@@ -2185,17 +2185,26 @@
   ::
       [%6 *]
     =^  c  gen  nomm-loop(n p.n)
-    ::  XX We take a union of argument requirements of branches
-    ::
-    =^  y  gen  nomm-loop(n q.n)
-    =^  n  gen  nomm-loop(n r.n)
     ::  only the condition is the true argument here
     ::
     =.  loc.gen  (update-loc-gen src.prod.c [%arg ~ ~])
-    =/  int=sock  (~(purr so sock.prod.y) sock.prod.n)
+    ::  We find the "deepest common argument usage" between branches
+    ::  and unify that with the usage accumulated so far + %6 condition
+    ::  expression argument usage
+    ::
+    =/  [y=sock-anno gen-y=_gen]  nomm-loop(n q.n, loc.gen ~)
+    =/  [n=sock-anno gen-n=_gen]  nomm-loop(n r.n, gen gen-y(loc ~))
+    =.  gen
+      [ memo.gen-n
+        (args-branches loc.gen loc.gen-y loc.gen-n)
+        loop-calls.gen-n
+        melo.gen-n
+      ]
+    ::
+    =/  int=sock  (~(purr so sock.y) sock.n)
     =/  uni-src=source
       =,  source
-      (uni (mask src.prod.y cape.int) (mask src.prod.n cape.int))
+      (uni (mask src.y cape.int) (mask src.n cape.int))
     ::
     :_  gen
     [int uni-src]
@@ -2237,9 +2246,3 @@
     (update-args-loc loc.gen src ?~(stack-list !! stack-list) args)
   --
 --
-
-
-
-
-
-

@@ -290,14 +290,14 @@
   ?~  a  b
   ?~  b  a
   ~+
-  =/  l  (uni-args l.a l.b)
-  =/  r  (uni-args r.a r.b)
   =/  n=?(%hole %look %arg)
     ?:  |(?=(%arg n.a) ?=(%arg n.b))    %arg
     ?:  |(?=(%look n.a) ?=(%look n.b))  %look
     %hole
   ::
   ?:  ?=(%arg n)  [%arg ~ ~]
+  =/  l  (uni-args l.a l.b)
+  =/  r  (uni-args r.a r.b)
   ?:  ?=(%hole n)  (blind l r)
   ::  n == %look
   ::
@@ -310,6 +310,97 @@
   %-  (~(uno by a) b)
   |=  [bell a=args b=args]
   (uni-args a b)
+::
+++  int-args
+  |=  [a=args b=args]
+  ^-  args
+  =-  ?:  =(- (normalize-args -))  -
+      ~|  `*`a
+      ~|  `*`b
+      ~|  `*`-
+      ~|  `*`(normalize-args -)
+      !!
+  ?:  =(a b)  a
+  ?~  a  ~
+  ?~  b  ~
+  ~+
+  =/  n=?(%hole %look %arg)
+    ?:  &(?=(%arg n.a) ?=(%arg n.b))    %arg
+    ?:  &(?=(%look n.a) ?=(%look n.b))  %look
+    %hole
+  ::
+  ?:  ?=(%arg n)  [%arg ~ ~]
+  =/  l  (int-args l.a l.b)
+  =/  r  (int-args r.a r.b)
+  ?:  ?=(%hole n)  (blind l r)
+  ?:  |(?=(^ l) ?=(^ r))  [%hole l r]
+  [%look ~ ~]
+::  (a - b), i.e. args in a that are not in b
+::
+++  dis-args
+  |=  [a=args b=args]
+  ^-  args
+  =-  ?:  =(- (normalize-args -))  -
+      ~|  `*`a
+      ~|  `*`b
+      ~|  `*`-
+      ~|  `*`(normalize-args -)
+      !!
+  ?:  =(a b)  ~
+  ?~  a  ~
+  ?~  b  a
+  ~+
+  =/  n=?(%hole %look %arg)
+    ?:  ?=(%arg n.b)  %hole
+    ?:  &(?=(%look n.b) ?=(%look n.a))  %hole
+    n.a
+  ::
+  ?:  ?=(%arg n)  [%arg ~ ~]
+  =/  l  (dis-args l.a l.b)
+  =/  r  (dis-args r.a r.b)
+  ?:  ?=(%hole n)  (blind l r)
+  ?:  |(?=(^ l) ?=(^ r))  [%hole l r]
+  [%look ~ ~]
+::
+++  join-args
+  |=  [a=args b=args]
+  ^-  args
+  =-  ?:  =(- (normalize-args -))  -
+      ~|  `*`a
+      ~|  `*`b
+      ~|  `*`-
+      ~|  `*`(normalize-args -)
+      !!
+  ?~  a  b
+  ?~  b  a
+  ?:  |(?=(%arg n.a) ?=(%arg n.b))  [%arg ~ ~]
+  ?:  &(?=(%look n.a) ?=(%look n.b))  [%look ~ ~]
+  =/  l  (join-args l.a l.b)
+  =/  r  (join-args r.a r.b)
+  ?:  |(?=(%look n.a) ?=(%look n.b))  (blind l r)
+  ?~  l
+    ?~  r  !!
+    [%hole ~ r]
+  ?~  r
+    ?~  l  !!
+    [%hole ~ l]
+  [(need (max-args l r)) ~ ~]
+::
+++  args-branches
+  |=  [old=args-locations y=args-locations n=args-locations]
+  ^-  args-locations
+  =/  keys  (~(uni in ~(key by y)) ~(key by n))
+  %-  ~(rep in keys)
+  |=  [key=bell acc=_old]
+  ^+  acc
+  =/  args-y=args    (~(gut by y) key ~)
+  =/  args-n=args    (~(gut by n) key ~)
+  =/  args-old=args  (~(gut by acc) key ~)
+  =/  args-sure  (uni-args args-old (int-args args-y args-n))
+  =/  only-y=args  (dis-args args-y args-sure)
+  =/  only-n=args  (dis-args args-n args-sure)
+  =/  join  (join-args only-y only-n)
+  (~(put by acc) key (uni-args args-sure join))
 ::
 ++  push-args
   |=  [a=args ax=@]
