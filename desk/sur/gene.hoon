@@ -1,3 +1,4 @@
+/-  *noir
 |%
 ::  @uvre: register index 
 ::  @uwoo: basic block index
@@ -5,6 +6,11 @@
 ::
 +$  need
   $^  [p=need q=need]
+  ::  c: does the downstream code crash if this is a cell?
+  ::  this flag is used to avoid crash relocation:
+  ::  if upstream code produces an atom that is supposed to fulfill
+  ::  a need [%both @uvre & * *], the crash is deferred by producing an atom
+  ::
   $%  [%both r=@uvre c=? h=need t=need]
       [%this r=@uvre]
       [%none ~]

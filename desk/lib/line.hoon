@@ -1,16 +1,17 @@
-/-  *gene
+/-  gene
 /+  *skan
 ::
+=,  gene
 =|  lon=line-long
 |_  bol=boil
 +*  this  .
 ++  line
-  |_  gen=short
+  |_  gen=line-short
   ++  cuts
     =/  =goal  [%done ~]
     |=  =bell
     ^-  [next line-short]
-    =|  gen  line-short
+    =|  gen=line-short
     =.  -.gen  lon
     =/  nomm=nomm-1  (~(got by code.bol) bell)
     |-  ^-  [next _gen]
@@ -33,6 +34,83 @@
       ==
     ==
   ::
+  ++  copy1
+    |=  [feed=next seed=need]
+    ^-  [next _gen]
+    =^  [ops=(list pole) =need]  gen
+      ^-  [[(list pole) need] _gen]
+      =/  needs=(pair need need)  [what.feed seed]
+      |-  ^-  [[(list pole) need] _gen]
+      ?+    needs  ~|(%impossible !!)
+          [[%none *] *]  [[~ q.needs] gen]
+          [* [%none *]]  [[~ p.needs] gen]
+      ::
+          [[%this *] [%this *]]
+        =,  needs
+        ~?  =(r.p r.q)  [%copy-this-this r.p]
+        ::  by copying `p` -> `q` we fulfill need of `q`
+        ::  then we return `p` to be fulfilled
+        ::
+        [[~[[%mov r.p r.q]] p] gen]
+      ::
+          [[%this *] *]
+        ::  normalize `q` to %both, as it is going
+        ::  to fulfill the need of `p`
+        ::
+          ?<  ?=(?(%this %none) -.q.needs)
+        =^  qq=$>(%both need)  gen
+          ?@(-.q.needs [q.needs gen] =^(x gen re [[%both x | q.needs] gen]))
+        ::
+        =,  needs
+        ~?  =(r.p r.qq)  [%copy-this-cell r.p]
+        [[~[[%mov r.qq r.p]] qq] gen]
+      ::
+          [* [%this *]]
+        ?<  ?=(?(%this %none) -.p.needs)
+        =^  pp=$>(%both need)  gen
+          ?@(-.p.needs [p.needs gen] =^(x gen re [[%both x | p.needs] gen]))
+        ::
+        =,  needs
+        ~?  =(r.q r.pp)  [%copy-cell-this r.q]
+        [[~[[%mov r.pp r.q]] pp] gen]
+      ::
+          [[%both *] *]
+        ?<  ?=(?(%this %none) -.q.needs)
+        =^  qq=$>(%both need)  gen
+          ?@(-.q.needs [q.needs gen] =^(x gen re [[%both x | q.needs] gen]))
+        ::
+        =,  needs
+        ~?  =(r.p r.qq)  [%copy-both-cell r.p]
+        =/  top-move=(list pole)  ~[[%mov r.qq r.p]]
+        =^  [head-move=(list pole) head-need=need]  gen  $(needs [h.p h.qq])
+        =^  [tail-move=(list pole) tail-need=need]  gen  $(needs [t.p t.qq])
+        :_  gen
+        :-  (zing tail-move head-move top-move ~)
+        ::          | XX ?
+        ::          v
+        ::
+        [%both r.qq &(c.p c.qq) head-need tail-need]
+      ::
+          [[^ *] [^ *]]
+        =,  needs
+        =^  [head-move=(list pole) head-need=need]  gen  $(needs [p.p p.q])
+        =^  [tail-move=(list pole) tail-need=need]  gen  $(needs [q.p q.q])
+        :_  gen
+        :-  (weld tail-move head-move)
+        [head-need tail-need]
+      ::
+          [[^ *] [%both *]]
+        =,  needs
+        =^  [head-move=(list pole) head-need=need]  gen  $(needs [p.p h.q])
+        =^  [tail-move=(list pole) tail-need=need]  gen  $(needs [q.p t.q])
+        :_  gen
+        :-  (weld tail-move head-move)
+        [%both r.q | head-need tail-need]
+      ==
+    ::
+    =^  o  gen  (emit ~ ops %hop then.feed)
+    [[%next need o] gen]
+  ::
   ++  copy
     |=  [feed=next seed=need]
     ^-  [next _gen]
@@ -44,10 +122,10 @@
     |-  ^-  [next _gen]
     ?~  work
       ?>  ?=([* ~] stack)
-      =^  o  gen  (emit ~ p %hop then.feed)
+      =^  o  gen  (emit ~ ops %hop then.feed)
       [[%next i.stack o] gen]
     ?:  ?=(%& -.i.work)
-      ?>  ?=([* * ~] s)
+      ?>  ?=([* * ~] stack)
       =/  par  [i.t.stack i.stack]
       %=  $
         work   t.work
@@ -138,8 +216,12 @@
     ^-  [next _gen]
     =^  o  gen  (emit ~ ~ %bom ~)
     [[%next [%none ~] o] gen]
+  ::
+  ++  mine
+    |=  [r=@uvre t=@uwoo]
+    ~!  next
+    ^-  [next _gen]
+    =^  mile  gen  (emit ~ [%imm %ska-line-mine r]~ %hop t)
+    [[%next [%none ~] mile] gen]
   --  ::  |line
-
-  
-
 --
