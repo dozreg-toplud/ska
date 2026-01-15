@@ -2016,8 +2016,8 @@
     ~>  %bout.[0 'find sccs']
     (find-sccs-all code)
   ::
-  ~&  %validity-check
-  ?>  ~>  %bout.[0 'validity check']  (valid-sccs sccs)
+  :: ~&  %validity-check
+  :: ?>  ~>  %bout.[0 'validity check']  (valid-sccs sccs)
   =|  stack-set=(set bell)
   =|  stack-list=(list bell)
   =/  sub=sock-anno  [bus.b ~[~[1]]]
@@ -2035,7 +2035,6 @@
   =.  stack-set  (~(put in stack-set) b)
   =.  stack-list  [b stack-list]
   ~&  [%enter `@ux`(mug b)]
-  :: ~?  =(0x19f5.57a4 (mug b))  (mug-set-bell (~(got by sccs) b))
   =;  [prod=sock-anno gen1=_gen]
     ::  fixpoint search done, finalize
     ::
@@ -2043,10 +2042,6 @@
     =/  map=(lest spring:source)  i.src.prod
     =/  final-args=(unit args)  (~(get by loc.gen) b)
     =/  =args  ?~(final-args ~ u.final-args)
-    :: ~&  fore+`*`args
-    :: ~&  cape.bus.b
-    =.  args  (subtract-cape-args-final args cape.bus.b)
-    :: ~&  aftr+`*`args
     ::  captured parts of the subject are required as arguments
     ::
     =/  args-capture=^args
@@ -2057,8 +2052,7 @@
       ?>  ?=([* ~ ~] loc.gen)
       q.n.loc.gen
     ::
-    =/  arg-with-captured
-      (subtract-cape-args-final (uni-args args args-capture) cape.bus.b)
+    =/  arg-with-captured  (uni-args args args-capture)
     ::
     =/  meme=meme-args  [b sock.prod map args arg-with-captured]
     ?:  (~(has by sccs) b)
@@ -2079,7 +2073,6 @@
     ::
     ?~  args-loop-mayb=(~(get by loop-calls.gen1) b)  [prod gen1]
     =/  =args  (normalize-args (~(gut by loc.gen1) b ~))
-    =.  args  (subtract-cape-args args cape.bus.b)
     ?:  =(u.args-loop-mayb args)
       [prod gen1(loop-calls (~(del in loop-calls.gen1)))]
     ?:  =(4 counter)
@@ -2087,13 +2080,14 @@
       ::  subject as an argument for the loop calls and for this call
       ::  XX but why we don't converge in complete:musk?
       ::
-      =.  loc.gen1  (~(put by loc.gen1) b [%arg ~ ~])
-      [prod gen1(loop-calls (~(del in loop-calls.gen1)))]
+      :: =.  loc.gen1  (~(put by loc.gen1) b [%arg ~ ~])
+      :: [prod gen1(loop-calls (~(del in loop-calls.gen1)))]
+      !!
     ~&  [%fixpoint counter `@ux`(mug b)]
-    :: ~?  =(0x2a97.a282 (mug b))  [fore=`*`u.args-loop-mayb aftr=`*`args]
     %=    fixpoint-loop
         loop-calls.gen
-      (~(put by loop-calls.gen1) b ?:(=(counter 3) [%arg ~ ~] args))
+      :: (~(put by loop-calls.gen1) b ?:(=(counter 3) [%arg ~ ~] args))
+      (~(put by loop-calls.gen1) b ?:(=(counter 3) !! args))
     ::
         memo.gen  memo.gen1
         counter   +(counter)
