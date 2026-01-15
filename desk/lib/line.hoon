@@ -32,6 +32,20 @@
         =^  neeh  gen  $(nomm -.nomm, goal [%next hed then.neet])
         (copy neeh what.neet)
       ==
+    ::
+        %6
+      ?:  ?=(%next -.goal)
+        =^  [phi-0=next phi-1=next]  gen  (phil goal)
+        =^  need-1  gen  $(nomm r.nomm, goal phi-1)
+        =^  need-0  gen  $(nomm q.nomm, goal phi-0)
+        =^  [bead=need then=@uwoo else=@uwoo]  gen  (sect need-0 need-1)
+        =^  cond  gen  $(nomm p.nomm, goal [%pick then else])
+        (copy cond bead)
+      =^  need-1  gen  $(nomm r.nomm)
+      =^  need-0  gen  $(nomm q.nomm)
+      =^  [bead=need then=@uwoo else=@uwoo]  gen  (sect need-0 need-1)
+      =^  cond  gen  $(nomm p.nomm, goal [%pick then else])
+      (copy cond bead)
     ==
   ::
   ++  copy1
@@ -86,7 +100,7 @@
         =^  [tail-move=(list pole) tail-need=need]  gen  $(needs [t.p t.qq])
         :_  gen
         :-  (zing tail-move head-move top-move ~)
-        ::          | XX ?
+        ::          | XX shouldn't this be "or"?
         ::          v
         ::
         [%both r.qq &(c.p c.qq) head-need tail-need]
@@ -110,6 +124,16 @@
     ::
     =^  o  gen  (emit ~ ops %hop then.feed)
     [[%next need o] gen]
+  ::
+  ++  phil
+    |=  nex=next
+    ^-  [[next next] _gen]
+    !!
+  ::
+  ++  sect
+    |=  [zero=next once=next]
+    ^-  [[need @uwoo @uwoo] _gen]
+    !!
   ::
   ++  copy
     |=  [feed=next seed=need]

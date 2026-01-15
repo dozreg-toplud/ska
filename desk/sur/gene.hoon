@@ -6,7 +6,7 @@
 ::
 +$  need
   $^  [p=need q=need]
-  ::  c: does the downstream code crash if this is a cell?
+  ::  c: does the downstream code crash if this is not a cell?
   ::  this flag is used to avoid crash relocation:
   ::  if upstream code produces an atom that is supposed to fulfill
   ::  a need [%both @uvre & * *], the crash is deferred by producing an atom
