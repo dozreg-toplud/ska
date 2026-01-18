@@ -51,9 +51,17 @@
 ::  %mov - copy s to d
 ::  %inc - increment s and write to d
 ::  %con - cons h and t into d
-::  %hed - write head of s to d. Crashes if s is an atom
-::  %tal - write tail of s to d. Crashes if s is an atom
+::  %hed - write head of s to d. Writes 0 if s is an atom
+::  %tal - write tail of s to d. Writes 0 if s is an atom
 ::  %cel - crash if p is an atom
+::  hint ops:     XX massive overkill as we always require the entire product
+::                   of the hinted formula which is not needed in general
+::
+::  %his - arbitrary static hint prologue
+::  %hes - arbitrary static hint epilogue
+::  %hid - arbitrary dynamic hint prologue, product of hint-formula in p
+::  %hed - arbitrary dynamic hint prologue, product of hint-formula in p,
+::         product of formula-formula in q
 ::
 +$  pole
   $%  [%imm n=* d=@uvre]
@@ -63,6 +71,10 @@
       [%hed s=@uvre d=@uvre]
       [%tal s=@uvre d=@uvre]
       [%cel p=@uvre]
+      [%his n=@]
+      [%hes n=@ p=@uvre]
+      [%hid n=@ p=@uvre]
+      [%hed n=@ p=@uvre q=@uvre]
   ==
 ::
 ::    control flow instructions
