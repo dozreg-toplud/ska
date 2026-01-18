@@ -58,7 +58,7 @@
 ::                   of the hinted formula which is not needed in general
 ::
 ::  %his - arbitrary static hint prologue
-::  %hes - arbitrary static hint epilogue
+::  %hes - arbitrary static hint epilogue, product of hinted formula in p
 ::  %hid - arbitrary dynamic hint prologue, product of hint-formula in p
 ::  %hed - arbitrary dynamic hint prologue, product of hint-formula in p,
 ::         product of formula-formula in q

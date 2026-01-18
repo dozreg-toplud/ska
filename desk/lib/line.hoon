@@ -141,9 +141,9 @@
           ::  kinda like autocons compilation, since we drop the result
           ::  and the op never crashes
           ::
-          =^  need-q  gen  $(nomm q.nomm)
-          =^  need-p  gen  $(nomm p.nomm, then.goal then.need-q)
-          (copy need-p what.need-q)
+          =^  next-q  gen  $(nomm q.nomm)
+          =^  next-p  gen  $(nomm p.nomm, then.goal then.next-q)
+          (copy next-p what.next-q)
         =^  [z=@uwoo o=@uwoo]  gen  (phin r.what.goal then.goal)
         $(goal [%pick z o])
       ::
@@ -151,9 +151,9 @@
         =^  r-p     gen  re
         =^  r-q     gen  re
         =^  o       gen  (emit ~ ~ %eqq r-p r-q [zero once]:goal)
-        =^  need-q  gen  $(nomm q.nomm, goal [%next [%this r-q] o])
-        =^  need-p  gen  $(nomm p.nomm, goal [%next [%this r-p] then.need-q])
-        (copy need-p what.need-q)
+        =^  next-q  gen  $(nomm q.nomm, goal [%next [%this r-q] o])
+        =^  next-p  gen  $(nomm p.nomm, goal [%next [%this r-p] then.next-q])
+        (copy next-p what.next-q)
       ::
       ==
     ::
@@ -196,7 +196,32 @@
       ::
       ==
     ::
-        %11  stub
+        %11  ::  XX aver
+      ?-    -.goal
+          %done
+        =^  r  gen  re
+        =^  o  gen  (emit ~ ~ %don r)
+        $(goal [%next [%this r] o])
+      ::
+          %pick
+        =^  r  gen  re
+        =^  o  gen  (emit ~ ~ %brn r [zero once]:goal)
+        $(goal [%next [%this r] o])
+      ::
+          %next
+        =^  [aftr=@uwoo prod=@uvre]  gen  (kerf goal)
+        ?@  p.nomm
+          =^  epil  gen  (emit ~ [%hes p.nomm prod]~ %hop aftr)
+          =^  nex   gen  $(nomm q.nomm, goal [%next this+prod epil])
+          =^  prol  gen  (emit ~ [%his p.nomm]~ %hop then.nex)
+          [[%next what.nex prol] gen]
+        =^  toke  gen  re
+        =^  epil  gen  (emit ~ [%hed p.p.nomm toke prod]~ %hop aftr)
+        =^  nex   gen  $(nomm q.nomm, goal [%next this+prod epil])
+        =^  prol  gen  (emit ~ [%hid p.p.nomm toke]~ %hop then.nex)
+        =^  dyn   gen  $(nomm q.p.nomm, goal [%next this+toke prol])
+        (copy dyn what.nex)
+      ==
     ==
   ::  split need for edit: donor, then recipient
   ::
