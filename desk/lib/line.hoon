@@ -57,7 +57,35 @@
         [[%next none+~ o] gen]
       ==
     ::
-        %2  stub
+        %2
+      ?:  ?=(%pick -.goal)
+        =^  r  gen  re
+        =^  o  gen  (emit ~ ~ %brn r [zero once]:goal)
+        $(goal [%next [%this r] o])
+      ?~  info.nomm
+        ::  indirect call
+        ::
+        ?~  q.nomm  !!
+        ?-    -.goal
+            %done
+          =^  s  gen  re
+          =^  f  gen  re
+          =^  o  gen  (emit ~ ~ %lnt s f)
+          =^  need-f  gen  $(nomm u.q.nomm, goal [%next this+f o])
+          =^  need-s  gen  $(nomm p.nomm, goal [%next this+s then.need-f])
+          (copy need-s what.need-f)
+        ::
+            %next
+          =^  [aftr=@uwoo prod=@uvre]  gen  (kerf goal)
+          =^  s  gen  re
+          =^  f  gen  re
+          =^  o  gen  (emit ~ ~ %lnk s f prod aftr)
+          =^  need-f  gen  $(nomm u.q.nomm, goal [%next this+f o])
+          =^  need-s  gen  $(nomm p.nomm, goal [%next this+s then.need-f])
+          (copy need-s what.need-f)
+        ==
+      =/  args  (~(got by arity.gen) u.info.nomm)
+      stub
     ::
         %3
       ?-    -.goal
