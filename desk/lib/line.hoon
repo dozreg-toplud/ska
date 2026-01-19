@@ -216,26 +216,32 @@
       ==
     ::
         %11
-      =^  goal  gen  (simple-next goal)
-      =^  [aftr=@uwoo prod=@uvre]  gen  (kerf goal)
       ?@  p.nomm
-        ::  control flow:
-        ::  prologue -> crash relocation border -> formula -> epilogue -> out
-        ::
-        =^  epil  gen  (emit ~ [%hes p.nomm prod]~ %hop aftr)
-        =^  nex   gen  $(nomm q.nomm, goal [%next this+prod epil])
+        ?.  ?=(hint-static-mute p.nomm)  $(nomm q.nomm)
+        =^  goal  gen  (simple-next goal)
+        =^  epil  gen  (emit ~ [%hos p.nomm q.nomm]~ %hop then.goal)
+        =^  nex   gen  $(nomm q.nomm)
         =^  top   gen  (stop nex)
-        =^  prol  gen  (emit ~ [%his p.nomm]~ %hop then.top)
+        =^  prol  gen  (emit ~ [%his p.nomm q.nomm]~ %hop then.top)
         [[%next what.top prol] gen]
-      ::  control flow:
-      ::  hint-formula -> prologue -> crash relocation border -> formula ->
-      ::  -> epilogue -> out
-      ::
+      ?.  ?=(?(hint-dynamic-mute hint-dynamic-prod) p.p.nomm)
+        =^  nex  gen  $(nomm q.nomm)
+        =^  hin  gen  $(nomm q.p.nomm, goal [%next none+~ then.nex])
+        (copy hin what.nex)
+      =^  goal  gen  (simple-next goal)
       =^  toke  gen  re
-      =^  epil  gen  (emit ~ [%hyd p.p.nomm toke prod]~ %hop aftr)
+      ?:  ?=(hint-dynamic-mute p.p.nomm)
+        =^  epil  gen  (emit ~ [%hod p.p.nomm toke q.nomm]~ %hop then.goal)
+        =^  nex   gen  $(nomm q.nomm)
+        =^  top   gen  (stop nex)
+        =^  prol  gen  (emit ~ [%hid p.p.nomm toke q.nomm]~ %hop then.top)
+        =^  dyn   gen  $(nomm q.p.nomm, goal [%next this+toke prol])
+        (copy dyn what.top)
+      =^  [aftr=@uwoo prod=@uvre]  gen  (kerf goal)
+      =^  epil  gen  (emit ~ [%hyd p.p.nomm toke prod q.nomm]~ %hop aftr)
       =^  nex   gen  $(nomm q.nomm, goal [%next this+prod epil])
       =^  top   gen  (stop nex)
-      =^  prol  gen  (emit ~ [%hid p.p.nomm toke]~ %hop then.top)
+      =^  prol  gen  (emit ~ [%hid p.p.nomm toke q.nomm]~ %hop then.top)
       =^  dyn   gen  $(nomm q.p.nomm, goal [%next this+toke prol])
       (copy dyn what.top)
     ::
