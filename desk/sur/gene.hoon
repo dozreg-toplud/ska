@@ -54,6 +54,7 @@
 ::  %hed - write head of s to d. Writes 0 if s is an atom
 ::  %tal - write tail of s to d. Writes 0 if s is an atom
 ::  %cel - crash if p is an atom
+::  %spy - scry with ref in e, path in p, put in d
 ::  hint ops:     XX massive overkill as we always require the entire product
 ::                   of the hinted formula which is not needed in general
 ::
@@ -75,6 +76,7 @@
       [%hes n=@ p=@uvre]
       [%hid n=@ p=@uvre]
       [%hyd n=@ p=@uvre q=@uvre]
+      [%spy e=@uvre p=@uvre d=@uvre]
   ==
 ::
 ::    control flow instructions

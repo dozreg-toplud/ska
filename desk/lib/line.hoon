@@ -16,7 +16,7 @@
     =.  -.gen  lon
     =/  nomm=nomm-1  (~(got by code.bol) bell)
     |-  ^-  [next _gen]
-    ?+    -.nomm  stub
+    ?-    -.nomm
         ^
       ?-    -.goal
           %done
@@ -29,27 +29,15 @@
       ::
           %next
         =^  [hed=need tel=need t=@uwoo]  gen  (split goal)
-        =^  neet  gen  $(nomm +.nomm, goal [%next tel t])
-        =^  neeh  gen  $(nomm -.nomm, goal [%next hed then.neet])
-        (copy neeh what.neet)
+        =^  next-2  gen  $(nomm +.nomm, goal [%next tel t])
+        =^  next-1  gen  $(nomm -.nomm, goal [%next hed then.next-2])
+        (copy next-1 what.next-2)
       ==
     ::
         %0
       ?:  =(0 p.nomm)  bomb
-      ?-    -.goal
-          %done
-        =^  r  gen  re
-        =^  o  gen  (emit ~ ~ %don r)
-        $(goal [%next [%this r] o])
-      ::
-          %pick
-        =^  r  gen  re
-        =^  o  gen  (emit ~ ~ %brn r [zero once]:goal)
-        $(goal [%next [%this r] o])
-      ::
-          %next
-        [[%next (from p.nomm what.goal) then.goal] gen]
-      ==
+      =^  goal  gen  (simple-next goal)
+      [[%next (from p.nomm what.goal) then.goal] gen]        
     ::
         %1
       ?-    -.goal
@@ -74,11 +62,11 @@
         %3
       ?-    -.goal
           %done
-        =^  r-z  gen  re
-        =^  r-o  gen  re
-        =^  o-z  gen  (emit ~ [%imm 0 r-z]~ %don r-z)
-        =^  o-o  gen  (emit ~ [%imm 1 r-o]~ %don r-o)
-        $(goal [%pick o-z o-o])
+        =^  r-0  gen  re
+        =^  r-1  gen  re
+        =^  o-0  gen  (emit ~ [%imm 0 r-0]~ %don r-0)
+        =^  o-1  gen  (emit ~ [%imm 1 r-1]~ %don r-1)
+        $(goal [%pick o-0 o-1])
       ::
           %next
         ?:  ?=(?(^ %both) -.what.goal)
@@ -100,28 +88,28 @@
         %4
       ?-    -.goal
           %done
-        =^  prod  gen  re
-        =^  oper  gen  re
-        =^  o     gen  (emit ~ [%inc oper prod]~ %don prod)
-        $(nomm p.nomm, goal [%next [%this oper] o])
+        =^  pro  gen  re
+        =^  arg  gen  re
+        =^  o     gen  (emit ~ [%inc arg pro]~ %don pro)
+        $(nomm p.nomm, goal [%next [%this arg] o])
       ::
           %pick
-        =^  prod  gen  re
-        =^  oper  gen  re
-        =^  o     gen  (emit ~ [%inc oper prod]~ %brn prod [zero once]:goal)
-        $(nomm p.nomm, goal [%next [%this oper] o])
+        =^  pro  gen  re
+        =^  arg  gen  re
+        =^  o     gen  (emit ~ [%inc arg pro]~ %brn pro [zero once]:goal)
+        $(nomm p.nomm, goal [%next [%this arg] o])
       ::
           %next
         ?:  ?=(?(^ %both) -.what.goal)
           ?.  ?=([%both @ %& *] what.goal)  bomb
           (mine r.what.goal then.goal)
-        =^  prod  gen
+        =^  pro  gen
           ?:  ?=(%none -.what.goal)  re
           [r.what.goal gen]
         ::
-        =^  oper  gen  re
-        =^  o     gen  (emit ~ [%inc oper prod]~ %hop then.goal)
-        $(nomm p.nomm, goal [%next [%this oper] o])
+        =^  arg  gen  re
+        =^  o     gen  (emit ~ [%inc arg pro]~ %hop then.goal)
+        $(nomm p.nomm, goal [%next [%this arg] o])
       ==
     ::
         %5
@@ -162,14 +150,17 @@
         =^  [phi-0=next phi-1=next]  gen  (phil goal)
         =^  next-1  gen  $(nomm r.nomm, goal phi-1)
         =^  next-0  gen  $(nomm q.nomm, goal phi-0)
-        =^  [bead=need then=@uwoo else=@uwoo]  gen  (sect next-0 next-1)
+        =^  [both=need then=@uwoo else=@uwoo]  gen  (sect next-0 next-1)
         =^  cond  gen  $(nomm p.nomm, goal [%pick then else])
-        (copy cond bead)
+        (copy cond both)
+      ::  either %6 is in tail position or the result is used to %pick,
+      ::  so we don't need to generate merge blocks
+      ::
       =^  next-1  gen  $(nomm r.nomm)
       =^  next-0  gen  $(nomm q.nomm)
-      =^  [bead=need then=@uwoo else=@uwoo]  gen  (sect next-0 next-1)
+      =^  [both=need then=@uwoo else=@uwoo]  gen  (sect next-0 next-1)
       =^  cond  gen  $(nomm p.nomm, goal [%pick then else])
-      (copy cond bead)
+      (copy cond both)
     ::
         %7
       =^  nex  gen  $(nomm q.nomm)
@@ -196,43 +187,53 @@
       ::
       ==
     ::
-        %11  ::  XX aver
-      ?-    -.goal
-          %done
-        =^  r  gen  re
-        =^  o  gen  (emit ~ ~ %don r)
-        $(goal [%next [%this r] o])
-      ::
-          %pick
-        =^  r  gen  re
-        =^  o  gen  (emit ~ ~ %brn r [zero once]:goal)
-        $(goal [%next [%this r] o])
-      ::
-          %next
-        =^  [aftr=@uwoo prod=@uvre]  gen  (kerf goal)
-        ?@  p.nomm
-          ::  control flow:
-          ::  prologue -> crash relocation border -> formula -> epilogue -> out
-          ::
-          =^  epil  gen  (emit ~ [%hes p.nomm prod]~ %hop aftr)
-          =^  nex   gen  $(nomm q.nomm, goal [%next this+prod epil])
-          =^  top   gen  (stop nex)
-          =^  prol  gen  (emit ~ [%his p.nomm]~ %hop then.top)
-          [[%next what.top prol] gen]
+        %11
+      =^  goal  gen  (simple-next goal)
+      =^  [aftr=@uwoo prod=@uvre]  gen  (kerf goal)
+      ?@  p.nomm
         ::  control flow:
-        ::  hint-formula -> prologue -> crash relocation border -> formula ->
-        ::  -> epilogue -> out
+        ::  prologue -> crash relocation border -> formula -> epilogue -> out
         ::
-        =^  toke  gen  re
-        =^  epil  gen  (emit ~ [%hyd p.p.nomm toke prod]~ %hop aftr)
+        =^  epil  gen  (emit ~ [%hes p.nomm prod]~ %hop aftr)
         =^  nex   gen  $(nomm q.nomm, goal [%next this+prod epil])
         =^  top   gen  (stop nex)
-        =^  prol  gen  (emit ~ [%hid p.p.nomm toke]~ %hop then.top)
-        =^  dyn   gen  $(nomm q.p.nomm, goal [%next this+toke prol])
-        (copy dyn what.top)
-      ==
+        =^  prol  gen  (emit ~ [%his p.nomm]~ %hop then.top)
+        [[%next what.top prol] gen]
+      ::  control flow:
+      ::  hint-formula -> prologue -> crash relocation border -> formula ->
+      ::  -> epilogue -> out
+      ::
+      =^  toke  gen  re
+      =^  epil  gen  (emit ~ [%hyd p.p.nomm toke prod]~ %hop aftr)
+      =^  nex   gen  $(nomm q.nomm, goal [%next this+prod epil])
+      =^  top   gen  (stop nex)
+      =^  prol  gen  (emit ~ [%hid p.p.nomm toke]~ %hop then.top)
+      =^  dyn   gen  $(nomm q.p.nomm, goal [%next this+toke prol])
+      (copy dyn what.top)
+    ::
+        %12
+      =^  goal  gen  (simple-next goal)
+      =^  [out=@uwoo pro=@uvre]  gen  (kerf goal)
+      =^  r-path     gen  re
+      =^  r-ref      gen  re
+      =^  o-spy      gen  (emit ~ [%spy r-ref r-path pro]~ %hop out)
+      =^  need-path  gen  $(nomm q.nomm, goal [%next this+r-path o-spy])
+      =^  need-ref   gen  $(nomm p.nomm, goal [%next this+r-ref then.need-path])
+      (copy need-ref what.need-path)
     ==
+  ::  simplify goal to next
   ::
+  ++  simple-next
+    |=  g=goal
+    ^-  [next _gen]
+    ?:  ?=(%next -.g)  [g gen]
+    =^  r  gen  re
+    =^  o  gen
+      %^  emit  ~  ~
+      ?:  ?=(%done -.g)  [%don r]
+      [%brn r [zero once]:g]
+    ::
+    [[%next this+r o] gen]
   ::  place a crash relocation boundary
   ::
   ++  stop
@@ -795,6 +796,7 @@
       =?  ops  !c.ned  [[%cel r.ned] ops]
       [[`r.ned ops] gen]
     ==
+  ::  split a goal into two for autocons, emitting cons code if needed
   ::
   ++  split
     |=  nex=next
