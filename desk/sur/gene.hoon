@@ -74,7 +74,7 @@
       [%his n=@]
       [%hes n=@ p=@uvre]
       [%hid n=@ p=@uvre]
-      [%hed n=@ p=@uvre q=@uvre]
+      [%hyd n=@ p=@uvre q=@uvre]
   ==
 ::
 ::    control flow instructions

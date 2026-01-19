@@ -77,7 +77,7 @@
         =^  r-z  gen  re
         =^  r-o  gen  re
         =^  o-z  gen  (emit ~ [%imm 0 r-z]~ %don r-z)
-        =^  o-o  gen  (emit ~ [%imm 0 r-o]~ %don r-o)
+        =^  o-o  gen  (emit ~ [%imm 1 r-o]~ %don r-o)
         $(goal [%pick o-z o-o])
       ::
           %next
@@ -211,17 +211,61 @@
           %next
         =^  [aftr=@uwoo prod=@uvre]  gen  (kerf goal)
         ?@  p.nomm
+          ::  control flow:
+          ::  prologue -> crash relocation border -> formula -> epilogue -> out
+          ::
           =^  epil  gen  (emit ~ [%hes p.nomm prod]~ %hop aftr)
           =^  nex   gen  $(nomm q.nomm, goal [%next this+prod epil])
-          =^  prol  gen  (emit ~ [%his p.nomm]~ %hop then.nex)
-          [[%next what.nex prol] gen]
+          =^  top   gen  (stop nex)
+          =^  prol  gen  (emit ~ [%his p.nomm]~ %hop then.top)
+          [[%next what.top prol] gen]
+        ::  control flow:
+        ::  hint-formula -> prologue -> crash relocation border -> formula ->
+        ::  -> epilogue -> out
+        ::
         =^  toke  gen  re
-        =^  epil  gen  (emit ~ [%hed p.p.nomm toke prod]~ %hop aftr)
+        =^  epil  gen  (emit ~ [%hyd p.p.nomm toke prod]~ %hop aftr)
         =^  nex   gen  $(nomm q.nomm, goal [%next this+prod epil])
-        =^  prol  gen  (emit ~ [%hid p.p.nomm toke]~ %hop then.nex)
+        =^  top   gen  (stop nex)
+        =^  prol  gen  (emit ~ [%hid p.p.nomm toke]~ %hop then.top)
         =^  dyn   gen  $(nomm q.p.nomm, goal [%next this+toke prol])
-        (copy dyn what.nex)
+        (copy dyn what.top)
       ==
+    ==
+  ::
+  ::  place a crash relocation boundary
+  ::
+  ++  stop
+    |=  nex=next
+    ^-  [next _gen]
+    =^  [ops=(list pole) ned=need]  gen  (aver what.nex)
+    =^  o  gen  (emit ~ ops %hop then.nex)
+    [[%next ned o] gen]
+  ::  emit %cel asserts, update need
+  ::
+  ++  aver
+    |=  ned=need
+    ^-  [[(list pole) need] _gen]
+    =|  acc=[ops=(list pole) gen=_gen]
+    =<  [[ops.acc n] gen.acc]
+    ^-  [n=need acc=_acc]
+    |-  ^-  [need _acc]
+    ?+    -.ned  [ned acc]
+        ^
+      =^  tel  acc      $(ned q.ned)
+      =^  hed  acc      $(ned p.ned)
+      =^  r    gen.acc  re
+      =.  ops.acc  [cel+r ops.acc]
+      :_  acc
+      [%both r & hed tel]
+    ::
+        %both
+      ?:  c.ned  [ned acc]
+      =^  tel  acc  $(ned t.ned)
+      =^  hed  acc  $(ned h.ned)
+      =.  ops.acc  [cel+r.ned ops.acc]
+      :_  acc
+      ned(c &, h hed, t tel)
     ==
   ::  split need for edit: donor, then recipient
   ::
