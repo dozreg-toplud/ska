@@ -542,11 +542,11 @@
       ~?  =(r.l r.rr)  [%copy-both r.l r.rr]
       %=  $
         ops   [[%mov r.rr r.l] ops]
-        sin  [|+[h.l h.rr] |+[t.l t.rr] &+`[r.rr &(c.l c.rr)] sin]
+        sin  [|+[h.l h.rr] |+[t.l t.rr] &+`[r.rr |(c.l c.rr)] sin]
       ==
     ?^  -.r
       $(sin [|+[p.l p.r] |+[q.l q.r] &+~ sin])
-    $(sin [|+[p.l h.r] |+[q.l t.r] &+`[r.r |] sin])
+    $(sin [|+[p.l h.r] |+[q.l t.r] &+`[r.r c.r] sin])
   ::  given a control flow merge destination, generate a phi block
   ::  and comefrom blocks for branches, returning branch destinations
   ::
@@ -722,20 +722,30 @@
         sin  t.sin
         sout  [[%this r.res-z] sout]
       ==
-    ?^  -.z-need
-      ?^  -.o-need
-        $(sin [|+[p.z-need p.o-need] |+[q.z-need q.o-need] &+~ t.sin])
-      $(sin [|+[p.z-need h.o-need] |+[q.z-need t.o-need] &+`[r.o-need |] t.sin])
-    ?^  -.o-need
-      $(sin [|+[h.z-need p.o-need] |+[t.z-need q.o-need] &+`[r.z-need |] t.sin])
+    ?:  &(?=(^ -.z-need) ?=(^ -.o-need))
+      $(sin [|+[p.z-need p.o-need] |+[q.z-need q.o-need] &+~ t.sin])
+    =^  z-both=$>(%both need)  gen
+      ?@  -.z-need  [z-need gen]
+      =^  x  gen  re
+      [[%both x | z-need] gen]
+    ::
+    =^  o-both=$>(%both need)  gen
+      ?@  -.o-need  [o-need gen]
+      =^  x  gen  re
+      [[%both x | o-need] gen]
+    ::
+    =?  .  |(c.z-both c.o-both)
+      =?  ops-z  !c.z-both  [[%cel r.z-both]~ ops-z]
+      =?  ops-o  !c.o-both  [[%cel r.o-both]~ ops-o]
+      .
+    ::
     %=  $
-      sin    [ |+[h.z-need h.o-need]
-               |+[t.z-need t.o-need]
-               &+`[r.z-need &(c.z-need c.o-need)]
+      ops-o  [[%mov r.z-both r.o-both]~ ops-o]
+      sin    [ |+[h.z-both h.o-both]
+               |+[t.z-both t.o-both]
+               &+`[r.z-both |(c.z-both c.o-both)]
                t.sin
              ]
-    ::
-      ops-o  [[%mov r.z-need r.o-need]~ ops-o]
     ==
   ::
   ++  sect1

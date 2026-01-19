@@ -7,9 +7,13 @@
 +$  need
   $^  [p=need q=need]
   ::  c: does the downstream code crash if this is not a cell?
-  ::  this flag is used to avoid crash relocation:
-  ::  if upstream code produces an atom that is supposed to fulfill
-  ::  a need [%both @uvre & * *], the crash is deferred by producing an atom
+  ::
+  ::  if c, then head and tail are safe to access, but we must not crash
+  ::  immediately when satisfying that need with an atom, we must defer
+  ::  the crash till %cell check
+  ::
+  ::  else, we can crash immediately just fine, but we can't access the root
+  ::  noun without a cell check
   ::
   $%  [%both r=@uvre c=? h=need t=need]
       [%this r=@uvre]
@@ -152,6 +156,7 @@
 +$  line-long
   $:  code=(map @uxor straight)
       ax-gen=@uxor
+      arity=args-locations
   ==
 ::
 +$  line-short
