@@ -84,8 +84,32 @@
           =^  need-s  gen  $(nomm p.nomm, goal [%next this+s then.need-f])
           (copy need-s what.need-f)
         ==
+      =/  armor=@uxor  (~(got by bells.gen) u.info.nomm)
       =/  args  (~(got by arity.gen) u.info.nomm)
-      stub
+      =^  [args-need=need args-list=(list @uvre)]  gen  (args-to-need args)
+      ::  XX no jet stuff for now
+      ::
+      ::  build block to jump from formula execution,
+      ::  splitting result to register in need if necessary
+      ::
+      =^  tar=@uwoo  gen
+        ?-    -.goal
+            %done  (emit ~ ~ %jmp armor args-list)
+        ::
+            %next
+          =^  [aftr=@uwoo prod=@uvre]  gen  (kerf goal)
+          (emit ~ ~ %cal armor args-list prod aftr)
+        ==
+      ::
+      =^  fol-next  gen
+        ::  if the formula-formula was removed: do nothing
+        ::  else compute formula-formula and drop the result to preserve crashes
+        ::
+        ?~  q.nomm  [[%next none+~ tar] gen]
+        $(nomm u.q.nomm, goal [%next none+~ tar])
+      ::
+      =^  sub-next  gen  $(nomm p.nomm, goal [%next args-need then.fol-next])
+      (copy sub-next what.fol-next)
     ::
         %3
       ?-    -.goal
@@ -288,6 +312,35 @@
       =^  need-path  gen  $(nomm q.nomm, goal [%next this+r-path o-spy])
       =^  need-ref   gen  $(nomm p.nomm, goal [%next this+r-ref then.need-path])
       (copy need-ref what.need-path)
+    ==
+  ::
+  ++  args-to-need
+    |=  =args
+    ^-  [[need (list @uvre)] _gen]
+    =^  ned=need  gen
+      |-  ^-  [need _gen]
+      ?~  args  [none+~ gen]
+      ?-    -.args
+          ::  XX special case %look somehow?..
+          ::
+          ?(%arg %look)
+        =^  r  gen  re
+        [this+r gen]
+      ::
+          %hole
+        =^  l  gen  $(args l.args)
+        =^  r  gen  $(args r.args)
+        [[l r] gen]
+      ==
+    ::
+    :_  gen
+    :-  ned
+    |-  ^-  (list @uvre)
+    ?-    -.ned
+        %both  !!
+        %none  ~
+        %this  ~[r.ned]
+        ^      (weld $(ned p.ned) $(ned q.ned))
     ==
   ::  simplify goal to next
   ::

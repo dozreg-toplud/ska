@@ -186,6 +186,7 @@
 +$  line-long
   $:  code=(map @uxor straight)
       ax-gen=@uxor
+      bells=(map bell @uxor)
       arity=args-locations
   ==
 ::
