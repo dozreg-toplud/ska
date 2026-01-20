@@ -59,8 +59,7 @@
 ::  %tal - write tail of s to d. Writes 0 if s is an atom
 ::  %cel - crash if p is an atom
 ::  %spy - scry with ref in e, path in p, put in d
-::  hint ops:     XX massive overkill as we always require the entire product
-::                   of the hinted formula which is not needed in general
+::  hint ops (except for %memo):
 ::
 ::  %his - static hint prologue
 ::  %hys - static hint epilogue, product of hinted formula in p
@@ -70,6 +69,8 @@
 ::         product of hinted formula in q
 ::  %hod - arbitrary dynamic hint epilogue, product of hint-formula in p (no
 ::         product of hinted formula)
+::  memo instructions:
+::    %mem - save noun `r` with key [k s f]
 ::
 ::  static hints that do not need the result of the hinted formula
 ::
@@ -85,7 +86,6 @@
 +$  hint-dynamic-mute  ?(hint-dynamic-mute-stop hint-dynamic-mute-safe)
 +$  hint-dynamic-prod-safe  ?(%slog)
 +$  hint-dynamic  ?(hint-dynamic-prod-safe hint-dynamic-mute)
-::  XX %memo requires special treatment as it impacts control flow
 ::
 +$  pole
   $%  [%imm n=* d=@uvre]
@@ -95,6 +95,8 @@
       [%hed s=@uvre d=@uvre]
       [%tal s=@uvre d=@uvre]
       [%cel p=@uvre]
+      ::  XX save original hinted formulas?
+      ::
       [%his n=hint-static-mute f=nomm-1]
       :: [%hys n=hint-static-prod p=@uvre f=nomm-1]
       [%hos n=hint-static-mute f=nomm-1]
@@ -103,6 +105,7 @@
       [%hyd n=hint-dynamic-prod-safe p=@uvre q=@uvre f=nomm-1]
       [%hod n=hint-dynamic-mute p=@uvre f=nomm-1]
       [%spy e=@uvre p=@uvre d=@uvre]
+      [%mem k=@uvre s=@uvre f=nomm-1 r=@uvre]
   ==
 ::
 ::    control flow instructions
@@ -143,6 +146,10 @@
 ::  %jmf - like jmp but with fast label
 ::  %don - return value in s from current arm
 ::  %bom - crash
+::
+::  %memo instructions:
+::  %mim: check triple [k s f], write product to d if available and goto z,
+::        else goto o
 +$  site
   $%  [%clq s=@uvre z=@uwoo o=@uwoo]
       [%eqq l=@uvre r=@uvre z=@uwoo o=@uwoo]
@@ -157,6 +164,7 @@
       [%jmf a=@uxor v=(list @uvre) u=@uvre n=[path @]]
       [%don s=@uvre]
       [%bom ~]
+      [%mim k=@uvre s=@uvre f=nomm-1 d=@uvre z=@uwoo o=@uwoo]
   ==
 ::    basic block
 ::

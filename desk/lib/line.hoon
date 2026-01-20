@@ -223,6 +223,31 @@
         =^  nex   gen  $(nomm q.nomm, goal goal(then epil))
         =^  prol  gen  (emit ~ [%his p.nomm q.nomm]~ %hop then.nex)
         [[%next what.nex prol] gen]
+      ?:  ?=(%memo p.p.nomm)
+        =^  key   gen  re
+        =^  sub   gen  re
+        =^  goal  gen  (simple-next goal)
+        =^  [phi-hit=next phi-mis=next]  gen  (phil goal)
+        ::  prod.hit will be filled by a cached value
+        ::  prod.hit will be filled by the hinted formula and saved
+        ::
+        =^  hit=[aftr=@uwoo prod=@uvre]  gen  (kerf phi-hit)
+        =^  mis=[aftr=@uwoo prod=@uvre]  gen  (kerf phi-mis)
+        =^  next-mis  gen
+          =^  save  gen  (emit ~ [%mem key sub q.nomm prod.mis]~ %hop aftr.mis)
+          $(nomm q.nomm, goal [%next this+prod.mis save])
+        ::  unsatisfied so far: prod.hit, what.next-mis
+        ::  %mim will satisfy prod.hit or miss, only what.next-mis is left
+        ::  so +sect is not needed to align the needs of branches
+        ::
+        =^  check  gen
+          (emit ~ ~ %mim key sub q.nomm prod.hit aftr.hit then.next-mis)
+        ::
+        =^  next-key  gen  $(nomm q.p.nomm, goal [%next this+key check])
+        =^  key-fol   gen  (copy next-key what.next-mis)
+        ::  fill the subject register
+        ::
+        (copy key-fol this+sub)
       ?.  ?=(hint-dynamic p.p.nomm)
         =^  nex  gen  $(nomm q.nomm)
         =^  hin  gen  $(nomm q.p.nomm, goal [%next none+~ then.nex])
@@ -232,7 +257,8 @@
       =^  epil-ops=(list pole)  .
         ::  produce epilogue ops while potentially emitting code
         ::  to split the hinted formula's product into the registers
-        ::  in the original need
+        ::  in the original need if the hint's epilogue needs the value
+        ::  of the hinted formula
         ::
         =*  dot  .
         ?:  ?=(hint-dynamic-mute p.p.nomm)
