@@ -80,8 +80,11 @@
 ::
 :: +$  hint-static-prod  _!!
 ::
-+$  hint-dynamic-mute  ?(%bout %xray %spin %loop %jinx %live %mean %spot)
-+$  hint-dynamic-prod  ?(%slog)
++$  hint-dynamic-mute-stop  ?(%mean %spot)
++$  hint-dynamic-mute-safe  ?(%bout %xray %spin %loop %jinx %live)
++$  hint-dynamic-mute  ?(hint-dynamic-mute-stop hint-dynamic-mute-safe)
++$  hint-dynamic-prod-safe  ?(%slog)
++$  hint-dynamic  ?(hint-dynamic-prod-safe hint-dynamic-mute)
 ::  XX %memo requires special treatment as it impacts control flow
 ::
 +$  pole
@@ -96,8 +99,8 @@
       :: [%hys n=hint-static-prod p=@uvre f=nomm-1]
       [%hos n=hint-static-mute f=nomm-1]
   ::
-      [%hid n=?(hint-dynamic-mute hint-dynamic-prod) p=@uvre f=nomm-1]
-      [%hyd n=hint-dynamic-prod p=@uvre q=@uvre f=nomm-1]
+      [%hid n=hint-dynamic p=@uvre f=nomm-1]
+      [%hyd n=hint-dynamic-prod-safe p=@uvre q=@uvre f=nomm-1]
       [%hod n=hint-dynamic-mute p=@uvre f=nomm-1]
       [%spy e=@uvre p=@uvre d=@uvre]
   ==

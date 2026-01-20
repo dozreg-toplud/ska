@@ -220,30 +220,38 @@
         ?.  ?=(hint-static-mute p.nomm)  $(nomm q.nomm)
         =^  goal  gen  (simple-next goal)
         =^  epil  gen  (emit ~ [%hos p.nomm q.nomm]~ %hop then.goal)
-        =^  nex   gen  $(nomm q.nomm)
-        =^  top   gen  (stop nex)
-        =^  prol  gen  (emit ~ [%his p.nomm q.nomm]~ %hop then.top)
-        [[%next what.top prol] gen]
-      ?.  ?=(?(hint-dynamic-mute hint-dynamic-prod) p.p.nomm)
+        =^  nex   gen  $(nomm q.nomm, goal goal(then epil))
+        =^  prol  gen  (emit ~ [%his p.nomm q.nomm]~ %hop then.nex)
+        [[%next what.nex prol] gen]
+      ?.  ?=(hint-dynamic p.p.nomm)
         =^  nex  gen  $(nomm q.nomm)
         =^  hin  gen  $(nomm q.p.nomm, goal [%next none+~ then.nex])
         (copy hin what.nex)
       =^  goal  gen  (simple-next goal)
       =^  toke  gen  re
-      ?:  ?=(hint-dynamic-mute p.p.nomm)
-        =^  epil  gen  (emit ~ [%hod p.p.nomm toke q.nomm]~ %hop then.goal)
-        =^  nex   gen  $(nomm q.nomm)
-        =^  top   gen  (stop nex)
-        =^  prol  gen  (emit ~ [%hid p.p.nomm toke q.nomm]~ %hop then.top)
-        =^  dyn   gen  $(nomm q.p.nomm, goal [%next this+toke prol])
-        (copy dyn what.top)
-      =^  [aftr=@uwoo prod=@uvre]  gen  (kerf goal)
-      =^  epil  gen  (emit ~ [%hyd p.p.nomm toke prod q.nomm]~ %hop aftr)
-      =^  nex   gen  $(nomm q.nomm, goal [%next this+prod epil])
-      =^  top   gen  (stop nex)
-      =^  prol  gen  (emit ~ [%hid p.p.nomm toke q.nomm]~ %hop then.top)
+      =^  epil-ops=(list pole)  .
+        ::  produce epilogue ops while potentially emitting code
+        ::  to split the hinted formula's product into the registers
+        ::  in the original need
+        ::
+        =*  dot  .
+        ?:  ?=(hint-dynamic-mute p.p.nomm)
+          [[%hod p.p.nomm toke q.nomm]~ dot]
+        =^  [aftr=@uwoo prod=@uvre]  gen  (kerf goal)
+        [[%hyd p.p.nomm toke prod q.nomm]~ dot(goal [%next this+prod aftr])]
+      ::
+      =^  epil  gen  (emit ~ epil-ops %hop then.goal)
+      =^  nex   gen  $(nomm q.nomm, goal goal(then epil))
+      ::  if the hint is not crash-relocation safe: put a relocation boundary
+      ::
+      =?  .  ?=(hint-dynamic-mute-stop p.p.nomm)
+        =*  dot  .
+        =^  top  gen  (stop nex)
+        dot(nex top)
+      ::
+      =^  prol  gen  (emit ~ [%hid p.p.nomm toke q.nomm]~ %hop then.nex)
       =^  dyn   gen  $(nomm q.p.nomm, goal [%next this+toke prol])
-      (copy dyn what.top)
+      (copy dyn what.nex)
     ::
         %12
       =^  goal  gen  (simple-next goal)
