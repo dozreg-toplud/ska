@@ -188,6 +188,7 @@
       ax-gen=@uxor
       bells=(map bell @uxor)
       arity=args-locations
+      =boil
   ==
 ::
 +$  line-short

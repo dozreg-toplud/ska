@@ -3,18 +3,92 @@
 ::
 =,  gene
 =*  stub  ~|(%stub !!)
-=|  lon=line-long
-|_  bol=boil
+|_  lon=line-long
 +*  this  .
+++  axor
+  ^-  [@uxor _this]
+  [ax-gen.lon this(ax-gen.lon +(ax-gen.lon))]
+::
+++  compile
+  |=  =bell
+  ^+  this
+  =|  gen=line-short
+  =.  -.gen  lon
+  =^  nex=next  gen  (~(cuts line gen) bell)
+  =/  args  (~(got by arity.lon) bell)
+  =^  [args-need=need args-list=(list @uvre)]  gen
+    (~(args-to-need line gen) args)
+  ::
+  =^  o-entry=@uwoo  gen  (~(coerce line gen) nex args-need bus.bell)
+  =^  ax  this  axor
+  =.  code.lon
+    %+  ~(put by code.lon)  ax
+    ^-  straight
+    [o-entry args-need args-list blocks.here.gen bell]
+  ::
+  this
+::
 ++  line
   |_  gen=line-short
+  ::  given argument need from arity prepass, satisfy entry point need with it,
+  ::  or satisfy the need with the noun from `bus` if known, or crash
+  ::
+  ::  XX need to update the arity and redo the linearization step for
+  ::  completeness
+  ::
+  ++  coerce
+    |=  [entry=next arguments=need bus=sock]
+    ^-  [@uwoo _gen]
+    ::  easy ways out:
+    ::
+    ::  nothing needed
+    ::
+    ?:  ?=(%none -.what.entry)  [then.entry gen]
+    ::  noun is known
+    ::
+    ?:  ?=(%& cape.bus)
+      =^  [aftr=@uwoo prod=@uvre]  gen  (kerf entry)
+      (emit ~ [%imm data.bus prod]~ %hop aftr)
+    ::  argument has all
+    ::
+    ?:  ?=(%this -.arguments)
+      =^  [aftr=@uwoo prod=@uvre]  gen  (kerf entry)
+      (emit ~ [%mov r.arguments prod]~ %hop aftr)
+    ::
+    ::  now we assert
+    ::
+    ?:  ?=(%none -.arguments)  ~|(%coerce-lost !!)
+      ::  args-to-need never produces %both
+      ::
+    ?:  ?=(%both -.arguments)  !!
+    ?:  ?=(%this -.what.entry)
+      =^  r-h  gen  re
+      =^  r-t  gen  re
+      =^  o-c  gen  (emit ~ [%con r-h r-t r.what.entry]~ %hop then.entry)
+      =^  o-h  gen
+        $(entry [%next this+r-h o-c], arguments p.arguments, bus ~(hed so bus))
+      ::
+      $(entry [%next this+r-t o-h], arguments q.arguments, bus ~(tel so bus))
+    ?:  ?=(%both -.what.entry)
+      =^  h=[aftr=@uwoo prod=@uvre]  gen  (kerf entry(what h.what.entry))
+      =^  t=[aftr=@uwoo prod=@uvre]  gen  (kerf %next t.what.entry aftr.h)
+      ::
+      =^  o-c  gen  (emit ~ [%con prod.h prod.t r.what.entry]~ %hop aftr.t)
+      =^  o-h  gen
+        $(entry [%next this+prod.h o-c], arguments p.arguments, bus ~(hed so bus))
+      ::
+      $(entry [%next this+prod.t o-h], arguments q.arguments, bus ~(tel so bus))
+    =^  o-h  gen
+      $(what.entry p.what.entry, arguments p.arguments, bus ~(hed so bus))
+    ::
+    $(what.entry q.what.entry, arguments q.arguments, bus ~(tel so bus))
+  ::  core linearizer
+  ::
   ++  cuts
     =/  =goal  [%done ~]
     |=  =bell
     ^-  [next line-short]
-    =|  gen=line-short
-    =.  -.gen  lon
-    =/  nomm=nomm-1  (~(got by code.bol) bell)
+    =/  nomm=nomm-1  (~(got by code.boil.gen) bell)
     |-  ^-  [next _gen]
     ?-    -.nomm
         ^
