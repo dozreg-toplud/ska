@@ -65,8 +65,8 @@
       [%6 p=nomm q=nomm r=nomm]               ::  Nock 6
       [%7 p=nomm q=nomm]                      ::  Nock 7
       [%10 p=[p=@ q=nomm] q=nomm]             ::  Nock 10
-      [%s11 p=@ q=nomm]                       ::  Nock 11 (static)
-      [%d11 p=[p=@ q=nomm] q=nomm]            ::  Nock 11 (dynamic)  XX hit formula info?
+      [%s11 p=@ q=nomm body=*]                ::  Nock 11 (static)
+      [%d11 p=[p=@ q=nomm] q=nomm body=*]     ::  Nock 11 (dynamic)
       [%12 p=nomm q=nomm]                     ::  "Nock 12"
       [%0 p=@]                                ::  Nock 0
   ==
@@ -81,7 +81,7 @@
       [%6 p=nomm-1 q=nomm-1 r=nomm-1]
       [%7 p=nomm-1 q=nomm-1]
       [%10 p=[p=@ q=nomm-1] q=nomm-1]
-      [%11 p=$@(@ [p=@ q=nomm-1]) q=nomm-1]
+      [%11 p=$@(@ [p=@ q=nomm-1]) q=nomm-1 body=*]
       [%12 p=nomm-1 q=nomm-1]
       [%0 p=@]
   ==

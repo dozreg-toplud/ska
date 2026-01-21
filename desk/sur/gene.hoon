@@ -97,15 +97,15 @@
       [%cel p=@uvre]
       ::  XX save original hinted formulas?
       ::
-      [%his n=hint-static-mute f=nomm-1]
-      :: [%hys n=hint-static-prod p=@uvre f=nomm-1]
-      [%hos n=hint-static-mute f=nomm-1]
+      [%his n=hint-static-mute f=*]
+      :: [%hys n=hint-static-prod p=@uvre f=*]
+      [%hos n=hint-static-mute f=*]
   ::
-      [%hid n=hint-dynamic p=@uvre f=nomm-1]
-      [%hyd n=hint-dynamic-prod-safe p=@uvre q=@uvre f=nomm-1]
-      [%hod n=hint-dynamic-mute p=@uvre f=nomm-1]
+      [%hid n=hint-dynamic p=@uvre f=*]
+      [%hyd n=hint-dynamic-prod-safe p=@uvre q=@uvre f=*]
+      [%hod n=hint-dynamic-mute p=@uvre f=*]
       [%spy e=@uvre p=@uvre d=@uvre]
-      [%mem k=@uvre s=@uvre f=nomm-1 r=@uvre]
+      [%mem k=@uvre s=@uvre f=* r=@uvre]
   ==
 ::
 ::    control flow instructions
@@ -164,7 +164,7 @@
       [%jmf a=@uxor v=(list @uvre) u=@uvre n=[path @]]
       [%don s=@uvre]
       [%bom ~]
-      [%mim k=@uvre s=@uvre f=nomm-1 d=@uvre z=@uwoo o=@uwoo]
+      [%mim k=@uvre s=@uvre f=* d=@uvre z=@uwoo o=@uwoo]
   ==
 ::    basic block
 ::

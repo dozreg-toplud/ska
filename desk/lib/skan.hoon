@@ -648,7 +648,7 @@
         [%11 p=@ q=^]
       =^  q=fol-res  gen  fol-loop(fol q.fol)
       :_  gen
-      :+  [%s11 p.fol code.q]
+      :+  [%s11 p.fol code.q q.fol]
         prod.q
       flags.q
     ::
@@ -666,7 +666,7 @@
           ==
       =^  f=fol-res  gen  fol-loop(fol f.fol)
       :_  (hint a.fol prod.h prod.f gen)
-      :+  [%d11 [a.fol code.h] code.f]
+      :+  [%d11 [a.fol code.h] code.f f.fol]
         prod.f
       (fold-flag flags.f flags.h ~)
     ::
@@ -1169,7 +1169,8 @@
     ?(%3 %4)          n(p $(n p.n))
     %s11              n(q $(n q.n))
     ?(%5 %7 %12 %i2)  n(p $(n p.n), q $(n q.n))
-    ?(%10 %d11)       n(q.p $(n q.p.n), q $(n q.n))
+    %d11              n(q.p $(n q.p.n), q $(n q.n))
+    %10               n(q.p $(n q.p.n), q $(n q.n))
     %6                n(p $(n p.n), q $(n q.n), r $(n r.n))
   ==
 ::  Analyze s/f pair, then run Nomm interpreter on the result
@@ -1715,10 +1716,10 @@
       %5        [%5 $(n p.n) $(n q.n)]
       %7        [%7 $(n p.n) $(n q.n)]
       %12       [%12 $(n p.n) $(n q.n)]
-      %s11      [%11 p.n $(n q.n)]
+      %s11      [%11 p.n $(n q.n) body.n]
       %6        [%6 $(n p.n) $(n q.n) $(n r.n)]
       %10       [%10 [p.p.n $(n q.p.n)] $(n q.n)]
-      %d11      [%11 [p.p.n $(n q.p.n)] $(n q.n)]
+      %d11      [%11 [p.p.n $(n q.p.n)] $(n q.n) body.n]
   ::
       %i2       [%2 $(n p.n) `$(n q.n) ~]
       %ds2

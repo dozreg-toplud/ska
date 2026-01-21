@@ -239,9 +239,9 @@
       ?@  p.nomm
         ?.  ?=(hint-static-mute p.nomm)  $(nomm q.nomm)
         =^  goal  gen  (simple-next goal)
-        =^  epil  gen  (emit ~ [%hos p.nomm q.nomm]~ %hop then.goal)
+        =^  epil  gen  (emit ~ [%hos p.nomm body.nomm]~ %hop then.goal)
         =^  nex   gen  $(nomm q.nomm, goal goal(then epil))
-        =^  prol  gen  (emit ~ [%his p.nomm q.nomm]~ %hop then.nex)
+        =^  prol  gen  (emit ~ [%his p.nomm body.nomm]~ %hop then.nex)
         [[%next what.nex prol] gen]
       ?:  ?=(%memo p.p.nomm)
         =^  key   gen  re
@@ -254,14 +254,16 @@
         =^  hit=[aftr=@uwoo prod=@uvre]  gen  (kerf phi-hit)
         =^  mis=[aftr=@uwoo prod=@uvre]  gen  (kerf phi-mis)
         =^  next-mis  gen
-          =^  save  gen  (emit ~ [%mem key sub q.nomm prod.mis]~ %hop aftr.mis)
+          =^  save  gen
+            (emit ~ [%mem key sub body.nomm prod.mis]~ %hop aftr.mis)
+          ::
           $(nomm q.nomm, goal [%next this+prod.mis save])
-        ::  unsatisfied so far: prod.hit, what.next-mis
+        ::  unsatisfied so far: prod.hit, what.next-mis, sub
         ::  %mim will satisfy prod.hit or miss, only what.next-mis is left
         ::  so +sect is not needed to align the needs of branches
         ::
         =^  check  gen
-          (emit ~ ~ %mim key sub q.nomm prod.hit aftr.hit then.next-mis)
+          (emit ~ ~ %mim key sub body.nomm prod.hit aftr.hit then.next-mis)
         ::
         =^  next-key  gen  $(nomm q.p.nomm, goal [%next this+key check])
         =^  key-fol   gen  (copy next-key what.next-mis)
@@ -282,9 +284,9 @@
         ::
         =*  dot  .
         ?:  ?=(hint-dynamic-mute p.p.nomm)
-          [[%hod p.p.nomm toke q.nomm]~ dot]
+          [[%hod p.p.nomm toke body.nomm]~ dot]
         =^  [aftr=@uwoo prod=@uvre]  gen  (kerf goal)
-        [[%hyd p.p.nomm toke prod q.nomm]~ dot(goal [%next this+prod aftr])]
+        [[%hyd p.p.nomm toke prod body.nomm]~ dot(goal [%next this+prod aftr])]
       ::
       =^  epil  gen  (emit ~ epil-ops %hop then.goal)
       =^  nex   gen  $(nomm q.nomm, goal goal(then epil))
@@ -295,7 +297,7 @@
         =^  top  gen  (stop nex)
         dot(nex top)
       ::
-      =^  prol  gen  (emit ~ [%hid p.p.nomm toke q.nomm]~ %hop then.nex)
+      =^  prol  gen  (emit ~ [%hid p.p.nomm toke body.nomm]~ %hop then.nex)
       =^  dyn   gen  $(nomm q.p.nomm, goal [%next this+toke prol])
       (copy dyn what.nex)
     ::
