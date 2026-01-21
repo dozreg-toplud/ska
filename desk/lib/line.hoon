@@ -66,31 +66,27 @@
         ::  indirect call
         ::
         ?~  q.nomm  !!
-        ?-    -.goal
-            %done
-          =^  s  gen  re
-          =^  f  gen  re
-          =^  o  gen  (emit ~ ~ %lnt s f)
-          =^  need-f  gen  $(nomm u.q.nomm, goal [%next this+f o])
-          =^  need-s  gen  $(nomm p.nomm, goal [%next this+s then.need-f])
-          (copy need-s what.need-f)
+        =^  s  gen  re
+        =^  f  gen  re
+        ::  build block to jump from formula execution,
+        ::  splitting result to register in need if necessary
         ::
-            %next
-          =^  [aftr=@uwoo prod=@uvre]  gen  (kerf goal)
-          =^  s  gen  re
-          =^  f  gen  re
-          =^  o  gen  (emit ~ ~ %lnk s f prod aftr)
-          =^  need-f  gen  $(nomm u.q.nomm, goal [%next this+f o])
-          =^  need-s  gen  $(nomm p.nomm, goal [%next this+s then.need-f])
-          (copy need-s what.need-f)
-        ==
+        =^  o  gen
+          ?-    -.goal
+              %done  (emit ~ ~ %lnt s f)
+          ::
+              %next
+            =^  [aftr=@uwoo prod=@uvre]  gen  (kerf goal)
+            (emit ~ ~ %lnk s f prod aftr)
+          ==
+        ::
+        =^  need-f  gen  $(nomm u.q.nomm, goal [%next this+f o])
+        =^  need-s  gen  $(nomm p.nomm, goal [%next this+s then.need-f])
+        (copy need-s what.need-f)
       =/  armor=@uxor  (~(got by bells.gen) u.info.nomm)
       =/  args  (~(got by arity.gen) u.info.nomm)
       =^  [args-need=need args-list=(list @uvre)]  gen  (args-to-need args)
       ::  XX no jet stuff for now
-      ::
-      ::  build block to jump from formula execution,
-      ::  splitting result to register in need if necessary
       ::
       =^  tar=@uwoo  gen
         ?-    -.goal
@@ -101,7 +97,7 @@
           (emit ~ ~ %cal armor args-list prod aftr)
         ==
       ::
-      =^  fol-next  gen
+      =^  fol-next=next  gen
         ::  if the formula-formula was removed: do nothing
         ::  else compute formula-formula and drop the result to preserve crashes
         ::
