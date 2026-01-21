@@ -633,11 +633,22 @@
       ~?  =(r.l r.rr)  [%copy-both r.l r.rr]
       %=  $
         ops   [[%mov r.rr r.l] ops]
-        sin  [|+[h.l h.rr] |+[t.l t.rr] &+`[r.rr |(c.l c.rr)] sin]
+        ::  if the first computation checks that the noun in r.rr/r.l is a cell,
+        ::  then the second one does not need to be checked, and in total the
+        ::  computation is checked
+        ::  if the first computation does not check, then it will have to be
+        ::  checked upstream, so the total computation is not checked
+        ::
+        ::  XX reconsider mixed case ^ / %both
+        ::
+        sin  [|+[h.l h.rr] |+[t.l t.rr] &+`[r.rr c.l] sin]
       ==
     ?^  -.r
       $(sin [|+[p.l p.r] |+[q.l q.r] &+~ sin])
-    $(sin [|+[p.l h.r] |+[q.l t.r] &+`[r.r c.r] sin])
+    ::  first computation does not have a cell check for r.r,
+    ::  so r.r will need to be checked upstream
+    ::
+    $(sin [|+[p.l h.r] |+[q.l t.r] &+`[r.r |] sin])
   ::  given a control flow merge destination, generate a phi block
   ::  and comefrom blocks for branches, returning branch destinations
   ::
