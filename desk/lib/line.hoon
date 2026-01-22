@@ -636,10 +636,7 @@
         =^  [tail-move=(list pole) tail-need=need]  gen  $(needs [t.p t.qq])
         :_  gen
         :-  (zing tail-move head-move top-move ~)
-        ::          | XX shouldn't this be "or"?
-        ::          v
-        ::
-        [%both r.qq &(c.p c.qq) head-need tail-need]
+        [%both r.qq c.p head-need tail-need]
       ::
           [[^ *] [^ *]]
         =,  needs
@@ -938,33 +935,38 @@
     |-  ^-  [need _acc]
     ?:  ?=(?(%none %this) -.z-need)
       ?:  ?=(%none -.o-need)  [z-need acc]
-      =^  res-o=[r=@uvre p=(list pole)]  gen  (kern o-need)
+      =^  res-o=[r=@uvre p=(list pole)]  gen.acc  (kern o-need)
       =?  ops-z.acc  ?=(%this -.z-need)  [[%mov r.res-o r.z-need]~ ops-z.acc]
       =.  ops-o.acc  [p.res-o ops-o.acc]
       [[%this r.res-o] acc]
     ?:  ?=(?(%none %this) -.o-need)
-      =^  res-z=[r=@uvre p=(list pole)]  gen  (kern z-need)
+      =^  res-z=[r=@uvre p=(list pole)]  gen.acc  (kern z-need)
       =?  ops-o.acc  ?=(%this -.o-need)  [[%mov r.res-z r.o-need]~ ops-o.acc]
       =.  ops-z.acc  [p.res-z ops-z.acc]
       [[%this r.res-z] acc]
-    ?^  -.z-need
-      ?^  -.o-need
-        =^  h  acc  $(z-need p.z-need, o-need p.o-need)
-        =^  t  acc  $(z-need q.z-need, o-need q.o-need)
-        [[h t] acc]
-      =^  h  acc  $(z-need p.z-need, o-need h.o-need)
-      =^  t  acc  $(z-need q.z-need, o-need t.o-need)
-      [[%both r.o-need | h t] acc]
-    ?^  -.o-need
-      =^  h  acc  $(z-need h.z-need, o-need p.o-need)
-      =^  t  acc  $(z-need t.z-need, o-need q.o-need)
-      [[%both r.z-need | h t] acc]
-    =^  h  acc  $(z-need h.z-need, o-need h.o-need)
-    =^  t  acc  $(z-need t.z-need, o-need t.o-need)
-    =.  ops-o.acc  [[%mov r.z-need r.o-need]~ ops-o.acc]
-    ::  XX &, not | again, why?
-    ::               v
-    [[%both r.z-need &(c.z-need c.o-need) h t] acc]
+    ?:  &(?=(^ -.z-need) ?=(^ -.o-need))
+      =^  h  acc  $(z-need p.z-need, o-need p.o-need)
+      =^  t  acc  $(z-need q.z-need, o-need q.o-need)
+      [[h t] acc]
+    =^  z-both=$>(%both need)  acc
+      ?@  -.z-need  [z-need acc]
+      =^  x  gen.acc  re
+      [[%both x | z-need] acc]
+    ::
+    =^  o-both=$>(%both need)  acc
+      ?@  -.o-need  [o-need acc]
+      =^  x  gen.acc  re
+      [[%both x | o-need] acc]
+    ::
+    =?  .  |(c.z-both c.o-both)
+      =?  ops-z.acc  !c.z-both  [[%cel r.z-both]~ ops-z.acc]
+      =?  ops-o.acc  !c.o-both  [[%cel r.o-both]~ ops-o.acc]
+      .
+    ::
+    =.  ops-o.acc  [[%mov r.z-both r.o-both]~ ops-o.acc]
+    =^  h  acc  $(z-need h.z-both, o-need h.o-both)
+    =^  t  acc  $(z-need t.z-both, o-need t.o-both)
+    [[%both r.z-both |(c.z-both c.o-both) h t] acc]
   ::  split noun in a register into goal
   ::  or, since we are going backwards, fulfill the given need by generating
   ::  code that splits a noun in a register, and return that register + the
