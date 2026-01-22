@@ -37,51 +37,63 @@
   ::  completeness
   ::
   ++  coerce
-    |=  [entry=next arguments=need bus=sock]
+    |=  [entry=next args=need bus=sock]
     ^-  [@uwoo _gen]
+    ::  ops: instructions to move args into registers before entry,
+    ::       or to fill those with constants, or cons them up
+    ::
+    ::  o: block label to instructions that split these intermediary regs
+    ::     into what.entry
+    =|  acc=[ops=(list pole) =_gen]
+    =;  [o=@uwoo =_acc]
+      =.  gen  gen.acc
+      (emit ~ ops.acc %hop o)
+    ::
+    |-  ^-  [@uwoo _acc]
     ::  easy ways out:
     ::
     ::  nothing needed
     ::
-    ?:  ?=(%none -.what.entry)  [then.entry gen]
+    ?:  ?=(%none -.what.entry)  [then.entry acc]
     ::  noun is known
     ::
     ?:  ?=(%& cape.bus)
-      =^  [aftr=@uwoo prod=@uvre]  gen  (kerf entry)
-      (emit ~ [%imm data.bus prod]~ %hop aftr)
+      =^  [aftr=@uwoo prod=@uvre]  gen.acc  (kerf entry)
+      =.  ops.acc  [[%imm data.bus prod] ops.acc]
+      [aftr acc]
     ::  argument has all
     ::
-    ?:  ?=(%this -.arguments)
-      =^  [aftr=@uwoo prod=@uvre]  gen  (kerf entry)
-      (emit ~ [%mov r.arguments prod]~ %hop aftr)
+    ?:  ?=(%this -.args)
+      =^  [aftr=@uwoo prod=@uvre]  gen.acc  (kerf entry)
+      =.  ops.acc  [[%mov r.args prod] ops.acc]
+      [aftr acc]
     ::
     ::  now we assert
     ::
-    ?:  ?=(%none -.arguments)  ~|(%coerce-lost !!)
-      ::  args-to-need never produces %both
-      ::
-    ?:  ?=(%both -.arguments)  !!
-    ?:  ?=(%this -.what.entry)
-      =^  r-h  gen  re
-      =^  r-t  gen  re
-      =^  o-c  gen  (emit ~ [%con r-h r-t r.what.entry]~ %hop then.entry)
-      =^  o-h  gen
-        $(entry [%next this+r-h o-c], arguments p.arguments, bus ~(hed so bus))
-      ::
-      $(entry [%next this+r-t o-h], arguments q.arguments, bus ~(tel so bus))
-    ?:  ?=(%both -.what.entry)
-      =^  h=[aftr=@uwoo prod=@uvre]  gen  (kerf entry(what h.what.entry))
-      =^  t=[aftr=@uwoo prod=@uvre]  gen  (kerf %next t.what.entry aftr.h)
-      ::
-      =^  o-c  gen  (emit ~ [%con prod.h prod.t r.what.entry]~ %hop aftr.t)
-      =^  o-h  gen
-        $(entry [%next this+prod.h o-c], arguments p.arguments, bus ~(hed so bus))
-      ::
-      $(entry [%next this+prod.t o-h], arguments q.arguments, bus ~(tel so bus))
-    =^  o-h  gen
-      $(what.entry p.what.entry, arguments p.arguments, bus ~(hed so bus))
+    ?:  ?=(%none -.args)  ~|(%coerce-lost !!)
+    ::  args-to-need never produces %both
     ::
-    $(what.entry q.what.entry, arguments q.arguments, bus ~(tel so bus))
+    ?:  ?=(%both -.args)  !!
+    ?:  ?=(%this -.what.entry)
+      =^  r-h  gen.acc  re
+      =^  r-t  gen.acc  re
+      =.  ops.acc  [[%con r-h r-t r.what.entry] ops.acc]
+      =^  o-h  acc
+        $(entry [%next this+r-h then.entry], args p.args, bus ~(hed so bus))
+      ::
+      $(entry [%next this+r-t o-h], args q.args, bus ~(tel so bus))
+    ?:  ?=(%both -.what.entry)
+      =^  h=[aftr=@uwoo prod=@uvre]  gen.acc  (kerf entry(what h.what.entry))
+      =^  t=[aftr=@uwoo prod=@uvre]  gen.acc  (kerf %next t.what.entry aftr.h)
+      =.  ops.acc  [[%con prod.h prod.t r.what.entry] ops.acc]
+      =^  o-h  acc
+        $(entry [%next this+prod.h aftr.t], args p.args, bus ~(hed so bus))
+      ::
+      $(entry [%next this+prod.t o-h], args q.args, bus ~(tel so bus))
+    =^  o-h  acc
+      $(what.entry p.what.entry, args p.args, bus ~(hed so bus))
+    ::
+    $(entry entry(what q.what.entry, then o-h), args q.args, bus ~(tel so bus))
   ::  core linearizer
   ::
   ++  cuts
