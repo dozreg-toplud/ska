@@ -82,10 +82,9 @@
 :: +$  hint-static-prod  _!!
 ::
 +$  hint-dynamic-mute-stop  ?(%mean %spot)
-+$  hint-dynamic-mute-safe  ?(%bout %xray %spin %loop %jinx %live)
++$  hint-dynamic-mute-safe  ?(%bout %xray %spin %loop %jinx %live %slog)
 +$  hint-dynamic-mute  ?(hint-dynamic-mute-stop hint-dynamic-mute-safe)
-+$  hint-dynamic-prod-safe  ?(%slog)
-+$  hint-dynamic  ?(hint-dynamic-prod-safe hint-dynamic-mute)
++$  hint-dynamic  hint-dynamic-mute
 ::
 +$  pole
   $%  [%imm n=* d=@uvre]
@@ -102,7 +101,7 @@
       [%hos n=hint-static-mute f=*]
   ::
       [%hid n=hint-dynamic p=@uvre f=*]
-      [%hyd n=hint-dynamic-prod-safe p=@uvre q=@uvre f=*]
+      :: [%hyd n=hint-dynamic-prod-safe p=@uvre q=@uvre f=*]
       [%hod n=hint-dynamic-mute p=@uvre f=*]
       [%spy e=@uvre p=@uvre d=@uvre]
       [%mem k=@uvre s=@uvre f=* r=@uvre]

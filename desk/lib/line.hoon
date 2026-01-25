@@ -9,6 +9,239 @@
   ^-  [@uxor _this]
   [ax-gen.lon this(ax-gen.lon +(ax-gen.lon))]
 ::
+++  eval
+  |=  [sub=* ax=@uxor]
+  ^-  (unit *)
+  =/  =straight  (~(got by code.lon) ax)
+  =/  regs=(unit (map @uvre *))
+    =|  regs=(map @uvre *)
+    |-  ^-  (unit (map @uvre *))
+    ?-    -.need.straight
+        %none  `regs
+        %this  `(~(put by regs) r.need.straight sub)
+        %both  !!
+    ::
+        ^
+      ?@  sub  ~
+      =/  l  $(need.straight p.need.straight, sub -.sub)
+      ?~  l  ~
+      $(need.straight q.need.straight, sub +.sub, regs u.l)
+    ==
+  ::
+  ?~  regs
+    ~&  >>  %eval-init-split
+    ~
+  =/  gen
+    :*
+      ::  current function context
+      ::
+      arm=straight
+      ::  register space
+      ::
+      regs=`(map @uvre *)`u.regs
+      ::  code
+      ::
+      `=blob`(~(got by blocks.straight) entry.straight)
+      ::  come-from label
+      ::
+      hip=*@uwoo
+    ==
+  ::
+  =>  .(gen `$+(gen _gen)`gen)
+  =<  -
+  |^  ^-  [(unit *) $+(gen _gen)]
+  ?:  =(~ body.blob.gen)
+    =/  end  bend.blob.gen
+    ?-    -.end
+        %clq
+      =/  s  (r-get s.end)
+      ?^  s  $(gen (hop z.end))
+      $(gen (hop o.end))
+    ::
+        %eqq
+      =/  l  (r-get l.end)
+      =/  r  (r-get r.end)
+      ?:  =(l r)  $(gen (hop z.end))
+      $(gen (hop o.end))
+    ::
+        %brn
+      =/  s  (r-get s.end)
+      ?-  -.s
+        %&  $(gen (hop z.end))
+        %|  $(gen (hop o.end))
+        *   `gen
+      ==
+    ::
+        %hop
+      $(gen (hop t.end))
+    ::
+        %hip
+      =.  hip.gen  c.end
+      $(gen (hop t.end))
+    ::
+        %lnk
+      =/  u  (r-get u.end)
+      =/  f  (r-get f.end)
+      ?~  res=(mole |.(.*(u f)))
+        ~&  %indi-crash
+        `gen
+      =.  gen  (r-put d.end u.res)
+      $(gen (hop t.end))
+    ::
+        %cal
+      =;  res=(unit *)
+        ?~  res  `gen
+        =.  gen  (r-put d.end u.res)
+        $(gen (hop t.end))
+      ::
+      =/  args-noun  (turn v.end r-get)
+      =/  arm-new  (~(got by code.lon) a.end)
+      =.  gen  [arm-new ~ (~(got by blocks.arm-new) entry.arm-new) *@uwoo]
+      =.  gen  (r-puts args.arm-new args-noun)
+      -:$
+    ::
+        %caf
+      ~|  %no-jet-stuff-now
+      stub
+    ::
+        %lnt
+      =/  u  (r-get u.end)
+      =/  f  (r-get f.end)
+      ?~  res=(mole |.(.*(u f)))
+        ~&  %indi-crash
+        `gen
+      [res gen]
+    ::
+        %jmp
+      =/  args-noun  (turn v.end r-get)
+      =/  arm-new  (~(got by code.lon) a.end)
+      =.  gen  [arm-new ~ (~(got by blocks.arm-new) entry.arm-new) *@uwoo]
+      =.  gen  (r-puts args.arm-new args-noun)
+      $
+    ::
+        %jmf
+      ~|  %no-jet-stuff-now
+      stub
+    ::
+        %don
+      [`(r-get s.end) gen]
+    ::
+        %bom
+      `gen
+    ::
+        %mim
+      ~|  %no-memo-now
+      stub
+    ::
+    ==
+  =^  op=pole  body.blob.gen  body.blob.gen
+  =-  ?~  -  `gen  $(gen u)
+  ^-  (unit $+(gen _gen))
+  ?-    -.op
+      %imm
+    :-  ~
+    (r-put d.op n.op)
+  ::
+      %mov
+    :-  ~
+    =/  n  (r-get s.op)
+    (r-put d.op n)
+  ::
+      %inc
+    =/  n  (r-get s.op)
+    ?^  n  ~
+    `(r-put d.op +(n))
+  ::
+      %con
+    :-  ~
+    =/  h  (r-get h.op)
+    =/  t  (r-get t.op)
+    (r-put d.op [h t])
+  ::
+      %hed
+    :-  ~
+    =/  n  (r-get s.op)
+    ?^  n  (r-put d.op -.n)
+    ~&  >>  %hed-atom
+    (r-put d.op %hed-atom)
+  ::
+      %tal
+    :-  ~
+    =/  n  (r-get s.op)
+    ?^  n  (r-put d.op +.n)
+    ~&  >>  %tal-atom
+    (r-put d.op %tal-atom)
+  ::
+      %cel
+    =/  p  (r-get p.op)
+    ?@  p  ~
+    `gen
+  ::
+      %his
+    `gen
+  ::
+      %hos
+    `gen
+  ::
+      %hid
+    :-  ~
+    ?+    n.op  gen
+        %spot
+      =/  tok  (r-get p.op)
+      ?~  pot=((soft spot) tok)  gen
+      ~>  %slog.[0 (ren:p u.pot)]
+      gen
+    ::
+        %slog
+      =/  tok  (r-get p.op)
+      ~&  tok
+      gen
+    ==
+  ::
+      %hod
+    `gen
+  ::
+      %spy
+    :-  ~
+    =/  e  (r-get e.op)
+    =/  p  (r-get p.op)
+    =/  pro  .*(~ [%12 1+e 1+p])
+    (r-put d.op pro)
+  ::
+      %mem
+    ~|  %no-memo-now
+    stub
+  ::
+  ==
+  ::
+  ++  r-get
+    |=  r=@uvre
+    =/  n  (~(get by regs.gen) r)
+    ?~  n
+      ~&  >>  %r-get-missing-register
+      ~
+    u.n
+  ::
+  ++  r-put
+    |=  [r=@uvre x=*]
+    =.  regs.gen  (~(put by regs.gen) r x)
+    gen
+  ::
+  ++  r-puts
+    |=  [rs=(list @uvre) xs=(list *)]
+    ?~  rs
+      ?^  xs  !!
+      gen
+    ?~  xs  !!
+    =.  gen  (r-put i.rs i.xs)
+    $(rs t.rs, xs t.xs)
+  ::
+  ++  hop
+    |=  o=@uwoo
+    ^+  gen
+    gen(blob (~(got by blocks.arm.gen) o))
+  --
+::
 ++  compile
   |=  =bell
   ^+  this
@@ -26,6 +259,7 @@
     ^-  straight
     [o-entry args-need args-list blocks.here.gen bell]
   ::
+  =.  bells.lon  (~(put by bells.lon) bell ax)
   this
 ::
 ++  line
@@ -74,6 +308,12 @@
     ::  args-to-need never produces %both
     ::
     ?:  ?=(%both -.args)  !!
+    ?:  ?=(^ -.what.entry)
+      =^  o-h  acc
+        $(what.entry p.what.entry, args p.args, bus ~(hed so bus))
+      ::
+      $(entry [%next q.what.entry o-h], args q.args, bus ~(tel so bus))
+    ~&  >>  %coerce-entry-greedier-than-args
     ?:  ?=(%this -.what.entry)
       =^  r-h  gen.acc  re
       =^  r-t  gen.acc  re
@@ -82,18 +322,13 @@
         $(entry [%next this+r-h then.entry], args p.args, bus ~(hed so bus))
       ::
       $(entry [%next this+r-t o-h], args q.args, bus ~(tel so bus))
-    ?:  ?=(%both -.what.entry)
-      =^  h=[aftr=@uwoo prod=@uvre]  gen.acc  (kerf entry(what h.what.entry))
-      =^  t=[aftr=@uwoo prod=@uvre]  gen.acc  (kerf %next t.what.entry aftr.h)
-      =.  ops.acc  [[%con prod.h prod.t r.what.entry] ops.acc]
-      =^  o-h  acc
-        $(entry [%next this+prod.h aftr.t], args p.args, bus ~(hed so bus))
-      ::
-      $(entry [%next this+prod.t o-h], args q.args, bus ~(tel so bus))
+    =^  h=[aftr=@uwoo prod=@uvre]  gen.acc  (kerf entry(what h.what.entry))
+    =^  t=[aftr=@uwoo prod=@uvre]  gen.acc  (kerf %next t.what.entry aftr.h)
+    =.  ops.acc  [[%con prod.h prod.t r.what.entry] ops.acc]
     =^  o-h  acc
-      $(what.entry p.what.entry, args p.args, bus ~(hed so bus))
+      $(entry [%next this+prod.h aftr.t], args p.args, bus ~(hed so bus))
     ::
-    $(entry entry(what q.what.entry, then o-h), args q.args, bus ~(tel so bus))
+    $(entry [%next this+prod.t o-h], args q.args, bus ~(tel so bus))
   ::  core linearizer
   ::
   ++  cuts
@@ -368,11 +603,14 @@
         ::  in the original need if the hint's epilogue needs the value
         ::  of the hinted formula
         ::
+        ::  XX are there actually no hints that require the product of the
+        ::  hinted formula besides %memo?
+        ::
         =*  dot  .
-        ?:  ?=(hint-dynamic-mute p.p.nomm)
+        :: ?:  ?=(hint-dynamic-mute p.p.nomm)
           [[%hod p.p.nomm toke body.nomm]~ dot]
-        =^  [aftr=@uwoo prod=@uvre]  gen  (kerf goal)
-        [[%hyd p.p.nomm toke prod body.nomm]~ dot(goal [%next this+prod aftr])]
+        :: =^  [aftr=@uwoo prod=@uvre]  gen  (kerf goal)
+        :: [[%hyd p.p.nomm toke prod body.nomm]~ dot(goal [%next this+prod aftr])]
       ::
       =^  epil  gen  (emit ~ epil-ops %hop then.goal)
       =^  nex   gen  $(nomm q.nomm, goal goal(then epil))
