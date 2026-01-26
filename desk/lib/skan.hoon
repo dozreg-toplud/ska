@@ -1978,14 +1978,6 @@
   ?:  (~(has by acc) k)  acc
   ((find-args code) k v acc)
 ::
-+$  meme-args
-  $:  =bell
-      prod=sock
-      map=(lest spring:source)
-      args-transitive=args
-      args-top=args
-  ==
-::
 ++  mug-set-bell
   |=  s=(tree bell)
   ^-  (tree @ux)

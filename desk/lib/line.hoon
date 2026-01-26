@@ -252,7 +252,7 @@
   =^  nex=next  gen  (~(cuts line gen) bell)
   =/  args  (~(got by arity.lon) bell)
   =^  [args-need=need args-list=(list @uvre)]  gen
-    (~(args-to-need line gen) args)
+    (~(args-to-need line gen) args-top.args)
   ::
   =^  o-entry=@uwoo  gen  (~(coerce line gen) nex args-need bus.bell)
   =^  ax  this  axor
@@ -408,7 +408,9 @@
         (copy need-s what.need-f)
       =/  armor=@uxor  (~(got by bells.gen) u.info.nomm)
       =/  args  (~(got by arity.gen) u.info.nomm)
-      =^  [args-need=need args-list=(list @uvre)]  gen  (args-to-need args)
+      =^  [args-need=need args-list=(list @uvre)]  gen
+        (args-to-need args-transitive.args)
+      ::
       ::  XX no jet stuff for now
       ::
       =^  tar=@uwoo  gen
