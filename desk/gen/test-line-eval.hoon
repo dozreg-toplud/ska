@@ -5,17 +5,21 @@
 :-  %say  |=  *  :-  %noun
 ::
 |^
-=/  ka-dor  ka:line-dor
 =/  sub  41
 =/  fol  [4 0 1]
+::  do SKA, find result
+::
+=/  ka-dor  ka:line-dor
 =.  ka-dor  (rout:ka-dor sub fol)
 =/  =boil  (cook:skan lon.ka-dor)
-=/  all-args  (find-args-all:skan code.boil)
 =/  =bell  (need:..zuse (find fols.boil sub fol))
+::  prep line-long state, find arities
+::
 =|  =line-long
 =.  boil.line-long  boil
-=.  arity.line-long  all-args
-=.  line-dor  ~(. line-dor line-long)
+=.  arity.line-long  (find-args-all:skan code.boil)
+::  linearize, run the interpreter
+::
 =.  line-dor  (~(compile line-dor line-long) bell)
 =/  entry=@uxor  (~(got by bells.lon.line-dor) bell)
 (eval:line-dor sub entry)
