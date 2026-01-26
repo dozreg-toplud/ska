@@ -255,6 +255,7 @@
     (~(args-to-need line gen) args-top.args)
   ::
   =^  o-entry=@uwoo  gen  (~(coerce line gen) nex args-need bus.bell)
+  =.  blocks.here.gen  (rewrite-registers-from-start blocks.here.gen o-entry)
   =^  ax  this  axor
   =.  code.lon
     %+  ~(put by code.lon)  ax
@@ -263,6 +264,226 @@
   ::
   =.  bells.lon  (~(put by bells.lon) bell ax)
   this
+::
+++  rewrite-registers-from-start
+  |=  [blocks=(map @uwoo blob) entry=@uwoo]
+  ^+  blocks
+  =|  gen=[new-reg=@uvre old-to-new=(map @uvre @uvre)]
+  |^
+  =^  first-new-blob  gen  (rewrite-blob (~(got by blocks) entry))
+  =/  new-blocks=(map @uwoo blob)  [[entry first-new-blob] ~ ~]
+  =<  -
+  %-  ~(rep by (~(del by blocks) entry))
+  |=  [[k=@uwoo v=blob] acc=_[new-blocks=new-blocks gen=gen]]
+  ^+  acc
+  =.  gen  gen.acc
+  =^  new-blob  gen  (rewrite-blob v)
+  [(~(put by new-blocks.acc) k new-blob) gen]
+  ::
+  ++  rewrite-blob
+    |=  =blob
+    ^+  [blob gen]
+    =^  phi-new   gen  (rewrite-phi phi.blob)
+    =^  body-new  gen  (rewrite-body body.blob)
+    =^  site-new  gen  (rewrite-site bend.blob)
+    [[phi-new body-new site-new] gen]
+  ::
+  ++  rewrite-phi
+    |=  phi=(map @uvre (map @uwoo @uvre))
+    ^+  [phi gen]
+    %-  ~(rep by phi)
+    |=  [[k=@uvre v=(map @uwoo @uvre)] acc=_[phi-new=*(map @uvre (map @uwoo @uvre)) gen=gen]]
+    =.  gen  gen.acc
+    =^  k-new  gen  (old-to-new k)
+    =^  v-new  gen
+      =/  acc  0
+      %-  ~(rep by v)
+      |=  [[k-in=@uwoo v-in=@uvre] acc-in=_[v-new=*(map @uwoo @uvre) gen=gen]]
+      =.  gen  gen.acc-in
+      =^  v-in-new  gen  (old-to-new v-in)
+      [(~(put by v-new.acc-in) k-in v-in-new) gen]
+    ::
+    [(~(put by phi-new.acc) k-new v-new) gen]
+  ::
+  ++  old-to-new
+    |=  old=@uvre
+    ^-  [@uvre _gen]
+    ?^  val=(~(get by old-to-new.gen) old)  [u.val gen]
+    =^  new  new-reg.gen  [new-reg.gen +(new-reg.gen)]
+    [new gen(old-to-new (~(put by old-to-new.gen) old new))]
+  ::
+  ++  rewrite-body
+    |=  body=(list pole)
+    ^+  [body gen]
+    =-  -(l-out (flop l-out))
+    %+  roll  body
+    |=  [i=pole acc=_[l-out=*(list pole) gen=gen]]
+    ^+  acc
+    =.  gen  gen.acc
+    =^  i-new  gen  (rewrite-pole i)
+    [[i-new l-out.acc] gen]
+  ::
+  ++  rewrite-site
+    |=  =site
+    ^+  [site gen]
+    ?-    -.site
+        %clq
+      =^  s-new  gen  (old-to-new s.site)
+      [site(s s-new) gen]
+    ::
+        %eqq
+      =^  l-new  gen  (old-to-new l.site)
+      =^  r-new  gen  (old-to-new r.site)
+      [site(l l-new, r r-new) gen]
+    ::
+        %brn
+      =^  s-new  gen  (old-to-new s.site)
+      [site(s s-new) gen]
+    ::
+        %hop
+      [site gen]
+    ::
+        %hip
+      [site gen]
+    ::
+        %lnk
+      =^  u-new  gen  (old-to-new u.site)
+      =^  f-new  gen  (old-to-new f.site)
+      =^  d-new  gen  (old-to-new d.site)
+      [site(u u-new, f f-new, d d-new) gen]
+    ::
+        %cal
+      =^  v-new  gen
+        =-  -(v-out (flop v-out))
+        %+  roll  v.site
+        |=  [i=@uvre acc=_[v-out=*(list @uvre) gen=gen]]
+        =.  gen  gen.acc
+        =^  i-new  gen  (old-to-new i)
+        [[i-new v-out.acc] gen]
+      ::
+      =^  d-new  gen  (old-to-new d.site)
+      [site(v v-new, d d-new) gen]
+    ::
+        %caf
+      =^  v-new  gen
+        =-  -(v-out (flop v-out))
+        %+  roll  v.site
+        |=  [i=@uvre acc=_[v-out=*(list @uvre) gen=gen]]
+        =.  gen  gen.acc
+        =^  i-new  gen  (old-to-new i)
+        [[i-new v-out.acc] gen]
+      ::
+      =^  d-new  gen  (old-to-new d.site)
+      =^  u-new  gen  (old-to-new u.site)
+      [site(v v-new, d d-new, u u-new) gen]
+    ::
+        %lnt
+      =^  u-new  gen  (old-to-new u.site)
+      =^  f-new  gen  (old-to-new f.site)
+      [site(u u-new, f f-new) gen]
+    ::
+        %jmp
+      =^  v-new  gen
+        =-  -(v-out (flop v-out))
+        %+  roll  v.site
+        |=  [i=@uvre acc=_[v-out=*(list @uvre) gen=gen]]
+        =.  gen  gen.acc
+        =^  i-new  gen  (old-to-new i)
+        [[i-new v-out.acc] gen]
+      ::
+      [site(v v-new) gen]
+    ::
+        %jmf
+      =^  v-new  gen
+        =-  -(v-out (flop v-out))
+        %+  roll  v.site
+        |=  [i=@uvre acc=_[v-out=*(list @uvre) gen=gen]]
+        =.  gen  gen.acc
+        =^  i-new  gen  (old-to-new i)
+        [[i-new v-out.acc] gen]
+      ::
+      =^  u-new  gen  (old-to-new u.site)
+      [site(v v-new, u u-new) gen]
+    ::
+        %don
+      =^  s-new  gen  (old-to-new s.site)
+      [site(s s-new) gen]
+    ::
+        %bom
+      [site gen]
+    ::
+        %mim
+      =^  k-new  gen  (old-to-new k.site)
+      =^  s-new  gen  (old-to-new s.site)
+      =^  d-new  gen  (old-to-new d.site)
+      [site(k k-new, s s-new, d d-new) gen]
+    ==
+  ::
+  ++  rewrite-pole
+    |=  =pole
+    ^+  [pole gen]
+    ?-    -.pole
+        %imm
+      =^  d-new  gen  (old-to-new d.pole)
+      [pole(d d-new) gen]
+    ::
+        %mov
+      =^  s-new  gen  (old-to-new s.pole)
+      =^  d-new  gen  (old-to-new d.pole)
+      [pole(d d-new, s s-new) gen]
+    ::
+        %inc
+      =^  s-new  gen  (old-to-new s.pole)
+      =^  d-new  gen  (old-to-new d.pole)
+      [pole(d d-new, s s-new) gen]
+    ::
+        %con
+      =^  h-new  gen  (old-to-new h.pole)
+      =^  t-new  gen  (old-to-new t.pole)
+      =^  d-new  gen  (old-to-new d.pole)
+      [pole(d d-new, h h-new, t t-new) gen]
+    ::
+        %hed
+      =^  s-new  gen  (old-to-new s.pole)
+      =^  d-new  gen  (old-to-new d.pole)
+      [pole(d d-new, s s-new) gen]
+    ::
+        %tal
+      =^  s-new  gen  (old-to-new s.pole)
+      =^  d-new  gen  (old-to-new d.pole)
+      [pole(d d-new, s s-new) gen]
+    ::
+        %cel
+      =^  p-new  gen  (old-to-new p.pole)
+      [pole(p p-new) gen]
+    ::
+        %his
+      [pole gen]
+    ::
+        %hos
+      [pole gen]
+    ::
+        %hid
+      =^  p-new  gen  (old-to-new p.pole)
+      [pole(p p-new) gen]
+    ::
+        %hod
+      =^  p-new  gen  (old-to-new p.pole)
+      [pole(p p-new) gen]
+    ::
+        %spy
+      =^  e-new  gen  (old-to-new e.pole)
+      =^  p-new  gen  (old-to-new p.pole)
+      =^  d-new  gen  (old-to-new d.pole)
+      [pole(d d-new, e e-new, p p-new) gen]
+    ::
+        %mem
+      =^  k-new  gen  (old-to-new k.pole)
+      =^  s-new  gen  (old-to-new s.pole)
+      =^  r-new  gen  (old-to-new r.pole)
+      [pole(k k-new, s s-new, r r-new) gen]
+    ==
+  --
 ::
 ++  line
   |_  gen=line-short
