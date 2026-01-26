@@ -89,20 +89,21 @@
       $(gen (hop t.end))
     ::
         %cal
-      =;  res=(unit *)
-        ?~  res  `gen
-        =.  gen  (r-put d.end u.res)
-        $(gen (hop t.end))
+      =/  res=(unit *)
+        =/  args-noun  (turn v.end r-get)
+        =/  arm-new  (~(got by code.lon) a.end)
+        =.  gen  [arm-new ~ (~(got by blocks.arm-new) entry.arm-new) *@uwoo]
+        =.  gen  (r-puts args.arm-new args-noun)
+        -:$
       ::
-      =/  args-noun  (turn v.end r-get)
-      =/  arm-new  (~(got by code.lon) a.end)
-      =.  gen  [arm-new ~ (~(got by blocks.arm-new) entry.arm-new) *@uwoo]
-      =.  gen  (r-puts args.arm-new args-noun)
-      -:$
+      ?~  res  `gen
+      =.  gen  (r-put d.end u.res)
+      $(gen (hop t.end))
     ::
         %caf
-      ~|  %no-jet-stuff-now
-      stub
+      ::  no jet stuff now
+      ::
+      $(bend.blob.gen [%cal a v d t]:end)
     ::
         %lnt
       =/  u  (r-get u.end)
@@ -120,8 +121,9 @@
       $
     ::
         %jmf
-      ~|  %no-jet-stuff-now
-      stub
+      ::  no jet stuff now
+      ::
+      $(bend.blob.gen [%jmp a v]:end)
     ::
         %don
       [`(r-get s.end) gen]
