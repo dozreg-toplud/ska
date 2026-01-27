@@ -177,7 +177,8 @@
 +$  straight
   $:  entry=@uwoo
       =need
-      args=(list @uvre)
+      :: args=(list @uvre)
+      n-args=@ud
       blocks=(map @uwoo blob)
       =bell
   ==

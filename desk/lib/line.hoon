@@ -9,6 +9,12 @@
   ^-  [@uxor _this]
   [ax-gen.lon this(ax-gen.lon +(ax-gen.lon))]
 ::
+++  span-args
+  |=  n=@
+  ^-  (list @uvre)
+  ?~  n  ~
+  (gulf `@uvre`0 `@uvre`(dec n))
+::
 ++  eval
   |=  [sub=* ax=@uxor]
   ^-  (unit *)
@@ -93,7 +99,7 @@
         =/  args-noun  (turn v.end r-get)
         =/  arm-new  (~(got by code.lon) a.end)
         =.  gen  [arm-new ~ (~(got by blocks.arm-new) entry.arm-new) *@uwoo]
-        =.  gen  (r-puts args.arm-new args-noun)
+        =.  gen  (r-puts (span-args n-args.arm-new) args-noun)
         -:$
       ::
       ?~  res  `gen
@@ -117,7 +123,7 @@
       =/  args-noun  (turn v.end r-get)
       =/  arm-new  (~(got by code.lon) a.end)
       =.  gen  [arm-new ~ (~(got by blocks.arm-new) entry.arm-new) *@uwoo]
-      =.  gen  (r-puts args.arm-new args-noun)
+      =.  gen  (r-puts (span-args n-args.arm-new) args-noun)
       $
     ::
         %jmf
@@ -218,6 +224,7 @@
   ::
   ++  r-get
     |=  r=@uvre
+    ^-  *
     =/  n  (~(get by regs.gen) r)
     ?~  n
       ~&  >>  %r-get-missing-register
@@ -226,17 +233,18 @@
   ::
   ++  r-put
     |=  [r=@uvre x=*]
+    ^+  gen
     =.  regs.gen  (~(put by regs.gen) r x)
     gen
   ::
   ++  r-puts
     |=  [rs=(list @uvre) xs=(list *)]
+    ^+  gen
     ?~  rs
       ?^  xs  !!
       gen
-    ?~  xs  !!
-    =.  gen  (r-put i.rs i.xs)
-    $(rs t.rs, xs t.xs)
+    =.  gen  (r-put i.rs -.xs)
+    $(rs t.rs, xs +.xs)
   ::
   ++  hop
     |=  o=@uwoo
@@ -256,9 +264,8 @@
   ::
   =^  o-entry=@uwoo  gen  (~(coerce line gen) nex args-need bus.bell)
   =/  [blocks-new=(map @uwoo blob) old-to-new=(map @uvre @uvre)]
-    (rewrite-registers-from-start blocks.here.gen o-entry)
+    (rewrite-registers-from-start blocks.here.gen o-entry args-list)
   ::
-  =.  args-list  (turn args-list ~(got by old-to-new))
   =.  args-need
     |-  ^-  need
     ?^  -.args-need  [$(args-need -.args-need) $(args-need +.args-need)]
@@ -270,16 +277,23 @@
   =.  code.lon
     %+  ~(put by code.lon)  ax
     ^-  straight
-    [o-entry args-need args-list blocks.here.gen bell]
+    [o-entry args-need (lent args-list) blocks.here.gen bell]
   ::
   =.  bells.lon  (~(put by bells.lon) bell ax)
   this
 ::
 ++  rewrite-registers-from-start
-  |=  [blocks=(map @uwoo blob) entry=@uwoo]
+  |=  [blocks=(map @uwoo blob) entry=@uwoo args-old=(list @uvre)]
   ^-  [_blocks (map @uvre @uvre)]
   =|  gen=[new-reg=@uvre old-to-new=(map @uvre @uvre)]
   |^
+  =.  gen
+    |-  ^+  gen
+    ?~  args-old  gen
+    =^  new  gen  next-new-reg
+    =.  old-to-new.gen  (~(put by old-to-new.gen) i.args-old new)
+    $(args-old t.args-old)
+  ::
   =^  first-new-blob  gen  (rewrite-blob (~(got by blocks) entry))
   =/  new-blocks=(map @uwoo blob)  [[entry first-new-blob] ~ ~]
   =<  [- +>]
@@ -314,11 +328,15 @@
     ::
     [(~(put by phi-new.acc) k-new v-new) gen]
   ::
+  ++  next-new-reg
+    ^-  [@uvre _gen]
+    [new-reg.gen gen(new-reg +(new-reg.gen))]
+  ::
   ++  old-to-new
     |=  old=@uvre
     ^-  [@uvre _gen]
     ?^  val=(~(get by old-to-new.gen) old)  [u.val gen]
-    =^  new  new-reg.gen  [new-reg.gen +(new-reg.gen)]
+    =^  new  gen  next-new-reg
     =.  old-to-new.gen  (~(put by old-to-new.gen) old new)
     [new gen]
   ::
@@ -625,7 +643,7 @@
       =/  armor=@uxor  (~(got by bells.gen) u.info.nomm)
       =/  args  (~(got by arity.gen) u.info.nomm)
       =^  [args-need=need args-list=(list @uvre)]  gen
-        (args-to-need args-transitive.args)
+        (args-to-need args-top.args)
       ::
       ::  XX no jet stuff for now
       ::
