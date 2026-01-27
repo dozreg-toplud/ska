@@ -255,7 +255,17 @@
     (~(args-to-need line gen) args-top.args)
   ::
   =^  o-entry=@uwoo  gen  (~(coerce line gen) nex args-need bus.bell)
-  =.  blocks.here.gen  (rewrite-registers-from-start blocks.here.gen o-entry)
+  =/  [blocks-new=(map @uwoo blob) old-to-new=(map @uvre @uvre)]
+    (rewrite-registers-from-start blocks.here.gen o-entry)
+  ::
+  =.  args-list  (turn args-list ~(got by old-to-new))
+  =.  args-need
+    |-  ^-  need
+    ?^  -.args-need  [$(args-need -.args-need) $(args-need +.args-need)]
+    ?:  ?=(%none -.args-need)  args-need
+    ?:  ?=(%both -.args-need)  !!
+    args-need(r (~(got by old-to-new) r.args-need))
+  ::
   =^  ax  this  axor
   =.  code.lon
     %+  ~(put by code.lon)  ax
@@ -267,12 +277,12 @@
 ::
 ++  rewrite-registers-from-start
   |=  [blocks=(map @uwoo blob) entry=@uwoo]
-  ^+  blocks
+  ^-  [_blocks (map @uvre @uvre)]
   =|  gen=[new-reg=@uvre old-to-new=(map @uvre @uvre)]
   |^
   =^  first-new-blob  gen  (rewrite-blob (~(got by blocks) entry))
   =/  new-blocks=(map @uwoo blob)  [[entry first-new-blob] ~ ~]
-  =<  -
+  =<  [- +>]
   %-  ~(rep by (~(del by blocks) entry))
   |=  [[k=@uwoo v=blob] acc=_[new-blocks=new-blocks gen=gen]]
   ^+  acc
@@ -292,11 +302,10 @@
     |=  phi=(map @uvre (map @uwoo @uvre))
     ^+  [phi gen]
     %-  ~(rep by phi)
-    |=  [[k=@uvre v=(map @uwoo @uvre)] acc=_[phi-new=*(map @uvre (map @uwoo @uvre)) gen=gen]]
+    |=  [[k=@uvre v=(map @uwoo @uvre)] acc=_[phi-new=`_phi`~ gen=gen]]
     =.  gen  gen.acc
     =^  k-new  gen  (old-to-new k)
     =^  v-new  gen
-      =/  acc  0
       %-  ~(rep by v)
       |=  [[k-in=@uwoo v-in=@uvre] acc-in=_[v-new=*(map @uwoo @uvre) gen=gen]]
       =.  gen  gen.acc-in
@@ -310,7 +319,8 @@
     ^-  [@uvre _gen]
     ?^  val=(~(get by old-to-new.gen) old)  [u.val gen]
     =^  new  new-reg.gen  [new-reg.gen +(new-reg.gen)]
-    [new gen(old-to-new (~(put by old-to-new.gen) old new))]
+    =.  old-to-new.gen  (~(put by old-to-new.gen) old new)
+    [new gen]
   ::
   ++  rewrite-body
     |=  body=(list pole)
@@ -427,12 +437,7 @@
       =^  d-new  gen  (old-to-new d.pole)
       [pole(d d-new) gen]
     ::
-        %mov
-      =^  s-new  gen  (old-to-new s.pole)
-      =^  d-new  gen  (old-to-new d.pole)
-      [pole(d d-new, s s-new) gen]
-    ::
-        %inc
+        ?(%mov %inc %hed %tal)
       =^  s-new  gen  (old-to-new s.pole)
       =^  d-new  gen  (old-to-new d.pole)
       [pole(d d-new, s s-new) gen]
@@ -442,16 +447,6 @@
       =^  t-new  gen  (old-to-new t.pole)
       =^  d-new  gen  (old-to-new d.pole)
       [pole(d d-new, h h-new, t t-new) gen]
-    ::
-        %hed
-      =^  s-new  gen  (old-to-new s.pole)
-      =^  d-new  gen  (old-to-new d.pole)
-      [pole(d d-new, s s-new) gen]
-    ::
-        %tal
-      =^  s-new  gen  (old-to-new s.pole)
-      =^  d-new  gen  (old-to-new d.pole)
-      [pole(d d-new, s s-new) gen]
     ::
         %cel
       =^  p-new  gen  (old-to-new p.pole)
