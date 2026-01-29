@@ -126,6 +126,30 @@
     (. 3 4)
   ::
   (expect-eq-nock-need cor fol)
+::
+++  test-abet
+  =/  cor
+    =>  ..dec:hoot
+    =+  c=0
+    |%
+    ++  this  .
+    ++  add
+      |=  n=@
+      ^+  this
+      =-  this.+(c c.-)
+      ?~  n  this
+      $(c +(c), n (dec n))
+    ::
+    ++  foo
+      =>  (add 42)
+      this(c +(c))
+    --
+  ::
+  =/  fol
+    =>  cor  !=
+    foo
+  ::
+  (expect-eq-nock-need cor fol)
 ::  XX ~60 seconds to analyze, ~1000 s to run Nomm
 ::
 :: ++  test-ream
