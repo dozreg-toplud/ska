@@ -10800,6 +10800,7 @@
       ::  ::.: reference with face/fork/hold reduced
       ::
       ^+  .
+      =-  +(ref ref.-, hos hos.-, wec wec.-, gil gil.-)
       ::  =-  ~>  %slog.[0 (dunk 'sint: sut')]
       ::      ~>  %slog.[0 (dunk(sut ref) 'sint: ref')]
       ::      ~>  %slog.[0 (dunk(sut =>(- ref)) 'sint: pro')]
