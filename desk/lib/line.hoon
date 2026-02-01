@@ -57,6 +57,13 @@
   =>  .(gen `$+(gen _gen)`gen)
   =<  -
   |^  ^-  [(unit *) $+(gen _gen)]
+  =?  gen  .?(phi.blob.gen)
+    %-  ~(rep by phi.blob.gen)
+    |=  [[destination=@uvre sources=(map @uwoo @uvre)] acc=_gen]
+    =.  gen  acc
+    =/  source=@uvre  (~(got by sources) hip.gen)
+    (r-put destination (r-get source))
+  ::
   ?:  =(~ body.blob.gen)
     =/  end  bend.blob.gen
     ?-    -.end
@@ -155,6 +162,7 @@
     (r-put d.op n.op)
   ::
       %mov
+    ~&  >>  %still-moving
     :-  ~
     =/  n  (r-get s.op)
     (r-put d.op n)
@@ -318,7 +326,8 @@
     =/  next  (~(got by new-blocks) t.bend.here)
     ?^  phi.next  !!
     =.  new-blocks
-      (~(put by new-blocks) here-o next(body (weld body.here body.next)))
+      =/  merged  [phi.here (weld body.here body.next) bend.next]
+      (~(put by new-blocks) here-o merged)
     ::
     (~(del by new-blocks) t.bend.here)
   ==
