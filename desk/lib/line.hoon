@@ -3,6 +3,7 @@
 ::
 =,  gene
 =*  stub  ~|(%stub !!)
+=*  direct-entrypoint  0w1
 |_  lon=line-long
 +*  this  .
 ++  axor
@@ -47,7 +48,7 @@
       regs=`(map @uvre *)`u.regs
       ::  code
       ::
-      `=blob`(~(got by blocks.straight) entry.straight)
+      `=blob`(~(got by blocks.straight) direct-entrypoint)
       ::  come-from label
       ::
       hip=*@uwoo
@@ -98,7 +99,7 @@
       =/  res=(unit *)
         =/  args-noun  (turn v.end r-get)
         =/  arm-new  (~(got by code.lon) a.end)
-        =.  gen  [arm-new ~ (~(got by blocks.arm-new) entry.arm-new) *@uwoo]
+        =.  gen  [arm-new ~ (~(got by blocks.arm-new) direct-entrypoint) *@uwoo]
         =.  gen  (r-puts (span-args n-args.arm-new) args-noun)
         -:$
       ::
@@ -122,7 +123,7 @@
         %jmp
       =/  args-noun  (turn v.end r-get)
       =/  arm-new  (~(got by code.lon) a.end)
-      =.  gen  [arm-new ~ (~(got by blocks.arm-new) entry.arm-new) *@uwoo]
+      =.  gen  [arm-new ~ (~(got by blocks.arm-new) direct-entrypoint) *@uwoo]
       =.  gen  (r-puts (span-args n-args.arm-new) args-noun)
       $
     ::
@@ -133,6 +134,9 @@
     ::
         %don
       [`(r-get s.end) gen]
+    ::
+        %dom
+      [`r.end gen]
     ::
         %bom
       `gen
@@ -262,9 +266,9 @@
   =^  [args-need=need args-list=(list @uvre)]  gen
     (~(args-to-need line gen) args-top.args)
   ::
-  =^  o-entry=@uwoo  gen  (~(coerce line gen) nex args-need bus.bell)
+  =.  gen  (~(coerce line gen) nex args-need bus.bell)
   =/  [blocks-new=(map @uwoo blob) old-to-new=(map @uvre @uvre)]
-    (rewrite-registers-from-start blocks.here.gen o-entry args-list)
+    (rewrite-registers-from-start blocks.here.gen args-list)
   ::
   =.  args-need
     |-  ^-  need
@@ -273,17 +277,190 @@
     ?:  ?=(%both -.args-need)  !!
     args-need(r (~(got by old-to-new) r.args-need))
   ::
+  =.  blocks-new  (merge-hops blocks-new)
+  =.  blocks-new  (remove-movs blocks-new)
   =^  ax  this  axor
   =.  code.lon
     %+  ~(put by code.lon)  ax
+    =-  ~&(- -)
     ^-  straight
-    [o-entry args-need (lent args-list) blocks.here.gen bell]
+    [args-need (lent args-list) blocks-new bell]
   ::
   =.  bells.lon  (~(put by bells.lon) bell ax)
   this
 ::
+++  merge-hops
+  |=  blocks=(map @uwoo blob)
+  ^+  blocks
+  =|  new-blocks=(map @uwoo blob)
+  =/  here-o=@uwoo  direct-entrypoint
+  =/  here=blob  (~(got by blocks) here-o)
+  |^  ^+  blocks
+  ?-    -.bend.here
+      ?(%don %dom %bom %lnt %jmp %jmf)
+    (~(put by new-blocks) here-o here)
+  ::
+      ?(%hip %lnk %cal %caf)
+    =/  t=@uwoo  (get-target bend.here)
+    =.  new-blocks  $(here (~(got by blocks) t), here-o t)
+    (~(put by new-blocks) here-o here)
+  ::
+      ?(%clq %eqq %brn %mim)
+    =/  [z=@uwoo o=@uwoo]  (get-z-o bend.here)
+    =.  new-blocks  $(here (~(got by blocks) z), here-o z)
+    =.  new-blocks  $(here (~(got by blocks) o), here-o o)
+    (~(put by new-blocks) here-o here)
+  ::
+      %hop
+    =/  next  (~(got by blocks) t.bend.here)
+    ?^  phi.next  !!
+    =.  new-blocks  $(here next, here-o t.bend.here)
+    =/  next  (~(got by new-blocks) t.bend.here)
+    ?^  phi.next  !!
+    =.  new-blocks
+      (~(put by new-blocks) here-o next(body (weld body.here body.next)))
+    ::
+    (~(del by new-blocks) t.bend.here)
+  ==
+  ::
+  ++  get-target
+    |=  s=_`$>(?(%hip %lnk %cal %caf) site)`[%hip *@uw *@uw]
+    ^-  @uwoo
+    ?-  -.s
+      %hip  t.s
+      %lnk  t.s
+      %cal  t.s
+      %caf  t.s
+    ==
+  ::
+  ++  get-z-o
+    |=  s=$>(?(%clq %eqq %brn %mim) site)
+    ^-  [@uwoo @uwoo]
+    ?-  -.s
+      %clq  [z.s o.s]
+      %eqq  [z.s o.s]
+      %brn  [z.s o.s]
+      %mim  [z.s o.s]
+    ==
+  --
+::
+++  remove-movs
+  |=  blocks=(map @uwoo blob)
+  ^+  blocks
+  =/  here-o=@uwoo  direct-entrypoint
+  =/  here=blob  (~(got by blocks) here-o)
+  =|  gen=[new-blocks=(map @uwoo blob) old-to-new=(map @uvre @uvre)]
+  =<  -
+  |^  ^+  gen
+  =/  phi  (update-phi phi.here)
+  =^  body  gen  (update-body body.here)
+  =/  site  (update-site bend.here)
+  =.  new-blocks.gen  (~(put by new-blocks.gen) here-o [phi body site])
+  ?-    -.bend.here
+      ?(%don %dom %bom %lnt %jmp %jmf)  gen
+  ::
+      ?(%hip %lnk %cal %caf %hop)
+    =/  t=@uwoo  (get-target bend.here)
+    $(here (~(got by blocks) t), here-o t)
+  ::
+      ?(%clq %eqq %brn %mim)
+    =/  [z=@uwoo o=@uwoo]  (get-z-o bend.here)
+    =.  gen  $(here (~(got by blocks) z), here-o z)
+    $(here (~(got by blocks) o), here-o o)
+  ==
+  ::
+  ++  update-phi
+    |=  phi=(map @uvre (map @uwoo @uvre))
+    ^+  phi
+    %-  ~(rep by phi)
+    |=  $:  [k-out=@uvre v-out=(map @uwoo @uvre)]
+            phi-new=(map @uvre (map @uwoo @uvre))
+        ==
+    =/  k-out-new=@uvre  (update-r k-out)
+    =-  (~(put by phi-new) k-out-new -)
+    %-  ~(rep by v-out)
+    |=  [[k-in=@uwoo v-in=@uvre] v-out-new=(map @uwoo @uvre)]
+    (~(put by v-out-new) k-in (update-r v-in))
+  ::
+  ++  update-body
+    |=  body=(list pole)
+    ^+  [body gen]
+    =|  new-body=(list pole)
+    =-  -(b (flop b))
+    |-  ^+  [b=new-body gen]
+    ?~  body  [new-body gen]
+    ?:  ?=(%mov -.i.body)
+      =,  i.body
+      ?~  old=(~(get by old-to-new.gen) s)
+        $(body t.body, old-to-new.gen (~(put by old-to-new.gen) d s))
+      $(body t.body, old-to-new.gen (~(put by old-to-new.gen) d u.old))
+    =-  $(body t.body, new-body [- new-body])
+    ^-  pole
+    =*  op  i.body
+    ?-  -.op
+      ?(%his %hos)  op
+      %imm  op(d (update-r d.op))
+      %inc  op(d (update-r d.op), s (update-r s.op))
+      %con  op(h (update-r h.op), t (update-r t.op), d (update-r d.op))
+      %hed  op(d (update-r d.op), s (update-r s.op))
+      %tal  op(d (update-r d.op), s (update-r s.op))
+      %cel  op(p (update-r p.op))
+      %hid  op(p (update-r p.op))
+      %hod  op(p (update-r p.op))
+      %spy  op(e (update-r e.op), p (update-r p.op), d (update-r d.op))
+      %mem  op(k (update-r k.op), s (update-r s.op), r (update-r r.op))
+    ==
+  ::
+  ++  update-r
+    |=  r=@uvre
+    ^-  @uvre
+    (~(gut by old-to-new.gen) r r)
+  ::
+  ++  update-site
+    |=  =site
+    ^+  site
+    ?-  -.site
+      %clq  site(s (update-r s.site))
+      %eqq  site(l (update-r l.site), r (update-r r.site))
+      %brn  site(s (update-r s.site))
+      %hop  site
+      %hip  site
+      %lnk  site(u (update-r u.site), f (update-r f.site), d (update-r d.site))
+      %cal  site(d (update-r d.site), v (turn v.site update-r))
+      %caf  site(d (update-r d.site), v (turn v.site update-r), u (update-r u.site))
+      %lnt  site(u (update-r u.site), f (update-r f.site))
+      %jmp  site(v (turn v.site update-r))
+      %jmf  site(v (turn v.site update-r), u (update-r u.site))
+      %don  site(s (update-r s.site))
+      %bom  site
+      %dom  site
+      %mim  site(k (update-r k.site), s (update-r s.site), d (update-r d.site))
+    ==
+  ::
+  ++  get-target
+    |=  s=_`$>(?(%hop %hip %lnk %cal %caf) site)`[%hip *@uw *@uw]
+    ^-  @uwoo
+    ?-  -.s
+      %hop  t.s
+      %hip  t.s
+      %lnk  t.s
+      %cal  t.s
+      %caf  t.s
+    ==
+  ::
+  ++  get-z-o
+    |=  s=$>(?(%clq %eqq %brn %mim) site)
+    ^-  [@uwoo @uwoo]
+    ?-  -.s
+      %clq  [z.s o.s]
+      %eqq  [z.s o.s]
+      %brn  [z.s o.s]
+      %mim  [z.s o.s]
+    ==
+  --
+::
 ++  rewrite-registers-from-start
-  |=  [blocks=(map @uwoo blob) entry=@uwoo args-old=(list @uvre)]
+  |=  [blocks=(map @uwoo blob) args-old=(list @uvre)]
   ^-  [_blocks (map @uvre @uvre)]
   =|  gen=[new-reg=@uvre old-to-new=(map @uvre @uvre)]
   |^
@@ -294,10 +471,10 @@
     =.  old-to-new.gen  (~(put by old-to-new.gen) i.args-old new)
     $(args-old t.args-old)
   ::
-  =^  first-new-blob  gen  (rewrite-blob (~(got by blocks) entry))
-  =/  new-blocks=(map @uwoo blob)  [[entry first-new-blob] ~ ~]
+  =^  first-new-blob  gen  (rewrite-blob (~(got by blocks) direct-entrypoint))
+  =/  new-blocks=(map @uwoo blob)  [[direct-entrypoint first-new-blob] ~ ~]
   =<  [- +>]
-  %-  ~(rep by (~(del by blocks) entry))
+  %-  ~(rep by (~(del by blocks) direct-entrypoint))
   |=  [[k=@uwoo v=blob] acc=_[new-blocks=new-blocks gen=gen]]
   ^+  acc
   =.  gen  gen.acc
@@ -369,6 +546,9 @@
       [site(s s-new) gen]
     ::
         %hop
+      [site gen]
+    ::
+        %dom
       [site gen]
     ::
         %hip
@@ -503,12 +683,15 @@
   ::  given argument need from arity prepass, satisfy entry point need with it,
   ::  or satisfy the need with the noun from `bus` if known, or crash
   ::
+  ::  this is where the very first code is emitted, and this code is bound
+  ::  to hard-coded 0w1 entry point
+  ::
   ::  XX need to update the arity and redo the linearization step for
   ::  completeness
   ::
   ++  coerce
     |=  [entry=next args=need bus=sock]
-    ^-  [@uwoo _gen]
+    ^+  gen
     ::  ops: instructions to move args into registers before entry,
     ::       or to fill those with constants, or cons them up
     ::
@@ -517,7 +700,7 @@
     =|  acc=[ops=(list pole) =_gen]
     =;  [o=@uwoo =_acc]
       =.  gen  gen.acc
-      (emit ~ ops.acc %hop o)
+      (emir direct-entrypoint ~ ops.acc %hop o)
     ::
     |-  ^-  [@uwoo _acc]
     ::  easy ways out:
@@ -599,8 +782,7 @@
         %1
       ?-    -.goal
           %done
-        =^  r  gen  re
-        =^  o  gen  (emit ~ [%imm p.nomm r]~ %don r)
+        =^  o  gen  (emit ~ ~ %dom p.nomm)
         [[%next none+~ o] gen]
       ::
           %pick
@@ -1160,7 +1342,7 @@
       =^  o  gen  (emit ~ ops %hop then.feed)
       [[%next i.sout o] gen]
     ?:  ?=(%& -.i.sin)
-      ?>  ?=([* * ~] sout)
+      ?>  ?=([* * *] sout)
       =/  par  [i.t.sout i.sout]
       %=  $
         sin   t.sin
@@ -1200,14 +1382,14 @@
         ::
         ::  XX reconsider mixed case ^ / %both
         ::
-        sin  [|+[h.l h.rr] |+[t.l t.rr] &+`[r.rr c.l] sin]
+        sin  [|+[h.l h.rr] |+[t.l t.rr] &+`[r.rr c.l] t.sin]
       ==
     ?^  -.r
-      $(sin [|+[p.l p.r] |+[q.l q.r] &+~ sin])
+      $(sin [|+[p.l p.r] |+[q.l q.r] &+~ t.sin])
     ::  first computation does not have a cell check for r.r,
     ::  so r.r will need to be checked upstream
     ::
-    $(sin [|+[p.l h.r] |+[q.l t.r] &+`[r.r |] sin])
+    $(sin [|+[p.l h.r] |+[q.l t.r] &+`[r.r |] t.sin])
   ::  given a control flow merge destination, generate a phi block
   ::  and comefrom blocks for branches, returning branch destinations
   ::

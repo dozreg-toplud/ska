@@ -144,6 +144,7 @@
 ::         tail position
 ::  %jmf - like jmp but with fast label
 ::  %don - return value in s from current arm
+::  %dom - return immediate value r
 ::  %bom - crash
 ::
 ::  %memo instructions:
@@ -162,6 +163,7 @@
       [%jmp a=@uxor v=(list @uvre)]
       [%jmf a=@uxor v=(list @uvre) u=@uvre n=[path @]]
       [%don s=@uvre]
+      [%dom r=*]
       [%bom ~]
       [%mim k=@uvre s=@uvre f=* d=@uvre z=@uwoo o=@uwoo]
   ==
@@ -175,9 +177,11 @@
 +$  blob  [phi=(map @uvre (map @uwoo @uvre)) body=(list pole) bend=site]
 ::
 +$  straight
-  $:  entry=@uwoo
-      =need
-      :: args=(list @uvre)
+  $:  =need
+      ::  these are hardcoded
+      ::
+      :: entry=@uwoo 0w1
+      :: args=(list @uvre)  ~[0v0 0v1 ... 0v(n-args - 1)]
       n-args=@ud
       blocks=(map @uwoo blob)
       =bell
@@ -194,7 +198,7 @@
 +$  line-short
   $:  line-long
       re-gen=@uvre
-      bo-gen=@uwoo
+      bo-gen=_`@uwoo`2
       $=  here
       $:  blocks=(map @uwoo blob)
   ==  ==

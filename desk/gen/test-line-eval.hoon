@@ -5,8 +5,12 @@
 :-  %say  |=  *  :-  %noun
 ::
 |^
-=/  sub  41
-=/  fol  [4 0 1]
+=/  sub  [42 42]
+=/  fol
+  !.  =>  sub  !=
+  ?:  =(- +)  41
+  42
+::
 ::  do SKA, find result
 ::
 =/  ka-dor  ka:line-dor
