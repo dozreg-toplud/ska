@@ -6,10 +6,6 @@
 =*  direct-entrypoint  0w1
 |_  lon=line-long
 +*  this  .
-++  axor
-  ^-  [@uxor _this]
-  [ax-gen.lon this(ax-gen.lon +(ax-gen.lon))]
-::
 ++  span-args
   |=  n=@
   ^-  (list @uvre)
@@ -17,9 +13,9 @@
   (gulf `@uvre`0 `@uvre`(dec n))
 ::
 ++  eval
-  |=  [sub=* ax=@uxor]
+  |=  [sub=* bel=bell]
   ^-  (unit *)
-  =/  =straight  (~(got by code.lon) ax)
+  =/  =straight  (~(got by code.lon) bel)
   =/  regs=(unit (map @uvre *))
     =|  regs=(map @uvre *)
     |-  ^-  (unit (map @uvre *))
@@ -57,6 +53,7 @@
   =>  .(gen `$+(gen _gen)`gen)
   =<  -
   |^  ^-  [(unit *) $+(gen _gen)]
+  =*  block-loop  $
   =?  gen  .?(phi.blob.gen)
     %-  ~(rep by phi.blob.gen)
     |=  [[destination=@uvre sources=(map @uwoo @uvre)] acc=_gen]
@@ -64,34 +61,36 @@
     =/  source=@uvre  (~(got by sources) hip.gen)
     (r-put destination (r-get source))
   ::
+  |-  ^-  [(unit *) $+(gen _gen)]
+  =*  ops-loop  $
   ?:  =(~ body.blob.gen)
     =/  end  bend.blob.gen
     ?-    -.end
         %clq
       =/  s  (r-get s.end)
-      ?^  s  $(gen (hop z.end))
-      $(gen (hop o.end))
+      ?^  s  block-loop(gen (hop z.end))
+      block-loop(gen (hop o.end))
     ::
         %eqq
       =/  l  (r-get l.end)
       =/  r  (r-get r.end)
-      ?:  =(l r)  $(gen (hop z.end))
-      $(gen (hop o.end))
+      ?:  =(l r)  block-loop(gen (hop z.end))
+      block-loop(gen (hop o.end))
     ::
         %brn
       =/  s  (r-get s.end)
       ?-  -.s
-        %&  $(gen (hop z.end))
-        %|  $(gen (hop o.end))
+        %&  block-loop(gen (hop z.end))
+        %|  block-loop(gen (hop o.end))
         *   `gen
       ==
     ::
         %hop
-      $(gen (hop t.end))
+      block-loop(gen (hop t.end))
     ::
         %hip
       =.  hip.gen  c.end
-      $(gen (hop t.end))
+      block-loop(gen (hop t.end))
     ::
         %lnk
       =/  u  (r-get u.end)
@@ -100,7 +99,7 @@
         ~&  %indi-crash
         `gen
       =.  gen  (r-put d.end u.res)
-      $(gen (hop t.end))
+      block-loop(gen (hop t.end))
     ::
         %cal
       =/  res=(unit *)
@@ -108,16 +107,16 @@
         =/  arm-new  (~(got by code.lon) a.end)
         =.  gen  [arm-new ~ (~(got by blocks.arm-new) direct-entrypoint) *@uwoo]
         =.  gen  (r-puts (span-args n-args.arm-new) args-noun)
-        -:$
+        -:block-loop
       ::
       ?~  res  `gen
       =.  gen  (r-put d.end u.res)
-      $(gen (hop t.end))
+      block-loop(gen (hop t.end))
     ::
         %caf
       ::  no jet stuff now
       ::
-      $(bend.blob.gen [%cal a v d t]:end)
+      ops-loop(bend.blob.gen [%cal a v d t]:end)
     ::
         %lnt
       =/  u  (r-get u.end)
@@ -132,12 +131,12 @@
       =/  arm-new  (~(got by code.lon) a.end)
       =.  gen  [arm-new ~ (~(got by blocks.arm-new) direct-entrypoint) *@uwoo]
       =.  gen  (r-puts (span-args n-args.arm-new) args-noun)
-      $
+      block-loop
     ::
         %jmf
       ::  no jet stuff now
       ::
-      $(bend.blob.gen [%jmp a v]:end)
+      ops-loop(bend.blob.gen [%jmp a v]:end)
     ::
         %don
       [`(r-get s.end) gen]
@@ -154,7 +153,7 @@
     ::
     ==
   =^  op=pole  body.blob.gen  body.blob.gen
-  =-  ?~  -  `gen  $(gen u)
+  =-  ?~  -  `gen  ops-loop(gen u)
   ^-  (unit $+(gen _gen))
   ?-    -.op
       %imm
@@ -287,14 +286,12 @@
   ::
   =.  blocks-new  (merge-hops blocks-new)
   =.  blocks-new  (remove-movs blocks-new)
-  =^  ax  this  axor
   =.  code.lon
-    %+  ~(put by code.lon)  ax
+    %+  ~(put by code.lon)  bell
     =-  ~&(- -)
     ^-  straight
     [args-need (lent args-list) blocks-new bell]
   ::
-  =.  bells.lon  (~(put by bells.lon) bell ax)
   this
 ::
 ++  merge-hops
@@ -831,7 +828,6 @@
         =^  need-f  gen  $(nomm u.q.nomm, goal [%next this+f o])
         =^  need-s  gen  $(nomm p.nomm, goal [%next this+s then.need-f])
         (copy need-s what.need-f)
-      =/  armor=@uxor  (~(got by bells.gen) u.info.nomm)
       =/  args  (~(got by arity.gen) u.info.nomm)
       =^  [args-need=need args-list=(list @uvre)]  gen
         (args-to-need args-top.args)
@@ -840,11 +836,11 @@
       ::
       =^  tar=@uwoo  gen
         ?-    -.goal
-            %done  (emit ~ ~ %jmp armor args-list)
+            %done  (emit ~ ~ %jmp u.info.nomm args-list)
         ::
             %next
           =^  [aftr=@uwoo prod=@uvre]  gen  (kerf goal)
-          (emit ~ ~ %cal armor args-list prod aftr)
+          (emit ~ ~ %cal u.info.nomm args-list prod aftr)
         ==
       ::
       =^  fol-next=next  gen

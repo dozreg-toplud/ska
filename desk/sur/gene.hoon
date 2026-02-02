@@ -2,7 +2,6 @@
 |%
 ::  @uvre: register index 
 ::  @uwoo: basic block index
-::  @uxor: function index
 ::
 +$  need
   $^  [p=need q=need]
@@ -157,11 +156,11 @@
       [%hop t=@uwoo]
       [%hip c=@uwoo t=@uwoo]
       [%lnk u=@uvre f=@uvre d=@uvre t=@uwoo]
-      [%cal a=@uxor v=(list @uvre) d=@uvre t=@uwoo]
-      [%caf a=@uxor v=(list @uvre) d=@uvre t=@uwoo u=@uvre n=[path @]]
+      [%cal a=bell v=(list @uvre) d=@uvre t=@uwoo]
+      [%caf a=bell v=(list @uvre) d=@uvre t=@uwoo u=@uvre n=[path @]]
       [%lnt u=@uvre f=@uvre]
-      [%jmp a=@uxor v=(list @uvre)]
-      [%jmf a=@uxor v=(list @uvre) u=@uvre n=[path @]]
+      [%jmp a=bell v=(list @uvre)]
+      [%jmf a=bell v=(list @uvre) u=@uvre n=[path @]]
       [%don s=@uvre]
       [%dom r=*]
       [%bom ~]
@@ -188,9 +187,7 @@
   ==
 ::
 +$  line-long
-  $:  code=(map @uxor straight)
-      ax-gen=@uxor
-      bells=(map bell @uxor)
+  $:  code=(map bell straight)
       arity=(map bell meme-args)
       =boil
   ==

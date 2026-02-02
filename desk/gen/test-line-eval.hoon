@@ -26,8 +26,8 @@
 ::  linearize, run the interpreter
 ::
 =.  line-dor  (~(compile line-dor line-long) bell)
-=/  entry=@uxor  (~(got by bells.lon.line-dor) bell)
-(eval:line-dor sub entry)
+(eval:line-dor sub bell)
+::
 ::  XX no sock maximization logic
 ::
 ++  find
