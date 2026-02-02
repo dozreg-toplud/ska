@@ -263,6 +263,14 @@
     gen(blob (~(got by blocks.arm.gen) o))
   --
 ::
+++  compile-all
+  |=  code=(map bell nomm-1)
+  ^+  this
+  %-  ~(rep by code)
+  |=  [[k=bell *] acc=_this]
+  =.  lon  lon.acc
+  (compile k)
+::
 ++  compile
   |=  =bell
   ^+  this
@@ -284,7 +292,7 @@
     ?:  ?=(%both -.args-need)  !!
     args-need(r (~(got by old-to-new) r.args-need))
   ::
-  =.  blocks-new  (merge-hops blocks-new)
+  =.  blocks-new  (remove-hops blocks-new)
   =.  blocks-new  (remove-movs blocks-new)
   =.  code.lon
     %+  ~(put by code.lon)  bell
@@ -293,8 +301,11 @@
     [args-need (lent args-list) blocks-new bell]
   ::
   this
+::  if block A %hop's to block B, then block B is necessarily only targeted
+::  by A, as control flow merges are done with %hip's. This means that blocks A
+::  and B can be safely merged into one block without any code duplication
 ::
-++  merge-hops
+++  remove-hops
   |=  blocks=(map @uwoo blob)
   ^+  blocks
   =|  new-blocks=(map @uwoo blob)
@@ -321,6 +332,9 @@
     ?^  phi.next  !!
     =.  new-blocks  $(here next, here-o t.bend.here)
     =/  next  (~(got by new-blocks) t.bend.here)
+    ::  sanity check: the target block must not have a phi table as it is not
+    ::  targeted with %hip
+    ::
     ?^  phi.next  !!
     =.  new-blocks
       =/  merged  [phi.here (weld body.here body.next) bend.next]
@@ -349,6 +363,14 @@
       %mim  [z.s o.s]
     ==
   --
+::  As we generate the code from the end to the beginning, we do not know if
+::  two given register will contain the same data, so we generate %mov
+::  instructions (that are actually copies) when we learn that two registers
+::  correspond to the same noun.
+::
+::  But once we generated all the code for a function, we know which registers
+::  are mere aliases, so we can eliminate the moves and instead rename the
+::  registers
 ::
 ++  remove-movs
   |=  blocks=(map @uwoo blob)
@@ -464,6 +486,12 @@
       %mim  [z.s o.s]
     ==
   --
+::  To make the calling convention simpler we want the argument registers to
+::  be sequential values (0v0, 0v1, 0v2, ...), but since we codegen from the end
+::  to the beginning, the input registers end up having high values, and return
+::  registers are low.
+::  So, once we have all the code for a function, we iterate from the beginning
+::  to the end, renaming the registers.
 ::
 ++  rewrite-registers-from-start
   |=  [blocks=(map @uwoo blob) args-old=(list @uvre)]
@@ -471,17 +499,18 @@
   =|  gen=[new-reg=@uvre old-to-new=(map @uvre @uvre)]
   |^
   =.  gen
+    ::  we iterate over the old argument registers first so that they are
+    ::  sequential
+    ::
     |-  ^+  gen
     ?~  args-old  gen
     =^  new  gen  next-new-reg
     =.  old-to-new.gen  (~(put by old-to-new.gen) i.args-old new)
     $(args-old t.args-old)
   ::
-  =^  first-new-blob  gen  (rewrite-blob (~(got by blocks) direct-entrypoint))
-  =/  new-blocks=(map @uwoo blob)  [[direct-entrypoint first-new-blob] ~ ~]
   =<  [- +>]
-  %-  ~(rep by (~(del by blocks) direct-entrypoint))
-  |=  [[k=@uwoo v=blob] acc=_[new-blocks=new-blocks gen=gen]]
+  %-  ~(rep by blocks)
+  |=  [[k=@uwoo v=blob] acc=[new-blocks=(map @uwoo blob) _gen=gen]]
   ^+  acc
   =.  gen  gen.acc
   =^  new-blob  gen  (rewrite-blob v)

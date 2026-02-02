@@ -25,7 +25,7 @@
 =.  arity.line-long  (find-args-all:skan code.boil)
 ::  linearize, run the interpreter
 ::
-=.  line-dor  (~(compile line-dor line-long) bell)
+=.  line-dor  (~(compile-all line-dor line-long) code.boil)
 (eval:line-dor sub bell)
 ::
 ::  XX no sock maximization logic
