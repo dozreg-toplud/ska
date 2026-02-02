@@ -281,7 +281,12 @@
   =^  [args-need=need args-list=(list @uvre)]  gen
     (~(args-to-need line gen) args-top.args)
   ::
-  =.  gen  (~(coerce line gen) nex args-need bus.bell)
+  =.  gen
+    ~|  line-need+what.nex
+    ~|  arity-need+args-need
+    ~|  arity+args-top.args
+    (~(coerce line gen) nex args-need bus.bell)
+  ::
   =/  [blocks-new=(map @uwoo blob) old-to-new=(map @uvre @uvre)]
     (rewrite-registers-from-start blocks.here.gen args-list)
   ::
@@ -296,7 +301,7 @@
   =.  blocks-new  (remove-movs blocks-new)
   =.  code.lon
     %+  ~(put by code.lon)  bell
-    =-  ~&(- -)
+    =-  ~&(code+- -)
     ^-  straight
     [args-need (lent args-list) blocks-new bell]
   ::
@@ -1365,16 +1370,22 @@
   ++  copy
     |=  [feed=next seed=need]
     ^-  [next _gen]
+    =^  [ned=need ops=(list pole)]  gen  (copy-give-ops what.feed seed)
+    =^  o  gen  (emit ~ ops %hop then.feed)
+    [[%next ned o] gen]
+  ::
+  ++  copy-give-ops
+    |=  [feed=need seed=need]
+    ^-  [[need (list pole)] _gen]
     =|  ops=(list pole)
     =|  sout=(list need)
     =/  sin=(list (each (unit [r=@uvre c=?]) [l=need r=need]))
-      [|+[what.feed seed]]~
+      [|+[feed seed]]~
     ::
-    |-  ^-  [next _gen]
+    |-  ^-  [[need (list pole)] _gen]
     ?~  sin
       ?>  ?=([* ~] sout)
-      =^  o  gen  (emit ~ ops %hop then.feed)
-      [[%next i.sout o] gen]
+      [[i.sout ops] gen]
     ?:  ?=(%& -.i.sin)
       ?>  ?=([* * *] sout)
       =/  par  [i.t.sout i.sout]
