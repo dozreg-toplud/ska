@@ -400,8 +400,8 @@
       ~|  `*`-
       ~|  `*`(normalize-args -)
       !!
-  ?~  a  b
-  ?~  b  a
+  ?:  &(?=(~ a) ?=(~ b))  ~
+  ?:  |(?=(~ a) ?=(~ b))  [%arg ~ ~]
   ::  assert disjointness
   ::
   ?>  ?=(%hole n.a)
