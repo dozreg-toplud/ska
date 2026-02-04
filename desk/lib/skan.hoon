@@ -2047,7 +2047,7 @@
     ::
     =/  arg-with-captured  (uni-args args args-capture)
     ::
-    =/  meme=meme-args  [b sock.prod map args arg-with-captured]
+    =/  meme=meme-args  [b sock.prod map arg-with-captured]
     ?:  (~(has by sccs) b)
       =.  memo.gen  (~(put by memo.gen) b meme)
       =.  memo.gen  (~(uni by memo.gen) melo.gen)
@@ -2066,7 +2066,17 @@
     ::
     ?~  args-loop-mayb=(~(get by loop-calls.gen1) b)  [prod gen1]
     =/  =args  (normalize-args (~(gut by loc.gen1) b ~))
-    ?:  =(u.args-loop-mayb args)
+    =/  map=(lest spring:source)  i.src.prod
+    =/  args-capture=^args
+      =.  stack-list  [-.stack-list ~]
+      =.  loc.gen  ~
+      =.  loc.gen  (update-loc-gen ~[map] [%arg ~ ~])
+      ?~  loc.gen  ~
+      ?>  ?=([* ~ ~] loc.gen)
+      q.n.loc.gen
+    ::
+    =/  arg-with-captured  (uni-args args args-capture)
+    ?:  =(u.args-loop-mayb arg-with-captured)
       [prod gen1(loop-calls (~(del in loop-calls.gen1)))]
     ?:  =(4 counter)
       ::  ugly hack: if we didn't converge in three tries we use the entire
@@ -2080,7 +2090,7 @@
     %=    fixpoint-loop
         loop-calls.gen
       :: (~(put by loop-calls.gen1) b ?:(=(counter 3) [%arg ~ ~] args))
-      (~(put by loop-calls.gen1) b ?:(=(counter 3) !! args))
+      (~(put by loop-calls.gen1) b ?:(=(counter 3) !! arg-with-captured))
     ::
         memo.gen  memo.gen1
         counter   +(counter)
@@ -2128,10 +2138,10 @@
         [[u.args-loop-mayb (dunno sub)] gen]
       ?^  meme=(~(get by memo.gen) u.info.n)
         =/  src  src.sub(i (compose:source map.u.meme i.src.sub))
-        [[args-transitive.u.meme [prod.u.meme src]] gen]
+        [[args.u.meme [prod.u.meme src]] gen]
       ?^  meal=(~(get by melo.gen) u.info.n)
         =/  src  src.sub(i (compose:source map.u.meal i.src.sub))
-        [[args-transitive.u.meal [prod.u.meal src]] gen]
+        [[args.u.meal [prod.u.meal src]] gen]
       ::  analyze through
       ::
       =^  pro=sock-anno  gen
@@ -2142,11 +2152,11 @@
         ==
       ::
       :_  gen
-      =/  args-transitive=args
-        ?^  meal=(~(get by melo.gen) u.info.n)  args-transitive.u.meal
-        args-transitive:(~(got by memo.gen) u.info.n)
+      =/  =args
+        ?^  meal=(~(get by melo.gen) u.info.n)  args.u.meal
+        args:(~(got by memo.gen) u.info.n)
       ::
-      :-  args-transitive
+      :-  args
       ?~  t.src.pro  !!
       %=  pro
         t.src  t.t.src.pro

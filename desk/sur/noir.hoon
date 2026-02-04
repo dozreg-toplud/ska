@@ -1,5 +1,6 @@
 /+  *soak
 :: =/  check-noir  ~
+=*  stub  ~|(%stub !!)
 |%
 ::  call label for Nomm 2: indirect call or entry in global
 ::  code table or arm-local callsite
@@ -172,8 +173,7 @@
   $:  =bell
       prod=sock
       map=(lest spring:source)
-      args-transitive=args
-      args-top=args
+      =args
   ==
 ::
 ++  blind
@@ -422,14 +422,42 @@
   %-  ~(rep in keys)
   |=  [key=bell acc=_old]
   ^+  acc
+  ::  XX here the idea is that we want to know which parts of the subject
+  ::  are used exclusively by the yes/no branches, and join these exclusive
+  ::  usages into one usage under which both would nest. This does not play well
+  ::  with the linearizer, which does not currently do that, so it pessimizes
+  ::  registerization of branches, making the linearizer greedier than the
+  ::  prepass. As a result, the subject registerization by the linearizer no
+  ::  longer nests under the prepass' estimate, resulting in a crash in +coerce
+  ::  (which could technically be an arity rewrite + recompilation of the whole
+  ::  call graph... the crash is to prevent that frim happening while I am
+  ::  writing this thing).
+  ::
+  ::  The problem is that the arity prepass walks the code forward, so it only
+  ::  knows which parts of the subject are used by the previous code, and the
+  ::  linearizer could only know which parts of the subject are required by the
+  ::  code after the control flow merge + the conditional itself -- in short,
+  ::  by the following code. 
+  ::
+  ::  Ideally we want to know which parts of the subject are used by code before
+  ::  and after the branch. It is currently not clear how to do that.
+  ::
+  ::  XX per-function stacks of branches to finalize?
+  ::
+  :: =/  args-y=args    (~(gut by y) key ~)
+  :: =/  args-n=args    (~(gut by n) key ~)
+  :: =/  args-old=args  (~(gut by acc) key ~)
+  :: =/  args-sure  (uni-args args-old (int-args args-y args-n))
+  :: =/  only-y=args  (dis-args args-y args-sure)
+  :: =/  only-n=args  (dis-args args-n args-sure)
+  :: =/  join  (join-args only-y only-n)
+  :: (~(put by acc) key (uni-args args-sure join))
+  ::
   =/  args-y=args    (~(gut by y) key ~)
   =/  args-n=args    (~(gut by n) key ~)
+  =/  join  (join-args args-y args-n)
   =/  args-old=args  (~(gut by acc) key ~)
-  =/  args-sure  (uni-args args-old (int-args args-y args-n))
-  =/  only-y=args  (dis-args args-y args-sure)
-  =/  only-n=args  (dis-args args-n args-sure)
-  =/  join  (join-args only-y only-n)
-  (~(put by acc) key (uni-args args-sure join))
+  (~(put by acc) key (uni-args args-old join))
 ::
 ++  push-args
   |=  [a=args ax=@]
