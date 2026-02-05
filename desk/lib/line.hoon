@@ -54,12 +54,17 @@
   =<  -
   |^  ^-  [(unit *) $+(gen _gen)]
   =*  block-loop  $
-  =?  gen  .?(phi.blob.gen)
-    %-  ~(rep by phi.blob.gen)
-    |=  [[destination=@uvre sources=(map @uwoo @uvre)] acc=_gen]
-    =.  gen  acc
-    =/  source=@uvre  (~(got by sources) hip.gen)
-    (r-put destination (r-get source))
+  ::  no phi stuff if +defi is applied
+  ::  in this case ops-loop and block-loop are the same thing, and can be
+  ::  modelled with a single loop
+  ::
+  ?>  =(~ phi.blob.gen)
+  :: =?  gen  .?(phi.blob.gen)
+  ::   %-  ~(rep by phi.blob.gen)
+  ::   |=  [[destination=@uvre sources=(map @uwoo @uvre)] acc=_gen]
+  ::   =.  gen  acc
+  ::   =/  source=@uvre  (~(got by sources) hip.gen)
+  ::   (r-put destination (r-get source))
   ::
   |-  ^-  [(unit *) $+(gen _gen)]
   =*  ops-loop  $
@@ -161,7 +166,6 @@
     (r-put d.op n.op)
   ::
       %mov
-    ~&  >>  %still-moving
     :-  ~
     =/  n  (r-get s.op)
     (r-put d.op n)
@@ -299,6 +303,10 @@
   ::
   =.  blocks-new  (remove-hops blocks-new)
   =.  blocks-new  (remove-movs blocks-new)
+  ::  defi needs to be last: the registers are no longer single-assignment
+  ::  and multiple blocks can be targeted with %hop's
+  ::
+  =.  blocks-new  (defi blocks-new)
   =.  code.lon
     %+  ~(put by code.lon)  bell
     =-  ~&(code+- -)
@@ -306,6 +314,68 @@
     [args-need (lent args-list) blocks-new bell]
   ::
   this
+::  simplify interpretation by replacing phi tables with moves and %hip's with
+::  %hop's
+::
+++  defi
+  |=  blocks=(map @uwoo blob)
+  ^+  blocks
+  =|  new-blocks=(map @uwoo blob)
+  =/  here-o=@uwoo  direct-entrypoint
+  =/  here=blob  (~(got by blocks) here-o)
+  |^  ^+  blocks
+  ?-    -.bend.here
+      ?(%don %dom %bom %lnt %jmp %jmf)
+    (~(put by new-blocks) here-o here)
+  ::
+      ?(%lnk %cal %caf %hop)
+    =/  t=@uwoo  (get-target bend.here)
+    =.  new-blocks  $(here (~(got by blocks) t), here-o t)
+    (~(put by new-blocks) here-o here)
+  ::
+      ?(%clq %eqq %brn %mim)
+    =/  [z=@uwoo o=@uwoo]  (get-z-o bend.here)
+    =.  new-blocks  $(here (~(got by blocks) z), here-o z)
+    =.  new-blocks  $(here (~(got by blocks) o), here-o o)
+    (~(put by new-blocks) here-o here)
+  ::
+      %hip
+    =/  target-blob  (~(got by blocks) t.bend.here)
+    =.  new-blocks  (~(put by new-blocks) t.bend.here target-blob(phi ~))
+    =/  moves=(list [from=@uvre to=@uvre])
+      %-  ~(rep by phi.target-blob)
+      |=  [[k-reg-to=@uvre v=(map @uwoo @uvre)] acc=(list [@uvre @uvre])]
+      ?~  from=(~(get by v) c.bend.here)  acc
+      [[u.from k-reg-to] acc]
+    ::
+    %+  ~(put by new-blocks)  here-o
+    %=  here
+      bend  [%hop t.bend.here]
+      body  (welp body.here (turn moves (lead %mov)))
+    ==
+  ==
+  ::
+  ++  get-target
+    |=  s=_`$>(?(%hop %lnk %cal %caf) site)`[%hop *@uw]
+    ^-  @uwoo
+    ?-  -.s
+      %hop  t.s
+      %lnk  t.s
+      %cal  t.s
+      %caf  t.s
+    ==
+  ::
+  ++  get-z-o
+    |=  s=$>(?(%clq %eqq %brn %mim) site)
+    ^-  [@uwoo @uwoo]
+    ?-  -.s
+      %clq  [z.s o.s]
+      %eqq  [z.s o.s]
+      %brn  [z.s o.s]
+      %mim  [z.s o.s]
+    ==
+  --
+    
 ::  if block A %hop's to block B, then block B is necessarily only targeted
 ::  by A, as control flow merges are done with %hip's. This means that blocks A
 ::  and B can be safely merged into one block without any code duplication
