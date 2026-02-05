@@ -21,11 +21,16 @@
     |=  [[k=bell v=*] acc=[i=@uxor m=(map bell @uxor)]]
     [+(i.acc) (~(put by m.acc) k i.acc)]
   ::
-  |^  ^-  (list tape)
+  |^
+  %+  weld
+    ^-  (list tape)
+    %-  ~(rep by code.lon)
+    |=  [[k=bell v=straight] txt=(list tape)]
+    :_  txt
+    "{(render-declaration (~(got by bell-to-idx) k) n-args.v)};\0a"
+  ^-  (list tape)
   %-  ~(rep by code.lon)
   |=  [[k=bell v=straight] txt=(list tape)]
-  ~&  (~(got by bell-to-idx) k)
-  =-  ~&(- -)
   :_  txt
   =/  max-reg=@  (get-max-register blocks.v)
   =/  num-regs-tape=tape  |2:(scow %ui +(max-reg))
@@ -38,6 +43,11 @@
   {(render-body-with-indentation blocks.v)}
   }
   """
+  ::
+  ++  render-declaration
+    |=  [idx=@uxor n-args=@]
+    ^-  tape
+    "_function_{<idx>}({(render-input-args n-args)})"
   ::
   ++  render-prelude-with-indentation
     |=  n=@
