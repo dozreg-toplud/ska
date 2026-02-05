@@ -401,11 +401,19 @@
       ~|  `*`(normalize-args -)
       !!
   ?:  &(?=(~ a) ?=(~ b))  ~
+  ::  XX this should take %look into account but I ignore it elsewhere so it's
+  ::  fine...
+  :::
   ?:  |(?=(~ a) ?=(~ b))  [%arg ~ ~]
-  ::  assert disjointness
+  ::  XX this works when a and b describe argument usage exclusive to these
+  ::  branches, but since we don't do that for now we still need to check
   ::
-  ?>  ?=(%hole n.a)
-  ?>  ?=(%hole n.b)
+  :: ::  assert disjointness
+  :: ::
+  :: ?>  ?=(%hole n.a)
+  :: ?>  ?=(%hole n.b)
+  ::
+  ?.  &(?=(%hole n.a) ?=(%hole n.b))  [%arg ~ ~]
   ?:  &(?=(~ l.a) ?=(~ l.b))  [%hole ~ (join-args r.a r.b)]
   ?:  &(?=(~ r.a) ?=(~ r.b))  [%hole (join-args l.a l.b) ~]
   ::  requirements are both in head and tail: require the common ancestor
@@ -430,7 +438,7 @@
   ::  prepass. As a result, the subject registerization by the linearizer no
   ::  longer nests under the prepass' estimate, resulting in a crash in +coerce
   ::  (which could technically be an arity rewrite + recompilation of the whole
-  ::  call graph... the crash is to prevent that frim happening while I am
+  ::  call graph... the crash is to prevent that from happening while I am
   ::  writing this thing).
   ::
   ::  The problem is that the arity prepass walks the code forward, so it only

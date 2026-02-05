@@ -277,14 +277,14 @@
   =|  gen=line-short
   =.  -.gen  lon
   =^  nex=next  gen  (~(cuts line gen) bell)
-  =/  args  (~(got by arity.lon) bell)
+  =/  meme-args  (~(got by arity.lon) bell)
   =^  [args-need=need args-list=(list @uvre)]  gen
-    (~(args-to-need line gen) args-top.args)
+    (~(args-to-need line gen) args.meme-args)
   ::
   =.  gen
     ~|  line-need+what.nex
     ~|  arity-need+args-need
-    ~|  arity+args-top.args
+    ~|  arity+args.meme-args
     (~(coerce line gen) nex args-need bus.bell)
   ::
   =/  [blocks-new=(map @uwoo blob) old-to-new=(map @uvre @uvre)]
@@ -862,9 +862,9 @@
         =^  need-f  gen  $(nomm u.q.nomm, goal [%next this+f o])
         =^  need-s  gen  $(nomm p.nomm, goal [%next this+s then.need-f])
         (copy need-s what.need-f)
-      =/  args  (~(got by arity.gen) u.info.nomm)
+      =/  meme-args  (~(got by arity.gen) u.info.nomm)
       =^  [args-need=need args-list=(list @uvre)]  gen
-        (args-to-need args-top.args)
+        (args-to-need args.meme-args)
       ::
       ::  XX no jet stuff for now
       ::
