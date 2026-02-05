@@ -166,6 +166,46 @@
       [%bom ~]
       [%mim k=@uvre s=@uvre f=* d=@uvre z=@uwoo o=@uwoo]
   ==
+::
+++  get-regs-site
+  |=  s=site
+  ^-  (list @uvre)
+  ?-  -.s
+    %clq  ~[s.s]
+    %eqq  ~[l.s r.s]
+    %brn  ~[s.s]
+    %hop  ~
+    %hip  ~
+    %lnk  ~[u.s f.s d.s]
+    %cal  [d.s v.s]
+    %caf  [d.s u.s v.s]
+    %lnt  ~[u.s f.s]
+    %jmp  v.s
+    %jmf  [u.s v.s]
+    %don  ~[s.s]
+    %dom  ~
+    %bom  ~
+    %mim  ~[k s d]:s
+  ==
+::
+++  get-regs-pole
+  |=  p=pole
+  ^-  (list @uvre)
+  ?-  -.p
+    %imm   ~[d]:p
+    %mov   ~[s d]:p
+    %inc   ~[s d]:p
+    %con   ~[h t d]:p
+    %hed   ~[s d]:p
+    %tal   ~[s d]:p
+    %cel   ~[p]:p
+    %his   ~
+    %hos   ~
+    %hid   ~[p]:p
+    %hod   ~[p]:p
+    %spy   ~[e p d]:p
+    %mem   ~[k s r]:p
+  ==
 ::    basic block
 ::
 ::  phi: which registers are set according to the comefrom label to values from

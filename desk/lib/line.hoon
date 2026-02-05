@@ -11,6 +11,240 @@
   ^-  (list @uvre)
   ?~  n  ~
   (gulf `@uvre`0 `@uvre`(dec n))
+::  XX rewrite the registers again to compress the space
+::
+++  back
+  ^-  (list tape)
+  =/  bell-to-idx=(map bell @uxor)
+    =<  +
+    %-  ~(rep by code.lon)
+    |=  [[k=bell v=*] acc=[i=@uxor m=(map bell @uxor)]]
+    [+(i.acc) (~(put by m.acc) k i.acc)]
+  ::
+  |^  ^-  (list tape)
+  %-  ~(rep by code.lon)
+  |=  [[k=bell v=straight] txt=(list tape)]
+  ~&  (~(got by bell-to-idx) k)
+  =-  ~&(- -)
+  :_  txt
+  =/  max-reg=@  (get-max-register blocks.v)
+  =/  num-regs-tape=tape  |2:(scow %ui +(max-reg))
+  """
+  static u3_noun
+  _function_{<(~(got by bell-to-idx) k)>}({(render-input-args n-args.v)})
+  \{
+    u3_noun rs[{num-regs-tape}];
+  {(render-prelude-with-indentation n-args.v)}
+  {(render-body-with-indentation blocks.v)}
+  }
+  """
+  ::
+  ++  render-prelude-with-indentation
+    |=  n=@
+    ^-  tape
+    ?~  n  ""
+    %+  weld  $(n (dec n))
+    "\0a  {(r (dec n))} = reg_{<`@uv`(dec n)>};"
+  ::
+  ++  get-max-register
+    |=  blocks=(map @uwoo blob)
+    ^-  @uvre
+    =/  max-r=@uvre  `@`0
+    %-  ~(rep by blocks)
+    |=  [[k=* v=blob] max-r=@uvre]
+    (max max-r (max-reg-blob v))
+  ::
+  ++  max-reg-blob
+    |=  =blob
+    ^-  @uvre
+    ?>  =(~ phi.blob)
+    %+  max  (max-reg-site bend.blob)
+    (roll body.blob |=([p=pole max-r=@uvre] (max max-r (max-reg-pole p))))
+  ::
+  ++  max-reg-site
+    |=  s=site
+    ^-  @uvre
+    (roll (get-regs-site s) max)
+  ::
+  ++  max-reg-pole
+    |=  p=pole
+    ^-  @uvre
+    (roll (get-regs-pole p) max)
+  ::
+  ++  render-input-args
+    |=  n=@ud
+    ^-  tape
+    ?~  n  ""
+    =/  out=tape  "u3_noun reg_0v0"
+    =/  i=@uv  `@`1
+    |-  ^-  tape
+    ?:  =(n i)  out
+    $(i +(i), out (weld out ", u3_noun reg_{<i>}"))
+  ::
+  ++  render-body-with-indentation
+    |=  blocks=(map @uwoo blob)
+    ^-  tape
+    =/  first  (~(got by blocks) direct-entrypoint)
+    """
+    _0w1:
+    {(render-block-with-indentation first)}
+    //
+    {(render-blocks-with-indentation (~(del by blocks) direct-entrypoint))}
+    """
+  ::  all but first
+  ::
+  ++  render-blocks-with-indentation
+    |=  blocks=(map @uwoo blob)
+    ^-  tape
+    %-  ~(rep by blocks)
+    |=  [[k=@uwoo v=blob] txt=tape]
+    %-  weld
+    :_  txt
+    """
+    _{<k>}:
+    {(render-block-with-indentation v)}
+    //\0a
+    """
+  ::
+  ++  render-block-with-indentation
+    |=  =blob
+    ^-  tape
+    ?>  =(~ phi.blob)
+    =/  lines-body=(list tape)  (turn body.blob render-pole)
+    =/  end  (render-site-with-indentation bend.blob)
+    ?:  =(~ lines-body)  end
+    =.  lines-body  (turn lines-body (cury (bake weld ,[tape tape]) "  "))
+    =/  body=tape  (zing (snoc (join ";\0a" lines-body) ";\0a"))
+    (weld body end)
+  ::
+  ++  render-pole
+    |=  p=pole
+    ^-  tape
+    ?-  -.p
+      %imm  "{(r d.p)} = {(render-noun n.p)}"
+      %mov  "{(r d.p)} = {(r s.p)}"
+      %inc  "{(r d.p)} = INC({(r s.p)})"
+      %con  "{(r d.p)} = CON({(r h.p)}, {(r t.p)})"
+      %hed  "{(r d.p)} = HED({(r s.p)})"
+      %tal  "{(r d.p)} = TAL({(r s.p)})"
+      %cel  "CEL({(r p.p)})"
+      ::  skipped for now
+      %his  "//  his"
+      %hos  "//  hos"
+      %hid  "//  hid"
+      %hod  "//  hod"
+      %spy  "//  spy"
+      %mem  "//  mem"
+    ==
+  ::
+  ++  render-site-with-indentation
+    |=  s=site
+    ^-  tape
+    ?-    -.s
+        %clq
+      """
+        if ( c3y == u3du({(r s.s)}) ) \{
+          goto _{<z.s>};
+        }
+        else \{
+          goto _{<o.s>};
+        }
+      """
+    ::
+        %eqq
+      """
+        if ( c3y == u3r_sing({(r l.s)}, {(r r.s)}) ) \{
+          goto _{<z.s>};
+        }
+        else \{
+          goto _{<o.s>};
+        }
+      """
+    ::
+        %brn
+      """
+        if ( c3y == u3x_loob({(r s.s)}) ) \{
+          goto _{<z.s>};
+        }
+        else \{
+            goto _{<o.s>};
+          }
+      """
+    ::
+        %hop
+      "  goto _{<t.s>};"
+    ::
+        %hip
+      ~|  %no-hip-in-c-source  !!
+    ::
+        %lnk
+      ::  skip indirect nock for now
+      ::
+      stub
+    ::
+        %cal
+      =/  callee  (~(got by bell-to-idx) a.s)
+      """
+        {(r d.s)} = _function_{<callee>}({(render-args-callee v.s)});
+        goto _{<t.s>};
+      """
+    ::
+        %caf
+      $(s [%cal a v d t]:s)
+    ::
+        %lnt
+      stub
+    ::
+        %jmp
+      =/  callee  (~(got by bell-to-idx) a.s)
+      "  return _function_{<callee>}({(render-args-callee v.s)});"
+    ::
+        %jmf
+      $(s [%jmp a v]:s)
+    ::
+        %don
+      "  return {(r s.s)};"
+    ::
+        %dom
+      "  return {(render-noun r.s)};"
+    ::
+        %bom
+      "  u3m_bail(c3__exit);"
+    ::
+        %mim
+      ::  no %memo stuff for now
+      stub
+    ::
+    ==
+  ::
+  ++  render-args-callee
+    |=  v=(list @uvre)
+    ^-  tape
+    ?~  v  ""
+    =/  out=tape  (r i.v)
+    |-  ^-  tape
+    ?~  t.v  out
+    $(t.v t.t.v, out (weld out ", {(r i.t.v)}"))
+  ::  XX make a jam buffer with all the nouns needed so we can reference it
+  ::  later
+  ::
+  ::  XX large atoms
+  ::
+  ++  render-noun
+    |=  n=*
+    ^-  tape
+    ?-  n
+      @                  |2:(scow %ui n)
+      [p=* q=@]          "u3nc({$(n p.n)}, {$(n q.n)})"
+      [p=* q=* r=@]      "u3nt({$(n p.n)}, {$(n q.n)}, {$(n r.n)})"
+      [p=* q=* r=* s=*]  "u3nq({$(n p.n)}, {$(n q.n)}, {$(n r.n)}, {$(n s.n)})"
+    ==
+  ::
+  ++  r
+    |=  r=@uvre
+    ^-  tape
+    "rs[{|2:(scow %ui r)}]"
+  --
 ::
 ++  eval
   |=  [sub=* bel=bell]
@@ -280,7 +514,9 @@
   ^+  this
   =|  gen=line-short
   =.  -.gen  lon
+  ::
   =^  nex=next  gen  (~(cuts line gen) bell)
+  ::
   =/  meme-args  (~(got by arity.lon) bell)
   =^  [args-need=need args-list=(list @uvre)]  gen
     (~(args-to-need line gen) args.meme-args)

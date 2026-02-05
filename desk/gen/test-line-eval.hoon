@@ -28,6 +28,7 @@
 ::  linearize, run the interpreter
 ::
 =.  line-dor  (~(compile-all line-dor line-long) code.boil)
+~&  `tape`(zing (join "\0a" back:line-dor))
 (eval:line-dor sub bell)
 ::
 ::  XX no sock maximization logic
