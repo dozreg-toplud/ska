@@ -451,11 +451,11 @@
       %hid
     :-  ~
     ?+    n.op  gen
-        %spot
-      =/  tok  (r-get p.op)
-      ?~  pot=((soft spot) tok)  gen
-      ~>  %slog.[0 (ren:p u.pot)]
-      gen
+      ::   %spot
+      :: =/  tok  (r-get p.op)
+      :: ?~  pot=((soft spot) tok)  gen
+      :: ~>  %slog.[0 (ren:p u.pot)]
+      :: gen
     ::
         %slog
       =/  tok  (r-get p.op)
@@ -506,6 +506,8 @@
   ++  hop
     |=  o=@uwoo
     ^+  gen
+    ~|  %no-block
+    ~|  o
     gen(blob (~(got by blocks.arm.gen) o))
   --
 ::
@@ -536,9 +538,8 @@
     (~(coerce line gen) nex args-need bus.bell)
   ::
   =/  blocks  blocks.here.gen
-  :: ~&  blocks
-  :: =.  blocks  (remove-hops blocks)
-  :: =.  blocks  (remove-movs blocks)
+  =.  blocks  (remove-hops blocks)
+  =.  blocks  (remove-movs blocks)
   =^  old-to-new  blocks
     (rewrite-registers-from-start blocks args-list)
   ::  defi needs to be last: the registers are no longer single-assignment
@@ -1069,13 +1070,13 @@
     ::  noun is known
     ::
     ?:  ?=(%& cape.bus)
-      =^  [aftr=@uwoo prod=@uvre]  gen.acc  (kerf entry)
+      =^  [aftr=@uwoo prod=@uvre]  gen.acc  (kerf(gen gen.acc) entry)
       =.  ops.acc  [[%imm data.bus prod] ops.acc]
       [aftr acc]
     ::  argument has all
     ::
     ?:  ?=(%this -.args)
-      =^  [aftr=@uwoo prod=@uvre]  gen.acc  (kerf entry)
+      =^  [aftr=@uwoo prod=@uvre]  gen.acc  (kerf(gen gen.acc) entry)
       =.  ops.acc  [[%mov r.args prod] ops.acc]
       [aftr acc]
     ::
@@ -1092,15 +1093,19 @@
       $(entry [%next q.what.entry o-h], args q.args, bus ~(tel so bus))
     ~&  >>  %coerce-entry-greedier-than-args
     ?:  ?=(%this -.what.entry)
-      =^  r-h  gen.acc  re
-      =^  r-t  gen.acc  re
+      =^  r-h  gen.acc  re(gen gen.acc)
+      =^  r-t  gen.acc  re(gen gen.acc)
       =.  ops.acc  [[%con r-h r-t r.what.entry] ops.acc]
       =^  o-h  acc
         $(entry [%next this+r-h then.entry], args p.args, bus ~(hed so bus))
       ::
       $(entry [%next this+r-t o-h], args q.args, bus ~(tel so bus))
-    =^  h=[aftr=@uwoo prod=@uvre]  gen.acc  (kerf entry(what h.what.entry))
-    =^  t=[aftr=@uwoo prod=@uvre]  gen.acc  (kerf %next t.what.entry aftr.h)
+    =^  h=[aftr=@uwoo prod=@uvre]  gen.acc
+      (kerf(gen gen.acc) entry(what h.what.entry))
+    ::
+    =^  t=[aftr=@uwoo prod=@uvre]  gen.acc
+      (kerf(gen gen.acc) %next t.what.entry aftr.h)
+    ::
     =.  ops.acc  [[%con prod.h prod.t r.what.entry] ops.acc]
     =^  o-h  acc
       $(entry [%next this+prod.h aftr.t], args p.args, bus ~(hed so bus))
@@ -1475,18 +1480,17 @@
         ^
       =^  tel  acc      $(ned q.ned)
       =^  hed  acc      $(ned p.ned)
-      =^  r    gen.acc  re
+      =^  r    gen.acc  re(gen gen.acc)
       =.  ops.acc  [cel+r ops.acc]
       :_  acc
       [%both r & hed tel]
     ::
         %both
-      ?:  c.ned  [ned acc]
       =^  tel  acc  $(ned t.ned)
       =^  hed  acc  $(ned h.ned)
-      =.  ops.acc  [cel+r.ned ops.acc]
+      =?  ops.acc  !c.ned  [cel+r.ned ops.acc]
       :_  acc
-      ned(c &, h hed, t tel)
+      [%both r.ned & hed tel]
     ==
   ::  split need for edit: donor, then recipient
   ::
@@ -1556,45 +1560,12 @@
     ::
         ^
       ?^  no  $(sin [[+.no q.ne] [-.no p.ne] t.sin])
-      =^  r  gen  re
-      $(i.sin i.sin(ned [%both r | ne]))
+      (emit ~ ~ %bom ~)
     ::
         %both
-      ?.  |(c.ne ?=(^ no))
-        =^  o1  gen  (emit ~ ~ %bom ~)
-        $(o o1, sin t.sin)
+      ?:  &(!c.ne ?=(@ no))  (emit ~ ~ %bom ~)
       =^  [o1=@uwoo r=@uvre]  gen  (kerf %next ne o)
       $(sin t.sin, o o1, ops [[%imm ?^(no no %ska-line-mede) r] ops])
-    ==
-  ::
-  ++  mede1
-    |=  [o=@uwoo n=* ned=need]
-    ^-  [@uwoo _gen]
-    =|  acc=[ops=(list pole) o=_o gen=_gen]
-    =;  acc=_acc
-      =.  gen  gen.acc
-      (emit ~ ops.acc %hop o.acc)
-    |-  ^+  acc
-    ?-    -.ned
-        %none  acc
-        %this  acc(ops [[%imm n r.ned] ops.acc])
-    ::
-        ^
-      ?^  n
-        =.  acc  $(n +.n, ned q.ned)
-        $(n -.n, ned p.ned)
-      =^  r  gen.acc  re
-      $(ned [%both r | ned])
-    ::
-        %both
-      ?.  |(c.ned ?=(^ n))
-        =^  o1  gen.acc  (emit ~ ~ %bom ~)
-        acc(o o1)
-      =^  [o1=@uwoo r=@uvre]  gen.acc  (kerf %next ned o)
-      %=  acc
-        o    o1
-        ops  [[%imm ?^(n n %ska-line-mede) r] ops.acc]
-      ==
     ==
   ::  push need
   ::  axe != 0
@@ -1786,15 +1757,15 @@
       [[cons-z cons-o] acc]
     ::
         %this
-      =^  r-z  gen.acc  re
-      =^  r-o  gen.acc  re
+      =^  r-z  gen.acc  re(gen gen.acc)
+      =^  r-o  gen.acc  re(gen gen.acc)
       =/  patch  (~(gas by *(map @uwoo @uvre)) ~[[from-z r-z] [from-o r-o]])
       =.  dispatch.acc  (~(put by dispatch.acc) r.ned patch)
       [[this+r-z this+r-o] acc]
     ::
         %both
-      =^  r-z  gen.acc  re
-      =^  r-o  gen.acc  re
+      =^  r-z  gen.acc  re(gen gen.acc)
+      =^  r-o  gen.acc  re(gen gen.acc)
       =/  patch  (~(gas by *(map @uwoo @uvre)) ~[[from-z r-z] [from-o r-o]])
       =.  dispatch.acc  (~(put by dispatch.acc) r.ned patch)
       =^  h=[z=need o=need]  acc  $(ned h.ned)
@@ -1968,12 +1939,12 @@
     |-  ^-  [need _acc]
     ?:  ?=(?(%none %this) -.z-need)
       ?:  ?=(%none -.o-need)  [z-need acc]
-      =^  res-o=[r=@uvre p=(list pole)]  gen.acc  (kern o-need)
+      =^  res-o=[r=@uvre p=(list pole)]  gen.acc  (kern(gen gen.acc) o-need)
       =?  ops-z.acc  ?=(%this -.z-need)  [[%mov r.res-o r.z-need]~ ops-z.acc]
       =.  ops-o.acc  [p.res-o ops-o.acc]
       [[%this r.res-o] acc]
     ?:  ?=(?(%none %this) -.o-need)
-      =^  res-z=[r=@uvre p=(list pole)]  gen.acc  (kern z-need)
+      =^  res-z=[r=@uvre p=(list pole)]  gen.acc  (kern(gen gen.acc) z-need)
       =?  ops-o.acc  ?=(%this -.o-need)  [[%mov r.res-z r.o-need]~ ops-o.acc]
       =.  ops-z.acc  [p.res-z ops-z.acc]
       [[%this r.res-z] acc]
@@ -1983,12 +1954,12 @@
       [[h t] acc]
     =^  z-both=$>(%both need)  acc
       ?@  -.z-need  [z-need acc]
-      =^  x  gen.acc  re
+      =^  x  gen.acc  re(gen gen.acc)
       [[%both x | z-need] acc]
     ::
     =^  o-both=$>(%both need)  acc
       ?@  -.o-need  [o-need acc]
-      =^  x  gen.acc  re
+      =^  x  gen.acc  re(gen gen.acc)
       [[%both x | o-need] acc]
     ::
     =?  .  |(c.z-both c.o-both)
@@ -2103,7 +2074,6 @@
   ::
   ++  mine
     |=  [r=@uvre t=@uwoo]
-    ~!  next
     ^-  [next _gen]
     =^  mile  gen  (emit ~ [%imm %ska-line-mine r]~ %hop t)
     [[%next [%none ~] mile] gen]

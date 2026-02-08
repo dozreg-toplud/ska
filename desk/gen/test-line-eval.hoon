@@ -1,18 +1,15 @@
 /-  *gene
 /+  line-dor=line
 /+  skan
+/+  hoot
 ::
 :-  %say  |=  *  :-  %noun
 ::
 |^
-=/  sub  ~
+=/  sub  ..add:hoot
 =/  fol
   !.  =>  sub  !=
-  =<  +(.)
-  =+  c=0
-  |-  ^-  @
-  ?:  =(c 5)  42
-  $(c +(c))
+  (add 2 3)
 ::
 ::  do SKA, find result
 ::
@@ -28,7 +25,6 @@
 ::  linearize, run the interpreter
 ::
 =.  line-dor  (~(compile-all line-dor line-long) code.boil)
-~&  `tape`(zing (join "\0a" back:line-dor))
 (eval:line-dor sub bell)
 ::
 ::  XX no sock maximization logic
