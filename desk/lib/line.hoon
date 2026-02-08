@@ -535,9 +535,16 @@
     ~|  arity+args.meme-args
     (~(coerce line gen) nex args-need bus.bell)
   ::
-  =/  [blocks-new=(map @uwoo blob) old-to-new=(map @uvre @uvre)]
-    (rewrite-registers-from-start blocks.here.gen args-list)
+  =/  blocks  blocks.here.gen
+  :: ~&  blocks
+  :: =.  blocks  (remove-hops blocks)
+  :: =.  blocks  (remove-movs blocks)
+  =^  old-to-new  blocks
+    (rewrite-registers-from-start blocks args-list)
+  ::  defi needs to be last: the registers are no longer single-assignment
+  ::  and multiple blocks can be targeted with %hop's
   ::
+  =.  blocks  (defi blocks)
   =.  args-need
     |-  ^-  need
     ?^  -.args-need  [$(args-need -.args-need) $(args-need +.args-need)]
@@ -545,17 +552,11 @@
     ?:  ?=(%both -.args-need)  !!
     args-need(r (~(got by old-to-new) r.args-need))
   ::
-  =.  blocks-new  (remove-hops blocks-new)
-  =.  blocks-new  (remove-movs blocks-new)
-  ::  defi needs to be last: the registers are no longer single-assignment
-  ::  and multiple blocks can be targeted with %hop's
-  ::
-  =.  blocks-new  (defi blocks-new)
   =.  code.lon
     %+  ~(put by code.lon)  bell
-    =-  ~&(code+- -)
+    :: =-  ~&(code+- -)
     ^-  straight
-    [args-need (lent args-list) blocks-new bell]
+    [args-need (lent args-list) blocks bell]
   ::
   this
 ::  simplify interpretation by replacing phi tables with moves and %hip's with
@@ -584,12 +585,16 @@
     (~(put by new-blocks) here-o here)
   ::
       %hip
-    =/  target-blob  (~(got by blocks) t.bend.here)
-    =.  new-blocks  (~(put by new-blocks) t.bend.here target-blob(phi ~))
+    =/  t  t.bend.here
+    =/  target-blob  (~(got by blocks) t)
+    =.  new-blocks  $(here target-blob, here-o t)
+    =.  new-blocks  (~(put by new-blocks) t target-blob(phi ~))
     =/  moves=(list [from=@uvre to=@uvre])
       %-  ~(rep by phi.target-blob)
       |=  [[k-reg-to=@uvre v=(map @uwoo @uvre)] acc=(list [@uvre @uvre])]
-      ?~  from=(~(get by v) c.bend.here)  acc
+      ?~  from=(~(get by v) c.bend.here)
+        ~&  >>>  %hip-weird
+        acc
       [[u.from k-reg-to] acc]
     ::
     %+  ~(put by new-blocks)  here-o
@@ -618,8 +623,7 @@
       %brn  [z.s o.s]
       %mim  [z.s o.s]
     ==
-  --
-    
+  -- 
 ::  if block A %hop's to block B, then block B is necessarily only targeted
 ::  by A, as control flow merges are done with %hip's. This means that blocks A
 ::  and B can be safely merged into one block without any code duplication
@@ -814,7 +818,7 @@
 ::
 ++  rewrite-registers-from-start
   |=  [blocks=(map @uwoo blob) args-old=(list @uvre)]
-  ^-  [_blocks (map @uvre @uvre)]
+  ^-  [(map @uvre @uvre) _blocks]
   =|  gen=[new-reg=@uvre old-to-new=(map @uvre @uvre)]
   |^
   =.  gen
@@ -827,7 +831,7 @@
     =.  old-to-new.gen  (~(put by old-to-new.gen) i.args-old new)
     $(args-old t.args-old)
   ::
-  =<  [- +>]
+  =<  [+> -]
   %-  ~(rep by blocks)
   |=  [[k=@uwoo v=blob] acc=[new-blocks=(map @uwoo blob) _gen=gen]]
   ^+  acc
