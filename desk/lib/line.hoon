@@ -23,11 +23,15 @@
   ::
   |^
   %+  weld
+    ::  function declarations
+    ::
     ^-  (list tape)
     %-  ~(rep by code.lon)
     |=  [[k=bell v=straight] txt=(list tape)]
     :_  txt
-    "{(render-declaration (~(got by bell-to-idx) k) n-args.v)};\0a"
+    =/  input  (render-input-args n-args.v)
+    =/  func-idx  (~(got by bell-to-idx) k)
+    "static u3_noun _function_{<func-idx>}({input});\0a"
   ^-  (list tape)
   %-  ~(rep by code.lon)
   |=  [[k=bell v=straight] txt=(list tape)]
@@ -43,11 +47,6 @@
   {(render-body-with-indentation blocks.v)}
   }
   """
-  ::
-  ++  render-declaration
-    |=  [idx=@uxor n-args=@]
-    ^-  tape
-    "_function_{<idx>}({(render-input-args n-args)})"
   ::
   ++  render-prelude-with-indentation
     |=  n=@
@@ -113,7 +112,7 @@
     """
     _{<k>}:
     {(render-block-with-indentation v)}
-    //\0a
+    \0a
     """
   ::
   ++  render-block-with-indentation
