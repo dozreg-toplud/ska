@@ -1,15 +1,15 @@
 /-  *gene
 /+  line-dor=line
 /+  skan
-/+  hoot
+/+  hoot-zpdt
 ::
 :-  %say  |=  *  :-  %noun
 ::
 |^
-=/  sub  ..add:hoot
+=/  sub  ..dec:hoot-zpdt
 =/  fol
   !.  =>  sub  !=
-  (add 2 3)
+  (dec 42)
 ::
 ::  do SKA, find result
 ::

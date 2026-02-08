@@ -323,6 +323,70 @@
 ::  call info
 ::
 +$  info  [memo=(unit @uxmemo)]
+::  XX transitive inlining?
+::
+++  try-inline
+  |=  f=*
+  ^-  (unit nomm)
+  ?+    f  ~
+      [p=^ q=*]
+    ?~  h=(try-inline p.f)  ~
+    ?~  t=(try-inline q.f)  ~
+    `[u.h u.t]
+  ::
+      [%0 @]  `f
+      [%1 *]  `f
+      [%2 *]  ~
+  ::
+      [%3 p=*]
+    ?~  p=(try-inline p.f)  ~
+    `[%3 u.p]
+  ::
+      [%4 p=*]
+    ?~  p=(try-inline p.f)  ~
+    `[%4 u.p]
+  ::
+      [%5 p=* q=*]
+    ?~  p=(try-inline p.f)  ~
+    ?~  q=(try-inline q.f)  ~
+    `[%5 u.p u.q]
+  ::
+      [%6 p=* q=* r=*]
+    ?~  p=(try-inline p.f)  ~
+    ?~  q=(try-inline q.f)  ~
+    ?~  r=(try-inline r.f)  ~
+    `[%6 u.p u.q u.r]
+  ::
+      [%7 p=* q=*]
+    ?~  p=(try-inline p.f)  ~
+    ?~  q=(try-inline q.f)  ~
+    `[%7 u.p u.q]
+  ::
+      [%8 p=* q=*]
+    $(f [%7 [?@(p.f 0+0 p.f) 0+1] q.f])
+  ::
+      [%9 *]
+    ~
+  ::
+      [%10 [a=@ don=*] rec=*]
+    ?~  don=(try-inline don.f)  ~
+    ?~  rec=(try-inline rec.f)  ~
+    `[%10 [a.f u.don] u.rec]
+  ::
+      [%11 a=@ p=*]
+    ?~  p=(try-inline p.f)  ~
+    `[%s11 a.f u.p p.f]
+  ::
+      [%11 [a=@ p=*] q=*]
+    ?~  p=(try-inline p.f)  ~
+    ?~  q=(try-inline q.f)  ~
+    `[%d11 [a.f u.p] u.q q.f]
+  ::
+      [%12 p=* q=*]
+    ?~  p=(try-inline p.f)  ~
+    ?~  q=(try-inline q.f)  ~
+    `[%12 u.p u.q]
+  ==
 ::  stateful analysis of bus/fol pair
 ::
 ++  scan
@@ -448,6 +512,16 @@
         (fold-flag flags.s flags.f [| !indi |] ~)
       ::  direct call
       ::
+      =/  fol-new  data.sock.prod.f
+      =/  fol-urge  (urge:source src.prod.f & ?~(list.stack !! list.stack))
+      =.  want.gen  (uni-urge:source want.gen fol-urge)
+      ?^  inlined=(try-inline fol-new)
+        =^  pro=fol-res  gen  fol-loop(fol fol-new, sub prod.s)
+        ?>  =(code.pro u.inlined)
+        :_  gen
+        :+  [%7 code.s code.pro]
+          prod.pro
+        (fold-flag flags.s flags.f flags.pro ~)
       =/  emit-two
         |=  [code-s=nomm code-f=nomm =glob]
         ^-  nomm
@@ -457,9 +531,6 @@
         ?:  ?=(?(%0 %1) -.code-f)  [%ds2 code-s glob]
         [%dus2 code-s code-f glob]
       ::
-      =/  fol-new  data.sock.prod.f
-      =/  fol-urge  (urge:source src.prod.f & ?~(list.stack !! list.stack))
-      =.  want.gen  (uni-urge:source want.gen fol-urge)
       ::  check memo cache
       ::  XX save crash safety?
       ::
@@ -1973,6 +2044,7 @@
 ++  find-args-all
   |=  code=(map bell nomm-1)
   ^-  (map bell meme-args)
+  :: =-  ~&(- -)
   %-  ~(rep by code)
   |=  [[k=bell v=nomm-1] acc=(map bell meme-args)]
   ?:  (~(has by acc) k)  acc

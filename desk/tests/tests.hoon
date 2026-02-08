@@ -9,6 +9,14 @@
   (expect-eq !>(mol) !>((run-nomm-1 sub fol)))
 ::
 |%
+++  test-hoot-add
+  =/  sub  ..add:hoot
+  =/  fol
+    =>  sub  !=
+    (add 3 2)
+  ::
+  (expect-eq-nock-need sub fol)
+::
 ++  test-once-dabl
   =/  sub
     =>  ~
@@ -152,19 +160,19 @@
   (expect-eq-nock-need cor fol)
 ::  XX ~60 seconds to analyze, ~1000 s to run Nomm
 ::
-:: ++  test-ream
-::   =/  sub  hoot
-::   =/  fol
-::     =>  sub  !=
-::     (ream '|=(* +<)')
-::   ::
-::   (expect-eq-nock-need sub fol)
-::
-:: ++  test-mint
-::   =/  sub  hoot
-::   =/  fol
-::     =>  sub  !=
-::     (~(mint ut [%atom %$ ~]) %noun [%dtls $+1])
-::   ::
-:: (expect-eq-nock-need sub fol)
+++  test-ream
+  =/  sub  hoot
+  =/  fol
+    =>  sub  !=
+    (ream '|=(* +<)')
+  ::
+  (expect-eq-nock-need sub fol)
+
+++  test-mint
+  =/  sub  hoot
+  =/  fol
+    =>  sub  !=
+    (~(mint ut [%atom %$ ~]) %noun [%dtls $+1])
+  ::
+(expect-eq-nock-need sub fol)
 --
