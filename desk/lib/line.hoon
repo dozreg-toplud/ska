@@ -326,8 +326,7 @@
       block-loop(gen (hop o.end))
     ::
         %brn
-      =/  s  (r-get s.end)
-      ?-  -.s
+      ?-  (r-get s.end)
         %&  block-loop(gen (hop z.end))
         %|  block-loop(gen (hop o.end))
         *   `gen
