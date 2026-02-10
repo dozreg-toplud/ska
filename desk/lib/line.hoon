@@ -95,7 +95,6 @@
     ^-  tape
     =/  first  (~(got by blocks) direct-entrypoint)
     """
-    _0w1:
     {(render-block-with-indentation first)}
     //
     {(render-blocks-with-indentation (~(del by blocks) direct-entrypoint))}

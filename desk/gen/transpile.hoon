@@ -9,7 +9,7 @@
 =/  sub  ..dec:hoot-zpdt
 =/  fol
   !.  =>  sub  !=
-  (dec 42)
+  (dec 10.000.000)
 ::
 ::  do SKA, find result
 ::

@@ -176,6 +176,11 @@
       =args
   ==
 ::
++$  arg-treeless
+  $~  ~
+  $@  ?(~ %arg %hole %look)
+  [arg-treeless arg-treeless]
+::
 ++  blind
   |=  [l=args r=args]
   ^-  args
@@ -414,9 +419,16 @@
   :: ?>  ?=(%hole n.b)
   ::
   ?.  &(?=(%hole n.a) ?=(%hole n.b))  [%arg ~ ~]
-  ?:  &(?=(~ l.a) ?=(~ l.b))  [%hole ~ (join-args r.a r.b)]
-  ?:  &(?=(~ r.a) ?=(~ r.b))  [%hole (join-args l.a l.b) ~]
-  ::  requirements are both in head and tail: require the common ancestor
+  ?:  &(?=(~ l.a) ?=(~ l.b))  [%hole ~ $(a r.a, b r.b)]
+  ?:  &(?=(~ r.a) ?=(~ r.b))  [%hole $(a l.a, b l.b) ~]
+  ::  condition: a and b require from head and tail only, respectively,
+  ::  or vice versa
+  ::
+  ?.  |(&(?=(~ l.a) ?=(~ r.b)) &(?=(~ r.a) ?=(~ l.b)))
+    ::  reconcilable requirements: cons
+    ::
+    [%hole $(a l.a, b l.b) $(a r.a, b r.b)]
+  ::  require the common ancestor
   ::
   :_  [~ ~]
   %-  need

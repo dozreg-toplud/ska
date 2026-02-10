@@ -6,10 +6,10 @@
 :-  %say  |=  *  :-  %noun
 ::
 |^
-=/  sub  ..add:hoot
+=/  sub  ..dec:hoot
 =/  fol
   !.  =>  sub  !=
-  (add 2 3)
+  (dec 10.000)
 ::
 ::  do SKA, find result
 ::

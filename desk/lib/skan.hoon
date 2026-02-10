@@ -36,6 +36,10 @@
 ::  first pass of the analysis
 ::
 |%
+++  mux
+  |=  n=*
+  ^-  @ux
+  (mug n)
 ::  ignorant sock-anno
 ::
 ++  dunno
@@ -443,7 +447,7 @@
             :-  %redo
             ?-  -.p.res
               %loop  res
-              %melo  [fol=`@ux`(mug p.p.res) sock=`@ux`(mug q.p.res)]
+              %melo  [fol=(mux p.p.res) sock=(mux q.p.res)]
             ==
           .
           ::
@@ -516,6 +520,7 @@
       =/  fol-urge  (urge:source src.prod.f & ?~(list.stack !! list.stack))
       =.  want.gen  (uni-urge:source want.gen fol-urge)
       ?^  inlined=(try-inline fol-new)
+        :: ~&  >  'inlined'
         =^  pro=fol-res  gen  fol-loop(fol fol-new, sub prod.s)
         ?>  =(code.pro u.inlined)
         :_  gen
@@ -2099,7 +2104,7 @@
   =*  call-loop  $
   =.  stack-set  (~(put in stack-set) b)
   =.  stack-list  [b stack-list]
-  ~&  [%enter `@ux`(mug b)]
+  ~&  [%enter (mux b)]
   =;  [prod=sock-anno gen1=_gen]
     ::  fixpoint search done, finalize
     ::
@@ -2120,6 +2125,8 @@
     =/  arg-with-captured  (uni-args args args-capture)
     ::
     =/  meme=meme-args  [b sock.prod map arg-with-captured]
+    :: ~&  [(mux b) arg-with-captured]
+    ~&  [b `arg-treeless`arg-with-captured]
     ?:  (~(has by sccs) b)
       =.  memo.gen  (~(put by memo.gen) b meme)
       =.  memo.gen  (~(uni by memo.gen) melo.gen)
@@ -2158,7 +2165,7 @@
       :: =.  loc.gen1  (~(put by loc.gen1) b [%arg ~ ~])
       :: [prod gen1(loop-calls (~(del in loop-calls.gen1)))]
       !!
-    ~&  [%fixpoint counter `@ux`(mug b)]
+    ~&  [%fixpoint counter (mux b) `arg-treeless`arg-with-captured]
     %=    fixpoint-loop
         loop-calls.gen
       :: (~(put by loop-calls.gen1) b ?:(=(counter 3) [%arg ~ ~] args))
