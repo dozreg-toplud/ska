@@ -2077,6 +2077,39 @@
       ?|  =(k-in k-out)
           &(!=(v-bell k-in) !(~(has in v-set-in) v-bell))
   ==  ==
+::    $loc-with-branches: describes argument usage by a function, with usages
+::    by branches separated out in a recursive structure
+::
+::  This is necessary because we can't know the data usage of a %6 before we
+::  know the data usage before **and** after it, otherwise we would pessimize
+::  branch registerization later on
+::  
++$  loc-with-branches
+  $:
+    ::  data that is guaranteed to be accessed in the codepath we are currently
+    ::  in
+    ::
+    loc=args-locations
+    ::  data that is accessed by the branches
+    ::
+    ::        | loc
+    ::        | =,  branches
+    ::        | code
+    ::       / \
+    ::      /   \
+    ::      |y n|
+    ::      \   /
+    ::       \ /
+    ::        |  also loc
+    ::
+    ::  we need `code` so that we can use it to identify every Nomm 6 in the
+    ::  source, so that later we can registerize the branch correctly in the
+    ::  linearizer
+    ::
+    branches=(list [code=nomm-1-6 y=loc-with-branches n=loc-with-branches])
+  ==
+::
++$  sock-anno-fork  [=sock src=source src-branch=(unit source)]
 ::
 ++  find-args
   |=  code=(map bell nomm-1)
@@ -2090,22 +2123,24 @@
   :: ?>  ~>  %bout.[0 'validity check']  (valid-sccs sccs)
   =|  stack-set=(set bell)
   =|  stack-list=(list bell)
-  =/  sub=sock-anno  [bus.b ~[~[1]]]
+  =|  stack-list-fork=(list bell)
+  =/  sub=sock-anno-fork  [bus.b ~[~[1]] ~]
   =+  ^=  gen
       ^-  $:  memo=(map bell meme-args)
-              loc=args-locations
+              loc-fork=loc-with-branches
               loop-calls=(map bell args)
               melo=(map bell meme-args)  ::  memo inside of a nontrivial scc
+              branch-args=(map (lest nomm-1-6) args)
           ==
-      [memo ~ ~ ~]
+      [memo ~ ~ ~ ~]
   ::
   =<  memo
-  |^  ^-  [sock-anno _gen]
+  |^  ^-  [sock-anno-fork _gen]
   =*  call-loop  $
   =.  stack-set  (~(put in stack-set) b)
   =.  stack-list  [b stack-list]
   ~&  [%enter (mux b)]
-  =;  [prod=sock-anno gen1=_gen]
+  =;  [prod=sock-anno-fork gen1=_gen]
     ::  fixpoint search done, finalize
     ::
     =.  gen  gen1
@@ -2136,11 +2171,11 @@
     =.  melo.gen  (~(put by melo.gen) b meme)
     =?  loc.gen  ?=(^ final-args)  (~(del by loc.gen) b)
     [prod gen]
-  ^-  [sock-anno _gen]
+  ^-  [sock-anno-fork _gen]
   =/  counter=@  0
-  |-  ^-  [sock-anno _gen]
+  |-  ^-  [sock-anno-fork _gen]
   =*  fixpoint-loop  $
-  =;  [prod=sock-anno gen1=_gen]
+  =;  [prod=sock-anno-fork gen1=_gen]
     ::  traversal of nomm and callees done, check if we converged
     ::
     ?~  args-loop-mayb=(~(get by loop-calls.gen1) b)  [prod gen1]
@@ -2174,7 +2209,7 @@
         memo.gen  memo.gen1
         counter   +(counter)
     ==
-  |-  ^-  [prod=sock-anno _gen]
+  |-  ^-  [prod=sock-anno-fork _gen]
   =*  nomm-loop  $
   ?-    n
       [p=^ q=*]
@@ -2186,7 +2221,7 @@
   ::
       [%0 *]
     ?:  =(0 p.n)  [(dunno sub) gen]
-    =/  prod=sock-anno
+    =/  prod=sock-anno-fork
       ?:  =(1 p.n)  sub
       :-  (~(pull so sock.sub) p.n)
       (slot:source src.sub p.n)
@@ -2209,7 +2244,7 @@
       (dunno sub)
     =^  s  gen            nomm-loop(n p.n)
     =?  gen  ?=(^ q.n)  +:nomm-loop(n u.q.n)
-    =^  [args-callee=args prod=sock-anno]  gen
+    =^  [args-callee=args prod=sock-anno-fork]  gen
       ?:  (~(has in stack-set) u.info.n)
         ?~  args-loop-mayb=(~(get by loop-calls.gen) u.info.n)
           =.  loop-calls.gen  (~(put by loop-calls.gen) u.info.n ~)
@@ -2223,7 +2258,7 @@
         [[args.u.meal [prod.u.meal src]] gen]
       ::  analyze through
       ::
-      =^  pro=sock-anno  gen
+      =^  pro=sock-anno-fork  gen
         %=  call-loop
           sub  s(src.prod [~[1] src.prod.s])
           n    (~(got by code) u.info.n)
@@ -2268,8 +2303,8 @@
     ::  and unify that with the usage accumulated so far + %6 condition
     ::  expression argument usage
     ::
-    =/  [y=sock-anno gen-y=_gen]  nomm-loop(n q.n, loc.gen ~)
-    =/  [n=sock-anno gen-n=_gen]  nomm-loop(n r.n, gen gen-y(loc ~))
+    =/  [y=sock-anno-fork gen-y=_gen]  nomm-loop(n q.n, loc.gen ~)
+    =/  [n=sock-anno-fork gen-n=_gen]  nomm-loop(n r.n, gen gen-y(loc ~))
     =.  gen
       [ memo.gen-n
         (args-branches loc.gen loc.gen-y loc.gen-n)
@@ -2319,6 +2354,6 @@
   ::
   ++  update-loc-gen
     |=  [src=source =args]
-    (update-args-loc loc.gen src ?~(stack-list !! stack-list) args)
+    (update-args-loc loc.loc-fork.gen src ?~(stack-list !! stack-list) args)
   --
 --

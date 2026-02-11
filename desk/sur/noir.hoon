@@ -86,6 +86,8 @@
       [%12 p=nomm-1 q=nomm-1]
       [%0 p=@]
   ==
+::
++$  nomm-1-6  _`$>(%6 nomm-1)`[%6 0+0 0+0 0+0]
 ::  formula registration coordinate: path + axis in the core
 ::
 +$  ring  (pair path @)
@@ -174,6 +176,7 @@
       prod=sock
       map=(lest spring:source)
       =args
+      branch-args=(map (lest nomm-1-6) args)
   ==
 ::
 +$  arg-treeless
