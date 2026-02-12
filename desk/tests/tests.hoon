@@ -158,6 +158,21 @@
     foo
   ::
   (expect-eq-nock-need cor fol)
+::
+++  test-curr
+  =/  sub
+    =>  ..add:hoot
+    |=  a=@
+    |=  b=@
+    |=  c=@
+    |=  d=@
+    :(add a b c d)
+  ::
+  =/  fol
+    =>  sub  !=
+    ((((. 1) 2) 3) 4)
+  ::
+  (expect-eq-nock-need sub fol)
 ::  XX ~60 seconds to analyze, ~1000 s to run Nomm
 ::
 :: ++  test-ream
