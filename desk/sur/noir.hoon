@@ -172,12 +172,10 @@
 +$  args  (tree ?(%hole %look %arg))
 +$  args-locations  (map bell args)
 +$  meme-args
-  $:  =bell
-      prod=sock
-      map=(lest spring:source)
-      =args
-      branch-args=(map (lest nomm-1-6) args)
+  $:  =args                         ::  argument usage of the function's subject
+      branch-args=(map @axis args)  ::  argument usage of the branches
   ==
+::  for printing
 ::
 +$  arg-treeless
   $~  ~

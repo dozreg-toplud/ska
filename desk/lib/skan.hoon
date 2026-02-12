@@ -2077,283 +2077,119 @@
       ?|  =(k-in k-out)
           &(!=(v-bell k-in) !(~(has in v-set-in) v-bell))
   ==  ==
-::    $loc-with-branches: describes argument usage by a function, with usages
+::    $args-with-branches: describes argument usage by a function, with usages
 ::    by branches separated out in a recursive structure
 ::
 ::  This is necessary because we can't know the data usage of a %6 before we
 ::  know the data usage before **and** after it, otherwise we would pessimize
 ::  branch registerization later on
 ::  
-+$  loc-with-branches
+++  args-with-branches
+  |-
   $:
     ::  data that is guaranteed to be accessed in the codepath we are currently
     ::  in
     ::
-    loc=args-locations
+    sure=args
     ::  data that is accessed by the branches
     ::
-    ::        | loc
+    ::        | sure
+    ::        |
     ::        | =,  branches
-    ::        | code
+    ::        | position
     ::       / \
     ::      /   \
     ::      |y n|
     ::      \   /
     ::       \ /
-    ::        |  also loc
+    ::        |  also sure
     ::
-    ::  we need `code` so that we can use it to identify every Nomm 6 in the
+    ::  we need `position` so that we can use it to identify every Nomm 6 in the
     ::  source, so that later we can registerize the branch correctly in the
     ::  linearizer
     ::
-    branches=(list [code=nomm-1-6 y=loc-with-branches n=loc-with-branches])
+    branches=(list [position=@axis y=$ n=$])
   ==
 ::
-+$  sock-anno-fork  [=sock src=source src-branch=(unit source)]
++$  spring  spring:source
++$  sock-prep  [=sock prov=(lest spring) prov-branch=(unit (lest spring))]
 ::
 ++  find-args
   |=  code=(map bell nomm-1)
   |=  [b=bell n=nomm-1 memo=(map bell meme-args)]
-  ^-  (map bell meme-args)
+  ^+  memo
   =/  sccs=(map bell (set bell))
     ~>  %bout.[0 'find sccs']
     (find-sccs-all code)
   ::
   :: ~&  %validity-check
   :: ?>  ~>  %bout.[0 'validity check']  (valid-sccs sccs)
-  =|  stack-set=(set bell)
-  =|  stack-list=(list bell)
-  =|  stack-list-fork=(list bell)
-  =/  sub=sock-anno-fork  [bus.b ~[~[1]] ~]
+  =/  sub=sock-prep  [bus.b ~[1] ~]
   =+  ^=  gen
       ^-  $:  memo=(map bell meme-args)
-              loc-fork=loc-with-branches
+              usage=args-with-branches
               loop-calls=(map bell args)
-              melo=(map bell meme-args)  ::  memo inside of a nontrivial scc
-              branch-args=(map (lest nomm-1-6) args)
+              melo=(map bell meme-args)
+              position=@axis
           ==
-      [memo ~ ~ ~ ~]
+      [memo [~ ~] ~ ~ `@`1]
   ::
   =<  memo
-  |^  ^-  [sock-anno-fork _gen]
+  |^  ^-  [sock-prep _gen]
   =*  call-loop  $
-  =.  stack-set  (~(put in stack-set) b)
-  =.  stack-list  [b stack-list]
   ~&  [%enter (mux b)]
-  =;  [prod=sock-anno-fork gen1=_gen]
+  =;  [branch-args=(map @axis args) prod=sock-prep gen1=_gen]
     ::  fixpoint search done, finalize
+    ::  branches were collapsed by this point
+    ::  and captured subject was taken into account
     ::
     =.  gen  gen1
-    =/  map=(lest spring:source)  i.src.prod
-    =/  final-args=(unit args)  (~(get by loc.gen) b)
-    =/  =args  ?~(final-args ~ u.final-args)
-    ::  captured parts of the subject are required as arguments
-    ::
-    =/  args-capture=^args
-      =.  stack-list  [-.stack-list ~]
-      =.  loc.gen  ~
-      =.  loc.gen  (update-loc-gen ~[map] [%arg ~ ~])
-      ?~  loc.gen  ~
-      ?>  ?=([* ~ ~] loc.gen)
-      q.n.loc.gen
-    ::
-    =/  arg-with-captured  (uni-args args args-capture)
-    ::
-    =/  meme=meme-args  [b sock.prod map arg-with-captured]
-    :: ~&  [(mux b) arg-with-captured]
-    ~&  [b `arg-treeless`arg-with-captured]
+    ?^  branches.usage.gen  !!
+    =/  meme=meme-args  [sure.usage.gen branch-args]
     ?:  (~(has by sccs) b)
       =.  memo.gen  (~(put by memo.gen) b meme)
       =.  memo.gen  (~(uni by memo.gen) melo.gen)
-      =?  loc.gen  ?=(^ final-args)  (~(del by loc.gen) b)
       =.  melo.gen  ~
       [prod gen]
     =.  melo.gen  (~(put by melo.gen) b meme)
-    =?  loc.gen  ?=(^ final-args)  (~(del by loc.gen) b)
     [prod gen]
-  ^-  [sock-anno-fork _gen]
   =/  counter=@  0
-  |-  ^-  [sock-anno-fork _gen]
+  |-  ^-  [(map @axis args) sock-prep _gen]
   =*  fixpoint-loop  $
-  =;  [prod=sock-anno-fork gen1=_gen]
-    ::  traversal of nomm and callees done, check if we converged
+  =;  [prod=sock-prep gen1=_gen]
+    ::  collapse branches
+    ::
+    =^  branch-args=(map @axis args)  gen1
+      ^-  [(map @axis args) _gen]
+      =.  gen  gen1
+      stub
+    ::
+    :-  branch-args
+    ^-  [sock-prep _gen]
+    ::  traversal of the function body and its callees done,
+    ::  check if we converged
     ::
     ?~  args-loop-mayb=(~(get by loop-calls.gen1) b)  [prod gen1]
-    =/  =args  (normalize-args (~(gut by loc.gen1) b ~))
-    =/  map=(lest spring:source)  i.src.prod
-    =/  args-capture=^args
-      =.  stack-list  [-.stack-list ~]
-      =.  loc.gen  ~
-      =.  loc.gen  (update-loc-gen ~[map] [%arg ~ ~])
-      ?~  loc.gen  ~
-      ?>  ?=([* ~ ~] loc.gen)
-      q.n.loc.gen
-    ::
-    =/  arg-with-captured  (uni-args args args-capture)
-    ?:  =(u.args-loop-mayb arg-with-captured)
-      [prod gen1(loop-calls (~(del in loop-calls.gen1)))]
-    ?:  =(4 counter)
-      ::  ugly hack: if we didn't converge in three tries we use the entire
-      ::  subject as an argument for the loop calls and for this call
-      ::  XX but why we don't converge in complete:musk?
-      ::
-      :: =.  loc.gen1  (~(put by loc.gen1) b [%arg ~ ~])
-      :: [prod gen1(loop-calls (~(del in loop-calls.gen1)))]
-      !!
-    ~&  [%fixpoint counter (mux b) `arg-treeless`arg-with-captured]
-    %=    fixpoint-loop
-        loop-calls.gen
-      :: (~(put by loop-calls.gen1) b ?:(=(counter 3) [%arg ~ ~] args))
-      (~(put by loop-calls.gen1) b ?:(=(counter 3) !! arg-with-captured))
-    ::
-        memo.gen  memo.gen1
-        counter   +(counter)
-    ==
-  |-  ^-  [prod=sock-anno-fork _gen]
+    stub
+  |-  ^-  [sock-prep _gen]
   =*  nomm-loop  $
-  ?-    n
-      [p=^ q=*]
-    =^  l  gen  nomm-loop(n p.n)
-    =^  r  gen  nomm-loop(n q.n)
-    :_  gen
-    :-  (~(knit so sock.prod.l) sock.prod.r)
-    (cons:source src.prod.l src.prod.r)
-  ::
-      [%0 *]
-    ?:  =(0 p.n)  [(dunno sub) gen]
-    =/  prod=sock-anno-fork
-      ?:  =(1 p.n)  sub
-      :-  (~(pull so sock.sub) p.n)
-      (slot:source src.sub p.n)
-    ::
-    =?  loc.gen  !=(1 p.n)  (update-loc-gen src.prod [%look ~ ~])
-    [prod gen]
-  ::
-      [%1 *]
-    :_  gen
-    [&+p.n [~[~] t.src.sub]]
-  ::
-      [%2 *]
-    ?~  info.n
-      ?~  q.n  !!
-      =^  s  gen  nomm-loop(n p.n)
-      =^  f  gen  nomm-loop(n u.q.n)
-      =.  loc.gen  (update-loc-gen src.prod.s [%arg ~ ~])
-      =.  loc.gen  (update-loc-gen src.prod.f [%arg ~ ~])
-      :_  gen
-      (dunno sub)
-    =^  s  gen            nomm-loop(n p.n)
-    =?  gen  ?=(^ q.n)  +:nomm-loop(n u.q.n)
-    =^  [args-callee=args prod=sock-anno-fork]  gen
-      ?:  (~(has in stack-set) u.info.n)
-        ?~  args-loop-mayb=(~(get by loop-calls.gen) u.info.n)
-          =.  loop-calls.gen  (~(put by loop-calls.gen) u.info.n ~)
-          [[~ (dunno sub)] gen]
-        [[u.args-loop-mayb (dunno sub)] gen]
-      ?^  meme=(~(get by memo.gen) u.info.n)
-        =/  src  src.sub(i (compose:source map.u.meme i.src.sub))
-        [[args.u.meme [prod.u.meme src]] gen]
-      ?^  meal=(~(get by melo.gen) u.info.n)
-        =/  src  src.sub(i (compose:source map.u.meal i.src.sub))
-        [[args.u.meal [prod.u.meal src]] gen]
-      ::  analyze through
-      ::
-      =^  pro=sock-anno-fork  gen
-        %=  call-loop
-          sub  s(src.prod [~[1] src.prod.s])
-          n    (~(got by code) u.info.n)
-          b    u.info.n
-        ==
-      ::
-      :_  gen
-      =/  =args
-        ?^  meal=(~(get by melo.gen) u.info.n)  args.u.meal
-        args:(~(got by memo.gen) u.info.n)
-      ::
-      :-  args
-      ?~  t.src.pro  !!
-      %=  pro
-        t.src  t.t.src.pro
-        i.src  (compose:source i.src.pro i.t.src.pro)
-      ==
-    ::
-    =.  loc.gen  (update-loc-gen src.prod.s args-callee)
-    [prod gen]
-  ::
-      ?([%3 *] [%4 *])
-    =^  p  gen  nomm-loop(n p.n)
-    =.  loc.gen  (update-loc-gen src.prod.p [%arg ~ ~])
-    :_  gen
-    (dunno sub)
-  ::
-      [%5 *]
-    =^  p  gen  nomm-loop(n p.n)
-    =^  q  gen  nomm-loop(n q.n)
-    =.  loc.gen  (update-loc-gen src.prod.p [%arg ~ ~])
-    =.  loc.gen  (update-loc-gen src.prod.q [%arg ~ ~])
-    :_  gen
-    (dunno sub)
-  ::
-      [%6 *]
-    =^  c  gen  nomm-loop(n p.n)
-    ::  only the condition is the true argument here
-    ::
-    =.  loc.gen  (update-loc-gen src.prod.c [%arg ~ ~])
-    ::  We find the "deepest common argument usage" between branches
-    ::  and unify that with the usage accumulated so far + %6 condition
-    ::  expression argument usage
-    ::
-    =/  [y=sock-anno-fork gen-y=_gen]  nomm-loop(n q.n, loc.gen ~)
-    =/  [n=sock-anno-fork gen-n=_gen]  nomm-loop(n r.n, gen gen-y(loc ~))
-    =.  gen
-      [ memo.gen-n
-        (args-branches loc.gen loc.gen-y loc.gen-n)
-        loop-calls.gen-n
-        melo.gen-n
-      ]
-    ::
-    =/  int=sock  (~(purr so sock.y) sock.n)
-    =/  uni-src=source
-      =,  source
-      (uni (mask src.y cape.int) (mask src.n cape.int))
-    ::
-    :_  gen
-    [int uni-src]
-  ::
-      [%7 *]
-    =^  p  gen  nomm-loop(n p.n)
-    nomm-loop(n q.n, sub prod.p)
-  ::
-      [%10 *]
-    =^  rec  gen  nomm-loop(n q.n)
-    =^  don  gen  nomm-loop(n q.p.n)
-    ::  edit site needs to exist for safe arg disassembly
-    ::
-    =/  edit-site-src  (slot:source src.prod.rec p.p.n)
-    =?  loc.gen  !=(1 p.p.n)  (update-loc-gen edit-site-src [%look ~ ~])
-    :_  gen
-    :-  (~(darn so sock.prod.rec) p.p.n sock.prod.don)
-    (edit:source src.prod.rec p.p.n src.prod.don)
-  ::
-      [%11 *]
-    ?@  p.n  nomm-loop(n q.n)
-    :: ~?  &(=(%spot p.p.n) =(0x2a97.a282 (mug b)))
-    ::   ((soft spot) +.q.p.n)
-    ::
-    =.  gen  +:nomm-loop(n q.p.n)
-    nomm-loop(n q.n)
-  ::
-      [%12 *]
-    =^  p  gen  nomm-loop(n p.n)
-    =^  q  gen  nomm-loop(n q.n)
-    =.  loc.gen  (update-loc-gen src.prod.p [%arg ~ ~])
-    =.  loc.gen  (update-loc-gen src.prod.q [%arg ~ ~])
-    :_  gen
-    (dunno sub)
-  ==  
+  stub
   ::
   ++  update-loc-gen
-    |=  [src=source =args]
-    (update-args-loc loc.loc-fork.gen src ?~(stack-list !! stack-list) args)
+    |=  [prov=(list spring) =args]
+    ^+  args
+    ?:  =([~ ~] prov)  sure.usage.gen
+    %+  uni-args  sure.usage.gen
+    %+  roll  prov
+    |=  [pin=spring acc=^args]
+    ?:  =(~ pin)  acc
+    %+  uni-args  acc
+    |-  ^-  ^args
+    ?:  =(~ pin)   ~
+    ?:  =(~ args)  ~
+    ?@  pin  (push-args args pin)
+    %+  uni-args
+      $(pin -.pin, args (hed-args args))
+    $(pin +.pin, args (tel-args args))
   --
 --
