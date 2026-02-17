@@ -926,8 +926,7 @@
     :: ~?  =(55.296 (lent i.don))  (spring-diff &2.i.don &3.i.don)
     :: ~>  %bout.[0 %edit]
     :_  t.rec
-    =/  check=?  (lth (mul (lent rec) (lent don)) 100)
-    (mul-springs i.rec i.don (edit-spring ax) check)
+    (mul-springs i.rec i.don (edit-spring ax) &)
   ::
   ++  hed
     |=  pin=spring
