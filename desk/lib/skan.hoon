@@ -19,7 +19,6 @@
 ::    
 =*  stub  ~|(%stub !!)
 =*  mure  mure:vi
-=*  one  `@`1
 ::  Wing for compile-time branching in printing routines
 ::
 =/  verb  ~
@@ -2108,15 +2107,18 @@
     ::  source, so that later we can registerize the branch correctly in the
     ::  linearizer
     ::
-    branches=(list [position=@axis y=$ n=$])
+    ::  further `args` are data usage of the subject at %6 site
+    ::
+    branches=(list [position=@axis sub-prov=(lest spring) y=$ n=$])
   ==
 ::
 +$  spring  spring:source
-+$  sock-prep  [=sock prov=(lest spring) prov-branch=(unit (lest spring))]
++$  sock-prep  [=sock prov=(lest spring)]
 ++  dunno-prep
   |=  s=sock-prep
   ^+  s
-  [|+~ ~[~] ?~(prov-branch.s ~ `~[~])]
+  :: [|+~ ~[~] ?~(prov-branch.s ~ `~[~])]
+  [|+~ ~[~]]
 ::
 ++  cons-prov
   |=  [a=(lest spring) b=(lest spring)]
@@ -2137,20 +2139,20 @@
     (turn a push-spring-hed:source)
   (turn b push-spring-tel:source)
 ::
-++  app-branch
-  |*  [g=$-((lest spring) *) a=(unit (lest spring))]
-  ^-  (unit _$:g)
-  (bind a g)
-::
-++  app-branch-2
-  |*  $:  g=$-((pair (lest spring) (lest spring)) *)
-          a=(unit (lest spring))
-          b=(unit (lest spring))
-      ==
-  ^-  (unit _$:g)
-  ?:  &(?=(^ a) ?=(^ b))  `(g u.a u.b)
-  ?>  &(?=(~ a) ?=(~ b))
-  ~
+:: ++  app-branch
+::   |*  [g=$-((lest spring) *) a=(unit (lest spring))]
+::   ^-  (unit _$:g)
+::   (bind a g)
+:: ::
+:: ++  app-branch-2
+::   |*  $:  g=$-((pair (lest spring) (lest spring)) *)
+::           a=(unit (lest spring))
+::           b=(unit (lest spring))
+::       ==
+::   ^-  (unit _$:g)
+::   ?:  &(?=(^ a) ?=(^ b))  `(g u.a u.b)
+::   ?>  &(?=(~ a) ?=(~ b))
+::   ~
 ::
 ++  slot-prov
   |=  [prov=(lest spring) ax=@]
@@ -2163,6 +2165,16 @@
   =/  check=?  (lth (mul (lent rec) (lent don)) 100)
   (mul-springs:source rec don (edit-spring:source ax) check)
 ::
+++  uni-prov
+  |=  [a=(lest spring) b=(lest spring)]
+  ^-  (lest spring)
+  -:(uni:source ~[a] ~[b])
+::
+++  mask-prov
+  |=  [prov=(lest spring) cap=cape]
+  ^-  (lest spring)
+  -:(mask:source ~[prov] cap)
+::
 ++  find-args
   |=  code=(map bell nomm-1)
   |=  [b=bell n=nomm-1 memo=(map bell meme-args)]
@@ -2173,19 +2185,21 @@
   ::
   :: ~&  %validity-check
   :: ?>  ~>  %bout.[0 'validity check']  (valid-sccs sccs)
+  =|  stack-set=(set bell)
   =/  sub=sock-prep  [bus.b ~[1] ~]
   =+  ^=  gen
       ^-  $:  memo=(map bell meme-args)
               usage=args-with-branches
               loop-calls=(map bell args)
               melo=(map bell meme-args)
-              position=@axis
           ==
-      [memo [~ ~] ~ ~ `@`1]
+      [memo [~ ~] ~ ~]
   ::
+  =/  position=@axis  `@`1
   =<  memo
   |^  ^+  gen
   =*  call-loop  $
+  =.  stack-set  (~(put in stack-set) b)
   ~&  [%enter (mux b)]
   =;  [branch-args=(map @axis args) gen1=_gen]
     ::  fixpoint search done, finalize
@@ -2227,84 +2241,140 @@
   =*  nomm-loop  $
   ?-  n
       [p=^ q=*]
-    =^  l  gen  nomm-loop(n p.n)
-    =^  r  gen  nomm-loop(n q.n)
+    =^  l  gen  nomm-loop(n p.n, position (peg position 2))
+    =^  r  gen  nomm-loop(n q.n, position (peg position 3))
     :_  gen
-    :+  (~(knit so sock.prod.l) sock.prod.r)
-      (cons-prov prov.prod.l prov.prod.r)
-    (app-branch-2 cons-prov prov-branch.prod.l prov-branch.prod.r)
+    :-  (~(knit so sock.prod.l) sock.prod.r)
+    (cons-prov prov.prod.l prov.prod.r)
   ::
       [%0 *]
     ?:  =(0 p.n)  [(dunno-prep sub) gen]
     =/  prod=sock-prep
       ?:  =(1 p.n)  sub
-      :+  (~(pull so sock.sub) p.n)
-        (slot-prov prov.sub p.n)
-      (app-branch (curr slot-prov p.n) prov-branch.sub)
+      :-  (~(pull so sock.sub) p.n)
+      (slot-prov prov.sub p.n)
     ::
     =?  sure.usage.gen  !=(1 p.n)  (update-loc-gen prov.prod look+~+~)
     [prod gen]
   ::
       [%1 *]
     :_  gen
-    [&+p.n ~[~] ?~(prov-branch.sub ~ `~[~])]
+    [&+p.n ~[~]]
   ::
       [%2 *]
-    stub
+    ?~  info.n
+      ?~  q.n  !!
+      ?>  .=  6   =<  +  !.  =>  n  !=  p
+      ?>  .=  29  =<  +  !.  =>  n  !=  u.q
+      =^  s  gen  nomm-loop(n p.n, position (peg position 6))
+      =^  f  gen  nomm-loop(n u.q.n, position (peg position 29))
+      =.  sure.usage.gen  (update-loc-gen prov.prod.s [%arg ~ ~])
+      =.  sure.usage.gen  (update-loc-gen prov.prod.f [%arg ~ ~])
+      :_  gen
+      (dunno-prep sub)
+    =^  s  gen  nomm-loop(n p.n, position (peg position 6))
+    ?>  .=  6  !.  =>  n  !=  p
+    =?  gen  ?=(^ q.n)
+      ?>  .=  29  =<  +  !.  =>  n  !=  u.q
+      +:nomm-loop(n u.q.n)
+    ::
+    =^  args-callee=args  gen
+      ^-  [args _gen]
+      ?:  (~(has in stack-set) u.info.n)
+        ?^  args-loop=(~(get by loop-calls.gen) u.info.n)  [u.args-loop gen]
+        =.  loop-calls.gen  (~(put by loop-calls.gen) u.info.n ~)
+        [~ gen]
+      ?^  meme=(~(get by memo.gen) u.info.n)  [args.u.meme gen]
+      ?^  meal=(~(get by melo.gen) u.info.n)  [args.u.meal gen]
+      =.  gen
+        %=  call-loop
+          sub  s(prov.prod ~[1])
+          n    (~(got by code) u.info.n)
+          b    u.info.n
+        ==
+      ::
+      :_  gen
+      ?^  meal=(~(get by melo.gen) u.info.n)  args.u.meal
+      args:(~(got by memo.gen) u.info.n)
+    ::
+    =.  sure.usage.gen  (update-loc-gen prov.prod.s args-callee)
+    [(dunno-prep sub) gen]
   ::
       ?([%3 *] [%4 *])
-    =^  p  gen  nomm-loop(n p.n)
+    =^  p  gen  nomm-loop(n p.n, position (peg position 3))
     =.  sure.usage.gen  (update-loc-gen prov.prod.p [%arg ~ ~])
     :_  gen
     (dunno-prep sub)
   ::
       [%5 *]
-    =^  p  gen  nomm-loop(n p.n)
-    =^  q  gen  nomm-loop(n q.n)
+    =^  p  gen  nomm-loop(n p.n, position (peg position 6))
+    =^  q  gen  nomm-loop(n q.n, position (peg position 7))
     =.  sure.usage.gen  (update-loc-gen prov.prod.p [%arg ~ ~])
     =.  sure.usage.gen  (update-loc-gen prov.prod.q [%arg ~ ~])
     :_  gen
     (dunno-prep sub)
   ::
       [%6 *]
-    stub
+    =^  c  gen  nomm-loop(n p.n, position (peg position 6))
+    =.  sure.usage.gen  (update-loc-gen prov.prod.c [%arg ~ ~])
+    =/  [y=sock-prep gen-y=_gen]
+      %=  nomm-loop
+        n          q.n
+        prov.sub   ~[1]
+        position   (peg position 14)
+        usage.gen  [~ ~]
+      ==
+    ::
+    =/  [n=sock-prep gen-n=_gen]
+      %=  nomm-loop
+        n          r.n
+        prov.sub   ~[1]
+        position   (peg position 15)
+        gen        gen-y(usage [~ ~])
+      ==
+    ::
+    =/  new-branch-info     [position prov.sub usage.gen-y usage.gen-n]
+    =.  branches.usage.gen  [new-branch-info branches.usage.gen]
+    =.  gen  gen-n(usage usage.gen)
+    =/  int=sock  (~(purr so sock.y) sock.n)
+    =/  uni-prov=(lest spring)
+      (uni-prov (mask-prov prov.y cape.int) (mask-prov prov.n cape.int))
+    ::
+    :_  gen
+    [int uni-prov]
   ::
       [%7 *]
-    =^  p  gen  nomm-loop(n p.n)
-    nomm-loop(n q.n, sub prod.p)
+    =^  p  gen  nomm-loop(n p.n, position (peg position 6))
+    nomm-loop(n q.n, sub prod.p, position (peg position 7))
   ::
       [%10 *]
-    =^  rec  gen  nomm-loop(n q.n)
-    =^  don  gen  nomm-loop(n q.p.n)
+    =^  rec  gen  nomm-loop(n q.n, position (peg position 7))
+    =^  don  gen  nomm-loop(n q.p.n, position (peg position 13))
     ::  edit site needs to exist for safe arg disassembly
     ::
     =/  edit-site-src  (slot-prov prov.prod.rec p.p.n)
     =?  sure.usage.gen  !=(1 p.n)  (update-loc-gen edit-site-src look+~+~)
     :_  gen
-    :+  (~(darn so sock.prod.rec) p.p.n sock.prod.don)
-      (edit-prov p.p.n prov.prod.rec prov.prod.don)
-    =*  g  (cury edit-prov p.p.n)
-    (app-branch-2 g prov-branch.prod.rec prov-branch.prod.don)
+    :-  (~(darn so sock.prod.rec) p.p.n sock.prod.don)
+    (edit-prov p.p.n prov.prod.rec prov.prod.don)
   ::
       [%11 *]
-    ?@  p.n  nomm-loop(n q.n)
-    =.  gen  +:nomm-loop(n q.p.n)
-    nomm-loop(n q.n)
+    ?@  p.n  nomm-loop(n q.n, position (peg position 14))
+    =.  gen  +:nomm-loop(n q.p.n, position (peg position 13))
+    nomm-loop(n q.n, position (peg position 14))
   ::
       [%12 *]
-    =^  p  gen  nomm-loop(n p.n)
-    =^  q  gen  nomm-loop(n q.n)
+    =^  p  gen  nomm-loop(n p.n, position (peg position 6))
+    =^  q  gen  nomm-loop(n q.n, position (peg position 7))
     =.  sure.usage.gen  (update-loc-gen prov.prod.p [%arg ~ ~])
     =.  sure.usage.gen  (update-loc-gen prov.prod.q [%arg ~ ~])
     :_  gen
     (dunno-prep sub)
   ==
   ::
-  ++  update-loc-gen
+  ++  distribute-args
     |=  [prov=(list spring) =args]
     ^+  args
-    ?:  =([~ ~] prov)  sure.usage.gen
-    %+  uni-args  sure.usage.gen
     %+  roll  prov
     |=  [pin=spring acc=^args]
     ?:  =(~ pin)  acc
@@ -2316,5 +2386,11 @@
     %+  uni-args
       $(pin -.pin, args (hed-args args))
     $(pin +.pin, args (tel-args args))
+  ::
+  ++  update-loc-gen
+    |=  [prov=(list spring) =args]
+    ^+  args
+    ?:  =([~ ~] prov)  sure.usage.gen
+    (uni-args sure.usage.gen (distribute-args prov args))
   --
 --
