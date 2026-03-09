@@ -2032,10 +2032,30 @@
       (~(uni in acc) members)
     ==
   --
+::  shape will be normalized to shape-final when the function prepass is
+::  finalized, as %data and %look will be the same thing from the POV of the
+::  linearizer
 ::
-++  shape  cape
+::  we need shape with `%look` case when we are in the middle of a prepass to
+::  not pessimize the registerization, so e.g. [%7 [%0 A] ...] would not have
+::  an effect on registerization if axis A is required by (...). [%0 1] is a
+::  trivial example of that.
 ::
-+$  meme-args  [=shape branches-shapes=(map @axis shape)]
+++  shape-final  cape
+::
+++  shape
+  $~  %nope
+  $@  ?(%nope %data %look)
+  [shape shape]
+::
++$  meme-args  [=shape-final branches-shapes=(map @axis shape-final)]
+::
+++  shape-finalize
+  |=  s=shape
+  ^-  shape-final
+  ?:  ?=(%nope s)  |
+  ?@  s  &
+  [$(s -.s) $(s +.s)]
 ::
 ++  distribute-shapes
   |=  [prov=(list spring) =shape]
@@ -2045,8 +2065,8 @@
   ?:  =(~ pin)  acc
   %+  uni-shape  acc
   |-  ^+  shape
-  ?:  =(~ pin)    |
-  ?:  =(| shape)  |
+  ?:  =(~ pin)        %nope
+  ?:  =(%nope shape)  %nope
   ?@  pin  (push-shape shape pin)
   %+  uni-shape
     $(pin -.pin, shape (hed-shape shape))
@@ -2055,12 +2075,39 @@
 ++  uni-shape
   |=  [a=shape b=shape]
   ^-  shape
-  (~(uni ca a) b)
+  ?:  =(a b)  a
+  ?-   a
+      %data  %data
+      %nope  b
+  ::
+      %look
+    ?:  ?=(%data b)  %data
+    ?@  b  %look
+    b
+  ::
+      ^
+    ?-    b
+        %data  %data
+        %nope  a
+        %look  a
+    ::
+        ^
+      =/  l  $(a -.a, b -.b)
+      =/  r  $(a +.a, b +.b)
+      (con-shape l r)
+    ==
+  ==
 ::
 ++  push-shape
   |=  [s=shape axis=@]
   ^-  shape
-  (~(pat ca s) axis)
+  ?:  ?=(%nope s)  %nope
+  |-  ^-  shape
+  ?:  =(1 axis)  s
+  ?-  (cap axis)
+    %2  [$(axis (mas axis)) %nope]
+    %3  [%nope $(axis (mas axis))]
+  ==
 ::
 ++  hed-shape
   |=  s=shape
@@ -2071,6 +2118,27 @@
   |=  s=shape
   ^-  shape
   ?@(s s +.s)
+::
+++  con-shape
+  |=  [l=shape r=shape]
+  ^-  shape
+  =*  lr  +<
+  ?:  &(?=(%nope l) ?=(%nope r))  %nope
+  ::  if one side is a %look and another is not %nope, we can remove %look
+  ::
+  ?:  &(?=(%look r) !?=(%nope l))  [l %nope]
+  ?:  &(?=(%look l) !?=(%nope r))  [%nope r]
+  lr
+::
+++  slot-shape
+  |=  [s=shape ax=@]
+  ^-  shape
+  ?<  =(0 ax)
+  ?@  s  s
+  ?-  (cap ax)
+    %2  $(s -.s, ax (mas ax))
+    %3  $(s +.s, ax (mas ax))
+  ==
 ::
 ++  find-args-all
   |=  code=(map bell nomm-1)
@@ -2113,11 +2181,71 @@
 ::
 +$  spring  spring:source
 ::  partial noun for the prepass
-::    shape: data shape of the noun (init'ed from the inverse of cape)
 ::    prov:  provenance from the function's subject (for capture)
-::    brans: provenance from the subjects of the branches upstream
+::    bran: provenance from the subjects of the branches upstream
 ::
-+$  sock-prep  [=shape prov=(lest spring) brans=(map @axis (lest spring))]
++$  sock-prep  [prov=(lest spring) bran=(map @axis (lest spring))]
+::
+++  dunno-prep  [~[~] ~]
+::
+++  cons-prov
+  |=  [a=(lest spring) b=(lest spring)]
+  ^-  (lest spring)
+  =/  out=(lest spring)  (mul-springs:source a b cons-spring:source |)
+  =/  len-a  (lent a)
+  =/  len-b  (lent b)
+  =/  len-out  (lent out)
+  ?:  (lte len-out (add len-a len-b))  out
+  ?:  (lte len-out 9)  out
+  =-  ?~(- ~[~] -)
+  ?:  =(~[~] a)
+    ?:  =(~[~] b)  ~
+    (turn b push-spring-tel:source)
+  ?:  =(~[~] b)
+    (turn a push-spring-hed:source)
+  %+  weld
+    (turn a push-spring-hed:source)
+  (turn b push-spring-tel:source)
+::
+++  slot-prov
+  |=  [prov=(lest spring) ax=@]
+  ^-  (lest spring)
+  (turn-spring:source prov (slot-spring:source ax) %slot-prov)
+::
+++  edit-prov
+  |=  [ax=@ rec=(lest spring) don=(lest spring)]
+  ^-  (lest spring)
+  =/  check=?  (lth (mul (lent rec) (lent don)) 100)
+  (mul-springs:source rec don (edit-spring:source ax) check)
+::
+++  uni-prov
+  |=  [a=(lest spring) b=(lest spring)]
+  ^-  (lest spring)
+  -:(uni:source ~[a] ~[b])
+::
+++  mask-prov
+  |=  [prov=(lest spring) cap=cape]
+  ^-  (lest spring)
+  -:(mask:source ~[prov] cap)
+::
+++  app-brans
+  |=  g=$-((lest spring) (lest spring))
+  |=  brans=(map @axis (lest spring))
+  ^-  (map @axis (lest spring))
+  (~(run by brans) g)
+::
+++  app-brans-2
+  |=  g=$-((pair (lest spring) (lest spring)) (lest spring))
+  |=  [a=(map @axis (lest spring)) b=(map @axis (lest spring))]
+  ^-  (map @axis (lest spring))
+  =/  all-keys  (~(uni in ~(key by a)) ~(key by b))
+  %-  ~(rep in all-keys)
+  |=  [k=@axis acc=(map @axis (lest spring))]
+  ^+  acc
+  =/  v-a=(lest spring)  (~(gut by a) k ~[~])
+  =/  v-b=(lest spring)  (~(gut by b) k ~[~])
+  (~(put by acc) k (g v-a v-b))
+
 ++  find-args
   |=  code=(map bell nomm-1)
   |=  [b=bell n=nomm-1 memo=(map bell meme-args)]
@@ -2129,7 +2257,7 @@
   :: ~&  %validity-check
   :: ?>  ~>  %bout.[0 'validity check']  (valid-sccs sccs)
   =|  stack-set=(set bell)
-  =/  sub=sock-prep  [| ~[1] ~]
+  =/  sub=sock-prep  [~[1] ~]
   =+  ^=  gen
       ^-  $:  memo=_memo
               ::  data usage accumulated in a given function's body
@@ -2142,7 +2270,7 @@
               ::
               melo=_memo
           ==
-      [memo [| ~] ~ ~]
+      [memo [%nope ~] ~ ~]
   ::
   =/  position=@axis  `@`1
   =<  memo
@@ -2157,7 +2285,10 @@
     ::
     =.  gen  gen1
     ?^  branches.use.gen  !!
-    =/  meme=meme-args  [sure.use.gen branches-shapes]
+    =/  meme=meme-args
+      =*  sf  shape-finalize
+      [(sf sure.use.gen) (~(run by branches-shapes) sf)]
+    ::
     ?:  (~(has by sccs) b)
       =.  memo.gen  (~(put by memo.gen) b meme)
       =.  memo.gen  (~(uni by memo.gen) melo.gen)
@@ -2179,7 +2310,7 @@
     ^+  gen
     ::  subject capture by the result
     ::
-    =.  sure.use.gen1  (update-loc-gen prov.prod &)
+    =.  sure.use.gen1  (update-loc-gen prov.prod %data)
     ::  check if we converged
     ::
     ?~  args-loop-mayb=(~(get by loop-calls.gen1) b)  gen1
@@ -2188,37 +2319,72 @@
   =*  nomm-loop  $
   ?-  n
       [p=^ q=*]
-    stub
+    =^  l  gen  nomm-loop(n p.n, position (peg position 2))
+    =^  r  gen  nomm-loop(n q.n, position (peg position 3))
+    :_  gen
+    :-  (cons-prov prov.prod.l prov.prod.r)
+   ((app-brans-2 cons-prov) bran.prod.l bran.prod.r) 
   ::
       [%0 *]
-    stub
+    ?:  =(0 p.n)  [dunno-prep gen]
+    =/  prod=sock-prep
+      ?:  =(1 p.n)  sub
+      :-  (slot-prov prov.sub p.n)
+      ((app-brans |=((lest spring) (slot-prov +< p.n))) bran.sub)
+    ::
+    =?  sure.use.gen  !=(1 p.n)  (update-loc-gen prov.prod %look)
+    [prod gen]
   ::
       [%1 *]
-    stub
+    [dunno-prep gen]
   ::
       [%2 *]
     stub
   ::
       ?([%3 *] [%4 *])
-    stub
+    =^  p  gen  nomm-loop(n p.n, position (peg position 3))
+    =.  sure.use.gen  (update-loc-gen prov.prod.p %data)
+    [dunno-prep gen]
   ::
       [%5 *]
-    stub
+    =^  p  gen  nomm-loop(n p.n, position (peg position 6))
+    =^  q  gen  nomm-loop(n q.n, position (peg position 7))
+    =.  sure.use.gen  (update-loc-gen prov.prod.p %data)
+    =.  sure.use.gen  (update-loc-gen prov.prod.q %data)
+    [dunno-prep gen]
   ::
       [%6 *]
     stub
   ::
       [%7 *]
-    stub
+    =^  p  gen  nomm-loop(n p.n, position (peg position 6))
+    nomm-loop(n q.n, sub prod.p, position (peg position 7))
   ::
       [%10 *]
-    stub
+    =^  rec  gen  nomm-loop(n q.n, position (peg position 7))
+    =^  don  gen  nomm-loop(n q.p.n, position (peg position 13))
+    ::  edit site needs to exist for safe arg disassembly
+    ::
+    =/  edit-site-src  (slot-prov prov.prod.rec p.p.n)
+    =?  sure.use.gen  !=(1 p.n)  (update-loc-gen edit-site-src %look)
+    :_  gen
+    :-  (edit-prov p.p.n prov.prod.rec prov.prod.don)
+    =*  g
+      |=  [a=(lest spring) b=(lest spring)]
+      (edit-prov p.p.n a b)
+    ::
+    ((app-brans-2 g) bran.prod.rec bran.prod.don)
   ::
-      [%11 *]
-    stub
+      [%11 *]  ::  XX relocation boundary hints
+    =?  gen  ?=(^ p.n)  +:nomm-loop(n q.p.n, position (peg position 13))
+    nomm-loop(n q.n, position (peg position 14))
   ::
       [%12 *]
-    stub
+    =^  p  gen  nomm-loop(n p.n, position (peg position 6))
+    =^  q  gen  nomm-loop(n q.n, position (peg position 7))
+    =.  sure.use.gen  (update-loc-gen prov.prod.p %data)
+    =.  sure.use.gen  (update-loc-gen prov.prod.q %data)
+    [dunno-prep gen]
   ::
   ==
   ::
