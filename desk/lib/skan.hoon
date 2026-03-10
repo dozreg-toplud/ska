@@ -2057,20 +2057,28 @@
   ?@  s  &
   [$(s -.s) $(s +.s)]
 ::
+++  unfinal  ::  XX just store both
+  |=  s=shape-final
+  ^-  shape
+  ?@  s  ?:(s %data %nope)
+  [$(s -.s) $(s +.s)]
+::
+++  uni-shape-map
+  |=  [a=(map @uxshape shape) b=(map @uxshape shape)]
+  ^-  (map @uxshape shape)
+  %-  (~(uno by a) b)
+  |=  [k=* v1=shape v2=shape]
+  (uni-shape v1 v2)
+::
 ++  distribute-shapes
-  |=  [prov=(list spring) =shape]
-  ^+  shape
-  %+  roll  prov
-  |=  [pin=spring acc=^shape]
-  ?:  =(~ pin)  acc
-  %+  uni-shape  acc
-  |-  ^+  shape
-  ?:  =(~ pin)        %nope
-  ?:  =(%nope shape)  %nope
-  ?@  pin  (push-shape shape pin)
-  %+  uni-shape
-    $(pin -.pin, shape (hed-shape shape))
-  $(pin +.pin, shape (tel-shape shape))
+  |=  [=form =shape]
+  ^-  (map @uxshape ^shape)
+  ?^  -.form
+    %+  uni-shape-map
+      $(form -.form, shape (hed-shape shape))
+    $(form +.form, shape (tel-shape shape))
+  ?.  ?=(%reg -.form)  ~
+  [[idx.form (push-shape shape ax.form)] ~ ~]
 ::
 ++  uni-shape
   |=  [a=shape b=shape]
@@ -2171,82 +2179,94 @@
       ?|  =(k-in k-out)
           &(!=(v-bell k-in) !(~(has in v-set-in) v-bell))
   ==  ==
+::
+::  Main ideas:
+::    - global registry of noun shapes to be discovered
+::    - subject `form` is a tree with either refs to the registry or some known
+::      shapes
+::    - in %6 we record the current form of the subject, + the shapes discovered
+::      by the branches. Their exclusive shape requirements will be formulated
+::      once we walked the entire function body
+::    - union of forms is a brand new shape in the global registry unless the
+::      union is trivial
+::
+::  Current stubs:
+::    - branch collapse: from deepest branches outward:
+::      - subtract `sure` from `y` and `n`, join the remainders.
+::      - sure += join
+::    - convergence check:
+::      - just a fixpoint search on the shape of the data reqs of the function?
+::    - cons: just cons the forms
+::    - %0: slot of the form or %boom if 0 or the shape is guaranteed to be incompatible
+::    - %1: produces %imm
+::    - %2: produces new shape (%reg case). Nothing interesting other than memo/
+::          melo/loop checks
+::    - %3/%4/%5: produce %atom
+::    - %6 form: a form is kinda like provenance, so a union is necessary:
+::      - %boom  |  X     -> X
+::      - %atom  |  %atom -> %atom
+::      - %imm m | imm n  -> %imm m iff m == n
+::      - %imm @ | %atom  -> %atom
+::      -              _  -> fresh %reg
+::      (keeping these simple is probably best, no imm dissasembly and such)
+::
+::    - %7/%10/%12 - trivial kinda
+::    - %11: treat crash relocation boundary by getting a new %reg for the hinted
+::           formula (kinda like assembling a need into a single register with +aver
+::           but in opposite direction
+::
++$  form
+  $^  [form form]
+  $%  [%reg idx=@uxshape ax=@axis]
+      [%imm p=*]
+      [%atom ~]
+      [%boom ~]
+  ==
 ::  data usage by a function, with lazy branches
 ::
 ++  usage-lazy
   |-
-  $:  sure=shape
-      branches=(list [where=@axis y=$ n=$])
+  $:  sure=(map @uxshape shape)  ::  0x0 is for the function's subject
+      ::  `form` describes the subject of the %6 in question, `y` and `n`
+      ::  contain shapes discovered/asserted by the branches
+      ::
+      branches=(list [where=@axis =form y=$ n=$])
   ==
 ::
 +$  spring  spring:source
 ::  partial noun for the prepass
-::    prov:  provenance from the function's subject (for capture)
-::    bran: provenance from the subjects of the branches upstream
 ::
-+$  sock-prep  [prov=(lest spring) bran=(map @axis (lest spring))]
++$  sock-prep  form
 ::
-++  dunno-prep  [~[~] ~]
-::
-++  cons-prov
-  |=  [a=(lest spring) b=(lest spring)]
-  ^-  (lest spring)
-  =/  out=(lest spring)  (mul-springs:source a b cons-spring:source |)
-  =/  len-a  (lent a)
-  =/  len-b  (lent b)
-  =/  len-out  (lent out)
-  ?:  (lte len-out (add len-a len-b))  out
-  ?:  (lte len-out 9)  out
-  =-  ?~(- ~[~] -)
-  ?:  =(~[~] a)
-    ?:  =(~[~] b)  ~
-    (turn b push-spring-tel:source)
-  ?:  =(~[~] b)
-    (turn a push-spring-hed:source)
-  %+  weld
-    (turn a push-spring-hed:source)
-  (turn b push-spring-tel:source)
-::
-++  slot-prov
-  |=  [prov=(lest spring) ax=@]
-  ^-  (lest spring)
-  (turn-spring:source prov (slot-spring:source ax) %slot-prov)
-::
-++  edit-prov
-  |=  [ax=@ rec=(lest spring) don=(lest spring)]
-  ^-  (lest spring)
-  =/  check=?  (lth (mul (lent rec) (lent don)) 100)
-  (mul-springs:source rec don (edit-spring:source ax) check)
-::
-++  uni-prov
-  |=  [a=(lest spring) b=(lest spring)]
-  ^-  (lest spring)
-  -:(uni:source ~[a] ~[b])
-::
-++  mask-prov
-  |=  [prov=(lest spring) cap=cape]
-  ^-  (lest spring)
-  -:(mask:source ~[prov] cap)
-::
-++  app-brans
-  |=  g=$-((lest spring) (lest spring))
-  |=  brans=(map @axis (lest spring))
-  ^-  (map @axis (lest spring))
-  (~(run by brans) g)
-::
-++  app-brans-2
-  |=  g=$-((pair (lest spring) (lest spring)) (lest spring))
-  |=  [a=(map @axis (lest spring)) b=(map @axis (lest spring))]
-  ^-  (map @axis (lest spring))
-  =/  all-keys  (~(uni in ~(key by a)) ~(key by b))
-  %-  ~(rep in all-keys)
-  |=  [k=@axis acc=(map @axis (lest spring))]
-  ^+  acc
-  =/  v-a=(lest spring)  (~(gut by a) k ~[~])
-  =/  v-b=(lest spring)  (~(gut by b) k ~[~])
-  (~(put by acc) k (g v-a v-b))
-
 ++  find-args
+  =/  axe-2-p=@  6
+  =/  axe-2-uq=@
+    ;;  @  =<  +  !.
+    =>  `nomm-1`[%2 *nomm-1 `*nomm-1 ~]
+    ?>  ?=(%2 -)
+    ?@  q  !!
+    ;;  [%0 @]  !=
+    u.q
+  ::
+  =/  axe-11-qp=@
+    ;;  @  =<  +  !.
+    =>  `nomm-1`[%11 [0 *nomm-1] *nomm-1 ~]
+    ?>  ?=(%11 -)
+    ?@  p  !!
+    ;;  [%0 @]  !=
+    q.p
+  ::
+  =/  axe-11-q=@
+    ;;  @  =<  +  !.
+    =>  `nomm-1`[%11 0 *nomm-1 ~]
+    ?>  ?=(%11 -)
+    ;;  [%0 @]  !=
+    q
+  ::
+  ?>  =(axe-11-q 14)
+  ?>  =(axe-11-qp 13)
+  ?>  =(axe-2-uq 29)
+  ::
   |=  code=(map bell nomm-1)
   |=  [b=bell n=nomm-1 memo=(map bell meme-args)]
   ^+  memo
@@ -2257,12 +2277,8 @@
   :: ~&  %validity-check
   :: ?>  ~>  %bout.[0 'validity check']  (valid-sccs sccs)
   =|  stack-set=(set bell)
-  =/  sub=sock-prep  [~[1] ~]
-  =+  ^=  gen
+  =+  ^=  long
       ^-  $:  memo=_memo
-              ::  data usage accumulated in a given function's body
-              ::
-              use=usage-lazy
               ::  "we had a loop call to `bell` and we used `shape`"
               ::
               loop-calls=(map bell shape)
@@ -2270,128 +2286,112 @@
               ::
               melo=_memo
           ==
-      [memo [%nope ~] ~ ~]
+      [memo ~ ~]
   ::
-  =/  position=@axis  `@`1
   =<  memo
-  |^  ^+  gen
+  ^+  long
   =*  call-loop  $
+  =/  position=@axis  `@`1
+  =/  short
+    :*  long
+        uxgen=`@uxshape`1  ::  0x0 is reserved for the subject
+        use=`usage-lazy`[[[0x0 %nope] ~ ~] ~]
+    ==
+  ::
+  =<  -
+  |^  ^+  short
   =.  stack-set  (~(put in stack-set) b)
+  =/  sub=sock-prep  [%reg 0x0 `@`1]
   ~&  [%enter (mux b)]
-  =;  [branches-shapes=(map @axis shape) gen1=_gen]
+  =;  [branches-shapes=(map @axis shape) short1=_short]
     ::  fixpoint search done, finalize
     ::  branches were collapsed by this point
     ::  and captured subject was taken into account
     ::
-    =.  gen  gen1
-    ?^  branches.use.gen  !!
+    =.  short  short1
+    ?^  branches.use.short  !!
     =/  meme=meme-args
       =*  sf  shape-finalize
-      [(sf sure.use.gen) (~(run by branches-shapes) sf)]
+      [(sf (~(got by sure.use.short) 0x0)) (~(run by branches-shapes) sf)]
     ::
     ?:  (~(has by sccs) b)
-      =.  memo.gen  (~(put by memo.gen) b meme)
-      =.  memo.gen  (~(uni by memo.gen) melo.gen)
-      =.  melo.gen  ~
-      gen
-    =.  melo.gen  (~(put by melo.gen) b meme)
-    gen
+      =.  memo.short  (~(put by memo.short) b meme)
+      =.  memo.short  (~(uni by memo.short) melo.short)
+      =.  melo.short  ~
+      short
+    =.  melo.short  (~(put by melo.short) b meme)
+    short
   =/  counter=@  0
-  |-  ^-  [(map @axis shape) _gen]
-  =;  [prod=sock-prep gen1=_gen]
+  |-  ^-  [(map @axis shape) _short]
+  =;  [prod=sock-prep short1=_short]
     ::  collapse branches
     ::
-    =^  branches-shapes=(map @axis shape)  gen1
-      ^-  [(map @axis shape) _gen]
-      =.  gen  gen1
+    =^  branches-shapes=(map @axis shape)  short1
+      ^-  [(map @axis shape) _short]
+      =.  short  short1
       stub
     ::
     :-  branches-shapes
-    ^+  gen
-    ::  subject capture by the result
+    ^+  short
+    ::  capture by the result
     ::
-    =.  sure.use.gen1  (update-loc-gen prov.prod %data)
+    =.  sure.use.short1  (update-shapes prod %data)
     ::  check if we converged
     ::
-    ?~  args-loop-mayb=(~(get by loop-calls.gen1) b)  gen1
+    ?~  args-loop-mayb=(~(get by loop-calls.short1) b)  short1
     stub
-  |-  ^-  [prod=sock-prep _gen]
+  |-  ^-  [prod=sock-prep _short]
   =*  nomm-loop  $
   ?-  n
       [p=^ q=*]
-    =^  l  gen  nomm-loop(n p.n, position (peg position 2))
-    =^  r  gen  nomm-loop(n q.n, position (peg position 3))
-    :_  gen
-    :-  (cons-prov prov.prod.l prov.prod.r)
-   ((app-brans-2 cons-prov) bran.prod.l bran.prod.r) 
+    stub
   ::
       [%0 *]
-    ?:  =(0 p.n)  [dunno-prep gen]
-    =/  prod=sock-prep
-      ?:  =(1 p.n)  sub
-      :-  (slot-prov prov.sub p.n)
-      ((app-brans |=((lest spring) (slot-prov +< p.n))) bran.sub)
-    ::
-    =?  sure.use.gen  !=(1 p.n)  (update-loc-gen prov.prod %look)
-    [prod gen]
+    stub
   ::
       [%1 *]
-    [dunno-prep gen]
+    stub
   ::
       [%2 *]
     stub
   ::
       ?([%3 *] [%4 *])
-    =^  p  gen  nomm-loop(n p.n, position (peg position 3))
-    =.  sure.use.gen  (update-loc-gen prov.prod.p %data)
-    [dunno-prep gen]
+    stub
   ::
       [%5 *]
-    =^  p  gen  nomm-loop(n p.n, position (peg position 6))
-    =^  q  gen  nomm-loop(n q.n, position (peg position 7))
-    =.  sure.use.gen  (update-loc-gen prov.prod.p %data)
-    =.  sure.use.gen  (update-loc-gen prov.prod.q %data)
-    [dunno-prep gen]
+    stub
   ::
       [%6 *]
+    =^  c        short  nomm-loop(n p.n, position (peg position 6))
+    =.  sure.use.short  (update-shapes c %data)
+    =/  [y=sock-prep short-y=_short]
+      nomm-loop(n q.n, position (peg position 14))
+    ::
+    =/  [n=sock-prep short-n=_short]
+      nomm-loop(n q.n, position (peg position 15), short short-y(use use.short))
+    ::
+    =/  new-branch-info  [position sub use.short-y use.short-n]
+    =.  branches.use.short  [new-branch-info branches.use.short]
+    =.  short  short-n(use use.short)
     stub
   ::
       [%7 *]
-    =^  p  gen  nomm-loop(n p.n, position (peg position 6))
-    nomm-loop(n q.n, sub prod.p, position (peg position 7))
+    stub
   ::
       [%10 *]
-    =^  rec  gen  nomm-loop(n q.n, position (peg position 7))
-    =^  don  gen  nomm-loop(n q.p.n, position (peg position 13))
-    ::  edit site needs to exist for safe arg disassembly
-    ::
-    =/  edit-site-src  (slot-prov prov.prod.rec p.p.n)
-    =?  sure.use.gen  !=(1 p.n)  (update-loc-gen edit-site-src %look)
-    :_  gen
-    :-  (edit-prov p.p.n prov.prod.rec prov.prod.don)
-    =*  g
-      |=  [a=(lest spring) b=(lest spring)]
-      (edit-prov p.p.n a b)
-    ::
-    ((app-brans-2 g) bran.prod.rec bran.prod.don)
+    stub
   ::
       [%11 *]  ::  XX relocation boundary hints
-    =?  gen  ?=(^ p.n)  +:nomm-loop(n q.p.n, position (peg position 13))
-    nomm-loop(n q.n, position (peg position 14))
+    stub
   ::
       [%12 *]
-    =^  p  gen  nomm-loop(n p.n, position (peg position 6))
-    =^  q  gen  nomm-loop(n q.n, position (peg position 7))
-    =.  sure.use.gen  (update-loc-gen prov.prod.p %data)
-    =.  sure.use.gen  (update-loc-gen prov.prod.q %data)
-    [dunno-prep gen]
+    stub
   ::
   ==
   ::
-  ++  update-loc-gen
-    |=  [prov=(list spring) =shape]
-    ^+  shape
-    ?:  =([~ ~] prov)  sure.use.gen
-    (uni-shape sure.use.gen (distribute-shapes prov shape))
+  ++  update-shapes
+    |=  [=form =shape]
+    ^-  (map @uxshape ^shape)
+    (uni-shape-map sure.use.short (distribute-shapes form shape))
   --
 --
