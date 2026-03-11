@@ -14,6 +14,7 @@
 ::        backtracking if loop/melo guess fails, the second one could do more 
 ::        heavy stuff
 /-  *noir
+/-  gene
 /+  hoot
 /+  playpen
 ::    
@@ -2032,23 +2033,6 @@
       (~(uni in acc) members)
     ==
   --
-::  shape will be normalized to shape-final when the function prepass is
-::  finalized, as %data and %look will be the same thing from the POV of the
-::  linearizer
-::
-::  we need shape with `%look` case when we are in the middle of a prepass to
-::  not pessimize the registerization, so e.g. [%7 [%0 A] ...] would not have
-::  an effect on registerization if axis A is required by (...). [%0 1] is a
-::  trivial example of that.
-::
-++  shape-final  cape
-::
-++  shape
-  $~  %nope
-  $@  ?(%nope %data %look)
-  [shape shape]
-::
-+$  meme-args  [=shape-final branches-shapes=(map @axis shape-final)]
 ::
 ++  shape-finalize
   |=  s=shape
@@ -2197,23 +2181,6 @@
 ::    - convergence check:
 ::      - just a fixpoint search on the shape of the data reqs of the function?
 ::    - cons: just cons the forms
-::    - %0: slot of the form or %boom if 0 or the shape is guaranteed to be incompatible
-::    - %1: produces %imm
-::    - %2: produces new shape (%reg case). Nothing interesting other than memo/
-::          melo/loop checks
-::    - %3/%4/%5: produce %atom
-::    - %6 form: a form is kinda like provenance, so a union is necessary:
-::      - %boom  |  X     -> X
-::      - %atom  |  %atom -> %atom
-::      - %imm m | imm n  -> %imm m iff m == n
-::      - %imm @ | %atom  -> %atom
-::      -              _  -> fresh %reg
-::      (keeping these simple is probably best, no imm dissasembly and such)
-::
-::    - %7/%10/%12 - trivial kinda
-::    - %11: treat crash relocation boundary by getting a new %reg for the hinted
-::           formula (kinda like assembling a need into a single register with +aver
-::           but in opposite direction
 ::
 +$  form
   $^  [form form]
@@ -2237,6 +2204,36 @@
 ::  partial noun for the prepass
 ::
 +$  sock-prep  form
+::
+++  slot-form
+  |=  [f=form ax=@]
+  ^-  form
+  ?<  =(0 ax)
+  ?:  =(1 ax)  f
+  ?^  -.f
+    ?-  (cap ax)
+      %2  $(ax (mas ax), f -.f)
+      %3  $(ax (mas ax), f +.f)
+    ==
+  ?-    -.f
+      ?(%atom %boom)  boom+~
+      %reg  f(ax (peg ax.f ax))
+  ::
+      %imm
+    |-
+    ?@  p.f  boom+~
+    ?-  (cap ax)
+      %2  $(ax (mas ax), p.f -.p.f)
+      %3  $(ax (mas ax), p.f +.p.f)
+    ==
+  ==
+::
+++  cons-form
+  |=  [a=form b=form]
+  ^-  form
+  =*  pair  +<
+  ?:  |(?=(%boom -.a) ?=(%boom -.b))  [%boom ~]
+  pair
 ::
 ++  find-args
   =/  axe-2-p=@  6
@@ -2289,7 +2286,7 @@
       [memo ~ ~]
   ::
   =<  memo
-  ^+  long
+  |-  ^+  long
   =*  call-loop  $
   =/  position=@axis  `@`1
   =/  short
@@ -2344,22 +2341,59 @@
   =*  nomm-loop  $
   ?-  n
       [p=^ q=*]
-    stub
+    =^  l  short  nomm-loop(n p.n, position (peg position 2))
+    =^  r  short  nomm-loop(n q.n, position (peg position 3))
+    [(cons-form l r) short]
   ::
       [%0 *]
-    stub
+    ?:  =(0 p.n)  [boom+~ short]
+    =/  prod=sock-prep  (slot-form sub p.n)
+    =?  sure.use.short  !=(1 p.n)  (update-shapes prod %look)
+    [prod short]
   ::
       [%1 *]
-    stub
+    [imm+p.n short]
   ::
       [%2 *]
-    stub
+    ?~  info.n
+      ?~  q.n  !!
+      =^  s  short  nomm-loop(n p.n, position (peg position axe-2-p))
+      =^  f  short  nomm-loop(n u.q.n, position (peg position axe-2-uq))
+      =.  sure.use.short  (update-shapes s %data)
+      =.  sure.use.short  (update-shapes f %data)
+      new-reg-shape
+    =^  s  short  nomm-loop(n p.n, position (peg position axe-2-p))
+    =?  short  ?=(^ q.n)  +:nomm-loop(n u.q.n, position (peg position axe-2-uq))
+    =^  use-callee=shape  short
+      ?:  (~(has in stack-set) u.info.n)
+        ?^  use-loop=(~(get by loop-calls.short) u.info.n)  [u.use-loop short]
+        =.  loop-calls.short  (~(put by loop-calls.short) u.info.n %nope)
+        [%nope short]
+      ?^  meme=(~(get by memo.short) u.info.n)
+        [(unfinal shape-final.u.meme) short]
+      ?^  meal=(~(get by melo.short) u.info.n)
+        [(unfinal shape-final.u.meal) short]
+      ::
+      =.  -.short  call-loop(n (~(got by code) u.info.n), b u.info.n)
+      ::
+      :_  short
+      %-  unfinal  =<  shape-final
+      (fall (~(get by memo.short) u.info.n) (~(got by melo.short) u.info.n))
+    ::
+    =.  sure.use.short  (update-shapes s use-callee)
+    new-reg-shape
   ::
       ?([%3 *] [%4 *])
-    stub
+    =^  p  short  nomm-loop(n p.n, position (peg position 3))
+    =.  sure.use.short  (update-shapes p %data)
+    [atom+~ short]
   ::
       [%5 *]
-    stub
+    =^  p  short  nomm-loop(n p.n, position (peg position 6))
+    =^  q  short  nomm-loop(n q.n, position (peg position 7))
+    =.  sure.use.short  (update-shapes p %data)
+    =.  sure.use.short  (update-shapes q %data)
+    [atom+~ short]
   ::
       [%6 *]
     =^  c        short  nomm-loop(n p.n, position (peg position 6))
@@ -2373,19 +2407,61 @@
     =/  new-branch-info  [position sub use.short-y use.short-n]
     =.  branches.use.short  [new-branch-info branches.use.short]
     =.  short  short-n(use use.short)
-    stub
+    ?:  =(y n)  [y short]
+    =+  [y n]
+    ?+  -  new-reg-shape
+      [* [%boom ~]]  [y short]
+      [[%boom ~] *]  [n short]
+      [[%imm @] [%atom ~]]  [[%atom ~] short]
+      [[%atom ~] [%imm @]]  [[%atom ~] short]
+    ==
   ::
       [%7 *]
-    stub
+    =^  p  short  nomm-loop(n p.n, position (peg position 6))
+    nomm-loop(n q.n, sub p, position (peg position 7))
   ::
       [%10 *]
-    stub
+    =^  rec  short  nomm-loop(n q.n, position (peg position 7))
+    =^  don  short  nomm-loop(n q.p.n, position (peg position 13))
+    ::  edit site needs to exist for safe arg disassembly
+    ::
+    =/  edit-site  (slot-form rec p.p.n)
+    =?  sure.use.short  !?=(%1 p.p.n)  (update-shapes edit-site %look)
+    :_  short
+    ^-  form
+    ?:  |(=(%boom -.rec) =(%boom -.don))  [%boom ~]
+    |-  ^-  form
+    ?:  =(1 p.p.n)  don
+    ?-    (cap p.p.n)
+        %2
+      (cons-form $(p.p.n (mas p.p.n), rec (slot-form rec 2)) (slot-form rec 3))
+    ::
+        %3
+      (cons-form (slot-form rec 2) $(p.p.n (mas p.p.n), rec (slot-form rec 3)))
+    ::
+    ==
   ::
-      [%11 *]  ::  XX relocation boundary hints
-    stub
+      [%11 *]
+    ?@  p.n
+      ?.  ?=(hint-static-stop:gene p.n)
+        nomm-loop(n q.n, position (peg position axe-11-q))
+      :: =^  s  short  new-reg-shape
+      :: nomm-loop(sub s, n q.n, position (peg position axe-11-q))
+      ::
+      ::  (mint-vain since hint-static-stop:gene is void for now)
+      !!
+    =.  short  +:nomm-loop(n q.p.n, position (peg position axe-11-qp))
+    ?.  ?=(hint-dynamic-stop:gene p.p.n)
+      nomm-loop(n q.n, position (peg position axe-11-q))
+    =^  s  short  new-reg-shape
+    nomm-loop(sub s, n q.n, position (peg position axe-11-q))
   ::
       [%12 *]
-    stub
+    =^  p  short  nomm-loop(n p.n, position (peg position 6))
+    =^  q  short  nomm-loop(n q.n, position (peg position 7))
+    =.  sure.use.short  (update-shapes p %data)
+    =.  sure.use.short  (update-shapes q %data)
+    new-reg-shape
   ::
   ==
   ::
@@ -2393,5 +2469,13 @@
     |=  [=form =shape]
     ^-  (map @uxshape ^shape)
     (uni-shape-map sure.use.short (distribute-shapes form shape))
+  ::
+  ++  new-reg-shape
+    ^-  [form _short]
+    :-  [%reg uxgen.short `@`1]
+    %=  short
+      uxgen     +(uxgen.short)
+      sure.use  (~(put by sure.use.short) uxgen.short %nope)
+    ==
   --
 --

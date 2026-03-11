@@ -1,5 +1,6 @@
 /-  *noir
 |%
+++  void  |=(* !!)
 ::  @uvre: register index 
 ::  @uwoo: basic block index
 ::
@@ -71,19 +72,24 @@
 ::  memo instructions:
 ::    %mem - save noun `r` with key [k s f]
 ::
-::  static hints that do not need the result of the hinted formula
+::  mute: product of the hinted formula not needed
+::  prod: it is needed
+::  stop: crash relocation boundary
+::  safe: safe to relocate crashes
 ::
-+$  hint-static-mute  ?(%bout %xray)
-::  static hints that need the result of the hinted formula
-::
-::  there are none, and I don't know how to express void type w/o mint-vain...
-::
-:: +$  hint-static-prod  _!!
++$  hint-static-mute-safe  ?(%bout %xray)
++$  hint-static-mute-stop  void
++$  hint-static-mute  ?(hint-static-mute-safe hint-static-mute-stop)
++$  hint-static-prod  void
++$  hint-static-stop  ?(hint-static-mute-stop)
++$  hint-static  ?(hint-static-prod hint-static-mute)
 ::
 +$  hint-dynamic-mute-stop  ?(%mean %spot)
 +$  hint-dynamic-mute-safe  ?(%bout %xray %spin %loop %jinx %live %slog)
 +$  hint-dynamic-mute  ?(hint-dynamic-mute-stop hint-dynamic-mute-safe)
-+$  hint-dynamic  hint-dynamic-mute
++$  hint-dynamic-prod  void
++$  hint-dynamic-stop  ?(hint-dynamic-mute-stop)
++$  hint-dynamic  ?(hint-dynamic-mute hint-dynamic-prod)
 ::
 +$  pole
   $%  [%imm n=* d=@uvre]
@@ -93,14 +99,12 @@
       [%hed s=@uvre d=@uvre]
       [%tal s=@uvre d=@uvre]
       [%cel p=@uvre]
-      ::  XX save original hinted formulas?
-      ::
-      [%his n=hint-static-mute f=*]
-      :: [%hys n=hint-static-prod p=@uvre f=*]
+      [%his n=hint-static f=*]
+      [%hys n=hint-static-prod p=@uvre f=*]
       [%hos n=hint-static-mute f=*]
   ::
       [%hid n=hint-dynamic p=@uvre f=*]
-      :: [%hyd n=hint-dynamic-prod-safe p=@uvre q=@uvre f=*]
+      [%hyd n=hint-dynamic-prod p=@uvre q=@uvre f=*]
       [%hod n=hint-dynamic-mute p=@uvre f=*]
       [%spy e=@uvre p=@uvre d=@uvre]
       [%mem k=@uvre s=@uvre f=* r=@uvre]
@@ -192,19 +196,21 @@
   |=  p=pole
   ^-  (list @uvre)
   ?-  -.p
-    %imm   ~[d]:p
-    %mov   ~[s d]:p
-    %inc   ~[s d]:p
-    %con   ~[h t d]:p
-    %hed   ~[s d]:p
-    %tal   ~[s d]:p
-    %cel   ~[p]:p
-    %his   ~
-    %hos   ~
-    %hid   ~[p]:p
-    %hod   ~[p]:p
-    %spy   ~[e p d]:p
-    %mem   ~[k s r]:p
+    %imm  ~[d]:p
+    %mov  ~[s d]:p
+    %inc  ~[s d]:p
+    %con  ~[h t d]:p
+    %hed  ~[s d]:p
+    %tal  ~[s d]:p
+    %cel  ~[p]:p
+    %his  ~
+    %hos  ~
+    %hid  ~[p]:p
+    %hod  ~[p]:p
+    %spy  ~[e p d]:p
+    %mem  ~[k s r]:p
+    %hyd  ~[p q]:p
+    %hys  ~[p]:p
   ==
 ::    basic block
 ::

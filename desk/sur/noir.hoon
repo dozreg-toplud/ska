@@ -878,4 +878,22 @@
   --
 ::
 +$  sock-anno  [=sock src=source]
+::
+::  shape will be normalized to shape-final when the function prepass is
+::  finalized, as %data and %look will be the same thing from the POV of the
+::  linearizer
+::
+::  we need shape with `%look` case when we are in the middle of a prepass to
+::  not pessimize the registerization, so e.g. [%7 [%0 A] ...] would not have
+::  an effect on registerization if axis A is required by (...). [%0 1] is a
+::  trivial example of that.
+::
+++  shape-final  cape
+::
+++  shape
+  $~  %nope
+  $@  ?(%nope %data %look)
+  [shape shape]
+::
++$  meme-args  [=shape-final branches-shapes=(map @axis shape-final)]
 --
