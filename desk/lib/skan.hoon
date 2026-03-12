@@ -2180,7 +2180,6 @@
 ::      - sure += join
 ::    - convergence check:
 ::      - just a fixpoint search on the shape of the data reqs of the function?
-::    - cons: just cons the forms
 ::
 +$  form
   $^  [form form]
@@ -2320,6 +2319,7 @@
     short
   =/  counter=@  0
   |-  ^-  [(map @axis shape) _short]
+  =*  fixpoint-loop  $
   =;  [prod=sock-prep short1=_short]
     ::  collapse branches
     ::
@@ -2328,15 +2328,24 @@
       =.  short  short1
       stub
     ::
-    :-  branches-shapes
-    ^+  short
     ::  capture by the result
     ::
     =.  sure.use.short1  (update-shapes prod %data)
     ::  check if we converged
     ::
-    ?~  args-loop-mayb=(~(get by loop-calls.short1) b)  short1
-    stub
+    ?~  shape-loop-mayb=`(unit shape)`(~(get by loop-calls.short1) b)
+      [branches-shapes short1]
+    =/  =shape  (~(got by sure.use.short1) 0x0)
+    ?:  =(u.shape-loop-mayb shape)
+      [branches-shapes short1(loop-calls (~(del by loop-calls.short1) b))]
+    ?:  =(4 counter)  stub
+    ~&  [%fixpoint counter (mux b)]
+    %=  fixpoint-loop
+      counter           +(counter)
+      memo.short        memo.short1
+      loop-calls.short  (~(put by loop-calls.short1) b shape)
+    ==
+  ::
   |-  ^-  [prod=sock-prep _short]
   =*  nomm-loop  $
   ?-  n
