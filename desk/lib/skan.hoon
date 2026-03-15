@@ -2048,8 +2048,8 @@
   [$(s -.s) $(s +.s)]
 ::
 ++  uni-shape-map
-  |=  [a=(map @uxshape shape) b=(map @uxshape shape)]
-  ^-  (map @uxshape shape)
+  |=  [a=map-shapes b=map-shapes]
+  ^-  map-shapes
   %-  (~(uno by a) b)
   |=  [k=* v1=shape v2=shape]
   (uni-shape v1 v2)
@@ -2061,7 +2061,6 @@
     %+  uni-shape-map
       $(form -.form, shape (hed-shape shape))
     $(form +.form, shape (tel-shape shape))
-  ?.  ?=(%reg -.form)  ~
   [[idx.form (push-shape shape ax.form)] ~ ~]
 ::
 ++  uni-shape
@@ -2175,19 +2174,13 @@
 ::      union is trivial
 ::
 ::  Current stubs:
-::    - branch collapse: from deepest branches outward:
-::      - subtract `sure` from `y` and `n`, join the remainders.
-::      - sure += join
 ::    - convergence check:
-::      - just a fixpoint search on the shape of the data reqs of the function?
+::      - counter > 4: never happens?
+::                     fallback to total subject use + redo prepass?
 ::
 +$  form
   $^  [form form]
-  $%  [%reg idx=@uxshape ax=@axis]
-      [%imm p=*]
-      [%atom ~]
-      [%boom ~]
-  ==
+  [idx=@uxshape ax=@axis]
 ::  data usage by a function, with lazy branches
 ::
 ++  usage-lazy
@@ -2209,30 +2202,156 @@
   ^-  form
   ?<  =(0 ax)
   ?:  =(1 ax)  f
-  ?^  -.f
-    ?-  (cap ax)
-      %2  $(ax (mas ax), f -.f)
-      %3  $(ax (mas ax), f +.f)
-    ==
-  ?-    -.f
-      ?(%atom %boom)  boom+~
-      %reg  f(ax (peg ax.f ax))
-  ::
-      %imm
-    |-
-    ?@  p.f  boom+~
-    ?-  (cap ax)
-      %2  $(ax (mas ax), p.f -.p.f)
-      %3  $(ax (mas ax), p.f +.p.f)
-    ==
+  ?@  -.f  f(ax (peg ax.f ax))
+  ?-  (cap ax)
+    %2  $(ax (mas ax), f -.f)
+    %3  $(ax (mas ax), f +.f)
   ==
 ::
 ++  cons-form
   |=  [a=form b=form]
   ^-  form
   =*  pair  +<
-  ?:  |(?=(%boom -.a) ?=(%boom -.b))  [%boom ~]
   pair
+::
++$  map-shapes  (map @uxshape shape)
+::
+++  int-shape-map
+  |=  [a=map-shapes b=map-shapes]
+  ^-  map-shapes
+  =/  keys-both=(set @uxshape)  (~(int in ~(key by a)) ~(key by b))
+  %-  ~(rep in keys-both)
+  |=  [k=@uxshape acc=map-shapes]
+  %+  ~(put by acc)  k
+  ^-  shape
+  =/  v-a=shape  (~(got by a) k)
+  =/  v-b=shape  (~(got by b) k)
+  |-  ^-  shape
+  ?:  =(v-a v-b)  v-a
+  ?:  |(=([%look %data] [v-a v-b]) =([%data %look] [v-a v-b]))  %data
+  ?.  &(?=(^ v-a) ?=(^ v-b))  %nope
+  (con-shape $(v-a -.v-a, v-b -.v-b) $(v-a +.v-a, v-b +.v-b))
+::  subtract b from a
+::
+++  dis-shape-map
+  |=  [a=map-shapes b=map-shapes]
+  ^-  map-shapes
+  =/  keys-both=(set @uxshape)  (~(int in ~(key by a)) ~(key by b))
+  %-  ~(rep in keys-both)
+  |=  [k=@uxshape acc=_(~(dif by a) b)]
+  %+  ~(put by acc)  k
+  ^-  shape
+  =/  v-a=shape  (~(got by a) k)
+  =/  v-b=shape  (~(got by b) k)
+  |-  ^-  shape
+  ?:  =(v-a v-b)     %nope
+  ?:  ?=(%nope v-a)  %nope
+  ?:  |(=([%look %data] [v-a v-b]) =([%data %look] [v-a v-b]))  %nope
+  ?@  v-b  v-a
+  ?@  v-a  ~|  %strange-shape  !!
+  (con-shape $(v-a -.v-a, v-b -.v-b) $(v-a +.v-a, v-b +.v-b))
+::
+++  join-shape-map
+  |=  [a=map-shapes b=map-shapes]
+  ^-  map-shapes
+  =/  keys-a=(set @uxshape)  ~(key by a)
+  =/  keys-b=(set @uxshape)  ~(key by b)
+  =/  keys-only-a=(set @uxshape)  (~(dif in keys-a) keys-b)
+  =/  keys-only-b=(set @uxshape)  (~(dif in keys-b) keys-a)
+  =/  keys-both=(set @uxshape)    (~(int in keys-a) keys-b)
+  =/  out=map-shapes
+    %-  ~(rep in keys-only-a)
+    |=  [k=@uxshape acc=map-shapes]
+    =/  v-a  (~(got by a) k)
+    ?:  ?=(%nope v-a)  acc
+    (~(put by acc) k %data)
+  ::
+  =.  out
+    %-  ~(rep in keys-only-b)
+    |=  [k=@uxshape acc=_out]
+    =/  v-b  (~(got by b) k)
+    ?:  ?=(%nope v-b)  acc
+    (~(put by acc) k %data)
+  ::
+  %-  ~(rep in keys-both)
+  |=  [k=@uxshape acc=_out]
+  %+  ~(put by acc)  k
+  ^-  shape
+  =/  v-a=shape  (~(got by a) k)
+  =/  v-b=shape  (~(got by b) k)
+  |-  ^-  shape
+  ?:  =(v-a v-b)  v-a
+  ?:  |(?=(@ v-a) ?=(@ v-b))  %data  ::  XX could be %look?
+  (con-shape $(v-a -.v-a, v-b -.v-b) $(v-a +.v-a, v-b +.v-b))
+::
+::  sure' = sure U (U_i (y_i n n_i))
+::  y_i' = y_i \ sure'
+::  n_i' = n_i \ sure'
+::  sure'' = sure' U (U_i (y_i' ^ n_i'))
+::  where a ^ b describes a shape under which both a and b nest (deepest common
+::  noun)
+::
+::  In plain words, we first intersect all data usages of respective `yes` and
+::  `no` branches and take a union of the intersections with the original
+::  sure.use, which gives us guaranteed data usage by the branches on the
+::  current branch level.
+::
+::  Then we subtract that data usage from the data usages of branches, giving us
+::  the exclusive data usage of the branches.
+::
+::  Then we "join" the exclusive data usages, producing a deepest data usage
+::  which is common to both branches' exclusive data usages.
+::
+::  Finally we unify the guaranteed data usage with these joined data usages,
+::  producing the total data usage of a given branch depth.
+::
+::  The algorithm is recursive, from the deepest branch level outwards: we first
+::  collapse the branches in our branches, then we collapse our branches.
+::
+++  uni-by
+  |*  [a=(map) b=(map)]
+  (~(uni by a) b)
+::
+++  form-to-shape
+  |=  [f=form m=map-shapes]
+  ^-  shape
+  ?^  -.f  [$(f -.f) $(f +.f)]
+  (slot-shape (~(got by m) idx.f) ax.f)
+::
+++  play-usage
+  |=  use=usage-lazy
+  ^-  [map-shapes (map @axis shape)]
+  =*  recur-out
+    $:  branches-play=(list [y=map-shapes n=map-shapes])
+        branch-sub-shapes=(map @axis shape)
+    ==
+  ::
+  =+  ^-  recur-out
+    %+  roll  branches.use
+    |=  [i=[where=@axis =form y=usage-lazy n=usage-lazy] acc=recur-out]
+    =/  y=(pair map-shapes (map @axis shape))  (play-usage y.i)
+    =/  n=(pair map-shapes (map @axis shape))  (play-usage n.i)
+    :-  [[p.y p.n] branches-play.acc]
+    :(uni-by branch-sub-shapes.acc q.y q.n)
+  ::
+  =/  sure-ints=map-shapes
+    %+  roll  branches-play
+    |=  [i=[y=map-shapes n=map-shapes] acc=_sure.use]
+    (uni-shape-map acc (int-shape-map i))
+  ::
+  =/  sure-joins=map-shapes
+    %+  roll  branches-play
+    |=  [i=[y=map-shapes n=map-shapes] acc=_sure-ints]
+    %+  uni-shape-map  acc
+    %+  join-shape-map  (dis-shape-map y.i sure-ints)
+    (dis-shape-map n.i sure-ints)
+  ::
+  :-  sure-joins
+  %-  ~(gas by branch-sub-shapes)
+  %+  turn  branches.use
+  |=  i=[where=@axis =form *]
+  :-  where.i
+  (form-to-shape form.i sure-joins)
 ::
 ++  find-args
   =/  axe-2-p=@  6
@@ -2297,7 +2416,7 @@
   =<  -
   |^  ^+  short
   =.  stack-set  (~(put in stack-set) b)
-  =/  sub=sock-prep  [%reg 0x0 `@`1]
+  =/  sub=sock-prep  [0x0 `@`1]
   ~&  [%enter (mux b)]
   =;  [branches-shapes=(map @axis shape) short1=_short]
     ::  fixpoint search done, finalize
@@ -2326,7 +2445,12 @@
     =^  branches-shapes=(map @axis shape)  short1
       ^-  [(map @axis shape) _short]
       =.  short  short1
-      stub
+      =/  [sure-collapsed=map-shapes branches-shapes=(map @axis shape)]
+        (play-usage use.short)
+      ::
+      =.  sure.use.short  sure-collapsed
+      =.  branches.use.short  ~
+      [branches-shapes short]
     ::
     ::  capture by the result
     ::
@@ -2355,13 +2479,13 @@
     [(cons-form l r) short]
   ::
       [%0 *]
-    ?:  =(0 p.n)  [boom+~ short]
+    ?:  =(0 p.n)  new-reg-shape
     =/  prod=sock-prep  (slot-form sub p.n)
     =?  sure.use.short  !=(1 p.n)  (update-shapes prod %look)
     [prod short]
   ::
       [%1 *]
-    [imm+p.n short]
+    new-reg-shape
   ::
       [%2 *]
     ?~  info.n
@@ -2395,14 +2519,14 @@
       ?([%3 *] [%4 *])
     =^  p  short  nomm-loop(n p.n, position (peg position 3))
     =.  sure.use.short  (update-shapes p %data)
-    [atom+~ short]
+    new-reg-shape
   ::
       [%5 *]
     =^  p  short  nomm-loop(n p.n, position (peg position 6))
     =^  q  short  nomm-loop(n q.n, position (peg position 7))
     =.  sure.use.short  (update-shapes p %data)
     =.  sure.use.short  (update-shapes q %data)
-    [atom+~ short]
+    new-reg-shape
   ::
       [%6 *]
     =^  c        short  nomm-loop(n p.n, position (peg position 6))
@@ -2417,13 +2541,7 @@
     =.  branches.use.short  [new-branch-info branches.use.short]
     =.  short  short-n(use use.short)
     ?:  =(y n)  [y short]
-    =+  [y n]
-    ?+  -  new-reg-shape
-      [* [%boom ~]]  [y short]
-      [[%boom ~] *]  [n short]
-      [[%imm @] [%atom ~]]  [[%atom ~] short]
-      [[%atom ~] [%imm @]]  [[%atom ~] short]
-    ==
+    new-reg-shape
   ::
       [%7 *]
     =^  p  short  nomm-loop(n p.n, position (peg position 6))
@@ -2438,7 +2556,6 @@
     =?  sure.use.short  !?=(%1 p.p.n)  (update-shapes edit-site %look)
     :_  short
     ^-  form
-    ?:  |(=(%boom -.rec) =(%boom -.don))  [%boom ~]
     |-  ^-  form
     ?:  =(1 p.p.n)  don
     ?-    (cap p.p.n)
@@ -2481,7 +2598,7 @@
   ::
   ++  new-reg-shape
     ^-  [form _short]
-    :-  [%reg uxgen.short `@`1]
+    :-  [uxgen.short `@`1]
     %=  short
       uxgen     +(uxgen.short)
       sure.use  (~(put by sure.use.short) uxgen.short %nope)
