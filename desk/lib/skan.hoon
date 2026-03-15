@@ -2163,21 +2163,6 @@
           &(!=(v-bell k-in) !(~(has in v-set-in) v-bell))
   ==  ==
 ::
-::  Main ideas:
-::    - global registry of noun shapes to be discovered
-::    - subject `form` is a tree with either refs to the registry or some known
-::      shapes
-::    - in %6 we record the current form of the subject, + the shapes discovered
-::      by the branches. Their exclusive shape requirements will be formulated
-::      once we walked the entire function body
-::    - union of forms is a brand new shape in the global registry unless the
-::      union is trivial
-::
-::  Current stubs:
-::    - convergence check:
-::      - counter > 4: never happens?
-::                     fallback to total subject use + redo prepass?
-::
 +$  form
   $^  [form form]
   [idx=@uxshape ax=@axis]
@@ -2437,6 +2422,7 @@
     =.  melo.short  (~(put by melo.short) b meme)
     short
   =/  counter=@  0
+  =*  counter-max  4  ::  XX does this ever happen?
   |-  ^-  [(map @axis shape) _short]
   =*  fixpoint-loop  $
   =;  [prod=sock-prep short1=_short]
@@ -2462,12 +2448,17 @@
     =/  =shape  (~(got by sure.use.short1) 0x0)
     ?:  =(u.shape-loop-mayb shape)
       [branches-shapes short1(loop-calls (~(del by loop-calls.short1) b))]
-    ?:  =(4 counter)  stub
+    ?:  =(+(counter-max) counter)  ~|  %fixpoint-end-shape-got-smaller  !!
     ~&  [%fixpoint counter (mux b)]
-    %=  fixpoint-loop
-      counter           +(counter)
-      memo.short        memo.short1
-      loop-calls.short  (~(put by loop-calls.short1) b shape)
+    %=    fixpoint-loop
+        counter     +(counter)
+        memo.short  memo.short1
+    ::
+        loop-calls.short
+      %+  ~(put by loop-calls.short1)  b
+      ?.  =(counter-max counter)  shape
+      ~&  %fixpoint-give-up
+      %data
     ==
   ::
   |-  ^-  [prod=sock-prep _short]
