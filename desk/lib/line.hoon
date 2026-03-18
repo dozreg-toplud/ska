@@ -143,6 +143,8 @@
       %hod  "//  hod"
       %spy  "//  spy"
       %mem  "//  mem"
+      %hys  "//  hys"
+      %hyd  "//  hyd"
     ==
   ::
   ++  render-site-with-indentation
@@ -476,6 +478,9 @@
     ~|  %no-memo-now
     stub
   ::
+      %hys  `gen
+      %hyd  `gen
+  ::
   ==
   ::
   ++  r-get
@@ -528,12 +533,12 @@
   ::
   =/  meme-args  (~(got by arity.lon) bell)
   =^  [args-need=need args-list=(list @uvre)]  gen
-    (~(args-to-need line gen) args.meme-args)
+    (~(shape-to-need line gen) shape-final.meme-args)
   ::
   =.  gen
     ~|  line-need+what.nex
     ~|  arity-need+args-need
-    ~|  arity+args.meme-args
+    ~|  arity+shape-final.meme-args
     (~(coerce line gen) nex args-need bus.bell)
   ::
   =/  blocks  blocks.here.gen
@@ -760,6 +765,8 @@
       %hod  op(p (update-r p.op))
       %spy  op(e (update-r e.op), p (update-r p.op), d (update-r d.op))
       %mem  op(k (update-r k.op), s (update-r s.op), r (update-r r.op))
+      %hys  op(p (update-r p.op))
+      %hyd  op(p (update-r p.op), q (update-r q.op))
     ==
   ::
   ++  update-r
@@ -1033,6 +1040,15 @@
       =^  s-new  gen  (old-to-new s.pole)
       =^  r-new  gen  (old-to-new r.pole)
       [pole(k k-new, s s-new, r r-new) gen]
+    ::
+        %hys
+      =^  p-new  gen  (old-to-new p.pole)
+      [pole(p p-new) gen]
+    ::
+        %hyd
+      =^  p-new  gen  (old-to-new p.pole)
+      =^  q-new  gen  (old-to-new q.pole)
+      [pole(p p-new, q q-new) gen]
     ==
   --
 ::
@@ -1082,7 +1098,7 @@
     ::  now we assert
     ::
     ?:  ?=(%none -.args)  ~|(%coerce-lost !!)
-    ::  args-to-need never produces %both
+    ::  shape-to-need never produces %both
     ::
     ?:  ?=(%both -.args)  !!
     ?:  ?=(^ -.what.entry)
@@ -1186,7 +1202,7 @@
         (copy need-s what.need-f)
       =/  meme-args  (~(got by arity.gen) u.info.nomm)
       =^  [args-need=need args-list=(list @uvre)]  gen
-        (args-to-need args.meme-args)
+        (shape-to-need shape-final.meme-args)
       ::
       ::  XX no jet stuff for now
       ::
@@ -1417,24 +1433,18 @@
       (copy need-ref what.need-path)
     ==
   ::
-  ++  args-to-need
-    |=  =args
+  ++  shape-to-need
+    |=  shape=shape-final
     ^-  [[need (list @uvre)] _gen]
     =^  ned=need  gen
       |-  ^-  [need _gen]
-      ?~  args  [none+~ gen]
-      ?-    -.args
-          ::  XX special case %look somehow?..
-          ::
-          ?(%arg %look)
+      ?@  shape
+        ?.  shape  [none+~ gen]
         =^  r  gen  re
         [this+r gen]
-      ::
-          %hole
-        =^  l  gen  $(args l.args)
-        =^  r  gen  $(args r.args)
-        [[l r] gen]
-      ==
+      =^  l  gen  $(shape -.shape)
+      =^  r  gen  $(shape +.shape)
+      [[l r] gen]
     ::
     :_  gen
     :-  ned

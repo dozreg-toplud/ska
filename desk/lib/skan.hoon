@@ -2213,8 +2213,8 @@
   =/  v-b=shape  (~(got by b) k)
   |-  ^-  shape
   ?:  =(v-a v-b)  v-a
-  ?:  |(=([%look %data] [v-a v-b]) =([%data %look] [v-a v-b]))  %data
-  ?.  &(?=(^ v-a) ?=(^ v-b))  %nope
+  ?:  |(?=(%nope v-a) ?=(%nope v-b))  %nope
+  ?:  |(?=(@ v-a) ?=(@ v-b))          %data
   (con-shape $(v-a -.v-a, v-b -.v-b) $(v-a +.v-a, v-b +.v-b))
 ::  subtract b from a
 ::
@@ -2306,6 +2306,7 @@
 ++  play-usage
   |=  use=usage-lazy
   ^-  [map-shapes (map @axis shape)]
+  =*  play-buc  $
   =*  recur-out
     $:  branches-play=(list [y=map-shapes n=map-shapes])
         branch-sub-shapes=(map @axis shape)
@@ -2314,8 +2315,8 @@
   =+  ^-  recur-out
     %+  roll  branches.use
     |=  [i=[where=@axis =form y=usage-lazy n=usage-lazy] acc=recur-out]
-    =/  y=(pair map-shapes (map @axis shape))  (play-usage y.i)
-    =/  n=(pair map-shapes (map @axis shape))  (play-usage n.i)
+    =/  y=(pair map-shapes (map @axis shape))  play-buc(use y.i)
+    =/  n=(pair map-shapes (map @axis shape))  play-buc(use n.i)
     :-  [[p.y p.n] branches-play.acc]
     :(uni-by branch-sub-shapes.acc q.y q.n)
   ::
