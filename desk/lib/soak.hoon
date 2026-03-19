@@ -7,6 +7,8 @@
 ::  operations on $cape
 ++  ca
   |_  one=cape
+  ++  hed  ?@(one one -.one)
+  ++  tel  ?@(one one +.one)
   ::  normalization
   ::
   ++  cut

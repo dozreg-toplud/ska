@@ -2273,6 +2273,7 @@
 ::  y_i' = y_i \ sure'
 ::  n_i' = n_i \ sure'
 ::  sure'' = sure' U (U_i (y_i' ^ n_i'))
+::
 ::  where a ^ b describes a shape under which both a and b nest (deepest common
 ::  noun)
 ::
@@ -2527,7 +2528,7 @@
       nomm-loop(n q.n, position (peg position 14))
     ::
     =/  [n=sock-prep short-n=_short]
-      nomm-loop(n q.n, position (peg position 15), short short-y(use use.short))
+      nomm-loop(n r.n, position (peg position 15), short short-y(use use.short))
     ::
     =/  new-branch-info  [position sub use.short-y use.short-n]
     =.  branches.use.short  [new-branch-info branches.use.short]

@@ -526,12 +526,12 @@
 ++  compile
   |=  =bell
   ^+  this
+  =/  meme-args  (~(got by arity.lon) bell)
   =|  gen=line-short
   =.  -.gen  lon
   ::
-  =^  nex=next  gen  (~(cuts line gen) bell)
+  =^  nex=next  gen  (~(cuts line gen) bell branches-shapes.meme-args)
   ::
-  =/  meme-args  (~(got by arity.lon) bell)
   =^  [args-need=need args-list=(list @uvre)]  gen
     (~(shape-to-need line gen) shape-final.meme-args)
   ::
@@ -1066,34 +1066,39 @@
   ++  coerce
     |=  [entry=next args=need bus=sock]
     ^+  gen
-    ::  ops: instructions to move args into registers before entry,
+    =^  ops=(list pole)  gen  (coerce-ops what.entry args bus)
+    (emir direct-entrypoint ~ ops %hop then.entry)
+  ::
+  ++  coerce-ops
+    |=  [entry=need args=need bus=sock]
+    ^-  [(list pole) _gen]
+    ::  ops1: instructions to move args into registers before entry,
     ::       or to fill those with constants, or cons them up
     ::
-    ::  o: block label to instructions that split these intermediary regs
-    ::     into what.entry
-    =|  acc=[ops=(list pole) =_gen]
-    =;  [o=@uwoo =_acc]
-      =.  gen  gen.acc
-      (emir direct-entrypoint ~ ops.acc %hop o)
+    ::  ops2: instructions that split these intermediary regs into what.entry
     ::
-    |-  ^-  [@uwoo _acc]
+    =|  acc=[ops1=(list pole) ops2=(list pole) =_gen]
+    =;  acc-out=_acc  [(weld ops1.acc-out ops2.acc-out) gen.acc-out]
+    |-  ^+  acc
     ::  easy ways out:
     ::
     ::  nothing needed
     ::
-    ?:  ?=(%none -.what.entry)  [then.entry acc]
+    ?:  ?=(%none -.entry)  acc
     ::  noun is known
     ::
     ?:  ?=(%& cape.bus)
-      =^  [aftr=@uwoo prod=@uvre]  gen.acc  (kerf(gen gen.acc) entry)
-      =.  ops.acc  [[%imm data.bus prod] ops.acc]
-      [aftr acc]
+      =^  [prod=@uvre ops=(list pole)]  gen.acc  (kern(gen gen.acc) entry)
+      =.  ops1.acc  [[%imm data.bus prod] ops1.acc]
+      =.  ops2.acc  (weld ops ops2.acc)
+      acc
     ::  argument has all
     ::
     ?:  ?=(%this -.args)
-      =^  [aftr=@uwoo prod=@uvre]  gen.acc  (kerf(gen gen.acc) entry)
-      =.  ops.acc  [[%mov r.args prod] ops.acc]
-      [aftr acc]
+      =^  [prod=@uvre ops=(list pole)]  gen.acc  (kern(gen gen.acc) entry)
+      =.  ops1.acc  [[%mov r.args prod] ops1.acc]
+      =.  ops2.acc  (weld ops ops2.acc)
+      acc
     ::
     ::  now we assert
     ::
@@ -1101,38 +1106,58 @@
     ::  shape-to-need never produces %both
     ::
     ?:  ?=(%both -.args)  !!
-    ?:  ?=(^ -.what.entry)
-      =^  o-h  acc
-        $(what.entry p.what.entry, args p.args, bus ~(hed so bus))
-      ::
-      $(entry [%next q.what.entry o-h], args q.args, bus ~(tel so bus))
+    ?:  ?=(^ -.entry)
+      =.  acc  $(entry p.entry, args p.args, bus ~(hed so bus))
+      $(entry q.entry, args q.args, bus ~(tel so bus))
     ~&  >>  %coerce-entry-greedier-than-args
-    ?:  ?=(%this -.what.entry)
+    ?:  ?=(%this -.entry)
       =^  r-h  gen.acc  re(gen gen.acc)
       =^  r-t  gen.acc  re(gen gen.acc)
-      =.  ops.acc  [[%con r-h r-t r.what.entry] ops.acc]
-      =^  o-h  acc
-        $(entry [%next this+r-h then.entry], args p.args, bus ~(hed so bus))
-      ::
-      $(entry [%next this+r-t o-h], args q.args, bus ~(tel so bus))
-    =^  h=[aftr=@uwoo prod=@uvre]  gen.acc
-      (kerf(gen gen.acc) entry(what h.what.entry))
-    ::
-    =^  t=[aftr=@uwoo prod=@uvre]  gen.acc
-      (kerf(gen gen.acc) %next t.what.entry aftr.h)
-    ::
-    =.  ops.acc  [[%con prod.h prod.t r.what.entry] ops.acc]
-    =^  o-h  acc
-      $(entry [%next this+prod.h aftr.t], args p.args, bus ~(hed so bus))
-    ::
-    $(entry [%next this+prod.t o-h], args q.args, bus ~(tel so bus))
+      =.  ops1.acc  [[%con r-h r-t r.entry] ops1.acc]
+      =.  acc  $(entry this+r-h, args p.args, bus ~(hed so bus))
+      $(entry this+r-t, args q.args, bus ~(tel so bus))
+    =^  h=[prod=@uvre ops=(list pole)]  gen.acc  (kern(gen gen.acc) h.entry)
+    =^  t=[prod=@uvre ops=(list pole)]  gen.acc  (kern(gen gen.acc) t.entry)
+    =.  ops1.acc  [[%con prod.h prod.t r.entry] ops1.acc]
+    =.  ops2.acc  :(weld ops.t ops.h ops2.acc)
+    =.  acc  $(entry this+prod.h, args p.args, bus ~(hed so bus))
+    $(entry this+prod.t, args q.args, bus ~(tel so bus))
   ::  core linearizer
   ::
   ++  cuts
+    =/  axe-2-p=@  6
+    =/  axe-2-uq=@
+      ;;  @  =<  +  !.
+      =>  `nomm-1`[%2 *nomm-1 `*nomm-1 ~]
+      ?>  ?=(%2 -)
+      ?@  q  !!
+      ;;  [%0 @]  !=
+      u.q
+    ::
+    =/  axe-11-qp=@
+      ;;  @  =<  +  !.
+      =>  `nomm-1`[%11 [0 *nomm-1] *nomm-1 ~]
+      ?>  ?=(%11 -)
+      ?@  p  !!
+      ;;  [%0 @]  !=
+      q.p
+    ::
+    =/  axe-11-q=@
+      ;;  @  =<  +  !.
+      =>  `nomm-1`[%11 0 *nomm-1 ~]
+      ?>  ?=(%11 -)
+      ;;  [%0 @]  !=
+      q
+    ::
+    ?>  =(axe-11-q 14)
+    ?>  =(axe-11-qp 13)
+    ?>  =(axe-2-uq 29)
+    ::
     =/  =goal  [%done ~]
-    |=  =bell
+    |=  [=bell branches-shapes=(map @axis shape-final)]
     ^-  [next line-short]
     =/  nomm=nomm-1  (~(got by code.boil.gen) bell)
+    =/  pos=@axis  `@`1
     |-  ^-  [next _gen]
     ?-    -.nomm
         ^
@@ -1147,8 +1172,10 @@
       ::
           %next
         =^  [hed=need tel=need t=@uwoo]  gen  (split goal)
-        =^  next-2  gen  $(nomm +.nomm, goal [%next tel t])
-        =^  next-1  gen  $(nomm -.nomm, goal [%next hed then.next-2])
+        =^  next-2  gen  $(nomm +.nomm, goal [%next tel t], pos (peg pos 2))
+        =^  next-1  gen
+          $(nomm -.nomm, goal [%next hed then.next-2], pos (peg pos 3))
+        ::
         (copy next-1 what.next-2)
       ==
     ::
@@ -1197,8 +1224,12 @@
             (emit ~ ~ %lnk s f prod aftr)
           ==
         ::
-        =^  need-f  gen  $(nomm u.q.nomm, goal [%next this+f o])
-        =^  need-s  gen  $(nomm p.nomm, goal [%next this+s then.need-f])
+        =^  need-f  gen
+          $(nomm u.q.nomm, goal [%next this+f o], pos (peg pos axe-2-uq))
+        ::
+        =^  need-s  gen
+          $(nomm p.nomm, goal [%next this+s then.need-f], pos (peg pos axe-2-p))
+        ::
         (copy need-s what.need-f)
       =/  meme-args  (~(got by arity.gen) u.info.nomm)
       =^  [args-need=need args-list=(list @uvre)]  gen
@@ -1220,9 +1251,11 @@
         ::  else compute formula-formula and drop the result to preserve crashes
         ::
         ?~  q.nomm  [[%next none+~ tar] gen]
-        $(nomm u.q.nomm, goal [%next none+~ tar])
+        $(nomm u.q.nomm, goal [%next none+~ tar], pos (peg pos axe-2-uq))
       ::
-      =^  sub-next  gen  $(nomm p.nomm, goal [%next args-need then.fol-next])
+      =^  sub-next  gen
+        =*  g  [%next args-need then.fol-next]
+        $(nomm p.nomm, goal g, pos (peg pos axe-2-p))
       (copy sub-next what.fol-next)
     ::
         %3
@@ -1241,14 +1274,14 @@
         ?:  ?=(%none -.what.goal)
           ::  the product will be discarded anyway, no checks necessary
           ::
-          $(nomm p.nomm)
+          $(nomm p.nomm, pos (peg pos 3))
         =^  [z=@uwoo o=@uwoo]  gen  (phin r.what.goal then.goal)
         $(goal [%pick z o])
       ::
           %pick
         =^  r  gen  re
         =^  o  gen  (emit ~ ~ %clq r [zero once]:goal)
-        $(nomm p.nomm, goal [%next [%this r] o])
+        $(nomm p.nomm, goal [%next [%this r] o], pos (peg pos 3))
       ==
     ::
         %4
@@ -1257,13 +1290,13 @@
         =^  pro  gen  re
         =^  arg  gen  re
         =^  o     gen  (emit ~ [%inc arg pro]~ %don pro)
-        $(nomm p.nomm, goal [%next [%this arg] o])
+        $(nomm p.nomm, goal [%next [%this arg] o], pos (peg pos 3))
       ::
           %pick
         =^  pro  gen  re
         =^  arg  gen  re
         =^  o     gen  (emit ~ [%inc arg pro]~ %brn pro [zero once]:goal)
-        $(nomm p.nomm, goal [%next [%this arg] o])
+        $(nomm p.nomm, goal [%next [%this arg] o], pos (peg pos 3))
       ::
           %next
         ?:  ?=(?(^ %both) -.what.goal)
@@ -1275,7 +1308,7 @@
         ::
         =^  arg  gen  re
         =^  o     gen  (emit ~ [%inc arg pro]~ %hop then.goal)
-        $(nomm p.nomm, goal [%next [%this arg] o])
+        $(nomm p.nomm, goal [%next [%this arg] o], pos (peg pos 3))
       ==
     ::
         %5
@@ -1295,8 +1328,10 @@
           ::  kinda like autocons compilation, since we drop the result
           ::  and the op never crashes
           ::
-          =^  next-q  gen  $(nomm q.nomm)
-          =^  next-p  gen  $(nomm p.nomm, then.goal then.next-q)
+          =^  next-q  gen  $(nomm q.nomm, pos (peg pos 7))
+          =^  next-p  gen
+            $(nomm p.nomm, then.goal then.next-q, pos (peg pos 6))
+          ::
           (copy next-p what.next-q)
         =^  [z=@uwoo o=@uwoo]  gen  (phin r.what.goal then.goal)
         $(goal [%pick z o])
@@ -1305,32 +1340,39 @@
         =^  r-p     gen  re
         =^  r-q     gen  re
         =^  o       gen  (emit ~ ~ %eqq r-p r-q [zero once]:goal)
-        =^  next-q  gen  $(nomm q.nomm, goal [%next [%this r-q] o])
-        =^  next-p  gen  $(nomm p.nomm, goal [%next [%this r-p] then.next-q])
+        =^  next-q  gen
+          $(nomm q.nomm, goal [%next [%this r-q] o], pos (peg pos 7))
+        ::
+        =^  next-p  gen
+          $(nomm p.nomm, goal [%next [%this r-p] then.next-q], pos (peg pos 6))
+        ::
         (copy next-p what.next-q)
       ::
       ==
     ::
         %6
-      ?:  ?=(%next -.goal)
-        =^  [phi-0=next phi-1=next]  gen  (phil goal)
-        =^  next-1  gen  $(nomm r.nomm, goal phi-1)
-        =^  next-0  gen  $(nomm q.nomm, goal phi-0)
-        =^  [both=need then=@uwoo else=@uwoo]  gen  (sect next-0 next-1)
-        =^  cond  gen  $(nomm p.nomm, goal [%pick then else])
-        (copy cond both)
-      ::  either %6 is in tail position or the result is used to %pick,
-      ::  so we don't need to generate merge blocks
+      =^  [goal-0=^goal goal-1=^goal]  gen
+        ?:  ?=(%next -.goal)  (phil goal)
+        [[goal goal] gen]
       ::
-      =^  next-1  gen  $(nomm r.nomm)
-      =^  next-0  gen  $(nomm q.nomm)
-      =^  [both=need then=@uwoo else=@uwoo]  gen  (sect next-0 next-1)
-      =^  cond  gen  $(nomm p.nomm, goal [%pick then else])
+      =^  next-1  gen  $(nomm r.nomm, goal goal-1)
+      =^  next-0  gen  $(nomm q.nomm, goal goal-0)
+      ::
+      ::  XX feels strange... maybe we should have info about the exclusive
+      ::  data usage by the branches and use that to pessimize if the actual
+      ::  registerizations happen to use stuff from those places?
+      ::
+      =^  [both=need *]  gen  (shape-to-need (~(got by branches-shapes) pos))
+      =^  ops-o  gen  (coerce-ops what.next-1 both |+~)
+      =^  ops-z  gen  (coerce-ops what.next-0 both |+~)
+      =^  then   gen  (emit ~ ops-z %hop then.next-0)
+      =^  else   gen  (emit ~ ops-o %hop then.next-1)
+      =^  cond   gen  $(nomm p.nomm, goal [%pick then else], pos (peg pos 6))
       (copy cond both)
     ::
         %7
-      =^  nex  gen  $(nomm q.nomm)
-      $(nomm p.nomm, goal nex)
+      =^  nex  gen  $(nomm q.nomm, pos (peg pos 7))
+      $(nomm p.nomm, goal nex, pos (peg pos 6))
     ::
         %10
       ?-    -.goal
@@ -1347,18 +1389,22 @@
       ::
           %next
         =^  [don=need rec=need o=@uwoo]  gen  (into p.p.nomm goal)
-        =^  next-rec  gen  $(nomm q.nomm, goal [%next rec o])
-        =^  next-don  gen  $(nomm q.p.nomm, goal [%next don then.next-rec])
+        =^  next-rec  gen  $(nomm q.nomm, goal [%next rec o], pos (peg pos 7))
+        =^  next-don  gen
+          $(nomm q.p.nomm, goal [%next don then.next-rec], pos (peg pos 13))
+        ::
         (copy next-don what.next-rec)
       ::
       ==
     ::
         %11
       ?@  p.nomm
-        ?.  ?=(hint-static-mute p.nomm)  $(nomm q.nomm)
+        ?.  ?=(hint-static-mute p.nomm)  $(nomm q.nomm, pos (peg pos axe-11-q))
         =^  goal  gen  (simple-next goal)
         =^  epil  gen  (emit ~ [%hos p.nomm body.nomm]~ %hop then.goal)
-        =^  nex   gen  $(nomm q.nomm, goal goal(then epil))
+        =^  nex   gen
+          $(nomm q.nomm, goal goal(then epil), pos (peg pos axe-11-q))
+        ::
         =^  prol  gen  (emit ~ [%his p.nomm body.nomm]~ %hop then.nex)
         [[%next what.nex prol] gen]
       ?:  ?=(%memo p.p.nomm)
@@ -1375,7 +1421,7 @@
           =^  save  gen
             (emit ~ [%mem key sub body.nomm prod.mis]~ %hop aftr.mis)
           ::
-          $(nomm q.nomm, goal [%next this+prod.mis save])
+          $(nomm q.nomm, goal [%next this+prod.mis save], pos (peg pos axe-11-q))
         ::  unsatisfied so far: prod.hit, what.next-mis, sub
         ::  %mim will satisfy prod.hit or miss, only what.next-mis is left
         ::  so +sect is not needed to align the needs of branches
@@ -1383,14 +1429,18 @@
         =^  check  gen
           (emit ~ ~ %mim key sub body.nomm prod.hit aftr.hit then.next-mis)
         ::
-        =^  next-key  gen  $(nomm q.p.nomm, goal [%next this+key check])
+        =^  next-key  gen
+          $(nomm q.p.nomm, goal [%next this+key check], pos (peg pos axe-11-qp))
+        ::
         =^  key-fol   gen  (copy next-key what.next-mis)
         ::  fill the subject register
         ::
         (copy key-fol this+sub)
       ?.  ?=(hint-dynamic p.p.nomm)
-        =^  nex  gen  $(nomm q.nomm)
-        =^  hin  gen  $(nomm q.p.nomm, goal [%next none+~ then.nex])
+        =^  nex  gen  $(nomm q.nomm, pos (peg pos axe-11-q))
+        =^  hin  gen
+          $(nomm q.p.nomm, goal [%next none+~ then.nex], pos (peg pos axe-11-qp))
+        ::
         (copy hin what.nex)
       =^  goal  gen  (simple-next goal)
       =^  toke  gen  re
@@ -1410,7 +1460,9 @@
         :: [[%hyd p.p.nomm toke prod body.nomm]~ dot(goal [%next this+prod aftr])]
       ::
       =^  epil  gen  (emit ~ epil-ops %hop then.goal)
-      =^  nex   gen  $(nomm q.nomm, goal goal(then epil))
+      =^  nex   gen
+        $(nomm q.nomm, goal goal(then epil), pos (peg pos axe-11-q))
+      ::
       ::  if the hint is not crash-relocation safe: put a relocation boundary
       ::
       =?  .  ?=(hint-dynamic-mute-stop p.p.nomm)
@@ -1419,7 +1471,9 @@
         dot(nex top)
       ::
       =^  prol  gen  (emit ~ [%hid p.p.nomm toke body.nomm]~ %hop then.nex)
-      =^  dyn   gen  $(nomm q.p.nomm, goal [%next this+toke prol])
+      =^  dyn   gen
+        $(nomm q.p.nomm, goal [%next this+toke prol], pos (peg pos axe-11-qp))
+      ::
       (copy dyn what.nex)
     ::
         %12
@@ -1428,8 +1482,12 @@
       =^  r-path     gen  re
       =^  r-ref      gen  re
       =^  o-spy      gen  (emit ~ [%spy r-ref r-path pro]~ %hop out)
-      =^  need-path  gen  $(nomm q.nomm, goal [%next this+r-path o-spy])
-      =^  need-ref   gen  $(nomm p.nomm, goal [%next this+r-ref then.need-path])
+      =^  need-path  gen
+        $(nomm q.nomm, goal [%next this+r-path o-spy], pos (peg pos 7))
+      ::
+      =^  need-ref   gen
+        $(nomm p.nomm, goal [%next this+r-ref then.need-path], pos (peg pos 6))
+      ::
       (copy need-ref what.need-path)
     ==
   ::
