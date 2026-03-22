@@ -1355,8 +1355,8 @@
         ?:  ?=(%next -.goal)  (phil goal)
         [[goal goal] gen]
       ::
-      =^  next-1  gen  $(nomm r.nomm, goal goal-1)
-      =^  next-0  gen  $(nomm q.nomm, goal goal-0)
+      =^  next-1  gen  $(nomm r.nomm, goal goal-1, pos (peg pos 15))
+      =^  next-0  gen  $(nomm q.nomm, goal goal-0, pos (peg pos 14))
       ::
       ::  XX feels strange... maybe we should have info about the exclusive
       ::  data usage by the branches and use that to pessimize if the actual
@@ -1399,7 +1399,10 @@
     ::
         %11
       ?@  p.nomm
-        ?.  ?=(hint-static-mute p.nomm)  $(nomm q.nomm, pos (peg pos axe-11-q))
+        ::  Atomic hint
+        ::
+        ?.  ?=(hint-static p.nomm)  $(nomm q.nomm, pos (peg pos axe-11-q))
+        ?>  ?=(hint-static-mute p.nomm)
         =^  goal  gen  (simple-next goal)
         =^  epil  gen  (emit ~ [%hos p.nomm body.nomm]~ %hop then.goal)
         =^  nex   gen
@@ -1408,6 +1411,8 @@
         =^  prol  gen  (emit ~ [%his p.nomm body.nomm]~ %hop then.nex)
         [[%next what.nex prol] gen]
       ?:  ?=(%memo p.p.nomm)
+        ::  %memo hint
+        ::
         =^  key   gen  re
         =^  sub   gen  re
         =^  goal  gen  (simple-next goal)
@@ -1436,6 +1441,9 @@
         ::  fill the subject register
         ::
         (copy key-fol this+sub)
+      ::
+      ::  Dynamic hint
+      ::
       ?.  ?=(hint-dynamic p.p.nomm)
         =^  nex  gen  $(nomm q.nomm, pos (peg pos axe-11-q))
         =^  hin  gen

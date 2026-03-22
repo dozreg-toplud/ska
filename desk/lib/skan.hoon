@@ -2036,7 +2036,8 @@
 ::
 ++  shape-finalize
   |=  s=shape
-  ^-  shape-final
+  ?:  =(%look s)  |
+  |-  ^-  shape-final
   ?:  ?=(%nope s)  |
   ?@  s  &
   [$(s -.s) $(s +.s)]
@@ -2125,6 +2126,7 @@
   |=  [s=shape ax=@]
   ^-  shape
   ?<  =(0 ax)
+  ?:  =(1 ax)  s
   ?@  s  s
   ?-  (cap ax)
     %2  $(s -.s, ax (mas ax))
@@ -2174,16 +2176,36 @@
       ::  `form` describes the subject of the %6 in question, `y` and `n`
       ::  contain shapes discovered/asserted by the branches
       ::
-      branches=(list [where=@axis =form y=$ n=$])
+      branches=(list [where=@axis sub=sock-prep y=$ n=$])
   ==
 ::
 +$  spring  spring:source
 ::  partial noun for the prepass
 ::
-+$  sock-prep  form
++$  sock-prep  (lest form)
+++  sock-prep-apply-una
+  |=  [f=$-(form form) a=(list form)]
+  ^-  (lest form)
+  =-  ?~  -  !!  -
+  ^-  (list form)
+  (turn a f)
+::
+++  sock-prep-apply-bin
+  |=  [f=$-([form form] form) a=(list form) b=(list form)]
+  ^-  (lest form)
+  =-  ?~  -  !!  -
+  ^-  (list form)
+  %-  zing
+  ^-  (list (list form))
+  %+  turn  a
+  |=  i-a=form
+  %+  turn  b
+  |=  i-b=form
+  (f i-a i-b)
 ::
 ++  slot-form
-  |=  [f=form ax=@]
+  |=  ax=@
+  |=  f=form
   ^-  form
   ?<  =(0 ax)
   ?:  =(1 ax)  f
@@ -2198,6 +2220,16 @@
   ^-  form
   =*  pair  +<
   pair
+::
+++  cons-sock-prep
+  |=  [a=sock-prep b=sock-prep]
+  ^-  sock-prep
+  (sock-prep-apply-bin cons-form a b)
+::
+++  slot-sock-prep
+  |=  [a=sock-prep ax=@]
+  ^-  sock-prep
+  (sock-prep-apply-una (slot-form ax) a)
 ::
 +$  map-shapes  (map @uxshape shape)
 ::
@@ -2304,6 +2336,13 @@
   ?^  -.f  [$(f -.f) $(f +.f)]
   (slot-shape (~(got by m) idx.f) ax.f)
 ::
+++  sock-prep-to-shape
+  |=  [s=sock-prep m=map-shapes]
+  ^-  shape
+  %+  roll  t.s
+  |=  [i=form acc=_`shape`(form-to-shape i.s m)]
+  (uni-shape acc (form-to-shape i m))
+::
 ++  play-usage
   |=  use=usage-lazy
   ^-  [map-shapes (map @axis shape)]
@@ -2315,7 +2354,7 @@
   ::
   =+  ^-  recur-out
     %+  roll  branches.use
-    |=  [i=[where=@axis =form y=usage-lazy n=usage-lazy] acc=recur-out]
+    |=  [i=[where=@axis sub=sock-prep y=usage-lazy n=usage-lazy] acc=recur-out]
     =/  y=(pair map-shapes (map @axis shape))  play-buc(use y.i)
     =/  n=(pair map-shapes (map @axis shape))  play-buc(use n.i)
     :-  [[p.y p.n] branches-play.acc]
@@ -2336,9 +2375,9 @@
   :-  sure-joins
   %-  ~(gas by branch-sub-shapes)
   %+  turn  branches.use
-  |=  i=[where=@axis =form *]
+  |=  i=[where=@axis sub=sock-prep *]
   :-  where.i
-  (form-to-shape form.i sure-joins)
+  (sock-prep-to-shape sub.i sure-joins)
 ::
 ++  find-args
   =/  axe-2-p=@  6
@@ -2403,7 +2442,7 @@
   =<  -
   |^  ^+  short
   =.  stack-set  (~(put in stack-set) b)
-  =/  sub=sock-prep  [0x0 `@`1]
+  =/  sub=sock-prep  [0x0 `@`1]~
   ~&  [%enter (mux b)]
   =;  [branches-shapes=(map @axis shape) short1=_short]
     ::  fixpoint search done, finalize
@@ -2431,7 +2470,6 @@
     ::  collapse branches
     ::
     =^  branches-shapes=(map @axis shape)  short1
-      ^-  [(map @axis shape) _short]
       =.  short  short1
       =/  [sure-collapsed=map-shapes branches-shapes=(map @axis shape)]
         (play-usage use.short)
@@ -2442,7 +2480,7 @@
     ::
     ::  capture by the result
     ::
-    =.  sure.use.short1  (update-shapes prod %data)
+    =.  sure.use.short1  (update-shapes(short short1) prod %data)
     ::  check if we converged
     ::
     ?~  shape-loop-mayb=`(unit shape)`(~(get by loop-calls.short1) b)
@@ -2469,11 +2507,11 @@
       [p=^ q=*]
     =^  l  short  nomm-loop(n p.n, position (peg position 2))
     =^  r  short  nomm-loop(n q.n, position (peg position 3))
-    [(cons-form l r) short]
+    [(sock-prep-apply-bin cons-form l r) short]
   ::
       [%0 *]
     ?:  =(0 p.n)  new-reg-shape
-    =/  prod=sock-prep  (slot-form sub p.n)
+    =/  prod=sock-prep  (sock-prep-apply-una (slot-form p.n) sub)
     =?  sure.use.short  !=(1 p.n)  (update-shapes prod %look)
     [prod short]
   ::
@@ -2504,7 +2542,9 @@
       ::
       :_  short
       %-  unfinal  =<  shape-final
-      (fall (~(get by memo.short) u.info.n) (~(got by melo.short) u.info.n))
+      ?^  mem=(~(get by memo.short) u.info.n)  u.mem
+      ?^  mel=(~(get by melo.short) u.info.n)  u.mel
+      !!
     ::
     =.  sure.use.short  (update-shapes s use-callee)
     new-reg-shape
@@ -2533,8 +2573,9 @@
     =/  new-branch-info  [position sub use.short-y use.short-n]
     =.  branches.use.short  [new-branch-info branches.use.short]
     =.  short  short-n(use use.short)
-    ?:  =(y n)  [y short]
-    new-reg-shape
+    :_  short
+    =-  ?~  -  !!  -
+    (weld y n)
   ::
       [%7 *]
     =^  p  short  nomm-loop(n p.n, position (peg position 6))
@@ -2545,19 +2586,16 @@
     =^  don  short  nomm-loop(n q.p.n, position (peg position 13))
     ::  edit site needs to exist for safe arg disassembly
     ::
-    =/  edit-site  (slot-form rec p.p.n)
+    =/  edit-site  (sock-prep-apply-una (slot-form p.p.n) rec)
     =?  sure.use.short  !?=(%1 p.p.n)  (update-shapes edit-site %look)
     :_  short
-    ^-  form
-    |-  ^-  form
+    |-  ^-  sock-prep
     ?:  =(1 p.p.n)  don
-    ?-    (cap p.p.n)
-        %2
-      (cons-form $(p.p.n (mas p.p.n), rec (slot-form rec 2)) (slot-form rec 3))
-    ::
-        %3
-      (cons-form (slot-form rec 2) $(p.p.n (mas p.p.n), rec (slot-form rec 3)))
-    ::
+    =*  cons  cons-sock-prep
+    =*  slot  slot-sock-prep
+    ?-  (cap p.p.n)
+      %2  (cons $(p.p.n (mas p.p.n), rec (slot rec 2)) (slot rec 3))
+      %3  (cons (slot rec 2) $(p.p.n (mas p.p.n), rec (slot rec 3)))
     ==
   ::
       [%11 *]
@@ -2585,13 +2623,15 @@
   ==
   ::
   ++  update-shapes
-    |=  [=form =shape]
+    |=  [forms=(list form) =shape]
     ^-  (map @uxshape ^shape)
-    (uni-shape-map sure.use.short (distribute-shapes form shape))
+    %+  roll  forms
+    |=  [i=form acc=_sure.use.short]
+    (uni-shape-map acc (distribute-shapes i shape))
   ::
   ++  new-reg-shape
-    ^-  [form _short]
-    :-  [uxgen.short `@`1]
+    ^-  [sock-prep _short]
+    :-  [uxgen.short `@`1]~
     %=  short
       uxgen     +(uxgen.short)
       sure.use  (~(put by sure.use.short) uxgen.short %nope)

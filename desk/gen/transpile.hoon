@@ -22,10 +22,14 @@
 =|  =line-long
 =.  boil.line-long  boil
 =.  arity.line-long  (find-args-all:skan code.boil)
-::  linearize, run the interpreter
+::  linearize, compile to C
 ::
 =.  line-dor  (~(compile-all line-dor line-long) code.boil)
 (crip (snoc `tape`(zing (join "\0a" back:line-dor)) '\0a'))
+:: %-  ~(rep by arity.line-long)
+:: |=  [[k=^bell v=meme-args] acc=~]
+:: ~&  [(mux k) shape-final.v fol.k]
+:: ~
 ::
 ::  XX no sock maximization logic
 ::
@@ -39,4 +43,9 @@
   ?~  l  ~
   ?:  (~(huge so s.i.l) &+sub)  `s.i.l
   $(l t.l)
+::
+++  mux
+  |=  n=*
+  ^-  @ux
+  (mug n)
 --
