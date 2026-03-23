@@ -161,10 +161,10 @@
       [%hip c=@uwoo t=@uwoo]
       [%lnk u=@uvre f=@uvre d=@uvre t=@uwoo]
       [%cal a=bell v=(list @uvre) d=@uvre t=@uwoo]
-      [%caf a=bell v=(list @uvre) d=@uvre t=@uwoo u=@uvre n=[path @]]
+      [%caf a=bell v=(list @uvre) d=@uvre t=@uwoo n=ring]
       [%lnt u=@uvre f=@uvre]
       [%jmp a=bell v=(list @uvre)]
-      [%jmf a=bell v=(list @uvre) u=@uvre n=[path @]]
+      [%jmf a=bell v=(list @uvre) n=ring]
       [%don s=@uvre]
       [%dom r=*]
       [%bom ~]
@@ -182,10 +182,10 @@
     %hip  ~
     %lnk  ~[u.s f.s d.s]
     %cal  [d.s v.s]
-    %caf  [d.s u.s v.s]
+    %caf  [d.s v.s]
     %lnt  ~[u.s f.s]
     %jmp  v.s
-    %jmf  [u.s v.s]
+    %jmf  v.s
     %don  ~[s.s]
     %dom  ~
     %bom  ~
@@ -236,6 +236,7 @@
   $:  code=(map bell straight)
       arity=(map bell meme-args)
       =boil
+      jet-args=(map ring shape-final)
   ==
 ::
 +$  line-short

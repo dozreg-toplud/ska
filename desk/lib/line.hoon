@@ -11,7 +11,6 @@
   ^-  (list @uvre)
   ?~  n  ~
   (gulf `@uvre`0 `@uvre`(dec n))
-::  XX rewrite the registers again to compress the space
 ::
 ++  back
   ^-  (list tape)
@@ -51,9 +50,9 @@
     |=  n=@
     ^-  tape
     ?~  n  ""
-    |-  ^-  tape
-    ?:  =(1 n)  "  {(r `@`0)} = reg_{<`@uv`0>};\0a"
     %-  snoc  :_  '\0a'
+    |-  ^-  tape
+    ?:  =(1 n)  "  {(r `@`0)} = reg_{<`@uv`0>};"
     %+  weld  $(n (dec n))  
     "\0a  {(r (dec n))} = reg_{<`@uv`(dec n)>};"
   ::
@@ -787,10 +786,10 @@
       %hip  site
       %lnk  site(u (update-r u.site), f (update-r f.site), d (update-r d.site))
       %cal  site(d (update-r d.site), v (turn v.site update-r))
-      %caf  site(d (update-r d.site), v (turn v.site update-r), u (update-r u.site))
+      %caf  site(d (update-r d.site), v (turn v.site update-r))
       %lnt  site(u (update-r u.site), f (update-r f.site))
       %jmp  site(v (turn v.site update-r))
-      %jmf  site(v (turn v.site update-r), u (update-r u.site))
+      %jmf  site(v (turn v.site update-r))
       %don  site(s (update-r s.site))
       %bom  site
       %dom  site
@@ -949,8 +948,7 @@
         [[i-new v-out.acc] gen]
       ::
       =^  d-new  gen  (old-to-new d.site)
-      =^  u-new  gen  (old-to-new u.site)
-      [site(v v-new, d d-new, u u-new) gen]
+      [site(v v-new, d d-new) gen]
     ::
         %lnt
       =^  u-new  gen  (old-to-new u.site)
@@ -977,8 +975,7 @@
         =^  i-new  gen  (old-to-new i)
         [[i-new v-out.acc] gen]
       ::
-      =^  u-new  gen  (old-to-new u.site)
-      [site(v v-new, u u-new) gen]
+      [site(v v-new) gen]
     ::
         %don
       =^  s-new  gen  (old-to-new s.site)
@@ -1233,19 +1230,28 @@
           $(nomm p.nomm, goal [%next this+s then.need-f], pos (peg pos axe-2-p))
         ::
         (copy need-s what.need-f)
-      =/  meme-args  (~(got by arity.gen) u.info.nomm)
+      =/  rin=(unit ring)  (~(get by cole.boil.gen) u.info.nomm)
       =^  [args-need=need args-list=(list @uvre)]  gen
+        ?^  rin  (shape-to-need (~(got by jet-args.gen) u.rin))
+        =/  meme-args  (~(got by arity.gen) u.info.nomm)
         (shape-to-need shape-final.meme-args)
-      ::
-      ::  XX no jet stuff for now
       ::
       =^  tar=@uwoo  gen
         ?-    -.goal
-            %done  (emit ~ ~ %jmp u.info.nomm args-list)
+            %done
+          =/  op=site
+            ?~  rin  [%jmp u.info.nomm args-list]
+            [%jmf u.info.nomm args-list u.rin]
+          ::
+          (emit ~ ~ op)
         ::
             %next
           =^  [aftr=@uwoo prod=@uvre]  gen  (kerf goal)
-          (emit ~ ~ %cal u.info.nomm args-list prod aftr)
+          =/  op=site
+            ?~  rin  [%cal u.info.nomm args-list prod aftr]
+            [%caf u.info.nomm args-list prod aftr u.rin]
+          ::
+          (emit ~ ~ op)
         ==
       ::
       =^  fol-next=next  gen
