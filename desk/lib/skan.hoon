@@ -2324,7 +2324,9 @@
 ::  producing the total data usage of a given branch depth.
 ::
 ::  The algorithm is recursive, from the deepest branch level outwards: we first
-::  collapse the branches in our branches, then we collapse our branches.
+::  collapse the branches in our branches, then we collapse our branches. When
+::  we collapse the branches below we unify their sure.use with our sure.use,
+::  propagating the info accumulated after branch merge
 ::
 ++  uni-by
   |*  [a=(map) b=(map)]
@@ -2355,8 +2357,12 @@
   =+  ^-  recur-out
     %+  roll  branches.use
     |=  [i=[where=@axis sub=sock-prep y=usage-lazy n=usage-lazy] acc=recur-out]
-    =/  y=(pair map-shapes (map @axis shape))  play-buc(use y.i)
-    =/  n=(pair map-shapes (map @axis shape))  play-buc(use n.i)
+    =/  y=(pair map-shapes (map @axis shape))
+      play-buc(use y.i(sure (uni-shape-map sure.y.i sure.use)))
+    ::
+    =/  n=(pair map-shapes (map @axis shape))
+      play-buc(use n.i(sure (uni-shape-map sure.n.i sure.use)))
+    ::
     :-  [[p.y p.n] branches-play.acc]
     :(uni-by branch-sub-shapes.acc q.y q.n)
   ::

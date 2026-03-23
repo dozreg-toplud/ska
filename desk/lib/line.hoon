@@ -44,15 +44,17 @@
   \{
     u3_noun rs[{num-regs-tape}];
   {(render-prelude-with-indentation n-args.v)}
-  {(render-body-with-indentation blocks.v)}
-  }
+  {(render-body-with-indentation blocks.v)}}\0a
   """
   ::
   ++  render-prelude-with-indentation
     |=  n=@
     ^-  tape
     ?~  n  ""
-    %+  weld  $(n (dec n))
+    |-  ^-  tape
+    ?:  =(1 n)  "  {(r `@`0)} = reg_{<`@uv`0>};\0a"
+    %-  snoc  :_  '\0a'
+    %+  weld  $(n (dec n))  
     "\0a  {(r (dec n))} = reg_{<`@uv`(dec n)>};"
   ::
   ++  get-max-register
@@ -83,7 +85,7 @@
   ++  render-input-args
     |=  n=@ud
     ^-  tape
-    ?~  n  ""
+    ?~  n  "void"
     =/  out=tape  "u3_noun reg_0v0"
     =/  i=@uv  `@`1
     |-  ^-  tape
@@ -94,10 +96,12 @@
     |=  blocks=(map @uwoo blob)
     ^-  tape
     =/  first  (~(got by blocks) direct-entrypoint)
+    =/  rest  (~(del by blocks) direct-entrypoint)
+    ?~  rest  "{(render-block-with-indentation first)}\0a"
     """
     {(render-block-with-indentation first)}
-    //
-    {(render-blocks-with-indentation (~(del by blocks) direct-entrypoint))}
+    
+    {(render-blocks-with-indentation rest)}
     """
   ::  all but first
   ::
@@ -106,12 +110,10 @@
     ^-  tape
     %-  ~(rep by blocks)
     |=  [[k=@uwoo v=blob] txt=tape]
-    %-  weld
-    :_  txt
+    %-  weld  :_  txt
     """
     _{<k>}:
-    {(render-block-with-indentation v)}
-    \0a
+    {(render-block-with-indentation v)}\0a
     """
   ::
   ++  render-block-with-indentation
