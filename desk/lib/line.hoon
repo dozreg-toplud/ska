@@ -1231,10 +1231,15 @@
         ::
         (copy need-s what.need-f)
       =/  rin=(unit ring)  (~(get by cole.boil.gen) u.info.nomm)
-      =^  [args-need=need args-list=(list @uvre)]  gen
-        ?^  rin  (shape-to-need (~(got by jet-args.gen) u.rin))
-        =/  meme-args  (~(got by arity.gen) u.info.nomm)
-        (shape-to-need shape-final.meme-args)
+      =^  [rin=(unit ring) args-need=need args-list=(list @uvre)]  gen
+        =/  shape-ring=(unit shape-final)  (biff rin ~(get by jet-args.gen))
+        =^  out  gen
+          %-  shape-to-need
+          ?^  shape-ring  u.shape-ring
+          shape-final:(~(got by arity.gen) u.info.nomm)
+        ::
+        :_  gen
+        [?~(shape-ring ~ rin) out]
       ::
       =^  tar=@uwoo  gen
         ?-    -.goal
