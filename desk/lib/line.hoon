@@ -1376,8 +1376,22 @@
       ::  registerizations happen to use stuff from those places?
       ::
       =^  [both=need *]  gen  (shape-to-need (~(got by branches-shapes) pos))
-      =^  ops-o  gen  (coerce-ops what.next-1 both |+~)
-      =^  ops-z  gen  (coerce-ops what.next-0 both |+~)
+      =^  ops-o  gen
+        ~|  %branch-1
+        ~|  what+what.next-1
+        ~|  both+both
+        ~|  6+(print-nomm-1 nomm)
+        ~|  1+(print-nomm-1 r.nomm)
+        (coerce-ops what.next-1 both |+~)
+      ::
+      =^  ops-z  gen
+        ~|  %branch-0
+        ~|  what+what.next-0
+        ~|  both+both
+        ~|  6+(print-nomm-1 nomm)
+        ~|  0+(print-nomm-1 q.nomm)
+        (coerce-ops what.next-0 both |+~)
+      ::
       =^  then   gen  (emit ~ ops-z %hop then.next-0)
       =^  else   gen  (emit ~ ops-o %hop then.next-1)
       =^  cond   gen  $(nomm p.nomm, goal [%pick then else], pos (peg pos 6))

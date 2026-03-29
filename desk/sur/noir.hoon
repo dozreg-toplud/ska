@@ -87,7 +87,34 @@
       [%0 p=@]
   ==
 ::
-+$  nomm-1-6  _`$>(%6 nomm-1)`[%6 0+0 0+0 0+0]
+++  mux
+  |=  n=*
+  ^-  @ux
+  (mug n)
+::
+++  print-nomm-1
+  |=  n=nomm-1
+  ^-  tape
+  ?-    -.n
+      ^   (weld $(n -.n) $(n +.n))
+      %0   <n>
+      %1 
+    =/  ren  <n>
+    ?:  (gth (lent ren) 5)  "..."
+    ren
+  ::
+      %2   "[%2 p={$(n p.n)} q={?~(q.n "?" $(n u.q.n))} info={?~(info.n "?" <(mux u.info.n)>)}]"
+      %3   "[%3 {$(n p.n)}]"
+      %4   "[%4 {$(n p.n)}]"
+      %5   "[%5 p={$(n p.n)} q={$(n q.n)}]"
+      %6   "[%6 p={$(n p.n)} q={$(n q.n)} r={$(n r.n)}]"
+      %7   "[%7 p={$(n p.n)} q={$(n q.n)}]"
+      %10  "[%10 p=[p=<p.p.n> q={$(n q.p.n)}] q={$(n q.n)}]"
+      %12  "[%12 p={$(n p.n)} q={$(n q.n)}]"
+      %11
+    ?@  p.n  "[%11 {<p.n>} {$(n q.n)}]"
+    "[%11 [{<p.p.n>} ...] {$(n q.n)}]"
+  ==
 ::  formula registration coordinate: path + axis in the core
 ::
 +$  ring  (pair path @)
