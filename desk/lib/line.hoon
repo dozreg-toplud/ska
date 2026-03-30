@@ -1407,7 +1407,13 @@
       ::  data usage by the branches and use that to pessimize if the actual
       ::  registerizations happen to use stuff from those places?
       ::
-      =^  [both=need *]  gen  (shape-to-need (~(got by branches-shapes) pos))
+      =^  [both=need *]  gen
+        %-  shape-to-need
+        ~|  pos
+        ~|  (print-nomm-1 nomm)
+        ~|  ~(key by branches-shapes)
+        (~(got by branches-shapes) pos)
+      ::
       =^  ops-o  gen
         ~|  %branch-1
         ~|  what+what.next-1
