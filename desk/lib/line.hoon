@@ -236,6 +236,22 @@
     |-  ^-  tape
     ?~  t.v  out
     $(t.v t.t.v, out (weld out ", {(r i.t.v)}"))
+  ::
+  ++  try-tape
+    |=  n=*
+    ^-  (unit tape)
+    ?:  =(0 n)  ~
+    ?~  l=((soft (list @)) n)  ~
+    =/  cord  (crip u.l)
+    ?.  ((sane %tas) cord)  ~
+    ?.  =((lent u.l) (met 3 cord))  ~
+    `u.l
+  ::
+  ++  render-atom
+    |=  a=@
+    ^-  tape
+    ?:  &(((sane %tas) a) !=(0 a))  "u3i_string(\"{(trip a)}\")"
+    |2:(scow %ui a)
   ::  XX make a jam buffer with all the nouns needed so we can reference it
   ::  later
   ::
@@ -244,11 +260,23 @@
   ++  render-noun
     |=  n=*
     ^-  tape
-    ?-  n
-      @                  |2:(scow %ui n)
-      [p=* q=@]          "u3nc({$(n p.n)}, {$(n q.n)})"
-      [p=* q=* r=@]      "u3nt({$(n p.n)}, {$(n q.n)}, {$(n r.n)})"
-      [p=* q=* r=* s=*]  "u3nq({$(n p.n)}, {$(n q.n)}, {$(n r.n)}, {$(n s.n)})"
+    ?^  tap=(try-tape n)  "u3i_tape(\"{u.tap}\")"
+    ?-    n
+        @
+      (render-atom n)
+    ::
+        [p=* q=@]
+      "u3nc({$(n p.n)}, {$(n q.n)})"
+    ::
+        [p=* q=* r=@]
+      ?^  tap=(try-tape q.n r.n)  "u3nc({$(n p.n)}, u3i_tape(\"{u.tap}\"))"
+      "u3nt({$(n p.n)}, {$(n q.n)}, {$(n r.n)})"
+    ::
+        [p=* q=* r=* s=*]
+      ?^  tap=(try-tape q.n r.n s.n)  "u3nc({$(n p.n)}, u3i_tape(\"{u.tap}\"))"
+      ?^  tap=(try-tape r.n s.n)  "u3nt({$(n p.n)}, {$(n q.n)}, u3i_tape(\"{u.tap}\"))"
+      "u3nq({$(n p.n)}, {$(n q.n)}, {$(n r.n)}, {$(n s.n)})"
+    ::
     ==
   ::
   ++  r
