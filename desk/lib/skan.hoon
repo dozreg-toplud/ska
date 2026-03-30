@@ -2630,14 +2630,16 @@
   ::
       [%11 *]
     ?@  p.n
-      ?.  ?=(hint-static-stop:gene p.n)
-        nomm-loop(n q.n, position (peg position axe-11-q))
-      :: =^  s  short  new-reg-shape
-      :: nomm-loop(sub s, n q.n, position (peg position axe-11-q))
-      ::
-      ::  (mint-vain since hint-static-stop:gene is void for now)
-      !!
-    =.  short  +:nomm-loop(n q.p.n, position (peg position axe-11-qp))
+      ?:  ?=(hint-static-stop:gene p.n)  
+        ::  crash relocation treatment if neccessary
+        ::
+        !!
+      nomm-loop(n q.n, position (peg position axe-11-q))
+    ?.  ?=(hint-dynamic:gene p.p.n)
+      =.  short  +:nomm-loop(n q.p.n, position (peg position axe-11-qp))
+      nomm-loop(n q.n, position (peg position axe-11-q))
+    =^  hint-prod  short  nomm-loop(n q.p.n, position (peg position axe-11-qp))
+    =.  sure.use.short  (update-shapes hint-prod %data)
     ?.  ?=(hint-dynamic-stop:gene p.p.n)
       nomm-loop(n q.n, position (peg position axe-11-q))
     =/  [res=sock-prep short-beyond=_short]
