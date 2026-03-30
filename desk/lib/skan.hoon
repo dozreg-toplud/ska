@@ -2646,6 +2646,7 @@
       nomm-loop(n q.n, position (peg position axe-11-q))
     ::
     =.  bounds.use.short  [[position sub] bounds.use.short]
+    =.  branches.use.short  branches.use.short-beyond
     =.  sure.use.short  (join-shape-map sure.use.short sure.use.short-beyond)
     =.  short  short-beyond(use use.short)
     [res short]
