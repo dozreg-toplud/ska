@@ -1,18 +1,16 @@
 ::::  TODO
-::  arity:
-::    - walk the callgraph to reestablish SCCs
-::      - done, but maybe double check with another approach? maybe it will also
-::        be faster...
-::    - use SCC knowledge to propagate finalized parts of memo cache (basically
-::      robust meloization without guesses)
 ::  vere:
 ::    - experiment with full integration: replace cold state, lean on read-only
 ::      nature of programs
 ::   refactor (eventually):
-::    - merge +scan, +cook and any other walks into one (maybe two?) traversals
-::      - case for two traversals: the first one does more work due to
-::        backtracking if loop/melo guess fails, the second one could do more 
-::        heavy stuff
+::    Explicit three passes:
+::      call graph reconstruction aka SKA
+::      Argument recovery aka arity search aka prepass
+::      compilation aka linearization aka codegen
+::
+::    Document everything! SKA is not much code but very complicated, a lot of
+::    tacit knowledge there, esp about performance when it comes to big nouns
+::
 /-  *noir
 /-  gene
 /+  hoot
