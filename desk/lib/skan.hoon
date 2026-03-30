@@ -1,16 +1,18 @@
 ::::  TODO
+::  arity:
+::    - walk the callgraph to reestablish SCCs
+::      - done, but maybe double check with another approach? maybe it will also
+::        be faster...
+::    - use SCC knowledge to propagate finalized parts of memo cache (basically
+::      robust meloization without guesses)
 ::  vere:
 ::    - experiment with full integration: replace cold state, lean on read-only
 ::      nature of programs
 ::   refactor (eventually):
-::    Explicit three passes:
-::      call graph reconstruction aka SKA
-::      Argument recovery aka arity search aka prepass
-::      compilation aka linearization aka codegen
-::
-::    Document everything! SKA is not much code but very complicated, a lot of
-::    tacit knowledge there, esp about performance when it comes to big nouns
-::
+::    - merge +scan, +cook and any other walks into one (maybe two?) traversals
+::      - case for two traversals: the first one does more work due to
+::        backtracking if loop/melo guess fails, the second one could do more 
+::        heavy stuff
 /-  *noir
 /-  gene
 /+  hoot
@@ -2175,17 +2177,6 @@
       ::  contain shapes discovered/asserted by the branches
       ::
       branches=(list [where=@axis sub=sock-prep y=$ n=$])
-      ::  `fore` describes shapes discovered/asserted before the crash
-      ::  relocation boundary
-      ::
-      ::  `yond` describes shapes discovered/asserted beyond the crash
-      ::  relocation boundary
-      ::
-      ::               | `fore`
-      ::              / \
-      ::  boundary   X   |
-      ::     `yond`  |   | current use
-      bounds=(list [where=@axis sub=sock-prep fore=$ yond=$])
   ==
 ::
 +$  spring  spring:source
@@ -2309,7 +2300,6 @@
   ?:  =(v-a v-b)  v-a
   ?:  |(?=(@ v-a) ?=(@ v-b))  %data  ::  XX could be %look?
   (con-shape $(v-a -.v-a, v-b -.v-b) $(v-a +.v-a, v-b +.v-b))
-::  XX add relocation boundary handling explanation
 ::
 ::  sure' = sure U (U_i (y_i n n_i))
 ::  y_i' = y_i \ sure'
@@ -2357,90 +2347,40 @@
 ::
 ++  play-usage
   |=  use=usage-lazy
-  ^-  [map-shapes (map @axis shape) (map @axis shape)]
+  ^-  [map-shapes (map @axis shape)]
   =*  play-buc  $
-  =*  play-out
-    $:  sure=map-shapes
-        branches-shapes=(map @axis shape)
-        bounds-shapes=(map @axis shape)
-    ==
-  ::
-  ^-  play-out
-  =*  recur-bounds-out
-        ::  yond \ fore, or data usage beyond the relocation boundary that did
-        ::  not occur before the relocation boundary
-        ::  NB: we do not subtract data usage AFTER the relocation boundary:
-        ::  if an axis was accessed inside the relocation boundary and after,
-        ::  then we want to crash within the boundary
-        ::
-    $:  bounds-play=(list map-shapes)
-        branches-shapes=(map @axis shape)
-        bounds-shapes=(map @axis shape)
-    ==
-  ::
-  =/  iter-bounds=recur-bounds-out
-    %+  roll  bounds.use
-    |=  $:  i=[where=@axis sub=sock-prep fore=usage-lazy yond=usage-lazy]
-            acc=recur-bounds-out
-        ==
-    ^+  acc
-    =/  fore=play-out  play-buc(use fore.i)
-    =/  yond=play-out  play-buc(use yond.i)
-    [ [(dis-shape-map sure.yond sure.fore) bounds-play.acc]
-      ::  no need to add stuff from `fore`: it's just an older version of
-      ::  top-level `use`
-      ::
-      (uni-by branches-shapes.acc branches-shapes.yond)
-      (uni-by bounds-shapes.acc bounds-shapes.yond)
-    ]
-  ::
-  =/  yonds-dis-fores=map-shapes  (roll bounds-play.iter-bounds uni-shape-map)
-  =*  recur-branches-out
+  =*  recur-out
     $:  branches-play=(list [y=map-shapes n=map-shapes])
-        branches-shapes=(map @axis shape)
-        bounds-shapes=(map @axis shape)
+        branch-sub-shapes=(map @axis shape)
     ==
   ::
-  =/  iter-branches=recur-branches-out
+  =+  ^-  recur-out
     %+  roll  branches.use
-    |=  $:  i=[where=@axis sub=sock-prep y=usage-lazy n=usage-lazy]
-            acc=recur-branches-out
-        ==
-    ^+  acc
-    =/  y=play-out  play-buc(use y.i(sure (uni-shape-map sure.y.i sure.use)))
-    =/  n=play-out  play-buc(use n.i(sure (uni-shape-map sure.n.i sure.use)))
-    =/  y-dis-ydf  (dis-shape-map sure.y yonds-dis-fores)
-    =/  n-dis-ydf  (dis-shape-map sure.n yonds-dis-fores)
-    [ [[y-dis-ydf n-dis-ydf] branches-play.acc]
-      :(uni-by branches-shapes.acc branches-shapes.y branches-shapes.n)
-      :(uni-by bounds-shapes.acc bounds-shapes.y bounds-shapes.n)
-    ]
+    |=  [i=[where=@axis sub=sock-prep y=usage-lazy n=usage-lazy] acc=recur-out]
+    =/  y=(pair map-shapes (map @axis shape))
+      play-buc(use y.i(sure (uni-shape-map sure.y.i sure.use)))
+    ::
+    =/  n=(pair map-shapes (map @axis shape))
+      play-buc(use n.i(sure (uni-shape-map sure.n.i sure.use)))
+    ::
+    :-  [[p.y p.n] branches-play.acc]
+    :(uni-by branch-sub-shapes.acc q.y q.n)
   ::
   =/  sure-ints=map-shapes
-    %+  roll  branches-play.iter-branches
-    |=  $:  i=[y=map-shapes n=map-shapes]
-            acc=_(dis-shape-map sure.use yonds-dis-fores)
-        ==
-    ^+  acc
+    %+  roll  branches-play
+    |=  [i=[y=map-shapes n=map-shapes] acc=_sure.use]
     (uni-shape-map acc (int-shape-map i))
   ::
   =/  sure-joins=map-shapes
-    %+  roll  branches-play.iter-branches
+    %+  roll  branches-play
     |=  [i=[y=map-shapes n=map-shapes] acc=_sure-ints]
     %+  uni-shape-map  acc
     %+  join-shape-map  (dis-shape-map y.i sure-ints)
     (dis-shape-map n.i sure-ints)
   ::
-  :+  sure-joins
-    =/  m  (~(uni by branches-shapes.iter-bounds) branches-shapes.iter-branches)
-    %-  ~(gas by m)
-    %+  turn  branches.use
-    |=  i=[where=@axis sub=sock-prep *]
-    :-  where.i
-    (sock-prep-to-shape sub.i sure-joins)
-  =/  m  (~(uni by bounds-shapes.iter-bounds) bounds-shapes.iter-branches)
-  %-  ~(gas by m)
-  %+  turn  bounds.use
+  :-  sure-joins
+  %-  ~(gas by branch-sub-shapes)
+  %+  turn  branches.use
   |=  i=[where=@axis sub=sock-prep *]
   :-  where.i
   (sock-prep-to-shape sub.i sure-joins)
@@ -2502,7 +2442,7 @@
   =/  short
     :*  long
         uxgen=`@uxshape`1  ::  0x0 is reserved for the subject
-        use=`usage-lazy`[[[0x0 %nope] ~ ~] ~ ~]
+        use=`usage-lazy`[[[0x0 %nope] ~ ~] ~]
     ==
   ::
   =<  -
@@ -2510,8 +2450,7 @@
   =.  stack-set  (~(put in stack-set) b)
   =/  sub=sock-prep  [0x0 `@`1]~
   ~&  [%enter (mux b)]
-  =*  ax-to-shape  (map @axis shape)
-  =;  [branches-shapes=ax-to-shape bounds-shapes=ax-to-shape short1=_short]
+  =;  [branches-shapes=(map @axis shape) short1=_short]
     ::  fixpoint search done, finalize
     ::  branches were collapsed by this point
     ::  and captured subject was taken into account
@@ -2520,10 +2459,7 @@
     ?^  branches.use.short  !!
     =/  meme=meme-args
       =*  sf  shape-finalize
-      [ (sf (~(got by sure.use.short) 0x0))
-        (~(run by branches-shapes) sf)
-        (~(run by bounds-shapes) sf)
-      ]
+      [(sf (~(got by sure.use.short) 0x0)) (~(run by branches-shapes) sf)]
     ::
     ?:  (~(has by sccs) b)
       =.  memo.short  (~(put by memo.short) b meme)
@@ -2534,22 +2470,19 @@
     short
   =/  counter=@  0
   =*  counter-max  4  ::  XX does this ever happen?
-  |-  ^-  [ax-to-shape ax-to-shape _short]
+  |-  ^-  [(map @axis shape) _short]
   =*  fixpoint-loop  $
   =;  [prod=sock-prep short1=_short]
     ::  collapse branches
     ::
-    =^  [branches-shapes=ax-to-shape bounds-shapes=ax-to-shape]  short1
+    =^  branches-shapes=(map @axis shape)  short1
       =.  short  short1
-      =+  ^-  $:  sure-collapsed=map-shapes
-                  branches-shapes=ax-to-shape
-                  bounds-shapes=ax-to-shape
-              ==
+      =/  [sure-collapsed=map-shapes branches-shapes=(map @axis shape)]
         (play-usage use.short)
       ::
       =.  sure.use.short  sure-collapsed
       =.  branches.use.short  ~
-      [[branches-shapes bounds-shapes] short]
+      [branches-shapes short]
     ::
     ::  capture by the result
     ::
@@ -2557,13 +2490,10 @@
     ::  check if we converged
     ::
     ?~  shape-loop-mayb=`(unit shape)`(~(get by loop-calls.short1) b)
-      [branches-shapes bounds-shapes short1]
+      [branches-shapes short1]
     =/  =shape  (~(got by sure.use.short1) 0x0)
     ?:  =(u.shape-loop-mayb shape)
-      [ branches-shapes
-        bounds-shapes
-        short1(loop-calls (~(del by loop-calls.short1) b))
-      ]
+      [branches-shapes short1(loop-calls (~(del by loop-calls.short1) b))]
     ?:  =(+(counter-max) counter)  ~|  %fixpoint-end-shape-got-smaller  !!
     ~&  [%fixpoint counter (mux b)]
     %=    fixpoint-loop
@@ -2686,13 +2616,8 @@
     =.  short  +:nomm-loop(n q.p.n, position (peg position axe-11-qp))
     ?.  ?=(hint-dynamic-stop:gene p.p.n)
       nomm-loop(n q.n, position (peg position axe-11-q))
-    =/  [res=sock-prep short-beyond=_short]
-      nomm-loop(n q.n, position (peg position axe-11-q))
-    ::
-    =/  new-bound-info  [position sub use.short use.short-beyond]
-    =.  bounds.use.short  [new-bound-info bounds.use.short]
-    =.  short  short-beyond(use use.short)
-    [res short]
+    =^  s  short  new-reg-shape
+    nomm-loop(sub s, n q.n, position (peg position axe-11-q))
   ::
       [%12 *]
     =^  p  short  nomm-loop(n p.n, position (peg position 6))
