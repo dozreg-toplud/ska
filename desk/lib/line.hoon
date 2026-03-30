@@ -531,7 +531,8 @@
   =|  gen=line-short
   =.  -.gen  lon
   ::
-  =^  nex=next  gen  (~(cuts line gen) bell branches-shapes.meme-args)
+  =^  nex=next  gen
+    (~(cuts line gen) bell branches-shapes.meme-args bounds-shapes.meme-args)
   ::
   =^  [args-need=need args-list=(list @uvre)]  gen
     (~(shape-to-need line gen) shape-final.meme-args)
@@ -1153,7 +1154,10 @@
     ?>  =(axe-2-uq 29)
     ::
     =/  =goal  [%done ~]
-    |=  [=bell branches-shapes=(map @axis shape-final)]
+    |=  $:  =bell
+            branches-shapes=(map @axis shape-final)
+            bounds-shapes=(map @axis shape-final)
+        ==
     ^-  [next line-short]
     =/  nomm=nomm-1  (~(got by code.boil.gen) bell)
     =/  pos=@axis  `@`1
@@ -1498,12 +1502,15 @@
       =^  nex   gen
         $(nomm q.nomm, goal goal(then epil), pos (peg pos axe-11-q))
       ::
-      ::  if the hint is not crash-relocation safe: put a relocation boundary
+      ::  if the hint is not crash-relocation safe: coerce to the shape before
+      ::  the boundary
       ::
-      =?  .  ?=(hint-dynamic-mute-stop p.p.nomm)
-        =*  dot  .
-        =^  top  gen  (stop nex)
-        dot(nex top)
+      =>  =*  dot  .
+          ?.  ?=(hint-dynamic-mute-stop p.p.nomm)  .
+          =^  [bound=need *]  gen  (shape-to-need (~(got by bounds-shapes) pos))
+          =^  ops  gen  (coerce-ops what.nex bound |+~)
+          =^  o    gen  (emit ~ ops %hop then.nex)
+          %_(dot nex [%next bound o])
       ::
       =^  prol  gen  (emit ~ [%hid p.p.nomm toke body.nomm]~ %hop then.nex)
       =^  dyn   gen
@@ -1561,14 +1568,14 @@
       [%brn r [zero once]:g]
     ::
     [[%next this+r o] gen]
-  ::  place a crash relocation boundary
-  ::
-  ++  stop
-    |=  nex=next
-    ^-  [next _gen]
-    =^  [ops=(list pole) ned=need]  gen  (aver what.nex)
-    =^  o  gen  (emit ~ ops %hop then.nex)
-    [[%next ned o] gen]
+  :: ::  place a crash relocation boundary
+  :: ::
+  :: ++  stop
+  ::   |=  nex=next
+  ::   ^-  [next _gen]
+  ::   =^  [ops=(list pole) ned=need]  gen  (aver what.nex)
+  ::   =^  o  gen  (emit ~ ops %hop then.nex)
+  ::   [[%next ned o] gen]
   ::  emit %cel asserts, update need
   ::
   ++  aver

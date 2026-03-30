@@ -922,5 +922,9 @@
   $@  ?(%nope %data %look)
   [shape shape]
 ::
-+$  meme-args  [=shape-final branches-shapes=(map @axis shape-final)]
++$  meme-args
+  $:  =shape-final
+      branches-shapes=(map @axis shape-final)
+      bounds-shapes=(map @axis shape-final)
+  ==
 --
