@@ -1837,6 +1837,83 @@
   ^-  (unit *)
   ?.  ?=([%11 * p=*] fol)  ~
   `p
+::
+++  walk-nomm-1
+  |=  gat=$-(nomm-1 (unit nomm-1))
+  |=  n=nomm-1
+  ^-  nomm-1
+  =*  this-gate  .
+  ~+
+  ?^  pro=(gat n)  u.pro
+  ?-  -.n
+    ^    [$(n -.n) $(n +.n)]
+    %0   n
+    %1   n
+    %2   n(p $(n p.n), q ?~(q.n ~ `$(n u.q.n)))
+    %3   n(p $(n p.n))
+    %4   n(p $(n p.n))
+    %5   n(p $(n p.n), q $(n q.n))
+    %6   n(p $(n p.n), q $(n q.n), r $(n r.n))
+    %7   n(p $(n p.n), q $(n q.n))
+    %10  n(q.p $(n q.p.n), q $(n q.n))
+    %11  n(p ?@(p.n p.n p.n(q $(n q.p.n))), q $(n q.n))
+    %12  n(p $(n p.n), q $(n q.n))
+  ==
+::
+++  boil-transform-nomm
+  |=  [b=boil gat=$-(nomm-1 nomm-1)]
+  ^-  boil
+  %=    b
+      code  (~(run by code.b) gat)
+  ::
+      fols
+    %-  ~(run by fols.b)
+    |=  l=(list [sock nomm-1])
+    %+  turn  l
+    |=  i=[sock n=nomm-1]
+    i(n (gat n.i))
+  ==
+::
+++  fold-constant-nomm-1
+  |=  [s=sock n=nomm-1]
+  ^-  sock
+  ?+    -.n  |+~
+      ^   (~(knit so $(n -.n)) $(n +.n))
+      %0  (~(pull so s) p.n)
+      %1  &+p.n
+      %7  $(n q.n, s $(n p.n))
+  ::
+      %11
+    ?@  p.n  $(n q.n)
+    =/  hit  $(n q.p.n)
+    ?.  ?=(%& cape.hit)  |+~
+    $(n q.n)
+  ==
+::
+++  fold-constant-nock
+  |=  fol=*
+  ^-  (unit *)
+  =/  prod  (abet:musk (araw:musk *seminoun fol))
+  ?.  &(?=(^ prod) ?=(%done -.u.prod))  ~
+  `p.u.prod
+::
+++  fold-hints
+  |=  n=nomm-1
+  ^-  nomm-1
+  %.  n
+  %-  walk-nomm-1
+  |=  n=nomm-1
+  ^-  (unit nomm-1)
+  ?.  ?=([%11 [%mean ^] *] n)  ~  
+  :-  ~
+  =;  constant=(unit *)
+    ?~  constant  n(q.p [1+%trap q.p.n])
+    n(q.p [1+%fold 1+u.constant])
+  ::
+  =/  trap-sock  (fold-constant-nomm-1 |+~ q.p.n)
+  =/  bat=sock  ~(hed so trap-sock)
+  ?.  ?=(%& cape.bat)  ~
+  (fold-constant-nock data.bat)
 ::  product: map SCC entry -> SCC members (including itself)
 ::
 ++  find-sccs-all

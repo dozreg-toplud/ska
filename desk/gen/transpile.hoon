@@ -16,6 +16,7 @@
 =/  ka-dor  ka:line-dor
 =.  ka-dor  (rout:ka-dor sub fol)
 =/  =boil  (cook:skan lon.ka-dor)
+=.  boil  (boil-transform-nomm:skan boil fold-hints:skan)
 =/  =bell  (need:..zuse (find fols.boil sub fol))
 ::  prep line-long state, find arities
 ::
