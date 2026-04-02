@@ -1138,6 +1138,7 @@
       =.  acc  $(entry p.entry, args p.args, bus ~(hed so bus))
       $(entry q.entry, args q.args, bus ~(tel so bus))
     ~&  >>  %coerce-entry-greedier-than-args
+    :: ~&  >>  [args+args entry+entry]
     ?:  ?=(%this -.entry)
       =^  r-h  gen.acc  re(gen gen.acc)
       =^  r-t  gen.acc  re(gen gen.acc)
@@ -1203,9 +1204,9 @@
       ::
           %next
         =^  [hed=need tel=need t=@uwoo]  gen  (split goal)
-        =^  next-2  gen  $(nomm +.nomm, goal [%next tel t], pos (peg pos 2))
+        =^  next-2  gen  $(nomm +.nomm, goal [%next tel t], pos (peg pos 3))
         =^  next-1  gen
-          $(nomm -.nomm, goal [%next hed then.next-2], pos (peg pos 3))
+          $(nomm -.nomm, goal [%next hed then.next-2], pos (peg pos 2))
         ::
         (copy next-1 what.next-2)
       ==
@@ -1541,8 +1542,18 @@
       ::
       =>  =*  dot  .
           ?.  ?=(hint-dynamic-mute-stop p.p.nomm)  .
-          =^  [bound=need *]  gen  (shape-to-need (~(got by bounds-shapes) pos))
-          =^  ops  gen  (coerce-ops what.nex bound |+~)
+          =^  [bound=need *]  gen
+            %-  shape-to-need
+            ~|  pos
+            ~|  `@tas`p.p.nomm
+            ~|  (print-nomm-1 nomm)
+            (~(got by bounds-shapes) pos)
+          =^  ops  gen
+            ~|  what+what.nex
+            ~|  bound+bound
+            ~|  (print-nomm-1 nomm)
+            (coerce-ops what.nex bound |+~)
+          ::
           =^  o    gen  (emit ~ ops %hop then.nex)
           %_(dot nex [%next bound o])
       ::

@@ -96,11 +96,11 @@
   |=  n=nomm-1
   ^-  tape
   ?-    -.n
-      ^   (weld $(n -.n) $(n +.n))
+      ^   "[{$(n -.n)} {$(n +.n)}]"
       %0   <n>
       %1 
     =/  ren  <n>
-    ?:  (gth (lent ren) 5)  "..."
+    ?:  (gth (lent ren) 8)  "[%1 ...]"
     ren
   ::
       %2   "[%2 p={$(n p.n)} q={?~(q.n "?" $(n u.q.n))} info={?~(info.n "?" <(mux u.info.n)>)}]"
