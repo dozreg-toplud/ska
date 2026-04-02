@@ -580,6 +580,7 @@
   ::  and multiple blocks can be targeted with %hop's
   ::
   =.  blocks  (defi blocks)
+  :: =.  blocks  (compress-regs blocks)
   =.  args-need
     |-  ^-  need
     ?^  -.args-need  [$(args-need -.args-need) $(args-need +.args-need)]
@@ -594,36 +595,39 @@
     [args-need (lent args-list) blocks bell]
   ::
   this
+::
+:: ++  compress-regs
+::   |=  blocks=(map @uwoo blob)
+::   ^+  blocks
+
 ::  simplify interpretation by replacing phi tables with moves and %hip's with
 ::  %hop's
 ::
 ++  defi
   |=  blocks=(map @uwoo blob)
   ^+  blocks
-  =|  new-blocks=(map @uwoo blob)
   =/  here-o=@uwoo  direct-entrypoint
   =/  here=blob  (~(got by blocks) here-o)
   |^  ^+  blocks
   ?-    -.bend.here
       ?(%don %dom %bom %lnt %jmp %jmf)
-    (~(put by new-blocks) here-o here)
+    [[here-o here(phi ~)] ~ ~]
   ::
       ?(%lnk %cal %caf %hop)
     =/  t=@uwoo  (get-target bend.here)
-    =.  new-blocks  $(here (~(got by blocks) t), here-o t)
-    (~(put by new-blocks) here-o here)
+    =/  new-blocks  $(here (~(got by blocks) t), here-o t)
+    (~(put by new-blocks) here-o here(phi ~))
   ::
       ?(%clq %eqq %brn %mim)
     =/  [z=@uwoo o=@uwoo]  (get-z-o bend.here)
-    =.  new-blocks  $(here (~(got by blocks) z), here-o z)
-    =.  new-blocks  $(here (~(got by blocks) o), here-o o)
-    (~(put by new-blocks) here-o here)
+    =/  new-blocks1=(map @uwoo blob)  $(here (~(got by blocks) z), here-o z)
+    =/  new-blocks2=(map @uwoo blob)  $(here (~(got by blocks) o), here-o o)
+    (~(put by (~(uni by new-blocks1) new-blocks2)) here-o here(phi ~))
   ::
       %hip
     =/  t  t.bend.here
     =/  target-blob  (~(got by blocks) t)
-    =.  new-blocks  $(here target-blob, here-o t)
-    =.  new-blocks  (~(put by new-blocks) t target-blob(phi ~))
+    =/  new-blocks  $(here target-blob, here-o t)
     =/  moves=(list [from=@uvre to=@uvre])
       %-  ~(rep by phi.target-blob)
       |=  [[k-reg-to=@uvre v=(map @uwoo @uvre)] acc=(list [@uvre @uvre])]
@@ -634,6 +638,7 @@
     ::
     %+  ~(put by new-blocks)  here-o
     %=  here
+      phi   ~
       bend  [%hop t.bend.here]
       body  (welp body.here (turn moves (lead %mov)))
     ==
