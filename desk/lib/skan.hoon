@@ -2722,11 +2722,11 @@
     =/  [res=sock-prep short-beyond=_short]
       nomm-loop(n q.n, position (peg position axe-11-q))
     ::
-    =.  bounds.use.short  [[position sub] bounds.use.short-beyond]
-    =.  branches.use.short  branches.use.short-beyond
-    =.  sure.use.short  (join-shape-map sure.use.short sure.use.short-beyond)
-    =.  short  short-beyond(use use.short)
-    [res short]
+    :-  res
+    %=  short-beyond
+      bounds.use  [[position sub] bounds.use.short-beyond]
+      sure.use    (join-shape-map sure.use.short sure.use.short-beyond)
+    ==
   ::
       [%12 *]
     =^  p  short  nomm-loop(n p.n, position (peg position 6))
