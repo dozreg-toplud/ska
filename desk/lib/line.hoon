@@ -285,6 +285,43 @@
     "rs[{|2:(scow %ui r)}]"
   --
 ::
+++  print-straight
+  |=  s=straight
+  ^-  tank
+  =;  l=(list tape)  [%rose [~ ~ ~] (turn l (lead %leaf))]
+  %+  turn  ~(tap by blocks.s)
+  |=  [k=@uwoo v=blob]
+  ^-  tape
+  %-  zing
+  ^-  (list tape)
+  :-  "{<k>}: "
+  %-  snoc  :_  (print-site bend.v)
+  ^-  (list tape)
+  (turn body.v print-pole)
+::
+++  print-site
+  |=  s=site
+  ^-  tape
+  ?+  -.s  <s>
+    %caf  <s(a '...', n '...')>
+    %jmf  <s(a '...', n '...')>
+    %cal  <s(a '...')>
+    %jmp  <s(a '...')>
+  ==
+::
+++  print-pole
+  |=  p=pole
+  ^-  tape
+  ?+  -.p  <p>
+    %imm  <p(n '...')>
+    %his  <p(f '...')>
+    %hys  <p(f '...')>
+    %hos  <p(f '...')>
+    %hid  <p(f '...')>
+    %hyd  <p(f '...')>
+    %hod  <p(f '...')>
+    %mem  <p(f '...')>
+  ==
 ++  eval
   |=  [sub=* bel=bell]
   ^-  (unit *)
@@ -327,6 +364,7 @@
   =<  -
   |^  ^-  [(unit *) $+(gen _gen)]
   =*  block-loop  $
+  ~_  (print-straight arm.gen)
   ::  no phi stuff if +defi is applied
   ::  in this case ops-loop and block-loop are the same thing, and can be
   ::  modelled with a single loop
@@ -518,7 +556,9 @@
     =/  n  (~(get by regs.gen) r)
     ?~  n
       ~&  >>  %r-get-missing-register
-      ~
+      :: ~
+      ~|  r
+      !!
     u.n
   ::
   ++  r-put
@@ -643,6 +683,44 @@
       body  (welp body.here (turn moves (lead %mov)))
     ==
   ==
+  ::
+  ++  pole-map-regs
+    |=  g=$-(@uvre @uvre)
+    |=  p=pole
+    ^-  pole
+    ?+  -.p  p
+      %imm  p(d (g d.p))
+      %mov  p(d (g d.p), s (g s.p))
+      %inc  p(s (g s.p), d (g d.p))
+      %con  p(h (g h.p), t (g t.p), d (g d.p))
+      %hed  p(s (g s.p), d (g d.p))
+      %tal  p(s (g s.p), d (g d.p))
+      %cel  p(p (g p.p))
+      %hys  p(p (g p.p))
+      %hid  p(p (g p.p))
+      %hyd  p(p (g p.p), q (g q.p))
+      %hod  p(p (g p.p))
+      %spy  p(e (g e.p), p (g p.p), d (g d.p))
+      %mem  p(k (g k.p), s (g s.p), r (g r.p))
+    ==
+  ::
+  ++  site-map-regs
+    |=  g=$-(@uvre @uvre)
+    |=  s=site
+    ^-  site
+    ?+  -.s  s
+      %clq  s(s (g s.s))
+      %eqq  s(l (g l.s), r (g r.s))
+      %brn  s(s (g s.s))
+      %lnk  s(u (g u.s), f (g f.s), d (g d.s))
+      %cal  s(v (turn v.s g), d (g d.s))
+      %caf  s(v (turn v.s g), d (g d.s))
+      %lnt  s(u (g u.s), f (g f.s))
+      %jmp  s(v (turn v.s g))
+      %jmf  s(v (turn v.s g))
+      %don  s(s (g s.s))
+      %mim  s(k (g k.s), s (g s.s), d (g d.s))
+    ==
   ::
   ++  get-target
     |=  s=_`$>(?(%hop %lnk %cal %caf) site)`[%hop *@uw]

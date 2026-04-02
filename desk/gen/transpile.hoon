@@ -2,14 +2,23 @@
 /+  line-dor=line
 /+  skan
 /+  hoot-zpdt
+/+  hoot
 ::
 :-  %say  |=  *  :-  %noun
 ::
 |^
-=/  sub  ..dec:hoot-zpdt
+=/  sub
+  =>  ..dec:hoot-zpdt
+  |=  [m=@ n=@]
+  ^-  @
+  ?:  =(0 m)  +(n)
+  ?:  =(0 n)  $(m (dec m), n 1)
+  $(m (dec m), n $(n (dec n)))
+::
 =/  fol
-  !.  =>  sub  !=
-  (dec 10.000.000)
+  !.
+  =>  sub  !=
+  (. 1 0)
 ::
 ::  do SKA, find result
 ::
