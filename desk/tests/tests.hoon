@@ -9,64 +9,34 @@
   (expect-eq !>(mol) !>((run-nomm-1 sub fol)))
 ::
 |%
-::  creates an unreachable loop? (which is fine if it is truly unreachable, 
-::  but in that case I wonder what the linearizer will generate...)
-::
-++  test-tree-functions  
-  =/  sub
-    =>  hoot
-    :_  .
-    =-  ~&(-< -)
-    ^-  m=(map @ $-(@ @))
-    %-  malt
-    ^-  (list [@ $-(@ @)])
-    :~  0+dec
-        1+succ
-        2+|=(@ +<)
-    ==
+++  test-provoke-infinite-loop
+  ::  I had an idea that building a growing noun of gates that were called
+  ::  (so, a growing noun of code) would provoke an infinite loop in SKA as
+  ::  the recursive iterations would not be recognised by the recursive call
+  ::  condition
   ::
-  =/  fol
-   =>  sub  !=
-   =/  key  0
-   =/  sam  42
-   |-  ^-  @
-   ?~  m  !!
-   ?:  =(key p.n.m)  (q.n.m sam)
-   ?:  (gor key p.n.m)  $(m l.m)
-   $(m r.m)
+  ::  XX turns out I am wrong. Why?
   ::
-  (expect-eq-nock-need sub fol)
-::
-++  test-muk
-  =/  sub  playpen
+  =/  sub  ..add:hoot
   =/  fol
     =>  sub  !=
-    (muk 0xcafe.babe 1 42)  ::  XX 42 42 42 is a jet mismatch
-  ::
-  (expect-eq-nock-need sub fol)
-::
-++  test-y-comb
-  =/  sub
-    =>  ..add:hoot
+    =/  l=*  [mul add]
+    =+  .*(-.l [9 2 0 1])
+    =+  .*(+.l [9 2 0 1])
+    =/  c  0
+    =<  even
     |%
-    ++  y
-      |*  [m1=mold m2=mold]
-      |=  f=$-($-(m1 m2) $-(m1 m2))
-      |=  x=m1
-      ^-  m2
-      ((f .) x)
+    ++  even
+      ?:  =(c 100)  ~
+      =.  l  [add l]
+      =+  .*(-.l [9 2 0 1])
+      odd(c +(c))
     ::
-    ++  fac-f
-      |=  cont=$-(@ @)
-      |=  x=@
-      ^-  @
-      ?:  =(x 0)  1
-      (mul x (cont (dec x)))
+    ++  odd
+      =.  l  [mul l]
+      =+  .*(-.l [9 2 0 1])
+      even(c +(c))
     --
-  ::
-  =/  fol
-    =>  sub  !=
-    (((y @ @) fac-f) 5)
   ::
   (expect-eq-nock-need sub fol)
 ::
