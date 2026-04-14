@@ -1,10 +1,70 @@
-/*  sock  %hoon  /sur/sock/hoon
-/*  noir  %hoon  /sur/noir/hoon
-/*  soak  %hoon  /lib/soak/hoon
-/*  skan  %hoon  /lib/skan-smol/hoon
+/*  sock  %hoon  /lib/smol/sock/hoon
+/*  noir  %hoon  /lib/smol/noir/hoon
+/*  gene  %hoon  /lib/smol/gene/hoon
+/*  soak  %hoon  /lib/smol/soak/hoon
+/*  skan  %hoon  /lib/smol/skan/hoon
+/*  line  %hoon  /lib/smol/line/hoon
 ::
-=<  (jam hoon:(p sock) hoon:(p soak) hoon:(p noir) hoon:(p skan))
+=<
+  =/  test
+    =/  zus  !>(..zuse)
+    =/  sock-hoon  hoon:(p sock)
+    =/  soak-hoon  hoon:(p soak)
+    =/  noir-hoon  hoon:(p noir)
+    =/  skan-hoon  hoon:(p skan)
+    =/  gene-hoon  hoon:(p gene)
+    =/  line-hoon  hoon:(p line)
+    =/  sock-vase  (slap zus sock-hoon)
+    =/  soak-vase  (slap (slop sock-vase zus) soak-hoon)
+    =/  noir-vase  (slap (slop soak-vase zus) noir-hoon)
+    =/  gene-vase  (slap (slop noir-vase zus) gene-hoon)
+    =/  skan-vase  (slap :(slop (with-face %gene gene-vase) noir-vase zus) skan-hoon)
+    =/  line-vase  (slap :(slop skan-vase (with-face %gene gene-vase) zus) line-hoon)
+    %+  slap  :(slop (with-face %skan skan-vase) (with-face %line-dor line-vase) gene-vase zus)
+    !,  *hoon
+    |^
+    =/  sub  42
+    =/  fol  [4 0 1]
+    =/  ka-dor  ka:line-dor
+    =.  ka-dor  (rout:ka-dor sub fol)
+    =/  =boil  (cook:skan lon.ka-dor)
+    =/  =bell  (need:..zuse (find fols.boil sub fol))
+    =|  =line-long
+    =.  boil.line-long  boil
+    =.  arity.line-long  (find-args-all:skan code.boil)
+    =.  line-dor  (~(compile-all line-dor line-long) code.boil)
+    (eval:line-dor sub bell)
+    ++  find
+      |=  [fols=(jar * [less=sock code=nomm-1]) sub=* fol=*]
+      ^-  (unit bell)
+      =-  ?~  -  ~  `[u fol]
+      ^-  (unit sock)
+      =/  l=(list [s=sock *])  (~(get ja fols) fol)
+      |-  ^-  (unit sock)
+      ?~  l  ~
+      ?:  (~(huge so s.i.l) &+sub)  `s.i.l
+      $(l t.l)
+    --
+  ::
+  ~&  test
+  =/  fol
+    !.
+    =>  [sock-hoon=*hoon soak-hoon=*hoon noir-hoon=*hoon skan-hoon=*hoon gene-hoon=*hoon line-hoon=*hoon ..zuse]
+    !=
+    =/  zus  !>(..zuse)
+    =/  with-face  |=([face=@tas =vase] vase(p [%face face p.vase]))
+    =/  sock-vase  (slap zus sock-hoon)
+    =/  soak-vase  (slap (slop sock-vase zus) soak-hoon)
+    =/  noir-vase  (slap (slop soak-vase zus) noir-hoon)
+    =/  gene-vase  (slap (slop noir-vase zus) gene-hoon)
+    =/  skan-vase  (slap :(slop (with-face %gene gene-vase) noir-vase zus) skan-hoon)
+    =/  line-vase  (slap :(slop skan-vase (with-face %gene gene-vase) zus) line-hoon)
+    [skan-vase line-vase]
+  ::
+  (jam fol hoon:(p sock) hoon:(p soak) hoon:(p noir) hoon:(p skan) hoon:(p gene) hoon:(p line))
+::
 |%
+++  with-face  |=([face=@tas =vase] vase(p [%face face p.vase]))
 ++  p  (cork trip (cury parse-pile ~))
 ++  parse-pile
   |=  [pax=path tex=tape]
