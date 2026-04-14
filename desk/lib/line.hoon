@@ -636,10 +636,6 @@
   ::
   this
 ::
-:: ++  compress-regs
-::   |=  blocks=(map @uwoo blob)
-::   ^+  blocks
-
 ::  simplify interpretation by replacing phi tables with moves and %hip's with
 ::  %hop's
 ::
@@ -648,26 +644,29 @@
   ^+  blocks
   =/  here-o=@uwoo  direct-entrypoint
   =/  here=blob  (~(got by blocks) here-o)
+  =|  new-blocks=(map @uwoo blob)
   |^  ^+  blocks
   ?-    -.bend.here
       ?(%don %dom %bom %lnt %jmp %jmf)
-    [[here-o here(phi ~)] ~ ~]
+    (~(put by new-blocks) here-o here(phi ~))
   ::
       ?(%lnk %cal %caf %hop)
     =/  t=@uwoo  (get-target bend.here)
-    =/  new-blocks  $(here (~(got by blocks) t), here-o t)
+    =.  new-blocks  $(here (~(got by blocks) t), here-o t)
     (~(put by new-blocks) here-o here(phi ~))
   ::
       ?(%clq %eqq %brn %mim)
     =/  [z=@uwoo o=@uwoo]  (get-z-o bend.here)
-    =/  new-blocks1=(map @uwoo blob)  $(here (~(got by blocks) z), here-o z)
-    =/  new-blocks2=(map @uwoo blob)  $(here (~(got by blocks) o), here-o o)
-    (~(put by (~(uni by new-blocks1) new-blocks2)) here-o here(phi ~))
+    =.  new-blocks  $(here (~(got by blocks) z), here-o z)
+    =.  new-blocks  $(here (~(got by blocks) o), here-o o)
+    (~(put by new-blocks) here-o here(phi ~))
   ::
       %hip
     =/  t  t.bend.here
     =/  target-blob  (~(got by blocks) t)
-    =/  new-blocks  $(here target-blob, here-o t)
+    =?  new-blocks  !(~(has by new-blocks) t)
+      $(here target-blob, here-o t)
+    ::
     =/  moves=(list [from=@uvre to=@uvre])
       %-  ~(rep by phi.target-blob)
       |=  [[k-reg-to=@uvre v=(map @uwoo @uvre)] acc=(list [@uvre @uvre])]
@@ -757,7 +756,14 @@
       ?(%don %dom %bom %lnt %jmp %jmf)
     (~(put by new-blocks) here-o here)
   ::
-      ?(%hip %lnk %cal %caf)
+      %hip
+    =/  t  t.bend.here
+    =?  new-blocks  !(~(has by new-blocks) t)
+      $(here (~(got by blocks) t), here-o t)
+    ::
+    (~(put by new-blocks) here-o here)
+  ::
+      ?(%lnk %cal %caf)
     =/  t=@uwoo  (get-target bend.here)
     =.  new-blocks  $(here (~(got by blocks) t), here-o t)
     (~(put by new-blocks) here-o here)
@@ -828,7 +834,12 @@
   ?-    -.bend.here
       ?(%don %dom %bom %lnt %jmp %jmf)  gen
   ::
-      ?(%hip %lnk %cal %caf %hop)
+      %hip
+    =*  t  t.bend.here
+    ?:  (~(has by new-blocks.gen) t)  gen
+    $(here (~(got by blocks) t), here-o t)
+  ::
+      ?(%lnk %cal %caf %hop)
     =/  t=@uwoo  (get-target bend.here)
     $(here (~(got by blocks) t), here-o t)
   ::
