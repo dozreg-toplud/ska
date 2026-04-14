@@ -616,11 +616,11 @@
   =.  blocks  (remove-movs blocks)
   =^  old-to-new  blocks
     (rewrite-registers-from-start blocks args-list)
-  ::  defi needs to be last: the registers are no longer single-assignment
-  ::  and multiple blocks can be targeted with %hop's
   ::
   =.  blocks  (defi blocks)
-  :: =.  blocks  (compress-regs blocks)
+  ::  the registers are no longer single-assignment
+  ::  and multiple blocks can target another block with %hop
+  ::
   =.  args-need
     |-  ^-  need
     ?^  -.args-need  [$(args-need -.args-need) $(args-need +.args-need)]
@@ -679,6 +679,8 @@
     %=  here
       phi   ~
       bend  [%hop t.bend.here]
+      ::  XX it might be possible to get rid of moves but it requires
+      ::  non-trivial analysis
       body  (welp body.here (turn moves (lead %mov)))
     ==
   ==
