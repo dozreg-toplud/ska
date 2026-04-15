@@ -100,14 +100,14 @@
       [%tal s=@uvre d=@uvre]
       [%cel p=@uvre]
       [%his n=hint-static f=*]
-      [%hys n=hint-static-prod p=@uvre f=*]
+      [%hys n=hint-static-prod p=@uvre f=*]  ::  do we need formulas in non-memo stuff?
       [%hos n=hint-static-mute f=*]
   ::
       [%hid n=hint-dynamic p=@uvre f=*]
       [%hyd n=hint-dynamic-prod p=@uvre q=@uvre f=*]
       [%hod n=hint-dynamic-mute p=@uvre f=*]
       [%spy e=@uvre p=@uvre d=@uvre]
-      [%mem k=@uvre s=@uvre f=* r=@uvre]
+      [%mem k=@uvre s=@uvre f=* r=@uvre]  ::  memo slot [k f]?
   ==
 ::
 ::    control flow instructions
@@ -159,16 +159,18 @@
       [%brn s=@uvre z=@uwoo o=@uwoo]
       [%hop t=@uwoo]
       [%hip c=@uwoo t=@uwoo]
-      [%lnk u=@uvre f=@uvre d=@uvre t=@uwoo]
-      [%cal a=bell v=(list @uvre) d=@uvre t=@uwoo]
-      [%caf a=bell v=(list @uvre) d=@uvre t=@uwoo n=ring]
-      [%lnt u=@uvre f=@uvre]
       [%jmp a=bell v=(list @uvre)]
       [%jmf a=bell v=(list @uvre) n=ring]
+      [%lnt u=@uvre f=@uvre]
       [%don s=@uvre]
       [%dom r=*]
       [%bom ~]
       [%mim k=@uvre s=@uvre f=* d=@uvre z=@uwoo o=@uwoo]
+      ::
+      ::  XX  these should be just poles
+      [%lnk u=@uvre f=@uvre d=@uvre t=@uwoo]
+      [%cal a=bell v=(list @uvre) d=@uvre t=@uwoo]
+      [%caf a=bell v=(list @uvre) d=@uvre t=@uwoo n=ring]
   ==
 ::
 ++  get-regs-site
@@ -220,6 +222,10 @@
 ::  bend: final control-flow instruction
 ::
 +$  blob  [phi=(map @uvre (map @uwoo @uvre)) body=(list pole) bend=site]
+::
+::  XX want to know the shape of the control flow: what is the join
+::  block of branches that are entered from a given block, if it exists
+::  (map @uwoo @uwoo)
 ::
 +$  straight
   $:  =need
