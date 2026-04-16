@@ -129,23 +129,30 @@
   ++  render-pole
     |=  p=pole
     ^-  tape
-    ?-  -.p
-      %imm  "{(r d.p)} = {(render-noun n.p)}"
-      %mov  "{(r d.p)} = {(r s.p)}"
-      %inc  "{(r d.p)} = INC({(r s.p)})"
-      %con  "{(r d.p)} = CON({(r h.p)}, {(r t.p)})"
-      %hed  "{(r d.p)} = HED({(r s.p)})"
-      %tal  "{(r d.p)} = TAL({(r s.p)})"
-      %cel  "CEL({(r p.p)})"
-      ::  skipped for now
-      %his  "//  his"
-      %hos  "//  hos"
-      %hid  "//  hid"
-      %hod  "//  hod"
-      %spy  "//  spy"
-      %mem  "//  mem"
-      %hys  "//  hys"
-      %hyd  "//  hyd"
+    ?-    -.p
+        %imm  "{(r d.p)} = {(render-noun n.p)}"
+        %mov  "{(r d.p)} = {(r s.p)}"
+        %inc  "{(r d.p)} = INC({(r s.p)})"
+        %con  "{(r d.p)} = CON({(r h.p)}, {(r t.p)})"
+        %hed  "{(r d.p)} = HED({(r s.p)})"
+        %tal  "{(r d.p)} = TAL({(r s.p)})"
+        %cel  "CEL({(r p.p)})"
+        ::  skipped for now
+        %his  "//  his"
+        %hos  "//  hos"
+        %hid  "//  hid"
+        %hod  "//  hod"
+        %spy  "//  spy"
+        %mem  "//  mem"
+        %hys  "//  hys"
+        %hyd  "//  hyd"
+        %lnk  stub
+    ::
+        %cal
+      =/  callee  (~(got by bell-to-idx) a.p)
+      "{(r d.p)} = _function_{<callee>}({(render-args-callee v.p)});"
+    ::
+        %caf  $(p [%cal a v d]:p)
     ==
   ::
   ++  render-site-with-indentation
@@ -187,21 +194,6 @@
     ::
         %hip
       ~|  %no-hip-in-c-source  !!
-    ::
-        %lnk
-      ::  skip indirect nock for now
-      ::
-      stub
-    ::
-        %cal
-      =/  callee  (~(got by bell-to-idx) a.s)
-      """
-        {(r d.s)} = _function_{<callee>}({(render-args-callee v.s)});
-        goto _{<t.s>};
-      """
-    ::
-        %caf
-      $(s [%cal a v d t]:s)
     ::
         %lnt
       stub
@@ -303,9 +295,7 @@
   |=  s=site
   ^-  tape
   ?+  -.s  <s>
-    %caf  <s(a '...', n '...')>
     %jmf  <s(a '...', n '...')>
-    %cal  <s(a '...')>
     %jmp  <s(a '...')>
   ==
 ::
@@ -313,6 +303,8 @@
   |=  p=pole
   ^-  tape
   ?+  -.p  <p>
+    %caf  <p(a '...', n '...')>
+    %cal  <p(a '...')>
     %imm  <p(n '...')>
     %his  <p(f '...')>
     %hys  <p(f '...')>
@@ -406,32 +398,6 @@
         %hip
       =.  hip.gen  c.end
       block-loop(gen (hop t.end))
-    ::
-        %lnk
-      =/  u  (r-get u.end)
-      =/  f  (r-get f.end)
-      ?~  res=(mole |.(.*(u f)))
-        ~&  %indi-crash
-        `gen
-      =.  gen  (r-put d.end u.res)
-      block-loop(gen (hop t.end))
-    ::
-        %cal
-      =/  res=(unit *)
-        =/  args-noun  (turn v.end r-get)
-        =/  arm-new  (~(got by code.lon) a.end)
-        =.  gen  [arm-new ~ (~(got by blocks.arm-new) direct-entrypoint) *@uwoo]
-        =.  gen  (r-puts (span-args n-args.arm-new) args-noun)
-        -:block-loop
-      ::
-      ?~  res  `gen
-      =.  gen  (r-put d.end u.res)
-      block-loop(gen (hop t.end))
-    ::
-        %caf
-      ::  no jet stuff now
-      ::
-      ops-loop(bend.blob.gen [%cal a v d t]:end)
     ::
         %lnt
       =/  u  (r-get u.end)
@@ -548,6 +514,37 @@
       %hys  `gen
       %hyd  `gen
   ::
+      %lnk
+    =/  u  (r-get u.op)
+    =/  f  (r-get f.op)
+    ?~  res=(mole |.(.*(u f)))
+      ~&  %indi-crash
+      ~
+    ::
+    `(r-put d.op u.res)
+  ::
+      %caf
+    =/  res=(unit *)
+      =/  args-noun  (turn v.op r-get)
+      =/  arm-new  (~(got by code.lon) a.op)
+      =.  gen  [arm-new ~ (~(got by blocks.arm-new) direct-entrypoint) *@uwoo]
+      =.  gen  (r-puts (span-args n-args.arm-new) args-noun)
+      -:block-loop
+    ::
+    ?~  res  ~
+    `(r-put d.op u.res)
+  ::
+      %cal
+    =/  res=(unit *)
+      =/  args-noun  (turn v.op r-get)
+      =/  arm-new  (~(got by code.lon) a.op)
+      =.  gen  [arm-new ~ (~(got by blocks.arm-new) direct-entrypoint) *@uwoo]
+      =.  gen  (r-puts (span-args n-args.arm-new) args-noun)
+      -:block-loop
+    ::
+    ?~  res  ~
+    `(r-put d.op u.res)
+  ::
   ==
   ::
   ++  r-get
@@ -636,6 +633,75 @@
   ::
   this
 ::
+++  straighten
+  |=  blocks=(map @uwoo blob)
+  ^-  (list vere-op)
+  =/  here-o=@uwoo  direct-entrypoint
+  =/  here=blob  (~(got by blocks) here-o)
+  =;  [l=(list vere-op) tar=(unit @uwoo)]
+    ?^  tar  ~|  %straighten-hop-unbalanced  !!
+    l
+  ::
+  |^  ^-  [(list vere-op) (unit @uwoo)]
+  ?-    -.bend.here
+      ?(%don %dom %bom %lnt %jmp %jmf)
+    [(snoc `(list vere-op)`body.here bend.here) ~]
+  ::
+      %hip  ~|(%no-hip !!)
+  ::
+      %hop
+    [body.here `t.bend.here]
+  ::
+      ?(%clq %eqq %brn %mim)
+    =/  [z=@uwoo o=@uwoo]  (get-z-o bend.here)
+    =/  [l0=(list vere-op) aftr0=(unit @uwoo)]
+      $(here-o z, here (~(got by blocks) z))
+    ::
+    =/  [l1=(list vere-op) aftr1=(unit @uwoo)]
+      $(here-o o, here (~(got by blocks) o))
+    ::
+    =/  aftr=(unit @uwoo)
+      ?~  aftr0  aftr1
+      ?~  aftr1  aftr0
+      ?>  =(u.aftr0 u.aftr1)
+      aftr1
+    ::
+    ?~  aftr
+      [(snoc `(list vere-op)`body.here (substitute-zo bend.here l0 l1)) ~]
+    =/  rest=[l=(list vere-op) aftr=(unit @uwoo)]
+      $(here-o u.aftr, here (~(got by blocks) u.aftr))
+    ::
+    :_  aftr.rest
+    ^-  (list vere-op)
+    %-  zing
+    ^-  (list (list vere-op))
+    :~  body.here
+        ~[(substitute-zo bend.here l0 l1)]
+        l.rest
+    == 
+  ::
+  ==
+  ::
+  ++  get-z-o
+    |=  s=$>(?(%clq %eqq %brn %mim) site)
+    ^-  [@uwoo @uwoo]
+    ?-  -.s
+      %clq  [z.s o.s]
+      %eqq  [z.s o.s]
+      %brn  [z.s o.s]
+      %mim  [z.s o.s]
+    ==
+  ::
+  ++  substitute-zo
+    |=  [s=$>(?(%clq %eqq %brn %mim) site) l0=(list vere-op) l1=(list vere-op)]
+    ^-  vere-op
+    ?-  -.s
+      %clq  s(z l0, o l1)
+      %eqq  s(z l0, o l1)
+      %brn  s(z l0, o l1)
+      %mim  s(z l0, o l1)
+    ==
+  --
 ::  simplify interpretation by replacing phi tables with moves and %hip's with
 ::  %hop's
 ::
@@ -650,7 +716,7 @@
       ?(%don %dom %bom %lnt %jmp %jmf)
     (~(put by new-blocks) here-o here(phi ~))
   ::
-      ?(%lnk %cal %caf %hop)
+      %hop
     =/  t=@uwoo  (get-target bend.here)
     =.  new-blocks  $(here (~(got by blocks) t), here-o t)
     (~(put by new-blocks) here-o here(phi ~))
@@ -703,6 +769,9 @@
       %hod  p(p (g p.p))
       %spy  p(e (g e.p), p (g p.p), d (g d.p))
       %mem  p(k (g k.p), s (g s.p), r (g r.p))
+      %lnk  p(u (g u.p), f (g f.p), d (g d.p))
+      %cal  p(v (turn v.p g), d (g d.p))
+      %caf  p(v (turn v.p g), d (g d.p))
     ==
   ::
   ++  site-map-regs
@@ -713,9 +782,6 @@
       %clq  s(s (g s.s))
       %eqq  s(l (g l.s), r (g r.s))
       %brn  s(s (g s.s))
-      %lnk  s(u (g u.s), f (g f.s), d (g d.s))
-      %cal  s(v (turn v.s g), d (g d.s))
-      %caf  s(v (turn v.s g), d (g d.s))
       %lnt  s(u (g u.s), f (g f.s))
       %jmp  s(v (turn v.s g))
       %jmf  s(v (turn v.s g))
@@ -724,13 +790,10 @@
     ==
   ::
   ++  get-target
-    |=  s=_`$>(?(%hop %lnk %cal %caf) site)`[%hop *@uw]
+    |=  s=_`$>(?(%hop) site)`[%hop *@uw]
     ^-  @uwoo
     ?-  -.s
       %hop  t.s
-      %lnk  t.s
-      %cal  t.s
-      %caf  t.s
     ==
   ::
   ++  get-z-o
@@ -765,11 +828,6 @@
     ::
     (~(put by new-blocks) here-o here)
   ::
-      ?(%lnk %cal %caf)
-    =/  t=@uwoo  (get-target bend.here)
-    =.  new-blocks  $(here (~(got by blocks) t), here-o t)
-    (~(put by new-blocks) here-o here)
-  ::
       ?(%clq %eqq %brn %mim)
     =/  [z=@uwoo o=@uwoo]  (get-z-o bend.here)
     =.  new-blocks  $(here (~(got by blocks) z), here-o z)
@@ -793,13 +851,10 @@
   ==
   ::
   ++  get-target
-    |=  s=_`$>(?(%hip %lnk %cal %caf) site)`[%hip *@uw *@uw]
+    |=  s=_`$>(?(%hip) site)`[%hip *@uw *@uw]
     ^-  @uwoo
     ?-  -.s
       %hip  t.s
-      %lnk  t.s
-      %cal  t.s
-      %caf  t.s
     ==
   ::
   ++  get-z-o
@@ -841,7 +896,7 @@
     ?:  (~(has by new-blocks.gen) t)  gen
     $(here (~(got by blocks) t), here-o t)
   ::
-      ?(%lnk %cal %caf %hop)
+      ?(%hop)
     =/  t=@uwoo  (get-target bend.here)
     $(here (~(got by blocks) t), here-o t)
   ::
@@ -893,6 +948,9 @@
       %mem  op(k (update-r k.op), s (update-r s.op), r (update-r r.op))
       %hys  op(p (update-r p.op))
       %hyd  op(p (update-r p.op), q (update-r q.op))
+      %lnk  op(u (update-r u.op), f (update-r f.op), d (update-r d.op))
+      %cal  op(d (update-r d.op), v (turn v.op update-r))
+      %caf  op(d (update-r d.op), v (turn v.op update-r))
     ==
   ::
   ++  update-r
@@ -909,9 +967,6 @@
       %brn  site(s (update-r s.site))
       %hop  site
       %hip  site
-      %lnk  site(u (update-r u.site), f (update-r f.site), d (update-r d.site))
-      %cal  site(d (update-r d.site), v (turn v.site update-r))
-      %caf  site(d (update-r d.site), v (turn v.site update-r))
       %lnt  site(u (update-r u.site), f (update-r f.site))
       %jmp  site(v (turn v.site update-r))
       %jmf  site(v (turn v.site update-r))
@@ -922,14 +977,11 @@
     ==
   ::
   ++  get-target
-    |=  s=_`$>(?(%hop %hip %lnk %cal %caf) site)`[%hip *@uw *@uw]
+    |=  s=_`$>(?(%hop %hip) site)`[%hip *@uw *@uw]
     ^-  @uwoo
     ?-  -.s
       %hop  t.s
       %hip  t.s
-      %lnk  t.s
-      %cal  t.s
-      %caf  t.s
     ==
   ::
   ++  get-z-o
@@ -1045,36 +1097,6 @@
         %hip
       [site gen]
     ::
-        %lnk
-      =^  u-new  gen  (old-to-new u.site)
-      =^  f-new  gen  (old-to-new f.site)
-      =^  d-new  gen  (old-to-new d.site)
-      [site(u u-new, f f-new, d d-new) gen]
-    ::
-        %cal
-      =^  v-new  gen
-        =-  -(v-out (flop v-out))
-        %+  roll  v.site
-        |=  [i=@uvre acc=_[v-out=*(list @uvre) gen=gen]]
-        =.  gen  gen.acc
-        =^  i-new  gen  (old-to-new i)
-        [[i-new v-out.acc] gen]
-      ::
-      =^  d-new  gen  (old-to-new d.site)
-      [site(v v-new, d d-new) gen]
-    ::
-        %caf
-      =^  v-new  gen
-        =-  -(v-out (flop v-out))
-        %+  roll  v.site
-        |=  [i=@uvre acc=_[v-out=*(list @uvre) gen=gen]]
-        =.  gen  gen.acc
-        =^  i-new  gen  (old-to-new i)
-        [[i-new v-out.acc] gen]
-      ::
-      =^  d-new  gen  (old-to-new d.site)
-      [site(v v-new, d d-new) gen]
-    ::
         %lnt
       =^  u-new  gen  (old-to-new u.site)
       =^  f-new  gen  (old-to-new f.site)
@@ -1173,6 +1195,36 @@
       =^  p-new  gen  (old-to-new p.pole)
       =^  q-new  gen  (old-to-new q.pole)
       [pole(p p-new, q q-new) gen]
+    ::
+        %lnk
+      =^  u-new  gen  (old-to-new u.pole)
+      =^  f-new  gen  (old-to-new f.pole)
+      =^  d-new  gen  (old-to-new d.pole)
+      [pole(u u-new, f f-new, d d-new) gen]
+    ::
+        %cal
+      =^  v-new  gen
+        =-  -(v-out (flop v-out))
+        %+  roll  v.pole
+        |=  [i=@uvre acc=_[v-out=*(list @uvre) gen=gen]]
+        =.  gen  gen.acc
+        =^  i-new  gen  (old-to-new i)
+        [[i-new v-out.acc] gen]
+      ::
+      =^  d-new  gen  (old-to-new d.pole)
+      [pole(v v-new, d d-new) gen]
+    ::
+        %caf
+      =^  v-new  gen
+        =-  -(v-out (flop v-out))
+        %+  roll  v.pole
+        |=  [i=@uvre acc=_[v-out=*(list @uvre) gen=gen]]
+        =.  gen  gen.acc
+        =^  i-new  gen  (old-to-new i)
+        [[i-new v-out.acc] gen]
+      ::
+      =^  d-new  gen  (old-to-new d.pole)
+      [pole(v v-new, d d-new) gen]
     ==
   --
 ::
@@ -1349,7 +1401,7 @@
           ::
               %next
             =^  [aftr=@uwoo prod=@uvre]  gen  (kerf goal)
-            (emit ~ ~ %lnk s f prod aftr)
+            (emit ~ [%lnk s f prod]~ %hop aftr)
           ==
         ::
         =^  need-f  gen
@@ -1381,11 +1433,11 @@
         ::
             %next
           =^  [aftr=@uwoo prod=@uvre]  gen  (kerf goal)
-          =/  op=site
-            ?~  rin  [%cal u.info.nomm args-list prod aftr]
-            [%caf u.info.nomm args-list prod aftr u.rin]
+          =/  op=pole
+            ?~  rin  [%cal u.info.nomm args-list prod]
+            [%caf u.info.nomm args-list prod u.rin]
           ::
-          (emit ~ ~ op)
+          (emit ~ [op]~ %hop aftr)
         ==
       ::
       =^  fol-next=next  gen
@@ -1495,6 +1547,11 @@
         %6
       =^  [goal-0=^goal goal-1=^goal]  gen
         ?:  ?=(%next -.goal)  (phil goal)
+        ::  simplifies code handling
+        ::
+        ?:  ?=(%pick -.goal)
+          =^  nex  gen  (simple-next goal)
+          (phil nex)
         [[goal goal] gen]
       ::
       =^  next-1  gen  $(nomm r.nomm, goal goal-1, pos (peg pos 15))

@@ -59,6 +59,9 @@
 ::  %tal - write tail of s to d. Writes 0 if s is an atom
 ::  %cel - crash if p is an atom
 ::  %spy - scry with ref in e, path in p, put in d
+::  %lnk - evaluate f against u and put the result in d
+::  %cal - call the arm a with subject in registers v, put result in d
+::  %caf - like cal but with fast label
 ::  hint ops (except for %memo):
 ::
 ::  %his - static hint prologue
@@ -108,6 +111,9 @@
       [%hod n=hint-dynamic-mute p=@uvre f=*]
       [%spy e=@uvre p=@uvre d=@uvre]
       [%mem k=@uvre s=@uvre f=* r=@uvre]  ::  memo slot [k f]?
+      [%lnk u=@uvre f=@uvre d=@uvre]
+      [%cal a=bell v=(list @uvre) d=@uvre]
+      [%caf a=bell v=(list @uvre) d=@uvre n=ring]
   ==
 ::
 ::    control flow instructions
@@ -138,10 +144,6 @@
 ::  %brn - if s is 0 goto z, if 1 goto o, else crash
 ::  %hop - unconditionally go to t
 ::  %hip - set comefrom label to c and goto t
-::  %lnk - evaluate f against u and put the result in d, then goto t
-::  %cal - call the arm a with subject in registers v,
-::         put result in d, and then goto t
-::  %caf - like call but with fast label
 ::  %lnt - evaluate f against u in tail position
 ::  %jmp - call the arm a with subject in registers v, in
 ::         tail position
@@ -166,11 +168,21 @@
       [%dom r=*]
       [%bom ~]
       [%mim k=@uvre s=@uvre f=* d=@uvre z=@uwoo o=@uwoo]
-      ::
-      ::  XX  these should be just poles
-      [%lnk u=@uvre f=@uvre d=@uvre t=@uwoo]
-      [%cal a=bell v=(list @uvre) d=@uvre t=@uwoo]
-      [%caf a=bell v=(list @uvre) d=@uvre t=@uwoo n=ring]
+  ==
+::
++$  vere-op
+  $%  pole
+      [%clq s=@uvre z=(list vere-op) o=(list vere-op)]
+      [%eqq l=@uvre r=@uvre z=(list vere-op) o=(list vere-op)]
+      [%brn s=@uvre z=(list vere-op) o=(list vere-op)]
+      [%mim k=@uvre s=@uvre f=* d=@uvre z=(list vere-op) o=(list vere-op)]
+      ::  terminators
+      [%jmp a=bell v=(list @uvre)]
+      [%jmf a=bell v=(list @uvre) n=ring]
+      [%lnt u=@uvre f=@uvre]
+      [%don s=@uvre]
+      [%dom r=*]
+      [%bom ~]
   ==
 ::
 ++  get-regs-site
@@ -182,9 +194,6 @@
     %brn  ~[s.s]
     %hop  ~
     %hip  ~
-    %lnk  ~[u.s f.s d.s]
-    %cal  [d.s v.s]
-    %caf  [d.s v.s]
     %lnt  ~[u.s f.s]
     %jmp  v.s
     %jmf  v.s
@@ -198,6 +207,9 @@
   |=  p=pole
   ^-  (list @uvre)
   ?-  -.p
+    %cal  [d.p v.p]
+    %caf  [d.p v.p]
+    %lnk  ~[u.p f.p d.p]
     %imm  ~[d]:p
     %mov  ~[s d]:p
     %inc  ~[s d]:p
