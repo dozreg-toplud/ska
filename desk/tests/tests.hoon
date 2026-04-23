@@ -9,6 +9,112 @@
   (expect-eq !>(mol) !>((run-nomm-1 sub fol)))
 ::
 |%
+++  test-hoot-add
+  =/  sub  ..add:hoot
+  =/  fol
+    =>  sub  !=
+    (add 3 2)
+  ::
+  (expect-eq-nock-need sub fol)
+::
+++  test-once-dabl
+  =/  sub
+    =>  ~
+    !:
+    |.
+    =/  once  |=(@ +(+<))
+    =/  dabl  =>  +  |=(@ +(+(+<)))
+    =/  slam  |=(g=$-(@ @) |=(n=@ (g n)))
+    [((slam once) 1) ((slam dabl) 1)]
+  ::
+  =/  fol  [9 2 0 1]
+  (expect-eq-nock-need sub fol)
+::
+++  test-dec
+  =/  sub
+    !:
+    =>  ~
+    |.
+    %.  3
+    |=  n=@
+    ^-  @
+    ?<  =(0 n)
+    =/  c  0
+    |-  ^-  @
+    ?:  =(+(c) n)  c
+    $(c +(c))
+  ::
+  =/  fol  [9 2 0 1]
+  (expect-eq-nock-need sub fol)
+:: ::
+++  test-scow-playpen
+  =/  sub  ..scow:playpen
+  =/  fol
+    =>  sub  !=
+    (scow %ud 5)
+  ::
+  (expect-eq-nock-need sub fol)
+::
+++  test-scow-hoot
+  =/  sub  ..scow:hoot
+  =/  fol
+    =>  sub  !=
+    (scow %ud 5)
+  ::
+  (expect-eq-nock-need sub fol)
+:: ::
+++  test-parser
+  =/  sub
+    =>  ..ride:hoot
+    |%
+    ++  test  (expr-parse "33+3+4\\\0a/1+1+2")
+    ++  expr-parse
+      |=  math=tape
+      (scan math expr)
+      ::
+    ++  expr
+      %+  knee  *@ud
+      |.  ~+
+      ;~  pose
+        ((slug add) lus ;~(pose dem expr))
+        dem
+      ==
+    --
+  ::
+  =/  fol
+    =>  sub  !=
+    test
+  ::
+  (expect-eq-nock-need sub fol)
+::
+::  creates an unreachable loop? (which is fine if it is truly unreachable, 
+::  but in that case I wonder what the linearizer will generate...)
+::
+++  test-tree-functions  
+  =/  sub
+    =>  hoot
+    :_  .
+    =-  ~&(-< -)
+    ^-  m=(map @ $-(@ @))
+    %-  malt
+    ^-  (list [@ $-(@ @)])
+    :~  0+dec
+        1+succ
+        2+|=(@ +<)
+    ==
+  ::
+  =/  fol
+   =>  sub  !=
+   =/  key  0
+   =/  sam  42
+   |-  ^-  @
+   ?~  m  !!
+   ?:  =(key p.n.m)  (q.n.m sam)
+   ?:  (gor key p.n.m)  $(m l.m)
+   $(m r.m)
+  ::
+  (expect-eq-nock-need sub fol)
+::
 ++  test-provoke-infinite-loop
   ::  I had an idea that building a growing noun of gates that were called
   ::  (so, a growing noun of code) would provoke an infinite loop in SKA as
@@ -37,6 +143,39 @@
       =+  .*(-.l [9 2 0 1])
       even(c +(c))
     --
+  ::
+  (expect-eq-nock-need sub fol)
+::
+++  test-muk
+  =/  sub  playpen
+  =/  fol
+    =>  sub  !=
+    (muk 0xcafe.babe 1 42)  ::  XX 42 42 42 is a jet mismatch
+  ::
+  (expect-eq-nock-need sub fol)
+::
+++  test-y-comb
+  =/  sub
+    =>  ..add:hoot
+    |%
+    ++  y
+      |*  [m1=mold m2=mold]
+      |=  f=$-($-(m1 m2) $-(m1 m2))
+      |=  x=m1
+      ^-  m2
+      ((f .) x)
+    ::
+    ++  fac-f
+      |=  cont=$-(@ @)
+      |=  x=@
+      ^-  @
+      ?:  =(x 0)  1
+      (mul x (cont (dec x)))
+    --
+  ::
+  =/  fol
+    =>  sub  !=
+    (((y @ @) fac-f) 5)
   ::
   (expect-eq-nock-need sub fol)
 ::
