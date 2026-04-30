@@ -433,7 +433,7 @@
       stub
     ::
     ==
-  =^  op=pole  body.blob.gen  body.blob.gen
+  =^  op=pole  body.blob.gen  ?~(body.blob.gen !! body.blob.gen)
   =-  ?~  -  `gen  ops-loop(gen u)
   ^-  (unit $+(gen _gen))
   ?-    -.op
