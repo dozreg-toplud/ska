@@ -1786,7 +1786,7 @@
     |=  [[k=[less=sock fol=*] v=nomm-1] acc=(jar * [less=sock code=nomm-1])]
     (~(add ja acc) fol.k less.k v)
   ::
-  [call.cole.jets.lon code fols]
+  [call.cole.jets.lon code fols mize.lon]
 ::
 ++  rewrite
   |=  [n=nomm lon=long]

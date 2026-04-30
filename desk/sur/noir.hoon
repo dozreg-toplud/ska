@@ -191,6 +191,7 @@
   $:  cole=(map bell ring)
       code=(map bell nomm-1)
       fols=(jar * [less=sock code=nomm-1])
+      mize=(map bell *)
   ==
 ::
 +$  bell  [bus=sock fol=*]
