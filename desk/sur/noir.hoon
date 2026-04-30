@@ -183,6 +183,8 @@
         doors=(map @uvarm [less=sock fol=* =nomm])
         sites=(map [@uvarm @uxsite] [less=sock fol=* =nomm])
     ==
+  ::
+    mize=(map bell *)  ::  keys
   ==
 ::
 +$  boil
@@ -284,6 +286,7 @@
           fol=*
           =nomm
           prod=sock
+          mize=(unit *)
           area=(unit spot)
   ==  ==
 ::  urge: evalsite subject requirements

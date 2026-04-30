@@ -9,6 +9,14 @@
   (expect-eq !>(mol) !>((run-nomm-1 sub fol)))
 ::
 |%
+++  test-memoize
+  =/  sub  ~
+  =/  fol
+    =>  sub  !=
+    ~+
+    42
+  ::
+  (expect-eq-nock-need sub fol)
 ++  test-hoot-add
   =/  sub  ..add:hoot
   =/  fol
