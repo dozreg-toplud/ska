@@ -3,16 +3,42 @@
 ::
 =,  gene
 =*  stub  ~|(%stub !!)
-=*  direct-entrypoint  0w1
+=*  indirect-entrypoint  0w0
+=*  direct-entrypoint    0w1
 |_  lon=line-long
 +*  this  .
 ++  span-args
   |=  n=@
   ^-  (list @uvre)
   ?~  n  ~
-  (gulf `@uvre`0 `@uvre`(dec n))
+  (gulf `@uvre`1 `@uvre`n)
 ::
-++  back
+++  get-max-register
+  |=  blocks=(map @uwoo blob)
+  ^-  @uvre
+  =/  max-r=@uvre  `@`0
+  %-  ~(rep by blocks)
+  |=  [[k=* v=blob] max-r=@uvre]
+  (max max-r (max-reg-blob v))
+::
+++  max-reg-blob
+  |=  =blob
+  ^-  @uvre
+  ?>  =(~ phi.blob)
+  %+  max  (max-reg-site bend.blob)
+  (roll body.blob |=([p=pole max-r=@uvre] (max max-r (max-reg-pole p))))
+::
+++  max-reg-site
+  |=  s=site
+  ^-  @uvre
+  (roll (get-regs-site s) max)
+::
+++  max-reg-pole
+  |=  p=pole
+  ^-  @uvre
+  (roll (get-regs-pole p) max)
+::
+++  back  ::  XX fix after changes due to indirect entry stuff
   ^-  (list tape)
   =/  bell-to-idx=(map bell @uxor)
     =<  +
@@ -55,31 +81,6 @@
     ?:  =(1 n)  "  {(r `@`0)} = reg_{<`@uv`0>};"
     %+  weld  $(n (dec n))  
     "\0a  {(r (dec n))} = reg_{<`@uv`(dec n)>};"
-  ::
-  ++  get-max-register
-    |=  blocks=(map @uwoo blob)
-    ^-  @uvre
-    =/  max-r=@uvre  `@`0
-    %-  ~(rep by blocks)
-    |=  [[k=* v=blob] max-r=@uvre]
-    (max max-r (max-reg-blob v))
-  ::
-  ++  max-reg-blob
-    |=  =blob
-    ^-  @uvre
-    ?>  =(~ phi.blob)
-    %+  max  (max-reg-site bend.blob)
-    (roll body.blob |=([p=pole max-r=@uvre] (max max-r (max-reg-pole p))))
-  ::
-  ++  max-reg-site
-    |=  s=site
-    ^-  @uvre
-    (roll (get-regs-site s) max)
-  ::
-  ++  max-reg-pole
-    |=  p=pole
-    ^-  @uvre
-    (roll (get-regs-pole p) max)
   ::
   ++  render-input-args
     |=  n=@ud
@@ -608,11 +609,17 @@
     ~|  arity+shape-final.meme-args
     (~(coerce line gen) nex args-need bus.bell)
   ::
+  ::  XX this is wrong and lazy, but fine for testing. to fix during rewrite
+  ::
+  =^  sub-r=@uvre  gen
+    =^  [r=@uvre ops=(list pole)]  gen  (~(kern line gen) args-need)
+    [r (~(emir line gen) indirect-entrypoint ~ ops %hop direct-entrypoint)]
+  ::
   =/  blocks  blocks.here.gen
   =.  blocks  (remove-hops blocks)
   =.  blocks  (remove-movs blocks)
   =^  old-to-new  blocks
-    (rewrite-registers-from-start blocks args-list)
+    (rewrite-registers-from-start blocks args-list sub-r)
   ::
   =.  blocks  (defi blocks)
   ::  the registers are no longer single-assignment
@@ -634,9 +641,12 @@
   this
 ::
 ++  straighten
-  |=  blocks=(map @uwoo blob)
+  |=  [blocks=(map @uwoo blob) direct=?]
   ^-  (list vere-op)
-  =/  here-o=@uwoo  direct-entrypoint
+  =/  here-o=@uwoo
+    ?:  direct  direct-entrypoint
+    indirect-entrypoint
+  ::
   =/  here=blob  (~(got by blocks) here-o)
   =;  [l=(list vere-op) tar=(unit @uwoo)]
     ?^  tar  ~|  %straighten-hop-unbalanced  !!
@@ -995,19 +1005,28 @@
     ==
   --
 ::  To make the calling convention simpler we want the argument registers to
-::  be sequential values (0v0, 0v1, 0v2, ...), but since we codegen from the end
+::  be sequential values (0v1, 0v2, 0v3, ...), but since we codegen from the end
 ::  to the beginning, the input registers end up having high values, and return
 ::  registers are low.
 ::  So, once we have all the code for a function, we iterate from the beginning
 ::  to the end, renaming the registers.
 ::
+::  0v0 is reserved for the subject in the indirect entry point
+::
 ++  rewrite-registers-from-start
-  |=  [blocks=(map @uwoo blob) args-old=(list @uvre)]
+  |=  [blocks=(map @uwoo blob) args-old=(list @uvre) sub-r=@uvre]
   ^-  [(map @uvre @uvre) _blocks]
   =|  gen=[new-reg=@uvre old-to-new=(map @uvre @uvre)]
   |^
   =.  gen
-    ::  we iterate over the old argument registers first so that they are
+    ::  first we rewrite the indirect entry register
+    ::
+    =^  new  gen  next-new-reg
+    =.  old-to-new.gen  (~(put by old-to-new.gen) sub-r new)
+    gen
+  ::
+  =.  gen
+    ::  then we iterate over the old argument registers so that they are
     ::  sequential
     ::
     |-  ^+  gen
