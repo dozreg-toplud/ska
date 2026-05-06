@@ -391,6 +391,8 @@
 ::
 ++  scan
   =|  gen=short
+  =|  memoize-key-here=(unit *)   ::  our memo key
+  =|  memoize-key-there=(unit *)  ::  memo key of a callee (set in %11 case)
   |=  [bus=sock fol=*]
   ^-  short
   =|  =stack  ::  lexically scoped
@@ -515,7 +517,11 @@
       =/  fol-new  data.sock.prod.f
       =/  fol-urge  (urge:source src.prod.f & ?~(list.stack !! list.stack))
       =.  want.gen  (uni-urge:source want.gen fol-urge)
-      ?^  inlined=(try-inline fol-new)
+      =/  inlined=(unit nomm)
+        ?^  memoize-key-there  ~
+        (try-inline fol-new)
+      ::
+      ?^  inlined
         :: ~&  >  'inlined'
         =^  pro=fol-res  gen  fol-loop(fol fol-new, sub prod.s)
         ?>  =(code.pro u.inlined)
@@ -629,13 +635,15 @@
       =/  need-call=cape  (prune:source i.src.prod.s cape.sock.prod.s)
       =^  [pro=sock-anno =flags =info]  gen
         %=  eval-loop
-          sub          prod.s(src [~[1] src.prod.s])
-          fol          fol-new
-          here-site    there-site
-          seat         ?~(trace ~ `i.trace)
-          area.gen     ~
-          areas.stack  ?~  area.gen  areas.stack
-                       (~(put by areas.stack) here-site u.area.gen)
+          sub                prod.s(src [~[1] src.prod.s])
+          fol                fol-new
+          here-site          there-site
+          memoize-key-here   memoize-key-there
+          memoize-key-there  ~
+          seat               ?~(trace ~ `i.trace)
+          area.gen           ~
+          areas.stack        ?~  area.gen  areas.stack
+                             (~(put by areas.stack) here-site u.area.gen)
         ==
       ::
       =/  code=nomm
@@ -727,15 +735,19 @@
         [%11 [a=@ h=^] f=^]
       =^  h=fol-res  gen  fol-loop(fol h.fol)
       =>  !@  verb  .
+          =*  dot  .
           =/  pot=(unit spot)
             ?.  =(%spot a.fol)  ~
             ((soft spot) data.sock.prod.h)
           ::
-          ?~  pot  +
-          %_  +
+          ?~  pot  dot
+          %_  dot
             area.gen  ?~(area.gen pot area.gen)
             trace  [u.pot trace]
           ==
+      ::
+      ?:  &(?=(%memo a.fol) ?=(%& cape.sock.prod.h) crash-safe.flags.h)
+        fol-loop(fol [%2 [%0 1] 1 f.fol], memoize-key-there `data.sock.prod.h)
       =^  f=fol-res  gen  fol-loop(fol f.fol)
       :_  (hint a.fol prod.h prod.f gen)
       :+  [%d11 [a.fol code.h] code.f f.fol]
@@ -779,6 +791,9 @@
     ::   ~|  cape.less-code
     ::   ~|  want-site
     ::   !!
+    =?  mize.gen  ?=(^ memoize-key-here)
+      (~(put by mize.gen) [less-code fol] u.memoize-key-here)
+    ::
     ::  memoize globally or save locally
     ::
     =^  =info  gen
@@ -830,7 +845,7 @@
     ::
     =.  process.gen
       %+  ~(put by process.gen)  here-site
-      [sock.sub fol code sock.prod area.gen]
+      [sock.sub fol code sock.prod memoize-key-here area.gen]
     ::
     gen
   ::  cycle entry not loopy if finalized
@@ -925,6 +940,9 @@
     ::   !!
     =.  locals.gen  [[site less-code fol.proc nomm.proc] locals.gen]
     =.  process.gen  (~(del by process.gen) site)
+    =?  mize.gen  ?=(^ mize.proc)
+      (~(put by mize.gen) [less-code fol.proc] u.mize.proc)
+    ::
     gen
   ::  memoize or save loop entry point
   ::
@@ -952,6 +970,9 @@
     ::
     =.  fols.memo.gen  (~(add ja fols.memo.gen) fol meme)
     =.  idxs.memo.gen  (~(put by idxs.memo.gen) idx meme)
+    =?  mize.gen  ?=(^ memoize-key-here)
+      (~(put by mize.gen) [less-code fol] u.memoize-key-here)
+    ::
     =.  sits.memo.gen  (~(put by sits.memo.gen) [here-arm.gen here-site] meme)
     [`idx gen]
   ::
@@ -1152,7 +1173,7 @@
           ::
           ?.  =(& cape.fore)  ~
           (~(get ju root.jets.gen) data.fore)
-      ::  child registrations
+      ::  parent core registrations
       ::
       =/  batt-fore  (~(pull so fore) 2)
       ?.  &(=(& cape.batt-fore) ?=(^ data.batt-fore))  ~
@@ -1735,7 +1756,7 @@
     |=  [[k=[less=sock fol=*] v=nomm-1] acc=(jar * [less=sock code=nomm-1])]
     (~(add ja acc) fol.k less.k v)
   ::
-  [call.cole.jets.lon code fols]
+  [call.cole.jets.lon code fols mize.lon]
 ::
 ++  rewrite
   |=  [n=nomm lon=long]
