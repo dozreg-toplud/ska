@@ -32,9 +32,8 @@
   ~&  test
   =/  fol
     !.
-    =>  [sock-hoon=*hoon soak-hoon=*hoon noir-hoon=*hoon skan-hoon=*hoon gene-hoon=*hoon line-hoon=*hoon vere-hoon=*hoon ..zuse]
+    =>  [sock-hoon=*hoon soak-hoon=*hoon noir-hoon=*hoon skan-hoon=*hoon gene-hoon=*hoon line-hoon=*hoon vere-hoon=*hoon zus=*vase ..zuse]
     !=
-    =/  zus  !>(..zuse)
     =/  with-face  |=([face=@tas =vase] vase(p [%face face p.vase]))
     =/  sock-vase  (slap zus sock-hoon)
     =/  soak-vase  (slap (slop sock-vase zus) soak-hoon)
@@ -45,7 +44,7 @@
     =/  vere-vase  (slap :(slop (with-face %line-dor line-vase) (with-face %skan skan-vase) zus) vere-hoon)
     vere-vase
   ::
-  (jam fol hoon:(p sock) hoon:(p soak) hoon:(p noir) hoon:(p skan) hoon:(p gene) hoon:(p line) hoon:(p vere-interface))
+  [fol hoon:(p sock) hoon:(p soak) hoon:(p noir) hoon:(p skan) hoon:(p gene) hoon:(p line) hoon:(p vere-interface)]
 ::
 |%
 ++  with-face  |=([face=@tas =vase] vase(p [%face face p.vase]))
