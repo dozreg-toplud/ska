@@ -9,6 +9,20 @@
   (expect-eq !>(mol) !>((run-nomm-1 sub fol)))
 ::
 |%
+++  test-pole-trap
+  =/  sub=(pole (trap))
+    !.
+    =>  ~
+    ~[|.(1) |.(1) |.(1) |.(1) |.(1) |.(1) |.(2)]
+  ::
+  =/  fol
+    =>  sub  !=
+    |-
+    ?~  +  ~
+    [^$ $(+ +>)]
+  ::
+  (expect-eq-nock-need sub fol)
+::
 ++  test-memoize
   =/  sub  ~
   =/  fol
