@@ -9,17 +9,13 @@
 |^
 =/  sub
   :: !.
-  =>  ..dec:hoot-zpdt
-  |=  [m=@ n=@]
-  ^-  @
-  ?:  =(0 m)  +(n)
-  ?:  =(0 n)  $(m (dec m), n 1)
-  $(m (dec m), n $(n (dec n)))
+  =>  ..dec:hoot
+  .
 ::
 =/  fol
   !.
   =>  sub  !=
-  (. 3 2)
+  (dec 42)
 ::
 ::  do SKA, find result
 ::

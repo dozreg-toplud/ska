@@ -8,7 +8,7 @@
 ::
 |^
 =/  sub
-  =>  ..dec:hoot-zpdt
+  !.  =>  ..dec:hoot-zpdt
   |=  [m=@ n=@]
   ^-  @
   ?:  =(0 m)  +(n)

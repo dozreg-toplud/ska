@@ -11,9 +11,10 @@
 ::    Document everything! SKA is not much code but very complicated, a lot of
 ::    tacit knowledge there, esp about performance when it comes to big nouns
 ::
-/-  *noir
-/-  gene
-::    
+:: /-  *noir
+:: /-  gene
+::
+=~
 =*  stub  ~|(%stub !!)
 =*  mure  mure:vi
 ::  Wing for compile-time branching in printing routines
@@ -2744,3 +2745,4 @@
     ==
   --
 --
+==
