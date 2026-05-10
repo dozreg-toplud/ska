@@ -5,11 +5,11 @@
 =*  sock  sock:skan
 |%
 ++  vere-straighten
-  |=  [b=bell:skan direct=?]
+  |=  [b=bell:skan entry=?]
   ^-  [(list vere-op:line-dor) @]
   =/  =straight:line-dor  (~(got by code.lon.line-dor) b)
   :_  (get-max-register:line-dor blocks.straight)
-  (straighten:line-dor blocks.straight direct)
+  (straighten:line-dor blocks.straight entry)
 ::
 ++  compile
   |=  [s=* f=*]

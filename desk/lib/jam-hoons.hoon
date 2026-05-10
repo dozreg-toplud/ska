@@ -1,37 +1,108 @@
-/*  sock  %hoon  /lib/smol/sock/hoon
-/*  noir  %hoon  /lib/smol/noir/hoon
-/*  gene  %hoon  /lib/smol/gene/hoon
-/*  soak  %hoon  /lib/smol/soak/hoon
-/*  skan  %hoon  /lib/smol/skan/hoon
-/*  line  %hoon  /lib/smol/line/hoon
+/*  sock            %hoon  /sur/sock/hoon
+/*  noir            %hoon  /sur/noir/hoon
+/*  gene            %hoon  /sur/gene/hoon
+/*  soak            %hoon  /lib/soak/hoon
+/*  skan            %hoon  /lib/skan/hoon
+/*  line            %hoon  /lib/line/hoon
+/*  vere-interface  %hoon  /lib/vere-interface/hoon
 ::
-/*  vere-interface  %hoon  /lib/smol/vere-interface/hoon
+::  utils
+=/  fas-line
+  %-  star
+  ;~  pose  vul
+    %+  ifix  [fas (just `@`10)]
+    (star ;~(less (just `@`10) next))
+  ==
 ::
-=/  fol
-  !:
-  =>  [[sock-hoon=*@t soak-hoon=*@t noir-hoon=*@t skan-hoon=*@t gene-hoon=*@t line-hoon=*@t vere-hoon=*@t] zus=*vase ..zuse]
-  !=
-  ?>  =(hoon-version 135)
-  ?>  =(zuse 408)
-  =/  with-face  |=([face=@tas =vase] vase(p [%face face p.vase]))
-  =/  sock-hoon  (ream sock-hoon)
-  =/  soak-hoon  (ream soak-hoon)
-  =/  noir-hoon  (ream noir-hoon)
-  =/  gene-hoon  (ream gene-hoon)
-  =/  skan-hoon  (ream skan-hoon)
-  =/  line-hoon  (ream line-hoon)
-  =/  vere-hoon  (ream vere-hoon)
+|%
+::  deferred +slop
+::
+++  swot
+  |=  [a=(trap vase) b=(trap vase)]
+  ^-  (trap vase)
+  =/  typ  [%cell p:$:a p:$:b]
+  |.
+  [typ q:$:a q:$:b]
+::
+++  name
+  |=  [tap=(trap vase) nam=term]
+  ^-  (trap vase)
+  =/  typ  [%face nam p:$:tap]
+  |.
+  [typ q:$:tap]
+::
+++  mist
+  |=  [bon=path txt=@]
+  ^-  hoon
+  ~|  bon
+  :-  %tssg
+  ^-  (list hoon)
+  %+  scan  (trip txt)
+  %-  full
+  (ifix [;~(plug gay fas-line) gay] (most gap tall:(vang | bon)))
+::
+--
+::  assembly
+::
+|=  sys=path
+|^
+=;  tap=(trap vase)
+  =/  nock  !.
+    =>  [tap=tap ~]  !=
+    $:tap
   ::
-  =/  sock-vase  ~>  %bout  (slap zus sock-hoon)
-  =/  soak-vase  ~>  %bout  (slap (slop sock-vase zus) soak-hoon)
-  =/  noir-vase  ~>  %bout  (slap (slop soak-vase zus) noir-hoon)
-  =/  gene-vase  ~>  %bout  (slap (slop noir-vase zus) gene-hoon)
-  =/  skan-vase  ~>  %bout  (slap :(slop (with-face %gene gene-vase) noir-vase zus) skan-hoon)
-  =/  line-vase  ~>  %bout  (slap :(slop skan-vase (with-face %gene gene-vase) zus) line-hoon)
-  =/  vere-vase  ~>  %bout  (slap :(slop (with-face %line-dor line-vase) (with-face %skan skan-vase) zus) vere-hoon)
-  vere-vase
+  [nock tap ~]
 ::
-=/  out  [fol sock+sock soak+soak noir+noir skan+`@t`skan gene+gene line+line vere+vere-interface]
-=-  out
-~>  %bout
-.*([[+.&2.out +.&3.out +.&4.out +.&5.out +.&6.out +.&7.out +.|7.out] !>(..zuse) ..zuse] &1.out)
+=/  sub=(trap vase)  !.  =>(..vase |.(*vase))
+=.  sub  (build-sys sub %hoon)
+=.  sub  (build-sys sub %arvo)
+=.  sub  (build-sys sub %lull)
+=/  zus  (build-sys sub %zuse)
+=/  sock-tap=(trap vase)  (swat zus (mist /sur/sock/hoon sock))
+::
+=/  soak-tap=(trap vase)
+  ~&  %soak
+  %+  swat
+    (swot sock-tap zus)
+  (mist /lib/soak/hoon soak)
+::
+=/  noir-tap=(trap vase)
+  ~&  %noir
+  %+  swat
+    (swot soak-tap zus)
+  (mist /sur/noir/hoon noir)
+::
+=/  gene-tap=(trap vase)
+  ~&  %gene
+  %+  swat
+    (swot noir-tap zus)
+  (mist /sur/gene/hoon gene)
+::
+=/  skan-tap=(trap vase)
+  ~&  %skan
+  %+  swat
+    :(swot (name gene-tap %gene) noir-tap zus)
+  (mist /lib/skan/hoon skan)
+::
+=/  line-tap=(trap vase)
+  ~&  %line
+  %+  swat
+    :(swot skan-tap (name gene-tap %gene) zus)
+  (mist /lib/line/hoon line)
+::
+%+  swat
+  ~&  %interface
+  :(swot (name line-tap %line-dor) (name skan-tap %skan) zus)
+(mist /lib/vere-interface/hoon vere-interface)
+::
+++  build-sys
+  |=  [sub=(trap vase) nam=term]
+  ^-  (trap vase)
+  ~&  "interface: building /sys/{(trip nam)}"
+  =/  src  .^(@t cx+(welp sys /[nam]/hoon))
+  %-  need
+  =>  [sub=sub src=src nam=nam ..ride]  !.
+  %-  ~(mole vi |)  |.
+  ~>  %memo./user
+  (swat sub (rain /sys/[nam]/hoon src))
+--

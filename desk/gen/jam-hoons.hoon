@@ -1,5 +1,5 @@
 /+  jam-hoons
 ::
-:-  %say  |=  *  :-  %noun
+:-  %say  |=  [[now=@da * bec=beak] *]  :-  %noun
 ::
-jam-hoons
+(jam-hoons /(scot %p p.bec)/base/(scot %da now)/sys)

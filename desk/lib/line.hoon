@@ -613,15 +613,22 @@
   ::
   =^  sub-r=@uvre  gen
     =^  [r=@uvre ops=(list pole)]  gen  (~(kern line gen) args-need)
-    [r (~(emir line gen) indirect-entrypoint ~ ops %hop direct-entrypoint)]
+    =^  sub-r=@uvre  gen  ~(re line gen)
+    [sub-r (~(emir line gen) indirect-entrypoint ~ [[%mov sub-r r] ops] %hop direct-entrypoint)]
   ::
+  ~&  sub-r+sub-r
   =/  blocks  blocks.here.gen
+  ~&  blocks
   =.  blocks  (remove-hops blocks)
-  =.  blocks  (remove-movs blocks)
+  ~&  blocks
+  =.  blocks  (remove-movs blocks sub-r)
+  ~&  blocks
   =^  old-to-new  blocks
     (rewrite-registers-from-start blocks args-list sub-r)
   ::
+  ~&  blocks
   =.  blocks  (defi blocks)
+  ~&  blocks
   ::  the registers are no longer single-assignment
   ::  and multiple blocks can target another block with %hop
   ::
@@ -641,16 +648,14 @@
   this
 ::
 ++  straighten
-  |=  [blocks=(map @uwoo blob) direct=?]
+  |=  [blocks=(map @uwoo blob) entry=?]
   ^-  (list vere-op)
-  =/  here-o=@uwoo
-    ?:  direct  direct-entrypoint
-    indirect-entrypoint
-  ::
+  =/  here-o=@uwoo  direct-entrypoint
   =/  here=blob  (~(got by blocks) here-o)
   =;  [l=(list vere-op) tar=(unit @uwoo)]
     ?^  tar  ~|  %straighten-hop-unbalanced  !!
-    l
+    ?.  entry  l
+    (weld `(list vere-op)`body:(~(got by blocks) indirect-entrypoint) l)
   ::
   |^  ^-  [(list vere-op) (unit @uwoo)]
   ?-    -.bend.here
@@ -721,6 +726,10 @@
   =/  here-o=@uwoo  direct-entrypoint
   =/  here=blob  (~(got by blocks) here-o)
   =|  new-blocks=(map @uwoo blob)
+  =.  new-blocks
+    =*  i  indirect-entrypoint
+    (~(put by new-blocks) i (~(got by blocks) i))
+  ::
   |^  ^+  blocks
   ?-    -.bend.here
       ?(%don %dom %bom %lnt %jmp %jmf)
@@ -823,7 +832,9 @@
 ++  remove-hops
   |=  blocks=(map @uwoo blob)
   ^+  blocks
-  =|  new-blocks=(map @uwoo blob)
+  =/  new-blocks=(map @uwoo blob)
+    [[indirect-entrypoint (~(got by blocks) indirect-entrypoint)] ~ ~]
+  ::
   =/  here-o=@uwoo  direct-entrypoint
   =/  here=blob  (~(got by blocks) here-o)
   |^  ^+  blocks
@@ -887,11 +898,15 @@
 ::  registers
 ::
 ++  remove-movs
-  |=  blocks=(map @uwoo blob)
+  |=  [blocks=(map @uwoo blob) sub-r=@uvre]
   ^+  blocks
   =/  here-o=@uwoo  direct-entrypoint
   =/  here=blob  (~(got by blocks) here-o)
   =|  gen=[new-blocks=(map @uwoo blob) old-to-new=(map @uvre @uvre)]
+  =.  new-blocks.gen
+    =*  i  indirect-entrypoint
+    (~(put by new-blocks.gen) i (~(got by blocks) i))
+  ::
   =<  -
   |^  ^+  gen
   =/  phi  (update-phi phi.here)
@@ -938,6 +953,8 @@
     ?~  body  [new-body gen]
     ?:  ?=(%mov -.i.body)
       =,  i.body
+      ?:  =(s sub-r)
+        $(body t.body, new-body [i.body new-body])
       ?~  old=(~(get by old-to-new.gen) s)
         $(body t.body, old-to-new.gen (~(put by old-to-new.gen) d s))
       $(body t.body, old-to-new.gen (~(put by old-to-new.gen) d u.old))
@@ -966,6 +983,7 @@
   ++  update-r
     |=  r=@uvre
     ^-  @uvre
+    ?:  =(r sub-r)  r
     (~(gut by old-to-new.gen) r r)
   ::
   ++  update-site
