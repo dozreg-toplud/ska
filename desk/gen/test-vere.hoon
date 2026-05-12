@@ -1,7 +1,13 @@
 /+  v=vere-interface
+/+  hoot-fol
+/+  hoot-zpdt
 ::
 |=  *
-=/  sub  42
-=/  fol  [4 0 1]
+=.  v  (ska:v ~ hoot-fol)
+=/  sub  ..dec:hoot-zpdt
+=/  fol
+  !.  =>  sub  !=
+  (dec 41)
+::
 =^  sock  v  (compile:v sub fol)
 (vere-straighten:v [sock fol] &)

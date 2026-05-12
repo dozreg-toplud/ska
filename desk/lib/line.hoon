@@ -591,8 +591,18 @@
   (compile k)
 ::
 ++  compile
-  |=  =bell
+  |=  b=bell
   ^+  this
+  =*  compile-buc  $
+  =^  worklist=(list bell)  this  (compile-one b)
+  %+  roll  worklist
+  |=  [new=bell acc=_this]
+  ?:  (~(has by code.lon) b)  acc
+  compile-buc(b new, this acc)
+::
+++  compile-one
+  |=  =bell
+  ^-  [(list ^bell) _this]
   =/  meme-args  (~(got by arity.lon) bell)
   =|  gen=line-short
   =.  -.gen  lon
@@ -616,19 +626,13 @@
     =^  sub-r=@uvre  gen  ~(re line gen)
     [sub-r (~(emir line gen) indirect-entrypoint ~ [[%mov sub-r r] ops] %hop direct-entrypoint)]
   ::
-  ~&  sub-r+sub-r
   =/  blocks  blocks.here.gen
-  ~&  blocks
   =.  blocks  (remove-hops blocks)
-  ~&  blocks
   =.  blocks  (remove-movs blocks sub-r)
-  ~&  blocks
   =^  old-to-new  blocks
     (rewrite-registers-from-start blocks args-list sub-r)
   ::
-  ~&  blocks
   =.  blocks  (defi blocks)
-  ~&  blocks
   ::  the registers are no longer single-assignment
   ::  and multiple blocks can target another block with %hop
   ::
@@ -645,7 +649,7 @@
     ^-  straight
     [args-need (lent args-list) blocks bell]
   ::
-  this
+  [worklist.gen this]
 ::
 ++  straighten
   |=  [blocks=(map @uwoo blob) entry=?]
@@ -1456,6 +1460,7 @@
           ?^  shape-ring  u.shape-ring
           shape-final:(~(got by arity.gen) u.info.nomm)
         ::
+        =?  worklist.gen  ?=(~ shape-ring)  [u.info.nomm worklist.gen]
         :_  gen
         [?~(shape-ring ~ rin) out]
       ::

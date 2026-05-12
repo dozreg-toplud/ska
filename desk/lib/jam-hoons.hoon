@@ -1,3 +1,4 @@
+/+  hoot-fol
 /*  sock            %hoon  /sur/sock/hoon
 /*  noir            %hoon  /sur/noir/hoon
 /*  gene            %hoon  /sur/gene/hoon
@@ -90,10 +91,17 @@
     :(swot skan-tap (name gene-tap %gene) zus)
   (mist /lib/line/hoon line)
 ::
+=/  vere-tap=(trap vase)
+  %+  swat
+    ~&  %interface
+    :(swot (name line-tap %line-dor) (name skan-tap %skan) zus)
+  (mist /lib/vere-interface/hoon vere-interface)
+::
 %+  swat
-  ~&  %interface
-  :(swot (name line-tap %line-dor) (name skan-tap %skan) zus)
-(mist /lib/vere-interface/hoon vere-interface)
+  ~&  %ska-hoon
+  (swot (name =>(f=hoot-fol |.([%noun f])) %hoot-fol) vere-tap)
+!,  *hoon
+(ska ~ hoot-fol)
 ::
 ++  build-sys
   |=  [sub=(trap vase) nam=term]

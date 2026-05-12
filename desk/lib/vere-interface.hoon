@@ -3,6 +3,18 @@
 ::
 =/  ka-dor  ka:skan
 =*  sock  sock:skan
+=*  shape-final  shape-final:line-dor
+=*  ring  ring:line-dor
+=.  jet-args.lon.line-dor
+  =/  unary=shape-final  [| & |]
+  =/  binary=shape-final  [| [& &] |]
+  ^-  (map ring shape-final)
+  %-  malt
+  ^-  (list [ring shape-final])
+  :~
+    [/dec/one/k135^2 unary]
+    [/add/one/k135^2 binary]
+  ==
 |%
 ++  vere-straighten
   |=  [b=bell:skan entry=?]
@@ -17,9 +29,21 @@
   =.  ka-dor  (rout:ka-dor s f)
   =.  boil.lon.line-dor  (cook:skan lon.ka-dor)
   =/  =sock  (need:..zuse (find fols.boil.lon.line-dor s f))
-  =.  arity.lon.line-dor  (find-args-all:skan code.boil.lon.line-dor)
-  =.  line-dor  (compile-all:line-dor code.boil.lon.line-dor)
+  =/  bell  [sock f]
+  =.  arity.lon.line-dor
+    =/  code  code.boil.lon.line-dor
+    =/  nomm  (~(got by code) bell)
+    ((find-args:skan code) bell nomm ~)
+  ::
+  =.  line-dor  (compile:line-dor bell)
   [sock ..compile]
+::
+++  ska
+  |=  [s=* f=*]
+  ^+  ..ska
+  =.  ka-dor  (rout:ka-dor s f)
+  =.  boil.lon.line-dor  (cook:skan lon.ka-dor)
+  ..ska
 ::
 ++  find
   |=  [fols=(jar * [less=sock code=nomm-1:skan]) sub=* fol=*]

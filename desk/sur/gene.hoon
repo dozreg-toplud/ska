@@ -261,6 +261,7 @@
   $:  line-long
       re-gen=@uvre
       bo-gen=_`@uwoo`2
+      worklist=(list bell)
       $=  here
       $:  blocks=(map @uwoo blob)
   ==  ==

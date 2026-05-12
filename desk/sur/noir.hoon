@@ -919,9 +919,9 @@
 ::  an effect on registerization if axis A is required by (...). [%0 1] is a
 ::  trivial example of that.
 ::
-++  shape-final  cape
++$  shape-final  cape
 ::
-++  shape
++$  shape
   $~  %nope
   $@  ?(%nope %data %look)
   [shape shape]
