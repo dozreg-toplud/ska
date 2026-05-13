@@ -594,6 +594,7 @@
   |=  b=bell
   ^+  this
   =*  compile-buc  $
+  ?:  (~(has by cole.boil.lon) b)  this
   =^  worklist=(list bell)  this  (compile-one b)
   %+  roll  worklist
   |=  [new=bell acc=_this]

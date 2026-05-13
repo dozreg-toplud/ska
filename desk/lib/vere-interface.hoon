@@ -16,6 +16,14 @@
     [/add/one/k135^2 binary]
   ==
 |%
+++  add-jet-registerization
+  |=  l=*
+  ^+  ..add-jet-registerization
+  %_    ..add-jet-registerization
+      jet-args.lon.line-dor
+    (~(gas by jet-args.lon.line-dor) ;;((list [ring shape-final]) l))
+  ==
+::
 ++  vere-straighten
   |=  [b=bell:skan entry=?]
   ^-  [(list vere-op:line-dor) @]
@@ -38,12 +46,12 @@
   =.  line-dor  (compile:line-dor bell)
   [sock ..compile]
 ::
-++  ska
-  |=  [s=* f=*]
-  ^+  ..ska
-  =.  ka-dor  (rout:ka-dor s f)
-  =.  boil.lon.line-dor  (cook:skan lon.ka-dor)
-  ..ska
+:: ++  ska
+::   |=  [s=* f=*]
+::   ^+  ..ska
+::   =.  ka-dor  (rout:ka-dor s f)
+::   =.  boil.lon.line-dor  (cook:skan lon.ka-dor)
+::   ..ska
 ::
 ++  find
   |=  [fols=(jar * [less=sock code=nomm-1:skan]) sub=* fol=*]
