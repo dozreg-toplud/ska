@@ -1,4 +1,3 @@
-/+  hoot-fol
 /*  sock            %hoon  /sur/sock/hoon
 /*  noir            %hoon  /sur/noir/hoon
 /*  gene            %hoon  /sur/gene/hoon
@@ -14,6 +13,14 @@
     %+  ifix  [fas (just `@`10)]
     (star ;~(less (just `@`10) next))
   ==
+::
+=/  memo-call
+  =>  ..ride
+  |*  [g=gate v=*]
+  %-  need  %-  ~(mole vi |)
+  |.  =>  [g=g v=v]
+  !.  ~>  %memo./user
+  (g v) 
 ::
 |%
 ::  deferred +slop
@@ -63,45 +70,41 @@
 ::
 =/  soak-tap=(trap vase)
   ~&  %soak
-  %+  swat
-    (swot sock-tap zus)
+  %+  memo-call  swat
+  :-  (swot sock-tap zus)
   (mist /lib/soak/hoon soak)
 ::
 =/  noir-tap=(trap vase)
   ~&  %noir
-  %+  swat
-    (swot soak-tap zus)
+  %+  memo-call  swat
+  :-  (swot soak-tap zus)
   (mist /sur/noir/hoon noir)
 ::
 =/  gene-tap=(trap vase)
   ~&  %gene
-  %+  swat
-    (swot noir-tap zus)
+  %+  memo-call  swat
+  :-  (swot noir-tap zus)
   (mist /sur/gene/hoon gene)
 ::
 =/  skan-tap=(trap vase)
   ~&  %skan
-  %+  swat
-    :(swot (name gene-tap %gene) noir-tap zus)
+  %+  memo-call  swat
+  :-  :(swot (name gene-tap %gene) noir-tap zus)
   (mist /lib/skan/hoon skan)
 ::
 =/  line-tap=(trap vase)
   ~&  %line
-  %+  swat
-    :(swot skan-tap (name gene-tap %gene) zus)
+  %+  memo-call  swat
+  :-  :(swot skan-tap (name gene-tap %gene) zus)
   (mist /lib/line/hoon line)
 ::
 =/  vere-tap=(trap vase)
-  %+  swat
+  %+  memo-call  swat
     ~&  %interface
-    :(swot (name line-tap %line-dor) (name skan-tap %skan) zus)
+  :-  :(swot (name line-tap %line-dor) (name skan-tap %skan) zus)
   (mist /lib/vere-interface/hoon vere-interface)
 ::
-%+  swat
-  ~&  %ska-hoon
-  (swot (name =>(f=hoot-fol |.([%noun f])) %hoot-fol) vere-tap)
-!,  *hoon
-(ska ~ hoot-fol)
+vere-tap
 ::
 ++  build-sys
   |=  [sub=(trap vase) nam=term]
@@ -110,7 +113,7 @@
   =/  src  .^(@t cx+(welp sys /[nam]/hoon))
   %-  need
   =>  [sub=sub src=src nam=nam ..ride]  !.
-  %-  ~(mole vi |)  |.
+  %-  ~(mole vi |)  |.  =>  +
   ~>  %memo./user
   (swat sub (rain /sys/[nam]/hoon src))
 --

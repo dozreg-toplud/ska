@@ -598,8 +598,9 @@
   =^  worklist=(list bell)  this  (compile-one b)
   %+  roll  worklist
   |=  [new=bell acc=_this]
-  ?:  (~(has by code.lon) b)  acc
-  compile-buc(b new, this acc)
+  =.  this  acc
+  ?:  (~(has by code.lon) new)  this
+  compile-buc(b new)
 ::
 ++  compile-one
   |=  =bell
@@ -1461,7 +1462,9 @@
           ?^  shape-ring  u.shape-ring
           shape-final:(~(got by arity.gen) u.info.nomm)
         ::
-        =?  worklist.gen  ?=(~ shape-ring)  [u.info.nomm worklist.gen]
+        =?  worklist.gen  ?=(~ shape-ring)
+          [u.info.nomm worklist.gen]
+        ::
         :_  gen
         [?~(shape-ring ~ rin) out]
       ::

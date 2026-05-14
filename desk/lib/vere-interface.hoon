@@ -21,7 +21,8 @@
   ^+  ..add-jet-registerization
   %_    ..add-jet-registerization
       jet-args.lon.line-dor
-    (~(gas by jet-args.lon.line-dor) ;;((list [ring shape-final]) l))
+    %-  ~(gas by jet-args.lon.line-dor)
+    ;;((list (pair ring shape-final)) l)
   ==
 ::
 ++  vere-straighten
