@@ -65,9 +65,21 @@
 |=  *
 ^-  tape
 =.  v  +:(memo-call compile:v ~ hoot-zpdt-fol)
-=/  sub  42
-=/  fol  [%8 [%1 0] %8 [%1 %6 [%5 [%0 7] %4 %0 6] [%0 6] %9 2 [%0 2] [%4 %0 6] %0 7] %9 2 %0 1]
+=/  sub
+  =;  fol  .*(..dec:hoot-zpdt fol)
+  !.  =>  ..dec:hoot-zpdt  !=
+  |=  [m=@ n=@]
+  ^-  @
+  ?:  =(0 m)  +(n)
+  ?:  =(0 n)  $(m (dec m), n 1)
+  $(m (dec m), n $(n (dec n)))
+::
+=/  fol
+  !.
+  =>  sub  !=
+  :: (. 3 8)
+  .*([. 3 8] [9 2 10 [6 0 3] 0 2])
+::
 =^  sock  v  (compile:v sub fol)
-=/  b  [bus=[cape=[%.y %.n] data=[[6 [5 [0 7] 4 0 6] [0 6] 9 2 [0 2] [4 0 6] 0 7] 0]] fol=[6 [5 [0 7] 4 0 6] [0 6] 9 2 [0 2] [4 0 6] 0 7]]
-~|  code.lon.line-dor.v
-(print-vere-ops -:(vere-straighten:v b |))
+~&  .*(sub fol)
+(print-vere-ops -:(vere-straighten:v [sock fol] &))

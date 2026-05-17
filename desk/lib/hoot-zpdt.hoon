@@ -6261,7 +6261,7 @@
 ::  +slum: slam a gate on a sample using raw nock, untyped
 ::
 ++  slum
-  ~/  %slum
+  :: ~/  %slum  ::  XX it got memoized somehow?
   |=  sub=[gat=* sam=*]
   .*(sub [%9 2 %10 [6 %0 3] %0 2])
 ::  +soft: virtual clam

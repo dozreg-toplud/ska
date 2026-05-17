@@ -647,7 +647,7 @@
   ::
   =.  code.lon
     %+  ~(put by code.lon)  bell
-    :: =-  ~&(code+- -)
+    :: =-  ~>  %slog.[0 (print-straight -)]  -
     ^-  straight
     [args-need (lent args-list) blocks bell]
   ::
@@ -1468,6 +1468,7 @@
         :_  gen
         [?~(shape-ring ~ rin) out]
       ::
+      ~?  ?=(^ rin)  %match
       =^  tar=@uwoo  gen
         ?-    -.goal
             %done
