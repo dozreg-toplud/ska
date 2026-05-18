@@ -73,6 +73,14 @@
 ::   :*  reg=~
 ::       :: norm=~
 ::   ==
+::  ska verbosity
+::
+=/  ska-verb
+  :*  ~
+      p-bars=&
+      f-bars=|
+      p-file=|
+  ==
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
@@ -242,10 +250,10 @@
     !@  check-soak  huge2
     |=  [a=sock b=sock]
     ^-  ?
-    =/  a  (huge1 a b)
-    =/  b  (huge2 a b)
-    ?>  =(a b)
-    a
+    =/  x  (huge1 a b)
+    =/  y  (huge2 a b)
+    ?>  =(x y)
+    x
   ::
   ++  huge1
     |=  [one=sock two=sock]
@@ -394,17 +402,17 @@
     ?:  =(a b)  a
     |-
     ?:  |(?=(^ cape.a) ?=(^ cape.b))
-      (knit $(a ~(hed so a), b ~(hed so b)) $(a ~(tel so a), b ~(tel so b)))
+      (knit $(a (hed a), b (hed b)) $(a (tel a), b (tel b)))
     ?:  |(?=(%| cape.a) ?=(%| cape.b))
       ~|  a
       ~|  b
       !!
     ?:  |(?=(@ data.a) ?=(@ data.b))
-      ?:  =(data.a data.b)  lost
+      ?:  =(data.a data.b)  *sock
       ~|  a
       ~|  b
       !!
-    (knit $(a ~(hed so a), b ~(hed so b)) $(a ~(tel so a), b ~(tel so b)))
+    (knit $(a (hed a), b (hed b)) $(a (tel a), b (tel b)))
   ::
   ++  darn1
     |=  [one=sock axe=@ two=sock]
@@ -661,6 +669,7 @@
 +$  bell  [sub=sock fol=*]
 +$  ring  [=path axe=@]
 +$  nomm
+  $+  nomm
   $~  [%0 0]
   $^  [nomm nomm]
   $%  [%1 p=*]
@@ -680,6 +689,26 @@
 |%
 ++  ska
   |%
+  ::  same as $nomm but with calls to unfinalized functions
+  ::
+  +$  nomm-local
+    $+  nomm-local
+    $~  [%0 0]
+    $^  [nomm-local nomm-local]
+    $%  [%1 p=*]
+        [%2 p=nomm-local q=nomm-local info=(unit $@(@uxsite bell))]
+        [%3 p=nomm-local]
+        [%4 p=nomm-local]
+        [%5 p=nomm-local q=nomm-local]
+        [%6 p=nomm-local q=nomm-local r=nomm-local]
+        [%7 p=nomm-local q=nomm-local]
+        [%10 p=[p=@ q=nomm-local] q=nomm-local]
+        [%11 p=$@(@ [p=@ q=nomm-local]) q=nomm-local body=*]
+        [%12 p=nomm-local q=nomm-local]
+        [%0 p=@]
+    ==
+  ::  Type definitions
+  ::
   ::  ~ : fresh noun, no provenance
   ::  @ : comes from axis
   ::  ^ : cons
@@ -702,7 +731,7 @@
   ::
   +$  meal
     $:  site=@uxsite
-        code=nomm
+        code=nomm-local
         capture=cape
         sub=sock-anno
         prod=sock
@@ -780,10 +809,290 @@
         %+  map  @uxsite
         $:  sub=sock
             fol=^
-            code=nomm
+            code=nomm-local
             prod=sock
             mize=(unit *)
             area=(unit spot)
     ==  ==
+  ::  backward-flowing data in the analysis flow/
+  ::  loopy - part of an SCC
+  ::  direct - fully direct including transitively, to be memoized
+  ::  
+  +$  flags  [loopy=? direct=? crash-safe=?]
+  ::  different views of the call stack
+  ::
+  +$  stack
+  $:
+    ::  list: linear stack of evalsites
+    ::    
+    list=(list @uxsite)
+    ::  fols: search by formula
+    ::
+    fols=(jar * (pair sock-anno @uxsite))
+    ::  set: set of evalsites on the stack
+    ::
+    :: set=(set @uxsite)
+    areas=(map @uxsite spot)
+  ==
+  ::
+  ++  mux
+    |=  n=*
+    ^-  @ux
+    (mug n)
+  ::  ignorant sock-anno
+  ::
+  ++  dunno
+    |=  sub=sock-anno
+    ^-  sock-anno
+    [|+~ [~[~] t.src.sub]]
+  ::
+  ++  uni-melo
+    |=  l=(list (jar ^ meal))
+    ^-  (jar ^ (pair @ meal))
+    ~+  ::  surprisingly not that important
+    =>  !@(verb . ~&(>> %uni-melo-recalc .))
+    ?~  l  ~
+    =/  out=(jar ^ (pair @ meal))
+      %-  ~(run by i.l)
+      |=  l=(list meal)
+      (turn l (lead 0))
+    ::
+    =/  c  1
+    =/  rest  t.l
+    |-  ^+  out
+    ?~  rest  out
+    =/  next=(jar ^ (pair @ meal))
+      %-  ~(run by i.l)
+      |=  l=(list meal)
+      (turn l (lead c))
+    ::
+    =.  out
+      %-  (~(uno by out) next)
+      |=  [* ls=[(list [@ meal]) (list [@ meal])]]
+      (weld ls)
+    ::
+    $(c +(c), rest t.rest)
+  ::
+  ++  weld-meal
+    |=  [* ls=[(list meal) (list meal)]]
+    (weld ls)
+  ::
+  ++  scux  ^~((cury scot %ux))
+  ++  scuv  ^~((cury scot %uv))
+  ::  printing core
+  ::
+  ++  p
+    !@  ska-verb  !!
+    =,  ska-verb
+    |%
+    ++  print
+      |=  [bars=@ud tag=cord comment=tank diff=@s]
+      ^+  bars
+      ?.  p-bars  ((slog [%rose [~ ~ ~] tag ': ' comment ~]~) 0)
+      =/  [bars-print=@ bars-return=@]
+        ?+  diff  ~|(%weird-diff !!)
+          %--0  [bars bars]
+          %--1  [. .]:(succ bars)
+          %-1   [bars ~|(%bars-underrun (dec bars))]
+        ==
+      ::
+      %.  bars-return
+      %-  slog
+      :_  ~
+      =/  bars=tank
+        ?.  f-bars  leaf+(reap bars-print '|')
+        ?:  (lte bars-print 5)  leaf+(reap bars-print '|')
+        =/  num  (scow %ud bars-print)
+        =/  len  (lent num)
+        =?  num  (lth len 3)  (weld (reap (sub 3 len) ' ') num)
+        [%rose [~ "|" "|"] leaf+num ~]
+      ::
+      [%rose [~ ~ ~] tag ': ' bars ' ' comment ~]
+    ::
+    ++  ren
+      |=  pot=spot
+      ^-  tank
+      =/  loc=tank
+        =*  l   p.q.pot
+        =*  r   q.q.pot
+        =/  ud  |=(a=@u (scow %ud a))
+        leaf+"<[{(ud p.l)} {(ud q.l)}].[{(ud p.r)} {(ud q.r)}]>"
+      ::
+      ?.  p-file  loc
+      [%rose [":" ~ ~] (smyt p.pot) loc ~]
+    ::
+    ++  step
+      |=  [site=@uxsite seat=(unit spot) bars=@ud]
+      ^+  bars
+      =-  (print bars 'step' - --1)
+      ^-  tank
+      ?~  seat  (scux site)
+      [%rose [" " ~ ~] (scux site) (ren u.seat) ~]
+    ::
+    ++  loop
+      |=  $:  kid=@uxsite
+              par=@uxsite
+              kid-seat=(unit spot)
+              par-area=(unit spot)
+              bars=@ud
+          ==
+      ^+  bars
+      =-  (print bars 'loop' - --0)
+      ^-  tank
+      ?:  |(?=(~ kid-seat) ?=(~ par-area))
+        [%rose [" =?= " ~ ~] (scux kid) (scux par) ~]
+      :+  %rose  ["; " ~ ~]
+      :~
+        [%rose [" =?= " ~ ~] ~[(scux kid) (scux par)]]
+        [%rose [" =?> " ~ ~] (ren u.kid-seat) (ren u.par-area) ~]
+      ==
+    ::
+    ++  done
+      |=  [site=@uxsite seat=(unit spot) area=(unit spot) bars=@ud]
+      ^+  bars
+      =-  (print bars 'done' - -1)
+      ^-  tank
+      ?~  area  (scux site)
+      :+  %rose  ["; " ~ ~]
+      :~
+        (scux site)
+        [%rose [" ==> " ~ ~] ?~(seat '??' (ren u.seat)) (ren u.area) ~]
+      ==
+    ::
+    ++  indi
+      |=  [seat=(unit spot) bars=@ud]
+      ^+  bars
+      =-  (print bars 'indi' - --0)
+      ^-  tank
+      ?~  seat  ''
+      (ren u.seat)
+    ::
+    ++  fini
+      |=  [site=@uxsite seat=(unit spot) area=(unit spot) bars=@ud]
+      ^+  bars
+      =-  (print bars 'fini' - -1)
+      ^-  tank
+      ?~  area  (scux site)
+      :+  %rose  ["; " ~ ~]
+      :~
+        (scux site)
+        [%rose [" ==> " ~ ~] ?~(seat '??' (ren u.seat)) (ren u.area) ~]
+      ==
+    ::
+    ++  ciao
+      |=  [site=@uxsite seat=(unit spot) area=(unit spot) bars=@ud]
+      ^+  bars
+      =-  (print bars 'ciao' - -1)
+      ^-  tank
+      ?~  area  (scux site)
+      :+  %rose  ["; " ~ ~]
+      :~
+        (scux site)
+        [%rose [" ==> " ~ ~] ?~(seat '??' (ren u.seat)) (ren u.area) ~]
+      ==
+    ::
+    ++  memo
+      |=  [from=(pair @uvarm @uxsite) seat=(unit spot) area=(unit spot) bars=@ud]
+      ^+  bars
+      =-  (print bars 'memo' - --0)
+      ^-  tank
+      ?~  area
+        [%rose ["/" ~ ~] (scuv p.from) (scux q.from) ~]
+      :+  %rose  ["; " ~ ~]
+      :~
+        [%rose ["/" ~ ~] (scuv p.from) (scux q.from) ~]
+        [%rose [" ==> " ~ ~] ?~(seat '??' (ren u.seat)) (ren u.area) ~]
+      ==
+    ::
+    ++  melo
+      |=  [here=@uxsite from=@uxsite seat=(unit spot) area=(unit spot) bars=@ud]
+      ^+  bars
+      =-  (print bars 'melo' - --0)
+      ^-  tank
+      ?~  area
+        [%rose [" =?= " ~ ~] (scux here) (scux from) ~]
+      :+  %rose  ["; " ~ ~]
+      :~
+        [%rose [" =?= " ~ ~] (scux here) (scux from) ~]
+        [%rose [" =?> " ~ ~] ?~(seat '??' (ren u.seat)) (ren u.area) ~]
+      ==
+    --
+  ::
+  ++  try-inline
+    |=  f=*
+    ^-  (unit nomm-local)
+    =*  try-inline  .
+    ?+    f  ~
+        [p=^ q=*]
+      ?~  h=(try-inline p.f)  ~
+      ?~  t=(try-inline q.f)  ~
+      `[u.h u.t]
+    ::
+        [%0 @]  `f
+        [%1 *]  `f
+        [%2 *]  ~
+    ::
+        [%3 p=*]
+      ?~  p=(try-inline p.f)  ~
+      `[%3 u.p]
+    ::
+        [%4 p=*]
+      ?~  p=(try-inline p.f)  ~
+      `[%4 u.p]
+    ::
+        [%5 p=* q=*]
+      ?~  p=(try-inline p.f)  ~
+      ?~  q=(try-inline q.f)  ~
+      `[%5 u.p u.q]
+    ::
+        [%6 p=* q=* r=*]
+      ?~  p=(try-inline p.f)  ~
+      ?~  q=(try-inline q.f)  ~
+      ?~  r=(try-inline r.f)  ~
+      `[%6 u.p u.q u.r]
+    ::
+        [%7 p=* q=*]
+      ?~  p=(try-inline p.f)  ~
+      ?~  q=(try-inline q.f)  ~
+      `[%7 u.p u.q]
+    ::
+        [%8 p=* q=*]
+      $(f [%7 [?@(p.f 0+0 p.f) 0+1] q.f])
+    ::
+        [%9 *]
+      ~
+    ::
+        [%10 [a=@ don=*] rec=*]
+      ?~  don=(try-inline don.f)  ~
+      ?~  rec=(try-inline rec.f)  ~
+      `[%10 [a.f u.don] u.rec]
+    ::
+        [%11 a=@ p=*]
+      ?~  p=(try-inline p.f)  ~
+      `[%11 a.f u.p p.f]
+    ::
+        [%11 [a=@ p=*] q=*]
+      ?~  p=(try-inline p.f)  ~
+      ?~  q=(try-inline q.f)  ~
+      `[%11 [a.f u.p] u.q q.f]
+    ::
+        [%12 p=* q=*]
+      ?~  p=(try-inline p.f)  ~
+      ?~  q=(try-inline q.f)  ~
+      `[%12 u.p u.q]
+    ==
+  ::  stateful analysis of [sock formula] pair
+  ::
+  ++  scan
+    |=  gen=short
+    =|  memoize-key-here=(unit *)   ::  our memo key
+    =|  memoize-key-there=(unit *)  ::  memo key of a callee (set in %11 case)
+    |=  [bus=sock fol=*]
+    ^-  short
+    =|  =stack
+    ::  provenance is updated by the caller
+    ::  length of the provenance list must match stack depth during analysis
+    =/  sub=sock-anno  [bus ~[~[1]]]
+    !!
   --
 --
