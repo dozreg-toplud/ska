@@ -1,9 +1,9 @@
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
-::    This document is an implementation of Subject Knowledge Analysis (SKA)
-::    pipeline in Hoon, first described by Edward Amsden ~ritpub-sipsyl, 
+::    This document is an implementation of the Subject Knowledge Analysis (SKA)
+::    pipeline in Hoon, first described by Edward Amsden ~ritpub-sipsyl. It
 ::    took inspiration from an unfinished implementation by him and Joe Bryan
-::    ~master-morzod, which could be found on Github in "sword" repository.
+::    ~master-morzod, which can be found on GitHub in the "sword" repository.
 ::    It also serves as a documentation and explanation piece: the problem being
 ::    solved here is unusual and in my opinion quite complicated, and developing
 ::    the implementation took a lot of experimentation, and it would be a waste
@@ -26,10 +26,10 @@
 ::
 ::    That is, we evaluate `c` against the original subject `a`, and reduce the
 ::    product of that reduction with *[a b] as our new subject.  Nock is
-::    expressive enough for *[a c] to be unknowable in general case without
+::    expressive enough for *[a c] to be unknowable in the general case without
 ::    actually running the code. 
 ::
-::    But while it is unknowable in general case, in practice we can almost
+::    But while it is unknowable in the general case, in practice we can almost
 ::    always know in advance what formula will be evaluated.  That is because
 ::    in practice the formula-formula `c` is almost always:
 ::      - a Nock 0, with the formula being pulled from the known subject (think
@@ -91,7 +91,7 @@
 +$  sock  $~(|+~ [=cape data=*])
 --
 ::  Partial noun logic.  Self-explanatory for the most part, but take note of
-::  equality shortcurcuits and ~+ memoization: this is the closest we can get
+::  equality shortcircuits and ~+ memoization: this is the closest we can get
 ::  in Nock to pointer equality shortcircuits, which are load-bearing if we
 ::  consider the degree to which nouns tend to be duplicated in the standard
 ::  library, with around 4e-12 bits per noun:
@@ -235,7 +235,7 @@
         *sock
       [[cape.l cape.r] data.l data.r]
     ==
-  ::  Does b nest under a? i.e. is everything that is known by a is also known
+  ::  Does b nest under a? i.e. is everything that is known by a also known
   ::  by b?
   ::
   ++  huge
@@ -482,10 +482,10 @@
 ::    We need to distinguish between memoized entries and merely saved ones.
 ::    A memoized entry could be safely reused during another instance of
 ::    analysis, while the saved entry can be found given a [sock formula] pair
-::    but will not be reused even if a call in an analysis matches is. It is
+::    but will not be reused even if a call in an analysis matches it. It is
 ::    done when the function has indirect calls itself or if it has one
 ::    transitively through one of its callees, and the indirect call is caused
-::    by the lack of knowledge in the function's subject and not by e.g. call
+::    by the lack of knowledge in the function's subject and not by e.g. a call
 ::    with a formula that is produced by Nock 6. The goal is to prevent future
 ::    pessimization - imagine if +turn got memoized with an unknown gate as its
 ::    argument, then any call to +turn would produce indirect calls even if the
@@ -498,14 +498,14 @@
 ::    , where `nomm` is a Nock formula with Nock 2 annotated with call
 ::    information (unit [sock formula]). Given a [sock formula] pair of the
 ::    entry point function, the call graph can be trivially restored by walking
-::    nomm body, descending into non-recursive callees.
+::    the nomm body, descending into non-recursive callees.
 ::
 ::    In addition to the call annotations, Nomm omits Nock 8 and 9, replacing
 ::    them with their desugared variants.
 ::
 ::  High-level description of the algorithm
 ::
-::    When Nock 2 site is encountered, code usage information is recorded for
+::    When a Nock 2 site is encountered, code usage information is recorded for
 ::    each function down the stack, whose subject could've contributed to the
 ::    Nock formula that is about to be evaluated.  For this we keep track of:
 ::      - global registry of functions and their code requirements:
@@ -522,10 +522,10 @@
 ::    unusual, but it is required due to the way structural sharing works in the
 ::    Nock runtime.
 ::
-::    What the subject provenance tells us, on higher level, is "from which
+::    What the subject provenance tells us, on a higher level, is "from which
 ::    parts of which subjects of functions deeper in the stack could the noun
-::    (or its subtrees) have come from".  Initially, in sword implementation of
-::    SKA this was recorded with something like:
+::    (or its subtrees) have come from".  Initially, in the sword implementation
+::    of SKA this was recorded with something like:
 ::      +$  provenance  (tree (list [site=@uxsite axe=@]))
 ::
 ::    , where the list corresponds to the provenance union: if a noun was a
@@ -536,7 +536,7 @@
 ::    to a halt when a product of many branches was used as a subject, like in
 ::    Hoon parsers.
 ::
-::    To preserve structural sharing, union of provenances was recorded as a
+::    To preserve structural sharing, the union of provenances was recorded as a
 ::    non-empty list of all possible provenances, and instead of eagerly
 ::    constructing the provenance of the product of a function from the
 ::    provenance of its subject, a "provenance from the input subject" was
@@ -549,7 +549,7 @@
 ::
 ::    This is the most critical part of the call graph analysis.  Call graph
 ::    cycles are abundant in Nock: any sort of control flow loop is expressed
-::    as recursion.  In the absence of recursion figuring out code usage by
+::    as recursion.  In the absence of recursion, figuring out code usage by
 ::    a function is trivial:
 ::
 ::      1. Code usage of leaf functions is nil (%| in cape terms);
@@ -577,7 +577,7 @@
 ::      3. We assume that the recursive call uses no code from the subject.
 ::
 ::    Once we analyze the entirety of the loop (formally a strongly connected
-::    component of the graph, or SCC), we use Kleene fixpoint algorithm on each
+::    component of the graph, or SCC), we use the Kleene fixpoint algorithm on each
 ::    recorded recursive call, with two goals in mind: we want to find the
 ::    actual code usage mask of the recursive functions, and we want to check
 ::    if the assumptions still hold.  If an assumption is violated, the entirety
@@ -585,26 +585,26 @@
 ::    has to be treated as some other function call during reanalysis.  Note
 ::    that doing one sweep over the set of recursive calls is not enough: what
 ::    we need instead is the fixpoint of the sweep itself, thus we need to
-::    repeat fixpoint searches in the loop until all code usage mask converge.
+::    repeat fixpoint searches in the loop until all code usage masks converge.
 ::    This method will yield a least fixed point of the code usages of functions
 ::    from the given SCC, which is guaranteed by the fact that the set of
 ::    (normalized) socks for a given noun forms a complete lattice with +huge:so
 ::    as a comparator, and it can be proven that any amount of sweeps would
-::    code usages that are <= lfp.
+::    yield code usages that are <= lfp.
 ::
-::    Without the loop heuristic the analysis would never terminate as we would
+::    Without the loop heuristic, the analysis would never terminate as we would
 ::    infinitely follow the recursion path in a cycle.  A similar problem is the
 ::    problem of reusing the work that was done in the current SCC: we don't
 ::    yet know the full code usage mask of a given function but we would like
 ::    to recognise a call to it to prevent us from reanalyzing the entire SCC
 ::    again and again.  A technique called "meloization" (memoization + loop) is
-::    used, where the formula and the sock are compared with what was what was
-::    accumulated so far in SCC prior to finalization.  In the sweep described
-::    above we would have to go over all meloization assumptions as well,
-::    updating the code usage masks and checking if the assumptions still hold.
-::    The only difference is that the fixpoint search is not necessary, as the
-::    code usage of a meloized function is guaranteed to not depend on the code
-::    usage of a caller of a meloized function.
+::    used, where the formula and the sock are compared with what was
+::    accumulated so far in the SCC prior to finalization.  In the 
+::    described above we would have to go over all meloization assumptions as
+::    well, updating the code usage masks and checking if the assumptions still
+::    hold.  The only difference is that the fixpoint search is not necessary,
+::    as the code usage of a meloized function is guaranteed to not depend on
+::    the code usage of a caller of a meloized function.
 ::    
 ::
 |%
