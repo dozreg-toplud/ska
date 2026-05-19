@@ -84,6 +84,7 @@
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
+=*  stub  ~|(%stub !!)
 ::  Partial noun definitions
 ::
 |%
@@ -683,6 +684,36 @@
     %deep  $(a p.a, out $(a q.a))
   ==
 ::
+++  jib
+  |*  [m=(map) k=* v=(trap *) g=$-(* *)]
+  ^+  m
+  ?~  v-old=(~(get by m) k)
+    (~(put by m) k $:v)
+  (~(put by m) k (g u.v-old))
+::  check that the formula does not crash, returning constant product
+::
+++  safe
+  |=  fol=^
+  ^-  (unit *)
+  ?+  fol  ~
+    [%1 p=*]       `p.fol
+    [%11 @ p=^]    $(fol p.fol)
+    [%11 [@ h=^] p=^]  ?~(s=(safe h.fol) ~ $(fol p.fol))
+  ==
+::  treat %fast hint formula
+::  returns ~ on failure, [~ ~] on root registration, [~ ~ @] on child
+::  registration
+::
+++  fast-parent
+  |=  fol=^
+  ^-  (unit (unit @))
+  ?+  fol  ~
+    [%1 %0]        `~
+    [%0 p=@]       ``p.fol
+    [%11 @ p=^]    $(fol p.fol)
+    [%11 [@ f=^] p=^]  ?~(s=(safe f.fol) ~ $(fol p.fol))
+  ==
+::
 +$  bell  [sub=sock fol=*]
 +$  ring  [=path axe=@]
 +$  nomm
@@ -814,11 +845,14 @@
             fol=^
             code=nomm-local
             prod=sock
-            move=(lest spring)
             mize=(unit *)
             area=(unit spot)
             =flags
     ==  ==
+  ::  Code usage information. Absence in the map == uses nothing from the
+  ::  subject of that call
+  ::
+  +$  urge  (map @uxsite cape)
   ::  Short-term analysis information. Initialized upon the start of the
   ::  analysis, eventually discarded after the entire call graph was analyzed.
   ::
@@ -827,18 +861,27 @@
     $:  long
         site-gen=@uxsite
         cycles=(list cycle)
-        want=(map @uxsite cape)
+        want=urge
         bars=@ud
         block-loop=(jug @uxsite @uxsite)
         block-melo=(set ^)
         area=(unit spot)
         finalized=(list [=bell code=nomm])
       ==
-  ::  backward-flowing data in the analysis flow/
+  ::  backward-flowing data in the analysis flow
   ::  loopy - part of an SCC
   ::  direct - fully direct including transitively, to be memoized
   ::  
-  +$  flags  [loopy=? direct=? crash-safe=?]
+  +$  flags  [loopy=? direct=?]
+  ++  fold-flag
+    |=  l=(lest flags)
+    ^-  flags
+    =/  out=flags  i.l
+    %+  roll  t.l
+    |:  [f=*flags out=out]
+    [ |(loopy.f loopy.out)
+      &(direct.f direct.out)
+    ]
   ::  different views of the call stack
   ::
   +$  stack
@@ -854,10 +897,319 @@
       :: set=(set @uxsite)
       areas=(map @uxsite spot)
     ==
-  ::  Provenance tree logic
+  ::  Provenance tree logic.  The implementation of some of these functions
+  ::  include performance-related heuristics
   ::
   ++  src
     |%
+    ::  Check if "old" spring (one possible provenance from the subject of the 
+    ::  current function) contains at least as much info as "new".
+    ::  This is done because (lest spring) forms a union of possible
+    ::  provenances, and if we need to add "new" to the list of old provenances,
+    ::  we might not have to do that if that provenance is already recorded
+    ::  in the list.
+    ::
+    ::  OTOH if provenance trees are too deep, then checking the trees for
+    ::  duplication gets too expensive, and at that point it is best to add
+    ::  that tree to the list. Hence the max-depth parameter, which was tuned
+    ::  in testing
+    ::  
+    ++  compat
+      =/  max-depth  10
+      |=  [old=spring new=spring]
+      !.
+      ::  old contains new? yes is a guarantee, no is a guess
+      ::
+      =/  depf  0
+      |-  ^-  ?
+      ?:  =(old new)  &
+      ?~  old  |
+      ?~  new  &
+      ?:  =(max-depth depf)
+        |
+      =.  depf  +(depf)
+      ?@  old
+        ?@  new  |
+        ?&  $(old (peg old 2), new -.new)
+            $(old (peg old 3), new +.new)
+        ==
+      ?@  new
+        ?&  $(old -.old, new (peg new 2))
+            $(old +.old, new (peg new 3))
+        ==
+      ?&  $(old -.old, new -.new)
+          $(old +.old, new +.new)
+      ==
+    ::  Given two lists of springs and a binary function for them, apply that
+    ::  function to all pairs from these lists and assemble them into a single
+    ::  list, removing duplicates if requested and if possible.
+    ::
+    ::  Again, if the product list gets too long we don't bother to check
+    ::  duplication across all members of the list, we just check the first ten.
+    ::
+    ++  mul-springs
+      |=  [a=(lest spring) b=(lest spring) g=$-([spring spring] spring) check=?]
+      ^-  (lest spring)
+      =>  .(a `(list spring)`a, b `(list spring)`b)
+      =-  ?~(- !! -)
+      %+  roll  a
+      |=  [pin-a=spring acc=(list spring)]
+      %+  roll  b
+      |=  [pin-b=spring acc=_acc]
+      =/  pin-c  (g pin-a pin-b)
+      ?:  &(check (lien (scag 10 acc) |=(spring (compat +< pin-c))))  acc
+      [pin-c acc]
+    ::  Map (lest spring) with a gate, removing duplicates if possible
+    ::
+    ++  turn-spring
+      |=  [a=(lest spring) g=$-(spring spring)]
+      ^-  (lest spring)
+      =>  .(a `(list spring)`a)
+      =-  ?~(- !! -)
+      %+  roll  a
+      |=  [pin-a=spring acc=(list spring)]
+      =/  pin-b  (g pin-a)
+      ?:  (lien acc |=(spring (compat +< pin-b)))  acc
+      [pin-b acc]
+    ::  Apply a mask to a spring
+    ::
+    ++  mask-spring
+      |=  cap=cape
+      |=  pin=spring
+      ^-  spring
+      |-  ^-  spring
+      ?~  pin  ~
+      ?:  ?=(%| cap)  ~
+      ?:  ?=(%& cap)  pin
+      ~+
+      %+  cons-spring  $(cap -.cap, pin ?@(pin (peg pin 2) -.pin))
+      $(cap +.cap, pin ?@(pin (peg pin 3) +.pin))
+    ::  Same as above, but keep provenance if it is an atom, i.e. don't deepen
+    ::  the provenance tree. Used when calculating code usage distribution maps,
+    ::  where overestimating provenance for cell-case capes doesn't hurt the
+    ::  semantics of the algorithm but helps the performance.
+    ::
+    ++  mask-spring-cut
+      |=  cap=cape
+      |=  pin=spring
+      ^-  spring
+      ?~  pin  ~
+      ?:  ?=(%| cap)  ~
+      ?:  ?=(%& cap)  pin
+      ?@  pin  pin
+      ~+
+      %+  cons-spring  $(cap -.cap, pin -.pin)
+      $(cap +.cap, pin +.pin)
+    ::
+    ++  mask
+      |=  [src=source cap=cape]
+      ^-  source
+      :_  t.src
+      (turn-spring i.src (mask-spring cap))
+    ::
+    ++  cons-spring
+      |=  [a=spring b=spring]
+      ^-  spring
+      ?:  &(?=(~ a) ?=(~ b))  ~
+      [a b]
+    ::  Similarly to +pat:ca, pushes a spring to a non-zero axis. Think of it
+    ::  as an inverse of slot
+    ::
+    ++  push-spring
+      |=  axe=@
+      |=  pin=spring
+      ^-  spring
+      ?~  pin  ~
+      |-  ^-  spring
+      ?:  =(1 axe)  pin
+      ?-  (cap axe)
+        %2  [$(axe (mas axe)) ~]
+        %3  [~ $(axe (mas axe))]
+      ==
+    ::
+    ++  push-spring-hed
+      |=  pin=spring
+      ^-  spring
+      ?~  pin  ~
+      [pin ~]
+    ::
+    ++  push-spring-tel
+      |=  pin=spring
+      ^-  spring
+      ?~  pin  ~
+      [~ pin]
+    ::  There are two ways to cons two provenances: a multiplicative and an
+    ::  additive. The choice comes down to using this elaborate inequality:
+    ::    n + n <= n * n, n >= 2
+    ::  That is, if we have two lists of provenances, each with one to two
+    ::  springs, it is better to cons them multiplicatively, by consing each
+    ::  spring from the head provenance with each spring from the tail
+    ::  provenance.  But once the lists are big enough it is better to cons
+    ::  them additively: cons each spring from head source with ~, cons ~ with
+    ::  each spring from tail source, then concatenate two lists. This works
+    ::  because the list represents a union of provenances, so these two are
+    ::  equivalent:
+    ::    ~[[a b]] == ~[[a ~] [~ b]]
+    ::
+    ++  cons
+      |=  [a=source b=source]
+      ^-  source
+      :_  t.a
+      =/  len-a  (lent i.a)
+      =/  len-b  (lent i.b)
+      =/  out=(lest spring)  (mul-springs i.a i.b cons-spring |)
+      =/  len-out  (lent out)
+      ?:  (lte len-out (add len-a len-b))  out
+      ?:  (lte len-out 9)  out
+      =-  ?~(- ~[~] -)
+      ?:  =(~[~] i.a)
+        ?:  =(~[~] i.b)  ~
+        (turn i.b push-spring-tel)
+      ?:  =(~[~] i.b)
+        (turn i.a push-spring-hed)
+      %+  weld
+        (turn i.a push-spring-hed)
+      (turn i.b push-spring-tel)
+    ::
+    ++  uni
+      |=  [a=source b=source]
+      ^-  source
+      :_  t.a
+      =-  ?~(- !! -)
+      %+  roll  `(list spring)`i.a
+      |=  [pin=spring acc=_`(list spring)`i.b]
+      ?:  (lien `(list spring)`i.b |=(spring (compat +< pin)))  acc
+      [pin acc]
+    ::
+    ++  slot-spring
+      |=  ax=@
+      |=  pin=spring
+      ^-  spring
+      ?:  =(ax 1)  pin
+      ?~  pin  ~
+      ?@  pin  (peg pin ax)
+      ?-  (cap ax)
+        %2  $(pin -.pin, ax (mas ax))
+        %3  $(pin +.pin, ax (mas ax))
+      ==
+    ::
+    ++  slot
+      |=  [src=source ax=@]
+      ^-  source
+      :_  t.src
+      (turn-spring i.src (slot-spring ax))
+    ::
+    ++  hed
+      |=  pin=spring
+      ^-  spring
+      ?~  pin  ~
+      ?@  pin  (peg pin 2)
+      -.pin
+    ::
+    ++  tel
+      |=  pin=spring
+      ^-  spring
+      ?~  pin  ~
+      ?@  pin  (peg pin 3)
+      +.pin
+    ::
+    ++  edit-spring
+      |=  ax=@
+      |=  [rec=spring don=spring]
+      ^-  spring
+      ?:  =(ax 1)  don
+      ?:  &(?=(~ rec) ?=(~ don))  ~
+      =|  tack=(list [c=?(%2 %3) p=spring])
+      |-  ^-  spring
+      ?.  =(1 ax)
+        ?-  (cap ax)
+          %2  $(ax (mas ax), rec (hed rec), tack [2+(tel rec) tack])
+          %3  $(ax (mas ax), rec (tel rec), tack [3+(hed rec) tack])
+        ==
+      |-  ^-  spring
+      ?~  tack  don
+      ?-  c.i.tack
+        %2  $(don (cons-spring don p.i.tack), tack t.tack)
+        %3  $(don (cons-spring p.i.tack don), tack t.tack)
+      ==
+    ::
+    ++  edit
+      |=  [rec=source ax=@ don=source]
+      ^-  source
+      :_  t.rec
+      (mul-springs i.rec i.don (edit-spring ax) &)
+    ::
+    ++  uni-urge
+      |=  [a=^urge b=^urge]
+      ^-  ^urge
+      %-  (~(uno by a) b)
+      =>  ..ca  ^~
+      |=  [@uxsite a=cape b=cape]
+      (uni:ca a b)
+    ::
+    ++  compose-spring
+      |=  [a=spring b=spring]
+      ^-  spring
+      ?~  b  ~
+      |-  ^-  spring
+      ?~  a  ~
+      ~+
+      ?@  a  ((slot-spring a) b)
+      (cons-spring $(a -.a) $(a +.a))
+    ::
+    ++  compose
+      |=  [a=(lest spring) b=(lest spring)]
+      ^-  (lest spring)
+      ~+ 
+      (mul-springs a b compose-spring &)
+    ::  Given the provenance of a noun and our interest in it,
+    ::  distribute code need to the function labels.
+    ::  The interest is & for a formula in a direct call, and cape from the bell
+    ::  of a memoized call in memo case.
+    ::
+    ++  urge
+      |=  [src=source cap=cape tak=(lest @uxsite)]
+      ^-  ^urge
+      ?:  =([~ ~] i.src)  ~
+      =^  comps=(lest (lest spring))  tak
+        =/  hed  i.src
+        =/  tel  t.src
+        |-  ^-  [(lest (lest spring)) (lest @uxsite)]
+        ?~  tel  [~[hed] tak]
+        =.  hed  (turn-spring hed (mask-spring-cut cap))
+        ?:  ?=([~ ~] hed)  [~[hed] ~[i.tak]]
+        =/  site  i.tak
+        =^  r=(list (lest spring))  tak
+          =/  comp  (compose hed i.tel)
+          $(hed comp, tel t.tel, tak ?~(t.tak !! t.tak))
+        ::
+        [[hed r] [site tak]]
+      ::
+      =|  out=^urge
+      |-  ^-  ^urge
+      ?:  |(?=(%| cap) ?=([~ ~] i.comps))  out
+      =/  need=cape
+        =>  [comps=comps cap=cap ..urge]
+        ~+
+        %+  roll  `(list spring)`i.comps
+        |=  [pin=spring acc=cape]
+        ?~  pin  acc
+        %+  uni:ca  acc
+        =>  [pin=`spring`pin cap=`cape`cap ..ca]
+        |-  ^-  cape
+        ?~  pin  |
+        ?:  ?=(%| cap)  |
+        ?@  pin  (pat:ca cap pin)
+        =/  [p=cape q=cape]  ?@(cap [& &] cap)
+        =/  l  $(pin -.pin, cap p)
+        =/  r  $(pin +.pin, cap q)
+        (uni:ca l r)
+      ::
+      =.  out  (jib out i.tak _need |=(c=cape (uni:ca c need)))
+      ?~  t.comps  out
+      ?~  t.tak  !!
+      $(tak t.tak, comps t.comps)
+    ::
     ++  prune-spring
       |=  [pin=spring cap=cape]
       ^-  cape
@@ -881,8 +1233,25 @@
   ++  error
     |$  [m]
     %+  each  m
-    $%  [%loop par=@uxsite kid=@uxsite]  ::  parent-kid
-        [%melo fol=^]  ::  [formula that shouldn't be meloized]
+        ::  kid -> parent call which is not actually recursive
+        ::
+    $%  $:  %loop
+            par=@uxsite
+            kid=@uxsit
+            lon=long
+            par-spot=(unit spot)
+            kid-spot=(unit spot)
+            block-melo=(set ^)
+        ==
+    ::::  new -> old call which is proven to be wrong
+      ::
+        $:  %melo
+            fol=^
+            lon=long
+            old-spot=(unit spot)
+            new-spot=(unit spot)
+            block-melo=(set ^)
+        ==
     ==
   ::
   ++  mux
@@ -1069,11 +1438,11 @@
     --
   ::
   ++  try-inline
-    |=  f=*
+    |=  f=^
     ^-  (unit nomm-local)
     =*  try-inline  .
     ?+    f  ~
-        [p=^ q=*]
+        [p=^ q=^]
       ?~  h=(try-inline p.f)  ~
       ?~  t=(try-inline q.f)  ~
       `[u.h u.t]
@@ -1082,51 +1451,51 @@
         [%1 *]  `f
         [%2 *]  ~
     ::
-        [%3 p=*]
+        [%3 p=^]
       ?~  p=(try-inline p.f)  ~
       `[%3 u.p]
     ::
-        [%4 p=*]
+        [%4 p=^]
       ?~  p=(try-inline p.f)  ~
       `[%4 u.p]
     ::
-        [%5 p=* q=*]
+        [%5 p=^ q=^]
       ?~  p=(try-inline p.f)  ~
       ?~  q=(try-inline q.f)  ~
       `[%5 u.p u.q]
     ::
-        [%6 p=* q=* r=*]
+        [%6 p=^ q=^ r=^]
       ?~  p=(try-inline p.f)  ~
       ?~  q=(try-inline q.f)  ~
       ?~  r=(try-inline r.f)  ~
       `[%6 u.p u.q u.r]
     ::
-        [%7 p=* q=*]
+        [%7 p=^ q=^]
       ?~  p=(try-inline p.f)  ~
       ?~  q=(try-inline q.f)  ~
       `[%7 u.p u.q]
     ::
-        [%8 p=* q=*]
-      $(f [%7 [?@(p.f 0+0 p.f) 0+1] q.f])
+        [%8 p=^ q=^]
+      $(f [%7 [p.f 0+1] q.f])
     ::
         [%9 *]
       ~
     ::
-        [%10 [a=@ don=*] rec=*]
+        [%10 [a=@ don=^] rec=^]
       ?~  don=(try-inline don.f)  ~
       ?~  rec=(try-inline rec.f)  ~
       `[%10 [a.f u.don] u.rec]
     ::
-        [%11 a=@ p=*]
+        [%11 a=@ p=^]
       ?~  p=(try-inline p.f)  ~
       `[%11 a.f u.p p.f]
     ::
-        [%11 [a=@ p=*] q=*]
+        [%11 [a=@ p=^] q=^]
       ?~  p=(try-inline p.f)  ~
       ?~  q=(try-inline q.f)  ~
       `[%11 [a.f u.p] u.q q.f]
     ::
-        [%12 p=* q=*]
+        [%12 p=^ q=^]
       ?~  p=(try-inline p.f)  ~
       ?~  q=(try-inline q.f)  ~
       `[%12 u.p u.q]
@@ -1154,6 +1523,9 @@
   ::  was not encountered yet, check fols.lon before analysis
   ::
   ++  scan
+    ::  default flags: not loopy, fully direct
+    ::
+    =*  deff  `flags`[| &]
     |=  lon=long
     =|  memoize-key-here=(unit *)   ::  our memo key
     =|  memoize-key-there=(unit *)  ::  memo key of a callee (set in %11 case)
@@ -1173,6 +1545,7 @@
     ::
     |-  ^-  [[sock-anno flags] gen=short]
     =*  eval-loop  $
+    =|  trace=(list spot)
     ::  SCC reanalysis loop. If a speculative call to a non-finalized function
     ::  is proven to be wrong, the call is added to a respective exclusion list
     ::  and the entire SCC is reanalyzed. As a reminder, the possible speculative
@@ -1190,18 +1563,26 @@
             ~&  >>>
               :-  %redo
               ?-    -.p.res
-                  %loop  res
-                  %melo  [%melo fol=(mux fol.p.res)]
+                  %loop  [par kid par-spot kid-spot]:p.res
+                  %melo  [%melo fol=(mux fol.p.res) [old-spot new-spot]:p.res]
               ==
             .
         ::
         ?-    -.p.res
             %loop
           =,  p.res
-          redo-loop(block-loop.gen (~(put ju block-loop.gen) par kid))
+          %=  redo-loop
+            -.gen           lon
+            block-loop.gen  (~(put ju block-loop.gen) par kid)
+            block-melo.gen  (~(uni in block-melo.gen) block-melo)
+          ==
         ::
             %melo
-          redo-loop(block-melo.gen (~(put in block-melo.gen) fol.p.res))
+          =,  p.res
+          %=  redo-loop
+            -.gen           lon
+            block-melo.gen  (~(put in (~(uni in block-melo.gen) block-melo)) fol)
+          ==
         ==
       ==
     ^-  (error [[sock-anno flags] short])
@@ -1212,7 +1593,222 @@
       =>  !@(ska-verb . .(bars.gen (step:p here-site seat bars.gen)))
       |-  ^-  [fol-res short]
       =*  fol-loop  $
-      !!
+      ?+    fol  [[[%0 0] (dunno sub) deff] gen]
+          [p=^ q=^]
+        =^  l=fol-res  gen  fol-loop(fol p.fol)
+        =^  r=fol-res  gen  fol-loop(fol q.fol)
+        :_  gen
+        :+  [code.l code.r]
+          :-  (knit:so sock.prod.l sock.prod.r)
+          (cons:src src.prod.l src.prod.r)
+        (fold-flag flags.l flags.r ~)
+      ::
+          [%1 p=*]
+        :_  gen
+        [fol [&+p.fol [~[~] t.src.sub]] deff]
+      ::
+          [%2 p=^ q=^]
+        =^  s=fol-res  gen  fol-loop(fol p.fol)
+        =^  f=fol-res  gen  fol-loop(fol q.fol)
+        ?.  =(& cape.sock.prod.f)
+          ::  formula is not known: indirect call
+          ::
+          =>  !@  verb  .
+              .(bars.gen (indi:p ?~(trace ~ `i.trace) bars.gen))
+          ::
+          :_  gen
+          :+  [%2 code.s code.f ~]
+            (dunno sub)
+          ::  if indirect due to dynamically generated formula (fork/unknown
+          ::  result) as opposed to missing data in the original subject
+          ::  - don't mark as indirect
+          ::  XX indirectness should also be ignored for virtual interpreter
+          ::  stuff that has to be jetted
+          ::
+          =/  indi=?  &(?=([@ ~] i.src.prod.f) !=(~[~] i.src.prod.f))
+          (fold-flag flags.s flags.f [| !indi] ~)
+        ::  direct call
+        ::  Firstly we need to propagate the code usage info to all our callers
+        ::  as we might have used parts of their subjects as code
+        ::
+        =/  fol-new  data.sock.prod.f
+        =/  fol-urge  (urge:src src.prod.f & ?~(list.stack !! list.stack))
+        =.  want.gen  (uni-urge:src want.gen fol-urge)
+        ::  if not a %11 %memo "virtual" function - try to inline
+        ::
+        =/  inlined=(unit nomm-local)
+          ?^  memoize-key-there  ~
+          ?@  fol-new  ~
+          (try-inline fol-new)
+        ::
+        ?^  inlined
+          =^  pro=fol-res  gen  fol-loop(fol ;;(^ fol-new), sub prod.s)
+          ?>  =(code.pro u.inlined)
+          :_  gen
+          :+  [%7 code.s code.pro]
+            prod.pro
+          (fold-flag flags.s flags.f flags.pro ~)
+        ::  XX memo, loop, melo, step
+        ::
+        stub
+      ::
+          [%3 p=^]
+        =^  p=fol-res  gen  fol-loop(fol p.fol)
+        :_  gen
+        :+  [%3 code.p]
+          (dunno sub)
+        flags.p
+      ::
+          [%4 p=^]
+        =^  p=fol-res  gen  fol-loop(fol p.fol)
+        :_  gen
+        :+  [%4 code.p]
+          (dunno sub)
+        flags.p
+      ::
+          [%5 p=^ q=^]
+        =^  p=fol-res  gen  fol-loop(fol p.fol)
+        =^  q=fol-res  gen  fol-loop(fol q.fol)
+        :_  gen
+        :+  [%5 code.p code.q]
+          (dunno sub)
+        (fold-flag flags.p flags.q ~)
+      ::
+          [%6 c=^ y=^ n=^]
+        =^  c=fol-res  gen  fol-loop(fol c.fol)
+        =^  y=fol-res  gen  fol-loop(fol y.fol)
+        =^  n=fol-res  gen  fol-loop(fol n.fol)
+        =/  int=sock  (purr:so sock.prod.y sock.prod.n)
+        =/  uni-src=source
+          =,  src
+          (uni (mask src.prod.y cape.int) (mask src.prod.n cape.int))
+        ::
+        :_  gen
+        :+  [%6 code.c code.y code.n]
+          [int uni-src]
+        (fold-flag flags.c flags.y flags.n ~)
+      ::
+          [%7 p=^ q=^]
+        =^  p=fol-res  gen  fol-loop(fol p.fol)
+        =^  q=fol-res  gen  fol-loop(fol q.fol, sub prod.p)
+        :_  gen
+        :+  [%7 code.p code.q]
+          prod.q
+        (fold-flag flags.p flags.q ~)
+      ::
+          [%8 p=^ q=^]
+        fol-loop(fol [%7 [p.fol 0+1] q.fol])
+      ::
+          [%9 p=@ q=^]
+        fol-loop(fol [%7 q.fol %2 [%0 1] %0 p.fol])
+      ::
+          [%10 [a=@ don=^] rec=^]
+        ?:  =(0 a.fol)  [[[%0 0] (dunno sub) deff] gen]
+        =^  don=fol-res  gen  fol-loop(fol don.fol)
+        =^  rec=fol-res  gen  fol-loop(fol rec.fol)
+        :_  gen
+        :+  [%10 [a.fol code.don] code.rec]
+          :-  (darn:so sock.prod.rec a.fol sock.prod.don)
+          (edit:src src.prod.rec a.fol src.prod.don)
+        (fold-flag flags.rec flags.don ~)
+      ::
+          [%11 p=@ q=^]
+        =^  q=fol-res  gen  fol-loop(fol q.fol)
+        :_  gen
+        :+  [%11 p.fol code.q q.fol]
+          prod.q
+        flags.q
+      ::
+          [%11 [a=@ h=^] f=^]
+        =^  h=fol-res  gen  fol-loop(fol h.fol)
+        =>  !@  ska-verb  .
+            =*  dot  .
+            =/  pot=(unit spot)
+              ?.  =(%spot a.fol)  ~
+              ((soft spot) data.sock.prod.h)
+            ::
+            ?~  pot  dot
+            %_  dot
+              area.gen  ?~(area.gen pot area.gen)
+              trace  [u.pot trace]
+            ==
+        ::  on %memo hint introduce a function to be memoized
+        ::
+        ?:  &(?=(%memo a.fol) ?=(%& cape.sock.prod.h) ?=(^ (safe h.fol)))
+          fol-loop(fol [%2 [%0 1] 1 f.fol], memoize-key-there `data.sock.prod.h)
+        =^  f=fol-res  gen  fol-loop(fol f.fol)
+        :-  :+  [%11 [a.fol code.h] code.f f.fol]
+              prod.f
+            (fold-flag flags.f flags.h ~)
+        ::  treat the hint (just %fast stuff for cold state for now)
+        ::
+        ?+    a.fol  gen
+            %fast
+          =/  [clue=sock prod=sock]  [sock.prod.h sock.prod.f]
+          ?.  =(& cape.clue)  ~&(>>> %fast-lost-clue gen)
+          =/  clue  data.clue
+          ?.  ?=([name=$@(@tas [@tas @]) dad=^ *] clue)
+            ~&(>>> fast-bad-clue+clue gen)
+          =/  label=cord
+            ?@  name.clue  name.clue
+            (rap 3 -.name.clue (scot %ud +.name.clue) ~)
+          ::
+          ?~  parent=(fast-parent dad.clue)  ~&(>>> fast-bad-clue+clue gen)
+          ?~  u.parent
+            ::  register root
+            ::
+            ?.  =(& cape.prod)  ~&(>>> %fast-lost-root gen)
+            %=  gen
+              core.jets  (~(put ju core.jets.gen) ~[label] prod)
+              root.jets  (~(put ju root.jets.gen) data.prod ~[label])
+            ==
+          ::  register child core
+          ::
+          =/  axis=@  u.u.parent
+          ?.  =(3 (cap axis))  ~&(>>> fast-weird-axis+axis gen)
+          =/  batt  (pull:so prod 2)
+          ?.  =(& cape.batt)   ~&(>>> fast-lost-batt+label gen)
+          ?.  ?=(^ data.batt)  ~&(>>> fast-atom-batt+data.batt gen)
+          =/  fore  (pull:so prod axis)
+          =/  past=(set path)
+            %-  %~  uni  in
+                ::  root registrations
+                ::
+                ?.  =(& cape.fore)  ~
+                (~(get ju root.jets.gen) data.fore)
+            ::  parent core registrations
+            ::
+            =/  batt-fore  (pull:so fore 2)
+            ?.  &(=(& cape.batt-fore) ?=(^ data.batt-fore))  ~
+            (~(get ju batt.jets.gen) data.batt-fore)
+          ::
+          =/  past-list  ~(tap in past)
+          |-  ^-  short
+          =*  past-loop  $
+          ?~  past-list  gen
+          =/  pax=path  [label i.past-list]
+          =/  socks  ~(tap in (~(get ju core.jets.gen) i.past-list))
+          |-  ^-  short
+          =*  sock-loop  $
+          ?~  socks  past-loop(past-list t.past-list)
+          ?.  (huge:so i.socks fore)  sock-loop(socks t.socks)
+          =/  just-fol=sock  [[& |] data.batt ~]
+          =/  template=sock  (darn:so just-fol axis i.socks)
+          ::
+          %=  gen
+            core.jets  (~(put ju core.jets.gen) pax template)
+            batt.jets  (~(put ju batt.jets.gen) data.batt pax)
+          ==
+        ==
+      ::
+          [%12 p=^ q=^]
+        =^  p=fol-res  gen  fol-loop(fol p.fol)
+        =^  q=fol-res  gen  fol-loop(fol q.fol)
+        :_  gen
+        :+    [%12 code.p code.q]
+          (dunno sub)
+        (fold-flag flags.p flags.q ~)
+      ==
     ::  provenance of the result from the subject, i.e. subject capture
     ::
     =/  move=(lest spring)  i.src.prod
@@ -1254,7 +1850,6 @@
           fol
           code
           sock.prod
-          move
           memoize-key-here
           area.gen
           flags
@@ -1276,7 +1871,7 @@
     ::  fixpoint over the speculative function calls
     ::
     =/  sweep-fix=(error [m=(map @uxsite bell) gen=short])
-      !!
+      stub
     ::
     ?:  ?=(%| -.sweep-fix)  sweep-fix
     ::  success
@@ -1293,7 +1888,6 @@
                   fol=^
                   code=nomm-local
                   prod=sock
-                  move=(lest spring)
                   mize=(unit *)
                   area=(unit spot)
                   =^flags
@@ -1306,8 +1900,8 @@
       %-  finalize-function
       [ sub  (finalize-nomm m code)
         fol  prod
-        move  want
-        direct.flags
+        *(lest spring)  want
+        |
         mize  area
         gen
       ]
@@ -1324,7 +1918,8 @@
       memoize-key-here
       area.gen  gen
     ]
-  ::  save function data in all appropriate tables
+  ::  save function data in all appropriate tables. "move" only used if
+  ::  "memoize" = %.y
   ::
   ++  finalize-function
     |=  $:  sub=sock
@@ -1333,7 +1928,7 @@
             pro=sock
             move=(lest spring)
             want=cape
-            direct=?
+            memoize=?
             mize=(unit *)
             area=(unit spot)
             gen=short
@@ -1345,7 +1940,7 @@
       mize  ?~  mize  mize.gen
             (~(put by mize.gen) bell u.mize)
     ::
-      memo  ?.  direct  memo.gen
+      memo  ?.  memoize  memo.gen
             =/  capture=cape  (prune:src move cape.pro)
             =/  mask=cape  (uni:ca want capture)
             =/  less-memo  (app:ca mask sub)

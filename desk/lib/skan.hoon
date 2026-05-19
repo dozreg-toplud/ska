@@ -509,10 +509,12 @@
         :+  [%i2 code.s code.f]
           (dunno sub)
         ::  if indirect due to dynamically generated formula (fork/unknown
-        ::  result) as opposed to a missing data in the original subject
+        ::  result) as opposed to missing data in the original subject
         ::  - don't mark as indirect
         ::
-        =/  indi=?  &(?=([@ ~] i.src.sub) !=(~[~] i.src.sub))
+        =/  indi=?  &(?=([@ ~] i.src.prod.f) !=(~[~] i.src.prod.f))  ::  XX ooof
+        ~&  indi-flag+indi
+        ~&  i.src.prod.f
         (fold-flag flags.s flags.f [| !indi |] ~)
       ::  direct call
       ::
