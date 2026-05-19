@@ -585,8 +585,8 @@
 ::      3. We assume that the recursive call uses no code from the subject.
 ::
 ::    Once we analyze the entirety of the loop (formally a strongly connected
-::    component of the graph, or SCC), we use the Kleene fixpoint algorithm on each
-::    recorded recursive call, with two goals in mind: we want to find the
+::    component of the graph, or SCC), we use the Kleene fixpoint algorithm on
+::    each recorded recursive call, with two goals in mind: we want to find the
 ::    actual code usage mask of the recursive functions, and we want to check
 ::    if the assumptions still hold.  If an assumption is violated, the entirety
 ::    of the analysis of a given SCC has to be discarded, and the Nock 2 call
@@ -613,7 +613,23 @@
 ::    hold.  The only difference is that the fixpoint search is not necessary,
 ::    as the code usage of a meloized function is guaranteed to not depend on
 ::    the code usage of a caller of a meloized function.
-::    
+::
+::    We have complete knowledge of an SCC only one we visited all transitive
+::    callees of the entry point of the SCC. Moreover, we do not know if a given
+::    function is an entry into an SCC until we return from that function,
+::    having visited all of its transitive callees.  This can lead to situations
+::    when two initially separate SCCs are learned to be the same SCC. In this
+::    case these two SCCs and all SCCs between them get merged: the entry point
+::    of the top-level SCC becomes the entry point of the new SCC, the call
+::    assumptions are merged etc.
+::
+::    Since @uxsite labels are assigned in depth-first order, the condition
+::    for SCC merging (or for adding a new recursive call into the latest SCC vs
+::    forming a new one, which is just a special case of the same thing) is:
+::    compare the index of the call target (call deeper in the stack or the
+::    meloized call) to the deep-most, right-most member of the SCC, or
+::    the "latch".  If the parent is >= than the latch then it the SCCs are not
+::    strongly connected.
 ::
 |%
 ::  lazily concatenated list
@@ -758,7 +774,8 @@
       memo=(jar ^ meme)
     ::::  saved entries:
       ::
-      code=(map bell nomm)
+      code=(map bell nomm)        ::  direct bell mapping
+      fols=(jar ^ [=bell =nomm])  ::  lookup by formula
     ::::  memoization (as in %11 %memo) keys
       ::
       mize=(map bell *)
@@ -787,15 +804,25 @@
         latch=@uxsite
         =frond
         set=(deep @uxsite)
-        process=(deep @uxsite)
         melo=(jar * meal)
         hits=(deep hit)
-    ==
+        $=  process
+        %-  deep
+        $:  site=@uxsite
+            sub=sock
+            fol=^
+            code=nomm-local
+            prod=sock
+            move=(lest spring)
+            mize=(unit *)
+            area=(unit spot)
+            =flags
+    ==  ==
   ::  Short-term analysis information. Initialized upon the start of the
   ::  analysis, eventually discarded after the entire call graph was analyzed.
   ::
   +$  short
-    $+  short
+    $+  short-ska
     $:  long
         site-gen=@uxsite
         cycles=(list cycle)
@@ -805,15 +832,7 @@
         block-melo=(set ^)
         area=(unit spot)
         finalized=(list [=bell code=nomm])
-        $=  process
-        %+  map  @uxsite
-        $:  sub=sock
-            fol=^
-            code=nomm-local
-            prod=sock
-            mize=(unit *)
-            area=(unit spot)
-    ==  ==
+      ==
   ::  backward-flowing data in the analysis flow/
   ::  loopy - part of an SCC
   ::  direct - fully direct including transitively, to be memoized
@@ -822,18 +841,48 @@
   ::  different views of the call stack
   ::
   +$  stack
-  $:
-    ::  list: linear stack of evalsites
-    ::    
-    list=(list @uxsite)
-    ::  fols: search by formula
+    $:
+      ::  list: linear stack of evalsites
+      ::    
+      list=(list @uxsite)
+      ::  fols: search by formula
+      ::
+      fols=(jar * (pair sock-anno @uxsite))
+      ::  set: set of evalsites on the stack
+      ::
+      :: set=(set @uxsite)
+      areas=(map @uxsite spot)
+    ==
+  ::  Provenance tree logic
+  ::
+  ++  src
+    |%
+    ++  prune-spring
+      |=  [pin=spring cap=cape]
+      ^-  cape
+      ?:  ?=(%| cap)  |
+      ?~  pin  |
+      ~+
+      ?@  pin  (pat:ca cap pin)
+      =/  [p=cape q=cape]  ?@(cap [& &] cap)
+      =/  l  $(pin -.pin, cap p)
+      =/  r  $(pin +.pin, cap q)
+      (uni:ca l r)
     ::
-    fols=(jar * (pair sock-anno @uxsite))
-    ::  set: set of evalsites on the stack
-    ::
-    :: set=(set @uxsite)
-    areas=(map @uxsite spot)
-  ==
+    ++  prune
+      |=  [src=(list spring) cap=cape]
+      ^-  cape
+      %+  roll  src
+      |=  [pin=spring acc=_`cape`|]
+      (uni:ca acc (prune-spring pin cap))
+    --
+  ::
+  ++  error
+    |$  [m]
+    %+  each  m
+    $%  [%loop par=@uxsite kid=@uxsite]  ::  parent-kid
+        [%melo fol=^]  ::  [formula that shouldn't be meloized]
+    ==
   ::
   ++  mux
     |=  n=*
@@ -992,15 +1041,15 @@
       ==
     ::
     ++  memo
-      |=  [from=(pair @uvarm @uxsite) seat=(unit spot) area=(unit spot) bars=@ud]
+      |=  [from=bell seat=(unit spot) area=(unit spot) bars=@ud]
       ^+  bars
       =-  (print bars 'memo' - --0)
       ^-  tank
       ?~  area
-        [%rose ["/" ~ ~] (scuv p.from) (scux q.from) ~]
+        (scux (mux from))
       :+  %rose  ["; " ~ ~]
       :~
-        [%rose ["/" ~ ~] (scuv p.from) (scux q.from) ~]
+        (scux (mux from))
         [%rose [" ==> " ~ ~] ?~(seat '??' (ren u.seat)) (ren u.area) ~]
       ==
     ::
@@ -1081,18 +1130,229 @@
       ?~  q=(try-inline q.f)  ~
       `[%12 u.p u.q]
     ==
-  ::  stateful analysis of [sock formula] pair
+  ::
+  ++  finalize-nomm
+    |=  [m=(map @uxsite bell) n=nomm-local]
+    ^-  nomm
+    =/  transform  |=($@(@uxsite bell) ?^(+< +< (~(got by m) +<)))
+    ~+
+    ?+  -.n  n
+      ^    [$(n -.n) $(n +.n)]
+      %2   n(p $(n p.n), q $(n q.n), info (bind info.n transform))
+      %3   n(p $(n p.n))
+      %4   n(p $(n p.n))
+      %5   n(p $(n p.n), q $(n q.n))
+      %6   n(p $(n p.n), q $(n q.n), r $(n r.n))
+      %7   n(p $(n p.n), q $(n q.n))
+      %10  n(q.p $(n q.p.n), q $(n q.n))
+      %12  n(p $(n p.n), q $(n q.n))
+      %11  ?@  p.n  n(q $(n q.n))
+           n(q.p $(n q.p.n), q $(n q.n))
+    ==
+  ::  Stateful analysis of [sock formula] pair. Assumes that this [sock formula]
+  ::  was not encountered yet, check fols.lon before analysis
   ::
   ++  scan
-    |=  gen=short
+    |=  lon=long
     =|  memoize-key-here=(unit *)   ::  our memo key
     =|  memoize-key-there=(unit *)  ::  memo key of a callee (set in %11 case)
-    |=  [bus=sock fol=*]
+    |=  [bus=sock fol=^]
     ^-  short
+    =|  gen=short
+    =.  -.gen  lon
     =|  =stack
     ::  provenance is updated by the caller
     ::  length of the provenance list must match stack depth during analysis
+    ::
     =/  sub=sock-anno  [bus ~[~[1]]]
-    !!
+    =^  here-site  site-gen.gen    [site-gen.gen +(site-gen.gen)]
+    =|  seat=(unit spot)  ::  call site
+    =<  gen
+    ::  Partial interpreter loop
+    ::
+    |-  ^-  [[sock-anno flags] gen=short]
+    =*  eval-loop  $
+    ::  SCC reanalysis loop. If a speculative call to a non-finalized function
+    ::  is proven to be wrong, the call is added to a respective exclusion list
+    ::  and the entire SCC is reanalyzed. To remind, the possible speculative
+    ::  calls are: recursive calls, i.e. calls to functions that are already on
+    ::  the stack, and non-recursive calls to functions that are part of the
+    ::  current SCC (aka "meloization" mechanism).
+    ::
+    |-  ^-  [[sock-anno flags] short]
+    =*  redo-loop  $
+    =;  res=(error [[sock-anno flags] short])
+      ?-    -.res
+          %&  p.res
+          %|
+        =>  !@  ska-verb  .
+            ~&  >>>
+              :-  %redo
+              ?-    -.p.res
+                  %loop  res
+                  %melo  [%melo fol=(mux fol.p.res)]
+              ==
+            .
+        ::
+        ?-    -.p.res
+            %loop
+          =,  p.res
+          redo-loop(block-loop.gen (~(put ju block-loop.gen) par kid))
+        ::
+            %melo
+          redo-loop(block-melo.gen (~(put in block-melo.gen) fol.p.res))
+        ==
+      ==
+    ^-  (error [[sock-anno flags] short])
+    =.  list.stack  [here-site list.stack]
+    =.  fols.stack  (~(add ja fols.stack) fol sub here-site)
+    =*  fol-res  ,[code=nomm-local prod=sock-anno =flags]
+    =^  [code=nomm-local prod=sock-anno =flags]  gen
+      =>  !@(ska-verb . .(bars.gen (step:p here-site seat bars.gen)))
+      |-  ^-  [fol-res short]
+      =*  fol-loop  $
+      !!
+    ::  provenance of the result from the subject, i.e. subject capture
+    ::
+    =/  move=(lest spring)  i.src.prod
+    =;  fin=(error [loopy=? gen=short])
+      ?:  ?=(%| -.fin)  fin
+      &+[[prod flags(loopy loopy.p.fin)] gen.p.fin]
+    ::
+    ?.  loopy.flags
+      ::  success, not a part of a non-trivial SCC, can be finalized immediately
+      ::
+      :+  %&  %|
+      ^-  short
+      =/  code=nomm  ;;(nomm code)  ::  XX debug assert, should use unsafe cast
+      =>  !@(ska-verb . .(bars.gen (done:p here-site seat area.gen bars.gen)))
+      =/  want=cape  (~(gut by want.gen) here-site |)
+      %-  finalize-function
+      [ sock.sub  code
+        fol  sock.prod
+        move  want
+        direct.flags
+        memoize-key-here
+        area.gen  gen
+      ]
+    ?~  cycles.gen  !!
+    ?.  =(here-site entry.i.cycles.gen)
+      ::  returning from a function that is not an entry point into its
+      ::  non-trivial SCC
+      ::  Success for now, validation is deferred until we return from the SCC
+      ::  entry point
+      ::
+      :+  %&  %&
+      ^-  short
+      =>  !@(ska-verb . .(bars.gen (ciao:p here-site seat area.gen bars.gen)))
+      =.  set.i.cycles.gen      (dive set.i.cycles.gen here-site)
+      =.  process.i.cycles.gen
+        %+  dive  process.i.cycles.gen
+        [ here-site
+          sock.sub
+          fol
+          code
+          sock.prod
+          move
+          memoize-key-here
+          area.gen
+          flags
+        ]
+      ::
+      =.  melo.i.cycles.gen
+        =/  capture=cape  (prune:src move cape.sock.prod)
+        =/  =meal  [here-site code capture sub sock.prod move area.gen]
+        (~(add ja melo.i.cycles.gen) fol meal)
+      ::
+      gen
+    ::  SCC entry point: not part of some other SCC if finalized
+    ::
+    =-  ?:  ?=(%| -<)  -  &+[| p]
+    ^-  (error short)
+    =>  .(cycles.gen `(list cycle)`cycles.gen)
+    =^  pop=cycle  cycles.gen  ?~(cycles.gen !! cycles.gen)
+    =*  sub-pre-sweep-fix  .
+    ::  fixpoint over the speculative function calls
+    ::
+    =/  sweep-fix=(error [m=(map @uxsite bell) gen=short])
+      !!
+    ::
+    ?:  ?=(%| -.sweep-fix)  sweep-fix
+    ::  success
+    ::
+    =.  gen  gen.p.sweep-fix
+    =>  [m=m.p.sweep-fix sub-pre-sweep-fix]
+    =>  !@(ska-verb . .(bars.gen (fini:p here-site seat area.gen bars.gen)))
+    ::  finalize non-entry functions in SCC 
+    ::
+    =.  gen
+      %+  roll-deep  process.pop
+      |=  $:  $:  site=@uxsite
+                  sub=sock
+                  fol=^
+                  code=nomm-local
+                  prod=sock
+                  move=(lest spring)
+                  mize=(unit *)
+                  area=(unit spot)
+                  =^flags
+                ==
+          ::
+              gen=_gen
+          ==
+      ^-  short
+      =/  want=cape  (~(gut by want.gen) site |)
+      %-  finalize-function
+      [ sub  (finalize-nomm m code)
+        fol  prod
+        move  want
+        direct.flags
+        mize  area
+        gen
+      ]
+    ::  finalize entry point
+    ::
+    =/  want  (~(gut by want.gen) here-site |)
+    =/  code-global  (finalize-nomm m code)
+    :-  %&
+    %-  finalize-function
+    [ sock.sub  (finalize-nomm m code)
+      fol  sock.prod
+      move  want
+      direct.flags
+      memoize-key-here
+      area.gen  gen
+    ]
+  ::  save function data in all appropriate tables
+  ::
+  ++  finalize-function
+    |=  $:  sub=sock
+            code=nomm
+            fol=^
+            pro=sock
+            move=(lest spring)
+            want=cape
+            direct=?
+            mize=(unit *)
+            area=(unit spot)
+            gen=short
+        ==
+    ^-  short
+    =/  less-code=sock  (app:ca want sub)
+    =/  =bell  [less-code fol]
+    %_  gen
+      mize  ?~  mize  mize.gen
+            (~(put by mize.gen) bell u.mize)
+    ::
+      memo  ?.  direct  memo.gen
+            =/  capture=cape  (prune:src move cape.pro)
+            =/  mask=cape  (uni:ca want capture)
+            =/  less-memo  (app:ca mask sub)
+            %+  ~(add ja memo.gen)  fol
+            [fol code less-memo less-code pro move area]
+    ::
+      code  (~(put by code.gen) bell code)
+      fols  (~(add ja fols.gen) fol [bell code])
+    ==
   --
 --
