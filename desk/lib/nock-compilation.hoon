@@ -7,7 +7,7 @@
 ::    It also serves as a documentation and explanation piece: the problem being
 ::    solved here is unusual and in my opinion quite complicated, and developing
 ::    the implementation took a lot of experimentation, and it would be a waste
-::    to not describe why certain design choices were made, as some of them are
+::    not to describe why certain design choices were made, as some of them are
 ::    crucial for the algorithm to work at reasonable speed.
 ::
 ::    Large blocks of comments can be found interspersed in code below.  At the
@@ -45,10 +45,10 @@
 ::    operations, including raw Nock 2 when *[a c] could not be deduced (an
 ::    indirect Nock call), but it can also call other SKA functions.
 ::
-::    Once function call graph is obtained with partial evaluation of the given
+::    Once the function call graph is obtained with partial evaluation of the given
 ::    subject/formula pair, the next step is to discover which parts of the
 ::    subject are actually used as data by each function.  Without it each
-::    function can be only thought of as a function (noun -> noun), which leads
+::    function can only be thought of as a function (noun -> noun), which leads
 ::    to unnecessary busywork when it comes to function calls - the entire
 ::    subject of a callee would have to be consed up, for it to be deconstructed
 ::    later by the callee.
@@ -531,8 +531,8 @@
 ::    Nock runtime.
 ::
 ::    What the subject provenance tells us, on a higher level, is "from which
-::    parts of which subjects of functions deeper in the stack could the noun
-::    (or its subtrees) have come from".  Initially, in the sword implementation
+::    parts of which subjects of functions deeper in the stack the noun
+::    (or its subtrees) could have come".  Initially, in the sword implementation
 ::    of SKA this was recorded with something like:
 ::      +$  provenance  (tree (list [site=@uxsite axe=@]))
 ::
@@ -571,10 +571,10 @@
 ::    the code usage of its callees. But what if a function calls itself? What
 ::    if there is mutual recursion?
 ::
-::    The problem is that the shape of the call graph is unknown to us, the
+::    The problem is that the shape of the call graph is unknown to us; the
 ::    purpose of this first step **is** to reconstruct the call graph.  We can't
 ::    know for sure if a given Nock 2 call is a call to a function that is
-::    already on the call stack: knowing so would require us having analyzed
+::    already on the call stack: knowing so would require us to have analyzed
 ::    all transitive callees of that function, which would include itself.  To
 ::    go around the paradox we use a loop call heuristic: if the Nock 2 call
 ::    uses the same formula and a compatible subject as a function on the stack
@@ -607,28 +607,29 @@
 ::    to recognise a call to it to prevent us from reanalyzing the entire SCC
 ::    again and again.  A technique called "meloization" (memoization + loop) is
 ::    used, where the formula and the sock are compared with what was
-::    accumulated so far in the SCC prior to finalization.  In the 
+::    accumulated so far in the SCC prior to finalization.  In the process
 ::    described above we would have to go over all meloization assumptions as
 ::    well, updating the code usage masks and checking if the assumptions still
 ::    hold.  The only difference is that the fixpoint search is not necessary,
 ::    as the code usage of a meloized function is guaranteed to not depend on
 ::    the code usage of a caller of a meloized function.
 ::
-::    We have complete knowledge of an SCC only one we visited all transitive
-::    callees of the entry point of the SCC. Moreover, we do not know if a given
-::    function is an entry into an SCC until we return from that function,
-::    having visited all of its transitive callees.  This can lead to situations
-::    when two initially separate SCCs are learned to be the same SCC. In this
-::    case these two SCCs and all SCCs between them get merged: the entry point
-::    of the top-level SCC becomes the entry point of the new SCC, the call
-::    assumptions are merged etc.
+::    We have complete knowledge of an SCC only once we have visited all
+::    transitive callees of the entry point of the SCC. Moreover, we do not know
+::    if a given function is an entry into an SCC until we return from that
+::    function, having visited all of its transitive callees.
+::
+::    This can lead to situations when two initially separate SCCs are learned
+::    to be the same SCC. In this case these two SCCs and all SCCs between them
+::    get merged: the entry point of the top-level SCC becomes the entry point
+::    of the new SCC, the call assumptions are merged etc.
 ::
 ::    Since @uxsite labels are assigned in depth-first order, the condition
 ::    for SCC merging (or for adding a new recursive call into the latest SCC vs
 ::    forming a new one, which is just a special case of the same thing) is:
 ::    compare the index of the call target (call deeper in the stack or the
 ::    meloized call) to the deep-most, right-most member of the SCC, or
-::    the "latch".  If the parent is >= than the latch then it the SCCs are not
+::    the "latch".  If the parent is >= than the latch then the SCCs are not
 ::    strongly connected.
 ::
 |%
@@ -1174,7 +1175,7 @@
     =*  eval-loop  $
     ::  SCC reanalysis loop. If a speculative call to a non-finalized function
     ::  is proven to be wrong, the call is added to a respective exclusion list
-    ::  and the entire SCC is reanalyzed. To remind, the possible speculative
+    ::  and the entire SCC is reanalyzed. As a reminder, the possible speculative
     ::  calls are: recursive calls, i.e. calls to functions that are already on
     ::  the stack, and non-recursive calls to functions that are part of the
     ::  current SCC (aka "meloization" mechanism).
