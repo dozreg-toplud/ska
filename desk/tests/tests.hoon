@@ -9,6 +9,22 @@
   (expect-eq !>(mol) !>((run-nomm-1 sub fol)))
 ::
 |%
+:: ++  test-cons-fol
+::   =/  sub  ..lent:hoot
+::   =/  fol
+::     =>  sub  !=
+::     =/  con=*  [1 0]
+::     |-  ^-  ~
+::     =/  list  .*(~ con)
+::     =/  len=@
+::       =-  ?^  -  !!  -
+::       .*([-:lent list +>:lent] -:lent)
+::     ::
+::     ?:  (gth len 5)  ~
+::     $(con [[1 0] con])
+::   ::
+::   (expect-eq-nock-need sub fol)
+::
 ++  test-pole-trap
   =/  sub=(pole (trap))
     !.
