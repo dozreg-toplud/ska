@@ -2,7 +2,6 @@
 ?>  =(|+~ *sock)
 ?>  =(| *cape)
 |%
-+$  bell  [bus=sock fol=^]
 +$  identity  [more=sock fol=^]
 +$  spring  *  ::  no union stuff
 +$  datum
@@ -15,6 +14,9 @@
   ==
 ::
 +$  callgraph  (map identity datum)
++$  callers  (jug identity identity)
++$  worklist  (set identity)
++$  memo  (jar ^ [id=identity =datum])
 +$  sock-anno  [=sock src=spring]
 ++  git-g
   |=  [i=identity g=callgraph]
@@ -36,35 +38,61 @@
   =/  l  $(s -.s, c p)
   =/  r  $(s +.s, c q)
   (~(uni ca l) r)
+::
+++  regenerate-callers
+  |=  g=callgraph
+  ^-  callers
+  %-  ~(rep by g)
+  |=  [[from=identity [* * * * * callees=(set [* identity])]] acc=callers]
+  =>  [from=from callees=callees acc=acc ..regenerate-callers]
+  %-  ~(rep in callees)
+  |=  [[* to=identity] acc=_acc]
+  (~(put ju acc) to from)
+::
+:: ++  regenerate-memo
 --
 ::
 |=  [bus=sock fol=^]
 ^-  callgraph
-=/  g=callgraph  (~(put by *callgraph) [bus fol] *datum)
+=|  g=callgraph
+=/  w=worklist  [[bus fol] ~ ~]
 ::
 |-  ^-  callgraph
 =*  fixpoint-callgraph  $
-=;  g1=callgraph
-  ?:  =(g1 g)  ~&  %done  g
-  ~&  %fixpoint
-  $(g g1)
+=;  [w1=worklist g1=callgraph]
+  =.  g  (~(uni by g) g1)
+  ?:  =(w1 ~)  ~&  %done  g
+  ~&  [%fixpoint ~(wyt in w1)]
+  $(w w1)
 ::
+=/  c=callers  (regenerate-callers g)
+:: =/  m=memo  (regenerate-memo g)
 =*  g-previous  g
-=/  funcs=(set identity)
-  %-  ~(rep by g)
-  |=  [[k=identity [* * * * * callees=(set [* identity])]] acc=(set identity)]
-  =/  s=(set identity)  (~(run in callees) |=([* identity] +<+))
-  (~(put in (~(uni in acc) s)) k)
-::
-%-  ~(rep in funcs)
-|=  [id=identity g=callgraph]
-^-  callgraph
+%-  ~(rep in w)
+|=  [id=identity w=worklist g=callgraph]
+^-  [worklist callgraph]
+=/  data  (git-g id g-previous)
 =/  bus=sock  more.id
 =;  [pro=sock-anno want=cape callees=(set [(unit spot) identity]) area=(unit spot)]
   =/  less-code  (~(app ca want) bus)
   =/  capture=cape  (prune-spring:source src.pro cape.sock.pro)
   =/  less-memo  (~(app ca (~(uni ca want) capture)) bus)
-  (~(put by g) id less-code less-memo sock.pro src.pro area callees)
+  =/  data-new=datum  [less-code less-memo sock.pro src.pro area callees]
+  =.  g  (~(put by g) id data-new)
+  =.  w
+    %-  ~(uni in w)
+    ^-  worklist
+    %-  ~(rep in callees)
+    |=  [[* id=identity] acc=worklist]
+    ?:  (~(has by g-previous) id)  acc
+    (~(put in acc) id)
+  ::
+  =?  w  |(!=(data-new data))
+    %-  ~(uni in w)
+    ^-  worklist
+    (~(get ja c) id)
+  ::
+  [w g]
 ::
 =/  fol  fol.id
 =/  sub=sock-anno  [bus 1]
