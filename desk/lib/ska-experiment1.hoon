@@ -1,14 +1,25 @@
 /-  *noir
+?>  =(|+~ *sock)
+?>  =(| *cape)
 |%
 +$  bell  [bus=sock fol=^]
 +$  identity  [more=sock fol=^]
 +$  spring  *  ::  no union stuff
-+$  callgraph  (map identity [less-code=sock less-memo=sock prod=sock map=spring callees=(set identity)])
++$  datum
+  $:  less-code=sock
+      less-memo=sock
+      prod=sock
+      map=spring
+      area=(unit spot)
+      callees=(set [seat=(unit spot) =identity])
+  ==
+::
++$  callgraph  (map identity datum)
 +$  sock-anno  [=sock src=spring]
 ++  git-g
   |=  [i=identity g=callgraph]
-  ^+  q.,.-.g
-  (~(gut by g) i [|+~ |+~ |+~ ~ ~])
+  ^-  datum
+  (~(gut by g) i *datum)
 ::
 ++  dunno
   ^-  sock-anno
@@ -17,81 +28,49 @@
 ++  distribute
   |=  [c=cape s=spring]
   ^-  cape
-  ~+
   ?~  s  |
   ?:  ?=(%| c)  |
+  ~+
   ?@  s  (~(pat ca c) s)
   =/  [p=cape q=cape]  ?@(c [& &] c)
   =/  l  $(s -.s, c p)
   =/  r  $(s +.s, c q)
   (~(uni ca l) r)
-::
-++  update-code-usage
-  |=  [g=callgraph =cape src=spring id=identity]
-  ^-  callgraph
-  ?:  =(~ src)  g
-  =/  need=^cape  (distribute cape src)
-  =/  data  (git-g id g)
-  =.  less-code.data  (~(app ca (~(uni ca cape.less-code.data) need)) more.id)
-  =.  less-memo.data  (~(app ca (~(uni ca cape.less-memo.data) need)) more.id)
-  =.  g  (~(put by g) id data)
-  g
-::
-++  add-callee
-  |=  [g=callgraph from=identity to=identity]
-  ^+  g
-  =/  data  (git-g from g)
-  =.  g  (~(put by g) from data(callees (~(put in callees.data) to)))
-  g
-::
 --
 ::
 |=  [bus=sock fol=^]
 ^-  callgraph
-=|  g=callgraph
+=/  g=callgraph  (~(put by *callgraph) [bus fol] *datum)
+::
 |-  ^-  callgraph
 =*  fixpoint-callgraph  $
 =;  g1=callgraph
-  ?:  =(g1 g)  g
+  ?:  =(g1 g)  ~&  %done  g
   ~&  %fixpoint
   $(g g1)
-=|  worklist=(list identity)
-|-  ^-  callgraph
-~>  %loop
-:: ~&  g
-:: ~&  worklist
-=*  worklist-loop  $
-=;  cont
-  ?~  worklist
-    =^  w  g  (cont bus fol)
-    ?~  w  g
-    ~&  %work
-    worklist-loop(worklist w)
-  =;  [g1=callgraph w=(list identity)]  ~&  %work2  worklist-loop(worklist w, g g1)
-  %+  roll  `(list identity)`worklist
-  |=  [i=identity acc=[g=_g w=(list identity)]]
-  ^+  acc
-  =.  g  g.acc
-  =^  w1  g  (cont i)
-  [g (weld w1 w.acc)]
 ::
-|=  id=identity
-^-  [(list identity) callgraph]
+=*  g-previous  g
+=/  funcs=(set identity)
+  %-  ~(rep by g)
+  |=  [[k=identity [* * * * * callees=(set [* identity])]] acc=(set identity)]
+  =/  s=(set identity)  (~(run in callees) |=([* identity] +<+))
+  (~(put in (~(uni in acc) s)) k)
+::
+%-  ~(rep in funcs)
+|=  [id=identity g=callgraph]
+^-  callgraph
 =/  bus=sock  more.id
-=/  fol  fol.id
-=/  dat  (git-g id g)
-=/  gen=[w=(list identity) g=callgraph]  [~ g]
-=/  sub=sock-anno  [bus 1]
-=;  [pro=sock-anno gen1=_gen]
-  =.  gen  gen1
-  =/  dat  (git-g id g.gen)
-  =.  prod.dat  sock.pro
-  =.  map.dat   src.pro
-  :: ~&  [id=id res=sock.pro]
-  =.  g.gen  (~(put by g.gen) id dat)
-  gen
+=;  [pro=sock-anno want=cape callees=(set [(unit spot) identity]) area=(unit spot)]
+  =/  less-code  (~(app ca want) bus)
+  =/  capture=cape  (prune-spring:source src.pro cape.sock.pro)
+  =/  less-memo  (~(app ca (~(uni ca want) capture)) bus)
+  (~(put by g) id less-code less-memo sock.pro src.pro area callees)
 ::
-|-  ^-  [sock-anno gen=_gen]
+=/  fol  fol.id
+=/  sub=sock-anno  [bus 1]
+=/  gen  [want=`cape`| callees=`(set [(unit spot) identity])`~ area=`(unit spot)`~]
+=/  seat=(unit spot)  ~
+|-  ^-  [sock-anno _gen]
 =*  fol-loop  $
 ?+    fol  ~|  fol  !!::  [dunno gen]
     [p=^ q=^]
@@ -115,26 +94,20 @@
     [%2 p=^ q=^]
   =^  s=sock-anno  gen  fol-loop(fol p.fol)
   =^  f=sock-anno  gen  fol-loop(fol q.fol)
-  ?.  |(=(& cape.sock.f) ?=(^ data.sock.f))
+  ?.  &(=(& cape.sock.f) ?=(^ data.sock.f))
     ::  indirect call
     ::
-    ~&  f
-    ~&  [sub fol]
-    ~&  %indi1
+    ~&  %indi
     [dunno gen]
-  =/  fol-new  ?@(data.sock.f !! data.sock.f)
-  =?  gen  !(~(has in callees.dat) `identity`[sock.s fol-new])
-    =.  w.gen  [[sock.s fol-new] w.gen]
-    ~&  >>>  callee+[sock.s fol-new]
-    =.  g.gen  (add-callee g.gen id [sock.s fol-new])
-    gen
-  ::
-  =.  g.gen  (update-code-usage g.gen & src.f id)
-  =/  dat-there  (git-g id g)
-  =.  g.gen  (update-code-usage g.gen cape.less-code.dat-there src.s id)
+  =/  fol-new  data.sock.f
+  =/  id-there  [sock.s fol-new]
+  =.  want.gen  (~(uni ca want.gen) (distribute & src.f))
+  =/  dat-there  (git-g id-there g-previous)
+  =.  want.gen  (~(uni ca want.gen) (distribute cape.less-code.dat-there src.s))
+  =.  callees.gen  (~(put in callees.gen) seat id-there)
   :_  gen
   :-  prod.dat-there
-  (compose-spring:source map.dat src.s)
+  (compose-spring:source map.dat-there src.s)
 ::
     [%3 p=^]
   =.  gen  +:fol-loop(fol p.fol)
@@ -178,9 +151,11 @@
   fol-loop(fol q.fol)
 ::
     [%11 [a=@ h=^] f=^]
+  ?:  &(=(a.fol %spot) =(1 -.h.fol))
+    ?~  pot=((soft spot) +.h.fol)  fol-loop(fol f.fol)
+    =?  area.gen  ?=(~ area.gen)  pot
+    =.  seat  pot
+    fol-loop(fol f.fol)
   =.  gen  +:fol-loop(fol h.fol)
   fol-loop(fol f.fol)
 ==
-
-
-
