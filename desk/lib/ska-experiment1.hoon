@@ -49,7 +49,12 @@
   |=  [[* to=identity] acc=_acc]
   (~(put ju acc) to from)
 ::
-:: ++  regenerate-memo
+++  regenerate-memo
+  |=  g=callgraph
+  ^-  memo
+  %-  ~(rep by g)
+  |=  [[id=identity d=datum] acc=memo]
+  (~(add ja acc) fol.id id d)
 --
 ::
 |=  [bus=sock fol=^]
@@ -61,12 +66,13 @@
 =*  fixpoint-callgraph  $
 =;  [w1=worklist g1=callgraph]
   =.  g  (~(uni by g) g1)
-  ?:  =(w1 ~)  ~&  %done  g
+  ?:  =(w1 ~)
+    ~&  %done  g
   ~&  [%fixpoint ~(wyt in w1)]
   $(w w1)
 ::
 =/  c=callers  (regenerate-callers g)
-:: =/  m=memo  (regenerate-memo g)
+=/  m=memo  (regenerate-memo g)
 =*  g-previous  g
 %-  ~(rep in w)
 |=  [id=identity w=worklist g=callgraph]
@@ -100,7 +106,7 @@
 =/  seat=(unit spot)  ~
 |-  ^-  [sock-anno _gen]
 =*  fol-loop  $
-?+    fol  ~|  fol  !!::  [dunno gen]
+?+    fol  ~|  fol  !!    ::  [dunno gen]
     [p=^ q=^]
   =^  l=sock-anno  gen  fol-loop(fol p.fol)
   =^  r=sock-anno  gen  fol-loop(fol q.fol)
@@ -126,11 +132,22 @@
     ::  indirect call
     ::
     ~&  %indi
+    ~&  seat
     [dunno gen]
   =/  fol-new  data.sock.f
   =/  id-there  [sock.s fol-new]
   =.  want.gen  (~(uni ca want.gen) (distribute & src.f))
-  =/  dat-there  (git-g id-there g-previous)
+  =/  [id-there=identity dat-there=datum]
+    =/  meme  (~(get ja m) fol-new)
+    |-  ^-  [identity datum]
+    =*  memo-loop  $
+    ?~  meme
+      =/  id  [sock.s fol-new]
+      [id (git-g id g-previous)]
+    ?.  (~(huge so less-memo.datum.i.meme) sock.s)  memo-loop(meme t.meme)
+    :: ~&  %memo-hit
+    i.meme
+  ::
   =.  want.gen  (~(uni ca want.gen) (distribute cape.less-code.dat-there src.s))
   =.  callees.gen  (~(put in callees.gen) seat id-there)
   :_  gen
