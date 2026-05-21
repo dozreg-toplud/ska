@@ -5556,7 +5556,8 @@
             %u
           ?:  ?=(%c hay)
             %+  welp  ['0' 'c' (reap (pad:fa q.p.lot) '1')]
-            (c-co (enc:fa q.p.lot))
+            :: (c-co (enc:fa q.p.lot))
+            `tape`!!
           ::
           =;  gam=(pair tape tape)
             (weld p.gam ?:(=(0 q.p.lot) `tape`['0' ~] q.gam))

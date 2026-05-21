@@ -56,13 +56,13 @@
 --
 ::
 :-  %say  |=  *  :-  %tang
-=/  sub  ..mul:our-hoot
+=/  sub  ..scow:our-hoot
 ::
 =/  fol
   ;;  ^
   =>  sub  !=
-  (mul 3 3)
+  (scow %ud 5)
 ::
-~&  .*(sub fol)
+:: ~&  .*(sub fol)
 =/  g  ~>  %bout  (ska-experiment1 &+sub fol)
-(render-callgraph g)
+~:(render-callgraph g)
