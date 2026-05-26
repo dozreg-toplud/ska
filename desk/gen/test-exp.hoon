@@ -22,7 +22,7 @@
   ^-  tang
   =/  funcs=(set identity)
     %-  ~(rep by g)
-    |=  [[k=identity [* * * * * callees=(set [* identity])]] acc=(set identity)]
+    |=  [[k=identity [* * * * * * callees=(set [* identity])]] acc=(set identity)]
     =/  s=(set identity)  (~(run in callees) |=([* identity] +<+))
     (~(put in (~(uni in acc) s)) k)
   ::
@@ -50,7 +50,7 @@
   ::
   =/  calls-rendered=(list tank)
     %-  ~(rep by g)
-    |=  [[k=identity [* * * * * callees=(set [* identity])]] acc=(list tank)]
+    |=  [[k=identity [* * * * * * callees=(set [* identity])]] acc=(list tank)]
     :_  acc
     =/  callees=tank
       =/  g  |=([* id=identity] `@ux`(~(got by func-to-id) id))
@@ -69,15 +69,15 @@
   ==
 --
 ::
-:-  %say  |=  *  :-  %noun
+:-  %say  |=  *
 =/  sub  our-hoot
 ::
 =/  fol
   ;;  ^
   =>  sub  !=
-  (~(mint ut [%atom %$ ~]) %noun [%dtls $+1])
+  (scow %ud 5)
 ::
 :: ~&  .*(sub fol)
 =/  g  ~>  %bout  (ska-experiment1 &+sub fol)
-:: ~:(render-callgraph (condense g))
-~(wyt by g)
+:: tang+(render-callgraph (condense g))
+noun+~(wyt by g)

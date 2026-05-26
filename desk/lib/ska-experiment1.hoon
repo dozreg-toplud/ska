@@ -10,6 +10,7 @@
       prod=sock
       map=spring
       area=(unit spot)
+      direct=?
       callees=(set [seat=(unit spot) =identity])
   ==
 ::
@@ -45,7 +46,7 @@
   ^-  callers
   :: ~>  %bout.[0 %regenerate-callers]
   %-  ~(rep by g)
-  |=  [[from=identity [* * * * * callees=(set [* identity])]] acc=callers]
+  |=  [[from=identity [* * * * * * callees=(set [* identity])]] acc=callers]
   =>  [from=from callees=callees acc=acc ..regenerate-callers]
   %-  ~(rep in callees)
   |=  [[* to=identity] acc=_acc]
@@ -58,6 +59,7 @@
   :: ~>  %bout.[0 %regenerate-memo]
   %-  ~(rep by g)
   |=  [[id=identity d=datum] acc=memo]
+  ?.  direct.d  acc
   (~(add ja acc) fol.id id d)
 --
 ::
@@ -91,11 +93,11 @@
 ^-  [worklist worklist callgraph]
 =/  data  (git-g id g-previous)
 =/  bus=sock  more.id
-=;  [pro=sock-anno want=cape callees=(set [(unit spot) identity]) area=(unit spot)]
+=;  [pro=sock-anno want=cape callees=(set [(unit spot) identity]) area=(unit spot) direct=?]
   =/  less-code  (~(app ca want) bus)
   =/  capture=cape  (prune-spring:source src.pro cape.sock.pro)
   =/  less-memo  (~(app ca (~(uni ca want) capture)) bus)
-  =/  data-new=datum  [less-code less-memo sock.pro src.pro area callees]
+  =/  data-new=datum  [less-code less-memo sock.pro src.pro area direct callees]
   =.  g  (~(put by g) id data-new)
   =.  w-new
     %-  ~(uni in w-new)
@@ -115,6 +117,7 @@
 =/  gen  :*  want=`cape`|
              callees=`(set [(unit spot) identity])`~
              area=`(unit spot)`~
+             direct=`?`&
          ==
 ::
 =/  seat=(unit spot)  ~
@@ -159,6 +162,7 @@
     ::
     :: ~&  %indi
     :: ~&  seat
+    =?  direct.gen  &(?=(@ src.f) !=(~ src.f))  |
     [dunno gen]
   =/  fol-new  data.sock.f
   =/  id-there  [sock.s fol-new]
@@ -179,6 +183,7 @@
   ::
   =.  want.gen  (~(uni ca want.gen) (distribute cape.less-code.dat-there src.s))
   =.  callees.gen  (~(put in callees.gen) seat id-there)
+  =.  direct.gen  &(direct.gen direct.dat-there)
   :_  gen
   :-  prod.dat-there
   (compose-spring:source map.dat-there src.s)
@@ -228,11 +233,11 @@
   fol-loop(fol q.fol)
 ::
     [%11 [a=@ h=^] f=^]
-  :: ?:  &(=(a.fol %spot) =(1 -.h.fol))
-  ::   ?~  pot=((soft spot) +.h.fol)  fol-loop(fol f.fol)
-  ::   =?  area.gen  ?=(~ area.gen)  pot
-  ::   =.  seat  pot
-  ::   fol-loop(fol f.fol)
+  ?:  &(=(a.fol %spot) =(1 -.h.fol))
+    ?~  pot=((soft spot) +.h.fol)  fol-loop(fol f.fol)
+    =?  area.gen  ?=(~ area.gen)  pot
+    =.  seat  pot
+    fol-loop(fol f.fol)
   =.  gen  +:fol-loop(fol h.fol)
   fol-loop(fol f.fol)
 ==
