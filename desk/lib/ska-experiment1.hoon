@@ -40,8 +40,10 @@
   (~(uni ca l) r)
 ::
 ++  regenerate-callers
+  ~%  %regenerate-callers  ..zuse  ~
   |=  g=callgraph
   ^-  callers
+  :: ~>  %bout.[0 %regenerate-callers]
   %-  ~(rep by g)
   |=  [[from=identity [* * * * * callees=(set [* identity])]] acc=callers]
   =>  [from=from callees=callees acc=acc ..regenerate-callers]
@@ -50,8 +52,10 @@
   (~(put ju acc) to from)
 ::
 ++  regenerate-memo
+  ~%  %regenerate-memo  ..zuse  ~
   |=  g=callgraph
   ^-  memo
+  :: ~>  %bout.[0 %regenerate-memo]
   %-  ~(rep by g)
   |=  [[id=identity d=datum] acc=memo]
   (~(add ja acc) fol.id id d)
@@ -62,21 +66,29 @@
 =|  g=callgraph
 =/  w=worklist  [[bus fol] ~ ~]
 ::
-|-  ^-  callgraph
+=<  $
+~%  %analysis  ..zuse  ~
+|.  ^-  callgraph
 =*  fixpoint-callgraph  $
-=;  [w1=worklist g1=callgraph]
+=;  [w-new=worklist w-call=worklist g1=callgraph]
   =.  g  (~(uni by g) g1)
-  ?:  =(w1 ~)
+  =.  w-new
+    =/  c  (regenerate-callers g)
+    %-  ~(rep in w-call)
+    |=  [callee=identity acc=_w-new]
+    (~(uni in acc) `worklist`(~(get ja c) callee))
+  ::
+  ?:  =(w-new ~)
     ~&  %done  g
-  ~&  [%fixpoint ~(wyt in w1)]
-  $(w w1)
+  ~&  [%fixpoint ~(wyt in w-new)]
+  $(w w-new)
 ::
-=/  c=callers  (regenerate-callers g)
+:: ~>  %bout.[0 %iter]
 =/  m=memo  (regenerate-memo g)
 =*  g-previous  g
 %-  ~(rep in w)
-|=  [id=identity w=worklist g=callgraph]
-^-  [worklist callgraph]
+|=  [id=identity w-new=worklist w-call=worklist g=callgraph]
+^-  [worklist worklist callgraph]
 =/  data  (git-g id g-previous)
 =/  bus=sock  more.id
 =;  [pro=sock-anno want=cape callees=(set [(unit spot) identity]) area=(unit spot)]
@@ -85,36 +97,46 @@
   =/  less-memo  (~(app ca (~(uni ca want) capture)) bus)
   =/  data-new=datum  [less-code less-memo sock.pro src.pro area callees]
   =.  g  (~(put by g) id data-new)
-  =.  w
-    %-  ~(uni in w)
+  =.  w-new
+    %-  ~(uni in w-new)
     ^-  worklist
     %-  ~(rep in callees)
     |=  [[* id=identity] acc=worklist]
     ?:  (~(has by g-previous) id)  acc
     (~(put in acc) id)
   ::
-  =?  w  |(!=(data-new data))
-    %-  ~(uni in w)
-    ^-  worklist
-    (~(get ja c) id)
+  =?  w-call  |(!=([less-code prod map]:data-new [less-code prod map]:data))
+    (~(put in w-call) id)
   ::
-  [w g]
+  [w-new w-call g]
 ::
 =/  fol  fol.id
 =/  sub=sock-anno  [bus 1]
-=/  gen  [want=`cape`| callees=`(set [(unit spot) identity])`~ area=`(unit spot)`~]
+=/  gen  :*  want=`cape`|
+             callees=`(set [(unit spot) identity])`~
+             area=`(unit spot)`~
+         ==
+::
 =/  seat=(unit spot)  ~
-|-  ^-  [sock-anno _gen]
+=<  $
+~%  %fol-loop  ..zuse  ~
+|.  ^-  [sock-anno _gen]
 =*  fol-loop  $
 ?+    fol  ~|  fol  !!    ::  [dunno gen]
     [p=^ q=^]
   =^  l=sock-anno  gen  fol-loop(fol p.fol)
   =^  r=sock-anno  gen  fol-loop(fol q.fol)
+  =<  $
+  ~%  %nock-cons  ..fol-loop  ~
+  |.
   :_  gen
   :-  (~(knit so sock.l) sock.r)
   (cons-spring:source src.l src.r)
 ::
     [%0 p=@]
+  =<  $
+  ~%  %nock-0  ..fol-loop  ~
+  |.
   :_  gen
   ?:  =(0 p.fol)  dunno
   ?:  =(1 p.fol)  sub
@@ -128,24 +150,31 @@
     [%2 p=^ q=^]
   =^  s=sock-anno  gen  fol-loop(fol p.fol)
   =^  f=sock-anno  gen  fol-loop(fol q.fol)
+  =<  $
+  ~%  %nock-2  ..fol-loop  ~
+  |.
+  =*  nock-2  .
   ?.  &(=(& cape.sock.f) ?=(^ data.sock.f))
     ::  indirect call
     ::
-    ~&  %indi
-    ~&  seat
+    :: ~&  %indi
+    :: ~&  seat
     [dunno gen]
   =/  fol-new  data.sock.f
   =/  id-there  [sock.s fol-new]
+  =<  $
+  ~%  %distribute  nock-2  ~
+  |.
   =.  want.gen  (~(uni ca want.gen) (distribute & src.f))
   =/  [id-there=identity dat-there=datum]
+    =/  id-exact  [sock.s fol-new]
+    ?^  dat=(~(get by g-previous) id-exact)  [id-exact u.dat]
     =/  meme  (~(get ja m) fol-new)
     |-  ^-  [identity datum]
     =*  memo-loop  $
-    ?~  meme
-      =/  id  [sock.s fol-new]
-      [id (git-g id g-previous)]
+    ?~  meme  [id-exact *datum]
     ?.  (~(huge so less-memo.datum.i.meme) sock.s)  memo-loop(meme t.meme)
-    :: ~&  %memo-hit
+    :: ~&  [%memo seat area:(~(got by g-previous) id.i.meme)]
     i.meme
   ::
   =.  want.gen  (~(uni ca want.gen) (distribute cape.less-code.dat-there src.s))
@@ -188,6 +217,9 @@
   ?:  =(0 a.fol)  [dunno gen]
   =^  don=sock-anno  gen  fol-loop(fol don.fol)
   =^  rec=sock-anno  gen  fol-loop(fol rec.fol)
+  =<  $
+  ~%  %nock-10  ..fol-loop  ~
+  |.
   :_  gen
   :-  (~(darn so sock.rec) a.fol sock.don)
   ((edit-spring:source a.fol) src.rec src.don)
@@ -196,11 +228,11 @@
   fol-loop(fol q.fol)
 ::
     [%11 [a=@ h=^] f=^]
-  ?:  &(=(a.fol %spot) =(1 -.h.fol))
-    ?~  pot=((soft spot) +.h.fol)  fol-loop(fol f.fol)
-    =?  area.gen  ?=(~ area.gen)  pot
-    =.  seat  pot
-    fol-loop(fol f.fol)
+  :: ?:  &(=(a.fol %spot) =(1 -.h.fol))
+  ::   ?~  pot=((soft spot) +.h.fol)  fol-loop(fol f.fol)
+  ::   =?  area.gen  ?=(~ area.gen)  pot
+  ::   =.  seat  pot
+  ::   fol-loop(fol f.fol)
   =.  gen  +:fol-loop(fol h.fol)
   fol-loop(fol f.fol)
 ==

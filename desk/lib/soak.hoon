@@ -237,6 +237,7 @@
   ++  huge2
     |=  two=sock
     ^-  ?
+    ~+
     ?|  =(one two)
         ?@  data.one
           ?.  ?=(@ cape.one)  ~|  badone+one  !!
@@ -382,6 +383,7 @@
     (~(knit so $(a ~(hed so a), b ~(hed so b))) $(a ~(tel so a), b ~(tel so b)))
   ::
   ++  darn1
+    ~%  %darn1-so  ..zuse  ~
     |=  [axe=@ two=sock]
     ^-  sock
     ?:  =(1 axe)  two

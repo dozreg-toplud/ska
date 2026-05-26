@@ -531,6 +531,7 @@
     (turn-spring i.src (slot-spring ax) %slot)
   ::
   ++  edit-spring
+    ~%  %edit-spring  ..zuse  ~
     |=  ax=@
     |=  [rec=spring don=spring]
     ^-  spring

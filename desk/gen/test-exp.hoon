@@ -3,6 +3,20 @@
 ::
 =,  ska-experiment1
 |%
+++  condense  ::  lossy
+  |=  g=callgraph
+  ^-  callgraph
+  =/  m=(map identity identity)
+    %-  ~(rep by g)
+    |=  [[k=identity v=datum] acc=(map identity identity)]
+    (~(put by acc) k [less-code.v fol.k])
+  ::
+  =/  f  |=  [seat=(unit spot) =identity]  [seat (~(got by m) identity)]
+  ::
+  %-  ~(rep by g)
+  |=  [[k=identity v=datum] acc=callgraph]
+  (~(put by acc) [less-code.v fol.k] v(callees (~(run in callees.v) f)))
+::
 ++  render-callgraph
   |=  g=callgraph
   ^-  tang
@@ -55,14 +69,15 @@
   ==
 --
 ::
-:-  %say  |=  *  :-  %tang
-=/  sub  ..scow:our-hoot
+:-  %say  |=  *  :-  %noun
+=/  sub  our-hoot
 ::
 =/  fol
   ;;  ^
   =>  sub  !=
-  (scow %ud 5)
+  (~(mint ut [%atom %$ ~]) %noun [%dtls $+1])
 ::
 :: ~&  .*(sub fol)
 =/  g  ~>  %bout  (ska-experiment1 &+sub fol)
-~:(render-callgraph g)
+:: ~:(render-callgraph (condense g))
+~(wyt by g)
