@@ -75,9 +75,10 @@
 =/  fol
   ;;  ^
   =>  sub  !=
-  (scow %ud 5)
+  (~(mint ut [%atom %$ ~]) %noun [%dtls $+1])
+  :: (scow %ud 5)
 ::
 :: ~&  .*(sub fol)
 =/  g  ~>  %bout  (ska-experiment1 &+sub fol)
-:: tang+(render-callgraph (condense g))
+:: tang+(render-callgraph g)
 noun+~(wyt by g)
