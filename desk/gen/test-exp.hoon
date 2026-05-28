@@ -77,6 +77,7 @@
   =>  sub  !=
   (~(mint ut [%atom %$ ~]) %noun [%dtls $+1])
   :: (scow %ud 5)
+  :: (dec 5)
 ::
 :: ~&  .*(sub fol)
 =/  g  ~>  %bout  (ska-experiment1 &+sub fol)

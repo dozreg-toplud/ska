@@ -15,7 +15,7 @@
   ==
 ::
 +$  callgraph  (map identity datum)
-+$  callers  (jug identity identity)
++$  jug-id  (jug identity identity)
 +$  worklist  (set identity)
 +$  memo  (map ^ (map sock [id=identity =datum]))  ::  fol -> less-memo -> entry
 ++  mi
@@ -71,67 +71,121 @@
   =/  r  $(s +.s, c q)
   (~(uni ca l) r)
 ::
-++  regenerate-callers
-  ~%  %regenerate-callers  ..zuse  ~
-  |=  g=callgraph
-  ^-  callers
-  :: ~>  %bout.[0 %regenerate-callers]
-  %-  ~(rep by g)
-  |=  [[from=identity [* * * * * * callees=(set [* identity])]] acc=callers]
-  =>  [from=from callees=callees acc=acc ..regenerate-callers]
-  %-  ~(rep in callees)
-  |=  [[* to=identity] acc=_acc]
-  (~(put ju acc) to from)
+:: ++  regenerate-callers
+::   ~%  %regenerate-callers  ..zuse  ~
+::   |=  g=callgraph
+::   ^-  callers
+::   :: ~>  %bout.[0 %regenerate-callers]
+::   %-  ~(rep by g)
+::   |=  [[from=identity [* * * * * * callees=(set [* identity])]] acc=callers]
+::   =>  [from=from callees=callees acc=acc ..regenerate-callers]
+::   %-  ~(rep in callees)
+::   |=  [[* to=identity] acc=_acc]
+::   (~(put ju acc) to from)
+:: ::
+:: ++  regenerate-memo
+::   ~%  %regenerate-memo  ..zuse  ~
+::   |=  g=callgraph
+::   ^-  memo
+::   :: ~>  %bout.[0 %regenerate-memo]
+::   %-  ~(rep by g)
+::   |=  [[id=identity d=datum] acc=memo]
+::   (put:mi acc id d)
 ::
-++  regenerate-memo
-  ~%  %regenerate-memo  ..zuse  ~
-  |=  g=callgraph
-  ^-  memo
-  :: ~>  %bout.[0 %regenerate-memo]
-  %-  ~(rep by g)
-  |=  [[id=identity d=datum] acc=memo]
-  (put:mi acc id d)
+++  trace-g
+  ~%  %trace-g  ..zuse  ~
+  |=  [r=identity g=callgraph]
+  ^-  callgraph
+  =|  out=callgraph
+  =/  queu=(list identity)  ~[r]
+  |-  ^-  callgraph
+  ?~  queu  out
+  ?~  d=(~(get by g) i.queu)  $(queu t.queu)
+  ?:  (~(has by out) i.queu)  $(queu t.queu)
+  =.  out  (~(put by out) i.queu u.d)
+  $(queu (weld t.queu ~(tap in `(set identity)`(~(run in callees.u.d) tail))))
+::
+++  trace-c
+  ~%  %trace-c  ..zuse  ~
+  |=  [r=identity c=jug-id]
+  ^-  jug-id
+  =|  out=jug-id
+  =/  queu=(list identity)  ~[r]
+  =|  back=(list identity)
+  |-  ^-  jug-id
+  ?~  queu
+    ?~  back  out
+    $(queu back, back ~)
+  ?~  v=(~(get by c) i.queu)  $(queu t.queu)
+  ?:  (~(has by out) i.queu)  $(queu t.queu)
+  =.  out  (~(put by out) i.queu u.v)
+  $(queu t.queu, back (weld back `(list identity)`~(tap in u.v)))
 --
 ::
 |=  [bus=sock fol=^]
 ^-  callgraph
 =|  g=callgraph
-=/  w=worklist  [[bus fol] ~ ~]
+=/  root  [bus fol]
+=/  w=worklist  [root ~ ~]
+=|  calls=jug-id
+=|  called-by=jug-id
 ::
 =<  $
 ~%  %analysis  ..zuse  ~
 |.  ^-  callgraph
 =*  fixpoint-callgraph  $
-=;  [w-new=worklist w-call=worklist g1=callgraph]
+=;  [w-new=worklist w-call=worklist new-calls=jug-id g1=callgraph]
   =.  g  (~(uni by g) g1)
+  :: =.  g  (trace-g root g)
+  :: =.  new-calls  (trace-c root new-calls)
+  =.  called-by
+    =<  $
+    ~%  %called-by-update  ..zuse  ~
+    |.
+    =/  all-callers=(list identity)  ~(tap in ~(key by new-calls))
+    %+  roll  all-callers
+    |=  [caller=identity acc=_called-by]
+    =/  old-callees=(set identity)  (~(get ju calls) caller)
+    =/  new-callees=(set identity)  (~(get ju new-calls) caller)
+    =/  callee-removals=(set identity)  (~(dif in old-callees) new-callees)
+    =/  callee-addition=(set identity)  (~(dif in new-callees) old-callees)
+    =.  acc
+      %-  ~(rep in callee-removals)
+      |=  [callee=identity acc=_acc]
+      (~(del ju acc) callee caller)
+    ::
+    %-  ~(rep in callee-addition)
+    |=  [callee=identity acc=_acc]
+    (~(put ju acc) callee caller)
+  ::
+  =.  calls  new-calls
   =/  w-new1=worklist
-    =/  c  (regenerate-callers g)
     %-  ~(rep in w-call)
     |=  [callee=identity acc=worklist]
-    (~(uni in acc) `worklist`(~(get ja c) callee))
+    (~(uni in acc) `worklist`(~(get ja called-by) callee))
   ::
   =/  w-new=worklist  (~(uni in w-new) w-new1)
   ?:  =(w-new ~)
     ~&  %done  g
   ~&  [%fixpoint new+~(wyt in ^w-new) upd+~(wyt in w-new1) uniq+~(wyt in `(set ^)`(~(run in w-new) |=(identity fol)))]
-  $(w w-new)
+  !.
+  fixpoint-callgraph(w w-new)
 ::
 :: ~>  %bout.[0 %iter]
 :: =/  m=memo  (regenerate-memo g)
 =*  g-previous  g
 =<  -
 %-  ~(rep in w)
-|=  [id=identity [w-new=worklist w-call=worklist g=callgraph] m-new=memo]
-^-  [[worklist worklist callgraph] memo]
+|=  [id=identity [w-new=worklist w-call=worklist calls=_calls g=callgraph] m-new=memo]
+^-  [[worklist worklist jug-id callgraph] memo]
 =/  data  (git-g g-previous id)
 =/  bus=sock  more.id
 =;  [memo-hit=? data-new=datum m-new=memo]
   =.  g  (~(put by g) id data-new)
+  =.  calls  (~(put by calls) id `(set identity)`(~(run in callees.data-new) tail))
   =?  w-new  !memo-hit
-    %-  ~(uni in w-new)
-    ^-  worklist
     %-  ~(rep in callees.data-new)
-    |=  [[* id=identity] acc=worklist]
+    |=  [[* id=identity] acc=_w-new]
     ?:  (~(has by g-previous) id)  acc
     (~(put in acc) id)
   ::
@@ -140,7 +194,7 @@
               ==
     (~(put in w-call) id)
   ::
-  [[w-new w-call g] m-new]
+  [[w-new w-call calls g] m-new]
 ::
 =/  fol  fol.id
 =/  sub=sock-anno  [bus 1]
@@ -218,7 +272,8 @@
   =/  indi  (distribute indirect-code-request.dat-there src.s)
   =.  indirect-code-request.gen  (~(uni ca indirect-code-request.gen) indi)
   ::
-  =.  callees.gen  (~(put in callees.gen) seat id-there)
+  :: =.  callees.gen  (~(put in callees.gen) seat id-there)
+  =.  callees.gen  (~(put in callees.gen) ~ id-there)
   :_  gen
   :-  prod.dat-there
   (compose-spring:source map.dat-there src.s)
@@ -269,10 +324,15 @@
 ::
     [%11 [a=@ h=^] f=^]
   ?:  &(=(a.fol %spot) =(1 -.h.fol))
-    ?~  pot=((soft spot) +.h.fol)  fol-loop(fol f.fol)
+    =/  pot=(unit spot)  `;;(spot +.h.fol)
     =?  area.gen  ?=(~ area.gen)  pot
     =.  seat  pot
     fol-loop(fol f.fol)
   =.  gen  +:fol-loop(fol h.fol)
   fol-loop(fol f.fol)
+::
+    [%12 p=^ q=^]
+  =.  gen  +:fol-loop(fol p.fol)
+  =.  gen  +:fol-loop(fol q.fol)
+  [dunno gen]
 ==
