@@ -26,6 +26,7 @@
     (~(gut by m) f ~)
   ::
   ++  git
+    ~%  %git-mi  ..zuse  ~
     |=  [m=memo f=^ s=sock]
     ^-  (unit [identity datum])
     =/  entries=(list [* id=identity d=datum])  ~(tap by (gut m f))
@@ -40,15 +41,17 @@
     $(entries t.entries)
   ::
   ++  put
+    ~%  %put-mi  ..zuse  ~
     |=  [m=memo id=identity d=datum]
     ^-  memo
     =/  inner  (gut m fol.id)
     =.  inner  (~(put by inner) less-memo.d [id d])
     (~(put by m) fol.id inner)
   --
+::
 +$  sock-anno  [=sock src=spring]
 ++  git-g
-  |=  [i=identity g=callgraph]
+  |=  [g=callgraph i=identity]
   ^-  datum
   (~(gut by g) i *datum)
 ::
@@ -101,29 +104,30 @@
 =*  fixpoint-callgraph  $
 =;  [w-new=worklist w-call=worklist g1=callgraph]
   =.  g  (~(uni by g) g1)
-  =.  w-new
+  =/  w-new1=worklist
     =/  c  (regenerate-callers g)
     %-  ~(rep in w-call)
-    |=  [callee=identity acc=_w-new]
+    |=  [callee=identity acc=worklist]
     (~(uni in acc) `worklist`(~(get ja c) callee))
   ::
+  =/  w-new=worklist  (~(uni in w-new) w-new1)
   ?:  =(w-new ~)
     ~&  %done  g
-  ~&  [%fixpoint ~(wyt in w-new) ~(wyt in `(set ^)`(~(run in w-new) |=(identity fol)))]
+  ~&  [%fixpoint new+~(wyt in ^w-new) upd+~(wyt in w-new1) uniq+~(wyt in `(set ^)`(~(run in w-new) |=(identity fol)))]
   $(w w-new)
 ::
 :: ~>  %bout.[0 %iter]
-=/  m=memo  (regenerate-memo g)
+:: =/  m=memo  (regenerate-memo g)
 =*  g-previous  g
 =<  -
 %-  ~(rep in w)
 |=  [id=identity [w-new=worklist w-call=worklist g=callgraph] m-new=memo]
 ^-  [[worklist worklist callgraph] memo]
-=/  data  (git-g id g-previous)
+=/  data  (git-g g-previous id)
 =/  bus=sock  more.id
-=;  [data-new=datum m-new=memo]
+=;  [memo-hit=? data-new=datum m-new=memo]
   =.  g  (~(put by g) id data-new)
-  =.  w-new
+  =?  w-new  !memo-hit
     %-  ~(uni in w-new)
     ^-  worklist
     %-  ~(rep in callees.data-new)
@@ -131,14 +135,16 @@
     ?:  (~(has by g-previous) id)  acc
     (~(put in acc) id)
   ::
-  =?  w-call  |(!=([less-code prod map]:data-new [less-code prod map]:data))
+  =?  w-call  ?&  !memo-hit
+                  |(!=([less-code prod map]:data-new [less-code prod map]:data))
+              ==
     (~(put in w-call) id)
   ::
   [[w-new w-call g] m-new]
 ::
 =/  fol  fol.id
 =/  sub=sock-anno  [bus 1]
-?^  hit=(git:mi m-new fol bus)  [+.u.hit m-new]
+?^  hit=(git:mi m-new fol bus)  [& +.u.hit m-new]
 =;  [pro=sock-anno want=cape indirect-code-request=cape callees=(set [(unit spot) identity]) area=(unit spot)]
   =/  less-code  (~(app ca want) bus)
   =/  capture=cape  (prune-spring:source src.pro cape.sock.pro)
@@ -146,7 +152,7 @@
   =/  data-new=datum  [less-code less-memo indirect-code-request sock.pro src.pro area callees]
   =.  m-new  (put:mi m-new id data-new)
   :: ~?  !?=(%| indirect-code-request.data-new)  [%m-new-skip area]
-  [data-new m-new]
+  [| data-new m-new]
 ::
 =/  gen  :*  want=`cape`|
              indirect-code-request=`cape`|
@@ -206,12 +212,8 @@
   ~%  %distribute  nock-2  ~
   |.
   =.  want.gen  (~(uni ca want.gen) (distribute & src.f))
-  =/  [id-there=identity dat-there=datum]
-    =/  id-exact  [sock.s fol-new]
-    ?^  dat=(~(get by g-previous) id-exact)  [id-exact u.dat]
-    ?^  hit=(git:mi m fol-new sock.s)  u.hit
-    [id-exact *datum]
-  ::
+  =/  id-there=identity  [sock.s fol-new]
+  =/  dat-there=datum  (git-g g-previous id-there)
   =.  want.gen  (~(uni ca want.gen) (distribute cape.less-code.dat-there src.s))
   =/  indi  (distribute indirect-code-request.dat-there src.s)
   =.  indirect-code-request.gen  (~(uni ca indirect-code-request.gen) indi)
