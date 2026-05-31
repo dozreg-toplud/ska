@@ -11,13 +11,42 @@
       prod=sock
       map=spring
       area=(unit spot)
-      callees=(set [seat=(unit spot) =identity])
+      callees=(set [seat=(unit spot) =identity src=spring])
   ==
 ::
 +$  callgraph  (map identity datum)
 +$  jug-id  (jug identity identity)
 +$  worklist  (set identity)
 +$  memo  (map ^ (map sock [id=identity =datum]))  ::  fol -> less-memo -> entry
+::
+++  recursive-match
+  |=  [kid=identity par=identity g=callgraph]
+  ^-  (unit datum)
+  ?.  =(fol.kid fol.par)  ~
+  =/  d=datum  (git-g g par)
+  ?:  (~(huge so less-code.d) more.kid)  `d
+  ~
+::
+++  recursive-call
+  |=  [id-caller=identity id-kid=identity called-by=jug-id g=callgraph]
+  ^-  (unit [id=identity d=datum])
+  =|  visited=(set identity)
+  =/  callers=(set identity)  [id-caller ~ ~]
+  =<  -
+  |-  ^-  [(unit [id=identity d=datum]) (set identity)]
+  =*  visit-loop  $
+  ?:  (~(has in visited) id-kid)  [~ visited]
+  =.  visited  (~(put in visited) id-kid)
+  ?~  callers  [~ visited]
+  ?^  d=(recursive-match id-kid n.callers g)
+    [`[n.callers u.d] visited]
+  =^  has-l  visited  visit-loop(callers l.callers)
+  ?^  has-l  [has-l visited]
+  =^  has-r  visited  visit-loop(callers r.callers)
+  ?^  has-r  [has-r visited]
+  =/  new-callers  (~(get ju called-by) n.callers)
+  visit-loop(callers new-callers)
+::
 ++  mi
   |%
   ++  gut
@@ -71,55 +100,6 @@
   =/  r  $(s +.s, c q)
   (~(uni ca l) r)
 ::
-:: ++  regenerate-callers
-::   ~%  %regenerate-callers  ..zuse  ~
-::   |=  g=callgraph
-::   ^-  callers
-::   :: ~>  %bout.[0 %regenerate-callers]
-::   %-  ~(rep by g)
-::   |=  [[from=identity [* * * * * * callees=(set [* identity])]] acc=callers]
-::   =>  [from=from callees=callees acc=acc ..regenerate-callers]
-::   %-  ~(rep in callees)
-::   |=  [[* to=identity] acc=_acc]
-::   (~(put ju acc) to from)
-:: ::
-:: ++  regenerate-memo
-::   ~%  %regenerate-memo  ..zuse  ~
-::   |=  g=callgraph
-::   ^-  memo
-::   :: ~>  %bout.[0 %regenerate-memo]
-::   %-  ~(rep by g)
-::   |=  [[id=identity d=datum] acc=memo]
-::   (put:mi acc id d)
-::
-++  trace-g
-  ~%  %trace-g  ..zuse  ~
-  |=  [r=identity g=callgraph]
-  ^-  callgraph
-  =|  out=callgraph
-  =/  queu=(list identity)  ~[r]
-  |-  ^-  callgraph
-  ?~  queu  out
-  ?~  d=(~(get by g) i.queu)  $(queu t.queu)
-  ?:  (~(has by out) i.queu)  $(queu t.queu)
-  =.  out  (~(put by out) i.queu u.d)
-  $(queu (weld t.queu ~(tap in `(set identity)`(~(run in callees.u.d) tail))))
-::
-++  trace-c
-  ~%  %trace-c  ..zuse  ~
-  |=  [r=identity c=jug-id]
-  ^-  jug-id
-  =|  out=jug-id
-  =/  queu=(list identity)  ~[r]
-  =|  back=(list identity)
-  |-  ^-  jug-id
-  ?~  queu
-    ?~  back  out
-    $(queu back, back ~)
-  ?~  v=(~(get by c) i.queu)  $(queu t.queu)
-  ?:  (~(has by out) i.queu)  $(queu t.queu)
-  =.  out  (~(put by out) i.queu u.v)
-  $(queu t.queu, back (weld back `(list identity)`~(tap in u.v)))
 --
 ::
 |=  [bus=sock fol=^]
@@ -136,8 +116,6 @@
 =*  fixpoint-callgraph  $
 =;  [w-new=worklist w-call=worklist new-calls=jug-id g1=callgraph]
   =.  g  (~(uni by g) g1)
-  :: =.  g  (trace-g root g)
-  :: =.  new-calls  (trace-c root new-calls)
   =.  called-by
     =<  $
     ~%  %called-by-update  ..zuse  ~
@@ -182,10 +160,10 @@
 =/  bus=sock  more.id
 =;  [memo-hit=? data-new=datum m-new=memo]
   =.  g  (~(put by g) id data-new)
-  =.  calls  (~(put by calls) id `(set identity)`(~(run in callees.data-new) tail))
+  =.  calls  (~(put by calls) id `(set identity)`(~(run in callees.data-new) |=([* id=identity *] id)))
   =?  w-new  !memo-hit
     %-  ~(rep in callees.data-new)
-    |=  [[* id=identity] acc=_w-new]
+    |=  [[* id=identity *] acc=_w-new]
     ?:  (~(has by g-previous) id)  acc
     (~(put in acc) id)
   ::
@@ -199,7 +177,7 @@
 =/  fol  fol.id
 =/  sub=sock-anno  [bus 1]
 ?^  hit=(git:mi m-new fol bus)  [& +.u.hit m-new]
-=;  [pro=sock-anno want=cape indirect-code-request=cape callees=(set [(unit spot) identity]) area=(unit spot)]
+=;  [pro=sock-anno want=cape indirect-code-request=cape callees=(set [(unit spot) identity spring]) area=(unit spot)]
   =/  less-code  (~(app ca want) bus)
   =/  capture=cape  (prune-spring:source src.pro cape.sock.pro)
   =/  less-memo  (~(app ca (~(uni ca want) capture)) bus)
@@ -210,7 +188,7 @@
 ::
 =/  gen  :*  want=`cape`|
              indirect-code-request=`cape`|
-             callees=`(set [(unit spot) identity])`~
+             callees=`(set [(unit spot) identity spring])`~
              area=`(unit spot)`~
          ==
 ::
@@ -266,14 +244,18 @@
   ~%  %distribute  nock-2  ~
   |.
   =.  want.gen  (~(uni ca want.gen) (distribute & src.f))
-  =/  id-there=identity  [sock.s fol-new]
-  =/  dat-there=datum  (git-g g-previous id-there)
+  =/  [id-there=identity dat-there=datum]
+    =/  id-there=identity  [sock.s fol-new]
+    ?^  par=(recursive-call id id-there called-by g-previous)
+      u.par(prod.d |+~, map.d ~)
+    [id-there (git-g g-previous id-there)]
+  ::
   =.  want.gen  (~(uni ca want.gen) (distribute cape.less-code.dat-there src.s))
   =/  indi  (distribute indirect-code-request.dat-there src.s)
   =.  indirect-code-request.gen  (~(uni ca indirect-code-request.gen) indi)
   ::
-  :: =.  callees.gen  (~(put in callees.gen) seat id-there)
-  =.  callees.gen  (~(put in callees.gen) ~ id-there)
+  =.  callees.gen  (~(put in callees.gen) seat id-there src.s)
+  :: =.  callees.gen  (~(put in callees.gen) [~ id-there src.s])
   :_  gen
   :-  prod.dat-there
   (compose-spring:source map.dat-there src.s)

@@ -270,6 +270,29 @@
     ((((. 1) 2) 3) 4)
   ::
   (expect-eq-nock-need sub fol)
+::
+:: ++  test-trap
+::   =/  sub
+::     ~
+::   ::
+::   =/  fol  !.
+::     =>  sub  !=
+::     =/  t  |.(0)
+::     |-  ^-  ~
+::     ?:  =(3 $:t)  ~
+::     $(t |.(+($:t)))
+::   ::
+::   (expect-eq-nock-need sub fol)
+::
+++  test-cons
+  =/  sub  ~
+::
+  =/  fol
+    =>  sub  !=
+    |-  ^-  *
+    [.^(~) $]
+  ::
+  ~:(scan &+sub fol)
 ::  XX ~60 seconds to analyze, ~1000 s to run Nomm
 ::
 :: ++  test-ream
