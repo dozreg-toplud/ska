@@ -120,9 +120,8 @@
   (g v) 
 ::
 =/  l=(list callgraph)  ~>  %bout
-  (ska-experiment1 &+sub fol)
+  (memo-call ska-experiment1 &+sub fol)
   :: (ska-experiment1 &+sub fol)
-noun+~(wyt by (condense -:l [&+sub fol]))
 :: noun+(lent g)
 :: noun+(turn l |=(g=callgraph ~(wyt by (condense g &+sub fol))))
 :: :-  %noun
@@ -133,3 +132,4 @@ noun+~(wyt by (condense -:l [&+sub fol]))
 :: |=  g=callgraph
 :: ~>  %bout
 :: (turn `wall`(zing `(list wall)`(turn (flop (render-callgraph (condense g [&+sub fol]))) (cury wash 0 80))) crip)
+noun+~(wyt by (condense -:l [&+sub fol]))

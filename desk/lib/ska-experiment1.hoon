@@ -138,12 +138,20 @@
 ~%  %analysis  ..zuse  ~
 |.  ^-  (list callgraph)
 =*  fixpoint-callgraph  $
+!.
+::  one fixpoint iteration gives us new worklists to handle, updated part of the
+::  callgraph and updated calls
 =;  [w-new=worklist w-call=worklist new-calls=jug-id g1=callgraph]
   =.  g  (~(uni by g) g1)
   =.  called-by
+    ::  calculate the diff between new-calls and calls to update called-by
+    ::
     =<  $
     ~%  %called-by-update  ..zuse  ~
     |.
+    ::  we only add/replace callers to "calls" graph, so grabbing the keys of
+    ::  new-calls is enough to get identities of all callers
+    ::
     =/  all-callers=(list identity)  ~(tap in ~(key by new-calls))
     %+  roll  all-callers
     |=  [caller=identity acc=_called-by]
@@ -162,38 +170,54 @@
   ::
   =.  calls  new-calls
   =/  w-new1=worklist
+    ::  worklist of functions whose immediate callees changed
+    ::
     %-  ~(rep in w-call)
     |=  [callee=identity acc=worklist]
     (~(uni in acc) `worklist`(~(get ja called-by) callee))
+  ::
+  ::  total worklist: new functions + functions whose callees changed. Nothing
+  ::  else needs to be reanalysed as we'll just get the same result
   ::
   =/  w-new=worklist  (~(uni in w-new) w-new1)
   ?:  =(w-new ~)
     ~&  %done  [g history]
   ~&  [%fixpoint new+~(wyt in ^w-new) upd+~(wyt in w-new1) uniq+~(wyt in `(set ^)`(~(run in w-new) |=(identity fol)))]
-  !.
   fixpoint-callgraph(w w-new, history [g history])
 ::
 :: ~>  %bout.[0 %iter]
-:: =/  m=memo  (regenerate-memo g)
+!:
 =*  g-previous  g
 =<  -
 %-  ~(rep in w)
-|=  [id=identity [w-new=worklist w-call=worklist calls=_calls g=callgraph] m-new=memo]
+::  note that now "g" is a bunt (empty), but "calls" is inherited from the
+::  previous iteration
+::
+|=  $:  id=identity
+        ::  accumulator
+        ::
+        [[w-new=worklist w-call=worklist calls=_calls g=callgraph] m-new=memo]
+    ==
 ^-  [[worklist worklist jug-id callgraph] memo]
 =/  data  (git-g g-previous id)
 =/  bus=sock  more.id
 =;  [memo-hit=? data-new=datum m-new=memo]
   =.  g  (~(put by g) id data-new)
-  =.  calls  (~(put by calls) id `(set identity)`(~(run in callees.data-new) |=([* id=identity *] id)))
+  =.  calls
+    (~(put by calls) id (~(run in callees.data-new) |=([* id=identity *] id)))
+  ::
+  ::  don't have to put fresh callees in the worklist, they should already be
+  ::  there
+  ::
   =?  w-new  !memo-hit
     %-  ~(rep in callees.data-new)
     |=  [[* id=identity *] acc=_w-new]
     ?:  (~(has by g-previous) id)  acc
     (~(put in acc) id)
+  ::  do have to put ourselves in the callee worklist if our code usage or
+  ::  product changed
   ::
-  =?  w-call  ?&  !memo-hit
-                  |(!=([less-code prod map]:data-new [less-code prod map]:data))
-              ==
+  =?  w-call  |(!=([less-code prod map]:data-new [less-code prod map]:data))
     (~(put in w-call) id)
   ::
   [[w-new w-call calls g] m-new]
@@ -201,27 +225,39 @@
 =/  fol  fol.id
 =/  sub=sock-anno  [bus 1]
 ?^  hit=(git:mi m-new fol bus)  [& +.u.hit m-new]
-=;  [pro=sock-anno want=cape indirect-code-request=cape callees=(set [(unit spot) identity spring]) area=(unit spot)]
+=*  fol-result
+  $:  pro=sock-anno
+      want=cape
+      indirect-code-request=cape
+      callees=(set [(unit spot) identity spring])
+      area=(unit spot)
+  ==
+::
+=;  ,fol-result
+  ::  construct datum & memoize
+  ::
   =/  less-code  (~(app ca want) bus)
   =/  capture=cape  (prune-spring:source src.pro cape.sock.pro)
   =/  less-memo  (~(app ca (~(uni ca want) capture)) bus)
-  =/  data-new=datum  [less-code less-memo indirect-code-request sock.pro src.pro area callees]
+  =/  data-new=datum
+    [less-code less-memo indirect-code-request sock.pro src.pro area callees]
+  ::
   =.  m-new  (put:mi m-new id data-new)
-  :: ~?  !?=(%| indirect-code-request.data-new)  [%m-new-skip area]
   [| data-new m-new]
 ::
-=/  gen  :*  want=`cape`|
-             indirect-code-request=`cape`|
-             callees=`(set [(unit spot) identity spring])`~
-             area=`(unit spot)`~
-         ==
+=|  $=  gen
+    $:  want=cape
+        indirect-code-request=cape
+        callees=(set [(unit spot) identity spring])
+        area=(unit spot)
+    ==
 ::
 =/  seat=(unit spot)  ~
 =<  $
 ~%  %fol-loop  ..zuse  ~
 |.  ^-  [sock-anno _gen]
 =*  fol-loop  $
-?+    fol  ~|  fol  !!    ::  [dunno gen]
+?+    fol  ~|  fol  [dunno gen]
     [p=^ q=^]
   =^  l=sock-anno  gen  fol-loop(fol p.fol)
   =^  r=sock-anno  gen  fol-loop(fol q.fol)
