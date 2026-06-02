@@ -4,7 +4,7 @@
 ::
 =,  ska-experiment1
 |%
-++  condense  ::  lossy
+++  condense
   |=  [g=callgraph id=identity]
   ^-  callgraph
   =/  m=(map identity identity)
@@ -16,13 +16,13 @@
   =|  new=callgraph
   |-  ^-  callgraph
   ?~  q  new
-  =/  id  (~(got by m) i.q)
+  =/  id  (~(gut by m) i.q [|+~ fol.i.q])
   ?:  (~(has by new) id)  $(q t.q)
-  =/  d=datum  (~(got by g) i.q)
+  =/  d=datum  (git-g g i.q)
   =/  callees=(list identity)
     (turn ~(tap in callees.d) |=([* id=identity *] id))
   ::
-  =/  g  |*  [* id=identity *]  +<(id (~(got by m) id))
+  =/  g  |*  [* i=identity *]  +<(i (~(gut by m) i [|+~ fol.,.i]))
   =.  new  (~(put by new) id d(callees (~(run in callees.d) g)))
   $(q (weld t.q callees))
 ::
@@ -90,12 +90,14 @@
 ::
 :-  %say  |=  *
 =/  sub  our-hoot
-:: =/  sub  ~
+:: =/  sub  1
 ::
 =/  fol
   ;;  ^
   =>  sub  !=
-  (~(mint ut [%atom %$ ~]) %noun [%dtls $+1])
+  :: (~(mint ut [%atom %$ ~]) %noun [%dtls $+1])
+  :: (ream '42')
+  (ride %noun '42')
   :: (scow %ud 5)
   :: (mug 42)
   :: (a-co:co 4)
@@ -107,7 +109,6 @@
   :: |-  ^-  ~
   :: ?:  =(3 $:t)  ~
   :: $(t |.(+($:t)))
-  
 ::
 :: ~&  .*(sub fol)
 =/  memo-call
@@ -118,11 +119,17 @@
   !.  ~>  %memo./user
   (g v) 
 ::
-=/  g  ~>  %bout
-  (memo-call ska-experiment1 &+sub fol)
-:: tang+(render-callgraph g)
-:: noun+~(wyt by (condense g [&+sub fol]))
-:-  %noun
-`(list cord)`(turn `wall`(zing `(list wall)`(turn (flop (render-callgraph (condense g [&+sub fol]))) (cury wash 0 80))) crip)
-
-
+=/  l=(list callgraph)  ~>  %bout
+  (ska-experiment1 &+sub fol)
+  :: (ska-experiment1 &+sub fol)
+noun+~(wyt by (condense -:l [&+sub fol]))
+:: noun+(lent g)
+:: noun+(turn l |=(g=callgraph ~(wyt by (condense g &+sub fol))))
+:: :-  %noun
+:: =;  l=(list wain)
+::   %-  zing
+::   (join `wain`~['====================='] l)
+:: %+  turn  l
+:: |=  g=callgraph
+:: ~>  %bout
+:: (turn `wall`(zing `(list wall)`(turn (flop (render-callgraph (condense g [&+sub fol]))) (cury wash 0 80))) crip)

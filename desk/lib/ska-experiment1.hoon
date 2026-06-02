@@ -100,11 +100,35 @@
   =/  r  $(s +.s, c q)
   (~(uni ca l) r)
 ::
+++  inlineable
+  |=  fol=^
+  ^-  ?
+  =*  l  .
+  ?+    fol  |
+    [p=^ q=^]  &((l p.fol) (l q.fol))
+    [%0 @]  &
+    [%1 *]  &
+    [%2 *]  |
+    [%9 *]  |
+  ::
+    [%3 p=^]           (l p.fol)
+    [%4 p=^]           (l p.fol)
+    [%5 p=^ q=^]       &((l p.fol) (l q.fol))
+    [%6 p=^ q=^ r=^]   &((l p.fol) (l q.fol) (l r.fol))
+    [%7 p=^ q=^]       &((l p.fol) (l q.fol))
+    [%8 p=^ q=^]       &((l p.fol) (l q.fol))
+    [%10 [@ p=^] q=^]  &((l p.fol) (l q.fol))
+    [%11 @ p=^]        (l p.fol)
+    [%11 [@ q=^] p=^]  &((l p.fol) (l q.fol))
+    [%12 p=^ q=^]      &((l p.fol) (l q.fol))
+  ==
+::
 --
 ::
 |=  [bus=sock fol=^]
-^-  callgraph
+^-  (list callgraph)
 =|  g=callgraph
+=|  history=(list callgraph)
 =/  root  [bus fol]
 =/  w=worklist  [root ~ ~]
 =|  calls=jug-id
@@ -112,7 +136,7 @@
 ::
 =<  $
 ~%  %analysis  ..zuse  ~
-|.  ^-  callgraph
+|.  ^-  (list callgraph)
 =*  fixpoint-callgraph  $
 =;  [w-new=worklist w-call=worklist new-calls=jug-id g1=callgraph]
   =.  g  (~(uni by g) g1)
@@ -144,10 +168,10 @@
   ::
   =/  w-new=worklist  (~(uni in w-new) w-new1)
   ?:  =(w-new ~)
-    ~&  %done  g
+    ~&  %done  [g history]
   ~&  [%fixpoint new+~(wyt in ^w-new) upd+~(wyt in w-new1) uniq+~(wyt in `(set ^)`(~(run in w-new) |=(identity fol)))]
   !.
-  fixpoint-callgraph(w w-new)
+  fixpoint-callgraph(w w-new, history [g history])
 ::
 :: ~>  %bout.[0 %iter]
 :: =/  m=memo  (regenerate-memo g)
@@ -239,16 +263,20 @@
     ::
     [dunno gen]
   =/  fol-new  data.sock.f
+  =.  want.gen  (~(uni ca want.gen) (distribute & src.f))
+  ?:  (inlineable fol-new)
+    fol-loop(fol fol-new, sub s)
   =/  id-there  [sock.s fol-new]
   =<  $
   ~%  %distribute  nock-2  ~
   |.
-  =.  want.gen  (~(uni ca want.gen) (distribute & src.f))
   =/  [id-there=identity dat-there=datum]
     =/  id-there=identity  [sock.s fol-new]
+    ?^  d=(~(get by g-previous) id-there)
+      [id-there u.d]
     ?^  par=(recursive-call id id-there called-by g-previous)
       u.par(prod.d |+~, map.d ~)
-    [id-there (git-g g-previous id-there)]
+    [id-there *datum]
   ::
   =.  want.gen  (~(uni ca want.gen) (distribute cape.less-code.dat-there src.s))
   =/  indi  (distribute indirect-code-request.dat-there src.s)
