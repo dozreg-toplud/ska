@@ -156,8 +156,8 @@
 ::
 =/  l=(list callgraph)  ~>  %bout
   :: (memo-call ska-experiment1 &+sub fol)
-  :: (ska-experiment1 &+sub fol)
-  (turn ~>(%bout.[0 %ska] (ska:nock-compilation1 &+sub fol)) rewrite-callgraph)
+  (ska-experiment1 &+sub fol)
+  :: (turn ~>(%bout.[0 %ska] (ska-callgraph:nock-compilation1 [&+sub fol] ~)) rewrite-callgraph)
 :: noun+(lent g)
 :: :-  %noun
 :: =;  l=(list wain)

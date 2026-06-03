@@ -551,6 +551,7 @@
 ::  distribute noun usage along provenance
 ::
 ++  distribute
+  ~%  %distribute  ..zuse  ~
   |=  [c=cape s=spring]
   ^-  cape
   ?~  s  |
@@ -564,6 +565,7 @@
 ::  doubly intersect a sock and a provenance
 ::
 ++  double-int
+  ~%  %double-int  ..zuse  ~
   |=  [a=[=sock src=spring] b=[=sock src=spring]]
   ^-  [=sock src=spring]
   ?:  =(a b)  a
@@ -603,6 +605,22 @@
 ::      - a code + data subject mask, which would be used to cache the analysis
 ::        result. Data mask is necessary due to potential subject capture by the
 ::        function.
+::
+::    The implementation below works by finding a fixed point of a function F
+::    that maps a set of SKA function calls onto itself by, formally, partially
+::    evaluating each callsite in the set, using the information from the
+::    previous set for Nock 2 handling.  De facto this means breadth-first
+::    iteration over the call graph with back-propagation of changes.
+::
+::    The algorithm assumes that the set of SKA function calls forms a complete
+::    lattice, and the fixed point is found via Kleene iteration, starting from
+::    the least element of the lattice that contains the root call.
+::
+::    Proving that F is monotonic for some ordering of the lattice, for which
+::    [[[&+sub fol] *datum] ~ ~] is the least element of the lattice which
+::    contains [&+sub fol] is left as an exercise for the reader. The hardest
+::    part IMO is taking into account recursive calls. The rest is trivial: socks
+::    for a given noun form a complete lattice with huge:so as partial ordering.
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ?>  =(|+~ *sock)
@@ -735,10 +753,42 @@
     [%12 p=^ q=^]      &((l p.fol) (l q.fol))
   ==
 ::
---
-|%
-++  ska
-  |=  [bus=sock fol=^]
++$  long-ska
+  $+  long-ska
+  $:
+  ::::  cold state
+    ::
+    $=  jets
+    $:  root=(jug * path)     ::  root registrations
+        core=(jug path sock)  ::  core registrations
+        batt=(jug ^ path)     ::  core battery -> set of possible paths
+        $=  cole              ::  bell <--> ring bidirectional mapping
+        $:  call=(map bell ring)
+            back=(jug ring bell)
+    ==  ==
+  ::::  memoized entries: 
+    ::
+    =memo
+  ::::  saved entries:
+    ::
+    code=(map bell nomm)        ::  direct bell mapping
+    fols=(jar ^ [=bell =nomm])  ::  lookup by formula
+  ::::  memoization (as in %11 %memo) keys
+    ::
+    mize=(map bell *)
+  ==
+::
+++  ska-poke
+  |=  [[bus=sock fol=^] lon=long-ska]
+  ^-  long-ska
+  =/  g=callgraph  -:(ska-callgraph [bus fol] memo.lon)
+  ::  XX fill memo, get jet, %memo info and code tables
+  stub
+::  Produces a list of callgraphs for visualization purposes. The fixpoint is
+::  the first callgraph in the list
+::
+++  ska-callgraph
+  |=  [[bus=sock fol=^] memo-final=memo]
   ^-  (list callgraph)
   =|  g=callgraph
   =|  history=(list callgraph)
@@ -810,8 +860,9 @@
   |=  $:  id=identity
           ::  accumulator
           ::
-          [[w-new=worklist w-call=worklist calls=_calls g=callgraph] m-new=memo]
-      ==
+          $:  [w-new=worklist w-call=worklist calls=_calls g=callgraph]
+              m-new=_memo-final
+      ==  ==
   ^-  [[worklist worklist jug-id callgraph] memo]
   =/  data  (git-g g-previous id)
   =/  bus=sock  more.id
