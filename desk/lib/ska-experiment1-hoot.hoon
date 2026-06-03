@@ -1,4 +1,5 @@
-/-  *noir
+/-  noir-hoot
+=>  noir-hoot
 ?>  =(|+~ *sock)
 ?>  =(| *cape)
 |%
@@ -28,7 +29,7 @@
   ~
 ::
 ++  recursive-call
-  ~%  %recursive-call  ..zuse  ~
+  ~%  %recursive-call  ..ride  ~
   |=  [id-caller=identity id-kid=identity called-by=jug-id g=callgraph]
   ^-  (unit [id=identity d=datum])
   =|  visited=(set identity)
@@ -56,7 +57,7 @@
     (~(gut by m) f ~)
   ::
   ++  git
-    ~%  %git-mi  ..zuse  ~
+    ~%  %git-mi  ..ride  ~
     |=  [m=memo f=^ s=sock]
     ^-  (unit [identity datum])
     =/  entries=(list [* id=identity d=datum])  ~(tap by (gut m f))
@@ -71,7 +72,7 @@
     $(entries t.entries)
   ::
   ++  put
-    ~%  %put-mi  ..zuse  ~
+    ~%  %put-mi  ..ride  ~
     |=  [m=memo id=identity d=datum]
     ^-  memo
     =/  inner  (gut m fol.id)
@@ -102,7 +103,7 @@
   (~(uni ca l) r)
 ::
 ++  inlineable
-  ~%  %inlineable  ..zuse  ~
+  ~%  %inlineable  ..ride  ~
   |=  fol=^
   ^-  ?
   =*  l  .
@@ -126,7 +127,7 @@
   ==
 ::
 ++  double-int
-  ~%  %double-int  ..zuse  ~
+  ~%  %double-int  ..ride  ~
   |=  [a=[=sock src=spring] b=[=sock src=spring]]
   ^-  [=sock src=spring]
   ?:  =(a b)  a
@@ -151,7 +152,7 @@
 =|  called-by=jug-id
 ::
 =<  $
-~%  %analysis  ..zuse  ~
+~%  %analysis  ..ride  ~
 |.  ^-  (list callgraph)
 =*  fixpoint-callgraph  $
 ::  one fixpoint iteration gives us new worklists to handle, updated part of the
@@ -162,7 +163,7 @@
     ::  calculate the diff between new-calls and calls to update called-by
     ::
     =<  $
-    ~%  %called-by-update  ..zuse  ~
+    ~%  %called-by-update  ..ride  ~
     |.
     ::  we only add/replace callers to "calls" graph, so grabbing the keys of
     ::  new-calls is enough to get identities of all callers
@@ -275,7 +276,7 @@
 =/  seat=(unit spot)  ~
 ^-  [[nomm=nomm-1 prod=sock-anno] gen=_gen]
 =<  $
-~%  %fol-loop  ..zuse  ~
+~%  %fol-loop  ..ride  ~
 |.  ^-  [[nomm=nomm-1 prod=sock-anno] _gen]
 =*  fol-loop  $
 ?+    fol  ~|  fol  [[0+0 dunno] gen]
@@ -328,7 +329,7 @@
     :-  [%7 nomm.s nomm.inline]
     prod.inline
   =<  $
-  ~%  %nock-2-direct-non-inlined  ..zuse  ~
+  ~%  %nock-2-direct-non-inlined  ..ride  ~
   |.
   ^-  [[nomm-1 sock-anno] _gen]
   =/  [id-there=identity dat-there=datum]
@@ -413,7 +414,7 @@
   =?  .  &(=(a.fol %spot) =(1 -.h.fol))
     =*  dot  .
     =<  $
-    ~%  %nock-11-soft  ..zuse  ~
+    ~%  %nock-11-soft  ..ride  ~
     |.
     =/  pot=(unit spot)  `;;(spot +.h.fol)  ::  XX soft
     =?  area.gen  ?=(~ area.gen)  pot

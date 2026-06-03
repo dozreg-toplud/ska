@@ -1,4 +1,5 @@
 /+  ska-experiment1
+/+  ska-experiment1-hoot
 /+  our-hoot=hoot
 /+  our-hoot-zpdt=hoot-zpdt
 /+  zuse-vendor
@@ -93,6 +94,7 @@
 =/  sub  our-hoot
 :: =/  sub  zuse-vendor
 :: =/  sub  ~
+:: =/  sub  ska-experiment1-hoot
 ::
 =/  fol
   ;;  ^
@@ -112,6 +114,7 @@
   :: ?:  =(3 $:t)  ~
   :: $(t |.(+($:t)))
   :: $:en:json:html
+  :: (.)
 ::
 :: ~&  .*(sub fol)
 =/  memo-call
@@ -123,8 +126,8 @@
   (g v) 
 ::
 =/  l=(list callgraph)  ~>  %bout
-  (memo-call ska-experiment1 &+sub fol)
-  :: (ska-experiment1 &+sub fol)
+  :: (memo-call ska-experiment1 &+sub fol)
+  (ska-experiment1 &+sub fol)
 :: noun+(lent g)
 :-  %noun
 :: =;  l=(list wain)
