@@ -5,13 +5,13 @@
 +$  identity  [more=sock fol=^]
 +$  spring  *  ::  no union stuff
 +$  datum
-  $:  less-code=sock
+  $:  callees=(set [seat=(unit spot) =identity src=spring])
+      nomm=nomm-1
+      less-code=sock
       less-memo=sock
       indirect-code-request=cape
-      prod=sock
-      map=spring
+      [prod=sock map=spring]
       area=(unit spot)
-      callees=(set [seat=(unit spot) =identity src=spring])
   ==
 ::
 +$  callgraph  (map identity datum)
@@ -169,7 +169,7 @@
     (~(put ju acc) callee caller)
   ::
   =.  calls  new-calls
-  =/  w-new1=worklist
+  =/  w-back=worklist
     ::  worklist of functions whose immediate callees changed
     ::
     %-  ~(rep in w-call)
@@ -179,10 +179,12 @@
   ::  total worklist: new functions + functions whose callees changed. Nothing
   ::  else needs to be reanalysed as we'll just get the same result
   ::
-  =/  w-new=worklist  (~(uni in w-new) w-new1)
-  ?:  =(w-new ~)
-    ~&  %done  [g history]
-  ~&  [%fixpoint new+~(wyt in ^w-new) upd+~(wyt in w-new1) uniq+~(wyt in `(set ^)`(~(run in w-new) |=(identity fol)))]
+  =/  w-new=worklist  (~(uni in w-new) w-back)
+  ?:  =(w-new ~)  [g history]
+  =/  new-count   ~(wyt in ^w-new)
+  =/  upd-count   ~(wyt in w-back)
+  =/  uniq-count  ~(wyt in `(set ^)`(~(run in w-new) |=(identity fol)))
+  ~&  [%fixpoint new+new-count upd+upd-count uniq+uniq-count]
   fixpoint-callgraph(w w-new, history [g history])
 ::
 :: ~>  %bout.[0 %iter]
@@ -226,7 +228,7 @@
 =/  sub=sock-anno  [bus 1]
 ?^  hit=(git:mi m-new fol bus)  [& +.u.hit m-new]
 =*  fol-result
-  $:  pro=sock-anno
+  $:  [nomm=nomm-1 pro=sock-anno]
       want=cape
       indirect-code-request=cape
       callees=(set [(unit spot) identity spring])
@@ -240,7 +242,11 @@
   =/  capture=cape  (prune-spring:source src.pro cape.sock.pro)
   =/  less-memo  (~(app ca (~(uni ca want) capture)) bus)
   =/  data-new=datum
-    [less-code less-memo indirect-code-request sock.pro src.pro area callees]
+    [ callees  nomm
+      less-code  less-memo
+      indirect-code-request
+      pro  area
+    ]
   ::
   =.  m-new  (put:mi m-new id data-new)
   [| data-new m-new]
@@ -253,26 +259,29 @@
     ==
 ::
 =/  seat=(unit spot)  ~
+^-  [[nomm=nomm-1 prod=sock-anno] gen=_gen]
 =<  $
 ~%  %fol-loop  ..zuse  ~
-|.  ^-  [sock-anno _gen]
+|.  ^-  [[nomm=nomm-1 prod=sock-anno] _gen]
 =*  fol-loop  $
-?+    fol  ~|  fol  [dunno gen]
+?+    fol  ~|  fol  [[0+0 dunno] gen]
     [p=^ q=^]
-  =^  l=sock-anno  gen  fol-loop(fol p.fol)
-  =^  r=sock-anno  gen  fol-loop(fol q.fol)
+  =^  l  gen  fol-loop(fol p.fol)
+  =^  r  gen  fol-loop(fol q.fol)
   =<  $
   ~%  %nock-cons  ..fol-loop  ~
   |.
   :_  gen
-  :-  (~(knit so sock.l) sock.r)
-  (cons-spring:source src.l src.r)
+  :-  [nomm.l nomm.r]
+  :-  (~(knit so sock.prod.l) sock.prod.r)
+  (cons-spring:source src.prod.l src.prod.r)
 ::
     [%0 p=@]
   =<  $
   ~%  %nock-0  ..fol-loop  ~
   |.
   :_  gen
+  :-  [%0 p.fol]
   ?:  =(0 p.fol)  dunno
   ?:  =(1 p.fol)  sub
   :-  (~(pull so sock.sub) p.fol)
@@ -280,73 +289,91 @@
 ::
     [%1 p=*]
   :_  gen
+  :-  [%1 p.fol]
   [&+p.fol ~]
 ::
     [%2 p=^ q=^]
-  =^  s=sock-anno  gen  fol-loop(fol p.fol)
-  =^  f=sock-anno  gen  fol-loop(fol q.fol)
+  =^  s  gen  fol-loop(fol p.fol)
+  =^  f  gen  fol-loop(fol q.fol)
   =<  $
   ~%  %nock-2  ..fol-loop  ~
   |.
+  ^-  [[nomm-1 sock-anno] _gen]
   =*  nock-2  .
-  ?.  &(=(& cape.sock.f) ?=(^ data.sock.f))
+  ?.  &(=(& cape.sock.prod.f) ?=(^ data.sock.prod.f))
     ::  indirect call
     ::
     :: ~&  %indi
     :: ~&  seat
     =.  indirect-code-request.gen
-      (~(uni ca indirect-code-request.gen) (distribute & src.f))
+      (~(uni ca indirect-code-request.gen) (distribute & src.prod.f))
     ::
-    [dunno gen]
-  =/  fol-new  data.sock.f
-  =.  want.gen  (~(uni ca want.gen) (distribute & src.f))
+    [[[%2 nomm.s `nomm.f ~] dunno] gen]
+  =/  fol-new  data.sock.prod.f
+  =.  want.gen  (~(uni ca want.gen) (distribute & src.prod.f))
   ?:  (inlineable fol-new)
-    fol-loop(fol fol-new, sub s)
-  =/  id-there  [sock.s fol-new]
+    =^  inline  gen  fol-loop(fol fol-new, sub prod.s)
+    :_  gen
+    :-  [%7 nomm.s nomm.inline]
+    prod.inline
   =<  $
   ~%  %distribute  nock-2  ~
   |.
+  ^-  [[nomm-1 sock-anno] _gen]
   =/  [id-there=identity dat-there=datum]
-    =/  id-there=identity  [sock.s fol-new]
+    =/  id-there=identity  [sock.prod.s fol-new]
     ?^  d=(~(get by g-previous) id-there)
       [id-there u.d]
     ?^  par=(recursive-call id id-there called-by g-previous)
       u.par(prod.d |+~, map.d ~)
     [id-there *datum]
   ::
-  =.  want.gen  (~(uni ca want.gen) (distribute cape.less-code.dat-there src.s))
-  =/  indi  (distribute indirect-code-request.dat-there src.s)
-  =.  indirect-code-request.gen  (~(uni ca indirect-code-request.gen) indi)
+  =.  want.gen
+    (~(uni ca want.gen) (distribute cape.less-code.dat-there src.prod.s))
   ::
-  =.  callees.gen  (~(put in callees.gen) seat id-there src.s)
-  :: =.  callees.gen  (~(put in callees.gen) [~ id-there src.s])
+  =/  indi  (distribute indirect-code-request.dat-there src.prod.s)
+  =.  indirect-code-request.gen  (~(uni ca indirect-code-request.gen) indi)
+  =.  callees.gen  (~(put in callees.gen) seat id-there src.prod.s)
   :_  gen
+  ^-  [nomm-1 sock-anno]
+  :-  [%2 nomm.s `nomm.f ~ less-code.dat-there fol-new]  ::  XX remove unit from q, rely on registerization
   :-  prod.dat-there
-  (compose-spring:source map.dat-there src.s)
+  (compose-spring:source map.dat-there src.prod.s)
 ::
     [%3 p=^]
-  =.  gen  +:fol-loop(fol p.fol)
-  [dunno gen]
+  =^  p  gen  fol-loop(fol p.fol)
+  :_  gen
+  :-  [%3 nomm.p]
+  dunno
 ::
     [%4 p=^]
-  =.  gen  +:fol-loop(fol p.fol)
-  [dunno gen]
+  =^  p  gen  fol-loop(fol p.fol)
+  :_  gen
+  :-  [%4 nomm.p]
+  dunno
 ::
     [%5 p=^ q=^]
-  =.  gen  +:fol-loop(fol p.fol)
-  =.  gen  +:fol-loop(fol q.fol)
-  [dunno gen]
+  =^  p  gen  fol-loop(fol p.fol)
+  =^  q  gen  fol-loop(fol q.fol)
+  :_  gen
+  :-  [%5 nomm.p nomm.q]
+  dunno
 ::  pessimization: calls with the subject that comes from a fork are indirect
 ::
     [%6 p=^ q=^ r=^]
-  =.  gen  +:fol-loop(fol p.fol)
-  =.  gen  +:fol-loop(fol q.fol)
-  =.  gen  +:fol-loop(fol r.fol)
-  [dunno gen]
+  =^  p  gen  fol-loop(fol p.fol)
+  =^  q  gen  fol-loop(fol q.fol)
+  =^  r  gen  fol-loop(fol r.fol)
+  :_  gen
+  :-  [%6 nomm.p nomm.q nomm.r]
+  dunno
 ::
     [%7 p=^ q=^]
-  =^  p=sock-anno  gen  fol-loop(fol p.fol)
-  fol-loop(fol q.fol, sub p)
+  =^  p  gen  fol-loop(fol p.fol)
+  =^  q  gen  fol-loop(fol q.fol, sub prod.p)
+  :_  gen
+  :-  [%7 nomm.p nomm.q]
+  prod.q
 ::
     [%8 p=^ q=^]
   fol-loop(fol [%7 [p.fol 0+1] q.fol])
@@ -355,30 +382,41 @@
   fol-loop(fol [%7 q.fol %2 [%0 1] %0 p.fol])
 ::
     [%10 [a=@ don=^] rec=^]
-  ?:  =(0 a.fol)  [dunno gen]
-  =^  don=sock-anno  gen  fol-loop(fol don.fol)
-  =^  rec=sock-anno  gen  fol-loop(fol rec.fol)
+  ?:  =(0 a.fol)  [[0+0 dunno] gen]
+  =^  don  gen  fol-loop(fol don.fol)
+  =^  rec  gen  fol-loop(fol rec.fol)
   =<  $
   ~%  %nock-10  ..fol-loop  ~
   |.
   :_  gen
-  :-  (~(darn so sock.rec) a.fol sock.don)
-  ((edit-spring:source a.fol) src.rec src.don)
+  :-  [%10 [a.fol nomm.don] nomm.rec]
+  :-  (~(darn so sock.prod.rec) a.fol sock.prod.don)
+  ((edit-spring:source a.fol) src.prod.rec src.prod.don)
 ::
     [%11 p=@ q=^]
-  fol-loop(fol q.fol)
+  =^  q  gen  fol-loop(fol q.fol)
+  :_  gen
+  :-  [%11 p.fol nomm.q q.fol]
+  prod.q
 ::
     [%11 [a=@ h=^] f=^]
-  ?:  &(=(a.fol %spot) =(1 -.h.fol))
-    =/  pot=(unit spot)  `;;(spot +.h.fol)
+  =?  .  &(=(a.fol %spot) =(1 -.h.fol))
+    =*  dot  .
+    =/  pot=(unit spot)  `;;(spot +.h.fol)  ::  XX soft
     =?  area.gen  ?=(~ area.gen)  pot
     =.  seat  pot
-    fol-loop(fol f.fol)
-  =.  gen  +:fol-loop(fol h.fol)
-  fol-loop(fol f.fol)
+    dot
+  ::
+  =^  h  gen  fol-loop(fol h.fol)
+  =^  f  gen  fol-loop(fol f.fol)
+  :_  gen
+  :-  [%11 [a.fol nomm.h] nomm.f f.fol]
+  prod.f
 ::
     [%12 p=^ q=^]
-  =.  gen  +:fol-loop(fol p.fol)
-  =.  gen  +:fol-loop(fol q.fol)
-  [dunno gen]
+  =^  p  gen  fol-loop(fol p.fol)
+  =^  q  gen  fol-loop(fol q.fol)
+  :_  gen
+  :-  [%12 nomm.p nomm.q]
+  dunno
 ==

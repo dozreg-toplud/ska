@@ -1,6 +1,7 @@
 /+  ska-experiment1
 /+  our-hoot=hoot
 /+  our-hoot-zpdt=hoot-zpdt
+/+  zuse-vendor
 ::
 =,  ska-experiment1
 |%
@@ -31,7 +32,7 @@
   ^-  tang
   =/  funcs=(set identity)
     %-  ~(rep by g)
-    |=  [[k=identity [* * * * * * callees=(set [* identity *])]] acc=(set identity)]
+    |=  [[k=identity [callees=(set [* identity *]) *]] acc=(set identity)]
     =/  s=(set identity)  (~(run in callees) |=([* id=identity *] id))
     (~(put in (~(uni in acc) s)) k)
   ::
@@ -59,7 +60,7 @@
   ::
   =/  calls-rendered=(list tank)
     %-  ~(rep by g)
-    |=  [[k=identity [* * * * * * callees=(set [seat=(unit spot) identity *])]] acc=(list tank)]
+    |=  [[k=identity [callees=(set [seat=(unit spot) identity *]) *]] acc=(list tank)]
     :_  acc
     =/  callees=tank
       =/  g  |=([* id=identity *] `@ux`(~(got by func-to-id) id))
@@ -90,7 +91,8 @@
 ::
 :-  %say  |=  *
 =/  sub  our-hoot
-:: =/  sub  1
+:: =/  sub  zuse-vendor
+:: =/  sub  ~
 ::
 =/  fol
   ;;  ^
@@ -109,6 +111,7 @@
   :: |-  ^-  ~
   :: ?:  =(3 $:t)  ~
   :: $(t |.(+($:t)))
+  :: $:en:json:html
 ::
 :: ~&  .*(sub fol)
 =/  memo-call
@@ -123,13 +126,14 @@
   (memo-call ska-experiment1 &+sub fol)
   :: (ska-experiment1 &+sub fol)
 :: noun+(lent g)
-:: noun+(turn l |=(g=callgraph ~(wyt by (condense g &+sub fol))))
-:: :-  %noun
+:-  %noun
 :: =;  l=(list wain)
 ::   %-  zing
 ::   (join `wain`~['====================='] l)
 :: %+  turn  l
 :: |=  g=callgraph
 :: ~>  %bout
+:: =/  g  -.l
 :: (turn `wall`(zing `(list wall)`(turn (flop (render-callgraph (condense g [&+sub fol]))) (cury wash 0 80))) crip)
+:: noun+(turn l |=(g=callgraph ~(wyt by (condense g [&+sub fol]))))
 noun+~(wyt by (condense -:l [&+sub fol]))
