@@ -3,6 +3,7 @@
 /+  our-hoot=hoot
 /+  our-hoot-zpdt=hoot-zpdt
 /+  zuse-vendor
+/+  nock-compilation1
 ::
 =,  ska-experiment1
 |%
@@ -88,6 +89,34 @@
       'callgraph:'
       [%rose [" " "\{" "}"] calls-rendered]
   ==
+::
+++  rewrite-nomm
+  |=  n=nomm:nock-compilation1
+  ^-  nomm-1
+  *nomm-1
+  :: ~+
+  :: =*  r  .
+  :: ?+  n  n
+  ::   [p=^ q=*]  `nomm-1`[`nomm-1`(r p.n) `nomm-1`(r q.n)]
+  ::   [%2 *]     n(q `(r q.n), p (r p.n))
+  ::   [%3 *]     n(p (r p.n))
+  ::   [%4 *]     n(p (r p.n))
+  ::   [%5 *]     n(p (r p.n), q (r q.n))
+  ::   [%6 *]     n(p (r p.n), q (r q.n), r (r r.n))
+  ::   [%7 *]     n(p (r p.n), q (r q.n))
+  ::   [%10 *]    n(q.p (r q.p.n), q (r q.n))
+  ::   [%11 *]    ?@  p.n  n(q (r q.n))
+  ::              n(q (r q.n), q.p (r q.p.n))
+  ::   [%12 *]    n(p (r p.n), q (r q.n))
+  :: ==
+::
+++  rewrite-callgraph
+  |=  g=callgraph:nock-compilation1
+  ^-  callgraph
+  %-  ~(run by g)
+  |=  d=datum:nock-compilation1
+  ^-  datum
+  d(nomm (rewrite-nomm nomm.d))
 --
 ::
 :-  %say  |=  *
@@ -105,7 +134,7 @@
   :: (scow %ud 5)
   :: (mug 42)
   :: (a-co:co 4)
-  :: (mul 1 5)
+  :: (dec 2)
   :: ((x-co:co 0) 4)
   :: |-  ^-  *
   :: [0 $]
@@ -127,9 +156,10 @@
 ::
 =/  l=(list callgraph)  ~>  %bout
   :: (memo-call ska-experiment1 &+sub fol)
-  (ska-experiment1 &+sub fol)
+  :: (ska-experiment1 &+sub fol)
+  (turn ~>(%bout.[0 %ska] (ska:nock-compilation1 &+sub fol)) rewrite-callgraph)
 :: noun+(lent g)
-:-  %noun
+:: :-  %noun
 :: =;  l=(list wain)
 ::   %-  zing
 ::   (join `wain`~['====================='] l)
