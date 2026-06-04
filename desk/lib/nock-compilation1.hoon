@@ -632,7 +632,7 @@
 +$  nomm
   $^  [nomm nomm]
   $%  [%1 p=*]
-      [%2 p=nomm q=nomm info=(unit bell)]
+      [%2 p=nomm q=nomm info=(unit [b=bell k=(unit *)])]
       [%3 p=nomm]
       [%4 p=nomm]
       [%5 p=nomm q=nomm]
@@ -644,8 +644,9 @@
       [%0 p=@]
   ==
 +$  spring  *  ::  no union stuff
++$  callee-entry  [seat=(unit spot) id=identity src=spring]
 +$  datum
-  $:  callees=(set [seat=(unit spot) =identity src=spring])
+  $:  callees=(set callee-entry)
       =nomm
       less-code=sock
       less-memo=sock
@@ -753,6 +754,32 @@
     [%12 p=^ q=^]      &((l p.fol) (l q.fol))
   ==
 ::
+::  check that the formula does not crash, returning constant product
+::
+++  safe
+  |=  fol=*
+  ^-  (unit *)
+  ?+  fol  ~
+    [%1 p=*]           `p.fol
+    [%11 @ p=*]        $(fol p.fol)
+    [%11 [@ h=^] p=*]  ?~(s=(safe h.fol) ~ $(fol p.fol))
+  ==
+::  treat %fast hint formula
+::  returns ~ on failure, [~ ~] on root registration, [~ ~ @] on child
+::  registration
+::
+++  fast-parent
+  |=  fol=*
+  ^-  (unit (unit @))
+  ?+  fol  ~
+    [%1 %0]            `~
+    [%0 p=@]           ``p.fol
+    [%11 @ p=*]        $(fol p.fol)
+    [%11 [@ f=^] p=*]  ?~(s=(safe f.fol) ~ $(fol p.fol))
+  ==
+::
++$  ring  [=path axe=@]
+::
 +$  long-ska
   $+  long-ska
   $:
@@ -773,17 +800,270 @@
     ::
     code=(map bell nomm)        ::  direct bell mapping
     fols=(jar ^ [=bell =nomm])  ::  lookup by formula
-  ::::  memoization (as in %11 %memo) keys
-    ::
-    mize=(map bell *)
   ==
+::
+++  dif-ju
+  |*  a=(jug)
+  |*  b=_a
+  ^+  a
+  =/  c=_a  (~(dif by a) b)
+  =/  i=_a  (~(int by a) b)
+  ?:  =(~ i)  c
+  %-  ~(rep by i)
+  |=  [[p=_?>(?=(^ i) p.n.i) q=_?>(?=(^ i) q.n.i)] =_c]
+  =/  r=_q  (~(get ju b) p)
+  =/  s=_q  (~(dif in q) r)
+  ?:  =(~ s)  c
+  (~(put by c) p s)
+::
+++  rout
+  |=  [[sub=* fol=^] lon=long-ska]
+  ^-  long-ska
+  =*  todo  ,[sub=sock fol=^ frame=(unit [cons=? =ring])]
+  =/  q=(list todo)  ~[[&+sub fol ~]]
+  =|  b=(list todo)
+  |-  ^-  long-ska
+  =*  cold-loop  $
+  ?~  q
+    ?~  b  lon
+    $(q (flop b), b ~)
+  ?:  ?&(?=(^ frame.i.q) cons.u.frame.i.q)
+    ::  merge analysis of an autocons head and tail
+    ::
+    =*  p  ring.u.frame.i.q
+    =*  b  back.cole.jets.lon
+    =/  heds=(list bell)  ~(tap in (~(get ju b) path.p (peg axe.p 2)))
+    =/  lets=(list bell)  ~(tap in (~(get ju b) path.p (peg axe.p 3)))
+    ~&  >  [%commence-join (lent heds) (lent lets)]
+    |-  ^-  long-ska
+    =*  hed-loop  $
+    ?~  heds
+      ~&  >  %done-joining
+      cold-loop(q t.q)
+    ?.  =(fol.i.heds -.fol.i.q)
+      ~&  >>  %join-head-wrong-fol
+      hed-loop(heds t.heds)
+    ?.  (huge:so bus.i.heds sub.i.q)
+      ~&  >>  %join-head-wrong-sub
+      hed-loop(heds t.heds)
+    =/  tels  lets
+    |-  ^-  long-ska
+    =*  tel-loop  $
+    ?~  tels  hed-loop(heds t.heds)
+    ?.  =(fol.i.tels +.fol.i.q)
+      ~&  >>  %join-tail-wrong-fol
+      tel-loop(tels t.tels)
+    ?.  (huge:so bus.i.tels sub.i.q)
+      ~&  >>  %join-tail-wrong-sub
+      tel-loop(tels t.tels)
+    ~&  >  joined+p
+    =/  join  (pack:so bus.i.heds bus.i.tels)
+    =.  call.cole.jets.lon  (~(put by call.cole.jets.lon) [join fol.i.q] p)
+    =.  back.cole.jets.lon  (~(put ju back.cole.jets.lon) p join fol.i.q)
+    tel-loop(tels t.tels)
+  ::  analyze a formula from the queue, push new tasks in the worklist
+  ::
+  =/  [root-bell=bell new-long=long-ska]  (ska-poke i.q lon)
+  =/  new-cores  ((dif-ju core.jets.new-long) core.jets.lon)
+  =.  cole.jets.new-long
+    ?~  frame.i.q  cole.jets.new-long
+    =*  r  ring.u.frame.i.q
+    %=  cole.jets.new-long
+      call  (~(put by call.cole.jets.new-long) root-bell r)
+      back  (~(put ju back.cole.jets.new-long) r root-bell)
+    ==
+  ::
+  %=    cold-loop
+      q    t.q
+      lon  new-long
+  ::
+      b
+    %+  roll
+      %+  sort
+        %+  turn  ~(tap by new-cores)
+        |=([p=path q=(set sock)] [(lent p) p q])
+      |=([l=[len=@ *] r=[len=@ *]] (lth len.l len.r))
+    |=  [[len=@ p=path q=(set sock)] =_b]
+    ~&  >  [%enqueu p]
+    %-  ~(rep in q)
+    |=  [s=sock =_b]
+    =/  batt  (pull:so s 2)
+    ?.  =(& cape.batt)  ~&(>>> [%cold-miss-batt p] b)
+    =*  f  data.batt
+    =/  ax=@  2
+    |-  ^+  b
+    ?:  ?=([@ *] f)  [[s f `[| p ax]] b]
+    ?.  ?=([^ ^] f)  ~&(>>> %strange-formula b)
+    =.  b  $(f -.f, ax (peg ax 2))
+    =.  b  $(f +.f, ax (peg ax 3))
+    [[s f `[& p ax]] b]
+  ==
+::
+++  get-hint-regs
+  |=  $:  [bus=sock =nomm]
+          $=  gen
+          $:  root=(jug * path)
+              core=(jug path sock)
+              batt=(jug ^ path)
+      ==  ==
+  ^+  gen
+  ::  works under assumption that:
+  ::    1. fast hints are placed in the beginning of arm's body
+  ::    2. the root being analyzed is the definition of a hinted core
+  ::  otherwise the hints might be ignored
+  ::
+  =<  +
+  |-  ^-  [sock _gen]
+  ?-    nomm
+      [p=^ q=*]
+    =^  h  gen  $(nomm p.nomm)
+    =^  t  gen  $(nomm q.nomm)
+    :_  gen
+    (knit:so h t)
+  ::
+      [%0 *]
+    :_  gen
+    (pull:so bus p.nomm)
+  ::
+      [%1 *]
+    :_  gen
+    &+p.nomm
+  ::
+      [%2 *]
+    =.  gen  +:$(nomm p.nomm)
+    =.  gen  +:$(nomm q.nomm)
+    [*sock gen]
+  ::
+      [%3 *]
+    =.  gen  +:$(nomm p.nomm)
+    [*sock gen]
+  ::
+      [%4 *]
+    =.  gen  +:$(nomm p.nomm)
+    [*sock gen]
+  ::
+      [%5 *]
+    =.  gen  +:$(nomm p.nomm)
+    =.  gen  +:$(nomm q.nomm)
+    [*sock gen]
+  ::
+      [%6 *]
+    =.  gen  +:$(nomm p.nomm)
+    =.  gen  +:$(nomm q.nomm)
+    =.  gen  +:$(nomm r.nomm)
+    [*sock gen]
+  ::
+      [%7 *]
+    =^  s  gen  $(nomm p.nomm)
+    $(bus s, nomm q.nomm)
+  ::
+      [%10 *]
+    =.  gen  +:$(nomm q.p.nomm)
+    =.  gen  +:$(nomm q.nomm)
+    [*sock gen]
+  ::
+      [%11 *]
+    ?@  p.nomm  $(nomm q.nomm)
+    ?.  ?=(%fast p.p.nomm)
+      =.  gen  +:$(nomm q.p.nomm)
+      $(nomm q.nomm)
+    =^  clue  gen  $(nomm q.p.nomm)
+    =^  prod  gen  $(nomm q.nomm)
+    :-  prod
+    ^+  gen
+    ?.  ?=(%& cape.clue)  ~&(>>> %fast-lost-clue gen)
+    =/  clue=*  data.clue
+    ?.  ?=([name=$@(@tas [@tas @]) dad=* *] clue)
+      ~&(>>> fast-bad-clue+clue gen)
+    =/  label=term
+      ?@  name.clue  name.clue
+      (cat 3 -.name.clue (scot %ud +.name.clue))
+    ::
+    ?.  ((sane %tas) label)            ~&(>>> fast-insane-label+label gen)
+    ?~  parent=(fast-parent dad.clue)
+      ~&(>>> fast-bad-clue-parent+[label clue] gen)
+    ?~  u.parent
+      ::  root registration
+      ::
+      ?.  =(& cape.prod)  ~&(>>> %fast-lost-root gen)
+      %=  gen
+        core  (~(put ju core.gen) ~[label] prod)
+        root  (~(put ju root.gen) data.prod ~[label])
+      ==
+    ::  child core registration
+    ::
+    =/  axis=@  u.u.parent
+    ?.  =(3 (cap axis))  ~&(>>> fast-weird-axis+[label axis] gen)
+    =/  batt  (pull:so prod 2)
+    ?.  =(& cape.batt)   ~&(>>> fast-lost-batt+label gen)
+    ?.  ?=(^ data.batt)  ~&(>>> fast-atom-batt+[label data.batt] gen)
+    =/  fore  (pull:so prod axis)
+    =/  past=(list path)
+      %~  tap  in
+      %-  %~  uni  in
+          ::  root registrations
+          ::
+          ?.  =(& cape.fore)  ~
+          (~(get ju root.gen) data.fore)
+      ::  parent core registrations
+      ::
+      =/  batt-fore  (pull:so fore 2)
+      ?.  &(=(& cape.batt-fore) ?=(^ data.batt-fore))  ~
+      (~(get ju batt.gen) data.batt-fore)
+    ::
+    |-  ^+  gen
+    =*  past-loop  $
+    ?~  past  ~&(>>> missed-parent+label gen)
+    =/  pax=path  [label i.past]
+    =/  socks  ~(tap in (~(get ju core.gen) i.past))
+    |-  ^+  gen
+    =*  sock-loop  $
+    ?~  socks
+      ~&  >>  missed-path+label
+      past-loop(past t.past)
+    ?.  (huge:so i.socks fore)  sock-loop(socks t.socks)
+    =/  template=sock
+      ::  put the parent into [formula *] sock
+      ::
+      (darn:so [[& |] data.batt ~] axis i.socks)
+    ::
+    %=  gen
+      core  (~(put ju core.gen) pax template)
+      batt  (~(put ju batt.gen) data.batt pax)
+    ==
+  ::
+      [%12 *]
+    =.  gen  +:$(nomm p.nomm)
+    =.  gen  +:$(nomm q.nomm)
+    [*sock gen]
+  ==  
 ::
 ++  ska-poke
   |=  [[bus=sock fol=^] lon=long-ska]
-  ^-  long-ska
+  ^-  [bell long-ska]
   =/  g=callgraph  -:(ska-callgraph [bus fol] memo.lon)
-  ::  XX fill memo, get jet, %memo info and code tables
-  stub
+  =/  root-datum=datum  (git-g g [bus fol])
+  =.  lon
+    =|  visit=(set identity)
+    =/  q=(list identity)  ~[[bus fol]]
+    |-  ^-  long-ska
+    ?~  q  lon
+    ?:  (~(has in visit) i.q)  $(q t.q)
+    =/  d=datum  (git-g g i.q)
+    =/  =bell  [less-code.d fol.i.q]
+    %=  $
+      q         (weld t.q (turn ~(tap in callees.d) |=(callee-entry id)))
+      memo.lon  (put:mi memo.lon i.q d)
+      code.lon  (~(put by code.lon) bell nomm.d)
+      fols.lon  (~(add ja fols.lon) fol.i.q [bell nomm.d])
+      visit     (~(put in visit) i.q)
+    ==
+  ::
+  =/  [root=(jug * path) core=(jug path sock) batt=(jug ^ path)]
+    (get-hint-regs [bus nomm.root-datum] [root core batt]:jets.lon)
+  ::
+  :-  [less-code.root-datum fol]
+  lon(root.jets root, core.jets core, batt.jets batt)
 ::  Produces a list of callgraphs for visualization purposes. The fixpoint is
 ::  the first callgraph in the list
 ::
@@ -797,9 +1077,9 @@
   =|  calls=jug-id
   =|  called-by=jug-id
   ::
-  =<  $
-  ~%  %analysis  ..zuse  ~
-  |.  ^-  (list callgraph)
+  :: =<  $
+  :: ~%  %analysis  ..zuse  ~
+  |-  ^-  (list callgraph)
   =*  fixpoint-callgraph  $
   ::  one fixpoint iteration gives us new worklists to handle, updated part of
   ::  the callgraph and updated calls
@@ -809,9 +1089,9 @@
     =.  called-by
       ::  calculate the diff between new-calls and calls to update called-by
       ::
-      =<  $
-      ~%  %called-by-update  ..zuse  ~
-      |.
+      :: =<  $
+      :: ~%  %called-by-update  ..zuse  ~
+      :: |.
       ::  we only add/replace callers to "calls" graph, so grabbing the keys of
       ::  new-calls is enough to get identities of all callers
       ::
@@ -922,6 +1202,7 @@
       ==
   ::
   =/  seat=(unit spot)  ~
+  =/  memo-key=(unit *)  ~
   ^-  [[=nomm prod=sock-anno] gen=_gen]
   =<  $
   ~%  %fol-loop  ..zuse  ~
@@ -956,6 +1237,11 @@
     [&+p.fol ~]
   ::
       [%2 p=^ q=^]
+    ::  memo-key might have been set by %11 %memo which redirected us here.
+    ::  but there is no reason to unset it when we decend into children: if it
+    ::  was set, then the child expressions will be [%0 1] and [%1 fol],
+    ::  neither of which are affected by memo-key
+    ::  
     =^  s  gen  fol-loop(fol p.fol)
     =^  f  gen  fol-loop(fol q.fol)
     ^-  [[nomm sock-anno] _gen]
@@ -971,7 +1257,7 @@
       [[[%2 nomm.s nomm.f ~] dunno] gen]
     =/  fol-new  data.sock.prod.f
     =.  want.gen  (uni:ca want.gen (distribute & src.prod.f))
-    ?:  (inlineable fol-new)
+    ?:  &(?=(~ memo-key) (inlineable fol-new))
       =^  inline  gen  fol-loop(fol fol-new, sub prod.s)
       :_  gen
       :-  [%7 nomm.s nomm.inline]
@@ -996,7 +1282,7 @@
     =.  callees.gen  (~(put in callees.gen) seat id-there src.prod.s)
     :_  gen
     ^-  [nomm sock-anno]
-    :-  [%2 nomm.s nomm.f ~ less-code.dat-there fol-new]
+    :-  [%2 nomm.s nomm.f `[[less-code.dat-there fol-new] memo-key]]
     :-  prod.dat-there
     (compose:pi map.dat-there src.prod.s)
   ::
@@ -1070,6 +1356,9 @@
       dot
     ::
     =^  h  gen  fol-loop(fol h.fol)
+    ?:  &(?=(%memo a.fol) ?=(%& cape.sock.prod.h) =(1 -.h.fol))
+      ::  XX faster? strange, but callgraph was sane
+      fol-loop(fol [%2 [%0 1] 1 f.fol], memo-key `data.sock.prod.h)
     =^  f  gen  fol-loop(fol f.fol)
     :_  gen
     :-  [%11 [a.fol nomm.h] nomm.f f.fol]

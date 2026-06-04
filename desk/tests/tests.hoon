@@ -290,7 +290,7 @@
   =/  fol
     =>  sub  !=
     |-  ^-  *
-    [.^(~) $]
+    [0 $]
   ::
   ~:(scan &+sub fol)
 ::  XX ~60 seconds to analyze, ~1000 s to run Nomm

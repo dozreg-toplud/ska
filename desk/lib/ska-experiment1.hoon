@@ -4,8 +4,9 @@
 |%
 +$  identity  [more=sock fol=^]
 +$  spring  *  ::  no union stuff
++$  callee-entry  [seat=(unit spot) =identity src=spring]
 +$  datum
-  $:  callees=(set [seat=(unit spot) =identity src=spring])
+  $:  callees=(set callee-entry)
       nomm=nomm-1
       less-code=sock
       less-memo=sock

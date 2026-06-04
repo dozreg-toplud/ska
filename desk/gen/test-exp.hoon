@@ -23,9 +23,9 @@
   ?:  (~(has by new) id)  $(q t.q)
   =/  d=datum  (git-g g i.q)
   =/  callees=(list identity)
-    (turn ~(tap in callees.d) |=([* id=identity *] id))
+    (turn ~(tap in callees.d) |=(callee-entry identity))
   ::
-  =/  g  |*  [* i=identity *]  +<(i (~(gut by m) i [|+~ fol.,.i]))
+  =/  g  |=  callee-entry  +<(identity (~(gut by m) identity [|+~ fol.identity]))
   =.  new  (~(put by new) id d(callees (~(run in callees.d) g)))
   $(q (weld t.q callees))
 ::
@@ -34,8 +34,8 @@
   ^-  tang
   =/  funcs=(set identity)
     %-  ~(rep by g)
-    |=  [[k=identity [callees=(set [* identity *]) *]] acc=(set identity)]
-    =/  s=(set identity)  (~(run in callees) |=([* id=identity *] id))
+    |=  [[k=identity v=datum] acc=(set identity)]
+    =/  s=(set identity)  (~(run in callees.v) |=(callee-entry identity))
     (~(put in (~(uni in acc) s)) k)
   ::
   =/  func-to-id=(map identity @ux)
@@ -120,17 +120,28 @@
 --
 ::
 :-  %say  |=  *
-=/  sub  our-hoot
+:: =/  sub  our-hoot
 :: =/  sub  zuse-vendor
 :: =/  sub  ~
 :: =/  sub  ska-experiment1-hoot
+=/  sub
+  !:
+  =>  our-hoot
+  :_  .
+  ^-  m=(map @ $-(@ @))
+  %-  malt
+  ^-  (list [@ $-(@ @)])
+  :~  0+|=(@ (dec +<))
+      1+|=(@ (succ +<))
+      2+|=(@ (same +<))
+  ==
 ::
 =/  fol
   ;;  ^
   =>  sub  !=
   :: (~(mint ut [%atom %$ ~]) %noun [%dtls $+1])
   :: (ream '42')
-  (ride %noun '42')
+  :: (ride %noun '42')
   :: (scow %ud 5)
   :: (mug 42)
   :: (a-co:co 4)
@@ -144,6 +155,13 @@
   :: $(t |.(+($:t)))
   :: $:en:json:html
   :: (.)
+  =/  key  0
+  =/  sam  42
+  |-  ^-  @
+  ?~  m  !!
+  ?:  =(key p.n.m)  (q.n.m sam)
+  ?:  (gor key p.n.m)  $(m l.m)
+  $(m r.m)
 ::
 :: ~&  .*(sub fol)
 =/  memo-call
@@ -156,17 +174,17 @@
 ::
 =/  l=(list callgraph)  ~>  %bout
   :: (memo-call ska-experiment1 &+sub fol)
-  (ska-experiment1 &+sub fol)
-  :: (turn ~>(%bout.[0 %ska] (ska-callgraph:nock-compilation1 [&+sub fol] ~)) rewrite-callgraph)
+  :: (ska-experiment1 &+sub fol)
+  (turn ~>(%bout.[0 %ska] (ska-callgraph:nock-compilation1 [&+sub fol] ~)) rewrite-callgraph)
 :: noun+(lent g)
-:: :-  %noun
+:-  %noun
 :: =;  l=(list wain)
 ::   %-  zing
 ::   (join `wain`~['====================='] l)
 :: %+  turn  l
 :: |=  g=callgraph
 :: ~>  %bout
-:: =/  g  -.l
-:: (turn `wall`(zing `(list wall)`(turn (flop (render-callgraph (condense g [&+sub fol]))) (cury wash 0 80))) crip)
+=/  g  -.l
+(turn `wall`(zing `(list wall)`(turn (flop (render-callgraph (condense g [&+sub fol]))) (cury wash 0 80))) crip)
 :: noun+(turn l |=(g=callgraph ~(wyt by (condense g [&+sub fol]))))
-noun+~(wyt by (condense -:l [&+sub fol]))
+:: noun+~(wyt by (condense -:l [&+sub fol]))
