@@ -8,6 +8,13 @@ This directory contains a small Lean 4 formalization of the Nock 4K rules from
 - `Formalization/NockSmallStep.lean` defines a one-step reduction relation over
   explicit non-noun evaluation terms and proves it equivalent to the big-step
   relation, including termination equivalence and result preservation.
+- `Formalization/Nomm.lean` defines a Lean model of SKA's post-analysis
+  `nomm-1` IR, its big-step semantics, sock-template matching, and the
+  equivalence predicate an analyzer correctness proof should establish. It
+  intentionally does not formalize the current unstable analyzer algorithm.
+- `NOMM_PROOF.md` describes the proof obligations for showing that a Nomm body
+  produced by a stabilized SKA analysis is equivalent to the input Nock formula
+  under a subject sock.
 - `Formalization/DecExample.lean` encodes a compact Nock battery for the Hoon
   decrement arm and runs it through the compiled arm-invocation formula
   `[9 2 0 1]`.
