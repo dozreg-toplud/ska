@@ -1,0 +1,8 @@
+:: Compiled invocation formula for the Hoon dec core, matching
+:: desk/tests/tests.hoon ++test-dec:
+::
+::   =/  fol  [9 2 0 1]
+::
+:: The Lean example supplies a compact Nock battery for the dec core and
+:: evaluates this invocation formula against that core.
+[9 2 0 1]
