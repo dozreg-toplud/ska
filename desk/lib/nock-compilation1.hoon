@@ -88,13 +88,15 @@
 ::  Partial noun definitions
 ::
 |%
-::  Noun mask. Strongly normalized:
-::    [& &] -> &
-::    [| |] -> |
+::  Noun mask. Normalization: [| |] -> |
+::  [& &] is not normalized: this signals that a noun was consed during
+::  a computation, preventing us from using it in a direct call. This (among
+::  other denormalizations) makes the set of formulas finite, allowing the
+::  analysis to converge.
 ::
 +$  cape  $~(| $@(? [cape cape]))
-::  masked noun. Strongly normalized:
-::    "|" leaves of the cape must correspond to 0 leaves in the data
+::  masked noun. Normalization:  "|" leaves of the cape must correspond to 0
+::  leaves in the data
 ::
 ::
 +$  sock  $~(|+~ [=cape data=*])
@@ -111,8 +113,8 @@
 ::  consider the degree to which nouns tend to be duplicated in the standard
 ::  library, with around 4e-12 bits per noun:
 ::
-::    %+  div:rq  (sun:rq (met 0 (jam ..zuse)))
-::    %-  sun:rq
+::    %+  div:rs  (sun:rs (met 0 (jam ..zuse)))
+::    %-  sun:rs
 ::    =/  n=*  ..zuse
 ::    |-  ^-  @
 ::    ?@  n  1
@@ -125,22 +127,14 @@
 ::
 ++  ca
   |%
-  ::  head
-  ::
   ++  hed  |=(c=cape ?@(c c -.c))
-  ::  tail
-  ::
   ++  tel  |=(c=cape ?@(c c +.c))
-  ::  normalization
-  ::
-  ++  cut
-    |=  c=cape
+  ++  con
+    |=  [h=cape t=cape]
     ^-  cape
-    ?@  c  c
-    =/  l  $(c -.c)
-    =/  r  $(c +.c)
-    ?:  &(?=(@ l) =(l r))  ~&  %cut-ca-norm  l
-    [l r]
+    =*  cons  +<
+    ?:  &(?=(%| h) ?=(%| t))  |
+    cons
   ::  list of known axes
   ::
   ++  yea
@@ -160,16 +154,13 @@
     ^-  cape
     ?:  =(a b)  a
     ?-  a
-        %|  %|
+        %|  |
         %&  b
         ^
       ?-  b
-          %|  %|
+          %|  |
           %&  a
-          ^
-        =/  l   $(a -.a, b -.b)
-        =/  r   $(a +.a, b +.b)
-        ?:(?&(?=(@ l) =(l r)) l [l r])
+          ^   (con $(a -.a, b -.b) $(a +.a, b +.b))
       ==
     ==
   ::  apply mask to a partial noun
@@ -196,10 +187,7 @@
       ?-  b
           %&  &
           %|  a
-          ^ 
-        =/  l  $(a -.a, b -.b)
-        =/  r  $(a +.a, b +.b)
-        ?:(&(?=(@ l) =(l r)) l [l r])
+          ^   (con $(a -.a, b -.b) $(a +.a, b +.b))
       ==
     ==
   ::  push a cape to an axis
@@ -220,70 +208,17 @@
 ::
 ++  so
   |%
-  ::  normalized?
-  ::
-  ++  apt
-    |=  sock
-    ^-  ?
-    ?@  cape  &
-    ?@  data  |
-    ?&  $(cape -.cape, data -.data)
-        $(cape +.cape, data +.data)
-    ==
-  ::  normalize
-  ::
-  ++  norm
-    |=  s=sock
-    ^-  sock
-    =-  =>  !@  norm:check-soak  .
-            ?:  !=(- s)  ~|  [- s]  !!  .
-        -
-    ?-  cape.s
-        %|  *sock
-        %&  s
-        ^
-      ?>  ?=(^ data.s)
-      =/  l  $(cape.s -.cape.s, data.s -.data.s)
-      =/  r  $(cape.s +.cape.s, data.s +.data.s)
-      ?:  ?&(=(& cape.l) =(& cape.r))
-        [& data.l data.r]
-      ?:  ?&(=(| cape.l) =(| cape.r))
-        *sock
-      [[cape.l cape.r] data.l data.r]
-    ==
   ::  Does b nest under a? i.e. is everything that is known by a also known
   ::  by b?
   ::
   ++  huge
-    !@  check-soak  huge2
-    |=  [a=sock b=sock]
-    ^-  ?
-    =/  x  (huge1 a b)
-    =/  y  (huge2 a b)
-    ?>  =(x y)
-    x
-  ::
-  ++  huge1
-    |=  [one=sock two=sock]
-    ^-  ?
-    ?:  =(one two)  &
-    ?:  ?=(%| cape.one)  &
-    ?:  ?=(%& cape.one)
-      ::  either cape.two is not %.y or data.one != data.two
-      ::  either way, two does not nest
-      ::
-      |
-    ?:  ?=(%| cape.two)  |
-    &($(one (hed one), two (hed two)) $(one (tel one), two (tel two)))
-  ::
-  ++  huge2
     |=  [one=sock two=sock]
     ^-  ?
     ?|  =(one two)
         ?@  data.one
           ?.  ?=(@ cape.one)  ~|  badone+one  !!
           ?.  cape.one  &
-          ?&(?=(@ cape.two) cape.two =(data.one data.two))
+          ?&(?=(%& cape.two) =(data.one data.two))
         ?@  data.two
           ?>  ?=(@ cape.two)
           ?<  ?=(%| cape.one)
@@ -300,34 +235,14 @@
     ==
     ::  axis of a partial noun, never fails
     ::
-    ++  pull
-      |=  [s=sock axe=@]
-      ^-  sock
-      ?<  =(0 axe)
-      |-  ^-  sock
-      ?:  =(1 axe)  s
-      ?:  |(?=(%| cape.s) ?=(@ data.s))
-        *sock
-      =+  [now lat]=[(cap axe) (mas axe)]
-      ?@  cape.s
-        ?-  now
-          %2  $(axe lat, data.s -.data.s)
-          %3  $(axe lat, data.s +.data.s)
-        ==
-      ?-  now
-        %2  $(axe lat, data.s -.data.s, cape.s -.cape.s)
-        %3  $(axe lat, data.s +.data.s, cape.s +.cape.s)
-      ==
-    ::  axis present?
-    ::
-    ++  find
-      |=  [s=sock axe=@]
-      ^-  ?
-      ?<  =(0 axe)
-      |-  ^-  ?
-      ?:  =(1 axe)  &
-      ?:  |(?=(%| cape.s) ?=(@ data.s))
-      |
+  ++  pull
+    |=  [s=sock axe=@]
+    ^-  sock
+    ?<  =(0 axe)
+    |-  ^-  sock
+    ?:  =(1 axe)  s
+    ?:  |(?=(%| cape.s) ?=(@ data.s))
+      *sock
     =+  [now lat]=[(cap axe) (mas axe)]
     ?@  cape.s
       ?-  now
@@ -345,7 +260,7 @@
     ^-  sock
     =*  l  cape.one
     =*  r  cape.two
-    =/  cap  ?:(&(?=(@ l) =(l r)) l [l r])
+    =/  cap  (con:ca l r)
     ?:  ?=(%| cap)  *sock
     [cap data.one data.two]
   ::  head
@@ -401,28 +316,6 @@
   ::  edit
   ::
   ++  darn
-    !@  check-soak  darn1
-    |=  [one=sock axe=@ two=sock]
-    ^-  sock
-    =*  sam  +<
-    =/  a  (darn1 sam)
-    =/  b  (darn2 sam)
-    ?:  =(a b)  a
-    |-
-    ?:  |(?=(^ cape.a) ?=(^ cape.b))
-      (knit $(a (hed a), b (hed b)) $(a (tel a), b (tel b)))
-    ?:  |(?=(%| cape.a) ?=(%| cape.b))
-      ~|  a
-      ~|  b
-      !!
-    ?:  |(?=(@ data.a) ?=(@ data.b))
-      ?:  =(data.a data.b)  *sock
-      ~|  a
-      ~|  b
-      !!
-    (knit $(a (hed a), b (hed b)) $(a (tel a), b (tel b)))
-  ::
-  ++  darn1
     |=  [one=sock axe=@ two=sock]
     ^-  sock
     ?:  =(1 axe)  two
@@ -439,37 +332,6 @@
     ?-  p.i.acc
       %2  $(two (knit two q.i.acc), acc t.acc)
       %3  $(two (knit q.i.acc two), acc t.acc)
-    ==
-  ::
-  ++  darn2
-    |=  [one=sock axe=@ two=sock]
-    ?<  =(0 axe)
-    |-  ^-  sock
-    =-  (norm -)
-    ?:  =(1 axe)  two
-    =+  [now lat]=[(cap axe) (mas axe)]
-    ?^  cape.one
-      ?-  now
-        %2  =/  n  $(axe lat, one [-.cape -.data]:one)
-            [[cape.n +.cape.one] data.n +.data.one]
-      ::
-        %3  =/  n  $(axe lat, one [+.cape +.data]:one)
-            [[-.cape.one cape.n] -.data.one data.n]
-      ==
-    ?:  &(cape.one ?=(^ data.one))
-      ?-  now
-        %2  =/  n  $(axe lat, data.one -.data.one)
-            :-  ?:(?=(%& cape.n) & [cape.n &])
-            [data.n +.data.one]
-      ::
-        %3  =/  n  $(axe lat, data.one +.data.one)
-            :-  ?:(?=(%& cape.n) & [& cape.n])
-            [-.data.one data.n]
-      ==
-    =/  n  $(axe lat)
-    ?-  now
-      %2  [[cape.n |] data.n ~]
-      %3  [[| cape.n] ~ data.n]
     ==
   --
 ::  Operations on provenance
@@ -763,28 +625,42 @@
     [%12 p=^ q=^]      &((l p.fol) (l q.fol))
   ==
 ::
-::  check that the formula does not crash, returning constant product
+::  check that the formula does not crash, returning constant product and nomm
 ::
 ++  safe
-  |=  fol=*
-  ^-  (unit *)
-  ?+  fol  ~
-    [%1 p=*]           `p.fol
-    [%11 @ p=*]        $(fol p.fol)
-    [%11 [@ h=^] p=*]  ?~(s=(safe h.fol) ~ $(fol p.fol))
+  |=  fol=^
+  ^-  (unit [=nomm prod=*])
+  =*  g  .
+  ?+    fol  ~
+      [p=^ q=^]
+    ?~  p=(g p.fol)  ~
+    ?~  q=(g q.fol)  ~
+    `[[nomm.u.p nomm.u.q] [prod.u.p prod.u.q]]
+  ::
+      [%1 p=*]
+    `[fol p.fol]
+  ::
+      [%11 a=@ p=^]
+    ?~  p=(g p.fol)  ~
+    `[[%11 a.fol nomm.u.p p.fol] prod.u.p]
+  ::
+      [%11 [a=@ h=^] p=^]
+    ?~  h=(g h.fol)  ~
+    ?~  p=(g p.fol)  ~
+    `[[%11 [a.fol nomm.u.h] nomm.u.p p.fol] prod.u.p]
   ==
 ::  treat %fast hint formula
 ::  returns ~ on failure, [~ ~] on root registration, [~ ~ @] on child
 ::  registration
 ::
 ++  fast-parent
-  |=  fol=*
+  |=  fol=^
   ^-  (unit (unit @))
   ?+  fol  ~
     [%1 %0]            `~
     [%0 p=@]           ``p.fol
-    [%11 @ p=*]        $(fol p.fol)
-    [%11 [@ f=^] p=*]  ?~(s=(safe f.fol) ~ $(fol p.fol))
+    [%11 @ p=^]        $(fol p.fol)
+    [%11 [@ f=^] p=^]  ?~((safe f.fol) ~ $(fol p.fol))
   ==
 ::
 +$  ring  [=path axe=@]
@@ -995,7 +871,7 @@
     ^+  gen
     ?.  ?=(%& cape.clue)  ~&(>>> %fast-lost-clue gen)
     =/  clue=*  data.clue
-    ?.  ?=([name=$@(@tas [@tas @]) dad=* *] clue)
+    ?.  ?=([name=$@(@tas [@tas @]) dad=^ *] clue)
       ~&(>>> fast-bad-clue+clue gen)
     =/  label=term
       ?@  name.clue  name.clue
@@ -1303,12 +1179,26 @@
     ::  neither of which are affected by memo-key
     ::  
     =^  s  gen  fol-loop(fol p.fol)
-    =^  f  gen  fol-loop(fol q.fol)
+    =^  f=[=nomm prod=sock-anno]  gen
+      ::  This is a workaround for our cape cons deoptimization breaking
+      ::  things like !:([%9 2 %0 1])
+      ::
+      ::  If a formula is "safe" it is equivalent to Nock 1 with respect to
+      ::  limiting set of available formulas
+      ::
+      ?^  x=(safe q.fol)  [[nomm.u.x [&+prod.u.x ~]] gen]
+      fol-loop(fol q.fol)
+    ::
     ^-  [[nomm sock-anno] _gen]
     =*  nock-2  .
     ?.  &(=(& cape.sock.prod.f) ?=(^ data.sock.prod.f))
       ::  indirect call
       ::
+      =/  all-yes  |=  c=cape  ^-  ?  ?@  c  c  &($(c +.c) $(c -.c))
+      ~?  (all-yes cape.sock.prod.f)  [%all-yes seat]
+      ~?  (all-yes cape.sock.prod.f)  q.fol
+      ~?  (all-yes cape.sock.prod.f)  cape.sock.prod.f
+      ~?  (all-yes cape.sock.prod.f)  (safe q.fol)
       =.  indirect-code-request.gen
         (uni:ca indirect-code-request.gen (distribute & src.prod.f))
       ::
