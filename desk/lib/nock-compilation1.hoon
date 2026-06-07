@@ -512,6 +512,10 @@
       [%0 p=@]
   ==
 +$  spring  *  ::  no union stuff
+::  seat: callsite location
+::  id:   identity of the callee
+::  src:  provenance of the callee's subject
+::
 +$  callee-entry  [seat=(unit spot) id=identity src=spring]
 +$  datum
   $:  callees=(set callee-entry)
@@ -1110,7 +1114,7 @@
     $:  [=nomm pro=sock-anno]
         want=cape
         indirect-code-request=cape
-        callees=(set [(unit spot) identity spring])
+        callees=(set callee-entry)
         area=(unit spot)
     ==
   ::
@@ -1133,7 +1137,7 @@
   =|  $=  gen
       $:  want=cape
           indirect-code-request=cape
-          callees=(set [(unit spot) identity spring])
+          callees=(set callee-entry)
           area=(unit spot)
       ==
   ::
