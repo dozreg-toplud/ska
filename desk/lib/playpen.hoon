@@ -527,8 +527,8 @@
 ::
 ++  muk                                                 ::  standard murmur3
   ~%  %muk  ..muk  ~
-  =+  ~(. fe 5)
   |=  [syd=@ len=@ key=@]
+  =+  ~(. fe 5)
   =.  syd      (end 5 syd)
   =/  pad      (sub len (met 3 key))
   =/  data     (welp (rip 3 key) (reap pad 0))

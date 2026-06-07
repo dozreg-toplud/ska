@@ -58,7 +58,7 @@
 ::    optimizations and eventually efficient execution.
 ::
 ::  Table of contents:
-::    Call graph construction:  line 595
+::    Call graph construction:  line 597
 ::    Axis usage analysis:      line X
 ::    Compilation:              line X
 ::
@@ -610,7 +610,9 @@
 ::    that maps a set of SKA function calls onto itself by, formally, partially
 ::    evaluating each callsite in the set, using the information from the
 ::    previous set for Nock 2 handling.  De facto this means breadth-first
-::    iteration over the call graph with back-propagation of changes.
+::    iteration over the call graph with back-propagation of changes. This
+::    appears to be the same thing as "chaotic iteration over a lattice" in
+::    literature.
 ::
 ::    The algorithm assumes that the set of SKA function calls forms a complete
 ::    lattice, and the fixed point is found via Kleene iteration, starting from
@@ -620,7 +622,11 @@
 ::    [[[&+sub fol] *datum] ~ ~] is the least element of the lattice which
 ::    contains [&+sub fol] is left as an exercise for the reader. The hardest
 ::    part IMO is taking into account recursive calls. The rest is trivial: socks
-::    for a given noun form a complete lattice with huge:so as partial ordering.
+::    for a given noun form a complete lattice with huge:so as partial ordering,
+::    and we only grow products and code requirements. The only place where the
+::    code requirement shrinks is going from a recursive call to a new non-
+::    recursive call. However, a non-recursive call can never become recursive
+::    again, which appears to bring some other kind of monotonicity.
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ?>  =(|+~ *sock)
@@ -677,17 +683,20 @@
   =<  -
   |-  ^-  [(unit [id=identity d=datum]) (set identity)]
   =*  visit-loop  $
-  ?:  (~(has in visited) id-kid)  [~ visited]
-  =.  visited  (~(put in visited) id-kid)
   ?~  callers  [~ visited]
-  ?^  d=(recursive-match id-kid n.callers g)
+  =^  n-res=?(%vis (unit [id=identity d=datum]))  visited
+    ?:  (~(has in visited) n.callers)  [%vis visited]
+    =.  visited  (~(put in visited) n.callers)
+    ?~  d=(recursive-match id-kid n.callers g)  [~ visited]
     [`[n.callers u.d] visited]
+  ::
+  ?^  n-res  [n-res visited]
   =^  has-l  visited  visit-loop(callers l.callers)
   ?^  has-l  [has-l visited]
   =^  has-r  visited  visit-loop(callers r.callers)
   ?^  has-r  [has-r visited]
-  =/  new-callers  (~(get ju called-by) n.callers)
-  visit-loop(callers new-callers)
+  ?:  ?=(%vis n-res)  [~ visited]
+  visit-loop(callers (~(get ju called-by) n.callers))
 ::
 ++  mi
   |%
@@ -793,9 +802,12 @@
         $:  call=(map bell ring)
             back=(jug ring bell)
     ==  ==
-  ::::  memoized entries: 
+  ::::  finalized graph views: 
     ::
-    =memo
+    $=  final
+    $:  =memo
+        graph=callgraph  :: pruned
+    ==
   ::::  saved entries:
     ::
     code=(map bell nomm)        ::  direct bell mapping
@@ -815,6 +827,14 @@
   =/  s=_q  (~(dif in q) r)
   ?:  =(~ s)  c
   (~(put by c) p s)
+::  Given subject and a formula, analyzes them, then goes over fresh %fast core
+::  registrations and tries to disassemble their batteries, analyzing leaf ba-
+::  tteries (heuristic for an arm), repeating in a loop until no more registra-
+::  tions are left.
+::
+::  XX is it actually useful? It's not like we can get a child core before eva-
+::  luating the parent-producing formula... assuming that we push everything
+::  through SKA pipeline
 ::
 ++  rout
   |=  [[sub=* fol=^] lon=long-ska]
@@ -834,11 +854,11 @@
     =*  b  back.cole.jets.lon
     =/  heds=(list bell)  ~(tap in (~(get ju b) path.p (peg axe.p 2)))
     =/  lets=(list bell)  ~(tap in (~(get ju b) path.p (peg axe.p 3)))
-    ~&  >  [%commence-join (lent heds) (lent lets)]
+    :: ~&  >  [%commence-join (lent heds) (lent lets)]
     |-  ^-  long-ska
     =*  hed-loop  $
     ?~  heds
-      ~&  >  %done-joining
+      :: ~&  >  %done-joining
       cold-loop(q t.q)
     ?.  =(fol.i.heds -.fol.i.q)
       ~&  >>  %join-head-wrong-fol
@@ -856,14 +876,15 @@
     ?.  (huge:so bus.i.tels sub.i.q)
       ~&  >>  %join-tail-wrong-sub
       tel-loop(tels t.tels)
-    ~&  >  joined+p
+    :: ~&  >  joined+p
     =/  join  (pack:so bus.i.heds bus.i.tels)
     =.  call.cole.jets.lon  (~(put by call.cole.jets.lon) [join fol.i.q] p)
     =.  back.cole.jets.lon  (~(put ju back.cole.jets.lon) p join fol.i.q)
     tel-loop(tels t.tels)
   ::  analyze a formula from the queue, push new tasks in the worklist
   ::
-  =/  [root-bell=bell new-long=long-ska]  (ska-poke i.q lon)
+  =/  [root-bell=bell new-long=long-ska]
+    (ska-poke [sub fol]:i.q lon)
   =/  new-cores  ((dif-ju core.jets.new-long) core.jets.lon)
   =.  cole.jets.new-long
     ?~  frame.i.q  cole.jets.new-long
@@ -923,6 +944,7 @@
   ::
       [%0 *]
     :_  gen
+    ?:  =(0 p.nomm)  *sock
     (pull:so bus p.nomm)
   ::
       [%1 *]
@@ -979,7 +1001,7 @@
       ?@  name.clue  name.clue
       (cat 3 -.name.clue (scot %ud +.name.clue))
     ::
-    ?.  ((sane %tas) label)            ~&(>>> fast-insane-label+label gen)
+    ?.  ((sane %tas) label)  ~&(>>> fast-insane-label+label gen)
     ?~  parent=(fast-parent dad.clue)
       ~&(>>> fast-bad-clue-parent+[label clue] gen)
     ?~  u.parent
@@ -1013,7 +1035,14 @@
     ::
     |-  ^+  gen
     =*  past-loop  $
-    ?~  past  ~&(>>> missed-parent+label gen)
+    ?~  past
+      ::  Don't be too scared - these might be caused by inlining of arm
+      ::  formulas together with their fast hints, followed by partial execution
+      ::  of their callers as we are searching for %fast hints.  These were
+      ::  likely already registered. Disable inlining if not sure.
+      ::
+      ~&  >>  missed-parent+label
+      gen
     =/  pax=path  [label i.past]
     =/  socks  ~(tap in (~(get ju core.gen) i.past))
     |-  ^+  gen
@@ -1027,6 +1056,7 @@
       ::
       (darn:so [[& |] data.batt ~] axis i.socks)
     ::
+    ~&  >  [%matched pax]
     %=  gen
       core  (~(put ju core.gen) pax template)
       batt  (~(put ju batt.gen) data.batt pax)
@@ -1037,28 +1067,58 @@
     =.  gen  +:$(nomm q.nomm)
     [*sock gen]
   ==  
+::  Assumes finalized (fixed point).
+::
+++  prune-callgraph
+  |=  [g=callgraph root=identity dbg=(unit callgraph)]
+  ^+  g
+  =|  out=callgraph
+  =/  q=(list identity)  ~[root]
+  =|  visit=(set identity)
+  |-  ^+  out
+  ?~  q  out
+  ?:  (~(has in visit) i.q)  $(q t.q)
+  ?~  d=(~(get by g) i.q)
+    ::  call outside of the callgraph being pruned
+    ::  sanity check: is the target present in the previous graph?
+    ::
+    ?>  |(?=(~ dbg) (~(has by u.dbg) i.q))
+    $(q t.q, visit (~(put in visit) i.q))
+  %=  $
+        q  (weld t.q (turn ~(tap in callees.u.d) |=(callee-entry id)))
+      out  (~(put by out) i.q u.d)
+    visit  (~(put in visit) i.q)
+  ==
 ::
 ++  ska-poke
   |=  [[bus=sock fol=^] lon=long-ska]
   ^-  [bell long-ska]
-  =/  g=callgraph  -:(ska-callgraph [bus fol] memo.lon)
-  =/  root-datum=datum  (git-g g [bus fol])
+  =/  g=callgraph  -:(ska-callgraph [bus fol] memo.final.lon)
+  ::
+  =/  pruned=callgraph  (prune-callgraph g [bus fol] `graph.final.lon)
+  =/  root-datum=datum  (~(got by pruned) [bus fol])
   =.  lon
     =|  visit=(set identity)
     =/  q=(list identity)  ~[[bus fol]]
     |-  ^-  long-ska
     ?~  q  lon
     ?:  (~(has in visit) i.q)  $(q t.q)
-    =/  d=datum  (git-g g i.q)
+    ?~  got=(~(get by pruned) i.q)
+      ::  call outside of the freshly produced & pruned callgraph
+      ::
+      ?>  (~(has by graph.final.lon) i.q)
+      $(q t.q, visit (~(put in visit) i.q))
+    =/  d=datum  u.got
     =/  =bell  [less-code.d fol.i.q]
     %=  $
-      q         (weld t.q (turn ~(tap in callees.d) |=(callee-entry id)))
-      memo.lon  (put:mi memo.lon i.q d)
-      code.lon  (~(put by code.lon) bell nomm.d)
-      fols.lon  (~(add ja fols.lon) fol.i.q [bell nomm.d])
-      visit     (~(put in visit) i.q)
+      q               (weld t.q (turn ~(tap in callees.d) |=(callee-entry id)))
+      memo.final.lon  (put:mi memo.final.lon i.q d)
+      code.lon        (~(put by code.lon) bell nomm.d)
+      fols.lon        (~(add ja fols.lon) fol.i.q [bell nomm.d])
+      visit           (~(put in visit) i.q)
     ==
   ::
+  =.  graph.final.lon  (~(uni by graph.final.lon) pruned)
   =/  [root=(jug * path) core=(jug path sock) batt=(jug ^ path)]
     (get-hint-regs [bus nomm.root-datum] [root core batt]:jets.lon)
   ::
@@ -1151,8 +1211,8 @@
     =.  calls
       (~(put by calls) id (~(run in callees.data-new) |=([* id=identity *] id)))
     ::
-    ::  don't have to put fresh callees in the worklist, they should already be
-    ::  there
+    ::  don't have to put callees in the worklist on memo hit, they should
+    ::  already be there
     ::
     =?  w-new  !memo-hit
       %-  ~(rep in callees.data-new)
@@ -1208,7 +1268,7 @@
   ~%  %fol-loop  ..zuse  ~
   |.  ^-  [[=nomm prod=sock-anno] _gen]
   =*  fol-loop  $
-  ?+    fol  ~|  fol  [[0+0 dunno] gen]
+  ?+    fol  ~|  fol  !!  ::  [[0+0 dunno] gen]
       [p=^ q=^]
     =^  l  gen  fol-loop(fol p.fol)
     =^  r  gen  fol-loop(fol q.fol)
@@ -1249,14 +1309,17 @@
     ?.  &(=(& cape.sock.prod.f) ?=(^ data.sock.prod.f))
       ::  indirect call
       ::
-      :: ~&  %indi
-      :: ~&  seat
       =.  indirect-code-request.gen
         (uni:ca indirect-code-request.gen (distribute & src.prod.f))
       ::
       [[[%2 nomm.s nomm.f ~] dunno] gen]
     =/  fol-new  data.sock.prod.f
     =.  want.gen  (uni:ca want.gen (distribute & src.prod.f))
+    ::  Inline leaf formulas. Allows to analyze through formulas whose products
+    ::  are gates, also speeds up analysis. Should be safe to comment out the
+    ::  condition and the first branch - useful during debugging to rule out
+    ::  stuff.
+    ::
     ?:  &(?=(~ memo-key) (inlineable fol-new))
       =^  inline  gen  fol-loop(fol fol-new, sub prod.s)
       :_  gen

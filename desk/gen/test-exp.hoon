@@ -58,7 +58,7 @@
       "{<p.u.area.dat>}: <[{(ud p.l)} {(ud q.l)}].[{(ud p.r)} {(ud q.r)}]>"
     ::
     :_  acc
-    leaf+"{(scow %ux num)}: [sock={(scow %ux (mug more.id))} fol={(scow %ux (mug fol.id))}] at {area}"
+    leaf+"{(scow %ux num)}: [sock={(scow %ux (mug more.id))} fol={(scow %ux (mug fol.id))}] at {area}; {<indirect-code-request.dat>}"
   ::
   =/  calls-rendered=(list tank)
     %-  ~(rep by g)
@@ -122,26 +122,26 @@
 :-  %say  |=  *
 :: =/  sub  our-hoot
 :: =/  sub  zuse-vendor
-:: =/  sub  ~
+=/  sub  our-hoot
 :: =/  sub  ska-experiment1-hoot
-=/  sub
-  !:
-  =>  our-hoot
-  :_  .
-  ^-  m=(map @ $-(@ @))
-  %-  malt
-  ^-  (list [@ $-(@ @)])
-  :~  0+|=(@ (dec +<))
-      1+|=(@ (succ +<))
-      2+|=(@ (same +<))
-  ==
+:: =/  sub
+::   !:
+::   =>  our-hoot
+::   :_  .
+::   ^-  m=(map @ $-(@ @))
+::   %-  malt
+::   ^-  (list [@ $-(@ @)])
+::   :~  0+|=(@ (dec +<))
+::       1+|=(@ (succ +<))
+::       2+|=(@ (same +<))
+::   ==
 ::
 =/  fol
   ;;  ^
   =>  sub  !=
   :: (~(mint ut [%atom %$ ~]) %noun [%dtls $+1])
   :: (ream '42')
-  :: (ride %noun '42')
+  (ride %noun '42')
   :: (scow %ud 5)
   :: (mug 42)
   :: (a-co:co 4)
@@ -155,13 +155,19 @@
   :: $(t |.(+($:t)))
   :: $:en:json:html
   :: (.)
-  =/  key  0
-  =/  sam  42
-  |-  ^-  @
-  ?~  m  !!
-  ?:  =(key p.n.m)  (q.n.m sam)
-  ?:  (gor key p.n.m)  $(m l.m)
-  $(m r.m)
+  :: =/  m=(map @ $-(@ @))
+    :: %-  malt
+    :: ^-  (list [@ $-(@ @)])
+    :: :~  0+|=(@ (dec +<))
+    ::     2+|=(@ (same +<))
+    :: ==
+    :: ~
+  ::
+  :: |-  ^-  @
+  :: ?~  m  !!
+  :: ?:  =(1 p.n.m)  (q.n.m 42)
+  :: ?:  =(1 p.n.m)  $(m l.m)
+  :: $(m r.m)
 ::
 :: ~&  .*(sub fol)
 =/  memo-call
@@ -177,14 +183,14 @@
   :: (ska-experiment1 &+sub fol)
   (turn ~>(%bout.[0 %ska] (ska-callgraph:nock-compilation1 [&+sub fol] ~)) rewrite-callgraph)
 :: noun+(lent g)
-:-  %noun
+:: :-  %noun
 :: =;  l=(list wain)
 ::   %-  zing
 ::   (join `wain`~['====================='] l)
 :: %+  turn  l
 :: |=  g=callgraph
 :: ~>  %bout
-=/  g  -.l
-(turn `wall`(zing `(list wall)`(turn (flop (render-callgraph (condense g [&+sub fol]))) (cury wash 0 80))) crip)
 :: noun+(turn l |=(g=callgraph ~(wyt by (condense g [&+sub fol]))))
-:: noun+~(wyt by (condense -:l [&+sub fol]))
+:: =/  g  -.l
+:: (turn `wall`(zing `(list wall)`(turn (flop (render-callgraph (condense g [&+sub fol]))) (cury wash 0 80))) crip)
+noun+~(wyt by (condense -:l [&+sub fol]))
