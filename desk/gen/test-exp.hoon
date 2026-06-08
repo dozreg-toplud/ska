@@ -120,9 +120,9 @@
 --
 ::
 :-  %say  |=  *
-:: =/  sub  our-hoot
-:: =/  sub  zuse-vendor
 =/  sub  our-hoot
+:: =/  sub  zuse-vendor
+:: =/  sub  ~
 :: =/  sub  ska-experiment1-hoot
 :: =/  sub
 ::   !:
@@ -142,6 +142,11 @@
   :: (~(mint ut [%atom %$ ~]) %noun [%dtls $+1])
   :: (ream '42')
   (ride %noun '42')
+  :: !.
+  :: =/  t  |.(0)
+  :: |-  ^-  ~
+  :: ?:  =(3 $:t)  ~
+  :: $(t |.(+($:t)))
   :: (scow %ud 5)
   :: (mug 42)
   :: (a-co:co 4)
@@ -149,10 +154,6 @@
   :: ((x-co:co 0) 4)
   :: |-  ^-  *
   :: [0 $]
-  :: =/  t  |.(0)
-  :: |-  ^-  ~
-  :: ?:  =(3 $:t)  ~
-  :: $(t |.(+($:t)))
   :: $:en:json:html
   :: (.)
   :: =/  m=(map @ $-(@ @))

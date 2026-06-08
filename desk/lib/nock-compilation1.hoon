@@ -567,39 +567,41 @@
   ?:  (huge:so less-code.d more.kid)  `d
   ~
 ::
-++  evil-match  _|
+++  evil-match
+  |=  [fol=^ [callee-provenance=spring id=identity] g=callgraph]
+  ^-  ?
+  |
+  ::  
 ::
 ++  evil-eval
   ~%  %evil-eval  ..zuse  ~
-  |=  [id-caller=identity s=spring called-by=jug-id g=callgraph]
+  |=  [id-caller=identity s=spring fol=^ called-by=jug-id g=callgraph]
   ^-  ?
-  |
-  :: =|  visited=(set [s=spring id=identity])
-  :: =/  callers=(list [s=spring id=identity])  ~[[s id-caller]]
-  :: |-  ^-  ?
-  :: =*  visit-loop  $
-  :: ?:  =(~ callers)  |
-  :: =/  l=(list [s=spring id=identity])  callers
-  :: |-  ^-  ?
-  :: =*  l-loop  $
-  :: ?^  l
-  ::   ?:  (~(has in visited) i.l)  l-loop(l t.l)
-  ::   =.  visited  (~(put in visited) i.l)
-  ::   |((evil-match s.i.l) l-loop(l t.l))
-  :: %=    visit-loop
-  ::     callers
-  ::   :: =-  ~&  (lent -)  -
-  ::   %-  skip  :_  ~(has in visited)
-  ::   %+  roll  callers
-  ::   |=  [[s=spring id=identity] acc=(list [s=spring id=identity])]
-  ::   =/  callers=(set identity)  (~(get ju called-by) id)
-  ::   %-  ~(rep in callers)
-  ::   |=  [id=identity acc=_acc]
-  ::   =/  d=datum  (git-g g id)
-  ::   =/  new  (compose:pi s map.d)
-  ::   ?~  new  acc
-  ::   [[new id] acc]
-  :: ==
+  !.
+  =|  visited=(set identity)
+  =/  callers=(list [s=spring id=identity])  ~[[s id-caller]]
+  |-  ^-  ?
+  =*  visit-loop  $
+  ?:  =(~ callers)  |
+  =/  l=(list [s=spring id=identity])  callers
+  |-  ^-  ?
+  =*  l-loop  $
+  ?^  l  |((evil-match fol i.l g) l-loop(l t.l))
+  %=    visit-loop
+      visited
+    (~(gas in visited) (turn callers tail))
+  ::
+      callers
+    %-  skip  :_  |=([* id=identity] (~(has in visited) id))
+    %+  roll  callers
+    |=  [[callee-provenance=spring id=identity] acc=(list [spring identity])]
+    %-  ~(rep in (~(get ju called-by) id))
+    |=  [id=identity acc=_acc]
+    =/  d=datum  (git-g g id)
+    =/  new  (compose:pi callee-provenance map.d)
+    ?~  new  acc
+    [[new id] acc]
+  ==
 ::
 ++  recursive-call
   ~%  %recursive-call  ..zuse  ~
@@ -614,11 +616,12 @@
   |-  ^-  (unit [id=identity d=datum])
   =*  l-loop  $
   ?^  l
-    ?:  (~(has in visited) i.l)  l-loop(l t.l)
-    =.  visited  (~(put in visited) i.l)
     ?~  d=(recursive-match id-kid i.l g)  l-loop(l t.l)
     `[i.l u.d]
   %=    visit-loop
+      visited
+    (~(gas in visited) callers)
+  ::
       callers
     %-  skip  :_  ~(has in visited)
     %~  tap  in
@@ -1260,7 +1263,7 @@
     |.
     ?.  ?.  =(& cape.sock.prod.f)   |
         ?.  ?=(^ data.sock.prod.f)  |
-        ?:  (evil-eval id src.prod.s called-by g-previous)
+        ?:  (evil-eval id src.prod.s data.sock.prod.f called-by g-previous)
           ~&  [%evil-eval seat]
           |
         &
