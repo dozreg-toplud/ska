@@ -105,7 +105,7 @@
 ::    @: comes from that axis of the subject
 ::    ^: provenance of a cell
 ::
-+$  spring  *
++$  spring  $~(~ *)
 --
 ::  Partial noun logic.  Self-explanatory for the most part, but take note of
 ::  equality shortcircuits and ~+ memoization: this is the closest we can get
@@ -126,10 +126,12 @@
 ::  Operations on capes
 ::
 ++  ca
+  ~%  %ca  ..zuse  ~
   |%
-  ++  hed  |=(c=cape ?@(c c -.c))
-  ++  tel  |=(c=cape ?@(c c +.c))
+  ++  hed  ~/  %hed  |=(c=cape ?@(c c -.c))
+  ++  tel  ~/  %tel  |=(c=cape ?@(c c +.c))
   ++  con
+    ~/  %con
     |=  [h=cape t=cape]
     ^-  cape
     =*  cons  +<
@@ -138,6 +140,7 @@
   ::  list of known axes
   ::
   ++  yea
+    ~/  %yea
     |=  c=cape
     ^-  (list @)
     =/  axe  1
@@ -150,6 +153,7 @@
   ::  intersection
   ::
   ++  int
+    ~/  %int
     |=  [a=cape b=cape]
     ^-  cape
     ?:  =(a b)  a
@@ -166,6 +170,7 @@
   ::  apply mask to a partial noun
   ::
   ++  app
+    ~/  %app
     |=  [c=cape s=sock]
     ^-  sock
     ?:  =(c cape.s)  s
@@ -177,6 +182,7 @@
   ::  union
   ::
   ++  uni
+    ~/  %uni
     |=  [a=cape b=cape]
     ^-  cape
     ?:  =(a b)  a
@@ -187,12 +193,13 @@
       ?-  b
           %&  &
           %|  a
-          ^   (con $(a -.a, b -.b) $(a +.a, b +.b))
+          ^   ~+((con $(a -.a, b -.b) $(a +.a, b +.b)))
       ==
     ==
   ::  push a cape to an axis
   ::
   ++  pat
+    ~/  %pat
     |=  [c=cape a=@]
     ^-  cape
     ?<  =(0 a)
@@ -207,35 +214,38 @@
 ::  Operations on socks
 ::
 ++  so
+  ~%  %so  ..zuse  ~
   |%
   ::  Does b nest under a? i.e. is everything that is known by a also known
   ::  by b?
   ::
   ++  huge
+    ~/  %huge
     |=  [one=sock two=sock]
     ^-  ?
-    ?|  =(one two)
-        ?@  data.one
-          ?.  ?=(@ cape.one)  ~|  badone+one  !!
-          ?.  cape.one  &
-          ?&(?=(%& cape.two) =(data.one data.two))
-        ?@  data.two
-          ?>  ?=(@ cape.two)
-          ?<  ?=(%| cape.one)
-          |
-        =/  [lope=cape rope=cape]
-          ?:(?=(^ cape.one) cape.one [cape.one cape.one])
-        ::
-        =/  [loop=cape roop=cape]
-          ?:(?=(^ cape.two) cape.two [cape.two cape.two])
-        ::
-        ?&  $(one [lope -.data.one], two [loop -.data.two])
-            $(one [rope +.data.one], two [roop +.data.two])
-        ==
+    ?:  =(one two)  &
+    ?@  data.one
+      ?.  ?=(@ cape.one)  ~|  badone+one  !!
+      ?.  cape.one  &
+      ?&(?=(%& cape.two) =(data.one data.two))
+    ?@  data.two
+      ?>  ?=(@ cape.two)
+      ?<  ?=(%| cape.one)
+      |
+    ~+
+    =/  [lope=cape rope=cape]
+      ?:(?=(^ cape.one) cape.one [cape.one cape.one])
+    ::
+    =/  [loop=cape roop=cape]
+      ?:(?=(^ cape.two) cape.two [cape.two cape.two])
+    ::
+    ?&  $(one [lope -.data.one], two [loop -.data.two])
+        $(one [rope +.data.one], two [roop +.data.two])
     ==
     ::  axis of a partial noun, never fails
     ::
   ++  pull
+    ~/  %pull
     |=  [s=sock axe=@]
     ^-  sock
     ?<  =(0 axe)
@@ -256,6 +266,7 @@
   ::  cons
   ::
   ++  knit
+    ~/  %knit
     |=  [one=sock two=sock]
     ^-  sock
     =*  l  cape.one
@@ -266,6 +277,7 @@
   ::  head
   ::
   ++  hed
+    ~/  %hed
     |=  s=sock
     ^-  sock
     ?:  |(?=(%| cape.s) ?=(@ data.s))
@@ -275,6 +287,7 @@
   ::  tail
   ::
   ++  tel
+    ~/  %tel
     |=  s=sock
     ^-  sock
     ?:  |(?=(%| cape.s) ?=(@ data.s))
@@ -285,6 +298,7 @@
   ::  and they both agree in data
   ::
   ++  purr
+    ~/  %purr
     |=  [one=sock two=sock]
     ^-  sock
     ?:  =(one two)  one
@@ -301,6 +315,7 @@
   ::  axis
   ::
   ++  pack
+    ~/  %pack
     |=  [one=sock two=sock]
     ^-  sock
     ?:  =(one two)  one
@@ -316,6 +331,7 @@
   ::  edit
   ::
   ++  darn
+    ~/  %darn
     |=  [one=sock axe=@ two=sock]
     ^-  sock
     ?:  =(1 axe)  two
@@ -337,14 +353,17 @@
 ::  Operations on provenance
 ::
 ++  pi
+  ~%  %pi  ..zuse  ~
   |%
   ++  cons
+    ~/  %cons
     |=  [a=spring b=spring]
     ^-  spring
     ?:  &(?=(~ a) ?=(~ b))  ~
     [a b]
   ::
   ++  hed
+    ~/  %hed
     |=  pin=spring
     ^-  spring
     ?~  pin  ~
@@ -352,6 +371,7 @@
     -.pin
   ::
   ++  tel
+    ~/  %tel
     |=  pin=spring
     ^-  spring
     ?~  pin  ~
@@ -359,6 +379,7 @@
     +.pin
   ::
   ++  prune
+    ~/  %prune
     |=  [pin=spring cap=cape]
     ^-  cape
     ?:  ?=(%| cap)  |
@@ -371,6 +392,7 @@
     (uni:ca l r)
   ::
   ++  slot
+    ~/  %slot
     |=  [pin=spring ax=@]
     ^-  spring
     ?:  =(ax 1)  pin
@@ -382,6 +404,7 @@
     ==
   ::
   ++  compose
+    ~/  %compose
     |=  [a=spring b=spring]
     ^-  spring
     ?~  b  ~
@@ -392,6 +415,7 @@
     (cons $(a -.a) $(a +.a))
   ::
   ++  edit
+    ~/  %edit
     |=  [rec=spring ax=@ don=spring]
     ^-  spring
     ?:  =(ax 1)  don
@@ -491,6 +515,9 @@
 ::    again, which appears to bring some other kind of monotonicity.
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::
+::  Partial noun datatypes bunt to their bottom elements
+::
 ?>  =(|+~ *sock)
 ?>  =(| *cape)
 ?>  =(~ *spring)
@@ -540,29 +567,65 @@
   ?:  (huge:so less-code.d more.kid)  `d
   ~
 ::
+++  evil-match  _|
+::
+++  evil-eval
+  ~%  %evil-eval  ..zuse  ~
+  |=  [id-caller=identity s=spring called-by=jug-id g=callgraph]
+  ^-  ?
+  |
+  :: =|  visited=(set [s=spring id=identity])
+  :: =/  callers=(list [s=spring id=identity])  ~[[s id-caller]]
+  :: |-  ^-  ?
+  :: =*  visit-loop  $
+  :: ?:  =(~ callers)  |
+  :: =/  l=(list [s=spring id=identity])  callers
+  :: |-  ^-  ?
+  :: =*  l-loop  $
+  :: ?^  l
+  ::   ?:  (~(has in visited) i.l)  l-loop(l t.l)
+  ::   =.  visited  (~(put in visited) i.l)
+  ::   |((evil-match s.i.l) l-loop(l t.l))
+  :: %=    visit-loop
+  ::     callers
+  ::   :: =-  ~&  (lent -)  -
+  ::   %-  skip  :_  ~(has in visited)
+  ::   %+  roll  callers
+  ::   |=  [[s=spring id=identity] acc=(list [s=spring id=identity])]
+  ::   =/  callers=(set identity)  (~(get ju called-by) id)
+  ::   %-  ~(rep in callers)
+  ::   |=  [id=identity acc=_acc]
+  ::   =/  d=datum  (git-g g id)
+  ::   =/  new  (compose:pi s map.d)
+  ::   ?~  new  acc
+  ::   [[new id] acc]
+  :: ==
+::
 ++  recursive-call
   ~%  %recursive-call  ..zuse  ~
   |=  [id-caller=identity id-kid=identity called-by=jug-id g=callgraph]
   ^-  (unit [id=identity d=datum])
   =|  visited=(set identity)
-  =/  callers=(set identity)  [id-caller ~ ~]
-  =<  -
-  |-  ^-  [(unit [id=identity d=datum]) (set identity)]
+  =/  callers=(list identity)  ~[id-caller]
+  |-  ^-  (unit [id=identity d=datum])
   =*  visit-loop  $
-  ?~  callers  [~ visited]
-  =^  n-res=?(%vis (unit [id=identity d=datum]))  visited
-    ?:  (~(has in visited) n.callers)  [%vis visited]
-    =.  visited  (~(put in visited) n.callers)
-    ?~  d=(recursive-match id-kid n.callers g)  [~ visited]
-    [`[n.callers u.d] visited]
-  ::
-  ?^  n-res  [n-res visited]
-  =^  has-l  visited  visit-loop(callers l.callers)
-  ?^  has-l  [has-l visited]
-  =^  has-r  visited  visit-loop(callers r.callers)
-  ?^  has-r  [has-r visited]
-  ?:  ?=(%vis n-res)  [~ visited]
-  visit-loop(callers (~(get ju called-by) n.callers))
+  ?:  =(~ callers)  ~
+  =/  l=(list identity)  callers
+  |-  ^-  (unit [id=identity d=datum])
+  =*  l-loop  $
+  ?^  l
+    ?:  (~(has in visited) i.l)  l-loop(l t.l)
+    =.  visited  (~(put in visited) i.l)
+    ?~  d=(recursive-match id-kid i.l g)  l-loop(l t.l)
+    `[i.l u.d]
+  %=    visit-loop
+      callers
+    %-  skip  :_  ~(has in visited)
+    %~  tap  in
+    %+  roll  callers
+    |=  [id=identity acc=(set identity)]
+    (~(uni in acc) (~(get ju called-by) id))
+  ==
 ::
 ++  mi
   |%
@@ -601,16 +664,12 @@
   ^-  datum
   (~(gut by g) i *datum)
 ::
-++  dunno
-  ^-  sock-anno
-  [|+~ ~]
-::
 ++  inlineable
   ~%  %inlineable  ..zuse  ~
   |=  fol=^
   ^-  ?
   =*  l  .
-  ?+    fol  |
+  ?+    fol  !!  ::  |
     [p=^ q=^]  &((l p.fol) (l q.fol))
     [%0 @]  &
     [%1 *]  &
@@ -1008,6 +1067,7 @@
 ::  the first callgraph in the list
 ::
 ++  ska-callgraph
+  ~%  %ska-callgraph  ..zuse  ~
   |=  [[bus=sock fol=^] memo-final=memo]
   ^-  (list callgraph)
   =|  g=callgraph
@@ -1077,6 +1137,7 @@
   ::  note that now "g" is a bunt (empty), but "calls" is inherited from the
   ::  previous iteration
   ::
+  ~%  %ska-callgraph-iteration  ..zuse  ~
   |=  $:  id=identity
           ::  accumulator
           ::
@@ -1148,6 +1209,15 @@
   ~%  %fol-loop  ..zuse  ~
   |.  ^-  [[=nomm prod=sock-anno] _gen]
   =*  fol-loop  $
+  ?^  x=(safe fol)
+    ::  This is a workaround for our cape cons denormalization breaking code
+    ::  like !:([%9 2 %0 1])
+    ::
+    ::  If a formula is "safe" it is equivalent to Nock 1 with respect to
+    ::  limiting set of available formulas
+    ::
+    [[nomm.u.x [&+prod.u.x ~]] gen]
+  =*  dunno  *sock-anno
   ?+    fol  ~|  fol  !!  ::  [[0+0 dunno] gen]
       [p=^ q=^]
     =^  l  gen  fol-loop(fol p.fol)
@@ -1183,19 +1253,17 @@
     ::  neither of which are affected by memo-key
     ::  
     =^  s  gen  fol-loop(fol p.fol)
-    =^  f=[=nomm prod=sock-anno]  gen
-      ::  This is a workaround for our cape cons deoptimization breaking
-      ::  things like !:([%9 2 %0 1])
-      ::
-      ::  If a formula is "safe" it is equivalent to Nock 1 with respect to
-      ::  limiting set of available formulas
-      ::
-      ?^  x=(safe q.fol)  [[nomm.u.x [&+prod.u.x ~]] gen]
-      fol-loop(fol q.fol)
-    ::
+    =^  f  gen  fol-loop(fol q.fol)
     ^-  [[nomm sock-anno] _gen]
-    =*  nock-2  .
-    ?.  &(=(& cape.sock.prod.f) ?=(^ data.sock.prod.f))
+    =<  $
+    ~%  %nock-2  ..zuse  ~
+    |.
+    ?.  ?.  =(& cape.sock.prod.f)   |
+        ?.  ?=(^ data.sock.prod.f)  |
+        ?:  (evil-eval id src.prod.s called-by g-previous)
+          ~&  [%evil-eval seat]
+          |
+        &
       ::  indirect call
       ::
       =/  all-yes  |=  c=cape  ^-  ?  ?@  c  c  &($(c +.c) $(c -.c))
@@ -1207,7 +1275,7 @@
         (uni:ca indirect-code-request.gen (distribute & src.prod.f))
       ::
       [[[%2 nomm.s nomm.f ~] dunno] gen]
-    =/  fol-new  data.sock.prod.f
+    =/  fol-new  ;;  ^  data.sock.prod.f
     =.  want.gen  (uni:ca want.gen (distribute & src.prod.f))
     ::  Inline leaf formulas. Allows to analyze through formulas whose products
     ::  are gates, also speeds up analysis. Should be safe to comment out the
