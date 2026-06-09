@@ -567,41 +567,32 @@
   ?:  (huge:so less-code.d more.kid)  `d
   ~
 ::
-++  evil-match
-  |=  [fol=^ [callee-provenance=spring id=identity] g=callgraph]
-  ^-  ?
-  |
-  ::  
+++  set-first-match
+  |*  [s=(set) g=$-(* (unit))]
+  ^+  $:g
+  ?~  s  ~
+  ?^  res=(g n.s)  res
+  =/  l  $(s l.s)
+  ?^  l  l
+  $(s r.s)
 ::
 ++  evil-eval
   ~%  %evil-eval  ..zuse  ~
-  |=  [id-caller=identity s=spring fol=^ called-by=jug-id g=callgraph]
-  ^-  ?
-  !.
-  =|  visited=(set identity)
-  =/  callers=(list [s=spring id=identity])  ~[[s id-caller]]
-  |-  ^-  ?
-  =*  visit-loop  $
-  ?:  =(~ callers)  |
-  =/  l=(list [s=spring id=identity])  callers
-  |-  ^-  ?
-  =*  l-loop  $
-  ?^  l  |((evil-match fol i.l g) l-loop(l t.l))
-  %=    visit-loop
-      visited
-    (~(gas in visited) (turn callers tail))
+  |=  [id-caller=identity fol-callee=^ transitive-called-by=jug-id g=callgraph]
+  ^-  (unit sock-anno)
+  =/  transitive-callers=(set identity)
+    (~(get ju transitive-called-by) id-caller)
   ::
-      callers
-    %-  skip  :_  |=([* id=identity] (~(has in visited) id))
-    %+  roll  callers
-    |=  [[callee-provenance=spring id=identity] acc=(list [spring identity])]
-    %-  ~(rep in (~(get ju called-by) id))
-    |=  [id=identity acc=_acc]
-    =/  d=datum  (git-g g id)
-    =/  new  (compose:pi callee-provenance map.d)
-    ?~  new  acc
-    [[new id] acc]
-  ==
+  %+  set-first-match  transitive-callers
+  |=  tr-caller=identity
+  ^-  (unit sock-anno)
+  ?.  =(fol.tr-caller fol.id-caller)  ~
+  =/  d=datum  (git-g g tr-caller)
+  %+  set-first-match  callees.d
+  |=  callee-entry
+  ^-  (unit sock-anno)
+  ?.  =(fol-callee fol.id)  ~
+  `[more.id src]  ::  XX sound?
 ::
 ++  recursive-call
   ~%  %recursive-call  ..zuse  ~
@@ -618,10 +609,8 @@
   ?^  l
     ?~  d=(recursive-match id-kid i.l g)  l-loop(l t.l)
     `[i.l u.d]
+  =.  visited  (~(gas in visited) callers)
   %=    visit-loop
-      visited
-    (~(gas in visited) callers)
-  ::
       callers
     %-  skip  :_  ~(has in visited)
     %~  tap  in
@@ -1066,6 +1055,39 @@
   ::
   :-  [less-code.root-datum fol]
   lon(root.jets root, core.jets core, batt.jets batt)
+::
+++  restore-transitive-called-by-same-fol
+  |=  called-by=jug-id
+  ^-  jug-id
+  ~>  %bout
+  %-  ~(rep by called-by)
+  |=  [[callee=identity callers=(set identity)] acc=jug-id]
+  =;  transitive-callers-same-fol=(set identity)
+    (~(put by acc) callee transitive-callers-same-fol)
+  ::
+  =>  [=_callee =_callers =_called-by ..restore-transitive-called-by-same-fol]
+  ~+
+  =|  out=(set identity)
+  =|  visited=(set identity)
+  =/  callers=(list identity)  ~(tap in callers)
+  |-  ^+  out
+  =*  visit-loop  $
+  ?:  =(~ callers)  out
+  =/  l=(list identity)  callers
+  |-  ^+  out
+  =*  l-loop  $
+  ?^  l
+    =?  out  =(fol.callee fol.i.l)  (~(put in out) i.l)
+    l-loop(l t.l)
+  =.  visited  (~(gas in visited) callers)
+  %=    visit-loop
+      callers
+    %-  skip  :_  ~(has in visited)
+    %~  tap  in
+    %+  roll  callers
+    |=  [id=identity acc=(set identity)]
+    (~(uni in acc) (~(get ju called-by) id))
+  ==
 ::  Produces a list of callgraphs for visualization purposes. The fixpoint is
 ::  the first callgraph in the list
 ::
@@ -1079,6 +1101,7 @@
   =/  w=worklist  [root ~ ~]
   =|  calls=jug-id
   =|  called-by=jug-id
+  =|  transitive-called-by=jug-id
   ::
   :: =<  $
   :: ~%  %analysis  ..zuse  ~
@@ -1089,7 +1112,8 @@
   ::
   =;  [w-new=worklist w-call=worklist new-calls=jug-id g1=callgraph]
     =.  g  (~(uni by g) g1)
-    =.  called-by
+    :: =.  g  g1
+    =/  new-called-by=jug-id
       ::  calculate the diff between new-calls and calls to update called-by
       ::
       :: =<  $
@@ -1114,7 +1138,64 @@
       |=  [callee=identity acc=_acc]
       (~(put ju acc) callee caller)
     ::
-    =.  calls  new-calls
+    =.  transitive-called-by
+      =/  seeds=(set identity)
+        =/  all-callees  (~(uni in ~(key by called-by)) ~(key by new-called-by))
+        %-  ~(rep in all-callees)
+        |=  [id=identity acc=(set identity)]
+        ?:  =((~(get ju called-by) id) (~(get ju new-called-by) id))
+          acc
+        (~(put in acc) id)
+      ::
+      =/  uno-calls=jug-id
+        %-  (~(uno by new-calls) calls)
+        |=  [identity a=(set identity) b=(set identity)]
+        (~(uni in a) b)
+      ::
+      =/  affected=(set identity)
+        =/  callees=(list identity)  ~(tap in seeds)
+        =|  out=(set identity)
+        |-  ^-  (set identity)
+        ?:  =(~ callees)  out
+        =.  out  (~(gas in out) callees)
+        %=    $
+            callees
+          %-  skip  :_  ~(has in out)
+          %~  tap  in
+          %+  roll  callees
+          |=  [id=identity acc=(set identity)]
+          (~(uni in acc) (~(get ju uno-calls) id))
+        ==
+      ::
+      =/  new-transitive-called-by=jug-id
+        %-  ~(rep in affected)
+        |=  [id=identity acc=_transitive-called-by]
+        (~(put by acc) id ~)
+      ::
+      =/  w-tcb=worklist  affected
+      |-  ^-  jug-id
+      =*  fixpoint-tcb  $
+      =;  [w-tcb-new=worklist new-new-tcb=jug-id]
+        =.  new-transitive-called-by  new-new-tcb
+        ?:  =(~ w-tcb)  new-transitive-called-by
+        fixpoint-tcb(w-tcb w-tcb-new)
+      ::
+      %-  ~(rep in w-tcb)
+      |=  [id=identity w-tcb-new=worklist new-new-tcb=_new-transitive-called-by]
+      =/  callers=(set identity)  (~(get ju new-transitive-called-by) id)
+      =/  new-callers=(set identity)
+        =/  immediate-callers=(set identity)  (~(get ju new-called-by) id)
+        %-  ~(rep in immediate-callers)
+        |=  [id=identity acc=_immediate-callers]
+        (~(uni in acc) (~(get ju new-transitive-called-by) id))
+      ::
+      ?:  =(new-callers callers)  [w-tcb-new new-transitive-called-by]
+      :_  (~(put by new-transitive-called-by) id new-callers)
+      %-  ~(uni in w-tcb-new)
+      (~(int in affected) (~(get ju uno-calls) id))
+    ::
+    =.  calls      new-calls
+    =.  called-by  new-called-by
     =/  w-back=worklist
       ::  worklist of functions whose immediate callees changed
       ::
@@ -1134,7 +1215,8 @@
     fixpoint-callgraph(w w-new, history [g history])
   ::
   :: ~>  %bout.[0 %iter]
-  =*  g-previous  g
+  =*  g-previous      g
+  =*  calls-previous  calls
   =<  -
   %-  ~(rep in w)
   ::  note that now "g" is a bunt (empty), but "calls" is inherited from the
@@ -1261,12 +1343,7 @@
     =<  $
     ~%  %nock-2  ..zuse  ~
     |.
-    ?.  ?.  =(& cape.sock.prod.f)   |
-        ?.  ?=(^ data.sock.prod.f)  |
-        ?:  (evil-eval id src.prod.s data.sock.prod.f called-by g-previous)
-          ~&  [%evil-eval seat]
-          |
-        &
+    ?.  &(=(& cape.sock.prod.f) ?=(^ data.sock.prod.f))
       ::  indirect call
       ::
       =/  all-yes  |=  c=cape  ^-  ?  ?@  c  c  &($(c +.c) $(c -.c))
@@ -1278,7 +1355,7 @@
         (uni:ca indirect-code-request.gen (distribute & src.prod.f))
       ::
       [[[%2 nomm.s nomm.f ~] dunno] gen]
-    =/  fol-new  ;;  ^  data.sock.prod.f
+    =/  fol-new=^  data.sock.prod.f
     =.  want.gen  (uni:ca want.gen (distribute & src.prod.f))
     ::  Inline leaf formulas. Allows to analyze through formulas whose products
     ::  are gates, also speeds up analysis. Should be safe to comment out the
@@ -1301,6 +1378,11 @@
       ?^  par=(recursive-call id id-there called-by g-previous)
         u.par(prod.d |+~, map.d ~)
       [id-there *datum]
+    ::
+    =.  prod.s
+      ?~  sub-callee=(evil-eval id fol-new transitive-called-by g-previous)
+        prod.s
+      (double-int prod.s u.sub-callee)
     ::
     =.  want.gen
       (uni:ca want.gen (distribute cape.less-code.dat-there src.prod.s))

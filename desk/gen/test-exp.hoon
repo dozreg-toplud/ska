@@ -7,6 +7,15 @@
 ::
 =,  ska-experiment1
 |%
+++  count-bells
+  |=  g=callgraph
+  ^-  @
+  =-  ~(wyt in -)
+  ^-  (set bell)
+  %-  ~(rep by g)
+  |=  [[k=identity v=datum] acc=(set bell)]
+  (~(put in acc) [less-code.v fol.k])
+::
 ++  condense
   |=  [g=callgraph id=identity]
   ^-  callgraph
@@ -147,6 +156,7 @@
   :: |-  ^-  ~
   :: ?:  =(3 $:t)  ~
   :: $(t |.(+($:t)))
+  ::
   :: (scow %ud 5)
   :: (mug 42)
   :: (a-co:co 4)
@@ -194,4 +204,4 @@
 :: noun+(turn l |=(g=callgraph ~(wyt by (condense g [&+sub fol]))))
 :: =/  g  -.l
 :: (turn `wall`(zing `(list wall)`(turn (flop (render-callgraph (condense g [&+sub fol]))) (cury wash 0 80))) crip)
-noun+~(wyt by (condense -:l [&+sub fol]))
+noun+(count-bells (condense -:l [&+sub fol]))
