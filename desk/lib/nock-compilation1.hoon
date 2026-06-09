@@ -1139,6 +1139,24 @@
       (~(put ju acc) callee caller)
     ::
     =.  transitive-called-by
+      ::  to incrementally construct transitive closure of the reversed
+      ::  callgraph:
+      ::    1. get the set of all id's whose immediate callers changed ("seed");
+      ::    2. walk the direct callgraph (unified with the prev version just in
+      ::       case), assembling the set of all id's which could reach the set
+      ::       from step 1 along the reversed callgraph ("affected")
+      ::    3. Zero out transitive callers of affected id's.
+      ::    4. Recalculate in a fixpoint:
+      ::         - start with the worklist equal to affected;
+      ::         - fold over the worklist, accumulating new worklist and
+      ::           updating transitive closure
+      ::         - done when worklist is empty
+      ::         - for each id in worklist:
+      ::           - new transitive callers = immediate callers U closure[id]
+      ::             for id in immediate callers
+      ::           - if new transitive callers are same: noop
+      ::           - else update closure, enqueue immediate callees /\ affected
+      ::
       =/  seeds=(set identity)
         =/  all-callees  (~(uni in ~(key by called-by)) ~(key by new-called-by))
         %-  ~(rep in all-callees)
