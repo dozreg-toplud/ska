@@ -1064,38 +1064,52 @@
   ::
   :-  [less-code.root-datum fol]
   lon(root.jets root, core.jets core, batt.jets batt)
+::  callers first
 ::
-++  norm-jug-id
-  |=  j=jug-id
-  ^-  jug-id
-  %-  ~(rep by j)
-  |=  [[k=identity v=(set identity)] acc=jug-id]
-  ?~  v  acc
-  (~(put by acc) k v)
-::
-++  restore-transitive-called-by
-  ~%  %restore-transitive-called-by  ..zuse  ~
-  |=  called-by=jug-id
-  ^-  jug-id
-  ~>  %bout.[0 %tcb-make]
-  %-  ~(rep by called-by)
-  |=  [[callee=identity callers=(set identity)] acc=jug-id]
-  =;  transitive-callers=(set identity)
-    (~(put by acc) callee transitive-callers)
+++  tarjan
+  ~%  %tarjan  ..zuse  ~
+  |=  g=jug-id
+  ^-  (list (set identity))
+  =*  gen
+    $:  idx=@
+        vis=(map identity @)
+        low=(map identity @)
+        stk=(list identity)
+        cur=(set identity)
+        fin=(list (set identity))
+    ==
   ::
-  =/  callers=(list identity)  ~(tap in callers)
-  =|  out=(set identity)
-  |-  ^+  out
-  ?:  =(~ callers)  out
-  =.  out  (~(gas in out) callers)
-  %=  $
-      callers
-    %-  skip  :_  ~(has in out)
-    %~  tap  in
-    %+  roll  callers
-    |=  [id=identity acc=(set identity)]
-    (~(uni in acc) (~(get ju called-by) id))
-  ==
+  =<  fin
+  ^-  gen
+  %-  ~(rep by g)
+  |=  [[id=identity v=*] acc=gen]
+  =*  strongly-connect  .
+  ?:  (~(has by vis.acc) id)  acc
+  =^  idx  idx.acc  [idx.acc +(idx.acc)]
+  =.  vis.acc  (~(put by vis.acc) id idx)
+  =.  low.acc  (~(put by low.acc) id idx)
+  =.  stk.acc  [id stk.acc]
+  =.  cur.acc  (~(put in cur.acc) id)
+  =.  acc
+    %-  ~(rep in (~(get ju g) id))
+    |=  [callee=identity =_acc]
+    ?^  callee-idx=(~(get by vis.acc) callee)
+      ?.  (~(has in cur.acc) callee)  acc
+      acc(low (~(jab by low.acc) id (curr min u.callee-idx)))
+    =.  acc  (strongly-connect [callee **] acc)
+    acc(low (~(jab by low.acc) id (curr min (~(got by low.acc) callee))))
+  ::
+  ?.  =((~(got by vis.acc) id) (~(got by low.acc) id))  acc
+  =^  done=(set identity)  acc
+    =|  out=(set identity)
+    |-  ^+  [out acc]
+    =^  pop=identity  stk.acc  ?~(stk.acc !! stk.acc)
+    =.  cur.acc  (~(del in cur.acc) pop)
+    =.  out  (~(put in out) pop)
+    ?:  =(id pop)  [out acc]
+    $
+  ::
+  acc(fin [done fin.acc])
 ::  Produces a list of callgraphs for visualization purposes. The fixpoint is
 ::  the first callgraph in the list
 ::
@@ -1150,7 +1164,7 @@
       =<  $
       ~%  %update-transitive-called-by  ..zuse  ~
       |.
-      :: ~>  %bout.[0 %tcb-upd]
+      ~>  %bout.[0 'tcb update        ']
       :: ~&  [%added ~(wyt in (~(dif in ~(key by new-called-by)) ~(key by called-by)))]
       :: ~&  [%removed ~(wyt in (~(dif in ~(key by called-by)) ~(key by new-called-by)))]
       :: ~&  :-  %changed
@@ -1164,18 +1178,14 @@
       ::    1. get the set of all id's whose immediate callers changed ("seed");
       ::    2. walk the direct callgraph (unified with the prev version just in
       ::       case), assembling the set of all id's which could reach the set
-      ::       from step 1 along the reversed callgraph ("affected")
-      ::    3. Zero out transitive callers of affected id's.
-      ::    4. Recalculate in a fixpoint:
-      ::         - start with the worklist equal to affected;
-      ::         - fold over the worklist, accumulating new worklist and
-      ::           updating transitive closure
-      ::         - done when worklist is empty
-      ::         - for each id in worklist:
-      ::           - new transitive callers = immediate callers U closure[id]
-      ::             for id in immediate callers
-      ::           - if new transitive callers are same: noop
-      ::           - else update closure, enqueue immediate callees /\ affected
+      ::       from step 1 along the reversed callgraph ("affected");
+      ::    3. Get the direct subgraph of affected vertices: new-calls from and
+      ::       to affected;
+      ::    5. Get SCCs in toposorted order (caller SCCs first);
+      ::    6. For each SCC compute "closure", assign it to each member of SCC
+      ::    7. To compute "closure": union over every immediate caller of every
+      ::       member of the SCC: {caller} if caller in SCC, else
+      ::       {caller} U TCB[caller]
       ::
       =/  seeds=(set identity)
         =/  all-callees  (~(uni in ~(key by called-by)) ~(key by new-called-by))
@@ -1185,7 +1195,6 @@
           acc
         (~(put in acc) id)
       ::
-      :: ~&  ~(wyt in seeds)
       =/  uno-calls=jug-id
         %-  (~(uno by new-calls) calls)
         |=  [identity a=(set identity) b=(set identity)]
@@ -1206,79 +1215,35 @@
           (~(uni in acc) (~(get ju uno-calls) id))
         ==
       ::
-      :: ~&  [%tcb ~(wyt in affected) ~(wyt by transitive-called-by)]
-      =/  new-transitive-called-by=jug-id
+      =/  affected-dep-subgraph=jug-id
         %-  ~(rep in affected)
-        |=  [id=identity acc=_transitive-called-by]
-        (~(put by acc) id ~)
+        |=  [id=identity acc=jug-id]
+        %+  ~(put by acc)  id
+        (~(int in affected) (~(get ju new-calls) id))
       ::
-      =^  deltas=jug-id  new-transitive-called-by
-        %-  ~(rep in affected)
-        |=  [id=identity deltas=jug-id acc1=_new-transitive-called-by]
-        =/  imm-callers=(set identity)  (~(get ju new-called-by) id)
-        =/  new-callers=(set identity)
-          %-  ~(rep in imm-callers)
-          |=  [id=identity acc2=_imm-callers]
-          (~(uni in acc2) (~(get ju acc1) id))
-        ::
-        [(~(put by deltas) id new-callers) (~(put by acc1) id new-callers)]
+      ::  callers first
       ::
-      ~>  %bout.[0 %tcb-inc-fixpoint]
+      =/  sccs=(list (set identity))  (tarjan affected-dep-subgraph)
       =<  $
-      ~%  %tcb-inc-fixpoint  ..zuse  ~
+      ~%  %closures-update-transitive-called-by  ..zuse  ~
       |.
-      |-  ^-  jug-id
-      =*  fixpoint-tcb  $
-      =;  [deltas-new=jug-id new-new-tcb=jug-id]
-        =.  new-transitive-called-by  new-new-tcb
-        ?:  =(~ deltas-new)  new-transitive-called-by
-        :: ~&  [%fixpoint-tcb ~(wyt by deltas-new) ~(wyt by new-transitive-called-by)]
-        fixpoint-tcb(deltas deltas-new)
+      %+  roll  sccs
+      |=  [scc=(set identity) acc-ju=_transitive-called-by]
+      =/  closure=(set identity)
+        %-  ~(rep in scc)
+        |=  [member=identity acc-se=(set identity)]
+        %-  ~(rep in (~(get ju new-called-by) member))
+        |=  [caller=identity =_acc-se]
+        ?:  (~(has in scc) caller)  (~(put in acc-se) caller)
+        %-  ~(uni in (~(put in acc-se) caller))
+        (~(get ju acc-ju) caller)
       ::
-      %-  ~(rep by deltas)
-      |=  [[id=identity callers-delta=(set identity)] deltas-new=jug-id new-new-tcb=_new-transitive-called-by]
-      =/  affected-callees=(set identity)
-        :: (~(int in affected) (~(get ju new-calls) id)) 
-        (~(get ju new-calls) id)
-      ::
-      %-  ~(rep in affected-callees)
-      |=  [callee=identity =_deltas-new =_new-new-tcb]
-      =/  callers-new=(set identity)
-        (~(dif in callers-delta) (~(get ju new-new-tcb) callee))
-      ::
-      ?:  =(~ callers-new)  [deltas-new new-new-tcb]
-      :-  %+  ~(put by deltas-new)  callee
-          (~(uni in callers-new) (~(get ju deltas-new) callee))
-      %+  ~(put by new-new-tcb)  callee
-      (~(uni in callers-new) (~(get ju new-new-tcb) callee))
-      ::::::::::::::::::::::::::::::::::::::::::
-      :: =/  w-tcb=worklist  affected
-      :: ~>  %bout.[0 %tcb-inc-fixpoint]
-      :: |-  ^-  jug-id
-      :: =*  fixpoint-tcb  $
-      :: =;  [w-tcb-new=worklist new-new-tcb=jug-id]
-      ::   =.  new-transitive-called-by  new-new-tcb
-      ::   ?:  =(~ w-tcb-new)  new-transitive-called-by
-      ::   ~&  [%fixpoint-tcb ~(wyt in w-tcb-new) ~(wyt by new-transitive-called-by)]
-      ::   fixpoint-tcb(w-tcb w-tcb-new)
-      :: ::
-      :: %-  ~(rep in w-tcb)
-      :: |=  [id=identity w-tcb-new=worklist new-new-tcb=_new-transitive-called-by]
-      :: =/  callers=(set identity)  (~(get ju new-new-tcb) id)
-      :: =/  new-callers=(set identity)
-      ::   =/  immediate-callers=(set identity)  (~(get ju new-called-by) id)
-      ::   %-  ~(rep in immediate-callers)
-      ::   |=  [id=identity acc=_immediate-callers]
-      ::   (~(uni in acc) (~(get ju new-new-tcb) id))
-      :: ::
-      :: ?:  =(new-callers callers)  [w-tcb-new new-new-tcb]
-      :: :_  (~(put by new-new-tcb) id new-callers)
-      :: %-  ~(uni in w-tcb-new)
-      :: (~(int in affected) (~(get ju uno-calls) id))
+      %-  ~(rep in scc)
+      |=  [member=identity =_acc-ju]  
+      (~(put by acc-ju) member closure)
     ::
     =.  calls      new-calls
     =.  called-by  new-called-by
-    :: ?>  =((norm-jug-id transitive-called-by) (restore-transitive-called-by called-by))
     =/  w-back=worklist
       ::  worklist of functions whose immediate callees changed
       ::
