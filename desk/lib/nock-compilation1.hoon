@@ -45,9 +45,9 @@
 ::    operations, including raw Nock 2 when *[a c] could not be deduced (an
 ::    indirect Nock call), but it can also call other SKA functions.
 ::
-::    Once the function call graph is obtained with partial evaluation of the given
-::    subject/formula pair, the next step is to discover which parts of the
-::    subject are actually used as data by each function.  Without it each
+::    Once the function call graph is obtained with partial evaluation of the
+::    given subject/formula pair, the next step is to discover which parts of
+::    the subject are actually used as data by each function.  Without it each
 ::    function can only be thought of as a function (noun -> noun), which leads
 ::    to unnecessary busywork when it comes to function calls - the entire
 ::    subject of a callee would have to be consed up, for it to be deconstructed
@@ -507,12 +507,12 @@
 ::    Proving that F is monotonic for some ordering of the lattice, for which
 ::    [[[&+sub fol] *datum] ~ ~] is the least element of the lattice which
 ::    contains [&+sub fol] is left as an exercise for the reader. The hardest
-::    part IMO is taking into account recursive calls. The rest is trivial: socks
-::    for a given noun form a complete lattice with huge:so as partial ordering,
-::    and we only grow products and code requirements. The only place where the
-::    code requirement shrinks is going from a recursive call to a new non-
-::    recursive call. However, a non-recursive call can never become recursive
-::    again, which appears to bring some other kind of monotonicity.
+::    part IMO is taking into account recursive calls. The rest is trivial:
+::    socks for a given noun form a complete lattice with huge:so as partial
+::    ordering, and we only grow products and code requirements. The only place
+::    where the code requirement shrinks is going from a recursive call to a new
+::    non-recursive call. However, a non-recursive call can never become recur-
+::    sive again, which appears to bring some other kind of monotonicity.
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
@@ -578,12 +578,9 @@
 ::
 ++  evil-eval
   ~%  %evil-eval  ..zuse  ~
-  |=  [id-caller=identity fol-callee=^ transitive-called-by=jug-id g=callgraph]
+  |=  [id-caller=identity fol-callee=^ tcb=jug-id g=callgraph]
   ^-  (unit sock-anno)
-  =/  transitive-callers=(set identity)
-    (~(get ju transitive-called-by) id-caller)
-  ::
-  %+  set-first-match  transitive-callers
+  %+  set-first-match  (~(get ju tcb) id-caller)
   |=  tr-caller=identity
   ^-  (unit sock-anno)
   ?.  =(fol.tr-caller fol.id-caller)  ~
@@ -596,37 +593,21 @@
 ::
 ++  recursive-call
   ~%  %recursive-call  ..zuse  ~
-  |=  [id-caller=identity id-kid=identity transitive-called-by=jug-id g=callgraph]
+  |=  [id-caller=identity id-kid=identity tcb=jug-id g=callgraph]
   ^-  (unit [id=identity d=datum])
-  =/  transitive-callers-of-kid=(set identity)
-    (~(put in (~(get ju transitive-called-by) id-caller)) id-caller)
+  =/  fast-match=(unit [id=identity d=datum])
+    ?.  =(fol.id-kid fol.id-caller)  ~
+    =/  d=datum  (git-g g id-caller)
+    ?:  (huge:so less-code.d more.id-kid)  `[id-caller d]
+    ~
   ::
-  %+  set-first-match  transitive-callers-of-kid
+  ?^  fast-match  fast-match
+  %+  set-first-match  (~(get ju tcb) id-caller)
   |=  tr-caller=identity
   ?.  =(fol.id-kid fol.tr-caller)  ~
   =/  d=datum  (git-g g tr-caller)
   ?:  (huge:so less-code.d more.id-kid)  `[tr-caller d]
   ~
-  :: =|  visited=(set identity)
-  :: =/  callers=(list identity)  ~[id-caller]
-  :: |-  ^-  (unit [id=identity d=datum])
-  :: =*  visit-loop  $
-  :: ?:  =(~ callers)  ~
-  :: =/  l=(list identity)  callers
-  :: |-  ^-  (unit [id=identity d=datum])
-  :: =*  l-loop  $
-  :: ?^  l
-  ::   ?~  d=(recursive-match id-kid i.l g)  l-loop(l t.l)
-  ::   `[i.l u.d]
-  :: =.  visited  (~(gas in visited) callers)
-  :: %=    visit-loop
-  ::     callers
-  ::   %-  skip  :_  ~(has in visited)
-  ::   %~  tap  in
-  ::   %+  roll  callers
-  ::   |=  [id=identity acc=(set identity)]
-  ::   (~(uni in acc) (~(get ju called-by) id))
-  :: ==
 ::
 ++  mi
   |%
@@ -1068,21 +1049,22 @@
 ::
 ++  tarjan
   ~%  %tarjan  ..zuse  ~
-  |=  g=jug-id
+  |*  vertex=mold
+  |=  g=(jug vertex vertex)
   ^-  (list (set identity))
   =*  gen
     $:  idx=@
-        vis=(map identity @)
-        low=(map identity @)
-        stk=(list identity)
-        cur=(set identity)
-        fin=(list (set identity))
+        vis=(map vertex @)
+        low=(map vertex @)
+        stk=(list vertex)
+        cur=(set vertex)
+        fin=(list (set vertex))
     ==
   ::
   =<  fin
   ^-  gen
   %-  ~(rep by g)
-  |=  [[id=identity v=*] acc=gen]
+  |=  [[id=vertex v=*] acc=gen]
   =*  strongly-connect  .
   ?:  (~(has by vis.acc) id)  acc
   =^  idx  idx.acc  [idx.acc +(idx.acc)]
@@ -1092,7 +1074,7 @@
   =.  cur.acc  (~(put in cur.acc) id)
   =.  acc
     %-  ~(rep in (~(get ju g) id))
-    |=  [callee=identity =_acc]
+    |=  [callee=vertex =_acc]
     ?^  callee-idx=(~(get by vis.acc) callee)
       ?.  (~(has in cur.acc) callee)  acc
       acc(low (~(jab by low.acc) id (curr min u.callee-idx)))
@@ -1100,10 +1082,10 @@
     acc(low (~(jab by low.acc) id (curr min (~(got by low.acc) callee))))
   ::
   ?.  =((~(got by vis.acc) id) (~(got by low.acc) id))  acc
-  =^  done=(set identity)  acc
-    =|  out=(set identity)
+  =^  done=(set vertex)  acc
+    =|  out=(set vertex)
     |-  ^+  [out acc]
-    =^  pop=identity  stk.acc  ?~(stk.acc !! stk.acc)
+    =^  pop=vertex  stk.acc  ?~(stk.acc !! stk.acc)
     =.  cur.acc  (~(del in cur.acc) pop)
     =.  out  (~(put in out) pop)
     ?:  =(id pop)  [out acc]
@@ -1165,14 +1147,6 @@
       ~%  %update-transitive-called-by  ..zuse  ~
       |.
       ~>  %bout.[0 'tcb update        ']
-      :: ~&  [%added ~(wyt in (~(dif in ~(key by new-called-by)) ~(key by called-by)))]
-      :: ~&  [%removed ~(wyt in (~(dif in ~(key by called-by)) ~(key by new-called-by)))]
-      :: ~&  :-  %changed
-      ::     %-  ~(rep in (~(uni in ~(key by called-by)) ~(key by new-called-by)))
-      ::     |=  [id=identity acc=@]
-      ::     ?:  =((~(get ju called-by) id) (~(get ju new-called-by) id))
-      ::       acc
-      ::     +(acc)
       ::  to incrementally construct transitive closure of the reversed
       ::  callgraph:
       ::    1. get the set of all id's whose immediate callers changed ("seed");
@@ -1223,7 +1197,7 @@
       ::
       ::  callers first
       ::
-      =/  sccs=(list (set identity))  (tarjan affected-dep-subgraph)
+      =/  sccs=(list (set identity))  ((tarjan identity) affected-dep-subgraph)
       =<  $
       ~%  %closures-update-transitive-called-by  ..zuse  ~
       |.
