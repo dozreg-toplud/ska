@@ -575,86 +575,62 @@
   =/  l  $(s l.s)
   ?^  l  l
   $(s r.s)
+::  check if "big" homeomorphically embeds "smol"
 ::
-++  evil-eval
-  ~%  %evil-eval  ..zuse  ~
-  ::       A
-  ::      / \
-  ::     /   \
-  ::    X     B
-  ::           \                        ::
-  ::            \                       ::  -- transitive edge
-  ::             Y                      ::  -  immediate edge
-  ::              \                     ::
-  ::               \
-  ::                Z
-  ::                 \
-  ::                  X
-  ::
-  ::  We are in Z, about to call X. X/Y and A/B have same formulas
-  ::  We check that:
-  ::    X is already in the callgraph;
-  ::    X does not call Z
-  ::    A calls X
-  ::    A and B have same formulas
-  ::    A and B are not the same function
-  ::    X does not call B
-  ::    B does not call A
-  ::    Y and X have same formulas
-  ::    X and Y are not the same function
-  ::    X does not call Y
-  ::    Y calls Z
-  ::    
-  ::
-  |=  [z=identity x=identity tc=jug-id tcb=jug-id g=callgraph seat=(unit spot)]
+++  he-sock
+  |=  [big=sock smol=sock]
   ^-  ?
-  ?.  (~(has by g) x)  |
-  =/  z-t-lers  (~(get ju tcb) z)
-  ?:  (~(has in z-t-lers) x)  |
-  =-  ?=(^ -)
-  ^-  (unit ~)
-  %+  set-first-match  z-t-lers
-  |=  a=identity
-  ^-  (unit ~)
-  =/  a-t-lees  (~(get ju tc) a)
-  ?.  (~(has in a-t-lees) x)  ~
-  =/  a-t-lers  (~(get ju tcb) a)
-  ?:  (~(has in a-t-lers) x)  ~
-  %+  set-first-match  a-t-lees
-  |=  b=identity
-  ?.  =(fol.b fol.a)  ~
-  ?:  =(a b)  ~
-  =/  b-t-lers  (~(get ju tcb) b)
-  ?:  (~(has in b-t-lers) x)  ~
-  =/  b-t-lees  (~(get ju tc) b)
-  ?:  (~(has in b-t-lees) a)  ~
-  %+  set-first-match  b-t-lees
-  |=  y=identity
-  ?.  =(fol.y fol.x)  ~
-  ?:  =(x y)  ~
-  =/  y-t-lers  (~(get ju tcb) y)
-  ?:  (~(has in y-t-lers) x)  ~
-  =/  y-t-lees  (~(get ju tc) y)
-  ?.  (~(has in y-t-lees) z)  ~
-  [~ ~]
+  =*  h-e  .
+  ?:  =(big smol)  &
+  ?:  &(?=(@ cape.big) ?=(@ cape.smol))  |
+  =/  couple=?
+    ?.  &(?=(^ cape.big) ?=(^ cape.smol))  |
+    ~+
+    ?&  (h-e (hed:so big) (hed:so smol))
+        (h-e (tel:so big) (tel:so smol))
+    ==
+  ::
+  ?:  couple  &
+  ?@  cape.big  |
+  ~+
+  ?|  (h-e (hed:so big) smol)
+      (h-e (tel:so big) smol)
+  ==
+::  most specific generalization of two socks
+::
+++  msg-sock
+  |=  [a=sock b=sock]
+  ^-  sock
+  =*  msg  .
+  ?:  =(a b)  a
+  ?:  |(?=(@ cape.a) ?=(@ cape.b))  |+~
+  ~+
+  (knit:so (msg (hed:so a) (hed:so b)) (msg (tel:so a) (tel:so b)))
 ::
 ++  recursive-call
   ~%  %recursive-call  ..zuse  ~
-  |=  [id-caller=identity id-kid=identity tcb=jug-id g=callgraph]
+  |=  [id-caller=identity id-kid=identity called-by=jug-id g=callgraph]
   ^-  (unit [id=identity d=datum])
-  =/  fast-match=(unit [id=identity d=datum])
-    ?.  =(fol.id-kid fol.id-caller)  ~
-    =/  d=datum  (git-g g id-caller)
-    ?:  (huge:so less-code.d more.id-kid)  `[id-caller d]
-    ~
-  ::
-  ?^  fast-match  fast-match
-  %+  set-first-match  (~(get ju tcb) id-caller)
-  |=  tr-caller=identity
-  ?.  =(fol.id-kid fol.tr-caller)  ~
-  =/  d=datum  (git-g g tr-caller)
-  ?:  (huge:so less-code.d more.id-kid)  `[tr-caller d]
-  ~
+  =|  visited=(set identity)
+  =/  callers=(list identity)  ~[id-caller]
+  |-  ^-  (unit [id=identity d=datum])
+  =*  visit-loop  $
+  ?:  =(~ callers)  ~
+  =/  l=(list identity)  callers
+  |-  ^-  (unit [id=identity d=datum])
+  =*  l-loop  $
+  ?^  l
+    ?~  d=(recursive-match id-kid i.l g)  l-loop(l t.l)  ::  XX add HE check
+    `[i.l u.d]
+  =.  visited  (~(gas in visited) callers)
+  %=    visit-loop
+      callers
+    %-  skip  :_  ~(has in visited)
+    %~  tap  in
+    %+  roll  callers
+    |=  [id=identity acc=(set identity)]
+    (~(uni in acc) (~(get ju called-by) id))
+  ==
 ::
 ++  mi
   |%
@@ -1250,8 +1226,8 @@
   =/  w=worklist  [root ~ ~]
   =|  calls=jug-id
   =|  called-by=jug-id
-  =|  transitive-calls=jug-id
-  =|  transitive-called-by=jug-id
+  :: =|  transitive-calls=jug-id
+  :: =|  transitive-called-by=jug-id
   ::
   :: =<  $
   :: ~%  %analysis  ..zuse  ~
@@ -1287,31 +1263,31 @@
       |=  [callee=identity acc=_acc]
       (~(put ju acc) callee caller)
     ::
-    =.  transitive-called-by
-      =<  $
-      ~%  %update-transitive-called-by  ..zuse  ~
-      |.
-      ~>  %bout.[0 'tcb update        ']
-      %:  update-transitive
-        transitive-called-by
-        called-by
-        new-called-by
-        calls
-        new-calls
-      ==
+    :: =.  transitive-called-by
+    ::   =<  $
+    ::   ~%  %update-transitive-called-by  ..zuse  ~
+    ::   |.
+    ::   ~>  %bout.[0 'tcb update        ']
+    ::   %:  update-transitive
+    ::     transitive-called-by
+    ::     called-by
+    ::     new-called-by
+    ::     calls
+    ::     new-calls
+    ::   ==
     ::
-    =.  transitive-calls
-      =<  $
-      ~%  %update-transitive-calls  ..zuse  ~
-      |.
-      ~>  %bout.[0 'tc update         ']
-      %:  update-transitive
-        transitive-calls
-        calls
-        new-calls
-        called-by
-        new-called-by
-      ==
+    :: =.  transitive-calls
+    ::   =<  $
+    ::   ~%  %update-transitive-calls  ..zuse  ~
+    ::   |.
+    ::   ~>  %bout.[0 'tc update         ']
+    ::   %:  update-transitive
+    ::     transitive-calls
+    ::     calls
+    ::     new-calls
+    ::     called-by
+    ::     new-called-by
+    ::   ==
     ::
     =.  calls      new-calls
     =.  called-by  new-called-by
@@ -1510,12 +1486,10 @@
       =/  id-there=identity  [sock.prod.s fol-new]
       ?^  d=(~(get by g-previous) id-there)
         [id-there u.d]
-      ?^  par=(recursive-call id id-there transitive-called-by g-previous)
+      ?^  par=(recursive-call id id-there called-by g-previous)
         u.par(prod.d |+~, map.d ~)
       [id-there *datum]
     ::
-    ?:  (evil-eval id id-there transitive-calls transitive-called-by g-previous seat)
-      [[[%2 nomm.s nomm.f ~] dunno] gen]
     =.  want.gen  (uni:ca want.gen (distribute & src.prod.f))
     =.  want.gen
       (uni:ca want.gen (distribute cape.less-code.dat-there src.prod.s))

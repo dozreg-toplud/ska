@@ -119,9 +119,9 @@
 --
 ::
 :-  %say  |=  *
-:: =/  sub  our-hoot
+=/  sub  our-hoot
 :: =/  sub  zuse-vendor
-=/  sub  ~
+:: =/  sub  ~
 :: =/  sub  ska-experiment1-hoot
 :: =/  sub
 ::   !:
@@ -140,12 +140,12 @@
   =>  sub  !=
   :: (~(mint ut [%atom %$ ~]) %noun [%dtls $+1])
   :: (ream '42')
-  :: (ride %noun '42')
-  !.
-  =/  t  |.(0)
-  |-  ^-  ~
-  ?:  =(3 $:t)  ~
-  $(t |.(+($:t)))
+  (ride %noun '42')
+  :: !.
+  :: =/  t  |.(0)
+  :: |-  ^-  ~
+  :: ?:  =(3 $:t)  ~
+  :: $(t |.(+($:t)))
   ::
   :: (scow %ud 5)
   :: (mug 42)
@@ -180,7 +180,7 @@
   (g v) 
 ::
 =/  l=(list callgraph)  ~>  %bout
-  (memo-call ska-callgraph:nock-compilation1 [&+sub fol] ~)
+  (ska-callgraph:nock-compilation1 [&+sub fol] ~)
 :: noun+(lent g)
 :: :-  %noun
 :: =;  l=(list wain)
