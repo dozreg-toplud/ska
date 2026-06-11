@@ -681,7 +681,7 @@
   ?:  =(~ t.a)  ~
   [i.a $(a t.a)]
 ::
-++  sort  !.                                            ::  quicksort
+++  sort  !:                                            ::  quicksort
   ~/  %sort
   |*  [a=(list) b=$-([* *] ?)]
   =>  .(a ^.(homo a))
@@ -6016,7 +6016,7 @@
   ?.(?=(%0 -.ton) ~ `product.ton)
 ::  +mink: raw virtual nock
 ::
-++  mink  !.
+++  mink  !:
   ~/  %mink
   |=  $:  [subject=* formula=*]
           scry=$@(~ $-(^ (unit (unit))))
@@ -6737,7 +6737,7 @@
 ::    5aa: new partial nock interpreter
 +|  %new-partial-nock-interpreter
 ::
-++  musk  !.                                            ::  nock with block set
+++  musk  !:                                            ::  nock with block set
   |%
   ++  abet
     ::    simplify raw result

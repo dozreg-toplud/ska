@@ -1,12 +1,30 @@
-/+  ska-experiment1
-/+  ska-experiment1-hoot
 /+  our-hoot=hoot
 /+  our-hoot-zpdt=hoot-zpdt
 /+  zuse-vendor
 /+  nock-compilation1
 ::
-=,  ska-experiment1
+=,  nock-compilation1
 |%
+++  strongly-normalize-sock
+  |=  s=sock
+  ^-  sock
+  ?@  data.s
+    ?^  cape.s  !!
+    ?.  cape.s  |+~
+    s
+  ?@  cape.s
+    ?.  cape.s  |+~
+    s
+  ~+
+  =/  l=sock  (hed:so s)
+  =/  r=sock  (tel:so s)
+  =/  c=cape
+    ?:  &(=(cape.l cape.r) ?=(@ cape.l))  cape.l
+    [cape.l cape.r]
+  ::
+  ?:  ?=(%| c)  |+~
+  [c data.l data.r]
+::
 ++  count-bells
   |=  g=callgraph
   ^-  @
@@ -14,7 +32,7 @@
   ^-  (set bell)
   %-  ~(rep by g)
   |=  [[k=identity v=datum] acc=(set bell)]
-  (~(put in acc) [less-code.v fol.k])
+  (~(put in acc) [(strongly-normalize-sock less-code.v) fol.k])
 ::
 ++  condense
   |=  [g=callgraph id=identity]
@@ -32,9 +50,9 @@
   ?:  (~(has by new) id)  $(q t.q)
   =/  d=datum  (git-g g i.q)
   =/  callees=(list identity)
-    (turn ~(tap in callees.d) |=(callee-entry identity))
+    (turn ~(tap in callees.d) |=(callee-entry id))
   ::
-  =/  g  |=  callee-entry  +<(identity (~(gut by m) identity [|+~ fol.identity]))
+  =/  g  |=  callee-entry  +<(id (~(gut by m) id [|+~ fol.id]))
   =.  new  (~(put by new) id d(callees (~(run in callees.d) g)))
   $(q (weld t.q callees))
 ::
@@ -44,7 +62,7 @@
   =/  funcs=(set identity)
     %-  ~(rep by g)
     |=  [[k=identity v=datum] acc=(set identity)]
-    =/  s=(set identity)  (~(run in callees.v) |=(callee-entry identity))
+    =/  s=(set identity)  (~(run in callees.v) |=(callee-entry id))
     (~(put in (~(uni in acc) s)) k)
   ::
   =/  func-to-id=(map identity @ux)
@@ -98,40 +116,12 @@
       'callgraph:'
       [%rose [" " "\{" "}"] calls-rendered]
   ==
-::
-++  rewrite-nomm
-  |=  n=nomm:nock-compilation1
-  ^-  nomm-1
-  *nomm-1
-  :: ~+
-  :: =*  r  .
-  :: ?+  n  n
-  ::   [p=^ q=*]  `nomm-1`[`nomm-1`(r p.n) `nomm-1`(r q.n)]
-  ::   [%2 *]     n(q `(r q.n), p (r p.n))
-  ::   [%3 *]     n(p (r p.n))
-  ::   [%4 *]     n(p (r p.n))
-  ::   [%5 *]     n(p (r p.n), q (r q.n))
-  ::   [%6 *]     n(p (r p.n), q (r q.n), r (r r.n))
-  ::   [%7 *]     n(p (r p.n), q (r q.n))
-  ::   [%10 *]    n(q.p (r q.p.n), q (r q.n))
-  ::   [%11 *]    ?@  p.n  n(q (r q.n))
-  ::              n(q (r q.n), q.p (r q.p.n))
-  ::   [%12 *]    n(p (r p.n), q (r q.n))
-  :: ==
-::
-++  rewrite-callgraph
-  |=  g=callgraph:nock-compilation1
-  ^-  callgraph
-  %-  ~(run by g)
-  |=  d=datum:nock-compilation1
-  ^-  datum
-  d(nomm (rewrite-nomm nomm.d))
 --
 ::
 :-  %say  |=  *
-=/  sub  our-hoot
+:: =/  sub  our-hoot
 :: =/  sub  zuse-vendor
-:: =/  sub  ~
+=/  sub  ~
 :: =/  sub  ska-experiment1-hoot
 :: =/  sub
 ::   !:
@@ -150,12 +140,12 @@
   =>  sub  !=
   :: (~(mint ut [%atom %$ ~]) %noun [%dtls $+1])
   :: (ream '42')
-  (ride %noun '42')
-  :: !.
-  :: =/  t  |.(0)
-  :: |-  ^-  ~
-  :: ?:  =(3 $:t)  ~
-  :: $(t |.(+($:t)))
+  :: (ride %noun '42')
+  !.
+  =/  t  |.(0)
+  |-  ^-  ~
+  ?:  =(3 $:t)  ~
+  $(t |.(+($:t)))
   ::
   :: (scow %ud 5)
   :: (mug 42)
@@ -182,17 +172,15 @@
 ::
 :: ~&  .*(sub fol)
 =/  memo-call
-  =>  ..ride
+  =>  ..ride  !.
   |*  [g=gate v=*]
   %-  need  %-  ~(mole vi |)
   |.  =>  [g=g v=v]
-  !.  ~>  %memo./user
+  ~>  %memo./user
   (g v) 
 ::
 =/  l=(list callgraph)  ~>  %bout
-  :: (memo-call ska-experiment1 &+sub fol)
-  :: (ska-experiment1 &+sub fol)
-  (turn ~>(%bout.[0 %ska] (ska-callgraph:nock-compilation1 [&+sub fol] ~)) rewrite-callgraph)
+  (memo-call ska-callgraph:nock-compilation1 [&+sub fol] ~)
 :: noun+(lent g)
 :: :-  %noun
 :: =;  l=(list wain)

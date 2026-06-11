@@ -578,18 +578,65 @@
 ::
 ++  evil-eval
   ~%  %evil-eval  ..zuse  ~
-  |=  [id-caller=identity fol-callee=^ tcb=jug-id g=callgraph]
-  ^-  (unit sock-anno)
-  %+  set-first-match  (~(get ju tcb) id-caller)
-  |=  tr-caller=identity
-  ^-  (unit sock-anno)
-  ?.  =(fol.tr-caller fol.id-caller)  ~
-  =/  d=datum  (git-g g tr-caller)
-  %+  set-first-match  callees.d
-  |=  callee-entry
-  ^-  (unit sock-anno)
-  ?.  =(fol-callee fol.id)  ~
-  `[more.id src]  ::  XX sound?
+  ::       A
+  ::      / \
+  ::     /   \
+  ::    X     B
+  ::           \                        ::
+  ::            \                       ::  -- transitive edge
+  ::             Y                      ::  -  immediate edge
+  ::              \                     ::
+  ::               \
+  ::                Z
+  ::                 \
+  ::                  X
+  ::
+  ::  We are in Z, about to call X. X/Y and A/B have same formulas
+  ::  We check that:
+  ::    X is already in the callgraph;
+  ::    X does not call Z
+  ::    A calls X
+  ::    A and B have same formulas
+  ::    A and B are not the same function
+  ::    X does not call B
+  ::    B does not call A
+  ::    Y and X have same formulas
+  ::    X and Y are not the same function
+  ::    X does not call Y
+  ::    Y calls Z
+  ::    
+  ::
+  |=  [z=identity x=identity tc=jug-id tcb=jug-id g=callgraph seat=(unit spot)]
+  ^-  ?
+  ?.  (~(has by g) x)  |
+  =/  z-t-lers  (~(get ju tcb) z)
+  ?:  (~(has in z-t-lers) x)  |
+  =-  ?=(^ -)
+  ^-  (unit ~)
+  %+  set-first-match  z-t-lers
+  |=  a=identity
+  ^-  (unit ~)
+  =/  a-t-lees  (~(get ju tc) a)
+  ?.  (~(has in a-t-lees) x)  ~
+  =/  a-t-lers  (~(get ju tcb) a)
+  ?:  (~(has in a-t-lers) x)  ~
+  %+  set-first-match  a-t-lees
+  |=  b=identity
+  ?.  =(fol.b fol.a)  ~
+  ?:  =(a b)  ~
+  =/  b-t-lers  (~(get ju tcb) b)
+  ?:  (~(has in b-t-lers) x)  ~
+  =/  b-t-lees  (~(get ju tc) b)
+  ?:  (~(has in b-t-lees) a)  ~
+  %+  set-first-match  b-t-lees
+  |=  y=identity
+  ?.  =(fol.y fol.x)  ~
+  ?:  =(x y)  ~
+  =/  y-t-lers  (~(get ju tcb) y)
+  ?:  (~(has in y-t-lers) x)  ~
+  =/  y-t-lees  (~(get ju tc) y)
+  ?.  (~(has in y-t-lees) z)  ~
+  [~ ~]
 ::
 ++  recursive-call
   ~%  %recursive-call  ..zuse  ~
@@ -1092,6 +1139,104 @@
     $
   ::
   acc(fin [done fin.acc])
+::  to incrementally construct transitive closure of a graph:
+::    1. get the set of all id's whose immediate children changed ("seed");
+::    2. walk the reversed graph (unified with the prev version just in
+::       case), assembling the set of all id's which could reach the set
+::       from step 1 ("affected");
+::    3. Get the reversed subgraph of affected vertices: new-reversed from and
+::       to affected;
+::    5. Get SCCs of the reversed subgraph in toposorted order (caller SCCs
+::       first);
+::    6. For each SCC compute "closure", assign it to each member of SCC
+::    7. To compute "closure": union over every immediate child of every
+::       member of the SCC: {child} if child in SCC, else
+::       {child} U TCB[child]
+::
+++  update-transitive
+  ~%  %update-transitive  ..zuse  ~
+  |=  $:  prev-trans=jug-id
+          prev-graph=jug-id
+          new-graph=jug-id
+          prev-reversed=jug-id
+          new-reversed=jug-id
+      ==
+  ^-  jug-id
+  =/  seeds=(set identity)
+    %-  ~(rep in (~(uni in ~(key by prev-graph)) ~(key by new-graph)))
+    |=  [id=identity acc=(set identity)]
+    ?:  =((~(get ju prev-graph) id) (~(get ju new-graph) id))
+      acc
+    (~(put in acc) id)
+  ::
+  =/  uno-reversed=jug-id
+    %-  (~(uno by new-reversed) prev-reversed)
+    |=  [identity a=(set identity) b=(set identity)]
+    (~(uni in a) b)
+  ::
+  =/  affected=(set identity)
+    =/  sinks=(list identity)  ~(tap in seeds)
+    =|  out=(set identity)
+    |-  ^-  (set identity)
+    ?:  =(~ sinks)  out
+    =.  out  (~(gas in out) sinks)
+    %=    $
+        sinks
+      %-  skip  :_  ~(has in out)
+      %~  tap  in
+      %+  roll  sinks
+      |=  [id=identity acc=(set identity)]
+      (~(uni in acc) (~(get ju uno-reversed) id))
+    ==
+  ::
+  =/  affected-dep-subgraph=jug-id
+    %-  ~(rep in affected)
+    |=  [id=identity acc=jug-id]
+    %+  ~(put by acc)  id
+    (~(int in affected) (~(get ju new-reversed) id))
+  ::
+  ::  callers first
+  ::
+  =/  sccs=(list (set identity))  ((tarjan identity) affected-dep-subgraph)
+  =<  $
+  ~%  %closures-update-prev-trans  ..zuse  ~
+  |.
+  %+  roll  sccs
+  |=  [scc=(set identity) acc-ju=_prev-trans]
+  =/  closure=(set identity)
+    %-  ~(rep in scc)
+    |=  [member=identity acc-se=(set identity)]
+    %-  ~(rep in (~(get ju new-graph) member))
+    |=  [child=identity =_acc-se]
+    ?:  (~(has in scc) child)  (~(put in acc-se) child)
+    %-  ~(uni in (~(put in acc-se) child))
+    (~(get ju acc-ju) child)
+  ::
+  %-  ~(rep in scc)
+  |=  [member=identity =_acc-ju]  
+  (~(put by acc-ju) member closure)
+::
+++  check-inverses
+  |=  [dir=jug-id inv=jug-id]
+  ^-  ?
+  =/  edges=(list (pair identity identity))
+    %-  ~(rep by dir)
+    |=  [[k=identity v=(set identity)] acc=(list (pair identity identity))]
+    %-  ~(rep in v)
+    |=  [i=identity =_acc]
+    [[k i] acc]
+  ::
+  =.  inv
+    %+  roll  edges
+    |=  [[i=identity k=identity] acc=_inv]
+    (~(del ju acc) k i)
+  ::
+  |-  ^-  ?
+  ?~  inv  &
+  ?&  =(~ q.n.inv)
+      $(inv l.inv)
+      $(inv r.inv)
+  ==
 ::  Produces a list of callgraphs for visualization purposes. The fixpoint is
 ::  the first callgraph in the list
 ::
@@ -1105,6 +1250,7 @@
   =/  w=worklist  [root ~ ~]
   =|  calls=jug-id
   =|  called-by=jug-id
+  =|  transitive-calls=jug-id
   =|  transitive-called-by=jug-id
   ::
   :: =<  $
@@ -1116,13 +1262,12 @@
   ::
   =;  [w-new=worklist w-call=worklist new-calls=jug-id g1=callgraph]
     =.  g  (~(uni by g) g1)
-    :: =.  g  g1
     =/  new-called-by=jug-id
       ::  calculate the diff between new-calls and calls to update called-by
       ::
-      :: =<  $
-      :: ~%  %called-by-update  ..zuse  ~
-      :: |.
+      =<  $
+      ~%  %called-by-update  ..zuse  ~
+      |.
       ::  we only add/replace callers to "calls" graph, so grabbing the keys of
       ::  new-calls is enough to get identities of all callers
       ::
@@ -1147,77 +1292,30 @@
       ~%  %update-transitive-called-by  ..zuse  ~
       |.
       ~>  %bout.[0 'tcb update        ']
-      ::  to incrementally construct transitive closure of the reversed
-      ::  callgraph:
-      ::    1. get the set of all id's whose immediate callers changed ("seed");
-      ::    2. walk the direct callgraph (unified with the prev version just in
-      ::       case), assembling the set of all id's which could reach the set
-      ::       from step 1 along the reversed callgraph ("affected");
-      ::    3. Get the direct subgraph of affected vertices: new-calls from and
-      ::       to affected;
-      ::    5. Get SCCs in toposorted order (caller SCCs first);
-      ::    6. For each SCC compute "closure", assign it to each member of SCC
-      ::    7. To compute "closure": union over every immediate caller of every
-      ::       member of the SCC: {caller} if caller in SCC, else
-      ::       {caller} U TCB[caller]
-      ::
-      =/  seeds=(set identity)
-        =/  all-callees  (~(uni in ~(key by called-by)) ~(key by new-called-by))
-        %-  ~(rep in all-callees)
-        |=  [id=identity acc=(set identity)]
-        ?:  =((~(get ju called-by) id) (~(get ju new-called-by) id))
-          acc
-        (~(put in acc) id)
-      ::
-      =/  uno-calls=jug-id
-        %-  (~(uno by new-calls) calls)
-        |=  [identity a=(set identity) b=(set identity)]
-        (~(uni in a) b)
-      ::
-      =/  affected=(set identity)
-        =/  callees=(list identity)  ~(tap in seeds)
-        =|  out=(set identity)
-        |-  ^-  (set identity)
-        ?:  =(~ callees)  out
-        =.  out  (~(gas in out) callees)
-        %=    $
-            callees
-          %-  skip  :_  ~(has in out)
-          %~  tap  in
-          %+  roll  callees
-          |=  [id=identity acc=(set identity)]
-          (~(uni in acc) (~(get ju uno-calls) id))
-        ==
-      ::
-      =/  affected-dep-subgraph=jug-id
-        %-  ~(rep in affected)
-        |=  [id=identity acc=jug-id]
-        %+  ~(put by acc)  id
-        (~(int in affected) (~(get ju new-calls) id))
-      ::
-      ::  callers first
-      ::
-      =/  sccs=(list (set identity))  ((tarjan identity) affected-dep-subgraph)
+      %:  update-transitive
+        transitive-called-by
+        called-by
+        new-called-by
+        calls
+        new-calls
+      ==
+    ::
+    =.  transitive-calls
       =<  $
-      ~%  %closures-update-transitive-called-by  ..zuse  ~
+      ~%  %update-transitive-calls  ..zuse  ~
       |.
-      %+  roll  sccs
-      |=  [scc=(set identity) acc-ju=_transitive-called-by]
-      =/  closure=(set identity)
-        %-  ~(rep in scc)
-        |=  [member=identity acc-se=(set identity)]
-        %-  ~(rep in (~(get ju new-called-by) member))
-        |=  [caller=identity =_acc-se]
-        ?:  (~(has in scc) caller)  (~(put in acc-se) caller)
-        %-  ~(uni in (~(put in acc-se) caller))
-        (~(get ju acc-ju) caller)
-      ::
-      %-  ~(rep in scc)
-      |=  [member=identity =_acc-ju]  
-      (~(put by acc-ju) member closure)
+      ~>  %bout.[0 'tc update         ']
+      %:  update-transitive
+        transitive-calls
+        calls
+        new-calls
+        called-by
+        new-called-by
+      ==
     ::
     =.  calls      new-calls
     =.  called-by  new-called-by
+    :: ?>  (check-inverses transitive-calls transitive-called-by)
     =/  w-back=worklist
       ::  worklist of functions whose immediate callees changed
       ::
@@ -1230,6 +1328,21 @@
     ::
     =/  w-new=worklist  (~(uni in w-new) w-back)
     ?:  =(w-new ~)  [g history]
+    ::  Tried keeping track of the transitive callgraph and memoizing functions
+    ::  that are finalized, that is, they and their transitive callees are not
+    ::  in the worklist. Seemingly didn't work for some reason: number of bells
+    ::  shrinked.
+    ::
+    :: =.  memo-final
+    ::   %-  ~(rep by g)
+    ::   |=  [[id=identity d=datum] =_memo-final]
+    ::   ?:  ?|  (~(has in w-new) id)
+    ::           ?=  ^
+    ::           (~(int in w-new) (~(get ju transitive-calls) id))
+    ::       ==
+    ::     memo-final
+    ::   (put:mi memo-final id d)
+    ::
     =/  new-count   ~(wyt in ^w-new)
     =/  upd-count   ~(wyt in w-back)
     =/  uniq-count  ~(wyt in `(set ^)`(~(run in w-new) |=(id=identity fol.id)))
@@ -1237,7 +1350,7 @@
     fixpoint-callgraph(w w-new, history [g history])
   ::
   ~>  %bout.[0 %callgraph-fixpoint]
-  =*  g-previous      g
+  =*  g-previous  g
   =*  calls-previous  calls
   =<  -
   %-  ~(rep in w)
@@ -1378,13 +1491,13 @@
       ::
       [[[%2 nomm.s nomm.f ~] dunno] gen]
     =/  fol-new=^  data.sock.prod.f
-    =.  want.gen  (uni:ca want.gen (distribute & src.prod.f))
     ::  Inline leaf formulas. Allows to analyze through formulas whose products
     ::  are gates, also speeds up analysis. Should be safe to comment out the
     ::  condition and the first branch - useful during debugging to rule out
     ::  stuff.
     ::
     ?:  &(?=(~ memo-key) (inlineable fol-new))
+      =.  want.gen  (uni:ca want.gen (distribute & src.prod.f))
       =^  inline  gen  fol-loop(fol fol-new, sub prod.s)
       :_  gen
       :-  [%7 nomm.s nomm.inline]
@@ -1397,16 +1510,13 @@
       =/  id-there=identity  [sock.prod.s fol-new]
       ?^  d=(~(get by g-previous) id-there)
         [id-there u.d]
-      :: ?^  par=(recursive-call id id-there called-by g-previous)
       ?^  par=(recursive-call id id-there transitive-called-by g-previous)
         u.par(prod.d |+~, map.d ~)
       [id-there *datum]
     ::
-    :: =.  prod.s
-    ::   ?~  sub-callee=(evil-eval id fol-new transitive-called-by g-previous)
-    ::     prod.s
-    ::   (double-int prod.s u.sub-callee)
-    ::
+    ?:  (evil-eval id id-there transitive-calls transitive-called-by g-previous seat)
+      [[[%2 nomm.s nomm.f ~] dunno] gen]
+    =.  want.gen  (uni:ca want.gen (distribute & src.prod.f))
     =.  want.gen
       (uni:ca want.gen (distribute cape.less-code.dat-there src.prod.s))
     ::
