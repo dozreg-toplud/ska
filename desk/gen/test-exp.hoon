@@ -138,9 +138,9 @@
 =/  fol
   ;;  ^
   =>  sub  !=
-  :: (~(mint ut [%atom %$ ~]) %noun [%dtls $+1])
+  (~(mint ut [%atom %$ ~]) %noun [%dtls $+1])
   :: (ream '42')
-  (ride %noun '42')
+  :: (ride %noun '42')
   :: !.
   :: =/  t  |.(0)
   :: |-  ^-  ~
@@ -150,7 +150,7 @@
   :: (scow %ud 5)
   :: (mug 42)
   :: (a-co:co 4)
-  :: (dec 2)
+  :: (mul 2 2)
   :: ((x-co:co 0) 4)
   :: |-  ^-  *
   :: [0 $]
