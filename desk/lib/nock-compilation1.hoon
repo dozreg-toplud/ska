@@ -559,14 +559,6 @@
 +$  worklist  (set identity)
 +$  memo  (map ^ (map sock [id=identity =datum]))  ::  fol -> less-memo -> entry
 ::
-++  recursive-match
-  |=  [kid=identity par=identity g=callgraph]
-  ^-  (unit datum)
-  ?.  =(fol.kid fol.par)  ~
-  =/  d=datum  (git-g g par)
-  ?:  (huge:so less-code.d more.kid)  `d
-  ~
-::
 ++  set-first-match
   |*  [s=(set) g=$-(* (unit))]
   ^+  $:g
@@ -578,12 +570,15 @@
 ::  check if "big" homeomorphically embeds "smol"
 ::
 ++  he-sock
+  ~%  %he-sock  ..zuse  ~
   |=  [big=sock smol=sock]
   ^-  ?
   =*  h-e  .
   ?:  =(big smol)  &
   ?:  &(?=(@ cape.big) ?=(@ cape.smol))  |
   =/  couple=?
+    ::  smol and big are cells and smol is distributed in head and tail of big
+    ::
     ?.  &(?=(^ cape.big) ?=(^ cape.smol))  |
     ~+
     ?&  (h-e (hed:so big) (hed:so smol))
@@ -592,6 +587,8 @@
   ::
   ?:  couple  &
   ?@  cape.big  |
+  ::  big is a cell and smol is either in head or tail
+  ::
   ~+
   ?|  (h-e (hed:so big) smol)
       (h-e (tel:so big) smol)
@@ -605,7 +602,8 @@
   ?:  =(a b)  a
   ?:  |(?=(@ cape.a) ?=(@ cape.b))  |+~
   ~+
-  (knit:so (msg (hed:so a) (hed:so b)) (msg (tel:so a) (tel:so b)))
+  %+  knit:so  (msg [-.cape -.data]:a [-.cape -.data]:b)
+  (msg [+.cape +.data]:a [+.cape +.data]:b)
 ::
 ++  recursive-call-tcb
   |=  [id-caller=identity id-kid=identity tcb=jug-id g=callgraph]
@@ -621,7 +619,7 @@
   |=  tr-caller=identity
   ?.  =(fol.id-kid fol.tr-caller)  ~
   =/  d=datum  (git-g g tr-caller)
-  ?:  (huge:so less-code.d more.id-kid)  `[tr-caller d]
+  ?:  (huge:so less-code.d more.id-kid)  `[tr-caller d(prod |+~, map ~)]
   ~
 ::
 ++  recursive-call
@@ -637,8 +635,14 @@
   |-  ^-  (unit [id=identity d=datum])
   =*  l-loop  $
   ?^  l
-    ?~  d=(recursive-match id-kid i.l g)  l-loop(l t.l)  ::  XX add HE check
-    `[i.l u.d]
+    ?.  =(fol.id-kid fol.i.l)  l-loop(l t.l)
+    =/  d=datum  (git-g g i.l)
+    ?:  (huge:so less-code.d more.id-kid)
+      `[i.l d(prod |+~, map ~)]
+    ?:  (he-sock more.id-kid more.i.l)
+      =/  id-msg=identity  [(msg-sock more.id-kid more.i.l) fol.id-kid]
+      `[id-msg (git-g g id-msg)]
+    l-loop(l t.l)
   =.  visited  (~(gas in visited) callers)
   %=    visit-loop
       callers
@@ -1575,8 +1579,7 @@
           (recursive-call id id-there called-by g-previous)
         (recursive-call-tcb id id-there transitive-called-by g-previous)
       ::
-      ?^  par
-        u.par(prod.d |+~, map.d ~)
+      ?^  par  u.par
       [id-there *datum]
     ::
     =.  want.gen  (uni:ca want.gen (distribute & src.prod.f))
