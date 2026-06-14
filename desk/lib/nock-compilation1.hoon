@@ -607,6 +607,23 @@
   ~+
   (knit:so (msg (hed:so a) (hed:so b)) (msg (tel:so a) (tel:so b)))
 ::
+++  recursive-call-tcb
+  |=  [id-caller=identity id-kid=identity tcb=jug-id g=callgraph]
+  ^-  (unit [id=identity d=datum])
+  =/  fast-match=(unit [id=identity d=datum])
+    ?.  =(fol.id-kid fol.id-caller)  ~
+    =/  d=datum  (git-g g id-caller)
+    ?:  (huge:so less-code.d more.id-kid)  `[id-caller d]
+    ~
+  ::
+  ?^  fast-match  fast-match
+  %+  set-first-match  (~(get ju tcb) id-caller)
+  |=  tr-caller=identity
+  ?.  =(fol.id-kid fol.tr-caller)  ~
+  =/  d=datum  (git-g g tr-caller)
+  ?:  (huge:so less-code.d more.id-kid)  `[tr-caller d]
+  ~
+::
 ++  recursive-call
   ~%  %recursive-call  ..zuse  ~
   |=  [id-caller=identity id-kid=identity called-by=jug-id g=callgraph]
@@ -631,6 +648,15 @@
     |=  [id=identity acc=(set identity)]
     (~(uni in acc) (~(get ju called-by) id))
   ==
+::
+++  src-check-present
+  |=  [src=spring less=sock]
+  ^-  ?
+  ?~  src  &
+  ?@  src
+    =/  part  (pull:so less src)
+    ?=(%& cape.part)
+  &($(src -.src) $(src +.src))
 ::
 ++  mi
   |%
@@ -658,6 +684,10 @@
     ~%  %put-mi  ..zuse  ~
     |=  [m=memo id=identity d=datum]
     ^-  memo
+    ::  if some part of the captured subject is unknown, do not memoize
+    ::  to prevent deoptz
+    ::
+    ?.  (src-check-present map.d less-memo.d)  m
     =/  inner  (gut m fol.id)
     =.  inner  (~(put by inner) less-memo.d [id d])
     (~(put by m) fol.id inner)
@@ -1213,6 +1243,15 @@
       $(inv l.inv)
       $(inv r.inv)
   ==
+::
+++  msg-indi-ca
+  |=  [a=cape b=cape]
+  ^-  cape
+  =*  msg  .
+  ?:  =(a b)  a
+  ?:  |(?=(@ a) ?=(@ b))  &
+  [(msg -.a -.b) (msg +.a +.b)]
+::
 ::  Produces a list of callgraphs for visualization purposes. The fixpoint is
 ::  the first callgraph in the list
 ::
@@ -1221,12 +1260,24 @@
   |=  [[bus=sock fol=^] memo-final=memo]
   ^-  (list callgraph)
   =|  g=callgraph
+  ::  Part of the callgraph that was finalized
+  ::
+  :: =|  g-done=callgraph
   =|  history=(list callgraph)
   =/  root  [bus fol]
   =/  w=worklist  [root ~ ~]
   =|  calls=jug-id
   =|  called-by=jug-id
+  ::  Transitive closure of the callgraph. Used in memoization of finalized
+  ::  parts of the callgraph, but it's not worth it
+  ::
   :: =|  transitive-calls=jug-id
+  ::  Memoization table for finalized results. Needs .transitive-calls
+  ::
+  :: =|  memo-done=memo
+  ::  Transitive closure of the inverse of the callgraph. Can be used in loop
+  ::  detection, but not worth it.
+  ::
   :: =|  transitive-called-by=jug-id
   ::
   :: =<  $
@@ -1237,7 +1288,8 @@
   ::  the callgraph and updated calls
   ::
   =;  [w-new=worklist w-call=worklist new-calls=jug-id g1=callgraph]
-    =.  g  (~(uni by g) g1)
+    :: =.  g  (~(uni by g) g1)
+    =.  g  g1
     =/  new-called-by=jug-id
       ::  calculate the diff between new-calls and calls to update called-by
       ::
@@ -1262,32 +1314,37 @@
       %-  ~(rep in callee-addition)
       |=  [callee=identity acc=_acc]
       (~(put ju acc) callee caller)
+    ::  update transitive closures, if defined
     ::
-    :: =.  transitive-called-by
-    ::   =<  $
-    ::   ~%  %update-transitive-called-by  ..zuse  ~
-    ::   |.
-    ::   ~>  %bout.[0 'tcb update        ']
-    ::   %:  update-transitive
-    ::     transitive-called-by
-    ::     called-by
-    ::     new-called-by
-    ::     calls
-    ::     new-calls
-    ::   ==
+    =>  !@  transitive-called-by  .
+        %_  .  transitive-called-by
+          =<  $
+          ~%  %update-transitive-called-by  ..zuse  ~
+          |.
+          ~>  %bout.[0 'tcb update        ']
+          %:  update-transitive
+            transitive-called-by
+            called-by
+            new-called-by
+            calls
+            new-calls
+          ==
+        ==
     ::
-    :: =.  transitive-calls
-    ::   =<  $
-    ::   ~%  %update-transitive-calls  ..zuse  ~
-    ::   |.
-    ::   ~>  %bout.[0 'tc update         ']
-    ::   %:  update-transitive
-    ::     transitive-calls
-    ::     calls
-    ::     new-calls
-    ::     called-by
-    ::     new-called-by
-    ::   ==
+    =>  !@  transitive-calls  .
+        %_  .  transitive-calls
+          =<  $
+          ~%  %update-transitive-calls  ..zuse  ~
+          |.
+          ~>  %bout.[0 'tc update         ']
+          %:  update-transitive
+            transitive-calls
+            calls
+            new-calls
+            called-by
+            new-called-by
+          ==
+        ==
     ::
     =.  calls      new-calls
     =.  called-by  new-called-by
@@ -1303,30 +1360,41 @@
     ::  else needs to be reanalysed as we'll just get the same result
     ::
     =/  w-new=worklist  (~(uni in w-new) w-back)
-    ?:  =(w-new ~)  [g history]
-    ::  Tried keeping track of the transitive callgraph and memoizing functions
-    ::  that are finalized, that is, they and their transitive callees are not
-    ::  in the worklist. Seemingly didn't work for some reason: number of bells
-    ::  shrinked.
+    ?:  =(w-new ~)  [!@(g-done g (~(uni by g-done) g)) history]
     ::
-    :: =.  memo-final
-    ::   %-  ~(rep by g)
-    ::   |=  [[id=identity d=datum] =_memo-final]
-    ::   ?:  ?|  (~(has in w-new) id)
-    ::           ?=  ^
-    ::           (~(int in w-new) (~(get ju transitive-calls) id))
-    ::       ==
-    ::     memo-final
-    ::   (put:mi memo-final id d)
+    =>  !@  memo-done  .
+        =*  dot  .
+        ~>  %bout.[0 'memo update       ']
+        =;  res=[memo-done=memo g=callgraph g-done=callgraph]
+          %_(dot memo-done memo-done.res, g g.res, g-done g-done.res)
+        ::
+        %-  ~(rep by g)
+        |=  [[id=identity d=datum] acc=_[=_memo-done =_g =_g-done]]
+        ?:  ?|  (~(has in w-new) id)
+            ::
+                ?=  ^
+                (~(int in w-new) (~(get ju transitive-calls) id))
+            ==
+          acc
+        [ (put:mi memo-done.acc id d)
+          (~(del by g.acc) id)
+          (~(put by g-done.acc) id d)
+        ]
     ::
     =/  new-count   ~(wyt in ^w-new)
     =/  upd-count   ~(wyt in w-back)
     =/  uniq-count  ~(wyt in `(set ^)`(~(run in w-new) |=(id=identity fol.id)))
     ~&  [%fixpoint new+new-count upd+upd-count uniq+uniq-count]
-    fixpoint-callgraph(w w-new, history [g history])
+    %=  fixpoint-callgraph
+      w        w-new
+      history  [!@(g-done g (~(uni by g-done) g)) history]
+    ==
   ::
   ~>  %bout.[0 %callgraph-fixpoint]
-  =*  g-previous  g
+  ::  pin .g-total if g-done is defined
+  ::
+  =>  !@  g-done  .  [g-total=`callgraph`(~(uni by g-done) g) .]
+  =*  g-previous  !@(g-total g g-total)
   =*  calls-previous  calls
   =<  -
   %-  ~(rep in w)
@@ -1337,13 +1405,24 @@
   |=  $:  id=identity
           ::  accumulator
           ::
-          $:  [w-new=worklist w-call=worklist calls=_calls g=callgraph]
+          $:  [w-new=worklist w-call=worklist =_calls =_g]
               m-new=_memo-final
       ==  ==
   ^-  [[worklist worklist jug-id callgraph] memo]
   =/  data  (git-g g-previous id)
   =/  bus=sock  more.id
   =;  [memo-hit=? data-new=datum m-new=memo]
+    =?  indirect-code-request.data-new
+        ?&  =([less-code prod map]:data-new [less-code prod map]:data)
+        ::
+            ?!  .=  indirect-code-request.data-new
+            indirect-code-request.data
+        ==
+      ::  if new datum only differs in indirect-code-request.data-new,
+      ::  turn disagreeing parts into %.y so that we converge
+      ::
+      (msg-indi-ca indirect-code-request.data-new indirect-code-request.data)
+    ::
     =.  g  (~(put by g) id data-new)
     =.  calls
       (~(put by calls) id (~(run in callees.data-new) |=([* id=identity *] id)))
@@ -1359,7 +1438,8 @@
     ::  do have to put ourselves in the callee worklist if our code usage or
     ::  product changed
     ::
-    =?  w-call  |(!=([less-code prod map]:data-new [less-code prod map]:data))
+    =?  w-call  ?!  .=  [less-code prod map indirect-code-request]:data-new
+                        [less-code prod map indirect-code-request]:data
       (~(put in w-call) id)
     ::
     [[w-new w-call calls g] m-new]
@@ -1486,7 +1566,16 @@
       =/  id-there=identity  [sock.prod.s fol-new]
       ?^  d=(~(get by g-previous) id-there)
         [id-there u.d]
-      ?^  par=(recursive-call id id-there called-by g-previous)
+      =/  m  !@  memo-done  `(unit [identity datum])`~
+             (git:mi memo-done fol-new sock.prod.s)
+      ::
+      ?^  m  u.m
+      =/  par
+        !@  transitive-called-by
+          (recursive-call id id-there called-by g-previous)
+        (recursive-call-tcb id id-there transitive-called-by g-previous)
+      ::
+      ?^  par
         u.par(prod.d |+~, map.d ~)
       [id-there *datum]
     ::
