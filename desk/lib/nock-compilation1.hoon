@@ -1260,6 +1260,25 @@
   ?:  |(?=(@ a) ?=(@ b))  &
   [(msg -.a -.b) (msg +.a +.b)]
 ::
+++  soft-spot
+  |=  n=*
+  ^-  (unit spot)
+  ?@  n  ~
+  =/  tel  +.n
+  =/  hed  -.n
+  ?.  ?=(pint tel)  ~
+  =;  pax=(unit path)
+    ?~  pax  ~
+    `[u.pax tel]
+  ::
+  |-  ^-  (unit path)
+  ?~  hed  `~
+  ?@  hed  ~
+  ?^  -.hed  ~
+  =/  rest=(unit path)  $(hed +.hed)
+  ?~  rest  ~
+  `[-.hed u.rest]
+::
 ::  Produces a list of callgraphs for visualization purposes. The fixpoint is
 ::  the first callgraph in the list
 ::
@@ -1660,7 +1679,8 @@
       =<  $
       ~%  %nock-11-soft  ..zuse  ~
       |.
-      =/  pot=(unit spot)  `;;(spot +.h.fol)  ::  XX soft
+      =/  pot=(unit spot)  (soft-spot +.h.fol)
+      ?~  pot  dot
       =?  area.gen  ?=(~ area.gen)  pot
       =.  seat  pot
       dot
