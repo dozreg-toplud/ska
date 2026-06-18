@@ -727,9 +727,11 @@
     [%12 p=^ q=^]      &((l p.fol) (l q.fol))
   ==
 ::
-::  check that the formula does not crash, returning constant product and nomm
+::  check that the formula does not crash and has no important sideeffect,
+::  returning constant product and nomm
 ::
 ++  safe
+  =*  hint-safe  ,?(%spot %mean)
   |=  fol=^
   ^-  (unit [=nomm prod=*])
   =*  g  .
@@ -743,10 +745,12 @@
     `[fol p.fol]
   ::
       [%11 a=@ p=^]
+    ?.  ?=(hint-safe a.fol)  ~
     ?~  p=(g p.fol)  ~
     `[[%11 a.fol nomm.u.p p.fol] prod.u.p]
   ::
       [%11 [a=@ h=^] p=^]
+    ?.  ?=(hint-safe a.fol)  ~
     ?~  h=(g h.fol)  ~
     ?~  p=(g p.fol)  ~
     `[[%11 [a.fol nomm.u.h] nomm.u.p p.fol] prod.u.p]
