@@ -543,7 +543,7 @@
 ::  id:   identity of the callee
 ::  src:  provenance of the callee's subject
 ::
-+$  callee-entry  [seat=(unit spot) id=identity src=spring]
++$  callee-entry  [seat=(unit spot) id=identity]
 +$  datum
   $:  callees=(set callee-entry)
       =nomm
@@ -1402,9 +1402,6 @@
   =*  calls-previous  calls
   =<  -
   %-  ~(rep in w)
-  ::  note that now "g" is a bunt (empty), but "calls" is inherited from the
-  ::  previous iteration
-  ::
   ~%  %ska-callgraph-iteration  ..zuse  ~
   |=  $:  id=identity
           ::  accumulator
@@ -1429,14 +1426,14 @@
     ::
     =.  g  (~(put by g) id data-new)
     =.  calls
-      (~(put by calls) id (~(run in callees.data-new) |=([* id=identity *] id)))
+      (~(put by calls) id (~(run in callees.data-new) |=(callee-entry id)))
     ::
     ::  don't have to put callees in the worklist on memo hit, they should
     ::  already be there
     ::
     =?  w-new  !memo-hit
       %-  ~(rep in callees.data-new)
-      |=  [[* id=identity *] acc=_w-new]
+      |=  [callee-entry acc=_w-new]
       ?:  (~(has by g-previous) id)  acc
       (~(put in acc) id)
     ::  do have to put ourselves in the callee worklist if our code usage or
@@ -1588,7 +1585,7 @@
     ::
     =/  indi  (distribute indirect-code-request.dat-there src.prod.s)
     =.  indirect-code-request.gen  (uni:ca indirect-code-request.gen indi)
-    =.  callees.gen  (~(put in callees.gen) seat id-there src.prod.s)
+    =.  callees.gen  (~(put in callees.gen) seat id-there)
     :_  gen
     ^-  [nomm sock-anno]
     :-  [%2 nomm.s nomm.f `[[less-code.dat-there fol-new] memo-key]]

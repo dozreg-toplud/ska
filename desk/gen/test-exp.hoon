@@ -89,13 +89,12 @@
   ::
   =/  calls-rendered=(list tank)
     %-  ~(rep by g)
-    |=  [[k=identity [callees=(set [seat=(unit spot) identity *]) *]] acc=(list tank)]
+    |=  [[k=identity [callees=(set callee-entry) *]] acc=(list tank)]
     :_  acc
     =/  callees=tank
-      =/  g  |=([* id=identity *] `@ux`(~(got by func-to-id) id))
       =/  scox  (cury scot %ux)
-      =/  g
-        |=  [seat=(unit spot) id=identity *]
+      =/  gate
+        |=  callee-entry
         =/  seat=tape
           ?~  seat  "??:??"
           =*  l   p.q.u.seat
@@ -104,7 +103,7 @@
           "{<p.u.seat>}: <[{(ud p.l)} {(ud q.l)}].[{(ud p.r)} {(ud q.r)}]>"
         ::
         leaf+"{<(~(got by func-to-id) id)>} at {seat}"
-      [%rose [", " "" ""] (turn ~(tap in callees) g)]
+      [%rose [", " "" ""] (turn ~(tap in callees) gate)]
     ::
     [%rose [" -> " "(" ")"] (scot %ux (~(got by func-to-id) k)) callees ~]
 
