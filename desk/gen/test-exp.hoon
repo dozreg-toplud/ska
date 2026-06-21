@@ -85,7 +85,7 @@
       "{<p.u.area.dat>}: <[{(ud p.l)} {(ud q.l)}].[{(ud p.r)} {(ud q.r)}]>"
     ::
     :_  acc
-    leaf+"{(scow %ux num)}: [sock={(scow %ux (mug more.id))} fol={(scow %ux (mug fol.id))}] at {area}; {<indirect-code-request.dat>}"
+    leaf+"{(scow %ux num)}: [sock={(scow %ux (mug more.id))} fol={(scow %ux (mug fol.id))}] at {area}; {<indi.dat>}"
   ::
   =/  calls-rendered=(list tank)
     %-  ~(rep by g)

@@ -58,8 +58,8 @@
 ::    optimizations and eventually efficient execution.
 ::
 ::  Table of contents:
-::    Call graph construction:  line 597
-::    Axis usage analysis:      line X
+::    Call graph construction:  line 480
+::    Axis usage analysis:      line 1749
 ::    Compilation:              line X
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -75,12 +75,7 @@
 ::   ==
 ::  ska verbosity
 ::
-=/  ska-verb
-  :*  ~
-      p-bars=&
-      f-bars=|
-      p-file=|
-  ==
+=/  ska-verb  ~
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
@@ -402,6 +397,8 @@
       %2  $(pin -.pin, ax (mas ax))
       %3  $(pin +.pin, ax (mas ax))
     ==
+  ::  a is provenance from b, b is provenance from x.
+  ::  what is the provenance of a from x?
   ::
   ++  compose
     ~/  %compose
@@ -541,23 +538,41 @@
 +$  spring  *  ::  no union stuff
 ::  seat: callsite location
 ::  id:   identity of the callee
-::  src:  provenance of the callee's subject
 ::
 +$  callee-entry  [seat=(unit spot) id=identity]
+::  A callgraph entry:
+::    callees: immediate callees
+::    nomm: SKA code of that function, with direct %2's annotated
+::    less-code: subject requirement for a call: subject with only the parts
+::               that are used as code transitively
+::    less-memo: less-code + parts of the subject that might've been captured
+::               by the product.
+::    indi: parts of the subject that were transitively used as code but which
+::          didn't have data to make a direct call
+::    prod/map: product of the function with less-memo as the input subject
+::    area: (approximate) location of the function's body
+::
 +$  datum
   $:  callees=(set callee-entry)
       =nomm
       less-code=sock
       less-memo=sock
-      indirect-code-request=cape
+      indi=cape
       [prod=sock map=spring]
       area=(unit spot)
   ==
 ::
 +$  callgraph  (map identity datum)
+::  A graph of functions
+::
 +$  jug-id  (jug identity identity)
 +$  worklist  (set identity)
-+$  memo  (map ^ (map sock [id=identity =datum]))  ::  fol -> less-memo -> entry
+::  memoization map
+::  formula -> less-memo -> entry
+::
++$  memo  (map ^ (map sock [id=identity =datum]))  
+::  Iterate over a set with a gate (a -> (unit b)) until we get a nonempty
+::  product
 ::
 ++  set-first-match
   |*  [s=(set) g=$-(* (unit))]
@@ -567,7 +582,7 @@
   =/  l  $(s l.s)
   ?^  l  l
   $(s r.s)
-::  check if "big" homeomorphically embeds "smol"
+::  Check if "big" homeomorphically embeds "smol".
 ::
 ++  he-sock
   ~%  %he-sock  ..zuse  ~
@@ -604,6 +619,9 @@
   ~+
   %+  knit:so  (msg [-.cape -.data]:a [-.cape -.data]:b)
   (msg [+.cape +.data]:a [+.cape +.data]:b)
+::  If we have the transitive clojure of the reversed callgraph, we can
+::  use this function to detect recursive calls.
+::  XX HE
 ::
 ++  recursive-call-tcb
   |=  [id-caller=identity id-kid=identity tcb=jug-id g=callgraph]
@@ -621,6 +639,19 @@
   =/  d=datum  (git-g g tr-caller)
   ?:  (huge:so less-code.d more.id-kid)  `[tr-caller d(prod |+~, map ~)]
   ~
+::  Check if a given call "id-kid" might be a recursive call to a function
+::  "id-caller" or one of its transitive callers. Also check if id-kid's subject
+::  homeomorphically embeds the subject of one of its transitive callers, mas-
+::  king out the accumulating part with +msg-sock. This is done to stop infinite
+::  chains of dynamically generated functions.
+::
+::  Chains before HE firing are theoretically finite but could be V A S T (see
+::  TREE(3) to get the sense of scale); however in testing I could not construct
+::  an example where a chain of functions would grow faster than linearly with
+::  the size of the formula and the subject: the products would get masked down
+::  with either the simple recursion pessimization (we erase the product of
+::  simple recursive calls), or with +double-int as we intersect nouns on both
+::  their values and provenances.
 ::
 ++  recursive-call
   ~%  %recursive-call  ..zuse  ~
@@ -647,20 +678,25 @@
   %=    visit-loop
       callers
     %-  skip  :_  ~(has in visited)
-    %~  tap  in
-    %+  roll  callers
-    |=  [id=identity acc=(set identity)]
-    (~(uni in acc) (~(get ju called-by) id))
+    %~  tap  in  %-  silt
+    ^-  (list identity)
+    %-  zing
+    %+  turn  callers
+    |=  id=identity
+    ~(tap in (~(get ju called-by) id))
   ==
+::  A noun with provenance "src" captured something from subject "less"
 ::
-++  src-check-present
+++  known-sock-captured
   |=  [src=spring less=sock]
   ^-  ?
-  ?~  src  &
-  ?@  src
-    =/  part  (pull:so less src)
-    ?=(%& cape.part)
-  &($(src -.src) $(src +.src))
+  ?~  src  |
+  ?^  src  |($(src -.src) $(src +.src))
+  =/  part=cape  cape:(pull:so less src)
+  |-  ^-  ?
+  ?@  part  part
+  |($(part -.part) $(part +.part))
+::  Memoization core
 ::
 ++  mi
   |%
@@ -668,6 +704,10 @@
     |=  [m=memo f=^]
     ^-  (map sock [identity datum])
     (~(gut by m) f ~)
+  ::  Get a memoization hit, not necessarily the best one. Although
+  ::  we do not memoize functions that captured anything from their subjects
+  ::  and we check that we don't have any data in the places where the memo can-
+  ::  didate tried to get code, so it should already be the best match?
   ::
   ++  git
     ~%  %git-mi  ..zuse  ~
@@ -678,11 +718,12 @@
     ?~  entries  ~
     ?:  ?&  (huge:so less-memo.d.i.entries s)
         ::
-            =/  c=cape  cape:(app:ca indirect-code-request.d.i.entries s)
+            =/  c=cape  cape:(app:ca indi.d.i.entries s)
             ?=(%| c)
         ==
       `[id d]:i.entries
     $(entries t.entries)
+  ::  Memoize, if the known parts of the subject were not captured.
   ::
   ++  put
     ~%  %put-mi  ..zuse  ~
@@ -691,7 +732,7 @@
     ::  if some part of the captured subject is unknown, do not memoize
     ::  to prevent deoptz
     ::
-    ?.  (src-check-present map.d less-memo.d)  m
+    ?:  (known-sock-captured map.d less-memo.d)  m
     =/  inner  (gut m fol.id)
     =.  inner  (~(put by inner) less-memo.d [id d])
     (~(put by m) fol.id inner)
@@ -708,7 +749,7 @@
   |=  fol=^
   ^-  ?
   =*  l  .
-  ?+    fol  !!  ::  |
+  ?+    fol  |
     [p=^ q=^]  &((l p.fol) (l q.fol))
     [%0 @]  &
     [%1 *]  &
@@ -727,7 +768,7 @@
     [%12 p=^ q=^]      &((l p.fol) (l q.fol))
   ==
 ::
-::  check that the formula does not crash and has no important sideeffect,
+::  check that the formula does not crash and has no important side-effect,
 ::  returning constant product and nomm
 ::
 ++  safe
@@ -770,6 +811,7 @@
   ==
 ::
 +$  ring  [=path axe=@]
+::  Persistent SKA state
 ::
 +$  long-ska
   $+  long-ska
@@ -809,6 +851,7 @@
   =/  s=_q  (~(dif in q) r)
   ?:  =(~ s)  c
   (~(put by c) p s)
+::
 ::  Given subject and a formula, analyzes them, then goes over fresh %fast core
 ::  registrations and tries to disassemble their batteries, analyzing leaf ba-
 ::  tteries (heuristic for an arm), repeating in a loop until no more registra-
@@ -1153,6 +1196,7 @@
     $
   ::
   acc(fin [done fin.acc])
+::
 ::  to incrementally construct transitive closure of a graph:
 ::    1. get the set of all id's whose immediate children changed ("seed");
 ::    2. walk the reversed graph (unified with the prev version just in
@@ -1273,8 +1317,7 @@
   ::
   |-  ^-  (unit path)
   ?~  hed  `~
-  ?@  hed  ~
-  ?^  -.hed  ~
+  ?.  ?=([@ta *] hed)  ~
   =/  rest=(unit path)  $(hed +.hed)
   ?~  rest  ~
   `[-.hed u.rest]
@@ -1284,6 +1327,7 @@
 ::
 ++  ska-callgraph
   ~%  %ska-callgraph  ..zuse  ~
+  !.
   |=  [[bus=sock fol=^] memo-final=memo]
   ^-  (list callgraph)
   =|  g=callgraph
@@ -1408,16 +1452,24 @@
           (~(put by g-done.acc) id d)
         ]
     ::
-    =/  new-count   ~(wyt in ^w-new)
-    =/  upd-count   ~(wyt in w-back)
-    =/  uniq-count  ~(wyt in `(set ^)`(~(run in w-new) |=(id=identity fol.id)))
-    ~&  [%fixpoint new+new-count upd+upd-count uniq+uniq-count]
+    =>  !@  ska-verb  .
+        =*  dot  .
+        =/  new-count   ~(wyt in ^w-new)
+        =/  upd-count   ~(wyt in w-back)
+        =/  uniq-count
+          ~(wyt in `(set ^)`(~(run in w-new) |=(id=identity fol.id)))
+        ::
+        ~&  [%fixpoint new+new-count upd+upd-count uniq+uniq-count]
+        dot
+    ::
     %=  fixpoint-callgraph
       w        w-new
       history  [!@(g-done g (~(uni by g-done) g)) history]
     ==
   ::
-  ~>  %bout.[0 %callgraph-fixpoint]
+  =<  !@  ska-verb  $
+      ~>  %bout.[0 %callgraph-fixpoint]  $
+  |.
   ::  pin .g-total if g-done is defined
   ::
   =>  !@  g-done  .  [g-total=`callgraph`(~(uni by g-done) g) .]
@@ -1426,6 +1478,7 @@
   =<  -
   %-  ~(rep in w)
   ~%  %ska-callgraph-iteration  ..zuse  ~
+  !:
   |=  $:  id=identity
           ::  accumulator
           ::
@@ -1436,16 +1489,14 @@
   =/  data  (git-g g-previous id)
   =/  bus=sock  more.id
   =;  [memo-hit=? data-new=datum m-new=memo]
-    =?  indirect-code-request.data-new
+    =?  indi.data-new
         ?&  =([less-code prod map]:data-new [less-code prod map]:data)
-        ::
-            ?!  .=  indirect-code-request.data-new
-            indirect-code-request.data
+            !=(indi.data-new indi.data)
         ==
-      ::  if new datum only differs in indirect-code-request.data-new,
+      ::  if new datum only differs in indi.data-new,
       ::  turn disagreeing parts into %.y so that we converge
       ::
-      (msg-indi-ca indirect-code-request.data-new indirect-code-request.data)
+      (msg-indi-ca indi.data-new indi.data)
     ::
     =.  g  (~(put by g) id data-new)
     =.  calls
@@ -1462,8 +1513,8 @@
     ::  do have to put ourselves in the callee worklist if our code usage or
     ::  product changed
     ::
-    =?  w-call  ?!  .=  [less-code prod map indirect-code-request]:data-new
-                        [less-code prod map indirect-code-request]:data
+    =?  w-call  ?!  .=  [less-code prod map indi]:data-new
+                        [less-code prod map indi]:data
       (~(put in w-call) id)
     ::
     [[w-new w-call calls g] m-new]
@@ -1474,7 +1525,7 @@
   =*  fol-result
     $:  [=nomm pro=sock-anno]
         want=cape
-        indirect-code-request=cape
+        indi=cape
         callees=(set callee-entry)
         area=(unit spot)
     ==
@@ -1485,23 +1536,11 @@
     =/  less-code  (app:ca want bus)
     =/  capture=cape  (prune:pi src.pro cape.sock.pro)
     =/  less-memo  (app:ca (uni:ca want capture) bus)
-    =/  data-new=datum
-      [ callees  nomm
-        less-code  less-memo
-        indirect-code-request
-        pro  area
-      ]
-    ::
+    =/  data-new=datum  [callees nomm less-code less-memo indi pro area]
     =.  m-new  (put:mi m-new id data-new)
     [| data-new m-new]
   ::
-  =|  $=  gen
-      $:  want=cape
-          indirect-code-request=cape
-          callees=(set callee-entry)
-          area=(unit spot)
-      ==
-  ::
+  =|  gen=[want=cape indi=cape callees=(set callee-entry) area=(unit spot)]
   =/  seat=(unit spot)  ~
   =/  memo-key=(unit *)  ~
   ^-  [[=nomm prod=sock-anno] gen=_gen]
@@ -1518,7 +1557,7 @@
     ::
     [[nomm.u.x [&+prod.u.x ~]] gen]
   =*  dunno  *sock-anno
-  ?+    fol  ~|  fol  !!  ::  [[0+0 dunno] gen]
+  ?+    fol  [[0+0 dunno] gen]
       [p=^ q=^]
     =^  l  gen  fol-loop(fol p.fol)
     =^  r  gen  fol-loop(fol q.fol)
@@ -1561,14 +1600,7 @@
     ?.  &(=(& cape.sock.prod.f) ?=(^ data.sock.prod.f))
       ::  indirect call
       ::
-      =/  all-yes  |=  c=cape  ^-  ?  ?@  c  c  &($(c +.c) $(c -.c))
-      ~?  (all-yes cape.sock.prod.f)  [%all-yes seat]
-      ~?  (all-yes cape.sock.prod.f)  q.fol
-      ~?  (all-yes cape.sock.prod.f)  cape.sock.prod.f
-      ~?  (all-yes cape.sock.prod.f)  (safe q.fol)
-      =.  indirect-code-request.gen
-        (uni:ca indirect-code-request.gen (distribute & src.prod.f))
-      ::
+      =.  indi.gen  (uni:ca indi.gen (distribute & src.prod.f))
       [[[%2 nomm.s nomm.f ~] dunno] gen]
     =/  fol-new=^  data.sock.prod.f
     ::  Inline leaf formulas. Allows to analyze through formulas whose products
@@ -1602,12 +1634,18 @@
       ?^  par  u.par
       [id-there *datum]
     ::
-    =.  want.gen  (uni:ca want.gen (distribute & src.prod.f))
-    =.  want.gen
-      (uni:ca want.gen (distribute cape.less-code.dat-there src.prod.s))
+    ::  Direct call: record immediate code usage (we just got the formula) +
+    ::  transitive code usage by the callee
     ::
-    =/  indi  (distribute indirect-code-request.dat-there src.prod.s)
-    =.  indirect-code-request.gen  (uni:ca indirect-code-request.gen indi)
+    =.  want.gen
+      ;:  uni:ca
+        want.gen
+        (distribute & src.prod.f)
+        (distribute cape.less-code.dat-there src.prod.s)
+      ==
+    ::  Also propagate transitive attempts to get code for indirect calls
+    ::
+    =.  indi.gen  (uni:ca indi.gen (distribute indi.dat-there src.prod.s))
     =.  callees.gen  (~(put in callees.gen) seat id-there)
     :_  gen
     ^-  [nomm sock-anno]
@@ -1686,8 +1724,12 @@
       dot
     ::
     =^  h  gen  fol-loop(fol h.fol)
-    ?:  &(?=(%memo a.fol) ?=(%& cape.sock.prod.h) =(1 -.h.fol))
-      ::  XX faster? strange, but callgraph was sane
+    ::  valid %memo generates a new call to an uninlineable function to be
+    ::  memoized
+    ::
+    ?:  &(?=(%memo a.fol) ?=(^ (safe h.fol)))
+      ::  ?=(^ (safe h.fol)) implies fully known sock.prod.h
+      ::
       fol-loop(fol [%2 [%0 1] 1 f.fol], memo-key `data.sock.prod.h)
     =^  f  gen  fol-loop(fol f.fol)
     :_  gen
@@ -1702,3 +1744,30 @@
     dunno
   ==
 --
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::
+::  Axis usage analysis
+::
+::    Once we have the callgraph, but before we can start compiling SKA func-
+::    tions, we need to establish which parts of the subject a function will use
+::    as the data.  With that information we will be able to compile functions
+::    in any order, including lazily.
+::
+::    To get axis usage data we start off with the cold state: we know axis
+::    usage of the jetted functions.  Then, starting with the root function:
+::      - if the function has a jet, immediately return the registerization;
+::      - else get the SCC to which this function belongs, and start the
+::        fixpoint search:
+::        - initialize all registerizations of functions in the SCC to empty;
+::        - iterate over functions with a worklist algorithm similar to
+::          +ska-callgraph;
+::        - on a call within SCC get the current guess, else get the
+::          registerization recursively. This will make sure we don't do extra
+::          work registerizing exclusive callees of jetted functions.
+::
+::    Additional attention needs to be payed to Nock 6 to prevent from pessimi-
+::    zing, both here and in the compiler. Subject usage of a computation with
+::    a branch consists of a union of subject usages before and after a branch
+::    with the most specific generalization of the exclusive subject usages
+::    of branches. This applies recursively to branches within branches
+::
