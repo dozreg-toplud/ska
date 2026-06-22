@@ -58,8 +58,8 @@
 ::    optimizations and eventually efficient execution.
 ::
 ::  Table of contents:
-::    Call graph construction:  line 480
-::    Axis usage analysis:      line 1749
+::    Call graph construction:  line 490
+::    Axis usage analysis:      line 1761
 ::    Compilation:              line X
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -205,6 +205,16 @@
       %2  [$(a (mas a)) |]
       %3  [| $(a (mas a))]
     ==
+  ::  subtract b from a
+  ::
+  ++  dif
+    |=  [a=cape b=cape]
+    ^-  cape
+    ?:  =(a b)  |
+    ?:  ?=(%& b)  |
+    ?:  ?=(%| b)  a
+    ?@  a  ~|  %misunderstanding  !!
+    (con:ca $(a -.a, b -.b) $(a +.a, b +.b))
   --
 ::  Operations on socks
 ::
@@ -522,8 +532,10 @@
 +$  identity  [more=sock fol=^]  ::  max subject
 +$  bell      [bus=sock fol=^]   ::  minimized subject
 +$  nomm
+  $~  [%0 0]
   $^  [nomm nomm]
-  $%  [%1 p=*]
+  $%  [%0 p=@]
+      [%1 p=*]
       [%2 p=nomm q=nomm info=(unit [b=bell k=(unit *)])]
       [%3 p=nomm]
       [%4 p=nomm]
@@ -533,7 +545,6 @@
       [%10 p=[p=@ q=nomm] q=nomm]
       [%11 p=$@(@ [p=@ q=nomm]) q=nomm body=*]
       [%12 p=nomm q=nomm]
-      [%0 p=@]
   ==
 +$  spring  *  ::  no union stuff
 ::  seat: callsite location
@@ -570,7 +581,38 @@
 ::  memoization map
 ::  formula -> less-memo -> entry
 ::
-+$  memo  (map ^ (map sock [id=identity =datum]))  
++$  memo  (map ^ (map sock [id=identity =datum]))
++$  sock-anno  [=sock src=spring]
++$  ring  [=path axe=@]
+::  Persistent SKA state
+::
++$  long-ska
+  $+  long-ska
+  $:
+  ::::  cold state
+    ::
+    $=  jets
+    $:  root=(jug * path)     ::  root registrations
+        core=(jug path sock)  ::  core registrations
+        batt=(jug ^ path)     ::  core battery -> set of possible paths
+        $=  cole              ::  bell <--> ring bidirectional mapping
+        $:  call=(map bell ring)
+            back=(jug ring bell)
+    ==  ==
+  ::::  finalized graph views: 
+    ::
+    $=  final
+    $:  =memo
+        graph=callgraph  :: pruned
+    ==
+  ::::  saved entries:
+    ::
+    code=(map bell nomm)        ::  direct bell mapping
+    fols=(jug ^ [=bell =nomm])  ::  lookup by formula
+  ==
+--
+::
+|%
 ::  Iterate over a set with a gate (a -> (unit b)) until we get a nonempty
 ::  product
 ::
@@ -738,7 +780,6 @@
     (~(put by m) fol.id inner)
   --
 ::
-+$  sock-anno  [=sock src=spring]
 ++  git-g
   |=  [g=callgraph i=identity]
   ^-  datum
@@ -808,34 +849,6 @@
     [%0 p=@]           ``p.fol
     [%11 @ p=^]        $(fol p.fol)
     [%11 [@ f=^] p=^]  ?~((safe f.fol) ~ $(fol p.fol))
-  ==
-::
-+$  ring  [=path axe=@]
-::  Persistent SKA state
-::
-+$  long-ska
-  $+  long-ska
-  $:
-  ::::  cold state
-    ::
-    $=  jets
-    $:  root=(jug * path)     ::  root registrations
-        core=(jug path sock)  ::  core registrations
-        batt=(jug ^ path)     ::  core battery -> set of possible paths
-        $=  cole              ::  bell <--> ring bidirectional mapping
-        $:  call=(map bell ring)
-            back=(jug ring bell)
-    ==  ==
-  ::::  finalized graph views: 
-    ::
-    $=  final
-    $:  =memo
-        graph=callgraph  :: pruned
-    ==
-  ::::  saved entries:
-    ::
-    code=(map bell nomm)        ::  direct bell mapping
-    fols=(jug ^ [=bell =nomm])  ::  lookup by formula
   ==
 ::
 ++  dif-ju
@@ -1296,7 +1309,7 @@
       $(inv r.inv)
   ==
 ::
-++  msg-indi-ca
+++  msg-ca
   |=  [a=cape b=cape]
   ^-  cape
   =*  msg  .
@@ -1359,7 +1372,6 @@
   ::  the callgraph and updated calls
   ::
   =;  [w-new=worklist w-call=worklist new-calls=jug-id g1=callgraph]
-    :: =.  g  (~(uni by g) g1)
     =.  g  g1
     =/  new-called-by=jug-id
       ::  calculate the diff between new-calls and calls to update called-by
@@ -1496,7 +1508,7 @@
       ::  if new datum only differs in indi.data-new,
       ::  turn disagreeing parts into %.y so that we converge
       ::
-      (msg-indi-ca indi.data-new indi.data)
+      (msg-ca indi.data-new indi.data)
     ::
     =.  g  (~(put by g) id data-new)
     =.  calls
@@ -1771,3 +1783,167 @@
 ::    with the most specific generalization of the exclusive subject usages
 ::    of branches. This applies recursively to branches within branches
 ::
+|%
++$  long-args
+  $+  long-args
+  $:
+  ::::  hot state: subject usage by jetted arms
+    ::
+    jets=(map ring cape)
+    code=(map bell cape)
+  ==
+::
++$  worklist  (set bell)
+++  axes-lazy
+  |-
+  $+  axes-lazy
+  $:  sure=cape
+      fork=(list [y=$ n=$])
+  ==
+--
+::
+|%
+++  axes-lazy-fmap
+  |=  [laz=axes-lazy gat=$-(cape cape)]
+  ^-  axes-lazy
+  =*  fmap  $
+  :-  (gat sure.laz)
+  %+  turn  fork.laz
+  |=  [y=axes-lazy n=axes-lazy]
+  [fmap(laz y) fmap(laz n)]
+::
+++  collapse-axes-lazy
+  |=  laz=axes-lazy
+  ^-  cape
+  =*  collapse  .
+  =/  fork-resolved=(list [y=cape n=cape])
+    %+  turn  fork.laz
+    |=  [y=axes-lazy n=axes-lazy]
+    [(collapse y) (collapse n)]
+  ::
+  =/  sure-ints=cape
+    %+  roll  fork-resolved
+    |=  [[y=cape n=cape] acc=_sure.laz]
+    (uni:ca acc (int:ca y n))
+  ::
+  =/  fork-dif=(list [y=cape n=cape])
+    %+  turn  fork-resolved
+    |=  [y=cape n=cape]
+    ^-  [cape cape]
+    [(dif:ca y sure-ints) (dif:ca n sure-ints)]
+  ::
+  %+  roll  fork-dif
+  |=  [[y=cape n=cape] acc=_sure-ints]
+  (uni:ca acc (msg-ca y n))
+::
+++  unify-lazy-usage
+  |=  [a=axes-lazy b=axes-lazy]
+  ^-  axes-lazy
+  :-  (uni:ca sure.a sure.b)
+  (weld fork.a fork.b)
+::
+++  simple-bell-graph-and-reversed
+  |=  g=callgraph
+  ^-  [(jug bell bell) (jug bell bell)]
+  %-  ~(rep by g)
+  |=  [[k=identity v=datum] acc=(jug bell bell) acc-r=(jug bell bell)]
+  %-  ~(rep in callees.v)
+  |=  [callee=callee-entry =_acc _acc-r]
+  =/  caller=bell  [less-code.v fol.k]
+  =/  callee=bell  [less-code:(~(got by g) id.callee) fol.id.callee]
+  [(~(put ju acc) caller callee) (~(put ju acc-r) callee caller)]
+::
+++  axis-poke
+  |=  [root=bell =long-ska lon=long-args]
+  ^-  long-args
+  =/  [bell-graph=(jug bell bell) bell-graph-reversed=(jug bell bell)]
+    (simple-bell-graph-and-reversed graph.final.long-ska)
+  ::
+  =/  scc-map=(map bell (set bell))
+    %+  roll  ((tarjan bell) bell-graph)
+    |=  [scc=(set bell) acc=(map bell (set bell))]
+    %-  ~(rep in scc)
+    |=  [b=bell acc=_acc]
+    (~(put by acc) b scc)
+  ::
+  =/  new=(map bell cape)
+    (axis-find (~(got by scc-map) root) bell-graph-reversed long-ska lon)
+  ::
+  lon(code (~(uni by code.lon) new))
+::
+++  axis-find
+  |=  [scc=(set bell) rev=(jug bell bell) =long-ska lon=long-args]
+  ^-  (map bell cape)
+  =|  functions-axes=(map bell cape)
+  =/  w=worklist  scc
+  |-  ^-  (map bell cape)
+  =*  fixpoint-axis  $
+  =;  [w-new=worklist functions-axes1=(map bell cape)]
+    =.  functions-axes  functions-axes1
+    ?:  =(~ w-new)  functions-axes
+    fixpoint-axis(w w-new)
+  ::
+  %-  ~(rep in w)
+  |=  [b=bell w-new=worklist =_functions-axes]
+  ^-  [worklist (map bell cape)]
+  =;  axes=cape
+    =/  axes-old=(unit cape)  (~(get by functions-axes) b)
+    ?~  axes-old
+      :-  ?:  =(axes |)  w-new
+          (~(uni in w-new) (~(get ju rev) b))
+      (~(put by functions-axes) b axes)
+    ::  this is not the first iteration, get MSG of the old and the new value
+    ::  to prevent divergence
+    ::
+    =.  axes  (msg-ca axes u.axes-old)
+    ?:  =(axes u.axes-old)
+      [w-new functions-axes]
+    :-  (~(uni in w-new) (~(get ju rev) b))
+    (~(put by functions-axes) b axes)
+  ::
+  %-  collapse-axes-lazy
+  ^-  axes-lazy
+  =/  =nomm  (~(got by code.long-ska) b)
+  =/  usage=axes-lazy  [& ~]
+  |-  ^-  axes-lazy
+  =*  nomm-loop  $
+  ?-    nomm
+      [p=^ q=*]
+    =/  q=axes-lazy  $(nomm q.nomm, usage (axes-lazy-fmap usage tel:ca))
+    =/  p=axes-lazy  $(nomm p.nomm, usage (axes-lazy-fmap usage hed:ca))
+    [(uni:ca sure.p sure.q) (weld fork.p fork.q)]
+  ::
+      [%0 @]
+    ?:  =(0 p.nomm)  *axes-lazy
+    ?:  =(1 p.nomm)  usage
+    %+  axes-lazy-fmap
+      ?:  =(*axes-lazy usage)  [& ~]
+      usage
+    |=(c=cape (pat:ca c p.nomm))
+  ::
+      [%1 *]  *axes-lazy
+      [%2 *]  stub
+      [%3 *]  $(nomm p.nomm, usage [& ~])
+      [%4 *]  $(nomm p.nomm, usage [& ~])
+      [%5 *]
+    (unify-lazy-usage $(nomm p.nomm, usage [& ~]) $(nomm q.nomm, usage [& ~]))
+  ::
+      [%6 *]
+    =/  p=axes-lazy  $(nomm p.nomm, usage [& ~])
+    =/  q=axes-lazy  $(nomm q.nomm)
+    =/  r=axes-lazy  $(nomm r.nomm)
+    [sure.p [[q r] fork.p]]
+  ::
+      [%7 *]
+    $(nomm p.nomm, usage $(nomm q.nomm))
+  ::
+      [%10 *]  stub
+  ::
+      [%11 *]
+    ?@  p.nomm  $(nomm q.nomm)
+    (unify-lazy-usage $(nomm q.nomm) $(nomm q.p.nomm, usage [& ~]))
+  ::
+      [%12 *]
+    (unify-lazy-usage $(nomm p.nomm, usage [& ~]) $(nomm q.nomm, usage [& ~]))
+  ==
+--
