@@ -210,11 +210,24 @@
   ++  dif
     |=  [a=cape b=cape]
     ^-  cape
-    ?:  =(a b)  |
+    ?:  =(a b)    |
     ?:  ?=(%& b)  |
     ?:  ?=(%| b)  a
-    ?@  a  ~|  %misunderstanding  !!
+    ?:  ?=(%| a)  |
+    ?:  ?=(%& a)  ~|  [%misunderstanding a+a b+b]  !!
     (con:ca $(a -.a, b -.b) $(a +.a, b +.b))
+  ::  slot
+  ::
+  ++  lot
+    |=  [c=cape axe=@]
+    ^-  cape
+    ?<  =(0 axe)
+    ?:  =(1 axe)  c
+    ?@  c  c
+    ?-  (cap axe)
+      %2  $(c -.c, axe (mas axe))
+      %3  $(c +.c, axe (mas axe))
+    ==
   --
 ::  Operations on socks
 ::
@@ -247,8 +260,8 @@
     ?&  $(one [lope -.data.one], two [loop -.data.two])
         $(one [rope +.data.one], two [roop +.data.two])
     ==
-    ::  axis of a partial noun, never fails
-    ::
+  ::  axis of a partial noun, never fails
+  ::
   ++  pull
     ~/  %pull
     |=  [s=sock axe=@]
@@ -542,7 +555,7 @@
       [%5 p=nomm q=nomm]
       [%6 p=nomm q=nomm r=nomm]
       [%7 p=nomm q=nomm]
-      [%10 p=[p=@ q=nomm] q=nomm]
+      [%10 p=[p=_`@`1 q=nomm] q=nomm]  ::  p.p != 0
       [%11 p=$@(@ [p=@ q=nomm]) q=nomm body=*]
       [%12 p=nomm q=nomm]
   ==
@@ -836,6 +849,45 @@
     ?~  h=(g h.fol)  ~
     ?~  p=(g p.fol)  ~
     `[[%11 [a.fol nomm.u.h] nomm.u.p p.fol] prod.u.p]
+  ==
+::  same, but for nomm, and no product
+::
+++  safe-nomm
+  =*  hint-safe  ,?(%spot %mean)
+  |=  =nomm
+  ^-  ?
+  =*  g  .
+  ?+    nomm  |
+      [p=^ q=^]  &((g p.nomm) (g q.nomm))
+      [%1 *]     &
+  ::
+      [%11 @ *]
+    &(?=(hint-safe p.nomm) (g q.nomm))
+  ::
+      [%11 [@ *] *]
+    &(?=(hint-safe p.p.nomm) (g q.p.nomm) (g q.nomm))
+  ==
+::  check if the formula for a formula in Nomm %2 can be safely dropped
+::
+++  safe-fol-fol
+  =*  hint-safe  ,?(%spot %mean)
+  |=  =nomm
+  ^-  ?
+  =*  g  .
+  ?+    nomm  |
+      ::  Nomm 0 is safe for fol-fol, since all executable code is required to
+      ::  be present in the subject
+      ::
+      [%0 @]  &
+  ::
+      [p=^ q=^]  &((g p.nomm) (g q.nomm))
+      [%1 *]     &
+  ::  
+      [%11 @ *]
+    &(?=(hint-safe p.nomm) (g q.nomm))
+  ::
+      [%11 [@ *] *]
+    &(?=(hint-safe p.p.nomm) (safe-nomm q.p.nomm) (g q.nomm))
   ==
 ::  treat %fast hint formula
 ::  returns ~ on failure, [~ ~] on root registration, [~ ~ @] on child
@@ -1816,6 +1868,7 @@
   |=  laz=axes-lazy
   ^-  cape
   =*  collapse  .
+  ?:  =(~ fork.laz)  sure.laz
   =/  fork-resolved=(list [y=cape n=cape])
     %+  turn  fork.laz
     |=  [y=axes-lazy n=axes-lazy]
@@ -1841,15 +1894,41 @@
   ^-  axes-lazy
   :-  (uni:ca sure.a sure.b)
   (weld fork.a fork.b)
+::  curry right. no inner wetness
+::
+++  curr
+  |*  [a=$-(^ *) c=*]
+  |=  b=_,.+<-.a
+  (a b c)
+::
+++  into
+  ::  split lazy goal for edit: donor, then recipient
+  ::
+  |=  [axe=@ laz=axes-lazy]
+  ^-  [axes-lazy axes-lazy]
+  ?<  =(0 axe)
+  ?:  =(1 axe)  [laz *axes-lazy]
+  :-  (axes-lazy-fmap laz (curr lot:ca axe))
+  %+  axes-lazy-fmap  laz
+  |=  c=cape
+  ^-  cape
+  ::  poke a hole in c at axe
+  ::
+  ?:  ?=(%| c)  |
+  ?:  =(1 axe)  |
+  ?-  (cap axe)
+    %2  (con:ca $(c (hed:ca c), axe (mas axe)) (tel:ca c))
+    %3  (con:ca (hed:ca c) $(c (tel:ca c), axe (mas axe)))
+  ==
 ::
 ++  simple-bell-graph-and-reversed
   |=  g=callgraph
   ^-  [(jug bell bell) (jug bell bell)]
   %-  ~(rep by g)
   |=  [[k=identity v=datum] acc=(jug bell bell) acc-r=(jug bell bell)]
+  =/  caller=bell  [less-code.v fol.k]
   %-  ~(rep in callees.v)
   |=  [callee=callee-entry =_acc _acc-r]
-  =/  caller=bell  [less-code.v fol.k]
   =/  callee=bell  [less-code:(~(got by g) id.callee) fol.id.callee]
   [(~(put ju acc) caller callee) (~(put ju acc-r) callee caller)]
 ::
@@ -1859,34 +1938,50 @@
   =/  [bell-graph=(jug bell bell) bell-graph-reversed=(jug bell bell)]
     (simple-bell-graph-and-reversed graph.final.long-ska)
   ::
+  =/  sccs=(list (set bell))  ((tarjan bell) bell-graph)
   =/  scc-map=(map bell (set bell))
-    %+  roll  ((tarjan bell) bell-graph)
+    %+  roll  sccs
     |=  [scc=(set bell) acc=(map bell (set bell))]
     %-  ~(rep in scc)
     |=  [b=bell acc=_acc]
     (~(put by acc) b scc)
   ::
-  =/  new=(map bell cape)
-    (axis-find (~(got by scc-map) root) bell-graph-reversed long-ska lon)
-  ::
-  lon(code (~(uni by code.lon) new))
+  (axis-find (~(got by scc-map) root) bell-graph-reversed long-ska lon scc-map)
 ::
 ++  axis-find
-  |=  [scc=(set bell) rev=(jug bell bell) =long-ska lon=long-args]
-  ^-  (map bell cape)
+  |=  $:  scc=(set bell)
+          rev=(jug bell bell)
+          =long-ska
+          lon=long-args
+          scc-map=(map bell (set bell))
+      ==
+  ^-  long-args
+  =*  axis-find  .
+  =;  [new=(map bell cape) lon1=long-args]
+    =.  lon  lon1
+    lon(code (~(uni by code.lon) new))
+  ::
+  ^-  [(map bell cape) long-args]
   =|  functions-axes=(map bell cape)
   =/  w=worklist  scc
-  |-  ^-  (map bell cape)
+  |-  ^-  [(map bell cape) long-args]
   =*  fixpoint-axis  $
-  =;  [w-new=worklist functions-axes1=(map bell cape)]
+  =;  [[w-new=worklist functions-axes1=(map bell cape)] lon1=long-args]
     =.  functions-axes  functions-axes1
-    ?:  =(~ w-new)  functions-axes
+    =.  lon  lon1
+    ::  we only care about the SCC we are focused on, don't enqueue other
+    ::  callers
+    ::
+    =.  w-new  (~(int in w-new) scc)
+    ?:  =(~ w-new)  [functions-axes lon]
     fixpoint-axis(w w-new)
   ::
   %-  ~(rep in w)
-  |=  [b=bell w-new=worklist =_functions-axes]
-  ^-  [worklist (map bell cape)]
-  =;  axes=cape
+  |=  [b=bell [w-new=worklist =_functions-axes] =_lon]
+  ^-  [[worklist (map bell cape)] long-args]
+  =;  [axes=cape lon1=long-args]
+    =.  lon  lon1
+    :_  lon
     =/  axes-old=(unit cape)  (~(get by functions-axes) b)
     ?~  axes-old
       :-  ?:  =(axes |)  w-new
@@ -1901,49 +1996,107 @@
     :-  (~(uni in w-new) (~(get ju rev) b))
     (~(put by functions-axes) b axes)
   ::
-  %-  collapse-axes-lazy
-  ^-  axes-lazy
+  =;  [laz=axes-lazy lon1=long-args]
+    [(collapse-axes-lazy laz) lon1]
+  ::
+  ^-  [axes-lazy long-args]
   =/  =nomm  (~(got by code.long-ska) b)
-  =/  usage=axes-lazy  [& ~]
-  |-  ^-  axes-lazy
+  ::  Equivalent to "goal" in SSA compilation. It means "what parts of the
+  ::  result of this computation will be used in the next computation".
+  ::  In tail position we need the whole thing.
+  ::
+  =/  goal=axes-lazy  [& ~]
+  |-  ^-  [axes-lazy long-args]
   =*  nomm-loop  $
   ?-    nomm
       [p=^ q=*]
-    =/  q=axes-lazy  $(nomm q.nomm, usage (axes-lazy-fmap usage tel:ca))
-    =/  p=axes-lazy  $(nomm p.nomm, usage (axes-lazy-fmap usage hed:ca))
-    [(uni:ca sure.p sure.q) (weld fork.p fork.q)]
+    =^  p  lon  $(nomm p.nomm, goal (axes-lazy-fmap goal hed:ca))
+    =^  q  lon  $(nomm q.nomm, goal (axes-lazy-fmap goal tel:ca))
+    :_  lon
+    (unify-lazy-usage p q)
   ::
       [%0 @]
+    :_  lon
     ?:  =(0 p.nomm)  *axes-lazy
-    ?:  =(1 p.nomm)  usage
+    ?:  =(1 p.nomm)  goal
+    ::  Push usage to the axis. If the next computation doesn't need anything
+    ::  push [& ~] to preserve crashes. Don't need to normalize like that for
+    ::  [%0 1] above as [%0 1] never crashes
+    ::
     %+  axes-lazy-fmap
-      ?:  =(*axes-lazy usage)  [& ~]
-      usage
-    |=(c=cape (pat:ca c p.nomm))
+      ?:  =(*axes-lazy goal)  [& ~]
+      goal
+    (curr pat:ca p.nomm)
   ::
-      [%1 *]  *axes-lazy
-      [%2 *]  stub
-      [%3 *]  $(nomm p.nomm, usage [& ~])
-      [%4 *]  $(nomm p.nomm, usage [& ~])
+      [%1 *]  [*axes-lazy lon]
+  ::
+      [%2 *]
+    ?~  info.nomm
+      =^  p  lon  $(nomm p.nomm, goal [& ~])
+      =^  q  lon  $(nomm q.nomm, goal [& ~])
+      :_  lon
+      (unify-lazy-usage p q)
+    =*  b-callee  b.u.info.nomm
+    =^  q=axes-lazy  lon
+      ?:  (safe-fol-fol q.nomm)  [*axes-lazy lon]
+      $(nomm q.nomm, goal *axes-lazy)
+    ::
+    =^  callee-usage=cape  lon
+      ::  first try to get subject split by jets, then check if in the current
+      ::  SCC, getting current assumption if yes, then look among finalized,
+      ::  finally recur into the new SCC and get the result
+      ::
+      ?^  j=(biff (~(get by call.cole.jets.long-ska) b-callee) ~(get by jets.lon))
+        [u.j lon]
+      ?:  (~(has in scc) b-callee)
+        [(~(gut by functions-axes) b-callee |) lon]
+      ?^  c=(~(get by code.lon) b-callee)
+        [u.c lon]
+      =.  lon  (axis-find (~(got by scc-map) b-callee) rev long-ska lon scc-map)
+      :_  lon
+      (~(got by code.lon) b-callee)
+    ::
+    =^  p=axes-lazy  lon  $(nomm p.nomm, goal [callee-usage ~])
+    :_  lon
+    (unify-lazy-usage p q)
+  ::
+      [%3 *]  $(nomm p.nomm, goal [& ~])
+      [%4 *]  $(nomm p.nomm, goal [& ~])
       [%5 *]
-    (unify-lazy-usage $(nomm p.nomm, usage [& ~]) $(nomm q.nomm, usage [& ~]))
+    =^  p  lon  $(nomm p.nomm, goal [& ~])
+    =^  q  lon  $(nomm q.nomm, goal [& ~])
+    :_  lon
+    (unify-lazy-usage p q)
   ::
       [%6 *]
-    =/  p=axes-lazy  $(nomm p.nomm, usage [& ~])
-    =/  q=axes-lazy  $(nomm q.nomm)
-    =/  r=axes-lazy  $(nomm r.nomm)
+    =^  p=axes-lazy  lon  $(nomm p.nomm, goal [& ~])
+    =^  q=axes-lazy  lon  $(nomm q.nomm)
+    =^  r=axes-lazy  lon  $(nomm r.nomm)
+    :_  lon
     [sure.p [[q r] fork.p]]
   ::
       [%7 *]
-    $(nomm p.nomm, usage $(nomm q.nomm))
+    =^  q  lon  $(nomm q.nomm)
+    $(nomm p.nomm, goal q)
   ::
-      [%10 *]  stub
+      [%10 *]
+    =/  [don=axes-lazy rec=axes-lazy]  (into p.p.nomm goal)
+    =^  qp  lon  $(nomm q.p.nomm, goal don)
+    =^  q   lon  $(nomm q.nomm, goal rec)
+    :_  lon
+    (unify-lazy-usage qp q)
   ::
       [%11 *]
     ?@  p.nomm  $(nomm q.nomm)
-    (unify-lazy-usage $(nomm q.nomm) $(nomm q.p.nomm, usage [& ~]))
+    =^  qp  lon  $(nomm q.p.nomm, goal [& ~])
+    =^  q   lon  $(nomm q.nomm)
+    :_  lon
+    (unify-lazy-usage q qp)
   ::
       [%12 *]
-    (unify-lazy-usage $(nomm p.nomm, usage [& ~]) $(nomm q.nomm, usage [& ~]))
+    =^  p  lon  $(nomm p.nomm, goal [& ~])
+    =^  q  lon  $(nomm q.nomm, goal [& ~])
+    :_  lon
+    (unify-lazy-usage p q)
   ==
 --
