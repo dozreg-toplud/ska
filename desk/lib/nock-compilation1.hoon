@@ -58,8 +58,8 @@
 ::    optimizations and eventually efficient execution.
 ::
 ::  Table of contents:
-::    Call graph construction:  line 490
-::    Axis usage analysis:      line 1761
+::    Call graph construction:  line 511
+::    Axis usage analysis:      line 1884
 ::    Compilation:              line X
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -123,6 +123,14 @@
 ++  ca
   ~%  %ca  ..zuse  ~
   |%
+  ::  all is known
+  ::
+  ++  all
+    |=  c=cape
+    ^-  ?
+    ?@  c  c
+    &($(c -.c) $(c +.c))
+  ::
   ++  hed  ~/  %hed  |=(c=cape ?@(c c -.c))
   ++  tel  ~/  %tel  |=(c=cape ?@(c c +.c))
   ++  con
@@ -543,7 +551,7 @@
 ?>  =(~ *spring)
 |%
 +$  identity  [more=sock fol=^]  ::  max subject
-+$  bell      [bus=sock fol=^]   ::  minimized subject
++$  bell      [less=sock fol=^]   ::  minimized subject
 +$  nomm
   $~  [%0 0]
   $^  [nomm nomm]
@@ -953,7 +961,7 @@
     ?.  =(fol.i.heds -.fol.i.q)
       ~&  >>  %join-head-wrong-fol
       hed-loop(heds t.heds)
-    ?.  (huge:so bus.i.heds sub.i.q)
+    ?.  (huge:so less.i.heds sub.i.q)
       ~&  >>  %join-head-wrong-sub
       hed-loop(heds t.heds)
     =/  tels  lets
@@ -963,11 +971,11 @@
     ?.  =(fol.i.tels +.fol.i.q)
       ~&  >>  %join-tail-wrong-fol
       tel-loop(tels t.tels)
-    ?.  (huge:so bus.i.tels sub.i.q)
+    ?.  (huge:so less.i.tels sub.i.q)
       ~&  >>  %join-tail-wrong-sub
       tel-loop(tels t.tels)
     :: ~&  >  joined+p
-    =/  join  (pack:so bus.i.heds bus.i.tels)
+    =/  join  (pack:so less.i.heds less.i.tels)
     =.  call.cole.jets.lon  (~(put by call.cole.jets.lon) [join fol.i.q] p)
     =.  back.cole.jets.lon  (~(put ju back.cole.jets.lon) p join fol.i.q)
     tel-loop(tels t.tels)
@@ -999,7 +1007,7 @@
     %-  ~(rep in q)
     |=  [s=sock =_b]
     =/  batt  (pull:so s 2)
-    ?.  =(& cape.batt)  ~&(>>> [%cold-miss-batt p] b)
+    ?.  (all:ca cape.batt)  ~&(>>> [%cold-miss-batt p] b)
     =*  f  data.batt
     =/  ax=@  2
     |-  ^+  b
@@ -1083,7 +1091,7 @@
     =^  prod  gen  $(nomm q.nomm)
     :-  prod
     ^+  gen
-    ?.  ?=(%& cape.clue)  ~&(>>> %fast-lost-clue gen)
+    ?.  (all:ca cape.clue)  ~&(>>> %fast-lost-clue gen)
     =/  clue=*  data.clue
     ?.  ?=([name=$@(@tas [@tas @]) dad=^ *] clue)
       ~&(>>> fast-bad-clue+clue gen)
@@ -1097,7 +1105,7 @@
     ?~  u.parent
       ::  root registration
       ::
-      ?.  =(& cape.prod)  ~&(>>> %fast-lost-root gen)
+      ?.  (all:ca cape.prod)  ~&(>>> %fast-lost-root gen)
       %=  gen
         core  (~(put ju core.gen) ~[label] prod)
         root  (~(put ju root.gen) data.prod ~[label])
@@ -1107,7 +1115,7 @@
     =/  axis=@  u.u.parent
     ?.  =(3 (cap axis))  ~&(>>> fast-weird-axis+[label axis] gen)
     =/  batt  (pull:so prod 2)
-    ?.  =(& cape.batt)   ~&(>>> fast-lost-batt+label gen)
+    ?.  (all:ca cape.batt)   ~&(>>> fast-lost-batt+label gen)
     ?.  ?=(^ data.batt)  ~&(>>> fast-atom-batt+[label data.batt] gen)
     =/  fore  (pull:so prod axis)
     =/  past=(list path)
@@ -1115,12 +1123,12 @@
       %-  %~  uni  in
           ::  root registrations
           ::
-          ?.  =(& cape.fore)  ~
+          ?.  (all:ca cape.fore)  ~
           (~(get ju root.gen) data.fore)
       ::  parent core registrations
       ::
       =/  batt-fore  (pull:so fore 2)
-      ?.  &(=(& cape.batt-fore) ?=(^ data.batt-fore))  ~
+      ?.  &((all:ca cape.batt-fore) ?=(^ data.batt-fore))  ~
       (~(get ju batt.gen) data.batt-fore)
     ::
     |-  ^+  gen
@@ -1179,6 +1187,63 @@
       out  (~(put by out) i.q u.d)
     visit  (~(put in visit) i.q)
   ==
+::  We just analyzed a callgraph, called some new functions, maybe registered
+::  some new jetted cores.
+::  Did we call something from freshly registered cores? Did we call something
+::  new from already registrated cores? This gate reestablishes bell <--> ring
+::  mapping
+::
+++  ska-cole-restore
+  |=  lon=long-ska
+  ^-  long-ska
+  =;  call=(map bell ring)
+    %_    lon
+        call.cole.jets  call
+    ::
+        back.cole.jets
+      %-  ~(rep by call)
+      |=  [[k=bell v=ring] acc=(jug ring bell)]
+      (~(put ju acc) v k)
+    ==
+  ::
+  %-  ~(rep by code.lon)
+  |=  [[b=bell *] acc=(map bell ring)]
+  =;  matching-ring=(unit ring)
+    ?~  matching-ring  acc
+    (~(put by acc) b u.matching-ring)
+  ::
+  =/  core  core.jets.lon
+  |-  ^-  (unit ring)
+  =*  path-loop  $
+  ?~  core  ~
+  =;  matching-axe-any=(unit @)
+    ?^  matching-axe-any  `[p.n.core u.matching-axe-any]
+    =/  l  path-loop(core l.core)
+    ?^  l  l
+    path-loop(core r.core)
+  ::
+  =/  templates=(set sock)  q.n.core
+  |-  ^-  (unit @)
+  =*  template-loop  $
+  ?~  templates  ~
+  =;  matching-axe=(unit @)
+    ?^  matching-axe  matching-axe
+    =/  l  template-loop(templates l.templates)
+    ?^  l  l
+    template-loop(templates r.templates)
+  ::
+  =/  template=sock  n.templates
+  ?.  (huge:so less.b template)  ~
+  =/  template-fol=sock  (hed:so template)
+  =/  axis=@  2
+  |-  ^-  (unit @)
+  =*  fol-loop  $
+  ?.  (all:ca cape.template-fol)  ~
+  ?:  =(data.template-fol fol.b)  `axis
+  ?.  ?=([^ *] data.template-fol)  ~
+  =/  h  fol-loop(template-fol (hed:so template-fol), axis (peg axis 2))
+  ?^  h  h
+  fol-loop(template-fol (tel:so template-fol), axis (peg axis 3))
 ::
 ++  ska-poke
   |=  [[bus=sock fol=^] lon=long-ska]
@@ -1661,6 +1726,12 @@
     =<  $
     ~%  %nock-2  ..zuse  ~
     |.
+    ::  Here we check that the mask is precisely & instead of cheking with
+    ::  +all:ca to prevent analyzing through Nock evals with consed up formulas.
+    ::  This makes the set of all callable nouns finite, guaranteeing termina-
+    ::  tion of the algo when paired with homeomorphic embedding check in recur-
+    ::  sive calls
+    ::
     ?.  &(=(& cape.sock.prod.f) ?=(^ data.sock.prod.f))
       ::  indirect call
       ::
@@ -1869,10 +1940,13 @@
   ^-  cape
   =*  collapse  .
   ?:  =(~ fork.laz)  sure.laz
+  =-  ~&  [laz+laz cap+-]  -
   =/  fork-resolved=(list [y=cape n=cape])
     %+  turn  fork.laz
     |=  [y=axes-lazy n=axes-lazy]
-    [(collapse y) (collapse n)]
+    [ (collapse y(sure (uni:ca sure.y sure.laz)))
+      (collapse n(sure (uni:ca sure.n sure.laz)))
+    ]
   ::
   =/  sure-ints=cape
     %+  roll  fork-resolved
@@ -1927,6 +2001,10 @@
   %-  ~(rep by g)
   |=  [[k=identity v=datum] acc=(jug bell bell) acc-r=(jug bell bell)]
   =/  caller=bell  [less-code.v fol.k]
+  ?:  =(~ callees.v)
+    :_  acc-r
+    ?:  (~(has by acc) caller)  acc
+    (~(put by acc) caller ~)
   %-  ~(rep in callees.v)
   |=  [callee=callee-entry =_acc _acc-r]
   =/  callee=bell  [less-code:(~(got by g) id.callee) fol.id.callee]
@@ -1979,8 +2057,23 @@
   %-  ~(rep in w)
   |=  [b=bell [w-new=worklist =_functions-axes] =_lon]
   ^-  [[worklist (map bell cape)] long-args]
-  =;  [axes=cape lon1=long-args]
+  =;  [[axes-data=cape axes-look=cape] lon1=long-args]
     =.  lon  lon1
+    =/  axes=cape
+      =/  only-look=cape  (dif:ca axes-look axes-data)
+      ::  subtract parts of sterile lookup that are guaranteed to exist due to
+      ::  less.bell shape
+      ::
+      %+  uni:ca  axes-data
+      =/  sub=sock  less.b
+      |-  ^-  cape
+      ?@  only-look  |
+      ?:  |(=(| cape.sub) ?=(@ data.sub))
+        only-look
+      %+  con:ca
+        $(sub (hed:so sub), only-look (hed:ca only-look))
+      $(sub (tel:so sub), only-look (tel:ca only-look))
+    ::
     :_  lon
     =/  axes-old=(unit cape)  (~(get by functions-axes) b)
     ?~  axes-old
@@ -1996,50 +2089,57 @@
     :-  (~(uni in w-new) (~(get ju rev) b))
     (~(put by functions-axes) b axes)
   ::
-  =;  [laz=axes-lazy lon1=long-args]
-    [(collapse-axes-lazy laz) lon1]
+  =;  [[dat=axes-lazy lok=axes-lazy] lon1=long-args]
+    [[(collapse-axes-lazy dat) (collapse-axes-lazy lok)] lon1]
   ::
-  ^-  [axes-lazy long-args]
   =/  =nomm  (~(got by code.long-ska) b)
-  ::  Equivalent to "goal" in SSA compilation. It means "what parts of the
-  ::  result of this computation will be used in the next computation".
+  ::  "dat" is equivalent to "goal" in SSA compilation. It means "what parts of
+  ::  the result of this computation will be used in the next computation".
   ::  In tail position we need the whole thing.
   ::
-  =/  goal=axes-lazy  [& ~]
-  |-  ^-  [axes-lazy long-args]
+  ::  "lok" is "dat" + axis usage caused by sterile Nock 0 lookups, i.e.
+  ::  Nock 0's whose products are dropped
+  ::
+  ::  XX having these two simultaneously feels like doing extra work... but it
+  ::  also felt lke an approach that is guaranteed to be correct. reconsider?
+  ::
+  =/  need-it  [. .]:[& ~]
+  =/  drop-it  [. .]:*axes-lazy
+  =/  goal=[dat=axes-lazy lok=axes-lazy]  need-it
+  |^  ^-  [_goal long-args]
   =*  nomm-loop  $
   ?-    nomm
       [p=^ q=*]
-    =^  p  lon  $(nomm p.nomm, goal (axes-lazy-fmap goal hed:ca))
-    =^  q  lon  $(nomm q.nomm, goal (axes-lazy-fmap goal tel:ca))
+    =^  p  lon  $(nomm p.nomm, goal (app-goal (curr axes-lazy-fmap hed:ca)))
+    =^  q  lon  $(nomm q.nomm, goal (app-goal (curr axes-lazy-fmap tel:ca)))
     :_  lon
-    (unify-lazy-usage p q)
+    (unify-goals p q)
   ::
       [%0 @]
     :_  lon
-    ?:  =(0 p.nomm)  *axes-lazy
+    ?:  =(0 p.nomm)  drop-it
     ?:  =(1 p.nomm)  goal
-    ::  Push usage to the axis. If the next computation doesn't need anything
-    ::  push [& ~] to preserve crashes. Don't need to normalize like that for
-    ::  [%0 1] above as [%0 1] never crashes
+    ::  lok.goal keeps track of sterile Nock 0's here by turning empty goals
+    ::  to [& ~]
     ::
+    :-  (axes-lazy-fmap dat.goal (curr pat:ca p.nomm))
     %+  axes-lazy-fmap
-      ?:  =(*axes-lazy goal)  [& ~]
-      goal
+      ?:  =(*axes-lazy lok.goal)  [& ~]
+      lok.goal
     (curr pat:ca p.nomm)
   ::
-      [%1 *]  [*axes-lazy lon]
+      [%1 *]  [drop-it lon]
   ::
       [%2 *]
     ?~  info.nomm
-      =^  p  lon  $(nomm p.nomm, goal [& ~])
-      =^  q  lon  $(nomm q.nomm, goal [& ~])
+      =^  p  lon  $(nomm p.nomm, goal need-it)
+      =^  q  lon  $(nomm q.nomm, goal need-it)
       :_  lon
-      (unify-lazy-usage p q)
+      (unify-goals p q)
     =*  b-callee  b.u.info.nomm
-    =^  q=axes-lazy  lon
-      ?:  (safe-fol-fol q.nomm)  [*axes-lazy lon]
-      $(nomm q.nomm, goal *axes-lazy)
+    =^  q=_goal  lon
+      ?:  (safe-fol-fol q.nomm)  [drop-it lon]
+      $(nomm q.nomm, goal drop-it)
     ::
     =^  callee-usage=cape  lon
       ::  first try to get subject split by jets, then check if in the current
@@ -2056,47 +2156,60 @@
       :_  lon
       (~(got by code.lon) b-callee)
     ::
-    =^  p=axes-lazy  lon  $(nomm p.nomm, goal [callee-usage ~])
+    =^  p  lon  $(nomm p.nomm, goal [. .]:[callee-usage ~])
     :_  lon
-    (unify-lazy-usage p q)
+    (unify-goals p q)
   ::
-      [%3 *]  $(nomm p.nomm, goal [& ~])
-      [%4 *]  $(nomm p.nomm, goal [& ~])
+      [%3 *]  $(nomm p.nomm, goal need-it)
+      [%4 *]  $(nomm p.nomm, goal need-it)
       [%5 *]
-    =^  p  lon  $(nomm p.nomm, goal [& ~])
-    =^  q  lon  $(nomm q.nomm, goal [& ~])
+    =^  p  lon  $(nomm p.nomm, goal need-it)
+    =^  q  lon  $(nomm q.nomm, goal need-it)
     :_  lon
-    (unify-lazy-usage p q)
+    (unify-goals p q)
   ::
       [%6 *]
-    =^  p=axes-lazy  lon  $(nomm p.nomm, goal [& ~])
-    =^  q=axes-lazy  lon  $(nomm q.nomm)
-    =^  r=axes-lazy  lon  $(nomm r.nomm)
+    =^  p  lon  $(nomm p.nomm, goal need-it)
+    =^  q  lon  $(nomm q.nomm)
+    =^  r  lon  $(nomm r.nomm)
     :_  lon
-    [sure.p [[q r] fork.p]]
+    :-  [sure.dat.p [[dat.q dat.r] fork.dat.p]]
+    [sure.lok.p [[lok.q lok.r] fork.lok.p]]
   ::
       [%7 *]
     =^  q  lon  $(nomm q.nomm)
     $(nomm p.nomm, goal q)
   ::
       [%10 *]
-    =/  [don=axes-lazy rec=axes-lazy]  (into p.p.nomm goal)
-    =^  qp  lon  $(nomm q.p.nomm, goal don)
-    =^  q   lon  $(nomm q.nomm, goal rec)
+    =/  [don-dat=axes-lazy rec-dat=axes-lazy]  (into p.p.nomm dat.goal)
+    =/  [don-lok=axes-lazy rec-lok=axes-lazy]  (into p.p.nomm lok.goal)
+    =^  qp  lon  $(nomm q.p.nomm, goal [don-dat don-lok])
+    =^  q   lon  $(nomm q.nomm, goal [rec-dat rec-lok])
     :_  lon
-    (unify-lazy-usage qp q)
+    (unify-goals qp q)
   ::
       [%11 *]
-    ?@  p.nomm  $(nomm q.nomm)
-    =^  qp  lon  $(nomm q.p.nomm, goal [& ~])
+    ?@  p.nomm   $(nomm q.nomm)
+    =^  qp  lon  $(nomm q.p.nomm, goal need-it)
     =^  q   lon  $(nomm q.nomm)
     :_  lon
-    (unify-lazy-usage q qp)
+    (unify-goals q qp)
   ::
       [%12 *]
-    =^  p  lon  $(nomm p.nomm, goal [& ~])
-    =^  q  lon  $(nomm q.nomm, goal [& ~])
+    =^  p  lon  $(nomm p.nomm, goal need-it)
+    =^  q  lon  $(nomm q.nomm, goal need-it)
     :_  lon
-    (unify-lazy-usage p q)
+    (unify-goals p q)
   ==
+  ::
+  ++  unify-goals
+    |=  [a=_goal b=_goal]
+    ^+  goal
+    [(unify-lazy-usage dat.a dat.b) (unify-lazy-usage lok.a lok.b)]
+  ::
+  ++  app-goal
+    |=  g=$-(axes-lazy axes-lazy)
+    ^+  goal
+    [(g dat.goal) (g lok.goal)]
+  --
 --
