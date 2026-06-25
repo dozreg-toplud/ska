@@ -750,14 +750,14 @@
   ==
 ::  A noun with provenance "src" captured something from subject "less"
 ::
-++  known-sock-captured
+++  unknown-sock-captured
   |=  [src=spring less=sock]
   ^-  ?
   ?~  src  |
   ?^  src  |($(src -.src) $(src +.src))
   =/  part=cape  cape:(pull:so less src)
   |-  ^-  ?
-  ?@  part  part
+  ?@  part  !part
   |($(part -.part) $(part +.part))
 ::  Memoization core
 ::
@@ -794,8 +794,10 @@
     ^-  memo
     ::  if some part of the captured subject is unknown, do not memoize
     ::  to prevent deoptz
+    ::  i.e. the result needs to be fully known wherever it captures the subject
+    ::  in order to memoize the call
     ::
-    ?:  (known-sock-captured map.d less-memo.d)  m
+    ?:  (unknown-sock-captured map.d less-memo.d)  m
     =/  inner  (gut m fol.id)
     =.  inner  (~(put by inner) less-memo.d [id d])
     (~(put by m) fol.id inner)
@@ -1672,6 +1674,7 @@
   =|  gen=[want=cape indi=cape callees=(set callee-entry) area=(unit spot)]
   =/  seat=(unit spot)  ~
   =/  memo-key=(unit *)  ~
+  =/  virt-call=?  |
   ^-  [[=nomm prod=sock-anno] gen=_gen]
   =<  $
   ~%  %fol-loop  ..zuse  ~
@@ -1732,7 +1735,7 @@
     ::  tion of the algo when paired with homeomorphic embedding check in recur-
     ::  sive calls
     ::
-    ?.  &(=(& cape.sock.prod.f) ?=(^ data.sock.prod.f))
+    ?.  &(=(& cape.sock.prod.f) ?=(^ data.sock.prod.f) !virt-call)
       ::  indirect call
       ::
       =.  indi.gen  (uni:ca indi.gen (distribute & src.prod.f))
@@ -1841,6 +1844,11 @@
     (edit:pi src.prod.rec a.fol src.prod.don)
   ::
       [%11 p=@ q=^]
+    ?:  ?=(%virt p.fol)
+      ::  %virt hint annotates entry points into meta-circularly jetted
+      ::  interpreters. No need to analyze through.
+      ::
+      fol-loop(fol [%2 [%0 1] 1 q.fol], virt-call &)
     =^  q  gen  fol-loop(fol q.fol)
     :_  gen
     :-  [%11 p.fol nomm.q q.fol]
