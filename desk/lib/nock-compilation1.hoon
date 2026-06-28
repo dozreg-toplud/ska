@@ -59,7 +59,7 @@
 ::
 ::  Table of contents:
 ::    Call graph construction:  line 511
-::    Axis usage analysis:      line 1884
+::    Axis usage analysis:      line 1994
 ::    Compilation:              line X
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -671,7 +671,9 @@
   ?|  (h-e (hed:so big) smol)
       (h-e (tel:so big) smol)
   ==
-::  most specific generalization of two socks
+::  Most specific generalization of two socks. Disagreeing parts are replaced
+::  with an unknown element |+~. Note that this has different behavior and
+::  intent compared to +msg-ca.
 ::
 ++  msg-sock
   |=  [a=sock b=sock]
@@ -1022,23 +1024,22 @@
 ::
 ++  get-hint-regs
   |=  $:  [bus=sock =nomm]
+          scc=(set identity)
+          sccs=(map identity (set identity))
+          code=(map bell nomm)
           $=  gen
           $:  root=(jug * path)
               core=(jug path sock)
               batt=(jug ^ path)
-      ==  ==
+      ==  ==  
   ^+  gen
-  ::  works under assumption that:
-  ::    1. fast hints are placed in the beginning of arm's body
-  ::    2. the root being analyzed is the definition of a hinted core
-  ::  otherwise the hints might be ignored
-  ::
   =<  +
   |-  ^-  [sock _gen]
+  =*  nomm-loop  $
   ?-    nomm
       [p=^ q=*]
-    =^  h  gen  $(nomm p.nomm)
-    =^  t  gen  $(nomm q.nomm)
+    =^  h  gen  nomm-loop(nomm p.nomm)
+    =^  t  gen  nomm-loop(nomm q.nomm)
     :_  gen
     (knit:so h t)
   ::
@@ -1052,45 +1053,58 @@
     &+p.nomm
   ::
       [%2 *]
-    =.  gen  +:$(nomm p.nomm)
-    =.  gen  +:$(nomm q.nomm)
-    [*sock gen]
+    ?~  info.nomm
+      =.  gen  +:nomm-loop(nomm p.nomm)
+      =.  gen  +:nomm-loop(nomm q.nomm)
+      [*sock gen]
+    =^  sub  gen  nomm-loop(nomm p.nomm)
+    =.  gen     +:nomm-loop(nomm q.nomm)
+    =*  b-callee  b.u.info.nomm
+    ?:  (~(has in scc) b-callee)
+      ::  XX maybe only pessimize backedges?
+      ::
+      [*sock gen]
+    %=  nomm-loop
+      bus   sub
+      nomm  (~(got by code) b-callee)
+      scc   (~(gut by sccs) b-callee [b-callee ~ ~])
+    ==
   ::
       [%3 *]
-    =.  gen  +:$(nomm p.nomm)
+    =.  gen  +:nomm-loop(nomm p.nomm)
     [*sock gen]
   ::
       [%4 *]
-    =.  gen  +:$(nomm p.nomm)
+    =.  gen  +:nomm-loop(nomm p.nomm)
     [*sock gen]
   ::
       [%5 *]
-    =.  gen  +:$(nomm p.nomm)
-    =.  gen  +:$(nomm q.nomm)
+    =.  gen  +:nomm-loop(nomm p.nomm)
+    =.  gen  +:nomm-loop(nomm q.nomm)
     [*sock gen]
   ::
       [%6 *]
-    =.  gen  +:$(nomm p.nomm)
-    =.  gen  +:$(nomm q.nomm)
-    =.  gen  +:$(nomm r.nomm)
-    [*sock gen]
+    =.     gen  +:nomm-loop(nomm p.nomm)
+    =^  y  gen    nomm-loop(nomm q.nomm)
+    =^  n  gen    nomm-loop(nomm r.nomm)
+    [(purr:so y n) gen]
   ::
       [%7 *]
-    =^  s  gen  $(nomm p.nomm)
-    $(bus s, nomm q.nomm)
+    =^  s  gen  nomm-loop(nomm p.nomm)
+    nomm-loop(bus s, nomm q.nomm)
   ::
       [%10 *]
-    =.  gen  +:$(nomm q.p.nomm)
-    =.  gen  +:$(nomm q.nomm)
-    [*sock gen]
+    =^  don  gen  nomm-loop(nomm q.p.nomm)
+    =^  rec  gen  nomm-loop(nomm q.nomm)
+    [(darn:so rec p.p.nomm don) gen]
   ::
       [%11 *]
-    ?@  p.nomm  $(nomm q.nomm)
+    ?@  p.nomm  nomm-loop(nomm q.nomm)
     ?.  ?=(%fast p.p.nomm)
-      =.  gen  +:$(nomm q.p.nomm)
-      $(nomm q.nomm)
-    =^  clue  gen  $(nomm q.p.nomm)
-    =^  prod  gen  $(nomm q.nomm)
+      =.  gen  +:nomm-loop(nomm q.p.nomm)
+      nomm-loop(nomm q.nomm)
+    =^  clue  gen  nomm-loop(nomm q.p.nomm)
+    =^  prod  gen  nomm-loop(nomm q.nomm)
     :-  prod
     ^+  gen
     ?.  (all:ca cape.clue)  ~&(>>> %fast-lost-clue gen)
@@ -1163,8 +1177,8 @@
     ==
   ::
       [%12 *]
-    =.  gen  +:$(nomm p.nomm)
-    =.  gen  +:$(nomm q.nomm)
+    =.  gen  +:nomm-loop(nomm p.nomm)
+    =.  gen  +:nomm-loop(nomm q.nomm)
     [*sock gen]
   ==  
 ::  Assumes finalized (fixed point).
@@ -1250,15 +1264,17 @@
 ++  ska-poke
   |=  [[bus=sock fol=^] lon=long-ska]
   ^-  [bell long-ska]
-  =/  g=callgraph  -:(ska-callgraph [bus fol] memo.final.lon)
+  =/  root-identity=identity  [bus fol]
+  =/  g=callgraph  -:(ska-callgraph root-identity memo.final.lon)
   ::
-  =/  pruned=callgraph  (prune-callgraph g [bus fol] `graph.final.lon)
-  =/  root-datum=datum  (~(got by pruned) [bus fol])
-  =.  lon
+  =/  pruned=callgraph  (prune-callgraph g root-identity `graph.final.lon)
+  =/  root-datum=datum  (~(got by pruned) root-identity)
+  =^  bell-calls=(jug bell bell)  lon
     =|  visit=(set identity)
-    =/  q=(list identity)  ~[[bus fol]]
-    |-  ^-  long-ska
-    ?~  q  lon
+    =|  bell-calls=(jug bell bell)
+    =/  q=(list identity)  ~[root-identity]
+    |-  ^-  [jug-id long-ska]
+    ?~  q  [bell-calls lon]
     ?:  (~(has in visit) i.q)  $(q t.q)
     ?~  got=(~(get by pruned) i.q)
       ::  call outside of the freshly produced & pruned callgraph
@@ -1266,68 +1282,147 @@
       ?>  (~(has by graph.final.lon) i.q)
       $(q t.q, visit (~(put in visit) i.q))
     =/  d=datum  u.got
-    =/  =bell  [less-code.d fol.i.q]
+    =/  b=bell  [less-code.d fol.i.q]
+    =/  callees-list=(list identity)
+      ~(tap in `(set identity)`(~(run in callees.d) |=(callee-entry id)))
+    ::
+    =/  get-bell
+      |=  id=identity
+      ^-  (unit bell)
+      %+  bind  (~(get by pruned) id)
+      |=  d=datum
+      [less-code.d fol.id]
+    ::
+    =/  callees-bells=(list bell)  (murn callees-list get-bell)
     %=  $
-      q               (weld t.q (turn ~(tap in callees.d) |=(callee-entry id)))
+      q               (weld t.q callees-list)
       memo.final.lon  (put:mi memo.final.lon i.q d)
-      code.lon        (~(put by code.lon) bell nomm.d)
-      fols.lon        (~(put ju fols.lon) fol.i.q [bell nomm.d])
+      code.lon        (~(put by code.lon) b nomm.d)
+      fols.lon        (~(put ju fols.lon) fol.i.q [b nomm.d])
       visit           (~(put in visit) i.q)
+      bell-calls      (~(gas ju bell-calls) (turn callees-bells (lead b)))
     ==
   ::
-  =.  graph.final.lon  (~(uni by graph.final.lon) pruned)
-  =/  [root=(jug * path) core=(jug path sock) batt=(jug ^ path)]
-    (get-hint-regs [bus nomm.root-datum] [root core batt]:jets.lon)
+  =/  sccs=(list (set bell))  ((tarjan identity) bell-calls)
+  =/  scc-map=(map bell (set bell))
+    %+  roll  sccs
+    |=  [scc=(set bell) acc=(map bell (set bell))]
+    %-  ~(rep in scc)
+    |=  [b=bell acc=_acc]
+    (~(put by acc) b scc)
   ::
-  :-  [less-code.root-datum fol]
+  =.  graph.final.lon  (~(uni by graph.final.lon) pruned)
+  =/  root-bell=bell  [less-code.root-datum fol]
+  =/  [root=(jug * path) core=(jug path sock) batt=(jug ^ path)]
+    %:  get-hint-regs
+      [bus nomm.root-datum]
+      (~(gut by scc-map) root-bell [root-bell ~ ~])
+      scc-map
+      code.lon
+      [root core batt]:jets.lon
+    ==
+  ::
+  :-  root-bell
   lon(root.jets root, core.jets core, batt.jets batt)
 ::  callers first
 ::
-++  tarjan
+++  tarjan1
   ~%  %tarjan  ..zuse  ~
   |*  vertex=mold
   |=  g=(jug vertex vertex)
   ^-  (list (set identity))
   =*  gen
-    $:  idx=@
-        vis=(map vertex @)
-        low=(map vertex @)
-        stk=(list vertex)
-        cur=(set vertex)
-        fin=(list (set vertex))
+    $:  idx=@                     ::  index generator
+        vis=(map vertex @)        ::  numbered vertices
+        low=(map vertex @)        ::  lowest strongly connected incl. itself
+        stk=(list vertex)         ::  call stack
+        cur=(set vertex)          ::  call stack as a set
+        fin=(list (set vertex))   ::  finalized SCCs
     ==
   ::
-  =<  fin
-  ^-  gen
+  =<  fin  ^-  gen
   %-  ~(rep by g)
-  |=  [[id=vertex v=*] acc=gen]
+  |=  [[v=vertex kids=(set vertex)] acc=gen]
   =*  strongly-connect  .
-  ?:  (~(has by vis.acc) id)  acc
-  =^  idx  idx.acc  [idx.acc +(idx.acc)]
-  =.  vis.acc  (~(put by vis.acc) id idx)
-  =.  low.acc  (~(put by low.acc) id idx)
-  =.  stk.acc  [id stk.acc]
-  =.  cur.acc  (~(put in cur.acc) id)
+  ?:  (~(has by vis.acc) v)  acc
+  =^  index  idx.acc  [idx.acc +(idx.acc)]
   =.  acc
-    %-  ~(rep in (~(get ju g) id))
-    |=  [callee=vertex =_acc]
-    ?^  callee-idx=(~(get by vis.acc) callee)
-      ?.  (~(has in cur.acc) callee)  acc
-      acc(low (~(jab by low.acc) id (curr min u.callee-idx)))
-    =.  acc  (strongly-connect [callee **] acc)
-    acc(low (~(jab by low.acc) id (curr min (~(got by low.acc) callee))))
+    %_  acc
+      vis  (~(put by vis.acc) v index)
+      low  (~(put by low.acc) v index)
+      stk  [v stk.acc]
+      cur  (~(put in cur.acc) v)
+    ==
   ::
-  ?.  =((~(got by vis.acc) id) (~(got by low.acc) id))  acc
-  =^  done=(set vertex)  acc
-    =|  out=(set vertex)
-    |-  ^+  [out acc]
-    =^  pop=vertex  stk.acc  ?~(stk.acc !! stk.acc)
-    =.  cur.acc  (~(del in cur.acc) pop)
-    =.  out  (~(put in out) pop)
-    ?:  =(id pop)  [out acc]
-    $
+  =.  acc
+    %-  ~(rep in kids)
+    |=  [kid=vertex =_acc]
+    ?^  kid-idx=(~(get by vis.acc) kid)
+      ?.  (~(has in cur.acc) kid)  acc
+      acc(low (~(jab by low.acc) v (curr min u.kid-idx)))
+    =.  acc  (strongly-connect [kid (~(get ju g) kid)] acc)
+    acc(low (~(jab by low.acc) v (curr min (~(got by low.acc) kid))))
   ::
-  acc(fin [done fin.acc])
+  ?.  =(index (~(got by low.acc) v))  acc
+  =;  [done=(set vertex) =_acc]  acc(fin [done fin.acc])
+  =|  out=(set vertex)
+  |-  ^+  [out acc]
+  =*  pop-loop  $
+  =^  pop=vertex  stk.acc  ?~(stk.acc !! stk.acc)
+  =.  cur.acc  (~(del in cur.acc) pop)
+  =.  out  (~(put in out) pop)
+  ?:  =(v pop)  [out acc]
+  pop-loop
+::
+++  tarjan
+  |*  vertex=mold
+  |=  g=(jug vertex vertex)
+  ^-  (list (set identity))
+  =*  gen
+    $:  idx=@                     ::  index generator
+        vis=(map vertex @)        ::  numbered vertices
+        stk=(list vertex)         ::  call stack
+        cur=(set vertex)          ::  call stack as a set
+        fin=(list (set vertex))   ::  finalized SCCs
+    ==
+  ::
+  =<  fin  ^-  gen
+  %-  ~(rep by g)
+  |=  [[v=vertex kids=(set vertex)] acc=gen]
+  ?:  (~(has by vis.acc) v)  acc
+  =<  +
+  |-  ^-  [@ gen]
+  =*  connect  $
+  =^  index  idx.acc  [idx.acc +(idx.acc)]
+  =.  acc
+    %_  acc
+      vis  (~(put by vis.acc) v index)
+      stk  [v stk.acc]
+      cur  (~(put in cur.acc) v)
+    ==
+  ::  lowest strongly-connected vertex, including itself
+  ::
+  =^  lowest=@  acc
+    %-  ~(rep in kids)
+    |=  [kid=vertex lowest=_index =_acc]
+    ?^  kid-idx=(~(get by vis.acc) kid)
+      :_  acc
+      ?.  (~(has in cur.acc) kid)  lowest
+      (min lowest u.kid-idx)
+    =^  lowest-kid=@  acc  connect(v kid, kids (~(get ju g) kid), acc acc)
+    [(min lowest lowest-kid) acc]
+  ::
+  :-  lowest
+  ?.  =(index lowest)  acc
+  =;  [done=(set vertex) =_acc]  acc(fin [done fin.acc])
+  =|  out=(set vertex)
+  |-  ^+  [out acc]
+  =*  pop-loop  $
+  =^  pop=vertex  stk.acc  ?~(stk.acc !! stk.acc)
+  =.  cur.acc  (~(del in cur.acc) pop)
+  =.  out  (~(put in out) pop)
+  ?:  =(v pop)  [out acc]
+  pop-loop
 ::
 ::  to incrementally construct transitive closure of a graph:
 ::    1. get the set of all id's whose immediate children changed ("seed");
@@ -1427,6 +1522,9 @@
       $(inv l.inv)
       $(inv r.inv)
   ==
+::  Most specific generalization of two capes. Disagreeing parts are replaced
+::  with & to capture/demand more. Note that this has different behavior and
+::  intent compared to +msg-sock
 ::
 ++  msg-ca
   |=  [a=cape b=cape]
@@ -1685,7 +1783,7 @@
     ::  like !:([%9 2 %0 1])
     ::
     ::  If a formula is "safe" it is equivalent to Nock 1 with respect to
-    ::  limiting set of available formulas
+    ::  limiting the set of available formulas
     ::
     [[nomm.u.x [&+prod.u.x ~]] gen]
   =*  dunno  *sock-anno
@@ -1914,6 +2012,7 @@
 ::    with the most specific generalization of the exclusive subject usages
 ::    of branches. This applies recursively to branches within branches
 ::
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 |%
 +$  long-args
   $+  long-args
@@ -1948,28 +2047,13 @@
   ^-  cape
   =*  collapse  .
   ?:  =(~ fork.laz)  sure.laz
-  =-  ~&  [laz+laz cap+-]  -
-  =/  fork-resolved=(list [y=cape n=cape])
-    %+  turn  fork.laz
-    |=  [y=axes-lazy n=axes-lazy]
-    [ (collapse y(sure (uni:ca sure.y sure.laz)))
-      (collapse n(sure (uni:ca sure.n sure.laz)))
-    ]
-  ::
-  =/  sure-ints=cape
-    %+  roll  fork-resolved
-    |=  [[y=cape n=cape] acc=_sure.laz]
-    (uni:ca acc (int:ca y n))
-  ::
-  =/  fork-dif=(list [y=cape n=cape])
-    %+  turn  fork-resolved
-    |=  [y=cape n=cape]
-    ^-  [cape cape]
-    [(dif:ca y sure-ints) (dif:ca n sure-ints)]
-  ::
-  %+  roll  fork-dif
-  |=  [[y=cape n=cape] acc=_sure-ints]
-  (uni:ca acc (msg-ca y n))
+  %+  roll  fork.laz
+  |=  [[y=axes-lazy n=axes-lazy] acc=cape]
+  %+  uni:ca  acc
+  %-  msg-ca
+  [ (uni:ca sure.laz (collapse y(sure (uni:ca sure.y sure.laz))))
+    (uni:ca sure.laz (collapse n(sure (uni:ca sure.n sure.laz))))
+  ]
 ::
 ++  unify-lazy-usage
   |=  [a=axes-lazy b=axes-lazy]
@@ -2068,19 +2152,16 @@
   =;  [[axes-data=cape axes-look=cape] lon1=long-args]
     =.  lon  lon1
     =/  axes=cape
-      =/  only-look=cape  (dif:ca axes-look axes-data)
-      ::  subtract parts of sterile lookup that are guaranteed to exist due to
-      ::  less.bell shape
-      ::
       %+  uni:ca  axes-data
       =/  sub=sock  less.b
       |-  ^-  cape
-      ?@  only-look  |
-      ?:  |(=(| cape.sub) ?=(@ data.sub))
-        only-look
-      %+  con:ca
-        $(sub (hed:so sub), only-look (hed:ca only-look))
-      $(sub (tel:so sub), only-look (tel:ca only-look))
+      ?@  axes-look  |
+      ?:  &(|(=(| cape.sub) ?=(@ data.sub)) ?=(@ axes-data))
+        axes-look
+      %-  con:ca
+      [ $(sub (hed:so sub), axes-look -.axes-look, axes-data (hed:ca axes-data))
+        $(sub (tel:so sub), axes-look +.axes-look, axes-data (tel:ca axes-data))
+      ]
     ::
     :_  lon
     =/  axes-old=(unit cape)  (~(get by functions-axes) b)
@@ -2105,14 +2186,11 @@
   ::  the result of this computation will be used in the next computation".
   ::  In tail position we need the whole thing.
   ::
-  ::  "lok" is "dat" + axis usage caused by sterile Nock 0 lookups, i.e.
-  ::  Nock 0's whose products are dropped
+  ::  "lok" is axis usage caused by sterile Nock 0 lookups, i.e. Nock 0's whose
+  ::  products are dropped
   ::
-  ::  XX having these two simultaneously feels like doing extra work... but it
-  ::  also felt lke an approach that is guaranteed to be correct. reconsider?
-  ::
-  =/  need-it  [. .]:[& ~]
-  =/  drop-it  [. .]:*axes-lazy
+  =/  need-it  [[& ~] *axes-lazy]
+  =/  drop-it  [*axes-lazy *axes-lazy]
   =/  goal=[dat=axes-lazy lok=axes-lazy]  need-it
   |^  ^-  [_goal long-args]
   =*  nomm-loop  $
@@ -2154,7 +2232,8 @@
       ::  SCC, getting current assumption if yes, then look among finalized,
       ::  finally recur into the new SCC and get the result
       ::
-      ?^  j=(biff (~(get by call.cole.jets.long-ska) b-callee) ~(get by jets.lon))
+      =*  call-cole  call.cole.jets.long-ska
+      ?^  j=(biff (~(get by call-cole) b-callee) ~(get by jets.lon))
         [u.j lon]
       ?:  (~(has in scc) b-callee)
         [(~(gut by functions-axes) b-callee |) lon]
@@ -2213,7 +2292,20 @@
   ++  unify-goals
     |=  [a=_goal b=_goal]
     ^+  goal
-    [(unify-lazy-usage dat.a dat.b) (unify-lazy-usage lok.a lok.b)]
+    :-  (unify-lazy-usage dat.a dat.b)
+    :_  (weld fork.lok.a fork.lok.b)
+    ::  get deepest axes
+    ::  XX maybe best to leave it a regular union for easier sync with
+    ::  compilation?
+    ::
+    =/  a=cape  sure.lok.a
+    =/  b=cape  sure.lok.b
+    |-  ^-  cape
+    ?@  a
+      ?^  b  b
+      |(a b)
+    ?@  b  a
+    (con:ca $(a -.a, b -.b) $(a +.a, b +.b))
   ::
   ++  app-goal
     |=  g=$-(axes-lazy axes-lazy)

@@ -15,9 +15,8 @@
 =/  sub  hoot-zpdt
 =/  fol
   ;;  ^  =>  sub  !.  !=
-  (dec 42)
+  (mul 2 2)
 ::
-~&  fol
 =/  =long-ska  +:(ska-poke [&+~ hoot-zpdt-fol] *long-ska)
 =^  root=bell  long-ska  (ska-poke [&+sub fol] long-ska)
 =.  long-ska  (ska-cole-restore long-ska)
@@ -28,7 +27,7 @@
   ^-  (map ring cape)
   %-  malt
   ^-  (list [ring cape])
-  :~
+  :*
     [/add/one/k135^2 binary]
     [/dec/one/k135^2 unary]
     [/div/one/k135^2 binary]
@@ -42,6 +41,7 @@
     [/mod/one/k135^2 binary]
     [/mul/one/k135^2 binary]
     [/sub/one/k135^2 binary]
+    ~
   ==
 ::
 =.  long-args  (axis-poke root long-ska long-args)
