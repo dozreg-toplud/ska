@@ -1024,8 +1024,9 @@
 ::
 ++  get-hint-regs
   |=  $:  [bus=sock =nomm]
-          scc=(set identity)
-          sccs=(map identity (set identity))
+          root-bell=bell
+          scc=(set bell)
+          sccs=(map bell (set bell))
           code=(map bell nomm)
           $=  gen
           $:  root=(jug * path)
@@ -1034,6 +1035,7 @@
       ==  ==  
   ^+  gen
   =<  +
+  =/  scc-vis=(set bell)  [root-bell ~ ~]
   |-  ^-  [sock _gen]
   =*  nomm-loop  $
   ?-    nomm
@@ -1061,13 +1063,17 @@
     =.  gen     +:nomm-loop(nomm q.nomm)
     =*  b-callee  b.u.info.nomm
     ?:  (~(has in scc) b-callee)
-      ::  XX maybe only pessimize backedges?
-      ::
-      [*sock gen]
+      ?:  (~(has in scc-vis) b-callee)  [*sock gen]
+      %=  nomm-loop
+        bus      sub
+        nomm     (~(got by code) b-callee)
+        scc-vis  (~(put in scc-vis) b-callee)
+      ==
     %=  nomm-loop
-      bus   sub
-      nomm  (~(got by code) b-callee)
-      scc   (~(gut by sccs) b-callee [b-callee ~ ~])
+      bus      sub
+      nomm     (~(got by code) b-callee)
+      scc      (~(gut by sccs) b-callee [b-callee ~ ~])
+      scc-vis  ~
     ==
   ::
       [%3 *]
@@ -1316,6 +1322,7 @@
   =/  [root=(jug * path) core=(jug path sock) batt=(jug ^ path)]
     %:  get-hint-regs
       [bus nomm.root-datum]
+      root-bell
       (~(gut by scc-map) root-bell [root-bell ~ ~])
       scc-map
       code.lon
