@@ -1022,12 +1022,10 @@
     [[s f `[& p ax]] b]
   ==
 ::
++$  bell-prod  (map bell [prod=sock map=spring])
 ++  get-hint-regs
   |=  $:  [bus=sock =nomm]
-          root-bell=bell
-          scc=(set bell)
-          sccs=(map bell (set bell))
-          code=(map bell nomm)
+          =bell-prod
           $=  gen
           $:  root=(jug * path)
               core=(jug path sock)
@@ -1035,7 +1033,6 @@
       ==  ==  
   ^+  gen
   =<  +
-  =/  scc-vis=(set bell)  [root-bell ~ ~]
   |-  ^-  [sock _gen]
   =*  nomm-loop  $
   ?-    nomm
@@ -1061,20 +1058,15 @@
       [*sock gen]
     =^  sub  gen  nomm-loop(nomm p.nomm)
     =.  gen     +:nomm-loop(nomm q.nomm)
-    =*  b-callee  b.u.info.nomm
-    ?:  (~(has in scc) b-callee)
-      ?:  (~(has in scc-vis) b-callee)  [*sock gen]
-      %=  nomm-loop
-        bus      sub
-        nomm     (~(got by code) b-callee)
-        scc-vis  (~(put in scc-vis) b-callee)
-      ==
-    %=  nomm-loop
-      bus      sub
-      nomm     (~(got by code) b-callee)
-      scc      (~(gut by sccs) b-callee [b-callee ~ ~])
-      scc-vis  ~
-    ==
+    =/  [prod=sock map=spring]  (~(got by bell-prod) b.u.info.nomm)
+    :_  gen
+    |-  ^-  sock
+    ?~  map  prod
+    ?@  map  (pull:so sub map)
+    %-  knit:so
+    [ $(prod (hed:so prod), map -.map)
+      $(prod (tel:so prod), map +.map)
+    ]
   ::
       [%3 *]
     =.  gen  +:nomm-loop(nomm p.nomm)
@@ -1267,6 +1259,13 @@
   ?^  h  h
   fol-loop(template-fol (tel:so template-fol), axis (peg axis 3))
 ::
+++  uni-ju
+  |*  v=mold
+  |*  [a=(jug * v) b=(jug * v)]
+  %-  (~(uno by a) b)
+  |=  [* a=(set v) b=(set v)]
+  (~(uni in a) b)
+::
 ++  ska-poke
   |=  [[bus=sock fol=^] lon=long-ska]
   ^-  [bell long-ska]
@@ -1274,13 +1273,30 @@
   =/  g=callgraph  -:(ska-callgraph root-identity memo.final.lon)
   ::
   =/  pruned=callgraph  (prune-callgraph g root-identity `graph.final.lon)
+  =/  =bell-prod
+    %-  ~(rep by pruned)
+    |=  [[id=identity d=datum] acc=bell-prod]
+    =/  b=bell  [less-code.d fol.id]
+    =;  prod=[sock spring]
+      ?~  have=(~(get by acc) b)  (~(put by acc) b prod)
+      ?>  =(prod u.have)
+      acc
+    ::
+    :_  map.d
+    |-  ^-  sock
+    ?~  map.d  prod.d
+    ?@  map.d  |+~
+    %-  knit:so
+    [ $(prod.d (hed:so prod.d), map.d -.map.d)
+      $(prod.d (tel:so prod.d), map.d +.map.d)
+    ]
+  ::
   =/  root-datum=datum  (~(got by pruned) root-identity)
-  =^  bell-calls=(jug bell bell)  lon
+  =.  lon
     =|  visit=(set identity)
-    =|  bell-calls=(jug bell bell)
     =/  q=(list identity)  ~[root-identity]
-    |-  ^-  [jug-id long-ska]
-    ?~  q  [bell-calls lon]
+    |-  ^-  long-ska
+    ?~  q  lon
     ?:  (~(has in visit) i.q)  $(q t.q)
     ?~  got=(~(get by pruned) i.q)
       ::  call outside of the freshly produced & pruned callgraph
@@ -1292,42 +1308,20 @@
     =/  callees-list=(list identity)
       ~(tap in `(set identity)`(~(run in callees.d) |=(callee-entry id)))
     ::
-    =/  get-bell
-      |=  id=identity
-      ^-  (unit bell)
-      %+  bind  (~(get by pruned) id)
-      |=  d=datum
-      [less-code.d fol.id]
-    ::
-    =/  callees-bells=(list bell)  (murn callees-list get-bell)
     %=  $
       q               (weld t.q callees-list)
       memo.final.lon  (put:mi memo.final.lon i.q d)
       code.lon        (~(put by code.lon) b nomm.d)
       fols.lon        (~(put ju fols.lon) fol.i.q [b nomm.d])
       visit           (~(put in visit) i.q)
-      bell-calls      (~(gas ju bell-calls) (turn callees-bells (lead b)))
     ==
-  ::
-  =/  sccs=(list (set bell))  ((tarjan identity) bell-calls)
-  =/  scc-map=(map bell (set bell))
-    %+  roll  sccs
-    |=  [scc=(set bell) acc=(map bell (set bell))]
-    %-  ~(rep in scc)
-    |=  [b=bell acc=_acc]
-    (~(put by acc) b scc)
   ::
   =.  graph.final.lon  (~(uni by graph.final.lon) pruned)
   =/  root-bell=bell  [less-code.root-datum fol]
   =/  [root=(jug * path) core=(jug path sock) batt=(jug ^ path)]
-    %:  get-hint-regs
-      [bus nomm.root-datum]
-      root-bell
-      (~(gut by scc-map) root-bell [root-bell ~ ~])
-      scc-map
-      code.lon
-      [root core batt]:jets.lon
-    ==
+    %-  ~(rep by pruned)
+    |=  [[id=identity d=datum] acc=_[root core batt]:jets.lon]
+    (get-hint-regs [more.id nomm.d] bell-prod acc)
   ::
   :-  root-bell
   lon(root.jets root, core.jets core, batt.jets batt)
@@ -1388,8 +1382,8 @@
   =*  gen
     $:  idx=@                     ::  index generator
         vis=(map vertex @)        ::  numbered vertices
-        stk=(list vertex)         ::  call stack
-        cur=(set vertex)          ::  call stack as a set
+        stk=(list vertex)         ::  stack of tr. callers, partially ordered
+        cur=(set vertex)          ::  above a set
         fin=(list (set vertex))   ::  finalized SCCs
     ==
   ::
@@ -1400,9 +1394,10 @@
   =<  +
   |-  ^-  [@ gen]
   =*  connect  $
-  =^  index  idx.acc  [idx.acc +(idx.acc)]
+  =/  index=@  idx.acc
   =.  acc
     %_  acc
+      idx  +(idx.acc)
       vis  (~(put by vis.acc) v index)
       stk  [v stk.acc]
       cur  (~(put in cur.acc) v)
