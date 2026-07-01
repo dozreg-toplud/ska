@@ -788,7 +788,7 @@
         ==
       `[id d]:i.entries
     $(entries t.entries)
-  ::  Memoize, if the known parts of the subject were not captured.
+  ::  Memoize, if unknown parts of the subject were not captured.
   ::
   ++  put
     ~%  %put-mi  ..zuse  ~
@@ -1026,11 +1026,11 @@
 ++  get-hint-regs
   |=  $:  [bus=sock =nomm]
           =bell-prod
-          $=  gen
-          $:  root=(jug * path)
-              core=(jug path sock)
-              batt=(jug ^ path)
-      ==  ==  
+          root=(jug * path)
+          core=(jug path sock)
+          batt=(jug ^ path)
+      ==
+  =/  gen  [miss=| root=root core=core batt=batt]
   ^+  gen
   =<  +
   |-  ^-  [sock _gen]
@@ -1148,13 +1148,8 @@
     |-  ^+  gen
     =*  past-loop  $
     ?~  past
-      ::  Don't be too scared - these might be caused by inlining of arm
-      ::  formulas together with their fast hints, followed by partial execution
-      ::  of their callers as we are searching for %fast hints.  These were
-      ::  likely already registered. Disable inlining if not sure.
-      ::
       ~&  >>  missed-parent+label
-      gen
+      gen(miss &)
     =/  pax=path  [label i.past]
     =/  socks  ~(tap in (~(get ju core.gen) i.past))
     |-  ^+  gen
@@ -1259,13 +1254,6 @@
   ?^  h  h
   fol-loop(template-fol (tel:so template-fol), axis (peg axis 3))
 ::
-++  uni-ju
-  |*  v=mold
-  |*  [a=(jug * v) b=(jug * v)]
-  %-  (~(uno by a) b)
-  |=  [* a=(set v) b=(set v)]
-  (~(uni in a) b)
-::
 ++  ska-poke
   |=  [[bus=sock fol=^] lon=long-ska]
   ^-  [bell long-ska]
@@ -1319,9 +1307,18 @@
   =.  graph.final.lon  (~(uni by graph.final.lon) pruned)
   =/  root-bell=bell  [less-code.root-datum fol]
   =/  [root=(jug * path) core=(jug path sock) batt=(jug ^ path)]
-    %-  ~(rep by pruned)
-    |=  [[id=identity d=datum] acc=_[root core batt]:jets.lon]
-    (get-hint-regs [more.id nomm.d] bell-prod acc)
+    =/  gen  [queu=pruned jets=[=_root =_core =_batt]:jets.lon]
+    |-  ^+  jets.gen
+    =;  [queu1=callgraph jets1=_[root core batt]:jets.lon]
+      ?:  =(jets.gen jets1)  jets.gen
+      $(gen [queu1 jets1])
+    ::
+    %-  ~(rep by queu.gen)
+    |=  [[id=identity d=datum] acc=_`_gen`[~ jets.gen]]
+    =^  miss=?  jets.acc  (get-hint-regs [more.id nomm.d] bell-prod jets.acc)
+    :_  jets.acc
+    ?.  miss  queu.acc
+    (~(put by queu.acc) id d)
   ::
   :-  root-bell
   lon(root.jets root, core.jets core, batt.jets batt)
