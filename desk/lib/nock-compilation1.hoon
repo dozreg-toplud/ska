@@ -605,6 +605,7 @@
 +$  memo  (map ^ (map sock [id=identity =datum]))
 +$  sock-anno  [=sock src=spring]
 +$  ring  [=path axe=@]
++$  code-entry  [=nomm pure=?]
 ::  Persistent SKA state
 ::
 +$  long-ska
@@ -628,12 +629,17 @@
     ==
   ::::  saved entries:
     ::
-    code=(map bell nomm)        ::  direct bell mapping
-    fols=(jug ^ [=bell =nomm])  ::  lookup by formula
+    code=(map bell code-entry)        ::  direct bell mapping
+    fols=(map ^ (map bell code-entry))  ::  lookup by formula
   ==
 --
 ::
 |%
+++  put-fols
+  |=  [b=bell en=code-entry fols=(map ^ (map bell code-entry))]
+  ^+  fols
+  =/  m=(map bell code-entry)  (~(gut by fols) fol.b ~)
+  (~(put by fols) fol.b (~(put by m) b en))
 ::  Iterate over a set with a gate (a -> (unit b)) until we get a nonempty
 ::  product
 ::
@@ -1280,11 +1286,17 @@
     ]
   ::
   =/  root-datum=datum  (~(got by pruned) root-identity)
-  =.  lon
+  =/  [bg=(jug bell bell) bg-rev=(jug bell bell)]
+    (simple-bell-graph-and-reversed pruned)
+  ::  callees first
+  ::
+  =/  sccs=(list (set bell))  (flop (tarjan bg))
+  =^  just-code=(map bell nomm)  lon
     =|  visit=(set identity)
     =/  q=(list identity)  ~[root-identity]
-    |-  ^-  long-ska
-    ?~  q  lon
+    =|  just-code=(map bell nomm)
+    |-  ^-  [_just-code long-ska]
+    ?~  q  [just-code lon]
     ?:  (~(has in visit) i.q)  $(q t.q)
     ?~  got=(~(get by pruned) i.q)
       ::  call outside of the freshly produced & pruned callgraph
@@ -1299,11 +1311,42 @@
     %=  $
       q               (weld t.q callees-list)
       memo.final.lon  (put:mi memo.final.lon i.q d)
-      code.lon        (~(put by code.lon) b nomm.d)
-      fols.lon        (~(put ju fols.lon) fol.i.q [b nomm.d])
+      just-code       (~(put by just-code) b nomm.d)
       visit           (~(put in visit) i.q)
     ==
   ::
+  =.  lon
+    |-  ^-  long-ska
+    =*  scc-loop  $
+    ?~  sccs  lon
+    =/  scc  i.sccs
+    =*  local  ,[code=(map bell code-entry) fols=(map ^ (map bell code-entry))]
+    =/  loc1=local
+      %-  ~(rep in scc)
+      |=  [b=bell acc=_`local`[code.lon fols.lon]]
+      :-  (~(put by code.acc) b [(~(got by just-code) b) &])
+      (put-fols b [(~(got by just-code) b) &] fols.acc)
+    ::
+    |-  ^-  long-ska
+    =*  fixpoint-loop  $
+    =;  loc2=local
+      ?.  =(loc1 loc2)  fixpoint-loop(loc1 loc2)
+      =.  code.lon  code.loc1
+      =.  fols.lon  fols.loc1
+      scc-loop(sccs t.sccs)
+    ::
+    %-  ~(rep in scc)
+    |=  [b=bell acc=_loc1]
+    ^+  acc
+    =/  [pure=?]  (eval-finalized b code.acc)
+    =/  set-pure  |=(=code-entry code-entry(pure pure))
+    =.  code.acc  (~(jab by code.acc) b set-pure)
+    =.  fols.acc
+      %+  ~(jab by fols.acc)  fol.b
+      |=  m=(map bell code-entry)
+      (~(jab by m) b set-pure)
+    ::
+    acc
   =.  graph.final.lon  (~(uni by graph.final.lon) pruned)
   =/  root-bell=bell  [less-code.root-datum fol]
   =/  [root=(jug * path) core=(jug path sock) batt=(jug ^ path)]
@@ -1323,13 +1366,92 @@
   ::
   :-  root-bell
   lon(root.jets root, core.jets core, batt.jets batt)
+::  produces data about a function
+::  for now it is only purity (no crashes, no hints except %fast)
+::
+++  eval-finalized
+  |=  [b=bell code=(map bell code-entry)]
+  ^-  [pure=?]
+  =/  sub=sock  less.b
+  =/  =nomm  nomm:(~(got by code) b)
+  =<  +
+  |^  ^-  [s=sock p=?]
+  =*  nomm-loop  $
+  ?-    nomm
+      [p=^ q=*]
+    =/  p  nomm-loop(nomm p.nomm)
+    =/  q  nomm-loop(nomm q.nomm)
+    :-  (knit:so s.p s.q)
+    &(p.p p.q)
+  ::
+      [%0 *]
+    ?:  =(0 p.nomm)  [|+~ |]
+    :-  (pull:so sub p.nomm)
+    (have sub p.nomm)
+  ::
+      [%1 *]  [&+p.nomm &]
+  ::
+      [%2 *]
+    :-  |+~
+    ?&  p:nomm-loop(nomm p.nomm)
+        p:nomm-loop(nomm q.nomm)
+        |(?=(~ info.nomm) pure:(~(got by code) b.u.info.nomm))
+    ==
+  ::
+      [%3 *]  [|+~ p:nomm-loop(nomm p.nomm)]
+      [%4 *]  [|+~ p:nomm-loop(nomm p.nomm)]
+      [%5 *]  [|+~ &(p:nomm-loop(nomm p.nomm) p:nomm-loop(nomm q.nomm))]
+  ::
+      [%6 *]
+    =/  y  nomm-loop(nomm q.nomm)
+    =/  n  nomm-loop(nomm r.nomm)
+    :-  (purr:so s.y s.n)
+    ?&  p:nomm-loop(nomm p.nomm)
+        p.y
+        p.n
+    ==
+  ::
+      [%7 *]
+    =/  p  nomm-loop(nomm p.nomm)
+    =/  q  nomm-loop(sub s.p, nomm q.nomm)
+    [s.q &(p.p p.q)]
+  ::
+      [%10 *]
+    =/  don  nomm-loop(nomm q.p.nomm)
+    =/  rec  nomm-loop(nomm q.nomm)
+    :-  (darn:so s.rec p.p.nomm s.don)
+    ?&  p.rec
+        p.don
+        (have s.rec p.p.nomm)
+    ==
+  ::
+      [%11 *]
+    ?@  p.nomm  [s:nomm-loop(nomm q.nomm) |]
+    =/  tok  nomm-loop(nomm q.p.nomm)
+    =/  fol  nomm-loop(nomm q.nomm)
+    [s.fol &(?=(%fast p.p.nomm) p.tok p.fol)]
+  ::
+      [%12 *]  [|+~ |]
+  ==
+  ::
+  ++  have
+    |=  [=sock axe=@]
+    ^-  ?
+    ?<  =(0 axe)
+    |-  ^-  ?
+    ?:  =(1 axe)  &
+    ?:  ?=(%| cape.sock)  |
+    ?-  (cap axe)
+      %2  $(sock (hed:so sock), axe (mas axe))
+      %3  $(sock (tel:so sock), axe (mas axe))
+    ==
+  --
 ::  callers first
 ::
 ++  tarjan1
   ~%  %tarjan  ..zuse  ~
   |*  vertex=mold
   |=  g=(jug vertex vertex)
-  ^-  (list (set identity))
   =*  gen
     $:  idx=@                     ::  index generator
         vis=(map vertex @)        ::  numbered vertices
@@ -1373,10 +1495,25 @@
   ?:  =(v pop)  [out acc]
   pop-loop
 ::
+++  simple-bell-graph-and-reversed
+  |=  g=callgraph
+  ^-  [(jug bell bell) (jug bell bell)]
+  %-  ~(rep by g)
+  |=  [[k=identity v=datum] acc=(jug bell bell) acc-r=(jug bell bell)]
+  =/  caller=bell  [less-code.v fol.k]
+  ?:  =(~ callees.v)
+    :_  acc-r
+    ?:  (~(has by acc) caller)  acc
+    (~(put by acc) caller ~)
+  %-  ~(rep in callees.v)
+  |=  [callee=callee-entry =_acc _acc-r]
+  =/  callee=bell  [less-code:(~(got by g) id.callee) fol.id.callee]
+  [(~(put ju acc) caller callee) (~(put ju acc-r) callee caller)]
+::
 ++  tarjan
-  |*  vertex=mold
-  |=  g=(jug vertex vertex)
-  ^-  (list (set identity))
+  |*  g=(jug * *)
+  =*  vertex  _p.n.-.g
+  ^-  (list (set vertex))
   =*  gen
     $:  idx=@                     ::  index generator
         vis=(map vertex @)        ::  numbered vertices
@@ -1482,7 +1619,7 @@
   ::
   ::  callers first
   ::
-  =/  sccs=(list (set identity))  ((tarjan identity) affected-dep-subgraph)
+  =/  sccs=(list (set identity))  (tarjan affected-dep-subgraph)
   =<  $
   ~%  %closures-update-prev-trans  ..zuse  ~
   |.
@@ -2087,28 +2224,13 @@
     %3  (con:ca (hed:ca c) $(c (tel:ca c), axe (mas axe)))
   ==
 ::
-++  simple-bell-graph-and-reversed
-  |=  g=callgraph
-  ^-  [(jug bell bell) (jug bell bell)]
-  %-  ~(rep by g)
-  |=  [[k=identity v=datum] acc=(jug bell bell) acc-r=(jug bell bell)]
-  =/  caller=bell  [less-code.v fol.k]
-  ?:  =(~ callees.v)
-    :_  acc-r
-    ?:  (~(has by acc) caller)  acc
-    (~(put by acc) caller ~)
-  %-  ~(rep in callees.v)
-  |=  [callee=callee-entry =_acc _acc-r]
-  =/  callee=bell  [less-code:(~(got by g) id.callee) fol.id.callee]
-  [(~(put ju acc) caller callee) (~(put ju acc-r) callee caller)]
-::
 ++  axis-poke
   |=  [root=bell =long-ska lon=long-args]
   ^-  long-args
   =/  [bell-graph=(jug bell bell) bell-graph-reversed=(jug bell bell)]
     (simple-bell-graph-and-reversed graph.final.long-ska)
   ::
-  =/  sccs=(list (set bell))  ((tarjan bell) bell-graph)
+  =/  sccs=(list (set bell))  (tarjan bell-graph)
   =/  scc-map=(map bell (set bell))
     %+  roll  sccs
     |=  [scc=(set bell) acc=(map bell (set bell))]
@@ -2181,7 +2303,7 @@
   =;  [[dat=axes-lazy lok=axes-lazy] lon1=long-args]
     [[(collapse-axes-lazy dat) (collapse-axes-lazy lok)] lon1]
   ::
-  =/  =nomm  (~(got by code.long-ska) b)
+  =/  =nomm  nomm:(~(got by code.long-ska) b)
   ::  "dat" is equivalent to "goal" in SSA compilation. It means "what parts of
   ::  the result of this computation will be used in the next computation".
   ::  In tail position we need the whole thing.
@@ -2223,10 +2345,14 @@
       :_  lon
       (unify-goals p q)
     =*  b-callee  b.u.info.nomm
+    =/  callee-pure=?  pure:(~(got by code.long-ska) b-callee)
     =^  q=_goal  lon
       ?:  (safe-fol-fol q.nomm)  [drop-it lon]
       $(nomm q.nomm, goal drop-it)
-    ::
+    ?:  &(callee-pure (drop-it-equivalent goal))
+      =^  p  lon  $(nomm p.nomm, goal drop-it)
+      :_  lon
+      (unify-goals p q)
     =^  callee-usage=cape  lon
       ::  first try to get subject split by jets, then check if in the current
       ::  SCC, getting current assumption if yes, then look among finalized,
@@ -2311,5 +2437,32 @@
     |=  g=$-(axes-lazy axes-lazy)
     ^+  goal
     [(g dat.goal) (g lok.goal)]
+  ::
+  ++  drop-it-equivalent
+    |=  g=_goal
+    ^-  ?
+    &((no-equivalent dat.g) (no-or-all-equivalent lok.g))
+  ::
+  ++  no-equivalent
+    |=  laz=axes-lazy
+    ^-  ?
+    =*  this  .
+    ?&  ?=(%| sure.laz)
+    ::
+        %+  levy  fork.laz
+        |=  [y=axes-lazy n=axes-lazy]
+        &((this y) (this n))
+    ==
+  ::
+  ++  no-or-all-equivalent
+    |=  laz=axes-lazy
+    ^-  ?
+    =*  this  .
+    ?&  ?=(@ sure.laz)
+    ::
+        %+  levy  fork.laz
+        |=  [y=axes-lazy n=axes-lazy]
+        &((this y) (this n))
+    ==
   --
 --
