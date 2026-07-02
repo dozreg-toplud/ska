@@ -1023,7 +1023,7 @@
   ==
 ::
 +$  bell-prod  (map bell [prod=sock map=spring])
-++  get-hint-regs
+++  get-fast-regs
   |=  $:  [bus=sock =nomm]
           =bell-prod
           root=(jug * path)
@@ -1311,11 +1311,12 @@
     |-  ^+  jets.gen
     =;  [queu1=callgraph jets1=_[root core batt]:jets.lon]
       ?:  =(jets.gen jets1)  jets.gen
+      ?:  =(queu1 ~)  jets1
       $(gen [queu1 jets1])
     ::
     %-  ~(rep by queu.gen)
     |=  [[id=identity d=datum] acc=_`_gen`[~ jets.gen]]
-    =^  miss=?  jets.acc  (get-hint-regs [more.id nomm.d] bell-prod jets.acc)
+    =^  miss=?  jets.acc  (get-fast-regs [more.id nomm.d] bell-prod jets.acc)
     :_  jets.acc
     ?.  miss  queu.acc
     (~(put by queu.acc) id d)
