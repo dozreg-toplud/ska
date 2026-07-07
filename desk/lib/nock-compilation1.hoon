@@ -59,7 +59,7 @@
 ::
 ::  Table of contents:
 ::    Call graph construction:  line 511
-::    Axis usage analysis:      line 1994
+::    Axis usage analysis:      line 2127
 ::    Compilation:              line X
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -2465,4 +2465,223 @@
         &((this y) (this n))
     ==
   --
+--
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::
+::  Compilation
+::
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+|%
++$  hint-static  ?(%bout %xray)
++$  hint-dynamic  ?(%mean %spot %bout %xray %spin %loop %jinx %live %slog)
++$  need
+  $^  [p=need q=need]
+  $%  [%both r=@uvre c=? h=need t=need]
+      [%this r=@uvre]
+      [%none ~]
+  ==
+::
++$  need-ordered
+  $~  [%none ~]
+  $^  [p=need-ordered q=need-ordered]
+  $%  [%both c=? h=need-ordered t=need-ordered]
+      [%this ~]
+      [%none ~]
+  ==
+::
+++  need-lazy
+  |-
+  $+  need-lazy
+  $:  sure=need
+      fork=(list [y=$ n=$])
+  ==
+::
++$  goal
+  $%  [%pick z=@uwoo o=@uwoo]
+      [%done ~]
+      [%next laz=need-lazy then=@uwoo]
+  ==
+::
++$  next  $>(%next goal)
+::  basic block
+::
++$  blob  [par=(list @uvre) body=(list pole) fin=termin]
++$  straight  [need=need-ordered n-args=@ud blocks=(map @uwoo blob)]
++$  line-short
+  $:  re-gen=@uvre
+      bo-gen=_`@uwoo`2
+      blocks=(map @uwoo blob)
+  ==
+::
++$  pole
+  $%  [%imm n=* d=@uvre]                          ::  n -> d
+      [%mov s=@uvre d=@uvre]                      ::  s -> d
+      [%inc s=@uvre d=@uvre]                      ::  +(s) -> d or crash
+      [%con h=@uvre t=@uvre d=@uvre]              ::  [h t] -> d
+      [%hed s=@uvre d=@uvre]                      ::  -.s -> d, does not crash
+      [%tal s=@uvre d=@uvre]                      ::  +.s -> d, does not crash
+      [%cel p=@uvre]                              ::  ?>  ?=(^ p)
+      [%hsp n=hint-static f=*]                    ::  prologue of a static hint
+      [%hse n=hint-static f=*]                    ::  epilogue of a static hint
+      [%hdp n=hint-dynamic p=@uvre f=*]           ::  prologue of a dynamic hint
+      [%hde n=hint-dynamic p=@uvre f=*]           ::  epilogue of a dynamic hint
+      [%spy e=@uvre p=@uvre d=@uvre]              ::  .^(e p) -> d
+      [%lnk u=@uvre f=@uvre d=@uvre]              ::  .*(u f) -> d
+      [%cal a=bell v=(list @uvre) d=@uvre]        ::  a(v) -> d
+      [%caf a=bell v=(list @uvre) d=@uvre n=ring] ::  %cal but maybe jetted
+      [%cam a=bell v=(list @uvre) d=@uvre n=*]    ::  %cal but memoized
+  ==
+::
++$  jmp  [args=(list @uvre) here=@uwoo]
++$  termin
+  $%  [%clq s=@uvre z=jmp o=jmp]
+      [%eqq l=@uvre r=@uvre z=jmp o=jmp]
+      [%brn s=@uvre z=jmp o=jmp]
+      [%hop t=jmp]
+      [%jmp a=bell v=(list @uvre)]
+      [%jmf a=bell v=(list @uvre) n=ring]
+      [%lnt u=@uvre f=@uvre]
+      [%don s=@uvre]
+      [%bom ~]
+  ==
+::
+++  get-regs
+  |=  op=$%(pole termin)
+  ^-  (list @uvre)
+  =>  op
+  ?-  -
+    %imm  ~[d]
+    %mov  ~[s d]
+    %inc  ~[s d]
+    %con  ~[h t d]
+    %hed  ~[s d]
+    %tal  ~[s d]
+    %cel  ~[p]
+    %hsp  ~
+    %hse  ~
+    %hdp  ~[p]
+    %hde  ~[p]
+    %spy  ~[e p d]
+    %lnk  ~[u f d]
+    %cal  [d v]
+    %caf  [d v]
+    %cam  [d v]
+    %clq  ~[s]
+    %eqq  ~[l r]
+    %brn  ~[s]
+    %hop  ~
+    %jmp  v
+    %jmf  v
+    %lnt  ~[u f]
+    %don  ~[s]
+    %bom  ~
+  ==
+::
+++  get-jmps
+  |=  op=termin
+  ^-  (list jmp)
+  =>  op
+  ?-  -
+    %clq  ~[z o]
+    %eqq  ~[z o]
+    %brn  ~[z o]
+    %hop  ~[t]
+    %jmp  ~
+    %jmf  ~
+    %lnt  ~
+    %don  ~
+    %bom  ~
+  ==
+--
+::
+|%
+++  compile-scc
+  |=  $:  scc=(set bell)
+          rev=(jug bell bell)
+          =long-ska
+          scc-map=(map bell (set bell))
+      ==
+  ^-  (map bell straight)
+  ~+
+  =|  map-local=(map bell straight)
+  =/  w=worklist  scc
+  |-  ^+  map-local
+  =*  fixpoint-compilation  $
+  =;  [w-new=worklist map-local1=(map bell straight)]
+    =.  map-local  map-local1
+    =.  w-new  (~(int in w-new) scc)
+    ?:  =(~ w-new)  map-local
+    fixpoint-compilation(w w-new)
+  ::
+  %-  ~(rep in w)
+  |=  [b=bell w-new=worklist =_map-local]
+  ^+  [w-new map-local]
+  =;  [s=straight =next gen=line-short]
+    ?~  s-previous=(~(get by map-local) b)
+      :-  ?:  ?=([%none ~] need.s)  w-new
+          (~(uni in w-new) (~(get ju rev) b))
+      (~(put by map-local) b s)
+    =/  need-pessimized  (msg-need-ord need.s need.u.s-previous)
+    :-  ?:  =(need-pessimized need.u.s-previous)  w-new
+        (~(uni in w-new) (~(get ju rev) b))
+    %+  ~(put by map-local)  b
+    ?:  =(need-pessimized need.s)  s
+    (to-straight (coerce need-pessimized next gen))
+  ::
+  =-  [(to-straight) -]
+  ^-  [next line-short]
+  =/  =nomm  nomm:(~(got by code.long-ska) b)
+  =/  =goal  [%done ~]
+  =|  gen=line-short
+  |^  ^-  [next line-short]
+  ?+    nomm  stub
+      [^ *]
+    ?-    -.goal
+        %done
+      =^  r  gen  re
+      =^  o  gen  (emit ~ ~ [%don r])
+      $(goal [%next [[%this r] ~] o])
+    ::
+        %pick
+      bomb
+    ::
+        %next
+      stub
+    ==
+    ::
+  ==
+  ::
+  ++  re  `[@uvre _gen]`[re-gen.gen gen(re-gen +(re-gen.gen))]
+  ++  oo  `[@uwoo _gen]`[bo-gen.gen gen(bo-gen +(bo-gen.gen))]
+  ++  emit
+    |=  =blob
+    ^-  [@uwoo _gen]
+    =^  o  gen  oo
+    [o (emir o blob)]
+  ::
+  ++  emir
+    |=  [o=@uwoo =blob]
+    ^+  gen
+    gen(blocks (~(put by blocks.gen) o blob))
+  ::
+  ++  bomb
+    ^-  [next _gen]
+    =^  o  gen  (emit ~ ~ %bom ~)
+    [[%next [[%none ~] ~] o] gen]
+  --
+::
+++  coerce
+  |=  [need-pessimized=need-ordered nex=next gen=line-short]
+  ^-  [next line-short]
+  stub
+::
+++  to-straight
+  |=  [=next gen=line-short]
+  ^-  straight
+  stub
+::
+++  msg-need-ord
+  |=  [a=need-ordered b=need-ordered]
+  ^-  need-ordered
+  stub
 --
