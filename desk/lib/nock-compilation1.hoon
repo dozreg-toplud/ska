@@ -2473,7 +2473,8 @@
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 |%
 +$  hint-static  ?(%bout %xray)
-+$  hint-dynamic  ?(%mean %spot %bout %xray %spin %loop %jinx %live %slog)
++$  hint-dynamic  ?(%bout %xray %spin %loop %jinx %live hint-dynamic-stop)
++$  hint-dynamic-stop  ?(%mean %spot %slog)
 +$  need
   $^  [p=need q=need]
   $%  [%both r=@uvre c=? h=need t=need]
@@ -2493,13 +2494,19 @@
   |-
   $+  need-lazy
   $:  sure=need
-      fork=(list [y=$ n=$])
+      fork=(list [y=[there=@uwoo laz=$] n=[there=@uwoo laz=$]])
+      bond=(list [o=@uwoo laz=$])
   ==
+::  there - target basic block
+::  args  - arguments for that basic block
+::  BBs with arguments: control flow merges (instead of phi nodes) and maybe
+::  entry point block
 ::
++$  jmp  [args=(list @uvre) there=@uwoo]
 +$  goal
-  $%  [%pick z=@uwoo o=@uwoo]
+  $%  [%pick z=jmp o=jmp]
       [%done ~]
-      [%next laz=need-lazy then=@uwoo]
+      [%next laz=need-lazy then=jmp]
   ==
 ::
 +$  next  $>(%next goal)
@@ -2526,23 +2533,21 @@
       [%hdp n=hint-dynamic p=@uvre f=*]           ::  prologue of a dynamic hint
       [%hde n=hint-dynamic p=@uvre f=*]           ::  epilogue of a dynamic hint
       [%spy e=@uvre p=@uvre d=@uvre]              ::  .^(e p) -> d
-      [%lnk u=@uvre f=@uvre d=@uvre]              ::  .*(u f) -> d
+      [%nok u=@uvre f=@uvre d=@uvre]              ::  .*(u f) -> d
       [%cal a=bell v=(list @uvre) d=@uvre]        ::  a(v) -> d
       [%caf a=bell v=(list @uvre) d=@uvre n=ring] ::  %cal but maybe jetted
       [%cam a=bell v=(list @uvre) d=@uvre n=*]    ::  %cal but memoized
   ==
 ::
-+$  jmp  [args=(list @uvre) here=@uwoo]
 +$  termin
-  $%  [%clq s=@uvre z=jmp o=jmp]
-      [%eqq l=@uvre r=@uvre z=jmp o=jmp]
-      [%brn s=@uvre z=jmp o=jmp]
-      [%hop t=jmp]
-      [%jmp a=bell v=(list @uvre)]
-      [%jmf a=bell v=(list @uvre) n=ring]
-      [%lnt u=@uvre f=@uvre]
-      [%don s=@uvre]
-      [%bom ~]
+  $%  [%clq s=@uvre z=jmp o=jmp]            ::  ?^  s
+      [%eqq l=@uvre r=@uvre z=jmp o=jmp]    ::  ?:  =(l r)
+      [%brn s=@uvre z=jmp o=jmp]            ::  ?:  s  (crashes on non-loobean)
+      [%hop t=jmp]                          ::  unconditional block jump
+      [%jmp a=bell v=(list @uvre)]          ::  %cal but in tail position
+      [%jmf a=bell v=(list @uvre) n=ring]   ::  %caf but in tail position
+      [%don s=@uvre]                        ::  return s
+      [%bom ~]                              ::  boom! crash
   ==
 ::
 ++  get-regs
@@ -2562,7 +2567,7 @@
     %hdp  ~[p]
     %hde  ~[p]
     %spy  ~[e p d]
-    %lnk  ~[u f d]
+    %nok  ~[u f d]
     %cal  [d v]
     %caf  [d v]
     %cam  [d v]
@@ -2572,7 +2577,6 @@
     %hop  ~
     %jmp  v
     %jmf  v
-    %lnt  ~[u f]
     %don  ~[s]
     %bom  ~
   ==
@@ -2588,7 +2592,6 @@
     %hop  ~[t]
     %jmp  ~
     %jmf  ~
-    %lnt  ~
     %don  ~
     %bom  ~
   ==
@@ -2634,30 +2637,293 @@
   =/  =goal  [%done ~]
   =|  gen=line-short
   |^  ^-  [next line-short]
-  ?+    nomm  stub
+  ?-    nomm
       [^ *]
     ?-    -.goal
         %done
       =^  r  gen  re
       =^  o  gen  (emit ~ ~ [%don r])
-      $(goal [%next [[%this r] ~] o])
+      $(goal [%next [[%this r] ~ ~] ~ o])
     ::
         %pick
       bomb
     ::
         %next
-      stub
+      =^  [hed=need-lazy tel=need-lazy o=@uwoo]  gen  split
+      =^  next-2  gen  $(nomm +.nomm, goal [%next tel ~ o])
+      =^  next-1  gen  $(nomm -.nomm, goal [%next hed then.next-2])
+      (copy next-1 laz.next-2)
     ==
+  ::
+      [%0 *]
+    ?:  =(0 p.nomm)  bomb
+    =^  next  gen  simple-next
+    [[%next (from p.nomm laz.next) then.next] gen]        
+  ::
+      [%1 *]
+    ?-    -.goal
+        %done
+      =^  r  gen  re
+      =^  o  gen  (emit ~ ~[imm+[p.nomm r]] don+r)
+      [[%next [none+~ ~ ~] ~ o] gen]
     ::
+        %pick
+      ?+  p.nomm  bomb
+        %0  [[%next [none+~ ~ ~] z.goal] gen]
+        %1  [[%next [none+~ ~ ~] o.goal] gen]
+      ==
+    ::
+        %next
+      =^  o  gen  (mede then.goal p.nomm laz.goal)
+      [[%next [none+~ ~ ~] ~ o] gen]
+    ==
+  ::
+      [%2 *]  stub
+  ::
+      [%3 *]
+    |-  ::  reenter with edited goal
+    ?-    -.goal
+        %done
+      =^  r-0  gen  re
+      =^  r-1  gen  re
+      =^  o-0  gen  (emit ~ [%imm 0 r-0]~ %don r-0)
+      =^  o-1  gen  (emit ~ [%imm 1 r-1]~ %don r-1)
+      $(goal [%pick ~^o-0 ~^o-1])
+    ::
+        %next
+      =^  r=(unit @uvre)  gen  (collapse-lazy-atom laz.goal)
+      ?~  r  ^$(nomm p.nomm)
+      =^  [z=@uwoo o=@uwoo]  gen  (forl u.r then.goal)
+      $(goal [%pick ~^z ~^o])
+    ::
+        %pick
+      =^  r  gen  re
+      =^  o  gen  (emit ~ ~ clq+[r [z o]:goal])
+      ^$(nomm p.nomm, goal [%next [this+r ~ ~] ~ o])
+    ==
+  ::
+      [%4 *]
+    ?-    -.goal
+        %done
+      =^  pro  gen  re
+      =^  arg  gen  re
+      =^  o    gen  (emit ~ [%inc arg pro]~ %don pro)
+      $(nomm p.nomm, goal [%next [[%this arg] ~ ~] ~ o])
+    ::
+        %pick
+      =^  pro  gen  re
+      =^  arg  gen  re
+      =^  o    gen  (emit ~ [%inc arg pro]~ %brn pro [z o]:goal)
+      $(nomm p.nomm, goal [%next [[%this arg] ~ ~] ~ o])
+    ::
+        %next
+      =^  r=(unit @uvre)  gen  (collapse-lazy-atom laz.goal)
+      =^  pro=@uvre  gen
+        ?~  r  re
+        [u.r gen]
+      ::
+      =^  arg  gen  re
+      =^  o    gen  (emit ~ [%inc arg pro]~ %hop then.goal)
+      $(nomm p.nomm, goal [%next [[%this arg] ~ ~] ~ o])
+    ==
+  ::
+      [%5 *]
+    |-  ::  reenter
+    ?-    -.goal
+        %done
+      =^  r-0  gen  re
+      =^  r-1  gen  re
+      =^  o-0  gen  (emit ~ [%imm 0 r-0]~ %don r-0)
+      =^  o-1  gen  (emit ~ [%imm 1 r-1]~ %don r-1)
+      $(goal [%pick ~^o-0 ~^o-1])
+    ::
+        %next
+      =^  r=(unit @uvre)  gen  (collapse-lazy-atom laz.goal)
+      ?~  r
+        =^  next-q  gen  ^$(nomm q.nomm)
+        =^  next-p  gen  ^$(nomm p.nomm, then.goal then.next-q)
+        (copy next-p laz.next-q)
+      =^  [z=@uwoo o=@uwoo]  gen  (forl u.r then.goal)
+      $(goal [%pick ~^z ~^o])
+    ::
+        %pick
+      =^  r-p  gen  re
+      =^  r-q  gen  re
+      =^  o    gen  (emit ~ ~ eqq+[r-p r-q [z o]:goal])
+      ::
+      =^  next-q  gen  ^$(nomm q.nomm, goal [%next [[%this r-q] ~ ~] ~ o])
+      =^  next-p  gen
+        ^$(nomm p.nomm, goal [%next [[%this r-p] ~ ~] then.next-q])
+      ::
+      (copy next-p laz.next-q)
+    ==
+  ::
+      [%6 *]
+    =^  [goal-0=^goal goal-1=^goal]  gen
+      ?-    -.goal
+          %next  (fork goal)
+          %done  [[done+~ done+~] gen]
+      ::
+          %pick
+        =^  next  gen  simple-next
+        (fork next)
+      ==
+    ::
+    =^  next-1  gen  $(nomm r.nomm, goal goal-1)
+    =^  next-0  gen  $(nomm q.nomm, goal goal-0)
+    =^  [lazy=need-lazy yes=@uwoo nuh=@uwoo]  gen  (sect next-0 next-1)
+    =^  cond  gen  $(nomm p.nomm, goal [%pick ~^yes ~^nuh])
+    (copy cond lazy)
+  ::
+      [%7 *]
+    =^  next  gen  $(nomm q.nomm)
+    $(nomm p.nomm, goal next)
+  ::
+      [%10 *]
+    ?-    -.goal
+        %done
+      =^  r  gen  re
+      =^  o  gen  (emit ~ ~ %don r)
+      $(goal [%next [this+r ~ ~] ~ o])
+    ::
+        %pick
+      ?:  =(p.p.nomm 1)
+        =^  r  gen  re
+        =^  o  gen  (emit ~ ~ brn+[r [z o]:goal])
+        $(goal [%next [[%this r] ~ ~] ~ o])
+      =^  o  gen  (emit ~ ~ %bom ~)
+      =^  next-rec  gen  $(nomm q.nomm, goal [%next [none+~ ~ ~] ~ o])
+      =^  next-don  gen
+        $(nomm q.nomm, goal [%next [none+~ ~ ~] then.next-rec])
+      ::
+      (copy next-don laz.next-rec)
+    ::
+        %next
+      =^  [don=need-lazy rec=need-lazy o=@uwoo]  gen  (into p.p.nomm)
+      =^  next-rec  gen  $(nomm q.nomm, goal [%next rec ~ o])
+      =^  next-don  gen  $(nomm q.p.nomm, goal [%next don then.next-rec])
+      (copy next-don laz.next-rec)
+    ==
+  ::
+      [%11 *]
+    ?@  p.nomm
+      ?.  ?=(hint-static p.nomm)  $(nomm q.nomm)
+      =^  next  gen  simple-next
+      =^  epil  gen  (emit ~ ~[hse+[p.nomm body.nomm]] %hop then.next)
+      =^  next  gen  $(nomm q.nomm, goal next(then [~ epil]))
+      =^  prol  gen  (emit ~ ~[hsp+[p.nomm body.nomm]] %hop then.next)  
+      [[%next laz.next ~ prol] gen]
+    ?.  ?=(hint-dynamic p.p.nomm)
+      =^  next  gen  $(nomm q.nomm)
+      =^  toke  gen  $(nomm q.p.nomm, goal [%next [none+~ ~ ~] then.next])
+      (copy toke laz.next)
+    =^  next  gen  simple-next
+    =^  toke  gen  re
+    =^  epil  gen  (emit ~ ~[hde+[p.p.nomm toke body.nomm]] %hop then.next)
+    =^  next  gen  $(nomm q.nomm, goal next(then [~ epil]))
+    =^  next  gen
+      ?.  ?=(hint-dynamic-stop p.p.nomm)  [next gen]
+      (lazy-bound next)
+    ::
+    =^  prol  gen  (emit ~ ~[hdp+[p.p.nomm toke body.nomm]] %hop then.next)  
+    =^  dyna  gen  $(nomm q.p.nomm, goal [%next [this+toke ~ ~] ~ prol])
+    (copy dyna laz.next)
+  ::
+      [%12 *]
+    =^  next  gen  simple-next
+    =^  [out=@uwoo pro=@uvre]  gen  (kerf next)
+    =^  r-path     gen  re
+    =^  r-ref      gen  re
+    =^  o-spy      gen  (emit ~ [%spy r-ref r-path pro]~ %hop ~ out)
+    =^  need-path  gen  $(nomm q.nomm, goal [%next [this+r-path ~ ~] ~ o-spy])
+    =^  need-ref   gen
+      $(nomm p.nomm, goal [%next [this+r-ref ~ ~] then.need-path])
+    ::
+    (copy need-ref laz.need-path)
   ==
   ::
   ++  re  `[@uvre _gen]`[re-gen.gen gen(re-gen +(re-gen.gen))]
   ++  oo  `[@uwoo _gen]`[bo-gen.gen gen(bo-gen +(bo-gen.gen))]
+  ++  kerf
+    |=  =next
+    ^-  [[@uwoo @uvre] _gen]
+    =^  [r=@uvre p=(list pole)]  gen  (kern laz.next)
+    ?~  p  [[there.then.next r] gen]  ::  args omitted?
+    =^  o  gen  (emit ~ p %hop then.next)
+    [[o r] gen]
+  ::
+  ++  kern
+    |=  laz=need-lazy
+    ^-  [[@uvre (list pole)] _gen]
+    stub
+  ::
+  ++  lazy-bound
+    |=  n=next
+    ^-  [next _gen]
+    stub
+  ::
+  ++  sect  ::  XX when do we do args?
+    |=  [z=next o=next]
+    ^-  [[need-lazy @uwoo @uwoo] _gen]
+    stub
+  ::
+  ++  mede
+    |=  [then=jmp som=* what=need-lazy]
+    ^-  [@uwoo _gen]
+    stub
+  ::
+  ++  collapse-lazy-atom
+    |=  laz=need-lazy
+    ^-  [(unit @uvre) _gen]
+    stub
+  ::  fork CFG
+  ::
+  ++  fork  ::  XX when do we do args? here, like phi in +phil?
+    |=  nex=next
+    ^-  [[next next] _gen]
+    stub
+  ::  fork CFG for loobean-producing opcodes
+  ::
+  ++  forl
+    |=  [r=@uvre j=jmp]
+    ^-  [[@uwoo @uwoo] _gen]
+    stub
+  ::
   ++  emit
     |=  =blob
     ^-  [@uwoo _gen]
     =^  o  gen  oo
     [o (emir o blob)]
+  ::
+  ++  from
+    |=  [axe=@ laz=need-lazy]
+    ^-  need-lazy
+    stub
+  ::
+  ++  copy
+    |=  [first=next second=need-lazy]
+    ^-  [next _gen]
+    stub
+  ::
+  ++  into
+    |=  axe=@
+    ^-  [[need-lazy need-lazy @uwoo] _gen]
+    stub
+  ::
+  ++  split
+    ^-  [[need-lazy need-lazy @uwoo] _gen]
+    stub
+  ::
+  ++  simple-next
+    ^-  [next _gen]
+    ?:  ?=(%next -.goal)  [goal gen]
+    =^  r  gen  re
+    =^  o  gen
+      %^  emit  ~  ~
+      ?:  ?=(%done -.goal)  [%don r]
+      [%brn r [z o]:goal]
+    ::
+    [[%next [this+r ~ ~] ~ o] gen]
   ::
   ++  emir
     |=  [o=@uwoo =blob]
@@ -2667,7 +2933,7 @@
   ++  bomb
     ^-  [next _gen]
     =^  o  gen  (emit ~ ~ %bom ~)
-    [[%next [[%none ~] ~] o] gen]
+    [[%next [[%none ~] ~ ~] ~ o] gen]
   --
 ::
 ++  coerce
