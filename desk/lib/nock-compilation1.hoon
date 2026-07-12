@@ -2490,9 +2490,9 @@
       [%none ~]
   ==
 ::
-++  need-lazy
-  |-
++$  need-lazy
   $+  need-lazy
+  $;  |-
   $:  sure=need
       fork=(list [y=[there=@uwoo laz=$] n=[there=@uwoo laz=$]])
       bond=(list [o=@uwoo laz=$])
@@ -2649,7 +2649,7 @@
       bomb
     ::
         %next
-      =^  [hed=need-lazy tel=need-lazy o=@uwoo]  gen  split
+      =^  [hed=need-lazy tel=need-lazy o=@uwoo]  gen  (split goal)
       =^  next-2  gen  $(nomm +.nomm, goal [%next tel ~ o])
       =^  next-1  gen  $(nomm -.nomm, goal [%next hed then.next-2])
       (copy next-1 laz.next-2)
@@ -2658,7 +2658,8 @@
       [%0 *]
     ?:  =(0 p.nomm)  bomb
     =^  next  gen  simple-next
-    [[%next (from p.nomm laz.next) then.next] gen]        
+    ?:  =(1 p.nomm)  [next gen]
+    [[%next (from p.nomm laz.next) then.next] gen]
   ::
       [%1 *]
     ?-    -.goal
@@ -2691,9 +2692,9 @@
       $(goal [%pick ~^o-0 ~^o-1])
     ::
         %next
-      =^  r=(unit @uvre)  gen  (collapse-lazy-atom laz.goal)
-      ?~  r  ^$(nomm p.nomm)
-      =^  [z=@uwoo o=@uwoo]  gen  (forl u.r then.goal)
+      =^  a=(unit [r=@uvre o=@uwoo])  gen  (collapse-lazy-atom goal)
+      ?~  a  ^$(nomm p.nomm)
+      =^  [z=@uwoo o=@uwoo]  gen  (forl r.u.a o.u.a)
       $(goal [%pick ~^z ~^o])
     ::
         %pick
@@ -2717,13 +2718,15 @@
       $(nomm p.nomm, goal [%next [[%this arg] ~ ~] ~ o])
     ::
         %next
-      =^  r=(unit @uvre)  gen  (collapse-lazy-atom laz.goal)
-      =^  pro=@uvre  gen
-        ?~  r  re
-        [u.r gen]
+      =^  a=(unit [r=@uvre o=@uwoo])  gen  (collapse-lazy-atom goal)
+      =^  [pro=@uvre then=@uwoo]  gen
+        ?^  a  [u.a gen]
+        =^  r  gen  re
+        ?>  =(~ args.then.goal)
+        [[r there.then.goal] gen]
       ::
       =^  arg  gen  re
-      =^  o    gen  (emit ~ [%inc arg pro]~ %hop then.goal)
+      =^  o    gen  (emit ~ [%inc arg pro]~ %hop ~ then)
       $(nomm p.nomm, goal [%next [[%this arg] ~ ~] ~ o])
     ==
   ::
@@ -2738,12 +2741,12 @@
       $(goal [%pick ~^o-0 ~^o-1])
     ::
         %next
-      =^  r=(unit @uvre)  gen  (collapse-lazy-atom laz.goal)
-      ?~  r
+      =^  a=(unit [r=@uvre o=@uwoo])  gen  (collapse-lazy-atom goal)
+      ?~  a
         =^  next-q  gen  ^$(nomm q.nomm)
         =^  next-p  gen  ^$(nomm p.nomm, then.goal then.next-q)
         (copy next-p laz.next-q)
-      =^  [z=@uwoo o=@uwoo]  gen  (forl u.r then.goal)
+      =^  [z=@uwoo o=@uwoo]  gen  (forl r.u.a o.u.a)
       $(goal [%pick ~^z ~^o])
     ::
         %pick
@@ -2799,7 +2802,7 @@
       (copy next-don laz.next-rec)
     ::
         %next
-      =^  [don=need-lazy rec=need-lazy o=@uwoo]  gen  (into p.p.nomm)
+      =^  [don=need-lazy rec=need-lazy o=@uwoo]  gen  (into goal p.p.nomm)
       =^  next-rec  gen  $(nomm q.nomm, goal [%next rec ~ o])
       =^  next-don  gen  $(nomm q.p.nomm, goal [%next don then.next-rec])
       (copy next-don laz.next-rec)
@@ -2867,15 +2870,96 @@
     ^-  [[need-lazy @uwoo @uwoo] _gen]
     stub
   ::
+  ++  mede-need
+    |=  [som=* ned=need o=@uwoo]
+    ^+  gen
+    ?-    -.ned
+        %none  gen
+        %this  (add-ops o [%imm som r.ned]~)
+    ::
+        ^
+      ?@  som  (emir o ~ ~ %bom ~)  ::  overwrites old block
+      =.  gen  $(som -.som, ned -.ned)
+      $(som +.som, ned +.ned)
+    ::
+        %both
+      ?:  &(!c.ned ?=(@ som))  (emir o ~ ~ %bom ~)
+      =.  gen  (add-ops o [%imm ?^(som som %mede-both-atom) r.ned]~)
+      =.  gen  $(som -.som, ned h.ned)  ::  XX no +kern here, is OK?
+      $(som +.som, ned t.ned)
+    ==
+  ::
   ++  mede
-    |=  [then=jmp som=* what=need-lazy]
+    |=  [then=jmp som=* laz=need-lazy]
     ^-  [@uwoo _gen]
-    stub
+    =^  o=@uwoo  gen  (emit ~ ~ %hop then)
+    :-  o
+    |-  ^+  gen
+    =*  mede-loop  $
+    =.  gen  (mede-need som sure.laz o)
+    =.  gen
+      %+  roll  fork.laz
+      |=  [[y=[o=@uwoo laz=need-lazy] n=[o=@uwoo laz=need-lazy]] gen=_gen]
+      =.  gen  mede-loop(gen gen, laz laz.y, o o.y)
+      mede-loop(gen gen, laz laz.n, o o.n)
+    ::
+    %+  roll  bond.laz
+    |=  [[o=@uwoo laz=need-lazy] gen=_gen]
+    mede-loop(gen gen, laz laz, o o)
+  ::
+  ++  none-equivalent
+    |=  laz=need-lazy
+    ^-  ?
+    =*  none  .
+    ?&  ?=([%none ~] sure.laz)
+        (levy fork.laz |=([[* a=need-lazy] * b=need-lazy] &((none a) (none b))))
+        (levy bond.laz |=([* n=need-lazy] (none n)))
+    ==
+  ::
+  ::  ~: nothing needed
+  ::  [~ @uvre @uwoo]: something is needed (an atom or whatever + crash)
   ::
   ++  collapse-lazy-atom
-    |=  laz=need-lazy
-    ^-  [(unit @uvre) _gen]
-    stub
+    |=  nex=next
+    ^-  [(unit [@uvre @uwoo]) _gen]
+    ?>  =(~ args.then.nex)
+    ?:  (none-equivalent laz.nex)  [~ gen]
+    =^  r  .
+      =*  dot  .
+      ?-    -.sure.laz.nex
+          %this
+        [r.sure.laz.nex dot]
+      ::
+          %none
+        =^  r  gen  re
+        [r dot]
+      ::
+          *
+        =^  r  gen  re
+        =^  o  gen  (emit ~ ~ %bom ~)
+        =.  there.then.nex  o
+        [r dot]
+      ==
+    ::
+    :-  `[r there.then.nex]
+    =/  laz=need-lazy  [this+r fork.laz.nex bond.laz.nex]
+    =/  o=@uwoo  there.then.nex
+    ::  add crashes wherever lazy needs need more than an atom
+    ::
+    |-  ^+  gen
+    =*  collapse-loop  $
+    =?  gen  !?=(?(%this %none) -.sure.laz)
+      (emir o ~ ~ %bom ~)
+    ::
+    =.  gen
+      %+  roll  fork.laz
+      |=  [[y=[o=@uwoo laz=need-lazy] n=[o=@uwoo laz=need-lazy]] gen=_gen]
+      =.  gen  collapse-loop(gen gen, laz laz.y, o o.y)
+      collapse-loop(gen gen, laz laz.n, o o.n)
+    ::
+    %+  roll  bond.laz
+    |=  [[o=@uwoo laz=need-lazy] gen=_gen]
+    collapse-loop(gen gen, laz laz, o o)
   ::  fork CFG
   ::
   ++  fork  ::  XX when do we do args? here, like phi in +phil?
@@ -2885,9 +2969,14 @@
   ::  fork CFG for loobean-producing opcodes
   ::
   ++  forl
-    |=  [r=@uvre j=jmp]
+    |=  [r=@uvre o=@uwoo]
     ^-  [[@uwoo @uwoo] _gen]
-    stub
+    =^  r-0   gen  re
+    =^  r-1   gen  re
+    =^  barg  gen  (emit ~[r] ~ %hop ~ o)
+    =^  if-0  gen  (emit ~ [%imm `*`0 r-0]~ %hop ~[r-0] barg)
+    =^  if-1  gen  (emit ~ [%imm `*`1 r-1]~ %hop ~[r-1] barg)
+    [[if-0 if-1] gen]
   ::
   ++  emit
     |=  =blob
@@ -2895,24 +2984,222 @@
     =^  o  gen  oo
     [o (emir o blob)]
   ::
+  ++  from-need
+    |=  [axe=@ ned=need]
+    ^-  need
+    ?<  =(0 axe)
+    |-  ^-  need
+    ?:  =(1 axe)  ned
+    ?-  (cap axe)
+      %2  [$(axe (mas axe)) none+~]
+      %3  [none+~ $(axe (mas axe))]
+    ==
+  ::
   ++  from
     |=  [axe=@ laz=need-lazy]
     ^-  need-lazy
-    stub
+    =*  from  .
+    :+  (from-need axe sure.laz)
+      %+  turn  fork.laz
+      |=  [y=[there=@uwoo laz=need-lazy] n=[there=@uwoo laz=need-lazy]]
+      =.  laz.y  (from axe laz.y)
+      =.  laz.n  (from axe laz.n)
+      [y n]
+    %+  turn  bond.laz
+    |=  [o=@uwoo laz=need-lazy]
+    [o (from axe laz)]
   ::
   ++  copy
     |=  [first=next second=need-lazy]
     ^-  [next _gen]
+    =^  o  gen  (emit ~ ~ %hop then.first)
+    =^  laz=need-lazy  gen  (copy-give-ops o laz.first second)
+    [[%next laz ~ o] gen]
+  ::
+  ++  copy-give-ops
+    |=  [o=@uwoo first=need-lazy second=need-lazy]
+    ^-  [need-lazy _gen]
     stub
+  ::
+  ++  into-need
+    |=  [axe=@ ned=need o=@uwoo]
+    ^-  [[need need] _gen]
+    ?<  =(0 axe)
+    ?:  =(1 axe)  [[ned none+~] gen]
+    =|  tack=(list [h=? n=need])
+    =|  ops=(list pole)
+    |^  ^-  [[need need] _gen]
+    ?:  =(1 axe)
+      =.  gen  (add-ops o ops)
+      =;  big=need  [[ned big] gen]
+      %+  roll  tack
+      |:  [*[h=? n=need] acc=`need`[%none ~]]
+      ?:  h  (cons acc n)
+      (cons n acc)
+    =/  [h=? lat=@]  [?=(%2 (cap axe)) (mas axe)]
+    ?-    -.ned
+        %none  $(tack [[h ned] tack], axe lat)  ::  XX we don't have to descend here
+    ::
+        %this
+      =^  l  gen  re
+      =^  r  gen  re
+      =/  =pole  [%con l r r.ned]
+      =+  [new old]=?:(h [l r] [r l])
+      $(tack [[h %this old] tack], ned [%this new], ops [pole ops], axe lat)
+    ::
+        ^
+      =+  [new old]=?:(h ned [q.ned p.ned])
+      $(tack [[h old] tack], ned new, axe lat)
+    ::
+        %both
+      =^  l  gen  (must h.ned)
+      =^  r  gen  (must t.ned)
+      =/  =pole  [%con p.l p.r r.ned]
+      =+  [new old]=?:(h [q.l q.r] [q.r q.l])
+      $(tack [[h old] tack], ned new, ops [pole ops], axe lat)
+    ==
+    ::
+    ++  cons
+      |=  [a=need b=need]
+      ^-  need
+      ?:  &(?=(%none -.a) ?=(%none -.b))  none+~
+      [a b]
+    --
   ::
   ++  into
-    |=  axe=@
+    |=  [nex=next axe=@]
     ^-  [[need-lazy need-lazy @uwoo] _gen]
-    stub
+    =^  o=@uwoo  gen  (emit ~ ~ %hop then.nex)
+    =;  [[ned-don=need-lazy ned-rec=need-lazy] gen=_gen]
+      [[ned-don ned-rec o] gen]
+    ::
+    =/  laz=need-lazy  laz.nex
+    |-  ^-  [[need-lazy need-lazy] _gen]
+    =*  split-loop  $
+    =^  [sure-don=need sure-rec=need]  gen  (into-need axe sure.laz o)
+    =*  fork  ^:  %-  list
+              [y=[there=@uwoo laz=need-lazy] n=[there=@uwoo laz=need-lazy]]
+    ::
+    =^  [fork-don=fork fork-rec=fork]  gen
+      |-  ^-  [[fork fork] _gen]
+      =*  fork-loop  $
+      ?~  fork.laz  [[~ ~] gen]
+      =^  [laz-y-don=need-lazy laz-y-rec=need-lazy]  gen
+        split-loop(laz laz.y.i.fork.laz, o there.y.i.fork.laz)
+      ::
+      =^  [laz-n-don=need-lazy laz-n-rec=need-lazy]  gen
+        split-loop(laz laz.n.i.fork.laz, o there.n.i.fork.laz)
+      ::
+      =^  [fork-don-rest=fork fork-rec-rest=fork]  gen  
+        fork-loop(fork.laz t.fork.laz)
+      ::
+      :_  gen
+      :-  :_  fork-don-rest
+          [[there.y.i.fork.laz laz-y-don] [there.n.i.fork.laz laz-n-don]]
+      :_  fork-rec-rest
+      [[there.y.i.fork.laz laz-y-rec] [there.n.i.fork.laz laz-n-rec]]
+    ::
+    =*  bond  ,(list [o=@uwoo laz=need-lazy])
+    =^  [bond-don=bond bond-rec=bond]  gen
+      |-  ^-  [[bond bond] _gen]
+      =*  bond-loop  $
+      ?~  bond.laz  [[~ ~] gen]
+      =^  [laz-don=need-lazy laz-rec=need-lazy]  gen
+        split-loop(laz laz.i.bond.laz, o o.i.bond.laz)
+      ::
+      =^  [bond-don-rest=bond bond-rec-rest=bond]  gen
+        bond-loop(bond.laz t.bond.laz)
+      ::
+      :_  gen
+      :-  [[o.i.bond.laz laz-don] bond-don-rest]
+      [[o.i.bond.laz laz-rec] bond-rec-rest]
+    ::
+    :_  gen
+    :-  [sure-don fork-don bond-don]
+    [sure-rec fork-rec bond-rec]
+  ::
+  ++  split-need
+    |=  [ned=need o=@uwoo]
+    ^-  [[need need] _gen]
+    ?-    -.ned
+        ^      [[p.ned q.ned] gen]
+        %none  [[ned ned] gen]
+    ::
+        %this
+      =^  h  gen  re
+      =^  t  gen  re
+      =.     gen  (add-ops o [%con h t r.ned]~)
+      [[this+h this+t] gen]
+    ::
+        %both
+      =^  hed  gen  (must h.ned)
+      =^  tel  gen  (must t.ned)
+      =.       gen  (add-ops o [%con p.hed p.tel r.ned]~)
+      [[q.hed q.tel] gen]
+    ==
+  ::
+  ++  must
+    |=  ned=need
+    ^-  [(pair @uvre $>(?(%both %this) need)) _gen]
+    ?-  -.ned
+      %both  [[r.ned ned] gen]
+      %this  [[r.ned ned] gen]
+      ^      =^(r gen re [[r %both r | ned] gen])
+      %none  =^(r gen re [[r %this r] gen])
+    ==
   ::
   ++  split
+    |=  nex=next
     ^-  [[need-lazy need-lazy @uwoo] _gen]
-    stub
+    ::  emit an empty basic block
+    ::
+    =^  o=@uwoo  gen  (emit ~ ~ %hop then.nex)
+    =;  [[ned-h=need-lazy ned-t=need-lazy] gen=_gen]
+      [[ned-h ned-t o] gen]
+    =/  laz=need-lazy  laz.nex
+    |-  ^-  [[need-lazy need-lazy] _gen]
+    =*  split-loop  $
+    =^  [sure-h=need sure-t=need]  gen  (split-need sure.laz o)
+    =*  fork  ^:  %-  list
+              [y=[there=@uwoo laz=need-lazy] n=[there=@uwoo laz=need-lazy]]
+    ::
+    =^  [fork-h=fork fork-t=fork]  gen
+      |-  ^-  [[fork fork] _gen]
+      =*  fork-loop  $
+      ?~  fork.laz  [[~ ~] gen]
+      =^  [laz-y-h=need-lazy laz-y-t=need-lazy]  gen
+        split-loop(laz laz.y.i.fork.laz, o there.y.i.fork.laz)
+      ::
+      =^  [laz-n-h=need-lazy laz-n-t=need-lazy]  gen
+        split-loop(laz laz.n.i.fork.laz, o there.n.i.fork.laz)
+      ::
+      =^  [fork-h-rest=fork fork-t-rest=fork]  gen  
+        fork-loop(fork.laz t.fork.laz)
+      ::
+      :_  gen
+      :-  :_  fork-h-rest
+          [[there.y.i.fork.laz laz-y-h] [there.n.i.fork.laz laz-n-h]]
+      :_  fork-t-rest
+      [[there.y.i.fork.laz laz-y-t] [there.n.i.fork.laz laz-n-t]]
+    ::
+    =*  bond  ,(list [o=@uwoo laz=need-lazy])
+    =^  [bond-h=bond bond-t=bond]  gen
+      |-  ^-  [[bond bond] _gen]
+      =*  bond-loop  $
+      ?~  bond.laz  [[~ ~] gen]
+      =^  [laz-h=need-lazy laz-t=need-lazy]  gen
+        split-loop(laz laz.i.bond.laz, o o.i.bond.laz)
+      ::
+      =^  [bond-h-rest=bond bond-t-rest=bond]  gen
+        bond-loop(bond.laz t.bond.laz)
+      ::
+      :_  gen
+      :-  [[o.i.bond.laz laz-h] bond-h-rest]
+      [[o.i.bond.laz laz-t] bond-t-rest]
+    ::
+    :_  gen
+    :-  [sure-h fork-h bond-h]
+    [sure-t fork-t bond-t]
   ::
   ++  simple-next
     ^-  [next _gen]
@@ -2924,6 +3211,13 @@
       [%brn r [z o]:goal]
     ::
     [[%next [this+r ~ ~] ~ o] gen]
+  ::
+  ++  add-ops
+    |=  [o=@uwoo ops=(list pole)]
+    ^+  gen
+    =/  =blob  (~(got by blocks.gen) o)
+    =.  body.blob  (weld ops body.blob)
+    gen(blocks (~(put by blocks.gen) o blob))
   ::
   ++  emir
     |=  [o=@uwoo =blob]
@@ -2949,5 +3243,20 @@
 ++  msg-need-ord
   |=  [a=need-ordered b=need-ordered]
   ^-  need-ordered
-  stub
+  =*  msg  .
+  ?:  =(a b)  a
+  ?:  ?|  ?=(%this -.a)
+          ?=(%none -.a)
+          ?=(%this -.b)
+          ?=(%none -.b)
+      ==
+    this+~
+  ?:  ?=(%both -.a)
+    ?:  ?=(%both -.b)
+      ?>  =(c.a c.b)
+      [%both c.a (msg h.a h.b) (msg t.a t.b)]
+    [%both c.a (msg h.a p.b) (msg t.a q.b)]
+  ?:  ?=(%both -.b)
+    [%both c.b (msg p.a h.b) (msg q.a t.b)]
+  [(msg p.a p.b) (msg q.a q.b)]
 --
