@@ -2494,7 +2494,7 @@
   $+  need-lazy
   $;  |-
   $:  sure=need
-      fork=(list [y=[there=@uwoo laz=$] n=[there=@uwoo laz=$]])
+      fork=(list [y=[o=@uwoo laz=$] n=[o=@uwoo laz=$]])
       bond=(list [o=@uwoo laz=$])
   ==
 ::  there - target basic block
@@ -2986,12 +2986,134 @@
     =.  gen  gen-init
     ?:  ?=(?(%this %none) -.ned)  gen
     (emir o ~ ~ %bom ~)
+  ::
+  ++  flatten-need
+    |=  ned=need
+    ^-  (list @uvre)
+    ?-  -.ned
+      %none  ~
+      %this  ~[r.ned]
+      ^      (weld $(ned -.ned) $(ned +.ned))
+      %both  [r.ned (weld $(ned h.ned) $(ned t.ned))]
+    ==
   ::  fork CFG
   ::
-  ++  fork  ::  XX when do we do args? here, like phi in +phil?
+  ++  fork-sure
+    |=  [ned=need o=@uwoo o-0=@uwoo o-1=@uwoo]
+    ^-  [[need need] _gen]
+    =;  [[ned-0=need ned-1=need] gen1=_gen]
+      =.  gen  gen1
+      :-  [ned-0 ned-1]
+      =/  args-0=(list @uvre)  (flatten-need ned-0)
+      =/  args-1=(list @uvre)  (flatten-need ned-1)
+      =/  args=(list @uvre)    (flatten-need ned)
+      =^  barg  gen  (emit args ~ %hop ~ o)
+      =.  gen  (emir o-0 ~ ~ %hop args-0 barg)
+      (emir o-1 ~ ~ %hop args-1 barg)
+    ::
+    |-  ^-  [[need need] _gen]
+    ?-    -.ned
+        %none  [[[%none ~] [%none ~]] gen]
+    ::
+        %this
+      =^  r-0  gen  re
+      =^  r-1  gen  re
+      :_  gen
+      [[%this r-0] [%this r-1]]
+    ::
+        ^
+      =^  [hed-0=need hed-1=need]  gen  $(ned -.ned)
+      =^  [tel-0=need tel-1=need]  gen  $(ned +.ned)
+      :_  gen
+      [[hed-0 tel-0] [hed-1 tel-1]]
+    ::
+        %both
+      =^  r-0  gen  re
+      =^  r-1  gen  re
+      =^  [hed-0=need hed-1=need]  gen  $(ned h.ned)
+      =^  [tel-0=need tel-1=need]  gen  $(ned t.ned)
+      :_  gen
+      [[%both r-0 c.ned hed-0 tel-0] [%both r-1 c.ned hed-1 tel-1]]  ::  XX c.ned?
+    ==
+  ::
+  ++  fork
     |=  nex=next
     ^-  [[next next] _gen]
-    stub
+    =^  o-0  gen  oo
+    =^  o-1  gen  oo
+    =;  [[laz-0=need-lazy laz-1=need-lazy] gen1=_gen]
+      =.  gen  gen1
+      :_  gen
+      :-  [%next laz-0 ~ o-0]
+      [%next laz-1 ~ o-1]
+    ::
+    =/  laz=need-lazy  laz.nex
+    =/  o=@uwoo  there.then.nex
+    |-  ^-  [[need-lazy need-lazy] _gen]
+    =*  fork-loop  $
+    =^  [sure-0=need sure-1=need]  gen
+      (fork-sure sure.laz o o-0 o-1)
+    ::
+    =*  fork  ,(list [[@uwoo need-lazy] [@uwoo need-lazy]])
+    ::
+    =^  [fork-0=fork fork-1=fork]  gen
+      |-  ^-  [[fork fork] _gen]
+      =*  fork-smol-loop  $  ::  pay attention to equivocation
+      ?~  fork.laz  [[~ ~] gen]
+      =^  o-0-kid-y  gen  oo
+      =^  o-1-kid-y  gen  oo
+      =^  o-0-kid-n  gen  oo
+      =^  o-1-kid-n  gen  oo
+      =^  [laz-y-0=need-lazy laz-y-1=need-lazy]  gen
+        %=  fork-loop
+          laz  laz.y.i.fork.laz
+          o    o.y.i.fork.laz
+          o-0  o-0-kid-y
+          o-1  o-1-kid-y
+        ==
+      ::
+      =^  [laz-n-0=need-lazy laz-n-1=need-lazy]  gen
+        %=  fork-loop
+          laz  laz.n.i.fork.laz
+          o    o.n.i.fork.laz
+          o-0  o-0-kid-n
+          o-1  o-1-kid-n
+        ==
+      ::
+      =^  [fork-0-rest=fork fork-1-rest=fork]  gen  
+        fork-smol-loop(fork.laz t.fork.laz)
+      ::
+      :_  gen
+      :-  :_  fork-0-rest
+          [[o-0-kid-y laz-y-0] [o-0-kid-n laz-n-0]]
+      :_  fork-1-rest
+      [[o-1-kid-y laz-y-1] [o-1-kid-n laz-n-1]]
+    ::
+    =*  bond  ,(list [o=@uwoo laz=need-lazy])
+    =^  [bond-0=bond bond-1=bond]  gen
+      |-  ^-  [[bond bond] _gen]
+      =*  bond-loop  $
+      ?~  bond.laz  [[~ ~] gen]
+      =^  o-0-kid  gen  oo
+      =^  o-1-kid  gen  oo
+      =^  [laz-0=need-lazy laz-1=need-lazy]  gen
+        %=  fork-loop
+          laz  laz.i.bond.laz
+          o    o.i.bond.laz
+          o-0  o-0-kid
+          o-1  o-1-kid
+        ==
+      ::
+      =^  [bond-0-rest=bond bond-1-rest=bond]  gen
+        bond-loop(bond.laz t.bond.laz)
+      ::
+      :_  gen
+      :-  [[o-0-kid laz-0] bond-0-rest]
+      [[o-1-kid laz-1] bond-1-rest]
+    ::
+    :_  gen
+    :-  [sure-0 fork-0 bond-0]
+    [sure-1 fork-1 bond-1]
   ::  fork CFG for loobean-producing opcodes
   ::
   ++  forl
@@ -3039,13 +3161,81 @@
     |=  [first=next second=need-lazy]
     ^-  [next _gen]
     =^  o  gen  (emit ~ ~ %hop then.first)
-    =^  laz=need-lazy  gen  (copy-give-ops o laz.first second)
+    =^  laz=need-lazy  gen  (copy-lazy o laz.first second)
     [[%next laz ~ o] gen]
   ::
-  ++  copy-give-ops
+  ++  copy-lazy
     |=  [o=@uwoo first=need-lazy second=need-lazy]
     ^-  [need-lazy _gen]
-    stub
+    =;  [sure=need gen1=_gen]
+      :_  gen1
+      :+  sure
+        (weld fork.first fork.second)
+      (weld bond.first bond.second)
+    ::
+    =;  [[sure=need ops=(list pole)] gen1=_gen]
+      =.  gen  gen1
+      =.  gen  (add-ops o ops)
+      [sure gen]
+    ::
+    =|  ops=(list pole)
+    =|  sout=(list need)
+    =/  sin=(list (each (unit [r=@uvre c=?]) [l=need r=need]))
+      [|+[sure.first sure.second]]~
+    ::
+    |-  ^-  [[need (list pole)] _gen]
+    ?~  sin
+      ?>  ?=([* ~] sout)
+      [[i.sout ops] gen]
+    ?:  ?=(%& -.i.sin)
+      ?>  ?=([* * *] sout)
+      =/  par  [i.t.sout i.sout]
+      %=  $
+        sin   t.sin
+        sout  :_  t.t.sout
+               ?~  p.i.sin  par
+               =*  both  u.p.i.sin
+               [%both r.both c.both par]
+      ==
+    =*  l  l.p.i.sin
+    =*  r  r.p.i.sin
+    ?:  ?=(%none -.l)  $(sout [r sout], sin t.sin)
+    ?:  ?=(%none -.r)  $(sout [l sout], sin t.sin)
+    ?:  ?=(%this -.l)
+      ?:  ?=(%this -.r)
+        ~?  =(r.l r.r)  [%copy-this-l-a r.l r.r]
+        $(ops [[%mov r.l r.r] ops], sout [l sout], sin t.sin)
+      =^  rr=$>(%both need)  gen
+        ?@(-.r [r gen] =^(x gen re [[%both x | r] gen]))
+      ~?  =(r.l r.rr)  [%copy-this-l-b r.l r.rr]
+      $(ops [[%mov r.rr r.l] ops], sout [rr sout], sin t.sin)
+    ?:  ?=(%this -.r)
+      =^  ll=$>(%both need)  gen
+        ?@(-.l [l gen] =^(x gen re [[%both x | l] gen]))
+      ~?  =(r.ll r.r)  [%copy-this-r r.ll r.r]
+      $(ops [[%mov r.ll r.r] ops], sout [ll sout], sin t.sin)
+    ?:  ?=(%both -.l)
+      =^  rr=$>(%both need)  gen
+        ?@(-.r [r gen] =^(x gen re [[%both x | r] gen]))
+      ~?  =(r.l r.rr)  [%copy-both r.l r.rr]
+      %=  $
+        ops   [[%mov r.rr r.l] ops]
+        ::  if the first computation checks that the noun in r.rr/r.l is a cell,
+        ::  then the second one does not need to be checked, and in total the
+        ::  computation is checked
+        ::  if the first computation does not check, then it will have to be
+        ::  checked upstream, so the total computation is not checked
+        ::
+        ::  XX reconsider mixed case ^ / %both
+        ::
+        sin  [|+[h.l h.rr] |+[t.l t.rr] &+`[r.rr c.l] t.sin]
+      ==
+    ?^  -.r
+      $(sin [|+[p.l p.r] |+[q.l q.r] &+~ t.sin])
+    ::  first computation does not have a cell check for r.r,
+    ::  so r.r will need to be checked upstream
+    ::
+    $(sin [|+[p.l h.r] |+[q.l t.r] &+`[r.r |] t.sin])
   ::
   ++  into-need
     |=  [axe=@ ned=need o=@uwoo]
@@ -3103,27 +3293,25 @@
     |-  ^-  [[need-lazy need-lazy] _gen]
     =*  split-loop  $
     =^  [sure-don=need sure-rec=need]  gen  (into-need axe sure.laz o)
-    =*  fork  ^:  %-  list
-              [y=[there=@uwoo laz=need-lazy] n=[there=@uwoo laz=need-lazy]]
-    ::
+    =*  fork  ,(list [[@uwoo need-lazy] [@uwoo need-lazy]])
     =^  [fork-don=fork fork-rec=fork]  gen
       |-  ^-  [[fork fork] _gen]
       =*  fork-loop  $
       ?~  fork.laz  [[~ ~] gen]
       =^  [laz-y-don=need-lazy laz-y-rec=need-lazy]  gen
-        split-loop(laz laz.y.i.fork.laz, o there.y.i.fork.laz)
+        split-loop(laz laz.y.i.fork.laz, o o.y.i.fork.laz)
       ::
       =^  [laz-n-don=need-lazy laz-n-rec=need-lazy]  gen
-        split-loop(laz laz.n.i.fork.laz, o there.n.i.fork.laz)
+        split-loop(laz laz.n.i.fork.laz, o o.n.i.fork.laz)
       ::
       =^  [fork-don-rest=fork fork-rec-rest=fork]  gen  
         fork-loop(fork.laz t.fork.laz)
       ::
       :_  gen
       :-  :_  fork-don-rest
-          [[there.y.i.fork.laz laz-y-don] [there.n.i.fork.laz laz-n-don]]
+          [[o.y.i.fork.laz laz-y-don] [o.n.i.fork.laz laz-n-don]]
       :_  fork-rec-rest
-      [[there.y.i.fork.laz laz-y-rec] [there.n.i.fork.laz laz-n-rec]]
+      [[o.y.i.fork.laz laz-y-rec] [o.n.i.fork.laz laz-n-rec]]
     ::
     =*  bond  ,(list [o=@uwoo laz=need-lazy])
     =^  [bond-don=bond bond-rec=bond]  gen
@@ -3186,27 +3374,25 @@
     |-  ^-  [[need-lazy need-lazy] _gen]
     =*  split-loop  $
     =^  [sure-h=need sure-t=need]  gen  (split-need sure.laz o)
-    =*  fork  ^:  %-  list
-              [y=[there=@uwoo laz=need-lazy] n=[there=@uwoo laz=need-lazy]]
-    ::
+    =*  fork  ,(list [[@uwoo need-lazy] [@uwoo need-lazy]])
     =^  [fork-h=fork fork-t=fork]  gen
       |-  ^-  [[fork fork] _gen]
       =*  fork-loop  $
       ?~  fork.laz  [[~ ~] gen]
       =^  [laz-y-h=need-lazy laz-y-t=need-lazy]  gen
-        split-loop(laz laz.y.i.fork.laz, o there.y.i.fork.laz)
+        split-loop(laz laz.y.i.fork.laz, o o.y.i.fork.laz)
       ::
       =^  [laz-n-h=need-lazy laz-n-t=need-lazy]  gen
-        split-loop(laz laz.n.i.fork.laz, o there.n.i.fork.laz)
+        split-loop(laz laz.n.i.fork.laz, o o.n.i.fork.laz)
       ::
       =^  [fork-h-rest=fork fork-t-rest=fork]  gen  
         fork-loop(fork.laz t.fork.laz)
       ::
       :_  gen
       :-  :_  fork-h-rest
-          [[there.y.i.fork.laz laz-y-h] [there.n.i.fork.laz laz-n-h]]
+          [[o.y.i.fork.laz laz-y-h] [o.n.i.fork.laz laz-n-h]]
       :_  fork-t-rest
-      [[there.y.i.fork.laz laz-y-t] [there.n.i.fork.laz laz-n-t]]
+      [[o.y.i.fork.laz laz-y-t] [o.n.i.fork.laz laz-n-t]]
     ::
     =*  bond  ,(list [o=@uwoo laz=need-lazy])
     =^  [bond-h=bond bond-t=bond]  gen
