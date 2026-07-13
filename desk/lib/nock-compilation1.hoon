@@ -2854,27 +2854,31 @@
     =^  r=@uvre  gen  (kern o laz.next)
     [[o r] gen]
   ::
+  ++  walk-lazy
+    |=  [o=@uwoo laz=need-lazy f=$-([@uwoo need _gen] _gen)]
+    ^+  gen
+    =*  walk  $
+    =.  gen  (f o sure.laz gen)
+    =.  gen
+      %+  roll  fork.laz
+      |=  [[y=[o=@uwoo laz=need-lazy] n=[o=@uwoo laz=need-lazy]] gen=_gen]
+      =.  gen  walk(gen gen, laz laz.y, o o.y)
+      walk(gen gen, laz laz.n, o o.n)
+    ::
+    %+  roll  bond.laz
+    |=  [[o=@uwoo laz=need-lazy] gen=_gen]
+    walk(gen gen, laz laz, o o)
+  ::
   ++  kern
     |=  [o=@uwoo laz=need-lazy]
     ^-  [@uvre _gen]
     =^  r  gen  re
     :-  r
-    |-  ^+  gen
-    =*  kern-loop  $
-    =.  gen  (kern-need r o sure.laz)
-    =.  gen
-      %+  roll  fork.laz
-      |=  [[y=[o=@uwoo laz=need-lazy] n=[o=@uwoo laz=need-lazy]] gen=_gen]
-      =.  gen  kern-loop(gen gen, laz laz.y, o o.y)
-      kern-loop(gen gen, laz laz.n, o o.n)
-    ::
-    %+  roll  bond.laz
-    |=  [[o=@uwoo laz=need-lazy] gen=_gen]
-    kern-loop(gen gen, laz laz, o o)
-  ::
-  ++  kern-need
-    |=  [r=@uvre o=@uwoo ned=need]
+    %^  walk-lazy  o  laz
+    |=  [o=@uwoo ned=need gen-init=_gen]
     ^+  gen
+    =.  gen  gen-init
+    |-  ^+  gen
     =;  [l=(list pole) gen1=_gen]  (add-ops(gen gen1) o l)
     =|  ops=(list pole)
     |-  ^-  [(list pole) _gen]
@@ -2913,9 +2917,16 @@
     ^-  [[need-lazy @uwoo @uwoo] _gen]
     stub
   ::
-  ++  mede-need
-    |=  [som=* ned=need o=@uwoo]
+  ++  mede
+    |=  [then=jmp som=* laz=need-lazy]
+    ^-  [@uwoo _gen]
+    =^  o=@uwoo  gen  (emit ~ ~ %hop then)
+    :-  o
+    %^  walk-lazy  o  laz
+    |=  [o=@uwoo ned=need gen-init=_gen]
     ^+  gen
+    =.  gen  gen-init
+    |-  ^+  gen
     ?-    -.ned
         %none  gen
         %this  (add-ops o [%imm som r.ned]~)
@@ -2931,24 +2942,6 @@
       =.  gen  $(som -.som, ned h.ned)  ::  XX no +kern here, is OK?
       $(som +.som, ned t.ned)
     ==
-  ::
-  ++  mede
-    |=  [then=jmp som=* laz=need-lazy]
-    ^-  [@uwoo _gen]
-    =^  o=@uwoo  gen  (emit ~ ~ %hop then)
-    :-  o
-    |-  ^+  gen
-    =*  mede-loop  $
-    =.  gen  (mede-need som sure.laz o)
-    =.  gen
-      %+  roll  fork.laz
-      |=  [[y=[o=@uwoo laz=need-lazy] n=[o=@uwoo laz=need-lazy]] gen=_gen]
-      =.  gen  mede-loop(gen gen, laz laz.y, o o.y)
-      mede-loop(gen gen, laz laz.n, o o.n)
-    ::
-    %+  roll  bond.laz
-    |=  [[o=@uwoo laz=need-lazy] gen=_gen]
-    mede-loop(gen gen, laz laz, o o)
   ::
   ++  none-equivalent
     |=  laz=need-lazy
@@ -2985,24 +2978,14 @@
       ==
     ::
     :-  `[r there.then.nex]
-    =/  laz=need-lazy  [this+r fork.laz.nex bond.laz.nex]
-    =/  o=@uwoo  there.then.nex
     ::  add crashes wherever lazy needs need more than an atom
     ::
-    |-  ^+  gen
-    =*  collapse-loop  $
-    =?  gen  !?=(?(%this %none) -.sure.laz)
-      (emir o ~ ~ %bom ~)
-    ::
-    =.  gen
-      %+  roll  fork.laz
-      |=  [[y=[o=@uwoo laz=need-lazy] n=[o=@uwoo laz=need-lazy]] gen=_gen]
-      =.  gen  collapse-loop(gen gen, laz laz.y, o o.y)
-      collapse-loop(gen gen, laz laz.n, o o.n)
-    ::
-    %+  roll  bond.laz
-    |=  [[o=@uwoo laz=need-lazy] gen=_gen]
-    collapse-loop(gen gen, laz laz, o o)
+    %^  walk-lazy  there.then.nex  [this+r fork.laz.nex bond.laz.nex]
+    |=  [o=@uwoo ned=need gen-init=_gen]
+    ^+  gen
+    =.  gen  gen-init
+    ?:  ?=(?(%this %none) -.ned)  gen
+    (emir o ~ ~ %bom ~)
   ::  fork CFG
   ::
   ++  fork  ::  XX when do we do args? here, like phi in +phil?
