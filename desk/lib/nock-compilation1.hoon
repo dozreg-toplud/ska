@@ -2850,15 +2850,58 @@
   ++  kerf
     |=  =next
     ^-  [[@uwoo @uvre] _gen]
-    =^  [r=@uvre p=(list pole)]  gen  (kern laz.next)
-    ?~  p  [[there.then.next r] gen]  ::  args omitted?
-    =^  o  gen  (emit ~ p %hop then.next)
+    =^  o  gen  (emit ~ ~ %hop then.next)
+    =^  r=@uvre  gen  (kern o laz.next)
     [[o r] gen]
   ::
   ++  kern
-    |=  laz=need-lazy
-    ^-  [[@uvre (list pole)] _gen]
-    stub
+    |=  [o=@uwoo laz=need-lazy]
+    ^-  [@uvre _gen]
+    =^  r  gen  re
+    :-  r
+    |-  ^+  gen
+    =*  kern-loop  $
+    =.  gen  (kern-need r o sure.laz)
+    =.  gen
+      %+  roll  fork.laz
+      |=  [[y=[o=@uwoo laz=need-lazy] n=[o=@uwoo laz=need-lazy]] gen=_gen]
+      =.  gen  kern-loop(gen gen, laz laz.y, o o.y)
+      kern-loop(gen gen, laz laz.n, o o.n)
+    ::
+    %+  roll  bond.laz
+    |=  [[o=@uwoo laz=need-lazy] gen=_gen]
+    kern-loop(gen gen, laz laz, o o)
+  ::
+  ++  kern-need
+    |=  [r=@uvre o=@uwoo ned=need]
+    ^+  gen
+    =;  [l=(list pole) gen1=_gen]  (add-ops(gen gen1) o l)
+    =|  ops=(list pole)
+    |-  ^-  [(list pole) _gen]
+    ?-    -.ned
+        %none  [ops gen]
+        %this  [[[%mov r r.ned] ops] gen]
+    ::
+        ^
+      =^  r-ned  gen  re
+      $(ned [%both r-ned | ned])
+    ::
+        %both
+      =^  r-t    gen  re
+      =^  ops-1  gen  $(ned t.ned, r r-t)
+      =?  ops-1  !=(ops-1 ops)
+        [[%tal r.ned r-t] ops-1]
+      ::
+      =.  ops  ops-1
+      =^  r-h    gen  re
+      =^  ops-1  gen  $(ned h.ned, r r-h)
+      =?  ops-1  !=(ops-1 ops)
+        [[%hed r.ned r-h] ops-1]
+      ::
+      =.  ops  ops-1
+      =?  ops  !c.ned  [[%cel r.ned] ops]
+      [[[%mov r r.ned] ops] gen]
+    ==
   ::
   ++  lazy-bound
     |=  n=next
