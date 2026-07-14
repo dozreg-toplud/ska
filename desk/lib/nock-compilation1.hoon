@@ -2762,16 +2762,36 @@
     ==
   ::
       [%6 *]
+    ?.  ?|  ?=(%done -.goal)
+            ?=(%pick -.goal)
+            &(=(~ fork.laz.goal) =(~ bond.laz.goal))
+        ==
+      =^  r-cond  gen  re
+      =^  [goal-0=^goal goal-1=^goal]  gen  (fork goal r-cond)
+      =^  next-1  gen  $(nomm r.nomm, goal goal-1)
+      =^  next-0  gen  $(nomm q.nomm, goal goal-0)
+      =^  [lazy=need-lazy yes=@uwoo nuh=@uwoo]  gen  (sect next-0 next-1)
+      =^  o=@uwoo  gen  (emit ~ ~ [%brn r-cond ~^yes ~^nuh])
+      =^  cond  gen  $(nomm p.nomm, goal [%next [this+r-cond ~ ~] ~ o])
+      (copy cond lazy)
     =^  [goal-0=^goal goal-1=^goal]  gen
+      |-  ^-  [[^goal ^goal] _gen]
       ?-    -.goal
-          %next  (fork goal)
           %done  [[done+~ done+~] gen]
+      ::
+          %next
+        =^  o-0  gen  oo
+        =^  o-1  gen  oo
+        =^  [ned-0=need ned-1=need]  gen
+          (fork-sure sure.laz.goal there.then.goal o-0 o-1)
+        ::
+        :_  gen
+        [[%next [ned-0 ~ ~] ~ o-0] [%next [ned-1 ~ ~] ~ o-1]]
       ::
           %pick
         =^  next  gen  simple-next
-        (fork next)
+        $(goal next)
       ==
-    ::
     =^  next-1  gen  $(nomm r.nomm, goal goal-1)
     =^  next-0  gen  $(nomm q.nomm, goal goal-0)
     =^  [lazy=need-lazy yes=@uwoo nuh=@uwoo]  gen  (sect next-0 next-1)
@@ -2998,6 +3018,9 @@
     ==
   ::  fork CFG
   ::
+  ::  Produces a pair of needs, emitting code into given o-0/1 provided by the
+  ::  caller
+  ::
   ++  fork-sure
     |=  [ned=need o=@uwoo o-0=@uwoo o-1=@uwoo]
     ^-  [[need need] _gen]
@@ -3035,9 +3058,24 @@
       :_  gen
       [[%both r-0 c.ned hed-0 tel-0] [%both r-1 c.ned hed-1 tel-1]]  ::  XX c.ned?
     ==
+  ::  o2 is empty
+  ::  a -> b  ==>  a -> o' ... o'' -> b
+  ::
+  ++  insert-hop
+    |=  [a=@uwoo o1=@uwoo o2=@uwoo]
+    ^+  gen
+    =/  blob-from=blob  (~(got by blocks.gen) a)
+    ?>  ?=(%hop -.fin.blob-from)
+    ?>  =(~ body.blob-from)
+    ?>  =(~ par.blob-from)
+    ?>  =(~ args.t.fin.blob-from)
+    =/  b=@uwoo  there.t.fin.blob-from
+    =.  gen  (emir o2 ~ ~ %hop ~ b)
+    =.  blocks.gen  (~(put by blocks.gen) a blob-from(there.t.fin o1))
+    gen
   ::
   ++  fork
-    |=  nex=next
+    |=  [nex=next r-cond=@uvre]
     ^-  [[next next] _gen]
     =^  o-0  gen  oo
     =^  o-1  gen  oo
@@ -3060,14 +3098,16 @@
       |-  ^-  [[fork fork] _gen]
       =*  fork-smol-loop  $  ::  pay attention to equivocation
       ?~  fork.laz  [[~ ~] gen]
-      =^  o-0-kid-y  gen  oo
-      =^  o-1-kid-y  gen  oo
-      =^  o-0-kid-n  gen  oo
-      =^  o-1-kid-n  gen  oo
+      =^  o-0-kid-y    gen  oo
+      =^  o-1-kid-y    gen  oo
+      =^  o-0-kid-n    gen  oo
+      =^  o-1-kid-n    gen  oo
+      =^  o-insert2-y  gen  oo
+      =^  o-insert2-n  gen  oo
       =^  [laz-y-0=need-lazy laz-y-1=need-lazy]  gen
         %=  fork-loop
           laz  laz.y.i.fork.laz
-          o    o.y.i.fork.laz
+          o    o-insert2-y
           o-0  o-0-kid-y
           o-1  o-1-kid-y
         ==
@@ -3075,11 +3115,19 @@
       =^  [laz-n-0=need-lazy laz-n-1=need-lazy]  gen
         %=  fork-loop
           laz  laz.n.i.fork.laz
-          o    o.n.i.fork.laz
+          o    o-insert2-n
           o-0  o-0-kid-n
           o-1  o-1-kid-n
         ==
       ::
+      =^  o-insert1-y=@uwoo  gen
+        (emit ~ ~ [%brn r-cond ~^o-0-kid-y ~^o-1-kid-y])
+      ::
+      =^  o-insert1-n=@uwoo  gen
+        (emit ~ ~ [%brn r-cond ~^o-0-kid-n ~^o-1-kid-n])
+      ::
+      =.  gen  (insert-hop o.y.i.fork.laz o-insert1-y o-insert2-y)
+      =.  gen  (insert-hop o.n.i.fork.laz o-insert1-n o-insert2-n)
       =^  [fork-0-rest=fork fork-1-rest=fork]  gen  
         fork-smol-loop(fork.laz t.fork.laz)
       ::
@@ -3094,16 +3142,19 @@
       |-  ^-  [[bond bond] _gen]
       =*  bond-loop  $
       ?~  bond.laz  [[~ ~] gen]
-      =^  o-0-kid  gen  oo
-      =^  o-1-kid  gen  oo
+      =^  o-0-kid    gen  oo
+      =^  o-1-kid    gen  oo
+      =^  o-insert2  gen  oo
       =^  [laz-0=need-lazy laz-1=need-lazy]  gen
         %=  fork-loop
           laz  laz.i.bond.laz
-          o    o.i.bond.laz
+          o    o-insert2
           o-0  o-0-kid
           o-1  o-1-kid
         ==
       ::
+      =^  o-insert1=@uwoo  gen  (emit ~ ~ [%brn r-cond ~^o-0-kid ~^o-1-kid])
+      =.  gen  (insert-hop o.i.bond.laz o-insert1 o-insert2)
       =^  [bond-0-rest=bond bond-1-rest=bond]  gen
         bond-loop(bond.laz t.bond.laz)
       ::
