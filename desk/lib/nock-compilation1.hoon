@@ -2476,6 +2476,7 @@
 +$  hint-dynamic  ?(%bout %xray %spin %loop %jinx %live hint-dynamic-stop)
 +$  hint-dynamic-stop  ?(%mean %spot %slog)
 +$  need
+  $~  [%none ~]
   $^  [p=need q=need]
   $%  [%both r=@uvre c=? h=need t=need]
       [%this r=@uvre]
@@ -2788,9 +2789,7 @@
         :_  gen
         [[%next [ned-0 ~ ~] ~ o-0] [%next [ned-1 ~ ~] ~ o-1]]
       ::
-          %pick
-        =^  next  gen  simple-next
-        $(goal next)
+          %pick  [[goal goal] gen]
       ==
     =^  next-1  gen  $(nomm r.nomm, goal goal-1)
     =^  next-0  gen  $(nomm q.nomm, goal goal-0)
@@ -2928,14 +2927,23 @@
     ==
   ::
   ++  lazy-bound
-    |=  n=next
+    |=  nex=next
     ^-  [next _gen]
-    stub
+    =^  o  gen  (emit ~ ~ %hop then.nex)
+    :_  gen
+    ?>  =(~ args.then.nex)
+    [%next [*need ~ [o laz.nex]~] ~ o]
   ::
-  ++  sect  ::  XX when do we do args?
-    |=  [z=next o=next]
+  ++  sect
+    |=  [nex-0=next nex-1=next]
     ^-  [[need-lazy @uwoo @uwoo] _gen]
-    stub
+    =^  o-0  gen  (emit ~ ~ %hop then.nex-0)
+    =^  o-1  gen  (emit ~ ~ %hop then.nex-1)
+    :_  gen
+    ?>  =(~ args.then.nex-0)
+    ?>  =(~ args.then.nex-1)
+    :_  [o-0 o-1]
+    [*need [[o-0 laz.nex-0] [o-1 laz.nex-1]]~ ~]
   ::
   ++  mede
     |=  [then=jmp som=* laz=need-lazy]
@@ -3066,7 +3074,7 @@
     ^+  gen
     =/  blob-from=blob  (~(got by blocks.gen) a)
     ?>  ?=(%hop -.fin.blob-from)
-    ?>  =(~ body.blob-from)
+    :: ?>  =(~ body.blob-from)
     ?>  =(~ par.blob-from)
     ?>  =(~ args.t.fin.blob-from)
     =/  b=@uwoo  there.t.fin.blob-from
