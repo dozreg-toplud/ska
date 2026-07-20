@@ -2635,13 +2635,14 @@
         (~(uni in w-new) (~(get ju rev) b))
     %+  ~(put by map-local)  b
     ?:  =(need-pessimized need.s)  s
-    (to-straight (~(coerce comp gen) need-pessimized nex))
+    =^  coerced=next-resolved  gen  (~(coerce comp gen) need-pessimized nex)
+    (~(to-straight comp gen) coerced)
   ::
   =/  [nex=next gen=line-short]
     (~(run comp *line-short) nomm:(~(got by code.long-ska) b) [%done ~])
   ::
   =^  res  gen  (~(next-lazy-collapse comp gen) nex)
-  [(to-straight res gen) res gen]
+  [(~(to-straight comp gen) res) res gen]
 ::
 ++  comp
   |_  gen=line-short
@@ -2922,6 +2923,14 @@
     |-  ^+  gen
     =^  l=(list pole)  gen  (kern-need r ned)
     (add-ops o l)
+  ::
+  ++  kern-r
+    |=  [o=@uwoo ned=need]
+    ^-  [@uvre _gen]
+    =^  r  gen  re
+    =^  ops=(list pole)  gen  (kern-need r ned)
+    =.  gen  (add-ops o ops)
+    [r gen]
   ::
   ++  kern-need
     |=  [r=@uvre ned=need]
@@ -3517,7 +3526,31 @@
   ++  coerce
     |=  [need-pessimized=need-ordered nex=next-resolved]
     ^-  [next-resolved _gen]
-    stub
+    =;  [ned=need gen1=_gen]  [[%next [ned ~ ~] [~ then.nex]] gen1]
+    |-  ^-  [need _gen]
+    ?-    -.need-pessimized
+        %none
+      ?>  ?=(%none -.ned.nex)
+      [[%none ~] gen]
+    ::
+        %this
+      ?:  ?=(%this -.ned.nex)  [ned.nex gen]
+      =^  r  gen  (kern-r then.nex ned.nex)
+      [[%this r] gen]
+    ::
+        ^
+      ?:  ?=(%none -.ned.nex)
+        =^  hed  gen  $(need-pessimized -.need-pessimized)
+        =^  tel  gen  $(need-pessimized +.need-pessimized)
+        [[hed tel] gen]
+      ?:  ?=(%this -.ned.nex)  !!
+      =^  r  gen  (kern-r then.nex ned.nex)
+      [[%this r] gen]
+    ::
+        %both
+      =^  r  gen  (kern-r then.nex ned.nex)
+      [[%this r] gen]
+    ==
   ::
   ++  combine
     |=  [y=[o=@uwoo ned=need] n=[o=@uwoo ned=need]]
@@ -3526,9 +3559,7 @@
       [[%none ~] gen]
     ?:  |(?=(%none -.ned.y) ?=(%none -.ned.n))
       =/  [o-not-none=@uwoo ned-not-none=need]  ?:(?=(%none -.ned.y) n y)
-      =^  r    gen  re
-      =^  ops  gen  (kern-need r ned-not-none)
-      =.  gen  (add-ops o-not-none ops)
+      =^  r  gen  (kern-r o-not-none ned-not-none)
       [[%this r] gen]
     ?:  &(?=(%this -.ned.y) ?=(%this -.ned.n))
       ::  move r.ned.y -> r.ned.n: arbitrary choice
@@ -3647,6 +3678,209 @@
     ?>  =(~ args.then.nex)
     =^  ned=need  gen  (need-lazy-collapse there.then.nex laz.nex)
     [[%next [ned ~ ~] ~ there.then.nex] gen]
+  ::
+  ::  Renumber the registers so that the input registers are 0-N, set the starting
+  ::  block index to 0w0
+  ::
+  ++  to-straight
+    |=  nex=next-resolved
+    ^-  straight
+    =/  blocks=(map @uwoo blob)  blocks.gen
+    =/  start=blob  (~(got by blocks) then.nex)
+    =.  blocks  (~(del by blocks) then.nex)
+    =.  blocks  (~(put by blocks) `@`0 start)
+    =|  gen=[re-gen=@uvre m=(map @uvre @uvre)]
+    |^  ^-  straight
+    =^  input=need-ordered  gen  (rewrite-input ned.nex)
+    :+  input  (count-args input)
+    =<  new
+    ^-  [new=(map @uwoo blob) *]
+    %-  ~(rep by blocks)
+    |=  [[k=@uwoo b=blob] new=(map @uwoo blob) gen-acc=_gen]
+    =.  gen  gen-acc
+    =;  [b1=blob gen1=_gen]
+      :_  gen1
+      (~(put by new) k b1)
+    ::
+    =^  par1   gen  (rewrite-par par.b)
+    =^  body1  gen  (rewrite-body body.b)
+    =^  fin1   gen  (rewrite-fin fin.b)
+    :_  gen
+    [par1 body1 fin1]
+    ::
+    ++  rer
+      |=  r=@uvre
+      ^-  [@uvre _gen]
+      ?^  r1=(~(get by m.gen) r)  [u.r1 gen]
+      =^  r1  re-gen.gen  [re-gen.gen +(re-gen.gen)]
+      =.  m.gen  (~(put by m.gen) r r1)
+      [r1 gen]
+    ::
+    ++  rewrite-input
+      |=  ned=need
+      ^-  [need-ordered _gen]
+      ?>  =(0 re-gen.gen)
+      |-  ^-  [need-ordered _gen]
+      ?-    -.ned
+          %none
+        [[%none ~] gen]
+      ::
+          %this
+        =.  gen  +:(rer r.ned)
+        [[%this ~] gen]
+      ::
+          ^
+        =^  l  gen  $(ned -.ned)
+        =^  r  gen  $(ned +.ned)
+        [[l r] gen]
+      ::
+          %both
+        =.  gen  +:(rer r.ned)
+        =^  h  gen  $(ned h.ned)
+        =^  t  gen  $(ned t.ned)
+        [[%both c.ned h t] gen]
+      ==
+    ::
+    ++  rewrite-par
+      |=  par=(list @uvre)
+      ^-  [(list @uvre) _gen]
+      %^  spin  par  gen
+      |=  [r=@uvre =_gen]
+      (rer(gen gen) r)
+    ::
+    ++  rewrite-body
+      |=  bod=(list pole)
+      ^-  [(list pole) _gen]
+      %^  spin  bod  gen
+      |=  [op=pole =_gen]
+      (rewrite-op(gen gen) op)
+    ::
+    ++  rewrite-op
+      |=  op=pole
+      ^-  [pole _gen]
+      ?-    -.op
+          %imm
+        =^  d1  gen  (rer d.op)
+        [op(d d1) gen]
+      ::
+          %mov
+        =^  s1  gen  (rer s.op)
+        =^  d1  gen  (rer d.op)
+        [op(s s1, d d1) gen]
+      ::
+          %inc
+        =^  s1  gen  (rer s.op)
+        =^  d1  gen  (rer d.op)
+        [op(s s1, d d1) gen]
+      ::
+          %con
+        =^  h1  gen  (rer h.op)
+        =^  t1  gen  (rer t.op)
+        =^  d1  gen  (rer d.op)
+        [op(h h1, t t1, d d1) gen]
+      ::
+          %hed
+        =^  s1  gen  (rer s.op)
+        =^  d1  gen  (rer d.op)
+        [op(s s1, d d1) gen]
+      ::
+          %tal
+        =^  s1  gen  (rer s.op)
+        =^  d1  gen  (rer d.op)
+        [op(s s1, d d1) gen]
+      ::
+          %cel
+        =^  p1  gen  (rer p.op)
+        [op(p p1) gen]
+      ::
+          %hsp  [op gen]
+          %hse  [op gen]
+      ::
+          %hdp
+        =^  p1  gen  (rer p.op)
+        [op(p p1) gen]
+      ::
+          %hde
+        =^  p1  gen  (rer p.op)
+        [op(p p1) gen]
+      ::
+          %spy
+        =^  e1  gen  (rer e.op)
+        =^  p1  gen  (rer p.op)
+        =^  d1  gen  (rer d.op)
+        [op(e e1, p p1, d d1) gen]
+      ::
+          %nok
+        =^  u1  gen  (rer u.op)
+        =^  f1  gen  (rer f.op)
+        =^  d1  gen  (rer d.op)
+        [op(u u1, f f1, d d1) gen]
+      ::
+          %cal
+        =^  v1  gen  (rewrite-par v.op)
+        =^  d1  gen  (rer d.op)
+        [op(v v1, d d1) gen]
+      ::
+          %caf
+        =^  v1  gen  (rewrite-par v.op)
+        =^  d1  gen  (rer d.op)
+        [op(v v1, d d1) gen]
+      ::
+          %cam
+        =^  v1  gen  (rewrite-par v.op)
+        =^  d1  gen  (rer d.op)
+        [op(v v1, d d1) gen]
+      ==
+    ::
+    ++  rewrite-fin
+      |=  fin=termin
+      ^-  [termin _gen]
+      ?-    -.fin
+          %clq
+        =^  s1  gen  (rer s.fin)
+        =^  z1  gen  (rewrite-jump z.fin)
+        =^  o1  gen  (rewrite-jump o.fin)
+        [fin(s s1, z z1, o o1) gen]
+      ::
+          %eqq
+        =^  l1  gen  (rer l.fin)
+        =^  r1  gen  (rer r.fin)
+        =^  z1  gen  (rewrite-jump z.fin)
+        =^  o1  gen  (rewrite-jump o.fin)
+        [fin(l l1, r r1, z z1, o o1) gen]
+      ::
+          %brn
+        =^  s1  gen  (rer s.fin)
+        =^  z1  gen  (rewrite-jump z.fin)
+        =^  o1  gen  (rewrite-jump o.fin)
+        [fin(s s1, z z1, o o1) gen]
+      ::
+          %hop
+        =^  t1  gen  (rewrite-jump t.fin)
+        [fin(t t1) gen]
+      ::
+          %jmp
+        =^  v1  gen  (rewrite-par v.fin)
+        [fin(v v1) gen]
+      ::
+          %jmf
+        =^  v1  gen  (rewrite-par v.fin)
+        [fin(v v1) gen]
+      ::
+          %don
+        =^  s1  gen  (rer s.fin)
+        [fin(s s1) gen]
+      ::
+          %bom
+        [fin gen]
+      ==
+    ::
+    ++  rewrite-jump
+      |=  j=jmp
+      ^-  [jmp _gen]
+      =^  args1  gen  (rewrite-par args.j)
+      [j(args args1) gen]
+    --
   --
 ::
 ::
@@ -3659,208 +3893,6 @@
     ^      (add $(args -.args) $(args +.args))
     %both  +((add $(args h.args) $(args t.args)))
   ==
-::  Renumber the registers so that the input registers are 0-N, set the starting
-::  block index to 0w0
-::
-++  to-straight
-  |=  [nex=next-resolved gen=line-short]
-  ^-  straight
-  =/  blocks=(map @uwoo blob)  blocks.gen
-  =/  start=blob  (~(got by blocks) then.nex)
-  =.  blocks  (~(del by blocks) then.nex)
-  =.  blocks  (~(put by blocks) `@`0 start)
-  =|  gen=[re-gen=@uvre m=(map @uvre @uvre)]
-  |^  ^-  straight
-  =^  input=need-ordered  gen  (rewrite-input ned.nex)
-  :+  input  (count-args input)
-  =<  new
-  ^-  [new=(map @uwoo blob) *]
-  %-  ~(rep by blocks)
-  |=  [[k=@uwoo b=blob] new=(map @uwoo blob) gen-acc=_gen]
-  =.  gen  gen-acc
-  =;  [b1=blob gen1=_gen]
-    :_  gen1
-    (~(put by new) k b1)
-  ::
-  =^  par1   gen  (rewrite-par par.b)
-  =^  body1  gen  (rewrite-body body.b)
-  =^  fin1   gen  (rewrite-fin fin.b)
-  :_  gen
-  [par1 body1 fin1]
-  ::
-  ++  rer
-    |=  r=@uvre
-    ^-  [@uvre _gen]
-    ?^  r1=(~(get by m.gen) r)  [u.r1 gen]
-    =^  r1  re-gen.gen  [re-gen.gen +(re-gen.gen)]
-    =.  m.gen  (~(put by m.gen) r r1)
-    [r1 gen]
-  ::
-  ++  rewrite-input
-    |=  ned=need
-    ^-  [need-ordered _gen]
-    ?>  =(0 re-gen.gen)
-    |-  ^-  [need-ordered _gen]
-    ?-    -.ned
-        %none
-      [[%none ~] gen]
-    ::
-        %this
-      =.  gen  +:(rer r.ned)
-      [[%this ~] gen]
-    ::
-        ^
-      =^  l  gen  $(ned -.ned)
-      =^  r  gen  $(ned +.ned)
-      [[l r] gen]
-    ::
-        %both
-      =.  gen  +:(rer r.ned)
-      =^  h  gen  $(ned h.ned)
-      =^  t  gen  $(ned t.ned)
-      [[%both c.ned h t] gen]
-    ==
-  ::
-  ++  rewrite-par
-    |=  par=(list @uvre)
-    ^-  [(list @uvre) _gen]
-    %^  spin  par  gen
-    |=  [r=@uvre =_gen]
-    (rer(gen gen) r)
-  ::
-  ++  rewrite-body
-    |=  bod=(list pole)
-    ^-  [(list pole) _gen]
-    %^  spin  bod  gen
-    |=  [op=pole =_gen]
-    (rewrite-op(gen gen) op)
-  ::
-  ++  rewrite-op
-    |=  op=pole
-    ^-  [pole _gen]
-    ?-    -.op
-        %imm
-      =^  d1  gen  (rer d.op)
-      [op(d d1) gen]
-    ::
-        %mov
-      =^  s1  gen  (rer s.op)
-      =^  d1  gen  (rer d.op)
-      [op(s s1, d d1) gen]
-    ::
-        %inc
-      =^  s1  gen  (rer s.op)
-      =^  d1  gen  (rer d.op)
-      [op(s s1, d d1) gen]
-    ::
-        %con
-      =^  h1  gen  (rer h.op)
-      =^  t1  gen  (rer t.op)
-      =^  d1  gen  (rer d.op)
-      [op(h h1, t t1, d d1) gen]
-    ::
-        %hed
-      =^  s1  gen  (rer s.op)
-      =^  d1  gen  (rer d.op)
-      [op(s s1, d d1) gen]
-    ::
-        %tal
-      =^  s1  gen  (rer s.op)
-      =^  d1  gen  (rer d.op)
-      [op(s s1, d d1) gen]
-    ::
-        %cel
-      =^  p1  gen  (rer p.op)
-      [op(p p1) gen]
-    ::
-        %hsp  [op gen]
-        %hse  [op gen]
-    ::
-        %hdp
-      =^  p1  gen  (rer p.op)
-      [op(p p1) gen]
-    ::
-        %hde
-      =^  p1  gen  (rer p.op)
-      [op(p p1) gen]
-    ::
-        %spy
-      =^  e1  gen  (rer e.op)
-      =^  p1  gen  (rer p.op)
-      =^  d1  gen  (rer d.op)
-      [op(e e1, p p1, d d1) gen]
-    ::
-        %nok
-      =^  u1  gen  (rer u.op)
-      =^  f1  gen  (rer f.op)
-      =^  d1  gen  (rer d.op)
-      [op(u u1, f f1, d d1) gen]
-    ::
-        %cal
-      =^  v1  gen  (rewrite-par v.op)
-      =^  d1  gen  (rer d.op)
-      [op(v v1, d d1) gen]
-    ::
-        %caf
-      =^  v1  gen  (rewrite-par v.op)
-      =^  d1  gen  (rer d.op)
-      [op(v v1, d d1) gen]
-    ::
-        %cam
-      =^  v1  gen  (rewrite-par v.op)
-      =^  d1  gen  (rer d.op)
-      [op(v v1, d d1) gen]
-    ==
-  ::
-  ++  rewrite-fin
-    |=  fin=termin
-    ^-  [termin _gen]
-    ?-    -.fin
-        %clq
-      =^  s1  gen  (rer s.fin)
-      =^  z1  gen  (rewrite-jump z.fin)
-      =^  o1  gen  (rewrite-jump o.fin)
-      [fin(s s1, z z1, o o1) gen]
-    ::
-        %eqq
-      =^  l1  gen  (rer l.fin)
-      =^  r1  gen  (rer r.fin)
-      =^  z1  gen  (rewrite-jump z.fin)
-      =^  o1  gen  (rewrite-jump o.fin)
-      [fin(l l1, r r1, z z1, o o1) gen]
-    ::
-        %brn
-      =^  s1  gen  (rer s.fin)
-      =^  z1  gen  (rewrite-jump z.fin)
-      =^  o1  gen  (rewrite-jump o.fin)
-      [fin(s s1, z z1, o o1) gen]
-    ::
-        %hop
-      =^  t1  gen  (rewrite-jump t.fin)
-      [fin(t t1) gen]
-    ::
-        %jmp
-      =^  v1  gen  (rewrite-par v.fin)
-      [fin(v v1) gen]
-    ::
-        %jmf
-      =^  v1  gen  (rewrite-par v.fin)
-      [fin(v v1) gen]
-    ::
-        %don
-      =^  s1  gen  (rer s.fin)
-      [fin(s s1) gen]
-    ::
-        %bom
-      [fin gen]
-    ==
-  ::
-  ++  rewrite-jump
-    |=  j=jmp
-    ^-  [jmp _gen]
-    =^  args1  gen  (rewrite-par args.j)
-    [j(args args1) gen]
-  --
 ::
 ++  msg-need-ord
   |=  [a=need-ordered b=need-ordered]
