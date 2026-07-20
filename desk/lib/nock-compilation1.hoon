@@ -2609,6 +2609,7 @@
           rev=(jug bell bell)
           =long-ska
           scc-map=(map bell (set bell))
+          jets-hot=(map ring need-ordered)
       ==
   ^-  (map bell straight)
   ~+
@@ -2625,6 +2626,7 @@
   %-  ~(rep in w)
   |=  [b=bell w-new=worklist =_map-local]
   ^+  [w-new map-local]
+  =/  comp  (comp scc rev long-ska scc-map jets-hot map-local)
   =;  [s=straight nex=next-resolved gen=line-short]
     ?~  s-previous=(~(get by map-local) b)
       :-  ?:  ?=([%none ~] need.s)  w-new
@@ -2645,6 +2647,13 @@
   [(~(to-straight comp gen) res) res gen]
 ::
 ++  comp
+  |=  $:  scc=(set bell)
+          rev=(jug bell bell)
+          =long-ska
+          scc-map=(map bell (set bell))
+          jets-hot=(map ring need-ordered)
+          map-local=(map bell straight)
+      ==
   |_  gen=line-short
   ++  run
     |=  [=nomm =goal]
@@ -2691,7 +2700,79 @@
         [[%next [none+~ ~ ~] ~ o] gen]
       ==
     ::
-        [%2 *]  stub
+        [%2 *]
+      ?~  info.nomm
+        =^  next  gen  simple-next
+        =^  [out=@uwoo pro=@uvre]  gen  (kerf next)
+        =^  r-sub  gen  re
+        =^  r-fol  gen  re
+        =^  o      gen  (emit ~ [%nok r-sub r-fol pro]~ %hop ~ out)
+        ::
+        =^  nex-fol  gen  $(nomm q.nomm, goal [%next [this+r-fol ~ ~] ~ o])
+        =^  nex-sub  gen
+          $(nomm p.nomm, goal [%next [this+r-sub ~ ~] then.nex-fol])
+        ::
+        (copy nex-sub laz.nex-fol)
+      =*  b-callee  b.u.info.nomm
+      =/  callee-pure=?  pure:(~(got by code.long-ska) b-callee)
+      ?:  &(callee-pure ?=(%next -.goal) (none-equivalent laz.goal))
+        =^  nex-fol  gen  $(nomm q.nomm, goal [%next [none+~ ~ ~] then.goal])
+        =^  nex-sub  gen  $(nomm p.nomm, goal [%next [none+~ ~ ~] then.nex-fol])
+        (copy nex-sub laz.nex-fol)
+      =*  call-cole  call.cole.jets.long-ska
+      =/  rin=(unit ring)  (~(get by call-cole) b-callee)
+      =/  b-ned=need-ordered
+        ?^  j=(biff rin ~(get by jets-hot))  u.j
+        ?:  (~(has in scc) b-callee)
+          need:(~(gut by map-local) b-callee *straight)
+        =/  new-scc=(set bell)  (~(gut by scc-map) b-callee [b-callee ~ ~])
+        =<  need
+        =;  m  (~(got by m) b-callee)
+        =/  new-scc=(set bell)  (~(gut by scc-map) b-callee [b-callee ~ ~])
+        (compile-scc new-scc rev long-ska scc-map jets-hot)
+      ::
+      =^  [sub-ned=need sub-v=(list @uvre)]  gen
+        =;  [sub-ned=need gen1=_gen]  [[sub-ned (flatten-need sub-ned)] gen1]
+        |-  ^-  [need _gen]
+        ?-    -.b-ned
+            %none  [[%none ~] gen]
+        ::
+            %this
+          =^  r  gen  re
+          [[%this r] gen]
+        ::
+            ^
+          =^  hed  gen  $(b-ned -.b-ned)
+          =^  tel  gen  $(b-ned +.b-ned)
+          [[hed tel] gen]
+        ::
+            %both
+          =^  r  gen  re
+          =^  hed  gen  $(b-ned h.b-ned)
+          =^  tel  gen  $(b-ned t.b-ned)
+          [[%both r c.b-ned hed tel] gen]
+        ==
+      ::
+      =^  o=@uwoo  gen
+        ?^  k.u.info.nomm
+          =/  key  u.k.u.info.nomm
+          =^  next  gen  simple-next
+          =^  [out=@uwoo pro=@uvre]  gen  (kerf next)
+          (emit ~ [%cam b-callee sub-v pro key]~ %hop then.next)
+        ?:  ?=(%done -.goal)
+          ?~  rin  (emit ~ ~ %jmp b-callee sub-v)
+          (emit ~ ~ %jmf b-callee sub-v u.rin)
+        =^  next  gen  simple-next
+        =^  [out=@uwoo pro=@uvre]  gen  (kerf next)
+        ?~  rin  (emit ~ [%cal b-callee sub-v pro]~ %hop then.next)
+        (emit ~ [%caf b-callee sub-v pro u.rin]~ %hop then.next)
+      ::
+      =^  nex-fol=next  gen
+        ?:  (safe-fol-fol q.nomm)  [[%next [none+~ ~ ~] ~ o] gen]
+        $(nomm q.nomm, goal [%next [none+~ ~ ~] ~ o])
+      ::
+      =^  nex-sub  gen  $(nomm p.nomm, goal [%next [sub-ned ~ ~] then.nex-fol])
+      (copy nex-sub laz.nex-fol)
     ::
         [%3 *]
       |-  ::  reenter with edited goal
