@@ -60,7 +60,7 @@
 ::  Table of contents:
 ::    Call graph construction:  line 511
 ::    Axis usage analysis:      line 2127
-::    Compilation:              line X
+::    Compilation:              line 2471
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
@@ -2478,7 +2478,7 @@
 +$  need
   $~  [%none ~]
   $^  [p=need q=need]
-  $%  [%both r=@uvre c=? h=need t=need]
+  $%  [%both r=@uvre h=need t=need]
       [%this r=@uvre]
       [%none ~]
   ==
@@ -2486,7 +2486,7 @@
 +$  need-ordered
   $~  [%none ~]
   $^  [p=need-ordered q=need-ordered]
-  $%  [%both c=? h=need-ordered t=need-ordered]
+  $%  [%both h=need-ordered t=need-ordered]
       [%this ~]
       [%none ~]
   ==
@@ -2667,7 +2667,10 @@
         $(goal [%next [[%this r] ~ ~] ~ o])
       ::
           %pick
-        bomb
+        =^  o  gen  (emit ~ ~ [%bom ~])
+        =^  next-2  gen  $(nomm +.nomm, goal [%next *need-lazy ~ o])
+        =^  next-1  gen  $(nomm -.nomm, goal [%next *need-lazy then.next-2])
+        (copy next-1 laz.next-2)
       ::
           %next
         =^  [hed=need-lazy tel=need-lazy o=@uwoo]  gen  (split goal)
@@ -2702,6 +2705,8 @@
     ::
         [%2 *]
       ?~  info.nomm
+        ::  indirect call
+        ::
         =^  next  gen  simple-next
         =^  [out=@uwoo pro=@uvre]  gen  (kerf next)
         =^  r-sub  gen  re
@@ -2716,20 +2721,27 @@
       =*  b-callee  b.u.info.nomm
       =/  callee-pure=?  pure:(~(got by code.long-ska) b-callee)
       ?:  &(callee-pure ?=(%next -.goal) (none-equivalent laz.goal))
-        =^  nex-fol  gen  $(nomm q.nomm, goal [%next [none+~ ~ ~] then.goal])
+        ::  the product is not used and the function is pure: drop
+        ::
+        =^  nex-fol=next  gen
+          ?:  (safe-fol-fol q.nomm)  [[%next [none+~ ~ ~] then.goal] gen]
+          $(nomm q.nomm, goal [%next [none+~ ~ ~] then.goal])
+        ::
         =^  nex-sub  gen  $(nomm p.nomm, goal [%next [none+~ ~ ~] then.nex-fol])
         (copy nex-sub laz.nex-fol)
       =*  call-cole  call.cole.jets.long-ska
       =/  rin=(unit ring)  (~(get by call-cole) b-callee)
+      ::  register-less need of the callee: jet or SCC-local best guess or recur
+      ::
       =/  b-ned=need-ordered
         ?^  j=(biff rin ~(get by jets-hot))  u.j
         ?:  (~(has in scc) b-callee)
           need:(~(gut by map-local) b-callee *straight)
         =/  new-scc=(set bell)  (~(gut by scc-map) b-callee [b-callee ~ ~])
-        =<  need
-        =;  m  (~(got by m) b-callee)
+        =;  m  need:(~(got by m) b-callee)
         =/  new-scc=(set bell)  (~(gut by scc-map) b-callee [b-callee ~ ~])
         (compile-scc new-scc rev long-ska scc-map jets-hot)
+      ::  allocate registers
       ::
       =^  [sub-ned=need sub-v=(list @uvre)]  gen
         =;  [sub-ned=need gen1=_gen]  [[sub-ned (flatten-need sub-ned)] gen1]
@@ -2750,8 +2762,9 @@
           =^  r  gen  re
           =^  hed  gen  $(b-ned h.b-ned)
           =^  tel  gen  $(b-ned t.b-ned)
-          [[%both r c.b-ned hed tel] gen]
+          [[%both r hed tel] gen]
         ==
+      ::  emit call: memoized, or tail call, or head call (w/ or w/out a jet)
       ::
       =^  o=@uwoo  gen
         ?^  k.u.info.nomm
@@ -2760,12 +2773,15 @@
           =^  [out=@uwoo pro=@uvre]  gen  (kerf next)
           (emit ~ [%cam b-callee sub-v pro key]~ %hop then.next)
         ?:  ?=(%done -.goal)
-          ?~  rin  (emit ~ ~ %jmp b-callee sub-v)
-          (emit ~ ~ %jmf b-callee sub-v u.rin)
+          %^  emit  ~  ~
+          ?~  rin  [%jmp b-callee sub-v]
+          [%jmf b-callee sub-v u.rin]
         =^  next  gen  simple-next
         =^  [out=@uwoo pro=@uvre]  gen  (kerf next)
-        ?~  rin  (emit ~ [%cal b-callee sub-v pro]~ %hop then.next)
-        (emit ~ [%caf b-callee sub-v pro u.rin]~ %hop then.next)
+        =-  (emit ~ ~[-] %hop then.next)
+        ^-  pole
+        ?~  rin  [%cal b-callee sub-v pro]
+        [%caf b-callee sub-v pro u.rin]
       ::
       =^  nex-fol=next  gen
         ?:  (safe-fol-fol q.nomm)  [[%next [none+~ ~ ~] ~ o] gen]
@@ -2894,30 +2910,11 @@
       $(nomm p.nomm, goal next)
     ::
         [%10 *]
-      ?-    -.goal
-          %done
-        =^  r  gen  re
-        =^  o  gen  (emit ~ ~ %don r)
-        $(goal [%next [this+r ~ ~] ~ o])
-      ::
-          %pick
-        ?:  =(p.p.nomm 1)
-          =^  r  gen  re
-          =^  o  gen  (emit ~ ~ brn+[r [z o]:goal])
-          $(goal [%next [[%this r] ~ ~] ~ o])
-        =^  o  gen  (emit ~ ~ %bom ~)
-        =^  next-rec  gen  $(nomm q.nomm, goal [%next [none+~ ~ ~] ~ o])
-        =^  next-don  gen
-          $(nomm q.nomm, goal [%next [none+~ ~ ~] then.next-rec])
-        ::
-        (copy next-don laz.next-rec)
-      ::
-          %next
-        =^  [don=need-lazy rec=need-lazy o=@uwoo]  gen  (into goal p.p.nomm)
-        =^  next-rec  gen  $(nomm q.nomm, goal [%next rec ~ o])
-        =^  next-don  gen  $(nomm q.p.nomm, goal [%next don then.next-rec])
-        (copy next-don laz.next-rec)
-      ==
+      =^  next  gen  simple-next
+      =^  [don=need-lazy rec=need-lazy o=@uwoo]  gen  (into next p.p.nomm)
+      =^  next-rec  gen  $(nomm q.nomm, goal [%next rec ~ o])
+      =^  next-don  gen  $(nomm q.p.nomm, goal [%next don then.next-rec])
+      (copy next-don laz.next-rec)
     ::
         [%11 *]
       ?@  p.nomm
@@ -2936,8 +2933,8 @@
       =^  epil  gen  (emit ~ ~[hde+[p.p.nomm toke body.nomm]] %hop then.next)
       =^  next  gen  $(nomm q.nomm, goal next(then [~ epil]))
       =^  next  gen
-        ?.  ?=(hint-dynamic-stop p.p.nomm)  [next gen]
-        (lazy-bound next)
+        ?:  ?=(hint-dynamic-stop p.p.nomm)  (lazy-bound next)
+        [next gen]
       ::
       =^  prol  gen  (emit ~ ~[hdp+[p.p.nomm toke body.nomm]] %hop then.next)  
       =^  dyna  gen  $(nomm q.p.nomm, goal [%next [this+toke ~ ~] ~ prol])
@@ -3005,7 +3002,7 @@
     =^  l=(list pole)  gen  (kern-need r ned)
     (add-ops o l)
   ::
-  ++  kern-r
+  ++  kern-r-need
     |=  [o=@uwoo ned=need]
     ^-  [@uvre _gen]
     =^  r  gen  re
@@ -3024,7 +3021,7 @@
     ::
         ^
       =^  r-ned  gen  re
-      $(ned [%both r-ned | ned])
+      $(ned [%both r-ned ned])
     ::
         %both
       =^  r-t    gen  re
@@ -3039,7 +3036,7 @@
         [[%hed r.ned r-h] ops-1]
       ::
       =.  ops  ops-1
-      =?  ops  !c.ned  [[%cel r.ned] ops]
+      =.  ops  [[%cel r.ned] ops]
       [[[%mov r r.ned] ops] gen]
     ==
   ::
@@ -3082,8 +3079,8 @@
       $(som +.som, ned +.ned)
     ::
         %both
-      ?:  &(!c.ned ?=(@ som))  (emir o ~ ~ %bom ~)
-      =.  gen  (add-ops o [%imm ?^(som som %mede-both-atom) r.ned]~)
+      ?:  ?=(@ som)  (emir o ~ ~ %bom ~)
+      =.  gen  (add-ops o [%imm som r.ned]~)
       =.  gen  $(som -.som, ned h.ned)  ::  XX no +kern here, is OK?
       $(som +.som, ned t.ned)
     ==
@@ -3115,11 +3112,16 @@
         =^  r  gen  re
         [r dot]
       ::
-          *
+          ^
         =^  r  gen  re
         =^  o  gen  (emit ~ ~ %bom ~)
         =.  there.then.nex  o
         [r dot]
+      ::
+          %both
+        =^  o  gen  (emit ~ ~ %bom ~)
+        =.  there.then.nex  o
+        [r.sure.laz.nex dot]
       ==
     ::
     :-  `[r there.then.nex]
@@ -3181,7 +3183,7 @@
       =^  [hed-0=need hed-1=need]  gen  $(ned h.ned)
       =^  [tel-0=need tel-1=need]  gen  $(ned t.ned)
       :_  gen
-      [[%both r-0 c.ned hed-0 tel-0] [%both r-1 c.ned hed-1 tel-1]]  ::  XX c.ned?
+      [[%both r-0 hed-0 tel-0] [%both r-1 hed-1 tel-1]]
     ==
   ::  o2 is empty
   ::  a -> b  ==>  a -> o' ... o'' -> b
@@ -3470,11 +3472,11 @@
     ?-  -.ned
       %both  [[r.ned ned] gen]
       %this  [[r.ned ned] gen]
-      ^      =^(r gen re [[r %both r | ned] gen])
+      ^      =^(r gen re [[r %both r ned] gen])
       %none  =^(r gen re [[r %this r] gen])
     ==
   ::
-  ++  split
+  ++  split  ::  XX  +spin but for a pair of lists
     |=  nex=next
     ^-  [[need-lazy need-lazy @uwoo] _gen]
     ::  emit an empty basic block
@@ -3542,12 +3544,18 @@
     =^  o  gen  (emit ~ ~ %bom ~)
     [[%next [[%none ~] ~ ~] ~ o] gen]
   ::
+  ++  copy-sure-o
+    |=  [o=@uwoo first=need second=need]
+    ^-  [need _gen]
+    =^  [ned=need ops=(list pole)]  gen  (copy-sure-make-ops first second)
+    [ned (add-ops o ops)]
+  ::
   ++  copy-sure-make-ops
     |=  [first=need second=need]
     ^-  [[need (list pole)] _gen]
     =|  ops=(list pole)
     =|  sout=(list need)
-    =/  sin=(list (each (unit [r=@uvre c=?]) [l=need r=need]))
+    =/  sin=(list (each (unit [r=@uvre]) [l=need r=need]))
       [|+[first second]]~
     ::
     |-  ^-  [[need (list pole)] _gen]
@@ -3562,7 +3570,7 @@
         sout  :_  t.t.sout
                 ?~  p.i.sin  par
                 =*  both  u.p.i.sin
-                [%both r.both c.both par]
+                [%both r.both par]
       ==
     =*  l  l.p.i.sin
     =*  r  r.p.i.sin
@@ -3573,36 +3581,28 @@
         ~?  =(r.l r.r)  [%copy-this-l-a r.l r.r]
         $(ops [[%mov r.l r.r] ops], sout [l sout], sin t.sin)
       =^  rr=$>(%both need)  gen
-        ?@(-.r [r gen] =^(x gen re [[%both x | r] gen]))
+        ?@(-.r [r gen] =^(x gen re [[%both x r] gen]))
       ~?  =(r.l r.rr)  [%copy-this-l-b r.l r.rr]
       $(ops [[%mov r.rr r.l] ops], sout [rr sout], sin t.sin)
     ?:  ?=(%this -.r)
       =^  ll=$>(%both need)  gen
-        ?@(-.l [l gen] =^(x gen re [[%both x | l] gen]))
+        ?@(-.l [l gen] =^(x gen re [[%both x l] gen]))
       ~?  =(r.ll r.r)  [%copy-this-r r.ll r.r]
       $(ops [[%mov r.ll r.r] ops], sout [ll sout], sin t.sin)
     ?:  ?=(%both -.l)
       =^  rr=$>(%both need)  gen
-        ?@(-.r [r gen] =^(x gen re [[%both x | r] gen]))
+        ?@(-.r [r gen] =^(x gen re [[%both x r] gen]))
       ~?  =(r.l r.rr)  [%copy-both r.l r.rr]
       %=  $
         ops   [[%mov r.rr r.l] ops]
-        ::  if the first computation checks that the noun in r.rr/r.l is a cell,
-        ::  then the second one does not need to be checked, and in total the
-        ::  computation is checked
-        ::  if the first computation does not check, then it will have to be
-        ::  checked upstream, so the total computation is not checked
-        ::
-        ::  XX reconsider mixed case ^ / %both
-        ::
-        sin  [|+[h.l h.rr] |+[t.l t.rr] &+`[r.rr c.l] t.sin]
+        sin  [|+[h.l h.rr] |+[t.l t.rr] &+`[r.rr] t.sin]
       ==
     ?^  -.r
       $(sin [|+[p.l p.r] |+[q.l q.r] &+~ t.sin])
     ::  first computation does not have a cell check for r.r,
     ::  so r.r will need to be checked upstream
     ::
-    $(sin [|+[p.l h.r] |+[q.l t.r] &+`[r.r |] t.sin])
+    $(sin [|+[p.l h.r] |+[q.l t.r] &+`[r.r] t.sin])
   ::
   ++  coerce
     |=  [need-pessimized=need-ordered nex=next-resolved]
@@ -3616,7 +3616,7 @@
     ::
         %this
       ?:  ?=(%this -.ned.nex)  [ned.nex gen]
-      =^  r  gen  (kern-r then.nex ned.nex)
+      =^  r  gen  (kern-r-need then.nex ned.nex)
       [[%this r] gen]
     ::
         ^
@@ -3624,134 +3624,30 @@
         =^  hed  gen  $(need-pessimized -.need-pessimized)
         =^  tel  gen  $(need-pessimized +.need-pessimized)
         [[hed tel] gen]
-      ?:  ?=(%this -.ned.nex)  !!
-      =^  r  gen  (kern-r then.nex ned.nex)
-      [[%this r] gen]
+      ?@  -.ned.nex  !!
+      =^  hed  gen  $(need-pessimized -.need-pessimized, ned.nex -.ned.nex)
+      =^  tel  gen  $(need-pessimized +.need-pessimized, ned.nex +.ned.nex)
+      [[hed tel] gen]
     ::
         %both
-      =^  r  gen  (kern-r then.nex ned.nex)
+      =^  r  gen  (kern-r-need then.nex ned.nex)
       [[%this r] gen]
     ==
+  ::  Bonds do not matter when it comes to figuring out the shape of the need
+  ::  but they do matter when it comes to emitting the disassembly code from a
+  ::  branch combination to a specific branch - into which block to emit the
+  ::  disassembly code
   ::
-  ++  combine
-    |=  [y=[o=@uwoo ned=need] n=[o=@uwoo ned=need]]
-    ^-  [need _gen]
-    ?:  &(?=(%none -.ned.y) ?=(%none -.ned.n))
-      [[%none ~] gen]
-    ?:  |(?=(%none -.ned.y) ?=(%none -.ned.n))
-      =/  [o-not-none=@uwoo ned-not-none=need]  ?:(?=(%none -.ned.y) n y)
-      =^  r  gen  (kern-r o-not-none ned-not-none)
-      [[%this r] gen]
-    ?:  &(?=(%this -.ned.y) ?=(%this -.ned.n))
-      ::  move r.ned.y -> r.ned.n: arbitrary choice
-      ::
-      =.  gen  (add-ops o.n [%mov r.ned.y r.ned.n]~)
-      [ned.y gen]
-    ?:  &(?=(^ -.ned.y) ?=(^ -.ned.n))
-      =^  hed=need  gen  $(ned.y -.ned.y, ned.n -.ned.n)
-      =^  tel=need  gen  $(ned.y +.ned.y, ned.n +.ned.n)
-      [[hed tel] gen]
-    ?:  |(?=(%this -.ned.y) ?=(%this -.ned.n))
-      ::  the other is ^ or %both
-      ::
-      =/  [[o-not-this=@uwoo ned-not-this=need] [o-this=@uwoo ned-this=$>(%this need)]]
-        ?:  ?=(%this -.ned.y)  [n y]
-        ?:  ?=(%this -.ned.n)  [y n]
-        ~|  %impossible
-        !!
-      ::
-      =^  b=$>(%both need)  gen
-        ?@  -.ned-not-this
-          ?>  ?=(%both -.ned-not-this)
-          [ned-not-this gen]
-        =^  x  gen  re
-        [[%both x | ned-not-this] gen]
-      ::
-      =.  gen  (add-ops o-this [%mov r.b r.ned-this]~)
-      [b gen]
-    ::  one is %both, the other is ^ or %both
-    ::
-    =^  b-y=$>(%both need)  gen
-      ?@  -.ned.y
-        ?>  ?=(%both -.ned.y)
-        [ned.y gen]
-      =^  x  gen  re
-      [[%both x | ned.y] gen]
-    ::
-    =^  b-n=$>(%both need)  gen
-      ?@  -.ned.n
-        ?>  ?=(%both -.ned.n)
-        [ned.n gen]
-      =^  x  gen  re
-      [[%both x | ned.n] gen]
-    ::
-    =^  h  gen  $(ned.y h.b-y, ned.n h.b-n)
-    =^  t  gen  $(ned.y t.b-y, ned.n t.b-n)
-    =.  gen  (add-ops o.n [%mov r.b-y r.b-n]~)
-    =?  gen  !=(c.b-y c.b-n)
-      ?:  c.b-y  (add-ops o.n [%cel r.b-n]~)
-      (add-ops o.y [%cel r.b-y]~)
-    ::
-    [[%both r.b-y |(c.b-y c.b-n) h t] gen]
-  ::
+  ::  1. Get regless laz1, each layer containing the parent
+  ::  2. Collapse laz1 recursively, putting collapsed needs of children and
+  ::     combined branches alongside the other data in laz1
+  ::  3. Walk laz and laz1 simultaneously, coercing the needs of blocks to the 
+  ::     ones in laz1
+  ::  
   ++  need-lazy-collapse
     |=  [o=@uwoo laz=need-lazy]
     ^-  [need _gen]
-    =*  collapse  .
-    ?:  &(=(~ fork.laz) =(~ bond.laz))
-      [sure.laz gen]
-    =^  bond-collapsed=(list need)  gen
-      %^  spin  bond.laz  gen
-      |=  [[o-bond=@uwoo laz-bond=need-lazy] gen-init=_gen]
-      ^-  [need _gen]
-      =.  gen  gen-init
-      =^  [ned-forward=need ops=(list pole)]  gen
-        (copy-sure-make-ops sure.laz sure.laz-bond)
-      ::
-      =.  gen  (add-ops o-bond ops)
-      (collapse o-bond laz-bond(sure ned-forward))
-    ::
-    =^  sure-with-bond=need  gen
-      %+  roll  bond-collapsed
-      |=  [bon=need sure=_sure.laz gen-init=_gen]
-      ^-  [need _gen]
-      =.  gen  gen-init
-      =^  [ned=need ops=(list pole)]  gen  (copy-sure-make-ops sure bon)
-      [ned (add-ops o ops)]
-    ::
-    =^  fork-collapsed=(list [y=[o=@uwoo ned=need] n=[o=@uwoo ned=need]])  gen
-      %^  spin  fork.laz  gen
-      |=  [[y=[o=@uwoo laz=need-lazy] n=[o=@uwoo laz=need-lazy]] gen-init=_gen]
-      ^-  [[[@uwoo need] [@uwoo need]] _gen]
-      =.  gen  gen-init
-      =^  ned-y=need  gen
-        =^  [ned-forward=need ops=(list pole)]  gen
-          (copy-sure-make-ops sure-with-bond sure.laz.y)
-        ::
-        =.  gen  (add-ops o.y ops)
-        (collapse o.y laz.y(sure ned-forward))
-      ::
-      =^  ned-n=need  gen
-        =^  [ned-forward=need ops=(list pole)]  gen
-          (copy-sure-make-ops sure-with-bond sure.laz.n)
-        ::
-        =.  gen  (add-ops o.n ops)
-        (collapse o.n laz.n(sure ned-forward))
-      ::
-      [[[o.y ned-y] [o.n ned-n]] gen]
-    ::
-    =^  fork-joined=(list need)  gen
-      %^  spin  fork-collapsed  gen
-      |=  [[y=[o=@uwoo ned=need] n=[o=@uwoo ned=need]] gen-init=_gen]
-      ^-  [need _gen]
-      (combine(gen gen-init) y n)
-    ::
-    %+  roll  fork-joined
-    |=  [jon=need sure=_sure-with-bond gen-init=_gen]
-    ^-  [need _gen]
-    =.  gen  gen-init
-    =^  [ned=need ops=(list pole)]  gen  (copy-sure-make-ops sure jon)
-    [ned (add-ops o ops)]
+    stub
   ::
   ++  next-lazy-collapse
     |=  nex=next
@@ -3819,7 +3715,7 @@
         =.  gen  +:(rer r.ned)
         =^  h  gen  $(ned h.ned)
         =^  t  gen  $(ned t.ned)
-        [[%both c.ned h t] gen]
+        [[%both h t] gen]
       ==
     ::
     ++  rewrite-par
@@ -3988,10 +3884,48 @@
     this+~
   ?:  ?=(%both -.a)
     ?:  ?=(%both -.b)
-      ?>  =(c.a c.b)
-      [%both c.a (msg h.a h.b) (msg t.a t.b)]
-    [%both c.a (msg h.a p.b) (msg t.a q.b)]
+      [%both (msg h.a h.b) (msg t.a t.b)]
+    [%both (msg h.a p.b) (msg t.a q.b)]
   ?:  ?=(%both -.b)
-    [%both c.b (msg p.a h.b) (msg q.a t.b)]
+    [%both (msg p.a h.b) (msg q.a t.b)]
   [(msg p.a p.b) (msg q.a q.b)]
+::
+++  need-to-ordered
+  |=  ned=need
+  ^-  need-ordered
+  =*  this  .
+  ?-  -.ned
+    %none  [%none ~]
+    %this  [%this ~]
+    ^      [(this -.ned) (this +.ned)]
+    %both  [%both (this h.ned) (this t.ned)]
+  ==
+::
+++  dif-need-ord
+  |=  [a=need-ordered b=need-ordered]
+  ^-  need-ordered
+  ?:  =(a b)  [%none ~]
+  ?:  ?=(%none -.a)  [%none ~]
+  ?:  ?=(%none -.b)  a
+  ?:  ?=(%this -.a)  [%this ~]
+  ?:  ?=(^ -.a)
+    ?:  ?=(%this -.b)  a
+    =/  hed  $(a -.a, b ?^(-.b -.b h.b))
+    =/  tel  $(a +.a, b ?^(-.b +.b t.b))
+    [hed tel]
+  ::  a is %both
+  ::
+  ?:  ?=(%this -.b)  [h t]:a
+  ?:  ?=(^ -.b)
+    =/  hed  $(a h.a, b -.b)
+    =/  tel  $(a t.a, b +.b)
+    [%both hed tel]
+  =/  hed=need-ordered  $(a h.a, b h.b)
+  =/  tel=need-ordered  $(a t.a, b t.b)
+  (cons-need hed tel)
+::
+++  cons-need  ::  XX review all need conses for normalization
+  |*  [a=?([%none ~] ^) b=?([%none ~] ^)]
+  ?:  &(?=(%none -.a) ?=(%none -.b))  [%none ~]
+  [a b]
 --
