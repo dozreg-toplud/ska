@@ -2268,15 +2268,16 @@
 ::
 ::  Materialized conditionals: map from a register used by spliced %brn's to
 ::  the register holding the conditional. `tag` is the region of the blocks
-::  where the use register was spliced in: the list of merging Nock 6's
-::  (identified by their yes-branch end blocks) whose branches contain those
-::  blocks. In +sect an entry from one branch is either inside the branch (the
+::  where the use register was spliced in: the list of merging Nock 6's (each
+::  given a fresh @uxid) whose branches contain those blocks.
+::  In +sect an entry from one branch is either inside the branch (the
 ::  definition dominates the uses, nothing to do) or past the join block. Then
 ::  the conditional gets threaded through the join block as a new parameter and
 ::  the entry is repointed to it. At the function entry +rewrite-cond replaces
-::  the use registers with whatever they got mapped to.
+::  the use registers with whatever they got mapped to, as the definition sites
+::  are guaranteed to dominate those use sites.
 ::
-+$  cond  (map @uvre [def=@uvre tag=(list @uwoo)])
++$  cond  (map @uvre [def=@uvre tag=(list @uxid)])
 +$  sure  [ned=need lok=(set @)]
 ::
 +$  need-lazy
@@ -2337,7 +2338,8 @@
   $:  re-gen=@uvre
       bo-gen=_`@uwoo`1  ::  0 is reserved for the entry point
       blocks=(map @uwoo blob)
-      tags=(map @uwoo (list @uwoo))  ::  region of lazy need blocks
+      id-gen=@uxid                   ::  branch region identifiers
+      tags=(map @uwoo (list @uxid))  ::  region of lazy need blocks
   ==
 ::  Non-control-flow ops
 ::
@@ -2591,7 +2593,7 @@
       ==
   |_  gen=line-short
   ++  run
-    |=  [mono=? =nomm =goal =cond region=(list @uwoo)]
+    |=  [mono=? =nomm =goal =cond region=(list @uxid)]
     |^  ^-  [next-cond _gen]
     ?-    nomm
         [^ *]
@@ -2888,15 +2890,14 @@
         =^  r-cond  gen  re
         =^  [[goal-0=next goal-1=next] cond-fork=^cond]  gen
           (fork goal r-cond)
-        ::  both branches are considered to be in the same region. so we pick
-        ::  there.then.goal-0 and use that as a path segment. the choice is
-        ::  arbitrary. this relies on the fact that +fork creates fresh blocks.
+        ::  both branches are in the same region
         ::
-        =/  region-arm  [there.then.goal-0 region]
+        =^  region-id  gen  id
+        =/  region-arm  [region-id region]
         =^  nc-1  gen  $(nomm r.nomm, goal goal-1, region region-arm)
         =^  nc-0  gen  $(nomm q.nomm, goal goal-0, region region-arm)
         =^  [lazy=need-lazy cond-new=^cond yes=@uwoo nuh=@uwoo]  gen
-          (sect nc-0 nc-1 there.then.goal-0 there.then.goal-1 region)
+          (sect nc-0 nc-1 there.then.goal-0 there.then.goal-1 region-arm)
         ::
         =.  cond  cond-new
         =^  o=@uwoo  gen  (emit ~ ~ [%brn r-cond ~^yes ~^nuh])
@@ -2915,9 +2916,10 @@
         :_  gen
         [[%next [sur-0 ~ ~] ~ o-0] [%next [sur-1 ~ ~] ~ o-1]]
       ::
-      =/  region-arm
-        ?.  ?=(%next -.goal-0)  region
-        [there.then.goal-0 region]
+      =^  region-arm=(list @uxid)  gen
+        ?.  ?=(%next -.goal-0)  [region gen]
+        =^  region-id  gen  id
+        [[region-id region] gen]
       ::
       =^  nc-1  gen  $(nomm r.nomm, goal goal-1, region region-arm)
       =^  nc-0  gen  $(nomm q.nomm, goal goal-0, region region-arm)
@@ -2925,7 +2927,7 @@
         ?:  ?=(%next -.goal)
           ?>  ?=(%next -.goal-0)
           ?>  ?=(%next -.goal-1)
-          (sect nc-0 nc-1 there.then.goal-0 there.then.goal-1 region)
+          (sect nc-0 nc-1 there.then.goal-0 there.then.goal-1 region-arm)
         =^  yes  gen  (emit ~ ~ %hop then.nc-0)
         =^  nuh  gen  (emit ~ ~ %hop then.nc-1)
         =.  tags.gen  (~(gas by tags.gen) ~[[yes region] [nuh region]])
@@ -3023,6 +3025,7 @@
   ::
   ++  re  `[@uvre _gen]`[re-gen.gen gen(re-gen +(re-gen.gen))]
   ++  oo  `[@uwoo _gen]`[bo-gen.gen gen(bo-gen +(bo-gen.gen))]
+  ++  id  `[@uxid _gen]`[id-gen.gen gen(id-gen +(id-gen.gen))]
   ++  kerf
     |=  =next
     ^-  [[@uwoo @uvre] _gen]
@@ -3128,7 +3131,7 @@
     ==
   ::
   ++  lazy-bound
-    |=  [nex=next region=(list @uwoo)]
+    |=  [nex=next region=(list @uxid)]
     ^-  [next _gen]
     =^  o  gen  (emit ~ ~ %hop then.nex)
     =.  tags.gen  (~(put by tags.gen) o region)
@@ -3141,9 +3144,10 @@
             nc-1=next-cond
             o-0-end=@uwoo
             o-1-end=@uwoo
-            region=(list @uwoo)
+            region-arm=(list @uxid)
         ==
     ^-  [[need-lazy cond @uwoo @uwoo] _gen]
+    ?>  ?=(^ region-arm)
     =/  o-target=@uwoo
       =/  blob-0-end  (~(got by blocks.gen) o-0-end)
       =/  blob-1-end  (~(got by blocks.gen) o-1-end)
@@ -3154,11 +3158,15 @@
     ::
     =^  o-0-beg  gen  (emit ~ ~ %hop then.nc-0)
     =^  o-1-beg  gen  (emit ~ ~ %hop then.nc-1)
-    =.  tags.gen  (~(gas by tags.gen) ~[[o-0-beg region] [o-1-beg region]])
-    =/  inside-arm  |=(tag=(list @uwoo) (lien tag |=(o=@uwoo =(o o-0-end))))
+    =.  tags.gen
+      (~(gas by tags.gen) ~[[o-0-beg region-arm] [o-1-beg region-arm]])
+    ::
+    =/  inside-arm
+      |=(tag=(list @uxid) (lien tag |=(id=@uxid =(id i.region-arm))))
+    ::
     =/  cond-new=cond
       %-  ~(rep by cond.nc-0)
-      |=  [[k=@uvre v1=[@uvre (list @uwoo)]] acc=cond]
+      |=  [[k=@uvre v1=[@uvre (list @uxid)]] acc=cond]
       ?~  v2=(~(get by cond.nc-1) k)  acc
       ?>  =(u.v2 v1)
       (~(put by acc) k v1)
@@ -3176,7 +3184,7 @@
       =*  dot  .
       ^+  dot
       %-  ~(rep by (~(dif by cond.nc-0) cond.nc-1))
-      |=  [[k=@uvre v=[def=@uvre tag=(list @uwoo)]] dot-init=_dot]
+      |=  [[k=@uvre v=[def=@uvre tag=(list @uxid)]] dot-init=_dot]
       =.  dot  dot-init
       ?:  (inside-arm tag.v)  dot(cond-new (~(put by cond-new) k v))
       =^  tar-new  gen  re
@@ -3192,7 +3200,7 @@
       =*  dot  .
       ^+  dot
       %-  ~(rep by (~(dif by cond.nc-1) cond.nc-0))
-      |=  [[k=@uvre v=[def=@uvre tag=(list @uwoo)]] dot-init=_dot]
+      |=  [[k=@uvre v=[def=@uvre tag=(list @uxid)]] dot-init=_dot]
       =.  dot  dot-init
       ?:  (inside-arm tag.v)  dot(cond-new (~(put by cond-new) k v))
       =^  tar-new  gen  re
@@ -3381,10 +3389,10 @@
     ^-  [[[next next] cond] _gen]
     =^  o-0  gen  oo
     =^  o-1  gen  oo
-    =^  regs=(map (list @uwoo) @uvre)  gen
+    =^  regs=(map (list @uxid) @uvre)  gen
       =/  tags  (turn (lazy-blocks laz.nex) ~(got by tags.gen))
-      =|  regs=(map (list @uwoo) @uvre)
-      |-  ^-  [(map (list @uwoo) @uvre) _gen]
+      =|  regs=(map (list @uxid) @uvre)
+      |-  ^-  [(map (list @uxid) @uvre) _gen]
       ?~  tags  [regs gen]
       ?:  (~(has by regs) i.tags)  $(tags t.tags)
       =^  r  gen  re
@@ -3395,7 +3403,7 @@
       :_  gen
       :-  [[%next laz-0 ~ o-0] [%next laz-1 ~ o-1]]
       %-  ~(rep by regs)
-      |=  [[tag=(list @uwoo) r=@uvre] acc=cond]
+      |=  [[tag=(list @uxid) r=@uvre] acc=cond]
       (~(put by acc) r [r-cond tag])
     ::
     =/  laz=need-lazy  laz.nex
