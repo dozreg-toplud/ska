@@ -3052,21 +3052,17 @@
   ++  lazy-blocks
     |=  laz=need-lazy
     ^-  (list @uwoo)
-    =|  out=(list @uwoo)
-    |-  ^+  out
-    =*  laz-loop  $
-    =.  out
-      %+  roll  bond.laz
-      |=  [[o=@uwoo laz=need-lazy] out-init=_out]
-      laz-loop(laz laz, out [o out-init])
-    ::
-    %+  roll  fork.laz
-    |=  $:  [y=[o=@uwoo laz=need-lazy] n=[o=@uwoo laz=need-lazy]]
-            out-init=_out
-        ==
-    =.  out  [o.y o.n out-init]
-    =.  out  laz-loop(laz laz.y)
-    laz-loop(laz laz.n)
+    =*  lazy-blocks  .
+    ~+
+    |-  ^-  (list @uwoo)
+    ?^  fork.laz
+      =/  blocks-y  (lazy-blocks laz.y.i.fork.laz)
+      =/  blocks-n  (lazy-blocks laz.n.i.fork.laz)
+      =/  blocks-rest  $(fork.laz t.fork.laz)
+      [o.y.i.fork.laz o.n.i.fork.laz (zing blocks-y blocks-n blocks-rest ~)]
+    |-  ^-  (list @uwoo)
+    ?~  bond.laz  ~
+    [o.i.bond.laz (weld (lazy-blocks laz.i.bond.laz) $(bond.laz t.bond.laz))]
   ::
   ++  kern
     |=  [o=@uwoo laz=need-lazy]
@@ -3390,13 +3386,12 @@
     =^  o-0  gen  oo
     =^  o-1  gen  oo
     =^  regs=(map (list @uxid) @uvre)  gen
-      =/  tags  (turn (lazy-blocks laz.nex) ~(got by tags.gen))
-      =|  regs=(map (list @uxid) @uvre)
-      |-  ^-  [(map (list @uxid) @uvre) _gen]
-      ?~  tags  [regs gen]
-      ?:  (~(has by regs) i.tags)  $(tags t.tags)
+      %+  roll  ~(tap in (silt (lazy-blocks laz.nex)))
+      |=  [o-laz=@uwoo regs=(map (list @uxid) @uvre) gen-init=_gen]
+      =.  gen  gen-init
+      =/  tag  (~(got by tags.gen) o-laz)
       =^  r  gen  re
-      $(tags t.tags, regs (~(put by regs) i.tags r))
+      [(~(put by regs) tag r) gen]
     ::
     =;  [[laz-0=need-lazy laz-1=need-lazy] gen1=_gen]
       =.  gen  gen1
