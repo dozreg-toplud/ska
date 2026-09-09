@@ -2370,6 +2370,7 @@
       [%tal s=@uvre d=@uvre]                      ::  +.s -> d, does not crash
       [%cel p=@uvre]                              ::  ?>  ?=(^ p)
       [%lob p=@uvre]                              ::  ?>  ?=(? p)
+      [%equ l=@uvre r=@uvre]                      ::  =(l r) for the sideeffect
       [%hsp n=hint-static f=*]                    ::  prologue of a static hint
       [%hse n=hint-static f=*]                    ::  epilogue of a static hint
       [%hdp n=hint-dynamic p=@uvre f=*]           ::  prologue of a dynamic hint
@@ -2383,12 +2384,17 @@
       [%csf a=bell s=@uvre d=@uvre n=ring]        ::  %caf but sub is in one reg
       [%csm a=bell s=@uvre d=@uvre k=*]           ::  %cam but sub is in one reg
   ==
+::  Ops that cannot crash
+::
++$  pole-not-crashing
+  $>(?(%imm %mov %con %hed %tal %hsp %hse %hdp %hde %equ) pole)
 ::  Control-flow ops
 ::
 +$  termin
   $%  [%clq s=@uvre z=jmp o=jmp]            ::  ?^  s
       [%eqq l=@uvre r=@uvre z=jmp o=jmp]    ::  ?:  =(l r)
       [%brn s=@uvre z=jmp o=jmp]            ::  ?:  s  (crashes on non-loobean)
+      [%brz s=@uvre z=jmp o=jmp]            ::  ?:  =(0 s), never crashes
       [%hop t=jmp]                          ::  unconditional block jump
       [%jmp a=bell v=(list @uvre)]          ::  %cal but in tail position
       [%jmf a=bell v=(list @uvre) n=ring]   ::  %caf but in tail position
@@ -2413,6 +2419,7 @@
     %tal  `d
     %cel  ~
     %lob  ~
+    %equ  ~
     %hsp  ~
     %hse  ~
     %hdp  ~
@@ -2438,6 +2445,7 @@
     %tal  ~[s d]:op
     %cel  ~[p]:op
     %lob  ~[p]:op
+    %equ  ~[l r]:op
     %hsp  ~
     %hse  ~
     %hdp  ~[p]:op
@@ -2453,6 +2461,7 @@
     %clq  [s.op (weld (jmp-regs z.op) (jmp-regs o.op))]
     %eqq  [l.op r.op (weld (jmp-regs z.op) (jmp-regs o.op))]
     %brn  [s.op (weld (jmp-regs z.op) (jmp-regs o.op))]
+    %brz  [s.op (weld (jmp-regs z.op) (jmp-regs o.op))]
     %hop  (jmp-regs t.op)
     %jmp  v:op
     %jmf  v:op
@@ -2475,6 +2484,7 @@
     %clq  ~[z o]
     %eqq  ~[z o]
     %brn  ~[z o]
+    %brz  ~[z o]
     %hop  ~[t]
     %jmp  ~
     %jmf  ~
@@ -2503,6 +2513,7 @@
       %tal  op(s (ren s.op), d (ren d.op))
       %cel  op(p (ren p.op))
       %lob  op(p (ren p.op))
+      %equ  op(l (ren l.op), r (ren r.op))
       %hsp  op
       %hse  op
       %hdp  op(p (ren p.op))
@@ -2522,6 +2533,7 @@
     %eqq
       fin(l (ren l.fin), r (ren r.fin), z (ren-jmp z.fin), o (ren-jmp o.fin))
     %brn  fin(s (ren s.fin), z (ren-jmp z.fin), o (ren-jmp o.fin))
+    %brz  fin(s (ren s.fin), z (ren-jmp z.fin), o (ren-jmp o.fin))
     %hop  fin(t (ren-jmp t.fin))
     %jmp  fin(v (turn v.fin ren))
     %jmf  fin(v (turn v.fin ren))
@@ -2909,31 +2921,29 @@
         ?>  (norm-need-lazy laz.next)
         [next gen]
       ::
-      =>  =*  dot  .
-          ?-    -.goal
-              %pick  dot
-          ::
-              %done
-            =^  r-0  gen  re
-            =^  r-1  gen  re
-            =^  o-0  gen  (emit ~ [%imm 0 r-0]~ %don r-0)
-            =^  o-1  gen  (emit ~ [%imm 1 r-1]~ %don r-1)
-            dot(goal `$>(%pick ^goal)`[%pick ~^o-0 ~^o-1])
-          ::
-              %next
-            =^  a=(unit [r=@uvre o=@uwoo])  gen  (collapse-lazy-atom goal)
-            ?~  a
-              ::  Compare for the sideeffect only
-              ::
-              ?>  =(~ args.then.goal)
-              dot(goal `$>(%pick ^goal)`[%pick [. .]:~^there.then.goal])
-            =^  [z=@uwoo o=@uwoo]  gen  (forl r.u.a o.u.a)
-            dot(goal `$>(%pick ^goal)`[%pick ~^z ~^o])
-          ==
-      ::
       =^  r-p  gen  re
       =^  r-q  gen  re
-      =^  o    gen  (emit ~ ~ eqq+[r-p r-q [z o]:goal])
+      =^  o=@uwoo  gen
+        ?-    -.goal
+            %pick  (emit ~ ~ eqq+[r-p r-q [z o]:goal])
+        ::
+            %done
+          =^  r-0  gen  re
+          =^  r-1  gen  re
+          =^  o-0  gen  (emit ~ [%imm 0 r-0]~ %don r-0)
+          =^  o-1  gen  (emit ~ [%imm 1 r-1]~ %don r-1)
+          (emit ~ ~ eqq+[r-p r-q ~^o-0 ~^o-1])
+        ::
+            %next
+          =^  a=(unit [r=@uvre o=@uwoo])  gen  (collapse-lazy-atom goal)
+          ?~  a
+            ::  Compare for the sideeffect only
+            ::
+            ?>  =(~ args.then.goal)
+            (emit ~ [%equ r-p r-q]~ %hop ~ there.then.goal)
+          =^  [z=@uwoo o=@uwoo]  gen  (forl r.u.a o.u.a)
+          (emit ~ ~ eqq+[r-p r-q ~^z ~^o])
+        ==
       ::
       =^  nex-q  gen
         $(nomm q.nomm, goal [%next (lazy-from-need this+r-q) ~ o])
@@ -2950,7 +2960,6 @@
       ::
       ?:  ?&  ?=(%next -.goal)
               !(none-equivalent laz.goal(sure *sure))
-              :: |(!=(~ fork.laz.goal) !=(~ bond.laz.goal))
           ==
         ::  In general case we have to materialize the conditional to handle
         ::  lazy needs. So we check if we really have to do this.
@@ -3506,12 +3515,8 @@
       ::
       =^  p-y  gen  (proxy r-cond o.y)
       =^  p-n  gen  (proxy r-cond o.n)
-      =^  o-insert1-y=@uwoo  gen
-        (emit ~ ~ [%brn p-y ~^o-0-kid-y ~^o-1-kid-y])
-      ::
-      =^  o-insert1-n=@uwoo  gen
-        (emit ~ ~ [%brn p-n ~^o-0-kid-n ~^o-1-kid-n])
-      ::
+      =^  o-insert1-y=@uwoo  gen  (emit ~ ~ [%brz p-y ~^o-0-kid-y ~^o-1-kid-y])
+      =^  o-insert1-n=@uwoo  gen  (emit ~ ~ [%brz p-n ~^o-0-kid-n ~^o-1-kid-n])
       =.  gen  (insert-hop o.y o-insert1-y o-insert2-y)
       =.  gen  (insert-hop o.n o-insert1-n o-insert2-n)
       :_  gen
@@ -3538,7 +3543,7 @@
         ==
       ::
       =^  p  gen  (proxy r-cond o-bond)
-      =^  o-insert1=@uwoo  gen  (emit ~ ~ [%brn p ~^o-0-kid ~^o-1-kid])
+      =^  o-insert1=@uwoo  gen  (emit ~ ~ [%brz p ~^o-0-kid ~^o-1-kid])
       =.  gen  (insert-hop o-bond o-insert1 o-insert2)
       [[[o-0-kid laz-0] [o-1-kid laz-1]] gen]
     ::
@@ -4150,6 +4155,11 @@
         =^  p1  gen  (rer p.op)
         [op(p p1) gen]
       ::
+          %equ
+        =^  l1  gen  (rer l.op)
+        =^  r1  gen  (rer r.op)
+        [op(l l1, r r1) gen]
+      ::
           %hsp  [op gen]
           %hse  [op gen]
       ::
@@ -4222,6 +4232,12 @@
         [fin(l l1, r r1, z z1, o o1) gen]
       ::
           %brn
+        =^  s1  gen  (rer s.fin)
+        =^  z1  gen  (rewrite-jump z.fin)
+        =^  o1  gen  (rewrite-jump o.fin)
+        [fin(s s1, z z1, o o1) gen]
+      ::
+          %brz
         =^  s1  gen  (rer s.fin)
         =^  z1  gen  (rewrite-jump z.fin)
         =^  o1  gen  (rewrite-jump o.fin)
@@ -4933,6 +4949,16 @@
       ?>  =(pre-z o)
       =/  lens  |=(info-reg +<(is-loob &))
       (~(jab by info) s.fin.pre-b lens)
+    ?:  ?=(%brz -.fin.pre-b)
+      =/  pre-z=@uwoo  there.z.fin.pre-b
+      =/  pre-o=@uwoo  there.o.fin.pre-b
+      ?:  &(=(pre-z o) !=(pre-o o))
+        =/  lens  |=(info-reg +<(has-imm `&))
+        (~(jab by info) s.fin.pre-b lens)
+      ?:  &(=(pre-o o) !=(pre-z o) is-loob:(~(got by info) s.fin.pre-b))
+        =/  lens  |=(info-reg +<(has-imm `|))
+        (~(jab by info) s.fin.pre-b lens)
+      info
     ?:  ?=(%clq -.fin.pre-b)
       =/  pre-z=@uwoo  there.z.fin.pre-b
       =/  pre-o=@uwoo  there.o.fin.pre-b
@@ -5108,6 +5134,12 @@
       ::
       [[[%lob arg] body-new] gen]
     ::
+        %equ
+      =/  l  (~(got by old.gen) l.op)
+      =/  r  (~(got by old.gen) r.op)
+      ?:  =(l r)  [body-new gen]
+      [[[%equ l r] body-new] gen]
+    ::
         %hsp
       [[op body-new] gen]
     ::
@@ -5226,7 +5258,9 @@
       ?>  =(~ args.o.fin.bob)
       =/  cond-new  (~(got by old.gen) s.fin.bob)
       =/  info-cond  (~(got by info-local.gen) cond-new)
-      ?~  has-imm.info-cond  [fin.bob(s cond-new) gen]
+      ?~  has-imm.info-cond
+        ?.  is-loob.info-cond  [fin.bob(s cond-new) gen]
+        [[%brz cond-new z.fin.bob o.fin.bob] gen]
       ?-    u.has-imm.info-cond
           %&
         :-  [%hop ~ there.z.fin.bob]
@@ -5244,6 +5278,21 @@
         =.  rev.gen  (~(del ju rev.gen) there.z.fin.bob o)
         gen
       ==
+    ::
+        %brz
+      ?>  =(~ args.z.fin.bob)
+      ?>  =(~ args.o.fin.bob)
+      =/  cond-new  (~(got by old.gen) s.fin.bob)
+      =/  info-cond  (~(got by info-local.gen) cond-new)
+      =/  zero=(unit ?)
+        ?^  has-imm.info-cond  `=(0 u.has-imm.info-cond)
+        ?:(is-cell.info-cond `| ~)
+      ?~  zero  [fin.bob(s cond-new) gen]
+      =/  [go=@uwoo cut=@uwoo]
+        ?:(u.zero [there.z there.o]:fin.bob [there.o there.z]:fin.bob)
+      :-  [%hop ~ go]
+      ?:  =(go cut)  gen
+      gen(rev (~(del ju rev.gen) cut o))
     ::
         %hop
       [fin.bob(args.t (turn args.t.fin.bob (lift ~(got by old.gen)))) gen]
@@ -5397,10 +5446,10 @@
   ::  or at a terminator that could crash or leave the function, is unsafe to
   ::  drop since the stack trace would change.
   ::
-  =/  [seen=(set key) unsafe=(set key)]
-    =|  [seen=(set key) unsafe=(set key) out=(map @uwoo (set key))]
-    |-  ^-  [(set key) (set key)]
-    ?~  topo  [seen unsafe]
+  =/  unsafe=(set key)
+    =|  [unsafe=(set key) out=(map @uwoo (set key))]
+    |-  ^-  (set key)
+    ?~  topo  unsafe
     =/  b  (~(got by blocks) i.topo)
     =/  open=(set key)
       %+  roll  (~(get ja rev) i.topo)
@@ -5408,24 +5457,18 @@
       (~(uni in acc) (~(get ju out) p))
     ::
     =/  body  body.b
-    |-  ^-  [(set key) (set key)]
+    |-  ^-  (set key)
     ?^  body
       =/  op  i.body
       ?:  &(?=(%hdp -.op) ?=(?(%spot %mean) n.op))
-        %=  $
-          body  t.body
-          open  (~(put in open) [n.op p.op])
-          seen  (~(put in seen) [n.op p.op])
-        ==
+        $(body t.body, open (~(put in open) [n.op p.op]))
       ?:  &(?=(%hde -.op) ?=(?(%spot %mean) n.op))
         $(body t.body, open (~(del in open) [n.op p.op]))
-      ?.  ?=(?(%inc %cel %lob %spy %nok %cal %caf %cam %csl %csf %csm) -.op)
-        $(body t.body)
+      ?:  ?=(pole-not-crashing op)  $(body t.body)
       $(body t.body, unsafe (~(uni in unsafe) open))
-    =?  unsafe  !?=(?(%clq %eqq %hop) -.fin.b)  (~(uni in unsafe) open)
+    =?  unsafe  !?=(?(%clq %eqq %brz %hop) -.fin.b)  (~(uni in unsafe) open)
     ^$(topo t.topo, out (~(put by out) i.topo open))
   ::
-  =/  safe  (~(dif in seen) unsafe)
   %-  ~(run by blocks)
   |=  b=blob
   %_    b
@@ -5434,7 +5477,7 @@
     |=  op=pole
     ?&  ?=(?(%hdp %hde) -.op)
         ?=(?(%spot %mean) n.op)
-        (~(has in safe) [n p]:op)
+        !(~(has in unsafe) [n p]:op)
     ==
   ==
 ::
@@ -5458,6 +5501,15 @@
     [%hop ~ there.z.fin.b]
   ::
       %eqq
+    ?>  =(~ args.z.fin.b)
+    ?>  =(~ args.o.fin.b)
+    =/  nex-z=blob  (~(got by blocks) there.z.fin.b)
+    =/  nex-o=blob  (~(got by blocks) there.o.fin.b)
+    ?.  =(nex-z nex-o)  `fin.b
+    :-  [%equ l.fin.b r.fin.b]~
+    [%hop ~ there.z.fin.b]
+  ::
+      %brz
     :-  ~
     ?>  =(~ args.z.fin.b)
     ?>  =(~ args.o.fin.b)
@@ -5478,6 +5530,15 @@
 ::
 ++  remove-empty-middle
   |=  blocks=(map @uwoo blob)
+  =/  readers=(jug @uvre @uwoo)
+    %-  ~(rep by blocks)
+    |=  [[o=@uwoo b=blob] acc=(jug @uvre @uwoo)]
+    =/  put  |=([r=@uvre acc=(jug @uvre @uwoo)] (~(put ju acc) r o))
+    =.  acc  (roll (get-regs fin.b) put(acc acc))
+    %+  roll  body.b
+    |=  [op=pole acc=_acc]
+    (roll (get-regs op) put(acc acc))
+  ::
   |^  ^+  blocks
   %-  ~(run by blocks)
   |=  b=blob
@@ -5487,6 +5548,7 @@
       %clq  fin.b(z (rewrite-jump z.fin.b), o (rewrite-jump o.fin.b))
       %eqq  fin.b(z (rewrite-jump z.fin.b), o (rewrite-jump o.fin.b))
       %brn  fin.b(z (rewrite-jump z.fin.b), o (rewrite-jump o.fin.b))
+      %brz  fin.b(z (rewrite-jump z.fin.b), o (rewrite-jump o.fin.b))
       %hop  fin.b(t (rewrite-hop t.fin.b))
   ==
   ::  Bypass an empty block on a branch edge. Only when nothing is passed
@@ -5505,7 +5567,8 @@
     $(j t.fin.nex)
   ::  Bypass an empty block on a hop edge. A hop is its block's only exit, so
   ::  the edge is never critical and can carry arguments: the parameters of
-  ::  the bypassed block are substituted by what the hop passes to them.
+  ::  the bypassed block are substituted by what the hop passes to them. The
+  ::  parameters must not be read anywhere else, they lose their definition.
   ::
   ++  rewrite-hop
     |=  j=jmp
@@ -5513,6 +5576,9 @@
     =/  nex  (~(got by blocks) there.j)
     ?.  =(~ body.nex)        j
     ?.  ?=(%hop -.fin.nex)   j
+    ?.  %+  levy  par.nex
+        |=(p=@uvre =(~ (~(del in (~(get ju readers) p)) there.j)))
+      j
     =/  sub=(map @uvre (unit @uvre))
       =|  sub=(map @uvre (unit @uvre))
       =/  par   par.nex

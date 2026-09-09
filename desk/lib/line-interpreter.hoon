@@ -272,6 +272,10 @@
     =/  j=jmp  ?:(cond z.fin o.fin)
     bob-loop(bob (got-blocks there.j), params (turn args.j get-arg))
   ::
+      %brz
+    =/  j=jmp  ?:(=(0 (get s.fin)) z.fin o.fin)
+    bob-loop(bob (got-blocks there.j), params (turn args.j get-arg))
+  ::
       %hop
     bob-loop(bob (got-blocks there.t.fin), params (turn args.t.fin get-arg))
   ::
@@ -334,6 +338,9 @@
     ?-    -.op
       %imm
     `(put d.op n.op)
+  ::
+      %equ
+    `regs
   ::
       %mov
     `(put d.op (get s.op))
