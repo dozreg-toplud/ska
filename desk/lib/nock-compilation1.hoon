@@ -2266,16 +2266,17 @@
 ::            |
 ::
 ::
-::  Materialized conditionals: map from a register used by spliced %brn's to
-::  the register holding the conditional. `tag` is the region of the blocks
-::  where the use register was spliced in: the list of merging Nock 6's (each
-::  given a fresh @uxid) whose branches contain those blocks.
-::  In +sect an entry from one branch is either inside the branch (the
+::  Registers read in lazy blocks. Code emitted into a lazy block (a spliced
+::  %brn on a materialized conditional, moves and deconsing of a computed
+::  product) does not read the register `def` directly but a proxy register
+::  which is the key. `tag` is the region of the lazy block: the list of merging
+::  Nock 6's (each given a fresh @uxid) whose branches contain it.
+::  In +sect an entry made inside one branch is either inside the branch (the
 ::  definition dominates the uses, nothing to do) or past the join block. Then
-::  the conditional gets threaded through the join block as a new parameter and
-::  the entry is repointed to it. At the function entry +rewrite-cond replaces
-::  the use registers with whatever they got mapped to, as the definition sites
-::  are guaranteed to dominate those use sites.
+::  `def` gets threaded through the join block as a new parameter and the entry
+::  is repointed to it. At the function entry +rewrite-cond replaces the proxy
+::  registers with whatever they got mapped to, as the definition sites are
+::  guaranteed to dominate those use sites.
 ::
 +$  cond  (map @uvre [def=@uvre tag=(list @uxid)])
 +$  sure  [ned=need lok=(set @)]
@@ -2320,7 +2321,6 @@
 ::  Compiler takes a goal and a Nomm formula and produces a $next for it.
 ::
 +$  next  $>(%next goal)
-+$  next-cond  [next =cond]
 ::  $next but no lazy stuff
 ::
 +$  next-resolved  [%next [[ned=need ~] ~ ~] [~ then=@uwoo]]
@@ -2340,6 +2340,7 @@
       blocks=(map @uwoo blob)
       id-gen=@uxid                   ::  branch region identifiers
       tags=(map @uwoo (list @uxid))  ::  region of lazy need blocks
+      =cond
   ==
 ::  Non-control-flow ops
 ::
@@ -2460,6 +2461,53 @@
     %don  ~
     %bom  ~
   ==
+::  Rename every register of a block, definitions included
+::
+++  map-regs
+  |=  ren=$-(@uvre @uvre)
+  |=  b=blob
+  ^-  blob
+  =/  ren-jmp  |=(j=jmp j(args (turn args.j ren)))
+  :+  (turn par.b ren)
+    %+  turn  body.b
+    |=  op=pole
+    ^-  pole
+    ?-  -.op
+      %imm  op(d (ren d.op))
+      %mov  op(s (ren s.op), d (ren d.op))
+      %inc  op(s (ren s.op), d (ren d.op))
+      %con  op(h (ren h.op), t (ren t.op), d (ren d.op))
+      %hed  op(s (ren s.op), d (ren d.op))
+      %tal  op(s (ren s.op), d (ren d.op))
+      %cel  op(p (ren p.op))
+      %lob  op(p (ren p.op))
+      %hsp  op
+      %hse  op
+      %hdp  op(p (ren p.op))
+      %hde  op(p (ren p.op))
+      %spy  op(e (ren e.op), p (ren p.op), d (ren d.op))
+      %nok  op(u (ren u.op), f (ren f.op), d (ren d.op))
+      %cal  op(v (turn v.op ren), d (ren d.op))
+      %caf  op(v (turn v.op ren), d (ren d.op))
+      %cam  op(v (turn v.op ren), d (ren d.op))
+      %csl  op(s (ren s.op), d (ren d.op))
+      %csf  op(s (ren s.op), d (ren d.op))
+      %csm  op(s (ren s.op), d (ren d.op))
+    ==
+  =/  fin  fin.b
+  ?-  -.fin
+    %clq  fin(s (ren s.fin), z (ren-jmp z.fin), o (ren-jmp o.fin))
+    %eqq
+      fin(l (ren l.fin), r (ren r.fin), z (ren-jmp z.fin), o (ren-jmp o.fin))
+    %brn  fin(s (ren s.fin), z (ren-jmp z.fin), o (ren-jmp o.fin))
+    %hop  fin(t (ren-jmp t.fin))
+    %jmp  fin(v (turn v.fin ren))
+    %jmf  fin(v (turn v.fin ren))
+    %jsp  fin(s (ren s.fin))
+    %jsf  fin(s (ren s.fin))
+    %don  fin(s (ren s.fin))
+    %bom  fin
+  ==
 --
 ::  Check that $next-resolved nests under $next
 ::
@@ -2489,11 +2537,11 @@
   =/  comp  (comp scc rev long-ska scc-map jets-hot n-ary-map func)
   ::  Compile the pessimized version
   ::
-  =/  [[nex=next =cond] gen=line-short]
+  =/  [nex=next gen=line-short]
     %-  ~(run comp *line-short)
-    [& nomm:(~(got by code.long-ska) func) [%done ~] ~ ~]
+    [& nomm:(~(got by code.long-ska) func) [%done ~] ~]
   ::
-  =.  gen  (~(rewrite-cond comp gen) cond)
+  =.  gen  ~(rewrite-cond comp gen)
   ::  Collapse the subject need to a single noun, finalize
   ::
   =^  [o=@uwoo sub=@uvre]  gen  (~(kerf comp gen) nex)
@@ -2543,10 +2591,10 @@
     (~(to-straight comp gen) coerced)
   ::  Compile the function normally, collapse lazy needs, finalize
   ::
-  =/  [[nex=next =cond] gen=line-short]
-    (~(run comp *line-short) | nomm:(~(got by code.long-ska) b) [%done ~] ~ ~)
+  =/  [nex=next gen=line-short]
+    (~(run comp *line-short) | nomm:(~(got by code.long-ska) b) [%done ~] ~)
   ::
-  =.  gen  (~(rewrite-cond comp gen) cond)
+  =.  gen  ~(rewrite-cond comp gen)
   ::
   =^  res  gen  (~(next-lazy-collapse comp gen) nex cape.less.b)
   [(~(to-straight comp gen) res) res gen]
@@ -2593,13 +2641,13 @@
       ==
   |_  gen=line-short
   ++  run
-    |=  [mono=? =nomm =goal =cond region=(list @uxid)]
-    |^  ^-  [next-cond _gen]
+    |=  [mono=? =nomm =goal region=(list @uxid)]
+    |^  ^-  [next _gen]
     ?-    nomm
         [^ *]
-      =;  [=next-cond =_gen]
-        ?>  (norm-need-lazy laz.next-cond)
-        [next-cond gen]
+      =;  [=next =_gen]
+        ?>  (norm-need-lazy laz.next)
+        [next gen]
       ::
       =>  =*  dot  .
           ?.  ?=(%done -.goal)  dot
@@ -2614,61 +2662,61 @@
         ::  though we still need to compile them for crash correctness
         ::
         =^  o  gen  (emit ~ ~ [%bom ~])
-        =^  nc-2  gen  $(nomm +.nomm, goal [%next *need-lazy ~ o])
-        =^  nc-1  gen  $(nomm -.nomm, goal [%next *need-lazy then.nc-2])
+        =^  nex-2  gen  $(nomm +.nomm, goal [%next *need-lazy ~ o])
+        =^  nex-1  gen  $(nomm -.nomm, goal [%next *need-lazy then.nex-2])
         ::  Here and later +copy is used to combine together two needs for one
         ::  subject
         ::
-        (copy nc-1 laz.nc-2 cond.nc-2)
+        (copy nex-1 laz.nex-2)
       ::
           %next
         =^  [hed=need-lazy tel=need-lazy o=@uwoo]  gen  (split goal)
-        =^  nc-2  gen  $(nomm +.nomm, goal [%next tel ~ o])
-        =^  nc-1  gen  $(nomm -.nomm, goal [%next hed then.nc-2])
-        (copy nc-1 laz.nc-2 cond.nc-2)
+        =^  nex-2  gen  $(nomm +.nomm, goal [%next tel ~ o])
+        =^  nex-1  gen  $(nomm -.nomm, goal [%next hed then.nex-2])
+        (copy nex-1 laz.nex-2)
       ==
     ::
         [%0 *]
-      =;  [=next-cond =_gen]
-        ?>  (norm-need-lazy laz.next-cond)
-        [next-cond gen]
+      =;  [=next =_gen]
+        ?>  (norm-need-lazy laz.next)
+        [next gen]
       ::
-      ?:  =(0 p.nomm)  (bomb cond ?:(?=(%next -.goal) `there.then.goal ~))
-      =^  next  gen  simple-next
-      ?:  =(1 p.nomm)  [[next cond] gen]
-      [[%next (from p.nomm laz.next) then.next]^cond gen]
+      ?:  =(0 p.nomm)  (bomb ?:(?=(%next -.goal) `there.then.goal ~))
+      =^  nex  gen  simple-next
+      ?:  =(1 p.nomm)  [nex gen]
+      [[%next (from p.nomm laz.nex) then.nex] gen]
     ::
         [%1 *]
-      =;  [=next-cond =_gen]
-        ?>  (norm-need-lazy laz.next-cond)
-        [next-cond gen]
+      =;  [=next =_gen]
+        ?>  (norm-need-lazy laz.next)
+        [next gen]
       ::
       ?-    -.goal
           %done
         =^  r  gen  re
         =^  o  gen  (emit ~ ~[imm+[p.nomm r]] don+r)
-        [[%next *need-lazy ~ o]^cond gen]
+        [[%next *need-lazy ~ o] gen]
       ::
           %pick
-        ?+  p.nomm  (bomb cond ~)
-          %0  [[%next *need-lazy z.goal]^cond gen]
-          %1  [[%next *need-lazy o.goal]^cond gen]
+        ?+  p.nomm  (bomb ~)
+          %0  [[%next *need-lazy z.goal] gen]
+          %1  [[%next *need-lazy o.goal] gen]
         ==
       ::
           %next
         =^  o  gen  (mede then.goal p.nomm laz.goal)
-        [[%next *need-lazy ~ o]^cond gen]
+        [[%next *need-lazy ~ o] gen]
       ==
     ::
         [%2 *]
-      =;  [=next-cond =_gen]
-        ?>  (norm-need-lazy laz.next-cond)
-        [next-cond gen]
+      =;  [=next =_gen]
+        ?>  (norm-need-lazy laz.next)
+        [next gen]
       ::
       ?~  info.nomm
         ::  indirect call
         ::
-        =^  next  gen  simple-next
+        =^  nex  gen  simple-next
         ::  Here and later +kerf and friends are used to collapse a need for
         ::  a noun into a single registers, i.e. to emit deconsing code that
         ::  splits the product of whatever computation (here it's indirect %2)
@@ -2676,29 +2724,29 @@
         ::
         ::  Indirect %2 is never TCO'd
         ::
-        =^  [out=@uwoo pro=@uvre]  gen  (kerf next)
+        =^  [out=@uwoo pro=@uvre]  gen  (kerf nex)
         =^  r-sub  gen  re
         =^  r-fol  gen  re
         =^  o      gen  (emit ~ [%nok r-sub r-fol pro]~ %hop ~ out)
         ::
-        =^  nc-fol  gen
+        =^  nex-fol  gen
           $(nomm q.nomm, goal [%next (lazy-from-need this+r-fol) ~ o])
         ::
-        =^  nc-sub  gen
-          $(nomm p.nomm, goal [%next (lazy-from-need this+r-sub) then.nc-fol])
+        =^  nex-sub  gen
+          $(nomm p.nomm, goal [%next (lazy-from-need this+r-sub) then.nex-fol])
         ::
-        (copy nc-sub laz.nc-fol cond.nc-fol)
+        (copy nex-sub laz.nex-fol)
       =*  b-callee  b.u.info.nomm
       =/  callee-pure=?  pure:(~(got by code.long-ska) b-callee)
       ?:  &(callee-pure ?=(%next -.goal) (none-equivalent laz.goal))
         ::  The product is not used and the function is pure: drop
         ::
-        =^  nc-fol=next-cond  gen
-          ?:  (safe-fol-fol q.nomm)  [[%next *need-lazy then.goal]^cond gen]
+        =^  nex-fol=next  gen
+          ?:  (safe-fol-fol q.nomm)  [[%next *need-lazy then.goal] gen]
           $(nomm q.nomm, goal [%next *need-lazy then.goal])
         ::
-        =^  nc-sub  gen  $(nomm p.nomm, goal [%next *need-lazy then.nc-fol])
-        (copy nc-sub laz.nc-fol cond.nc-fol)
+        =^  nex-sub  gen  $(nomm p.nomm, goal [%next *need-lazy then.nex-fol])
+        (copy nex-sub laz.nex-fol)
       =*  call-cole  call.cole.jets.long-ska
       =/  rin=(unit ring)  (~(get by call-cole) b-callee)
       ::  register-less need of the callee: jet or SCC-local best guess or recur
@@ -2745,8 +2793,8 @@
           =^  opt  gen  (emit ~ ~ (jump-op ~))
           =^  pes  gen  (emit ~ ~ (jump-op `sub-pes))
           [[opt sub-pes pes] gen]
-        =^  next  gen  simple-next
-        =^  [out=@uwoo pro=@uvre]  gen  (kerf next)
+        =^  nex  gen  simple-next
+        =^  [out=@uwoo pro=@uvre]  gen  (kerf nex)
         ?.  mono  (emit ~ ~[(call-op ~ pro)] %hop ~ out)
         =^  merged   gen  re
         =^  sub-pes  gen  re
@@ -2765,19 +2813,19 @@
         =^  o=@uwoo  gen  (mono-try-call sub-ned call-blocks)
         [[this+sub.pes.call-blocks o] gen]
       ::
-      =^  nc-fol=next-cond  gen
-        ?:  (safe-fol-fol q.nomm)  [[%next *need-lazy ~ call-block]^cond gen]
+      =^  nex-fol=next  gen
+        ?:  (safe-fol-fol q.nomm)  [[%next *need-lazy ~ call-block] gen]
         $(nomm q.nomm, goal [%next *need-lazy ~ call-block])
       ::
-      =^  nc-sub  gen
-        $(nomm p.nomm, goal [%next (lazy-from-need sub-ned) then.nc-fol])
+      =^  nex-sub  gen
+        $(nomm p.nomm, goal [%next (lazy-from-need sub-ned) then.nex-fol])
       ::
-      (copy nc-sub laz.nc-fol cond.nc-fol)
+      (copy nex-sub laz.nex-fol)
     ::
         [%3 *]
-      =;  [=next-cond =_gen]
-        ?>  (norm-need-lazy laz.next-cond)
-        [next-cond gen]
+      =;  [=next =_gen]
+        ?>  (norm-need-lazy laz.next)
+        [next gen]
       ::
       ?:  &(?=(%next -.goal) (none-equivalent laz.goal))
         ::  Don't care about the product
@@ -2806,9 +2854,9 @@
       $(nomm p.nomm, goal [%next (lazy-from-need this+r) ~ o])
     ::
         [%4 *]
-      =;  [=next-cond =_gen]
-        ?>  (norm-need-lazy laz.next-cond)
-        [next-cond gen]
+      =;  [=next =_gen]
+        ?>  (norm-need-lazy laz.next)
+        [next gen]
       ::
       ?-    -.goal
           %done
@@ -2837,9 +2885,9 @@
       ==
     ::
         [%5 *]
-      =;  [=next-cond =_gen]
-        ?>  (norm-need-lazy laz.next-cond)
-        [next-cond gen]
+      =;  [=next =_gen]
+        ?>  (norm-need-lazy laz.next)
+        [next gen]
       ::
       =>  =*  dot  .
           ?-    -.goal
@@ -2867,18 +2915,18 @@
       =^  r-q  gen  re
       =^  o    gen  (emit ~ ~ eqq+[r-p r-q [z o]:goal])
       ::
-      =^  nc-q  gen
+      =^  nex-q  gen
         $(nomm q.nomm, goal [%next (lazy-from-need this+r-q) ~ o])
       ::
-      =^  nc-p  gen
-        $(nomm p.nomm, goal [%next (lazy-from-need this+r-p) then.nc-q])
+      =^  nex-p  gen
+        $(nomm p.nomm, goal [%next (lazy-from-need this+r-p) then.nex-q])
       ::
-      (copy nc-p laz.nc-q cond.nc-q)
+      (copy nex-p laz.nex-q)
     ::
         [%6 *]
-      =;  [=next-cond =_gen]
-        ?>  (norm-need-lazy laz.next-cond)
-        [next-cond gen]
+      =;  [=next =_gen]
+        ?>  (norm-need-lazy laz.next)
+        [next gen]
       ::
       ?:  ?&  ?=(%next -.goal)
               :: !(none-equivalent laz.goal(sure *sure))
@@ -2888,23 +2936,26 @@
         ::  lazy needs. So we check if we really have to do this.
         ::
         =^  r-cond  gen  re
-        =^  [[goal-0=next goal-1=next] cond-fork=^cond]  gen
-          (fork goal r-cond)
+        =^  [goal-0=next goal-1=next]  gen  (fork goal r-cond)
         ::  both branches are in the same region
         ::
         =^  region-id  gen  id
         =/  region-arm  [region-id region]
-        =^  nc-1  gen  $(nomm r.nomm, goal goal-1, region region-arm)
-        =^  nc-0  gen  $(nomm q.nomm, goal goal-0, region region-arm)
-        =^  [lazy=need-lazy cond-new=^cond yes=@uwoo nuh=@uwoo]  gen
-          (sect nc-0 nc-1 there.then.goal-0 there.then.goal-1 region-arm)
+        =/  cond-before  cond.gen
+        =^  nex-1  gen  $(nomm r.nomm, goal goal-1, region region-arm)
+        =/  cond-between  cond.gen
+        =^  nex-0  gen  $(nomm q.nomm, goal goal-0, region region-arm)
+        =^  [lazy=need-lazy yes=@uwoo nuh=@uwoo]  gen
+          %-  sect
+          :*  nex-0  nex-1  there.then.goal-0  there.then.goal-1
+              region-arm  cond-before  cond-between
+          ==
         ::
-        =.  cond  cond-new
         =^  o=@uwoo  gen  (emit ~ ~ [%brn r-cond ~^yes ~^nuh])
-        =^  nc-cond  gen
+        =^  nex-cond  gen
           $(nomm p.nomm, goal [%next (lazy-from-need this+r-cond) ~ o])
         ::
-        (copy nc-cond lazy (uni-cond cond cond-fork))
+        (copy nex-cond lazy)
       =^  [goal-0=^goal goal-1=^goal]  gen
         ?.  ?=(%next -.goal)  [[goal goal] gen]
         ?>  &(?=(~ fork.laz.goal) ?=(~ bond.laz.goal))
@@ -2921,94 +2972,101 @@
         =^  region-id  gen  id
         [[region-id region] gen]
       ::
-      =^  nc-1  gen  $(nomm r.nomm, goal goal-1, region region-arm)
-      =^  nc-0  gen  $(nomm q.nomm, goal goal-0, region region-arm)
-      =^  [lazy=need-lazy cond-new=^cond yes=@uwoo nuh=@uwoo]  gen
+      =/  cond-before  cond.gen
+      =^  nex-1  gen  $(nomm r.nomm, goal goal-1, region region-arm)
+      =/  cond-between  cond.gen
+      =^  nex-0  gen  $(nomm q.nomm, goal goal-0, region region-arm)
+      =^  [lazy=need-lazy yes=@uwoo nuh=@uwoo]  gen
         ?:  ?=(%next -.goal)
           ?>  ?=(%next -.goal-0)
           ?>  ?=(%next -.goal-1)
-          (sect nc-0 nc-1 there.then.goal-0 there.then.goal-1 region-arm)
-        =^  yes  gen  (emit ~ ~ %hop then.nc-0)
-        =^  nuh  gen  (emit ~ ~ %hop then.nc-1)
+          %-  sect
+          :*  nex-0  nex-1  there.then.goal-0  there.then.goal-1
+              region-arm  cond-before  cond-between
+          ==
+        =^  yes  gen  (emit ~ ~ %hop then.nex-0)
+        =^  nuh  gen  (emit ~ ~ %hop then.nex-1)
         =.  tags.gen  (~(gas by tags.gen) ~[[yes region] [nuh region]])
         :_  gen
-        ?>  =(~ args.then.nc-0)
-        ?>  =(~ args.then.nc-1)
-        :_  [(uni-cond cond.nc-0 cond.nc-1) yes nuh]
-        [*sure [[yes laz.nc-0] [nuh laz.nc-1]]~ ~]
+        ?>  =(~ args.then.nex-0)
+        ?>  =(~ args.then.nex-1)
+        :_  [yes nuh]
+        [*sure [[yes laz.nex-0] [nuh laz.nex-1]]~ ~]
       ::
-      =.  cond  cond-new
-      =^  nc-cond  gen  $(nomm p.nomm, goal [%pick ~^yes ~^nuh])
-      (copy nc-cond lazy cond)
+      =^  nex-cond  gen  $(nomm p.nomm, goal [%pick ~^yes ~^nuh])
+      (copy nex-cond lazy)
     ::
         [%7 *]
-      =;  [=next-cond =_gen]
-        ?>  (norm-need-lazy laz.next-cond)
-        [next-cond gen]
+      =;  [=next =_gen]
+        ?>  (norm-need-lazy laz.next)
+        [next gen]
       ::
-      =^  nc  gen  $(nomm q.nomm)
-      $(nomm p.nomm, goal -.nc, cond cond.nc)
+      =^  nex  gen  $(nomm q.nomm)
+      $(nomm p.nomm, goal nex)
     ::
         [%10 *]
-      =;  [=next-cond =_gen]
-        ?>  (norm-need-lazy laz.next-cond)
-        [next-cond gen]
+      =;  [=next =_gen]
+        ?>  (norm-need-lazy laz.next)
+        [next gen]
       ::
       =^  next  gen  simple-next
       =^  [don=need-lazy rec=need-lazy o=@uwoo]  gen  (into next p.p.nomm)
-      =^  nc-rec  gen  $(nomm q.nomm, goal [%next rec ~ o])
-      =^  nc-don  gen  $(nomm q.p.nomm, goal [%next don then.nc-rec])
-      (copy nc-don laz.nc-rec cond.nc-rec)
+      =^  nex-rec  gen  $(nomm q.nomm, goal [%next rec ~ o])
+      =^  nex-don  gen  $(nomm q.p.nomm, goal [%next don then.nex-rec])
+      (copy nex-don laz.nex-rec)
     ::
         [%11 *]
-      =;  [=next-cond =_gen]
-        ?>  (norm-need-lazy laz.next-cond)
-        [next-cond gen]
+      =;  [=next =_gen]
+        ?>  (norm-need-lazy laz.next)
+        [next gen]
       ::
       ?@  p.nomm
         ?.  ?=(hint-static p.nomm)  $(nomm q.nomm)
-        =^  next    gen  simple-next
-        =^  epil    gen  (emit ~ ~[hse+[p.nomm body.nomm]] %hop then.next)
-        =^  nc-fol  gen  $(nomm q.nomm, goal next(then [~ epil]))
-        =^  prol    gen  (emit ~ ~[hsp+[p.nomm body.nomm]] %hop then.nc-fol)
-        [[%next laz.nc-fol ~ prol]^cond.nc-fol gen]
+        =^  nex    gen  simple-next
+        =^  epil    gen  (emit ~ ~[hse+[p.nomm body.nomm]] %hop then.nex)
+        =^  nex-fol  gen  $(nomm q.nomm, goal nex(then [~ epil]))
+        =^  prol    gen  (emit ~ ~[hsp+[p.nomm body.nomm]] %hop then.nex-fol)
+        [[%next laz.nex-fol ~ prol] gen]
       ?.  ?=(hint-dynamic p.p.nomm)
-        =^  nc-fol  gen  $(nomm q.nomm)
-        ?:  (safe-nomm q.p.nomm)  [nc-fol gen]
-        =^  nc-toke  gen  $(nomm q.p.nomm, goal [%next *need-lazy then.nc-fol])
-        (copy nc-toke laz.nc-fol cond.nc-fol)
-      =^  next     gen  simple-next
+        =^  nex-fol  gen  $(nomm q.nomm)
+        ?:  (safe-nomm q.p.nomm)  [nex-fol gen]
+        =^  nex-toke  gen
+          $(nomm q.p.nomm, goal [%next *need-lazy then.nex-fol])
+        ::
+        (copy nex-toke laz.nex-fol)
+      =^  nex      gen  simple-next
       =^  toke     gen  re
-      =^  epil     gen  (emit ~ ~[hde+[p.p.nomm toke body.nomm]] %hop then.next)
-      =^  nc-fol1  gen  $(nomm q.nomm, goal next(then [~ epil]))
-      =^  nc-fol2=next-cond  gen
-        ?.  ?=(hint-dynamic-stop p.p.nomm)  [nc-fol1 gen]
-        =^  nex  gen  (lazy-bound -.nc-fol1 region)
-        [[nex cond.nc-fol1] gen]
+      =^  epil     gen  (emit ~ ~[hde+[p.p.nomm toke body.nomm]] %hop then.nex)
+      =^  nex-fol1  gen  $(nomm q.nomm, goal nex(then [~ epil]))
+      =^  nex-fol2=next  gen
+        ?.  ?=(hint-dynamic-stop p.p.nomm)  [nex-fol1 gen]
+        (lazy-bound nex-fol1 region)
       ::
-      =^  prol  gen  (emit ~ ~[hdp+[p.p.nomm toke body.nomm]] %hop then.nc-fol2)  
-      =^  nc-toke  gen
+      =^  prol  gen
+        (emit ~ ~[hdp+[p.p.nomm toke body.nomm]] %hop then.nex-fol2)
+      ::
+      =^  nex-toke  gen
         $(nomm q.p.nomm, goal [%next (lazy-from-reg toke) ~ prol])
       ::
-      (copy nc-toke laz.nc-fol2 cond.nc-fol2)
+      (copy nex-toke laz.nex-fol2)
     ::
         [%12 *]
-      =;  [=next-cond =_gen]
-        ?>  (norm-need-lazy laz.next-cond)
-        [next-cond gen]
+      =;  [=next =_gen]
+        ?>  (norm-need-lazy laz.next)
+        [next gen]
       ::
-      =^  next  gen  simple-next
-      =^  [out=@uwoo pro=@uvre]  gen  (kerf next)
+      =^  nex  gen  simple-next
+      =^  [out=@uwoo pro=@uvre]  gen  (kerf nex)
       =^  r-path     gen  re
       =^  r-ref      gen  re
       =^  o-spy      gen  (emit ~ [%spy r-ref r-path pro]~ %hop ~ out)
-      =^  nc-path  gen
+      =^  nex-path  gen
         $(nomm q.nomm, goal [%next (lazy-from-reg r-path) ~ o-spy])
       ::
-      =^  nc-ref   gen
-        $(nomm p.nomm, goal [%next (lazy-from-reg r-ref) then.nc-path])
+      =^  nex-ref   gen
+        $(nomm p.nomm, goal [%next (lazy-from-reg r-ref) then.nex-path])
       ::
-      (copy nc-ref laz.nc-path cond.nc-path)
+      (copy nex-ref laz.nex-path)
     ==
     ::
     ++  simple-next
@@ -3049,39 +3107,28 @@
     |=  [[o=@uwoo laz=need-lazy] gen=_gen]
     walk(gen gen, laz laz, o o)
   ::
-  ++  lazy-blocks
-    |=  laz=need-lazy
-    ^-  (list @uwoo)
-    =*  lazy-blocks  .
-    ~+
-    |-  ^-  (list @uwoo)
-    ?^  fork.laz
-      =/  blocks-y  (lazy-blocks laz.y.i.fork.laz)
-      =/  blocks-n  (lazy-blocks laz.n.i.fork.laz)
-      =/  blocks-rest  $(fork.laz t.fork.laz)
-      [o.y.i.fork.laz o.n.i.fork.laz (zing blocks-y blocks-n blocks-rest ~)]
-    |-  ^-  (list @uwoo)
-    ?~  bond.laz  ~
-    [o.i.bond.laz (weld (lazy-blocks laz.i.bond.laz) $(bond.laz t.bond.laz))]
-  ::
   ++  kern
     |=  [o=@uwoo laz=need-lazy]
     ^-  [@uvre _gen]
     =^  r  gen  re
     :-  r
     %^  walk-lazy  o  laz
-    |=  [o=@uwoo sur=sure gen-init=_gen]
+    |=  [o-laz=@uwoo sur=sure gen-init=_gen]
     ^+  gen
     =.  gen  gen-init
-    |-  ^+  gen
-    =^  l=(list pole)  gen  (kern-sure r sur)
-    (add-ops o l)
-  ::
-  ++  kern-sure
-    |=  [r=@uvre sur=sure]
-    ^-  [(list pole) _gen]
     =^  ned  gen  (sure-require-look sur)
-    (kern-need r ned)
+    ?:  ?=(%none -.ned)  gen
+    =^  src  gen  ?:(=(o-laz o) [r gen] (proxy r o-laz))
+    =^  ops  gen  (kern-need src ned)
+    (add-ops o-laz ops)
+  ::  Register to read `r` through in the lazy block `o`. Recorded in cond.gen
+  ::  so that +sect can thread `r` through join blocks.
+  ::
+  ++  proxy
+    |=  [r=@uvre o=@uwoo]
+    ^-  [@uvre _gen]
+    =^  p  gen  re
+    [p gen(cond (~(put by cond.gen) p [r (~(got by tags.gen) o)]))]
   ::
   ++  kern-r-need
     |=  [o=@uwoo ned=need]
@@ -3136,14 +3183,18 @@
     [%next [*sure ~ [o laz.nex]~] ~ o]
   ::
   ++  sect
-    |=  $:  nc-0=next-cond
-            nc-1=next-cond
+    |=  $:  nex-0=next
+            nex-1=next
             o-0-end=@uwoo
             o-1-end=@uwoo
             region-arm=(list @uxid)
+            cond-before=cond   ::  cond.gen before the branches were compiled
+            cond-between=cond  ::  cond.gen after the no branch was compiled
         ==
-    ^-  [[need-lazy cond @uwoo @uwoo] _gen]
+    ^-  [[need-lazy @uwoo @uwoo] _gen]
     ?>  ?=(^ region-arm)
+    =/  made-0  (~(dif by cond.gen) cond-between)
+    =/  made-1  (~(dif by cond-between) cond-before)
     =/  o-target=@uwoo
       =/  blob-0-end  (~(got by blocks.gen) o-0-end)
       =/  blob-1-end  (~(got by blocks.gen) o-1-end)
@@ -3152,21 +3203,15 @@
       ?>  =(there.t.fin.blob-0-end there.t.fin.blob-1-end)
       there.t.fin.blob-0-end
     ::
-    =^  o-0-beg  gen  (emit ~ ~ %hop then.nc-0)
-    =^  o-1-beg  gen  (emit ~ ~ %hop then.nc-1)
+    =^  o-0-beg  gen  (emit ~ ~ %hop then.nex-0)
+    =^  o-1-beg  gen  (emit ~ ~ %hop then.nex-1)
     =.  tags.gen
       (~(gas by tags.gen) ~[[o-0-beg region-arm] [o-1-beg region-arm]])
     ::
     =/  inside-arm
       |=(tag=(list @uxid) (lien tag |=(id=@uxid =(id i.region-arm))))
     ::
-    =/  cond-new=cond
-      %-  ~(rep by cond.nc-0)
-      |=  [[k=@uvre v1=[@uvre (list @uxid)]] acc=cond]
-      ?~  v2=(~(get by cond.nc-1) k)  acc
-      ?>  =(u.v2 v1)
-      (~(put by acc) k v1)
-    ::
+    =|  tars=(map @uvre @uvre)  ::  definition -> join parameter
     =/  args=[yes=(list @uvre) nuh=(list @uvre) tar=(list @uvre)]
       =/  yes-end=blob  (~(got by blocks.gen) o-0-end)
       ?>  ?=(%hop -.fin.yes-end)
@@ -3179,33 +3224,39 @@
     =>
       =*  dot  .
       ^+  dot
-      %-  ~(rep by (~(dif by cond.nc-0) cond.nc-1))
+      %-  ~(rep by made-0)
       |=  [[k=@uvre v=[def=@uvre tag=(list @uxid)]] dot-init=_dot]
       =.  dot  dot-init
-      ?:  (inside-arm tag.v)  dot(cond-new (~(put by cond-new) k v))
+      ?:  (inside-arm tag.v)  dot
+      ?^  tar=(~(get by tars) def.v)
+        dot(cond.gen (~(put by cond.gen) k [u.tar tag.v]))
       =^  tar-new  gen  re
+      =.  tars  (~(put by tars) def.v tar-new)
       =.  yes.args  [def.v yes.args]
       =.  tar.args  [tar-new tar.args]
       =^  r  gen  re
       =.  nuh.args  [r nuh.args]
       =.  gen  (add-ops o-1-end [%imm %value-should-be-unreachable r]~)
-      =.  cond-new  (~(put by cond-new) k [tar-new tag.v])
+      =.  cond.gen  (~(put by cond.gen) k [tar-new tag.v])
       dot
     ::
     =>
       =*  dot  .
       ^+  dot
-      %-  ~(rep by (~(dif by cond.nc-1) cond.nc-0))
+      %-  ~(rep by made-1)
       |=  [[k=@uvre v=[def=@uvre tag=(list @uxid)]] dot-init=_dot]
       =.  dot  dot-init
-      ?:  (inside-arm tag.v)  dot(cond-new (~(put by cond-new) k v))
+      ?:  (inside-arm tag.v)  dot
+      ?^  tar=(~(get by tars) def.v)
+        dot(cond.gen (~(put by cond.gen) k [u.tar tag.v]))
       =^  tar-new  gen  re
+      =.  tars  (~(put by tars) def.v tar-new)
       =.  nuh.args  [def.v nuh.args]
       =.  tar.args  [tar-new tar.args]
       =^  r  gen  re
       =.  yes.args  [r yes.args]
       =.  gen  (add-ops o-0-end [%imm %value-should-be-unreachable r]~)
-      =.  cond-new  (~(put by cond-new) k [tar-new tag.v])
+      =.  cond.gen  (~(put by cond.gen) k [tar-new tag.v])
       dot
     ::
     =.  blocks.gen  (~(jab by blocks.gen) o-target |=(blob +<(par tar.args)))
@@ -3218,10 +3269,10 @@
     =.  blocks.gen  (~(jab by blocks.gen) o-0-end (lens-hop yes.args))
     =.  blocks.gen  (~(jab by blocks.gen) o-1-end (lens-hop nuh.args))
     :_  gen
-    ?>  =(~ args.then.nc-0)
-    ?>  =(~ args.then.nc-1)
-    :_  [cond-new o-0-beg o-1-beg]
-    [*sure [[o-0-beg laz.nc-0] [o-1-beg laz.nc-1]]~ ~]
+    ?>  =(~ args.then.nex-0)
+    ?>  =(~ args.then.nex-1)
+    :_  [o-0-beg o-1-beg]
+    [*sure [[o-0-beg laz.nex-0] [o-1-beg laz.nex-1]]~ ~]
   ::
   ++  mede
     |=  [then=jmp som=* laz=need-lazy]
@@ -3293,7 +3344,8 @@
     ?:  ?=(%none -.ned-sure)  gen
     ?:  ?=(%this -.ned-sure)
       ?:  =(r r.ned-sure)  gen
-      (add-ops o [%mov r r.ned-sure]~)
+      =^  src  gen  ?:(=(o there.then.nex) [r gen] (proxy r o))
+      (add-ops o [%mov src r.ned-sure]~)
     (emir o ~ ~ %bom ~)
   ::
   ++  flatten-need
@@ -3382,24 +3434,13 @@
   ::
   ++  fork
     |=  [nex=next r-cond=@uvre]
-    ^-  [[[next next] cond] _gen]
+    ^-  [[next next] _gen]
     =^  o-0  gen  oo
     =^  o-1  gen  oo
-    =^  regs=(map (list @uxid) @uvre)  gen
-      %+  roll  ~(tap in (silt (lazy-blocks laz.nex)))
-      |=  [o-laz=@uwoo regs=(map (list @uxid) @uvre) gen-init=_gen]
-      =.  gen  gen-init
-      =/  tag  (~(got by tags.gen) o-laz)
-      =^  r  gen  re
-      [(~(put by regs) tag r) gen]
-    ::
     =;  [[laz-0=need-lazy laz-1=need-lazy] gen1=_gen]
       =.  gen  gen1
       :_  gen
-      :-  [[%next laz-0 ~ o-0] [%next laz-1 ~ o-1]]
-      %-  ~(rep by regs)
-      |=  [[tag=(list @uxid) r=@uvre] acc=cond]
-      (~(put by acc) r [r-cond tag])
+      [[%next laz-0 ~ o-0] [%next laz-1 ~ o-1]]
     ::
     =/  laz=need-lazy  laz.nex
     =/  o=@uwoo  there.then.nex
@@ -3449,11 +3490,13 @@
           o-1  o-1-kid-n
         ==
       ::
+      =^  p-y  gen  (proxy r-cond o.y)
+      =^  p-n  gen  (proxy r-cond o.n)
       =^  o-insert1-y=@uwoo  gen
-        (emit ~ ~ [%brn (~(got by regs) tag-y) ~^o-0-kid-y ~^o-1-kid-y])
+        (emit ~ ~ [%brn p-y ~^o-0-kid-y ~^o-1-kid-y])
       ::
       =^  o-insert1-n=@uwoo  gen
-        (emit ~ ~ [%brn (~(got by regs) tag-n) ~^o-0-kid-n ~^o-1-kid-n])
+        (emit ~ ~ [%brn p-n ~^o-0-kid-n ~^o-1-kid-n])
       ::
       =.  gen  (insert-hop o.y o-insert1-y o-insert2-y)
       =.  gen  (insert-hop o.n o-insert1-n o-insert2-n)
@@ -3480,9 +3523,8 @@
           o-1  o-1-kid
         ==
       ::
-      =^  o-insert1=@uwoo  gen
-        (emit ~ ~ [%brn (~(got by regs) tag) ~^o-0-kid ~^o-1-kid])
-      ::
+      =^  p  gen  (proxy r-cond o-bond)
+      =^  o-insert1=@uwoo  gen  (emit ~ ~ [%brn p ~^o-0-kid ~^o-1-kid])
       =.  gen  (insert-hop o-bond o-insert1 o-insert2)
       [[[o-0-kid laz-0] [o-1-kid laz-1]] gen]
     ::
@@ -3537,11 +3579,11 @@
     [o from-buc(laz laz)]
   ::
   ++  copy
-    |=  [first=next-cond second=need-lazy sec-cond=cond]
-    ^-  [next-cond _gen]
+    |=  [first=next second=need-lazy]
+    ^-  [next _gen]
     =^  o  gen  (emit ~ ~ %hop then.first)
     =^  laz=need-lazy  gen  (copy-lazy o laz.first second)
-    [[%next laz ~ o]^(uni-cond cond.first sec-cond) gen]
+    [[%next laz ~ o] gen]
   ::
   ++  copy-lazy
     |=  [o=@uwoo first=need-lazy second=need-lazy]
@@ -3764,10 +3806,10 @@
     gen(blocks (~(put by blocks.gen) o blob))
   ::
   ++  bomb
-    |=  [=cond miss=(unit @uwoo)]
-    ^-  [next-cond _gen]
+    |=  miss=(unit @uwoo)
+    ^-  [next _gen]
     =^  o  gen  (emit ~ ~ %bom miss)
-    [[%next *need-lazy ~ o]^cond gen]
+    [[%next *need-lazy ~ o] gen]
   ::
   ++  copy-need-make-ops
     |=  [first=need second=need]
@@ -4280,14 +4322,9 @@
     [[%both u.here x] gen]
   ::
   ++  rewrite-cond
-    |=  =cond
     ^+  gen
-    =-  gen(blocks -)
-    %-  ~(run by blocks.gen)
-    |=  b=blob
-    ?.  ?=(%brn -.fin.b)  b
-    ?~  e=(~(get by cond) s.fin.b)  b
-    b(s.fin def.u.e)
+    =/  ren  |=(r=@uvre ?~(e=(~(get by cond.gen) r) r def.u.e))
+    gen(blocks (~(run by blocks.gen) (map-regs ren)))
   --
 ::
 ++  count-args
@@ -4634,14 +4671,6 @@
       (levy fork.laz |=([[* a=need-lazy] * b=need-lazy] &((none a) (none b))))
       (levy bond.laz |=([* n=need-lazy] (none n)))
   ==
-::
-++  uni-cond
-  |=  [a=cond b=cond]
-  ^-  cond
-  %-  (~(uno by a) b)
-  |*  [* v1=* v2=*]
-  ?>  =(v1 v2)
-  v1
 --
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::

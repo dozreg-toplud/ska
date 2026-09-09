@@ -19,12 +19,7 @@
   =>  subject
   ;;  ^
   !=
-  =>
-    ?:  =(0 0)  1
-    ?:  =(0 1)  2
-    3
-  ::
-  .
+  (scow %ud 5)
 ::
 =|  =long-ska
 =^  func=bell  long-ska  (memo-call ska-poke [&+subject formula] long-ska)
@@ -73,9 +68,9 @@
   |=  [[k=* v=(set bell)] acc=(map bell straight)]
   (~(uni by acc) (compile-scc v rev [code jets]:long-ska scc-map jets-hot))
 ::
-:-  %tang
-%-  flop
-:: :-  %noun
+:: :-  %tang
+:: %-  flop
+:-  %noun
 %-  to-wain:format  %-  crip
 ^-  tape
 %-  zing
