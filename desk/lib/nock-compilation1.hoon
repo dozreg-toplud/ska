@@ -2268,15 +2268,18 @@
 ::
 ::  Registers read in lazy blocks. Code emitted into a lazy block (a spliced
 ::  %brn on a materialized conditional, moves and deconsing of a computed
-::  product) does not read the register `def` directly but a proxy register
-::  which is the key. `tag` is the region of the lazy block: the list of merging
-::  Nock 6's (each given a fresh @uxid) whose branches contain it.
-::  In +sect an entry made inside one branch is either inside the branch (the
-::  definition dominates the uses, nothing to do) or past the join block. Then
-::  `def` gets threaded through the join block as a new parameter and the entry
-::  is repointed to it. At the function entry +rewrite-cond replaces the proxy
-::  registers with whatever they got mapped to, as the definition sites are
-::  guaranteed to dominate those use sites.
+::  product via +kern) does not read the register `def` directly but a proxy
+::  register which is the key. `tag` is the region of the lazy block: the list
+::  of merging Nock 6's (each given a fresh @uxid) whose branches contain it.
+::  In +sect an entry made during the compilation of a branch is either inside
+::  the branch (the definition dominates the uses, nothing to do) or past the
+::  join block. Then `def` becomes an input parameter for the merging block on
+::  one side, a new target register is allocated that becomes the input parameter
+::  in the merging block, and on the other side a dummy register is used as an
+::  input with a placeholder value. The proxy register now points to the new
+::  target in the merging block. At the function entry the proxies are guaran-
+::  teed to be dominated by their respective defined registers, so +rewrite-cond
+::  rewrites the proxies with their definitions directly.
 ::
 +$  cond  (map @uvre [def=@uvre tag=(list @uxid)])
 +$  sure  [ned=need lok=(set @)]
@@ -2936,15 +2939,15 @@
         ::  both branches are in the same region
         ::
         =^  region-id  gen  id
-        =/  region-arm  [region-id region]
+        =/  region-branch  [region-id region]
         =/  cond-before  cond.gen
-        =^  nex-1  gen  $(nomm r.nomm, goal goal-1, region region-arm)
+        =^  nex-1  gen  $(nomm r.nomm, goal goal-1, region region-branch)
         =/  cond-between  cond.gen
-        =^  nex-0  gen  $(nomm q.nomm, goal goal-0, region region-arm)
+        =^  nex-0  gen  $(nomm q.nomm, goal goal-0, region region-branch)
         =^  [lazy=need-lazy yes=@uwoo nuh=@uwoo]  gen
           %-  sect
           :*  nex-0  nex-1  there.then.goal-0  there.then.goal-1
-              region-arm  cond-before  cond-between
+              region-branch  cond-before  cond-between
           ==
         ::
         =^  o=@uwoo  gen  (emit ~ ~ [%brn r-cond ~^yes ~^nuh])
@@ -2963,22 +2966,22 @@
         :_  gen
         [[%next [sur-0 ~ ~] ~ o-0] [%next [sur-1 ~ ~] ~ o-1]]
       ::
-      =^  region-arm=(list @uxid)  gen
+      =^  region-branch=(list @uxid)  gen
         ?.  ?=(%next -.goal-0)  [region gen]
         =^  region-id  gen  id
         [[region-id region] gen]
       ::
       =/  cond-before  cond.gen
-      =^  nex-1  gen  $(nomm r.nomm, goal goal-1, region region-arm)
+      =^  nex-1  gen  $(nomm r.nomm, goal goal-1, region region-branch)
       =/  cond-between  cond.gen
-      =^  nex-0  gen  $(nomm q.nomm, goal goal-0, region region-arm)
+      =^  nex-0  gen  $(nomm q.nomm, goal goal-0, region region-branch)
       =^  [lazy=need-lazy yes=@uwoo nuh=@uwoo]  gen
         ?:  ?=(%next -.goal)
           ?>  ?=(%next -.goal-0)
           ?>  ?=(%next -.goal-1)
           %-  sect
           :*  nex-0  nex-1  there.then.goal-0  there.then.goal-1
-              region-arm  cond-before  cond-between
+              region-branch  cond-before  cond-between
           ==
         =^  yes  gen  (emit ~ ~ %hop then.nex-0)
         =^  nuh  gen  (emit ~ ~ %hop then.nex-1)
@@ -3183,12 +3186,12 @@
             nex-1=next
             o-0-end=@uwoo
             o-1-end=@uwoo
-            region-arm=(list @uxid)
+            region-branch=(list @uxid)
             cond-before=cond   ::  cond.gen before the branches were compiled
             cond-between=cond  ::  cond.gen after the no branch was compiled
         ==
     ^-  [[need-lazy @uwoo @uwoo] _gen]
-    ?>  ?=(^ region-arm)
+    ?>  ?=(^ region-branch)
     =/  made-0  (~(dif by cond.gen) cond-between)
     =/  made-1  (~(dif by cond-between) cond-before)
     =/  o-target=@uwoo
@@ -3202,10 +3205,10 @@
     =^  o-0-beg  gen  (emit ~ ~ %hop then.nex-0)
     =^  o-1-beg  gen  (emit ~ ~ %hop then.nex-1)
     =.  tags.gen
-      (~(gas by tags.gen) ~[[o-0-beg region-arm] [o-1-beg region-arm]])
+      (~(gas by tags.gen) ~[[o-0-beg region-branch] [o-1-beg region-branch]])
     ::
-    =/  inside-arm
-      |=(tag=(list @uxid) (lien tag |=(id=@uxid =(id i.region-arm))))
+    =/  inside-branch
+      |=(tag=(list @uxid) (lien tag |=(id=@uxid =(id i.region-branch))))
     ::
     =|  tars=(map @uvre @uvre)  ::  definition -> join parameter
     =/  args=[yes=(list @uvre) nuh=(list @uvre) tar=(list @uvre)]
@@ -3223,7 +3226,7 @@
       %-  ~(rep by made-0)
       |=  [[k=@uvre v=[def=@uvre tag=(list @uxid)]] dot-init=_dot]
       =.  dot  dot-init
-      ?:  (inside-arm tag.v)  dot
+      ?:  (inside-branch tag.v)  dot
       ?^  tar=(~(get by tars) def.v)
         dot(cond.gen (~(put by cond.gen) k [u.tar tag.v]))
       =^  tar-new  gen  re
@@ -3242,7 +3245,7 @@
       %-  ~(rep by made-1)
       |=  [[k=@uvre v=[def=@uvre tag=(list @uxid)]] dot-init=_dot]
       =.  dot  dot-init
-      ?:  (inside-arm tag.v)  dot
+      ?:  (inside-branch tag.v)  dot
       ?^  tar=(~(get by tars) def.v)
         dot(cond.gen (~(put by cond.gen) k [u.tar tag.v]))
       =^  tar-new  gen  re
