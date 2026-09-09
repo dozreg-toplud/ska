@@ -935,6 +935,17 @@
   ?:  =(~ s)  c
   (~(put by c) p s)
 ::
+++  int-ju
+  |*  a=(jug)
+  |*  b=_a
+  ^+  a
+  ?:  =(~ a)  ~
+  %-  ~(rep by a)
+  |=  [[k=_?>(?=(^ a) p.n.a) v=_?>(?=(^ a) q.n.a)] acc=_`_a`~]
+  =/  s  (~(int in v) (~(get ju b) k))
+  ?:  =(~ s)  acc
+  (~(put by acc) k s)
+::
 ::  Given subject and a formula, analyzes them, then goes over fresh %fast core
 ::  registrations and tries to disassemble their batteries, analyzing leaf ba-
 ::  tteries (heuristic for an arm), repeating in a loop until no more registra-
@@ -2928,8 +2939,8 @@
         [next gen]
       ::
       ?:  ?&  ?=(%next -.goal)
-              :: !(none-equivalent laz.goal(sure *sure))
-              |(!=(~ fork.laz.goal) !=(~ bond.laz.goal))
+              !(none-equivalent laz.goal(sure *sure))
+              :: |(!=(~ fork.laz.goal) !=(~ bond.laz.goal))
           ==
         ::  In general case we have to materialize the conditional to handle
         ::  lazy needs. So we check if we really have to do this.
@@ -2957,7 +2968,6 @@
         (copy nex-cond lazy)
       =^  [goal-0=^goal goal-1=^goal]  gen
         ?.  ?=(%next -.goal)  [[goal goal] gen]
-        ?>  &(?=(~ fork.laz.goal) ?=(~ bond.laz.goal))
         =^  o-0  gen  oo
         =^  o-1  gen  oo
         =^  [sur-0=sure sur-1=sure]  gen
@@ -4855,9 +4865,9 @@
           re-gen=@uvre
           old=(map @uvre @uvre)  ::  old -> new
           info=(map @uwoo (map @uvre info-reg))
-          imms=(map @uwoo (map * @uvre))
+          imms=(map @uwoo (jug * @uvre))
           info-local=(map @uvre info-reg)
-          imms-local=(map * @uvre)
+          imms-local=(jug * @uvre)
           rev=(jug @uwoo @uwoo)
       ==
   ::
@@ -4921,11 +4931,11 @@
       info
     info
   ::
-  =/  imms=(map * @uvre)
+  =/  imms=(jug * @uvre)
     ?~  pre  ~
     %+  roll  t.pre
     |=  [o1=@uwoo acc=_(~(got by imms.gen) i.pre)]
-    (~(int by acc) (~(got by imms.gen) o1))
+    ((int-ju acc) (~(got by imms.gen) o1))
   ::
   =.  info-local.gen  info
   =.  imms-local.gen  imms
@@ -4950,8 +4960,8 @@
     =.  gen  gen-init
     ?-    -.op
         %imm
-      ?^  res=(~(get by imms-local.gen) n.op)
-        =.  old.gen  (~(put by old.gen) d.op u.res)
+      ?^  res=(~(get ju imms-local.gen) n.op)
+        =.  old.gen  (~(put by old.gen) d.op n.res)
         [body-new gen]
       =^  new=@uvre  gen
         ?<  (~(has by old.gen) d.op)
@@ -4959,7 +4969,7 @@
         =|  info=info-reg
         =.  info-local.gen  (~(put by info-local.gen) new info(has-imm `n.op))
         =.  old.gen   (~(put by old.gen) d.op new)
-        =.  imms-local.gen  (~(put by imms-local.gen) n.op new)
+        =.  imms-local.gen  (~(put ju imms-local.gen) n.op new)
         [new gen]
       ::
       [[[%imm n.op new] body-new] gen]
@@ -5426,7 +5436,7 @@
 ++  optimize
   |=  s=straight
   ^-  straight
-  ?:  &  s
+  ?:  |  s
   =;  s1=straight
     ?:  =(s s1)  s1
     $(s s1)
