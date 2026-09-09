@@ -260,20 +260,20 @@
   ?-    -.fin
       %clq
     =/  j=jmp  ?^((get s.fin) z.fin o.fin)
-    bob-loop(bob (got-blocks there.j), params (turn args.j get))
+    bob-loop(bob (got-blocks there.j), params (turn args.j get-arg))
   ::
       %eqq
     =/  j=jmp  ?:(=((get l.fin) (get r.fin)) z.fin o.fin)
-    bob-loop(bob (got-blocks there.j), params (turn args.j get))
+    bob-loop(bob (got-blocks there.j), params (turn args.j get-arg))
   ::
       %brn
     =/  cond  (get s.fin)
     ?.  ?=(? cond)  ~
     =/  j=jmp  ?:(cond z.fin o.fin)
-    bob-loop(bob (got-blocks there.j), params (turn args.j get))
+    bob-loop(bob (got-blocks there.j), params (turn args.j get-arg))
   ::
       %hop
-    bob-loop(bob (got-blocks there.t.fin), params (turn args.t.fin get))
+    bob-loop(bob (got-blocks there.t.fin), params (turn args.t.fin get-arg))
   ::
       %jmp
     =/  sam-callee
@@ -314,6 +314,11 @@
     |=  [r=@uvre n=*]
     ^+  regs
     (~(put by regs) r n)
+  ::
+  ++  get-arg
+    |=  a=(unit @uvre)
+    ^-  *
+    ?~(a %value-should-be-unreachable (get u.a))
   ::
   ++  get
     |=  r=@uvre

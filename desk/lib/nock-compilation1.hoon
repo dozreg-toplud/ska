@@ -2309,7 +2309,10 @@
 ::  everywhere else args are empty, and there are assertions for that littered
 ::  around when we use there.jmp alone.
 ::
-+$  jmp  [args=(list @uvre) there=@uwoo]
+::  An empty argument supplies nothing: the parameter is never read on that
+::  edge. Used by +sect to keep SSA form when only one branch defines a value.
+::
++$  jmp  [args=(list (unit @uvre)) there=@uwoo]
 ::  goal of a computation.
 ::  %done: return the product of the computation, tail position. Used for TCO.
 ::  %pick: the product is used as a conditional in Nock 6: if 0 go to z, if 1
@@ -2447,10 +2450,10 @@
     %csl  ~[s d]:op
     %csf  ~[s d]:op
     %csm  ~[s d]:op
-    %clq  [s.op (weld args.z.op args.o.op)]
-    %eqq  [l.op r.op (weld args.z.op args.o.op)]
-    %brn  [s.op (weld args.z.op args.o.op)]
-    %hop  args.t.op
+    %clq  [s.op (weld (jmp-regs z.op) (jmp-regs o.op))]
+    %eqq  [l.op r.op (weld (jmp-regs z.op) (jmp-regs o.op))]
+    %brn  [s.op (weld (jmp-regs z.op) (jmp-regs o.op))]
+    %hop  (jmp-regs t.op)
     %jmp  v:op
     %jmf  v:op
     %jsp  ~[s]:op
@@ -2458,6 +2461,11 @@
     %don  ~[s]:op
     %bom  ~
   ==
+::
+++  jmp-regs
+  |=  j=jmp
+  ^-  (list @uvre)
+  (murn args.j same)
 ::
 ++  get-jmps
   |=  op=termin
@@ -2481,7 +2489,7 @@
   |=  ren=$-(@uvre @uvre)
   |=  b=blob
   ^-  blob
-  =/  ren-jmp  |=(j=jmp j(args (turn args.j ren)))
+  =/  ren-jmp  |=(j=jmp j(args (turn args.j (lift ren))))
   :+  (turn par.b ren)
     %+  turn  body.b
     |=  op=pole
@@ -2811,9 +2819,11 @@
         =^  merge    gen  (emit ~[merged] [%mov merged pro]~ %hop ~ out)
         =^  pro-opt  gen  re
         =^  pro-pes  gen  re
-        =^  opt      gen  (emit ~ ~[(call-op ~ pro-opt)] %hop ~[pro-opt] merge)
+        =^  opt      gen
+          (emit ~ ~[(call-op ~ pro-opt)] %hop ~[`pro-opt] merge)
+        ::
         =^  pes      gen
-          (emit ~ ~[(call-op `sub-pes pro-pes)] %hop ~[pro-pes] merge)
+          (emit ~ ~[(call-op `sub-pes pro-pes)] %hop ~[`pro-pes] merge)
         ::
         [[opt sub-pes pes] gen]
       ::  call-blocks end definition
@@ -3221,7 +3231,7 @@
       |=(tag=(list @uxid) (lien tag |=(id=@uxid =(id i.region-branch))))
     ::
     =|  tars=(map @uvre @uvre)  ::  definition -> join parameter
-    =/  args=[yes=(list @uvre) nuh=(list @uvre) tar=(list @uvre)]
+    =/  args=[yes=(list (unit @uvre)) nuh=(list (unit @uvre)) tar=(list @uvre)]
       =/  yes-end=blob  (~(got by blocks.gen) o-0-end)
       ?>  ?=(%hop -.fin.yes-end)
       =/  nuh-end=blob  (~(got by blocks.gen) o-1-end)
@@ -3241,11 +3251,9 @@
         dot(cond.gen (~(put by cond.gen) k [u.tar tag.v]))
       =^  tar-new  gen  re
       =.  tars  (~(put by tars) def.v tar-new)
-      =.  yes.args  [def.v yes.args]
+      =.  yes.args  [`def.v yes.args]
+      =.  nuh.args  [~ nuh.args]
       =.  tar.args  [tar-new tar.args]
-      =^  r  gen  re
-      =.  nuh.args  [r nuh.args]
-      =.  gen  (add-ops o-1-end [%imm %value-should-be-unreachable r]~)
       =.  cond.gen  (~(put by cond.gen) k [tar-new tag.v])
       dot
     ::
@@ -3260,17 +3268,15 @@
         dot(cond.gen (~(put by cond.gen) k [u.tar tag.v]))
       =^  tar-new  gen  re
       =.  tars  (~(put by tars) def.v tar-new)
-      =.  nuh.args  [def.v nuh.args]
+      =.  nuh.args  [`def.v nuh.args]
+      =.  yes.args  [~ yes.args]
       =.  tar.args  [tar-new tar.args]
-      =^  r  gen  re
-      =.  yes.args  [r yes.args]
-      =.  gen  (add-ops o-0-end [%imm %value-should-be-unreachable r]~)
       =.  cond.gen  (~(put by cond.gen) k [tar-new tag.v])
       dot
     ::
     =.  blocks.gen  (~(jab by blocks.gen) o-target |=(blob +<(par tar.args)))
     =/  lens-hop
-      |=  args=(list @uvre)
+      |=  args=(list (unit @uvre))
       |=  b=blob
       ?>  ?=(%hop -.fin.b)
       b(args.t.fin args)
@@ -3384,10 +3390,9 @@
     =;  [[ned-0=need ned-1=need] gen1=_gen]
       =.  gen  gen1
       :-  [ned-0 ned-1]
-      =/  args-0=(list @uvre)  (flatten-need ned-0)
-      =/  args-1=(list @uvre)  (flatten-need ned-1)
-      =/  args=(list @uvre)    (flatten-need ned)
-      =^  barg  gen  (emit args ~ %hop ~ o)
+      =/  args-0  (turn (flatten-need ned-0) some)
+      =/  args-1  (turn (flatten-need ned-1) some)
+      =^  barg  gen  (emit (flatten-need ned) ~ %hop ~ o)
       =.  gen  (emir o-0 ~ ~ %hop args-0 barg)
       (emir o-1 ~ ~ %hop args-1 barg)
     ::
@@ -3548,8 +3553,8 @@
     =^  r-0   gen  re
     =^  r-1   gen  re
     =^  barg  gen  (emit ~[r] ~ %hop ~ o)
-    =^  if-0  gen  (emit ~ [%imm `*`0 r-0]~ %hop ~[r-0] barg)
-    =^  if-1  gen  (emit ~ [%imm `*`1 r-1]~ %hop ~[r-1] barg)
+    =^  if-0  gen  (emit ~ [%imm `*`0 r-0]~ %hop ~[`r-0] barg)
+    =^  if-1  gen  (emit ~ [%imm `*`1 r-1]~ %hop ~[`r-1] barg)
     [[if-0 if-1] gen]
   ::
   ++  emit
@@ -4253,7 +4258,15 @@
     ++  rewrite-jump
       |=  j=jmp
       ^-  [jmp _gen]
-      =^  args1  gen  (rewrite-par args.j)
+      =^  args1  gen
+        %^  spin  args.j  gen
+        |=  [a=(unit @uvre) gen-init=_gen]
+        ^-  [(unit @uvre) _gen]
+        =.  gen  gen-init
+        ?~  a  [~ gen]
+        =^  r  gen  (rer u.a)
+        [`r gen]
+      ::
       [j(args args1) gen]
     --
   ::  XX sloppy codegen, always both head and tail
@@ -4940,16 +4953,41 @@
   =.  info-local.gen  info
   =.  imms-local.gen  imms
   =/  bob  (~(got by blocks) o)
+  ::  parameters get the joined info of the arguments passed to them
+  ::
   =^  par-new=(list @uvre)  gen
+    =/  edges=(list [p=@uwoo args=(list (unit @uvre))])
+      %-  zing
+      %+  turn  pre
+      |=  p=@uwoo
+      %+  murn  (get-jmps fin:(~(got by new.gen) p))
+      |=  j=jmp
+      ?.  =(there.j o)  ~
+      `[p args.j]
+    ::
     =|  out=(list @uvre)
     |-  ^-  [(list @uvre) _gen]
     ?~  par.bob  [(flop out) gen]
     ?<  (~(has by old.gen) i.par.bob)
     =^  new  gen  re
     =.  old.gen  (~(put by old.gen) i.par.bob new)
-    =.  info-local.gen  (~(put by info-local.gen) new *info-reg)
+    =/  ins=(list (unit info-reg))
+      %+  turn  edges
+      |=  [p=@uwoo args=(list (unit @uvre))]
+      ?>  ?=(^ args)
+      ?~  i.args  ~
+      `(~(got by (~(got by info.gen) p)) u.i.args)
+    ::
+    =.  info-local.gen  (~(put by info-local.gen) new (param-info ins))
     =.  out  [new out]
-    $(par.bob t.par.bob)
+    %=    $
+        par.bob  t.par.bob
+    ::
+        edges
+      %+  turn  edges
+      |=  [p=@uwoo args=(list (unit @uvre))]
+      [p ?>(?=(^ args) t.args)]
+    ==
   ::
   =^  body-new=(list pole)  gen
     =-  [(flop -<) ->]
@@ -5208,7 +5246,7 @@
       ==
     ::
         %hop
-      [fin.bob(args.t (turn args.t.fin.bob ~(got by old.gen))) gen]
+      [fin.bob(args.t (turn args.t.fin.bob (lift ~(got by old.gen)))) gen]
     ::
         %jmp
       [fin.bob(v (turn v.fin.bob ~(got by old.gen))) gen]
@@ -5241,21 +5279,34 @@
     %-  ~(rep by a)
     |=  [[k=@uvre v-a=info-reg] acc=(map @uvre info-reg)]
     ?~  v-b=(~(get by b) k)  acc
-    =/  v-b  u.v-b
-    %+  ~(put by acc)  k
-    [ &(is-cell.v-a is-cell.v-b)
-    ::
-      ?&  |(is-loob.v-a ?=([~ ?] has-imm.v-a))
-          |(is-loob.v-b ?=([~ ?] has-imm.v-b))
-      ==
-    ::
-      (~(int in hed-of.v-a) hed-of.v-b)
-      (~(int in tel-of.v-a) tel-of.v-b)
-      ?:  =(has-hed.v-a has-hed.v-b)  has-hed.v-a  ~
-      ?:  =(has-tel.v-a has-tel.v-b)  has-tel.v-a  ~
-      ?:  =(dec-of.v-a dec-of.v-b)    dec-of.v-a   ~
-      ?:  =(has-imm.v-a has-imm.v-b)  has-imm.v-a  ~
-    ]
+    (~(put by acc) k (join-reg v-a u.v-b))
+  ::
+  ++  join-reg
+    |=  [a=info-reg b=info-reg]
+    ^-  info-reg
+    :*  &(is-cell.a is-cell.b)
+        ?&  |(is-loob.a ?=([~ ?] has-imm.a))
+            |(is-loob.b ?=([~ ?] has-imm.b))
+        ==
+        (~(int in hed-of.a) hed-of.b)
+        (~(int in tel-of.a) tel-of.b)
+        ?:(=(has-hed.a has-hed.b) has-hed.a ~)
+        ?:(=(has-tel.a has-tel.b) has-tel.a ~)
+        ?:(=(dec-of.a dec-of.b) dec-of.a ~)
+        ?:(=(has-imm.a has-imm.b) has-imm.a ~)
+    ==
+  ::  Info of a parameter from the arguments passed on each edge. An edge that
+  ::  passes nothing is skipped; then facts naming other registers are dropped,
+  ::  since those registers may be defined on the skipped edge only.
+  ::
+  ++  param-info
+    |=  ins=(list (unit info-reg))
+    ^-  info-reg
+    =/  have=(list info-reg)  (murn ins same)
+    ?~  have  *info-reg
+    =/  joined  (roll t.have |:([a=*info-reg b=i.have] (join-reg a b)))
+    ?:  =((lent have) (lent ins))  joined
+    joined(hed-of ~, tel-of ~, has-hed ~, has-tel ~, dec-of ~)
   --
 ::  If blocks are each others ipdom and idom respectively, we can merge them
 ::  into one. This requires the predecessor block to have %hop as the final
@@ -5296,7 +5347,11 @@
       ?^  args-b  !!
       ops
     ?~  args-b  !!
-    $(args-a t.args-a, args-b t.args-b, ops [[%mov i.args-a i.args-b] ops])
+    %=  $
+      args-a  t.args-a
+      args-b  t.args-b
+      ops     ?~(i.args-a ops [[%mov u.i.args-a i.args-b] ops])
+    ==
   ::
   $(o o1, body.b-new body-merge, fin.b-new fin.b1)
 ::  If a non-crashing op assigns to a register which is never used, we can
