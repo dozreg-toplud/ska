@@ -2540,8 +2540,6 @@
   =/  [nex=next gen=line-short]
     %-  ~(run comp *line-short)
     [& nomm:(~(got by code.long-ska) func) [%done ~] ~]
-  ::
-  =.  gen  ~(rewrite-cond comp gen)
   ::  Collapse the subject need to a single noun, finalize
   ::
   =^  [o=@uwoo sub=@uvre]  gen  (~(kerf comp gen) nex)
@@ -2593,8 +2591,6 @@
   ::
   =/  [nex=next gen=line-short]
     (~(run comp *line-short) | nomm:(~(got by code.long-ska) b) [%done ~] ~)
-  ::
-  =.  gen  ~(rewrite-cond comp gen)
   ::
   =^  res  gen  (~(next-lazy-collapse comp gen) nex cape.less.b)
   [(~(to-straight comp gen) res) res gen]
@@ -4024,7 +4020,7 @@
   ++  to-straight
     |=  nex=next-resolved
     ^-  straight
-    =/  blocks=(map @uwoo blob)  blocks.gen
+    =/  blocks=(map @uwoo blob)  blocks:rewrite-cond
     =/  start=blob  (~(got by blocks) then.nex)
     =.  blocks  (~(del by blocks) then.nex)
     =.  blocks  (~(put by blocks) `@`0 start)
