@@ -5389,40 +5389,54 @@
 ++  trim-trace-hints
   |=  blocks=(map @uwoo blob)
   ^+  blocks
+  =*  key  ,[hint=?(%spot %mean) reg=@uvre]
+  =/  topo  (bb-topo blocks)
+  =/  rev   (rev-cfg blocks (sy topo))
+  ::  Walk in topological order carrying the hints that are open: prologue
+  ::  passed, epilogue not reached yet. A hint open at an op that could crash,
+  ::  or at a terminator that could crash or leave the function, is unsafe to
+  ::  drop since the stack trace would change.
+  ::
+  =/  [seen=(set key) unsafe=(set key)]
+    =|  [seen=(set key) unsafe=(set key) out=(map @uwoo (set key))]
+    |-  ^-  [(set key) (set key)]
+    ?~  topo  [seen unsafe]
+    =/  b  (~(got by blocks) i.topo)
+    =/  open=(set key)
+      %+  roll  (~(get ja rev) i.topo)
+      |=  [p=@uwoo acc=(set key)]
+      (~(uni in acc) (~(get ju out) p))
+    ::
+    =/  body  body.b
+    |-  ^-  [(set key) (set key)]
+    ?^  body
+      =/  op  i.body
+      ?:  &(?=(%hdp -.op) ?=(?(%spot %mean) n.op))
+        %=  $
+          body  t.body
+          open  (~(put in open) [n.op p.op])
+          seen  (~(put in seen) [n.op p.op])
+        ==
+      ?:  &(?=(%hde -.op) ?=(?(%spot %mean) n.op))
+        $(body t.body, open (~(del in open) [n.op p.op]))
+      ?.  ?=(?(%inc %cel %lob %spy %nok %cal %caf %cam %csl %csf %csm) -.op)
+        $(body t.body)
+      $(body t.body, unsafe (~(uni in unsafe) open))
+    =?  unsafe  !?=(?(%clq %eqq %hop) -.fin.b)  (~(uni in unsafe) open)
+    ^$(topo t.topo, out (~(put by out) i.topo open))
+  ::
+  =/  safe  (~(dif in seen) unsafe)
   %-  ~(run by blocks)
   |=  b=blob
-  ^+  b
-  =/  safe=(set [hint=?(%spot %mean) reg=@uvre])
-    =*  set-hints  ,(set [hint=?(%spot %mean) reg=@uvre])
-    =|  gen=[safe=set-hints tack=set-hints]
-    |-  ^+  safe.gen
-    ?~  body.b  safe.gen
-    =/  op  i.body.b
-    =.  gen
-      ?:  &(?=(%hdp -.op) ?=(?(%spot %mean) n.op))
-        gen(tack (~(put in tack.gen) [n.op p.op]))
-      ?:  &(?=(%hde -.op) ?=(?(%spot %mean) n.op))
-        ?.  (~(has in tack.gen) [n.op p.op])  gen
-        =.  tack.gen  (~(del in tack.gen) [n.op p.op])
-        =.  safe.gen  (~(put in safe.gen) [n.op p.op])
-        gen
-      ?.  ?=(?(%inc %cel %lob %spy %nok %cal %caf %cam %csl %csf %csm) -.op)
-        gen
-      ::  op could crash, remove all pending stacktrace hints from removal
-      ::  candidates
-      ::  XX check calling ops for crash safety
-      ::
-      gen(tack ~)
-    ::
-    $(body.b t.body.b)
-  ::
-  =;  new=(list pole)  b(body new)
-  %+  murn  body.b
-  |=  op=pole
-  ^-  (unit pole)
-  ?:  &(?=(?(%hdp %hde) -.op) ?=(?(%spot %mean) n.op) (~(has in safe) [n p]:op))
-    ~
-  `op
+  %_    b
+      body
+    %+  skip  body.b
+    |=  op=pole
+    ?&  ?=(?(%hdp %hde) -.op)
+        ?=(?(%spot %mean) n.op)
+        (~(has in safe) [n p]:op)
+    ==
+  ==
 ::
 ++  remove-useless-branching
   |=  blocks=(map @uwoo blob)
@@ -5473,8 +5487,11 @@
       %clq  fin.b(z (rewrite-jump z.fin.b), o (rewrite-jump o.fin.b))
       %eqq  fin.b(z (rewrite-jump z.fin.b), o (rewrite-jump o.fin.b))
       %brn  fin.b(z (rewrite-jump z.fin.b), o (rewrite-jump o.fin.b))
-      %hop  fin.b(t (rewrite-jump t.fin.b))
+      %hop  fin.b(t (rewrite-hop t.fin.b))
   ==
+  ::  Bypass an empty block on a branch edge. Only when nothing is passed
+  ::  along: the edge could be critical and arguments on it would have no
+  ::  block to be moved in.
   ::
   ++  rewrite-jump
     |=  j=jmp
@@ -5485,7 +5502,28 @@
     ?.  =(~ body.nex)        j
     ?.  ?=(%hop -.fin.nex)   j
     ?.  =(~ args.t.fin.nex)  j
-    t.fin.nex
+    $(j t.fin.nex)
+  ::  Bypass an empty block on a hop edge. A hop is its block's only exit, so
+  ::  the edge is never critical and can carry arguments: the parameters of
+  ::  the bypassed block are substituted by what the hop passes to them.
+  ::
+  ++  rewrite-hop
+    |=  j=jmp
+    ^-  jmp
+    =/  nex  (~(got by blocks) there.j)
+    ?.  =(~ body.nex)        j
+    ?.  ?=(%hop -.fin.nex)   j
+    =/  sub=(map @uvre (unit @uvre))
+      =|  sub=(map @uvre (unit @uvre))
+      =/  par   par.nex
+      =/  args  args.j
+      |-  ^+  sub
+      ?~  par  ?>(?=(~ args) sub)
+      ?>  ?=(^ args)
+      $(par t.par, args t.args, sub (~(put by sub) i.par i.args))
+    ::
+    =/  pass  |=(a=(unit @uvre) ?~(a ~ (~(gut by sub) u.a a)))
+    $(there.j there.t.fin.nex, args.j (turn args.t.fin.nex pass))
   --
 ::
 ++  optimize
