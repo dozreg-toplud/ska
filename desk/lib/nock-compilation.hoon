@@ -5669,7 +5669,7 @@
 ::
 +$  prod
   $@  ~
-  $%  [%ir p=straight]
+  $%  [%ir b=bell p=straight]
   ==
 ::
 ++  validate-ovum
@@ -5754,7 +5754,7 @@
       [func scc rev [code jets]:long-ska.state scc-map jets-hot.state]
     ::
     =.  straight  (optimize straight)
-    [[%ir straight] ..poke]
+    [[%ir func straight] ..poke]
   ::
       %dire
     =/  [rev=(jug bell bell) scc-map=(map bell (set bell))]  graph-info
@@ -5767,7 +5767,7 @@
       [scc rev [code jets]:long-ska.state scc-map jets-hot.state]
     ::
     =.  straight  (optimize straight)
-    [[%ir straight] ..poke]
+    [[%ir b.ovo straight] ..poke]
   ==
 ::
 ++  wish  !!  ::  +10
