@@ -1,4 +1,4 @@
-/+  *nock-compilation1
+/+  *nock-compilation
 ::
 =*  stub  ~|(%stub !!)
 |%
@@ -451,7 +451,7 @@
 ++  print-straight
   |=  [prefix=tape =straight]
   |^  ^-  tape
-  ~>  %bout.[0 %print-straight]
+  :: ~>  %bout.[0 %print-straight]
   =/  blocks=tape
     %-  zing
     %+  join  "\0a"

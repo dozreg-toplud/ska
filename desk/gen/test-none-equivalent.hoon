@@ -1,4 +1,4 @@
-/+  *nock-compilation1
+/+  *nock-compilation
 ::
 :-  %say  |=  *  :-  %noun
 %-  none-equivalent

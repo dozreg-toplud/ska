@@ -1,4 +1,4 @@
-/+  *nock-compilation1
+/+  *nock-compilation
 /+  li=line-interpreter
 /+  hoot-zpdt
 /+  hoot-zpdt-fol
@@ -13,7 +13,8 @@
   ~>  %memo./user
   (g v)
 ::
-:: =/  =long-ska  +:(memo-call ska-poke [&+~ hoot-zpdt-fol] *long-ska)
+=|  =long-ska
+=.   long-ska  +:(memo-call ska-poke [&+~ hoot-zpdt-fol] long-ska)
 =/  subject  ..scow:hoot-zpdt
 =/  formula=^
   =>  subject
@@ -21,7 +22,6 @@
   !=
   (scow %ud 5)
 ::
-=|  =long-ska
 =^  func=bell  long-ska  (memo-call ska-poke [&+subject formula] long-ska)
 =.  long-ska  (ska-cole-restore long-ska)
 =/  [bell-graph=(jug bell bell) rev=(jug bell bell)]
@@ -70,6 +70,7 @@
 ::
 :: :-  %tang
 :: %-  flop
+~>  %bout.[0 'test-run-ir total']
 :-  %noun
 %-  to-wain:format  %-  crip
 ^-  tape

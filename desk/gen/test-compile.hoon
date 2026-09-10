@@ -1,4 +1,4 @@
-/+  *nock-compilation1
+/+  *nock-compilation
 /+  li=line-interpreter
 /+  hoot-zpdt
 /+  hoot

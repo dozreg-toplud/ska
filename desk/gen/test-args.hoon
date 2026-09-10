@@ -1,4 +1,4 @@
-/+  *nock-compilation1
+/+  *nock-compilation
 /+  hoot, hoot-zpdt, hoot-fol, hoot-zpdt-fol
 ::
 |%

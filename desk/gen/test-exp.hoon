@@ -1,9 +1,9 @@
 /+  our-hoot=hoot
 /+  our-hoot-zpdt=hoot-zpdt
 /+  zuse-vendor
-/+  nock-compilation1
+/+  nock-compilation
 ::
-=,  nock-compilation1
+=,  nock-compilation
 |%
 ++  strongly-normalize-sock
   |=  s=sock
@@ -208,7 +208,7 @@
   (g v) 
 ::
 =/  l=(list callgraph)  ~>  %bout
-  (ska-callgraph:nock-compilation1 [&+sub fol] ~)
+  (ska-callgraph:nock-compilation [&+sub fol] ~)
 :: ?:  |
 ::   noun+(lent l)
 :: ?:  |

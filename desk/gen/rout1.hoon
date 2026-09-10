@@ -1,4 +1,4 @@
-/+  nock-compilation1
+/+  nock-compilation
 /+  play-fol
 /+  hoot-fol
 ::
@@ -11,4 +11,4 @@
 %~  key  by
 =<  back.cole.jets
 ~>  %bout
-(rout:nock-compilation1 [~ hoot-fol] *long-ska:nock-compilation1)
+(rout:nock-compilation [~ hoot-fol] *long-ska:nock-compilation)
