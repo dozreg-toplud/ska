@@ -2661,7 +2661,7 @@
           jets-hot=(map ring need-ordered)
       ==
   ^-  [straight (map bell straight)]
-  ~+
+  ~>  %memo./ska
   =*  args  +<
   ::  Compile normally
   ::
@@ -2687,7 +2687,7 @@
           jets-hot=(map ring need-ordered)
       ==
   ^-  (map bell straight)
-  ~+
+  ~>  %memo./ska
   =|  map-local=(map bell straight)
   ::  Fixed-point loop with a worklist
   ::
@@ -5757,14 +5757,6 @@
     n
   ~+
   [(val -.n) (val +.n)]
-::
-++  memo-call
-  =>  ..ride  !.
-  |*  [g=gate v=*]
-  %-  need  %-  ~(mole vi |)
-  |.  =>  [g=g v=v]
-  ~>  %memo./ska
-  (g v)
 --
 ::
 =|  state=[=long-ska jets-hot=(map ring need-ordered)]
@@ -5808,7 +5800,7 @@
     =/  scc=(set bell)  (~(gut by scc-map) func [func ~ ~])
     =/  =straight
       =<  -
-      %+  memo-call  compile-unary  ::  XX explicit memoization?
+      %-  compile-unary
       [func scc rev [code jets]:long-ska.state scc-map jets-hot.state]
     ::
     =.  straight  (optimize straight)
@@ -5819,9 +5811,7 @@
     =/  scc=(set bell)  (~(gut by scc-map) b.ovo [b.ovo ~ ~])
     =/  =straight
       =-  (~(got by -) b.ovo)
-      ::  XX explicit memoization?
-      ::
-      %+  memo-call  compile-scc
+      %-  compile-scc
       [scc rev [code jets]:long-ska.state scc-map jets-hot.state]
     ::
     =.  straight  (optimize straight)
