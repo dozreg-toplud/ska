@@ -6024,6 +6024,7 @@
   |=  $:  [subject=* formula=*]
           scry=$@(~ $-(^ (unit (unit))))
       ==
+  ~>  %virt
   =|  trace=(list [@ta *])
   |^  ^-  tone
       ?+  formula  [%2 trace]
@@ -6289,6 +6290,7 @@
     ~/  %mole
     |*  tap=(trap)
     ^-  (unit _$:tap)
+    ~>  %virt
     =/  mur  (mure tap)
     ?~(mur ~ `$:tap)
   ::  +mule: typed virtual
@@ -6296,6 +6298,7 @@
   ++  mule
     ~/  %mule
     |*  tap=(trap)
+    ~>  %virt
     =/  mud  (mute tap)
     ?-  -.mud
       %&  [%& p=$:tap]

@@ -145,7 +145,7 @@
 --
 ::
 :-  %say  |=  *
-=/  sub  ..add:our-hoot-zpdt
+=/  sub  our-hoot-zpdt
 :: =/  sub  zuse-vendor
 :: =/  sub  ~
 :: =/  sub  ska-experiment1-hoot
@@ -164,11 +164,11 @@
 =/  fol
   ;;  ^
   =>  sub  !.  !=
-  =/  a  ?:  =(0 0)  42  43
-  (add a 1)
+  :: =/  a  ?:  =(0 0)  42  43
+  :: (add a 1)
   :: (~(mint ut [%atom %$ ~]) %noun [%dtls $+1])
   :: (ream '42')
-  :: (ride %noun '42')
+  (ride %noun '42')
   :: !.
   :: =/  t  |.(0)
   :: |-  ^-  ~
@@ -213,6 +213,7 @@
 ::   noun+(lent l)
 :: ?:  |
 :: noun+(count-bells (condense -:l [&+sub fol]))
-  :-  %noun
-  =/  g  -.l
-  (turn `wall`(zing `(list wall)`(turn (flop (render-callgraph (condense g [&+sub fol]))) (cury wash 0 80))) crip)
+  :: :-  %noun
+  :: =/  g  -.l
+  :: (turn `wall`(zing `(list wall)`(turn (flop (render-callgraph (condense g [&+sub fol]))) (cury wash 0 80))) crip)
+noun+~

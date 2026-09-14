@@ -1313,6 +1313,59 @@
   ?^  h  h
   fol-loop(template-fol (tel:so template-fol), axis (peg axis 3))
 ::
+++  dif-so
+  |=  [a=sock b=sock]
+  ^-  (list (pair @ (lest (pair @ ?(%lost %data)))))
+  =*  res  ,(list (pair @ (lest (pair @ ?(%lost %data)))))
+  =/  rev  1
+  |-  ^-  res
+  ?:  |(?=(^ cape.a) ?=(^ cape.b))
+    %:  weld
+      $(a (hed:so a), b (hed:so b), rev (peg rev 2))
+      $(a (tel:so a), b (tel:so b), rev (peg rev 3))
+    ==
+  ?:  ?=(%| cape.a)  ~
+  ?:  ?=(%| cape.b)  ~[[rev ~[[1 %lost]]]]
+  =/  rel  1
+  =-  ?~  -  ~  ~[[rev -]]
+  |-  ^-  (list (pair @ ?(%lost %data)))
+  ?:  =(data.a data.b)  ~
+  ?.  &(?=(^ data.a) ?=(^ data.b))  ~[[rel %data]]
+  %:  weld
+    $(data.a -.data.a, data.b -.data.b, rel (peg rel 2))
+    $(data.a +.data.a, data.b +.data.b, rel (peg rel 3))
+  ==
+::
+++  norm-so
+  |=  s=sock
+  ^-  sock
+  =*  norm-so  .
+  ?:  ?=(@ cape.s)  s
+  ~+
+  =;  out=sock  =+(=(out s) out)
+  =/  h=sock  (norm-so -.cape.s -.data.s)
+  =/  t=sock  (norm-so +.cape.s +.data.s)
+  :_  [data.h data.t]
+  ?:  &(?=(? cape.h) =(cape.h cape.t))  cape.h
+  [cape.h cape.t]
+::
+++  norm-pi
+  |=  m=spring
+  ^-  spring
+  =*  norm-pi  .
+  ?@  m  m
+  ~+
+  =/  l  (norm-pi -.m)
+  =/  r  (norm-pi +.m)
+  ?:  &(?=(@ l) ?=(@ r) !=(0 l) !=(1 l) =(0 (mod l 2)) =(+(l) r))
+    (div l 2)
+  [l r]
+::
+++  normalize-prod
+  |=  prod=[s=sock m=spring]
+  ^+  prod
+  [(norm-so s.prod) (norm-pi m.prod)]
+::
 ++  ska-poke
   |=  [[bus=sock fol=^] lon=long-ska]
   ^-  [bell long-ska]
@@ -1320,15 +1373,22 @@
   =/  g=callgraph  -:(ska-callgraph root-identity memo.final.lon)
   ::
   =/  pruned=callgraph  (prune-callgraph g root-identity `graph.final.lon)
+  =.  graph.final.lon  (~(uni by graph.final.lon) pruned)
   =/  =bell-prod
-    %-  ~(rep by pruned)
+    %-  ~(rep by graph.final.lon)
     |=  [[id=identity d=datum] acc=bell-prod]
     =/  b=bell  [less-code.d fol.id]
     =;  prod=[sock spring]
       ?~  have=(~(get by acc) b)  (~(put by acc) b prod)
-      ?>  =(prod u.have)
+      ?.  =(prod u.have)
+        ?.  =(`sock`-.prod `sock`-.u.have)
+          ~|  (dif-so -.prod -.u.have)
+          !!
+        ~|  [+.prod +.u.have]
+        !!
       acc
     ::
+    %-  normalize-prod  ::  XX normalize right here?
     :_  map.d
     |-  ^-  sock
     ?~  map.d  prod.d
@@ -1412,7 +1472,6 @@
       (~(jab by m) b lens)
     ::
     acc
-  =.  graph.final.lon  (~(uni by graph.final.lon) pruned)
   =/  root-bell=bell  [less-code.root-datum fol]
   =/  [root=(jug * path) core=(jug path sock) batt=(jug ^ path)]
     =/  gen  [queu=pruned jets=[=_root =_core =_batt]:jets.lon]
@@ -1579,15 +1638,14 @@
   ^-  [(jug bell bell) (jug bell bell)]
   %-  ~(rep by g)
   |=  [[k=identity v=datum] acc=(jug bell bell) acc-r=(jug bell bell)]
-  =/  caller=bell  [less-code.v fol.k]
-  ?:  =(~ callees.v)
-    :_  acc-r
-    ?:  (~(has by acc) caller)  acc
-    (~(put by acc) caller ~)
+  =/  caller-bell=bell  [less-code.v fol.k]
+  =?  acc  !(~(has by acc) caller-bell)  (~(put by acc) caller-bell ~)
   %-  ~(rep in callees.v)
   |=  [callee=callee-entry =_acc _acc-r]
-  =/  callee=bell  [less-code:(~(got by g) id.callee) fol.id.callee]
-  [(~(put ju acc) caller callee) (~(put ju acc-r) callee caller)]
+  ?~  callee-datum=(~(get by g) id.callee)  [acc acc-r]
+  =/  callee-bell=bell  [less-code.u.callee-datum fol.id.callee]
+  :-  (~(put ju acc) caller-bell callee-bell)
+  (~(put ju acc-r) callee-bell caller-bell)
 ::
 ++  tarjan
   |*  g=(jug * *)

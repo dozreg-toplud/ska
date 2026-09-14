@@ -15,12 +15,30 @@
 ::
 =|  =long-ska
 =.   long-ska  +:(memo-call ska-poke [&+~ hoot-zpdt-fol] long-ska)
-=/  subject  ..scow:hoot-zpdt
+=/  subject  ..dec:hoot-zpdt
 =/  formula=^
   =>  subject
   ;;  ^
   !=
-  (scow %ud 5)
+  %.  [3 5]
+  |=  [m=@ n=@]
+  ^-  @
+  ?:  =(0 m)  +(n)
+  ?:  =(0 n)  $(m (dec m), n 1)
+  $(m (dec m), n $(n (dec n)))
+::
+=^  func=bell  long-ska  (memo-call ska-poke [&+subject formula] long-ska)
+=.  long-ska  (ska-cole-restore long-ska)
+::
+=/  formula=^
+  =>  subject
+  ;;  ^
+  !=
+  %.  ~[1]
+  |=  l=(list @)
+  ^-  (list @)
+  ?~  l  ~
+  [(dec i.l) $(l t.l)]
 ::
 =^  func=bell  long-ska  (memo-call ska-poke [&+subject formula] long-ska)
 =.  long-ska  (ska-cole-restore long-ska)
