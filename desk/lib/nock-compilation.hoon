@@ -2462,13 +2462,46 @@
 +$  straight  [need=need-ordered n-args=@ud blocks=(map @uwoo blob)]
 ::  Inner state for the linearizer
 ::
+::  The compiler computes the subject shape and emits code in one traversal,
+::  but the compilation fixed point only reads the shape, and code emission is
+::  the more expensive half.  So everything that touches the emitted IR
+::  (.blocks, .tags, .cond) goes through +late as a $gen-act: recorded in
+::  .todo and replayed in order by +replay once the shape is final, run right
+::  away in %run mode, or thrown away for the fixed point iterations whose
+::  code is never used.  Register and block identifiers are allocated eagerly
+::  either way, since needs and lazy blocks carry them.
+::
 +$  line-short
   $:  re-gen=@uvre
       bo-gen=_`@uwoo`1  ::  0 is reserved for the entry point
-      blocks=(map @uwoo blob)
       id-gen=@uxid                   ::  branch region identifiers
+      mode=$~(%record ?(%record %run %drop))
+      todo=(list gen-act)            ::  recorded actions, latest first
+      blocks=(map @uwoo blob)
       tags=(map @uwoo (list @uxid))  ::  region of lazy need blocks
       =cond
+      snaps=(map @uxid cond)         ::  snapshots of .cond for +sect
+  ==
+::  Deferred code emission, see $line-short
+::
++$  gen-act
+  $%  [%emir o=@uwoo =blob]
+      [%add-ops o=@uwoo ops=(list pole)]
+      [%tag o=@uwoo region=(list @uxid)]
+      [%tag-from from=@uwoo to=(list @uwoo)]
+      [%proxy p=@uvre r=@uvre o=@uwoo]
+      [%snap id=@uxid]
+      [%kern o=@uwoo laz=need-lazy r=@uvre]
+      [%mede o=@uwoo som=* laz=need-lazy]
+      [%collapse-atom o=@uwoo laz=need-lazy r=@uvre]
+      [%insert-hop a=@uwoo o1=@uwoo o2=@uwoo]
+      $:  %sect
+          o-0-end=@uwoo
+          o-1-end=@uwoo
+          region=@uxid
+          before=@uxid   ::  snapshot of .cond before the branches were compiled
+          between=@uxid  ::  snapshot of .cond after the no branch was compiled
+      ==
   ==
 ::  Non-control-flow ops
 ::
@@ -2692,6 +2725,14 @@
   =^  [o=@uwoo sub=@uvre]  gen  (~(kerf comp gen) nex)
   (~(to-straight comp gen) [%next [[this+sub ~] ~ ~] ~ o])
 ::
+::  Compute the input shapes of the compilation fixed point with +run-shape
+::  instead of +run with code emission dropped
+::
+++  dedicated-shape-pass  &
+::  Debug: check that both agree on the final pass
+::
+++  shape-check  |
+::
 ++  compile-scc
   ~%  %compile-scc  ..ride  ~
   |=  $:  scc=(set bell)
@@ -2705,56 +2746,61 @@
   :: ~>  %memo./ska
   ::  Only the subject shapes in .map-local are read by the loop, so the rest
   ::  of the straight is a placeholder until the fixed point is reached, when
-  ::  the functions get finalized by the traps in .pending
+  ::  the whole SCC is compiled once more with .done set, this time for real
   ::
   =|  map-local=(map bell straight)
-  =|  pending=(map bell (trap straight))
   ::  Fixed-point loop with a worklist
   ::
   =/  w=worklist  scc
   =/  done=?  |
   |-  ^+  map-local
   =*  fixpoint-compilation  $
-  =;  [w-new=worklist map-local1=_map-local pending1=_pending]
-    ?:  done
-      %-  ~(urn by map-local1)
-      |=  [b=bell straight]
-      ^-  straight
-      $:(~(got by pending1) b)
+  =;  [w-new=worklist map-local1=_map-local]
+    ?:  done  map-local1
     =.  w-new  (~(int in w-new) scc)
-    ?:  =(~ w-new)
-      %=  fixpoint-compilation
-        w          scc
-        map-local  map-local1
-        pending    pending1
-        done       &
-      ==
+    ?:  =(~ w-new)  fixpoint-compilation(w scc, map-local map-local1, done &)
     =>  !@  comp-verb  .
         ~&  %fixpoint-compilation  .
-    fixpoint-compilation(w w-new, map-local map-local1, pending pending1)
+    fixpoint-compilation(w w-new, map-local map-local1)
   ::
   %-  ~(rep in w)
   ~%  %compile-scc-fn  ..ride  ~
-  |=  [b=bell w-new=worklist =_map-local =_pending]
-  ^+  [w-new map-local pending]
+  |=  [b=bell w-new=worklist =_map-local]
+  ^+  [w-new map-local]
   =/  comp  (comp scc rev long-ska scc-map jets-hot map-local b)
-  ::  Compile the function normally, collapse lazy needs to the input shape
+  =/  =nomm  nomm:(~(got by code.long-ska) b)
+  ::  Until the fixed point only the input shape is needed: from the shape-only
+  ::  traversal, or from the full compilation with code emission dropped.  The
+  ::  final pass compiles for real, emitting code right away.
   ::
-  =/  [nex=next gen=line-short]
-    (~(run comp *line-short) | nomm:(~(got by code.long-ska) b) [%done ~] ~)
+  =/  gen=line-short  *line-short
+  =^  [need-new=need-ordered laz=need-lazy ned-final=need o=@uwoo]  gen
+    ?:  &(!done dedicated-shape-pass)
+      =^  l=laze  gen  (~(run-shape comp gen) nomm [%done ~])
+      [[(laze-collapse l cape.less.b) *need-lazy *need `@uwoo`0] gen]
+    =.  mode.gen  ?:(done %run %drop)
+    =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~)
+    =^  [ned-final=need laz=need-lazy o=@uwoo]  gen
+      (~(collapse-shape comp gen) nex cape.less.b)
+    [[(need-to-ordered ned-final) laz ned-final o] gen]
   ::
-  =^  [ned-final=need laz=need-lazy o=@uwoo]  gen
-    (~(collapse-shape comp gen) nex cape.less.b)
-  ::
-  =/  need-new=need-ordered  (need-to-ordered ned-final)
+  =/  shape-ok=?
+    ?.  &(done shape-check)  &
+    =/  l=laze  -:(~(run-shape comp *line-short) nomm [%done ~])
+    =/  shape  (laze-collapse l cape.less.b)
+    ~|  [%shape-mismatch b shape need-new]
+    ?>  =(shape need-new)
+    &
+  ?>  shape-ok
   ::  Finalization: emit the subject deconsing code, coerce the subject to the
-  ::  pessimized shape if there is one, renumber the registers
+  ::  pessimized shape if there is one, replay the recorded code emission and
+  ::  renumber the registers
   ::
   =/  finish
-    |=  pessimized=(unit need-ordered)
-    ^-  (trap straight)
     ~%  %compile-scc-finish  ..ride  ~
-    |.
+    |=  pessimized=(unit need-ordered)
+    ^-  straight
+    ?.  done  [?~(pessimized need-new u.pessimized) 0 ~]
     =.  gen  (~(coerce-lazy comp gen) ned-final o laz)
     =/  res=next-resolved  [%next [[ned-final ~] ~ ~] ~ o]
     ?~  pessimized  (~(to-straight comp gen) res)
@@ -2763,17 +2809,14 @@
   ::  With a compiled function candidate, requeue callers if the subject split
   ::  did not converge yet, taking MSG of subject splits to avoid divergence.
   ::
-  =/  s=straight  [need-new 0 ~]
   ?~  s-previous=(~(get by map-local) b)
-    :+  ?:  ?=([%none ~] need-new)  w-new
+    :-  ?:  ?=([%none ~] need-new)  w-new
         (~(uni in w-new) (~(get ju rev) b))
-      (~(put by map-local) b s)
-    (~(put by pending) b (finish ~))
+    (~(put by map-local) b (finish ~))
   =/  need-pessimized  (msg-need-ord need-new need.u.s-previous cape.less.b)
-  :+  ?:  =(need-pessimized need.u.s-previous)  w-new
+  :-  ?:  =(need-pessimized need.u.s-previous)  w-new
       (~(uni in w-new) (~(get ju rev) b))
-    (~(put by map-local) b s(need need-pessimized))
-  %+  ~(put by pending)  b
+  %+  ~(put by map-local)  b
   ?:  =(need-pessimized need-new)  (finish ~)
   (finish `need-pessimized)
 ::
@@ -3120,14 +3163,14 @@
         ::
         =^  region-id  gen  id
         =/  region-branch  [region-id region]
-        =/  cond-before  cond.gen
+        =^  snap-before  gen  snap
         =^  nex-1  gen  $(nomm r.nomm, goal goal-1, region region-branch)
-        =/  cond-between  cond.gen
+        =^  snap-between  gen  snap
         =^  nex-0  gen  $(nomm q.nomm, goal goal-0, region region-branch)
         =^  [lazy=need-lazy yes=@uwoo nuh=@uwoo]  gen
           %-  sect
           :*  nex-0  nex-1  there.then.goal-0  there.then.goal-1
-              region-branch  cond-before  cond-between
+              region-branch  snap-before  snap-between
           ==
         ::
         =^  o=@uwoo  gen  (emit ~ ~ [%brn r-cond ~^yes ~^nuh])
@@ -3150,9 +3193,9 @@
         =^  region-id  gen  id
         [[region-id region] gen]
       ::
-      =/  cond-before  cond.gen
+      =^  snap-before  gen  snap
       =^  nex-1  gen  $(nomm r.nomm, goal goal-1, region region-branch)
-      =/  cond-between  cond.gen
+      =^  snap-between  gen  snap
       =^  nex-0  gen  $(nomm q.nomm, goal goal-0, region region-branch)
       =^  [lazy=need-lazy yes=@uwoo nuh=@uwoo]  gen
         ?:  ?=(%next -.goal)
@@ -3160,11 +3203,12 @@
           ?>  ?=(%next -.goal-1)
           %-  sect
           :*  nex-0  nex-1  there.then.goal-0  there.then.goal-1
-              region-branch  cond-before  cond-between
+              region-branch  snap-before  snap-between
           ==
         =^  yes  gen  (emit ~ ~ %hop then.nex-0)
         =^  nuh  gen  (emit ~ ~ %hop then.nex-1)
-        =.  tags.gen  (~(gas by tags.gen) ~[[yes region] [nuh region]])
+        =.  gen  (late %tag yes region)
+        =.  gen  (late %tag nuh region)
         :_  gen
         ?>  =(~ args.then.nex-0)
         ?>  =(~ args.then.nex-1)
@@ -3262,6 +3306,410 @@
   ++  re  `[@uvre _gen]`[re-gen.gen gen(re-gen +(re-gen.gen))]
   ++  oo  `[@uwoo _gen]`[bo-gen.gen gen(bo-gen +(bo-gen.gen))]
   ++  id  `[@uxid _gen]`[id-gen.gen gen(id-gen +(id-gen.gen))]
+  ::  Snapshot of .cond, taken when the action gets run
+  ::
+  ++  snap
+    ^-  [@uxid _gen]
+    =^  i  gen  id
+    [i (late %snap i)]
+  ::  Record, run or drop a code emission action, see $line-short
+  ::
+  ++  late
+    |=  act=gen-act
+    ^+  gen
+    ?-    mode.gen
+        %drop    gen
+        %record  gen(todo [act todo.gen])
+        %run
+      ?-  -.act
+        %emir     gen(blocks (~(put by blocks.gen) o.act blob.act))
+        %tag      gen(tags (~(put by tags.gen) o.act region.act))
+        %snap     gen(snaps (~(put by snaps.gen) id.act cond.gen))
+        %kern     (kern-now [o laz r]:act)
+        %mede     (mede-now [o som laz]:act)
+        %insert-hop  (insert-hop-now [a o1 o2]:act)
+        %collapse-atom  (collapse-atom-now [o laz r]:act)
+        %sect     (sect-now [o-0-end o-1-end region before between]:act)
+      ::
+          %add-ops
+        =/  =blob  (~(got by blocks.gen) o.act)
+        =.  body.blob  (weld ops.act body.blob)
+        gen(blocks (~(put by blocks.gen) o.act blob))
+      ::
+          %tag-from
+        =/  tag  (~(got by tags.gen) from.act)
+        gen(tags (~(gas by tags.gen) (turn to.act |=(o=@uwoo [o tag]))))
+      ::
+          %proxy
+        gen(cond (~(put by cond.gen) p.act [r.act (~(got by tags.gen) o.act)]))
+      ==
+    ==
+  ::  Run the recorded actions in order.  Afterwards actions run immediately.
+  ::
+  ++  replay
+    ^+  gen
+    =<  $
+    ~%  %comp-replay  ..ride  ~
+    |.
+    =/  todo=(list gen-act)  (flop todo.gen)
+    =.  todo.gen  ~
+    =.  mode.gen  %run
+    |-  ^+  gen
+    ?~  todo  gen
+    $(gen (late i.todo), todo t.todo)
+  ::  Shape-only compilation: the traversal of +run reduced to what decides
+  ::  the lazy need of the subject.  No code, no registers, no blocks.
+  ::
+  ++  run-shape
+    ~%  %comp-run-shape  ..ride  ~
+    |=  [=nomm goal=goal-shape]
+    ^-  [laze _gen]
+    =/  none=laze  *laze
+    =/  this=laze  [[this+~ ~] ~ ~]
+    ::  what +simple-next does to the goal
+    ::
+    =/  simple=goal-shape  ?:(?=(%next -.goal) goal [%next this])
+    ?-    nomm
+        [^ *]
+      ?-    -.goal
+          %done  $(goal [%next this])
+      ::
+          %pick
+        =^  l-2  gen  $(nomm +.nomm, goal [%next none])
+        =^  l-1  gen  $(nomm -.nomm, goal [%next none])
+        [(laze-copy l-1 l-2) gen]
+      ::
+          %next
+        =/  [hed=laze tel=laze]  (laze-split laz.goal)
+        =^  l-2  gen  $(nomm +.nomm, goal [%next tel])
+        =^  l-1  gen  $(nomm -.nomm, goal [%next hed])
+        [(laze-copy l-1 l-2) gen]
+      ==
+    ::
+        [%0 *]
+      ?:  =(0 p.nomm)  [none gen]
+      ?>  ?=(%next -.simple)
+      ?:  =(1 p.nomm)  [laz.simple gen]
+      [(laze-from p.nomm laz.simple) gen]
+    ::
+        [%1 *]  [none gen]
+    ::
+        [%2 *]
+      ?~  info.nomm
+        =^  l-fol  gen  $(nomm q.nomm, goal [%next this])
+        =^  l-sub  gen  $(nomm p.nomm, goal [%next this])
+        [(laze-copy l-sub l-fol) gen]
+      =*  b-callee  b.u.info.nomm
+      =/  callee-pure=?  pure:(~(got by code.long-ska) b-callee)
+      =/  drop=?  &(callee-pure ?=(%next -.goal) (laze-none-equivalent laz.goal))
+      =^  l-fol=laze  gen
+        ?:  (safe-fol-fol q.nomm)  [none gen]
+        $(nomm q.nomm, goal [%next none])
+      =^  l-sub  gen
+        ?:  drop  $(nomm p.nomm, goal [%next none])
+        $(nomm p.nomm, goal [%next [[(callee-need b-callee) ~] ~ ~]])
+      [(laze-copy l-sub l-fol) gen]
+    ::
+        [%3 *]
+      ?:  &(?=(%next -.goal) (laze-none-equivalent laz.goal))  $(nomm p.nomm)
+      $(nomm p.nomm, goal [%next this])
+    ::
+        [%4 *]  $(nomm p.nomm, goal [%next this])
+    ::
+        [%5 *]
+      =^  l-q  gen  $(nomm q.nomm, goal [%next this])
+      =^  l-p  gen  $(nomm p.nomm, goal [%next this])
+      [(laze-copy l-p l-q) gen]
+    ::
+        [%6 *]
+      ?:  ?&  ?=(%next -.goal)
+              !(laze-none-equivalent laz.goal(sure *sure-inter1))
+          ==
+        =^  [goal-0=laze goal-1=laze]  gen  (laze-branch laz.goal)
+        =^  l-1  gen  $(nomm r.nomm, goal [%next goal-1])
+        =^  l-0  gen  $(nomm q.nomm, goal [%next goal-0])
+        =^  lazy  gen  (laze-sect l-0 l-1)
+        =^  l-cond  gen  $(nomm p.nomm, goal [%next this])
+        [(laze-copy l-cond lazy) gen]
+      =/  goal-branch=goal-shape
+        ?.  ?=(%next -.goal)  goal
+        [%next [sure.laz.goal ~ ~]]
+      =^  l-1  gen  $(nomm r.nomm, goal goal-branch)
+      =^  l-0  gen  $(nomm q.nomm, goal goal-branch)
+      =^  lazy  gen  (laze-sect l-0 l-1)
+      =^  l-cond  gen  $(nomm p.nomm, goal [%pick ~])
+      [(laze-copy l-cond lazy) gen]
+    ::
+        [%7 *]
+      =^  l  gen  $(nomm q.nomm)
+      $(nomm p.nomm, goal [%next l])
+    ::
+        [%10 *]
+      ?>  ?=(%next -.simple)
+      =/  [don=laze rec=laze]  (laze-into p.p.nomm laz.simple)
+      =^  l-rec  gen  $(nomm q.nomm, goal [%next rec])
+      =^  l-don  gen  $(nomm q.p.nomm, goal [%next don])
+      [(laze-copy l-don l-rec) gen]
+    ::
+        [%11 *]
+      ?@  p.nomm
+        ?.  ?=(hint-static p.nomm)  $(nomm q.nomm)
+        $(nomm q.nomm, goal simple)
+      ?.  ?=(hint-dynamic p.p.nomm)
+        =^  l-fol  gen  $(nomm q.nomm)
+        ?:  (safe-nomm q.p.nomm)  [l-fol gen]
+        =^  l-toke  gen  $(nomm q.p.nomm, goal [%next none])
+        [(laze-copy l-toke l-fol) gen]
+      =^  l-fol=laze  gen  $(nomm q.nomm, goal simple)
+      =^  l-fol=laze  gen
+        ?.  ?=(hint-dynamic-stop p.p.nomm)  [l-fol gen]
+        =^  i  gen  id
+        [[*sure-inter1 ~ [i l-fol]~] gen]
+      =^  l-toke  gen  $(nomm q.p.nomm, goal [%next this])
+      [(laze-copy l-toke l-fol) gen]
+    ::
+        [%12 *]
+      =^  l-q  gen  $(nomm q.nomm, goal [%next this])
+      =^  l-p  gen  $(nomm p.nomm, goal [%next this])
+      [(laze-copy l-p l-q) gen]
+    ==
+  ::  register-less need of the callee: jet or SCC-local best guess or recur
+  ::
+  ++  callee-need
+    |=  b-callee=bell
+    ^-  need-ordered
+    =/  rin=(unit ring)  (~(get by call.cole.jets.long-ska) b-callee)
+    ?^  j=(biff rin ~(get by jets-hot))  u.j
+    ?:  (~(has in scc) b-callee)
+      need:(~(gut by map-local) b-callee *straight)
+    =/  new-scc=(set bell)  (~(gut by scc-map) b-callee [b-callee ~ ~])
+    need:(~(got by (compile-scc new-scc rev long-ska scc-map jets-hot)) b-callee)
+  ::
+  ++  laze-none-equivalent
+    |=  laz=laze
+    ^-  ?
+    =*  none  .
+    ?&  ?=([%none ~] ned.sure.laz)
+        ?=(?(~ [%1 ~ ~]) lok.sure.laz)
+        (levy fork.laz |=([[* a=laze] * b=laze] &((none a) (none b))))
+        (levy bond.laz |=([* n=laze] (none n)))
+    ==
+  ::  +must for shapes
+  ::
+  ++  laze-must
+    |=  ned=need-ordered
+    ^-  need-ordered
+    ?-  -.ned
+      %both  ned
+      %this  ned
+      ^      [%both ned]
+      %none  [%this ~]
+    ==
+  ::  +split for shapes
+  ::
+  ++  laze-split
+    ~%  %comp-laze-split  ..ride  ~
+    |=  laz=laze
+    ^-  [laze laze]
+    =/  [lok-h=(set @) lok-t=(set @)]
+      %-  ~(rep in lok.sure.laz)
+      |=  [axe=@ lok-h=(set @) lok-t=(set @)]
+      ?<  =(0 axe)
+      ?:  ?=(?(%1 %2 %3) axe)  [lok-h lok-t]
+      ?-  (cap axe)
+        %2  [(~(put in lok-h) (mas axe)) lok-t]
+        %3  [lok-h (~(put in lok-t) (mas axe))]
+      ==
+    ::
+    =/  [ned-h=need-ordered ned-t=need-ordered]
+      =/  ned  ned.sure.laz
+      ?-  -.ned
+        ^      [-.ned +.ned]
+        %none  [ned ned]
+        %this  [ned ned]
+        %both  [(laze-must h.ned) (laze-must t.ned)]
+      ==
+    ::
+    =/  forks=(list [laze-fork laze-fork])
+      %+  turn  fork.laz
+      |=  [y=[o=@uxid laz=laze] n=[o=@uxid laz=laze]]
+      =/  [y-h=laze y-t=laze]  (laze-split laz.y)
+      =/  [n-h=laze n-t=laze]  (laze-split laz.n)
+      [[[o.y y-h] [o.n n-h]] [[o.y y-t] [o.n n-t]]]
+    ::
+    =/  bonds=(list [laze-bond laze-bond])
+      %+  turn  bond.laz
+      |=  [o=@uxid laz=laze]
+      =/  [h=laze t=laze]  (laze-split laz)
+      [[o h] [o t]]
+    ::
+    :-  [[ned-h lok-h] (turn forks head) (turn bonds head)]
+    [[ned-t lok-t] (turn forks tail) (turn bonds tail)]
+  ::  +into for shapes
+  ::
+  ++  laze-into
+    ~%  %comp-laze-into  ..ride  ~
+    |=  [axe=@ laz=laze]
+    ^-  [laze laze]
+    ?<  =(0 axe)
+    =/  [lok-don=(set @) lok-rec=(set @)]
+      =;  [lok-don=(set @) lok-rec=(set @)]
+        :-  lok-don
+        ?:  =(1 axe)  lok-rec
+        (~(put in lok-rec) axe)
+      %-  ~(rep in lok.sure.laz)
+      |=  [axe-lok=@ lok-don=(set @) lok-rec=(set @)]
+      ?~  rest=(gep axe axe-lok)
+        [lok-don (~(put in lok-rec) axe-lok)]
+      ?:  =(1 u.rest)  [lok-don lok-rec]
+      [(~(put in lok-don) u.rest) lok-rec]
+    ::
+    =/  [ned-don=need-ordered ned-rec=need-ordered]
+      =/  ned  ned.sure.laz
+      ?:  =(1 axe)  [ned none+~]
+      =|  tack=(list [h=? n=need-ordered])
+      |-  ^-  [need-ordered need-ordered]
+      ?:  =(1 axe)
+        :-  ned
+        %+  roll  tack
+        |:  [*[h=? n=need-ordered] acc=`need-ordered`[%none ~]]
+        ^-  need-ordered
+        ?:  h  (cons-need acc n)
+        (cons-need n acc)
+      =/  [h=? lat=@]  [?=(%2 (cap axe)) (mas axe)]
+      ?-    -.ned
+          %none  $(tack [[h ned] tack], axe lat)
+          %this  $(tack [[h ned] tack], axe lat)
+      ::
+          ^
+        =+  [new old]=?:(h ned [+.ned -.ned])
+        $(tack [[h old] tack], ned new, axe lat)
+      ::
+          %both
+        =/  l  (laze-must h.ned)
+        =/  r  (laze-must t.ned)
+        =+  [new old]=?:(h [l r] [r l])
+        $(tack [[h old] tack], ned new, axe lat)
+      ==
+    ::
+    =/  forks=(list [laze-fork laze-fork])
+      %+  turn  fork.laz
+      |=  [y=[o=@uxid laz=laze] n=[o=@uxid laz=laze]]
+      =/  [y-don=laze y-rec=laze]  (laze-into axe laz.y)
+      =/  [n-don=laze n-rec=laze]  (laze-into axe laz.n)
+      [[[o.y y-don] [o.n n-don]] [[o.y y-rec] [o.n n-rec]]]
+    ::
+    =/  bonds=(list [laze-bond laze-bond])
+      %+  turn  bond.laz
+      |=  [o=@uxid laz=laze]
+      =/  [don=laze rec=laze]  (laze-into axe laz)
+      [[o don] [o rec]]
+    ::
+    :-  [[ned-don lok-don] (turn forks head) (turn bonds head)]
+    [[ned-rec lok-rec] (turn forks tail) (turn bonds tail)]
+  ::  +from for shapes
+  ::
+  ++  laze-from
+    ~%  %comp-laze-from  ..ride  ~
+    |=  [axe=@ laz=laze]
+    ^-  laze
+    ?<  =(0 axe)
+    =/  sur=sure-inter1
+      ?:  ?=(%none -.ned.sure.laz)
+        :-  [%none ~]
+        ?<  =(1 axe)
+        ?:  =(~ lok.sure.laz)  [axe ~ ~]
+        (~(run in lok.sure.laz) |=(x=@ (peg axe x)))
+      :_  (~(run in lok.sure.laz) |=(x=@ (peg axe x)))
+      =/  ned  ned.sure.laz
+      |-  ^-  need-ordered
+      ?:  =(1 axe)  ned
+      ?-  (cap axe)
+        %2  [$(axe (mas axe)) none+~]
+        %3  [none+~ $(axe (mas axe))]
+      ==
+    ::
+    :+  sur
+      %+  turn  fork.laz
+      |=  [y=[o=@uxid laz=laze] n=[o=@uxid laz=laze]]
+      [y(laz (laze-from axe laz.y)) n(laz (laze-from axe laz.n))]
+    %+  turn  bond.laz
+    |=  [o=@uxid laz=laze]
+    [o (laze-from axe laz)]
+  ::  +copy for shapes
+  ::
+  ++  laze-copy
+    ~%  %comp-laze-copy  ..ride  ~
+    |=  [first=laze second=laze]
+    ^-  laze
+    :+  :-  (uni-need-ord ned.sure.first ned.sure.second)
+        (~(uni in lok.sure.first) lok.sure.second)
+      ?:  =(~ fork.second)  fork.first
+      ?:  =(~ fork.first)  fork.second
+      =/  index=(map @uxid laze-fork)
+        (malt (turn fork.second |=(e=laze-fork [o.y.e e])))
+      =/  merged=(list laze-fork)
+        %+  turn  fork.first
+        |=  e=laze-fork
+        ?~  m=(~(get by index) o.y.e)  e
+        ?>  =(o.n.e o.n.u.m)
+        :-  [o.y.e (laze-copy laz.y.e laz.y.u.m)]
+        [o.n.e (laze-copy laz.n.e laz.n.u.m)]
+      =/  seen=(set @uxid)  (silt (turn fork.first |=(e=laze-fork o.y.e)))
+      (weld merged (skip fork.second |=(e=laze-fork (~(has in seen) o.y.e))))
+    ?:  =(~ bond.second)  bond.first
+    ?:  =(~ bond.first)  bond.second
+    =/  index=(map @uxid laze-bond)
+      (malt (turn bond.second |=(e=laze-bond [o.e e])))
+    =/  merged=(list laze-bond)
+      %+  turn  bond.first
+      |=  e=laze-bond
+      ?~  m=(~(get by index) o.e)  e
+      [o.e (laze-copy laz.e laz.u.m)]
+    =/  seen=(set @uxid)  (silt (turn bond.first |=(e=laze-bond o.e)))
+    (weld merged (skip bond.second |=(e=laze-bond (~(has in seen) o.e))))
+  ::  +fork for shapes: the same shape for both branches, fresh identifiers
+  ::
+  ++  laze-branch
+    ~%  %comp-laze-branch  ..ride  ~
+    |=  laz=laze
+    ^-  [[laze laze] _gen]
+    =^  forks=(list [laze-fork laze-fork])  gen
+      %^  spin  fork.laz  gen
+      |=  [[y=[o=@uxid laz=laze] n=[o=@uxid laz=laze]] gen-acc=_gen]
+      ^-  [[laze-fork laze-fork] _gen]
+      =.  gen  gen-acc
+      =^  o-0-y  gen  id
+      =^  o-1-y  gen  id
+      =^  o-0-n  gen  id
+      =^  o-1-n  gen  id
+      =^  [y-0=laze y-1=laze]  gen  (laze-branch laz.y)
+      =^  [n-0=laze n-1=laze]  gen  (laze-branch laz.n)
+      :_  gen
+      [[[o-0-y y-0] [o-0-n n-0]] [[o-1-y y-1] [o-1-n n-1]]]
+    ::
+    =^  bonds=(list [laze-bond laze-bond])  gen
+      %^  spin  bond.laz  gen
+      |=  [[o=@uxid laz=laze] gen-acc=_gen]
+      ^-  [[laze-bond laze-bond] _gen]
+      =.  gen  gen-acc
+      =^  o-0  gen  id
+      =^  o-1  gen  id
+      =^  [l-0=laze l-1=laze]  gen  (laze-branch laz)
+      [[[o-0 l-0] [o-1 l-1]] gen]
+    ::
+    :_  gen
+    :-  [sure.laz (turn forks head) (turn bonds head)]
+    [sure.laz (turn forks tail) (turn bonds tail)]
+  ::  +sect for shapes
+  ::
+  ++  laze-sect
+    |=  [l-0=laze l-1=laze]
+    ^-  [laze _gen]
+    =^  o-0  gen  id
+    =^  o-1  gen  id
+    [[*sure-inter1 [[o-0 l-0] [o-1 l-1]]~ ~] gen]
+  ::
   ++  kerf
     ~%  %comp-kerf  ..ride  ~
     |=  =next
@@ -3288,11 +3736,15 @@
     walk(gen gen, laz laz, o o)
   ::
   ++  kern
-    ~%  %comp-kern  ..ride  ~
     |=  [o=@uwoo laz=need-lazy]
     ^-  [@uvre _gen]
     =^  r  gen  re
-    :-  r
+    [r (late %kern o laz r)]
+  ::
+  ++  kern-now
+    ~%  %comp-kern  ..ride  ~
+    |=  [o=@uwoo laz=need-lazy r=@uvre]
+    ^+  gen
     %^  walk-lazy  o  laz
     |=  [o-laz=@uwoo sur=sure gen-init=_gen]
     ^+  gen
@@ -3310,7 +3762,7 @@
     |=  [r=@uvre o=@uwoo]
     ^-  [@uvre _gen]
     =^  p  gen  re
-    [p gen(cond (~(put by cond.gen) p [r (~(got by tags.gen) o)]))]
+    [p (late %proxy p r o)]
   ::
   ++  kern-r-need
     ~%  %comp-kern-r-need  ..ride  ~
@@ -3362,7 +3814,7 @@
     |=  [nex=next region=(list @uxid)]
     ^-  [next _gen]
     =^  o  gen  (emit ~ ~ %hop then.nex)
-    =.  tags.gen  (~(put by tags.gen) o region)
+    =.  gen  (late %tag o region)
     :_  gen
     ?>  =(~ args.then.nex)
     [%next [*sure ~ [o laz.nex]~] ~ o]
@@ -3374,11 +3826,34 @@
             o-0-end=@uwoo
             o-1-end=@uwoo
             region-branch=(list @uxid)
-            cond-before=cond   ::  cond.gen before the branches were compiled
-            cond-between=cond  ::  cond.gen after the no branch was compiled
+            snap-before=@uxid   ::  cond.gen before the branches were compiled
+            snap-between=@uxid  ::  cond.gen after the no branch was compiled
         ==
     ^-  [[need-lazy @uwoo @uwoo] _gen]
     ?>  ?=(^ region-branch)
+    =^  o-0-beg  gen  (emit ~ ~ %hop then.nex-0)
+    =^  o-1-beg  gen  (emit ~ ~ %hop then.nex-1)
+    =.  gen  (late %tag o-0-beg region-branch)
+    =.  gen  (late %tag o-1-beg region-branch)
+    =.  gen
+      (late %sect o-0-end o-1-end i.region-branch snap-before snap-between)
+    ::
+    :_  gen
+    ?>  =(~ args.then.nex-0)
+    ?>  =(~ args.then.nex-1)
+    :_  [o-0-beg o-1-beg]
+    [*sure [[o-0-beg laz.nex-0] [o-1-beg laz.nex-1]]~ ~]
+  ::  Thread the registers read past the join through the join block, see
+  ::  $cond
+  ::
+  ++  sect-now
+    ~%  %comp-sect-now  ..ride  ~
+    |=  [o-0-end=@uwoo o-1-end=@uwoo region=@uxid before=@uxid between=@uxid]
+    ^+  gen
+    =/  cond-before   (~(got by snaps.gen) before)
+    =/  cond-between  (~(got by snaps.gen) between)
+    =.  snaps.gen  (~(del by snaps.gen) before)
+    =.  snaps.gen  (~(del by snaps.gen) between)
     =/  made-0  (~(dif by cond.gen) cond-between)
     =/  made-1  (~(dif by cond-between) cond-before)
     =/  o-target=@uwoo
@@ -3389,13 +3864,8 @@
       ?>  =(there.t.fin.blob-0-end there.t.fin.blob-1-end)
       there.t.fin.blob-0-end
     ::
-    =^  o-0-beg  gen  (emit ~ ~ %hop then.nex-0)
-    =^  o-1-beg  gen  (emit ~ ~ %hop then.nex-1)
-    =.  tags.gen
-      (~(gas by tags.gen) ~[[o-0-beg region-branch] [o-1-beg region-branch]])
-    ::
     =/  inside-branch
-      |=(tag=(list @uxid) (lien tag |=(id=@uxid =(id i.region-branch))))
+      |=(tag=(list @uxid) (lien tag |=(id=@uxid =(id region))))
     ::
     =|  tars=(map @uvre @uvre)  ::  definition -> join parameter
     =/  args=[yes=(list (unit @uvre)) nuh=(list (unit @uvre)) tar=(list @uvre)]
@@ -3450,18 +3920,18 @@
     ::
     =.  blocks.gen  (~(jab by blocks.gen) o-0-end (lens-hop yes.args))
     =.  blocks.gen  (~(jab by blocks.gen) o-1-end (lens-hop nuh.args))
-    :_  gen
-    ?>  =(~ args.then.nex-0)
-    ?>  =(~ args.then.nex-1)
-    :_  [o-0-beg o-1-beg]
-    [*sure [[o-0-beg laz.nex-0] [o-1-beg laz.nex-1]]~ ~]
+    gen
   ::
   ++  mede
-    ~%  %comp-mede  ..ride  ~
     |=  [then=jmp som=* laz=need-lazy]
     ^-  [@uwoo _gen]
     =^  o=@uwoo  gen  (emit ~ ~ %hop then)
-    :-  o
+    [o (late %mede o som laz)]
+  ::
+  ++  mede-now
+    ~%  %comp-mede  ..ride  ~
+    |=  [o=@uwoo som=* laz=need-lazy]
+    ^+  gen
     %^  walk-lazy  o  laz
     |=  [o=@uwoo sur=sure gen-init=_gen]
     ^+  gen
@@ -3517,20 +3987,25 @@
       ==
     ::
     :-  `[r there.then.nex]
-    ::  add moves wherever lazy needs need one noun, crashes wherever lazy needs
-    ::  need more than an atom
-    ::
-    %^  walk-lazy  there.then.nex  laz.nex(ned.sure this+r)
-    |=  [o=@uwoo sur=sure gen-init=_gen]
+    (late %collapse-atom there.then.nex laz.nex(ned.sure this+r) r)
+  ::  add moves wherever lazy needs need one noun, crashes wherever lazy needs
+  ::  need more than an atom
+  ::
+  ++  collapse-atom-now
+    ~%  %comp-collapse-atom-now  ..ride  ~
+    |=  [o=@uwoo laz=need-lazy r=@uvre]
+    ^+  gen
+    %^  walk-lazy  o  laz
+    |=  [o-laz=@uwoo sur=sure gen-init=_gen]
     ^+  gen
     =.  gen  gen-init
     =^  ned-sure=need  gen  (sure-require-look sur)
     ?:  ?=(%none -.ned-sure)  gen
     ?:  ?=(%this -.ned-sure)
       ?:  =(r r.ned-sure)  gen
-      =^  src  gen  ?:(=(o there.then.nex) [r gen] (proxy r o))
-      (add-ops o [%mov src r.ned-sure]~)
-    (emir o ~ ~ %bom ~)
+      =^  src  gen  ?:(=(o-laz o) [r gen] (proxy r o-laz))
+      (add-ops o-laz [%mov src r.ned-sure]~)
+    (emir o-laz ~ ~ %bom ~)
   ::
   ++  flatten-need
     ~%  %comp-flatten-need  ..ride  ~
@@ -3604,6 +4079,11 @@
   ::  precedes the code that uses the product of the fork.
   ::
   ++  insert-hop
+    |=  [a=@uwoo o1=@uwoo o2=@uwoo]
+    ^+  gen
+    (late %insert-hop a o1 o2)
+  ::
+  ++  insert-hop-now
     ~%  %comp-insert-hop  ..ride  ~
     |=  [a=@uwoo o1=@uwoo o2=@uwoo]
     ^+  gen
@@ -3654,13 +4134,8 @@
       =^  o-1-kid-n    gen  oo
       =^  o-insert2-y  gen  oo
       =^  o-insert2-n  gen  oo
-      =/  tag-y  (~(got by tags.gen) o.y)
-      =/  tag-n  (~(got by tags.gen) o.n)
-      =.  tags.gen
-        %-  ~(gas by tags.gen)
-        :~  [o-0-kid-y tag-y]  [o-1-kid-y tag-y]
-            [o-0-kid-n tag-n]  [o-1-kid-n tag-n]
-        ==
+      =.  gen  (late %tag-from o.y ~[o-0-kid-y o-1-kid-y])
+      =.  gen  (late %tag-from o.n ~[o-0-kid-n o-1-kid-n])
       ::
       =^  [laz-y-0=need-lazy laz-y-1=need-lazy]  gen
         %=  fork-loop
@@ -3697,8 +4172,7 @@
       =^  o-0-kid    gen  oo
       =^  o-1-kid    gen  oo
       =^  o-insert2  gen  oo
-      =/  tag  (~(got by tags.gen) o-bond)
-      =.  tags.gen  (~(gas by tags.gen) ~[[o-0-kid tag] [o-1-kid tag]])
+      =.  gen  (late %tag-from o-bond ~[o-0-kid o-1-kid])
       =^  [laz-0=need-lazy laz-1=need-lazy]  gen
         %=  fork-loop
           laz  laz-bond
@@ -4039,15 +4513,13 @@
     ~%  %comp-add-ops  ..ride  ~
     |=  [o=@uwoo ops=(list pole)]
     ^+  gen
-    =/  =blob  (~(got by blocks.gen) o)
-    =.  body.blob  (weld ops body.blob)
-    gen(blocks (~(put by blocks.gen) o blob))
+    (late %add-ops o ops)
   ::
   ++  emir
     ~%  %comp-emir  ..ride  ~
     |=  [o=@uwoo =blob]
     ^+  gen
-    gen(blocks (~(put by blocks.gen) o blob))
+    (late %emir o blob)
   ::
   ++  bomb
     ~%  %comp-bomb  ..ride  ~
@@ -4283,6 +4755,7 @@
     ~%  %comp-to-straight  ..ride  ~
     |=  nex=next-resolved
     ^-  straight
+    =.  gen  replay
     =/  blocks=(map @uwoo blob)  blocks.gen
     ::  Proxy registers (see $cond) are dominated by their definitions at this
     ::  point, so they are replaced by their definitions while renumbering
@@ -4789,6 +5262,19 @@
 ::         axes that were available to us, including in the prior iterations.
 ::
 +$  sure-inter1  [ned=need-ordered lok=(set @)]
+::  $need-lazy without registers or blocks: what +run-shape computes.  Fork and
+::  bond entries carry identifiers so that +laze-copy can merge them.
+::
++$  laze
+  $+  laze
+  $;  |-
+  $:  sure=sure-inter1
+      fork=(list [y=[o=@uxid laz=$] n=[o=@uxid laz=$]])
+      bond=(list [o=@uxid laz=$])
+  ==
++$  laze-fork  [y=[o=@uxid laz=laze] n=[o=@uxid laz=laze]]
++$  laze-bond  [o=@uxid laz=laze]
++$  goal-shape  $%([%pick ~] [%done ~] [%next laz=laze])
 +$  need-inter1
   $+  need-inter1
   $;  |-
@@ -4869,6 +5355,30 @@
   %+  turn  fork.intr
   |=  [y=need-inter1 n=need-inter1]
   [this-buc(intr y) this-buc(intr n)]
+::
+++  laze-to-inter1
+  ~%  %laze-to-inter1  ..ride  ~
+  |=  laz=laze
+  ^-  need-inter1
+  =*  laze-to-inter  .
+  %+  roll  bond.laz
+  =/  fork-new=(list [need-inter1 need-inter1])
+    %+  turn  fork.laz
+    |=  [[* laz-y=laze] * laz-n=laze]
+    [(laze-to-inter laz-y) (laze-to-inter laz-n)]
+  ::
+  |=  [[* i=laze] sur=_sure.laz fork=_fork-new]
+  ^+  [sur fork]
+  =/  i  (laze-to-inter i)
+  :_  (weld fork.i fork)
+  :-  (uni-need-ord ned.sure.i ned.sur)
+  (~(uni in lok.sur) lok.sure.i)
+::
+++  laze-collapse
+  ~%  %laze-collapse  ..ride  ~
+  |=  [laz=laze less=cape]
+  ^-  need-ordered
+  (inter2-collapse (inter1-to-inter2 (laze-to-inter1 laz) less) less)
 ::
 ++  shape-collapse
   ~%  %shape-collapse  ..ride  ~
