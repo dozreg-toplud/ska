@@ -5697,28 +5697,29 @@
           rev=(jar @uwoo @uwoo)
           topo=(list @uwoo)
       ==
-  ^-  [changed=? (map @uwoo blob)]
+  ^-  [[changed=? folded=?] (map @uwoo blob)]
   =|  $=  gen
       $:  new=(map @uwoo blob)
-          re-gen=@uvre
-          old=(map @uvre @uvre)  ::  old -> new
+          old=(map @uvre @uvre)  ::  eliminated register -> its alias
           info=(map @uwoo (map @uvre info-reg))
           imms=(map @uwoo (jug * @uvre))
           info-local=(map @uvre info-reg)
           imms-local=(jug * @uvre)
           rev=(jug @uwoo @uwoo)
           changed=_|  ::  an op, a branch or a block was eliminated
+          folded=_|   ::  a branch or a block was eliminated
       ==
   ::
   =.  rev.gen  (~(run by rev) (bake silt (list @uwoo)))
-  |^  ^-  [? (map @uwoo blob)]
-  ?~  topo  [changed.gen new.gen]
+  |^  ^-  [[? ?] (map @uwoo blob)]
+  ?~  topo  [[changed.gen folded.gen] new.gen]
   =*  o  i.topo
   =/  pre=(list @uwoo)  ~(tap in (~(get ju rev.gen) o))
   ?:  &(=(~ pre) !=(0w0 o))
     ::  this block became unreachable: delete its descendants from reversed CFG
     ::
     =.  changed.gen  &
+    =.  folded.gen  &
     =.  rev.gen
       %+  roll  (get-jmps fin:(~(got by blocks) o))
       |=  [j=jmp acc=_rev.gen]
@@ -5730,12 +5731,11 @@
       ::  entry block: initialize input registers
       ::
       =|  info=(map @uvre info-reg)
+      =/  r=@uvre  0v0
       |-  ^+  [info gen]
-      ?:  =(n-args 0)  [info gen]
-      =^  r  gen  re
+      ?:  =(r n-args)  [info gen]
       =.  info  (~(put by info) r *info-reg)
-      =.  old.gen  (~(put by old.gen) r r)
-      $(n-args (dec n-args))
+      $(r `@uvre`+(r))
     :_  gen
     =/  info=(map @uvre info-reg)
       %+  roll  t.pre
@@ -5805,9 +5805,7 @@
     =|  out=(list @uvre)
     |-  ^-  [(list @uvre) _gen]
     ?~  par.bob  [(flop out) gen]
-    ?<  (~(has by old.gen) i.par.bob)
-    =^  new  gen  re
-    =.  old.gen  (~(put by old.gen) i.par.bob new)
+    =/  new  i.par.bob
     =/  ins=(list (unit info-reg))
       %+  turn  edges
       |=  [p=@uwoo args=(list (unit @uvre))]
@@ -5838,46 +5836,39 @@
       ?^  res=(~(get ju imms-local.gen) n.op)
         =.  old.gen  (~(put by old.gen) d.op n.res)
         [body-new gen(changed &)]
-      =^  new=@uvre  gen
-        ?<  (~(has by old.gen) d.op)
-        =^  new  gen  re
-        =|  info=info-reg
-        =.  info-local.gen  (~(put by info-local.gen) new info(has-imm `n.op))
-        =.  old.gen   (~(put by old.gen) d.op new)
-        =.  imms-local.gen  (~(put ju imms-local.gen) n.op new)
-        [new gen]
+      =/  new=@uvre  d.op
+      =|  info=info-reg
+      =.  info-local.gen  (~(put by info-local.gen) new info(has-imm `n.op))
+      =.  imms-local.gen  (~(put ju imms-local.gen) n.op new)
       ::
       [[[%imm n.op new] body-new] gen]
     ::
         %mov
-      =.  old.gen  (~(put by old.gen) d.op (~(got by old.gen) s.op))
+      =.  old.gen  (~(put by old.gen) d.op (rn s.op))
       [body-new gen(changed &)]
     ::
         %inc
-      =/  arg  (~(got by old.gen) s.op)
+      =/  arg  (rn s.op)
       =/  arg-info  (~(got by info-local.gen) arg)
       ?^  dec-of.arg-info
         =.  old.gen  (~(put by old.gen) d.op u.dec-of.arg-info)
         [body-new gen(changed &)]
-      ?<  (~(has by old.gen) d.op)
-      =^  new  gen  re
+      =/  new  d.op
       =.  info-local.gen  (~(put by info-local.gen) new *info-reg)
       =.  info-local.gen
         (~(jab by info-local.gen) arg |=(info-reg +<(dec-of `new)))
       ::
-      =.  old.gen   (~(put by old.gen) d.op new)
       [[[%inc arg new] body-new] gen]
     ::
         %con
-      =/  h  (~(got by old.gen) h.op)
-      =/  t  (~(got by old.gen) t.op)
+      =/  h  (rn h.op)
+      =/  t  (rn t.op)
       =/  h-info  (~(got by info-local.gen) h)
       =/  t-info  (~(got by info-local.gen) t)
       ?^  intersect=(~(int in hed-of.h-info) tel-of.t-info)
         =.  old.gen  (~(put by old.gen) d.op n.intersect)
         [body-new gen(changed &)]
-      ?<  (~(has by old.gen) d.op)
-      =^  new  gen  re
+      =/  new  d.op
       =|  info=info-reg
       =.  info-local.gen
         (~(put by info-local.gen) new info(has-hed `h, has-tel `t, is-cell &))
@@ -5890,43 +5881,38 @@
         =/  lens  |=(info-reg +<(tel-of (~(put in tel-of) new)))
         (~(jab by info-local.gen) t lens)
       ::
-      =.  old.gen  (~(put by old.gen) d.op new)
       [[[%con h t new] body-new] gen]
     ::
         %hed
-      =/  arg  (~(got by old.gen) s.op)
+      =/  arg  (rn s.op)
       =/  arg-info  (~(got by info-local.gen) arg)
       ?^  has-hed.arg-info
         =.  old.gen  (~(put by old.gen) d.op u.has-hed.arg-info)
         [body-new gen(changed &)]
-      ?<  (~(has by old.gen) d.op)
-      =^  new  gen  re
+      =/  new  d.op
       =|  info=info-reg
       =.  info-local.gen  (~(put by info-local.gen) new info(hed-of [arg ~ ~]))
       =.  info-local.gen
         (~(jab by info-local.gen) arg |=(info-reg +<(has-hed `new)))
       ::
-      =.  old.gen   (~(put by old.gen) d.op new)
       [[[%hed arg new] body-new] gen]
     ::
         %tal
-      =/  arg  (~(got by old.gen) s.op)
+      =/  arg  (rn s.op)
       =/  arg-info  (~(got by info-local.gen) arg)
       ?^  has-tel.arg-info
         =.  old.gen  (~(put by old.gen) d.op u.has-tel.arg-info)
         [body-new gen(changed &)]
-      ?<  (~(has by old.gen) d.op)
-      =^  new  gen  re
+      =/  new  d.op
       =|  info=info-reg
       =.  info-local.gen  (~(put by info-local.gen) new info(tel-of [arg ~ ~]))
       =.  info-local.gen
         (~(jab by info-local.gen) arg |=(info-reg +<(has-tel `new)))
       ::
-      =.  old.gen   (~(put by old.gen) d.op new)
       [[[%tal arg new] body-new] gen]
     ::
         %cel
-      =/  arg  (~(got by old.gen) p.op)
+      =/  arg  (rn p.op)
       =/  arg-info  (~(got by info-local.gen) arg)
       ?:  is-cell.arg-info
         [body-new gen(changed &)]
@@ -5936,7 +5922,7 @@
       [[[%cel arg] body-new] gen]
     ::
         %lob
-      =/  arg  (~(got by old.gen) p.op)
+      =/  arg  (rn p.op)
       =/  arg-info  (~(got by info-local.gen) arg)
       ?:  |(is-loob.arg-info ?=([~ ?] has-imm.arg-info))
         [body-new gen(changed &)]
@@ -5946,8 +5932,8 @@
       [[[%lob arg] body-new] gen]
     ::
         %equ
-      =/  l  (~(got by old.gen) l.op)
-      =/  r  (~(got by old.gen) r.op)
+      =/  l  (rn l.op)
+      =/  r  (rn r.op)
       ?:  =(l r)  [body-new gen(changed &)]
       [[[%equ l r] body-new] gen]
     ::
@@ -5958,78 +5944,62 @@
       [[op body-new] gen]
     ::
         %hdp
-      =/  arg  (~(got by old.gen) p.op)
+      =/  arg  (rn p.op)
       [[[%hdp n.op arg f.op] body-new] gen]
     ::
         %hde
-      =/  arg  (~(got by old.gen) p.op)
+      =/  arg  (rn p.op)
       [[[%hde n.op arg f.op] body-new] gen]
     ::
         %spy
-      =/  e  (~(got by old.gen) e.op)
-      =/  p  (~(got by old.gen) p.op)
-      ?<  (~(has by old.gen) d.op)
-      =^  new  gen  re
+      =/  e  (rn e.op)
+      =/  p  (rn p.op)
+      =/  new  d.op
       =.  info-local.gen  (~(put by info-local.gen) new *info-reg)
-      =.  old.gen   (~(put by old.gen) d.op new)
       [[[%spy e p new] body-new] gen]
     ::
         %nok
-      =/  u  (~(got by old.gen) u.op)
-      =/  f  (~(got by old.gen) f.op)
-      ?<  (~(has by old.gen) d.op)
-      =^  new  gen  re
+      =/  u  (rn u.op)
+      =/  f  (rn f.op)
+      =/  new  d.op
       =.  info-local.gen  (~(put by info-local.gen) new *info-reg)
-      =.  old.gen   (~(put by old.gen) d.op new)
       [[[%nok u f new] body-new] gen]
     ::
         %cal
-      =/  v  (turn v.op ~(got by old.gen))
-      ?<  (~(has by old.gen) d.op)
-      =^  new  gen  re
+      =/  v  (turn v.op rn)
+      =/  new  d.op
       =.  info-local.gen  (~(put by info-local.gen) new *info-reg)
-      =.  old.gen   (~(put by old.gen) d.op new)
       [[[%cal a.op v new] body-new] gen]
     ::
         %caf
-      =/  v  (turn v.op ~(got by old.gen))
-      ?<  (~(has by old.gen) d.op)
-      =^  new  gen  re
+      =/  v  (turn v.op rn)
+      =/  new  d.op
       =.  info-local.gen  (~(put by info-local.gen) new *info-reg)
-      =.  old.gen   (~(put by old.gen) d.op new)
       [[[%caf a.op v new n.op] body-new] gen]
     ::
         %cam
-      =/  v  (turn v.op ~(got by old.gen))
-      ?<  (~(has by old.gen) d.op)
-      =^  new  gen  re
+      =/  v  (turn v.op rn)
+      =/  new  d.op
       =.  info-local.gen  (~(put by info-local.gen) new *info-reg)
-      =.  old.gen   (~(put by old.gen) d.op new)
       [[[%cam a.op v new k.op] body-new] gen]
     ::
         %csl
-      =/  s  (~(got by old.gen) s.op)
+      =/  s  (rn s.op)
       ~|  d.op
-      ?<  (~(has by old.gen) d.op)
-      =^  new  gen  re
+      =/  new  d.op
       =.  info-local.gen  (~(put by info-local.gen) new *info-reg)
-      =.  old.gen   (~(put by old.gen) d.op new)
       [[[%csl a.op s new] body-new] gen]
     ::
         %csf
-      =/  s  (~(got by old.gen) s.op)
-      ?<  (~(has by old.gen) d.op)
-      =^  new  gen  re
+      =/  s  (rn s.op)
+      =/  new  d.op
       =.  info-local.gen  (~(put by info-local.gen) new *info-reg)
-      =.  old.gen   (~(put by old.gen) d.op new)
       [[[%csf a.op s new n.op] body-new] gen]
     ::
         %csm
-      =/  s  (~(got by old.gen) s.op)
-      ?<  (~(has by old.gen) d.op)
-      =^  new  gen  re
+      =/  s  (rn s.op)
+      =/  new  d.op
       =.  info-local.gen  (~(put by info-local.gen) new *info-reg)
-      =.  old.gen   (~(put by old.gen) d.op new)
       [[[%csm a.op s new k.op] body-new] gen]
     ==
   ::
@@ -6038,12 +6008,14 @@
         %clq
       ?>  =(~ args.z.fin.bob)
       ?>  =(~ args.o.fin.bob)
-      =/  cond-new  (~(got by old.gen) s.fin.bob)
+      =/  cond-new  (rn s.fin.bob)
       =/  info-cond  (~(got by info-local.gen) cond-new)
       ?:  |(is-cell.info-cond ?=([~ ^] has-imm.info-cond))
         :-  [%hop ~ there.z.fin.bob]
       =.  changed.gen  &
+      =.  folded.gen  &
         =.  changed.gen  &
+        =.  folded.gen  &
         ::  if the branching instruction points to a block twice then we can't
         ::  delete the edge from the reversed graph since it still points to it
         ::  after the branch elimination
@@ -6053,6 +6025,7 @@
       ?:  |(is-loob.info-cond ?=([~ @] has-imm.info-cond))
         :-  [%hop ~ there.o.fin.bob]
         =.  changed.gen  &
+        =.  folded.gen  &
         ?:  =(there.o.fin.bob there.z.fin.bob)  gen
         gen(rev (~(del ju rev.gen) there.z.fin.bob o))
       [fin.bob(s cond-new) gen]
@@ -6060,33 +6033,37 @@
         %eqq
       ?>  =(~ args.z.fin.bob)
       ?>  =(~ args.o.fin.bob)
-      =/  l-new  (~(got by old.gen) l.fin.bob)
-      =/  r-new  (~(got by old.gen) r.fin.bob)
+      =/  l-new  (rn l.fin.bob)
+      =/  r-new  (rn r.fin.bob)
       ?.  =(l-new r-new)  [fin.bob(l l-new, r r-new) gen]
       :-  [%hop ~ there.z.fin.bob]
       =.  changed.gen  &
+      =.  folded.gen  &
       ?:  =(there.o.fin.bob there.z.fin.bob)  gen
       gen(rev (~(del ju rev.gen) there.o.fin.bob o))
     ::
         %brn
       ?>  =(~ args.z.fin.bob)
       ?>  =(~ args.o.fin.bob)
-      =/  cond-new  (~(got by old.gen) s.fin.bob)
+      =/  cond-new  (rn s.fin.bob)
       =/  info-cond  (~(got by info-local.gen) cond-new)
       ?~  has-imm.info-cond
         ?.  is-loob.info-cond  [fin.bob(s cond-new) gen]
-        [[%brz cond-new z.fin.bob o.fin.bob] gen(changed &)]
+        [[%brz cond-new z.fin.bob o.fin.bob] gen(changed &, folded &)]
       ?-    u.has-imm.info-cond
           %&
         :-  [%hop ~ there.z.fin.bob]
       =.  changed.gen  &
+      =.  folded.gen  &
         =.  changed.gen  &
+        =.  folded.gen  &
         ?:  =(there.o.fin.bob there.z.fin.bob)  gen
         gen(rev (~(del ju rev.gen) there.o.fin.bob o))
       ::
           %|
         :-  [%hop ~ there.o.fin.bob]
         =.  changed.gen  &
+        =.  folded.gen  &
         ?:  =(there.o.fin.bob there.z.fin.bob)  gen
         gen(rev (~(del ju rev.gen) there.z.fin.bob o))
       ::
@@ -6100,7 +6077,7 @@
         %brz
       ?>  =(~ args.z.fin.bob)
       ?>  =(~ args.o.fin.bob)
-      =/  cond-new  (~(got by old.gen) s.fin.bob)
+      =/  cond-new  (rn s.fin.bob)
       =/  info-cond  (~(got by info-local.gen) cond-new)
       =/  zero=(unit ?)
         ?^  has-imm.info-cond  `=(0 u.has-imm.info-cond)
@@ -6110,26 +6087,27 @@
         ?:(u.zero [there.z there.o]:fin.bob [there.o there.z]:fin.bob)
       :-  [%hop ~ go]
       =.  changed.gen  &
+      =.  folded.gen  &
       ?:  =(go cut)  gen
       gen(rev (~(del ju rev.gen) cut o))
     ::
         %hop
-      [fin.bob(args.t (turn args.t.fin.bob (lift ~(got by old.gen)))) gen]
+      [fin.bob(args.t (turn args.t.fin.bob (lift rn))) gen]
     ::
         %jmp
-      [fin.bob(v (turn v.fin.bob ~(got by old.gen))) gen]
+      [fin.bob(v (turn v.fin.bob rn)) gen]
     ::
         %jmf
-      [fin.bob(v (turn v.fin.bob ~(got by old.gen))) gen]
+      [fin.bob(v (turn v.fin.bob rn)) gen]
     ::
         %jsp
-      [fin.bob(s (~(got by old.gen) s.fin.bob)) gen]
+      [fin.bob(s (rn s.fin.bob)) gen]
     ::
         %jsf
-      [fin.bob(s (~(got by old.gen) s.fin.bob)) gen]
+      [fin.bob(s (rn s.fin.bob)) gen]
     ::
         %don
-      [fin.bob(s (~(got by old.gen) s.fin.bob)) gen]
+      [fin.bob(s (rn s.fin.bob)) gen]
     ::
         %bom
       [fin.bob gen]
@@ -6140,7 +6118,9 @@
   =.  imms.gen  (~(put by imms.gen) o imms-local.gen)
   $(topo t.topo)
   ::
-  ++  re  `[@uvre _gen]`[re-gen.gen gen(re-gen +(re-gen.gen))]
+  ::  Registers keep their numbers, only eliminated ones are renamed
+  ::
+  ++  rn  |=(r=@uvre ^-(@uvre (~(gut by old.gen) r r)))
   ::  Intersection of two info maps, joining the facts.  The maps of two
   ::  predecessors share most of their structure, since both grew from the
   ::  map of the branching block, so this is +int:by with a shortcut for
@@ -6500,22 +6480,39 @@
 ++  optimize-once
   ~%  %optimize-once  ..ride  ~
   |=  s=straight
-  ^-  [changed=? straight]
+  ^-  [again=? straight]
+  ::  Structural cleanup first, to a fixed point: it is cheap and it lets
+  ::  +alias see merged blocks right away instead of a round later
+  ::
   =/  topo  (bb-topo blocks.s)
   =/  rev  (rev-cfg blocks.s (sy topo))
-  =^  c-hops=?  blocks.s  (remove-hops blocks.s rev topo)
+  =^  [c-struct=? topo=(list @uwoo) rev=(jar @uwoo @uwoo)]  blocks.s
+    =/  c-struct=?  |
+    |-  ^-  [[? (list @uwoo) (jar @uwoo @uwoo)] (map @uwoo blob)]
+    =^  c-hops=?  blocks.s  (remove-hops blocks.s rev topo)
+    =^  c-branch=?  blocks.s  (remove-useless-branching blocks.s)
+    =^  c-middle=?  blocks.s  (remove-empty-middle blocks.s)
+    ?.  |(c-hops c-branch c-middle)  [[c-struct topo rev] blocks.s]
+    =.  topo  (bb-topo blocks.s)
+    =.  rev  (rev-cfg blocks.s (sy topo))
+    $(c-struct &)
   ::
+  =^  [c-alias=? f-alias=?]  blocks.s  (alias n-args.s blocks.s rev topo)
   =.  topo  (skim topo ~(has by blocks.s))
   =.  rev  (rev-cfg blocks.s (sy topo))
-  =^  c-alias=?  blocks.s  (alias n-args.s blocks.s rev topo)
+  ::  Trimming hints can leave their token registers dead, so dead code goes
+  ::  after it
   ::
-  =.  topo  (skim topo ~(has by blocks.s))
-  =.  rev  (rev-cfg blocks.s (sy topo))
-  =^  c-dead=?  blocks.s  (remove-dead-code blocks.s (flop topo))
   =^  c-trim=?  blocks.s  (trim-trace-hints blocks.s topo rev)
+  =^  c-dead=?  blocks.s  (remove-dead-code blocks.s (flop topo))
+  ::  Another round is needed only if +alias folded a branch or dropped a
+  ::  block, or if the structure can be cleaned up further after the op
+  ::  eliminations.  Op eliminations alone never make +alias more precise.
+  ::
+  =^  c-hops=?  blocks.s  (remove-hops blocks.s rev topo)
   =^  c-branch=?  blocks.s  (remove-useless-branching blocks.s)
   =^  c-middle=?  blocks.s  (remove-empty-middle blocks.s)
-  [|(c-hops c-alias c-dead c-trim c-branch c-middle) s]
+  [|(f-alias c-hops c-branch c-middle) s]
 --
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::

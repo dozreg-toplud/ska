@@ -87,24 +87,6 @@
   |=  [[k=* v=(set bell)] acc=(map bell straight)]
   (~(uni by acc) (compile-scc v rev [code jets]:long-ska scc-map jets-hot))
 ::
-=/  size
-  |=  s=straight
-  ^-  [blocks=@ud ops=@ud]
-  %-  ~(rep by blocks.s)
-  |=  [[k=@uwoo b=blob] acc=[@ud @ud]]
-  [+(-.acc) (add +.acc (lent body.b))]
-::
-=/  iters
-  |=  s=straight
-  ^-  @ud
-  =/  n  0
-  |-
-  =^  changed=?  s  (optimize-once s)
-  ?.  changed  +(n)
-  $(n +(n))
-::
-::  the fixed point by full comparison, to check the early stop
-::
 =/  optimize-full
   |=  s=straight
   ^-  straight
@@ -112,22 +94,20 @@
   ?:  =(s s1)  s1
   $(s s1)
 ::
-=/  rows=(list [bell [@ud @ud] [@ud @ud] @ud])
-  %+  turn  ~(tap by all-straights)
+=/  bad=(list [bell straight straight])
+  %+  murn  ~(tap by all-straights)
   |=  [k=bell v=straight]
   =/  o  (optimize v)
-  ~?  !=(o (optimize-full v))  [%optimize-early-stop-mismatch `@ux`(mug k)]
-  [k (size v) (size o) (iters v)]
+  =/  f  (optimize-full v)
+  ?:  =(o f)  ~
+  `[k o f]
 ::
-=/  tot
-  %+  roll  rows
-  |=  [[* a=[@ud @ud] b=[@ud @ud] n=@ud] acc=[[@ud @ud] [@ud @ud] @ud @ud]]
-  :^    [(add -.a -.-.acc) (add +.a +.-.acc)]
-      [(add -.b -.+<.acc) (add +.b +.+<.acc)]
-    (add n +>-.acc)
-  (max n +>+.acc)
+?~  bad  [%noun %no-mismatch]
 :-  %noun
-:-  [%functions (lent rows) %total-before -.tot %total-after +<.tot %iters-sum +>-.tot %iters-max +>+.tot]
-%+  turn  (scag 25 (sort rows |=([[* a=[@ud @ud] *] [* b=[@ud @ud] *]] (gth +.a +.b))))
-|=  [k=bell a=[@ud @ud] b=[@ud @ud] n=@ud]
-[`@ux`(mug k) a b n]
+%-  to-wain:format  %-  crip
+;:  weld
+  "{<`@ux`(mug -.i.bad)>} early stop:\0a"
+  (print-straight:li "  " +<.i.bad)
+  "\0afull:\0a"
+  (print-straight:li "  " +>.i.bad)
+==
