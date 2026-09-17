@@ -59,9 +59,10 @@
 ::    fixed point loop for callees that are in the same SCC as the caller.
 ::
 ::  Table of contents:
-::    Call graph construction:  line 517
-::    Compilation:              line 2206
-::    IR optimization passes:   line 4758
+::    Call graph construction:  line 518
+::    Compilation:              line 2265
+::    IR optimization passes:   line 4817
+::    Interactive core:         line 5722
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
@@ -1357,7 +1358,14 @@
   ~+
   =/  l  (norm-pi -.m)
   =/  r  (norm-pi +.m)
-  ?:  &(?=(@ l) ?=(@ r) !=(0 l) !=(1 l) =(0 (mod l 2)) =(+(l) r))
+  ::  [2n 2n+1] -> n, n != 0
+  ::
+  ?:  ?&  ?=(@ l)
+          ?=(@ r)
+          !=(0 l)
+          =(0 (mod l 2))
+          =(+(l) r)
+      ==
     (div l 2)
   [l r]
 ::
@@ -1388,7 +1396,7 @@
         !!
       acc
     ::
-    %-  normalize-prod  ::  XX normalize right here?
+    %-  normalize-prod
     :_  map.d
     |-  ^-  sock
     ?~  map.d  prod.d
@@ -2328,7 +2336,7 @@
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 |%
 +$  hint-static  ?(%bout %xray)
-+$  hint-dynamic  ?(%bout %xray %spin %loop %jinx %live hint-dynamic-stop)
++$  hint-dynamic  ?(%bout %xray %spin %jinx %live hint-dynamic-stop)
 +$  hint-dynamic-stop  ?(%hunk %hand %lose %mean %spot %slog)
 ::  Data requirement of a computation. %both means both the root noun and some
 ::  of its descendants.
@@ -2661,7 +2669,7 @@
           jets-hot=(map ring need-ordered)
       ==
   ^-  [straight (map bell straight)]
-  ~>  %memo./ska
+  :: ~>  %memo./ska
   =*  args  +<
   ::  Compile normally
   ::
@@ -2687,7 +2695,8 @@
           jets-hot=(map ring need-ordered)
       ==
   ^-  (map bell straight)
-  ~>  %memo./ska
+  ~+
+  :: ~>  %memo./ska
   =|  map-local=(map bell straight)
   ::  Fixed-point loop with a worklist
   ::
@@ -5716,7 +5725,11 @@
   =.  blocks.s  (remove-empty-middle blocks.s)
   s
 --
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::
 ::  Arvo-shaped core for stateful interaction with SKA code
+::
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
 |%
 +$  ovum
@@ -5759,8 +5772,9 @@
   [(val -.n) (val +.n)]
 --
 ::
-=|  state=[=long-ska jets-hot=(map ring need-ordered)]
+=|  state=[%0 =long-ska jets-hot=(map ring need-ordered)]
 |%
+++  version  -.state
 ++  graph-info
   ^-  [rev=(jug bell bell) scc-map=(map bell (set bell))]
   ~>  %memo./ska  ::  proper explicit memoization?
@@ -5782,7 +5796,13 @@
 ::
 |%
 ++  load  !!  ::  +4
-++  peek  !!  ::  +22
+++  peek      ::  +22
+  |=  pax=path
+  ^-  (unit (pair @tas *))
+  ?+  pax  !!
+    [%ver ~]  `[%ud `@ud`version]
+  ==
+::
 ++  poke      ::  +23
   |=  ovo=*
   ^-  [prod _..poke]
@@ -5791,7 +5811,7 @@
     (validate-ovum ovo)
   ::
   ?-    -.ovo
-      %jets  [~ ..poke(jets-hot.state (~(gas by jets-hot.state) p.ovo))]
+      %jets  [~ ..poke(jets-hot.state (malt p.ovo))]
   ::
       %full
     =^  func=bell  long-ska.state  (ska-poke [&+sub.ovo fol.ovo] long-ska.state)

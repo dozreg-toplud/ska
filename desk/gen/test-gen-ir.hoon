@@ -13,9 +13,16 @@
   ~>  %memo./user
   (g v)
 ::
+=/  scryless
+  =>  ..ride
+  |*  [gat=$-(* *) sam=*]
+  =/  res  (~(mule vi |) |.((gat sam)))
+  ?:  ?=(%& -.res)  p.res
+  (mean p.res)
+::
 =|  =long-ska
 =.   long-ska  +:(ska-poke [&+~ hoot-zpdt-fol] long-ska)
-=/  subject  ..dec:hoot-zpdt
+=/  subject  ..scow:hoot-zpdt
 =/  formula=^
   =>  subject
   ;;  ^
@@ -35,7 +42,7 @@
   ?~  l  ~
   [(dec i.l) $(l t.l)]
 ::
-=^  func=bell  long-ska  (memo-call ska-poke [&+subject formula] long-ska)
+=^  func=bell  long-ska  (ska-poke [&+subject formula] long-ska)
 =.  long-ska  (ska-cole-restore long-ska)
 =/  [bell-graph=(jug bell bell) rev=(jug bell bell)]
   (simple-bell-graph-and-reversed graph.final.long-ska)
@@ -74,28 +81,16 @@
       [/bex/two/one/k135^2 unary]
   ==
 ::
-?:  |
-  noun+(run:li |+subject func scc-here rev [code jets]:long-ska scc-map jets-hot)
+~>  %bout
 =/  all-straights=(map bell straight)
   %-  ~(rep by scc-map)
   |=  [[k=* v=(set bell)] acc=(map bell straight)]
   (~(uni by acc) (compile-scc v rev [code jets]:long-ska scc-map jets-hot))
 ::
-:: :-  %tang
-:: %-  flop
-~>  %bout.[0 'test-run-ir total']
-:-  %noun
-%-  to-wain:format  %-  crip
-^-  tape
-%-  zing
-^-  (list tape)
-=-  ?:  |  -  :_  -
-    =/  pessimistic=straight
-      -:(compile-unary func scc-here rev [code jets]:long-ska scc-map ~)
-    ::
-    =.  pessimistic  (optimize pessimistic)
-    "{<`@ux`(mug func)>} pessimistic:\0a{(print-straight:li "  " pessimistic)}\0a"
+=<  noun+~
+:-
+  (optimize -:(compile-unary func scc-here rev [code jets]:long-ska scc-map jets-hot))
 %+  turn  ~(tap by all-straights)
 |=  [k=bell v=straight]
 =.  v  (optimize v)
-"{<`@ux`(mug k)>}:\0a{(print-straight:li "  " v)}\0a"
+~
