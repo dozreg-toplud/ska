@@ -99,9 +99,9 @@
   ^-  @ud
   =/  n  0
   |-
-  =/  s1  (optimize-once s)
-  ?:  =(s s1)  +(n)
-  $(s s1, n +(n))
+  =^  changed=?  s  (optimize-once s)
+  ?.  changed  +(n)
+  $(n +(n))
 ::
 =/  rows=(list [bell [@ud @ud] [@ud @ud] @ud])
   %+  turn  ~(tap by all-straights)

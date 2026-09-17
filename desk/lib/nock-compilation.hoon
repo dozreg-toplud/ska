@@ -5697,7 +5697,7 @@
           rev=(jar @uwoo @uwoo)
           topo=(list @uwoo)
       ==
-  ^+  blocks
+  ^-  [changed=? (map @uwoo blob)]
   =|  $=  gen
       $:  new=(map @uwoo blob)
           re-gen=@uvre
@@ -5707,16 +5707,18 @@
           info-local=(map @uvre info-reg)
           imms-local=(jug * @uvre)
           rev=(jug @uwoo @uwoo)
+          changed=_|  ::  an op, a branch or a block was eliminated
       ==
   ::
   =.  rev.gen  (~(run by rev) (bake silt (list @uwoo)))
-  |^  ^+  blocks
-  ?~  topo  new.gen
+  |^  ^-  [? (map @uwoo blob)]
+  ?~  topo  [changed.gen new.gen]
   =*  o  i.topo
   =/  pre=(list @uwoo)  ~(tap in (~(get ju rev.gen) o))
   ?:  &(=(~ pre) !=(0w0 o))
     ::  this block became unreachable: delete its descendants from reversed CFG
     ::
+    =.  changed.gen  &
     =.  rev.gen
       %+  roll  (get-jmps fin:(~(got by blocks) o))
       |=  [j=jmp acc=_rev.gen]
@@ -5783,7 +5785,7 @@
     ?~  pre  ~
     %+  roll  t.pre
     |=  [o1=@uwoo acc=_(~(got by imms.gen) i.pre)]
-    ((int-ju acc) (~(got by imms.gen) o1))
+    (join-imms acc (~(got by imms.gen) o1))
   ::
   =.  info-local.gen  info
   =.  imms-local.gen  imms
@@ -5835,7 +5837,7 @@
         %imm
       ?^  res=(~(get ju imms-local.gen) n.op)
         =.  old.gen  (~(put by old.gen) d.op n.res)
-        [body-new gen]
+        [body-new gen(changed &)]
       =^  new=@uvre  gen
         ?<  (~(has by old.gen) d.op)
         =^  new  gen  re
@@ -5849,14 +5851,14 @@
     ::
         %mov
       =.  old.gen  (~(put by old.gen) d.op (~(got by old.gen) s.op))
-      [body-new gen]
+      [body-new gen(changed &)]
     ::
         %inc
       =/  arg  (~(got by old.gen) s.op)
       =/  arg-info  (~(got by info-local.gen) arg)
       ?^  dec-of.arg-info
         =.  old.gen  (~(put by old.gen) d.op u.dec-of.arg-info)
-        [body-new gen]
+        [body-new gen(changed &)]
       ?<  (~(has by old.gen) d.op)
       =^  new  gen  re
       =.  info-local.gen  (~(put by info-local.gen) new *info-reg)
@@ -5873,7 +5875,7 @@
       =/  t-info  (~(got by info-local.gen) t)
       ?^  intersect=(~(int in hed-of.h-info) tel-of.t-info)
         =.  old.gen  (~(put by old.gen) d.op n.intersect)
-        [body-new gen]
+        [body-new gen(changed &)]
       ?<  (~(has by old.gen) d.op)
       =^  new  gen  re
       =|  info=info-reg
@@ -5896,7 +5898,7 @@
       =/  arg-info  (~(got by info-local.gen) arg)
       ?^  has-hed.arg-info
         =.  old.gen  (~(put by old.gen) d.op u.has-hed.arg-info)
-        [body-new gen]
+        [body-new gen(changed &)]
       ?<  (~(has by old.gen) d.op)
       =^  new  gen  re
       =|  info=info-reg
@@ -5912,7 +5914,7 @@
       =/  arg-info  (~(got by info-local.gen) arg)
       ?^  has-tel.arg-info
         =.  old.gen  (~(put by old.gen) d.op u.has-tel.arg-info)
-        [body-new gen]
+        [body-new gen(changed &)]
       ?<  (~(has by old.gen) d.op)
       =^  new  gen  re
       =|  info=info-reg
@@ -5927,7 +5929,7 @@
       =/  arg  (~(got by old.gen) p.op)
       =/  arg-info  (~(got by info-local.gen) arg)
       ?:  is-cell.arg-info
-        [body-new gen]
+        [body-new gen(changed &)]
       =.  info-local.gen
         (~(jab by info-local.gen) arg |=(info-reg +<(is-cell &)))
       ::
@@ -5937,7 +5939,7 @@
       =/  arg  (~(got by old.gen) p.op)
       =/  arg-info  (~(got by info-local.gen) arg)
       ?:  |(is-loob.arg-info ?=([~ ?] has-imm.arg-info))
-        [body-new gen]
+        [body-new gen(changed &)]
       =.  info-local.gen
         (~(jab by info-local.gen) arg |=(info-reg +<(is-loob &)))
       ::
@@ -5946,7 +5948,7 @@
         %equ
       =/  l  (~(got by old.gen) l.op)
       =/  r  (~(got by old.gen) r.op)
-      ?:  =(l r)  [body-new gen]
+      ?:  =(l r)  [body-new gen(changed &)]
       [[[%equ l r] body-new] gen]
     ::
         %hsp
@@ -6040,6 +6042,8 @@
       =/  info-cond  (~(got by info-local.gen) cond-new)
       ?:  |(is-cell.info-cond ?=([~ ^] has-imm.info-cond))
         :-  [%hop ~ there.z.fin.bob]
+      =.  changed.gen  &
+        =.  changed.gen  &
         ::  if the branching instruction points to a block twice then we can't
         ::  delete the edge from the reversed graph since it still points to it
         ::  after the branch elimination
@@ -6048,6 +6052,7 @@
         gen(rev (~(del ju rev.gen) there.o.fin.bob o))
       ?:  |(is-loob.info-cond ?=([~ @] has-imm.info-cond))
         :-  [%hop ~ there.o.fin.bob]
+        =.  changed.gen  &
         ?:  =(there.o.fin.bob there.z.fin.bob)  gen
         gen(rev (~(del ju rev.gen) there.z.fin.bob o))
       [fin.bob(s cond-new) gen]
@@ -6059,6 +6064,7 @@
       =/  r-new  (~(got by old.gen) r.fin.bob)
       ?.  =(l-new r-new)  [fin.bob(l l-new, r r-new) gen]
       :-  [%hop ~ there.z.fin.bob]
+      =.  changed.gen  &
       ?:  =(there.o.fin.bob there.z.fin.bob)  gen
       gen(rev (~(del ju rev.gen) there.o.fin.bob o))
     ::
@@ -6069,15 +6075,18 @@
       =/  info-cond  (~(got by info-local.gen) cond-new)
       ?~  has-imm.info-cond
         ?.  is-loob.info-cond  [fin.bob(s cond-new) gen]
-        [[%brz cond-new z.fin.bob o.fin.bob] gen]
+        [[%brz cond-new z.fin.bob o.fin.bob] gen(changed &)]
       ?-    u.has-imm.info-cond
           %&
         :-  [%hop ~ there.z.fin.bob]
+      =.  changed.gen  &
+        =.  changed.gen  &
         ?:  =(there.o.fin.bob there.z.fin.bob)  gen
         gen(rev (~(del ju rev.gen) there.o.fin.bob o))
       ::
           %|
         :-  [%hop ~ there.o.fin.bob]
+        =.  changed.gen  &
         ?:  =(there.o.fin.bob there.z.fin.bob)  gen
         gen(rev (~(del ju rev.gen) there.z.fin.bob o))
       ::
@@ -6100,6 +6109,7 @@
       =/  [go=@uwoo cut=@uwoo]
         ?:(u.zero [there.z there.o]:fin.bob [there.o there.z]:fin.bob)
       :-  [%hop ~ go]
+      =.  changed.gen  &
       ?:  =(go cut)  gen
       gen(rev (~(del ju rev.gen) cut o))
     ::
@@ -6163,6 +6173,36 @@
       (~(uni by $(b l.b, r.a ~)) $(a r.a))
     (~(uni by $(b r.b, l.a ~)) $(a l.a))
   ::
+  ::  Intersection of two immediates maps with the register sets intersected,
+  ::  structural like +join-info
+  ::
+  ++  join-imms
+    |=  [a=(jug * @uvre) b=(jug * @uvre)]
+    ^-  (jug * @uvre)
+    |-  ^-  (jug * @uvre)
+    ?~  b  ~
+    ?~  a  ~
+    ?:  =(a b)  a
+    ?:  (mor p.n.a p.n.b)
+      ?:  =(p.n.b p.n.a)
+        =/  v  (~(int in q.n.a) q.n.b)
+        =/  l  $(a l.a, b l.b)
+        =/  r  $(a r.a, b r.b)
+        ?:  =(~ v)  (~(uni by l) r)
+        [[p.n.b v] l r]
+      ?:  (gor p.n.b p.n.a)
+        (~(uni by $(a l.a, r.b ~)) $(b r.b))
+      (~(uni by $(a r.a, l.b ~)) $(b l.b))
+    ?:  =(p.n.a p.n.b)
+      =/  v  (~(int in q.n.a) q.n.b)
+      =/  l  $(b l.b, a l.a)
+      =/  r  $(b r.b, a r.a)
+      ?:  =(~ v)  (~(uni by l) r)
+      [[p.n.b v] l r]
+    ?:  (gor p.n.a p.n.b)
+      (~(uni by $(b l.b, r.a ~)) $(a r.a))
+    (~(uni by $(b r.b, l.a ~)) $(a l.a))
+  ::
   ++  join-reg
     |=  [a=info-reg b=info-reg]
     ^-  info-reg
@@ -6200,9 +6240,9 @@
           rev=(jar @uwoo @uwoo)
           topo=(list @uwoo)
       ==
-  ^-  (map @uwoo blob)
+  ^-  [changed=? (map @uwoo blob)]
   =*  gen  ,[new=(map @uwoo blob) saw=(set @uwoo)]
-  =<  new
+  =;  =gen  [!=(~ saw.gen) new.gen]
   ^-  gen
   %+  roll  topo
   |=  [o=@uwoo =gen]
@@ -6210,18 +6250,24 @@
   ?:  (~(has in saw.gen) o)  gen
   =/  o-new=@uwoo  o
   =/  b-new=blob  (~(got by blocks) o)
+  ::  bodies of the blocks merged into it so far, latest first
+  ::
+  =|  segs=(list (list pole))
   |-  ^+  gen
-  ?.  ?=(%hop -.fin.b-new)
-    gen(new (~(put by new.gen) o-new b-new))
+  =*  done
+    %=    gen
+        new
+      %+  ~(put by new.gen)  o-new
+      b-new(body (zing [body.b-new (flop segs)]))
+    ==
+  ?.  ?=(%hop -.fin.b-new)  done
   =/  o1=@uwoo  there.t.fin.b-new
   =/  pre-o1=(list @uwoo)  (~(get ja rev) o1)
   ?<  =(~ pre-o1)
-  ?.  =(pre-o1 ~[o])
-    gen(new (~(put by new.gen) o-new b-new))
+  ?.  =(pre-o1 ~[o])  done
   =.  saw.gen  (~(put in saw.gen) o1)
   =/  b1  (~(got by blocks) o1)
-  =/  body-merge=(list pole)
-    %+  weld  body.b-new
+  =/  seg=(list pole)
     =/  args-a  args.t.fin.b-new
     =/  args-b  par.b1
     =/  ops=(list pole)  body.b1
@@ -6236,7 +6282,7 @@
       ops     ?~(i.args-a ops [[%mov u.i.args-a i.args-b] ops])
     ==
   ::
-  $(o o1, body.b-new body-merge, fin.b-new fin.b1)
+  $(o o1, segs [seg segs], fin.b-new fin.b1)
 ::  If a non-crashing op assigns to a register which is never used, we can
 ::  omit the op.
 ::  XX non-crashing direct calls
@@ -6244,14 +6290,16 @@
 ++  remove-dead-code
   ~%  %remove-dead-code  ..ride  ~
   |=  [blocks=(map @uwoo blob) rev-topo=(list @uwoo)]
-  ^-  (map @uwoo blob)
+  ^-  [changed=? (map @uwoo blob)]
   =|  new=(map @uwoo blob)
   =|  saw=(set @uvre)
-  |-  ^+  new
-  ?~  rev-topo  new
+  =/  changed=?  |
+  |-  ^-  [? (map @uwoo blob)]
+  ?~  rev-topo  [changed new]
   =/  b  (~(got by blocks) i.rev-topo)
   =;  [new-body=(list pole) saw1=(set @uvre)]
     =.  new  (~(put by new) i.rev-topo b(body new-body))
+    =?  changed  !=((lent new-body) (lent body.b))  &
     $(rev-topo t.rev-topo, saw saw1)
   ::
   =/  old-body=(list pole)  (flop body.b)
@@ -6272,11 +6320,9 @@
 ::
 ++  trim-trace-hints
   ~%  %trim-trace-hints  ..ride  ~
-  |=  blocks=(map @uwoo blob)
-  ^+  blocks
+  |=  [blocks=(map @uwoo blob) topo=(list @uwoo) rev=(jar @uwoo @uwoo)]
+  ^-  [changed=? (map @uwoo blob)]
   =*  key  ,[hint=?(%spot %mean) reg=@uvre]
-  =/  topo  (bb-topo blocks)
-  =/  rev   (rev-cfg blocks (sy topo))
   ::  Walk in topological order carrying the hints that are open: prologue
   ::  passed, epilogue not reached yet. A hint open at an op that could crash,
   ::  or at a terminator that could crash or leave the function, is unsafe to
@@ -6305,27 +6351,27 @@
     =?  unsafe  !?=(?(%clq %eqq %brz %hop) -.fin.b)  (~(uni in unsafe) open)
     ^$(topo t.topo, out (~(put by out) i.topo open))
   ::
-  %-  ~(run by blocks)
-  |=  b=blob
-  %_    b
-      body
+  %-  ~(rep by blocks)
+  |=  [[o=@uwoo b=blob] changed=_| new=(map @uwoo blob)]
+  =/  body
     %+  skip  body.b
     |=  op=pole
     ?&  ?=(?(%hdp %hde) -.op)
         ?=(?(%spot %mean) n.op)
         !(~(has in unsafe) [n p]:op)
     ==
-  ==
+  :-  |(changed !=((lent body) (lent body.b)))
+  (~(put by new) o b(body body))
 ::
 ++  remove-useless-branching
   ~%  %remove-useless-branching  ..ride  ~
   |=  blocks=(map @uwoo blob)
-  ^+  blocks
-  %-  ~(run by blocks)
-  |=  b=blob
-  ^+  b
+  ^-  [changed=? (map @uwoo blob)]
+  %-  ~(rep by blocks)
+  |=  [[o=@uwoo b=blob] changed=_| new=(map @uwoo blob)]
   =;  [epilogue=(list pole) new-fin=termin]
-    b(body (weld body.b epilogue), fin new-fin)
+    :-  |(changed !=(new-fin fin.b))
+    (~(put by new) o b(body (weld body.b epilogue), fin new-fin))
   ::
   ?+    -.fin.b  `fin.b
       %clq
@@ -6368,7 +6414,14 @@
 ++  remove-empty-middle
   ~%  %remove-empty-middle  ..ride  ~
   |=  blocks=(map @uwoo blob)
+  ^-  [changed=? (map @uwoo blob)]
+  ::  Readers are only consulted for empty blocks with parameters, see
+  ::  +rewrite-hop, so they are computed only when there is such a block
+  ::
   =/  readers=(jug @uvre @uwoo)
+    ?.  %-  ~(any by blocks)
+        |=(b=blob &(?=(^ par.b) ?=(~ body.b) ?=(%hop -.fin.b)))
+      ~
     %-  ~(rep by blocks)
     |=  [[o=@uwoo b=blob] acc=(jug @uvre @uwoo)]
     =/  put  |=([r=@uvre acc=(jug @uvre @uwoo)] (~(put ju acc) r o))
@@ -6377,11 +6430,12 @@
     |=  [op=pole acc=_acc]
     (roll (get-regs op) put(acc acc))
   ::
-  |^  ^+  blocks
-  %-  ~(run by blocks)
-  |=  b=blob
-  ^+  b
-  =;  new-fin=termin  b(fin new-fin)
+  |^  ^-  [? (map @uwoo blob)]
+  %-  ~(rep by blocks)
+  |=  [[o=@uwoo b=blob] changed=_| new=(map @uwoo blob)]
+  =;  new-fin=termin
+    :-  |(changed !=(new-fin fin.b))
+    (~(put by new) o b(fin new-fin))
   ?+    -.fin.b  fin.b
       %clq  fin.b(z (rewrite-jump z.fin.b), o (rewrite-jump o.fin.b))
       %eqq  fin.b(z (rewrite-jump z.fin.b), o (rewrite-jump o.fin.b))
@@ -6435,30 +6489,33 @@
   |=  s=straight
   ^-  straight
   ?:  |  s
-  =/  s1=straight  (optimize-once s)
-  ?:  =(s s1)  s1
-  $(s s1)
-::  One round of all the optimization passes
+  =^  changed=?  s  (optimize-once s)
+  ?.  changed  s
+  $(s s)
+::  One round of all the optimization passes.  Every pass says whether it
+::  changed anything, so that the fixed point is known without another round.
+::  +remove-hops and +alias only ever delete blocks and edges, so the reverse
+::  postorder computed up front stays valid once filtered.
 ::
 ++  optimize-once
   ~%  %optimize-once  ..ride  ~
   |=  s=straight
-  ^-  straight
+  ^-  [changed=? straight]
   =/  topo  (bb-topo blocks.s)
   =/  rev  (rev-cfg blocks.s (sy topo))
-  =.  blocks.s  (remove-hops blocks.s rev topo)
+  =^  c-hops=?  blocks.s  (remove-hops blocks.s rev topo)
   ::
-  =.  topo  (bb-topo blocks.s)
+  =.  topo  (skim topo ~(has by blocks.s))
   =.  rev  (rev-cfg blocks.s (sy topo))
-  =.  blocks.s  (alias n-args.s blocks.s rev topo)
+  =^  c-alias=?  blocks.s  (alias n-args.s blocks.s rev topo)
   ::
-  =.  topo  (bb-topo blocks.s)
-  =.  blocks.s  (remove-dead-code blocks.s (flop topo))
-  ::
-  =.  blocks.s  (trim-trace-hints blocks.s)
-  =.  blocks.s  (remove-useless-branching blocks.s)
-  =.  blocks.s  (remove-empty-middle blocks.s)
-  s
+  =.  topo  (skim topo ~(has by blocks.s))
+  =.  rev  (rev-cfg blocks.s (sy topo))
+  =^  c-dead=?  blocks.s  (remove-dead-code blocks.s (flop topo))
+  =^  c-trim=?  blocks.s  (trim-trace-hints blocks.s topo rev)
+  =^  c-branch=?  blocks.s  (remove-useless-branching blocks.s)
+  =^  c-middle=?  blocks.s  (remove-empty-middle blocks.s)
+  [|(c-hops c-alias c-dead c-trim c-branch c-middle) s]
 --
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
