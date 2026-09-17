@@ -2420,6 +2420,9 @@
 ::  An empty argument supplies nothing: the parameter is never read on that
 ::  edge. Used by +sect to keep SSA form when only one branch defines a value.
 ::
++$  lazy-fork  [y=[o=@uwoo laz=need-lazy] n=[o=@uwoo laz=need-lazy]]
++$  lazy-bond  [o=@uwoo laz=need-lazy]
+::
 +$  jmp  [args=(list (unit @uvre)) there=@uwoo]
 ::  goal of a computation.
 ::  %done: return the product of the computation, tail position. Used for TCO.
@@ -2605,6 +2608,7 @@
 ::
 ++  map-regs
   |=  ren=$-(@uvre @uvre)
+  ~%  %map-regs  ..ride  ~
   |=  b=blob
   ^-  blob
   =/  ren-jmp  |=(j=jmp j(args (turn args.j (lift ren))))
@@ -2661,6 +2665,7 @@
 ::  including itself as N-ary functions
 ::
 ++  compile-unary
+  ~%  %compile-unary  ..ride  ~
   |=  $:  func=bell
           scc=(set bell)
           rev=(jug bell bell)  ::  reversed call graph
@@ -2688,6 +2693,7 @@
   (~(to-straight comp gen) [%next [[this+sub ~] ~ ~] ~ o])
 ::
 ++  compile-scc
+  ~%  %compile-scc  ..ride  ~
   |=  $:  scc=(set bell)
           rev=(jug bell bell)
           long-ska=_[=_code =_jets]:*long-ska
@@ -2697,49 +2703,82 @@
   ^-  (map bell straight)
   ~+
   :: ~>  %memo./ska
+  ::  Only the subject shapes in .map-local are read by the loop, so the rest
+  ::  of the straight is a placeholder until the fixed point is reached, when
+  ::  the functions get finalized by the traps in .pending
+  ::
   =|  map-local=(map bell straight)
+  =|  pending=(map bell (trap straight))
   ::  Fixed-point loop with a worklist
   ::
   =/  w=worklist  scc
   =/  done=?  |
   |-  ^+  map-local
   =*  fixpoint-compilation  $
-  =;  [w-new=worklist map-local1=(map bell straight)]
-    ?:  done  map-local1
+  =;  [w-new=worklist map-local1=_map-local pending1=_pending]
+    ?:  done
+      %-  ~(urn by map-local1)
+      |=  [b=bell straight]
+      ^-  straight
+      $:(~(got by pending1) b)
     =.  w-new  (~(int in w-new) scc)
-    ?:  =(~ w-new)  fixpoint-compilation(w scc, map-local map-local1, done &)
+    ?:  =(~ w-new)
+      %=  fixpoint-compilation
+        w          scc
+        map-local  map-local1
+        pending    pending1
+        done       &
+      ==
     =>  !@  comp-verb  .
         ~&  %fixpoint-compilation  .
-    fixpoint-compilation(w w-new, map-local map-local1)
+    fixpoint-compilation(w w-new, map-local map-local1, pending pending1)
   ::
   %-  ~(rep in w)
-  |=  [b=bell w-new=worklist =_map-local]
-  ^+  [w-new map-local]
+  ~%  %compile-scc-fn  ..ride  ~
+  |=  [b=bell w-new=worklist =_map-local =_pending]
+  ^+  [w-new map-local pending]
   =/  comp  (comp scc rev long-ska scc-map jets-hot map-local b)
-  =;  [s=straight nex=next-resolved gen=line-short]
-    ::  With a compiled function candidate, requeue callers if the subject split
-    ::  did not converge yet, taking MSG of subject splits to avoid divergence.
-    ::
-    ?~  s-previous=(~(get by map-local) b)
-      :-  ?:  ?=([%none ~] need.s)  w-new
-          (~(uni in w-new) (~(get ju rev) b))
-      (~(put by map-local) b s)
-    =/  need-pessimized  (msg-need-ord need.s need.u.s-previous cape.less.b)
-    :-  ?:  =(need-pessimized need.u.s-previous)  w-new
-        (~(uni in w-new) (~(get ju rev) b))
-    %+  ~(put by map-local)  b
-    ?:  =(need-pessimized need.s)  s
-    =^  coerced=next-resolved  gen  (~(coerce-ord comp gen) need-pessimized nex)
-    (~(to-straight comp gen) coerced)
-  ::  Compile the function normally, collapse lazy needs, finalize
+  ::  Compile the function normally, collapse lazy needs to the input shape
   ::
   =/  [nex=next gen=line-short]
     (~(run comp *line-short) | nomm:(~(got by code.long-ska) b) [%done ~] ~)
   ::
-  =^  res  gen  (~(next-lazy-collapse comp gen) nex cape.less.b)
-  [(~(to-straight comp gen) res) res gen]
+  =^  [ned-final=need laz=need-lazy o=@uwoo]  gen
+    (~(collapse-shape comp gen) nex cape.less.b)
+  ::
+  =/  need-new=need-ordered  (need-to-ordered ned-final)
+  ::  Finalization: emit the subject deconsing code, coerce the subject to the
+  ::  pessimized shape if there is one, renumber the registers
+  ::
+  =/  finish
+    |=  pessimized=(unit need-ordered)
+    ^-  (trap straight)
+    ~%  %compile-scc-finish  ..ride  ~
+    |.
+    =.  gen  (~(coerce-lazy comp gen) ned-final o laz)
+    =/  res=next-resolved  [%next [[ned-final ~] ~ ~] ~ o]
+    ?~  pessimized  (~(to-straight comp gen) res)
+    =^  coerced=next-resolved  gen  (~(coerce-ord comp gen) u.pessimized res)
+    (~(to-straight comp gen) coerced)
+  ::  With a compiled function candidate, requeue callers if the subject split
+  ::  did not converge yet, taking MSG of subject splits to avoid divergence.
+  ::
+  =/  s=straight  [need-new 0 ~]
+  ?~  s-previous=(~(get by map-local) b)
+    :+  ?:  ?=([%none ~] need-new)  w-new
+        (~(uni in w-new) (~(get ju rev) b))
+      (~(put by map-local) b s)
+    (~(put by pending) b (finish ~))
+  =/  need-pessimized  (msg-need-ord need-new need.u.s-previous cape.less.b)
+  :+  ?:  =(need-pessimized need.u.s-previous)  w-new
+      (~(uni in w-new) (~(get ju rev) b))
+    (~(put by map-local) b s(need need-pessimized))
+  %+  ~(put by pending)  b
+  ?:  =(need-pessimized need-new)  (finish ~)
+  (finish `need-pessimized)
 ::
 ++  need-normalize
+  ~%  %need-normalize  ..ride  ~
   |=  ned=need
   ^-  need
   =*  this  .
@@ -2781,6 +2820,7 @@
       ==
   |_  gen=line-short
   ++  run
+    ~%  %comp-run  ..ride  ~
     |=  [mono=? =nomm =goal region=(list @uxid)]
     |^  ^-  [next _gen]
     ?-    nomm
@@ -3223,6 +3263,7 @@
   ++  oo  `[@uwoo _gen]`[bo-gen.gen gen(bo-gen +(bo-gen.gen))]
   ++  id  `[@uxid _gen]`[id-gen.gen gen(id-gen +(id-gen.gen))]
   ++  kerf
+    ~%  %comp-kerf  ..ride  ~
     |=  =next
     ^-  [[@uwoo @uvre] _gen]
     =^  o  gen  (emit ~ ~ %hop then.next)
@@ -3230,6 +3271,7 @@
     [[o r] gen]
   ::
   ++  walk-lazy
+    ~%  %comp-walk-lazy  ..ride  ~
     |=  [o=@uwoo laz=need-lazy f=$-([@uwoo sure _gen] _gen)]
     ^+  gen
     =*  walk  $
@@ -3246,6 +3288,7 @@
     walk(gen gen, laz laz, o o)
   ::
   ++  kern
+    ~%  %comp-kern  ..ride  ~
     |=  [o=@uwoo laz=need-lazy]
     ^-  [@uvre _gen]
     =^  r  gen  re
@@ -3263,12 +3306,14 @@
   ::  so that +sect can thread `r` through join blocks.
   ::
   ++  proxy
+    ~%  %comp-proxy  ..ride  ~
     |=  [r=@uvre o=@uwoo]
     ^-  [@uvre _gen]
     =^  p  gen  re
     [p gen(cond (~(put by cond.gen) p [r (~(got by tags.gen) o)]))]
   ::
   ++  kern-r-need
+    ~%  %comp-kern-r-need  ..ride  ~
     |=  [o=@uwoo ned=need]
     ^-  [@uvre _gen]
     =^  r  gen  re
@@ -3277,6 +3322,7 @@
     [r gen]
   ::
   ++  kern-need
+    ~%  %comp-kern-need  ..ride  ~
     |=  [r=@uvre ned=need]
     ^-  [(list pole) _gen]
     =|  ops=(list pole)
@@ -3312,6 +3358,7 @@
     ==
   ::
   ++  lazy-bound
+    ~%  %comp-lazy-bound  ..ride  ~
     |=  [nex=next region=(list @uxid)]
     ^-  [next _gen]
     =^  o  gen  (emit ~ ~ %hop then.nex)
@@ -3321,6 +3368,7 @@
     [%next [*sure ~ [o laz.nex]~] ~ o]
   ::
   ++  sect
+    ~%  %comp-sect  ..ride  ~
     |=  $:  nex-0=next
             nex-1=next
             o-0-end=@uwoo
@@ -3409,6 +3457,7 @@
     [*sure [[o-0-beg laz.nex-0] [o-1-beg laz.nex-1]]~ ~]
   ::
   ++  mede
+    ~%  %comp-mede  ..ride  ~
     |=  [then=jmp som=* laz=need-lazy]
     ^-  [@uwoo _gen]
     =^  o=@uwoo  gen  (emit ~ ~ %hop then)
@@ -3439,6 +3488,7 @@
   ::  [~ @uvre @uwoo]: something is needed (an atom or whatever + crash)
   ::
   ++  collapse-lazy-atom
+    ~%  %comp-collapse-lazy-atom  ..ride  ~
     |=  nex=next
     ^-  [(unit [@uvre @uwoo]) _gen]
     ?>  =(~ args.then.nex)
@@ -3483,6 +3533,7 @@
     (emir o ~ ~ %bom ~)
   ::
   ++  flatten-need
+    ~%  %comp-flatten-need  ..ride  ~
     |=  ned=need
     ^-  (list @uvre)
     =*  flat  .
@@ -3498,12 +3549,14 @@
   ::  caller
   ::
   ++  fork-sure
+    ~%  %comp-fork-sure  ..ride  ~
     |=  [sur=sure o=@uwoo o-0=@uwoo o-1=@uwoo]
     ^-  [[sure sure] _gen] 
     =^  [ned-0=need ned-1=need]  gen  (fork-need ned.sur o o-0 o-1)
     [[[ned-0 lok.sur] [ned-1 lok.sur]] gen]
   ::
   ++  fork-need
+    ~%  %comp-fork-need  ..ride  ~
     |=  [ned=need o=@uwoo o-0=@uwoo o-1=@uwoo]
     ^-  [[need need] _gen]
     =;  [[ned-0=need ned-1=need] gen1=_gen]
@@ -3551,6 +3604,7 @@
   ::  precedes the code that uses the product of the fork.
   ::
   ++  insert-hop
+    ~%  %comp-insert-hop  ..ride  ~
     |=  [a=@uwoo o1=@uwoo o2=@uwoo]
     ^+  gen
     =/  blob-from=blob  (~(got by blocks.gen) a)
@@ -3566,6 +3620,7 @@
   ::  need with either of the two
   ::
   ++  fork
+    ~%  %comp-fork  ..ride  ~
     |=  [nex=next r-cond=@uvre]
     ^-  [[next next] _gen]
     =^  o-0  gen  oo
@@ -3663,6 +3718,7 @@
   ::  fork CFG for loobean-producing opcodes
   ::
   ++  forl
+    ~%  %comp-forl  ..ride  ~
     |=  [r=@uvre o=@uwoo]
     ^-  [[@uwoo @uwoo] _gen]
     =^  r-0   gen  re
@@ -3673,12 +3729,14 @@
     [[if-0 if-1] gen]
   ::
   ++  emit
+    ~%  %comp-emit  ..ride  ~
     |=  =blob
     ^-  [@uwoo _gen]
     =^  o  gen  oo
     [o (emir o blob)]
   ::
   ++  from-sure
+    ~%  %comp-from-sure  ..ride  ~
     |=  [axe=@ sur=sure]
     ^-  sure
     ?<  =(0 axe)
@@ -3696,6 +3754,7 @@
     ==
   ::
   ++  from
+    ~%  %comp-from  ..ride  ~
     |=  [axe=@ laz=need-lazy]
     ^-  need-lazy
     =*  from-buc  $
@@ -3708,6 +3767,7 @@
     [o from-buc(laz laz)]
   ::
   ++  copy
+    ~%  %comp-copy  ..ride  ~
     |=  [first=next second=need-lazy]
     ^-  [next _gen]
     =^  o  gen  (emit ~ ~ %hop then.first)
@@ -3715,21 +3775,68 @@
     [[%next laz ~ o] gen]
   ::
   ++  copy-lazy
+    ~%  %comp-copy-lazy  ..ride  ~
     |=  [o=@uwoo first=need-lazy second=need-lazy]
     ^-  [need-lazy _gen]
+    =*  copy-lazy  $
     =^  [ned=need ops=(list pole)]  gen
       (copy-need-make-ops ned.sure.first ned.sure.second)
     ::
-    :_  (add-ops o ops)
-    :+  [ned (~(uni in lok.sure.first) lok.sure.second)]
-      (weld fork.first fork.second)
-    (weld bond.first bond.second)
+    =.  gen  (add-ops o ops)
+    ::  Fork and bond entries of the two needs that name the same lazy block
+    ::  come from the two children of one node (+split/+into share the block
+    ::  labels between the halves) and describe two needs of the same subject
+    ::  in the same block, so they are merged the same way as the sure needs,
+    ::  with the moves emitted into that lazy block.  Without this each
+    ::  autocons leaf would contribute its own copy of the whole fork list.
+    ::
+    =^  fork=(list lazy-fork)  gen
+      ?:  =(~ fork.second)  [fork.first gen]
+      ?:  =(~ fork.first)  [fork.second gen]
+      =/  index=(map @uwoo lazy-fork)
+        (malt (turn fork.second |=(e=lazy-fork [o.y.e e])))
+      =^  merged=(list lazy-fork)  gen
+        %^  spin  fork.first  gen
+        |=  [e=lazy-fork gen-acc=_gen]
+        ^-  [lazy-fork _gen]
+        =.  gen  gen-acc
+        ?~  m=(~(get by index) o.y.e)  [e gen]
+        ?>  =(o.n.e o.n.u.m)
+        =^  laz-y  gen  copy-lazy(o o.y.e, first laz.y.e, second laz.y.u.m)
+        =^  laz-n  gen  copy-lazy(o o.n.e, first laz.n.e, second laz.n.u.m)
+        [[[o.y.e laz-y] [o.n.e laz-n]] gen]
+      ::
+      =/  seen=(set @uwoo)  (silt (turn fork.first |=(e=lazy-fork o.y.e)))
+      :_  gen
+      (weld merged (skip fork.second |=(e=lazy-fork (~(has in seen) o.y.e))))
+    ::
+    =^  bond=(list lazy-bond)  gen
+      ?:  =(~ bond.second)  [bond.first gen]
+      ?:  =(~ bond.first)  [bond.second gen]
+      =/  index=(map @uwoo lazy-bond)
+        (malt (turn bond.second |=(e=lazy-bond [o.e e])))
+      =^  merged=(list lazy-bond)  gen
+        %^  spin  bond.first  gen
+        |=  [e=lazy-bond gen-acc=_gen]
+        ^-  [lazy-bond _gen]
+        =.  gen  gen-acc
+        ?~  m=(~(get by index) o.e)  [e gen]
+        =^  laz  gen  copy-lazy(o o.e, first laz.e, second laz.u.m)
+        [[o.e laz] gen]
+      ::
+      =/  seen=(set @uwoo)  (silt (turn bond.first |=(e=lazy-bond o.e)))
+      :_  gen
+      (weld merged (skip bond.second |=(e=lazy-bond (~(has in seen) o.e))))
+    ::
+    :_  gen
+    [[ned (~(uni in lok.sure.first) lok.sure.second)] fork bond]
   ::  +split-* and +into-* for autoconses and Nock 10 follow the same pattern:
   ::  they split a lazy need into two, emitting consing code into the BBs of the
   ::  children lazy needs. The split needs share the BB label, which should be
   ::  fine since they produce disjoint parts of a noun
   ::
   ++  into-sure
+    ~%  %comp-into-sure  ..ride  ~
     |=  [axe=@ sur=sure o=@uwoo]
     ^-  [[sure sure] _gen]
     =;  [lok-don=(set @) lok-rec=(set @)]
@@ -3750,6 +3857,7 @@
     [(~(put in lok-don) u.rest) lok-rec]
   ::
   ++  into-need
+    ~%  %comp-into-need  ..ride  ~
     |=  [axe=@ ned=need o=@uwoo]
     ^-  [[need need] _gen]
     ?<  =(0 axe)
@@ -3789,6 +3897,7 @@
     ==
   ::
   ++  into
+    ~%  %comp-into  ..ride  ~
     |=  [nex=next axe=@]
     ^-  [[need-lazy need-lazy @uwoo] _gen]
     =^  o=@uwoo  gen  (emit ~ ~ %hop then.nex)
@@ -3832,6 +3941,7 @@
     [sure-rec fork-rec bond-rec]
   ::
   ++  split-sure
+    ~%  %comp-split-sure  ..ride  ~
     |=  [sur=sure o=@uwoo]
     ^-  [[sure sure] _gen]
     =;  [lok-h=(set @) lok-t=(set @)]
@@ -3848,6 +3958,7 @@
     ==
   ::
   ++  split-need
+    ~%  %comp-split-need  ..ride  ~
     |=  [ned=need o=@uwoo]
     ^-  [[need need] _gen]
     ?-    -.ned
@@ -3868,6 +3979,7 @@
     ==
   ::
   ++  must
+    ~%  %comp-must  ..ride  ~
     |=  ned=need
     ^-  [(pair @uvre $>(?(%both %this) need)) _gen]
     ?-  -.ned
@@ -3878,6 +3990,7 @@
     ==
   ::
   ++  split
+    ~%  %comp-split  ..ride  ~
     |=  nex=next
     ^-  [[need-lazy need-lazy @uwoo] _gen]
     ::  emit an empty basic block
@@ -3923,6 +4036,7 @@
     [sure-t fork-t bond-t]
   ::
   ++  add-ops
+    ~%  %comp-add-ops  ..ride  ~
     |=  [o=@uwoo ops=(list pole)]
     ^+  gen
     =/  =blob  (~(got by blocks.gen) o)
@@ -3930,17 +4044,20 @@
     gen(blocks (~(put by blocks.gen) o blob))
   ::
   ++  emir
+    ~%  %comp-emir  ..ride  ~
     |=  [o=@uwoo =blob]
     ^+  gen
     gen(blocks (~(put by blocks.gen) o blob))
   ::
   ++  bomb
+    ~%  %comp-bomb  ..ride  ~
     |=  miss=(unit @uwoo)
     ^-  [next _gen]
     =^  o  gen  (emit ~ ~ %bom miss)
     [[%next *need-lazy ~ o] gen]
   ::
   ++  copy-need-make-ops
+    ~%  %comp-copy-need-make-ops  ..ride  ~
     |=  [first=need second=need]
     ^-  [[need (list pole)] _gen]
     =|  ops=(list pole)
@@ -3999,6 +4116,7 @@
     $(sin [|+[p.l h.r] |+[q.l t.r] &+`[r.r] t.sin])
   ::
   ++  coerce-ord
+    ~%  %comp-coerce-ord  ..ride  ~
     |=  [need-pessimized=need-ordered nex=next-resolved]
     ^-  [next-resolved _gen]
     =;  [ned=need gen1=_gen]  [[%next [[ned ~] ~ ~] [~ then.nex]] gen1]
@@ -4055,6 +4173,7 @@
       ==
     ==
   ++  need-ord-alloc-regs
+    ~%  %comp-need-ord-alloc-regs  ..ride  ~
     |=  ord=need-ordered
     ^-  [need _gen]
     ?-    -.ord
@@ -4081,6 +4200,7 @@
   ::  appropriate BBs
   ::
   ++  coerce-lazy
+    ~%  %comp-coerce-lazy  ..ride  ~
     |=  [ned=need o=@uwoo laz=need-lazy]
     ^+  gen
     =*  coerce-lazy  .
@@ -4142,18 +4262,32 @@
   ++  next-lazy-collapse
     |=  [nex=next less=cape]
     ^-  [next-resolved _gen]
+    =^  [ned-final=need laz=need-lazy o=@uwoo]  gen  (collapse-shape nex less)
+    :-  [%next [[ned-final ~] ~ ~] ~ o]
+    (coerce-lazy ned-final o laz)
+  ::  Shape of the subject with registers allocated, without the deconsing
+  ::  code: the input shape is all that the compilation fixed point reads
+  ::
+  ++  collapse-shape
+    ~%  %comp-collapse-shape  ..ride  ~
+    |=  [nex=next less=cape]
+    ^-  [[need need-lazy @uwoo] _gen]
     ?>  =(~ args.then.nex)
     =^  ned-final=need  gen  (need-ord-alloc-regs (shape-collapse laz.nex less))
-    :-  [%next [[ned-final ~] ~ ~] ~ there.then.nex]
-    (coerce-lazy ned-final there.then.nex laz.nex)
+    [[ned-final laz.nex there.then.nex] gen]
   ::
   ::  Renumber the registers so that the input registers are 0-N, set the
   ::  starting block index to 0w0
   ::
   ++  to-straight
+    ~%  %comp-to-straight  ..ride  ~
     |=  nex=next-resolved
     ^-  straight
-    =/  blocks=(map @uwoo blob)  blocks:rewrite-cond
+    =/  blocks=(map @uwoo blob)  blocks.gen
+    ::  Proxy registers (see $cond) are dominated by their definitions at this
+    ::  point, so they are replaced by their definitions while renumbering
+    ::
+    =/  unproxy  |=(r=@uvre ?~(e=(~(get by cond.gen) r) r def.u.e))
     =/  start=blob  (~(got by blocks) then.nex)
     =.  blocks  (~(del by blocks) then.nex)
     =.  blocks  (~(put by blocks) `@`0 start)
@@ -4166,6 +4300,9 @@
     %-  ~(rep by blocks)
     |=  [[k=@uwoo b=blob] new=(map @uwoo blob) gen-acc=_gen]
     =.  gen  gen-acc
+    ::  Empty blocks that every jump bypasses are dropped, see +chase
+    ::
+    ?:  &(!=(`@`0 k) (bypassable & b))  [new gen]
     =;  [b1=blob gen1=_gen]
       :_  gen1
       (~(put by new) k b1)
@@ -4175,10 +4312,37 @@
     =^  fin1   gen  (rewrite-fin fin.b)
     :_  gen
     [par1 body1 fin1]
+    ::  Most blocks the compiler emits are empty hops: +copy, +split, +into,
+    ::  +kerf, +mede and friends each make one.  A jump to such a block may go
+    ::  to the block's target directly, unless the jump is a branch and the
+    ::  hop passes arguments: then the edge could be critical and there would
+    ::  be no block to move the arguments in.  Same rules as
+    ::  +remove-empty-middle, but here, before the IR gets to the optimizer,
+    ::  so that the passes work on a CFG that is many times smaller.
+    ::
+    ++  bypassable
+      |=  [branch=? b=blob]
+      ^-  ?
+      ?&  ?=(~ par.b)
+          ?=(~ body.b)
+          ?=(%hop -.fin.b)
+          |(!branch ?=(~ args.t.fin.b))
+      ==
+    ::
+    ++  chase
+      |=  [branch=? j=jmp]
+      ^-  jmp
+      |-  ^-  jmp
+      =/  b=blob  (~(got by blocks) there.j)
+      ?.  ?=(%hop -.fin.b)  j
+      ?.  (bypassable branch b)  j
+      ?>  ?=(~ args.j)
+      $(j t.fin.b)
     ::
     ++  rer
       |=  r=@uvre
       ^-  [@uvre _gen]
+      =.  r  (unproxy r)
       ?^  r1=(~(get by m.gen) r)  [u.r1 gen]
       =^  r1  re-gen.gen  [re-gen.gen +(re-gen.gen)]
       =.  m.gen  (~(put by m.gen) r r1)
@@ -4354,7 +4518,7 @@
         [fin(s s1, z z1, o o1) gen]
       ::
           %hop
-        =^  t1  gen  (rewrite-jump t.fin)
+        =^  t1  gen  (rewrite-hop t.fin)
         [fin(t t1) gen]
       ::
           %jmp
@@ -4378,10 +4542,23 @@
         [fin(s s1) gen]
       ::
           %bom
-        [fin gen]
+        ?~  o.fin  [fin gen]
+        [fin(o `there:(chase & [~ u.o.fin])) gen]
       ==
+    ::  branch edge
     ::
     ++  rewrite-jump
+      |=  j=jmp
+      ^-  [jmp _gen]
+      (rewrite-args (chase & j))
+    ::  hop edge
+    ::
+    ++  rewrite-hop
+      |=  j=jmp
+      ^-  [jmp _gen]
+      (rewrite-args (chase | j))
+    ::
+    ++  rewrite-args
       |=  j=jmp
       ^-  [jmp _gen]
       =^  args1  gen
@@ -4398,6 +4575,7 @@
   ::  XX sloppy codegen, always both head and tail
   ::
   ++  mono-try-call
+    ~%  %comp-mono-try-call  ..ride  ~
     |=  [ned=need opt=@uwoo pes=[sub=@uvre o=@uwoo]]
     ^-  [@uwoo _gen]
     =/  r=@uvre  sub.pes
@@ -4433,6 +4611,7 @@
     ==
   ::
   ++  sure-require-look
+    ~%  %comp-sure-require-look  ..ride  ~
     |=  sur=sure
     ^-  [need _gen]
     %-  ~(rep in lok.sur)
@@ -4469,10 +4648,6 @@
     ?@  -.x  [[%this u.here] gen]
     [[%both u.here x] gen]
   ::
-  ++  rewrite-cond
-    ^+  gen
-    =/  ren  |=(r=@uvre ?~(e=(~(get by cond.gen) r) r def.u.e))
-    gen(blocks (~(run by blocks.gen) (map-regs ren)))
   --
 ::
 ++  count-args
@@ -4486,6 +4661,7 @@
   ==
 ::
 ++  msg-need-ord
+  ~%  %msg-need-ord  ..ride  ~
   |=  [a=need-ordered b=need-ordered less=cape]
   ^-  need-ordered
   =*  msg  .
@@ -4542,6 +4718,7 @@
   [(msg p.a p.b (hed:ca less)) (msg q.a q.b (tel:ca less))]
 ::
 ++  need-to-ordered
+  ~%  %need-to-ordered  ..ride  ~
   |=  ned=need
   ^-  need-ordered
   ~+
@@ -4559,6 +4736,7 @@
   [a b]
 ::
 ++  uni-need-ord
+  ~%  %uni-need-ord  ..ride  ~
   |=  [a=need-ordered b=need-ordered]
   ^-  need-ordered
   ?:  =(a b)  a
@@ -4627,6 +4805,7 @@
 ::  Ignore bounds by unifying sure with bonds
 ::
 ++  lazy-to-inter1
+  ~%  %lazy-to-inter1  ..ride  ~
   |=  laz=need-lazy
   ^-  need-inter1
   =*  lazy-to-inter  .
@@ -4658,6 +4837,7 @@
   ==
 ::
 ++  inter1-to-inter2
+  ~%  %inter1-to-inter2  ..ride  ~
   |=  [intr=need-inter1 less=cape]
   ^-  need-inter2
   =*  this-buc  $
@@ -4691,11 +4871,13 @@
   [this-buc(intr y) this-buc(intr n)]
 ::
 ++  shape-collapse
+  ~%  %shape-collapse  ..ride  ~
   |=  [laz=need-lazy less=cape]
   ^-  need-ordered
   (inter2-collapse (inter1-to-inter2 (lazy-to-inter1 laz) less) less)
 ::
 ++  inter2-collapse
+  ~%  %inter2-collapse  ..ride  ~
   |=  [intr=need-inter2 less=cape]
   ^-  need-ordered
   =/  sures=[orig=need-ordered fix=need-ordered]  [. .]:sure.intr
@@ -4760,6 +4942,7 @@
 ::  MSG of `a` and `b` while knowing that axes in `fix` exist
 ::
 ++  msg-need-ord-fix-aware
+  ~%  %msg-need-ord-fix-aware  ..ride  ~
   |=  [a=need-ordered b=need-ordered fix=need-ordered less=cape]
   ^-  need-ordered
   ~+
@@ -4811,6 +4994,7 @@
   `(con low-b x)
 ::
 ++  none-equivalent
+  ~%  %none-equivalent  ..ride  ~
   |=  laz=need-lazy
   ^-  ?
   =*  none  .
@@ -4848,6 +5032,7 @@
 ::  BBs in topological order
 ::
 ++  bb-topo
+  ~%  %bb-topo  ..ride  ~
   |=  blocks=(map @uwoo blob)
   ^-  (list @uwoo)
   =|  saw=(set @uwoo)
@@ -4866,6 +5051,7 @@
   dfs-buc(o o1, out out, saw saw)
 ::
 ++  rev-cfg
+  ~%  %rev-cfg  ..ride  ~
   |=  [blocks=(map @uwoo blob) topo-set=(set @uwoo)]
   ^-  (jar @uwoo @uwoo)
   %-  ~(rep by blocks)
@@ -4879,6 +5065,7 @@
 ::  the merge block, or the corresponing branching ancestor
 ::
 ++  get-idom
+  ~%  %get-idom  ..ride  ~
   |=  [blocks=(map @uwoo blob) topo=(list @uwoo) rev=(jar @uwoo @uwoo)]
   ^-  (map @uwoo @uwoo)
   =|  idom=(map @uwoo @uwoo)
@@ -4925,6 +5112,7 @@
 ::  branch, or the successor where the branches merge.
 ::
 ++  get-ipdom
+  ~%  %get-ipdom  ..ride  ~
   |=  [blocks=(map @uwoo blob) rev-topo=(list @uwoo)]
   ^-  (map @uwoo @uwoo)
   =|  ipdom=(map @uwoo @uwoo)
@@ -4993,6 +5181,7 @@
 ::  to itself in %eqq, or if the noun is known in %brn
 ::
 ++  alias
+  ~%  %alias  ..ride  ~
   |=  $:  n-args=@ud
           blocks=(map @uwoo blob)
           rev=(jar @uwoo @uwoo)
@@ -5432,13 +5621,37 @@
   $(topo t.topo)
   ::
   ++  re  `[@uvre _gen]`[re-gen.gen gen(re-gen +(re-gen.gen))]
+  ::  Intersection of two info maps, joining the facts.  The maps of two
+  ::  predecessors share most of their structure, since both grew from the
+  ::  map of the branching block, so this is +int:by with a shortcut for
+  ::  identical subtrees instead of a walk over the whole map.
+  ::
   ++  join-info
     |=  [a=(map @uvre info-reg) b=(map @uvre info-reg)]
     ^-  (map @uvre info-reg)
-    %-  ~(rep by a)
-    |=  [[k=@uvre v-a=info-reg] acc=(map @uvre info-reg)]
-    ?~  v-b=(~(get by b) k)  acc
-    (~(put by acc) k (join-reg v-a u.v-b))
+    |-  ^-  (map @uvre info-reg)
+    ?~  b  ~
+    ?~  a  ~
+    ?:  =(a b)  a
+    ?:  (mor p.n.a p.n.b)
+      ?:  =(p.n.b p.n.a)
+        %=  b
+          n  [p.n.b (join-reg q.n.a q.n.b)]
+          l  $(a l.a, b l.b)
+          r  $(a r.a, b r.b)
+        ==
+      ?:  (gor p.n.b p.n.a)
+        (~(uni by $(a l.a, r.b ~)) $(b r.b))
+      (~(uni by $(a r.a, l.b ~)) $(b l.b))
+    ?:  =(p.n.a p.n.b)
+      %=  b
+        n  [p.n.b (join-reg q.n.a q.n.b)]
+        l  $(b l.b, a l.a)
+        r  $(b r.b, a r.a)
+      ==
+    ?:  (gor p.n.a p.n.b)
+      (~(uni by $(b l.b, r.a ~)) $(a r.a))
+    (~(uni by $(b r.b, l.a ~)) $(a l.a))
   ::
   ++  join-reg
     |=  [a=info-reg b=info-reg]
@@ -5472,6 +5685,7 @@
 ::  instruction
 ::
 ++  remove-hops
+  ~%  %remove-hops  ..ride  ~
   |=  $:  blocks=(map @uwoo blob)
           rev=(jar @uwoo @uwoo)
           topo=(list @uwoo)
@@ -5518,6 +5732,7 @@
 ::  XX non-crashing direct calls
 ::
 ++  remove-dead-code
+  ~%  %remove-dead-code  ..ride  ~
   |=  [blocks=(map @uwoo blob) rev-topo=(list @uwoo)]
   ^-  (map @uwoo blob)
   =|  new=(map @uwoo blob)
@@ -5546,6 +5761,7 @@
   ==
 ::
 ++  trim-trace-hints
+  ~%  %trim-trace-hints  ..ride  ~
   |=  blocks=(map @uwoo blob)
   ^+  blocks
   =*  key  ,[hint=?(%spot %mean) reg=@uvre]
@@ -5592,6 +5808,7 @@
   ==
 ::
 ++  remove-useless-branching
+  ~%  %remove-useless-branching  ..ride  ~
   |=  blocks=(map @uwoo blob)
   ^+  blocks
   %-  ~(run by blocks)
@@ -5639,6 +5856,7 @@
   ==
 ::
 ++  remove-empty-middle
+  ~%  %remove-empty-middle  ..ride  ~
   |=  blocks=(map @uwoo blob)
   =/  readers=(jug @uvre @uwoo)
     %-  ~(rep by blocks)
@@ -5703,12 +5921,19 @@
   --
 ::
 ++  optimize
+  ~%  %optimize  ..ride  ~
   |=  s=straight
   ^-  straight
   ?:  |  s
-  =;  s1=straight
-    ?:  =(s s1)  s1
-    $(s s1)
+  =/  s1=straight  (optimize-once s)
+  ?:  =(s s1)  s1
+  $(s s1)
+::  One round of all the optimization passes
+::
+++  optimize-once
+  ~%  %optimize-once  ..ride  ~
+  |=  s=straight
+  ^-  straight
   =/  topo  (bb-topo blocks.s)
   =/  rev  (rev-cfg blocks.s (sy topo))
   =.  blocks.s  (remove-hops blocks.s rev topo)
