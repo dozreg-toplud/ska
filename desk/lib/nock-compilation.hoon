@@ -2334,6 +2334,17 @@
 ::    functions, and pessimized functions try to enter optimized functions.
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::
+::  Compilation flags. Uncomment to enable.
+::
+::  Compute the input shapes of the compilation fixed point with +run-shape
+::  instead of +run with code emission dropped
+::
+=/  dedicated-shape-pass  ~
+::  Debug: check that both agree on the final pass
+::
+:: =/  shape-check  ~
+::
 |%
 +$  hint-static  ?(%bout %xray)
 +$  hint-dynamic  ?(%bout %xray %spin %jinx %live hint-dynamic-stop)
@@ -2465,8 +2476,7 @@
 ::  The compiler computes the subject shape and emits code in one traversal,
 ::  but the compilation fixed point only reads the shape, and code emission is
 ::  the more expensive half.  So everything that touches the emitted IR
-::  (.blocks, .tags, .cond) goes through +late as a $gen-act: recorded in
-::  .todo and replayed in order by +replay once the shape is final, run right
+::  (.blocks, .tags, .cond) goes through +late as a $gen-act: run right
 ::  away in %run mode, or thrown away for the fixed point iterations whose
 ::  code is never used.  Register and block identifiers are allocated eagerly
 ::  either way, since needs and lazy blocks carry them.
@@ -2475,14 +2485,13 @@
   $:  re-gen=@uvre
       bo-gen=_`@uwoo`1  ::  0 is reserved for the entry point
       id-gen=@uxid                   ::  branch region identifiers
-      mode=$~(%record ?(%record %run %drop))
-      todo=(list gen-act)            ::  recorded actions, latest first
+      mode=?(%drop %run)
       blocks=(map @uwoo blob)
       tags=(map @uwoo (list @uxid))  ::  region of lazy need blocks
       =cond
       snaps=(map @uxid cond)         ::  snapshots of .cond for +sect
   ==
-::  Deferred code emission, see $line-short
+::  Deferred code emission, see +late
 ::
 +$  gen-act
   $%  [%emir o=@uwoo =blob]
@@ -2725,14 +2734,6 @@
   =^  [o=@uwoo sub=@uvre]  gen  (~(kerf comp gen) nex)
   (~(to-straight comp gen) [%next [[this+sub ~] ~ ~] ~ o])
 ::
-::  Compute the input shapes of the compilation fixed point with +run-shape
-::  instead of +run with code emission dropped
-::
-++  dedicated-shape-pass  &
-::  Debug: check that both agree on the final pass
-::
-++  shape-check  |
-::
 ++  compile-scc
   ~%  %compile-scc  ..ride  ~
   |=  $:  scc=(set bell)
@@ -2775,26 +2776,34 @@
   ::
   =/  gen=line-short  *line-short
   =^  [need-new=need-ordered laz=need-lazy ned-final=need o=@uwoo]  gen
-    ?:  &(!done dedicated-shape-pass)
+    !@  dedicated-shape-pass
+      =.  mode.gen  ?:(done %run %drop)
+      =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~)
+      =^  [ned-final=need laz=need-lazy o=@uwoo]  gen
+        (~(collapse-shape comp gen) nex cape.less.b)
+      [[(need-to-ordered ned-final) laz ned-final o] gen]
+    ?.  done
       =^  l=laze  gen  (~(run-shape comp gen) nomm [%done ~])
       [[(laze-collapse l cape.less.b) *need-lazy *need `@uwoo`0] gen]
-    =.  mode.gen  ?:(done %run %drop)
+    =.  mode.gen  %run
     =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~)
     =^  [ned-final=need laz=need-lazy o=@uwoo]  gen
       (~(collapse-shape comp gen) nex cape.less.b)
+    ::
     [[(need-to-ordered ned-final) laz ned-final o] gen]
+  ::  Debug assert of +run-shape correctenss
   ::
-  =/  shape-ok=?
-    ?.  &(done shape-check)  &
-    =/  l=laze  -:(~(run-shape comp *line-short) nomm [%done ~])
-    =/  shape  (laze-collapse l cape.less.b)
-    ~|  [%shape-mismatch b shape need-new]
-    ?>  =(shape need-new)
-    &
-  ?>  shape-ok
+  =>  =*  dot  .
+      !@  shape-check  dot
+      ?.  done  dot
+      =/  l=laze  -:(~(run-shape comp *line-short) nomm [%done ~])
+      =/  shape  (laze-collapse l cape.less.b)
+      ~|  [%shape-mismatch b shape need-new]
+      ?>  =(shape need-new)
+      dot
+  ::
   ::  Finalization: emit the subject deconsing code, coerce the subject to the
-  ::  pessimized shape if there is one, replay the recorded code emission and
-  ::  renumber the registers
+  ::  pessimized shape if there is one, and renumber the registers
   ::
   =/  finish
     ~%  %compile-scc-finish  ..ride  ~
@@ -3319,7 +3328,6 @@
     ^+  gen
     ?-    mode.gen
         %drop    gen
-        %record  gen(todo [act todo.gen])
         %run
       ?-  -.act
         %emir     gen(blocks (~(put by blocks.gen) o.act blob.act))
@@ -3344,19 +3352,6 @@
         gen(cond (~(put by cond.gen) p.act [r.act (~(got by tags.gen) o.act)]))
       ==
     ==
-  ::  Run the recorded actions in order.  Afterwards actions run immediately.
-  ::
-  ++  replay
-    ^+  gen
-    =<  $
-    ~%  %comp-replay  ..ride  ~
-    |.
-    =/  todo=(list gen-act)  (flop todo.gen)
-    =.  todo.gen  ~
-    =.  mode.gen  %run
-    |-  ^+  gen
-    ?~  todo  gen
-    $(gen (late i.todo), todo t.todo)
   ::  Shape-only compilation: the traversal of +run reduced to what decides
   ::  the lazy need of the subject.  No code, no registers, no blocks.
   ::
@@ -4755,7 +4750,6 @@
     ~%  %comp-to-straight  ..ride  ~
     |=  nex=next-resolved
     ^-  straight
-    =.  gen  replay
     =/  blocks=(map @uwoo blob)  blocks.gen
     ::  Proxy registers (see $cond) are dominated by their definitions at this
     ::  point, so they are replaced by their definitions while renumbering
