@@ -2343,7 +2343,7 @@
 =/  dedicated-shape-pass  ~
 ::  Debug: check that both agree on the final pass
 ::
-:: =/  shape-check  ~
+=/  shape-check  ~
 ::
 |%
 +$  hint-static  ?(%bout %xray)
@@ -3321,7 +3321,7 @@
     =/  this=laze  [[this+~ ~] ~ ~]
     ::  what +simple-next does to the goal
     ::
-    =/  simple=goal-shape  ?:(?=(%next -.goal) goal [%next this])
+    =/  simple=$>(%next goal-shape)  ?:(?=(%next -.goal) goal [%next this])
     ?-    nomm
         [^ *]
       ?-    -.goal
@@ -3341,7 +3341,6 @@
     ::
         [%0 *]
       ?:  =(0 p.nomm)  [none gen]
-      ?>  ?=(%next -.simple)
       ?:  =(1 p.nomm)  [laz.simple gen]
       [(laze-from p.nomm laz.simple) gen]
     ::
@@ -3354,13 +3353,17 @@
         [(laze-copy l-sub l-fol) gen]
       =*  b-callee  b.u.info.nomm
       =/  callee-pure=?  pure:(~(got by code.long-ska) b-callee)
-      =/  drop=?  &(callee-pure ?=(%next -.goal) (laze-none-equivalent laz.goal))
+      =/  drop=?
+        &(callee-pure ?=(%next -.goal) (laze-none-equivalent laz.goal))
+      ::
       =^  l-fol=laze  gen
         ?:  (safe-fol-fol q.nomm)  [none gen]
         $(nomm q.nomm, goal [%next none])
+      ::
       =^  l-sub  gen
         ?:  drop  $(nomm p.nomm, goal [%next none])
         $(nomm p.nomm, goal [%next [[(callee-need b-callee) ~] ~ ~]])
+      ::
       [(laze-copy l-sub l-fol) gen]
     ::
         [%3 *]
@@ -3376,7 +3379,7 @@
     ::
         [%6 *]
       ?:  ?&  ?=(%next -.goal)
-              !(laze-none-equivalent laz.goal(sure *sure-inter1))
+              !(laze-none-equivalent laz.goal(sure *sure-ordered))
           ==
         =^  [goal-0=laze goal-1=laze]  gen  (laze-branch laz.goal)
         =^  l-1  gen  $(nomm r.nomm, goal [%next goal-1])
@@ -3417,7 +3420,7 @@
       =^  l-fol=laze  gen
         ?.  ?=(hint-dynamic-stop p.p.nomm)  [l-fol gen]
         =^  i  gen  id
-        [[*sure-inter1 ~ [i l-fol]~] gen]
+        [[*sure-ordered ~ [i l-fol]~] gen]
       =^  l-toke  gen  $(nomm q.p.nomm, goal [%next this])
       [(laze-copy l-toke l-fol) gen]
     ::
@@ -3436,7 +3439,8 @@
     ?:  (~(has in scc) b-callee)
       need:(~(gut by map-local) b-callee *straight)
     =/  new-scc=(set bell)  (~(gut by scc-map) b-callee [b-callee ~ ~])
-    need:(~(got by (compile-scc new-scc rev long-ska scc-map jets-hot)) b-callee)
+    =<  need
+    (~(got by (compile-scc new-scc rev long-ska scc-map jets-hot)) b-callee)
   ::
   ++  laze-none-equivalent
     |=  laz=laze
@@ -3567,7 +3571,7 @@
     |=  [axe=@ laz=laze]
     ^-  laze
     ?<  =(0 axe)
-    =/  sur=sure-inter1
+    =/  sur=sure-ordered
       ?:  ?=(%none -.ned.sure.laz)
         :-  [%none ~]
         ?<  =(1 axe)
@@ -3661,7 +3665,7 @@
     ^-  [laze _gen]
     =^  o-0  gen  id
     =^  o-1  gen  id
-    [[*sure-inter1 [[o-0 l-0] [o-1 l-1]]~ ~] gen]
+    [[*sure-ordered [[o-0 l-0] [o-1 l-1]]~ ~] gen]
   ::
   ++  kerf
     ~%  %comp-kerf  ..ride  ~
@@ -3864,6 +3868,7 @@
     ?>  =(~ args.then.nex-1)
     :_  [o-0-beg o-1-beg]
     [*sure [[o-0-beg laz.nex-0] [o-1-beg laz.nex-1]]~ ~]
+  ::
   ++  mede
     ~%  %comp-mede  ..ride  ~
     |=  [then=jmp som=* laz=need-lazy]
@@ -4201,6 +4206,7 @@
       ?:  =(~ fork.first)  [fork.second gen]
       =/  index=(map @uwoo lazy-fork)
         (malt (turn fork.second |=(e=lazy-fork [o.y.e e])))
+      ::
       =^  merged=(list lazy-fork)  gen
         %^  spin  fork.first  gen
         |=  [e=lazy-fork gen-acc=_gen]
@@ -4710,7 +4716,7 @@
     =.  gen  gen-acc
     ::  Empty blocks that every jump bypasses are dropped, see +chase
     ::
-    ?:  &(!=(`@`0 k) (bypassable & b))  [new gen]
+    ?:  &(!=(0w0 k) (bypassable & b))  [new gen]
     =;  [b1=blob gen1=_gen]
       :_  gen1
       (~(put by new) k b1)
@@ -5196,14 +5202,14 @@
 ::    fix: the shape we accumulate in the fixed point loop. It contains all the
 ::         axes that were available to us, including in the prior iterations.
 ::
-+$  sure-inter1  [ned=need-ordered lok=(set @)]
++$  sure-ordered  [ned=need-ordered lok=(set @)]
 ::  $need-lazy without registers or blocks: what +run-shape computes.  Fork and
 ::  bond entries carry identifiers so that +laze-copy can merge them.
 ::
 +$  laze
   $+  laze
   $;  |-
-  $:  sure=sure-inter1
+  $:  sure=sure-ordered
       fork=(list [y=[o=@uxid laz=$] n=[o=@uxid laz=$]])
       bond=(list [o=@uxid laz=$])
   ==
@@ -5213,7 +5219,7 @@
 +$  need-inter1
   $+  need-inter1
   $;  |-
-  $:  sure=sure-inter1
+  $:  sure=sure-ordered
       fork=(list [y=$ n=$])
   ==
 ::
@@ -5237,7 +5243,7 @@
     |=  [[* laz-y=need-lazy] * laz-n=need-lazy]
     [(lazy-to-inter laz-y) (lazy-to-inter laz-n)]
   ::
-  =/  sure-new=sure-inter1  [ned-sure-new lok.sure.laz]
+  =/  sure-new=sure-ordered  [ned-sure-new lok.sure.laz]
   |=  [[* i=need-lazy] sur=_sure-new fork=_fork-new]
   ^+  [sur fork]
   =/  i  (lazy-to-inter i)
@@ -5632,7 +5638,7 @@
           rev=(jar @uwoo @uwoo)
           topo=(list @uwoo)
       ==
-  ^-  [[changed=? folded=?] (map @uwoo blob)]
+  ^-  [folded=? (map @uwoo blob)]
   =|  $=  gen
       $:  new=(map @uwoo blob)
           old=(map @uvre @uvre)  ::  eliminated register -> its alias
@@ -5641,19 +5647,17 @@
           info-local=(map @uvre info-reg)
           imms-local=(jug * @uvre)
           rev=(jug @uwoo @uwoo)
-          changed=_|  ::  an op, a branch or a block was eliminated
           folded=_|   ::  a branch or a block was eliminated
       ==
   ::
   =.  rev.gen  (~(run by rev) (bake silt (list @uwoo)))
-  |^  ^-  [[? ?] (map @uwoo blob)]
-  ?~  topo  [[changed.gen folded.gen] new.gen]
+  |^  ^-  [? (map @uwoo blob)]
+  ?~  topo  [folded.gen new.gen]
   =*  o  i.topo
   =/  pre=(list @uwoo)  ~(tap in (~(get ju rev.gen) o))
   ?:  &(=(~ pre) !=(0w0 o))
     ::  this block became unreachable: delete its descendants from reversed CFG
     ::
-    =.  changed.gen  &
     =.  folded.gen  &
     =.  rev.gen
       %+  roll  (get-jmps fin:(~(got by blocks) o))
@@ -5770,7 +5774,7 @@
         %imm
       ?^  res=(~(get ju imms-local.gen) n.op)
         =.  old.gen  (~(put by old.gen) d.op n.res)
-        [body-new gen(changed &)]
+        [body-new gen]
       =/  new=@uvre  d.op
       =|  info=info-reg
       =.  info-local.gen  (~(put by info-local.gen) new info(has-imm `n.op))
@@ -5780,14 +5784,14 @@
     ::
         %mov
       =.  old.gen  (~(put by old.gen) d.op (rn s.op))
-      [body-new gen(changed &)]
+      [body-new gen]
     ::
         %inc
       =/  arg  (rn s.op)
       =/  arg-info  (~(got by info-local.gen) arg)
       ?^  dec-of.arg-info
         =.  old.gen  (~(put by old.gen) d.op u.dec-of.arg-info)
-        [body-new gen(changed &)]
+        [body-new gen]
       =/  new  d.op
       =.  info-local.gen  (~(put by info-local.gen) new *info-reg)
       =.  info-local.gen
@@ -5802,7 +5806,7 @@
       =/  t-info  (~(got by info-local.gen) t)
       ?^  intersect=(~(int in hed-of.h-info) tel-of.t-info)
         =.  old.gen  (~(put by old.gen) d.op n.intersect)
-        [body-new gen(changed &)]
+        [body-new gen]
       =/  new  d.op
       =|  info=info-reg
       =.  info-local.gen
@@ -5823,7 +5827,7 @@
       =/  arg-info  (~(got by info-local.gen) arg)
       ?^  has-hed.arg-info
         =.  old.gen  (~(put by old.gen) d.op u.has-hed.arg-info)
-        [body-new gen(changed &)]
+        [body-new gen]
       =/  new  d.op
       =|  info=info-reg
       =.  info-local.gen  (~(put by info-local.gen) new info(hed-of [arg ~ ~]))
@@ -5837,7 +5841,7 @@
       =/  arg-info  (~(got by info-local.gen) arg)
       ?^  has-tel.arg-info
         =.  old.gen  (~(put by old.gen) d.op u.has-tel.arg-info)
-        [body-new gen(changed &)]
+        [body-new gen]
       =/  new  d.op
       =|  info=info-reg
       =.  info-local.gen  (~(put by info-local.gen) new info(tel-of [arg ~ ~]))
@@ -5850,7 +5854,7 @@
       =/  arg  (rn p.op)
       =/  arg-info  (~(got by info-local.gen) arg)
       ?:  is-cell.arg-info
-        [body-new gen(changed &)]
+        [body-new gen]
       =.  info-local.gen
         (~(jab by info-local.gen) arg |=(info-reg +<(is-cell &)))
       ::
@@ -5860,7 +5864,7 @@
       =/  arg  (rn p.op)
       =/  arg-info  (~(got by info-local.gen) arg)
       ?:  |(is-loob.arg-info ?=([~ ?] has-imm.arg-info))
-        [body-new gen(changed &)]
+        [body-new gen]
       =.  info-local.gen
         (~(jab by info-local.gen) arg |=(info-reg +<(is-loob &)))
       ::
@@ -5869,7 +5873,7 @@
         %equ
       =/  l  (rn l.op)
       =/  r  (rn r.op)
-      ?:  =(l r)  [body-new gen(changed &)]
+      ?:  =(l r)  [body-new gen]
       [[[%equ l r] body-new] gen]
     ::
         %hsp
@@ -5947,9 +5951,7 @@
       =/  info-cond  (~(got by info-local.gen) cond-new)
       ?:  |(is-cell.info-cond ?=([~ ^] has-imm.info-cond))
         :-  [%hop ~ there.z.fin.bob]
-      =.  changed.gen  &
       =.  folded.gen  &
-        =.  changed.gen  &
         =.  folded.gen  &
         ::  if the branching instruction points to a block twice then we can't
         ::  delete the edge from the reversed graph since it still points to it
@@ -5959,7 +5961,6 @@
         gen(rev (~(del ju rev.gen) there.o.fin.bob o))
       ?:  |(is-loob.info-cond ?=([~ @] has-imm.info-cond))
         :-  [%hop ~ there.o.fin.bob]
-        =.  changed.gen  &
         =.  folded.gen  &
         ?:  =(there.o.fin.bob there.z.fin.bob)  gen
         gen(rev (~(del ju rev.gen) there.z.fin.bob o))
@@ -5972,7 +5973,6 @@
       =/  r-new  (rn r.fin.bob)
       ?.  =(l-new r-new)  [fin.bob(l l-new, r r-new) gen]
       :-  [%hop ~ there.z.fin.bob]
-      =.  changed.gen  &
       =.  folded.gen  &
       ?:  =(there.o.fin.bob there.z.fin.bob)  gen
       gen(rev (~(del ju rev.gen) there.o.fin.bob o))
@@ -5984,20 +5984,16 @@
       =/  info-cond  (~(got by info-local.gen) cond-new)
       ?~  has-imm.info-cond
         ?.  is-loob.info-cond  [fin.bob(s cond-new) gen]
-        [[%brz cond-new z.fin.bob o.fin.bob] gen(changed &, folded &)]
+        [[%brz cond-new z.fin.bob o.fin.bob] gen(folded &)]
       ?-    u.has-imm.info-cond
           %&
         :-  [%hop ~ there.z.fin.bob]
-      =.  changed.gen  &
-      =.  folded.gen  &
-        =.  changed.gen  &
         =.  folded.gen  &
         ?:  =(there.o.fin.bob there.z.fin.bob)  gen
         gen(rev (~(del ju rev.gen) there.o.fin.bob o))
       ::
           %|
         :-  [%hop ~ there.o.fin.bob]
-        =.  changed.gen  &
         =.  folded.gen  &
         ?:  =(there.o.fin.bob there.z.fin.bob)  gen
         gen(rev (~(del ju rev.gen) there.z.fin.bob o))
@@ -6021,7 +6017,6 @@
       =/  [go=@uwoo cut=@uwoo]
         ?:(u.zero [there.z there.o]:fin.bob [there.o there.z]:fin.bob)
       :-  [%hop ~ go]
-      =.  changed.gen  &
       =.  folded.gen  &
       ?:  =(go cut)  gen
       gen(rev (~(del ju rev.gen) cut o))
@@ -6205,16 +6200,14 @@
 ++  remove-dead-code
   ~%  %remove-dead-code  ..ride  ~
   |=  [blocks=(map @uwoo blob) rev-topo=(list @uwoo)]
-  ^-  [changed=? (map @uwoo blob)]
+  ^+  blocks
   =|  new=(map @uwoo blob)
   =|  saw=(set @uvre)
-  =/  changed=?  |
-  |-  ^-  [? (map @uwoo blob)]
-  ?~  rev-topo  [changed new]
+  |-  ^+  new
+  ?~  rev-topo  new
   =/  b  (~(got by blocks) i.rev-topo)
   =;  [new-body=(list pole) saw1=(set @uvre)]
     =.  new  (~(put by new) i.rev-topo b(body new-body))
-    =?  changed  !=((lent new-body) (lent body.b))  &
     $(rev-topo t.rev-topo, saw saw1)
   ::
   =/  old-body=(list pole)  (flop body.b)
@@ -6236,7 +6229,7 @@
 ++  trim-trace-hints
   ~%  %trim-trace-hints  ..ride  ~
   |=  [blocks=(map @uwoo blob) topo=(list @uwoo) rev=(jar @uwoo @uwoo)]
-  ^-  [changed=? (map @uwoo blob)]
+  ^+  blocks
   =*  key  ,[hint=?(%spot %mean) reg=@uvre]
   ::  Walk in topological order carrying the hints that are open: prologue
   ::  passed, epilogue not reached yet. A hint open at an op that could crash,
@@ -6267,7 +6260,7 @@
     ^$(topo t.topo, out (~(put by out) i.topo open))
   ::
   %-  ~(rep by blocks)
-  |=  [[o=@uwoo b=blob] changed=_| new=(map @uwoo blob)]
+  |=  [[o=@uwoo b=blob] new=(map @uwoo blob)]
   =/  body
     %+  skip  body.b
     |=  op=pole
@@ -6275,7 +6268,7 @@
         ?=(?(%spot %mean) n.op)
         !(~(has in unsafe) [n p]:op)
     ==
-  :-  |(changed !=((lent body) (lent body.b)))
+  ::
   (~(put by new) o b(body body))
 ::
 ++  remove-useless-branching
@@ -6421,25 +6414,24 @@
   ::
   =/  topo  (bb-topo blocks.s)
   =/  rev  (rev-cfg blocks.s (sy topo))
-  =^  [c-struct=? topo=(list @uwoo) rev=(jar @uwoo @uwoo)]  blocks.s
-    =/  c-struct=?  |
-    |-  ^-  [[? (list @uwoo) (jar @uwoo @uwoo)] (map @uwoo blob)]
+  =^  [topo=(list @uwoo) rev=(jar @uwoo @uwoo)]  blocks.s
+    |-  ^-  [[(list @uwoo) (jar @uwoo @uwoo)] (map @uwoo blob)]
     =^  c-hops=?  blocks.s  (remove-hops blocks.s rev topo)
     =^  c-branch=?  blocks.s  (remove-useless-branching blocks.s)
     =^  c-middle=?  blocks.s  (remove-empty-middle blocks.s)
-    ?.  |(c-hops c-branch c-middle)  [[c-struct topo rev] blocks.s]
+    ?.  |(c-hops c-branch c-middle)  [[topo rev] blocks.s]
     =.  topo  (bb-topo blocks.s)
     =.  rev  (rev-cfg blocks.s (sy topo))
-    $(c-struct &)
+    $
   ::
-  =^  [c-alias=? f-alias=?]  blocks.s  (alias n-args.s blocks.s rev topo)
+  =^  f-alias=?  blocks.s  (alias n-args.s blocks.s rev topo)
   =.  topo  (skim topo ~(has by blocks.s))
   =.  rev  (rev-cfg blocks.s (sy topo))
   ::  Trimming hints can leave their token registers dead, so dead code goes
   ::  after it
   ::
-  =^  c-trim=?  blocks.s  (trim-trace-hints blocks.s topo rev)
-  =^  c-dead=?  blocks.s  (remove-dead-code blocks.s (flop topo))
+  =.  blocks.s  (trim-trace-hints blocks.s topo rev)
+  =.  blocks.s  (remove-dead-code blocks.s (flop topo))
   ::  Another round is needed only if +alias folded a branch or dropped a
   ::  block, or if the structure can be cleaned up further after the op
   ::  eliminations.  Op eliminations alone never make +alias more precise.
