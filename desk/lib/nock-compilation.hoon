@@ -2475,11 +2475,10 @@
 ::
 ::  The compiler computes the subject shape and emits code in one traversal,
 ::  but the compilation fixed point only reads the shape, and code emission is
-::  the more expensive half.  So everything that touches the emitted IR
-::  (.blocks, .tags, .cond) goes through +late as a $gen-act: run right
-::  away in %run mode, or thrown away for the fixed point iterations whose
-::  code is never used.  Register and block identifiers are allocated eagerly
-::  either way, since needs and lazy blocks carry them.
+::  the more expensive half.  So every operation that touches the emitted IR
+::  (.blocks, .tags, .cond) does nothing in %drop mode, used for the fixed
+::  point iterations whose code is never used.  Register and block identifiers
+::  are allocated eagerly either way, since needs and lazy blocks carry them.
 ::
 +$  line-short
   $:  re-gen=@uvre
@@ -2489,26 +2488,6 @@
       blocks=(map @uwoo blob)
       tags=(map @uwoo (list @uxid))  ::  region of lazy need blocks
       =cond
-  ==
-::  Deferred code emission, see +late
-::
-+$  gen-act
-  $%  [%emir o=@uwoo =blob]
-      [%add-ops o=@uwoo ops=(list pole)]
-      [%tag o=@uwoo region=(list @uxid)]
-      [%tag-from from=@uwoo to=(list @uwoo)]
-      [%proxy p=@uvre r=@uvre o=@uwoo]
-      [%kern o=@uwoo laz=need-lazy r=@uvre]
-      [%mede o=@uwoo som=* laz=need-lazy]
-      [%collapse-atom o=@uwoo laz=need-lazy r=@uvre]
-      [%insert-hop a=@uwoo o1=@uwoo o2=@uwoo]
-      $:  %sect
-          o-0-end=@uwoo
-          o-1-end=@uwoo
-          region=@uxid
-          cond-before=cond   ::  .cond before the branches were compiled
-          cond-between=cond  ::  .cond after the no branch was compiled
-      ==
   ==
 ::  Non-control-flow ops
 ::
@@ -3214,8 +3193,8 @@
           ==
         =^  yes  gen  (emit ~ ~ %hop then.nex-0)
         =^  nuh  gen  (emit ~ ~ %hop then.nex-1)
-        =.  gen  (late %tag yes region)
-        =.  gen  (late %tag nuh region)
+        =.  gen  (set-tag yes region)
+        =.  gen  (set-tag nuh region)
         :_  gen
         ?>  =(~ args.then.nex-0)
         ?>  =(~ args.then.nex-1)
@@ -3313,36 +3292,24 @@
   ++  re  `[@uvre _gen]`[re-gen.gen gen(re-gen +(re-gen.gen))]
   ++  oo  `[@uwoo _gen]`[bo-gen.gen gen(bo-gen +(bo-gen.gen))]
   ++  id  `[@uxid _gen]`[id-gen.gen gen(id-gen +(id-gen.gen))]
-  ::  Run or drop a code emission action, see $line-short
+  ::  Nothing is emitted in %drop mode, see $line-short
   ::
-  ++  late
-    |=  act=gen-act
+  ++  dropping  ?=(%drop mode.gen)
+  ::
+  ++  set-tag
+    |=  [o=@uwoo region=(list @uxid)]
     ^+  gen
-    ?-    mode.gen
-        %drop    gen
-        %run
-      ?-  -.act
-        %emir     gen(blocks (~(put by blocks.gen) o.act blob.act))
-        %tag      gen(tags (~(put by tags.gen) o.act region.act))
-        %kern     (kern-now [o laz r]:act)
-        %mede     (mede-now [o som laz]:act)
-        %insert-hop  (insert-hop-now [a o1 o2]:act)
-        %collapse-atom  (collapse-atom-now [o laz r]:act)
-        %sect     (sect-now [o-0-end o-1-end region cond-before cond-between]:act)
-      ::
-          %add-ops
-        =/  =blob  (~(got by blocks.gen) o.act)
-        =.  body.blob  (weld ops.act body.blob)
-        gen(blocks (~(put by blocks.gen) o.act blob))
-      ::
-          %tag-from
-        =/  tag  (~(got by tags.gen) from.act)
-        gen(tags (~(gas by tags.gen) (turn to.act |=(o=@uwoo [o tag]))))
-      ::
-          %proxy
-        gen(cond (~(put by cond.gen) p.act [r.act (~(got by tags.gen) o.act)]))
-      ==
-    ==
+    ?:  dropping  gen
+    gen(tags (~(put by tags.gen) o region))
+  ::  The kids of a lazy block are in its region
+  ::
+  ++  copy-tag
+    |=  [from=@uwoo to=(list @uwoo)]
+    ^+  gen
+    ?:  dropping  gen
+    =/  region  (~(got by tags.gen) from)
+    gen(tags (~(gas by tags.gen) (turn to |=(o=@uwoo [o region]))))
+  ::
   ::  Shape-only compilation: the traversal of +run reduced to what decides
   ::  the lazy need of the subject.  No code, no registers, no blocks.
   ::
@@ -3722,15 +3689,12 @@
     walk(gen gen, laz laz, o o)
   ::
   ++  kern
+    ~%  %comp-kern  ..ride  ~
     |=  [o=@uwoo laz=need-lazy]
     ^-  [@uvre _gen]
     =^  r  gen  re
-    [r (late %kern o laz r)]
-  ::
-  ++  kern-now
-    ~%  %comp-kern  ..ride  ~
-    |=  [o=@uwoo laz=need-lazy r=@uvre]
-    ^+  gen
+    ?:  dropping  [r gen]
+    :-  r
     %^  walk-lazy  o  laz
     |=  [o-laz=@uwoo sur=sure gen-init=_gen]
     ^+  gen
@@ -3748,7 +3712,8 @@
     |=  [r=@uvre o=@uwoo]
     ^-  [@uvre _gen]
     =^  p  gen  re
-    [p (late %proxy p r o)]
+    ?:  dropping  [p gen]
+    [p gen(cond (~(put by cond.gen) p [r (~(got by tags.gen) o)]))]
   ::
   ++  kern-r-need
     ~%  %comp-kern-r-need  ..ride  ~
@@ -3800,7 +3765,7 @@
     |=  [nex=next region=(list @uxid)]
     ^-  [next _gen]
     =^  o  gen  (emit ~ ~ %hop then.nex)
-    =.  gen  (late %tag o region)
+    =.  gen  (set-tag o region)
     :_  gen
     ?>  =(~ args.then.nex)
     [%next [*sure ~ [o laz.nex]~] ~ o]
@@ -3819,106 +3784,93 @@
     ?>  ?=(^ region-branch)
     =^  o-0-beg  gen  (emit ~ ~ %hop then.nex-0)
     =^  o-1-beg  gen  (emit ~ ~ %hop then.nex-1)
-    =.  gen  (late %tag o-0-beg region-branch)
-    =.  gen  (late %tag o-1-beg region-branch)
+    =.  gen  (set-tag o-0-beg region-branch)
+    =.  gen  (set-tag o-1-beg region-branch)
+    ::  Thread the registers read past the join through the join block, see
+    ::  $cond
+    ::
     =.  gen
-      (late %sect o-0-end o-1-end i.region-branch cond-before cond-between)
+      ?:  dropping  gen
+      =/  made-0  (~(dif by cond.gen) cond-between)
+      =/  made-1  (~(dif by cond-between) cond-before)
+      =/  o-target=@uwoo
+        =/  blob-0-end  (~(got by blocks.gen) o-0-end)
+        =/  blob-1-end  (~(got by blocks.gen) o-1-end)
+        ?>  ?=(%hop -.fin.blob-0-end)
+        ?>  ?=(%hop -.fin.blob-1-end)
+        ?>  =(there.t.fin.blob-0-end there.t.fin.blob-1-end)
+        there.t.fin.blob-0-end
+      ::
+      =/  inside-branch
+        |=(tag=(list @uxid) (lien tag |=(id=@uxid =(id i.region-branch))))
+      ::
+      =|  tars=(map @uvre @uvre)  ::  definition -> join parameter
+      =/  args=[yes=(list (unit @uvre)) nuh=(list (unit @uvre)) tar=(list @uvre)]
+        =/  yes-end=blob  (~(got by blocks.gen) o-0-end)
+        ?>  ?=(%hop -.fin.yes-end)
+        =/  nuh-end=blob  (~(got by blocks.gen) o-1-end)
+        ?>  ?=(%hop -.fin.nuh-end)
+        :+  args.t.fin.yes-end
+          args.t.fin.nuh-end
+        par:(~(got by blocks.gen) o-target)
+      ::
+      =>
+        =*  dot  .
+        ^+  dot
+        %-  ~(rep by made-0)
+        |=  [[k=@uvre v=[def=@uvre tag=(list @uxid)]] dot-init=_dot]
+        =.  dot  dot-init
+        ?:  (inside-branch tag.v)  dot
+        ?^  tar=(~(get by tars) def.v)
+          dot(cond.gen (~(put by cond.gen) k [u.tar tag.v]))
+        =^  tar-new  gen  re
+        =.  tars  (~(put by tars) def.v tar-new)
+        =.  yes.args  [`def.v yes.args]
+        =.  nuh.args  [~ nuh.args]
+        =.  tar.args  [tar-new tar.args]
+        =.  cond.gen  (~(put by cond.gen) k [tar-new tag.v])
+        dot
+      ::
+      =>
+        =*  dot  .
+        ^+  dot
+        %-  ~(rep by made-1)
+        |=  [[k=@uvre v=[def=@uvre tag=(list @uxid)]] dot-init=_dot]
+        =.  dot  dot-init
+        ?:  (inside-branch tag.v)  dot
+        ?^  tar=(~(get by tars) def.v)
+          dot(cond.gen (~(put by cond.gen) k [u.tar tag.v]))
+        =^  tar-new  gen  re
+        =.  tars  (~(put by tars) def.v tar-new)
+        =.  nuh.args  [`def.v nuh.args]
+        =.  yes.args  [~ yes.args]
+        =.  tar.args  [tar-new tar.args]
+        =.  cond.gen  (~(put by cond.gen) k [tar-new tag.v])
+        dot
+      ::
+      =.  blocks.gen  (~(jab by blocks.gen) o-target |=(blob +<(par tar.args)))
+      =/  lens-hop
+        |=  args=(list (unit @uvre))
+        |=  b=blob
+        ?>  ?=(%hop -.fin.b)
+        b(args.t.fin args)
+      ::
+      =.  blocks.gen  (~(jab by blocks.gen) o-0-end (lens-hop yes.args))
+      =.  blocks.gen  (~(jab by blocks.gen) o-1-end (lens-hop nuh.args))
+      gen
     ::
     :_  gen
     ?>  =(~ args.then.nex-0)
     ?>  =(~ args.then.nex-1)
     :_  [o-0-beg o-1-beg]
     [*sure [[o-0-beg laz.nex-0] [o-1-beg laz.nex-1]]~ ~]
-  ::  Thread the registers read past the join through the join block, see
-  ::  $cond
-  ::
-  ++  sect-now
-    ~%  %comp-sect-now  ..ride  ~
-    |=  $:  o-0-end=@uwoo
-            o-1-end=@uwoo
-            region=@uxid
-            cond-before=cond
-            cond-between=cond
-        ==
-    ^+  gen
-    =/  made-0  (~(dif by cond.gen) cond-between)
-    =/  made-1  (~(dif by cond-between) cond-before)
-    =/  o-target=@uwoo
-      =/  blob-0-end  (~(got by blocks.gen) o-0-end)
-      =/  blob-1-end  (~(got by blocks.gen) o-1-end)
-      ?>  ?=(%hop -.fin.blob-0-end)
-      ?>  ?=(%hop -.fin.blob-1-end)
-      ?>  =(there.t.fin.blob-0-end there.t.fin.blob-1-end)
-      there.t.fin.blob-0-end
-    ::
-    =/  inside-branch
-      |=(tag=(list @uxid) (lien tag |=(id=@uxid =(id region))))
-    ::
-    =|  tars=(map @uvre @uvre)  ::  definition -> join parameter
-    =/  args=[yes=(list (unit @uvre)) nuh=(list (unit @uvre)) tar=(list @uvre)]
-      =/  yes-end=blob  (~(got by blocks.gen) o-0-end)
-      ?>  ?=(%hop -.fin.yes-end)
-      =/  nuh-end=blob  (~(got by blocks.gen) o-1-end)
-      ?>  ?=(%hop -.fin.nuh-end)
-      :+  args.t.fin.yes-end
-        args.t.fin.nuh-end
-      par:(~(got by blocks.gen) o-target)
-    ::
-    =>
-      =*  dot  .
-      ^+  dot
-      %-  ~(rep by made-0)
-      |=  [[k=@uvre v=[def=@uvre tag=(list @uxid)]] dot-init=_dot]
-      =.  dot  dot-init
-      ?:  (inside-branch tag.v)  dot
-      ?^  tar=(~(get by tars) def.v)
-        dot(cond.gen (~(put by cond.gen) k [u.tar tag.v]))
-      =^  tar-new  gen  re
-      =.  tars  (~(put by tars) def.v tar-new)
-      =.  yes.args  [`def.v yes.args]
-      =.  nuh.args  [~ nuh.args]
-      =.  tar.args  [tar-new tar.args]
-      =.  cond.gen  (~(put by cond.gen) k [tar-new tag.v])
-      dot
-    ::
-    =>
-      =*  dot  .
-      ^+  dot
-      %-  ~(rep by made-1)
-      |=  [[k=@uvre v=[def=@uvre tag=(list @uxid)]] dot-init=_dot]
-      =.  dot  dot-init
-      ?:  (inside-branch tag.v)  dot
-      ?^  tar=(~(get by tars) def.v)
-        dot(cond.gen (~(put by cond.gen) k [u.tar tag.v]))
-      =^  tar-new  gen  re
-      =.  tars  (~(put by tars) def.v tar-new)
-      =.  nuh.args  [`def.v nuh.args]
-      =.  yes.args  [~ yes.args]
-      =.  tar.args  [tar-new tar.args]
-      =.  cond.gen  (~(put by cond.gen) k [tar-new tag.v])
-      dot
-    ::
-    =.  blocks.gen  (~(jab by blocks.gen) o-target |=(blob +<(par tar.args)))
-    =/  lens-hop
-      |=  args=(list (unit @uvre))
-      |=  b=blob
-      ?>  ?=(%hop -.fin.b)
-      b(args.t.fin args)
-    ::
-    =.  blocks.gen  (~(jab by blocks.gen) o-0-end (lens-hop yes.args))
-    =.  blocks.gen  (~(jab by blocks.gen) o-1-end (lens-hop nuh.args))
-    gen
-  ::
   ++  mede
+    ~%  %comp-mede  ..ride  ~
     |=  [then=jmp som=* laz=need-lazy]
     ^-  [@uwoo _gen]
     =^  o=@uwoo  gen  (emit ~ ~ %hop then)
-    [o (late %mede o som laz)]
-  ::
-  ++  mede-now
-    ~%  %comp-mede  ..ride  ~
-    |=  [o=@uwoo som=* laz=need-lazy]
-    ^+  gen
+    ?:  dropping  [o gen]
+    :-  o
     %^  walk-lazy  o  laz
     |=  [o=@uwoo sur=sure gen-init=_gen]
     ^+  gen
@@ -3974,15 +3926,12 @@
       ==
     ::
     :-  `[r there.then.nex]
-    (late %collapse-atom there.then.nex laz.nex(ned.sure this+r) r)
-  ::  add moves wherever lazy needs need one noun, crashes wherever lazy needs
-  ::  need more than an atom
-  ::
-  ++  collapse-atom-now
-    ~%  %comp-collapse-atom-now  ..ride  ~
-    |=  [o=@uwoo laz=need-lazy r=@uvre]
-    ^+  gen
-    %^  walk-lazy  o  laz
+    ?:  dropping  gen
+    ::  add moves wherever lazy needs need one noun, crashes wherever lazy
+    ::  needs need more than an atom
+    ::
+    =/  o  there.then.nex
+    %^  walk-lazy  o  laz.nex(ned.sure this+r)
     |=  [o-laz=@uwoo sur=sure gen-init=_gen]
     ^+  gen
     =.  gen  gen-init
@@ -4066,14 +4015,10 @@
   ::  precedes the code that uses the product of the fork.
   ::
   ++  insert-hop
-    |=  [a=@uwoo o1=@uwoo o2=@uwoo]
-    ^+  gen
-    (late %insert-hop a o1 o2)
-  ::
-  ++  insert-hop-now
     ~%  %comp-insert-hop  ..ride  ~
     |=  [a=@uwoo o1=@uwoo o2=@uwoo]
     ^+  gen
+    ?:  dropping  gen
     =/  blob-from=blob  (~(got by blocks.gen) a)
     ?>  ?=(%hop -.fin.blob-from)
     ?>  =(~ par.blob-from)
@@ -4121,8 +4066,8 @@
       =^  o-1-kid-n    gen  oo
       =^  o-insert2-y  gen  oo
       =^  o-insert2-n  gen  oo
-      =.  gen  (late %tag-from o.y ~[o-0-kid-y o-1-kid-y])
-      =.  gen  (late %tag-from o.n ~[o-0-kid-n o-1-kid-n])
+      =.  gen  (copy-tag o.y ~[o-0-kid-y o-1-kid-y])
+      =.  gen  (copy-tag o.n ~[o-0-kid-n o-1-kid-n])
       ::
       =^  [laz-y-0=need-lazy laz-y-1=need-lazy]  gen
         %=  fork-loop
@@ -4159,7 +4104,7 @@
       =^  o-0-kid    gen  oo
       =^  o-1-kid    gen  oo
       =^  o-insert2  gen  oo
-      =.  gen  (late %tag-from o-bond ~[o-0-kid o-1-kid])
+      =.  gen  (copy-tag o-bond ~[o-0-kid o-1-kid])
       =^  [laz-0=need-lazy laz-1=need-lazy]  gen
         %=  fork-loop
           laz  laz-bond
@@ -4500,13 +4445,17 @@
     ~%  %comp-add-ops  ..ride  ~
     |=  [o=@uwoo ops=(list pole)]
     ^+  gen
-    (late %add-ops o ops)
+    ?:  dropping  gen
+    =/  =blob  (~(got by blocks.gen) o)
+    =.  body.blob  (weld ops body.blob)
+    gen(blocks (~(put by blocks.gen) o blob))
   ::
   ++  emir
     ~%  %comp-emir  ..ride  ~
     |=  [o=@uwoo =blob]
     ^+  gen
-    (late %emir o blob)
+    ?:  dropping  gen
+    gen(blocks (~(put by blocks.gen) o blob))
   ::
   ++  bomb
     ~%  %comp-bomb  ..ride  ~
