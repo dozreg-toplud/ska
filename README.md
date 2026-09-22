@@ -10,7 +10,7 @@ Initially based on [@zorp-corp/sword](https://github.com/zorp-corp/sword), this 
 
 ## Reading/watching recommendations
 
-`nock-compilation.hoon` is the single-file implementation of the algortihm. The rest of the repo contains some historical artifacts and tests. The file is heavily commented so it should be a good read on its own.
+[`nock-compilation.hoon`](https://github.com/dozreg-toplud/ska/blob/master/desk/lib/nock-compilation.hoon) is the single-file implementation of the algortihm. The rest of the repo contains some historical artifacts and tests. The file is heavily commented so it should be a good read on its own.
 
 ### Papers/presentations about the latest implementation
 
