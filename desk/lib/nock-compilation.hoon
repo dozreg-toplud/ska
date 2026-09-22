@@ -2489,7 +2489,6 @@
       blocks=(map @uwoo blob)
       tags=(map @uwoo (list @uxid))  ::  region of lazy need blocks
       =cond
-      snaps=(map @uxid cond)         ::  snapshots of .cond for +sect
   ==
 ::  Deferred code emission, see +late
 ::
@@ -2499,7 +2498,6 @@
       [%tag o=@uwoo region=(list @uxid)]
       [%tag-from from=@uwoo to=(list @uwoo)]
       [%proxy p=@uvre r=@uvre o=@uwoo]
-      [%snap id=@uxid]
       [%kern o=@uwoo laz=need-lazy r=@uvre]
       [%mede o=@uwoo som=* laz=need-lazy]
       [%collapse-atom o=@uwoo laz=need-lazy r=@uvre]
@@ -2508,8 +2506,8 @@
           o-0-end=@uwoo
           o-1-end=@uwoo
           region=@uxid
-          before=@uxid   ::  snapshot of .cond before the branches were compiled
-          between=@uxid  ::  snapshot of .cond after the no branch was compiled
+          cond-before=cond   ::  .cond before the branches were compiled
+          cond-between=cond  ::  .cond after the no branch was compiled
       ==
   ==
 ::  Non-control-flow ops
@@ -3172,14 +3170,14 @@
         ::
         =^  region-id  gen  id
         =/  region-branch  [region-id region]
-        =^  snap-before  gen  snap
+        =/  cond-before  cond.gen
         =^  nex-1  gen  $(nomm r.nomm, goal goal-1, region region-branch)
-        =^  snap-between  gen  snap
+        =/  cond-between  cond.gen
         =^  nex-0  gen  $(nomm q.nomm, goal goal-0, region region-branch)
         =^  [lazy=need-lazy yes=@uwoo nuh=@uwoo]  gen
           %-  sect
           :*  nex-0  nex-1  there.then.goal-0  there.then.goal-1
-              region-branch  snap-before  snap-between
+              region-branch  cond-before  cond-between
           ==
         ::
         =^  o=@uwoo  gen  (emit ~ ~ [%brn r-cond ~^yes ~^nuh])
@@ -3202,9 +3200,9 @@
         =^  region-id  gen  id
         [[region-id region] gen]
       ::
-      =^  snap-before  gen  snap
+      =/  cond-before  cond.gen
       =^  nex-1  gen  $(nomm r.nomm, goal goal-1, region region-branch)
-      =^  snap-between  gen  snap
+      =/  cond-between  cond.gen
       =^  nex-0  gen  $(nomm q.nomm, goal goal-0, region region-branch)
       =^  [lazy=need-lazy yes=@uwoo nuh=@uwoo]  gen
         ?:  ?=(%next -.goal)
@@ -3212,7 +3210,7 @@
           ?>  ?=(%next -.goal-1)
           %-  sect
           :*  nex-0  nex-1  there.then.goal-0  there.then.goal-1
-              region-branch  snap-before  snap-between
+              region-branch  cond-before  cond-between
           ==
         =^  yes  gen  (emit ~ ~ %hop then.nex-0)
         =^  nuh  gen  (emit ~ ~ %hop then.nex-1)
@@ -3315,13 +3313,7 @@
   ++  re  `[@uvre _gen]`[re-gen.gen gen(re-gen +(re-gen.gen))]
   ++  oo  `[@uwoo _gen]`[bo-gen.gen gen(bo-gen +(bo-gen.gen))]
   ++  id  `[@uxid _gen]`[id-gen.gen gen(id-gen +(id-gen.gen))]
-  ::  Snapshot of .cond, taken when the action gets run
-  ::
-  ++  snap
-    ^-  [@uxid _gen]
-    =^  i  gen  id
-    [i (late %snap i)]
-  ::  Record, run or drop a code emission action, see $line-short
+  ::  Run or drop a code emission action, see $line-short
   ::
   ++  late
     |=  act=gen-act
@@ -3332,12 +3324,11 @@
       ?-  -.act
         %emir     gen(blocks (~(put by blocks.gen) o.act blob.act))
         %tag      gen(tags (~(put by tags.gen) o.act region.act))
-        %snap     gen(snaps (~(put by snaps.gen) id.act cond.gen))
         %kern     (kern-now [o laz r]:act)
         %mede     (mede-now [o som laz]:act)
         %insert-hop  (insert-hop-now [a o1 o2]:act)
         %collapse-atom  (collapse-atom-now [o laz r]:act)
-        %sect     (sect-now [o-0-end o-1-end region before between]:act)
+        %sect     (sect-now [o-0-end o-1-end region cond-before cond-between]:act)
       ::
           %add-ops
         =/  =blob  (~(got by blocks.gen) o.act)
@@ -3821,8 +3812,8 @@
             o-0-end=@uwoo
             o-1-end=@uwoo
             region-branch=(list @uxid)
-            snap-before=@uxid   ::  cond.gen before the branches were compiled
-            snap-between=@uxid  ::  cond.gen after the no branch was compiled
+            cond-before=cond   ::  cond.gen before the branches were compiled
+            cond-between=cond  ::  cond.gen after the no branch was compiled
         ==
     ^-  [[need-lazy @uwoo @uwoo] _gen]
     ?>  ?=(^ region-branch)
@@ -3831,7 +3822,7 @@
     =.  gen  (late %tag o-0-beg region-branch)
     =.  gen  (late %tag o-1-beg region-branch)
     =.  gen
-      (late %sect o-0-end o-1-end i.region-branch snap-before snap-between)
+      (late %sect o-0-end o-1-end i.region-branch cond-before cond-between)
     ::
     :_  gen
     ?>  =(~ args.then.nex-0)
@@ -3843,12 +3834,13 @@
   ::
   ++  sect-now
     ~%  %comp-sect-now  ..ride  ~
-    |=  [o-0-end=@uwoo o-1-end=@uwoo region=@uxid before=@uxid between=@uxid]
+    |=  $:  o-0-end=@uwoo
+            o-1-end=@uwoo
+            region=@uxid
+            cond-before=cond
+            cond-between=cond
+        ==
     ^+  gen
-    =/  cond-before   (~(got by snaps.gen) before)
-    =/  cond-between  (~(got by snaps.gen) between)
-    =.  snaps.gen  (~(del by snaps.gen) before)
-    =.  snaps.gen  (~(del by snaps.gen) between)
     =/  made-0  (~(dif by cond.gen) cond-between)
     =/  made-1  (~(dif by cond-between) cond-before)
     =/  o-target=@uwoo
