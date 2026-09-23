@@ -695,6 +695,10 @@
   ^-  ?
   =*  h-e  .
   ?:  =(big smol)  &
+  ::  embedding never shrinks the cape: reject before searching the whole
+  ::  cape of big, which can have a million nodes
+  ::
+  ?:  (lth (cape-size cape.big) (cape-size cape.smol))  |
   ?:  &(?=(@ cape.big) ?=(@ cape.smol))  |
   =/  couple=?
     ::  smol and big are cells and smol is distributed in head and tail of big
@@ -713,6 +717,15 @@
   ?|  (h-e (hed:so big) smol)
       (h-e (tel:so big) smol)
   ==
+::  number of nodes of a cape, memoized per subtree (capes of related subjects
+::  share most of their subtrees)
+::
+++  cape-size
+  |=  c=cape
+  ^-  @
+  ?@  c  1
+  ~+
+  (add $(c -.c) $(c +.c))
 ::  Most specific generalization of two socks. Disagreeing parts are replaced
 ::  with an unknown element |+~. Note that this has different behavior and
 ::  intent compared to +msg-ca.
