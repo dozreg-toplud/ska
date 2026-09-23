@@ -197,12 +197,32 @@
     `(bex a.s)
   ==
 ::
+::  bell graph views of the finalized graph, for +compile-scc and friends
+::
+++  graph-info
+  |=  lon=long-ska
+  ^-  [rev=(jug bell bell) scc-map=(map bell (set bell))]
+  =/  [bell-graph=(jug bell bell) rev=(jug bell bell)]
+    (simple-bell-graph-and-reversed graph.final.lon)
+  ::
+  :-  rev
+  =/  sccs=(list (set bell))  (tarjan bell-graph)
+  =|  out=(map bell (set bell))
+  |-  ^+  out
+  ?~  sccs  out
+  =.  out
+    %-  ~(rep in i.sccs)
+    |=  [b=bell acc=_out]
+    (~(put by acc) b i.sccs)
+  ::
+  $(sccs t.sccs)
+::
 ++  run
   |=  $:  args=(each (list *) *)  ::  optimized/pessimized call
           =bell
           scc=(set bell)
           rev=(jug bell bell)
-          long-ska=_[=_code =_jets]:*long-ska
+          =long-ska
           scc-map=(map bell (set bell))
           jets-hot=(map ring need-ordered)
       ==
@@ -217,8 +237,9 @@
       ~>  %bout.[0 %compile]
       ~&  %compile-start
       ?:  f
-        (~(got by (compile-scc scc rev long-ska scc-map jets-hot)) bell)
-      -:(compile-unary bell scc rev long-ska scc-map jets-hot)
+        %-  ~(got by (compile-scc scc rev [code jets]:long-ska scc-map jets-hot))
+        bell
+      -:(compile-unary bell scc rev [code jets]:long-ska scc-map jets-hot)
     ::
     ~&  %optimize-start
     ~&  `@ux`(mug bell)
@@ -232,6 +253,7 @@
     %-  malt
     |-  ^-  (list [@uvre *])
     ?~  p.args
+      ~|  [%arity bell=`@ux`(mug bell) got=r want=n-args.straight]
       ?>  =(r n-args.straight)
       ~
     [[r i.p.args] $(p.args t.p.args, r +(r))]
@@ -398,13 +420,29 @@
     !!
   ::
       %nok
-    ::  XX reenter analysis (unless jetted? and/or unless %virt?)
+    ::  Indirect call: the subject and the formula are known now, so reenter
+    ::  the analysis with them and run the resulting function as a pessimized
+    ::  call. The updated analysis state is not kept past this call.
     ::
-    !!
-    :: =/  sub  (get u.op)
-    :: =/  fol  (get f.op)
-    :: ?~  res=(mole |.(.*(sub fol)))  ~
-    :: `(put d.op u.res)
+    ::  XX unless jetted? and/or unless %virt?
+    ::
+    =/  sub  (get u.op)
+    =/  fol  (get f.op)
+    ?@  fol  ~
+    =^  callee  long-ska  (ska-poke [&+sub fol] long-ska)
+    =/  info  (graph-info long-ska)
+    =/  sam-callee
+      %=  sam
+        args      |+sub
+        bell      callee
+        scc       (~(gut by scc-map.info) callee [callee ~ ~])
+        rev       rev.info
+        long-ska  long-ska
+        scc-map   scc-map.info
+      ==
+    ::
+    ?~  res=(run sam-callee)  ~
+    `(put d.op u.res)
   ::
       %cal
     =/  sam-callee

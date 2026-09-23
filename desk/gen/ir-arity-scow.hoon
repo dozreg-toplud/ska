@@ -1,27 +1,13 @@
+::  Compile every SCC of the graph after the ride poke and check that every
+::  optimized call passes as many arguments as the callee takes.
+::
 /+  *nock-compilation
-/+  li=line-interpreter
 /+  hoot-zpdt
 /+  hoot-zpdt-fol
 ::
 :-  %say  |=  *
-::
-=/  memo-call
-  =>  ..ride  !.
-  |*  [g=gate v=*]
-  %-  need  %-  ~(mole vi |)
-  |.  =>  [g=g v=v]
-  ~>  %memo./user
-  (g v)
-::
-=/  scryless
-  =>  ..ride
-  |*  [gat=$-(* *) sam=*]
-  =/  res  (~(mule vi |) |.((gat sam)))
-  ?:  ?=(%& -.res)  p.res
-  (mean p.res)
-::
 =|  =long-ska
-=.   long-ska  +:(ska-poke [&+~ hoot-zpdt-fol] long-ska)
+=.  long-ska  +:(ska-poke [&+~ hoot-zpdt-fol] long-ska)
 =/  subject  ..scow:hoot-zpdt
 =/  formula=^
   =>  subject
@@ -29,25 +15,9 @@
   !=
   (scow %ud 5)
 ::
-=^  func-1=bell  long-ska  (ska-poke [&+subject formula] long-ska)
-=.  long-ska  (ska-cole-restore long-ska)
-=/  formula-1=^  formula
-::
-=/  formula=^
-  =>  subject
-  ;;  ^
-  !=
-  %.  ~[1]
-  |=  l=(list @)
-  ^-  (list @)
-  ?~  l  ~
-  [(dec i.l) $(l t.l)]
-::
 =^  func=bell  long-ska  (ska-poke [&+subject formula] long-ska)
-=.  long-ska  (ska-cole-restore long-ska)
 =/  [bell-graph=(jug bell bell) rev=(jug bell bell)]
   (simple-bell-graph-and-reversed graph.final.long-ska)
-::
 =/  sccs=(list (set bell))  (tarjan bell-graph)
 =/  scc-map=(map bell (set bell))
   =|  out=(map bell (set bell))
@@ -60,7 +30,6 @@
   ::
   $(sccs t.sccs)
 ::
-=/  scc-here=(set bell)  (~(gut by scc-map) func [func ~ ~])
 =/  jets-hot=(map ring need-ordered)
   %-  malt
   ^-  (list [ring need-ordered])
@@ -82,15 +51,34 @@
       [/bex/two/one/k135^2 unary]
   ==
 ::
-
-=/  check
-  |=  [f=bell formula=^]
-  ^-  [? *]
-  =/  expect  .*(subject formula)
-  =/  scc-f=(set bell)  (~(gut by scc-map) f [f ~ ~])
-  =/  got  (run:li |+subject f scc-f rev long-ska scc-map jets-hot)
-  [?&(?=(^ got) =(expect u.got)) ?~(got ~ u.got)]
+~>  %bout
+=/  all=(map bell straight)
+  %-  ~(rep by scc-map)
+  |=  [[k=* v=(set bell)] acc=(map bell straight)]
+  (~(uni by acc) (compile-scc v rev [code jets]:long-ska scc-map jets-hot))
+::
+=/  bad=(list [caller=@ux callee=@ux got=@ want=@ op=@tas])
+  %-  ~(rep by all)
+  |=  [[b=bell s=straight] acc=(list [caller=@ux callee=@ux got=@ want=@ op=@tas])]
+  %-  ~(rep by blocks.s)
+  |=  [[* =blob] acc=_acc]
+  =/  check
+    |=  [a=bell v=(list @uvre) op=@tas acc=_acc]
+    ^+  acc
+    ?~  t=(~(get by all) a)  [[(mug b) (mug a) (lent v) 999 op] acc]
+    ?:  =((lent v) n-args.u.t)  acc
+    [[(mug b) (mug a) (lent v) n-args.u.t op] acc]
+  =.  acc
+    ?+  -.fin.blob  acc
+      %jmp  (check a.fin.blob v.fin.blob %jmp acc)
+      %jmf  (check a.fin.blob v.fin.blob %jmf acc)
+    ==
+  %+  roll  body.blob
+  |=  [op=pole acc=_acc]
+  ?+  -.op  acc
+    %cal  (check a.op v.op %cal acc)
+    %caf  (check a.op v.op %caf acc)
+    %cam  (check a.op v.op %cam acc)
+  ==
 :-  %noun
-:~  (check func formula)
-    (check func-1 formula-1)
-==
+[n-bells=~(wyt by all) mismatches=bad]

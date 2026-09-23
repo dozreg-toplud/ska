@@ -59,10 +59,10 @@
 ::    fixed point loop for callees that are in the same SCC as the caller.
 ::
 ::  Table of contents:
-::    Call graph construction:  line 518
-::    Compilation:              line 2272
-::    IR optimization passes:   line 5466
-::    Interactive core:         line 6452
+::    Call graph construction:  line 524
+::    Compilation:              line 2299
+::    IR optimization passes:   line 5493
+::    Interactive core:         line 6479
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
@@ -79,6 +79,12 @@
 ::  ska verbosity
 ::
 =/  ska-verb  ~
+::
+::  check-bell-prod: check that all functions with the same bell agree on the
+::  product with the parts captured from the subject masked out. Expensive:
+::  walks the provenance of every product.
+::
+:: =/  check-bell-prod  ~
 ::
 ::  compiler verbosity
 ::
@@ -530,14 +536,24 @@
 ::    The implementation below works by finding a fixed point of a function F
 ::    that maps a set of SKA function calls onto itself by, formally, partially
 ::    evaluating each callsite in the set, using the information from the
-::    previous set for Nock 2 handling.  In practice this means breadth-first
-::    iteration over the call graph with back-propagation of changes.  This
-::    appears to be the same thing as "chaotic iteration over a lattice" in the
-::    literature.
+::    previous set for Nock 2 handling.  This appears to be the same thing as
+::    "chaotic iteration over a lattice" in the literature.
 ::
 ::    The algorithm assumes that the set of SKA function calls forms a complete
 ::    lattice, and the fixed point is found via Kleene iteration, starting from
 ::    the least element of the lattice that contains the root call.
+::
+::    An earlier version iterated breadth-first over the whole call graph with
+::    back-propagation of changes, which reanalyzed every function once per
+::    level of discovery and per level of propagation (7 times on average for
+::    +scow, 20 for +ride).  The current version (+ska-callgraph) explores the
+::    graph depth-first, analyzing a newly found callee before its caller
+::    proceeds, so that a function outside of a cycle is analyzed once, with
+::    its callees final; the iteration only happens over strongly connected
+::    components, which are found on the fly with Tarjan's algorithm.  This
+::    also gives finalization for free: a function popped off Tarjan's stack
+::    never changes, so it can be memoized right away, without a transitive
+::    closure of the graph.
 ::
 ::    Proving that F is monotonic for some ordering of the lattice, in which
 ::    [[[&+sub fol] *datum] ~ ~] is the least element that contains [&+sub fol],
@@ -609,6 +625,16 @@
 ::
 +$  jug-id  (jug identity identity)
 +$  worklist  (set identity)
+::  Analysis state, see +ska-callgraph
+::
++$  ska-state
+  $:  g=callgraph             ::  functions found so far, in progress or done
+      done=memo               ::  memoization of finished functions
+      order=(map identity @)  ::  DFS numbers of the functions in progress
+      stk=(list identity)     ::  functions in progress, latest first
+      next=@                  ::  next DFS number
+      runs=@                  ::  number of function analyses (statistics)
+  ==
 ::  memoization map
 ::  formula -> less-memo -> entry
 ::
@@ -700,83 +726,55 @@
   ~+
   %+  knit:so  (msg [-.cape -.data]:a [-.cape -.data]:b)
   (msg [+.cape +.data]:a [+.cape +.data]:b)
-::  If we have the transitive clojure of the reversed callgraph, we can
-::  use this function to detect recursive calls.
-::  XX HE
-::
-++  recursive-call-tcb
-  |=  [id-caller=identity id-kid=identity tcb=jug-id g=callgraph]
-  ^-  (unit [id=identity d=datum])
-  =/  fast-match=(unit [id=identity d=datum])
-    ?.  =(fol.id-kid fol.id-caller)  ~
-    =/  d=datum  (git-g g id-caller)
-    ?:  (huge:so less-code.d more.id-kid)  `[id-caller d]
-    ~
-  ::
-  ?^  fast-match  fast-match
-  %+  set-first-match  (~(get ju tcb) id-caller)
-  |=  tr-caller=identity
-  ?.  =(fol.id-kid fol.tr-caller)  ~
-  =/  d=datum  (git-g g tr-caller)
-  ?:  (huge:so less-code.d more.id-kid)  `[tr-caller d(prod |+~, map ~)]
-  ~
-::  Check if a given call "id-kid" might be a recursive call to a function
-::  "id-caller" or one of its transitive callers. Also check if id-kid's subject
-::  homeomorphically embeds the subject of one of its transitive callers, mas-
-::  king out the accumulating part with +msg-sock. This is done to stop infinite
-::  chains of dynamically generated functions.
+::  Check if a call to "id-kid" is a recursive call to one of the functions
+::  in progress, i.e. its transitive callers (the analysis stack, latest
+::  caller first): a function with the same formula whose code requirement is
+::  satisfied by id-kid's subject. Also check if id-kid's subject
+::  homeomorphically embeds the subject of one of them, masking out the accu-
+::  mulating part with +msg-sock. This is done to stop infinite chains of
+::  dynamically generated functions. Produces the identity to call instead:
+::  %merge, a function in progress (its product is erased by the caller, as
+::  id-kid only satisfies its code requirement), or %gen, a generalized
+::  identity.
 ::
 ::  Chains before HE firing are theoretically finite but could be V A S T (see
 ::  TREE(3) to get the sense of scale); however in testing I could not construct
 ::  an example where a chain of functions would grow faster than linearly with
 ::  the size of the formula and the subject: the products would get masked down
 ::  with either the simple recursion pessimization (we erase the product of
-::  simple recursive calls), or with +double-int as we intersect nouns on both
+::  recursive calls), or with +double-int as we intersect nouns on both
 ::  their values and provenances.
 ::
 ++  recursive-call
   ~%  %recursive-call  ..ride  ~
-  |=  [id-caller=identity id-kid=identity called-by=jug-id g=callgraph]
-  ^-  (unit [id=identity d=datum])
-  =|  visited=(set identity)
-  =/  callers=(list identity)  ~[id-caller]
-  |-  ^-  (unit [id=identity d=datum])
-  =*  visit-loop  $
-  ?:  =(~ callers)  ~
-  =/  l=(list identity)  callers
-  |-  ^-  (unit [id=identity d=datum])
-  =*  l-loop  $
-  ?^  l
-    ?.  =(fol.id-kid fol.i.l)  l-loop(l t.l)
-    =/  d=datum  (git-g g i.l)
-    ?:  (huge:so less-code.d more.id-kid)
-      `[i.l d(prod |+~, map ~)]
-    ?:  (he-sock more.id-kid more.i.l)
-      =/  id-msg=identity  [(msg-sock more.id-kid more.i.l) fol.id-kid]
-      `[id-msg (git-g g id-msg)]
-    l-loop(l t.l)
-  =.  visited  (~(gas in visited) callers)
-  %=    visit-loop
-      callers
-    %-  skip  :_  ~(has in visited)
-    %~  tap  in  %-  silt
-    ^-  (list identity)
-    %-  zing
-    %+  turn  callers
-    |=  id=identity
-    ~(tap in (~(get ju called-by) id))
-  ==
-::  A noun with provenance "src" captured something from subject "less"
+  |=  [id-kid=identity stk=(list identity) g=callgraph]
+  ^-  (unit [?(%merge %gen) identity])
+  ?~  stk  ~
+  ?.  =(fol.id-kid fol.i.stk)  $(stk t.stk)
+  =/  d=datum  (git-g g i.stk)
+  ?:  (huge:so less-code.d more.id-kid)  `[%merge i.stk]
+  ?:  (he-sock more.id-kid more.i.stk)
+    `[%gen [(msg-sock more.id-kid more.i.stk) fol.id-kid]]
+  $(stk t.stk)
+::  A noun with provenance "src" captured something unknown from subject
+::  "less". Walks the capes rather than the provenance, which can be huge (a
+::  product that is a big partially known noun assembled from the subject):
+::  +distribute is memoized on the subtrees that provenances share, and the
+::  cape of the subject is small. (A provenance axis that goes beyond an atom
+::  of the subject counts as known here: the product there is unknown but the
+::  subject is not, so a memoized product does not lose information.)
 ::
 ++  unknown-sock-captured
+  ~%  %unknown-sock-captured  ..ride  ~
   |=  [src=spring less=sock]
   ^-  ?
-  ?~  src  |
-  ?^  src  |($(src -.src) $(src +.src))
-  =/  part=cape  cape:(pull:so less src)
+  =/  got=cape  (distribute & src)
+  =/  cap=cape  cape.less
   |-  ^-  ?
-  ?@  part  !part
-  |($(part -.part) $(part +.part))
+  ?:  ?=(%| got)  |
+  ?:  ?=(%& got)  !(all:ca cap)
+  ?@  cap  !cap
+  |($(got -.got, cap -.cap) $(got +.got, cap +.cap))
 ::  Memoization core
 ::
 ++  mi
@@ -1058,8 +1056,33 @@
   ==
 ::
 +$  bell-prod  (map bell [prod=sock map=spring])
+::  does the code contain %fast hints?
+::
+++  has-fast
+  |=  =nomm
+  ^-  ?
+  ?-  nomm
+    [^ *]     |($(nomm -.nomm) $(nomm +.nomm))
+    [%0 *]    |
+    [%1 *]    |
+    [%2 *]    |($(nomm p.nomm) $(nomm q.nomm))
+    [%3 *]    $(nomm p.nomm)
+    [%4 *]    $(nomm p.nomm)
+    [%5 *]    |($(nomm p.nomm) $(nomm q.nomm))
+    [%6 *]    |($(nomm p.nomm) $(nomm q.nomm) $(nomm r.nomm))
+    [%7 *]    |($(nomm p.nomm) $(nomm q.nomm))
+    [%10 *]   |($(nomm q.p.nomm) $(nomm q.nomm))
+    [%12 *]   |($(nomm p.nomm) $(nomm q.nomm))
+  ::
+      [%11 *]
+    ?@  p.nomm  $(nomm q.nomm)
+    |(?=(%fast p.p.nomm) $(nomm q.p.nomm) $(nomm q.nomm))
+  ==
+::
 ++  get-fast-regs
+  ~%  %get-fast-regs  ..ride  ~
   |=  $:  [bus=sock =nomm]
+          g=callgraph
           =bell-prod
           root=(jug * path)
           core=(jug path sock)
@@ -1093,6 +1116,11 @@
       [*sock gen]
     =^  sub  gen  nomm-loop(nomm p.nomm)
     =.  gen     +:nomm-loop(nomm q.nomm)
+    ::  the analysis of the callee with exactly this subject, if it was one:
+    ::  its product needs no masking
+    ::
+    ?^  there=(~(get by g) [sub fol.b.u.info.nomm])
+      [prod.u.there gen]
     =/  [prod=sock map=spring]  (~(got by bell-prod) b.u.info.nomm)
     :_  gen
     |-  ^-  sock
@@ -1237,6 +1265,7 @@
 ::  Assumes finalized (fixed point).
 ::
 ++  prune-callgraph
+  ~%  %prune-callgraph  ..ride  ~
   |=  [g=callgraph root=identity dbg=(unit callgraph)]
   ^+  g
   =|  out=callgraph
@@ -1256,32 +1285,12 @@
       out  (~(put by out) i.q u.d)
     visit  (~(put in visit) i.q)
   ==
-::  We just analyzed a callgraph, called some new functions, maybe registered
-::  some new jetted cores.
-::  Did we call something from freshly registered cores? Did we call something
-::  new from already registrated cores? This gate reestablishes bell <--> ring
-::  mapping
+::  Match a bell against registered cores: look for its formula in the battery
+::  of a core template that its subject fits. Produces the ring of the arm.
 ::
-++  ska-cole-restore
-  |=  lon=long-ska
-  ^-  long-ska
-  =;  call=(map bell ring)
-    %_    lon
-        call.cole.jets  call
-    ::
-        back.cole.jets
-      %-  ~(rep by call)
-      |=  [[k=bell v=ring] acc=(jug ring bell)]
-      (~(put ju acc) v k)
-    ==
-  ::
-  %-  ~(rep by code.lon)
-  |=  [[b=bell *] acc=(map bell ring)]
-  =;  matching-ring=(unit ring)
-    ?~  matching-ring  acc
-    (~(put by acc) b u.matching-ring)
-  ::
-  =/  core  core.jets.lon
+++  cole-match
+  |=  [b=bell core=(jug path sock)]
+  ^-  (unit ring)
   |-  ^-  (unit ring)
   =*  path-loop  $
   ?~  core  ~
@@ -1313,6 +1322,46 @@
   =/  h  fol-loop(template-fol (hed:so template-fol), axis (peg axis 2))
   ?^  h  h
   fol-loop(template-fol (tel:so template-fol), axis (peg axis 3))
+::  We just analyzed a callgraph, called some new functions, maybe registered
+::  some new jetted cores.
+::  Did we call something from freshly registered cores? Did we call something
+::  new from already registrated cores? This gate updates the bell <--> ring
+::  mapping incrementally: the new bells are matched against all cores, and
+::  the bells without a ring against the new cores. Bells that have a ring
+::  keep it.
+::
+++  ska-cole-update
+  |=  [lon=long-ska new-bells=(set bell) new-cores=(jug path sock)]
+  ^-  long-ska
+  =*  cole  cole.jets.lon
+  =/  put
+    |=  [b=bell r=ring c=_cole]
+    ^+  c
+    [(~(put by call.c) b r) (~(put ju back.c) r b)]
+  ::
+  =.  cole
+    %-  ~(rep in new-bells)
+    |=  [b=bell c=_cole]
+    ?:  (~(has by call.c) b)  c
+    ?~  r=(cole-match b core.jets.lon)  c
+    (put b u.r c)
+  ::
+  ?:  =(~ new-cores)  lon
+  =.  cole
+    %-  ~(rep by code.lon)
+    |=  [[b=bell *] c=_cole]
+    ?:  (~(has by call.c) b)  c
+    ?~  r=(cole-match b new-cores)  c
+    (put b u.r c)
+  lon
+::  Reestablish the bell <--> ring mapping from scratch. +ska-poke keeps it up
+::  to date, so this is only needed to check it.
+::
+++  ska-cole-restore
+  |=  lon=long-ska
+  ^-  long-ska
+  =.  cole.jets.lon  [~ ~]
+  (ska-cole-update lon ~(key by code.lon) core.jets.lon)
 ::
 ++  dif-so
   |=  [a=sock b=sock]
@@ -1370,6 +1419,7 @@
   [l r]
 ::
 ++  normalize-prod
+  ~%  %normalize-prod  ..ride  ~
   |=  prod=[s=sock m=spring]
   ^+  prod
   [(norm-so s.prod) (norm-pi m.prod)]
@@ -1382,37 +1432,55 @@
   ::
   =/  pruned=callgraph  (prune-callgraph g root-identity `graph.final.lon)
   =.  graph.final.lon  (~(uni by graph.final.lon) pruned)
+  ::  Product of a function by bell, for +get-fast-regs, which masks the parts
+  ::  captured from the subject with the subject at the callsite. Functions
+  ::  with the same bell agree on the product outside of the captured parts,
+  ::  so any of them will do.
+  ::
   =/  =bell-prod
+    =<  $  ~%  %poke-bell-prod  ..ride  ~  |.
     %-  ~(rep by graph.final.lon)
     |=  [[id=identity d=datum] acc=bell-prod]
     =/  b=bell  [less-code.d fol.id]
-    =;  prod=[sock spring]
-      ?~  have=(~(get by acc) b)  (~(put by acc) b prod)
-      ?.  =(prod u.have)
-        ?.  =(`sock`-.prod `sock`-.u.have)
-          ~|  (dif-so -.prod -.u.have)
+    ?:  (~(has by acc) b)  acc
+    (~(put by acc) b prod.d map.d)
+  ::
+  =>  !@  check-bell-prod  .
+      =*  dot  .
+      =<  dot
+      %-  ~(rep by graph.final.lon)
+      |=  [[id=identity d=datum] acc=bell-prod]
+      =/  b=bell  [less-code.d fol.id]
+      =;  prod=[sock spring]
+        ?~  have=(~(get by acc) b)  (~(put by acc) b prod)
+        ?.  =(prod u.have)
+          ?.  =(`sock`-.prod `sock`-.u.have)
+            ~|  (dif-so -.prod -.u.have)
+            !!
+          ~|  [+.prod +.u.have]
           !!
-        ~|  [+.prod +.u.have]
-        !!
-      acc
-    ::
-    %-  normalize-prod
-    :_  map.d
-    |-  ^-  sock
-    ?~  map.d  prod.d
-    ?@  map.d  |+~
-    %-  knit:so
-    [ $(prod.d (hed:so prod.d), map.d -.map.d)
-      $(prod.d (tel:so prod.d), map.d +.map.d)
-    ]
+        acc
+      ::
+      %-  normalize-prod
+      :_  map.d
+      |-  ^-  sock
+      ?~  map.d  prod.d
+      ?@  map.d  |+~
+      %-  knit:so
+      [ $(prod.d (hed:so prod.d), map.d -.map.d)
+        $(prod.d (tel:so prod.d), map.d +.map.d)
+      ]
   ::
   =/  root-datum=datum  (~(got by pruned) root-identity)
   =/  [bg=(jug bell bell) bg-rev=(jug bell bell)]
     (simple-bell-graph-and-reversed pruned)
   ::  callees first
   ::
-  =/  sccs=(list (set bell))  (flop (tarjan bg))
+  =/  sccs=(list (set bell))
+    =<  $  ~%  %poke-tarjan  ..ride  ~  |.
+    (flop (tarjan bg))
   =^  just-code=(map bell nomm)  lon
+    =<  $  ~%  %poke-just-code  ..ride  ~  |.
     =|  visit=(set identity)
     =/  q=(list identity)  ~[root-identity]
     =|  just-code=(map bell nomm)
@@ -1437,6 +1505,7 @@
     ==
   ::
   =.  lon
+    =<  $  ~%  %poke-scc-loop  ..ride  ~  |.
     |-  ^-  long-ska
     =*  scc-loop  $
     ?~  sccs  lon
@@ -1482,7 +1551,13 @@
     acc
   =/  root-bell=bell  [less-code.root-datum fol]
   =/  [root=(jug * path) core=(jug path sock) batt=(jug ^ path)]
-    =/  gen  [queu=pruned jets=[=_root =_core =_batt]:jets.lon]
+    =<  $  ~%  %poke-jets-loop  ..ride  ~  |.
+    =/  queu=callgraph
+      %-  ~(rep by pruned)
+      |=  [[id=identity d=datum] acc=callgraph]
+      ?.  (has-fast nomm.d)  acc
+      (~(put by acc) id d)
+    =/  gen  [queu=queu jets=[=_root =_core =_batt]:jets.lon]
     |-  ^+  jets.gen
     =;  [queu1=callgraph jets1=_[root core batt]:jets.lon]
       ?:  =(jets.gen jets1)  jets.gen
@@ -1491,19 +1566,23 @@
     ::
     %-  ~(rep by queu.gen)
     |=  [[id=identity d=datum] acc=_`_gen`[~ jets.gen]]
-    =^  miss=?  jets.acc  (get-fast-regs [more.id nomm.d] bell-prod jets.acc)
+    =^  miss=?  jets.acc
+      (get-fast-regs [more.id nomm.d] graph.final.lon bell-prod jets.acc)
     :_  jets.acc
     ?.  miss  queu.acc
     (~(put by queu.acc) id d)
   ::
   :-  root-bell
-  lon(root.jets root, core.jets core, batt.jets batt)
+  =/  new-cores=(jug path sock)  ((dif-ju core) core.jets.lon)
+  =.  lon  lon(root.jets root, core.jets core, batt.jets batt)
+  (ska-cole-update lon ~(key by just-code) new-cores)
 ::  produces data about a function
 ::  pure: no crashes + no hints excepts %fast (call to it could be omitted)
 ::  total: no crashes (stacktrace boundaries around them could be omitted)
 ::
 ++  eval-finalized
   =*  hint-pure  ,?(%fast %spot %mean)
+  ~%  %eval-finalized  ..ride  ~
   |=  [b=bell code=(map bell code-entry)]
   ^-  [pure=? total=?]
   =/  sub=sock  less.b
@@ -1642,6 +1721,7 @@
   pop-loop
 ::
 ++  simple-bell-graph-and-reversed
+  ~%  %simple-bell-graph  ..ride  ~
   |=  g=callgraph
   ^-  [(jug bell bell) (jug bell bell)]
   %-  ~(rep by g)
@@ -1649,7 +1729,7 @@
   =/  caller-bell=bell  [less-code.v fol.k]
   =?  acc  !(~(has by acc) caller-bell)  (~(put by acc) caller-bell ~)
   %-  ~(rep in callees.v)
-  |=  [callee=callee-entry =_acc _acc-r]
+  |=  [callee=callee-entry =_acc =_acc-r]
   ?~  callee-datum=(~(get by g) id.callee)  [acc acc-r]
   =/  callee-bell=bell  [less-code.u.callee-datum fol.id.callee]
   :-  (~(put ju acc) caller-bell callee-bell)
@@ -1834,438 +1914,406 @@
   ?~  rest  ~
   `[-.hed u.rest]
 ::
-::  Produces a list of callgraphs for visualization purposes. The fixpoint is
-::  the first callgraph in the list
+::  Analysis of the call graph rooted at a function. Produces a list for
+::  historical reasons: the callgraph is its only element.
+::
+::  The graph is explored depth-first: a direct call to a function that is not
+::  in the graph yet analyzes that function right away, before the caller
+::  proceeds, so a function that is not on a cycle is analyzed exactly once,
+::  with its callees final. Cycles are found with Tarjan's SCC algorithm on the
+::  fly: a function stays on the stack (.stk) while a function below it on the
+::  stack is reachable from it, and when the root of a strongly connected
+::  component finishes, the component is reanalyzed in passes until no member
+::  changes. A pass may discover new functions, which join the component if
+::  they call back into it. A call to a function on the stack is a recursive
+::  call: its product is erased and only its code requirement is used, the
+::  same pessimization as for a call merged into a function in progress.
+::  Code requirements only grow, so the passes converge (Kleene iteration
+::  over the products would not: the least fixed point of a product like
+::  [1 $] does not exist).
+::
+::  Functions popped off the stack are final and get memoized in .done, so
+::  that a later call to the same formula with a subject that provides what a
+::  finished function used resolves to that function instead of a new one.
 ::
 ++  ska-callgraph
   ~%  %ska-callgraph  ..ride  ~
   !.
   |=  [[bus=sock fol=^] memo-final=memo]
   ^-  (list callgraph)
-  =|  g=callgraph
-  ::  Part of the callgraph that was finalized
+  =|  st=ska-state
+  =<  =/  res  (analyze [bus fol] st)
+      =>  !@  ska-verb  .
+          ~&  [%ska-callgraph functions+~(wyt by g.st.res) runs+runs.st.res]
+          .
+      [g.st.res ~]
+  |%
+  ::  Analyze a function that is not in the graph yet, and the functions it
+  ::  calls. Produces the lowest DFS number of a function in progress reachable
+  ::  from it (Tarjan's lowlink), or .next if none.
   ::
-  :: =|  g-done=callgraph
-  =|  history=(list callgraph)
-  =/  root  [bus fol]
-  =/  w=worklist  [root ~ ~]
-  =|  calls=jug-id
-  =|  called-by=jug-id
-  ::  Transitive closure of the callgraph. Used in memoization of finalized
-  ::  parts of the callgraph, but it's not worth it
-  ::
-  :: =|  transitive-calls=jug-id
-  ::  Memoization table for finalized results. Needs .transitive-calls
-  ::
-  :: =|  memo-done=memo
-  ::  Transitive closure of the inverse of the callgraph. Can be used in loop
-  ::  detection, but not worth it.
-  ::
-  :: =|  transitive-called-by=jug-id
-  ::
-  :: =<  $
-  :: ~%  %analysis  ..ride  ~
-  |-  ^-  (list callgraph)
-  =*  fixpoint-callgraph  $
-  ::  one fixpoint iteration gives us new worklists to handle, updated part of
-  ::  the callgraph and updated calls
-  ::
-  =;  [w-new=worklist w-call=worklist new-calls=jug-id g1=callgraph]
-    =.  g  g1
-    =/  new-called-by=jug-id
-      ::  calculate the diff between new-calls and calls to update called-by
-      ::
-      =<  $
-      ~%  %called-by-update  ..ride  ~
-      |.
-      ::  we only add/replace callers to "calls" graph, so grabbing the keys of
-      ::  new-calls is enough to get identities of all callers
-      ::
-      =/  all-callers=(list identity)  ~(tap in ~(key by new-calls))
-      %+  roll  all-callers
-      |=  [caller=identity acc=_called-by]
-      =/  old-callees=(set identity)  (~(get ju calls) caller)
-      =/  new-callees=(set identity)  (~(get ju new-calls) caller)
-      =/  callee-removals=(set identity)  (~(dif in old-callees) new-callees)
-      =/  callee-addition=(set identity)  (~(dif in new-callees) old-callees)
-      =.  acc
-        %-  ~(rep in callee-removals)
-        |=  [callee=identity acc=_acc]
-        (~(del ju acc) callee caller)
-      ::
-      %-  ~(rep in callee-addition)
-      |=  [callee=identity acc=_acc]
-      (~(put ju acc) callee caller)
-    ::  update transitive closures, if defined
+  ++  analyze
+    ~%  %ska-analyze  ..ride  ~
+    |=  [id=identity st=ska-state]
+    ^-  [low=@ st=ska-state]
+    ::  analyzed in a previous poke: the callees of the memoized function are
+    ::  in the finalized graph already
     ::
-    =>  !@  transitive-called-by  .
-        %_  .  transitive-called-by
-          =<  $
-          ~%  %update-transitive-called-by  ..ride  ~
-          |.
-          ~>  %bout.[0 'tcb update        ']
-          %:  update-transitive
-            transitive-called-by
-            called-by
-            new-called-by
-            calls
-            new-calls
-          ==
-        ==
-    ::
-    =>  !@  transitive-calls  .
-        %_  .  transitive-calls
-          =<  $
-          ~%  %update-transitive-calls  ..ride  ~
-          |.
-          ~>  %bout.[0 'tc update         ']
-          %:  update-transitive
-            transitive-calls
-            calls
-            new-calls
-            called-by
-            new-called-by
-          ==
-        ==
-    ::
-    =.  calls      new-calls
-    =.  called-by  new-called-by
-    :: ?>  (check-inverses transitive-calls transitive-called-by)
-    =/  w-back=worklist
-      ::  worklist of functions whose immediate callees changed
-      ::
-      %-  ~(rep in w-call)
-      |=  [callee=identity acc=worklist]
-      (~(uni in acc) (~(get ju called-by) callee))
-    ::
-    ::  total worklist: new functions + functions whose callees changed. Nothing
-    ::  else needs to be reanalysed as we'll just get the same result
-    ::
-    =/  w-new=worklist  (~(uni in w-new) w-back)
-    ?:  =(w-new ~)  [!@(g-done g (~(uni by g-done) g)) history]
-    ::
-    =>  !@  memo-done  .
-        =*  dot  .
-        ~>  %bout.[0 'memo update       ']
-        =;  res=[memo-done=memo g=callgraph g-done=callgraph]
-          %_(dot memo-done memo-done.res, g g.res, g-done g-done.res)
-        ::
-        %-  ~(rep by g)
-        |=  [[id=identity d=datum] acc=_[=_memo-done =_g =_g-done]]
-        ?:  ?|  (~(has in w-new) id)
-            ::
-                ?=  ^
-                (~(int in w-new) (~(get ju transitive-calls) id))
-            ==
-          acc
-        [ (put:mi memo-done.acc id d)
-          (~(del by g.acc) id)
-          (~(put by g-done.acc) id d)
-        ]
-    ::
-    =>  !@  ska-verb  .
-        =*  dot  .
-        =/  new-count   ~(wyt in ^w-new)
-        =/  upd-count   ~(wyt in w-back)
-        =/  uniq-count
-          ~(wyt in `(set ^)`(~(run in w-new) |=(id=identity fol.id)))
-        ::
-        ~&  [%fixpoint new+new-count upd+upd-count uniq+uniq-count]
-        dot
-    ::
-    %=  fixpoint-callgraph
-      w        w-new
-      history  [!@(g-done g (~(uni by g-done) g)) history]
-    ==
-  ::
-  =<  !@  ska-verb  $
-      ~>  %bout.[0 %callgraph-fixpoint]  $
-  |.
-  ::  pin .g-total if g-done is defined
-  ::
-  =>  !@  g-done  .  [g-total=`callgraph`(~(uni by g-done) g) .]
-  =*  g-previous  !@(g-total g g-total)
-  =*  calls-previous  calls
-  =<  -
-  %-  ~(rep in w)
-  ~%  %ska-callgraph-iteration  ..ride  ~
-  !:
-  |=  $:  id=identity
-          ::  accumulator
-          ::
-          $:  [w-new=worklist w-call=worklist =_calls =_g]
-              m-new=_memo-final
-      ==  ==
-  ^-  [[worklist worklist jug-id callgraph] memo]
-  =/  data  (git-g g-previous id)
-  =/  bus=sock  more.id
-  =;  [memo-hit=? data-new=datum m-new=memo]
-    =?  indi.data-new
-        ?&  =([less-code prod map]:data-new [less-code prod map]:data)
-            !=(indi.data-new indi.data)
-        ==
-      ::  if new datum only differs in indi.data-new,
-      ::  turn disagreeing parts into %.y so that we converge
-      ::
-      (msg-ca indi.data-new indi.data)
-    ::
-    =.  g  (~(put by g) id data-new)
-    =.  calls
-      (~(put by calls) id (~(run in callees.data-new) |=(callee-entry id)))
-    ::
-    ::  don't have to put callees in the worklist on memo hit, they should
-    ::  already be there
-    ::
-    =?  w-new  !memo-hit
-      %-  ~(rep in callees.data-new)
-      |=  [callee-entry acc=_w-new]
-      ?:  (~(has by g-previous) id)  acc
-      (~(put in acc) id)
-    ::  do have to put ourselves in the callee worklist if our code usage or
-    ::  product changed
-    ::
-    =?  w-call  ?!  .=  [less-code prod map indi]:data-new
-                        [less-code prod map indi]:data
-      (~(put in w-call) id)
-    ::
-    [[w-new w-call calls g] m-new]
-  ::
-  =/  fol  fol.id
-  =/  sub=sock-anno  [bus 1]
-  ?^  hit=(git:mi m-new fol bus)  [& +.u.hit m-new]
-  =*  fol-result
-    $:  [=nomm pro=sock-anno]
-        want=cape
-        indi=cape
-        callees=(set callee-entry)
-        area=(unit spot)
-    ==
-  ::
-  =;  ,fol-result
-    ::  construct datum & memoize
-    ::
-    =/  less-code  (app:ca want bus)
-    =/  capture=cape  (prune:pi src.pro cape.sock.pro)
-    =/  less-memo  (app:ca (uni:ca want capture) bus)
-    =/  data-new=datum  [callees nomm less-code less-memo indi pro area]
-    =.  m-new  (put:mi m-new id data-new)
-    [| data-new m-new]
-  ::
-  =|  gen=[want=cape indi=cape callees=(set callee-entry) area=(unit spot)]
-  =/  seat=(unit spot)  ~
-  =/  memo-key=(unit *)  ~
-  =/  virt-call=?  |
-  ^-  [[=nomm prod=sock-anno] gen=_gen]
-  =<  $
-  ~%  %fol-loop  ..ride  ~
-  |.  ^-  [[=nomm prod=sock-anno] _gen]
-  =*  fol-loop  $
-  ?^  x=(safe fol)
-    ::  This is a workaround for our cape cons denormalization breaking code
-    ::  like !:([%9 2 %0 1])
-    ::
-    ::  If a formula is "safe" it is equivalent to Nock 1 with respect to
-    ::  limiting the set of available formulas
-    ::
-    [[nomm.u.x [&+prod.u.x ~]] gen]
-  =*  dunno  *sock-anno
-  ?+    fol  [[0+0 dunno] gen]
-      [p=^ q=^]
-    =^  l  gen  fol-loop(fol p.fol)
-    =^  r  gen  fol-loop(fol q.fol)
-    =<  $
-    ~%  %nock-cons  ..fol-loop  ~
-    |.
-    :_  gen
-    :-  [nomm.l nomm.r]
-    :-  (knit:so sock.prod.l sock.prod.r)
-    (cons:pi src.prod.l src.prod.r)
-  ::
-      [%0 p=@]
-    =<  $
-    ~%  %nock-0  ..fol-loop  ~
-    |.
-    :_  gen
-    :-  [%0 p.fol]
-    ?:  =(0 p.fol)  dunno
-    ?:  =(1 p.fol)  sub
-    :-  (pull:so sock.sub p.fol)
-    (slot:pi src.sub p.fol)
-  ::
-      [%1 p=*]
-    :_  gen
-    :-  [%1 p.fol]
-    [&+p.fol ~]
-  ::
-      [%2 p=^ q=^]
-    ::  memo-key might have been set by %11 %memo which redirected us here.
-    ::  but there is no reason to unset it when we decend into children: if it
-    ::  was set, then the child expressions will be [%0 1] and [%1 fol],
-    ::  neither of which are affected by memo-key
-    ::  
-    =^  s  gen  fol-loop(fol p.fol)
-    =^  f  gen  fol-loop(fol q.fol)
-    ^-  [[nomm sock-anno] _gen]
-    =<  $
-    ~%  %nock-2  ..ride  ~
-    |.
-    ::  Here we check that the mask is precisely & instead of cheking with
-    ::  +all:ca to prevent analyzing through Nock evals with consed up formulas.
-    ::  This makes the set of all callable nouns finite, guaranteeing termina-
-    ::  tion of the algo when paired with homeomorphic embedding check in recur-
-    ::  sive calls
-    ::
-    ?.  &(=(& cape.sock.prod.f) ?=(^ data.sock.prod.f) !virt-call)
-      ::  indirect call
-      ::
-      =.  indi.gen  (uni:ca indi.gen (distribute & src.prod.f))
-      [[[%2 nomm.s nomm.f ~] dunno] gen]
-    =/  fol-new=^  data.sock.prod.f
-    ::  Inline leaf formulas. Allows to analyze through formulas whose products
-    ::  are gates, also speeds up analysis. Should be safe to comment out the
-    ::  condition and the first branch - useful during debugging to rule out
-    ::  stuff.
-    ::
-    ?:  &(?=(~ memo-key) (inlineable fol-new))
-      =.  want.gen  (uni:ca want.gen (distribute & src.prod.f))
-      =^  inline  gen  fol-loop(fol fol-new, sub prod.s)
-      :_  gen
-      :-  [%7 nomm.s nomm.inline]
-      prod.inline
-    =<  $
-    ~%  %nock-2-direct-non-inlined  ..ride  ~
-    |.
-    ^-  [[nomm sock-anno] _gen]
-    =/  [id-there=identity dat-there=datum]
-      =/  id-there=identity  [sock.prod.s fol-new]
-      ?^  d=(~(get by g-previous) id-there)
-        [id-there u.d]
-      =/  m  !@  memo-done  `(unit [identity datum])`~
-             (git:mi memo-done fol-new sock.prod.s)
-      ::
-      ?^  m  u.m
-      =/  par
-        !@  transitive-called-by
-          (recursive-call id id-there called-by g-previous)
-        (recursive-call-tcb id id-there transitive-called-by g-previous)
-      ::
-      ?^  par  u.par
-      [id-there *datum]
-    ::
-    ::  Direct call: record immediate code usage (we just got the formula) +
-    ::  transitive code usage by the callee
-    ::
-    =.  want.gen
-      ;:  uni:ca
-        want.gen
-        (distribute & src.prod.f)
-        (distribute cape.less-code.dat-there src.prod.s)
+    ?^  hit=(git:mi memo-final fol.id more.id)
+      =/  d=datum  +.u.hit
+      :-  next.st
+      st(g (~(put by g.st) id d), done (put:mi done.st id d))
+    =/  index=@  next.st
+    =.  st
+      %_  st
+        next   +(index)
+        order  (~(put by order.st) id index)
+        stk    [id stk.st]
+        g      (~(put by g.st) id *datum)
       ==
-    ::  Also propagate transitive attempts to get code for indirect calls
+    =^  [low=@ back=? changed=?]  st  (run id index st)
+    ?.  =(low index)  [low st]
+    ::  .id is the root of a strongly connected component: everything above it
+    ::  on the stack. If it is trivial, it is final.
     ::
-    =.  indi.gen  (uni:ca indi.gen (distribute indi.dat-there src.prod.s))
-    =.  callees.gen  (~(put in callees.gen) seat id-there)
-    :_  gen
-    ^-  [nomm sock-anno]
-    :-  [%2 nomm.s nomm.f `[[less-code.dat-there fol-new] memo-key]]
-    :-  prod.dat-there
-    (compose:pi map.dat-there src.prod.s)
+    ?.  |(back !?=([* ~] (above id stk.st)))
+      [next.st (pop id st)]
+    ::  Reanalyze the component until it is stable. Members are swept latest
+    ::  first, which puts callees before callers along the DFS tree. A pass may
+    ::  find a call to a function below .id on the stack: then .id was not the
+    ::  root after all, and the component stays on the stack for the real root
+    ::  to iterate.
+    ::
+    |-  ^-  [@ ska-state]
+    =*  pass-loop  $
+    =/  members=(list identity)  (above id stk.st)
+    =^  [low=@ changed=?]  st
+      |-  ^-  [[@ ?] ska-state]
+      ?~  members  [[index |] st]
+      =^  [low-m=@ back-m=? changed-m=?]  st
+        (run i.members (~(got by order.st) i.members) st)
+      ?:  (lth low-m index)  [[low-m |] st]
+      =^  [low-t=@ changed-t=?]  st  $(members t.members)
+      [[(min low-m low-t) |(changed-m changed-t)] st]
+    ?:  (lth low index)  [low st]
+    ::  another pass if a member changed or new members joined
+    ::
+    ?:  |(changed !=((lent members) (lent (above id stk.st))))  pass-loop
+    [next.st (pop id st)]
+  ::  functions on the stack above and including .id, latest first
   ::
-      [%3 p=^]
-    =^  p  gen  fol-loop(fol p.fol)
-    :_  gen
-    :-  [%3 nomm.p]
-    dunno
+  ++  above
+    |=  [id=identity stk=(list identity)]
+    ^-  (list identity)
+    ?~  stk  ~|(%ska-stack !!)
+    ?:  =(id i.stk)  [id ~]
+    [i.stk $(stk t.stk)]
+  ::  pop a finished component off the stack, memoizing its members
   ::
-      [%4 p=^]
-    =^  p  gen  fol-loop(fol p.fol)
-    :_  gen
-    :-  [%4 nomm.p]
-    dunno
+  ++  pop
+    |=  [id=identity st=ska-state]
+    ^-  ska-state
+    ::  no ?~ on stk.st: it would refine the type of .st, and .st could not
+    ::  be edited with an empty stack anymore
+    ::
+    =/  top=identity  ?~(stk.st ~|(%ska-stack !!) i.stk.st)
+    =/  rest=(list identity)  ?~(stk.st ~|(%ska-stack !!) t.stk.st)
+    =.  st
+      %_  st
+        stk    rest
+        order  (~(del by order.st) top)
+        done   (put:mi done.st top (git-g g.st top))
+      ==
+    ?:  =(top id)  st
+    $(st st)
+  ::  One analysis pass over the formula of .id, updating its entry in the
+  ::  graph. Produces its lowlink, whether it called a function in progress,
+  ::  and whether the entry changed in a way that affects its callers.
   ::
-      [%5 p=^ q=^]
-    =^  p  gen  fol-loop(fol p.fol)
-    =^  q  gen  fol-loop(fol q.fol)
-    :_  gen
-    :-  [%5 nomm.p nomm.q]
-    dunno
-  ::
-      [%6 p=^ q=^ r=^]
-    =^  p  gen  fol-loop(fol p.fol)
-    =^  q  gen  fol-loop(fol q.fol)
-    =^  r  gen  fol-loop(fol r.fol)
-    :_  gen
-    :-  [%6 nomm.p nomm.q nomm.r]
-    (double-int prod.q prod.r)
-  ::
-      [%7 p=^ q=^]
-    =^  p  gen  fol-loop(fol p.fol)
-    =^  q  gen  fol-loop(fol q.fol, sub prod.p)
-    :_  gen
-    :-  [%7 nomm.p nomm.q]
-    prod.q
-  ::
-      [%8 p=^ q=^]
-    fol-loop(fol [%7 [p.fol 0+1] q.fol])
-  ::
-      [%9 p=@ q=^]
-    fol-loop(fol [%7 q.fol %2 [%0 1] %0 p.fol])
-  ::
-      [%10 [a=@ don=^] rec=^]
-    ?:  =(0 a.fol)  [[0+0 dunno] gen]
-    =^  don  gen  fol-loop(fol don.fol)
-    =^  rec  gen  fol-loop(fol rec.fol)
+  ++  run
+    ~%  %ska-callgraph-iteration  ..ride  ~
+    |=  [id=identity index=@ st=ska-state]
+    ^-  [[low=@ back=? changed=?] st=ska-state]
+    =.  runs.st  +(runs.st)
+    =/  data=datum  (git-g g.st id)
+    =/  bus=sock  more.id
+    =/  fol  fol.id
+    =/  sub=sock-anno  [bus 1]
+    =*  fol-result
+      $:  [=nomm pro=sock-anno]
+          want=cape
+          indi=cape
+          callees=(set callee-entry)
+          area=(unit spot)
+          low=@
+          back=?
+          st=ska-state
+      ==
+    ::
+    =;  ,fol-result
+      ::  construct datum
+      ::
+      =/  less-code  (app:ca want bus)
+      =/  capture=cape  (prune:pi src.pro cape.sock.pro)
+      =/  less-memo  (app:ca (uni:ca want capture) bus)
+      =/  data-new=datum  [callees nomm less-code less-memo indi pro area]
+      =?  indi.data-new
+          ?&  =([less-code prod map]:data-new [less-code prod map]:data)
+              !=(indi.data-new indi.data)
+          ==
+        ::  if new datum only differs in indi.data-new,
+        ::  turn disagreeing parts into %.y so that we converge
+        ::
+        (msg-ca indi.data-new indi.data)
+      =/  changed=?
+        !=([less-code prod map indi]:data-new [less-code prod map indi]:data)
+      :-  [low back changed]
+      st(g (~(put by g.st) id data-new))
+    ::
+    =/  gen
+      ^-  $:  want=cape
+              indi=cape
+              callees=(set callee-entry)
+              area=(unit spot)
+              low=@
+              back=?
+              st=ska-state
+          ==
+      [| | ~ ~ index | st]
+    =/  seat=(unit spot)  ~
+    =/  memo-key=(unit *)  ~
+    =/  virt-call=?  |
+    ^-  [[=nomm prod=sock-anno] gen=_gen]
     =<  $
-    ~%  %nock-10  ..fol-loop  ~
-    |.
-    :_  gen
-    :-  [%10 [a.fol nomm.don] nomm.rec]
-    :-  (darn:so sock.prod.rec a.fol sock.prod.don)
-    (edit:pi src.prod.rec a.fol src.prod.don)
-  ::
-      [%11 p=@ q=^]
-    ?:  ?=(%virt p.fol)
-      ::  %virt hint annotates entry points into meta-circularly jetted
-      ::  interpreters. No need to analyze through.
+    ~%  %fol-loop  ..ride  ~
+    |.  ^-  [[=nomm prod=sock-anno] _gen]
+    =*  fol-loop  $
+    ?^  x=(safe fol)
+      ::  This is a workaround for our cape cons denormalization breaking code
+      ::  like !:([%9 2 %0 1])
       ::
-      fol-loop(fol [%2 [%0 1] 1 q.fol], virt-call &)
-    =^  q  gen  fol-loop(fol q.fol)
-    :_  gen
-    :-  [%11 p.fol nomm.q q.fol]
-    prod.q
-  ::
-      [%11 [a=@ h=^] f=^]
-    =?  .  &(=(a.fol %spot) =(1 -.h.fol))
-      =*  dot  .
+      ::  If a formula is "safe" it is equivalent to Nock 1 with respect to
+      ::  limiting the set of available formulas
+      ::
+      [[nomm.u.x [&+prod.u.x ~]] gen]
+    =*  dunno  *sock-anno
+    ?+    fol  [[0+0 dunno] gen]
+        [p=^ q=^]
+      =^  l  gen  fol-loop(fol p.fol)
+      =^  r  gen  fol-loop(fol q.fol)
       =<  $
-      ~%  %nock-11-soft  ..ride  ~
+      ~%  %nock-cons  ..fol-loop  ~
       |.
-      =/  pot=(unit spot)  (soft-spot +.h.fol)
-      ?~  pot  dot
-      =?  area.gen  ?=(~ area.gen)  pot
-      =.  seat  pot
-      dot
+      :_  gen
+      :-  [nomm.l nomm.r]
+      :-  (knit:so sock.prod.l sock.prod.r)
+      (cons:pi src.prod.l src.prod.r)
     ::
-    =^  h  gen  fol-loop(fol h.fol)
-    ::  valid %memo generates a new call to an uninlineable function to be
-    ::  memoized
+        [%0 p=@]
+      =<  $
+      ~%  %nock-0  ..fol-loop  ~
+      |.
+      :_  gen
+      :-  [%0 p.fol]
+      ?:  =(0 p.fol)  dunno
+      ?:  =(1 p.fol)  sub
+      :-  (pull:so sock.sub p.fol)
+      (slot:pi src.sub p.fol)
     ::
-    ?:  &(?=(%memo a.fol) ?=(^ (safe h.fol)))
-      ::  ?=(^ (safe h.fol)) implies fully known sock.prod.h
+        [%1 p=*]
+      :_  gen
+      :-  [%1 p.fol]
+      [&+p.fol ~]
+    ::
+        [%2 p=^ q=^]
+      ::  memo-key might have been set by %11 %memo which redirected us here.
+      ::  but there is no reason to unset it when we decend into children: if it
+      ::  was set, then the child expressions will be [%0 1] and [%1 fol],
+      ::  neither of which are affected by memo-key
+      ::  
+      =^  s  gen  fol-loop(fol p.fol)
+      =^  f  gen  fol-loop(fol q.fol)
+      ^-  [[nomm sock-anno] _gen]
+      =<  $
+      ~%  %nock-2  ..ride  ~
+      |.
+      ::  Here we check that the mask is precisely & instead of cheking with
+      ::  +all:ca to prevent analyzing through Nock evals with consed up formulas.
+      ::  This makes the set of all callable nouns finite, guaranteeing termina-
+      ::  tion of the algo when paired with homeomorphic embedding check in recur-
+      ::  sive calls
       ::
-      fol-loop(fol [%2 [%0 1] 1 f.fol], memo-key `data.sock.prod.h)
-    =^  f  gen  fol-loop(fol f.fol)
-    :_  gen
-    :-  [%11 [a.fol nomm.h] nomm.f f.fol]
-    prod.f
-  ::
-      [%12 p=^ q=^]
-    =^  p  gen  fol-loop(fol p.fol)
-    =^  q  gen  fol-loop(fol q.fol)
-    :_  gen
-    :-  [%12 nomm.p nomm.q]
-    dunno
-  ==
+      ?.  &(=(& cape.sock.prod.f) ?=(^ data.sock.prod.f) !virt-call)
+        ::  indirect call
+        ::
+        =.  indi.gen  (uni:ca indi.gen (distribute & src.prod.f))
+        [[[%2 nomm.s nomm.f ~] dunno] gen]
+      =/  fol-new=^  data.sock.prod.f
+      ::  Inline leaf formulas. Allows to analyze through formulas whose products
+      ::  are gates, also speeds up analysis. Should be safe to comment out the
+      ::  condition and the first branch - useful during debugging to rule out
+      ::  stuff.
+      ::
+      ?:  &(?=(~ memo-key) (inlineable fol-new))
+        =.  want.gen  (uni:ca want.gen (distribute & src.prod.f))
+        =^  inline  gen  fol-loop(fol fol-new, sub prod.s)
+        :_  gen
+        :-  [%7 nomm.s nomm.inline]
+        prod.inline
+      =<  $
+      ~%  %nock-2-direct-non-inlined  ..ride  ~
+      |.
+      ^-  [[nomm sock-anno] _gen]
+      =^  [id-there=identity dat-there=datum]  gen
+        =/  id-there=identity  [sock.prod.s fol-new]
+        |-  ^-  [[identity datum] _gen]
+        =*  resolve  $
+        ?^  d=(~(get by g.st.gen) id-there)
+          ::  in the graph. A function in progress: recursive call, use its
+          ::  code requirement but not its product
+          ::
+          ?~  ord=(~(get by order.st.gen) id-there)  [[id-there u.d] gen]
+          :-  [id-there u.d(prod |+~, map ~)]
+          gen(low (min low.gen u.ord), back &)
+        ::  a finished function with the same formula whose subject
+        ::  requirement is satisfied here
+        ::
+        ?^  m=(git:mi done.st.gen fol-new sock.prod.s)
+          [u.m gen]
+        ::  a recursive call to a function in progress with a different
+        ::  subject: its product is erased, as only its code requirement is
+        ::  known to be satisfied. Or a call in a chain of growing subjects,
+        ::  generalized
+        ::
+        ?^  par=(recursive-call id-there stk.st.gen g.st.gen)
+          ?-    -.u.par
+              %gen  resolve(id-there +.u.par)
+              %merge
+            =/  d=datum  (git-g g.st.gen +.u.par)
+            :-  [+.u.par d(prod |+~, map ~)]
+            gen(low (min low.gen (~(got by order.st.gen) +.u.par)), back &)
+          ==
+        ::  a new function: analyze it now
+        ::
+        =^  low-there=@  st.gen  (analyze id-there st.gen)
+        =.  low.gen  (min low.gen low-there)
+        [[id-there (git-g g.st.gen id-there)] gen]
+      ::
+      ::  Direct call: record immediate code usage (we just got the formula) +
+      ::  transitive code usage by the callee
+      ::
+      =.  want.gen
+        ;:  uni:ca
+          want.gen
+          (distribute & src.prod.f)
+          (distribute cape.less-code.dat-there src.prod.s)
+        ==
+      ::  Also propagate transitive attempts to get code for indirect calls
+      ::
+      =.  indi.gen  (uni:ca indi.gen (distribute indi.dat-there src.prod.s))
+      =.  callees.gen  (~(put in callees.gen) seat id-there)
+      :_  gen
+      ^-  [nomm sock-anno]
+      :-  [%2 nomm.s nomm.f `[[less-code.dat-there fol-new] memo-key]]
+      :-  prod.dat-there
+      (compose:pi map.dat-there src.prod.s)
+    ::
+        [%3 p=^]
+      =^  p  gen  fol-loop(fol p.fol)
+      :_  gen
+      :-  [%3 nomm.p]
+      dunno
+    ::
+        [%4 p=^]
+      =^  p  gen  fol-loop(fol p.fol)
+      :_  gen
+      :-  [%4 nomm.p]
+      dunno
+    ::
+        [%5 p=^ q=^]
+      =^  p  gen  fol-loop(fol p.fol)
+      =^  q  gen  fol-loop(fol q.fol)
+      :_  gen
+      :-  [%5 nomm.p nomm.q]
+      dunno
+    ::
+        [%6 p=^ q=^ r=^]
+      =^  p  gen  fol-loop(fol p.fol)
+      =^  q  gen  fol-loop(fol q.fol)
+      =^  r  gen  fol-loop(fol r.fol)
+      :_  gen
+      :-  [%6 nomm.p nomm.q nomm.r]
+      (double-int prod.q prod.r)
+    ::
+        [%7 p=^ q=^]
+      =^  p  gen  fol-loop(fol p.fol)
+      =^  q  gen  fol-loop(fol q.fol, sub prod.p)
+      :_  gen
+      :-  [%7 nomm.p nomm.q]
+      prod.q
+    ::
+        [%8 p=^ q=^]
+      fol-loop(fol [%7 [p.fol 0+1] q.fol])
+    ::
+        [%9 p=@ q=^]
+      fol-loop(fol [%7 q.fol %2 [%0 1] %0 p.fol])
+    ::
+        [%10 [a=@ don=^] rec=^]
+      ?:  =(0 a.fol)  [[0+0 dunno] gen]
+      =^  don  gen  fol-loop(fol don.fol)
+      =^  rec  gen  fol-loop(fol rec.fol)
+      =<  $
+      ~%  %nock-10  ..fol-loop  ~
+      |.
+      :_  gen
+      :-  [%10 [a.fol nomm.don] nomm.rec]
+      :-  (darn:so sock.prod.rec a.fol sock.prod.don)
+      (edit:pi src.prod.rec a.fol src.prod.don)
+    ::
+        [%11 p=@ q=^]
+      ?:  ?=(%virt p.fol)
+        ::  %virt hint annotates entry points into meta-circularly jetted
+        ::  interpreters. No need to analyze through.
+        ::
+        fol-loop(fol [%2 [%0 1] 1 q.fol], virt-call &)
+      =^  q  gen  fol-loop(fol q.fol)
+      :_  gen
+      :-  [%11 p.fol nomm.q q.fol]
+      prod.q
+    ::
+        [%11 [a=@ h=^] f=^]
+      =?  .  &(=(a.fol %spot) =(1 -.h.fol))
+        =*  dot  .
+        =<  $
+        ~%  %nock-11-soft  ..ride  ~
+        |.
+        =/  pot=(unit spot)  (soft-spot +.h.fol)
+        ?~  pot  dot
+        =?  area.gen  ?=(~ area.gen)  pot
+        =.  seat  pot
+        dot
+      ::
+      =^  h  gen  fol-loop(fol h.fol)
+      ::  valid %memo generates a new call to an uninlineable function to be
+      ::  memoized
+      ::
+      ?:  &(?=(%memo a.fol) ?=(^ (safe h.fol)))
+        ::  ?=(^ (safe h.fol)) implies fully known sock.prod.h
+        ::
+        fol-loop(fol [%2 [%0 1] 1 f.fol], memo-key `data.sock.prod.h)
+      =^  f  gen  fol-loop(fol f.fol)
+      :_  gen
+      :-  [%11 [a.fol nomm.h] nomm.f f.fol]
+      prod.f
+    ::
+        [%12 p=^ q=^]
+      =^  p  gen  fol-loop(fol p.fol)
+      =^  q  gen  fol-loop(fol q.fol)
+      :_  gen
+      :-  [%12 nomm.p nomm.q]
+      dunno
+    ==
+  --
 --
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
@@ -6542,7 +6590,6 @@
   ::
       %full
     =^  func=bell  long-ska.state  (ska-poke [&+sub.ovo fol.ovo] long-ska.state)
-    =.  long-ska.state  (ska-cole-restore long-ska.state)  ::  XX is there a way to get rid of this?
     =/  [rev=(jug bell bell) scc-map=(map bell (set bell))]  graph-info
     =/  scc=(set bell)  (~(gut by scc-map) func [func ~ ~])
     =/  =straight

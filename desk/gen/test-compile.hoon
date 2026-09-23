@@ -31,8 +31,8 @@
 =/  scc-here=(set bell)  (~(gut by scc-map) func [func ~ ~])
 ?:  |
   :: =/  args  ~[subject 42]
-  :: noun+(run:li &+args func scc-here rev [code jets]:long-ska scc-map ~)
-  noun+(run:li |+subject func scc-here rev [code jets]:long-ska scc-map ~)
+  :: noun+(run:li &+args func scc-here rev long-ska scc-map ~)
+  noun+(run:li |+subject func scc-here rev long-ska scc-map ~)
 =/  all-straights=(map bell straight)
   %-  ~(rep by scc-map)
   |=  [[k=* v=(set bell)] acc=(map bell straight)]

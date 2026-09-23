@@ -22,26 +22,12 @@
 ::
 =|  =long-ska
 =.   long-ska  +:(ska-poke [&+~ hoot-zpdt-fol] long-ska)
-=/  subject  ..scow:hoot-zpdt
+=/  subject  ..ride:hoot-zpdt
 =/  formula=^
   =>  subject
   ;;  ^
   !=
-  (scow %ud 5)
-::
-=^  func-1=bell  long-ska  (ska-poke [&+subject formula] long-ska)
-=.  long-ska  (ska-cole-restore long-ska)
-=/  formula-1=^  formula
-::
-=/  formula=^
-  =>  subject
-  ;;  ^
-  !=
-  %.  ~[1]
-  |=  l=(list @)
-  ^-  (list @)
-  ?~  l  ~
-  [(dec i.l) $(l t.l)]
+  (ride %noun '42')
 ::
 =^  func=bell  long-ska  (ska-poke [&+subject formula] long-ska)
 =.  long-ska  (ska-cole-restore long-ska)
@@ -91,6 +77,4 @@
   =/  got  (run:li |+subject f scc-f rev long-ska scc-map jets-hot)
   [?&(?=(^ got) =(expect u.got)) ?~(got ~ u.got)]
 :-  %noun
-:~  (check func formula)
-    (check func-1 formula-1)
-==
+~[(check func formula)]
