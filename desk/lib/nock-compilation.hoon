@@ -102,11 +102,23 @@
 ::  other denormalizations) makes the set of formulas finite, allowing the
 ::  analysis to converge.
 ::
-+$  cape  $~(| $@(? [cape cape]))
++$  cape-final  $~(| $@(? [cape-final cape-final]))
+::  During the analysis a cape has one more leaf, %wild: the top element,
+::  no noun at all, the product of a computation with no terminating
+::  execution (so far). It is the neutral element of the intersection of
+::  products (+double-int, +purr) and absorbing for everything else: a cell
+::  with a wild part is wild, a subject that is wild has no code and no data.
+::  The products of functions in progress start wild, see +ska-callgraph.
+::  Wild never reaches the finalized structures: those hold $cape-final and
+::  $sock-final (+final-sock turns wild into unknown).
+::  Normalization: [wild x] -> wild, [x wild] -> wild
+::
++$  cape  $~(| $@(?(%wild ?) [cape cape]))
 ::  masked noun. Normalization:  "|" leaves of the cape must correspond to 0
 ::  leaves in the data
 ::
 ::
++$  sock-final  $~(|+~ [cape=cape-final data=*])
 +$  sock  $~(|+~ [=cape data=*])
 ::  Provenance of data from the subject of a Nock computation we are in.
 ::    ~: does not come from the subject.
@@ -141,7 +153,7 @@
   ++  all
     |=  c=cape
     ^-  ?
-    ?@  c  c
+    ?@  c  ?=(%& c)
     &($(c -.c) $(c +.c))
   ::
   ++  hed  ~/  %hed  |=(c=cape ?@(c c -.c))
@@ -151,6 +163,7 @@
     |=  [h=cape t=cape]
     ^-  cape
     =*  cons  +<
+    ?:  |(=(%wild h) =(%wild t))  %wild
     ?:  &(?=(%| h) ?=(%| t))  |
     cons
   ::  list of known axes
@@ -162,8 +175,9 @@
     =/  axe  1
     |-  ^-  (list @)
     ?-  c
-      %|  ~
-      %&  ~[axe]
+      %|     ~
+      %wild  ~
+      %&     ~[axe]
       ^  (weld $(c -.c, axe (peg axe 2)) $(c +.c, axe (peg axe 3)))
     ==
   ::  intersection
@@ -174,12 +188,14 @@
     ^-  cape
     ?:  =(a b)  a
     ?-  a
-        %|  |
-        %&  b
+        %|     |
+        %wild  |
+        %&     b
         ^
       ?-  b
-          %|  |
-          %&  a
+          %|     |
+          %wild  |
+          %&     a
           ^   (con $(a -.a, b -.b) $(a +.a, b +.b))
       ==
     ==
@@ -190,7 +206,8 @@
     |=  [c=cape s=sock]
     ^-  sock
     ?:  =(c cape.s)  s
-    ?:  |(?=(%| c) ?=(%| cape.s))  *sock
+    ?:  =(%wild cape.s)  s
+    ?:  |(?=(%| c) ?=(%| cape.s) =(%wild c))  *sock
     ?:  ?=(%& c)  s
     ~+
     %+  knit:so  $(s (hed:so s), c -.c)
@@ -203,12 +220,14 @@
     ^-  cape
     ?:  =(a b)  a
     ?-  a
-        %&  &
-        %|  b
+        %&     &
+        %|     b
+        %wild  b
         ^
       ?-  b
-          %&  &
-          %|  a
+          %&     &
+          %|     a
+          %wild  a
           ^   ~+((con $(a -.a, b -.b) $(a +.a, b +.b)))
       ==
     ==
@@ -219,7 +238,7 @@
     |=  [c=cape a=@]
     ^-  cape
     ?<  =(0 a)
-    ?:  ?=(%| c)  |
+    ?:  |(?=(%| c) =(%wild c))  |
     |-  ^-  cape
     ?:  =(1 a)  c
     ?-  (cap a)
@@ -232,6 +251,7 @@
     |=  [a=cape b=cape]
     ^-  cape
     ?:  =(a b)    |
+    ?:  |(=(%wild a) =(%wild b))  |
     ?:  ?=(%& b)  |
     ?:  ?=(%| b)  a
     ?:  ?=(%| a)  |
@@ -255,6 +275,7 @@
 ++  so
   ~%  %so  ..ride  ~
   |%
+  ++  sock-wild  ^-(sock [%wild 0])
   ::  Does b nest under a? i.e. is everything that is known by a also known
   ::  by b?
   ::
@@ -263,9 +284,11 @@
     |=  [one=sock two=sock]
     ^-  ?
     ?:  =(one two)  &
+    ?:  =(%wild cape.two)  &
+    ?:  =(%wild cape.one)  |
     ?@  data.one
       ?.  ?=(@ cape.one)  ~|  badone+one  !!
-      ?.  cape.one  &
+      ?.  ?=(%& cape.one)  &
       ?&(?=(%& cape.two) =(data.one data.two))
     ?@  data.two
       ?>  ?=(@ cape.two)
@@ -290,6 +313,7 @@
     ?<  =(0 axe)
     |-  ^-  sock
     ?:  =(1 axe)  s
+    ?:  =(%wild cape.s)  s
     ?:  |(?=(%| cape.s) ?=(@ data.s))
       *sock
     =+  [now lat]=[(cap axe) (mas axe)]
@@ -312,6 +336,7 @@
     =*  r  cape.two
     =/  cap  (con:ca l r)
     ?:  ?=(%| cap)  *sock
+    ?:  =(%wild cap)  sock-wild
     [cap data.one data.two]
   ::  head
   ::
@@ -319,6 +344,7 @@
     ~/  %hed
     |=  s=sock
     ^-  sock
+    ?:  =(%wild cape.s)  s
     ?:  |(?=(%| cape.s) ?=(@ data.s))
       *sock
     ?@  cape.s  [& -.data.s]
@@ -329,6 +355,7 @@
     ~/  %tel
     |=  s=sock
     ^-  sock
+    ?:  =(%wild cape.s)  s
     ?:  |(?=(%| cape.s) ?=(@ data.s))
       *sock
     ?@  cape.s  [& +.data.s]
@@ -341,6 +368,8 @@
     |=  [one=sock two=sock]
     ^-  sock
     ?:  =(one two)  one
+    ?:  =(%wild cape.one)  two
+    ?:  =(%wild cape.two)  one
     ?:  |(?=(%| cape.one) ?=(%| cape.two))  *sock
     ?:  |(?=(^ cape.one) ?=(^ cape.two))
       %+  knit  $(one (hed one), two (hed two))
@@ -358,6 +387,8 @@
     |=  [one=sock two=sock]
     ^-  sock
     ?:  =(one two)  one
+    ?:  =(%wild cape.one)  one
+    ?:  =(%wild cape.two)  two
     ?:  ?=(%| cape.one)  two
     ?:  ?=(%| cape.two)  one
     ::  unequal known data
@@ -374,6 +405,7 @@
     |=  [one=sock axe=@ two=sock]
     ^-  sock
     ?:  =(1 axe)  two
+    ?:  |(=(%wild cape.one) =(%wild cape.two))  sock-wild
     ?:  &(?=(%| cape.one) ?=(%| cape.two))  *sock
     =|  acc=(list (pair ?(%2 %3) sock))
     |-  ^-  sock
@@ -421,7 +453,7 @@
     ~/  %prune
     |=  [pin=spring cap=cape]
     ^-  cape
-    ?:  ?=(%| cap)  |
+    ?:  |(?=(%| cap) =(%wild cap))  |
     ?~  pin  |
     ~+
     ?@  pin  (pat:ca cap pin)
@@ -482,13 +514,44 @@
   |=  [c=cape s=spring]
   ^-  cape
   ?~  s  |
-  ?:  ?=(%| c)  |
+  ?:  |(?=(%| c) =(%wild c))  |
   ~+
   ?@  s  (pat:ca c s)
   =/  [p=cape q=cape]  ?@(c [& &] c)
   =/  l  $(s -.s, c p)
   =/  r  $(s +.s, c q)
   (uni:ca l r)
+::  Finalize a sock: wild becomes unknown, denormalized [| |] collapses
+::
+++  final-sock
+  |=  s=sock
+  ^-  sock-final
+  ?-  cape.s
+    %&     [& data.s]
+    %|     |+~
+    %wild  |+~
+    ^      ~+
+           =/  h  $(s (hed:so s))
+           =/  t  $(s (tel:so s))
+           ?:  &(?=(%| cape.h) ?=(%| cape.t))  |+~
+           [[cape.h cape.t] data.h data.t]
+  ==
+::  Retype a sock known to contain no wild
+::
+++  sock-final-of
+  |=  s=sock
+  ^-  sock-final
+  [(cape-final-of cape.s) data.s]
+::
+++  cape-final-of
+  |=  c=cape
+  ^-  cape-final
+  ?-  c
+    %&     &
+    %|     |
+    %wild  ~|(%wild-in-final !!)
+    ^      ~+([$(c -.c) $(c +.c)])
+  ==
 ::  doubly intersect a sock and a provenance
 ::
 ++  double-int
@@ -496,6 +559,8 @@
   |=  [a=[=sock src=spring] b=[=sock src=spring]]
   ^-  [=sock src=spring]
   ?:  =(a b)  a
+  ?:  =(%wild cape.sock.a)  b
+  ?:  =(%wild cape.sock.b)  a
   ?:  |(?=(%| cape.sock.a) ?=(%| cape.sock.b))
     [*sock *spring]
   ?.  |(?=(^ cape.sock.a) ?=(^ cape.sock.b) ?=(^ src.a) ?=(^ src.b))
@@ -575,8 +640,8 @@
 ?>  =(| *cape)
 ?>  =(~ *spring)
 |%
-+$  identity  [more=sock fol=^]     ::  max subject
-+$  bell      [less=sock fol=^]     ::  minimized subject
++$  identity  [more=sock-final fol=^]     ::  max subject
++$  bell      [less=sock-final fol=^]     ::  minimized subject
 +$  info-2    [b=bell k=(unit *)]   ::  callee, maybe memoization key
 +$  nomm
   $~  [%0 0]
@@ -613,14 +678,26 @@
 +$  datum
   $:  callees=(set callee-entry)
       =nomm
-      less-code=sock
-      less-memo=sock
-      indi=cape
+      less-code=sock-final
+      less-memo=sock-final
+      indi=cape-final
+      [prod=sock-final map=spring]
+      area=(unit spot)
+  ==
+::  Entry of a function in progress: its product may be wild
+::
++$  datum-live
+  $:  callees=(set callee-entry)
+      =nomm
+      less-code=sock-final
+      less-memo=sock-final
+      indi=cape-final
       [prod=sock map=spring]
       area=(unit spot)
   ==
 ::
 +$  callgraph  (map identity datum)
++$  callgraph-live  (map identity datum-live)
 ::  A graph of functions
 ::
 +$  jug-id  (jug identity identity)
@@ -628,7 +705,8 @@
 ::  Analysis state, see +ska-callgraph
 ::
 +$  ska-state
-  $:  g=callgraph             ::  functions found so far, in progress or done
+  $:  g=callgraph-live        ::  functions in progress
+      fin=callgraph           ::  finished functions
       done=memo               ::  memoization of finished functions
       order=(map identity @)  ::  DFS numbers of the functions in progress
       stk=(list identity)     ::  functions in progress, latest first
@@ -638,7 +716,7 @@
 ::  memoization map
 ::  formula -> less-memo -> entry
 ::
-+$  memo  (map ^ (map sock [id=identity =datum]))
++$  memo  (map ^ (map sock-final [id=identity =datum]))
 +$  sock-anno  [=sock src=spring]
 +$  ring  [=path axe=@]
 +$  code-entry  [=nomm pure=? total=?]
@@ -651,7 +729,7 @@
     ::
     $=  jets
     $:  root=(jug * path)     ::  root registrations
-        core=(jug path sock)  ::  core registrations
+        core=(jug path sock-final)  ::  core registrations
         batt=(jug ^ path)     ::  core battery -> set of possible paths
         $=  cole              ::  bell <--> ring bidirectional mapping
         $:  call=(map bell ring)
@@ -747,14 +825,19 @@
 ::
 ++  recursive-call
   ~%  %recursive-call  ..ride  ~
-  |=  [id-kid=identity stk=(list identity) g=callgraph]
+  |=  [id-kid=identity stk=(list identity) g=callgraph-live]
   ^-  (unit [?(%merge %gen) identity])
   ?~  stk  ~
   ?.  =(fol.id-kid fol.i.stk)  $(stk t.stk)
-  =/  d=datum  (git-g g i.stk)
+  ::  a subject that knows less than the one in progress: a function of its
+  ::  own, as the product of the one in progress does not describe it. Such
+  ::  chains are finite, knowledge of a noun only decreases along them.
+  ::
+  ?:  (huge:so more.id-kid more.i.stk)  ~
+  =/  d=datum-live  (~(gut by g) i.stk *datum-live)
   ?:  (huge:so less-code.d more.id-kid)  `[%merge i.stk]
   ?:  (he-sock more.id-kid more.i.stk)
-    `[%gen [(msg-sock more.id-kid more.i.stk) fol.id-kid]]
+    `[%gen [(sock-final-of (msg-sock more.id-kid more.i.stk)) fol.id-kid]]
   $(stk t.stk)
 ::  A noun with provenance "src" captured something unknown from subject
 ::  "less". Walks the capes rather than the provenance, which can be huge (a
@@ -773,7 +856,7 @@
   |-  ^-  ?
   ?:  ?=(%| got)  |
   ?:  ?=(%& got)  !(all:ca cap)
-  ?@  cap  !cap
+  ?@  cap  !?=(%& cap)
   |($(got -.got, cap -.cap) $(got +.got, cap +.cap))
 ::  Memoization core
 ::
@@ -781,7 +864,7 @@
   |%
   ++  gut
     |=  [m=memo f=^]
-    ^-  (map sock [identity datum])
+    ^-  (map sock-final [identity datum])
     (~(gut by m) f ~)
   ::  Get a memoization hit, not necessarily the best one. Although
   ::  we do not memoize functions that captured anything from their subjects
@@ -966,7 +1049,7 @@
 ++  rout
   |=  [[sub=* fol=^] lon=long-ska]
   ^-  long-ska
-  =*  todo  ,[sub=sock fol=^ frame=(unit [cons=? =ring])]
+  =*  todo  ,[sub=sock-final fol=^ frame=(unit [cons=? =ring])]
   =/  q=(list todo)  ~[[&+sub fol ~]]
   =|  b=(list todo)
   |-  ^-  long-ska
@@ -1005,7 +1088,7 @@
       =>  !@  ska-verb  .
         ~&  >>  %join-tail-wrong-sub  .
       tel-loop(tels t.tels)
-    =/  join  (pack:so less.i.heds less.i.tels)
+    =/  join  (sock-final-of (pack:so less.i.heds less.i.tels))
     =.  call.cole.jets.lon  (~(put by call.cole.jets.lon) [join fol.i.q] p)
     =.  back.cole.jets.lon  (~(put ju back.cole.jets.lon) p join fol.i.q)
     tel-loop(tels t.tels)
@@ -1030,13 +1113,13 @@
     %+  roll
       %+  sort
         %+  turn  ~(tap by new-cores)
-        |=([p=path q=(set sock)] [(lent p) p q])
+        |=([p=path q=(set sock-final)] [(lent p) p q])
       |=([l=[len=@ *] r=[len=@ *]] (lth len.l len.r))
-    |=  [[len=@ p=path q=(set sock)] =_b]
+    |=  [[len=@ p=path q=(set sock-final)] =_b]
     =>  !@  ska-verb  .
         ~&  >  [%enqueu p]  .
     %-  ~(rep in q)
-    |=  [s=sock =_b]
+    |=  [s=sock-final =_b]
     =/  batt  (pull:so s 2)
     ?.  (all:ca cape.batt)
       =>  !@  ska-verb  .
@@ -1085,7 +1168,7 @@
           g=callgraph
           =bell-prod
           root=(jug * path)
-          core=(jug path sock)
+          core=(jug path sock-final)
           batt=(jug ^ path)
       ==
   =/  gen  [miss=| root=root core=core batt=batt]
@@ -1119,7 +1202,7 @@
     ::  the analysis of the callee with exactly this subject, if it was one:
     ::  its product needs no masking
     ::
-    ?^  there=(~(get by g) [sub fol.b.u.info.nomm])
+    ?^  there=(~(get by g) [(sock-final-of sub) fol.b.u.info.nomm])
       [prod.u.there gen]
     =/  [prod=sock map=spring]  (~(got by bell-prod) b.u.info.nomm)
     :_  gen
@@ -1197,7 +1280,7 @@
             ~&  >>>  %fast-lost-root  .
         gen
       %=  gen
-        core  (~(put ju core.gen) ~[label] prod)
+        core  (~(put ju core.gen) ~[label] (sock-final-of prod))
         root  (~(put ju root.gen) data.prod ~[label])
       ==
     ::  child core registration
@@ -1253,7 +1336,7 @@
     =>  !@  ska-verb  .
         ~&  >  [%matched pax]  .
     %=  gen
-      core  (~(put ju core.gen) pax template)
+      core  (~(put ju core.gen) pax (sock-final-of template))
       batt  (~(put ju batt.gen) data.batt pax)
     ==
   ::
@@ -1289,7 +1372,7 @@
 ::  of a core template that its subject fits. Produces the ring of the arm.
 ::
 ++  cole-match
-  |=  [b=bell core=(jug path sock)]
+  |=  [b=bell core=(jug path sock-final)]
   ^-  (unit ring)
   |-  ^-  (unit ring)
   =*  path-loop  $
@@ -1300,7 +1383,7 @@
     ?^  l  l
     path-loop(core r.core)
   ::
-  =/  templates=(set sock)  q.n.core
+  =/  templates=(set sock-final)  q.n.core
   |-  ^-  (unit @)
   =*  template-loop  $
   ?~  templates  ~
@@ -1331,7 +1414,7 @@
 ::  keep it.
 ::
 ++  ska-cole-update
-  |=  [lon=long-ska new-bells=(set bell) new-cores=(jug path sock)]
+  |=  [lon=long-ska new-bells=(set bell) new-cores=(jug path sock-final)]
   ^-  long-ska
   =*  cole  cole.jets.lon
   =/  put
@@ -1375,7 +1458,8 @@
       $(a (tel:so a), b (tel:so b), rev (peg rev 3))
     ==
   ?:  ?=(%| cape.a)  ~
-  ?:  ?=(%| cape.b)  ~[[rev ~[[1 %lost]]]]
+  ?:  |(=(%wild cape.a) =(%wild cape.b) ?=(%| cape.b))
+    ~[[rev ~[[1 %lost]]]]
   =/  rel  1
   =-  ?~  -  ~  ~[[rev -]]
   |-  ^-  (list (pair @ ?(%lost %data)))
@@ -1395,6 +1479,7 @@
   =;  out=sock  =+(=(out s) out)
   =/  h=sock  (norm-so -.cape.s -.data.s)
   =/  t=sock  (norm-so +.cape.s +.data.s)
+  ?:  |(=(%wild cape.h) =(%wild cape.t))  sock-wild:so
   :_  [data.h data.t]
   ?:  &(?=(? cape.h) =(cape.h cape.t))  cape.h
   [cape.h cape.t]
@@ -1425,7 +1510,7 @@
   [(norm-so s.prod) (norm-pi m.prod)]
 ::
 ++  ska-poke
-  |=  [[bus=sock fol=^] lon=long-ska]
+  |=  [[bus=sock-final fol=^] lon=long-ska]
   ^-  [bell long-ska]
   =/  root-identity=identity  [bus fol]
   =/  g=callgraph  -:(ska-callgraph root-identity memo.final.lon)
@@ -1550,7 +1635,7 @@
     ::
     acc
   =/  root-bell=bell  [less-code.root-datum fol]
-  =/  [root=(jug * path) core=(jug path sock) batt=(jug ^ path)]
+  =/  [root=(jug * path) core=(jug path sock-final) batt=(jug ^ path)]
     =<  $  ~%  %poke-jets-loop  ..ride  ~  |.
     =/  queu=callgraph
       %-  ~(rep by pruned)
@@ -1573,7 +1658,7 @@
     (~(put by queu.acc) id d)
   ::
   :-  root-bell
-  =/  new-cores=(jug path sock)  ((dif-ju core) core.jets.lon)
+  =/  new-cores=(jug path sock-final)  ((dif-ju core) core.jets.lon)
   =.  lon  lon(root.jets root, core.jets core, batt.jets batt)
   (ska-cole-update lon ~(key by just-code) new-cores)
 ::  produces data about a function
@@ -1926,11 +2011,16 @@
 ::  component finishes, the component is reanalyzed in passes until no member
 ::  changes. A pass may discover new functions, which join the component if
 ::  they call back into it. A call to a function on the stack is a recursive
-::  call: its product is erased and only its code requirement is used, the
-::  same pessimization as for a call merged into a function in progress.
-::  Code requirements only grow, so the passes converge (Kleene iteration
-::  over the products would not: the least fixed point of a product like
-::  [1 $] does not exist).
+::  call. To the same identity it sees a wild product before the first pass
+::  of the callee, which makes the callee's product start as the intersection
+::  of its non-recursive branches, and the callee's product on later passes,
+::  forced to descend by intersection with the previous one (+run), so that
+::  the passes converge within a finite structure and the fixed point is
+::  sound (a function's actual results satisfy the product of one more pass,
+::  which is at least as known as the fixed point). A call merged into a
+::  function in progress with a different subject only uses its code
+::  requirement: the product is erased. Code requirements only grow, so the
+::  passes converge.
 ::
 ::  Functions popped off the stack are final and get memoized in .done, so
 ::  that a later call to the same formula with a subject that provides what a
@@ -1939,14 +2029,14 @@
 ++  ska-callgraph
   ~%  %ska-callgraph  ..ride  ~
   !.
-  |=  [[bus=sock fol=^] memo-final=memo]
+  |=  [[bus=sock-final fol=^] memo-final=memo]
   ^-  (list callgraph)
   =|  st=ska-state
   =<  =/  res  (analyze [bus fol] st)
       =>  !@  ska-verb  .
-          ~&  [%ska-callgraph functions+~(wyt by g.st.res) runs+runs.st.res]
+          ~&  [%ska-callgraph functions+~(wyt by fin.st.res) runs+runs.st.res]
           .
-      [g.st.res ~]
+      [fin.st.res ~]
   |%
   ::  Analyze a function that is not in the graph yet, and the functions it
   ::  calls. Produces the lowest DFS number of a function in progress reachable
@@ -1962,14 +2052,16 @@
     ?^  hit=(git:mi memo-final fol.id more.id)
       =/  d=datum  +.u.hit
       :-  next.st
-      st(g (~(put by g.st) id d), done (put:mi done.st id d))
+      st(fin (~(put by fin.st) id d), done (put:mi done.st id d))
     =/  index=@  next.st
+    =/  init=datum-live  *datum-live
+    =.  prod.init  sock-wild:so
     =.  st
       %_  st
         next   +(index)
         order  (~(put by order.st) id index)
         stk    [id stk.st]
-        g      (~(put by g.st) id *datum)
+        g      (~(put by g.st) id init)
       ==
     =^  [low=@ back=? changed=?]  st  (run id index st)
     ?.  =(low index)  [low st]
@@ -2018,14 +2110,30 @@
     ::
     =/  top=identity  ?~(stk.st ~|(%ska-stack !!) i.stk.st)
     =/  rest=(list identity)  ?~(stk.st ~|(%ska-stack !!) t.stk.st)
+    =/  d=datum  (final-datum (~(gut by g.st) top *datum-live))
     =.  st
       %_  st
         stk    rest
         order  (~(del by order.st) top)
-        done   (put:mi done.st top (git-g g.st top))
+        g      (~(del by g.st) top)
+        fin    (~(put by fin.st) top d)
+        done   (put:mi done.st top d)
       ==
     ?:  =(top id)  st
     $(st st)
+  ::  a finished function: wild in its product becomes unknown
+  ::
+  ++  final-datum
+    |=  d=datum-live
+    ^-  datum
+    :*  callees.d
+        nomm.d
+        less-code.d
+        less-memo.d
+        indi.d
+        [(final-sock prod.d) map.d]
+        area.d
+    ==
   ::  One analysis pass over the formula of .id, updating its entry in the
   ::  graph. Produces its lowlink, whether it called a function in progress,
   ::  and whether the entry changed in a way that affects its callers.
@@ -2035,7 +2143,7 @@
     |=  [id=identity index=@ st=ska-state]
     ^-  [[low=@ back=? changed=?] st=ska-state]
     =.  runs.st  +(runs.st)
-    =/  data=datum  (git-g g.st id)
+    =/  data=datum-live  (~(gut by g.st) id *datum-live)
     =/  bus=sock  more.id
     =/  fol  fol.id
     =/  sub=sock-anno  [bus 1]
@@ -2053,10 +2161,21 @@
     =;  ,fol-result
       ::  construct datum
       ::
-      =/  less-code  (app:ca want bus)
+      =/  less-code  (sock-final-of (app:ca want bus))
       =/  capture=cape  (prune:pi src.pro cape.sock.pro)
-      =/  less-memo  (app:ca (uni:ca want capture) bus)
-      =/  data-new=datum  [callees nomm less-code less-memo indi pro area]
+      =/  less-memo  (sock-final-of (app:ca (uni:ca want capture) bus))
+      =/  data-new=datum-live
+        [callees nomm less-code less-memo (cape-final-of indi) pro area]
+      ::  The product descends across passes: it is the intersection of the
+      ::  previous and the new product (the previous one is wild before the
+      ::  first pass), so the passes converge within the structure of the
+      ::  first product, and the result is never more known than what one
+      ::  more pass would give, which makes it sound.
+      ::
+      =/  pm=[=sock src=spring]
+        (double-int [prod map]:data-new [prod map]:data)
+      =.  prod.data-new  sock.pm
+      =.  map.data-new  src.pm
       =?  indi.data-new
           ?&  =([less-code prod map]:data-new [less-code prod map]:data)
               !=(indi.data-new indi.data)
@@ -2064,7 +2183,7 @@
         ::  if new datum only differs in indi.data-new,
         ::  turn disagreeing parts into %.y so that we converge
         ::
-        (msg-ca indi.data-new indi.data)
+        (cape-final-of (msg-ca indi.data-new indi.data))
       =/  changed=?
         !=([less-code prod map indi]:data-new [less-code prod map indi]:data)
       :-  [low back changed]
@@ -2134,6 +2253,10 @@
       =^  s  gen  fol-loop(fol p.fol)
       =^  f  gen  fol-loop(fol q.fol)
       ^-  [[nomm sock-anno] _gen]
+      ::  a wild subject or formula: no execution reaches this call
+      ::
+      ?:  |(=(%wild cape.sock.prod.s) =(%wild cape.sock.prod.f))
+        [[[%2 nomm.s nomm.f ~] [sock-wild:so ~]] gen]
       =<  $
       ~%  %nock-2  ..ride  ~
       |.
@@ -2164,17 +2287,19 @@
       ~%  %nock-2-direct-non-inlined  ..ride  ~
       |.
       ^-  [[nomm sock-anno] _gen]
-      =^  [id-there=identity dat-there=datum]  gen
-        =/  id-there=identity  [sock.prod.s fol-new]
-        |-  ^-  [[identity datum] _gen]
+      =^  [id-there=identity dat-there=datum-live]  gen
+        =/  id-there=identity  [(sock-final-of sock.prod.s) fol-new]
+        |-  ^-  [[identity datum-live] _gen]
         =*  resolve  $
+        ::  a finished function
+        ::
+        ?^  d=(~(get by fin.st.gen) id-there)  [[id-there u.d] gen]
+        ::  a function in progress: recursive call to the same identity, its
+        ::  product is wild before its first pass and descends from there
+        ::
         ?^  d=(~(get by g.st.gen) id-there)
-          ::  in the graph. A function in progress: recursive call, use its
-          ::  code requirement but not its product
-          ::
-          ?~  ord=(~(get by order.st.gen) id-there)  [[id-there u.d] gen]
-          :-  [id-there u.d(prod |+~, map ~)]
-          gen(low (min low.gen u.ord), back &)
+          :-  [id-there u.d]
+          gen(low (min low.gen (~(got by order.st.gen) id-there)), back &)
         ::  a finished function with the same formula whose subject
         ::  requirement is satisfied here
         ::
@@ -2189,7 +2314,7 @@
           ?-    -.u.par
               %gen  resolve(id-there +.u.par)
               %merge
-            =/  d=datum  (git-g g.st.gen +.u.par)
+            =/  d=datum-live  (~(gut by g.st.gen) +.u.par *datum-live)
             :-  [+.u.par d(prod |+~, map ~)]
             gen(low (min low.gen (~(got by order.st.gen) +.u.par)), back &)
           ==
@@ -2197,7 +2322,10 @@
         ::
         =^  low-there=@  st.gen  (analyze id-there st.gen)
         =.  low.gen  (min low.gen low-there)
-        [[id-there (git-g g.st.gen id-there)] gen]
+        ::  finished, or still on the stack in our component
+        ::
+        ?^  d=(~(get by fin.st.gen) id-there)  [[id-there u.d] gen]
+        [[id-there (~(gut by g.st.gen) id-there *datum-live)] gen]
       ::
       ::  Direct call: record immediate code usage (we just got the formula) +
       ::  transitive code usage by the callee
@@ -6537,7 +6665,7 @@
 ::
 ++  validate-cape
   |=  n=*
-  ^-  cape
+  ^-  cape-final
   =;  out  =+(=(n out) out)
   =*  val  .
   ?@  n
