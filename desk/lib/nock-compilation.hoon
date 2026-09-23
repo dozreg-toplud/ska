@@ -60,9 +60,9 @@
 ::
 ::  Table of contents:
 ::    Call graph construction:  line 518
-::    Compilation:              line 2265
-::    IR optimization passes:   line 4817
-::    Interactive core:         line 5722
+::    Compilation:              line 2272
+::    IR optimization passes:   line 5466
+::    Interactive core:         line 6452
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
@@ -2693,7 +2693,7 @@
           jets-hot=(map ring need-ordered)
       ==
   ^-  [straight (map bell straight)]
-  :: ~>  %memo./ska
+  ~>  %memo./ska
   =*  args  +<
   ::  Compile normally
   ::
@@ -2720,8 +2720,10 @@
           jets-hot=(map ring need-ordered)
       ==
   ^-  (map bell straight)
+  ::  Transient memoization for local tests, persistent memoization for stateful
+  ::  interaction. The latter requires running SKA core with an empty scry gate.
   ~+
-  :: ~>  %memo./ska
+  ~>  %memo./ska
   ::  Only the subject shapes in .map-local are read by the loop, so the rest
   ::  of the straight is a placeholder until the fixed point is reached, when
   ::  the whole SCC is compiled once more with .done set, this time for real
@@ -2758,6 +2760,7 @@
       =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~)
       =^  [ned-final=need laz=need-lazy o=@uwoo]  gen
         (~(collapse-shape comp gen) nex cape.less.b)
+      ::
       [[(need-to-ordered ned-final) laz ned-final o] gen]
     ?.  done
       =^  l=laze  gen  (~(run-shape comp gen) nomm [%done ~])
@@ -2786,6 +2789,9 @@
     ~%  %compile-scc-finish  ..ride  ~
     |=  pessimized=(unit need-ordered)
     ^-  straight
+    ::  argument count and the blocks are bunted unless fixed point of the
+    ::  subject shape was achieved
+    ::
     ?.  done  [?~(pessimized need-new u.pessimized) 0 ~]
     =.  gen  (~(coerce-lazy comp gen) ned-final o laz)
     =/  res=next-resolved  [%next [[ned-final ~] ~ ~] ~ o]
@@ -6444,6 +6450,11 @@
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
 ::  Arvo-shaped core for stateful interaction with SKA code
+::
+::    Persistent memoization is used in some places instead of explicit state,
+::    perhaps more out of laziness than for a good reason. Because of that SKA
+::    core needs to be evaluated with scrying disabled for persistent memoiza-
+::    tion to work.
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
