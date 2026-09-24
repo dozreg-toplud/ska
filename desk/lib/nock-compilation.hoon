@@ -59,10 +59,10 @@
 ::    fixed point loop for callees that are in the same SCC as the caller.
 ::
 ::  Table of contents:
-::    Call graph construction:  line 524
-::    Compilation:              line 2299
-::    IR optimization passes:   line 5493
-::    Interactive core:         line 6479
+::    Call graph construction:  line 523
+::    Compilation:              line 2215
+::    IR optimization passes:   line 5409
+::    Interactive core:         line 6384
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
@@ -137,9 +137,6 @@
     |=  c=cape
     ^-  ?
     ?@  c  c
-    ::  memoized per subtree: capes of consed-up nouns are as big as the
-    ::  nouns and share their subtrees
-    ::
     ~+
     &($(c -.c) $(c +.c))
   ::
@@ -549,10 +546,7 @@
 ::    graph depth-first, analyzing a newly found callee before its caller
 ::    proceeds, so that a function outside of a cycle is analyzed once, with
 ::    its callees final; the iteration only happens over strongly connected
-::    components, which are found on the fly with Tarjan's algorithm.  This
-::    also gives finalization for free: a function popped off Tarjan's stack
-::    never changes, so it can be memoized right away, without a transitive
-::    closure of the graph.
+::    components, which are found on the fly with Tarjan's algorithm.
 ::
 ::    Proving that F is monotonic for some ordering of the lattice, in which
 ::    [[[&+sub fol] *datum] ~ ~] is the least element that contains [&+sub fol],
@@ -640,15 +634,16 @@
 +$  ska-state
   $:  g=callgraph             ::  functions found so far, in progress or done
       done=memo               ::  memoization of finished functions
-      order=(map identity @)  ::  DFS numbers of the functions in progress
+      order=(map identity @uxsite)  ::  DFS numbers of the functions in progress
       stk=(list identity)     ::  functions in progress, latest first
-      next=@                  ::  next DFS number
-      runs=@                  ::  number of function analyses (statistics)
-      passes=@                ::  number of passes over components (statistics)
-      late-runs=@             ::  analyses in the second and later passes
+      next=@uxsite            ::  next DFS number
       =regs                   ::  %fast registrations so far
-      misses=@                ::  child registrations without a parent
-  ==
+      $=  stats               ::  statistics for debugging
+      $:  runs=@ud            ::    number of function analyses
+          passes=@ud          ::    number of passes over components
+          late-runs=@ud       ::    analyses in the second and later passes
+          misses=@ud          ::    child registrations without a parent
+  ==  ==
 ::  memoization map
 ::  formula -> less-memo -> entry
 ::
@@ -710,8 +705,7 @@
   ^-  ?
   =*  h-e  .
   ?:  =(big smol)  &
-  ::  embedding never shrinks the cape: reject before searching the whole
-  ::  cape of big, which can have a million nodes
+  ::  embedding never shrinks the cape
   ::
   ?:  (lth (cape-size cape.big) (cape-size cape.smol))  |
   ?:  &(?=(@ cape.big) ?=(@ cape.smol))  |
@@ -732,15 +726,12 @@
   ?|  (h-e (hed:so big) smol)
       (h-e (tel:so big) smol)
   ==
-::  number of nodes of a cape, memoized per subtree (capes of related subjects
-::  share most of their subtrees)
 ::
 ++  cape-size
   |=  c=cape
   ^-  @
   ?@  c  1
-  ~+
-  (add $(c -.c) $(c +.c))
+  ~+((add $(c -.c) $(c +.c)))
 ::  Most specific generalization of two socks. Disagreeing parts are replaced
 ::  with an unknown element |+~. Note that this has different behavior and
 ::  intent compared to +msg-ca.
@@ -770,8 +761,8 @@
 ::  an example where a chain of functions would grow faster than linearly with
 ::  the size of the formula and the subject: the products would get masked down
 ::  with either the simple recursion pessimization (we erase the product of
-::  recursive calls), or with +double-int as we intersect nouns on both
-::  their values and provenances.
+::  recursive calls), or with +double-int as we intersect nouns on both their
+::  values and provenances.
 ::
 ++  recursive-call
   ~%  %recursive-call  ..ride  ~
@@ -784,13 +775,7 @@
   ?:  (he-sock more.id-kid more.i.stk)
     `[%gen [(msg-sock more.id-kid more.i.stk) fol.id-kid]]
   $(stk t.stk)
-::  A noun with provenance "src" captured something unknown from subject
-::  "less". Walks the capes rather than the provenance, which can be huge (a
-::  product that is a big partially known noun assembled from the subject):
-::  +distribute is memoized on the subtrees that provenances share, and the
-::  cape of the subject is small. (A provenance axis that goes beyond an atom
-::  of the subject counts as known here: the product there is unknown but the
-::  subject is not, so a memoized product does not lose information.)
+::  A noun with provenance "src" captured something unknown from subject "less"
 ::
 ++  unknown-sock-captured
   ~%  %unknown-sock-captured  ..ride  ~
@@ -813,8 +798,9 @@
     (~(gut by m) f ~)
   ::  Get a memoization hit, not necessarily the best one. Although
   ::  we do not memoize functions that captured anything from their subjects
-  ::  and we check that we don't have any data in the places where the memo can-
-  ::  didate tried to get code, so it should already be the best match?
+  ::  and we check that we don't have any data in the places where the memo
+  ::  candidate tried to get code and failed, so it should already be the best
+  ::  match?
   ::
   ++  git
     ~%  %git-mi  ..ride  ~
@@ -1083,7 +1069,7 @@
     [[s f `[& p ax]] b]
   ==
 ::
-::  Register the core of a %fast hint: the clue and the product of the hinted
+::  Register the core with a %fast hint: the clue and the product of the hinted
 ::  formula as seen by the analysis at that point. The analysis walks the code
 ::  in execution order, so a parent core is registered before its children.
 ::  Produces whether a child registration missed its parent.
@@ -1191,9 +1177,7 @@
     batt  (~(put ju batt.gen) data.batt pax)
     arms  (index-arms data.batt pax arms.gen)
   ==
-::  Index the nodes of a battery that +cole-match visits (the battery itself,
-::  its arms, and the subtrees of arms it descends into) under the path of a
-::  registered core. A battery is indexed once per path.
+::  Put the battery `batt` and its subformulas (if present) into `arms`
 ::
 ++  index-arms
   |=  [batt=^ pax=path arms=(jug ^ path)]
@@ -1303,6 +1287,7 @@
     ?:  (~(has by call.c) b)  c
     ?~  r=(cole-match b new-cores arms.jets.lon)  c
     (put b u.r c)
+  ::
   lon
 ::  Reestablish the bell <--> ring mapping from scratch. +ska-poke keeps it up
 ::  to date, so this is only needed to check it.
@@ -1815,10 +1800,10 @@
       =>  !@  ska-verb  .
           ~&  :*  %ska-callgraph
                   functions+~(wyt by g.st.res)
-                  runs+runs.st.res
-                  passes+passes.st.res
-                  late-runs+late-runs.st.res
-                  fast-misses+misses.st.res
+                  runs+runs.stats.st.res
+                  passes+passes.stats.st.res
+                  late-runs+late-runs.stats.st.res
+                  fast-misses+misses.stats.st.res
               ==
           .
       [g.st.res regs.st.res]
@@ -1830,7 +1815,7 @@
   ++  analyze
     ~%  %ska-analyze  ..ride  ~
     |=  [id=identity st=ska-state]
-    ^-  [low=@ st=ska-state]
+    ^-  [low=@uxsite st=ska-state]
     ::  analyzed in a previous poke: the callees of the memoized function are
     ::  in the finalized graph already
     ::
@@ -1838,7 +1823,7 @@
       =/  d=datum  +.u.hit
       :-  next.st
       st(g (~(put by g.st) id d), done (put:mi done.st id d))
-    =/  index=@  next.st
+    =/  index=@uxsite  next.st
     =.  st
       %_  st
         next   +(index)
@@ -1846,7 +1831,7 @@
         stk    [id stk.st]
         g      (~(put by g.st) id *datum)
       ==
-    =^  [low=@ back=? changed=?]  st  (run id index st)
+    =^  [low=@uxsite back=? changed=?]  st  (run id index st)
     ?.  =(low index)  [low st]
     ::  .id is the root of a strongly connected component: everything above it
     ::  on the stack. If it is trivial, it is final.
@@ -1869,16 +1854,16 @@
     |-  ^-  [@ ska-state]
     =*  pass-loop  $
     =/  members=(list identity)  (above id stk.st)
-    =.  passes.st  +(passes.st)
-    =^  [low=@ changed=(set identity)]  st
+    =.  passes.stats.st  +(passes.stats.st)
+    =^  [low=@uxsite changed=(set identity)]  st
       |-  ^-  [[@ (set identity)] ska-state]
       ?~  members  [[index ~] st]
       ?.  |(=(1 pass) (~(has in dirty) i.members))  $(members t.members)
-      =?  late-runs.st  (gth pass 1)  +(late-runs.st)
-      =^  [low-m=@ back-m=? changed-m=?]  st
+      =?  late-runs.stats.st  (gth pass 1)  +(late-runs.stats.st)
+      =^  [low-m=@uxsite back-m=? changed-m=?]  st
         (run i.members (~(got by order.st) i.members) st)
       ?:  (lth low-m index)  [[low-m ~] st]
-      =^  [low-t=@ changed-t=(set identity)]  st  $(members t.members)
+      =^  [low-t=@uxsite changed-t=(set identity)]  st  $(members t.members)
       :_  st
       :-  (min low-m low-t)
       ?.(changed-m changed-t (~(put in changed-t) i.members))
@@ -1933,9 +1918,9 @@
   ::
   ++  run
     ~%  %ska-callgraph-iteration  ..ride  ~
-    |=  [id=identity index=@ st=ska-state]
-    ^-  [[low=@ back=? changed=?] st=ska-state]
-    =.  runs.st  +(runs.st)
+    |=  [id=identity index=@uxsite st=ska-state]
+    ^-  [[low=@uxsite back=? changed=?] st=ska-state]
+    =.  runs.stats.st  +(runs.stats.st)
     =/  data=datum  (git-g g.st id)
     =/  bus=sock  more.id
     =/  fol  fol.id
@@ -1946,7 +1931,7 @@
           indi=cape
           callees=(set callee-entry)
           area=(unit spot)
-          low=@
+          low=@uxsite
           back=?
           st=ska-state
       ==
@@ -1976,7 +1961,7 @@
               indi=cape
               callees=(set callee-entry)
               area=(unit spot)
-              low=@
+              low=@uxsite
               back=?
               st=ska-state
           ==
@@ -2089,7 +2074,7 @@
           ==
         ::  a new function: analyze it now
         ::
-        =^  low-there=@  st.gen  (analyze id-there st.gen)
+        =^  low-there=@uxsite  st.gen  (analyze id-there st.gen)
         =.  low.gen  (min low.gen low-there)
         [[id-there (git-g g.st.gen id-there)] gen]
       ::
@@ -2196,7 +2181,7 @@
         =^  miss=?  regs.st.gen
           (register-fast sock.prod.h sock.prod.f regs.st.gen)
         ?.  miss  gen
-        gen(misses.st +(misses.st.gen))
+        gen(misses.stats.st +(misses.stats.st.gen))
       =/  saf=?  &(?=(?(%spot %mean) a.fol) saf.h saf.f)
       =?  area.gen  saf  area-was
       :_  gen
@@ -6022,12 +6007,6 @@
       ?:  (gor p.n.b p.n.a)
         (~(uni by $(a l.a, r.b ~)) $(b r.b))
       (~(uni by $(a r.a, l.b ~)) $(b l.b))
-    ?:  =(p.n.a p.n.b)
-      %=  b
-        n  [p.n.b (join-reg q.n.a q.n.b)]
-        l  $(b l.b, a l.a)
-        r  $(b r.b, a r.a)
-      ==
     ?:  (gor p.n.a p.n.b)
       (~(uni by $(b l.b, r.a ~)) $(a r.a))
     (~(uni by $(b r.b, l.a ~)) $(a l.a))
@@ -6052,12 +6031,6 @@
       ?:  (gor p.n.b p.n.a)
         (~(uni by $(a l.a, r.b ~)) $(b r.b))
       (~(uni by $(a r.a, l.b ~)) $(b l.b))
-    ?:  =(p.n.a p.n.b)
-      =/  v  (~(int in q.n.a) q.n.b)
-      =/  l  $(b l.b, a l.a)
-      =/  r  $(b r.b, a r.a)
-      ?:  =(~ v)  (~(uni by l) r)
-      [[p.n.b v] l r]
     ?:  (gor p.n.a p.n.b)
       (~(uni by $(b l.b, r.a ~)) $(a r.a))
     (~(uni by $(b r.b, l.a ~)) $(a l.a))
@@ -6119,6 +6092,7 @@
       %+  ~(put by new.gen)  o-new
       b-new(body (zing [body.b-new (flop segs)]))
     ==
+  ::
   ?.  ?=(%hop -.fin.b-new)  done
   =/  o1=@uwoo  there.t.fin.b-new
   =/  pre-o1=(list @uwoo)  (~(get ja rev) o1)
@@ -6208,17 +6182,17 @@
     =?  unsafe  !?=(?(%clq %eqq %brz %hop) -.fin.b)  (~(uni in unsafe) open)
     ^$(topo t.topo, out (~(put by out) i.topo open))
   ::
-  %-  ~(rep by blocks)
-  |=  [[o=@uwoo b=blob] new=(map @uwoo blob)]
-  =/  body
+  %-  ~(run by blocks)
+  |=  b=blob
+  %_    b
+      body
     %+  skip  body.b
     |=  op=pole
     ?&  ?=(?(%hdp %hde) -.op)
         ?=(?(%spot %mean) n.op)
         !(~(has in unsafe) [n p]:op)
     ==
-  ::
-  (~(put by new) o b(body body))
+  ==
 ::
 ++  remove-useless-branching
   ~%  %remove-useless-branching  ..ride  ~

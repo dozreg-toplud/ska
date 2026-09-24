@@ -44,6 +44,16 @@
 ::
 =^  func=bell  long-ska  (ska-poke [&+subject formula] long-ska)
 =.  long-ska  (ska-cole-restore long-ska)
+::
+=/  subject  ..ride:hoot-zpdt
+=/  formula=^
+  =>  subject
+  ;;  ^
+  !=
+  (ride %noun '42')
+::
+=^  func=bell  long-ska  (ska-poke [&+subject formula] long-ska)
+=.  long-ska  (ska-cole-restore long-ska)
 =/  [bell-graph=(jug bell bell) rev=(jug bell bell)]
   (simple-bell-graph-and-reversed graph.final.long-ska)
 ::

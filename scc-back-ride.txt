@@ -1,0 +1,122 @@
+shortest path within the SCC from each member back into +mint:ut (hoot.hoon lines)
+
+bran:ut@9075
+  calls at bran:ut@9075:5 -> bran:ut@9076
+  calls at bran:ut@9077:5 -> bran:ut@9077
+  calls at bran:ut@9077:9 -> bran:ut@9077
+  calls at bran:ut@9086:24 -> repo:ut@10817
+  calls at repo:ut@10822:19 -> rest:ut@10830
+  calls at rest:ut@10834:5 -> play:ut@10544
+  calls at play:ut@10549:18 -> play:et:ut@9297
+  calls at play:et:ut@9298:15 -> find:ut@9527
+  calls at find:ut@9536:5 -> fond:ut@9366
+  calls at pony:fond:ut@9384:17 -> mint:ut@9974
+9.827: no member
+
+dish:us@11075
+ 11.100:23-11.100:42 -> ?
+  calls at no-spot -> dish:us@11098
+  calls at dish:us@11098:24 -> dole:us@11313
+  calls at dole:us@11317:5 -> dole:us@11317
+  calls at dole:us@11384:46 -> repo:ut@10817
+  calls at repo:ut@10822:19 -> rest:ut@10830
+  calls at rest:ut@10834:5 -> play:ut@10544
+  calls at play:ut@10549:18 -> play:et:ut@9297
+  calls at play:et:ut@9298:15 -> find:ut@9527
+  calls at find:ut@9536:5 -> fond:ut@9366
+  calls at pony:fond:ut@9384:17 -> mint:ut@9974
+
+take:ut@10877
+  calls at take:ut@10888:5 -> take:ut@10888
+  calls at take:ut@10907:24 -> repo:ut@10817
+  calls at repo:ut@10822:19 -> rest:ut@10830
+  calls at rest:ut@10834:5 -> play:ut@10544
+  calls at play:ut@10549:18 -> play:et:ut@9297
+  calls at play:et:ut@9298:15 -> find:ut@9527
+  calls at find:ut@9536:5 -> fond:ut@9366
+  calls at pony:fond:ut@9384:17 -> mint:ut@9974
+731: no member
+
+fish:ar:ut@8836
+  calls at fish:ar:ut@8879:26 -> fend:ut@9540
+  calls at fend:ut@9541:13 -> find:ut@9527
+  calls at find:ut@9536:5 -> fond:ut@9366
+  calls at pony:fond:ut@9384:17 -> mint:ut@9974
+
+ergo:ut@9235
+  calls at ergo:ut@9238:15 -> mint:ut@9974
+
+endo:ut@9280
+  calls at endo:ut@9283:13 -> mull:ut@10163
+  calls at mull:ut@10163:5 -> mull:ut@10163
+  calls at mull:ut@10251:34 -> mint:ut@9974
+
+fend:ut@9540
+  calls at fend:ut@9541:13 -> find:ut@9527
+  calls at find:ut@9536:5 -> fond:ut@9366
+  calls at pony:fond:ut@9384:17 -> mint:ut@9974
+
+bake:ut@9782
+  calls at bake:ut@9789:17 -> mull:ut@10163
+  calls at mull:ut@10163:5 -> mull:ut@10163
+  calls at mull:ut@10251:34 -> mint:ut@9974
+
+core-check:mine:ut@9874
+  calls at core-check:mine:ut@9875:24 -> repo:ut@10817
+  calls at repo:ut@10822:19 -> rest:ut@10830
+  calls at rest:ut@10834:5 -> play:ut@10544
+  calls at play:ut@10549:18 -> play:et:ut@9297
+  calls at play:et:ut@9298:15 -> find:ut@9527
+  calls at find:ut@9536:5 -> fond:ut@9366
+  calls at pony:fond:ut@9384:17 -> mint:ut@9974
+
+sell@11412
+  calls at sell@11414:3 -> deal:us@10991
+  calls at deal:us@10991:28 -> dole:us@11313
+  calls at dole:us@11317:5 -> dole:us@11317
+  calls at dole:us@11384:46 -> repo:ut@10817
+  calls at repo:ut@10822:19 -> rest:ut@10830
+  calls at rest:ut@10834:5 -> play:ut@10544
+  calls at play:ut@10549:18 -> play:et:ut@9297
+  calls at play:et:ut@9298:15 -> find:ut@9527
+  calls at find:ut@9536:5 -> fond:ut@9366
+  calls at pony:fond:ut@9384:17 -> mint:ut@9974
+
+meet:ut@10322
+  calls at meet:ut@10322:40 -> nest:ut@10373
+  calls at nest:ut@10377:9 -> dext:nest:ut@10415
+  calls at dext:nest:ut@10415:11 -> dext:nest:ut@10418
+  calls at dext:nest:ut@10459:27 -> repo:ut@10817
+  calls at repo:ut@10822:19 -> rest:ut@10830
+  calls at rest:ut@10834:5 -> play:ut@10544
+  calls at play:ut@10549:18 -> play:et:ut@9297
+  calls at play:et:ut@9298:15 -> find:ut@9527
+  calls at find:ut@9536:5 -> fond:ut@9366
+  calls at pony:fond:ut@9384:17 -> mint:ut@9974
+
+levy@561
+  calls at levy@563:7 -> dext:miss:ut@10347
+  calls at dext:miss:ut@10347:28 -> dext:miss:ut@10336
+  calls at dext:miss:ut@10354:27 -> repo:ut@10817
+  calls at repo:ut@10822:19 -> rest:ut@10830
+  calls at rest:ut@10834:5 -> play:ut@10544
+  calls at play:ut@10549:18 -> play:et:ut@9297
+  calls at play:et:ut@9298:15 -> find:ut@9527
+  calls at find:ut@9536:5 -> fond:ut@9366
+  calls at pony:fond:ut@9384:17 -> mint:ut@9974
+
+deep:nest:ut@10403
+  calls at deep:nest:ut@10411:22 -> play:ut@10544
+  calls at play:ut@10549:18 -> play:et:ut@9297
+  calls at play:et:ut@9298:15 -> find:ut@9527
+  calls at find:ut@9536:5 -> fond:ut@9366
+  calls at pony:fond:ut@9384:17 -> mint:ut@9974
+
+fish:ut@9600
+  calls at fish:ut@9622:13 -> repo:ut@10817
+  calls at repo:ut@10822:19 -> rest:ut@10830
+  calls at rest:ut@10834:5 -> play:ut@10544
+  calls at play:ut@10549:18 -> play:et:ut@9297
+  calls at play:et:ut@9298:15 -> find:ut@9527
+  calls at find:ut@9536:5 -> fond:ut@9366
+  calls at pony:fond:ut@9384:17 -> mint:ut@9974
