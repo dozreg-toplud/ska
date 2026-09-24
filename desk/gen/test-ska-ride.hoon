@@ -25,6 +25,6 @@
     bells+~(wyt by code.long-ska)
     bell-set+`@ux`(mug (sort (turn ~(tap by code.long-ska) |=([b=bell *] (mug b))) lth))
     code+`@ux`(mug code.long-ska)
-    jets+`@ux`(mug jets.long-ska)
+    jets+`@ux`(mug [root core batt cole]:jets.long-ska)
     root+`@ux`(mug func)
 ==

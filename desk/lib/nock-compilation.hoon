@@ -80,12 +80,6 @@
 ::
 =/  ska-verb  ~
 ::
-::  check-bell-prod: check that all functions with the same bell agree on the
-::  product with the parts captured from the subject masked out. Expensive:
-::  walks the provenance of every product.
-::
-:: =/  check-bell-prod  ~
-::
 ::  compiler verbosity
 ::
  =/  comp-verb  ~
@@ -139,9 +133,14 @@
   ::  all is known
   ::
   ++  all
+    ~/  %all
     |=  c=cape
     ^-  ?
     ?@  c  c
+    ::  memoized per subtree: capes of consed-up nouns are as big as the
+    ::  nouns and share their subtrees
+    ::
+    ~+
     &($(c -.c) $(c +.c))
   ::
   ++  hed  ~/  %hed  |=(c=cape ?@(c c -.c))
@@ -625,6 +624,17 @@
 ::
 +$  jug-id  (jug identity identity)
 +$  worklist  (set identity)
+::  %fast registrations: root cores by noun, core templates by path, battery
+::  -> paths of the registered cores with it, battery node (arm formula or a
+::  subtree of arms) -> paths of the registered cores with it (index for
+::  +cole-match)
+::
++$  regs
+  $:  root=(jug * path)
+      core=(jug path sock)
+      batt=(jug ^ path)
+      arms=(jug ^ path)
+  ==
 ::  Analysis state, see +ska-callgraph
 ::
 +$  ska-state
@@ -634,6 +644,10 @@
       stk=(list identity)     ::  functions in progress, latest first
       next=@                  ::  next DFS number
       runs=@                  ::  number of function analyses (statistics)
+      passes=@                ::  number of passes over components (statistics)
+      late-runs=@             ::  analyses in the second and later passes
+      =regs                   ::  %fast registrations so far
+      misses=@                ::  child registrations without a parent
   ==
 ::  memoization map
 ::  formula -> less-memo -> entry
@@ -653,6 +667,7 @@
     $:  root=(jug * path)     ::  root registrations
         core=(jug path sock)  ::  core registrations
         batt=(jug ^ path)     ::  core battery -> set of possible paths
+        arms=(jug ^ path)     ::  battery node -> set of possible paths
         $=  cole              ::  bell <--> ring bidirectional mapping
         $:  call=(map bell ring)
             back=(jug ring bell)
@@ -1068,213 +1083,128 @@
     [[s f `[& p ax]] b]
   ==
 ::
-+$  bell-prod  (map bell [prod=sock map=spring])
-::  does the code contain %fast hints?
+::  Register the core of a %fast hint: the clue and the product of the hinted
+::  formula as seen by the analysis at that point. The analysis walks the code
+::  in execution order, so a parent core is registered before its children.
+::  Produces whether a child registration missed its parent.
 ::
-++  has-fast
-  |=  =nomm
-  ^-  ?
-  ?-  nomm
-    [^ *]     |($(nomm -.nomm) $(nomm +.nomm))
-    [%0 *]    |
-    [%1 *]    |
-    [%2 *]    |($(nomm p.nomm) $(nomm q.nomm))
-    [%3 *]    $(nomm p.nomm)
-    [%4 *]    $(nomm p.nomm)
-    [%5 *]    |($(nomm p.nomm) $(nomm q.nomm))
-    [%6 *]    |($(nomm p.nomm) $(nomm q.nomm) $(nomm r.nomm))
-    [%7 *]    |($(nomm p.nomm) $(nomm q.nomm))
-    [%10 *]   |($(nomm q.p.nomm) $(nomm q.nomm))
-    [%12 *]   |($(nomm p.nomm) $(nomm q.nomm))
-  ::
-      [%11 *]
-    ?@  p.nomm  $(nomm q.nomm)
-    |(?=(%fast p.p.nomm) $(nomm q.p.nomm) $(nomm q.nomm))
-  ==
-::
-++  get-fast-regs
-  ~%  %get-fast-regs  ..ride  ~
-  |=  $:  [bus=sock =nomm]
-          g=callgraph
-          =bell-prod
-          root=(jug * path)
-          core=(jug path sock)
-          batt=(jug ^ path)
-      ==
-  =/  gen  [miss=| root=root core=core batt=batt]
+++  register-fast
+  ~%  %register-fast  ..ride  ~
+  |=  [clue=sock prod=sock reg=regs]
+  ^-  [miss=? =regs]
+  =/  gen  [miss=| reg]
   ^+  gen
-  =<  +
-  |-  ^-  [sock _gen]
-  =*  nomm-loop  $
-  ?-    nomm
-      [p=^ q=*]
-    =^  h  gen  nomm-loop(nomm p.nomm)
-    =^  t  gen  nomm-loop(nomm q.nomm)
-    :_  gen
-    (knit:so h t)
-  ::
-      [%0 *]
-    :_  gen
-    ?:  =(0 p.nomm)  *sock
-    (pull:so bus p.nomm)
-  ::
-      [%1 *]
-    :_  gen
-    &+p.nomm
-  ::
-      [%2 *]
-    ?~  info.nomm
-      =.  gen  +:nomm-loop(nomm p.nomm)
-      =.  gen  +:nomm-loop(nomm q.nomm)
-      [*sock gen]
-    =^  sub  gen  nomm-loop(nomm p.nomm)
-    =.  gen     +:nomm-loop(nomm q.nomm)
-    ::  the analysis of the callee with exactly this subject, if it was one:
-    ::  its product needs no masking
-    ::
-    ?^  there=(~(get by g) [sub fol.b.u.info.nomm])
-      [prod.u.there gen]
-    =/  [prod=sock map=spring]  (~(got by bell-prod) b.u.info.nomm)
-    :_  gen
-    |-  ^-  sock
-    ?~  map  prod
-    ?@  map  (pull:so sub map)
-    %-  knit:so
-    [ $(prod (hed:so prod), map -.map)
-      $(prod (tel:so prod), map +.map)
-    ]
-  ::
-      [%3 *]
-    =.  gen  +:nomm-loop(nomm p.nomm)
-    [*sock gen]
-  ::
-      [%4 *]
-    =.  gen  +:nomm-loop(nomm p.nomm)
-    [*sock gen]
-  ::
-      [%5 *]
-    =.  gen  +:nomm-loop(nomm p.nomm)
-    =.  gen  +:nomm-loop(nomm q.nomm)
-    [*sock gen]
-  ::
-      [%6 *]
-    =.     gen  +:nomm-loop(nomm p.nomm)
-    =^  y  gen    nomm-loop(nomm q.nomm)
-    =^  n  gen    nomm-loop(nomm r.nomm)
-    [(purr:so y n) gen]
-  ::
-      [%7 *]
-    =^  s  gen  nomm-loop(nomm p.nomm)
-    nomm-loop(bus s, nomm q.nomm)
-  ::
-      [%10 *]
-    =^  don  gen  nomm-loop(nomm q.p.nomm)
-    =^  rec  gen  nomm-loop(nomm q.nomm)
-    [(darn:so rec p.p.nomm don) gen]
-  ::
-      [%11 *]
-    ?@  p.nomm  nomm-loop(nomm q.nomm)
-    ?.  ?=(%fast p.p.nomm)
-      =.  gen  +:nomm-loop(nomm q.p.nomm)
-      nomm-loop(nomm q.nomm)
-    =^  clue  gen  nomm-loop(nomm q.p.nomm)
-    =^  prod  gen  nomm-loop(nomm q.nomm)
-    :-  prod
-    ^+  gen
-    ?.  (all:ca cape.clue)
-      =>  !@  ska-verb  .
-          ~&  >>>  %fast-lost-clue  .
-      gen
-    =/  clue=*  data.clue
-    ?.  ?=([name=$@(@tas [@tas @]) dad=^ *] clue)
-      =>  !@  ska-verb  .
-          ~&  >>>  [%fast-bad-clue clue]  .
-      gen
-    =/  label=term
-      ?@  name.clue  name.clue
-      (cat 3 -.name.clue (scot %ud +.name.clue))
-    ::
-    ?.  ((sane %tas) label)
-      =>  !@  ska-verb  .
-          ~&  >>>  fast-insane-label+label  .
-      gen
-    ?~  parent=(fast-parent dad.clue)
-      =>  !@  ska-verb  .
-          ~&  >>>  fast-bad-clue-parent+[label clue]  .
-      gen
-    ?~  u.parent
-      ::  root registration
-      ::
-      ?.  (all:ca cape.prod)
-        =>  !@  ska-verb  .
-            ~&  >>>  %fast-lost-root  .
-        gen
-      %=  gen
-        core  (~(put ju core.gen) ~[label] prod)
-        root  (~(put ju root.gen) data.prod ~[label])
-      ==
-    ::  child core registration
-    ::
-    =/  axis=@  u.u.parent
-    ?.  =(3 (cap axis))
-      =>  !@  ska-verb  .
-          ~&  >>>  fast-weird-axis+[label axis]  .
-      gen
-    =/  batt  (pull:so prod 2)
-    ?.  (all:ca cape.batt)
-      =>  !@  ska-verb  .
-          ~&  >>>  fast-lost-batt+label  .
-      gen
-    ?.  ?=(^ data.batt)
-      =>  !@  ska-verb  .
-          ~&  >>>  fast-atom-batt+[label data.batt]  .
-      gen
-    =/  fore  (pull:so prod axis)
-    =/  past=(list path)
-      %~  tap  in
-      %-  %~  uni  in
-          ::  root registrations
-          ::
-          ?.  (all:ca cape.fore)  ~
-          (~(get ju root.gen) data.fore)
-      ::  parent core registrations
-      ::
-      =/  batt-fore  (pull:so fore 2)
-      ?.  &((all:ca cape.batt-fore) ?=(^ data.batt-fore))  ~
-      (~(get ju batt.gen) data.batt-fore)
-    ::
-    |-  ^+  gen
-    =*  past-loop  $
-    ?~  past
-      =>  !@  ska-verb  .
-          ~&  >>  missed-parent+label  .
-      gen(miss &)
-    =/  pax=path  [label i.past]
-    =/  socks  ~(tap in (~(get ju core.gen) i.past))
-    |-  ^+  gen
-    =*  sock-loop  $
-    ?~  socks
-      =>  !@  ska-verb  .
-          ~&  >>  missed-path+label  .
-      past-loop(past t.past)
-    ?.  (huge:so i.socks fore)  sock-loop(socks t.socks)
-    =/  template=sock
-      ::  put the parent into [formula *] sock
-      ::
-      (darn:so [[& |] data.batt ~] axis i.socks)
-    ::
+  ?.  (all:ca cape.clue)
     =>  !@  ska-verb  .
-        ~&  >  [%matched pax]  .
-    %=  gen
-      core  (~(put ju core.gen) pax template)
-      batt  (~(put ju batt.gen) data.batt pax)
-    ==
+        ~&  >>>  %fast-lost-clue  .
+    gen
+  =/  clue=*  data.clue
+  ?.  ?=([name=$@(@tas [@tas @]) dad=^ *] clue)
+    =>  !@  ska-verb  .
+        ~&  >>>  [%fast-bad-clue clue]  .
+    gen
+  =/  label=term
+    ?@  name.clue  name.clue
+    (cat 3 -.name.clue (scot %ud +.name.clue))
   ::
-      [%12 *]
-    =.  gen  +:nomm-loop(nomm p.nomm)
-    =.  gen  +:nomm-loop(nomm q.nomm)
-    [*sock gen]
-  ==  
+  ?.  ((sane %tas) label)
+    =>  !@  ska-verb  .
+        ~&  >>>  fast-insane-label+label  .
+    gen
+  ?~  parent=(fast-parent dad.clue)
+    =>  !@  ska-verb  .
+        ~&  >>>  fast-bad-clue-parent+[label clue]  .
+    gen
+  ?~  u.parent
+    ::  root registration
+    ::
+    ?.  (all:ca cape.prod)
+      =>  !@  ska-verb  .
+          ~&  >>>  %fast-lost-root  .
+      gen
+    =/  root-batt=*  data:(pull:so prod 2)
+    ?.  ?=(^ root-batt)
+      =>  !@  ska-verb  .
+          ~&  >>>  fast-atom-root+[label data.prod]  .
+      gen
+    %=  gen
+      core  (~(put ju core.gen) ~[label] prod)
+      root  (~(put ju root.gen) data.prod ~[label])
+      arms  (index-arms root-batt ~[label] arms.gen)
+    ==
+  ::  child core registration
+  ::
+  =/  axis=@  u.u.parent
+  ?.  =(3 (cap axis))
+    =>  !@  ska-verb  .
+        ~&  >>>  fast-weird-axis+[label axis]  .
+    gen
+  =/  batt  (pull:so prod 2)
+  ?.  (all:ca cape.batt)
+    =>  !@  ska-verb  .
+        ~&  >>>  fast-lost-batt+label  .
+    gen
+  ?.  ?=(^ data.batt)
+    =>  !@  ska-verb  .
+        ~&  >>>  fast-atom-batt+[label data.batt]  .
+    gen
+  =/  fore  (pull:so prod axis)
+  =/  past=(list path)
+    %~  tap  in
+    %-  %~  uni  in
+        ::  root registrations: check the noun before the cape, which can
+        ::  be big
+        ::
+        ?.  (~(has by root.gen) data.fore)  ~
+        ?.  (all:ca cape.fore)  ~
+        (~(get ju root.gen) data.fore)
+    ::  parent core registrations
+    ::
+    =/  batt-fore  (pull:so fore 2)
+    ?.  &((all:ca cape.batt-fore) ?=(^ data.batt-fore))  ~
+    (~(get ju batt.gen) data.batt-fore)
+  ::
+  |-  ^+  gen
+  =*  past-loop  $
+  ?~  past
+    =>  !@  ska-verb  .
+        ~&  >>  missed-parent+label  .
+    gen(miss &)
+  =/  pax=path  [label i.past]
+  =/  socks  ~(tap in (~(get ju core.gen) i.past))
+  |-  ^+  gen
+  =*  sock-loop  $
+  ?~  socks
+    =>  !@  ska-verb  .
+        ~&  >>  missed-path+label  .
+    past-loop(past t.past)
+  ?.  (huge:so i.socks fore)  sock-loop(socks t.socks)
+  =/  template=sock
+    ::  put the parent into [formula *] sock
+    ::
+    (darn:so [[& |] data.batt ~] axis i.socks)
+  ::
+  =>  !@  ska-verb  .
+      ~&  >  [%matched pax]  .
+  %=  gen
+    core  (~(put ju core.gen) pax template)
+    batt  (~(put ju batt.gen) data.batt pax)
+    arms  (index-arms data.batt pax arms.gen)
+  ==
+::  Index the nodes of a battery that +cole-match visits (the battery itself,
+::  its arms, and the subtrees of arms it descends into) under the path of a
+::  registered core. A battery is indexed once per path.
+::
+++  index-arms
+  |=  [batt=^ pax=path arms=(jug ^ path)]
+  ^+  arms
+  ?:  (~(has ju arms) batt pax)  arms
+  |-  ^+  arms
+  =.  arms  (~(put ju arms) batt pax)
+  ?.  ?=([^ *] batt)  arms
+  =.  arms  $(batt -.batt)
+  ?.  ?=(^ +.batt)  arms
+  $(batt +.batt)
 ::  Assumes finalized (fixed point).
 ::
 ++  prune-callgraph
@@ -1302,8 +1232,13 @@
 ::  of a core template that its subject fits. Produces the ring of the arm.
 ::
 ++  cole-match
-  |=  [b=bell core=(jug path sock)]
+  ~%  %cole-match  ..ride  ~
+  |=  [b=bell core=(jug path sock) arms=(jug ^ path)]
   ^-  (unit ring)
+  ::  only the paths of cores whose battery contains the formula can match
+  ::
+  =/  cands=(set path)  (~(get ju arms) fol.b)
+  ?:  =(~ cands)  ~
   |-  ^-  (unit ring)
   =*  path-loop  $
   ?~  core  ~
@@ -1313,6 +1248,7 @@
     ?^  l  l
     path-loop(core r.core)
   ::
+  ?.  (~(has in cands) p.n.core)  ~
   =/  templates=(set sock)  q.n.core
   |-  ^-  (unit @)
   =*  template-loop  $
@@ -1344,6 +1280,7 @@
 ::  keep it.
 ::
 ++  ska-cole-update
+  ~%  %ska-cole-update  ..ride  ~
   |=  [lon=long-ska new-bells=(set bell) new-cores=(jug path sock)]
   ^-  long-ska
   =*  cole  cole.jets.lon
@@ -1356,7 +1293,7 @@
     %-  ~(rep in new-bells)
     |=  [b=bell c=_cole]
     ?:  (~(has by call.c) b)  c
-    ?~  r=(cole-match b core.jets.lon)  c
+    ?~  r=(cole-match b core.jets.lon arms.jets.lon)  c
     (put b u.r c)
   ::
   ?:  =(~ new-cores)  lon
@@ -1364,7 +1301,7 @@
     %-  ~(rep by code.lon)
     |=  [[b=bell *] c=_cole]
     ?:  (~(has by call.c) b)  c
-    ?~  r=(cole-match b new-cores)  c
+    ?~  r=(cole-match b new-cores arms.jets.lon)  c
     (put b u.r c)
   lon
 ::  Reestablish the bell <--> ring mapping from scratch. +ska-poke keeps it up
@@ -1375,29 +1312,6 @@
   ^-  long-ska
   =.  cole.jets.lon  [~ ~]
   (ska-cole-update lon ~(key by code.lon) core.jets.lon)
-::
-++  dif-so
-  |=  [a=sock b=sock]
-  ^-  (list (pair @ (lest (pair @ ?(%lost %data)))))
-  =*  res  ,(list (pair @ (lest (pair @ ?(%lost %data)))))
-  =/  rev  1
-  |-  ^-  res
-  ?:  |(?=(^ cape.a) ?=(^ cape.b))
-    %:  weld
-      $(a (hed:so a), b (hed:so b), rev (peg rev 2))
-      $(a (tel:so a), b (tel:so b), rev (peg rev 3))
-    ==
-  ?:  ?=(%| cape.a)  ~
-  ?:  ?=(%| cape.b)  ~[[rev ~[[1 %lost]]]]
-  =/  rel  1
-  =-  ?~  -  ~  ~[[rev -]]
-  |-  ^-  (list (pair @ ?(%lost %data)))
-  ?:  =(data.a data.b)  ~
-  ?.  &(?=(^ data.a) ?=(^ data.b))  ~[[rel %data]]
-  %:  weld
-    $(data.a -.data.a, data.b -.data.b, rel (peg rel 2))
-    $(data.a +.data.a, data.b +.data.b, rel (peg rel 3))
-  ==
 ::
 ++  norm-so
   |=  s=sock
@@ -1441,49 +1355,11 @@
   |=  [[bus=sock fol=^] lon=long-ska]
   ^-  [bell long-ska]
   =/  root-identity=identity  [bus fol]
-  =/  g=callgraph  -:(ska-callgraph root-identity memo.final.lon)
+  =/  [g=callgraph =regs]
+    (ska-callgraph root-identity memo.final.lon [root core batt arms]:jets.lon)
   ::
   =/  pruned=callgraph  (prune-callgraph g root-identity `graph.final.lon)
   =.  graph.final.lon  (~(uni by graph.final.lon) pruned)
-  ::  Product of a function by bell, for +get-fast-regs, which masks the parts
-  ::  captured from the subject with the subject at the callsite. Functions
-  ::  with the same bell agree on the product outside of the captured parts,
-  ::  so any of them will do.
-  ::
-  =/  =bell-prod
-    =<  $  ~%  %poke-bell-prod  ..ride  ~  |.
-    %-  ~(rep by graph.final.lon)
-    |=  [[id=identity d=datum] acc=bell-prod]
-    =/  b=bell  [less-code.d fol.id]
-    ?:  (~(has by acc) b)  acc
-    (~(put by acc) b prod.d map.d)
-  ::
-  =>  !@  check-bell-prod  .
-      =*  dot  .
-      =<  dot
-      %-  ~(rep by graph.final.lon)
-      |=  [[id=identity d=datum] acc=bell-prod]
-      =/  b=bell  [less-code.d fol.id]
-      =;  prod=[sock spring]
-        ?~  have=(~(get by acc) b)  (~(put by acc) b prod)
-        ?.  =(prod u.have)
-          ?.  =(`sock`-.prod `sock`-.u.have)
-            ~|  (dif-so -.prod -.u.have)
-            !!
-          ~|  [+.prod +.u.have]
-          !!
-        acc
-      ::
-      %-  normalize-prod
-      :_  map.d
-      |-  ^-  sock
-      ?~  map.d  prod.d
-      ?@  map.d  |+~
-      %-  knit:so
-      [ $(prod.d (hed:so prod.d), map.d -.map.d)
-        $(prod.d (tel:so prod.d), map.d +.map.d)
-      ]
-  ::
   =/  root-datum=datum  (~(got by pruned) root-identity)
   =/  [bg=(jug bell bell) bg-rev=(jug bell bell)]
     (simple-bell-graph-and-reversed pruned)
@@ -1563,31 +1439,10 @@
     ::
     acc
   =/  root-bell=bell  [less-code.root-datum fol]
-  =/  [root=(jug * path) core=(jug path sock) batt=(jug ^ path)]
-    =<  $  ~%  %poke-jets-loop  ..ride  ~  |.
-    =/  queu=callgraph
-      %-  ~(rep by pruned)
-      |=  [[id=identity d=datum] acc=callgraph]
-      ?.  (has-fast nomm.d)  acc
-      (~(put by acc) id d)
-    =/  gen  [queu=queu jets=[=_root =_core =_batt]:jets.lon]
-    |-  ^+  jets.gen
-    =;  [queu1=callgraph jets1=_[root core batt]:jets.lon]
-      ?:  =(jets.gen jets1)  jets.gen
-      ?:  =(queu1 ~)  jets1
-      $(gen [queu1 jets1])
-    ::
-    %-  ~(rep by queu.gen)
-    |=  [[id=identity d=datum] acc=_`_gen`[~ jets.gen]]
-    =^  miss=?  jets.acc
-      (get-fast-regs [more.id nomm.d] graph.final.lon bell-prod jets.acc)
-    :_  jets.acc
-    ?.  miss  queu.acc
-    (~(put by queu.acc) id d)
-  ::
   :-  root-bell
-  =/  new-cores=(jug path sock)  ((dif-ju core) core.jets.lon)
-  =.  lon  lon(root.jets root, core.jets core, batt.jets batt)
+  =/  new-cores=(jug path sock)  ((dif-ju core.regs) core.jets.lon)
+  =.  jets.lon
+    jets.lon(root root.regs, core core.regs, batt batt.regs, arms arms.regs)
   (ska-cole-update lon ~(key by just-code) new-cores)
 ::  produces data about a function
 ::  pure: no crashes + no hints excepts %fast (call to it could be omitted)
@@ -1952,14 +1807,21 @@
 ++  ska-callgraph
   ~%  %ska-callgraph  ..ride  ~
   !.
-  |=  [[bus=sock fol=^] memo-final=memo]
-  ^-  (list callgraph)
+  |=  [[bus=sock fol=^] memo-final=memo reg=regs]
+  ^-  [callgraph regs]
   =|  st=ska-state
+  =.  regs.st  reg
   =<  =/  res  (analyze [bus fol] st)
       =>  !@  ska-verb  .
-          ~&  [%ska-callgraph functions+~(wyt by g.st.res) runs+runs.st.res]
+          ~&  :*  %ska-callgraph
+                  functions+~(wyt by g.st.res)
+                  runs+runs.st.res
+                  passes+passes.st.res
+                  late-runs+late-runs.st.res
+                  fast-misses+misses.st.res
+              ==
           .
-      [g.st.res ~]
+      [g.st.res regs.st.res]
   |%
   ::  Analyze a function that is not in the graph yet, and the functions it
   ::  calls. Produces the lowest DFS number of a function in progress reachable
@@ -1997,22 +1859,48 @@
     ::  root after all, and the component stays on the stack for the real root
     ::  to iterate.
     ::
+    ::  A member is re-run only if one of its callees changed in the previous
+    ::  pass (or in the DFS, for the first pass): the data a run reads are the
+    ::  entries of its callees, so a member whose callees did not change would
+    ::  produce the same entry again.
+    ::
+    =/  pass=@  1
+    =|  dirty=(set identity)
     |-  ^-  [@ ska-state]
     =*  pass-loop  $
     =/  members=(list identity)  (above id stk.st)
-    =^  [low=@ changed=?]  st
-      |-  ^-  [[@ ?] ska-state]
-      ?~  members  [[index |] st]
+    =.  passes.st  +(passes.st)
+    =^  [low=@ changed=(set identity)]  st
+      |-  ^-  [[@ (set identity)] ska-state]
+      ?~  members  [[index ~] st]
+      ?.  |(=(1 pass) (~(has in dirty) i.members))  $(members t.members)
+      =?  late-runs.st  (gth pass 1)  +(late-runs.st)
       =^  [low-m=@ back-m=? changed-m=?]  st
         (run i.members (~(got by order.st) i.members) st)
-      ?:  (lth low-m index)  [[low-m |] st]
-      =^  [low-t=@ changed-t=?]  st  $(members t.members)
-      [[(min low-m low-t) |(changed-m changed-t)] st]
+      ?:  (lth low-m index)  [[low-m ~] st]
+      =^  [low-t=@ changed-t=(set identity)]  st  $(members t.members)
+      :_  st
+      :-  (min low-m low-t)
+      ?.(changed-m changed-t (~(put in changed-t) i.members))
     ?:  (lth low index)  [low st]
-    ::  another pass if a member changed or new members joined
+    ::  new members (found in this pass) count as changed: they were seen in
+    ::  progress, as an empty entry, by the members that called them
     ::
-    ?:  |(changed !=((lent members) (lent (above id stk.st))))  pass-loop
-    [next.st (pop id st)]
+    =/  members-now=(list identity)  (above id stk.st)
+    =/  was=(set identity)  (~(gas in *(set identity)) members)
+    =.  changed
+      %-  ~(gas in changed)
+      (skip members-now ~(has in was))
+    ?:  =(~ changed)  [next.st (pop id st)]
+    %=  pass-loop
+      pass  +(pass)
+      dirty
+        %-  ~(gas in *(set identity))
+        %+  skim  members-now
+        |=  m=identity
+        %-  ~(any in callees:(git-g g.st m))
+        |=(callee-entry (~(has in changed) id))
+    ==
   ::  functions on the stack above and including .id, latest first
   ::
   ++  above
@@ -2053,7 +1941,7 @@
     =/  fol  fol.id
     =/  sub=sock-anno  [bus 1]
     =*  fol-result
-      $:  [=nomm pro=sock-anno]
+      $:  [=nomm pro=sock-anno saf=?]
           want=cape
           indi=cape
           callees=(set callee-entry)
@@ -2096,47 +1984,43 @@
     =/  seat=(unit spot)  ~
     =/  memo-key=(unit *)  ~
     =/  virt-call=?  |
-    ^-  [[=nomm prod=sock-anno] gen=_gen]
+    ::  saf: the formula is safe: it does not crash and has no important side
+    ::  effect, i.e. it is a constant, a cons of safe formulas or a %spot/%mean
+    ::  hint on one. Its product is a constant with cape exactly & and no
+    ::  provenance, as if it were a Nock 1: a workaround for our cape cons
+    ::  denormalization breaking code like !:([%9 2 %0 1]). (This used to be a
+    ::  separate check, +safe, at every node, re-walking the constant prefix
+    ::  of every node under it.)
+    ::
+    ^-  [[=nomm prod=sock-anno saf=?] gen=_gen]
     =<  $
     ~%  %fol-loop  ..ride  ~
-    |.  ^-  [[=nomm prod=sock-anno] _gen]
+    |.  ^-  [[=nomm prod=sock-anno saf=?] _gen]
     =*  fol-loop  $
-    ?^  x=(safe fol)
-      ::  This is a workaround for our cape cons denormalization breaking code
-      ::  like !:([%9 2 %0 1])
-      ::
-      ::  If a formula is "safe" it is equivalent to Nock 1 with respect to
-      ::  limiting the set of available formulas
-      ::
-      [[nomm.u.x [&+prod.u.x ~]] gen]
     =*  dunno  *sock-anno
-    ?+    fol  [[0+0 dunno] gen]
+    ?+    fol  [[0+0 dunno |] gen]
         [p=^ q=^]
       =^  l  gen  fol-loop(fol p.fol)
       =^  r  gen  fol-loop(fol q.fol)
-      =<  $
-      ~%  %nock-cons  ..fol-loop  ~
-      |.
       :_  gen
       :-  [nomm.l nomm.r]
+      ?:  &(saf.l saf.r)
+        [[&+[data.sock.prod.l data.sock.prod.r] ~] &]
+      :_  |
       :-  (knit:so sock.prod.l sock.prod.r)
       (cons:pi src.prod.l src.prod.r)
     ::
         [%0 p=@]
-      =<  $
-      ~%  %nock-0  ..fol-loop  ~
-      |.
       :_  gen
       :-  [%0 p.fol]
+      :_  |
       ?:  =(0 p.fol)  dunno
       ?:  =(1 p.fol)  sub
       :-  (pull:so sock.sub p.fol)
       (slot:pi src.sub p.fol)
     ::
         [%1 p=*]
-      :_  gen
-      :-  [%1 p.fol]
-      [&+p.fol ~]
+      [[[%1 p.fol] [&+p.fol ~] &] gen]
     ::
         [%2 p=^ q=^]
       ::  memo-key might have been set by %11 %memo which redirected us here.
@@ -2146,10 +2030,7 @@
       ::  
       =^  s  gen  fol-loop(fol p.fol)
       =^  f  gen  fol-loop(fol q.fol)
-      ^-  [[nomm sock-anno] _gen]
-      =<  $
-      ~%  %nock-2  ..ride  ~
-      |.
+      ^-  [[nomm sock-anno ?] _gen]
       ::  Here we check that the mask is precisely & instead of cheking with
       ::  +all:ca to prevent analyzing through Nock evals with consed up formulas.
       ::  This makes the set of all callable nouns finite, guaranteeing termina-
@@ -2160,7 +2041,7 @@
         ::  indirect call
         ::
         =.  indi.gen  (uni:ca indi.gen (distribute & src.prod.f))
-        [[[%2 nomm.s nomm.f ~] dunno] gen]
+        [[[%2 nomm.s nomm.f ~] dunno |] gen]
       =/  fol-new=^  data.sock.prod.f
       ::  Inline leaf formulas. Allows to analyze through formulas whose products
       ::  are gates, also speeds up analysis. Should be safe to comment out the
@@ -2172,11 +2053,11 @@
         =^  inline  gen  fol-loop(fol fol-new, sub prod.s)
         :_  gen
         :-  [%7 nomm.s nomm.inline]
-        prod.inline
+        [prod.inline |]
       =<  $
       ~%  %nock-2-direct-non-inlined  ..ride  ~
       |.
-      ^-  [[nomm sock-anno] _gen]
+      ^-  [[nomm sock-anno ?] _gen]
       =^  [id-there=identity dat-there=datum]  gen
         =/  id-there=identity  [sock.prod.s fol-new]
         |-  ^-  [[identity datum] _gen]
@@ -2226,29 +2107,24 @@
       =.  indi.gen  (uni:ca indi.gen (distribute indi.dat-there src.prod.s))
       =.  callees.gen  (~(put in callees.gen) seat id-there)
       :_  gen
-      ^-  [nomm sock-anno]
+      ^-  [nomm sock-anno ?]
       :-  [%2 nomm.s nomm.f `[[less-code.dat-there fol-new] memo-key]]
+      :_  |
       :-  prod.dat-there
       (compose:pi map.dat-there src.prod.s)
     ::
         [%3 p=^]
       =^  p  gen  fol-loop(fol p.fol)
-      :_  gen
-      :-  [%3 nomm.p]
-      dunno
+      [[[%3 nomm.p] dunno |] gen]
     ::
         [%4 p=^]
       =^  p  gen  fol-loop(fol p.fol)
-      :_  gen
-      :-  [%4 nomm.p]
-      dunno
+      [[[%4 nomm.p] dunno |] gen]
     ::
         [%5 p=^ q=^]
       =^  p  gen  fol-loop(fol p.fol)
       =^  q  gen  fol-loop(fol q.fol)
-      :_  gen
-      :-  [%5 nomm.p nomm.q]
-      dunno
+      [[[%5 nomm.p nomm.q] dunno |] gen]
     ::
         [%6 p=^ q=^ r=^]
       =^  p  gen  fol-loop(fol p.fol)
@@ -2256,14 +2132,12 @@
       =^  r  gen  fol-loop(fol r.fol)
       :_  gen
       :-  [%6 nomm.p nomm.q nomm.r]
-      (double-int prod.q prod.r)
+      [(double-int prod.q prod.r) |]
     ::
         [%7 p=^ q=^]
       =^  p  gen  fol-loop(fol p.fol)
       =^  q  gen  fol-loop(fol q.fol, sub prod.p)
-      :_  gen
-      :-  [%7 nomm.p nomm.q]
-      prod.q
+      [[[%7 nomm.p nomm.q] prod.q |] gen]
     ::
         [%8 p=^ q=^]
       fol-loop(fol [%7 [p.fol 0+1] q.fol])
@@ -2272,14 +2146,12 @@
       fol-loop(fol [%7 q.fol %2 [%0 1] %0 p.fol])
     ::
         [%10 [a=@ don=^] rec=^]
-      ?:  =(0 a.fol)  [[0+0 dunno] gen]
+      ?:  =(0 a.fol)  [[0+0 dunno |] gen]
       =^  don  gen  fol-loop(fol don.fol)
       =^  rec  gen  fol-loop(fol rec.fol)
-      =<  $
-      ~%  %nock-10  ..fol-loop  ~
-      |.
       :_  gen
       :-  [%10 [a.fol nomm.don] nomm.rec]
+      :_  |
       :-  (darn:so sock.prod.rec a.fol sock.prod.don)
       (edit:pi src.prod.rec a.fol src.prod.don)
     ::
@@ -2292,9 +2164,12 @@
       =^  q  gen  fol-loop(fol q.fol)
       :_  gen
       :-  [%11 p.fol nomm.q q.fol]
-      prod.q
+      [prod.q &(?=(?(%spot %mean) p.fol) saf.q)]
     ::
         [%11 [a=@ h=^] f=^]
+      ::  a safe hint formula leaves the area of the function alone
+      ::
+      =/  area-was=(unit spot)  area.gen
       =?  .  &(=(a.fol %spot) =(1 -.h.fol))
         =*  dot  .
         =<  $
@@ -2310,21 +2185,28 @@
       ::  valid %memo generates a new call to an uninlineable function to be
       ::  memoized
       ::
-      ?:  &(?=(%memo a.fol) ?=(^ (safe h.fol)))
-        ::  ?=(^ (safe h.fol)) implies fully known sock.prod.h
+      ?:  &(?=(%memo a.fol) saf.h)
+        ::  saf.h implies fully known sock.prod.h
         ::
         fol-loop(fol [%2 [%0 1] 1 f.fol], memo-key `data.sock.prod.h)
       =^  f  gen  fol-loop(fol f.fol)
+      ::  %fast: register the core in execution order
+      ::
+      =?  gen  ?=(%fast a.fol)
+        =^  miss=?  regs.st.gen
+          (register-fast sock.prod.h sock.prod.f regs.st.gen)
+        ?.  miss  gen
+        gen(misses.st +(misses.st.gen))
+      =/  saf=?  &(?=(?(%spot %mean) a.fol) saf.h saf.f)
+      =?  area.gen  saf  area-was
       :_  gen
       :-  [%11 [a.fol nomm.h] nomm.f f.fol]
-      prod.f
+      [prod.f saf]
     ::
         [%12 p=^ q=^]
       =^  p  gen  fol-loop(fol p.fol)
       =^  q  gen  fol-loop(fol q.fol)
-      :_  gen
-      :-  [%12 nomm.p nomm.q]
-      dunno
+      [[[%12 nomm.p nomm.q] dunno |] gen]
     ==
   --
 --

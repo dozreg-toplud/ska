@@ -208,7 +208,7 @@
   (g v) 
 ::
 =/  l=(list callgraph)  ~>  %bout
-  (ska-callgraph:nock-compilation [&+sub fol] ~)
+  [-:(ska-callgraph:nock-compilation [&+sub fol] ~ [~ ~ ~]) ~]
 :: ?:  |
 ::   noun+(lent l)
 :: ?:  |

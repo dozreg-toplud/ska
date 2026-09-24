@@ -37,6 +37,6 @@
     code+`@ux`(mug code.long-ska)
     graph-keys+`@ux`(mug (sort (turn ~(tap by g) |=([i=identity *] (mug i))) lth))
     graph+`@ux`(mug g)
-    jets+`@ux`(mug jets.long-ska)
+    jets+`@ux`(mug [root core batt cole]:jets.long-ska)
     root+`@ux`(mug func)
 ==
