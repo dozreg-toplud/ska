@@ -14,7 +14,7 @@ Initially based on [@zorp-corp/sword](https://github.com/zorp-corp/sword), this 
 
 ### Papers/presentations about the latest implementation
 
-  - [Nock Compilation (Subject Knowledge Analysis II)](https://urbitsystems.tech/issue/v03-i02)
+  - [Nock Compilation (Subject Knowledge Analysis II)](https://urbitsystems.tech/article/v03-i02/nock-compilation-subject-knowledge-analysis-ii)
 
 ### Historical articles/videos:
   - [First presentation of SKA by Edward Amsden @ Lambdaconf](https://www.youtube.com/watch?v=8vtnmiEN-r4) 
