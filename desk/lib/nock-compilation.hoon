@@ -82,7 +82,17 @@
 ::
 ::  compiler verbosity
 ::
- =/  comp-verb  ~
+=/  comp-verb  ~
+::
+=/  print-ska
+  |=  [pri=@ print=(trap tank)]
+  !@  ska-verb  same
+  %*($ slog pri pri, a ~[$:print])
+::
+=/  print-comp
+  |=  [pri=@ print=(trap tank)]
+  !@  comp-verb  same
+  %*($ slog pri pri, a ~[$:print])
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
@@ -1000,24 +1010,20 @@
     ?~  heds
       cold-loop(q t.q)
     ?.  =(fol.i.heds -.fol.i.q)
-      =>  !@  ska-verb  .
-          ~&  >>  %join-head-wrong-fol  .
+      %-  (print-ska 2 |.(%join-head-wrong-fol))
       hed-loop(heds t.heds)
     ?.  (huge:so less.i.heds sub.i.q)
-      =>  !@  ska-verb  .
-          ~&  >>  %join-head-wrong-sub  .
+      %-  (print-ska 2 |.(%join-head-wrong-sub))
       hed-loop(heds t.heds)
     =/  tels  lets
     |-  ^-  long-ska
     =*  tel-loop  $
     ?~  tels  hed-loop(heds t.heds)
     ?.  =(fol.i.tels +.fol.i.q)
-      =>  !@  ska-verb  .
-          ~&  >>  %join-tail-wrong-fol  .
+      %-  (print-ska 2 |.(%join-tail-wrong-fol))
       tel-loop(tels t.tels)
     ?.  (huge:so less.i.tels sub.i.q)
-      =>  !@  ska-verb  .
-        ~&  >>  %join-tail-wrong-sub  .
+      %-  (print-ska 2 |.(%join-tail-wrong-sub))
       tel-loop(tels t.tels)
     =/  join  (pack:so less.i.heds less.i.tels)
     =.  call.cole.jets.lon  (~(put by call.cole.jets.lon) [join fol.i.q] p)
@@ -1047,22 +1053,19 @@
         |=([p=path q=(set sock)] [(lent p) p q])
       |=([l=[len=@ *] r=[len=@ *]] (lth len.l len.r))
     |=  [[len=@ p=path q=(set sock)] =_b]
-    =>  !@  ska-verb  .
-        ~&  >  [%enqueu p]  .
+    %-  (print-ska 1 |.(>[%enqueu p]<))
     %-  ~(rep in q)
     |=  [s=sock =_b]
     =/  batt  (pull:so s 2)
     ?.  (all:ca cape.batt)
-      =>  !@  ska-verb  .
-          ~&  >>>  [%cold-miss-batt p]  .
+      %-  (print-ska 3 |.(>[%cold-miss-batt p]<))
       b
     =*  f  data.batt
     =/  ax=@  2
     |-  ^+  b
     ?:  ?=([@ *] f)  [[s f `[| p ax]] b]
     ?.  ?=([^ ^] f)
-      =>  !@  ska-verb  .
-          ~&  >>>  %strange-formula  .
+      %-  (print-ska 3 |.(%strange-formula))
       b
     =.  b  $(f -.f, ax (peg ax 2))
     =.  b  $(f +.f, ax (peg ax 3))
@@ -1081,37 +1084,31 @@
   =/  gen  [miss=| reg]
   ^+  gen
   ?.  (all:ca cape.clue)
-    =>  !@  ska-verb  .
-        ~&  >>>  %fast-lost-clue  .
+    %-  (print-ska 3 |.(%fast-lost-clue))
     gen
   =/  clue=*  data.clue
   ?.  ?=([name=$@(@tas [@tas @]) dad=^ *] clue)
-    =>  !@  ska-verb  .
-        ~&  >>>  [%fast-bad-clue clue]  .
+    %-  (print-ska 3 |.(>[%fast-bad-clue clue]<))
     gen
   =/  label=term
     ?@  name.clue  name.clue
     (cat 3 -.name.clue (scot %ud +.name.clue))
   ::
   ?.  ((sane %tas) label)
-    =>  !@  ska-verb  .
-        ~&  >>>  fast-insane-label+label  .
+    %-  (print-ska 3 |.(>fast-insane-label+label<))
     gen
   ?~  parent=(fast-parent dad.clue)
-    =>  !@  ska-verb  .
-        ~&  >>>  fast-bad-clue-parent+[label clue]  .
+    %-  (print-ska 3 |.(>fast-bad-clue-parent+[label clue]<))
     gen
   ?~  u.parent
     ::  root registration
     ::
     ?.  (all:ca cape.prod)
-      =>  !@  ska-verb  .
-          ~&  >>>  %fast-lost-root  .
+      %-  (print-ska 3 |.(%fast-lost-root))
       gen
     =/  root-batt=*  data:(pull:so prod 2)
     ?.  ?=(^ root-batt)
-      =>  !@  ska-verb  .
-          ~&  >>>  fast-atom-root+[label data.prod]  .
+      %-  (print-ska 3 |.(>fast-atom-root+[label data.prod]<))
       gen
     %=  gen
       core  (~(put ju core.gen) ~[label] prod)
@@ -1122,17 +1119,14 @@
   ::
   =/  axis=@  u.u.parent
   ?.  =(3 (cap axis))
-    =>  !@  ska-verb  .
-        ~&  >>>  fast-weird-axis+[label axis]  .
+    %-  (print-ska 3 |.(>fast-weird-axis+[label axis]<))
     gen
   =/  batt  (pull:so prod 2)
   ?.  (all:ca cape.batt)
-    =>  !@  ska-verb  .
-        ~&  >>>  fast-lost-batt+label  .
+    %-  (print-ska 3 |.(>fast-lost-batt+label<))
     gen
   ?.  ?=(^ data.batt)
-    =>  !@  ska-verb  .
-        ~&  >>>  fast-atom-batt+[label data.batt]  .
+    %-  (print-ska 3 |.(>fast-atom-batt+[label data.batt]<))
     gen
   =/  fore  (pull:so prod axis)
   =/  past=(list path)
@@ -1153,16 +1147,14 @@
   |-  ^+  gen
   =*  past-loop  $
   ?~  past
-    =>  !@  ska-verb  .
-        ~&  >>  missed-parent+label  .
+    %-  (print-ska 2 |.(>missed-parent+label<))
     gen(miss &)
   =/  pax=path  [label i.past]
   =/  socks  ~(tap in (~(get ju core.gen) i.past))
   |-  ^+  gen
   =*  sock-loop  $
   ?~  socks
-    =>  !@  ska-verb  .
-        ~&  >>  missed-path+label  .
+    %-  (print-ska 2 |.(>missed-path+label<))
     past-loop(past t.past)
   ?.  (huge:so i.socks fore)  sock-loop(socks t.socks)
   =/  template=sock
@@ -1170,8 +1162,7 @@
     ::
     (darn:so [[& |] data.batt ~] axis i.socks)
   ::
-  =>  !@  ska-verb  .
-      ~&  >  [%matched pax]  .
+  %-  (print-ska 1 |.(>[%matched pax]<))
   %=  gen
     core  (~(put ju core.gen) pax template)
     batt  (~(put ju batt.gen) data.batt pax)
@@ -1353,6 +1344,7 @@
   =/  sccs=(list (set bell))
     =<  $  ~%  %poke-tarjan  ..ride  ~  |.
     (flop (tarjan bg))
+  ::
   =^  just-code=(map bell nomm)  lon
     =<  $  ~%  %poke-just-code  ..ride  ~  |.
     =|  visit=(set identity)
@@ -1423,11 +1415,13 @@
       (~(jab by m) b lens)
     ::
     acc
+  ::
   =/  root-bell=bell  [less-code.root-datum fol]
   :-  root-bell
   =/  new-cores=(jug path sock)  ((dif-ju core.regs) core.jets.lon)
   =.  jets.lon
     jets.lon(root root.regs, core core.regs, batt batt.regs, arms arms.regs)
+  ::
   (ska-cole-update lon ~(key by just-code) new-cores)
 ::  produces data about a function
 ::  pure: no crashes + no hints excepts %fast (call to it could be omitted)
@@ -1524,54 +1518,6 @@
       %3  $(sock (tel:so sock), axe (mas axe))
     ==
   --
-::  callers first
-::
-++  tarjan1
-  ~%  %tarjan  ..ride  ~
-  |*  vertex=mold
-  |=  g=(jug vertex vertex)
-  =*  gen
-    $:  idx=@                     ::  index generator
-        vis=(map vertex @)        ::  numbered vertices
-        low=(map vertex @)        ::  lowest strongly connected incl. itself
-        stk=(list vertex)         ::  call stack
-        cur=(set vertex)          ::  call stack as a set
-        fin=(list (set vertex))   ::  finalized SCCs
-    ==
-  ::
-  =<  fin  ^-  gen
-  %-  ~(rep by g)
-  |=  [[v=vertex kids=(set vertex)] acc=gen]
-  =*  strongly-connect  .
-  ?:  (~(has by vis.acc) v)  acc
-  =^  index  idx.acc  [idx.acc +(idx.acc)]
-  =.  acc
-    %_  acc
-      vis  (~(put by vis.acc) v index)
-      low  (~(put by low.acc) v index)
-      stk  [v stk.acc]
-      cur  (~(put in cur.acc) v)
-    ==
-  ::
-  =.  acc
-    %-  ~(rep in kids)
-    |=  [kid=vertex =_acc]
-    ?^  kid-idx=(~(get by vis.acc) kid)
-      ?.  (~(has in cur.acc) kid)  acc
-      acc(low (~(jab by low.acc) v (curr min u.kid-idx)))
-    =.  acc  (strongly-connect [kid (~(get ju g) kid)] acc)
-    acc(low (~(jab by low.acc) v (curr min (~(got by low.acc) kid))))
-  ::
-  ?.  =(index (~(got by low.acc) v))  acc
-  =;  [done=(set vertex) =_acc]  acc(fin [done fin.acc])
-  =|  out=(set vertex)
-  |-  ^+  [out acc]
-  =*  pop-loop  $
-  =^  pop=vertex  stk.acc  ?~(stk.acc !! stk.acc)
-  =.  cur.acc  (~(del in cur.acc) pop)
-  =.  out  (~(put in out) pop)
-  ?:  =(v pop)  [out acc]
-  pop-loop
 ::
 ++  simple-bell-graph-and-reversed
   ~%  %simple-bell-graph  ..ride  ~
@@ -1587,6 +1533,7 @@
   =/  callee-bell=bell  [less-code.u.callee-datum fol.id.callee]
   :-  (~(put ju acc) caller-bell callee-bell)
   (~(put ju acc-r) callee-bell caller-bell)
+::  callers first
 ::
 ++  tarjan
   |*  g=(jug * *)
@@ -1638,105 +1585,6 @@
   =.  out  (~(put in out) pop)
   ?:  =(v pop)  [out acc]
   pop-loop
-::
-::  to incrementally construct transitive closure of a graph:
-::    1. get the set of all id's whose immediate children changed ("seed");
-::    2. walk the reversed graph (unified with the prev version just in
-::       case), assembling the set of all id's which could reach the set
-::       from step 1 ("affected");
-::    3. Get the reversed subgraph of affected vertices: new-reversed from and
-::       to affected;
-::    5. Get SCCs of the reversed subgraph in toposorted order (caller SCCs
-::       first);
-::    6. For each SCC compute "closure", assign it to each member of SCC
-::    7. To compute "closure": union over every immediate child of every
-::       member of the SCC: {child} if child in SCC, else
-::       {child} U TCB[child]
-::
-++  update-transitive
-  ~%  %update-transitive  ..ride  ~
-  |=  $:  prev-trans=jug-id
-          prev-graph=jug-id
-          new-graph=jug-id
-          prev-reversed=jug-id
-          new-reversed=jug-id
-      ==
-  ^-  jug-id
-  =/  seeds=(set identity)
-    %-  ~(rep in (~(uni in ~(key by prev-graph)) ~(key by new-graph)))
-    |=  [id=identity acc=(set identity)]
-    ?:  =((~(get ju prev-graph) id) (~(get ju new-graph) id))
-      acc
-    (~(put in acc) id)
-  ::
-  =/  uno-reversed=jug-id
-    %-  (~(uno by new-reversed) prev-reversed)
-    |=  [identity a=(set identity) b=(set identity)]
-    (~(uni in a) b)
-  ::
-  =/  affected=(set identity)
-    =/  sinks=(list identity)  ~(tap in seeds)
-    =|  out=(set identity)
-    |-  ^-  (set identity)
-    ?:  =(~ sinks)  out
-    =.  out  (~(gas in out) sinks)
-    %=    $
-        sinks
-      %-  skip  :_  ~(has in out)
-      %~  tap  in
-      %+  roll  sinks
-      |=  [id=identity acc=(set identity)]
-      (~(uni in acc) (~(get ju uno-reversed) id))
-    ==
-  ::
-  =/  affected-dep-subgraph=jug-id
-    %-  ~(rep in affected)
-    |=  [id=identity acc=jug-id]
-    %+  ~(put by acc)  id
-    (~(int in affected) (~(get ju new-reversed) id))
-  ::
-  ::  callers first
-  ::
-  =/  sccs=(list (set identity))  (tarjan affected-dep-subgraph)
-  =<  $
-  ~%  %closures-update-prev-trans  ..ride  ~
-  |.
-  %+  roll  sccs
-  |=  [scc=(set identity) acc-ju=_prev-trans]
-  =/  closure=(set identity)
-    %-  ~(rep in scc)
-    |=  [member=identity acc-se=(set identity)]
-    %-  ~(rep in (~(get ju new-graph) member))
-    |=  [child=identity =_acc-se]
-    ?:  (~(has in scc) child)  (~(put in acc-se) child)
-    %-  ~(uni in (~(put in acc-se) child))
-    (~(get ju acc-ju) child)
-  ::
-  %-  ~(rep in scc)
-  |=  [member=identity =_acc-ju]  
-  (~(put by acc-ju) member closure)
-::
-++  check-inverses
-  |=  [dir=jug-id inv=jug-id]
-  ^-  ?
-  =/  edges=(list (pair identity identity))
-    %-  ~(rep by dir)
-    |=  [[k=identity v=(set identity)] acc=(list (pair identity identity))]
-    %-  ~(rep in v)
-    |=  [i=identity =_acc]
-    [[k i] acc]
-  ::
-  =.  inv
-    %+  roll  edges
-    |=  [[i=identity k=identity] acc=_inv]
-    (~(del ju acc) k i)
-  ::
-  |-  ^-  ?
-  ?~  inv  &
-  ?&  =(~ q.n.inv)
-      $(inv l.inv)
-      $(inv r.inv)
-  ==
 ::  Most specific generalization of two capes. Disagreeing parts are replaced
 ::  with & to capture/demand more. Note that this has different behavior and
 ::  intent compared to +msg-sock
@@ -1766,10 +1614,6 @@
   =/  rest=(unit path)  $(hed +.hed)
   ?~  rest  ~
   `[-.hed u.rest]
-::
-::  Analysis of the call graph rooted at a function. Produces a list for
-::  historical reasons: the callgraph is its only element.
-::
 ::  The graph is explored depth-first: a direct call to a function that is not
 ::  in the graph yet analyzes that function right away, before the caller
 ::  proceeds, so a function that is not on a cycle is analyzed exactly once,
@@ -1779,11 +1623,7 @@
 ::  component finishes, the component is reanalyzed in passes until no member
 ::  changes. A pass may discover new functions, which join the component if
 ::  they call back into it. A call to a function on the stack is a recursive
-::  call: its product is erased and only its code requirement is used, the
-::  same pessimization as for a call merged into a function in progress.
-::  Code requirements only grow, so the passes converge (Kleene iteration
-::  over the products would not: the least fixed point of a product like
-::  [1 $] does not exist).
+::  call: its product is erased and only its code requirement is used.
 ::
 ::  Functions popped off the stack are final and get memoized in .done, so
 ::  that a later call to the same formula with a subject that provides what a
@@ -1797,15 +1637,15 @@
   =|  st=ska-state
   =.  regs.st  reg
   =<  =/  res  (analyze [bus fol] st)
-      =>  !@  ska-verb  .
-          ~&  :*  %ska-callgraph
-                  functions+~(wyt by g.st.res)
-                  runs+runs.stats.st.res
-                  passes+passes.stats.st.res
-                  late-runs+late-runs.stats.st.res
-                  fast-misses+misses.stats.st.res
-              ==
-          .
+      %-  %+  print-ska  0
+          |.  %-  sell  !>
+          :*  %ska-callgraph
+              functions+~(wyt by g.st.res)
+              runs+runs.stats.st.res
+              passes+passes.stats.st.res
+              late-runs+late-runs.stats.st.res
+              fast-misses+misses.stats.st.res
+          ==
       [g.st.res regs.st.res]
   |%
   ::  Analyze a function that is not in the graph yet, and the functions it
@@ -1825,12 +1665,13 @@
       st(g (~(put by g.st) id d), done (put:mi done.st id d))
     =/  index=@uxsite  next.st
     =.  st
-      %_  st
+      %=  st
         next   +(index)
         order  (~(put by order.st) id index)
         stk    [id stk.st]
         g      (~(put by g.st) id *datum)
       ==
+    ::
     =^  [low=@uxsite back=? changed=?]  st  (run id index st)
     ?.  =(low index)  [low st]
     ::  .id is the root of a strongly connected component: everything above it
@@ -1857,34 +1698,39 @@
     =.  passes.stats.st  +(passes.stats.st)
     =^  [low=@uxsite changed=(set identity)]  st
       |-  ^-  [[@ (set identity)] ska-state]
+      =*  member-loop  $
       ?~  members  [[index ~] st]
-      ?.  |(=(1 pass) (~(has in dirty) i.members))  $(members t.members)
+      ?.  |(=(1 pass) (~(has in dirty) i.members))
+        member-loop(members t.members)
       =?  late-runs.stats.st  (gth pass 1)  +(late-runs.stats.st)
       =^  [low-m=@uxsite back-m=? changed-m=?]  st
         (run i.members (~(got by order.st) i.members) st)
+      ::
       ?:  (lth low-m index)  [[low-m ~] st]
-      =^  [low-t=@uxsite changed-t=(set identity)]  st  $(members t.members)
+      =^  [low-t=@uxsite changed-t=(set identity)]  st
+        member-loop(members t.members)
+      ::
       :_  st
       :-  (min low-m low-t)
       ?.(changed-m changed-t (~(put in changed-t) i.members))
+    ::
     ?:  (lth low index)  [low st]
     ::  new members (found in this pass) count as changed: they were seen in
     ::  progress, as an empty entry, by the members that called them
     ::
     =/  members-now=(list identity)  (above id stk.st)
-    =/  was=(set identity)  (~(gas in *(set identity)) members)
-    =.  changed
-      %-  ~(gas in changed)
-      (skip members-now ~(has in was))
+    =/  was=(set identity)  (silt members)
+    =.  changed  (~(gas in changed) (skip members-now ~(has in was)))
     ?:  =(~ changed)  [next.st (pop id st)]
-    %=  pass-loop
-      pass  +(pass)
-      dirty
-        %-  ~(gas in *(set identity))
-        %+  skim  members-now
-        |=  m=identity
-        %-  ~(any in callees:(git-g g.st m))
-        |=(callee-entry (~(has in changed) id))
+    %=    pass-loop
+        pass  +(pass)
+    ::
+        dirty
+      %-  silt
+      %+  skim  members-now
+      |=  m=identity
+      %-  ~(any in callees:(git-g g.st m))
+      |=(callee-entry (~(has in changed) id))
     ==
   ::  functions on the stack above and including .id, latest first
   ::
@@ -1899,27 +1745,23 @@
   ++  pop
     |=  [id=identity st=ska-state]
     ^-  ska-state
-    ::  no ?~ on stk.st: it would refine the type of .st, and .st could not
-    ::  be edited with an empty stack anymore
+    =^  top=identity  stk.st
+      ?~  stk.st  ~|(%ska-stack !!)
+      stk.st
     ::
-    =/  top=identity  ?~(stk.st ~|(%ska-stack !!) i.stk.st)
-    =/  rest=(list identity)  ?~(stk.st ~|(%ska-stack !!) t.stk.st)
-    =.  st
-      %_  st
-        stk    rest
-        order  (~(del by order.st) top)
-        done   (put:mi done.st top (git-g g.st top))
-      ==
+    =.  order.st  (~(del by order.st) top)
+    =.  done.st   (put:mi done.st top (git-g g.st top))
     ?:  =(top id)  st
-    $(st st)
+    $
   ::  One analysis pass over the formula of .id, updating its entry in the
-  ::  graph. Produces its lowlink, whether it called a function in progress,
-  ::  and whether the entry changed in a way that affects its callers.
+  ::  graph. Produces its lowlink, whether it called its transitive caller,
+  ::  and whether the entry changed in a way that could affect its immediate
+  ::  callers.
   ::
   ++  run
     ~%  %ska-callgraph-iteration  ..ride  ~
     |=  [id=identity index=@uxsite st=ska-state]
-    ^-  [[low=@uxsite back=? changed=?] st=ska-state]
+    ^-  [[low=@uxsite back=? changed=?] ska-state]
     =.  runs.stats.st  +(runs.stats.st)
     =/  data=datum  (git-g g.st id)
     =/  bus=sock  more.id
@@ -1947,12 +1789,15 @@
           ?&  =([less-code prod map]:data-new [less-code prod map]:data)
               !=(indi.data-new indi.data)
           ==
-        ::  if new datum only differs in indi.data-new,
-        ::  turn disagreeing parts into %.y so that we converge
+        ::  if new datum only differs in indi.data-new when it comes to data
+        ::  that could affect the immediate callers, turn disagreeing parts into
+        ::  %.y so that we converge
         ::
         (msg-ca indi.data-new indi.data)
+      ::
       =/  changed=?
         !=([less-code prod map indi]:data-new [less-code prod map indi]:data)
+      ::
       :-  [low back changed]
       st(g (~(put by g.st) id data-new))
     ::
@@ -1966,6 +1811,7 @@
               st=ska-state
           ==
       [| | ~ ~ index | st]
+    ::
     =/  seat=(unit spot)  ~
     =/  memo-key=(unit *)  ~
     =/  virt-call=?  |
@@ -1973,9 +1819,7 @@
     ::  effect, i.e. it is a constant, a cons of safe formulas or a %spot/%mean
     ::  hint on one. Its product is a constant with cape exactly & and no
     ::  provenance, as if it were a Nock 1: a workaround for our cape cons
-    ::  denormalization breaking code like !:([%9 2 %0 1]). (This used to be a
-    ::  separate check, +safe, at every node, re-walking the constant prefix
-    ::  of every node under it.)
+    ::  denormalization breaking code like !:([%9 2 %0 1]).
     ::
     ^-  [[=nomm prod=sock-anno saf=?] gen=_gen]
     =<  $
@@ -2016,11 +1860,11 @@
       =^  s  gen  fol-loop(fol p.fol)
       =^  f  gen  fol-loop(fol q.fol)
       ^-  [[nomm sock-anno ?] _gen]
-      ::  Here we check that the mask is precisely & instead of cheking with
-      ::  +all:ca to prevent analyzing through Nock evals with consed up formulas.
-      ::  This makes the set of all callable nouns finite, guaranteeing termina-
-      ::  tion of the algo when paired with homeomorphic embedding check in recur-
-      ::  sive calls
+      ::  Here we check that the mask is precisely %& instead of cheking with
+      ::  +all:ca to prevent analyzing through Nock evals with consed up
+      ::  formulas. This makes the set of all callable nouns finite,
+      ::  guaranteeing termination of the algo when paired with homeomorphic
+      ::  embedding check in recursive calls
       ::
       ?.  &(=(& cape.sock.prod.f) ?=(^ data.sock.prod.f) !virt-call)
         ::  indirect call
@@ -2028,10 +1872,10 @@
         =.  indi.gen  (uni:ca indi.gen (distribute & src.prod.f))
         [[[%2 nomm.s nomm.f ~] dunno |] gen]
       =/  fol-new=^  data.sock.prod.f
-      ::  Inline leaf formulas. Allows to analyze through formulas whose products
-      ::  are gates, also speeds up analysis. Should be safe to comment out the
-      ::  condition and the first branch - useful during debugging to rule out
-      ::  stuff.
+      ::  Inline leaf formulas. Allows to analyze through formulas whose
+      ::  products are gates, also speeds up analysis. Should be safe to comment
+      ::  out the condition and the first branch - useful during debugging to
+      ::  rule out stuff.
       ::
       ?:  &(?=(~ memo-key) (inlineable fol-new))
         =.  want.gen  (uni:ca want.gen (distribute & src.prod.f))
@@ -2048,14 +1892,13 @@
         |-  ^-  [[identity datum] _gen]
         =*  resolve  $
         ?^  d=(~(get by g.st.gen) id-there)
-          ::  in the graph. A function in progress: recursive call, use its
-          ::  code requirement but not its product
+          ::  Exact identity match. If in order: recursive call, use its code
+          ::  requirement but not its product
           ::
           ?~  ord=(~(get by order.st.gen) id-there)  [[id-there u.d] gen]
           :-  [id-there u.d(prod |+~, map ~)]
           gen(low (min low.gen u.ord), back &)
-        ::  a finished function with the same formula whose subject
-        ::  requirement is satisfied here
+        ::  finalized memo hit
         ::
         ?^  m=(git:mi done.st.gen fol-new sock.prod.s)
           [u.m gen]
@@ -2149,12 +1992,9 @@
       =^  q  gen  fol-loop(fol q.fol)
       :_  gen
       :-  [%11 p.fol nomm.q q.fol]
-      [prod.q &(?=(?(%spot %mean) p.fol) saf.q)]
+      [prod.q |]
     ::
         [%11 [a=@ h=^] f=^]
-      ::  a safe hint formula leaves the area of the function alone
-      ::
-      =/  area-was=(unit spot)  area.gen
       =?  .  &(=(a.fol %spot) =(1 -.h.fol))
         =*  dot  .
         =<  $
@@ -2180,10 +2020,11 @@
       =?  gen  ?=(%fast a.fol)
         =^  miss=?  regs.st.gen
           (register-fast sock.prod.h sock.prod.f regs.st.gen)
+        ::
         ?.  miss  gen
         gen(misses.stats.st +(misses.stats.st.gen))
+      ::
       =/  saf=?  &(?=(?(%spot %mean) a.fol) saf.h saf.f)
-      =?  area.gen  saf  area-was
       :_  gen
       :-  [%11 [a.fol nomm.h] nomm.f f.fol]
       [prod.f saf]
@@ -2667,8 +2508,7 @@
     ?:  done  map-local1
     =.  w-new  (~(int in w-new) scc)
     ?:  =(~ w-new)  fixpoint-compilation(w scc, map-local map-local1, done &)
-    =>  !@  comp-verb  .
-        ~&  %fixpoint-compilation  .
+    %-  (print-comp 0 |.(%fixpoint-compilation))
     fixpoint-compilation(w w-new, map-local map-local1)
   ::
   %-  ~(rep in w)

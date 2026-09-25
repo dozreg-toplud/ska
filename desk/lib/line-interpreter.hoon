@@ -234,16 +234,16 @@
     =/  f  -.args
     =>  [=_f +.sam con]  ~+
     =/  =straight
-      ~>  %bout.[0 %compile]
-      ~&  %compile-start
+      :: ~>  %bout.[0 %compile]
+      :: ~&  %compile-start
       ?:  f
         %-  ~(got by (compile-scc scc rev [code jets]:long-ska scc-map jets-hot))
         bell
       -:(compile-unary bell scc rev [code jets]:long-ska scc-map jets-hot)
     ::
-    ~&  %optimize-start
-    ~&  `@ux`(mug bell)
-    ~>  %bout.[0 %optimize]
+    :: ~&  %optimize-start
+    :: ~&  `@ux`(mug bell)
+    :: ~>  %bout.[0 %optimize]
     (optimize -)
   ::
   =/  bob  (~(got by blocks.straight) 0w0)
