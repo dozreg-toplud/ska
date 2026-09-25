@@ -59,10 +59,10 @@
 ::    fixed point loop for callees that are in the same SCC as the caller.
 ::
 ::  Table of contents:
-::    Call graph construction:  line 523
-::    Compilation:              line 2215
-::    IR optimization passes:   line 5409
-::    Interactive core:         line 6384
+::    Call graph construction:  line 530
+::    Compilation:              line 2041
+::    IR optimization passes:   line 5234
+::    Interactive core:         line 6209
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
