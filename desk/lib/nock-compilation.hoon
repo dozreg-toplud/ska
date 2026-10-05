@@ -627,7 +627,7 @@
       area=(unit spot)
   ==
 ::
-+$  callgraph  (map identity datum)asdasdasdf
++$  callgraph  (map identity datum)
 ::  A graph of functions
 ::
 +$  jug-id  (jug identity identity)
@@ -1350,6 +1350,7 @@
 ::  produces data about a function
 ::  pure: no crashes + no hints excepts %fast (call to it could be omitted)
 ::  total: no crashes (stacktrace boundaries around them could be omitted)
+::  by this point socks are never %void
 ::
 ++  eval-finalized
   =*  hint-pure  ,?(%fast %spot %mean)
