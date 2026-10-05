@@ -59,10 +59,10 @@
 ::    fixed point loop for callees that are in the same SCC as the caller.
 ::
 ::  Table of contents:
-::    Call graph construction:  line 553
-::    Compilation:              line 2145
-::    IR optimization passes:   line 5339
-::    Interactive core:         line 6314
+::    Call graph construction:  line 532
+::    Compilation:              line 2045
+::    IR optimization passes:   line 5239
+::    Interactive core:         line 6214
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
@@ -658,6 +658,7 @@
           passes=@ud          ::    number of passes over components
           late-runs=@ud       ::    analyses in the second and later passes
           misses=@ud          ::    child registrations without a parent
+          culled=@ud          ::    members dropped from components
   ==  ==
 ::  memoization map
 ::  formula -> less-code -> entry
@@ -766,12 +767,15 @@
 ::  Check if a call to "id-kid" is a recursive call to one of the functions
 ::  in progress, i.e. its transitive callers (the analysis stack, latest
 ::  caller first): a function with the same formula whose code requirement is
-::  satisfied by id-kid's subject. Also check if id-kid's subject
-::  homeomorphically embeds the subject of one of them, masking out the accu-
-::  mulating part with +msg-sock. This is done to stop infinite chains of
-::  dynamically generated functions. Produces the identity to call instead:
-::  %merge, a function in progress (the caller patches its product for
-::  id-kid's subject, +patch-prod), or %gen, a generalized identity.
+::  satisfied by id-kid's subject, unless id-kid's subject knows more than
+::  that function's own subject where it failed to get code for a direct call
+::  (.indi): a separate analysis of id-kid could make such a call direct.
+::  Also check if id-kid's subject homeomorphically embeds the subject of one
+::  of them, masking out the accumulating part with +msg-sock. This is done to
+::  stop infinite chains of dynamically generated functions. Produces the
+::  identity to call instead: %merge, a function in progress (the caller
+::  patches its product for id-kid's subject, +patch-prod), or %gen, a
+::  generalized identity.
 ::
 ::  Chains before HE firing are theoretically finite but could be V A S T (see
 ::  TREE(3) to get the sense of scale); however in testing I could not construct
@@ -788,7 +792,11 @@
   ?~  stk  ~
   ?.  =(fol.id-kid fol.i.stk)  $(stk t.stk)
   =/  d=datum  (git-g g i.stk)
-  ?:  (huge:so less-code.d more.id-kid)  `[%merge i.stk]
+  ?:  ?&  (huge:so less-code.d more.id-kid)
+          %+  huge:so  (app:ca indi.d more.id-kid)
+          (app:ca indi.d more.i.stk)
+      ==
+    `[%merge i.stk]
   ?:  (he-sock more.id-kid more.i.stk)
     `[%gen [(msg-sock more.id-kid more.i.stk) fol.id-kid]]
   $(stk t.stk)
@@ -840,9 +848,14 @@
     =/  entries=(list [* id=identity d=datum])  ~(tap by (gut m f))
     |-  ^-  (unit [identity datum])
     ?~  entries  ~
+    ::  a hit: the subject provides the code that the function used, and
+    ::  knows no more than the function's own subject where it failed to get
+    ::  code for a direct call (same rule as the merge in +recursive-call)
+    ::
     ?:  ?&  (huge:so less-code.d.i.entries s)
         ::
-            ?=([%| *] (app:ca indi.d.i.entries s))
+            %+  huge:so  (app:ca indi.d.i.entries s)
+            (app:ca indi.d.i.entries more.id.i.entries)
         ==
       =/  p  (patch-prod [prod map]:d.i.entries s)
       `[id.i.entries d.i.entries(prod sock.p, map src.p)]
@@ -1569,6 +1582,7 @@
               passes+passes.stats.st.res
               late-runs+late-runs.stats.st.res
               fast-misses+misses.stats.st.res
+              culled+culled.stats.st.res
           ==
       [g.st.res regs.st.res]
   |%
@@ -1638,13 +1652,21 @@
       :-  (min low-m low-t)
       ?.(changed-m changed-t (~(put in changed-t) i.members))
     ::
-    ?:  (lth low index)  [low st]
+    ?.  =(low index)  [low st]
+    ::  members that .id does not reach anymore are dropped
+    ::
+    =.  st  (cull id st)
     ::  new members (found in this pass) count as changed: they were seen in
     ::  progress, as an empty entry, by the members that called them
     ::
     =/  members-now=(list identity)  (above id stk.st)
     =/  was=(set identity)  (silt members)
-    =.  changed  (~(gas in changed) (skip members-now ~(has in was)))
+    =.  changed
+      %-  silt
+      %+  skim  members-now
+      |=  m=identity
+      |((~(has in changed) m) !(~(has in was) m))
+    ::
     ?:  =(~ changed)  [next.st (pop id st)]
     %=    pass-loop
         pass  +(pass)
@@ -1664,6 +1686,40 @@
     ?~  stk  ~|(%ska-stack !!)
     ?:  =(id i.stk)  [id ~]
     [i.stk $(stk t.stk)]
+  ::  Forget the members of the component of .id that are not reachable from
+  ::  .id anymore: a later pass can stop calling a function that an earlier
+  ::  one found, e.g. when a call becomes indirect or gets another subject.
+  ::  Such a function can still call members, so its entry is not final and
+  ::  must not be left in the graph, where it would pass for a finished one.
+  ::  Nothing else refers to it: every function above .id on the stack was
+  ::  found after .id, by a member. If it is called again, it is analyzed
+  ::  afresh.
+  ::
+  ++  cull
+    |=  [id=identity st=ska-state]
+    ^-  ska-state
+    =/  members=(set identity)  (silt (above id stk.st))
+    =/  live=(set identity)
+      =/  q=(list identity)  ~[id]
+      =|  live=(set identity)
+      |-  ^+  live
+      ?~  q  live
+      ?:  |((~(has in live) i.q) !(~(has in members) i.q))  $(q t.q)
+      %=  $
+        live  (~(put in live) i.q)
+        q     %+  weld  t.q
+              (turn ~(tap in callees:(git-g g.st i.q)) |=(callee-entry id))
+      ==
+    ::
+    =/  dead=(set identity)  (~(dif in members) live)
+    ?:  =(~ dead)  st
+    =.  culled.stats.st  (add culled.stats.st ~(wyt in dead))
+    %=  st
+      stk    (skip stk.st ~(has in dead))
+      moved  (~(dif in moved.st) dead)
+      order  (~(rep in dead) |=([i=identity o=_order.st] (~(del by o) i)))
+      g      (~(rep in dead) |=([i=identity g=_g.st] (~(del by g) i)))
+    ==
   ::  pop a finished component off the stack, memoizing its members
   ::
   ++  pop
