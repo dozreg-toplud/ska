@@ -104,6 +104,7 @@
   %+  murn  ~(tap by code.long-ska)
   |=  [b=bell c=code-entry]
   ?.  =((mug fol.b) i.t.mugs)  ~
+  ?>  ?=(^ less.b)
   `[`@ux`(mug b) (lent (yea:ca cape.less.b)) (turn (sites nomm.c) crip)]
 ?:  =(mugs ~[0x1])
   %+  murn  ~(tap by code.long-ska)
@@ -120,6 +121,7 @@
   ?~  area  ~
   =/  line  p.p.q.u.area
   ?.  &((gte line i.t.mugs) (lte line i.t.t.mugs))  ~
+  ?>  ?=(^ less.b)
   =/  n  (count-2 nomm.c)
   `[`@ux`(mug b) line+line direct+direct.n indirect+indirect.n (lent (yea:ca cape.less.b))]
 ?:  =(~ mugs)
@@ -142,6 +144,7 @@
   |=  [c=callee-entry acc=_acc]
   ?.  =(b (~(gut by id-bell) id.c *bell))  acc
   [[seat.c `@ux`(mug fol.id)] acc]
+?>  ?=(^ less.b)
 :-  ~
 :*  m
     `@ux`(mug fol.b)

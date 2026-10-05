@@ -46,5 +46,6 @@
 %+  murn  ~(tap by g)
 |=  [id=identity d=datum]
 ?.  (has-atom fol.id)  ~
+?>  &(?=(^ less-code.d) ?=(^ prod.d))
 =/  n  (count-2 nomm.d)
 `[`@ux`(mug fol.id) (lent (yea:ca cape.less-code.d)) n (lent (yea:ca cape.prod.d))]

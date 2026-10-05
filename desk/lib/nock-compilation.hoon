@@ -59,10 +59,10 @@
 ::    fixed point loop for callees that are in the same SCC as the caller.
 ::
 ::  Table of contents:
-::    Call graph construction:  line 530
-::    Compilation:              line 2041
-::    IR optimization passes:   line 5234
-::    Interactive core:         line 6209
+::    Call graph construction:  line 553
+::    Compilation:              line 2145
+::    IR optimization passes:   line 5339
+::    Interactive core:         line 6314
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
@@ -106,22 +106,19 @@
 ::  other denormalizations) makes the set of formulas finite, allowing the
 ::  analysis to converge.
 ::
-::  During the analysis a cape has one more leaf, %wild: the top element,
-::  no noun at all, the product of a computation with no terminating
-::  execution (so far). It is the neutral element of the intersection of
-::  products (+double-int, +purr) and absorbing for everything else: a cell
-::  with a wild part is wild, a subject that is wild has no code and no data.
-::  The products of functions in progress start wild, see +ska-callgraph.
-::  Wild never reaches the finalized graph: +final-sock turns it into unknown
-::  when a function is popped.
-::  Normalization: [wild x] -> wild, [x wild] -> wild
-::
-+$  cape  $~(| $@(?(%wild ?) [cape cape]))
++$  cape  $~(| $@(? [cape cape]))
 ::  masked noun. Normalization:  "|" leaves of the cape must correspond to 0
 ::  leaves in the data
 ::
+::  %void is the top element: no noun at all, the product of a computation
+::  with no terminating execution (so far). It is the neutral element of the
+::  intersection of products (+double-int, +purr) and absorbing for everything
+::  else: a cell with a void part is void, a void subject has no code and no
+::  data. The products of functions in progress start void, see
+::  +ska-callgraph. Void never reaches the finalized graph: it turns into
+::  unknown when a function is popped.
 ::
-+$  sock  $~(|+~ [=cape data=*])
++$  sock  $~(|+~ $@(%void [=cape data=*]))
 ::  Provenance of data from the subject of a Nock computation we are in.
 ::    ~: does not come from the subject.
 ::    @: comes from that axis of the subject
@@ -156,7 +153,7 @@
     ~/  %all
     |=  c=cape
     ^-  ?
-    ?@  c  ?=(%& c)
+    ?@  c  c
     ~+
     &($(c -.c) $(c +.c))
   ::
@@ -167,7 +164,6 @@
     |=  [h=cape t=cape]
     ^-  cape
     =*  cons  +<
-    ?:  |(=(%wild h) =(%wild t))  %wild
     ?:  &(?=(%| h) ?=(%| t))  |
     cons
   ::  list of known axes
@@ -179,9 +175,8 @@
     =/  axe  1
     |-  ^-  (list @)
     ?-  c
-      %|     ~
-      %wild  ~
-      %&     ~[axe]
+      %|  ~
+      %&  ~[axe]
       ^  (weld $(c -.c, axe (peg axe 2)) $(c +.c, axe (peg axe 3)))
     ==
   ::  intersection
@@ -192,14 +187,12 @@
     ^-  cape
     ?:  =(a b)  a
     ?-  a
-        %|     |
-        %wild  |
-        %&     b
+        %|  |
+        %&  b
         ^
       ?-  b
-          %|     |
-          %wild  |
-          %&     a
+          %|  |
+          %&  a
           ^   (con $(a -.a, b -.b) $(a +.a, b +.b))
       ==
     ==
@@ -209,9 +202,9 @@
     ~/  %app
     |=  [c=cape s=sock]
     ^-  sock
+    ?:  ?=(%void s)  s
     ?:  =(c cape.s)  s
-    ?:  =(%wild cape.s)  s
-    ?:  |(?=(%| c) ?=(%| cape.s) =(%wild c))  *sock
+    ?:  |(?=(%| c) ?=(%| cape.s))  *sock
     ?:  ?=(%& c)  s
     ~+
     %+  knit:so  $(s (hed:so s), c -.c)
@@ -224,14 +217,12 @@
     ^-  cape
     ?:  =(a b)  a
     ?-  a
-        %&     &
-        %|     b
-        %wild  b
+        %&  &
+        %|  b
         ^
       ?-  b
-          %&     &
-          %|     a
-          %wild  a
+          %&  &
+          %|  a
           ^   ~+((con $(a -.a, b -.b) $(a +.a, b +.b)))
       ==
     ==
@@ -242,7 +233,7 @@
     |=  [c=cape a=@]
     ^-  cape
     ?<  =(0 a)
-    ?:  |(?=(%| c) =(%wild c))  |
+    ?:  ?=(%| c)  |
     |-  ^-  cape
     ?:  =(1 a)  c
     ?-  (cap a)
@@ -255,7 +246,6 @@
     |=  [a=cape b=cape]
     ^-  cape
     ?:  =(a b)    |
-    ?:  |(=(%wild a) =(%wild b))  |
     ?:  ?=(%& b)  |
     ?:  ?=(%| b)  a
     ?:  ?=(%| a)  |
@@ -279,7 +269,6 @@
 ++  so
   ~%  %so  ..ride  ~
   |%
-  ++  sock-wild  ^-(sock [%wild 0])
   ::  Does b nest under a? i.e. is everything that is known by a also known
   ::  by b?
   ::
@@ -288,11 +277,11 @@
     |=  [one=sock two=sock]
     ^-  ?
     ?:  =(one two)  &
-    ?:  =(%wild cape.two)  &
-    ?:  =(%wild cape.one)  |
+    ?:  ?=(%void two)  &
+    ?:  ?=(%void one)  |
     ?@  data.one
       ?.  ?=(@ cape.one)  ~|  badone+one  !!
-      ?.  ?=(%& cape.one)  &
+      ?.  cape.one  &
       ?&(?=(%& cape.two) =(data.one data.two))
     ?@  data.two
       ?>  ?=(@ cape.two)
@@ -315,9 +304,9 @@
     |=  [s=sock axe=@]
     ^-  sock
     ?<  =(0 axe)
+    ?:  ?=(%void s)  s
     |-  ^-  sock
     ?:  =(1 axe)  s
-    ?:  =(%wild cape.s)  s
     ?:  |(?=(%| cape.s) ?=(@ data.s))
       *sock
     =+  [now lat]=[(cap axe) (mas axe)]
@@ -336,11 +325,11 @@
     ~/  %knit
     |=  [one=sock two=sock]
     ^-  sock
+    ?:  |(?=(%void one) ?=(%void two))  %void
     =*  l  cape.one
     =*  r  cape.two
     =/  cap  (con:ca l r)
     ?:  ?=(%| cap)  *sock
-    ?:  =(%wild cap)  sock-wild
     [cap data.one data.two]
   ::  head
   ::
@@ -348,7 +337,7 @@
     ~/  %hed
     |=  s=sock
     ^-  sock
-    ?:  =(%wild cape.s)  s
+    ?:  ?=(%void s)  s
     ?:  |(?=(%| cape.s) ?=(@ data.s))
       *sock
     ?@  cape.s  [& -.data.s]
@@ -359,7 +348,7 @@
     ~/  %tel
     |=  s=sock
     ^-  sock
-    ?:  =(%wild cape.s)  s
+    ?:  ?=(%void s)  s
     ?:  |(?=(%| cape.s) ?=(@ data.s))
       *sock
     ?@  cape.s  [& +.data.s]
@@ -372,8 +361,8 @@
     |=  [one=sock two=sock]
     ^-  sock
     ?:  =(one two)  one
-    ?:  =(%wild cape.one)  two
-    ?:  =(%wild cape.two)  one
+    ?:  ?=(%void one)  two
+    ?:  ?=(%void two)  one
     ?:  |(?=(%| cape.one) ?=(%| cape.two))  *sock
     ?:  |(?=(^ cape.one) ?=(^ cape.two))
       %+  knit  $(one (hed one), two (hed two))
@@ -391,8 +380,8 @@
     |=  [one=sock two=sock]
     ^-  sock
     ?:  =(one two)  one
-    ?:  =(%wild cape.one)  one
-    ?:  =(%wild cape.two)  two
+    ?:  ?=(%void one)  one
+    ?:  ?=(%void two)  two
     ?:  ?=(%| cape.one)  two
     ?:  ?=(%| cape.two)  one
     ::  unequal known data
@@ -409,11 +398,13 @@
     |=  [one=sock axe=@ two=sock]
     ^-  sock
     ?:  =(1 axe)  two
-    ?:  |(=(%wild cape.one) =(%wild cape.two))  sock-wild
-    ?:  &(?=(%| cape.one) ?=(%| cape.two))  *sock
+    ::  no ?= here: the loop below replaces .one, which must stay a sock
+    ::
+    ?:  |(=(%void one) =(%void two))  %void
+    ?:  &(?=([%| *] one) ?=([%| *] two))  *sock
     =|  acc=(list (pair ?(%2 %3) sock))
     |-  ^-  sock
-    ?.  |(=(1 axe) &(=(| cape.one) =(| cape.two)))
+    ?.  |(=(1 axe) &(?=([%| *] one) ?=([%| *] two)))
       ?-  (cap axe)
           %2  $(one (hed one), acc [[%2 (tel one)] acc], axe (mas axe))
           %3  $(one (tel one), acc [[%3 (hed one)] acc], axe (mas axe))
@@ -457,7 +448,7 @@
     ~/  %prune
     |=  [pin=spring cap=cape]
     ^-  cape
-    ?:  |(?=(%| cap) =(%wild cap))  |
+    ?:  ?=(%| cap)  |
     ?~  pin  |
     ~+
     ?@  pin  (pat:ca cap pin)
@@ -518,7 +509,7 @@
   |=  [c=cape s=spring]
   ^-  cape
   ?~  s  |
-  ?:  |(?=(%| c) =(%wild c))  |
+  ?:  ?=(%| c)  |
   ~+
   ?@  s  (pat:ca c s)
   =/  [p=cape q=cape]  ?@(c [& &] c)
@@ -532,8 +523,8 @@
   |=  [a=[=sock src=spring] b=[=sock src=spring]]
   ^-  [=sock src=spring]
   ?:  =(a b)  a
-  ?:  =(%wild cape.sock.a)  b
-  ?:  =(%wild cape.sock.b)  a
+  ?:  ?=(%void sock.a)  b
+  ?:  ?=(%void sock.b)  a
   ?:  |(?=(%| cape.sock.a) ?=(%| cape.sock.b))
     [*sock *spring]
   ?.  |(?=(^ cape.sock.a) ?=(^ cape.sock.b) ?=(^ src.a) ?=(^ src.b))
@@ -556,21 +547,6 @@
     ==
   ::
   [(knit:so sock.h sock.t) (cons:pi src.h src.t)]
-::  Finalize a sock: wild becomes unknown, denormalized [| |] collapses
-::
-++  final-sock
-  |=  s=sock
-  ^-  sock
-  ?-  cape.s
-    %&     [& data.s]
-    %|     |+~
-    %wild  |+~
-    ^      ~+
-           =/  h  $(s (hed:so s))
-           =/  t  $(s (tel:so s))
-           ?:  &(?=(%| cape.h) ?=(%| cape.t))  |+~
-           [[cape.h cape.t] data.h data.t]
-  ==
 --
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
@@ -660,7 +636,11 @@
 ::              another subject that provides less-code)
 ::    area: (approximate) location of the function's body
 ::
+::  Bunts to an entry of a function in progress that was not analyzed yet:
+::  it requires nothing and its product is void.
+::
 +$  datum
+  $~  [~ [%0 0] |+~ | [%void ~] ~]
   $:  callees=(set callee-entry)
       =nomm
       less-code=sock
@@ -693,6 +673,7 @@
       order=(map identity @uxsite)  ::  DFS numbers of the functions in progress
       stk=(list identity)     ::  functions in progress, latest first
       next=@uxsite            ::  next DFS number
+      moved=(set identity)    ::  functions whose product changed already
       =regs                   ::  %fast registrations so far
       $=  stats               ::  statistics for debugging
       $:  runs=@ud            ::    number of function analyses
@@ -761,6 +742,7 @@
   ^-  ?
   =*  h-e  .
   ?:  =(big smol)  &
+  ?:  |(?=(%void big) ?=(%void smol))  |
   ::  embedding never shrinks the cape
   ::
   ?:  (lth (cape-size cape.big) (cape-size cape.smol))  |
@@ -797,6 +779,8 @@
   ^-  sock
   =*  msg  .
   ?:  =(a b)  a
+  ?:  ?=(%void a)  b
+  ?:  ?=(%void b)  a
   ?:  |(?=(@ cape.a) ?=(@ cape.b))  |+~
   ~+
   %+  knit:so  (msg [-.cape -.data]:a [-.cape -.data]:b)
@@ -839,7 +823,7 @@
 ::  branches agree on it, Nock 3/4/5 produce unknown, and calls compose the
 ::  provenance of their products back onto the subject. This is what makes
 ::  memoization on the code requirement alone sound, and what a call merged
-::  into a function in progress sees of its (live: wild before the first
+::  into a function in progress sees of its (live: void before the first
 ::  run, then descending) product.
 ::
 ++  patch-prod
@@ -847,7 +831,7 @@
   |=  [pro=[=sock src=spring] new=sock]
   ^-  [=sock src=spring]
   ?:  =(~ src.pro)  pro
-  ?:  =(%wild cape.sock.pro)  pro
+  ?:  ?=(%void sock.pro)  pro
   ~+
   ?@  src.pro  [(pull:so new src.pro) src.pro]
   %-  knit-anno
@@ -858,6 +842,23 @@
   |=  [h=[=sock src=spring] t=[=sock src=spring]]
   ^-  [=sock src=spring]
   [(knit:so sock.h sock.t) (cons:pi src.h src.t)]
+::  Most specific generalization of two products: +msg-sock with provenance.
+::  Unlike +double-int it never looks below the capes: a known noun against
+::  a cell of known nouns is a disagreement, so the result is never bigger
+::  than either cape.
+::
+++  msg-anno
+  ~%  %msg-anno  ..ride  ~
+  |=  [a=[=sock src=spring] b=[=sock src=spring]]
+  ^-  [=sock src=spring]
+  ?:  =(a b)  a
+  ?:  ?=(%void sock.a)  b
+  ?:  ?=(%void sock.b)  a
+  ?:  |(?=(@ cape.sock.a) ?=(@ cape.sock.b))  [*sock *spring]
+  ~+
+  %+  knit-anno
+    $(a [(hed:so sock.a) (hed:pi src.a)], b [(hed:so sock.b) (hed:pi src.b)])
+  $(a [(tel:so sock.a) (tel:pi src.a)], b [(tel:so sock.b) (tel:pi src.b)])
 ::  Memoization core
 ::
 ++  mi
@@ -880,8 +881,7 @@
     ?~  entries  ~
     ?:  ?&  (huge:so less-code.d.i.entries s)
         ::
-            =/  c=cape  cape:(app:ca indi.d.i.entries s)
-            ?=(%| c)
+            ?=([%| *] (app:ca indi.d.i.entries s))
         ==
       =/  p  (patch-prod [prod map]:d.i.entries s)
       `[id.i.entries d.i.entries(prod sock.p, map src.p)]
@@ -1110,7 +1110,7 @@
     %-  ~(rep in q)
     |=  [s=sock =_b]
     =/  batt  (pull:so s 2)
-    ?.  (all:ca cape.batt)
+    ?.  &(?=(^ batt) (all:ca cape.batt))
       %-  (print-ska 3 |.(>[%cold-miss-batt p]<))
       b
     =*  f  data.batt
@@ -1138,7 +1138,7 @@
   ^+  gen
   ::  unreachable registration
   ::
-  ?:  |(=(%wild cape.clue) =(%wild cape.prod))  gen
+  ?:  |(?=(%void clue) ?=(%void prod))  gen
   ?.  (all:ca cape.clue)
     %-  (print-ska 3 |.(%fast-lost-clue))
     gen
@@ -1162,14 +1162,13 @@
     ?.  (all:ca cape.prod)
       %-  (print-ska 3 |.(%fast-lost-root))
       gen
-    =/  root-batt=*  data:(pull:so prod 2)
-    ?.  ?=(^ root-batt)
+    ?.  ?=([^ *] data.prod)
       %-  (print-ska 3 |.(>fast-atom-root+[label data.prod]<))
       gen
     %=  gen
       core  (~(put ju core.gen) ~[label] prod)
       root  (~(put ju root.gen) data.prod ~[label])
-      arms  (index-arms root-batt ~[label] arms.gen)
+      arms  (index-arms -.data.prod ~[label] arms.gen)
     ==
   ::  child core registration
   ::
@@ -1178,13 +1177,14 @@
     %-  (print-ska 3 |.(>fast-weird-axis+[label axis]<))
     gen
   =/  batt  (pull:so prod 2)
-  ?.  (all:ca cape.batt)
+  ?.  &(?=(^ batt) (all:ca cape.batt))
     %-  (print-ska 3 |.(>fast-lost-batt+label<))
     gen
   ?.  ?=(^ data.batt)
     %-  (print-ska 3 |.(>fast-atom-batt+[label data.batt]<))
     gen
   =/  fore  (pull:so prod axis)
+  ?>  ?=(^ fore)
   =/  past=(list path)
     %~  tap  in
     %-  %~  uni  in
@@ -1197,6 +1197,7 @@
     ::  parent core registrations
     ::
     =/  batt-fore  (pull:so fore 2)
+    ?.  ?=(^ batt-fore)  ~
     ?.  &((all:ca cape.batt-fore) ?=(^ data.batt-fore))  ~
     (~(get ju batt.gen) data.batt-fore)
   ::
@@ -1296,7 +1297,7 @@
   =/  axis=@  2
   |-  ^-  (unit @)
   =*  fol-loop  $
-  ?.  (all:ca cape.template-fol)  ~
+  ?.  &(?=(^ template-fol) (all:ca cape.template-fol))  ~
   ?:  =(data.template-fol fol.b)  `axis
   ?.  ?=([^ *] data.template-fol)  ~
   =/  h  fol-loop(template-fol (hed:so template-fol), axis (peg axis 2))
@@ -1349,12 +1350,12 @@
   |=  s=sock
   ^-  sock
   =*  norm-so  .
-  ?:  ?=(@ cape.s)  s
+  ?:  |(?=(%void s) ?=(@ cape.s))  s
   ~+
   =;  out=sock  =+(=(out s) out)
   =/  h=sock  (norm-so -.cape.s -.data.s)
   =/  t=sock  (norm-so +.cape.s +.data.s)
-  ?:  |(=(%wild cape.h) =(%wild cape.t))  sock-wild:so
+  ?:  |(?=(%void h) ?=(%void t))  %void
   :_  [data.h data.t]
   ?:  &(?=(? cape.h) =(cape.h cape.t))  cape.h
   [cape.h cape.t]
@@ -1569,7 +1570,7 @@
     ?<  =(0 axe)
     |-  ^-  ?
     ?:  =(1 axe)  &
-    ?:  ?=(%| cape.sock)  |
+    ?:  ?=([%| *] sock)  |
     ?-  (cap axe)
       %2  $(sock (hed:so sock), axe (mas axe))
       %3  $(sock (tel:so sock), axe (mas axe))
@@ -1680,19 +1681,20 @@
 ::  component finishes, the component is reanalyzed in passes until no member
 ::  changes. A pass may discover new functions, which join the component if
 ::  they call back into it. A call to a function on the stack is a recursive
-::  call. To the same identity it sees a wild product before the first run
+::  call. To the same identity it sees a void product before the first run
 ::  of the callee, which makes the callee's product start as the intersection
 ::  of its non-recursive branches, and the callee's product on later passes,
-::  forced to descend by intersection with the previous one (+run), so that
-::  the passes converge within a finite structure and the fixed point is
-::  sound: any terminating execution has a finite recursion depth, its
-::  results at depth k satisfy the product of pass k+1, and every pass is at
-::  least as known as the fixed point. A call to a function in progress with
-::  a different subject that satisfies its code requirement merges into it
-::  and sees its product patched for its own subject (+patch-prod), like a
-::  memo hit; this is what makes a state machine (a gate that returns its
-::  core after recursing on a changed sample) legible. Code requirements only
-::  grow, so the passes converge.
+::  forced to descend: by intersection with the previous one the first time
+::  it changes, by their most specific generalization afterwards (+run), so
+::  that the passes converge within the cape of the second product and the
+::  fixed point is sound: any terminating execution has a finite recursion
+::  depth, its results at depth k satisfy the product of pass k+1, and every
+::  pass is at least as known as the fixed point. A call to a function in
+::  progress with a different subject that satisfies its code requirement
+::  merges into it and sees its product patched for its own subject
+::  (+patch-prod), like a memo hit; this is what makes a state machine (a
+::  gate that returns its core after recursing on a changed sample) legible.
+::  Code requirements only grow, so the passes converge.
 ::
 ::  Functions popped off the stack are final and get memoized in .done, so
 ::  that a later call to the same formula with a subject that provides what a
@@ -1733,14 +1735,12 @@
       :-  next.st
       st(g (~(put by g.st) id d), done (put:mi done.st id d))
     =/  index=@uxsite  next.st
-    =/  init=datum  *datum
-    =.  prod.init  sock-wild:so
     =.  st
       %=  st
         next   +(index)
         order  (~(put by order.st) id index)
         stk    [id stk.st]
-        g      (~(put by g.st) id init)
+        g      (~(put by g.st) id *datum)
       ==
     ::
     =^  [low=@uxsite back=? changed=?]  st  (run id index st)
@@ -1821,10 +1821,10 @@
       stk.st
     ::
     =.  order.st  (~(del by order.st) top)
-    ::  a finished function: wild in its product becomes unknown
+    ::  a finished function: a void product becomes unknown
     ::
     =/  d=datum   (git-g g.st top)
-    =.  prod.d    (final-sock prod.d)
+    =?  prod.d  ?=(%void prod.d)  |+~
     =.  g.st      (~(put by g.st) top d)
     =.  done.st   (put:mi done.st top d)
     ?:  =(top id)  st
@@ -1859,17 +1859,28 @@
       ::
       =/  less-code  (app:ca want bus)
       =/  data-new=datum  [callees nomm less-code indi pro area]
-      ::  The product descends across passes: it is the intersection of the
-      ::  previous and the new product (the previous one is wild before the
-      ::  first pass), so the passes converge within the structure of the
-      ::  first product, and the result is never more known than what one
-      ::  more pass would give, which makes it sound.
+      ::  The product descends across passes (the previous one is void
+      ::  before the first pass), so the result is never more known than what
+      ::  one more pass would give, which makes it sound. The first time the
+      ::  product of a function changes it becomes the intersection of the
+      ::  previous and the new one: that is where it finds its shape, e.g. a
+      ::  core with the part that the recursion changes masked out. Later
+      ::  changes are generalized with +msg-anno, which stays within the cape
+      ::  of the previous product, so the chain is bounded by the size of
+      ::  that cape. The intersection alone follows the known data instead:
+      ::  a gate that rebuilds its argument cell by cell takes as many passes
+      ::  as the argument is deep (+ska!test-walk).
       ::
       =/  pm=[=sock src=spring]
+        ?:  (~(has in moved.st) id)
+          (msg-anno [prod map]:data-new [prod map]:data)
         (double-int [prod map]:data-new [prod map]:data)
       ::
       =.  prod.data-new  sock.pm
       =.  map.data-new  src.pm
+      =?  moved.st  &(!?=(%void prod.data) !=(pm [prod map]:data))
+        (~(put in moved.st) id)
+      ::
       =?  indi.data-new
           ?&  =([less-code prod map]:data-new [less-code prod map]:data)
               !=(indi.data-new indi.data)
@@ -1918,7 +1929,7 @@
       =^  r  gen  fol-loop(fol q.fol)
       :_  gen
       :-  [nomm.l nomm.r]
-      ?:  &(saf.l saf.r)
+      ?:  &(saf.l saf.r ?=(^ sock.prod.l) ?=(^ sock.prod.r))
         [[&+[data.sock.prod.l data.sock.prod.r] ~] &]
       :_  |
       :-  (knit:so sock.prod.l sock.prod.r)
@@ -1945,10 +1956,10 @@
       =^  s  gen  fol-loop(fol p.fol)
       =^  f  gen  fol-loop(fol q.fol)
       ^-  [[nomm sock-anno ?] _gen]
-      ::  a wild subject or formula: no execution reaches this call
+      ::  a void subject or formula: no execution reaches this call
       ::
-      ?:  |(=(%wild cape.sock.prod.s) =(%wild cape.sock.prod.f))
-        [[[%2 nomm.s nomm.f ~] [sock-wild:so ~] |] gen]
+      ?:  |(?=(%void sock.prod.s) ?=(%void sock.prod.f))
+        [[[%2 nomm.s nomm.f ~] [%void ~] |] gen]
       ::  Here we check that the mask is precisely %& instead of cheking with
       ::  +all:ca to prevent analyzing through Nock evals with consed up
       ::  formulas. This makes the set of all callable nouns finite,
@@ -1982,7 +1993,7 @@
         =*  resolve  $
         ?^  d=(~(get by g.st.gen) id-there)
           ::  Exact identity match. If in order: recursive call to a function
-          ::  in progress: its product is wild before its first pass and
+          ::  in progress: its product is void before its first pass and
           ::  descends from there
           ::
           ?~  ord=(~(get by order.st.gen) id-there)  [[id-there u.d] gen]
@@ -2011,7 +2022,9 @@
         =^  low-there=@uxsite  st.gen  (analyze id-there st.gen)
         =.  low.gen  (min low.gen low-there)
         [[id-there (git-g g.st.gen id-there)] gen]
+      ::  a code requirement is never void
       ::
+      ?>  ?=(^ less-code.dat-there)
       ::  Direct call: record immediate code usage (we just got the formula) +
       ::  transitive code usage by the callee
       ::
@@ -2101,7 +2114,7 @@
       ::  valid %memo generates a new call to an uninlineable function to be
       ::  memoized
       ::
-      ?:  &(?=(%memo a.fol) saf.h)
+      ?:  &(?=(%memo a.fol) saf.h ?=(^ sock.prod.h))
         ::  saf.h implies fully known sock.prod.h
         ::
         fol-loop(fol [%2 [%0 1] 1 f.fol], memo-key `data.sock.prod.h)
@@ -2606,6 +2619,7 @@
   ~%  %compile-scc-fn  ..ride  ~
   |=  [b=bell w-new=worklist =_map-local]
   ^+  [w-new map-local]
+  ?>  ?=(^ less.b)
   =/  comp  (comp scc rev long-ska scc-map jets-hot map-local b)
   =/  =nomm  nomm:(~(got by code.long-ska) b)
   ::  Until the fixed point only the input shape is needed: from the shape-only

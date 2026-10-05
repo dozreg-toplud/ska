@@ -8,6 +8,7 @@
 ++  strongly-normalize-sock
   |=  s=sock
   ^-  sock
+  ?:  ?=(%void s)  s
   ?@  data.s
     ?^  cape.s  !!
     ?.  cape.s  |+~
@@ -18,6 +19,7 @@
   ~+
   =/  l=sock  (hed:so s)
   =/  r=sock  (tel:so s)
+  ?:  |(?=(%void l) ?=(%void r))  %void
   =/  c=cape
     ?:  &(=(cape.l cape.r) ?=(@ cape.l))  cape.l
     [cape.l cape.r]

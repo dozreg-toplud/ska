@@ -75,7 +75,12 @@
   ==
 ::
 ?:  ?=([%0x4 @ ~] mugs)
-  =/  axes  |=(c=cape (roll (turn (scag 16 (yea:ca c)) |=(a=@ "{(a-co:co a)} ")) |=([a=tape b=tape] (weld b a))))
+  =/  axes
+    |=  s=sock
+    ^-  tape
+    ?:  ?=(%void s)  "void"
+    (roll (turn (scag 16 (yea:ca cape.s)) |=(a=@ "{(a-co:co a)} ")) |=([a=tape b=tape] (weld b a)))
+  ::
   =/  spot-tape
     |=  s=(unit spot)
     ^-  tape
@@ -90,7 +95,7 @@
     :-  ~
     %-  crip
     ;:  weld
-      "FUNCTION {(scow %ux (mug fol.id))} more=[{(axes cape.more.id)}] prod=[{(axes cape.prod.d)}]"
+      "FUNCTION {(scow %ux (mug fol.id))} more=[{(axes more.id)}] prod=[{(axes prod.d)}]"
       %-  roll
       :_  |=([a=tape b=tape] (weld b a))
       %+  turn  ~(tap in callees.d)
@@ -98,9 +103,9 @@
       =/  cd=datum  (~(gut by g) id.c *datum)
       ;:  weld
         " | {(spot-tape seat.c)} {(scow %ux (mug fol.id.c))}"
-        " more=[{(axes cape.more.id.c)}]"
-        " less=[{(axes cape.less-code.cd)}]"
-        " prod=[{(axes cape.prod.cd)}]"
+        " more=[{(axes more.id.c)}]"
+        " less=[{(axes less-code.cd)}]"
+        " prod=[{(axes prod.cd)}]"
         ?:((~(has by g) id.c) " in-graph" " NOT-in-graph")
       ==
     ==
@@ -163,6 +168,7 @@
   %+  murn  ~(tap by code.long-ska)
   |=  [b=bell c=code-entry]
   ?.  =((mug fol.b) i.t.mugs)  ~
+  ?>  ?=(^ less.b)
   `[`@ux`(mug b) (lent (yea:ca cape.less.b)) (turn (sites nomm.c) crip)]
 ::  ~[0x4 formula-mug]: callees of that formula's functions: [seat callee
 ::  formula mug, less-code axes, product known axes, first product axes]
@@ -242,6 +248,7 @@
   |=  [c=callee-entry acc=_acc]
   ?.  =(b (~(gut by id-bell) id.c *bell))  acc
   [[seat.c `@ux`(mug fol.id)] acc]
+?>  ?=(^ less.b)
 :-  ~
 :*  m
     `@ux`(mug fol.b)

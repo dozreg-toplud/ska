@@ -20,4 +20,5 @@
 :-  functions+~(wyt by g)
 %+  turn  ~(tap by g)
 |=  [id=identity d=datum]
+?>  &(?=(^ more.id) ?=(^ prod.d))
 [`@ux`(mug fol.id) more=cape.more.id prod=cape.prod.d]

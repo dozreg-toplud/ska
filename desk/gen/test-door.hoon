@@ -20,6 +20,7 @@
 =/  lon  +:(ska-poke [&+sub fol] *long-ska)
 =/  g  graph.final.lon
 =/  root  (~(got by g) [&+sub fol])
+?>  ?=(^ prod.root)
 =/  count-2
   |=  =nomm
   ^-  [direct=@ indirect=@]
@@ -43,5 +44,6 @@
     :-  %prods
     %+  turn  ~(tap by g)
     |=  [id=identity d=datum]
+    ?>  &(?=(^ more.id) ?=(^ prod.d))
     [`@ux`(mug fol.id) more=cape.more.id prod=cape.prod.d (count-2 nomm.d)]
 ==
