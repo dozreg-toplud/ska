@@ -93,6 +93,20 @@
   |=  [pri=@ print=(trap tank)]
   !@  comp-verb  same
   %*($ slog pri pri, a ~[$:print])
+::  Run a trap in a road of its own with scrying disabled.  Transient memo
+::  entries made inside are dropped on return instead of evicting the caller's,
+::  and %memo hints with a clue save into the persistent cache even when the
+::  caller has a scry gate.  Used at the entry points of the analyzer and the
+::  compiler; the recursion inside stays in that road.
+::
+=/  road-pure
+  |*  =(trap *)
+  ^+  $:trap
+  =/  res  (~(mule vi |) trap)
+  ?-  -.res
+    %&  p.res
+    %|  (mean p.res)
+  ==
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
@@ -1267,6 +1281,7 @@
 ++  ska-poke
   |=  [[bus=sock fol=^] lon=long-ska]
   ^-  [bell long-ska]
+  %-  road-pure  |.
   =/  root-identity=identity  [bus fol]
   =/  [g=callgraph =regs]
     (ska-callgraph root-identity memo.final.lon [root core batt arms]:jets.lon)
@@ -2469,11 +2484,13 @@
           jets-hot=(map ring need-ordered)
       ==
   ^-  [straight (map bell straight)]
+  =/  args  +<
+  ~+
+  %-  road-pure  |.
   ~>  %memo./ska
-  =*  args  +<
   ::  Compile normally
   ::
-  =/  n-ary-map=(map bell straight)  (compile-scc +.args)
+  =/  n-ary-map=(map bell straight)  (compile-scc-in +.args)
   :_  n-ary-map
   ^-  straight
   =/  comp  (comp scc rev long-ska scc-map jets-hot n-ary-map func)
@@ -2496,19 +2513,40 @@
           jets-hot=(map ring need-ordered)
       ==
   ^-  (map bell straight)
-  ::  Transient memoization for local tests, persistent memoization for stateful
-  ::  interaction. The latter requires running SKA core with an empty scry gate.
-  :: ~+
+  =/  args  +<
+  ~+
+  (road-pure |.((compile-scc-in args)))
+::  The compilation proper, called directly for callees so that the whole
+::  recursion shares the entry's road
+::
+++  compile-scc-in
+  ~%  %compile-scc-in  ..ride  ~
+  |=  $:  scc=(set bell)
+          rev=(jug bell bell)
+          long-ska=_[=_code =_jets]:*long-ska
+          scc-map=(map bell (set bell))
+          jets-hot=(map ring need-ordered)
+      ==
+  ^-  (map bell straight)
+  ::  Transient memoization within the road, persistent memoization across
+  ::  calls and events (the road has no scry gate, so it always saves)
+  ::
+  ~+
   ~>  %memo./ska
   ::  Only the subject shapes in .map-local are read by the loop, so the rest
   ::  of the straight is a placeholder until the fixed point is reached, when
   ::  the whole SCC is compiled once more with .done set, this time for real
   ::
   =|  map-local=(map bell straight)
+  ::  A function alone in its SCC that does not call itself needs no fixed
+  ::  point: the final pass computes its subject shape by itself
+  ::
+  =/  done=?
+    ?.  ?=([* ~ ~] scc)  |
+    !(~(has ju rev) n.scc n.scc)
   ::  Fixed-point loop with a worklist
   ::
   =/  w=worklist  scc
-  =/  done=?  |
   |-  ^+  map-local
   =*  fixpoint-compilation  $
   =;  [w-new=worklist map-local1=_map-local]
@@ -2749,7 +2787,7 @@
         =/  new-scc=(set bell)  (~(gut by scc-map) b-callee [b-callee ~ ~])
         =;  m  need:(~(got by m) b-callee)
         =/  new-scc=(set bell)  (~(gut by scc-map) b-callee [b-callee ~ ~])
-        (compile-scc new-scc rev long-ska scc-map jets-hot)
+        (compile-scc-in new-scc rev long-ska scc-map jets-hot)
       ::  allocate registers
       ::
       =^  sub-ned=need  gen  (need-ord-alloc-regs b-ned)
@@ -3222,7 +3260,7 @@
       need:(~(gut by map-local) b-callee *straight)
     =/  new-scc=(set bell)  (~(gut by scc-map) b-callee [b-callee ~ ~])
     =<  need
-    (~(got by (compile-scc new-scc rev long-ska scc-map jets-hot)) b-callee)
+    (~(got by (compile-scc-in new-scc rev long-ska scc-map jets-hot)) b-callee)
   ::
   ++  laze-none-equivalent
     |=  laz=laze
@@ -4862,6 +4900,7 @@
   ^-  need-ordered
   =*  msg  .
   ?:  =(a b)  a
+  ~+
   ::  none are cells
   ::
   ?:  ?&  |(?=(%this -.a) ?=(%none -.a))

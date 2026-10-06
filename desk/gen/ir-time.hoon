@@ -125,6 +125,7 @@
     =/  z  (size s)
     [(add -.z -.acc) (add +.z +.acc)]
   ::
-  [%functions ~(wyt by all-straights) %before tot-before %after tot-after]
+  =/  args  (roll (turn ~(val by all-straights) |=(s=straight n-args.s)) add)
+  [%functions ~(wyt by all-straights) %args args %before tot-before %after tot-after]
 ?:  ?=(%& -.res)  p.res
 (mean p.res)
