@@ -5,6 +5,9 @@
 ::
 :-  %say  |=  *
 ::
+%-  need:..ride
+%-  ~(mole vi |)
+|.
 =/  memo-call
   =>  ..ride  !.
   |*  [g=gate v=*]
@@ -52,7 +55,9 @@
   !=
   (ride %noun '42')
 ::
-=^  func=bell  long-ska  (ska-poke [&+subject formula] long-ska)
+=^  func=bell  long-ska
+  ~>  %bout.[1 'ska-poke ride']
+  (ska-poke [&+subject formula] long-ska)
 =.  long-ska  (ska-cole-restore long-ska)
 =/  [bell-graph=(jug bell bell) rev=(jug bell bell)]
   (simple-bell-graph-and-reversed graph.final.long-ska)
@@ -93,6 +98,7 @@
 ::
 
 =/  all-straights=(map bell straight)
+  ~>  %bout.[1 'compile all']
   %-  ~(rep by scc-map)
   |=  [[k=* v=(set bell)] acc=(map bell straight)]
   (~(uni by acc) (compile-scc v rev [code jets]:long-ska scc-map jets-hot))

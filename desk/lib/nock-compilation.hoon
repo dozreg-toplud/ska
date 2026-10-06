@@ -78,11 +78,11 @@
 ::
 ::  ska verbosity
 ::
-=/  ska-verb  ~
+:: =/  ska-verb  ~
 ::
 ::  compiler verbosity
 ::
-=/  comp-verb  ~
+:: =/  comp-verb  ~
 ::
 =/  print-ska
   |=  [pri=@ print=(trap tank)]
@@ -1714,12 +1714,11 @@
     =/  dead=(set identity)  (~(dif in members) live)
     ?:  =(~ dead)  st
     =.  culled.stats.st  (add culled.stats.st ~(wyt in dead))
-    %=  st
-      stk    (skip stk.st ~(has in dead))
-      moved  (~(dif in moved.st) dead)
-      order  (~(rep in dead) |=([i=identity o=_order.st] (~(del by o) i)))
-      g      (~(rep in dead) |=([i=identity g=_g.st] (~(del by g) i)))
-    ==
+    =.  stk.st  (skip stk.st ~(has in dead))
+    =.  moved.st  (~(dif in moved.st) dead)
+    %-  ~(rep in dead)
+    |=  [i=identity =_st]
+    st(order (~(del by order.st) i), g (~(del by g.st) i))
   ::  pop a finished component off the stack, memoizing its members
   ::
   ++  pop
@@ -2116,7 +2115,11 @@
 =/  dedicated-shape-pass  ~
 ::  Debug: check that both agree on the final pass
 ::
-=/  shape-check  ~
+:: =/  shape-check  ~
+::  Debug: check the whole-tree shape collapse against the nested one
+::
+:: =/  collapse-check  ~
+::
 ::
 |%
 +$  hint-static  ?(%bout %xray)
@@ -2495,7 +2498,7 @@
   ^-  (map bell straight)
   ::  Transient memoization for local tests, persistent memoization for stateful
   ::  interaction. The latter requires running SKA core with an empty scry gate.
-  ~+
+  :: ~+
   ~>  %memo./ska
   ::  Only the subject shapes in .map-local are read by the loop, so the rest
   ::  of the straight is a placeholder until the fixed point is reached, when
@@ -4944,6 +4947,7 @@
     ?>  ?=(^ -.a)
     [%both a]
   ?:  &(?=(^ -.a) ?=(^ -.b))
+    ~+
     (cons-need $(a -.a, b -.b) $(a +.a, b +.b))
   ?>  |(?=(%both -.a) ?=(%both -.b))
   =/  [h-a=need-ordered t-a=need-ordered]
@@ -4956,7 +4960,10 @@
     ?>  ?=(^ -.b)
     b
   ::
-  =/  x=need-ordered  (cons-need $(a h-a, b h-b) $(a t-a, b t-b))
+  =/  x=need-ordered
+    ~+
+    (cons-need $(a h-a, b h-b) $(a t-a, b t-b))
+  ::
   ?:  |(?=(%none -.x) ?=(%this -.x))  [%this ~]
   :-  %both
   ?:  ?=(^ -.x)  x
@@ -5108,6 +5115,64 @@
 ::
 ++  inter2-collapse
   ~%  %inter2-collapse  ..ride  ~
+  |=  [intr=need-inter2 less=cape]
+  ^-  need-ordered
+  ::  The fixed point of the available shapes is computed over the whole fork
+  ::  tree per round: push each parent's shape down, then pull the MSG of the
+  ::  branches of every fork up, so that a round is linear in the tree size.
+  ::  Starting from the sure shapes, this converges to the same least fixed
+  ::  point as the nested per-fork loop of +inter2-collapse-nested, which
+  ::  re-collapsed every subtree once per level above it.
+  ::
+  =/  fix=need-inter2  intr
+  =.  fix
+    |-  ^-  need-inter2
+    =/  new  (inter2-fix-round fix none+~ less)
+    ?:  =(new fix)  new
+    $(fix new)
+  ::
+  =/  res  (inter2-orig intr fix less)
+  !@  collapse-check  res
+  ~|  %inter2-collapse-mismatch
+  ?>  =(res (inter2-collapse-nested intr less))
+  res
+::  One round of the fixed point: the parent's shape comes in as .p
+::
+++  inter2-fix-round
+  ~%  %inter2-fix-round  ..ride  ~
+  |=  [prev=need-inter2 p=need-ordered less=cape]
+  ^-  need-inter2
+  =*  round  .
+  =/  f1=need-ordered  (uni-need-ord p sure.prev)
+  =/  kids=(list [y=need-inter2 n=need-inter2])
+    %+  turn  fork.prev
+    |=  [y=need-inter2 n=need-inter2]
+    [(round y f1 less) (round n f1 less)]
+  ::
+  :_  kids
+  %+  roll  kids
+  |=  [[y=need-inter2 n=need-inter2] f=_f1]
+  (uni-need-ord f (msg-need-ord sure.y sure.n less))
+::  The returned shape, given the fixed point of the available shapes
+::
+++  inter2-orig
+  ~%  %inter2-orig  ..ride  ~
+  |=  [intr=need-inter2 fix=need-inter2 less=cape]
+  ^-  need-ordered
+  =*  orig  .
+  =/  acc=need-ordered  sure.intr
+  =/  forks  fork.intr
+  =/  fixes  fork.fix
+  |-  ^-  need-ordered
+  ?~  forks  acc
+  ?>  ?=(^ fixes)
+  =/  o-y  (orig y.i.forks y.i.fixes less)
+  =/  o-n  (orig n.i.forks n.i.fixes less)
+  =/  msg-special  (msg-need-ord-fix-aware o-y o-n sure.fix less)
+  $(acc (uni-need-ord acc msg-special), forks t.forks, fixes t.fixes)
+::
+++  inter2-collapse-nested
+  ~%  %inter2-collapse-nested  ..ride  ~
   |=  [intr=need-inter2 less=cape]
   ^-  need-ordered
   =/  sures=[orig=need-ordered fix=need-ordered]  [. .]:sure.intr
