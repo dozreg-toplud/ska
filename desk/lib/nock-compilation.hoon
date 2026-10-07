@@ -2478,7 +2478,6 @@
   ~%  %compile-unary  ..ride  ~
   |=  $:  func=bell
           scc=(set bell)
-          fwd=(jug bell bell)
           rev=(jug bell bell)  ::  reversed call graph
           long-ska=_[=_code =_jets]:*long-ska
           scc-map=(map bell (set bell))
@@ -2494,7 +2493,7 @@
   =/  n-ary-map=(map bell straight)  (compile-scc-in +.args)
   :_  n-ary-map
   ^-  straight
-  =/  comp  (comp scc fwd rev long-ska scc-map jets-hot n-ary-map func)
+  =/  comp  (comp scc rev long-ska scc-map jets-hot n-ary-map func)
   ::  Compile the pessimized version
   ::
   =/  [nex=next gen=line-short]
@@ -2508,7 +2507,6 @@
 ++  compile-scc
   ~%  %compile-scc  ..ride  ~
   |=  $:  scc=(set bell)
-          fwd=(jug bell bell)
           rev=(jug bell bell)
           long-ska=_[=_code =_jets]:*long-ska
           scc-map=(map bell (set bell))
@@ -2524,7 +2522,6 @@
 ++  compile-scc-in
   ~%  %compile-scc-in  ..ride  ~
   |=  $:  scc=(set bell)
-          fwd=(jug bell bell)
           rev=(jug bell bell)
           long-ska=_[=_code =_jets]:*long-ska
           scc-map=(map bell (set bell))
@@ -2545,29 +2542,6 @@
   ::  point: the final pass computes its subject shape by itself
   ::
   =/  done=?  &(?=([* ~ ~] scc) !(~(has ju rev) n.scc n.scc))
-  ::  caller-first order
-  ::
-  =/  order=(list bell)
-    ?:  ?=([* ~ ~] scc)  ~[n.scc]
-    =/  visit
-      |=  [n=bell seen=(set bell) post=(list bell)]
-      ^-  [(list bell) (set bell)]
-      =*  visit  .
-      =.  seen  (~(put in seen) n)
-      =/  kids  ~(tap in (~(get ju fwd) n))
-      |-  ^-  [(list bell) (set bell)]
-      ?~  kids  [[n post] seen]
-      ?:  (~(has in seen) i.kids)  $(kids t.kids)
-      =/  sub  (visit i.kids seen post)
-      $(kids t.kids, post -.sub, seen +.sub)
-    ::
-    =/  roots=(list bell)  ~(tap in scc)
-    =<  +
-    %+  roll  roots
-    |=  [r=bell seen=(set bell) post=(list bell)]
-    ?:  (~(has in seen) r)  [seen post]
-    =^  post  seen  (visit r seen post)
-    [seen post]
   ::  Fixed-point loop with a worklist
   ::
   =/  w=worklist  scc
@@ -2579,87 +2553,76 @@
     ?:  =(~ w-new)  fixpoint-compilation(w scc, map-local map-local1, done &)
     %-  (print-comp 0 |.(%fixpoint-compilation))
     fixpoint-compilation(w w-new, map-local map-local1)
-  =/  compile-scc-fn
-    ~%  %compile-scc-fn  ..ride  ~
-    |=  [b=bell =_map-local]
-    ^-  [changed=? _map-local]
-    ?>  ?=(^ less.b)
-    =/  comp  (comp scc fwd rev long-ska scc-map jets-hot map-local b)
-    =/  =nomm  nomm:(~(got by code.long-ska) b)
-    ::  Until the fixed point only the input shape is needed: from the shape-only
-    ::  traversal, or from the full compilation with code emission dropped.  The
-    ::  final pass compiles for real, emitting code right away.
-    ::
-    =/  gen=line-short  *line-short
-    =^  [need-new=need-ordered laz=need-lazy ned-final=need o=@uwoo]  gen
-      !@  dedicated-shape-pass
-        =.  mode.gen  ?:(done %run %drop)
-        =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~)
-        =^  [ned-final=need laz=need-lazy o=@uwoo]  gen
-          (~(collapse-shape comp gen) nex cape.less.b)
-        ::
-        [[(need-to-ordered ned-final) laz ned-final o] gen]
-      ?.  done
-        =^  l=laze  gen  (~(run-shape comp gen) nomm [%done ~])
-        [[(laze-collapse l cape.less.b) *need-lazy *need `@uwoo`0] gen]
-      =.  mode.gen  %run
+  ::
+  %-  ~(rep in w)
+  ~%  %compile-scc-fn  ..ride  ~
+  |=  [b=bell w-new=worklist =_map-local]
+  ^+  [w-new map-local]
+  ?>  ?=(^ less.b)
+  =/  comp  (comp scc rev long-ska scc-map jets-hot map-local b)
+  =/  =nomm  nomm:(~(got by code.long-ska) b)
+  ::  Until the fixed point only the input shape is needed: from the shape-only
+  ::  traversal, or from the full compilation with code emission dropped.  The
+  ::  final pass compiles for real, emitting code right away.
+  ::
+  =/  gen=line-short  *line-short
+  =^  [need-new=need-ordered laz=need-lazy ned-final=need o=@uwoo]  gen
+    !@  dedicated-shape-pass
+      =.  mode.gen  ?:(done %run %drop)
       =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~)
       =^  [ned-final=need laz=need-lazy o=@uwoo]  gen
         (~(collapse-shape comp gen) nex cape.less.b)
       ::
       [[(need-to-ordered ned-final) laz ned-final o] gen]
-    ::  Debug assert of +run-shape correctenss
+    ?.  done
+      =^  l=laze  gen  (~(run-shape comp gen) nomm [%done ~])
+      [[(laze-collapse l cape.less.b) *need-lazy *need `@uwoo`0] gen]
+    =.  mode.gen  %run
+    =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~)
+    =^  [ned-final=need laz=need-lazy o=@uwoo]  gen
+      (~(collapse-shape comp gen) nex cape.less.b)
     ::
-    =>  =*  dot  .
-        !@  shape-check  dot
-        ?.  done  dot
-        =/  l=laze  -:(~(run-shape comp *line-short) nomm [%done ~])
-        =/  shape  (laze-collapse l cape.less.b)
-        ~|  [%shape-mismatch b shape need-new]
-        ?>  =(shape need-new)
-        dot
-    ::
-    ::  Finalization: emit the subject deconsing code, coerce the subject to the
-    ::  pessimized shape if there is one, and renumber the registers
-    ::
-    =/  finish
-      ~%  %compile-scc-finish  ..ride  ~
-      |=  pessimized=(unit need-ordered)
-      ^-  straight
-      ::  argument count and the blocks are bunted unless fixed point of the
-      ::  subject shape was achieved
-      ::
-      ?.  done  [?~(pessimized need-new u.pessimized) 0 ~]
-      =.  gen  (~(coerce-lazy comp gen) ned-final o laz)
-      =/  res=next-resolved  [%next [[ned-final ~] ~ ~] ~ o]
-      ?~  pessimized  (~(to-straight comp gen) res)
-      =^  coerced=next-resolved  gen  (~(coerce-ord comp gen) u.pessimized res)
-      (~(to-straight comp gen) coerced)
-    ::  With a compiled function candidate, requeue callers if the subject split
-    ::  did not converge yet, taking MSG of subject splits to avoid divergence.
-    ::
-    ?~  s-previous=(~(get by map-local) b)
-      :-  !?=([%none ~] need-new)
-      (~(put by map-local) b (finish ~))
-    =/  need-pessimized  (msg-need-ord need-new need.u.s-previous cape.less.b)
-    :-  !=(need-pessimized need.u.s-previous)
-    %+  ~(put by map-local)  b
-    ?:  =(need-pessimized need-new)  (finish ~)
-    (finish `need-pessimized)
-  ::  One round: a caller whose callee changed shape is requeued only if it
-  ::  is not still pending in this round
+    [[(need-to-ordered ned-final) laz ned-final o] gen]
+  ::  Debug assert of +run-shape correctenss
   ::
-  =/  todo=(list bell)  (skim order ~(has in w))
-  =/  pending=worklist  w
-  =|  w-new=worklist
-  |-  ^+  [w-new map-local]
-  ?~  todo  [w-new map-local]
-  =.  pending  (~(del in pending) i.todo)
-  =^  changed=?  map-local  (compile-scc-fn i.todo map-local)
-  =?  w-new  changed
-    (~(uni in w-new) (~(dif in (~(get ju rev) i.todo)) pending))
+  =>  =*  dot  .
+      !@  shape-check  dot
+      ?.  done  dot
+      =/  l=laze  -:(~(run-shape comp *line-short) nomm [%done ~])
+      =/  shape  (laze-collapse l cape.less.b)
+      ~|  [%shape-mismatch b shape need-new]
+      ?>  =(shape need-new)
+      dot
   ::
-  $(todo t.todo)
+  ::  Finalization: emit the subject deconsing code, coerce the subject to the
+  ::  pessimized shape if there is one, and renumber the registers
+  ::
+  =/  finish
+    ~%  %compile-scc-finish  ..ride  ~
+    |=  pessimized=(unit need-ordered)
+    ^-  straight
+    ::  argument count and the blocks are bunted unless fixed point of the
+    ::  subject shape was achieved
+    ::
+    ?.  done  [?~(pessimized need-new u.pessimized) 0 ~]
+    =.  gen  (~(coerce-lazy comp gen) ned-final o laz)
+    =/  res=next-resolved  [%next [[ned-final ~] ~ ~] ~ o]
+    ?~  pessimized  (~(to-straight comp gen) res)
+    =^  coerced=next-resolved  gen  (~(coerce-ord comp gen) u.pessimized res)
+    (~(to-straight comp gen) coerced)
+  ::  With a compiled function candidate, requeue callers if the subject split
+  ::  did not converge yet, taking MSG of subject splits to avoid divergence.
+  ::
+  ?~  s-previous=(~(get by map-local) b)
+    :-  ?:  ?=([%none ~] need-new)  w-new
+        (~(uni in w-new) (~(get ju rev) b))
+    (~(put by map-local) b (finish ~))
+  =/  need-pessimized  (msg-need-ord need-new need.u.s-previous cape.less.b)
+  :-  ?:  =(need-pessimized need.u.s-previous)  w-new
+      (~(uni in w-new) (~(get ju rev) b))
+  %+  ~(put by map-local)  b
+  ?:  =(need-pessimized need-new)  (finish ~)
+  (finish `need-pessimized)
 ::
 ++  need-normalize
   ~%  %need-normalize  ..ride  ~
@@ -2695,7 +2658,6 @@
 ::
 ++  comp
   |=  $:  scc=(set bell)
-          fwd=(jug bell bell)
           rev=(jug bell bell)
           long-ska=_[=_code =_jets]:*long-ska
           scc-map=(map bell (set bell))
@@ -2823,7 +2785,7 @@
         =/  new-scc=(set bell)  (~(gut by scc-map) b-callee [b-callee ~ ~])
         =;  m  need:(~(got by m) b-callee)
         =/  new-scc=(set bell)  (~(gut by scc-map) b-callee [b-callee ~ ~])
-        (compile-scc-in new-scc fwd rev long-ska scc-map jets-hot)
+        (compile-scc-in new-scc rev long-ska scc-map jets-hot)
       ::  allocate registers
       ::
       =^  sub-ned=need  gen  (need-ord-alloc-regs b-ned)
@@ -3296,7 +3258,7 @@
       need:(~(gut by map-local) b-callee *straight)
     =/  new-scc=(set bell)  (~(gut by scc-map) b-callee [b-callee ~ ~])
     =<  need
-    (~(got by (compile-scc-in new-scc fwd rev long-ska scc-map jets-hot)) b-callee)
+    (~(got by (compile-scc-in new-scc rev long-ska scc-map jets-hot)) b-callee)
   ::
   ++  laze-none-equivalent
     |=  laz=laze
@@ -6405,13 +6367,13 @@
 |%
 ++  version  -.state
 ++  graph-info
-  ^-  [fwd=(jug bell bell) rev=(jug bell bell) scc-map=(map bell (set bell))]
+  ^-  [rev=(jug bell bell) scc-map=(map bell (set bell))]
   ~>  %memo./ska  ::  proper explicit memoization?
-  =/  [fwd=(jug bell bell) rev=(jug bell bell)]  ::  XX make incremental?
+  =/  [bell-graph=(jug bell bell) rev=(jug bell bell)]  ::  XX make incremental?
     (simple-bell-graph-and-reversed graph.final.long-ska.state)
   ::
-  :+  fwd  rev
-  =/  sccs=(list (set bell))  (tarjan fwd)  ::  XX make incremental?
+  :-  rev
+  =/  sccs=(list (set bell))  (tarjan bell-graph)  ::  XX make incremental?
   =|  out=(map bell (set bell))
   |-  ^+  out
   ?~  sccs  out
@@ -6444,27 +6406,27 @@
   ::
       %full
     =^  func=bell  long-ska.state  (ska-poke [&+sub.ovo fol.ovo] long-ska.state)
-    =/  [fwd=(jug bell bell) rev=(jug bell bell) scc-map=(map bell (set bell))]
+    =/  [rev=(jug bell bell) scc-map=(map bell (set bell))]
       graph-info
     ::
     =/  scc=(set bell)  (~(gut by scc-map) func [func ~ ~])
     =/  =straight
       =<  -
       %-  compile-unary
-      [func scc fwd rev [code jets]:long-ska.state scc-map jets-hot.state]
+      [func scc rev [code jets]:long-ska.state scc-map jets-hot.state]
     ::
     =.  straight  (optimize straight)
     [[%ir func straight] ..poke]
   ::
       %dire
-    =/  [fwd=(jug bell bell) rev=(jug bell bell) scc-map=(map bell (set bell))]
+    =/  [rev=(jug bell bell) scc-map=(map bell (set bell))]
       graph-info
     ::
     =/  scc=(set bell)  (~(gut by scc-map) b.ovo [b.ovo ~ ~])
     =/  =straight
       =-  (~(got by -) b.ovo)
       %-  compile-scc
-      [scc fwd rev [code jets]:long-ska.state scc-map jets-hot.state]
+      [scc rev [code jets]:long-ska.state scc-map jets-hot.state]
     ::
     =.  straight  (optimize straight)
     [[%ir b.ovo straight] ..poke]

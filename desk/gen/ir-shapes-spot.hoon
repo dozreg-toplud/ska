@@ -1,6 +1,6 @@
 /+  *nock-compilation
-/+  hoot-zpdt
-/+  hoot-zpdt-fol
+/+  hoot
+/+  hoot-fol
 ::
 :-  %say  |=  *
 :-  %noun
@@ -14,8 +14,8 @@
   ::
   ~>  %jinx.~m15
   =|  =long-ska
-  =.   long-ska  +:(ska-poke [&+~ hoot-zpdt-fol] long-ska)
-  =/  subject  ..scow:hoot-zpdt
+  =.   long-ska  +:(ska-poke [&+~ hoot-fol] long-ska)
+  =/  subject  ..scow:hoot
   =/  formula=^
     =>  subject
     ;;  ^
@@ -26,7 +26,7 @@
     ~>  %bout.[1 'ska-poke 1']
     (ska-poke [&+subject formula] long-ska)
   ::
-  =/  subject  ..ride:hoot-zpdt
+  =/  subject  ..ride:hoot
   =/  formula=^
     =>  subject
     ;;  ^
@@ -118,10 +118,21 @@
       ^      :(weld "(" (enc -.n) "," (enc +.n) ")")
     ==
   ::
+  ::  source area of each function, from the analysis graph
+  ::
+  =/  areas=(map bell (unit spot))
+    %-  ~(rep by graph.final.long-ska)
+    |=  [[id=identity d=datum] acc=(map bell (unit spot))]
+    (~(put by acc) [less-code.d fol.id] area.d)
+  ::
   =/  rows=(list [@ud tape])
     %+  turn  ~(tap by all-straights)
     |=  [k=bell v=straight]
-    [(mug k) (enc need.v)]
+    =/  where=tape
+      =/  a  (~(gut by areas) k ~)
+      ?~  a  "?"
+      :(weld (spud p.u.a) ":" (scow %ud p.p.q.u.a) ":" (scow %ud q.p.q.u.a))
+    [(mug k) :(weld (enc need.v) " " where)]
   ::
   =.  rows  (sort rows |=([[a=@ud *] [b=@ud *]] (lth a b)))
   =/  args  (roll (turn ~(val by all-straights) |=(s=straight n-args.s)) add)

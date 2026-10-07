@@ -10,6 +10,9 @@
 =/  res
   %-  ~(mule vi |)
   |.
+  ::  bound the run: a runaway bails with %alrm inside the mule
+  ::
+  ~>  %jinx.~m15
   =|  =long-ska
   =.   long-ska  +:(ska-poke [&+~ hoot-zpdt-fol] long-ska)
   =/  subject  ..scow:hoot-zpdt
@@ -88,11 +91,11 @@
   ::
   =/  big-1=(map bell straight)
     ~>  %bout.[1 'compile biggest scc']
-    (compile-scc big fwd rev [code jets]:long-ska scc-map jets-hot)
+    (compile-scc big rev [code jets]:long-ska scc-map jets-hot)
   ::
   =/  big-2=(map bell straight)
     ~>  %bout.[1 'compile biggest scc again']
-    (compile-scc big fwd rev [code jets]:long-ska scc-map jets-hot)
+    (compile-scc big rev [code jets]:long-ska scc-map jets-hot)
   ::
   ~&  [%biggest-same =(big-1 big-2)]
   ::
@@ -100,7 +103,7 @@
     ~>  %bout.[1 'compile all distinct sccs']
     %+  roll  sccs
     |=  [s=(set bell) acc=(map bell straight)]
-    (~(uni by acc) (compile-scc s fwd rev [code jets]:long-ska scc-map jets-hot))
+    (~(uni by acc) (compile-scc s rev [code jets]:long-ska scc-map jets-hot))
   ::
   =/  size
     |=  s=straight
