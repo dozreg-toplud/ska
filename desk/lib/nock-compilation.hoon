@@ -59,10 +59,10 @@
 ::    fixed point loop for callees that are in the same SCC as the caller.
 ::
 ::  Table of contents:
-::    Call graph construction:  line 532
-::    Compilation:              line 2045
-::    IR optimization passes:   line 5239
-::    Interactive core:         line 6214
+::    Call graph construction:  line 541
+::    Compilation:              line 2054
+::    IR optimization passes:   line 5337
+::    Interactive core:         line 6312
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
@@ -78,11 +78,11 @@
 ::
 ::  ska verbosity
 ::
-:: =/  ska-verb  ~
+=/  ska-verb  ~
 ::
 ::  compiler verbosity
 ::
-:: =/  comp-verb  ~
+=/  comp-verb  ~
 ::
 =/  print-ska
   |=  [pri=@ print=(trap tank)]
@@ -93,11 +93,6 @@
   |=  [pri=@ print=(trap tank)]
   !@  comp-verb  same
   %*($ slog pri pri, a ~[$:print])
-::  Run a trap in a road of its own with scrying disabled.  Transient memo
-::  entries made inside are dropped on return instead of evicting the caller's,
-::  and %memo hints with a clue save into the persistent cache even when the
-::  caller has a scry gate.  Used at the entry points of the analyzer and the
-::  compiler; the recursion inside stays in that road.
 ::
 =/  road-pure
   |*  =(trap *)
@@ -2545,14 +2540,15 @@
   ::  Fixed-point loop with a worklist
   ::
   =/  w=worklist  scc
+  =/  counter=@ud  0
   |-  ^+  map-local
   =*  fixpoint-compilation  $
   =;  [w-new=worklist map-local1=_map-local]
     ?:  done  map-local1
     =.  w-new  (~(int in w-new) scc)
     ?:  =(~ w-new)  fixpoint-compilation(w scc, map-local map-local1, done &)
-    %-  (print-comp 0 |.(%fixpoint-compilation))
-    fixpoint-compilation(w w-new, map-local map-local1)
+    %-  (print-comp 0 |.(leaf+"[fixpoint-compilation {(scow %ud counter)}]"))
+    fixpoint-compilation(w w-new, map-local map-local1, counter +(counter))
   ::
   %-  ~(rep in w)
   ~%  %compile-scc-fn  ..ride  ~
