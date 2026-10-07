@@ -34,10 +34,10 @@
     ~>  %bout.[1 'ska-poke 3']
     (ska-poke [&+subject formula] long-ska)
   ::
-  =/  [fwd=(jug bell bell) rev=(jug bell bell)]
+  =/  [bell-graph=(jug bell bell) rev=(jug bell bell)]
     (simple-bell-graph-and-reversed graph.final.long-ska)
   ::
-  =/  sccs=(list (set bell))  (tarjan fwd)
+  =/  sccs=(list (set bell))  (tarjan bell-graph)
   =/  scc-map=(map bell (set bell))
     =|  out=(map bell (set bell))
     |-  ^+  out
@@ -88,11 +88,11 @@
   ::
   =/  big-1=(map bell straight)
     ~>  %bout.[1 'compile biggest scc']
-    (compile-scc big fwd rev [code jets]:long-ska scc-map jets-hot)
+    (compile-scc big rev [code jets]:long-ska scc-map jets-hot)
   ::
   =/  big-2=(map bell straight)
     ~>  %bout.[1 'compile biggest scc again']
-    (compile-scc big fwd rev [code jets]:long-ska scc-map jets-hot)
+    (compile-scc big rev [code jets]:long-ska scc-map jets-hot)
   ::
   ~&  [%biggest-same =(big-1 big-2)]
   ::
@@ -100,32 +100,29 @@
     ~>  %bout.[1 'compile all distinct sccs']
     %+  roll  sccs
     |=  [s=(set bell) acc=(map bell straight)]
-    (~(uni by acc) (compile-scc s fwd rev [code jets]:long-ska scc-map jets-hot))
+    (~(uni by acc) (compile-scc s rev [code jets]:long-ska scc-map jets-hot))
   ::
-  =/  size
-    |=  s=straight
-    ^-  [blocks=@ud ops=@ud]
-    %-  ~(rep by blocks.s)
-    |=  [[k=@uwoo b=blob] acc=[@ud @ud]]
-    [+(-.acc) (add +.acc (lent body.b))]
+  ::  one line per function: SHAPE <mug> <encoded subject shape>
   ::
-  =/  tot-before
-    %+  roll  ~(val by all-straights)
-    |=  [s=straight acc=[@ud @ud]]
-    =/  z  (size s)
-    [(add -.z -.acc) (add +.z +.acc)]
+  =/  enc
+    |=  n=need-ordered
+    ^-  tape
+    =*  enc  .
+    ?-  -.n
+      %none  "n"
+      %this  "t"
+      %both  :(weld "b(" (enc h.n) "," (enc t.n) ")")
+      ^      :(weld "(" (enc -.n) "," (enc +.n) ")")
+    ==
   ::
-  =/  opt=(list straight)
-    ~>  %bout.[1 'optimize all']
-    (turn ~(val by all-straights) optimize)
+  =/  rows=(list [@ud tape])
+    %+  turn  ~(tap by all-straights)
+    |=  [k=bell v=straight]
+    [(mug k) (enc need.v)]
   ::
-  =/  tot-after
-    %+  roll  opt
-    |=  [s=straight acc=[@ud @ud]]
-    =/  z  (size s)
-    [(add -.z -.acc) (add +.z +.acc)]
-  ::
+  =.  rows  (sort rows |=([[a=@ud *] [b=@ud *]] (lth a b)))
   =/  args  (roll (turn ~(val by all-straights) |=(s=straight n-args.s)) add)
-  [%functions ~(wyt by all-straights) %args args %before tot-before %after tot-after]
+  %-  (slog (turn rows |=([m=@ud t=tape] leaf+:(weld "SHAPE " (scow %ud m) " " t))))
+  [%functions ~(wyt by all-straights) %args args]
 ?:  ?=(%& -.res)  p.res
 (mean p.res)
