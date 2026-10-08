@@ -52,25 +52,25 @@
     ::
     $(sccs t.sccs)
   ::
-  =/  jets-hot=(map ring need-ordered)
+  =/  jets-hot=jets-comp
     %-  malt
-    ^-  (list [ring need-ordered])
+    ^-  (list [ring jets-comp-info])
     =/  unary=need-ordered  [none+~ this+~ none+~]
     =/  binary=need-ordered  [none+~ [this+~ this+~] none+~]
-    :~  [/add/one/k135^2 binary]
-        [/dec/one/k135^2 unary]
-        [/div/one/k135^2 binary]
-        [/dvr/one/k135^2 binary]
-        [/gte/one/k135^2 binary]
-        [/gth/one/k135^2 binary]
-        [/lte/one/k135^2 binary]
-        [/lth/one/k135^2 binary]
-        [/max/one/k135^2 binary]
-        [/min/one/k135^2 binary]
-        [/mod/one/k135^2 binary]
-        [/mul/one/k135^2 binary]
-        [/sub/one/k135^2 binary]
-        [/bex/two/one/k135^2 unary]
+    :~  [/add/one/k135^2 [binary]]
+        [/dec/one/k135^2 [unary]]
+        [/div/one/k135^2 [binary]]
+        [/dvr/one/k135^2 [binary]]
+        [/gte/one/k135^2 [binary]]
+        [/gth/one/k135^2 [binary]]
+        [/lte/one/k135^2 [binary]]
+        [/lth/one/k135^2 [binary]]
+        [/max/one/k135^2 [binary]]
+        [/min/one/k135^2 [binary]]
+        [/mod/one/k135^2 [binary]]
+        [/mul/one/k135^2 [binary]]
+        [/sub/one/k135^2 [binary]]
+        [/bex/two/one/k135^2 [unary]]
     ==
   ::  SCC size statistics
   ::

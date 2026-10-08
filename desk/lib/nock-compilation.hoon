@@ -797,7 +797,7 @@
 ++  recursive-call
   ~%  %recursive-call  ..ride  ~
   |=  [id-kid=identity stk=(list identity) g=callgraph]
-  ^-  (unit [?(%merge %gen) identity])
+  ^-  (unit [?(%rec %he) identity])
   ?~  stk  ~
   ?.  =(fol.id-kid fol.i.stk)  $(stk t.stk)
   =/  d=datum  (git-g g i.stk)
@@ -805,9 +805,9 @@
           %+  huge:so  (app:ca indi.d more.id-kid)
           (app:ca indi.d more.i.stk)
       ==
-    `[%merge i.stk]
+    `[%rec i.stk]
   ?:  (he-sock more.id-kid more.i.stk)
-    `[%gen [(msg-sock more.id-kid more.i.stk) fol.id-kid]]
+    `[%he [(msg-sock more.id-kid more.i.stk) fol.id-kid]]
   $(stk t.stk)
 ::  Patch the product of the memoized computation with the new subject
 ::
@@ -817,8 +817,8 @@
   ^-  [=sock src=spring]
   ?:  =(~ src.pro)  pro
   ?:  ?=(%void sock.pro)  pro
-  ~+
   ?@  src.pro  [(pull:so new src.pro) src.pro]
+  ~+
   %+  knit-anno
     $(pro [(hed:so sock.pro) (hed:pi src.pro)])
   $(pro [(tel:so sock.pro) (tel:pi src.pro)])
@@ -1919,8 +1919,8 @@
         ::
         ?^  par=(recursive-call id-there stk.st.gen g.st.gen)
           ?-    -.u.par
-              %gen  resolve(id-there +.u.par)
-              %merge
+              %he  resolve(id-there +.u.par)
+              %rec
             =/  d=datum  (git-g g.st.gen +.u.par)
             =/  m  (patch-prod [prod map]:d sock.prod.s)
             :-  [+.u.par d(prod sock.m, map src.m)]
@@ -2275,6 +2275,9 @@
       tags=(map @uwoo (list @uxid))  ::  region of lazy need blocks
       =cond
   ==
+::
++$  jets-comp-info  [need=need-ordered]
++$  jets-comp  (map ring jets-comp-info)
 ::  Non-control-flow ops
 ::
 +$  pole
@@ -2476,7 +2479,7 @@
           rev=(jug bell bell)  ::  reversed call graph
           long-ska=_[=_code =_jets]:*long-ska
           scc-map=(map bell (set bell))
-          jets-hot=(map ring need-ordered)
+          jets-hot=jets-comp
       ==
   ^-  [straight (map bell straight)]
   =/  args  +<
@@ -2505,7 +2508,7 @@
           rev=(jug bell bell)
           long-ska=_[=_code =_jets]:*long-ska
           scc-map=(map bell (set bell))
-          jets-hot=(map ring need-ordered)
+          jets-hot=jets-comp
       ==
   ^-  (map bell straight)
   =*  args  +<
@@ -2520,7 +2523,7 @@
           rev=(jug bell bell)
           long-ska=_[=_code =_jets]:*long-ska
           scc-map=(map bell (set bell))
-          jets-hot=(map ring need-ordered)
+          jets-hot=jets-comp
       ==
   ^-  (map bell straight)
   ::  Transient memoization within the road, persistent memoization across
@@ -2657,7 +2660,7 @@
           rev=(jug bell bell)
           long-ska=_[=_code =_jets]:*long-ska
           scc-map=(map bell (set bell))
-          jets-hot=(map ring need-ordered)
+          jets-hot=jets-comp
           map-local=(map bell straight)
           b=bell
       ==
@@ -2773,9 +2776,12 @@
       =*  call-cole  call.cole.jets.long-ska
       =/  rin=(unit ring)  (~(get by call-cole) b-callee)
       ::  register-less need of the callee: jet or SCC-local best guess or recur
+      ::  if calling persistently memoized function: call with the entire
+      ::  subject
       ::
       =/  b-ned=need-ordered
-        ?^  j=(biff rin ~(get by jets-hot))  u.j
+        ?^  j=(biff rin ~(get by jets-hot))  need.u.j
+        ?:  ?=([~ ^] k.u.info.nomm)  this+~
         ?:  (~(has in scc) b-callee)
           need:(~(gut by map-local) b-callee *straight)
         =/  new-scc=(set bell)  (~(gut by scc-map) b-callee [b-callee ~ ~])
@@ -2818,7 +2824,9 @@
           [[opt sub-pes pes] gen]
         =^  nex  gen  simple-next
         =^  [out=@uwoo pro=@uvre]  gen  (kerf nex)
-        ?.  mono  (emit ~ ~[(call-op ~ pro)] %hop ~ out)
+        ?.  mono
+          ?.  ?=([~ ^] key)  (emit ~ ~[(call-op ~ pro)] %hop ~ out)
+          (emit ~ ~[[%csm b-callee -.sub-v pro u.key]] %hop ~ out)
         =^  merged   gen  re
         =^  sub-pes  gen  re
         =^  merge    gen  (emit ~[merged] [%mov merged pro]~ %hop ~ out)
@@ -3249,7 +3257,7 @@
     |=  b-callee=bell
     ^-  need-ordered
     =/  rin=(unit ring)  (~(get by call.cole.jets.long-ska) b-callee)
-    ?^  j=(biff rin ~(get by jets-hot))  u.j
+    ?^  j=(biff rin ~(get by jets-hot))  need.u.j
     ?:  (~(has in scc) b-callee)
       need:(~(gut by map-local) b-callee *straight)
     =/  new-scc=(set bell)  (~(gut by scc-map) b-callee [b-callee ~ ~])
@@ -5160,7 +5168,7 @@
   =/  fix=need-inter2  intr
   =.  fix
     |-  ^-  need-inter2
-    =/  new  (inter2-fix-round fix none+~ less)
+    =/  new  (inter2-fix-round fix less)
     ?:  =(new fix)  new
     $(fix new)
   ::
@@ -5173,19 +5181,21 @@
 ::
 ++  inter2-fix-round
   ~%  %inter2-fix-round  ..ride  ~
-  |=  [prev=need-inter2 p=need-ordered less=cape]
+  |=  [prev=need-inter2 less=cape]
   ^-  need-inter2
-  =*  round  .
-  =/  f1=need-ordered  (uni-need-ord p sure.prev)
+  =/  parent=need-ordered  none+~
+  |-  ^-  need-inter2
+  =*  round  $
+  =.  parent  (uni-need-ord parent sure.prev)
   =/  kids=(list [y=need-inter2 n=need-inter2])
     %+  turn  fork.prev
     |=  [y=need-inter2 n=need-inter2]
-    [(round y f1 less) (round n f1 less)]
+    [round(prev y) round(prev n)]
   ::
   :_  kids
   %+  roll  kids
-  |=  [[y=need-inter2 n=need-inter2] f=_f1]
-  (uni-need-ord f (msg-need-ord sure.y sure.n less))
+  |=  [[y=need-inter2 n=need-inter2] =_parent]
+  (uni-need-ord parent (msg-need-ord sure.y sure.n less))
 ::  The returned shape, given the fixed point of the available shapes
 ::
 ++  inter2-orig
@@ -6321,8 +6331,8 @@
 |%
 +$  ovum
   $%  [%full sub=* fol=^]
-      [%jets p=(list (pair ring need-ordered))]
-      [%dire b=bell]
+      [%jets p=(list (pair ring jets-comp-info))]
+      [%dire b=bell mono=?]
   ==
 ::
 +$  prod
@@ -6335,9 +6345,11 @@
   ^-  ovum
   =;  out  =+(=(n out) out)
   ?@  n  !!
-  ?+  -.n  !!
-    ?(%full %jets)  ;;(ovum n)
-    %dire  [%dire (validate-bell +.n)]
+  ?+    -.n  !!
+      ?(%full %jets)  ;;(ovum n)
+      %dire
+    ?.  ?=([%dire b=* mono=?] n)  !!
+    n(b (validate-bell b.n))
   ==
 ::
 ++  validate-bell
@@ -6359,7 +6371,7 @@
   [(val -.n) (val +.n)]
 --
 ::
-=|  state=[%0 =long-ska jets-hot=(map ring need-ordered)]
+=|  state=[%0 =long-ska jets-hot=jets-comp]
 |%
 ++  version  -.state
 ++  graph-info
@@ -6420,6 +6432,10 @@
     ::
     =/  scc=(set bell)  (~(gut by scc-map) b.ovo [b.ovo ~ ~])
     =/  =straight
+      ?:  mono.ovo
+        =<  -
+        %-  compile-unary
+        [b.ovo scc rev [code jets]:long-ska.state scc-map jets-hot.state]
       =-  (~(got by -) b.ovo)
       %-  compile-scc
       [scc rev [code jets]:long-ska.state scc-map jets-hot.state]
