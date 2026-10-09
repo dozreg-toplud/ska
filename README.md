@@ -6,7 +6,7 @@ This repo contains an Urbit desk to:
   3. Run optimizations on that IR, simplifying the output code;
   4. Providing a stateful Arvo-shaped core definition for Vere integration.
 
-Initially based on [@zorp-corp/sword](https://github.com/zorp-corp/sword), this project underwent significant changes in the implementation of the originally envisioned algorithm.
+Initially based on @zorp-corp/sword (original repo 404's, [my fork](https://github.com/dozreg-toplud/sword)), this project underwent significant changes in the implementation of the originally envisioned algorithm.
 
 ## Reading/watching recommendations
 
