@@ -607,7 +607,6 @@
       [%11 p=$@(@ [p=@ q=nomm]) q=nomm body=*]
       [%12 p=nomm q=nomm]
   ==
-+$  spring  *  ::  no union stuff
 ::  seat: callsite location
 ::  id:   identity of the callee
 ::
@@ -1762,7 +1761,7 @@
     =/  fol  fol.id
     =/  sub=sock-anno  [bus 1]
     =*  fol-result
-      $:  [=nomm pro=sock-anno saf=?]
+      $:  [=nomm pro=sock-anno *]
           want=cape
           indi=cape
           callees=(set callee-entry)
@@ -2763,6 +2762,7 @@
         ::
         (copy nex-sub laz.nex-fol)
       =*  b-callee  b.u.info.nomm
+      =*  key       k.u.info.nomm
       =/  callee-pure=?  pure:(~(got by code.long-ska) b-callee)
       ?:  &(callee-pure ?=(%next -.goal) (none-equivalent laz.goal))
         ::  The product is not used and the function is pure: drop
@@ -2781,7 +2781,9 @@
       ::
       =/  b-ned=need-ordered
         ?^  j=(biff rin ~(get by jets-hot))  need.u.j
-        ?:  ?=([~ ^] k.u.info.nomm)  this+~
+        ::  persistent memoization: always %csm
+        ::
+        ?:  ?=([~ ^] key)  this+~
         ?:  (~(has in scc) b-callee)
           need:(~(gut by map-local) b-callee *straight)
         =/  new-scc=(set bell)  (~(gut by scc-map) b-callee [b-callee ~ ~])
@@ -2793,7 +2795,6 @@
       =^  sub-ned=need  gen  (need-ord-alloc-regs b-ned)
       =/  sub-v=(list @uvre)  (flatten-need sub-ned)
       =^  call-blocks=$@(@uwoo [opt=@uwoo pes=[sub=@uvre o=@uwoo]])  gen
-        =*  key  k.u.info.nomm
         =/  call-op
           |=  [pes=(unit @uvre) pro=@uvre]
           ^-  pole
@@ -2826,6 +2827,8 @@
         =^  [out=@uwoo pro=@uvre]  gen  (kerf nex)
         ?.  mono
           ?.  ?=([~ ^] key)  (emit ~ ~[(call-op ~ pro)] %hop ~ out)
+          ::  persistent memoization: always %csm
+          ::
           (emit ~ ~[[%csm b-callee -.sub-v pro u.key]] %hop ~ out)
         =^  merged   gen  re
         =^  sub-pes  gen  re
