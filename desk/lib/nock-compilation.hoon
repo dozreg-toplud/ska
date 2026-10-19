@@ -952,6 +952,23 @@
       [%11 [@ *] *]
     &(?=(hint-safe p.p.nomm) (g q.p.nomm) (g q.nomm))
   ==
+::  Is the product of the formula always in a single register?
+::
+++  whole
+  |=  =nomm
+  ^-  ?
+  =*  g  .
+  ?+  nomm  |
+    [%1 @]    &
+    [%2 *]    &
+    [%3 *]    &
+    [%4 *]    &
+    [%5 *]    &
+    [%12 *]   &
+    [%6 *]    &((g q.nomm) (g r.nomm))
+    [%7 *]    (g q.nomm)
+    [%11 *]   (g q.nomm)
+  ==
 ::  check if the formula for a formula in Nomm %2 can be safely dropped
 ::
 ++  safe-fol-fol
@@ -2965,9 +2982,13 @@
       ?:  ?&  ?=(%next -.goal)
               !(none-equivalent laz.goal(sure *sure))
           ==
-        ::  In general case we have to materialize the conditional to handle
-        ::  lazy needs. So we check if we really have to do this.
+        ::  If both branches produce a noun in a single register and/or all
+        ::  lazy needs need a single register, we can collapse the lazy need
+        ::  proactively with +kerf and compile against that.
         ::
+        ?:  |(&((whole q.nomm) (whole r.nomm)) (this-only laz.goal))
+          =^  [out=@uwoo pro=@uvre]  gen  (kerf goal)
+          $(goal [%next (lazy-from-need this+pro) ~ out])
         =^  r-cond  gen  re
         =^  [goal-0=next goal-1=next]  gen  (fork goal r-cond)
         ::  both branches are in the same region
@@ -2989,6 +3010,8 @@
           $(nomm p.nomm, goal [%next (lazy-from-need this+r-cond) ~ o])
         ::
         (copy nex-cond lazy)
+      ::  No lazy needs captured, simpler compilation
+      ::
       =^  [goal-0=^goal goal-1=^goal]  gen
         ?.  ?=(%next -.goal)  [[goal goal] gen]
         =^  o-0  gen  oo
@@ -3206,6 +3229,10 @@
       ?:  ?&  ?=(%next -.goal)
               !(laze-none-equivalent laz.goal(sure *sure-ordered))
           ==
+        ::  the branches merge their products where +run would (+kerf)
+        ::
+        ?:  |(&((whole q.nomm) (whole r.nomm)) (laze-this-only laz.goal))
+          $(goal [%next this])
         =^  [goal-0=laze goal-1=laze]  gen  (laze-branch laz.goal)
         =^  l-1  gen  $(nomm r.nomm, goal [%next goal-1])
         =^  l-0  gen  $(nomm q.nomm, goal [%next goal-0])
@@ -3275,6 +3302,17 @@
         ?=(?(~ [%1 ~ ~]) lok.sure.laz)
         (levy fork.laz |=([[* a=laze] * b=laze] &((none a) (none b))))
         (levy bond.laz |=([* n=laze] (none n)))
+    ==
+  ::  +this-only for shapes
+  ::
+  ++  laze-this-only
+    |=  laz=laze
+    ^-  ?
+    =*  only  .
+    ?&  ?=(?(%this %none) -.ned.sure.laz)
+        ?=(?(~ [%1 ~ ~]) lok.sure.laz)
+        (levy fork.laz |=([[* a=laze] * b=laze] &((only a) (only b))))
+        (levy bond.laz |=([* n=laze] (only n)))
     ==
   ::  +must for shapes
   ::
@@ -5343,6 +5381,19 @@
       ?=(?(~ [%1 ~ ~]) lok.sure.laz)
       (levy fork.laz |=([[* a=need-lazy] * b=need-lazy] &((none a) (none b))))
       (levy bond.laz |=([* n=need-lazy] (none n)))
+  ==
+::  whether a lazy need wants its noun whole or not at all, in every block
+::  (sure, forks and bonds): then nothing deconses it, and one register of
+::  it serves them all
+::
+++  this-only
+  |=  laz=need-lazy
+  ^-  ?
+  =*  only  .
+  ?&  ?=(?(%this %none) -.ned.sure.laz)
+      ?=(?(~ [%1 ~ ~]) lok.sure.laz)
+      (levy fork.laz |=([[* a=need-lazy] * b=need-lazy] &((only a) (only b))))
+      (levy bond.laz |=([* n=need-lazy] (only n)))
   ==
 --
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
