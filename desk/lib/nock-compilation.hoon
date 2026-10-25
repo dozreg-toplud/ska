@@ -1069,11 +1069,7 @@
     ?.  ?=([^ *] data.prod)
       %-  (print-ska 3 |.(>fast-atom-root+[label data.prod]<))
       gen
-    %=  gen
-      core  (~(put ju core.gen) ~[label] prod)
-      root  (~(put ju root.gen) data.prod ~[label])
-      arms  (index-arms -.data.prod ~[label] arms.gen)
-    ==
+    [miss.gen (register-template ~[label] prod +.gen)]
   ::  child core registration
   ::
   =/  axis=@  u.u.parent
@@ -1124,11 +1120,24 @@
     (darn:so [[& |] data.batt ~] axis i.socks)
   ::
   %-  (print-ska 1 |.(>[%matched pax]<))
-  %=  gen
-    core  (~(put ju core.gen) pax template)
-    batt  (~(put ju batt.gen) data.batt pax)
-    arms  (index-arms data.batt pax arms.gen)
-  ==
+  [miss.gen (register-template pax template +.gen)]
+::  Register a template at a path: for a root registration the whole core,
+::  else the battery with the parent's template at the parent axis and
+::  nothing else known, as +register-fast builds it.  Vere builds the same
+::  for the cores u3n registers and feeds them through the %fast ovum.
+::
+++  register-template
+  |=  [pax=path tem=sock reg=regs]
+  ^-  regs
+  ?>  ?=(^ tem)
+  =/  batt=sock  (hed:so tem)
+  ?>  &(?=(^ batt) (all:ca cape.batt) ?=(^ data.batt))
+  =.  core.reg  (~(put ju core.reg) pax tem)
+  =.  arms.reg  (index-arms data.batt pax arms.reg)
+  ?.  ?=([* ~] pax)
+    reg(batt (~(put ju batt.reg) data.batt pax))
+  ?>  (all:ca cape.tem)
+  reg(root (~(put ju root.reg) data.tem pax))
 ::  Put the battery `batt` and its subformulas (if present) into `arms`
 ::
 ++  index-arms
@@ -1291,7 +1300,7 @@
 ::
 ++  ska-poke
   |=  [[bus=sock fol=^] lon=long-ska]
-  ^-  [bell long-ska]
+  ^-  [[bell (jug path sock)] long-ska]
   %-  road-pure  |.
   =/  root-identity=identity  [bus fol]
   =/  [g=callgraph =regs]
@@ -1380,11 +1389,11 @@
     acc
   ::
   =/  root-bell=bell  [less-code.root-datum fol]
-  :-  root-bell
   =/  new-cores=(jug path sock)  ((dif-ju core.regs) core.jets.lon)
   =.  jets.lon
     jets.lon(root root.regs, core core.regs, batt batt.regs, arms arms.regs)
   ::
+  :-  [root-bell new-cores]
   (ska-cole-update lon ~(key by just-code) new-cores)
 ::  produces data about a function
 ::  pure: no crashes + no hints excepts %fast (call to it could be omitted)
@@ -6387,11 +6396,13 @@
   $%  [%full sub=* fol=^]
       [%jets p=(list (pair ring jets-comp-info))]
       [%dire b=bell mono=?]
+      [%fast reset=? p=(list [pax=path =sock])]
   ==
+::  %ir carries the registrations the analysis made, for vere to keep
 ::
 +$  prod
   $@  ~
-  $%  [%ir b=bell p=straight]
+  $%  [%ir b=bell p=straight new=(list [pax=path =sock])]
   ==
 ::
 ++  validate-ovum
@@ -6400,7 +6411,7 @@
   =;  out  =+(=(n out) out)
   ?@  n  !!
   ?+    -.n  !!
-      ?(%full %jets)  ;;(ovum n)
+      ?(%full %jets %fast)  ;;(ovum n)
       %dire
     ?.  ?=([%dire b=* mono=?] n)  !!
     n(b (validate-bell b.n))
@@ -6466,8 +6477,30 @@
   ?-    -.ovo
       %jets  [~ ..poke(jets-hot.state (malt p.ovo))]
   ::
+      %fast
+    =/  old=(jug path sock)  core.jets.long-ska.state
+    =/  reg=regs
+      ?:  reset.ovo  *regs
+      [root core batt arms]:jets.long-ska.state
+    =.  reg
+      %+  roll  p.ovo
+      |=  [[pax=path tem=sock] =_reg]
+      (register-template pax tem reg)
+    =.  jets.long-ska.state
+      %=  jets.long-ska.state
+        root  root.reg
+        core  core.reg
+        batt  batt.reg
+        arms  arms.reg
+      ==
+    =.  long-ska.state
+      ?:  reset.ovo  (ska-cole-restore long-ska.state)
+      (ska-cole-update long-ska.state ~ ((dif-ju core.reg) old))
+    [~ ..poke]
+  ::
       %full
-    =^  func=bell  long-ska.state  (ska-poke [&+sub.ovo fol.ovo] long-ska.state)
+    =^  [func=bell new=(jug path sock)]  long-ska.state
+      (ska-poke [&+sub.ovo fol.ovo] long-ska.state)
     =/  [rev=(jug bell bell) scc-map=(map bell (set bell))]
       graph-info
     ::
@@ -6478,7 +6511,12 @@
       [func scc rev [code jets]:long-ska.state scc-map jets-hot.state]
     ::
     =.  straight  (optimize straight)
-    [[%ir func straight] ..poke]
+    :_  ..poke
+    :^  %ir  func  straight
+    %-  zing
+    %+  turn  ~(tap by new)
+    |=  [pax=path socks=(set sock)]
+    (turn ~(tap in socks) (lead pax))
   ::
       %dire
     =/  [rev=(jug bell bell) scc-map=(map bell (set bell))]
@@ -6495,7 +6533,7 @@
       [scc rev [code jets]:long-ska.state scc-map jets-hot.state]
     ::
     =.  straight  (optimize straight)
-    [[%ir b.ovo straight] ..poke]
+    [[%ir b.ovo straight ~] ..poke]
   ==
 ::
 ++  wish  !!  ::  +10
