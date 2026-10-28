@@ -2282,10 +2282,16 @@
       blocks=(map @uwoo blob)
       tags=(map @uwoo (list @uxid))  ::  region of lazy need blocks
       =cond
+      nary=(map bell straight)       ::  compiled callees, for their needs
   ==
 ::
 +$  jets-comp-info  [need=need-ordered]
 +$  jets-comp  (map ring jets-comp-info)
++$  comp-cache
+  $:  views=(unit [rev=(jug bell bell) scc-map=(map bell (set bell))])
+      nary=(map bell straight)      ::  functions of the parts they use
+      mono=(map bell straight)      ::  functions of their whole subject
+  ==
 ::  Non-control-flow ops
 ::
 +$  pole
@@ -2488,27 +2494,27 @@
           long-ska=_[=_code =_jets]:*long-ska
           scc-map=(map bell (set bell))
           jets-hot=jets-comp
+          nary=(map bell straight)
       ==
-  ^-  [straight (map bell straight)]
+  ^-  [[straight (map bell straight)] nary=(map bell straight)]
   =/  args  +<
-  ~+
   %-  road-pure  |.
-  ~>  %memo./ska
   ::  Compile normally
   ::
-  =/  n-ary-map=(map bell straight)  (compile-scc-in +.args)
-  :_  n-ary-map
-  ^-  straight
+  =^  n-ary-map=(map bell straight)  nary  (compile-scc-in +.args)
   =/  comp  (comp scc rev long-ska scc-map jets-hot n-ary-map func)
   ::  Compile the pessimized version
   ::
-  =/  [nex=next gen=line-short]
-    %-  ~(run comp *line-short)
-    [& nomm:(~(got by code.long-ska) func) [%done ~] ~]
+  =|  gen=line-short
+  =.  nary.gen  nary
+  =^  nex=next  gen
+    (~(run comp gen) & nomm:(~(got by code.long-ska) func) [%done ~] ~)
   ::  Collapse the subject need to a single noun, finalize
   ::
   =^  [o=@uwoo sub=@uvre]  gen  (~(kerf comp gen) nex)
-  (~(to-straight comp gen) [%next [[this+sub ~] ~ ~] ~ o])
+  :_  nary.gen
+  :-  (~(to-straight comp gen) [%next [[this+sub ~] ~ ~] ~ o])
+  n-ary-map
 ::
 ++  compile-scc
   ~%  %compile-scc  ..ride  ~
@@ -2517,10 +2523,10 @@
           long-ska=_[=_code =_jets]:*long-ska
           scc-map=(map bell (set bell))
           jets-hot=jets-comp
+          nary=(map bell straight)
       ==
-  ^-  (map bell straight)
+  ^-  [(map bell straight) nary=(map bell straight)]
   =*  args  +<
-  ~+
   (road-pure |.((compile-scc-in args)))
 ::  The compilation proper, called directly for callees so that the whole
 ::  recursion shares the entry's road
@@ -2532,13 +2538,13 @@
           long-ska=_[=_code =_jets]:*long-ska
           scc-map=(map bell (set bell))
           jets-hot=jets-comp
+          nary=(map bell straight)
       ==
-  ^-  (map bell straight)
-  ::  Transient memoization within the road, persistent memoization across
-  ::  calls and events (the road has no scry gate, so it always saves)
-  ::
-  ~+
-  ~>  %memo./ska
+  ^-  [(map bell straight) nary=(map bell straight)]
+  ?:  (levy ~(tap in scc) ~(has by nary))
+    :_  nary
+    %-  ~(gas by *(map bell straight))
+    (turn ~(tap in scc) |=(b=bell [b (~(got by nary) b)]))
   ::  Only the subject shapes in .map-local are read by the loop, so the rest
   ::  of the straight is a placeholder until the fixed point is reached, when
   ::  the whole SCC is compiled once more with .done set, this time for real
@@ -2552,19 +2558,25 @@
   ::
   =/  w=worklist  scc
   =/  counter=@ud  0
-  |-  ^+  map-local
+  |-  ^+  [map-local nary]
   =*  fixpoint-compilation  $
-  =;  [w-new=worklist map-local1=_map-local]
-    ?:  done  map-local1
+  =;  [w-new=worklist map-local1=_map-local nary1=_nary]
+    ?:  done  [map-local1 (~(uni by nary1) map-local1)]
     =.  w-new  (~(int in w-new) scc)
-    ?:  =(~ w-new)  fixpoint-compilation(w scc, map-local map-local1, done &)
+    ?:  =(~ w-new)
+      fixpoint-compilation(w scc, map-local map-local1, nary nary1, done &)
     %-  (print-comp 0 |.(leaf+"[fixpoint-compilation {(scow %ud counter)}]"))
-    fixpoint-compilation(w w-new, map-local map-local1, counter +(counter))
+    %=  fixpoint-compilation
+      w          w-new
+      map-local  map-local1
+      nary       nary1
+      counter    +(counter)
+    ==
   ::
   %-  ~(rep in w)
   ~%  %compile-scc-fn  ..ride  ~
-  |=  [b=bell w-new=worklist =_map-local]
-  ^+  [w-new map-local]
+  |=  [b=bell w-new=worklist =_map-local =_nary]
+  ^+  [w-new map-local nary]
   ?>  ?=(^ less.b)
   =/  comp  (comp scc rev long-ska scc-map jets-hot map-local b)
   =/  =nomm  nomm:(~(got by code.long-ska) b)
@@ -2572,7 +2584,8 @@
   ::  traversal, or from the full compilation with code emission dropped.  The
   ::  final pass compiles for real, emitting code right away.
   ::
-  =/  gen=line-short  *line-short
+  =|  gen=line-short
+  =.  nary.gen  nary
   =^  [need-new=need-ordered laz=need-lazy ned-final=need o=@uwoo]  gen
     !@  dedicated-shape-pass
       =.  mode.gen  ?:(done %run %drop)
@@ -2590,12 +2603,13 @@
       (~(collapse-shape comp gen) nex cape.less.b)
     ::
     [[(need-to-ordered ned-final) laz ned-final o] gen]
+  =.  nary  nary.gen
   ::  Debug assert of +run-shape correctenss
   ::
   =>  =*  dot  .
       !@  shape-check  dot
       ?.  done  dot
-      =/  l=laze  -:(~(run-shape comp *line-short) nomm [%done ~])
+      =/  l=laze  -:(~(run-shape comp gen) nomm [%done ~])
       =/  shape  (laze-collapse l cape.less.b)
       ~|  [%shape-mismatch b shape need-new]
       ?>  =(shape need-new)
@@ -2621,15 +2635,17 @@
   ::  did not converge yet, taking MSG of subject splits to avoid divergence.
   ::
   ?~  s-previous=(~(get by map-local) b)
-    :-  ?:  ?=([%none ~] need-new)  w-new
+    :+  ?:  ?=([%none ~] need-new)  w-new
         (~(uni in w-new) (~(get ju rev) b))
-    (~(put by map-local) b (finish ~))
+      (~(put by map-local) b (finish ~))
+    nary
   =/  need-pessimized  (msg-need-ord need-new need.u.s-previous cape.less.b)
-  :-  ?:  =(need-pessimized need.u.s-previous)  w-new
+  :+  ?:  =(need-pessimized need.u.s-previous)  w-new
       (~(uni in w-new) (~(get ju rev) b))
-  %+  ~(put by map-local)  b
-  ?:  =(need-pessimized need-new)  (finish ~)
-  (finish `need-pessimized)
+    %+  ~(put by map-local)  b
+    ?:  =(need-pessimized need-new)  (finish ~)
+    (finish `need-pessimized)
+  nary
 ::
 ++  need-normalize
   ~%  %need-normalize  ..ride  ~
@@ -2788,17 +2804,14 @@
       ::  if calling persistently memoized function: call with the entire
       ::  subject
       ::
-      =/  b-ned=need-ordered
-        ?^  j=(biff rin ~(get by jets-hot))  need.u.j
+      =^  b-ned=need-ordered  gen
+        ?^  j=(biff rin ~(get by jets-hot))  [need.u.j gen]
         ::  persistent memoization: always %csm
         ::
-        ?:  ?=([~ ^] key)  this+~
+        ?:  ?=([~ ^] key)  [this+~ gen]
         ?:  (~(has in scc) b-callee)
-          need:(~(gut by map-local) b-callee *straight)
-        =/  new-scc=(set bell)  (~(gut by scc-map) b-callee [b-callee ~ ~])
-        =;  m  need:(~(got by m) b-callee)
-        =/  new-scc=(set bell)  (~(gut by scc-map) b-callee [b-callee ~ ~])
-        (compile-scc-in new-scc rev long-ska scc-map jets-hot)
+          [need:(~(gut by map-local) b-callee *straight) gen]
+        (callee-compiled b-callee)
       ::  allocate registers
       ::
       =^  sub-ned=need  gen  (need-ord-alloc-regs b-ned)
@@ -3202,7 +3215,8 @@
       ::
       =^  l-sub  gen
         ?:  drop  $(nomm p.nomm, goal [%next none])
-        $(nomm p.nomm, goal [%next [[(callee-need b-callee) ~] ~ ~]])
+        =^  ned=need-ordered  gen  (callee-need b-callee)
+        $(nomm p.nomm, goal [%next [[ned ~] ~ ~]])
       ::
       [(laze-copy l-sub l-fol) gen]
     ::
@@ -3277,14 +3291,23 @@
   ::
   ++  callee-need
     |=  b-callee=bell
-    ^-  need-ordered
+    ^-  [need-ordered _gen]
     =/  rin=(unit ring)  (~(get by call.cole.jets.long-ska) b-callee)
-    ?^  j=(biff rin ~(get by jets-hot))  need.u.j
+    ?^  j=(biff rin ~(get by jets-hot))  [need.u.j gen]
     ?:  (~(has in scc) b-callee)
-      need:(~(gut by map-local) b-callee *straight)
+      [need:(~(gut by map-local) b-callee *straight) gen]
+    (callee-compiled b-callee)
+  ::  need of a callee outside the SCC, compiled for it: from the compiled
+  ::  functions in .gen, which compiling it extends
+  ::
+  ++  callee-compiled
+    |=  b-callee=bell
+    ^-  [need-ordered _gen]
+    ?^  s=(~(get by nary.gen) b-callee)  [need.u.s gen]
     =/  new-scc=(set bell)  (~(gut by scc-map) b-callee [b-callee ~ ~])
-    =<  need
-    (~(got by (compile-scc-in new-scc rev long-ska scc-map jets-hot)) b-callee)
+    =^  m=(map bell straight)  nary.gen
+      (compile-scc-in new-scc rev long-ska scc-map jets-hot nary.gen)
+    [need:(~(got by m) b-callee) gen]
   ::
   ++  laze-none-equivalent
     |=  laz=laze
@@ -6428,26 +6451,57 @@
   [(val -.n) (val +.n)]
 --
 ::
-=|  state=[%0 =long-ska jets-hot=jets-comp]
+=|  state=[%0 =long-ska jets-hot=jets-comp cache=comp-cache]
 |%
 ++  version  -.state
+::  views of the finalized graph, from the cache or made and cached
+::
 ++  graph-info
-  ^-  [rev=(jug bell bell) scc-map=(map bell (set bell))]
-  ~>  %memo./ska  ::  proper explicit memoization?
+  ^-  [[rev=(jug bell bell) scc-map=(map bell (set bell))] _cache.state]
+  ?^  views.cache.state  [u.views.cache.state cache.state]
   =/  [bell-graph=(jug bell bell) rev=(jug bell bell)]  ::  XX make incremental?
     (simple-bell-graph-and-reversed graph.final.long-ska.state)
   ::
-  :-  rev
-  =/  sccs=(list (set bell))  (tarjan bell-graph)  ::  XX make incremental?
-  =|  out=(map bell (set bell))
-  |-  ^+  out
-  ?~  sccs  out
-  =.  out
-    %-  ~(rep in i.sccs)
-    |=  [b=bell acc=_out]
-    (~(put by acc) b i.sccs)
-  ::
-  $(sccs t.sccs)
+  =/  scc-map=(map bell (set bell))
+    =/  sccs=(list (set bell))  (tarjan bell-graph)  ::  XX make incremental?
+    =|  out=(map bell (set bell))
+    |-  ^+  out
+    ?~  sccs  out
+    =.  out
+      %-  ~(rep in i.sccs)
+      |=  [b=bell acc=_out]
+      (~(put by acc) b i.sccs)
+    ::
+    $(sccs t.sccs)
+  :-  [rev scc-map]
+  cache.state(views `[rev scc-map])
+::  a function compiled as one of its whole subject, from the cache or made
+::  and cached, with its SCC
+::
+++  compiled-mono
+  |=  [b=bell scc=(set bell) rev=(jug bell bell) scc-map=(map bell (set bell))]
+  ^-  [straight _cache.state]
+  ?^  s=(~(get by mono.cache.state) b)  [u.s cache.state]
+  =^  [=straight n-ary=(map bell straight)]  nary.cache.state
+    %-  compile-unary
+    :*  b  scc  rev  [code jets]:long-ska.state  scc-map  jets-hot.state
+        nary.cache.state
+    ==
+  =.  nary.cache.state  (~(uni by nary.cache.state) n-ary)
+  [straight cache.state(mono (~(put by mono.cache.state) b straight))]
+::  a function compiled as one of the parts of its subject it uses, from the
+::  cache or made and cached with its SCC
+::
+++  compiled-nary
+  |=  [b=bell scc=(set bell) rev=(jug bell bell) scc-map=(map bell (set bell))]
+  ^-  [straight _cache.state]
+  ?^  s=(~(get by nary.cache.state) b)  [u.s cache.state]
+  =^  m=(map bell straight)  nary.cache.state
+    %-  compile-scc
+    :*  scc  rev  [code jets]:long-ska.state  scc-map  jets-hot.state
+        nary.cache.state
+    ==
+  [(~(got by m) b) cache.state]
 --
 ::
 |%
@@ -6467,7 +6521,13 @@
     (validate-ovum ovo)
   ::
   ?-    -.ovo
-      %jets  [~ ..poke(jets-hot.state (malt p.ovo))]
+      %jets
+    :-  ~
+    %=  ..poke
+      jets-hot.state    (malt p.ovo)
+      nary.cache.state  ~
+      mono.cache.state  ~
+    ==
   ::
       %fast
     =/  old=(jug path sock)  core.jets.long-ska.state
@@ -6489,42 +6549,43 @@
         arms  arms.reg
       ==
     ::
+    =/  cole  call.cole.jets.long-ska.state
     =.  long-ska.state
       ?:  reset.ovo  (ska-cole-restore long-ska.state)
       (ska-cole-update long-ska.state ~ ((dif-ju core.reg) old))
+    ::  compiled functions call through the rings: none holds if those
+    ::  changed
+    ::
+    =?  nary.cache.state  !=(cole call.cole.jets.long-ska.state)  ~
+    =?  mono.cache.state  !=(cole call.cole.jets.long-ska.state)  ~
     ::
     [~ ..poke]
   ::
       %full
     =^  [func=bell new=(list [pax=path tem=sock clue=*])]  long-ska.state
       (ska-poke [&+sub.ovo fol.ovo] long-ska.state)
+    ::  the graph and the code changed, the rings may have: nothing derived
+    ::  from them holds
     ::
-    =/  [rev=(jug bell bell) scc-map=(map bell (set bell))]
+    =.  cache.state  *comp-cache
+    =^  [rev=(jug bell bell) scc-map=(map bell (set bell))]  cache.state
       graph-info
     ::
     =/  scc=(set bell)  (~(gut by scc-map) func [func ~ ~])
-    =/  =straight
-      =<  -
-      %-  compile-unary
-      [func scc rev [code jets]:long-ska.state scc-map jets-hot.state]
+    =^  =straight  cache.state  (compiled-mono func scc rev scc-map)
     ::
     =.  straight  (optimize straight)
     :_  ..poke
     [%ir func straight new]
   ::
       %dire
-    =/  [rev=(jug bell bell) scc-map=(map bell (set bell))]
+    =^  [rev=(jug bell bell) scc-map=(map bell (set bell))]  cache.state
       graph-info
     ::
     =/  scc=(set bell)  (~(gut by scc-map) b.ovo [b.ovo ~ ~])
-    =/  =straight
-      ?:  mono.ovo
-        =<  -
-        %-  compile-unary
-        [b.ovo scc rev [code jets]:long-ska.state scc-map jets-hot.state]
-      =-  (~(got by -) b.ovo)
-      %-  compile-scc
-      [scc rev [code jets]:long-ska.state scc-map jets-hot.state]
+    =^  =straight  cache.state
+      ?:  mono.ovo  (compiled-mono b.ovo scc rev scc-map)
+      (compiled-nary b.ovo scc rev scc-map)
     ::
     =.  straight  (optimize straight)
     [[%ir b.ovo straight ~] ..poke]
