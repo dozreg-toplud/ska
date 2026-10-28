@@ -429,7 +429,7 @@
     =/  sub  (get u.op)
     =/  fol  (get f.op)
     ?@  fol  ~
-    =^  callee  long-ska  (ska-poke [&+sub fol] long-ska)
+    =^  callee  long-ska  [-< +]:(ska-poke [&+sub fol] long-ska)
     =/  info  (graph-info long-ska)
     =/  sam-callee
       %=  sam

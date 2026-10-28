@@ -29,7 +29,7 @@
   !=
   (scow %ud 5)
 ::
-=^  func=bell  long-ska  (ska-poke [&+subject formula] long-ska)
+=^  func=bell  long-ska  [-< +]:(ska-poke [&+subject formula] long-ska)
 =.  long-ska  (ska-cole-restore long-ska)
 ::
 =/  formula=^
@@ -42,7 +42,7 @@
   ?~  l  ~
   [(dec i.l) $(l t.l)]
 ::
-=^  func=bell  long-ska  (ska-poke [&+subject formula] long-ska)
+=^  func=bell  long-ska  [-< +]:(ska-poke [&+subject formula] long-ska)
 =.  long-ska  (ska-cole-restore long-ska)
 =/  [bell-graph=(jug bell bell) rev=(jug bell bell)]
   (simple-bell-graph-and-reversed graph.final.long-ska)

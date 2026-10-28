@@ -1130,6 +1130,22 @@
   |=  [pax=path tem=sock reg=regs]
   ^-  regs
   ?>  ?=(^ tem)
+  =.  tem
+    ::  Normalize the sock for better matches. Denormalization is needed during
+    ::  the analysis, not in between
+    ::
+    =>  [s=tem ..sock]
+    |-  ^+  s
+    ?:  ?=(%| cape.s)  |+~
+    ?:  ?=(%& cape.s)  s
+    ~+
+    =/  l  $(s [-.cape.s -.data.s])
+    =/  r  $(s [+.cape.s +.data.s])
+    ?:  &(?=(%| cape.l) ?=(%| cape.r))  |+~
+    :_  [data.l data.r]
+    ?:  &(?=(@ cape.l) =(cape.l cape.r))  cape.l
+    [cape.l cape.r]
+  ::
   =/  batt=sock  (hed:so tem)
   ?>  &(?=(^ batt) (all:ca cape.batt) ?=(^ data.batt))
   =.  core.reg  (~(put ju core.reg) pax tem)
@@ -1250,53 +1266,12 @@
     (put b u.r c)
   ::
   lon
-::  Reestablish the bell <--> ring mapping from scratch. +ska-poke keeps it up
-::  to date, so this is only needed to check it.
 ::
 ++  ska-cole-restore
   |=  lon=long-ska
   ^-  long-ska
   =.  cole.jets.lon  [~ ~]
   (ska-cole-update lon ~(key by code.lon) core.jets.lon)
-::
-++  norm-so
-  |=  s=sock
-  ^-  sock
-  =*  norm-so  .
-  ?:  |(?=(%void s) ?=(@ cape.s))  s
-  ~+
-  =;  out=sock  =+(=(out s) out)
-  =/  h=sock  (norm-so -.cape.s -.data.s)
-  =/  t=sock  (norm-so +.cape.s +.data.s)
-  ?:  |(?=(%void h) ?=(%void t))  %void
-  :_  [data.h data.t]
-  ?:  &(?=(? cape.h) =(cape.h cape.t))  cape.h
-  [cape.h cape.t]
-::
-++  norm-pi
-  |=  m=spring
-  ^-  spring
-  =*  norm-pi  .
-  ?@  m  m
-  ~+
-  =/  l  (norm-pi -.m)
-  =/  r  (norm-pi +.m)
-  ::  [2n 2n+1] -> n, n != 0
-  ::
-  ?:  ?&  ?=(@ l)
-          ?=(@ r)
-          !=(0 l)
-          =(0 (mod l 2))
-          =(+(l) r)
-      ==
-    (div l 2)
-  [l r]
-::
-++  normalize-prod
-  ~%  %normalize-prod  ..ride  ~
-  |=  prod=[s=sock m=spring]
-  ^+  prod
-  [(norm-so s.prod) (norm-pi m.prod)]
 ::
 ++  ska-poke
   |=  [[bus=sock fol=^] lon=long-ska]
@@ -6486,6 +6461,7 @@
       %+  roll  p.ovo
       |=  [[pax=path tem=sock] =_reg]
       (register-template pax tem reg)
+    ::
     =.  jets.long-ska.state
       %=  jets.long-ska.state
         root  root.reg
@@ -6493,14 +6469,17 @@
         batt  batt.reg
         arms  arms.reg
       ==
+    ::
     =.  long-ska.state
       ?:  reset.ovo  (ska-cole-restore long-ska.state)
       (ska-cole-update long-ska.state ~ ((dif-ju core.reg) old))
+    ::
     [~ ..poke]
   ::
       %full
     =^  [func=bell new=(jug path sock)]  long-ska.state
       (ska-poke [&+sub.ovo fol.ovo] long-ska.state)
+    ::
     =/  [rev=(jug bell bell) scc-map=(map bell (set bell))]
       graph-info
     ::
