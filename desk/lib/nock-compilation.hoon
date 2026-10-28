@@ -2612,7 +2612,7 @@
     ::  subject shape was achieved
     ::
     ?.  done  [?~(pessimized need-new u.pessimized) 0 ~]
-    =.  gen  (~(coerce-lazy comp gen) ned-final o laz)
+    =.  gen  (~(coerce-lazy comp gen) ned-final o laz cape.less.b)
     =/  res=next-resolved  [%next [[ned-final ~] ~ ~] ~ o]
     ?~  pessimized  (~(to-straight comp gen) res)
     =^  coerced=next-resolved  gen  (~(coerce-ord comp gen) u.pessimized res)
@@ -4470,11 +4470,19 @@
   ::
   ++  coerce-lazy
     ~%  %comp-coerce-lazy  ..ride  ~
-    |=  [ned=need o=@uwoo laz=need-lazy]
+    |=  [ned=need o=@uwoo laz=need-lazy less=cape]
     ^+  gen
     =*  coerce-lazy  .
     =.  gen
-      =/  ned-target=need  ned.sure.laz
+      =^  ned-target=need  gen
+        %-  sure-require-look
+        %=    sure.laz
+            lok
+          %-  ~(rep in lok.sure.laz)
+          |=  [axe=@ acc=(set @)]
+          ?:((axe-in-less-cape axe less) acc (~(put in acc) axe))
+        ==
+      ::
       |-  ^+  gen
       =*  sure-loop  $
       ?-    -.ned
@@ -4515,13 +4523,13 @@
       %+  roll  bond.laz
       |=  [[o=@uwoo laz=need-lazy] gen-acc=_gen]
       =.  gen  gen-acc
-      (coerce-lazy ned o laz)
+      (coerce-lazy ned o laz less)
     ::
     %+  roll  fork.laz
     |=  [[y=[o=@uwoo laz=need-lazy] n=[o=@uwoo laz=need-lazy]] gen-acc=_gen]
     =.  gen  gen-acc
-    =.  gen  (coerce-lazy ned y)
-    (coerce-lazy ned n)
+    =.  gen  (coerce-lazy ned o.y laz.y less)
+    (coerce-lazy ned o.n laz.n less)
   ::
   ::  NB: bonds do not matter when it comes to figuring out the shape of the
   ::  need but they do matter when it comes to emitting the disassembly code
@@ -4533,7 +4541,7 @@
     ^-  [next-resolved _gen]
     =^  [ned-final=need laz=need-lazy o=@uwoo]  gen  (collapse-shape nex less)
     :-  [%next [[ned-final ~] ~ ~] ~ o]
-    (coerce-lazy ned-final o laz)
+    (coerce-lazy ned-final o laz less)
   ::  Shape of the subject with registers allocated, without the deconsing
   ::  code: the input shape is all that the compilation fixed point reads
   ::
