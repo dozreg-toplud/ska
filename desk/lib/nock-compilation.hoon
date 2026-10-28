@@ -643,13 +643,16 @@
 ::  %fast registrations: root cores by noun, core templates by path, battery
 ::  -> paths of the registered cores with it, battery node (arm formula or a
 ::  subtree of arms) -> paths of the registered cores with it (index for
-::  +cole-match)
+::  +cole-match), and the registrations made since the analysis began,
+::  latest first, with the clues of their hints, for vere to register the
+::  cores too
 ::
 +$  regs
   $:  root=(jug * path)
       core=(jug path sock)
       batt=(jug ^ path)
       arms=(jug ^ path)
+      new=(list [pax=path tem=sock clue=*])
   ==
 ::  Analysis state, see +ska-callgraph
 ::
@@ -1069,7 +1072,7 @@
     ?.  ?=([^ *] data.prod)
       %-  (print-ska 3 |.(>fast-atom-root+[label data.prod]<))
       gen
-    [miss.gen (register-template ~[label] prod +.gen)]
+    [miss.gen (register-template ~[label] prod clue +.gen)]
   ::  child core registration
   ::
   =/  axis=@  u.u.parent
@@ -1120,14 +1123,15 @@
     (darn:so [[& |] data.batt ~] axis i.socks)
   ::
   %-  (print-ska 1 |.(>[%matched pax]<))
-  [miss.gen (register-template pax template +.gen)]
+  [miss.gen (register-template pax template clue +.gen)]
 ::  Register a template at a path: for a root registration the whole core,
 ::  else the battery with the parent's template at the parent axis and
 ::  nothing else known, as +register-fast builds it.  Vere builds the same
-::  for the cores u3n registers and feeds them through the %fast ovum.
+::  for the cores u3n registers and feeds them through the %fast ovum, and
+::  registers the ones made here from the clues %ir carries back.
 ::
 ++  register-template
-  |=  [pax=path tem=sock reg=regs]
+  |=  [pax=path tem=sock clue=* reg=regs]
   ^-  regs
   ?>  ?=(^ tem)
   =.  tem
@@ -1146,8 +1150,10 @@
     ?:  &(?=(@ cape.l) =(cape.l cape.r))  cape.l
     [cape.l cape.r]
   ::
+  ?:  (~(has ju core.reg) pax tem)  reg
   =/  batt=sock  (hed:so tem)
   ?>  &(?=(^ batt) (all:ca cape.batt) ?=(^ data.batt))
+  =.  new.reg   [[pax tem clue] new.reg]
   =.  core.reg  (~(put ju core.reg) pax tem)
   =.  arms.reg  (index-arms data.batt pax arms.reg)
   ?.  ?=([* ~] pax)
@@ -1275,11 +1281,12 @@
 ::
 ++  ska-poke
   |=  [[bus=sock fol=^] lon=long-ska]
-  ^-  [[bell (jug path sock)] long-ska]
+  ^-  [[bell (list [pax=path tem=sock clue=*])] long-ska]
   %-  road-pure  |.
   =/  root-identity=identity  [bus fol]
   =/  [g=callgraph =regs]
-    (ska-callgraph root-identity memo.final.lon [root core batt arms]:jets.lon)
+    %-  ska-callgraph
+    [root-identity memo.final.lon [root core batt arms ~]:jets.lon]
   ::
   =/  pruned=callgraph  (prune-callgraph g root-identity `graph.final.lon)
   =.  graph.final.lon  (~(uni by graph.final.lon) pruned)
@@ -1364,11 +1371,12 @@
     acc
   ::
   =/  root-bell=bell  [less-code.root-datum fol]
-  =/  new-cores=(jug path sock)  ((dif-ju core.regs) core.jets.lon)
+  =/  new-cores=(jug path sock)
+    (~(gas ju *(jug path sock)) (turn new.regs |=([p=path s=sock *] [p s])))
   =.  jets.lon
     jets.lon(root root.regs, core core.regs, batt batt.regs, arms arms.regs)
   ::
-  :-  [root-bell new-cores]
+  :-  [root-bell (flop new.regs)]
   (ska-cole-update lon ~(key by just-code) new-cores)
 ::  produces data about a function
 ::  pure: no crashes + no hints excepts %fast (call to it could be omitted)
@@ -6373,11 +6381,12 @@
       [%dire b=bell mono=?]
       [%fast reset=? p=(list [pax=path =sock])]
   ==
-::  %ir carries the registrations the analysis made, for vere to keep
+::  %ir carries the registrations the analysis made, parents first, with
+::  the clues of their hints, for vere to keep and to register the cores
 ::
 +$  prod
   $@  ~
-  $%  [%ir b=bell p=straight new=(list [pax=path =sock])]
+  $%  [%ir b=bell p=straight new=(list [pax=path tem=sock clue=*])]
   ==
 ::
 ++  validate-ovum
@@ -6456,11 +6465,13 @@
     =/  old=(jug path sock)  core.jets.long-ska.state
     =/  reg=regs
       ?:  reset.ovo  *regs
-      [root core batt arms]:jets.long-ska.state
+      [root core batt arms ~]:jets.long-ska.state
+    ::  no clue: vere registered these itself
+    ::
     =.  reg
       %+  roll  p.ovo
       |=  [[pax=path tem=sock] =_reg]
-      (register-template pax tem reg)
+      (register-template pax tem ~ reg)
     ::
     =.  jets.long-ska.state
       %=  jets.long-ska.state
@@ -6477,7 +6488,7 @@
     [~ ..poke]
   ::
       %full
-    =^  [func=bell new=(jug path sock)]  long-ska.state
+    =^  [func=bell new=(list [pax=path tem=sock clue=*])]  long-ska.state
       (ska-poke [&+sub.ovo fol.ovo] long-ska.state)
     ::
     =/  [rev=(jug bell bell) scc-map=(map bell (set bell))]
@@ -6491,11 +6502,7 @@
     ::
     =.  straight  (optimize straight)
     :_  ..poke
-    :^  %ir  func  straight
-    %-  zing
-    %+  turn  ~(tap by new)
-    |=  [pax=path socks=(set sock)]
-    (turn ~(tap in socks) (lead pax))
+    [%ir func straight new]
   ::
       %dire
     =/  [rev=(jug bell bell) scc-map=(map bell (set bell))]
