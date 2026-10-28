@@ -60,9 +60,9 @@
 ::
 ::  Table of contents:
 ::    Call graph construction:  line 541
-::    Compilation:              line 2054
-::    IR optimization passes:   line 5337
-::    Interactive core:         line 6312
+::    Compilation:              line 2075
+::    IR optimization passes:   line 5471
+::    Interactive core:         line 6446
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
@@ -702,8 +702,9 @@
     ==
   ::::  saved entries:
     ::
-    code=(map bell code-entry)        ::  direct bell mapping
+    code=(map bell code-entry)          ::  direct bell mapping
     fols=(map ^ (map bell code-entry))  ::  lookup by formula
+    calls=(map bell (set bell))         ::  bell call graph
   ==
 --
 ::
@@ -1375,6 +1376,18 @@
     (~(gas ju *(jug path sock)) (turn new.regs |=([p=path s=sock *] [p s])))
   =.  jets.lon
     jets.lon(root root.regs, core core.regs, batt batt.regs, arms arms.regs)
+  ::
+  =/  old  calls.lon
+  =.  calls.lon
+    %-  ~(rep by pruned)
+    |=  [[k=identity v=datum] acc=_calls.lon]
+    =/  b=bell  [less-code.v fol.k]
+    ?:  (~(has by old) b)  acc
+    %+  ~(put by acc)  b
+    %-  ~(rep in callees.v)
+    |=  [c=callee-entry cs=_(~(gut by acc) b ~)]
+    =/  d=datum  (~(got by graph.final.lon) id.c)
+    (~(put in cs) [less-code.d fol.id.c])
   ::
   :-  [root-bell (flop new.regs)]
   (ska-cole-update lon ~(key by just-code) new-cores)
@@ -2282,15 +2295,19 @@
       blocks=(map @uwoo blob)
       tags=(map @uwoo (list @uxid))  ::  region of lazy need blocks
       =cond
-      nary=(map bell straight)       ::  compiled callees, for their needs
+      cache=comp-cache               ::  compiled callees, their SCCs
   ==
 ::
 +$  jets-comp-info  [need=need-ordered]
 +$  jets-comp  (map ring jets-comp-info)
+::  what compiling derives from the state: the functions compiled, dropped
+::  when the code or the jets change, and the SCCs found, which hold for
+::  good (+scc-of)
+::
 +$  comp-cache
-  $:  views=(unit [rev=(jug bell bell) scc-map=(map bell (set bell))])
-      nary=(map bell straight)      ::  functions of the parts they use
+  $:  nary=(map bell straight)      ::  functions of the parts they use
       mono=(map bell straight)      ::  functions of their whole subject
+      sccs=(map bell (set bell))    ::  strongly connected components
   ==
 ::  Non-control-flow ops
 ::
@@ -2486,46 +2503,70 @@
 ::  Compiles `func` with the root subject as a sole argument, plus its SCC
 ::  including itself as N-ary functions
 ::
+::  The SCC of a bell: found before, or by Tarjan over the functions it
+::  reaches whose SCCs are not found yet.
+::
+++  scc-of
+  ~%  %scc-of  ..ride  ~
+  |=  [b=bell calls=(map bell (set bell)) sccs=(map bell (set bell))]
+  ^-  [(set bell) sccs=(map bell (set bell))]
+  ?^  s=(~(get by sccs) b)  [u.s sccs]
+  =/  sub=(jug bell bell)
+    =|  sub=(jug bell bell)
+    =/  q=(list bell)  ~[b]
+    |-  ^+  sub
+    ?~  q  sub
+    ?:  (~(has by sub) i.q)  $(q t.q)
+    =/  cs=(set bell)
+      %-  ~(rep in (~(gut by calls) i.q ~))
+      |=  [c=bell acc=(set bell)]
+      ?:((~(has by sccs) c) acc (~(put in acc) c))
+    ::
+    $(q (weld ~(tap in cs) t.q), sub (~(put by sub) i.q cs))
+  ::
+  =.  sccs
+    %+  roll  (tarjan sub)
+    |=  [s=(set bell) acc=_sccs]
+    (~(rep in s) |=([m=bell acc=_acc] (~(put by acc) m s)))
+  ::
+  [(~(got by sccs) b) sccs]
+::
 ++  compile-unary
   ~%  %compile-unary  ..ride  ~
   |=  $:  func=bell
           scc=(set bell)
-          rev=(jug bell bell)  ::  reversed call graph
-          long-ska=_[=_code =_jets]:*long-ska
-          scc-map=(map bell (set bell))
+          long-ska=_[=_code =_jets =_calls]:*long-ska
           jets-hot=jets-comp
-          nary=(map bell straight)
+          cache=comp-cache
       ==
-  ^-  [[straight (map bell straight)] nary=(map bell straight)]
+  ^-  [[straight (map bell straight)] cache=comp-cache]
   =/  args  +<
   %-  road-pure  |.
   ::  Compile normally
   ::
-  =^  n-ary-map=(map bell straight)  nary  (compile-scc-in +.args)
-  =/  comp  (comp scc rev long-ska scc-map jets-hot n-ary-map func)
+  =^  n-ary-map=(map bell straight)  cache  (compile-scc-in +.args)
+  =/  comp  (comp scc long-ska jets-hot n-ary-map func)
   ::  Compile the pessimized version
   ::
   =|  gen=line-short
-  =.  nary.gen  nary
+  =.  cache.gen  cache
   =^  nex=next  gen
     (~(run comp gen) & nomm:(~(got by code.long-ska) func) [%done ~] ~)
   ::  Collapse the subject need to a single noun, finalize
   ::
   =^  [o=@uwoo sub=@uvre]  gen  (~(kerf comp gen) nex)
-  :_  nary.gen
+  :_  cache.gen
   :-  (~(to-straight comp gen) [%next [[this+sub ~] ~ ~] ~ o])
   n-ary-map
 ::
 ++  compile-scc
   ~%  %compile-scc  ..ride  ~
   |=  $:  scc=(set bell)
-          rev=(jug bell bell)
-          long-ska=_[=_code =_jets]:*long-ska
-          scc-map=(map bell (set bell))
+          long-ska=_[=_code =_jets =_calls]:*long-ska
           jets-hot=jets-comp
-          nary=(map bell straight)
+          cache=comp-cache
       ==
-  ^-  [(map bell straight) nary=(map bell straight)]
+  ^-  [(map bell straight) cache=comp-cache]
   =*  args  +<
   (road-pure |.((compile-scc-in args)))
 ::  The compilation proper, called directly for callees so that the whole
@@ -2534,22 +2575,28 @@
 ++  compile-scc-in
   ~%  %compile-scc-in  ..ride  ~
   |=  $:  scc=(set bell)
-          rev=(jug bell bell)
-          long-ska=_[=_code =_jets]:*long-ska
-          scc-map=(map bell (set bell))
+          long-ska=_[=_code =_jets =_calls]:*long-ska
           jets-hot=jets-comp
-          nary=(map bell straight)
+          cache=comp-cache
       ==
-  ^-  [(map bell straight) nary=(map bell straight)]
-  ?:  (levy ~(tap in scc) ~(has by nary))
-    :_  nary
+  ^-  [(map bell straight) cache=comp-cache]
+  ?:  (levy ~(tap in scc) ~(has by nary.cache))
+    :_  cache
     %-  ~(gas by *(map bell straight))
-    (turn ~(tap in scc) |=(b=bell [b (~(got by nary) b)]))
+    (turn ~(tap in scc) |=(b=bell [b (~(got by nary.cache) b)]))
   ::  Only the subject shapes in .map-local are read by the loop, so the rest
   ::  of the straight is a placeholder until the fixed point is reached, when
   ::  the whole SCC is compiled once more with .done set, this time for real
   ::
   =|  map-local=(map bell straight)
+  ::  reversed bell graph
+  ::
+  =/  rev=(jug bell bell)
+    %-  ~(rep in scc)
+    |=  [m=bell acc=(jug bell bell)]
+    %-  ~(rep in (~(gut by calls.long-ska) m ~))
+    |=  [c=bell acc=_acc]
+    ?.((~(has in scc) c) acc (~(put ju acc) c m))
   ::  A function alone in its SCC that does not call itself needs no fixed
   ::  point: the final pass computes its subject shape by itself
   ::
@@ -2558,34 +2605,35 @@
   ::
   =/  w=worklist  scc
   =/  counter=@ud  0
-  |-  ^+  [map-local nary]
+  |-  ^+  [map-local cache]
   =*  fixpoint-compilation  $
-  =;  [w-new=worklist map-local1=_map-local nary1=_nary]
-    ?:  done  [map-local1 (~(uni by nary1) map-local1)]
+  =;  [w-new=worklist map-local1=_map-local cache1=_cache]
+    ?:  done
+      [map-local1 cache1(nary (~(uni by nary.cache1) map-local1))]
     =.  w-new  (~(int in w-new) scc)
     ?:  =(~ w-new)
-      fixpoint-compilation(w scc, map-local map-local1, nary nary1, done &)
+      fixpoint-compilation(w scc, map-local map-local1, cache cache1, done &)
     %-  (print-comp 0 |.(leaf+"[fixpoint-compilation {(scow %ud counter)}]"))
     %=  fixpoint-compilation
       w          w-new
       map-local  map-local1
-      nary       nary1
+      cache      cache1
       counter    +(counter)
     ==
   ::
   %-  ~(rep in w)
   ~%  %compile-scc-fn  ..ride  ~
-  |=  [b=bell w-new=worklist =_map-local =_nary]
-  ^+  [w-new map-local nary]
+  |=  [b=bell w-new=worklist =_map-local =_cache]
+  ^+  [w-new map-local cache]
   ?>  ?=(^ less.b)
-  =/  comp  (comp scc rev long-ska scc-map jets-hot map-local b)
+  =/  comp  (comp scc long-ska jets-hot map-local b)
   =/  =nomm  nomm:(~(got by code.long-ska) b)
   ::  Until the fixed point only the input shape is needed: from the shape-only
   ::  traversal, or from the full compilation with code emission dropped.  The
   ::  final pass compiles for real, emitting code right away.
   ::
   =|  gen=line-short
-  =.  nary.gen  nary
+  =.  cache.gen  cache
   =^  [need-new=need-ordered laz=need-lazy ned-final=need o=@uwoo]  gen
     !@  dedicated-shape-pass
       =.  mode.gen  ?:(done %run %drop)
@@ -2603,7 +2651,7 @@
       (~(collapse-shape comp gen) nex cape.less.b)
     ::
     [[(need-to-ordered ned-final) laz ned-final o] gen]
-  =.  nary  nary.gen
+  =.  cache  cache.gen
   ::  Debug assert of +run-shape correctenss
   ::
   =>  =*  dot  .
@@ -2638,14 +2686,14 @@
     :+  ?:  ?=([%none ~] need-new)  w-new
         (~(uni in w-new) (~(get ju rev) b))
       (~(put by map-local) b (finish ~))
-    nary
+    cache
   =/  need-pessimized  (msg-need-ord need-new need.u.s-previous cape.less.b)
   :+  ?:  =(need-pessimized need.u.s-previous)  w-new
       (~(uni in w-new) (~(get ju rev) b))
     %+  ~(put by map-local)  b
     ?:  =(need-pessimized need-new)  (finish ~)
     (finish `need-pessimized)
-  nary
+  cache
 ::
 ++  need-normalize
   ~%  %need-normalize  ..ride  ~
@@ -2681,9 +2729,7 @@
 ::
 ++  comp
   |=  $:  scc=(set bell)
-          rev=(jug bell bell)
-          long-ska=_[=_code =_jets]:*long-ska
-          scc-map=(map bell (set bell))
+          long-ska=_[=_code =_jets =_calls]:*long-ska
           jets-hot=jets-comp
           map-local=(map bell straight)
           b=bell
@@ -3303,10 +3349,11 @@
   ++  callee-compiled
     |=  b-callee=bell
     ^-  [need-ordered _gen]
-    ?^  s=(~(get by nary.gen) b-callee)  [need.u.s gen]
-    =/  new-scc=(set bell)  (~(gut by scc-map) b-callee [b-callee ~ ~])
-    =^  m=(map bell straight)  nary.gen
-      (compile-scc-in new-scc rev long-ska scc-map jets-hot nary.gen)
+    ?^  s=(~(get by nary.cache.gen) b-callee)  [need.u.s gen]
+    =^  new-scc=(set bell)  sccs.cache.gen
+      (scc-of b-callee calls.long-ska sccs.cache.gen)
+    =^  m=(map bell straight)  cache.gen
+      (compile-scc-in new-scc long-ska jets-hot cache.gen)
     [need:(~(got by m) b-callee) gen]
   ::
   ++  laze-none-equivalent
@@ -6454,53 +6501,29 @@
 =|  state=[%0 =long-ska jets-hot=jets-comp cache=comp-cache]
 |%
 ++  version  -.state
-::  views of the finalized graph, from the cache or made and cached
-::
-++  graph-info
-  ^-  [[rev=(jug bell bell) scc-map=(map bell (set bell))] _cache.state]
-  ?^  views.cache.state  [u.views.cache.state cache.state]
-  =/  [bell-graph=(jug bell bell) rev=(jug bell bell)]  ::  XX make incremental?
-    (simple-bell-graph-and-reversed graph.final.long-ska.state)
-  ::
-  =/  scc-map=(map bell (set bell))
-    =/  sccs=(list (set bell))  (tarjan bell-graph)  ::  XX make incremental?
-    =|  out=(map bell (set bell))
-    |-  ^+  out
-    ?~  sccs  out
-    =.  out
-      %-  ~(rep in i.sccs)
-      |=  [b=bell acc=_out]
-      (~(put by acc) b i.sccs)
-    ::
-    $(sccs t.sccs)
-  :-  [rev scc-map]
-  cache.state(views `[rev scc-map])
 ::  a function compiled as one of its whole subject, from the cache or made
 ::  and cached, with its SCC
 ::
 ++  compiled-mono
-  |=  [b=bell scc=(set bell) rev=(jug bell bell) scc-map=(map bell (set bell))]
+  |=  [b=bell scc=(set bell)]
   ^-  [straight _cache.state]
   ?^  s=(~(get by mono.cache.state) b)  [u.s cache.state]
-  =^  [=straight n-ary=(map bell straight)]  nary.cache.state
+  =^  [=straight n-ary=(map bell straight)]  cache.state
     %-  compile-unary
-    :*  b  scc  rev  [code jets]:long-ska.state  scc-map  jets-hot.state
-        nary.cache.state
-    ==
-  =.  nary.cache.state  (~(uni by nary.cache.state) n-ary)
+    [b scc [code jets calls]:long-ska.state jets-hot.state cache.state]
+  ::
   [straight cache.state(mono (~(put by mono.cache.state) b straight))]
 ::  a function compiled as one of the parts of its subject it uses, from the
 ::  cache or made and cached with its SCC
 ::
 ++  compiled-nary
-  |=  [b=bell scc=(set bell) rev=(jug bell bell) scc-map=(map bell (set bell))]
+  |=  [b=bell scc=(set bell)]
   ^-  [straight _cache.state]
   ?^  s=(~(get by nary.cache.state) b)  [u.s cache.state]
-  =^  m=(map bell straight)  nary.cache.state
+  =^  m=(map bell straight)  cache.state
     %-  compile-scc
-    :*  scc  rev  [code jets]:long-ska.state  scc-map  jets-hot.state
-        nary.cache.state
-    ==
+    [scc [code jets calls]:long-ska.state jets-hot.state cache.state]
+  ::
   [(~(got by m) b) cache.state]
 --
 ::
@@ -6564,28 +6587,24 @@
       %full
     =^  [func=bell new=(list [pax=path tem=sock clue=*])]  long-ska.state
       (ska-poke [&+sub.ovo fol.ovo] long-ska.state)
-    ::  the graph and the code changed, the rings may have: nothing derived
-    ::  from them holds
+    ::  the code changed, the rings may have: no compiled function holds.
+    ::  The SCCs do: no new function joins an old one's
     ::
-    =.  cache.state  *comp-cache
-    =^  [rev=(jug bell bell) scc-map=(map bell (set bell))]  cache.state
-      graph-info
-    ::
-    =/  scc=(set bell)  (~(gut by scc-map) func [func ~ ~])
-    =^  =straight  cache.state  (compiled-mono func scc rev scc-map)
+    =.  cache.state  cache.state(nary ~, mono ~)
+    =^  scc=(set bell)  sccs.cache.state
+      (scc-of func calls.long-ska.state sccs.cache.state)
+    =^  =straight  cache.state  (compiled-mono func scc)
     ::
     =.  straight  (optimize straight)
     :_  ..poke
     [%ir func straight new]
   ::
       %dire
-    =^  [rev=(jug bell bell) scc-map=(map bell (set bell))]  cache.state
-      graph-info
-    ::
-    =/  scc=(set bell)  (~(gut by scc-map) b.ovo [b.ovo ~ ~])
+    =^  scc=(set bell)  sccs.cache.state
+      (scc-of b.ovo calls.long-ska.state sccs.cache.state)
     =^  =straight  cache.state
-      ?:  mono.ovo  (compiled-mono b.ovo scc rev scc-map)
-      (compiled-nary b.ovo scc rev scc-map)
+      ?:  mono.ovo  (compiled-mono b.ovo scc)
+      (compiled-nary b.ovo scc)
     ::
     =.  straight  (optimize straight)
     [[%ir b.ovo straight ~] ..poke]
