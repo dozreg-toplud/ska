@@ -2079,7 +2079,7 @@
         :_  gen
         :+  ~  b.u.info.nomm.call
         ?.  ?=(^ sock.prod.call)  ~
-        ?.  =(& cape.sock.prod.call)  ~
+        ?.  (all:ca cape.sock.prod.call)  ~
         `data.sock.prod.call
       ::
       =^  f  gen  fol-loop(fol f.fol)
