@@ -4550,7 +4550,9 @@
             lok
           %-  ~(rep in lok.sure.laz)
           |=  [axe=@ acc=(set @)]
-          ?:((axe-in-less-cape axe less) acc (~(put in acc) axe))
+          ?:  (axe-in-less-cape axe less)  acc
+          ?:  (axe-in-need axe ned)  acc
+          (~(put in acc) axe)
         ==
       ::
       |-  ^+  gen
@@ -5199,6 +5201,18 @@
   ?-  (cap axe)
     %2  $(axe (mas axe), less -.less)
     %3  $(axe (mas axe), less +.less)
+  ==
+::
+++  axe-in-need
+  |=  [axe=@ ned=need]
+  ^-  ?
+  ?<  =(0 axe)
+  |-  ^-  ?
+  ?:  =(1 axe)  &
+  ?-  -.ned
+    ?(%none %this)  |
+    ^               $(axe (mas axe), ned ?-((cap axe) %2 -.ned, %3 +.ned))
+    %both           $(axe (mas axe), ned ?-((cap axe) %2 h.ned, %3 t.ned))
   ==
 ::
 ++  inter1-to-inter2
