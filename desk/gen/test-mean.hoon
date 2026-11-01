@@ -1,6 +1,6 @@
 ::  Deferred %mean traps. A trap with a known battery is pushed as its $ arm
 ::  and the parts of the trap the arm needs, instead of the trap capturing the
-::  whole subject; a constant arm is a function of no arguments; an unknown
+::  whole subject; the known product of a pure arm is pushed instead; an unknown
 ::  trap is captured as before. For each case: whether the interpreter agrees
 ::  with Nock, the IR of the gate body and the IR of the arms it pushes.
 ::

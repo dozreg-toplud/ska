@@ -420,6 +420,12 @@
       %hme
     `regs
   ::
+      %hcp
+    `regs
+  ::
+      %hce
+    `regs
+  ::
       %spy
     ~|  %scry-not-yet-implemented
     !!
@@ -594,6 +600,8 @@
         %hde  <[%hde n=n.op p=p.op]>
         %hmp  <[%hmp a=`@ux`(mug a.op) v=v.op]>
         %hme  <[%hme a=`@ux`(mug a.op) v=v.op]>
+        %hcp  <[%hcp n=n.op]>
+        %hce  <[%hce n=n.op]>
     ::
         %cal
       <op(a `@ux`(mug a.op))>

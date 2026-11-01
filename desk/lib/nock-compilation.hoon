@@ -612,8 +612,9 @@
       ::  p: formula for the trap
       ::  b: bell for the trap
       ::  q: hinted formula
+      ::  k: product of the arm, if known
       ::
-      [%mean p=nomm b=bell q=nomm body=*]
+      [%mean p=nomm b=bell q=nomm body=* k=(unit *)]
   ==
 ::  seat: callsite location
 ::  id:   identity of the callee
@@ -2069,13 +2070,17 @@
         ::  saf.h implies fully known sock.prod.h
         ::
         fol-loop(fol [%2 [%0 1] 1 f.fol], memo-key `data.sock.prod.h)
-      =^  arm=(unit bell)  gen
+      =^  arm=(unit [b=bell k=(unit *)])  gen
         ?.  &(?=(%mean a.fol) !saf.h ?=(^ sock.prod.h))  [~ gen]
         =/  bat=sock  (pull:so sock.prod.h 2)
         ?.  &(?=(^ bat) =(& cape.bat) ?=(^ data.bat))  [~ gen]
         =^  call  gen  fol-loop(fol [%2 [%0 1] %0 2], sub prod.h, defer &)
         ?>  ?=([%2 * * ^] nomm.call)
-        [`b.u.info.nomm.call gen]
+        :_  gen
+        :+  ~  b.u.info.nomm.call
+        ?.  ?=(^ sock.prod.call)  ~
+        ?.  =(& cape.sock.prod.call)  ~
+        `data.sock.prod.call
       ::
       =^  f  gen  fol-loop(fol f.fol)
       ::  %fast: register the core in execution order
@@ -2090,7 +2095,7 @@
       =/  saf=?  &(?=(?(%spot %mean) a.fol) saf.h saf.f)
       :_  gen
       :_  [prod.f saf]
-      ?^  arm  [%mean nomm.h u.arm nomm.f f.fol]
+      ?^  arm  [%mean nomm.h b.u.arm nomm.f f.fol k.u.arm]
       [%11 [a.fol nomm.h] nomm.f f.fol]
     ::
         [%12 p=^ q=^]
@@ -2357,6 +2362,8 @@
       [%hde n=hint-dynamic p=@uvre f=*]           ::  epilogue of a dynamic hint
       [%hmp a=bell v=(list @uvre) f=*]            ::  push deferred %mean: a(v)
       [%hme a=bell v=(list @uvre) f=*]            ::  pop it
+      [%hcp n=* f=*]                              ::  push %mean of product n
+      [%hce n=* f=*]                              ::  pop it
       [%spy e=@uvre p=@uvre d=@uvre]              ::  .^(e p) -> d
       [%nok u=@uvre f=@uvre d=@uvre]              ::  .*(u f) -> d
       [%cal a=bell v=(list @uvre) d=@uvre]        ::  a(v) -> d
@@ -2369,7 +2376,7 @@
 ::  Tags of the ops that cannot crash
 ::
 +$  pole-not-crashing
-  ?(%imm %mov %con %hed %tal %hsp %hse %hdp %hde %hmp %hme %equ)
+  ?(%imm %mov %con %hed %tal %hsp %hse %hdp %hde %hmp %hme %hcp %hce %equ)
 ::  Control-flow ops
 ::
 +$  termin
@@ -2408,6 +2415,8 @@
     %hde  ~
     %hmp  ~
     %hme  ~
+    %hcp  ~
+    %hce  ~
     %spy  ~
     %nok  ~
     %cal  ~
@@ -2436,6 +2445,8 @@
     %hde  ~[p]:op
     %hmp  v.op
     %hme  v.op
+    %hcp  ~
+    %hce  ~
     %spy  ~[e p d]:op
     %nok  ~[u f d]:op
     %cal  [d v]:op
@@ -2507,6 +2518,8 @@
       %hde  op(p (ren p.op))
       %hmp  op(v (turn v.op ren))
       %hme  op(v (turn v.op ren))
+      %hcp  op
+      %hce  op
       %spy  op(e (ren e.op), p (ren p.op), d (ren d.op))
       %nok  op(u (ren u.op), f (ren f.op), d (ren d.op))
       %cal  op(v (turn v.op ren), d (ren d.op))
@@ -3142,22 +3155,30 @@
       (copy nex-toke laz.nex-fol2)
     ::
         [%mean *]
+      ::  A known product of a pure arm is pushed as a constant: no call
+      ::
+      =/  konst=(unit *)  (mean-konst b.nomm k.nomm)
       ::  The subject will already be a single noun and we don't bother with
       ::  mono version of the mean bell: just push the trap as is
       ::
-      ?:  mono  $(nomm [%11 [%mean p.nomm] q.nomm body.nomm])
+      ?:  &(mono ?=(~ konst))  $(nomm [%11 [%mean p.nomm] q.nomm body.nomm])
       ::  The trap's function will be pushed on the stack w/ its arguments
       ::
-      =^  b-ned=need-ordered  gen  (callee-need b.nomm)
+      =^  b-ned=need-ordered  gen
+        ?^  konst  [[%none ~] gen]
+        (callee-need b.nomm)
+      ::
       =^  sub-ned=need  gen  (need-ord-alloc-regs b-ned)
       =/  sub-v=(list @uvre)  (flatten-need sub-ned)
+      =/  [prol-op=pole epil-op=pole]
+        ?^  konst  [[%hcp u.konst body.nomm] [%hce u.konst body.nomm]]
+        [[%hmp b.nomm sub-v body.nomm] [%hme b.nomm sub-v body.nomm]]
+      ::
       =^  nex   gen  simple-next
-      =^  epil  gen  (emit ~ ~[[%hme b.nomm sub-v body.nomm]] %hop then.nex)
+      =^  epil  gen  (emit ~ ~[epil-op] %hop then.nex)
       =^  nex-fol1  gen  $(nomm q.nomm, goal nex(then [~ epil]))
       =^  nex-fol2=next  gen  (lazy-bound nex-fol1 region)
-      =^  prol  gen
-        (emit ~ ~[[%hmp b.nomm sub-v body.nomm]] %hop then.nex-fol2)
-      ::
+      =^  prol  gen  (emit ~ ~[prol-op] %hop then.nex-fol2)
       =^  nex-trap  gen
         $(nomm p.nomm, goal [%next (lazy-from-need sub-ned) ~ prol])
       ::
@@ -3334,7 +3355,10 @@
       =^  l-fol=laze  gen  $(nomm q.nomm, goal simple)
       =^  i  gen  id
       =/  l-fol=laze  [*sure-ordered ~ [i l-fol]~]
-      =^  ned=need-ordered  gen  (callee-need b.nomm)
+      =^  ned=need-ordered  gen
+        ?^  (mean-konst b.nomm k.nomm)  [[%none ~] gen]
+        (callee-need b.nomm)
+      ::
       =^  l-trap  gen  $(nomm p.nomm, goal [%next [[ned ~] ~ ~]])
       [(laze-copy l-trap l-fol) gen]
     ::
@@ -3365,6 +3389,16 @@
     =^  m=(map bell straight)  cache.gen
       (compile-scc-in new-scc long-ska jets-hot cache.gen)
     [need:(~(got by m) b-callee) gen]
+  ::
+  ::  The constant to push for a deferred %mean instead of its arm: the arm's
+  ::  product, when it is known and the call could be omitted
+  ::
+  ++  mean-konst
+    |=  [b=bell k=(unit *)]
+    ^-  (unit *)
+    ?~  k  ~
+    ?.  pure:(~(got by code.long-ska) b)  ~
+    k
   ::
   ++  laze-none-equivalent
     |=  laz=laze
@@ -4812,6 +4846,9 @@
         =^  v1  gen  (rewrite-par v.op)
         [op(v v1) gen]
       ::
+          %hcp  [op gen]
+          %hce  [op gen]
+      ::
           %spy
         =^  e1  gen  (rer e.op)
         =^  p1  gen  (rer p.op)
@@ -5939,6 +5976,12 @@
         %hme
       [[[%hme a.op (turn v.op rn) f.op] body-new] gen]
     ::
+        %hcp
+      [[op body-new] gen]
+    ::
+        %hce
+      [[op body-new] gen]
+    ::
         %spy
       =/  e  (rn e.op)
       =/  p  (rn p.op)
@@ -6268,12 +6311,15 @@
   ~%  %trim-trace-hints  ..ride  ~
   |=  [blocks=(map @uwoo blob) topo=(list @uwoo) rev=(jar @uwoo @uwoo)]
   ^+  blocks
-  ::  a trace hint: %spot/%mean with its clue register, or a deferred %mean
-  ::  with the arm and its arguments
+  ::  a trace hint: %spot/%mean with its clue register, a deferred %mean
+  ::  with the arm and its arguments, or a constant %mean. The hinted formula
+  ::  tells nested hints with the same arguments or constant apart: the
+  ::  outer one contains the inner one
   ::
   =*  key
     ^:  $%  [%clue hint=?(%spot %mean) reg=@uvre]
-            [%defer a=bell v=(list @uvre)]
+            [%defer a=bell v=(list @uvre) f=*]
+            [%konst n=* f=*]
         ==
   ::  the key of a trace hint op, and whether it opens the hint
   ::
@@ -6283,8 +6329,10 @@
     ?+  op  ~
       [%hdp ?(%spot %mean) *]  `[& %clue n.op p.op]
       [%hde ?(%spot %mean) *]  `[| %clue n.op p.op]
-      [%hmp *]                 `[& %defer a.op v.op]
-      [%hme *]                 `[| %defer a.op v.op]
+      [%hmp *]                 `[& %defer a.op v.op f.op]
+      [%hme *]                 `[| %defer a.op v.op f.op]
+      [%hcp *]                 `[& %konst n.op f.op]
+      [%hce *]                 `[| %konst n.op f.op]
     ==
   ::  Walk in topological order carrying the hints that are open: prologue
   ::  passed, epilogue not reached yet. A hint open at an op that could crash,
