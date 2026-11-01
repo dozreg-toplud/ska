@@ -60,9 +60,9 @@
 ::
 ::  Table of contents:
 ::    Call graph construction:  line 541
-::    Compilation:              line 2075
-::    IR optimization passes:   line 5471
-::    Interactive core:         line 6446
+::    Compilation:              line 2112
+::    IR optimization passes:   line 5560
+::    Interactive core:         line 6555
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
@@ -604,8 +604,16 @@
       [%6 p=nomm q=nomm r=nomm]
       [%7 p=nomm q=nomm]
       [%10 p=[p=_`@`1 q=nomm] q=nomm]  ::  p.p != 0
+      ::  body: original hinted formula
+      ::
       [%11 p=$@(@ [p=@ q=nomm]) q=nomm body=*]
       [%12 p=nomm q=nomm]
+      ::  ~>  %mean.|.(...), known battery
+      ::  p: formula for the trap
+      ::  b: bell for the trap
+      ::  q: hinted formula
+      ::
+      [%mean p=nomm b=bell q=nomm body=*]
   ==
 ::  seat: callsite location
 ::  id:   identity of the callee
@@ -955,6 +963,9 @@
   ::
       [%11 [@ *] *]
     &(?=(hint-safe p.p.nomm) (g q.p.nomm) (g q.nomm))
+  ::
+      [%mean *]
+    &((g p.nomm) (g q.nomm))
   ==
 ::  Is the product of the formula always in a single register?
 ::
@@ -972,6 +983,7 @@
     [%6 *]    &((g q.nomm) (g r.nomm))
     [%7 *]    (g q.nomm)
     [%11 *]   (g q.nomm)
+    [%mean *]  (g q.nomm)
   ==
 ::  check if the formula for a formula in Nomm %2 can be safely dropped
 ::
@@ -994,6 +1006,9 @@
   ::
       [%11 [@ *] *]
     &(?=(hint-safe p.p.nomm) (safe-nomm q.p.nomm) (g q.nomm))
+  ::
+      [%mean *]
+    &((safe-nomm p.nomm) (g q.nomm))
   ==
 ::  treat %fast hint formula
 ::  returns ~ on failure, [~ ~] on root registration, [~ ~ @] on child
@@ -1472,6 +1487,11 @@
       &(?=(hint-pure p.p.nomm) pure.tok pure.fol)
     &(total.tok total.fol)
   ::
+      [%mean *]
+    =/  tok  nomm-loop(nomm p.nomm)
+    =/  fol  nomm-loop(nomm q.nomm)
+    [s.fol &(pure.tok pure.fol) &(total.tok total.fol)]
+  ::
       [%12 *]  [|+~ | |]
   ==
   ::
@@ -1842,6 +1862,7 @@
     =/  seat=(unit spot)  ~
     =/  memo-key=(unit *)  ~
     =/  virt-call=?  |
+    =/  defer=?  |
     ::  saf: the formula is safe: it does not crash and has no important side
     ::  effect, i.e. it is a constant, a cons of safe formulas or a %spot/%mean
     ::  hint on one. Its product is a constant with cape exactly & and no
@@ -1908,7 +1929,7 @@
       ::  out the condition and the first branch - useful during debugging to
       ::  rule out stuff.
       ::
-      ?:  &(?=(~ memo-key) (inlineable fol-new))
+      ?:  &(?=(~ memo-key) !defer (inlineable fol-new))
         =.  want.gen  (uni:ca want.gen (distribute & src.prod.f))
         =^  inline  gen  fol-loop(fol fol-new, sub prod.s)
         :_  gen
@@ -2048,6 +2069,14 @@
         ::  saf.h implies fully known sock.prod.h
         ::
         fol-loop(fol [%2 [%0 1] 1 f.fol], memo-key `data.sock.prod.h)
+      =^  arm=(unit bell)  gen
+        ?.  &(?=(%mean a.fol) !saf.h ?=(^ sock.prod.h))  [~ gen]
+        =/  bat=sock  (pull:so sock.prod.h 2)
+        ?.  &(?=(^ bat) =(& cape.bat) ?=(^ data.bat))  [~ gen]
+        =^  call  gen  fol-loop(fol [%2 [%0 1] %0 2], sub prod.h, defer &)
+        ?>  ?=([%2 * * ^] nomm.call)
+        [`b.u.info.nomm.call gen]
+      ::
       =^  f  gen  fol-loop(fol f.fol)
       ::  %fast: register the core in execution order
       ::
@@ -2060,8 +2089,9 @@
       ::
       =/  saf=?  &(?=(?(%spot %mean) a.fol) saf.h saf.f)
       :_  gen
-      :-  [%11 [a.fol nomm.h] nomm.f f.fol]
-      [prod.f saf]
+      :_  [prod.f saf]
+      ?^  arm  [%mean nomm.h u.arm nomm.f f.fol]
+      [%11 [a.fol nomm.h] nomm.f f.fol]
     ::
         [%12 p=^ q=^]
       =^  p  gen  fol-loop(fol p.fol)
@@ -2325,6 +2355,8 @@
       [%hse n=hint-static f=*]                    ::  epilogue of a static hint
       [%hdp n=hint-dynamic p=@uvre f=*]           ::  prologue of a dynamic hint
       [%hde n=hint-dynamic p=@uvre f=*]           ::  epilogue of a dynamic hint
+      [%hmp a=bell v=(list @uvre) f=*]            ::  push deferred %mean: a(v)
+      [%hme a=bell v=(list @uvre) f=*]            ::  pop it
       [%spy e=@uvre p=@uvre d=@uvre]              ::  .^(e p) -> d
       [%nok u=@uvre f=@uvre d=@uvre]              ::  .*(u f) -> d
       [%cal a=bell v=(list @uvre) d=@uvre]        ::  a(v) -> d
@@ -2334,10 +2366,10 @@
       [%csf a=bell s=@uvre d=@uvre n=ring]        ::  %caf but sub is in one reg
       [%csm a=bell s=@uvre d=@uvre k=*]           ::  %cam but sub is in one reg
   ==
-::  Ops that cannot crash
+::  Tags of the ops that cannot crash
 ::
 +$  pole-not-crashing
-  $>(?(%imm %mov %con %hed %tal %hsp %hse %hdp %hde %equ) pole)
+  ?(%imm %mov %con %hed %tal %hsp %hse %hdp %hde %hmp %hme %equ)
 ::  Control-flow ops
 ::
 +$  termin
@@ -2374,6 +2406,8 @@
     %hse  ~
     %hdp  ~
     %hde  ~
+    %hmp  ~
+    %hme  ~
     %spy  ~
     %nok  ~
     %cal  ~
@@ -2400,6 +2434,8 @@
     %hse  ~
     %hdp  ~[p]:op
     %hde  ~[p]:op
+    %hmp  v.op
+    %hme  v.op
     %spy  ~[e p d]:op
     %nok  ~[u f d]:op
     %cal  [d v]:op
@@ -2469,6 +2505,8 @@
       %hse  op
       %hdp  op(p (ren p.op))
       %hde  op(p (ren p.op))
+      %hmp  op(v (turn v.op ren))
+      %hme  op(v (turn v.op ren))
       %spy  op(e (ren e.op), p (ren p.op), d (ren d.op))
       %nok  op(u (ren u.op), f (ren f.op), d (ren d.op))
       %cal  op(v (turn v.op ren), d (ren d.op))
@@ -2717,16 +2755,6 @@
     [%this r.ned]
   ==
 ::
-++  norm-need-lazy
-  |=  laz=need-lazy
-  ^-  ?
-  &
-  :: =*  this  .
-  :: ?&  =(sure.laz (need-normalize sure.laz))
-  ::     (levy fork.laz |=([[* y=need-lazy] * n=need-lazy] &((this y) (this n))))
-  ::     (levy bond.laz |=([* laz=need-lazy] (this laz)))
-  :: ==
-::
 ++  comp
   |=  $:  scc=(set bell)
           long-ska=_[=_code =_jets =_calls]:*long-ska
@@ -2741,10 +2769,6 @@
     |^  ^-  [next _gen]
     ?-    nomm
         [^ *]
-      =;  [=next =_gen]
-        ?>  (norm-need-lazy laz.next)
-        [next gen]
-      ::
       =>  =*  dot  .
           ?.  ?=(%done -.goal)  dot
           =^  r  gen  re
@@ -2773,20 +2797,12 @@
       ==
     ::
         [%0 *]
-      =;  [=next =_gen]
-        ?>  (norm-need-lazy laz.next)
-        [next gen]
-      ::
       ?:  =(0 p.nomm)  (bomb ?:(?=(%next -.goal) `there.then.goal ~))
       =^  nex  gen  simple-next
       ?:  =(1 p.nomm)  [nex gen]
       [[%next (from p.nomm laz.nex) then.nex] gen]
     ::
         [%1 *]
-      =;  [=next =_gen]
-        ?>  (norm-need-lazy laz.next)
-        [next gen]
-      ::
       ?-    -.goal
           %done
         =^  r  gen  re
@@ -2805,10 +2821,6 @@
       ==
     ::
         [%2 *]
-      =;  [=next =_gen]
-        ?>  (norm-need-lazy laz.next)
-        [next gen]
-      ::
       ?~  info.nomm
         ::  indirect call
         ::
@@ -2927,10 +2939,6 @@
       (copy nex-sub laz.nex-fol)
     ::
         [%3 *]
-      =;  [=next =_gen]
-        ?>  (norm-need-lazy laz.next)
-        [next gen]
-      ::
       ?:  &(?=(%next -.goal) (none-equivalent laz.goal))
         ::  Don't care about the product
         ::
@@ -2958,10 +2966,6 @@
       $(nomm p.nomm, goal [%next (lazy-from-need this+r) ~ o])
     ::
         [%4 *]
-      =;  [=next =_gen]
-        ?>  (norm-need-lazy laz.next)
-        [next gen]
-      ::
       ?-    -.goal
           %done
         =^  pro  gen  re
@@ -2989,10 +2993,6 @@
       ==
     ::
         [%5 *]
-      =;  [=next =_gen]
-        ?>  (norm-need-lazy laz.next)
-        [next gen]
-      ::
       =^  r-p  gen  re
       =^  r-q  gen  re
       =^  o=@uwoo  gen
@@ -3026,10 +3026,6 @@
       (copy nex-p laz.nex-q)
     ::
         [%6 *]
-      =;  [=next =_gen]
-        ?>  (norm-need-lazy laz.next)
-        [next gen]
-      ::
       ?:  ?&  ?=(%next -.goal)
               !(none-equivalent laz.goal(sure *sure))
           ==
@@ -3104,18 +3100,10 @@
       (copy nex-cond lazy)
     ::
         [%7 *]
-      =;  [=next =_gen]
-        ?>  (norm-need-lazy laz.next)
-        [next gen]
-      ::
       =^  nex  gen  $(nomm q.nomm)
       $(nomm p.nomm, goal nex)
     ::
         [%10 *]
-      =;  [=next =_gen]
-        ?>  (norm-need-lazy laz.next)
-        [next gen]
-      ::
       =^  next  gen  simple-next
       =^  [don=need-lazy rec=need-lazy o=@uwoo]  gen  (into next p.p.nomm)
       =^  nex-rec  gen  $(nomm q.nomm, goal [%next rec ~ o])
@@ -3123,10 +3111,6 @@
       (copy nex-don laz.nex-rec)
     ::
         [%11 *]
-      =;  [=next =_gen]
-        ?>  (norm-need-lazy laz.next)
-        [next gen]
-      ::
       ?@  p.nomm
         ?.  ?=(hint-static p.nomm)  $(nomm q.nomm)
         =^  nex    gen  simple-next
@@ -3157,11 +3141,29 @@
       ::
       (copy nex-toke laz.nex-fol2)
     ::
-        [%12 *]
-      =;  [=next =_gen]
-        ?>  (norm-need-lazy laz.next)
-        [next gen]
+        [%mean *]
+      ::  The subject will already be a single noun and we don't bother with
+      ::  mono version of the mean bell: just push the trap as is
       ::
+      ?:  mono  $(nomm [%11 [%mean p.nomm] q.nomm body.nomm])
+      ::  The trap's function will be pushed on the stack w/ its arguments
+      ::
+      =^  b-ned=need-ordered  gen  (callee-need b.nomm)
+      =^  sub-ned=need  gen  (need-ord-alloc-regs b-ned)
+      =/  sub-v=(list @uvre)  (flatten-need sub-ned)
+      =^  nex   gen  simple-next
+      =^  epil  gen  (emit ~ ~[[%hme b.nomm sub-v body.nomm]] %hop then.nex)
+      =^  nex-fol1  gen  $(nomm q.nomm, goal nex(then [~ epil]))
+      =^  nex-fol2=next  gen  (lazy-bound nex-fol1 region)
+      =^  prol  gen
+        (emit ~ ~[[%hmp b.nomm sub-v body.nomm]] %hop then.nex-fol2)
+      ::
+      =^  nex-trap  gen
+        $(nomm p.nomm, goal [%next (lazy-from-need sub-ned) ~ prol])
+      ::
+      (copy nex-trap laz.nex-fol2)
+    ::
+        [%12 *]
       =^  nex  gen  simple-next
       =^  [out=@uwoo pro=@uvre]  gen  (kerf nex)
       =^  r-path     gen  re
@@ -3327,6 +3329,14 @@
         [[*sure-ordered ~ [i l-fol]~] gen]
       =^  l-toke  gen  $(nomm q.p.nomm, goal [%next this])
       [(laze-copy l-toke l-fol) gen]
+    ::
+        [%mean *]
+      =^  l-fol=laze  gen  $(nomm q.nomm, goal simple)
+      =^  i  gen  id
+      =/  l-fol=laze  [*sure-ordered ~ [i l-fol]~]
+      =^  ned=need-ordered  gen  (callee-need b.nomm)
+      =^  l-trap  gen  $(nomm p.nomm, goal [%next [[ned ~] ~ ~]])
+      [(laze-copy l-trap l-fol) gen]
     ::
         [%12 *]
       =^  l-q  gen  $(nomm q.nomm, goal [%next this])
@@ -4794,6 +4804,14 @@
         =^  p1  gen  (rer p.op)
         [op(p p1) gen]
       ::
+          %hmp
+        =^  v1  gen  (rewrite-par v.op)
+        [op(v v1) gen]
+      ::
+          %hme
+        =^  v1  gen  (rewrite-par v.op)
+        [op(v v1) gen]
+      ::
           %spy
         =^  e1  gen  (rer e.op)
         =^  p1  gen  (rer p.op)
@@ -5915,6 +5933,12 @@
       =/  arg  (rn p.op)
       [[[%hde n.op arg f.op] body-new] gen]
     ::
+        %hmp
+      [[[%hmp a.op (turn v.op rn) f.op] body-new] gen]
+    ::
+        %hme
+      [[[%hme a.op (turn v.op rn) f.op] body-new] gen]
+    ::
         %spy
       =/  e  (rn e.op)
       =/  p  (rn p.op)
@@ -6244,7 +6268,24 @@
   ~%  %trim-trace-hints  ..ride  ~
   |=  [blocks=(map @uwoo blob) topo=(list @uwoo) rev=(jar @uwoo @uwoo)]
   ^+  blocks
-  =*  key  ,[hint=?(%spot %mean) reg=@uvre]
+  ::  a trace hint: %spot/%mean with its clue register, or a deferred %mean
+  ::  with the arm and its arguments
+  ::
+  =*  key
+    ^:  $%  [%clue hint=?(%spot %mean) reg=@uvre]
+            [%defer a=bell v=(list @uvre)]
+        ==
+  ::  the key of a trace hint op, and whether it opens the hint
+  ::
+  =/  trace
+    |=  op=pole
+    ^-  (unit [open=? =key])
+    ?+  op  ~
+      [%hdp ?(%spot %mean) *]  `[& %clue n.op p.op]
+      [%hde ?(%spot %mean) *]  `[| %clue n.op p.op]
+      [%hmp *]                 `[& %defer a.op v.op]
+      [%hme *]                 `[| %defer a.op v.op]
+    ==
   ::  Walk in topological order carrying the hints that are open: prologue
   ::  passed, epilogue not reached yet. A hint open at an op that could crash,
   ::  or at a terminator that could crash or leave the function, is unsafe to
@@ -6264,11 +6305,10 @@
     |-  ^-  (set key)
     ?^  body
       =/  op  i.body
-      ?:  &(?=(%hdp -.op) ?=(?(%spot %mean) n.op))
-        $(body t.body, open (~(put in open) [n.op p.op]))
-      ?:  &(?=(%hde -.op) ?=(?(%spot %mean) n.op))
-        $(body t.body, open (~(del in open) [n.op p.op]))
-      ?:  ?=(pole-not-crashing op)  $(body t.body)
+      ?^  hint=(trace op)
+        ?:  open.u.hint  $(body t.body, open (~(put in open) key.u.hint))
+        $(body t.body, open (~(del in open) key.u.hint))
+      ?:  ?=(pole-not-crashing -.op)  $(body t.body)
       $(body t.body, unsafe (~(uni in unsafe) open))
     =?  unsafe  !?=(?(%clq %eqq %brz %hop) -.fin.b)  (~(uni in unsafe) open)
     ^$(topo t.topo, out (~(put by out) i.topo open))
@@ -6279,10 +6319,8 @@
       body
     %+  skip  body.b
     |=  op=pole
-    ?&  ?=(?(%hdp %hde) -.op)
-        ?=(?(%spot %mean) n.op)
-        !(~(has in unsafe) [n p]:op)
-    ==
+    ?~  hint=(trace op)  |
+    !(~(has in unsafe) key.u.hint)
   ==
 ::
 ++  remove-useless-branching

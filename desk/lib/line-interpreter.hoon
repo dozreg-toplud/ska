@@ -231,20 +231,19 @@
   =/  =straight
     =*  sam  +<
     =*  con  +>
-    =/  f  -.args
-    =>  [=_f +.sam con]  ~+
-    =/  =straight
-      :: ~>  %bout.[0 %compile]
-      :: ~&  %compile-start
-      ?:  f
-        %-  ~(got by (compile-scc scc rev [code jets]:long-ska scc-map jets-hot))
-        bell
-      -:(compile-unary bell scc rev [code jets]:long-ska scc-map jets-hot)
+    =/  lon  [code jets calls]:long-ska
+    ?.  -.args
+      =>  [bell=bell scc=scc lon=lon jets-hot=jets-hot con]  ~+
+      =/  [[s=straight *] *]  (compile-unary bell scc lon jets-hot *comp-cache)
+      (optimize s)
+    ::  one compilation per SCC, since this runs once per bell called
     ::
-    :: ~&  %optimize-start
-    :: ~&  `@ux`(mug bell)
-    :: ~>  %bout.[0 %optimize]
-    (optimize -)
+    =/  m=(map ^bell straight)
+      =>  [scc=scc lon=lon jets-hot=jets-hot con]  ~+
+      =/  [m=(map bell straight) *]  (compile-scc scc lon jets-hot *comp-cache)
+      m
+    =>  [bell=bell m=m con]  ~+
+    (optimize (~(got by m) bell))
   ::
   =/  bob  (~(got by blocks.straight) 0w0)
   =/  regs=(map @uvre *)
@@ -413,6 +412,12 @@
     `regs
   ::
       %hde
+    `regs
+  ::
+      %hmp
+    `regs
+  ::
+      %hme
     `regs
   ::
       %spy
@@ -587,6 +592,8 @@
         %hse  <[%hse n=n.op]>
         %hdp  <[%hdp n=n.op p=p.op]>
         %hde  <[%hde n=n.op p=p.op]>
+        %hmp  <[%hmp a=`@ux`(mug a.op) v=v.op]>
+        %hme  <[%hme a=`@ux`(mug a.op) v=v.op]>
     ::
         %cal
       <op(a `@ux`(mug a.op))>
