@@ -2066,7 +2066,7 @@
       ::  valid %memo generates a new call to an uninlineable function to be
       ::  memoized
       ::
-      ?:  &(?=(%memo a.fol) saf.h ?=(^ sock.prod.h))
+      ?:  &(?=(%memo a.fol) saf.h ?=(^ sock.prod.h) !=(%core data.sock.prod.h))
         ::  saf.h implies fully known sock.prod.h
         ::
         fol-loop(fol [%2 [%0 1] 1 f.fol], memo-key `data.sock.prod.h)
@@ -3284,7 +3284,9 @@
       ::
       =^  l-sub  gen
         ?:  drop  $(nomm p.nomm, goal [%next none])
-        =^  ned=need-ordered  gen  (callee-need b-callee)
+        =^  ned=need-ordered  gen
+          ?:  ?=([~ ^] k.u.info.nomm)  [this+~ gen]
+          (callee-need b-callee)
         $(nomm p.nomm, goal [%next [[ned ~] ~ ~]])
       ::
       [(laze-copy l-sub l-fol) gen]
