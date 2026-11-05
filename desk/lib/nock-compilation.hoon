@@ -699,6 +699,7 @@
         core=(jug path sock)  ::  core registrations
         batt=(jug ^ path)     ::  core battery -> set of possible paths
         arms=(jug ^ path)     ::  battery node -> set of possible paths
+        pend=(jug path sock)  ::  core registrations old bells wait for
         $=  cole              ::  bell <--> ring bidirectional mapping
         $:  call=(map bell ring)
             back=(jug ring bell)
@@ -1025,12 +1026,21 @@
     [%11 [@ f=^] p=^]  ?~((safe f.fol) ~ $(fol p.fol))
   ==
 ::
+++  uni-ju
+  |*  a=(jug)
+  |*  b=_a
+  ^+  a
+  ?:  =(~ b)  a
+  %-  ~(rep by b)
+  |=  [[p=_?>(?=(^ b) p.n.b) q=_?>(?=(^ b) q.n.b)] =_a]
+  (~(put by a) p (~(uni in (~(get ju a) p)) q))
+::
 ++  dif-ju
   |*  a=(jug)
   |*  b=_a
   ^+  a
   =/  c=_a  (~(dif by a) b)
-  =/  i=_a  (~(int by a) b)
+  =/  i=_a  (~(int by b) a)
   ?:  =(~ i)  c
   %-  ~(rep by i)
   |=  [[p=_?>(?=(^ i) p.n.i) q=_?>(?=(^ i) q.n.i)] =_c]
@@ -1255,46 +1265,52 @@
   =/  h  fol-loop(template-fol (hed:so template-fol), axis (peg axis 2))
   ?^  h  h
   fol-loop(template-fol (tel:so template-fol), axis (peg axis 3))
-::  We just analyzed a callgraph, called some new functions, maybe registered
-::  some new jetted cores.
-::  Did we call something from freshly registered cores? Did we call something
-::  new from already registrated cores? This gate updates the bell <--> ring
-::  mapping incrementally: the new bells are matched against all cores, and
-::  the bells without a ring against the new cores. Bells that have a ring
-::  keep it.
+::  We just analyzed a callgraph and called some new functions: match the new
+::  bells against all cores. A bell seen before keeps what it has until
+::  +ska-cole-settle: the ring of a callee goes into the need of its callers,
+::  whose programs may be running, so functions compile the same for as long as
+::  the process lasts.
 ::
 ++  ska-cole-update
   ~%  %ska-cole-update  ..ride  ~
-  |=  [lon=long-ska new-bells=(set bell) new-cores=(jug path sock)]
+  |=  [lon=long-ska new-bells=(set bell)]
   ^-  long-ska
   =*  cole  cole.jets.lon
-  =/  put
-    |=  [b=bell r=ring c=_cole]
-    ^+  c
-    [(~(put by call.c) b r) (~(put ju back.c) r b)]
-  ::
   =.  cole
     %-  ~(rep in new-bells)
     |=  [b=bell c=_cole]
-    ?:  (~(has by call.c) b)  c
     ?~  r=(cole-match b core.jets.lon arms.jets.lon)  c
-    (put b u.r c)
-  ::
-  ?:  =(~ new-cores)  lon
-  =.  cole
-    %-  ~(rep by code.lon)
-    |=  [[b=bell *] c=_cole]
-    ?:  (~(has by call.c) b)  c
-    ?~  r=(cole-match b new-cores arms.jets.lon)  c
-    (put b u.r c)
+    (cole-put b u.r c)
   ::
   lon
+::  With no compiled code running: match the bells without a ring against the
+::  cores registered since this was done last. Produces those that got a ring.
+::
+++  ska-cole-settle
+  ~%  %ska-cole-settle  ..ride  ~
+  |=  lon=long-ska
+  ^-  [(set bell) long-ska]
+  ?:  =(~ pend.jets.lon)  [~ lon]
+  =/  [rung=(set bell) cole=_cole.jets.lon]
+    %-  ~(rep by code.lon)
+    |=  [[b=bell *] rung=(set bell) c=_cole.jets.lon]
+    ?:  (~(has by call.c) b)  [rung c]
+    ?~  r=(cole-match b pend.jets.lon arms.jets.lon)  [rung c]
+    [(~(put in rung) b) (cole-put b u.r c)]
+  ::
+  [rung lon(cole.jets cole, pend.jets ~)]
+::
+++  cole-put
+  |=  [b=bell r=ring c=[call=(map bell ring) back=(jug ring bell)]]
+  ^+  c
+  [(~(put by call.c) b r) (~(put ju back.c) r b)]
 ::
 ++  ska-cole-restore
   |=  lon=long-ska
   ^-  long-ska
   =.  cole.jets.lon  [~ ~]
-  (ska-cole-update lon ~(key by code.lon) core.jets.lon)
+  =.  pend.jets.lon  ~
+  (ska-cole-update lon ~(key by code.lon))
 ::
 ++  ska-poke
   |=  [[bus=sock fol=^] lon=long-ska]
@@ -1391,7 +1407,13 @@
   =/  new-cores=(jug path sock)
     (~(gas ju *(jug path sock)) (turn new.regs |=([p=path s=sock *] [p s])))
   =.  jets.lon
-    jets.lon(root root.regs, core core.regs, batt batt.regs, arms arms.regs)
+    %=  jets.lon
+      root  root.regs
+      core  core.regs
+      batt  batt.regs
+      arms  arms.regs
+      pend  ((uni-ju pend.jets.lon) new-cores)
+    ==
   ::
   =/  old  calls.lon
   =.  calls.lon
@@ -1406,7 +1428,7 @@
     (~(put in cs) [less-code.d fol.id.c])
   ::
   :-  [root-bell (flop new.regs)]
-  (ska-cole-update lon ~(key by just-code) new-cores)
+  (ska-cole-update lon (~(dif in ~(key by just-code)) ~(key by old)))
 ::  produces data about a function
 ::  pure: no crashes + no hints excepts %fast (call to it could be omitted)
 ::  total: no crashes (stacktrace boundaries around them could be omitted)
@@ -2336,8 +2358,7 @@
 +$  jets-comp-info  [need=need-ordered]
 +$  jets-comp  (map ring jets-comp-info)
 ::  what compiling derives from the state: the functions compiled, dropped
-::  when the code or the jets change, and the SCCs found, which hold for
-::  good (+scc-of)
+::  when the jets change, and the SCCs found, which hold for good (+scc-of)
 ::
 +$  comp-cache
   $:  nary=(map bell straight)      ::  functions of the parts they use
@@ -2876,13 +2897,10 @@
       ::  subject
       ::
       =^  b-ned=need-ordered  gen
-        ?^  j=(biff rin ~(get by jets-hot))  [need.u.j gen]
         ::  persistent memoization: always %csm
         ::
         ?:  ?=([~ ^] key)  [this+~ gen]
-        ?:  (~(has in scc) b-callee)
-          [need:(~(gut by map-local) b-callee *straight) gen]
-        (callee-compiled b-callee)
+        (callee-need b-callee)
       ::  allocate registers
       ::
       =^  sub-ned=need  gen  (need-ord-alloc-regs b-ned)
@@ -2892,7 +2910,9 @@
           |=  [pes=(unit @uvre) pro=@uvre]
           ^-  pole
           ?^  key
-            ?~  pes  [%cam b-callee sub-v pro u.key]
+            ?~  pes
+              ?@  u.key  [%cam b-callee sub-v pro u.key]
+              [%csm b-callee -.sub-v pro u.key]
             [%csm b-callee u.pes pro u.key]
           ?~  rin
             ?~  pes  [%cal b-callee sub-v pro]
@@ -2918,11 +2938,7 @@
           [[opt sub-pes pes] gen]
         =^  nex  gen  simple-next
         =^  [out=@uwoo pro=@uvre]  gen  (kerf nex)
-        ?.  mono
-          ?.  ?=([~ ^] key)  (emit ~ ~[(call-op ~ pro)] %hop ~ out)
-          ::  persistent memoization: always %csm
-          ::
-          (emit ~ ~[[%csm b-callee -.sub-v pro u.key]] %hop ~ out)
+        ?.  mono  (emit ~ ~[(call-op ~ pro)] %hop ~ out)
         =^  merged   gen  re
         =^  sub-pes  gen  re
         =^  merge    gen  (emit ~[merged] [%mov merged pro]~ %hop ~ out)
@@ -6562,12 +6578,18 @@
       [%fast reset=? p=(list [pax=path =sock])]
   ==
 ::  %ir carries the registrations the analysis made, parents first, with
-::  the clues of their hints, for vere to keep and to register the cores
+::  the clues of their hints, for vere to keep and to register the cores.
+::  %drop: the functions whose compiled forms a change of the jets invalidated
 ::
 +$  prod
   $@  ~
   $%  [%ir b=bell p=straight new=(list [pax=path tem=sock clue=*])]
+      [%drop p=(list bell)]
   ==
+::  The state of a core of any version, for +load
+::
++$  state-0  [%0 =long-ska jets-hot=jets-comp cache=comp-cache]
++$  state-any  $%(state-0)
 ::
 ++  validate-ovum
   |=  n=*
@@ -6598,9 +6620,52 @@
     n
   ~+
   [(val -.n) (val +.n)]
+::  The rings whose drivers differ between two hot states
+::
+++  hot-diff
+  |=  [a=jets-comp b=jets-comp]
+  ^-  (set ring)
+  %-  ~(rep by (~(uni by a) b))
+  |=  [[r=ring *] acc=(set ring)]
+  ?:  =((~(get by a) r) (~(get by b) r))  acc
+  (~(put in acc) r)
+::  The functions whose compiled forms changes of the jets invalidated, as the
+::  need of a callee goes into the need of its caller: those with rings whose
+::  drivers differ, those that got a ring with a driver, and their transitive
+::  callers
+::
+++  hot-stale
+  |=  [rings=(set ring) rung=(set bell) hot=jets-comp lon=long-ska]
+  ^-  (set bell)
+  =/  rev=(jug bell bell)
+    %-  ~(rep by calls.lon)
+    |=  [[m=bell cs=(set bell)] acc=(jug bell bell)]
+    (~(rep in cs) |=([c=bell acc=_acc] (~(put ju acc) c m)))
+  ::
+  =/  driven=(set bell)
+    %-  ~(rep in rung)
+    |=  [b=bell acc=(set bell)]
+    ?.  (~(has by hot) (~(got by call.cole.jets.lon) b))  acc
+    (~(put in acc) b)
+  ::
+  =/  q=(list bell)
+    %-  ~(rep in rings)
+    |=  [r=ring acc=_~(tap in driven)]
+    (weld ~(tap in (~(get ju back.cole.jets.lon) r)) acc)
+  ::
+  =|  out=(set bell)
+  |-  ^+  out
+  ?~  q  out
+  ?:  (~(has in out) i.q)  $(q t.q)
+  $(q (weld ~(tap in (~(get ju rev) i.q)) t.q), out (~(put in out) i.q))
+::
+++  del-bells
+  |=  [m=(map bell straight) s=(set bell)]
+  ^+  m
+  (~(rep in s) |=([b=bell =_m] (~(del by m) b)))
 --
 ::
-=|  state=[%0 =long-ska jets-hot=jets-comp cache=comp-cache]
+=|  state=state-0
 |%
 ++  version  -.state
 ::  a function compiled as one of its whole subject, from the cache or made
@@ -6630,7 +6695,16 @@
 --
 ::
 |%
-++  load  !!  ::  +4
+::  This core with the state of an installed core of any version, at the same
+::  axis of all of them. Functions compiled by another version don't hold
+::
+++  load      ::  +4
+  |=  old=[* * state=state-any *]
+  ^+  ..load
+  ?-  -.state.old
+    %0  ..load(state state.old(nary.cache ~, mono.cache ~))
+  ==
+::
 ++  peek      ::  +22
   |=  pax=path
   ^-  (unit (pair @tas *))
@@ -6647,11 +6721,18 @@
   ::
   ?-    -.ovo
       %jets
-    :-  ~
+    =/  hot=jets-comp  (malt p.ovo)
+    ?:  &(=(hot jets-hot.state) =(~ pend.jets.long-ska.state))
+      [[%drop ~] ..poke]
+    =^  rung=(set bell)  long-ska.state  (ska-cole-settle long-ska.state)
+    =/  stale=(set bell)
+      (hot-stale (hot-diff jets-hot.state hot) rung hot long-ska.state)
+    ::
+    :-  [%drop ~(tap in stale)]
     %=  ..poke
-      jets-hot.state    (malt p.ovo)
-      nary.cache.state  ~
-      mono.cache.state  ~
+      jets-hot.state    hot
+      nary.cache.state  (del-bells nary.cache.state stale)
+      mono.cache.state  (del-bells mono.cache.state stale)
     ==
   ::
       %fast
@@ -6677,7 +6758,9 @@
     =/  cole  call.cole.jets.long-ska.state
     =.  long-ska.state
       ?:  reset.ovo  (ska-cole-restore long-ska.state)
-      (ska-cole-update long-ska.state ~ ((dif-ju core.reg) old))
+      %=  long-ska.state
+        pend.jets  ((uni-ju pend.jets.long-ska.state) ((dif-ju core.reg) old))
+      ==
     ::  compiled functions call through the rings: none holds if those
     ::  changed
     ::
@@ -6689,10 +6772,9 @@
       %full
     =^  [func=bell new=(list [pax=path tem=sock clue=*])]  long-ska.state
       (ska-poke [&+sub.ovo fol.ovo] long-ska.state)
-    ::  the code changed, the rings may have: no compiled function holds.
-    ::  The SCCs do: no new function joins an old one's
+    ::  what is compiled holds, as do the SCCs: no new function joins an old
+    ::  one's, and a function seen before keeps its ring until +ska-cole-settle
     ::
-    =.  cache.state  cache.state(nary ~, mono ~)
     =^  scc=(set bell)  sccs.cache.state
       (scc-of func calls.long-ska.state sccs.cache.state)
     =^  =straight  cache.state  (compiled-mono func scc)
