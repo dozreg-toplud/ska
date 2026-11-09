@@ -22,7 +22,8 @@
     !=
     (scow %ud 5)
   ::
-  =^  func=bell  long-ska
+  =/  g  (ska-graph [&+subject formula] long-ska)
+  =^  [func=bell *]  long-ska
     ~>  %bout.[1 'ska-poke 1']
     (ska-poke [&+subject formula] long-ska)
   ::
@@ -33,12 +34,13 @@
     !=
     (ride %noun '42')
   ::
-  =^  func=bell  long-ska
+  =.  g  (~(uni by g) (ska-graph [&+subject formula] long-ska))
+  =^  [func=bell *]  long-ska
     ~>  %bout.[1 'ska-poke 3']
     (ska-poke [&+subject formula] long-ska)
   ::
   =/  [fwd=(jug bell bell) rev=(jug bell bell)]
-    (simple-bell-graph-and-reversed graph.final.long-ska)
+    [calls.long-ska (reverse-bell-graph calls.long-ska)]
   ::
   =/  sccs=(list (set bell))  (tarjan fwd)
   =/  scc-map=(map bell (set bell))
@@ -121,7 +123,7 @@
   ::  source area of each function, from the analysis graph
   ::
   =/  areas=(map bell (unit spot))
-    %-  ~(rep by graph.final.long-ska)
+    %-  ~(rep by g)
     |=  [[id=identity d=datum] acc=(map bell (unit spot))]
     (~(put by acc) [less-code.d fol.id] area.d)
   ::

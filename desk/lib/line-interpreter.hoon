@@ -203,7 +203,7 @@
   |=  lon=long-ska
   ^-  [rev=(jug bell bell) scc-map=(map bell (set bell))]
   =/  [bell-graph=(jug bell bell) rev=(jug bell bell)]
-    (simple-bell-graph-and-reversed graph.final.lon)
+    [calls.lon (reverse-bell-graph calls.lon)]
   ::
   :-  rev
   =/  sccs=(list (set bell))  (tarjan bell-graph)

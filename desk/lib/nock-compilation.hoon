@@ -722,27 +722,20 @@
         $:  call=(map bell ring)
             back=(jug ring bell)
     ==  ==
-  ::::  finalized graph views: 
+  ::::  finalized functions, for the analysis to pick up instead of
+  ::::  analyzing them again (+analyze): by formula and code requirement
+  ::::  (+mi), as +memo-final-entry stores them
     ::
-    $=  final
-    $:  =memo
-        graph=callgraph  :: pruned
-    ==
+    =memo
   ::::  saved entries:
     ::
     code=(map bell code-entry)          ::  direct bell mapping
-    fols=(map ^ (map bell code-entry))  ::  lookup by formula
     calls=(map bell (set bell))         ::  bell call graph
     vars=(jug bell bell)                ::  code bell -> its baked variants
   ==
 --
 ::
 |%
-++  put-fols
-  |=  [b=bell en=code-entry fols=(map ^ (map bell code-entry))]
-  ^+  fols
-  =/  m=(map bell code-entry)  (~(gut by fols) fol.b ~)
-  (~(put by fols) fol.b (~(put by m) b en))
 ::  Iterate over a set with a gate (a -> (unit b)) until we get a nonempty
 ::  product
 ::
@@ -1229,29 +1222,46 @@
   =.  arms  $(batt -.batt)
   ?.  ?=(^ +.batt)  arms
   $(batt +.batt)
-::  Assumes finalized (fixed point).
+::  The functions the root reaches. Assumes finalized (fixed point): every
+::  callee of a function in the graph is in the graph, a function found
+::  memoized having none (+memo-final-entry).
 ::
 ++  prune-callgraph
   ~%  %prune-callgraph  ..ride  ~
-  |=  [g=callgraph root=identity dbg=(unit callgraph)]
+  |=  [g=callgraph root=identity]
   ^+  g
   =|  out=callgraph
   =/  q=(list identity)  ~[root]
-  =|  visit=(set identity)
   |-  ^+  out
   ?~  q  out
-  ?:  (~(has in visit) i.q)  $(q t.q)
-  ?~  d=(~(get by g) i.q)
-    ::  call outside of the callgraph being pruned
-    ::  sanity check: is the target present in the previous graph?
-    ::
-    ?>  |(?=(~ dbg) (~(has by u.dbg) i.q))
-    $(q t.q, visit (~(put in visit) i.q))
+  ?:  (~(has by out) i.q)  $(q t.q)
+  =/  d=datum  ~|(%ska-prune-missing-callee (~(got by g) i.q))
   %=  $
-        q  (weld t.q (turn ~(tap in callees.u.d) |=(callee-entry id)))
-      out  (~(put by out) i.q u.d)
-    visit  (~(put in visit) i.q)
+      q  (weld t.q (turn ~(tap in callees.d) |=(callee-entry id)))
+    out  (~(put by out) i.q d)
   ==
+::  A finished function as the persistent memo keeps it, for +git to find
+::  and the analysis to use in place of its own: without its callees, which
+::  are final too and memoized with it, and with the subject of its identity
+::  masked down to .indi, all that +git reads of it. The rest of the state
+::  keeps the function's bell and nomm (.code) and the bells it calls
+::  (.calls); nothing keeps the whole subject it was found with.
+::
+++  memo-final-entry
+  |=  [id=identity d=datum]
+  ^-  [identity datum]
+  [[(app:ca indi.d more.id) fol.id] d(callees ~)]
+::  The functions a poke of [bus fol] on the state would find, with their
+::  callees, for inspection: the state keeps only their bells (.code, .calls)
+::  and what +memo-final-entry memoizes. A function found memoized in the
+::  state has no callees.
+::
+++  ska-graph
+  |=  [[bus=sock fol=^] lon=long-ska]
+  ^-  callgraph
+  =/  [g=callgraph *]
+    (ska-callgraph [bus fol] memo.lon [root core batt arms ~]:jets.lon)
+  (prune-callgraph g [bus fol])
 ::  Match a bell against registered cores: look for its formula in the battery
 ::  of a core template that its subject fits. Produces the ring of the arm.
 ::
@@ -1701,44 +1711,26 @@
   =/  root-identity=identity  [bus fol]
   =/  [g=callgraph =regs]
     %-  ska-callgraph
-    [root-identity memo.final.lon [root core batt arms ~]:jets.lon]
+    [root-identity memo.lon [root core batt arms ~]:jets.lon]
   ::
-  =/  pruned=callgraph  (prune-callgraph g root-identity `graph.final.lon)
-  =.  graph.final.lon  (~(uni by graph.final.lon) pruned)
+  =/  pruned=callgraph  (prune-callgraph g root-identity)
   =/  root-datum=datum  (~(got by pruned) root-identity)
   ::  memoize the finished functions, and index their datums by code bell
   ::
-  =^  dats=(map bell datum)  lon
+  =^  dats=(map bell datum)  memo.lon
     =<  $  ~%  %poke-just-code  ..ride  ~  |.
-    =|  visit=(set identity)
-    =/  q=(list identity)  ~[root-identity]
-    =|  dats=(map bell datum)
-    |-  ^-  [_dats long-ska]
-    ?~  q  [dats lon]
-    ?:  (~(has in visit) i.q)  $(q t.q)
-    ?~  got=(~(get by pruned) i.q)
-      ::  call outside of the freshly produced & pruned callgraph
-      ::
-      ?>  (~(has by graph.final.lon) i.q)
-      $(q t.q, visit (~(put in visit) i.q))
-    =/  d=datum  u.got
-    =/  b=bell  [less-code.d fol.i.q]
-    =/  callees-list=(list identity)
-      ~(tap in `(set identity)`(~(run in callees.d) |=(callee-entry id)))
-    ::
-    %=  $
-      q               (weld t.q callees-list)
-      memo.final.lon  (put:mi memo.final.lon i.q d)
-      dats            (~(put by dats) b d)
-      visit           (~(put in visit) i.q)
-    ==
+    %-  ~(rep by pruned)
+    |=  [[id=identity d=datum] dats=(map bell datum) =_memo.lon]
+    :-  (~(put by dats) [less-code.d fol.id] d)
+    =/  entry  (memo-final-entry id d)
+    (put:mi memo -.entry +.entry)
   ::  a code bell's datum: from this poke, or memoized by an earlier one
   ::
   =/  dat
     |=  b=bell
     ^-  (unit datum)
     ?^  d=(~(get by dats) b)  d
-    ?^  m=(~(get by (gut:mi memo.final.lon fol.b)) less.b)  `+.u.m
+    ?^  m=(~(get by (gut:mi memo.lon fol.b)) less.b)  `+.u.m
     ~
   ::  the variants to compile, with their folded code and their callees
   ::
@@ -1781,13 +1773,10 @@
     =*  scc-loop  $
     ?~  sccs  lon
     =/  scc  i.sccs
-    =*  local  ,[code=(map bell code-entry) fols=(map ^ (map bell code-entry))]
-    =/  loc1=local
+    =/  loc1=(map bell code-entry)
       %-  ~(rep in scc)
-      |=  [b=bell acc=_`local`[code.lon fols.lon]]
-      =/  entry  [nomm:(~(got by new-code) b) | |]
-      :-  (~(put by code.acc) b entry)
-      (put-fols b entry fols.acc)
+      |=  [b=bell acc=_code.lon]
+      (~(put by acc) b [nomm:(~(got by new-code) b) | |])
     ::  Previously there was a fixed point loop that could mark potentially
     ::  diverging computations as pure/total. While it is correct from the POV
     ::  of +mink correctness, it would make stacktraces obtained in a non-
@@ -1802,24 +1791,16 @@
     ::
     :: |-  ^-  long-ska
     :: =*  fixpoint-loop  $
-    =;  loc2=local
+    =;  loc2=(map bell code-entry)
       :: ?.  =(loc1 loc2)  fixpoint-loop(loc1 loc2)
-      =.  code.lon  code.loc2
-      =.  fols.lon  fols.loc2
+      =.  code.lon  loc2
       scc-loop(sccs t.sccs)
     ::
     %-  ~(rep in scc)
     |=  [b=bell acc=_loc1]
     ^+  acc
-    =/  [pure=? total=?]  (eval-finalized b code.acc)
-    =/  lens  |=(=code-entry code-entry(pure pure, total total))
-    =.  code.acc  (~(jab by code.acc) b lens)
-    =.  fols.acc
-      %+  ~(jab by fols.acc)  fol.b
-      |=  m=(map bell code-entry)
-      (~(jab by m) b lens)
-    ::
-    acc
+    =/  [pure=? total=?]  (eval-finalized b acc)
+    (~(jab by acc) b |=(=code-entry code-entry(pure pure, total total)))
   ::
   =/  new-cores=(jug path sock)
     (~(gas ju *(jug path sock)) (turn new.regs |=([p=path s=sock *] [p s])))
@@ -1955,6 +1936,14 @@
   =/  callee-bell=bell  [less-code.u.callee-datum fol.id.callee]
   :-  (~(put ju acc) caller-bell callee-bell)
   (~(put ju acc-r) callee-bell caller-bell)
+::  callee -> callers, of a bell graph like .calls of $long-ska
+::
+++  reverse-bell-graph
+  |=  g=(jug bell bell)
+  ^-  (jug bell bell)
+  %-  ~(rep by g)
+  |=  [[m=bell cs=(set bell)] acc=(jug bell bell)]
+  (~(rep in cs) |=([c=bell acc=_acc] (~(put ju acc) c m)))
 ::  callers first
 ::
 ++  tarjan
@@ -2078,8 +2067,8 @@
     ~%  %ska-analyze  ..ride  ~
     |=  [id=identity st=ska-state]
     ^-  [low=@uxsite st=ska-state]
-    ::  analyzed in a previous poke: the callees of the memoized function are
-    ::  in the finalized graph already
+    ::  analyzed in a previous poke: the memoized function is final and has
+    ::  no callees, they are final and memoized too (+memo-final-entry)
     ::
     ?^  hit=(git:mi memo-final fol.id more.id)
       =/  d=datum  +.u.hit
@@ -7368,11 +7357,7 @@
 ++  hot-stale
   |=  [rings=(set ring) rung=(set bell) hot=jets-comp lon=long-ska]
   ^-  (set bell)
-  =/  rev=(jug bell bell)
-    %-  ~(rep by calls.lon)
-    |=  [[m=bell cs=(set bell)] acc=(jug bell bell)]
-    (~(rep in cs) |=([c=bell acc=_acc] (~(put ju acc) c m)))
-  ::
+  =/  rev=(jug bell bell)  (reverse-bell-graph calls.lon)
   =/  driven=(set bell)
     %-  ~(rep in rung)
     |=  [b=bell acc=(set bell)]

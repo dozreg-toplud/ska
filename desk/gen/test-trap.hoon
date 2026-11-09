@@ -12,10 +12,9 @@
   |-  ^-  ~
   ?:  =(3 $:t)  ~
   $(t |.(+($:t)))
-=/  lon
+=/  g
   ~>  %bout.[0 'trap poke']
-  +:(ska-poke [&+~ fol] *long-ska)
-=/  g  graph.final.lon
+  (ska-graph [&+~ fol] *long-ska)
 :-  %noun
 :-  functions+~(wyt by g)
 %+  turn  ~(tap by g)

@@ -16,8 +16,8 @@
   !=
   (scow %ud 5)
 ::
-=^  func=bell  long-ska  (ska-poke [&+subject formula] long-ska)
-=/  g  graph.final.long-ska
+=/  g  (ska-graph [&+subject formula] long-ska)
+=^  [func=bell *]  long-ska  (ska-poke [&+subject formula] long-ska)
 =/  root=identity  [&+subject formula]
 =/  ig=jug-id
   %-  ~(rep by g)

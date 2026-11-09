@@ -37,7 +37,6 @@
   (ska-poke [&+subject formula] long-ska)
 =.  long-ska  (ska-cole-restore long-ska)
 :-  %noun
-:*  graph+~(wyt by graph.final.long-ska)
-    code+~(wyt by code.long-ska)
-    memo+(roll (turn ~(val by memo.final.long-ska) |=(m=(map sock *) ~(wyt by m))) add)
+:*  code+~(wyt by code.long-ska)
+    memo+(roll (turn ~(val by memo.long-ska) |=(m=(map sock *) ~(wyt by m))) add)
 ==

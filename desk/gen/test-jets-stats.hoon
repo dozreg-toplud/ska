@@ -30,7 +30,7 @@
   !=
   (ride %noun '42')
 ::
-=^  func=bell  long-ska
+=^  [func=bell *]  long-ska
   ~>  %bout.[0 'poke ride']
   (ska-poke [&+subject formula] long-ska)
 :-  %noun

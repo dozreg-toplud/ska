@@ -29,10 +29,10 @@
   !=
   (ride %noun '42')
 ::
-=^  func=bell  long-ska  (ska-poke [&+subject formula] long-ska)
+=^  [func=bell *]  long-ska  (ska-poke [&+subject formula] long-ska)
 =.  long-ska  (ska-cole-restore long-ska)
 =/  [bell-graph=(jug bell bell) rev=(jug bell bell)]
-  (simple-bell-graph-and-reversed graph.final.long-ska)
+  [calls.long-ska (reverse-bell-graph calls.long-ska)]
 ::
 =/  sccs=(list (set bell))  (tarjan bell-graph)
 =/  scc-map=(map bell (set bell))

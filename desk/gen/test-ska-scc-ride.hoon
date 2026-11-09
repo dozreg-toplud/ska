@@ -8,7 +8,7 @@
 :-  %say  |=  *
 =|  =long-ska
 =.  long-ska  +:(ska-poke [&+~ hoot-zpdt-fol] long-ska)
-=/  n-boot  ~(wyt by graph.final.long-ska)
+=/  n-boot  ~(wyt by code.long-ska)
 =/  subject  ..ride:hoot-zpdt
 =/  formula=^
   =>  subject
@@ -16,8 +16,8 @@
   !=
   (ride %noun '42')
 ::
+=/  g  (ska-graph [&+subject formula] long-ska)
 =^  [func=bell *]  long-ska  (ska-poke [&+subject formula] long-ska)
-=/  g  graph.final.long-ska
 =/  ig=jug-id
   %-  ~(rep by g)
   |=  [[k=identity v=datum] acc=jug-id]

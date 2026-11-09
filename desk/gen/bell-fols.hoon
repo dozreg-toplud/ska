@@ -19,7 +19,8 @@
     !=
     (scow %ud 5)
   ::
-  =^  func=bell  long-ska  (ska-poke [&+subject formula] long-ska)
+  =/  g  (ska-graph [&+subject formula] long-ska)
+  =^  [func=bell *]  long-ska  (ska-poke [&+subject formula] long-ska)
   =/  subject  ..ride:hoot-zpdt
   =/  formula=^
     =>  subject
@@ -27,7 +28,8 @@
     !=
     (ride %noun '42')
   ::
-  =^  func=bell  long-ska  (ska-poke [&+subject formula] long-ska)
+  =.  g  (~(uni by g) (ska-graph [&+subject formula] long-ska))
+  =^  [func=bell *]  long-ska  (ska-poke [&+subject formula] long-ska)
   =/  strip
     |=  f=*
     ^-  *
@@ -41,7 +43,7 @@
     [(strip -.f) (strip +.f)]
   ::
   =/  rows=(list tape)
-    %+  turn  ~(tap by graph.final.long-ska)
+    %+  turn  ~(tap by g)
     |=  [id=identity d=datum]
     =/  b=bell  [less-code.d fol.id]
     :(weld "BELL " (scow %ud (mug b)) " " (scow %ud (mug (strip fol.id))))

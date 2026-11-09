@@ -17,8 +17,7 @@
     this(c +(c))
   --
 =/  fol=^  ;;(^ =>(sub !=(foo)))
-=/  lon  +:(ska-poke [&+sub fol] *long-ska)
-=/  g  graph.final.lon
+=/  g  (ska-graph [&+sub fol] *long-ska)
 =/  root  (~(got by g) [&+sub fol])
 ?>  ?=(^ prod.root)
 =/  count-2

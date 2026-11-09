@@ -18,6 +18,10 @@
   ;;  ^
   !=
   (ride %noun '42')
+::  the identity graph of the ride poke, with whole subjects: the memo keeps
+::  only what +git:mi reads of them
+::
+=/  g=callgraph  (ska-graph [&+subject formula] long-ska)
 =^  [root=bell *]  long-ska
   ~>  %bout.[0 leaf+"ride poke"]
   (ska-poke [&+subject formula] long-ska)
@@ -57,8 +61,8 @@
   ==
 ::  the leaves of a shape: axis, whether the whole is also taken, whether
 ::  the bell knows the noun there, and what the analysis knew there (the
-::  subject of the identity the memo keeps for the bell): an atom, a cell by
-::  mug, or ~ for unknown
+::  subject of an identity of the bell in the ride analysis, +ska-graph):
+::  an atom, a cell by mug, or ~ for unknown
 ::
 =/  what
   |=  [more=sock axe=@]
@@ -103,8 +107,11 @@
     =/  c=bell
       =/  cs  (skim `(list bell)`codes |=(c=bell (~(has in (~(get ju vars.long-ska) c)) v)))
       ?~(cs v i.cs)
-    ?~  m=(~(get by (gut:mi memo.final.long-ska fol.c)) less.c)  |+~
-    more:-.u.m
+    =/  ids=(list identity)
+      %+  murn  ~(tap by g)
+      |=  [id=identity d=datum]
+      ?.(=(c [less-code.d fol.id]) ~ `id)
+    ?~(ids |+~ more.i.ids)
   =/  lv  (leaves need.s less.v more)
   =/  scc-args=@ud
     (roll ~(tap by m) |=([[b=bell st=straight] n=@ud] (add n n-args.st)))

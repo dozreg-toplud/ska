@@ -15,9 +15,10 @@
   !=
   (ride %noun '42')
 ::
-=^  func=bell  long-ska  (ska-poke [&+subject formula] long-ska)
+=/  g  (ska-graph [&+subject formula] long-ska)
+=^  [func=bell *]  long-ska  (ska-poke [&+subject formula] long-ska)
 =/  [bell-graph=(jug bell bell) rev=(jug bell bell)]
-  (simple-bell-graph-and-reversed graph.final.long-ska)
+  [calls.long-ska (reverse-bell-graph calls.long-ska)]
 =/  sccs=(list (set bell))  (tarjan bell-graph)
 =/  scc-map=(map bell (set bell))
   =|  out=(map bell (set bell))
@@ -83,7 +84,7 @@
 :: source area of a function with the callee's formula, if spots are known
 ::
 =/  areas=(map @ux (unit spot))
-  %-  ~(rep by graph.final.long-ska)
+  %-  ~(rep by g)
   |=  [[id=identity d=datum] acc=(map @ux (unit spot))]
   (~(put by acc) (mug fol.id) area.d)
 =/  fol-of=(map @ux @ux)

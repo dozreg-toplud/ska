@@ -19,9 +19,8 @@
   ~>  %bout.[0 'poke ride']
   (ska-poke [&+subject formula] long-ska)
 =.  long-ska  (ska-cole-restore long-ska)
-=/  g  graph.final.long-ska
 :-  %noun
-:*  ids+~(wyt by g)
+:*  memo+(roll (turn ~(val by memo.long-ska) |=(m=(map sock *) ~(wyt by m))) add)
     bells+~(wyt by code.long-ska)
     bell-set+`@ux`(mug (sort (turn ~(tap by code.long-ska) |=([b=bell *] (mug b))) lth))
     code+`@ux`(mug code.long-ska)

@@ -15,10 +15,9 @@
   ++  foo  (walk l)
   --
 =/  fol=^  ;;(^ =>(sub !=(foo)))
-=/  lon
+=/  g
   ~>  %bout.[0 'walk poke']
-  +:(ska-poke [&+sub fol] *long-ska)
-=/  g  graph.final.lon
+  (ska-graph [&+sub fol] *long-ska)
 =/  root  (~(got by g) [&+sub fol])
 :-  %noun
 [n=n functions+~(wyt by g) root-prod+?@(prod.root %void cape.prod.root)]

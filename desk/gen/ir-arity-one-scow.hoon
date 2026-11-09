@@ -15,9 +15,10 @@
   !=
   (scow %ud 5)
 ::
-=^  func=bell  long-ska  (ska-poke [&+subject formula] long-ska)
+=/  g  (ska-graph [&+subject formula] long-ska)
+=^  [func=bell *]  long-ska  (ska-poke [&+subject formula] long-ska)
 =/  [bell-graph=(jug bell bell) rev=(jug bell bell)]
-  (simple-bell-graph-and-reversed graph.final.long-ska)
+  [calls.long-ska (reverse-bell-graph calls.long-ska)]
 =/  sccs=(list (set bell))  (tarjan bell-graph)
 =/  scc-map=(map bell (set bell))
   =|  out=(map bell (set bell))
@@ -76,7 +77,7 @@
     %cam  ?.(=(a.op b) acc [[(mug c) %cam (lent v.op) v.op] acc])
   ==
 =/  ids=(list [identity datum])
-  (skim ~(tap by graph.final.long-ska) |=([id=identity d=datum] =(b [less-code.d fol.id])))
+  (skim ~(tap by g) |=([id=identity d=datum] =(b [less-code.d fol.id])))
 :-  %noun
 :*  self-edge+(~(has in (~(get ju rev) b)) b)
     n-ids+(lent ids)
@@ -86,7 +87,7 @@
     %+  turn  ~(tap in callees.d)
     |=  ce=callee-entry
     ^-  [@tas @ux]
-    =/  cd  (~(get by graph.final.long-ska) id.ce)
+    =/  cd  (~(get by g) id.ce)
     ?~  cd  [%missing (mug fol.id.ce)]
     [%bell (mug [less-code.u.cd fol.id.ce])]
     scc-size+~(wyt in scc)

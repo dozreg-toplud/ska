@@ -24,8 +24,7 @@
   --
 =/  fol=^  ;;(^ =>(sub !=(foo)))
 =/  f-bat=*  -:f:sub
-=/  lon  +:(ska-poke [&+sub fol] *long-ska)
-=/  g  graph.final.lon
+=/  g  (ska-graph [&+sub fol] *long-ska)
 =/  count-2
   |=  =nomm
   ^-  [direct=@ indirect=@]

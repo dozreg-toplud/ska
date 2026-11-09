@@ -22,7 +22,7 @@
     !=
     (scow %ud 5)
   ::
-  =^  func=bell  long-ska
+  =^  [func=bell *]  long-ska
     ~>  %bout.[1 'ska-poke 1']
     (ska-poke [&+subject formula] long-ska)
   ::
@@ -33,12 +33,12 @@
     !=
     (ride %noun '42')
   ::
-  =^  func=bell  long-ska
+  =^  [func=bell *]  long-ska
     ~>  %bout.[1 'ska-poke 3']
     (ska-poke [&+subject formula] long-ska)
   ::
   =/  [fwd=(jug bell bell) rev=(jug bell bell)]
-    (simple-bell-graph-and-reversed graph.final.long-ska)
+    [calls.long-ska (reverse-bell-graph calls.long-ska)]
   ::
   =/  sccs=(list (set bell))  (tarjan fwd)
   =/  scc-map=(map bell (set bell))
