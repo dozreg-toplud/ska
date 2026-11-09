@@ -79,6 +79,12 @@
 ::  ska verbosity
 ::
 =/  ska-verb  ~
+::  Baking (+bake-graph): %bake, the constants a function's callers know
+::  from their code are part of its bell; %fold, only the function's own
+::  reads of its code fold to constants, every function is its own one
+::  variant; %off, as before
+::
+=/  bake-mode=?(%off %fold %bake)  %bake
 ::
 ::  compiler verbosity
 ::
@@ -715,6 +721,7 @@
     code=(map bell code-entry)          ::  direct bell mapping
     fols=(map ^ (map bell code-entry))  ::  lookup by formula
     calls=(map bell (set bell))         ::  bell call graph
+    vars=(jug bell bell)                ::  code bell -> its baked variants
   ==
 --
 ::
@@ -1229,6 +1236,7 @@
   ~%  %cole-match  ..ride  ~
   |=  [b=bell core=(jug path sock) arms=(jug ^ path)]
   ^-  (unit ring)
+  ~+
   ::  only the paths of cores whose battery contains the formula can match
   ::
   =/  cands=(set path)  (~(get ju arms) fol.b)
@@ -1311,6 +1319,357 @@
   =.  cole.jets.lon  [~ ~]
   =.  pend.jets.lon  ~
   (ska-cole-update lon ~(key by code.lon))
+::  Baking: the constants a function's callers know from their code become
+::  part of its bell
+::
+::    A bell [less fol] names the subject a function is compiled for: the
+::    analysis makes .less the parts of the subject used as code
+::    (+less-code), so everything else the function reads is an argument,
+::    even a constant that every caller computes from its own code: the
+::    character a parser closure was built with, the sample of a door, a
+::    core passed along whole.  Parsing combinators make functions of a
+::    hundred arguments this way, most of them known to their one caller.
+::
+::    Baking widens .less with the data the callers know of the callee's
+::    subject from their own bells: +know evaluates a caller's nomm as
+::    socks under its bell, as the analysis does under the full subject,
+::    and reports the subject at each call site; the meet (+msg-sock) of
+::    the sites, with the callee's code, is the callee's bake, and
+::    +bake-graph iterates this down the graph to a greatest fixed point.
+::    Reads of the baked parts fold to constants and branches on them to
+::    the branch taken, and the leaves of the compiled shape inside the
+::    baked parts are immediates of the prologue (+bake-need), so the
+::    baked parts are not arguments.
+::
+::    The root is baked no further than its code: vere calls it with any
+::    subject that provides the code, and a bell per subject would compile
+::    the function once per datum.  So what gets baked is what is derivable
+::    from code: literals, the products of calls on them, batteries; the
+::    data of the root subject (a kernel's payload) stays an argument.
+::
+::    A code bell gets variants, one per knowledge its callers turned out
+::    to have (.vars): a call site reuses a variant whose bell it
+::    satisfies, else the poke makes one variant for the sites that fit
+::    none.  A variant is a bell like any other: compiled once, called
+::    directly, matched against the jets.
+::
+::  The union of two socks of one noun: known where either knows
+::
+++  uni-sock
+  ~%  %uni-sock  ..ride  ~
+  |=  [a=sock b=sock]
+  ^-  sock
+  ?:  =(a b)  a
+  ?:  ?=(%void a)  b
+  ?:  ?=(%void b)  a
+  ?:  (all:ca cape.a)  a
+  ?:  (all:ca cape.b)  b
+  ?:  ?=(%| cape.a)  b
+  ?:  ?=(%| cape.b)  a
+  ~+
+  (knit:so $(a (hed:so a), b (hed:so b)) $(a (tel:so a), b (tel:so b)))
+::  Evaluate a function's nomm as socks under a subject (what its bell
+::  knows), folding reads of known parts to constants and branches on them
+::  to the branch taken.  Produces the folded nomm, with the callee of each
+::  call site replaced by what .res says, the parts of the subject the
+::  folds assumed (.used), and the sites: callee code bell, the sock of its
+::  subject and the provenance of that from ours.  .dat gives a callee code
+::  bell's datum, for the product of a call.
+::
+::  A fold drops the computation of the folded value, so it is only done
+::  when that computation is safe (+safe-nomm: a literal, a cons, a trace
+::  hint on one), which it is after its own reads folded.
+::
+++  know
+  ~%  %know  ..ride  ~
+  |=  $:  =nomm
+          sub=sock
+          dat=$-(bell (unit datum))
+          res=$-([bell sock] bell)
+      ==
+  ^-  $:  nomm=^nomm
+          used=cape
+          sites=(list [b=bell k=sock src=spring])
+      ==
+  =/  gen  [used=`cape`| sites=*(list [b=bell k=sock src=spring])]
+  =/  sub=sock-anno  [sub 1]
+  =/  fold=?  !?=(%off bake-mode)
+  =<  =^  out=[nomm=^nomm prod=sock-anno]  gen  $
+      [nomm.out used.gen sites.gen]
+  |.  ^-  [[nomm=^nomm prod=sock-anno] _gen]
+  =*  loop  $
+  =*  dunno  *sock-anno
+  ?-    nomm
+      [^ *]
+    =^  l  gen  loop(nomm -.nomm)
+    =^  r  gen  loop(nomm +.nomm)
+    :_  gen
+    :-  =/  new  [nomm.l nomm.r]
+        ?:(=(new nomm) nomm new)
+    [(knit:so sock.prod.l sock.prod.r) (cons:pi src.prod.l src.prod.r)]
+  ::
+      [%0 *]
+    ?:  =(0 p.nomm)  [[nomm dunno] gen]
+    =/  prod=sock-anno
+      ?:  =(1 p.nomm)  sub
+      [(pull:so sock.sub p.nomm) (slot:pi src.sub p.nomm)]
+    ::
+    ?.  &(fold ?=(^ sock.prod) (all:ca cape.sock.prod))  [[nomm prod] gen]
+    ::  a read of a known part: a literal, assuming that part
+    ::
+    :-  [[%1 data.sock.prod] [sock.prod ~]]
+    gen(used (uni:ca used.gen (distribute & src.prod)))
+  ::
+      [%1 *]  [[nomm [&+p.nomm ~]] gen]
+  ::
+      [%2 *]
+    =^  s  gen  loop(nomm p.nomm)
+    =^  f  gen  loop(nomm q.nomm)
+    ?~  info.nomm  [[[%2 nomm.s nomm.f ~] dunno] gen]
+    =/  k=sock  sock.prod.s
+    =/  v=bell  (res b.u.info.nomm k)
+    =.  sites.gen  [[b.u.info.nomm k src.prod.s] sites.gen]
+    =/  prod=sock-anno
+      ?~  d=(dat b.u.info.nomm)  dunno
+      =/  p  (patch-prod [prod map]:u.d k)
+      [sock.p (compose:pi src.p src.prod.s)]
+    [[[%2 nomm.s nomm.f `[v k.u.info.nomm]] prod] gen]
+  ::
+      [%3 *]
+    =^  [n=^nomm p=sock-anno]  gen  loop(nomm p.nomm)
+    ?.  &(fold ?=(^ sock.p) (all:ca cape.sock.p) (safe-nomm n))
+      [[[%3 n] dunno] gen]
+    =/  pro=@  ?@(data.sock.p 1 0)
+    :-  [[%1 pro] [&+pro ~]]
+    gen(used (uni:ca used.gen (distribute & src.p)))
+  ::
+      [%4 *]
+    =^  [n=^nomm p=sock-anno]  gen  loop(nomm p.nomm)
+    ?.  ?&  fold
+            ?=(^ sock.p)
+            (all:ca cape.sock.p)
+            ?=(@ data.sock.p)
+            (safe-nomm n)
+        ==
+      [[[%4 n] dunno] gen]
+    =/  pro=@  +(data.sock.p)
+    :-  [[%1 pro] [&+pro ~]]
+    gen(used (uni:ca used.gen (distribute & src.p)))
+  ::
+      [%5 *]
+    =^  p  gen  loop(nomm p.nomm)
+    =^  q  gen  loop(nomm q.nomm)
+    ?.  ?&  fold
+            ?=(^ sock.prod.p)
+            (all:ca cape.sock.prod.p)
+            (safe-nomm nomm.p)
+            ?=(^ sock.prod.q)
+            (all:ca cape.sock.prod.q)
+            (safe-nomm nomm.q)
+        ==
+      [[[%5 nomm.p nomm.q] dunno] gen]
+    =/  pro=@  ?:(=(data.sock.prod.p data.sock.prod.q) 0 1)
+    :-  [[%1 pro] [&+pro ~]]
+    %=    gen
+        used
+      ;:  uni:ca
+        used.gen
+        (distribute & src.prod.p)
+        (distribute & src.prod.q)
+      ==
+    ==
+  ::
+      [%6 *]
+    =^  p  gen  loop(nomm p.nomm)
+    ?:  ?&  fold
+            ?=(^ sock.prod.p)
+            (all:ca cape.sock.prod.p)
+            (safe-nomm nomm.p)
+            ?=(?(%0 %1) data.sock.prod.p)
+        ==
+      ::  a known condition: the branch taken, assuming the parts of the
+      ::  subject the condition came from
+      ::
+      =.  used.gen  (uni:ca used.gen (distribute & src.prod.p))
+      ?-  data.sock.prod.p
+        %0  loop(nomm q.nomm)
+        %1  loop(nomm r.nomm)
+      ==
+    =^  q  gen  loop(nomm q.nomm)
+    =^  r  gen  loop(nomm r.nomm)
+    [[[%6 nomm.p nomm.q nomm.r] (double-int prod.q prod.r)] gen]
+  ::
+      [%7 *]
+    =^  p  gen  loop(nomm p.nomm)
+    =^  q  gen  loop(nomm q.nomm, sub prod.p)
+    [[[%7 nomm.p nomm.q] prod.q] gen]
+  ::
+      [%10 *]
+    =^  don  gen  loop(nomm q.p.nomm)
+    =^  rec  gen  loop(nomm q.nomm)
+    :_  gen
+    :-  [%10 [p.p.nomm nomm.don] nomm.rec]
+    :-  (darn:so sock.prod.rec p.p.nomm sock.prod.don)
+    (edit:pi src.prod.rec p.p.nomm src.prod.don)
+  ::
+      [%11 *]
+    ?@  p.nomm
+      =^  q  gen  loop(nomm q.nomm)
+      [[[%11 p.nomm nomm.q body.nomm] prod.q] gen]
+    =^  h  gen  loop(nomm q.p.nomm)
+    =^  q  gen  loop(nomm q.nomm)
+    [[[%11 [p.p.nomm nomm.h] nomm.q body.nomm] prod.q] gen]
+  ::
+      [%12 *]
+    =^  p  gen  loop(nomm p.nomm)
+    =^  q  gen  loop(nomm q.nomm)
+    [[[%12 nomm.p nomm.q] dunno] gen]
+  ::
+      [%mean *]
+    =^  p  gen  loop(nomm p.nomm)
+    =/  k=sock  sock.prod.p
+    =/  v=bell  (res b.nomm k)
+    =.  sites.gen  [[b.nomm k src.prod.p] sites.gen]
+    =^  q  gen  loop(nomm q.nomm)
+    [[[%mean nomm.p v nomm.q body.nomm k.nomm] prod.q] gen]
+  ==
+::  Bake the functions of a poke, from the root down: the variants to
+::  compile, as the folded nomm and the variants it calls, and the code
+::  bell -> variants index with them.  The root's variant is itself.
+::
+::  A worklist approaches the greatest fixed point from above: a function
+::  enters with what its first evaluated caller knows, is evaluated under
+::  that, and loses what later callers, or its own recursion, do not know,
+::  each loss re-evaluating it and its callees.  Every change shrinks a
+::  bake, so this settles; a function re-evaluated too often (an unstable
+::  choice of variants) is fixed at its code bell, which always fits.
+::
+++  bake-graph
+  ~%  %bake-graph  ..ride  ~
+  |=  $:  root=bell
+          dat=$-(bell (unit datum))
+          jetted=$-(bell ?)
+          vars=(jug bell bell)
+      ==
+  ^-  [(map bell [=nomm calls=(set bell)]) (jug bell bell)]
+  =*  site  ,[b=bell k=sock src=spring]
+  ::  an existing variant of a code bell fit for a subject: the one that
+  ::  knows the most.  The code bell itself if the subject does not even
+  ::  provide the code: the analysis found that call, not us
+  ::
+  =/  pick
+    |=  [c=bell k=sock]
+    ^-  (unit bell)
+    ?.  (huge:so less.c k)  `c
+    %-  ~(rep in (~(get ju vars) c))
+    |=  [v=bell best=(unit bell)]
+    ?.  (huge:so less.v k)  best
+    ?~  best  `v
+    ?:  (huge:so less.u.best less.v)  `v
+    best
+  ::
+  =/  idc  |=([c=bell k=sock] c)
+  =/  frozen=?  !?=(%bake bake-mode)
+  =|  $=  st
+      $:  bak=(map bell sock)        ::  code bell -> its bake, the variant
+          fix=(set bell)             ::  bakes fixed at the code bell
+          cnt=(map bell @ud)         ::  evaluations of each
+          out=(map bell (set bell))  ::  callees whose variant it awaits
+          inn=(map bell (map bell (list sock)))  ::  callee -> caller -> known
+          evals=@ud
+      ==
+  ::
+  =.  bak.st  (~(put by bak.st) root less.root)
+  =.  fix.st  (~(put in fix.st) root)
+  =/  q=(list bell)  ~[root]
+  =/  qs=(set bell)  [root ~ ~]
+  |-  ^-  [(map bell [=nomm calls=(set bell)]) (jug bell bell)]
+  =*  work  $
+  ?~  q
+    %-  %+  print-ska  0
+        |.  %-  sell  !>
+        :*  %bake
+            variants+~(wyt by bak.st)
+            baked+(lent (skim ~(tap by bak.st) |=([c=bell s=sock] !=(s less.c))))
+            evals+evals.st
+            fixed+(dec ~(wyt in fix.st))
+        ==
+    =/  res
+      |=  [c=bell k=sock]
+      ^-  bell
+      ?^  v=(pick c k)  u.v
+      [(~(got by bak.st) c) fol.c]
+    ::
+    %-  ~(rep by bak.st)
+    |=  [[t=bell s=sock] out=(map bell [=nomm calls=(set bell)]) =_vars]
+    =/  [=nomm * sites=(list site)]  (know nomm:(need (dat t)) s dat res)
+    =/  v=bell  [s fol.t]
+    :-  (~(put by out) v [nomm (silt (turn sites |=(site (res b k))))])
+    (~(put ju vars) t v)
+  ::
+  =/  cur=bell  i.q
+  =/  rest=(list bell)  t.q
+  =.  qs  (~(del in qs) cur)
+  ::  evaluate .cur under its bake
+  ::
+  =/  sites=(list site)
+    sites:(know nomm:(need (dat cur)) (~(got by bak.st) cur) dat idc)
+  ::
+  =.  evals.st  +(evals.st)
+  ::  its sites: what each callee waiting for a variant of this poke learns
+  ::  from .cur
+  ::
+  =/  new=(map bell (list sock))
+    %+  roll  sites
+    |=  [s=site new=(map bell (list sock))]
+    ?^  (pick b.s k.s)  new
+    (~(put by new) b.s [k.s (~(gut by new) b.s ~)])
+  ::
+  =/  new-bells=(set bell)  ~(key by new)
+  =/  prev=(set bell)  (~(gut by out.st) cur ~)
+  =.  out.st  (~(put by out.st) cur new-bells)
+  ::  the bakes to recompute: the callees .cur informs.  A bake is the
+  ::  code and what all the callers know.  A function that changed too
+  ::  often is fixed at its code
+  ::
+  =/  touched=(set bell)  (~(uni in prev) new-bells)
+  =^  changed=(list bell)  st
+    %+  roll  ~(tap in touched)
+    |=  [c=bell changed=(list bell) =_st]
+    =/  m=(map bell (list sock))  (~(gut by inn.st) c ~)
+    =.  m
+      ?~  ks=(~(get by new) c)  (~(del by m) cur)
+      (~(put by m) cur u.ks)
+    ::
+    =.  inn.st  (~(put by inn.st) c m)
+    ?:  =(c root)  [changed st]
+    ::  a jetted arm is called through its ring and runs its program only
+    ::  when the jet punts: nothing to bake, and a variant would have to
+    ::  match the template again
+    ::
+    =?  fix.st  (jetted c)  (~(put in fix.st) c)
+    =/  bake=sock
+      ?:  |(frozen (~(has in fix.st) c))  less.c
+      =/  ks=(list sock)  (zing ~(val by m))
+      ?~  ks  less.c
+      =/  meet=sock  (roll t.ks |=([k=sock acc=_i.ks] (msg-sock k acc)))
+      (uni-sock less.c meet)
+    ::
+    ?:  =(`bake (~(get by bak.st) c))  [changed st]
+    =/  n=@ud  +((~(gut by cnt.st) c 0))
+    =/  give=?  (gth n 16)
+    :-  [c changed]
+    %=  st
+      cnt  (~(put by cnt.st) c n)
+      bak  (~(put by bak.st) c ?:(give less.c bake))
+      fix  ?:(give (~(put in fix.st) c) fix.st)
+    ==
+  ::
+  =/  fresh=(list bell)  (skip changed ~(has in qs))
+  %=  work
+    q   (weld rest fresh)
+    qs  (~(gas in qs) fresh)
+  ==
 ::
 ++  ska-poke
   |=  [[bus=sock fol=^] lon=long-ska]
@@ -1324,21 +1683,15 @@
   =/  pruned=callgraph  (prune-callgraph g root-identity `graph.final.lon)
   =.  graph.final.lon  (~(uni by graph.final.lon) pruned)
   =/  root-datum=datum  (~(got by pruned) root-identity)
-  =/  [bg=(jug bell bell) bg-rev=(jug bell bell)]
-    (simple-bell-graph-and-reversed pruned)
-  ::  callees first
+  ::  memoize the finished functions, and index their datums by code bell
   ::
-  =/  sccs=(list (set bell))
-    =<  $  ~%  %poke-tarjan  ..ride  ~  |.
-    (flop (tarjan bg))
-  ::
-  =^  just-code=(map bell nomm)  lon
+  =^  dats=(map bell datum)  lon
     =<  $  ~%  %poke-just-code  ..ride  ~  |.
     =|  visit=(set identity)
     =/  q=(list identity)  ~[root-identity]
-    =|  just-code=(map bell nomm)
-    |-  ^-  [_just-code long-ska]
-    ?~  q  [just-code lon]
+    =|  dats=(map bell datum)
+    |-  ^-  [_dats long-ska]
+    ?~  q  [dats lon]
     ?:  (~(has in visit) i.q)  $(q t.q)
     ?~  got=(~(get by pruned) i.q)
       ::  call outside of the freshly produced & pruned callgraph
@@ -1353,9 +1706,51 @@
     %=  $
       q               (weld t.q callees-list)
       memo.final.lon  (put:mi memo.final.lon i.q d)
-      just-code       (~(put by just-code) b nomm.d)
+      dats            (~(put by dats) b d)
       visit           (~(put in visit) i.q)
     ==
+  ::  a code bell's datum: from this poke, or memoized by an earlier one
+  ::
+  =/  dat
+    |=  b=bell
+    ^-  (unit datum)
+    ?^  d=(~(get by dats) b)  d
+    ?^  m=(~(get by (gut:mi memo.final.lon fol.b)) less.b)  `+.u.m
+    ~
+  ::  the variants to compile, with their folded code and their callees
+  ::
+  =/  root-bell=bell  [less-code.root-datum fol]
+  ::  jetted arms, by the registrations so far, this poke's included
+  ::
+  =/  jetted
+    |=  c=bell
+    ^-  ?
+    ?|  (~(has by call.cole.jets.lon) c)
+        ?=(^ (cole-match c core.regs arms.regs))
+    ==
+  ::
+  =^  baked=(map bell [=nomm calls=(set bell)])  vars.lon
+    =<  $  ~%  %poke-bake  ..ride  ~  |.
+    (bake-graph root-bell dat jetted vars.lon)
+  ::  a variant seen before keeps its entry and its programs
+  ::
+  =/  new-code=(map bell [=nomm calls=(set bell)])
+    %-  ~(rep by baked)
+    |=  $:  [b=bell v=[=nomm calls=(set bell)]]
+            acc=(map bell [=nomm calls=(set bell)])
+        ==
+    ?:((~(has by code.lon) b) acc (~(put by acc) b v))
+  ::  callees first (+tarjan takes its vertex type from the graph's root
+  ::  node, so not on an empty graph: a root seen before has no new variant)
+  ::
+  =/  sccs=(list (set bell))
+    ?:  =(~ new-code)  ~
+    =<  $  ~%  %poke-tarjan  ..ride  ~  |.
+    =/  bg=(jug bell bell)
+      %-  ~(rep by new-code)
+      |=  [[b=bell v=[=nomm calls=(set bell)]] acc=(jug bell bell)]
+      (~(put by acc) b (~(int in calls.v) ~(key by new-code)))
+    (flop (tarjan bg))
   ::
   =.  lon
     =<  $  ~%  %poke-scc-loop  ..ride  ~  |.
@@ -1367,7 +1762,7 @@
     =/  loc1=local
       %-  ~(rep in scc)
       |=  [b=bell acc=_`local`[code.lon fols.lon]]
-      =/  entry  [(~(got by just-code) b) | |]
+      =/  entry  [nomm:(~(got by new-code) b) | |]
       :-  (~(put by code.acc) b entry)
       (put-fols b entry fols.acc)
     ::  Previously there was a fixed point loop that could mark potentially
@@ -1403,7 +1798,6 @@
     ::
     acc
   ::
-  =/  root-bell=bell  [less-code.root-datum fol]
   =/  new-cores=(jug path sock)
     (~(gas ju *(jug path sock)) (turn new.regs |=([p=path s=sock *] [p s])))
   =.  jets.lon
@@ -1415,20 +1809,13 @@
       pend  ((uni-ju pend.jets.lon) new-cores)
     ==
   ::
-  =/  old  calls.lon
   =.  calls.lon
-    %-  ~(rep by pruned)
-    |=  [[k=identity v=datum] acc=_calls.lon]
-    =/  b=bell  [less-code.v fol.k]
-    ?:  (~(has by old) b)  acc
-    %+  ~(put by acc)  b
-    %-  ~(rep in callees.v)
-    |=  [c=callee-entry cs=_(~(gut by acc) b ~)]
-    =/  d=datum  (~(got by graph.final.lon) id.c)
-    (~(put in cs) [less-code.d fol.id.c])
+    %-  ~(rep by new-code)
+    |=  [[b=bell v=[=nomm calls=(set bell)]] acc=_calls.lon]
+    (~(put by acc) b calls.v)
   ::
   :-  [root-bell (flop new.regs)]
-  (ska-cole-update lon (~(dif in ~(key by just-code)) ~(key by old)))
+  (ska-cole-update lon ~(key by new-code))
 ::  produces data about a function
 ::  pure: no crashes + no hints excepts %fast (call to it could be omitted)
 ::  total: no crashes (stacktrace boundaries around them could be omitted)
@@ -2335,6 +2722,10 @@
 ::  in that shape and the basic blocks, with the entry block having an index 0.
 ::
 +$  straight  [need=need-ordered n-args=@ud blocks=(map @uwoo blob)]
+::  Baked shape: the arguments of a function less the parts its bell knows,
+::  which are immediates loaded in the prologue (+bake-need)
+::
++$  baked  [ned=need imm=(list [r=@uvre v=*])]
 ::  Inner state for the linearizer
 ::
 ::  The compiler computes the subject shape and emits code in one traversal,
@@ -2706,23 +3097,32 @@
   ::
   =|  gen=line-short
   =.  cache.gen  cache
-  =^  [need-new=need-ordered laz=need-lazy ned-final=need o=@uwoo]  gen
+  ::  Baking: the leaves of the shape inside what the bell knows of the
+  ::  subject are immediates loaded in the prologue, not arguments: .bak
+  ::  has the shape of the arguments and the registers to load, .ned-final
+  ::  the one the body's registers follow
+  ::
+  =^    [need-new=need-ordered laz=need-lazy ned-final=need bak=baked o=@uwoo]
+      gen
     !@  dedicated-shape-pass
       =.  mode.gen  ?:(done %run %drop)
       =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~)
       =^  [ned-final=need laz=need-lazy o=@uwoo]  gen
         (~(collapse-shape comp gen) nex cape.less.b)
+      =/  bak=baked  (bake-need ned-final less.b)
       ::
-      [[(need-to-ordered ned-final) laz ned-final o] gen]
+      [[(need-to-ordered ned.bak) laz ned-final bak o] gen]
     ?.  done
       =^  l=laze  gen  (~(run-shape comp gen) nomm [%done ~])
-      [[(laze-collapse l cape.less.b) *need-lazy *need `@uwoo`0] gen]
+      =/  shape  (bake-need-ord (laze-collapse l cape.less.b) less.b)
+      [[shape *need-lazy *need *baked `@uwoo`0] gen]
     =.  mode.gen  %run
     =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~)
     =^  [ned-final=need laz=need-lazy o=@uwoo]  gen
       (~(collapse-shape comp gen) nex cape.less.b)
+    =/  bak=baked  (bake-need ned-final less.b)
     ::
-    [[(need-to-ordered ned-final) laz ned-final o] gen]
+    [[(need-to-ordered ned.bak) laz ned-final bak o] gen]
   =.  cache  cache.gen
   ::  Debug assert of +run-shape correctenss
   ::
@@ -2730,7 +3130,7 @@
       !@  shape-check  dot
       ?.  done  dot
       =/  l=laze  -:(~(run-shape comp gen) nomm [%done ~])
-      =/  shape  (laze-collapse l cape.less.b)
+      =/  shape  (bake-need-ord (laze-collapse l cape.less.b) less.b)
       ~|  [%shape-mismatch b shape need-new]
       ?>  =(shape need-new)
       dot
@@ -2747,7 +3147,11 @@
     ::
     ?.  done  [?~(pessimized need-new u.pessimized) 0 ~]
     =.  gen  (~(coerce-lazy comp gen) ned-final o laz cape.less.b)
-    =/  res=next-resolved  [%next [[ned-final ~] ~ ~] ~ o]
+    ::  the baked registers are loaded before the deconsing code
+    ::
+    =.  gen
+      (~(add-ops comp gen) o (turn imm.bak |=([r=@uvre v=*] [%imm v r])))
+    =/  res=next-resolved  [%next [[ned.bak ~] ~ ~] ~ o]
     ?~  pessimized  (~(to-straight comp gen) res)
     =^  coerced=next-resolved  gen  (~(coerce-ord comp gen) u.pessimized res)
     (~(to-straight comp gen) coerced)
@@ -2766,6 +3170,96 @@
     ?:  =(need-pessimized need-new)  (finish ~)
     (finish `need-pessimized)
   cache
+::  Baking of a shape: the leaves of a need inside what the bell knows of
+::  the subject are not arguments but immediates: the need without them,
+::  and the registers to load with their values, in the prologue.  A known
+::  part is baked whole only when it has the structure the need asks of
+::  it; where it does not, the caller's fetch crashes, as it should.
+::
+++  bake-need
+  ~%  %bake-need  ..ride  ~
+  |=  [ned=need know=sock]
+  ^-  baked
+  =|  imm=(list [r=@uvre v=*])
+  =/  axe=@  1
+  |-  ^-  [need _imm]
+  =*  loop  $
+  =/  k=sock  (pull:so know axe)
+  ?:  ?&  ?=(^ k)
+          (all:ca cape.k)
+          (need-fits ned data.k)
+      ==
+    :-  [%none ~]
+    |-  ^+  imm
+    =*  all  $
+    ?-  -.ned
+        %none  imm
+        %this  [[r.ned data:(pull-known know axe)] imm]
+        ^      all(ned q.ned, axe (peg axe 3), imm all(ned p.ned, axe (peg axe 2)))
+        %both
+      =.  imm  [[r.ned data:(pull-known know axe)] imm]
+      all(ned t.ned, axe (peg axe 3), imm all(ned h.ned, axe (peg axe 2)))
+    ==
+  ?-    -.ned
+      %none  [ned imm]
+      %this  [ned imm]
+      ^
+    =^  l  imm  loop(ned p.ned, axe (peg axe 2))
+    =^  r  imm  loop(ned q.ned, axe (peg axe 3))
+    [(cons-need l r) imm]
+  ::
+      %both
+    =^  h  imm  loop(ned h.ned, axe (peg axe 2))
+    =^  t  imm  loop(ned t.ned, axe (peg axe 3))
+    =/  x  (cons-need h t)
+    ?^  -.x  [[%both r.ned x] imm]
+    [[%this r.ned] imm]
+  ==
+::  does a known noun have the structure a need or a shape asks of it?
+::
+++  need-fits
+  |=  [ned=$@(~ *) som=*]
+  ^-  ?
+  ?.  ?=([?(%none %this %both) *] ned)
+    ?@  som  |
+    ?>  ?=(^ ned)
+    &($(ned -.ned, som -.som) $(ned +.ned, som +.som))
+  ?.  ?=(%both -.ned)  &
+  ?@  som  |
+  ?>  ?=([%both * *] ned)
+  =/  rest  +.ned
+  ::  a need carries a register before the halves, a shape doesn't
+  ::
+  =/  halves  ?@(-.rest +.rest rest)
+  ?>  ?=(^ halves)
+  &($(ned -.halves, som -.som) $(ned +.halves, som +.som))
+::  a known part of a sock
+::
+++  pull-known
+  |=  [s=sock axe=@]
+  ^-  [cape=cape data=*]
+  =/  k=sock  (pull:so s axe)
+  ?>  ?=(^ k)
+  k
+::  +bake-need for a shape
+::
+++  bake-need-ord
+  ~%  %bake-need-ord  ..ride  ~
+  |=  [ned=need-ordered know=sock]
+  ^-  need-ordered
+  =/  axe=@  1
+  |-  ^-  need-ordered
+  =/  k=sock  (pull:so know axe)
+  ?:  &(?=(^ k) (all:ca cape.k) (need-fits ned data.k))  [%none ~]
+  ?-    -.ned
+      %none  ned
+      %this  ned
+      ^      (cons-need $(ned p.ned, axe (peg axe 2)) $(ned q.ned, axe (peg axe 3)))
+      %both
+    =/  x  (cons-need $(ned h.ned, axe (peg axe 2)) $(ned t.ned, axe (peg axe 3)))
+    ?^  -.x  [%both x]
+    [%this ~]
+  ==
 ::
 ++  need-normalize
   ~%  %need-normalize  ..ride  ~
