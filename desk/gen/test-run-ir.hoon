@@ -15,14 +15,14 @@
 ::
 =|  =long-ska
 =.   long-ska  +:(ska-poke [&+~ hoot-zpdt-fol] long-ska)
-=/  subject  ..dec:hoot-zpdt
+=/  subject  ..scow:hoot-zpdt
 =/  formula=^
   =>  subject
   ;;  ^
   !=
   (scow %ud 5)
 ::
-=^  func=bell  long-ska  (ska-poke [&+subject formula] long-ska)
+=^  [func=bell *]  long-ska  (ska-poke [&+subject formula] long-ska)
 =.  long-ska  (ska-cole-restore long-ska)
 ::
 =/  formula=^
@@ -35,27 +35,13 @@
   ?~  l  ~
   [(dec i.l) $(l t.l)]
 ::
-=^  func=bell  long-ska  (memo-call ska-poke [&+subject formula] long-ska)
+=^  [func=bell *]  long-ska  (memo-call ska-poke [&+subject formula] long-ska)
 =.  long-ska  (ska-cole-restore long-ska)
-=/  [bell-graph=(jug bell bell) rev=(jug bell bell)]
-  (simple-bell-graph-and-reversed graph.final.long-ska)
-::
-=/  sccs=(list (set bell))  (tarjan bell-graph)
-=/  scc-map=(map bell (set bell))
-  =|  out=(map bell (set bell))
-  |-  ^+  out
-  ?~  sccs  out
-  =.  out
-    %-  ~(rep in i.sccs)
-    |=  [b=bell acc=_out]
-    (~(put by acc) b i.sccs)
-  ::
-  $(sccs t.sccs)
-::
-=/  scc-here=(set bell)  (~(gut by scc-map) func [func ~ ~])
-=/  jets-hot=(map ring need-ordered)
+=/  [rev=(jug bell bell) scc-map=(map bell (set bell))]  (graph-info:li long-ska)
+=/  [scc-here=(set bell) sccs=(map bell (set bell))]  (scc-of func calls.long-ska ~)
+=/  jets-hot=jets-comp
   %-  malt
-  ^-  (list [ring need-ordered])
+  ^-  (list [ring jets-comp-info])
   =/  unary=need-ordered  [none+~ this+~ none+~]
   =/  binary=need-ordered  [none+~ [this+~ this+~] none+~]
   :~  [/add/one/k135^2 binary]
@@ -75,11 +61,16 @@
   ==
 ::
 ?:  |
-  noun+(run:li |+subject func scc-here rev [code jets]:long-ska scc-map jets-hot)
-=/  all-straights=(map bell straight)
-  %-  ~(rep by scc-map)
-  |=  [[k=* v=(set bell)] acc=(map bell straight)]
-  (~(uni by acc) (compile-scc v rev [code jets]:long-ska scc-map jets-hot))
+  noun+(run:li |+subject func scc-here rev long-ska scc-map jets-hot)
+=/  cache=comp-cache  [~ ~ sccs]
+=/  todo=(list (set bell))  ~(tap in (silt ~(val by scc-map)))
+=|  all-straights=(map bell straight)
+=^  all-straights  cache
+  |-  ^-  [(map bell straight) comp-cache]
+  ?~  todo  [all-straights cache]
+  =^  m=(map bell straight)  cache
+    (compile-scc i.todo [code jets calls]:long-ska jets-hot cache)
+  $(todo t.todo, all-straights (~(uni by all-straights) m))
 ::
 :: :-  %tang
 :: %-  flop
@@ -91,7 +82,7 @@
 ^-  (list tape)
 =-  ?:  |  -  :_  -
     =/  pessimistic=straight
-      -:(compile-unary func scc-here rev [code jets]:long-ska scc-map ~)
+      -<:(compile-unary func scc-here [code jets calls]:long-ska ~ cache)
     ::
     =.  pessimistic  (optimize pessimistic)
     "{<`@ux`(mug func)>} pessimistic:\0a{(print-straight:li "  " pessimistic)}\0a"

@@ -17,7 +17,7 @@
   !=
   (scow %ud 5)
 ::
-=^  func=bell  long-ska
+=^  [func=bell *]  long-ska
   ~>  %bout.[0 'poke scow']
   (ska-poke [&+subject formula] long-ska)
 =.  long-ska  (ska-cole-restore long-ska)
@@ -32,7 +32,7 @@
   ?~  l  ~
   [(dec i.l) $(l t.l)]
 ::
-=^  func=bell  long-ska
+=^  [func=bell *]  long-ska
   ~>  %bout.[0 'poke dec']
   (ska-poke [&+subject formula] long-ska)
 =.  long-ska  (ska-cole-restore long-ska)

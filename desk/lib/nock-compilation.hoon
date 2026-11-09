@@ -85,6 +85,14 @@
 ::  variant; %off, as before
 ::
 =/  bake-mode=?(%off %fold %bake)  %bake
+::  Functions in progress with one formula before a call with that formula
+::  is checked for homeomorphic embedding, see +recursive-call. On +ride the
+::  nesting of functions with one formula (mold generators such as +list on
+::  nested item types, parser combinators such as +plug on nested parsers)
+::  reaches 21 and HE fired at nesting 9 at most; 0 is the old behavior,
+::  HE on the first embedding.
+::
+=/  he-threshold  32
 ::
 ::  compiler verbosity
 ::
@@ -678,6 +686,10 @@
       stk=(list identity)     ::  functions in progress, latest first
       next=@uxsite            ::  next DFS number
       moved=(set identity)    ::  functions whose product changed already
+      tick=@ud                ::  counts the runs
+      $=  ticks               ::  of the functions in progress: the tick of
+      %+  map  identity       ::  the last run and of the last change
+      [ran=@ud chg=@ud]       ::  of the entry
       =regs                   ::  %fast registrations so far
       $=  stats               ::  statistics for debugging
       $:  runs=@ud            ::    number of function analyses
@@ -802,9 +814,15 @@
 ::  Also check if id-kid's subject homeomorphically embeds the subject of one
 ::  of them, masking out the accumulating part with +msg-sock. This is done to
 ::  stop infinite chains of dynamically generated functions. Produces the
-::  identity to call instead: %merge, a function in progress (the caller
-::  patches its product for id-kid's subject, +patch-prod), or %gen, a
+::  identity to call instead: %rec, a function in progress (the caller
+::  patches its product for id-kid's subject, +patch-prod), or %he, a
 ::  generalized identity.
+::
+::  The embedding is checked only once .he-threshold functions with the
+::  formula of id-kid are in progress: a shorter chain of functions with one
+::  formula is analyzed in full. This keeps termination: an infinite chain
+::  has infinitely many functions with one formula (the callable formulas
+::  are finitely many), so past the threshold HE applies to it as before.
 ::
 ::  Chains before HE firing are theoretically finite but could be V A S T (see
 ::  TREE(3) to get the sense of scale); however in testing I could not construct
@@ -818,6 +836,11 @@
   ~%  %recursive-call  ..ride  ~
   |=  [id-kid=identity stk=(list identity) g=callgraph]
   ^-  (unit [?(%rec %he) identity])
+  ::  functions in progress with the formula of id-kid
+  ::
+  =/  same=@  (lent (skim stk |=(id=identity =(fol.id-kid fol.id))))
+  =/  he-on=?  (gte same he-threshold)
+  |-  ^-  (unit [?(%rec %he) identity])
   ?~  stk  ~
   ?.  =(fol.id-kid fol.i.stk)  $(stk t.stk)
   =/  d=datum  (git-g g i.stk)
@@ -826,7 +849,7 @@
           (app:ca indi.d more.i.stk)
       ==
     `[%rec i.stk]
-  ?:  (he-sock more.id-kid more.i.stk)
+  ?:  &(he-on (he-sock more.id-kid more.i.stk))
     `[%he [(msg-sock more.id-kid more.i.stk) fol.id-kid]]
   $(stk t.stk)
 ::  Patch the product of the memoized computation with the new subject
@@ -2078,67 +2101,91 @@
     ::
     ?.  |(back !?=([* ~] (above id stk.st)))
       [next.st (pop id st)]
-    ::  Reanalyze the component until it is stable. Members are swept latest
-    ::  first, which puts callees before callers along the DFS tree. A pass may
-    ::  find a call to a function below .id on the stack: then .id was not the
-    ::  root after all, and the component stays on the stack for the real root
-    ::  to iterate.
+    ::  Reanalyze the component until it is stable. A pass sweeps the members
+    ::  callees first (+sweep), so that a change reaches the callers within
+    ::  the pass except across back edges. A pass may find a call to a
+    ::  function below .id on the stack: then .id was not the root after all,
+    ::  and the component stays on the stack for the real root to iterate.
     ::
-    ::  A member is re-run only if one of its callees changed in the previous
-    ::  pass (or in the DFS, for the first pass): the data a run reads are the
+    ::  A member is re-run only if the entry of one of its callees changed
+    ::  since the member last ran (+dirty): the data a run reads are the
     ::  entries of its callees, so a member whose callees did not change would
-    ::  produce the same entry again.
+    ::  produce the same entry again. This covers the first pass (a member
+    ::  that saw a callee in progress, with an empty entry, is dirty once the
+    ::  callee has run) and the members of a component that was found stable
+    ::  before its real root was known.
     ::
     =/  pass=@  1
-    =|  dirty=(set identity)
     |-  ^-  [@ ska-state]
     =*  pass-loop  $
-    =/  members=(list identity)  (above id stk.st)
+    =/  was=(set identity)  (silt (above id stk.st))
+    =/  members=(list identity)  (sweep id was st)
     =.  passes.stats.st  +(passes.stats.st)
-    =^  [low=@uxsite changed=(set identity)]  st
-      |-  ^-  [[@ (set identity)] ska-state]
+    ::  every function analyzed afresh takes a DFS number, so a change of
+    ::  .next tells whether this pass found one
+    ::
+    =/  next-before=@uxsite  next.st
+    =^  [low=@uxsite reran=? changed=?]  st
+      |-  ^-  [[@ ? ?] ska-state]
       =*  member-loop  $
-      ?~  members  [[index ~] st]
-      ?.  |(=(1 pass) (~(has in dirty) i.members))
-        member-loop(members t.members)
+      ?~  members  [[index | |] st]
+      ?.  (dirty i.members st)  member-loop(members t.members)
       =?  late-runs.stats.st  (gth pass 1)  +(late-runs.stats.st)
       =^  [low-m=@uxsite back-m=? changed-m=?]  st
         (run i.members (~(got by order.st) i.members) st)
       ::
-      ?:  (lth low-m index)  [[low-m ~] st]
-      =^  [low-t=@uxsite changed-t=(set identity)]  st
+      ?:  (lth low-m index)  [[low-m & changed-m] st]
+      =^  [low-t=@uxsite reran-t=? changed-t=?]  st
         member-loop(members t.members)
       ::
-      :_  st
-      :-  (min low-m low-t)
-      ?.(changed-m changed-t (~(put in changed-t) i.members))
+      [[(min low-m low-t) & |(changed-m changed-t)] st]
     ::
     ?.  =(low index)  [low st]
     ::  members that .id does not reach anymore are dropped
     ::
     =.  st  (cull id st)
-    ::  new members (found in this pass) count as changed: they were seen in
-    ::  progress, as an empty entry, by the members that called them
+    ::  stable: no member was dirty, or no entry changed and no function was
+    ::  found (a new function was seen in progress, as an empty entry, by the
+    ::  members that called it, which are dirty now)
     ::
-    =/  members-now=(list identity)  (above id stk.st)
-    =/  was=(set identity)  (silt members)
-    =.  changed
-      %-  silt
-      %+  skim  members-now
-      |=  m=identity
-      |((~(has in changed) m) !(~(has in was) m))
-    ::
-    ?:  =(~ changed)  [next.st (pop id st)]
-    %=    pass-loop
-        pass  +(pass)
-    ::
-        dirty
-      %-  silt
-      %+  skim  members-now
-      |=  m=identity
-      %-  ~(any in callees:(git-g g.st m))
-      |=(callee-entry (~(has in changed) id))
-    ==
+    ?:  |(!reran &(!changed =(next.st next-before)))
+      [next.st (pop id st)]
+    pass-loop(pass +(pass))
+  ::  did the entry of a callee of .m change since .m last ran? A run reads
+  ::  the entries of its callees as they are at the time, except its own: a
+  ::  recursive call to .m itself reads the entry from before the run, which
+  ::  the run then replaces, so a change in the run itself (the same tick)
+  ::  counts too.
+  ::
+  ++  dirty
+    |=  [m=identity st=ska-state]
+    ^-  ?
+    =/  ran=@ud  ran:(~(gut by ticks.st) m [ran=0 chg=0])
+    %-  ~(any in callees:(git-g g.st m))
+    |=  callee-entry
+    (gte chg:(~(gut by ticks.st) id [ran=0 chg=0]) ran)
+  ::  the members (.was) of the component of .id that .id reaches, callees
+  ::  before callers: the post-order of a depth-first search from .id over
+  ::  the current callees
+  ::
+  ++  sweep
+    |=  [id=identity was=(set identity) st=ska-state]
+    ^-  (list identity)
+    =/  kids
+      |=  i=identity
+      ^-  (list identity)
+      (turn ~(tap in callees:(git-g g.st i)) |=(callee-entry id))
+    =/  seen=(set identity)  [id ~ ~]
+    =/  stack=(list [i=identity kids=(list identity)])  [id (kids id)]~
+    =|  out=(list identity)
+    |-  ^-  (list identity)
+    ?~  stack  (flop out)
+    ?~  kids.i.stack  $(stack t.stack, out [i.i.stack out])
+    =/  k=identity  i.kids.i.stack
+    =/  rest=(list [i=identity kids=(list identity)])
+      [[i.i.stack t.kids.i.stack] t.stack]
+    ?:  |((~(has in seen) k) !(~(has in was) k))  $(stack rest)
+    $(stack [[k (kids k)] rest], seen (~(put in seen) k))
   ::  functions on the stack above and including .id, latest first
   ::
   ++  above
@@ -2179,7 +2226,11 @@
     =.  moved.st  (~(dif in moved.st) dead)
     %-  ~(rep in dead)
     |=  [i=identity =_st]
-    st(order (~(del by order.st) i), g (~(del by g.st) i))
+    %=  st
+      order  (~(del by order.st) i)
+      ticks  (~(del by ticks.st) i)
+      g      (~(del by g.st) i)
+    ==
   ::  pop a finished component off the stack, memoizing its members
   ::
   ++  pop
@@ -2190,6 +2241,7 @@
       stk.st
     ::
     =.  order.st  (~(del by order.st) top)
+    =.  ticks.st  (~(del by ticks.st) top)
     ::  a finished function: a void product becomes unknown
     ::
     =/  d=datum   (git-g g.st top)
@@ -2255,6 +2307,12 @@
       =/  changed=?
         !=([less-code prod map indi]:data-new [less-code prod map indi]:data)
       ::
+      =.  tick.st  +(tick.st)
+      =.  ticks.st
+        %+  ~(put by ticks.st)  id
+        :-  tick.st
+        ?:  changed  tick.st
+        chg:(~(gut by ticks.st) id [ran=0 chg=0])
       :-  [low back changed]
       st(g (~(put by g.st) id data-new))
     ::
@@ -3052,124 +3110,175 @@
   ::  the whole SCC is compiled once more with .done set, this time for real
   ::
   =|  map-local=(map bell straight)
-  ::  reversed bell graph
+  ::  the callees of each member in the SCC
   ::
-  =/  rev=(jug bell bell)
+  =/  kids=(jug bell bell)
     %-  ~(rep in scc)
     |=  [m=bell acc=(jug bell bell)]
-    %-  ~(rep in (~(gut by calls.long-ska) m ~))
-    |=  [c=bell acc=_acc]
-    ?.((~(has in scc) c) acc (~(put ju acc) c m))
+    (~(put by acc) m (~(int in (~(gut by calls.long-ska) m ~)) scc))
   ::  A function alone in its SCC that does not call itself needs no fixed
   ::  point: the final pass computes its subject shape by itself
   ::
-  =/  done=?  &(?=([* ~ ~] scc) !(~(has ju rev) n.scc n.scc))
-  ::  Fixed-point loop with a worklist
+  =/  done=?  &(?=([* ~ ~] scc) !(~(has ju kids) n.scc n.scc))
+  ::  Compile one member against the shapes in .map-local; produces whether
+  ::  its shape changed (not used in the final pass)
   ::
-  =/  w=worklist  scc
-  =/  counter=@ud  0
-  |-  ^+  [map-local cache]
-  =*  fixpoint-compilation  $
-  =;  [w-new=worklist map-local1=_map-local cache1=_cache]
-    ?:  done
-      [map-local1 cache1(nary (~(uni by nary.cache1) map-local1))]
-    =.  w-new  (~(int in w-new) scc)
-    ?:  =(~ w-new)
-      fixpoint-compilation(w scc, map-local map-local1, cache cache1, done &)
-    %-  (print-comp 0 |.(leaf+"[fixpoint-compilation {(scow %ud counter)}]"))
-    %=  fixpoint-compilation
-      w          w-new
-      map-local  map-local1
-      cache      cache1
-      counter    +(counter)
-    ==
-  ::
-  %-  ~(rep in w)
-  ~%  %compile-scc-fn  ..ride  ~
-  |=  [b=bell w-new=worklist =_map-local =_cache]
-  ^+  [w-new map-local cache]
-  ?>  ?=(^ less.b)
-  =/  comp  (comp scc long-ska jets-hot map-local b)
-  =/  =nomm  nomm:(~(got by code.long-ska) b)
-  ::  Until the fixed point only the input shape is needed: from the shape-only
-  ::  traversal, or from the full compilation with code emission dropped.  The
-  ::  final pass compiles for real, emitting code right away.
-  ::
-  =|  gen=line-short
-  =.  cache.gen  cache
-  ::  Baking: the leaves of the shape inside what the bell knows of the
-  ::  subject are immediates loaded in the prologue, not arguments: .bak
-  ::  has the shape of the arguments and the registers to load, .ned-final
-  ::  the one the body's registers follow
-  ::
-  =^    [need-new=need-ordered laz=need-lazy ned-final=need bak=baked o=@uwoo]
-      gen
-    !@  dedicated-shape-pass
-      =.  mode.gen  ?:(done %run %drop)
+  =/  member
+    ~%  %compile-scc-fn  ..ride  ~
+    |=  [b=bell done=? map-local=(map bell straight) cache=comp-cache]
+    ^-  [? (map bell straight) comp-cache]
+    ?>  ?=(^ less.b)
+    =/  comp  (comp scc long-ska jets-hot map-local b)
+    =/  =nomm  nomm:(~(got by code.long-ska) b)
+    ::  Until the fixed point only the input shape is needed: from the
+    ::  shape-only traversal, or from the full compilation with code emission
+    ::  dropped.  The final pass compiles for real, emitting code right away.
+    ::
+    =|  gen=line-short
+    =.  cache.gen  cache
+    ::  Baking: the leaves of the shape inside what the bell knows of the
+    ::  subject are immediates loaded in the prologue, not arguments: .bak
+    ::  has the shape of the arguments and the registers to load, .ned-final
+    ::  the one the body's registers follow
+    ::
+    =^    [need-new=need-ordered laz=need-lazy ned-final=need bak=baked o=@uwoo]
+        gen
+      !@  dedicated-shape-pass
+        =.  mode.gen  ?:(done %run %drop)
+        =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~)
+        =^  [ned-final=need laz=need-lazy o=@uwoo]  gen
+          (~(collapse-shape comp gen) nex cape.less.b)
+        =/  bak=baked  (bake-need ned-final less.b)
+        ::
+        [[(need-to-ordered ned.bak) laz ned-final bak o] gen]
+      ?.  done
+        =^  l=laze  gen  (~(run-shape comp gen) nomm [%done ~])
+        =/  shape  (bake-need-ord (laze-collapse l cape.less.b) less.b)
+        [[shape *need-lazy *need *baked `@uwoo`0] gen]
+      =.  mode.gen  %run
       =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~)
       =^  [ned-final=need laz=need-lazy o=@uwoo]  gen
         (~(collapse-shape comp gen) nex cape.less.b)
       =/  bak=baked  (bake-need ned-final less.b)
       ::
       [[(need-to-ordered ned.bak) laz ned-final bak o] gen]
-    ?.  done
-      =^  l=laze  gen  (~(run-shape comp gen) nomm [%done ~])
-      =/  shape  (bake-need-ord (laze-collapse l cape.less.b) less.b)
-      [[shape *need-lazy *need *baked `@uwoo`0] gen]
-    =.  mode.gen  %run
-    =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~)
-    =^  [ned-final=need laz=need-lazy o=@uwoo]  gen
-      (~(collapse-shape comp gen) nex cape.less.b)
-    =/  bak=baked  (bake-need ned-final less.b)
+    =.  cache  cache.gen
+    ::  Debug assert of +run-shape correctenss
     ::
-    [[(need-to-ordered ned.bak) laz ned-final bak o] gen]
-  =.  cache  cache.gen
-  ::  Debug assert of +run-shape correctenss
-  ::
-  =>  =*  dot  .
-      !@  shape-check  dot
-      ?.  done  dot
-      =/  l=laze  -:(~(run-shape comp gen) nomm [%done ~])
-      =/  shape  (bake-need-ord (laze-collapse l cape.less.b) less.b)
-      ~|  [%shape-mismatch b shape need-new]
-      ?>  =(shape need-new)
-      dot
-  ::
-  ::  Finalization: emit the subject deconsing code, coerce the subject to the
-  ::  pessimized shape if there is one, and renumber the registers
-  ::
-  =/  finish
-    ~%  %compile-scc-finish  ..ride  ~
-    |=  pessimized=(unit need-ordered)
-    ^-  straight
-    ::  argument count and the blocks are bunted unless fixed point of the
-    ::  subject shape was achieved
+    =>  =*  dot  .
+        !@  shape-check  dot
+        ?.  done  dot
+        =/  l=laze  -:(~(run-shape comp gen) nomm [%done ~])
+        =/  shape  (bake-need-ord (laze-collapse l cape.less.b) less.b)
+        ~|  [%shape-mismatch b shape need-new]
+        ?>  =(shape need-new)
+        dot
     ::
-    ?.  done  [?~(pessimized need-new u.pessimized) 0 ~]
-    =.  gen  (~(coerce-lazy comp gen) ned-final o laz cape.less.b)
-    ::  the baked registers are loaded before the deconsing code
+    ::  Finalization: emit the subject deconsing code, coerce the subject to
+    ::  the pessimized shape if there is one, and renumber the registers
     ::
-    =.  gen
-      (~(add-ops comp gen) o (turn imm.bak |=([r=@uvre v=*] [%imm v r])))
-    =/  res=next-resolved  [%next [[ned.bak ~] ~ ~] ~ o]
-    ?~  pessimized  (~(to-straight comp gen) res)
-    =^  coerced=next-resolved  gen  (~(coerce-ord comp gen) u.pessimized res)
-    (~(to-straight comp gen) coerced)
-  ::  With a compiled function candidate, requeue callers if the subject split
-  ::  did not converge yet, taking MSG of subject splits to avoid divergence.
-  ::
-  ?~  s-previous=(~(get by map-local) b)
-    :+  ?:  ?=([%none ~] need-new)  w-new
-        (~(uni in w-new) (~(get ju rev) b))
-      (~(put by map-local) b (finish ~))
+    =/  finish
+      ~%  %compile-scc-finish  ..ride  ~
+      |=  pessimized=(unit need-ordered)
+      ^-  straight
+      ::  argument count and the blocks are bunted unless fixed point of the
+      ::  subject shape was achieved
+      ::
+      ?.  done  [?~(pessimized need-new u.pessimized) 0 ~]
+      =.  gen  (~(coerce-lazy comp gen) ned-final o laz cape.less.b)
+      ::  the baked registers are loaded before the deconsing code
+      ::
+      =.  gen
+        (~(add-ops comp gen) o (turn imm.bak |=([r=@uvre v=*] [%imm v r])))
+      =/  res=next-resolved  [%next [[ned.bak ~] ~ ~] ~ o]
+      ?~  pessimized  (~(to-straight comp gen) res)
+      =^  coerced=next-resolved  gen
+        (~(coerce-ord comp gen) u.pessimized res)
+      (~(to-straight comp gen) coerced)
+    ::  The shape changed when it is new and needs something, or when the MSG
+    ::  with the previous one (taken to avoid divergence) differs from it
+    ::
+    ?~  s-previous=(~(get by map-local) b)
+      :+  !?=([%none ~] need-new)
+        (~(put by map-local) b (finish ~))
+      cache
+    =/  need-pessimized  (msg-need-ord need-new need.u.s-previous cape.less.b)
+    :+  !=(need-pessimized need.u.s-previous)
+      %+  ~(put by map-local)  b
+      ?:  =(need-pessimized need-new)  (finish ~)
+      (finish `need-pessimized)
     cache
-  =/  need-pessimized  (msg-need-ord need-new need.u.s-previous cape.less.b)
-  :+  ?:  =(need-pessimized need.u.s-previous)  w-new
-      (~(uni in w-new) (~(get ju rev) b))
-    %+  ~(put by map-local)  b
-    ?:  =(need-pessimized need-new)  (finish ~)
-    (finish `need-pessimized)
-  cache
+  ::  The final pass: every member compiled for real
+  ::
+  =/  final
+    |=  [map-local=(map bell straight) cache=comp-cache]
+    ^-  [(map bell straight) comp-cache]
+    =;  [m=(map bell straight) c=comp-cache]
+      [m c(nary (~(uni by nary.c) m))]
+    %+  roll  ~(tap in scc)
+    |=  [b=bell m=_map-local c=_cache]
+    =/  r  (member b & m c)
+    [+<.r +>.r]
+  ?:  done  (final map-local cache)
+  ::  Fixed point, with the schedule of the call graph analysis: sweeps over
+  ::  the members in DFS postorder (callees before their callers, but for the
+  ::  back edges), so that a shape reaches its callers in the same sweep
+  ::  instead of one call per round.  A member is compiled again only when a
+  ::  callee in the SCC changed its shape at or after the member's last
+  ::  compile ("at": a self-call read the shape from before the compile).  The
+  ::  loop ends with a sweep that finds nothing to do.
+  ::
+  =/  order=(list bell)
+    =|  [vis=(set bell) out=(list bell)]
+    =|  stk=(list [b=bell kids=(list bell)])
+    =/  roots=(list bell)  ~(tap in scc)
+    |-  ^+  out
+    ?~  stk
+      ?~  roots  (flop out)
+      ?:  (~(has in vis) i.roots)  $(roots t.roots)
+      %=  $
+        roots  t.roots
+        vis    (~(put in vis) i.roots)
+        stk    [[i.roots ~(tap in (~(get ju kids) i.roots))] ~]
+      ==
+    ?~  kids.i.stk
+      $(stk t.stk, out [b.i.stk out])
+    =/  k=bell  i.kids.i.stk
+    =/  stk1=(list [b=bell kids=(list bell)])  [[b.i.stk t.kids.i.stk] t.stk]
+    ?:  (~(has in vis) k)  $(stk stk1)
+    %=  $
+      vis  (~(put in vis) k)
+      stk  [[k ~(tap in (~(get ju kids) k))] stk1]
+    ==
+  ::  .tick counts member compiles; .ran is the tick of a member's last
+  ::  compile, .chg the tick of its last shape change
+  ::
+  =/  st=[any=? tick=@ud ran=(map bell @ud) chg=(map bell @ud)]  [| 0 ~ ~]
+  =/  counter=@ud  0
+  |-  ^+  [map-local cache]
+  =*  sweep-loop  $
+  =/  res
+    %+  roll  order
+    |=  [b=bell st=_st m=_map-local c=_cache]
+    =/  dirty=?
+      ?~  r=(~(get by ran.st) b)  &
+      %-  ~(any in (~(get ju kids) b))
+      |=(k=bell (gte (~(gut by chg.st) k 0) u.r))
+    ?.  dirty  [st m c]
+    =/  t=@ud  +(tick.st)
+    =/  r  (member b | m c)
+    :_  [+<.r +>.r]
+    :^  &  t
+      (~(put by ran.st) b t)
+    ?:(-.r (~(put by chg.st) b t) chg.st)
+  ?.  any.st.res  (final map-local cache)
+  %-  (print-comp 0 |.(leaf+"[fixpoint-compilation {(scow %ud counter)}]"))
+  %=  sweep-loop
+    st         st.res(any |)
+    map-local  m.res
+    cache      c.res
+    counter    +(counter)
+  ==
 ::  Baking of a shape: the leaves of a need inside what the bell knows of
 ::  the subject are not arguments but immediates: the need without them,
 ::  and the registers to load with their values, in the prologue.  A known
@@ -3912,6 +4021,57 @@
     ?.  pure:(~(got by code.long-ska) b)  ~
     k
   ::
+  ::  +split and +into give both halves a copy of every fork and bond entry
+  ::  of the need they split, and a half keeps an entry even when it needs
+  ::  nothing there.  Under a hinted push (=+  a=X  rest, with X in a %spot)
+  ::  the head half of rest's entries ends up inside X's bond while the tail
+  ::  half stays on top, where +copy-lazy cannot merge them back, so every
+  ::  hinted push doubled the entries of the code after it.  Parsers built
+  ::  of nested ;~ under !: got lazy needs of hundreds of thousands of
+  ::  entries for a few hundred Nock nodes, and the compile time with them.
+  ::
+  ::  An entry that needs nothing gets no code (nothing to collapse into its
+  ::  block, only an empty %brz when a fork forks it) and adds nothing to
+  ::  the shape (MSG and union with none are none), so the halves drop such
+  ::  entries.  Their kids are pruned first, so emptiness is a check of one
+  ::  level.
+  ::
+  ++  lazy-empty
+    |=  l=need-lazy
+    ^-  ?
+    ?&  ?=([%none ~] ned.sure.l)
+        ?=(?(~ [%1 ~ ~]) lok.sure.l)
+        ?=(~ fork.l)
+        ?=(~ bond.l)
+    ==
+  ::
+  ++  lazy-prune
+    |=  l=need-lazy
+    ^-  need-lazy
+    :+  sure.l
+      %+  skip  fork.l
+      |=(e=lazy-fork &((lazy-empty laz.y.e) (lazy-empty laz.n.e)))
+    (skip bond.l |=(e=lazy-bond (lazy-empty laz.e)))
+  ::  +lazy-empty for shapes
+  ::
+  ++  laze-empty
+    |=  l=laze
+    ^-  ?
+    ?&  ?=([%none ~] ned.sure.l)
+        ?=(?(~ [%1 ~ ~]) lok.sure.l)
+        ?=(~ fork.l)
+        ?=(~ bond.l)
+    ==
+  ::  +lazy-prune for shapes
+  ::
+  ++  laze-prune
+    |=  l=laze
+    ^-  laze
+    :+  sure.l
+      %+  skip  fork.l
+      |=(e=laze-fork &((laze-empty laz.y.e) (laze-empty laz.n.e)))
+    (skip bond.l |=(e=laze-bond (laze-empty laz.e)))
+  ::
   ++  laze-none-equivalent
     |=  laz=laze
     ^-  ?
@@ -3968,6 +4128,8 @@
         %both  [(laze-must h.ned) (laze-must t.ned)]
       ==
     ::
+    ?:  &(?=(~ fork.laz) ?=(~ bond.laz))
+      [[[ned-h lok-h] ~ ~] [[ned-t lok-t] ~ ~]]
     =/  forks=(list [laze-fork laze-fork])
       %+  turn  fork.laz
       |=  [y=[o=@uxid laz=laze] n=[o=@uxid laz=laze]]
@@ -3981,8 +4143,8 @@
       =/  [h=laze t=laze]  (laze-split laz)
       [[o h] [o t]]
     ::
-    :-  [[ned-h lok-h] (turn forks head) (turn bonds head)]
-    [[ned-t lok-t] (turn forks tail) (turn bonds tail)]
+    :-  (laze-prune [ned-h lok-h] (turn forks head) (turn bonds head))
+    (laze-prune [ned-t lok-t] (turn forks tail) (turn bonds tail))
   ::  +into for shapes
   ::
   ++  laze-into
@@ -4030,6 +4192,8 @@
         $(tack [[h old] tack], ned new, axe lat)
       ==
     ::
+    ?:  &(?=(~ fork.laz) ?=(~ bond.laz))
+      [[[ned-don lok-don] ~ ~] [[ned-rec lok-rec] ~ ~]]
     =/  forks=(list [laze-fork laze-fork])
       %+  turn  fork.laz
       |=  [y=[o=@uxid laz=laze] n=[o=@uxid laz=laze]]
@@ -4043,8 +4207,8 @@
       =/  [don=laze rec=laze]  (laze-into axe laz)
       [[o don] [o rec]]
     ::
-    :-  [[ned-don lok-don] (turn forks head) (turn bonds head)]
-    [[ned-rec lok-rec] (turn forks tail) (turn bonds tail)]
+    :-  (laze-prune [ned-don lok-don] (turn forks head) (turn bonds head))
+    (laze-prune [ned-rec lok-rec] (turn forks tail) (turn bonds tail))
   ::  +from for shapes
   ::
   ++  laze-from
@@ -4067,6 +4231,7 @@
         %3  [none+~ $(axe (mas axe))]
       ==
     ::
+    ?:  &(?=(~ fork.laz) ?=(~ bond.laz))  [sur ~ ~]
     :+  sur
       %+  turn  fork.laz
       |=  [y=[o=@uxid laz=laze] n=[o=@uxid laz=laze]]
@@ -4163,6 +4328,7 @@
     =*  walk  $
     !.
     =.  gen  (f o sure.laz gen)
+    ?:  &(?=(~ fork.laz) ?=(~ bond.laz))  gen
     =.  gen
       %+  roll  fork.laz
       |=  [[y=[o=@uwoo laz=need-lazy] n=[o=@uwoo laz=need-lazy]] gen=_gen]
@@ -4650,6 +4816,7 @@
     |=  [axe=@ laz=need-lazy]
     ^-  need-lazy
     =*  from-buc  $
+    ?:  &(?=(~ fork.laz) ?=(~ bond.laz))  [(from-sure axe sure.laz) ~ ~]
     :+  (from-sure axe sure.laz)
       %+  turn  fork.laz
       |=  [y=[@uwoo laz=need-lazy] n=[@uwoo laz=need-lazy]]
@@ -4801,6 +4968,7 @@
     |-  ^-  [[need-lazy need-lazy] _gen]
     =*  split-loop  $
     =^  [sure-don=sure sure-rec=sure]  gen  (into-sure axe sure.laz o)
+    ?:  &(?=(~ fork.laz) ?=(~ bond.laz))  [[[sure-don ~ ~] [sure-rec ~ ~]] gen]
     =*  fork  ,(list [[@uwoo need-lazy] [@uwoo need-lazy]])
     =^  [fork-don=fork fork-rec=fork]  gen
       %^  spin-split  fork.laz  gen
@@ -4830,8 +4998,8 @@
       [[[o-bond laz-don] [o-bond laz-rec]] gen]
     ::
     :_  gen
-    :-  [sure-don fork-don bond-don]
-    [sure-rec fork-rec bond-rec]
+    :-  (lazy-prune sure-don fork-don bond-don)
+    (lazy-prune sure-rec fork-rec bond-rec)
   ::
   ++  split-sure
     ~%  %comp-split-sure  ..ride  ~
@@ -4895,6 +5063,7 @@
     |-  ^-  [[need-lazy need-lazy] _gen]
     =*  split-loop  $
     =^  [sure-h=sure sure-t=sure]  gen  (split-sure sure.laz o)
+    ?:  &(?=(~ fork.laz) ?=(~ bond.laz))  [[[sure-h ~ ~] [sure-t ~ ~]] gen]
     =*  fork  ,(list [[@uwoo need-lazy] [@uwoo need-lazy]])
     =^  [fork-h=fork fork-t=fork]  gen
       %^  spin-split  fork.laz  gen
@@ -4925,8 +5094,8 @@
       [[[o-bond laz-h] [o-bond laz-t]] gen]
     ::
     :_  gen
-    :-  [sure-h fork-h bond-h]
-    [sure-t fork-t bond-t]
+    :-  (lazy-prune sure-h fork-h bond-h)
+    (lazy-prune sure-t fork-t bond-t)
   ::
   ++  add-ops
     ~%  %comp-add-ops  ..ride  ~
@@ -5147,6 +5316,7 @@
         ==
       ==
     ::
+    ?:  &(?=(~ fork.laz) ?=(~ bond.laz))  gen
     =.  gen
       %+  roll  bond.laz
       |=  [[o=@uwoo laz=need-lazy] gen-acc=_gen]
@@ -5193,12 +5363,46 @@
     ::  point, so they are replaced by their definitions while renumbering
     ::
     =/  unproxy  |=(r=@uvre ?~(e=(~(get by cond.gen) r) r def.u.e))
+    =/  proxies=?  !=(~ cond.gen)
+    ::  +collapse-shape allocates the input registers last, one after the
+    ::  other, in the order +rewrite-input numbers them.  When they are such
+    ::  a run [r0, r0+n), the inputs go to 0..n-1, the registers before them
+    ::  move up by n and those after them stay: a pure renaming, no map and
+    ::  no compaction (the compiler uses most registers it allocates).  A
+    ::  coerced subject is not such a run and is renumbered through the map.
+    ::
+    =/  ins=(list @uvre)  (flatten-need ned.nex)
+    =/  r0=@uvre  ?~(ins 0v0 i.ins)
+    =/  n-in=@ud  (lent ins)
+    =/  run=?
+      =/  i=@ud  0
+      |-  ^-  ?
+      ?~  ins  &
+      ?.  =(i.ins (add r0 i))  |
+      $(ins t.ins, i +(i))
+    =/  ren
+      |=  r=@uvre
+      ^-  @uvre
+      ?:  (lth r r0)  `@uvre``@`(add r n-in)
+      ?:  (lth r (add r0 n-in))  `@uvre``@`(sub r r0)
+      r
     =/  start=blob  (~(got by blocks) then.nex)
     =.  blocks  (~(del by blocks) then.nex)
     =.  blocks  (~(put by blocks) `@`0 start)
     =|  gen=[re-gen=@uvre m=(map @uvre @uvre)]
     |^  ^-  straight
     =^  input=need-ordered  gen  (rewrite-input ned.nex)
+    ?:  &(run !proxies)
+      ::  a pure renaming: the parameters and the body of each kept block
+      ::  through +map-regs, its terminator by +chase-fin
+      ::
+      =/  rename  (map-regs ren)
+      :+  input  (count-args input)
+      %-  ~(rep by blocks)
+      |=  [[k=@uwoo b=blob] new=(map @uwoo blob)]
+      ?:  &(!=(0w0 k) (bypassable & b))  new
+      =/  b1=blob  (rename b(fin [%bom ~]))
+      (~(put by new) k b1(fin (chase-fin fin.b)))
     :+  input  (count-args input)
     =<  new
     ^-  [new=(map @uwoo blob) *]
@@ -5244,10 +5448,37 @@
       ?>  ?=(~ args.j)
       $(j t.fin.b)
     ::
+    ::  the terminator: jumps chased past the bypassed blocks, then renamed
+    ::
+    ++  chase-fin
+      |=  fin=termin
+      ^-  termin
+      =/  rj  |=(j=jmp j(args (turn args.j (lift ren))))
+      ?-  -.fin
+        %clq  fin(s (ren s.fin), z (rj (chase & z.fin)), o (rj (chase & o.fin)))
+        %eqq
+          %=  fin
+            l  (ren l.fin)
+            r  (ren r.fin)
+            z  (rj (chase & z.fin))
+            o  (rj (chase & o.fin))
+          ==
+        %brn  fin(s (ren s.fin), z (rj (chase & z.fin)), o (rj (chase & o.fin)))
+        %brz  fin(s (ren s.fin), z (rj (chase & z.fin)), o (rj (chase & o.fin)))
+        %hop  fin(t (rj (chase | t.fin)))
+        %jmp  fin(v (turn v.fin ren))
+        %jmf  fin(v (turn v.fin ren))
+        %jsp  fin(s (ren s.fin))
+        %jsf  fin(s (ren s.fin))
+        %don  fin(s (ren s.fin))
+        %bom  ?~(o.fin fin fin(o `there:(chase & [~ u.o.fin])))
+      ==
+    ::
     ++  rer
       |=  r=@uvre
       ^-  [@uvre _gen]
-      =.  r  (unproxy r)
+      =?  r  proxies  (unproxy r)
+      ?:  run  [(ren r) gen]
       ?^  r1=(~(get by m.gen) r)  [u.r1 gen]
       =^  r1  re-gen.gen  [re-gen.gen +(re-gen.gen)]
       =.  m.gen  (~(put by m.gen) r r1)
@@ -5281,6 +5512,7 @@
     ++  rewrite-par
       |=  par=(list @uvre)
       ^-  [(list @uvre) _gen]
+      ?:  =(~ par)  [~ gen]
       %^  spin  par  gen
       |=  [r=@uvre =_gen]
       (rer(gen gen) r)
@@ -5288,6 +5520,7 @@
     ++  rewrite-body
       |=  bod=(list pole)
       ^-  [(list pole) _gen]
+      ?:  =(~ bod)  [~ gen]
       %^  spin  bod  gen
       |=  [op=pole =_gen]
       (rewrite-op(gen gen) op)
@@ -5477,6 +5710,7 @@
     ++  rewrite-args
       |=  j=jmp
       ^-  [jmp _gen]
+      ?:  =(~ args.j)  [j gen]
       =^  args1  gen
         %^  spin  args.j  gen
         |=  [a=(unit @uvre) gen-init=_gen]
@@ -5743,6 +5977,8 @@
   |=  laz=need-lazy
   ^-  need-inter1
   =*  lazy-to-inter  .
+  ?:  &(?=(~ fork.laz) ?=(~ bond.laz))
+    [[(need-to-ordered ned.sure.laz) lok.sure.laz] ~]
   %+  roll  bond.laz
   =/  ned-sure-new  (need-to-ordered ned.sure.laz)
   =/  fork-new=(list [need-inter1 need-inter1])
@@ -5821,6 +6057,7 @@
   |=  laz=laze
   ^-  need-inter1
   =*  laze-to-inter  .
+  ?:  &(?=(~ fork.laz) ?=(~ bond.laz))  [sure.laz ~]
   %+  roll  bond.laz
   =/  fork-new=(list [need-inter1 need-inter1])
     %+  turn  fork.laz
@@ -7264,16 +7501,22 @@
     [~ ..poke]
   ::
       %full
+    ::  The analysis and the compiler run compiled themselves: vere runs the
+    ::  formula of a %ska hint compiled, but in a poke of this core made from
+    ::  inside another one (this core compiling its own code), where it runs
+    ::  in u3n (vere's u3a_flag_ska)
+    ::
     =^  [func=bell new=(list [pax=path tem=sock clue=*])]  long-ska.state
+      ~>  %ska
       (ska-poke [&+sub.ovo fol.ovo] long-ska.state)
     ::  what is compiled holds, as do the SCCs: no new function joins an old
     ::  one's, and a function seen before keeps its ring until +ska-cole-settle
     ::
     =^  scc=(set bell)  sccs.cache.state
       (scc-of func calls.long-ska.state sccs.cache.state)
-    =^  =straight  cache.state  (compiled-mono func scc)
+    =^  =straight  cache.state  ~>(%ska (compiled-mono func scc))
     ::
-    =.  straight  (optimize straight)
+    =.  straight  ~>(%ska (optimize straight))
     :_  ..poke
     [%ir func straight new]
   ::
@@ -7281,10 +7524,11 @@
     =^  scc=(set bell)  sccs.cache.state
       (scc-of b.ovo calls.long-ska.state sccs.cache.state)
     =^  =straight  cache.state
+      ~>  %ska
       ?:  mono.ovo  (compiled-mono b.ovo scc)
       (compiled-nary b.ovo scc)
     ::
-    =.  straight  (optimize straight)
+    =.  straight  ~>(%ska (optimize straight))
     [[%ir b.ovo straight ~] ..poke]
   ==
 ::

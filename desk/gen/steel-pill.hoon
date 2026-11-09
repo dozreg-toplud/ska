@@ -58,7 +58,11 @@
 :-  %noun
 ::
 ^-  [%steel p=(list)]
-=/  sys=path  /(scot %p p.bec)/base/(scot %da now)/sys
+::  the SKA core's own hoon.hoon, not the kernel's: there +mock and +monk
+::  are jetted and +mink, +mole and +mule carry %virt hints, so that the
+::  core's virtualization (road-pure) runs compiled when the core does
+::
+=/  sys=path  /(scot %p p.bec)/ska/(scot %da now)/sys
 =/  lib=path  /(scot %p p.bec)/ska/(scot %da now)/lib
 =/  trap
   =/  sub  *(trap vase)
