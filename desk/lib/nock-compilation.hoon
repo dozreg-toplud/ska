@@ -518,6 +518,49 @@
   =/  l  $(s -.s, c p)
   =/  r  $(s +.s, c q)
   (uni:ca l r)
+::  +battery-of: where a call's formula is an arm of the core that is its
+::  subject, read from the subject of the caller: the axis of the battery
+::  there.  A battery any arm of which is code is code whole
+::
+++  battery-of
+  |=  [s=spring f=spring]
+  ^-  (unit @)
+  ?.  ?&(?=(@ s) ?=(@ f) !=(0 s) !=(0 f))  ~
+  =/  r=@  (peg s 2)
+  =/  d=@  (xeb r)
+  =/  e=@  (xeb f)
+  ?:  (lth e d)  ~
+  ?.  =(r (rsh [0 (sub e d)] f))  ~
+  `r
+::  +core-atoms: a core's payload that is an atom is part of its code: the
+::  version at the bottom of a kernel, the ~ under a core isolated with
+::  =>  ~.  Wherever .want covers the head of a cell of .bus whole and its
+::  tail is a known atom, the tail is wanted too.  The head is a battery
+::  wanted whole, as +battery-of has a call want it
+::
+++  core-atoms
+  ~%  %core-atoms  ..ride  ~
+  |=  [want=cape bus=sock]
+  ^-  cape
+  ?@  bus  want
+  =/  dat=*  data.bus
+  =/  cap=cape  cape.bus
+  |-  ^-  cape
+  ?@  want  want
+  ?@  dat  want
+  =/  hc=cape  ?@(cap cap -.cap)
+  =/  tc=cape  ?@(cap cap +.cap)
+  =/  hed=cape  $(want -.want, dat -.dat, cap hc)
+  =/  tel=cape  $(want +.want, dat +.dat, cap tc)
+  ?:  ?&  ?=(%& hed)
+          ?=(%| tel)
+          ?=(@ +.dat)
+          (all:ca tc)
+      ==
+    &
+  ?:  &(?=(%& hed) ?=(%& tel))  &
+  ?:  &(?=(%| hed) ?=(%| tel))  |
+  [hed tel]
 ::  doubly intersect a sock and a provenance
 ::
 ++  double-int
@@ -691,12 +734,21 @@
       %+  map  identity       ::  the last run and of the last change
       [ran=@ud chg=@ud]       ::  of the entry
       =regs                   ::  %fast registrations so far
+      hot=(set ring)          ::  the arms vere has jets for (+ev)
+      eva=@ud                 ::  steps a fold may take (+ev), 0 for no
+                              ::  folds: vere sends 0 for the core
+                              ::  compiling itself
+      faz=(set ^)             ::  batteries folds registered, once each
       $=  stats               ::  statistics for debugging
       $:  runs=@ud            ::    number of function analyses
           passes=@ud          ::    number of passes over components
           late-runs=@ud       ::    analyses in the second and later passes
           misses=@ud          ::    child registrations without a parent
           culled=@ud          ::    members dropped from components
+          folds=@ud           ::    calls folded by +ev
+          fuel=@ud            ::    steps +ev took for them
+          tries=@ud           ::    calls +ev tried
+          waste=@ud           ::    steps +ev took on calls it couldn't fold
   ==  ==
 ::  memoization map
 ::  formula -> less-code -> entry
@@ -1222,6 +1274,58 @@
   =.  arms  $(batt -.batt)
   ?.  ?=(^ +.batt)  arms
   $(batt +.batt)
+::  +core-chains: a registered core is code whole, its battery and the
+::  parents it was registered with.  Wherever .want covers some of a core
+::  in .bus that one of its templates matches, the template's cape is
+::  wanted too.  The layers of a kernel are such a chain, so a bell over any
+::  of them knows the whole kernel, and a rule that a combinator builds over
+::  it is a constant, also when the rule only keeps the core (the v=. of a
+::  ;~) and calls none of its arms
+::
+++  core-chains
+  ~%  %core-chains  ..ride  ~
+  |=  [want=cape bus=sock reg=regs]
+  ^-  cape
+  |-  ^-  cape
+  ?@  want  want
+  ?@  bus  want
+  ?:  |(?=(%| cape.bus) ?=(@ data.bus))  want
+  =/  tem=(unit cape)  (chain-cape bus reg)
+  ?:  ?=([~ %&] tem)  &
+  =/  out=cape
+    %+  con:ca
+      $(want -.want, bus (hed:so bus))
+    $(want +.want, bus (tel:so bus))
+  ?~  tem  out
+  (uni:ca out u.tem)
+::  +chain-cape: the cape of a template of a registered core that matches
+::  .bus, if any: the whole core for a root
+::
+++  chain-cape
+  |=  [bus=sock reg=regs]
+  ^-  (unit cape)
+  ~+
+  ?@  bus  ~
+  ?@  data.bus  ~
+  =/  bat=sock  (hed:so bus)
+  ?@  bat  ~
+  ?.  (all:ca cape.bat)  ~
+  =/  bad=*  data.bat
+  ?@  bad  ~
+  ?:  ?&  (~(has by root.reg) data.bus)
+          (all:ca cape.bus)
+      ==
+    `&
+  =/  paz=(list path)  ~(tap in (~(get ju batt.reg) bad))
+  |-  ^-  (unit cape)
+  ?~  paz  ~
+  =/  tez=(list sock)  ~(tap in (~(get ju core.reg) i.paz))
+  |-  ^-  (unit cape)
+  ?~  tez  ^$(paz t.paz)
+  =/  tem=sock  i.tez
+  ?@  tem  $(tez t.tez)
+  ?:  (huge:so tem bus)  `cape.tem
+  $(tez t.tez)
 ::  The functions the root reaches. Assumes finalized (fixed point): every
 ::  callee of a function in the graph is in the graph, a function found
 ::  memoized having none (+memo-final-entry).
@@ -1260,7 +1364,7 @@
   |=  [[bus=sock fol=^] lon=long-ska]
   ^-  callgraph
   =/  [g=callgraph *]
-    (ska-callgraph [bus fol] memo.lon [root core batt arms ~]:jets.lon)
+    (ska-callgraph [bus fol] memo.lon [root core batt arms ~]:jets.lon ~ 0)
   (prune-callgraph g [bus fol])
 ::  Match a bell against registered cores: look for its formula in the battery
 ::  of a core template that its subject fits. Produces the ring of the arm.
@@ -1427,6 +1531,15 @@
   =/  gen  [used=`cape`| sites=*(list [b=bell k=sock src=spring])]
   =/  sub=sock-anno  [sub 1]
   =/  fold=?  !?=(%off bake-mode)
+  ::  closed calls are folded by the analysis now (+ev), on code only:
+  ::  +run-closed ran them on the subject the bell knows, under mole, and
+  ::  in u3nc made nested pokes
+  ::
+  =/  fold-run=?  |
+  ::  hints a literal can drop: traces, which only a crash shows, inert
+  ::  %memo, and %fast, which the analysis registered already
+  ::
+  =*  hint-free  ,?(%spot %mean %memo %fast)
   =<  =^  out=[nomm=^nomm prod=sock-anno]  gen  $
       [nomm.out used.gen sites.gen]
   |.  ^-  [[nomm=^nomm prod=sock-anno] _gen]
@@ -1437,6 +1550,9 @@
     =^  l  gen  loop(nomm -.nomm)
     =^  r  gen  loop(nomm +.nomm)
     :_  gen
+    ?:  &(fold ?=([%1 *] nomm.l) ?=([%1 *] nomm.r))
+      =/  x  [p.nomm.l p.nomm.r]
+      [[%1 x] [&+x ~]]
     :-  =/  new  [nomm.l nomm.r]
         ?:(=(new nomm) nomm new)
     [(knit:so sock.prod.l sock.prod.r) (cons:pi src.prod.l src.prod.r)]
@@ -1460,12 +1576,35 @@
     =^  f  gen  loop(nomm q.nomm)
     ?~  info.nomm  [[[%2 nomm.s nomm.f ~] dunno] gen]
     =/  k=sock  sock.prod.s
-    =/  v=bell  (res b.u.info.nomm k)
-    =.  sites.gen  [[b.u.info.nomm k src.prod.s] sites.gen]
+    =/  d=(unit datum)  (dat b.u.info.nomm)
     =/  prod=sock-anno
-      ?~  d=(dat b.u.info.nomm)  dunno
+      ?~  d  dunno
       =/  p  (patch-prod [prod map]:u.d k)
       [sock.p (compose:pi src.p src.prod.s)]
+    ::  a closed call: its subject all known, and the analysis knew its
+    ::  product whole, so it halts.  Run it, and the call is its product
+    ::  if it doesn't crash: a rule a combinator builds over the kernel,
+    ::  the trap of a +knee
+    ::
+    =/  run=(unit *)
+      ?.  ?&  fold-run
+              ?=(^ d)
+              ?=(^ k)
+              (all:ca cape.k)
+              ?=(^ sock.prod)
+              (all:ca cape.sock.prod)
+              (safe-nomm nomm.s)
+              (safe-nomm nomm.f)
+          ==
+        ~
+      =/  pro=(unit)  (run-closed data.k fol.b.u.info.nomm)
+      ?.  &(?=(^ pro) =(u.pro data.sock.prod))  ~
+      pro
+    ?^  run
+      :_  gen(used (uni:ca used.gen (distribute & src.prod.s)))
+      [[%1 u.run] [&+u.run ~]]
+    =/  v=bell  (res b.u.info.nomm k)
+    =.  sites.gen  [[b.u.info.nomm k src.prod.s] sites.gen]
     [[[%2 nomm.s nomm.f `[v k.u.info.nomm]] prod] gen]
   ::
       [%3 *]
@@ -1535,11 +1674,17 @@
       [%7 *]
     =^  p  gen  loop(nomm p.nomm)
     =^  q  gen  loop(nomm q.nomm, sub prod.p)
+    ?:  &(fold ?=([%1 *] nomm.q) (safe-nomm nomm.p))
+      [[nomm.q [&+p.nomm.q ~]] gen]
     [[[%7 nomm.p nomm.q] prod.q] gen]
   ::
       [%10 *]
     =^  don  gen  loop(nomm q.p.nomm)
     =^  rec  gen  loop(nomm q.nomm)
+    =/  lit=(unit)
+      ?.  &(fold ?=([%1 *] nomm.don) ?=([%1 *] nomm.rec))  ~
+      (mole |.(.*([p.nomm.don p.nomm.rec] [%10 [p.p.nomm %0 2] %0 3])))
+    ?^  lit  [[[%1 u.lit] [&+u.lit ~]] gen]
     :_  gen
     :-  [%10 [p.p.nomm nomm.don] nomm.rec]
     :-  (darn:so sock.prod.rec p.p.nomm sock.prod.don)
@@ -1548,9 +1693,17 @@
       [%11 *]
     ?@  p.nomm
       =^  q  gen  loop(nomm q.nomm)
+      ?:  &(fold ?=(hint-free p.nomm) ?=([%1 *] nomm.q))
+        [[nomm.q [&+p.nomm.q ~]] gen]
       [[[%11 p.nomm nomm.q body.nomm] prod.q] gen]
     =^  h  gen  loop(nomm q.p.nomm)
     =^  q  gen  loop(nomm q.nomm)
+    ?:  ?&  fold
+            ?=(hint-free p.p.nomm)
+            (safe-nomm nomm.h)
+            ?=([%1 *] nomm.q)
+        ==
+      [[nomm.q [&+p.nomm.q ~]] gen]
     [[[%11 [p.p.nomm nomm.h] nomm.q body.nomm] prod.q] gen]
   ::
       [%12 *]
@@ -1566,6 +1719,421 @@
     =^  q  gen  loop(nomm q.nomm)
     [[[%mean nomm.p v nomm.q body.nomm k.nomm] prod.q] gen]
   ==
+::  +run-closed: the product of a closed call, unless it crashes.  +know
+::  runs only a call whose product the analysis knew whole, so it halts.
+::  Memoized: baking evaluates a function many times
+::
+++  run-closed
+  |=  [sub=* fol=*]
+  ^-  (unit)
+  ~+
+  (mole |.(.*(sub fol)))
+::  +ev: Nock with fuel over a partially known subject, for the analysis
+::  to fold calls it can run (the %2 of +ska-callgraph).  It runs .*(suk
+::  fol) for at most .fel steps.  The parts of the subject it only passes
+::  around stay references (%r) and need not be known.  It fails, with the
+::  fuel left (an atom where a run gives a cell), out of fuel, on a crash
+::  or a scry, and on needing a part of the subject that is not code
+::  (+code) or that the sock does not know whole.  Besides the product:
+::  the cape of the subject it read, which the bell then pins (.rid), and
+::  the %fast registrations it ran (.fas).  A call of a first-order jet
+::  (+ev-pure) on known nouns runs natively: hoon's arithmetic is loops.
+::  vere jets +eval (jets/e/ska_ev.c), an exact port: the same product,
+::  reads, registrations and steps, so a change here goes there too.
+::
++$  ev-val  $~([%k 0] $%([%k n=*] [%r a=@] [%c h=ev-val t=ev-val]))
+::  .cal: the cores of the subject whose arms the run called (+code)
+::
++$  ev-st   [fel=@ud rid=cape cal=(set @) fas=(list [clue=sock core=sock]) faz=(set ^)]
++$  ev-go   $@(@ud [ev-val ev-st])
+::  what a native jet call costs of the fuel of a try (vere's, the
+::  .eva of the %full ovum)
+::
+++  ev-jet-cost  8
+::  first-order jets: no gate in their samples, so a native call can't run
+::  anything unfueled, and none that crash on what their types admit but
+::  the arithmetic +ev-safe checks.  By the first element of the path, or
+::  the first two for the arms of the container doors
+::
+++  ev-pure
+  ^~  %-  silt
+  ^-  (list @)
+  :~  %dec  %add  %sub  %mul  %div  %mod  %dvr  %gte  %gth  %lte  %lth
+      %max  %min  %bex  %can  %cat  %cut  %end  %lsh  %met  %rap  %rep
+      %rev  %rip  %rsh  %swp  %sqt  %mix  %con  %dis  %pow  %xeb  %fil
+      %mug  %muk  %gor  %mor  %dor  %aor  %lent  %flop  %weld  %slag
+      %scag  %trip  %crip  %jam  %mat
+  ==
+::  +ev-safe: a native call of jet .nam on sample .sam won't crash: the
+::  arguments the arithmetic crashes on are run by +ev instead, which
+::  fails there.  So the call is a plain .*: a +mole would push a road for
+::  each, about 100 s of a W1 compile
+::
+++  ev-safe
+  |=  [nam=@ sam=*]
+  ^-  ?
+  ?+  nam  &
+    %dec  &(?=(@ sam) !=(0 sam))
+    %sub  ?&(?=([@ @] sam) (gte -.sam +.sam))
+    %div  ?&(?=([@ @] sam) !=(0 +.sam))
+    %mod  ?&(?=([@ @] sam) !=(0 +.sam))
+    %dvr  ?&(?=([@ @] sam) !=(0 +.sam))
+  ==
+++  ev-door  ^~((silt `(list @)`~[%in %by]))
+::  +ev-bat: the battery of a core's sock, where it is known
+::
+++  ev-bat
+  |=  cor=sock
+  ^-  (unit ^)
+  =/  b=sock  (pull:so cor 2)
+  ?@  b  ~
+  ?.  (all:ca cape.b)  ~
+  ?@  data.b  ~
+  `data.b
+++  ev-door-arm
+  ^~  %-  silt
+  ^-  (list @)
+  ~[%put %get %has %del %gas %tap %wyt %bif %uni %int %dif %apt]
+::
+++  ev
+  ~%  %ev  ..ride  ~
+  |_  [suk=sock reg=regs hot=(set ring)]
+  ::  +eval: .*(suk fol), fel steps at most, the subject a core whose arm
+  ::  fol is when .cor: %& the product, what it read, its registrations
+  ::  and the steps it took; %| the steps it took
+  ::
+  ++  eval
+    ~/  %eval
+    |=  [fol=* fel=@ud cor=?]
+    ^-  (each [pro=* rid=cape fas=(list [sock sock]) use=@ud] @ud)
+    ~+
+    =/  r=ev-go  (go [%r 1] fol [fel | ?:(cor (sy ~[1]) ~) ~ ~])
+    ?@  r  [%| (sub fel r)]
+    =/  z  (real -.r +.r |)
+    ?~  z  [%| (sub fel fel.+.r)]
+    =/  zst=ev-st  +.u.z
+    [%& -.u.z rid.zst fas.zst (sub fel fel.zst)]
+  ::  +go: .*(s f)
+  ::
+  ++  go
+    |=  [s=ev-val f=* st=ev-st]
+    ^-  ev-go
+    ?:  =(0 fel.st)  0
+    =.  fel.st  (dec fel.st)
+    ?@  f  fel.st
+    ?^  -.f
+      =/  h=ev-go  $(f -.f)
+      ?@  h  h
+      =/  t=ev-go  $(f +.f, st +.h)
+      ?@  t  t
+      [(cons -.h -.t) +.t]
+    ?+    f  fel.st
+        [%0 b=@]  (slot s b.f st)
+        [%1 c=*]  [[%k c.f] st]
+    ::
+        [%2 b=* c=*]
+      =/  x=ev-go  $(f b.f)
+      ?@  x  x
+      =/  y=ev-go  $(f c.f, st +.x)
+      ?@  y  y
+      =/  z  (real -.y +.y &)
+      ?~  z  fel.+.y
+      =/  zst=ev-st  +.u.z
+      ::  a formula from the head of a core of the subject: that core runs
+      ::
+      =?  cal.zst  &(?=([%r *] -.x) ?=([%r *] -.y) (bat a.-.x a.-.y))
+        (~(put in cal.zst) a.-.x)
+      $(s -.x, f -.u.z, st zst)
+    ::
+        [%3 b=*]
+      =/  x=ev-go  $(f b.f)
+      ?@  x  x
+      =/  c  (cell -.x +.x)
+      ?~  c  fel.+.x
+      [[%k ?:(-.u.c 0 1)] +.u.c]
+    ::
+        [%4 b=*]
+      =/  x=ev-go  $(f b.f)
+      ?@  x  x
+      =/  z  (real -.x +.x |)
+      ?~  z  fel.+.x
+      ?^  -.u.z  fel.+.x
+      [[%k +(-.u.z)] +.u.z]
+    ::
+        [%5 b=* c=*]
+      =/  x=ev-go  $(f b.f)
+      ?@  x  x
+      =/  y=ev-go  $(f c.f, st +.x)
+      ?@  y  y
+      ?:  =(-.x -.y)  [[%k 0] +.y]
+      =/  p  (real -.x +.y |)
+      ?~  p  fel.+.y
+      =/  q  (real -.y +.u.p |)
+      ?~  q  fel.+.y
+      [[%k ?:(=(-.u.p -.u.q) 0 1)] +.u.q]
+    ::
+        [%6 b=* c=* d=*]
+      =/  x=ev-go  $(f b.f)
+      ?@  x  x
+      =/  z  (real -.x +.x |)
+      ?~  z  fel.+.x
+      ?+  -.u.z  fel.+.x
+        %0  $(f c.f, st +.u.z)
+        %1  $(f d.f, st +.u.z)
+      ==
+    ::
+        [%7 b=* c=*]
+      =/  x=ev-go  $(f b.f)
+      ?@  x  x
+      $(s -.x, f c.f, st +.x)
+    ::
+        [%8 b=* c=*]
+      =/  x=ev-go  $(f b.f)
+      ?@  x  x
+      $(s (cons -.x s), f c.f, st +.x)
+    ::
+        [%9 b=@ c=*]
+      =/  x=ev-go  $(f c.f)
+      ?@  x  x
+      =/  j  (jet -.x b.f +.x)
+      ?^  j  u.j
+      =/  y  (slot -.x b.f +.x)
+      ?@  y  y
+      =/  z  (real -.y +.y &)
+      ?~  z  fel.+.y
+      =/  zst=ev-st  +.u.z
+      =?  cal.zst  ?=([%r *] -.x)  (~(put in cal.zst) a.-.x)
+      $(s -.x, f -.u.z, st zst)
+    ::
+        [%10 [b=@ c=*] d=*]
+      =/  x=ev-go  $(f c.f)
+      ?@  x  x
+      =/  y=ev-go  $(f d.f, st +.x)
+      ?@  y  y
+      (edit -.y b.f -.x +.y)
+    ::
+        [%11 b=@ c=*]
+      $(f c.f)
+    ::
+        [%11 [b=@ d=*] c=*]
+      ::  the clue runs, as Nock runs it, and a %fast registration is kept
+      ::  for the analysis to make, on what is known of the clue and the
+      ::  core: a kernel core refers to its context in the subject.  Once
+      ::  per battery: a gate's hint runs at each call, and the analysis
+      ::  registers a battery once a function (+register-fast), registered
+      ::  before or not
+      ::
+      =/  x=ev-go  $(f d.f)
+      ?@  x  x
+      =/  y=ev-go  $(f c.f, st +.x)
+      ?@  y  y
+      ?.  ?=(%fast b.f)  y
+      =/  sst=ev-st  +.y
+      =/  cor=sock  (sock-of -.y)
+      =/  bat=(unit ^)  (ev-bat cor)
+      ?:  ?&(?=(^ bat) (~(has in faz.sst) u.bat))  y
+      =?  faz.sst  ?=(^ bat)  (~(put in faz.sst) u.bat)
+      [-.y sst(fas [[(sock-of -.x) cor] fas.sst])]
+    ==
+  ::  +bat: axis f is in the battery of the core at axis s
+  ::
+  ++  bat
+    |=  [s=@ f=@]
+    ^-  ?
+    =/  r=@  (peg s 2)
+    =/  d=@  (xeb r)
+    =/  e=@  (xeb f)
+    ?:  (lth e d)  |
+    =(r (rsh [0 (sub e d)] f))
+  ::
+  ::  +sock-of: what is known of v, the subject's sock where it refers
+  ::  to the subject
+  ::
+  ++  sock-of
+    |=  v=ev-val
+    ^-  sock
+    ?-  -.v
+      %k  [& n.v]
+      %r  (pull:so suk a.v)
+      %c  (knit:so $(v h.v) $(v t.v))
+    ==
+  ::
+  ++  cons
+    |=  [h=ev-val t=ev-val]
+    ^-  ev-val
+    ?:  &(?=(%k -.h) ?=(%k -.t))  [%k n.h n.t]
+    [%c h t]
+  ::  +slot: axis b of v.  A part of the subject stays a reference where
+  ::  the sock knows the subject has the axis, known there or not
+  ::
+  ++  slot
+    |=  [v=ev-val b=@ st=ev-st]
+    ^-  ev-go
+    ?:  =(0 b)  fel.st
+    |-  ^-  ev-go
+    ?:  =(1 b)  [v st]
+    ?-    -.v
+        %k  ?~(n=(get n.v b) fel.st [[%k u.n] st])
+        %c
+      ?-  (cap b)
+        %2  $(v h.v, b (mas b))
+        %3  $(v t.v, b (mas b))
+      ==
+    ::
+        %r
+      =/  c=@  (peg a.v b)
+      ?.  (has c)  fel.st
+      [[%r c] st]
+    ==
+  ::  +get: axis b of a noun
+  ::
+  ++  get
+    |=  [n=* b=@]
+    ^-  (unit)
+    ?:  =(1 b)  `n
+    ?@  n  ~
+    ?-  (cap b)
+      %2  $(n -.n, b (mas b))
+      %3  $(n +.n, b (mas b))
+    ==
+  ::  +has: the sock knows the subject has axis c
+  ::
+  ++  has
+    |=  c=@
+    ^-  ?
+    =/  s=sock  suk
+    |-  ^-  ?
+    ?:  =(1 c)  &
+    ?@  s  |
+    ?@  cape.s
+      ?.  cape.s  |
+      ?=(^ (get data.s c))
+    ?@  data.s  |
+    ?-  (cap c)
+      %2  $(s [-.cape.s -.data.s], c (mas c))
+      %3  $(s [+.cape.s +.data.s], c (mas c))
+    ==
+  ::  +real: v as a noun.  What it refers to of the subject, the sock must
+  ::  know whole, and it must be code: run as a formula or read as a
+  ::  battery (.cod), or code by +code.  Data of the subject is never
+  ::  read: the bell would pin it, and a root's subject is its input.  A
+  ::  parser folds over its definition, not over what it parses
+  ::
+  ++  real
+    |=  [v=ev-val st=ev-st cod=?]
+    ^-  (unit [* ev-st])
+    ?-    -.v
+        %k  `[n.v st]
+        %c
+      =/  h  $(v h.v)
+      ?~  h  ~
+      =/  t  $(v t.v, st +.u.h)
+      ?~  t  ~
+      `[[-.u.h -.u.t] +.u.t]
+    ::
+        %r
+      ?.  |(cod (code a.v cal.st))  ~
+      =/  s=sock  (pull:so suk a.v)
+      ?@  s  ~
+      ?.  (all:ca cape.s)  ~
+      `[data.s st(rid (uni:ca rid.st (pat:ca & a.v)))]
+    ==
+  ::  +code: the subject at axis a is code.  In the template of a
+  ::  registered core (+chain-cape, the chain of batteries of
+  ::  +core-chains), or a core the run called (.cal): its battery, and the
+  ::  core whole if its payload is code (a trap, a core without a
+  ::  sample), never a sample
+  ::
+  ++  code
+    |=  [a=@ cal=(set @)]
+    ^-  ?
+    ~+
+    =/  n=@  1
+    =/  r=@  a
+    |-  ^-  ?
+    =/  t=(unit cape)  (chain-cape (pull:so suk n) reg)
+    ?:  &(?=(^ t) (all:ca (lot:ca u.t r)))  &
+    ?:  (~(has in cal) n)
+      ?:  =(1 r)  ^$(a (peg n 3))
+      ?:  =(%2 (cap r))  &
+      $(n (peg n 3), r (mas r))
+    ?:  =(1 r)  |
+    $(n (peg n (cap r)), r (mas r))
+  ::
+  ++  cell
+    |=  [v=ev-val st=ev-st]
+    ^-  (unit [? ev-st])
+    ?-  -.v
+      %k  `[?=(^ n.v) st]
+      %c  `[& st]
+      %r  ?~(z=(real v st |) ~ `[?=(^ -.u.z) +.u.z])
+    ==
+  ::  +edit: v with new at axis b
+  ::
+  ++  edit
+    |=  [v=ev-val b=@ new=ev-val st=ev-st]
+    ^-  ev-go
+    ?:  =(0 b)  fel.st
+    |-  ^-  ev-go
+    ?:  =(1 b)  [new st]
+    =/  l=ev-go  (slot v 2 st)
+    ?@  l  l
+    =/  r=ev-go  (slot v 3 +.l)
+    ?@  r  r
+    ?-    (cap b)
+        %2
+      =/  e=ev-go  $(v -.l, b (mas b), st +.r)
+      ?@  e  e
+      [(cons -.e -.r) +.e]
+    ::
+        %3
+      =/  e=ev-go  $(v -.r, b (mas b), st +.r)
+      ?@  e  e
+      [(cons -.l -.e) +.e]
+    ==
+  ::  +jet: arm .arm of .core run natively, if the core is known and
+  ::  registered at the path of a first-order jet vere has, and the call
+  ::  can't crash (+ev-safe): ~ if not one
+  ::
+  ++  jet
+    |=  [core=ev-val arm=@ st=ev-st]
+    ^-  (unit ev-go)
+    =/  b=ev-go  (slot core 2 st)
+    ?@  b  ~
+    ?~  z=(real -.b +.b &)  ~
+    =/  bat=*  -.u.z
+    ?@  bat  ~
+    =/  paz=(list path)
+      (skim ~(tap in (~(get ju batt.reg) bat)) |=(p=path (pure p arm)))
+    ?~  paz  ~
+    ?~  k=(real core +.u.z |)  ~
+    =/  cor=*  -.u.k
+    ?.  %+  lien  `(list path)`paz
+        |=  p=path
+        %+  lien  ~(tap in (~(get ju core.reg) p))
+        |=(t=sock (huge:so t [& cor]))
+      ~
+    =/  kst=ev-st  +.u.k
+    =/  nam=@  ?~(i.paz %$ i.i.paz)
+    ?.  ?&  ?=(^ cor)
+            ?=(^ +.cor)
+            (ev-safe nam -.+.cor)
+        ==
+      ~
+    =/  r=*  .*(cor [9 arm 0 1])
+    `[[%k r] kst(fel ?:((lth fel.kst ev-jet-cost) 0 (sub fel.kst ev-jet-cost)))]
+  ::
+  ++  pure
+    |=  [p=path arm=@]
+    ^-  ?
+    ?.  (~(has in hot) [p arm])  |
+    ?~  p  |
+    ?|  (~(has in ev-pure) i.p)
+        ?&  ?=(^ t.p)
+            (~(has in ev-door) i.t.p)
+            (~(has in ev-door-arm) i.p)
+    ==  ==
+  --
 ::  Bake the functions of a poke, from the root down: the variants to
 ::  compile, as the folded nomm and the variants it calls, and the code
 ::  bell -> variants index with them.  The root's variant is itself.
@@ -1705,13 +2273,13 @@
   ==
 ::
 ++  ska-poke
-  |=  [[bus=sock fol=^] lon=long-ska]
+  |=  [[bus=sock fol=^] lon=long-ska hot=(set ring) eva=@ud]
   ^-  [[bell (list [pax=path tem=sock clue=*])] long-ska]
   %-  road-pure  |.
   =/  root-identity=identity  [bus fol]
   =/  [g=callgraph =regs]
     %-  ska-callgraph
-    [root-identity memo.lon [root core batt arms ~]:jets.lon]
+    [root-identity memo.lon [root core batt arms ~]:jets.lon hot eva]
   ::
   =/  pruned=callgraph  (prune-callgraph g root-identity)
   =/  root-datum=datum  (~(got by pruned) root-identity)
@@ -1826,7 +2394,9 @@
 ::  by this point socks are never %void
 ::
 ++  eval-finalized
-  =*  hint-pure  ,?(%fast %spot %mean)
+  ::  %memo: the memoized formulas are calls by now, a %memo left is inert
+  ::
+  =*  hint-pure  ,?(%fast %spot %mean %memo)
   ~%  %eval-finalized  ..ride  ~
   |=  [b=bell code=(map bell code-entry)]
   ^-  [pure=? total=?]
@@ -2042,10 +2612,12 @@
 ++  ska-callgraph
   ~%  %ska-callgraph  ..ride  ~
   !.
-  |=  [[bus=sock fol=^] memo-final=memo reg=regs]
+  |=  [[bus=sock fol=^] memo-final=memo reg=regs hot=(set ring) eva=@ud]
   ^-  [callgraph regs]
   =|  st=ska-state
   =.  regs.st  reg
+  =.  hot.st  hot
+  =.  eva.st  eva
   =<  =/  res  (analyze [bus fol] st)
       %-  %+  print-ska  0
           |.  %-  sell  !>
@@ -2056,6 +2628,10 @@
               late-runs+late-runs.stats.st.res
               fast-misses+misses.stats.st.res
               culled+culled.stats.st.res
+              folds+folds.stats.st.res
+              fuel+fuel.stats.st.res
+              tries+tries.stats.st.res
+              waste+waste.stats.st.res
           ==
       [g.st.res regs.st.res]
   |%
@@ -2267,7 +2843,7 @@
     =;  ,fol-result
       ::  construct datum
       ::
-      =/  less-code  (app:ca want bus)
+      =/  less-code  (app:ca (core-chains (core-atoms want bus) bus regs.st) bus)
       =/  data-new=datum  [callees nomm less-code indi pro area]
       ::  If we got two different non-void products we will compute their MSG to
       ::  converge faster, otherwise we intersect the products to preserve more
@@ -2381,13 +2957,57 @@
         =.  indi.gen  (uni:ca indi.gen (distribute & src.prod.f))
         [[[%2 nomm.s nomm.f ~] dunno |] gen]
       =/  fol-new=^  data.sock.prod.f
+      ::  A call +ev runs on what the subject knows is folded here, during
+      ::  the analysis, so the code that uses what it builds sees it known
+      ::  (a parser built from constants, the tree of a +stew).  The bell
+      ::  pins what the run read, and the formula, as for any call; the
+      ::  subject and the formula are still computed where that could
+      ::  crash.
+      ::
+      =/  try=?  &(!=(0 eva.st.gen) ?!(|(defer ?=(%| cape.sock.prod.s))))
+      =/  ran=(unit (each [pro=* rid=cape fas=(list [sock sock]) use=@ud] @ud))
+        ?.  try  ~
+        :-  ~
+        %-  ~(eval ev sock.prod.s regs.st.gen hot.st.gen)
+        [fol-new eva.st.gen ?=(^ (battery-of src.prod.s src.prod.f))]
+      =?  tries.stats.st.gen  try  +(tries.stats.st.gen)
+      =?  waste.stats.st.gen  ?=([~ %| *] ran)  (add waste.stats.st.gen p.u.ran)
+      ?:  ?=([~ %& *] ran)
+        =*  fod  p.u.ran
+        =.  want.gen
+          ;:  uni:ca
+            want.gen
+            (distribute & src.prod.f)
+            (distribute rid.fod src.prod.s)
+          ==
+        =.  regs.st.gen
+          =/  fas=(list [sock sock])  (flop fas.fod)
+          |-  ^-  regs
+          ?~  fas  regs.st.gen
+          =/  b=(unit ^)  (ev-bat +.i.fas)
+          ?:  ?&(?=(^ b) (~(has in faz.st.gen) u.b))
+            $(fas t.fas)
+          %=  $
+            fas          t.fas
+            faz.st.gen   ?~(b faz.st.gen (~(put in faz.st.gen) u.b))
+            regs.st.gen  +:(register-fast -.i.fas +.i.fas regs.st.gen)
+          ==
+        =.  folds.stats.st.gen  +(folds.stats.st.gen)
+        =.  fuel.stats.st.gen  (add fuel.stats.st.gen use.fod)
+        :_  gen
+        ?:  &((safe-nomm nomm.s) (safe-nomm nomm.f))
+          [[%1 pro.fod] [&+pro.fod ~] &]
+        [[%7 [nomm.s nomm.f] %1 pro.fod] [&+pro.fod ~] |]
       ::  Inline leaf formulas. Allows to analyze through formulas whose
       ::  products are gates, also speeds up analysis. Should be safe to comment
       ::  out the condition and the first branch - useful during debugging to
       ::  rule out stuff.
       ::
+      =/  bat=cape
+        ?~  b=(battery-of src.prod.s src.prod.f)  |
+        (pat:ca & u.b)
       ?:  &(?=(~ memo-key) !defer (inlineable fol-new))
-        =.  want.gen  (uni:ca want.gen (distribute & src.prod.f))
+        =.  want.gen  :(uni:ca want.gen (distribute & src.prod.f) bat)
         =^  inline  gen  fol-loop(fol fol-new, sub prod.s)
         :_  gen
         :-  [%7 nomm.s nomm.inline]
@@ -2440,6 +3060,7 @@
         ;:  uni:ca
           want.gen
           (distribute & src.prod.f)
+          bat
           (distribute cape.less-code.dat-there src.prod.s)
         ==
       ::  Also propagate transitive attempts to get code for indirect calls
@@ -3279,36 +3900,40 @@
   |=  [ned=need know=sock]
   ^-  baked
   =|  imm=(list [r=@uvre v=*])
-  =/  axe=@  1
+  ::  .k: what the bell knows of the part of the subject .ned is the need
+  ::  of, taken down with the walk (+pull:so composes): pulling it from
+  ::  the root at each node was most of a hoon-parser compile
+  ::
+  =/  k=sock  know
   |-  ^-  [need _imm]
   =*  loop  $
-  =/  k=sock  (pull:so know axe)
   ?:  ?&  ?=(^ k)
           (all:ca cape.k)
           (need-fits ned data.k)
       ==
     :-  [%none ~]
+    =/  j=sock  k
     |-  ^+  imm
     =*  all  $
     ?-  -.ned
         %none  imm
-        %this  [[r.ned data:(pull-known know axe)] imm]
-        ^      all(ned q.ned, axe (peg axe 3), imm all(ned p.ned, axe (peg axe 2)))
+        %this  [[r.ned data:(known-sock j)] imm]
+        ^      all(ned q.ned, j (tel:so j), imm all(ned p.ned, j (hed:so j)))
         %both
-      =.  imm  [[r.ned data:(pull-known know axe)] imm]
-      all(ned t.ned, axe (peg axe 3), imm all(ned h.ned, axe (peg axe 2)))
+      =.  imm  [[r.ned data:(known-sock j)] imm]
+      all(ned t.ned, j (tel:so j), imm all(ned h.ned, j (hed:so j)))
     ==
   ?-    -.ned
       %none  [ned imm]
       %this  [ned imm]
       ^
-    =^  l  imm  loop(ned p.ned, axe (peg axe 2))
-    =^  r  imm  loop(ned q.ned, axe (peg axe 3))
+    =^  l  imm  loop(ned p.ned, k (hed:so k))
+    =^  r  imm  loop(ned q.ned, k (tel:so k))
     [(cons-need l r) imm]
   ::
       %both
-    =^  h  imm  loop(ned h.ned, axe (peg axe 2))
-    =^  t  imm  loop(ned t.ned, axe (peg axe 3))
+    =^  h  imm  loop(ned h.ned, k (hed:so k))
+    =^  t  imm  loop(ned t.ned, k (tel:so k))
     =/  x  (cons-need h t)
     ?^  -.x  [[%both r.ned x] imm]
     [[%this r.ned] imm]
@@ -3333,10 +3958,9 @@
   &($(ned -.halves, som -.som) $(ned +.halves, som +.som))
 ::  a known part of a sock
 ::
-++  pull-known
-  |=  [s=sock axe=@]
+++  known-sock
+  |=  k=sock
   ^-  [cape=cape data=*]
-  =/  k=sock  (pull:so s axe)
   ?>  ?=(^ k)
   k
 ::  +bake-need for a shape
@@ -3345,16 +3969,15 @@
   ~%  %bake-need-ord  ..ride  ~
   |=  [ned=need-ordered know=sock]
   ^-  need-ordered
-  =/  axe=@  1
+  =/  k=sock  know
   |-  ^-  need-ordered
-  =/  k=sock  (pull:so know axe)
   ?:  &(?=(^ k) (all:ca cape.k) (need-fits ned data.k))  [%none ~]
   ?-    -.ned
       %none  ned
       %this  ned
-      ^      (cons-need $(ned p.ned, axe (peg axe 2)) $(ned q.ned, axe (peg axe 3)))
+      ^      (cons-need $(ned p.ned, k (hed:so k)) $(ned q.ned, k (tel:so k)))
       %both
-    =/  x  (cons-need $(ned h.ned, axe (peg axe 2)) $(ned t.ned, axe (peg axe 3)))
+    =/  x  (cons-need $(ned h.ned, k (hed:so k)) $(ned t.ned, k (tel:so k)))
     ?^  -.x  [%both x]
     [%this ~]
   ==
@@ -7291,8 +7914,11 @@
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
 |%
+::  %full: compile .*(sub fol), folding the calls +ev runs within .eva
+::  steps, none for 0
+::
 +$  ovum
-  $%  [%full sub=* fol=^]
+  $%  [%full sub=* fol=^ eva=@ud]
       [%jets p=(list (pair ring jets-comp-info))]
       [%dire b=bell mono=?]
       [%fast reset=? p=(list [pax=path =sock])]
@@ -7493,7 +8119,7 @@
     ::
     =^  [func=bell new=(list [pax=path tem=sock clue=*])]  long-ska.state
       ~>  %ska
-      (ska-poke [&+sub.ovo fol.ovo] long-ska.state)
+      (ska-poke [&+sub.ovo fol.ovo] long-ska.state ~(key by jets-hot.state) eva.ovo)
     ::  what is compiled holds, as do the SCCs: no new function joins an old
     ::  one's, and a function seen before keeps its ring until +ska-cole-settle
     ::
