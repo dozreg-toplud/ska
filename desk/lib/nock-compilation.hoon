@@ -7389,14 +7389,173 @@
     $(there.j there.t.fin.nex, args.j (turn args.t.fin.nex pass))
   --
 ::
+::  The optimized IR has one more branch: %lti, the step of a binary
+::  search among the constants a register is compared with
+::
++$  termin-out
+  $%  termin
+      [%lti n=@ s=@uvre z=jmp o=jmp]    ::  ?:  (lth s n), s a direct atom
+  ==
++$  blob-out  [par=(list @uvre) body=(list pole) fin=termin-out]
++$  straight-out
+  [need=need-ordered n-args=@ud blocks=(map @uwoo blob-out)]
+::  A ?- over a head-tagged union compiles to a chain of tests of the head
+::  of one register .s against constants, each test in blocks of its own:
+::
+::    P:  [%clq s Y N]
+::    Y:  [%hed s d]  [%imm c r]  [%eqq d r hit N]
+::    N:  the next test, or what follows the last
+::
+::  which is a linear search: +open:ap has eighty cases.  A chain of four
+::  tests or more, of direct atoms, becomes a binary search: the cell test
+::  and the head once, %lti by the sorted constants, and one %eqq against
+::  the constant found.  The first of equal constants wins, as in the
+::  chain; the blocks of the chain are those of the tree.
+::
+++  switch-chains
+  ~%  %switch-chains  ..ride  ~
+  |=  blocks=(map @uwoo blob)
+  ^-  (map @uwoo blob-out)
+  =/  topo=(list @uwoo)  (bb-topo blocks)
+  =/  rev=(jar @uwoo @uwoo)  (rev-cfg blocks (sy topo))
+  ::  how many times each register is mentioned
+  ::
+  =/  uses=(map @uvre @ud)
+    =/  put
+      |=  [r=@uvre acc=(map @uvre @ud)]
+      (~(put by acc) r +((~(gut by acc) r 0)))
+    %-  ~(rep by blocks)
+    |=  [[o=@uwoo b=blob] acc=(map @uvre @ud)]
+    =.  acc  (roll par.b put(acc acc))
+    =.  acc  (roll (get-regs fin.b) put(acc acc))
+    %+  roll  body.b
+    |=  [op=pole acc=_acc]
+    (roll (get-regs op) put(acc acc))
+  ::  the test that the block .p ends with, if it does: of the head .d of
+  ::  .s against the constant .c in .r, to .hit or .miss, in the block .y
+  ::
+  =*  test  ,[s=@uvre c=@ hit=@uwoo miss=@uwoo y=@uwoo d=@uvre r=@uvre]
+  =/  test-of
+    |=  p=@uwoo
+    ^-  (unit test)
+    =/  b=blob  (~(got by blocks) p)
+    ?.  ?=([%clq * [~ *] [~ *]] fin.b)  ~
+    =/  y=@uwoo  there.z.fin.b
+    =/  n=@uwoo  there.o.fin.b
+    ?.  =(~[p] (~(get ja rev) y))  ~
+    =/  yb=blob  (~(got by blocks) y)
+    ?.  ?=(~ par.yb)  ~
+    ?.  ?=([%eqq * * [~ *] [~ *]] fin.yb)  ~
+    ?.  =(n there.o.fin.yb)  ~
+    =/  bod=(list pole)  body.yb
+    ?.  ?=([* * ~] bod)  ~
+    =/  h=(unit [s=@uvre d=@uvre])
+      ?:  ?=([%hed *] i.bod)    `[s d]:i.bod
+      ?:  ?=([%hed *] i.t.bod)  `[s d]:i.t.bod
+      ~
+    =/  m=(unit [n=* d=@uvre])
+      ?:  ?=([%imm *] i.bod)    `[n d]:i.bod
+      ?:  ?=([%imm *] i.t.bod)  `[n d]:i.t.bod
+      ~
+    ?~  h  ~
+    ?~  m  ~
+    ?.  =(s.u.h s.fin.b)  ~
+    =/  c=*  n.u.m
+    ?.  ?=(@ c)  ~
+    ?.  (lth c (bex 31))  ~
+    ?.  ?|  =([l r]:fin.yb [d.u.h d.u.m])
+            =([l r]:fin.yb [d.u.m d.u.h])
+        ==
+      ~
+    ?.  ?&  =(2 (~(gut by uses) d.u.h 0))
+            =(2 (~(gut by uses) d.u.m 0))
+        ==
+      ~
+    `[s.fin.b c there.z.fin.yb n y d.u.h d.u.m]
+  ::  the tests chained from the one of .p: the miss of each is a block
+  ::  with nothing but the next test, of the same register, reached from
+  ::  that test only
+  ::
+  =/  chain-of
+    |=  p=@uwoo
+    ^-  (list test)
+    =/  t=(unit test)  (test-of p)
+    ?~  t  ~
+    :-  u.t
+    =/  nb=blob  (~(got by blocks) miss.u.t)
+    ?.  &(?=(~ par.nb) ?=(~ body.nb))  ~
+    ?.  =((sy (~(get ja rev) miss.u.t)) (sy ~[p y.u.t]))  ~
+    =/  t2=(unit test)  (test-of miss.u.t)
+    ?~  t2  ~
+    ?.  =(s.u.t2 s.u.t)  ~
+    $(p miss.u.t)
+  ::
+  =/  out=(map @uwoo blob-out)  blocks
+  =|  done=(set @uwoo)
+  |-  ^-  (map @uwoo blob-out)
+  ?~  topo  out
+  ?:  (~(has in done) i.topo)  $(topo t.topo)
+  =/  cs=(list test)  (chain-of i.topo)
+  ?:  (lth (lent cs) 4)  $(topo t.topo)
+  ?>  ?=(^ cs)
+  =/  s=@uvre  s.i.cs
+  =/  d=@uvre  d.i.cs
+  =/  top=@uwoo  y.i.cs
+  =/  mis=@uwoo  miss:(rear `(list test)`cs)
+  ::  the blocks of the chain but its first two: those of the tree
+  ::
+  =/  ids=(list @uwoo)
+    %+  weld  (turn t.cs |=(t=test y.t))
+    (turn (snip `(list test)`cs) |=(t=test miss.t))
+  =.  done  (~(gas in done) ids)
+  =.  out  (roll ids |=([o=@uwoo acc=_out] (~(del by acc) o)))
+  ::  the cases, the first of each constant, by the constants
+  ::
+  =/  cas=(list [c=@ hit=@uwoo r=@uvre])
+    =/  ces=(list test)  cs
+    =|  [saw=(set @) acc=(list [c=@ hit=@uwoo r=@uvre])]
+    |-  ^+  acc
+    ?~  ces  (sort acc |=([a=[c=@ *] b=[c=@ *]] (lth c.a c.b)))
+    ?:  (~(has in saw) c.i.ces)  $(ces t.ces)
+    $(ces t.ces, saw (~(put in saw) c.i.ces), acc [[c hit r]:i.ces acc])
+  ::
+  =/  node
+    |-  ^-  [body=(list pole) fin=termin-out ids=(list @uwoo) out=_out]
+    ?>  ?=(^ cas)
+    ?:  ?=(~ t.cas)
+      :*  ~[[%imm c.i.cas r.i.cas]]
+          [%eqq d r.i.cas [~ hit.i.cas] [~ mis]]
+          ids
+          out
+      ==
+    =/  all=(list [c=@ hit=@uwoo r=@uvre])  cas
+    =/  haf=@ud  (div (lent all) 2)
+    =/  hi=(list [c=@ hit=@uwoo r=@uvre])  (slag haf all)
+    ?>  ?=(^ hi)
+    ?>  ?=([* * *] ids)
+    =/  [l-id=@uwoo r-id=@uwoo]  [i.ids i.t.ids]
+    =/  l  $(cas (scag haf all), ids t.t.ids)
+    =.  out.l  (~(put by out.l) l-id [~ body.l fin.l])
+    =/  r  $(cas hi, ids ids.l, out out.l)
+    =.  out.r  (~(put by out.r) r-id [~ body.r fin.r])
+    [~ [%lti c.i.hi d [~ l-id] [~ r-id]] ids.r out.r]
+  ::
+  =.  out  out.node
+  =.  out  (~(put by out) top [~ [[%hed s d] body.node] fin.node])
+  =/  b=blob  (~(got by blocks) i.topo)
+  =.  out  (~(put by out) i.topo b(fin [%clq s [~ top] [~ mis]]))
+  $(topo t.topo)
+::
 ++  optimize
   ~%  %optimize  ..ride  ~
   |=  s=straight
-  ^-  straight
-  ?:  |  s
-  =^  changed=?  s  (optimize-once s)
-  ?.  changed  s
-  $(s s)
+  ^-  straight-out
+  =.  s
+    |-  ^-  straight
+    =^  changed=?  s  (optimize-once s)
+    ?.  changed  s
+    $(s s)
+  s(blocks (switch-chains blocks.s))
 ::  One round of all the optimization passes.  Every pass says whether it
 ::  changed anything, so that the fixed point is known without another round.
 ::  +remove-hops and +alias only ever delete blocks and edges, so the reverse
@@ -7462,7 +7621,7 @@
 ::
 +$  prod
   $@  ~
-  $%  [%ir b=bell p=straight new=(list [pax=path tem=sock clue=*])]
+  $%  [%ir b=bell p=straight-out new=(list [pax=path tem=sock clue=*])]
       [%drop p=(list bell)]
   ==
 ::  The state of a core of any version, for +load
@@ -7660,9 +7819,9 @@
       (scc-of func calls.long-ska.state sccs.cache.state)
     =^  =straight  cache.state  ~>(%ska (compiled-mono func scc))
     ::
-    =.  straight  ~>(%ska (optimize straight))
+    =/  out=straight-out  ~>(%ska (optimize straight))
     :_  ..poke
-    [%ir func straight new]
+    [%ir func out new]
   ::
       %dire
     =^  scc=(set bell)  sccs.cache.state
@@ -7672,8 +7831,8 @@
       ?:  mono.ovo  (compiled-mono b.ovo scc)
       (compiled-nary b.ovo scc)
     ::
-    =.  straight  ~>(%ska (optimize straight))
-    [[%ir b.ovo straight ~] ..poke]
+    =/  out=straight-out  ~>(%ska (optimize straight))
+    [[%ir b.ovo out ~] ..poke]
   ==
 ::
 ++  wish  !!  ::  +10
