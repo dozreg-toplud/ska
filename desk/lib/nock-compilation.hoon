@@ -2983,6 +2983,7 @@
   $:  nary=(map bell straight)      ::  functions of the parts they use
       mono=(map bell straight)      ::  functions of their whole subject
       sccs=(map bell (set bell))    ::  strongly connected components
+      inl=(map bell nomm)           ::  code with the small callees inlined
   ==
 ::  Non-control-flow ops
 ::
@@ -3221,6 +3222,133 @@
     (~(rep in s) |=([m=bell acc=_acc] (~(put by acc) m s)))
   ::
   [(~(got by sccs) b) sccs]
+::  Inlining.  A direct call of a function that is small, not recursive,
+::  not memoized and without a driver is replaced by the function's code,
+::  run on the subject the call made for it: [%2 p q info] becomes [%7 p n].
+::  The needs of that code then reach the caller's registers and its product
+::  goes where the caller wants it, where a call moves both through the
+::  callee's interface.  The formula of the call is dropped, so it must be
+::  safe to drop.  The code of a function, inlined into, is found once.
+::
+++  inline-max  48   ::  nodes of the code of a function that is inlined
+++  inline-off  |    ::  debug: no inlining
+::
+++  nomm-size
+  |=  =nomm
+  ^-  @ud
+  =|  n=@ud
+  |-  ^-  @ud
+  ?:  (gth n inline-max)  n
+  =.  n  +(n)
+  ?-    nomm
+      [^ *]      $(nomm +.nomm, n $(nomm -.nomm))
+      [%0 *]     n
+      [%1 *]     n
+      [%2 *]     $(nomm q.nomm, n $(nomm p.nomm))
+      [%3 *]     $(nomm p.nomm)
+      [%4 *]     $(nomm p.nomm)
+      [%5 *]     $(nomm q.nomm, n $(nomm p.nomm))
+      [%6 *]     $(nomm r.nomm, n $(nomm q.nomm, n $(nomm p.nomm)))
+      [%7 *]     $(nomm q.nomm, n $(nomm p.nomm))
+      [%10 *]    $(nomm q.nomm, n $(nomm q.p.nomm))
+      [%11 *]    ?@  p.nomm  $(nomm q.nomm)
+                 $(nomm q.nomm, n $(nomm q.p.nomm))
+      [%12 *]    $(nomm q.nomm, n $(nomm p.nomm))
+      [%mean *]  $(nomm q.nomm, n $(nomm p.nomm))
+  ==
+::
+++  inlined
+  ~%  %inlined  ..ride  ~
+  |=  $:  b=bell
+          long-ska=_[=_code =_jets =_calls]:*long-ska
+          jets-hot=jets-comp
+          cache=comp-cache
+      ==
+  ^-  [nomm comp-cache]
+  =*  inlined-loop  $
+  ?^  n=(~(get by inl.cache) b)  [u.n cache]
+  =/  hot
+    |=  c=bell
+    ^-  ?
+    ?=(^ (biff (~(get by call.cole.jets.long-ska) c) ~(get by jets-hot)))
+  ::
+  =^  new=nomm  cache
+    =/  =nomm  nomm:(~(got by code.long-ska) b)
+    ?:  inline-off  [nomm cache]
+    |-  ^-  [^nomm comp-cache]
+    ?-    nomm
+        [^ *]
+      =^  a  cache  $(nomm -.nomm)
+      =^  d  cache  $(nomm +.nomm)
+      [[a d] cache]
+    ::
+        [%0 *]  [nomm cache]
+        [%1 *]  [nomm cache]
+    ::
+        [%2 *]
+      =^  p  cache  $(nomm p.nomm)
+      =^  q  cache  $(nomm q.nomm)
+      =/  keep=^nomm  [%2 p q info.nomm]
+      ?~  info.nomm  [keep cache]
+      =/  c=bell  b.u.info.nomm
+      ?.  &(?=(~ k.u.info.nomm) (safe-fol-fol q.nomm) !(hot c))
+        [keep cache]
+      =^  s=(set bell)  sccs.cache  (scc-of c calls.long-ska sccs.cache)
+      ?.  ?=([* ~ ~] s)  [keep cache]
+      ?:  (~(has in (~(gut by calls.long-ska) c ~)) c)  [keep cache]
+      =^  m=^nomm  cache  inlined-loop(b c, cache cache)
+      ?:  (gth (nomm-size m) inline-max)  [keep cache]
+      [[%7 p m] cache]
+    ::
+        [%3 *]
+      =^  p  cache  $(nomm p.nomm)
+      [[%3 p] cache]
+    ::
+        [%4 *]
+      =^  p  cache  $(nomm p.nomm)
+      [[%4 p] cache]
+    ::
+        [%5 *]
+      =^  p  cache  $(nomm p.nomm)
+      =^  q  cache  $(nomm q.nomm)
+      [[%5 p q] cache]
+    ::
+        [%6 *]
+      =^  p  cache  $(nomm p.nomm)
+      =^  q  cache  $(nomm q.nomm)
+      =^  r  cache  $(nomm r.nomm)
+      [[%6 p q r] cache]
+    ::
+        [%7 *]
+      =^  p  cache  $(nomm p.nomm)
+      =^  q  cache  $(nomm q.nomm)
+      [[%7 p q] cache]
+    ::
+        [%10 *]
+      =^  v  cache  $(nomm q.p.nomm)
+      =^  q  cache  $(nomm q.nomm)
+      [[%10 [p.p.nomm v] q] cache]
+    ::
+        [%11 *]
+      ?@  p.nomm
+        =^  q  cache  $(nomm q.nomm)
+        [[%11 p.nomm q body.nomm] cache]
+      =^  v  cache  $(nomm q.p.nomm)
+      =^  q  cache  $(nomm q.nomm)
+      [[%11 [p.p.nomm v] q body.nomm] cache]
+    ::
+        [%12 *]
+      =^  p  cache  $(nomm p.nomm)
+      =^  q  cache  $(nomm q.nomm)
+      [[%12 p q] cache]
+    ::
+        [%mean *]
+      =^  p  cache  $(nomm p.nomm)
+      =^  q  cache  $(nomm q.nomm)
+      [[%mean p b.nomm q body.nomm k.nomm] cache]
+    ==
+  ::
+  [new cache(inl (~(put by inl.cache) b new))]
 ::
 ++  compile-unary
   ~%  %compile-unary  ..ride  ~
@@ -3241,6 +3369,10 @@
   ::
   =|  gen=line-short
   =.  cache.gen  cache
+  ::  nothing is inlined into the function of the whole subject: a %mean
+  ::  trap is deferred in the n-ary functions only (+run), and a callee
+  ::  inlined here would push its traps whole
+  ::
   =^  nex=next  gen
     (~(run comp gen) & nomm:(~(got by code.long-ska) func) [%done ~] ~)
   ::  Collapse the subject need to a single noun, finalize
@@ -3299,7 +3431,7 @@
     ^-  [? (map bell straight) comp-cache]
     ?>  ?=(^ less.b)
     =/  comp  (comp scc long-ska jets-hot map-local b)
-    =/  =nomm  nomm:(~(got by code.long-ska) b)
+    =^  =nomm  cache  (inlined b long-ska jets-hot cache)
     ::  Until the fixed point only the input shape is needed: from the
     ::  shape-only traversal, or from the full compilation with code emission
     ::  dropped.  The final pass compiles for real, emitting code right away.
@@ -4706,12 +4838,12 @@
         %this  (add-ops o [%imm som r.ned]~)
     ::
         ^
-      ?@  som  (emir o ~ ~ %bom ~)  ::  overwrites old block
+      ?@  som  (crash-need o [%& %imm som] ned)
       =.  gen  $(som -.som, ned -.ned)
       $(som +.som, ned +.ned)
     ::
         %both
-      ?:  ?=(@ som)  (emir o ~ ~ %bom ~)
+      ?:  ?=(@ som)  (crash-need o [%& %imm som] ned)
       =.  gen  (add-ops o [%imm som r.ned]~)
       =.  gen  $(som -.som, ned h.ned)  ::  XX no +kern here, is OK?
       $(som +.som, ned t.ned)
@@ -4765,7 +4897,25 @@
       ?:  =(r r.ned-sure)  gen
       =^  src  gen  ?:(=(o-laz o) [r gen] (proxy r o-laz))
       (add-ops o-laz [%mov src r.ned-sure]~)
-    (emir o-laz ~ ~ %bom ~)
+    =^  src  gen  ?:(=(o-laz o) [r gen] (proxy r o-laz))
+    (crash-need o-laz [%| src] ned-sure)
+  ::  A need for the parts of an atom, in block .o: the fetch crashes there.
+  ::  The block is not made a crash as a whole: it keeps its place in the
+  ::  control flow, since a fork may still splice into it (+insert-hop), and
+  ::  the registers of the need are defined, with values nothing reads.
+  ::  The atom is an immediate or in a register
+  ::
+  ++  crash-need
+    |=  [o=@uwoo atom=(each [%imm n=@] @uvre) ned=need]
+    ^+  gen
+    =/  fill=(list pole)
+      (turn (flatten-need ned) |=(x=@uvre `pole`[%imm 0 x]))
+    ?-    -.atom
+        %|  (add-ops o [[%cel p.atom] fill])
+        %&
+      =^  r  gen  re
+      (add-ops o [[%imm n.p.atom r] [%cel r] fill])
+    ==
   ::
   ++  flatten-need
     ~%  %comp-flatten-need  ..ride  ~
@@ -7797,7 +7947,7 @@
   |=  old=[* * state=state-any *]
   ^+  ..load
   ?-  -.state.old
-    %0  ..load(state state.old(nary.cache ~, mono.cache ~))
+    %0  ..load(state state.old(nary.cache ~, mono.cache ~, inl.cache ~))
   ==
 ::
 ++  peek      ::  +22
@@ -7829,6 +7979,8 @@
       jets-hot.state    hot
       nary.cache.state  (del-bells nary.cache.state stale)
       mono.cache.state  (del-bells mono.cache.state stale)
+      inl.cache.state
+        (~(rep in stale) |=([b=bell m=_inl.cache.state] (~(del by m) b)))
     ==
   ::
       %fast
@@ -7863,6 +8015,7 @@
     ::
     =?  nary.cache.state  !=(cole call.cole.jets.long-ska.state)  ~
     =?  mono.cache.state  !=(cole call.cole.jets.long-ska.state)  ~
+    =?  inl.cache.state  !=(cole call.cole.jets.long-ska.state)  ~
     ::
     [~ ..poke]
   ::
