@@ -320,6 +320,27 @@
     ?&  $(one [lope -.data.one], two [loop -.data.two])
         $(one [rope +.data.one], two [roop +.data.two])
     ==
+  ::  Do two socks agree wherever both know?
+  ::
+  ++  jibe
+    |=  [one=sock two=sock]
+    ^-  ?
+    ?:  =(one two)  &
+    ?@  two  &
+    ?@  one  |
+    ?:  |(?=(%| cape.one) ?=(%| cape.two))  &
+    ?:  &(?=(%& cape.one) ?=(%& cape.two))  =(data.one data.two)
+    ?.  &(?=(^ data.one) ?=(^ data.two))  |
+    ~+
+    =/  [lope=cape rope=cape]
+      ?:(?=(^ cape.one) cape.one [cape.one cape.one])
+    ::
+    =/  [loop=cape roop=cape]
+      ?:(?=(^ cape.two) cape.two [cape.two cape.two])
+    ::
+    ?&  $(one [lope -.data.one], two [loop -.data.two])
+        $(one [rope +.data.one], two [roop +.data.two])
+    ==
   ::  axis of a partial noun, never fails
   ::
   ++  pull
@@ -1362,9 +1383,17 @@
 ::  Match a bell against registered cores: look for its formula in the battery
 ::  of a core template that its subject fits. Produces the ring of the arm.
 ::
+::  A bell that knows more than the template, the code of a gate in its
+::  sample, is a function of fewer subjects, and the arm's driver is right for
+::  it as it is for the function that knows what both do.  It gets the ring
+::  only if the ring has a driver (.hot): with none the ring would change
+::  nothing but keep the function from being baked, and a driver that takes
+::  such a function must be worth more than the code specialized on the gate
+::  (the sort by a jetted comparator, +hmac by any hash), or punt.
+::
 ++  cole-match
   ~%  %cole-match  ..ride  ~
-  |=  [b=bell core=(jug path sock) arms=(jug ^ path)]
+  |=  [b=bell core=(jug path sock) arms=(jug ^ path) hot=(set ring)]
   ^-  (unit ring)
   ~+
   ::  only the paths of cores whose battery contains the formula can match
@@ -1392,9 +1421,13 @@
     template-loop(templates r.templates)
   ::
   =/  template=sock  n.templates
-  ?.  (huge:so less.b template)  ~
+  =/  nest=?  (huge:so less.b template)
+  ?.  |(nest (jibe:so less.b template))  ~
   =/  template-fol=sock  (hed:so template)
   =/  axis=@  2
+  =;  axe=(unit @)
+    ?:  |(nest ?=(~ axe))  axe
+    ?:((~(has in hot) [p.n.core u.axe]) axe ~)
   |-  ^-  (unit @)
   =*  fol-loop  $
   ?.  &(?=(^ template-fol) (all:ca cape.template-fol))  ~
@@ -1411,13 +1444,13 @@
 ::
 ++  ska-cole-update
   ~%  %ska-cole-update  ..ride  ~
-  |=  [lon=long-ska new-bells=(set bell)]
+  |=  [lon=long-ska new-bells=(set bell) hot=(set ring)]
   ^-  long-ska
   =*  cole  cole.jets.lon
   =.  cole
     %-  ~(rep in new-bells)
     |=  [b=bell c=_cole]
-    ?~  r=(cole-match b core.jets.lon arms.jets.lon)  c
+    ?~  r=(cole-match b core.jets.lon arms.jets.lon hot)  c
     (cole-put b u.r c)
   ::
   lon
@@ -1426,14 +1459,14 @@
 ::
 ++  ska-cole-settle
   ~%  %ska-cole-settle  ..ride  ~
-  |=  lon=long-ska
+  |=  [lon=long-ska hot=(set ring)]
   ^-  [(set bell) long-ska]
   ?:  =(~ pend.jets.lon)  [~ lon]
   =/  [rung=(set bell) cole=_cole.jets.lon]
     %-  ~(rep by code.lon)
     |=  [[b=bell *] rung=(set bell) c=_cole.jets.lon]
     ?:  (~(has by call.c) b)  [rung c]
-    ?~  r=(cole-match b pend.jets.lon arms.jets.lon)  [rung c]
+    ?~  r=(cole-match b pend.jets.lon arms.jets.lon hot)  [rung c]
     [(~(put in rung) b) (cole-put b u.r c)]
   ::
   [rung lon(cole.jets cole, pend.jets ~)]
@@ -1444,11 +1477,11 @@
   [(~(put by call.c) b r) (~(put ju back.c) r b)]
 ::
 ++  ska-cole-restore
-  |=  lon=long-ska
+  |=  [lon=long-ska hot=(set ring)]
   ^-  long-ska
   =.  cole.jets.lon  [~ ~]
   =.  pend.jets.lon  ~
-  (ska-cole-update lon ~(key by code.lon))
+  (ska-cole-update lon ~(key by code.lon) hot)
 ::  Baking: the constants a function's callers know from their code become
 ::  part of its bell
 ::
@@ -1847,7 +1880,7 @@
   ==
 ::
 ++  ska-poke
-  |=  [[bus=sock fol=^] lon=long-ska]
+  |=  [[bus=sock fol=^] lon=long-ska hot=(set ring)]
   ^-  [[bell (list [pax=path tem=sock clue=*])] long-ska]
   %-  road-pure  |.
   =/  root-identity=identity  [bus fol]
@@ -1883,7 +1916,7 @@
     |=  c=bell
     ^-  ?
     ?|  (~(has by call.cole.jets.lon) c)
-        ?=(^ (cole-match c core.regs arms.regs))
+        ?=(^ (cole-match c core.regs arms.regs hot))
     ==
   ::
   =^  baked=(map bell [=nomm calls=(set bell)])  vars.lon
@@ -1961,7 +1994,7 @@
     (~(put by acc) b calls.v)
   ::
   :-  [root-bell (flop new.regs)]
-  (ska-cole-update lon ~(key by new-code))
+  (ska-cole-update lon ~(key by new-code) hot)
 ::  produces data about a function
 ::  pure: no crashes + no hints excepts %fast (call to it could be omitted)
 ::  total: no crashes (stacktrace boundaries around them could be omitted)
@@ -7786,7 +7819,8 @@
     =/  hot=jets-comp  (malt p.ovo)
     ?:  &(=(hot jets-hot.state) =(~ pend.jets.long-ska.state))
       [[%drop ~] ..poke]
-    =^  rung=(set bell)  long-ska.state  (ska-cole-settle long-ska.state)
+    =^  rung=(set bell)  long-ska.state
+      (ska-cole-settle long-ska.state ~(key by hot))
     =/  stale=(set bell)
       (hot-stale (hot-diff jets-hot.state hot) rung hot long-ska.state)
     ::
@@ -7819,7 +7853,8 @@
     ::
     =/  cole  call.cole.jets.long-ska.state
     =.  long-ska.state
-      ?:  reset.ovo  (ska-cole-restore long-ska.state)
+      ?:  reset.ovo
+        (ska-cole-restore long-ska.state ~(key by jets-hot.state))
       %=  long-ska.state
         pend.jets  ((uni-ju pend.jets.long-ska.state) ((dif-ju core.reg) old))
       ==
@@ -7839,7 +7874,7 @@
     ::
     =^  [func=bell new=(list [pax=path tem=sock clue=*])]  long-ska.state
       ~>  %ska
-      (ska-poke [&+sub.ovo fol.ovo] long-ska.state)
+      (ska-poke [&+sub.ovo fol.ovo] long-ska.state ~(key by jets-hot.state))
     ::  what is compiled holds, as do the SCCs: no new function joins an old
     ::  one's, and a function seen before keeps its ring until +ska-cole-settle
     ::
