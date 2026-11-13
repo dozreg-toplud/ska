@@ -7161,7 +7161,13 @@
     %=  $
       args-a  t.args-a
       args-b  t.args-b
-      ops     ?~(i.args-a ops [[%mov u.i.args-a i.args-b] ops])
+      ::  an argument that passes nothing leaves its parameter without a
+      ::  definition here, where the block that held it is gone, while the
+      ::  joins further on still pass the parameter along (+sect): it is
+      ::  made 0, as the interpreter makes it on such an edge
+      ::
+      ops     ?~  i.args-a  [[%imm 0 i.args-b] ops]
+              [[%mov u.i.args-a i.args-b] ops]
     ==
   ::
   $(o o1, segs [seg segs], fin.b-new fin.b1)
