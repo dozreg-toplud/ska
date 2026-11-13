@@ -3143,7 +3143,7 @@
       ::  valid %memo generates a new call to an uninlineable function to be
       ::  memoized
       ::
-      ?:  &(?=(%memo a.fol) saf.h ?=(^ sock.prod.h) !=(%core data.sock.prod.h))
+      ?:  &(?=(%memo a.fol) saf.h ?=(^ sock.prod.h))
         ::  saf.h implies fully known sock.prod.h
         ::
         fol-loop(fol [%2 [%0 1] 1 f.fol], memo-key `data.sock.prod.h)
@@ -6467,9 +6467,19 @@
     ::
     =/  l  (msg none+~ h-double -.less)
     =/  r  (msg none+~ t-double +.less)
-    ?:  |(?=(%this -.single) ?=(%both -.double))  [%both l r]
-    %-  cons-need  ::  XX 
-    [l r]
+    =/  res=need-ordered
+      ?:  |(?=(%this -.single) ?=(%both -.double))  [%both l r]
+      %-  cons-need  ::  XX
+      [l r]
+    ::  Only one branch takes the noun apart, so a split here is paid on
+    ::  entry by every path, for parts that path never reads: a known cell
+    ::  makes the hoisting crash-free but not free.  A big split (the data
+    ::  of a rule tree: thousands of registers, dropped by the paths that
+    ::  read none of it) is passed whole instead, as structs are by
+    ::  reference, and the branch that reads it splits its one register.
+    ::
+    ?:  (gth (need-ord-regs res split-max) split-max)  this+~
+    res
   ::
   ?:  ?=(%both -.a)
     ?:  ?=(%both -.b)
@@ -6479,6 +6489,25 @@
     [%both (msg p.a h.b (hed:ca less)) (msg q.a t.b (tel:ca less))]
   %-  cons-need  ::  XX
   [(msg p.a p.b (hed:ca less)) (msg q.a q.b (tel:ca less))]
+::
+::  Registers of a shape, counted until there are more than .max
+::
+++  need-ord-regs
+  |=  [n=need-ordered max=@ud]
+  ^-  @ud
+  =|  acc=@ud
+  |-  ^-  @ud
+  ?:  (gth acc max)  acc
+  ?-  -.n
+    %none  acc
+    %this  +(acc)
+    %both  $(n t.n, acc $(n h.n, acc +(acc)))
+    ^      $(n +.n, acc $(n -.n))
+  ==
+::  The most registers a fork splits a noun into on entry for one branch
+::  (+msg-need-ord)
+::
+++  split-max  32
 ::
 ++  need-to-ordered
   ~%  %need-to-ordered  ..ride  ~
