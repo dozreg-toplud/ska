@@ -7843,6 +7843,19 @@
     ::  what is compiled holds, as do the SCCs: no new function joins an old
     ::  one's, and a function seen before keeps its ring until +ska-cole-settle
     ::
+    ::  An entry that is a jetted arm itself, as when a gate that the caller
+    ::  did not know is slammed on its battery: by subject through the ring,
+    ::  as a caller that knew it would call it.  The driver runs, and the
+    ::  arm's own program, which %dire compiles, only if the driver punts.
+    ::  Else the body of the arm would run as Nock where u3n runs the jet
+    ::
+    =/  rin=(unit ring)  (~(get by call.cole.jets.long-ska.state) func)
+    ?:  &(?=(^ rin) (~(has by jets-hot.state) u.rin))
+      =/  out=straight-out
+        :+  [%this ~]  1
+        (~(put by *(map @uwoo blob-out)) `@uwoo`0 [~ ~ [%jsf func `@uvre`0 u.rin]])
+      ::
+      [[%ir func out new] ..poke]
     =^  scc=(set bell)  sccs.cache.state
       (scc-of func calls.long-ska.state sccs.cache.state)
     =^  =straight  cache.state  ~>(%ska (compiled-mono func scc))
