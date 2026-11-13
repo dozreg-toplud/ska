@@ -6032,9 +6032,11 @@
     ^      $(n +.n, acc $(n -.n))
   ==
 ::  The most registers a fork splits a noun into on entry for one branch
-::  (+msg-need-ord)
+::  (+msg-need-ord).  Measured: at 6 the parsers gain (+ream of hoon.hoon
+::  380 -> 334 ms, +nuck 161 -> 133) and +mint is as with 32; at 4 +mint
+::  loses 8%, a loop keeping what it reads again in registers
 ::
-++  split-max  32
+++  split-max  6
 ::
 ++  need-to-ordered
   ~%  %need-to-ordered  ..ride  ~
