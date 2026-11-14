@@ -387,12 +387,14 @@
     ?@  one  two
     ?@  two  one
     ?:  |(?=(%| cape.one) ?=(%| cape.two))  *sock
+    ~+
     ?:  |(?=(^ cape.one) ?=(^ cape.two))
       %+  knit  $(one (hed one), two (hed two))
       $(one (tel one), two (tel two))
     |-  ^-  sock
     ?:  =(data.one data.two)  one
     ?:  |(?=(@ data.one) ?=(@ data.two))  *sock
+    ~+
     %+  knit  $(data.one -.data.one, data.two -.data.two)
     $(data.one +.data.one, data.two +.data.two)
   ::  edit
@@ -1483,6 +1485,27 @@
 ::
 ::  The union of two socks of one noun: known where either knows
 ::
+::  The normal form of a sock: a cape is & where all is known, | where
+::  nothing is.  The analysis keeps [& &] apart from & (a noun consed on
+::  the way is not code); what a bell knows of data needs no such mark,
+::  and one noun for one knowledge makes a change of a bake a loss
+::
+++  norm-sock
+  ~%  %norm-sock  ..ride  ~
+  |=  s=sock
+  ^-  sock
+  ?@  s  s
+  ?:  ?=(%| cape.s)  |+~
+  ?:  ?=(%& cape.s)  s
+  ~+
+  =/  l=sock  $(s [-.cape.s -.data.s])
+  =/  r=sock  $(s [+.cape.s +.data.s])
+  ?>  &(?=(^ l) ?=(^ r))
+  ?:  &(?=(%| cape.l) ?=(%| cape.r))  |+~
+  :_  [data.l data.r]
+  ?:  &(?=(@ cape.l) =(cape.l cape.r))  cape.l
+  [cape.l cape.r]
+::
 ++  uni-sock
   ~%  %uni-sock  ..ride  ~
   |=  [a=sock b=sock]
@@ -1689,9 +1712,10 @@
 ::  A worklist approaches the greatest fixed point from above: a function
 ::  enters with what its first evaluated caller knows, is evaluated under
 ::  that, and loses what later callers, or its own recursion, do not know,
-::  each loss re-evaluating it and its callees.  Every change shrinks a
-::  bake, so this settles; a function re-evaluated too often (an unstable
-::  choice of variants) is fixed at its code bell, which always fits.
+::  each loss re-evaluating it and its callees.  A bake only shrinks, so
+::  this settles: it is the intersection (+purr:so) of what the sites
+::  know, in normal form, and a caller that knows less has the sites it
+::  had, each knowing less, and maybe more of them.
 ::
 ++  bake-graph
   ~%  %bake-graph  ..ride  ~
@@ -1703,13 +1727,22 @@
   ^-  [(map bell [=nomm calls=(set bell)]) (jug bell bell)]
   =*  site  ,[b=bell k=sock src=spring]
   ::  an existing variant of a code bell fit for a subject: the one that
-  ::  knows the most.  The code bell itself if the subject does not even
-  ::  provide the code: the analysis found that call, not us
+  ::  knows the most.
+  ::
+  ::  The subject of a site mostly provides the callee's code: the caller's
+  ::  bell has what the callee's code requirement comes from in the
+  ::  caller's subject (the analysis put it there), and +know computes the
+  ::  rest again.  Not always: a caller that computes a gate and then slams
+  ::  it has the gate's code from the analysis of that computation, and
+  ::  +know may find the gate unknown (+cram:vast has such a site).  The
+  ::  sock of the site is then short of the callee's own requirement, no
+  ::  variant is picked, and the site, knowing little, leaves little in the
+  ::  callee's bake, which it then calls like any other site
   ::
   =/  pick
     |=  [c=bell k=sock]
     ^-  (unit bell)
-    ?.  (huge:so less.c k)  `c
+    ?.  (huge:so less.c k)  ~
     %-  ~(rep in (~(get ju vars) c))
     |=  [v=bell best=(unit bell)]
     ?.  (huge:so less.v k)  best
@@ -1722,7 +1755,6 @@
   =|  $=  st
       $:  bak=(map bell sock)        ::  code bell -> its bake, the variant
           fix=(set bell)             ::  bakes fixed at the code bell
-          cnt=(map bell @ud)         ::  evaluations of each
           out=(map bell (set bell))  ::  callees whose variant it awaits
           inn=(map bell (map bell (list sock)))  ::  callee -> caller -> known
           evals=@ud
@@ -1778,8 +1810,7 @@
   =/  prev=(set bell)  (~(gut by out.st) cur ~)
   =.  out.st  (~(put by out.st) cur new-bells)
   ::  the bakes to recompute: the callees .cur informs.  A bake is the
-  ::  code and what all the callers know.  A function that changed too
-  ::  often is fixed at its code
+  ::  code and what all the callers know
   ::
   =/  touched=(set bell)  (~(uni in prev) new-bells)
   =^  changed=(list bell)  st
@@ -1801,18 +1832,13 @@
       ?:  |(frozen (~(has in fix.st) c))  less.c
       =/  ks=(list sock)  (zing ~(val by m))
       ?~  ks  less.c
-      =/  meet=sock  (roll t.ks |=([k=sock acc=_i.ks] (msg-sock k acc)))
-      (uni-sock less.c meet)
+      =/  meet=sock  (roll t.ks |=([k=sock acc=_i.ks] (purr:so k acc)))
+      (norm-sock (uni-sock less.c meet))
     ::
-    ?:  =(`bake (~(get by bak.st) c))  [changed st]
-    =/  n=@ud  +((~(gut by cnt.st) c 0))
-    =/  give=?  (gth n 16)
-    :-  [c changed]
-    %=  st
-      cnt  (~(put by cnt.st) c n)
-      bak  (~(put by bak.st) c ?:(give less.c bake))
-      fix  ?:(give (~(put in fix.st) c) fix.st)
-    ==
+    =/  old=(unit sock)  (~(get by bak.st) c)
+    ?:  =(`bake old)  [changed st]
+    ?>  |(?=(~ old) (huge:so bake u.old))
+    [[c changed] st(bak (~(put by bak.st) c bake))]
   ::
   =/  fresh=(list bell)  (skip changed ~(has in qs))
   %=  work
