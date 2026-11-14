@@ -2893,6 +2893,38 @@
       [%this ~]
       [%none ~]
   ==
+::  Shape of a product returned in parts (+rets-scc):
+::    ~:   a noun in one register
+::    %c:  a pair whose halves are returned apart
+::    %m:  an atom or a pair: a tag register, then the halves.  The tag is
+::         the atom itself, or any cell when the product is a pair, so that
+::         a test of the product (for a cell, for an atom) is a test of the
+::         tag; the registers of the halves of an atom hold 0
+::    %k:  an atom known to the caller: no register
+::
++$  rets
+  $@  ~
+  $%  [%c p=rets q=rets]
+      [%m p=rets q=rets]
+      [%k n=@]
+  ==
+::  What +rets-scc knows of the structure of a product:
+::    %top: nothing yet: a crash, a callee not analyzed yet
+::    %one: a noun
+::    %a:   an atom
+::    %k:   a constant
+::    %c:   a pair made by the function or returned in parts by a callee
+::    %n:   a pair that exists already: a noun the function fetched into
+::    %m:   an atom on some paths, a pair made on others
+::
++$  form
+  $~  %one
+  $@  ?(%top %one %a)
+  $%  [%k n=*]
+      [%c h=form t=form]
+      [%n h=form t=form]
+      [%m h=form t=form]
+  ==
 ::  Lazy data requirement, with needs of Nock 6 forks and Nock 11 crash relo-
 ::  cation boundaries.
 ::
@@ -3019,6 +3051,8 @@
       cache=comp-cache               ::  compiled callees, their SCCs
       soft=(map @uwoo soft-call)     ::  blocks where a callee's need is met
       sofs=(set @uxid)               ::  the same for shapes
+      tst=(set @uvre)                ::  registers that are only tested (+tst-read)
+      mine=rets                      ::  the shape the function returns in
   ==
 ::  A direct call whose callee takes parts that the subject formula does
 ::  not make by a cons.  The need of the callee is bound at blocks before
@@ -3038,10 +3072,13 @@
 ::  call; plain: the block of the call.  Three blocks run before it: head,
 ::  with the fetches that crash; that of the bond, with the moves and
 ::  conses that make the callee's arguments, and what a fork splices into
-::  it (+insert-hop); last, with the tries.  pro, out: the product and the
-::  block that follows, of a call that is no tail call (out: the block
-::  past the push); aux: the block of the epilogue of a %mean, and its
-::  hint; req: the nouns to take apart, with the need of each
+::  it (+insert-hop); last, with the tries.  pros, out: the registers of
+::  the product and the block that follows, of a call that is no tail call
+::  (out: the block past the push); ret: the shape the callee returns its
+::  product in, which the subject version returns as one noun: it is taken
+::  apart for the same registers (+conv); aux: the block of the epilogue
+::  of a %mean, and its hint; req: the nouns to take apart, with the need
+::  of each
 ::
 +$  soft-call
   $:  kin=?(%call %tail %mean)
@@ -3052,7 +3089,8 @@
       plain=@uwoo
       head=@uwoo
       last=@uwoo
-      pro=@uvre
+      pros=(list @uvre)
+      ret=rets
       out=@uwoo
       aux=*
       req=(list [src=@uvre ned=need])
@@ -3067,6 +3105,7 @@
   $:  nary=(map bell straight)      ::  functions of the parts they use
       mono=(map bell straight)      ::  functions of their whole subject
       sccs=(map bell (set bell))    ::  strongly connected components
+      rets=(map bell rets)          ::  shapes of the products of .nary
       inl=(map bell nomm)           ::  code with the small callees inlined
       sure=(map bell need-ordered)  ::  what each reads first thing (+sure-of)
   ==
@@ -3098,6 +3137,7 @@
       [%csl a=bell s=@uvre d=@uvre]               ::  %cal but sub is in one reg
       [%csf a=bell s=@uvre d=@uvre n=ring]        ::  %caf but sub is in one reg
       [%csm a=bell s=@uvre d=@uvre k=*]           ::  %cam but sub is in one reg
+      [%rtl i=@ud d=@uvre]                        ::  part i of a call's product
   ==
 ::  Tags of the ops that cannot crash
 ::
@@ -3116,6 +3156,7 @@
       [%jsp a=bell s=@uvre]                 ::  %jmp but sub is in one reg
       [%jsf a=bell s=@uvre n=ring]          ::  %jmf but sub is in one reg
       [%don s=@uvre]                        ::  return s
+      [%dox v=(lest @uvre) n=rets]          ::  return a product n in parts v
       [%bom o=(unit @uwoo)]                 ::  boom! crash. would've gone to o
   ==
 ::  get assignment register of the op if exists and does not crash
@@ -3151,6 +3192,7 @@
     %csl  ~
     %csf  ~
     %csm  ~
+    %rtl  ~
   ==
 ++  get-regs
   |=  op=$%(pole termin)
@@ -3181,6 +3223,7 @@
     %csl  ~[s d]:op
     %csf  ~[s d]:op
     %csm  ~[s d]:op
+    %rtl  ~[d]:op
     %clq  [s.op (weld (jmp-regs z.op) (jmp-regs o.op))]
     %eqq  [l.op r.op (weld (jmp-regs z.op) (jmp-regs o.op))]
     %brn  [s.op (weld (jmp-regs z.op) (jmp-regs o.op))]
@@ -3191,6 +3234,7 @@
     %jsp  ~[s]:op
     %jsf  ~[s]:op
     %don  ~[s]:op
+    %dox  v:op
     %bom  ~
   ==
 ::
@@ -3214,6 +3258,7 @@
     %jsp  ~
     %jsf  ~
     %don  ~
+    %dox  ~
     %bom  ~
   ==
 ::  Rename every register of a block, definitions included
@@ -3254,6 +3299,7 @@
       %csl  op(s (ren s.op), d (ren d.op))
       %csf  op(s (ren s.op), d (ren d.op))
       %csm  op(s (ren s.op), d (ren d.op))
+      %rtl  op(d (ren d.op))
     ==
   =/  fin  fin.b
   ?-  -.fin
@@ -3268,6 +3314,7 @@
     %jsp  fin(s (ren s.fin))
     %jsf  fin(s (ren s.fin))
     %don  fin(s (ren s.fin))
+    %dox  fin(v [(ren i.v.fin) (turn t.v.fin ren)])
     %bom  fin
   ==
 --
@@ -3316,7 +3363,6 @@
 ::  safe to drop.  The code of a function, inlined into, is found once.
 ::
 ++  inline-max  48   ::  nodes of the code of a function that is inlined
-++  inline-off  |    ::  debug: no inlining
 ::
 ++  nomm-size
   |=  =nomm
@@ -3340,6 +3386,33 @@
                  $(nomm q.nomm, n $(nomm q.p.nomm))
       [%12 *]    $(nomm q.nomm, n $(nomm p.nomm))
       [%mean *]  $(nomm q.nomm, n $(nomm p.nomm))
+  ==
+::  the functions a piece of code calls directly
+::
+++  nomm-callees
+  |=  =nomm
+  ^-  (set bell)
+  =|  out=(set bell)
+  |-  ^-  (set bell)
+  ?-    nomm
+      [^ *]      $(nomm +.nomm, out $(nomm -.nomm))
+      [%0 *]     out
+      [%1 *]     out
+  ::
+      [%2 *]
+    =?  out  ?=(^ info.nomm)  (~(put in out) b.u.info.nomm)
+    $(nomm q.nomm, out $(nomm p.nomm))
+  ::
+      [%3 *]     $(nomm p.nomm)
+      [%4 *]     $(nomm p.nomm)
+      [%5 *]     $(nomm q.nomm, out $(nomm p.nomm))
+      [%6 *]     $(nomm r.nomm, out $(nomm q.nomm, out $(nomm p.nomm)))
+      [%7 *]     $(nomm q.nomm, out $(nomm p.nomm))
+      [%10 *]    $(nomm q.nomm, out $(nomm q.p.nomm))
+      [%11 *]    ?@  p.nomm  $(nomm q.nomm)
+                 $(nomm q.nomm, out $(nomm q.p.nomm))
+      [%12 *]    $(nomm q.nomm, out $(nomm p.nomm))
+      [%mean *]  $(nomm q.nomm, out $(nomm p.nomm))
   ==
 ::
 ++  inlined
@@ -3434,6 +3507,405 @@
     ==
   ::
   [new cache(inl (~(put by inl.cache) b new))]
+::  Products in parts.  A function whose product is a pair on every path
+::  that returns, and a pair it makes itself on one of them at least (a
+::  cons, an edit, the product of a callee that returns in parts), returns
+::  the halves of the pair in registers instead of the cell, and so on into
+::  the halves: the cell is made only where a caller wants it whole.  The
+::  shape is found here, per SCC, before the functions are compiled against
+::  it: the meet of the forms of the returning paths, a fixed point from
+::  %top for the members.
+::
+::  On a path that does not make the pair, the product must still be known
+::  to be one, to be split without a check that could fail: a constant, or
+::  a noun the function has fetched into before (%n).  A pair that no path
+::  makes is returned whole: splitting it would only make the callers that
+::  want it cons it again (measured on +ream of hoon.hoon: a fifth more
+::  cells allocated).
+::
+::  A form that claims less than it could costs speed only, since a call
+::  site receives the shape of its callee, not the form of the call.
+::
+::  Sums (.rets-sums, off: measured, they do not pay in the interpreter).
+::  A product that is an atom on some returning paths and a made pair on
+::  others is returned as a tag register and the halves (%m).  The tag is
+::  the atom itself, or any cell when the product is a pair, so a test of
+::  the product, for a cell or against an atom, is the same test of the
+::  tag: the caller gives the tag to a register that is only tested
+::  (.tst in the compiler's state), checks it for a cell where it fetches
+::  from the product, and conses the pair, on the cell side of a branch
+::  on the tag, only where the product is wanted whole.  The callee fills
+::  the registers where the returned formula shows its form (a cons, a
+::  constant) and tells any other noun apart when it has it (+fill,
+::  +unpack).  An atom that every path agrees on takes no register (%k).
+::
+::  A function with a driver returns one noun, as the driver does.  So does a
+::  memoized call (the interpreter conses for it), and a function of its
+::  whole subject (the .mono ones).
+::
+++  rets-max    6   ::  registers of a product, at most (the interpreter: 8)
+++  rets-sums   |   ::  an atom on some paths and a made pair on others: %m
+++  rets-opaque  |  ::  a noun on some paths and a made pair on others: %m
+++  form-depth  4   ::  depth of the forms followed
+++  rets-known  &   ::  nouns the function fetched into are pairs too
+++  inline-off  |   ::  debug: no inlining
+::
+++  form-pair
+  |=  [made=? h=form t=form]
+  ^-  form
+  ?:(made [%c h t] [%n h t])
+::
+++  form-atom
+  |=  f=form
+  ^-  ?
+  |(?=(%a f) &(?=([%k *] f) ?=(@ n.f)))
+::  the halves of a form, where it is a pair
+::
+++  form-half
+  |=  f=form
+  ^-  (unit [p=form q=form])
+  ?@  f  ~
+  ?-  -.f
+    %c  `[h.f t.f]
+    %n  `[h.f t.f]
+    %m  `[h.f t.f]
+    %k  ?@(n.f ~ `[[%k -.n.f] [%k +.n.f]])
+  ==
+::
+++  form-meet
+  |=  [a=form b=form d=@ud]
+  ^-  form
+  ?:  ?=(%top a)  b
+  ?:  ?=(%top b)  a
+  ?:  =(a b)  a
+  =/  aa=?  (form-atom a)
+  =/  ab=?  (form-atom b)
+  ?:  &(aa ab)  %a
+  ::  an atom on one side: a sum, if the other side makes a pair
+  ::
+  ?:  |(aa ab)
+    =/  c=form  ?:(aa b a)
+    ?.  rets-sums  %one
+    ?:  ?=([%c *] c)  [%m h.c t.c]
+    ?:  ?=([%m *] c)  c
+    %one
+  ::  a noun on one side: a sum, to be told apart when it is returned
+  ::
+  ?:  |(?=(%one a) ?=(%one b))
+    =/  c=form  ?:(?=(%one a) b a)
+    ?.  &(rets-sums rets-opaque !=(0 d))  %one
+    ?.  ?=([?(%c %m) *] c)  %one
+    :+  %m
+      $(a %one, b h.c, d (dec d))
+    $(a %one, b t.c, d (dec d))
+  ?:  =(0 d)  %one
+  =/  ha  (form-half a)
+  =/  hb  (form-half b)
+  ?~  ha  %one
+  ?~  hb  %one
+  =/  h=form  $(a p.u.ha, b p.u.hb, d (dec d))
+  =/  t=form  $(a q.u.ha, b q.u.hb, d (dec d))
+  ?:  |(?=([%m *] a) ?=([%m *] b))  [%m h t]
+  ::  made on one path at least: worth returning in parts
+  ::
+  (form-pair |(?=([%c *] a) ?=([%c *] b)) h t)
+::
+++  form-slot
+  |=  [axe=@ f=form]
+  ^-  form
+  ?:  =(1 axe)  f
+  ?:  ?=(%a f)  %top
+  ?@  f  f
+  =/  h  (form-half f)
+  ?~  h  %top
+  ?-  (cap axe)
+    %2  $(axe (mas axe), f p.u.h)
+    %3  $(axe (mas axe), f q.u.h)
+  ==
+::
+++  form-edit
+  |=  [axe=@ don=form rec=form]
+  ^-  form
+  ?:  =(1 axe)  don
+  ?:  ?=(?(%top %a) rec)  %top
+  =/  h=(unit [p=form q=form])
+    ?:  ?=(%one rec)  `[%one %one]
+    (form-half rec)
+  ?~  h  %top
+  ?-  (cap axe)
+    %2  [%c $(axe (mas axe), rec p.u.h) q.u.h]
+    %3  [%c p.u.h $(axe (mas axe), rec q.u.h)]
+  ==
+::
+++  form-cap
+  |=  [f=form d=@ud]
+  ^-  form
+  ?@  f  f
+  ?:  ?=(%k -.f)  f
+  ?:  =(0 d)  %one
+  =/  h=form  $(f h.f, d (dec d))
+  =/  t=form  $(f t.f, d (dec d))
+  ?:  ?=(%m -.f)  [%m h t]
+  (form-pair ?=(%c -.f) h t)
+::  the shape a form is returned in: a pair or a sum that was made, a
+::  constant atom below one
+::
+++  form-rets
+  |=  f=form
+  ^-  rets
+  =/  top=?  &
+  |-  ^-  rets
+  ?@  f  ~
+  ?-  -.f
+    %n  ~
+    %k  ?:(|(top !rets-sums ?=(^ n.f)) ~ [%k n.f])
+    %c  [%c $(f h.f, top |) $(f t.f, top |)]
+    %m  [%m $(f h.f, top |) $(f t.f, top |)]
+  ==
+::
+++  rets-form
+  |=  r=rets
+  ^-  form
+  ?~  r  %one
+  ?-  -.r
+    %k  [%k n.r]
+    %c  [%c $(r p.r) $(r q.r)]
+    %m  [%m $(r p.r) $(r q.r)]
+  ==
+::  registers of a shape
+::
+++  rets-size
+  |=  r=rets
+  ^-  @ud
+  ?~  r  1
+  ?-  -.r
+    %k  0
+    %c  (add $(r p.r) $(r q.r))
+    %m  +((add $(r p.r) $(r q.r)))
+  ==
+::  a shape cut down to .n registers at most
+::
+++  rets-trim
+  |=  [r=rets n=@ud]
+  ^-  rets
+  ?~  r  ~
+  ?-    -.r
+      %k  r
+      %c
+    ?:  (lth n 2)  ~
+    =/  h=rets  $(r p.r, n (dec n))
+    [%c h $(r q.r, n (sub n (rets-size h)))]
+  ::
+      %m
+    ?:  (lth n 3)  ~
+    =/  h=rets  $(r p.r, n (sub n 2))
+    [%m h $(r q.r, n (sub n +((rets-size h))))]
+  ==
+::  what a fetch of .axe tells of the noun fetched from: it has cells down
+::  to the axis; .cel: the noun at the axis is a cell too
+::
+++  form-know
+  |=  [axe=@ f=form cel=?]
+  ^-  form
+  ?:  ?=(%top f)  %top
+  ?:  ?=(%a f)  ?:(|(cel !=(1 axe)) %top %a)
+  ?:  ?=([%k *] f)  f
+  ?:  =(1 axe)
+    ?.  cel  f
+    ?:  ?=(%one f)  [%n %one %one]
+    ?:  ?=([%m *] f)  [%c h.f t.f]
+    f
+  =/  h=[made=? p=form q=form]
+    ?:  ?=(%one f)  [| %one %one]
+    [?=(?(%c %m) -.f) h.f t.f]
+  ?-  (cap axe)
+    %2  (form-pair made.h $(axe (mas axe), f p.h) q.h)
+    %3  (form-pair made.h p.h $(axe (mas axe), f q.h))
+  ==
+::  what a test told of the noun at .axe, which was fetched before
+::
+++  form-jab
+  |=  [axe=@ f=form fun=$-(form form)]
+  ^-  form
+  ?:  =(1 axe)  (fun f)
+  ?@  f  f
+  ?:  ?=(%k -.f)  f
+  =/  made=?  ?=(?(%c %m) -.f)
+  ?-  (cap axe)
+    %2  (form-pair made $(axe (mas axe), f h.f) t.f)
+    %3  (form-pair made h.f $(axe (mas axe), f t.f))
+  ==
+::  What a test tells each branch of the part of the subject it tested: a
+::  cell or an atom, or the atom it was found equal to.  The atom and the
+::  equality matter to sums only
+::
+++  form-test
+  |=  [=nomm sub=form]
+  ^-  [yes=form nay=form]
+  ?.  rets-known  [sub sub]
+  ?:  &(?=([%3 %0 @] nomm) !=(0 p.p.nomm))
+    :-  (form-know p.p.nomm sub &)
+    ?.  rets-sums  sub
+    (form-jab p.p.nomm sub |=(f=form ?:(?=(?(%one [%m *]) f) %a f)))
+  ?.  rets-sums  [sub sub]
+  =/  eq=(unit [axe=@ n=@])
+    ?:  ?=([%5 [%1 @] %0 @] nomm)  `[p.q.nomm p.p.nomm]
+    ?:  ?=([%5 [%0 @] %1 @] nomm)  `[p.p.nomm p.q.nomm]
+    ~
+  ?~  eq  [sub sub]
+  ?:  =(0 axe.u.eq)  [sub sub]
+  :_  sub
+  (form-jab axe.u.eq sub |=(f=form `form`[%k n.u.eq]))
+::  form of the product of a formula on a subject of the form .sub; .loc
+::  has the forms of the SCC so far, .ext the shapes of the functions
+::  outside.  The form of the subject is refined along the way by what the
+::  formula fetches from it (.rets-known): a noun that was fetched into is
+::  a cell where it is returned later.
+::
+++  form-of
+  ~%  %form-of  ..ride  ~
+  |=  $:  =nomm
+          sub=form
+          scc=(set bell)
+          loc=(map bell form)
+          ext=(map bell rets)
+      ==
+  ^-  form
+  =<  pro
+  |-  ^-  [pro=form sub=form]
+  ?-    nomm
+      [^ *]
+    =/  a  $(nomm -.nomm)
+    =/  b  $(nomm +.nomm, sub sub.a)
+    [[%c pro.a pro.b] sub.b]
+  ::
+      [%0 *]
+    ?:  =(0 p.nomm)  [%top %top]
+    =?  sub  rets-known  (form-know p.nomm sub |)
+    [(form-slot p.nomm sub) sub]
+  ::
+      [%1 *]  [[%k p.nomm] sub]
+  ::
+      [%2 *]
+    =/  a  $(nomm p.nomm)
+    =/  b  $(nomm q.nomm, sub sub.a)
+    :_  sub.b
+    ?~  info.nomm  %one
+    ?^  k.u.info.nomm  %one
+    ?:  (~(has in scc) b.u.info.nomm)  (~(gut by loc) b.u.info.nomm %top)
+    (rets-form (~(gut by ext) b.u.info.nomm ~))
+  ::
+      [%3 *]  [%a sub:$(nomm p.nomm)]
+      [%4 *]  [%a sub:$(nomm p.nomm)]
+  ::
+      [%5 *]
+    =/  a  $(nomm p.nomm)
+    [%a sub:$(nomm q.nomm, sub sub.a)]
+  ::
+      [%6 *]
+    =/  c  $(nomm p.nomm)
+    =/  [yes=form nay=form]  (form-test p.nomm sub.c)
+    =/  y  $(nomm q.nomm, sub yes)
+    =/  n  $(nomm r.nomm, sub nay)
+    ?:  ?=(%top pro.y)  n
+    ?:  ?=(%top pro.n)  y
+    ::  past the branches the subject is known as it was before them: what
+    ::  both branches fetched is not looked for, a meet of two forms of the
+    ::  subject at every branch being most of the cost of this pass on the
+    ::  large arms of the compiler
+    ::
+    [(form-meet pro.y pro.n form-depth) sub.c]
+  ::
+      [%7 *]
+    =/  a  $(nomm p.nomm)
+    [pro:$(nomm q.nomm, sub pro.a) sub.a]
+  ::
+      [%10 *]
+    =/  a  $(nomm q.p.nomm)
+    =/  b  $(nomm q.nomm, sub sub.a)
+    [(form-edit p.p.nomm pro.a pro.b) sub.b]
+  ::
+      [%11 *]
+    ?@  p.nomm  $(nomm q.nomm)
+    =/  a  $(nomm q.p.nomm)
+    $(nomm q.nomm, sub sub.a)
+  ::
+      [%12 *]
+    =/  a  $(nomm p.nomm)
+    [%one sub:$(nomm q.nomm, sub sub.a)]
+  ::
+      [%mean *]
+    =/  a  $(nomm p.nomm)
+    $(nomm q.nomm, sub sub.a)
+  ==
+::  the shapes of the products of an SCC, into the cache; of its callees
+::  first
+::
+++  rets-scc
+  ~%  %rets-scc  ..ride  ~
+  |=  $:  scc=(set bell)
+          long-ska=_[=_code =_jets =_calls]:*long-ska
+          jets-hot=jets-comp
+          cache=comp-cache
+      ==
+  ^-  comp-cache
+  =*  rets-loop  $
+  =/  mem=(list bell)  ~(tap in scc)
+  ?:  (levy mem ~(has by rets.cache))  cache
+  =.  cache
+    %+  roll  mem
+    |=  [m=bell cache=_cache]
+    =^  n=nomm  cache  (inlined m long-ska jets-hot cache)
+    ::  the callees of the code as it was, too: the function of the whole
+    ::  subject calls them (+compile-unary)
+    ::
+    %-  %~  rep  in
+        %-  ~(uni in (nomm-callees n))
+        (nomm-callees nomm:(~(got by code.long-ska) m))
+    |=  [c=bell cache=_cache]
+    ?:  |((~(has in scc) c) (~(has by rets.cache) c))  cache
+    =^  s=(set bell)  sccs.cache  (scc-of c calls.long-ska sccs.cache)
+    rets-loop(scc s, cache cache)
+  ::
+  =/  hot
+    |=  b=bell
+    ^-  ?
+    ?=(^ (biff (~(get by call.cole.jets.long-ska) b) ~(get by jets-hot)))
+  ::
+  =/  loc=(map bell form)
+    %-  ~(gas by *(map bell form))
+    (murn mem |=(b=bell ?:((hot b) `[b %one] ~)))
+  ::
+  =/  fuel=@ud  32
+  |-  ^-  comp-cache
+  =/  res=[any=? loc=(map bell form)]
+    %+  roll  mem
+    |=  [m=bell any=_`?`| loc=_loc]
+    ?:  (hot m)  [any loc]
+    =/  f=form
+      %+  form-cap
+        %:  form-of
+          (~(got by inl.cache) m)
+          %one
+          scc
+          loc
+          rets.cache
+        ==
+      form-depth
+    ?:  =(f (~(gut by loc) m %top))  [any loc]
+    [& (~(put by loc) m f)]
+  ::
+  ?:  &(any.res !=(0 fuel))  $(loc loc.res, fuel (dec fuel))
+  =?  loc.res  any.res  ~
+  %=    cache
+      rets
+    %-  ~(gas by rets.cache)
+    %+  turn  mem
+    |=  b=bell
+    =/  r=rets
+      (rets-trim (form-rets (~(gut by loc.res) b %top)) rets-max)
+    [b ?:(=(0 (rets-size r)) ~ r)]
+  ==
 ::
 ++  compile-unary
   ~%  %compile-unary  ..ride  ~
@@ -3492,6 +3964,7 @@
     :_  cache
     %-  ~(gas by *(map bell straight))
     (turn ~(tap in scc) |=(b=bell [b (~(got by nary.cache) b)]))
+  =.  cache  (rets-scc scc long-ska jets-hot cache)
   ::  Only the subject shapes in .map-local are read by the loop, so the rest
   ::  of the straight is a placeholder until the fixed point is reached, when
   ::  the whole SCC is compiled once more with .done set, this time for real
@@ -3532,6 +4005,7 @@
     ::
     =|  gen=line-short
     =.  cache.gen  cache
+    =.  mine.gen   (~(got by rets.cache) b)
     ::  Baking: the leaves of the shape inside what the bell knows of the
     ::  subject are immediates loaded in the prologue, not arguments: .bak
     ::  has the shape of the arguments and the registers to load, .ned-final
@@ -3869,13 +4343,14 @@
     ~%  %comp-run  ..ride  ~
     |=  [mono=? =nomm =goal region=(list @uxid) sup=(unit nomm)]
     |^  ^-  [next _gen]
+    ?:  &(?=(%done -.goal) !(rets-plain mine) !(done-through mono nomm))
+      done-sum
     ?-    nomm
         [^ *]
       =>  =*  dot  .
           ?.  ?=(%done -.goal)  dot
-          =^  r  gen  re
-          =^  o  gen  (emit ~ ~ [%don r])
-          dot(goal [%next (lazy-from-reg r) ~ o])
+          =^  nex  gen  done-next
+          dot(goal nex)
       ::
       ?-    -.goal
           %pick
@@ -3914,8 +4389,12 @@
         [%1 *]
       ?-    -.goal
           %done
-        =^  r  gen  re
-        =^  o  gen  (emit ~ ~[imm+[p.nomm r]] don+r)
+        ?:  =(~ mine)
+          =^  r  gen  re
+          =^  o  gen  (emit ~ ~[imm+[p.nomm r]] don+r)
+          [[%next *need-lazy ~ o] gen]
+        =^  nex  gen  done-next
+        =^  o  gen  (mede then.nex p.nomm laz.nex)
         [[%next *need-lazy ~ o] gen]
       ::
           %pick
@@ -4000,6 +4479,9 @@
                 (hinted q.nomm code.long-ska)
             ==
         ==
+      ::  the shape the callee returns its product in
+      ::
+      =/  ret=rets  (callee-rets b-callee key)
       =^  call-blocks=$@(@uwoo [opt=@uwoo pes=[sub=@uvre o=@uwoo]])  gen
         =/  call-op
           |=  [pes=(unit @uvre) pro=@uvre]
@@ -4023,32 +4505,52 @@
             [%jsp b-callee u.pes]
           ?~  pes  [%jmf b-callee sub-v u.rin]
           [%jsf b-callee u.pes u.rin]
-        ::  Memoized calls are never TCO'd
+        ::  the parts of the product after the first, into their registers
         ::
-        ?:  &(?=(~ key) ?=(%done -.goal))
+        =/  rtls
+          |=  regs=(list @uvre)
+          ^-  (list pole)
+          =/  i=@ud  1
+          |-  ^-  (list pole)
+          ?~  regs  ~
+          [[%rtl i i.regs] $(regs t.regs, i +(i))]
+        ::  Memoized calls are never TCO'd, nor is a call whose product comes
+        ::  in other parts than this function's
+        ::
+        ?:  &(?=(~ key) ?=(%done -.goal) =(ret mine))
           ?.  mono
             =^  o  gen  (emit ~ ~ (jump-op ~))
             =?  gen  sof
-              (soft-new o %tail b-callee rin sub-ned b-sur *@uvre *@uwoo ~)
+              (soft-new o %tail b-callee rin sub-ned b-sur ~ ret *@uwoo ~)
             [o gen]
           =^  sub-pes  gen  re
           =^  opt  gen  (emit ~ ~ (jump-op ~))
           =^  pes  gen  (emit ~ ~ (jump-op `sub-pes))
           [[opt sub-pes pes] gen]
         =^  nex  gen  simple-next
-        =^  [out=@uwoo pro=@uvre]  gen  (kerf nex)
         ?.  mono
-          =^  o  gen  (emit ~ ~[(call-op ~ pro)] %hop ~ out)
+          =^  [regs=(list @uvre) out=@uwoo]  gen  (spread nex ret)
+          ?>  ?=(^ regs)
+          =^  o  gen
+            (emit ~ [(call-op ~ i.regs) (rtls t.regs)] %hop ~ out)
+          ::
           =?  gen  sof
-            (soft-new o %call b-callee rin sub-ned b-sur pro out ~)
+            (soft-new o %call b-callee rin sub-ned b-sur regs ret out ~)
           [o gen]
+        =^  [out=@uwoo pro=@uvre]  gen  (kerf nex)
         =^  merged   gen  re
         =^  sub-pes  gen  re
         =^  merge    gen  (emit ~[merged] [%mov merged pro]~ %hop ~ out)
-        =^  pro-opt  gen  re
         =^  pro-pes  gen  re
+        ::  a function of its whole subject takes the product whole
+        ::
+        =^  regs=(list @uvre)  gen  (rets-regs ret)
+        ?>  ?=(^ regs)
+        =^  y  gen  oo
+        =^  [ob=@uwoo pro-opt=@uvre]  gen  (whole-of ret regs y)
+        =.  gen  (emir y ~ ~ %hop ~[`pro-opt] merge)
         =^  opt      gen
-          (emit ~ ~[(call-op ~ pro-opt)] %hop ~[`pro-opt] merge)
+          (emit ~ [(call-op ~ i.regs) (rtls t.regs)] %hop ~ ob)
         ::
         =^  pes      gen
           (emit ~ ~[(call-op `sub-pes pro-pes)] %hop ~[`pro-pes] merge)
@@ -4089,6 +4591,7 @@
               %pick  dot
           ::
               %done
+            ?>  =(~ mine)
             =^  r-0  gen  re
             =^  r-1  gen  re
             =^  o-0  gen  (emit ~ [%imm 0 r-0]~ %don r-0)
@@ -4103,12 +4606,14 @@
           ==
       ::
       =^  r  gen  re
+      =?  tst.gen  rets-sums  (~(put in tst.gen) r)
       =^  o  gen  (emit ~ ~ clq+[r [z o]:goal])
       $(nomm p.nomm, goal [%next (lazy-from-need this+r) ~ o])
     ::
         [%4 *]
       ?-    -.goal
           %done
+        ?>  =(~ mine)
         =^  pro  gen  re
         =^  arg  gen  re
         =^  o    gen  (emit ~ [%inc arg pro]~ %don pro)
@@ -4141,6 +4646,7 @@
             %pick  (emit ~ ~ eqq+[r-p r-q [z o]:goal])
         ::
             %done
+          ?>  =(~ mine)
           =^  r-0  gen  re
           =^  r-1  gen  re
           =^  o-0  gen  (emit ~ [%imm 0 r-0]~ %don r-0)
@@ -4157,7 +4663,10 @@
           =^  [z=@uwoo o=@uwoo]  gen  (forl r.u.a o.u.a)
           (emit ~ ~ eqq+[r-p r-q ~^z ~^o])
         ==
+      ::  a noun compared with an atom is only tested
       ::
+      =?  tst.gen  &(rets-sums ?=([%1 @] p.nomm))  (~(put in tst.gen) r-q)
+      =?  tst.gen  &(rets-sums ?=([%1 @] q.nomm))  (~(put in tst.gen) r-p)
       =^  nex-q  gen
         $(nomm q.nomm, goal [%next (lazy-from-need this+r-q) ~ o])
       ::
@@ -4193,7 +4702,7 @@
         ::  So we do when the lazy need is big (+lazy-max): each branch
         ::  would take a copy of it.
         ::
-        ?:  ?|  &((whole q.nomm) (whole r.nomm))
+        ?:  ?|  &((whole-here mono q.nomm) (whole-here mono r.nomm))
                 (this-only laz.goal)
                 (lazy-big (soft-less laz.goal))
                 (soft-fork laz.goal q.nomm r.nomm)
@@ -4356,7 +4865,7 @@
         ?:  (sound p.nomm b-ned)  [nex-arg gen]
         =.  gen
           %:  soft-new
-            prol  %mean  b.nomm  ~  sub-ned  [%none ~]  *@uvre
+            prol  %mean  b.nomm  ~  sub-ned  [%none ~]  ~  ~
             there.then.nex-fol2  [epil body.nomm]
           ==
         (soft-bond nex-arg region)
@@ -4382,15 +4891,388 @@
     ::
     ++  simple-next
       ^-  [next _gen]
-      ?:  ?=(%next -.goal)  [goal gen]
-      =^  r  gen  re
-      =^  o  gen
-        %^  emit  ~  ~
-        ?:  ?=(%done -.goal)  [%don r]
-        [%brn r [z o]:goal]
+      ?-    -.goal
+          %next  [goal gen]
+          %done  done-next
       ::
-      [[%next [[this+r ~] ~ ~] ~ o] gen]
+          %pick
+        =^  r  gen  re
+        =^  o  gen  (emit ~ ~ [%brn r [z o]:goal])
+        [[%next [[this+r ~] ~ ~] ~ o] gen]
+      ==
+    ::  the shape this function returns its product in
+    ::
+    ++  mine  (rets-mine mono)
+    ::  The goal of a product that is returned: in one register, or in parts
+    ::
+    ++  done-next
+      ^-  [next _gen]
+      =/  ret=rets  mine
+      ?~  ret
+        =^  r  gen  re
+        =^  o  gen  (emit ~ ~ [%don r])
+        [[%next [[this+r ~] ~ ~] ~ o] gen]
+      =^  ned=need  gen  (rets-need ret)
+      =/  v=(list @uvre)  (flatten-need ned)
+      ?>  ?=(^ v)
+      =^  o  gen  (emit ~ ~ [%dox v ret])
+      [[%next [[ned ~] ~ ~] ~ o] gen]
+    ::  A product returned by a shape with sums: its registers are filled
+    ::  by the formula, as far as its form shows
+    ::
+    ++  done-sum
+      ^-  [next _gen]
+      =/  ret=rets  mine
+      =^  v=(list @uvre)  gen  (rets-regs ret)
+      ?>  ?=(^ v)
+      =^  o  gen  (emit ~ ~ [%dox v ret])
+      (fill nomm ret v [~ o])
+    ::  Code for .nom, its product into the registers .v by the shape .ret,
+    ::  then to .then.  A cons fills the halves, of a sum too, under any
+    ::  cell as the tag; a constant atom is the tag of its sum; any other
+    ::  formula is asked for the pairs of the shape and its sums whole,
+    ::  which are told apart when it is done (+unpack)
+    ::
+    ++  fill
+      |=  [nom=^nomm ret=rets v=(list @uvre) then=jmp]
+      ^-  [next _gen]
+      ?~  ret
+        ?>  ?=(^ v)
+        ^$(nomm nom, goal [%next (lazy-from-reg i.v) then])
+      ?:  ?=(%k -.ret)
+        ^$(nomm nom, goal [%next *need-lazy then])
+      ?:  ?=([%7 *] nom)
+        =^  nex  gen  $(nom q.nom)
+        ^$(nomm p.nom, goal nex)
+      =/  [vp=(list @uvre) vq=(list @uvre)]
+        =/  w=(list @uvre)  ?:(?=(%m -.ret) (slag 1 v) v)
+        =/  n=@ud  (rets-size p.ret)
+        [(scag n w) (slag n w)]
+      ::  the tag of a pair: any cell
+      ::
+      =/  tag
+        |=  then=jmp
+        ^-  [jmp _gen]
+        ?.  ?=(%m -.ret)  [then gen]
+        ?>  ?=(^ v)
+        =^  o  gen  (emit ~ [%imm [0 0] i.v]~ %hop then)
+        [[~ o] gen]
+      ::
+      ?:  ?=([^ *] nom)
+        =^  then  gen  (tag then)
+        =^  nex-2  gen  $(nom +.nom, ret q.ret, v vq, then then)
+        =^  nex-1  gen  $(nom -.nom, ret p.ret, v vp, then then.nex-2)
+        (copy nex-1 laz.nex-2)
+      ?:  ?=([%1 *] nom)
+        ?@  p.nom
+          ?:  ?=(%c -.ret)  (bomb ~)
+          ?>  ?=(^ v)
+          =^  o  gen
+            %^  emit  ~
+              [[%imm p.nom i.v] (turn t.v |=(x=@uvre `pole`[%imm 0 x]))]
+            [%hop then]
+          [[%next *need-lazy ~ o] gen]
+        =^  then  gen  (tag then)
+        =^  nex-2  gen  $(nom [%1 +.p.nom], ret q.ret, v vq, then then)
+        $(nom [%1 -.p.nom], ret p.ret, v vp, then then.nex-2)
+      =^  [ned=need o=@uwoo]  gen  (unpack ret v then)
+      ^$(nomm nom, goal [%next (lazy-from-need ned) ~ o])
     --
+  ::
+  ++  rets-mine
+    |=  mono=?
+    ^-  rets
+    ?:(mono ~ mine.gen)
+  ::  A memoized call produces one noun
+  ::
+  ++  callee-rets
+    |=  [b-callee=bell key=(unit *)]
+    ^-  rets
+    ?^  key  ~
+    ~|  %rets-missing-callee
+    (~(got by rets.cache.gen) b-callee)
+  ::  +whole, but a call that returns in parts is not whole
+  ::
+  ++  whole-here
+    |=  [mono=? =nomm]
+    ^-  ?
+    ?:  mono  (whole nomm)
+    |-  ^-  ?
+    ?+  nomm  |
+      [%1 @]     &
+      [%2 *]     ?~(info.nomm & =(~ (callee-rets u.info.nomm)))
+      [%3 *]     &
+      [%4 *]     &
+      [%5 *]     &
+      [%12 *]    &
+      [%6 *]     &($(nomm q.nomm) $(nomm r.nomm))
+      [%7 *]     $(nomm q.nomm)
+      [%11 *]    $(nomm q.nomm)
+      [%mean *]  $(nomm q.nomm)
+    ==
+  ::  no sums in the shape: the product is asked for by a plain need
+  ::
+  ++  rets-plain
+    |=  ret=rets
+    ^-  ?
+    ?~  ret  &
+    ?-  -.ret
+      %k  &
+      %m  |
+      %c  &($(ret p.ret) $(ret q.ret))
+    ==
+  ::  registers for the parts of a product of a plain shape, as a need
+  ::
+  ++  rets-need
+    |=  ret=rets
+    ^-  [need _gen]
+    ?~  ret  =^(r gen re [this+r gen])
+    ?-    -.ret
+        %k  [[%none ~] gen]
+        %m  !!
+        %c
+      =^  h  gen  $(ret p.ret)
+      =^  t  gen  $(ret q.ret)
+      ?:  &(?=(%none -.h) ?=(%none -.t))  [[%none ~] gen]
+      [[h t] gen]
+    ==
+  ::
+  ++  rets-ord
+    |=  ret=rets
+    ^-  need-ordered
+    ?~  ret  [%this ~]
+    ?-    -.ret
+        %k  [%none ~]
+        %m  !!
+        %c
+      =/  h  $(ret p.ret)
+      =/  t  $(ret q.ret)
+      ?:  &(?=(%none -.h) ?=(%none -.t))  [%none ~]
+      [h t]
+    ==
+  ::  the need of a noun that +unpack takes apart by the shape .ret: a sum
+  ::  is asked for whole
+  ::
+  ++  unpack-ord
+    |=  ret=rets
+    ^-  need-ordered
+    ?~  ret  [%this ~]
+    ?-    -.ret
+        %k  [%none ~]
+        %m  [%this ~]
+        %c
+      =/  h  $(ret p.ret)
+      =/  t  $(ret q.ret)
+      ?:  &(?=(%none -.h) ?=(%none -.t))  [%none ~]
+      [h t]
+    ==
+  ::  fresh registers for a shape, in the order of its registers
+  ::
+  ++  rets-regs
+    |=  ret=rets
+    ^-  [(list @uvre) _gen]
+    =/  n=@ud  (rets-size ret)
+    =|  out=(list @uvre)
+    |-  ^-  [(list @uvre) _gen]
+    ?:  =(0 n)  [(flop out) gen]
+    =^  r  gen  re
+    $(n (dec n), out [r out])
+  ::  a product returned by the shape of this function without ending here:
+  ::  the formula passes the goal on (+run)
+  ::
+  ++  done-through
+    |=  [mono=? =nomm]
+    ^-  ?
+    ?+    nomm  |
+        [%6 *]  &
+        [%7 *]  &
+    ::
+        [%2 *]
+      ?~  info.nomm  |
+      &(?=(~ k.u.info.nomm) =((callee-rets u.info.nomm) (rets-mine mono)))
+    ::
+        [%11 *]
+      ?@  p.nomm  !?=(hint-static p.nomm)
+      !?=(hint-dynamic p.p.nomm)
+    ==
+  ::  Receive a product in parts: the lazy need of the product, split along
+  ::  the shape of the callee, each part collapsed to one register.
+  ::  Produces the registers of the parts and the block to go to.
+  ::
+  ::  A sum arrives as a tag and the halves.  Where the product is only
+  ::  tested, the tag stands in for it; where its halves are fetched, the
+  ::  tag is checked to be a cell, as the product would be; where it is
+  ::  wanted whole, it is consed on the pair side of a branch on the tag
+  ::  (+split-need-tag).
+  ::
+  ++  spread
+    |=  [nex=next ret=rets]
+    ^-  [[(list @uvre) @uwoo] _gen]
+    ?~  ret
+      =^  [o=@uwoo r=@uvre]  gen  (kerf nex)
+      [[~[r] o] gen]
+    ?-    -.ret
+        %k
+      =^  o=@uwoo  gen  (mede then.nex n.ret laz.nex)
+      [[~ o] gen]
+    ::
+        %c
+      =^  [hed=need-lazy tel=need-lazy o=@uwoo]  gen  (split nex)
+      =^  [rt=(list @uvre) ot=@uwoo]  gen  $(nex [%next tel ~ o], ret q.ret)
+      =^  [rh=(list @uvre) oh=@uwoo]  gen  $(nex [%next hed ~ ot], ret p.ret)
+      [[(weld rh rt) oh] gen]
+    ::
+        %m
+      =^  tag  gen  re
+      =^  [hed=need-lazy tel=need-lazy o=@uwoo]  gen  (split-tag nex tag)
+      =^  [rt=(list @uvre) ot=@uwoo]  gen  $(nex [%next tel ~ o], ret q.ret)
+      =^  [rh=(list @uvre) oh=@uwoo]  gen  $(nex [%next hed ~ ot], ret p.ret)
+      [[[tag (weld rh rt)] oh] gen]
+    ==
+  ::  Blocks that cons the parts .v of a product of the shape .ret, then go
+  ::  to .then.  Produces the first block and the register of the product
+  ::
+  ++  whole-of
+    |=  [ret=rets v=(list @uvre) then=@uwoo]
+    ^-  [[@uwoo @uvre] _gen]
+    ?~  ret
+      ?>  ?=(^ v)
+      [[then i.v] gen]
+    ?-    -.ret
+        %k
+      =^  d  gen  re
+      =^  o  gen  (emit ~ [%imm n.ret d]~ %hop ~ then)
+      [[o d] gen]
+    ::
+        %c
+      =/  n=@ud  (rets-size p.ret)
+      =^  d  gen  re
+      =^  x  gen  oo
+      =^  [oq=@uwoo dq=@uvre]  gen  $(ret q.ret, v (slag n v), then x)
+      =^  [op=@uwoo dp=@uvre]  gen  $(ret p.ret, v (scag n v), then oq)
+      =.  gen  (emir x ~ [%con dp dq d]~ %hop ~ then)
+      [[op d] gen]
+    ::
+        %m
+      ?>  ?=(^ v)
+      =/  n=@ud  (rets-size p.ret)
+      =^  d  gen  re
+      =^  j  gen  (emit ~[d] ~ %hop ~ then)
+      =^  a  gen  (emit ~ ~ %hop ~[`i.v] j)
+      =^  dk  gen  re
+      =^  x  gen  oo
+      =^  [oq=@uwoo dq=@uvre]  gen  $(ret q.ret, v (slag n t.v), then x)
+      =^  [op=@uwoo dp=@uvre]  gen  $(ret p.ret, v (scag n t.v), then oq)
+      =.  gen  (emir x ~ [%con dp dq dk]~ %hop ~[`dk] j)
+      =^  o  gen  (emit ~ ~ [%clq i.v [~ op] [~ a]])
+      [[o d] gen]
+    ==
+  ::  Blocks that take the noun in .r apart into the registers .v by the
+  ::  shape .ret, then go to .then.  A sum is told apart here: a cell goes
+  ::  to its halves under any cell as the tag, an atom is its own tag
+  ::
+  ++  conv
+    |=  [r=@uvre ret=rets v=(list @uvre) then=@uwoo cold=?]
+    ^-  [@uwoo _gen]
+    ?~  ret
+      ?>  ?=(^ v)
+      (emit-as cold ~ [%mov r i.v]~ %hop ~ then)
+    ?-    -.ret
+        %k  [then gen]
+        %c
+      =/  n=@ud  (rets-size p.ret)
+      =^  h  gen  re
+      =^  t  gen  re
+      =^  oq  gen  $(r t, ret q.ret, v (slag n v))
+      =^  op  gen  $(r h, ret p.ret, v (scag n v), then oq)
+      (emit-as cold ~ ~[[%cel r] [%hed r h] [%tal r t]] %hop ~ op)
+    ::
+        %m
+      ?>  ?=(^ v)
+      ::  the join takes the registers of the shape as parameters
+      ::
+      =^  j  gen  (emit-as cold v ~ %hop ~ then)
+      =^  z  gen  re
+      =^  a  gen
+        %:  emit-as  cold  ~  [%imm 0 z]~
+          [%hop [`r (turn t.v |=(* `(unit @uvre)``z))] j]
+        ==
+      ::
+      =^  w=(list @uvre)  gen  (rets-regs ret)
+      ?>  ?=(^ w)
+      =^  e  gen
+        %:  emit-as  cold  ~  ~
+          [%hop (turn `(list @uvre)`w |=(x=@uvre `(unit @uvre)``x)) j]
+        ==
+      ::
+      =/  n=@ud  (rets-size p.ret)
+      =^  h  gen  re
+      =^  t  gen  re
+      =^  oq  gen  $(r t, ret q.ret, v (slag n t.w), then e)
+      =^  op  gen  $(r h, ret p.ret, v (scag n t.w), then oq)
+      =^  k  gen
+        (emit-as cold ~ ~[[%imm [0 0] i.w] [%hed r h] [%tal r t]] %hop ~ op)
+      ::
+      (emit-as cold ~ ~ [%clq r [~ k] [~ a]])
+    ==
+  ::  The need of a noun whose parts go into the registers .v by the shape
+  ::  .ret, and the block that takes its sums apart (+conv) and goes to
+  ::  .then: the pairs of the shape are asked for by the need
+  ::
+  ++  unpack
+    |=  [ret=rets v=(list @uvre) then=jmp]
+    ^-  [[need @uwoo] _gen]
+    =^  end=@uwoo  gen  (emit ~ ~ %hop then)
+    |-  ^-  [[need @uwoo] _gen]
+    ?~  ret
+      ?>  ?=(^ v)
+      [[this+i.v end] gen]
+    ?-    -.ret
+        %k  [[[%none ~] end] gen]
+        %c
+      =/  n=@ud  (rets-size p.ret)
+      =^  [nq=need oq=@uwoo]  gen  $(ret q.ret, v (slag n v))
+      =^  [np=need op=@uwoo]  gen  $(ret p.ret, v (scag n v), end oq)
+      ?:  &(?=(%none -.np) ?=(%none -.nq))  [[[%none ~] op] gen]
+      [[[np nq] op] gen]
+    ::
+        %m
+      =^  r  gen  re
+      =^  o  gen  (conv r ret v end |)
+      [[this+r o] gen]
+    ==
+  ::  Registers that are read as nouns are not test registers.  A register
+  ::  made for a test (Nock 3, Nock 5 with an atom) is in .tst as long as
+  ::  nothing but tests, cell checks and moves into such registers reads it:
+  ::  a sum received in parts gives such a register its tag (+spread)
+  ::
+  ++  tst-read
+    |=  [ops=(list pole) fin=(unit termin)]
+    ^+  gen
+    ?:  =(~ tst.gen)  gen
+    =/  del
+      |=  [rs=(list @uvre) tst=(set @uvre)]
+      ^-  (set @uvre)
+      ?~  rs  tst
+      $(rs t.rs, tst (~(del in tst) i.rs))
+    ::
+    =.  tst.gen
+      %+  roll  ops
+      |=  [op=pole tst=_tst.gen]
+      ?+  -.op  (del (get-regs op) tst)
+        %cel  tst
+        %equ  tst
+        %mov  ?:((~(has in tst) d.op) tst (~(del in tst) s.op))
+      ==
+    ?~  fin  gen
+    =.  tst.gen
+      ?+  -.u.fin  (del (get-regs u.fin) tst.gen)
+        %clq  (del (weld (jmp-regs z.u.fin) (jmp-regs o.u.fin)) tst.gen)
+        %eqq  (del (weld (jmp-regs z.u.fin) (jmp-regs o.u.fin)) tst.gen)
+        %brn  (del (weld (jmp-regs z.u.fin) (jmp-regs o.u.fin)) tst.gen)
+        %brz  (del (weld (jmp-regs z.u.fin) (jmp-regs o.u.fin)) tst.gen)
+      ==
+    gen
   ::
   ++  re  `[@uvre _gen]`[re-gen.gen gen(re-gen +(re-gen.gen))]
   ++  oo  `[@uwoo _gen]`[bo-gen.gen gen(bo-gen +(bo-gen.gen))]
@@ -4424,11 +5306,41 @@
     =/  this=laze  [[this+~ ~] ~ ~]
     ::  what +simple-next does to the goal
     ::
-    =/  simple=$>(%next goal-shape)  ?:(?=(%next -.goal) goal [%next this])
+    ::  what +fill does to a product returned by a shape with sums
+    ::
+    =/  fill
+      |=  [nom=^nomm ret=rets]
+      ^-  [laze _gen]
+      ?~  ret  ^$(nomm nom, goal [%next this])
+      ?:  ?=(%k -.ret)  ^$(nomm nom, goal [%next none])
+      ?:  ?=([%7 *] nom)
+        =^  l  gen  $(nom q.nom)
+        ^$(nomm p.nom, goal [%next l])
+      ?:  ?=([^ *] nom)
+        =^  l-2  gen  $(nom +.nom, ret q.ret)
+        =^  l-1  gen  $(nom -.nom, ret p.ret)
+        [(laze-copy l-1 l-2) gen]
+      ?:  ?=([%1 *] nom)  [none gen]
+      ^$(nomm nom, goal [%next [[(unpack-ord ret) ~] ~ ~]])
+    ::
+    ?:  ?&  ?=(%done -.goal)
+            !(rets-plain (rets-mine |))
+            !(done-through | nomm)
+        ==
+      (fill nomm (rets-mine |))
+    =/  done=laze
+      ?.  (rets-plain (rets-mine |))  this
+      [[(rets-ord (rets-mine |)) ~] ~ ~]
+    =/  simple=$>(%next goal-shape)
+      ?-  -.goal
+        %next  goal
+        %done  [%next done]
+        %pick  [%next this]
+      ==
     ?-    nomm
         [^ *]
       ?-    -.goal
-          %done  $(goal [%next this])
+          %done  $(goal [%next done])
       ::
           %pick
         =^  l-2  gen  $(nomm +.nomm, goal [%next none])
@@ -4521,7 +5433,7 @@
           ==
         ::  the branches merge their products where +run would (+kerf)
         ::
-        ?:  ?|  &((whole q.nomm) (whole r.nomm))
+        ?:  ?|  &((whole-here | q.nomm) (whole-here | r.nomm))
                 (laze-this-only laz.goal)
                 (laze-big laz.goal)
                 (laze-soft-fork laz.goal q.nomm r.nomm)
@@ -5192,12 +6104,12 @@
     [[*sure-ordered fork.laz [[i [sure.laz ~ ~]] bond.laz]] gen]
   ::  +sound: no noun of unknown shape is taken apart to meet the need .ned
   ::  of the product of .nom: where parts are wanted the product is made of
-  ::  parts by a cons, in every branch
+  ::  parts, by a cons or by a call that returns them apart, in every branch
   ::
   ++  sound
     |=  [nom=nomm ned=need-ordered]
     ^-  ?
-    (sound-far nom ned code.long-ska 3)
+    (sound-far nom ned code.long-ska rets.cache.gen 3)
   ::  +made: the formula that makes the product of .nom, for +sound: a
   ::  formula that hands its subject on was given the subject by .sup, the
   ::  head of the composition it is the tail of
@@ -5218,12 +6130,16 @@
             rin=(unit ring)
             ned=need
             sur=need-ordered
-            pro=@uvre
+            pros=(list @uvre)
+            ret=rets
             out=@uwoo
             aux=*
         ==
     ^+  gen
-    gen(soft (~(put by soft.gen) o [kin b rin ned sur o o o pro out aux ~]))
+    %=    gen
+        soft
+      (~(put by soft.gen) o [kin b rin ned sur o o o pros ret out aux ~])
+    ==
   ::  +soft-bond: the need of the callee is bound at a block before the
   ::  call: all that takes a noun apart for the callee goes there
   ::
@@ -5442,26 +6358,43 @@
     ::  the call of the subject version
     ::
     =^  pes=@uwoo  gen
-      ?:  ?=(%tail kin.s)
-        %^  emit-cold  ~  ~
-        ?~(rin.s [%jsp b.s rub] [%jsf b.s rub u.rin.s])
-      =^  pro-opt  gen  re
-      =^  pro-pes  gen  re
-      =^  merged   gen  re
-      =^  merge    gen  (emit ~[merged] [%mov merged pro.s]~ %hop ~ out.s)
+      ?:  ?=(%tail kin.s)  (soft-back ~ b.s rin.s rub)
+      ::  The product goes on in the parts the callee returns it in, on
+      ::  both ways: the subject version returns one noun, which is taken
+      ::  apart for them (+conv)
+      ::
+      =^  opt=(list @uvre)  gen  (rets-regs ret.s)
+      =^  mer=(list @uvre)  gen  (rets-regs ret.s)
+      ?>  ?=(^ opt)
+      =/  movs=(list pole)
+        =/  [a=(list @uvre) b=(list @uvre)]  [mer pros.s]
+        |-  ^-  (list pole)
+        ?~  a  ~
+        ?>  ?=(^ b)
+        [[%mov i.a i.b] $(a t.a, b t.b)]
+      ::
+      =^  merge  gen  (emit mer movs %hop ~ out.s)
       =/  sub-v=(list @uvre)  (flatten-need ned.s)
       =.  gen
         %^  emir  plain.s  ~
-        :_  [%hop ~[`pro-opt] merge]
+        :_  [%hop (turn opt some) merge]
         ^-  (list pole)
-        :_  ~
-        ?~(rin.s [%cal b.s sub-v pro-opt] [%caf b.s sub-v pro-opt u.rin.s])
+        :-  ?~(rin.s [%cal b.s sub-v i.opt] [%caf b.s sub-v i.opt u.rin.s])
+        =/  i=@ud  1
+        =/  regs=(list @uvre)  t.opt
+        |-  ^-  (list pole)
+        ?~  regs  ~
+        [[%rtl i i.regs] $(regs t.regs, i +(i))]
       ::
+      =^  pro-pes  gen  re
+      =^  pv=(list @uvre)  gen  (rets-regs ret.s)
+      =^  end=@uwoo  gen  (emit-cold ~ ~ %hop (turn pv some) merge)
+      =^  oc=@uwoo  gen  (conv pro-pes ret.s pv end &)
       %^  emit-cold  ~
         ^-  (list pole)
         :_  ~
         ?~(rin.s [%csl b.s rub pro-pes] [%csf b.s rub pro-pes u.rin.s])
-      [%hop ~[`pro-pes] merge]
+      [%hop ~ oc]
     ::
     =^  fail=@uwoo  gen  (emit-cold ~ kon %hop ~ pes)
     ::  the registers that the tries define
@@ -5495,6 +6428,32 @@
     =^  o  gen  oo
     =/  c=@uwoo  (con (bex 30) o)
     [c (emir c blob)]
+  ::
+  ++  emit-as
+    |=  [cold=? =blob]
+    ^-  [@uwoo _gen]
+    ?:(cold (emit-cold blob) (emit blob))
+  ::  +soft-back: a block that does .kon and then runs the subject version
+  ::  of .b on the subject in .rub, in place of the rest of this function.
+  ::  The subject version returns one noun.  Where this function returns
+  ::  its product in parts, it is called, and its product is taken apart
+  ::  for them (+conv): the pairs that the shape has are there, the product
+  ::  being that of this function
+  ::
+  ++  soft-back
+    |=  [kon=(list pole) b=bell rin=(unit ring) rub=@uvre]
+    ^-  [@uwoo _gen]
+    =/  ret=rets  mine.gen
+    ?~  ret
+      (emit-cold ~ kon ?~(rin [%jsp b rub] [%jsf b rub u.rin]))
+    =^  w  gen  re
+    =^  v=(list @uvre)  gen  (rets-regs ret)
+    ?>  ?=(^ v)
+    =^  end=@uwoo  gen  (emit-cold ~ ~ [%dox v ret])
+    =^  o=@uwoo  gen  (conv w ret v end &)
+    %^  emit-cold  ~
+      (snoc kon `pole`?~(rin [%csl b rub w] [%csf b rub w u.rin]))
+    [%hop ~ o]
   ::  +soft-free: no block from .o on, before .las, reads a register in
   ::  .def: the block of a bond and what a fork spliced into it
   ::
@@ -6528,15 +7487,114 @@
     ~%  %comp-split  ..ride  ~
     |=  nex=next
     ^-  [[need-lazy need-lazy @uwoo] _gen]
+    (split-in nex ~)
+  ::  +split for a product that is an atom or a pair and comes as a tag and
+  ::  its halves (+spread)
+  ::
+  ++  split-tag
+    |=  [nex=next tag=@uvre]
+    ^-  [[need-lazy need-lazy @uwoo] _gen]
+    (split-in nex `tag)
+  ::  the tag of a sum as read in block .o: lazy blocks read it by proxy
+  ::
+  ++  tag-in
+    |=  [o=@uwoo tag=@uvre top=?]
+    ^-  [@uvre _gen]
+    ?:  top  [tag gen]
+    (proxy tag o)
+  ::  In block .o, before what it holds now: .r is the pair of .h and .t if
+  ::  .src is a cell, else .src.  The ops of the block read .r (they were
+  ::  added before, so they run after), so they move to a block past the
+  ::  join; .o stays a hop that takes the ops added from now on, which
+  ::  make .h and .t, and +insert-hop may still splice into it
+  ::
+  ++  join-after
+    |=  [o=@uwoo src=@uvre h=@uvre t=@uvre r=@uvre]
+    ^+  gen
+    ?:  dropping  gen
+    =/  bob=blob  (~(got by blocks.gen) o)
+    =^  rest  gen  (emit ~ body.bob fin.bob)
+    =^  j  gen  (emit ~[r] ~ %hop ~ rest)
+    =^  rk  gen  re
+    =^  k  gen  (emit ~ [%con h t rk]~ %hop ~[`rk] j)
+    =^  a  gen  (emit ~ ~ %hop ~[`src] j)
+    =^  x  gen  (emit ~ ~ [%clq src [~ k] [~ a]])
+    =.  gen  (emir o par.bob ~ [%hop ~ x])
+    ?.  (~(has by tags.gen) o)  gen
+    (copy-tag o ~[rest j k a x])
+  ::
+  ++  split-sure-tag
+    |=  [sur=sure o=@uwoo tag=@uvre top=?]
+    ^-  [[sure sure] _gen]
+    ::  .deep: something is fetched from the noun, so it must be a cell
+    ::
+    =/  [lok-h=(set @) lok-t=(set @) deep=?]
+      %-  ~(rep in lok.sur)
+      |=  [axe=@ lok-h=(set @) lok-t=(set @) deep=_`?`|]
+      ?<  =(0 axe)
+      ?:  =(1 axe)  [lok-h lok-t deep]
+      ?:  ?=(?(%2 %3) axe)  [lok-h lok-t &]
+      ?-  (cap axe)
+        %2  [(~(put in lok-h) (mas axe)) lok-t &]
+        %3  [lok-h (~(put in lok-t) (mas axe)) &]
+      ==
+    =^  [ned-h=need ned-t=need]  gen  (split-need-tag ned.sur o tag top deep)
+    [[[ned-h lok-h] [ned-t lok-t]] gen]
+  ::
+  ++  split-need-tag
+    |=  [ned=need o=@uwoo tag=@uvre top=? cel=?]
+    ^-  [[need need] _gen]
+    ?-    -.ned
+        ^
+      =^  src  gen  (tag-in o tag top)
+      =.  gen  (add-ops o [%cel src]~)
+      [[p.ned q.ned] gen]
+    ::
+        %none
+      ?.  cel  [[ned ned] gen]
+      =^  src  gen  (tag-in o tag top)
+      =.  gen  (add-ops o [%cel src]~)
+      [[ned ned] gen]
+    ::
+        %this
+      =^  src  gen  (tag-in o tag top)
+      ?:  (~(has in tst.gen) r.ned)
+        =.  gen
+          %+  add-ops  o
+          ?:(cel ~[[%cel src] [%mov src r.ned]] [%mov src r.ned]~)
+        [[[%none ~] [%none ~]] gen]
+      =^  h  gen  re
+      =^  t  gen  re
+      =.  gen  (join-after o src h t r.ned)
+      =?  gen  cel  (add-ops o [%cel src]~)
+      [[this+h this+t] gen]
+    ::
+        %both
+      =^  src  gen  (tag-in o tag top)
+      ?:  (~(has in tst.gen) r.ned)
+        =.  gen  (add-ops o ~[[%cel src] [%mov src r.ned]])
+        [[h.ned t.ned] gen]
+      =^  hed  gen  (must h.ned)
+      =^  tel  gen  (must t.ned)
+      =.  gen  (add-ops o ~[[%cel src] [%con p.hed p.tel r.ned]])
+      [[q.hed q.tel] gen]
+    ==
+  ::
+  ++  split-in
+    |=  [nex=next tag=(unit @uvre)]
+    ^-  [[need-lazy need-lazy @uwoo] _gen]
     ::  emit an empty basic block
     ::
     =^  o=@uwoo  gen  (emit ~ ~ %hop then.nex)
     =;  [[ned-h=need-lazy ned-t=need-lazy] gen=_gen]
       [[ned-h ned-t o] gen]
+    =/  top=@uwoo  o
     =/  laz=need-lazy  laz.nex
     |-  ^-  [[need-lazy need-lazy] _gen]
     =*  split-loop  $
-    =^  [sure-h=sure sure-t=sure]  gen  (split-sure sure.laz o)
+    =^  [sure-h=sure sure-t=sure]  gen
+      ?~  tag  (split-sure sure.laz o)
+      (split-sure-tag sure.laz o u.tag =(o top))
     ?:  &(?=(~ fork.laz) ?=(~ bond.laz))  [[[sure-h ~ ~] [sure-t ~ ~]] gen]
     =*  fork  ,(list [[@uwoo need-lazy] [@uwoo need-lazy]])
     =^  [fork-h=fork fork-t=fork]  gen
@@ -6576,6 +7634,7 @@
     |=  [o=@uwoo ops=(list pole)]
     ^+  gen
     ?:  dropping  gen
+    =.  gen  (tst-read ops ~)
     =/  =blob  (~(got by blocks.gen) o)
     =.  body.blob  (weld ops body.blob)
     gen(blocks (~(put by blocks.gen) o blob))
@@ -6585,6 +7644,7 @@
     |=  [o=@uwoo =blob]
     ^+  gen
     ?:  dropping  gen
+    =.  gen  (tst-read body.blob `fin.blob)
     gen(blocks (~(put by blocks.gen) o blob))
   ::
   ++  bomb
@@ -6773,9 +7833,7 @@
     ?:  |(?=(~ req) dropping)  [[%next [[ned ~] ~ ~] [~ then.nex]] gen]
     =/  rin=(unit ring)  (~(get by call.cole.jets.long-ska) b)
     =^  [kon=(list pole) rub=@uvre]  gen  (soft-cons ned ~ less.b)
-    =^  fail=@uwoo  gen
-      (emit ~ kon ?~(rin [%jsp b rub] [%jsf b rub u.rin]))
-    ::
+    =^  fail=@uwoo  gen  (soft-back kon b rin rub)
     =^  first=@uwoo  gen
       =/  req=(list [r=@uvre ned=need])  req
       =/  nxt=@uwoo  then.nex
@@ -7022,6 +8080,7 @@
         %jsp  fin(s (ren s.fin))
         %jsf  fin(s (ren s.fin))
         %don  fin(s (ren s.fin))
+        %dox  fin(v [(ren i.v.fin) (turn t.v.fin ren)])
         %bom  ?~(o.fin fin fin(o `there:(chase & [~ u.o.fin])))
       ==
     ::
@@ -7186,6 +8245,10 @@
         =^  s1  gen  (rer s.op)
         =^  d1  gen  (rer d.op)
         [op(s s1, d d1) gen]
+      ::
+          %rtl
+        =^  d1  gen  (rer d.op)
+        [op(d d1) gen]
       ==
     ::
     ++  rewrite-fin
@@ -7240,6 +8303,11 @@
           %don
         =^  s1  gen  (rer s.fin)
         [fin(s s1) gen]
+      ::
+          %dox
+        =^  v1  gen  (rewrite-par v.fin)
+        ?>  ?=(^ v1)
+        [fin(v v1) gen]
       ::
           %bom
         ?~  o.fin  [fin gen]
@@ -7710,7 +8778,12 @@
 ::
 ++  sound-far
   ~%  %sound-far  ..ride  ~
-  |=  [nom=nomm ned=need-ordered cod=_code:*long-ska dep=@ud]
+  |=  $:  nom=nomm
+          ned=need-ordered
+          cod=_code:*long-ska
+          ret=(map bell rets)
+          dep=@ud
+      ==
   ^-  ?
   ?:  ?=(?(%none %this) -.ned)  &
   ~+
@@ -7724,8 +8797,17 @@
       [%11 *]    $(nom q.nom)
       [%mean *]  $(nom q.nom)
   ::
+  ::  a callee that returns the parts apart hands them on without a
+  ::  noun to take apart, and its product, where it comes whole (to a
+  ::  function of its whole subject, from the subject version), is a pair
+  ::  wherever the shape has one
+  ::
       [%2 *]
     ?~  info.nom  |
+    ?:  ?&  ?=(~ k.u.info.nom)
+            (sound-rets (~(gut by ret) b.u.info.nom ~) ned)
+        ==
+      &
     ?:  =(0 dep)  |
     $(nom nomm:(~(got by cod) b.u.info.nom), dep (dec dep))
   ::  what is put in makes the part at the axis, the noun it is put into
@@ -7735,6 +8817,16 @@
     =/  e  (need-ord-edit p.p.nom ned)
     &($(nom q.p.nom, ned don.e) $(nom q.nom, ned rec.e))
   ==
+::  +sound for a product returned by a shape
+::
+++  sound-rets
+  |=  [ret=rets ned=need-ordered]
+  ^-  ?
+  ?:  ?=(?(%none %this) -.ned)  &
+  ?.  ?=([%c *] ret)  |
+  =/  [h=need-ordered t=need-ordered]
+    ?:(?=(%both -.ned) [h.ned t.ned] [p.ned q.ned])
+  &($(ret p.ret, ned h) $(ret q.ret, ned t))
 ::  +need-ord-edit: the need .ned of an edited noun, as the need of what
 ::  was put at .axe and the need of the noun it was put into, where the
 ::  part at .axe needs nothing
@@ -8649,6 +9741,10 @@
       =/  new  d.op
       =.  info-local.gen  (~(put by info-local.gen) new *info-reg)
       [[[%csm a.op s new k.op] body-new] gen]
+    ::
+        %rtl
+      =.  info-local.gen  (~(put by info-local.gen) d.op *info-reg)
+      [[op body-new] gen]
     ==
   ::
   =^  fin-new=termin  gen
@@ -8747,6 +9843,9 @@
     ::
         %don
       [fin.bob(s (rn s.fin.bob)) gen]
+    ::
+        %dox
+      [fin.bob(v [(rn i.v.fin.bob) (turn t.v.fin.bob rn)]) gen]
     ::
         %bom
       [fin.bob gen]
@@ -9586,7 +10685,14 @@
   ?-  -.state.old
     %0
       %=  ..load
-        state  state.old(nary.cache ~, mono.cache ~, inl.cache ~, sure.cache ~)
+        state
+          %=  state.old
+            nary.cache  ~
+            mono.cache  ~
+            rets.cache  ~
+            inl.cache   ~
+            sure.cache  ~
+          ==
       ==
   ==
 ::
@@ -9619,6 +10725,8 @@
       jets-hot.state    hot
       nary.cache.state  (del-bells nary.cache.state stale)
       mono.cache.state  (del-bells mono.cache.state stale)
+      rets.cache.state
+        (~(rep in stale) |=([b=bell m=_rets.cache.state] (~(del by m) b)))
       inl.cache.state
         (~(rep in stale) |=([b=bell m=_inl.cache.state] (~(del by m) b)))
     ::
@@ -9658,6 +10766,7 @@
     ::
     =?  nary.cache.state  !=(cole call.cole.jets.long-ska.state)  ~
     =?  mono.cache.state  !=(cole call.cole.jets.long-ska.state)  ~
+    =?  rets.cache.state  !=(cole call.cole.jets.long-ska.state)  ~
     =?  inl.cache.state  !=(cole call.cole.jets.long-ska.state)  ~
     =?  sure.cache.state  !=(cole call.cole.jets.long-ska.state)  ~
     ::
