@@ -1939,7 +1939,13 @@
     =/  bg=(jug bell bell)
       %-  ~(rep by new-code)
       |=  [[b=bell v=[=nomm calls=(set bell)]] acc=(jug bell bell)]
-      (~(put by acc) b (~(int in calls.v) ~(key by new-code)))
+      ::  the callees that are new too: by a lookup of each, not by an
+      ::  intersection with the set of the new bells, which was built
+      ::  again for every bell
+      ::
+      %+  ~(put by acc)  b
+      %-  silt
+      (skim ~(tap in calls.v) |=(c=bell (~(has by new-code) c)))
     (flop (tarjan bg))
   ::
   =.  lon
