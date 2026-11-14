@@ -3993,7 +3993,13 @@
         ::  lazy needs need a single register, we can collapse the lazy need
         ::  proactively with +kerf and compile against that.
         ::
-        ?:  |(&((whole q.nomm) (whole r.nomm)) (this-only laz.goal))
+        ::  So we do when the lazy need is big (+lazy-max): each branch
+        ::  would take a copy of it.
+        ::
+        ?:  ?|  &((whole q.nomm) (whole r.nomm))
+                (this-only laz.goal)
+                (lazy-big laz.goal)
+            ==
           =^  [out=@uwoo pro=@uvre]  gen  (kerf goal)
           $(goal [%next (lazy-from-need this+pro) ~ out])
         =^  r-cond  gen  re
@@ -4013,6 +4019,7 @@
           ==
         ::
         =^  o=@uwoo  gen  (emit ~ ~ [%brn r-cond ~^yes ~^nuh])
+        =^  lazy  gen  (lazy-shut o lazy)
         =^  nex-cond  gen
           $(nomm p.nomm, goal [%next (lazy-from-need this+r-cond) ~ o])
         ::
@@ -4057,7 +4064,12 @@
         [*sure [[yes laz.nex-0] [nuh laz.nex-1]]~ ~]
       ::
       =^  nex-cond  gen  $(nomm p.nomm, goal [%pick ~^yes ~^nuh])
-      (copy nex-cond lazy)
+      ?.  (lazy-big lazy)  (copy nex-cond lazy)
+      ::  the need of the branches is met before the test (+lazy-shut)
+      ::
+      =^  o=@uwoo  gen  (emit ~ ~ %hop then.nex-cond)
+      =^  lazy  gen  (lazy-shut o lazy)
+      (copy nex-cond(then ~^o) lazy)
     ::
         [%7 *]
       =^  nex  gen  $(nomm q.nomm)
@@ -4268,12 +4280,16 @@
           ==
         ::  the branches merge their products where +run would (+kerf)
         ::
-        ?:  |(&((whole q.nomm) (whole r.nomm)) (laze-this-only laz.goal))
+        ?:  ?|  &((whole q.nomm) (whole r.nomm))
+                (laze-this-only laz.goal)
+                (laze-big laz.goal)
+            ==
           $(goal [%next this])
         =^  [goal-0=laze goal-1=laze]  gen  (laze-branch laz.goal)
         =^  l-1  gen  $(nomm r.nomm, goal [%next goal-1])
         =^  l-0  gen  $(nomm q.nomm, goal [%next goal-0])
         =^  lazy  gen  (laze-sect l-0 l-1)
+        =?  lazy  (laze-big lazy)  this
         =^  l-cond  gen  $(nomm p.nomm, goal [%next this])
         [(laze-copy l-cond lazy) gen]
       =/  goal-branch=goal-shape
@@ -4282,6 +4298,7 @@
       =^  l-1  gen  $(nomm r.nomm, goal goal-branch)
       =^  l-0  gen  $(nomm q.nomm, goal goal-branch)
       =^  lazy  gen  (laze-sect l-0 l-1)
+      =?  lazy  (laze-big lazy)  this
       =^  l-cond  gen  $(nomm p.nomm, goal [%pick ~])
       [(laze-copy l-cond lazy) gen]
     ::
@@ -4426,6 +4443,25 @@
         (levy fork.laz |=([[* a=laze] * b=laze] &((none a) (none b))))
         (levy bond.laz |=([* n=laze] (none n)))
     ==
+  ::  +lazy-big for shapes
+  ::
+  ++  laze-big
+    |=  laz=laze
+    ^-  ?
+    =|  c=@ud
+    =-  (gth - lazy-max)
+    |-  ^-  @ud
+    ?:  (gth c lazy-max)  c
+    =.  c  +(c)
+    =.  c
+      |-  ^-  @ud
+      ?~  fork.laz  c
+      =.  c  ^$(laz laz.y.i.fork.laz)
+      =.  c  ^$(laz laz.n.i.fork.laz)
+      $(fork.laz t.fork.laz)
+    |-  ^-  @ud
+    ?~  bond.laz  c
+    $(bond.laz t.bond.laz, c ^$(laz laz.i.bond.laz))
   ::  +this-only for shapes
   ::
   ++  laze-this-only
@@ -4741,6 +4777,20 @@
     =^  o-0  gen  id
     =^  o-1  gen  id
     [[*sure-ordered [[o-0 l-0] [o-1 l-1]]~ ~] gen]
+  ::
+  ::  +lazy-shut: a lazy need of the subject that is too big to hand on
+  ::  (+lazy-big) is met at the block o, from one register of the whole
+  ::  subject, which is then the need.  The needs of the branches of a fork
+  ::  go up to what precedes it once per branch, and so does the need of
+  ::  what follows the fork, when a branch passes a part of the subject
+  ::  through; forks in a row double it each time otherwise.
+  ::
+  ++  lazy-shut
+    |=  [o=@uwoo laz=need-lazy]
+    ^-  [need-lazy _gen]
+    ?.  (lazy-big laz)  [laz gen]
+    =^  r  gen  (kern o laz)
+    [(lazy-from-need this+r) gen]
   ::
   ++  kerf
     ~%  %comp-kerf  ..ride  ~
@@ -6986,6 +7036,44 @@
       (levy fork.laz |=([[* a=need-lazy] * b=need-lazy] &((none a) (none b))))
       (levy bond.laz |=([* n=need-lazy] (none n)))
   ==
+::  The most nodes a lazy need may have for a fork to take it into both of
+::  its branches (+lazy-big).  A need that passes a fork lazily is kept once
+::  per branch, so n forks one after the other, each handing the need of
+::  what follows it to both of its branches, make a need of 2^n nodes, and
+::  as many blocks of deconsing code when it is collapsed: +on-load of an
+::  agent with a dozen of `=?  old  ?=(%n -.old)  ..` in a row came to
+::  142.730 blocks, and one with twenty did not come to an end.  Past the
+::  limit the fork takes its product in one register (+kerf), as it does a
+::  product that is whole on both sides, and the need is met from that
+::  register after the join: the code is then linear in the forks.
+::  The limit is high enough to leave ordinary code alone: at 32 the
+::  compiler itself (+mint:ut on hoon.hoon) ran 28% slower, at 128 9.5%,
+::  at 512 as without a limit.
+::
+++  lazy-max  512
+::
+++  lazy-big
+  |=  laz=need-lazy
+  ^-  ?
+  (gth (lazy-size laz) lazy-max)
+::  its nodes, counted up to the limit
+::
+++  lazy-size
+  |=  laz=need-lazy
+  ^-  @ud
+  =|  c=@ud
+  |-  ^-  @ud
+  ?:  (gth c lazy-max)  c
+  =.  c  +(c)
+  =.  c
+    |-  ^-  @ud
+    ?~  fork.laz  c
+    =.  c  ^$(laz laz.y.i.fork.laz)
+    =.  c  ^$(laz laz.n.i.fork.laz)
+    $(fork.laz t.fork.laz)
+  |-  ^-  @ud
+  ?~  bond.laz  c
+  $(bond.laz t.bond.laz, c ^$(laz laz.i.bond.laz))
 ::  whether a lazy need wants its noun whole or not at all, in every block
 ::  (sure, forks and bonds): then nothing deconses it, and one register of
 ::  it serves them all
