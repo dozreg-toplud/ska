@@ -3000,30 +3000,40 @@
       sofs=(set @uxid)               ::  the same for shapes
   ==
 ::  A direct call whose callee takes parts that the subject formula does
-::  not make by a cons.  The parts are the callee's to read: where this
-::  function has to take a noun apart for them, it tries (+soft-done), and
-::  a noun that is not a cell goes to the subject version of the callee,
-::  whole, which crashes where the plain interpreter does, or does not.
+::  not make by a cons.  The need of the callee is bound at blocks before
+::  the call, where this function takes a noun apart for it (+soft-emit).
+::  A part that the callee reads first thing (.sur, +sure-of) is fetched
+::  with a crash: the callee would crash on it the same way.  Any other
+::  part is the callee's to read, under a hint or on a branch or later: it
+::  is tried, and a noun that is not a cell goes to the subject version of
+::  the callee, whole, which crashes where the plain interpreter does, or
+::  does not.
+::
+::  kin: a call, a tail call, or the push of a deferred %mean, whose arm
+::  reads nothing unless the trace is rendered: all its parts are tried,
+::  and where one is not there the trap is pushed whole
 ::
 ::  b, rin: the callee, its ring; ned: its need, with the registers of the
-::  call; tel: a tail call; plain: the block of the call.  Three blocks run
-::  before it: head, with the fetches that are this function's own; that
-::  of the bond, with the moves and conses that make the callee's
-::  arguments, and what a fork splices into it (+insert-hop); last, with
-::  the tries (+soft-emit).  pro, out: the product and the block that
-::  follows, of a call that is no tail call; req: the nouns to take apart,
-::  with the need of each
+::  call; plain: the block of the call.  Three blocks run before it: head,
+::  with the fetches that crash; that of the bond, with the moves and
+::  conses that make the callee's arguments, and what a fork splices into
+::  it (+insert-hop); last, with the tries.  pro, out: the product and the
+::  block that follows, of a call that is no tail call (out: the block
+::  past the push); aux: the block of the epilogue of a %mean, and its
+::  hint; req: the nouns to take apart, with the need of each
 ::
 +$  soft-call
-  $:  b=bell
+  $:  kin=?(%call %tail %mean)
+      b=bell
       rin=(unit ring)
       ned=need
-      tel=?
+      sur=need-ordered
       plain=@uwoo
       head=@uwoo
       last=@uwoo
       pro=@uvre
       out=@uwoo
+      aux=*
       req=(list [src=@uvre ned=need])
   ==
 ::
@@ -3037,6 +3047,7 @@
       mono=(map bell straight)      ::  functions of their whole subject
       sccs=(map bell (set bell))    ::  strongly connected components
       inl=(map bell nomm)           ::  code with the small callees inlined
+      sure=(map bell need-ordered)  ::  what each reads first thing (+sure-of)
   ==
 ::  Non-control-flow ops
 ::
@@ -3427,7 +3438,7 @@
   ::  inlined here would push its traps whole
   ::
   =^  nex=next  gen
-    (~(run comp gen) & nomm:(~(got by code.long-ska) func) [%done ~] ~)
+    (~(run comp gen) & nomm:(~(got by code.long-ska) func) [%done ~] ~ ~)
   ::  Collapse the subject need to a single noun, finalize
   ::
   =^  [o=@uwoo sub=@uvre]  gen  (~(kerf comp gen) nex)
@@ -3475,12 +3486,19 @@
   ::  point: the final pass computes its subject shape by itself
   ::
   =/  done=?  &(?=([* ~ ~] scc) !(~(has ju kids) n.scc n.scc))
-  ::  Compile one member against the shapes in .map-local; produces whether
-  ::  its shape changed (not used in the final pass)
+  ::  Compile one member against the shapes in .map-local, and against
+  ::  what the members read first thing (.sure.cache); produces whether its
+  ::  shape changed, or what it reads first thing (not used in the final
+  ::  pass).  .keep: the latter is left as it was found before
   ::
   =/  member
     ~%  %compile-scc-fn  ..ride  ~
-    |=  [b=bell done=? map-local=(map bell straight) cache=comp-cache]
+    |=  $:  b=bell
+            done=?
+            keep=?
+            map-local=(map bell straight)
+            cache=comp-cache
+        ==
     ^-  [? (map bell straight) comp-cache]
     ?>  ?=(^ less.b)
     =/  comp  (comp scc long-ska jets-hot map-local b)
@@ -3496,34 +3514,45 @@
     ::  has the shape of the arguments and the registers to load, .ned-final
     ::  the one the body's registers follow
     ::
-    =^    [need-new=need-ordered laz=need-lazy ned-final=need bak=baked o=@uwoo]
+    ::  .sur: what the function reads first thing (+sure-of)
+    ::
+    =^    [need-new=need-ordered laz=need-lazy ned-final=need bak=baked o=@uwoo sur=need-ordered]
         gen
       !@  dedicated-shape-pass
         =.  mode.gen  ?:(done %run %drop)
-        =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~)
+        =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~ ~)
         =^  [ned-final=need laz=need-lazy o=@uwoo]  gen
           (~(collapse-shape comp gen) nex cape.less.b)
         =/  bak=baked  (bake-need ned-final less.b)
+        =/  sur
+          (sure-of [(need-to-ordered ned.sure.laz) lok.sure.laz] cape.less.b)
         ::
-        [[(need-to-ordered ned.bak) laz ned-final bak o] gen]
+        [[(need-to-ordered ned.bak) laz ned-final bak o sur] gen]
       ?.  done
-        =^  l=laze  gen  (~(run-shape comp gen) nomm [%done ~])
+        =^  l=laze  gen  (~(run-shape comp gen) nomm [%done ~] ~)
         =/  shape  (bake-need-ord (laze-collapse l cape.less.b) less.b)
-        [[shape *need-lazy *need *baked `@uwoo`0] gen]
+        :_  gen
+        [shape *need-lazy *need *baked `@uwoo`0 (sure-of sure.l cape.less.b)]
       =.  mode.gen  %run
-      =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~)
+      =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~ ~)
       =^  [ned-final=need laz=need-lazy o=@uwoo]  gen
         (~(collapse-shape comp gen) nex cape.less.b)
       =/  bak=baked  (bake-need ned-final less.b)
+      =/  sur
+        (sure-of [(need-to-ordered ned.sure.laz) lok.sure.laz] cape.less.b)
       ::
-      [[(need-to-ordered ned.bak) laz ned-final bak o] gen]
+      [[(need-to-ordered ned.bak) laz ned-final bak o sur] gen]
     =.  cache  cache.gen
+    =/  was=(unit need-ordered)  (~(get by sure.cache) b)
+    =/  sur=need-ordered  ?:(&(keep ?=(^ was)) u.was sur)
+    =.  sure.cache  (~(put by sure.cache) b sur)
+    =/  moved=?  !=(sur (fall was [%none ~]))
     ::  Debug assert of +run-shape correctenss
     ::
     =>  =*  dot  .
         !@  shape-check  dot
         ?.  done  dot
-        =/  l=laze  -:(~(run-shape comp gen) nomm [%done ~])
+        =/  l=laze  -:(~(run-shape comp gen) nomm [%done ~] ~)
         =/  shape  (bake-need-ord (laze-collapse l cape.less.b) less.b)
         ~|  [%shape-mismatch b shape need-new]
         ?>  =(shape need-new)
@@ -3555,27 +3584,41 @@
     ::  with the previous one (taken to avoid divergence) differs from it
     ::
     ?~  s-previous=(~(get by map-local) b)
-      :+  !?=([%none ~] need-new)
+      :+  |(moved !?=([%none ~] need-new))
         (~(put by map-local) b (finish ~))
       cache
     =/  need-pessimized  (msg-need-ord need-new need.u.s-previous cape.less.b)
-    :+  !=(need-pessimized need.u.s-previous)
+    ::  Debug assert: the final pass finds the shape of the sweeps
+    ::
+    =>  =*  dot  .
+        !@  shape-check  dot
+        ?.  done  dot
+        ~|  [%shape-moved b need-pessimized need.u.s-previous]
+        ?>  =(need-pessimized need.u.s-previous)
+        dot
+    ::
+    :+  |(moved !=(need-pessimized need.u.s-previous))
       %+  ~(put by map-local)  b
       ?:  =(need-pessimized need-new)  (finish ~)
       (finish `need-pessimized)
     cache
   ::  The final pass: every member compiled for real
   ::
+  ::  It compiles each member as its last sweep did, against the same
+  ::  shapes and the same .sure.cache: what the sweeps found the members to
+  ::  read first thing is kept (.keep), so that a member compiled before a
+  ::  callee in the SCC and one compiled after it take the same of it.
+  ::
   =/  final
-    |=  [map-local=(map bell straight) cache=comp-cache]
+    |=  [keep=? map-local=(map bell straight) cache=comp-cache]
     ^-  [(map bell straight) comp-cache]
     =;  [m=(map bell straight) c=comp-cache]
       [m c(nary (~(uni by nary.c) m))]
     %+  roll  ~(tap in scc)
     |=  [b=bell m=_map-local c=_cache]
-    =/  r  (member b & m c)
+    =/  r  (member b & keep m c)
     [+<.r +>.r]
-  ?:  done  (final map-local cache)
+  ?:  done  (final | map-local cache)
   ::  Fixed point, with the schedule of the call graph analysis: sweeps over
   ::  the members in DFS postorder (callees before their callers, but for the
   ::  back edges), so that a shape reaches its callers in the same sweep
@@ -3583,6 +3626,14 @@
   ::  callee in the SCC changed its shape at or after the member's last
   ::  compile ("at": a self-call read the shape from before the compile).  The
   ::  loop ends with a sweep that finds nothing to do.
+  ::
+  ::  What a member reads first thing (+sure-of) is found by the same
+  ::  sweeps, and a change of it is a change for the callers: whether a
+  ::  call tries decides, at a fork, whether a noun is taken apart in the
+  ::  branches (+soft-fork:comp), which the shape shows.  A shape only
+  ::  loses parts from sweep to sweep, and what is read first thing follows
+  ::  the shapes, so it may go back and forth: after four compiles per
+  ::  member it is kept as it is.  Whatever a sweep found of it is true.
   ::
   =/  order=(list bell)
     =|  [vis=(set bell) out=(list bell)]
@@ -3622,12 +3673,12 @@
       |=(k=bell (gte (~(gut by chg.st) k 0) u.r))
     ?.  dirty  [st m c]
     =/  t=@ud  +(tick.st)
-    =/  r  (member b | m c)
+    =/  r  (member b | (gth t (mul 4 ~(wyt in scc))) m c)
     :_  [+<.r +>.r]
     :^  &  t
       (~(put by ran.st) b t)
     ?:(-.r (~(put by chg.st) b t) chg.st)
-  ?.  any.st.res  (final map-local cache)
+  ?.  any.st.res  (final & map-local cache)
   %-  (print-comp 0 |.(leaf+"[fixpoint-compilation {(scow %ud counter)}]"))
   %=  sweep-loop
     st         st.res(any |)
@@ -3760,7 +3811,7 @@
   |_  gen=line-short
   ++  run
     ~%  %comp-run  ..ride  ~
-    |=  [mono=? =nomm =goal region=(list @uxid)]
+    |=  [mono=? =nomm =goal region=(list @uxid) sup=(unit nomm)]
     |^  ^-  [next _gen]
     ?-    nomm
         [^ *]
@@ -3787,9 +3838,14 @@
       ::
           %next
         =^  [hed=need-lazy tel=need-lazy o=@uwoo]  gen  (split goal)
-        =^  nex-2  gen  $(nomm +.nomm, goal [%next tel ~ o])
+        ::  the tail runs before the code that follows: what that code
+        ::  takes apart of the head's product is taken apart past the tail
+        ::  (+past)
+        ::
+        =^  nex-h=next  gen  (past [%next hed ~ o] +.nomm region)
+        =^  nex-2  gen  $(nomm +.nomm, goal [%next tel then.nex-h])
         =^  nex-2  gen  (past nex-2 -.nomm region)
-        =^  nex-1  gen  $(nomm -.nomm, goal [%next hed then.nex-2])
+        =^  nex-1  gen  $(nomm -.nomm, goal [%next laz.nex-h then.nex-2])
         (copy nex-1 laz.nex-2)
       ==
     ::
@@ -3870,9 +3926,24 @@
       ::
       =^  sub-ned=need  gen  (need-ord-alloc-regs b-ned)
       =/  sub-v=(list @uvre)  (flatten-need sub-ned)
-      ::  a noun might be taken apart for the callee ($soft-call)
+      ::  a noun might be taken apart for the callee: its need is bound at
+      ::  the call if a part is not read first thing, or if a hint or a call
+      ::  runs between the argument and the call ($soft-call).  A jet is
+      ::  taken to read nothing first: a core that lacks an argument goes
+      ::  whole to its driver, which bails or punts in its own way
       ::
-      =/  sof=?  &(?=(~ key) !(sound p.nomm b-ned))
+      =/  b-sur=need-ordered
+        ?^  (biff rin ~(get by jets-hot))  [%none ~]
+        (callee-sure b-callee)
+      ::
+      =/  sof=?
+        ?&  ?=(~ key)
+            !(sound (made p.nomm sup) b-ned)
+            ?|  (need-soft b-ned b-sur less.b-callee)
+                (hinted p.nomm code.long-ska)
+                (hinted q.nomm code.long-ska)
+            ==
+        ==
       =^  call-blocks=$@(@uwoo [opt=@uwoo pes=[sub=@uvre o=@uwoo]])  gen
         =/  call-op
           |=  [pes=(unit @uvre) pro=@uvre]
@@ -3901,7 +3972,8 @@
         ?:  &(?=(~ key) ?=(%done -.goal))
           ?.  mono
             =^  o  gen  (emit ~ ~ (jump-op ~))
-            =?  gen  sof  (soft-new o b-callee rin sub-ned & *@uvre *@uwoo)
+            =?  gen  sof
+              (soft-new o %tail b-callee rin sub-ned b-sur *@uvre *@uwoo ~)
             [o gen]
           =^  sub-pes  gen  re
           =^  opt  gen  (emit ~ ~ (jump-op ~))
@@ -3911,7 +3983,8 @@
         =^  [out=@uwoo pro=@uvre]  gen  (kerf nex)
         ?.  mono
           =^  o  gen  (emit ~ ~[(call-op ~ pro)] %hop ~ out)
-          =?  gen  sof  (soft-new o b-callee rin sub-ned | pro out)
+          =?  gen  sof
+            (soft-new o %call b-callee rin sub-ned b-sur pro out ~)
           [o gen]
         =^  merged   gen  re
         =^  sub-pes  gen  re
@@ -4067,6 +4140,7 @@
         ?:  ?|  &((whole q.nomm) (whole r.nomm))
                 (this-only laz.goal)
                 (lazy-big (soft-less laz.goal))
+                (soft-fork laz.goal q.nomm r.nomm)
             ==
           =^  [out=@uwoo pro=@uvre]  gen  (kerf goal)
           $(goal [%next (lazy-from-need this+pro) ~ out])
@@ -4142,23 +4216,32 @@
       (copy nex-cond(then ~^o) lazy)
     ::
         [%7 *]
-      =^  nex  gen  $(nomm q.nomm)
+      =^  nex  gen  $(nomm q.nomm, sup `p.nomm)
       $(nomm p.nomm, goal nex)
     ::
         [%10 *]
       =^  next  gen  simple-next
       =^  [don=need-lazy rec=need-lazy o=@uwoo]  gen  (into next p.p.nomm)
-      =^  nex-rec  gen  $(nomm q.nomm, goal [%next rec ~ o])
+      ::  as the tail of a cons does to the head
+      ::
+      =^  nex-d  gen  (past [%next don ~ o] q.nomm region)
+      =^  nex-rec  gen  $(nomm q.nomm, goal [%next rec then.nex-d])
       =^  nex-rec  gen  (past nex-rec q.p.nomm region)
-      =^  nex-don  gen  $(nomm q.p.nomm, goal [%next don then.nex-rec])
+      =^  nex-don  gen  $(nomm q.p.nomm, goal [%next laz.nex-d then.nex-rec])
       (copy nex-don laz.nex-rec)
     ::
         [%11 *]
       ?@  p.nomm
         ?.  ?=(hint-static p.nomm)  $(nomm q.nomm)
+        ::  A hint with an effect bounds the needs both ways, as one that
+        ::  keeps a trace frame does: no noun is taken apart before the
+        ::  effect for what the plain interpreter reads after it
+        ::
         =^  nex    gen  simple-next
+        =^  nex=next  gen  (past-if nex q.nomm region)
         =^  epil    gen  (emit ~ ~[hse+[p.nomm body.nomm]] %hop then.nex)
         =^  nex-fol  gen  $(nomm q.nomm, goal nex(then [~ epil]))
+        =^  nex-fol=next  gen  (lazy-bound nex-fol region)
         =^  prol    gen  (emit ~ ~[hsp+[p.nomm body.nomm]] %hop then.nex-fol)
         [[%next laz.nex-fol ~ prol] gen]
       ?.  ?=(hint-dynamic p.p.nomm)
@@ -4170,16 +4253,11 @@
         ::
         (copy nex-toke laz.nex-fol)
       =^  nex      gen  simple-next
-      =^  nex=next  gen
-        ?.  ?=(hint-dynamic-stop p.p.nomm)  [nex gen]
-        (past-if nex q.nomm region)
+      =^  nex=next  gen  (past-if nex q.nomm region)
       =^  toke     gen  re
       =^  epil     gen  (emit ~ ~[hde+[p.p.nomm toke body.nomm]] %hop then.nex)
       =^  nex-fol1  gen  $(nomm q.nomm, goal nex(then [~ epil]))
-      =^  nex-fol2=next  gen
-        ?.  ?=(hint-dynamic-stop p.p.nomm)  (past nex-fol1 q.p.nomm region)
-        (lazy-bound nex-fol1 region)
-      ::
+      =^  nex-fol2=next  gen  (lazy-bound nex-fol1 region)
       =^  prol  gen
         (emit ~ ~[hdp+[p.p.nomm toke body.nomm]] %hop then.nex-fol2)
       ::
@@ -4214,9 +4292,20 @@
       =^  nex-fol1  gen  $(nomm q.nomm, goal nex(then [~ epil]))
       =^  nex-fol2=next  gen  (lazy-bound nex-fol1 region)
       =^  prol  gen  (emit ~ ~[prol-op] %hop then.nex-fol2)
-      =^  nex-trap  gen
-        $(nomm p.nomm, goal [%next (lazy-from-need sub-ned) ~ prol])
+      ::  The arm reads its parts only if the trace is rendered: none is
+      ::  fetched here with a crash ($soft-call)
       ::
+      =^  nex-arg=next  gen
+        =/  nex-arg=next  [%next (lazy-from-need sub-ned) ~ prol]
+        ?:  (sound p.nomm b-ned)  [nex-arg gen]
+        =.  gen
+          %:  soft-new
+            prol  %mean  b.nomm  ~  sub-ned  [%none ~]  *@uvre
+            there.then.nex-fol2  [epil body.nomm]
+          ==
+        (soft-bond nex-arg region)
+      ::
+      =^  nex-trap  gen  $(nomm p.nomm, goal nex-arg)
       (copy nex-trap laz.nex-fol2)
     ::
         [%12 *]
@@ -4273,7 +4362,7 @@
   ::
   ++  run-shape
     ~%  %comp-run-shape  ..ride  ~
-    |=  [=nomm goal=goal-shape]
+    |=  [=nomm goal=goal-shape sup=(unit nomm)]
     ^-  [laze _gen]
     =/  none=laze  *laze
     =/  this=laze  [[this+~ ~] ~ ~]
@@ -4293,6 +4382,7 @@
       ::
           %next
         =/  [hed=laze tel=laze]  (laze-split laz.goal)
+        =^  hed  gen  (laze-past hed +.nomm)
         =^  l-2  gen  $(nomm +.nomm, goal [%next tel])
         =^  l-2  gen  (laze-past l-2 -.nomm)
         =^  l-1  gen  $(nomm -.nomm, goal [%next hed])
@@ -4329,7 +4419,18 @@
           (callee-need b-callee)
         ::  as +run does ($soft-call)
         ::
-        ?.  &(?=(~ k.u.info.nomm) !(sound p.nomm ned))
+        =/  sur=need-ordered
+          =/  rin=(unit ring)  (~(get by call.cole.jets.long-ska) b-callee)
+          ?^  (biff rin ~(get by jets-hot))  [%none ~]
+          (callee-sure b-callee)
+        ::
+        ?.  ?&  ?=(~ k.u.info.nomm)
+                !(sound (made p.nomm sup) ned)
+                ?|  (need-soft ned sur less.b-callee)
+                    (hinted p.nomm code.long-ska)
+                    (hinted q.nomm code.long-ska)
+                ==
+            ==
           $(nomm p.nomm, goal [%next [[ned ~] ~ ~]])
         =^  i  gen  id
         =.  sofs.gen  (~(put in sofs.gen) i)
@@ -4367,6 +4468,7 @@
         ?:  ?|  &((whole q.nomm) (whole r.nomm))
                 (laze-this-only laz.goal)
                 (laze-big laz.goal)
+                (laze-soft-fork laz.goal q.nomm r.nomm)
             ==
           $(goal [%next this])
         =^  [goal-0=laze goal-1=laze]  gen  (laze-branch laz.goal)
@@ -4389,12 +4491,13 @@
       [(laze-copy l-cond lazy) gen]
     ::
         [%7 *]
-      =^  l  gen  $(nomm q.nomm)
+      =^  l  gen  $(nomm q.nomm, sup `p.nomm)
       $(nomm p.nomm, goal [%next l])
     ::
         [%10 *]
       ?>  ?=(%next -.simple)
       =/  [don=laze rec=laze]  (laze-into p.p.nomm laz.simple)
+      =^  don  gen  (laze-past don q.nomm)
       =^  l-rec  gen  $(nomm q.nomm, goal [%next rec])
       =^  l-rec  gen  (laze-past l-rec q.p.nomm)
       =^  l-don  gen  $(nomm q.p.nomm, goal [%next don])
@@ -4403,19 +4506,19 @@
         [%11 *]
       ?@  p.nomm
         ?.  ?=(hint-static p.nomm)  $(nomm q.nomm)
-        $(nomm q.nomm, goal simple)
+        =^  gol=laze  gen  (laze-past-if laz.simple q.nomm)
+        =^  l-fol=laze  gen  $(nomm q.nomm, goal [%next gol])
+        =^  i  gen  id
+        [[*sure-ordered ~ [i l-fol]~] gen]
       ?.  ?=(hint-dynamic p.p.nomm)
         =^  l-fol  gen  $(nomm q.nomm)
         ?:  (safe-nomm q.p.nomm)  [l-fol gen]
         =^  l-fol  gen  (laze-past l-fol q.p.nomm)
         =^  l-toke  gen  $(nomm q.p.nomm, goal [%next none])
         [(laze-copy l-toke l-fol) gen]
-      =^  gol=laze  gen
-        ?.  ?=(hint-dynamic-stop p.p.nomm)  [laz.simple gen]
-        (laze-past-if laz.simple q.nomm)
+      =^  gol=laze  gen  (laze-past-if laz.simple q.nomm)
       =^  l-fol=laze  gen  $(nomm q.nomm, goal [%next gol])
       =^  l-fol=laze  gen
-        ?.  ?=(hint-dynamic-stop p.p.nomm)  (laze-past l-fol q.p.nomm)
         =^  i  gen  id
         [[*sure-ordered ~ [i l-fol]~] gen]
       =^  l-toke  gen  $(nomm q.p.nomm, goal [%next this])
@@ -4429,8 +4532,15 @@
       =^  ned=need-ordered  gen
         ?^  (mean-konst b.nomm k.nomm)  [[%none ~] gen]
         (callee-need b.nomm)
+      ::  as +run does ($soft-call)
       ::
-      =^  l-trap  gen  $(nomm p.nomm, goal [%next [[ned ~] ~ ~]])
+      =^  l-arg=laze  gen
+        ?:  (sound p.nomm ned)  [[[ned ~] ~ ~] gen]
+        =^  i  gen  id
+        =.  sofs.gen  (~(put in sofs.gen) i)
+        [[*sure-ordered ~ [i [[ned ~] ~ ~]]~] gen]
+      ::
+      =^  l-trap  gen  $(nomm p.nomm, goal [%next l-arg])
       [(laze-copy l-trap l-fol) gen]
     ::
         [%12 *]
@@ -4440,6 +4550,13 @@
       [(laze-copy l-p l-q) gen]
     ==
   ::  register-less need of the callee: jet or SCC-local best guess or recur
+  ::
+  ::  what a callee reads first thing (+sure-of), as far as it is known
+  ::
+  ++  callee-sure
+    |=  b-callee=bell
+    ^-  need-ordered
+    (~(gut by sure.cache.gen) b-callee [%none ~])
   ::
   ++  callee-need
     |=  b-callee=bell
@@ -5021,21 +5138,32 @@
     |=  [nom=nomm ned=need-ordered]
     ^-  ?
     (sound-far nom ned code.long-ska 3)
+  ::  +made: the formula that makes the product of .nom, for +sound: a
+  ::  formula that hands its subject on was given the subject by .sup, the
+  ::  head of the composition it is the tail of
+  ::
+  ++  made
+    |=  [nom=nomm sup=(unit nomm)]
+    ^-  nomm
+    ?:  &(?=([%0 %1] nom) ?=(^ sup))  u.sup
+    nom
   ::
   ::  +soft-new: a direct call whose callee's need is met softly, by the
   ::  block of the call; +soft-bond moves it to the block of the bond
   ::
   ++  soft-new
     |=  $:  o=@uwoo
+            kin=?(%call %tail %mean)
             b=bell
             rin=(unit ring)
             ned=need
-            tel=?
+            sur=need-ordered
             pro=@uvre
             out=@uwoo
+            aux=*
         ==
     ^+  gen
-    gen(soft (~(put by soft.gen) o [b rin ned tel o o o pro out ~]))
+    gen(soft (~(put by soft.gen) o [kin b rin ned sur o o o pro out aux ~]))
   ::  +soft-bond: the need of the callee is bound at a block before the
   ::  call: all that takes a noun apart for the callee goes there
   ::
@@ -5059,6 +5187,45 @@
     ^+  gen
     ?:  dropping  gen
     gen(soft (~(jab by soft.gen) o |=(s=soft-call s(req [[src ned] req.s]))))
+  ::  +soft-fork: the need that a fork would hand to its branches has the
+  ::  bond of a soft call, and a branch would take a noun apart for it: in
+  ::  the branch, with a crash, and before the rest of the subject formula
+  ::  has run (+fork).  Then the fork makes its product in one register
+  ::  (+kerf), and that is taken apart at the call.
+  ::
+  ++  soft-fork
+    |=  [laz=need-lazy q=nomm r=nomm]
+    ^-  ?
+    ?|  %+  lien  bond.laz
+        |=  e=lazy-bond
+        ?|  ?&  (~(has by soft.gen) o.e)
+                =/  ned  (need-to-ordered ned.sure.laz.e)
+                !&((sound q ned) (sound r ned))
+            ==
+            ^$(laz laz.e)
+        ==
+    ::
+        %+  lien  fork.laz
+        |=  e=lazy-fork
+        |(^$(laz laz.y.e) ^$(laz laz.n.e))
+    ==
+  ::  +soft-fork for shapes
+  ::
+  ++  laze-soft-fork
+    |=  [laz=laze q=nomm r=nomm]
+    ^-  ?
+    ?|  %+  lien  bond.laz
+        |=  e=laze-bond
+        ?|  ?&  (~(has in sofs.gen) o.e)
+                !&((sound q ned.sure.laz.e) (sound r ned.sure.laz.e))
+            ==
+            ^$(laz laz.e)
+        ==
+    ::
+        %+  lien  fork.laz
+        |=  e=laze-fork
+        |(^$(laz laz.y.e) ^$(laz laz.n.e))
+    ==
   ::  +soft-less: a lazy need without the bonds of soft calls, for its size
   ::  (+lazy-big): a need that is bound at its call was part of the sure
   ::  need, and counted for nothing
@@ -5102,9 +5269,8 @@
   ::  flag and gives its registers a 0 that nothing reads (+soft-try), and
   ::  the flag is tested before the call.
   ::
-  ::  What a fork takes apart in its branches for the need (+fork) is not
-  ::  tried: an argument made by a conditional, a branch of which hands on
-  ::  a noun whole, still crashes in that branch.
+  ::  A fork does not take a noun apart in a branch for the need of a soft
+  ::  call (+soft-fork).
   ::
   ++  soft-emit
     |=  [o=@uwoo s=soft-call]
@@ -5116,7 +5282,7 @@
       =/  req=(list [src=@uvre ned=need])  req.s
       |-  ^-  [[ops=(list pole) tops=(list [q=@ r=@uvre ned=need])] _gen]
       ?~  req  [acc gen]
-      =^  c  gen  (soft-cut src.i.req ned.i.req axs)
+      =^  c  gen  (soft-cut src.i.req ned.i.req axs sur.s less.b.s)
       $(req t.req, acc [(weld ops.c ops.acc) (weld tops.c tops.acc)])
     ::  the fetches that are this function's, and the moves of the parts
     ::  that the callee takes whole, and of the wholes of those it takes
@@ -5149,16 +5315,75 @@
     ?~  tries  (emir head.s ~ ops fin.hed)
     =/  lat=blob  (~(got by blocks.gen) last.s)
     ?>  ?=([~ ~ %hop ~ *] lat)
-    =/  bod=blob  (~(got by blocks.gen) o)
-    ::  the call of the subject version, with the subject in .rub
+    ::  the tries first, each going on to the next, the last to the block
+    ::  of the bond; the flag is 0 until one fails, and is tested last.
+    ::  Produces the flag
+    ::
+    =/  flag
+      |=  fail=@uwoo
+      ^-  [@uvre _gen]
+      =^  f0  gen  re
+      =^  [first=@uwoo f=@uvre]  gen
+        =/  tops=(list [q=@ r=@uvre ned=need])  tries
+        =/  nxt=@uwoo  there.t.fin.hed
+        ::  the flags are made front to back, the blocks back to front
+        ::
+        =^  fla=(list @uvre)  gen
+          =/  n=@ud  (lent tops)
+          |-  ^-  [(list @uvre) _gen]
+          ?:  =(0 n)  [~ gen]
+          =^  r  gen  re
+          =^  rest  gen  $(n (dec n))
+          [[r rest] gen]
+        ::
+        =/  tops  (flop tops)
+        =/  fla   (flop fla)
+        |-  ^-  [[@uwoo @uvre] _gen]
+        ?~  tops  [[nxt f0] gen]
+        ?>  ?=(^ fla)
+        =/  pre=@uvre  ?~(t.fla f0 i.t.fla)
+        =^  n  gen  (soft-try r.i.tops ned.i.tops pre i.fla nxt)
+        =^  [fir=@uwoo *]  gen  $(tops t.tops, fla t.fla, nxt n)
+        [[fir i.fla] gen]
+      ::
+      =.  gen  (emir head.s ~ (snoc ops [%imm 0 f0]) %hop ~ first)
+      [f (emir last.s ~ ~ %brz f t.fin.lat ~^fail)]
+    ::  the subject of the callee, in .rub
     ::
     =/  tom=(map @ @uvre)
       (malt (turn tops.cut |=([q=@ r=@uvre ned=need] [q r])))
     ::
     =^  [kon=(list pole) rub=@uvre]  gen  (soft-cons ned.s tom less.b.s)
+    ::  A trap whose arm lacks a part is pushed as the plain interpreter
+    ::  pushes it: the trap itself, which is the subject of its arm, for
+    ::  the renderer to run.  The epilogue of that frame is another: it
+    ::  takes its pick by the flag.
+    ::
+    ?:  ?=(%mean kin.s)
+      =/  [epil=@uwoo body=*]  ;;([@uwoo *] aux.s)
+      =^  rum  gen  re
+      =^  join=@uwoo  gen  (emit ~[rum] ~ %hop ~ out.s)
+      =^  fail=@uwoo  gen
+        %^  emit-cold  ~
+          (snoc kon `pole`[%hdp %mean rub body])
+        [%hop ~[`rub] join]
+      ::
+      =/  pla=blob  (~(got by blocks.gen) plain.s)
+      ?>  ?=([~ * %hop ~ *] pla)
+      =.  gen  (emir plain.s ~ body.pla %hop ~[~] join)
+      =^  f=@uvre  gen  (flag(gen gen) fail)
+      =/  epi=blob  (~(got by blocks.gen) epil)
+      ?>  ?=([~ * %hop *] epi)
+      =^  epa=@uwoo  gen  (emit epi)
+      =^  epb=@uwoo  gen
+        (emit-cold ~ `(list pole)`[%hde %mean rum body]~ fin.epi)
+      ::
+      (emir epil ~ ~ %brz f ~^epa ~^epb)
+    ::  the call of the subject version
+    ::
     =^  pes=@uwoo  gen
-      ?:  tel.s
-        %^  emit  ~  ~
+      ?:  ?=(%tail kin.s)
+        %^  emit-cold  ~  ~
         ?~(rin.s [%jsp b.s rub] [%jsf b.s rub u.rin.s])
       =^  pro-opt  gen  re
       =^  pro-pes  gen  re
@@ -5172,13 +5397,13 @@
         :_  ~
         ?~(rin.s [%cal b.s sub-v pro-opt] [%caf b.s sub-v pro-opt u.rin.s])
       ::
-      %^  emit  ~
+      %^  emit-cold  ~
         ^-  (list pole)
         :_  ~
         ?~(rin.s [%csl b.s rub pro-pes] [%csf b.s rub pro-pes u.rin.s])
       [%hop ~[`pro-pes] merge]
     ::
-    =^  fail=@uwoo  gen  (emit ~ kon %hop ~ pes)
+    =^  fail=@uwoo  gen  (emit-cold ~ kon %hop ~ pes)
     ::  the registers that the tries define
     ::
     =/  def=(set @uvre)
@@ -5187,48 +5412,29 @@
       %-  zing
       (turn tries |=([q=@ r=@uvre ned=need] (flatten-need ned)))
     ::
-    ?:  (soft-free o last.s def)
-      ::  the tries last
-      ::
-      =^  first=@uwoo  gen
-        =/  tops=(list [q=@ r=@uvre ned=need])  tries
-        =/  nxt=@uwoo  there.t.fin.lat
-        |-  ^-  [@uwoo _gen]
-        ?~  tops  [nxt gen]
-        =^  n  gen  (mono-try-call ned.i.tops nxt [r.i.tops fail])
-        $(tops t.tops, nxt n)
-      ::
-      =.  gen  (emir head.s ~ ops fin.hed)
-      (emir last.s ~ ~ %hop ~ first)
-    ::  the tries first, each going on to the next, the last to the block
-    ::  of the bond; .f is 0 until one fails
+    ?.  (soft-free o last.s def)  +:(flag(gen gen) fail)
+    ::  the tries last
     ::
-    =^  f0  gen  re
-    =^  [first=@uwoo f=@uvre]  gen
+    =^  first=@uwoo  gen
       =/  tops=(list [q=@ r=@uvre ned=need])  tries
-      =/  nxt=@uwoo  there.t.fin.hed
-      ::  the flags are made front to back, the blocks back to front
-      ::
-      =^  fla=(list @uvre)  gen
-        =/  n=@ud  (lent tops)
-        |-  ^-  [(list @uvre) _gen]
-        ?:  =(0 n)  [~ gen]
-        =^  r  gen  re
-        =^  rest  gen  $(n (dec n))
-        [[r rest] gen]
-      ::
-      =/  tops  (flop tops)
-      =/  fla   (flop fla)
-      |-  ^-  [[@uwoo @uvre] _gen]
-      ?~  tops  [[nxt f0] gen]
-      ?>  ?=(^ fla)
-      =/  pre=@uvre  ?~(t.fla f0 i.t.fla)
-      =^  n  gen  (soft-try r.i.tops ned.i.tops pre i.fla nxt)
-      =^  [fir=@uwoo *]  gen  $(tops t.tops, fla t.fla, nxt n)
-      [[fir i.fla] gen]
+      =/  nxt=@uwoo  there.t.fin.lat
+      |-  ^-  [@uwoo _gen]
+      ?~  tops  [nxt gen]
+      =^  n  gen  (mono-try-call ned.i.tops nxt [r.i.tops fail])
+      $(tops t.tops, nxt n)
     ::
-    =.  gen  (emir head.s ~ (snoc ops [%imm 0 f0]) %hop ~ first)
-    (emir last.s ~ ~ %brz f t.fin.lat ~^fail)
+    =.  gen  (emir head.s ~ ops fin.hed)
+    (emir last.s ~ ~ %hop ~ first)
+  ::  +emit-cold: +emit for a block that runs when a try has failed: the
+  ::  runtime lays the blocks with this bit in their label last, out of the
+  ::  way of the code that falls through
+  ::
+  ++  emit-cold
+    |=  =blob
+    ^-  [@uwoo _gen]
+    =^  o  gen  oo
+    =/  c=@uwoo  (con (bex 30) o)
+    [c (emir c blob)]
   ::  +soft-free: no block from .o on, before .las, reads a register in
   ::  .def: the block of a bond and what a fork spliced into it
   ::
@@ -5347,16 +5553,31 @@
     ?~  qt  [%at u.qh]
     ?.(=(u.qh u.qt) %no [%at u.qh])
   ::  +soft-cut: the noun in .src, to be taken apart to meet .ned: the
-  ::  fetches that are this function's own (.ops, which crash on a noun that
-  ::  is not a cell), down to the parts of the callee's subject (.tops:
-  ::  place, register, need), which are tried
+  ::  fetches that crash on a noun that is not a cell (.ops): this
+  ::  function's own, above the callee's subject, and those of what the
+  ::  callee reads first thing; and the other parts of the callee's
+  ::  subject (.tops: place, register, need), which are tried
   ::
   ++  soft-cut
-    |=  [src=@uvre ned=need axs=(map @uvre @)]
+    |=  $:  src=@uvre
+            ned=need
+            axs=(map @uvre @)
+            sur=need-ordered
+            k=sock
+        ==
     ^-  [[ops=(list pole) tops=(list [q=@ r=@uvre ned=need])] _gen]
     =/  q  (soft-axis ned axs)
     ?:  ?=(%any q)  [[~ ~] gen]
-    ?^  q  [[~ [q.q src ned]~] gen]
+    ::  a part of the callee's subject: handed on whole, or taken apart
+    ::  with a try, unless the callee reads it first thing (+sure-at): then
+    ::  the fetch crashes as the callee would
+    ::
+    ?:  ?&  ?=(^ q)
+            ?|  ?=(?(%none %this) -.ned)
+                !(sure-at q.q sur k)
+            ==
+        ==
+      [[~ [q.q src ned]~] gen]
     ?-    -.ned
         %none  [[~ ~] gen]
         %this
@@ -7372,6 +7593,54 @@
   :-  (uni-need-ord ned.sure.i ned.sur)
   (~(uni in lok.sur) lok.sure.i)
 ::
+::  +sure-of: the shape of what a function reads first thing: on every
+::  path, before any hint that keeps a trace frame or has an effect, and
+::  before any call that may crash.  It is the sure need of the function's
+::  lazy need: a need under a hint is in a bond, on a branch in a fork, and
+::  a need of code that runs after such a hint or call is bound past it
+::  (+past:comp).  If a part of this shape is not there, the function
+::  crashes on it with the trace stack it was entered with and before any
+::  effect of its own: so does a fetch of the part by its caller, at the
+::  call.
+::
+++  sure-of
+  |=  [sur=sure-ordered less=cape]
+  ^-  need-ordered
+  sure:(inter1-to-inter2 [sur ~] less)
+::  +cell-sure: the noun that .sur is the sure need of (+sure-of) is a cell:
+::  a part of it is read first thing, or the bell knows the cell (.k)
+::
+++  cell-sure
+  |=  [sur=need-ordered k=sock]
+  ^-  ?
+  ?|  ?=(%both -.sur)
+      ?=(^ -.sur)
+      ?=(^ -.k)
+      &(?=(%& -.k) ?=(^ +.k))
+  ==
+::  +sure-at: +cell-sure of the noun at .axe
+::
+++  sure-at
+  |=  [axe=@ sur=need-ordered k=sock]
+  ^-  ?
+  ?:  =(1 axe)  (cell-sure sur k)
+  ?-  (cap axe)
+    %2  $(axe (mas axe), sur (hed-need-ord sur), k (hed:so k))
+    %3  $(axe (mas axe), sur (tel-need-ord sur), k (tel:so k))
+  ==
+::  +need-soft: the need .ned of a callee has a part that the callee does
+::  not read first thing (.sur): a cell of it that is not sure
+::
+++  need-soft
+  |=  [ned=need-ordered sur=need-ordered k=sock]
+  ^-  ?
+  ?:  ?=(?(%none %this) -.ned)  |
+  ?.  (cell-sure sur k)  &
+  =/  [h=need-ordered t=need-ordered]
+    ?:(?=(%both -.ned) [h.ned t.ned] [p.ned q.ned])
+  ?|  $(ned h, sur (hed-need-ord sur), k (hed:so k))
+      $(ned t, sur (tel-need-ord sur), k (tel:so k))
+  ==
 ::  +sound-far: +sound:comp, which sees through .dep direct calls: the
 ::  product of a call is that of the callee's formula
 ::
@@ -7395,10 +7664,36 @@
     ?~  info.nom  |
     ?:  =(0 dep)  |
     $(nom nomm:(~(got by cod) b.u.info.nom), dep (dec dep))
+  ::  what is put in makes the part at the axis, the noun it is put into
+  ::  the rest: the edit takes that noun apart down to the axis itself
+  ::
+      [%10 *]
+    =/  e  (need-ord-edit p.p.nom ned)
+    &($(nom q.p.nom, ned don.e) $(nom q.nom, ned rec.e))
   ==
-::  +hinted: the formula has a hint that keeps a trace frame, or a call
-::  that may crash: the callee may have such hints, and a jet reports a
-::  crash with frames of its own
+::  +need-ord-edit: the need .ned of an edited noun, as the need of what
+::  was put at .axe and the need of the noun it was put into, where the
+::  part at .axe needs nothing
+::
+++  need-ord-edit
+  |=  [axe=@ ned=need-ordered]
+  ^-  [don=need-ordered rec=need-ordered]
+  ?:  =(1 axe)  [ned [%none ~]]
+  ?:  ?=(?(%none %this) -.ned)  [[%none ~] [%none ~]]
+  =/  [h=need-ordered t=need-ordered]
+    ?:(?=(%both -.ned) [h.ned t.ned] [p.ned q.ned])
+  ?-    (cap axe)
+      %2
+    =/  r  $(axe (mas axe), ned h)
+    [don.r (cons-need rec.r t)]
+  ::
+      %3
+    =/  r  $(axe (mas axe), ned t)
+    [don.r (cons-need h rec.r)]
+  ==
+::  +hinted: the formula has a hint that keeps a trace frame or has an
+::  effect, or a call that may crash: the callee may have such hints, and a
+::  jet reports a crash with frames of its own
 ::
 ++  hinted
   ~%  %hinted  ..ride  ~
@@ -7429,8 +7724,8 @@
       ==
     ::
         [%11 *]
-      ?@  p.nomm  $(nomm q.nomm)
-      ?|  ?=(hint-dynamic-stop p.p.nomm)
+      ?@  p.nomm  |(?=(hint-static p.nomm) $(nomm q.nomm))
+      ?|  ?=(hint-dynamic p.p.nomm)
           $(nomm q.p.nomm)
           $(nomm q.nomm)
       ==
@@ -8611,6 +8906,19 @@
     =?  unsafe  !?=(?(%clq %eqq %brz %hop) -.fin.b)  (~(uni in unsafe) open)
     ^$(topo t.topo, out (~(put by out) i.topo open))
   ::
+  ::  An epilogue that no prologue has the key of stays: that of a trap
+  ::  pushed whole where a part of its arm is not there, which ends the
+  ::  frame of a prologue with another register (+soft-emit:comp)
+  ::
+  =/  opened=(set key)
+    %-  ~(rep by blocks)
+    |=  [[* b=blob] acc=(set key)]
+    %+  roll  body.b
+    |=  [op=pole acc=_acc]
+    ?~  hint=(trace op)  acc
+    ?.  open.u.hint  acc
+    (~(put in acc) key.u.hint)
+  ::
   %-  ~(run by blocks)
   |=  b=blob
   %_    b
@@ -8618,7 +8926,9 @@
     %+  skip  body.b
     |=  op=pole
     ?~  hint=(trace op)  |
-    !(~(has in unsafe) key.u.hint)
+    ?&  !(~(has in unsafe) key.u.hint)
+        (~(has in opened) key.u.hint)
+    ==
   ==
 ::
 ++  remove-useless-branching
@@ -9196,7 +9506,10 @@
   |=  old=[* * state=state-any *]
   ^+  ..load
   ?-  -.state.old
-    %0  ..load(state state.old(nary.cache ~, mono.cache ~, inl.cache ~))
+    %0
+      %=  ..load
+        state  state.old(nary.cache ~, mono.cache ~, inl.cache ~, sure.cache ~)
+      ==
   ==
 ::
 ++  peek      ::  +22
@@ -9230,6 +9543,9 @@
       mono.cache.state  (del-bells mono.cache.state stale)
       inl.cache.state
         (~(rep in stale) |=([b=bell m=_inl.cache.state] (~(del by m) b)))
+    ::
+      sure.cache.state
+        (~(rep in stale) |=([b=bell m=_sure.cache.state] (~(del by m) b)))
     ==
   ::
       %fast
@@ -9265,6 +9581,7 @@
     =?  nary.cache.state  !=(cole call.cole.jets.long-ska.state)  ~
     =?  mono.cache.state  !=(cole call.cole.jets.long-ska.state)  ~
     =?  inl.cache.state  !=(cole call.cole.jets.long-ska.state)  ~
+    =?  sure.cache.state  !=(cole call.cole.jets.long-ska.state)  ~
     ::
     [~ ..poke]
   ::
