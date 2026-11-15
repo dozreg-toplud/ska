@@ -3971,6 +3971,21 @@
       (copy nex-p laz.nex-q)
     ::
         [%6 *]
+      ::  the parts both branches take from one place of the subject do not
+      ::  cross the fork (+leap)
+      ::
+      =/  lep=(unit [gol=next bys=(list need-lazy)])
+        ?.  ?=(%next -.goal)  ~
+        =/  l  (leap laz.goal q.nomm r.nomm)
+        ?~  l  ~
+        `[[%next rest.u.l then.goal] bys.u.l]
+      ?^  lep
+        =^  nex  gen  $(goal gol.u.lep)
+        =/  bys=(list need-lazy)  bys.u.lep
+        |-  ^-  [next _gen]
+        ?~  bys  [nex gen]
+        =^  nex-new  gen  (copy nex i.bys)
+        $(bys t.bys, nex nex-new)
       ?:  ?&  ?=(%next -.goal)
               !(none-equivalent laz.goal(sure *sure))
           ==
@@ -4235,6 +4250,15 @@
       [(laze-copy l-p l-q) gen]
     ::
         [%6 *]
+      ::  as +run does (+leap)
+      ::
+      =/  lep  ?.(?=(%next -.goal) ~ (laze-leaps laz.goal q.nomm r.nomm))
+      ?^  lep
+        =^  l  gen  $(goal [%next rest.u.lep])
+        :_  gen
+        %+  roll  bys.u.lep
+        |:  [by=*laze acc=l]
+        (laze-copy acc by)
       ?:  ?&  ?=(%next -.goal)
               !(laze-none-equivalent laz.goal(sure *sure-ordered))
           ==
@@ -4552,6 +4576,90 @@
     %+  turn  bond.laz
     |=  [o=@uxid laz=laze]
     [o (laze-from axe laz)]
+  ::  +leap for shapes
+  ::
+  ++  laze-leaps
+    |=  [laz=laze q=nomm r=nomm]
+    ^-  (unit [rest=laze bys=(list laze)])
+    ?:  &(?=(~ fork.laz) ?=(~ bond.laz))  ~
+    =/  pas=(list [p=@ s=@])  (pass-both q r)
+    =/  lab=laze  [*sure-ordered fork.laz bond.laz]
+    =|  bys=(list laze)
+    |-  ^-  (unit [laze (list laze)])
+    ?~  pas
+      ?~  bys  ~
+      `[[sure.laz fork.lab bond.lab] bys]
+    =/  [by=laze rec=laze]  (laze-leap p.i.pas s.i.pas lab)
+    ?:  (laze-empty by)  $(pas t.pas)
+    $(pas t.pas, lab rec, bys [by bys])
+  ::  +lazy-leap for shapes
+  ::
+  ++  laze-leap
+    |=  [p=@ s=@ laz=laze]
+    ^-  [by=laze rec=laze]
+    =*  loop  $
+    =/  cut=(unit [don=need-ordered rec=need-ordered])
+      (need-ord-cut p ned.sure.laz)
+    =/  [sur-by=sure-ordered sur-rec=sure-ordered]
+      ?~  cut  [*sure-ordered sure.laz]
+      =/  [lok-by=(set @) lok-rec=(set @)]
+        %-  ~(rep in lok.sure.laz)
+        |=  [a=@ by=(set @) rec=(set @)]
+        ?~  d=(gep p a)  [by (~(put in rec) a)]
+        [(~(put in by) (peg s u.d)) rec]
+      [[(need-ord-from s don.u.cut) lok-by] [rec.u.cut lok-rec]]
+    ::
+    =/  forks=(list [laze-fork laze-fork])
+      %+  turn  fork.laz
+      |=  e=laze-fork
+      =/  y  loop(laz laz.y.e)
+      =/  n  loop(laz laz.n.e)
+      [[[o.y.e by.y] [o.n.e by.n]] [[o.y.e rec.y] [o.n.e rec.n]]]
+    ::
+    =/  bonds=(list [laze-bond laze-bond])
+      %+  turn  bond.laz
+      |=  e=laze-bond
+      =/  b  loop(laz laz.e)
+      [[o.e by.b] [o.e rec.b]]
+    ::
+    :-  (laze-prune sur-by (turn forks head) (turn bonds head))
+    (laze-prune sur-rec (turn forks tail) (turn bonds tail))
+  ::  +need-cut for shapes
+  ::
+  ++  need-ord-cut
+    |=  [axe=@ ned=need-ordered]
+    ^-  (unit [don=need-ordered rec=need-ordered])
+    ?:  =(1 axe)  `[ned none+~]
+    ?-    -.ned
+        %none  `[ned ned]
+        %this  ~
+        %both  ~
+    ::
+        ^
+      ?-    (cap axe)
+          %2
+        =/  kid  $(axe (mas axe), ned p.ned)
+        ?~  kid  ~
+        `[don.u.kid (cons-need rec.u.kid q.ned)]
+      ::
+          %3
+        =/  kid  $(axe (mas axe), ned q.ned)
+        ?~  kid  ~
+        `[don.u.kid (cons-need p.ned rec.u.kid)]
+      ==
+    ==
+  ::  +need-from for shapes
+  ::
+  ++  need-ord-from
+    |=  [axe=@ ned=need-ordered]
+    ^-  need-ordered
+    ?:  ?=(%none -.ned)  ned
+    |-  ^-  need-ordered
+    ?:  =(1 axe)  ned
+    ?-  (cap axe)
+      %2  [$(axe (mas axe)) none+~]
+      %3  [none+~ $(axe (mas axe))]
+    ==
   ::  +copy for shapes
   ::
   ++  laze-copy
@@ -5155,6 +5263,102 @@
     %+  turn  bond.laz
     |=  [o=@uwoo laz=need-lazy]
     [o from-buc(laz laz)]
+  ::
+  ::  +leap: a part of the product of a fork that both branches take from
+  ::  one place of the subject (+pass-both) does not depend on the branch.
+  ::  What the lazy blocks of the goal need of such a part goes to that place
+  ::  with its blocks (.bys), and the fork is compiled for the rest.  +fork
+  ::  would give each branch a copy of that need, and when both hand theirs
+  ::  up to the subject the need doubles: forks in a row (`=?` after `=?`)
+  ::  came to 2^n blocks.  The sure need is left to the join block, where it
+  ::  costs moves and no blocks.
+  ::
+  ++  leap
+    |=  [laz=need-lazy q=nomm r=nomm]
+    ^-  (unit [rest=need-lazy bys=(list need-lazy)])
+    ?:  &(?=(~ fork.laz) ?=(~ bond.laz))  ~
+    =/  pas=(list [p=@ s=@])  (pass-both q r)
+    =/  lab=need-lazy  [*sure fork.laz bond.laz]
+    =|  bys=(list need-lazy)
+    |-  ^-  (unit [need-lazy (list need-lazy)])
+    ?~  pas
+      ?~  bys  ~
+      `[[sure.laz fork.lab bond.lab] bys]
+    =/  [by=need-lazy rec=need-lazy]  (lazy-leap p.i.pas s.i.pas lab)
+    ?:  (lazy-empty by)  $(pas t.pas)
+    $(pas t.pas, lab rec, bys [by bys])
+  ::  +lazy-leap: what the blocks of a lazy need want of the part at .p, as
+  ::  a need of the axis .s of another noun, and the need without it.  A
+  ::  block that wants in a register a noun that holds the part keeps all of
+  ::  its need: that noun is not the same in both branches.  Nothing is
+  ::  looked at that was not: no look at .s itself is added (+from adds one)
+  ::
+  ++  lazy-leap
+    |=  [p=@ s=@ laz=need-lazy]
+    ^-  [by=need-lazy rec=need-lazy]
+    =*  loop  $
+    =/  cut=(unit [don=need rec=need])  (need-cut p ned.sure.laz)
+    =/  [sur-by=sure sur-rec=sure]
+      ?~  cut  [*sure sure.laz]
+      =/  [lok-by=(set @) lok-rec=(set @)]
+        %-  ~(rep in lok.sure.laz)
+        |=  [a=@ by=(set @) rec=(set @)]
+        ?~  d=(gep p a)  [by (~(put in rec) a)]
+        [(~(put in by) (peg s u.d)) rec]
+      [[(need-from s don.u.cut) lok-by] [rec.u.cut lok-rec]]
+    ::
+    =/  forks=(list [lazy-fork lazy-fork])
+      %+  turn  fork.laz
+      |=  e=lazy-fork
+      =/  y  loop(laz laz.y.e)
+      =/  n  loop(laz laz.n.e)
+      [[[o.y.e by.y] [o.n.e by.n]] [[o.y.e rec.y] [o.n.e rec.n]]]
+    ::
+    =/  bonds=(list [lazy-bond lazy-bond])
+      %+  turn  bond.laz
+      |=  e=lazy-bond
+      =/  b  loop(laz laz.e)
+      [[o.e by.b] [o.e rec.b]]
+    ::
+    :-  (lazy-prune sur-by (turn forks head) (turn bonds head))
+    (lazy-prune sur-rec (turn forks tail) (turn bonds tail))
+  ::  the part of a need at an axis and the need without it; ~ if a noun
+  ::  that holds the part is wanted in a register
+  ::
+  ++  need-cut
+    |=  [axe=@ ned=need]
+    ^-  (unit [don=need rec=need])
+    ?:  =(1 axe)  `[ned none+~]
+    ?-    -.ned
+        %none  `[ned ned]
+        %this  ~
+        %both  ~
+    ::
+        ^
+      ?-    (cap axe)
+          %2
+        =/  kid  $(axe (mas axe), ned p.ned)
+        ?~  kid  ~
+        `[don.u.kid (cons-need rec.u.kid q.ned)]
+      ::
+          %3
+        =/  kid  $(axe (mas axe), ned q.ned)
+        ?~  kid  ~
+        `[don.u.kid (cons-need p.ned rec.u.kid)]
+      ==
+    ==
+  ::  a need of a noun as the need of the noun that holds it at .axe
+  ::
+  ++  need-from
+    |=  [axe=@ ned=need]
+    ^-  need
+    ?:  ?=(%none -.ned)  ned
+    |-  ^-  need
+    ?:  =(1 axe)  ned
+    ?-  (cap axe)
+      %2  [$(axe (mas axe)) none+~]
+      %3  [none+~ $(axe (mas axe))]
+    ==
   ::
   ++  copy
     ~%  %comp-copy  ..ride  ~
@@ -6621,6 +6825,97 @@
   =/  x  (bex dif-wid)
   =/  low-b  (dis b (dec x))
   `(con low-b x)
+::
+::  +pass: the parts of the product of a formula that are parts of its
+::  subject as they stand: pairs of an axis of the product and the axis of
+::  the subject it is taken from, the widest such parts, none inside another
+::
+++  pass
+  |=  =nomm
+  ^-  (list [p=@ s=@])
+  ?+    nomm  ~
+      [^ *]
+    %+  weld
+      (turn $(nomm -.nomm) |=([p=@ s=@] [(peg 2 p) s]))
+    (turn $(nomm +.nomm) |=([p=@ s=@] [(peg 3 p) s]))
+  ::
+      [%0 *]   ?:(=(0 p.nomm) ~ [1 p.nomm]~)
+      [%6 *]   (pass-both q.nomm r.nomm)
+      [%7 *]   (pass-then $(nomm p.nomm) $(nomm q.nomm))
+      [%10 *]  (pass-edit p.p.nomm $(nomm q.p.nomm) $(nomm q.nomm))
+      [%11 *]  $(nomm q.nomm)
+  ==
+::  the parts both branches of a fork take from one place of the subject.  A
+::  branch that is a crash has no product to differ in
+::
+++  pass-both
+  |=  [q=nomm r=nomm]
+  ^-  (list [p=@ s=@])
+  ?:  (pass-bomb q)  (pass r)
+  ?:  (pass-bomb r)  (pass q)
+  =/  a=(list [p=@ s=@])  (pass q)
+  ?~  a  ~
+  =/  b=(list [p=@ s=@])  (pass r)
+  ?~  b  ~
+  %-  zing
+  %+  turn  `(list [p=@ s=@])`a
+  |=  [p=@ s=@]
+  %+  murn  `(list [p=@ s=@])`b
+  |=  [q=@ t=@]
+  ^-  (unit [p=@ s=@])
+  ?^  d=(gep p q)
+    ?.(=(t (peg s u.d)) ~ `[q t])
+  ?^  d=(gep q p)
+    ?.(=(s (peg t u.d)) ~ `[p s])
+  ~
+::  a crash, under hints or not
+::
+++  pass-bomb
+  |=  =nomm
+  ^-  ?
+  ?+  nomm  |
+    [%0 *]   =(0 p.nomm)
+    [%11 *]  $(nomm q.nomm)
+  ==
+::  +pass of [7 p q] from those of p (.a) and of q (.b)
+::
+++  pass-then
+  |=  [a=(list [p=@ s=@]) b=(list [p=@ s=@])]
+  ^-  (list [p=@ s=@])
+  ?~  a  ~
+  %-  zing
+  %+  turn  b
+  |=  [pq=@ sq=@]
+  %+  murn  `(list [p=@ s=@])`a
+  |=  [pp=@ sp=@]
+  ^-  (unit [p=@ s=@])
+  ?^  d=(gep pp sq)  `[pq (peg sp u.d)]
+  ?^  d=(gep sq pp)  `[(peg pq u.d) sp]
+  ~
+::  +pass of an edit at .axe: what the new part passes, and of what the
+::  edited noun passes the parts beside the path to .axe
+::
+++  pass-edit
+  |=  [axe=@ don=(list [p=@ s=@]) rec=(list [p=@ s=@])]
+  ^-  (list [p=@ s=@])
+  %+  weld
+    ^-  (list [p=@ s=@])
+    (turn don |=([p=@ s=@] [(peg axe p) s]))
+  ^-  (list [p=@ s=@])
+  %-  zing
+  %+  turn  rec
+  |=  [p=@ s=@]
+  ^-  (list [p=@ s=@])
+  ?^  (gep axe p)  ~
+  =/  und=(unit @)  (gep p axe)
+  ?~  und  [p s]~
+  =/  d=@  u.und
+  |-  ^-  (list [p=@ s=@])
+  ?:  =(1 d)  ~
+  =/  k=@  (cap d)
+  =/  o=@  ?:(=(2 k) 3 2)
+  :-  [(peg p o) (peg s o)]
+  $(p (peg p k), s (peg s k), d (mas d))
 ::
 ++  none-equivalent
   ~%  %none-equivalent  ..ride  ~
