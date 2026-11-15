@@ -274,6 +274,16 @@
     ?:  ?=(%| a)  |
     ?:  ?=(%& a)  ~|  [%misunderstanding a+a b+b]  !!
     (con:ca $(a -.a, b -.b) $(a +.a, b +.b))
+  ::  +lack: the parts of a that b does not know
+  ::
+  ++  lack
+    |=  [a=cape b=cape]
+    ^-  cape
+    ?:  ?=(%| a)  |
+    ?:  ?=(%& b)  |
+    ?:  ?=(%| b)  a
+    =/  [p=cape q=cape]  ?@(a [a a] a)
+    (con $(a p, b -.b) $(a q, b +.b))
   ::  slot
   ::
   ++  lot
@@ -2466,6 +2476,17 @@
         ?~  tem=(chain-cape bus regs.st)  want
         (uni:ca want u.tem)
       =/  less-code  (app:ca (core-chains (core-atoms want bus) bus regs.st) bus)
+      ::  .indi is where a subject that knows more could make an indirect
+      ::  call direct, so it has no part that this subject knows whole: such
+      ::  a part can't be known better.  A formula is sought in a known part
+      ::  and not found when it is a cons over the part, or the atom the
+      ::  part is (the null scry gate of +mink): nothing a subject could
+      ::  know there would find it.  Without this the reuse of a function
+      ::  for another call (+recursive-call, +git:mi) compared the two
+      ::  subjects on data
+      ::
+      =/  dark=cape  ?@(bus | cape.bus)
+      =.  indi  (lack:ca indi dark)
       =/  data-new=datum  [callees nomm less-code indi pro area]
       ::  If we got two different non-void products we will compute their MSG to
       ::  converge faster, otherwise we intersect the products to preserve more
@@ -2489,7 +2510,7 @@
         ::  that could affect the immediate callers, turn disagreeing parts into
         ::  %.y so that we converge
         ::
-        (msg-ca indi.data-new indi.data)
+        (lack:ca (msg-ca indi.data-new indi.data) dark)
       ::
       =/  changed=?
         !=([less-code prod map indi]:data-new [less-code prod map indi]:data)
