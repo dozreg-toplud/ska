@@ -8074,6 +8074,16 @@
 ::  the constant found.  The first of equal constants wins, as in the
 ::  chain; the blocks of the chain are those of the tree.
 ::
+::  A ?- or a ?+ over atoms (a tag already fetched, a character) compiles
+::  to a chain of plain tests of one register .d, each ending a block:
+::
+::    P:  ..  [%imm c r]  [%eqq d r hit N]
+::    N:  [%imm c' r']  [%eqq d r' hit' N']
+::
+::  and becomes a binary search the same way.  %lti takes any noun: a cell
+::  or an indirect atom is above every direct atom, and the %eqq at the
+::  leaf then misses.
+::
 ++  switch-chains
   ~%  %switch-chains  ..ride  ~
   |=  blocks=(map @uwoo blob)
@@ -8152,37 +8162,78 @@
     ?.  =(s.u.t2 s.u.t)  ~
     $(p miss.u.t)
   ::
-  =/  out=(map @uwoo blob-out)  blocks
-  =|  done=(set @uwoo)
-  |-  ^-  (map @uwoo blob-out)
-  ?~  topo  out
-  ?:  (~(has in done) i.topo)  $(topo t.topo)
-  =/  cs=(list test)  (chain-of i.topo)
-  ?:  (lth (lent cs) 4)  $(topo t.topo)
-  ?>  ?=(^ cs)
-  =/  s=@uvre  s.i.cs
-  =/  d=@uvre  d.i.cs
-  =/  top=@uwoo  y.i.cs
-  =/  mis=@uwoo  miss:(rear `(list test)`cs)
-  ::  the blocks of the chain but its first two: those of the tree
+  ::  the plain test that the block .p ends with, if it does: of the
+  ::  register .d against the constant .c, put in .r by the block, to .hit
+  ::  or .miss
   ::
-  =/  ids=(list @uwoo)
-    %+  weld  (turn t.cs |=(t=test y.t))
-    (turn (snip `(list test)`cs) |=(t=test miss.t))
-  =.  done  (~(gas in done) ids)
-  =.  out  (roll ids |=([o=@uwoo acc=_out] (~(del by acc) o)))
-  ::  the cases, the first of each constant, by the constants
+  =*  plain  ,[d=@uvre c=@ hit=@uwoo miss=@uwoo r=@uvre]
+  =/  plain-of
+    |=  p=@uwoo
+    ^-  (unit plain)
+    =/  b=blob  (~(got by blocks) p)
+    ?.  ?=([%eqq * * [~ *] [~ *]] fin.b)  ~
+    =/  m=(unit [n=* d=@uvre])
+      =/  bod=(list pole)  body.b
+      |-  ^-  (unit [n=* d=@uvre])
+      ?~  bod  ~
+      ?:  ?&  ?=([%imm *] i.bod)
+              |(=(d.i.bod l.fin.b) =(d.i.bod r.fin.b))
+          ==
+        `[n d]:i.bod
+      $(bod t.bod)
+    ?~  m  ~
+    =/  c=*  n.u.m
+    ?.  ?=(@ c)  ~
+    ?.  (lth c (bex 31))  ~
+    ?:  =(l.fin.b r.fin.b)  ~
+    ?.  =(2 (~(gut by uses) d.u.m 0))  ~
+    =/  d=@uvre  ?:(=(d.u.m l.fin.b) r.fin.b l.fin.b)
+    `[d c there.z.fin.b there.o.fin.b d.u.m]
+  ::  the plain tests chained from the one of .p, with their blocks: the
+  ::  miss of each is a block with nothing but the constant and the test of
+  ::  the next, of the same register, reached from that test only
   ::
-  =/  cas=(list [c=@ hit=@uwoo r=@uvre])
-    =/  ces=(list test)  cs
-    =|  [saw=(set @) acc=(list [c=@ hit=@uwoo r=@uvre])]
+  =/  plains-of
+    |=  p=@uwoo
+    ^-  (list [p=@uwoo t=plain])
+    =/  t=(unit plain)  (plain-of p)
+    ?~  t  ~
+    :-  [p u.t]
+    =/  nb=blob  (~(got by blocks) miss.u.t)
+    ?.  ?=(~ par.nb)  ~
+    ?.  ?=([[%imm *] ~] body.nb)  ~
+    ?.  =(~[p] (~(get ja rev) miss.u.t))  ~
+    =/  t2=(unit plain)  (plain-of miss.u.t)
+    ?~  t2  ~
+    ?.  =(d.u.t2 d.u.t)  ~
+    $(p miss.u.t)
+  ::  the cases of a chain, the first of each constant, by the constants
+  ::
+  =*  case  ,[c=@ hit=@uwoo r=@uvre]
+  =/  cases
+    |=  ces=(list case)
+    ^-  (list case)
+    =|  [saw=(set @) acc=(list case)]
     |-  ^+  acc
     ?~  ces  (sort acc |=([a=[c=@ *] b=[c=@ *]] (lth c.a c.b)))
     ?:  (~(has in saw) c.i.ces)  $(ces t.ces)
-    $(ces t.ces, saw (~(put in saw) c.i.ces), acc [[c hit r]:i.ces acc])
+    $(ces t.ces, saw (~(put in saw) c.i.ces), acc [i.ces acc])
+  ::  the tree of a binary search over the cases .cas of the register .d,
+  ::  .mis where no case leads: the body and the end of its root; the other
+  ::  nodes are put in .out under the labels .ids
   ::
-  =/  node
-    |-  ^-  [body=(list pole) fin=termin-out ids=(list @uwoo) out=_out]
+  =/  tree
+    |=  $:  cas=(list case)
+            d=@uvre
+            mis=@uwoo
+            ids=(list @uwoo)
+            out=(map @uwoo blob-out)
+        ==
+    ^-  $:  body=(list pole)
+            fin=termin-out
+            ids=(list @uwoo)
+            out=(map @uwoo blob-out)
+        ==
     ?>  ?=(^ cas)
     ?:  ?=(~ t.cas)
       :*  ~[[%imm c.i.cas r.i.cas]]
@@ -8190,9 +8241,9 @@
           ids
           out
       ==
-    =/  all=(list [c=@ hit=@uwoo r=@uvre])  cas
+    =/  all=(list case)  cas
     =/  haf=@ud  (div (lent all) 2)
-    =/  hi=(list [c=@ hit=@uwoo r=@uvre])  (slag haf all)
+    =/  hi=(list case)  (slag haf all)
     ?>  ?=(^ hi)
     ?>  ?=([* * *] ids)
     =/  [l-id=@uwoo r-id=@uwoo]  [i.ids i.t.ids]
@@ -8202,10 +8253,66 @@
     =.  out.r  (~(put by out.r) r-id [~ body.r fin.r])
     [~ [%lti c.i.hi d [~ l-id] [~ r-id]] ids.r out.r]
   ::
+  =/  out=(map @uwoo blob-out)  blocks
+  =|  done=(set @uwoo)
+  ::  the first label that no block has
+  ::
+  =/  nex=@uwoo
+    %+  roll  ~(tap in ~(key by blocks))
+    |=([o=@uwoo m=@uwoo] ?:((gte o m) `@uwoo`+(o) m))
+  |-  ^-  (map @uwoo blob-out)
+  ?~  topo  out
+  ?:  (~(has in done) i.topo)  $(topo t.topo)
+  =/  cs=(list test)  (chain-of i.topo)
+  ?:  (gte (lent cs) 4)
+    ?>  ?=(^ cs)
+    =/  s=@uvre  s.i.cs
+    =/  d=@uvre  d.i.cs
+    =/  top=@uwoo  y.i.cs
+    =/  mis=@uwoo  miss:(rear `(list test)`cs)
+    ::  the blocks of the chain but its first two: those of the tree
+    ::
+    =/  ids=(list @uwoo)
+      %+  weld  (turn t.cs |=(t=test y.t))
+      (turn (snip `(list test)`cs) |=(t=test miss.t))
+    =.  done  (~(gas in done) ids)
+    =.  out  (roll ids |=([o=@uwoo acc=_out] (~(del by acc) o)))
+    =/  cas=(list case)
+      (cases (turn `(list test)`cs |=(t=test [c hit r]:t)))
+    =/  node  (tree cas d mis ids out)
+    =.  out  out.node
+    =.  out  (~(put by out) top [~ [[%hed s d] body.node] fin.node])
+    =/  b=blob  (~(got by blocks) i.topo)
+    =.  out  (~(put by out) i.topo b(fin [%clq s [~ top] [~ mis]]))
+    $(topo t.topo)
+  ::  a chain of plain tests: the root of the tree ends the first block,
+  ::  the other nodes take the blocks of the chain and new ones
+  ::
+  =/  ps=(list [p=@uwoo t=plain])  (plains-of i.topo)
+  ?:  (lth (lent ps) 4)  $(topo t.topo)
+  ?>  ?=(^ ps)
+  =/  d=@uvre  d.t.i.ps
+  =/  mis=@uwoo  miss.t:(rear `(list [p=@uwoo t=plain])`ps)
+  =/  old=(list @uwoo)  (turn t.ps |=([p=@uwoo *] p))
+  =.  done  (~(gas in done) old)
+  =.  out  (roll old |=([o=@uwoo acc=_out] (~(del by acc) o)))
+  =/  cas=(list case)
+    (cases (turn `(list [p=@uwoo t=plain])`ps |=([* t=plain] [c hit r]:t)))
+  ::  a tree of k leaves has 2k-1 nodes, and the root has a block
+  ::
+  =/  ned=@ud  (sub (mul 2 (lent cas)) 2)
+  =^  ids=(list @uwoo)  nex
+    =/  ids=(list @uwoo)  (scag ned old)
+    |-  ^-  [(list @uwoo) @uwoo]
+    ?:  (gte (lent ids) ned)  [ids nex]
+    $(ids [nex ids], nex `@uwoo`+(nex))
+  =/  node  (tree cas d mis ids out)
   =.  out  out.node
-  =.  out  (~(put by out) top [~ [[%hed s d] body.node] fin.node])
   =/  b=blob  (~(got by blocks) i.topo)
-  =.  out  (~(put by out) i.topo b(fin [%clq s [~ top] [~ mis]]))
+  =/  bod=(list pole)
+    %+  skip  body.b
+    |=(op=pole &(?=([%imm *] op) =(d.op r.t.i.ps)))
+  =.  out  (~(put by out) i.topo [par.b (weld bod body.node) fin.node])
   $(topo t.topo)
 ::
 ++  optimize
