@@ -656,6 +656,11 @@
           |((cell:so sock.b) ?=(^ src.b))
       ==
     (double-int a b)
+  ::  two constants are not walked for what they share, as in +double-int:
+  ::  they are cells, and that is all
+  ::
+  ?.  |(?=(^ cape.sock.a) ?=(^ cape.sock.b) ?=(^ src.a) ?=(^ src.b))
+    [[[| |] ~ ~] ~]
   ~+
   =/  h
     %=  $
