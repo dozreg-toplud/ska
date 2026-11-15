@@ -6021,7 +6021,6 @@
   |=  $:  [subject=* formula=*]
           scry=$@(~ $-(^ (unit (unit))))
       ==
-  ~>  %bare
   =|  trace=(list [@ta *])
   |^  ^-  tone
       ?+  formula  [%2 trace]
@@ -6118,6 +6117,7 @@
         =/  next  $(formula next.formula)
         ?.  ?=(%0 -.next)  next
         :-  %0
+        ~>  %bare
         .*  subject
         [11 tag.formula 1 product.next]
       ::
@@ -6131,6 +6131,7 @@
           $(formula next.formula)
         ?.  ?=(%0 -.next)  next
         :-  %0
+        ~>  %bare
         .*  subject
         [11 [tag.formula 1 product.clue] 1 product.next]
       ::
