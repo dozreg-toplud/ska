@@ -452,6 +452,64 @@
       %2  $(two (knit two q.i.acc), acc t.acc)
       %3  $(two (knit q.i.acc two), acc t.acc)
     ==
+  ::    Structure
+  ::
+  ::  A cape [| |] over data [0 0] is a cell of which nothing else is known.
+  ::  The call graph analysis never makes one (+knit loses it, which keeps
+  ::  the subjects of its functions few); baking does (+know), from what the
+  ::  callers of a function build: a part of a subject that every caller
+  ::  conses is a cell for the callee, and a fetch from it cannot crash.
+  ::
+  ::  cons, a cell also when nothing of its parts is known
+  ::
+  ++  cons
+    ~/  %cons
+    |=  [one=sock two=sock]
+    ^-  sock
+    ?:  |(?=(%void one) ?=(%void two))  %void
+    [[cape.one cape.two] data.one data.two]
+  ::  is the noun known to be a cell?
+  ::
+  ++  cell
+    |=  s=sock
+    ^-  ?
+    ?@  s  |
+    ?^  cape.s  &
+    &(cape.s ?=(^ data.s))
+  ::  +purr that keeps a cell where both are cells
+  ::
+  ++  meet
+    ~/  %meet
+    |=  [one=sock two=sock]
+    ^-  sock
+    ?:  =(one two)  one
+    ?@  one  two
+    ?@  two  one
+    ?.  &((cell one) (cell two))  *sock
+    ~+
+    (cons $(one (hed one), two (hed two)) $(one (tel one), two (tel two)))
+  ::  +darn that keeps the cells on the way to the axis: an edit that did
+  ::  not crash went through them
+  ::
+  ++  mend
+    ~/  %mend
+    |=  [one=sock axe=@ two=sock]
+    ^-  sock
+    ?:  =(1 axe)  two
+    ?:  |(=(%void one) =(%void two))  %void
+    =|  acc=(list (pair ?(%2 %3) sock))
+    |-  ^-  sock
+    ?.  =(1 axe)
+      ?-  (cap axe)
+          %2  $(one (hed one), acc [[%2 (tel one)] acc], axe (mas axe))
+          %3  $(one (tel one), acc [[%3 (hed one)] acc], axe (mas axe))
+      ==
+    |-  ^-  sock
+    ?~  acc  two
+    ?-  p.i.acc
+      %2  $(two (cons two q.i.acc), acc t.acc)
+      %3  $(two (cons q.i.acc two), acc t.acc)
+    ==
   --
 ::  Operations on provenance
 ::
@@ -584,6 +642,38 @@
     ==
   ::
   [(knit:so sock.h sock.t) (cons:pi src.h src.t)]
+::  +double-int that keeps a cell where both are cells: by the sock, or by
+::  the provenance, which is a cell for what was consed
+::
+++  double-meet
+  ~%  %double-meet  ..ride  ~
+  |=  [a=[=sock src=spring] b=[=sock src=spring]]
+  ^-  [=sock src=spring]
+  ?:  =(a b)  a
+  ?@  sock.a  b
+  ?@  sock.b  a
+  ?.  ?&  |((cell:so sock.a) ?=(^ src.a))
+          |((cell:so sock.b) ?=(^ src.b))
+      ==
+    (double-int a b)
+  ~+
+  =/  h
+    %=  $
+      sock.a  (hed:so sock.a)
+      sock.b  (hed:so sock.b)
+      src.a   (hed:pi src.a)
+      src.b   (hed:pi src.b)
+    ==
+  ::
+  =/  t
+    %=  $
+      sock.a  (tel:so sock.a)
+      sock.b  (tel:so sock.b)
+      src.a   (tel:pi src.a)
+      src.b   (tel:pi src.b)
+    ==
+  ::
+  [(cons:so sock.h sock.t) (cons:pi src.h src.t)]
 --
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
@@ -1470,9 +1560,10 @@
   =/  l=sock  $(s [-.cape.s -.data.s])
   =/  r=sock  $(s [+.cape.s +.data.s])
   ?>  &(?=(^ l) ?=(^ r))
-  ?:  &(?=(%| cape.l) ?=(%| cape.r))  |+~
+  ::  [| |] stays: a cell of unknown parts
+  ::
   :_  [data.l data.r]
-  ?:  &(?=(@ cape.l) =(cape.l cape.r))  cape.l
+  ?:  &(?=(%& cape.l) ?=(%& cape.r))  &
   [cape.l cape.r]
 ::
 ++  uni-sock
@@ -1487,7 +1578,7 @@
   ?:  ?=(%| cape.a)  b
   ?:  ?=(%| cape.b)  a
   ~+
-  (knit:so $(a (hed:so a), b (hed:so b)) $(a (tel:so a), b (tel:so b)))
+  (cons:so $(a (hed:so a), b (hed:so b)) $(a (tel:so a), b (tel:so b)))
 ::    What a caller holds
 ::
 ::  A cape of the parts of a noun that the code that made it holds
@@ -1674,7 +1765,7 @@
       [[%1 x] [&+x ~]]
     :-  =/  new  [nomm.l nomm.r]
         ?:(=(new nomm) nomm new)
-    [(knit:so sock.prod.l sock.prod.r) (cons:pi src.prod.l src.prod.r)]
+    [(cons:so sock.prod.l sock.prod.r) (cons:pi src.prod.l src.prod.r)]
   ::
       [%0 *]
     ?:  =(0 p.nomm)  [[nomm dunno] gen]
@@ -1757,7 +1848,7 @@
       ==
     =^  q  gen  loop(nomm q.nomm)
     =^  r  gen  loop(nomm r.nomm)
-    [[[%6 nomm.p nomm.q nomm.r] (double-int prod.q prod.r)] gen]
+    [[[%6 nomm.p nomm.q nomm.r] (double-meet prod.q prod.r)] gen]
   ::
       [%7 *]
     =^  p  gen  loop(nomm p.nomm)
@@ -1776,7 +1867,7 @@
     ?^  lit  [[[%1 u.lit] [&+u.lit ~]] gen]
     :_  gen
     :-  [%10 [p.p.nomm nomm.don] nomm.rec]
-    :-  (darn:so sock.prod.rec p.p.nomm sock.prod.don)
+    :-  (mend:so sock.prod.rec p.p.nomm sock.prod.don)
     (edit:pi src.prod.rec p.p.nomm src.prod.don)
   ::
       [%11 *]
@@ -1942,7 +2033,7 @@
       ?:  |(frozen (~(has in fix.st) c))  less.c
       =/  ks=(list sock)  (zing ~(val by m))
       ?~  ks  less.c
-      =/  meet=sock  (roll t.ks |=([k=sock acc=_i.ks] (purr:so k acc)))
+      =/  meet=sock  (roll t.ks |=([k=sock acc=_i.ks] (meet:so k acc)))
       (norm-sock (uni-sock less.c meet))
     ::
     =/  old=(unit sock)  (~(get by bak.st) c)
