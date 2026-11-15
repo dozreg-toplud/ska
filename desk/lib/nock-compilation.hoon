@@ -4086,6 +4086,9 @@
         ::
         (copy nex-toke laz.nex-fol)
       =^  nex      gen  simple-next
+      =^  nex=next  gen
+        ?.  ?=(hint-dynamic-stop p.p.nomm)  [nex gen]
+        (past-if nex q.nomm region)
       =^  toke     gen  re
       =^  epil     gen  (emit ~ ~[hde+[p.p.nomm toke body.nomm]] %hop then.nex)
       =^  nex-fol1  gen  $(nomm q.nomm, goal nex(then [~ epil]))
@@ -4122,6 +4125,7 @@
         [[%hmp b.nomm sub-v body.nomm] [%hme b.nomm sub-v body.nomm]]
       ::
       =^  nex   gen  simple-next
+      =^  nex=next  gen  (past-if nex q.nomm region)
       =^  epil  gen  (emit ~ ~[epil-op] %hop then.nex)
       =^  nex-fol1  gen  $(nomm q.nomm, goal nex(then [~ epil]))
       =^  nex-fol2=next  gen  (lazy-bound nex-fol1 region)
@@ -4301,7 +4305,10 @@
         ?:  (safe-nomm q.p.nomm)  [l-fol gen]
         =^  l-toke  gen  $(nomm q.p.nomm, goal [%next none])
         [(laze-copy l-toke l-fol) gen]
-      =^  l-fol=laze  gen  $(nomm q.nomm, goal simple)
+      =^  gol=laze  gen
+        ?.  ?=(hint-dynamic-stop p.p.nomm)  [laz.simple gen]
+        (laze-past-if laz.simple q.nomm)
+      =^  l-fol=laze  gen  $(nomm q.nomm, goal [%next gol])
       =^  l-fol=laze  gen
         ?.  ?=(hint-dynamic-stop p.p.nomm)  [l-fol gen]
         =^  i  gen  id
@@ -4310,7 +4317,8 @@
       [(laze-copy l-toke l-fol) gen]
     ::
         [%mean *]
-      =^  l-fol=laze  gen  $(nomm q.nomm, goal simple)
+      =^  gol=laze  gen  (laze-past-if laz.simple q.nomm)
+      =^  l-fol=laze  gen  $(nomm q.nomm, goal [%next gol])
       =^  i  gen  id
       =/  l-fol=laze  [*sure-ordered ~ [i l-fol]~]
       =^  ned=need-ordered  gen
@@ -4830,6 +4838,57 @@
       =.  ops  [[%cel r.ned] ops]
       ?<  =(r r.ned)
       [[[%mov r r.ned] ops] gen]
+    ==
+  ::
+  ::  +past-if: a hint that stops crash relocation (%spot, %mean, ..) ends
+  ::  where its formula has made its product.  What follows the hint needs
+  ::  parts of that product; if the formula met that need itself, a product
+  ::  that is not a cell where a part is wanted would crash inside the hint,
+  ::  and the trace would hold a frame that the plain interpreter has
+  ::  already left.  So the sure need is met in a block of its own past the
+  ::  hint's epilogue, as the needs of the lazy blocks of the goal already
+  ::  are.  Unless meeting it cannot crash (+sound): then it is left to the
+  ::  formula, and conses, branches and calls hand their parts on directly.
+  ::
+  ++  past-if
+    |=  [nex=next nom=nomm region=(list @uxid)]
+    ^-  [next _gen]
+    ?:  ?&  ?=(?(~ [%1 ~ ~]) lok.sure.laz.nex)
+            (sound nom (need-to-ordered ned.sure.laz.nex))
+        ==
+      [nex gen]
+    =^  o  gen  (emit ~ ~ %hop then.nex)
+    =.  gen  (set-tag o region)
+    :_  gen
+    [%next [*sure fork.laz.nex [[o [sure.laz.nex ~ ~]] bond.laz.nex]] ~ o]
+  ::  +past-if for shapes
+  ::
+  ++  laze-past-if
+    |=  [laz=laze nom=nomm]
+    ^-  [laze _gen]
+    ?:  ?&  ?=(?(~ [%1 ~ ~]) lok.sure.laz)
+            (sound nom ned.sure.laz)
+        ==
+      [laz gen]
+    =^  i  gen  id
+    [[*sure-ordered fork.laz [[i [sure.laz ~ ~]] bond.laz]] gen]
+  ::  +sound: no noun of unknown shape is taken apart to meet the need .ned
+  ::  of the product of .nom: where parts are wanted the product is made of
+  ::  parts by a cons, in every branch
+  ::
+  ++  sound
+    |=  [nom=nomm ned=need-ordered]
+    ^-  ?
+    ?:  ?=(?(%none %this) -.ned)  &
+    =/  [h=need-ordered t=need-ordered]
+      ?:(?=(%both -.ned) [h.ned t.ned] [p.ned q.ned])
+    ?+    nom  |
+        [^ *]      &($(nom -.nom, ned h) $(nom +.nom, ned t))
+        [%0 *]     =(0 p.nom)
+        [%6 *]     &($(nom q.nom) $(nom r.nom))
+        [%7 *]     $(nom q.nom)
+        [%11 *]    $(nom q.nom)
+        [%mean *]  $(nom q.nom)
     ==
   ::
   ++  lazy-bound
