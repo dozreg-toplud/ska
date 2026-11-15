@@ -3449,7 +3449,7 @@
   ::  Compile normally
   ::
   =^  n-ary-map=(map bell straight)  cache  (compile-scc-in +.args)
-  =/  comp  (comp scc long-ska jets-hot n-ary-map func)
+  =/  comp  (comp scc long-ska jets-hot n-ary-map ~ func)
   ::  Compile the pessimized version
   ::
   =|  gen=line-short
@@ -3515,14 +3515,16 @@
   =/  member
     ~%  %compile-scc-fn  ..ride  ~
     |=  $:  b=bell
-            done=?
+            mode=scc-mode
             keep=?
             map-local=(map bell straight)
+            top=(map bell need-ordered)
             cache=comp-cache
         ==
     ^-  [? (map bell straight) comp-cache]
+    =/  done=?  ?=(%done mode)
     ?>  ?=(^ less.b)
-    =/  comp  (comp scc long-ska jets-hot map-local b)
+    =/  comp  (comp scc long-ska jets-hot map-local top b)
     =^  =nomm  cache  (inlined b long-ska jets-hot cache)
     ::  Until the fixed point only the input shape is needed: from the
     ::  shape-only traversal, or from the full compilation with code emission
@@ -3551,7 +3553,11 @@
         [[(need-to-ordered ned.bak) laz ned-final bak o sur] gen]
       ?.  done
         =^  l=laze  gen  (~(run-shape comp gen) nomm [%done ~] ~)
-        =/  shape  (bake-need-ord (laze-collapse l cape.less.b) less.b)
+        =/  shape
+          %+  bake-need-ord
+            ?:  ?=(%must mode)  (laze-collapse l cape.less.b)
+            (laze-may l cape.less.b)
+          less.b
         :_  gen
         [shape *need-lazy *need *baked `@uwoo`0 (sure-of sure.l cape.less.b)]
       =.  mode.gen  %run
@@ -3604,8 +3610,14 @@
     ::  The shape changed when it is new and needs something, or when the MSG
     ::  with the previous one (taken to avoid divergence) differs from it
     ::
+    ::  A first shape is a change for the callers that were compiled with
+    ::  another: nothing, or what the member may read (+callee-need)
+    ::
     ?~  s-previous=(~(get by map-local) b)
-      :+  |(moved !?=([%none ~] need-new))
+      :+  ?|  moved
+              !?=([%none ~] need-new)
+              !?=([%none ~] (~(gut by top) b [%none ~]))
+          ==
         (~(put by map-local) b (finish ~))
       cache
     =/  need-pessimized  (msg-need-ord need-new need.u.s-previous cape.less.b)
@@ -3637,7 +3649,7 @@
       [m c(nary (~(uni by nary.c) m))]
     %+  roll  ~(tap in scc)
     |=  [b=bell m=_map-local c=_cache]
-    =/  r  (member b & keep m c)
+    =/  r  (member b %done keep m ~ c)
     [+<.r +>.r]
   ?:  done  (final | map-local cache)
   ::  Fixed point, with the schedule of the call graph analysis: sweeps over
@@ -3678,9 +3690,31 @@
       vis  (~(put in vis) k)
       stk  [[k ~(tap in (~(get ju kids) k))] stk1]
     ==
+  ::  A callee in the SCC that has no shape yet is not taken to read
+  ::  nothing, as it once was: a member compiled before its callee then took
+  ::  what its other branch read for conditional and the noun above it
+  ::  whole, its callers kept that noun whole for it, and a loop that
+  ::  changed one field of the noun consed it back every turn: the first
+  ::  guess held itself up.  Such a callee is taken to read on every path
+  ::  what it may read on any (.top): one sweep before the loop unites, for
+  ::  each member, the needs of both branches of its forks (+laze-may), with
+  ::  those of the callees the sweep has been to.  The loop then makes whole
+  ::  what a member reads on some paths only, as before.
+  ::
+  ::  A part that is taken to be read and is not there costs a try and the
+  ::  subject version of the callee (\$soft-call), not a crash.
+  ::
   ::  .tick counts member compiles; .ran is the tick of a member's last
   ::  compile, .chg the tick of its last shape change
   ::
+  =/  may=[m=(map bell straight) c=comp-cache]
+    !@  dedicated-shape-pass  [~ cache]
+    %+  roll  order
+    |=  [b=bell m=(map bell straight) c=_cache]
+    =/  r  (member b %may | m ~ c)
+    [+<.r +>.r]
+  =/  top=(map bell need-ordered)  (~(run by m.may) |=(s=straight need.s))
+  =.  cache  c.may
   =/  st=[any=? tick=@ud ran=(map bell @ud) chg=(map bell @ud)]  [| 0 ~ ~]
   =/  counter=@ud  0
   |-  ^+  [map-local cache]
@@ -3694,7 +3728,7 @@
       |=(k=bell (gte (~(gut by chg.st) k 0) u.r))
     ?.  dirty  [st m c]
     =/  t=@ud  +(tick.st)
-    =/  r  (member b | (gth t (mul 4 ~(wyt in scc))) m c)
+    =/  r  (member b %must (gth t (mul 4 ~(wyt in scc))) m top c)
     :_  [+<.r +>.r]
     :^  &  t
       (~(put by ran.st) b t)
@@ -3827,6 +3861,7 @@
           long-ska=_[=_code =_jets =_calls]:*long-ska
           jets-hot=jets-comp
           map-local=(map bell straight)
+          top=(map bell need-ordered)
           b=bell
       ==
   |_  gen=line-short
@@ -4584,9 +4619,13 @@
     ^-  [need-ordered _gen]
     =/  rin=(unit ring)  (~(get by call.cole.jets.long-ska) b-callee)
     ?^  j=(biff rin ~(get by jets-hot))  [need.u.j gen]
-    ?:  (~(has in scc) b-callee)
-      [need:(~(gut by map-local) b-callee *straight) gen]
-    (callee-compiled b-callee)
+    ?.  (~(has in scc) b-callee)  (callee-compiled b-callee)
+    ::  a member of the SCC that has no shape yet is taken to read what it
+    ::  may read (.top)
+    ::
+    :_  gen
+    ?^  s=(~(get by map-local) b-callee)  need.u.s
+    (~(gut by top) b-callee [%none ~])
   ::  need of a callee outside the SCC, compiled for it: from the compiled
   ::  functions in .gen, which compiling it extends
   ::
@@ -7497,6 +7536,10 @@
       fork=(list [y=[o=@uxid laz=$] n=[o=@uxid laz=$]])
       bond=(list [o=@uxid laz=$])
   ==
+::  What a pass over a member of an SCC computes: what it may read
+::  (%may), its shape (%must), its code (%done)
+::
++$  scc-mode  ?(%may %must %done)
 +$  laze-fork  [y=[o=@uxid laz=laze] n=[o=@uxid laz=laze]]
 +$  laze-bond  [o=@uxid laz=laze]
 +$  goal-shape  $%([%pick ~] [%done ~] [%next laz=laze])
@@ -7752,6 +7795,20 @@
       ==
     ==
   ==
+::
+::  +laze-may: the shape of all that some path reads of the subject: the
+::  needs of both branches of every fork united, where +laze-collapse takes
+::  their MSG
+::
+++  laze-may
+  ~%  %laze-may  ..ride  ~
+  |=  [laz=laze less=cape]
+  ^-  need-ordered
+  =/  intr=need-inter2  (inter1-to-inter2 (laze-to-inter1 laz) less)
+  |-  ^-  need-ordered
+  %+  roll  fork.intr
+  |=  [[y=need-inter2 n=need-inter2] acc=_sure.intr]
+  (uni-need-ord (uni-need-ord acc ^$(intr y)) ^$(intr n))
 ::
 ++  laze-collapse
   ~%  %laze-collapse  ..ride  ~
