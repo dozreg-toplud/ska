@@ -2996,6 +2996,35 @@
       tags=(map @uwoo (list @uxid))  ::  region of lazy need blocks
       =cond
       cache=comp-cache               ::  compiled callees, their SCCs
+      soft=(map @uwoo soft-call)     ::  blocks where a callee's need is met
+      sofs=(set @uxid)               ::  the same for shapes
+  ==
+::  A direct call whose callee takes parts that the subject formula does
+::  not make by a cons.  The parts are the callee's to read: where this
+::  function has to take a noun apart for them, it tries (+soft-done), and
+::  a noun that is not a cell goes to the subject version of the callee,
+::  whole, which crashes where the plain interpreter does, or does not.
+::
+::  b, rin: the callee, its ring; ned: its need, with the registers of the
+::  call; tel: a tail call; plain: the block of the call.  Three blocks run
+::  before it: head, with the fetches that are this function's own; that
+::  of the bond, with the moves and conses that make the callee's
+::  arguments, and what a fork splices into it (+insert-hop); last, with
+::  the tries (+soft-emit).  pro, out: the product and the block that
+::  follows, of a call that is no tail call; req: the nouns to take apart,
+::  with the need of each
+::
++$  soft-call
+  $:  b=bell
+      rin=(unit ring)
+      ned=need
+      tel=?
+      plain=@uwoo
+      head=@uwoo
+      last=@uwoo
+      pro=@uvre
+      out=@uwoo
+      req=(list [src=@uvre ned=need])
   ==
 ::
 +$  jets-comp-info  [need=need-ordered]
@@ -3512,6 +3541,7 @@
       ::
       ?.  done  [?~(pessimized need-new u.pessimized) 0 ~]
       =.  gen  (~(coerce-lazy comp gen) ned-final o laz cape.less.b)
+      =.  gen  ~(soft-done comp gen)
       ::  the baked registers are loaded before the deconsing code
       ::
       =.  gen
@@ -3519,7 +3549,7 @@
       =/  res=next-resolved  [%next [[ned.bak ~] ~ ~] ~ o]
       ?~  pessimized  (~(to-straight comp gen) res)
       =^  coerced=next-resolved  gen
-        (~(coerce-ord comp gen) u.pessimized res)
+        (~(coerce-soft comp gen) u.pessimized res)
       (~(to-straight comp gen) coerced)
     ::  The shape changed when it is new and needs something, or when the MSG
     ::  with the previous one (taken to avoid divergence) differs from it
@@ -3840,6 +3870,9 @@
       ::
       =^  sub-ned=need  gen  (need-ord-alloc-regs b-ned)
       =/  sub-v=(list @uvre)  (flatten-need sub-ned)
+      ::  a noun might be taken apart for the callee ($soft-call)
+      ::
+      =/  sof=?  &(?=(~ key) !(sound p.nomm b-ned))
       =^  call-blocks=$@(@uwoo [opt=@uwoo pes=[sub=@uvre o=@uwoo]])  gen
         =/  call-op
           |=  [pes=(unit @uvre) pro=@uvre]
@@ -3866,14 +3899,20 @@
         ::  Memoized calls are never TCO'd
         ::
         ?:  &(?=(~ key) ?=(%done -.goal))
-          ?.  mono  (emit ~ ~ (jump-op ~))
+          ?.  mono
+            =^  o  gen  (emit ~ ~ (jump-op ~))
+            =?  gen  sof  (soft-new o b-callee rin sub-ned & *@uvre *@uwoo)
+            [o gen]
           =^  sub-pes  gen  re
           =^  opt  gen  (emit ~ ~ (jump-op ~))
           =^  pes  gen  (emit ~ ~ (jump-op `sub-pes))
           [[opt sub-pes pes] gen]
         =^  nex  gen  simple-next
         =^  [out=@uwoo pro=@uvre]  gen  (kerf nex)
-        ?.  mono  (emit ~ ~[(call-op ~ pro)] %hop ~ out)
+        ?.  mono
+          =^  o  gen  (emit ~ ~[(call-op ~ pro)] %hop ~ out)
+          =?  gen  sof  (soft-new o b-callee rin sub-ned | pro out)
+          [o gen]
         =^  merged   gen  re
         =^  sub-pes  gen  re
         =^  merge    gen  (emit ~[merged] [%mov merged pro]~ %hop ~ out)
@@ -3893,13 +3932,21 @@
         =^  o=@uwoo  gen  (mono-try-call sub-ned call-blocks)
         [[this+sub.pes.call-blocks o] gen]
       ::
+      ::  the need of the callee: bound at a block of the call when a noun
+      ::  might be taken apart for it ($soft-call)
+      ::
+      =^  nex-arg=next  gen
+        =/  nex-arg=next  [%next (lazy-from-need sub-ned) ~ call-block]
+        ?.  (~(has by soft.gen) call-block)  [nex-arg gen]
+        (soft-bond nex-arg region)
+      ::
       =^  nex-fol=next  gen
-        ?:  (safe-fol-fol q.nomm)  [[%next *need-lazy ~ call-block] gen]
-        $(nomm q.nomm, goal [%next *need-lazy ~ call-block])
+        ?:  (safe-fol-fol q.nomm)  [[%next *need-lazy then.nex-arg] gen]
+        $(nomm q.nomm, goal [%next *need-lazy then.nex-arg])
       ::
       =^  nex-fol  gen  (past nex-fol p.nomm region)
       =^  nex-sub  gen
-        $(nomm p.nomm, goal [%next (lazy-from-need sub-ned) then.nex-fol])
+        $(nomm p.nomm, goal [%next laz.nex-arg then.nex-fol])
       ::
       (copy nex-sub laz.nex-fol)
     ::
@@ -4019,7 +4066,7 @@
         ::
         ?:  ?|  &((whole q.nomm) (whole r.nomm))
                 (this-only laz.goal)
-                (lazy-big laz.goal)
+                (lazy-big (soft-less laz.goal))
             ==
           =^  [out=@uwoo pro=@uvre]  gen  (kerf goal)
           $(goal [%next (lazy-from-need this+pro) ~ out])
@@ -4087,7 +4134,7 @@
       ::
       =.  lazy  (past-fork lazy p.nomm)
       =^  nex-cond  gen  $(nomm p.nomm, goal [%pick ~^yes ~^nuh])
-      ?.  (lazy-big lazy)  (copy nex-cond lazy)
+      ?.  (lazy-big (soft-less lazy))  (copy nex-cond lazy)
       ::  the need of the branches is met before the test (+lazy-shut)
       ::
       =^  o=@uwoo  gen  (emit ~ ~ %hop then.nex-cond)
@@ -4280,7 +4327,13 @@
         =^  ned=need-ordered  gen
           ?:  ?=([~ ^] k.u.info.nomm)  [this+~ gen]
           (callee-need b-callee)
-        $(nomm p.nomm, goal [%next [[ned ~] ~ ~]])
+        ::  as +run does ($soft-call)
+        ::
+        ?.  &(?=(~ k.u.info.nomm) !(sound p.nomm ned))
+          $(nomm p.nomm, goal [%next [[ned ~] ~ ~]])
+        =^  i  gen  id
+        =.  sofs.gen  (~(put in sofs.gen) i)
+        $(nomm p.nomm, goal [%next [*sure-ordered ~ [i [[ned ~] ~ ~]]~]])
       ::
       [(laze-copy l-sub l-fol) gen]
     ::
@@ -4497,6 +4550,7 @@
       $(fork.laz t.fork.laz)
     |-  ^-  @ud
     ?~  bond.laz  c
+    ?:  (~(has in sofs.gen) o.i.bond.laz)  $(bond.laz t.bond.laz)
     $(bond.laz t.bond.laz, c ^$(laz laz.i.bond.laz))
   ::  +this-only for shapes
   ::
@@ -4824,7 +4878,7 @@
   ++  lazy-shut
     |=  [o=@uwoo laz=need-lazy]
     ^-  [need-lazy _gen]
-    ?.  (lazy-big laz)  [laz gen]
+    ?.  (lazy-big (soft-less laz))  [laz gen]
     =^  r  gen  (kern o laz)
     [(lazy-from-need this+r) gen]
   ::
@@ -4868,6 +4922,7 @@
     =^  ned  gen  (sure-require-look sur)
     ?:  ?=(%none -.ned)  gen
     =^  src  gen  ?:(=(o-laz o) [r gen] (proxy r o-laz))
+    ?:  (~(has by soft.gen) o-laz)  (soft-ask o-laz src ned)
     =^  ops  gen  (kern-need src ned)
     (add-ops o-laz ops)
   ::  Register to read `r` through in the lazy block `o`. Recorded in cond.gen
@@ -4965,18 +5020,410 @@
   ++  sound
     |=  [nom=nomm ned=need-ordered]
     ^-  ?
-    ?:  ?=(?(%none %this) -.ned)  &
-    =/  [h=need-ordered t=need-ordered]
-      ?:(?=(%both -.ned) [h.ned t.ned] [p.ned q.ned])
-    ?+    nom  |
-        [^ *]      &($(nom -.nom, ned h) $(nom +.nom, ned t))
-        [%0 *]     =(0 p.nom)
-        [%6 *]     &($(nom q.nom) $(nom r.nom))
-        [%7 *]     $(nom q.nom)
-        [%11 *]    $(nom q.nom)
-        [%mean *]  $(nom q.nom)
+    (sound-far nom ned code.long-ska 3)
+  ::
+  ::  +soft-new: a direct call whose callee's need is met softly, by the
+  ::  block of the call; +soft-bond moves it to the block of the bond
+  ::
+  ++  soft-new
+    |=  $:  o=@uwoo
+            b=bell
+            rin=(unit ring)
+            ned=need
+            tel=?
+            pro=@uvre
+            out=@uwoo
+        ==
+    ^+  gen
+    gen(soft (~(put by soft.gen) o [b rin ned tel o o o pro out ~]))
+  ::  +soft-bond: the need of the callee is bound at a block before the
+  ::  call: all that takes a noun apart for the callee goes there
+  ::
+  ++  soft-bond
+    |=  [nex=next region=(list @uxid)]
+    ^-  [next _gen]
+    =/  call=@uwoo  there.then.nex
+    =^  l  gen  (emit ~ ~ %hop then.nex)
+    =^  o  gen  (emit ~ ~ %hop ~ l)
+    =^  h  gen  (emit ~ ~ %hop ~ o)
+    =.  gen  (set-tag o region)
+    =/  s=soft-call  (~(got by soft.gen) call)
+    =.  soft.gen  (~(put by (~(del by soft.gen) call)) o s(head h, last l))
+    :_  gen
+    [%next [*sure ~ [o [sure.laz.nex ~ ~]]~] ~ h]
+  ::  +soft-ask: the noun in .src is to be taken apart in the block .o of a
+  ::  soft call, to meet .ned
+  ::
+  ++  soft-ask
+    |=  [o=@uwoo src=@uvre ned=need]
+    ^+  gen
+    ?:  dropping  gen
+    gen(soft (~(jab by soft.gen) o |=(s=soft-call s(req [[src ned] req.s]))))
+  ::  +soft-less: a lazy need without the bonds of soft calls, for its size
+  ::  (+lazy-big): a need that is bound at its call was part of the sure
+  ::  need, and counted for nothing
+  ::
+  ++  soft-less
+    |=  laz=need-lazy
+    ^-  need-lazy
+    ?:  &(?=(~ fork.laz) ?=(~ bond.laz))  laz
+    :+  sure.laz
+      %+  turn  fork.laz
+      |=  e=lazy-fork
+      ^-  lazy-fork
+      [[o.y.e ^$(laz laz.y.e)] [o.n.e ^$(laz laz.n.e)]]
+    %+  murn  bond.laz
+    |=  e=lazy-bond
+    ^-  (unit lazy-bond)
+    ?:  (~(has by soft.gen) o.e)  ~
+    `[o.e ^$(laz laz.e)]
+  ::  +soft-done: the blocks of the soft calls, once all that is taken apart
+  ::  in them is known: after +coerce-lazy
+  ::
+  ++  soft-done
+    ^+  gen
+    ?:  dropping  gen
+    =/  lis=(list [o=@uwoo s=soft-call])  ~(tap by soft.gen)
+    |-  ^+  gen
+    ?~  lis  gen
+    $(lis t.lis, gen (soft-emit i.lis))
+  ::  +soft-emit: the blocks of a soft call.  A noun that is taken apart
+  ::  for the callee is a part of the callee's subject, as the caller has
+  ::  it, or is above such parts (+soft-cut).  Above them the fetch is this
+  ::  function's own, and crashes here.  The parts are tried: if one is not
+  ::  a cell where the callee takes it apart, the callee's subject is made
+  ::  of what there is (+soft-cons) and given to its subject version.
+  ::
+  ::  The tries come last, right before the call, and a try that fails
+  ::  goes straight to the subject version: all that the bond's block makes
+  ::  is there to make the subject of.  Unless the block, or what a fork
+  ::  spliced into it, reads a register that a try defines (a part that is
+  ::  passed twice): then the tries come first, a try that fails sets a
+  ::  flag and gives its registers a 0 that nothing reads (+soft-try), and
+  ::  the flag is tested before the call.
+  ::
+  ::  What a fork takes apart in its branches for the need (+fork) is not
+  ::  tried: an argument made by a conditional, a branch of which hands on
+  ::  a noun whole, still crashes in that branch.
+  ::
+  ++  soft-emit
+    |=  [o=@uwoo s=soft-call]
+    ^+  gen
+    ?~  req.s  gen
+    =/  axs=(map @uvre @)  (soft-axes ned.s)
+    =^  cut=[ops=(list pole) tops=(list [q=@ r=@uvre ned=need])]  gen
+      =|  acc=[ops=(list pole) tops=(list [q=@ r=@uvre ned=need])]
+      =/  req=(list [src=@uvre ned=need])  req.s
+      |-  ^-  [[ops=(list pole) tops=(list [q=@ r=@uvre ned=need])] _gen]
+      ?~  req  [acc gen]
+      =^  c  gen  (soft-cut src.i.req ned.i.req axs)
+      $(req t.req, acc [(weld ops.c ops.acc) (weld tops.c tops.acc)])
+    ::  the fetches that are this function's, and the moves of the parts
+    ::  that the callee takes whole, and of the wholes of those it takes
+    ::  apart too
+    ::
+    =/  ops=(list pole)
+      %+  weld  ops.cut
+      %+  murn  tops.cut
+      |=  [q=@ r=@uvre ned=need]
+      ^-  (unit pole)
+      =/  d=(unit @uvre)
+        ?:  ?=(%this -.ned)  `r.ned
+        ?:  ?=(%both -.ned)  `r.ned
+        ~
+      ?~  d  ~
+      ?:  =(r u.d)  ~
+      `[%mov r u.d]
+    ::  what is tried: the parts under each noun
+    ::
+    =/  tries=(list [q=@ r=@uvre ned=need])
+      %+  murn  tops.cut
+      |=  [q=@ r=@uvre ned=need]
+      ^-  (unit [q=@ r=@uvre ned=need])
+      ?:  ?=(?(%none %this) -.ned)  ~
+      ?:  ?=(%both -.ned)  `[q r h.ned t.ned]
+      `[q r ned]
+    ::
+    =/  hed=blob  (~(got by blocks.gen) head.s)
+    ?>  ?=([~ ~ %hop ~ *] hed)
+    ?~  tries  (emir head.s ~ ops fin.hed)
+    =/  lat=blob  (~(got by blocks.gen) last.s)
+    ?>  ?=([~ ~ %hop ~ *] lat)
+    =/  bod=blob  (~(got by blocks.gen) o)
+    ::  the call of the subject version, with the subject in .rub
+    ::
+    =/  tom=(map @ @uvre)
+      (malt (turn tops.cut |=([q=@ r=@uvre ned=need] [q r])))
+    ::
+    =^  [kon=(list pole) rub=@uvre]  gen  (soft-cons ned.s tom less.b.s)
+    =^  pes=@uwoo  gen
+      ?:  tel.s
+        %^  emit  ~  ~
+        ?~(rin.s [%jsp b.s rub] [%jsf b.s rub u.rin.s])
+      =^  pro-opt  gen  re
+      =^  pro-pes  gen  re
+      =^  merged   gen  re
+      =^  merge    gen  (emit ~[merged] [%mov merged pro.s]~ %hop ~ out.s)
+      =/  sub-v=(list @uvre)  (flatten-need ned.s)
+      =.  gen
+        %^  emir  plain.s  ~
+        :_  [%hop ~[`pro-opt] merge]
+        ^-  (list pole)
+        :_  ~
+        ?~(rin.s [%cal b.s sub-v pro-opt] [%caf b.s sub-v pro-opt u.rin.s])
+      ::
+      %^  emit  ~
+        ^-  (list pole)
+        :_  ~
+        ?~(rin.s [%csl b.s rub pro-pes] [%csf b.s rub pro-pes u.rin.s])
+      [%hop ~[`pro-pes] merge]
+    ::
+    =^  fail=@uwoo  gen  (emit ~ kon %hop ~ pes)
+    ::  the registers that the tries define
+    ::
+    =/  def=(set @uvre)
+      %-  silt
+      ^-  (list @uvre)
+      %-  zing
+      (turn tries |=([q=@ r=@uvre ned=need] (flatten-need ned)))
+    ::
+    ?:  (soft-free o last.s def)
+      ::  the tries last
+      ::
+      =^  first=@uwoo  gen
+        =/  tops=(list [q=@ r=@uvre ned=need])  tries
+        =/  nxt=@uwoo  there.t.fin.lat
+        |-  ^-  [@uwoo _gen]
+        ?~  tops  [nxt gen]
+        =^  n  gen  (mono-try-call ned.i.tops nxt [r.i.tops fail])
+        $(tops t.tops, nxt n)
+      ::
+      =.  gen  (emir head.s ~ ops fin.hed)
+      (emir last.s ~ ~ %hop ~ first)
+    ::  the tries first, each going on to the next, the last to the block
+    ::  of the bond; .f is 0 until one fails
+    ::
+    =^  f0  gen  re
+    =^  [first=@uwoo f=@uvre]  gen
+      =/  tops=(list [q=@ r=@uvre ned=need])  tries
+      =/  nxt=@uwoo  there.t.fin.hed
+      ::  the flags are made front to back, the blocks back to front
+      ::
+      =^  fla=(list @uvre)  gen
+        =/  n=@ud  (lent tops)
+        |-  ^-  [(list @uvre) _gen]
+        ?:  =(0 n)  [~ gen]
+        =^  r  gen  re
+        =^  rest  gen  $(n (dec n))
+        [[r rest] gen]
+      ::
+      =/  tops  (flop tops)
+      =/  fla   (flop fla)
+      |-  ^-  [[@uwoo @uvre] _gen]
+      ?~  tops  [[nxt f0] gen]
+      ?>  ?=(^ fla)
+      =/  pre=@uvre  ?~(t.fla f0 i.t.fla)
+      =^  n  gen  (soft-try r.i.tops ned.i.tops pre i.fla nxt)
+      =^  [fir=@uwoo *]  gen  $(tops t.tops, fla t.fla, nxt n)
+      [[fir i.fla] gen]
+    ::
+    =.  gen  (emir head.s ~ (snoc ops [%imm 0 f0]) %hop ~ first)
+    (emir last.s ~ ~ %brz f t.fin.lat ~^fail)
+  ::  +soft-free: no block from .o on, before .las, reads a register in
+  ::  .def: the block of a bond and what a fork spliced into it
+  ::
+  ++  soft-free
+    |=  [o=@uwoo las=@uwoo def=(set @uvre)]
+    ^-  ?
+    =|  seen=(set @uwoo)
+    =/  todo=(list @uwoo)  ~[o]
+    |-  ^-  ?
+    ?~  todo  &
+    ?:  |(=(las i.todo) (~(has in seen) i.todo))  $(todo t.todo)
+    =/  =blob  (~(got by blocks.gen) i.todo)
+    ?:  (lien body.blob |=(op=pole (lien (get-regs op) ~(has in def))))  |
+    =/  nex=(list @uwoo)
+      ?+  -.fin.blob  ~
+        %hop  ~[there.t.fin.blob]
+        %clq  ~[there.z.fin.blob there.o.fin.blob]
+        %eqq  ~[there.z.fin.blob there.o.fin.blob]
+        %brn  ~[there.z.fin.blob there.o.fin.blob]
+        %brz  ~[there.z.fin.blob there.o.fin.blob]
+      ==
+    ::  a block that ends otherwise is none of the bond's
+    ::
+    ?:  ?=(~ nex)  |
+    $(todo (weld nex t.todo), seen (~(put in seen) i.todo))
+  ::  +soft-try: the noun in .src is taken apart to meet .ned if it has the
+  ::  cells; if it has not, the registers of .ned get 0, which nothing
+  ::  reads, and the flag .f is 1; else .f is the flag .pre of the tries
+  ::  before.  Goes on to .nxt
+  ::
+  ++  soft-try
+    |=  [src=@uvre ned=need pre=@uvre f=@uvre nxt=@uwoo]
+    ^-  [@uwoo _gen]
+    =/  out=(list @uvre)  (flatten-need ned)
+    =^  merge=@uwoo  gen  (emit (snoc out f) ~ %hop ~ nxt)
+    ::  fresh registers on the way that has the cells
+    ::
+    =^  tem=need  gen  (need-ord-alloc-regs (need-to-ordered ned))
+    =^  good=@uwoo  gen
+      %^  emit  ~  ~
+      [%hop (snoc (turn (flatten-need tem) some) `pre) merge]
+    ::
+    =^  zero  gen  re
+    =^  one   gen  re
+    =^  bad=@uwoo  gen
+      %^  emit  ~
+        `(list pole)`~[[%imm 0 zero] [%imm 1 one]]
+      [%hop (snoc (turn out |=(* `(unit @uvre)``zero)) `one) merge]
+    ::
+    (mono-try-call tem good [src bad])
+  ::  +soft-axes: where the registers of a callee's need are in its subject
+  ::
+  ++  soft-axes
+    |=  ned=need
+    ^-  (map @uvre @)
+    =|  m=(map @uvre @)
+    =/  axe=@  1
+    |-  ^+  m
+    ?-    -.ned
+        %none  m
+        %this  (~(put by m) r.ned axe)
+        ^      $(ned +.ned, axe (peg axe 3), m $(ned -.ned, axe (peg axe 2)))
+        %both
+      =.  m  (~(put by m) r.ned axe)
+      $(ned t.ned, axe (peg axe 3), m $(ned h.ned, axe (peg axe 2)))
+    ==
+  ::  +soft-axis: the place in the callee's subject of the noun that .ned
+  ::  is the need of: %any for no need, %no when it is not one place (the
+  ::  noun is above parts of the callee's subject, or a register of the
+  ::  need is none of the callee's: a fetch of the subject formula's own)
+  ::
+  ++  soft-axis
+    |=  [ned=need axs=(map @uvre @)]
+    ^-  $@(?(%any %no) [%at q=@])
+    ?-    -.ned
+        %none  %any
+        %this
+      ?~  a=(~(get by axs) r.ned)  %no
+      [%at u.a]
+    ::
+        ^
+      (soft-pair $(ned -.ned) $(ned +.ned))
+    ::
+        %both
+      =/  b  (soft-pair $(ned h.ned) $(ned t.ned))
+      ::  a register that is none of the callee's holds a noun to cons
+      ::  (+must): its place is that of its parts
+      ::
+      ?~  a=(~(get by axs) r.ned)
+        ?:(?=(%any b) %no b)
+      ?:  ?=(%any b)  [%at u.a]
+      ?:  ?=(%no b)  %no
+      ?.(=(q.b u.a) %no b)
     ==
   ::
+  ++  soft-pair
+    |=  $:  h=$@(?(%any %no) [%at q=@])
+            t=$@(?(%any %no) [%at q=@])
+        ==
+    ^-  $@(?(%any %no) [%at q=@])
+    ?:  |(?=(%no h) ?=(%no t))  %no
+    ::  the parent of a head at 2q and of a tail at 2q+1 is q
+    ::
+    =/  qh=(unit @)
+      ?@  h  ~
+      ?.  &((gth q.h 1) =(0 (end 0 q.h)))  [~ 0]
+      `(rsh 0 q.h)
+    =/  qt=(unit @)
+      ?@  t  ~
+      ?.  &((gth q.t 1) =(1 (end 0 q.t)))  [~ 0]
+      `(rsh 0 q.t)
+    ?~  qh
+      ?~  qt  %any
+      ?:(=(0 u.qt) %no [%at u.qt])
+    ?:  =(0 u.qh)  %no
+    ?~  qt  [%at u.qh]
+    ?.(=(u.qh u.qt) %no [%at u.qh])
+  ::  +soft-cut: the noun in .src, to be taken apart to meet .ned: the
+  ::  fetches that are this function's own (.ops, which crash on a noun that
+  ::  is not a cell), down to the parts of the callee's subject (.tops:
+  ::  place, register, need), which are tried
+  ::
+  ++  soft-cut
+    |=  [src=@uvre ned=need axs=(map @uvre @)]
+    ^-  [[ops=(list pole) tops=(list [q=@ r=@uvre ned=need])] _gen]
+    =/  q  (soft-axis ned axs)
+    ?:  ?=(%any q)  [[~ ~] gen]
+    ?^  q  [[~ [q.q src ned]~] gen]
+    ?-    -.ned
+        %none  [[~ ~] gen]
+        %this
+      ?<  =(src r.ned)
+      [[[%mov src r.ned]~ ~] gen]
+    ::
+        ^
+      =^  r-h  gen  re
+      =^  r-t  gen  re
+      =^  h  gen  $(src r-h, ned -.ned)
+      =^  t  gen  $(src r-t, ned +.ned)
+      :_  gen
+      :_  (weld tops.h tops.t)
+      ^-  (list pole)
+      :-  [%cel src]
+      %+  weld
+        ?:  &(?=(~ ops.h) ?=(~ tops.h))  ~
+        `(list pole)`[[%hed src r-h] ops.h]
+      ?:  &(?=(~ ops.t) ?=(~ tops.t))  ~
+      `(list pole)`[[%tal src r-t] ops.t]
+    ::
+        %both
+      ?<  =(src r.ned)
+      =^  r-h  gen  re
+      =^  r-t  gen  re
+      =^  h  gen  $(src r-h, ned h.ned)
+      =^  t  gen  $(src r-t, ned t.ned)
+      :_  gen
+      :_  (weld tops.h tops.t)
+      ^-  (list pole)
+      :+  [%mov src r.ned]
+        [%cel src]
+      %+  weld
+        ?:  &(?=(~ ops.h) ?=(~ tops.h))  ~
+        `(list pole)`[[%hed src r-h] ops.h]
+      ?:  &(?=(~ ops.t) ?=(~ tops.t))  ~
+      `(list pole)`[[%tal src r-t] ops.t]
+    ==
+  ::  +soft-cons: the subject of a callee as a noun, from the registers of
+  ::  its need .ned: the nouns in .tops where they are (a noun that was
+  ::  tried is whole in its source), and what the callee's bell knows (.k)
+  ::  where the need has nothing: where the bell knows nothing either, the
+  ::  callee reads nothing
+  ::
+  ++  soft-cons
+    |=  [ned=need tops=(map @ @uvre) k=sock]
+    ^-  [[(list pole) @uvre] _gen]
+    =/  axe=@  1
+    |-  ^-  [[(list pole) @uvre] _gen]
+    ?^  t=(~(get by tops) axe)  [[~ u.t] gen]
+    ?:  ?=(%this -.ned)  [[~ r.ned] gen]
+    ?:  ?=(%both -.ned)  [[~ r.ned] gen]
+    ::  nothing of the callee's below: the noun of its bell, which has
+    ::  what the bell knows, and elsewhere what nothing reads
+    ::
+    ?:  ?=(%none -.ned)
+      =^  r  gen  re
+      [[[%imm +.k r]~ r] gen]
+    =/  [h=need t=need]  ned
+    =^  [oh=(list pole) rh=@uvre]  gen
+      $(ned h, k (hed:so k), axe (peg axe 2))
+    ::
+    =^  [ot=(list pole) rt=@uvre]  gen
+      $(ned t, k (tel:so k), axe (peg axe 3))
+    ::
+    =^  r  gen  re
+    [[:(weld oh ot `(list pole)`[%con rh rt r]~) r] gen]
   ::  +past: the need of what runs after .nom is bound past it, when .nom
   ::  has a hint that keeps a trace frame or a call that may crash
   ::  (+hinted): where this function takes a noun apart for the code that
@@ -5234,9 +5681,14 @@
     =/  fill=(list pole)
       (turn (flatten-need ned) |=(x=@uvre `pole`[%imm 0 x]))
     ?-    -.atom
-        %|  (add-ops o [[%cel p.atom] fill])
+        %|
+      ?:  (~(has by soft.gen) o)  (soft-ask o p.atom ned)
+      (add-ops o [[%cel p.atom] fill])
+    ::
         %&
       =^  r  gen  re
+      ?:  (~(has by soft.gen) o)
+        (soft-ask(gen (add-ops o [%imm n.p.atom r]~)) o r ned)
       (add-ops o [[%imm n.p.atom r] [%cel r] fill])
     ==
   ::
@@ -5977,6 +6429,82 @@
         [[%both r.ned.nex hed tel] gen]
       ==
     ==
+  ::  +coerce-soft: +coerce-ord for the entry of a function whose shape is
+  ::  wider than its code wants.  The code reads the parts where it reads
+  ::  them, under a hint or on a branch: taken apart on entry, a noun that is
+  ::  not a cell would crash before all of that.  So the parts are tried,
+  ::  and a noun that is not a cell sends the function's subject, made of
+  ::  the registers it was entered with (+soft-cons), to its subject version
+  ::
+  ++  coerce-soft
+    ~%  %comp-coerce-soft  ..ride  ~
+    |=  [need-pessimized=need-ordered nex=next-resolved]
+    ^-  [next-resolved _gen]
+    =|  req=(list [r=@uvre ned=need])
+    =^  [ned=need req=_req]  gen
+      |-  ^-  [[need _req] _gen]
+      ?-    -.need-pessimized
+          %none
+        ?>  ?=(%none -.ned.nex)
+        [[[%none ~] req] gen]
+      ::
+          %this
+        ?:  ?=(%this -.ned.nex)  [[ned.nex req] gen]
+        =^  r  gen  re
+        :_  gen
+        :-  [%this r]
+        ?:(?=(%none -.ned.nex) req [[r ned.nex] req])
+      ::
+          ^
+        =/  [h=need t=need]
+          ?:  ?=(%none -.ned.nex)  [ned.nex ned.nex]
+          ?@  -.ned.nex  !!
+          ned.nex
+        ::
+        =^  [hed=need req=_req]  gen
+          $(need-pessimized -.need-pessimized, ned.nex h, req req)
+        ::
+        =^  [tel=need req=_req]  gen
+          $(need-pessimized +.need-pessimized, ned.nex t, req req)
+        ::
+        ?<  &(?=(%none -.hed) ?=(%none -.tel))
+        [[[hed tel] req] gen]
+      ::
+          %both
+        =^  [r=@uvre h=need t=need]  gen
+          ?-  -.ned.nex
+            %none  =^(r gen re [[r ned.nex ned.nex] gen])
+            %this  [[r.ned.nex [. .]:[%none ~]] gen]
+            ^      =^(r gen re [[r ned.nex] gen])
+            %both  [[r.ned.nex h.ned.nex t.ned.nex] gen]
+          ==
+        ::
+        =^  [hed=need req=_req]  gen
+          $(need-pessimized h.need-pessimized, ned.nex h, req req)
+        ::
+        =^  [tel=need req=_req]  gen
+          $(need-pessimized t.need-pessimized, ned.nex t, req req)
+        ::
+        ?<  &(?=(%none -.hed) ?=(%none -.tel))
+        [[[%both r hed tel] req] gen]
+      ==
+    ::
+    ?:  |(?=(~ req) dropping)  [[%next [[ned ~] ~ ~] [~ then.nex]] gen]
+    =/  rin=(unit ring)  (~(get by call.cole.jets.long-ska) b)
+    =^  [kon=(list pole) rub=@uvre]  gen  (soft-cons ned ~ less.b)
+    =^  fail=@uwoo  gen
+      (emit ~ kon ?~(rin [%jsp b rub] [%jsf b rub u.rin]))
+    ::
+    =^  first=@uwoo  gen
+      =/  req=(list [r=@uvre ned=need])  req
+      =/  nxt=@uwoo  then.nex
+      |-  ^-  [@uwoo _gen]
+      ?~  req  [nxt gen]
+      =^  n  gen  (mono-try-call ned.i.req nxt [r.i.req fail])
+      $(req t.req, nxt n)
+    ::
+    [[%next [[ned ~] ~ ~] [~ first]] gen]
+  ::
   ++  need-ord-alloc-regs
     ~%  %comp-need-ord-alloc-regs  ..ride  ~
     |=  ord=need-ordered
@@ -6029,6 +6557,7 @@
         gen
       ::
           %this
+        ?:  (~(has by soft.gen) o)  (soft-ask o r.ned ned-target)
         =^  ops  gen  (kern-need r.ned ned-target)
         (add-ops o ops)
       ::
@@ -6843,6 +7372,30 @@
   :-  (uni-need-ord ned.sure.i ned.sur)
   (~(uni in lok.sur) lok.sure.i)
 ::
+::  +sound-far: +sound:comp, which sees through .dep direct calls: the
+::  product of a call is that of the callee's formula
+::
+++  sound-far
+  ~%  %sound-far  ..ride  ~
+  |=  [nom=nomm ned=need-ordered cod=_code:*long-ska dep=@ud]
+  ^-  ?
+  ?:  ?=(?(%none %this) -.ned)  &
+  ~+
+  =/  [h=need-ordered t=need-ordered]
+    ?:(?=(%both -.ned) [h.ned t.ned] [p.ned q.ned])
+  ?+    nom  |
+      [^ *]      &($(nom -.nom, ned h) $(nom +.nom, ned t))
+      [%0 *]     =(0 p.nom)
+      [%6 *]     &($(nom q.nom) $(nom r.nom))
+      [%7 *]     $(nom q.nom)
+      [%11 *]    $(nom q.nom)
+      [%mean *]  $(nom q.nom)
+  ::
+      [%2 *]
+    ?~  info.nom  |
+    ?:  =(0 dep)  |
+    $(nom nomm:(~(got by cod) b.u.info.nom), dep (dec dep))
+  ==
 ::  +hinted: the formula has a hint that keeps a trace frame, or a call
 ::  that may crash: the callee may have such hints, and a jet reports a
 ::  crash with frames of its own
