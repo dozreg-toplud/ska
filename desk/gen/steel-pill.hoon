@@ -59,8 +59,8 @@
 ::
 ^-  [%steel p=(list)]
 ::  the SKA core's own hoon.hoon, not the kernel's: there +mock and +monk
-::  are jetted and +mink, +mole and +mule carry %virt hints, so that the
-::  core's virtualization (road-pure) runs compiled when the core does
+::  are jetted, so that the core's virtualization (road-pure) runs compiled
+::  when the core does; +mink itself is under %bare
 ::
 =/  sys=path  /(scot %p p.bec)/ska/(scot %da now)/sys
 =/  lib=path  /(scot %p p.bec)/ska/(scot %da now)/lib

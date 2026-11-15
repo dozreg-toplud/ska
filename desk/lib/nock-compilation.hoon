@@ -2501,7 +2501,7 @@
     ::
     =/  seat=(unit spot)  ~
     =/  memo-key=(unit *)  ~
-    =/  virt-call=?  |
+    =/  bare-call=?  |
     =/  defer=?  |
     ::  saf: the formula is safe: it does not crash and has no important side
     ::  effect, i.e. it is a constant, a cons of safe formulas or a %spot/%mean
@@ -2558,7 +2558,7 @@
       ::  guaranteeing termination of the algo when paired with homeomorphic
       ::  embedding check in recursive calls
       ::
-      ?.  &(=(& cape.sock.prod.f) ?=(^ data.sock.prod.f) !virt-call)
+      ?.  &(=(& cape.sock.prod.f) ?=(^ data.sock.prod.f) !bare-call)
         ::  indirect call
         ::
         =.  indi.gen  (uni:ca indi.gen (distribute & src.prod.f))
@@ -2683,11 +2683,6 @@
       (edit:pi src.prod.rec a.fol src.prod.don)
     ::
         [%11 p=@ q=^]
-      ?:  ?=(%virt p.fol)
-        ::  %virt hint annotates entry points into meta-circularly jetted
-        ::  interpreters. No need to analyze through.
-        ::
-        fol-loop(fol [%2 [%0 1] 1 q.fol], virt-call &)
       ?:  ?=(%bare p.fol)
         ::  %bare keeps a formula out of compiled nock: it is not analyzed,
         ::  and is run by an indirect call as it is written, with the hint,
@@ -2695,7 +2690,7 @@
         ::  The boundary of code that is compiled only under hints of its
         ::  own: an agent run by gall, say.
         ::
-        fol-loop(fol [%2 [%0 1] 1 fol], virt-call &)
+        fol-loop(fol [%2 [%0 1] 1 fol], bare-call &)
       =^  q  gen  fol-loop(fol q.fol)
       :_  gen
       :-  [%11 p.fol nomm.q q.fol]
