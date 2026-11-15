@@ -3748,6 +3748,7 @@
         ::
         =^  o  gen  (emit ~ ~ [%bom ~])
         =^  nex-2  gen  $(nomm +.nomm, goal [%next *need-lazy ~ o])
+        =^  nex-2  gen  (past nex-2 -.nomm region)
         =^  nex-1  gen  $(nomm -.nomm, goal [%next *need-lazy then.nex-2])
         ::  Here and later +copy is used to combine together two needs for one
         ::  subject
@@ -3757,6 +3758,7 @@
           %next
         =^  [hed=need-lazy tel=need-lazy o=@uwoo]  gen  (split goal)
         =^  nex-2  gen  $(nomm +.nomm, goal [%next tel ~ o])
+        =^  nex-2  gen  (past nex-2 -.nomm region)
         =^  nex-1  gen  $(nomm -.nomm, goal [%next hed then.nex-2])
         (copy nex-1 laz.nex-2)
       ==
@@ -3805,6 +3807,7 @@
         =^  nex-fol  gen
           $(nomm q.nomm, goal [%next (lazy-from-need this+r-fol) ~ o])
         ::
+        =^  nex-fol  gen  (past nex-fol p.nomm region)
         =^  nex-sub  gen
           $(nomm p.nomm, goal [%next (lazy-from-need this+r-sub) then.nex-fol])
         ::
@@ -3819,6 +3822,7 @@
           ?:  (safe-fol-fol q.nomm)  [[%next *need-lazy then.goal] gen]
           $(nomm q.nomm, goal [%next *need-lazy then.goal])
         ::
+        =^  nex-fol  gen  (past nex-fol p.nomm region)
         =^  nex-sub  gen  $(nomm p.nomm, goal [%next *need-lazy then.nex-fol])
         (copy nex-sub laz.nex-fol)
       =*  call-cole  call.cole.jets.long-ska
@@ -3893,6 +3897,7 @@
         ?:  (safe-fol-fol q.nomm)  [[%next *need-lazy ~ call-block] gen]
         $(nomm q.nomm, goal [%next *need-lazy ~ call-block])
       ::
+      =^  nex-fol  gen  (past nex-fol p.nomm region)
       =^  nex-sub  gen
         $(nomm p.nomm, goal [%next (lazy-from-need sub-ned) then.nex-fol])
       ::
@@ -3980,6 +3985,7 @@
       =^  nex-q  gen
         $(nomm q.nomm, goal [%next (lazy-from-need this+r-q) ~ o])
       ::
+      =^  nex-q  gen  (past nex-q p.nomm region)
       =^  nex-p  gen
         $(nomm p.nomm, goal [%next (lazy-from-need this+r-p) then.nex-q])
       ::
@@ -4033,6 +4039,7 @@
               region-branch  cond-before  cond-between
           ==
         ::
+        =.  lazy  (past-fork lazy p.nomm)
         =^  o=@uwoo  gen  (emit ~ ~ [%brn r-cond ~^yes ~^nuh])
         =^  lazy  gen  (lazy-shut o lazy)
         =^  nex-cond  gen
@@ -4078,6 +4085,7 @@
         :_  [yes nuh]
         [*sure [[yes laz.nex-0] [nuh laz.nex-1]]~ ~]
       ::
+      =.  lazy  (past-fork lazy p.nomm)
       =^  nex-cond  gen  $(nomm p.nomm, goal [%pick ~^yes ~^nuh])
       ?.  (lazy-big lazy)  (copy nex-cond lazy)
       ::  the need of the branches is met before the test (+lazy-shut)
@@ -4094,6 +4102,7 @@
       =^  next  gen  simple-next
       =^  [don=need-lazy rec=need-lazy o=@uwoo]  gen  (into next p.p.nomm)
       =^  nex-rec  gen  $(nomm q.nomm, goal [%next rec ~ o])
+      =^  nex-rec  gen  (past nex-rec q.p.nomm region)
       =^  nex-don  gen  $(nomm q.p.nomm, goal [%next don then.nex-rec])
       (copy nex-don laz.nex-rec)
     ::
@@ -4108,6 +4117,7 @@
       ?.  ?=(hint-dynamic p.p.nomm)
         =^  nex-fol  gen  $(nomm q.nomm)
         ?:  (safe-nomm q.p.nomm)  [nex-fol gen]
+        =^  nex-fol  gen  (past nex-fol q.p.nomm region)
         =^  nex-toke  gen
           $(nomm q.p.nomm, goal [%next *need-lazy then.nex-fol])
         ::
@@ -4120,7 +4130,7 @@
       =^  epil     gen  (emit ~ ~[hde+[p.p.nomm toke body.nomm]] %hop then.nex)
       =^  nex-fol1  gen  $(nomm q.nomm, goal nex(then [~ epil]))
       =^  nex-fol2=next  gen
-        ?.  ?=(hint-dynamic-stop p.p.nomm)  [nex-fol1 gen]
+        ?.  ?=(hint-dynamic-stop p.p.nomm)  (past nex-fol1 q.p.nomm region)
         (lazy-bound nex-fol1 region)
       ::
       =^  prol  gen
@@ -4171,6 +4181,7 @@
       =^  nex-path  gen
         $(nomm q.nomm, goal [%next (lazy-from-reg r-path) ~ o-spy])
       ::
+      =^  nex-path  gen  (past nex-path p.nomm region)
       =^  nex-ref   gen
         $(nomm p.nomm, goal [%next (lazy-from-reg r-ref) then.nex-path])
       ::
@@ -4229,12 +4240,14 @@
       ::
           %pick
         =^  l-2  gen  $(nomm +.nomm, goal [%next none])
+        =^  l-2  gen  (laze-past l-2 -.nomm)
         =^  l-1  gen  $(nomm -.nomm, goal [%next none])
         [(laze-copy l-1 l-2) gen]
       ::
           %next
         =/  [hed=laze tel=laze]  (laze-split laz.goal)
         =^  l-2  gen  $(nomm +.nomm, goal [%next tel])
+        =^  l-2  gen  (laze-past l-2 -.nomm)
         =^  l-1  gen  $(nomm -.nomm, goal [%next hed])
         [(laze-copy l-1 l-2) gen]
       ==
@@ -4249,6 +4262,7 @@
         [%2 *]
       ?~  info.nomm
         =^  l-fol  gen  $(nomm q.nomm, goal [%next this])
+        =^  l-fol  gen  (laze-past l-fol p.nomm)
         =^  l-sub  gen  $(nomm p.nomm, goal [%next this])
         [(laze-copy l-sub l-fol) gen]
       =*  b-callee  b.u.info.nomm
@@ -4260,6 +4274,7 @@
         ?:  (safe-fol-fol q.nomm)  [none gen]
         $(nomm q.nomm, goal [%next none])
       ::
+      =^  l-fol  gen  (laze-past l-fol p.nomm)
       =^  l-sub  gen
         ?:  drop  $(nomm p.nomm, goal [%next none])
         =^  ned=need-ordered  gen
@@ -4277,6 +4292,7 @@
     ::
         [%5 *]
       =^  l-q  gen  $(nomm q.nomm, goal [%next this])
+      =^  l-q  gen  (laze-past l-q p.nomm)
       =^  l-p  gen  $(nomm p.nomm, goal [%next this])
       [(laze-copy l-p l-q) gen]
     ::
@@ -4304,6 +4320,7 @@
         =^  l-1  gen  $(nomm r.nomm, goal [%next goal-1])
         =^  l-0  gen  $(nomm q.nomm, goal [%next goal-0])
         =^  lazy  gen  (laze-sect l-0 l-1)
+        =.  lazy  (laze-past-fork lazy p.nomm)
         =?  lazy  (laze-big lazy)  this
         =^  l-cond  gen  $(nomm p.nomm, goal [%next this])
         [(laze-copy l-cond lazy) gen]
@@ -4313,6 +4330,7 @@
       =^  l-1  gen  $(nomm r.nomm, goal goal-branch)
       =^  l-0  gen  $(nomm q.nomm, goal goal-branch)
       =^  lazy  gen  (laze-sect l-0 l-1)
+      =.  lazy  (laze-past-fork lazy p.nomm)
       =?  lazy  (laze-big lazy)  this
       =^  l-cond  gen  $(nomm p.nomm, goal [%pick ~])
       [(laze-copy l-cond lazy) gen]
@@ -4325,6 +4343,7 @@
       ?>  ?=(%next -.simple)
       =/  [don=laze rec=laze]  (laze-into p.p.nomm laz.simple)
       =^  l-rec  gen  $(nomm q.nomm, goal [%next rec])
+      =^  l-rec  gen  (laze-past l-rec q.p.nomm)
       =^  l-don  gen  $(nomm q.p.nomm, goal [%next don])
       [(laze-copy l-don l-rec) gen]
     ::
@@ -4335,6 +4354,7 @@
       ?.  ?=(hint-dynamic p.p.nomm)
         =^  l-fol  gen  $(nomm q.nomm)
         ?:  (safe-nomm q.p.nomm)  [l-fol gen]
+        =^  l-fol  gen  (laze-past l-fol q.p.nomm)
         =^  l-toke  gen  $(nomm q.p.nomm, goal [%next none])
         [(laze-copy l-toke l-fol) gen]
       =^  gol=laze  gen
@@ -4342,7 +4362,7 @@
         (laze-past-if laz.simple q.nomm)
       =^  l-fol=laze  gen  $(nomm q.nomm, goal [%next gol])
       =^  l-fol=laze  gen
-        ?.  ?=(hint-dynamic-stop p.p.nomm)  [l-fol gen]
+        ?.  ?=(hint-dynamic-stop p.p.nomm)  (laze-past l-fol q.p.nomm)
         =^  i  gen  id
         [[*sure-ordered ~ [i l-fol]~] gen]
       =^  l-toke  gen  $(nomm q.p.nomm, goal [%next this])
@@ -4362,6 +4382,7 @@
     ::
         [%12 *]
       =^  l-q  gen  $(nomm q.nomm, goal [%next this])
+      =^  l-q  gen  (laze-past l-q p.nomm)
       =^  l-p  gen  $(nomm p.nomm, goal [%next this])
       [(laze-copy l-p l-q) gen]
     ==
@@ -4955,6 +4976,67 @@
         [%11 *]    $(nom q.nom)
         [%mean *]  $(nom q.nom)
     ==
+  ::
+  ::  +past: the need of what runs after .nom is bound past it, when .nom
+  ::  has a hint that keeps a trace frame or a call that may crash
+  ::  (+hinted): where this function takes a noun apart for the code that
+  ::  follows, it does so past .nom, and not before a crash that the plain
+  ::  interpreter comes to first, with other frames.  The shape the
+  ::  function is entered with is the same: a bond is part of it.  The
+  ::  bonds of the need are where they belong already.
+  ::
+  ++  past
+    |=  [nex=next nom=nomm region=(list @uxid)]
+    ^-  [next _gen]
+    ?:  ?&  ?=([%none ~] ned.sure.laz.nex)
+            ?=(?(~ [%1 ~ ~]) lok.sure.laz.nex)
+            ?=(~ fork.laz.nex)
+        ==
+      [nex gen]
+    ?.  (hinted nom code.long-ska)  [nex gen]
+    =^  o  gen  (emit ~ ~ %hop then.nex)
+    =.  gen  (set-tag o region)
+    :_  gen
+    [%next [*sure ~ [[o [sure.laz.nex fork.laz.nex ~]] bond.laz.nex]] ~ o]
+  ::  +past for shapes
+  ::
+  ++  laze-past
+    |=  [laz=laze nom=nomm]
+    ^-  [laze _gen]
+    ?:  ?&  ?=([%none ~] ned.sure.laz)
+            ?=(?(~ [%1 ~ ~]) lok.sure.laz)
+            ?=(~ fork.laz)
+        ==
+      [laz gen]
+    ?.  (hinted nom code.long-ska)  [laz gen]
+    =^  i  gen  id
+    [[*sure-ordered ~ [[i [sure.laz fork.laz ~]] bond.laz]] gen]
+  ::  +past-fork: +past for the need of the branches of a fork (+sect), when
+  ::  the test .nom has such a hint: each branch is bound where it begins
+  ::
+  ++  past-fork
+    |=  [laz=need-lazy nom=nomm]
+    ^-  need-lazy
+    ?.  (hinted nom code.long-ska)  laz
+    :+  sure.laz
+      %+  turn  fork.laz
+      |=  e=lazy-fork
+      ^-  lazy-fork
+      :-  [o.y.e [*sure ~ [o.y.e laz.y.e]~]]
+      [o.n.e [*sure ~ [o.n.e laz.n.e]~]]
+    bond.laz
+  ::
+  ++  laze-past-fork
+    |=  [laz=laze nom=nomm]
+    ^-  laze
+    ?.  (hinted nom code.long-ska)  laz
+    :+  sure.laz
+      %+  turn  fork.laz
+      |=  e=laze-fork
+      ^-  laze-fork
+      :-  [o.y.e [*sure-ordered ~ [o.y.e laz.y.e]~]]
+      [o.n.e [*sure-ordered ~ [o.n.e laz.n.e]~]]
+    bond.laz
   ::
   ++  lazy-bound
     ~%  %comp-lazy-bound  ..ride  ~
@@ -6760,6 +6842,47 @@
   :_  (weld fork.i fork)
   :-  (uni-need-ord ned.sure.i ned.sur)
   (~(uni in lok.sur) lok.sure.i)
+::
+::  +hinted: the formula has a hint that keeps a trace frame, or a call
+::  that may crash: the callee may have such hints, and a jet reports a
+::  crash with frames of its own
+::
+++  hinted
+  ~%  %hinted  ..ride  ~
+  |=  [=nomm cod=_code:*long-ska]
+  ^-  ?
+  ?-  nomm
+    [%0 *]     |
+    [%1 *]     |
+    [%3 *]     $(nomm p.nomm)
+    [%4 *]     $(nomm p.nomm)
+    [%mean *]  &
+    [%12 *]    &
+  ::
+      ?([^ *] [%2 *] [%5 *] [%6 *] [%7 *] [%10 *] [%11 *])
+    ~+
+    ?-  nomm
+      [^ *]    |($(nomm -.nomm) $(nomm +.nomm))
+      [%5 *]   |($(nomm p.nomm) $(nomm q.nomm))
+      [%6 *]   |($(nomm p.nomm) $(nomm q.nomm) $(nomm r.nomm))
+      [%7 *]   |($(nomm p.nomm) $(nomm q.nomm))
+      [%10 *]  |($(nomm q.p.nomm) $(nomm q.nomm))
+    ::
+        [%2 *]
+      ?~  info.nomm  &
+      ?|  !pure:(~(got by cod) b.u.info.nomm)
+          $(nomm p.nomm)
+          $(nomm q.nomm)
+      ==
+    ::
+        [%11 *]
+      ?@  p.nomm  $(nomm q.nomm)
+      ?|  ?=(hint-dynamic-stop p.p.nomm)
+          $(nomm q.p.nomm)
+          $(nomm q.nomm)
+      ==
+    ==
+  ==
 ::
 ++  laze-collapse
   ~%  %laze-collapse  ..ride  ~
