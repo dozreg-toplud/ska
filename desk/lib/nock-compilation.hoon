@@ -78,7 +78,7 @@
 ::
 ::  ska verbosity
 ::
-=/  ska-verb  ~
+:: =/  ska-verb  ~
 ::  Baking (+bake-graph): %bake, the constants a function's callers know
 ::  from their code are part of its bell; %fold, only the function's own
 ::  reads of its code fold to constants, every function is its own one
@@ -96,7 +96,7 @@
 ::
 ::  compiler verbosity
 ::
-=/  comp-verb  ~
+:: =/  comp-verb  ~
 ::
 =/  print-ska
   |=  [pri=@ print=(trap tank)]
