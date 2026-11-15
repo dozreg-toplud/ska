@@ -1383,6 +1383,13 @@
 ::  Match a bell against registered cores: look for its formula in the battery
 ::  of a core template that its subject fits. Produces the ring of the arm.
 ::
+::  The driver of an arm is right for the cores of the template and for no
+::  others, so the bell has to know all that the template knows.  A bell
+::  that knows less is a function of other cores too, and the driver is not
+::  right for them, also when the function's code reads nothing else of the
+::  core: it may give the core to code that was not analyzed (%bare).  An
+::  arm that is run on its registered core knows the template always (+run).
+::
 ::  A bell that knows more than the template, the code of a gate in its
 ::  sample, is a function of fewer subjects, and the arm's driver is right for
 ::  it as it is for the function that knows what both do.  It gets the ring
@@ -1421,8 +1428,8 @@
     template-loop(templates r.templates)
   ::
   =/  template=sock  n.templates
+  ?.  (huge:so template less.b)  ~
   =/  nest=?  (huge:so less.b template)
-  ?.  |(nest (jibe:so less.b template))  ~
   =/  template-fol=sock  (hed:so template)
   =/  axis=@  2
   =;  axe=(unit @)
@@ -2450,6 +2457,14 @@
     =;  ,fol-result
       ::  construct datum
       ::
+      ::  an arm of a registered core that is run on that core is a function
+      ::  of the core's template, whatever it uses of it: only a bell that
+      ::  knows the template gets the ring (+cole-match)
+      ::
+      =/  want=cape
+        ?:  =(~ (~(get ju arms.regs.st) fol))  want
+        ?~  tem=(chain-cape bus regs.st)  want
+        (uni:ca want u.tem)
       =/  less-code  (app:ca (core-chains (core-atoms want bus) bus regs.st) bus)
       =/  data-new=datum  [callees nomm less-code indi pro area]
       ::  If we got two different non-void products we will compute their MSG to
