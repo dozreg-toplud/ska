@@ -15,17 +15,17 @@
   (memo-call swat sub (rain /sys/[nam]/hoon src))
 ::
 ++  build-lib
-  |=  [sub=(trap vase) imp=? nam=term lib=path]
+  |=  [sub=(trap vase) imp=? bug=? nam=term lib=path]
   ^-  (trap vase)
   ~>  %slog.[0 leaf+"ivory: building /lib/{(trip nam)}"]
   =/  hun=hoon
-    %+  mist  /lib/[nam]/hoon
+    %^  mist  bug  /lib/[nam]/hoon
     .^(@t cx+(welp lib /[nam]/hoon))
   ?.  imp  (swat sub hun)
   (swel sub [%ktts nam hun])
 ::
 ++  mist
-  |=  [bon=path txt=@]
+  |=  [bug=? bon=path txt=@]
   ^-  hoon
   =+  vas=vast
   ~|  bon
@@ -39,7 +39,7 @@
     ==
   ::
   %+  ifix  [;~(plug gay skip-ford) gay]
-  (stag %tssg (most gap tall:vas(wer bon, bug &)))
+  (stag %tssg (most gap tall:vas(wer bon, bug bug)))
   ::
 ::  +swel: +swat but with +slop
 ::
@@ -54,20 +54,25 @@
 --
 ::
 :-  %say
-|=  [[now=@da eny=@uvJ bec=beak] *]
+|=  [[now=@da eny=@uvJ bec=beak] arg=$@(~ [bug=? ~]) ~]
 :-  %noun
 ::
 ^-  [%steel p=(list)]
 ::  the SKA core's own hoon.hoon, not the kernel's: there +mock and +monk
 ::  are jetted, so that the core's virtualization (road-pure) runs compiled
-::  when the core does; +mink itself is under %bare
+::  when the core does; the two .* of +mink are under %bare
 ::
+::  The library is built without the spots of its source, unless the
+::  argument is & (+steel-pill &): they are for debugging the core, and a
+::  core that carries them compiles three times slower
+::
+=/  bug=?  ?~(arg | bug.arg)
 =/  sys=path  /(scot %p p.bec)/ska/(scot %da now)/sys
 =/  lib=path  /(scot %p p.bec)/ska/(scot %da now)/lib
 =/  trap
   =/  sub  *(trap vase)
   =.  sub  (build-sys sub %hoon sys)
-  (build-lib sub | %nock-compilation lib)
+  (build-lib sub | bug %nock-compilation lib)
 ::
 =/  nok  !.
   =>  [=_trap ~]  !=
