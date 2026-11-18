@@ -333,6 +333,27 @@
     ?&  $(one [lope -.data.one], two [loop -.data.two])
         $(one [rope +.data.one], two [roop +.data.two])
     ==
+  ::  Do two socks agree wherever both know?
+  ::
+  ++  jibe
+    |=  [one=sock two=sock]
+    ^-  ?
+    ?:  =(one two)  &
+    ?@  two  &
+    ?@  one  |
+    ?:  |(?=(%| cape.one) ?=(%| cape.two))  &
+    ?:  &(?=(%& cape.one) ?=(%& cape.two))  =(data.one data.two)
+    ?.  &(?=(^ data.one) ?=(^ data.two))  |
+    ~+
+    =/  [lope=cape rope=cape]
+      ?:(?=(^ cape.one) cape.one [cape.one cape.one])
+    ::
+    =/  [loop=cape roop=cape]
+      ?:(?=(^ cape.two) cape.two [cape.two cape.two])
+    ::
+    ?&  $(one [lope -.data.one], two [loop -.data.two])
+        $(one [rope +.data.one], two [roop +.data.two])
+    ==
   ::  axis of a partial noun, never fails
   ::
   ++  pull
@@ -533,49 +554,6 @@
   =/  l  $(s -.s, c p)
   =/  r  $(s +.s, c q)
   (uni:ca l r)
-::  +battery-of: where a call's formula is an arm of the core that is its
-::  subject, read from the subject of the caller: the axis of the battery
-::  there.  A battery any arm of which is code is code whole
-::
-++  battery-of
-  |=  [s=spring f=spring]
-  ^-  (unit @)
-  ?.  ?&(?=(@ s) ?=(@ f) !=(0 s) !=(0 f))  ~
-  =/  r=@  (peg s 2)
-  =/  d=@  (xeb r)
-  =/  e=@  (xeb f)
-  ?:  (lth e d)  ~
-  ?.  =(r (rsh [0 (sub e d)] f))  ~
-  `r
-::  +core-atoms: a core's payload that is an atom is part of its code: the
-::  version at the bottom of a kernel, the ~ under a core isolated with
-::  =>  ~.  Wherever .want covers the head of a cell of .bus whole and its
-::  tail is a known atom, the tail is wanted too.  The head is a battery
-::  wanted whole, as +battery-of has a call want it
-::
-++  core-atoms
-  ~%  %core-atoms  ..ride  ~
-  |=  [want=cape bus=sock]
-  ^-  cape
-  ?@  bus  want
-  =/  dat=*  data.bus
-  =/  cap=cape  cape.bus
-  |-  ^-  cape
-  ?@  want  want
-  ?@  dat  want
-  =/  hc=cape  ?@(cap cap -.cap)
-  =/  tc=cape  ?@(cap cap +.cap)
-  =/  hed=cape  $(want -.want, dat -.dat, cap hc)
-  =/  tel=cape  $(want +.want, dat +.dat, cap tc)
-  ?:  ?&  ?=(%& hed)
-          ?=(%| tel)
-          ?=(@ +.dat)
-          (all:ca tc)
-      ==
-    &
-  ?:  &(?=(%& hed) ?=(%& tel))  &
-  ?:  &(?=(%| hed) ?=(%| tel))  |
-  [hed tel]
 ::  doubly intersect a sock and a provenance
 ::
 ++  double-int
@@ -699,6 +677,9 @@
 ::               that are used as code transitively
 ::    indi: parts of the subject that were transitively used as code but which
 ::          didn't have data to make a direct call
+::    seek: parts of the subject where an indirect call sought its formula,
+::          transitively, known or not: what the function may run of its
+::          subject that the analysis did not find (+cole-match)
 ::    prod/map: product of the function, with the provenance of its parts in
 ::              the subject of the function (+patch-prod carries it over to
 ::              another subject that provides less-code)
@@ -712,6 +693,7 @@
       =nomm
       less-code=sock
       indi=cape
+      seek=cape
       [prod=$~(%void sock) map=spring]
       area=(unit spot)
   ==
@@ -790,6 +772,8 @@
     code=(map bell code-entry)          ::  direct bell mapping
     calls=(map bell (set bell))         ::  bell call graph
     vars=(jug bell bell)                ::  code bell -> its baked variants
+    seek=(map bell cape)                ::  compiled bell -> .seek of its
+                                        ::  function (+cole-match)
   ==
 --
 ::
@@ -1285,58 +1269,6 @@
   =.  arms  $(batt -.batt)
   ?.  ?=(^ +.batt)  arms
   $(batt +.batt)
-::  +core-chains: a registered core is code whole, its battery and the
-::  parents it was registered with.  Wherever .want covers some of a core
-::  in .bus that one of its templates matches, the template's cape is
-::  wanted too.  The layers of a kernel are such a chain, so a bell over any
-::  of them knows the whole kernel, and a rule that a combinator builds over
-::  it is a constant, also when the rule only keeps the core (the v=. of a
-::  ;~) and calls none of its arms
-::
-++  core-chains
-  ~%  %core-chains  ..ride  ~
-  |=  [want=cape bus=sock reg=regs]
-  ^-  cape
-  |-  ^-  cape
-  ?@  want  want
-  ?@  bus  want
-  ?:  |(?=(%| cape.bus) ?=(@ data.bus))  want
-  =/  tem=(unit cape)  (chain-cape bus reg)
-  ?:  ?=([~ %&] tem)  &
-  =/  out=cape
-    %+  con:ca
-      $(want -.want, bus (hed:so bus))
-    $(want +.want, bus (tel:so bus))
-  ?~  tem  out
-  (uni:ca out u.tem)
-::  +chain-cape: the cape of a template of a registered core that matches
-::  .bus, if any: the whole core for a root
-::
-++  chain-cape
-  |=  [bus=sock reg=regs]
-  ^-  (unit cape)
-  ~+
-  ?@  bus  ~
-  ?@  data.bus  ~
-  =/  bat=sock  (hed:so bus)
-  ?@  bat  ~
-  ?.  (all:ca cape.bat)  ~
-  =/  bad=*  data.bat
-  ?@  bad  ~
-  ?:  ?&  (~(has by root.reg) data.bus)
-          (all:ca cape.bus)
-      ==
-    `&
-  =/  paz=(list path)  ~(tap in (~(get ju batt.reg) bad))
-  |-  ^-  (unit cape)
-  ?~  paz  ~
-  =/  tez=(list sock)  ~(tap in (~(get ju core.reg) i.paz))
-  |-  ^-  (unit cape)
-  ?~  tez  ^$(paz t.paz)
-  =/  tem=sock  i.tez
-  ?@  tem  $(tez t.tez)
-  ?:  (huge:so tem bus)  `cape.tem
-  $(tez t.tez)
 ::  The functions the root reaches. Assumes finalized (fixed point): every
 ::  callee of a function in the graph is in the graph, a function found
 ::  memoized having none (+memo-final-entry).
@@ -1380,12 +1312,15 @@
 ::  Match a bell against registered cores: look for its formula in the battery
 ::  of a core template that its subject fits. Produces the ring of the arm.
 ::
-::  The driver of an arm is right for the cores of the template and for no
-::  others, so the bell has to know all that the template knows.  A bell
-::  that knows less is a function of other cores too, and the driver is not
-::  right for them, also when the function's code reads nothing else of the
-::  core: it may give the core to code that was not analyzed (%bare).  An
-::  arm that is run on its registered core knows the template always (+run).
+::  The template has all the code the driver may run, and the bell has all
+::  the code its function was found to run, so a bell that nests in the
+::  template is one the driver is right for.  Not when the function made an
+::  indirect call whose formula it sought in a part the template knows
+::  (.seek of its datum): what runs there was not found, and the driver is
+::  right only for what the template has there, so a core with another
+::  context, +add's battery over ~, would take the driver.  A formula sought
+::  in the sample, the comparator of +sort, the formula of +mink, is no
+::  such call.
 ::
 ::  A bell that knows more than the template, the code of a gate in its
 ::  sample, is a function of fewer subjects, and the arm's driver is right for
@@ -1397,7 +1332,7 @@
 ::
 ++  cole-match
   ~%  %cole-match  ..ride  ~
-  |=  [b=bell core=(jug path sock) arms=(jug ^ path) hot=(set ring)]
+  |=  [b=bell seek=cape core=(jug path sock) arms=(jug ^ path) hot=(set ring)]
   ^-  (unit ring)
   ~+
   ::  only the paths of cores whose battery contains the formula can match
@@ -1425,8 +1360,12 @@
     template-loop(templates r.templates)
   ::
   =/  template=sock  n.templates
-  ?.  (huge:so template less.b)  ~
+  ?:  ?&  ?=(^ template)
+          !=(~ (yea:ca (int:ca seek cape.template)))
+      ==
+    ~
   =/  nest=?  (huge:so less.b template)
+  ?.  |(nest (jibe:so less.b template))  ~
   =/  template-fol=sock  (hed:so template)
   =/  axis=@  2
   =;  axe=(unit @)
@@ -1454,7 +1393,8 @@
   =.  cole
     %-  ~(rep in new-bells)
     |=  [b=bell c=_cole]
-    ?~  r=(cole-match b core.jets.lon arms.jets.lon hot)  c
+    =/  sek=cape  (~(gut by seek.lon) b &)
+    ?~  r=(cole-match b sek core.jets.lon arms.jets.lon hot)  c
     (cole-put b u.r c)
   ::
   lon
@@ -1470,7 +1410,8 @@
     %-  ~(rep by code.lon)
     |=  [[b=bell *] rung=(set bell) c=_cole.jets.lon]
     ?:  (~(has by call.c) b)  [rung c]
-    ?~  r=(cole-match b pend.jets.lon arms.jets.lon hot)  [rung c]
+    =/  sek=cape  (~(gut by seek.lon) b &)
+    ?~  r=(cole-match b sek pend.jets.lon arms.jets.lon hot)  [rung c]
     [(~(put in rung) b) (cole-put b u.r c)]
   ::
   [rung lon(cole.jets cole, pend.jets ~)]
@@ -1743,8 +1684,9 @@
     [[[%mean nomm.p v nomm.q body.nomm k.nomm] prod.q] gen]
   ==
 ::  Bake the functions of a poke, from the root down: the variants to
-::  compile, as the folded nomm and the variants it calls, and the code
-::  bell -> variants index with them.  The root's variant is itself.
+::  compile, as the folded nomm, the variants it calls and the .seek of
+::  its function, and the code bell -> variants index with them.  The
+::  root's variant is itself.
 ::
 ::  A worklist approaches the greatest fixed point from above: a function
 ::  enters with what its first evaluated caller knows, is evaluated under
@@ -1761,7 +1703,7 @@
           jetted=$-(bell ?)
           vars=(jug bell bell)
       ==
-  ^-  [(map bell [=nomm calls=(set bell)]) (jug bell bell)]
+  ^-  [(map bell [=nomm calls=(set bell) seek=cape]) (jug bell bell)]
   =*  site  ,[b=bell k=sock src=spring]
   ::  an existing variant of a code bell fit for a subject: the one that
   ::  knows the most.
@@ -1801,7 +1743,7 @@
   =.  fix.st  (~(put in fix.st) root)
   =/  q=(list bell)  ~[root]
   =/  qs=(set bell)  [root ~ ~]
-  |-  ^-  [(map bell [=nomm calls=(set bell)]) (jug bell bell)]
+  |-  ^-  [(map bell [=nomm calls=(set bell) seek=cape]) (jug bell bell)]
   =*  work  $
   ?~  q
     %-  %+  print-ska  0
@@ -1819,10 +1761,14 @@
       [(~(got by bak.st) c) fol.c]
     ::
     %-  ~(rep by bak.st)
-    |=  [[t=bell s=sock] out=(map bell [=nomm calls=(set bell)]) =_vars]
-    =/  [=nomm * sites=(list site)]  (know nomm:(need (dat t)) s dat res)
+    |=  $:  [t=bell s=sock]
+            out=(map bell [=nomm calls=(set bell) seek=cape])
+            =_vars
+        ==
+    =/  d=datum  (need (dat t))
+    =/  [=nomm * sites=(list site)]  (know nomm.d s dat res)
     =/  v=bell  [s fol.t]
-    :-  (~(put by out) v [nomm (silt (turn sites |=(site (res b k))))])
+    :-  (~(put by out) v [nomm (silt (turn sites |=(site (res b k)))) seek.d])
     (~(put ju vars) t v)
   ::
   =/  cur=bell  i.q
@@ -1920,18 +1866,18 @@
     |=  c=bell
     ^-  ?
     ?|  (~(has by call.cole.jets.lon) c)
-        ?=(^ (cole-match c core.regs arms.regs hot))
+        ?=(^ (cole-match c ?~(d=(dat c) & seek.u.d) core.regs arms.regs hot))
     ==
   ::
-  =^  baked=(map bell [=nomm calls=(set bell)])  vars.lon
+  =^  baked=(map bell [=nomm calls=(set bell) seek=cape])  vars.lon
     =<  $  ~%  %poke-bake  ..ride  ~  |.
     (bake-graph root-bell dat jetted vars.lon)
   ::  a variant seen before keeps its entry and its programs
   ::
-  =/  new-code=(map bell [=nomm calls=(set bell)])
+  =/  new-code=(map bell [=nomm calls=(set bell) seek=cape])
     %-  ~(rep by baked)
-    |=  $:  [b=bell v=[=nomm calls=(set bell)]]
-            acc=(map bell [=nomm calls=(set bell)])
+    |=  $:  [b=bell v=[=nomm calls=(set bell) seek=cape]]
+            acc=(map bell [=nomm calls=(set bell) seek=cape])
         ==
     ?:((~(has by code.lon) b) acc (~(put by acc) b v))
   ::  callees first (+tarjan takes its vertex type from the graph's root
@@ -1942,7 +1888,7 @@
     =<  $  ~%  %poke-tarjan  ..ride  ~  |.
     =/  bg=(jug bell bell)
       %-  ~(rep by new-code)
-      |=  [[b=bell v=[=nomm calls=(set bell)]] acc=(jug bell bell)]
+      |=  [[b=bell v=[=nomm calls=(set bell) seek=cape]] acc=(jug bell bell)]
       ::  the callees that are new too: by a lookup of each, not by an
       ::  intersection with the set of the new bells, which was built
       ::  again for every bell
@@ -1998,9 +1944,14 @@
       pend  ((uni-ju pend.jets.lon) new-cores)
     ==
   ::
+  =.  seek.lon
+    %-  ~(rep by new-code)
+    |=  [[b=bell v=[=nomm calls=(set bell) seek=cape]] acc=_seek.lon]
+    (~(put by acc) b seek.v)
+  ::
   =.  calls.lon
     %-  ~(rep by new-code)
-    |=  [[b=bell v=[=nomm calls=(set bell)]] acc=_calls.lon]
+    |=  [[b=bell v=[=nomm calls=(set bell) seek=cape]] acc=_calls.lon]
     (~(put by acc) b calls.v)
   ::
   :-  [root-bell (flop new.regs)]
@@ -2444,6 +2395,7 @@
       $:  [=nomm pro=sock-anno *]
           want=cape
           indi=cape
+          seek=cape
           callees=(set callee-entry)
           area=(unit spot)
           low=@uxsite
@@ -2454,15 +2406,7 @@
     =;  ,fol-result
       ::  construct datum
       ::
-      ::  an arm of a registered core that is run on that core is a function
-      ::  of the core's template, whatever it uses of it: only a bell that
-      ::  knows the template gets the ring (+cole-match)
-      ::
-      =/  want=cape
-        ?:  =(~ (~(get ju arms.regs.st) fol))  want
-        ?~  tem=(chain-cape bus regs.st)  want
-        (uni:ca want u.tem)
-      =/  less-code  (app:ca (core-chains (core-atoms want bus) bus regs.st) bus)
+      =/  less-code  (app:ca want bus)
       ::  .indi is where a subject that knows more could make an indirect
       ::  call direct, so it has no part that this subject knows whole: such
       ::  a part can't be known better.  A formula is sought in a known part
@@ -2474,7 +2418,7 @@
       ::
       =/  dark=cape  ?@(bus | cape.bus)
       =.  indi  (lack:ca indi dark)
-      =/  data-new=datum  [callees nomm less-code indi pro area]
+      =/  data-new=datum  [callees nomm less-code indi seek pro area]
       ::  If we got two different non-void products we will compute their MSG to
       ::  converge faster, otherwise we intersect the products to preserve more
       ::  knowledge
@@ -2499,8 +2443,18 @@
         ::
         (lack:ca (msg-ca indi.data-new indi.data) dark)
       ::
+      =?  seek.data-new
+          ?&  .=  [less-code prod map indi]:data-new
+                  [less-code prod map indi]:data
+              !=(seek.data-new seek.data)
+          ==
+        ::  likewise for .seek, which only takes rings away
+        ::
+        (msg-ca seek.data-new seek.data)
+      ::
       =/  changed=?
-        !=([less-code prod map indi]:data-new [less-code prod map indi]:data)
+        ?!  .=  [less-code prod map indi seek]:data-new
+                [less-code prod map indi seek]:data
       ::
       =.  tick.st  +(tick.st)
       =.  ticks.st
@@ -2514,13 +2468,14 @@
     =/  gen
       ^-  $:  want=cape
               indi=cape
+              seek=cape
               callees=(set callee-entry)
               area=(unit spot)
               low=@uxsite
               back=?
               st=ska-state
           ==
-      [| | ~ ~ index | st]
+      [| | | ~ ~ index | st]
     ::
     =/  seat=(unit spot)  ~
     =/  memo-key=(unit *)  ~
@@ -2585,6 +2540,7 @@
         ::  indirect call
         ::
         =.  indi.gen  (uni:ca indi.gen (distribute & src.prod.f))
+        =.  seek.gen  (uni:ca seek.gen (distribute & src.prod.f))
         [[[%2 nomm.s nomm.f ~] dunno |] gen]
       =/  fol-new=^  data.sock.prod.f
       ::  Inline leaf formulas. Allows to analyze through formulas whose
@@ -2592,11 +2548,8 @@
       ::  out the condition and the first branch - useful during debugging to
       ::  rule out stuff.
       ::
-      =/  bat=cape
-        ?~  b=(battery-of src.prod.s src.prod.f)  |
-        (pat:ca & u.b)
       ?:  &(?=(~ memo-key) !defer (inlineable fol-new))
-        =.  want.gen  :(uni:ca want.gen (distribute & src.prod.f) bat)
+        =.  want.gen  (uni:ca want.gen (distribute & src.prod.f))
         =^  inline  gen  fol-loop(fol fol-new, sub prod.s)
         :_  gen
         :-  [%7 nomm.s nomm.inline]
@@ -2649,12 +2602,12 @@
         ;:  uni:ca
           want.gen
           (distribute & src.prod.f)
-          bat
           (distribute cape.less-code.dat-there src.prod.s)
         ==
       ::  Also propagate transitive attempts to get code for indirect calls
       ::
       =.  indi.gen  (uni:ca indi.gen (distribute indi.dat-there src.prod.s))
+      =.  seek.gen  (uni:ca seek.gen (distribute seek.dat-there src.prod.s))
       =.  callees.gen  (~(put in callees.gen) seat id-there)
       :_  gen
       ^-  [nomm sock-anno ?]
