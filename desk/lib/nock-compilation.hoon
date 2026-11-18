@@ -338,9 +338,8 @@
   ++  jibe
     |=  [one=sock two=sock]
     ^-  ?
+    ?:  |(?=(%void one) ?=(%void two))  |
     ?:  =(one two)  &
-    ?@  two  &
-    ?@  one  |
     ?:  |(?=(%| cape.one) ?=(%| cape.two))  &
     ?:  &(?=(%& cape.one) ?=(%& cape.two))  =(data.one data.two)
     ?.  &(?=(^ data.one) ?=(^ data.two))  |
@@ -727,10 +726,13 @@
       next=@uxsite            ::  next DFS number
       moved=(set identity)    ::  functions whose product changed already
       tick=@ud                ::  counts the runs
+  ::
       $=  ticks               ::  of the functions in progress: the tick of
       %+  map  identity       ::  the last run and of the last change
       [ran=@ud chg=@ud]       ::  of the entry
+  ::
       =regs                   ::  %fast registrations so far
+  ::
       $=  stats               ::  statistics for debugging
       $:  runs=@ud            ::    number of function analyses
           passes=@ud          ::    number of passes over components
@@ -758,6 +760,7 @@
         batt=(jug ^ path)     ::  core battery -> set of possible paths
         arms=(jug ^ path)     ::  battery node -> set of possible paths
         pend=(jug path sock)  ::  core registrations old bells wait for
+    ::
         $=  cole              ::  bell <--> ring bidirectional mapping
         $:  call=(map bell ring)
             back=(jug ring bell)
@@ -778,17 +781,6 @@
 --
 ::
 |%
-::  Iterate over a set with a gate (a -> (unit b)) until we get a nonempty
-::  product
-::
-++  set-first-match
-  |*  [s=(set) g=$-(* (unit))]
-  ^+  $:g
-  ?~  s  ~
-  ?^  res=(g n.s)  res
-  =/  l  $(s l.s)
-  ?^  l  l
-  $(s r.s)
 ::  Check if "big" homeomorphically embeds "smol".
 ::
 ++  he-sock
@@ -885,8 +877,7 @@
   ?.  =(fol.id-kid fol.i.stk)  $(stk t.stk)
   =/  d=datum  (git-g g i.stk)
   ?:  ?&  (huge:so less-code.d more.id-kid)
-          %+  huge:so  (app:ca indi.d more.id-kid)
-          (app:ca indi.d more.i.stk)
+          (huge:so (app:ca indi.d more.id-kid) (app:ca indi.d more.i.stk))
       ==
     `[%rec i.stk]
   ?:  &(he-on (he-sock more.id-kid more.i.stk))
@@ -990,12 +981,13 @@
     [%11 [@ q=^] p=^]  &((l p.fol) (l q.fol))
     [%12 p=^ q=^]      &((l p.fol) (l q.fol))
   ==
+::  Hints that don't affect whether a Nock formula could be skipped
 ::
++$  hint-safe  ?(%hunk %hand %lose %mean %spot)
 ::  check that the formula does not crash and has no important side-effect,
 ::  returning constant product and nomm
 ::
 ++  safe
-  =*  hint-safe  ,?(%spot %mean)
   |=  fol=^
   ^-  (unit [=nomm prod=*])
   =*  g  .
@@ -1022,7 +1014,6 @@
 ::  same, but for nomm, and no product
 ::
 ++  safe-nomm
-  =*  hint-safe  ,?(%spot %mean)
   |=  =nomm
   ^-  ?
   =*  g  .
@@ -1031,10 +1022,10 @@
       [%1 *]     &
   ::
       [%11 @ *]
-    &(?=(hint-safe p.nomm) (g q.nomm))
+    &(?=(?(hint-safe %memo) p.nomm) (g q.nomm))
   ::
       [%11 [@ *] *]
-    &(?=(hint-safe p.p.nomm) (g q.p.nomm) (g q.nomm))
+    &(?=(?(hint-safe %memo) p.p.nomm) (g q.p.nomm) (g q.nomm))
   ::
       [%mean *]
     &((g p.nomm) (g q.nomm))
@@ -1060,7 +1051,6 @@
 ::  check if the formula for a formula in Nomm %2 can be safely dropped
 ::
 ++  safe-fol-fol
-  =*  hint-safe  ,?(%spot %mean)
   |=  =nomm
   ^-  ?
   =*  g  .
@@ -1074,10 +1064,10 @@
       [%1 *]     &
   ::  
       [%11 @ *]
-    &(?=(hint-safe p.nomm) (g q.nomm))
+    &(?=(?(hint-safe %memo) p.nomm) (g q.nomm))
   ::
       [%11 [@ *] *]
-    &(?=(hint-safe p.p.nomm) (safe-nomm q.p.nomm) (g q.nomm))
+    &(?=(?(hint-safe %memo) p.p.nomm) (safe-nomm q.p.nomm) (g q.nomm))
   ::
       [%mean *]
     &((safe-nomm p.nomm) (g q.nomm))
@@ -1148,7 +1138,7 @@
     gen
   =/  clue=*  data.clue
   ?.  ?=([name=$@(@tas [@tas @]) dad=^ *] clue)
-    %-  (print-ska 3 |.(>[%fast-bad-clue clue]<))
+    %-  (print-ska 3 |.(%fast-bad-clue))
     gen
   =/  label=term
     ?@  name.clue  name.clue
@@ -1158,7 +1148,7 @@
     %-  (print-ska 3 |.(>fast-insane-label+label<))
     gen
   ?~  parent=(fast-parent dad.clue)
-    %-  (print-ska 3 |.(>fast-bad-clue-parent+[label clue]<))
+    %-  (print-ska 3 |.(>fast-bad-clue-parent+label<))
     gen
   ?~  u.parent
     ::  root registration
@@ -1167,7 +1157,7 @@
       %-  (print-ska 3 |.(%fast-lost-root))
       gen
     ?.  ?=([^ *] data.prod)
-      %-  (print-ska 3 |.(>fast-atom-root+[label data.prod]<))
+      %-  (print-ska 3 |.(>fast-atom-root+label<))
       gen
     [miss.gen (register-template ~[label] prod clue +.gen)]
   ::  child core registration
@@ -1298,17 +1288,6 @@
   |=  [id=identity d=datum]
   ^-  [identity datum]
   [[(app:ca indi.d more.id) fol.id] d(callees ~)]
-::  The functions a poke of [bus fol] on the state would find, with their
-::  callees, for inspection: the state keeps only their bells (.code, .calls)
-::  and what +memo-final-entry memoizes. A function found memoized in the
-::  state has no callees.
-::
-++  ska-graph
-  |=  [[bus=sock fol=^] lon=long-ska]
-  ^-  callgraph
-  =/  [g=callgraph *]
-    (ska-callgraph [bus fol] memo.lon [root core batt arms ~]:jets.lon)
-  (prune-callgraph g [bus fol])
 ::  Match a bell against registered cores: look for its formula in the battery
 ::  of a core template that its subject fits. Produces the ring of the arm.
 ::
@@ -1363,6 +1342,9 @@
   ?:  ?&  ?=(^ template)
           !=(~ (yea:ca (int:ca seek cape.template)))
       ==
+    ::  the function has an indirect call with code provenance from a
+    ::  place where template is known: don't match it
+    ::
     ~
   =/  nest=?  (huge:so less.b template)
   ?.  |(nest (jibe:so less.b template))  ~
@@ -1370,7 +1352,11 @@
   =/  axis=@  2
   =;  axe=(unit @)
     ?:  |(nest ?=(~ axe))  axe
+    ::  bell doesn't nest under the table and got an axis:
+    ::  potential higher-order jet, check the hot state
+    ::
     ?:((~(has in hot) [p.n.core u.axe]) axe ~)
+  ::
   |-  ^-  (unit @)
   =*  fol-loop  $
   ?.  &(?=(^ template-fol) (all:ca cape.template-fol))  ~
@@ -1393,7 +1379,10 @@
   =.  cole
     %-  ~(rep in new-bells)
     |=  [b=bell c=_cole]
-    =/  sek=cape  (~(gut by seek.lon) b &)
+    =/  sek=cape
+      ~|  %ska-seek
+      (~(got by seek.lon) b)
+    ::
     ?~  r=(cole-match b sek core.jets.lon arms.jets.lon hot)  c
     (cole-put b u.r c)
   ::
@@ -1441,7 +1430,7 @@
 ::    Baking widens .less with the data the callers know of the callee's
 ::    subject from their own bells: +know evaluates a caller's nomm as
 ::    socks under its bell, as the analysis does under the full subject,
-::    and reports the subject at each call site; the meet (+msg-sock) of
+::    and reports the subject at each call site; the meet (+purr:so) of
 ::    the sites, with the callee's code, is the callee's bake, and
 ::    +bake-graph iterates this down the graph to a greatest fixed point.
 ::    Reads of the baked parts fold to constants and branches on them to
@@ -1516,19 +1505,22 @@
           dat=$-(bell (unit datum))
           res=$-([bell sock] bell)
       ==
-  ^-  $:  nomm=^nomm
-          used=cape
-          sites=(list [b=bell k=sock src=spring])
+  ^-  $:  =^nomm
+          sites=(list [b=bell k=sock])
       ==
-  =/  gen  [used=`cape`| sites=*(list [b=bell k=sock src=spring])]
+  =/  gen  [sites=*(list [b=bell k=sock])]
+  ::  provenance is tracked to reproduce +double-int results only, it is
+  ::  discarded afterwards
+  ::
   =/  sub=sock-anno  [sub 1]
   =/  fold=?  !@(off:bake-mode & |)
   ::  hints a literal can drop: traces, which only a crash shows, inert
   ::  %memo, and %fast, which the analysis registered already
   ::
-  =*  hint-free  ,?(%spot %mean %memo %fast)
+  =*  hint-free  ,?(hint-safe %fast %memo)
   =<  =^  out=[nomm=^nomm prod=sock-anno]  gen  $
-      [nomm.out used.gen sites.gen]
+      [nomm.out sites.gen]
+  ::
   |.  ^-  [[nomm=^nomm prod=sock-anno] _gen]
   =*  loop  $
   =*  dunno  *sock-anno
@@ -1554,7 +1546,7 @@
     ::  a read of a known part: a literal, assuming that part
     ::
     :-  [[%1 data.sock.prod] [sock.prod ~]]
-    gen(used (uni:ca used.gen (distribute & src.prod)))
+    gen
   ::
       [%1 *]  [[nomm [&+p.nomm ~]] gen]
   ::
@@ -1564,7 +1556,7 @@
     ?~  info.nomm  [[[%2 nomm.s nomm.f ~] dunno] gen]
     =/  k=sock  sock.prod.s
     =/  v=bell  (res b.u.info.nomm k)
-    =.  sites.gen  [[b.u.info.nomm k src.prod.s] sites.gen]
+    =.  sites.gen  [[b.u.info.nomm k] sites.gen]
     =/  prod=sock-anno
       ?~  d=(dat b.u.info.nomm)  dunno
       =/  p  (patch-prod [prod map]:u.d k)
@@ -1575,9 +1567,9 @@
     =^  [n=^nomm p=sock-anno]  gen  loop(nomm p.nomm)
     ?.  &(fold ?=(^ sock.p) (all:ca cape.sock.p) (safe-nomm n))
       [[[%3 n] dunno] gen]
-    =/  pro=@  ?@(data.sock.p 1 0)
+    =/  pro=@  .?(data.sock.p)
     :-  [[%1 pro] [&+pro ~]]
-    gen(used (uni:ca used.gen (distribute & src.p)))
+    gen
   ::
       [%4 *]
     =^  [n=^nomm p=sock-anno]  gen  loop(nomm p.nomm)
@@ -1590,7 +1582,7 @@
       [[[%4 n] dunno] gen]
     =/  pro=@  +(data.sock.p)
     :-  [[%1 pro] [&+pro ~]]
-    gen(used (uni:ca used.gen (distribute & src.p)))
+    gen
   ::
       [%5 *]
     =^  p  gen  loop(nomm p.nomm)
@@ -1606,14 +1598,7 @@
       [[[%5 nomm.p nomm.q] dunno] gen]
     =/  pro=@  ?:(=(data.sock.prod.p data.sock.prod.q) 0 1)
     :-  [[%1 pro] [&+pro ~]]
-    %=    gen
-        used
-      ;:  uni:ca
-        used.gen
-        (distribute & src.prod.p)
-        (distribute & src.prod.q)
-      ==
-    ==
+    gen
   ::
       [%6 *]
     =^  p  gen  loop(nomm p.nomm)
@@ -1626,7 +1611,6 @@
       ::  a known condition: the branch taken, assuming the parts of the
       ::  subject the condition came from
       ::
-      =.  used.gen  (uni:ca used.gen (distribute & src.prod.p))
       ?-  data.sock.prod.p
         %0  loop(nomm q.nomm)
         %1  loop(nomm r.nomm)
@@ -1648,6 +1632,7 @@
     =/  lit=(unit)
       ?.  &(fold ?=([%1 *] nomm.don) ?=([%1 *] nomm.rec))  ~
       (mole |.(.*([p.nomm.don p.nomm.rec] [%10 [p.p.nomm %0 2] %0 3])))
+    ::
     ?^  lit  [[[%1 u.lit] [&+u.lit ~]] gen]
     :_  gen
     :-  [%10 [p.p.nomm nomm.don] nomm.rec]
@@ -1679,7 +1664,7 @@
     =^  p  gen  loop(nomm p.nomm)
     =/  k=sock  sock.prod.p
     =/  v=bell  (res b.nomm k)
-    =.  sites.gen  [[b.nomm k src.prod.p] sites.gen]
+    =.  sites.gen  [[b.nomm k] sites.gen]
     =^  q  gen  loop(nomm q.nomm)
     [[[%mean nomm.p v nomm.q body.nomm k.nomm] prod.q] gen]
   ==
@@ -1704,19 +1689,17 @@
           vars=(jug bell bell)
       ==
   ^-  [(map bell [=nomm calls=(set bell) seek=cape]) (jug bell bell)]
-  =*  site  ,[b=bell k=sock src=spring]
+  =*  site  ,[b=bell k=sock]
   ::  an existing variant of a code bell fit for a subject: the one that
   ::  knows the most.
   ::
   ::  The subject of a site mostly provides the callee's code: the caller's
   ::  bell has what the callee's code requirement comes from in the
   ::  caller's subject (the analysis put it there), and +know computes the
-  ::  rest again.  Not always: a caller that computes a gate and then slams
-  ::  it has the gate's code from the analysis of that computation, and
-  ::  +know may find the gate unknown (+cram:vast has such a site).  The
-  ::  sock of the site is then short of the callee's own requirement, no
-  ::  variant is picked, and the site, knowing little, leaves little in the
-  ::  callee's bake, which it then calls like any other site
+  ::  rest again.  Sometimes a callsite may provide less than `less.c` in know,
+  ::  like when branches get folded and turn into %1 constant, which makes their
+  ::  double-int empty because the latter is limited on capes. Allowing
+  ::  +double-int to decend into data would slow it down a lot.
   ::
   =/  pick
     |=  [c=bell k=sock]
@@ -1750,7 +1733,7 @@
         |.  %-  sell  !>
         :*  %bake
             variants+~(wyt by bak.st)
-            baked+(lent (skim ~(tap by bak.st) |=([c=bell s=sock] !=(s less.c))))
+            bake+(lent (skim ~(tap by bak.st) |=([c=bell s=sock] !=(s less.c))))
             evals+evals.st
             fixed+(dec ~(wyt in fix.st))
         ==
@@ -1766,7 +1749,7 @@
             =_vars
         ==
     =/  d=datum  (need (dat t))
-    =/  [=nomm * sites=(list site)]  (know nomm.d s dat res)
+    =/  [=nomm sites=(list site)]  (know nomm.d s dat res)
     =/  v=bell  [s fol.t]
     :-  (~(put by out) v [nomm (silt (turn sites |=(site (res b k)))) seek.d])
     (~(put ju vars) t v)
@@ -1870,7 +1853,6 @@
     ==
   ::
   =^  baked=(map bell [=nomm calls=(set bell) seek=cape])  vars.lon
-    =<  $  ~%  %poke-bake  ..ride  ~  |.
     (bake-graph root-bell dat jetted vars.lon)
   ::  a variant seen before keeps its entry and its programs
   ::
@@ -1885,18 +1867,15 @@
   ::
   =/  sccs=(list (set bell))
     ?:  =(~ new-code)  ~
+    %-  flop
     =<  $  ~%  %poke-tarjan  ..ride  ~  |.
-    =/  bg=(jug bell bell)
-      %-  ~(rep by new-code)
-      |=  [[b=bell v=[=nomm calls=(set bell) seek=cape]] acc=(jug bell bell)]
-      ::  the callees that are new too: by a lookup of each, not by an
-      ::  intersection with the set of the new bells, which was built
-      ::  again for every bell
-      ::
-      %+  ~(put by acc)  b
-      %-  silt
-      (skim ~(tap in calls.v) |=(c=bell (~(has by new-code) c)))
-    (flop (tarjan bg))
+    %-  tarjan
+    ^-  (jug bell bell)
+    %-  ~(rep by new-code)
+    |=  [[b=bell v=[=nomm calls=(set bell) seek=cape]] acc=(jug bell bell)]
+    %+  ~(put by acc)  b
+    %-  silt
+    (skim ~(tap in calls.v) |=(c=bell (~(has by new-code) c)))
   ::
   =.  lon
     =<  $  ~%  %poke-scc-loop  ..ride  ~  |.
@@ -1935,6 +1914,7 @@
   ::
   =/  new-cores=(jug path sock)
     (~(gas ju *(jug path sock)) (turn new.regs |=([p=path s=sock *] [p s])))
+  ::
   =.  jets.lon
     %=  jets.lon
       root  root.regs
@@ -1962,9 +1942,9 @@
 ::  by this point socks are never %void
 ::
 ++  eval-finalized
-  ::  %memo: the memoized formulas are calls by now, a %memo left is inert
+  ::  %memo and %fast: handled by analysis, noops in computations
   ::
-  =*  hint-pure  ,?(%fast %spot %mean %memo)
+  =*  hint-pure  ,?(hint-safe %fast %memo)
   ~%  %eval-finalized  ..ride  ~
   |=  [b=bell code=(map bell code-entry)]
   ^-  [pure=? total=?]
@@ -2125,7 +2105,8 @@
   ::
   :-  lowest
   ?.  =(index lowest)  acc
-  =;  [done=(set vertex) =_acc]  acc(fin [done fin.acc])
+  =<  acc(fin [done fin.acc])
+  ^-  [done=(set vertex) =_acc]
   =|  out=(set vertex)
   |-  ^+  [out acc]
   =*  pop-loop  $
@@ -9343,6 +9324,7 @@
     =^  changed=?  s  (optimize-once s)
     ?.  changed  s
     $(s s)
+  ::
   s(blocks (switch-chains blocks.s))
 ::  One round of all the optimization passes.  Every pass says whether it
 ::  changed anything, so that the fixed point is known without another round.
@@ -9533,7 +9515,7 @@
 ++  peek      ::  +22
   |=  pax=path
   ^-  (unit (pair @tas *))
-  ?+  pax  !!
+  ?+  pax  ~
     [%ver ~]  `[%ud `@ud`version]
   ==
 ::
