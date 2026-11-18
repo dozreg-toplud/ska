@@ -79,18 +79,19 @@
 ::  ska verbosity
 ::
 :: =/  ska-verb  ~
-::  Baking (+bake-graph): %bake, the constants a function's callers know
-::  from their code are part of its bell; %fold, only the function's own
-::  reads of its code fold to constants, every function is its own one
-::  variant; %off, as before
 ::
-=/  bake-mode=?(%off %fold %bake)  %bake
-::  Functions in progress with one formula before a call with that formula
-::  is checked for homeomorphic embedding, see +recursive-call. On +ride the
-::  nesting of functions with one formula (mold generators such as +list on
-::  nested item types, parser combinators such as +plug on nested parsers)
-::  reaches 21 and HE fired at nesting 9 at most; 0 is the old behavior,
-::  HE on the first embedding.
+::  Baking (+bake-graph):
+::    `bake`: the constants a function's callers know from their code are part
+::            of its bell;
+::    `fold`: only the function's own reads of its code fold to constants, every
+::            function is its own one variant;
+::     `off`: no baking
+::
+=/  bake-mode  bake=~
+::  Homeomorphic embedding (+recursive-call) is not checked until `he-threshold`
+::  functions with the same formula are on the stack. Tuned by running Hoon
+::  compiler, which needed `he-threshold` of at least 9 to analyze complex molds
+::  through
 ::
 =/  he-threshold  32
 ::
@@ -120,6 +121,7 @@
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
 =*  stub  ~|(%stub !!)
+!@  bake-mode  !!
 ::  Partial noun definitions
 ::
 |%
@@ -282,6 +284,7 @@
     ?:  ?=(%| a)  |
     ?:  ?=(%& b)  |
     ?:  ?=(%| b)  a
+    ?:  =(a b)    |
     =/  [p=cape q=cape]  ?@(a [a a] a)
     (con $(a p, b -.b) $(a q, b +.b))
   ::  slot
@@ -320,27 +323,6 @@
       ?>  ?=(@ cape.two)
       ?<  ?=(%| cape.one)
       |
-    ~+
-    =/  [lope=cape rope=cape]
-      ?:(?=(^ cape.one) cape.one [cape.one cape.one])
-    ::
-    =/  [loop=cape roop=cape]
-      ?:(?=(^ cape.two) cape.two [cape.two cape.two])
-    ::
-    ?&  $(one [lope -.data.one], two [loop -.data.two])
-        $(one [rope +.data.one], two [roop +.data.two])
-    ==
-  ::  Do two socks agree wherever both know?
-  ::
-  ++  jibe
-    |=  [one=sock two=sock]
-    ^-  ?
-    ?:  =(one two)  &
-    ?@  two  &
-    ?@  one  |
-    ?:  |(?=(%| cape.one) ?=(%| cape.two))  &
-    ?:  &(?=(%& cape.one) ?=(%& cape.two))  =(data.one data.two)
-    ?.  &(?=(^ data.one) ?=(^ data.two))  |
     ~+
     =/  [lope=cape rope=cape]
       ?:(?=(^ cape.one) cape.one [cape.one cape.one])
@@ -907,7 +889,12 @@
   ^-  (unit [?(%rec %he) identity])
   ::  functions in progress with the formula of id-kid
   ::
-  =/  same=@  (lent (skim stk |=(id=identity =(fol.id-kid fol.id))))
+  =/  same=@
+    %+  roll  stk
+    |=  [id=identity acc=@]
+    ?.  =(fol.id-kid fol.id)  acc
+    +(acc)
+  ::
   =/  he-on=?  (gte same he-threshold)
   |-  ^-  (unit [?(%rec %he) identity])
   ?~  stk  ~
@@ -1594,7 +1581,7 @@
       ==
   =/  gen  [used=`cape`| sites=*(list [b=bell k=sock src=spring])]
   =/  sub=sock-anno  [sub 1]
-  =/  fold=?  !?=(%off bake-mode)
+  =/  fold=?  !@(off:bake-mode & |)
   ::  hints a literal can drop: traces, which only a crash shows, inert
   ::  %memo, and %fast, which the analysis registered already
   ::
@@ -1801,7 +1788,7 @@
     best
   ::
   =/  idc  |=([c=bell k=sock] c)
-  =/  frozen=?  !?=(%bake bake-mode)
+  =/  frozen=?  !@(bake:bake-mode & |)
   =|  $=  st
       $:  bak=(map bell sock)        ::  code bell -> its bake, the variant
           fix=(set bell)             ::  bakes fixed at the code bell
