@@ -1679,7 +1679,9 @@
 ::  each loss re-evaluating it and its callees.  A bake only shrinks, so
 ::  this settles: it is the intersection (+purr:so) of what the sites
 ::  know, in normal form, and a caller that knows less has the sites it
-::  had, each knowing less, and maybe more of them.
+::  had, each knowing less, and maybe more of them.  Except at a join of
+::  branches that no longer fold, which may keep more: there a bake that
+::  would grow is intersected with the old one.
 ::
 ++  bake-graph
   ~%  %bake-graph  ..ride  ~
@@ -1720,6 +1722,7 @@
           out=(map bell (set bell))  ::  callees whose variant it awaits
           inn=(map bell (map bell (list sock)))  ::  callee -> caller -> known
           evals=@ud
+          grew=@ud                   ::  bakes that would have grown
       ==
   ::
   =.  bak.st  (~(put by bak.st) root less.root)
@@ -1735,6 +1738,7 @@
             variants+~(wyt by bak.st)
             bake+(lent (skim ~(tap by bak.st) |=([c=bell s=sock] !=(s less.c))))
             evals+evals.st
+            grew+grew.st
             fixed+(dec ~(wyt in fix.st))
         ==
     =/  res
@@ -1802,8 +1806,14 @@
       (norm-sock (uni-sock less.c meet))
     ::
     =/  old=(unit sock)  (~(get by bak.st) c)
+    ::  +know is not monotone due to %6 branch folding or lack thereof and
+    ::  +double-int not intersecting beyond capes for speed
+    ::
+    =^  bake=sock  grew.st
+      ?~  old  [bake grew.st]
+      ?:  (huge:so bake u.old)  [bake grew.st]
+      [(norm-sock (purr:so bake u.old)) +(grew.st)]
     ?:  =(`bake old)  [changed st]
-    ?>  |(?=(~ old) (huge:so bake u.old))
     [[c changed] st(bak (~(put by bak.st) c bake))]
   ::
   =/  fresh=(list bell)  (skip changed ~(has in qs))
@@ -2226,27 +2236,26 @@
     =/  pass=@  1
     |-  ^-  [@ ska-state]
     =*  pass-loop  $
-    =/  was=(set identity)  (silt (above id stk.st))
-    =/  members=(list identity)  (sweep id was st)
+    =/  members=(list identity)  (sweep id (silt (above id stk.st)) st)
     =.  passes.stats.st  +(passes.stats.st)
     ::  every function analyzed afresh takes a DFS number, so a change of
     ::  .next tells whether this pass found one
     ::
     =/  next-before=@uxsite  next.st
-    =^  [low=@uxsite reran=? changed=?]  st
-      |-  ^-  [[@ ? ?] ska-state]
+    =^  [low=@uxsite changed=?]  st
+      |-  ^-  [[@ ?] ska-state]
       =*  member-loop  $
-      ?~  members  [[index | |] st]
+      ?~  members  [[index |] st]
       ?.  (dirty i.members st)  member-loop(members t.members)
       =?  late-runs.stats.st  (gth pass 1)  +(late-runs.stats.st)
       =^  [low-m=@uxsite back-m=? changed-m=?]  st
         (run i.members (~(got by order.st) i.members) st)
       ::
-      ?:  (lth low-m index)  [[low-m & changed-m] st]
-      =^  [low-t=@uxsite reran-t=? changed-t=?]  st
+      ?:  (lth low-m index)  [[low-m changed-m] st]
+      =^  [low-t=@uxsite changed-t=?]  st
         member-loop(members t.members)
       ::
-      [[(min low-m low-t) & |(changed-m changed-t)] st]
+      [[(min low-m low-t) |(changed-m changed-t)] st]
     ::
     ?.  =(low index)  [low st]
     ::  members that .id does not reach anymore are dropped
@@ -2256,7 +2265,7 @@
     ::  found (a new function was seen in progress, as an empty entry, by the
     ::  members that called it, which are dirty now)
     ::
-    ?:  |(!reran &(!changed =(next.st next-before)))
+    ?:  &(!changed =(next.st next-before))
       [next.st (pop id st)]
     pass-loop(pass +(pass))
   ::  did the entry of a callee of .m change since .m last ran? A run reads
@@ -2388,14 +2397,13 @@
       ::  construct datum
       ::
       =/  less-code  (app:ca want bus)
-      ::  .indi is where a subject that knows more could make an indirect
-      ::  call direct, so it has no part that this subject knows whole: such
-      ::  a part can't be known better.  A formula is sought in a known part
-      ::  and not found when it is a cons over the part, or the atom the
-      ::  part is (the null scry gate of +mink): nothing a subject could
-      ::  know there would find it.  Without this the reuse of a function
-      ::  for another call (+recursive-call, +git:mi) compared the two
-      ::  subjects on data
+      ::  indi is intersected with the inverse of subject knowledge to track
+      ::  only the parts that we actually do not know, not the parts where there
+      ::  is an atom where formula look up expected a cell or a denormalized
+      ::  cell which %2 couldn't use for a direct call. These parts of the
+      ::  subject cannot be known better, and indi is used to reanalyze if the
+      ::  new subject actually knows more and could turn indirect calls of a
+      ::  memoized entry into direct ones.
       ::
       =/  dark=cape  ?@(bus | cape.bus)
       =.  indi  (lack:ca indi dark)
@@ -2443,6 +2451,7 @@
         :-  tick.st
         ?:  changed  tick.st
         chg:(~(gut by ticks.st) id [ran=0 chg=0])
+      ::
       :-  [low back changed]
       st(g (~(put by g.st) id data-new))
     ::
@@ -2796,7 +2805,7 @@
 +$  hint-dynamic-stop  ?(%hunk %hand %lose %mean %spot %slog)
 ::  Data requirement of a computation. %both means both the root noun and some
 ::  of its descendants.
-::  Normalizations: [[%none ~] [%none ~]] --> [%none ~]
+::  Normalizations:         [[%none ~] [%none ~]] --> [%none ~]
 ::                  [%both x [%none ~] [%none ~]] --> [%this x]
 +$  need
   $~  [%none ~]
@@ -2849,12 +2858,12 @@
 ::  In +sect an entry made during the compilation of a branch is either inside
 ::  the branch (the definition dominates the uses, nothing to do) or past the
 ::  join block. Then `def` becomes an input parameter for the merging block on
-::  one side, a new target register is allocated that becomes the input parameter
-::  in the merging block, and on the other side a dummy register is used as an
-::  input with a placeholder value. The proxy register now points to the new
-::  target in the merging block. At the function entry the proxies are guaran-
-::  teed to be dominated by their respective defined registers, so +rewrite-cond
-::  rewrites the proxies with their definitions directly.
+::  one side, a new target register is allocated that becomes the input
+::  parameter in the merging block, and on the other side a dummy register is
+::  used as an input with a placeholder value. The proxy register now points to
+::  the new target in the merging block. At the function entry the proxies are
+::  guaranteed to be dominated by their respective defined registers, so
+::  +rewrite-cond rewrites the proxies with their definitions directly.
 ::
 +$  cond  (map @uvre [def=@uvre tag=(list @uxid)])
 +$  sure  [ned=need lok=(set @)]
@@ -2931,7 +2940,7 @@
 ::
 +$  line-short
   $:  re-gen=@uvre
-      bo-gen=_`@uwoo`1  ::  0 is reserved for the entry point
+      bo-gen=_`@uwoo`1               ::  0 is reserved for the entry point
       id-gen=@uxid                   ::  branch region identifiers
       mode=?(%drop %run)
       blocks=(map @uwoo blob)
@@ -3278,83 +3287,82 @@
     ^-  ?
     ?=(^ (biff (~(get by call.cole.jets.long-ska) c) ~(get by jets-hot)))
   ::
-  =^  new=nomm  cache
-    =/  =nomm  nomm:(~(got by code.long-ska) b)
-    ?:  inline-off  [nomm cache]
-    |-  ^-  [^nomm comp-cache]
-    ?-    nomm
-        [^ *]
-      =^  a  cache  $(nomm -.nomm)
-      =^  d  cache  $(nomm +.nomm)
-      [[a d] cache]
-    ::
-        [%0 *]  [nomm cache]
-        [%1 *]  [nomm cache]
-    ::
-        [%2 *]
-      =^  p  cache  $(nomm p.nomm)
-      =^  q  cache  $(nomm q.nomm)
-      =/  keep=^nomm  [%2 p q info.nomm]
-      ?~  info.nomm  [keep cache]
-      =/  c=bell  b.u.info.nomm
-      ?.  &(?=(~ k.u.info.nomm) (safe-fol-fol q.nomm) !(hot c))
-        [keep cache]
-      =^  s=(set bell)  sccs.cache  (scc-of c calls.long-ska sccs.cache)
-      ?.  ?=([* ~ ~] s)  [keep cache]
-      ?:  (~(has in (~(gut by calls.long-ska) c ~)) c)  [keep cache]
-      =^  m=^nomm  cache  inlined-loop(b c, cache cache)
-      ?:  (gth (nomm-size m) inline-max)  [keep cache]
-      [[%7 p m] cache]
-    ::
-        [%3 *]
-      =^  p  cache  $(nomm p.nomm)
-      [[%3 p] cache]
-    ::
-        [%4 *]
-      =^  p  cache  $(nomm p.nomm)
-      [[%4 p] cache]
-    ::
-        [%5 *]
-      =^  p  cache  $(nomm p.nomm)
-      =^  q  cache  $(nomm q.nomm)
-      [[%5 p q] cache]
-    ::
-        [%6 *]
-      =^  p  cache  $(nomm p.nomm)
-      =^  q  cache  $(nomm q.nomm)
-      =^  r  cache  $(nomm r.nomm)
-      [[%6 p q r] cache]
-    ::
-        [%7 *]
-      =^  p  cache  $(nomm p.nomm)
-      =^  q  cache  $(nomm q.nomm)
-      [[%7 p q] cache]
-    ::
-        [%10 *]
-      =^  v  cache  $(nomm q.p.nomm)
-      =^  q  cache  $(nomm q.nomm)
-      [[%10 [p.p.nomm v] q] cache]
-    ::
-        [%11 *]
-      ?@  p.nomm
-        =^  q  cache  $(nomm q.nomm)
-        [[%11 p.nomm q body.nomm] cache]
-      =^  v  cache  $(nomm q.p.nomm)
-      =^  q  cache  $(nomm q.nomm)
-      [[%11 [p.p.nomm v] q body.nomm] cache]
-    ::
-        [%12 *]
-      =^  p  cache  $(nomm p.nomm)
-      =^  q  cache  $(nomm q.nomm)
-      [[%12 p q] cache]
-    ::
-        [%mean *]
-      =^  p  cache  $(nomm p.nomm)
-      =^  q  cache  $(nomm q.nomm)
-      [[%mean p b.nomm q body.nomm k.nomm] cache]
-    ==
+  =-  [new cache(inl (~(put by inl.cache) b new))]
+  ^-  [new=nomm =_cache]
+  =/  =nomm  nomm:(~(got by code.long-ska) b)
+  ?:  inline-off  [nomm cache]
+  |-  ^-  [^nomm comp-cache]
+  ?-    nomm
+      [^ *]
+    =^  a  cache  $(nomm -.nomm)
+    =^  d  cache  $(nomm +.nomm)
+    [[a d] cache]
   ::
-  [new cache(inl (~(put by inl.cache) b new))]
+      [%0 *]  [nomm cache]
+      [%1 *]  [nomm cache]
+  ::
+      [%2 *]
+    =^  p  cache  $(nomm p.nomm)
+    =^  q  cache  $(nomm q.nomm)
+    =/  keep=^nomm  [%2 p q info.nomm]
+    ?~  info.nomm  [keep cache]
+    =/  c=bell  b.u.info.nomm
+    ?.  &(?=(~ k.u.info.nomm) (safe-fol-fol q.nomm) !(hot c))
+      [keep cache]
+    =^  s=(set bell)  sccs.cache  (scc-of c calls.long-ska sccs.cache)
+    ?.  ?=([* ~ ~] s)  [keep cache]
+    ?:  (~(has in (~(gut by calls.long-ska) c ~)) c)  [keep cache]
+    =^  m=^nomm  cache  inlined-loop(b c, cache cache)
+    ?:  (gth (nomm-size m) inline-max)  [keep cache]
+    [[%7 p m] cache]
+  ::
+      [%3 *]
+    =^  p  cache  $(nomm p.nomm)
+    [[%3 p] cache]
+  ::
+      [%4 *]
+    =^  p  cache  $(nomm p.nomm)
+    [[%4 p] cache]
+  ::
+      [%5 *]
+    =^  p  cache  $(nomm p.nomm)
+    =^  q  cache  $(nomm q.nomm)
+    [[%5 p q] cache]
+  ::
+      [%6 *]
+    =^  p  cache  $(nomm p.nomm)
+    =^  q  cache  $(nomm q.nomm)
+    =^  r  cache  $(nomm r.nomm)
+    [[%6 p q r] cache]
+  ::
+      [%7 *]
+    =^  p  cache  $(nomm p.nomm)
+    =^  q  cache  $(nomm q.nomm)
+    [[%7 p q] cache]
+  ::
+      [%10 *]
+    =^  v  cache  $(nomm q.p.nomm)
+    =^  q  cache  $(nomm q.nomm)
+    [[%10 [p.p.nomm v] q] cache]
+  ::
+      [%11 *]
+    ?@  p.nomm
+      =^  q  cache  $(nomm q.nomm)
+      [[%11 p.nomm q body.nomm] cache]
+    =^  v  cache  $(nomm q.p.nomm)
+    =^  q  cache  $(nomm q.nomm)
+    [[%11 [p.p.nomm v] q body.nomm] cache]
+  ::
+      [%12 *]
+    =^  p  cache  $(nomm p.nomm)
+    =^  q  cache  $(nomm q.nomm)
+    [[%12 p q] cache]
+  ::
+      [%mean *]
+    =^  p  cache  $(nomm p.nomm)
+    =^  q  cache  $(nomm q.nomm)
+    [[%mean p b.nomm q body.nomm k.nomm] cache]
+  ==
 ::
 ++  compile-unary
   ~%  %compile-unary  ..ride  ~
@@ -3460,8 +3468,15 @@
     ::
     ::  .sur: what the function reads first thing (+sure-of)
     ::
-    =^    [need-new=need-ordered laz=need-lazy ned-final=need bak=baked o=@uwoo sur=need-ordered]
-        gen
+    =*  res  $:  need-new=need-ordered
+                 laz=need-lazy
+                 ned-final=need
+                 bak=baked
+                 o=@uwoo
+                 sur=need-ordered
+             ==
+    ::
+    =^  ,res  gen
       !@  dedicated-shape-pass
         =.  mode.gen  ?:(done %run %drop)
         =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~ ~)
@@ -9156,7 +9171,8 @@
     :-  u.t
     =/  nb=blob  (~(got by blocks) miss.u.t)
     ?.  &(?=(~ par.nb) ?=(~ body.nb))  ~
-    ?.  =((sy (~(get ja rev) miss.u.t)) (sy ~[p y.u.t]))  ~
+    =/  rev-miss  (~(get ja rev) miss.u.t)
+    ?.  |(=(rev-miss ~[p y.u.t]) =(rev-miss ~[y.u.t p]))  ~
     =/  t2=(unit test)  (test-of miss.u.t)
     ?~  t2  ~
     ?.  =(s.u.t2 s.u.t)  ~
