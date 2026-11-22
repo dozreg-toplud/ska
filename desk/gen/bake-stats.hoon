@@ -59,7 +59,7 @@
   ?:  (~(has by straights) b)  [straights cache]
   =^  scc=(set bell)  sccs.cache  (scc-of b calls.long-ska sccs.cache)
   =^  m=(map bell straight)  cache
-    (compile-scc scc [code jets calls]:long-ska jets-hot cache)
+    (compile-scc scc [code jets calls held]:long-ska jets-hot cache)
   [(~(uni by straights) m) cache]
 ::  per function: arguments, ops, literal ops, blocks, after optimization
 ::

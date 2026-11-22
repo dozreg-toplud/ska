@@ -231,7 +231,7 @@
   =/  =straight
     =*  sam  +<
     =*  con  +>
-    =/  lon  [code jets calls]:long-ska
+    =/  lon  [code jets calls held]:long-ska
     ?.  -.args
       =>  [bell=bell scc=scc lon=lon jets-hot=jets-hot con]  ~+
       =/  [[s=straight *] *]  (compile-unary bell scc lon jets-hot *comp-cache)

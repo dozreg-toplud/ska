@@ -99,7 +99,7 @@
   =^  scc=(set bell)  sccs.cache  (scc-of v calls.long-ska sccs.cache)
   =^  m=(map bell straight)  cache
     ~>  %bout.[0 leaf+"compile the component"]
-    (compile-scc scc [code jets calls]:long-ska jets-hot cache)
+    (compile-scc scc [code jets calls held]:long-ska jets-hot cache)
   =/  s=straight  (optimize (~(got by m) v))
   ::  the analysis identity of the code bell, for what the callers knew
   ::
