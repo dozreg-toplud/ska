@@ -1588,37 +1588,49 @@
 ::
 ::  A cape of the parts of a noun that the code that made it holds
 ::  separately, in registers of their own: a cell where the noun was
-::  assembled, by a cons or an edit, or is a constant cell; | where it is
-::  held whole (a product of a call, a part of a subject that its callers
-::  hold whole) or is an atom.  The parts of a subject that every call site
-::  assembles (+held-graph) cost its callers a move each, where the noun
-::  whole would cost them a cons: the function takes them apart
-::  (+msg-need-ord), where the bell knows the cell too (+cons:so): that
-::  it is a cell rests on the bell, as for any part the bell knows, and
-::  only the cost on this.
+::  assembled, by a cons or an edit; | where it is held whole (a product
+::  of a call, a part of a subject that its callers hold whole) or is an
+::  atom; & for a constant cell, which comes either way for nothing.  The
+::  parts of a subject that every call site assembles (+held-graph) cost
+::  its callers a move each, where the noun whole would cost them a cons:
+::  the function takes them apart (+msg-need-ord), where the bell knows the
+::  cell too (+cons:so): that it is a cell rests on the bell, as for any
+::  part the bell knows, and only the cost on this.
 ::
 ++  slot-held
   |=  [c=cape axe=@]
   ^-  cape
   ?:  =(1 axe)  c
-  ?@  c  |
+  ?@  c  c
   ?-  (cap axe)
     %2  $(c -.c, axe (mas axe))
     %3  $(c +.c, axe (mas axe))
   ==
-::  what both hold: never deeper than either, so a chain of them ends
+::  what both hold; a constant holds what the other does
 ::
 ++  meet-held
   |=  [a=cape b=cape]
   ^-  cape
-  ?:  |(?=(@ a) ?=(@ b))  |
+  ?:  ?=(%& a)  b
+  ?:  ?=(%& b)  a
+  ?:  |(?=(%| a) ?=(%| b))  |
   [$(a -.a, b -.b) $(a +.a, b +.b)]
+::  what is held, as far as the bell of the function knows cells: only
+::  there does it count (+msg-need-ord), and that makes it finite, where a
+::  noun that a loop conses onto (a list) is held to any depth
+::
+++  trim-held
+  |=  [h=cape les=cape]
+  ^-  cape
+  ?@  h  h
+  ?@  les  les
+  [$(h -.h, les -.les) $(h +.h, les +.les)]
 ::
 ++  edit-held
   |=  [rec=cape axe=@ don=cape]
   ^-  cape
   ?:  =(1 axe)  don
-  =/  [h=cape t=cape]  ?@(rec [| |] rec)
+  =/  [h=cape t=cape]  ?@(rec [rec rec] rec)
   ?-  (cap axe)
     %2  [$(rec h, axe (mas axe)) t]
     %3  [h $(rec t, axe (mas axe))]
@@ -1631,28 +1643,16 @@
   |=  [=nomm sub=cape]
   ^-  cape
   ?:  ?=([%0 *] nomm)
-    ?:(=(0 p.nomm) | (slot-held sub p.nomm))
-  ::  a constant cell, to a depth
-  ::
-  ?:  ?=([%1 *] nomm)
-    =/  n  p.nomm
-    =/  d=@ud  0
-    |-  ^-  cape
-    ?:  |(?=(@ n) (gth d 5))  |
-    [$(n -.n, d +(d)) $(n +.n, d +(d))]
+    ?:(=(0 p.nomm) & (slot-held sub p.nomm))
+  ?:  ?=([%1 *] nomm)  .?(p.nomm)
   ~+
   ?+  nomm  |
     [^ *]      [$(nomm -.nomm) $(nomm +.nomm)]
+    [%6 *]     (meet-held $(nomm q.nomm) $(nomm r.nomm))
     [%7 *]     $(nomm q.nomm, sub $(nomm p.nomm))
     [%10 *]    (edit-held $(nomm q.nomm) p.p.nomm $(nomm q.p.nomm))
     [%11 *]    $(nomm q.nomm)
     [%mean *]  $(nomm q.nomm)
-  ::  a branch that is a crash hands nothing on
-  ::
-      [%6 *]
-    ?:  ?=([%0 %0] q.nomm)  $(nomm r.nomm)
-    ?:  ?=([%0 %0] r.nomm)  $(nomm q.nomm)
-    (meet-held $(nomm q.nomm) $(nomm r.nomm))
   ==
 ::  the direct calls of a function's code, each with what the function
 ::  holds of the callee's subject at the call
@@ -1718,7 +1718,9 @@
     |=  [[b=bell h=cape] changed=(list bell) hel=_hel]
     ?:  =(b root)  [changed hel]
     =/  old=(unit cape)  (~(get by hel) b)
-    =/  new=cape  ?~(old h (meet-held h u.old))
+    =/  new=cape
+      (trim-held ?~(old h (meet-held h u.old)) ?@(less.b | cape.less.b))
+    ::
     ?:  =(`new old)  [changed hel]
     [[b changed] (~(put by hel) b new)]
   ::
@@ -3551,8 +3553,6 @@
 ::  safe to drop.  The code of a function, inlined into, is found once.
 ::
 ++  inline-max  48   ::  nodes of the code of a function that is inlined
-++  may-rounds  2   ::  sweeps of the %may pass over the members of an SCC
-++  may-size  64    ::  registers past which a %may need grows no more
 ::
 ++  nomm-size
   |=  =nomm
@@ -4383,17 +4383,17 @@
   ::  .tick counts member compiles; .ran is the tick of a member's last
   ::  compile, .chg the tick of its last shape change
   ::
-  ::  The sweep is repeated until no member's need grows
-  ::  (+may-rounds at most): a callee is read from .top, which has what
-  ::  the rounds before found of the members the sweep has not been to.  A
-  ::  need past +may-size registers grows no more
+  ::  Two sweeps.  The first has nothing for a callee across a back edge;
+  ::  the second reads every callee from what the first found, so a member
+  ::  gets what one more turn of its cycle reads.  A third would add what
+  ::  only a third turn reads: the next level of a noun that the cycle
+  ::  walks, and a walk has no last level.
   ::
   =^  top=(map bell need-ordered)  cache
     !@  dedicated-shape-pass  [~ cache]
-    =|  top=(map bell need-ordered)
-    =/  round=@ud  1
-    |-  ^-  [(map bell need-ordered) comp-cache]
-    =/  res=[top=(map bell need-ordered) c=comp-cache]
+    =/  sweep
+      |=  [top=(map bell need-ordered) cache=comp-cache]
+      ^-  [(map bell need-ordered) comp-cache]
       %+  roll  order
       |=  [b=bell top=_top c=_cache]
       =/  r  (member b %may ~ top c)
@@ -4401,16 +4401,10 @@
       :_  +>.r
       %+  ~(put by top)  b
       ?~  old=(~(get by top) b)  new
-      ?:  (gth (need-ord-regs u.old may-size) may-size)  u.old
       (uni-need-ord u.old new)
     ::
-    =/  grew=?
-      %+  lien  order
-      |=  b=bell
-      !=((~(gut by top.res) b [%none ~]) (~(gut by top) b [%none ~]))
-    ::
-    ?:  |(!grew (gte round may-rounds))  res
-    $(round +(round), top top.res, cache c.res)
+    =^  one=(map bell need-ordered)  cache  (sweep ~ cache)
+    (sweep one cache)
   ::
   =/  st=[any=? tick=@ud ran=(map bell @ud) chg=(map bell @ud)]  [| 0 ~ ~]
   =/  counter=@ud  0
@@ -8498,22 +8492,6 @@
     [%both (msg p.a h.b (hed-lore less)) (msg q.a t.b (tel-lore less))]
   %-  cons-need  ::  XX
   [(msg p.a p.b (hed-lore less)) (msg q.a q.b (tel-lore less))]
-::
-::  Registers of a shape, counted until there are more than .max
-::
-++  need-ord-regs
-  |=  [n=need-ordered max=@ud]
-  ^-  @ud
-  =|  acc=@ud
-  |-  ^-  @ud
-  ?:  (gth acc max)  acc
-  ?-  -.n
-    %none  acc
-    %this  +(acc)
-    %both  $(n t.n, acc $(n h.n, acc +(acc)))
-    ^      $(n +.n, acc $(n -.n))
-    %lax   $(n t.n, acc $(n h.n, acc +(acc)))
-  ==
 ::
 ++  need-to-ordered
   ~%  %need-to-ordered  ..ride  ~
