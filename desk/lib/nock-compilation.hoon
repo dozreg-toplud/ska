@@ -3293,6 +3293,8 @@
 ::  safe to drop.  The code of a function, inlined into, is found once.
 ::
 ++  inline-max  48   ::  nodes of the code of a function that is inlined
+++  may-rounds  2   ::  sweeps of the %may pass over the members of an SCC
+++  may-size  64    ::  registers past which a %may need grows no more
 ::
 ++  nomm-size
   |=  =nomm
@@ -4117,14 +4119,35 @@
   ::  .tick counts member compiles; .ran is the tick of a member's last
   ::  compile, .chg the tick of its last shape change
   ::
-  =/  may=[m=(map bell straight) c=comp-cache]
+  ::  The sweep is repeated until no member's need grows
+  ::  (+may-rounds at most): a callee is read from .top, which has what
+  ::  the rounds before found of the members the sweep has not been to.  A
+  ::  need past +may-size registers grows no more
+  ::
+  =^  top=(map bell need-ordered)  cache
     !@  dedicated-shape-pass  [~ cache]
-    %+  roll  order
-    |=  [b=bell m=(map bell straight) c=_cache]
-    =/  r  (member b %may | m ~ c)
-    [+<.r +>.r]
-  =/  top=(map bell need-ordered)  (~(run by m.may) |=(s=straight need.s))
-  =.  cache  c.may
+    =|  top=(map bell need-ordered)
+    =/  round=@ud  1
+    |-  ^-  [(map bell need-ordered) comp-cache]
+    =/  res=[top=(map bell need-ordered) c=comp-cache]
+      %+  roll  order
+      |=  [b=bell top=_top c=_cache]
+      =/  r  (member b %may | ~ top c)
+      =/  new=need-ordered  need:(~(got by +<.r) b)
+      :_  +>.r
+      %+  ~(put by top)  b
+      ?~  old=(~(get by top) b)  new
+      ?:  (gth (need-ord-regs u.old may-size) may-size)  u.old
+      (uni-need-ord u.old new)
+    ::
+    =/  grew=?
+      %+  lien  order
+      |=  b=bell
+      !=((~(gut by top.res) b [%none ~]) (~(gut by top) b [%none ~]))
+    ::
+    ?:  |(!grew (gte round may-rounds))  res
+    $(round +(round), top top.res, cache c.res)
+  ::
   =/  st=[any=? tick=@ud ran=(map bell @ud) chg=(map bell @ud)]  [| 0 ~ ~]
   =/  counter=@ud  0
   |-  ^+  [map-local cache]
