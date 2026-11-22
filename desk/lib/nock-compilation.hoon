@@ -1495,7 +1495,7 @@
 ::  assembled, by a cons or an edit, or is a constant cell; | where it is
 ::  held whole (a product of a call, a part of a subject that its callers
 ::  hold whole) or is an atom.  The parts of a subject that every call site
-::  assembles (+bake-graph) cost its callers a move each, where the noun
+::  assembles (+held-graph) cost its callers a move each, where the noun
 ::  whole would cost them a cons: the function takes them apart
 ::  (+msg-need-ord).  Nothing rests on it but the cost: a caller that
 ::  holds the noun whole tries the fetch (\$soft-call).
@@ -1533,21 +1533,23 @@
   ~%  %heft  ..ride  ~
   |=  [=nomm sub=cape]
   ^-  cape
-  ?+  nomm  |
-    [^ *]      [$(nomm -.nomm) $(nomm +.nomm)]
-    [%0 *]     ?:(=(0 p.nomm) | (slot-held sub p.nomm))
-    [%7 *]     $(nomm q.nomm, sub $(nomm p.nomm))
-    [%10 *]    (edit-held $(nomm q.nomm) p.p.nomm $(nomm q.p.nomm))
-    [%11 *]    $(nomm q.nomm)
-    [%mean *]  $(nomm q.nomm)
+  ?:  ?=([%0 *] nomm)
+    ?:(=(0 p.nomm) | (slot-held sub p.nomm))
   ::  a constant cell, to a depth
   ::
-      [%1 *]
+  ?:  ?=([%1 *] nomm)
     =/  n  p.nomm
     =/  d=@ud  0
     |-  ^-  cape
     ?:  |(?=(@ n) (gth d 5))  |
     [$(n -.n, d +(d)) $(n +.n, d +(d))]
+  ~+
+  ?+  nomm  |
+    [^ *]      [$(nomm -.nomm) $(nomm +.nomm)]
+    [%7 *]     $(nomm q.nomm, sub $(nomm p.nomm))
+    [%10 *]    (edit-held $(nomm q.nomm) p.p.nomm $(nomm q.p.nomm))
+    [%11 *]    $(nomm q.nomm)
+    [%mean *]  $(nomm q.nomm)
   ::  a branch that is a crash hands nothing on
   ::
       [%6 *]
@@ -1555,6 +1557,70 @@
     ?:  ?=([%0 %0] r.nomm)  $(nomm q.nomm)
     (meet-held $(nomm q.nomm) $(nomm r.nomm))
   ==
+::  the direct calls of a function's code, each with what the function
+::  holds of the callee's subject at the call
+::
+++  heft-sites
+  ~%  %heft-sites  ..ride  ~
+  |=  [=nomm own=cape]
+  ^-  (list [b=bell h=cape])
+  =|  out=(list [b=bell h=cape])
+  =/  hub=cape  own
+  |-  ^+  out
+  ?-    nomm
+      [^ *]    $(nomm +.nomm, out $(nomm -.nomm))
+      [%0 *]   out
+      [%1 *]   out
+      [%3 *]   $(nomm p.nomm)
+      [%4 *]   $(nomm p.nomm)
+      [%5 *]   $(nomm q.nomm, out $(nomm p.nomm))
+      [%6 *]   $(nomm r.nomm, out $(nomm q.nomm, out $(nomm p.nomm)))
+      [%7 *]   $(nomm q.nomm, hub (heft p.nomm hub), out $(nomm p.nomm))
+      [%10 *]  $(nomm q.nomm, out $(nomm q.p.nomm))
+      [%12 *]  $(nomm q.nomm, out $(nomm p.nomm))
+  ::
+      [%2 *]
+    =.  out  $(nomm p.nomm)
+    =.  out  $(nomm q.nomm)
+    ?~  info.nomm  out
+    [[b.u.info.nomm (heft p.nomm hub)] out]
+  ::
+      [%11 *]
+    ?@  p.nomm  $(nomm q.nomm)
+    $(nomm q.nomm, out $(nomm q.p.nomm))
+  ::
+      [%mean *]
+    =.  out  $(nomm p.nomm)
+    =.  out  [[b.nomm (heft p.nomm hub)] out]
+    $(nomm q.nomm)
+  ==
+::  +held-graph: for the variants of a poke (+bake-graph), what every call
+::  site holds of each one's subject.  From the root down: a function
+::  enters with what its first site holds and loses what a later site, or
+::  a site whose function came to hold less, does not.
+::
+++  held-graph
+  ~%  %held-graph  ..ride  ~
+  |=  [root=bell baked=(map bell [=nomm calls=(set bell) seek=cape])]
+  ^-  (map bell cape)
+  =/  hel=(map bell cape)  [[root |] ~ ~]
+  =/  q=(list bell)  ~[root]
+  |-  ^+  hel
+  ?~  q  hel
+  ?~  ent=(~(get by baked) i.q)  $(q t.q)
+  =/  sites=(list [b=bell h=cape])
+    (heft-sites nomm.u.ent (~(gut by hel) i.q |))
+  ::
+  =^  changed=(list bell)  hel
+    %+  roll  sites
+    |=  [[b=bell h=cape] changed=(list bell) hel=_hel]
+    ?:  =(b root)  [changed hel]
+    =/  old=(unit cape)  (~(get by hel) b)
+    =/  new=cape  ?~(old h (meet-held h u.old))
+    ?:  =(`new old)  [changed hel]
+    [[b changed] (~(put by hel) b new)]
+  ::
+  $(q (weld t.q changed))
 ::  Evaluate a function's nomm as socks under a subject (what its bell
 ::  knows), folding reads of known parts to constants and branches on them
 ::  to the branch taken.  Produces the folded nomm, with the callee of each
@@ -1573,15 +1639,11 @@
           sub=sock
           dat=$-(bell (unit datum))
           res=$-([bell sock] bell)
-          own=cape
       ==
   ^-  $:  =^nomm
-          sites=(list [b=bell k=sock h=cape])
+          sites=(list [b=bell k=sock])
       ==
-  =/  gen  [sites=*(list [b=bell k=sock h=cape])]
-  ::  what is held of the subject of the formula at hand (+heft)
-  ::
-  =/  hub=cape  own
+  =/  gen  [sites=*(list [b=bell k=sock])]
   ::  provenance is tracked to reproduce +double-int results only, it is
   ::  discarded afterwards
   ::
@@ -1629,7 +1691,7 @@
     ?~  info.nomm  [[[%2 nomm.s nomm.f ~] dunno] gen]
     =/  k=sock  sock.prod.s
     =/  v=bell  (res b.u.info.nomm k)
-    =.  sites.gen  [[b.u.info.nomm k (heft p.nomm hub)] sites.gen]
+    =.  sites.gen  [[b.u.info.nomm k] sites.gen]
     =/  prod=sock-anno
       ?~  d=(dat b.u.info.nomm)  dunno
       =/  p  (patch-prod [prod map]:u.d k)
@@ -1694,7 +1756,7 @@
   ::
       [%7 *]
     =^  p  gen  loop(nomm p.nomm)
-    =^  q  gen  loop(nomm q.nomm, sub prod.p, hub (heft p.nomm hub))
+    =^  q  gen  loop(nomm q.nomm, sub prod.p)
     ?:  &(fold ?=([%1 *] nomm.q) (safe-nomm nomm.p))
       [[nomm.q [&+p.nomm.q ~]] gen]
     [[[%7 nomm.p nomm.q] prod.q] gen]
@@ -1737,7 +1799,7 @@
     =^  p  gen  loop(nomm p.nomm)
     =/  k=sock  sock.prod.p
     =/  v=bell  (res b.nomm k)
-    =.  sites.gen  [[b.nomm k (heft p.nomm hub)] sites.gen]
+    =.  sites.gen  [[b.nomm k] sites.gen]
     =^  q  gen  loop(nomm q.nomm)
     [[[%mean nomm.p v nomm.q body.nomm k.nomm] prod.q] gen]
   ==
@@ -1763,8 +1825,8 @@
           jetted=$-(bell ?)
           vars=(jug bell bell)
       ==
-  ^-  [(map bell [=nomm calls=(set bell) seek=cape held=cape]) (jug bell bell)]
-  =*  site  ,[b=bell k=sock h=cape]
+  ^-  [(map bell [=nomm calls=(set bell) seek=cape]) (jug bell bell)]
+  =*  site  ,[b=bell k=sock]
   ::  an existing variant of a code bell fit for a subject: the one that
   ::  knows the most.
   ::
@@ -1788,14 +1850,12 @@
     best
   ::
   =/  idc  |=([c=bell k=sock] c)
-  =*  kh  ,[k=sock h=cape]
   =/  frozen=?  !@(bake:bake-mode & |)
   =|  $=  st
       $:  bak=(map bell sock)        ::  code bell -> its bake, the variant
           fix=(set bell)             ::  bakes fixed at the code bell
           out=(map bell (set bell))  ::  callees whose variant it awaits
-          inn=(map bell (map bell (list kh)))  ::  callee -> caller -> known
-          hel=(map bell cape)        ::  code bell -> what its sites hold
+          inn=(map bell (map bell (list sock)))  ::  callee -> caller -> known
           evals=@ud
           grew=@ud                   ::  bakes that would have grown
       ==
@@ -1804,7 +1864,7 @@
   =.  fix.st  (~(put in fix.st) root)
   =/  q=(list bell)  ~[root]
   =/  qs=(set bell)  [root ~ ~]
-  |-  ^-  [(map bell [=nomm calls=(set bell) seek=cape held=cape]) (jug bell bell)]
+  |-  ^-  [(map bell [=nomm calls=(set bell) seek=cape]) (jug bell bell)]
   =*  work  $
   ?~  q
     %-  %+  print-ska  0
@@ -1824,15 +1884,13 @@
     ::
     %-  ~(rep by bak.st)
     |=  $:  [t=bell s=sock]
-            out=(map bell [=nomm calls=(set bell) seek=cape held=cape])
+            out=(map bell [=nomm calls=(set bell) seek=cape])
             =_vars
         ==
     =/  d=datum  (need (dat t))
-    =/  held=cape  (~(gut by hel.st) t |)
-    =/  [=nomm sites=(list site)]  (know nomm.d s dat res held)
+    =/  [=nomm sites=(list site)]  (know nomm.d s dat res)
     =/  v=bell  [s fol.t]
-    :-  %+  ~(put by out)  v
-        [nomm (silt (turn sites |=(site (res b k)))) seek.d held]
+    :-  (~(put by out) v [nomm (silt (turn sites |=(site (res b k)))) seek.d])
     (~(put ju vars) t v)
   ::
   =/  cur=bell  i.q
@@ -1841,21 +1899,17 @@
   ::  evaluate .cur under its bake
   ::
   =/  sites=(list site)
-    =<  sites
-    %:  know
-      nomm:(need (dat cur))  (~(got by bak.st) cur)  dat  idc
-      (~(gut by hel.st) cur |)
-    ==
+    sites:(know nomm:(need (dat cur)) (~(got by bak.st) cur) dat idc)
   ::
   =.  evals.st  +(evals.st)
   ::  its sites: what each callee waiting for a variant of this poke learns
   ::  from .cur
   ::
-  =/  new=(map bell (list kh))
+  =/  new=(map bell (list sock))
     %+  roll  sites
-    |=  [s=site new=(map bell (list kh))]
+    |=  [s=site new=(map bell (list sock))]
     ?^  (pick b.s k.s)  new
-    (~(put by new) b.s [[k.s h.s] (~(gut by new) b.s ~)])
+    (~(put by new) b.s [k.s (~(gut by new) b.s ~)])
   ::
   =/  new-bells=(set bell)  ~(key by new)
   =/  prev=(set bell)  (~(gut by out.st) cur ~)
@@ -1867,7 +1921,7 @@
   =^  changed=(list bell)  st
     %+  roll  ~(tap in touched)
     |=  [c=bell changed=(list bell) =_st]
-    =/  m=(map bell (list kh))  (~(gut by inn.st) c ~)
+    =/  m=(map bell (list sock))  (~(gut by inn.st) c ~)
     =.  m
       ?~  ks=(~(get by new) c)  (~(del by m) cur)
       (~(put by m) cur u.ks)
@@ -1881,7 +1935,7 @@
     =?  fix.st  (jetted c)  (~(put in fix.st) c)
     =/  bake=sock
       ?:  |(frozen (~(has in fix.st) c))  less.c
-      =/  ks=(list sock)  (turn `(list kh)`(zing ~(val by m)) |=(kh k))
+      =/  ks=(list sock)  (zing ~(val by m))
       ?~  ks  less.c
       =/  meet=sock  (roll t.ks |=([k=sock acc=_i.ks] (purr:so k acc)))
       (norm-sock (uni-sock less.c meet))
@@ -1894,20 +1948,8 @@
       ?~  old  [bake grew.st]
       ?:  (huge:so bake u.old)  [bake grew.st]
       [(norm-sock (purr:so bake u.old)) +(grew.st)]
-    ::  what every site holds of the subject: only less from one
-    ::  evaluation to the next, as the bake
-    ::
-    =/  held=cape
-      ?:  |(frozen (~(has in fix.st) c))  |
-      =/  hs=(list cape)  (turn `(list kh)`(zing ~(val by m)) |=(kh h))
-      ?~  hs  |
-      (roll t.hs |=([h=cape acc=_i.hs] (meet-held h acc)))
-    ::
-    =/  hold=(unit cape)  (~(get by hel.st) c)
-    =?  held  ?=(^ hold)  (meet-held held u.hold)
-    ?:  &(=(`bake old) =(`held hold))  [changed st]
-    :-  [c changed]
-    st(bak (~(put by bak.st) c bake), hel (~(put by hel.st) c held))
+    ?:  =(`bake old)  [changed st]
+    [[c changed] st(bak (~(put by bak.st) c bake))]
   ::
   =/  fresh=(list bell)  (skip changed ~(has in qs))
   %=  work
@@ -1955,14 +1997,16 @@
         ?=(^ (cole-match c ?~(d=(dat c) & seek.u.d) core.regs arms.regs hot))
     ==
   ::
-  =^  baked=(map bell [=nomm calls=(set bell) seek=cape held=cape])  vars.lon
+  =^  baked=(map bell [=nomm calls=(set bell) seek=cape])  vars.lon
     (bake-graph root-bell dat jetted vars.lon)
+  ::
+  =/  helds=(map bell cape)  (held-graph root-bell baked)
   ::  a variant seen before keeps its entry and its programs
   ::
-  =/  new-code=(map bell [=nomm calls=(set bell) seek=cape held=cape])
+  =/  new-code=(map bell [=nomm calls=(set bell) seek=cape])
     %-  ~(rep by baked)
-    |=  $:  [b=bell v=[=nomm calls=(set bell) seek=cape held=cape]]
-            acc=(map bell [=nomm calls=(set bell) seek=cape held=cape])
+    |=  $:  [b=bell v=[=nomm calls=(set bell) seek=cape]]
+            acc=(map bell [=nomm calls=(set bell) seek=cape])
         ==
     ?:((~(has by code.lon) b) acc (~(put by acc) b v))
   ::  callees first (+tarjan takes its vertex type from the graph's root
@@ -1975,7 +2019,7 @@
     %-  tarjan
     ^-  (jug bell bell)
     %-  ~(rep by new-code)
-    |=  [[b=bell v=[=nomm calls=(set bell) seek=cape held=cape]] acc=(jug bell bell)]
+    |=  [[b=bell v=[=nomm calls=(set bell) seek=cape]] acc=(jug bell bell)]
     %+  ~(put by acc)  b
     %-  silt
     (skim ~(tap in calls.v) |=(c=bell (~(has by new-code) c)))
@@ -2029,18 +2073,19 @@
   ::
   =.  seek.lon
     %-  ~(rep by new-code)
-    |=  [[b=bell v=[=nomm calls=(set bell) seek=cape held=cape]] acc=_seek.lon]
+    |=  [[b=bell v=[=nomm calls=(set bell) seek=cape]] acc=_seek.lon]
     (~(put by acc) b seek.v)
   ::
   =.  held.lon
     %-  ~(rep by new-code)
-    |=  [[b=bell v=[=nomm calls=(set bell) seek=cape held=cape]] acc=_held.lon]
-    ?:  ?=(@ held.v)  acc
-    (~(put by acc) b held.v)
+    |=  [[b=bell *] acc=_held.lon]
+    =/  h=cape  (~(gut by helds) b |)
+    ?:  ?=(@ h)  acc
+    (~(put by acc) b h)
   ::
   =.  calls.lon
     %-  ~(rep by new-code)
-    |=  [[b=bell v=[=nomm calls=(set bell) seek=cape held=cape]] acc=_calls.lon]
+    |=  [[b=bell v=[=nomm calls=(set bell) seek=cape]] acc=_calls.lon]
     (~(put by acc) b calls.v)
   ::
   :-  [root-bell (flop new.regs)]
