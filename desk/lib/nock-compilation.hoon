@@ -8861,53 +8861,23 @@
 ++  sure-of
   |=  [sur=sure-ordered less=cape]
   ^-  need-ordered
-  (lax-strip sure:(inter1-to-inter2 [sur ~] less))
-::  a shape without its %lax parts: they are no reads
+  (lax-out sure:(inter1-to-inter2 [sur ~] less) |)
+::  A shape with its %lax parts decided.  .w: the noun whole, for the shape
+::  a function takes its subject in; nothing otherwise, a %lax part being
+::  no read
 ::
-++  lax-strip
-  |=  ned=need-ordered
+++  lax-out
+  |=  [ned=need-ordered w=?]
   ^-  need-ordered
   ?-    -.ned
       %none  ned
       %this  ned
-      %lax   [%none ~]
+      %lax   ?:(w [%this ~] [%none ~])
       ^      (cons-need $(ned -.ned) $(ned +.ned))
       %both
     =/  x  (cons-need $(ned h.ned) $(ned t.ned))
     ?^  -.x  [%both x]
     [%this ~]
-  ==
-::  A shape with its %lax parts decided: the parts where every call site
-::  holds them and the bell knows the cell, the noun otherwise
-::
-++  lax-resolve
-  ~%  %lax-resolve  ..ride  ~
-  |=  [ned=need-ordered less=lore]
-  ^-  need-ordered
-  ?-    -.ned
-      %none  ned
-      %this  ned
-      ^
-    %+  cons-need
-      $(ned -.ned, less (hed-lore less))
-    $(ned +.ned, less (tel-lore less))
-  ::
-      %both
-    =/  x
-      %+  cons-need
-        $(ned h.ned, less (hed-lore less))
-      $(ned t.ned, less (tel-lore less))
-    ?^  -.x  [%both x]
-    [%this ~]
-  ::
-      %lax
-    ?.  &(?=(^ les.less) ?=(^ hel.less))  [%this ~]
-    =/  x
-      %+  cons-need
-        $(ned h.ned, less (hed-lore less))
-      $(ned t.ned, less (tel-lore less))
-    ?:  ?=(%none -.x)  [%this ~]
-    x
   ==
 ::  +cell-sure: the noun that .sur is the sure need of (+sure-of) is a cell:
 ::  a part of it is read first thing, or the bell knows the cell (.k)
@@ -9067,28 +9037,28 @@
   |=  [laz=laze less=lore]
   ^-  need-ordered
   =/  intr=need-inter2  (inter1-to-inter2 (laze-to-inter1 laz) les.less)
-  %-  lax-resolve
-  :_  less
-  |-  ^-  need-ordered
-  %+  roll  fork.intr
-  |=  [[y=need-inter2 n=need-inter2] acc=_sure.intr]
-  (uni-need-ord (uni-need-ord acc ^$(intr y)) ^$(intr n))
+  %+  lax-out
+    |-  ^-  need-ordered
+    %+  roll  fork.intr
+    |=  [[y=need-inter2 n=need-inter2] acc=_sure.intr]
+    (uni-need-ord (uni-need-ord acc ^$(intr y)) ^$(intr n))
+  &
 ::
 ++  laze-collapse
   ~%  %laze-collapse  ..ride  ~
   |=  [laz=laze less=lore]
   ^-  need-ordered
-  %-  lax-resolve
-  :_  less
-  (inter2-collapse (inter1-to-inter2 (laze-to-inter1 laz) les.less) less)
+  %+  lax-out
+    (inter2-collapse (inter1-to-inter2 (laze-to-inter1 laz) les.less) less)
+  &
 ::
 ++  shape-collapse
   ~%  %shape-collapse  ..ride  ~
   |=  [laz=need-lazy less=lore]
   ^-  need-ordered
-  %-  lax-resolve
-  :_  less
-  (inter2-collapse (inter1-to-inter2 (lazy-to-inter1 laz) les.less) less)
+  %+  lax-out
+    (inter2-collapse (inter1-to-inter2 (lazy-to-inter1 laz) les.less) less)
+  &
 ::
 ++  inter2-collapse
   ~%  %inter2-collapse  ..ride  ~
