@@ -3053,12 +3053,23 @@
 ::  of its descendants.
 ::  Normalizations:         [[%none ~] [%none ~]] --> [%none ~]
 ::                  [%both x [%none ~] [%none ~]] --> [%this x]
+::
+::  %lax: the noun whole or in parts, whichever its maker has: whole in .r
+::  with .g 0, or .g 1 and the needs .h and .t met.  Nothing is consed and
+::  nothing is fetched to meet it; the registers that the other form would
+::  have filled hold 0.  It is the need that the lazy blocks past a fork have
+::  of the fork's product (+lerf): a branch that conses the product hands on
+::  the parts, a branch that has it in a register hands on the register, and
+::  the block that reads it tells by .g.  On entry .g is a constant: the
+::  parts where every call site holds them (+heft), the noun otherwise.
+::
 +$  need
   $~  [%none ~]
   $^  [p=need q=need]
   $%  [%both r=@uvre h=need t=need]
       [%this r=@uvre]
       [%none ~]
+      [%lax g=@uvre r=@uvre h=need t=need]
   ==
 ::  Same as $need but no registers allocated, pure shape.
 ::
@@ -3068,6 +3079,7 @@
   $%  [%both h=need-ordered t=need-ordered]
       [%this ~]
       [%none ~]
+      [%lax h=need-ordered t=need-ordered]
   ==
 ::  Shape of a product returned in parts (+rets-scc):
 ::    ~:   a noun in one register
@@ -4214,7 +4226,7 @@
         =/  shape
           %+  bake-need-ord
             ?:  ?=(%must mode)  (laze-collapse l lor)
-            (laze-may l cape.less.b)
+            (laze-may l lor)
           less.b
         :_  gen
         [shape *need-lazy *need *baked `@uwoo`0 (sure-of sure.l cape.less.b)]
@@ -4453,6 +4465,7 @@
     |-  ^+  imm
     =*  all  $
     ?-  -.ned
+        %lax   ~|(%lax-in-a-shape !!)
         %none  imm
         %this  [[r.ned data:(known-sock j)] imm]
         ^      all(ned q.ned, j (tel:so j), imm all(ned p.ned, j (hed:so j)))
@@ -4461,6 +4474,7 @@
       all(ned t.ned, j (tel:so j), imm all(ned h.ned, j (hed:so j)))
     ==
   ?-    -.ned
+      %lax   ~|(%lax-in-a-shape !!)
       %none  [ned imm]
       %this  [ned imm]
       ^
@@ -4510,6 +4524,7 @@
   |-  ^-  need-ordered
   ?:  &(?=(^ k) (all:ca cape.k) (need-fits ned data.k))  [%none ~]
   ?-    -.ned
+      %lax   ~|(%lax-in-a-shape !!)
       %none  ned
       %this  ned
       ^      (cons-need $(ned p.ned, k (hed:so k)) $(ned q.ned, k (tel:so k)))
@@ -4525,6 +4540,7 @@
   ^-  need
   =*  this  .
   ?-    -.ned
+      %lax   ~|(%lax-in-a-shape !!)
       %none  ned
       %this  ned
   ::
@@ -4888,61 +4904,17 @@
       (copy nex-p laz.nex-q)
     ::
         [%6 *]
-      ::  the parts both branches take from one place of the subject do not
-      ::  cross the fork (+leap)
+      ::  What follows needs of the product lazily, in blocks of its own:
+      ::  those blocks read it from one need, which each branch meets with
+      ::  what it has (+lerf).  The fork is then compiled for a sure need.
       ::
-      =/  lep=(unit [gol=next bys=(list need-lazy)])
-        ?.  ?=(%next -.goal)  ~
-        =/  l  (leap laz.goal q.nomm r.nomm)
-        ?~  l  ~
-        `[[%next rest.u.l then.goal] bys.u.l]
-      ?^  lep
-        =^  nex  gen  $(goal gol.u.lep)
-        =/  bys=(list need-lazy)  bys.u.lep
-        |-  ^-  [next _gen]
-        ?~  bys  [nex gen]
-        =^  nex-new  gen  (copy nex i.bys)
-        $(bys t.bys, nex nex-new)
       ?:  ?&  ?=(%next -.goal)
               !(none-equivalent laz.goal(sure *sure))
           ==
-        ::  If both branches produce a noun in a single register and/or all
-        ::  lazy needs need a single register, we can collapse the lazy need
-        ::  proactively with +kerf and compile against that.
-        ::
-        ::  So we do when the lazy need is big (+lazy-max): each branch
-        ::  would take a copy of it.
-        ::
-        ?:  ?|  &((whole-here mono q.nomm) (whole-here mono r.nomm))
-                (this-only laz.goal)
-                (lazy-big (soft-less laz.goal))
-                (soft-fork laz.goal q.nomm r.nomm)
-            ==
-          =^  [out=@uwoo pro=@uvre]  gen  (kerf goal)
-          $(goal [%next (lazy-from-need this+pro) ~ out])
-        =^  r-cond  gen  re
-        =^  [goal-0=next goal-1=next]  gen  (fork goal r-cond)
-        ::  both branches are in the same region
-        ::
-        =^  region-id  gen  id
-        =/  region-branch  [region-id region]
-        =/  cond-before  cond.gen
-        =^  nex-1  gen  $(nomm r.nomm, goal goal-1, region region-branch)
-        =/  cond-between  cond.gen
-        =^  nex-0  gen  $(nomm q.nomm, goal goal-0, region region-branch)
-        =^  [lazy=need-lazy yes=@uwoo nuh=@uwoo]  gen
-          %-  sect
-          :*  nex-0  nex-1  there.then.goal-0  there.then.goal-1
-              region-branch  cond-before  cond-between
-          ==
-        ::
-        =.  lazy  (past-fork lazy p.nomm)
-        =^  o=@uwoo  gen  (emit ~ ~ [%brn r-cond ~^yes ~^nuh])
-        =^  lazy  gen  (lazy-shut o lazy)
-        =^  nex-cond  gen
-          $(nomm p.nomm, goal [%next (lazy-from-need this+r-cond) ~ o])
-        ::
-        (copy nex-cond lazy)
+        =^  ler=(unit next)  gen  (lerf goal q.nomm r.nomm mono)
+        ?^  ler  $(goal u.ler)
+        =^  [out=@uwoo pro=@uvre]  gen  (kerf goal)
+        $(goal [%next (lazy-from-need this+pro) ~ out])
       ::  No lazy needs captured, simpler compilation
       ::
       =^  [goal-0=^goal goal-1=^goal]  gen
@@ -4984,12 +4956,7 @@
       ::
       =.  lazy  (past-fork lazy p.nomm)
       =^  nex-cond  gen  $(nomm p.nomm, goal [%pick ~^yes ~^nuh])
-      ?.  (lazy-big (soft-less lazy))  (copy nex-cond lazy)
-      ::  the need of the branches is met before the test (+lazy-shut)
-      ::
-      =^  o=@uwoo  gen  (emit ~ ~ %hop then.nex-cond)
-      =^  lazy  gen  (lazy-shut o lazy)
-      (copy nex-cond(then ~^o) lazy)
+      (copy nex-cond lazy)
     ::
         [%7 *]
       =^  nex  gen  $(nomm q.nomm, sup `p.nomm)
@@ -5630,34 +5597,14 @@
       [(laze-copy l-p l-q) gen]
     ::
         [%6 *]
-      ::  as +run does (+leap)
+      ::  as +run does (+lerf)
       ::
-      =/  lep  ?.(?=(%next -.goal) ~ (laze-leaps laz.goal q.nomm r.nomm))
-      ?^  lep
-        =^  l  gen  $(goal [%next rest.u.lep])
-        :_  gen
-        %+  roll  bys.u.lep
-        |:  [by=*laze acc=l]
-        (laze-copy acc by)
       ?:  ?&  ?=(%next -.goal)
               !(laze-none-equivalent laz.goal(sure *sure-ordered))
           ==
-        ::  the branches merge their products where +run would (+kerf)
-        ::
-        ?:  ?|  &((whole-here | q.nomm) (whole-here | r.nomm))
-                (laze-this-only laz.goal)
-                (laze-big laz.goal)
-                (laze-soft-fork laz.goal q.nomm r.nomm)
-            ==
-          $(goal [%next this])
-        =^  [goal-0=laze goal-1=laze]  gen  (laze-branch laz.goal)
-        =^  l-1  gen  $(nomm r.nomm, goal [%next goal-1])
-        =^  l-0  gen  $(nomm q.nomm, goal [%next goal-0])
-        =^  lazy  gen  (laze-sect l-0 l-1)
-        =.  lazy  (laze-past-fork lazy p.nomm)
-        =?  lazy  (laze-big lazy)  this
-        =^  l-cond  gen  $(nomm p.nomm, goal [%next this])
-        [(laze-copy l-cond lazy) gen]
+        ?^  ler=(laze-lerf laz.goal q.nomm r.nomm)
+          $(goal [%next u.ler])
+        $(goal [%next this])
       =/  goal-branch=goal-shape
         ?.  ?=(%next -.goal)  goal
         [%next [sure.laz.goal ~ ~]]
@@ -5665,7 +5612,6 @@
       =^  l-0  gen  $(nomm q.nomm, goal goal-branch)
       =^  lazy  gen  (laze-sect l-0 l-1)
       =.  lazy  (laze-past-fork lazy p.nomm)
-      =?  lazy  (laze-big lazy)  this
       =^  l-cond  gen  $(nomm p.nomm, goal [%pick ~])
       [(laze-copy l-cond lazy) gen]
     ::
@@ -5873,6 +5819,7 @@
       %this  ned
       ^      [%both ned]
       %none  [%this ~]
+      %lax   [%this ~]
     ==
   ::  +split for shapes
   ::
@@ -5897,6 +5844,7 @@
         %none  [ned ned]
         %this  [ned ned]
         %both  [(laze-must h.ned) (laze-must t.ned)]
+        %lax   [h.ned t.ned]
       ==
     ::
     ?:  &(?=(~ fork.laz) ?=(~ bond.laz))
@@ -5961,6 +5909,9 @@
         =/  r  (laze-must t.ned)
         =+  [new old]=?:(h [l r] [r l])
         $(tack [[h old] tack], ned new, axe lat)
+      ::
+          %lax
+        $(ned [h.ned t.ned])
       ==
     ::
     ?:  &(?=(~ fork.laz) ?=(~ bond.laz))
@@ -6068,6 +6019,7 @@
         %none  `[ned ned]
         %this  ~
         %both  ~
+        %lax   ~
     ::
         ^
       ?-    (cap axe)
@@ -6182,6 +6134,242 @@
     =^  r  gen  (kern o laz)
     [(lazy-from-need this+r) gen]
   ::
+  ::    The lazy needs of what follows a fork
+  ::
+  ::  +lay-of: how a formula holds its product (\$lay), given how its
+  ::  subject is held
+  ::
+  ++  lay-of
+    |=  [=nomm sub=lay mono=?]
+    ^-  lay
+    ?-    nomm
+        [^ *]      [$(nomm -.nomm) $(nomm +.nomm)]
+        [%0 *]     ?:(=(0 p.nomm) %x (lay-slot sub p.nomm))
+        [%1 *]     %w
+        [%3 *]     %w
+        [%4 *]     %w
+        [%5 *]     %w
+        [%12 *]    %w
+        [%6 *]     (lay-join $(nomm q.nomm) $(nomm r.nomm))
+        [%7 *]     $(nomm q.nomm, sub $(nomm p.nomm))
+        [%10 *]    (lay-edit $(nomm q.nomm) p.p.nomm $(nomm q.p.nomm))
+        [%11 *]    $(nomm q.nomm)
+        [%mean *]  $(nomm q.nomm)
+    ::
+        [%2 *]
+      ?:  |(mono ?=(~ info.nomm))  %w
+      =/  ret=rets  (callee-rets u.info.nomm)
+      |-  ^-  lay
+      ?~  ret  %w
+      ?-  -.ret
+        %k  %w
+        %m  %p
+        %c  [$(ret p.ret) $(ret q.ret)]
+      ==
+    ==
+  ::  +lerf: the blocks of a lazy need of the product of a fork read it
+  ::  from one need of it, which the fork is then compiled for with the
+  ::  sure need: no block gets a copy per branch (forks in a row doubled
+  ::  them each time), and the product is not consed for them (+kerf).  The
+  ::  need asks each branch for what it has (+lax-ord): a part that one
+  ::  branch makes of parts and the other has in a register comes as
+  ::  either, with a flag, and the block that reads it tests the flag
+  ::  (+meet).  ~ if the block of a soft call would have to take a noun
+  ::  apart: then the product goes into one register, as before.
+  ::
+  ++  lerf
+    |=  [nex=next q=nomm r=nomm mono=?]
+    ^-  [(unit next) _gen]
+    =/  laz=need-lazy  laz.nex(sure *sure)
+    =/  lo=need-ordered
+      (lax-ord (lazy-want laz) (lay-of q %p mono) (lay-of r %p mono))
+    ::
+    ?.  (lazy-soft-ok laz lo)  [~ gen]
+    =^  l=need  gen  (need-ord-alloc-regs lo)
+    =^  o=@uwoo  gen  (emit ~ ~ %hop then.nex)
+    =.  gen
+      ?:  dropping  gen
+      %^  walk-lazy  o  laz
+      |=  [o-laz=@uwoo sur=sure gen-init=_gen]
+      ^+  gen
+      =.  gen  gen-init
+      =^  [t=need lop=(list pole)]  gen  (sure-require-look sur)
+      ?:  ?=(%none -.t)  gen
+      =.  gen  (add-ops o-laz lop)
+      (meet o-laz l t)
+    ::
+    =^  [ned=need ops=(list pole)]  gen
+      (copy-need-make-ops ned.sure.laz.nex l)
+    ::
+    =.  gen  (add-ops o ops)
+    [`[%next [[ned lok.sure.laz.nex] ~ ~] ~ o] gen]
+  ::  the block of a soft call takes nothing apart to meet its need from
+  ::  .lo: all it does there is tried (+soft-emit), and a noun that may come
+  ::  either way can't be
+  ::
+  ++  lazy-soft-ok
+    |=  [laz=need-lazy lo=need-ordered]
+    ^-  ?
+    ?&  %+  levy  bond.laz
+        |=  e=lazy-bond
+        ?&  ?|  !(~(has by soft.gen) o.e)
+                %+  movable  lo
+                (look-ord (need-to-ordered ned.sure.laz.e) lok.sure.laz.e)
+            ==
+            ^$(laz laz.e)
+        ==
+    ::
+        %+  levy  fork.laz
+        |=  e=lazy-fork
+        &(^$(laz laz.y.e) ^$(laz laz.n.e))
+    ==
+  ::  +lerf for shapes
+  ::
+  ++  laze-lerf
+    |=  [laz=laze q=nomm r=nomm]
+    ^-  (unit laze)
+    =/  rest=laze  laz(sure *sure-ordered)
+    =/  lo=need-ordered
+      (lax-ord (laze-want rest) (lay-of q %p |) (lay-of r %p |))
+    ::
+    ?.  (laze-soft-ok rest lo)  ~
+    `[[(uni-need-ord ned.sure.laz lo) lok.sure.laz] ~ ~]
+  ::
+  ++  laze-soft-ok
+    |=  [laz=laze lo=need-ordered]
+    ^-  ?
+    ?&  %+  levy  bond.laz
+        |=  e=laze-bond
+        ?&  ?|  !(~(has in sofs.gen) o.e)
+                (movable lo (look-ord sure.laz.e))
+            ==
+            ^$(laz laz.e)
+        ==
+    ::
+        %+  levy  fork.laz
+        |=  e=laze-fork
+        &(^$(laz laz.y.e) ^$(laz laz.n.e))
+    ==
+  ::  +meet: in the lazy block .o, the need .t met from the registers of
+  ::  .l, a need of the same noun that was met where the noun was made.
+  ::  A %lax part is told apart by its flag: where it came whole it is
+  ::  taken apart here, as the block would have taken it apart; where a
+  ::  noun is wanted whole and came in parts it is consed here.  The
+  ::  registers of .l are read by proxy, see \$cond.
+  ::
+  ++  meet
+    |=  [o=@uwoo l=need t=need]
+    ^+  gen
+    ?:  ?=(%none -.t)  gen
+    ?:  (movable (need-to-ordered l) (need-to-ordered t))
+      =^  ops  gen  (meet-moves o l t)
+      (add-ops o ops)
+    ?-    -.l
+        %none  ~|(%meet-none !!)
+        %both  ~|(%meet-both !!)
+        %lax   (meet-lax o l t)
+        %this
+      =^  src  gen  (proxy r.l o)
+      =^  ops  gen  (kern-need src t)
+      (add-ops o ops)
+    ::
+        ^
+      ?-    -.t
+          %this  (whole-into o l r.t)
+          ^
+        =.  gen  $(l p.l, t p.t)
+        $(l q.l, t q.t)
+      ::
+          %both
+        =.  gen  (whole-into o l r.t)
+        =.  gen  $(l p.l, t h.t)
+        $(l q.l, t t.t)
+      ::
+          %lax
+        =.  gen  (add-ops o (lax-parts t))
+        =.  gen  $(l p.l, t h.t)
+        $(l q.l, t t.t)
+      ==
+    ==
+  ::  the moves of a need that is +movable
+  ::
+  ++  meet-moves
+    |=  [o=@uwoo l=need t=need]
+    ^-  [(list pole) _gen]
+    ?-    -.t
+        %none  [~ gen]
+        %both  ~|(%meet-moves !!)
+        %this
+      ?>  ?=(%this -.l)
+      =^  s  gen  (proxy r.l o)
+      [[%mov s r.t]~ gen]
+    ::
+        ^
+      ?>  ?=(^ -.l)
+      =^  a  gen  $(l p.l, t p.t)
+      =^  b  gen  $(l q.l, t q.t)
+      [(weld a b) gen]
+    ::
+        %lax
+      ?+    -.l  ~|(%meet-moves !!)
+          %this
+        =^  s  gen  (proxy r.l o)
+        [(lax-whole s t) gen]
+      ::
+          ^
+        =^  a  gen  $(l p.l, t h.t)
+        =^  b  gen  $(l q.l, t t.t)
+        [(weld (lax-parts t) (weld a b)) gen]
+      ::
+          %lax
+        =^  g  gen  (proxy g.l o)
+        =^  s  gen  (proxy r.l o)
+        =^  a  gen  $(l h.l, t h.t)
+        =^  b  gen  $(l t.l, t t.t)
+        [[[%mov g g.t] [%mov s r.t] (weld a b)] gen]
+      ==
+    ==
+  ::  the noun of the need .l, whole, into the register .d in block .o:
+  ::  consed where it came in parts
+  ::
+  ++  whole-into
+    |=  [o=@uwoo l=need d=@uvre]
+    ^+  gen
+    ?-    -.l
+        %none  ~|(%whole-none !!)
+        %both  ~|(%whole-both !!)
+        %lax   (meet-lax o l [%this d])
+        %this
+      =^  s  gen  (proxy r.l o)
+      (add-ops o [%mov s d]~)
+    ::
+        ^
+      =^  h  gen  re
+      =^  t  gen  re
+      =.  gen  (add-ops o [%con h t d]~)
+      =.  gen  $(l p.l, d h)
+      $(l q.l, d t)
+    ==
+  ::  a %lax need .l by its flag, before what block .o holds now: two
+  ::  blocks, one meets .t from the noun, the other from the parts, and a
+  ::  join that gives the registers of .t (as +fork-need gives those of a
+  ::  need to the branches of a fork)
+  ::
+  ++  meet-lax
+    |=  [o=@uwoo l=need t=need]
+    ^+  gen
+    ?>  ?=(%lax -.l)
+    =^  o-0  gen  oo
+    =^  o-1  gen  oo
+    =^  o-in  gen  oo
+    =.  gen  (copy-tag o ~[o-0 o-1])
+    =^  [t-0=need t-1=need]  gen  (fork-need t o-in o-0 o-1)
+    =^  p  gen  (proxy g.l o)
+    =^  o-if=@uwoo  gen  (emit ~ ~ [%brz p ~^o-0 ~^o-1])
+    =.  gen  (insert-hop o o-if o-in)
+    =.  gen  (meet o-0 [%this r.l] t-0)
+    (meet o-1 [h.l t.l] t-1)
+  ::
   ++  kerf
     ~%  %comp-kerf  ..ride  ~
     |=  =next
@@ -6219,8 +6407,9 @@
     |=  [o-laz=@uwoo sur=sure gen-init=_gen]
     ^+  gen
     =.  gen  gen-init
-    =^  ned  gen  (sure-require-look sur)
+    =^  [ned=need lop=(list pole)]  gen  (sure-require-look sur)
     ?:  ?=(%none -.ned)  gen
+    =.  gen  (add-ops o-laz lop)
     =^  src  gen  ?:(=(o-laz o) [r gen] (proxy r o-laz))
     ?:  (~(has by soft.gen) o-laz)  (soft-ask o-laz src ned)
     =^  ops  gen  (kern-need src ned)
@@ -6258,6 +6447,7 @@
     ?-    -.ned
         %none  [ops gen]
         %this  ?<  =(r r.ned)  [[[%mov r r.ned] ops] gen]
+        %lax   ?<  =(r r.ned)  [(weld (lax-whole r ned) ops) gen]
     ::
         ^
       =^  r-ned  gen  re
@@ -6493,7 +6683,7 @@
       %+  murn  tops.cut
       |=  [q=@ r=@uvre ned=need]
       ^-  (unit [q=@ r=@uvre ned=need])
-      ?:  ?=(?(%none %this) -.ned)  ~
+      ?:  ?=(?(%none %this %lax) -.ned)  ~
       ?:  ?=(%both -.ned)  `[q r h.ned t.ned]
       `[q r ned]
     ::
@@ -6724,6 +6914,7 @@
     =/  axe=@  1
     |-  ^+  m
     ?-    -.ned
+        %lax   ~|(%lax-in-a-shape !!)
         %none  m
         %this  (~(put by m) r.ned axe)
         ^      $(ned +.ned, axe (peg axe 3), m $(ned -.ned, axe (peg axe 2)))
@@ -6740,6 +6931,7 @@
     |=  [ned=need axs=(map @uvre @)]
     ^-  $@(?(%any %no) [%at q=@])
     ?-    -.ned
+        %lax   ~|(%lax-in-a-shape !!)
         %none  %any
         %this
       ?~  a=(~(get by axs) r.ned)  %no
@@ -6803,12 +6995,13 @@
     ::  the fetch crashes as the callee would
     ::
     ?:  ?&  ?=(^ q)
-            ?|  ?=(?(%none %this) -.ned)
+            ?|  ?=(?(%none %this %lax) -.ned)
                 !(sure-at q.q sur k)
             ==
         ==
       [[~ [q.q src ned]~] gen]
     ?-    -.ned
+        %lax   ~|(%lax-in-a-shape !!)
         %none  [[~ ~] gen]
         %this
       ?<  =(src r.ned)
@@ -6866,6 +7059,7 @@
     ?:  ?=(%none -.ned)
       =^  r  gen  re
       [[[%imm +.k r]~ r] gen]
+    ?:  ?=(%lax -.ned)  ~|(%lax-in-a-shape !!)
     =/  [h=need t=need]  ned
     =^  [oh=(list pole) rh=@uvre]  gen
       $(ned h, k (hed:so k), axe (peg axe 2))
@@ -7052,11 +7246,13 @@
     |=  [o=@uwoo sur=sure gen-init=_gen]
     ^+  gen
     =.  gen  gen-init
-    =^  ned  gen  (sure-require-look sur)
+    =^  [ned=need lop=(list pole)]  gen  (sure-require-look sur)
+    =.  gen  (add-ops o lop)
     |-  ^+  gen
     ?-    -.ned
         %none  gen
         %this  (add-ops o [%imm som r.ned]~)
+        %lax   (add-ops o [[%imm som r.ned] t:(lax-whole r.ned ned)])
     ::
         ^
       ?@  som  (crash-need o [%& %imm som] ned)
@@ -7079,11 +7275,18 @@
     ^-  [(unit [@uvre @uwoo]) _gen]
     ?>  =(~ args.then.nex)
     ?:  (none-equivalent laz.nex)  [~ gen]
-    =^  ned-sure=need  gen  (sure-require-look sure.laz.nex)
+    =^  [ned-sure=need lop=(list pole)]  gen
+      (sure-require-look sure.laz.nex)
+    ::
+    =.  gen  (add-ops there.then.nex lop)
     =^  r=@uvre  .
       =*  dot  .
       ?-    -.ned-sure
           %this
+        [r.ned-sure dot]
+      ::
+          %lax
+        =.  gen  (add-ops there.then.nex t:(lax-whole r.ned-sure ned-sure))
         [r.ned-sure dot]
       ::
           %none
@@ -7112,12 +7315,17 @@
     |=  [o-laz=@uwoo sur=sure gen-init=_gen]
     ^+  gen
     =.  gen  gen-init
-    =^  ned-sure=need  gen  (sure-require-look sur)
+    =^  [ned-sure=need lop=(list pole)]  gen  (sure-require-look sur)
+    =.  gen  (add-ops o-laz lop)
     ?:  ?=(%none -.ned-sure)  gen
     ?:  ?=(%this -.ned-sure)
       ?:  =(r r.ned-sure)  gen
       =^  src  gen  ?:(=(o-laz o) [r gen] (proxy r o-laz))
       (add-ops o-laz [%mov src r.ned-sure]~)
+    ?:  ?=(%lax -.ned-sure)
+      ?:  =(r r.ned-sure)  gen
+      =^  src  gen  ?:(=(o-laz o) [r gen] (proxy r o-laz))
+      (add-ops o-laz (lax-whole src ned-sure))
     =^  src  gen  ?:(=(o-laz o) [r gen] (proxy r o-laz))
     (crash-need o-laz [%| src] ned-sure)
   ::  A need for the parts of an atom, in block .o: the fetch crashes there.
@@ -7153,7 +7361,26 @@
       %this  ~[r.ned]
       ^      (weld (flat -.ned) (flat +.ned))
       %both  [r.ned (weld (flat h.ned) (flat t.ned))]
+      %lax   [g.ned r.ned (weld (flat h.ned) (flat t.ned))]
     ==
+  ::  %lax needs (see \$need).  +lax-whole: the ops that meet one with the
+  ::  noun in .src: the registers of its parts get 0, which nothing reads.
+  ::  +lax-parts: the ops for one that is met by its parts
+  ::
+  ++  lax-whole
+    |=  [src=@uvre ned=need]
+    ^-  (lest pole)
+    ?>  ?=(%lax -.ned)
+    :+  [%mov src r.ned]
+      [%imm 0 g.ned]
+    %+  turn  (weld (flatten-need h.ned) (flatten-need t.ned))
+    |=(x=@uvre `pole`[%imm 0 x])
+  ::
+  ++  lax-parts
+    |=  ned=need
+    ^-  (list pole)
+    ?>  ?=(%lax -.ned)
+    ~[[%imm 1 g.ned] [%imm 0 r.ned]]
   ::  fork CFG
   ::
   ::  Produces a pair of needs, emitting code into given o-0/1 provided by the
@@ -7204,6 +7431,16 @@
       =^  [tel-0=need tel-1=need]  gen  $(ned t.ned)
       :_  gen
       [[%both r-0 hed-0 tel-0] [%both r-1 hed-1 tel-1]]
+    ::
+        %lax
+      =^  g-0  gen  re
+      =^  g-1  gen  re
+      =^  r-0  gen  re
+      =^  r-1  gen  re
+      =^  [hed-0=need hed-1=need]  gen  $(ned h.ned)
+      =^  [tel-0=need tel-1=need]  gen  $(ned t.ned)
+      :_  gen
+      [[%lax g-0 r-0 hed-0 tel-0] [%lax g-1 r-1 hed-1 tel-1]]
     ==
   ::  o2 is empty
   ::  a -> b  ==>  a -> o' ... o'' -> b
@@ -7442,6 +7679,7 @@
         %none  `[ned ned]
         %this  ~
         %both  ~
+        %lax   ~
     ::
         ^
       ?-    (cap axe)
@@ -7593,11 +7831,15 @@
       $(tack [[h old] tack], ned new, axe lat)
     ::
         %both
-      =^  l  gen  (must h.ned)
-      =^  r  gen  (must t.ned)
+      =^  l  gen  (must-at o h.ned)
+      =^  r  gen  (must-at o t.ned)
       =/  =pole  [%con p.l p.r r.ned]
       =+  [new old]=?:(h [q.l q.r] [q.r q.l])
       $(tack [[h old] tack], ned new, ops [pole ops], axe lat)
+    ::  an edit makes the noun of parts
+    ::
+        %lax
+      $(ned [h.ned t.ned], ops (weld (lax-parts ned) ops))
     ==
   ::
   ++  into
@@ -7677,10 +7919,14 @@
       [[this+h this+t] gen]
     ::
         %both
-      =^  hed  gen  (must h.ned)
-      =^  tel  gen  (must t.ned)
+      =^  hed  gen  (must-at o h.ned)
+      =^  tel  gen  (must-at o t.ned)
       =.       gen  (add-ops o [%con p.hed p.tel r.ned]~)
       [[q.hed q.tel] gen]
+    ::
+        %lax
+      =.  gen  (add-ops o (lax-parts ned))
+      [[h.ned t.ned] gen]
     ==
   ::
   ++  must
@@ -7692,7 +7938,18 @@
       %this  [[r.ned ned] gen]
       ^      =^(r gen re [[r %both r ned] gen])
       %none  =^(r gen re [[r %this r] gen])
+      %lax   ~|(%must-lax !!)
     ==
+  ::  +must in block .o, which gets the ops for a %lax need: it is met with
+  ::  the noun whole
+  ::
+  ++  must-at
+    |=  [o=@uwoo ned=need]
+    ^-  [(pair @uvre $>(?(%both %this) need)) _gen]
+    ?.  ?=(%lax -.ned)  (must ned)
+    =^  w  gen  re
+    =.  gen  (add-ops o (lax-whole w ned))
+    [[w %this w] gen]
   ::
   ++  split
     ~%  %comp-split  ..ride  ~
@@ -7780,13 +8037,18 @@
       =?  gen  cel  (add-ops o [%cel src]~)
       [[this+h this+t] gen]
     ::
+        %lax
+      =^  w  gen  re
+      =.  gen  (add-ops o (lax-whole w ned))
+      $(ned [%this w])
+    ::
         %both
       =^  src  gen  (tag-in o tag top)
       ?:  (~(has in tst.gen) r.ned)
         =.  gen  (add-ops o ~[[%cel src] [%mov src r.ned]])
         [[h.ned t.ned] gen]
-      =^  hed  gen  (must h.ned)
-      =^  tel  gen  (must t.ned)
+      =^  hed  gen  (must-at o h.ned)
+      =^  tel  gen  (must-at o t.ned)
       =.  gen  (add-ops o ~[[%cel src] [%con p.hed p.tel r.ned]])
       [[q.hed q.tel] gen]
     ==
@@ -7869,60 +8131,59 @@
     ~%  %comp-copy-need-make-ops  ..ride  ~
     |=  [first=need second=need]
     ^-  [[need (list pole)] _gen]
-    =|  ops=(list pole)
-    =|  sout=(list need)
-    =/  sin=(list (each (unit [r=@uvre]) [l=need r=need]))
-      [|+[first second]]~
+    ::  One need for two of the same noun: the registers of the need that
+    ::  asks for more are the ones to fill, and those of the other are
+    ::  moved to from them
     ::
+    =/  l=need  first
+    =/  r=need  second
+    =|  ops=(list pole)
     |-  ^-  [[need (list pole)] _gen]
-    ?~  sin
-      ?>  ?=([* ~] sout)
-      [[i.sout ops] gen]
-    ?:  ?=(%& -.i.sin)
-      ?>  ?=([* * *] sout)
-      ::  should not need normalization as the shapes are preserved
-      ::
-      =/  par  [i.t.sout i.sout]
-      %=  $
-        sin   t.sin
-        sout  :_  t.t.sout
-                ?~  p.i.sin
-                  %-  cons-need  ::  XX
-                  par
-                =*  both  u.p.i.sin
-                [%both r.both par]
-      ==
-    =*  l  l.p.i.sin
-    =*  r  r.p.i.sin
-    ?:  ?=(%none -.l)  $(sout [r sout], sin t.sin)
-    ?:  ?=(%none -.r)  $(sout [l sout], sin t.sin)
+    ?:  ?=(%none -.l)  [[r ops] gen]
+    ?:  ?=(%none -.r)  [[l ops] gen]
+    ::  %lax gives way to a need that is sure: it is met with the noun where
+    ::  that is wanted, with the parts where the noun is taken apart
+    ::
+    ?:  ?=(%lax -.r)
+      ?.  ?=(%lax -.l)  $(l r, r l)
+      =.  ops  [[%mov g.l g.r] [%mov r.l r.r] ops]
+      =^  h=[n=need o=(list pole)]  gen  $(l h.l, r h.r)
+      =^  t=[n=need o=(list pole)]  gen  $(l t.l, r t.r, ops o.h)
+      [[[%lax g.l r.l n.h n.t] o.t] gen]
+    ?:  ?=(%lax -.l)
+      ?:  ?=(%this -.r)  [[r (weld (lax-whole r.r l) ops)] gen]
+      ?:  ?=(%both -.r)  [[r (weld (lax-whole r.r l) ops)] gen]
+      =.  ops  (weld (lax-parts l) ops)
+      =^  h=[n=need o=(list pole)]  gen  $(l h.l, r p.r)
+      =^  t=[n=need o=(list pole)]  gen  $(l t.l, r q.r, ops o.h)
+      [[[n.h n.t] o.t] gen]
     ?:  ?=(%this -.l)
       ?:  ?=(%this -.r)
-        ~?  =(r.l r.r)  [%copy-this-l-a r.l r.r]
-        $(ops [[%mov r.l r.r] ops], sout [l sout], sin t.sin)
+        [[l [[%mov r.l r.r] ops]] gen]
       =^  rr=$>(%both need)  gen
         ?@(-.r [r gen] =^(x gen re [[%both x r] gen]))
-      ~?  =(r.l r.rr)  [%copy-this-l-b r.l r.rr]
-      $(ops [[%mov r.rr r.l] ops], sout [rr sout], sin t.sin)
+      [[rr [[%mov r.rr r.l] ops]] gen]
     ?:  ?=(%this -.r)
       =^  ll=$>(%both need)  gen
         ?@(-.l [l gen] =^(x gen re [[%both x l] gen]))
-      ~?  =(r.ll r.r)  [%copy-this-r r.ll r.r]
-      $(ops [[%mov r.ll r.r] ops], sout [ll sout], sin t.sin)
+      [[ll [[%mov r.ll r.r] ops]] gen]
     ?:  ?=(%both -.l)
       =^  rr=$>(%both need)  gen
         ?@(-.r [r gen] =^(x gen re [[%both x r] gen]))
-      ~?  =(r.l r.rr)  [%copy-both r.l r.rr]
-      %=  $
-        ops  [[%mov r.rr r.l] ops]
-        sin  [|+[h.l h.rr] |+[t.l t.rr] &+`[r.rr] t.sin]
-      ==
+      =.  ops  [[%mov r.rr r.l] ops]
+      =^  h=[n=need o=(list pole)]  gen  $(l h.l, r h.rr)
+      =^  t=[n=need o=(list pole)]  gen  $(l t.l, r t.rr, ops o.h)
+      [[[%both r.rr n.h n.t] o.t] gen]
     ?^  -.r
-      $(sin [|+[p.l p.r] |+[q.l q.r] &+~ t.sin])
+      =^  h=[n=need o=(list pole)]  gen  $(l p.l, r p.r)
+      =^  t=[n=need o=(list pole)]  gen  $(l q.l, r q.r, ops o.h)
+      [[(cons-need n.h n.t) o.t] gen]
     ::  first computation does not have a cell check for r.r,
     ::  so r.r will need to be checked upstream
     ::
-    $(sin [|+[p.l h.r] |+[q.l t.r] &+`[r.r] t.sin])
+    =^  h=[n=need o=(list pole)]  gen  $(l p.l, r h.r)
+    =^  t=[n=need o=(list pole)]  gen  $(l q.l, r t.r, ops o.h)
+    [[[%both r.r n.h n.t] o.t] gen]
   ::
   ++  coerce-ord
     ~%  %comp-coerce-ord  ..ride  ~
@@ -7931,6 +8192,7 @@
     =;  [ned=need gen1=_gen]  [[%next [[ned ~] ~ ~] [~ then.nex]] gen1]
     |-  ^-  [need _gen]
     ?-    -.need-pessimized
+        %lax   ~|(%lax-in-a-shape !!)
         %none
       ?>  ?=(%none -.ned.nex)
       [[%none ~] gen]
@@ -7954,6 +8216,7 @@
     ::
         %both
       ?-    -.ned.nex
+          %lax   ~|(%lax-in-a-shape !!)
           %none
         =^  r  gen  re
         =^  hed  gen  $(need-pessimized h.need-pessimized)
@@ -7996,6 +8259,7 @@
     =^  [ned=need req=_req]  gen
       |-  ^-  [[need _req] _gen]
       ?-    -.need-pessimized
+          %lax   ~|(%lax-in-a-shape !!)
           %none
         ?>  ?=(%none -.ned.nex)
         [[[%none ~] req] gen]
@@ -8025,6 +8289,7 @@
           %both
         =^  [r=@uvre h=need t=need]  gen
           ?-  -.ned.nex
+            %lax   ~|(%lax-in-a-shape !!)
             %none  =^(r gen re [[r ned.nex ned.nex] gen])
             %this  [[r.ned.nex [. .]:[%none ~]] gen]
             ^      =^(r gen re [[r ned.nex] gen])
@@ -8078,6 +8343,13 @@
       =^  tel  gen  $(ord t.ord)
       ?<  &(?=(%none -.hed) ?=(%none -.tel))
       [[%both r hed tel] gen]
+    ::
+        %lax
+      =^  g  gen  re
+      =^  r  gen  re
+      =^  hed  gen  $(ord h.ord)
+      =^  tel  gen  $(ord t.ord)
+      [[%lax g r hed tel] gen]
     ==
   ::  With the top level need finally known, emit noun splitting code into
   ::  appropriate BBs
@@ -8088,7 +8360,7 @@
     ^+  gen
     =*  coerce-lazy  .
     =.  gen
-      =^  ned-target=need  gen
+      =^  [ned-target=need lop=(list pole)]  gen
         %-  sure-require-look
         %=    sure.laz
             lok
@@ -8099,9 +8371,11 @@
           (~(put in acc) axe)
         ==
       ::
+      =.  gen  (add-ops o lop)
       |-  ^+  gen
       =*  sure-loop  $
       ?-    -.ned
+          %lax   ~|(%lax-in-a-shape !!)
           %none
         ?>  ?=(%none -.ned-target)
         gen
@@ -8113,6 +8387,12 @@
       ::
           ^
         ?:  ?=(%none -.ned-target)  gen
+        ::  the parts are what there is
+        ::
+        ?:  ?=(%lax -.ned-target)
+          =.  gen  (add-ops o (lax-parts ned-target))
+          =.  gen  sure-loop(ned -.ned, ned-target h.ned-target)
+          sure-loop(ned +.ned, ned-target t.ned-target)
         ?@  -.ned-target  !!
         =.  gen  sure-loop(ned -.ned, ned-target -.ned-target)
         sure-loop(ned +.ned, ned-target +.ned-target)
@@ -8123,6 +8403,9 @@
             %this
           ?<  =(r.ned r.ned-target)
           (add-ops o [%mov r.ned r.ned-target]~)
+        ::
+            %lax
+          (add-ops o (lax-whole r.ned ned-target))
         ::
             ^
           =.  gen  sure-loop(ned h.ned, ned-target -.ned-target)
@@ -8314,6 +8597,7 @@
           %none
         [[%none ~] gen]
       ::
+          %lax  ~|(%lax-in-a-shape !!)
           %this
         =.  gen  +:(rer r.ned)
         [[%this ~] gen]
@@ -8566,6 +8850,7 @@
         %none
       [o gen]
     ::
+        %lax   ~|(%lax-in-a-shape !!)
         %this
       ?<  =(r r.ned)
       (emit ~ [%mov r r.ned]~ %hop ~ o)
@@ -8593,17 +8878,24 @@
   ++  sure-require-look
     ~%  %comp-sure-require-look  ..ride  ~
     |=  sur=sure
-    ^-  [need _gen]
+    ^-  [[need (list pole)] _gen]
+    ::  .lop: the ops for the %lax needs that a look goes into: such a noun
+    ::  is fetched into, so it is taken whole, and its %lax need is met from
+    ::  that
+    ::
     %-  ~(rep in lok.sur)
-    |=  [axe=@ ned=_ned.sur gen-init=_gen]
+    |=  [axe=@ [ned=_ned.sur lop=(list pole)] gen-init=_gen]
     =.  gen  gen-init
-    ?:  =(1 axe)  [ned gen]
+    ?:  =(1 axe)  [[ned lop] gen]
     ?<  =(0 axe)
-    |-  ^-  [need _gen]
+    |-  ^-  [[need (list pole)] _gen]
     ?:  =(1 axe)
-      ?.  ?=(%none -.ned)  [ned gen]
+      ?.  ?=(%none -.ned)  [[ned lop] gen]
       =^  r  gen  re
-      [[%this r] gen]
+      [[[%this r] lop] gen]
+    ?:  ?=(%lax -.ned)
+      =^  w  gen  re
+      $(ned [%this w], lop (weld (lax-whole w ned) lop))
     =/  [here=(unit @uvre) h=need t=need]
       ?-  -.ned
         %none  [~ [. .]:[%none ~]]
@@ -8612,21 +8904,23 @@
         %both  [`r.ned [h t]:ned]
       ==
     ::
-    =^  [h-required=need t-required=need]  gen
-      ?-    (cap axe)
-          %2
-        =^  x  gen  $(ned h, axe (mas axe))
-        [[x t] gen]
-      ::
-          %3
-        =^  x  gen  $(ned t, axe (mas axe))
-        [[h x] gen]
+    =^  kid=[n=need l=(list pole)]  gen
+      ?-  (cap axe)
+        %2  $(ned h, axe (mas axe))
+        %3  $(ned t, axe (mas axe))
+      ==
+    ::
+    =.  lop  l.kid
+    =/  [h-required=need t-required=need]
+      ?-  (cap axe)
+        %2  [n.kid t]
+        %3  [h n.kid]
       ==
     ::
     =/  x  (cons-need h-required t-required)
-    ?~  here  [x gen]
-    ?@  -.x  [[%this u.here] gen]
-    [[%both u.here x] gen]
+    ?~  here  [[x lop] gen]
+    ?@  -.x  [[[%this u.here] lop] gen]
+    [[[%both u.here x] lop] gen]
   ::
   --
 ::
@@ -8638,6 +8932,7 @@
     %this  1
     ^      (add $(args -.args) $(args +.args))
     %both  +((add $(args h.args) $(args t.args)))
+    %lax   ~|(%lax-in-a-shape !!)
   ==
 ::
 ::  a cape that knows no noun: cells of unknown parts at most (+cons:so)
@@ -8658,6 +8953,15 @@
   =*  msg  .
   ?:  =(a b)  a
   ~+
+  ::  %lax asks for nothing by itself: two of them meet part by part, and
+  ::  one gives way to what the other branch needs for sure
+  ::
+  ?:  |(?=(%lax -.a) ?=(%lax -.b))
+    ?:  ?=(%lax -.a)
+      ?:  ?=(%lax -.b)
+        [%lax (msg h.a h.b (hed-lore less)) (msg t.a t.b (tel-lore less))]
+      (uni-need-ord (msg none+~ b less) a)
+    (uni-need-ord (msg none+~ a less) b)
   ::  none are cells
   ::
   ?:  ?&  |(?=(%this -.a) ?=(%none -.a))
@@ -8739,6 +9043,7 @@
     %this  +(acc)
     %both  $(n t.n, acc $(n h.n, acc +(acc)))
     ^      $(n +.n, acc $(n -.n))
+    %lax   $(n t.n, acc $(n h.n, acc +(acc)))
   ==
 ::
 ++  need-to-ordered
@@ -8752,6 +9057,7 @@
     %this  [%this ~]
     ^      [(this -.ned) (this +.ned)]
     %both  [%both (this h.ned) (this t.ned)]
+    %lax   [%lax (this h.ned) (this t.ned)]
   ==
 ::
 ++  cons-need
@@ -8766,6 +9072,20 @@
   ?:  =(a b)  a
   ?:  ?=(%none -.a)  b
   ?:  ?=(%none -.b)  a
+  ::  %lax gives way to a need that is sure: the noun whole where it is
+  ::  wanted whole, the parts, with what the %lax wants of them, where it is
+  ::  taken apart (as +copy-need-make-ops does with the registers)
+  ::
+  ?:  ?=(%lax -.b)
+    ?:  ?=(%lax -.a)
+      ~+
+      [%lax $(a h.a, b h.b) $(a t.a, b t.b)]
+    $(a b, b a)
+  ?:  ?=(%lax -.a)
+    ?:  ?=(?(%this %both) -.b)  b
+    ?>  ?=(^ -.b)
+    ~+
+    (cons-need $(a h.a, b -.b) $(a t.a, b +.b))
   ?:  ?=(%this -.a)
     ?:  ?=(%both -.b)  b
     ?>  ?=(^ -.b)
@@ -8835,6 +9155,155 @@
 ::  what every call site holds of it (+heft)
 ::
 +$  lore  [les=cape hel=cape]
+::  How a formula holds its product (+lay-of:comp): %w, whole in one
+::  register; a cell, where it makes it of parts; %p, as its subject holds
+::  the part that it hands on; %x, it has none (a crash)
+::
++$  lay  $@(?(%w %p %x) [h=lay t=lay])
+::
+++  lay-hed  |=(a=lay `lay`?@(a a h.a))
+++  lay-tel  |=(a=lay `lay`?@(a a t.a))
+++  lay-slot
+  |=  [a=lay axe=@]
+  ^-  lay
+  ?:  =(1 axe)  a
+  ?@  a  a
+  ?-  (cap axe)
+    %2  $(a h.a, axe (mas axe))
+    %3  $(a t.a, axe (mas axe))
+  ==
+::
+++  lay-edit
+  |=  [rec=lay axe=@ don=lay]
+  ^-  lay
+  ?:  =(1 axe)  don
+  ?:  ?=(%x rec)  %x
+  ?-  (cap axe)
+    %2  [$(rec (lay-hed rec), axe (mas axe)) (lay-tel rec)]
+    %3  [(lay-hed rec) $(rec (lay-tel rec), axe (mas axe))]
+  ==
+::  the product of a fork: of parts where both branches make it of parts,
+::  whole where both have it whole
+::
+++  lay-join
+  |=  [a=lay b=lay]
+  ^-  lay
+  ?:  ?=(%x a)  b
+  ?:  ?=(%x b)  a
+  ?:  &(?=(^ a) ?=(^ b))  [$(a h.a, b h.b) $(a t.a, b t.b)]
+  ?:  &(?=(%w a) ?=(%w b))  %w
+  %p
+::  +look-ord: a shape with the looks of its block: a noun that is looked
+::  into is fetched into
+::
+++  look-ord
+  |=  sur=sure-ordered
+  ^-  need-ordered
+  %-  ~(rep in lok.sur)
+  |=  [axe=@ new=_ned.sur]
+  ?:  =(1 axe)  new
+  |-  ^-  need-ordered
+  ?:  =(1 axe)
+    ?.  ?=(%none -.new)  new
+    [%this ~]
+  =/  [h=need-ordered t=need-ordered]
+    ?-  -.new
+      ?(%none %this %lax)  [. .]:[%none ~]
+      ^                    new
+      %both                [h t]:new
+    ==
+  ::
+  =/  [h-new=need-ordered t-new=need-ordered]
+    ?-  (cap axe)
+      %2  [$(axe (mas axe), new h) t]
+      %3  [h $(axe (mas axe), new t)]
+    ==
+  ::
+  =/  x  (cons-need h-new t-new)
+  ?:  ?=(?(%none ^) -.new)  x
+  ?@  -.x  [%this ~]
+  [%both x]
+::  +laze-want: what the blocks of a lazy need may want of the noun: their
+::  needs united, with their looks
+::
+++  laze-want
+  |=  laz=laze
+  ^-  need-ordered
+  =/  acc=need-ordered  (look-ord sure.laz)
+  =.  acc
+    %+  roll  fork.laz
+    |=  [e=laze-fork acc=_acc]
+    (uni-need-ord (uni-need-ord acc ^$(laz laz.y.e)) ^$(laz laz.n.e))
+  ::
+  %+  roll  bond.laz
+  |=  [e=laze-bond acc=_acc]
+  (uni-need-ord acc ^$(laz laz.e))
+::  the same for a need with registers
+::
+++  lazy-want
+  |=  laz=need-lazy
+  ^-  need-ordered
+  =/  acc=need-ordered
+    (look-ord (need-to-ordered ned.sure.laz) lok.sure.laz)
+  ::
+  =.  acc
+    %+  roll  fork.laz
+    |=  [e=lazy-fork acc=_acc]
+    (uni-need-ord (uni-need-ord acc ^$(laz laz.y.e)) ^$(laz laz.n.e))
+  ::
+  %+  roll  bond.laz
+  |=  [e=lazy-bond acc=_acc]
+  (uni-need-ord acc ^$(laz laz.e))
+::  +lax-ord: the need that the lazy blocks past a fork have of its product
+::  (+lerf:comp), from what they may want of it (.s) and how the branches
+::  hold it.  A part that both branches have whole is asked for whole; one
+::  that both make of parts, in parts; any other is %lax, whichever each
+::  branch has.  Where a block wants a noun whole that a branch makes of
+::  parts, the parts are asked for, and the block conses them if it runs.
+::
+++  lax-ord
+  ~%  %lax-ord  ..ride  ~
+  |=  [s=need-ordered a=lay b=lay]
+  ^-  need-ordered
+  ?:  ?=(%none -.s)  s
+  =?  a  ?=(%x a)  b
+  =?  b  ?=(%x b)  a
+  ?:  ?=(%x a)  [%this ~]
+  ?:  &(?=(%w a) ?=(%w b))  [%this ~]
+  =/  whole=?  ?=(?(%this %both) -.s)
+  =/  sh=need-ordered
+    ?.  whole  (hed-need-ord s)
+    (uni-need-ord (hed-need-ord s) [%this ~])
+  ::
+  =/  st=need-ordered
+    ?.  whole  (tel-need-ord s)
+    (uni-need-ord (tel-need-ord s) [%this ~])
+  ::
+  ?:  &(?=(^ a) ?=(^ b))
+    =/  x  (cons-need $(s sh, a h.a, b h.b) $(s st, a t.a, b t.b))
+    ?:(?=(%none -.x) [%this ~] x)
+  ?:  &(?=(%this -.s) ?=(@ a) ?=(@ b))  [%this ~]
+  :+  %lax
+    $(s sh, a (lay-hed a), b (lay-hed b))
+  $(s st, a (lay-tel a), b (lay-tel b))
+::  +movable: a need .t of a noun is met from a need .l of it that was
+::  met before by moves alone: nothing is fetched, nothing is consed
+::
+++  movable
+  |=  [l=need-ordered t=need-ordered]
+  ^-  ?
+  ?-    -.t
+      %none  &
+      %this  ?=(%this -.l)
+      %both  |
+      ^      &(?=(^ -.l) $(l -.l, t -.t) $(l +.l, t +.t))
+      %lax
+    ?+  -.l  |
+      %this  &
+      ^      &($(l -.l, t h.t) $(l +.l, t t.t))
+      %lax   &($(l h.l, t h.t) $(l t.l, t t.t))
+    ==
+  ==
 +$  laze-fork  [y=[o=@uxid laz=laze] n=[o=@uxid laz=laze]]
 +$  laze-bond  [o=@uxid laz=laze]
 +$  goal-shape  $%([%pick ~] [%done ~] [%next laz=laze])
@@ -8894,6 +9363,7 @@
   |-  ^-  ?
   ?:  =(1 axe)  &
   ?-  -.ned
+    %lax   ~|(%lax-in-a-shape !!)
     ?(%none %this)  |
     ^               $(axe (mas axe), ned ?-((cap axe) %2 -.ned, %3 +.ned))
     %both           $(axe (mas axe), ned ?-((cap axe) %2 h.ned, %3 t.ned))
@@ -8904,31 +9374,10 @@
   |=  [intr=need-inter1 less=cape]
   ^-  need-inter2
   =*  this-buc  $
-  :-  %-  ~(rep in lok.sure.intr)
-      |=  [axe=@ new=_ned.sure.intr]
-      ?:  =(1 axe)  new
-      ?:  (axe-in-less-cape axe less)  new
-      |-  ^-  need-ordered
-      ?:  =(1 axe)
-        ?.  ?=(%none -.new)  new
-        [%this ~]
-      =/  [h=need-ordered t=need-ordered]
-        ?-  -.new
-          ?(%none %this)  [. .]:[%none ~]
-          ^               new
-          %both           [h t]:new
-        ==
-      ::
-      =/  [h-new=need-ordered t-new=need-ordered]
-        ?-  (cap axe)
-          %2  [$(axe (mas axe), new h) t]
-          %3  [h $(axe (mas axe), new t)]
-        ==
-      ::
-      =/  x  (cons-need h-new t-new)
-      ?:  ?=(?(%none ^) -.new)  x
-      ?@  -.x  [%this ~]
-      [%both x]
+  :-  %-  look-ord
+      :-  ned.sure.intr
+      %-  silt
+      (skip ~(tap in lok.sure.intr) |=(axe=@ (axe-in-less-cape axe less)))
   %+  turn  fork.intr
   |=  [y=need-inter1 n=need-inter1]
   [this-buc(intr y) this-buc(intr n)]
@@ -8965,7 +9414,54 @@
 ++  sure-of
   |=  [sur=sure-ordered less=cape]
   ^-  need-ordered
-  sure:(inter1-to-inter2 [sur ~] less)
+  (lax-strip sure:(inter1-to-inter2 [sur ~] less))
+::  a shape without its %lax parts: they are no reads
+::
+++  lax-strip
+  |=  ned=need-ordered
+  ^-  need-ordered
+  ?-    -.ned
+      %none  ned
+      %this  ned
+      %lax   [%none ~]
+      ^      (cons-need $(ned -.ned) $(ned +.ned))
+      %both
+    =/  x  (cons-need $(ned h.ned) $(ned t.ned))
+    ?^  -.x  [%both x]
+    [%this ~]
+  ==
+::  A shape with its %lax parts decided: the parts where every call site
+::  holds them and the bell knows the cell, the noun otherwise
+::
+++  lax-resolve
+  ~%  %lax-resolve  ..ride  ~
+  |=  [ned=need-ordered less=lore]
+  ^-  need-ordered
+  ?-    -.ned
+      %none  ned
+      %this  ned
+      ^
+    %+  cons-need
+      $(ned -.ned, less (hed-lore less))
+    $(ned +.ned, less (tel-lore less))
+  ::
+      %both
+    =/  x
+      %+  cons-need
+        $(ned h.ned, less (hed-lore less))
+      $(ned t.ned, less (tel-lore less))
+    ?^  -.x  [%both x]
+    [%this ~]
+  ::
+      %lax
+    ?.  &(?=(^ les.less) ?=(^ hel.less))  [%this ~]
+    =/  x
+      %+  cons-need
+        $(ned h.ned, less (hed-lore less))
+      $(ned t.ned, less (tel-lore less))
+    ?:  ?=(%none -.x)  [%this ~]
+    x
+  ==
 ::  +cell-sure: the noun that .sur is the sure need of (+sure-of) is a cell:
 ::  a part of it is read first thing, or the bell knows the cell (.k)
 ::
@@ -8993,7 +9489,7 @@
 ++  need-soft
   |=  [ned=need-ordered sur=need-ordered k=sock]
   ^-  ?
-  ?:  ?=(?(%none %this) -.ned)  |
+  ?:  ?=(?(%none %this %lax) -.ned)  |
   ?.  (cell-sure sur k)  &
   =/  [h=need-ordered t=need-ordered]
     ?:(?=(%both -.ned) [h.ned t.ned] [p.ned q.ned])
@@ -9012,7 +9508,7 @@
           dep=@ud
       ==
   ^-  ?
-  ?:  ?=(?(%none %this) -.ned)  &
+  ?:  ?=(?(%none %this %lax) -.ned)  &
   ~+
   =/  [h=need-ordered t=need-ordered]
     ?:(?=(%both -.ned) [h.ned t.ned] [p.ned q.ned])
@@ -9049,7 +9545,7 @@
 ++  sound-rets
   |=  [ret=rets ned=need-ordered]
   ^-  ?
-  ?:  ?=(?(%none %this) -.ned)  &
+  ?:  ?=(?(%none %this %lax) -.ned)  &
   ?.  ?=([%c *] ret)  |
   =/  [h=need-ordered t=need-ordered]
     ?:(?=(%both -.ned) [h.ned t.ned] [p.ned q.ned])
@@ -9062,7 +9558,7 @@
   |=  [axe=@ ned=need-ordered]
   ^-  [don=need-ordered rec=need-ordered]
   ?:  =(1 axe)  [ned [%none ~]]
-  ?:  ?=(?(%none %this) -.ned)  [[%none ~] [%none ~]]
+  ?:  ?=(?(%none %this %lax) -.ned)  [[%none ~] [%none ~]]
   =/  [h=need-ordered t=need-ordered]
     ?:(?=(%both -.ned) [h.ned t.ned] [p.ned q.ned])
   ?-    (cap axe)
@@ -9121,9 +9617,11 @@
 ::
 ++  laze-may
   ~%  %laze-may  ..ride  ~
-  |=  [laz=laze less=cape]
+  |=  [laz=laze less=lore]
   ^-  need-ordered
-  =/  intr=need-inter2  (inter1-to-inter2 (laze-to-inter1 laz) less)
+  =/  intr=need-inter2  (inter1-to-inter2 (laze-to-inter1 laz) les.less)
+  %-  lax-resolve
+  :_  less
   |-  ^-  need-ordered
   %+  roll  fork.intr
   |=  [[y=need-inter2 n=need-inter2] acc=_sure.intr]
@@ -9133,12 +9631,16 @@
   ~%  %laze-collapse  ..ride  ~
   |=  [laz=laze less=lore]
   ^-  need-ordered
+  %-  lax-resolve
+  :_  less
   (inter2-collapse (inter1-to-inter2 (laze-to-inter1 laz) les.less) less)
 ::
 ++  shape-collapse
   ~%  %shape-collapse  ..ride  ~
   |=  [laz=need-lazy less=lore]
   ^-  need-ordered
+  %-  lax-resolve
+  :_  less
   (inter2-collapse (inter1-to-inter2 (lazy-to-inter1 laz) les.less) less)
 ::
 ++  inter2-collapse
@@ -9253,6 +9755,7 @@
   ^-  need-ordered
   ?:  =(a b)  a
   ?:  |(?=(%none -.a) ?=(%none -.b))  [%none ~]
+  ?:  |(?=(%lax -.a) ?=(%lax -.b))  [%none ~]
   ?:  |(?=(%this -.a) ?=(%this -.b))  [%this ~]
   ~+
   =/  x=need-ordered
@@ -9271,6 +9774,7 @@
     %this  [%none ~]
     %both  h.a
     ^      -.a
+    %lax   h.a
   ==
 ::
 ++  tel-need-ord
@@ -9281,6 +9785,7 @@
     %this  [%none ~]
     %both  t.a
     ^      +.a
+    %lax   t.a
   ==
 ::
 ::  MSG of `a` and `b` while knowing that axes in `fix` exist
@@ -9292,7 +9797,15 @@
   ~+
   =*  msg  .
   ?:  =(a b)  a
-  ?:  |(?=(%this -.fix) ?=(%none -.fix))
+  ?:  |(?=(%lax -.a) ?=(%lax -.b))
+    ?:  ?=(%lax -.a)
+      ?:  ?=(%lax -.b)
+        :+  %lax
+          (msg h.a h.b (hed-need-ord fix) (hed-lore less))
+        (msg t.a t.b (tel-need-ord fix) (tel-lore less))
+      (uni-need-ord (msg none+~ b fix less) a)
+    (uni-need-ord (msg none+~ a fix less) b)
+  ?:  |(?=(%this -.fix) ?=(%none -.fix) ?=(%lax -.fix))
     (msg-need-ord a b less)
   ?:  &(?=(%none -.a) =(b fix))  b
   ?:  &(?=(%none -.b) =(a fix))  a
