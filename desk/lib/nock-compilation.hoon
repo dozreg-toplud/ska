@@ -4021,7 +4021,7 @@
 ++  rets-scc
   ~%  %rets-scc  ..ride  ~
   |=  $:  scc=(set bell)
-          long-ska=_[=_code =_jets =_calls]:*long-ska
+          long-ska=_[=_code =_jets =_calls =_held]:*long-ska
           jets-hot=jets-comp
           cache=comp-cache
       ==
