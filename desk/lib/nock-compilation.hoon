@@ -4339,8 +4339,8 @@
   ::
   ::  What a member reads first thing (+sure-of) is found by the same
   ::  sweeps, and a change of it is a change for the callers: whether a
-  ::  call tries decides, at a fork, whether a noun is taken apart in the
-  ::  branches (+soft-fork:comp), which the shape shows.  A shape only
+  ::  call tries decides, at a fork, whether the product goes into one
+  ::  register (+lazy-soft-ok:comp), which the shape shows.  A shape only
   ::  loses parts from sweep to sweep, and so does what is read first
   ::  thing: a member keeps of it what its compiles agree on.
   ::
@@ -5169,27 +5169,6 @@
     ?^  key  ~
     ~|  %rets-missing-callee
     (~(got by rets.cache.gen) b-callee)
-  ::  +whole, but a call that returns in parts is not whole
-  ::
-  ++  whole-here
-    |=  [mono=? =nomm]
-    ^-  ?
-    ?:  mono  (whole nomm)
-    |-  ^-  ?
-    ?+  nomm  |
-      [%1 @]     &
-      [%2 *]     ?~(info.nomm & =(~ (callee-rets u.info.nomm)))
-      [%3 *]     &
-      [%4 *]     &
-      [%5 *]     &
-      [%12 *]    &
-      [%6 *]     &($(nomm q.nomm) $(nomm r.nomm))
-      [%7 *]     $(nomm q.nomm)
-      [%11 *]    $(nomm q.nomm)
-      [%mean *]  $(nomm q.nomm)
-    ==
-  ::  no sums in the shape: the product is asked for by a plain need
-  ::
   ++  rets-plain
     |=  ret=rets
     ^-  ?
@@ -5778,39 +5757,6 @@
         (levy fork.laz |=([[* a=laze] * b=laze] &((none a) (none b))))
         (levy bond.laz |=([* n=laze] (none n)))
     ==
-  ::  +lazy-big for shapes
-  ::
-  ++  laze-big
-    |=  laz=laze
-    ^-  ?
-    =|  c=@ud
-    =-  (gth - lazy-max)
-    |-  ^-  @ud
-    ?:  (gth c lazy-max)  c
-    =.  c  +(c)
-    =.  c
-      |-  ^-  @ud
-      ?~  fork.laz  c
-      =.  c  ^$(laz laz.y.i.fork.laz)
-      =.  c  ^$(laz laz.n.i.fork.laz)
-      $(fork.laz t.fork.laz)
-    |-  ^-  @ud
-    ?~  bond.laz  c
-    ?:  (~(has in sofs.gen) o.i.bond.laz)  $(bond.laz t.bond.laz)
-    $(bond.laz t.bond.laz, c ^$(laz laz.i.bond.laz))
-  ::  +this-only for shapes
-  ::
-  ++  laze-this-only
-    |=  laz=laze
-    ^-  ?
-    =*  only  .
-    ?&  ?=(?(%this %none) -.ned.sure.laz)
-        ?=(?(~ [%1 ~ ~]) lok.sure.laz)
-        (levy fork.laz |=([[* a=laze] * b=laze] &((only a) (only b))))
-        (levy bond.laz |=([* n=laze] (only n)))
-    ==
-  ::  +must for shapes
-  ::
   ++  laze-must
     |=  ned=need-ordered
     ^-  need-ordered
@@ -5961,93 +5907,6 @@
     %+  turn  bond.laz
     |=  [o=@uxid laz=laze]
     [o (laze-from axe laz)]
-  ::  +leap for shapes
-  ::
-  ++  laze-leaps
-    |=  [laz=laze q=nomm r=nomm]
-    ^-  (unit [rest=laze bys=(list laze)])
-    ?:  &(?=(~ fork.laz) ?=(~ bond.laz))  ~
-    =/  pas=(list [p=@ s=@])  (pass-both q r)
-    =/  lab=laze  [*sure-ordered fork.laz bond.laz]
-    =|  bys=(list laze)
-    |-  ^-  (unit [laze (list laze)])
-    ?~  pas
-      ?~  bys  ~
-      `[[sure.laz fork.lab bond.lab] bys]
-    =/  [by=laze rec=laze]  (laze-leap p.i.pas s.i.pas lab)
-    ?:  (laze-empty by)  $(pas t.pas)
-    $(pas t.pas, lab rec, bys [by bys])
-  ::  +lazy-leap for shapes
-  ::
-  ++  laze-leap
-    |=  [p=@ s=@ laz=laze]
-    ^-  [by=laze rec=laze]
-    =*  loop  $
-    =/  cut=(unit [don=need-ordered rec=need-ordered])
-      (need-ord-cut p ned.sure.laz)
-    =/  [sur-by=sure-ordered sur-rec=sure-ordered]
-      ?~  cut  [*sure-ordered sure.laz]
-      =/  [lok-by=(set @) lok-rec=(set @)]
-        %-  ~(rep in lok.sure.laz)
-        |=  [a=@ by=(set @) rec=(set @)]
-        ?~  d=(gep p a)  [by (~(put in rec) a)]
-        [(~(put in by) (peg s u.d)) rec]
-      [[(need-ord-from s don.u.cut) lok-by] [rec.u.cut lok-rec]]
-    ::
-    =/  forks=(list [laze-fork laze-fork])
-      %+  turn  fork.laz
-      |=  e=laze-fork
-      =/  y  loop(laz laz.y.e)
-      =/  n  loop(laz laz.n.e)
-      [[[o.y.e by.y] [o.n.e by.n]] [[o.y.e rec.y] [o.n.e rec.n]]]
-    ::
-    =/  bonds=(list [laze-bond laze-bond])
-      %+  turn  bond.laz
-      |=  e=laze-bond
-      =/  b  loop(laz laz.e)
-      [[o.e by.b] [o.e rec.b]]
-    ::
-    :-  (laze-prune sur-by (turn forks head) (turn bonds head))
-    (laze-prune sur-rec (turn forks tail) (turn bonds tail))
-  ::  +need-cut for shapes
-  ::
-  ++  need-ord-cut
-    |=  [axe=@ ned=need-ordered]
-    ^-  (unit [don=need-ordered rec=need-ordered])
-    ?:  =(1 axe)  `[ned none+~]
-    ?-    -.ned
-        %none  `[ned ned]
-        %this  ~
-        %both  ~
-        %lax   ~
-    ::
-        ^
-      ?-    (cap axe)
-          %2
-        =/  kid  $(axe (mas axe), ned p.ned)
-        ?~  kid  ~
-        `[don.u.kid (cons-need rec.u.kid q.ned)]
-      ::
-          %3
-        =/  kid  $(axe (mas axe), ned q.ned)
-        ?~  kid  ~
-        `[don.u.kid (cons-need p.ned rec.u.kid)]
-      ==
-    ==
-  ::  +need-from for shapes
-  ::
-  ++  need-ord-from
-    |=  [axe=@ ned=need-ordered]
-    ^-  need-ordered
-    ?:  ?=(%none -.ned)  ned
-    |-  ^-  need-ordered
-    ?:  =(1 axe)  ned
-    ?-  (cap axe)
-      %2  [$(axe (mas axe)) none+~]
-      %3  [none+~ $(axe (mas axe))]
-    ==
-  ::  +copy for shapes
-  ::
   ++  laze-copy
     ~%  %comp-laze-copy  ..ride  ~
     |=  [first=laze second=laze]
@@ -6078,67 +5937,12 @@
       [o.e (laze-copy laz.e laz.u.m)]
     =/  seen=(set @uxid)  (silt (turn bond.first |=(e=laze-bond o.e)))
     (weld merged (skip bond.second |=(e=laze-bond (~(has in seen) o.e))))
-  ::  +fork for shapes: the same shape for both branches, fresh identifiers
-  ::
-  ++  laze-branch
-    ~%  %comp-laze-branch  ..ride  ~
-    |=  laz=laze
-    ^-  [[laze laze] _gen]
-    =^  forks=(list [laze-fork laze-fork])  gen
-      %^  spin  fork.laz  gen
-      |=  [[y=[o=@uxid laz=laze] n=[o=@uxid laz=laze]] gen-acc=_gen]
-      ^-  [[laze-fork laze-fork] _gen]
-      =.  gen  gen-acc
-      =^  o-0-y  gen  id
-      =^  o-1-y  gen  id
-      =^  o-0-n  gen  id
-      =^  o-1-n  gen  id
-      =^  [y-0=laze y-1=laze]  gen  (laze-branch laz.y)
-      =^  [n-0=laze n-1=laze]  gen  (laze-branch laz.n)
-      :_  gen
-      [[[o-0-y y-0] [o-0-n n-0]] [[o-1-y y-1] [o-1-n n-1]]]
-    ::
-    =^  bonds=(list [laze-bond laze-bond])  gen
-      %^  spin  bond.laz  gen
-      |=  [[o=@uxid laz=laze] gen-acc=_gen]
-      ^-  [[laze-bond laze-bond] _gen]
-      =.  gen  gen-acc
-      =^  o-0  gen  id
-      =^  o-1  gen  id
-      =^  [l-0=laze l-1=laze]  gen  (laze-branch laz)
-      [[[o-0 l-0] [o-1 l-1]] gen]
-    ::
-    :_  gen
-    :-  [sure.laz (turn forks head) (turn bonds head)]
-    [sure.laz (turn forks tail) (turn bonds tail)]
-  ::  +sect for shapes
-  ::
   ++  laze-sect
     |=  [l-0=laze l-1=laze]
     ^-  [laze _gen]
     =^  o-0  gen  id
     =^  o-1  gen  id
     [[*sure-ordered [[o-0 l-0] [o-1 l-1]]~ ~] gen]
-  ::
-  ::  +lazy-shut: a lazy need of the subject that is too big to hand on
-  ::  (+lazy-big) is met at the block o, from one register of the whole
-  ::  subject, which is then the need.  The needs of the branches of a fork
-  ::  go up to what precedes it once per branch, and so does the need of
-  ::  what follows the fork, when a branch passes a part of the subject
-  ::  through; forks in a row double it each time otherwise.
-  ::
-  ++  lazy-shut
-    |=  [o=@uwoo laz=need-lazy]
-    ^-  [need-lazy _gen]
-    ?.  (lazy-big (soft-less laz))  [laz gen]
-    =^  r  gen  (kern o laz)
-    [(lazy-from-need this+r) gen]
-  ::
-  ::    The lazy needs of what follows a fork
-  ::
-  ::  +lay-of: how a formula holds its product (\$lay), given how its
-  ::  subject is held
-  ::
   ++  lay-of
     |=  [=nomm sub=lay mono=?]
     ^-  lay
@@ -6564,66 +6368,6 @@
     ^+  gen
     ?:  dropping  gen
     gen(soft (~(jab by soft.gen) o |=(s=soft-call s(req [[src ned] req.s]))))
-  ::  +soft-fork: the need that a fork would hand to its branches has the
-  ::  bond of a soft call, and a branch would take a noun apart for it: in
-  ::  the branch, with a crash, and before the rest of the subject formula
-  ::  has run (+fork).  Then the fork makes its product in one register
-  ::  (+kerf), and that is taken apart at the call.
-  ::
-  ++  soft-fork
-    |=  [laz=need-lazy q=nomm r=nomm]
-    ^-  ?
-    ?|  %+  lien  bond.laz
-        |=  e=lazy-bond
-        ?|  ?&  (~(has by soft.gen) o.e)
-                =/  ned  (need-to-ordered ned.sure.laz.e)
-                !&((sound q ned) (sound r ned))
-            ==
-            ^$(laz laz.e)
-        ==
-    ::
-        %+  lien  fork.laz
-        |=  e=lazy-fork
-        |(^$(laz laz.y.e) ^$(laz laz.n.e))
-    ==
-  ::  +soft-fork for shapes
-  ::
-  ++  laze-soft-fork
-    |=  [laz=laze q=nomm r=nomm]
-    ^-  ?
-    ?|  %+  lien  bond.laz
-        |=  e=laze-bond
-        ?|  ?&  (~(has in sofs.gen) o.e)
-                !&((sound q ned.sure.laz.e) (sound r ned.sure.laz.e))
-            ==
-            ^$(laz laz.e)
-        ==
-    ::
-        %+  lien  fork.laz
-        |=  e=laze-fork
-        |(^$(laz laz.y.e) ^$(laz laz.n.e))
-    ==
-  ::  +soft-less: a lazy need without the bonds of soft calls, for its size
-  ::  (+lazy-big): a need that is bound at its call was part of the sure
-  ::  need, and counted for nothing
-  ::
-  ++  soft-less
-    |=  laz=need-lazy
-    ^-  need-lazy
-    ?:  &(?=(~ fork.laz) ?=(~ bond.laz))  laz
-    :+  sure.laz
-      %+  turn  fork.laz
-      |=  e=lazy-fork
-      ^-  lazy-fork
-      [[o.y.e ^$(laz laz.y.e)] [o.n.e ^$(laz laz.n.e)]]
-    %+  murn  bond.laz
-    |=  e=lazy-bond
-    ^-  (unit lazy-bond)
-    ?:  (~(has by soft.gen) o.e)  ~
-    `[o.e ^$(laz laz.e)]
-  ::  +soft-done: the blocks of the soft calls, once all that is taken apart
-  ::  in them is known: after +coerce-lazy
-  ::
   ++  soft-done
     ^+  gen
     ?:  dropping  gen
@@ -6647,7 +6391,7 @@
   ::  the flag is tested before the call.
   ::
   ::  A fork does not take a noun apart in a branch for the need of a soft
-  ::  call (+soft-fork).
+  ::  call (+lazy-soft-ok).
   ::
   ++  soft-emit
     |=  [o=@uwoo s=soft-call]
@@ -7463,101 +7207,6 @@
     =/  a-to-b=jmp  t.fin.blob-from
     =.  gen  (emir o2 ~ body.blob-from fin.blob-from)
     gen(blocks (~(put by blocks.gen) a blob-from(body ~, t.fin [~ o1])))
-  ::  Here the idea is that we materialize the conditional as a register with
-  ::  a loobean, then the lazy needs get forked, and the BB of that need gets
-  ::  code that branches on the conditional register and fulfills the original
-  ::  need with either of the two
-  ::
-  ++  fork
-    ~%  %comp-fork  ..ride  ~
-    |=  [nex=next r-cond=@uvre]
-    ^-  [[next next] _gen]
-    =^  o-0  gen  oo
-    =^  o-1  gen  oo
-    =;  [[laz-0=need-lazy laz-1=need-lazy] gen1=_gen]
-      =.  gen  gen1
-      :_  gen
-      [[%next laz-0 ~ o-0] [%next laz-1 ~ o-1]]
-    ::
-    =/  laz=need-lazy  laz.nex
-    =/  o=@uwoo  there.then.nex
-    ?>  =(~ args.then.nex)
-    |-  ^-  [[need-lazy need-lazy] _gen]
-    =*  fork-loop  $
-    =^  [sure-0=sure sure-1=sure]  gen  (fork-sure sure.laz o o-0 o-1)
-    =*  fork  ,(list [[@uwoo need-lazy] [@uwoo need-lazy]])
-    =^  [fork-0=fork fork-1=fork]  gen
-      %^  spin-split  fork.laz  gen
-      |=  [[y=[o=@uwoo laz=need-lazy] n=[o=@uwoo laz=need-lazy]] gen-acc=_gen]
-      =*  i  ,[[@uwoo need-lazy] [@uwoo need-lazy]]
-      ^-  [[i i] _gen]
-      =.  gen  gen-acc
-      ::  -y/n here means y or n child. 0 or 1 means either yes or no branch
-      ::  of this split. Confusing!
-      ::  insert1/2 are used for splicing the code in: o -> x becomes
-      ::  o -> insert1 -> ... -> insert2 -> x. 
-      ::
-      =^  o-0-kid-y    gen  oo
-      =^  o-1-kid-y    gen  oo
-      =^  o-0-kid-n    gen  oo
-      =^  o-1-kid-n    gen  oo
-      =^  o-insert2-y  gen  oo
-      =^  o-insert2-n  gen  oo
-      =.  gen  (copy-tag o.y ~[o-0-kid-y o-1-kid-y])
-      =.  gen  (copy-tag o.n ~[o-0-kid-n o-1-kid-n])
-      ::
-      =^  [laz-y-0=need-lazy laz-y-1=need-lazy]  gen
-        %=  fork-loop
-          laz  laz.y
-          o    o-insert2-y
-          o-0  o-0-kid-y
-          o-1  o-1-kid-y
-        ==
-      ::
-      =^  [laz-n-0=need-lazy laz-n-1=need-lazy]  gen
-        %=  fork-loop
-          laz  laz.n
-          o    o-insert2-n
-          o-0  o-0-kid-n
-          o-1  o-1-kid-n
-        ==
-      ::
-      =^  p-y  gen  (proxy r-cond o.y)
-      =^  p-n  gen  (proxy r-cond o.n)
-      =^  o-insert1-y=@uwoo  gen  (emit ~ ~ [%brz p-y ~^o-0-kid-y ~^o-1-kid-y])
-      =^  o-insert1-n=@uwoo  gen  (emit ~ ~ [%brz p-n ~^o-0-kid-n ~^o-1-kid-n])
-      =.  gen  (insert-hop o.y o-insert1-y o-insert2-y)
-      =.  gen  (insert-hop o.n o-insert1-n o-insert2-n)
-      :_  gen
-      :-  [[o-0-kid-y laz-y-0] [o-0-kid-n laz-n-0]]
-      [[o-1-kid-y laz-y-1] [o-1-kid-n laz-n-1]]
-    ::
-    =*  bond  ,(list [o=@uwoo laz=need-lazy])
-    =^  [bond-0=bond bond-1=bond]  gen
-      %^  spin-split  bond.laz  gen
-      |=  [[o-bond=@uwoo laz-bond=need-lazy] gen-acc=_gen]
-      ^-  [[[@uwoo need-lazy] [@uwoo need-lazy]] _gen]
-      =.  gen  gen-acc
-      =^  o-0-kid    gen  oo
-      =^  o-1-kid    gen  oo
-      =^  o-insert2  gen  oo
-      =.  gen  (copy-tag o-bond ~[o-0-kid o-1-kid])
-      =^  [laz-0=need-lazy laz-1=need-lazy]  gen
-        %=  fork-loop
-          laz  laz-bond
-          o    o-insert2
-          o-0  o-0-kid
-          o-1  o-1-kid
-        ==
-      ::
-      =^  p  gen  (proxy r-cond o-bond)
-      =^  o-insert1=@uwoo  gen  (emit ~ ~ [%brz p ~^o-0-kid ~^o-1-kid])
-      =.  gen  (insert-hop o-bond o-insert1 o-insert2)
-      [[[o-0-kid laz-0] [o-1-kid laz-1]] gen]
-    ::
-    :_  gen
-    :-  [sure-0 fork-0 bond-0]
-    [sure-1 fork-1 bond-1]
   ::  fork CFG for loobean-producing opcodes
   ::
   ++  forl
@@ -7609,104 +7258,6 @@
     %+  turn  bond.laz
     |=  [o=@uwoo laz=need-lazy]
     [o from-buc(laz laz)]
-  ::
-  ::  +leap: a part of the product of a fork that both branches take from
-  ::  one place of the subject (+pass-both) does not depend on the branch.
-  ::  What the lazy blocks of the goal need of such a part goes to that place
-  ::  with its blocks (.bys), and the fork is compiled for the rest.  +fork
-  ::  would give each branch a copy of that need, and when both hand theirs
-  ::  up to the subject the need doubles: forks in a row (`=?` after `=?`)
-  ::  came to 2^n blocks.  The sure need is left to the join block, where it
-  ::  costs moves and no blocks.
-  ::
-  ++  leap
-    |=  [laz=need-lazy q=nomm r=nomm]
-    ^-  (unit [rest=need-lazy bys=(list need-lazy)])
-    ?:  &(?=(~ fork.laz) ?=(~ bond.laz))  ~
-    =/  pas=(list [p=@ s=@])  (pass-both q r)
-    =/  lab=need-lazy  [*sure fork.laz bond.laz]
-    =|  bys=(list need-lazy)
-    |-  ^-  (unit [need-lazy (list need-lazy)])
-    ?~  pas
-      ?~  bys  ~
-      `[[sure.laz fork.lab bond.lab] bys]
-    =/  [by=need-lazy rec=need-lazy]  (lazy-leap p.i.pas s.i.pas lab)
-    ?:  (lazy-empty by)  $(pas t.pas)
-    $(pas t.pas, lab rec, bys [by bys])
-  ::  +lazy-leap: what the blocks of a lazy need want of the part at .p, as
-  ::  a need of the axis .s of another noun, and the need without it.  A
-  ::  block that wants in a register a noun that holds the part keeps all of
-  ::  its need: that noun is not the same in both branches.  Nothing is
-  ::  looked at that was not: no look at .s itself is added (+from adds one)
-  ::
-  ++  lazy-leap
-    |=  [p=@ s=@ laz=need-lazy]
-    ^-  [by=need-lazy rec=need-lazy]
-    =*  loop  $
-    =/  cut=(unit [don=need rec=need])  (need-cut p ned.sure.laz)
-    =/  [sur-by=sure sur-rec=sure]
-      ?~  cut  [*sure sure.laz]
-      =/  [lok-by=(set @) lok-rec=(set @)]
-        %-  ~(rep in lok.sure.laz)
-        |=  [a=@ by=(set @) rec=(set @)]
-        ?~  d=(gep p a)  [by (~(put in rec) a)]
-        [(~(put in by) (peg s u.d)) rec]
-      [[(need-from s don.u.cut) lok-by] [rec.u.cut lok-rec]]
-    ::
-    =/  forks=(list [lazy-fork lazy-fork])
-      %+  turn  fork.laz
-      |=  e=lazy-fork
-      =/  y  loop(laz laz.y.e)
-      =/  n  loop(laz laz.n.e)
-      [[[o.y.e by.y] [o.n.e by.n]] [[o.y.e rec.y] [o.n.e rec.n]]]
-    ::
-    =/  bonds=(list [lazy-bond lazy-bond])
-      %+  turn  bond.laz
-      |=  e=lazy-bond
-      =/  b  loop(laz laz.e)
-      [[o.e by.b] [o.e rec.b]]
-    ::
-    :-  (lazy-prune sur-by (turn forks head) (turn bonds head))
-    (lazy-prune sur-rec (turn forks tail) (turn bonds tail))
-  ::  the part of a need at an axis and the need without it; ~ if a noun
-  ::  that holds the part is wanted in a register
-  ::
-  ++  need-cut
-    |=  [axe=@ ned=need]
-    ^-  (unit [don=need rec=need])
-    ?:  =(1 axe)  `[ned none+~]
-    ?-    -.ned
-        %none  `[ned ned]
-        %this  ~
-        %both  ~
-        %lax   ~
-    ::
-        ^
-      ?-    (cap axe)
-          %2
-        =/  kid  $(axe (mas axe), ned p.ned)
-        ?~  kid  ~
-        `[don.u.kid (cons-need rec.u.kid q.ned)]
-      ::
-          %3
-        =/  kid  $(axe (mas axe), ned q.ned)
-        ?~  kid  ~
-        `[don.u.kid (cons-need p.ned rec.u.kid)]
-      ==
-    ==
-  ::  a need of a noun as the need of the noun that holds it at .axe
-  ::
-  ++  need-from
-    |=  [axe=@ ned=need]
-    ^-  need
-    ?:  ?=(%none -.ned)  ned
-    |-  ^-  need
-    ?:  =(1 axe)  ned
-    ?-  (cap axe)
-      %2  [$(axe (mas axe)) none+~]
-      %3  [none+~ $(axe (mas axe))]
-    ==
-  ::
   ++  copy
     ~%  %comp-copy  ..ride  ~
     |=  [first=next second=need-lazy]
@@ -8184,73 +7735,6 @@
     =^  h=[n=need o=(list pole)]  gen  $(l p.l, r h.r)
     =^  t=[n=need o=(list pole)]  gen  $(l q.l, r t.r, ops o.h)
     [[[%both r.r n.h n.t] o.t] gen]
-  ::
-  ++  coerce-ord
-    ~%  %comp-coerce-ord  ..ride  ~
-    |=  [need-pessimized=need-ordered nex=next-resolved]
-    ^-  [next-resolved _gen]
-    =;  [ned=need gen1=_gen]  [[%next [[ned ~] ~ ~] [~ then.nex]] gen1]
-    |-  ^-  [need _gen]
-    ?-    -.need-pessimized
-        %lax   ~|(%lax-in-a-shape !!)
-        %none
-      ?>  ?=(%none -.ned.nex)
-      [[%none ~] gen]
-    ::
-        %this
-      ?:  ?=(%this -.ned.nex)  [ned.nex gen]
-      =^  r  gen  (kern-r-need then.nex ned.nex)
-      [[%this r] gen]
-    ::
-        ^
-      ?:  ?=(%none -.ned.nex)
-        =^  hed  gen  $(need-pessimized -.need-pessimized)
-        =^  tel  gen  $(need-pessimized +.need-pessimized)
-        ?<  &(?=(%none -.hed) ?=(%none -.tel))
-        [[hed tel] gen]
-      ?@  -.ned.nex  !!
-      =^  hed  gen  $(need-pessimized -.need-pessimized, ned.nex -.ned.nex)
-      =^  tel  gen  $(need-pessimized +.need-pessimized, ned.nex +.ned.nex)
-      ?<  &(?=(%none -.hed) ?=(%none -.tel))
-      [[hed tel] gen]
-    ::
-        %both
-      ?-    -.ned.nex
-          %lax   ~|(%lax-in-a-shape !!)
-          %none
-        =^  r  gen  re
-        =^  hed  gen  $(need-pessimized h.need-pessimized)
-        =^  tel  gen  $(need-pessimized t.need-pessimized)
-        ?<  &(?=(%none -.hed) ?=(%none -.tel))
-        [[%both r hed tel] gen]
-      ::
-          %this
-        =^  hed  gen  $(need-pessimized h.need-pessimized, ned.nex [%none ~])
-        =^  tel  gen  $(need-pessimized t.need-pessimized, ned.nex [%none ~])
-        ?<  &(?=(%none -.hed) ?=(%none -.tel))
-        [[%both r.ned.nex hed tel] gen]
-      ::
-          ^
-        =^  r  gen  re
-        =^  hed  gen  $(need-pessimized h.need-pessimized, ned.nex -.ned.nex)
-        =^  tel  gen  $(need-pessimized t.need-pessimized, ned.nex +.ned.nex)
-        ?<  &(?=(%none -.hed) ?=(%none -.tel))
-        [[%both r hed tel] gen]
-      ::
-          %both
-        =^  hed  gen  $(need-pessimized h.need-pessimized, ned.nex h.ned.nex)
-        =^  tel  gen  $(need-pessimized t.need-pessimized, ned.nex t.ned.nex)
-        ?<  &(?=(%none -.hed) ?=(%none -.tel))
-        [[%both r.ned.nex hed tel] gen]
-      ==
-    ==
-  ::  +coerce-soft: +coerce-ord for the entry of a function whose shape is
-  ::  wider than its code wants.  The code reads the parts where it reads
-  ::  them, under a hint or on a branch: taken apart on entry, a noun that is
-  ::  not a cell would crash before all of that.  So the parts are tried,
-  ::  and a noun that is not a cell sends the function's subject, made of
-  ::  the registers it was entered with (+soft-cons), to its subject version
-  ::
   ++  coerce-soft
     ~%  %comp-coerce-soft  ..ride  ~
     |=  [need-pessimized=need-ordered nex=next-resolved]
@@ -8431,21 +7915,6 @@
     =.  gen  gen-acc
     =.  gen  (coerce-lazy ned o.y laz.y less)
     (coerce-lazy ned o.n laz.n less)
-  ::
-  ::  NB: bonds do not matter when it comes to figuring out the shape of the
-  ::  need but they do matter when it comes to emitting the disassembly code
-  ::  from a branch combination to a specific branch - into which block to emit
-  ::  the disassembly code
-  ::
-  ++  next-lazy-collapse
-    |=  [nex=next less=lore]
-    ^-  [next-resolved _gen]
-    =^  [ned-final=need laz=need-lazy o=@uwoo]  gen  (collapse-shape nex less)
-    :-  [%next [[ned-final ~] ~ ~] ~ o]
-    (coerce-lazy ned-final o laz les.less)
-  ::  Shape of the subject with registers allocated, without the deconsing
-  ::  code: the input shape is all that the compilation fixed point reads
-  ::
   ++  collapse-shape
     ~%  %comp-collapse-shape  ..ride  ~
     |=  [nex=next less=lore]
@@ -9850,96 +9319,6 @@
   =/  low-b  (dis b (dec x))
   `(con low-b x)
 ::
-::  +pass: the parts of the product of a formula that are parts of its
-::  subject as they stand: pairs of an axis of the product and the axis of
-::  the subject it is taken from, the widest such parts, none inside another
-::
-++  pass
-  |=  =nomm
-  ^-  (list [p=@ s=@])
-  ?+    nomm  ~
-      [^ *]
-    %+  weld
-      (turn $(nomm -.nomm) |=([p=@ s=@] [(peg 2 p) s]))
-    (turn $(nomm +.nomm) |=([p=@ s=@] [(peg 3 p) s]))
-  ::
-      [%0 *]   ?:(=(0 p.nomm) ~ [1 p.nomm]~)
-      [%6 *]   (pass-both q.nomm r.nomm)
-      [%7 *]   (pass-then $(nomm p.nomm) $(nomm q.nomm))
-      [%10 *]  (pass-edit p.p.nomm $(nomm q.p.nomm) $(nomm q.nomm))
-      [%11 *]  $(nomm q.nomm)
-  ==
-::  the parts both branches of a fork take from one place of the subject.  A
-::  branch that is a crash has no product to differ in
-::
-++  pass-both
-  |=  [q=nomm r=nomm]
-  ^-  (list [p=@ s=@])
-  ?:  (pass-bomb q)  (pass r)
-  ?:  (pass-bomb r)  (pass q)
-  =/  a=(list [p=@ s=@])  (pass q)
-  ?~  a  ~
-  =/  b=(list [p=@ s=@])  (pass r)
-  ?~  b  ~
-  %-  zing
-  %+  turn  `(list [p=@ s=@])`a
-  |=  [p=@ s=@]
-  %+  murn  `(list [p=@ s=@])`b
-  |=  [q=@ t=@]
-  ^-  (unit [p=@ s=@])
-  ?^  d=(gep p q)
-    ?.(=(t (peg s u.d)) ~ `[q t])
-  ?^  d=(gep q p)
-    ?.(=(s (peg t u.d)) ~ `[p s])
-  ~
-::  a crash, under hints or not
-::
-++  pass-bomb
-  |=  =nomm
-  ^-  ?
-  ?+  nomm  |
-    [%0 *]   =(0 p.nomm)
-    [%11 *]  $(nomm q.nomm)
-  ==
-::  +pass of [7 p q] from those of p (.a) and of q (.b)
-::
-++  pass-then
-  |=  [a=(list [p=@ s=@]) b=(list [p=@ s=@])]
-  ^-  (list [p=@ s=@])
-  ?~  a  ~
-  %-  zing
-  %+  turn  b
-  |=  [pq=@ sq=@]
-  %+  murn  `(list [p=@ s=@])`a
-  |=  [pp=@ sp=@]
-  ^-  (unit [p=@ s=@])
-  ?^  d=(gep pp sq)  `[pq (peg sp u.d)]
-  ?^  d=(gep sq pp)  `[(peg pq u.d) sp]
-  ~
-::  +pass of an edit at .axe: what the new part passes, and of what the
-::  edited noun passes the parts beside the path to .axe
-::
-++  pass-edit
-  |=  [axe=@ don=(list [p=@ s=@]) rec=(list [p=@ s=@])]
-  ^-  (list [p=@ s=@])
-  %+  weld
-    ^-  (list [p=@ s=@])
-    (turn don |=([p=@ s=@] [(peg axe p) s]))
-  ^-  (list [p=@ s=@])
-  %-  zing
-  %+  turn  rec
-  |=  [p=@ s=@]
-  ^-  (list [p=@ s=@])
-  ?^  (gep axe p)  ~
-  =/  und=(unit @)  (gep p axe)
-  ?~  und  [p s]~
-  =/  d=@  u.und
-  |-  ^-  (list [p=@ s=@])
-  ?:  =(1 d)  ~
-  =/  k=@  (cap d)
-  =/  o=@  ?:(=(2 k) 3 2)
-  :-  [(peg p o) (peg s o)]
-  $(p (peg p k), s (peg s k), d (mas d))
 ::
 ++  none-equivalent
   ~%  %none-equivalent  ..ride  ~
@@ -9950,57 +9329,6 @@
       ?=(?(~ [%1 ~ ~]) lok.sure.laz)
       (levy fork.laz |=([[* a=need-lazy] * b=need-lazy] &((none a) (none b))))
       (levy bond.laz |=([* n=need-lazy] (none n)))
-  ==
-::  The most nodes a lazy need may have for a fork to take it into both of
-::  its branches (+lazy-big).  A need that passes a fork lazily is kept once
-::  per branch, so n forks one after the other, each handing the need of
-::  what follows it to both of its branches, make a need of 2^n nodes, and
-::  as many blocks of deconsing code when it is collapsed: +on-load of an
-::  agent with a dozen of `=?  old  ?=(%n -.old)  ..` in a row came to
-::  142.730 blocks, and one with twenty did not come to an end.  Past the
-::  limit the fork takes its product in one register (+kerf), as it does a
-::  product that is whole on both sides, and the need is met from that
-::  register after the join: the code is then linear in the forks.
-::  The limit is high enough to leave ordinary code alone: at 32 the
-::  compiler itself (+mint:ut on hoon.hoon) ran 28% slower, at 128 9.5%,
-::  at 512 as without a limit.
-::
-++  lazy-max  512
-::
-++  lazy-big
-  |=  laz=need-lazy
-  ^-  ?
-  (gth (lazy-size laz) lazy-max)
-::  its nodes, counted up to the limit
-::
-++  lazy-size
-  |=  laz=need-lazy
-  ^-  @ud
-  =|  c=@ud
-  |-  ^-  @ud
-  ?:  (gth c lazy-max)  c
-  =.  c  +(c)
-  =.  c
-    |-  ^-  @ud
-    ?~  fork.laz  c
-    =.  c  ^$(laz laz.y.i.fork.laz)
-    =.  c  ^$(laz laz.n.i.fork.laz)
-    $(fork.laz t.fork.laz)
-  |-  ^-  @ud
-  ?~  bond.laz  c
-  $(bond.laz t.bond.laz, c ^$(laz laz.i.bond.laz))
-::  whether a lazy need wants its noun whole or not at all, in every block
-::  (sure, forks and bonds): then nothing deconses it, and one register of
-::  it serves them all
-::
-++  this-only
-  |=  laz=need-lazy
-  ^-  ?
-  =*  only  .
-  ?&  ?=(?(%this %none) -.ned.sure.laz)
-      ?=(?(~ [%1 ~ ~]) lok.sure.laz)
-      (levy fork.laz |=([[* a=need-lazy] * b=need-lazy] &((only a) (only b))))
-      (levy bond.laz |=([* n=need-lazy] (only n)))
   ==
 --
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
