@@ -1583,6 +1583,11 @@
     =.  out  $(nomm p.nomm)
     =.  out  $(nomm q.nomm)
     ?~  info.nomm  out
+    ::  a memoized call fetches the parts of its callee's subject with a
+    ::  crash, not with a try: its callee takes nothing apart on the word
+    ::  of its callers
+    ::
+    ?^  k.u.info.nomm  [[b.u.info.nomm |] out]
     [[b.u.info.nomm (heft p.nomm hub)] out]
   ::
       [%11 *]
@@ -8639,7 +8644,7 @@
 ::  380 -> 334 ms, +nuck 161 -> 133) and +mint is as with 32; at 4 +mint
 ::  loses 8%, a loop keeping what it reads again in registers
 ::
-++  split-max  6
+++  split-max  0
 ::
 ++  need-to-ordered
   ~%  %need-to-ordered  ..ride  ~
