@@ -2984,7 +2984,7 @@
       last=@uwoo
       pro=@uvre
       out=@uwoo
-      aux=*
+      aux=$@(~ [epil=@uwoo body=*])
       req=(list [src=@uvre ned=need])
   ==
 ::
@@ -3450,7 +3450,7 @@
             top=(map bell need-ordered)
             cache=comp-cache
         ==
-    ^-  [? (map bell straight) comp-cache]
+    ^-  [chg=? ray=(map bell straight) cache=comp-cache]
     =/  done=?  ?=(%done mode)
     ?>  ?=(^ less.b)
     =/  comp  (comp scc long-ska jets-hot map-local top b)
@@ -3490,21 +3490,25 @@
       ?.  done
         =^  l=laze  gen  (~(run-shape comp gen) nomm [%done ~] ~)
         =/  shape
-          %+  bake-need-ord
+          =/  collapsed=need-ordered
             ?:  ?=(%must mode)  (laze-collapse l cape.less.b)
             (laze-may l cape.less.b)
-          less.b
+          ::
+          (bake-need-ord collapsed less.b)
+        ::
         :_  gen
         [shape *need-lazy *need *baked `@uwoo`0 (sure-of sure.l cape.less.b)]
       =.  mode.gen  %run
       =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~ ~)
       =^  [ned-final=need laz=need-lazy o=@uwoo]  gen
         (~(collapse-shape comp gen) nex cape.less.b)
+      ::
       =/  bak=baked  (bake-need ned-final less.b)
       =/  sur
         (sure-of [(need-to-ordered ned.sure.laz) lok.sure.laz] cape.less.b)
       ::
       [[(need-to-ordered ned.bak) laz ned-final bak o sur] gen]
+    ::
     =.  cache  cache.gen
     =/  was=(unit need-ordered)  (~(get by sure.cache) b)
     =/  sur=need-ordered  ?:(&(keep ?=(^ was)) u.was sur)
@@ -3538,11 +3542,14 @@
       ::
       =.  gen
         (~(add-ops comp gen) o (turn imm.bak |=([r=@uvre v=*] [%imm v r])))
+      ::
       =/  res=next-resolved  [%next [[ned.bak ~] ~ ~] ~ o]
       ?~  pessimized  (~(to-straight comp gen) res)
       =^  coerced=next-resolved  gen
         (~(coerce-soft comp gen) u.pessimized res)
+      ::
       (~(to-straight comp gen) coerced)
+    ::
     ::  The shape changed when it is new and needs something, or when the MSG
     ::  with the previous one (taken to avoid divergence) differs from it
     ::
@@ -3571,6 +3578,7 @@
       ?:  =(need-pessimized need-new)  (finish ~)
       (finish `need-pessimized)
     cache
+  ::::  end of `member` def
   ::  The final pass: every member compiled for real
   ::
   ::  It compiles each member as its last sweep did, against the same
@@ -3643,14 +3651,13 @@
   ::  .tick counts member compiles; .ran is the tick of a member's last
   ::  compile, .chg the tick of its last shape change
   ::
-  =/  may=[m=(map bell straight) c=comp-cache]
+  =^  may=(map bell straight)  cache
     !@  dedicated-shape-pass  [~ cache]
     %+  roll  order
     |=  [b=bell m=(map bell straight) c=_cache]
-    =/  r  (member b %may | m ~ c)
-    [+<.r +>.r]
-  =/  top=(map bell need-ordered)  (~(run by m.may) |=(s=straight need.s))
-  =.  cache  c.may
+    [ray cache]:(member b %may | m ~ c)
+  ::
+  =/  top=(map bell need-ordered)  (~(run by may) |=(s=straight need.s))
   =/  st=[any=? tick=@ud ran=(map bell @ud) chg=(map bell @ud)]  [| 0 ~ ~]
   =/  counter=@ud  0
   |-  ^+  [map-local cache]
@@ -3662,13 +3669,15 @@
       ?~  r=(~(get by ran.st) b)  &
       %-  ~(any in (~(get ju kids) b))
       |=(k=bell (gte (~(gut by chg.st) k 0) u.r))
+    ::
     ?.  dirty  [st m c]
     =/  t=@ud  +(tick.st)
     =/  r  (member b %must (gth t (mul 4 ~(wyt in scc))) m top c)
-    :_  [+<.r +>.r]
+    :_  [ray cache]:r
     :^  &  t
       (~(put by ran.st) b t)
-    ?:(-.r (~(put by chg.st) b t) chg.st)
+    ?:(chg.r (~(put by chg.st) b t) chg.st)
+  ::
   ?.  any.st.res  (final & map-local cache)
   %-  (print-comp 0 |.(leaf+"[fixpoint-compilation {(scow %ud counter)}]"))
   %=  sweep-loop
@@ -3936,6 +3945,7 @@
                 (hinted q.nomm code.long-ska)
             ==
         ==
+      ::
       =^  call-blocks=$@(@uwoo [opt=@uwoo pes=[sub=@uvre o=@uwoo]])  gen
         =/  call-op
           |=  [pes=(unit @uvre) pro=@uvre]
@@ -3966,6 +3976,7 @@
             =^  o  gen  (emit ~ ~ (jump-op ~))
             =?  gen  sof
               (soft-new o %tail b-callee rin sub-ned b-sur *@uvre *@uwoo ~)
+            ::
             [o gen]
           =^  sub-pes  gen  re
           =^  opt  gen  (emit ~ ~ (jump-op ~))
@@ -3977,6 +3988,7 @@
           =^  o  gen  (emit ~ ~[(call-op ~ pro)] %hop ~ out)
           =?  gen  sof
             (soft-new o %call b-callee rin sub-ned b-sur pro out ~)
+          ::
           [o gen]
         =^  merged   gen  re
         =^  sub-pes  gen  re
@@ -4112,6 +4124,7 @@
         =/  l  (leap laz.goal q.nomm r.nomm)
         ?~  l  ~
         `[[%next rest.u.l then.goal] bys.u.l]
+      ::
       ?^  lep
         =^  nex  gen  $(goal gol.u.lep)
         =/  bys=(list need-lazy)  bys.u.lep
@@ -5156,7 +5169,7 @@
             sur=need-ordered
             pro=@uvre
             out=@uwoo
-            aux=*
+            aux=$@(~ [epil=@uwoo body=*])
         ==
     ^+  gen
     gen(soft (~(put by soft.gen) o [kin b rin ned sur o o o pro out aux ~]))
@@ -5356,7 +5369,8 @@
     ::  takes its pick by the flag.
     ::
     ?:  ?=(%mean kin.s)
-      =/  [epil=@uwoo body=*]  ;;([@uwoo *] aux.s)
+      ?>  ?=(^ aux.s)
+      =/  [epil=@uwoo body=*]  aux.s
       =^  rum  gen  re
       =^  join=@uwoo  gen  (emit ~[rum] ~ %hop ~ out.s)
       =^  fail=@uwoo  gen
@@ -7638,6 +7652,7 @@
   ?.  (cell-sure sur k)  &
   =/  [h=need-ordered t=need-ordered]
     ?:(?=(%both -.ned) [h.ned t.ned] [p.ned q.ned])
+  ::
   ?|  $(ned h, sur (hed-need-ord sur), k (hed:so k))
       $(ned t, sur (tel-need-ord sur), k (tel:so k))
   ==
@@ -7652,6 +7667,7 @@
   ~+
   =/  [h=need-ordered t=need-ordered]
     ?:(?=(%both -.ned) [h.ned t.ned] [p.ned q.ned])
+  ::
   ?+    nom  |
       [^ *]      &($(nom -.nom, ned h) $(nom +.nom, ned t))
       [%0 *]     =(0 p.nom)
@@ -9549,6 +9565,7 @@
       [[%drop ~] ..poke]
     =^  rung=(set bell)  long-ska.state
       (ska-cole-settle long-ska.state ~(key by hot))
+    ::
     =/  stale=(set bell)
       (hot-stale (hot-diff jets-hot.state hot) rung hot long-ska.state)
     ::
