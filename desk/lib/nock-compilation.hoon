@@ -8706,21 +8706,16 @@
       ?:  |(?=(%this -.single) ?=(%both -.double))  [%both l r]
       %-  cons-need  ::  XX
       [l r]
-    ::  Only one branch takes the noun apart, so a split here is paid on
-    ::  entry by every path, for parts that path never reads: a known cell
-    ::  makes the hoisting crash-free but not free.  A big split (the data
-    ::  of a rule tree: thousands of registers, dropped by the paths that
-    ::  read none of it) is passed whole instead, as structs are by
-    ::  reference, and the branch that reads it splits its one register.
+    ::  Only one branch takes the noun apart.  Where every call site holds
+    ::  its parts (+heft), passing them costs a move each and the noun whole
+    ::  would cost every caller a cons: it is split.  Where the callers hold
+    ::  it whole, a split would be paid on entry by every path, in fetches
+    ::  and moves for parts that path never reads (the rule trees of the
+    ::  parsers): it is passed whole, as structs are by reference, and the
+    ::  branch that reads it splits its one register.
     ::
-    ::
-    ::  Not so for the parts that every call site holds (+heft): passing
-    ::  them costs a move each, and the noun whole would cost every caller
-    ::  a cons.  No limit on those.
-    ::
-    ?:  ?=(^ hel.less)  res
-    ?:  (gth (need-ord-regs res split-max) split-max)  this+~
-    res
+    ?:  |(?=(^ hel.less) ?=(%none -.res))  res
+    this+~
   ::
   ?:  ?=(%both -.a)
     ?:  ?=(%both -.b)
@@ -8745,12 +8740,6 @@
     %both  $(n t.n, acc $(n h.n, acc +(acc)))
     ^      $(n +.n, acc $(n -.n))
   ==
-::  The most registers a fork splits a noun into on entry for one branch
-::  (+msg-need-ord).  Measured: at 6 the parsers gain (+ream of hoon.hoon
-::  380 -> 334 ms, +nuck 161 -> 133) and +mint is as with 32; at 4 +mint
-::  loses 8%, a loop keeping what it reads again in registers
-::
-++  split-max  0
 ::
 ++  need-to-ordered
   ~%  %need-to-ordered  ..ride  ~
