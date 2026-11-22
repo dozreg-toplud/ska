@@ -870,8 +870,9 @@
     code=(map bell code-entry)          ::  direct bell mapping
     calls=(map bell (set bell))         ::  bell call graph
     vars=(jug bell bell)                ::  code bell -> its baked variants
-    held=(map bell cape)                ::  compiled bell -> what every site
-                                        ::  holds of its subject (+heft)
+    held=(map bell [hel=cape fre=cape]) ::  compiled bell -> what every site
+                                        ::  holds of its subject (+heft),
+                                        ::  and makes anew for the call
     seek=(map bell cape)                ::  compiled bell -> .seek of its
                                         ::  function (+cole-match)
   ==
@@ -1660,9 +1661,13 @@
 ++  heft-sites
   ~%  %heft-sites  ..ride  ~
   |=  [=nomm own=cape]
-  ^-  (list [b=bell h=cape])
-  =|  out=(list [b=bell h=cape])
+  ^-  (list [b=bell h=cape f=cape])
+  =|  out=(list [b=bell h=cape f=cape])
   =/  hub=cape  own
+  ::  .fub: what the formula made anew since the function began: nothing of
+  ::  its own subject, which may be the same noun from one call to the next
+  ::
+  =/  fub=cape  |
   |-  ^+  out
   ?-    nomm
       [^ *]    $(nomm +.nomm, out $(nomm -.nomm))
@@ -1672,7 +1677,13 @@
       [%4 *]   $(nomm p.nomm)
       [%5 *]   $(nomm q.nomm, out $(nomm p.nomm))
       [%6 *]   $(nomm r.nomm, out $(nomm q.nomm, out $(nomm p.nomm)))
-      [%7 *]   $(nomm q.nomm, hub (heft p.nomm hub), out $(nomm p.nomm))
+      [%7 *]
+    %=  $
+      nomm  q.nomm
+      hub   (heft p.nomm hub)
+      fub   (heft p.nomm fub)
+      out   $(nomm p.nomm)
+    ==
       [%10 *]  $(nomm q.nomm, out $(nomm q.p.nomm))
       [%12 *]  $(nomm q.nomm, out $(nomm p.nomm))
   ::
@@ -1684,8 +1695,8 @@
     ::  crash, not with a try: its callee takes nothing apart on the word
     ::  of its callers
     ::
-    ?^  k.u.info.nomm  [[b.u.info.nomm |] out]
-    [[b.u.info.nomm (heft p.nomm hub)] out]
+    ?^  k.u.info.nomm  [[b.u.info.nomm | |] out]
+    [[b.u.info.nomm (heft p.nomm hub) (heft p.nomm fub)] out]
   ::
       [%11 *]
     ?@  p.nomm  $(nomm q.nomm)
@@ -1693,7 +1704,7 @@
   ::
       [%mean *]
     =.  out  $(nomm p.nomm)
-    =.  out  [[b.nomm (heft p.nomm hub)] out]
+    =.  out  [[b.nomm (heft p.nomm hub) (heft p.nomm fub)] out]
     $(nomm q.nomm)
   ==
 ::  +held-graph: for the variants of a poke (+bake-graph), what every call
@@ -1704,24 +1715,30 @@
 ++  held-graph
   ~%  %held-graph  ..ride  ~
   |=  [root=bell baked=(map bell [=nomm calls=(set bell) seek=cape])]
-  ^-  (map bell cape)
-  =/  hel=(map bell cape)  [[root |] ~ ~]
+  ^-  (map bell [hel=cape fre=cape])
+  =/  hel=(map bell [hel=cape fre=cape])  [[root | |] ~ ~]
   =/  q=(list bell)  ~[root]
   |-  ^+  hel
   ?~  q  hel
   ?~  ent=(~(get by baked) i.q)  $(q t.q)
-  =/  sites=(list [b=bell h=cape])
-    (heft-sites nomm.u.ent (~(gut by hel) i.q |))
+  =/  sites=(list [b=bell h=cape f=cape])
+    (heft-sites nomm.u.ent hel:(~(gut by hel) i.q [hel=| fre=|]))
   ::
   =^  changed=(list bell)  hel
     %+  roll  sites
-    |=  [[b=bell h=cape] changed=(list bell) hel=_hel]
+    |=  [[b=bell h=cape f=cape] changed=(list bell) hel=_hel]
     ?:  =(b root)  [changed hel]
-    =/  old=(unit cape)  (~(get by hel) b)
-    =/  new=cape
-      (trim-held ?~(old h (meet-held h u.old)) ?@(less.b | cape.less.b))
+    =/  old=(unit [hel=cape fre=cape])  (~(get by hel) b)
+    =/  les=cape  ?@(less.b | cape.less.b)
+    =/  new=[hel=cape fre=cape]
+      :-  (trim-held ?~(old h (meet-held h hel.u.old)) les)
+      (trim-held ?~(old f (meet-held f fre.u.old)) les)
     ::
     ?:  =(`new old)  [changed hel]
+    ::  what a site makes anew does not depend on its function's callers
+    ::
+    ?:  &(?=(^ old) =(hel.new hel.u.old))
+      [changed (~(put by hel) b new)]
     [[b changed] (~(put by hel) b new)]
   ::
   $(q (weld t.q changed))
@@ -2104,7 +2121,7 @@
   =^  baked=(map bell [=nomm calls=(set bell) seek=cape])  vars.lon
     (bake-graph root-bell dat jetted vars.lon)
   ::
-  =/  helds=(map bell cape)  (held-graph root-bell baked)
+  =/  helds=(map bell [hel=cape fre=cape])  (held-graph root-bell baked)
   ::  a variant seen before keeps its entry and its programs
   ::
   =/  new-code=(map bell [=nomm calls=(set bell) seek=cape])
@@ -2183,8 +2200,8 @@
   =.  held.lon
     %-  ~(rep by new-code)
     |=  [[b=bell *] acc=_held.lon]
-    =/  h=cape  (~(gut by helds) b |)
-    ?:  ?=(@ h)  acc
+    =/  h=[hel=cape fre=cape]  (~(gut by helds) b [| |])
+    ?:  ?=(@ hel.h)  acc
     (~(put by acc) b h)
   ::
   =.  calls.lon
@@ -4185,7 +4202,9 @@
     ^-  [? (map bell straight) comp-cache]
     =/  done=?  ?=(%done mode)
     ?>  ?=(^ less.b)
-    =/  lor=lore  [cape.less.b (~(gut by held.long-ska) b |)]
+    =/  [lor=lore fre=cape]
+      =/  h=[hel=cape fre=cape]  (~(gut by held.long-ska) b [| |])
+      [[cape.less.b hel.h] fre.h]
     =/  comp  (comp scc long-ska jets-hot map-local top b)
     =^  =nomm  cache  (inlined b long-ska jets-hot cache)
     ::  Until the fixed point only the input shape is needed: from the
@@ -4215,7 +4234,7 @@
         =.  mode.gen  ?:(done %run %drop)
         =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~ ~)
         =^  [ned-final=need laz=need-lazy o=@uwoo]  gen
-          (~(collapse-shape comp gen) nex lor)
+          (~(collapse-shape comp gen) nex lor fre)
         =/  bak=baked  (bake-need ned-final less.b)
         =/  sur
           (sure-of [(need-to-ordered ned.sure.laz) lok.sure.laz] cape.less.b)
@@ -4225,15 +4244,15 @@
         =^  l=laze  gen  (~(run-shape comp gen) nomm [%done ~] ~)
         =/  shape
           %+  bake-need-ord
-            ?:  ?=(%must mode)  (laze-collapse l lor)
-            (laze-may l lor)
+            ?:  ?=(%must mode)  (laze-collapse l lor fre)
+            (laze-may l lor fre)
           less.b
         :_  gen
         [shape *need-lazy *need *baked `@uwoo`0 (sure-of sure.l cape.less.b)]
       =.  mode.gen  %run
       =^  nex  gen  (~(run comp gen) | nomm [%done ~] ~ ~)
       =^  [ned-final=need laz=need-lazy o=@uwoo]  gen
-        (~(collapse-shape comp gen) nex lor)
+        (~(collapse-shape comp gen) nex lor fre)
       =/  bak=baked  (bake-need ned-final less.b)
       =/  sur
         (sure-of [(need-to-ordered ned.sure.laz) lok.sure.laz] cape.less.b)
@@ -4257,7 +4276,7 @@
         !@  shape-check  dot
         ?.  done  dot
         =/  l=laze  -:(~(run-shape comp gen) nomm [%done ~] ~)
-        =/  shape  (bake-need-ord (laze-collapse l lor) less.b)
+        =/  shape  (bake-need-ord (laze-collapse l lor fre) less.b)
         ~|  [%shape-mismatch b shape need-new]
         ?>  =(shape need-new)
         dot
@@ -4273,7 +4292,10 @@
       ::  subject shape was achieved
       ::
       ?.  done  [?~(pessimized need-new u.pessimized) 0 ~]
-      =.  gen  (~(coerce-lazy comp gen) ned-final o laz cape.less.b)
+      =.  gen
+        =/  fre=cape
+          ?:(=(~ (~(whole-wants comp gen) ned-final laz fre ~)) | fre)
+        (~(coerce-lazy comp gen) ned-final o laz cape.less.b fre)
       =.  gen  ~(soft-done comp gen)
       ::  the baked registers are loaded before the deconsing code
       ::
@@ -4297,7 +4319,8 @@
           ==
         (~(put by map-local) b (finish ~))
       cache
-    =/  need-pessimized  (msg-need-ord need-new need.u.s-previous lor)
+    =/  need-pessimized
+      (held-out (msg-need-ord need-new need.u.s-previous lor) les.lor fre)
     ::  Debug assert: the final pass finds the shape of the sweeps
     ::
     =>  =*  dot  .
@@ -7734,35 +7757,46 @@
     |=  [need-pessimized=need-ordered nex=next-resolved]
     ^-  [next-resolved _gen]
     =|  req=(list [r=@uvre ned=need])
-    =^  [ned=need req=_req]  gen
-      |-  ^-  [[need _req] _gen]
+    ::  .kon: the conses of what comes in parts and the function wants whole
+    ::  (+held-out): on entry
+    ::
+    =|  kon=(list pole)
+    =^  [ned=need req=_req kon=_kon]  gen
+      |-  ^-  [[need _req _kon] _gen]
       ?-    -.need-pessimized
           %lax   ~|(%lax-in-a-shape !!)
           %none
         ?>  ?=(%none -.ned.nex)
-        [[[%none ~] req] gen]
+        [[[%none ~] req kon] gen]
       ::
           %this
-        ?:  ?=(%this -.ned.nex)  [[ned.nex req] gen]
+        ?:  ?=(%this -.ned.nex)  [[ned.nex req kon] gen]
         =^  r  gen  re
         :_  gen
-        :-  [%this r]
-        ?:(?=(%none -.ned.nex) req [[r ned.nex] req])
+        :+  [%this r]
+          ?:(?=(%none -.ned.nex) req [[r ned.nex] req])
+        kon
       ::
           ^
-        =/  [h=need t=need]
-          ?:  ?=(%none -.ned.nex)  [ned.nex ned.nex]
-          ?@  -.ned.nex  !!
-          ned.nex
+        =/  [w=(unit @uvre) h=need t=need]
+          ?-  -.ned.nex
+            %lax   ~|(%lax-in-a-shape !!)
+            %none  [~ ned.nex ned.nex]
+            %this  [`r.ned.nex [. .]:[%none ~]]
+            ^      [~ ned.nex]
+            %both  [`r.ned.nex h.ned.nex t.ned.nex]
+          ==
         ::
-        =^  [hed=need req=_req]  gen
-          $(need-pessimized -.need-pessimized, ned.nex h, req req)
+        =^  [hed=need req=_req kon=_kon]  gen
+          $(need-pessimized -.need-pessimized, ned.nex h, req req, kon kon)
         ::
-        =^  [tel=need req=_req]  gen
-          $(need-pessimized +.need-pessimized, ned.nex t, req req)
+        =^  [tel=need req=_req kon=_kon]  gen
+          $(need-pessimized +.need-pessimized, ned.nex t, req req, kon kon)
         ::
         ?<  &(?=(%none -.hed) ?=(%none -.tel))
-        [[[hed tel] req] gen]
+        ?~  w  [[[hed tel] req kon] gen]
+        =^  ops  gen  (whole-ops [hed tel] u.w)
+        [[[hed tel] req (weld kon ops)] gen]
       ::
           %both
         =^  [r=@uvre h=need t=need]  gen
@@ -7774,23 +7808,27 @@
             %both  [[r.ned.nex h.ned.nex t.ned.nex] gen]
           ==
         ::
-        =^  [hed=need req=_req]  gen
-          $(need-pessimized h.need-pessimized, ned.nex h, req req)
+        =^  [hed=need req=_req kon=_kon]  gen
+          $(need-pessimized h.need-pessimized, ned.nex h, req req, kon kon)
         ::
-        =^  [tel=need req=_req]  gen
-          $(need-pessimized t.need-pessimized, ned.nex t, req req)
+        =^  [tel=need req=_req kon=_kon]  gen
+          $(need-pessimized t.need-pessimized, ned.nex t, req req, kon kon)
         ::
         ?<  &(?=(%none -.hed) ?=(%none -.tel))
-        [[[%both r hed tel] req] gen]
+        [[[%both r hed tel] req kon] gen]
       ==
     ::
-    ?:  |(?=(~ req) dropping)  [[%next [[ned ~] ~ ~] [~ then.nex]] gen]
+    =^  body=@uwoo  gen
+      ?:  |(?=(~ kon) dropping)  [then.nex gen]
+      (emit ~ kon %hop ~ then.nex)
+    ::
+    ?:  |(?=(~ req) dropping)  [[%next [[ned ~] ~ ~] [~ body]] gen]
     =/  rin=(unit ring)  (~(get by call.cole.jets.long-ska) b)
     =^  [kon=(list pole) rub=@uvre]  gen  (soft-cons ned ~ less.b)
     =^  fail=@uwoo  gen  (soft-back kon b rin rub)
     =^  first=@uwoo  gen
       =/  req=(list [r=@uvre ned=need])  req
-      =/  nxt=@uwoo  then.nex
+      =/  nxt=@uwoo  body
       |-  ^-  [@uwoo _gen]
       ?~  req  [nxt gen]
       =^  n  gen  (mono-try-call ned.i.req nxt [r.i.req fail])
@@ -7834,22 +7872,73 @@
   ::
   ++  coerce-lazy
     ~%  %comp-coerce-lazy  ..ride  ~
-    |=  [ned=need o=@uwoo laz=need-lazy less=cape]
+    |=  [ned=need o=@uwoo laz=need-lazy less=cape fre=cape]
     ^+  gen
     =*  coerce-lazy  .
-    =.  gen
-      =^  [ned-target=need lop=(list pole)]  gen
-        %-  sure-require-look
-        %=    sure.laz
-            lok
-          %-  ~(rep in lok.sure.laz)
-          |=  [axe=@ acc=(set @)]
-          ?:  (axe-in-less-cape axe less)  acc
-          ?:  (axe-in-need axe ned)  acc
-          (~(put in acc) axe)
+    =^  [ned-target=need lop=(list pole)]  gen
+      %-  sure-require-look
+      %=    sure.laz
+          lok
+        %-  ~(rep in lok.sure.laz)
+        |=  [axe=@ acc=(set @)]
+        ?:  (axe-in-less-cape axe less)  acc
+        ?:  (axe-in-need axe ned)  acc
+        (~(put in acc) axe)
+      ==
+    ::
+    =.  gen  (add-ops o lop)
+    ::  A noun that came in parts alone (+held-out) is consed in the block
+    ::  that wants it whole, and is whole for the blocks past that one.  One
+    ::  that more than one of the blocks past this one want whole is consed
+    ::  here: two of them may run one after the other, and so it is consed
+    ::  once on any path.  .fre: what every call site makes anew of the
+    ::  subject, where the function has such a noun, or |.  .kon: the conses
+    ::
+    =^  [ned=need kon=(list pole)]  gen
+      ?@  fre  [[ned ~] gen]
+      =/  here=(set @)  (need-wants ned ned-target fre ~)
+      =.  here
+        ?:  (lth (add (lent fork.laz) (lent bond.laz)) 2)  here
+        =/  kids=(list (set @))
+          %+  weld
+            %+  turn  fork.laz
+            |=  [y=[o=@uwoo laz=need-lazy] n=[o=@uwoo laz=need-lazy]]
+            (whole-wants ned laz.n fre (whole-wants ned laz.y fre ~))
+          %+  turn  bond.laz
+          |=([o=@uwoo laz=need-lazy] (whole-wants ned laz fre ~))
+        ::
+        =|  seen=(set @)
+        |-  ^+  here
+        ?~  kids  here
+        %=  $
+          kids  t.kids
+          here  (~(uni in here) (~(int in seen) i.kids))
+          seen  (~(uni in seen) i.kids)
         ==
       ::
-      =.  gen  (add-ops o lop)
+      ?:  =(~ here)  [[ned ~] gen]
+      =/  axe=@  1
+      =|  kon=(list pole)
+      |-  ^-  [[need (list pole)] _gen]
+      ?+    -.ned  [[ned kon] gen]
+          %both
+        =^  [h=need kon=_kon]  gen  $(ned h.ned, axe (peg axe 2))
+        =^  [t=need kon=_kon]  gen  $(ned t.ned, axe (peg axe 3), kon kon)
+        [[[%both r.ned h t] kon] gen]
+      ::
+          ^
+        =^  [h=need kon=_kon]  gen  $(ned -.ned, axe (peg axe 2))
+        =^  [t=need kon=_kon]  gen  $(ned +.ned, axe (peg axe 3), kon kon)
+        ?.  (~(has in here) axe)  [[[h t] kon] gen]
+        ::  of its parts as they are now: one that was consed for itself
+        ::  is not consed again
+        ::
+        =^  w  gen  re
+        =^  ops  gen  (whole-ops [h t] w)
+        [[[%both w h t] (weld kon ops)] gen]
+      ==
+    ::
+    =.  gen
       |-  ^+  gen
       =*  sure-loop  $
       ?-    -.ned
@@ -7896,25 +7985,87 @@
           sure-loop(ned t.ned, ned-target t.ned-target)
         ==
       ==
+    ::  the conses go before the moves out of them
     ::
+    =?  gen  ?=(^ kon)  (add-ops o kon)
     ?:  &(?=(~ fork.laz) ?=(~ bond.laz))  gen
     =.  gen
       %+  roll  bond.laz
       |=  [[o=@uwoo laz=need-lazy] gen-acc=_gen]
       =.  gen  gen-acc
-      (coerce-lazy ned o laz less)
+      (coerce-lazy ned o laz less fre)
     ::
     %+  roll  fork.laz
     |=  [[y=[o=@uwoo laz=need-lazy] n=[o=@uwoo laz=need-lazy]] gen-acc=_gen]
     =.  gen  gen-acc
-    =.  gen  (coerce-lazy ned o.y laz.y less)
-    (coerce-lazy ned o.n laz.n less)
+    =.  gen  (coerce-lazy ned o.y laz.y less fre)
+    (coerce-lazy ned o.n laz.n less fre)
+  ::  +need-wants: where the need .t wants whole a noun that the subject
+  ::  .ned has in parts alone: the axes.  Only what every call site makes
+  ::  anew (.fre) comes so (+held-out)
+  ::
+  ++  need-wants
+    |=  [ned=need t=need fre=cape acc=(set @)]
+    ^+  acc
+    =/  axe=@  1
+    |-  ^+  acc
+    ?@  fre  acc
+    ?:  ?=(?(%none %lax) -.t)  acc
+    ?+    -.ned  acc
+        %both
+      ?:  ?=(%this -.t)  acc
+      =/  [h=need k=need]  ?:(?=(%both -.t) [h.t t.t] t)
+      =.  acc  $(ned h.ned, t h, axe (peg axe 2), fre -.fre)
+      $(ned t.ned, t k, axe (peg axe 3), fre +.fre)
+    ::
+        ^
+      ?:  ?=(%this -.t)  (~(put in acc) axe)
+      =?  acc  ?=(%both -.t)  (~(put in acc) axe)
+      =/  [h=need k=need]  ?:(?=(%both -.t) [h.t t.t] t)
+      =.  acc  $(ned -.ned, t h, axe (peg axe 2), fre -.fre)
+      $(ned +.ned, t k, axe (peg axe 3), fre +.fre)
+    ==
+  ::  the same for the lazy blocks of .laz, all of them
+  ::
+  ++  whole-wants
+    |=  [ned=need laz=need-lazy fre=cape acc=(set @)]
+    ^+  acc
+    ?@  fre  acc
+    =.  acc  (need-wants ned ned.sure.laz fre acc)
+    =.  acc
+      %+  roll  fork.laz
+      |=  [[y=[o=@uwoo laz=need-lazy] n=[o=@uwoo laz=need-lazy]] acc=_acc]
+      ^$(laz laz.n, acc ^$(laz laz.y, acc acc))
+    ::
+    %+  roll  bond.laz
+    |=  [[o=@uwoo laz=need-lazy] acc=_acc]
+    ^$(laz laz, acc acc)
+  ::  the ops that make the noun of the subject's need .ned, whole, in .d:
+  ::  consed of the registers that its parts came in
+  ::
+  ++  whole-ops
+    |=  [ned=need d=@uvre]
+    ^-  [(list pole) _gen]
+    ?-    -.ned
+        %none  ~|(%whole-ops-none !!)
+        %lax   ~|(%lax-in-a-shape !!)
+        %this  [[%mov r.ned d]~ gen]
+        %both  [[%mov r.ned d]~ gen]
+        ^
+      =^  h  gen  re
+      =^  t  gen  re
+      =^  a  gen  $(ned -.ned, d h)
+      =^  b  gen  $(ned +.ned, d t)
+      [(weld a (snoc b `pole`[%con h t d])) gen]
+    ==
+  ::
   ++  collapse-shape
     ~%  %comp-collapse-shape  ..ride  ~
-    |=  [nex=next less=lore]
+    |=  [nex=next less=lore fre=cape]
     ^-  [[need need-lazy @uwoo] _gen]
     ?>  =(~ args.then.nex)
-    =^  ned-final=need  gen  (need-ord-alloc-regs (shape-collapse laz.nex less))
+    =^  ned-final=need  gen
+      (need-ord-alloc-regs (shape-collapse laz.nex less fre))
     [[ned-final laz.nex there.then.nex] gen]
   ::
   ::  Renumber the registers so that the input registers are 0-N, set the
@@ -8398,14 +8549,6 @@
     %lax   ~|(%lax-in-a-shape !!)
   ==
 ::
-::  a cape that knows no noun: cells of unknown parts at most (+cons:so)
-::
-++  bare-cape
-  |=  c=cape
-  ^-  ?
-  ?@  c  !c
-  &($(c -.c) $(c +.c))
-::
 ++  hed-lore  |=(l=lore `lore`[(hed:ca les.l) (hed:ca hel.l)])
 ++  tel-lore  |=(l=lore `lore`[(tel:ca les.l) (tel:ca hel.l)])
 ::
@@ -8461,12 +8604,6 @@
       ?>  ?=(^ -.double)
       +.double
     ::
-    ::  a noun that only its callers' conses make a cell (the bell knows
-    ::  no part of it), used whole on the other path: whole, as one that is
-    ::  not known to be a cell.  With its parts too (%both) a loop that
-    ::  changed one part would cons the noun anew every turn
-    ::
-    ?:  &(?=(%this -.single) (bare-cape les.less))  this+~
     =/  l  (msg none+~ h-double (hed-lore less))
     =/  r  (msg none+~ t-double (tel-lore less))
     =/  res=need-ordered
@@ -8475,11 +8612,13 @@
       [l r]
     ::  Only one branch takes the noun apart.  Where every call site holds
     ::  its parts (+heft), passing them costs a move each and the noun whole
-    ::  would cost every caller a cons: it is split.  Where the callers hold
-    ::  it whole, a split would be paid on entry by every path, in fetches
-    ::  and moves for parts that path never reads (the rule trees of the
-    ::  parsers): it is passed whole, as structs are by reference, and the
-    ::  branch that reads it splits its one register.
+    ::  would cost every caller a cons: it is split, and where the other
+    ::  branch wants it whole it is that too here (%both), until +held-out
+    ::  has the shape.  Where the callers hold it whole, a split would be
+    ::  paid on entry by every path, in fetches and moves for parts that
+    ::  path never reads (the rule trees of the parsers): it is passed
+    ::  whole, as structs are by reference, and the branch that reads it
+    ::  splits its one register.
     ::
     ?:  |(?=(^ hel.less) ?=(%none -.res))  res
     this+~
@@ -8492,6 +8631,55 @@
     [%both (msg p.a h.b (hed-lore less)) (msg q.a t.b (tel-lore less))]
   %-  cons-need  ::  XX
   [(msg p.a p.b (hed-lore less)) (msg q.a q.b (tel-lore less))]
+::
+::  +full-ord: a shape with nothing left out: what its noun is consed back
+::  from.  A part that the shape did not go into is asked for whole.  One
+::  that it went into is consed back as well, where every call site makes
+::  that cell anew for the call (.hel is .fre of \$lore); any other is asked
+::  for whole beside its parts: an edit shares what it did not change, and
+::  a noun that a caller got from its own callers is one noun for all that
+::  it is passed on to, however many of them want it whole.
+::
+++  full-ord
+  |=  [a=need-ordered hel=cape]
+  ^-  need-ordered
+  ?-  -.a
+    %none  [%this ~]
+    %this  a
+    %both  a
+    %lax   [%this ~]
+    ^
+      ?@  hel  [%both a]
+      [$(a -.a, hel -.hel) $(a +.a, hel +.hel)]
+  ==
+::
+::  +held-out: the shape a function takes its subject in, from the shape of
+::  what it reads.  A noun wanted whole and in parts (%both) that every
+::  call site makes anew for the call (+heft-sites), a cell by the bell,
+::  comes in all of its parts and no register for the whole: a call conses
+::  nothing, and the block that wants the noun whole conses it
+::  (+coerce-lazy:comp), once where it runs.
+::
+++  held-out
+  |=  [ned=need-ordered les=cape fre=cape]
+  ^-  need-ordered
+  ::  nothing below is made anew for the call: nothing to do
+  ::
+  ?@  fre  ned
+  ?-    -.ned
+      %none  ned
+      %this  ned
+      %lax   ~|(%lax-in-a-shape !!)
+      ^
+    :-  $(ned -.ned, les (hed:ca les), fre -.fre)
+    $(ned +.ned, les (tel:ca les), fre +.fre)
+  ::
+      %both
+    =/  h  $(ned h.ned, les (hed:ca les), fre -.fre)
+    =/  t  $(ned t.ned, les (tel:ca les), fre +.fre)
+    ?^  les  [(full-ord h -.fre) (full-ord t +.fre)]
+    [%both h t]
+  ==
 ::
 ++  need-to-ordered
   ~%  %need-to-ordered  ..ride  ~
@@ -9034,9 +9222,10 @@
 ::
 ++  laze-may
   ~%  %laze-may  ..ride  ~
-  |=  [laz=laze less=lore]
+  |=  [laz=laze less=lore fre=cape]
   ^-  need-ordered
   =/  intr=need-inter2  (inter1-to-inter2 (laze-to-inter1 laz) les.less)
+  =-  (held-out - les.less fre)
   %+  lax-out
     |-  ^-  need-ordered
     %+  roll  fork.intr
@@ -9046,16 +9235,18 @@
 ::
 ++  laze-collapse
   ~%  %laze-collapse  ..ride  ~
-  |=  [laz=laze less=lore]
+  |=  [laz=laze less=lore fre=cape]
   ^-  need-ordered
+  =-  (held-out - les.less fre)
   %+  lax-out
     (inter2-collapse (inter1-to-inter2 (laze-to-inter1 laz) les.less) less)
   &
 ::
 ++  shape-collapse
   ~%  %shape-collapse  ..ride  ~
-  |=  [laz=need-lazy less=lore]
+  |=  [laz=need-lazy less=lore fre=cape]
   ^-  need-ordered
+  =-  (held-out - les.less fre)
   %+  lax-out
     (inter2-collapse (inter1-to-inter2 (lazy-to-inter1 laz) les.less) less)
   &
