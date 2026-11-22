@@ -4013,13 +4013,12 @@
   ::  Compile one member against the shapes in .map-local, and against
   ::  what the members read first thing (.sure.cache); produces whether its
   ::  shape changed, or what it reads first thing (not used in the final
-  ::  pass).  .keep: the latter is left as it was found before
+  ::  pass)
   ::
   =/  member
     ~%  %compile-scc-fn  ..ride  ~
     |=  $:  b=bell
             mode=scc-mode
-            keep=?
             map-local=(map bell straight)
             top=(map bell need-ordered)
             cache=comp-cache
@@ -4083,7 +4082,14 @@
       [[(need-to-ordered ned.bak) laz ned-final bak o sur] gen]
     =.  cache  cache.gen
     =/  was=(unit need-ordered)  (~(get by sure.cache) b)
-    =/  sur=need-ordered  ?:(&(keep ?=(^ was)) u.was sur)
+    ::  what is read first thing only gets less from one compile to the
+    ::  next (+int-need-ord): a part of it is read first thing too.  The
+    ::  final pass compiles against what the sweeps found
+    ::
+    =/  sur=need-ordered
+      ?~  was  sur
+      ?:  done  u.was
+      (int-need-ord u.was sur)
     =.  sure.cache  (~(put by sure.cache) b sur)
     =/  moved=?  !=(sur (fall was [%none ~]))
     ::  Debug assert of +run-shape correctenss
@@ -4151,19 +4157,19 @@
   ::
   ::  It compiles each member as its last sweep did, against the same
   ::  shapes and the same .sure.cache: what the sweeps found the members to
-  ::  read first thing is kept (.keep), so that a member compiled before a
-  ::  callee in the SCC and one compiled after it take the same of it.
+  ::  read first thing is kept, so that a member compiled before a callee
+  ::  in the SCC and one compiled after it take the same of it.
   ::
   =/  final
-    |=  [keep=? map-local=(map bell straight) cache=comp-cache]
+    |=  [map-local=(map bell straight) cache=comp-cache]
     ^-  [(map bell straight) comp-cache]
     =;  [m=(map bell straight) c=comp-cache]
       [m c(nary (~(uni by nary.c) m))]
     %+  roll  ~(tap in scc)
     |=  [b=bell m=_map-local c=_cache]
-    =/  r  (member b %done keep m ~ c)
+    =/  r  (member b %done m ~ c)
     [+<.r +>.r]
-  ?:  done  (final | map-local cache)
+  ?:  done  (final map-local cache)
   ::  Fixed point, with the schedule of the call graph analysis: sweeps over
   ::  the members in DFS postorder (callees before their callers, but for the
   ::  back edges), so that a shape reaches its callers in the same sweep
@@ -4176,9 +4182,8 @@
   ::  sweeps, and a change of it is a change for the callers: whether a
   ::  call tries decides, at a fork, whether a noun is taken apart in the
   ::  branches (+soft-fork:comp), which the shape shows.  A shape only
-  ::  loses parts from sweep to sweep, and what is read first thing follows
-  ::  the shapes, so it may go back and forth: after four compiles per
-  ::  member it is kept as it is.  Whatever a sweep found of it is true.
+  ::  loses parts from sweep to sweep, and so does what is read first
+  ::  thing: a member keeps of it what its compiles agree on.
   ::
   =/  order=(list bell)
     =|  [vis=(set bell) out=(list bell)]
@@ -4232,7 +4237,7 @@
     =/  res=[top=(map bell need-ordered) c=comp-cache]
       %+  roll  order
       |=  [b=bell top=_top c=_cache]
-      =/  r  (member b %may | ~ top c)
+      =/  r  (member b %may ~ top c)
       =/  new=need-ordered  need:(~(got by +<.r) b)
       :_  +>.r
       %+  ~(put by top)  b
@@ -4261,12 +4266,12 @@
       |=(k=bell (gte (~(gut by chg.st) k 0) u.r))
     ?.  dirty  [st m c]
     =/  t=@ud  +(tick.st)
-    =/  r  (member b %must (gth t (mul 4 ~(wyt in scc))) m top c)
+    =/  r  (member b %must m top c)
     :_  [+<.r +>.r]
     :^  &  t
       (~(put by ran.st) b t)
     ?:(-.r (~(put by chg.st) b t) chg.st)
-  ?.  any.st.res  (final & map-local cache)
+  ?.  any.st.res  (final map-local cache)
   %-  (print-comp 0 |.(leaf+"[fixpoint-compilation {(scow %ud counter)}]"))
   %=  sweep-loop
     st         st.res(any |)
@@ -9093,6 +9098,25 @@
     (msg-need-ord-fix-aware orig.sures-y orig.sures-n fix.sures less)
   ::
   sures(orig (uni-need-ord orig.sures msg-special))
+::
+::  what two shapes both take apart: for what is read first thing
+::  (+sure-of), where only the cells count
+::
+++  int-need-ord
+  ~%  %int-need-ord  ..ride  ~
+  |=  [a=need-ordered b=need-ordered]
+  ^-  need-ordered
+  ?:  =(a b)  a
+  ?:  |(?=(%none -.a) ?=(%none -.b))  [%none ~]
+  ?:  |(?=(%this -.a) ?=(%this -.b))  [%this ~]
+  ~+
+  =/  x=need-ordered
+    %+  cons-need
+      $(a (hed-need-ord a), b (hed-need-ord b))
+    $(a (tel-need-ord a), b (tel-need-ord b))
+  ?.  &(?=(%both -.a) ?=(%both -.b))  x
+  ?^  -.x  [%both x]
+  [%this ~]
 ::
 ++  hed-need-ord
   |=  a=need-ordered
