@@ -1593,8 +1593,9 @@
 ::  hold whole) or is an atom.  The parts of a subject that every call site
 ::  assembles (+held-graph) cost its callers a move each, where the noun
 ::  whole would cost them a cons: the function takes them apart
-::  (+msg-need-ord).  Nothing rests on it but the cost: a caller that
-::  holds the noun whole tries the fetch (\$soft-call).
+::  (+msg-need-ord), where the bell knows the cell too (+cons:so): that
+::  it is a cell rests on the bell, as for any part the bell knows, and
+::  only the cost on this.
 ::
 ++  slot-held
   |=  [c=cape axe=@]
@@ -8639,6 +8640,14 @@
     %both  +((add $(args h.args) $(args t.args)))
   ==
 ::
+::  a cape that knows no noun: cells of unknown parts at most (+cons:so)
+::
+++  bare-cape
+  |=  c=cape
+  ^-  ?
+  ?@  c  !c
+  &($(c -.c) $(c +.c))
+::
 ++  hed-lore  |=(l=lore `lore`[(hed:ca les.l) (hed:ca hel.l)])
 ++  tel-lore  |=(l=lore `lore`[(tel:ca les.l) (tel:ca hel.l)])
 ::
@@ -8658,7 +8667,6 @@
   ::  one is maybe atom, can't refine with `less`
   ::
   ?:  ?&  ?=(@ les.less)
-          ?=(@ hel.less)
           ?|  ?=(%this -.a)
               ?=(%none -.a)
               ?=(%this -.b)
@@ -8686,10 +8694,12 @@
       ?>  ?=(^ -.double)
       +.double
     ::
-    ::  a noun that only its callers' conses make a cell, used whole on
-    ::  the other path: whole, as one that is not known to be a cell
+    ::  a noun that only its callers' conses make a cell (the bell knows
+    ::  no part of it), used whole on the other path: whole, as one that is
+    ::  not known to be a cell.  With its parts too (%both) a loop that
+    ::  changed one part would cons the noun anew every turn
     ::
-    ?:  &(?=(@ les.less) ?=(%this -.single))  this+~
+    ?:  &(?=(%this -.single) (bare-cape les.less))  this+~
     =/  l  (msg none+~ h-double (hed-lore less))
     =/  r  (msg none+~ t-double (tel-lore less))
     =/  res=need-ordered
