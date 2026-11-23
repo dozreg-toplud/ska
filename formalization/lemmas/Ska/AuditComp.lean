@@ -43,3 +43,5 @@ open Formalization.SkaModel.Comp
 #print axioms isRun_needOrdAllocRegs
 #print axioms doneBlocks_ok
 #print axioms run_n3_done_ok
+#print axioms collapse_ok
+#print axioms run_n4_next_ok

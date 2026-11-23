@@ -255,6 +255,61 @@ theorem collapse_ok {laz : Sure S} {th : Jmp} {g g' : Gen Map} {a : Option (Nat 
     · exact absurd ((L.fits (A n)).mpr ⟨hf.1, hf.2⟩) id
     · exact B hd c (hc g.bo (Nat.le_refl _) (by rw [eb]; simp)) lib σ O st regs t gul n hr
 
+
+/-- **`[4 p]` for `%next`.** -/
+theorem run_n4_next_ok {lib : Lib} {p : Nomm} {laz : Sure S} {th : Jmp} {g0 g1 : Gen Map} {nex : Next S}
+    (h : run (Nomm.n4 p) (CGoal.next laz th) g0 = some (nex, g1))
+    (ih : ∀ (laz : Sure S) (th : Jmp) (g g' : Gen Map) (nex' : Next S), GoalOK g (CGoal.next laz th) →
+      run p (CGoal.next laz th) g = some (nex', g') → RunOK lib p (CGoal.next laz th) g g' nex') :
+    RunOK lib (Nomm.n4 p) (CGoal.next laz th) g0 g1 nex := by
+  simp only [run] at h
+  obtain ⟨a, g2, h2, h⟩ := bind_some h
+  obtain ⟨E2, ea, hnone, hsome⟩ := collapse_ok h2
+  obtain ⟨⟨pro, th'⟩, g3, h3, h⟩ := bind_some h
+  -- the register of the product and the block after the increment
+  have P : Ext g2 g3 ∧ (NMem laz.ned pro ∨ (g0.re ≤ pro ∧ pro < g3.re)) ∧
+      (g0.drop = false → ∀ (c : Straight Map), Agree c g0 g2 → ∀ (σ : Type) (O : Oracle σ) (st : σ) regs t gul n,
+        SkaModel.read pro regs = some (A n) →
+        GoalSem lib O c gul st (Keep g0 (CGoal.next laz th)) regs t (jmp0 th') (CGoal.next laz th) (some (A n))) := by
+    cases a with
+    | some x =>
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h3
+      obtain ⟨e1, rfl⟩ := h3
+      subst e1
+      obtain ⟨hm, _, hs⟩ := hsome pro th' rfl
+      exact ⟨Ext.refl _, hm, fun hd c hc σ O st regs t gul n hr => hs hd c hc lib σ O st regs t gul n hr⟩
+    | none =>
+      obtain ⟨hn, hl⟩ := hnone rfl
+      simp only [bind_apply, re_apply, Option.bind_some, ea, if_true, pure_apply, Option.some.injEq,
+        Prod.mk.injEq] at h3
+      obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h3
+      refine ⟨ext_re _, Or.inr ⟨E2.1, Nat.lt_succ_self _⟩, fun _ c _ σ O st regs t gul n hr => ?_⟩
+      refine ⟨fun _ => ⟨regs, by rw [hn]; trivial, fun _ _ => rfl, by rw [jmp0_of_args ea]⟩, fun hf => ?_⟩
+      exact absurd ⟨by rw [hn]; trivial, fun y hy => by rw [hl y hy]; simp⟩ hf
+  simp only [bind_apply, re_apply, emit_apply, Option.bind_some] at h
+  refine unary_ok (pureEval_n4 p) (E2.trans (P.1.trans ((ext_re _).trans (ext_emit _ _)))) ⟨by have := E2.1; have := P.1.1; omega, by simp [emitted_re]⟩
+    (by simp [emitted_bo])
+    (ih _ _ _ _ _ ⟨trivial, fun r hr => by simp [lazyReg, NMem] at hr; subst hr; simp [emitted_re]⟩ h) ?_
+    (by have := E2.2.1; have := P.1.2.1; show g0.bo ≤ g3.bo; omega)
+  intro c hc hd σ O st regs t gul x hx
+  have hd3 : g3.drop = false := P.1.2.2.1.trans (E2.2.2.1.trans hd)
+  have hb := emitted_get' (by simpa using hd3)
+    (hc _ (by have := E2.2.1; have := P.1.2.1; show g0.bo ≤ g3.bo; omega) (by simp [emitted_bo]))
+  have hj := goJ_jmp0 (lib := lib) (O := O) (gul := gul) (st := st) regs t _ _ hb
+  cases x with
+  | atom n =>
+    rw [show [Pole.inc _ _] = [Pole.inc _ _] ++ [] from rfl, runs_inc hx, execBlob_hop] at hj
+    have G := P.2.2 hd c (hc.left E2 (P.1.trans ((ext_re _).trans (ext_emit _ _)))) σ O st
+      (store pro (A (n + 1)) regs) t gul (n + 1) (read_store_eq _ _ _)
+    refine GoalSem.transfer hj (fun r ⟨h1, h2⟩ => read_store_ne (fun e => ?_) _ _) G
+    subst e
+    rcases P.2.1 with hm | ⟨hm, _⟩
+    · exact h2 hm
+    · omega
+  | cell u v =>
+    apply goalSem_crash
+    rw [hj, show [Pole.inc _ _] = [Pole.inc _ _] ++ [] from rfl, crashes_inc hx]
+
 end Comp
 end SkaModel
 end Formalization
