@@ -70,8 +70,10 @@ set_option maxHeartbeats 4000000 in
 stored, ends the block or has the trace welded on. -/
 theorem eval_pole_nok (cr : Noun) (hc : CorIn cr) (lib : Lib) (O : Oracle Noun) (scry : Noun)
     (u f d : Nat) (regs : TreapMap mugF Noun) (trace : Trace)
-    (htop : ∀ vu vf, nock (topS cr vu vf scry) eval_top.battery = (O.nok cr vu vf scry).map resN)
-    (hgood : ∀ vu vf r, O.nok cr vu vf scry = some r → CorIn r.2) :
+    (htop : ∀ vu vf, SkaModel.read u regs = some vu → SkaModel.read f regs = some vf →
+      nock (topS cr vu vf scry) eval_top.battery = (O.nok cr vu vf scry).map resN)
+    (hgood : ∀ vu vf r, SkaModel.read u regs = some vu → SkaModel.read f regs = some vf →
+      O.nok cr vu vf scry = some r → CorIn r.2) :
     nock (poleS cr (Pole.nok u f d) regs trace scry) eval_pole.battery
       = (execPole lib O scry cr (Pole.nok u f d) regs trace).map poleOutS := by
   have hpi := evalPoleIn_icore hc
@@ -89,7 +91,7 @@ theorem eval_pole_nok (cr : Noun) (hc : CorIn cr) (lib : Lib) (O : Oracle Noun) 
     nock_open eval_pole.battery
     simp [nock_exec, Pole.toNoun, Tag.nok, hld, e1, e2, execPole, htarm]
   | some vf =>
-  have ht := htop vu vf
+  have ht := htop vu vf e1 e2
   cases e3 : O.nok cr vu vf scry with
   | none =>
     rw [e3] at ht
@@ -97,7 +99,7 @@ theorem eval_pole_nok (cr : Noun) (hc : CorIn cr) (lib : Lib) (O : Oracle Noun) 
     simp [nock_exec, Pole.toNoun, Tag.nok, hld, e1, e2, e3, execPole, htarm, ht]
   | some r =>
     obtain ⟨ton, cr'⟩ := r
-    have hc' := hgood vu vf _ e3
+    have hc' := hgood vu vf _ e1 e2 e3
     rw [e3] at ht
     have hsm := store_model (icore cr') (regsIn_icore hc')
     have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'
@@ -198,8 +200,13 @@ set_option maxHeartbeats 8000000 in
 `0 ..`, run block `0` of the callee with `+eval-blob`, and store the product. -/
 theorem eval_pole_cal (cr : Noun) (hc : CorIn cr) (lib : Lib)
     (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
-    (O : Oracle Noun) (hO : BlobIs lib O) (nk : Noun → Noun → Noun → Noun → Option (Tone × Noun))
-    (scry : Noun) (a : Bell) (v : List Nat) (d : Nat) (regs : TreapMap mugF Noun) (trace : Trace) :
+    (O : Oracle Noun) (nk : Noun → Noun → Noun → Noun → Option (Tone × Noun))
+    (scry : Noun) (a : Bell) (v : List Nat) (d : Nat) (regs : TreapMap mugF Noun) (trace : Trace)
+    (hO : ∀ b c new cr' vs b0, pk cr (Ovum.dire a false) = some (SkaModel.Prod.ir b c new, cr') →
+      v.mapM (SkaModel.read · regs) = some vs → HoonMap.get c.blocks 0 = some b0 →
+      nock (blobS cr' (regsOf vs) trace b0 c [] scry) eval_blob.battery
+        = (execBlob lib O c scry cr' (regsOf vs) trace b0 []).map resN ∧
+      ∀ r, execBlob lib O c scry cr' (regsOf vs) trace b0 [] = some r → CorIn r.2) :
     nock (poleS cr (Pole.cal a v d) regs trace scry) eval_pole.battery
       = (execPole lib ⟨callBody lib pk O, nk⟩ scry cr (Pole.cal a v d) regs trace).map poleOutS := by
   obtain ⟨hpkN, hpkG⟩ := hpk
@@ -252,7 +259,7 @@ theorem eval_pole_cal (cr : Noun) (hc : CorIn cr) (lib : Lib)
       got_arm, got_gate_nil layer2 ⟨hneed, hsome, hgor⟩ _ _ hg, execEntry, e3]
   | some b0 =>
   rw [e3] at hg
-  obtain ⟨hb, hbg⟩ := hO cr' hc' (regsOf vs) trace b0 c [] scry
+  obtain ⟨hb, hbg⟩ := hO b c new cr' vs b0 e1 e2 e3
   cases e4 : execBlob lib O c scry cr' (regsOf vs) trace b0 [] with
   | none =>
     rw [e4] at hb
@@ -283,8 +290,13 @@ set_option maxHeartbeats 8000000 in
 in register `0`, run block `0` of the callee and store the product. -/
 theorem eval_pole_csl (cr : Noun) (hc : CorIn cr) (lib : Lib)
     (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
-    (O : Oracle Noun) (hO : BlobIs lib O) (nk : Noun → Noun → Noun → Noun → Option (Tone × Noun))
-    (scry : Noun) (a : Bell) (sr : Nat) (d : Nat) (regs : TreapMap mugF Noun) (trace : Trace) :
+    (O : Oracle Noun) (nk : Noun → Noun → Noun → Noun → Option (Tone × Noun))
+    (scry : Noun) (a : Bell) (sr : Nat) (d : Nat) (regs : TreapMap mugF Noun) (trace : Trace)
+    (hO : ∀ b c new cr' vs0 b0, pk cr (Ovum.dire a true) = some (SkaModel.Prod.ir b c new, cr') →
+      SkaModel.read sr regs = some vs0 → HoonMap.get c.blocks 0 = some b0 →
+      nock (blobS cr' (regsOf [vs0]) trace b0 c [] scry) eval_blob.battery
+        = (execBlob lib O c scry cr' (regsOf [vs0]) trace b0 []).map resN ∧
+      ∀ r, execBlob lib O c scry cr' (regsOf [vs0]) trace b0 [] = some r → CorIn r.2) :
     nock (poleS cr (Pole.csl a sr d) regs trace scry) eval_pole.battery
       = (execPole lib ⟨callBody lib pk O, nk⟩ scry cr (Pole.csl a sr d) regs trace).map poleOutS := by
   obtain ⟨hpkN, hpkG⟩ := hpk
@@ -335,7 +347,7 @@ theorem eval_pole_csl (cr : Noun) (hc : CorIn cr) (lib : Lib)
       got_arm, got_gate_nil layer2 ⟨hneed, hsome, hgor⟩ _ _ hg, execEntry, e3]
   | some b0 =>
   rw [e3] at hg
-  obtain ⟨hb, hbg⟩ := hO cr' hc' (regsOf [vs0]) trace b0 c [] scry
+  obtain ⟨hb, hbg⟩ := hO b c new cr' vs0 b0 e1 e2 e3
   cases e4 : execBlob lib O c scry cr' (regsOf [vs0]) trace b0 [] with
   | none =>
     rw [e4] at hb
@@ -430,17 +442,27 @@ theorem eval_pole_gate (cr : Noun) (hc : CorIn cr) (lib : Lib) (hslam : SlamIsNo
   have hpi := evalPoleIn_icore hc
   have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc
   cases pole with
-  | nok u f d => exact eval_pole_nok cr hc lib _ scry u f d regs trace htop.1 htop.2
-  | cal a v d => exact eval_pole_cal cr hc lib pk hpk Ob hO nk scry a v d regs trace
+  | nok u f d =>
+    exact eval_pole_nok cr hc lib _ scry u f d regs trace (fun vu vf _ _ => htop.1 vu vf)
+      (fun vu vf r _ _ => htop.2 vu vf r)
+  | cal a v d =>
+    exact eval_pole_cal cr hc lib pk hpk Ob nk scry a v d regs trace
+      (fun _ c _ cr' vs b0 e1 _ _ => hO cr' (hpk.2 _ _ e1) (regsOf vs) trace b0 c [] scry)
   | caf a v d n =>
-    rw [eval_pole_caf, eval_pole_cal cr hc lib pk hpk Ob hO nk scry a v d regs trace]; rfl
+    rw [eval_pole_caf, eval_pole_cal cr hc lib pk hpk Ob nk scry a v d regs trace
+      (fun _ c _ cr' vs b0 e1 _ _ => hO cr' (hpk.2 _ _ e1) (regsOf vs) trace b0 c [] scry)]; rfl
   | cam a v d k =>
-    rw [eval_pole_cam, eval_pole_cal cr hc lib pk hpk Ob hO nk scry a v d regs trace]; rfl
-  | csl a sr d => exact eval_pole_csl cr hc lib pk hpk Ob hO nk scry a sr d regs trace
+    rw [eval_pole_cam, eval_pole_cal cr hc lib pk hpk Ob nk scry a v d regs trace
+      (fun _ c _ cr' vs b0 e1 _ _ => hO cr' (hpk.2 _ _ e1) (regsOf vs) trace b0 c [] scry)]; rfl
+  | csl a sr d =>
+    exact eval_pole_csl cr hc lib pk hpk Ob nk scry a sr d regs trace
+      (fun _ c _ cr' vs0 b0 e1 _ _ => hO cr' (hpk.2 _ _ e1) (regsOf [vs0]) trace b0 c [] scry)
   | csf a sr d n =>
-    rw [eval_pole_csf, eval_pole_csl cr hc lib pk hpk Ob hO nk scry a sr d regs trace]; rfl
+    rw [eval_pole_csf, eval_pole_csl cr hc lib pk hpk Ob nk scry a sr d regs trace
+      (fun _ c _ cr' vs0 b0 e1 _ _ => hO cr' (hpk.2 _ _ e1) (regsOf [vs0]) trace b0 c [] scry)]; rfl
   | csm a sr d k =>
-    rw [eval_pole_csm, eval_pole_csl cr hc lib pk hpk Ob hO nk scry a sr d regs trace]; rfl
+    rw [eval_pole_csm, eval_pole_csl cr hc lib pk hpk Ob nk scry a sr d regs trace
+      (fun _ c _ cr' vs0 b0 e1 _ _ => hO cr' (hpk.2 _ _ e1) (regsOf [vs0]) trace b0 c [] scry)]; rfl
   | hmp a v f =>
     rw [eval_pole_hmp (icore cr) cr hcor hpi layer2 hl2 turn.arm_at homoIn_layer2 lib scry a v f
       regs trace]
