@@ -30,6 +30,7 @@ import lemmas.Ska.Bake
 import lemmas.Ska.Know
 import lemmas.Ska.KnowSound
 import lemmas.Ska.BakeGraph
+import lemmas.Ska.PokeBake
 
 /-! The axioms of the main theorems of `lemmas/Ska`.  `lake build` prints
 them; each should be `propext`, `Classical.choice` and `Quot.sound` at most. -/
@@ -255,3 +256,14 @@ open Formalization.SkaModel
 #print axioms Bake.pick_spec
 #print axioms Bake.bakeRes_ok
 #print axioms Bake.variant_annot
+#print axioms Bake.uniSock_left
+#print axioms Bake.purr_sub
+#print axioms Bake.normSockH_rev
+#print axioms Bake.bakeOf_ok
+#print axioms Bake.rebakeG_ok
+#print axioms Bake.addCode_get
+#print axioms Bake.finalFold_spec
+#print axioms Bake.skaPoke_dats
+#print axioms Bake.pokeDat_ok
+#print axioms Bake.skaPokeB_sound
+#print axioms Bake.InvB.agree
