@@ -79,6 +79,14 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Hoon/Muk.lean` | The arms `sit`, `sum`, `rol` of the door `+fe`, and `+muk` against the model `mukF`. |
 | `Hoon/Mug.lean` | `mug_spec`: `+mug` computes `mugF` on every noun, which proves `MugSpec mugF`. |
 | `Hoon/Layer1.lean`, `Hoon/Layer2.lean` | The pill's layers satisfy the predicates of their arms, and `+gor`, `+mor` and the map and set theorems hold on `layer2` with no assumption.  The only theorem files that import `Facts.lean` and the bulk. |
+| `Ska/Types.lean` | Models of the IR types (`Bell`, `Sock`, `Cape`, `Pole`, `Termin`, `Blob`, `Straight`, `Tone`, ...), each with its Hoon noun layout. |
+| `Ska/Mink.lean`, `Ska/MinkTrace.lean` | Models of `+mink`, `+mook` and `+mock`; what Nock computes, `+mink` returns. |
+| `Ska/Interp.lean`, `Ska/Steps.lean` | A model of the Hoon interpreter (`+eval-top`, `+eval-blob`, `+eval-pole`, `+eval-mook`), with the compiler as a parameter that answers pokes. |
+| `Ska/Contract.lean`, `Ska/ContractExamples.lean` | The contract: what the code answered for a bell must do, given the same of its callees. It is met by a tail call and by an indirect `[2 b c]`. |
+| `Ska/Theorems.lean`, `Ska/Statements.lean` | From the contract alone: `meek`, `weak`, `converse` for the models, on every reachable compiler state. |
+| `Ska/Sock.lean`, `Ska/SockFacts.lean`, `Ska/CapeFacts.lean` | Models of the `+ca` and `+so` cores, and what their operations do to the nouns a sock describes. |
+| `Ska/NommSem.lean` | `nomm`, a semantics for it, and the invariant `Annot` the analysis must give it. Not yet proved to agree with `+mink`. |
+| `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
 Every main theorem depends on `propext`, `Classical.choice` and `Quot.sound`
