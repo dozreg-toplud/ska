@@ -1,5 +1,6 @@
 import lemmas.Ska.CompFinal
 import lemmas.Ska.CompLazyFinal
+import lemmas.Ska.CompSix
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -100,3 +101,11 @@ open Formalization.SkaModel.Comp
 #print axioms coerceLazyL_ofSure
 #print axioms finishL_eq
 #print axioms finishL_bellContract
+#print axioms keep_mono
+#print axioms runL_six_done
+#print axioms finishL_six_parts
+#print axioms finishL_six_compDone
+#print axioms finishL_six_bellContract
+#print axioms finishL_bellContract6
+#print axioms six_crash_iff
+#print axioms six_example
