@@ -32,9 +32,10 @@ Two layers.  `put_loop` runs the pill's Nock and shows that it computes the
 Lean model `putF`.  `Treap.lean` shows what `putF` does to a map.  `put_by`
 joins them.
 
-The one assumption is `MugSpec mug`: slamming the pill's `+mug` gate on any
-noun ends with an atom, and `mug` names that atom.  Nothing else about the
-hash is used.
+The door `+by` is `[by.battery a c]` with the map `a` and a context `c`.  The
+gate reads `+gor` and `+mor` from `c` (`GorIn mug c ∧ MorIn mug c`), and
+through them `+mug`: slamming the `+mug` gate of `c` on any noun ends with an
+atom, and `mug` names that atom.  Nothing else about the hash is used.
 -/
 
 namespace Formalization
@@ -44,10 +45,14 @@ open Nock Pill
 
 /-- The loop of `+put:by` in the door whose map is `a`, with sample `[b c]`,
 computes the model. -/
-theorem put_loop {mug : Noun → Nat} (hmug : MugSpec mug) (b c a : Noun) :
+theorem put_loop {mug : Noun → Nat} (ctx : Noun) (hc : GorIn mug ctx ∧ MorIn mug ctx)
+    (b c a : Noun) :
     ∀ out, putF mug b c a = some out →
-      nock (C put.loop (C put.battery (C (C b c) (C by.battery (C a layer2))))) put.loop
-        = some out := by
+      nock (C by.put.loop (C by.put.battery (C (C b c) (C by.battery (C a ctx)))))
+        by.put.loop = some out := by
+  have hgor := gor_gate (mug := mug) ctx hc.1.2
+  have hmor := mor_gate (mug := mug) ctx hc.2.2
+  obtain ⟨⟨hg, _⟩, ⟨hm, _⟩⟩ := hc
   fun_induction putF mug b c a
   all_goals intro out h
   all_goals first
@@ -55,38 +60,47 @@ theorem put_loop {mug : Noun → Nat} (hmug : MugSpec mug) (b c a : Noun) :
     | skip
   all_goals
     cases h
-    nock_open put.loop
-    simp [nock_exec, gor_gate hmug, mor_gate hmug, *]
+    nock_open by.put.loop
+    simp [nock_exec, gor_arm, mor_arm, *]
 
 /-- The gate `put` of the door `by` with map `a`, slammed on `[b c]`. -/
-theorem put_gate {mug : Noun → Nat} (hmug : MugSpec mug) (b c a out : Noun)
-    (h : putF mug b c a = some out) :
-    nock (C put.battery (C (C b c) (C by.battery (C a layer2)))) put.battery = some out := by
-  nock_open put.battery
-  simp only [nock_exec, put_loop hmug b c a out h]
+theorem put_gate {mug : Noun → Nat} (ctx : Noun) (hc : GorIn mug ctx ∧ MorIn mug ctx)
+    (b c a out : Noun) (h : putF mug b c a = some out) :
+    nock (C by.put.battery (C (C b c) (C by.battery (C a ctx)))) by.put.battery = some out := by
+  nock_open by.put.battery
+  simp only [nock_exec, put_loop ctx hc b c a out h]
 
-/-- The arm `by` of layer 2 builds the door, with an empty map. -/
-theorem by_arm : nock layer2 by.arm = some (C by.battery (C (A 0) layer2)) := by
+/-- The arm `by` builds the door, with an empty map. -/
+@[nock_exec] theorem by_arm (c : Noun) : nock c by.arm = some (C by.battery (C (A 0) c)) := by
   nock_open by.arm
   simp only [nock_exec]
 
-/-- The arm `put` of a `by` door builds the gate, with a bunted sample. -/
-theorem put_arm (a : Noun) :
-    nock (C by.battery (C a layer2)) put.arm
-      = some (C put.battery (C (C (A 0) (A 0)) (C by.battery (C a layer2)))) := by
-  nock_open put.arm
+/-- The arm `put` of a door builds the gate, with a bunted sample. -/
+@[nock_exec] theorem put_arm (d : Noun) :
+    nock d by.put.arm = some (C by.put.battery (C (C (A 0) (A 0)) d)) := by
+  nock_open by.put.arm
   simp only [nock_exec]
 
 /-- `+put:by` on a map noun `a` that satisfies the invariant of `+by` ends,
 its product satisfies the invariant, and the product holds the pair `[k v]`
 and the pairs of `a` under other keys. -/
-theorem put_by {mug : Noun → Nat} (hmug : MugSpec mug) (a k v : Noun) (h : IsMap mug a) :
+theorem put_by {mug : Noun → Nat} (ctx : Noun) (hc : GorIn mug ctx ∧ MorIn mug ctx)
+    (a k v : Noun) (h : IsMap mug a) :
     ∃ out,
-      Eval (C put.battery (C (C k v) (C by.battery (C a layer2)))) put.battery out ∧
+      Eval (C by.put.battery (C (C k v) (C by.battery (C a ctx)))) by.put.battery out ∧
       IsMap mug out ∧
       ∀ k' v', Get out k' v' ↔ (k' = k ∧ v' = v) ∨ (k' ≠ k ∧ Get a k' v') := by
   obtain ⟨out, hput, hmap, hget⟩ := putF_spec mug a k v h
-  exact ⟨out, eval_of_nock (put_gate hmug k v a out hput), hmap, hget⟩
+  exact ⟨out, eval_of_nock (put_gate ctx hc k v a out hput), hmap, hget⟩
+
+/-- The same in the pill's second layer, given `+mug`. -/
+theorem put_by_layer2 {mug : Noun → Nat} (hmug : MugSpec mug layer2)
+    (a k v : Noun) (h : IsMap mug a) :
+    ∃ out,
+      Eval (C by.put.battery (C (C k v) (C by.battery (C a layer2)))) by.put.battery out ∧
+      IsMap mug out ∧
+      ∀ k' v', Get out k' v' ↔ (k' = k ∧ v' = v) ∨ (k' ≠ k ∧ Get a k' v') :=
+  put_by layer2 (gorIn_layer2 hmug) a k v h
 
 end Hoon
 end Formalization

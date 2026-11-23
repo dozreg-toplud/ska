@@ -256,7 +256,23 @@ def main():
     facts.append(('core_layer2', 'slot? %d core = some layer2' % find_axis(core, layer2)))
     facts.append(('layer2_layer1', 'slot? 3 layer2 = some layer1'))
 
+    # (name, axis, statement) for every named arm: Facts.lean defines
+    # `name.axis` and proves the statement as `name.arm_at`
+    axes = []
+
+    def name(i, nm):
+        assert names.get(i, nm) == nm, (nm, names[i])
+        names[i] = nm
+
+    def name_loops(label, g, loops):
+        ls = find_loops(g) if loops is not None else []
+        assert loops is None or len(ls) == loops, (label, len(ls))
+        for k, l in enumerate(ls):
+            name(l, label + ('.loop' if loops == 1 else '.loop%d' % k))
+            formulas.add(l)
+
     def arm(label, layer, lname, loops=0, full=True):
+        """the arm with %fast label `label` in the battery of `layer`"""
         cands = [a for a in arms_of(label)]
         inside = []
         for a in cands:
@@ -267,58 +283,108 @@ def main():
                 pass
         assert len(inside) == 1, (label, inside)
         ax, a = inside[0]
-        names[a] = label + '.arm'
+        name(a, label + '.arm')
         g = gate_battery(a)
-        names[g] = label + '.battery'
+        name(g, label + '.battery')
         formulas.add(a)
         if full:
             formulas.add(g)
-        ls = find_loops(g) if loops is not None else []
-        assert loops is None or len(ls) == loops, (label, len(ls))
-        for k, l in enumerate(ls):
-            names[l] = label + ('.loop' if loops == 1 else '.loop%d' % k)
-            formulas.add(l)
-        facts.append((label + '.arm_at', 'slot? %d %s = some %s.arm' % (ax, lname, label)))
+        name_loops(label, g, loops)
+        axes.append((label, ax, 'slot? %s.axis %s = some %s.arm' % (label, lname, label)))
         return a
 
+    def callee(formula, ctx):
+        """the axis of the one arm that `formula` pulls with [9 axis 0 ctx]"""
+        res = set()
+        for i in reach([formula]):
+            n = NODES[i]
+            if type(n) is int or NODES[n[0]] != 9:
+                continue
+            m = NODES[n[1]]
+            if type(m) is int or type(NODES[m[0]]) is not int:
+                continue
+            if m[1] == cell(atom(0), atom(ctx)):
+                res.add(NODES[m[0]])
+        assert len(res) == 1, res
+        return res.pop()
+
+    # unsigned arithmetic
     arm('dec', layer1, 'layer1', loops=1)
     arm('add', layer1, 'layer1')
+    arm('sub', layer1, 'layer1')
+    arm('mul', layer1, 'layer1', loops=1)
     arm('lth', layer1, 'layer1', loops=1)
+    arm('lte', layer1, 'layer1')
+    arm('gth', layer1, 'layer1')
+    arm('gte', layer1, 'layer1')
+    arm('max', layer1, 'layer1')
+    arm('min', layer1, 'layer1')
+    arm('dvr', layer1, 'layer1', loops=1)
+    arm('div', layer1, 'layer1')
+    arm('mod', layer1, 'layer1')
+
+    # noun ordering and hashing
     arm('dor', layer2, 'layer2')
     arm('gor', layer2, 'layer2')
     arm('mor', layer2, 'layer2')
     arm('mug', layer2, 'layer2', loops=None, full=False)
 
-    # the +by door and its +put
-    by_arm = [a for a in arms_of('by')]
-    by_in = [(find_axis(layer2, a), a) for a in by_arm]
-    assert len(by_in) == 1
-    by_ax, by_a = by_in[0]
-    names[by_a] = 'by.arm'
-    formulas.add(by_a)
-    door = nock(layer2, by_a)
-    assert tail(tail(door)) == layer2 and NODES[head(tail(door))] == 0
-    names[head(door)] = 'by.battery'
-    facts.append(('by.arm_at', 'slot? %d layer2 = some by.arm' % by_ax))
-    puts = []
-    for a in arms_of('put'):
-        try:
-            find_axis(head(door), a)
-            puts.append((find_axis(door, a), a))
-        except KeyError:
-            pass
-    assert len(puts) == 1
-    put_ax, put_a = puts[0]
-    names[put_a] = 'put.arm'
-    formulas.add(put_a)
-    g = gate_battery(put_a)
-    names[g] = 'put.battery'
-    formulas.add(g)
-    (l,) = find_loops(g)
-    names[l] = 'put.loop'
-    formulas.add(l)
-    facts.append(('put.arm_at',
-                  'slot? %d (C by.battery (C a layer2)) = some put.arm' % put_ax))
+    # lists
+    for label in ['lent', 'weld', 'snag', 'scag', 'slag', 'turn', 'roll', 'levy',
+                  'lien']:
+        arm(label, layer2, 'layer2', loops=1)
+    flop = arm('flop', layer2, 'layer2', loops=1)
+    # +homo has no %fast label: it is the arm that +flop pulls from its context
+    homo_ax = callee(gate_battery(flop), 7)
+    name(slot(homo_ax, layer2), 'homo.arm')
+    formulas.add(slot(homo_ax, layer2))
+    axes.append(('homo', homo_ax, 'slot? homo.axis layer2 = some homo.arm'))
+
+    # bit arithmetic
+    for label in ['bex', 'rsh', 'lsh', 'end', 'cut', 'cat', 'can']:
+        arm(label, layer2, 'layer2')
+    for label in ['met', 'mix', 'dis', 'con']:
+        arm(label, layer2, 'layer2', loops=1)
+
+    # the doors +by and +in, with some of their arms
+    def door(label, layer, lname):
+        (ax, a), = [(find_axis(layer, a), a) for a in arms_of(label)]
+        name(a, label + '.arm')
+        formulas.add(a)
+        d = nock(layer, a)
+        assert tail(tail(d)) == layer and NODES[head(tail(d))] == 0
+        name(head(d), label + '.battery')
+        axes.append((label, ax, 'slot? %s.axis %s = some %s.arm' % (label, lname, label)))
+        return head(d)
+
+    def door_arm(dlabel, battery, label, loops):
+        res = []
+        for a in arms_of(label):
+            try:
+                find_axis(battery, a)
+                res.append((find_axis(cell(battery, atom(0)), a), a))
+            except KeyError:
+                pass
+        assert len(res) == 1, (dlabel, label, res)
+        ax, a = res[0]
+        full = dlabel + '.' + label
+        name(a, full + '.arm')
+        formulas.add(a)
+        g = gate_battery(a)
+        name(g, full + '.battery')
+        formulas.add(g)
+        name_loops(full, g, loops)
+        axes.append((full, ax, '∀ x, slot? %s.axis (C %s.battery x) = some %s.arm'
+                     % (full, dlabel, full)))
+        return a
+
+    by_battery = door('by', layer2, 'layer2')
+    door_arm('by', by_battery, 'put', 1)
+    door_arm('by', by_battery, 'get', 1)
+    door_arm('by', by_battery, 'has', 0)
+    in_battery = door('in', layer2, 'layer2')
+    door_arm('in', in_battery, 'put', 1)
+    door_arm('in', in_battery, 'has', None)
 
     # ---- write
     em = Emitter([root, core], names, formulas)
@@ -347,15 +413,22 @@ def main():
         f.write('theorem core_evalFuel : evalFuel %d (C trap (A 0)) nok = some core := by kernel_rfl\n\n'
                 % (steps + 8))
         for nm, st in facts:
-            if nm == 'put.arm_at':
-                f.write('theorem %s (a : Noun) : %s := by\n  cases a <;> kernel_rfl\n\n' % (nm, st))
+            f.write('theorem %s : %s := by kernel_rfl\n\n' % (nm, st))
+        f.write('/-! The axes of the named arms.  A proof names an axis by its constant,\n'
+                'never by its number. -/\n\n')
+        for nm, ax, st in axes:
+            f.write('abbrev %s.axis : Nat := %d\n\n' % (nm, ax))
+            if st.startswith('∀'):
+                f.write('theorem %s.arm_at : %s := by\n  intro x; kernel_rfl\n\n' % (nm, st))
             else:
-                f.write('theorem %s : %s := by kernel_rfl\n\n' % (nm, st))
+                f.write('theorem %s.arm_at : %s := by kernel_rfl\n\n' % (nm, st))
         f.write('end Pill\nend Formalization\n')
     print('cells', sum(1 for i in reach([root, core]) if type(NODES[i]) is tuple),
           'definitions', len(em.defs), 'steps', steps)
     for nm, st in facts:
         print(nm, ':', st)
+    for nm, ax, st in axes:
+        print(nm, ax, ':', st)
 
 
 if __name__ == '__main__':
