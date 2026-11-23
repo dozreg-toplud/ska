@@ -69,15 +69,16 @@ namespace PokeM
 variable {M : Type → Type → Type} [Treap M] {Map : Type → Type} [HoonMap Map] {J H CR R : Type}
 
 /-- **`+ska-poke` as `+poke` calls it**: `skaPokeB` on the root identity
-`[&+sub fol]`, with the fuel `fuel`, the registrations of the jets state
+`[&+sub fol]`, with the fuel `fuel` of the analysis and `bf` of the
+worklist of `+bake-graph`, the registrations of the jets state
 (`regOf`), and the jets state and the noun of `new` made from the
 registrations it ends with (`jetsOf`, `newOf`).  `jet` is the `jetted` gate,
 which reads the hot jets and the jets state. -/
 def anaArm (env : Env R) (jet : H → J → (Bell → Option Datum) → R → Bell → Bool) (fold frozen : Bool)
-    (fuel : Noun → Noun → LongB M → J → Nat) (regOf : J → R) (jetsOf : J → R → J) (newOf : R → Noun) :
-    Noun → Noun → LongB M → J → H → Option (Bell × LongB M × J × Noun) :=
+    (fuel : Noun → Noun → LongB M → J → Nat) (bf : BEnv M → Nat) (regOf : J → R) (jetsOf : J → R → J)
+    (newOf : R → Noun) : Noun → Noun → LongB M → J → H → Option (Bell × LongB M × J × Noun) :=
   fun s f L j hot =>
-    (skaPokeB env (jet hot j) fold frozen (fuel s f L j) (Sock.mk Cape.yes s, f) L (regOf j)).map fun r =>
+    (skaPokeB env (jet hot j) fold frozen (fuel s f L j) bf (Sock.mk Cape.yes s, f) L (regOf j)).map fun r =>
       (r.1, r.2.1, jetsOf j r.2.2, newOf r.2.2)
 
 /-- The `+bake-graph` environment of the poke `[&+sub fol]` from the state
@@ -115,8 +116,9 @@ root bell has the poke's formula and a code requirement that the poke's
 subject fits. -/
 theorem anaHyp_of_bakes (A : Arms M Map J H CR) {lib : Lib} {env : Env R}
     {jet : H → J → (Bell → Option Datum) → R → Bell → Bool} {fold frozen : Bool}
-    {fuel : Noun → Noun → LongB M → J → Nat} {regOf : J → R} {jetsOf : J → R → J} {newOf : R → Noun}
-    (hA : A.skaPoke = anaArm env jet fold frozen fuel regOf jetsOf newOf)
+    {fuel : Noun → Noun → LongB M → J → Nat} {bf : BEnv M → Nat} {regOf : J → R} {jetsOf : J → R → J}
+    {newOf : R → Noun}
+    (hA : A.skaPoke = anaArm env jet fold frozen fuel bf regOf jetsOf newOf)
     (hb : PokeBakes lib env jet fold frozen fuel regOf) : AnaHyp A lib where
   ana := by
     intro s f long jets hot r h hinv
@@ -138,16 +140,18 @@ theorem anaHyp_of_bakes (A : Arms M Map J H CR) {lib : Lib} {env : Env R}
 /-- **`AnaHyp` from `SitesMeet`.** -/
 theorem anaHyp_of_meet (A : Arms M Map J H CR) {lib : Lib} {env : Env R}
     {jet : H → J → (Bell → Option Datum) → R → Bell → Bool} {fold frozen : Bool}
-    {fuel : Noun → Noun → LongB M → J → Nat} {regOf : J → R} {jetsOf : J → R → J} {newOf : R → Noun}
-    (hA : A.skaPoke = anaArm env jet fold frozen fuel regOf jetsOf newOf)
+    {fuel : Noun → Noun → LongB M → J → Nat} {bf : BEnv M → Nat} {regOf : J → R} {jetsOf : J → R → J}
+    {newOf : R → Noun}
+    (hA : A.skaPoke = anaArm env jet fold frozen fuel bf regOf jetsOf newOf)
     (hs : PokeSites lib env jet fold frozen fuel regOf) : AnaHyp A lib :=
   anaHyp_of_bakes A hA (pokeBakes_of_sites hs)
 
 /-- **`Sound` of the model of `+poke`** from `CompHyp` and `PokeSites`. -/
 theorem pokeS_sound_of_meet (A : Arms M Map J H CR) {lib : Lib} {ref : Ref M Map J H} {env : Env R}
     {jet : H → J → (Bell → Option Datum) → R → Bell → Bool} {fold frozen : Bool}
-    {fuel : Noun → Noun → LongB M → J → Nat} {regOf : J → R} {jetsOf : J → R → J} {newOf : R → Noun}
-    (hC : CompHyp A lib ref) (hA : A.skaPoke = anaArm env jet fold frozen fuel regOf jetsOf newOf)
+    {fuel : Noun → Noun → LongB M → J → Nat} {bf : BEnv M → Nat} {regOf : J → R} {jetsOf : J → R → J}
+    {newOf : R → Noun}
+    (hC : CompHyp A lib ref) (hA : A.skaPoke = anaArm env jet fold frozen fuel bf regOf jetsOf newOf)
     (hs : PokeSites lib env jet fold frozen fuel regOf) : Sound lib (pokeS A) (InvS lib ref) :=
   pokeS_sound A hC (anaHyp_of_meet A hA hs)
 
@@ -155,8 +159,9 @@ theorem pokeS_sound_of_meet (A : Arms M Map J H CR) {lib : Lib} {ref : Ref M Map
 `PokeSites`. -/
 theorem pokeS_invKept_of_meet (A : Arms M Map J H CR) {lib : Lib} {ref : Ref M Map J H} {env : Env R}
     {jet : H → J → (Bell → Option Datum) → R → Bell → Bool} {fold frozen : Bool}
-    {fuel : Noun → Noun → LongB M → J → Nat} {regOf : J → R} {jetsOf : J → R → J} {newOf : R → Noun}
-    (hC : CompHyp A lib ref) (hA : A.skaPoke = anaArm env jet fold frozen fuel regOf jetsOf newOf)
+    {fuel : Noun → Noun → LongB M → J → Nat} {bf : BEnv M → Nat} {regOf : J → R} {jetsOf : J → R → J}
+    {newOf : R → Noun}
+    (hC : CompHyp A lib ref) (hA : A.skaPoke = anaArm env jet fold frozen fuel bf regOf jetsOf newOf)
     (hs : PokeSites lib env jet fold frozen fuel regOf) :
     ∀ st ov p st', InvS lib ref st → ¬ HotOvum ov → pokeS A st ov = some (p, st') → InvS lib ref st' :=
   pokeS_invKept A hC (anaHyp_of_meet A hA hs)
@@ -165,8 +170,9 @@ theorem pokeS_invKept_of_meet (A : Arms M Map J H CR) {lib : Lib} {ref : Ref M M
 `CompHyp` and `PokeSites` alone. -/
 theorem gap_of_meet (A : Arms M Map J H CR) {lib : Lib} {ref : Ref M Map J H} {env : Env R}
     {jet : H → J → (Bell → Option Datum) → R → Bell → Bool} {fold frozen : Bool}
-    {fuel : Noun → Noun → LongB M → J → Nat} {regOf : J → R} {jetsOf : J → R → J} {newOf : R → Noun}
-    (hC : CompHyp A lib ref) (hA : A.skaPoke = anaArm env jet fold frozen fuel regOf jetsOf newOf)
+    {fuel : Noun → Noun → LongB M → J → Nat} {bf : BEnv M → Nat} {regOf : J → R} {jetsOf : J → R → J}
+    {newOf : R → Noun}
+    (hC : CompHyp A lib ref) (hA : A.skaPoke = anaArm env jet fold frozen fuel bf regOf jetsOf newOf)
     (hs : PokeSites lib env jet fold frozen fuel regOf)
     (enc : CSt M Map J H CR → Noun) (henc : ∀ a b, enc a = enc b → a = b) :
     Sound lib (liftPoke enc (pokeS A)) (liftInv enc (InvS lib ref)) ∧
