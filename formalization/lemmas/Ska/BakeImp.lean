@@ -18,8 +18,17 @@ This file proves how far it does:
   one of the sites it is made from shares a noun with `less.c`, and a rebake
   of two such bakes does too.
 
-What is left of the question is whether every callee with a bake made from
-sites has a site whose sock shares a noun with its code requirement.
+Through the worklist (`bakeLoop_pred`, a generic invariant of the bakes),
+every bake at the end is `less.c` or is under `less.c` and has a noun
+(`bakes_ok_of_meet`), given `SitesMeet`: under every bake that is under its
+function's code requirement, every site `+know` lists, of a callee that is
+not the root, has a sock that shares a noun with the callee's code
+requirement.  `SitesMeet` is what is left of the question.  A site that some
+subject of the bake reaches meets it (the call's subject is in both), so it
+can fail only at a site no subject of the bake reaches, whose sock
+contradicts the callee's code requirement: by the argument in the report of
+this track, only where `dat` gives the product of a never-returning callee
+from another identity of its code bell than the one the analysis used.
 -/
 
 namespace Formalization
