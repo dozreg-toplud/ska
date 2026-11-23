@@ -69,7 +69,11 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Hoon/Treap.lean` | Pure Lean: the three orders are total orders, and `putF` inserts into an `IsMap`. |
 | `Hoon/PutBy.lean` | `put_by`: `+put:by` ends on an `IsMap`, keeps the invariant, and holds the new pair and the old pairs under other keys. |
 | `Hoon/Lists.lean` | `+lent`, `+weld`, `+flop`, `+snag`, `+scag`, `+slag` against `List Noun`; `+turn`, `+roll`, `+levy`, `+lien` given what their gate argument computes on the elements. |
-| `Hoon/Maps.lean` | `+get:by` and `+has:by` on an `IsMap`. |
+| `Hoon/Units.lean` | `+need` and `+fall` on units. |
+| `Hoon/Maps.lean` | `+get:by`, `+has:by`, `+got:by`, `+gut:by` on an `IsMap`. |
+| `Hoon/Apt.lean` | `apt_by`: the pill's `+apt:by` says yes exactly on `IsMap` nouns and on the lone nodes `[x ~ ~]` with an atom `x`. |
+| `Hoon/TapBy.lean`, `Hoon/TapIn.lean` | `+tap:by` and `+tap:in` (the same noun): the list of the pairs of a map, of the keys of a set. |
+| `Hoon/Axis.lean` | `+cap`, `+mas`, `+peg`, and what they mean for `slot?` (`slot_pegF`, `slot_cap_mas`). |
 | `Hoon/Sets.lean` | `+put:in` and `+has:in`, with a set read as the map of its keys to `~`. |
 | `Hoon/Bits.lean` | `+bex`, `+lsh`, `+rsh`, `+end`, `+met`, `+cut`, `+cat`, `+can`, and `+mix`, `+dis`, `+con` as `^^^`, `&&&`, `|||`. |
 | `Hoon/Muk.lean` | The arms `sit`, `sum`, `rol` of the door `+fe`, and `+muk` against the model `mukF`. |
@@ -155,11 +159,14 @@ import only its theorems.  So:
    pieces: a relation `Enc pill pos noun end` with one lemma per definition of
    `Nouns.lean`, each small enough for the kernel, and one general theorem
    that `cue` returns what the relation accepts.
-3. **`IsMap` is not `+apt:by`.**  It is the same invariant stated for every key
-   of a subtree.  That the pill's `+apt` computes it is not proved.
+3. **`IsMap` and `+apt:by` differ on one shape.**  `apt_by` proves that the
+   pill's `+apt:by` accepts exactly the `IsMap` nouns and the lone nodes
+   `[x ~ ~]` with an atom `x`: on a node without bounds and without children
+   `+apt:by` never reads its head.
 4. **Failure is proved for few arms.**  `(dec 0)`, `+sub` below zero,
    `+dvr`, `+div`, `+mod` by zero and `+snag` past the end crash; nothing is
    proved about gates slammed on nouns of the wrong shape, nor about nouns on
    which a model is `none`.
 5. **Not done among the arms of the library:** `+del:by`, `+gas:by`,
-   `+tap:by` and `+apt:by`.
+   `+rep:by`, `+jab:by`, `+uni:by`, the `+ju` and `+ja` doors, and the rest of
+   the usage table in the last report.

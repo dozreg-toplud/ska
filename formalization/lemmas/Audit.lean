@@ -7,6 +7,7 @@ import lemmas.Hoon.Bits
 import lemmas.Hoon.Layer2
 import lemmas.Hoon.Axis
 import lemmas.Hoon.Apt
+import lemmas.Hoon.TapIn
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -88,3 +89,5 @@ open Formalization
 #print axioms Hoon.slot_cap_mas
 #print axioms Hoon.apt_loop
 #print axioms Hoon.apt_by
+#print axioms Hoon.tap_by
+#print axioms Hoon.tap_in
