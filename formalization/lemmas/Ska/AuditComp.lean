@@ -192,3 +192,4 @@ open Formalization.SkaModel.Comp
 #print axioms runOKP_n3p
 #print axioms runOKP_n7g
 #print axioms fragM_pure
+#print axioms fragM_of_fragT

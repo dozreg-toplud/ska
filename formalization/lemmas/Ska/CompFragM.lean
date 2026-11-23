@@ -702,6 +702,43 @@ theorem crash_iffM (lib : Lib) {nm : Nomm} (hf : FragM (S := S) nm) (hcount : si
   crash_iffR lib (fun h1 => (runM_ok lib hf).1 trivial trivial hcount (by simp [gen0]) rfl upBelow_gen0 h1)
     hbake h O st s args t gul hP hsp
 
+/-! ## `FragM` contains `FragT` -/
+
+/-- `Frag` does not depend on the goal. -/
+theorem frag_any : ∀ {nm : Nomm} {goal : CGoal S} (goal' : CGoal S), Frag nm goal → Frag nm goal'
+  | Nomm.n0 _, _, _, _ => trivial
+  | Nomm.n1 _, _, _, _ => trivial
+  | Nomm.n7 _ _, _, goal', h => ⟨frag_any goal' h.1, h.2⟩
+  | Nomm.n4 _, goal, goal', h => by cases goal <;> cases goal' <;> exact h
+  | Nomm.n3 _, goal, goal', h => by cases goal <;> cases goal' <;> exact h
+  | Nomm.n5 _ _, _, _, h => h
+  | Nomm.cons _ _, _, _, h => h
+  | Nomm.n10 _ _ _, _, _, h => h
+  | Nomm.n2 _ _ _, _, _, h => h.elim
+  | Nomm.n6 _ _ _, _, _, h => h.elim
+  | Nomm.n11s _ _ _, _, _, h => h.elim
+  | Nomm.n11d _ _ _ _, _, _, h => h.elim
+  | Nomm.n12 _ _, _, _, h => h.elim
+  | Nomm.mean _ _ _ _ _, _, _, h => h.elim
+
+theorem fragM_of_fragP {goal : CGoal S} {nm : Nomm} (h : FragP goal nm) : FragM (S := S) nm := by
+  induction h with
+  | frag hf => exact FragM.frag fun g => frag_any g hf
+  | six _ _ _ ihc iha ihb => exact FragM.six (ihc (jmp0 0) (jmp0 0)) iha ihb
+
+theorem fragM_of_fragN {nm : Nomm} (h : FragN (S := S) nm) : FragM (S := S) nm := by
+  induction h with
+  | frag hf => exact FragM.frag fun g => frag_any g (hf Sure.bunt (jmp0 0))
+  | six hc _ _ iha ihb => exact FragM.six (fragM_of_fragP (hc (jmp0 0) (jmp0 0))) iha ihb
+
+/-- **`FragM` contains `FragT`.** -/
+theorem fragM_of_fragT {nm : Nomm} (h : FragT (S := S) nm) : FragM (S := S) nm := by
+  cases h with
+  | nest h => exact fragM_of_fragP h
+  | seven hq hp => exact FragM.seven (fun g => frag_any g hq) (fragM_of_fragN hp)
+  | four hp => exact FragM.four (fragM_of_fragN hp)
+  | three hp => exact FragM.three (fragM_of_fragN hp)
+
 end Comp
 end SkaModel
 end Formalization
