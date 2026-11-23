@@ -163,6 +163,122 @@ theorem memOK_frame {st st' : SkaState M R} {F F' : Entry → Prop} {m : Ident} 
     obtain ⟨dc, hdc, htc⟩ := htab hlt'
     exact ⟨dc, by rw [hk.2.2 _ hcs]; exact hdc, htc⟩
 
+theorem Frame.congr2 {bt : Ident → Prop} {st st1 st2 : SkaState M R} (h : Frame bt st st1)
+    (hg : st2.g = st1.g) (ho : st2.order = st1.order) (hn : st2.next = st1.next) (htk : st2.tick = st1.tick)
+    (hts : st2.ticks = st1.ticks) : Frame bt st st2 where
+  fin := fun i d a b => by rw [hg, ho]; exact h.fin i d a b
+  ticks := fun j hj => by rw [hts]; exact h.ticks j hj
+  next := by rw [hn]; exact h.next
+  tick := by rw [htk]; exact h.tick
+  newOrd := fun x o hx hn' => h.newOrd x o (by rw [← ho]; exact hx) hn'
+
+theorem Keep.congr2 {bo : List Ident} {bg : Ident → Prop} {st st1 st2 : SkaState M R} (h : Keep bo bg st st1)
+    (hg : st2.g = st1.g) (ho : st2.order = st1.order) (hs : st2.stk = st1.stk) : Keep bo bg st st2 := by
+  obtain ⟨a, b, c⟩ := h
+  exact ⟨by rw [hs]; exact a, fun j hj => by rw [ho]; exact b j hj, fun j hj => by rw [hg]; exact c j hj⟩
+
+/-! ## What the arms keep and give -/
+
+/-- What `resolve` keeps and gives: the invariant, the frame, the capes and
+callees of `gen`; the members it leaves have run and read nothing below its
+`low`; the identity of the answer is at or above `low` if it is a member,
+and was not on the stack if `back` stays clear; the answer comes from
+finalized entries and from the identity of the answer. -/
+def ResP2 (memoF : Memo M) (res : ResGo M R) : Prop :=
+  ∀ idT gs r gs' (F : Entry → Prop), CInv memoF gs.st F → WellFormed idT.1 → res idT gs = some (r, gs') →
+    (∃ F', (∀ e, F e → F' e) ∧ CInv memoF gs'.st F') ∧
+    GStepsR (gCore gs.st.g) (gCore gs'.st.g) ∧ Keep gs.st.stk (· ∈ gs.st.stk) gs.st gs'.st ∧
+    Frame (· ∈ gs.st.stk) gs.st gs'.st ∧ gs'.gen = gs.gen ∧ gs'.callees = gs.callees ∧
+    gs'.low ≤ gs.low ∧ Pushed gs.st gs'.st gs'.low ∧
+    (∀ o, Treap.get gs'.st.order r.1 = some o → gs'.low ≤ o) ∧
+    (gs'.back = false → gs.back = false ∧ ∀ o, Treap.get gs'.st.order r.1 = some o → r.1 ∉ gs.st.stk) ∧
+    AnsW (RBat gs'.st r.1) idT.1 idT.2 r.2.core.tab
+
+/-- What `+analyze` keeps and gives. -/
+def AnaP2 (memoF : Memo M) (ana : AnaGo M R) : Prop :=
+  ∀ id st low st' (F : Entry → Prop), CInv memoF st F → WellFormed id.1 → Treap.get st.g id = none →
+    ana id st = some (low, st') →
+    (∃ F', (∀ e, F e → F' e) ∧ CInv memoF st' F') ∧
+    GStepsR (gCore st.g) (gCore st'.g) ∧ Keep st.stk (· ∈ st.stk) st st' ∧ Frame (· ∈ st.stk) st st' ∧
+    low ≤ st.next ∧ Pushed st st' low ∧ (∃ d, Treap.get st'.g id = some d) ∧
+    (∀ o, Treap.get st'.order id = some o → low ≤ o)
+
+/-- What `+run` keeps and gives: the members other than `id` keep their
+answers; `id` is `MemOK` (in `CInv`), its run tick is the clock, its change
+tick moves to the clock exactly when the run changed its entry; `low` is at
+most its DFS number, and its callees and the members the run leaves read
+nothing below `low`; if `back` is clear, its callees on the stack were not
+on it when the run began. -/
+def RunP2 (memoF : Memo M) (run : RunGo M R) : Prop :=
+  ∀ id index st r st' (F : Entry → Prop), CInv memoF st F → id ∈ st.stk → Treap.get st.order id = some index →
+    run id index st = some (r, st') →
+    (∃ F', (∀ e, F e → F' e) ∧ CInv memoF st' F' ∧
+      ∀ m Lmax, m ∈ st.stk → m ≠ id → MemOK st F m Lmax → MemOK st' F' m Lmax) ∧
+    GStepsR (gCore st.g) (gCore st'.g) ∧ Keep st.stk (fun j => j ∈ st.stk ∧ j ≠ id) st st' ∧
+    Frame (fun j => j ∈ st.stk ∧ j ≠ id) st st' ∧
+    ranOf st' id = st'.tick ∧ st.tick < st'.tick ∧
+    (r.2.2 = false → chgOf st' id = chgOf st id ∧ (gitG st'.g id).core.tab = (gitG st.g id).core.tab) ∧
+    (r.2.2 = true → chgOf st' id = st'.tick) ∧
+    r.1 ≤ index ∧ LowB st' id r.1 ∧ Pushed st st' r.1 ∧
+    (r.2.1 = false → ∀ c, InCallees (calleesOf st' id) c → ∀ o, Treap.get st'.order c = some o → c ∉ st.stk)
+
+/-! ## `+run` -/
+
+/-- The invariant of a run of `fol-loop` on the member with DFS number
+`index`, begun in `st0` with the frozen entries `F0`. -/
+def RunInv (memoF : Memo M) (st0 : SkaState M R) (F0 : Entry → Prop) (index : Nat) (gs : GenS M R) : Prop :=
+  ∃ F, (∀ e, F0 e → F e) ∧ CInv memoF gs.st F ∧
+    GStepsR (gCore st0.g) (gCore gs.st.g) ∧ Keep st0.stk (· ∈ st0.stk) st0 gs.st ∧
+    Frame (· ∈ st0.stk) st0 gs.st ∧ gs.low ≤ index ∧ Pushed st0 gs.st gs.low ∧
+    (∀ c, InCallees gs.callees c → ∀ o, Treap.get gs.st.order c = some o → gs.low ≤ o) ∧
+    (gs.back = false → ∀ c, InCallees gs.callees c → ∀ o, Treap.get gs.st.order c = some o → c ∉ st0.stk)
+
+theorem runInv_stable (memoF : Memo M) (st0 : SkaState M R) (F0 : Entry → Prop) (index : Nat) :
+    LocalStableC (RunInv memoF st0 F0 index) := by
+  intro gs gs' h hlf hc
+  obtain ⟨e1, e2, e3, e4, e5, e6, e7, e8, e9, e10⟩ := hlf
+  obtain ⟨F, hF, a, b, c, d, e, f, g, i⟩ := h
+  refine ⟨F, hF, a.congr e3 e4 e5 e6 e7 e9 e10, by rw [e3]; exact b, c.congr2 e3 e5 e6,
+    d.congr2 e3 e5 e7 e9 e10, by rw [e1]; exact e, by rw [e1]; exact f.congr e3 e5 e10,
+    fun c' hc' o ho => ?_, fun hb c' hc' o ho => ?_⟩
+  · rw [hc] at hc'; rw [e5] at ho; rw [e1]; exact g c' hc' o ho
+  · rw [hc] at hc'; rw [e5] at ho; rw [e2] at hb; exact i hb c' hc' o ho
+
+theorem runEnd_eff (id : Ident) (data : FDatum M) (out : FolOut) (gs : GenS M R) :
+    (runEnd id data out gs).1 =
+      (gs.low, gs.back, (runDatum (Treap.has gs.st.moved id) id.1 out gs.gen data.core).2.2) ∧
+    (runEnd id data out gs).2.g = Treap.put gs.st.g id
+      ⟨gs.callees, (runDatum (Treap.has gs.st.moved id) id.1 out gs.gen data.core).1.nomm,
+        (runDatum (Treap.has gs.st.moved id) id.1 out gs.gen data.core).1.less,
+        (runDatum (Treap.has gs.st.moved id) id.1 out gs.gen data.core).1.indi,
+        (runDatum (Treap.has gs.st.moved id) id.1 out gs.gen data.core).1.seek,
+        (runDatum (Treap.has gs.st.moved id) id.1 out gs.gen data.core).1.prod,
+        (runDatum (Treap.has gs.st.moved id) id.1 out gs.gen data.core).1.map, gs.area⟩ ∧
+    (runEnd id data out gs).2.order = gs.st.order ∧ (runEnd id data out gs).2.stk = gs.st.stk ∧
+    (runEnd id data out gs).2.done = gs.st.done ∧ (runEnd id data out gs).2.next = gs.st.next ∧
+    (runEnd id data out gs).2.tick = gs.st.tick + 1 ∧
+    (runEnd id data out gs).2.ticks = Treap.put gs.st.ticks id (gs.st.tick + 1,
+      if (runDatum (Treap.has gs.st.moved id) id.1 out gs.gen data.core).2.2 then gs.st.tick + 1
+      else chgOf gs.st id) := by
+  unfold runEnd
+  dsimp only
+  split <;> refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> first | rfl | trivial
+
+theorem runDatum_unchanged {moved : Bool} {bus : Sock} {out : FolOut} {gen' : Gen} {old : Datum}
+    (h : (runDatum moved bus out gen' old).2.2 = false) : (runDatum moved bus out gen' old).1.tab = old.tab := by
+  have key : ∀ (d o : Datum), decide ((d.less, d.prod, d.map, d.indi, d.seek) ≠
+      (o.less, o.prod, o.map, o.indi, o.seek)) = false → d.tab = o.tab := by
+    intro d o h
+    simp only [decide_eq_false_iff_not, ne_eq, Decidable.not_not, Prod.mk.injEq] at h
+    obtain ⟨h1, h2, h3, h4, h5⟩ := h
+    simp only [Datum.tab, h1, h2, h3, h4, h5]
+  exact key (runDatum moved bus out gen' old).1 old h
+
+theorem runDatum_runEntryR {P : Sock → Noun → TabEntry → Prop} {n : Nat} {bus : Sock} {fol : Noun}
+    {out : FolOut} {gen' : Gen} (h : FolTopR P n bus fol out gen') (moved : Bool) (old : Datum) :
+    RunEntryR P ⟨bus, fol, (runDatum moved bus out gen' old).1⟩ :=
+  ⟨n, out, gen', moved, ⟨old.prod, old.map⟩, h, rfl, rfl, rfl⟩
+
 end Ana
 end SkaModel
 end Formalization
