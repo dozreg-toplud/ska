@@ -112,6 +112,7 @@ structure Gen where
   indi : Cape
   seek : Cape
   ghost : Nat := 0
+  deriving DecidableEq
 
 /-- `gen` at the start of `+run`: `[| | | ~ ~ index | st]`, its capes. -/
 def Gen.init : Gen := ⟨Cape.no, Cape.no, Cape.no, 0⟩
