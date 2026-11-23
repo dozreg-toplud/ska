@@ -6,6 +6,7 @@ import lemmas.Ska.CompCopyFresh
 import lemmas.Ska.CompNestFinalP
 import lemmas.Ska.CompSixNext
 import lemmas.Ska.CompSixNextCond
+import lemmas.Ska.CompSixNextOK
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -150,3 +151,13 @@ open Formalization.SkaModel.Comp
 #print axioms kc_forkSure
 #print axioms kc_copyL
 #print axioms sixNextSimple_cond
+#print axioms forkNeedGo_spec
+#print axioms evalPassLoop_copy
+#print axioms forkSure_spec
+#print axioms goJ_fork
+#print axioms sectThread_same
+#print axioms runOKN_frag
+#print axioms sect_spec
+#print axioms lazyBlkN
+#print axioms sixNext_okN
+#print axioms runN_ok
