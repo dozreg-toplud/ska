@@ -1155,5 +1155,42 @@ theorem fol_loop_op11d (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap
   exact fol_loop_op11d_plain regsNoun env res go rest hgo tag hsp hme hmn hfa h1 h2 f sub seat mk bc
     df gen
 
+/-! ## Every case but `%2` -/
+
+/-- One level of the trap is `Ana.folStep` on every formula but a `%2`, given
+its calls to itself (`GoIs`), `ana` at axis `511` of the rest of `+run`'s
+subject, and `+soft-spot` and `+register-fast` as `env` says. -/
+theorem fol_loop_step (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap R)
+    (go : FolGoS FinMap R) (rest : Noun) (hgo : GoIs regsNoun rest go)
+    (hana : slot? 511 rest = some ana) (hsoft : SoftSpotIs env) (hreg : RegisterFastIs regsNoun env)
+    (fol : Noun) (h2 : ∀ a b q, shape fol ≠ Shape.op2 a b q) (sub : Anno) (seat mk : Option Noun)
+    (bc df : Bool) (gen : GenS FinMap R) :
+    nock (folSubj regsNoun rest fol sub seat mk bc df gen) fol_loop.battery
+      = (Ana.folStep env res go fol sub seat mk bc df gen).map (folOutNoun regsNoun) := by
+  rcases shape_fol fol with hs | hs
+  · exact fol_loop_other regsNoun env res go rest fol hs sub seat mk bc df gen
+  · generalize hsh : shape fol = sh at hs h2
+    subst hs
+    cases sh with
+    | cons a b q => exact fol_loop_cons regsNoun env res go rest hgo hana a b q sub seat mk bc df gen
+    | op0 p => exact fol_loop_op0 regsNoun env res go rest hana p sub seat mk bc df gen
+    | op1 p => exact fol_loop_op1 regsNoun env res go rest p sub seat mk bc df gen
+    | op2 a b q => exact absurd rfl (h2 a b q)
+    | op3 a b => exact fol_loop_op3 regsNoun env res go rest hgo a b sub seat mk bc df gen
+    | op4 a b => exact fol_loop_op4 regsNoun env res go rest hgo a b sub seat mk bc df gen
+    | op5 a b q => exact fol_loop_op5 regsNoun env res go rest hgo a b q sub seat mk bc df gen
+    | op6 a b q r => exact fol_loop_op6 regsNoun env res go rest hgo hana a b q r sub seat mk bc df gen
+    | op7 a b q => exact fol_loop_op7 regsNoun env res go rest hgo a b q sub seat mk bc df gen
+    | op8 a b q => exact fol_loop_op8 regsNoun env res go rest hgo a b q sub seat mk bc df gen
+    | op9 p a b => exact fol_loop_op9 regsNoun env res go rest hgo p a b sub seat mk bc df gen
+    | op10 ax don r1 r2 =>
+      exact fol_loop_op10 regsNoun env res go rest hgo hana ax don r1 r2 sub seat mk bc df gen
+    | op11s p a b => exact fol_loop_op11s regsNoun env res go rest hgo p a b sub seat mk bc df gen
+    | op11d tag h1 h2' f =>
+      exact fol_loop_op11d regsNoun env res go rest hgo hana hsoft hreg tag h1 h2' f sub seat mk bc df
+        gen
+    | op12 a b q => exact fol_loop_op12 regsNoun env res go rest hgo a b q sub seat mk bc df gen
+    | other => exact fol_loop_other regsNoun env res go rest _ hsh sub seat mk bc df gen
+
 end Compiler
 end Formalization
