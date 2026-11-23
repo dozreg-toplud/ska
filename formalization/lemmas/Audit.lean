@@ -34,6 +34,7 @@ import lemmas.Compiler.EvalPole
 import lemmas.Compiler.TreapList
 import lemmas.Compiler.EvalCall
 import lemmas.Compiler.EvalConv
+import lemmas.Compiler.EvalRend
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -279,3 +280,9 @@ open Formalization
 #print axioms Compiler.interp_ge
 #print axioms Compiler.eval_top_to_model
 #print axioms Compiler.eval_top_iff
+#print axioms Compiler.bell_ofNoun_toNoun
+#print axioms Compiler.eval_rend_le
+#print axioms Compiler.eval_rend_ge
+#print axioms Compiler.eval_mook_le
+#print axioms Compiler.eval_mook_ge
+#print axioms Compiler.eval_mook_iff
