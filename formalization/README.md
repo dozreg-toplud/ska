@@ -343,22 +343,28 @@ import only its theorems.  So:
    `PokeModel` needs every arm that `+poke` runs linked to its model.  The
    map of the arms of `nock-compilation.hoon` (from the arm list, 2026-11-23):
    - *Linked* (the pill's Nock computes a model): `+cape-size`, `+git-g`,
-     `gut` and `put` of `+mi`; all of `+ca` and `+so`;
+     `gut`, `put` and `git` of `+mi`, `+he-sock` (against `heSock`, which
+     instantiates `Env.he`), `+recursive-call` (with `he-threshold` `32`);
+     the cases `%1`, `%3`, `%4`, `%5`, `%7`, `%8`, `%9`, `%12` of `fol-loop`,
+     given its calls to itself (`Compiler/FolLoopLink.lean`); all of `+ca` and
+     `+so`;
      `cons`, `hed`, `tel`, `prune`, `slot`, `compose`, `edit` of `+pi`,
      `+distribute`, `+double-int`; `+msg-sock`, `+patch-prod`, `+knit-anno`,
      `+msg-anno`, `+safe-nomm`, `+safe-fol-fol`, `+inlineable`; the
      validators; the interpreter (`+eval-top`, `+eval-blob`, `+eval-pole`,
      `+eval-pass`, `+move`, `+read`, `+store`, `+eval-mook`, `+eval-rend`);
      of `+poke` its frame, that it validates first, and the outer `+poke`.
-   - *Modelled, not linked*: `fol-loop` (`Ana.folStep`), `resolve`,
+   - *Modelled, not linked*: the cases of `fol-loop` (`Ana.folStep`) for
+     cons, `%0`, `%2` (with `callStep`), `%6`, `%10`, `%11` and the default,
+     and the induction that turns `GoIs` into a theorem; `resolve`,
      `+analyze`, `+run`, the pass and member loops, `+dirty`, `+sweep`,
      `+above`, `+cull`, `+pop`, `+ska-callgraph`, `+prune-callgraph`,
-     `+memo-final-entry`, the analysis part of `+ska-poke`; `+git:mi`,
-     `+recursive-call`; `+uni-sock`, `+norm-sock`, `+know`,
+     `+memo-final-entry`, the analysis part of `+ska-poke`;
+     `+uni-sock`, `+norm-sock`, `+know`,
      `+bake-graph`; `+reverse-bell-graph`, `+hot-stale`, `+del-bells`;
      `+compiled-mono`, `+compiled-nary`, the `%full` and `%dire` branches of
      `+poke`; `run` of `+comp` and its helpers (`Comp*.lean`).
-   - *Parameters with no model*: `+he-sock`, `+soft-spot`, `+register-fast`,
+   - *Parameters with no model*: `+soft-spot`, `+register-fast`,
      `+shape-collapse`, `+bake-need`.
    - *No model*: `+msg-ca`, `+register-template`, `+index-arms`,
      `+fast-parent`, the `*-ju` arms, the cole arms, `+eval-finalized`,
@@ -376,7 +382,13 @@ import only its theorems.  So:
    the pre-order of `+rep` on the noun of `m`, under every layout of the
    values, list `tap m` and `rap m` (`tapList_toNoun`, `preorder_toNoun`): the
    shape of the treap does not depend on its values (`toNoun_relabel`).
-11. **`fol-loop` against `Ana.folStep` is not started.**  The trap is the
+11. **`fol-loop` against `Ana.folStep` is begun** (`Compiler/FolLoopLink.lean`):
+   the cases that read nothing beyond the trap's own variables are done.  The
+   cases cons, `%0`, `%6`, `%10` read `+so`, `+pi` and `+double-int` through
+   the library core in the rest of the subject of `+run` (axis `511` of the
+   trap), at axes that depend on the pushes of each case (`[9 11 0 0x7ffff]`,
+   `[9 11 0 0xfffff]`, `[9 11 0 0x1fffff]` in the battery), so they need a
+   hypothesis on that rest; `%2` and `%11` need `res` and the hint arms too.  The trap is the
    formula `[8 [1 bat] [11 [%fast fol-loop-clue] [0 1]]]`, kicked by
    `[9 2 0 1]`.  The generator names its battery `fol_loop.battery` (5569
    cells as a tree), the traps it kicks in place `fol_loop.direct`
