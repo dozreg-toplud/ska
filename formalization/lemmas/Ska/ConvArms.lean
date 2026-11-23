@@ -11,23 +11,10 @@ moreover leaves its own identity `MemOK`: its answers, judged at the end of
 its `fol-loop` (`BridgeD.lean`, with the family `PfR`), come from finalized
 entries and from its callees on the stack as they are when the run ends.
 
-Proved here: `runStep_ok2` (from `ResP2` below), `resolveStep_ok2` (from
-`ResP2` and `AnaP2` below).  Still to do, in this order: `+cull` keeps `CInv`
-with the same frozen entries (a live member's callees on the stack above the
-root are live: the closure of `liveLoop`) and leaves every member above the
-root reachable from it (the soundness of `liveLoop`); `+sweep` lists every
-member reachable from the root (the closure of `sweepLoop`); the member loop
-(`MemP2`: in a pass with no new function and no change, every member listed
-is not dirty at the end, since each run leaves its own callees' change ticks
-below its run tick and changes no other member's ticks); the pass loop
-(`PassP2`, from the members above the root all having run and read nothing
-below the root, `LowB _ _ index`, which a pass with `low = index` restores,
-and `pop_frozen` at a stable pass); `+analyze` (`AnaP2`: a memo hit is a new
-frozen entry, `MemoHitE`; the trivial pop is `pop_frozen` with no callee on
-the stack, from `back = false` and `LowB`); the induction on the fuel as
-`AnaInv.allP`; and at the end of `+ska-callgraph` the stack is empty, so the
-final graph is `F` up to the pre-pop versions, which gives
-`ConvergedGraphM` with the memo hits as `MemoHitE`.
+Proved here: `runStep_ok2` (from `ResP2`), `resolveStep_ok2` (from `ResP2`
+and `AnaP2`).  `+cull`, `+sweep`, the member loop and the pass loop are in
+`ConvPass.lean`; `+analyze`, the induction on the fuel and the final graph
+in `ConvAna.lean` (`skaCallgraph_frozen`, `skaCallgraph_convergedM`).
 -/
 
 namespace Formalization
