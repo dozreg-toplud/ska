@@ -401,6 +401,199 @@ theorem knowGo_suffix (fold : Bool) (dat : Bell → Option Datum) (res : Bell �
     cases h
     exact this
 
+/-! ## The soundness of `+know` -/
+
+section Sound
+
+variable {lib : Lib} {code code' : Bell → Option Nomm} {fold : Bool} {dat : Bell → Option Datum}
+  {res : Bell → Sock → Option Bell} {stF : List Site}
+
+/-- What `+know` needs of a code bell's datum: its product, patched for what
+a site knows, fits every product of the callee on a subject that fits both
+the code requirement and the site's sock. -/
+def DatOK (lib : Lib) (dat : Bell → Option Datum) : Prop :=
+  ∀ b d, dat b = some d → ∀ (k : Sock) s y gul, Fits b.less s → Fits k s →
+    Mink lib gul [] s b.fol (Tone.zero y) → Fits (patchProd d.prod d.map k).sock y
+
+/-- What `+know` needs of `res` on the sites `stF`: the variant has the
+callee's formula and a nomm in `code'`, and every subject that fits both the
+callee's code requirement and the site's sock fits it. -/
+def ResOK (code' : Bell → Option Nomm) (res : Bell → Sock → Option Bell) (stF : List Site) : Prop :=
+  ∀ b k v, (b, k) ∈ stF → res b k = some v →
+    v.fol = b.fol ∧ (∃ nb, code' v = some nb) ∧ ∀ y, Fits b.less y → Fits k y → Fits v.less y
+
+/-- **What `+know` gives**: the folded nomm stands for the formula on `Q`
+with the table `code'`, and the product sock fits every product of the
+original nomm (with the table `code`) on `Q`. -/
+def KnowOK (lib : Lib) (code code' : Bell → Option Nomm) (Q : Noun → Prop) (f : Noun) (nm : Nomm)
+    (out : Nomm × Anno) : Prop :=
+  Annot lib code' Q f out.1 ∧
+    ∀ x, Q x → ∀ gul t m y, nommF lib gul code m t x nm = some (Tone.zero y) → Fits out.2.sock y
+
+theorem nommF_succ_inv {gul : Noun} {m : Nat} {t : Trace} {x : Noun} {nm : Nomm} {r : Tone}
+    (h : nommF lib gul code m t x nm = some r) :
+    ∃ m', m = m' + 1 ∧ nommStep lib gul code (nommF lib gul code m') (minkF lib gul m') t x nm = some r := by
+  cases m with
+  | zero => simp [nommF] at h
+  | succ m' => exact ⟨m', rfl, h⟩
+
+theorem nomm_mink (hc : CodeOK lib code) {P : Noun → Prop} {f : Noun} {nm : Nomm}
+    (hA : Annot lib code P f nm) {x : Noun} (hx : P x) {gul : Noun} {t : Trace} {m : Nat} {y : Noun}
+    (h : nommF lib gul code m t x nm = some (Tone.zero y)) : Mink lib gul [] x f (Tone.zero y) := by
+  obtain ⟨n, hn⟩ := (nomm_agree lib gul code hc hA hx t _).mpr ⟨m, h⟩
+  exact ⟨n, mink_nil_of_zero hn⟩
+
+theorem mink_nomm (hc : CodeOK lib code) {P : Noun → Prop} {f : Noun} {nm : Nomm}
+    (hA : Annot lib code P f nm) {x : Noun} (hx : P x) {gul y : Noun}
+    (h : Mink lib gul [] x f (Tone.zero y)) : ∃ m, nommF lib gul code m [] x nm = some (Tone.zero y) :=
+  (nomm_agree lib gul code hc hA hx [] _).mp h
+
+theorem lit_eq {n : Nomm} {v : Noun} (h : lit n = some v) : n = Nomm.n1 v := by
+  cases n <;> simp [lit] at h
+  subst h; rfl
+
+/-- The value of an original nomm whose fold is the literal `v` is `v`. -/
+theorem lit_val (hc : CodeOK lib code) {P Q : Noun → Prop} {f : Noun} {p : Nomm} {v : Noun}
+    (hA : Annot lib code P f p) (hQP : ∀ x, Q x → P x) (hl : Annot lib code' Q f (Nomm.n1 v))
+    {x gul : Noun} {t : Trace} {m : Nat} {y : Noun} (hx : Q x)
+    (h : nommF lib gul code m t x p = some (Tone.zero y)) : y = v := by
+  obtain ⟨n, hn⟩ := nomm_mink hc hA (hQP x hx) h
+  have := mink_det_zero (annot_lit hl v rfl x gul hx) hn
+  cases this; rfl
+
+/-- A safe folded nomm whose sock is known: its formula returns the known
+value on every subject. -/
+theorem safe_known (hc : CodeOK lib code) {P Q : Noun → Prop} {b : Noun} {p : Nomm} {out : Nomm × Anno}
+    {d : Noun} (hA : Annot lib code P b p) (hQP : ∀ x, Q x → P x) (hk : KnowOK lib code code' Q b p out)
+    (hs : safeNomm out.1 = true) (hkn : known out.2.sock = some d) :
+    ∀ x gul, Q x → Mink lib gul [] x b (Tone.zero d) := by
+  intro x gul hx
+  obtain ⟨y, hy⟩ := annot_safe_total hk.1 hs x gul hx
+  obtain ⟨m, hm⟩ := mink_nomm hc hA (hQP x hx) hy
+  have := known_fits hkn (hk.2 x hx gul [] m y hm)
+  subst this; exact hy
+
+theorem fits_dunno' (y : Noun) : Fits Anno.dunno.sock y := fits_dunno y
+
+theorem fits_litAnno {v y : Noun} (h : y = v) : Fits (litAnno v).sock y := h
+
+theorem wut_eq (d : Noun) : wut d = A (if isCellN d = true then 0 else 1) := by
+  cases d <;> rfl
+
+theorem eqCode_eq (p q : Noun) : eqCode p q = A (if p = q then 0 else 1) := by
+  unfold eqCode; split <;> rfl
+
+/-- `knowGo` on Nock 0: the sites are kept, and the read is the original or
+its literal. -/
+theorem knowGo_n0 {sub : Anno} {st : List Site} {axis : Nat} {r : (Nomm × Anno) × List Site}
+    (h : knowGo fold dat res (Nomm.n0 axis) sub st = some r) {Q : Noun → Prop}
+    (hQ : ∀ x, Q x → Fits sub.sock x) :
+    r.2 = st ∧ KnowOK lib code code' Q (slot axis) (Nomm.n0 axis) r.1 ∧
+      (r.1.1 = Nomm.n0 axis ∨ ∃ d, r.1.1 = Nomm.n1 d ∧ ∀ x, Q x → slot? axis x = some d) := by
+  have hslot : ∀ {x gul t m y}, nommF lib gul code m t x (Nomm.n0 axis) = some (Tone.zero y) →
+      slot? axis x = some y := by
+    intro x gul t m y hm
+    obtain ⟨m', rfl, hm'⟩ := nommF_succ_inv hm
+    simp only [nommStep] at hm'
+    split at hm'
+    · cases hm'
+    · rename_i p hp; cases hm'; exact hp
+  simp only [knowGo] at h
+  split at h
+  · cases h
+    exact ⟨rfl, ⟨Annot.n0, fun _ _ _ _ _ _ _ => fits_dunno _⟩, Or.inl rfl⟩
+  · rename_i hax
+    simp only [Option.map_eq_some_iff] at h
+    obtain ⟨prod, hprod, h⟩ := h
+    have hfit : ∀ x, Q x → ∀ y, slot? axis x = some y → Fits prod.sock y := by
+      intro x hx y hy
+      split at hprod
+      · cases hprod
+        rename_i h1; subst h1
+        simp only [slot?_one, Option.some.injEq] at hy
+        subst hy; exact hQ x hx
+      · simp only [Option.map_eq_some_iff] at hprod
+        obtain ⟨s', hs', rfl⟩ := hprod
+        exact pull_fits (hQ x hx) hy hs'
+    have hkn : ∀ d, known prod.sock = some d → ∀ x, Q x → slot? axis x = some d := by
+      intro d hd x hx
+      split at hprod
+      · cases hprod
+        rename_i h1; subst h1
+        rw [slot?_one, known_fits hd (hQ x hx)]
+      · simp only [Option.map_eq_some_iff] at hprod
+        obtain ⟨s', hs', rfl⟩ := hprod
+        exact pull_known (hQ x hx) hs' hd
+    split at h
+    · rename_i d hd
+      cases h
+      refine ⟨rfl, ⟨Annot.fold fun x gul hx => mink_mk_n0 (hkn d hd x hx), ?_⟩, Or.inr ⟨d, rfl, hkn d hd⟩⟩
+      intro x hx gul t m y hm
+      exact hfit x hx y (hslot hm)
+    · cases h
+      exact ⟨rfl, ⟨Annot.n0, fun x hx gul t m y hm => hfit x hx y (hslot hm)⟩, Or.inl rfl⟩
+
+/-- The statement of `knowGo_sound` for one annotation, as an induction
+motive. -/
+def IHK (lib : Lib) (code code' : Bell → Option Nomm) (fold : Bool) (dat : Bell → Option Datum)
+    (res : Bell → Sock → Option Bell) (stF : List Site) (P : Noun → Prop) (f : Noun) (nm : Nomm) : Prop :=
+  ∀ sub st r, knowGo fold dat res nm sub st = some r → r.2 <:+ stF →
+    ∀ Q : Noun → Prop, (∀ x, Q x → P x ∧ Fits sub.sock x) → KnowOK lib code code' Q f nm r.1
+
+/-- The Nock 7 family (`%7`, an inlined `%2`, `%9`): the first nomm gives
+the subject of the second. -/
+theorem seven_core (hc : CodeOK lib code) {P : Noun → Prop} {f b g : Noun} {p q : Nomm}
+    (hA1 : Annot lib code P b p) (hA2 : Annot lib code (Img lib P b) g q)
+    (ih1 : IHK lib code code' fold dat res stF P b p)
+    (ih2 : IHK lib code code' fold dat res stF (Img lib P b) g q)
+    (hmk : ∀ {Q : Noun → Prop} {p' q' : Nomm}, (∀ x, Q x → P x) → Annot lib code' Q b p' →
+      Annot lib code' (Img lib Q b) g q' → Annot lib code' Q f (Nomm.n7 p' q'))
+    (hfold : ∀ {Q : Noun → Prop}, (∀ x, Q x → P x) → ∀ v x gul z, Q x → Mink lib gul [] x b (Tone.zero z) →
+      Mink lib gul [] z g (Tone.zero v) → Mink lib gul [] x f (Tone.zero v)) :
+    IHK lib code code' fold dat res stF P f (Nomm.n7 p q) := by
+  intro sub st r h hsuf Q hQ
+  simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  obtain ⟨pp, hp, qq, hq, h⟩ := h
+  have hq2 : qq.2 <:+ stF := by split at h <;> (cases h; exact hsuf)
+  have hp2 : pp.2 <:+ stF := (knowGo_suffix fold dat res q _ _ _ hq).trans hq2
+  have hQP : ∀ x, Q x → P x := fun x hx => (hQ x hx).1
+  have K1 := ih1 sub st pp hp hp2 Q hQ
+  have hQ2 : ∀ z, Img lib Q b z → Img lib P b z ∧ Fits pp.1.2.sock z := by
+    rintro z ⟨x, gul, hx, hm⟩
+    refine ⟨⟨x, gul, hQP x hx, hm⟩, ?_⟩
+    obtain ⟨m, hm'⟩ := mink_nomm hc hA1 (hQP x hx) hm
+    exact K1.2 x hx gul [] m z hm'
+  have K2 := ih2 pp.1.2 pp.2 qq hq hq2 (Img lib Q b) hQ2
+  have hsem : ∀ x, Q x → ∀ gul t m y, nommF lib gul code m t x (Nomm.n7 p q) = some (Tone.zero y) →
+      ∃ z m', Img lib Q b z ∧ nommF lib gul code m' t z q = some (Tone.zero y) := by
+    intro x hx gul t m y hm
+    obtain ⟨m', rfl, hm'⟩ := nommF_succ_inv hm
+    simp only [nommStep] at hm'
+    obtain ⟨z, hz, hzq⟩ := tbind_zero_inv hm'
+    exact ⟨z, m', ⟨x, gul, hx, nomm_mink hc hA1 (hQP x hx) hz⟩, hzq⟩
+  split at h
+  · rename_i v hv hs
+    cases h
+    have hl := lit_eq hv
+    have K21 := K2.1
+    rw [hl] at K21
+    refine ⟨?_, ?_⟩
+    · show Annot lib code' Q f qq.1.1
+      rw [hl]
+      refine Annot.fold fun x gul hx => ?_
+      obtain ⟨z, hz⟩ := annot_safe_total K1.1 hs x gul hx
+      exact hfold hQP v x gul z hx hz (annot_lit K21 v rfl z gul ⟨x, gul, hx, hz⟩)
+    · intro x hx gul t m y hm
+      obtain ⟨z, m', hz, hzq⟩ := hsem x hx gul t m y hm
+      exact fits_litAnno (lit_val hc hA2 (fun z hz => (hQ2 z hz).1) K21 hz hzq)
+  · cases h
+    refine ⟨hmk hQP K1.1 K2.1, ?_⟩
+    intro x hx gul t m y hm
+    obtain ⟨z, m', hz, hzq⟩ := hsem x hx gul t m y hm
+    exact K2.2 z hz gul t m' y hzq
+
+end Sound
+
 end Bake
 
 end SkaModel
