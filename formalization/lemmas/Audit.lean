@@ -24,6 +24,7 @@ import lemmas.Compiler.Axes
 import lemmas.Compiler.Lib
 import lemmas.Compiler.MinkPill
 import lemmas.Compiler.MockPill
+import lemmas.Compiler.PiEdit
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -218,3 +219,13 @@ open Formalization
 #print axioms Compiler.pegF_eq_peg
 #print axioms Compiler.pi_compose_gate
 #print axioms Compiler.pi_compose_pill
+#print axioms Compiler.pi_edit_up
+#print axioms Compiler.pi_edit_down
+#print axioms Compiler.pi_edit_gate
+#print axioms Compiler.distribute_gate
+#print axioms Compiler.pi_prune_gate
+#print axioms Compiler.double_int_gate'
+#print axioms Compiler.pi_edit_pill
+#print axioms Compiler.pi_prune_pill
+#print axioms Compiler.distribute_pill
+#print axioms Compiler.double_int_pill

@@ -962,6 +962,23 @@ def main():
     axes.append(('ca.lib.layer1', spine_axis(lib, layer1),
                  'slot? ca.lib.layer1.axis lib = some layer1'))
 
+    # the gates +distribute and +double-int of the library core, which recurse
+    # on themselves (the Lean names drop the dash)
+    for label, lname in (('distribute', 'distribute'), ('double-int', 'double_int')):
+        res = []
+        for a in arms_of(label):
+            try:
+                find_axis(head(lib), a)
+                res.append((find_axis(lib, a), a))
+            except KeyError:
+                pass
+        (ax, a), = res
+        name(a, lname + '.arm')
+        formulas.add(a)
+        name(gate_battery(a), lname + '.battery')
+        formulas.add(gate_battery(a))
+        axes.append((lname, ax, 'slot? %s.axis lib = some %s.arm' % (lname, lname)))
+
     # ---- write
     emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, len(data))
     print('steps', steps)

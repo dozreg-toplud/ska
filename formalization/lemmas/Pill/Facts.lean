@@ -15,8 +15,10 @@ public import lemmas.Pill.Arm.ConArm
 public import lemmas.Pill.Arm.Cut
 public import lemmas.Pill.Arm.Dec
 public import lemmas.Pill.Arm.Dis
+public import lemmas.Pill.Arm.Distribute
 public import lemmas.Pill.Arm.Div
 public import lemmas.Pill.Arm.Dor
+public import lemmas.Pill.Arm.Double_int
 public import lemmas.Pill.Arm.Dvr
 public import lemmas.Pill.Arm.End
 public import lemmas.Pill.Arm.Fall
@@ -90,8 +92,10 @@ import all lemmas.Pill.Arm.ConArm
 import all lemmas.Pill.Arm.Cut
 import all lemmas.Pill.Arm.Dec
 import all lemmas.Pill.Arm.Dis
+import all lemmas.Pill.Arm.Distribute
 import all lemmas.Pill.Arm.Div
 import all lemmas.Pill.Arm.Dor
+import all lemmas.Pill.Arm.Double_int
 import all lemmas.Pill.Arm.Dvr
 import all lemmas.Pill.Arm.End
 import all lemmas.Pill.Arm.Fall
@@ -543,6 +547,10 @@ theorem pi.lib.arm_at : slot? pi.lib.axis lib = some pi.lib.arm := by kernel_rfl
 theorem ca.lib.layer2.arm_at : slot? ca.lib.layer2.axis lib = some layer2 := by kernel_rfl
 
 theorem ca.lib.layer1.arm_at : slot? ca.lib.layer1.axis lib = some layer1 := by kernel_rfl
+
+theorem distribute.arm_at : slot? distribute.axis lib = some distribute.arm := by kernel_rfl
+
+theorem double_int.arm_at : slot? double_int.axis lib = some double_int.arm := by kernel_rfl
 
 end Pill
 end Formalization

@@ -95,6 +95,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/Mook.lean` | `+mook` and `+mock` against `mookF` and `Mock`: the test of the tone, `+skip` (`mook_skip`), the `+turn` of `rend` over the trace, `rend` on a `%mean` of a cell through `+mack` and `(soft tank)` (`rend_mean`), and the branches of `rend` that format with constants, `+rip` and `+scow %p` of `+mug` (`rend_leaf`, `rend_hand`).  `mook_gate_iff`, `mock_gate_iff`. |
 | `Compiler/MockPill.lean` | The same in layer 4 (`mock_pill_iff`).  What stays assumed of `Lib`, each a statement about the pill's Nock for one field: `(soft tank)` (`SoftTankIs`), the cord of `+skip` (`SkipMsgIs`), `+scow %p` (`HandIs`), and `rend` on `%hunk` of a cell and on `%spot` (`RendRestIs`); and, on `Lib` alone, the frames that `rend` formats with constants and `+rip` (`RendLeafIs`). |
 | `Compiler/Pi.lean` | `cons`, `hed`, `tel`, `slot` (on an axis of at least `1`) and `compose` of the provenance core `+pi` compute B's models of `Ska/Pi.lean`; `hed`, `tel`, `slot` read `+peg` (and `+cap`, `+mas`) of layer 1 through the library core (`PegOf`, `AxisOf`). |
+| `Compiler/PiEdit.lean` | `edit` and `prune` of `+pi`, `+distribute` and `+double-int` against B's models (`pi_edit_gate`, `pi_prune_gate`, `distribute_gate`, `double_int_gate'`), and on the pill's library core with no assumption (`*_pill`).  The upward loop of `edit` is the noun of the upward loop of `+darn:so` (`pi_edit_up`); `prune` computes `distribute` with its arguments swapped. |
 | `Compiler/Lib.lean` | `dif` of `+ca` and `huge` of `+so`, whose crash messages quote a noun that holds the hoon core, so that the generator names them in the bulk chain (`ca.dif.mean` is the quoted noun).  And the pill's library core `lib` satisfies `CaOf`, `SoOf`, `AxisOf`, `YeaOf`: every gate of `+ca` and `+so` computes its model on the pill's core (`ca_int_pill`, ..., `so_darn_pill`) with no assumption. |
 | `Compiler/Axes.lean` | `pat`, `lot` of `+ca` and `pull` of `+so`, which walk an axis with `+cap` and `+mas` of layer 1, read through the library core at `ca.lib.layer1.axis`; B's `cap` and `mas` equal `capF` and `masF`.  And `yea` of `+ca`, with `+peg` and `+weld`, and `darn` of `+so`. |
 | `Ska/Types.lean` | Models of the IR types (`Bell`, `Sock`, `Cape`, `Pole`, `Termin`, `Blob`, `Straight`, `Tone`, ...), each with its Hoon noun layout. |
@@ -225,6 +226,5 @@ import only its theorems.  So:
    `+mack`, `+mook` and `+mock`.  `+scow`, `+smyt`, `+crip` and `+soft` are
    not proved; `mock_pill_iff` assumes what they compute, field by field of
    `Lib`.
-8. **Not done among the compiler's arms:** `edit` and `prune` of `+pi`,
-   `+distribute`, `+double-int`, `+safe-nomm`, `+safe-fol-fol`,
-   `+inlineable`.
+8. **Not done among the compiler's arms:** `+safe-nomm`, `+safe-fol-fol`,
+   `+inlineable`, `+knit-anno`, `+patch-prod`, `+msg-sock`, `+msg-anno`.
