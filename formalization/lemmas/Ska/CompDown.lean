@@ -545,6 +545,302 @@ theorem collapse_down {nex : Next S} {g g' : Gen Map} {a : Option (Nat × Nat)}
     obtain ⟨rfl, rfl⟩ := e
     exact ⟨T.2.1, by rw [q3.2]; exact T.2.2⟩⟩
 
+
+/-! ## The cases of `run` -/
+
+/-- What `run_down` proves of one nomm. -/
+def DownIH (S : Type) [HoonSet S] (Map : Type → Type) [HoonMap Map] (p : Nomm) : Prop :=
+  ∀ (goal : CGoal S) (g0 g1 : Gen Map) (nex : Next S), GJ g0.bo goal → 1 ≤ g0.bo → g0.drop = false →
+    run p goal g0 = some (nex, g1) → DownR goal g0 g1 nex
+
+/-- A run for the goal of a block just emitted, at the end of a case. -/
+theorem emit_run {p : Nomm} (ih : DownIH S Map p) {goal' : CGoal S} {g0 g g1 : Gen Map} {b : Blob}
+    {laz : Sure S} {nex : Next S} (h0 : Grow g0 g) (hd : g0.drop = false) (h1 : 1 ≤ g0.bo)
+    (hb : JumpsBelow b.fin g.bo) (hp : b.par = [])
+    (h : run p (CGoal.next laz (jmp0 g.bo)) (g.emitted b) = some (nex, g1)) : DownR goal' g0 g1 nex := by
+  have hd' : g.drop = false := h0.drop.trans hd
+  have hb1 : 1 ≤ g.bo := Nat.le_trans h1 h0.bo
+  exact DownR.close (h0.trans (grow_emit hb))
+    (ih (CGoal.next _ _) _ g1 nex ⟨hb1, by simp [jmp0, emitted_bo]⟩ (by simp only [emitted_bo]; omega)
+      ((emitted_drop g b).trans hd') h)
+    (fresh_emitted hd' hp rfl) (by simp [jmp0, emitted_bo])
+
+theorem jumpsBelow_two {fin : Termin} {z o : Jmp} {k : Nat} (h : finJumps fin = [z, o])
+    (hz : 1 ≤ z.there ∧ z.there < k) (ho : 1 ≤ o.there ∧ o.there < k) : JumpsBelow fin k := by
+  intro j hj
+  rw [h] at hj
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at hj
+  rcases hj with rfl | rfl
+  · exact hz
+  · exact ho
+
+theorem jumpsBelow_one {fin : Termin} {t : Jmp} {k : Nat} (h : finJumps fin = [t])
+    (ht : 1 ≤ t.there ∧ t.there < k) : JumpsBelow fin k := by
+  intro j hj
+  rw [h] at hj
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at hj
+  subst hj; exact ht
+
+theorem run_n0_down {ax : Nat} {goal : CGoal S} {g0 g1 : Gen Map} {nex : Next S}
+    (h : run (Nomm.n0 ax) goal g0 = some (nex, g1)) (hj : GJ g0.bo goal) (h1 : 1 ≤ g0.bo)
+    (hd : g0.drop = false) : DownR goal g0 g1 nex := by
+  simp only [run] at h
+  by_cases e0 : ax = 0
+  · rw [if_pos e0] at h; exact bomb_down h hd h1
+  rw [if_neg e0] at h
+  obtain ⟨n1, g', h2, h⟩ := bind_some h
+  have D := simpleNext_down h2 hj hd h1
+  by_cases e1 : ax = 1
+  · rw [if_pos e1] at h
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h; exact D
+  rw [if_neg e1] at h
+  cases hf : «from» ax n1.laz with
+  | none => simp only [hf] at h; cases h
+  | some laz =>
+    simp only [hf, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨D.grow, D.lo, D.hi, D.entry⟩
+
+theorem run_n1_down {k : Noun} {goal : CGoal S} {g0 g1 : Gen Map} {nex : Next S}
+    (h : run (Nomm.n1 k) goal g0 = some (nex, g1)) (hj : GJ g0.bo goal) (h1 : 1 ≤ g0.bo)
+    (hd : g0.drop = false) : DownR goal g0 g1 nex := by
+  cases goal with
+  | done =>
+    simp only [run, bind_apply, re_apply, emit_apply, Option.bind_some, pure_apply, Option.some.injEq,
+      Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨(grow_re _).trans (grow_emit (jumpsBelow_nil rfl _)), h1, by simp [jmp0, emitted_bo],
+      Or.inl (fresh_emitted hd rfl rfl)⟩
+  | pick z o =>
+    simp only [run] at h
+    by_cases e0 : k = A 0
+    · rw [if_pos e0] at h
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact ⟨Grow.refl _, hj.1.1, hj.1.2, Or.inr (Or.inl rfl)⟩
+    rw [if_neg e0] at h
+    by_cases e1 : k = A 1
+    · rw [if_pos e1] at h
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact ⟨Grow.refl _, hj.2.1, hj.2.2, Or.inr (Or.inr rfl)⟩
+    rw [if_neg e1] at h
+    exact bomb_down h hd h1
+  | next laz th =>
+    simp only [run] at h
+    obtain ⟨o, g', h2, h⟩ := bind_some h
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact mede_down h2 hj.1 hj.2 hd h1 _
+
+theorem run_n7_down {p q : Nomm} (ihp : DownIH S Map p) (ihq : DownIH S Map q) : DownIH S Map (Nomm.n7 p q) := by
+  intro goal g0 g1 nex hj h1 hd h
+  simp only [run] at h
+  obtain ⟨nexq, g', h2, h⟩ := bind_some h
+  have Dq := ihq goal g0 g' nexq hj h1 hd h2
+  have Dp := ihp (CGoal.next _ _) g' g1 nex ⟨Dq.lo, Dq.hi⟩ (Nat.le_trans h1 Dq.grow.bo) (Dq.grow.drop.trans hd) h
+  refine ⟨Dq.grow.trans Dp.grow, Dp.lo, Dp.hi, ?_⟩
+  rcases Dp.entry with f | e
+  · exact Or.inl f
+  · simp only [Next.goal, GoalJ] at e
+    rw [e]
+    exact Dq.entry.grow Dq.hi Dp.grow
+
+theorem run_n4_down {p : Nomm} (ih : DownIH S Map p) : DownIH S Map (Nomm.n4 p) := by
+  intro goal g0 g1 nex hj h1 hd h
+  cases goal with
+  | done =>
+    simp only [run, bind_apply, re_apply, emit_apply, Option.bind_some] at h
+    exact emit_run ih ((grow_re _).trans (grow_re _)) hd h1 (jumpsBelow_nil rfl _) rfl h
+  | pick z o =>
+    simp only [run, bind_apply, re_apply, emit_apply, Option.bind_some] at h
+    exact emit_run ih ((grow_re _).trans (grow_re _)) hd h1 (jumpsBelow_two rfl hj.1 hj.2) rfl h
+  | next laz th =>
+    simp only [run] at h
+    obtain ⟨a, g2, h2, h⟩ := bind_some h
+    have C := collapse_down h2 hj.1 hj.2 h1
+    obtain ⟨⟨pro, th'⟩, g3, h3, h⟩ := bind_some h
+    have T : Grow g2 g3 ∧ 1 ≤ th' ∧ th' < g3.bo := by
+      cases a with
+      | some x =>
+        simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h3
+        obtain ⟨rfl, rfl⟩ := h3
+        exact ⟨Grow.refl _, C.2 _ _ rfl⟩
+      | none =>
+        simp only [bind_apply, re_apply, Option.bind_some] at h3
+        by_cases ea : th.args = []
+        · rw [if_pos ea] at h3
+          simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h3
+          obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h3
+          exact ⟨grow_re _, hj.1, Nat.lt_of_lt_of_le hj.2 C.1.bo⟩
+        · rw [if_neg ea] at h3; cases h3
+    simp only [bind_apply, re_apply, emit_apply, Option.bind_some] at h
+    exact emit_run ih (C.1.trans (T.1.trans (grow_re _))) hd h1
+      (jumpsBelow_one rfl ⟨T.2.1, T.2.2⟩) rfl h
+
+theorem run_n3_down {p : Nomm} (ih : DownIH S Map p) : DownIH S Map (Nomm.n3 p) := by
+  intro goal g0 g1 nex hj h1 hd h
+  cases goal with
+  | done =>
+    simp only [run] at h
+    obtain ⟨⟨o0, o1⟩, g2, h2, h⟩ := bind_some h
+    have B := doneBlocks_down h2 h1
+    simp only [bind_apply, re_apply, emit_apply, Option.bind_some] at h
+    exact emit_run ih (B.1.trans (grow_re _)) hd h1 (jumpsBelow_two rfl B.2.1 B.2.2) rfl h
+  | pick z o =>
+    simp only [run, bind_apply, re_apply, emit_apply, Option.bind_some] at h
+    exact emit_run ih (grow_re _) hd h1 (jumpsBelow_two rfl hj.1 hj.2) rfl h
+  | next laz th =>
+    simp only [run] at h
+    by_cases en : noneEquivalent laz = true
+    · rw [if_pos en] at h; exact ih _ g0 g1 nex hj h1 hd h
+    rw [if_neg en] at h
+    obtain ⟨a, g2, h2, h⟩ := bind_some h
+    have C := collapse_down h2 hj.1 hj.2 h1
+    cases a with
+    | none => cases h
+    | some x =>
+      obtain ⟨r, o⟩ := x
+      have Co := C.2 r o rfl
+      simp only at h
+      obtain ⟨⟨z, o'⟩, g3, h3, h⟩ := bind_some h
+      have F := forl_down h3 Co.1 Co.2 (Nat.le_trans h1 C.1.bo)
+      simp only [bind_apply, re_apply, emit_apply, Option.bind_some] at h
+      exact emit_run ih (C.1.trans (F.1.trans (grow_re _))) hd h1 (jumpsBelow_two rfl F.2.1 F.2.2) rfl h
+
+theorem run_n5_down {p q : Nomm} (ihp : DownIH S Map p) (ihq : DownIH S Map q) : DownIH S Map (Nomm.n5 p q) := by
+  intro goal g0 g1 nex hj h1 hd h
+  simp only [run, bind_apply, re_apply, Option.bind_some] at h
+  obtain ⟨⟨o, g2⟩, h2, h⟩ := Option.bind_eq_some_iff.mp h
+  have O : Grow g0 g2 ∧ 1 ≤ o ∧ o < g2.bo := by
+    have G0 : Grow g0 { { g0 with re := g0.re + 1 } with re := g0.re + 1 + 1 } := (grow_re _).trans (grow_re _)
+    cases goal with
+    | pick z o' =>
+      simp only [emit_apply, Option.some.injEq, Prod.mk.injEq] at h2
+      obtain ⟨rfl, rfl⟩ := h2
+      exact ⟨G0.trans (grow_emit (jumpsBelow_two rfl hj.1 hj.2)), h1, by simp [emitted_bo]⟩
+    | done =>
+      obtain ⟨⟨o0, o1⟩, g3, h3, h2⟩ := bind_some h2
+      have B := doneBlocks_down h3 h1
+      rw [emit_apply] at h2
+      simp only [Option.some.injEq, Prod.mk.injEq] at h2
+      obtain ⟨rfl, rfl⟩ := h2
+      exact ⟨G0.trans (B.1.trans (grow_emit (jumpsBelow_two rfl B.2.1 B.2.2))), Nat.le_trans h1 B.1.bo,
+        by simp [emitted_bo]⟩
+    | next laz th =>
+      obtain ⟨a, g3, h3, h2⟩ := bind_some h2
+      have C := collapse_down h3 hj.1 hj.2 h1
+      cases a with
+      | none =>
+        simp only at h2
+        by_cases ea : th.args = []
+        · rw [if_pos ea, emit_apply] at h2
+          simp only [Option.some.injEq, Prod.mk.injEq] at h2
+          obtain ⟨rfl, rfl⟩ := h2
+          exact ⟨G0.trans (C.1.trans (grow_emit (jumpsBelow_one rfl
+            ⟨hj.1, Nat.lt_of_lt_of_le hj.2 C.1.bo⟩))), Nat.le_trans h1 C.1.bo, by simp [emitted_bo]⟩
+        · rw [if_neg ea] at h2; cases h2
+      | some x =>
+        obtain ⟨r, o''⟩ := x
+        have Co := C.2 r o'' rfl
+        simp only at h2
+        obtain ⟨⟨z, o'⟩, g4, h4, h2⟩ := bind_some h2
+        have F := forl_down h4 Co.1 Co.2 (Nat.le_trans h1 C.1.bo)
+        rw [emit_apply] at h2
+        simp only [Option.some.injEq, Prod.mk.injEq] at h2
+        obtain ⟨rfl, rfl⟩ := h2
+        exact ⟨G0.trans (C.1.trans (F.1.trans (grow_emit (jumpsBelow_two rfl F.2.1 F.2.2)))),
+          Nat.le_trans h1 (Nat.le_trans C.1.bo F.1.bo), by simp [emitted_bo]⟩
+  obtain ⟨⟨nexq, g3⟩, h3, h⟩ := Option.bind_eq_some_iff.mp h
+  have Dq := ihq (CGoal.next _ _) g2 g3 nexq ⟨O.2.1, O.2.2⟩ (Nat.le_trans h1 O.1.bo) (O.1.drop.trans hd) h3
+  obtain ⟨⟨nexp, g4⟩, h4, h⟩ := Option.bind_eq_some_iff.mp h
+  have Dp := ihp (CGoal.next _ _) g3 g4 nexp ⟨Dq.lo, Dq.hi⟩ (Nat.le_trans h1 (Nat.le_trans O.1.bo Dq.grow.bo))
+    (Dq.grow.drop.trans (O.1.drop.trans hd)) h4
+  have G := O.1.trans (Dq.grow.trans Dp.grow)
+  have Dc := copy_down (goal := goal) h Dp.lo Dp.hi (G.drop.trans hd) (Nat.le_trans h1 G.bo)
+  exact ⟨G.trans Dc.grow, Dc.lo, Dc.hi, Dc.entry⟩
+
+/-- The two runs and the copy of a cons, for a goal `%next`. -/
+theorem cons_next_down {p q : Nomm} (ihp : DownIH S Map p) (ihq : DownIH S Map q) {goal : CGoal S}
+    {laz : Sure S} {th : Jmp} {g0 g1 : Gen Map} {nex : Next S}
+    (h : (do
+      let (hed, tel, o) ← Comp.split ⟨laz, th⟩
+      let nexh : Next S := ⟨hed, jmp0 o⟩
+      let nex2 ← run q (CGoal.next tel nexh.th)
+      let nex1 ← run p (CGoal.next nexh.laz nex2.th)
+      copy nex1 nex2.laz : CM Map (Next S)) g0 = some (nex, g1))
+    (hl : 1 ≤ th.there) (hh : th.there < g0.bo) (h1 : 1 ≤ g0.bo) (hd : g0.drop = false) :
+    DownR goal g0 g1 nex := by
+  obtain ⟨⟨hed, tel, o⟩, g2, h2, h⟩ := bind_some h
+  have Sp := split_down h2 hl hh hd
+  simp only at Sp
+  obtain ⟨nex2, g3, h3, h⟩ := bind_some h
+  have Dq := ihq (CGoal.next _ _) g2 g3 nex2 ⟨by rw [Sp.2.1]; exact h1, by simp [jmp0]; omega⟩
+    (Nat.le_trans h1 Sp.1.bo) (Sp.1.drop.trans hd) h3
+  obtain ⟨nex1, g4, h4, h⟩ := bind_some h
+  have Dp := ihp (CGoal.next _ _) g3 g4 nex1 ⟨Dq.lo, Dq.hi⟩ (Nat.le_trans h1 (Nat.le_trans Sp.1.bo Dq.grow.bo))
+    (Dq.grow.drop.trans (Sp.1.drop.trans hd)) h4
+  have G := Sp.1.trans (Dq.grow.trans Dp.grow)
+  have Dc := copy_down (goal := goal) h Dp.lo Dp.hi (G.drop.trans hd) (Nat.le_trans h1 G.bo)
+  exact ⟨G.trans Dc.grow, Dc.lo, Dc.hi, Dc.entry⟩
+
+theorem run_cons_down {p q : Nomm} (ihp : DownIH S Map p) (ihq : DownIH S Map q) :
+    DownIH S Map (Nomm.cons p q) := by
+  intro goal g0 g1 nex hj h1 hd h
+  cases goal with
+  | done =>
+    simp only [run, bind_apply, re_apply, emit_apply, Option.bind_some, pure_apply] at h
+    have D := cons_next_down (goal := (CGoal.done : CGoal S)) ihp ihq h h1 (by simp [jmp0, emitted_bo])
+      (by simp only [emitted_bo]; omega) ((emitted_drop _ _).trans hd)
+    exact ⟨((grow_re _).trans (grow_emit (jumpsBelow_nil rfl _))).trans D.grow, D.lo, D.hi, D.entry⟩
+  | next laz th =>
+    simp only [run, bind_apply, pure_apply, Option.bind_some] at h
+    exact cons_next_down ihp ihq h hj.1 hj.2 h1 hd
+  | pick z o =>
+    simp only [run, bind_apply, pure_apply, emit_apply, Option.bind_some] at h
+    obtain ⟨⟨nex2, g3⟩, h3, h⟩ := Option.bind_eq_some_iff.mp h
+    have G0 : Grow g0 (g0.emitted ⟨[], [], Termin.bom Option.none⟩) := grow_emit (jumpsBelow_nil rfl _)
+    have Dq := ihq (CGoal.next _ _) _ g3 nex2 ⟨h1, by simp [jmp0, emitted_bo]⟩ (by simp only [emitted_bo]; omega)
+      ((emitted_drop _ _).trans hd) h3
+    obtain ⟨⟨nex1, g4⟩, h4, h⟩ := Option.bind_eq_some_iff.mp h
+    have Dp := ihp (CGoal.next _ _) g3 g4 nex1 ⟨Dq.lo, Dq.hi⟩ (Nat.le_trans h1 (Nat.le_trans G0.bo Dq.grow.bo))
+      (Dq.grow.drop.trans (G0.drop.trans hd)) h4
+    have G := G0.trans (Dq.grow.trans Dp.grow)
+    have Dc := copy_down (goal := CGoal.pick z o) h Dp.lo Dp.hi (G.drop.trans hd) (Nat.le_trans h1 G.bo)
+    exact ⟨G.trans Dc.grow, Dc.lo, Dc.hi, Dc.entry⟩
+
+/-- **The blocks of `run` go down**, for every nomm and goal. -/
+theorem run_down : ∀ (nm : Nomm), DownIH S Map nm := by
+  intro nm
+  induction nm with
+  | n0 ax => intro goal g0 g1 nex hj h1 hd h; exact run_n0_down h hj h1 hd
+  | n1 k => intro goal g0 g1 nex hj h1 hd h; exact run_n1_down h hj h1 hd
+  | n7 p q ihp ihq => exact run_n7_down ihp ihq
+  | n4 p ih => exact run_n4_down ih
+  | n3 p ih => exact run_n3_down ih
+  | n5 p q ihp ihq => exact run_n5_down ihp ihq
+  | cons p q ihp ihq => exact run_cons_down ihp ihq
+  | n2 => intro goal g0 g1 nex _ _ _ h; simp only [run] at h; cases h
+  | n6 => intro goal g0 g1 nex _ _ _ h; simp only [run] at h; cases h
+  | n10 => intro goal g0 g1 nex _ _ _ h; simp only [run] at h; cases h
+  | n11s => intro goal g0 g1 nex _ _ _ h; simp only [run] at h; cases h
+  | n11d => intro goal g0 g1 nex _ _ _ h; simp only [run] at h; cases h
+  | n12 => intro goal g0 g1 nex _ _ _ h; simp only [run] at h; cases h
+  | mean => intro goal g0 g1 nex _ _ _ h; simp only [run] at h; cases h
+
+/-- **`RunDown` holds of every nomm.** -/
+theorem runDown (nm : Nomm) : RunDown S Map nm := by
+  intro nex g1 h
+  have D := run_down (S := S) (Map := Map) nm CGoal.done gen0 g1 nex trivial (by simp [gen0]) rfl h
+  refine ⟨D.grow.down (fun k b hb => by simp [gen0, HoonMap.get_empty] at hb) (by simp [gen0]), ?_⟩
+  rcases D.entry with ⟨b, hb, hp⟩ | e
+  · rcases b with ⟨par, body, fin⟩
+    simp only at hp
+    subst hp
+    exact ⟨body, fin, hb⟩
+  · exact e.elim
+
 end Comp
 end SkaModel
 end Formalization
