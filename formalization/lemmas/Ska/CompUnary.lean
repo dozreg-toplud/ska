@@ -25,7 +25,7 @@ theorem unary_ok {lib : Lib} {nm p : Nomm} {goal : CGoal S} {g0 g' g1 : Gen Map}
     (hev : ∀ s, pureEval nm s = (pureEval p s).bind f) (hpre : Ext g0 g')
     (ha : g0.re ≤ a ∧ a < g'.re) (ho : o < g'.bo)
     (hp : RunOK lib p (CGoal.next (lazyReg a) (jmp0 o)) g' g1 nexp)
-    (hblk : ∀ (c : Straight Map), HoonMap.get c.blocks o = HoonMap.get g'.blocks o → g0.drop = false →
+    (hblk : ∀ (c : Straight Map), Agree c g0 g' → g0.drop = false →
       ∀ (σ : Type) (O : Oracle σ) st regs t gul x, SkaModel.read a regs = some x →
       GoalSem lib O c gul st (Keep g0 goal) regs t (jmp0 o) goal (f x))
     (hgo : g0.bo ≤ o) :
@@ -51,11 +51,9 @@ theorem unary_ok {lib : Lib} {nm p : Nomm} {goal : CGoal S} {g0 g' g1 : Gen Map}
     | some x =>
       rw [e] at Hp
       obtain ⟨regs', hh', hk, he⟩ := Hp.1 ⟨trivial, looks_empty x⟩
-      have hc : HoonMap.get c.blocks o = HoonMap.get g'.blocks o :=
-        (hag o (Nat.le_trans hgo (Nat.le_refl _)) (Nat.lt_of_lt_of_le ho hp.ext.2.1)).trans (hp.ext.2.2.2 o ho)
       exact GoalSem.transfer he (fun r ⟨h1, h2⟩ => hk r ⟨Nat.lt_of_lt_of_le h1 hpre.1, fun e => by
           simp only [GMem, lazyReg, NMem] at e; omega⟩)
-        (hblk c hc hd σ O st regs' t gul x hh')
+        (hblk c (hag.left hpre hp.ext) hd σ O st regs' t gul x hh')
 
 /-- `[4 p]`: the value through `+(x)`. -/
 def incF : Noun → Option Noun
@@ -86,7 +84,7 @@ theorem run_n4_done_ok {lib : Lib} {p : Nomm} {g0 g1 : Gen Map} {nex : Next S}
     (ih _ _ _ _ ⟨trivial, fun r hr => by simp [lazyReg, NMem] at hr; subst hr; simp [emitted_re]⟩ h) ?_
     (by simp)
   intro c hc hd σ O st regs t gul x hx
-  have hb := emitted_get' (by simpa using hd) hc
+  have hb := emitted_get' (by simpa using hd) (hc _ (by simp) (by simp [emitted_bo]))
   simp only [GoalSem]
   rw [goJ_jmp0 _ _ _ _ hb]
   cases x with
@@ -108,7 +106,7 @@ theorem run_n4_pick_ok {lib : Lib} {p : Nomm} {z o : Jmp} {g0 g1 : Gen Map} {nex
     (ih _ _ _ _ ⟨trivial, fun r hr => by simp [lazyReg, NMem] at hr; subst hr; simp [emitted_re]⟩ h) ?_
     (by simp)
   intro c hc hd σ O st regs t gul x hx
-  have hb := emitted_get' (by simpa using hd) hc
+  have hb := emitted_get' (by simpa using hd) (hc _ (by simp) (by simp [emitted_bo]))
   have hj := goJ_jmp0 (lib := lib) (O := O) (gul := gul) (st := st) regs t _ _ hb
   cases x with
   | atom n =>
@@ -124,6 +122,34 @@ theorem run_n4_pick_ok {lib : Lib} {p : Nomm} {z o : Jmp} {g0 g1 : Gen Map} {nex
     simp only [incF]
     apply goalSem_crash
     rw [hj, show [Pole.inc _ _] = [Pole.inc _ _] ++ [] from rfl, crashes_inc hx]
+
+theorem execBlob_clq {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ}
+    (regs : Map Noun) (t : Trace) (r : Nat) (z o : Jmp) :
+    execBlob lib O c gul st regs t ⟨[], [], Termin.clq r z o⟩ [] =
+      (SkaModel.read r regs).bind fun v => match v with
+        | Noun.cell _ _ => goJ lib O c gul st regs t z
+        | Noun.atom _ => goJ lib O c gul st regs t o := by
+  rw [execBlob]; simp only [goJ]; cases SkaModel.read r regs with
+  | none => rfl
+  | some v => cases v <;> rfl
+
+theorem run_n3_pick_ok {lib : Lib} {p : Nomm} {z o : Jmp} {g0 g1 : Gen Map} {nex : Next S}
+    (h : run (Nomm.n3 p) (CGoal.pick z o : CGoal S) g0 = some (nex, g1))
+    (ih : ∀ (goal : CGoal S) (g g' : Gen Map) (nex' : Next S), GoalOK g goal → run p goal g = some (nex', g') →
+      RunOK lib p goal g g' nex') :
+    RunOK lib (Nomm.n3 p) (CGoal.pick z o) g0 g1 nex := by
+  simp only [run, bind_apply, re_apply, emit_apply, Option.bind_some] at h
+  refine unary_ok (pureEval_n3 p) ((ext_re _).trans (ext_emit _ _))
+    ⟨Nat.le_refl _, by simp [emitted_re]⟩ (by simp [emitted_bo])
+    (ih _ _ _ _ ⟨trivial, fun r hr => by simp [lazyReg, NMem] at hr; subst hr; simp [emitted_re]⟩ h) ?_
+    (by simp)
+  intro c hc hd σ O st regs t gul x hx
+  have hb := emitted_get' (by simpa using hd) (hc _ (by simp) (by simp [emitted_bo]))
+  have hj := goJ_jmp0 (lib := lib) (O := O) (gul := gul) (st := st) regs t _ _ hb
+  rw [execBlob_clq, hx, Option.bind_some] at hj
+  cases x with
+  | atom n => exact ⟨regs, fun _ _ => rfl, by rw [hj]⟩
+  | cell u v => exact ⟨regs, fun _ _ => rfl, by rw [hj]⟩
 
 end Comp
 end SkaModel
