@@ -325,6 +325,119 @@ theorem push_ok {st : SkaState M R} (hi : SInv st) {id : Ident} (hw : WellFormed
   · simp only [Treap.get_put]; rw [if_neg]; rintro rfl; exact hn hj
   · simp only [Treap.get_put]; rw [if_neg]; rintro rfl; exact hn hj
 
+/-! ## The write of `+run` -/
+
+theorem runEnd_fields (id : Ident) (data : FDatum M) (out : FolOut) (gs : GenS M R) :
+    (runEnd id data out gs).2.order = gs.st.order ∧ (runEnd id data out gs).2.stk = gs.st.stk ∧
+    (runEnd id data out gs).2.done = gs.st.done ∧
+    (∃ dn, (runEnd id data out gs).2.g = Treap.put gs.st.g id dn) := by
+  unfold runEnd
+  simp only
+  split <;> exact ⟨rfl, rfl, rfl, _, rfl⟩
+
+/-- The write at the end of `+run` keeps the invariant. -/
+theorem runEnd_ok {gs : GenS M R} (hi : SInv gs.st) {id : Ident} {data : FDatum M} {out : FolOut}
+    (hstep : GStepR (gCore gs.st.g) (gCore (runEnd id data out gs).2.g)) :
+    SInv (runEnd id data out gs).2 ∧ Keep gs.st.stk (· ≠ id) gs.st (runEnd id data out gs).2 := by
+  obtain ⟨ho, hs, hd, dn, hg⟩ := runEnd_fields id data out gs
+  refine ⟨⟨hstep.wf hi.g_wf, hd ▸ hi.done_wf, fun i o h => ?_, fun i => ?_, hs ▸ hi.nodup⟩,
+    ⟨⟨[], by rw [hs]; rfl⟩, fun j _ => by rw [ho], fun j hj => by rw [hg, Treap.get_put, if_neg hj]⟩⟩
+  · rw [ho] at h
+    obtain ⟨d, e⟩ := hi.ord_g i o h
+    rw [hg, Treap.get_put]
+    split
+    · exact ⟨_, rfl⟩
+    · exact ⟨d, e⟩
+  · rw [ho, hs]; exact hi.ord_stk i
+
+/-! ## `+pop` -/
+
+theorem FDatum.pop_core (d : FDatum M) :
+    (if d.prod = Sock.void then { d with prod := Sock.dunno } else d).core =
+      if d.core.prod = Sock.void then { d.core with prod := Sock.dunno } else d.core := by
+  unfold FDatum.core; split <;> rfl
+
+theorem popGo_ok {id : Ident} : ∀ (l : List Ident) (st st' : SkaState M R), st.stk = l → SInv st →
+    popGo id l st = some st' →
+    SInv st' ∧ GStepsR (gCore st.g) (gCore st'.g) ∧ (∃ pre, l = pre ++ id :: st'.stk) ∧
+    ∀ j ∈ st'.stk, Treap.get st'.order j = Treap.get st.order j ∧ Treap.get st'.g j = Treap.get st.g j
+  | [], _, _, _, _, h => by simp [popGo] at h
+  | top :: rest, st, st', hl, hi, h => by
+    unfold popGo at h
+    simp only at h
+    have htop : top ∈ st.stk := by rw [hl]; exact List.mem_cons_self
+    obtain ⟨d0, hd0⟩ := hi.mem_g htop
+    have hnd : (top :: rest).Nodup := hl ▸ hi.nodup
+    have hnr : top ∉ rest := (List.nodup_cons.mp hnd).1
+    have hgit : gitG st.g top = d0 := by simp [gitG, Treap.gut, hd0]
+    simp only [hgit] at h
+    let d' : FDatum M := if d0.prod = Sock.void then { d0 with prod := Sock.dunno } else d0
+    have hstep : GStepR (gCore st.g) (gCore (Treap.put st.g top d')) := by
+      rw [gCore_put, FDatum.pop_core]
+      exact GStepR.pop (by simp [gCore, hd0])
+    have hwd : WellFormed d'.prod := by
+      show WellFormed (if d0.prod = Sock.void then { d0 with prod := Sock.dunno } else d0).prod
+      split
+      · exact wf_dunno
+      · exact (hi.wf_get hd0).2
+    let st2 : SkaState M R :=
+      { st with stk := rest, order := Treap.del st.order top, ticks := Treap.del st.ticks top, g := Treap.put st.g top d', done := putMi st.done top d' }
+    have i2 : SInv st2 := by
+      refine ⟨hstep.wf hi.g_wf, hi.done_wf.putMi hwd, fun i o ho => ?_, fun i => ?_, (List.nodup_cons.mp hnd).2⟩
+      · simp only [st2, Treap.get_del] at ho
+        split at ho
+        · cases ho
+        · obtain ⟨d, e⟩ := hi.ord_g i o ho
+          simp only [st2, Treap.get_put]
+          split
+          · exact ⟨_, rfl⟩
+          · exact ⟨d, e⟩
+      · simp only [st2, Treap.get_del]
+        split
+        · rename_i e; subst e; simp [hnr]
+        · rename_i e; rw [hi.ord_stk i, hl]; simp [e]
+    have k2 : ∀ j ∈ rest, Treap.get st2.order j = Treap.get st.order j ∧ Treap.get st2.g j = Treap.get st.g j := by
+      intro j hj
+      have hne : j ≠ top := fun e => hnr (e ▸ hj)
+      simp [st2, Treap.get_del, Treap.get_put, hne]
+    by_cases e : top = id
+    · rw [if_pos e] at h
+      cases h
+      exact ⟨i2, gStepsR_one hstep, ⟨[], by rw [e]; rfl⟩, k2⟩
+    · rw [if_neg e] at h
+      obtain ⟨i', s', ⟨pre, hpre⟩, k'⟩ := popGo_ok rest st2 st' rfl i2 h
+      refine ⟨i', gStepsR_trans (gStepsR_one hstep) s', ⟨top :: pre, by rw [hpre]; rfl⟩, fun j hj => ?_⟩
+      have hjr : j ∈ rest := by rw [hpre]; simp [hj]
+      obtain ⟨a1, a2⟩ := k' j hj
+      obtain ⟨b1, b2⟩ := k2 j hjr
+      exact ⟨a1.trans b1, a2.trans b2⟩
+
+theorem nodup_split_unique {α : Type} {x : α} : ∀ {a a' b b' : List α}, (a ++ x :: b).Nodup →
+    a ++ x :: b = a' ++ x :: b' → a = a' ∧ b = b'
+  | [], [], _, _, _, h => by simp at h; exact ⟨rfl, h⟩
+  | [], y :: a', b, b', hn, h => by
+    simp only [List.nil_append, List.cons_append, List.cons.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    simp at hn
+  | y :: a, [], b, b', hn, h => by
+    simp only [List.nil_append, List.cons_append, List.cons.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    simp at hn
+  | y :: a, z :: a', b, b', hn, h => by
+    simp only [List.cons_append, List.cons.injEq] at h
+    obtain ⟨rfl, h⟩ := h
+    obtain ⟨e1, e2⟩ := nodup_split_unique (List.nodup_cons.mp hn).2 h
+    exact ⟨by rw [e1], e2⟩
+
+/-- **`+pop` keeps the invariant**: it writes the graph by `GStepR.pop`, and
+leaves the stack below `id` alone. -/
+theorem pop_ok {id : Ident} {st st' : SkaState M R} (hi : SInv st) (h : pop id st = some st')
+    {ab0 rest : List Ident} (hs : st.stk = ab0 ++ id :: rest) :
+    SInv st' ∧ GStepsR (gCore st.g) (gCore st'.g) ∧ Keep rest (· ∈ rest) st st' := by
+  obtain ⟨i', s', ⟨pre, hpre⟩, k'⟩ := popGo_ok st.stk st st' rfl hi h
+  have hu := nodup_split_unique (hs ▸ hi.nodup) (hs.symm.trans hpre)
+  refine ⟨i', s', ⟨⟨[], by rw [← hu.2]; rfl⟩, fun j hj => (k' j (hu.2 ▸ hj)).1, fun j hj => (k' j (hu.2 ▸ hj)).2⟩⟩
+
 end Ana
 end SkaModel
 end Formalization
