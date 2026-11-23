@@ -37,8 +37,6 @@ arithmetic on the window, which is small, instead of on the whole atom.
 
 @[expose] public section
 
-set_option exponentiation.threshold 20000
-
 namespace Formalization
 namespace Nock
 namespace CueRel
@@ -280,7 +278,7 @@ theorem winOK_of_bits {a W o : Nat} (h : bits a o 16384 = W) : WinOK a W o := by
 
 theorem glue_split : ∀ (L : List Nat) (k : Nat),
     glue L = glue (L.take k) + 2 ^ (8192 * k) * glue (L.drop k)
-  | [], k => by simp [glue]
+  | [], k => by simp only [glue, List.take_nil, List.drop_nil, Nat.mul_zero, Nat.add_zero]
   | c :: L, 0 => by simp [glue]
   | c :: L, k + 1 => by
     simp only [List.take_succ_cons, List.drop_succ_cons, glue]
@@ -290,7 +288,8 @@ theorem glue_split : ∀ (L : List Nat) (k : Nat),
 
 theorem glue_lt : ∀ (L : List Nat), (∀ c ∈ L, c < 2 ^ 8192) →
     glue L < 2 ^ (8192 * L.length)
-  | [], _ => by simp [glue]
+  | [], _ => by
+    simp only [glue, List.length_nil, Nat.mul_zero, Nat.pow_zero]; exact Nat.zero_lt_one
   | c :: L, h => by
     simp only [glue, List.length_cons]
     have hc := h c (by simp)
