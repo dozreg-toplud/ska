@@ -278,6 +278,182 @@ theorem popGo_eff {id : Ident} : ∀ (pre : List Ident) (st st' : SkaState M R) 
         refine Or.inr ⟨j, by simp at hj ⊢; rcases hj with hj | hj <;> simp [hj], ?_, rfl⟩
         simp [st2, gitG, Treap.gut, Treap.get_put, hjx]
 
+/-! ## The orders along the stack -/
+
+theorem ordInv_split {st : SkaState M R} (ho : OrdInv st) {ab0 rest : List Ident} {id : Ident} {index : Nat}
+    (hs : st.stk = ab0 ++ id :: rest) (hidx : Treap.get st.order id = some index) :
+    (∀ x ∈ ab0 ++ [id], ∀ o, Treap.get st.order x = some o → index ≤ o) ∧
+    (∀ x ∈ rest, ∀ o, Treap.get st.order x = some o → o < index) := by
+  have hp := ho.2
+  rw [hs, List.pairwise_append] at hp
+  obtain ⟨_, hp2, hp3⟩ := hp
+  rw [List.pairwise_cons] at hp2
+  refine ⟨fun x hx o hxo => ?_, fun x hx o hxo => hp2.1 x hx index o hidx hxo⟩
+  rcases List.mem_append.mp hx with hx | hx
+  · exact Nat.le_of_lt (hp3 x hx id List.mem_cons_self o index hxo hidx)
+  · rw [List.mem_singleton.mp hx] at hxo; rw [hidx] at hxo; cases hxo; exact Nat.le_refl _
+
+theorem FDatum.postPop_core (d : FDatum M) :
+    (postPop d).core = if d.core.prod = Sock.void then { d.core with prod := Sock.dunno } else d.core := by
+  unfold postPop FDatum.core; split <;> rfl
+
+/-! ## A `+pop` freezes its members -/
+
+/-- **A `+pop` whose members are ready freezes them**: each popped member has
+run, its callees on the stack did not change since its last run (it is not
+dirty) and are popped with it (their DFS numbers are at least the root's);
+the members below keep their answers, which come from below the root.  Then
+the popped entries, before and after `+pop`, join the frozen entries. -/
+theorem pop_frozen {memoF : Memo M} {id : Ident} {st st' : SkaState M R} {F : Entry → Prop}
+    {ab0 rest : List Ident} {index : Nat}
+    (hc : CInv memoF st F) (hs : st.stk = ab0 ++ id :: rest) (hidx : Treap.get st.order id = some index)
+    (hrest : ∀ m ∈ rest, MemOK st F m index)
+    (hready : ∀ x ∈ ab0 ++ [id], 1 ≤ ranOf st x ∧ ∀ c, InCallees (calleesOf st x) c → ∀ o,
+      Treap.get st.order c = some o → chgOf st c < ranOf st x ∧ index ≤ o)
+    (h : pop id st = some st') :
+    ∃ F', (∀ e, F e → F' e) ∧ CInv memoF st' F' := by
+  have hnd : (ab0 ++ id :: rest).Nodup := hs ▸ hc.s.nodup
+  have hin : ∀ j ∈ ab0 ++ [id], ∃ d, Treap.get st.g j = some d := fun j hj =>
+    hc.s.mem_g (by rw [hs]; simp at hj ⊢; rcases hj with hj | hj <;> simp [hj])
+  obtain ⟨a1, a2, a3, a4, a5, a6, a7⟩ := popGo_eff ab0 st st' rest hs hnd hin (by unfold pop at h; exact h)
+  obtain ⟨hup, hdown⟩ := ordInv_split hc.ord hs hidx
+  have hmemP : ∀ j, j ∈ ab0 ++ [id] → ∃ o, Treap.get st.order j = some o := fun j hj =>
+    (hc.s.ord_stk j).mpr (by rw [hs]; simp at hj ⊢; rcases hj with hj | hj <;> simp [hj])
+  -- the popped identities are exactly the members at or above the root
+  have hinP : ∀ c o, Treap.get st.order c = some o → index ≤ o → c ∈ ab0 ++ [id] := by
+    intro c o hco hle
+    have hcs : c ∈ st.stk := (hc.s.ord_stk c).mp ⟨o, hco⟩
+    rw [hs] at hcs
+    simp only [List.mem_append, List.mem_cons] at hcs
+    rcases hcs with hcs | rfl | hcs
+    · simp [hcs]
+    · simp
+    · exact absurd (hdown c hcs o hco) (by omega)
+  let F' : Entry → Prop := fun e => F e ∨ ∃ x ∈ ab0 ++ [id], ∃ d, Treap.get st.g x = some d ∧
+    (e = entOf x d ∨ e = entOf x (postPop d))
+  have hFF' : ∀ e, F e → F' e := fun e he => Or.inl he
+  -- the answers of a popped member are answers of `F'`
+  have hans : ∀ x ∈ ab0 ++ [id], ∀ d, Treap.get st.g x = some d →
+      ∃ P : Sock → Noun → TabEntry → Prop, RunEntryR P (entOf x d) ∧ ∀ s f a, P s f a → Answers F' s f a := by
+    intro x hx d hd
+    obtain ⟨hr, hcal⟩ := hready x hx
+    obtain ⟨o, hxo⟩ := hmemP x hx
+    obtain ⟨P, L, _, hrun, hP⟩ := hc.mem x o hxo d hd hr
+    refine ⟨P, hrun, fun s f a hp => (AnsW.transfer (fun e he => ?_) (hP s f a hp)).toAnswers⟩
+    rcases he with he | ⟨hce, ⟨oc, hco, _⟩, htab⟩
+    · exact ⟨e, Or.inl he, rfl, rfl, rfl⟩
+    · obtain ⟨hlt, hle⟩ := hcal _ hce oc hco
+      obtain ⟨dc, hdc, htc⟩ := htab hlt
+      exact ⟨entOf (e.more, e.fol) dc, Or.inr ⟨_, hinP _ oc hco hle, dc, hdc, Or.inl rfl⟩, rfl, rfl, htc⟩
+  have hok : FrozenOK memoF F' := by
+    intro e he
+    rcases he with he | ⟨x, hx, d, hd, rfl | rfl⟩
+    · exact hc.frz.ok.mono hFF' he
+    · obtain ⟨P, hrun, hP⟩ := hans x hx d hd
+      exact Or.inl ⟨P, hP, hrun⟩
+    · obtain ⟨P, hrun, hP⟩ := hans x hx d hd
+      refine Or.inl ⟨P, hP, ?_⟩
+      unfold entOf
+      rw [FDatum.postPop_core]
+      split
+      · exact RunEntryR.pop hrun (by assumption)
+      · exact hrun
+  have hgP : ∀ x ∈ ab0 ++ [id], Treap.get st'.g x = (Treap.get st.g x).map postPop := fun x hx => by
+    rw [a6, if_pos hx]
+  have hgN : ∀ x, x ∉ ab0 ++ [id] → Treap.get st'.g x = Treap.get st.g x := fun x hx => by
+    rw [a6, if_neg hx]
+  have hoN : ∀ x, x ∉ ab0 ++ [id] → Treap.get st'.order x = Treap.get st.order x := fun x hx => by
+    rw [a4, if_neg hx]
+  have hoP : ∀ x ∈ ab0 ++ [id], Treap.get st'.order x = none := fun x hx => by rw [a4, if_pos hx]
+  have htN : ∀ x, x ∉ ab0 ++ [id] → Treap.gut st'.ticks x (0, 0) = Treap.gut st.ticks x (0, 0) := fun x hx => by
+    unfold Treap.gut; rw [a5, if_neg hx]
+  have hpopNot : ∀ x o, Treap.get st.order x = some o → o < index → x ∉ ab0 ++ [id] := fun x o hxo hlt hx =>
+    absurd (hup x hx o hxo) (by omega)
+  refine ⟨F', hFF', ⟨pop_ok hc.s h hs |>.1, fun m => ?_, ⟨fun i o hio => ?_, ?_⟩, ⟨hok, ?_, ?_, ?_, ?_⟩, ?_⟩⟩
+  · -- ticks
+    by_cases hm : m ∈ ab0 ++ [id]
+    · simp only [ranOf, chgOf, Treap.gut, a5, if_pos hm, Option.getD_none]; omega
+    · simp only [ranOf, chgOf, htN m hm, a3]; exact hc.tick m
+  · -- orders below next
+    by_cases hi : i ∈ ab0 ++ [id]
+    · rw [hoP i hi] at hio; cases hio
+    · rw [hoN i hi] at hio; rw [a2]; exact hc.ord.1 i o hio
+  · -- orders down the stack
+    rw [a1]
+    have hp := hc.ord.2
+    rw [hs, List.pairwise_append, List.pairwise_cons] at hp
+    refine hp.2.1.2.imp_of_mem (fun {a b} ha hb hab oa ob h1 h2 => ?_)
+    have hnd2 : ((ab0 ++ [id]) ++ rest).Nodup := by simpa using hnd
+    have hna : a ∉ ab0 ++ [id] := fun hx => (List.nodup_append.mp hnd2).2.2 a hx a ha rfl
+    have hnb : b ∉ ab0 ++ [id] := fun hx => (List.nodup_append.mp hnd2).2.2 b hx b hb rfl
+    rw [hoN a hna] at h1; rw [hoN b hnb] at h2
+    exact hab oa ob h1 h2
+  · -- cover
+    intro i d hgd hgo
+    by_cases hi : i ∈ ab0 ++ [id]
+    · rw [hgP i hi] at hgd
+      obtain ⟨d0, hd0, rfl⟩ := Option.map_eq_some_iff.mp hgd
+      exact Or.inr ⟨i, hi, d0, hd0, Or.inr rfl⟩
+    · rw [hgN i hi] at hgd; rw [hoN i hi] at hgo
+      exact Or.inl (hc.frz.cover i d hgd hgo)
+  · -- sub
+    intro e he
+    rcases he with he | ⟨x, hx, d, hd, rfl | rfl⟩
+    · obtain ⟨⟨d0, hd0⟩, hno⟩ := hc.frz.sub e he
+      have hn : (e.more, e.fol) ∉ ab0 ++ [id] := fun hx => by
+        obtain ⟨o, ho⟩ := hmemP _ hx; rw [hno] at ho; cases ho
+      exact ⟨⟨d0, by rw [hgN _ hn]; exact hd0⟩, by rw [hoN _ hn]; exact hno⟩
+    · have e1 : Treap.get st'.g x = some (postPop d) := by rw [hgP x hx, hd]; rfl
+      exact ⟨⟨postPop d, e1⟩, hoP x hx⟩
+    · have e1 : Treap.get st'.g x = some (postPop d) := by rw [hgP x hx, hd]; rfl
+      exact ⟨⟨postPop d, e1⟩, hoP x hx⟩
+  · -- wf
+    intro e he
+    rcases he with he | ⟨x, hx, d, hd, rfl | rfl⟩
+    · exact hc.frz.wf e he
+    · exact (hc.s.wf_get hd).2
+    · show WellFormed (postPop d).prod
+      unfold postPop; split
+      · exact wf_dunno
+      · exact (hc.s.wf_get hd).2
+  · -- done
+    intro f ms s ent h1 h2
+    rcases a7 f ms s ent h1 h2 with ⟨ms', e1, e2⟩ | ⟨j, hj, rfl, rfl⟩
+    · obtain ⟨hF, hk⟩ := hc.frz.done f ms' s ent e1 e2
+      exact ⟨Or.inl hF, hk⟩
+    · obtain ⟨dj, hdj⟩ := hin j hj
+      have hg : gitG st.g j = dj := by simp [gitG, Treap.gut, hdj]
+      rw [hg]
+      exact ⟨Or.inr ⟨j, hj, dj, hdj, Or.inr rfl⟩, rfl⟩
+  · -- members
+    intro m o hmo d hd hr
+    have hmN : m ∉ ab0 ++ [id] := fun hx => by rw [hoP m hx] at hmo; cases hmo
+    rw [hoN m hmN] at hmo
+    have hmr : m ∈ rest := by
+      have hms : m ∈ st.stk := (hc.s.ord_stk m).mp ⟨o, hmo⟩
+      rw [hs] at hms
+      simp only [List.mem_append, List.mem_cons] at hms
+      rcases hms with hms | rfl | hms
+      · exact absurd (by simp [hms]) hmN
+      · exact absurd (by simp) hmN
+      · exact hms
+    rw [hgN m hmN] at hd
+    have hrn : ranOf st' m = ranOf st m := by simp only [ranOf, htN m hmN]
+    rw [hrn] at hr
+    obtain ⟨P, L, hL, hrun, hP⟩ := hrest m hmr d hd hr
+    refine ⟨P, L, ?_, hrun, fun s f a hp => (hP s f a hp).mono (fun e he => ?_)⟩
+    · rw [a2]; exact Nat.le_trans hL (Nat.le_of_lt (hc.ord.1 id index hidx))
+    · rcases he with he | ⟨hce, ⟨oc, hco, hlt⟩, htab⟩
+      · exact Or.inl (hFF' e he)
+      · have hcN := hpopNot _ oc hco (Nat.lt_of_lt_of_le hlt hL)
+        have hcal : calleesOf st' m = calleesOf st m := by
+          simp only [calleesOf, gitG, Treap.gut, hgN m hmN]
+        refine Or.inr ⟨by rw [hcal]; exact hce, ⟨oc, by rw [hoN _ hcN]; exact hco, hlt⟩, ?_⟩
+        intro hlt'
+        simp only [chgOf, ranOf, htN _ hcN, htN m hmN] at hlt'
+        obtain ⟨dc, hdc, htc⟩ := htab hlt'
+        exact ⟨dc, by rw [hgN _ hcN]; exact hdc, htc⟩
+
 end Ana
 end SkaModel
 end Formalization
