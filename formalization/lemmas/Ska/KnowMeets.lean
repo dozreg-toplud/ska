@@ -761,7 +761,19 @@ Two forms of the residue, over the entries of one call graph:
 `tools/hoon/sitesmeet5.hoon` checks `ProdMeet` (with the sock `less.c` and
 the two identities' subjects) and the equality of the patched products
 under `less.c`, over every two entries of one code bell in the pruned graph
-of each poke: there were none in the fifteen pokes. -/
+of each poke: there were none in the fifteen pokes.
+
+`tools/hoon/prodsame.hoon` makes such entries on purpose: a gate whose
+sample is the formula of an indirect call, `|=(a=* .*(a a))`, called first
+with an unknown sample (`(f (add 2 3))`, so the sample joins `indi`) and then
+with a known atom (`(f 5)`): `+git:mi` misses on the `.indi` test, and since
+an atom is no formula the call stays indirect, so the new identity has the
+same code requirement.  On seven such pokes (runhoon.sh, 2026-11-24) the
+pruned graphs held 8 groups of two identities of one code bell, with no
+failure of `ProdMeet` and no pair whose patched products under `less.c`
+differ; `tools/hoon/prodsame4.hoon` found, after the last poke, 34 pairs of
+a code bell and a bake (10 strict) and 64 sites, with no failure of
+`LessProvidesNF`, `KnowMeetsNF` or `SitesMeet`. -/
 
 section Residue
 
