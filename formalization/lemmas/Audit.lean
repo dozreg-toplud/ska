@@ -18,6 +18,7 @@ import lemmas.Hoon.SetFolds
 import lemmas.Hoon.ListsMore
 import lemmas.Hoon.ListsSort
 import lemmas.Hoon.Rip
+import lemmas.Hoon.CellCrash
 import lemmas.Compiler.Ca
 import lemmas.Compiler.So
 import lemmas.Compiler.Axes
@@ -304,6 +305,13 @@ open Formalization
 #print axioms Assembly.ovumMold
 #print axioms Compiler.eval_mook_not2
 #print axioms Assembly.mookOther_of
+#print axioms Hoon.dec_gate_cell
+#print axioms Hoon.rip_gate_cell
+#print axioms Hoon.lent_gate_bad
+#print axioms Compiler.eval_rend_cell_tag
+#print axioms Compiler.loopN_indep
+#print axioms Compiler.loopN_some
+#print axioms Compiler.mookOtherTwo_of
 #print axioms Assembly.poke_iff
 #print axioms Assembly.reach_model
 #print axioms Assembly.meek_of
