@@ -274,5 +274,234 @@ theorem wf_patchDatum {d : Datum} {s : Sock} (hd : WellFormed d.prod) (hs : Well
     WellFormed (patchDatum d s).prod :=
   wf_patchProd hs d.map d.prod hd
 
+/-! ## `fol-loop` keeps well-formed products and reads the table only at
+well-formed subject socks -/
+
+/-- The table's answers at well-formed subject socks have well-formed
+products. -/
+def TabWF (tab : Tab) : Prop := ∀ s f a, WellFormed s → tab s f = some a → WellFormed a.prod
+
+/-- The table cut down to well-formed subject socks: it fails elsewhere. -/
+noncomputable def tabOnWF (tab : Tab) : Tab := fun s f =>
+  @ite _ (WellFormed s) (Classical.propDecidable _) (tab s f) none
+
+theorem tabOnWF_eq {tab : Tab} {s : Sock} (hs : WellFormed s) (f : Noun) : tabOnWF tab s f = tab s f := by
+  unfold tabOnWF; rw [@if_pos _ (Classical.propDecidable _) hs]
+
+/-- What a run of the recursion `go` gives on a well-formed subject sock: a
+well-formed product, and the same result from `go'` (the recursion with the
+table cut down to well-formed subject socks). -/
+def GoWF (go go' : FolGo) : Prop :=
+  ∀ fol sub mk bc df gen out gen', WellFormed sub.sock → go fol sub mk bc df gen = some (out, gen') →
+    WellFormed out.prod.sock ∧ go' fol sub mk bc df gen = some (out, gen')
+
+theorem callStep_wf {tab : Tab} {go go' : FolGo} (htab : TabWF tab) (IH : GoWF go go')
+    {mk : Option Noun} {bc df : Bool} {s f out : FolOut} {gen gen' : Gen}
+    (hs : WellFormed s.prod.sock) (h : callStep tab go mk bc df s f gen = some (out, gen')) :
+    WellFormed out.prod.sock ∧ callStep (tabOnWF tab) go' mk bc df s f gen = some (out, gen') := by
+  unfold callStep at h ⊢
+  by_cases hv : s.prod.sock = Sock.void ∨ f.prod.sock = Sock.void
+  · rw [if_pos hv] at h ⊢
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨wf_void, rfl⟩
+  rw [if_neg hv] at h ⊢
+  have dflt : ∀ (o : FolOut) (g : Gen), some (o, g) = some (out, gen') → o.prod = Anno.dunno →
+      WellFormed out.prod.sock ∧ some (o, g) = some (out, gen') := by
+    intro o g e hp
+    simp only [Option.some.injEq, Prod.mk.injEq] at e
+    obtain ⟨rfl, rfl⟩ := e
+    exact ⟨by rw [hp]; exact wf_dunno, rfl⟩
+  cases hf : f.prod.sock with
+  | void => exact absurd (Or.inr hf) hv
+  | mk c d =>
+  rw [hf] at h
+  cases c with
+  | no => exact dflt _ _ h rfl
+  | cell _ _ => exact dflt _ _ h rfl
+  | yes =>
+  cases d with
+  | atom _ => exact dflt _ _ h rfl
+  | cell fa fb =>
+  cases bc with
+  | true => exact dflt _ _ h rfl
+  | false =>
+  simp only at h ⊢
+  split at h
+  · rename_i hc
+    rw [if_pos hc]
+    simp only [Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h ⊢
+    obtain ⟨i, hi, rfl, rfl⟩ := h
+    obtain ⟨w, e⟩ := IH _ _ _ _ _ _ _ _ hs hi
+    exact ⟨w, i, e, rfl, rfl⟩
+  · rename_i hc
+    rw [if_neg hc, tabOnWF_eq hs]
+    simp only [Option.bind_eq_some_iff] at h ⊢
+    obtain ⟨dd, hd, h⟩ := h
+    refine ⟨?_, dd, hd, h⟩
+    split at h
+    · cases h
+    · simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact htab _ _ _ hs hd
+
+theorem meanArm_wf {go go' : FolGo} (IH : GoWF go go') {tag : Nat} {h : FolOut} {mk : Option Noun}
+    {bc : Bool} {gen : Gen} {r : Option (Bell × Option Noun) × Gen} (hh : WellFormed h.prod.sock)
+    (hm : meanArm go tag h mk bc gen = some r) : meanArm go' tag h mk bc gen = some r := by
+  unfold meanArm at hm ⊢
+  split at hm
+  · rename_i hc; rw [if_pos hc]; exact hm
+  · rename_i hc; rw [if_neg hc]
+    simp only [Option.bind_eq_some_iff] at hm ⊢
+    obtain ⟨bat, hb, hm⟩ := hm
+    refine ⟨bat, hb, ?_⟩
+    split at hm
+    · simp only [Option.bind_eq_some_iff] at hm ⊢
+      obtain ⟨cg, hcg, hm⟩ := hm
+      exact ⟨cg, (IH _ _ _ _ _ _ _ _ hh hcg).2, hm⟩
+    · exact hm
+
+theorem consProd_wf {l r : FolOut} (hl : WellFormed l.prod.sock) (hr : WellFormed r.prod.sock) :
+    WellFormed (consProd l r).1.sock := by
+  unfold consProd; split
+  · exact wf_yes _
+  · exact wf_knit hl hr
+
+/-- One level of `fol-loop` keeps `GoWF`. -/
+theorem folStep_wf {tab : Tab} {go go' : FolGo} (htab : TabWF tab) (IH : GoWF go go')
+    (IHs : ∀ fol sub mk bc df gen out gen', WellFormed sub.sock →
+      go fol sub mk bc df gen = some (out, gen') → go' fol sub mk bc df gen = some (out, gen')) :
+    GoWF (folStep tab go) (folStep (tabOnWF tab) go') := by
+  intro fol sub mk bc df gen out gen' hsub h
+  cases hs : shape fol with
+  | cons a b q =>
+    simp only [folStep, hs, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h ⊢
+    obtain ⟨⟨l, g1⟩, h1, ⟨r, g2⟩, h2, rfl, rfl⟩ := h
+    obtain ⟨w1, e1⟩ := IH _ _ _ _ _ _ _ _ hsub h1
+    obtain ⟨w2, e2⟩ := IH _ _ _ _ _ _ _ _ hsub h2
+    exact ⟨consProd_wf w1 w2, _, e1, _, e2, rfl, rfl⟩
+  | op0 p =>
+    simp only [folStep, hs, Option.map_eq_some_iff, Prod.mk.injEq] at h ⊢
+    obtain ⟨pr, hpr, rfl, rfl⟩ := h
+    refine ⟨?_, pr, hpr, rfl, rfl⟩
+    split at hpr
+    · cases hpr; exact wf_dunno
+    · split at hpr
+      · cases hpr; exact hsub
+      · simp only [Option.map_eq_some_iff] at hpr
+        obtain ⟨s', hs', rfl⟩ := hpr
+        exact wf_pull hsub hs'
+  | op1 p =>
+    simp only [folStep, hs, Option.some.injEq, Prod.mk.injEq] at h ⊢
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨wf_yes p, rfl, rfl⟩
+  | op2 a b q =>
+    simp only [folStep, hs, Option.bind_eq_some_iff] at h ⊢
+    obtain ⟨⟨s1, g1⟩, h1, ⟨f1, g2⟩, h2, h3⟩ := h
+    obtain ⟨w1, e1⟩ := IH _ _ _ _ _ _ _ _ hsub h1
+    obtain ⟨_, e2⟩ := IH _ _ _ _ _ _ _ _ hsub h2
+    obtain ⟨w3, e3⟩ := callStep_wf htab IH w1 h3
+    exact ⟨w3, _, e1, _, e2, e3⟩
+  | op3 a b =>
+    simp only [folStep, hs, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h ⊢
+    obtain ⟨⟨p1, g1⟩, h1, rfl, rfl⟩ := h
+    exact ⟨wf_dunno, _, (IH _ _ _ _ _ _ _ _ hsub h1).2, rfl, rfl⟩
+  | op4 a b =>
+    simp only [folStep, hs, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h ⊢
+    obtain ⟨⟨p1, g1⟩, h1, rfl, rfl⟩ := h
+    exact ⟨wf_dunno, _, (IH _ _ _ _ _ _ _ _ hsub h1).2, rfl, rfl⟩
+  | op5 a b q =>
+    simp only [folStep, hs, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h ⊢
+    obtain ⟨⟨p1, g1⟩, h1, ⟨q1, g2⟩, h2, rfl, rfl⟩ := h
+    exact ⟨wf_dunno, _, (IH _ _ _ _ _ _ _ _ hsub h1).2, _, (IH _ _ _ _ _ _ _ _ hsub h2).2, rfl, rfl⟩
+  | op6 a b q r =>
+    simp only [folStep, hs, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h ⊢
+    obtain ⟨⟨p1, g1⟩, h1, ⟨q1, g2⟩, h2, ⟨r1, g3⟩, h3, rfl, rfl⟩ := h
+    obtain ⟨_, e1⟩ := IH _ _ _ _ _ _ _ _ hsub h1
+    obtain ⟨w2, e2⟩ := IH _ _ _ _ _ _ _ _ hsub h2
+    obtain ⟨w3, e3⟩ := IH _ _ _ _ _ _ _ _ hsub h3
+    exact ⟨wf_doubleInt w2 w3, _, e1, _, e2, _, e3, rfl, rfl⟩
+  | op7 a b q =>
+    simp only [folStep, hs, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h ⊢
+    obtain ⟨⟨p1, g1⟩, h1, ⟨q1, g2⟩, h2, rfl, rfl⟩ := h
+    obtain ⟨w1, e1⟩ := IH _ _ _ _ _ _ _ _ hsub h1
+    obtain ⟨w2, e2⟩ := IH _ _ _ _ _ _ _ _ w1 h2
+    exact ⟨w2, _, e1, _, e2, rfl, rfl⟩
+  | op8 a b q =>
+    simp only [folStep, hs] at h ⊢
+    exact IH _ _ _ _ _ _ _ _ hsub h
+  | op9 p a b =>
+    simp only [folStep, hs] at h ⊢
+    exact IH _ _ _ _ _ _ _ _ hsub h
+  | op10 ax don r1 r2 =>
+    simp only [folStep, hs] at h ⊢
+    split at h
+    · rename_i hx
+      rw [if_pos hx]
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact ⟨wf_dunno, rfl⟩
+    · rename_i hx
+      rw [if_neg hx]
+      simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff, Prod.mk.injEq] at h ⊢
+      obtain ⟨⟨dn, g1⟩, h1, ⟨rc, g2⟩, h2, s', hd, rfl, rfl⟩ := h
+      obtain ⟨w1, e1⟩ := IH _ _ _ _ _ _ _ _ hsub h1
+      obtain ⟨w2, e2⟩ := IH _ _ _ _ _ _ _ _ hsub h2
+      exact ⟨wf_darn w2 w1 hd, _, e1, _, e2, s', hd, rfl, rfl⟩
+  | op11s p a b =>
+    simp only [folStep, hs] at h ⊢
+    split at h
+    · rename_i hp
+      rw [if_pos hp]
+      exact IH _ _ _ _ _ _ _ _ hsub h
+    · rename_i hp
+      rw [if_neg hp]
+      simp only [Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h ⊢
+      obtain ⟨⟨q1, g1⟩, h1, rfl, rfl⟩ := h
+      obtain ⟨w1, e1⟩ := IH _ _ _ _ _ _ _ _ hsub h1
+      exact ⟨w1, _, e1, rfl, rfl⟩
+  | op11d tag h1 h2 f =>
+    simp only [folStep, hs, Option.bind_eq_some_iff] at h ⊢
+    obtain ⟨⟨hh, g1⟩, e1, h⟩ := h
+    obtain ⟨wh, e1'⟩ := IH _ _ _ _ _ _ _ _ hsub e1
+    split at h
+    · rename_i hc
+      obtain ⟨w, e⟩ := IH _ _ _ _ _ _ _ _ hsub h
+      refine ⟨w, _, e1', ?_⟩
+      simp only [if_pos hc]
+      exact e
+    · rename_i hc
+      simp only [Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨arm, harm, ⟨fr, g3⟩, h3, rfl, rfl⟩ := h
+      obtain ⟨w3, e3⟩ := IH _ _ _ _ _ _ _ _ hsub h3
+      refine ⟨w3, _, e1', ?_⟩
+      simp only [if_neg hc, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq]
+      exact ⟨arm, meanArm_wf IH wh harm, _, e3, rfl, rfl⟩
+  | op12 a b q =>
+    simp only [folStep, hs, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h ⊢
+    obtain ⟨⟨p1, g1⟩, h1, ⟨q1, g2⟩, h2, rfl, rfl⟩ := h
+    exact ⟨wf_dunno, _, (IH _ _ _ _ _ _ _ _ hsub h1).2, _, (IH _ _ _ _ _ _ _ _ hsub h2).2, rfl, rfl⟩
+  | other =>
+    simp only [folStep, hs, Option.some.injEq, Prod.mk.injEq] at h ⊢
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨wf_dunno, rfl, rfl⟩
+
+/-- **`fol-loop` on a well-formed subject sock**, with a table whose answers
+at well-formed subject socks have well-formed products: every product is
+well formed, and the run reads the table only at well-formed subject socks:
+it returns the same with the table cut down to them (`tabOnWF`), which fails
+at every other sock, so a read anywhere else would have failed the run. -/
+theorem folLoop_wf {tab : Tab} (htab : TabWF tab) : ∀ n, GoWF (folLoopF tab n) (folLoopF (tabOnWF tab) n)
+  | 0 => fun _ _ _ _ _ _ _ _ _ h => by cases h
+  | n + 1 => folStep_wf htab (folLoop_wf htab n) (fun _ _ _ _ _ _ _ _ hs h => (folLoop_wf htab n _ _ _ _ _ _ _ _ hs h).2)
+
+/-- **The run of an entry**: from a well-formed subject sock `bus`, the
+product is well formed and the table is read only at well-formed subject
+socks. -/
+theorem folLoopTop_wf {tab : Tab} (htab : TabWF tab) {n : Nat} {bus : Sock} {fol : Noun}
+    {out : FolOut} {gen' : Gen} (hb : WellFormed bus) (h : folLoopTop tab n bus fol = some (out, gen')) :
+    WellFormed out.prod.sock ∧ folLoopTop (tabOnWF tab) n bus fol = some (out, gen') :=
+  folLoop_wf htab n _ _ _ _ _ _ _ _ hb h
+
 end SkaModel
 end Formalization
