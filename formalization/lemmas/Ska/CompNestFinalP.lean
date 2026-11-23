@@ -30,10 +30,10 @@ theorem finishLF_compDoneP (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.do
     (hcount : sixCount nm ≤ 255) {ord : NeedOrd} {less : Cape} {bake : Need → Need × List (Nat × Noun)}
     (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
     (h : finishLF (S := S) nm ord less bake = some c') : CompDoneOn lib c' nm (CapeAxes less) := by
-  rw [finishLF_eq hbake (fun _ _ h1 => (runP_ok (Map := Map) lib hf trivial trivial hcount (by simp [gen0]) rfl h1).cnd)] at h
+  rw [finishLF_eq hbake (fun _ _ h1 => (runP_ok (Map := Map) lib hf trivial trivial hcount (by simp [gen0]) rfl upBelow_gen0 h1).cnd)] at h
   unfold finishL at h
   obtain ⟨⟨nex, g4⟩, h1, h⟩ := Option.bind_eq_some_iff.mp h
-  have R := runP_ok (Map := Map) lib hf trivial trivial hcount (by simp [gen0]) rfl h1
+  have R := runP_ok (Map := Map) lib hf trivial trivial hcount (by simp [gen0]) rfl upBelow_gen0 h1
   simp only at h
   split at h
   · cases h
@@ -78,8 +78,8 @@ theorem finishLF_compDoneP (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.do
       HoonMap.get g9.blocks o = HoonMap.get g4.blocks o := fun o h1 h2 =>
     (F9.other o h1).trans (oth8 o h1 h2)
   -- every block goes down
-  have D4 : Down g4.blocks := R.grow.down (fun k b hb => by simp [gen0, HoonMap.get_empty] at hb) (by simp [gen0])
-  have D9 : Down g9.blocks := down_of_fins D4 fun k b' hk => by
+  have D4 : DownRk (upRk g4.blocks) g4.blocks := downRk_gen0 R.grow
+  have D9 : DownRk (upRk g4.blocks) g9.blocks := downRk_of_fins D4 fun k b' hk => by
     by_cases e1 : k = nex.th.there
     · subst e1; rw [hB9] at hk; cases hk; exact ⟨_, hB, rfl⟩
     by_cases e2 : k ∈ (entries nex.laz).map Prod.fst
@@ -92,12 +92,12 @@ theorem finishLF_compDoneP (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.do
   have hc1o : HoonMap.get c1.blocks nex.th.there = some ⟨[], B, fin⟩ := by simp [c1, HoonMap.get_put]
   have hag : ∀ k, k ≠ nex.th.there → HoonMap.get c1.blocks k = HoonMap.get g9.blocks k := fun k hk => by
     simp [c1, HoonMap.get_put, hk]
-  have D1 : Down c1.blocks := by
+  have D1 : DownRk (upRk g4.blocks) c1.blocks := by
     intro k b hk
     by_cases e : k = nex.th.there
     · subst e; rw [hc1o] at hk; cases hk; exact D4 _ _ hB
     · rw [hag k e] at hk; exact D9 k b hk
-  obtain ⟨_, start, hst, hent⟩ := toStraight_entry hts D9 D1 hag
+  obtain ⟨_, start, hst, hent⟩ := toStraight_entryR hts D9 D1 hag
   rw [hB9] at hst; cases hst
   intro σ O st s args t gul hP hsp
   obtain ⟨R0, hR0, he⟩ := hent lib O st s args t gul hsp

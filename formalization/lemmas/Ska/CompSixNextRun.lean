@@ -30,6 +30,7 @@ variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys
 /-- **The relation for one run of `runL` for a fork-free goal `%next`.** -/
 structure RunOKN (lib : Lib) (nm : Nomm) (sur : Sure S) (th : Jmp) (g0 g1 : Gen Map) (nex : NextL S) : Prop where
   ext : Ext g0 g1
+  grow : GrowU g0 g1
   cnd : g1.cond = g0.cond
   lo : 1 ≤ nex.th.there
   hi : nex.th.there < g1.bo
@@ -51,7 +52,7 @@ structure RunOKN (lib : Lib) (nm : Nomm) (sur : Sure S) (th : Jmp) (g0 g1 : Gen 
 /-- **Every nomm of `Frag` meets `RunOKN`.** -/
 theorem runOKN_frag (lib : Lib) {sur : Sure S} {th : Jmp} {nm : Nomm} (hf : Frag nm (CGoal.next sur th))
     {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S} (hj : GJ g0.bo (CGoal.next sur th)) (b0 : 1 ≤ g0.bo)
-    (d0 : g0.drop = false) (hok : GoalOK g0 (CGoal.next sur th)) (hcl : Clean sur.ned)
+    (d0 : g0.drop = false) (hu : UpBelow g0) (hok : GoalOK g0 (CGoal.next sur th)) (hcl : Clean sur.ned)
     (h : runL nm (CGoalL.next (ofSure sur) th) region g0 = some (nex, g1)) :
     RunOKN (Map := Map) lib nm sur th g0 g1 nex := by
   rw [show (CGoalL.next (ofSure sur) th : CGoalL S) = CGoal.toL (CGoal.next sur th) from rfl, runL_frag hf] at h
@@ -60,7 +61,7 @@ theorem runOKN_frag (lib : Lib) {sur : Sure S} {th : Jmp} {nm : Nomm} (hf : Frag
   obtain ⟨rfl, rfl⟩ := e
   have R := run_ok lib nm _ g0 g n hf hok hcl hr
   have D := run_down (S := S) (Map := Map) nm _ g0 g n hj b0 d0 hr
-  refine ⟨R.ext, (kc_run nm _).keep g0 n g hr, D.lo, D.hi, D.entry, R.regs, R.dist,
+  refine ⟨R.ext, D.grow.toU hu, (kc_run nm _).keep g0 n g hr, D.lo, D.hi, D.entry, R.regs, R.dist,
     by simp [Next.toL, entries_ofSure], by simp [Next.toL, entries_ofSure], by simp [Next.toL, entries_ofSure],
     by simp [Next.toL, entries_ofSure], fun s hs => R.nec s hs, ?_⟩
   intro c ned σ O st t gul s0 s ag hned regs hh _
@@ -69,6 +70,56 @@ theorem runOKN_frag (lib : Lib) {sur : Sure S} {th : Jmp} {nm : Nomm} (hf : Frag
   rcases hr.1 with e | e
   · exact Or.inl e
   · exact Or.inr (hned r e)
+
+/-- `+fork-sure` changes no block above the join. -/
+theorem forkSure_other {sur : Sure S} {o : Nat} {g g' : Gen Map} {s0 s1 : Sure S}
+    (h : forkSure sur o g.bo (g.bo + 1) { g with bo := g.bo + 2 } = some ((s0, s1), g')) (hd : g.drop = false) :
+    ∀ k, g.bo + 3 ≤ k → HoonMap.get g'.blocks k = HoonMap.get g.blocks k := by
+  unfold forkSure at h
+  obtain ⟨⟨n0, n1⟩, gK, hK, h⟩ := bind_some h
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h
+  unfold forkNeed at hK
+  obtain ⟨⟨m0, m1⟩, gN, hN, h⟩ := bind_some hK
+  obtain ⟨⟨kk, eN⟩, -⟩ := forkNeedGo_spec _ _ _ _ _ hN
+  subst eN
+  simp only [bind_apply, emit_apply, Option.bind_some, pure_apply] at h
+  simp only [emir, Gen.emitted, hd, Bool.false_eq_true, if_false, Option.bind_some, pure_apply,
+    Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h
+  intro k' hk'
+  simp [HoonMap.get_put, show k' ≠ g.bo + 1 by omega, show k' ≠ g.bo by omega, show k' ≠ g.bo + 2 by omega]
+
+/-- **`+fork-sure` grows the state with hops up**: the fork blocks hop up to
+the join, which hops down to the goal's block. -/
+theorem growU_forkSure {sur : Sure S} {th : Jmp} {g gF : Gen Map} {s0 s1 : Sure S}
+    (h : forkSure sur th.there g.bo (g.bo + 1) { g with bo := g.bo + 2 } = some ((s0, s1), gF))
+    (hd : g.drop = false) (h1 : 1 ≤ th.there) (h2 : th.there < g.bo) (hu : UpBelow g) : GrowU g gF := by
+  obtain ⟨-, -, -, -, -, -, -, -, -, boF, drF, -, -, bk0, bk1, bk2, keepF⟩ := forkSure_spec h hd
+  have oth := forkSure_other h hd
+  have notUp : ∀ t, ¬ UpAt gF.blocks (g.bo + 2) t := by
+    rintro t ⟨b, j, hb, hf, ht, hlt⟩
+    rw [bk2] at hb; cases hb; simp only [Termin.hop.injEq] at hf; subst hf; simp only [jmp0] at ht; omega
+  refine growU_of (by omega) drF (fun k hk => ?_) (fun k b' hk1 hk2 hb => ?_)
+  · rcases hk with hk | hk
+    · exact keepF k hk
+    · exact oth k (by omega)
+  · have : k = g.bo ∨ k = g.bo + 1 ∨ k = g.bo + 2 := by omega
+    rcases this with rfl | rfl | rfl
+    · rw [bk0] at hb; cases hb
+      intro j hj; simp only [finJumps, List.mem_singleton] at hj; subst hj
+      exact ⟨by dsimp only; omega, Or.inr ⟨rfl, by dsimp only; omega, by dsimp only; omega, notUp⟩⟩
+    · rw [bk1] at hb; cases hb
+      intro j hj; simp only [finJumps, List.mem_singleton] at hj; subst hj
+      exact ⟨by dsimp only; omega, Or.inr ⟨rfl, by dsimp only; omega, by dsimp only; omega, notUp⟩⟩
+    · rw [bk2] at hb; cases hb
+      intro j hj; simp only [finJumps, List.mem_singleton] at hj; subst hj
+      refine ⟨by simp only [jmp0]; omega, Or.inl ⟨by simp only [jmp0]; omega, fun t ht => ?_⟩⟩
+      simp only [jmp0] at ht
+      have ht' : UpAt g.blocks th.there t := by
+        obtain ⟨b, j, hb, hf, e, hlt⟩ := ht
+        exact ⟨b, j, (keepF _ h2).symm.trans hb, hf, e, hlt⟩
+      have := hu _ t ht'; omega
 
 /-- **`+sect` when the branches made no proxy**: the two lazy blocks at the
 next labels, tagged, and the blocks otherwise as they were. -/
