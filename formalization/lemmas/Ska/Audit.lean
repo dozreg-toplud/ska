@@ -3,6 +3,7 @@ import lemmas.Ska.CapeFacts
 import lemmas.Ska.ContractExamples
 import lemmas.Ska.BugWitness
 import lemmas.Ska.NommSem
+import lemmas.Ska.NommAgree
 
 /-! The axioms of the main theorems of `lemmas/Ska`.  `lake build` prints
 them; each should be `propext`, `Classical.choice` and `Quot.sound` at most. -/
@@ -45,3 +46,6 @@ open Formalization.SkaModel
 #print axioms bare_runs
 #print axioms EvalA.toEvalH
 #print axioms toneRel_mink_self
+#print axioms nomm_fwd
+#print axioms nomm_bwd
+#print axioms nomm_agree

@@ -374,5 +374,209 @@ theorem nomm_fwd (lib : Lib) (gul : Noun) (code : Bell → Option Nomm) (hc : Co
     simp only [nommStep]
     rfl
 
+/-! ## The backward direction -/
+
+theorem Ev.mink_nil {lib : Lib} {gul : Noun} {t : Trace} {x b y : Noun}
+    (h : Ev (fun n => SkaModel.minkF lib gul n t x b) (Tone.zero y)) :
+    Mink lib gul [] x b (Tone.zero y) := by
+  obtain ⟨n, hn⟩ := h.exists
+  exact ⟨n, mink_nil_of_zero hn⟩
+
+theorem nommF_cons_n0_inv {lib : Lib} {gul : Noun} {code : Bell → Option Nomm} {m : Nat}
+    {t : Trace} {x : Noun} {p : Nomm} {r : Tone}
+    (h : nommF lib gul code m t x (Nomm.cons p (Nomm.n0 1)) = some r) :
+    (∃ y, nommF lib gul code m t x p = some (Tone.zero y) ∧ r = Tone.zero (C y x)) ∨
+      (nommF lib gul code m t x p = some r ∧ ∀ p', r ≠ Tone.zero p') := by
+  match m, h with
+  | 0, h => simp [nommF] at h
+  | 1, h =>
+    simp only [nommF_succ, nommStep] at h
+    rcases tbind_eq_some h with ⟨a, ha, h1⟩ | ⟨ha, hnz⟩
+    · simp [nommF] at h1
+    · exact Or.inr ⟨nommF_succ_le lib gul code 0 t x p r ha, hnz⟩
+  | k + 2, h =>
+    rw [nommF_cons_n0] at h
+    rcases tbind_eq_some h with ⟨a, ha, h1⟩ | ⟨ha, hnz⟩
+    · cases h1
+      exact Or.inl ⟨a, nommF_succ_le lib gul code _ t x p _ ha, rfl⟩
+    · exact Or.inr ⟨nommF_succ_le lib gul code _ t x p r ha, hnz⟩
+
+/-- **What a nomm returns, `+mink` returns on its formula.** -/
+theorem nomm_bwd (lib : Lib) (gul : Noun) (code : Bell → Option Nomm) (hc : CodeOK lib code) :
+    ∀ m P f nm t x r, Annot lib code P f nm → P x → nommF lib gul code m t x nm = some r →
+      Ev (fun n => minkF lib gul n t x f) r := by
+  intro m
+  induction m with
+  | zero => intro P f nm t x r _ _ h; simp [nommF] at h
+  | succ m ih =>
+  intro P f nm t x r hA hP h
+  have IH : ∀ {P f nm t x r}, Annot lib code P f nm → P x → nommF lib gul code m t x nm = some r →
+      Ev (fun n => minkF lib gul n t x f) r := fun hA hP h => ih _ _ _ _ _ _ hA hP h
+  have h0 := h
+  rw [nommF_succ] at h
+  apply Ev.succ
+  simp only [minkF_succ_eq]
+  cases hA with
+  | cons hA1 hA2 =>
+    simp only [nommStep] at h
+    simp only [minkStep]
+    exact ev_tbind (fun _ h1 => IH hA1 hP h1) (fun _ _ _ h1 => ev_tbind (fun _ h2 => IH hA2 hP h2)
+      (fun _ _ _ h3 => by cases h3; exact Ev.const _) h1) h
+  | @n0 _ axis =>
+    simp only [nommStep] at h
+    refine ⟨0, fun _ _ => ?_⟩
+    simp only [minkStep]
+    cases hs : slot? axis x <;> simp only [hs] at h ⊢ <;> exact h
+  | n1 =>
+    simp only [nommStep] at h
+    exact ⟨0, fun _ _ => h⟩
+  | indirect hA1 hA2 =>
+    simp only [nommStep] at h
+    simp only [minkStep]
+    exact ev_tbind (fun _ h1 => IH hA1 hP h1) (fun _ _ _ h1 => ev_tbind (fun _ h2 => IH hA2 hP h2)
+      (fun _ _ _ h3 => Ev.minkF h3) h1) h
+  | direct hA1 hA2 hcode hy hg =>
+    rename_i b c p q bl k nb
+    simp only [nommStep] at h
+    simp only [minkStep]
+    refine ev_tbind (fun _ h1 => IH hA1 hP h1) (fun y _ hxy h1 => ev_tbind (fun _ h2 => IH hA2 hP h2)
+      (fun g r2 hxg h2 => ?_) h1) h
+    have hgf := hg x gul g hP (IH hA2 hP hxg).mink_nil
+    have hfit := hy x gul y hP (IH hA1 hP hxy).mink_nil
+    subst hgf
+    simp only [hcode, Option.bind_some] at h2
+    exact IH (hc bl nb hcode) hfit h2
+  | inline hA1 htot hA2 =>
+    rename_i b c g p q
+    simp only [nommStep] at h
+    simp only [minkStep]
+    refine ev_tbind (fun _ h1 => IH hA1 hP h1) (fun y r1 hxy h1 => ?_) h
+    have hy := (IH hA1 hP hxy).mink_nil
+    obtain ⟨m2, e2⟩ := IH hA2 ⟨x, gul, hP, hy⟩ h1
+    obtain ⟨n0, hn0⟩ := htot x gul hP
+    refine ⟨max m2 n0, fun n hn => ?_⟩
+    have ec : minkF lib gul n t x c = some (Tone.zero g) :=
+      minkF_le lib gul (show n0 ≤ n by omega) _ _ _ _ (mink_t_of_nil_zero t hn0)
+    have ey : minkF lib gul n t y g = some r1 := e2 n (by omega)
+    show tbind _ _ = _
+    rw [ec, tbind_zero]; exact ey
+  | n3 hA1 =>
+    simp only [nommStep] at h
+    simp only [minkStep]
+    exact ev_tbind (fun _ h1 => IH hA1 hP h1) (fun _ _ _ h1 => by cases h1; exact Ev.const _) h
+  | n4 hA1 =>
+    simp only [nommStep] at h
+    simp only [minkStep]
+    refine ev_tbind (fun _ h1 => IH hA1 hP h1) (fun v _ _ h1 => ⟨0, fun _ _ => ?_⟩) h
+    cases v <;> exact h1
+  | n5 hA1 hA2 =>
+    simp only [nommStep] at h
+    simp only [minkStep]
+    exact ev_tbind (fun _ h1 => IH hA1 hP h1) (fun _ _ _ h1 => ev_tbind (fun _ h2 => IH hA2 hP h2)
+      (fun _ _ _ h3 => by cases h3; exact Ev.const _) h1) h
+  | n6 hA1 hA2 hA3 =>
+    simp only [nommStep] at h
+    simp only [minkStep]
+    refine ev_tbind (fun _ h1 => IH hA1 hP h1) (fun v _ _ h1 => ?_) h
+    match v, h1 with
+    | Noun.cell _ _, h1 => exact ⟨0, fun _ _ => h1⟩
+    | Noun.atom 0, h1 => exact IH hA2 hP h1
+    | Noun.atom 1, h1 => exact IH hA3 hP h1
+    | Noun.atom (k + 2), h1 => exact ⟨0, fun _ _ => h1⟩
+  | n7 hA1 hA2 =>
+    simp only [nommStep] at h
+    simp only [minkStep]
+    exact ev_tbind (fun _ h1 => IH hA1 hP h1)
+      (fun _ _ hxy h1 => IH hA2 ⟨x, gul, hP, (IH hA1 hP hxy).mink_nil⟩ h1) h
+  | n8 hA1 hA2 =>
+    rename_i b c p q
+    simp only [nommStep] at h
+    simp only [minkStep]
+    rcases tbind_eq_some h with ⟨z, hz, h1⟩ | ⟨hz, hnz⟩
+    · rcases nommF_cons_n0_inv hz with ⟨y, hy, hzy⟩ | ⟨_, hnz⟩
+      · cases hzy
+        obtain ⟨m1, e1⟩ := IH hA1 hP hy
+        obtain ⟨m2, e2⟩ := IH hA2 ⟨x, y, gul, hP, (IH hA1 hP hy).mink_nil, rfl⟩ h1
+        refine ⟨max m1 m2, fun n hn => ?_⟩
+        have e1' : minkF lib gul n t x b = some (Tone.zero y) := e1 n (by omega)
+        have e2' : minkF lib gul n t (C y x) c = some r := e2 n (by omega)
+        show tbind _ _ = _
+        rw [e1', tbind_zero]; exact e2'
+      · exact absurd rfl (hnz z)
+    · rcases nommF_cons_n0_inv hz with ⟨y, _, hzy⟩ | ⟨hp, _⟩
+      · exact absurd hzy (hnz _)
+      · obtain ⟨m1, e1⟩ := IH hA1 hP hp
+        refine ⟨m1, fun n hn => ?_⟩
+        have e1' : minkF lib gul n t x b = some r := e1 n hn
+        show tbind _ _ = _
+        rw [e1', tbind_nonzero' hnz]
+  | n9 hA1 hA2 =>
+    rename_i axis c q rr
+    simp only [nommStep] at h
+    simp only [minkStep]
+    refine ev_tbind (fun _ h1 => IH hA1 hP h1) (fun core r1 hxc h1 => ?_) h
+    have hQ : Img lib P c core := ⟨x, gul, hP, (IH hA1 hP hxc).mink_nil⟩
+    obtain ⟨m0, e0⟩ := IH hA2 hQ h1
+    refine ⟨m0 + 1, fun n hn => ?_⟩
+    obtain ⟨k, rfl⟩ : ∃ k, n = k + 1 := ⟨n - 1, by omega⟩
+    have e : minkF lib gul (k + 2) t core (n3 (A 2) (slot 1) (slot axis)) = some r1 := e0 (k + 2) (by omega)
+    rw [minkF_invoke] at e
+    cases hs : slot? axis core <;> simp only [hs] at e ⊢ <;> exact e
+  | n10 hax hA1 hA2 =>
+    simp only [nommStep, hax, if_false] at h
+    simp only [minkStep, hax, if_false]
+    refine ev_tbind (fun _ h1 => IH hA2 hP h1) (fun _ _ _ h1 => ev_tbind (fun _ h2 => IH hA1 hP h2)
+      (fun _ _ _ h3 => ⟨0, fun _ _ => ?_⟩) h1) h
+    split at h3 <;> simp_all
+  | n11s hA1 =>
+    simp only [nommStep] at h
+    simp only [minkStep]
+    exact ev_tbind (fun _ h1 => IH hA1 hP h1) (fun _ _ _ h1 => by cases h1; exact Ev.const _) h
+  | n11d hA1 hA2 =>
+    simp only [nommStep] at h
+    simp only [minkStep]
+    exact ev_tbind (fun _ h1 => IH hA1 hP h1) (fun _ _ _ h1 => ev_tbind (fun _ h2 => IH hA2 hP h2)
+      (fun _ _ _ h3 => by cases h3; exact Ev.const _) h1) h
+  | mean hA1 hA2 =>
+    have hst : stopTag Tag.mean = true := by decide
+    simp only [nommStep] at h
+    simp only [minkStep, hst, if_true]
+    exact ev_tbind (fun _ h1 => IH hA1 hP h1) (fun _ _ _ h1 => ev_tbind (fun _ h2 => IH hA2 hP h2)
+      (fun _ _ _ h3 => by cases h3; exact Ev.const _) h1) h
+  | n12 hA1 hA2 =>
+    simp only [nommStep] at h
+    simp only [minkStep]
+    refine ev_tbind (fun _ h1 => IH hA1 hP h1) (fun _ _ _ h1 => ev_tbind (fun _ h2 => IH hA2 hP h2)
+      (fun _ _ _ h3 => ⟨0, fun _ _ => ?_⟩) h1) h
+    split at h3
+    · simp_all
+    · rw [if_neg (by assumption)]
+      cases hsl : lib.slam gul _ <;> simp only [hsl, Option.bind_none, Option.bind_some] at h3 ⊢
+      · exact h3
+      · rename_i res
+        cases hd : scryDecode res <;> simp only [hd, Option.bind_none, Option.bind_some] at h3 ⊢
+        · exact h3
+        · rename_i d; cases d <;> exact h3
+  | crash hcr =>
+    simp only [nommStep] at h
+    rw [show slot? 0 x = none from rfl] at h
+    simp only [Option.some.injEq] at h
+    subst h
+    obtain ⟨k, hk⟩ := hcr gul t x
+    obtain ⟨m0, e0⟩ := Ev.minkF hk
+    refine ⟨m0, fun n hn => ?_⟩
+    have e : minkF lib gul (n + 1) t x f = some (Tone.two t) := e0 (n + 1) (by omega)
+    rw [minkF_succ_eq] at e
+    exact e
+
+/-- **A nomm that satisfies the invariant agrees with `+mink` on its
+formula**: they return the same tones. -/
+theorem nomm_agree (lib : Lib) (gul : Noun) (code : Bell → Option Nomm) (hc : CodeOK lib code)
+    {P : Noun → Prop} {f : Noun} {nm : Nomm} (hA : Annot lib code P f nm) {x : Noun} (hP : P x)
+    (t : Trace) (r : Tone) :
+    Mink lib gul t x f r ↔ ∃ m, nommF lib gul code m t x nm = some r :=
+  ⟨fun ⟨n, hn⟩ => (nomm_fwd lib gul code hc n P f nm t x r hA hP hn).exists,
+   fun ⟨m, hm⟩ => (nomm_bwd lib gul code hc m P f nm t x r hA hP hm).exists⟩
+
 end SkaModel
 end Formalization
