@@ -190,8 +190,9 @@ theorem holds_of_split : ∀ (ned : Need) (k : Nat) (s : Noun) (a : List Noun) (
 /-- **Entering what `+to-straight` makes.**  The program `c` holds the
 blocks; entering `c'` on the arguments `split` takes out of `s` does what
 block `o` of `c` does from registers that hold `s` as `ned` asks. -/
-theorem toStraight_entry [HoonMapKeys Map] {blocks : Map Blob} {c : Straight Map} {ned : Need} {o : Nat}
-    {c' : Straight Map} (h : toStraight blocks ned o = some c') (hdb : Down blocks) (hd : Down c.blocks)
+theorem toStraight_entryR [HoonMapKeys Map] {ρ : Nat → Nat} {blocks : Map Blob} {c : Straight Map} {ned : Need}
+    {o : Nat} {c' : Straight Map} (h : toStraight blocks ned o = some c') (hdb : DownRk ρ blocks)
+    (hd : DownRk ρ c.blocks)
     (hag : ∀ k, k ≠ o → HoonMap.get c.blocks k = HoonMap.get blocks k) :
     c'.need = needToOrd ned ∧ ∃ start, HoonMap.get blocks o = some start ∧
       ∀ (lib : Lib) {σ : Type} (O : Oracle σ) (st : σ) (s : Noun) (args : List Noun) (t : Trace) (gul : Noun),
@@ -223,7 +224,7 @@ theorem toStraight_entry [HoonMapKeys Map] {blocks : Map Blob} {c : Straight Map
     have hren := renRel_entry (Map := Map) r0 args
     rw [hlen] at hren
     generalize hbs : HoonMap.put (HoonMap.del blocks o) 0 start = bs at hnew
-    have hsim : Sim c ⟨needToOrd ned, countArgs (needToOrd ned), new⟩ bs (renReg r0 ins.length) o := by
+    have hsim : Sim c ⟨needToOrd ned, countArgs (needToOrd ned), new⟩ bs (renReg r0 ins.length) o ρ := by
       refine ⟨renReg_inj _ _, hd, fun k h0 hk => ?_, ?_, fun k b hb hk hby => ?_⟩
       · simp [← hbs, HoonMap.get_put, HoonMap.get_del, h0, hk, hag k hk]
       · simp [← hbs, HoonMap.get_put, HoonMap.get_del, show o ≠ 0 by omega]
@@ -239,7 +240,17 @@ theorem toStraight_entry [HoonMapKeys Map] {blocks : Map Blob} {c : Straight Map
     simp only [keepBlock, ne_eq, not_true_eq_false, false_and, if_false] at hkb
     obtain ⟨fin', hf, rfl⟩ := Option.map_eq_some_iff.mp hkb
     simp only [execEntry, hget, Option.bind_some]
-    exact (sim_block hsim lib O gul o start (hdb o start hst).2 fin' hf st _ _ t [] hren).symm
+    exact (sim_block hsim lib O gul (ρ o) start (hdb o start hst).2 fin' hf st _ _ t [] hren).symm
+
+/-- **Entering what `+to-straight` makes**, for blocks that jump only down. -/
+theorem toStraight_entry [HoonMapKeys Map] {blocks : Map Blob} {c : Straight Map} {ned : Need} {o : Nat}
+    {c' : Straight Map} (h : toStraight blocks ned o = some c') (hdb : Down blocks) (hd : Down c.blocks)
+    (hag : ∀ k, k ≠ o → HoonMap.get c.blocks k = HoonMap.get blocks k) :
+    c'.need = needToOrd ned ∧ ∃ start, HoonMap.get blocks o = some start ∧
+      ∀ (lib : Lib) {σ : Type} (O : Oracle σ) (st : σ) (s : Noun) (args : List Noun) (t : Trace) (gul : Noun),
+        SkaModel.split c'.need s = some args → ∃ R : Map Noun, HoldsN ned R s ∧
+          execEntry lib O st c' args t gul = execBlob lib O c gul st R t start [] :=
+  toStraight_entryR h hdb.rank hd.rank hag
 
 end Comp
 end SkaModel
