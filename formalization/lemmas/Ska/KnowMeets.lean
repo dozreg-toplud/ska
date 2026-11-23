@@ -364,24 +364,9 @@ theorem knowGo_lit (fold : Bool) (dat : Bell → Option Datum) (res : Bell → S
     obtain ⟨a, _, v, _, c, _, rfl⟩ := h
     simp [lit] at hx
 
-/-! ## Run B returns -/
+/-! ## Run B returns
 
-/-- No `%10` of the nomm has axis `0`. -/
-def NoAx0 : Nomm → Prop
-  | Nomm.cons p q => NoAx0 p ∧ NoAx0 q
-  | Nomm.n0 _ => True
-  | Nomm.n1 _ => True
-  | Nomm.n2 p q _ => NoAx0 p ∧ NoAx0 q
-  | Nomm.n3 p => NoAx0 p
-  | Nomm.n4 p => NoAx0 p
-  | Nomm.n5 p q => NoAx0 p ∧ NoAx0 q
-  | Nomm.n6 p q r => NoAx0 p ∧ NoAx0 q ∧ NoAx0 r
-  | Nomm.n7 p q => NoAx0 p ∧ NoAx0 q
-  | Nomm.n10 a v q => a ≠ 0 ∧ NoAx0 v ∧ NoAx0 q
-  | Nomm.n11s _ q _ => NoAx0 q
-  | Nomm.n11d _ h q _ => NoAx0 h ∧ NoAx0 q
-  | Nomm.n12 p q => NoAx0 p ∧ NoAx0 q
-  | Nomm.mean p _ q _ _ => NoAx0 p ∧ NoAx0 q
+`NoAx0` (no `%10` of the nomm has axis `0`) is defined in `DatFacts.lean`. -/
 
 /-- **`+know` without folding and with `idc` never crashes** on a nomm with
 no `%10` at axis `0`: its only crash is `+darn:so` there. -/
