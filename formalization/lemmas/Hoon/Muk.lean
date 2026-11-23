@@ -172,5 +172,120 @@ theorem muk_loop (c : Noun) (hc : MukNeeds c) (key nb h1 syd len : Nat) : ∀ (i
       Nat.add_sub_cancel, ih _ (by omega : i ≤ nb)]
     rw [mukLoop_succ, mukBlock_eq]
 
+/-- The scrambling of a word `k1` of the key in `+muk`. -/
+def mukK1 (k1 : Nat) : Nat := rolF 5 0 15 (k1 * 0xcc9e2d51 % 2 ^ 2 ^ 5) * 0x1b873593 % 2 ^ 2 ^ 5
+
+/-- The last `tlen` bytes `tl` of the key mixed into `h1`, as the switch of
+`+muk` does. -/
+def mukTail (tl tlen h1 : Nat) : Nat :=
+  if tlen = 3 then
+    h1 ^^^ mukK1 (0 ^^^ tl / 2 ^ (2 ^ 3 * 2) % 2 ^ (2 ^ 3 * 1) * 2 ^ (2 ^ 0 * 16) ^^^
+      tl / 2 ^ (2 ^ 3 * 1) % 2 ^ (2 ^ 3 * 1) * 2 ^ (2 ^ 0 * 8) ^^^
+      tl / 2 ^ (2 ^ 3 * 0) % 2 ^ (2 ^ 3 * 1))
+  else if tlen = 2 then
+    h1 ^^^ mukK1 (0 ^^^ tl / 2 ^ (2 ^ 3 * 1) % 2 ^ (2 ^ 3 * 1) * 2 ^ (2 ^ 0 * 8) ^^^
+      tl / 2 ^ (2 ^ 3 * 0) % 2 ^ (2 ^ 3 * 1))
+  else if tlen = 1 then
+    h1 ^^^ mukK1 (0 ^^^ tl / 2 ^ (2 ^ 3 * 0) % 2 ^ (2 ^ 3 * 1))
+  else h1
+
+/-- The finalizer `fmix32` of `+muk`. -/
+def fmix32 (h : Nat) : Nat :=
+  let h := h ^^^ h / 2 ^ (2 ^ 0 * 16)
+  let h := h * 0x85ebca6b % 2 ^ 2 ^ 5
+  let h := h ^^^ h / 2 ^ (2 ^ 0 * 13)
+  let h := h * 0xc2b2ae35 % 2 ^ 2 ^ 5
+  h ^^^ h / 2 ^ (2 ^ 0 * 16)
+
+/-- `+muk`: the hash of the `len` low bytes of `key` with seed `syd`. -/
+def mukF (syd len key : Nat) : Nat :=
+  fmix32 (mukTail (key / 2 ^ (2 ^ 3 * (4 * (len / 4)))) (len &&& 3)
+    (mukLoop key (len / 4) (len / 4) (syd % 2 ^ (2 ^ 5 * 1))) ^^^ len % 2 ^ (2 ^ 5 * 1))
+
+/-! The models written out, by small equations over variables, so that no
+proof makes the kernel compare or reduce the expressions themselves. -/
+
+theorem mukF_eq (syd len key : Nat) :
+    mukF syd len key =
+      fmix32 (mukTail (key / 2 ^ (2 ^ 3 * (4 * (len / 4)))) (len &&& 3)
+        (mukLoop key (len / 4) (len / 4) (syd % 2 ^ (2 ^ 5 * 1))) ^^^ len % 2 ^ (2 ^ 5 * 1)) := by
+  delta mukF; exact Eq.refl _
+
+theorem mukK1_eq (k1 : Nat) :
+    mukK1 k1 = rolF 5 0 15 (k1 * 0xcc9e2d51 % 2 ^ 2 ^ 5) * 0x1b873593 % 2 ^ 2 ^ 5 := by
+  delta mukK1; exact Eq.refl _
+
+theorem fmix32_eq (h : Nat) :
+    fmix32 h =
+      (((h ^^^ h / 2 ^ (2 ^ 0 * 16)) * 0x85ebca6b % 2 ^ 2 ^ 5 ^^^
+        (h ^^^ h / 2 ^ (2 ^ 0 * 16)) * 0x85ebca6b % 2 ^ 2 ^ 5 / 2 ^ (2 ^ 0 * 13)) * 0xc2b2ae35 %
+          2 ^ 2 ^ 5) ^^^
+      ((h ^^^ h / 2 ^ (2 ^ 0 * 16)) * 0x85ebca6b % 2 ^ 2 ^ 5 ^^^
+        (h ^^^ h / 2 ^ (2 ^ 0 * 16)) * 0x85ebca6b % 2 ^ 2 ^ 5 / 2 ^ (2 ^ 0 * 13)) * 0xc2b2ae35 %
+          2 ^ 2 ^ 5 / 2 ^ (2 ^ 0 * 16) := by
+  delta fmix32; exact Eq.refl _
+
+theorem mukTail_three (tl h1 : Nat) :
+    mukTail tl 3 h1 =
+      h1 ^^^ mukK1 (0 ^^^ tl / 2 ^ (2 ^ 3 * 2) % 2 ^ (2 ^ 3 * 1) * 2 ^ (2 ^ 0 * 16) ^^^
+        tl / 2 ^ (2 ^ 3 * 1) % 2 ^ (2 ^ 3 * 1) * 2 ^ (2 ^ 0 * 8) ^^^
+        tl / 2 ^ (2 ^ 3 * 0) % 2 ^ (2 ^ 3 * 1)) := by
+  delta mukTail; exact if_pos rfl
+
+theorem mukTail_two (tl h1 : Nat) :
+    mukTail tl 2 h1 =
+      h1 ^^^ mukK1 (0 ^^^ tl / 2 ^ (2 ^ 3 * 1) % 2 ^ (2 ^ 3 * 1) * 2 ^ (2 ^ 0 * 8) ^^^
+        tl / 2 ^ (2 ^ 3 * 0) % 2 ^ (2 ^ 3 * 1)) := by
+  delta mukTail
+  rw [if_neg (by decide), if_pos rfl]
+
+theorem mukTail_one (tl h1 : Nat) :
+    mukTail tl 1 h1 = h1 ^^^ mukK1 (0 ^^^ tl / 2 ^ (2 ^ 3 * 0) % 2 ^ (2 ^ 3 * 1)) := by
+  delta mukTail
+  rw [if_neg (by decide), if_neg (by decide), if_pos rfl]
+
+theorem mukTail_zero (tl h1 : Nat) : mukTail tl 0 h1 = h1 := by
+  delta mukTail
+  rw [if_neg (by decide), if_neg (by decide), if_neg (by decide)]
+
+/-- Slamming the `+muk` gate on `[syd len key]`. -/
+theorem muk_gate (c : Noun) (hc : MukNeeds c) (syd len key : Nat) :
+    nock (C muk.battery (C (C (A syd) (C (A len) (A key))) c)) muk.battery
+      = some (A (mukF syd len key)) := by
+  have hloop := muk_loop c hc
+  obtain ⟨hfe, hf, hcut, hmix, hdis, hdiv, hmul⟩ := hc
+  have hsit := sit_gate c hf.1.2.2.2.1 5
+  have hrol := rol_gate c hf 5
+  have hcutg := cut_gate c hcut.2
+  have hmixg := mix_gate c hmix.2
+  have hdisg := dis_gate c hdis.2
+  have hend := end_gate c hf.1.2.2.2.1
+  have hrsh := rsh_gate c hf.1.2.1
+  have hlsh := lsh_gate c hf.1.2.2.1.2
+  obtain ⟨bat, t, rfl, ht⟩ := hmul.elim
+  have hd : DivIn t := hdiv
+  have h4 : len &&& 3 < 4 := Nat.and_lt_two_pow len (by decide : 3 < 2 ^ 2)
+  rw [mukF_eq]
+  obtain hv | hv | hv | hv : len &&& 3 = 0 ∨ len &&& 3 = 1 ∨ len &&& 3 = 2 ∨ len &&& 3 = 3 := by
+    omega
+  all_goals
+    rw [hv]
+    first
+      | rw [mukTail_zero]
+      | rw [mukTail_one, mukK1_eq]
+      | rw [mukTail_two, mukK1_eq]
+      | rw [mukTail_three, mukK1_eq]
+    rw [fmix32_eq]
+    nock_open muk.battery
+    simp only [nock_exec, Noun.atom.injEq, ↓reduceIte, hfe, hcut, hmix, hdis, ht, hd,
+      hf.1.2.2.2.1.1, hf.1.2.1.1, hf.1.2.2.1.1, fe_arm, sit_arm, rol_arm, cut_arm, mix_arm,
+      dis_arm, end_arm, rsh_arm, lsh_arm, mul_arm, div_arm, hsit, hrol _ _ _ (Nat.zero_le 5),
+      hcutg, hmixg, hdisg, hend _ 5 1 _ (BiteIs.atom 5), hrsh _ 3 _ _ (BiteIs.cell 3 _),
+      hlsh _ 0 _ _ (BiteIs.cell 0 _), hrsh _ 0 _ _ (BiteIs.cell 0 _), mul_gate t ht.2,
+      div_gate t hd.2 _ _ (by decide : 0 < 4),
+      hloop key (len / 4) _ _ len (len / 4) _ (Nat.le_refl _), hv, muk.fmix.battery,
+      (by decide : ¬ (3 : Nat) = 0), (by decide : ¬ (2 : Nat) = 0), (by decide : ¬ (1 : Nat) = 0),
+      (by decide : ¬ (3 : Nat) = 1), (by decide : ¬ (2 : Nat) = 1), (by decide : ¬ (3 : Nat) = 2)]
+
 end Hoon
 end Formalization
