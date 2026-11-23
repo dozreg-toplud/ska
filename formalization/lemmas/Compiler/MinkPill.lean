@@ -1,8 +1,8 @@
-import lemmas.Compiler.Mink
+import lemmas.Compiler.Monk
 import lemmas.Hoon.Layer1
 
 /-!
-`+mink` in the pill's layer 4 of `hoon.hoon`, with no assumption on the
+`+mink`, `+monk` and `+mack` in the pill's layer 4 of `hoon.hoon`, with no assumption on the
 context: layer 4 holds layer 1 with `+cap` and `+mas`.  The theorems still
 take the model's `Lib` and ask only that it slams the scry gate as Nock does.
 -/
@@ -33,6 +33,22 @@ theorem mink_pill_call (lib : Lib) (hslam : SlamIsNock lib) (s f gul x : Noun) :
       = some x ↔ ∃ r, x = r.toNoun ∧ Mink lib gul [] s f r := by
   rw [← mink_pill_iff lib hslam s f gul x]
   simp only [nock_exec, mink.arm_at, mink_arm]
+
+theorem monkIn_layer4 : MonkIn layer4 := ⟨mink.arm_at, minkIn_layer4⟩
+
+theorem mackIn_layer4 : MackIn layer4 := ⟨monk.arm_at, monkIn_layer4⟩
+
+/-- The pill's `+monk`: `+mink` with the trace dropped. -/
+theorem monk_pill_iff (lib : Lib) (hslam : SlamIsNock lib) (s f gul x : Noun) :
+    nock (C monk.battery (C (C (C s f) gul) layer4)) monk.battery = some x ↔
+      ∃ r, Mink lib gul [] s f r ∧ x = (monkToon r).toNoun :=
+  monk_gate_iff lib layer4 monkIn_layer4 hslam s f gul x
+
+/-- The pill's `+mack`: the product of `+mink` with no scry gate. -/
+theorem mack_pill_iff (lib : Lib) (hslam : SlamIsNock lib) (s f x : Noun) :
+    nock (C mack.battery (C (C s f) layer4)) mack.battery = some x ↔
+      ∃ r, Mink lib (A 0) [] s f r ∧ x = unitN (mackUnit r) :=
+  mack_gate_iff lib layer4 mackIn_layer4 hslam s f x
 
 end Compiler
 end Formalization

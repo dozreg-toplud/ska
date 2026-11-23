@@ -2,7 +2,7 @@ module
 
 public import lemmas.Sound
 public import lemmas.KernelRfl
-public import lemmas.Pill.Nouns.P015
+public import lemmas.Pill.Nouns.P014
 public import lemmas.Pill.Arm.Add
 public import lemmas.Pill.Arm.Bex
 public import lemmas.Pill.Arm.Biff
@@ -35,13 +35,16 @@ public import lemmas.Pill.Arm.Lien
 public import lemmas.Pill.Arm.Lsh
 public import lemmas.Pill.Arm.Lte
 public import lemmas.Pill.Arm.Lth
+public import lemmas.Pill.Arm.Mack
 public import lemmas.Pill.Arm.Mas
 public import lemmas.Pill.Arm.Max
 public import lemmas.Pill.Arm.Met
 public import lemmas.Pill.Arm.Min
 public import lemmas.Pill.Arm.Mink
 public import lemmas.Pill.Arm.Mix
+public import lemmas.Pill.Arm.Mock
 public import lemmas.Pill.Arm.Mod
+public import lemmas.Pill.Arm.Monk
 public import lemmas.Pill.Arm.Mor
 public import lemmas.Pill.Arm.Mug
 public import lemmas.Pill.Arm.Muk
@@ -101,13 +104,16 @@ import all lemmas.Pill.Arm.Lien
 import all lemmas.Pill.Arm.Lsh
 import all lemmas.Pill.Arm.Lte
 import all lemmas.Pill.Arm.Lth
+import all lemmas.Pill.Arm.Mack
 import all lemmas.Pill.Arm.Mas
 import all lemmas.Pill.Arm.Max
 import all lemmas.Pill.Arm.Met
 import all lemmas.Pill.Arm.Min
 import all lemmas.Pill.Arm.Mink
 import all lemmas.Pill.Arm.Mix
+import all lemmas.Pill.Arm.Mock
 import all lemmas.Pill.Arm.Mod
+import all lemmas.Pill.Arm.Monk
 import all lemmas.Pill.Arm.Mor
 import all lemmas.Pill.Arm.Mug
 import all lemmas.Pill.Arm.Muk
@@ -416,6 +422,12 @@ theorem biff.arm_at : slot? biff.axis layer2 = some biff.arm := by kernel_rfl
 theorem mink.arm_at : slot? mink.axis layer4 = some mink.arm := by kernel_rfl
 
 theorem mink.layer1.arm_at : slot? mink.layer1.axis layer4 = some layer1 := by kernel_rfl
+
+theorem monk.arm_at : slot? monk.axis layer4 = some monk.arm := by kernel_rfl
+
+theorem mock.arm_at : slot? mock.axis layer4 = some mock.arm := by kernel_rfl
+
+theorem mack.arm_at : slot? mack.axis layer4 = some mack.arm := by kernel_rfl
 
 theorem ca.con.arm_at : ∀ x, slot? ca.con.axis (C ca.battery x) = some ca.con.arm := by
   intro x; kernel_rfl

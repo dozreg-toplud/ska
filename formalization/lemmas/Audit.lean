@@ -189,3 +189,7 @@ open Formalization
 #print axioms Compiler.mink_gate_to_model
 #print axioms Compiler.mink_pill_iff
 #print axioms Compiler.mink_pill_call
+#print axioms Compiler.monk_gate_iff
+#print axioms Compiler.mack_gate_iff
+#print axioms Compiler.monk_pill_iff
+#print axioms Compiler.mack_pill_iff

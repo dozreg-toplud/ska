@@ -739,6 +739,21 @@ def main():
         formulas.add(gb)
         name_loops('mink.' + lab, gb, 'any')
 
+    # +monk and +mock, and +mack, the gate of layer 4 that slams +monk from
+    # its context and has no %fast label
+    arm('monk', layer4, 'layer4', loops=None)
+    arm('mock', layer4, 'layer4', loops=None)
+    monk_ax = [ax for nm, ax, _ in axes if nm == 'monk'][0]
+    macks = [(ax, a) for ax, a in fe_arms(head(layer4), 2, limit=40)
+             if is_gate_builder(a) and (monk_ax, 7) in pulls(door_gate_battery(a))]
+    assert len(macks) == 1, len(macks)
+    mack_ax, mack_a = macks[0]
+    name(mack_a, 'mack.arm')
+    formulas.add(mack_a)
+    name(door_gate_battery(mack_a), 'mack.battery')
+    formulas.add(door_gate_battery(mack_a))
+    axes.append(('mack', mack_ax, 'slot? mack.axis layer4 = some mack.arm'))
+
     # ---- the compiler's leaf cores +ca and +so: arms of the library core,
     # [[1 battery] [11 [%fast [1 [label [0 511] 0]]] [0 1]]], whose own arms
     # carry %fast labels except for a few
