@@ -1,4 +1,5 @@
 import lemmas.Ska.Statements
+import lemmas.Ska.KnowMeets
 import lemmas.Ska.AnaInv
 import lemmas.Ska.StaleWitness
 import lemmas.Ska.CapeFacts
@@ -323,3 +324,13 @@ open Formalization.SkaModel
 #print axioms Bake.meets_doubleInt_left
 #print axioms Bake.meets_pull
 #print axioms Bake.meets_of_bakeOK
+#print axioms Bake.meets_patchProd
+#print axioms Bake.darn_fits_force
+#print axioms Bake.meets_darn
+#print axioms Bake.darn_some
+#print axioms Bake.knowGo_lit
+#print axioms Bake.knowGo_nf_some
+#print axioms Bake.knowGo_meets
+#print axioms Bake.knowMeetsNF_of
+#print axioms Bake.sitesMeet_of_lessNF
+#print axioms Bake.prodMeet_of_same

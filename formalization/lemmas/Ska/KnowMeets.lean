@@ -727,6 +727,67 @@ theorem sitesMeet_of_lessNF {E : BEnv M} (hlp : LessProvidesNF E) (hp : DatInhab
 
 end Env
 
+/-! ## The residue of `LessProvidesNF`
+
+`LessProvidesNF` asks that, under `less.cur` and without folding, every
+site provides its callee's code requirement (`Sub k c.less`).  The analysis
+never folds a `%6` (`folStep` joins both branches with `doubleInt`), so its
+walk of the same nomm under its own subject sock is `+know` without folding,
+with two differences: its subject sock knows more than `less.cur` only off
+the code cape, and a call's product is the product of the identity it
+resolved to, where `+know` reads the product of `dat`'s datum for the
+callee's code bell, patched for the site.  A part of a site's sock that the
+callee's code requirement knows comes from the caller's subject through
+provenance (then the caller's code requirement knows it, as the analysis'
+subject did), from a constant of the formula, or from a callee's product
+without provenance.  Only the last can differ: when two identities of one
+code bell have products that differ there, `dat` may give the other one.
+
+Two forms of the residue, over the entries of one call graph:
+
+1. `ProdMeet`: the two patched products share a noun.  This is what the
+   products' soundness gives whenever the callee returns on some subject of
+   its code requirement and the site, and it is what `SitesMeet` needs in
+   spirit, but it does not give `LessProvidesNF`: a part that one identity's
+   product knows and the other's does not is lost at the site.
+2. `ProdSame`: the two patched products have the same nouns.  This gives
+   `LessProvidesNF` by the argument above (not proved here: it needs the
+   analysis' walk and `+know`'s walk related node by node, as
+   `knowGo_meets` relates two walks of `+know`).
+
+Checked on the real compiler with `tools/hoon/sitesmeet5.hoon` (see the
+README of this track's report). -/
+
+section Residue
+
+variable {M : Type → Type → Type} [Treap M]
+
+/-- **Two identities of one code bell have products that do not
+contradict**: patched for any sock with a noun under the code requirement,
+they share a noun. -/
+def ProdMeet (g : Callgraph M) : Prop :=
+  ∀ (id1 id2 : Ident) (d1 d2 : FDatum M), Treap.get g id1 = some d1 → Treap.get g id2 = some d2 →
+    id1.2 = id2.2 → d1.less = d2.less → ∀ k, Sub k d1.less → (∃ y, Fits k y) →
+      Meets (patchProd d1.prod d1.map k).sock (patchProd d2.prod d2.map k).sock
+
+/-- **Two identities of one code bell have the same products**, patched for
+any sock under the code requirement: the form of the residue that gives
+`LessProvidesNF`. -/
+def ProdSame (g : Callgraph M) : Prop :=
+  ∀ (id1 id2 : Ident) (d1 d2 : FDatum M), Treap.get g id1 = some d1 → Treap.get g id2 = some d2 →
+    id1.2 = id2.2 → d1.less = d2.less → ∀ k, Sub k d1.less →
+      Sub (patchProd d1.prod d1.map k).sock (patchProd d2.prod d2.map k).sock
+
+/-- `ProdSame` gives `ProdMeet` when the products have nouns. -/
+theorem prodMeet_of_same {g : Callgraph M} (h : ProdSame g)
+    (hinh : ∀ id d k, Treap.get g id = some d → Sub k d.less → (∃ y, Fits k y) →
+      ∃ y, Fits (patchProd d.prod d.map k).sock y) : ProdMeet g := by
+  intro id1 id2 d1 d2 h1 h2 hf hl k hk hky
+  obtain ⟨y, hy⟩ := hinh id1 d1 k h1 hk hky
+  exact ⟨y, hy, h id1 id2 d1 d2 h1 h2 hf hl k hk y hy⟩
+
+end Residue
+
 end Bake
 
 end SkaModel
