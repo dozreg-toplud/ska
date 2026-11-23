@@ -240,6 +240,96 @@ theorem run_n1_pick_ok {lib : Lib} {k : Noun} {z o : Jmp} {g0 g1 : Gen Map} {nex
       rw [goJ_jmp0 _ _ _ _ ((hag g0.bo (Nat.le_refl _) (by simp [emitted_bo])).trans (emitted_get _ _ hd)),
         execBlob_bom'] }
 
+/-! ## Composition: `%7` -/
+
+section
+variable {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ}
+
+/-- What the code does for a goal, a code that goes on as it does does too. -/
+theorem GoalSem.transfer {K : Nat → Prop} {regs regs' : Map Noun} {t : Trace} {je je' : Jmp}
+    {goal : CGoal S} {v : Option Noun}
+    (he : goJ lib O c gul st regs t je = goJ lib O c gul st regs' t je')
+    (hk : ∀ r, K r → SkaModel.read r regs' = SkaModel.read r regs)
+    (h : GoalSem lib O c gul st K regs' t je' goal v) : GoalSem lib O c gul st K regs t je goal v := by
+  cases goal with
+  | done => simp only [GoalSem] at h ⊢; rw [he]; exact h
+  | next laz th =>
+    cases v with
+    | none => simp only [GoalSem] at h ⊢; rw [he]; exact h
+    | some p =>
+      exact ⟨fun hf => let ⟨r2, h1, h2, h3⟩ := h.1 hf
+        ⟨r2, h1, fun r hr => (h2 r hr).trans (hk r hr), he.trans h3⟩, fun hf => he.trans (h.2 hf)⟩
+  | pick z o =>
+    rcases v with _ | ⟨⟨_ | _ | k⟩ | ⟨a, b⟩⟩
+    · simp only [GoalSem] at h ⊢; rw [he]; exact h
+    · obtain ⟨r2, h2, h3⟩ := h; exact ⟨r2, fun r hr => (h2 r hr).trans (hk r hr), he.trans h3⟩
+    · obtain ⟨r2, h2, h3⟩ := h; exact ⟨r2, fun r hr => (h2 r hr).trans (hk r hr), he.trans h3⟩
+    · simp only [GoalSem] at h ⊢; rw [he]; exact h
+    · simp only [GoalSem] at h ⊢; rw [he]; exact h
+
+/-- A product without the goal's shape or looks: the code must crash. -/
+theorem goalSem_not {K : Nat → Prop} {regs : Map Noun} {t : Trace} {je : Jmp} {goal : CGoal S} {p : Noun}
+    (hn : GNot goal p) (h : goJ lib O c gul st regs t je = some (Tone.two t, st)) :
+    GoalSem lib O c gul st K regs t je goal (some p) := by
+  cases goal with
+  | next laz th => exact ⟨fun hf => absurd hf hn, fun _ => h⟩
+  | _ => exact hn.elim
+
+end
+
+theorem goalOK_of_runOK {lib : Lib} {nm : Nomm} {goal : CGoal S} {g0 g1 : Gen Map} {nex : Next S}
+    (hg : GoalOK g0 goal) (h : RunOK lib nm goal g0 g1 nex) : GoalOK g1 nex.goal := by
+  refine ⟨h.dist, fun r hr => ?_⟩
+  rcases h.regs r hr with hm | ⟨_, h2⟩
+  · cases goal with
+    | next laz th => exact Nat.lt_of_lt_of_le (hg.2 r hm) h.ext.1
+    | _ => exact hm.elim
+  · exact h2
+
+theorem keep_mono {g0 g1 : Gen Map} {goal : CGoal S} {nex : Next S} (he : Ext g0 g1)
+    (hregs : ∀ r, NMem nex.laz.ned r → GMem goal r ∨ (g0.re ≤ r ∧ r < g1.re)) :
+    ∀ r, Keep g0 goal r → Keep g1 nex.goal r := by
+  intro r ⟨h1, h2⟩
+  refine ⟨Nat.lt_of_lt_of_le h1 he.1, fun hm => ?_⟩
+  rcases hregs r hm with h | ⟨h3, _⟩
+  · exact h2 h
+  · omega
+
+/-- **`[7 p q]`**: `q` for the goal, then `p` for the `next` of `q`. -/
+theorem run_n7_ok {lib : Lib} {p q : Nomm} {goal : CGoal S} {g0 g1 g2 : Gen Map} {nexq nex : Next S}
+    (hq : RunOK lib q goal g0 g1 nexq) (hp : RunOK lib p nexq.goal g1 g2 nex) :
+    RunOK lib (Nomm.n7 p q) goal g0 g2 nex where
+  ext := hq.ext.trans hp.ext
+  regs := fun r hr => by
+    rcases hp.regs r hr with h | ⟨h1, h2⟩
+    · rcases hq.regs r h with h' | ⟨h1', h2'⟩
+      · exact Or.inl h'
+      · exact Or.inr ⟨h1', Nat.lt_of_lt_of_le h2' hp.ext.1⟩
+    · exact Or.inr ⟨Nat.le_trans hq.ext.1 h1, h2⟩
+  nec := fun s hs => by
+    simp only [pureEval]
+    rcases hp.nec s hs with h | ⟨s', h1, h2⟩
+    · rw [h]; exact Or.inl rfl
+    · rw [h1, Option.bind_some]; exact hq.nec s' h2
+  dist := hp.dist
+  sem := fun hd c hag σ O st s regs t gul hh => by
+    have hd1 : g1.drop = false := hq.ext.2.2.1.trans hd
+    have Hp := hp.sem hd1 c (hag.right hq.ext) σ O st s regs t gul hh
+    simp only [pureEval]
+    cases e : pureEval p s with
+    | none => rw [e] at Hp; exact goalSem_crash goal Hp
+    | some s' =>
+      rw [e] at Hp
+      simp only [Option.bind_some]
+      by_cases hf : FitsS nexq.laz s'
+      · obtain ⟨regs', hh', hk, he⟩ := Hp.1 hf
+        exact GoalSem.transfer he (fun r hr => hk r (keep_mono hq.ext hq.regs r hr))
+          (hq.sem hd c (hag.left hq.ext hp.ext) σ O st s' regs' t gul ⟨hh', hf.2⟩)
+      · have hc := Hp.2 hf
+        rcases hq.nec s' hf with h | ⟨v, h1, h2⟩
+        · rw [h]; exact goalSem_crash goal hc
+        · rw [h1]; exact goalSem_not h2 hc
+
 end Comp
 end SkaModel
 end Formalization
