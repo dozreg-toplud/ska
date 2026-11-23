@@ -4,6 +4,7 @@ import lemmas.Hoon.PutBy
 import lemmas.Hoon.Lists
 import lemmas.Hoon.Sets
 import lemmas.Hoon.Bits
+import lemmas.Hoon.Layer2
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -61,3 +62,16 @@ open Formalization
 #print axioms Hoon.mix_gate
 #print axioms Hoon.dis_gate
 #print axioms Hoon.con_gate
+#print axioms Hoon.sit_gate
+#print axioms Hoon.sum_gate
+#print axioms Hoon.rol_gate
+#print axioms Hoon.muk_gate
+#print axioms Hoon.mug_spec
+#print axioms Hoon.mug_layer2
+#print axioms Hoon.gor_pill
+#print axioms Hoon.mor_pill
+#print axioms Hoon.put_by_pill
+#print axioms Hoon.get_by_pill
+#print axioms Hoon.has_by_pill
+#print axioms Hoon.put_in_pill
+#print axioms Hoon.has_in_pill

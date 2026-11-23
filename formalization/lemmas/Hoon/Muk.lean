@@ -277,8 +277,7 @@ theorem muk_gate (c : Noun) (hc : MukNeeds c) (syd len key : Nat) :
       | rw [mukTail_three, mukK1_eq]
     rw [fmix32_eq]
     nock_open muk.battery
-    simp only [nock_exec, Noun.atom.injEq, ↓reduceIte, hfe, hcut, hmix, hdis, ht, hd,
-      hf.1.2.2.2.1.1, hf.1.2.1.1, hf.1.2.2.1.1, fe_arm, sit_arm, rol_arm, cut_arm, mix_arm,
+    simp only [nock_exec, Noun.atom.injEq, ↓reduceIte, hfe, hcut, hmix, hdis, ht, hd, fe_arm, sit_arm, rol_arm, cut_arm, mix_arm,
       dis_arm, end_arm, rsh_arm, lsh_arm, mul_arm, div_arm, hsit, hrol _ _ _ (Nat.zero_le 5),
       hcutg, hmixg, hdisg, hend _ 5 1 _ (BiteIs.atom 5), hrsh _ 3 _ _ (BiteIs.cell 3 _),
       hlsh _ 0 _ _ (BiteIs.cell 0 _), hrsh _ 0 _ _ (BiteIs.cell 0 _), mul_gate t ht.2,
