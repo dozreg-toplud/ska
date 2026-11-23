@@ -267,3 +267,7 @@ open Formalization.SkaModel
 #print axioms Bake.pokeDat_ok
 #print axioms Bake.skaPokeB_sound
 #print axioms Bake.InvB.agree
+#print axioms Bake.bakeLoop_pred
+#print axioms Bake.bakes_ok_of_meet
+#print axioms Bake.bakes_norm
+#print axioms Bake.bakesImply_of_meet

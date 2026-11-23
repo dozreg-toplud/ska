@@ -25,7 +25,7 @@ sites has a site whose sock shares a noun with its code requirement.
 namespace Formalization
 namespace SkaModel
 
-open Nock
+open Nock Ana
 
 namespace Bake
 
@@ -481,6 +481,205 @@ theorem rebakeG_ok {lessc bake s : Sock} {old : Option Sock} {g g' : Nat} (hb : 
       have hp := purr_sub _ bake o lessc (Nat.lt_succ_self _) hb.sub hoo.sub hinh.1 hinh.2
       obtain ⟨y, hy⟩ := hinh.1
       exact Or.inr ⟨(normSockH_rev hs').trans hp, y, normSockH_fits (purr_fits_left _ _ _ hy) hs'⟩
+
+/-! ## Through the worklist
+
+A property `Q c s` of the bake `s` of each callee `c` that holds of the
+root's, and that each new bake keeps given `I c k` of every sock `k` it is
+made from, holds at the end of the worklist, if every site `+know` lists
+under a bake with `Q` satisfies `I` (`bakeLoop_pred`). -/
+
+section Loop
+
+variable {M : Type → Type → Type} [Treap M]
+
+/-- Every sock of `new` comes from a site. -/
+theorem newFold_back (vars : M Bell (M Bell Unit)) :
+    ∀ (l : List Site) (acc new : M Bell (List Sock)), l.foldl (newStep vars) (some acc) = some new →
+      ∀ b ks, Treap.get new b = some ks → ∀ k ∈ ks, (∃ ks0, Treap.get acc b = some ks0 ∧ k ∈ ks0) ∨ (b, k) ∈ l
+  | [], acc, new, h => by
+    simp only [List.foldl_nil, Option.some.injEq] at h
+    subst h
+    intro b ks hb k hk
+    exact Or.inl ⟨ks, hb, hk⟩
+  | s :: l, acc, new, h => by
+    simp only [List.foldl_cons] at h
+    cases h1 : newStep vars (some acc) s with
+    | none => rw [h1, newFold_none] at h; cases h
+    | some acc1 =>
+    rw [h1] at h
+    intro b ks hb k hk
+    rcases newFold_back vars l acc1 new h b ks hb k hk with ⟨ks0, h0, hk0⟩ | hm
+    · simp only [newStep, Option.bind_some, Option.map_eq_some_iff] at h1
+      obtain ⟨p, _, hp⟩ := h1
+      cases p with
+      | some _ => subst hp; exact Or.inl ⟨ks0, h0, hk0⟩
+      | none =>
+        subst hp
+        rw [Treap.get_put] at h0
+        split at h0
+        · rename_i hbs
+          cases h0
+          rcases List.mem_cons.mp hk0 with rfl | hk0
+          · subst hbs; exact Or.inr (List.mem_cons.mpr (Or.inl rfl))
+          · unfold Treap.gut at hk0
+            cases hg : Treap.get acc s.1 with
+            | none => simp [hg] at hk0
+            | some ks1 =>
+              simp only [hg, Option.getD_some] at hk0
+              exact Or.inl ⟨ks1, by rw [hbs]; exact hg, hk0⟩
+        · exact Or.inl ⟨ks0, h0, hk0⟩
+    · exact Or.inr (List.mem_cons_of_mem _ hm)
+
+theorem innUpd_get (new : M Bell (List Sock)) (cur c : Bell) (m : M Bell (List Sock)) (b : Bell) {ks : List Sock}
+    (h : Treap.get (innUpd new cur c m) b = some ks) : Treap.get m b = some ks ∨ Treap.get new c = some ks := by
+  unfold innUpd at h
+  split at h
+  · rw [Treap.get_del] at h
+    split at h
+    · cases h
+    · exact Or.inl h
+  · rename_i ks' hn
+    rw [Treap.get_put] at h
+    split at h
+    · cases h; exact Or.inr hn
+    · exact Or.inl h
+
+/-- The state invariant: `Q` of every bake, `I` of every sock a callee is
+told. -/
+def PredInv (Q I : Bell → Sock → Prop) (st : BSt M) : Prop :=
+  (∀ c s, Treap.get st.bak c = some s → Q c s) ∧
+    ∀ c b ks, Treap.get (Treap.gut st.inn c Treap.empty) b = some ks → ∀ k ∈ ks, I c k
+
+theorem touchFold_pred (E : BEnv M) {Q I : Bell → Sock → Prop}
+    (hstep : ∀ c fixed ks bake old g bake' g', c ≠ E.root → (∀ k ∈ ks, I c k) → bakeOf fixed c.less ks = some bake →
+      (∀ o, old = some o → Q c o) → rebakeG bake old g = some (bake', g') → Q c bake')
+    (cur : Bell) (new : M Bell (List Sock)) (hnew : ∀ c ks, Treap.get new c = some ks → ∀ k ∈ ks, I c k) :
+    ∀ (l : List Bell) (ch0 ch1 : List Bell) (st0 st1 : BSt M), PredInv Q I st0 →
+      l.foldl (touchStep E cur new) (some (ch0, st0)) = some (ch1, st1) → PredInv Q I st1
+  | [], _, _, _, _, hI, h => by
+    simp only [List.foldl_nil, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨-, rfl⟩ := h
+    exact hI
+  | c :: l, ch0, ch1, st0, st1, hI, h => by
+    simp only [List.foldl_cons] at h
+    cases h1 : touchStep E cur new (some (ch0, st0)) c with
+    | none => rw [h1, touchFold_none] at h; cases h
+    | some p =>
+    obtain ⟨chm, stm⟩ := p
+    rw [h1] at h
+    refine touchFold_pred E hstep cur new hnew l chm ch1 stm st1 ?_ h
+    obtain ⟨hinn, hcase⟩ := touchStep_cases h1
+    -- what `c` is told now
+    have hm : ∀ b ks, Treap.get (innUpd new cur c (Treap.gut st0.inn c Treap.empty)) b = some ks →
+        ∀ k ∈ ks, I c k := by
+      intro b ks hb k hk
+      rcases innUpd_get _ _ _ _ _ hb with h0 | h0
+      · exact hI.2 c b ks h0 k hk
+      · exact hnew c ks h0 k hk
+    have hinn' : PredInv Q I stm → True := fun _ => trivial
+    clear hinn'
+    have hI2 : ∀ c' b ks, Treap.get (Treap.gut stm.inn c' Treap.empty) b = some ks → ∀ k ∈ ks, I c' k := by
+      intro c' b ks hb k hk
+      rw [hinn] at hb
+      simp only [Treap.gut, Treap.get_put] at hb
+      by_cases e : c' = c
+      · subst e
+        simp only [if_true, Option.getD_some] at hb
+        exact hm b ks hb k hk
+      · rw [if_neg e] at hb
+        exact hI.2 c' b ks hb k hk
+    rcases hcase with ⟨_, hbak, _⟩ | ⟨hc, fixed, bake, bake', g, g', hbake, hre, hcase⟩
+    · exact ⟨fun c' s hs => hI.1 c' s (by rw [← hbak]; exact hs), hI2⟩
+    · have hQ : Q c bake' := by
+        refine hstep c fixed _ bake _ g bake' g' hc (fun k hk => ?_) hbake (fun o ho => hI.1 c o ho) hre
+        obtain ⟨ks, hks, hk⟩ := List.mem_flatten.mp hk
+        obtain ⟨⟨b, ks'⟩, hb, rfl⟩ := List.mem_map.mp hks
+        exact hm b ks' ((Treap.mem_tap _ _ _).mp hb) k hk
+      rcases hcase with ⟨_, hbak, _⟩ | ⟨hbak, _⟩
+      · exact ⟨fun c' s hs => hI.1 c' s (by rw [← hbak]; exact hs), hI2⟩
+      · refine ⟨fun c' s hs => ?_, hI2⟩
+        rw [hbak, Treap.get_put] at hs
+        split at hs
+        · rename_i e; cases hs; subst e; exact hQ
+        · exact hI.1 c' s hs
+
+theorem bakeStep_pred (E : BEnv M) {Q I : Bell → Sock → Prop}
+    (hsites : ∀ cur s d out sites, Q cur s → E.dat cur = some d →
+      know E.fold d.nomm s E.dat idc = some (out, sites) → ∀ c k, (c, k) ∈ sites → I c k)
+    (hstep : ∀ c fixed ks bake old g bake' g', c ≠ E.root → (∀ k ∈ ks, I c k) → bakeOf fixed c.less ks = some bake →
+      (∀ o, old = some o → Q c o) → rebakeG bake old g = some (bake', g') → Q c bake')
+    {cur : Bell} {rest q' : List Bell} {qs qs' : M Bell Unit} {st st' : BSt M}
+    (hI : PredInv Q I st) (h : bakeStep E cur rest qs st = some (q', qs', st')) : PredInv Q I st' := by
+  simp only [bakeStep, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  obtain ⟨sites, hs, new, hnew, ⟨changed, st3⟩, hfold, he⟩ := h
+  simp only [Prod.mk.injEq] at he
+  obtain ⟨-, -, rfl⟩ := he
+  have hS : ∀ c k, (c, k) ∈ sites → I c k := by
+    simp only [sitesOf, Option.bind_eq_some_iff, Option.map_eq_some_iff] at hs
+    obtain ⟨d, hd, s, hsb, ⟨out, sites'⟩, hk, rfl⟩ := hs
+    exact hsites cur s d out sites' (hI.1 cur s hsb) hd hk
+  have hN : ∀ c ks, Treap.get new c = some ks → ∀ k ∈ ks, I c k := by
+    intro c ks hc k hk
+    rcases newFold_back E.vars sites Treap.empty new hnew c ks hc k hk with ⟨_, h0, _⟩ | hm
+    · simp [Treap.get_empty] at h0
+    · exact hS c k hm
+  refine touchFold_pred E hstep cur new hN _ [] changed _ _ ?_ hfold
+  exact ⟨hI.1, hI.2⟩
+
+/-- **A property of the bakes that the worklist keeps** holds of every bake
+at its end. -/
+theorem bakeLoop_pred (E : BEnv M) {Q I : Bell → Sock → Prop} (hroot : Q E.root E.root.less)
+    (hsites : ∀ cur s d out sites, Q cur s → E.dat cur = some d →
+      know E.fold d.nomm s E.dat idc = some (out, sites) → ∀ c k, (c, k) ∈ sites → I c k)
+    (hstep : ∀ c fixed ks bake old g bake' g', c ≠ E.root → (∀ k ∈ ks, I c k) → bakeOf fixed c.less ks = some bake →
+      (∀ o, old = some o → Q c o) → rebakeG bake old g = some (bake', g') → Q c bake')
+    {n : Nat} {st : BSt M}
+    (h : bakeLoop E n [E.root] (Treap.put Treap.empty E.root ()) (bakeInit E) = some st) :
+    ∀ c s, Treap.get st.bak c = some s → Q c s := by
+  suffices ∀ n q qs (st0 st1 : BSt M), PredInv Q I st0 → bakeLoop E n q qs st0 = some st1 → PredInv Q I st1 by
+    refine (this n _ _ _ st ⟨fun c s hs => ?_, fun c b ks hb => ?_⟩ h).1
+    · simp only [bakeInit, Treap.get_put, Treap.get_empty] at hs
+      split at hs
+      · rename_i e; cases hs; subst e; exact hroot
+      · cases hs
+    · simp [bakeInit, Treap.gut, Treap.get_empty] at hb
+  intro n
+  induction n with
+  | zero => intro _ _ _ _ _ h; simp [bakeLoop] at h
+  | succ n ih =>
+    intro q qs st0 st1 hI h
+    cases q with
+    | nil => simp only [bakeLoop, Option.some.injEq] at h; subst h; exact hI
+    | cons cur rest =>
+      simp only [bakeLoop, Option.bind_eq_some_iff] at h
+      obtain ⟨⟨q', qs', st2⟩, h1, h2⟩ := h
+      exact ih q' qs' st2 st1 (bakeStep_pred E hsites hstep hI h1) h2
+
+/-- **What is left of HImp**: under every bake that is under its function's
+code requirement (or is it), every site `+know` lists, of a callee that is
+not the root, has a sock that shares a noun with the callee's code
+requirement. -/
+def SitesMeet (E : BEnv M) : Prop :=
+  ∀ cur s d out sites, BakeOK cur.less s → E.dat cur = some d →
+    know E.fold d.nomm s E.dat idc = some (out, sites) → ∀ c k, (c, k) ∈ sites → c ≠ E.root →
+      ∃ y, Fits c.less y ∧ Fits k y
+
+/-- **HImp from the sites**: if the sites meet their callees' code
+requirements, every bake at the end of the worklist is under its code
+bell's code requirement. -/
+theorem bakes_ok_of_meet {E : BEnv M} (hm : SitesMeet E) {n : Nat} {st : BSt M}
+    (h : bakeLoop E n [E.root] (Treap.put Treap.empty E.root ()) (bakeInit E) = some st) :
+    ∀ c s, Treap.get st.bak c = some s → BakeOK c.less s :=
+  bakeLoop_pred E (I := fun c k => c ≠ E.root → ∃ y, Fits c.less y ∧ Fits k y) (Or.inl rfl)
+    (fun cur s d out sites hq hd hk c k hck hc => hm cur s d out sites hq hd hk c k hck hc)
+    (fun c fixed ks bake old g bake' g' hc hks hb ho hre => by
+      refine rebakeG_ok (bakeOf_ok hb fun _ hne => ?_) ho hre
+      obtain ⟨k, ks', rfl⟩ := List.exists_cons_of_ne_nil hne
+      obtain ⟨y, hy⟩ := hks k List.mem_cons_self hc
+      exact ⟨k, List.mem_cons_self, y, hy⟩) h
+
+end Loop
 
 end Bake
 

@@ -108,12 +108,16 @@ structure InvB (lib : Lib) (L : LongB M) : Prop where
   lessKeys : LessKeys L.memo
   codeOK : CodeOK lib (realOf L.code)
   vars : VarsOK L.vars (realOf L.code)
+  /-- Every bell of the table has a normal cape, as the compilation of a bell
+  assumes. -/
+  bellNorm : ∀ bl nb, realOf L.code bl = some nb → NormSock bl.less
 
 theorem InvB.init (lib : Lib) : InvB lib (⟨Treap.empty, Treap.empty, Treap.empty⟩ : LongB M) where
   ghost := ⟨_, PokeInv.init lib⟩
   lessKeys := fun _ _ _ _ h _ => by simp [Treap.get_empty] at h
   codeOK := fun _ _ h => by simp [realOf, Treap.get_empty] at h
   vars := fun c v h => by simp [Treap.has, Treap.gut, Treap.get_empty] at h
+  bellNorm := fun _ _ h => by simp [realOf, Treap.get_empty] at h
 
 /-- **Every bell of the real table agrees with `+mink`** on every subject
 that fits it. -/
@@ -377,6 +381,95 @@ theorem pokeDat_ok {lib : Lib} {code : Bell → Option Nomm} {dats : M Bell (FDa
         exact ⟨ha, hp⟩
   exact ⟨datOK_of_prov fun b d h => (key b d h).2, fun t d h => (key t d h).1⟩
 
+
+/-! ## Normal bakes -/
+
+theorem normCape_no_of_isNo : ∀ {c : Cape}, NormCape c → c.isNo = true → c = Cape.no
+  | Cape.yes, _, h => by simp [Cape.isNo] at h
+  | Cape.no, _, _ => rfl
+  | Cape.cell _ _, hn, h => by simp only [NormCape] at hn; simp [Cape.isNo, hn.1] at h
+
+/-- `+norm-sock` makes a normal cape. -/
+theorem normCD_norm : ∀ {c : Cape} {d : Noun} {p : Cape × Noun}, normCD c d = some p → NormCape p.1
+  | Cape.no, _, _, h => by simp only [normCD, Option.some.injEq] at h; rw [← h]; trivial
+  | Cape.yes, _, _, h => by simp only [normCD, Option.some.injEq] at h; rw [← h]; trivial
+  | Cape.cell _ _, Noun.atom _, _, h => by simp [normCD] at h
+  | Cape.cell h t, Noun.cell dh dt, p, e => by
+    simp only [normCD, Option.bind_eq_some_iff, Option.map_eq_some_iff] at e
+    obtain ⟨l, hl, r, hr, rfl⟩ := e
+    have nl := normCD_norm hl
+    have nr := normCD_norm hr
+    split
+    · trivial
+    · rename_i hnn
+      dsimp only
+      split
+      · rename_i hy
+        obtain ⟨hy1 | hy1, _⟩ := hy <;> rw [hy1] <;> trivial
+      · refine ⟨?_, nl, nr⟩
+        cases e1 : l.1.isNo <;> cases e2 : r.1.isNo <;> simp only [Bool.and_false, Bool.and_true, Bool.false_and]
+        exact absurd ⟨normCape_no_of_isNo nl e1, normCape_no_of_isNo nr e2⟩ hnn
+
+theorem normSockH_norm {s s' : Sock} (h : normSockH s = some s') : NormSock s' := by
+  cases s with
+  | void => simp only [normSockH, Option.some.injEq] at h; subst h; trivial
+  | mk c d =>
+    simp only [normSockH, Option.map_eq_some_iff] at h
+    obtain ⟨p, hp, rfl⟩ := h
+    exact normCD_norm hp
+
+/-- **Every bake at the end of the worklist is its code requirement or
+normal.** -/
+theorem bakes_norm {E : BEnv M} {n : Nat} {st : BSt M}
+    (h : bakeLoop E n [E.root] (Treap.put Treap.empty E.root ()) (bakeInit E) = some st) :
+    ∀ c s, Treap.get st.bak c = some s → s = c.less ∨ NormSock s :=
+  bakeLoop_pred E (I := fun _ _ => True) (Or.inl rfl) (fun _ _ _ _ _ _ _ _ _ _ _ => trivial)
+    (fun c fixed ks bake old g bake' g' _ _ hb ho hre => by
+      have hq : bake = c.less ∨ NormSock bake := by
+        unfold bakeOf at hb
+        split at hb
+        · cases hb; exact Or.inl rfl
+        · split at hb
+          · cases hb; exact Or.inl rfl
+          · exact Or.inr (normSockH_norm hb)
+      unfold rebakeG at hre
+      split at hre
+      · cases hre; exact hq
+      · simp only [Option.bind_eq_some_iff] at hre
+        obtain ⟨hv, _, hre⟩ := hre
+        split at hre
+        · cases hre; exact hq
+        · simp only [Option.map_eq_some_iff, Prod.mk.injEq] at hre
+          obtain ⟨s', hs', rfl, -⟩ := hre
+          exact Or.inr (normSockH_norm hs')) h
+
+/-- **HImp from the sites** (`BakeImp.lean`). -/
+theorem bakesImply_of_meet {E : BEnv M} (hm : SitesMeet E) : BakesImply E :=
+  fun _ _ h c s hs => (bakes_ok_of_meet hm h c s hs).sub
+
+/-- The code bells `dat` has a datum for have normal capes. -/
+theorem pokeDat_norm {lib : Lib} {code : Bell → Option Nomm} {dats : M Bell (FDatum M)} {memo : Memo M}
+    (hinv : PokeInv lib memo (extendCode code dats)) (hlk : LessKeys memo) {t : Bell} {d : Datum}
+    (h : pokeDat dats memo t = some d) : NormSock t.less := by
+  unfold pokeDat at h
+  split at h
+  · rename_i d' hd'
+    cases hc : code t with
+    | some nb => exact hinv.bellNorm t nb (by simp [extendCode, hc])
+    | none => exact hinv.bellNorm t d'.nomm (by simp [extendCode, hc, hd'])
+  · simp only [Option.map_eq_some_iff] at h
+    obtain ⟨ent, he, rfl⟩ := h
+    unfold gutMi Treap.gut at he
+    cases hm : Treap.get memo t.fol with
+    | none => simp [hm, Treap.get_empty] at he
+    | some ms =>
+      simp only [hm, Option.getD_some] at he
+      have hn := (hinv.norm _ ⟨t.fol, ms, t.less, ent, hm, he, rfl⟩).1
+      have hl : ent.2.less = t.less := hlk _ _ _ _ hm he
+      simp only [entOf] at hn
+      rw [show (FDatum.core ent.2).less = t.less from hl] at hn
+      exact hn
+
 /-! ## A poke -/
 
 /-- **`+ska-poke` keeps the invariant**, and the root bell it returns has an
@@ -454,7 +547,8 @@ theorem skaPokeB_sound {lib : Lib} (env : Env R) {jet : (Bell → Option Datum) 
         have hva := variant_annot (code := extendCode code dats) (code' := code') hpi'.codeOK hdatOK hloop
           hvars hbake hd hs (hA e.1 d hd) hk
         exact hva.mono fun x hx => ⟨himpE n st hloop e.1 e.2 hs x hx, hx⟩
-  refine ⟨⟨⟨_, hpi'⟩, hlk', ?_, ?_⟩, ?_⟩
+  have hnorm := bakes_norm hloop
+  refine ⟨⟨⟨_, hpi'⟩, hlk', ?_, ?_, ?_⟩, ?_⟩
   · show CodeOK lib (realOf (addCode L.code (newCode L.code baked)))
     rw [hc']; exact hcodeOK
   · show VarsOK vars' (realOf (addCode L.code (newCode L.code baked)))
@@ -464,6 +558,22 @@ theorem skaPokeB_sound {lib : Lib} (env : Env R) {jet : (Bell → Option Datum) 
     · exact hvars c v h0
     · have hs : Treap.get st.bak e.1 = some e.2 := (Treap.mem_rap _ _ _).mp hel
       exact ⟨rfl, hbake e.1 e.2 hs⟩
+  · show ∀ bl nb, realOf (addCode L.code (newCode L.code baked)) bl = some nb → NormSock bl.less
+    intro bl nb hb
+    rw [realOf_add] at hb
+    split at hb
+    · rename_i nb0 hr
+      exact hinv.bellNorm bl nb0 hr
+    · simp only [Option.map_eq_some_iff] at hb
+      obtain ⟨ve, hve, rfl⟩ := hb
+      rcases f1 _ ve hve with h0 | ⟨e, hel, rfl, d, sites, hd, -⟩
+      · simp [Treap.get_empty] at h0
+      · rcases hnorm e.1 e.2 ((Treap.mem_rap _ _ _).mp hel) with he | he
+        · show NormSock e.2
+          rw [he]
+          rw [hEdat] at hd
+          exact pokeDat_norm hpi' hlk' hd
+        · exact he
   · exact hbake E.root E.root.less hI.root
 
 end Bake
