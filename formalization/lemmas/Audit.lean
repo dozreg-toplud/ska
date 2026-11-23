@@ -11,6 +11,7 @@ import lemmas.Hoon.TapIn
 import lemmas.Hoon.DelBy
 import lemmas.Hoon.GasBy
 import lemmas.Hoon.RepBy
+import lemmas.Hoon.JabBy
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -97,3 +98,4 @@ open Formalization
 #print axioms Hoon.del_by
 #print axioms Hoon.gas_by
 #print axioms Hoon.rep_tree
+#print axioms Hoon.jab_by
