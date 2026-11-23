@@ -24,7 +24,7 @@
 =/  run
   |=  [s=* code=straight-out]
   ^-  (each tone tang)
-  (mule |.(-:(eval-blob [[[`@`0 s] ~ ~] ~] (~(got by blocks.code) 0w0) code ~ ~)))
+  (mule |.(-:(eval-blob [[[`@`0 `s] ~ ~] ~] (~(got by blocks.code) 0w0) code ~ ~)))
 =/  judge
   |=  [a=toon r=(each tone tang)]
   ^-  @tas

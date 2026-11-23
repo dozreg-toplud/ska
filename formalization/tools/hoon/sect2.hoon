@@ -13,7 +13,7 @@
 =/  raw  (~(got by mono.cache.state) b.p)
 =/  r
   %-  mule  |.
-  -:(eval-blob [[[`@`0 sub.i.cases] ~ ~] ~] (~(got by blocks.raw) 0w0) raw ~ ~)
+  -:(eval-blob [[[`@`0 `sub.i.cases] ~ ~] ~] (~(got by blocks.raw) 0w0) raw ~ ~)
 =/  blk  ~(wyt by blocks.raw)
 ~&  :*  nam.i.cases
         mock=a
