@@ -41,3 +41,5 @@ open Formalization.SkaModel.Comp
 #print axioms finish_bellContract'
 #print axioms flatten_needOrdAllocRegs
 #print axioms isRun_needOrdAllocRegs
+#print axioms doneBlocks_ok
+#print axioms run_n3_done_ok
