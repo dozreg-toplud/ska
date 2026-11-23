@@ -17,7 +17,7 @@ namespace Pill
 
 open Nock
 
-@[expose] public abbrev mul.axis : Nat := 8
+public abbrev mul.axis : Nat := 8
 
 public def mul.loop : Noun := C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 60)))) (C (C (A 0) (A 6)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 60) (C (A 8) (C (C (A 9) (C (A 2398) (C (A 0) (A 31)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 124))) (C (A 0) (A 2))))))))) (C (A 10) (C (C (A 6) (C (A 8) (C (C (A 9) (C (A 36) (C (A 0) (A 31)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 125)) (C (A 0) (A 14)))) (C (A 0) (A 2))))))))) (C (A 0) (A 1))))))))))
 public def mul.battery : Noun := C (A 8) (C (C (A 1) (A 0)) (C (A 8) (C (C (A 1) mul.loop) (C (A 9) (C (A 2) (C (A 0) (A 1)))))))

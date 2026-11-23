@@ -17,7 +17,7 @@ namespace Pill
 
 open Nock
 
-@[expose] public abbrev homo.axis : Nat := 1564411
+public abbrev homo.axis : Nat := 1564411
 
 public def homo.arm : Noun := C (A 8) (C (C (A 1) (A 0)) (C (C (A 1) (C (A 0) (A 6))) (C (A 0) (A 1))))
 

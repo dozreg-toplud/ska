@@ -17,7 +17,7 @@ namespace Pill
 
 open Nock
 
-@[expose] public abbrev dor.axis : Nat := 183
+public abbrev dor.axis : Nat := 183
 
 public def dor.battery : Noun := C (A 6) (C (C (A 5) (C (C (A 0) (A 12)) (C (A 0) (A 13)))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 12))) (C (C (A 1) (A 1)) (C (A 1) (A 0))))) (C (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 13))) (C (C (A 1) (A 1)) (C (A 1) (A 0))))) (C (C (A 8) (C (C (A 9) (C (A 2399) (C (A 0) (A 15)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 28)) (C (A 0) (A 29)))) (C (A 0) (A 2)))))))) (C (A 1) (A 0))))) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 13))) (C (C (A 1) (A 1)) (C (A 1) (A 0))))) (C (C (A 1) (A 1)) (C (A 6) (C (C (A 5) (C (C (A 0) (A 24)) (C (A 0) (A 26)))) (C (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 25)) (C (A 0) (A 27)))) (C (A 0) (A 1)))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 24)) (C (A 0) (A 26)))) (C (A 0) (A 1)))))))))))))))))
 public def dor.arm : Noun := C (A 7) (C (C (A 8) (C (C (A 1) (C (A 0) (A 0))) (C (C (A 1) dor.battery) (C (A 0) (A 1))))) (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x726f64) (C (C (A 0) (A 7)) (A 0))))) (C (A 0) (A 1)))))

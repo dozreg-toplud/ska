@@ -17,7 +17,7 @@ namespace Pill
 
 open Nock
 
-@[expose] public abbrev gte.axis : Nat := 38
+public abbrev gte.axis : Nat := 38
 
 public def gte.battery : Noun := C (A 6) (C (C (A 8) (C (C (A 9) (C (A 2399) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 28)) (C (A 0) (A 29)))) (C (A 0) (A 2)))))))) (C (C (A 1) (A 1)) (C (A 1) (A 0))))
 public def gte.arm : Noun := C (A 7) (C (C (A 8) (C (C (A 1) (C (A 0) (A 0))) (C (C (A 1) gte.battery) (C (A 0) (A 1))))) (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x657467) (C (C (A 0) (A 7)) (A 0))))) (C (A 0) (A 1)))))

@@ -324,6 +324,11 @@ def main():
     arm('div', layer1, 'layer1')
     arm('mod', layer1, 'layer1')
 
+    # tree addressing
+    arm('cap', layer1, 'layer1')
+    arm('mas', layer1, 'layer1')
+    arm('peg', layer1, 'layer1')
+
     # noun ordering and hashing
     arm('dor', layer2, 'layer2')
     arm('gor', layer2, 'layer2')
@@ -340,6 +345,9 @@ def main():
     name(slot(homo_ax, layer2), 'homo.arm')
     formulas.add(slot(homo_ax, layer2))
     axes.append(('homo', homo_ax, 'slot? homo.axis layer2 = some homo.arm'))
+
+    # units
+    arm('need', layer2, 'layer2')
 
     # bit arithmetic
     for label in ['bex', 'rsh', 'lsh', 'end', 'cut', 'cat', 'can']:
@@ -494,6 +502,64 @@ def main():
     formulas.add(slot(some_ax, layer2))
     axes.append(('some', some_ax, 'slot? some.axis layer2 = some some.arm'))
     door_arm('by', by_battery, 'has', 0)
+    door_arm('by', by_battery, 'del', None)
+    door_arm('by', by_battery, 'gas', 1)
+
+    def door_trap(dlabel, battery, label):
+        """an arm [7 [7 [8 [1 bunt] [1 battery] 0 1] hint] 9 2 0 1] of a door:
+        a trap whose state is the bunt"""
+        kick = cell(atom(9), cell(atom(2), cell(atom(0), atom(1))))
+        res = []
+        for inner in arms_of(label):
+            for ax, a in fe_arms(battery, 2):
+                if NODES[head(a)] == 7 and head(tail(a)) == inner and tail(tail(a)) == kick:
+                    res.append((ax, a, inner))
+        assert len(res) == 1, (dlabel, label, res)
+        ax, a, inner = res[0]
+        full = dlabel + '.' + label
+        name(a, full + '.arm')
+        formulas.add(a)
+        g = gate_battery(inner)
+        name(g, full + '.battery')
+        formulas.add(g)
+        axes.append((full, ax, '∀ x, slot? %s.axis (C %s.battery x) = some %s.arm'
+                     % (full, dlabel, full)))
+
+    door_trap('by', by_battery, 'apt')
+    door_trap('by', by_battery, 'tap')
+
+    def door_gate_pulling(dlabel, battery, label, want):
+        """the unhinted gate arm of a door whose battery pulls exactly `want`"""
+        res = []
+        for ax, a in fe_arms(battery, 2):
+            if is_gate_builder(a) and sorted(pulls(door_gate_battery(a))) == sorted(want):
+                res.append((ax, a))
+        assert len(res) == 1, (dlabel, label, res)
+        ax, a = res[0]
+        full = dlabel + '.' + label
+        name(a, full + '.arm')
+        formulas.add(a)
+        name(door_gate_battery(a), full + '.battery')
+        formulas.add(door_gate_battery(a))
+        axes.append((full, ax, '∀ x, slot? %s.axis (C %s.battery x) = some %s.arm'
+                     % (full, dlabel, full)))
+        return a
+
+    ax_of = dict((nm, ax) for nm, ax, _ in axes)
+    door_gate_pulling('by', by_battery, 'got', [(ax_of['need'], 31), (ax_of['by.get'], 7)])
+    # +fall has no %fast label: it is the other arm that +gut:by pulls
+    gut = None
+    for ax, a in fe_arms(by_battery, 2):
+        if is_gate_builder(a):
+            ps = pulls(door_gate_battery(a))
+            if len(ps) == 2 and (ax_of['by.get'], 7) in ps and \
+                    [x for x in ps if x[1] == 31 and x[0] != ax_of['need']]:
+                assert gut is None
+                gut = [x for x in ps if x[1] == 31][0][0]
+    name(slot(gut, layer2), 'fall.arm')
+    formulas.add(slot(gut, layer2))
+    axes.append(('fall', gut, 'slot? fall.axis layer2 = some fall.arm'))
+    door_gate_pulling('by', by_battery, 'gut', [(gut, 31), (ax_of['by.get'], 7)])
     in_battery = door('in', layer2, 'layer2')
     door_arm('in', in_battery, 'put', 1)
     has_in = door_arm('in', in_battery, 'has', 1)
@@ -793,7 +859,7 @@ def emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, nbyte
             fh.write('\nset_option maxRecDepth 100000\n')
             fh.write('\nnamespace Formalization\nnamespace Pill\n\nopen Nock\n\n')
             for nm, ax in sorted(axes_of.get(head_f, [])):
-                fh.write('@[expose] public abbrev %s.axis : Nat := %d\n' % (nm, ax))
+                fh.write('public abbrev %s.axis : Nat := %d\n' % (nm, ax))
             if axes_of.get(head_f):
                 fh.write('\n')
             fh.writelines(['public ' + line for line in body])

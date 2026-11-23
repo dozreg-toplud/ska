@@ -17,7 +17,7 @@ namespace Pill
 
 open Nock
 
-@[expose] public abbrev cat.axis : Nat := 166
+public abbrev cat.axis : Nat := 166
 
 public def cat.battery : Noun := C (A 8) (C (C (A 9) (C (A 36) (C (A 0) (A 15)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 663) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 7) (C (C (A 0) (A 3)) (C (C (A 0) (A 12)) (C (A 8) (C (C (A 9) (C (A 10710) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 28)) (C (A 0) (A 58)))) (C (A 0) (A 2))))))))))) (C (A 0) (A 59)))) (C (A 0) (A 2)))))))))) (C (A 0) (A 58)))) (C (A 0) (A 2)))))))
 public def cat.arm : Noun := C (A 7) (C (C (A 8) (C (C (A 1) (C (A 0) (C (A 0) (A 0)))) (C (C (A 1) cat.battery) (C (A 0) (A 1))))) (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x746163) (C (C (A 0) (A 7)) (A 0))))) (C (A 0) (A 1)))))

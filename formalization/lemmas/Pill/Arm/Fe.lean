@@ -17,10 +17,10 @@ namespace Pill
 
 open Nock
 
-@[expose] public abbrev fe.axis : Nat := 670
-@[expose] public abbrev fe.rol.axis : Nat := 188
-@[expose] public abbrev fe.sit.axis : Nat := 44
-@[expose] public abbrev fe.sum.axis : Nat := 4
+public abbrev fe.axis : Nat := 670
+public abbrev fe.rol.axis : Nat := 188
+public abbrev fe.sit.axis : Nat := 44
+public abbrev fe.sum.axis : Nat := 4
 
 public def fe.sum.battery : Noun := C (A 8) (C (C (A 9) (C (A 44) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 36) (C (A 0) (A 63)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 28)) (C (A 0) (A 29)))) (C (A 0) (A 2))))))))))) (C (A 0) (A 2)))))))
 public def fe.sum.arm : Noun := C (A 8) (C (C (A 1) (C (A 0) (A 0))) (C (C (A 1) fe.sum.battery) (C (A 0) (A 1))))

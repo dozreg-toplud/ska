@@ -17,7 +17,7 @@ namespace Pill
 
 open Nock
 
-@[expose] public abbrev roll.axis : Nat := 3128828
+public abbrev roll.axis : Nat := 3128828
 
 public def roll.loop : Noun := C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 28)))) (C (C (A 0) (A 237)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 14) (C (C (A 0) (A 57)) (C (A 10) (C (C (A 13) (C (A 8) (C (C (A 0) (A 29)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 120)) (C (A 0) (A 493)))) (C (A 0) (A 2))))))))) (C (A 0) (A 29)))))) (C (A 0) (A 1))))))))
 public def roll.battery : Noun := C (A 8) (C (C (A 1) roll.loop) (C (A 9) (C (A 2) (C (A 0) (A 1)))))

@@ -17,7 +17,7 @@ namespace Pill
 
 open Nock
 
-@[expose] public abbrev sub.axis : Nat := 79
+public abbrev sub.axis : Nat := 79
 
 public def sub.battery : Noun := C (A 11) (C (C (A 0x6e61656d) (C (C (A 1) (C (C (A 1) (A 0x6661656c)) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 1) (C (A 1) (C (A 115) (C (A 117) (C (A 98) (C (A 116) (C (A 114) (C (A 97) (C (A 99) (C (A 116) (C (A 45) (C (A 117) (C (A 110) (C (A 100) (C (A 101) (C (A 114) (C (A 102) (C (A 108) (C (A 111) (C (A 119) (A 0))))))))))))))))))))) (C (A 9) (C (A 2) (C (A 0) (A 1)))))))))) (C (A 0) (A 1)))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 13)))) (C (C (A 0) (A 12)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 8) (C (C (A 9) (C (A 2398) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 28))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 9) (C (A 2398) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 29))) (C (A 0) (A 2)))))))))) (C (A 0) (A 1))))))))))
 public def sub.arm : Noun := C (A 7) (C (C (A 8) (C (C (A 1) (C (A 0) (A 0))) (C (C (A 1) sub.battery) (C (A 0) (A 1))))) (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x627573) (C (C (A 0) (A 7)) (A 0))))) (C (A 0) (A 1)))))

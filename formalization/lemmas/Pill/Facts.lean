@@ -7,6 +7,7 @@ public import lemmas.Pill.Arm.Add
 public import lemmas.Pill.Arm.Bex
 public import lemmas.Pill.Arm.By
 public import lemmas.Pill.Arm.Can
+public import lemmas.Pill.Arm.Cap
 public import lemmas.Pill.Arm.Cat
 public import lemmas.Pill.Arm.ConArm
 public import lemmas.Pill.Arm.Cut
@@ -16,6 +17,7 @@ public import lemmas.Pill.Arm.Div
 public import lemmas.Pill.Arm.Dor
 public import lemmas.Pill.Arm.Dvr
 public import lemmas.Pill.Arm.End
+public import lemmas.Pill.Arm.Fall
 public import lemmas.Pill.Arm.Fe
 public import lemmas.Pill.Arm.Flop
 public import lemmas.Pill.Arm.Gor
@@ -29,6 +31,7 @@ public import lemmas.Pill.Arm.Lien
 public import lemmas.Pill.Arm.Lsh
 public import lemmas.Pill.Arm.Lte
 public import lemmas.Pill.Arm.Lth
+public import lemmas.Pill.Arm.Mas
 public import lemmas.Pill.Arm.Max
 public import lemmas.Pill.Arm.Met
 public import lemmas.Pill.Arm.Min
@@ -38,6 +41,8 @@ public import lemmas.Pill.Arm.Mor
 public import lemmas.Pill.Arm.Mug
 public import lemmas.Pill.Arm.Muk
 public import lemmas.Pill.Arm.Mul
+public import lemmas.Pill.Arm.Need
+public import lemmas.Pill.Arm.Peg
 public import lemmas.Pill.Arm.Roll
 public import lemmas.Pill.Arm.Rsh
 public import lemmas.Pill.Arm.Scag
@@ -51,6 +56,7 @@ import all lemmas.Pill.Arm.Add
 import all lemmas.Pill.Arm.Bex
 import all lemmas.Pill.Arm.By
 import all lemmas.Pill.Arm.Can
+import all lemmas.Pill.Arm.Cap
 import all lemmas.Pill.Arm.Cat
 import all lemmas.Pill.Arm.ConArm
 import all lemmas.Pill.Arm.Cut
@@ -60,6 +66,7 @@ import all lemmas.Pill.Arm.Div
 import all lemmas.Pill.Arm.Dor
 import all lemmas.Pill.Arm.Dvr
 import all lemmas.Pill.Arm.End
+import all lemmas.Pill.Arm.Fall
 import all lemmas.Pill.Arm.Fe
 import all lemmas.Pill.Arm.Flop
 import all lemmas.Pill.Arm.Gor
@@ -73,6 +80,7 @@ import all lemmas.Pill.Arm.Lien
 import all lemmas.Pill.Arm.Lsh
 import all lemmas.Pill.Arm.Lte
 import all lemmas.Pill.Arm.Lth
+import all lemmas.Pill.Arm.Mas
 import all lemmas.Pill.Arm.Max
 import all lemmas.Pill.Arm.Met
 import all lemmas.Pill.Arm.Min
@@ -82,6 +90,8 @@ import all lemmas.Pill.Arm.Mor
 import all lemmas.Pill.Arm.Mug
 import all lemmas.Pill.Arm.Muk
 import all lemmas.Pill.Arm.Mul
+import all lemmas.Pill.Arm.Need
+import all lemmas.Pill.Arm.Peg
 import all lemmas.Pill.Arm.Roll
 import all lemmas.Pill.Arm.Rsh
 import all lemmas.Pill.Arm.Scag
@@ -146,6 +156,12 @@ theorem div.arm_at : slot? div.axis layer1 = some div.arm := by kernel_rfl
 
 theorem mod.arm_at : slot? mod.axis layer1 = some mod.arm := by kernel_rfl
 
+theorem cap.arm_at : slot? cap.axis layer1 = some cap.arm := by kernel_rfl
+
+theorem mas.arm_at : slot? mas.axis layer1 = some mas.arm := by kernel_rfl
+
+theorem peg.arm_at : slot? peg.axis layer1 = some peg.arm := by kernel_rfl
+
 theorem dor.arm_at : slot? dor.axis layer2 = some dor.arm := by kernel_rfl
 
 theorem gor.arm_at : slot? gor.axis layer2 = some gor.arm := by kernel_rfl
@@ -175,6 +191,8 @@ theorem lien.arm_at : slot? lien.axis layer2 = some lien.arm := by kernel_rfl
 theorem flop.arm_at : slot? flop.axis layer2 = some flop.arm := by kernel_rfl
 
 theorem homo.arm_at : slot? homo.axis layer2 = some homo.arm := by kernel_rfl
+
+theorem need.arm_at : slot? need.axis layer2 = some need.arm := by kernel_rfl
 
 theorem bex.arm_at : slot? bex.axis layer2 = some bex.arm := by kernel_rfl
 
@@ -222,6 +240,26 @@ theorem by.get.arm_at : ∀ x, slot? by.get.axis (C by.battery x) = some by.get.
 theorem some.arm_at : slot? some.axis layer2 = some some.arm := by kernel_rfl
 
 theorem by.has.arm_at : ∀ x, slot? by.has.axis (C by.battery x) = some by.has.arm := by
+  intro x; kernel_rfl
+
+theorem by.del.arm_at : ∀ x, slot? by.del.axis (C by.battery x) = some by.del.arm := by
+  intro x; kernel_rfl
+
+theorem by.gas.arm_at : ∀ x, slot? by.gas.axis (C by.battery x) = some by.gas.arm := by
+  intro x; kernel_rfl
+
+theorem by.apt.arm_at : ∀ x, slot? by.apt.axis (C by.battery x) = some by.apt.arm := by
+  intro x; kernel_rfl
+
+theorem by.tap.arm_at : ∀ x, slot? by.tap.axis (C by.battery x) = some by.tap.arm := by
+  intro x; kernel_rfl
+
+theorem by.got.arm_at : ∀ x, slot? by.got.axis (C by.battery x) = some by.got.arm := by
+  intro x; kernel_rfl
+
+theorem fall.arm_at : slot? fall.axis layer2 = some fall.arm := by kernel_rfl
+
+theorem by.gut.arm_at : ∀ x, slot? by.gut.axis (C by.battery x) = some by.gut.arm := by
   intro x; kernel_rfl
 
 theorem in.arm_at : slot? in.axis layer2 = some in.arm := by kernel_rfl

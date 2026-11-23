@@ -17,7 +17,7 @@ namespace Pill
 
 open Nock
 
-@[expose] public abbrev gth.axis : Nat := 75
+public abbrev gth.axis : Nat := 75
 
 public def gth.battery : Noun := C (A 6) (C (C (A 8) (C (C (A 9) (C (A 148) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 28)) (C (A 0) (A 29)))) (C (A 0) (A 2)))))))) (C (C (A 1) (A 1)) (C (A 1) (A 0))))
 public def gth.arm : Noun := C (A 7) (C (C (A 8) (C (C (A 1) (C (A 0) (A 0))) (C (C (A 1) gth.battery) (C (A 0) (A 1))))) (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x687467) (C (C (A 0) (A 7)) (A 0))))) (C (A 0) (A 1)))))

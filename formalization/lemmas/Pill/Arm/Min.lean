@@ -17,7 +17,7 @@ namespace Pill
 
 open Nock
 
-@[expose] public abbrev min.axis : Nat := 156
+public abbrev min.axis : Nat := 156
 
 public def min.battery : Noun := C (A 6) (C (C (A 8) (C (C (A 9) (C (A 2399) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 28)) (C (A 0) (A 29)))) (C (A 0) (A 2)))))))) (C (C (A 0) (A 12)) (C (A 0) (A 13))))
 public def min.arm : Noun := C (A 7) (C (C (A 8) (C (C (A 1) (C (A 0) (A 0))) (C (C (A 1) min.battery) (C (A 0) (A 1))))) (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x6e696d) (C (C (A 0) (A 7)) (A 0))))) (C (A 0) (A 1)))))

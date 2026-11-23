@@ -17,7 +17,7 @@ namespace Pill
 
 open Nock
 
-@[expose] public abbrev some.axis : Nat := 5982
+public abbrev some.axis : Nat := 5982
 
 public def some.arm : Noun := C (A 8) (C (C (A 1) (A 0)) (C (C (A 1) (C (C (A 1) (A 0)) (C (A 0) (A 6)))) (C (A 0) (A 1))))
 

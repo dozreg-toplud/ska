@@ -17,7 +17,7 @@ namespace Pill
 
 open Nock
 
-@[expose] public abbrev mod.axis : Nat := 157
+public abbrev mod.axis : Nat := 157
 
 public def mod.battery : Noun := C (A 7) (C (C (A 8) (C (C (A 9) (C (A 298) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 28)) (C (A 0) (A 29)))) (C (A 0) (A 2)))))))) (C (A 0) (A 3)))
 public def mod.arm : Noun := C (A 7) (C (C (A 8) (C (C (A 1) (C (A 1) (A 1))) (C (C (A 1) mod.battery) (C (A 0) (A 1))))) (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x646f6d) (C (C (A 0) (A 7)) (A 0))))) (C (A 0) (A 1)))))
