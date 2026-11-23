@@ -28,11 +28,11 @@ side.  So:
 `sitesMeet_of_nf`: the two give `SitesMeet`, with no `SitesInhab` (the
 shared noun is the noun of the site).  The operations keep `Meets`:
 `meets_knit`, `meets_doubleInt`, `meets_doubleInt_left`, `meets_pull`.
-What `KnowMeetsNF` still needs, by induction on the nomm as in
-`knowGo_idc`: that `dat`'s products have a noun (for `+patch-prod`), that
-no `%10` of the nomm has axis `0` (the analysis turns those into `[0 0]`,
-and `+darn:so` crashes there only on one side), that a literal's sock
-knows exactly its noun, and that `+darn:so` keeps `Meets`.
+`KnowMeetsNF` is proved in `KnowMeets.lean` (`knowMeetsNF_of`), by
+induction on the nomm over the two runs, from three facts about the datums
+(`DatInhab`, `LessInhab`, `NoAx0Dat`), all three checked on the real
+compiler.  `LessProvidesNF` is not proved; it held on the real compiler,
+and `KnowMeets.lean` states its residue (`ProdSame`).
 -/
 
 namespace Formalization

@@ -12,4 +12,6 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
 * `thread-a/b/c`    162 threading cases: before `+optimize`, after it, and with passes left out
 * `sitesmeet2.hoon` `SitesMeet` on every site after fifteen pokes
 * `sitesmeet3.hoon` the three invariants of `lemmas/Ska/SitesMeet.lean` on the same sites
+* `sitesmeet4.hoon` `LessProvidesNF` and `KnowMeetsNF` of `lemmas/Ska/SitesMeetNF.lean` (a copy of `+know` with `fold` as a sample)
+* `sitesmeet5.hoon` the residue `ProdMeet` of `lemmas/Ska/KnowMeets.lean` on the pruned graphs, and `DatInhab`, `LessInhab`, `NoAx0Dat`
 * `bakeok.hoon`     every variant's bake is under its code requirement
