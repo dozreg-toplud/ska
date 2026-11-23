@@ -265,10 +265,13 @@ def main():
         names[i] = nm
 
     def name_loops(label, g, loops):
+        """name the loops [8 [1 L] 9 2 0 1] of g: `loops` of them, or all of
+        them if `loops` is 'any', or none if it is None"""
         ls = find_loops(g) if loops is not None else []
-        assert loops is None or len(ls) == loops, (label, len(ls))
+        if loops != 'any':
+            assert loops is None or len(ls) == loops, (label, len(ls))
         for k, l in enumerate(ls):
-            name(l, label + ('.loop' if loops == 1 else '.loop%d' % k))
+            name(l, label + ('.loop' if len(ls) == 1 else '.loop%d' % k))
             formulas.add(l)
 
     def arm(label, layer, lname, loops=0, full=True):
@@ -340,6 +343,8 @@ def main():
                   'lien']:
         arm(label, layer2, 'layer2', loops=1)
     flop = arm('flop', layer2, 'layer2', loops=1)
+    for label in ['skip', 'murn', 'zing', 'spin', 'skim', 'rear', 'snip', 'sort']:
+        arm(label, layer2, 'layer2', loops='any')
     # +homo has no %fast label: it is the arm that +flop pulls from its context
     homo_ax = callee(gate_battery(flop), 7)
     name(slot(homo_ax, layer2), 'homo.arm')
@@ -480,6 +485,11 @@ def main():
         assert len(res) == 1, (dlabel, label, res)
         ax, a = res[0]
         full = dlabel + '.' + label
+        if a in names:
+            # the same noun as an arm of another door: keep its name
+            axes.append((full, ax, '∀ x, slot? %s.axis (C %s.battery x) = some %s'
+                         % (full, dlabel, names[a])))
+            return a
         name(a, full + '.arm')
         formulas.add(a)
         g = gate_battery(a)
@@ -502,7 +512,9 @@ def main():
     formulas.add(slot(some_ax, layer2))
     axes.append(('some', some_ax, 'slot? some.axis layer2 = some some.arm'))
     door_arm('by', by_battery, 'has', 0)
-    door_arm('by', by_battery, 'del', None)
+    door_arm('by', by_battery, 'del', 'any')
+    for label in ['rep', 'jab', 'uni', 'run', 'dif', 'any', 'int']:
+        door_arm('by', by_battery, label, 'any')
     door_arm('by', by_battery, 'gas', 1)
 
     def door_trap(dlabel, battery, label):
@@ -527,6 +539,7 @@ def main():
 
     door_trap('by', by_battery, 'apt')
     door_trap('by', by_battery, 'tap')
+    door_trap('by', by_battery, 'key')
 
     def door_gate_pulling(dlabel, battery, label, want):
         """the unhinted gate arm of a door whose battery pulls exactly `want`"""
@@ -562,12 +575,74 @@ def main():
     door_gate_pulling('by', by_battery, 'gut', [(gut, 31), (ax_of['by.get'], 7)])
     in_battery = door('in', layer2, 'layer2')
     door_arm('in', in_battery, 'put', 1)
+    for label in ['gas', 'del', 'rep', 'run', 'uni', 'int', 'dif', 'any']:
+        door_arm('in', in_battery, label, 'any')
     has_in = door_arm('in', in_battery, 'has', 1)
     # +has:in slams an inner gate [8 [8 [1 0] [1 gate] 0 1] 9 2 10 ...]
     inner = tail(head(tail(tail(head(tail(gate_battery(has_in)))))))
     assert NODES[head(inner)] == 7
     name(inner, 'in.has.gate')
     formulas.add(inner)
+
+    # the doors +ju and +ja have no %fast labels: they are the door arms of
+    # layer 2 whose arms pull +by and +in (+ju), or hold the hinted +zip (+ja)
+    ax_of = dict((nm, ax) for nm, ax, _ in axes)
+    by_ax, in_ax = ax_of['by'], ax_of['in']
+    zip_inner = set(arms_of('zip'))
+    ju_ja = {}
+    for ax, a in fe_arms(head(layer2), 2):
+        if not is_gate_builder(a):
+            continue
+        bat = door_gate_battery(a)
+        sub = list(fe_arms(bat, 2))
+        if len(sub) < 3:
+            continue
+        ps = set()
+        for _, sa in sub:
+            ps.update(pulls(sa))
+        if zip_inner & reach([bat]):
+            ju_ja.setdefault('ja', []).append((ax, a))
+        elif len(sub) == 5 and any(x == by_ax for x, _ in ps) and any(x == in_ax for x, _ in ps):
+            ju_ja.setdefault('ju', []).append((ax, a))
+    for dlabel in ['ju', 'ja']:
+        (ax, a), = ju_ja[dlabel]
+        name(a, dlabel + '.arm')
+        formulas.add(a)
+        name(door_gate_battery(a), dlabel + '.battery')
+        axes.append((dlabel, ax, 'slot? %s.axis layer2 = some %s.arm' % (dlabel, dlabel)))
+
+    def door_arm_pulling(dlabel, label, pred, loops):
+        """the gate arm of a door without %fast labels whose pulls satisfy pred"""
+        battery = [i for i, nm in names.items() if nm == dlabel + '.battery'][0]
+        res = []
+        for ax, a in fe_arms(battery, 2):
+            if is_gate_builder(a) and pred(set(pulls(door_gate_battery(a)))):
+                res.append((find_axis(cell(battery, atom(0)), a), a))
+        assert len(res) == 1, (dlabel, label, res)
+        ax, a = res[0]
+        full = dlabel + '.' + label
+        if a in names:
+            axes.append((full, ax, '∀ x, slot? %s.axis (C %s.battery x) = some %s'
+                         % (full, dlabel, names[a])))
+            return ax
+        name(a, full + '.arm')
+        formulas.add(a)
+        g = door_gate_battery(a)
+        name(g, full + '.battery')
+        formulas.add(g)
+        name_loops(full, g, loops)
+        axes.append((full, ax, '∀ x, slot? %s.axis (C %s.battery x) = some %s.arm'
+                     % (full, dlabel, full)))
+        return ax
+
+    ju_get = door_arm_pulling('ju', 'get', lambda ps: ps == {(by_ax, 31)}, 0)
+    door_arm_pulling('ju', 'has', lambda ps: ps == {(in_ax, 31), (ju_get, 7)}, 0)
+    ju_put = door_arm_pulling('ju', 'put',
+                              lambda ps: ps == {(ju_get, 7), (by_ax, 63), (in_ax, 63)}, 0)
+    door_arm_pulling('ju', 'del', lambda ps: (by_ax, 127) in ps and (ju_get, 7) in ps, 0)
+    door_arm_pulling('ju', 'gas', lambda ps: (ju_put, 15) in ps, 1)
+    ja_get = door_arm_pulling('ja', 'get', lambda ps: ps == {(by_ax, 31)}, 0)
+    door_arm_pulling('ja', 'add', lambda ps: ps == {(ja_get, 7), (by_ax, 63)}, 0)
 
     # ---- write
     emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, len(data))
