@@ -278,5 +278,129 @@ theorem eval_pole_cal (cr : Noun) (hc : CorIn cr) (lib : Lib)
       eval_blob.arm, hb, argsN, listNoun, resN, Tone.toNoun, afterCall, poleOutS, hsm, e4,
       store_arm]
 
+set_option maxHeartbeats 8000000 in
+/-- `+eval-pole` on `%csl`: poke `%dire` for a call whose subject goes whole,
+in register `0`, run block `0` of the callee and store the product. -/
+theorem eval_pole_csl (cr : Noun) (hc : CorIn cr) (lib : Lib)
+    (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
+    (O : Oracle Noun) (hO : BlobIs lib O) (nk : Noun → Noun → Noun → Noun → Option (Tone × Noun))
+    (scry : Noun) (a : Bell) (sr : Nat) (d : Nat) (regs : TreapMap mugF Noun) (trace : Trace) :
+    nock (poleS cr (Pole.csl a sr d) regs trace scry) eval_pole.battery
+      = (execPole lib ⟨callBody lib pk O, nk⟩ scry cr (Pole.csl a sr d) regs trace).map poleOutS := by
+  obtain ⟨hpkN, hpkG⟩ := hpk
+  have hp := hpkN (Ovum.dire a true)
+  simp only [pokeN, poke.axis, Ovum.toNoun, flag, if_true, Tag.dire] at hp
+  cases e1 : pk cr (Ovum.dire a true) with
+  | none =>
+    rw [e1] at hp
+    nock_open eval_pole.battery
+    simp [nock_exec, Pole.toNoun, Tag.csl, Tag.cal, Tag.nok, Tag.dire, hp, execPole, callBody, e1]
+  | some r =>
+  obtain ⟨p, cr'⟩ := r
+  have hc' := hpkG _ _ e1
+  rw [e1] at hp
+  have hpi := evalPoleIn_icore hc'
+  obtain ⟨_, hrd, _, hrc⟩ := hpi
+  have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'
+  simp only [read.layer2.axis, icore, nock_exec] at hl2
+  have hneed : NeedIn layer2 := need.arm_at
+  have hsome := someIn_layer2
+  have hgor := gorIn_morIn_layer2.1
+  rcases p with _ | ⟨b, c, new⟩ | ps
+  · nock_open eval_pole.battery
+    simp [nock_exec, Pole.toNoun, Tag.csl, Tag.cal, Tag.nok, Tag.dire, hp, execPole, callBody, e1,
+      SkaModel.Prod.toNoun]
+  rotate_left
+  · nock_open eval_pole.battery
+    simp [nock_exec, Pole.toNoun, Tag.csl, Tag.cal, Tag.nok, Tag.dire, Tag.ir, Tag.drop, hp, execPole,
+      callBody, e1, SkaModel.Prod.toNoun]
+  have hpi' := evalPoleIn_icore hc'
+  obtain ⟨_, hrd', _, hrc'⟩ := hpi'
+  have hld := eval_pole_load (icore cr') hrd' hrc' regs
+  cases e2 : SkaModel.read sr regs with
+  | none =>
+    nock_open eval_pole.battery
+    simp [nock_exec, Pole.toNoun, Tag.csl, Tag.csl, Tag.cal, Tag.nok, Tag.dire, Tag.ir, hp, execPole,
+      callBody, e1, SkaModel.Prod.toNoun, hld, e2, Straight.toNoun]
+  | some vs0 =>
+  have hreg : HoonMap.toNoun id (regsOf [vs0] : TreapMap mugF Noun)
+      = C (C (A 0) vs0) (C (A 0) (A 0)) := rfl
+  have hg := getF_hoonMap Blob.toNoun c.blocks 0
+  cases e3 : HoonMap.get c.blocks 0 with
+  | none =>
+    rw [e3] at hg
+    nock_open eval_pole.battery
+    simp [nock_exec, Pole.toNoun, Tag.csl, Tag.cal, Tag.nok, Tag.dire, Tag.ir, hp, execPole, callBody, e1,
+      SkaModel.Prod.toNoun, hld, e2, hreg, Straight.toNoun, hl2, by.arm_at, by_arm, by.got.arm_at,
+      got_arm, got_gate_nil layer2 ⟨hneed, hsome, hgor⟩ _ _ hg, execEntry, e3]
+  | some b0 =>
+  rw [e3] at hg
+  obtain ⟨hb, hbg⟩ := hO cr' hc' (regsOf [vs0]) trace b0 c [] scry
+  cases e4 : execBlob lib O c scry cr' (regsOf [vs0]) trace b0 [] with
+  | none =>
+    rw [e4] at hb
+    simp only [blobS, icore, Straight.toNoun, argsN, listNoun, hreg] at hb
+    nock_open eval_pole.battery
+    simp [nock_exec, Pole.toNoun, Tag.csl, Tag.cal, Tag.nok, Tag.dire, Tag.ir, hp, execPole, callBody, e1,
+      SkaModel.Prod.toNoun, hld, e2, hreg, Straight.toNoun, hl2, by.arm_at, by_arm, by.got.arm_at,
+      got_arm, got_gate layer2 ⟨hneed, hsome, hgor⟩ _ _ _ hg, execEntry, e3, unitNoun,
+      eval_blob.arm, hb, argsN, listNoun, e4]
+  | some r =>
+  obtain ⟨ton, cr''⟩ := r
+  have hc'' := hbg _ e4
+  rw [e4] at hb
+  simp only [blobS, icore, Straight.toNoun, argsN, listNoun, hreg] at hb
+  obtain ⟨hsm, hl2''⟩ := corIn_facts hc''
+  simp only at hsm hl2''
+  rcases ton with q | q | q
+  all_goals
+    nock_open eval_pole.battery
+    simp [nock_exec, Pole.toNoun, Tag.csl, Tag.cal, Tag.nok, Tag.dire, Tag.ir, hp, execPole, callBody, e1,
+      SkaModel.Prod.toNoun, hld, e2, hreg, Straight.toNoun, hl2, by.arm_at, by_arm, by.got.arm_at,
+      got_arm, got_gate layer2 ⟨hneed, hsome, hgor⟩ _ _ _ hg, execEntry, e3, unitNoun,
+      eval_blob.arm, hb, argsN, listNoun, resN, Tone.toNoun, afterCall, poleOutS, hsm, e4,
+      store_arm]
+
+/-- `%caf`, `%cam`, `%csf` and `%csm` run `+eval-pole` again on the plain call. -/
+theorem eval_pole_caf (cr : Noun) (a : Bell) (v : List Nat) (d : Nat) (n : Ring)
+    (regs : TreapMap mugF Noun) (trace : Trace) (scry : Noun) :
+    nock (poleS cr (Pole.caf a v d n) regs trace scry) eval_pole.battery
+      = nock (poleS cr (Pole.cal a v d) regs trace scry) eval_pole.battery := by
+  nock_open eval_pole.battery
+  simp [nock_exec, Pole.toNoun, Tag.caf, Tag.cal, Tag.nok, Tag.imm, Tag.mov, Tag.inc, Tag.con,
+    Tag.hed, Tag.tal, Tag.cel, Tag.lob, Tag.equ, Tag.hsp, Tag.hse, Tag.hdp, Tag.hde, Tag.hmp,
+    Tag.hme, Tag.hcp, Tag.hce, Tag.spy, Tag.cam, Tag.csl, Tag.csf, Tag.csm]
+  rfl
+
+theorem eval_pole_cam (cr : Noun) (a : Bell) (v : List Nat) (d : Nat) (k : Noun)
+    (regs : TreapMap mugF Noun) (trace : Trace) (scry : Noun) :
+    nock (poleS cr (Pole.cam a v d k) regs trace scry) eval_pole.battery
+      = nock (poleS cr (Pole.cal a v d) regs trace scry) eval_pole.battery := by
+  nock_open eval_pole.battery
+  simp [nock_exec, Pole.toNoun, Tag.caf, Tag.cal, Tag.nok, Tag.imm, Tag.mov, Tag.inc, Tag.con,
+    Tag.hed, Tag.tal, Tag.cel, Tag.lob, Tag.equ, Tag.hsp, Tag.hse, Tag.hdp, Tag.hde, Tag.hmp,
+    Tag.hme, Tag.hcp, Tag.hce, Tag.spy, Tag.cam, Tag.csl, Tag.csf, Tag.csm]
+  rfl
+
+theorem eval_pole_csf (cr : Noun) (a : Bell) (sr d : Nat) (n : Ring)
+    (regs : TreapMap mugF Noun) (trace : Trace) (scry : Noun) :
+    nock (poleS cr (Pole.csf a sr d n) regs trace scry) eval_pole.battery
+      = nock (poleS cr (Pole.csl a sr d) regs trace scry) eval_pole.battery := by
+  nock_open eval_pole.battery
+  simp [nock_exec, Pole.toNoun, Tag.caf, Tag.cal, Tag.nok, Tag.imm, Tag.mov, Tag.inc, Tag.con,
+    Tag.hed, Tag.tal, Tag.cel, Tag.lob, Tag.equ, Tag.hsp, Tag.hse, Tag.hdp, Tag.hde, Tag.hmp,
+    Tag.hme, Tag.hcp, Tag.hce, Tag.spy, Tag.cam, Tag.csl, Tag.csf, Tag.csm]
+  rfl
+
+theorem eval_pole_csm (cr : Noun) (a : Bell) (sr d : Nat) (k : Noun)
+    (regs : TreapMap mugF Noun) (trace : Trace) (scry : Noun) :
+    nock (poleS cr (Pole.csm a sr d k) regs trace scry) eval_pole.battery
+      = nock (poleS cr (Pole.csl a sr d) regs trace scry) eval_pole.battery := by
+  nock_open eval_pole.battery
+  simp [nock_exec, Pole.toNoun, Tag.caf, Tag.cal, Tag.nok, Tag.imm, Tag.mov, Tag.inc, Tag.con,
+    Tag.hed, Tag.tal, Tag.cel, Tag.lob, Tag.equ, Tag.hsp, Tag.hse, Tag.hdp, Tag.hde, Tag.hmp,
+    Tag.hme, Tag.hcp, Tag.hce, Tag.spy, Tag.cam, Tag.csl, Tag.csf, Tag.csm]
+  rfl
+
 end Compiler
 end Formalization
