@@ -9683,6 +9683,11 @@
   |=  [[s=* f=*] scry=$@(~ $-(^ (unit (unit))))]
   ^-  [tone _cor]
   ?@  f  [[%2 ~] cor]
+  ::  %bare keeps a formula out of compiled Nock: the compiler answers it with
+  ::  an indirect call of the same formula, which the runtime gives to its
+  ::  plain interpreter.  Here that is +mink
+  ::
+  ?:  ?=([%11 %bare *] f)  [(mink [s f] scry) cor]
   =^  p=prod  cor  (poke %full s f)
   ?>  ?=(%ir -.p)
   =/  code=straight-out  p.p
