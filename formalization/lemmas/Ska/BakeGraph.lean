@@ -420,6 +420,68 @@ theorem touchStep_spec {E : BEnv M} {cur : Bell} {new : M Bell (List Sock)} {c :
       · subst e; exact List.mem_cons_self
       · rw [hbak, Treap.get_put, if_neg e] at hb; exact absurd rfl hb
 
+theorem goodSite_of_bak {st st' : BSt M} {b : Bell} {k : Sock} (h : Treap.get st'.bak b = Treap.get st.bak b)
+    (hg : GoodSite st b k) : GoodSite st' b k := by
+  obtain ⟨s, hs, hf⟩ := hg
+  exact ⟨s, by rw [h, hs], hf⟩
+
+/-- All the touched callees. -/
+theorem touchFold_spec (E : BEnv M) (cur : Bell) (new : M Bell (List Sock)) :
+    ∀ (L : List Bell) (changed0 changed' : List Bell) (st0 st' : BSt M),
+      L.foldl (touchStep E cur new) (some (changed0, st0)) = some (changed', st') →
+      (∀ b, b ∉ L → Treap.get st'.inn b = Treap.get st0.inn b ∧ Treap.get st'.bak b = Treap.get st0.bak b) ∧
+      (∀ b ∈ L, Treap.gut st'.inn b Treap.empty = innUpd new cur b (Treap.gut st0.inn b Treap.empty)) ∧
+      (∀ b ∈ L, b ≠ E.root → ∀ c ks, Treap.get (Treap.gut st'.inn b Treap.empty) c = some ks →
+        ∀ k ∈ ks, GoodSite st' b k) ∧
+      (∀ b, Treap.get st'.bak b ≠ Treap.get st0.bak b → b ∈ changed') ∧
+      (∀ b ∈ changed0, b ∈ changed') ∧
+      Treap.get st'.bak E.root = Treap.get st0.bak E.root
+  | [], changed0, changed', st0, st', h => by
+    simp only [List.foldl_nil, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨fun _ _ => ⟨rfl, rfl⟩, fun _ h => by simp at h, fun _ h => by simp at h,
+      fun _ h => absurd rfl h, fun _ h => h, rfl⟩
+  | c :: L, changed0, changed', st0, st', h => by
+    simp only [List.foldl_cons] at h
+    cases h1 : touchStep E cur new (some (changed0, st0)) c with
+    | none => rw [h1, touchFold_none] at h; cases h
+    | some p =>
+      obtain ⟨changed1, st1⟩ := p
+      rw [h1] at h
+      obtain ⟨S1, S2, S3, S4, S5, S6⟩ := touchStep_spec h1
+      obtain ⟨F1, F2, F3, F4, F5, F6⟩ := touchFold_spec E cur new L changed1 changed' st1 st' h
+      refine ⟨fun b hb => ?_, fun b hb => ?_, fun b hb hr c' ks hks k hk => ?_, fun b hb => ?_,
+        fun b hb => F5 b (S5 b hb), ?_⟩
+      · have hbc : b ≠ c := fun e => hb (e ▸ List.mem_cons_self)
+        have hbL : b ∉ L := fun e => hb (List.mem_cons_of_mem _ e)
+        exact ⟨(F1 b hbL).1.trans (S1 b hbc).1, (F1 b hbL).2.trans (S1 b hbc).2⟩
+      · by_cases hbL : b ∈ L
+        · rw [F2 b hbL]
+          by_cases e : b = c
+          · subst e; rw [S2, innUpd_idem]
+          · rw [gut_eq_of_get (S1 b e).1]
+        · have e : b = c := by
+            rcases List.mem_cons.mp hb with e | e
+            · exact e
+            · exact absurd e hbL
+          subst e
+          rw [gut_eq_of_get (F1 b hbL).1, S2]
+      · by_cases hbL : b ∈ L
+        · exact F3 b hbL hr c' ks hks k hk
+        · have e : b = c := by
+            rcases List.mem_cons.mp hb with e | e
+            · exact e
+            · exact absurd e hbL
+          subst e
+          rw [gut_eq_of_get (F1 b hbL).1] at hks
+          exact goodSite_of_bak (F1 b hbL).2 (S3 hr c' ks hks k hk)
+      · by_cases e : Treap.get st'.bak b = Treap.get st1.bak b
+        · exact F5 b (S4 b (by rwa [e] at hb))
+        · exact F4 b e
+      · by_cases e : c = E.root
+        · rw [F6, S6 e]
+        · rw [F6, (S1 E.root (fun h => e h.symm)).2]
+
 end Bake
 
 end SkaModel
