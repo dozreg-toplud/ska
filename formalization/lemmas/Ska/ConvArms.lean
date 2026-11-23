@@ -122,8 +122,9 @@ theorem memOK_congr {st st' : SkaState M R} {F : Entry → Prop} {m : Ident} {Lm
 theorem CInv.congr {memoF : Memo M} {st st' : SkaState M R} {F : Entry → Prop} (h : CInv memoF st F)
     (hg : st'.g = st.g) (hd : st'.done = st.done) (ho : st'.order = st.order) (hs : st'.stk = st.stk)
     (hn : st'.next = st.next) (htk : st'.tick = st.tick) (hts : st'.ticks = st.ticks) : CInv memoF st' F := by
-  obtain ⟨a, b, c, d, e, f⟩ := h
-  refine ⟨a.congr hg hd ho hs, ?_, ?_, ?_, ?_, fun j hj => by rw [ho]; rw [hts] at hj; exact f j hj⟩
+  obtain ⟨a, b, c, d, e, f, g⟩ := h
+  refine ⟨a.congr hg hd ho hs, ?_, ?_, ?_, ?_, fun j hj => by rw [ho]; rw [hts] at hj; exact f j hj,
+    fun i d hd => g i d (by rw [← hg]; exact hd)⟩
   · intro m; simp only [ranOf, chgOf, hts, htk]; exact b m
   · simp only [OrdInv, ho, hs, hn]; exact c
   · obtain ⟨d1, d2, d3, d4, d5⟩ := d
@@ -186,7 +187,8 @@ callees of `gen`; the members it leaves have run and read nothing below its
 and was not on the stack if `back` stays clear; the answer comes from
 finalized entries and from the identity of the answer. -/
 def ResP2 (memoF : Memo M) (res : ResGo M R) : Prop :=
-  ∀ idT gs r gs' (F : Entry → Prop), CInv memoF gs.st F → WellFormed idT.1 → res idT gs = some (r, gs') →
+  ∀ idT gs r gs' (F : Entry → Prop), CInv memoF gs.st F → WellFormed idT.1 → idT.1 ≠ Sock.void →
+    res idT gs = some (r, gs') →
     (∃ F', (∀ e, F e → F' e) ∧ CInv memoF gs'.st F') ∧
     GStepsR (gCore gs.st.g) (gCore gs'.st.g) ∧ Keep gs.st.stk (· ∈ gs.st.stk) gs.st gs'.st ∧
     Frame (· ∈ gs.st.stk) gs.st gs'.st ∧ gs'.gen = gs.gen ∧ gs'.callees = gs.callees ∧
@@ -197,7 +199,8 @@ def ResP2 (memoF : Memo M) (res : ResGo M R) : Prop :=
 
 /-- What `+analyze` keeps and gives. -/
 def AnaP2 (memoF : Memo M) (ana : AnaGo M R) : Prop :=
-  ∀ id st low st' (F : Entry → Prop), CInv memoF st F → WellFormed id.1 → Treap.get st.g id = none →
+  ∀ id st low st' (F : Entry → Prop), CInv memoF st F → WellFormed id.1 → id.1 ≠ Sock.void →
+    Treap.get st.g id = none →
     ana id st = some (low, st') →
     (∃ F', (∀ e, F e → F' e) ∧ CInv memoF st' F') ∧
     GStepsR (gCore st.g) (gCore st'.g) ∧ Keep st.stk (· ∈ st.stk) st st' ∧ Frame (· ∈ st.stk) st st' ∧
@@ -296,9 +299,9 @@ theorem not_inCallees_empty (c : Ident) : ¬ InCallees (Treap.empty : M CalleeEn
 theorem resOKD_of_resP2 {memoF : Memo M} {res : ResGo M R} (h : ResP2 memoF res) (st0 : SkaState M R)
     (F0 : Entry → Prop) (index : Nat) (hidx : index < st0.next) :
     ResOKD PfR (RunInv memoF st0 F0 index) res := by
-  intro idT gs r gs' hi hw e
+  intro idT gs r gs' hi hw hnv e
   obtain ⟨F, hF0, hc, s1, k1, fr1, hlow, hpush, hcl, hbk⟩ := hi
-  obtain ⟨⟨F', hFF', hc'⟩, s2, k2, fr2, hgen, hcal, hle, hpush2, hr1, hback, hans⟩ := h idT gs r gs' F hc hw e
+  obtain ⟨⟨F', hFF', hc'⟩, s2, k2, fr2, hgen, hcal, hle, hpush2, hr1, hback, hans⟩ := h idT gs r gs' F hc hw hnv e
   have hst0 : ∀ j ∈ st0.stk, j ∈ gs.st.stk := fun j hj => by
     obtain ⟨l, el⟩ := k1.1; rw [el]; exact List.mem_append_right _ hj
   have hnew : ∀ c o, Treap.get gs'.st.order c = some o → c ∉ gs.st.stk → gs'.low ≤ o := fun c o hco hcn => by
@@ -473,7 +476,7 @@ theorem runStep_ok2 (env : Env R) (memoF : Memo M) {n : Nat}
           intro h; obtain ⟨o, ho'⟩ := hidO; rw [← h, (c1.frz.sub e he).2] at ho'; cases ho'
         unfold calleesOf; rw [hgx _ hi]
     refine ⟨iS, fun m => ?_, ?_, ⟨fun e he => c1.frz.ok.mono (fun _ h => h) hcalF he, fun i d h1 h2 => ?_,
-      fun e he => ?_, c1.frz.wf, ?_⟩, ?_, ?_⟩
+      fun e he => ?_, c1.frz.wf, ?_⟩, ?_, ?_, ?_⟩
     · by_cases hm : m = id
       · subst hm
         rw [hranid, hchgid, etk]
@@ -538,6 +541,11 @@ theorem runStep_ok2 (env : Env R) (memoF : Memo M) {n : Nat}
       by_cases hji : j = id
       · rw [hji]; obtain ⟨o, ho⟩ := hidO; rw [ho]; simp
       · rw [htsj j hji] at hj; exact c1.tkeys j hj
+    · intro i d hd
+      rw [hgj] at hd
+      split at hd
+      · rename_i hi; rw [hi]; exact c1.nv id d0 (by rw [hg0]; exact hd0)
+      · exact c1.nv i d hd
   refine ⟨⟨F1, hF01, cS, fun m Lmax hm hmi h => hmem m Lmax hmi
     (memOK_frame c0.s hm k1 (fun j hj => fr1.ticks j hj) hF01 (memOK_congr rfl rfl rfl h))⟩,
     ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
@@ -633,7 +641,7 @@ theorem ansW_hit {st : SkaState M R} (hi : SInv st) {i : Ident} {d : FDatum M} (
 `+analyze` do at the fuel below. -/
 theorem resolveStep_ok2 (env : Env R) (memoF : Memo M) {resolve : ResGo M R} {analyze : AnaGo M R}
     (hres : ResP2 memoF resolve) (hana : AnaP2 memoF analyze) : ResP2 memoF (resolveStep env resolve analyze) := by
-  intro idT gs r gs' F hc hw e
+  intro idT gs r gs' F hc hw hnv e
   have hstay : ∀ low' back', low' ≤ gs.low → (back' = false → gs.back = false) →
       let gs2 : GenS M R := { gs with low := low', back := back' }
       (∃ F', (∀ e, F e → F' e) ∧ CInv memoF gs2.st F') ∧ GStepsR (gCore gs.st.g) (gCore gs2.st.g) ∧
@@ -688,7 +696,7 @@ theorem resolveStep_ok2 (env : Env R) (memoF : Memo M) {resolve : ResGo M R} {an
         · cases hb
         have hwj : WellFormed j.1 := hc.s.wf_stk hj
         have hwi : WellFormed i.1 := wf_msgSock hw hwj hm
-        obtain ⟨a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11⟩ := hres i gs r gs' F hc hwi e
+        obtain ⟨a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11⟩ := hres i gs r gs' F hc hwi (msgSock_nv hnv hm) e
         refine ⟨a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, ?_⟩
         rw [hf] at a11
         exact AnsW.gen hwj hm a11
@@ -711,7 +719,7 @@ theorem resolveStep_ok2 (env : Env R) (memoF : Memo M) {resolve : ResGo M R} {an
       · simp only [Option.map_eq_some_iff] at e
         obtain ⟨⟨low, st'⟩, ha, e⟩ := e
         cases e
-        obtain ⟨⟨F', hFF', hc'⟩, s1, k1, fr1, hpush, ⟨d, hd⟩, hlo, _⟩ := hana idT gs.st low st' F hc hw hg ha
+        obtain ⟨⟨F', hFF', hc'⟩, s1, k1, fr1, hpush, ⟨d, hd⟩, hlo, _⟩ := hana idT gs.st low st' F hc hw hnv hg ha
         have hnot : idT ∉ gs.st.stk := hc.s.not_mem hg
         refine ⟨⟨F', hFF', hc'⟩, s1, k1, fr1, rfl, rfl, Nat.min_le_left _ _, fun x o hxo hx => ?_,
           fun o h => Nat.le_trans (Nat.min_le_right _ _) (hlo o h), fun hb => ⟨hb, fun _ _ => hnot⟩, ?_⟩

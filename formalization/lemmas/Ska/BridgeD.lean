@@ -83,7 +83,7 @@ answers only grow, and the `gen` that `fol-loop` makes after the call (the
 result with the identity of the answer among its callees) has `Inv` and the
 answer among its answers. -/
 def ResOKD (Pf : PFam M R) (Inv : GenS M R → Prop) (res : ResGo M R) : Prop :=
-  ∀ idT gs r gs', Inv gs → WellFormed idT.1 → res idT gs = some (r, gs') →
+  ∀ idT gs r gs', Inv gs → WellFormed idT.1 → idT.1 ≠ Sock.void → res idT gs = some (r, gs') →
     gs'.gen = gs.gen ∧ PLe Pf gs gs' ∧
     ∀ (gs'' : GenS M R) seat, LFEq gs' gs'' → gs''.callees = Treap.ins gs'.callees ⟨seat, r.1⟩ →
       Inv gs'' ∧ Pf gs'' idT.1 idT.2 r.2.core.tab
@@ -203,7 +203,7 @@ theorem bridge_stepD (env : Env R) (hP : ∀ g tab, TabIn (Pf g) tab → TabWF t
       hL.app i2 rfl rfl rfl rfl rfl rfl rfl rfl rfl rfl rfl
     have l2' : PLe Pf g2 ({ g2 with want := Ca.uni g2.want (distribute Cape.yes f1.prod.src) } : GenS M R) :=
       hS.app rfl rfl rfl rfl rfl rfl rfl rfl rfl rfl rfl
-    rcases callStep_cases h3 with ⟨el, eb, est, ec, hc⟩ | ⟨fa, fb, i, g3, h4, rfl, hc⟩ | ⟨fa, fb, r, g3, h4, el, eb, est, ec, hc⟩
+    rcases callStep_cases h3 with ⟨el, eb, est, ec, hc⟩ | ⟨fa, fb, i, g3, h4, rfl, hc⟩ | ⟨fa, fb, r, g3, h4, hnv4, el, eb, est, ec, hc⟩
     · have l3 : PLe Pf g2 gs' := hS.app el eb (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est])
         (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est]) ec
       refine ⟨hL.app i2 el eb (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est])
@@ -232,7 +232,7 @@ theorem bridge_stepD (env : Env R) (hP : ∀ g tab, TabIn (Pf g) tab → TabWF t
         rw [goL_tl (by simp [GenS.at]), goL_hd]; simp only [Option.bind_some]
         refine hc _ _ _ _ ?_
         rw [goL_tl (by simp [GenS.at]), goL_tl (by simp [GenS.at]), goL_hd]
-    · obtain ⟨hg3, l3, hp⟩ := hres _ _ _ _ i2 ws1 h4
+    · obtain ⟨hg3, l3, hp⟩ := hres _ _ _ _ i2 ws1 hnv4 h4
       have hlf : LFEq g3 gs' := ⟨el, eb, by rw [est], by rw [est], by rw [est], by rw [est], by rw [est],
         by rw [est], by rw [est], by rw [est]⟩
       have l4 : PLe Pf g3 gs' := hS g3 gs' hlf (fun c h => by

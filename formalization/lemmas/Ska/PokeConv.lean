@@ -173,18 +173,17 @@ theorem pokeMemo_spec (pruned : Callgraph M) (memo : Memo M) :
 /-- **The pruned entries are converged among themselves**: the frozen entries
 of pruned identities form a `ConvergedGraphM` (their answers come from their
 callees, which the pruned graph holds), for a memo whose entries are sound
-for `code`, if no pruned identity has a `%void` subject sock. -/
+for `code` and a root whose subject sock is not `%void`. -/
 theorem skaCallgraph_prunedM {lib : Lib} {code : Bell → Option Nomm} (env : Env R) (memoF : Memo M)
     (hmF : MemoWF memoF) (hkey : MemoKeys memoF) (hok : ∀ m, MemEnt memoF m → MemoEntryOK lib code m)
     {n n' : Nat} {root : Ident} {reg reg' : R} {g pruned : Callgraph M} (hw : WellFormed root.1)
-    (h : skaCallgraph env n root memoF reg = some (g, reg'))
-    (hp : pruneCallgraph n' g root = some pruned)
-    (hnv : ∀ i d, Treap.get pruned i = some d → i.1 ≠ Sock.void) :
+    (hnvr : root.1 ≠ Sock.void) (h : skaCallgraph env n root memoF reg = some (g, reg'))
+    (hp : pruneCallgraph n' g root = some pruned) :
     ∃ G : Entry → Prop, ConvergedGraphM lib code (MemEnt memoF) G ∧
       (∀ i d, Treap.get pruned i = some d → G (entOf i d)) ∧
       (∀ e, G e → ∃ d, Treap.get pruned (e.more, e.fol) = some d ∧ e.d.less = d.less) ∧
       (∀ e, G e → WellFormed e.more ∧ WellFormed e.d.prod) := by
-  obtain ⟨F, hok', hcov, hsub, hwfp, hs⟩ := skaCallgraph_frozen env memoF hmF hw h
+  obtain ⟨F, hok', hcov, hsub, hwfp, hs, hnv⟩ := skaCallgraph_frozen env memoF hmF hw hnvr h
   obtain ⟨psub, _, pcl⟩ := pruneCallgraph_spec hp
   have hgw := graphWF_stepsR hs graphWF_empty
   let G : Entry → Prop := fun e => F e ∧ Treap.has pruned (e.more, e.fol) = true
@@ -203,7 +202,7 @@ theorem skaCallgraph_prunedM {lib : Lib} {code : Bell → Option Nomm} (env : En
       have hgit : gitG g (e.more, e.fol) = d := by simp [gitG, Treap.gut, psub _ _ hd]
       rw [hgit] at h2
       exact pcl _ d hd _ h2
-    · exact Or.inr (memoHit_hitEntry hkey hok (hnv _ d hd) hm)
+    · exact Or.inr (memoHit_hitEntry hkey hok (hnv _ d (psub _ _ hd)) hm)
   · obtain ⟨d, hd, _⟩ := hGp e he
     exact ⟨(hgw _ _ (show gCore g (e.more, e.fol) = some d.core by simp [gCore, psub _ _ hd])).1, hwfp e he.1⟩
 
@@ -265,12 +264,12 @@ satisfy `PokeInv`, then every bell of the poke's datums `dats` agrees with
 pokes extended by `dats`, and `PokeInv` holds of the new memo and that table.
 
 Termination is not part of this: `Ana.skaPoke` is fuelled, and the statement
-is about every fuel that is enough for it to return (`some`).  The hypothesis
-`hnv` (no pruned identity has a `%void` subject sock) is still assumed. -/
+is about every fuel that is enough for it to return (`some`).  The root's
+subject sock is well formed and not `%void` (the root of `+ska-poke` is
+`[bus fol]` with `bus` from the caller, `&+sub` for a whole subject). -/
 theorem skaPoke_sound {lib : Lib} (env : Env R) {n : Nat} {root : Ident} {memo memo' : Memo M} {reg reg' : R}
     {code : Bell → Option Nomm} {pruned : Callgraph M} {dats : M Bell (FDatum M)} {rd : FDatum M}
-    (hinv : PokeInv lib memo code) (hw : WellFormed root.1)
-    (hnv : ∀ i d, Treap.get pruned i = some d → i.1 ≠ Sock.void)
+    (hinv : PokeInv lib memo code) (hw : WellFormed root.1) (hnvr : root.1 ≠ Sock.void)
     (h : skaPoke env n root memo reg = some (pruned, dats, memo', rd, reg')) :
     PokeInv lib memo' (extendCode code dats) ∧
     ∀ bl d, Treap.get dats bl = some d → ∀ x, Fits bl.less x → ∀ gul t r,
@@ -286,7 +285,7 @@ theorem skaPoke_sound {lib : Lib} (env : Env R) {n : Nat} {root : Ident} {memo m
     rw [← hcd]; exact extendCode_has
   have hok' : ∀ m, MemEnt memo m → MemoEntryOK lib code' m := fun m hm => (hinv.ok m hm).mono_code hcc
   obtain ⟨G, hG, hcovP, hGp, hwfG⟩ := skaCallgraph_prunedM (lib := lib) (code := code') env memo hinv.wf hinv.keys
-    hok' hw hg hpr hnv
+    hok' hw hnvr hg hpr
   obtain ⟨d1, d2, d3⟩ := pokeMemo_spec pr memo
   have hdat : ∀ i d, Treap.get pr i = some d → ∃ nb, code' ⟨d.less, i.2⟩ = some nb := by
     intro i d hd

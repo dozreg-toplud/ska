@@ -165,7 +165,7 @@ theorem callStep_cases {res : ResGo M R} {go : FolGoS M R} {seat mk : Option Nou
         (GenS.at ({ g with want := Ca.uni g.want (distribute Cape.yes f.prod.src) } : GenS M R) δ) =
           some (i, g3.at δ') →
         SkaModel.callStep tab go' mk bc df s f (g.at δ) = some (out, g3.at δ')) ∨
-    (∃ fa fb r g3, res (s.prod.sock, C fa fb) g = some (r, g3) ∧
+    (∃ fa fb r g3, res (s.prod.sock, C fa fb) g = some (r, g3) ∧ s.prod.sock ≠ Sock.void ∧
       g'.low = g3.low ∧ g'.back = g3.back ∧ g'.st = g3.st ∧ g'.callees = Treap.ins g3.callees ⟨seat, r.1⟩ ∧
       (g3.gen = g.gen → ∀ (go' : FolGo) δ,
         SkaModel.callStep (tabOne s.prod.sock (C fa fb) r.2.core.tab) go' mk bc df s f (g.at δ) =
@@ -235,7 +235,8 @@ theorem callStep_cases {res : ResGo M R} {go : FolGoS M R} {seat mk : Option Nou
     · rename_i lc dd hl
       simp only [Option.some.injEq, Prod.mk.injEq] at h
       obtain ⟨rfl, rfl⟩ := h
-      refine Or.inr (Or.inr ⟨fa, fb, (r : Ident × FDatum M), g3, hr, rfl, rfl, rfl, rfl, fun hg go' δ => ?_⟩)
+      refine Or.inr (Or.inr ⟨fa, fb, (r : Ident × FDatum M), g3, hr, fun e => hv (Or.inl e), rfl, rfl, rfl, rfl,
+        fun hg go' δ => ?_⟩)
       unfold SkaModel.callStep; rw [if_neg hv, hf]
       simp only
       rw [if_neg hc]
@@ -365,7 +366,7 @@ theorem bridge_step (env : Env R) (hP : ∀ tab, TabIn P tab → TabWF tab) (hL 
     have i2 := (hgo _ _ _ _ _ _ _ _ _ i1 hsub h2).1
     have i2' : Inv ({ g2 with want := Ca.uni g2.want (distribute Cape.yes f1.prod.src) } : GenS M R) :=
       hL.app i2 rfl rfl rfl rfl rfl rfl rfl rfl rfl rfl
-    rcases callStep_cases h3 with ⟨el, eb, est, _, hc⟩ | ⟨fa, fb, i, g3, h4, rfl, hc⟩ | ⟨fa, fb, r, g3, h4, el, eb, est, _, hc⟩
+    rcases callStep_cases h3 with ⟨el, eb, est, _, hc⟩ | ⟨fa, fb, i, g3, h4, rfl, hc⟩ | ⟨fa, fb, r, g3, h4, _, el, eb, est, _, hc⟩
     · refine ⟨hL.app i2 el eb (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est])
         (by rw [est]) (by rw [est]) (by rw [est]), fun γ => ?_⟩
       refine folR_of_calls (calls := [((C a b, sub, mk, bc, df, gs.at γ), (s1, g1.at (γ + 1))),

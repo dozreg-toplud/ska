@@ -96,6 +96,44 @@ theorem answers_mono {G G' : Entry → Prop} (hG : ∀ e, G e → G' e) {s : Soc
   | hit he ht => exact Answers.hit (hG _ he) ht
   | gen hm _ ih => exact Answers.gen hm ih
 
+theorem knit_nv {a b : Sock} (ha : a ≠ Sock.void) (hb : b ≠ Sock.void) : So.knit a b ≠ Sock.void := by
+  cases a with
+  | void => exact absurd rfl ha
+  | mk c1 d1 =>
+    cases b with
+    | void => exact absurd rfl hb
+    | mk c2 d2 =>
+      simp only [So.knit]
+      split
+      · exact fun e => Sock.noConfusion e
+      · exact fun e => Sock.noConfusion e
+
+theorem msgSock_nv' : ∀ (k : Nat) (a b m : Sock), nsize a.data < k → a ≠ Sock.void →
+    msgSock a b = some m → m ≠ Sock.void := by
+  intro k
+  induction k with
+  | zero => intro _ _ _ h; omega
+  | succ k ih =>
+  intro a b m hk ha hm
+  unfold msgSock at hm
+  split at hm
+  · cases hm; exact ha
+  · split at hm
+    · exact absurd rfl ha
+    · cases hm; exact ha
+    · rename_i ah aT ad1 ad2 bh bT bd1 bd2 _
+      simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at hm
+      obtain ⟨h, hh, t, ht, rfl⟩ := hm
+      simp only [Sock.data, nsize] at hk
+      exact knit_nv (ih _ _ _ (by simp only [Sock.data]; omega) (fun e => Sock.noConfusion e) hh)
+        (ih _ _ _ (by simp only [Sock.data]; omega) (fun e => Sock.noConfusion e) ht)
+    · cases hm
+    · cases hm; exact fun e => Sock.noConfusion e
+
+/-- **`+msg-sock` of a sock that is not `%void` is not `%void`.** -/
+theorem msgSock_nv {a b m : Sock} (ha : a ≠ Sock.void) (hm : msgSock a b = some m) : m ≠ Sock.void :=
+  msgSock_nv' _ a b m (Nat.lt_succ_self _) ha hm
+
 namespace Ana
 
 variable {M : Type → Type → Type} [Treap M] {R : Type}
@@ -194,6 +232,8 @@ structure CInv (memoF : Memo M) (st : SkaState M R) (F : Entry → Prop) : Prop 
   frz : FrzInv memoF st F
   mem : MemInv st F
   tkeys : ∀ j, Treap.get st.ticks j ≠ none → Treap.get st.order j ≠ none
+  /-- No identity of the graph has a `%void` subject sock. -/
+  nv : ∀ i d, Treap.get st.g i = some d → i.1 ≠ Sock.void
 
 /-! ## `+pop`, entry by entry -/
 
@@ -390,7 +430,7 @@ theorem pop_frozen {memoF : Memo M} {id : Ident} {st st' : SkaState M R} {F : En
     unfold Treap.gut; rw [a5, if_neg hx]
   have hpopNot : ∀ x o, Treap.get st.order x = some o → o < index → x ∉ ab0 ++ [id] := fun x o hxo hlt hx =>
     absurd (hup x hx o hxo) (by omega)
-  refine ⟨F', hFF', ⟨pop_ok hc.s h hs |>.1, fun m => ?_, ⟨fun i o hio => ?_, ?_⟩, ⟨hok, ?_, ?_, ?_, ?_⟩, ?_, ?_⟩⟩
+  refine ⟨F', hFF', ⟨pop_ok hc.s h hs |>.1, fun m => ?_, ⟨fun i o hio => ?_, ?_⟩, ⟨hok, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_⟩⟩
   · -- ticks
     by_cases hm : m ∈ ab0 ++ [id]
     · simp only [ranOf, chgOf, Treap.gut, a5, if_pos hm, Option.getD_none]; omega
@@ -485,6 +525,13 @@ theorem pop_frozen {memoF : Memo M} {id : Ident} {st st' : SkaState M R} {F : En
     split
     · rename_i hjP; rw [if_pos hjP] at hj; exact absurd rfl hj
     · rename_i hjP; rw [if_neg hjP] at hj; exact hc.tkeys j hj
+  · -- no `%void` identity
+    intro i d hd
+    by_cases hi : i ∈ ab0 ++ [id]
+    · rw [hgP i hi] at hd
+      obtain ⟨d0, hd0, _⟩ := Option.map_eq_some_iff.mp hd
+      exact hc.nv i d0 hd0
+    · rw [hgN i hi] at hd; exact hc.nv i d hd
 
 end Ana
 end SkaModel
