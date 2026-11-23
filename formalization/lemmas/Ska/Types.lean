@@ -90,6 +90,8 @@ def meac : Nat := 0x6361656d
 def leaf : Nat := 0x6661656c
 -- the hint that keeps a formula out of compiled Nock
 def bare : Nat := 0x65726162
+-- persistent memoization
+def memo : Nat := 0x6f6d656d
 end Tag
 
 /-! ## Generic layouts -/

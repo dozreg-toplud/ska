@@ -179,6 +179,61 @@ theorem nommF_cons_n0 (lib : Lib) (gul : Noun) (code : Bell → Option Nomm) (k 
   rw [nommF_n0]
   simp
 
+theorem tbind_zero_id (x : Option Tone) : tbind x (fun p => some (Tone.zero p)) = x := by
+  match x with
+  | none => rfl
+  | some (Tone.zero _) => rfl
+  | some (Tone.one _) => rfl
+  | some (Tone.two _) => rfl
+
+/-- A call `[2 b c]` that `+mink` runs with fuel `n + 1`, from the
+induction hypothesis at fuel `n`: by cases on its annotation. -/
+theorem two_fwd (lib : Lib) (gul : Noun) (code : Bell → Option Nomm) (hc : CodeOK lib code)
+    (n : Nat)
+    (IH : ∀ {P f nm t x r}, Annot lib code P f nm → P x → minkF lib gul n t x f = some r →
+      Ev (fun m => nommF lib gul code m t x nm) r)
+    {P : Noun → Prop} {b c : Noun} {nm : Nomm} {t : Trace} {x : Noun} {r : Tone}
+    (hA : Annot lib code P (n3 (A 2) b c) nm) (hP : P x)
+    (hrun : minkF lib gul (n + 1) t x (n3 (A 2) b c) = some r) :
+    Ev (fun m => nommF lib gul code m t x nm) r := by
+  have hrun' := hrun
+  rw [minkF_succ_eq] at hrun'
+  simp only [minkStep] at hrun'
+  apply Ev.succ
+  simp only [nommF_succ]
+  cases hA with
+  | indirect hp hq =>
+    simp only [nommStep]
+    exact ev_tbind (fun _ e1 => IH hp hP e1) (fun _ _ _ e1 => ev_tbind (fun _ e2 => IH hq hP e2)
+      (fun _ _ _ e3 => Ev.minkF e3) e1) hrun'
+  | direct hp hq hcode hy hg =>
+    rename_i p' q' bl k nb
+    simp only [nommStep]
+    refine ev_tbind (fun _ e1 => IH hp hP e1) (fun y _ hxy e1 => ev_tbind (fun _ e2 => IH hq hP e2)
+      (fun g r2 hxg e2 => ?_) e1) hrun'
+    have hgf := hg x gul g hP ⟨_, mink_nil_of_zero hxg⟩
+    have hfit := hy x gul y hP ⟨_, mink_nil_of_zero hxy⟩
+    subst hgf
+    simp only [hcode, Option.bind_some]
+    exact IH (hc bl nb hcode) hfit e2
+  | inline hp htot hq =>
+    rename_i g p' q'
+    simp only [nommStep]
+    refine ev_tbind (fun _ e1 => IH hp hP e1) (fun y r2 hxy e1 => ?_) hrun'
+    rcases tbind_eq_some e1 with ⟨g', hg', e2⟩ | ⟨hrc, hnz⟩
+    · have := mink_det_zero (htot x gul hP) hg'
+      cases this
+      exact IH hq (img_of hP hxy) e2
+    · exact absurd (mink_det_zero (htot x gul hP) hrc) (hnz g)
+  | bare hb => simp [isBare] at hb
+  | crash hcr =>
+    obtain ⟨k, hk⟩ := hcr gul t x
+    have := minkF_det lib gul hrun hk
+    subst this
+    refine ⟨0, fun _ _ => ?_⟩
+    simp only [nommStep]
+    rfl
+
 /-! ## The forward direction -/
 
 /-- **What `+mink` returns on a formula, its nomm returns.** -/
@@ -295,42 +350,34 @@ theorem nomm_fwd (lib : Lib) (gul : Noun) (code : Bell → Option Nomm) (hc : Co
     have hrun : minkF lib gul (n' + 2) t core (n3 (A 2) (slot 1) (slot axis)) = some r1 := by
       rw [minkF_invoke]
       cases hs : slot? axis core <;> simp only [hs] at h1 ⊢ <;> exact h1
-    have hrun' := hrun
-    rw [minkF_succ_eq] at hrun'
-    simp only [minkStep] at hrun'
-    apply Ev.succ
-    simp only [nommF_succ]
-    cases hA2 with
-    | indirect hp hq =>
-      simp only [nommStep]
-      exact ev_tbind (fun _ e1 => IH hp hQ e1) (fun _ _ _ e1 => ev_tbind (fun _ e2 => IH hq hQ e2)
-        (fun _ _ _ e3 => Ev.minkF e3) e1) hrun'
-    | direct hp hq hcode hy hg =>
-      rename_i p' q' bl k nb
-      simp only [nommStep]
-      refine ev_tbind (fun _ e1 => IH hp hQ e1) (fun y _ hxy e1 => ev_tbind (fun _ e2 => IH hq hQ e2)
-        (fun g r2 hxg e2 => ?_) e1) hrun'
-      have hgf := hg core gul g hQ ⟨_, mink_nil_of_zero hxg⟩
-      have hfit := hy core gul y hQ ⟨_, mink_nil_of_zero hxy⟩
-      subst hgf
-      simp only [hcode, Option.bind_some]
-      exact IH (hc bl nb hcode) hfit e2
-    | inline hp htot hq =>
-      rename_i g p' q'
-      simp only [nommStep]
-      refine ev_tbind (fun _ e1 => IH hp hQ e1) (fun y r2 hxy e1 => ?_) hrun'
-      rcases tbind_eq_some e1 with ⟨g', hg', e2⟩ | ⟨hrc, hnz⟩
-      · have := mink_det_zero (htot core gul hQ) hg'
-        cases this
-        exact IH hq (img_of hQ hxy) e2
-      · exact absurd (mink_det_zero (htot core gul hQ) hrc) (hnz g)
-    | crash hcr =>
-      obtain ⟨k, hk⟩ := hcr gul t core
-      have := minkF_det lib gul hrun hk
-      subst this
-      refine ⟨0, fun _ _ => ?_⟩
-      simp only [nommStep]
-      rfl
+    exact two_fwd lib gul code hc (n' + 1) IH hA2 hQ hrun
+  | bare hb =>
+    refine ⟨n + 2, fun m hm => ?_⟩
+    obtain ⟨k, rfl⟩ : ∃ k, m = k + 1 := ⟨m - 1, by omega⟩
+    simp only [nommStep]
+    rw [nommF_n0]
+    simp only [slot?_one, tbind_zero]
+    rw [show nommF lib gul code (k + 1) t x (Nomm.n1 f) = some (Tone.zero f) from rfl, tbind_zero]
+    exact minkF_le lib gul (by omega) _ _ _ _ h0
+  | @memo _ hh f' nm' htot hA1 =>
+    have hst : stopTag Tag.memo = false := by decide
+    simp only [minkStep, hst, Bool.false_eq_true, if_false] at h
+    have hf : minkF lib gul n t x f' = some r := by
+      rcases tbind_eq_some h with ⟨_, _, h1⟩ | ⟨hh', hnz⟩
+      · rw [tbind_zero_id] at h1; exact h1
+      · obtain ⟨c0, hc0⟩ := htot x gul hP
+        exact absurd (mink_det_zero hc0 hh') (hnz c0)
+    obtain ⟨n', rfl⟩ : ∃ n', n = n' + 1 := by
+      cases n with
+      | zero => simp [minkF] at hf
+      | succ n' => exact ⟨n', rfl⟩
+    have hrun : minkF lib gul (n' + 2) t x (n3 (A 2) (slot 1) (quote f')) = some r := by
+      rw [minkF_succ_eq]; simp only [minkStep]
+      rw [minkF_slot1', tbind_zero,
+        show minkF lib gul (n' + 1) t x (quote f') = some (Tone.zero f') from rfl, tbind_zero]
+      exact hf
+    obtain ⟨m0, e0⟩ := two_fwd lib gul code hc (n' + 1) IH hA1 hP hrun
+    exact ⟨m0, fun m hm => e0 (m + 1) (by omega)⟩
   | n10 hax hA1 hA2 =>
     simp only [minkStep, hax, if_false] at h
     simp only [nommStep, hax, if_false]
@@ -400,6 +447,64 @@ theorem nommF_cons_n0_inv {lib : Lib} {gul : Noun} {code : Bell → Option Nomm}
     · cases h1
       exact Or.inl ⟨a, nommF_succ_le lib gul code _ t x p _ ha, rfl⟩
     · exact Or.inr ⟨nommF_succ_le lib gul code _ t x p r ha, hnz⟩
+
+/-- A call `[2 b c]` whose nomm runs with fuel `m + 1`, from the induction
+hypothesis at fuel `m`: by cases on its annotation. -/
+theorem two_bwd (lib : Lib) (gul : Noun) (code : Bell → Option Nomm) (hc : CodeOK lib code)
+    (m : Nat)
+    (IH : ∀ {P f nm t x r}, Annot lib code P f nm → P x → nommF lib gul code m t x nm = some r →
+      Ev (fun n => minkF lib gul n t x f) r)
+    {P : Noun → Prop} {b c : Noun} {nm : Nomm} {t : Trace} {x : Noun} {r : Tone}
+    (hA : Annot lib code P (n3 (A 2) b c) nm) (hP : P x)
+    (h0 : nommF lib gul code (m + 1) t x nm = some r) :
+    Ev (fun n => minkF lib gul n t x (n3 (A 2) b c)) r := by
+  have h := h0
+  rw [nommF_succ] at h
+  apply Ev.succ
+  simp only [minkF_succ_eq]
+  cases hA with
+  | indirect hA1 hA2 =>
+    simp only [nommStep] at h
+    simp only [minkStep]
+    exact ev_tbind (fun _ h1 => IH hA1 hP h1) (fun _ _ _ h1 => ev_tbind (fun _ h2 => IH hA2 hP h2)
+      (fun _ _ _ h3 => Ev.minkF h3) h1) h
+  | direct hA1 hA2 hcode hy hg =>
+    rename_i p q bl k nb
+    simp only [nommStep] at h
+    simp only [minkStep]
+    refine ev_tbind (fun _ h1 => IH hA1 hP h1) (fun y _ hxy h1 => ev_tbind (fun _ h2 => IH hA2 hP h2)
+      (fun g r2 hxg h2 => ?_) h1) h
+    have hgf := hg x gul g hP (IH hA2 hP hxg).mink_nil
+    have hfit := hy x gul y hP (IH hA1 hP hxy).mink_nil
+    subst hgf
+    simp only [hcode, Option.bind_some] at h2
+    exact IH (hc bl nb hcode) hfit h2
+  | inline hA1 htot hA2 =>
+    rename_i g p q
+    simp only [nommStep] at h
+    simp only [minkStep]
+    refine ev_tbind (fun _ h1 => IH hA1 hP h1) (fun y r1 hxy h1 => ?_) h
+    have hy := (IH hA1 hP hxy).mink_nil
+    obtain ⟨m2, e2⟩ := IH hA2 ⟨x, gul, hP, hy⟩ h1
+    obtain ⟨n0, hn0⟩ := htot x gul hP
+    refine ⟨max m2 n0, fun n hn => ?_⟩
+    have ec : minkF lib gul n t x c = some (Tone.zero g) :=
+      minkF_le lib gul (show n0 ≤ n by omega) _ _ _ _ (mink_t_of_nil_zero t hn0)
+    have ey : minkF lib gul n t y g = some r1 := e2 n (by omega)
+    show tbind _ _ = _
+    rw [ec, tbind_zero]; exact ey
+  | bare hb => simp [isBare] at hb
+  | crash hcr =>
+    simp only [nommStep] at h
+    rw [show slot? 0 x = none from rfl] at h
+    simp only [Option.some.injEq] at h
+    subst h
+    obtain ⟨k, hk⟩ := hcr gul t x
+    obtain ⟨m0, e0⟩ := Ev.minkF hk
+    refine ⟨m0, fun n hn => ?_⟩
+    have e : minkF lib gul (n + 1) t x (n3 (A 2) b c) = some (Tone.two t) := e0 (n + 1) (by omega)
+    rw [minkF_succ_eq] at e
+    exact e
 
 /-- **What a nomm returns, `+mink` returns on its formula.** -/
 theorem nomm_bwd (lib : Lib) (gul : Noun) (code : Bell → Option Nomm) (hc : CodeOK lib code) :
@@ -557,6 +662,35 @@ theorem nomm_bwd (lib : Lib) (gul : Noun) (code : Bell → Option Nomm) (hc : Co
         cases hd : scryDecode res <;> simp only [hd, Option.bind_none, Option.bind_some] at h3 ⊢
         · exact h3
         · rename_i d; cases d <;> exact h3
+  | bare hb =>
+    simp only [nommStep] at h
+    cases m with
+    | zero => simp [nommF] at h
+    | succ k =>
+      rw [nommF_n0] at h
+      simp only [slot?_one, tbind_zero] at h
+      rw [show nommF lib gul code (k + 1) t x (Nomm.n1 f) = some (Tone.zero f) from rfl,
+        tbind_zero] at h
+      show Ev (fun n => minkF lib gul (n + 1) t x f) r
+      obtain ⟨m0, e0⟩ := Ev.minkF h
+      exact ⟨m0, fun n hn => e0 (n + 1) (by omega)⟩
+  | @memo _ hh f' nm' htot hA1 =>
+    obtain ⟨m0, e0⟩ := two_bwd lib gul code hc m IH hA1 hP h0
+    have hst : stopTag Tag.memo = false := by decide
+    simp only [minkStep, hst, Bool.false_eq_true, if_false]
+    obtain ⟨c0, k0, hk0⟩ := htot x gul hP
+    refine ⟨m0 + k0 + 1, fun n hn => ?_⟩
+    obtain ⟨k, rfl⟩ : ∃ k, n = k + 1 := ⟨n - 1, by omega⟩
+    have eh : minkF lib gul (k + 1) t x hh = some (Tone.zero c0) :=
+      minkF_le lib gul (by omega) _ _ _ _ (mink_t_of_nil_zero t hk0)
+    have e2 : minkF lib gul (k + 2) t x (n3 (A 2) (slot 1) (quote f')) = some r := e0 (k + 2) (by omega)
+    rw [minkF_succ_eq] at e2
+    simp only [minkStep] at e2
+    rw [minkF_slot1', tbind_zero,
+      show minkF lib gul (k + 1) t x (quote f') = some (Tone.zero f') from rfl, tbind_zero] at e2
+    show tbind _ _ = _
+    rw [eh, tbind_zero, tbind_zero_id]
+    exact e2
   | crash hcr =>
     simp only [nommStep] at h
     rw [show slot? 0 x = none from rfl] at h

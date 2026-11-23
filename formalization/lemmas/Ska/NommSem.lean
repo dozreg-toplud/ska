@@ -29,9 +29,9 @@ The table of callees is a separate invariant, `CodeOK`: an inductive `Annot`
 cannot hold the callee's annotation, which for a recursive function would hold
 the caller's again.
 
-There is no case for `%bare`: `fol-loop` makes `[11 %bare q]` an indirect call
-of itself, which the interpreter runs by `+eval-top` again, for ever
-(`bare_loops` in `BugWitness.lean`).
+`%bare` is an indirect call of the hinted formula itself, which the fixed
+`+eval-top` gives to `+mink`; `%memo` is the memoized call `[2 [0 1] 1 f]`
+with the clue dropped.
 
 `NommAgree.lean` proves that `Annot` and `CodeOK` make `nommF` agree with
 `minkF`.
@@ -196,6 +196,14 @@ inductive Annot (lib : Lib) (code : Bell → Option Nomm) : (Noun → Prop) → 
       Annot lib code P (n3 (A 11) (C (A Tag.mean) h) f) (Nomm.mean p b q f k)
   | n12 {P b c p q} : Annot lib code P b p → Annot lib code P c q →
       Annot lib code P (n3 (A 12) b c) (Nomm.n12 p q)
+  /-- `%bare` inside a formula: an indirect call of the hinted formula itself,
+  which `+eval-top` gives to `+mink`. -/
+  | bare {P f} : isBare f = true → Annot lib code P f (Nomm.n2 (Nomm.n0 1) (Nomm.n1 f) none)
+  /-- `[11 [%memo h] f]` with a safe clue: the call of `f` on the subject,
+  `[2 [0 1] 1 f]`, memoized.  The clue is dropped, so it must return. -/
+  | memo {P h f nm} : (∀ x gul, P x → ∃ c, Mink lib gul [] x h (Tone.zero c)) →
+      Annot lib code P (n3 (A 2) (slot 1) (quote f)) nm →
+      Annot lib code P (n3 (A 11) (C (A Tag.memo) h) f) nm
   /-- The default case of `fol-loop`: a crash, for formulas on which `+mink`
   crashes at once. -/
   | crash {P f} : CrashesAtOnce lib f → Annot lib code P f (Nomm.n0 0)
