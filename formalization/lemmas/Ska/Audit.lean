@@ -123,6 +123,9 @@ open Formalization.SkaModel
 #print axioms prodRel_of_converged
 #print axioms codeOK_at_convergence
 #print axioms agree_at_convergence
+#print axioms provO_msgAnno_left
+#print axioms statOK_msgAnno_left
+#print axioms mergeProd_rel
 #print axioms nommF_pure
 #print axioms nommF_pure_total
 #print axioms mink_pure
