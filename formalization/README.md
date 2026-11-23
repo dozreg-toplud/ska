@@ -134,7 +134,10 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/CompModel.lean` | A model of `+comp`'s `run` for nomm without calls, hints and forks (`[^ *]`, `%0`, `%1`, `%3`, `%4`, `%5`, `%7`) and its helpers (`emit`, `from`, `split`, `copy`, `mede`, `collapse-lazy-atom`, `forl`); `HoonSet` abstracts the sets. |
 | `Ska/CompSem.lean` | `RunOK`, the relation for one run of `run` against `execBlob` (goals with looks and jump arguments, the necessity of the looks). |
 | `Ska/CompRun.lean`, `Ska/CompLook.lean`, `Ska/CompMede.lean`, `Ska/CompUnary.lean` | `%0`, `%1`, `%7`, `%4` (`%done`, `%pick`) and `%3` (`%pick`) meet `RunOK`; `+sure-require-look`; `+mede`. |
-| `Ska/CompFrag.lean` | `run_ok`: the model of `run` meets `RunOK` on the fragment `Frag`, by induction, with no assumption about `+comp`. Not yet connected to `BellContract`: `coerce-lazy` and `to-straight` are not modelled. |
+| `Ska/CompFrag.lean` | `run_ok`: the model of `run` meets `RunOK` on the fragment `Frag`, by induction, with no assumption about `+comp`. |
+| `Ska/CompTop.lean` | A model of the end of `+comp` (`+need-ord-alloc-regs`, `+kern-need`, `+coerce-lazy` without forks, `+to-straight`'s renaming path with `+chase`) and of the final pass `finish`. `+shape-collapse` and `+bake-need` are parameters. |
+| `Ska/CompStraight.lean`, `Ska/CompEntry.lean` | The renaming and chasing of `+to-straight` keep what the code does (`sim_block`), and entering the result does what the entry block did (`toStraight_entry`). |
+| `Ska/CompTopOK.lean` | `finish_bellContract`: on the fragment `Frag`, the final pass meets `BellContract` for every shape on which it does not crash, when nothing is baked and the bell's cape has no `[| |]`. It still assumes `RunDown` (blocks jump only to smaller labels) and `CoerceSpec` (what the ops of `+coerce-lazy` do), which are facts about the model that are not proved yet. |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
