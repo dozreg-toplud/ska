@@ -62,6 +62,12 @@ theorem Annot.mono {lib : Lib} {code : Bell → Option Nomm} :
     intro Q hQ
     exact Annot.memo (fun x gul hx => hh x gul (hQ x hx)) (ih hQ)
   | crash hc => intro Q _; exact Annot.crash hc
+  | fold hv => intro Q hQ; exact Annot.fold (fun x gul hx => hv x gul (hQ x hx))
+  | six0 hb _ ih => intro Q hQ; exact Annot.six0 (fun x gul hx => hb x gul (hQ x hx)) (ih hQ)
+  | six1 hb _ ih => intro Q hQ; exact Annot.six1 (fun x gul hx => hb x gul (hQ x hx)) (ih hQ)
+  | n8g _ _ _ ih1 ih2 ih3 => intro Q hQ; exact Annot.n8g (ih1 hQ) (ih2 hQ) (ih3 (Img8_mono hQ))
+  | n8l hb _ ih => intro Q hQ; exact Annot.n8l (fun x gul hx => hb x gul (hQ x hx)) (ih (Img8_mono hQ))
+  | bareLit hb hd => intro Q hQ; exact Annot.bareLit hb (fun x hx => hd x (hQ x hx))
 
 /-! ## The cases of the `?+` -/
 
