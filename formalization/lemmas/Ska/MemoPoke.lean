@@ -177,6 +177,12 @@ theorem Annot.mono_code {lib : Lib} {code code' : Bell → Option Nomm}
   | bare hb => exact Annot.bare hb
   | memo hs _ ih => exact Annot.memo hs ih
   | crash hc => exact Annot.crash hc
+  | fold hv => exact Annot.fold hv
+  | six0 hb _ ih => exact Annot.six0 hb ih
+  | six1 hb _ ih => exact Annot.six1 hb ih
+  | n8g _ _ _ ih1 ih2 ih3 => exact Annot.n8g ih1 ih2 ih3
+  | n8l hb _ ih => exact Annot.n8l hb ih
+  | bareLit hb hd => exact Annot.bareLit hb hd
 
 /-- `+memo-final-entry` on the entries of `Entry`: the subject of the
 identity masked down to `indi` (the callees, which `Entry` does not keep,

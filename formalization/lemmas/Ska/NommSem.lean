@@ -207,6 +207,29 @@ inductive Annot (lib : Lib) (code : Bell → Option Nomm) : (Noun → Prop) → 
   /-- The default case of `fol-loop`: a crash, for formulas on which `+mink`
   crashes at once. -/
   | crash {P f} : CrashesAtOnce lib f → Annot lib code P f (Nomm.n0 0)
+  /-- A computation that `+know` folds: the formula returns `v` on every
+  subject, so its nomm is the literal. -/
+  | fold {P f v} : (∀ x gul, P x → Mink lib gul [] x f (Tone.zero v)) → Annot lib code P f (Nomm.n1 v)
+  /-- A `%6` whose condition returns `0` on every subject: `+know` keeps the
+  nomm of the branch taken. -/
+  | six0 {P b c d q} : (∀ x gul, P x → Mink lib gul [] x b (Tone.zero (A 0))) → Annot lib code P c q →
+      Annot lib code P (n4 (A 6) b c d) q
+  /-- A `%6` whose condition returns `1` on every subject. -/
+  | six1 {P b c d r} : (∀ x gul, P x → Mink lib gul [] x b (Tone.zero (A 1))) → Annot lib code P d r →
+      Annot lib code P (n4 (A 6) b c d) r
+  /-- `[8 b c]` whose pushed subject `+know` folded to a literal (`r`, for
+  `[0 1]`). -/
+  | n8g {P b c p r q} : Annot lib code P b p → Annot lib code P (slot 1) r →
+      Annot lib code (Img8 lib P b) c q →
+      Annot lib code P (n3 (A 8) b c) (Nomm.n7 (Nomm.cons p r) q)
+  /-- `[8 b c]` whose pushed pair `+know` folded whole: `b` returns `y` on
+  every subject, and the subject is `d`. -/
+  | n8l {P b c y d q} : (∀ x gul, P x → Mink lib gul [] x b (Tone.zero y) ∧ x = d) →
+      Annot lib code (Img8 lib P b) c q →
+      Annot lib code P (n3 (A 8) b c) (Nomm.n7 (Nomm.n1 (C y d)) q)
+  /-- `%bare` on a subject that `+know` knows whole: the subject is a literal. -/
+  | bareLit {P f d} : isBare f = true → (∀ x, P x → x = d) →
+      Annot lib code P f (Nomm.n2 (Nomm.n1 d) (Nomm.n1 f) none)
 
 /-- Every nomm of the table stands for its bell's formula on the bell's sock. -/
 def CodeOK (lib : Lib) (code : Bell → Option Nomm) : Prop :=
