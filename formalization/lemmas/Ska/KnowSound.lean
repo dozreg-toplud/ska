@@ -592,6 +592,99 @@ theorem seven_core (hc : CodeOK lib code) {P : Noun → Prop} {f b g : Noun} {p 
     obtain ⟨z, m', hz, hzq⟩ := hsem x hx gul t m y hm
     exact K2.2 z hz gul t m' y hzq
 
+theorem slot1_eq {lib : Lib} {gul x w : Noun} (h : Mink lib gul [] x (slot 1) (Tone.zero w)) : w = x := by
+  have e := mink_inv_n0 h
+  simp only [slot?_one, Option.some.injEq] at e
+  exact e.symm
+
+/-- `%8` and the forms `+know` gives it: the pushed pair `[b 0 1]`, as a
+cons of two nomms or folded whole. -/
+theorem n8_core (hc : CodeOK lib code) {P : Noun → Prop} {b c : Noun} {p r' q : Nomm}
+    (hA1 : Annot lib code P b p) (hA2 : Annot lib code P (slot 1) r')
+    (hA3 : Annot lib code (Img8 lib P b) c q)
+    (ih1 : IHK lib code code' fold dat res stF P b p)
+    (ih2 : IHK lib code code' fold dat res stF P (slot 1) r')
+    (ih3 : IHK lib code code' fold dat res stF (Img8 lib P b) c q) :
+    IHK lib code code' fold dat res stF P (n3 (A 8) b c) (Nomm.n7 (Nomm.cons p r') q) := by
+  intro sub st r h hsuf Q hQ
+  simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  obtain ⟨pp, ⟨l, hl, r0, hr0, hcons⟩, qq, hq, h⟩ := h
+  have hq2 : qq.2 <:+ stF := by split at h <;> (cases h; exact hsuf)
+  have hcases : (∃ x1 x2, lit l.1.1 = some x1 ∧ lit r0.1.1 = some x2 ∧
+      pp = ((Nomm.n1 (C x1 x2), litAnno (C x1 x2)), r0.2)) ∨
+      pp = ((Nomm.cons l.1.1 r0.1.1, ⟨So.knit l.1.2.sock r0.1.2.sock, Pi.cons l.1.2.src r0.1.2.src⟩), r0.2) := by
+    split at hcons
+    · rename_i x1 x2 h1 h2
+      exact Or.inl ⟨_, _, h1, h2, (Option.some.inj hcons).symm⟩
+    · exact Or.inr (Option.some.inj hcons).symm
+  have hpp : pp.2 = r0.2 := by rcases hcases with ⟨_, _, _, _, rfl⟩ | rfl <;> rfl
+  have hpq : pp.2 <:+ qq.2 := knowGo_suffix fold dat res q _ _ _ hq
+  have hr02 : r0.2 <:+ stF := hpp ▸ hpq.trans hq2
+  have hl2 : l.2 <:+ stF := (knowGo_suffix fold dat res r' _ _ _ hr0).trans hr02
+  have hQP : ∀ x, Q x → P x := fun x hx => (hQ x hx).1
+  have K1 := ih1 sub st l hl hl2 Q hQ
+  have K0 := ih2 sub l.2 r0 hr0 hr02 Q hQ
+  have hself : ∀ x, Q x → ∀ gul t m w, nommF lib gul code m t x r' = some (Tone.zero w) → w = x :=
+    fun x hx gul t m w hm => slot1_eq (nomm_mink hc hA2 (hQP x hx) hm)
+  have hself' : ∀ x, Q x → ∀ gul, ∃ m, nommF lib gul code m [] x r' = some (Tone.zero x) :=
+    fun x hx gul => mink_nomm hc hA2 (hQP x hx) (mink_mk_n0 (slot?_one x))
+  have hQ2 : ∀ z, Img8 lib Q b z → Img8 lib P b z ∧ Fits pp.1.2.sock z := by
+    rintro z ⟨x, y, gul, hx, hy, rfl⟩
+    refine ⟨⟨x, y, gul, hQP x hx, hy, rfl⟩, ?_⟩
+    rcases hcases with ⟨x1, x2, h1, h2, rfl⟩ | rfl
+    · have e1 := Mink.det hy (annot_lit K1.1 x1 (lit_eq h1) x gul hx)
+      cases e1
+      have e2 := slot1_eq (annot_lit K0.1 x2 (lit_eq h2) x gul hx)
+      exact fits_litAnno (by rw [e2])
+    · obtain ⟨m, hm⟩ := mink_nomm hc hA1 (hQP x hx) hy
+      obtain ⟨m', hm'⟩ := hself' x hx gul
+      exact knit_fits (K1.2 x hx gul [] m y hm) (K0.2 x hx gul [] m' x hm')
+  have K3 := ih3 pp.1.2 pp.2 qq hq hq2 (Img8 lib Q b) hQ2
+  have hsem : ∀ x, Q x → ∀ gul t m y,
+      nommF lib gul code m t x (Nomm.n7 (Nomm.cons p r') q) = some (Tone.zero y) →
+      ∃ z m', Img8 lib Q b z ∧ nommF lib gul code m' t z q = some (Tone.zero y) := by
+    intro x hx gul t m y hm
+    obtain ⟨m', rfl, hm'⟩ := nommF_succ_inv hm
+    simp only [nommStep] at hm'
+    obtain ⟨z, hz, hzq⟩ := tbind_zero_inv hm'
+    obtain ⟨m'', rfl, hz'⟩ := nommF_succ_inv hz
+    simp only [nommStep] at hz'
+    obtain ⟨u, hu, hz'⟩ := tbind_zero_inv hz'
+    obtain ⟨w, hw, hz'⟩ := tbind_zero_inv hz'
+    cases hz'
+    have hwx := hself x hx gul t m'' w hw
+    subst hwx
+    exact ⟨_, m'' + 1, ⟨_, u, gul, hx, nomm_mink hc hA1 (hQP _ hx) hu, rfl⟩, hzq⟩
+  split at h
+  · rename_i v hv hs
+    cases h
+    have K31 := K3.1
+    rw [lit_eq hv] at K31
+    refine ⟨?_, ?_⟩
+    · show Annot lib code' Q (n3 (A 8) b c) qq.1.1
+      rw [lit_eq hv]
+      refine Annot.fold fun x gul hx => ?_
+      have hb : ∃ z, Mink lib gul [] x b (Tone.zero z) := by
+        rcases hcases with ⟨x1, x2, h1, h2, rfl⟩ | rfl
+        · exact ⟨x1, annot_lit K1.1 x1 (lit_eq h1) x gul hx⟩
+        · simp only [safeNomm, Bool.and_eq_true] at hs
+          exact annot_safe_total K1.1 hs.1 x gul hx
+      obtain ⟨z, hz⟩ := hb
+      exact mink_mk_n8 hz (annot_lit K31 v rfl _ gul ⟨x, z, gul, hx, hz, rfl⟩)
+    · intro x hx gul t m y hm
+      obtain ⟨z, m', hz, hzq⟩ := hsem x hx gul t m y hm
+      exact fits_litAnno (lit_val hc hA3 (fun z hz => (hQ2 z hz).1) K31 hz hzq)
+  · cases h
+    refine ⟨?_, ?_⟩
+    · show Annot lib code' Q (n3 (A 8) b c) (Nomm.n7 pp.1.1 qq.1.1)
+      rcases hcases with ⟨x1, x2, h1, h2, rfl⟩ | rfl
+      · refine Annot.n8l (fun x gul hx => ⟨annot_lit K1.1 x1 (lit_eq h1) x gul hx, ?_⟩) K3.1
+        exact (slot1_eq (annot_lit K0.1 x2 (lit_eq h2) x gul hx)).symm
+      · exact Annot.n8g K1.1 K0.1 K3.1
+    · intro x hx gul t m y hm
+      obtain ⟨z, m', hz, hzq⟩ := hsem x hx gul t m y hm
+      exact K3.2 z hz gul t m' y hzq
+
 end Sound
 
 end Bake
