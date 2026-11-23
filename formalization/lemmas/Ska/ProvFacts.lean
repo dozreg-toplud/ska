@@ -1,4 +1,5 @@
 import lemmas.Ska.Prov
+import lemmas.Ska.CapeFacts
 
 /-!
 # Provenance along paths: what `+pi` does to the invariant
@@ -909,6 +910,57 @@ theorem provO_compose {x y' p : Noun} {S P : Sock} {σ m : Noun}
     · have := ih2 (π ++ [true]) (by rw [springAt_app, e]; rfl)
       rw [sockAt_app, slotO_app] at this
       exact this
+
+/-! ## `+distribute` and the paths of the subject it records -/
+
+/-- **`+distribute` records the subject's paths under a use.**  If the use
+`c` of a noun covers the path `π ++ r`, and the part at `π` comes from the
+axis `a` of the subject, then the use of the subject covers the path of `a`
+followed by `r`. -/
+theorem distribute_has : ∀ (s : Noun) (c : Cape) (π r : List Bool) (a : Nat) (q : List Bool),
+    c.Has (π ++ r) → springAt s π = A a → a ≠ 0 → axisPath a = some q →
+    (distribute c s).Has (q ++ r) := by
+  intro s
+  induction s with
+  | atom a' =>
+    intro c π r a q hc e ha hq
+    by_cases ha' : a' = 0
+    · subst ha'; rw [springAt_zero] at e; cases e; exact absurd rfl ha
+    · rw [springAt_atom a' π ha'] at e
+      cases e
+      obtain ⟨q', hq'⟩ := axisPath_pos a' (by omega)
+      rw [axisPath_pegPath a' π q' (by omega) hq'] at hq
+      cases hq
+      have hcn : c ≠ Cape.no := by intro h; subst h; exact hc
+      unfold distribute
+      cases a' with
+      | zero => exact absurd rfl ha'
+      | succ k =>
+        simp only [hcn, if_false, Ca.pat, Nat.add_one_ne_zero, Option.getD_some]
+        rw [patLoop_has (k + 1) c q' (by omega) hq']
+        exact ⟨π ++ r, by simp, hc⟩
+  | cell sh st ih1 ih2 =>
+    intro c π r a q hc e ha hq
+    cases π with
+    | nil => cases e
+    | cons b π' =>
+      have hcn : c ≠ Cape.no := by intro h; subst h; exact hc
+      unfold distribute
+      simp only [hcn, if_false]
+      cases c with
+      | no => exact absurd rfl hcn
+      | yes =>
+        simp only
+        rw [uni_has]
+        cases b
+        · exact Or.inl (ih1 Cape.yes π' r a q trivial e ha hq)
+        · exact Or.inr (ih2 Cape.yes π' r a q trivial e ha hq)
+      | cell cp cq =>
+        simp only
+        rw [uni_has]
+        cases b
+        · exact Or.inl (ih1 cp π' r a q hc e ha hq)
+        · exact Or.inr (ih2 cq π' r a q hc e ha hq)
 
 end SkaModel
 end Formalization
