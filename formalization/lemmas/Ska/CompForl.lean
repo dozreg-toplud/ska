@@ -24,7 +24,7 @@ section
 variable {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ}
 
 /-- A block with one parameter `p` and no ops, entered with the argument `a`. -/
-theorem execBlob_par1 (regs : Map Noun) (t : Trace) {a p : Nat} (j : Jmp) {v : Noun}
+theorem execBlob_par1 (regs : Map (Option Noun)) (t : Trace) {a p : Nat} (j : Jmp) {v : Noun}
     (hv : SkaModel.read a regs = some v) (hne : a ≠ p) :
     execBlob lib O c gul st regs t ⟨[p], [], Termin.hop j⟩ [some a] =
       goJ lib O c gul st (store p v regs) t j := by

@@ -342,11 +342,11 @@ theorem finishL_six_compDone (lib : Lib) {c a b : Nomm}
   have lazyBlk : ∀ (o : Nat) (A : List Pole) (L : Sure S) (th : Jmp) (nm : Nomm) (g g' : Gen Map),
       HoonMap.get cF.blocks o = some ⟨[], A ++ [], Termin.hop th⟩ →
       RunOK lib nm (CGoal.done : CGoal S) g g' ⟨L, th⟩ → Agree cF g g' → g.drop = false →
-      (∀ (R : Map Noun), HoldsN nedF R s → CapeAxes less s →
+      (∀ (R : Map (Option Noun)), HoldsN nedF R s → CapeAxes less s →
         (FitsS L s → ∃ R', Runs lib O cF gul st t A R R' ∧ HoldsS L R' s ∧
           ∀ x, NMem nedF x → SkaModel.read x R' = SkaModel.read x R) ∧
         (¬ FitsS L s → Crashes lib O cF gul st t A R)) →
-      ∀ (R2 : Map Noun), HoldsN nedF R2 s →
+      ∀ (R2 : Map (Option Noun)), HoldsN nedF R2 s →
         goJ lib O cF gul st R2 t (jmp0 o) = some (toneOf t (pureEval nm s), st) := by
     intro o A L th nm g g' hbk RO ag dg SA R2 hR2
     rw [goJ_jmp0 _ _ _ _ hbk]

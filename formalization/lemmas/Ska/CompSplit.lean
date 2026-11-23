@@ -185,7 +185,7 @@ theorem must_spec {ned n : Need} {r : Nat} {g g' : Gen Map} (h : must ned g = so
     (∀ y, NMem n y → NMem ned y ∨ (g.re ≤ y ∧ y < g'.re)) ∧
     (NMem ned r ∨ (g.re ≤ r ∧ r < g'.re)) ∧
     (∀ x, Comp.Fits n x ↔ Comp.Fits ned x) ∧
-    (∀ (R : Map Noun) x, HoldsN n R x → SkaModel.read r R = some x ∧ HoldsN ned R x) ∧
+    (∀ (R : Map (Option Noun)) x, HoldsN n R x → SkaModel.read r R = some x ∧ HoldsN ned R x) ∧
     (Distinct ned → (∀ y, NMem ned y → y < g.re) → Distinct n) := by
   cases ned with
   | both x p q =>
@@ -228,7 +228,7 @@ theorem splitNeed_spec {ned : Need} {o : Nat} {g g' : Gen Map} {x : Need × Need
       Distinct x.1 ∧ Distinct x.2 ∧ (∀ y, NMem x.1 y → ¬ NMem x.2 y) ∧
       (∀ a b, Comp.Fits ned (C a b) ↔ Comp.Fits x.1 a ∧ Comp.Fits x.2 b)) ∧
     (g.drop = false → ∃ A, Front o g g' A ∧ (Distinct ned → (∀ y, NMem ned y → y < g.re) →
-      ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) gul st t (R : Map Noun) a b,
+      ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) gul st t (R : Map (Option Noun)) a b,
         HoldsN x.1 R a → HoldsN x.2 R b →
         ∃ R', Runs lib O c gul st t A R R' ∧ HoldsN ned R' (C a b) ∧
           ∀ y, ¬ NMem ned y → SkaModel.read y R' = SkaModel.read y R)) := by
@@ -312,7 +312,7 @@ theorem split_ok {laz : Sure S} {th : Jmp} {g g' : Gen Map} {hed tel : Sure S} {
       Distinct hed.ned ∧ Distinct tel.ned ∧ (∀ y, NMem hed.ned y → ¬ NMem tel.ned y) ∧
       (∀ a b, FitsS laz (C a b) ↔ FitsS hed a ∧ FitsS tel b) ∧
       (g.drop = false → ∀ (c : Straight Map), Agree c g g' → ∀ (lib : Lib) (σ : Type) (O : Oracle σ) st t
-        (R : Map Noun) a b gul, HoldsN hed.ned R a → HoldsN tel.ned R b →
+        (R : Map (Option Noun)) a b gul, HoldsN hed.ned R a → HoldsN tel.ned R b →
         ∃ R', HoldsN laz.ned R' (C a b) ∧ (∀ y, ¬ NMem laz.ned y → SkaModel.read y R' = SkaModel.read y R) ∧
           goJ lib O c gul st R t (jmp0 o) = goJ lib O c gul st R' t th)) := by
   simp only [Comp.split] at h

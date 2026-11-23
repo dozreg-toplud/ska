@@ -63,17 +63,17 @@ theorem evalPoleIn_icore {cr : Noun} (h : CorIn cr) : EvalPoleIn (icore cr) := b
   · have := store.arm_at; rw [interp_eq] at this; simpa [store.axis, nock_exec] using this
 
 /-- The product of `+eval-pole` with the compiler's core it ends with. -/
-def poleOutS (r : Tone × TreapMap mugF Noun × Trace × Noun) : Noun :=
-  C r.1.toNoun (C (HoonMap.toNoun id r.2.1) (C (listNoun Frame.toNoun r.2.2.1) r.2.2.2))
+def poleOutS (r : Tone × TreapMap mugF (Option Noun) × Trace × Noun) : Noun :=
+  C r.1.toNoun (C (HoonMap.toNoun (unitNoun id) r.2.1) (C (listNoun Frame.toNoun r.2.2.1) r.2.2.2))
 
 /-- The noun of a result of `+eval-top` or `+eval-blob`: `[tone cor]`. -/
 def resN (r : Tone × Noun) : Noun := C r.1.toNoun r.2
 
 /-- The sample of `+eval-pole`, in its context `icore cr`. -/
-abbrev poleS (cr : Noun) (pole : Pole) (regs : TreapMap mugF Noun) (trace : Trace) (scry : Noun) :
+abbrev poleS (cr : Noun) (pole : Pole) (regs : TreapMap mugF (Option Noun)) (trace : Trace) (scry : Noun) :
     Noun :=
   C eval_pole.battery (C (C pole.toNoun
-    (C (C (HoonMap.toNoun id regs) (listNoun Frame.toNoun trace)) scry)) (icore cr))
+    (C (C (HoonMap.toNoun (unitNoun id) regs) (listNoun Frame.toNoun trace)) scry)) (icore cr))
 
 /-- The gate of `+eval-top` slammed on `[[u f] scry]` in `icore cr`. -/
 abbrev topS (cr u f scry : Noun) : Noun :=
@@ -92,7 +92,7 @@ set_option maxHeartbeats 4000000 in
 /-- `+eval-pole` on `%nok`: `+eval-top` on the two registers, whose tone is
 stored, ends the block or has the trace welded on. -/
 theorem eval_pole_nok (cr : Noun) (hc : CorIn cr) (lib : Lib) (O : Oracle Noun) (scry : Noun)
-    (u f d : Nat) (regs : TreapMap mugF Noun) (trace : Trace)
+    (u f d : Nat) (regs : TreapMap mugF (Option Noun)) (trace : Trace)
     (htop : ∀ vu vf, SkaModel.read u regs = some vu → SkaModel.read f regs = some vf →
       nock (topS cr vu vf scry) eval_top.battery = (O.nok cr vu vf scry).map resN)
     (hgood : ∀ vu vf r, SkaModel.read u regs = some vu → SkaModel.read f regs = some vf →
@@ -156,9 +156,9 @@ theorem nh_full (s f : Noun) : ¬ Ska.Hot (Ovum.full s f).toNoun := by
   simp [Ovum.toNoun, Tag.full, Ska.jets] at h
 
 /-- The gate of `+eval-blob` on `[[regs trace] b s params scry]` in `icore cr`. -/
-abbrev blobS (cr : Noun) (regs : TreapMap mugF Noun) (trace : Trace) (b : Blob)
+abbrev blobS (cr : Noun) (regs : TreapMap mugF (Option Noun)) (trace : Trace) (b : Blob)
     (s : Straight (TreapMap mugF)) (params : List (Option Nat)) (scry : Noun) : Noun :=
-  C eval_blob.battery (C (C (C (HoonMap.toNoun id regs) (listNoun Frame.toNoun trace))
+  C eval_blob.battery (C (C (C (HoonMap.toNoun (unitNoun id) regs) (listNoun Frame.toNoun trace))
     (C b.toNoun (C s.toNoun (C (argsN params) scry)))) (icore cr))
 
 /-- `+eval-blob` is the model `execBlob` with the oracle `O`, on every core
@@ -169,19 +169,19 @@ def BlobIs (lib : Lib) (O : Oracle Noun) : Prop :=
       = (execBlob lib O s scry cr regs trace b params).map resN ∧
     ∀ r, execBlob lib O s scry cr regs trace b params = some r → CorIn r.2
 
-theorem regsFrom_toNoun_put (r : Nat) (v : Noun) (vs : List Noun) (out : TreapMap mugF Noun) :
+theorem regsFrom_toNoun_put (r : Nat) (v : Noun) (vs : List Noun) (out : TreapMap mugF (Option Noun)) :
     regsFrom (r + 1) vs (HoonMap.put out r v) = regsFrom r (v :: vs) out := rfl
 
 set_option maxHeartbeats 4000000 in
 /-- The loop of `%cal` that puts the values of the registers `v` in the
 registers `r, r+1, ...` of `out`, reading them through `+read` of `regs`. -/
-theorem eval_pole_loop (cr : Noun) (hc : CorIn cr) (p an : Noun) (d : Nat) (regs : TreapMap mugF Noun)
+theorem eval_pole_loop (cr : Noun) (hc : CorIn cr) (p an : Noun) (d : Nat) (regs : TreapMap mugF (Option Noun))
     (tn scry : Noun) :
-    ∀ (v : List Nat) (r : Nat) (out : TreapMap mugF Noun),
-    nock (C eval_pole.loop (C (A r) (C (HoonMap.toNoun id out) (C p (C eval_pole.battery
-        (C (C (C (A Tag.cal) (C an (C (listNoun A v) (A d)))) (C (C (HoonMap.toNoun id regs) tn) scry))
+    ∀ (v : List Nat) (r : Nat) (out : TreapMap mugF (Option Noun)),
+    nock (C eval_pole.loop (C (A r) (C (HoonMap.toNoun (unitNoun id) out) (C p (C eval_pole.battery
+        (C (C (C (A Tag.cal) (C an (C (listNoun A v) (A d)))) (C (C (HoonMap.toNoun (unitNoun id) regs) tn) scry))
           (icore cr))))))) eval_pole.loop
-      = (v.mapM (SkaModel.read · regs)).map fun vs => HoonMap.toNoun id (regsFrom r vs out) := by
+      = (v.mapM (SkaModel.read · regs)).map fun vs => HoonMap.toNoun (unitNoun id) (regsFrom r vs out) := by
   have hpi := evalPoleIn_icore hc
   obtain ⟨_, hrd, _, hrc⟩ := hpi
   have hld := eval_pole_load (icore cr) hrd hrc regs
@@ -211,9 +211,9 @@ theorem eval_pole_loop (cr : Noun) (hc : CorIn cr) (p an : Noun) (d : Nat) (regs
 /-- What `+eval-pole` reads through a core after a call: layer 2, as facts in
 the form the executor leaves them. -/
 theorem corIn_facts {cr : Noun} (hc : CorIn cr) :
-    (∀ r v (regs : TreapMap mugF Noun),
-      nock (C store.battery (C (C (A r) (C v (HoonMap.toNoun id regs))) (icore cr))) store.battery
-        = some (HoonMap.toNoun id (SkaModel.store r v regs))) ∧
+    (∀ r v (regs : TreapMap mugF (Option Noun)),
+      nock (C store.battery (C (C (A r) (C v (HoonMap.toNoun (unitNoun id) regs))) (icore cr))) store.battery
+        = some (HoonMap.toNoun (unitNoun id) (SkaModel.store r v regs))) ∧
     slot? read.layer2.axis (icore cr) = some layer2 :=
   ⟨store_model (icore cr) (regsIn_icore hc), hc.1⟩
 
@@ -223,7 +223,7 @@ set_option maxHeartbeats 8000000 in
 theorem eval_pole_cal (cr : Noun) (hc : CorIn cr) (lib : Lib)
     (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
     (O : Oracle Noun) (nk : Noun → Noun → Noun → Noun → Option (Tone × Noun))
-    (scry : Noun) (a : Bell) (v : List Nat) (d : Nat) (regs : TreapMap mugF Noun) (trace : Trace)
+    (scry : Noun) (a : Bell) (v : List Nat) (d : Nat) (regs : TreapMap mugF (Option Noun)) (trace : Trace)
     (hO : ∀ b c new cr' vs b0, pk cr (Ovum.dire a false) = some (SkaModel.Prod.ir b c new, cr') →
       v.mapM (SkaModel.read · regs) = some vs → HoonMap.get c.blocks 0 = some b0 →
       nock (blobS cr' (regsOf vs) trace b0 c [] scry) eval_blob.battery
@@ -313,7 +313,7 @@ in register `0`, run block `0` of the callee and store the product. -/
 theorem eval_pole_csl (cr : Noun) (hc : CorIn cr) (lib : Lib)
     (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
     (O : Oracle Noun) (nk : Noun → Noun → Noun → Noun → Option (Tone × Noun))
-    (scry : Noun) (a : Bell) (sr : Nat) (d : Nat) (regs : TreapMap mugF Noun) (trace : Trace)
+    (scry : Noun) (a : Bell) (sr : Nat) (d : Nat) (regs : TreapMap mugF (Option Noun)) (trace : Trace)
     (hO : ∀ b c new cr' vs0 b0, pk cr (Ovum.dire a true) = some (SkaModel.Prod.ir b c new, cr') →
       SkaModel.read sr regs = some vs0 → HoonMap.get c.blocks 0 = some b0 →
       nock (blobS cr' (regsOf [vs0]) trace b0 c [] scry) eval_blob.battery
@@ -357,7 +357,7 @@ theorem eval_pole_csl (cr : Noun) (hc : CorIn cr) (lib : Lib)
     simp [nock_exec, Pole.toNoun, Tag.csl, Tag.csl, Tag.cal, Tag.nok, Tag.dire, Tag.ir, hp, execPole,
       callBody, e1, SkaModel.Prod.toNoun, hld, e2, Straight.toNoun]
   | some vs0 =>
-  have hreg : HoonMap.toNoun id (regsOf [vs0] : TreapMap mugF Noun)
+  have hreg : HoonMap.toNoun (unitNoun id) (regsOf [vs0] : TreapMap mugF (Option Noun))
       = C (C (A 0) vs0) (C (A 0) (A 0)) := rfl
   have hg := getF_hoonMap Blob.toNoun c.blocks 0
   cases e3 : HoonMap.get c.blocks 0 with
@@ -397,7 +397,7 @@ theorem eval_pole_csl (cr : Noun) (hc : CorIn cr) (lib : Lib)
 
 /-- `%caf`, `%cam`, `%csf` and `%csm` run `+eval-pole` again on the plain call. -/
 theorem eval_pole_caf (cr : Noun) (a : Bell) (v : List Nat) (d : Nat) (n : Ring)
-    (regs : TreapMap mugF Noun) (trace : Trace) (scry : Noun) :
+    (regs : TreapMap mugF (Option Noun)) (trace : Trace) (scry : Noun) :
     nock (poleS cr (Pole.caf a v d n) regs trace scry) eval_pole.battery
       = nock (poleS cr (Pole.cal a v d) regs trace scry) eval_pole.battery := by
   nock_open eval_pole.battery
@@ -407,7 +407,7 @@ theorem eval_pole_caf (cr : Noun) (a : Bell) (v : List Nat) (d : Nat) (n : Ring)
   rfl
 
 theorem eval_pole_cam (cr : Noun) (a : Bell) (v : List Nat) (d : Nat) (k : Noun)
-    (regs : TreapMap mugF Noun) (trace : Trace) (scry : Noun) :
+    (regs : TreapMap mugF (Option Noun)) (trace : Trace) (scry : Noun) :
     nock (poleS cr (Pole.cam a v d k) regs trace scry) eval_pole.battery
       = nock (poleS cr (Pole.cal a v d) regs trace scry) eval_pole.battery := by
   nock_open eval_pole.battery
@@ -417,7 +417,7 @@ theorem eval_pole_cam (cr : Noun) (a : Bell) (v : List Nat) (d : Nat) (k : Noun)
   rfl
 
 theorem eval_pole_csf (cr : Noun) (a : Bell) (sr d : Nat) (n : Ring)
-    (regs : TreapMap mugF Noun) (trace : Trace) (scry : Noun) :
+    (regs : TreapMap mugF (Option Noun)) (trace : Trace) (scry : Noun) :
     nock (poleS cr (Pole.csf a sr d n) regs trace scry) eval_pole.battery
       = nock (poleS cr (Pole.csl a sr d) regs trace scry) eval_pole.battery := by
   nock_open eval_pole.battery
@@ -427,7 +427,7 @@ theorem eval_pole_csf (cr : Noun) (a : Bell) (sr d : Nat) (n : Ring)
   rfl
 
 theorem eval_pole_csm (cr : Noun) (a : Bell) (sr d : Nat) (k : Noun)
-    (regs : TreapMap mugF Noun) (trace : Trace) (scry : Noun) :
+    (regs : TreapMap mugF (Option Noun)) (trace : Trace) (scry : Noun) :
     nock (poleS cr (Pole.csm a sr d k) regs trace scry) eval_pole.battery
       = nock (poleS cr (Pole.csl a sr d) regs trace scry) eval_pole.battery := by
   nock_open eval_pole.battery
@@ -444,7 +444,7 @@ def TopIs (O : Oracle Noun) (cr scry : Noun) : Prop :=
   (∀ vu vf, nock (topS cr vu vf scry) eval_top.battery = (O.nok cr vu vf scry).map resN) ∧
     ∀ vu vf r, O.nok cr vu vf scry = some r → CorIn r.2
 
-theorem local_map (cr : Noun) (lib : Lib) (scry : Noun) (pole : Pole) (regs : TreapMap mugF Noun)
+theorem local_map (cr : Noun) (lib : Lib) (scry : Noun) (pole : Pole) (regs : TreapMap mugF (Option Noun))
     (trace : Trace) :
     ((localPole lib scry pole regs trace).map fun r => (r.1, r.2.1, r.2.2, cr)).map poleOutS
       = (localPole lib scry pole regs trace).map (poleOut cr) := by
@@ -457,7 +457,7 @@ theorem eval_pole_gate (cr : Noun) (hc : CorIn cr) (lib : Lib) (hslam : SlamIsNo
     (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
     (Ob : Oracle Noun) (hO : BlobIs lib Ob) (nk : Noun → Noun → Noun → Noun → Option (Tone × Noun))
     (scry : Noun) (htop : TopIs ⟨callBody lib pk Ob, nk⟩ cr scry) (pole : Pole)
-    (regs : TreapMap mugF Noun) (trace : Trace) :
+    (regs : TreapMap mugF (Option Noun)) (trace : Trace) :
     nock (poleS cr pole regs trace scry) eval_pole.battery
       = (execPole lib ⟨callBody lib pk Ob, nk⟩ scry cr pole regs trace).map poleOutS := by
   have hcor : slot? 3 (icore cr) = some cr := by simp [nock_exec]
@@ -519,7 +519,7 @@ def TopLe (O : Oracle Noun) : Prop :=
     nock (topS cr vu vf scry) eval_top.battery = some (resN r) ∧ CorIn r.2
 
 theorem eval_pole_nok_le (cr : Noun) (hc : CorIn cr) (lib : Lib) (O : Oracle Noun) (hnok : TopLe O)
-    (scry : Noun) (u f d : Nat) (regs : TreapMap mugF Noun) (trace : Trace) (r)
+    (scry : Noun) (u f d : Nat) (regs : TreapMap mugF (Option Noun)) (trace : Trace) (r)
     (h : execPole lib O scry cr (Pole.nok u f d) regs trace = some r) :
     nock (poleS cr (Pole.nok u f d) regs trace scry) eval_pole.battery = some (poleOutS r) ∧
       CorIn r.2.2.2 := by
@@ -558,7 +558,7 @@ theorem callBody_some {lib : Lib} {pk : Noun → Ovum → Option (SkaModel.Prod 
 theorem eval_pole_cal_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
     (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
     (O : Oracle Noun) (hcall : CallLe lib pk O)
-    (scry : Noun) (a : Bell) (v : List Nat) (d : Nat) (regs : TreapMap mugF Noun) (trace : Trace) (r)
+    (scry : Noun) (a : Bell) (v : List Nat) (d : Nat) (regs : TreapMap mugF (Option Noun)) (trace : Trace) (r)
     (h : execPole lib O scry cr (Pole.cal a v d) regs trace = some r) :
     nock (poleS cr (Pole.cal a v d) regs trace scry) eval_pole.battery = some (poleOutS r) ∧
       CorIn r.2.2.2 := by
@@ -583,7 +583,7 @@ theorem eval_pole_cal_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
 theorem eval_pole_csl_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
     (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
     (O : Oracle Noun) (hcall : CallLe lib pk O)
-    (scry : Noun) (a : Bell) (sr : Nat) (d : Nat) (regs : TreapMap mugF Noun) (trace : Trace) (r)
+    (scry : Noun) (a : Bell) (sr : Nat) (d : Nat) (regs : TreapMap mugF (Option Noun)) (trace : Trace) (r)
     (h : execPole lib O scry cr (Pole.csl a sr d) regs trace = some r) :
     nock (poleS cr (Pole.csl a sr d) regs trace scry) eval_pole.battery = some (poleOutS r) ∧
       CorIn r.2.2.2 := by
@@ -609,7 +609,7 @@ theorem eval_pole_csl_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
 theorem eval_pole_le (cr : Noun) (hc : CorIn cr) (lib : Lib) (hslam : SlamIsNock lib)
     (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
     (O : Oracle Noun) (hcall : CallLe lib pk O)
-    (hnok : TopLe O) (scry : Noun) (pole : Pole) (regs : TreapMap mugF Noun) (trace : Trace) (r)
+    (hnok : TopLe O) (scry : Noun) (pole : Pole) (regs : TreapMap mugF (Option Noun)) (trace : Trace) (r)
     (h : execPole lib O scry cr pole regs trace = some r) :
     nock (poleS cr pole regs trace scry) eval_pole.battery = some (poleOutS r) ∧
       CorIn r.2.2.2 := by
@@ -660,13 +660,13 @@ macro "blob_simp" "[" ts:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(tactic
 set_option maxHeartbeats 4000000 in
 /-- The loop of `%jmp` that puts the values of the registers `v` in the
 registers `r, r+1, ...` of `out`. -/
-theorem eval_blob_loop (cr : Noun) (hc : CorIn cr) (p an : Noun) (regs : TreapMap mugF Noun)
+theorem eval_blob_loop (cr : Noun) (hc : CorIn cr) (p an : Noun) (regs : TreapMap mugF (Option Noun))
     (tn sN scry : Noun) :
-    ∀ (v : List Nat) (r : Nat) (out : TreapMap mugF Noun),
-    nock (C eval_blob.loop (C (A r) (C (HoonMap.toNoun id out) (C p (C eval_blob.battery
-        (C (C (C (HoonMap.toNoun id regs) tn) (C (C (A 0) (C (A 0) (C (A Tag.jmp)
+    ∀ (v : List Nat) (r : Nat) (out : TreapMap mugF (Option Noun)),
+    nock (C eval_blob.loop (C (A r) (C (HoonMap.toNoun (unitNoun id) out) (C p (C eval_blob.battery
+        (C (C (C (HoonMap.toNoun (unitNoun id) regs) tn) (C (C (A 0) (C (A 0) (C (A Tag.jmp)
           (C an (listNoun A v))))) (C sN (C (A 0) scry)))) (icore cr))))))) eval_blob.loop
-      = (v.mapM (SkaModel.read · regs)).map fun vs => HoonMap.toNoun id (regsFrom r vs out) := by
+      = (v.mapM (SkaModel.read · regs)).map fun vs => HoonMap.toNoun (unitNoun id) (regsFrom r vs out) := by
   have hpi := evalPoleIn_icore hc
   obtain ⟨_, hrd, _, hrc⟩ := hpi
   have hrm := read_model (icore cr) hrc
@@ -701,7 +701,7 @@ theorem eval_blob_jmp_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
     (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
     (O : Oracle Noun) (hcall : CallLe lib pk O)
     (s : Straight (TreapMap mugF)) (scry : Noun) (a : Bell) (v : List Nat)
-    (regs : TreapMap mugF Noun) (trace : Trace) (r : Tone × Noun)
+    (regs : TreapMap mugF (Option Noun)) (trace : Trace) (r : Tone × Noun)
     (h : (v.mapM (SkaModel.read · regs)).bind (fun vs => O.call cr a false vs trace scry) = some r) :
     nock (blobS cr regs trace ⟨[], [], Termin.jmp a v⟩ s [] scry) eval_blob.battery
       = some (resN r) ∧ CorIn r.2 := by
@@ -737,7 +737,7 @@ theorem eval_blob_jsp_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
     (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
     (O : Oracle Noun) (hcall : CallLe lib pk O)
     (s : Straight (TreapMap mugF)) (scry : Noun) (a : Bell) (sr : Nat)
-    (regs : TreapMap mugF Noun) (trace : Trace) (r : Tone × Noun)
+    (regs : TreapMap mugF (Option Noun)) (trace : Trace) (r : Tone × Noun)
     (h : (SkaModel.read sr regs).bind (fun vs => O.call cr a true [vs] trace scry) = some r) :
     nock (blobS cr regs trace ⟨[], [], Termin.jsp a sr⟩ s [] scry) eval_blob.battery
       = some (resN r) ∧ CorIn r.2 := by
@@ -756,7 +756,7 @@ theorem eval_blob_jsp_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
   obtain ⟨_, hrd', _, hrc'⟩ := hpi'
   have hrm := read_model (icore cr') hrc'
   simp only [read.axis, icore, nock_exec] at hrd'
-  have hreg : HoonMap.toNoun id (regsOf [vs] : TreapMap mugF Noun)
+  have hreg : HoonMap.toNoun (unitNoun id) (regsOf [vs] : TreapMap mugF (Option Noun))
       = C (C (A 0) vs) (C (A 0) (A 0)) := rfl
   have hg := getF_hoonMap Blob.toNoun c.blocks 0
   rw [e4] at hg
@@ -816,7 +816,7 @@ theorem eval_blob_le (lib : Lib) (hslam : SlamIsNock lib)
   have hop : ∀ (j : Jmp), (∃ b', HoonMap.get s.blocks j.there = some b' ∧
       rec st regs trace b' j.args = some r) →
       ∃ b' : Blob, getF mugF (A j.there) (HoonMap.toNoun Blob.toNoun s.blocks) = some (C (A 0) b'.toNoun) ∧
-        nock (C eval_blob.battery (C (C (C (HoonMap.toNoun id regs) (listNoun Frame.toNoun trace))
+        nock (C eval_blob.battery (C (C (C (HoonMap.toNoun (unitNoun id) regs) (listNoun Frame.toNoun trace))
           (C b'.toNoun (C s.toNoun (C (listNoun (unitNoun A) j.args) scry)))) (C interp.battery st)))
           eval_blob.battery = some (resN r) ∧ CorIn r.2 := by
     intro j hj
@@ -1040,7 +1040,7 @@ theorem eval_top_le (lib : Lib) (hslam : SlamIsNock lib)
     have hc' := (hpk cr hc).2 _ _ e1 (nh_full _ _)
     obtain ⟨hB, hC⟩ := hO cr' hc' _ _ _ _ _ _ _ h
     refine ⟨?_, hC⟩
-    have hreg : HoonMap.toNoun id (regsOf [s] : TreapMap mugF Noun)
+    have hreg : HoonMap.toNoun (unitNoun id) (regsOf [s] : TreapMap mugF (Option Noun))
         = C (C (A 0) s) (C (A 0) (A 0)) := rfl
     simp only [blobS, icore, Straight.toNoun, argsN, listNoun, hreg, Blob.toNoun, hn.1, hn.2,
       NeedOrd.toNoun, Tag.this] at hB

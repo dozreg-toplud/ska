@@ -18,15 +18,15 @@ open Nock
 section
 variable {Map : Type → Type} [HoonMap Map] {σ : Type}
 
-theorem afterCall_state {st : σ} {regs : Map Noun} {trace : Trace} {d : Nat} {ton : Tone}
-    {r : Tone × Map Noun × Trace × σ} (h : afterCall st regs trace d ton = some r) :
+theorem afterCall_state {st : σ} {regs : Map (Option Noun)} {trace : Trace} {d : Nat} {ton : Tone}
+    {r : Tone × Map (Option Noun) × Trace × σ} (h : afterCall st regs trace d ton = some r) :
     r.2.2.2 = st := by
   cases ton <;> simp [afterCall] at h <;> subst h <;> rfl
 
 /-- The state after an op is the state before it, or the state an answer of
 the oracle left. -/
 theorem execPole_state {lib : Lib} {O : Oracle σ} {scry : Noun} {st : σ} {pole : Pole}
-    {regs : Map Noun} {trace : Trace} {r : Tone × Map Noun × Trace × σ} (Q : σ → Prop)
+    {regs : Map (Option Noun)} {trace : Trace} {r : Tone × Map (Option Noun) × Trace × σ} (Q : σ → Prop)
     (hst : Q st)
     (hcall : ∀ a m vs t ton st', O.call st a m vs t scry = some (ton, st') → Q st')
     (hnok : ∀ u f ton st', O.nok st u f scry = some (ton, st') → Q st')

@@ -125,7 +125,7 @@ theorem run_n4_pick_ok {lib : Lib} {p : Nomm} {z o : Jmp} {g0 g1 : Gen Map} {nex
     rw [hj, show [Pole.inc _ _] = [Pole.inc _ _] ++ [] from rfl, crashes_inc hx]
 
 theorem execBlob_clq {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ}
-    (regs : Map Noun) (t : Trace) (r : Nat) (z o : Jmp) :
+    (regs : Map (Option Noun)) (t : Trace) (r : Nat) (z o : Jmp) :
     execBlob lib O c gul st regs t ⟨[], [], Termin.clq r z o⟩ [] =
       (SkaModel.read r regs).bind fun v => match v with
         | Noun.cell _ _ => goJ lib O c gul st regs t z

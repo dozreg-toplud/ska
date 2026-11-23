@@ -25,7 +25,7 @@ variable {Map : Type → Type} [HoonMap Map]
 /-! ## Registers under a renaming -/
 
 /-- `R'` holds at `ren r` what `R` holds at `r`. -/
-def RenRel (ren : Nat → Nat) (R R' : Map Noun) : Prop :=
+def RenRel (ren : Nat → Nat) (R R' : Map (Option Noun)) : Prop :=
   ∀ r, SkaModel.read (ren r) R' = SkaModel.read r R
 
 def Inj (ren : Nat → Nat) : Prop := ∀ a b, ren a = ren b → a = b
@@ -33,14 +33,14 @@ def Inj (ren : Nat → Nat) : Prop := ∀ a b, ren a = ren b → a = b
 section Ren
 variable {ren : Nat → Nat}
 
-theorem RenRel.store (hi : Inj ren) {R R' : Map Noun} (h : RenRel ren R R') (d : Nat) (v : Noun) :
+theorem RenRel.store (hi : Inj ren) {R R' : Map (Option Noun)} (h : RenRel ren R R') (d : Nat) (v : Noun) :
     RenRel ren (store d v R) (store (ren d) v R') := by
   intro r
   by_cases e : r = d
   · subst e; simp [read_store_eq]
   · rw [read_store_ne (fun h' => e (hi _ _ h')), read_store_ne e, h r]
 
-theorem RenRel.del (hi : Inj ren) {R R' : Map Noun} (h : RenRel ren R R') (p : Nat) :
+theorem RenRel.del (hi : Inj ren) {R R' : Map (Option Noun)} (h : RenRel ren R R') (p : Nat) :
     RenRel ren (HoonMap.del R p) (HoonMap.del R' (ren p)) := by
   intro r
   have hr := h r
@@ -49,18 +49,18 @@ theorem RenRel.del (hi : Inj ren) {R R' : Map Noun} (h : RenRel ren R R') (p : N
   · subst e; simp
   · rw [if_neg (fun h' => e (hi _ _ h')), if_neg e]; exact hr
 
-theorem RenRel.mapM {R R' : Map Noun} (h : RenRel ren R R') : ∀ (v : List Nat),
+theorem RenRel.mapM {R R' : Map (Option Noun)} (h : RenRel ren R R') : ∀ (v : List Nat),
     (v.map ren).mapM (SkaModel.read · R') = v.mapM (SkaModel.read · R)
   | [] => rfl
   | x :: xs => by simp only [List.map_cons, List.mapM_cons, h x, RenRel.mapM h xs]
 
 /-- Related optional register maps. -/
-def ORel (ren : Nat → Nat) : Option (Map Noun) → Option (Map Noun) → Prop
+def ORel (ren : Nat → Nat) : Option (Map (Option Noun)) → Option (Map (Option Noun)) → Prop
   | Option.none, Option.none => True
   | some a, some b => RenRel ren a b
   | _, _ => False
 
-theorem evalPassLoop_ren (hi : Inj ren) : ∀ (args : List (Option Nat)) (par : List Nat) {R R' : Map Noun},
+theorem evalPassLoop_ren (hi : Inj ren) : ∀ (args : List (Option Nat)) (par : List Nat) {R R' : Map (Option Noun)},
     RenRel ren R R' →
     ORel ren (evalPassLoop args par R) (evalPassLoop (args.map (Option.map ren)) (par.map ren) R')
   | [], par, R, R', h => by cases par <;> simp [evalPassLoop, ORel, h]
@@ -83,7 +83,7 @@ theorem contains_map (hi : Inj ren) (par : List Nat) (r : Nat) :
   simp only [List.contains_iff_mem, List.mem_map]
   exact ⟨fun ⟨x, hx, e⟩ => hi _ _ e ▸ hx, fun h => ⟨r, h, rfl⟩⟩
 
-theorem evalPass_ren (hi : Inj ren) (args : List (Option Nat)) (par : List Nat) {R R' : Map Noun}
+theorem evalPass_ren (hi : Inj ren) (args : List (Option Nat)) (par : List Nat) {R R' : Map (Option Noun)}
     (h : RenRel ren R R') :
     ORel ren (evalPass args par R) (evalPass (args.map (Option.map ren)) (par.map ren) R') := by
   unfold evalPass
@@ -108,19 +108,19 @@ theorem evalPass_ren (hi : Inj ren) (args : List (Option Nat)) (par : List Nat) 
 /-! ## Ops under a renaming -/
 
 /-- Related results of an op. -/
-def PRel (ren : Nat → Nat) {σ : Type} : Option (Tone × Map Noun × Trace × σ) →
-    Option (Tone × Map Noun × Trace × σ) → Prop
+def PRel (ren : Nat → Nat) {σ : Type} : Option (Tone × Map (Option Noun) × Trace × σ) →
+    Option (Tone × Map (Option Noun) × Trace × σ) → Prop
   | Option.none, Option.none => True
   | some (a, R, t, s), some (a', R', t', s') => a = a' ∧ t = t' ∧ s = s' ∧ RenRel ren R R'
   | _, _ => False
 
 /-- Related results of a local op. -/
-def LRel (ren : Nat → Nat) : Option (Tone × Map Noun × Trace) → Option (Tone × Map Noun × Trace) → Prop
+def LRel (ren : Nat → Nat) : Option (Tone × Map (Option Noun) × Trace) → Option (Tone × Map (Option Noun) × Trace) → Prop
   | Option.none, Option.none => True
   | some (a, R, t), some (a', R', t') => a = a' ∧ t = t' ∧ RenRel ren R R'
   | _, _ => False
 
-theorem localPole_ren (hi : Inj ren) (lib : Lib) (gul : Noun) (p : Pole) {R R' : Map Noun} (t : Trace)
+theorem localPole_ren (hi : Inj ren) (lib : Lib) (gul : Noun) (p : Pole) {R R' : Map (Option Noun)} (t : Trace)
     (h : RenRel ren R R') : LRel ren (localPole lib gul p R t) (localPole lib gul (renPole ren p) R' t) := by
   cases p with
   | imm n d => simpa [localPole, renPole, LRel] using h.store hi d n
@@ -199,12 +199,12 @@ theorem localPole_ren (hi : Inj ren) (lib : Lib) (gul : Noun) (p : Pole) {R R' :
   | csf a s d n => simp [localPole, renPole, LRel]
   | csm a s d k => simp [localPole, renPole, LRel]
 
-theorem afterCall_ren (hi : Inj ren) {σ : Type} (st : σ) {R R' : Map Noun} (t : Trace) (d : Nat)
+theorem afterCall_ren (hi : Inj ren) {σ : Type} (st : σ) {R R' : Map (Option Noun)} (t : Trace) (d : Nat)
     (h : RenRel ren R R') (ton : Tone) : PRel ren (afterCall st R t d ton) (afterCall st R' t (ren d) ton) := by
   cases ton <;> simp [afterCall, PRel, h, h.store hi]
 
 theorem execPole_local (lib : Lib) {σ : Type} (O : Oracle σ) (gul : Noun) (st : σ) (q : Pole)
-    (R : Map Noun) (t : Trace)
+    (R : Map (Option Noun)) (t : Trace)
     (h1 : ∀ u f d, q ≠ Pole.nok u f d) (h2 : ∀ a v d, q ≠ Pole.cal a v d) (h3 : ∀ a v d n, q ≠ Pole.caf a v d n)
     (h4 : ∀ a v d k, q ≠ Pole.cam a v d k) (h5 : ∀ a s d, q ≠ Pole.csl a s d)
     (h6 : ∀ a s d n, q ≠ Pole.csf a s d n) (h7 : ∀ a s d k, q ≠ Pole.csm a s d k) :
@@ -220,7 +220,7 @@ theorem execPole_local (lib : Lib) {σ : Type} (O : Oracle σ) (gul : Noun) (st 
   | _ => rfl
 
 theorem execPole_ren (hi : Inj ren) (lib : Lib) {σ : Type} (O : Oracle σ) (gul : Noun) (st : σ) (p : Pole)
-    {R R' : Map Noun} (t : Trace) (h : RenRel ren R R') :
+    {R R' : Map (Option Noun)} (t : Trace) (h : RenRel ren R R') :
     PRel ren (execPole lib O gul st p R t) (execPole lib O gul st (renPole ren p) R' t) := by
   have hloc : ∀ q : Pole,
       PRel ren ((localPole lib gul q R t).map fun (ton, regs', trace') => (ton, regs', trace', st))
@@ -338,7 +338,7 @@ variable {c c' : Straight Map} {bs : Map Blob} {ren : Nat → Nat} {o : Nat}
 
 theorem chase_spec {ρ : Nat → Nat} (hs : Sim c c' bs ren o ρ) (lib : Lib) {σ : Type} (O : Oracle σ) (gul : Noun) :
     ∀ n (j : Jmp) (br : Bool) (j' : Jmp), ρ j.there < n → 1 ≤ j.there → chase bs br j = some j' →
-    (∀ st (R : Map Noun) t, goJ lib O c gul st R t j = goJ lib O c gul st R t j') ∧ ρ j'.there ≤ ρ j.there ∧
+    (∀ st (R : Map (Option Noun)) t, goJ lib O c gul st R t j = goJ lib O c gul st R t j') ∧ ρ j'.there ≤ ρ j.there ∧
       j'.there ≠ o ∧ ∃ b', HoonMap.get c.blocks j'.there = some b' ∧ bypassable br b' = false
   | 0, _, _, _, hn, _, _ => absurd hn (Nat.not_lt_zero _)
   | n + 1, j, br, j', hn, h1, hc => by
@@ -379,11 +379,11 @@ theorem chase_spec {ρ : Nat → Nat} (hs : Sim c c' bs ren o ρ) (lib : Lib) {�
 renamed jumps go in `c'`. -/
 def JGo (lib : Lib) {σ : Type} (O : Oracle σ) (c c' : Straight Map) (gul : Noun) (bs : Map Blob)
     (ren : Nat → Nat) (fin : Termin) : Prop :=
-  ∀ j ∈ finJumps fin, ∀ br j', chase bs br j = some j' → ∀ st (R R' : Map Noun) t, RenRel ren R R' →
+  ∀ j ∈ finJumps fin, ∀ br j', chase bs br j = some j' → ∀ st (R R' : Map (Option Noun)) t, RenRel ren R R' →
     goJ lib O c gul st R t j = goJ lib O c' gul st R' t (renJmp ren j')
 
 theorem fin_sim {lib : Lib} {σ : Type} {O : Oracle σ} {gul : Noun} {fin fin' : Termin}
-    (hc : chaseFin bs ren fin = some fin') (hj : JGo lib O c c' gul bs ren fin) (st : σ) {R R' : Map Noun}
+    (hc : chaseFin bs ren fin = some fin') (hj : JGo lib O c c' gul bs ren fin) (st : σ) {R R' : Map (Option Noun)}
     (t : Trace) (h : RenRel ren R R') :
     execBlob lib O c gul st R t ⟨[], [], fin⟩ [] = execBlob lib O c' gul st R' t ⟨[], [], fin'⟩ [] := by
   cases fin with
@@ -468,9 +468,9 @@ theorem fin_sim {lib : Lib} {σ : Type} {O : Oracle σ} {gul : Noun} {fin fin' :
   | lti n s z o => simp [chaseFin] at hc
 
 theorem body_sim {lib : Lib} {σ : Type} {O : Oracle σ} {gul : Noun} (hi : Inj ren) {fin fin' : Termin}
-    (hf : ∀ (st : σ) (R R' : Map Noun) t, RenRel ren R R' →
+    (hf : ∀ (st : σ) (R R' : Map (Option Noun)) t, RenRel ren R R' →
       execBlob lib O c gul st R t ⟨[], [], fin⟩ [] = execBlob lib O c' gul st R' t ⟨[], [], fin'⟩ []) :
-    ∀ (body : List Pole) (st : σ) (R R' : Map Noun) t, RenRel ren R R' →
+    ∀ (body : List Pole) (st : σ) (R R' : Map (Option Noun)) t, RenRel ren R R' →
       execBlob lib O c gul st R t ⟨[], body, fin⟩ [] =
         execBlob lib O c' gul st R' t ⟨[], body.map (renPole ren), fin'⟩ []
   | [], st, R, R', t, h => hf st R R' t h
@@ -493,7 +493,7 @@ theorem body_sim {lib : Lib} {σ : Type} {O : Oracle σ} {gul : Noun} (hi : Inj 
 jumps below `k` (a block of `c` at `k`, or one that is not in `c`). -/
 theorem sim_block {ρ : Nat → Nat} (hs : Sim c c' bs ren o ρ) (lib : Lib) {σ : Type} (O : Oracle σ) (gul : Noun) :
     ∀ k (b : Blob), (∀ j ∈ finJumps b.fin, 1 ≤ j.there ∧ ρ j.there < k) → ∀ fin', chaseFin bs ren b.fin = some fin' →
-    ∀ (st : σ) (R R' : Map Noun) t (params : List (Option Nat)), RenRel ren R R' →
+    ∀ (st : σ) (R R' : Map (Option Noun)) t (params : List (Option Nat)), RenRel ren R R' →
     execBlob lib O c gul st R t b params =
       execBlob lib O c' gul st R' t (renB ren b fin') (params.map (Option.map ren)) := by
   intro k

@@ -45,7 +45,7 @@ register below `lo` outside `tgt`, or crash if `v` has not the shape of
 `tgt`. -/
 def KernSem (Map : Type → Type) [HoonMap Map] (tgt : Need) (r lo : Nat) (A : List Pole) : Prop :=
   ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace)
-    (R : Map Noun) (v : Noun), SkaModel.read r R = some v →
+    (R : Map (Option Noun)) (v : Noun), SkaModel.read r R = some v →
     (Comp.Fits tgt v → ∃ R', Runs lib O c gul st t A R R' ∧ HoldsN tgt R' v ∧
         ∀ x, x < lo → ¬ NMem tgt x → SkaModel.read x R' = SkaModel.read x R) ∧
     (¬ Comp.Fits tgt v → Crashes lib O c gul st t A R)
@@ -63,7 +63,7 @@ variable {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun}
 /-- One half of a `%both` of `+kern-need`: the op `sel` that reads the half
 into `rr`, then the ops for the half, or nothing if there are none. -/
 theorem part_spec {x : Need} {rr : Nat} {gg gg' : Gen Map} {Ax : List Pole} (K : KernOK x rr gg gg' Ax)
-    (hx : Distinct x) (hlt : ∀ y, NMem x y → y < gg.re) (sel : Pole) {R : Map Noun} {w : Noun}
+    (hx : Distinct x) (hlt : ∀ y, NMem x y → y < gg.re) (sel : Pole) {R : Map (Option Noun)} {w : Noun}
     (hsel : Runs lib O c gul st t [sel] R (store rr w R)) :
     (Comp.Fits x w → ∃ R', Runs lib O c gul st t (if Ax = [] then [] else sel :: Ax) R R' ∧ HoldsN x R' w ∧
         ∀ y, y < gg.re → y ≠ rr → ¬ NMem x y → SkaModel.read y R' = SkaModel.read y R) ∧
@@ -92,7 +92,7 @@ theorem kernBoth_spec {r d : Nat} {kh kt : Nat → List Pole → CM Map (List Po
       (Distinct h → Distinct t → (∀ x, NMem h x → ¬ NMem t x) → ¬ NMem h d → ¬ NMem t d → d < g.re →
         (∀ x, NMem h x → x < g.re) → (∀ x, NMem t x → x < g.re) →
         ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) (gul : Noun) (stt : σ) (tr : Trace)
-          (R : Map Noun) (v : Noun), SkaModel.read r R = some v →
+          (R : Map (Option Noun)) (v : Noun), SkaModel.read r R = some v →
           (∀ a b, v = C a b → Comp.Fits h a → Comp.Fits t b → ∃ R', Runs lib O c gul stt tr A R R' ∧
             SkaModel.read d R' = some v ∧ HoldsN h R' a ∧ HoldsN t R' b ∧
             ∀ x, x < g.re → x ≠ d → ¬ NMem h x → ¬ NMem t x → SkaModel.read x R' = SkaModel.read x R) ∧
@@ -257,7 +257,7 @@ theorem kernLoop_spec : ∀ (tgt : Need) (r : Nat) (acc : List Pole) (g g' : Gen
 /-- What the ops `A` of `sure-loop` from `ned` into `tgt` do. -/
 def SureSem (Map : Type → Type) [HoonMap Map] (ned tgt : Need) (lo : Nat) (A : List Pole) : Prop :=
   ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace)
-    (R : Map Noun) (s : Noun), HoldsN ned R s →
+    (R : Map (Option Noun)) (s : Noun), HoldsN ned R s →
     (Comp.Fits tgt s → ∃ R', Runs lib O c gul st t A R R' ∧ HoldsN tgt R' s ∧
         ∀ x, x < lo → ¬ NMem tgt x → SkaModel.read x R' = SkaModel.read x R) ∧
     (¬ Comp.Fits tgt s → Crashes lib O c gul st t A R)
@@ -273,7 +273,7 @@ theorem sureSem_halves {p q tp tq : Need} {lo1 lo2 : Nat} {Ap Aq : List Pole} (h
     (dtq : ∀ x, NMem tp x → ¬ NMem tq x) (ltq : ∀ x, NMem tq x → x < lo1)
     (lp : ∀ x, NMem p x → x < lo1) (np : ∀ x, NMem p x → ¬ NMem tq x)
     (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace)
-    (R : Map Noun) (a b : Noun) (ha : HoldsN p R a) (hb : HoldsN q R b) :
+    (R : Map (Option Noun)) (a b : Noun) (ha : HoldsN p R a) (hb : HoldsN q R b) :
     (Comp.Fits tp a → Comp.Fits tq b → ∃ R', Runs lib O c gul st t (Aq ++ Ap) R R' ∧ HoldsN tp R' a ∧
         HoldsN tq R' b ∧ ∀ x, x < lo1 → ¬ NMem tp x → ¬ NMem tq x → SkaModel.read x R' = SkaModel.read x R) ∧
     (¬ (Comp.Fits tp a ∧ Comp.Fits tq b) → Crashes lib O c gul st t (Aq ++ Ap) R) := by

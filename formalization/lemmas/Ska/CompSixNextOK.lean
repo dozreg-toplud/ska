@@ -43,7 +43,7 @@ theorem lazyBlkN {lib : Lib} {σ : Type} {O : Oracle σ} {cc : Straight Map} {gu
     (hre : gB.re ≤ g9.re) (hlo : g0.re ≤ gA.re)
     (hl : u.lok = sur.lok) (hcp : NCopy sur.ned u.ned) (hu : ∀ r, NMem u.ned r → g0.re ≤ r ∧ r < gA.re)
     (hob : HoonMap.get cc.blocks ob = some ⟨[], [], Termin.hop ⟨(flattenNeed u.ned).map some, barg⟩⟩)
-    (R2 : Map Noun) (hR2 : HoldsN ned R2 s0) :
+    (R2 : Map (Option Noun)) (hR2 : HoldsN ned R2 s0) :
     GoalSem lib O cc gul st (fun r => (r < g0.re ∨ NMem ned r) ∧ ¬ NMem sur.ned r) R2 t (jmp0 o)
       (CGoal.next sur th) (pureEval nm' s) := by
   have e0 : goJ lib O cc gul st R2 t (jmp0 o) = execBlob lib O cc gul st R2 t ⟨[], A, Termin.hop x.th⟩ [] :=
@@ -357,7 +357,7 @@ theorem sixNext_okN (lib : Lib) {c a b : Nomm} (hcp : c.pure = true)
       ⟨hh.1, (looks_uni_empty _ _).mp hh.2⟩ hn
     have e0 : goJ lib O cc gul st regs t (jmp0 gC.bo) = goJ lib O cc gul st regs t xc.th := by
       rw [goJ_jmp0 _ _ _ _ hc3, execBlob_hop]
-    have kk : ∀ R2 : Map Noun, (∀ r, (r < gS.re ∨ NMem ned r) → SkaModel.read r R2 = SkaModel.read r regs) →
+    have kk : ∀ R2 : Map (Option Noun), (∀ r, (r < gS.re ∨ NMem ned r) → SkaModel.read r R2 = SkaModel.read r regs) →
         ∀ r, ((r < g0.re ∨ NMem ned r) ∧ ¬ NMem sur.ned r) → SkaModel.read r R2 = SkaModel.read r regs :=
       fun R2 k2 r hr => k2 r (hr.1.elim (fun h => Or.inl (by omega)) Or.inr)
     show GoalSem lib O cc gul st (fun r => (r < g0.re ∨ NMem ned r) ∧ ¬ NMem sur.ned r) regs t (jmp0 gC.bo)

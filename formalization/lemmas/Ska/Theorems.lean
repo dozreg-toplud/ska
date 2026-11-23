@@ -26,7 +26,7 @@ variable {Map : Type → Type} [HoonMap Map] {σ : Type}
 /-! ## Entering a function -/
 
 theorem execBlob_par {lib : Lib} {O : Oracle σ} {c : Straight Map} {scry : Noun} {st : σ}
-    {regs : Map Noun} {t : Trace} {b : Blob} (hpar : b.par ≠ []) :
+    {regs : Map (Option Noun)} {t : Trace} {b : Blob} (hpar : b.par ≠ []) :
     execBlob lib O c scry st regs t b [] = none := by
   rw [execBlob]
   have : ([] : List (Option Nat)) ≠ [] ∨ b.par ≠ [] := Or.inr hpar

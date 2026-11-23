@@ -13,22 +13,25 @@ The register arms of the interpreter core `interp`: `+read`, `+store`,
 
 ```hoon
 ++  move
-  |=  [s=@uvre d=@uvre regs=(map @uvre *)]
-  (store d (read s regs) regs)
+  |=  [s=@uvre d=@uvre regs=(map @uvre (unit *))]
+  (~(put by regs) d (~(got by regs) s))
 ::
 ++  read
-  |=  [r=@uvre regs=(map @uvre *)]
+  |=  [r=@uvre regs=(map @uvre (unit *))]
   ^-  *
-  (~(got by regs) r)
+  =/  v=(unit *)  (~(got by regs) r)
+  ?>  ?=(^ v)
+  u.v
 ::
 ++  store
-  |=  [r=@uvre v=* regs=(map @uvre *)]
-  (~(put by regs) r v)
+  |=  [r=@uvre v=* regs=(map @uvre (unit *))]
+  (~(put by regs) r `v)
 ```
 
 The arms reach the door `+by` in layer 2, at `read.layer2.axis` of their
 context; `RegsIn mug c` says what they read there, for a `+mug` computed by
-`mug`.
+`mug`.  A register holds a unit: `+read` takes a value out of `[~ v]` and
+crashes on `~` (poison), `+move` copies the unit.
 -/
 
 namespace Formalization
@@ -54,14 +57,23 @@ abbrev RegsIn (mug : Noun → Nat) (c : Noun) : Prop :=
     nock c move.arm = some (C move.battery (C (C (A 0) (C (A 0) (A 0))) c)) := by
   nock_open move.arm; simp only [nock_exec]
 
-/-- `+read` of a register that the map holds. -/
-theorem read_gate {mug : Noun → Nat} (c : Noun) (hc : RegsIn mug c) (r : Nat) (regs v : Noun)
-    (h : getF mug (A r) regs = some (C (A 0) v)) :
+/-- `+read` of a register that holds a value. -/
+theorem read_gate {mug : Noun → Nat} (c : Noun) (hc : RegsIn mug c) (r : Nat) (regs x v : Noun)
+    (h : getF mug (A r) regs = some (C (A 0) (C x v))) :
     nock (C read.battery (C (C (A r) regs) c)) read.battery = some v := by
   obtain ⟨l2, hl2, hby, hneed, hsome, hgor, _⟩ := hc
   nock_open read.battery
   simp [nock_exec, hl2, hby, by_arm, by.got.arm_at, got_arm,
-    got_gate l2 ⟨hneed, hsome, hgor⟩ (A r) regs v h]
+    got_gate l2 ⟨hneed, hsome, hgor⟩ (A r) regs _ h]
+
+/-- `+read` of a poisoned register crashes. -/
+theorem read_gate_poison {mug : Noun → Nat} (c : Noun) (hc : RegsIn mug c) (r : Nat) (regs : Noun)
+    (n : Nat) (h : getF mug (A r) regs = some (C (A 0) (A n))) :
+    nock (C read.battery (C (C (A r) regs) c)) read.battery = none := by
+  obtain ⟨l2, hl2, hby, hneed, hsome, hgor, _⟩ := hc
+  nock_open read.battery
+  simp [nock_exec, hl2, hby, by_arm, by.got.arm_at, got_arm,
+    got_gate l2 ⟨hneed, hsome, hgor⟩ (A r) regs _ h]
 
 /-- `+read` of a register that the map does not hold crashes. -/
 theorem read_gate_nil {mug : Noun → Nat} (c : Noun) (hc : RegsIn mug c) (r : Nat) (regs : Noun)
@@ -72,76 +84,81 @@ theorem read_gate_nil {mug : Noun → Nat} (c : Noun) (hc : RegsIn mug c) (r : N
   simp [nock_exec, hl2, hby, by_arm, by.got.arm_at, got_arm,
     got_gate_nil l2 ⟨hneed, hsome, hgor⟩ (A r) regs h]
 
-/-- `+store` of a value in a register. -/
+/-- `+store` of a value in a register: it puts `[~ v]`. -/
 theorem store_gate {mug : Noun → Nat} (c : Noun) (hc : RegsIn mug c) (r : Nat) (v regs out : Noun)
-    (h : putF mug (A r) v regs = some out) :
+    (h : putF mug (A r) (C (A 0) v) regs = some out) :
     nock (C store.battery (C (C (A r) (C v regs)) c)) store.battery = some out := by
   obtain ⟨l2, hl2, hby, _, _, hgor, hmor⟩ := hc
   nock_open store.battery
   simp [nock_exec, hl2, hby, by_arm, by.put.arm_at, put_arm,
-    put_gate l2 ⟨hgor, hmor⟩ (A r) v regs out h]
+    put_gate l2 ⟨hgor, hmor⟩ (A r) _ regs out h]
 
-/-- What `+move` reads from its context: `+read` and `+store`, and what they
-read. -/
-abbrev MoveIn (mug : Noun → Nat) (c : Noun) : Prop :=
-  slot? read.axis c = some read.arm ∧ slot? store.axis c = some store.arm ∧ RegsIn mug c
+/-- What `+move` reads from its context: `+by`, as `+read` and `+store`. -/
+abbrev MoveIn (mug : Noun → Nat) (c : Noun) : Prop := RegsIn mug c
 
-/-- `+move` from a register that the map holds. -/
-theorem move_gate {mug : Noun → Nat} (c : Noun) (hc : MoveIn mug c) (s d : Nat) (regs v out : Noun)
-    (h : getF mug (A s) regs = some (C (A 0) v)) (h' : putF mug (A d) v regs = some out) :
+/-- `+move` from a register that the map holds, a value or poison. -/
+theorem move_gate {mug : Noun → Nat} (c : Noun) (hc : MoveIn mug c) (s d : Nat) (regs u out : Noun)
+    (h : getF mug (A s) regs = some (C (A 0) u)) (h' : putF mug (A d) u regs = some out) :
     nock (C move.battery (C (C (A s) (C (A d) regs)) c)) move.battery = some out := by
-  obtain ⟨hr, hs, hc⟩ := hc
+  obtain ⟨l2, hl2, hby, hneed, hsome, hgor, hmor⟩ := hc
   nock_open move.battery
-  simp [nock_exec, hr, hs, read_gate c hc s regs v h, store_gate c hc d v regs out h']
+  simp [nock_exec, hl2, hby, by_arm, by.got.arm_at, got_arm, by.put.arm_at, put_arm,
+    got_gate l2 ⟨hneed, hsome, hgor⟩ (A s) regs u h, put_gate l2 ⟨hgor, hmor⟩ (A d) u regs out h']
 
 /-- `+move` from a register that the map does not hold crashes. -/
 theorem move_gate_nil {mug : Noun → Nat} (c : Noun) (hc : MoveIn mug c) (s d : Nat) (regs : Noun)
     (h : getF mug (A s) regs = some (A 0)) :
     nock (C move.battery (C (C (A s) (C (A d) regs)) c)) move.battery = none := by
-  obtain ⟨hr, hs, hc⟩ := hc
+  obtain ⟨l2, hl2, hby, hneed, hsome, hgor, _⟩ := hc
   nock_open move.battery
-  simp [nock_exec, hr, hs, read_gate_nil c hc s regs h]
+  simp [nock_exec, hl2, hby, by_arm, by.got.arm_at, got_arm, by.put.arm_at, put_arm,
+    got_gate_nil l2 ⟨hneed, hsome, hgor⟩ (A s) regs h]
 
 /-! ## On the pill's interpreter core, against the model
 
-The register maps are the treaps of `TreapMap mugF` (`TreapMap.lean`), whose
-noun `HoonMap.toNoun id regs` is the map the Hoon holds. -/
+The register maps are the treaps of `TreapMap mugF` (`TreapMap.lean`) with
+units as values, whose noun `HoonMap.toNoun (unitNoun id) regs` is the map
+the Hoon holds. -/
 
 theorem regsIn_interp : RegsIn mugF interp :=
   ⟨layer2, read.layer2.arm_at, by.arm_at, need.arm_at, someIn_layer2, gorIn_morIn_layer2.1,
     gorIn_morIn_layer2.2⟩
 
-theorem moveIn_interp : MoveIn mugF interp := ⟨read.arm_at, store.arm_at, regsIn_interp⟩
+theorem moveIn_interp : MoveIn mugF interp := regsIn_interp
 
 /-- `+read` computes `read` of `Interp.lean`, a crash when the register is
-not there. -/
-theorem read_pill (r : Nat) (regs : TreapMap mugF Noun) :
-    nock (C read.battery (C (C (A r) (HoonMap.toNoun id regs)) interp)) read.battery
+not there or is poisoned. -/
+theorem read_pill (r : Nat) (regs : TreapMap mugF (Option Noun)) :
+    nock (C read.battery (C (C (A r) (HoonMap.toNoun (unitNoun id) regs)) interp)) read.battery
       = SkaModel.read r regs := by
-  have h := getF_hoonMap id regs r
+  have h := getF_hoonMap (unitNoun id) regs r
   unfold SkaModel.read
   cases e : HoonMap.get regs r with
   | none => rw [e] at h; exact read_gate_nil _ regsIn_interp r _ h
-  | some v => rw [e] at h; exact read_gate _ regsIn_interp r _ v h
+  | some u =>
+    rw [e] at h
+    cases u with
+    | none => exact read_gate_poison _ regsIn_interp r _ 0 h
+    | some v => exact read_gate _ regsIn_interp r _ (A 0) v h
 
 /-- `+store` computes `store` of `Interp.lean`. -/
-theorem store_pill (r : Nat) (v : Noun) (regs : TreapMap mugF Noun) :
-    nock (C store.battery (C (C (A r) (C v (HoonMap.toNoun id regs))) interp)) store.battery
-      = some (HoonMap.toNoun id (SkaModel.store r v regs)) :=
-  store_gate _ regsIn_interp r v _ _ (putF_hoonMap id regs r v)
+theorem store_pill (r : Nat) (v : Noun) (regs : TreapMap mugF (Option Noun)) :
+    nock (C store.battery (C (C (A r) (C v (HoonMap.toNoun (unitNoun id) regs))) interp))
+      store.battery = some (HoonMap.toNoun (unitNoun id) (SkaModel.store r v regs)) :=
+  store_gate _ regsIn_interp r v _ _ (putF_hoonMap (unitNoun id) regs r (some v))
 
 /-- `+move` computes `move` of `Interp.lean`. -/
-theorem move_pill (s d : Nat) (regs : TreapMap mugF Noun) :
-    nock (C move.battery (C (C (A s) (C (A d) (HoonMap.toNoun id regs))) interp)) move.battery
-      = (SkaModel.move s d regs).map (HoonMap.toNoun id) := by
-  have h := getF_hoonMap id regs s
-  unfold SkaModel.move SkaModel.read
+theorem move_pill (s d : Nat) (regs : TreapMap mugF (Option Noun)) :
+    nock (C move.battery (C (C (A s) (C (A d) (HoonMap.toNoun (unitNoun id) regs))) interp))
+      move.battery = (SkaModel.move s d regs).map (HoonMap.toNoun (unitNoun id)) := by
+  have h := getF_hoonMap (unitNoun id) regs s
+  unfold SkaModel.move
   cases e : HoonMap.get regs s with
   | none => rw [e] at h; simpa using move_gate_nil _ moveIn_interp s d _ h
-  | some v =>
+  | some u =>
     rw [e] at h
-    simpa [SkaModel.store] using
-      move_gate _ moveIn_interp s d _ v _ h (putF_hoonMap id regs d v)
+    simpa using move_gate _ moveIn_interp s d _ (unitNoun id u) _ h
+      (putF_hoonMap (unitNoun id) regs d u)
 
 end Compiler
 end Formalization

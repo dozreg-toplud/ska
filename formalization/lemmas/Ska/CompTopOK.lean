@@ -103,7 +103,7 @@ def CoerceSpec (S : Type) [HoonSet S] (Map : Type → Type) [HoonMap Map] : Prop
   ∀ (ned : Need) (o : Nat) (laz : Sure S) (less : Cape) (g g' : Gen Map),
     coerceLazy ned o laz less g = some ((), g') → g.drop = false → Distinct ned → Distinct laz.ned →
     (∀ r, NMem laz.ned r → r < g.re) → (∀ r, NMem ned r → r < g.re) → (∀ r, NMem ned r → ¬ NMem laz.ned r) →
-    ∃ A, Front o g g' A ∧ ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) gul st t (R : Map Noun) s,
+    ∃ A, Front o g g' A ∧ ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) gul st t (R : Map (Option Noun)) s,
       HoldsN ned R s → CapeAxes less s →
       (FitsS laz s → ∃ R', Runs lib O c gul st t A R R' ∧ HoldsS laz R' s ∧
         ∀ x, NMem ned x → SkaModel.read x R' = SkaModel.read x R) ∧

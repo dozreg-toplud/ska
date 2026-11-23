@@ -199,7 +199,7 @@ structure RunOKP (lib : Lib) (nm : Nomm) (goal : CGoal S) (g0 g1 : Gen Map) (nex
 section GS
 variable {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ} {t : Trace}
 
-theorem goalSem_mono {K K' : Nat → Prop} (hk : ∀ r, K' r → K r) {regs : Map Noun} {je : Jmp} :
+theorem goalSem_mono {K K' : Nat → Prop} (hk : ∀ r, K' r → K r) {regs : Map (Option Noun)} {je : Jmp} :
     ∀ (goal : CGoal S) (v : Option Noun), GoalSem lib O c gul st K regs t je goal v →
       GoalSem lib O c gul st K' regs t je goal v
   | CGoal.done, _, h => h
@@ -215,7 +215,7 @@ theorem goalSem_mono {K K' : Nat → Prop} (hk : ∀ r, K' r → K r) {regs : Ma
   | CGoal.pick _ _, none, h => h
 
 /-- `GoalSem` through code in front that keeps the registers of `K`. -/
-theorem goalSem_pre {K : Nat → Prop} {regs regs' : Map Noun} {je je' : Jmp}
+theorem goalSem_pre {K : Nat → Prop} {regs regs' : Map (Option Noun)} {je je' : Jmp}
     (hk : ∀ r, K r → SkaModel.read r regs' = SkaModel.read r regs)
     (he : goJ lib O c gul st regs t je = goJ lib O c gul st regs' t je') :
     ∀ (goal : CGoal S) (v : Option Noun), GoalSem lib O c gul st K regs' t je' goal v →
@@ -233,7 +233,7 @@ theorem goalSem_pre {K : Nat → Prop} {regs regs' : Map Noun} {je je' : Jmp}
   | CGoal.pick _ _, some (Noun.cell _ _), h => he.trans h
   | CGoal.pick _ _, none, h => he.trans h
 
-theorem goalSem_none {K : Nat → Prop} {regs : Map Noun} {je : Jmp} :
+theorem goalSem_none {K : Nat → Prop} {regs : Map (Option Noun)} {je : Jmp} :
     ∀ (goal : CGoal S), goJ lib O c gul st regs t je = some (Tone.two t, st) →
       GoalSem lib O c gul st K regs t je goal none
   | CGoal.done, h => h
@@ -244,7 +244,7 @@ end GS
 
 theorem fillSem_runK {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ} {t : Trace}
     {ned : Need} {lo : Nat} {L : Sure S} {A : List Pole} {s0 s : Noun} (F : FillSem lib O c gul st t ned lo L A s0 s)
-    {R : Map Noun} (hR : HoldsN ned R s0) (th : Jmp) :
+    {R : Map (Option Noun)} (hR : HoldsN ned R s0) (th : Jmp) :
     (FitsS L s → ∃ R', HoldsS L R' s ∧
       (∀ x, (NMem ned x ∨ x < lo) → ¬ NMem L.ned x → SkaModel.read x R' = SkaModel.read x R) ∧
       execBlob lib O c gul st R t ⟨[], A, Termin.hop th⟩ [] = goJ lib O c gul st R' t th) ∧
@@ -557,7 +557,7 @@ theorem runP_ok (lib : Lib) {goal : CGoal S} {nm : Nomm} (hf : FragP goal nm) :
         ⟨hh.1, (looks_uni_empty _ _).mp hh.2⟩ hn
       have e0 : goJ lib O cc gul st regs t (jmp0 g3.bo) = goJ lib O cc gul st regs t xc.th := by
         rw [goJ_jmp0 _ _ _ _ hc3, execBlob_hop]
-      have kk : ∀ R2 : Map Noun, (∀ r, (r < (sixGenL g2 x0.th x1.th region).re ∨ NMem ned r) →
+      have kk : ∀ R2 : Map (Option Noun), (∀ r, (r < (sixGenL g2 x0.th x1.th region).re ∨ NMem ned r) →
           SkaModel.read r R2 = SkaModel.read r regs) →
           ∀ r, (r < g0.re ∨ NMem ned r) → SkaModel.read r R2 = SkaModel.read r regs :=
         fun R2 k2 r hr => k2 r (hr.elim (fun h => Or.inl (by simp only [sixGenL_re]; omega)) Or.inr)

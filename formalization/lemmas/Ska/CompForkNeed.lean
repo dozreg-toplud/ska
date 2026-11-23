@@ -148,7 +148,7 @@ theorem forkNeedGo_spec : ∀ (ned : Need) (g g' : Gen Map) (n0 n1 : Need),
 /-! ## `+eval-pass` of a copy -/
 
 theorem evalPassLoop_append : ∀ (a : List (Option Nat)) (p : List Nat) (a' : List (Option Nat)) (p' : List Nat),
-    a.length = p.length → ∀ R : Map Noun,
+    a.length = p.length → ∀ R : Map (Option Noun),
     evalPassLoop (a ++ a') (p ++ p') R = (evalPassLoop a p R).bind (evalPassLoop a' p')
   | [], [], _, _, _, R => by simp [evalPassLoop]
   | [], _ :: _, _, _, h, _ => by simp at h
@@ -160,7 +160,7 @@ theorem evalPassLoop_append : ∀ (a : List (Option Nat)) (p : List Nat) (a' : L
 
 /-- **The moves of a join from a copy**: the registers of `ned` get what
 those of `n` hold, and no other register changes. -/
-theorem evalPassLoop_copy : ∀ (ned n : Need), NCopy ned n → ∀ (R : Map Noun) (v : Noun), HoldsN n R v →
+theorem evalPassLoop_copy : ∀ (ned n : Need), NCopy ned n → ∀ (R : Map (Option Noun)) (v : Noun), HoldsN n R v →
     Distinct ned → (∀ x, NMem n x → ¬ NMem ned x) →
     ∃ R', evalPassLoop ((flattenNeed n).map some) (flattenNeed ned) R = some R' ∧ HoldsN ned R' v ∧
       ∀ x, ¬ NMem ned x → SkaModel.read x R' = SkaModel.read x R
@@ -251,7 +251,7 @@ theorem goJ_fork {o0 barg : Nat} {ned n : Need} {th : Jmp} (hth : th.args = [])
     (h0 : HoonMap.get c.blocks o0 = some ⟨[], [], Termin.hop ⟨(flattenNeed n).map some, barg⟩⟩)
     (hb : HoonMap.get c.blocks barg = some ⟨flattenNeed ned, [], Termin.hop (jmp0 th.there)⟩)
     (hc : NCopy ned n) (hd : Distinct ned) (hj : ∀ x, NMem n x → ¬ NMem ned x)
-    {R : Map Noun} {v : Noun} (hh : HoldsN n R v) (t : Trace) :
+    {R : Map (Option Noun)} {v : Noun} (hh : HoldsN n R v) (t : Trace) :
     ∃ R', HoldsN ned R' v ∧ (∀ x, ¬ NMem ned x → SkaModel.read x R' = SkaModel.read x R) ∧
       goJ lib O c gul st R t (jmp0 o0) = goJ lib O c gul st R' t th := by
   obtain ⟨R', e, h', k⟩ := evalPassLoop_copy ned n hc R v hh hd hj

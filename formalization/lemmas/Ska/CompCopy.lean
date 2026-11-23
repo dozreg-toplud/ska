@@ -31,7 +31,7 @@ variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
 /-- What the ops `A` of a copy do. -/
 def CopySem (Map : Type → Type) [HoonMap Map] (l r res : Need) (A : List Pole) : Prop :=
   ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace)
-    (R : Map Noun) (s : Noun), HoldsN res R s → ∃ R', Runs lib O c gul st t A R R' ∧ HoldsN l R' s ∧
+    (R : Map (Option Noun)) (s : Noun), HoldsN res R s → ∃ R', Runs lib O c gul st t A R R' ∧ HoldsN l R' s ∧
       HoldsN r R' s ∧ ∀ y, ¬ NMem (Need.pair l r) y → SkaModel.read y R' = SkaModel.read y R
 
 /-- What a copy assumes of its two needs. -/
@@ -57,7 +57,7 @@ theorem copySem_swap {l r res : Need} {A : List Pole} (h : CopySem Map l r res A
 /-- A move of the whole from the top register of `res` into `d`, the
 register of the other need. -/
 theorem copySem_mov {M res : Need} {m d : Nat}
-    (hres : ∀ (R : Map Noun) s, HoldsN res R s → SkaModel.read m R = some s ∧ HoldsN M R s)
+    (hres : ∀ (R : Map (Option Noun)) s, HoldsN res R s → SkaModel.read m R = some s ∧ HoldsN M R s)
     (hd : ¬ NMem M d) : CopySem Map (Need.this d) M res [Pole.mov m d] := by
   intro lib σ O c gul st t R s hs
   obtain ⟨hm, hM⟩ := hres R s hs
@@ -70,7 +70,7 @@ theorem copySem_halves {hl hr tl tr ra rb : Need} {Ah At : List Pole}
     (d1 : ∀ y, NMem ra y → ¬ NMem (Need.pair tl tr) y)
     (d2 : ∀ y, NMem (Need.pair tl tr) y → ¬ NMem (Need.pair hl hr) y)
     (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace)
-    (R : Map Noun) (a b : Noun) (ha : HoldsN ra R a) (hb : HoldsN rb R b) :
+    (R : Map (Option Noun)) (a b : Noun) (ha : HoldsN ra R a) (hb : HoldsN rb R b) :
     ∃ R', Runs lib O c gul st t (At ++ Ah) R R' ∧ HoldsN hl R' a ∧ HoldsN hr R' a ∧ HoldsN tl R' b ∧
       HoldsN tr R' b ∧ ∀ y, ¬ NMem (Need.pair hl hr) y → ¬ NMem (Need.pair tl tr) y →
         SkaModel.read y R' = SkaModel.read y R := by
@@ -148,13 +148,13 @@ theorem copyOK_right (r : Need) (g : Gen Map) : CopyOK Need.none r g g r [] wher
   sem := fun P => ⟨P.d.2.1, fun e => ⟨rfl, e⟩, fun s => by simp [Comp.Fits],
     fun lib σ O c gul st t R s hs => ⟨R, Runs.nil R, trivial, hs, fun _ _ => rfl⟩⟩
 
-theorem holds_both_top {x : Nat} {a b : Need} {R : Map Noun} {s : Noun} (h : HoldsN (Need.both x a b) R s) :
+theorem holds_both_top {x : Nat} {a b : Need} {R : Map (Option Noun)} {s : Noun} (h : HoldsN (Need.both x a b) R s) :
     SkaModel.read x R = some s ∧ HoldsN (Need.both x a b) R s := by
   cases s with
   | atom _ => exact h.elim
   | cell u v => exact ⟨h.1, h⟩
 
-theorem holds_both_pair {x : Nat} {a b : Need} {R : Map Noun} {s : Noun} (h : HoldsN (Need.both x a b) R s) :
+theorem holds_both_pair {x : Nat} {a b : Need} {R : Map (Option Noun)} {s : Noun} (h : HoldsN (Need.both x a b) R s) :
     SkaModel.read x R = some s ∧ HoldsN (Need.pair a b) R s := by
   cases s with
   | atom _ => exact h.elim
@@ -550,7 +550,7 @@ theorem copy_ok {first : Next S} {second : Sure S} {g g' : Gen Map} {nex : Next 
     (CopyPre first.laz.ned second.ned g.re →
       Distinct nex.laz.ned ∧ (∀ s, FitsS nex.laz s ↔ FitsS first.laz s ∧ FitsS second s) ∧
       (g.drop = false → ∀ (c : Straight Map), Agree c g g' → ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (st : σ)
-        (R : Map Noun) t gul s, HoldsS nex.laz R s → ∃ R', HoldsS first.laz R' s ∧ HoldsS second R' s ∧
+        (R : Map (Option Noun)) t gul s, HoldsS nex.laz R s → ∃ R', HoldsS first.laz R' s ∧ HoldsS second R' s ∧
           (∀ y, ¬ NMem first.laz.ned y → ¬ NMem second.ned y → SkaModel.read y R' = SkaModel.read y R) ∧
           goJ lib O c gul st R t nex.th = goJ lib O c gul st R' t first.th)) := by
   simp only [copy] at h
