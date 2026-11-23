@@ -1,4 +1,5 @@
 import lemmas.Compiler.Axes
+import lemmas.Compiler.Pi
 import lemmas.Hoon.Layer1
 
 /-!
@@ -214,6 +215,29 @@ theorem so_darn_pill (one : Sock) (axe : Nat) (two : Sock) :
         so.darn.battery
       = (So.darn one axe two).map Sock.toNoun :=
   so_darn_gate _ soIn_pill.2.2.2 one axe two
+
+/-! ## `+pi` on the pill -/
+
+theorem pegOf_lib : PegOf lib := by
+  obtain ⟨ha, _, hm, _, _, _, _, _, _, _, hdv, hmd⟩ := Hoon.arith_layer1
+  exact ⟨layer1, ca.lib.layer1.arm_at, ⟨peg.arm_at, ha, hmd, hm, hdv⟩⟩
+
+/-- The arm `+pi` of the library core builds the core of `+pi`. -/
+theorem pi_lib_arm : nock lib pi.lib.arm = some (C pi.battery lib) := by
+  unfold pi.lib.arm; simp only [nock_exec]
+
+theorem pi_hed_pill (n : Noun) :
+    nock (C pi.hed.battery (C n (C pi.battery lib))) pi.hed.battery = some (Pi.hed n) :=
+  pi_hed_gate _ (Hoon.Below.cell pegOf_lib) n
+
+theorem pi_tel_pill (n : Noun) :
+    nock (C pi.tel.battery (C n (C pi.battery lib))) pi.tel.battery = some (Pi.tel n) :=
+  pi_tel_gate _ (Hoon.Below.cell pegOf_lib) n
+
+theorem pi_slot_pill (pin : Noun) (ax : Nat) (h : 1 ≤ ax) :
+    nock (C pi.slot.battery (C (C pin (A ax)) (C pi.battery lib))) pi.slot.battery
+      = some (Pi.slot pin ax) :=
+  pi_slot_gate _ (Hoon.Below.cell ⟨axisOf_lib, pegOf_lib⟩) ax h pin
 
 end Compiler
 end Formalization

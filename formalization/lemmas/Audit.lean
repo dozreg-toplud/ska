@@ -193,3 +193,11 @@ open Formalization
 #print axioms Compiler.mack_gate_iff
 #print axioms Compiler.monk_pill_iff
 #print axioms Compiler.mack_pill_iff
+#print axioms Compiler.pi_cons_gate
+#print axioms Compiler.pi_hed_gate
+#print axioms Compiler.pi_tel_gate
+#print axioms Compiler.pi_slot_gate
+#print axioms Compiler.pi_hed_pill
+#print axioms Compiler.pi_tel_pill
+#print axioms Compiler.pi_slot_pill
+#print axioms Compiler.pegF_eq_peg

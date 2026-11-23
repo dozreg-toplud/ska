@@ -52,6 +52,7 @@ public import lemmas.Pill.Arm.Mul
 public import lemmas.Pill.Arm.Murn
 public import lemmas.Pill.Arm.Need
 public import lemmas.Pill.Arm.Peg
+public import lemmas.Pill.Arm.Pi
 public import lemmas.Pill.Arm.Rear
 public import lemmas.Pill.Arm.Roll
 public import lemmas.Pill.Arm.Rsh
@@ -121,6 +122,7 @@ import all lemmas.Pill.Arm.Mul
 import all lemmas.Pill.Arm.Murn
 import all lemmas.Pill.Arm.Need
 import all lemmas.Pill.Arm.Peg
+import all lemmas.Pill.Arm.Pi
 import all lemmas.Pill.Arm.Rear
 import all lemmas.Pill.Arm.Roll
 import all lemmas.Pill.Arm.Rsh
@@ -489,9 +491,32 @@ theorem so.darn.arm_at : ∀ x, slot? so.darn.axis (C so.battery x) = some so.da
 theorem so.tel.arm_at : ∀ x, slot? so.tel.axis (C so.battery x) = some so.tel.arm := by
   intro x; kernel_rfl
 
+theorem pi.edit.arm_at : ∀ x, slot? pi.edit.axis (C pi.battery x) = some pi.edit.arm := by
+  intro x; kernel_rfl
+
+theorem pi.hed.arm_at : ∀ x, slot? pi.hed.axis (C pi.battery x) = some pi.hed.arm := by
+  intro x; kernel_rfl
+
+theorem pi.prune.arm_at : ∀ x, slot? pi.prune.axis (C pi.battery x) = some pi.prune.arm := by
+  intro x; kernel_rfl
+
+theorem pi.cons.arm_at : ∀ x, slot? pi.cons.axis (C pi.battery x) = some pi.cons.arm := by
+  intro x; kernel_rfl
+
+theorem pi.slot.arm_at : ∀ x, slot? pi.slot.axis (C pi.battery x) = some pi.slot.arm := by
+  intro x; kernel_rfl
+
+theorem pi.tel.arm_at : ∀ x, slot? pi.tel.axis (C pi.battery x) = some pi.tel.arm := by
+  intro x; kernel_rfl
+
+theorem pi.compose.arm_at : ∀ x, slot? pi.compose.axis (C pi.battery x) = some pi.compose.arm := by
+  intro x; kernel_rfl
+
 theorem ca.lib.arm_at : slot? ca.lib.axis lib = some ca.lib.arm := by kernel_rfl
 
 theorem so.lib.arm_at : slot? so.lib.axis lib = some so.lib.arm := by kernel_rfl
+
+theorem pi.lib.arm_at : slot? pi.lib.axis lib = some pi.lib.arm := by kernel_rfl
 
 theorem ca.lib.layer2.arm_at : slot? ca.lib.layer2.axis lib = some layer2 := by kernel_rfl
 

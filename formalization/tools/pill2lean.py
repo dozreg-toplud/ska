@@ -271,6 +271,9 @@ def main():
         if loops != 'any':
             assert loops is None or len(ls) == loops, (label, len(ls))
         for k, l in enumerate(ls):
+            # a loop whose Nock is that of a loop named before keeps that name
+            if l in names:
+                continue
             name(l, label + ('.loop' if len(ls) == 1 else '.loop%d' % k))
             formulas.add(l)
 
@@ -791,12 +794,12 @@ def main():
     # (IN_BULK), and so is the quoted noun (`ca.dif.mean`, the battery of the
     # trap of its %mean hint), so that the arm's formula is written out down
     # to that name.
-    unlabeled = {'ca': {95: 'lot', 171: 'lack', 87: 'dif'}, 'so': {4: 'jibe'}}
+    unlabeled = {'ca': {95: 'lot', 171: 'lack', 87: 'dif'}, 'so': {4: 'jibe'}, 'pi': {}}
     bulk_named = set(i for i, nm in names.items() if nm.split('.')[0] in
                      ('root', 'nok', 'trap', 'core', 'layer0', 'layer1', 'layer2',
                       'layer3', 'layer4'))
     in_bulk = []
-    for clabel in ['ca', 'so']:
+    for clabel in ['ca', 'so', 'pi']:
         carm, cbat = core_label_arm(clabel)
         name(cbat, clabel + '.battery')
         IN_BULK.add(clabel + '.battery')
@@ -843,12 +846,13 @@ def main():
     # that the arms of +ca and +so read.
     ca_arm8 = cell(atom(8), core_label_arm('ca')[0])
     so_arm8 = cell(atom(8), core_label_arm('so')[0])
+    pi_arm8 = cell(atom(8), core_label_arm('pi')[0])
     lib = core
     while True:
         if type(NODES[head(lib)]) is tuple:
             lib_arms = dict((a, ax) for ax, a in fe_arms(head(lib), 2, limit=20))
             if ca_arm8 in lib_arms and so_arm8 in lib_arms:
-                ca_lib, so_lib = lib_arms[ca_arm8], lib_arms[so_arm8]
+                ca_lib, so_lib, pi_lib = lib_arms[ca_arm8], lib_arms[so_arm8], lib_arms[pi_arm8]
                 break
         lib = tail(lib)
     def spine_axis(x, target):
@@ -861,7 +865,8 @@ def main():
     assert (ca_lib, 15) in pulls(knit_battery), (ca_lib, so_lib, spine_axis(core, lib), pulls(knit_battery))
     name(lib, 'lib')
     facts.append(('core_lib', 'slot? %d core = some lib' % spine_axis(core, lib)))
-    for clabel, ax, arm8 in (('ca', ca_lib, ca_arm8), ('so', so_lib, so_arm8)):
+    for clabel, ax, arm8 in (('ca', ca_lib, ca_arm8), ('so', so_lib, so_arm8),
+                             ('pi', pi_lib, pi_arm8)):
         name(arm8, clabel + '.lib.arm')
         IN_BULK.add(clabel + '.lib.arm')
         formulas.add(arm8)
