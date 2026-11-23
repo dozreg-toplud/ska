@@ -1,12 +1,13 @@
 import lemmas.Ska.CompSimOps
 import lemmas.Ska.SockFacts
 import lemmas.Hoon.Axis
+import lemmas.Hoon.Bits
 
 /-!
 # A model of `+comp` for nomm without calls, hints and forks
 
 The arms of the door `+comp` of `desk/lib/nock-compilation.hoon` that the
-cases `[^ *]`, `%0`, `%1`, `%3`, `%4`, `%5` and `%7` of `run` reach, each
+cases `[^ *]`, `%0`, `%1`, `%3`, `%4`, `%5`, `%7` and `%10` of `run` reach, each
 as one Lean function with the arm's name, its case order and its order of
 allocations, so that the registers and the block labels it hands out are
 the Hoon's.
@@ -18,11 +19,14 @@ tests `&(?=(~ fork.laz) ?=(~ bond.laz))` takes the branch that test selects,
 and that branch is what is modelled.  Without calls the state's `soft` map
 stays empty, so its tests (`(~(has by soft.gen) o)`) are false; `tags`,
 `cond`, `cache` and `sofs` are neither read nor written, and are left out
-of `Gen`.  `+past` returns its `next` unchanged when `(hinted nom ...)` is
-false, which it is on every nomm of the fragment; it is the identity here.
+of `Gen`.  `+past` is modelled with `+hinted`; its branch for a hinted nomm
+makes a bond and is not modelled.  It returns its `next` unchanged on every
+pure nomm (`past_pure`), and wherever it returns at all (`past_some`).
 
 What `none` means.  A model returns `none` where the Hoon crashes: a failed
-`?>` or `?<`, `!!`, `got` on a missing key.
+`?>` or `?<`, `!!`, `got` on a missing key; and on the cases of `run` and
+the branch of `+past` that are not modelled, so that no theorem about a
+result of the model says anything about them.
 
 Sets.  A `(set @)` is a treap; its noun depends only on its elements, but
 `~(rep in s)` folds in the treap's order, and the registers that
@@ -281,6 +285,96 @@ def split (nex : Next S) : CM Map (Sure S × Sure S × Nat) := do
   let (h, t) ← splitSure nex.laz o
   pure (h, t, o)
 
+/-! ## `+into`
+
+`+into` is the `+split` of Nock 10: the need of the edited noun, as the need
+of the donor (the noun put at the axis) and the need of the recipient (the
+noun it is put into). -/
+
+/-- `+gep` (an arm of the library at the end of the file): the axis of `b`
+within the axis `a`, when `b` is `a` or below it.  `none` is a crash (the
+`?<` on a zero axis), `some none` is `~`. -/
+def gep (a b : Nat) : Option (Option Nat) :=
+  if a = 0 then Option.none else
+  if b = 0 then Option.none else
+  if a = b then some (some 1) else
+  if b < a then some Option.none else
+  let difWid := Hoon.metF 0 b - Hoon.metF 0 a
+  let topB := b / 2 ^ difWid
+  if topB ≠ a then some Option.none else
+  let x := 2 ^ difWid
+  let lowB := b &&& (x - 1)
+  some (some (lowB ||| x))
+
+/-- One step of the `rep` of `+into-sure` over the looked-at axes: an axis
+under `axe` goes to the donor's looks as an axis within it (or nowhere, when
+it is `axe` itself), any other to the recipient's. -/
+def intoStep (axe : Nat) (acc : Option (S × S)) (l : Nat) : Option (S × S) :=
+  acc.bind fun (ld, lr) =>
+    if axe = 0 then Option.none else
+    match gep axe l with
+    | Option.none => Option.none
+    | some Option.none => some (ld, HoonSet.put lr l)
+    | some (some r) => if r = 1 then some (ld, lr) else some (HoonSet.put ld r, lr)
+
+/-- The looks of the donor and of the recipient, before `+into-sure` adds
+`axe` to the latter. -/
+def intoLok (axe : Nat) (lok : S) : Option (S × S) :=
+  (HoonSet.toList lok).foldl (intoStep axe) (some (HoonSet.empty, HoonSet.empty))
+
+/-- The gate of the `roll` at the end of `+into-need`: the need built so far
+goes into the head when the path went into the head. -/
+def side (h : Bool) (acc n : Need) : Need := if h then consNeed acc n else consNeed n acc
+
+/-- `(roll tack ...)` from `[%none ~]`. -/
+def rollTack (tack : List (Bool × Need)) : Need :=
+  tack.foldl (fun acc e => side e.1 acc e.2) Need.none
+
+/-- The loop of `+into-need`.  Its axis is never `0` (`+into-need` checks
+it, and `mas` of an axis of at least `2` is at least `1`), so its test
+`=(1 axe)` is `axe ≤ 1` here. -/
+def intoLoop (o : Nat) (axe : Nat) (ned : Need) (tack : List (Bool × Need)) (ops : List Pole) :
+    CM Map (Need × Need) :=
+  if _h : axe ≤ 1 then do
+    addOps o ops
+    pure (ned, rollTack tack)
+  else
+    let h := decide (cap axe = 2)
+    match ned with
+    | Need.none => intoLoop o (mas axe) Need.none ((h, Need.none) :: tack) ops
+    | Need.this r => do
+        let l ← re
+        let r' ← re
+        intoLoop o (mas axe) (Need.this (if h then l else r')) ((h, Need.this (if h then r' else l)) :: tack)
+          (Pole.con l r' r :: ops)
+    | Need.pair p q =>
+        intoLoop o (mas axe) (if h then p else q) ((h, if h then q else p) :: tack) ops
+    | Need.both r hh t => do
+        let l ← must hh
+        let r' ← must t
+        intoLoop o (mas axe) (if h then l.2 else r'.2) ((h, if h then r'.2 else l.2) :: tack)
+          (Pole.con l.1 r'.1 r :: ops)
+termination_by axe
+decreasing_by all_goals exact mas_lt axe (by omega)
+
+/-- `+into-need`. -/
+def intoNeed (axe : Nat) (ned : Need) (o : Nat) : CM Map (Need × Need) :=
+  if axe = 0 then fun _ => Option.none else
+  if axe = 1 then pure (ned, Need.none) else
+  intoLoop o axe ned [] []
+
+/-- `+into-sure`. -/
+def intoSure (axe : Nat) (sur : Sure S) (o : Nat) : CM Map (Sure S × Sure S) := fun g =>
+  (intoLok axe sur.lok).bind fun (ld, lr) =>
+    (intoNeed axe sur.ned o g).map fun ((nd, nr), g') =>
+      ((⟨nd, ld⟩, ⟨nr, if axe = 1 then lr else HoonSet.put lr axe⟩), g')
+
+/-- `+into` on a fork-free lazy need. -/
+def into (nex : Next S) (axe : Nat) : CM Map (Sure S × Sure S × Nat) := do
+  let o ← emit ⟨[], [], Termin.hop nex.th⟩
+  let (d, r) ← intoSure axe nex.laz o
+  pure (d, r, o)
+
 /-! ## `+copy` -/
 
 /-- `+copy-need-make-ops`.  The Hoon walks a work list depth first, head
@@ -444,6 +538,72 @@ def forl (r o : Nat) : CM Map (Nat × Nat) := do
   let if1 ← emit ⟨[], [Pole.imm (A 1) r1], Termin.hop ⟨[some r1], barg⟩⟩
   pure (if0, if1)
 
+/-! ## `+hinted` and `+past` -/
+
+/-! The cords of the hint tags `+hinted` tests. -/
+namespace HintTag
+def bout : Nat := 0x74756f62
+def xray : Nat := 0x79617278
+def spin : Nat := 0x6e697073
+def jinx : Nat := 0x786e696a
+def live : Nat := 0x6576696c
+def slog : Nat := 0x676f6c73
+end HintTag
+
+/-- `$hint-static`, `?(%bout %xray)`. -/
+def hintStatic (t : Nat) : Bool := t = HintTag.bout || t = HintTag.xray
+
+/-- `$hint-dynamic`: `?(%bout %xray %spin %jinx %live hint-dynamic-stop)`,
+with `$hint-dynamic-stop` `?(%hunk %hand %lose %mean %spot %slog)`. -/
+def hintDynamic (t : Nat) : Bool :=
+  t = HintTag.bout || t = HintTag.xray || t = HintTag.spin || t = HintTag.jinx || t = HintTag.live ||
+  t = Tag.hunk || t = Tag.hand || t = Tag.lose || t = Tag.mean || t = Tag.spot || t = HintTag.slog
+
+/-- `|(a b)`: `b` is not evaluated when `a` is yes, so a crash in it is
+not reached. -/
+def orB : Option Bool → Option Bool → Option Bool
+  | some true, _ => some true
+  | some false, b => b
+  | Option.none, _ => Option.none
+
+/-- `+hinted`, with the code table `code.long-ska` read only for the
+purity of a direct callee (`pure:(~(got by cod) b)`): `cod b` is that flag,
+`none` where `got` crashes.  `none` is a crash. -/
+def hinted (cod : Bell → Option Bool) : Nomm → Option Bool
+  | Nomm.n0 _ => some false
+  | Nomm.n1 _ => some false
+  | Nomm.n3 p => hinted cod p
+  | Nomm.n4 p => hinted cod p
+  | Nomm.mean _ _ _ _ _ => some true
+  | Nomm.n12 _ _ => some true
+  | Nomm.cons p q => orB (hinted cod p) (hinted cod q)
+  | Nomm.n5 p q => orB (hinted cod p) (hinted cod q)
+  | Nomm.n6 p q r => orB (hinted cod p) (orB (hinted cod q) (hinted cod r))
+  | Nomm.n7 p q => orB (hinted cod p) (hinted cod q)
+  | Nomm.n10 _ v q => orB (hinted cod v) (hinted cod q)
+  | Nomm.n2 p q info =>
+      match info with
+      | Option.none => some true
+      | some (b, _) => orB ((cod b).map (! ·)) (orB (hinted cod p) (hinted cod q))
+  | Nomm.n11s tag q _ => orB (some (hintStatic tag)) (hinted cod q)
+  | Nomm.n11d tag h q _ => orB (some (hintDynamic tag)) (orB (hinted cod h) (hinted cod q))
+
+/-- `+past` on a fork-free lazy need.  When the need asks something and
+`nom` is hinted, the Hoon parks the need in a bond behind a new block; a
+fork-free need has no bond, so that branch is not modelled (`none`, as the
+cases of `run` that are not modelled).  Every other branch returns `nex`. -/
+def past (cod : Bell → Option Bool) (nex : Next S) (nom : Nomm) : CM Map (Next S) :=
+  if nex.laz.ned = Need.none ∧ HoonSet.small nex.laz.lok = true then pure nex else
+  match hinted cod nom with
+  | some false => pure nex
+  | _ => fun _ => Option.none
+
+/-- The code table the model of `run` hands `+past`.  `+hinted` reads the
+table only at a `%2` with a callee, which no nomm the model compiles has
+(`run` is `none` on `%2`); on the others the answer does not depend on the
+table (`hinted_pure`). -/
+def noCode : Bell → Option Bool := fun _ => Option.none
+
 /-! ## `run` -/
 
 /-- The goal `%pick` into the two blocks that return `0` and `1`, as the
@@ -456,7 +616,7 @@ def doneBlocks : CM Map (Nat × Nat) := do
   pure (o0, o1)
 
 /-- `run` of `+comp`, for the cases `[^ *]`, `%0`, `%1`, `%3`, `%4`, `%5`,
-`%7` (the parameters `mono`, `region`, `sup` are read by no case of the
+`%7`, `%10` (the parameters `mono`, `region`, `sup` are read by no case of the
 fragment).  `none` on the other cases: they are not modelled. -/
 def run : Nomm → CGoal S → CM Map (Next S)
   | Nomm.cons p q, goal => do
@@ -470,12 +630,14 @@ def run : Nomm → CGoal S → CM Map (Next S)
       | CGoal.pick _ _ => do
           let o ← emit ⟨[], [], Termin.bom Option.none⟩
           let nex2 ← run q (CGoal.next Sure.bunt (jmp0 o))
+          let nex2 ← past noCode nex2 p
           let nex1 ← run p (CGoal.next Sure.bunt nex2.th)
           copy nex1 nex2.laz
       | CGoal.next laz th => do
           let (hed, tel, o) ← split ⟨laz, th⟩
-          let nexh : Next S := ⟨hed, jmp0 o⟩
+          let nexh ← past noCode ⟨hed, jmp0 o⟩ q
           let nex2 ← run q (CGoal.next tel nexh.th)
+          let nex2 ← past noCode nex2 p
           let nex1 ← run p (CGoal.next nexh.laz nex2.th)
           copy nex1 nex2.laz
       | CGoal.done => fun _ => Option.none
@@ -561,11 +723,20 @@ def run : Nomm → CGoal S → CM Map (Next S)
                 let (z, o') ← forl r o
                 emit ⟨[], [], Termin.eqq rp rq (jmp0 z) (jmp0 o')⟩ : CM Map Nat)
       let nexq ← run q (CGoal.next (lazyReg rq) (jmp0 o))
+      let nexq ← past noCode nexq p
       let nexp ← run p (CGoal.next (lazyReg rp) nexq.th)
       copy nexp nexq.laz
   | Nomm.n7 p q, goal => do
       let nex ← run q goal
       run p nex.goal
+  | Nomm.n10 a v q, goal => do
+      let next ← simpleNext goal
+      let (don, rec, o) ← into next a
+      let nexD ← past noCode ⟨don, jmp0 o⟩ q
+      let nexRec ← run q (CGoal.next rec nexD.th)
+      let nexRec ← past noCode nexRec v
+      let nexDon ← run v (CGoal.next nexD.laz nexRec.th)
+      copy nexDon nexRec.laz
   | _, _ => fun _ => Option.none
 
 end Comp

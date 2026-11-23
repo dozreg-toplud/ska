@@ -207,6 +207,86 @@ theorem clean_bomb {miss : Option Nat} {g g' : Gen Map} {nex : Next S}
   simp only [Option.some.injEq, Prod.mk.injEq] at h
   rw [← h.1]; trivial
 
+theorem clean_side {h : Bool} {a b : Need} (ha : Clean a) (hb : Clean b) : Clean (side h a b) := by
+  unfold side; split
+  · exact clean_consNeed ha hb
+  · exact clean_consNeed hb ha
+
+theorem clean_rollTack : ∀ (tack : List (Bool × Need)) (acc : Need), Clean acc → (∀ e ∈ tack, Clean e.2) →
+    Clean (tack.foldl (fun acc e => side e.1 acc e.2) acc)
+  | [], _, ha, _ => ha
+  | e :: tack, acc, ha, ht => clean_rollTack tack _ (clean_side ha (ht e (List.mem_cons_self ..)))
+      (fun x hx => ht x (List.mem_cons_of_mem _ hx))
+
+theorem clean_intoLoop {o : Nat} : ∀ (axe : Nat) (ned : Need) (tack : List (Bool × Need)) (ops : List Pole)
+    (g g' : Gen Map) (x : Need × Need), intoLoop o axe ned tack ops g = some (x, g') →
+    Clean ned → (∀ e ∈ tack, Clean e.2) → Clean x.1 ∧ Clean x.2 := by
+  intro axe
+  induction axe using Nat.strongRecOn with
+  | ind axe ih =>
+  intro ned tack ops g g' x h hc ht
+  rw [intoLoop] at h
+  by_cases h1 : axe ≤ 1
+  · rw [dif_pos h1] at h
+    obtain ⟨_, g1, _, h⟩ := bind_some h
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    rw [← h.1]; exact ⟨hc, clean_rollTack tack _ trivial ht⟩
+  rw [dif_neg h1] at h
+  have lt := mas_lt axe (by omega)
+  cases ned with
+  | none => exact ih _ lt _ _ _ _ _ _ h trivial (by
+      intro e he; rcases List.mem_cons.mp he with rfl | he
+      · trivial
+      · exact ht e he)
+  | this r =>
+    simp only [bind_apply, re_apply, Option.bind_some] at h
+    refine ih _ lt _ _ _ _ _ _ h trivial ?_
+    intro e he; rcases List.mem_cons.mp he with rfl | he
+    · trivial
+    · exact ht e he
+  | pair p q =>
+    simp only at h
+    refine ih _ lt _ _ _ _ _ _ h (by split <;> first | exact hc.2.1 | exact hc.2.2) ?_
+    intro e he; rcases List.mem_cons.mp he with rfl | he
+    · show Clean (if _ then _ else _); split
+      · exact hc.2.2
+      · exact hc.2.1
+    · exact ht e he
+  | both r hh t =>
+    simp only at h
+    obtain ⟨l, g1, h1, h⟩ := bind_some h
+    obtain ⟨l', g2, h2, h⟩ := bind_some h
+    have c1 := clean_must h1 hc.1
+    have c2 := clean_must h2 hc.2
+    refine ih _ lt _ _ _ _ _ _ h (by split <;> assumption) ?_
+    intro e he; rcases List.mem_cons.mp he with rfl | he
+    · show Clean (if _ then _ else _); split <;> assumption
+    · exact ht e he
+
+theorem clean_into {nex : Next S} {axe : Nat} {g g' : Gen Map} {x : Sure S × Sure S × Nat}
+    (h : into nex axe g = some (x, g')) (hc : Clean nex.laz.ned) : Clean x.1.ned ∧ Clean x.2.1.ned := by
+  simp only [into] at h
+  obtain ⟨o, g0, _, h⟩ := bind_some h
+  obtain ⟨⟨sd, sr⟩, g1, h2, h⟩ := bind_some h
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨rfl, rfl⟩ := h
+  simp only [intoSure] at h2
+  obtain ⟨⟨ld, lr⟩, _, h2⟩ := Option.bind_eq_some_iff.mp h2
+  obtain ⟨⟨⟨nd, nr⟩, g2⟩, h3, h4⟩ := Option.map_eq_some_iff.mp h2
+  simp only [Option.some.injEq, Prod.mk.injEq] at h4
+  obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h4
+  simp only [intoNeed] at h3
+  by_cases a0 : axe = 0
+  · simp [a0] at h3
+  rw [if_neg a0] at h3
+  by_cases a1 : axe = 1
+  · rw [if_pos a1] at h3
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h3
+    obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h3
+    exact ⟨hc, trivial⟩
+  rw [if_neg a1] at h3
+  exact clean_intoLoop _ _ _ _ _ _ _ h3 hc (fun e he => by simp at he)
+
 /-- What `run_clean` proves of one nomm. -/
 def CleanIH (S : Type) [HoonSet S] (Map : Type → Type) [HoonMap Map] (p : Nomm) : Prop :=
   ∀ (goal : CGoal S) (g g' : Gen Map) (nex : Next S), GClean goal → run p goal g = some (nex, g') →
@@ -217,16 +297,21 @@ theorem cons_next_clean {p q : Nomm} (ihp : CleanIH S Map p) (ihq : CleanIH S Ma
     {laz : Sure S} {th : Jmp} {g0 g1 : Gen Map} {nex : Next S}
     (h : (do
       let (hed, tel, o) ← Comp.split ⟨laz, th⟩
-      let nexh : Next S := ⟨hed, jmp0 o⟩
+      let nexh ← past noCode ⟨hed, jmp0 o⟩ q
       let nex2 ← run q (CGoal.next tel nexh.th)
+      let nex2 ← past noCode nex2 p
       let nex1 ← run p (CGoal.next nexh.laz nex2.th)
       copy nex1 nex2.laz : CM Map (Next S)) g0 = some (nex, g1))
     (hc : Clean laz.ned) : Clean nex.laz.ned := by
   obtain ⟨⟨hed, tel, o⟩, g2, h2, h⟩ := bind_some h
   have Sp := clean_split h2 hc
   simp only at Sp
+  obtain ⟨nexh, g2', hph, h⟩ := bind_some h
+  obtain ⟨rfl, rfl⟩ := past_some hph
   obtain ⟨nex2, g3, h3, h⟩ := bind_some h
   have Cq := ihq (CGoal.next _ _) g2 g3 nex2 Sp.2 h3
+  obtain ⟨nex2', g3', hp2, h⟩ := bind_some h
+  obtain ⟨rfl, rfl⟩ := past_some hp2
   obtain ⟨nex1, g4, h4, h⟩ := bind_some h
   have Cp := ihp (CGoal.next _ _) g3 g4 nex1 Sp.1 h4
   exact clean_copy h Cp Cq
@@ -330,6 +415,8 @@ theorem run_clean : ∀ (nm : Nomm), CleanIH S Map nm := by
     simp only [run, bind_apply, re_apply, Option.bind_some] at h
     obtain ⟨⟨o, g2⟩, h2, h⟩ := Option.bind_eq_some_iff.mp h
     obtain ⟨⟨nexq, g3⟩, h3, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨⟨nexq', g3'⟩, hp, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨rfl, rfl⟩ := past_some hp
     obtain ⟨⟨nexp, g4⟩, h4, h⟩ := Option.bind_eq_some_iff.mp h
     exact clean_copy h (ihp _ _ _ _ (by trivial) h4) (ihq _ _ _ _ (by trivial) h3)
   | cons p q ihp ihq =>
@@ -344,11 +431,27 @@ theorem run_clean : ∀ (nm : Nomm), CleanIH S Map nm := by
     | pick z o =>
       simp only [run, bind_apply, pure_apply, emit_apply, Option.bind_some] at h
       obtain ⟨⟨nex2, g3⟩, h3, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨⟨nex2', g3'⟩, hp, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨rfl, rfl⟩ := past_some hp
       obtain ⟨⟨nex1, g4⟩, h4, h⟩ := Option.bind_eq_some_iff.mp h
       exact clean_copy h (ihp _ _ _ _ (by trivial) h4) (ihq _ _ _ _ (by trivial) h3)
   | n2 => intro goal g0 g1 nex _ h; simp only [run] at h; cases h
   | n6 => intro goal g0 g1 nex _ h; simp only [run] at h; cases h
-  | n10 => intro goal g0 g1 nex _ h; simp only [run] at h; cases h
+  | n10 a v q ihv ihq =>
+    intro goal g0 g1 nex hc h
+    simp only [run] at h
+    obtain ⟨nex0, g2, h2, h⟩ := bind_some h
+    have C0 := clean_simpleNext h2 hc
+    obtain ⟨⟨don, rec, o⟩, g3, h3, h⟩ := bind_some h
+    have CI := clean_into h3 C0
+    simp only at h
+    obtain ⟨nexD, g3', hpd, h⟩ := bind_some h
+    obtain ⟨rfl, rfl⟩ := past_some hpd
+    obtain ⟨nexRec, g4, h4, h⟩ := bind_some h
+    obtain ⟨nexRec', g4', hpr, h⟩ := bind_some h
+    obtain ⟨rfl, rfl⟩ := past_some hpr
+    obtain ⟨nexDon, g5, h5, h⟩ := bind_some h
+    exact clean_copy h (ihv _ _ _ _ (by exact CI.1) h5) (ihq _ _ _ _ (by exact CI.2) h4)
   | n11s => intro goal g0 g1 nex _ h; simp only [run] at h; cases h
   | n11d => intro goal g0 g1 nex _ h; simp only [run] at h; cases h
   | n12 => intro goal g0 g1 nex _ h; simp only [run] at h; cases h

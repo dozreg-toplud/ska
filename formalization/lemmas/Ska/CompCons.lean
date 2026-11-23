@@ -29,8 +29,9 @@ theorem cons_next_ok {lib : Lib} {p q : Nomm} {laz : Sure S} {th : Jmp} {g0 g1 :
     (hg : GoalOK g0 (CGoal.next laz th)) (hc : Clean laz.ned)
     (h : (do
       let (hed, tel, o) ← Comp.split ⟨laz, th⟩
-      let nexh : Next S := ⟨hed, jmp0 o⟩
+      let nexh ← past noCode ⟨hed, jmp0 o⟩ q
       let nex2 ← run q (CGoal.next tel nexh.th)
+      let nex2 ← past noCode nex2 p
       let nex1 ← run p (CGoal.next nexh.laz nex2.th)
       copy nex1 nex2.laz : CM Map (Next S)) g0 = some (nex, g1))
     (ihp : ∀ (laz : Sure S) (th : Jmp) (g g' : Gen Map) (nex' : Next S), GoalOK g (CGoal.next laz th) → Clean laz.ned →
@@ -42,7 +43,11 @@ theorem cons_next_ok {lib : Lib} {p q : Nomm} {laz : Sure S} {th : Jmp} {g0 g1 :
   obtain ⟨eo, E2, _, Mh, Mt, SP⟩ := split_ok h2
   obtain ⟨Dh, Dt, Dht, F, B⟩ := SP hg.1 hg.2
   simp only at h
+  obtain ⟨nexh, g2', hph, h⟩ := bind_some h
+  obtain ⟨rfl, rfl⟩ := past_some hph
   obtain ⟨nex2, g3, h3, h⟩ := bind_some h
+  obtain ⟨nex2', g3', hp2, h⟩ := bind_some h
+  obtain ⟨rfl, rfl⟩ := past_some hp2
   obtain ⟨nex1, g4, h4, h⟩ := bind_some h
   have lt2 : ∀ (n : Need), (∀ y, NMem n y → NMem laz.ned y ∨ (g0.re ≤ y ∧ y < g2.re)) →
       ∀ y, NMem n y → y < g2.re := fun n M y hy => by
@@ -88,6 +93,8 @@ theorem run_cons_ok {lib : Lib} {p q : Nomm} {goal : CGoal S} {g0 g1 : Gen Map} 
   | pick z o =>
     simp only [run, bind_apply, pure_apply, emit_apply, Option.bind_some] at h
     obtain ⟨⟨nex2, g3⟩, h3, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨⟨nex2', g3'⟩, hp2, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨rfl, rfl⟩ := past_some hp2
     obtain ⟨⟨nex1, g4⟩, h4, h⟩ := Option.bind_eq_some_iff.mp h
     have hq := ihq Sure.bunt _ _ g3 nex2 ⟨trivial, fun r hr => hr.elim⟩ trivial h3
     have hp := ihp Sure.bunt nex2.th g3 g4 nex1 ⟨trivial, fun r hr => hr.elim⟩ trivial h4
