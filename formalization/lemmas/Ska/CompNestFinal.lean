@@ -15,7 +15,7 @@ namespace Comp
 
 open Nock Lazy
 
-variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
+variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
 
 /-- Blocks with the terminators of blocks that go down go down. -/
 theorem down_of_fins {bs bs' : Map Blob} (hd : Down bs)

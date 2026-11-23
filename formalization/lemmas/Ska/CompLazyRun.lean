@@ -1,4 +1,5 @@
 import lemmas.Ska.CompLazyArms
+import lemmas.Ska.CompLeap
 import lemmas.Ska.CompTop
 
 /-!
@@ -11,17 +12,23 @@ with `+proxy`, `+kern`, `+lazy-shut`), and `runL`, the
 model of `run` with the parameter `region` and the case `%6` for the goals
 `%done` and `%pick`.
 
-What is modelled of `%6`.  For a goal `%next` the Hoon first tries `+leap`,
-then the branch that collapses or forks the goal's need (`+kerf`, `+fork`,
-`+sect`), then the simpler branch with `+fork-sure` and `+sect`: none of
-these is modelled yet, and `runL` is `none` there.  For `%done` and `%pick`
-the Hoon takes the simpler branch with the goal itself for both branches:
-the no branch `r` is compiled, then the yes branch `q`, two blocks hop to
-their code and are tagged with the region, the lazy need of the subject is
-a fork of the two branches' needs at those blocks, `+past-fork` binds them
-when the test is hinted, the test `p` is compiled for `%pick` into the two
-blocks, and the fork is copied into the test's need, or, when it is big,
-met before the test by `+lazy-shut`.  That is all modelled.
+What is modelled of `%6`.  For `%done` and `%pick` the Hoon takes the
+simpler branch with the goal itself for both branches: the no branch `r` is
+compiled, then the yes branch `q`, two blocks hop to their code and are
+tagged with the region, the lazy need of the subject is a fork of the two
+branches' needs at those blocks, `+past-fork` binds them when the test is
+hinted, the test `p` is compiled for `%pick` into the two blocks, and the
+fork is copied into the test's need, or, when it is big, met before the
+test by `+lazy-shut`.  For a goal `%next` (`sixNextL`) the Hoon first tries
+`+leap`, and compiles the `%6` again for the rest of the goal's need, then
+copies the parts it took out; then, when the goal's need has forks or bonds
+that need something, either collapses the goal with `+kerf` and compiles the
+`%6` again for one register, or forks the goal on the test's register
+(`+fork`) and joins the branches with `+sect`; otherwise it forks the sure
+need (`+fork-sure`), compiles the branches in a new region, joins them with
+`+sect`, and compiles the test for `%pick`.  All of it is modelled, with
+`fuel` bounding how often the case runs itself again (at most twice in a
+row in the Hoon) and an empty soft map (`noSoft`, so `+soft-fork` is false).
 
 `runL_toL` (in `CompLazyAgree.lean`): on the fragment of `CompFrag.lean`,
 `runL` on a fork-free goal is `run`.
@@ -215,12 +222,267 @@ def kerf (nex : NextL S) : CM Map (Nat × Nat) := do
 /-- An `Option` as a step of `CM`. -/
 def liftO {α : Type} (x : Option α) : CM Map α := fun g => x.map fun a => (a, g)
 
+/-! ## The arms of `%6` for a goal `%next` -/
+
+/-- `+id`: a fresh region id. -/
+def idM : CM Map Nat := fun g => some (g.id, { g with id := g.id + 1 })
+
+/-- `+copy-tag`: the kids of a lazy block are in its region. -/
+def copyTag (frm : Nat) (tos : List Nat) : CM Map Unit := fun g =>
+  if g.drop then some ((), g) else
+  (HoonMap.get g.tags frm).map fun region =>
+    ((), { g with tags := tos.foldl (fun m o => HoonMap.put m o region) g.tags })
+
+/-- `+insert-hop`: `a -> b` becomes `a -> o1 ... o2 -> b`, with the body of
+`a` moved to `o2`. -/
+def insertHop (a o1 o2 : Nat) : CM Map Unit := fun g =>
+  if g.drop then some ((), g) else
+  (HoonMap.get g.blocks a).bind fun b =>
+  match b.fin with
+  | Termin.hop _ =>
+    if b.par ≠ [] then Option.none else
+    let g := { g with blocks := HoonMap.put g.blocks o2 ⟨[], b.body, b.fin⟩ }
+    some ((), { g with blocks := HoonMap.put g.blocks a { b with body := [], fin := Termin.hop ⟨[], o1⟩ } })
+  | _ => Option.none
+
+/-- The loop of `+fork-need`: fresh registers of the same shape, twice. -/
+def forkNeedGo : Need → CM Map (Need × Need)
+  | Need.none => pure (Need.none, Need.none)
+  | Need.this _ => do
+    let r0 ← re
+    let r1 ← re
+    pure (Need.this r0, Need.this r1)
+  | Need.pair p q => do
+    let (h0, h1) ← forkNeedGo p
+    let (t0, t1) ← forkNeedGo q
+    pure (Need.pair h0 t0, Need.pair h1 t1)
+  | Need.both _ h t => do
+    let r0 ← re
+    let r1 ← re
+    let (h0, h1) ← forkNeedGo h
+    let (t0, t1) ← forkNeedGo t
+    pure (Need.both r0 h0 t0, Need.both r1 h1 t1)
+
+/-- `+fork-need`: two needs of the shape of `ned`, at the blocks `o0` and
+`o1`, which hop with their registers to a join block whose parameters are
+those of `ned` and which hops to `o`. -/
+def forkNeed (ned : Need) (o o0 o1 : Nat) : CM Map (Need × Need) := do
+  let (n0, n1) ← forkNeedGo ned
+  let barg ← emit ⟨flattenNeed ned, [], Termin.hop (jmp0 o)⟩
+  emir o0 ⟨[], [], Termin.hop ⟨(flattenNeed n0).map some, barg⟩⟩
+  emir o1 ⟨[], [], Termin.hop ⟨(flattenNeed n1).map some, barg⟩⟩
+  pure (n0, n1)
+
+/-- `+fork-sure`. -/
+def forkSure (sur : Sure S) (o o0 o1 : Nat) : CM Map (Sure S × Sure S) := do
+  let (n0, n1) ← forkNeed sur.ned o o0 o1
+  pure (⟨n0, sur.lok⟩, ⟨n1, sur.lok⟩)
+
+mutual
+/-- The loop of `+fork`: the lazy need forked on the register `rc`, the
+sure part at `o0` and `o1` joining to `o`. -/
+def forkLoop (rc : Nat) : Lazy S → Nat → Nat → Nat → CM Map (Lazy S × Lazy S)
+  | mk sur fk bd, o, o0, o1 => do
+    let (s0, s1) ← forkSure sur o o0 o1
+    let (f0, f1) ← forkForks rc fk
+    let (b0, b1) ← forkBonds rc bd
+    pure (mk s0 f0 b0, mk s1 f1 b1)
+
+/-- Its `spin-split` over the forks: each lazy block of a fork gets a block
+that branches on a proxy of `rc` to two kids, which join to the old body. -/
+def forkForks (rc : Nat) : List ((Nat × Lazy S) × (Nat × Lazy S)) →
+    CM Map (List ((Nat × Lazy S) × (Nat × Lazy S)) × List ((Nat × Lazy S) × (Nat × Lazy S)))
+  | [] => pure ([], [])
+  | ((oy, y), (on, n)) :: rest => do
+    let o0ky ← oo
+    let o1ky ← oo
+    let o0kn ← oo
+    let o1kn ← oo
+    let oi2y ← oo
+    let oi2n ← oo
+    copyTag oy [o0ky, o1ky]
+    copyTag on [o0kn, o1kn]
+    let (ly0, ly1) ← forkLoop rc y oi2y o0ky o1ky
+    let (ln0, ln1) ← forkLoop rc n oi2n o0kn o1kn
+    let py ← proxy rc oy
+    let pn ← proxy rc on
+    let oi1y ← emit ⟨[], [], Termin.brz py (jmp0 o0ky) (jmp0 o1ky)⟩
+    let oi1n ← emit ⟨[], [], Termin.brz pn (jmp0 o0kn) (jmp0 o1kn)⟩
+    insertHop oy oi1y oi2y
+    insertHop on oi1n oi2n
+    let (r0, r1) ← forkForks rc rest
+    pure ((((o0ky, ly0), (o0kn, ln0)) :: r0), (((o1ky, ly1), (o1kn, ln1)) :: r1))
+
+/-- Its `spin-split` over the bonds. -/
+def forkBonds (rc : Nat) : List (Nat × Lazy S) → CM Map (List (Nat × Lazy S) × List (Nat × Lazy S))
+  | [] => pure ([], [])
+  | (ob, lb) :: rest => do
+    let o0k ← oo
+    let o1k ← oo
+    let oi2 ← oo
+    copyTag ob [o0k, o1k]
+    let (l0, l1) ← forkLoop rc lb oi2 o0k o1k
+    let p ← proxy rc ob
+    let oi1 ← emit ⟨[], [], Termin.brz p (jmp0 o0k) (jmp0 o1k)⟩
+    insertHop ob oi1 oi2
+    let (r0, r1) ← forkBonds rc rest
+    pure (((o0k, l0) :: r0), ((o1k, l1) :: r1))
+end
+
+/-- `+fork`: the goal's lazy need forked on the register `rc`. -/
+def forkL (nex : NextL S) (rc : Nat) : CM Map (NextL S × NextL S) := do
+  let o0 ← oo
+  let o1 ← oo
+  if nex.th.args ≠ [] then fun _ => Option.none else do
+  let (l0, l1) ← forkLoop rc nex.laz nex.th.there o0 o1
+  pure (⟨l0, jmp0 o0⟩, ⟨l1, jmp0 o1⟩)
+
+/-- `~(dif by a) b`: the entries of `a` whose keys are not in `b`. -/
+def difM [HoonMapKeys Map] {ν : Type} (a b : Map ν) : Map ν :=
+  (HoonMapKeys.keys b).foldl HoonMap.del a
+
+/-- The accumulator of the `rep`s of `+sect`: `tars`, and the arguments of
+the yes and no ends and the parameters of the join. -/
+abbrev SectAcc (Map : Type → Type) := Map Nat × List (Option Nat) × List (Option Nat) × List Nat
+
+/-- One step of a `rep` of `+sect` over the proxies `made` that a branch
+made (`yes`: the yes branch): a proxy read outside the branch's region is
+read through a parameter of the join, which the branch passes its
+definition to and the other branch nothing. -/
+def sectStep (rid : Nat) (yes : Bool) (made : Map (Nat × List Nat)) (acc : SectAcc Map) (k : Nat) :
+    CM Map (SectAcc Map) := fun g =>
+  match HoonMap.get made k with
+  | Option.none => some (acc, g)
+  | some (df, tag) =>
+    if tag.any (· == rid) then some (acc, g) else
+    match HoonMap.get acc.1 df with
+    | some t => some (acc, { g with cond := HoonMap.put g.cond k (t, tag) })
+    | Option.none =>
+      let tn := g.re
+      let g := { g with re := g.re + 1 }
+      let acc' : SectAcc Map := if yes
+        then (HoonMap.put acc.1 df tn, some df :: acc.2.1, Option.none :: acc.2.2.1, tn :: acc.2.2.2)
+        else (HoonMap.put acc.1 df tn, Option.none :: acc.2.1, some df :: acc.2.2.1, tn :: acc.2.2.2)
+      some (acc', { g with cond := HoonMap.put g.cond k (tn, tag) })
+
+/-- `~(jab by blocks)` with a gate that may crash. -/
+def jabBlock (o : Nat) (f : Blob → Option Blob) : CM Map Unit := fun g =>
+  (HoonMap.get g.blocks o).bind fun b => (f b).map fun b' => ((), { g with blocks := HoonMap.put g.blocks o b' })
+
+/-- The `lens-hop` of `+sect`. -/
+def lensHop (args : List (Option Nat)) (b : Blob) : Option Blob :=
+  match b.fin with
+  | Termin.hop t => some { b with fin := Termin.hop { t with args := args } }
+  | _ => Option.none
+
+/-- The threading of `+sect` (when not dropping): the proxies the branches
+made whose blocks lie outside the branches' region read the join's new
+parameters. -/
+def sectThread [HoonMapKeys Map] (rid : Nat) (o0end o1end : Nat)
+    (condBefore condBetween : Map (Nat × List Nat)) : CM Map Unit := fun g =>
+  let made0 := difM g.cond condBetween
+  let made1 := difM condBetween condBefore
+  (HoonMap.get g.blocks o0end).bind fun b0 => (HoonMap.get g.blocks o1end).bind fun b1 =>
+  match b0.fin, b1.fin with
+  | Termin.hop t0, Termin.hop t1 =>
+    if t0.there ≠ t1.there then Option.none else
+    let tgt := t0.there
+    (HoonMap.get g.blocks tgt).bind fun bt =>
+    (do
+      let acc ← (HoonMapKeys.keys made0).foldlM (sectStep rid true made0)
+        ((HoonMap.empty, t0.args, t1.args, bt.par) : SectAcc Map)
+      let acc ← (HoonMapKeys.keys made1).foldlM (sectStep rid false made1) acc
+      jabBlock tgt (fun b => some { b with par := acc.2.2.2 })
+      jabBlock o0end (lensHop acc.2.1)
+      jabBlock o1end (lensHop acc.2.2.1) : CM Map Unit) g
+  | _, _ => Option.none
+
+/-- `+sect`: the blocks where the branches begin, tagged with the region of
+the branches, and the fork of their lazy needs. -/
+def sect [HoonMapKeys Map] (nex0 nex1 : NextL S) (o0end o1end : Nat) (rb : List Nat)
+    (condBefore condBetween : Map (Nat × List Nat)) : CM Map (Lazy S × Nat × Nat) :=
+  match rb with
+  | [] => fun _ => Option.none
+  | rid :: _ => do
+    let o0b ← emit ⟨[], [], Termin.hop nex0.th⟩
+    let o1b ← emit ⟨[], [], Termin.hop nex1.th⟩
+    setTag o0b rb
+    setTag o1b rb
+    let g ← get
+    if g.drop then pure () else sectThread rid o0end o1end condBefore condBetween
+    if nex0.th.args ≠ [] then fun _ => Option.none else
+    if nex1.th.args ≠ [] then fun _ => Option.none else
+    pure (mk Sure.bunt [((o0b, nex0.laz), (o1b, nex1.laz))] [], o0b, o1b)
+
+/-- The `cond` of the state. -/
+def getCond : CM Map (Map (Nat × List Nat)) := fun g => some (g.cond, g)
+
+/-- `+copy` of each need of `bys` into `nex`, in order. -/
+def copyAll (nex : NextL S) : List (Lazy S) → CM Map (NextL S)
+  | [] => pure nex
+  | b :: rest => do
+    let nex ← copyL nex b
+    copyAll nex rest
+
+/-- **The case `%6` of `run` for a goal `%next laz th`**, with the runs of
+the test and the branches as parameters.  `fuel` bounds the times the case
+runs itself again with another goal (after `+leap`, after `+kerf`): it does
+so at most twice in a row, so `3` is enough (`none` past it, a departure
+from the Hoon only where it would loop). -/
+def sixNextL [HoonMapKeys Map] (rp rq rr : CGoalL S → List Nat → CM Map (NextL S)) (p q r : Nomm) :
+    Nat → Lazy S → Jmp → List Nat → CM Map (NextL S)
+  | 0, _, _, _ => fun _ => Option.none
+  | fuel + 1, laz, th, region =>
+    match leap laz q r with
+    | Option.none => fun _ => Option.none
+    | some (some (rest, bys)) => do
+      let nex ← sixNextL rp rq rr p q r fuel rest th region
+      copyAll nex bys
+    | some Option.none =>
+      if !(noneEquivalentL (mk Sure.bunt laz.fork laz.bond)) then
+        if (whole q && whole r) || thisOnly laz || lazyBig (softLess noSoft laz) ||
+            softFork noSoft (fun _ => false) laz then do
+          let (out, pro) ← kerf ⟨laz, th⟩
+          sixNextL rp rq rr p q r fuel (ofSure ⟨Need.this pro, HoonSet.empty⟩) (jmp0 out) region
+        else do
+          let rCond ← re
+          let (g0, g1) ← forkL ⟨laz, th⟩ rCond
+          let rid ← idM
+          let rb := rid :: region
+          let condBefore ← getCond
+          let nex1 ← rr (CGoalL.next g1.laz g1.th) rb
+          let condBetween ← getCond
+          let nex0 ← rq (CGoalL.next g0.laz g0.th) rb
+          let (lazy, yes, nuh) ← sect nex0 nex1 g0.th.there g1.th.there rb condBefore condBetween
+          let lazy ← liftO (pastFork noCode lazy p)
+          let o ← emit ⟨[], [], Termin.brn rCond (jmp0 yes) (jmp0 nuh)⟩
+          let lazy ← lazyShut o lazy
+          let nexCond ← rp (CGoalL.next (ofSure ⟨Need.this rCond, HoonSet.empty⟩) (jmp0 o)) region
+          copyL nexCond lazy
+      else do
+        let o0 ← oo
+        let o1 ← oo
+        let (s0, s1) ← forkSure laz.sure th.there o0 o1
+        let rid ← idM
+        let rb := rid :: region
+        let condBefore ← getCond
+        let nex1 ← rr (CGoalL.next (ofSure s1) (jmp0 o1)) rb
+        let condBetween ← getCond
+        let nex0 ← rq (CGoalL.next (ofSure s0) (jmp0 o0)) rb
+        let (lazy, yes, nuh) ← sect nex0 nex1 o0 o1 rb condBefore condBetween
+        let lazy ← liftO (pastFork noCode lazy p)
+        let nexCond ← rp (CGoalL.pick (jmp0 yes) (jmp0 nuh)) region
+        if !(lazyBig (softLess noSoft lazy)) then copyL nexCond lazy else do
+          let o ← emit ⟨[], [], Termin.hop nexCond.th⟩
+          let lazy ← lazyShut o lazy
+          copyL ⟨nexCond.laz, jmp0 o⟩ lazy
+
 /-! ## `run` -/
 
 /-- `run` of `+comp` over full lazy needs, with the parameter `region`: the
-cases of `CompModel.lean` and `%6` for the goals `%done` and `%pick`.
-`none` on the other cases: they are not modelled. -/
-def runL : Nomm → CGoalL S → List Nat → CM Map (NextL S)
+cases of `CompModel.lean` and `%6` for every goal.  `none` on the other
+cases: they are not modelled. -/
+def runL [HoonMapKeys Map] : Nomm → CGoalL S → List Nat → CM Map (NextL S)
   | Nomm.cons p q, goal, region => do
       let goal ← (match goal with
         | CGoalL.done => do
@@ -330,7 +592,7 @@ def runL : Nomm → CGoalL S → List Nat → CM Map (NextL S)
       copyL nexp nexq.laz
   | Nomm.n6 p q r, goal, region =>
       match goal with
-      | CGoalL.next _ _ => fun _ => Option.none
+      | CGoalL.next laz th => sixNextL (runL p) (runL q) (runL r) p q r 3 laz th region
       | _ => do
           let nex1 ← runL r goal region
           let nex0 ← runL q goal region

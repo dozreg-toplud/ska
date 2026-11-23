@@ -23,10 +23,10 @@ namespace Comp
 
 open Nock Lazy
 
-variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
+variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
 
 /-- **The final pass on `FragP` for `%done` meets the relation at the entry.** -/
-theorem finishLF_compDoneP [HoonMapKeys Map] (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.done nm)
+theorem finishLF_compDoneP (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.done nm)
     (hcount : sixCount nm ≤ 255) {ord : NeedOrd} {less : Cape} {bake : Need → Need × List (Nat × Noun)}
     (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
     (h : finishLF (S := S) nm ord less bake = some c') : CompDoneOn lib c' nm (CapeAxes less) := by
@@ -128,7 +128,7 @@ theorem finishLF_compDoneP [HoonMapKeys Map] (lib : Lib) {nm : Nomm} (hf : FragP
 
 /-- **The final pass meets the contract on `FragP` for `%done`**, when the nomm has at
 most 255 `%6`, nothing is baked and the bell's cape has no `[| |]`. -/
-theorem finishLF_bellContractP [HoonMapKeys Map] {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
+theorem finishLF_bellContractP {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
     {bl : Bell} {nm : Nomm} (hp : nm.pure = true) (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol nm)
     (hf : FragP (S := S) CGoal.done nm) (hcount : sixCount nm ≤ 255) {cape : Cape} {data : Noun}
     (hbl : bl.less = Sock.mk cape data) (hn : CapeNorm cape) {ord : NeedOrd}
@@ -141,7 +141,7 @@ theorem finishLF_bellContractP [HoonMapKeys Map] {lib : Lib} {code : Bell → Op
 
 /-- **The compiled code of a `FragP` for `%done` nomm crashes exactly when the nomm
 does**, on every subject that has the axes the cape says it has. -/
-theorem crash_iffP [HoonMapKeys Map] (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.done nm) (hcount : sixCount nm ≤ 255)
+theorem crash_iffP (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.done nm) (hcount : sixCount nm ≤ 255)
     {ord : NeedOrd} {less : Cape} {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, []))
     {c' : Straight Map} (h : finishLF (S := S) nm ord less bake = some c') {σ : Type} (O : Oracle σ) (st : σ)
     (s : Noun) (args : List Noun) (t : Trace) (gul : Noun) (hP : CapeAxes less s)
@@ -165,7 +165,7 @@ theorem sixCount_frag6 {nm : Nomm} (h : Frag6 (S := S) nm) : sixCount nm ≤ 1 :
   · simp only [sixCount, sixCount_frag (hc (jmp0 0) (jmp0 0)), sixCount_frag ha, sixCount_frag hb]; omega
 
 /-- **`finishLF_bellContract6` again, as a case of `FragP`.** -/
-theorem finishLF_bellContract6' [HoonMapKeys Map] {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
+theorem finishLF_bellContract6' {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
     {bl : Bell} {nm : Nomm} (hp : nm.pure = true) (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol nm)
     (hf : Frag6 (S := S) nm) {cape : Cape} {data : Noun} (hbl : bl.less = Sock.mk cape data)
     (hn : CapeNorm cape) {ord : NeedOrd} {bake : Need → Need × List (Nat × Noun)}

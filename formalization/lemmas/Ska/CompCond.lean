@@ -19,7 +19,7 @@ namespace Comp
 
 open Nock Lazy
 
-variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
+variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
 
 /-- `m` keeps `cond`.  A structure, so that `intro` does not open it. -/
 structure KC {α : Type} (m : CM Map α) : Prop where
