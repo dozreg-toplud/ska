@@ -11,4 +11,5 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
 * `sect2.hoon`      the same on the code before `+optimize`
 * `thread-a/b/c`    162 threading cases: before `+optimize`, after it, and with passes left out
 * `sitesmeet2.hoon` `SitesMeet` on every site after fifteen pokes
+* `sitesmeet3.hoon` the three invariants of `lemmas/Ska/SitesMeet.lean` on the same sites
 * `bakeok.hoon`     every variant's bake is under its code requirement
