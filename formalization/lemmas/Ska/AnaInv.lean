@@ -578,6 +578,186 @@ theorem cull_ok {n : Nat} {id : Ident} {st st' : SkaState M R} (hi : SInv st) (h
     · rw [a3, if_neg (fun h => hkeep j hj ((hL j).mp h))]
     · rw [a4, if_neg (fun h => hkeep j hj ((hL j).mp h))]
 
+/-! ## `+sweep` -/
+
+theorem sweepLoop_mem {st : SkaState M R} {was : M Ident Unit} {id : Ident} : ∀ (n : Nat)
+    (seen : M Ident Unit) (stack : List (Ident × List Ident)) (out res : List Ident),
+    sweepLoop st was n seen stack out = some res → (∀ x ∈ out, x = id ∨ Treap.has was x = true) →
+    (∀ e ∈ stack, e.1 = id ∨ Treap.has was e.1 = true) → ∀ x ∈ res, x = id ∨ Treap.has was x = true
+  | 0, _, _, _, _, h, _, _ => by simp [sweepLoop] at h
+  | n + 1, seen, [], out, res, h, ho, _ => by
+    simp only [sweepLoop, Option.some.injEq] at h
+    subst h; intro x hx; exact ho x (List.mem_reverse.mp hx)
+  | n + 1, seen, (i, []) :: rest, out, res, h, ho, hs => by
+    simp only [sweepLoop] at h
+    refine sweepLoop_mem n seen rest (i :: out) res h ?_ (fun e he => hs e (List.mem_cons_of_mem _ he))
+    intro x hx
+    rcases List.mem_cons.mp hx with rfl | hx
+    · exact hs (x, []) List.mem_cons_self
+    · exact ho x hx
+  | n + 1, seen, (i, k :: ks) :: rest, out, res, h, ho, hs => by
+    simp only [sweepLoop] at h
+    split at h
+    · refine sweepLoop_mem n seen ((i, ks) :: rest) out res h ho ?_
+      intro e he
+      rcases List.mem_cons.mp he with rfl | he
+      · exact hs (i, k :: ks) List.mem_cons_self
+      · exact hs e (List.mem_cons_of_mem _ he)
+    · rename_i hc
+      refine sweepLoop_mem n _ _ out res h ho ?_
+      intro e he
+      rcases List.mem_cons.mp he with rfl | he
+      · refine Or.inr ?_
+        cases hw : Treap.has was k
+        · exact absurd (Or.inr hw) hc
+        · rfl
+      · rcases List.mem_cons.mp he with rfl | he
+        · exact hs (i, k :: ks) List.mem_cons_self
+        · exact hs e (List.mem_cons_of_mem _ he)
+
+theorem sweep_mem {n : Nat} {id : Ident} {was : M Ident Unit} {st : SkaState M R} {res : List Ident}
+    (h : sweep n id was st = some res) : ∀ x ∈ res, x = id ∨ Treap.has was x = true :=
+  sweepLoop_mem n _ _ [] res h (by simp) (by simp)
+
+/-! ## The arms, by induction on the fuel -/
+
+/-- The answers of `resolve` at a well-formed subject sock have well-formed
+products. -/
+def PWF : Sock → Noun → TabEntry → Prop := fun s _ a => WellFormed s → WellFormed a.prod
+
+theorem pwf_tab : ∀ tab, TabIn PWF tab → TabWF tab := fun _ ht s f a hs h => ht s f a h hs
+
+theorem SInv.congr {st st' : SkaState M R} (h : SInv st) (h1 : st'.g = st.g) (h2 : st'.done = st.done)
+    (h3 : st'.order = st.order) (h4 : st'.stk = st.stk) : SInv st' := by
+  obtain ⟨a, b, c, d, e⟩ := h
+  exact ⟨h1 ▸ a, h2 ▸ b, h3 ▸ h1 ▸ c, h3 ▸ h4 ▸ d, h4 ▸ e⟩
+
+theorem Keep.refl' {st st' : SkaState M R} (bg : Ident → Prop) (h1 : st'.g = st.g)
+    (h3 : st'.order = st.order) (h4 : st'.stk = st.stk) : Keep st.stk bg st st' :=
+  ⟨⟨[], by rw [h4]; rfl⟩, fun j _ => by rw [h3], fun j _ => by rw [h1]⟩
+
+theorem Keep.weaken {bo bo' : List Ident} {bg bg' : Ident → Prop} {st st' : SkaState M R}
+    (h : Keep bo bg st st') (hb : ∃ l, bo = l ++ bo') (hg : ∀ j, bg' j → bg j) : Keep bo' bg' st st' := by
+  obtain ⟨⟨l1, e1⟩, h2, h3⟩ := h
+  obtain ⟨l, rfl⟩ := hb
+  exact ⟨⟨l1 ++ l, by rw [e1, List.append_assoc]⟩, fun j hj => h2 j (List.mem_append_right _ hj),
+    fun j hj => h3 j (hg j hj)⟩
+
+/-- What `resolve` keeps. -/
+def ResP (res : ResGo M R) : Prop :=
+  ∀ idT gs r gs', SInv gs.st → WellFormed idT.1 → res idT gs = some (r, gs') →
+    SInv gs'.st ∧ GStepsR (gCore gs.st.g) (gCore gs'.st.g) ∧ Keep gs.st.stk (· ∈ gs.st.stk) gs.st gs'.st ∧
+      gs'.gen = gs.gen ∧ WellFormed r.2.prod
+
+/-- What `+analyze` keeps. -/
+def AnaP (ana : AnaGo M R) : Prop :=
+  ∀ id st low st', SInv st → WellFormed id.1 → Treap.get st.g id = none → ana id st = some (low, st') →
+    SInv st' ∧ GStepsR (gCore st.g) (gCore st'.g) ∧ Keep st.stk (· ∈ st.stk) st st'
+
+/-- What `+run` keeps. -/
+def RunP (run : RunGo M R) : Prop :=
+  ∀ id index st r st', SInv st → id ∈ st.stk → run id index st = some (r, st') →
+    SInv st' ∧ GStepsR (gCore st.g) (gCore st'.g) ∧ Keep st.stk (fun j => j ∈ st.stk ∧ j ≠ id) st st'
+
+/-- What the member loop keeps. -/
+def MemP (mem : MemGo M R) : Prop :=
+  ∀ index pass ms st r st' (bo : List Ident) (bg : Ident → Prop), SInv st → (∃ l, st.stk = l ++ bo) →
+    (∀ j, bg j → j ∈ bo) → (∀ m ∈ ms, ¬ bg m) → mem index pass ms st = some (r, st') →
+    SInv st' ∧ GStepsR (gCore st.g) (gCore st'.g) ∧ Keep bo bg st st'
+
+/-- What the pass loop keeps. -/
+def PassP (pass : PassGo M R) : Prop :=
+  ∀ id index p st low st' (ab0 rest : List Ident), SInv st → st.stk = ab0 ++ id :: rest →
+    pass id index p st = some (low, st') →
+    SInv st' ∧ GStepsR (gCore st.g) (gCore st'.g) ∧ Keep rest (· ∈ rest) st st'
+
+/-- The invariant of a run of `fol-loop` that began in the state `st0`. -/
+def RInv (st0 : SkaState M R) (gs : GenS M R) : Prop :=
+  SInv gs.st ∧ GStepsR (gCore st0.g) (gCore gs.st.g) ∧ Keep st0.stk (· ∈ st0.stk) st0 gs.st
+
+theorem rInv_stable (st0 : SkaState M R) : LocalStable (RInv (M := M) st0) := by
+  intro gs gs' h _ _ e1 e2 e3 e4 _ _ _ _
+  obtain ⟨a, b, c⟩ := h
+  refine ⟨a.congr e1 e2 e3 e4, by rw [e1]; exact b, ?_⟩
+  obtain ⟨⟨l, el⟩, c2, c3⟩ := c
+  exact ⟨⟨l, by rw [e4]; exact el⟩, fun j hj => by rw [e3]; exact c2 j hj, fun j hj => by rw [e1]; exact c3 j hj⟩
+
+theorem resOK_of_resP {res : ResGo M R} (h : ResP res) (st0 : SkaState M R) : ResOK PWF (RInv st0) res := by
+  intro idT gs r gs' hi hw e
+  obtain ⟨i1, s1, k1⟩ := hi
+  obtain ⟨i2, s2, k2, g2, w2⟩ := h idT gs r gs' i1 hw e
+  refine ⟨fun _ => w2, ⟨i2, gStepsR_trans s1 s2, k1.trans (k2.weaken k1.1 (fun j hj => ?_))⟩, g2⟩
+  obtain ⟨l, el⟩ := k1.1
+  rw [el]; exact List.mem_append_right _ hj
+
+theorem resolveStep_ok (env : Env R) {resolve : ResGo M R} {analyze : AnaGo M R}
+    (hres : ResP resolve) (hana : AnaP analyze) : ResP (resolveStep env resolve analyze) := by
+  intro idT gs r gs' hi hw e
+  unfold resolveStep at e
+  cases hg : Treap.get gs.st.g idT with
+  | some d =>
+    simp only [hg] at e
+    have hwd := (hi.wf_get hg).2
+    cases ho : Treap.get gs.st.order idT with
+    | none =>
+      simp only [ho, Option.some.injEq, Prod.mk.injEq] at e
+      obtain ⟨rfl, rfl⟩ := e
+      exact ⟨hi, GStepsR.refl _, Keep.refl' _ rfl rfl rfl, rfl, hwd⟩
+    | some o =>
+      simp only [ho, Option.some.injEq, Prod.mk.injEq] at e
+      obtain ⟨rfl, rfl⟩ := e
+      exact ⟨hi, GStepsR.refl _, Keep.refl' _ rfl rfl rfl, rfl, hwd⟩
+  | none =>
+    rw [hg] at e
+    simp only at e
+    split at e
+    · cases e
+    · rename_i m hm
+      cases e
+      exact ⟨hi, GStepsR.refl _, Keep.refl' _ rfl rfl rfl, rfl, gitMi_wf hi.done_wf hw hm⟩
+    · split at e
+      · cases e
+      · rename_i i hrc
+        have hwi : WellFormed i.1 := by
+          rcases recursiveCall_cases hrc with ⟨hb, _⟩ | ⟨_, j, hj, hm, _⟩
+          · cases hb
+          · exact wf_msgSock hw (hi.wf_stk hj) hm
+        exact hres i gs r gs' hi hwi e
+      · rename_i i hrc
+        simp only [Option.map_eq_some_iff] at e
+        obtain ⟨o, _, e⟩ := e
+        cases e
+        refine ⟨hi, GStepsR.refl _, Keep.refl' _ rfl rfl rfl, rfl, ?_⟩
+        exact wf_patchDatum (d := (gitG gs.st.g i).core) (hi.wf_gitG i) hw
+      · simp only [Option.map_eq_some_iff] at e
+        obtain ⟨⟨low, st'⟩, ha, e⟩ := e
+        cases e
+        obtain ⟨i', s', k'⟩ := hana idT gs.st low st' hi hw hg ha
+        exact ⟨i', s', k', rfl, i'.wf_gitG idT⟩
+
+theorem runStep_ok (env : Env R) (memoF : Memo M) {n : Nat}
+    (hres : ∀ k, k < n → ResP (resolve env memoF k)) : RunP (runStep (folLoop env memoF n)) := by
+  intro id index st r st' hi hid e
+  unfold runStep at e
+  simp only [Option.map_eq_some_iff] at e
+  obtain ⟨⟨out, gs⟩, hf, e⟩ := e
+  cases e
+  let st0 : SkaState M R := { st with stats := { st.stats with runs := st.stats.runs + 1 } }
+  have i0 : SInv st0 := hi.congr rfl rfl rfl rfl
+  have r0 : RInv st0 (genInit index st0) := ⟨i0, GStepsR.refl _, Keep.refl' _ rfl rfl rfl⟩
+  obtain ⟨⟨i1, s1, k1⟩, hF⟩ := run_folTopR env memoF pwf_tab (rInv_stable st0)
+    (fun k hk => resOK_of_resP (hres k hk) st0) r0 (hi.wf_stk hid) hf
+  obtain ⟨d0, hd0⟩ := hi.mem_g hid
+  have hold : gCore gs.st.g id = some (gitG st0.g id).core := by
+    have e1 : Treap.get gs.st.g id = Treap.get st0.g id := k1.2.2 id hid
+    simp only [gCore, e1]
+    show Option.map FDatum.core (Treap.get st.g id) = some (gitG st.g id).core
+    simp [hd0, gitG, Treap.gut]
+  have hstep := runEnd_gStepR pwf_tab hF hold
+  obtain ⟨i2, k2⟩ := runEnd_ok i1 hstep
+  refine ⟨i2, gStepsR_trans s1 (gStepsR_one hstep), ?_⟩
+  refine (k1.mono (fun j hj => hj.1)).trans (k2.weaken k1.1 (fun j hj => hj.2))
+
 end Ana
 end SkaModel
 end Formalization
