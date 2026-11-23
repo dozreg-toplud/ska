@@ -48,11 +48,11 @@ def RSub (bus : Sock) (W : Cape) (a : Anno) : Noun → Prop := fun z => ∃ X', 
 /-- **What the relative proofs assume of the table of callees**, for an
 answer `d` to a call of `f` on the subject sock `s`. -/
 structure RTab (lib : Lib) (code : Bell → Option Nomm) (tab : Tab) : Prop where
-  less : ∀ s f d lc dl, tab s f = some d → d.less = Sock.mk lc dl →
+  less : ∀ s f d lc dl, tab s f = some d → s ≠ Sock.void → d.less = Sock.mk lc dl →
     ∀ y, Fits (Ca.app lc s) y → Fits d.less y
   code : ∀ s f d, tab s f = some d → ∃ nb, code ⟨d.less, f⟩ = some nb
-  prod : ∀ s f d, tab s f = some d → ∀ y gul p, Fits d.less y → Mink lib gul [] y f (Tone.zero p) →
-    ProvR y d.prod d.map p ∧ StatOK s d.prod d.map
+  prod : ∀ s f d, tab s f = some d → s ≠ Sock.void → ∀ y gul p, Fits d.less y →
+    Mink lib gul [] y f (Tone.zero p) → ProvR y d.prod d.map p ∧ StatOK s d.prod d.map
 
 /-- What holds of a result `out` of `fol-loop` on `fol` and `sub`, relative
 to the code requirement. -/
@@ -413,7 +413,7 @@ theorem rgood_call (hT : RTab lib code tab) (hwf : WellFormed bus) (IH : GoRGood
           have hless : ∀ X' x gul y, RP bus W sub X' x → Mink lib gul [] x b (Tone.zero y) →
               Fits d.less y := fun X' x gul y hx hm => by
             have R := Gs.prod X' x gul y hx hm
-            exact hT.less _ _ d lc dl hd hdl y (call_sub_fits (provO_iff.mpr R.prov) R.stat hwf R.req hWs)
+            exact hT.less _ _ d lc dl hd hv.1 hdl y (call_sub_fits (provO_iff.mpr R.prov) R.stat hwf R.req hWs)
           refine RGood.of_plain (Annot.direct (bl := ⟨d.less, C fa fb⟩) Gs.annot Gf.annot hnb ?_ ?_)
             ?_ rfl rfl rfl
           · intro x gul y ⟨X', hx⟩ hm; exact hless X' x gul y hx hm
@@ -422,7 +422,7 @@ theorem rgood_call (hT : RTab lib code tab) (hwf : WellFormed bus) (IH : GoRGood
             obtain ⟨y, g, m1, m2, m3⟩ := mink_inv_n2 hm
             rw [hg hWf X' x gul g hx m2] at m3
             have R := Gs.prod X' x gul y hx m1
-            obtain ⟨hpR, hpS⟩ := hT.prod _ _ d hd y gul p (hless X' x gul y hx m1) m3
+            obtain ⟨hpR, hpS⟩ := hT.prod _ _ d hd hv.1 y gul p (hless X' x gul y hx m1) m3
             refine ⟨R.req, ?_, statOK_compose hv.1 R.stat hpS⟩
             exact provO_iff.mp (provO_compose (provO_iff.mpr R.prov) (provO_iff.mpr hpR)
               (hpS.toStatS hpR.nonvoid) (hpS.toShapeOK hpR.nonvoid))

@@ -10,6 +10,10 @@ import lemmas.Ska.Prov
 import lemmas.Ska.ProvFacts
 import lemmas.Ska.WantMono
 import lemmas.Ska.AppPath
+import lemmas.Ska.Stat
+import lemmas.Ska.AppMask
+import lemmas.Ska.FolLoopRel
+import lemmas.Ska.Converge
 
 /-! The axioms of the main theorems of `lemmas/Ska`.  `lake build` prints
 them; each should be `propext`, `Classical.choice` and `Quot.sound` at most. -/
@@ -87,3 +91,25 @@ open Formalization.SkaModel
 #print axioms folLoopF_want_mono
 #print axioms fitsOpt_app_part
 #print axioms known_formula
+#print axioms GenLe.toPosLe
+#print axioms GenLe.appFits
+#print axioms statOK_slot
+#print axioms statOK_knit
+#print axioms statOK_doubleInt_left
+#print axioms statOK_doubleInt_right
+#print axioms statOK_darn
+#print axioms statOK_compose
+#print axioms statOK_patchProd
+#print axioms fitsOpt_app_mask
+#print axioms call_sub_fits
+#print axioms known_at
+#print axioms folLoop_rgood
+#print axioms folLoop_wantSound
+#print axioms folLoop_relProd
+#print axioms app_cape_fits
+#print axioms huge_app_fits
+#print axioms provO_patchProd
+#print axioms msgSock_genLe
+#print axioms rtab_of_answers
+#print axioms codeOK_of_converged
+#print axioms converged_agree
