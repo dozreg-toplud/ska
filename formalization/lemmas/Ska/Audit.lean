@@ -15,6 +15,7 @@ import lemmas.Ska.AppMask
 import lemmas.Ska.FolLoopRel
 import lemmas.Ska.Converge
 import lemmas.Ska.ConvergeProd
+import lemmas.Ska.CompSim
 
 /-! The axioms of the main theorems of `lemmas/Ska`.  `lake build` prints
 them; each should be `propext`, `Classical.choice` and `Quot.sound` at most. -/
@@ -122,3 +123,12 @@ open Formalization.SkaModel
 #print axioms prodRel_of_converged
 #print axioms codeOK_at_convergence
 #print axioms agree_at_convergence
+#print axioms nommF_pure
+#print axioms nommF_pure_total
+#print axioms mink_pure
+#print axioms bellContract_of_compDone
+#print axioms compDone_of_compRel
+#print axioms compRel_done_of_next
+#print axioms const_contract
+#print axioms slot1_contract
+#print axioms bomb_contract

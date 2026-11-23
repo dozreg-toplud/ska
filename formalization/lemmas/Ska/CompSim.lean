@@ -359,6 +359,184 @@ theorem bellContract_of_compDone {lib : Lib} {code : Bell → Option Nomm} (hok 
 /-- The empty code table satisfies `CodeOK`. -/
 theorem codeOK_none (lib : Lib) : CodeOK lib (fun _ => none) := fun _ _ h => by cases h
 
+/-! ## The relation for one block and one goal -/
+
+/-- A need with registers, as `+comp` builds them: `%none`, the whole in a
+register, a pair of needs, or a `%both`, the whole in a register and its
+halves by needs. -/
+inductive RNeed where
+  | none
+  | this (r : Nat)
+  | pair (p q : RNeed)
+  | both (r : Nat) (p q : RNeed)
+
+/-- The registers `regs` hold the noun `n` as the need asks: a pair or a
+`%both` asks for a cell. -/
+def Holds : RNeed → Map Noun → Noun → Prop
+  | RNeed.none, _, _ => True
+  | RNeed.this r, regs, n => SkaModel.read r regs = some n
+  | RNeed.pair p q, regs, Noun.cell h t => Holds p regs h ∧ Holds q regs t
+  | RNeed.both r p q, regs, Noun.cell h t =>
+      SkaModel.read r regs = some (C h t) ∧ Holds p regs h ∧ Holds q regs t
+  | _, _, _ => False
+
+/-- The goals of `+comp`'s `run`: return the product (`%done`); put the
+product in registers as the need `nd` asks and go on in the block `k`
+(`%next`, without parameters here); branch to `z` on `0` and to `o` on `1`
+(`%pick`). -/
+inductive Goal where
+  | done
+  | next (nd : RNeed) (k : Nat)
+  | pick (z o : Nat)
+
+/-- What the block `b` of `c`, entered with the registers `regs`, does for
+the goal `g` when the value of the nomm is `v`.  A crash is `[%2 t]` with
+the trace the block was entered with.  On `%next` and `%pick` the block goes
+on in the target block with registers that agree with `regs` on the
+registers `keep` that the code after it reads. -/
+def GoalRel (lib : Lib) (c : Straight Map) (keep : Nat → Prop) {σ : Type} (O : Oracle σ) (st : σ)
+    (regs : Map Noun) (t : Trace) (gul : Noun) (b : Blob) : Goal → Option Noun → Prop
+  | Goal.done, v => execBlob lib O c gul st regs t b [] = some (toneOf t v, st)
+  | Goal.next nd k, some p => ∃ regs' bk, HoonMap.get c.blocks k = some bk ∧ Holds nd regs' p ∧
+      (∀ r, keep r → SkaModel.read r regs' = SkaModel.read r regs) ∧
+      execBlob lib O c gul st regs t b [] = execBlob lib O c gul st regs' t bk []
+  | Goal.pick z o, some (Noun.atom 0) => ∃ regs' bz, HoonMap.get c.blocks z = some bz ∧
+      (∀ r, keep r → SkaModel.read r regs' = SkaModel.read r regs) ∧
+      execBlob lib O c gul st regs t b [] = execBlob lib O c gul st regs' t bz []
+  | Goal.pick z o, some (Noun.atom 1) => ∃ regs' bo, HoonMap.get c.blocks o = some bo ∧
+      (∀ r, keep r → SkaModel.read r regs' = SkaModel.read r regs) ∧
+      execBlob lib O c gul st regs t b [] = execBlob lib O c gul st regs' t bo []
+  | _, _ => execBlob lib O c gul st regs t b [] = some (Tone.two t, st)
+
+/-- **The simulation relation of `+comp` for one block**: the block `b` of
+`c`, entered with registers that hold the subject as the need `nd` asks,
+does for the goal `g` what the value of the pure nomm `nm` says, against
+every oracle. -/
+def CompRel (lib : Lib) (c : Straight Map) (nm : Nomm) (g : Goal) (b : Blob) (nd : RNeed)
+    (keep : Nat → Prop) : Prop :=
+  ∀ (σ : Type) (O : Oracle σ) (st : σ) (s : Noun) (regs : Map Noun) (t : Trace) (gul : Noun),
+    Holds nd regs s → GoalRel lib c keep O st regs t gul b g (pureEval nm s)
+
+/-- **`CompDone` from the relation at the entry block**: block `0` is `b`,
+the registers the interpreter enters with hold the subject as `nd` asks,
+and `b` satisfies the relation for `%done`. -/
+theorem compDone_of_compRel {lib : Lib} {c : Straight Map} {nm : Nomm} {b : Blob} {nd : RNeed}
+    {keep : Nat → Prop} {mono : Bool} (hb : HoonMap.get c.blocks 0 = some b)
+    (hhold : ∀ s args, (if mono then some [s] else split c.need s) = some args →
+      Holds nd (regsOf (Map := Map) args) s)
+    (hr : CompRel lib c nm Goal.done b nd keep) : CompDone lib c nm mono := by
+  intro σ O st s args t gul hargs
+  have := hr σ O st s (regsOf args) t gul (hhold s args hargs)
+  simp only [GoalRel] at this
+  simp only [execEntry, hb, Option.bind_some]
+  exact this
+
+theorem execBlob_don {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ}
+    {regs : Map Noun} {t : Trace} (r : Nat) :
+    execBlob lib O c gul st regs t ⟨[], [], Termin.don r⟩ [] =
+      (SkaModel.read r regs).bind fun v => some (Tone.zero v, st) := by
+  rw [execBlob]; simp
+
+theorem execBlob_bom {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ}
+    {regs : Map Noun} {t : Trace} (o : Option Nat) :
+    execBlob lib O c gul st regs t ⟨[], [], Termin.bom o⟩ [] = some (Tone.two t, st) := by
+  rw [execBlob]; simp
+
+/-- **`%done` from `%next`**, as `+comp` makes it for a cell of formulas: a
+fresh register `r`, a block `[%don r]`, and the goal `%next` that puts the
+product in `r` and goes on in that block. -/
+theorem compRel_done_of_next {lib : Lib} {c : Straight Map} {nm : Nomm} {b : Blob} {nd : RNeed}
+    {keep : Nat → Prop} {r k : Nat} (hk : HoonMap.get c.blocks k = some ⟨[], [], Termin.don r⟩)
+    (h : CompRel lib c nm (Goal.next (RNeed.this r) k) b nd keep) :
+    CompRel lib c nm Goal.done b nd keep := by
+  intro σ O st s regs t gul hs
+  have H := h σ O st s regs t gul hs
+  simp only [GoalRel]
+  revert H
+  cases pureEval nm s with
+  | none => intro H; exact H
+  | some p =>
+    intro ⟨regs', bk, hbk, hh, _, he⟩
+    rw [hk] at hbk; cases hbk
+    rw [he, execBlob_don]
+    simp only [Holds] at hh
+    simp [hh, toneOf]
+
+/-! ## The leaves of `+comp` with the goal `%done`
+
+From the cases `[%0 *]` and `[%1 *]` of `run`: `[%1 k]` emits a block
+`(emit ~ ~[imm+[k r]] don+r)` with a fresh register `r` and needs nothing of
+the subject; `[%0 1]` is `simple-next`, a block `[%don r]` with the need
+`this+r`; `[%0 0]` is `bomb`, a block `[%bom ~]` that needs nothing. -/
+
+theorem compRel_const (lib : Lib) (c : Straight Map) (k : Noun) (r : Nat) (nd : RNeed)
+    (keep : Nat → Prop) :
+    CompRel lib c (Nomm.n1 k) Goal.done ⟨[], [Pole.imm k r], Termin.don r⟩ nd keep := by
+  intro σ O st s regs t gul _
+  simp only [GoalRel, pureEval, toneOf]
+  rw [execBlob_body]
+  simp only [execPole_imm, Option.bind_some]
+  rw [execBlob_don]
+  simp [store, SkaModel.read, HoonMap.get_put]
+
+theorem compRel_slot1 (lib : Lib) (c : Straight Map) (r : Nat) (keep : Nat → Prop) :
+    CompRel lib c (Nomm.n0 1) Goal.done ⟨[], [], Termin.don r⟩ (RNeed.this r) keep := by
+  intro σ O st s regs t gul hs
+  simp only [Holds] at hs
+  simp only [GoalRel, pureEval, slot?_one, toneOf]
+  rw [execBlob_don, hs]; rfl
+
+theorem compRel_bomb (lib : Lib) (c : Straight Map) (nd : RNeed) (keep : Nat → Prop) :
+    CompRel lib c (Nomm.n0 0) Goal.done ⟨[], [], Termin.bom none⟩ nd keep := by
+  intro σ O st s regs t gul _
+  simp only [GoalRel]
+  rw [execBlob_bom]
+  have : slot? 0 s = none := slot?_zero s
+  simp [pureEval, this, toneOf]
+
+/-- A function of one block that needs nothing of its subject. -/
+def noArgBlock (b : Blob) : Straight Map := ⟨NeedOrd.none, 0, HoonMap.put HoonMap.empty 0 b⟩
+
+theorem holds_none (s : Noun) (args : List Noun) : Holds (Map := Map) RNeed.none (regsOf args) s :=
+  trivial
+
+/-- **The code of `[1 k]`**: as a function by need, or by subject, the
+block that `+comp` emits satisfies the contract of every bell whose formula
+is `[1 k]`. -/
+theorem const_contract (lib : Lib) (N : Needs) (k : Noun) (r : Nat) (b : Bell) (hf : b.fol = quote k)
+    (mono : Bool) :
+    BellContract lib N b mono (noArgBlock (Map := Map) ⟨[], [Pole.imm k r], Termin.don r⟩) := by
+  refine bellContract_of_compDone (codeOK_none lib) (nm := Nomm.n1 k) rfl
+    (by rw [hf]; exact Annot.n1) ?_ N
+  exact compDone_of_compRel (nd := RNeed.none) (keep := fun _ => False)
+    (by simp [noArgBlock, HoonMap.get_put]) (fun s args _ => holds_none s args)
+    (compRel_const lib _ k r RNeed.none _)
+
+/-- **The code of `[0 1]`**: the block `[%don 0]` with the whole subject in
+register `0` satisfies the contract of every bell whose formula is `[0 1]`. -/
+theorem slot1_contract (lib : Lib) (N : Needs) (b : Bell) (hf : b.fol = slot 1) (mono : Bool) :
+    BellContract lib N b mono (oneBlock (Map := Map) ⟨[], [], Termin.don 0⟩) := by
+  refine bellContract_of_compDone (codeOK_none lib) (nm := Nomm.n0 1) rfl
+    (by rw [hf]; exact Annot.n0) ?_ N
+  refine compDone_of_compRel (nd := RNeed.this 0) (keep := fun _ => False)
+    (by simp [oneBlock, HoonMap.get_put]) ?_ (compRel_slot1 lib _ 0 _)
+  intro s args h
+  have e : args = [s] := by
+    cases mono <;> simp [oneBlock, split] at h <;> exact h.symm
+  subst e
+  simp [Holds, regsOf, regsFrom, SkaModel.read, HoonMap.get_put]
+
+/-- **The code of `[0 0]`**: the block `[%bom ~]` satisfies the contract of
+every bell whose formula is `[0 0]`. -/
+theorem bomb_contract (lib : Lib) (N : Needs) (b : Bell) (hf : b.fol = slot 0) (mono : Bool) :
+    BellContract lib N b mono (noArgBlock (Map := Map) ⟨[], [], Termin.bom none⟩) := by
+  refine bellContract_of_compDone (codeOK_none lib) (nm := Nomm.n0 0) rfl
+    (by rw [hf]; exact Annot.n0) ?_ N
+  exact compDone_of_compRel (nd := RNeed.none) (keep := fun _ => False)
+    (by simp [noArgBlock, HoonMap.get_put]) (fun s args _ => holds_none s args)
+    (compRel_bomb lib _ RNeed.none _)
+
+
 end
 
 end SkaModel
