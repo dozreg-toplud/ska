@@ -102,6 +102,10 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/Prov.lean`, `Ska/ProvFacts.lean` | The provenance invariant on products (`ProvR`, `ProvO`): a part with axis provenance is that axis of the function's subject. Nock 0, cons, Nock 10, the join of two branches and a direct call through `compose:pi` keep it; `+patch-prod` is sound under it. |
 | `Ska/WantMono.lean` | `want` only grows along a run of `fol-loop`. |
 | `Ska/AppPath.lean` | `app:ca` below a covered path; the static conditions `StatS` and `ShapeOK`; `known_formula`: on subjects of the code requirement, a fully known formula-formula is that formula. |
+| `Ska/Stat.lean` | The static condition `StatOK` (the product sock generalizes what the subject sock knows at each axis provenance), kept by every sock operation of `fol-loop`. |
+| `Ska/AppMask.lean` | `+app:ca` under a mask, and the subject half of a call site, `call_sub_fits`: on the code requirement, a call's subject fits the callee's requirement. |
+| `Ska/FolLoopRel.lean` | `folLoop_rgood`: the soundness of `fol-loop` relative to the code requirement, every case; `folLoop_wantSound`, `folLoop_relProd`. |
+| `Ska/Converge.lean` | `converged_agree`: the analysis output of every entry of a converged graph agrees with `+mink` on its code requirement. It still assumes `ProdRel` (products of entries satisfy the provenance invariant), well-formed subject socks, and that the graph converged. |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
