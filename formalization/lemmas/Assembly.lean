@@ -3,6 +3,7 @@ import lemmas.Compiler.PokeFrame
 import lemmas.Compiler.ListMold
 import lemmas.Compiler.Validate
 import lemmas.Ska.Statements
+import lemmas.Pill.Cue.Root
 
 /-!
 # The assembly
@@ -128,9 +129,11 @@ section
 variable (lib : Lib) (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun))
   (InvC : Noun → Prop)
 
-/-- The pill decodes to the noun `root` of `lemmas/Pill`.  Owner: the pill
-track (gap 2 of the README: a proof of `cue` in pieces). -/
+/-- The pill decodes to the noun `root` of `lemmas/Pill`.  Proved
+(`cueRoot`), by `lemmas/CueRel.lean` and the generated `lemmas/Pill/Cue/`. -/
 def CueRoot : Prop := cue pill = some root
+
+theorem cueRoot : CueRoot := Pill.Cue.cue_pill
 
 /-- The inner `+poke` of every compiler's core that the pill's `cor` reaches by
 pokes and that keeps what the interpreter reads (`CorIn`) computes the model
@@ -318,7 +321,6 @@ variable {lib : Lib} {pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mug
 /-- Every hypothesis of the assembly, in one place. -/
 structure Gap (lib : Lib) (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun))
     (InvC : Noun → Prop) : Prop where
-  cueRoot : CueRoot
   pokeModel : PokeModel pk
   ovumMold : OvumMold
   mookOther : MookOther
@@ -332,14 +334,14 @@ structure Gap (lib : Lib) (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMa
 
 theorem Gap.reach (g : Gap lib pk InvC) {core₀ c : Noun} (h0 : Ska.IsCore core₀)
     (h : Ska.Reach core₀ c) : ∃ cr, c = C ob (icore cr) ∧ CorIn cr ∧ InvC cr := by
-  obtain ⟨cr, rfl, hc, hr⟩ := reach_model g.cueRoot g.libSlam g.pokeModel g.ovumMold
+  obtain ⟨cr, rfl, hc, hr⟩ := reach_model cueRoot g.libSlam g.pokeModel g.ovumMold
     g.mookOther g.libFormat g.mookFormat h0 h
   exact ⟨cr, rfl, hc, reach_inv lib g.contract.toPokeSteps g.invKept g.invStart hr⟩
 
 theorem meek_of (g : Gap lib pk InvC) : Ska.Meek := by
   intro core₀ c s f p gul h0 hr hA
   have hpk := pokeIs_all g.pokeModel
-  obtain ⟨cr, rfl, hc, hr'⟩ := reach_model g.cueRoot g.libSlam g.pokeModel g.ovumMold
+  obtain ⟨cr, rfl, hc, hr'⟩ := reach_model cueRoot g.libSlam g.pokeModel g.ovumMold
     g.mookOther g.libFormat g.mookFormat h0 hr
   obtain ⟨st', he⟩ := meek_reach lib g.contract g.halting g.invKept (gul := gul) g.invStart hr' hA
   exact ⟨_, (top_iff lib g.libSlam pk hpk ob cr hc s f gul _ _).2 ⟨_, st', rfl, rfl, he⟩⟩
@@ -351,8 +353,8 @@ theorem weak_of (g : Gap lib pk InvC) : Ska.Weak := by
   have hlist := listMoldIs
   have hmm : EvalMookMsgIs lib := g.mookFormat
   have hrb := rendBaseIs_layer4 lib hleaf hhand hrest
-  have e0 := isCore_eq g.cueRoot h0
-  obtain ⟨cr, rfl, hc, hr'⟩ := reach_model g.cueRoot g.libSlam g.pokeModel g.ovumMold
+  have e0 := isCore_eq cueRoot h0
+  obtain ⟨cr, rfl, hc, hr'⟩ := reach_model cueRoot g.libSlam g.pokeModel g.ovumMold
     g.mookOther g.libFormat g.mookFormat h0 hr
   subst e0
   obtain ⟨t, rfl, ht⟩ := (mock_iff lib g.libSlam hleaf hhand hrest hst hmsg core core_layer4
@@ -368,8 +370,8 @@ theorem converse_of (g : Gap lib pk InvC) : Ska.Converse := by
   have hlist := listMoldIs
   have hmm : EvalMookMsgIs lib := g.mookFormat
   have hrb := rendBaseIs_layer4 lib hleaf hhand hrest
-  have e0 := isCore_eq g.cueRoot h0
-  obtain ⟨cr, rfl, hc, hr'⟩ := reach_model g.cueRoot g.libSlam g.pokeModel g.ovumMold
+  have e0 := isCore_eq cueRoot h0
+  obtain ⟨cr, rfl, hc, hr'⟩ := reach_model cueRoot g.libSlam g.pokeModel g.ovumMold
     g.mookOther g.libFormat g.mookFormat h0 hr
   subst e0
   obtain ⟨tn, cr'', rfl, rfl, hR⟩ :=
@@ -388,7 +390,7 @@ theorem halts_of (g : Gap lib pk InvC) : Ska.Halts := by
 /-- **The assembly.**  The five statements of `core/Statement.lean`, from the
 hypotheses of `Gap`. -/
 theorem full_of (g : Gap lib pk InvC) : Ska.Full :=
-  ⟨loads g.cueRoot, meek_of g, weak_of g, converse_of g, halts_of g⟩
+  ⟨loads cueRoot, meek_of g, weak_of g, converse_of g, halts_of g⟩
 
 end
 

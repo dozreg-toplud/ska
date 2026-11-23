@@ -299,6 +299,8 @@ open Formalization
 #print axioms Compiler.mock_iff
 #print axioms Compiler.corIn_of_tail
 #print axioms Compiler.pokeIs_of_frame
+#print axioms Pill.Cue.cue_pill
+#print axioms Assembly.cueRoot
 #print axioms Assembly.poke_iff
 #print axioms Assembly.reach_model
 #print axioms Assembly.meek_of
