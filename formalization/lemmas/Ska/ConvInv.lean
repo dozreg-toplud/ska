@@ -148,7 +148,7 @@ structure FrzInv (memoF : Memo M) (st : SkaState M R) (F : Entry → Prop) : Pro
   sub : ∀ e, F e → (∃ d, Treap.get st.g (e.more, e.fol) = some d) ∧ Treap.get st.order (e.more, e.fol) = none
   wf : ∀ e, F e → WellFormed e.d.prod
   done : ∀ f ms s ent, Treap.get st.done f = some ms → Treap.get ms s = some ent →
-    F (entOf ent.1 ent.2) ∧ ent.1.2 = f
+    F (entOf ent.1 ent.2) ∧ ent.1.2 = f ∧ Treap.get st.g ent.1 = some ent.2
 
 /-- What a member may have read: a frozen entry, or a callee on the stack
 below the bound `L`, whose entry is still the one read unless it changed at
@@ -419,12 +419,17 @@ theorem pop_frozen {memoF : Memo M} {id : Ident} {st st' : SkaState M R} {F : En
   · -- done
     intro f ms s ent h1 h2
     rcases a7 f ms s ent h1 h2 with ⟨ms', e1, e2⟩ | ⟨j, hj, rfl, rfl⟩
-    · obtain ⟨hF, hk⟩ := hc.frz.done f ms' s ent e1 e2
-      exact ⟨Or.inl hF, hk⟩
+    · obtain ⟨hF, hk, hge⟩ := hc.frz.done f ms' s ent e1 e2
+      have hn : ent.1 ∉ ab0 ++ [id] := fun hx => by
+        obtain ⟨o, ho⟩ := hmemP _ hx
+        have := (hc.frz.sub _ hF).2
+        simp only [entOf] at this
+        rw [this] at ho; cases ho
+      exact ⟨Or.inl hF, hk, by rw [hgN _ hn]; exact hge⟩
     · obtain ⟨dj, hdj⟩ := hin j hj
       have hg : gitG st.g j = dj := by simp [gitG, Treap.gut, hdj]
       rw [hg]
-      exact ⟨Or.inr ⟨j, hj, dj, hdj, Or.inr rfl⟩, rfl⟩
+      exact ⟨Or.inr ⟨j, hj, dj, hdj, Or.inr rfl⟩, rfl, by rw [hgP j hj, hdj]; rfl⟩
   · -- members
     intro m o hmo d hd hr
     have hmN : m ∉ ab0 ++ [id] := fun hx => by rw [hoP m hx] at hmo; cases hmo

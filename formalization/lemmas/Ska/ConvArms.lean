@@ -126,7 +126,7 @@ theorem CInv.congr {memoF : Memo M} {st st' : SkaState M R} {F : Entry → Prop}
   · intro m; simp only [ranOf, chgOf, hts, htk]; exact b m
   · simp only [OrdInv, ho, hs, hn]; exact c
   · obtain ⟨d1, d2, d3, d4, d5⟩ := d
-    exact ⟨d1, by simp only [hg, ho]; exact d2, by simp only [hg, ho]; exact d3, d4, by simp only [hd]; exact d5⟩
+    exact ⟨d1, by simp only [hg, ho]; exact d2, by simp only [hg, ho]; exact d3, d4, by simp only [hd, hg]; exact d5⟩
   · intro m o hmo
     rw [hn]
     exact memOK_congr hg ho hts (e m o (by rw [← ho]; exact hmo))
@@ -492,7 +492,15 @@ theorem runStep_ok2 (env : Env R) (memoF : Memo M) {n : Nat}
     · obtain ⟨⟨d, hd⟩, ho⟩ := c1.frz.sub e he
       have hi : (e.more, e.fol) ≠ id := by intro h; obtain ⟨o, ho'⟩ := hidO; rw [← h, ho] at ho'; cases ho'
       exact ⟨⟨d, by rw [hgj, if_neg hi]; exact hd⟩, by rw [eo]; exact ho⟩
-    · rw [ed]; exact c1.frz.done
+    · intro f ms s ent h1 h2
+      rw [ed] at h1
+      obtain ⟨hF, hk, hge⟩ := c1.frz.done f ms s ent h1 h2
+      have hi : ent.1 ≠ id := by
+        intro h; obtain ⟨o, ho⟩ := hidO
+        have := (c1.frz.sub _ hF).2
+        simp only [entOf] at this
+        rw [h] at this; rw [this] at ho; cases ho
+      exact ⟨hF, hk, by rw [hgj, if_neg hi]; exact hge⟩
     · intro m o hmo
       rw [eo] at hmo; rw [en]
       by_cases hm : m = id
