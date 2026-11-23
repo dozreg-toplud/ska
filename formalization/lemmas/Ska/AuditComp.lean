@@ -1,4 +1,4 @@
-import lemmas.Ska.CompFrag
+import lemmas.Ska.CompTopOK
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -21,3 +21,13 @@ open Formalization.SkaModel.Comp
 #print axioms fromSure_spec
 #print axioms sureRequireLook_spec
 #print axioms medeLoop_spec
+#print axioms finish_bellContract
+#print axioms finish_compDone
+#print axioms bellContract_of_compDoneOn
+#print axioms toStraight_entry
+#print axioms sim_block
+#print axioms execPole_ren
+#print axioms renameBlocks_spec
+#print axioms holds_of_split
+#print axioms needOrdAllocRegs_spec
+#print axioms capeAxes_of_fits
