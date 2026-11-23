@@ -302,6 +302,8 @@ open Formalization
 #print axioms Pill.Cue.cue_pill
 #print axioms Assembly.cueRoot
 #print axioms Assembly.ovumMold
+#print axioms Compiler.eval_mook_not2
+#print axioms Assembly.mookOther_of
 #print axioms Assembly.poke_iff
 #print axioms Assembly.reach_model
 #print axioms Assembly.meek_of

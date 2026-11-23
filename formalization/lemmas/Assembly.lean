@@ -5,6 +5,7 @@ import lemmas.Compiler.Validate
 import lemmas.Ska.Statements
 import lemmas.Pill.Cue.Root
 import lemmas.Compiler.OvumMold
+import lemmas.Compiler.MookOther
 
 /-!
 # The assembly
@@ -177,12 +178,16 @@ theorem pokeValid (hm : OvumMold) : PokeValid := by
 /-- `+eval-mook` on a noun that is no tone leaves a core that it also leaves on
 some tone.  `Reach` of `core/Statement.lean` runs `+eval-mook` on any noun,
 the model only on tones.  On a noun that is not `[%2 *]` it returns the core
-unchanged; on `[%2 x]` the state changes only through the `%meaf` frames it
-renders, and the frames it skips or renders without the state can be
-replaced by tone frames.  Owner: pill to model. -/
+unchanged (`eval_mook_not2`), so `MookOther` follows from its case `[%2 x]`,
+`MookOtherTwo` of `lemmas/Compiler/MookOther.lean` (`mookOther_of`), which is
+the hypothesis left in `Gap`: there the state changes only through the
+`%meaf` frames it renders, and the frames it skips or renders without the
+state can be replaced by tone frames.  Owner: pill to model. -/
 def MookOther : Prop :=
   ∀ cr, CorIn cr → ∀ ton x, nock (C eval_mook.battery (C ton (icore cr))) eval_mook.battery = some x →
     ∃ (t : Tone) (y z cr' : Noun), x = C y cr' ∧ nock (mookS cr t) eval_mook.battery = some (C z cr')
+
+theorem mookOther_of (h : MookOtherTwo) : MookOther := mookOther_of_two h
 
 /-- The model of the compiler meets the contract from every state where
 `InvC` holds.  Owner: the analysis and compilation tracks (`lemmas/Ska/`). -/
@@ -325,7 +330,7 @@ variable {lib : Lib} {pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mug
 structure Gap (lib : Lib) (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun))
     (InvC : Noun → Prop) : Prop where
   pokeModel : PokeModel pk
-  mookOther : MookOther
+  mookOtherTwo : MookOtherTwo
   contract : Contract lib pk InvC
   halting : Halting pk InvC
   invStart : InvStart InvC
@@ -337,14 +342,14 @@ structure Gap (lib : Lib) (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMa
 theorem Gap.reach (g : Gap lib pk InvC) {core₀ c : Noun} (h0 : Ska.IsCore core₀)
     (h : Ska.Reach core₀ c) : ∃ cr, c = C ob (icore cr) ∧ CorIn cr ∧ InvC cr := by
   obtain ⟨cr, rfl, hc, hr⟩ := reach_model cueRoot g.libSlam g.pokeModel ovumMold
-    g.mookOther g.libFormat g.mookFormat h0 h
+    (mookOther_of g.mookOtherTwo) g.libFormat g.mookFormat h0 h
   exact ⟨cr, rfl, hc, reach_inv lib g.contract.toPokeSteps g.invKept g.invStart hr⟩
 
 theorem meek_of (g : Gap lib pk InvC) : Ska.Meek := by
   intro core₀ c s f p gul h0 hr hA
   have hpk := pokeIs_all g.pokeModel
   obtain ⟨cr, rfl, hc, hr'⟩ := reach_model cueRoot g.libSlam g.pokeModel ovumMold
-    g.mookOther g.libFormat g.mookFormat h0 hr
+    (mookOther_of g.mookOtherTwo) g.libFormat g.mookFormat h0 hr
   obtain ⟨st', he⟩ := meek_reach lib g.contract g.halting g.invKept (gul := gul) g.invStart hr' hA
   exact ⟨_, (top_iff lib g.libSlam pk hpk ob cr hc s f gul _ _).2 ⟨_, st', rfl, rfl, he⟩⟩
 
@@ -357,7 +362,7 @@ theorem weak_of (g : Gap lib pk InvC) : Ska.Weak := by
   have hrb := rendBaseIs_layer4 lib hleaf hhand hrest
   have e0 := isCore_eq cueRoot h0
   obtain ⟨cr, rfl, hc, hr'⟩ := reach_model cueRoot g.libSlam g.pokeModel ovumMold
-    g.mookOther g.libFormat g.mookFormat h0 hr
+    (mookOther_of g.mookOtherTwo) g.libFormat g.mookFormat h0 hr
   subst e0
   obtain ⟨t, rfl, ht⟩ := (mock_iff lib g.libSlam hleaf hhand hrest hst hmsg core core_layer4
     s f gul toon).1 hm
@@ -374,7 +379,7 @@ theorem converse_of (g : Gap lib pk InvC) : Ska.Converse := by
   have hrb := rendBaseIs_layer4 lib hleaf hhand hrest
   have e0 := isCore_eq cueRoot h0
   obtain ⟨cr, rfl, hc, hr'⟩ := reach_model cueRoot g.libSlam g.pokeModel ovumMold
-    g.mookOther g.libFormat g.mookFormat h0 hr
+    (mookOther_of g.mookOtherTwo) g.libFormat g.mookFormat h0 hr
   subst e0
   obtain ⟨tn, cr'', rfl, rfl, hR⟩ :=
     (run_iff lib g.libSlam pk hpk hrb hst hmsg hlist hmm (fun _ hc => pokeDireBad hc) ob cr hc s f gul _ _).1 hrun
