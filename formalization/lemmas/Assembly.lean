@@ -1,6 +1,7 @@
 import lemmas.Compiler.Connect
 import lemmas.Compiler.PokeFrame
 import lemmas.Compiler.ListMold
+import lemmas.Compiler.Validate
 import lemmas.Ska.Statements
 
 /-!
@@ -144,10 +145,6 @@ def PokeModel : Prop :=
 def PokeValid : Prop :=
   ∀ cr, CorIn cr → ∀ ovo x, pokeN cr ovo = some x → ∃ ov : Ovum, ovo = ov.toNoun
 
-/-- The inner `+poke` crashes on a `%dire` ovum whose bell `+validate-bell`
-rejects (`PokeDireBad` of `EvalRend.lean`).  Owner: pill to model. -/
-def PokeDire : Prop := ∀ cr, CorIn cr → PokeDireBad cr
-
 /-- `+eval-mook` on a noun that is no tone leaves a core that it also leaves on
 some tone.  `Reach` of `core/Statement.lean` runs `+eval-mook` on any noun,
 the model only on tones.  On a noun that is not `[%2 *]` it returns the core
@@ -249,10 +246,11 @@ theorem pokeIs_all (hpm : PokeModel pk) : ∀ cr, CorIn cr → PokeIs pk cr :=
 interpreter core of a compiler's core `cr` that keeps what the interpreter
 reads and that the model reaches from the pill's `cor`. -/
 theorem reach_model (hcue : CueRoot) (hslam : LibSlam lib) (hpm : PokeModel pk)
-    (hpv : PokeValid) (hbad : PokeDire) (hmo : MookOther) (hfmt : LibFormat lib)
+    (hpv : PokeValid) (hmo : MookOther) (hfmt : LibFormat lib)
     (hmf : MookFormat lib) {core₀ c : Noun} (h0 : Ska.IsCore core₀) (h : Ska.Reach core₀ c) :
     ∃ cr, c = C ob (icore cr) ∧ CorIn cr ∧ ReachI lib pk cor cr := by
   have hpk := pokeIs_all hpm
+  have hbad : ∀ cr, CorIn cr → PokeDireBad cr := fun _ hc => pokeDireBad hc
   obtain ⟨hleaf, hhand, hrest, hst, hm⟩ := hfmt
   have hlist := listMoldIs
   have hmsg : EvalMookMsgIs lib := hmf
@@ -300,7 +298,6 @@ structure Gap (lib : Lib) (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMa
   cueRoot : CueRoot
   pokeModel : PokeModel pk
   pokeValid : PokeValid
-  pokeDire : PokeDire
   mookOther : MookOther
   contract : Contract lib pk InvC
   halting : Halting pk InvC
@@ -313,14 +310,14 @@ structure Gap (lib : Lib) (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMa
 theorem Gap.reach (g : Gap lib pk InvC) {core₀ c : Noun} (h0 : Ska.IsCore core₀)
     (h : Ska.Reach core₀ c) : ∃ cr, c = C ob (icore cr) ∧ CorIn cr ∧ InvC cr := by
   obtain ⟨cr, rfl, hc, hr⟩ := reach_model g.cueRoot g.libSlam g.pokeModel g.pokeValid
-    g.pokeDire g.mookOther g.libFormat g.mookFormat h0 h
+    g.mookOther g.libFormat g.mookFormat h0 h
   exact ⟨cr, rfl, hc, reach_inv lib g.contract.toPokeSteps g.invKept g.invStart hr⟩
 
 theorem meek_of (g : Gap lib pk InvC) : Ska.Meek := by
   intro core₀ c s f p gul h0 hr hA
   have hpk := pokeIs_all g.pokeModel
   obtain ⟨cr, rfl, hc, hr'⟩ := reach_model g.cueRoot g.libSlam g.pokeModel g.pokeValid
-    g.pokeDire g.mookOther g.libFormat g.mookFormat h0 hr
+    g.mookOther g.libFormat g.mookFormat h0 hr
   obtain ⟨st', he⟩ := meek_reach lib g.contract g.halting g.invKept (gul := gul) g.invStart hr' hA
   exact ⟨_, (top_iff lib g.libSlam pk hpk ob cr hc s f gul _ _).2 ⟨_, st', rfl, rfl, he⟩⟩
 
@@ -333,12 +330,12 @@ theorem weak_of (g : Gap lib pk InvC) : Ska.Weak := by
   have hrb := rendBaseIs_layer4 lib hleaf hhand hrest
   have e0 := isCore_eq g.cueRoot h0
   obtain ⟨cr, rfl, hc, hr'⟩ := reach_model g.cueRoot g.libSlam g.pokeModel g.pokeValid
-    g.pokeDire g.mookOther g.libFormat g.mookFormat h0 hr
+    g.mookOther g.libFormat g.mookFormat h0 hr
   subst e0
   obtain ⟨t, rfl, ht⟩ := (mock_iff lib g.libSlam hleaf hhand hrest hst hmsg core core_layer4
     s f gul toon).1 hm
   obtain ⟨st'', hrun⟩ := weak_reach lib g.contract g.halting g.invKept g.invStart hr' ht
-  exact ⟨_, (run_iff lib g.libSlam pk hpk hrb hst hmsg hlist hmm g.pokeDire ob cr hc s f gul _ _).2
+  exact ⟨_, (run_iff lib g.libSlam pk hpk hrb hst hmsg hlist hmm (fun _ hc => pokeDireBad hc) ob cr hc s f gul _ _).2
     ⟨t, st'', rfl, rfl, hrun⟩⟩
 
 theorem converse_of (g : Gap lib pk InvC) : Ska.Converse := by
@@ -350,10 +347,10 @@ theorem converse_of (g : Gap lib pk InvC) : Ska.Converse := by
   have hrb := rendBaseIs_layer4 lib hleaf hhand hrest
   have e0 := isCore_eq g.cueRoot h0
   obtain ⟨cr, rfl, hc, hr'⟩ := reach_model g.cueRoot g.libSlam g.pokeModel g.pokeValid
-    g.pokeDire g.mookOther g.libFormat g.mookFormat h0 hr
+    g.mookOther g.libFormat g.mookFormat h0 hr
   subst e0
   obtain ⟨tn, cr'', rfl, rfl, hR⟩ :=
-    (run_iff lib g.libSlam pk hpk hrb hst hmsg hlist hmm g.pokeDire ob cr hc s f gul _ _).1 hrun
+    (run_iff lib g.libSlam pk hpk hrb hst hmsg hlist hmm (fun _ hc => pokeDireBad hc) ob cr hc s f gul _ _).1 hrun
   have hM := converse_reach lib g.contract g.invKept g.invStart hr' hR
   exact (mock_iff lib g.libSlam hleaf hhand hrest hst hmsg core core_layer4 s f gul _).2 ⟨tn, rfl, hM⟩
 

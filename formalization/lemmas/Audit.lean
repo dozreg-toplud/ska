@@ -310,3 +310,4 @@ open Formalization
 #print axioms Compiler.pokeReach_frame
 #print axioms Compiler.pokeFrame_corIn
 #print axioms Compiler.listMoldIs
+#print axioms Compiler.pokeDireBad
