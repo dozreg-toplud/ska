@@ -12,6 +12,7 @@ import lemmas.Hoon.DelBy
 import lemmas.Hoon.GasBy
 import lemmas.Hoon.RepBy
 import lemmas.Hoon.JabBy
+import lemmas.Hoon.Ju
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -99,3 +100,8 @@ open Formalization
 #print axioms Hoon.gas_by
 #print axioms Hoon.rep_tree
 #print axioms Hoon.jab_by
+#print axioms Hoon.ju_get
+#print axioms Hoon.ju_put
+#print axioms Hoon.ju_has_gate
+#print axioms Hoon.ja_add_gate
+#print axioms Hoon.ju_gas_loop
