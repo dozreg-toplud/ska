@@ -444,6 +444,289 @@ theorem knowGo_nf_some (dat : Bell → Option Datum) :
     obtain ⟨c, hc⟩ := ihq hn.2 sub ((b, a.1.2.sock) :: a.2)
     simp [knowGo, ha, hc, idc]
 
+/-! ## The two runs -/
+
+/-- Every site of `L` has a site of the same callee in `L'` whose sock
+shares a noun with it. -/
+def SitesRel (L L' : List Site) : Prop := ∀ c k, (c, k) ∈ L → ∃ k', (c, k') ∈ L' ∧ Meets k k'
+
+theorem SitesRel.mono {L L1 L2 : List Site} (h : SitesRel L L1) (hs : L1 <:+ L2) : SitesRel L L2 :=
+  fun c k hck => let ⟨k', hm, hk⟩ := h c k hck; ⟨k', hs.subset hm, hk⟩
+
+theorem SitesRel.cons {L L' : List Site} (h : SitesRel L L') {c : Bell} {k k' : Sock} (hk : Meets k k') :
+    SitesRel ((c, k) :: L) ((c, k') :: L') := by
+  intro c0 k0 hm
+  rcases List.mem_cons.mp hm with he | hm
+  · cases he; exact ⟨k', List.mem_cons_self, hk⟩
+  · obtain ⟨k1, h1, h2⟩ := h c0 k0 hm
+    exact ⟨k1, List.mem_cons_of_mem _ h1, h2⟩
+
+theorem fits_of_only {a a' : Sock} {x : Noun} (honly : ∀ z, Fits a z → z = x) (hm : Meets a a') : Fits a' x :=
+  let ⟨w, h1, h2⟩ := hm; (honly w h1) ▸ h2
+
+theorem meets_dunno_dunno : Meets Anno.dunno.sock Anno.dunno.sock := ⟨A 0, fits_dunno _, fits_dunno _⟩
+
+theorem meets_lit_dunno (v : Noun) : Meets (litAnno v).sock Anno.dunno.sock := ⟨v, rfl, fits_dunno _⟩
+
+/-- A branch taken by a fold meets the join of both branches without the
+fold, on the second branch. -/
+theorem meets_doubleInt_right {b a' b' : Anno} (hb : Meets b.sock b'.sock) :
+    Meets b.sock (doubleInt a' b').sock :=
+  let ⟨x, h1, h2⟩ := hb
+  ⟨x, h1, doubleInt_fits_right a' b' h2⟩
+
+/-- `knowGo` on Nock 0 at a nonzero axis: the sites are kept, and the
+product's sock is what the subject's sock knows at the axis. -/
+theorem knowGo_n0_read {fold : Bool} {dat : Bell → Option Datum} {res : Bell → Sock → Option Bell}
+    {sub : Anno} {st : List Site} {p : Nat} {r : (Nomm × Anno) × List Site} (hp0 : p ≠ 0)
+    (h : knowGo fold dat res (Nomm.n0 p) sub st = some r) :
+    r.2 = st ∧ (if p = 1 then some sub.sock else So.pull sub.sock p) = some r.1.2.sock := by
+  simp only [knowGo, if_neg hp0, Option.map_eq_some_iff] at h
+  obtain ⟨prod, hprod, h⟩ := h
+  have e : r.2 = st ∧ r.1.2.sock = prod.sock := by
+    split at h <;> (subst h; exact ⟨rfl, rfl⟩)
+  refine ⟨e.1, ?_⟩
+  rw [e.2]
+  split at hprod
+  · rename_i h1; cases hprod; rw [if_pos h1]
+  · rename_i h1
+    rw [if_neg h1]
+    simp only [Option.map_eq_some_iff] at hprod
+    obtain ⟨s', hs', rfl⟩ := hprod
+    exact hs'
+
+/-- **The run under a bake against the run without folding.**  If the two
+subject socks share a noun, so do the two products, and every site of the
+first run has a site of the same callee in the second whose sock shares a
+noun with it.  `fold` is the first run's flag; the second never folds. -/
+theorem knowGo_meets (fold : Bool) (dat : Bell → Option Datum)
+    (hdat : ∀ b d, dat b = some d → ∃ y, Fits d.prod y) :
+    ∀ (nm : Nomm) (sub sub' : Anno) (st st' : List Site) (r r' : (Nomm × Anno) × List Site),
+      knowGo fold dat idc nm sub st = some r → knowGo false dat idc nm sub' st' = some r' →
+      Meets sub.sock sub'.sock → SitesRel st st' →
+      Meets r.1.2.sock r'.1.2.sock ∧ SitesRel r.2 r'.2 := by
+  intro nm
+  induction nm with
+  | cons p q ihp ihq =>
+    intro sub sub' st st' r r' h h' hs hst
+    simp only [knowGo, Option.bind_eq_some_iff] at h h'
+    obtain ⟨l, hl, r1, hr1, h⟩ := h
+    obtain ⟨l', hl', r1', hr1', h'⟩ := h'
+    simp only [Option.some.injEq] at h'
+    subst h'
+    obtain ⟨ml, sl⟩ := ihp sub sub' st st' l l' hl hl' hs hst
+    obtain ⟨mr, sr⟩ := ihq sub sub' l.2 l'.2 r1 r1' hr1 hr1' hs sl
+    split at h
+    · rename_i x y hx hy
+      cases h
+      exact ⟨⟨C x y, rfl, knit_fits (fits_of_only (knowGo_lit _ _ _ _ _ _ _ hl x hx) ml)
+        (fits_of_only (knowGo_lit _ _ _ _ _ _ _ hr1 y hy) mr)⟩, sr⟩
+    · cases h
+      exact ⟨meets_knit ml mr, sr⟩
+  | n0 p =>
+    intro sub sub' st st' r r' h h' hs hst
+    by_cases hp0 : p = 0
+    · subst hp0
+      simp only [knowGo, if_pos, Option.some.injEq] at h h'
+      subst h; subst h'
+      exact ⟨meets_dunno_dunno, hst⟩
+    · obtain ⟨e1, e2⟩ := knowGo_n0_read hp0 h
+      obtain ⟨e1', e2'⟩ := knowGo_n0_read hp0 h'
+      rw [e1, e1']
+      refine ⟨?_, hst⟩
+      by_cases hp1 : p = 1
+      · rw [if_pos hp1] at e2 e2'
+        rw [← Option.some.inj e2, ← Option.some.inj e2']
+        exact hs
+      · rw [if_neg hp1] at e2 e2'
+        exact meets_pull hs hp0 e2 e2'
+  | n1 p =>
+    intro sub sub' st st' r r' h h' hs hst
+    simp only [knowGo, Option.some.injEq] at h h'
+    subst h; subst h'
+    exact ⟨⟨p, rfl, rfl⟩, hst⟩
+  | n2 p q info ihp ihq =>
+    intro sub sub' st st' r r' h h' hs hst
+    simp only [knowGo, Option.bind_eq_some_iff] at h h'
+    obtain ⟨s, hs1, f, hf, h⟩ := h
+    obtain ⟨s', hs1', f', hf', h'⟩ := h'
+    obtain ⟨ms, ss⟩ := ihp sub sub' st st' s s' hs1 hs1' hs hst
+    obtain ⟨-, sf⟩ := ihq sub sub' s.2 s'.2 f f' hf hf' hs ss
+    cases info with
+    | none =>
+      simp only [Option.some.injEq] at h h'
+      subst h; subst h'
+      exact ⟨meets_dunno_dunno, sf⟩
+    | some i =>
+      obtain ⟨b, mk⟩ := i
+      simp only [idc, Option.map_some, Option.some.injEq] at h h'
+      subst h; subst h'
+      refine ⟨?_, sf.cons ms⟩
+      cases hd : dat b with
+      | none => exact meets_dunno_dunno
+      | some d => exact meets_patchProd ms d.map d.prod (hdat b d hd)
+  | n3 p ih =>
+    intro sub sub' st st' r r' h h' hs hst
+    simp only [knowGo, Option.map_eq_some_iff] at h h'
+    obtain ⟨a, ha, h⟩ := h
+    obtain ⟨a', ha', h'⟩ := h'
+    subst h'
+    obtain ⟨-, sa⟩ := ih sub sub' st st' a a' ha ha' hs hst
+    split at h <;> (subst h; first | exact ⟨meets_lit_dunno _, sa⟩ | exact ⟨meets_dunno_dunno, sa⟩)
+  | n4 p ih =>
+    intro sub sub' st st' r r' h h' hs hst
+    simp only [knowGo, Option.map_eq_some_iff] at h h'
+    obtain ⟨a, ha, h⟩ := h
+    obtain ⟨a', ha', h'⟩ := h'
+    subst h'
+    obtain ⟨-, sa⟩ := ih sub sub' st st' a a' ha ha' hs hst
+    split at h <;> (subst h; first | exact ⟨meets_lit_dunno _, sa⟩ | exact ⟨meets_dunno_dunno, sa⟩)
+  | n5 p q ihp ihq =>
+    intro sub sub' st st' r r' h h' hs hst
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h h'
+    obtain ⟨a, ha, b, hb, h⟩ := h
+    obtain ⟨a', ha', b', hb', h'⟩ := h'
+    subst h'
+    obtain ⟨-, sa⟩ := ihp sub sub' st st' a a' ha ha' hs hst
+    obtain ⟨-, sb⟩ := ihq sub sub' a.2 a'.2 b b' hb hb' hs sa
+    split at h <;> (subst h; first | exact ⟨meets_lit_dunno _, sb⟩ | exact ⟨meets_dunno_dunno, sb⟩)
+  | n6 p q r0 ihp ihq ihr =>
+    intro sub sub' st st' r r' h h' hs hst
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h'
+    obtain ⟨a', ha', b', hb', c', hc', h'⟩ := h'
+    subst h'
+    simp only [knowGo, Option.bind_eq_some_iff] at h
+    obtain ⟨a, ha, h⟩ := h
+    obtain ⟨-, sa⟩ := ihp sub sub' st st' a a' ha ha' hs hst
+    split at h
+    · obtain ⟨mq, sq⟩ := ihq sub sub' a.2 a'.2 r b' h hb' hs sa
+      exact ⟨meets_doubleInt_left mq, sq.mono (knowGo_suffix _ _ _ _ _ _ c' hc')⟩
+    · obtain ⟨mr, sr⟩ := ihr sub sub' a.2 b'.2 r c' h hc' hs (sa.mono (knowGo_suffix _ _ _ _ _ _ _ hb'))
+      exact ⟨meets_doubleInt_right mr, sr⟩
+    · simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+      obtain ⟨b, hb, c, hc, rfl⟩ := h
+      obtain ⟨mq, sq⟩ := ihq sub sub' a.2 a'.2 b b' hb hb' hs sa
+      obtain ⟨-, sr⟩ := ihr sub sub' b.2 b'.2 c c' hc hc' hs sq
+      exact ⟨meets_doubleInt mq, sr⟩
+  | n7 p q ihp ihq =>
+    intro sub sub' st st' r r' h h' hs hst
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h h'
+    obtain ⟨a, ha, b, hb, h⟩ := h
+    obtain ⟨a', ha', b', hb', h'⟩ := h'
+    subst h'
+    obtain ⟨ma, sa⟩ := ihp sub sub' st st' a a' ha ha' hs hst
+    obtain ⟨mb, sb⟩ := ihq a.1.2 a'.1.2 a.2 a'.2 b b' hb hb' ma sa
+    split at h
+    · rename_i x hx _
+      subst h
+      exact ⟨⟨x, rfl, fits_of_only (knowGo_lit _ _ _ _ _ _ _ hb x hx) mb⟩, sb⟩
+    · subst h
+      exact ⟨mb, sb⟩
+  | n10 ax v q ihv ihq =>
+    intro sub sub' st st' r r' h h' hs hst
+    simp only [knowGo, Option.bind_eq_some_iff] at h h'
+    obtain ⟨a, ha, b, hb, h⟩ := h
+    obtain ⟨a', ha', b', hb', h'⟩ := h'
+    obtain ⟨ma, sa⟩ := ihv sub sub' st st' a a' ha ha' hs hst
+    obtain ⟨mb, sb⟩ := ihq sub sub' a.2 a'.2 b b' hb hb' hs sa
+    simp only [Option.map_eq_some_iff] at h'
+    obtain ⟨s', hs', rfl⟩ := h'
+    split at h
+    · rename_i u hu
+      cases h
+      split at hu
+      · rename_i x y hx hy
+        exact ⟨⟨u, rfl, darn_fits (fits_of_only (knowGo_lit _ _ _ _ _ _ _ hb y hy) mb)
+          (fits_of_only (knowGo_lit _ _ _ _ _ _ _ ha x hx) ma) hu hs'⟩, sb⟩
+      · cases hu
+    · simp only [Option.map_eq_some_iff] at h
+      obtain ⟨s, hs1, rfl⟩ := h
+      exact ⟨meets_darn mb ma hs1 hs', sb⟩
+  | n11s tag q body ihq =>
+    intro sub sub' st st' r r' h h' hs hst
+    simp only [knowGo, Option.map_eq_some_iff] at h h'
+    obtain ⟨a, ha, h⟩ := h
+    obtain ⟨a', ha', h'⟩ := h'
+    subst h'
+    obtain ⟨ma, sa⟩ := ihq sub sub' st st' a a' ha ha' hs hst
+    split at h
+    · rename_i x _ hx
+      subst h
+      exact ⟨⟨x, rfl, fits_of_only (knowGo_lit _ _ _ _ _ _ _ ha x hx) ma⟩, sa⟩
+    · subst h
+      exact ⟨ma, sa⟩
+  | n11d tag hh q body ihh ihq =>
+    intro sub sub' st st' r r' h h' hs hst
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h h'
+    obtain ⟨a, ha, b, hb, h⟩ := h
+    obtain ⟨a', ha', b', hb', h'⟩ := h'
+    subst h'
+    obtain ⟨-, sa⟩ := ihh sub sub' st st' a a' ha ha' hs hst
+    obtain ⟨mb, sb⟩ := ihq sub sub' a.2 a'.2 b b' hb hb' hs sa
+    split at h
+    · rename_i x _ _ hx
+      subst h
+      exact ⟨⟨x, rfl, fits_of_only (knowGo_lit _ _ _ _ _ _ _ hb x hx) mb⟩, sb⟩
+    · subst h
+      exact ⟨mb, sb⟩
+  | n12 p q ihp ihq =>
+    intro sub sub' st st' r r' h h' hs hst
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h h'
+    obtain ⟨a, ha, b, hb, rfl⟩ := h
+    obtain ⟨a', ha', b', hb', rfl⟩ := h'
+    obtain ⟨-, sa⟩ := ihp sub sub' st st' a a' ha ha' hs hst
+    obtain ⟨-, sb⟩ := ihq sub sub' a.2 a'.2 b b' hb hb' hs sa
+    exact ⟨meets_dunno_dunno, sb⟩
+  | mean p b q body k ihp ihq =>
+    intro sub sub' st st' r r' h h' hs hst
+    simp only [knowGo, idc, Option.bind_some, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h h'
+    obtain ⟨a, ha, c, hc, rfl⟩ := h
+    obtain ⟨a', ha', c', hc', rfl⟩ := h'
+    obtain ⟨ma, sa⟩ := ihp sub sub' st st' a a' ha ha' hs hst
+    exact ihq sub sub' _ _ c c' hc hc' hs (sa.cons ma)
+
+/-! ## `KnowMeetsNF` -/
+
+section Env
+
+variable {M : Type → Type → Type} [Treap M]
+
+/-- **Every datum's product sock has a noun** (`+pop` turns `%void` into
+`|+~`). -/
+def DatInhab (E : BEnv M) : Prop := ∀ b d, E.dat b = some d → ∃ y, Fits d.prod y
+
+/-- **Every code bell with a datum has a code requirement with a noun.** -/
+def LessInhab (E : BEnv M) : Prop := ∀ cur d, E.dat cur = some d → ∃ y, Fits cur.less y
+
+/-- **No `%10` of a datum's nomm has axis `0`.** -/
+def NoAx0Dat (E : BEnv M) : Prop := ∀ cur d, E.dat cur = some d → NoAx0 d.nomm
+
+omit [Treap M] in
+/-- **`KnowMeetsNF` from three facts about the datums**: products and code
+requirements have nouns, and no `%10` has axis `0`. -/
+theorem knowMeetsNF_of {E : BEnv M} (hp : DatInhab E) (hl : LessInhab E) (hn : NoAx0Dat E) :
+    KnowMeetsNF E := by
+  intro cur s d out sites hb hd hk
+  obtain ⟨rB, hrB⟩ := knowGo_nf_some E.dat d.nomm (hn cur d hd) ⟨cur.less, A 1⟩ []
+  simp only [know, Option.map_eq_some_iff] at hk
+  obtain ⟨rA, hrA, he⟩ := hk
+  simp only [Prod.mk.injEq] at he
+  obtain ⟨rfl, rfl⟩ := he
+  refine ⟨rB.1.1, rB.2, by simp [know, hrB], ?_⟩
+  obtain ⟨-, hs⟩ := knowGo_meets E.fold E.dat hp d.nomm _ _ [] [] rA rB hrA hrB
+    (meets_of_bakeOK hb (hl cur d hd)) (fun _ _ h => by simp at h)
+  intro c k hck _
+  exact hs c k hck
+
+omit [Treap M] in
+/-- **`SitesMeet` from `LessProvidesNF` and the three facts about the
+datums.** -/
+theorem sitesMeet_of_lessNF {E : BEnv M} (hlp : LessProvidesNF E) (hp : DatInhab E) (hl : LessInhab E)
+    (hn : NoAx0Dat E) : SitesMeet E :=
+  sitesMeet_of_nf hlp (knowMeetsNF_of hp hl hn)
+
+end Env
+
 end Bake
 
 end SkaModel
