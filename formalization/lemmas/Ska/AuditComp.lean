@@ -5,6 +5,7 @@ import lemmas.Ska.CompFinishF
 import lemmas.Ska.CompCopyFresh
 import lemmas.Ska.CompNestFinalP
 import lemmas.Ska.CompSixNext
+import lemmas.Ska.CompSixNextCond
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -143,3 +144,9 @@ open Formalization.SkaModel.Comp
 #print axioms runL_n6_next
 #print axioms sixNextSimple_apart
 #print axioms sixNextL_ofSure
+#print axioms keys_difM_self
+#print axioms sect_apart
+#print axioms sect_cond
+#print axioms kc_forkSure
+#print axioms kc_copyL
+#print axioms sixNextSimple_cond
