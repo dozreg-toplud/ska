@@ -311,5 +311,161 @@ theorem springAt_slot : ∀ (b : Nat) (σ : Noun) (q π : List Bool), 1 ≤ b �
       rw [if_neg (by omega)]
       exact ih (mas b) (mas_lt b h2) t q' π hm hq'
 
+/-! ## The invariant for a part that may be absent -/
+
+/-- The `exact` half of the invariant: a part whose provenance is an axis is
+the part of the subject there. -/
+def ExactAt (y σ : Noun) (o : Option Noun) : Prop :=
+  ∀ π a, springAt σ π = A a → a ≠ 0 → slotO o π = slot? a y
+
+/-- **The provenance invariant** `ProvR`, for a part that may be absent. -/
+structure ProvO (y : Noun) (S : Sock) (σ : Noun) (o : Option Noun) : Prop where
+  nonvoid : S ≠ Sock.void
+  exact : ExactAt y σ o
+  const : ∀ π, springAt σ π = A 0 → FitsOpt (sockAt S π) (slotO o π)
+
+theorem provO_iff {y : Noun} {S : Sock} {σ p : Noun} : ProvO y S σ (some p) ↔ ProvR y S σ p :=
+  ⟨fun h => ⟨h.nonvoid, h.exact, h.const⟩, fun h => ⟨h.nonvoid, h.exact, h.const⟩⟩
+
+theorem fitsOpt_dunno (o : Option Noun) : FitsOpt Sock.dunno o := by
+  cases o with
+  | none => exact dunno_blank
+  | some n => exact fits_dunno n
+
+theorem fitsOpt_blank {S : Sock} (h : S.Blank) (o : Option Noun) : FitsOpt S o := by
+  cases o with
+  | none => exact h
+  | some n => exact Sock.Blank.fits h n
+
+theorem exactAt_zero (y : Noun) (o : Option Noun) : ExactAt y (A 0) o := by
+  intro π a e ha
+  rw [springAt_zero] at e
+  cases e; exact absurd rfl ha
+
+theorem ExactAt.part {y σ : Noun} {o : Option Noun} (h : ExactAt y σ o) (π : List Bool) :
+    ExactAt y (springAt σ π) (slotO o π) := fun ρ a e ha => by
+  rw [← slotO_app]; exact h (π ++ ρ) a (by rw [springAt_app]; exact e) ha
+
+theorem ProvO.part {y : Noun} {S : Sock} {σ : Noun} {o : Option Noun} (h : ProvO y S σ o)
+    (π : List Bool) : ProvO y (sockAt S π) (springAt σ π) (slotO o π) where
+  nonvoid := sockAt_ne_void π h.nonvoid
+  exact := h.exact.part π
+  const := fun ρ e => by
+    rw [← slotO_app, ← sockAt_app]; exact h.const (π ++ ρ) (by rw [springAt_app]; exact e)
+
+theorem ProvO.congr {y : Noun} {S : Sock} {σ σ' : Noun} {o : Option Noun}
+    (he : ∀ π, springAt σ' π = springAt σ π) (h : ProvO y S σ o) : ProvO y S σ' o where
+  nonvoid := h.nonvoid
+  exact := fun π a e ha => h.exact π a (by rw [← he]; exact e) ha
+  const := fun π e => h.const π (by rw [← he]; exact e)
+
+/-- A part without provenance that the sock knows nothing of. -/
+theorem provO_dunno (y : Noun) (o : Option Noun) : ProvO y Sock.dunno (A 0) o where
+  nonvoid := by simp [Sock.dunno]
+  exact := exactAt_zero y o
+  const := fun π _ => by rw [sockAt_dunno]; exact fitsOpt_dunno _
+
+/-- A blank sock: only the `exact` half is left. -/
+theorem provO_blank {y : Noun} {S : Sock} {σ : Noun} {o : Option Noun} (hb : S.Blank)
+    (he : ExactAt y σ o) : ProvO y S σ o where
+  nonvoid := fun h => by subst h; exact Sock.Blank.not_void hb
+  exact := he
+  const := fun π _ => fitsOpt_blank (sockAt_blank π hb) _
+
+/-! ## Nock 0 -/
+
+/-- **Nock 0 keeps the invariant**: the part at an axis, with `+pull:so` and
+`+slot:pi`. -/
+theorem provO_slot {y : Noun} {S : Sock} {σ : Noun} {o : Option Noun} {b : Nat} {q : List Bool}
+    (h : ProvO y S σ o) (hb : 1 ≤ b) (hq : axisPath b = some q) :
+    ProvO y (sockAt S q) (Pi.slot σ b) (slotO o q) :=
+  (h.part q).congr fun π => by rw [springAt_slot b σ q π hb hq, springAt_app]
+
+/-! ## Cons -/
+
+theorem springAt_cons_cons (x z : Noun) (b : Bool) (π : List Bool) :
+    springAt (Pi.cons x z) (b :: π) = springAt (if b then z else x) π := by
+  unfold Pi.cons
+  split
+  · rename_i h
+    obtain ⟨rfl, rfl⟩ := h
+    cases b <;> simp [springAt, springAt_zero, Pi.hed, Pi.tel]
+  · cases b <;> rfl
+
+theorem cons_ne_atom {x z : Noun} {a : Nat} (h : Pi.cons x z = A a) : a = 0 ∧ x = A 0 ∧ z = A 0 := by
+  unfold Pi.cons at h
+  split at h
+  · rename_i hh; cases h; exact ⟨rfl, hh⟩
+  · cases h
+
+theorem knit_ne_void {Sl Sr : Sock} (hl : Sl ≠ Sock.void) (hr : Sr ≠ Sock.void) :
+    So.knit Sl Sr ≠ Sock.void := by
+  cases Sl with
+  | void => exact absurd rfl hl
+  | mk l d1 =>
+    cases Sr with
+    | void => exact absurd rfl hr
+    | mk r d2 => simp only [So.knit]; split <;> simp [Sock.dunno]
+
+theorem fitsOpt_knit_part {Sl Sr : Sock} (hl : Sl ≠ Sock.void) (hr : Sr ≠ Sock.void) (b : Bool)
+    (π : List Bool) (o : Option Noun) (h : FitsOpt (sockAt (if b then Sr else Sl) π) o) :
+    FitsOpt (sockAt (So.knit Sl Sr) (b :: π)) o := by
+  cases Sl with
+  | void => exact absurd rfl hl
+  | mk l d1 =>
+    cases Sr with
+    | void => exact absurd rfl hr
+    | mk r d2 =>
+      simp only [So.knit]
+      split
+      · show FitsOpt (sockAt Sock.dunno (b :: π)) o
+        rw [sockAt_dunno]; exact fitsOpt_dunno o
+      · rename_i hc
+        rw [con_ne_no hc]
+        cases b
+        · simpa [sockAt, So.hed] using h
+        · simpa [sockAt, So.tel] using h
+
+/-- **A cons keeps the invariant**: `+knit:so` with `+cons:pi`, on any part
+whose head and tail satisfy it, including the normalization
+`cons:pi ~ ~ = ~`. -/
+theorem provO_knit {y : Noun} {Sl Sr : Sock} {σl σr : Noun} {o : Option Noun}
+    (hl : ProvO y Sl σl (slotO o [false])) (hr : ProvO y Sr σr (slotO o [true])) :
+    ProvO y (So.knit Sl Sr) (Pi.cons σl σr) o where
+  nonvoid := knit_ne_void hl.nonvoid hr.nonvoid
+  exact := by
+    intro π a e ha
+    cases π with
+    | nil => exact absurd (cons_ne_atom e).1 ha
+    | cons b ρ =>
+      rw [springAt_cons_cons] at e
+      rw [slotO_cons]
+      cases b
+      · exact hl.exact ρ a e ha
+      · exact hr.exact ρ a e ha
+  const := by
+    intro π e
+    cases π with
+    | nil =>
+      obtain ⟨_, h1, h2⟩ := cons_ne_atom e
+      have fl := hl.const [] (by rw [h1]; rfl)
+      have fr := hr.const [] (by rw [h2]; rfl)
+      cases o with
+      | none => exact knit_blank fl fr
+      | some n =>
+        cases n with
+        | atom k => exact Sock.Blank.fits (knit_blank fl fr) _
+        | cell x z =>
+          rw [slotO_nil] at fl fr
+          exact knit_fits (by simpa [slotO, slotAtPath, sockAt, FitsOpt] using fl)
+            (by simpa [slotO, slotAtPath, sockAt, FitsOpt] using fr)
+    | cons b ρ =>
+      rw [springAt_cons_cons] at e
+      rw [slotO_cons]
+      apply fitsOpt_knit_part hl.nonvoid hr.nonvoid
+      cases b
+      · exact hl.const ρ e
+      · exact hr.const ρ e
+
 end SkaModel
 end Formalization
