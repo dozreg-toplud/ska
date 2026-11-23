@@ -38,8 +38,8 @@ on the whole pill took the machine down.
 The statements quantify over every core that the pill's core can become by
 pokes and by runs of the interpreter, except through a `%jets` poke that names
 a jet.  Nothing in `core/` is proved.  `lemmas/Compiler/Connect.lean` ties
-`Top`, `Mook`, `Run` and `Mock` to the models; `Reach` and the four
-statements themselves are not yet proved.
+`Top`, `Mook`, `Run` and `Mock` to the models, and `lemmas/Assembly.lean`
+proves the statements from the hypotheses it lists.
 
 What a reader of `core/` has to take on trust beyond the Lean kernel:
 
@@ -109,6 +109,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/EvalConv.lean` | The converse: what the pill's `+eval-top` returns, `EvalTop` says (`eval_top_to_model`, `eval_top_iff`).  By induction on the depth of the calls of `+eval-top`, `+eval-blob` and `+eval-pole` (`interp_ge`): a run at depth `k + 1` is a run of `nockW (hyb k)`, which sends those calls to `iterN k` and every other call to `nock`, with the gate `hop` of `+eval-blob` (`hopB`) run inline.  The model's side holds from some level on (`Ev`), and the values come from `interp_le` and the determinism of Nock.  The poke under `hyb k` crashes or returns what `pk` says (`pokeW_cases`). |
 | `Compiler/EvalRend.lean` | `+eval-rend` and `+eval-mook` against `evalRend` and `evalMook`, both ways (`eval_rend_le`, `eval_rend_ge`, `eval_mook_le`, `eval_mook_ge`, `eval_mook_iff`).  `Bell.ofNoun?` inverts `Bell.toNoun` on what `+validate-bell` accepts (`bell_ofNoun_toNoun`).  Assumed: the list mold of layer 1 (`ListMoldIs`), the cord of `+eval-mook` (`EvalMookMsgIs`), and for the direction from the pill, that the poke crashes on a bell `+validate-bell` rejects (`PokeDireBad`). |
 | `Compiler/Connect.lean` | `Top`, `Mook`, `Run` and `Mock` of `core/Statement.lean` hold exactly when the models do (`top_iff`, `mook_iff`, `run_iff`, `mock_iff`), on every core of the pill's shape (`core_shape`, `core_layer4`); the axes of `Statement.lean` are the generated ones (`axes_agree`). |
+| `Assembly.lean` | The five statements of `core/Statement.lean` (`full_of`) from the hypotheses listed in `Gap`, each a `def … : Prop` naming the track that owns it: `CueRoot`, `PokeModel`, `PokeKeeps`, `PokeValid`, `PokeDire`, `MookOther`, `Contract`, `Halting`, `InvStart`, `InvKept`, `LibSlam`, `LibFormat`, `MookFormat`.  Proved here: the outer `+poke` (`poke_iff`), and every core that `Reach` allows is of the pill's shape with a compiler's core the model reaches (`reach_model`). |
 | `Compiler/PokeFrame.lean` | `CorIn` reads the compiler's core only under axis `15` (`corIn_of_tail`); the second half of `PokeIs` follows from its first half and `PokeFrame`, a statement on the Nock of `+poke` alone (`pokeIs_of_frame`). |
 | `Compiler/Lib.lean` | `dif` of `+ca` and `huge` of `+so`, whose crash messages quote a noun that holds the hoon core, so that the generator names them in the bulk chain (`ca.dif.mean` is the quoted noun).  And the pill's library core `lib` satisfies `CaOf`, `SoOf`, `AxisOf`, `YeaOf`: every gate of `+ca` and `+so` computes its model on the pill's core (`ca_int_pill`, ..., `so_darn_pill`) with no assumption. |
 | `Compiler/Axes.lean` | `pat`, `lot` of `+ca` and `pull` of `+so`, which walk an axis with `+cap` and `+mas` of layer 1, read through the library core at `ca.lib.layer1.axis`; B's `cap` and `mas` equal `capF` and `masF`.  And `yea` of `+ca`, with `+peg` and `+weld`, and `darn` of `+so`. |
@@ -249,12 +250,9 @@ import only its theorems.  So:
 
 ## Gaps
 
-1. **The statements are not yet proved.**  `Compiler/Connect.lean` reduces
-   `Top`, `Mook`, `Run` and `Mock` to the models, given `PokeIs` for every
-   core with `CorIn`, the formatting fields of `Lib`, `ListMoldIs`,
-   `EvalMookMsgIs`, `PokeDireBad`, and that the pill's core is `core` (gap 2).
-   `Reach` (pokes keep the shape of the core) and the model-level proofs of
-   `Meek`, `Weak`, `Converse` and `Halts` from these are not done.
+1. **The statements are proved from a list of hypotheses.**
+   `Assembly.lean` proves `Full` from `Gap`; what is left of the project is
+   that list.
 2. **The pill is not tied to `root`.**  No theorem says `cue pill = some root`,
    where `root` is the noun of `lemmas/Pill/Nouns/`.  The kernel cannot
    evaluate `cue` on 792 KB in one piece.  The way through is a proof in

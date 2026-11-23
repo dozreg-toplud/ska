@@ -37,6 +37,7 @@ import lemmas.Compiler.EvalConv
 import lemmas.Compiler.EvalRend
 import lemmas.Compiler.Connect
 import lemmas.Compiler.PokeFrame
+import lemmas.Assembly
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -297,3 +298,10 @@ open Formalization
 #print axioms Compiler.mock_iff
 #print axioms Compiler.corIn_of_tail
 #print axioms Compiler.pokeIs_of_frame
+#print axioms Assembly.poke_iff
+#print axioms Assembly.reach_model
+#print axioms Assembly.meek_of
+#print axioms Assembly.weak_of
+#print axioms Assembly.converse_of
+#print axioms Assembly.halts_of
+#print axioms Assembly.full_of
