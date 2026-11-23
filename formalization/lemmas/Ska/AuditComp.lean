@@ -177,3 +177,4 @@ open Formalization.SkaModel.Comp
 #print axioms crash_iffT
 #print axioms unaryP_ok
 #print axioms runOKP_n4
+#print axioms runOKP_n3
