@@ -1,6 +1,7 @@
 import lemmas.Ska.Statements
 import lemmas.Ska.CapeFacts
 import lemmas.Ska.ContractExamples
+import lemmas.Ska.BugWitness
 
 /-! The axioms of the main theorems of `lemmas/Ska`.  `lake build` prints
 them; each should be `propext`, `Classical.choice` and `Quot.sound` at most. -/
@@ -34,3 +35,5 @@ open Formalization.SkaModel
 #print axioms tail_bwd
 #print axioms nok_fwd
 #print axioms nok_bwd
+#print axioms inline_drop
+#print axioms default_crash
