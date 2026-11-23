@@ -164,18 +164,18 @@ theorem quiet_medeLoop {o : Nat} : ∀ (som : Noun) (ned : Need) (g g' : Gen Map
 
 /-! ## Fresh blocks and the jump `run` returns -/
 
-/-- The jump goes to a block with no parameters. -/
-def Fresh (g : Gen Map) (j : Jmp) : Prop := ∃ b, HoonMap.get g.blocks j.there = some b ∧ b.par = []
+/-- The jump goes to a block with no parameters, and passes no arguments. -/
+def Fresh (g : Gen Map) (j : Jmp) : Prop := ∃ b, HoonMap.get g.blocks j.there = some b ∧ b.par = [] ∧ j.args = []
 
 theorem Fresh.grow {g g' : Gen Map} {j : Jmp} (h : Fresh g j) (hl : j.there < g.bo) (hg : Grow g g') :
     Fresh g' j := by
-  obtain ⟨b, hb, hp⟩ := h
+  obtain ⟨b, hb, hp, ha⟩ := h
   obtain ⟨b', hb', hp', _⟩ := hg.keep _ b hl hb
-  exact ⟨b', hb', hp'.trans hp⟩
+  exact ⟨b', hb', hp'.trans hp, ha⟩
 
 theorem fresh_emitted {g : Gen Map} {b : Blob} (hd : g.drop = false) (hp : b.par = []) {j : Jmp}
-    (hj : j.there = g.bo) : Fresh (g.emitted b) j :=
-  ⟨b, by rw [hj]; exact emitted_get g b hd, hp⟩
+    (hj : j.there = g.bo) (ha : j.args = [] := by rfl) : Fresh (g.emitted b) j :=
+  ⟨b, by rw [hj]; exact emitted_get g b hd, hp, ha⟩
 
 /-- The jumps of a goal go to labels in `[1, bo)`. -/
 def GJ (bo : Nat) : CGoal S → Prop
@@ -926,7 +926,7 @@ theorem runDown (nm : Nomm) : RunDown S Map nm := by
   intro nex g1 h
   have D := run_down (S := S) (Map := Map) nm CGoal.done gen0 g1 nex trivial (by simp [gen0]) rfl h
   refine ⟨D.grow.down (fun k b hb => by simp [gen0, HoonMap.get_empty] at hb) (by simp [gen0]), ?_⟩
-  rcases D.entry with ⟨b, hb, hp⟩ | e
+  rcases D.entry with ⟨b, hb, hp, _⟩ | e
   · rcases b with ⟨par, body, fin⟩
     simp only at hp
     subst hp

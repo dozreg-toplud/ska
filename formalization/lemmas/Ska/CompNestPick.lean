@@ -428,7 +428,7 @@ theorem runP_ok (lib : Lib) {goal : CGoal S} {nm : Nomm} (hf : FragP goal nm) :
     have reB : ∀ r, g1.re ≤ r → r < g2.re → g0.re ≤ r ∧ r < g4'.re := fun r h1 h2 => ⟨by omega, by omega⟩
     have reA : ∀ r, g0.re ≤ r → r < g1.re → g0.re ≤ r ∧ r < g4'.re := fun r h1 h2 => ⟨h1, by omega⟩
     refine ⟨E04, ?_, ?_, by simp only [jmp0]; omega, by simp only [jmp0]; omega,
-      Or.inl ⟨⟨[], [], Termin.hop xc.th⟩, h4o, rfl⟩, fun r hr => ?_, Rc.dist, ?_, ?_, ?_, ?_, fun s hs => ?_, ?_⟩
+      Or.inl ⟨⟨[], [], Termin.hop xc.th⟩, h4o, rfl, rfl⟩, fun r hr => ?_, Rc.dist, ?_, ?_, ?_, ?_, fun s hs => ?_, ?_⟩
     · -- grow
       have GE := growU_emit (b := ⟨[], [], Termin.hop xc.th⟩) (jumpsBelow_hop Rc.lo Rc.hi) u3
       exact Rb.grow.trans (Ra.grow.trans (GU.trans

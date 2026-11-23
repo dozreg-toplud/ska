@@ -47,7 +47,7 @@ theorem finishLF_compDoneP (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.do
   obtain ⟨⟨k5, rfl⟩, l5, dist5, mem5⟩ := needOrdAllocRegs_spec ord g4 _ nedF h5
   simp only at l5 mem5
   obtain ⟨B, fin, hB⟩ : ∃ B fin, HoonMap.get g4.blocks nex.th.there = some ⟨[], B, fin⟩ := by
-    rcases R.ent with ⟨b, hb, hp⟩ | e
+    rcases R.ent with ⟨b, hb, hp, _⟩ | e
     · exact ⟨b.body, b.fin, by rw [hb, ← hp]⟩
     · exact e.elim
   have regs4 : ∀ r, NMem nex.laz.sure.ned r → r < g4.re := fun r hr => (R.regs r hr).2

@@ -247,7 +247,7 @@ theorem sixNext_okN (lib : Lib) {c a b : Nomm} (hcp : c.pure = true)
   have G09 : GrowU g0 g9' := GF.trans ((growU_same (g := gF) (g' := { gF with id := gF.id + 1 }) rfl rfl (fun _ => rfl)).trans (Rb.grow.trans
     (Ra.grow.trans (GQS.trans (Rc.grow.trans (GE.trans (growU_addOps hadd (GE.up uC))))))))
   refine ⟨E09, G09, ?_, by simp only [jmp0]; omega, by simp only [jmp0]; omega,
-    Or.inl ⟨⟨[], [], Termin.hop xc.th⟩, h9o, rfl⟩, fun r hr => ?_, Rc.dist, ?_, ?_, ?_, ?_, fun s hs => ?_, ?_⟩
+    Or.inl ⟨⟨[], [], Termin.hop xc.th⟩, h9o, rfl, rfl⟩, fun r hr => ?_, Rc.dist, ?_, ?_, ?_, ?_, fun s hs => ?_, ?_⟩
   · -- cond
     rw [(KC.addOps' _ _).keep _ _ _ hadd, emitted_cond, Rc.cnd, cS, cQ, cnF]
   · -- regs
