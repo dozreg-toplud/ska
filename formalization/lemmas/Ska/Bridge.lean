@@ -628,6 +628,32 @@ theorem run_folTopR {Inv : GenS M R → Prop} (env : Env R) (memoF : Memo M) (hL
   obtain ⟨i', F⟩ := folLoop_goOK env memoF hL hres n _ _ _ _ _ _ _ _ _ hi h
   exact ⟨i', F 0⟩
 
+/-! ## The write of `+run` -/
+
+theorem gCore_put (g : Callgraph M) (i : Ident) (d : FDatum M) :
+    gCore (Treap.put g i d) = Graph.put (gCore g) i d.core := by
+  funext j
+  simp only [gCore, Graph.put, Treap.get_put]
+  split <;> rfl
+
+/-- **The write of `+run` is a `GStepR.run`**: the graph after `+run` is the
+graph after its `fol-loop` with the identity set to `runDatum` of the run,
+from the datum the identity had when the run began (`hold`: the identity's
+entry is the same at the end of its own `fol-loop`, which the analysis keeps
+and is not proved here). -/
+theorem runEnd_gStepR {P : Sock → Noun → TabEntry → Prop} (hP : ∀ tab, TabIn P tab → TabWF tab)
+    {n : Nat} {id : Ident} {data : FDatum M} {out : FolOut} {gs : GenS M R}
+    (hF : FolTopR P n id.1 id.2 out gs.gen) (hold : gCore gs.st.g id = some data.core) :
+    GStepR (gCore gs.st.g) (gCore (runEnd id data out gs).2.g) := by
+  have e : gCore (runEnd id data out gs).2.g =
+      Graph.put (gCore gs.st.g) id (runDatum (Treap.has gs.st.moved id) id.1 out gs.gen data.core).1 := by
+    unfold runEnd
+    simp only
+    rw [gCore_put]
+    split <;> rfl
+  rw [e]
+  exact GStepR.run hP hF hold
+
 end Ana
 end SkaModel
 end Formalization

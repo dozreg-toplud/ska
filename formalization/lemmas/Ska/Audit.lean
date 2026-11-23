@@ -184,3 +184,4 @@ open Formalization.SkaModel
 #print axioms agree_pokeM
 #print axioms mergeProd_void
 #print axioms RunEntryR.pop
+#print axioms Ana.runEnd_gStepR
