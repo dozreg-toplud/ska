@@ -1,6 +1,7 @@
 import lemmas.Run
 import lemmas.CueExample
 import lemmas.Hoon.PutBy
+import lemmas.Hoon.Lists
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -33,3 +34,14 @@ open Formalization
 #print axioms Hoon.gor_gate
 #print axioms Hoon.mor_gate
 #print axioms Hoon.put_by
+#print axioms Hoon.lent_gate
+#print axioms Hoon.weld_gate
+#print axioms Hoon.flop_gate
+#print axioms Hoon.snag_gate
+#print axioms Hoon.snag_gate_none
+#print axioms Hoon.scag_gate
+#print axioms Hoon.slag_gate
+#print axioms Hoon.turn_gate
+#print axioms Hoon.roll_gate
+#print axioms Hoon.levy_gate
+#print axioms Hoon.lien_gate
