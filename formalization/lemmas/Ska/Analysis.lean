@@ -51,52 +51,67 @@ open Nock
 
 /-! ## Maps and sets -/
 
+/-- The key types of the treaps, with their noun encoding.  `+put:by` and
+`+tap:by` order a map by `+gor` and `+mor` of the key nouns, so the treap
+operations are over keys with an injective encoding, and may depend on it. -/
+class TKey (κ : Type) where
+  enc : κ → Noun
+  enc_inj : ∀ a b, enc a = enc b → a = b
+
 /-- The treaps of `+by` (a map from `κ` to `ν`) and of `+in` (a set, `ν` the
-unit type), with the laws the analysis uses.  `tap` lists a map in the order
-of `~(tap by ...)`, `rap` in the order in which `~(rep by ...)` visits it.
-`toNoun` and `setNoun` are the treaps as nouns. -/
+unit type), over keys with their noun encoding (`TKey`), with the laws the
+analysis uses.  `tap` lists a map in the order of `~(tap by ...)`, `rap` in
+the order in which `~(rep by ...)` visits it.  `toNoun` and `setNoun` are the
+treaps as nouns, the keys encoded by `TKey.enc`.
+
+`get_put` and `get_del` have proved counterparts for atom keys in
+`Compiler/TreapMap.lean` (`TreapMap.get_put`, `TreapMap.get_del`, from
+`putF_spec` and `delF_spec`), and the listings in `Hoon/TapBy.lean`
+(`mem_tapList`) and `Hoon/RepBy.lean` (the pre-order of `+rep`).  `ext`
+(a treap is determined by its contents) rests on treaps ordered by `+gor` and
+`+mor` being canonical, which is not proved yet. -/
 class Treap (M : Type → Type → Type) where
   empty {κ ν : Type} : M κ ν
-  get {κ ν : Type} [DecidableEq κ] : M κ ν → κ → Option ν
-  put {κ ν : Type} [DecidableEq κ] : M κ ν → κ → ν → M κ ν
-  del {κ ν : Type} [DecidableEq κ] : M κ ν → κ → M κ ν
-  tap {κ ν : Type} : M κ ν → List (κ × ν)
-  rap {κ ν : Type} : M κ ν → List (κ × ν)
-  toNoun {κ ν : Type} : (κ → Noun) → (ν → Noun) → M κ ν → Noun
-  setNoun {κ : Type} : (κ → Noun) → M κ Unit → Noun
-  get_empty {κ ν : Type} [DecidableEq κ] (k : κ) : get (empty : M κ ν) k = none
-  get_put {κ ν : Type} [DecidableEq κ] (m : M κ ν) (k : κ) (v : ν) (k' : κ) :
+  get {κ ν : Type} [DecidableEq κ] [TKey κ] : M κ ν → κ → Option ν
+  put {κ ν : Type} [DecidableEq κ] [TKey κ] : M κ ν → κ → ν → M κ ν
+  del {κ ν : Type} [DecidableEq κ] [TKey κ] : M κ ν → κ → M κ ν
+  tap {κ ν : Type} [TKey κ] : M κ ν → List (κ × ν)
+  rap {κ ν : Type} [TKey κ] : M κ ν → List (κ × ν)
+  toNoun {κ ν : Type} [TKey κ] : (ν → Noun) → M κ ν → Noun
+  setNoun {κ : Type} [TKey κ] : M κ Unit → Noun
+  get_empty {κ ν : Type} [DecidableEq κ] [TKey κ] (k : κ) : get (empty : M κ ν) k = none
+  get_put {κ ν : Type} [DecidableEq κ] [TKey κ] (m : M κ ν) (k : κ) (v : ν) (k' : κ) :
     get (put m k v) k' = if k' = k then some v else get m k'
-  get_del {κ ν : Type} [DecidableEq κ] (m : M κ ν) (k k' : κ) :
+  get_del {κ ν : Type} [DecidableEq κ] [TKey κ] (m : M κ ν) (k k' : κ) :
     get (del m k) k' = if k' = k then none else get m k'
-  mem_tap {κ ν : Type} [DecidableEq κ] (m : M κ ν) (k : κ) (v : ν) :
+  mem_tap {κ ν : Type} [DecidableEq κ] [TKey κ] (m : M κ ν) (k : κ) (v : ν) :
     (k, v) ∈ tap m ↔ get m k = some v
-  mem_rap {κ ν : Type} [DecidableEq κ] (m : M κ ν) (k : κ) (v : ν) :
+  mem_rap {κ ν : Type} [DecidableEq κ] [TKey κ] (m : M κ ν) (k : κ) (v : ν) :
     (k, v) ∈ rap m ↔ get m k = some v
-  ext {κ ν : Type} [DecidableEq κ] (a b : M κ ν) : (∀ k, get a k = get b k) → a = b
+  ext {κ ν : Type} [DecidableEq κ] [TKey κ] (a b : M κ ν) : (∀ k, get a k = get b k) → a = b
 
 variable {M : Type → Type → Type} [Treap M] {R : Type}
 
 namespace Treap
 
 /-- `+has:by`, `+has:in`. -/
-def has {κ ν : Type} [DecidableEq κ] (m : M κ ν) (k : κ) : Bool := (get m k).isSome
+def has {κ ν : Type} [DecidableEq κ] [TKey κ] (m : M κ ν) (k : κ) : Bool := (get m k).isSome
 
 /-- `+gut:by`. -/
-def gut {κ ν : Type} [DecidableEq κ] (m : M κ ν) (k : κ) (d : ν) : ν := (get m k).getD d
+def gut {κ ν : Type} [DecidableEq κ] [TKey κ] (m : M κ ν) (k : κ) (d : ν) : ν := (get m k).getD d
 
 /-- `+put:in`. -/
-def ins {κ : Type} [DecidableEq κ] (s : M κ Unit) (k : κ) : M κ Unit := put s k ()
+def ins {κ : Type} [DecidableEq κ] [TKey κ] (s : M κ Unit) (k : κ) : M κ Unit := put s k ()
 
 /-- `+silt`: the set of a list. -/
-def silt {κ : Type} [DecidableEq κ] (l : List κ) : M κ Unit := l.foldl ins empty
+def silt {κ : Type} [DecidableEq κ] [TKey κ] (l : List κ) : M κ Unit := l.foldl ins empty
 
 /-- `+dif:in`: `a` without the members of `b`. -/
-def dif {κ ν μ : Type} [DecidableEq κ] (a : M κ ν) (b : M κ μ) : M κ ν :=
+def dif {κ ν μ : Type} [DecidableEq κ] [TKey κ] (a : M κ ν) (b : M κ μ) : M κ ν :=
   (tap b).foldl (fun s k => del s k.1) a
 
 /-- `+wyt:in`. -/
-def wyt {κ ν : Type} (m : M κ ν) : Nat := (tap m).length
+def wyt {κ ν : Type} [TKey κ] (m : M κ ν) : Nat := (tap m).length
 
 end Treap
 
@@ -116,6 +131,39 @@ structure CalleeEntry where
 
 def CalleeEntry.toNoun (c : CalleeEntry) : Noun := C (unitNoun (fun x => x) c.seat) (identNoun c.id)
 
+theorem Cape.toNoun_inj : ∀ a b : Cape, a.toNoun = b.toNoun → a = b
+  | Cape.yes, Cape.yes, _ => rfl
+  | Cape.no, Cape.no, _ => rfl
+  | Cape.cell a1 a2, Cape.cell b1 b2, h => by
+    simp only [Cape.toNoun, Noun.cell.injEq] at h
+    rw [Cape.toNoun_inj a1 b1 h.1, Cape.toNoun_inj a2 b2 h.2]
+  | Cape.yes, Cape.no, h | Cape.no, Cape.yes, h => by simp [Cape.toNoun] at h
+  | Cape.yes, Cape.cell _ _, h | Cape.no, Cape.cell _ _, h => by simp [Cape.toNoun] at h
+  | Cape.cell _ _, Cape.yes, h | Cape.cell _ _, Cape.no, h => by simp [Cape.toNoun] at h
+
+theorem Sock.toNoun_inj : ∀ a b : Sock, a.toNoun = b.toNoun → a = b
+  | Sock.void, Sock.void, _ => rfl
+  | Sock.mk c d, Sock.mk c' d', h => by
+    simp only [Sock.toNoun, Noun.cell.injEq] at h
+    rw [Cape.toNoun_inj c c' h.1, h.2]
+  | Sock.void, Sock.mk _ _, h | Sock.mk _ _, Sock.void, h => by simp [Sock.toNoun] at h
+
+instance : TKey Noun := ⟨fun x => x, fun _ _ h => h⟩
+instance : TKey Sock := ⟨Sock.toNoun, Sock.toNoun_inj⟩
+instance : TKey Ident := ⟨identNoun, fun a b h => by
+  simp only [identNoun, Noun.cell.injEq] at h
+  exact Prod.ext (Sock.toNoun_inj _ _ h.1) h.2⟩
+instance : TKey Bell := ⟨Bell.toNoun, fun a b h => by
+  cases a; cases b
+  simp only [Bell.toNoun, Noun.cell.injEq] at h
+  rw [Sock.toNoun_inj _ _ h.1, h.2]⟩
+instance : TKey CalleeEntry := ⟨CalleeEntry.toNoun, fun a b h => by
+  cases a with | mk sa ia => cases b with | mk sb ib =>
+  simp only [CalleeEntry.toNoun, identNoun, Noun.cell.injEq] at h
+  have hs : sa = sb := by
+    cases sa <;> cases sb <;> simp_all [unitNoun]
+  rw [hs, Prod.ext (Sock.toNoun_inj _ _ h.2.1) h.2.2]⟩
+
 /-- `+$datum`, with all its fields. -/
 structure FDatum (M : Type → Type → Type) where
   callees : M CalleeEntry Unit
@@ -128,7 +176,7 @@ structure FDatum (M : Type → Type → Type) where
   area : Option Noun
 
 def FDatum.toNoun (d : FDatum M) : Noun :=
-  C (Treap.setNoun CalleeEntry.toNoun d.callees)
+  C (Treap.setNoun d.callees)
     (C d.nomm.toNoun (C d.less.toNoun (C d.indi.toNoun (C d.seek.toNoun
       (C (C d.prod.toNoun d.map) (unitNoun (fun x => x) d.area))))))
 
@@ -150,7 +198,7 @@ abbrev Memo (M : Type → Type → Type) := M Noun (M Sock (Ident × FDatum M))
 def entryNoun (e : Ident × FDatum M) : Noun := C (identNoun e.1) e.2.toNoun
 
 def memoNoun (m : Memo M) : Noun :=
-  Treap.toNoun (fun x => x) (Treap.toNoun Sock.toNoun entryNoun) m
+  Treap.toNoun (Treap.toNoun entryNoun) m
 
 /-- `stats` of `+$ska-state`. -/
 structure Stats where
@@ -176,14 +224,14 @@ structure SkaState (M : Type → Type → Type) (R : Type) where
   stats : Stats
 
 def SkaState.toNoun (regsNoun : R → Noun) (st : SkaState M R) : Noun :=
-  C (Treap.toNoun identNoun FDatum.toNoun st.g)
+  C (Treap.toNoun FDatum.toNoun st.g)
     (C (memoNoun st.done)
-      (C (Treap.toNoun identNoun A st.order)
+      (C (Treap.toNoun A st.order)
         (C (listNoun identNoun st.stk)
           (C (A st.next)
-            (C (Treap.setNoun identNoun st.moved)
+            (C (Treap.setNoun st.moved)
               (C (A st.tick)
-                (C (Treap.toNoun identNoun (fun p => C (A p.1) (A p.2)) st.ticks)
+                (C (Treap.toNoun (fun p => C (A p.1) (A p.2)) st.ticks)
                   (C (regsNoun st.regs) st.stats.toNoun))))))))
 
 /-- `=|  st=ska-state` with `regs` set, as `+ska-callgraph` starts. -/
@@ -203,7 +251,7 @@ structure GenS (M : Type → Type → Type) (R : Type) where
 
 def GenS.toNoun (regsNoun : R → Noun) (g : GenS M R) : Noun :=
   C g.want.toNoun (C g.indi.toNoun (C g.seek.toNoun
-    (C (Treap.setNoun CalleeEntry.toNoun g.callees) (C (unitNoun (fun x => x) g.area)
+    (C (Treap.setNoun g.callees) (C (unitNoun (fun x => x) g.area)
       (C (A g.low) (C (flag g.back) (g.st.toNoun regsNoun)))))))
 
 /-- The capes of `gen` that the fixed-table model keeps. -/

@@ -27,18 +27,18 @@ variable {M : Type → Type → Type} [Treap M] {R : Type}
 
 namespace Treap
 
-theorem get_ins {κ : Type} [DecidableEq κ] (s : M κ Unit) (k k' : κ) :
+theorem get_ins {κ : Type} [DecidableEq κ] [TKey κ] (s : M κ Unit) (k k' : κ) :
     get (ins s k) k' = if k' = k then some () else get s k' := get_put _ _ _ _
 
-theorem has_iff {κ ν : Type} [DecidableEq κ] (m : M κ ν) (k : κ) : has m k = true ↔ ∃ v, get m k = some v := by
+theorem has_iff {κ ν : Type} [DecidableEq κ] [TKey κ] (m : M κ ν) (k : κ) : has m k = true ↔ ∃ v, get m k = some v := by
   unfold has; cases get m k <;> simp
 
-theorem has_ins {κ : Type} [DecidableEq κ] (s : M κ Unit) (k k' : κ) :
+theorem has_ins {κ : Type} [DecidableEq κ] [TKey κ] (s : M κ Unit) (k k' : κ) :
     has (ins s k) k' = true ↔ k' = k ∨ has s k' = true := by
   simp only [has_iff, get_ins]
   split <;> simp_all
 
-theorem has_silt_aux {κ : Type} [DecidableEq κ] : ∀ (l : List κ) (s : M κ Unit) (k : κ),
+theorem has_silt_aux {κ : Type} [DecidableEq κ] [TKey κ] : ∀ (l : List κ) (s : M κ Unit) (k : κ),
     has (l.foldl ins s) k = true ↔ k ∈ l ∨ has s k = true
   | [], s, k => by simp
   | x :: l, s, k => by
@@ -53,20 +53,20 @@ theorem has_silt_aux {κ : Type} [DecidableEq κ] : ∀ (l : List κ) (s : M κ 
       · exact Or.inl h
       · exact Or.inr (Or.inr h)
 
-theorem has_silt {κ : Type} [DecidableEq κ] (l : List κ) (k : κ) :
+theorem has_silt {κ : Type} [DecidableEq κ] [TKey κ] (l : List κ) (k : κ) :
     has (silt l : M κ Unit) k = true ↔ k ∈ l := by
   unfold silt
   rw [has_silt_aux]
   simp [has, get_empty]
 
-theorem get_foldl_del {κ ν μ : Type} [DecidableEq κ] : ∀ (l : List (κ × μ)) (a : M κ ν) (k : κ),
+theorem get_foldl_del {κ ν μ : Type} [DecidableEq κ] [TKey κ] : ∀ (l : List (κ × μ)) (a : M κ ν) (k : κ),
     get (l.foldl (fun s k => del s k.1) a) k = if k ∈ l.map (·.1) then none else get a k
   | [], a, k => by simp
   | x :: l, a, k => by
     simp only [List.foldl_cons, get_foldl_del l (del a x.1) k, get_del, List.map_cons, List.mem_cons]
     by_cases h1 : k ∈ l.map (·.1) <;> by_cases h2 : k = x.1 <;> simp [h1, h2]
 
-theorem get_dif {κ ν μ : Type} [DecidableEq κ] (a : M κ ν) (b : M κ μ) (k : κ) :
+theorem get_dif {κ ν μ : Type} [DecidableEq κ] [TKey κ] (a : M κ ν) (b : M κ μ) (k : κ) :
     get (dif a b) k = if has b k = true then none else get a k := by
   unfold dif
   rw [get_foldl_del]
@@ -492,7 +492,7 @@ theorem cullFold_ok : ∀ (l : List (Ident × Unit)) (st : SkaState M R),
       by_cases h1 : k ∈ l.map (·.1) <;> by_cases h2 : k = x.1 <;> simp [h1, h2]
     · simp only [cullStep]; rw [gCore_del]; exact GStepR.cull
 
-theorem mem_rap_keys {κ : Type} [DecidableEq κ] (m : M κ Unit) (k : κ) :
+theorem mem_rap_keys {κ : Type} [DecidableEq κ] [TKey κ] (m : M κ Unit) (k : κ) :
     k ∈ (Treap.rap m).map (·.1) ↔ Treap.has m k = true := by
   rw [Treap.has_iff]
   constructor
