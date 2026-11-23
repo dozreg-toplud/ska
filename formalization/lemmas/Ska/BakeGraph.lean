@@ -613,6 +613,214 @@ theorem bakeLoop_sound {E : BEnv M} {n : Nat} {st : BSt M}
     · subst hr; exact ⟨_, hI.root, fun y hy _ => hy⟩
     · exact hI.inn b hr c ks hks k hk
 
+/-! ## The final pass lists the sites the worklist saw -/
+
+/-- A nomm with the bells of its calls blanked: what `+know`'s folds look at. -/
+def eraseN : Nomm → Nomm
+  | Nomm.cons p q => Nomm.cons (eraseN p) (eraseN q)
+  | Nomm.n0 p => Nomm.n0 p
+  | Nomm.n1 p => Nomm.n1 p
+  | Nomm.n2 p q info => Nomm.n2 (eraseN p) (eraseN q) (info.map fun i => (⟨Sock.void, A 0⟩, i.2))
+  | Nomm.n3 p => Nomm.n3 (eraseN p)
+  | Nomm.n4 p => Nomm.n4 (eraseN p)
+  | Nomm.n5 p q => Nomm.n5 (eraseN p) (eraseN q)
+  | Nomm.n6 p q r => Nomm.n6 (eraseN p) (eraseN q) (eraseN r)
+  | Nomm.n7 p q => Nomm.n7 (eraseN p) (eraseN q)
+  | Nomm.n10 a v q => Nomm.n10 a (eraseN v) (eraseN q)
+  | Nomm.n11s tag q body => Nomm.n11s tag (eraseN q) body
+  | Nomm.n11d tag h q body => Nomm.n11d tag (eraseN h) (eraseN q) body
+  | Nomm.n12 p q => Nomm.n12 (eraseN p) (eraseN q)
+  | Nomm.mean p _ q body k => Nomm.mean (eraseN p) ⟨Sock.void, A 0⟩ (eraseN q) body k
+
+theorem lit_erase {a b : Nomm} (h : (eraseN a) = (eraseN b)) : lit a = lit b := by
+  cases a <;> cases b <;> simp_all [eraseN, lit]
+
+theorem safeNomm_eraseN : ∀ a : Nomm, safeNomm (eraseN a) = safeNomm a := by
+  intro a
+  induction a with
+  | cons p q ih1 ih2 => simp only [eraseN, safeNomm, ih1, ih2]
+  | n11s t q b ih => simp only [eraseN, safeNomm, ih]
+  | n11d t h q b ih1 ih2 => simp only [eraseN, safeNomm, ih1, ih2]
+  | mean p b q body k ih1 ih2 => simp only [eraseN, safeNomm, ih1, ih2]
+  | _ => rfl
+
+theorem safeNomm_erase {a b : Nomm} (h : eraseN a = eraseN b) : safeNomm a = safeNomm b := by
+  rw [← safeNomm_eraseN a, h, safeNomm_eraseN]
+
+theorem lit_eraseN (a : Nomm) : lit (eraseN a) = lit a := by cases a <;> rfl
+
+/-- `knowGo` with a `res` that succeeds, and with `idc`: the same products
+and sites, and nomms that differ only in the bells of their calls. -/
+def SameRun (r r' : (Nomm × Anno) × List Site) : Prop :=
+  eraseN r'.1.1 = eraseN r.1.1 ∧ r'.1.2 = r.1.2 ∧ r'.2 = r.2
+
+theorem knowGo_idc (fold : Bool) (dat : Bell → Option Datum) (res : Bell → Sock → Option Bell) :
+    ∀ (nm : Nomm) (sub : Anno) (st : List Site) (r : (Nomm × Anno) × List Site),
+      knowGo fold dat res nm sub st = some r →
+      ∃ r', knowGo fold dat idc nm sub st = some r' ∧ SameRun r r' := by
+  intro nm
+  induction nm with
+  | cons p q ihp ihq =>
+    intro sub st r h
+    simp only [knowGo, Option.bind_eq_some_iff] at h
+    obtain ⟨l, hl, r1, hr1, h⟩ := h
+    obtain ⟨l', hl', el, pl, sl⟩ := ihp sub st l hl
+    obtain ⟨r1', hr1', er, pr, sr⟩ := ihq sub l.2 r1 hr1
+    rw [← sl] at hr1'
+    simp only [knowGo, hl', Option.bind_some, hr1']
+    have e1 : lit l'.1.1 = lit l.1.1 := by rw [← lit_eraseN, el, lit_eraseN]
+    have e2 : lit r1'.1.1 = lit r1.1.1 := by rw [← lit_eraseN, er, lit_eraseN]
+    rw [e1, e2]
+    split at h
+    · cases h; exact ⟨_, rfl, rfl, rfl, sr⟩
+    · cases h; exact ⟨_, rfl, by simp only [eraseN, el, er], by simp only [pl, pr], sr⟩
+  | n0 p =>
+    intro sub st r h
+    exact ⟨r, by rw [← h]; rfl, rfl, rfl, rfl⟩
+  | n1 p =>
+    intro sub st r h
+    exact ⟨r, by rw [← h]; rfl, rfl, rfl, rfl⟩
+  | n2 p q info ihp ihq =>
+    intro sub st r h
+    simp only [knowGo, Option.bind_eq_some_iff] at h
+    obtain ⟨s, hs, f, hf, h⟩ := h
+    obtain ⟨s', hs', es, ps, ss⟩ := ihp sub st s hs
+    obtain ⟨f', hf', ef, pf, sf⟩ := ihq sub s.2 f hf
+    rw [← ss] at hf'
+    simp only [knowGo, hs', Option.bind_some, hf']
+    cases info with
+    | none =>
+      simp only [Option.some.injEq] at h ⊢
+      subst h
+      exact ⟨_, rfl, by simp only [eraseN, es, ef, Option.map_none], rfl, sf⟩
+    | some i =>
+      obtain ⟨b, mk⟩ := i
+      simp only [Option.map_eq_some_iff] at h
+      obtain ⟨v, _, rfl⟩ := h
+      simp only [idc, Option.map_some]
+      exact ⟨_, rfl, by simp only [eraseN, es, ef, Option.map_some], by simp only [ps], by simp only [ps, sf]⟩
+  | n3 p ih =>
+    intro sub st r h
+    simp only [knowGo, Option.map_eq_some_iff] at h
+    obtain ⟨a, ha, h⟩ := h
+    obtain ⟨a', ha', ea, pa, sa⟩ := ih sub st a ha
+    simp only [knowGo, ha', Option.map_some]
+    rw [pa, safeNomm_erase ea]
+    split at h
+    · cases h; exact ⟨_, rfl, rfl, rfl, sa⟩
+    · cases h; exact ⟨_, rfl, by simp only [eraseN, ea], rfl, sa⟩
+  | n4 p ih =>
+    intro sub st r h
+    simp only [knowGo, Option.map_eq_some_iff] at h
+    obtain ⟨a, ha, h⟩ := h
+    obtain ⟨a', ha', ea, pa, sa⟩ := ih sub st a ha
+    simp only [knowGo, ha', Option.map_some]
+    rw [pa, safeNomm_erase ea]
+    split at h
+    · cases h; exact ⟨_, rfl, rfl, rfl, sa⟩
+    · cases h; exact ⟨_, rfl, by simp only [eraseN, ea], rfl, sa⟩
+  | n5 p q ihp ihq =>
+    intro sub st r h
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨a, ha, b, hb, h⟩ := h
+    obtain ⟨a', ha', ea, pa, sa⟩ := ihp sub st a ha
+    obtain ⟨b', hb', eb, pb, sb⟩ := ihq sub a.2 b hb
+    rw [← sa] at hb'
+    simp only [knowGo, ha', Option.bind_some, hb', Option.map_some]
+    rw [pa, pb, safeNomm_erase ea, safeNomm_erase eb]
+    split at h
+    · cases h; exact ⟨_, rfl, rfl, rfl, sb⟩
+    · cases h; exact ⟨_, rfl, by simp only [eraseN, ea, eb], rfl, sb⟩
+  | n6 p q r0 ihp ihq ihr =>
+    intro sub st r h
+    simp only [knowGo, Option.bind_eq_some_iff] at h
+    obtain ⟨a, ha, h⟩ := h
+    obtain ⟨a', ha', ea, pa, sa⟩ := ihp sub st a ha
+    simp only [knowGo, ha', Option.bind_some]
+    rw [pa, safeNomm_erase ea, sa]
+    split at h
+    · exact ihq sub a.2 r h
+    · exact ihr sub a.2 r h
+    · simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+      obtain ⟨b, hb, c, hc, rfl⟩ := h
+      obtain ⟨b', hb', eb, pb, sb⟩ := ihq sub a.2 b hb
+      obtain ⟨c', hc', ec, pc, sc⟩ := ihr sub b.2 c hc
+      rw [← sb] at hc'
+      simp only [hb', Option.bind_some, hc', Option.map_some]
+      exact ⟨_, rfl, by simp only [eraseN, ea, eb, ec], by simp only [pb, pc], sc⟩
+  | n7 p q ihp ihq =>
+    intro sub st r h
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨a, ha, b, hb, h⟩ := h
+    obtain ⟨a', ha', ea, pa, sa⟩ := ihp sub st a ha
+    obtain ⟨b', hb', eb, pb, sb⟩ := ihq a.1.2 a.2 b hb
+    rw [← sa, ← pa] at hb'
+    simp only [knowGo, ha', Option.bind_some, hb', Option.map_some]
+    have e2 : lit b'.1.1 = lit b.1.1 := by rw [← lit_eraseN, eb, lit_eraseN]
+    rw [e2, safeNomm_erase ea]
+    split at h
+    · cases h; exact ⟨_, rfl, eb, rfl, sb⟩
+    · cases h; exact ⟨_, rfl, by simp only [eraseN, ea, eb], pb, sb⟩
+  | n10 ax v q ihv ihq =>
+    intro sub st r h
+    simp only [knowGo, Option.bind_eq_some_iff] at h
+    obtain ⟨a, ha, b, hb, h⟩ := h
+    obtain ⟨a', ha', ea, pa, sa⟩ := ihv sub st a ha
+    obtain ⟨b', hb', eb, pb, sb⟩ := ihq sub a.2 b hb
+    rw [← sa] at hb'
+    simp only [knowGo, ha', Option.bind_some, hb']
+    have e1 : lit a'.1.1 = lit a.1.1 := by rw [← lit_eraseN, ea, lit_eraseN]
+    have e2 : lit b'.1.1 = lit b.1.1 := by rw [← lit_eraseN, eb, lit_eraseN]
+    rw [e1, e2, pa, pb]
+    split at h
+    · cases h; exact ⟨_, rfl, rfl, rfl, sb⟩
+    · simp only [Option.map_eq_some_iff] at h
+      obtain ⟨s', hs', rfl⟩ := h
+      simp only [hs', Option.map_some]
+      exact ⟨_, rfl, by simp only [eraseN, ea, eb], rfl, sb⟩
+  | n11s tag q body ih =>
+    intro sub st r h
+    simp only [knowGo, Option.map_eq_some_iff] at h
+    obtain ⟨a, ha, h⟩ := h
+    obtain ⟨a', ha', ea, pa, sa⟩ := ih sub st a ha
+    simp only [knowGo, ha', Option.map_some]
+    have e1 : lit a'.1.1 = lit a.1.1 := by rw [← lit_eraseN, ea, lit_eraseN]
+    rw [e1]
+    split at h
+    · cases h; exact ⟨_, rfl, ea, rfl, sa⟩
+    · cases h; exact ⟨_, rfl, by simp only [eraseN, ea], pa, sa⟩
+  | n11d tag hh q body ihh ihq =>
+    intro sub st r h
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨a, ha, b, hb, h⟩ := h
+    obtain ⟨a', ha', ea, pa, sa⟩ := ihh sub st a ha
+    obtain ⟨b', hb', eb, pb, sb⟩ := ihq sub a.2 b hb
+    rw [← sa] at hb'
+    simp only [knowGo, ha', Option.bind_some, hb', Option.map_some]
+    have e2 : lit b'.1.1 = lit b.1.1 := by rw [← lit_eraseN, eb, lit_eraseN]
+    rw [e2, safeNomm_erase ea]
+    split at h
+    · cases h; exact ⟨_, rfl, eb, rfl, sb⟩
+    · cases h; exact ⟨_, rfl, by simp only [eraseN, ea, eb], pb, sb⟩
+  | n12 p q ihp ihq =>
+    intro sub st r h
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨a, ha, b, hb, rfl⟩ := h
+    obtain ⟨a', ha', ea, pa, sa⟩ := ihp sub st a ha
+    obtain ⟨b', hb', eb, pb, sb⟩ := ihq sub a.2 b hb
+    rw [← sa] at hb'
+    simp only [knowGo, ha', Option.bind_some, hb', Option.map_some]
+    exact ⟨_, rfl, by simp only [eraseN, ea, eb], rfl, sb⟩
+  | mean p b q body k ihp ihq =>
+    intro sub st r h
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨a, ha, v, hv, c, hc, rfl⟩ := h
+    obtain ⟨a', ha', ea, pa, sa⟩ := ihp sub st a ha
+    obtain ⟨c', hc', ec, pc, sc⟩ := ihq sub ((b, a.1.2.sock) :: a.2) c hc
+    rw [← sa, ← pa] at hc'
+    simp only [knowGo, ha', Option.bind_some, idc, hc', Option.map_some]
+    exact ⟨_, rfl, by simp only [eraseN, ea, ec], pc, sc⟩
+
 end Bake
 
 end SkaModel
