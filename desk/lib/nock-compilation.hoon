@@ -9665,3 +9665,390 @@
 ::
 ++  wish  !!  ::  +10
 --
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::
+::  Formal definition of the interpreter
+::
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::
+|%
+++  eval-top
+  =*  cor  ..poke
+  |=  [[s=* f=*] scry=$@(~ $-(^ (unit (unit))))]
+  ^-  [tone _cor]
+  ?@  f  [[%2 ~] cor]
+  =^  p=prod  cor  (poke %full s f)
+  ?>  ?=(%ir -.p)
+  =/  code=straight-out  p.p
+  ?>  =(1 n-args.code)
+  ?>  =([%this ~] need.code)
+  =/  regs=(map @uvre *)  [[`@`0 s] ~ ~]
+  =/  blob  (~(got by blocks.code) 0w0)
+  ?>  =(~ par.blob)
+  (eval-blob [regs ~] blob code ~ scry)
+::
+++  eval-blob
+  =*  cor  ..poke
+  |=  $:  gen=[regs=(map @uvre *) trace=(list [@ta *])]
+          b=blob-out
+          s=straight-out
+          params=(list (unit @uvre))
+          scry=$@(~ $-(^ (unit (unit))))
+      ==
+  ^-  [tone _cor]
+  =*  eval-blob  .
+  ?:  |(?=(^ params) ?=(^ par.b))
+    $(regs.gen (eval-pass params par.b regs.gen), params ~, par.b ~)
+  ?^  body.b
+    =/  res  (eval-pole i.body.b gen scry)
+    =.  cor  cor.res
+    =.  trace.gen  trace.res
+    =.  regs.gen  regs.res
+    ?.  ?=(%0 -.tone.res)  [tone.res cor]
+    $(body.b t.body.b)
+  =*  hop  |=(=jmp ^$(b (~(got by blocks.s) there.jmp), params args.jmp))
+  =*  load  |=(r=@uvre (read r regs.gen))
+  ?-    -.fin.b
+      %lti
+    =/  v=*  (load s.fin.b)
+    ?:  &(?=(@ v) (lth v n.fin.b))
+      (hop z.fin.b)
+    (hop o.fin.b)
+  ::
+      %clq
+    ?^  (load s.fin.b)  (hop z.fin.b)
+    (hop o.fin.b)
+  ::
+      %eqq
+    ?:  =((load l.fin.b) (load r.fin.b))  (hop z.fin.b)
+    (hop o.fin.b)
+  ::
+      %brn
+    =/  cond  (load s.fin.b)
+    ?.  ?=(? cond)  [[%2 trace.gen] cor]
+    ?:  cond  (hop z.fin.b)
+    (hop o.fin.b)
+  ::
+      %brz
+    ?:  =(0 (load s.fin.b))  (hop z.fin.b)
+    (hop o.fin.b)
+  ::
+      %hop
+    (hop t.fin.b)
+  ::
+      %jmp
+    =^  p=prod  cor  (poke %dire a.fin.b |)
+    ?>  ?=(%ir -.p)
+    =/  regs-new=(map @uvre *)
+      =|  out=(map @uvre *)
+      =/  r=@uvre  `@`0
+      |-  ^-  (map @uvre *)
+      ?~  v.fin.b  out
+      $(out (~(put by out) r (load i.v.fin.b)), v.fin.b t.v.fin.b, r +(r))
+    ::
+    (eval-blob [regs-new trace.gen] (~(got by blocks.p.p) 0w0) p.p ~ scry)
+  ::
+      %jmf
+    $(fin.b [%jmp a v]:fin.b)
+  ::
+      %jsp
+    =^  p=prod  cor  (poke %dire a.fin.b &)
+    ?>  ?=(%ir -.p)
+    =/  regs-new=(map @uvre *)  [[`@`0 (load s.fin.b)] ~ ~]
+    (eval-blob [regs-new trace.gen] (~(got by blocks.p.p) 0w0) p.p ~ scry)
+  ::
+      %jsf
+    $(fin.b [%jsp a s]:fin.b)
+  ::
+      %don
+    [[%0 (load s.fin.b)] cor]
+  ::
+      %bom
+    [[%2 trace.gen] cor]
+  ::
+  ==
+::
+++  eval-pole
+  =*  cor  ..poke
+  |=  $:  =pole
+          [regs=(map @uvre *) trace=(list [@ta *])]
+          scry=$@(~ $-(^ (unit (unit))))
+      ==
+  ^-  [=tone =_regs =_trace =_cor]
+  =*  load  |=(r=@uvre (read r regs))
+  =*  store  |=([v=* r=@uvre] (^store r v regs))
+  =*  move  |=([s=@uvre d=@uvre] (^move s d regs))
+  =*  rest  [regs trace cor]
+  =*  fine  [[%0 ~] rest]
+  =*  boom  [[%2 trace] rest]
+  ?-    -.pole
+      %imm
+    =.  regs  (store n.pole d.pole)
+    fine
+  ::
+      %mov
+    =.  regs  (move s.pole d.pole)
+    fine
+  ::
+      %inc
+    =/  v  (load s.pole)
+    ?^  v  boom
+    =.  regs  (store +(v) d.pole)
+    fine
+  ::
+      %con
+    =.  regs  (store [(load h.pole) (load t.pole)] d.pole)
+    fine
+  ::
+      %hed
+    =/  v  (load s.pole)
+    =.  regs  (store -.v d.pole)
+    fine
+  ::
+      %tal
+    =/  v  (load s.pole)
+    =.  regs  (store +.v d.pole)
+    fine
+  ::
+      %cel
+    ?@  (load p.pole)  boom
+    fine
+  ::
+      %lob
+    ?.  ?=(? (load p.pole))  boom
+    fine
+  ::
+      %equ
+    =+  =((load l.pole) (load r.pole))
+    fine
+  ::
+      %hsp
+    fine
+  ::
+      %hse
+    fine
+  ::
+      %hdp
+    ?.  ?=(?(%hunk %hand %lose %mean %spot) n.pole)  fine
+    =.  trace  [[n.pole (load p.pole)] trace]
+    fine
+  ::
+      %hde
+    ?.  ?=(?(%hunk %hand %lose %mean %spot) n.pole)  fine
+    =.  trace  +.trace
+    fine
+  ::
+      %hmp
+    =.  trace  [[%meaf a.pole (turn v.pole load)] trace]
+    fine
+  ::
+      %hme
+    =.  trace  +.trace
+    fine
+  ::
+      %hcp
+    =.  trace  [[%meac n]:pole trace]
+    fine
+  ::
+      %hce
+    =.  trace  +.trace
+    fine
+  ::
+      %spy
+    ?~  scry  boom
+    =/  ref  (load e.pole)
+    =/  pax  (load p.pole)
+    =/  result  (scry ref pax)
+    ?~  result  [[%1 pax] rest]
+    ?~  u.result
+      =.  trace  [[%hunk ref pax] trace]
+      boom
+    =.  regs  (store u.u.result d.pole)
+    fine
+  ::
+      %nok
+    =^  ton=tone  cor  (eval-top [(load u.pole) (load f.pole)] scry)
+    ?-    -.ton
+        %0
+      =.  regs  (store product.ton d.pole)
+      fine
+    ::
+        %1
+      [ton rest]
+    ::
+        %2
+      [[%2 (weld trace.ton trace)] rest]
+    ==
+  ::
+      %cal
+    =^  p=prod  cor  (poke %dire a.pole |)
+    ?>  ?=(%ir -.p)
+    =/  regs-new=(map @uvre *)
+      =|  out=(map @uvre *)
+      =/  r=@uvre  `@`0
+      |-  ^-  (map @uvre *)
+      ?~  v.pole  out
+      $(out (~(put by out) r (load i.v.pole)), v.pole t.v.pole, r +(r))
+    ::
+    =^  ton=tone  cor
+      (eval-blob [regs-new trace] (~(got by blocks.p.p) 0w0) p.p ~ scry)
+    ::
+    ?-    -.ton
+        %0
+      =.  regs  (store product.ton d.pole)
+      fine
+    ::
+        %1
+      [ton rest]
+    ::
+        %2
+      [[%2 trace.ton] rest]
+    ==
+  ::
+      %caf
+    $(pole [%cal a v d]:pole)
+  ::
+      %cam
+    $(pole [%cal a v d]:pole)
+  ::
+      %csl
+    =^  p=prod  cor  (poke %dire a.pole &)
+    ?>  ?=(%ir -.p)
+    =/  regs-new=(map @uvre *)  [[`@`0 (load s.pole)] ~ ~]
+    =^  ton=tone  cor
+      (eval-blob [regs-new trace] (~(got by blocks.p.p) 0w0) p.p ~ scry)
+    ::
+    ?-    -.ton
+        %0
+      =.  regs  (store product.ton d.pole)
+      fine
+    ::
+        %1
+      [ton rest]
+    ::
+        %2
+      [[%2 trace.ton] rest]
+    ==
+  ::
+      %csf
+    $(pole [%csl a s d]:pole)
+  ::
+      %csm
+    $(pole [%csl a s d]:pole)
+  ::
+  ==
+::
+::  The tone of +eval-top as a toon, as +mook renders that of +mink.  Two
+::  frames are the compiler's own: [%meaf bell args], a deferred %mean, is
+::  rendered by the arm of the trap run on its arguments without a namespace,
+::  as +mook runs the trap; [%meac n], a constant %mean, is the known product
+::  of the arm.  Any other frame is +mink's and +mook renders it
+::
+++  eval-mook
+  =*  cor  ..poke
+  |=  ton=tone
+  ^-  [toon _cor]
+  ?.  ?=([%2 *] ton)  [ton cor]
+  ::  the frames +mook leaves out of a long trace
+  ::
+  =/  yel  (lent trace.ton)
+  =/  tax=(list [@ta *])
+    ?.  (gth yel 1.024)  trace.ton
+    %+  weld  (scag 512 trace.ton)
+    ^-  (list [@ta *])
+    :_  (slag (sub yel 512) trace.ton)
+    [%lose (crip "[skipped {(scow %ud (sub yel 1.024))} frames]")]
+  ::
+  =.  tax  (flop tax)
+  =|  out=(list tank)
+  |-  ^-  [toon _cor]
+  ?~  tax  [[%2 out] cor]
+  =^  tan=tank  cor  (eval-rend i.tax)
+  $(tax t.tax, out [tan out])
+::
+++  eval-rend
+  =*  cor  ..poke
+  |=  [tag=@ta dat=*]
+  ^-  [tank _cor]
+  ?+    tag
+      =/  ton=toon  (mook %2 [tag dat] ~)
+      ?>  ?=([%2 * ~] ton)
+      [i.p.ton cor]
+  ::
+      %meac
+    =/  sof  ((soft tank) dat)
+    ?~  sof  [leaf+"mook.mean" cor]
+    [u.sof cor]
+  ::
+      %meaf
+    ?>  ?=(^ dat)
+    =/  v  ;;((list) +.dat)
+    =^  p=prod  cor  (poke %dire -.dat |)
+    ?>  ?=(%ir -.p)
+    =/  regs-new=(map @uvre *)
+      =|  out=(map @uvre *)
+      =/  r=@uvre  `@`0
+      |-  ^-  (map @uvre *)
+      ?~  v  out
+      $(out (~(put by out) r i.v), v t.v, r +(r))
+    ::
+    =^  ton=tone  cor
+      (eval-blob [regs-new ~] (~(got by blocks.p.p) 0w0) p.p ~ ~)
+    ::
+    ?.  ?=(%0 -.ton)  [leaf+"####" cor]
+    =/  sof  ((soft tank) product.ton)
+    ?~  sof  [leaf+"mook.mean" cor]
+    [u.sof cor]
+  ==
+::  Arguments along a jump into a block, to its parameters.  An empty
+::  argument leaves the parameter undefined: it is not read on that edge.
+::  No argument is a parameter of the block, so the moves, made one at a
+::  time, do not depend on their order
+::
+++  eval-pass
+  |=  [args=(list (unit @uvre)) par=(list @uvre) regs=(map @uvre *)]
+  ^-  (map @uvre *)
+  ?>  %+  levy  args
+      |=  a=(unit @uvre)
+      |(?=(~ a) !(lien par |=(p=@uvre =(p u.a))))
+  |-  ^-  (map @uvre *)
+  ?~  args  ?>(?=(~ par) regs)
+  ?>  ?=(^ par)
+  =.  regs
+    ?~  i.args  (~(del by regs) i.par)
+    (move u.i.args i.par regs)
+  $(args t.args, par t.par)
+::
+++  move
+  |=  [s=@uvre d=@uvre regs=(map @uvre *)]
+  (store d (read s regs) regs)
+::
+++  read
+  |=  [r=@uvre regs=(map @uvre *)]
+  ^-  *
+  (~(got by regs) r)
+::
+++  store
+  |=  [r=@uvre v=* regs=(map @uvre *)]
+  (~(put by regs) r v)
+--
+::
+::  Outer SKA core
+::
+?>  !.  =([0 3] !=(..poke))
+|%
+++  load
+  |=  old=[* * * * state=state-any *]
+  ^+  ..load
+  =.  ..^load  (^load +7.old)
+  ..load
+::
+++  peek  ^peek
+++  poke
+  |=  ovo=*
+  ^-  [prod _..poke]
+  =^  p=prod  ..^poke  (^poke ovo)
+  [p ..poke]
+::
+++  wish  ^wish
+--
