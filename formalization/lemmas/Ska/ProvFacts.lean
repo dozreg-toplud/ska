@@ -758,5 +758,157 @@ theorem provO_darn {y : Noun} {one two s : Sock} {rec don : Noun} {ax : Nat} {n 
         · have := provO_darnDown ax y one two rec don [] [] [] n v n'' s h1 h2 he CtxProv.nil hd
           simpa [plug] using this
 
+/-! ## `+compose:pi`: the product of a direct call -/
+
+/-- `T` knows no more than `S` at every position: every part, maybe absent,
+that fits `T` there fits `S` there. -/
+def PosLe (T S : Sock) : Prop := ∀ ρ o, FitsOpt (sockAt T ρ) o → FitsOpt (sockAt S ρ) o
+
+theorem PosLe.refl (S : Sock) : PosLe S S := fun _ _ h => h
+
+theorem PosLe.trans {R S T : Sock} (h1 : PosLe R S) (h2 : PosLe S T) : PosLe R T :=
+  fun ρ o h => h2 ρ o (h1 ρ o h)
+
+theorem PosLe.part {T S : Sock} (h : PosLe T S) (π : List Bool) : PosLe (sockAt T π) (sockAt S π) :=
+  fun ρ o hf => by rw [← sockAt_app] at hf ⊢; exact h (π ++ ρ) o hf
+
+/-- A weaker sock keeps the invariant. -/
+theorem ProvO.mono_sock {y : Noun} {T S : Sock} {σ : Noun} {o : Option Noun} (h : ProvO y T σ o)
+    (hne : S ≠ Sock.void) (hle : PosLe T S) : ProvO y S σ o where
+  nonvoid := hne
+  exact := h.exact
+  const := fun π e => hle π _ (h.const π e)
+
+/-- A sock that may stand for a cell: it knows nothing, or it knows a cell. -/
+def Cellish : Sock → Prop
+  | Sock.mk Cape.no _ => True
+  | Sock.mk Cape.yes (Noun.cell _ _) => True
+  | Sock.mk (Cape.cell _ _) (Noun.cell _ _) => True
+  | _ => False
+
+/-- What a sock that may stand for a cell says of a part follows from what
+its head and tail say. -/
+theorem fitsOpt_of_parts {s : Sock} {o : Option Noun} (hs : Cellish s)
+    (hh : FitsOpt (So.hed s) (slotO o [false])) (ht : FitsOpt (So.tel s) (slotO o [true])) :
+    FitsOpt s o := by
+  match s, hs with
+  | Sock.mk Cape.no d, _ => exact fitsOpt_blank ⟨Cape.no, d, rfl, rfl⟩ o
+  | Sock.mk Cape.yes (Noun.cell d1 d2), _ =>
+    cases o with
+    | none => exact absurd hh (by simp [slotO, FitsOpt, So.hed, Sock.Blank, Cape.isNo])
+    | some n =>
+      cases n with
+      | atom k => exact absurd hh (by simp [slotO, slotAtPath, FitsOpt, So.hed, Sock.Blank, Cape.isNo])
+      | cell a b =>
+        simp only [slotO, slotAtPath, Option.bind_some, FitsOpt, So.hed, So.tel, Fits, FitsCape] at hh ht
+        simp only [FitsOpt, Fits, FitsCape]
+        rw [hh, ht]
+  | Sock.mk (Cape.cell ch ct) (Noun.cell d1 d2), _ =>
+    cases o with
+    | none =>
+      simp only [slotO, FitsOpt, So.hed, So.tel, Option.bind_none] at hh ht
+      obtain ⟨_, _, e1, h1⟩ := hh
+      obtain ⟨_, _, e2, h2⟩ := ht
+      cases e1; cases e2
+      exact ⟨_, _, rfl, by simp [Cape.isNo, h1, h2]⟩
+    | some n =>
+      cases n with
+      | atom k =>
+        simp only [slotO, slotAtPath, Option.bind_some, FitsOpt, So.hed, So.tel] at hh ht
+        obtain ⟨_, _, e1, h1⟩ := hh
+        obtain ⟨_, _, e2, h2⟩ := ht
+        cases e1; cases e2
+        exact Or.inl (by simp [h1, h2])
+      | cell a b =>
+        simp only [slotO, slotAtPath, Option.bind_some, FitsOpt, So.hed, So.tel, Fits] at hh ht
+        exact Or.inr ⟨d1, d2, a, b, rfl, rfl, hh, ht⟩
+
+/-- A cons of provenances over a sock that may stand for a cell. -/
+theorem provO_cons_cellish {y : Noun} {S : Sock} {x z : Noun} {o : Option Noun} (hs : Cellish S)
+    (hne : S ≠ Sock.void) (hl : ProvO y (So.hed S) x (slotO o [false]))
+    (hr : ProvO y (So.tel S) z (slotO o [true])) : ProvO y S (Pi.cons x z) o where
+  nonvoid := hne
+  exact := exactAt_cons hl.exact hr.exact
+  const := by
+    intro π e
+    cases π with
+    | nil =>
+      obtain ⟨_, h1, h2⟩ := cons_ne_atom e
+      have fl := hl.const [] (by rw [h1]; rfl)
+      have fr := hr.const [] (by rw [h2]; rfl)
+      rw [slotO_nil] at fl fr ⊢
+      exact fitsOpt_of_parts hs fl fr
+    | cons b ρ =>
+      rw [springAt_cons_cons] at e
+      rw [slotO_cons]
+      cases b
+      · exact hl.const ρ e
+      · exact hr.const ρ e
+
+theorem composeLoop_zero : ∀ m, Pi.composeLoop (A 0) m = A 0
+  | Noun.atom 0 => rfl
+  | Noun.atom (b + 1) => by
+      show Pi.slot (A 0) (b + 1) = A 0
+      rw [Pi.slot.eq_def]; split <;> simp
+  | Noun.cell h t => by
+      show Pi.cons (Pi.composeLoop (A 0) h) (Pi.composeLoop (A 0) t) = A 0
+      rw [composeLoop_zero h, composeLoop_zero t]; simp [Pi.cons]
+
+theorem compose_eq (m σ : Noun) : Pi.compose m σ = Pi.composeLoop σ m := by
+  unfold Pi.compose
+  split
+  · rename_i h; subst h; rw [composeLoop_zero]
+  · rfl
+
+/-- **The product of a direct call keeps the invariant**, through
+`+compose:pi`: the call's subject `y'` satisfies the invariant on the
+subject `x` with the sock `S` and the provenance `σ`; the callee's product
+`p` satisfies it on `y'` with the sock `P` and the provenance `m`; the
+callee's product sock knows, at each part that comes from an axis of its
+subject, no more than `S` there (`hstat`); and it may stand for a cell where
+`m` is a cell (`hshape`). -/
+theorem provO_compose {x y' p : Noun} {S P : Sock} {σ m : Noun}
+    (hy : ProvO x S σ (some y')) (hp : ProvO y' P m (some p))
+    (hstat : ∀ π b, springAt m π = A b → b ≠ 0 →
+      ∃ q, axisPath b = some q ∧ PosLe (sockAt S q) (sockAt P π))
+    (hshape : ∀ π, isCellN (springAt m π) = true → Cellish (sockAt P π)) :
+    ProvO x P (Pi.compose m σ) (some p) := by
+  rw [compose_eq]
+  suffices H : ∀ m' π, springAt m π = m' →
+      ProvO x (sockAt P π) (Pi.composeLoop σ m') (slotO (some p) π) by
+    have := H m [] rfl
+    rw [slotO_nil] at this
+    exact this
+  intro m'
+  induction m' with
+  | atom b =>
+    intro π e
+    by_cases hb : b = 0
+    · subst hb
+      refine ⟨sockAt_ne_void π hp.nonvoid, exactAt_zero _ _, fun ρ e' => ?_⟩
+      rw [← slotO_app, ← sockAt_app]
+      exact hp.const (π ++ ρ) (by rw [springAt_app, e]; exact springAt_zero ρ)
+    · obtain ⟨q, hq, hle⟩ := hstat π b e hb
+      have hx := hp.exact π b e hb
+      rw [show Pi.composeLoop σ (A b) = Pi.slot σ b by
+        cases b with
+        | zero => exact absurd rfl hb
+        | succ k => rfl]
+      have hs := provO_slot hy (by omega) hq
+      have : slotO (some p) π = slotO (some y') q := by
+        rw [hx]; simp [slot?, hq, slotO]
+      rw [this]
+      exact hs.mono_sock (sockAt_ne_void π hp.nonvoid) hle
+  | cell h t ih1 ih2 =>
+    intro π e
+    have hc := hshape π (by rw [e]; rfl)
+    apply provO_cons_cellish hc (sockAt_ne_void π hp.nonvoid)
+    · have := ih1 (π ++ [false]) (by rw [springAt_app, e]; rfl)
+      rw [sockAt_app, slotO_app] at this
+      exact this
+    · have := ih2 (π ++ [true]) (by rw [springAt_app, e]; rfl)
+      rw [sockAt_app, slotO_app] at this
+      exact this
+
 end SkaModel
 end Formalization
