@@ -76,6 +76,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Hoon/DelBy.lean`, `Hoon/GasBy.lean`, `Hoon/JabBy.lean` | `+del:by` (with the merge of two treaps), `+gas:by`, `+jab:by` on maps. |
 | `Hoon/RepBy.lean` | `+rep:by` and `+rep:in` (one noun): a fold over the nodes in pre-order. |
 | `Hoon/MapFolds.lean`, `Hoon/SetFolds.lean` | `+key:by`, `+run:by`, `+any:by`, `+wyt` of `+by` and `+in` (one noun); `+gas:in`, `+any:in`, `+run:in`, `+del:in`. |
+| `Hoon/Canon.lean` | Pure Lean: treaps are canonical.  Two `IsMap` nouns with the same pairs are equal (`isMap_ext`), and two `IsSet` nouns with the same keys (`isSet_ext`, through `toMap_inj`).  `+tap:by` lists the pairs in strictly decreasing `+gor` order of the keys (`tapList_pairwise`), which determines the list (`tapList_unique`); the order of `+rep` is the pre-order of the canonical treap (`preorder_ext`, `mem_preorder`). |
 | `Hoon/Ju.lean` | The doors `+ju` (get, put, has, del, gas) and `+ja` (get, add). |
 | `Hoon/ListsMore.lean` | `+skim`, `+skip`, `+murn`, `+rear`, `+snip`. |
 | `Hoon/ListsSort.lean` | `+welp`, `+zing`, `+snoc`, `+skid`, `+spin`, and `+sort` against the quicksort `qsort`, which permutes its list. |
@@ -100,6 +101,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/Safe.lean` | `+safe-nomm` and `+safe-fol-fol` of the analysis core `ana` compute `safeNomm` and `safeFolFol` of `Ska/FolLoop.lean` on `Nomm.toNoun` of every nomm (`safe_nomm_gate`, `safe_fol_fol_gate`, and `*_pill` on `ana`).  `+safe-nomm` reads nothing from its context, `+safe-fol-fol` reads `+safe-nomm`. |
 | `Compiler/Anno.lean` | `+knit-anno`, `+patch-prod`, `+msg-sock` and `+msg-anno` of `ana` against `knitAnno`, `patchProd`, `msgSock` (with its crash as `none`) and `msgAnno` of `Ska/CallGraph.lean`, on every sock and spring (`*_gate`), and on `ana` with no assumption (`*_pill`).  They reach `+so` and `+pi` through `lib` at `knit_anno.lib.axis` of `ana`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
+| `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`. |
 | `Compiler/Regs.lean`, `Compiler/EvalPass.lean` | `+read`, `+store`, `+move` and `+eval-pass` of the interpreter core `interp` against `read`, `store`, `move`, `evalPass` of `Ska/Interp.lean` on maps of `TreapMap mugF` (`read_pill`, `store_pill`, `move_pill`, `eval_pass_pill`), from gate theorems that assume what the arms read through layer 2 (`RegsIn`, `MoveIn`, `EvalPassIn`). |
 | `Compiler/EvalPole.lean` | `+eval-pole` on every op that stays in the function (all but `%nok` and the calls) against `localPole` of `Ska/Interp.lean` (`eval_pole_local`, `eval_pole_hmp`, `eval_pole_spy`), in a context `ctx` whose tail is the compiler's core `cor`; `%spy` assumes `SlamIsNock lib`.  On the pill's `interp` with its own `cor`: `eval_pole_local_pill`. |
 | `Compiler/Lib.lean` | `dif` of `+ca` and `huge` of `+so`, whose crash messages quote a noun that holds the hoon core, so that the generator names them in the bulk chain (`ca.dif.mean` is the quoted noun).  And the pill's library core `lib` satisfies `CaOf`, `SoOf`, `AxisOf`, `YeaOf`: every gate of `+ca` and `+so` computes its model on the pill's core (`ca_int_pill`, ..., `so_darn_pill`) with no assumption. |
@@ -261,5 +263,8 @@ import only its theorems.  So:
    about them needs the poke to keep layer 2 at `read.layer2.axis`.
 10. **`Treap` of `Ska/Analysis.lean` has no instance from `lemmas/Hoon/`.**  The
    class orders nothing by key nouns (its `put` and `tap` take no layout of
-   the keys, which `+put:by` and `+tap:by` order by `+gor` and `+mor`), and its
-   law `ext` needs treaps to be canonical, which is not proved.
+   the keys, which `+put:by` and `+tap:by` order by `+gor` and `+mor`), so it
+   needs a key encoding fixed by the instance before one can be built.  Its
+   laws are all available on nouns: `ext` from `isMap_ext` and `isSet_ext`,
+   `mem_tap` from `mem_tapList`, `mem_rap` from `mem_preorder`, and
+   `TreapMap` (atom keys) has all of them (`Compiler/TreapList.lean`).
