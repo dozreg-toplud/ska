@@ -74,17 +74,45 @@ theorem iterN_succ_hyb {k : Nat} {s f x : Noun} (h : iterN (k + 1) s f = some x)
     nockW (hyb k) s f = some x :=
   nockW_mono (iterN_le_hyb k) s f x h
 
-theorem hyb_in {k : Nat} {s f : Noun} (h : InR f) : hyb k s f = iterN k s f := if_pos h
+theorem hyb_top (k : Nat) (s : Noun) : hyb k s eval_top.battery = iterN k s eval_top.battery :=
+  if_pos (Or.inl rfl)
+theorem hyb_blob (k : Nat) (s : Noun) : hyb k s eval_blob.battery = iterN k s eval_blob.battery :=
+  if_pos (Or.inr (Or.inl rfl))
+theorem hyb_pole (k : Nat) (s : Noun) : hyb k s eval_pole.battery = iterN k s eval_pole.battery :=
+  if_pos (Or.inr (Or.inr rfl))
+theorem hyb0_top (k : Nat) (s : Noun) : hyb0 k s eval_top.battery = iterN k s eval_top.battery :=
+  if_pos (Or.inl rfl)
+theorem hyb0_blob (k : Nat) (s : Noun) : hyb0 k s eval_blob.battery = iterN k s eval_blob.battery :=
+  if_pos (Or.inr (Or.inl rfl))
+theorem hyb0_pole (k : Nat) (s : Noun) : hyb0 k s eval_pole.battery = iterN k s eval_pole.battery :=
+  if_pos (Or.inr (Or.inr rfl))
 
 theorem hyb_hop {k : Nat} {s f : Noun} (h : f = hopB) : hyb k s f = nockW (hyb0 k) s f := by
   subst h; unfold hyb; rw [if_neg (by decide), if_pos rfl]
 
-theorem hyb_out {k : Nat} {s f : Noun} (h : ¬ InR f ∧ ¬ f = hopB) : hyb k s f = nock s f := by
-  unfold hyb; rw [if_neg h.1, if_neg h.2]
+/-- A noun cut at depth `n`: two nouns whose cuts differ differ, and a cut is
+cheap to compare where a battery is not. -/
+def trunc : Nat → Noun → Noun
+  | 0, _ => A 0
+  | _ + 1, Noun.atom a => A a
+  | n + 1, Noun.cell x y => C (trunc n x) (trunc n y)
 
-theorem hyb0_in {k : Nat} {s f : Noun} (h : InR f) : hyb0 k s f = iterN k s f := if_pos h
+/-- A formula that is none of the routed ones, seen from its cut at depth 8. -/
+def Far (f : Noun) : Prop :=
+  trunc 8 f ≠ trunc 8 eval_top.battery ∧ trunc 8 f ≠ trunc 8 eval_blob.battery ∧
+    trunc 8 f ≠ trunc 8 eval_pole.battery ∧ trunc 8 f ≠ trunc 8 hopB
 
-theorem hyb0_out {k : Nat} {s f : Noun} (h : ¬ InR f) : hyb0 k s f = nock s f := if_neg h
+instance : DecidablePred Far := fun _ => inferInstanceAs (Decidable (_ ∧ _))
+
+theorem Far.out {f : Noun} (h : Far f) : ¬ InR f ∧ ¬ f = hopB := by
+  obtain ⟨h1, h2, h3, h4⟩ := h
+  refine ⟨?_, fun e => h4 (e ▸ rfl)⟩
+  rintro (e | e | e) <;> subst e <;> simp_all
+
+theorem hyb_out {k : Nat} {s f : Noun} (h : Far f) : hyb k s f = nock s f := by
+  unfold hyb; rw [if_neg h.out.1, if_neg h.out.2]
+
+theorem hyb0_out {k : Nat} {s f : Noun} (h : Far f) : hyb0 k s f = nock s f := if_neg h.out.1
 
 /-! ## From some level on -/
 
@@ -203,11 +231,13 @@ end
 /-- The ends of `+eval-top`, run on a hypothesis under `hyb k`. -/
 macro "top_simp_at" h:ident "[" ts:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(tactic|
   (conv at $h:ident => { lhs; arg 3; unfold eval_top.battery }
-   simp (disch := decide) [nock_exec, hyb_in, hyb_hop, hyb_out, hyb0_in, hyb0_out, $ts,*] at $h:ident))
+   simp (disch := decide) [nock_exec, hyb_top, hyb_blob, hyb_pole, hyb_hop, hyb_out, hyb0_top, hyb0_blob,
+     hyb0_pole, hyb0_out, $ts,*] at $h:ident))
 
 /-- The same, on a hypothesis whose formula is already open. -/
 macro "hyb_simp_at" h:ident "[" ts:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(tactic|
-  simp (disch := decide) [nock_exec, hyb_in, hyb_hop, hyb_out, hyb0_in, hyb0_out, $ts,*] at $h:ident)
+  simp (disch := decide) [nock_exec, hyb_top, hyb_blob, hyb_pole, hyb_hop, hyb_out, hyb0_top, hyb0_blob,
+     hyb0_pole, hyb0_out, $ts,*] at $h:ident)
 
 theorem needOrd_this {n : NeedOrd} (h : ¬ n = NeedOrd.this) :
     ¬ C (A Tag.this) (A 0) = n.toNoun := by
@@ -216,6 +246,21 @@ theorem needOrd_this {n : NeedOrd} (h : ¬ n = NeedOrd.this) :
   | both _ _ => simp [NeedOrd.toNoun, Tag.this, Tag.both]
   | this => exact absurd rfl h
   | none => simp [NeedOrd.toNoun, Tag.this, Tag.none]
+
+/-- `+eval-pole`, run on a hypothesis under `hyb k`. -/
+macro "pole_simp_at" h:ident "[" ts:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(tactic|
+  (conv at $h:ident => { lhs; arg 3; unfold eval_pole.battery }
+   simp (disch := decide) [nock_exec, hyb_top, hyb_blob, hyb_pole, hyb_hop, hyb_out, hyb0_top, hyb0_blob,
+     hyb0_pole, hyb0_out, Pole.toNoun,
+     Tag.caf, Tag.cal, Tag.nok, Tag.imm, Tag.mov, Tag.inc, Tag.con, Tag.hed, Tag.tal, Tag.cel,
+     Tag.lob, Tag.equ, Tag.hsp, Tag.hse, Tag.hdp, Tag.hde, Tag.hmp, Tag.hme, Tag.hcp, Tag.hce,
+     Tag.spy, Tag.cam, Tag.csl, Tag.csf, Tag.csm, $ts,*] at $h:ident))
+
+/-- Something from some level on, from a constant value that is not `none`. -/
+theorem ev_of {α : Type} {g : Nat → Option α} {v : Option α} (m0 : Nat)
+    (h : ∀ m, m0 ≤ m → g m = v) (hv : v ≠ none) : ∃ a, Ev g a := by
+  obtain ⟨a, rfl⟩ := Option.ne_none_iff_exists'.1 hv
+  exact ⟨a, m0, h⟩
 
 /-- The model at level `m + 1` from level `m`. -/
 theorem Ev.succ {α : Type} {g : Nat → Option α} {a : α} (h : ∃ m0, ∀ m, m0 ≤ m → g (m + 1) = some a) :
@@ -331,6 +376,183 @@ theorem top_step (k : Nat) (hB : BlobGe lib pk k) : TopGe lib pk (k + 1) := by
           obtain ⟨r, m0, hm⟩ := hB cr' hc' _ _ _ _ _ _ _ eB
           refine ⟨r, Ev.succ ⟨m0, fun m hm' => ?_⟩⟩
           simp [SkaModel.interp, topBody, hb, e1, h1, h2, e2, hm m hm']
+
+set_option maxHeartbeats 16000000 in
+/-- `+eval-pole` at depth `k + 1`: the ops that stay in the function from
+`nock`, `%nok` by `+eval-top` at depth `k`, the calls by the poke and
+`+eval-blob` at depth `k`, and `%caf`, `%cam`, `%csf`, `%csm` by `+eval-pole`
+at depth `k` on the plain call. -/
+theorem pole_step (k : Nat) (hB : BlobGe lib pk k) (hT : TopGe lib pk k) (hP : PoleGe lib pk k) :
+    PoleGe lib pk (k + 1) := by
+  intro cr hc pole regs trace scry x h
+  have h' := iterN_succ_hyb h
+  have hcor : slot? 3 (icore cr) = some cr := by simp [nock_exec]
+  have hpi := evalPoleIn_icore hc
+  have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc.1
+  have loc : ∀ (_ : nock (poleS cr pole regs trace scry) eval_pole.battery
+      = (localPole lib scry pole regs trace).map (poleOut cr)),
+      (∀ m, execPole lib (SkaModel.interp lib pk m) scry cr pole regs trace =
+        (localPole lib scry pole regs trace).map (fun r => (r.1, r.2.1, r.2.2, cr))) →
+      ∃ r, Ev (fun m => execPole lib (SkaModel.interp lib pk m) scry cr pole regs trace) r := by
+    intro e hx
+    have h1 := iterN_sound _ _ _ x h
+    rw [e] at h1
+    obtain ⟨r', h2, -⟩ := Option.map_eq_some_iff.1 h1
+    exact ⟨_, 0, fun m _ => (hx m).trans (by rw [h2]; rfl)⟩
+  -- the plain call that `%caf`, `%cam`, `%csf`, `%csm` run
+  have plain : ∀ pole', (∀ m, execPole lib (SkaModel.interp lib pk m) scry cr pole regs trace =
+        execPole lib (SkaModel.interp lib pk m) scry cr pole' regs trace) →
+      iterN k (poleS cr pole' regs trace scry) eval_pole.battery = some x →
+      ∃ r, Ev (fun m => execPole lib (SkaModel.interp lib pk m) scry cr pole regs trace) r := by
+    intro pole' hx e
+    obtain ⟨r, m0, hm⟩ := hP cr hc pole' regs trace scry x e
+    exact ⟨r, m0, fun m hm' => (hx m).trans (hm m hm')⟩
+  cases pole with
+  | caf a v d n =>
+    refine plain (Pole.cal a v d) (fun m => rfl) ?_
+    pole_simp_at h' []
+    simpa [poleS, icore, Pole.toNoun, Tag.cal] using h'
+  | cam a v d n =>
+    refine plain (Pole.cal a v d) (fun m => rfl) ?_
+    pole_simp_at h' []
+    simpa [poleS, icore, Pole.toNoun, Tag.cal] using h'
+  | csf a sr d n =>
+    refine plain (Pole.csl a sr d) (fun m => rfl) ?_
+    pole_simp_at h' []
+    simpa [poleS, icore, Pole.toNoun, Tag.csl] using h'
+  | csm a sr d n =>
+    refine plain (Pole.csl a sr d) (fun m => rfl) ?_
+    pole_simp_at h' []
+    simpa [poleS, icore, Pole.toNoun, Tag.csl] using h'
+  | hmp a v f =>
+    exact loc (eval_pole_hmp (icore cr) cr hcor hpi layer2 hl2 turn.arm_at homoIn_layer2 lib scry a v f
+      regs trace) fun m => rfl
+  | spy e p d =>
+    exact loc (eval_pole_spy (icore cr) cr hcor hpi lib hslam scry e p d regs trace) fun m => rfl
+  | nok u f d =>
+    obtain ⟨_, hrd, _, hrc⟩ := hpi
+    have hld := eval_pole_load (icore cr) hrd hrc regs
+    have htarm := eval_top.arm_at cr
+    simp only [eval_top.axis] at htarm
+    cases e1 : SkaModel.read u regs with
+    | none => exfalso; pole_simp_at h' [hld, e1, htarm]
+    | some vu =>
+    cases e2 : SkaModel.read f regs with
+    | none => exfalso; pole_simp_at h' [hld, e1, e2, htarm]
+    | some vf =>
+    cases e3 : iterN k (topS cr vu vf scry) eval_top.battery with
+    | none =>
+      exfalso
+      simp only [topS, icore] at e3
+      pole_simp_at h' [hld, e1, e2, htarm, e3]
+    | some y =>
+      obtain ⟨⟨ton, cr'⟩, m0, hm⟩ := hT cr hc vu vf scry y e3
+      apply ev_of m0
+      · intro m hm'
+        simp only [execPole, e1, e2, Option.bind_some, hm m hm']
+        exact rfl
+      · cases ton <;> simp
+  | cal a v d =>
+    rcases pokeW_cases (hpk cr hc) k (Ovum.dire a false) with hw | ⟨p, cr', e1, hw⟩
+    · exfalso
+      simp only [pokeW, poke.axis, Ovum.toNoun, flag, Bool.false_eq_true, if_false, Tag.dire] at hw
+      pole_simp_at h' [Tag.dire, hw]
+    simp only [pokeW, poke.axis, Ovum.toNoun, flag, Bool.false_eq_true, if_false, Tag.dire] at hw
+    pole_simp_at h' [Tag.dire, hw]
+    have hc' := (hpk cr hc).2 _ _ e1
+    have hl2' : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
+    simp only [read.layer2.axis, icore, nock_exec] at hl2'
+    have hnd : NeedIn layer2 ∧ SomeIn layer2 ∧ GorIn mugF layer2 :=
+      ⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩
+    rcases p with _ | ⟨b, c, new⟩ | ps
+    · hyb_simp_at h' []
+    rotate_left
+    · hyb_simp_at h' [Tag.ir, Tag.drop]
+    have hloop := eval_pole_loop cr' hc' (SkaModel.Prod.toNoun (SkaModel.Prod.ir b c new)) a.toNoun d
+      regs (listNoun Frame.toNoun trace) scry v 0 HoonMap.empty
+    simp only [SkaModel.Prod.toNoun, Tag.ir, Tag.cal, icore, HoonMap.toNoun_empty, Straight.toNoun]
+      at hloop
+    cases e2 : v.mapM (SkaModel.read · regs) with
+    | none =>
+      rw [e2] at hloop
+      hyb_simp_at h' [SkaModel.Prod.toNoun, Tag.ir, hloop, Straight.toNoun]
+    | some vs =>
+    rw [e2] at hloop
+    simp only [Option.map_some] at hloop
+    rw [show regsFrom 0 vs HoonMap.empty = regsOf vs from rfl] at hloop
+    have hg := getF_hoonMap Blob.toNoun c.blocks 0
+    cases e3 : HoonMap.get c.blocks 0 with
+    | none =>
+      rw [e3] at hg
+      hyb_simp_at h' [SkaModel.Prod.toNoun, Tag.ir, hloop, Straight.toNoun, hl2', by.arm_at, by_arm,
+        by.got.arm_at, got_arm, got_gate_nil layer2 hnd _ _ hg]
+    | some b0 =>
+    rw [e3] at hg
+    cases eB : iterN k (blobS cr' (regsOf vs) trace b0 c [] scry) eval_blob.battery with
+    | none =>
+      simp only [blobS, icore, Straight.toNoun, argsN, listNoun] at eB
+      hyb_simp_at h' [SkaModel.Prod.toNoun, Tag.ir, hloop, Straight.toNoun, hl2', by.arm_at, by_arm,
+        by.got.arm_at, got_arm, got_gate layer2 hnd _ _ _ hg, unitNoun, eval_blob.arm, eB, argsN,
+        listNoun]
+    | some y =>
+      obtain ⟨⟨ton, cr''⟩, m0, hm⟩ := hB cr' hc' _ _ _ _ _ _ _ eB
+      apply ev_of (m0 + 1)
+      · intro m hm'
+        obtain ⟨m', rfl⟩ : ∃ m', m = m' + 1 := ⟨m - 1, by omega⟩
+        simp only [execPole, e2, Option.bind_some, SkaModel.interp, callBody, e1, execEntry, e3,
+          hm m' (by omega)]
+        exact rfl
+      · cases ton <;> simp [afterCall]
+  | csl a sr d =>
+    rcases pokeW_cases (hpk cr hc) k (Ovum.dire a true) with hw | ⟨p, cr', e1, hw⟩
+    · exfalso
+      simp only [pokeW, poke.axis, Ovum.toNoun, flag, if_true, Tag.dire] at hw
+      pole_simp_at h' [Tag.dire, hw]
+    simp only [pokeW, poke.axis, Ovum.toNoun, flag, if_true, Tag.dire] at hw
+    pole_simp_at h' [Tag.dire, hw]
+    have hc' := (hpk cr hc).2 _ _ e1
+    have hl2' : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
+    simp only [read.layer2.axis, icore, nock_exec] at hl2'
+    have hnd : NeedIn layer2 ∧ SomeIn layer2 ∧ GorIn mugF layer2 :=
+      ⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩
+    obtain ⟨_, hrd', _, hrc'⟩ := evalPoleIn_icore hc'
+    have hld := eval_pole_load (icore cr') hrd' hrc' regs
+    rcases p with _ | ⟨b, c, new⟩ | ps
+    · hyb_simp_at h' []
+    rotate_left
+    · hyb_simp_at h' [Tag.ir, Tag.drop]
+    cases e2 : SkaModel.read sr regs with
+    | none =>
+      hyb_simp_at h' [SkaModel.Prod.toNoun, Tag.ir, hld, e2, Straight.toNoun]
+    | some vs0 =>
+    have hreg : HoonMap.toNoun id (regsOf [vs0] : TreapMap mugF Noun)
+        = C (C (A 0) vs0) (C (A 0) (A 0)) := rfl
+    have hg := getF_hoonMap Blob.toNoun c.blocks 0
+    cases e3 : HoonMap.get c.blocks 0 with
+    | none =>
+      rw [e3] at hg
+      hyb_simp_at h' [SkaModel.Prod.toNoun, Tag.ir, hld, e2, hreg, Straight.toNoun, hl2', by.arm_at,
+        by_arm, by.got.arm_at, got_arm, got_gate_nil layer2 hnd _ _ hg]
+    | some b0 =>
+    rw [e3] at hg
+    cases eB : iterN k (blobS cr' (regsOf [vs0]) trace b0 c [] scry) eval_blob.battery with
+    | none =>
+      simp only [blobS, icore, Straight.toNoun, argsN, listNoun, hreg] at eB
+      hyb_simp_at h' [SkaModel.Prod.toNoun, Tag.ir, hld, e2, hreg, Straight.toNoun, hl2', by.arm_at,
+        by_arm, by.got.arm_at, got_arm, got_gate layer2 hnd _ _ _ hg, unitNoun, eval_blob.arm, eB,
+        argsN, listNoun]
+    | some y =>
+      obtain ⟨⟨ton, cr''⟩, m0, hm⟩ := hB cr' hc' _ _ _ _ _ _ _ eB
+      apply ev_of (m0 + 1)
+      · intro m hm'
+        obtain ⟨m', rfl⟩ : ∃ m', m = m' + 1 := ⟨m - 1, by omega⟩
+        simp only [execPole, e2, Option.bind_some, SkaModel.interp, callBody, e1, execEntry, e3,
+          hm m' (by omega)]
+        exact rfl
+      · cases ton <;> simp [afterCall]
+  | _ =>
+    exact loc (eval_pole_local (icore cr) cr hcor hpi lib scry _ (by simp [PlainLocal]) regs trace)
+      fun m => rfl
 
 end
 
