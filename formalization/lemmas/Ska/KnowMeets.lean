@@ -806,5 +806,31 @@ end Residue
 
 end Bake
 
+namespace PokeM
+
+open Bake
+
+variable {M : Type → Type → Type} [Treap M] {J H R : Type}
+
+/-- **`LessProvidesNF` and the three facts about the datums, of every
+poke** from a state that satisfies `InvB`. -/
+def PokeNF (lib : Lib) (env : Env R) (jet : H → J → (Bell → Option Datum) → R → Bell → Bool)
+    (fold frozen : Bool) (fuel : Noun → Noun → LongB M → J → Nat) (regOf : J → R) : Prop :=
+  ∀ s f (L : LongB M) j hot pr dats memo' rd reg', InvB lib L →
+    skaPoke env (fuel s f L j) (Sock.mk Cape.yes s, f) L.memo (regOf j) = some (pr, dats, memo', rd, reg') →
+    let E := anaEnv jet fold frozen s f L j hot dats memo' rd reg'
+    LessProvidesNF E ∧ DatInhab E ∧ LessInhab E ∧ NoAx0Dat E
+
+/-- **`PokeSites` from `PokeNF`**, so `gap_of_meet` holds with `PokeNF` in
+place of `PokeSites`. -/
+theorem pokeSites_of_nf {lib : Lib} {env : Env R} {jet : H → J → (Bell → Option Datum) → R → Bell → Bool}
+    {fold frozen : Bool} {fuel : Noun → Noun → LongB M → J → Nat} {regOf : J → R}
+    (h : PokeNF lib env jet fold frozen fuel regOf) : PokeSites lib env jet fold frozen fuel regOf :=
+  fun s f L j hot pr dats memo' rd reg' hI hs =>
+    let ⟨hl, hp, hi, hn⟩ := h s f L j hot pr dats memo' rd reg' hI hs
+    sitesMeet_of_lessNF hl hp hi hn
+
+end PokeM
+
 end SkaModel
 end Formalization

@@ -334,3 +334,4 @@ open Formalization.SkaModel
 #print axioms Bake.knowMeetsNF_of
 #print axioms Bake.sitesMeet_of_lessNF
 #print axioms Bake.prodMeet_of_same
+#print axioms PokeM.pokeSites_of_nf
