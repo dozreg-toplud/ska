@@ -296,6 +296,289 @@ theorem meanArm_cases {go : FolGoS M R} {tag : Nat} {h : FolOut} {seat mk : Opti
       · rename_i hx; exact (hx _ _ rfl).elim
       · rfl
 
+/-! ## One level -/
+
+theorem folR_of_calls {n : Nat} {tab : Tab} {calls : List (Key × (FolOut × Gen))} {fol : Noun}
+    {sub : Anno} {mk : Option Noun} {bc df : Bool} {gen g' gen' : Gen} {out : FolOut}
+    (ht : TabIn P tab)
+    (hc : ∀ c ∈ calls, FolR P n c.1.1 c.1.2.1 c.1.2.2.1 c.1.2.2.2.1 c.1.2.2.2.2.1 c.1.2.2.2.2.2 c.2.1 c.2.2)
+    (h : SkaModel.folStep tab (goL calls) fol sub mk bc df gen = some (out, g'))
+    (he : g'.erase = gen'.erase) : FolR P (n + 1) fol sub mk bc df gen out gen' :=
+  ⟨tab, goL calls, g', ht, goR_goL hc, h, he⟩
+
+section Step
+
+variable {Inv : GenS M R → Prop} {res : ResGo M R} {go : FolGoS M R} {n : Nat}
+
+/-- What the bridge asks of `resolve`: its answers are in `P`, it keeps
+`Inv`, and it leaves the capes of `gen` alone. -/
+def ResOK (P : Sock → Noun → TabEntry → Prop) (Inv : GenS M R → Prop) (res : ResGo M R) : Prop :=
+  ∀ idT gs r gs', Inv gs → res idT gs = some (r, gs') → P idT.1 idT.2 r.2.core.tab ∧ Inv gs' ∧ gs'.gen = gs.gen
+
+/-- What the bridge gives of a recursion: it keeps `Inv`, and its results,
+projected, are in `FolR P n` with any ghost. -/
+def GoOK (P : Sock → Noun → TabEntry → Prop) (Inv : GenS M R → Prop) (n : Nat) (go : FolGoS M R) : Prop :=
+  ∀ fol sub seat mk bc df gs out gs', Inv gs → go fol sub seat mk bc df gs = some (out, gs') →
+    Inv gs' ∧ ∀ γ, FolR P n fol sub mk bc df (gs.at γ) out gs'.gen
+
+theorem GoOK.ch (hgo : GoOK P Inv n go) {fol : Noun} {sub : Anno} {seat mk : Option Noun} {bc df : Bool}
+    {gs gs' : GenS M R} {out : FolOut} (hi : Inv gs) (h : go fol sub seat mk bc df gs = some (out, gs'))
+    (γ γ' : Nat) : FolR P n fol sub mk bc df (gs.at γ) out (gs'.at γ') :=
+  folR_reghost ((hgo _ _ _ _ _ _ _ _ _ hi h).2 γ) rfl
+
+/-- **One level of the state-passing `fol-loop` is in `FolR`.** -/
+theorem bridge_step (env : Env R) (hL : LocalStable Inv) (hres : ResOK P Inv res) (hgo : GoOK P Inv n go)
+    {fol : Noun} {sub : Anno} {seat mk : Option Noun} {bc df : Bool} {gs gs' : GenS M R} {out : FolOut}
+    (hi : Inv gs) (h : folStep env res go fol sub seat mk bc df gs = some (out, gs')) :
+    Inv gs' ∧ ∀ γ, FolR P (n + 1) fol sub mk bc df (gs.at γ) out gs'.gen := by
+  cases hs : shape fol with
+  | cons a b q =>
+    simp only [folStep, hs, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨⟨l, g1⟩, h1, ⟨r, g2⟩, h2, rfl, rfl⟩ := h
+    have i1 := (hgo _ _ _ _ _ _ _ _ _ hi h1).1
+    refine ⟨(hgo _ _ _ _ _ _ _ _ _ i1 h2).1, fun γ => ?_⟩
+    refine folR_of_calls (calls := [((C a b, sub, mk, bc, df, gs.at γ), (l, g1.at (γ + 1))),
+        ((q, sub, mk, bc, df, g1.at (γ + 1)), (r, g2.at (γ + 2)))]) (g' := g2.at (γ + 2)) tabIn_none ?_ ?_ rfl
+    · simp only [List.mem_cons, List.mem_nil_iff, or_false, forall_eq_or_imp, forall_eq]
+      exact ⟨hgo.ch hi h1 _ _, hgo.ch i1 h2 _ _⟩
+    · simp only [SkaModel.folStep, hs]
+      rw [goL_hd]; simp only [Option.bind_some]
+      rw [goL_tl (by simp [GenS.at]), goL_hd]; rfl
+  | op0 p =>
+    simp only [folStep, hs, Option.map_eq_some_iff, Prod.mk.injEq] at h
+    obtain ⟨pr, hpr, rfl, rfl⟩ := h
+    refine ⟨hi, fun γ => folR_of_calls (calls := []) (g' := gs.at γ) tabIn_none (by simp) ?_ rfl⟩
+    simp only [SkaModel.folStep, hs, hpr, Option.map_some]
+  | op1 p =>
+    simp only [folStep, hs, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨hi, fun γ => folR_of_calls (calls := []) (g' := gs.at γ) tabIn_none (by simp)
+      (by simp only [SkaModel.folStep, hs]) rfl⟩
+  | op2 a b q =>
+    simp only [folStep, hs, Option.bind_eq_some_iff] at h
+    obtain ⟨⟨s1, g1⟩, h1, ⟨f1, g2⟩, h2, h3⟩ := h
+    dsimp only at h2 h3
+    have i1 := (hgo _ _ _ _ _ _ _ _ _ hi h1).1
+    have i2 := (hgo _ _ _ _ _ _ _ _ _ i1 h2).1
+    have i2' : Inv ({ g2 with want := Ca.uni g2.want (distribute Cape.yes f1.prod.src) } : GenS M R) :=
+      hL.app i2 rfl rfl rfl rfl rfl rfl rfl rfl rfl rfl
+    rcases callStep_cases h3 with ⟨el, eb, est, hc⟩ | ⟨fa, fb, i, g3, h4, rfl, hc⟩ | ⟨fa, fb, r, g3, h4, el, eb, est, hc⟩
+    · refine ⟨hL.app i2 el eb (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est])
+        (by rw [est]) (by rw [est]) (by rw [est]), fun γ => ?_⟩
+      refine folR_of_calls (calls := [((C a b, sub, mk, bc, df, gs.at γ), (s1, g1.at (γ + 1))),
+          ((q, sub, mk, bc, df, g1.at (γ + 1)), (f1, g2.at (γ + 2)))]) (g' := gs'.at (γ + 2)) tabIn_none ?_ ?_ rfl
+      · simp only [List.mem_cons, List.mem_nil_iff, or_false, forall_eq_or_imp, forall_eq]
+        exact ⟨hgo.ch hi h1 _ _, hgo.ch i1 h2 _ _⟩
+      · simp only [SkaModel.folStep, hs]
+        rw [goL_hd]; simp only [Option.bind_some]
+        rw [goL_tl (by simp [GenS.at]), goL_hd]; simp only [Option.bind_some]
+        exact hc _ _ _
+    · have i3 := (hgo _ _ _ _ _ _ _ _ _ i2' h4).1
+      refine ⟨i3, fun γ => ?_⟩
+      refine folR_of_calls (calls := [((C a b, sub, mk, bc, df, gs.at γ), (s1, g1.at (γ + 1))),
+          ((q, sub, mk, bc, df, g1.at (γ + 1)), (f1, g2.at (γ + 2))),
+          ((C fa fb, s1.prod, mk, bc, df,
+            GenS.at ({ g2 with want := Ca.uni g2.want (distribute Cape.yes f1.prod.src) } : GenS M R) (γ + 2)),
+            (i, gs'.at (γ + 3)))]) (g' := gs'.at (γ + 3)) tabIn_none ?_ ?_ rfl
+      · simp only [List.mem_cons, List.mem_nil_iff, or_false, forall_eq_or_imp, forall_eq]
+        exact ⟨hgo.ch hi h1 _ _, hgo.ch i1 h2 _ _,
+          hgo.ch i2' h4 _ _⟩
+      · simp only [SkaModel.folStep, hs]
+        rw [goL_hd]; simp only [Option.bind_some]
+        rw [goL_tl (by simp [GenS.at]), goL_hd]; simp only [Option.bind_some]
+        refine hc _ _ _ _ ?_
+        rw [goL_tl (by simp [GenS.at]), goL_tl (by simp [GenS.at]), goL_hd]
+    · obtain ⟨hp, i3, hg3⟩ := hres _ _ _ _ i2 h4
+      refine ⟨hL.app i3 el eb (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est])
+        (by rw [est]) (by rw [est]) (by rw [est]), fun γ => ?_⟩
+      refine folR_of_calls (calls := [((C a b, sub, mk, bc, df, gs.at γ), (s1, g1.at (γ + 1))),
+          ((q, sub, mk, bc, df, g1.at (γ + 1)), (f1, g2.at (γ + 2)))]) (g' := gs'.at (γ + 2))
+          (tabIn_one hp) ?_ ?_ rfl
+      · simp only [List.mem_cons, List.mem_nil_iff, or_false, forall_eq_or_imp, forall_eq]
+        exact ⟨hgo.ch hi h1 _ _, hgo.ch i1 h2 _ _⟩
+      · simp only [SkaModel.folStep, hs]
+        rw [goL_hd]; simp only [Option.bind_some]
+        rw [goL_tl (by simp [GenS.at]), goL_hd]; simp only [Option.bind_some]
+        exact hc hg3 _ _
+  | op3 a b =>
+    simp only [folStep, hs, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨⟨p1, g1⟩, h1, rfl, rfl⟩ := h
+    refine ⟨(hgo _ _ _ _ _ _ _ _ _ hi h1).1, fun γ => ?_⟩
+    refine folR_of_calls (calls := [((C a b, sub, mk, bc, df, gs.at γ), (p1, g1.at (γ + 1)))])
+      (g' := g1.at (γ + 1)) tabIn_none (by simpa using hgo.ch hi h1 _ _) ?_ rfl
+    simp only [SkaModel.folStep, hs]
+    rw [goL_hd]; rfl
+  | op4 a b =>
+    simp only [folStep, hs, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨⟨p1, g1⟩, h1, rfl, rfl⟩ := h
+    refine ⟨(hgo _ _ _ _ _ _ _ _ _ hi h1).1, fun γ => ?_⟩
+    refine folR_of_calls (calls := [((C a b, sub, mk, bc, df, gs.at γ), (p1, g1.at (γ + 1)))])
+      (g' := g1.at (γ + 1)) tabIn_none (by simpa using hgo.ch hi h1 _ _) ?_ rfl
+    simp only [SkaModel.folStep, hs]
+    rw [goL_hd]; rfl
+  | op5 a b q =>
+    simp only [folStep, hs, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨⟨p1, g1⟩, h1, ⟨q1, g2⟩, h2, rfl, rfl⟩ := h
+    have i1 := (hgo _ _ _ _ _ _ _ _ _ hi h1).1
+    refine ⟨(hgo _ _ _ _ _ _ _ _ _ i1 h2).1, fun γ => ?_⟩
+    refine folR_of_calls (calls := [((C a b, sub, mk, bc, df, gs.at γ), (p1, g1.at (γ + 1))),
+        ((q, sub, mk, bc, df, g1.at (γ + 1)), (q1, g2.at (γ + 2)))]) (g' := g2.at (γ + 2)) tabIn_none ?_ ?_ rfl
+    · simp only [List.mem_cons, List.mem_nil_iff, or_false, forall_eq_or_imp, forall_eq]
+      exact ⟨hgo.ch hi h1 _ _, hgo.ch i1 h2 _ _⟩
+    · simp only [SkaModel.folStep, hs]
+      rw [goL_hd]; simp only [Option.bind_some]
+      rw [goL_tl (by simp [GenS.at]), goL_hd]; rfl
+  | op6 a b q r =>
+    simp only [folStep, hs, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨⟨p1, g1⟩, h1, ⟨q1, g2⟩, h2, ⟨r1, g3⟩, h3, rfl, rfl⟩ := h
+    have i1 := (hgo _ _ _ _ _ _ _ _ _ hi h1).1
+    have i2 := (hgo _ _ _ _ _ _ _ _ _ i1 h2).1
+    refine ⟨(hgo _ _ _ _ _ _ _ _ _ i2 h3).1, fun γ => ?_⟩
+    refine folR_of_calls (calls := [((C a b, sub, mk, bc, df, gs.at γ), (p1, g1.at (γ + 1))),
+        ((q, sub, mk, bc, df, g1.at (γ + 1)), (q1, g2.at (γ + 2))),
+        ((r, sub, mk, bc, df, g2.at (γ + 2)), (r1, g3.at (γ + 3)))]) (g' := g3.at (γ + 3)) tabIn_none ?_ ?_ rfl
+    · simp only [List.mem_cons, List.mem_nil_iff, or_false, forall_eq_or_imp, forall_eq]
+      exact ⟨hgo.ch hi h1 _ _, hgo.ch i1 h2 _ _, hgo.ch i2 h3 _ _⟩
+    · simp only [SkaModel.folStep, hs]
+      rw [goL_hd]; simp only [Option.bind_some]
+      rw [goL_tl (by simp [GenS.at]), goL_hd]; simp only [Option.bind_some]
+      rw [goL_tl (by simp [GenS.at]), goL_tl (by simp [GenS.at]), goL_hd]; rfl
+  | op7 a b q =>
+    simp only [folStep, hs, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨⟨p1, g1⟩, h1, ⟨q1, g2⟩, h2, rfl, rfl⟩ := h
+    have i1 := (hgo _ _ _ _ _ _ _ _ _ hi h1).1
+    refine ⟨(hgo _ _ _ _ _ _ _ _ _ i1 h2).1, fun γ => ?_⟩
+    refine folR_of_calls (calls := [((C a b, sub, mk, bc, df, gs.at γ), (p1, g1.at (γ + 1))),
+        ((q, p1.prod, mk, bc, df, g1.at (γ + 1)), (q1, g2.at (γ + 2)))]) (g' := g2.at (γ + 2)) tabIn_none ?_ ?_ rfl
+    · simp only [List.mem_cons, List.mem_nil_iff, or_false, forall_eq_or_imp, forall_eq]
+      exact ⟨hgo.ch hi h1 _ _, hgo.ch i1 h2 _ _⟩
+    · simp only [SkaModel.folStep, hs]
+      rw [goL_hd]; simp only [Option.bind_some]
+      rw [goL_tl (by simp [GenS.at]), goL_hd]; rfl
+  | op8 a b q =>
+    simp only [folStep, hs] at h
+    refine ⟨(hgo _ _ _ _ _ _ _ _ _ hi h).1, fun γ => ?_⟩
+    refine folR_of_calls (calls := [((n3 (A 7) (C (C a b) (slot 1)) q, sub, mk, bc, df, gs.at γ),
+        (out, gs'.at (γ + 1)))]) (g' := gs'.at (γ + 1)) tabIn_none (by simpa using hgo.ch hi h _ _) ?_ rfl
+    simp only [SkaModel.folStep, hs]
+    rw [goL_hd]
+  | op9 p a b =>
+    simp only [folStep, hs] at h
+    refine ⟨(hgo _ _ _ _ _ _ _ _ _ hi h).1, fun γ => ?_⟩
+    refine folR_of_calls (calls := [((n3 (A 7) (C a b) (n3 (A 2) (slot 1) (slot p)), sub, mk, bc, df, gs.at γ),
+        (out, gs'.at (γ + 1)))]) (g' := gs'.at (γ + 1)) tabIn_none (by simpa using hgo.ch hi h _ _) ?_ rfl
+    simp only [SkaModel.folStep, hs]
+    rw [goL_hd]
+  | op10 ax don r1 r2 =>
+    simp only [folStep, hs] at h
+    split at h
+    · rename_i hx
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      refine ⟨hi, fun γ => folR_of_calls (calls := []) (g' := gs.at γ) tabIn_none (by simp) ?_ rfl⟩
+      simp only [SkaModel.folStep, hs, if_pos hx]
+    · rename_i hx
+      simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff, Prod.mk.injEq] at h
+      obtain ⟨⟨dn, g1⟩, h1, ⟨rc, g2⟩, h2, s', hd, rfl, rfl⟩ := h
+      have i1 := (hgo _ _ _ _ _ _ _ _ _ hi h1).1
+      refine ⟨(hgo _ _ _ _ _ _ _ _ _ i1 h2).1, fun γ => ?_⟩
+      refine folR_of_calls (calls := [((don, sub, mk, bc, df, gs.at γ), (dn, g1.at (γ + 1))),
+          ((C r1 r2, sub, mk, bc, df, g1.at (γ + 1)), (rc, g2.at (γ + 2)))]) (g' := g2.at (γ + 2))
+          tabIn_none ?_ ?_ rfl
+      · simp only [List.mem_cons, List.mem_nil_iff, or_false, forall_eq_or_imp, forall_eq]
+        exact ⟨hgo.ch hi h1 _ _, hgo.ch i1 h2 _ _⟩
+      · simp only [SkaModel.folStep, hs, if_neg hx]
+        rw [goL_hd]; simp only [Option.bind_some]
+        rw [goL_tl (by simp [GenS.at]), goL_hd]; simp only [Option.bind_some, hd, Option.map_some]
+  | op11s p a b =>
+    simp only [folStep, hs] at h
+    split at h
+    · rename_i hp
+      refine ⟨(hgo _ _ _ _ _ _ _ _ _ hi h).1, fun γ => ?_⟩
+      refine folR_of_calls (calls := [((n3 (A 2) (slot 1) (quote (C (A 11) (C (A p) (C a b)))), sub, mk, true,
+          df, gs.at γ), (out, gs'.at (γ + 1)))]) (g' := gs'.at (γ + 1)) tabIn_none
+          (by simpa using hgo.ch hi h _ _) ?_ rfl
+      simp only [SkaModel.folStep, hs, if_pos hp]
+      rw [goL_hd]
+    · rename_i hp
+      simp only [Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨⟨q1, g1⟩, h1, rfl, rfl⟩ := h
+      refine ⟨(hgo _ _ _ _ _ _ _ _ _ hi h1).1, fun γ => ?_⟩
+      refine folR_of_calls (calls := [((C a b, sub, mk, bc, df, gs.at γ), (q1, g1.at (γ + 1)))])
+        (g' := g1.at (γ + 1)) tabIn_none (by simpa using hgo.ch hi h1 _ _) ?_ rfl
+      simp only [SkaModel.folStep, hs, if_neg hp]
+      rw [goL_hd]; rfl
+  | op11d tag h1 h2 f =>
+    simp only [folStep, hs, Option.bind_eq_some_iff] at h
+    obtain ⟨⟨hh, g1⟩, e1, h⟩ := h
+    have i0 := spotHint_inv hL env tag h1 h2 seat hi
+    have hat0 : ∀ γ, (spotHint env tag h1 h2 seat gs).2.at γ = gs.at γ :=
+      fun γ => GenS.at_eq (spotHint_gen env tag h1 h2 seat gs) γ
+    have i1 := (hgo _ _ _ _ _ _ _ _ _ i0 e1).1
+    have F1 : ∀ γ γ', FolR P n (C h1 h2) sub mk bc df (gs.at γ) hh (g1.at γ') := fun γ γ' => by
+      rw [← hat0 γ]; exact hgo.ch i0 e1 _ _
+    split at h
+    · rename_i hc
+      refine ⟨(hgo _ _ _ _ _ _ _ _ _ i1 h).1, fun γ => ?_⟩
+      refine folR_of_calls (calls := [((C h1 h2, sub, mk, bc, df, gs.at γ), (hh, g1.at (γ + 1))),
+          ((n3 (A 2) (slot 1) (quote f), sub, some hh.prod.sock.data, bc, df, g1.at (γ + 1)),
+            (out, gs'.at (γ + 2)))]) (g' := gs'.at (γ + 2)) tabIn_none ?_ ?_ rfl
+      · simp only [List.mem_cons, List.mem_nil_iff, or_false, forall_eq_or_imp, forall_eq]
+        exact ⟨F1 _ _, hgo.ch i1 h _ _⟩
+      · simp only [SkaModel.folStep, hs]
+        rw [goL_hd]; simp only [Option.bind_some]
+        rw [if_pos hc, goL_tl (by simp [GenS.at]), goL_hd]
+    · rename_i hc
+      simp only [Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨⟨arm, g2⟩, harm, ⟨fr, g3⟩, h3, g4, h4, rfl, rfl⟩ := h
+      have iA : Inv g2 := by
+        rcases meanArm_cases harm with ⟨rfl, _⟩ | ⟨cg, hcg, rfl, _⟩
+        · exact i1
+        · exact (hgo _ _ _ _ _ _ _ _ _ i1 hcg).1
+      obtain ⟨i4, hg4⟩ := fastHint_inv hL ((hgo _ _ _ _ _ _ _ _ _ iA h3).1) h4
+      refine ⟨i4, fun γ => ?_⟩
+      rcases meanArm_cases harm with ⟨rfl, hm⟩ | ⟨cg, hcg, rfl, hm⟩
+      · refine folR_of_calls (calls := [((C h1 h2, sub, mk, bc, df, gs.at γ), (hh, g2.at (γ + 1))),
+            ((f, sub, mk, bc, df, g2.at (γ + 1)), (fr, g3.at (γ + 2)))]) (g' := g3.at (γ + 2)) tabIn_none ?_ ?_
+            (by rw [GenS.at_erase, hg4])
+        · simp only [List.mem_cons, List.mem_nil_iff, or_false, forall_eq_or_imp, forall_eq]
+          exact ⟨F1 _ _, hgo.ch i1 h3 _ _⟩
+        · simp only [SkaModel.folStep, hs]
+          rw [goL_hd]; simp only [Option.bind_some]
+          rw [if_neg hc, hm]; simp only [Option.bind_some]
+          rw [goL_tl (by simp [GenS.at]), goL_hd]; rfl
+      · have icg := (hgo _ _ _ _ _ _ _ _ _ i1 hcg).1
+        refine folR_of_calls (calls := [((C h1 h2, sub, mk, bc, df, gs.at γ), (hh, g1.at (γ + 1))),
+            ((n3 (A 2) (slot 1) (slot 2), hh.prod, mk, bc, true, g1.at (γ + 1)), (cg.1, cg.2.at (γ + 2))),
+            ((f, sub, mk, bc, df, cg.2.at (γ + 2)), (fr, g3.at (γ + 3)))]) (g' := g3.at (γ + 3)) tabIn_none ?_ ?_
+            (by rw [GenS.at_erase, hg4])
+        · simp only [List.mem_cons, List.mem_nil_iff, or_false, forall_eq_or_imp, forall_eq]
+          exact ⟨F1 _ _, hgo.ch i1 hcg _ _, hgo.ch icg h3 _ _⟩
+        · simp only [SkaModel.folStep, hs]
+          rw [goL_hd]; simp only [Option.bind_some]
+          rw [if_neg hc, hm _ _ _ (by rw [goL_tl (by simp [GenS.at]), goL_hd])]
+          simp only [Option.bind_some]
+          rw [goL_tl (by simp [GenS.at]), goL_tl (by simp [GenS.at]), goL_hd]; rfl
+  | op12 a b q =>
+    simp only [folStep, hs, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨⟨p1, g1⟩, h1, ⟨q1, g2⟩, h2, rfl, rfl⟩ := h
+    have i1 := (hgo _ _ _ _ _ _ _ _ _ hi h1).1
+    refine ⟨(hgo _ _ _ _ _ _ _ _ _ i1 h2).1, fun γ => ?_⟩
+    refine folR_of_calls (calls := [((C a b, sub, mk, bc, df, gs.at γ), (p1, g1.at (γ + 1))),
+        ((q, sub, mk, bc, df, g1.at (γ + 1)), (q1, g2.at (γ + 2)))]) (g' := g2.at (γ + 2)) tabIn_none ?_ ?_ rfl
+    · simp only [List.mem_cons, List.mem_nil_iff, or_false, forall_eq_or_imp, forall_eq]
+      exact ⟨hgo.ch hi h1 _ _, hgo.ch i1 h2 _ _⟩
+    · simp only [SkaModel.folStep, hs]
+      rw [goL_hd]; simp only [Option.bind_some]
+      rw [goL_tl (by simp [GenS.at]), goL_hd]; rfl
+  | other =>
+    simp only [folStep, hs, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨hi, fun γ => folR_of_calls (calls := []) (g' := gs.at γ) tabIn_none (by simp)
+      (by simp only [SkaModel.folStep, hs]) rfl⟩
+
+end Step
+
 end Ana
 end SkaModel
 end Formalization
