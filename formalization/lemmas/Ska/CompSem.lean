@@ -124,6 +124,18 @@ def GMem : CGoal S → Nat → Prop
   | CGoal.next laz _, r => NMem laz.ned r
   | _, _ => False
 
+/-- A need with no subterm `pair none none`. -/
+def Clean : Need → Prop
+  | Need.none => True
+  | Need.this _ => True
+  | Need.pair p q => ¬ (p = Need.none ∧ q = Need.none) ∧ Clean p ∧ Clean q
+  | Need.both _ p q => Clean p ∧ Clean q
+
+/-- The need of a goal `%next` is clean. -/
+def GClean : CGoal S → Prop
+  | CGoal.next laz _ => Clean laz.ned
+  | _ => True
+
 /-- A product that has not the shape or the looks the goal asks. -/
 def GNot : CGoal S → Noun → Prop
   | CGoal.next laz _, p => ¬ FitsS laz p
@@ -209,6 +221,57 @@ theorem bind_apply {α β : Type} (x : CM Map α) (f : α → CM Map β) (g : Ge
 theorem pure_apply {α : Type} (a : α) (g : Gen Map) : (pure a : CM Map α) g = some (a, g) := rfl
 
 theorem re_apply (g : Gen Map) : (re : CM Map Nat) g = some (g.re, { g with re := g.re + 1 }) := rfl
+
+/-! ## `+past` -/
+
+/-- Where `+past` returns, it returns its `next` and leaves the state. -/
+theorem past_some {cod : Bell → Option Bool} {nex : Next S} {nom : Nomm} {g g' : Gen Map} {x : Next S}
+    (h : past cod nex nom g = some (x, g')) : nex = x ∧ g = g' := by
+  unfold past at h
+  split at h
+  · simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h; exact h
+  · cases e : hinted cod nom with
+    | none => rw [e] at h; cases h
+    | some b =>
+      cases b with
+      | true => rw [e] at h; cases h
+      | false =>
+        rw [e] at h
+        simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h; exact h
+
+/-- **A pure nomm is not hinted**, whatever the code table. -/
+theorem hinted_pure (cod : Bell → Option Bool) : ∀ (nm : Nomm), nm.pure = true → hinted cod nm = some false
+  | Nomm.n0 _, _ => rfl
+  | Nomm.n1 _, _ => rfl
+  | Nomm.n3 p, h => hinted_pure cod p h
+  | Nomm.n4 p, h => hinted_pure cod p h
+  | Nomm.cons p q, h => by
+      simp only [Nomm.pure, Bool.and_eq_true] at h
+      simp only [hinted, hinted_pure cod p h.1, hinted_pure cod q h.2, orB]
+  | Nomm.n5 p q, h => by
+      simp only [Nomm.pure, Bool.and_eq_true] at h
+      simp only [hinted, hinted_pure cod p h.1, hinted_pure cod q h.2, orB]
+  | Nomm.n7 p q, h => by
+      simp only [Nomm.pure, Bool.and_eq_true] at h
+      simp only [hinted, hinted_pure cod p h.1, hinted_pure cod q h.2, orB]
+  | Nomm.n10 _ p q, h => by
+      simp only [Nomm.pure, Bool.and_eq_true] at h
+      simp only [hinted, hinted_pure cod p h.1, hinted_pure cod q h.2, orB]
+  | Nomm.n6 p q r, h => by
+      simp only [Nomm.pure, Bool.and_eq_true] at h
+      simp only [hinted, hinted_pure cod p h.1.1, hinted_pure cod q h.1.2, hinted_pure cod r h.2, orB]
+  | Nomm.n2 _ _ _, h => by simp [Nomm.pure] at h
+  | Nomm.n11s _ _ _, h => by simp [Nomm.pure] at h
+  | Nomm.n11d _ _ _ _, h => by simp [Nomm.pure] at h
+  | Nomm.n12 _ _, h => by simp [Nomm.pure] at h
+  | Nomm.mean _ _ _ _ _, h => by simp [Nomm.pure] at h
+
+/-- **On a pure nomm `+past` is the identity.** -/
+theorem past_pure (cod : Bell → Option Bool) (nex : Next S) {nom : Nomm} (h : nom.pure = true) :
+    (past cod nex nom : CM Map (Next S)) = pure nex := by
+  unfold past
+  simp only [hinted_pure cod nom h]
+  split <;> rfl
 
 /-- The state after `(emit b)`. -/
 def Gen.emitted (g : Gen Map) (b : Blob) : Gen Map :=

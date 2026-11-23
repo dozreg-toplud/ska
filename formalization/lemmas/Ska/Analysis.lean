@@ -627,10 +627,17 @@ def passStep (n : Nat) (memberLoop : MemGo M R) (passLoop : PassGo M R) (id : Id
   if r.1.2 = false ∧ st.next = nextBefore then (pop id st).map fun st' => (st.next, st')
   else passLoop id index (pass + 1) st
 
+/-- The `=.  st  (cull id st)` before the first pass, then the pass loop. -/
+def cullPass (n : Nat) (passLoop : PassGo M R) (id : Ident) (index : Nat) (st : SkaState M R) :
+    Option (Nat × SkaState M R) :=
+  (cull n id st).bind fun st => passLoop id index 1 st
+
 /-- One `+analyze` of `id` with the persistent memo `memoF`: a hit from an
 earlier poke, or a new function: number it, push it, run it, and if it is
-the root of a component, pop it (trivial) or iterate the component. -/
-def analyzeStep (memoF : Memo M) (run : RunGo M R) (passLoop : PassGo M R) (id : Ident)
+the root of a component, pop it (trivial) or drop the members it does not
+reach (`+cull`) and iterate the component.  `n` is the fuel of that
+`+cull`. -/
+def analyzeStep (n : Nat) (memoF : Memo M) (run : RunGo M R) (passLoop : PassGo M R) (id : Ident)
     (st : SkaState M R) : Option (Nat × SkaState M R) :=
   match gitMi memoF id.2 id.1 with
   | none => none
@@ -642,9 +649,9 @@ def analyzeStep (memoF : Memo M) (run : RunGo M R) (passLoop : PassGo M R) (id :
   (run id index st).bind fun r =>
   let st := r.2
   if r.1.1 ≠ index then some (r.1.1, st) else
-  if r.1.2.1 = true then passLoop id index 1 st else
+  if r.1.2.1 = true then cullPass n passLoop id index st else
   (above id st.stk).bind fun ab =>
-  if ab.length ≠ 1 then passLoop id index 1 st else
+  if ab.length ≠ 1 then cullPass n passLoop id index st else
   (pop id st).map fun st' => (st.next, st')
 
 /-! ## The recursion, fuelled -/
@@ -664,7 +671,7 @@ def resolve (env : Env R) (memoF : Memo M) : Nat → ResGo M R
 /-- `+analyze`, with fuel. -/
 def analyze (env : Env R) (memoF : Memo M) : Nat → AnaGo M R
   | 0 => fun _ _ => none
-  | n + 1 => analyzeStep memoF (run env memoF n) (passLoop env memoF n)
+  | n + 1 => analyzeStep n memoF (run env memoF n) (passLoop env memoF n)
 
 /-- `+run`, with fuel. -/
 def run (env : Env R) (memoF : Memo M) : Nat → RunGo M R

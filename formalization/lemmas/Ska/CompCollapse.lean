@@ -259,7 +259,7 @@ theorem collapse_ok {laz : Sure S} {th : Jmp} {g g' : Gen Map} {a : Option (Nat 
 /-- **`[4 p]` for `%next`.** -/
 theorem run_n4_next_ok {lib : Lib} {p : Nomm} {laz : Sure S} {th : Jmp} {g0 g1 : Gen Map} {nex : Next S}
     (h : run (Nomm.n4 p) (CGoal.next laz th) g0 = some (nex, g1))
-    (ih : ∀ (laz : Sure S) (th : Jmp) (g g' : Gen Map) (nex' : Next S), GoalOK g (CGoal.next laz th) →
+    (ih : ∀ (laz : Sure S) (th : Jmp) (g g' : Gen Map) (nex' : Next S), GoalOK g (CGoal.next laz th) → Clean laz.ned →
       run p (CGoal.next laz th) g = some (nex', g') → RunOK lib p (CGoal.next laz th) g g' nex') :
     RunOK lib (Nomm.n4 p) (CGoal.next laz th) g0 g1 nex := by
   simp only [run] at h
@@ -289,7 +289,7 @@ theorem run_n4_next_ok {lib : Lib} {p : Nomm} {laz : Sure S} {th : Jmp} {g0 g1 :
   simp only [bind_apply, re_apply, emit_apply, Option.bind_some] at h
   refine unary_ok (pureEval_n4 p) (E2.trans (P.1.trans ((ext_re _).trans (ext_emit _ _)))) ⟨by have := E2.1; have := P.1.1; omega, by simp [emitted_re]⟩
     (by simp [emitted_bo])
-    (ih _ _ _ _ _ ⟨trivial, fun r hr => by simp [lazyReg, NMem] at hr; subst hr; simp [emitted_re]⟩ h) ?_
+    (ih _ _ _ _ _ ⟨trivial, fun r hr => by simp [lazyReg, NMem] at hr; subst hr; simp [emitted_re]⟩ trivial h) ?_
     (by have := E2.2.1; have := P.1.2.1; show g0.bo ≤ g3.bo; omega)
   intro c hc hd σ O st regs t gul x hx
   have hd3 : g3.drop = false := P.1.2.2.1.trans (E2.2.2.1.trans hd)

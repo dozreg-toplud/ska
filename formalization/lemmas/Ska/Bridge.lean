@@ -157,7 +157,7 @@ call, an inlined call, or a direct call answered by `res`; and what the
 fixed-table `%2` case does in each. -/
 theorem callStep_cases {res : ResGo M R} {go : FolGoS M R} {seat mk : Option Noun} {bc df : Bool}
     {s f out : FolOut} {g g' : GenS M R} (h : callStep res go seat mk bc df s f g = some (out, g')) :
-    (g'.low = g.low ∧ g'.back = g.back ∧ g'.st = g.st ∧
+    (g'.low = g.low ∧ g'.back = g.back ∧ g'.st = g.st ∧ g'.callees = g.callees ∧
       ∀ (tab : Tab) (go' : FolGo) δ, SkaModel.callStep tab go' mk bc df s f (g.at δ) = some (out, g'.at δ)) ∨
     (∃ fa fb i g3, go (C fa fb) s.prod seat mk bc df
         { g with want := Ca.uni g.want (distribute Cape.yes f.prod.src) } = some (i, g3) ∧ g' = g3 ∧
@@ -166,7 +166,7 @@ theorem callStep_cases {res : ResGo M R} {go : FolGoS M R} {seat mk : Option Nou
           some (i, g3.at δ') →
         SkaModel.callStep tab go' mk bc df s f (g.at δ) = some (out, g3.at δ')) ∨
     (∃ fa fb r g3, res (s.prod.sock, C fa fb) g = some (r, g3) ∧
-      g'.low = g3.low ∧ g'.back = g3.back ∧ g'.st = g3.st ∧
+      g'.low = g3.low ∧ g'.back = g3.back ∧ g'.st = g3.st ∧ g'.callees = Treap.ins g3.callees ⟨seat, r.1⟩ ∧
       (g3.gen = g.gen → ∀ (go' : FolGo) δ,
         SkaModel.callStep (tabOne s.prod.sock (C fa fb) r.2.core.tab) go' mk bc df s f (g.at δ) =
           some (out, g'.at δ))) := by
@@ -175,7 +175,7 @@ theorem callStep_cases {res : ResGo M R} {go : FolGoS M R} {seat mk : Option Nou
   · rw [if_pos hv] at h
     simp only [Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, rfl⟩ := h
-    refine Or.inl ⟨rfl, rfl, rfl, fun tab go' δ => ?_⟩
+    refine Or.inl ⟨rfl, rfl, rfl, rfl, fun tab go' δ => ?_⟩
     unfold SkaModel.callStep; rw [if_pos hv]
   rw [if_neg hv] at h
   cases hf : f.prod.sock with
@@ -184,14 +184,14 @@ theorem callStep_cases {res : ResGo M R} {go : FolGoS M R} {seat mk : Option Nou
   rw [hf] at h
   cases c with
   | no => exact Or.inl (by
-      refine ⟨by simp at h; rw [← h.2], by simp at h; rw [← h.2], by simp at h; rw [← h.2], ?_⟩
+      refine ⟨by simp at h; rw [← h.2], by simp at h; rw [← h.2], by simp at h; rw [← h.2], by simp at h; rw [← h.2], ?_⟩
       intro tab go' δ
       unfold SkaModel.callStep; rw [if_neg hv, hf]
       simp only [Option.some.injEq, Prod.mk.injEq] at h ⊢
       obtain ⟨rfl, rfl⟩ := h
       exact ⟨rfl, rfl⟩)
   | cell _ _ => exact Or.inl (by
-      refine ⟨by simp at h; rw [← h.2], by simp at h; rw [← h.2], by simp at h; rw [← h.2], ?_⟩
+      refine ⟨by simp at h; rw [← h.2], by simp at h; rw [← h.2], by simp at h; rw [← h.2], by simp at h; rw [← h.2], ?_⟩
       intro tab go' δ
       unfold SkaModel.callStep; rw [if_neg hv, hf]
       simp only [Option.some.injEq, Prod.mk.injEq] at h ⊢
@@ -200,7 +200,7 @@ theorem callStep_cases {res : ResGo M R} {go : FolGoS M R} {seat mk : Option Nou
   | yes =>
   cases d with
   | atom _ => exact Or.inl (by
-      refine ⟨by simp at h; rw [← h.2], by simp at h; rw [← h.2], by simp at h; rw [← h.2], ?_⟩
+      refine ⟨by simp at h; rw [← h.2], by simp at h; rw [← h.2], by simp at h; rw [← h.2], by simp at h; rw [← h.2], ?_⟩
       intro tab go' δ
       unfold SkaModel.callStep; rw [if_neg hv, hf]
       simp only [Option.some.injEq, Prod.mk.injEq] at h ⊢
@@ -209,7 +209,7 @@ theorem callStep_cases {res : ResGo M R} {go : FolGoS M R} {seat mk : Option Nou
   | cell fa fb =>
   cases bc with
   | true => exact Or.inl (by
-      refine ⟨by simp at h; rw [← h.2], by simp at h; rw [← h.2], by simp at h; rw [← h.2], ?_⟩
+      refine ⟨by simp at h; rw [← h.2], by simp at h; rw [← h.2], by simp at h; rw [← h.2], by simp at h; rw [← h.2], ?_⟩
       intro tab go' δ
       unfold SkaModel.callStep; rw [if_neg hv, hf]
       simp only [Option.some.injEq, Prod.mk.injEq] at h ⊢
@@ -235,7 +235,7 @@ theorem callStep_cases {res : ResGo M R} {go : FolGoS M R} {seat mk : Option Nou
     · rename_i lc dd hl
       simp only [Option.some.injEq, Prod.mk.injEq] at h
       obtain ⟨rfl, rfl⟩ := h
-      refine Or.inr (Or.inr ⟨fa, fb, (r : Ident × FDatum M), g3, hr, rfl, rfl, rfl, fun hg go' δ => ?_⟩)
+      refine Or.inr (Or.inr ⟨fa, fb, (r : Ident × FDatum M), g3, hr, rfl, rfl, rfl, rfl, fun hg go' δ => ?_⟩)
       unfold SkaModel.callStep; rw [if_neg hv, hf]
       simp only
       rw [if_neg hc]
@@ -365,7 +365,7 @@ theorem bridge_step (env : Env R) (hP : ∀ tab, TabIn P tab → TabWF tab) (hL 
     have i2 := (hgo _ _ _ _ _ _ _ _ _ i1 hsub h2).1
     have i2' : Inv ({ g2 with want := Ca.uni g2.want (distribute Cape.yes f1.prod.src) } : GenS M R) :=
       hL.app i2 rfl rfl rfl rfl rfl rfl rfl rfl rfl rfl
-    rcases callStep_cases h3 with ⟨el, eb, est, hc⟩ | ⟨fa, fb, i, g3, h4, rfl, hc⟩ | ⟨fa, fb, r, g3, h4, el, eb, est, hc⟩
+    rcases callStep_cases h3 with ⟨el, eb, est, _, hc⟩ | ⟨fa, fb, i, g3, h4, rfl, hc⟩ | ⟨fa, fb, r, g3, h4, el, eb, est, _, hc⟩
     · refine ⟨hL.app i2 el eb (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est])
         (by rw [est]) (by rw [est]) (by rw [est]), fun γ => ?_⟩
       refine folR_of_calls (calls := [((C a b, sub, mk, bc, df, gs.at γ), (s1, g1.at (γ + 1))),
@@ -598,7 +598,7 @@ theorem resolve_succ (env : Env R) (memoF : Memo M) (n : Nat) :
   conv => lhs; unfold resolve
 
 theorem analyze_succ (env : Env R) (memoF : Memo M) (n : Nat) :
-    analyze env memoF (n + 1) = analyzeStep memoF (run env memoF n) (passLoop env memoF n) := by
+    analyze env memoF (n + 1) = analyzeStep n memoF (run env memoF n) (passLoop env memoF n) := by
   conv => lhs; unfold analyze
 
 theorem run_succ (env : Env R) (memoF : Memo M) (n : Nat) :

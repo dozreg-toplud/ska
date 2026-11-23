@@ -138,7 +138,7 @@ theorem finish_compDone [HoonMapKeys Map] (lib : Lib) {nm : Nomm} (hf : Frag nm 
   simp only [hbake, List.map_nil] at h
   obtain ⟨⟨u3, g3⟩, h3, h⟩ := Option.bind_eq_some_iff.mp h
   obtain ⟨⟨u4, g4⟩, h4, h5⟩ := Option.bind_eq_some_iff.mp h
-  have hr := run_ok lib nm CGoal.done gen0 g1 nex hf trivial h1
+  have hr := run_ok lib nm CGoal.done gen0 g1 nex hf trivial trivial h1
   have hd1 : g1.drop = false := hr.ext.2.2.1
   obtain ⟨⟨k2, rfl⟩, l2, dist2, mem2⟩ := needOrdAllocRegs_spec ord g1 _ nedF h2
   obtain ⟨hdn, B, fin, hB⟩ := hdown nex g1 h1

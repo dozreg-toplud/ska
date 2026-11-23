@@ -7,8 +7,9 @@ import lemmas.Ska.CompCoerce
 `finish_bellContract` of `CompTopOK.lean` with its two hypotheses about the
 model discharged: `RunDown` by `runDown` (`CompDown.lean`) and `CoerceSpec`
 by `coerceSpec` (`CompCoerce.lean`).  What it still assumes: the nomm is on
-the fragment `Frag` and pure, nothing is baked, and the bell's cape has no
-cell whose halves both know nothing (`CapeNorm`).
+the fragment `Frag` (every nomm made of cons, `%0`, `%1`, `%3`, `%4`, `%5`,
+`%7` and `%10`, under every goal) and pure, nothing is baked, and the bell's cape
+has no cell whose halves both know nothing (`CapeNorm`).
 -/
 
 namespace Formalization
