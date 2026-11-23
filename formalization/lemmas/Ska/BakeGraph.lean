@@ -187,6 +187,142 @@ def bakeGraph (E : BEnv M) (n : Nat) : Option (M Bell (VarEntry M) × M Bell (M 
   (bakeLoop E n [E.root] (Treap.put Treap.empty E.root ()) (bakeInit E)).bind fun st =>
     (Treap.rap st.bak).foldl (finalStep E st) (some (Treap.empty, E.vars))
 
+/-! ## Maps and sets -/
+
+theorem has_iff {ν : Type} (m : M Bell ν) (k : Bell) : Treap.has m k = true ↔ ∃ v, Treap.get m k = some v := by
+  unfold Treap.has
+  cases Treap.get m k <;> simp
+
+theorem has_foldl_put {α : Type} (key : α → Bell) :
+    ∀ (l : List α) (acc : M Bell Unit) (b : Bell),
+      Treap.has (l.foldl (fun acc e => Treap.put acc (key e) ()) acc) b = true ↔
+        Treap.has acc b = true ∨ ∃ e ∈ l, key e = b
+  | [], acc, b => by simp
+  | e :: l, acc, b => by
+    simp only [List.foldl_cons]
+    rw [has_foldl_put key l]
+    simp only [has_iff, Treap.get_put, List.mem_cons]
+    constructor
+    · rintro (⟨v, hv⟩ | ⟨e', he', rfl⟩)
+      · split at hv
+        · rename_i h; exact Or.inr ⟨e, Or.inl rfl, h.symm⟩
+        · exact Or.inl ⟨v, hv⟩
+      · exact Or.inr ⟨e', Or.inr he', rfl⟩
+    · rintro (⟨v, hv⟩ | ⟨e', rfl | he', rfl⟩)
+      · by_cases h : b = key e
+        · exact Or.inl ⟨(), by rw [if_pos h]⟩
+        · exact Or.inl ⟨v, by rw [if_neg h]; exact hv⟩
+      · exact Or.inl ⟨(), by rw [if_pos rfl]⟩
+      · exact Or.inr ⟨e', he', rfl⟩
+
+theorem has_keySet {ν : Type} (m : M Bell ν) (b : Bell) :
+    Treap.has (keySet m) b = true ↔ ∃ v, Treap.get m b = some v := by
+  unfold keySet
+  rw [has_foldl_put]
+  simp only [has_iff, Treap.get_empty, reduceCtorEq, exists_false, false_or]
+  constructor
+  · rintro ⟨e, he, rfl⟩; exact ⟨e.2, (Treap.mem_tap _ _ _).mp he⟩
+  · rintro ⟨v, hv⟩; exact ⟨(b, v), (Treap.mem_tap _ _ _).mpr hv, rfl⟩
+
+theorem has_uniIn (a b : M Bell Unit) (c : Bell) :
+    Treap.has (uniIn a b) c = true ↔ Treap.has a c = true ∨ Treap.has b c = true := by
+  unfold uniIn
+  rw [has_foldl_put]
+  constructor
+  · rintro (h | ⟨e, he, rfl⟩)
+    · exact Or.inl h
+    · exact Or.inr ((has_iff _ _).mpr ⟨e.2, (Treap.mem_tap _ _ _).mp he⟩)
+  · rintro (h | h)
+    · exact Or.inl h
+    · obtain ⟨v, hv⟩ := (has_iff _ _).mp h
+      exact Or.inr ⟨(c, v), (Treap.mem_tap _ _ _).mpr hv, rfl⟩
+
+theorem has_gasIn (s : M Bell Unit) (l : List Bell) (c : Bell) :
+    Treap.has (gasIn s l) c = true ↔ Treap.has s c = true ∨ c ∈ l := by
+  unfold gasIn
+  rw [has_foldl_put (fun c => c)]
+  simp
+
+theorem has_del {ν : Type} (m : M Bell ν) (k c : Bell) :
+    Treap.has (Treap.del m k) c = true ↔ Treap.has m c = true ∧ c ≠ k := by
+  simp only [has_iff, Treap.get_del]
+  by_cases h : c = k <;> simp [h]
+
+theorem mem_tap_keys (m : M Bell Unit) (c : Bell) :
+    c ∈ (Treap.tap m).map Prod.fst ↔ Treap.has m c = true := by
+  rw [has_iff]
+  constructor
+  · intro h
+    obtain ⟨e, he, rfl⟩ := List.mem_map.mp h
+    exact ⟨e.2, (Treap.mem_tap _ _ _).mp he⟩
+  · rintro ⟨v, hv⟩
+    exact List.mem_map.mpr ⟨(c, v), (Treap.mem_tap _ _ _).mpr hv, rfl⟩
+
+theorem innUpd_idem (new : M Bell (List Sock)) (cur c : Bell) (m : M Bell (List Sock)) :
+    innUpd new cur c (innUpd new cur c m) = innUpd new cur c m := by
+  unfold innUpd
+  split
+  · exact Treap.ext _ _ fun k => by simp only [Treap.get_del]; split <;> rfl
+  · exact Treap.ext _ _ fun k => by simp only [Treap.get_put]; split <;> rfl
+
+theorem innUpd_other (new : M Bell (List Sock)) {cur c' : Bell} (c : Bell) (m : M Bell (List Sock))
+    (h : c' ≠ cur) : Treap.get (innUpd new cur c m) c' = Treap.get m c' := by
+  unfold innUpd
+  split
+  · rw [Treap.get_del, if_neg h]
+  · rw [Treap.get_put, if_neg h]
+
+theorem innUpd_cur (new : M Bell (List Sock)) (cur c : Bell) (m : M Bell (List Sock)) {ks : List Sock}
+    (h : Treap.get new c = some ks) : Treap.get (innUpd new cur c m) cur = some ks := by
+  unfold innUpd
+  rw [h]
+  simp only [Treap.get_put, if_true]
+
+/-! ## What a site of `cur` tells its callee -/
+
+theorem newFold_none (vars : M Bell (M Bell Unit)) :
+    ∀ (l : List Site), l.foldl (newStep vars) none = none
+  | [] => rfl
+  | _ :: l => newFold_none vars l
+
+/-- Every site that `+pick` sends to no variant is in the list of its callee
+in `new`. -/
+theorem newFold_spec (vars : M Bell (M Bell Unit)) :
+    ∀ (l : List Site) (acc new : M Bell (List Sock)), l.foldl (newStep vars) (some acc) = some new →
+      (∀ b ks, Treap.get acc b = some ks → ∃ ks', Treap.get new b = some ks' ∧ ∀ k ∈ ks, k ∈ ks') ∧
+      ∀ b k, (b, k) ∈ l → pick vars b k = some none → ∃ ks, Treap.get new b = some ks ∧ k ∈ ks
+  | [], acc, new, h => by
+    simp only [List.foldl_nil, Option.some.injEq] at h
+    subst h
+    exact ⟨fun b ks hb => ⟨ks, hb, fun _ h => h⟩, fun _ _ h => by simp at h⟩
+  | s :: l, acc, new, h => by
+    simp only [List.foldl_cons] at h
+    cases hp : pick vars s.1 s.2 with
+    | none =>
+      simp only [newStep, Option.bind_some, hp, Option.map_none] at h
+      rw [newFold_none] at h; cases h
+    | some p =>
+      simp only [newStep, Option.bind_some, hp, Option.map_some] at h
+      have acc' := newFold_spec vars l _ new h
+      refine ⟨fun b ks hb => ?_, fun b k hm hpk => ?_⟩
+      · cases p with
+        | some _ => exact acc'.1 b ks hb
+        | none =>
+          by_cases e : b = s.1
+          · have hput : Treap.get (Treap.put acc s.1 (s.2 :: Treap.gut acc s.1 [])) b = some (s.2 :: ks) := by
+              rw [Treap.get_put, if_pos e, ← e]; simp [Treap.gut, hb]
+            obtain ⟨ks', h1, h2⟩ := acc'.1 b (s.2 :: ks) hput
+            exact ⟨ks', h1, fun k hk => h2 k (List.mem_cons_of_mem _ hk)⟩
+          · exact acc'.1 b ks (by rw [Treap.get_put, if_neg e]; exact hb)
+      · rcases List.mem_cons.mp hm with e | hm
+        · cases e
+          rw [hp] at hpk
+          cases hpk
+          obtain ⟨ks', h1, h2⟩ := acc'.1 b (k :: Treap.gut acc b []) (by simp [Treap.get_put])
+          exact ⟨ks', h1, h2 k List.mem_cons_self⟩
+        · exact acc'.2 b k hm hpk
+
+
 end Bake
 
 end SkaModel
