@@ -1,4 +1,5 @@
 import lemmas.Ska.ConvPass
+import lemmas.Ska.MemoPoke
 
 /-!
 # Convergence: `+analyze`, the induction, and the final graph
@@ -371,6 +372,50 @@ theorem skaCallgraph_frozen (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) 
   rw [show gCore (SkaState.init reg : SkaState M R).g = fun _ => none from gCore_empty] at s
   exact ⟨F, c.frz.ok, fun i d hd => c.frz.cover i d hd (hempty i), fun e he => (c.frz.sub e he).1,
     c.frz.wf, s⟩
+
+/-! ## To `ConvergedGraphM` -/
+
+/-- The entries of a memo, as `Entry`. -/
+def MemEnt (memo : Memo M) : Entry → Prop := fun m =>
+  ∃ f ms s ent, Treap.get memo f = some ms ∧ Treap.get ms s = some ent ∧ m = entOf ent.1 ent.2
+
+/-- The entries of a memo under the formula `f` have the formula `f` (as
+`+put:mi` stores them). -/
+def MemoKeys (memo : Memo M) : Prop :=
+  ∀ f ms s ent, Treap.get memo f = some ms → Treap.get ms s = some ent → ent.1.2 = f
+
+/-- **A memo hit is a `HitEntry`**, for a memo whose entries are sound and
+stored under their formula, on a subject sock that is not `%void`. -/
+theorem memoHit_hitEntry {lib : Lib} {code : Bell → Option Nomm} {memo : Memo M} (hkey : MemoKeys memo)
+    (hok : ∀ m, MemEnt memo m → MemoEntryOK lib code m) {e : Entry} (hnv : e.more ≠ Sock.void)
+    (h : MemoHitE memo e) : HitEntry lib code (MemEnt memo) e := by
+  obtain ⟨i, d, hg, hd⟩ := h
+  obtain ⟨k, d0, hk, ht, hcore, _⟩ := gitMi_hit hg
+  have hget : Treap.get memo e.fol = some (gutMi memo e.fol) := by
+    unfold gutMi Treap.gut
+    cases e2 : Treap.get memo e.fol with
+    | none => simp only [gutMi, Treap.gut, e2, Option.getD_none, Treap.get_empty] at hk; cases hk
+    | some ms => rfl
+  have hm : MemEnt memo (entOf i d0) := ⟨e.fol, _, k, (i, d0), hget, hk, rfl⟩
+  have hf : i.2 = e.fol := hkey _ _ _ _ hget hk
+  exact ⟨entOf i d0, hm, hok _ hm, hnv, ht, hf.symm, by rw [hd, hcore]; rfl⟩
+
+/-- **Convergence as `ConvergedGraphM`**: the frozen entries of the final
+graph, with the memo hits as `HitEntry`s of the persistent memo. -/
+theorem skaCallgraph_convergedM {lib : Lib} {code : Bell → Option Nomm} (env : Env R) (memoF : Memo M)
+    (hmF : MemoWF memoF) (hkey : MemoKeys memoF) (hok : ∀ m, MemEnt memoF m → MemoEntryOK lib code m)
+    {n : Nat} {root : Ident} {reg reg' : R} {g : Callgraph M} (hw : WellFormed root.1)
+    (hnv : ∀ i d, Treap.get g i = some d → i.1 ≠ Sock.void)
+    (h : skaCallgraph env n root memoF reg = some (g, reg')) :
+    ∃ G : Entry → Prop, ConvergedGraphM lib code (MemEnt memoF) G ∧
+      (∀ i d, Treap.get g i = some d → G (entOf i d)) ∧
+      (∀ e, G e → ∃ d, Treap.get g (e.more, e.fol) = some d) ∧ GStepsR (fun _ => none) (gCore g) := by
+  obtain ⟨F, hok', hcov, hsub, _, hs⟩ := skaCallgraph_frozen env memoF hmF hw h
+  refine ⟨F, fun e he => ?_, hcov, hsub, hs⟩
+  rcases hok' e he with hr | hm
+  · exact Or.inl hr
+  · obtain ⟨d, hd⟩ := hsub e he
+    exact Or.inr (memoHit_hitEntry hkey hok (hnv _ d hd) hm)
 
 end Ana
 end SkaModel

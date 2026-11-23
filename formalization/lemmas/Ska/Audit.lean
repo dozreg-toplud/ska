@@ -225,3 +225,5 @@ open Formalization.SkaModel
 #print axioms Ana.analyzeStep_ok2
 #print axioms Ana.allP2
 #print axioms Ana.skaCallgraph_frozen
+#print axioms Ana.memoHit_hitEntry
+#print axioms Ana.skaCallgraph_convergedM
