@@ -947,5 +947,213 @@ theorem fol_loop_op11d_spot (regsNoun : R → Noun) (env : Env R) (res : ResGo F
         simp [nock_exec, e, h, e2, hf, hh1', Tag.spot, Tag.memo, Tag.mean, Tag.fast, flag] <;>
         simp [folOutNoun, FolOut.toNoun, Nomm.toNoun, Anno.toNoun, flag, Tag.spot]
 
+
+theorem nomm_toNoun_ne_two (n : Nomm) : (A 2 = n.toNoun) = False := by
+  cases n <;> simp [Nomm.toNoun]
+
+theorem wut_nomm (n : Nomm) : wut n.toNoun = A 0 := by
+  cases n <;> rfl
+
+set_option maxHeartbeats 2000000 in
+set_option linter.unusedSimpArgs false in
+/-- `[%11 [%mean h=^] f=*]`: when the hint is not safe and its product is a core
+with a known battery, the call `[%2 [%0 1] %0 2]` on it, with `defer`, gives
+the bell of the `%mean` nomm. -/
+theorem fol_loop_op11d_mean (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap R)
+    (go : FolGoS FinMap R) (rest : Noun) (hgo : GoIs regsNoun rest go)
+    (hana : slot? 511 rest = some ana)
+    (h1 h2 f : Noun) (sub : Anno) (seat mk : Option Noun) (bc df : Bool) (gen : GenS FinMap R) :
+    nock (folSubj regsNoun rest (C (A 11) (C (C (A Tag.mean) (C h1 h2)) f)) sub seat mk bc df gen)
+        fol_loop.battery
+      = (Ana.folStep env res go (C (A 11) (C (C (A Tag.mean) (C h1 h2)) f)) sub seat mk bc df
+          gen).map (folOutNoun regsNoun) := by
+  have h := hgo (C h1 h2) sub seat mk bc df gen
+  unfold folSubj at h ⊢
+  nock_open fol_loop.battery
+  cases e : go (C h1 h2) sub seat mk bc df gen with
+  | none =>
+    rw [e] at h
+    simp [nock_exec, Ana.folStep, shape, Ana.spotHint, e, h, Tag.spot, Tag.mean]
+  | some r =>
+    rw [e] at h
+    obtain ⟨⟨m1, ⟨s1, src1⟩, f1⟩, g⟩ := r
+    simp only [Option.map_some, folOutNoun, FolOut.toNoun] at h
+    have hf := hgo f sub seat mk bc df g
+    unfold folSubj at hf
+    generalize hn1 : flag df = n1 at h hf ⊢
+    generalize hn2 : flag bc = n2 at h hf ⊢
+    generalize hn3 : unitNoun id mk = n3 at h hf ⊢
+    generalize hn4 : unitNoun id seat = n4 at h hf ⊢
+    generalize GenS.toNoun regsNoun gen = n5 at h ⊢
+    generalize hn6 : sub.toNoun = n6 at h hf ⊢
+    simp only [Anno.toNoun] at h
+    by_cases hgood : f1 = false ∧ s1 ≠ Sock.void
+    · obtain ⟨rfl, hs1⟩ := hgood
+      obtain ⟨c1, d1, rfl⟩ : ∃ c1 d1, s1 = Sock.mk c1 d1 := by
+        cases s1 with
+        | void => exact absurd rfl hs1
+        | mk c d => exact ⟨c, d, rfl⟩
+      simp only [sock_mk_toNoun] at h
+      have hp := so_pull_pill (Sock.mk c1 d1) 2
+      simp only [sock_mk_toNoun] at hp
+      generalize hnc1 : c1.toNoun = nc1 at h hp
+      cases ep : So.pull (Sock.mk c1 d1) 2 with
+      | none =>
+        rw [ep] at hp
+        simp [nock_exec, Ana.folStep, shape, Ana.spotHint, Ana.meanArm, Ana.fastHint, e, h, hp, ep,
+          rest_lib hana, so.lib.arm_at, so_lib_arm, so.pull.arm_at, so_pull_arm, Tag.spot, Tag.mean,
+          Tag.memo, Tag.fast, flag, Nock.n3, Nock.n2, Nock.slot]
+      | some bat =>
+        rw [ep] at hp
+        by_cases hb : ∃ da db, bat = Sock.mk Cape.yes (C da db)
+        · obtain ⟨da, db, rfl⟩ := hb
+          simp only [Option.map_some, sock_mk_toNoun, cape_yes_toNoun] at hp
+          have hc := hgo (C (A 2) (C (C (A 0) (A 1)) (C (A 0) (A 2)))) ⟨Sock.mk c1 d1, src1⟩ seat mk
+            bc true g
+          unfold folSubj at hc
+          rw [hn2, hn3, hn4, show flag true = A 0 from rfl] at hc
+          simp only [Anno.toNoun, sock_mk_toNoun, hnc1] at hc
+          generalize GenS.toNoun regsNoun g = n7 at h hf hc ⊢
+          cases ec : go (C (A 2) (C (C (A 0) (A 1)) (C (A 0) (A 2)))) ⟨Sock.mk c1 d1, src1⟩ seat mk
+            bc true g with
+          | none =>
+            rw [ec] at hc
+            simp [nock_exec, Ana.folStep, shape, Ana.spotHint, Ana.meanArm, Ana.fastHint, e, h, hp, ep,
+          rest_lib hana, so.lib.arm_at, so_lib_arm, so.pull.arm_at, so_pull_arm, Tag.spot, Tag.mean,
+          Tag.memo, Tag.fast, flag, Nock.n3, Nock.n2, Nock.slot, hc, ec]
+          | some rc =>
+            rw [ec] at hc
+            obtain ⟨⟨mc, ⟨sc, srcc⟩, fc⟩, gc⟩ := rc
+            simp only [Option.map_some, folOutNoun, FolOut.toNoun, Anno.toNoun] at hc
+            have hf2 := hgo f sub seat mk bc df gc
+            unfold folSubj at hf2
+            rw [hn1, hn2, hn3, hn4, hn6] at hf2
+            generalize GenS.toNoun regsNoun gc = n8 at hc hf2 ⊢
+            by_cases hn : ∃ p q b k, mc = Nomm.n2 p q (some (b, k))
+            · obtain ⟨p, q, b, k, rfl⟩ := hn
+              simp only [Nomm.toNoun, unitNoun, id] at hc
+              have hca : ∀ c : Cape, nock (C ca.all.battery (C c.toNoun (C ca.battery lib)))
+                  ca.all.battery = some (Hoon.loob (Ca.all c)) := ca_all_gate _
+              cases e3 : go f sub seat mk bc df gc with
+              | none =>
+                rw [e3] at hf2
+                rcases sc with _ | ⟨cc, dc⟩
+                · simp only [sock_void_toNoun] at hc
+                  simp [nock_exec, Ana.folStep, shape, Ana.spotHint, Ana.meanArm, Ana.fastHint, e, h, hp, ep,
+          rest_lib hana, so.lib.arm_at, so_lib_arm, so.pull.arm_at, so_pull_arm, Tag.spot, Tag.mean,
+          Tag.memo, Tag.fast, flag, Nock.n3, Nock.n2, Nock.slot, hc, ec, hf2, e3]
+                · simp only [sock_mk_toNoun] at hc
+                  have ha := hca cc
+                  cases hall : Ca.all cc <;> rw [hall] at ha <;>
+                  simp [nock_exec, Ana.folStep, shape, Ana.spotHint, Ana.meanArm, Ana.fastHint, e, h, hp, ep,
+          rest_lib hana, so.lib.arm_at, so_lib_arm, so.pull.arm_at, so_pull_arm, Tag.spot, Tag.mean,
+          Tag.memo, Tag.fast, flag, Nock.n3, Nock.n2, Nock.slot, hc, ec, hf2, e3, hall, ha, ca.lib.arm_at, ca_lib_arm,
+                    ca.all.arm_at, ca_all_arm, Hoon.loob]
+              | some r3 =>
+                rw [e3] at hf2
+                obtain ⟨⟨m2, p2, f2⟩, g2⟩ := r3
+                simp only [Option.map_some, folOutNoun, FolOut.toNoun] at hf2
+                rcases sc with _ | ⟨cc, dc⟩
+                · simp only [sock_void_toNoun] at hc
+                  cases f2 <;> simp [nock_exec, Ana.folStep, shape, Ana.spotHint, Ana.meanArm, Ana.fastHint, e, h, hp, ep,
+          rest_lib hana, so.lib.arm_at, so_lib_arm, so.pull.arm_at, so_pull_arm, Tag.spot, Tag.mean,
+          Tag.memo, Tag.fast, flag, Nock.n3, Nock.n2, Nock.slot, hc, ec, hf2, e3] <;>
+                  simp [folOutNoun, FolOut.toNoun, Nomm.toNoun, Anno.toNoun, flag, unitNoun,
+                    Tag.mean]
+                · simp only [sock_mk_toNoun] at hc
+                  have ha := hca cc
+                  cases hall : Ca.all cc <;> rw [hall] at ha <;> cases f2 <;>
+                  simp [nock_exec, Ana.folStep, shape, Ana.spotHint, Ana.meanArm, Ana.fastHint, e, h, hp, ep,
+          rest_lib hana, so.lib.arm_at, so_lib_arm, so.pull.arm_at, so_pull_arm, Tag.spot, Tag.mean,
+          Tag.memo, Tag.fast, flag, Nock.n3, Nock.n2, Nock.slot, hc, ec, hf2, e3, hall, ha, ca.lib.arm_at, ca_lib_arm,
+                    ca.all.arm_at, ca_all_arm, Hoon.loob] <;>
+                  simp [folOutNoun, FolOut.toNoun, Nomm.toNoun, Anno.toNoun, flag, unitNoun,
+                    Tag.mean]
+            · cases mc
+              case n2 p q info =>
+                cases info with
+                | none =>
+                  simp only [Nomm.toNoun, unitNoun] at hc
+                  simp [nock_exec, Ana.folStep, shape, Ana.spotHint, Ana.meanArm, Ana.fastHint, e, h, hp, ep,
+          rest_lib hana, so.lib.arm_at, so_lib_arm, so.pull.arm_at, so_pull_arm, Tag.spot, Tag.mean,
+          Tag.memo, Tag.fast, flag, Nock.n3, Nock.n2, Nock.slot, hc, ec]
+                | some bk => exact absurd ⟨p, q, bk.1, bk.2, rfl⟩ hn
+              case cons p q =>
+                simp only [Nomm.toNoun] at hc
+                simp [nock_exec, Ana.folStep, shape, Ana.spotHint, Ana.meanArm, Ana.fastHint, e, h, hp, ep,
+          rest_lib hana, so.lib.arm_at, so_lib_arm, so.pull.arm_at, so_pull_arm, Tag.spot, Tag.mean,
+          Tag.memo, Tag.fast, flag, Nock.n3, Nock.n2, Nock.slot, hc, ec, nomm_toNoun_ne_two]
+              all_goals
+                simp only [Nomm.toNoun] at hc
+                simp [nock_exec, Ana.folStep, shape, Ana.spotHint, Ana.meanArm, Ana.fastHint, e, h, hp, ep,
+          rest_lib hana, so.lib.arm_at, so_lib_arm, so.pull.arm_at, so_pull_arm, Tag.spot, Tag.mean,
+          Tag.memo, Tag.fast, flag, Nock.n3, Nock.n2, Nock.slot, hc, ec]
+        · have hb' : ∀ da db, bat ≠ Sock.mk Cape.yes (C da db) := fun da db e => hb ⟨da, db, e⟩
+          generalize GenS.toNoun regsNoun g = n7 at h hf ⊢
+          cases e2 : go f sub seat mk bc df g with
+          | none =>
+            rw [e2] at hf
+            rcases bat with _ | ⟨_ | _ | ⟨cp, cq⟩, _ | ⟨da, db⟩⟩ <;>
+            (try exact absurd rfl (hb' _ _)) <;>
+            simp only [Option.map_some, sock_mk_toNoun, sock_void_toNoun, Cape.toNoun] at hp <;>
+            simp [nock_exec, Ana.folStep, shape, Ana.spotHint, Ana.meanArm, Ana.fastHint, e, h, hp, ep,
+          rest_lib hana, so.lib.arm_at, so_lib_arm, so.pull.arm_at, so_pull_arm, Tag.spot, Tag.mean,
+          Tag.memo, Tag.fast, flag, Nock.n3, Nock.n2, Nock.slot, hf, e2]
+          | some r2 =>
+            rw [e2] at hf
+            obtain ⟨⟨m2, p2, f2⟩, g2⟩ := r2
+            simp only [Option.map_some, folOutNoun, FolOut.toNoun] at hf
+            rcases bat with _ | ⟨_ | _ | ⟨cp, cq⟩, _ | ⟨da, db⟩⟩ <;>
+            (try exact absurd rfl (hb' _ _)) <;>
+            simp only [Option.map_some, sock_mk_toNoun, sock_void_toNoun, Cape.toNoun] at hp <;>
+            cases f2 <;>
+            simp [nock_exec, Ana.folStep, shape, Ana.spotHint, Ana.meanArm, Ana.fastHint, e, h, hp, ep,
+          rest_lib hana, so.lib.arm_at, so_lib_arm, so.pull.arm_at, so_pull_arm, Tag.spot, Tag.mean,
+          Tag.memo, Tag.fast, flag, Nock.n3, Nock.n2, Nock.slot, hf, e2] <;>
+            simp [folOutNoun, FolOut.toNoun, Nomm.toNoun, Anno.toNoun, flag]
+    · have hbad : f1 = true ∨ s1 = Sock.void := by
+        cases f1 <;> simp_all
+      generalize GenS.toNoun regsNoun g = n7 at h hf ⊢
+      cases e2 : go f sub seat mk bc df g with
+      | none =>
+        rw [e2] at hf
+        rcases s1 with _ | ⟨c1, d1⟩ <;> cases f1 <;> simp at hbad <;>
+        simp only [sock_mk_toNoun, sock_void_toNoun] at h <;>
+        simp [nock_exec, Ana.folStep, shape, Ana.spotHint, Ana.meanArm, e, h, e2, hf, Tag.spot,
+          Tag.mean, Tag.memo, flag]
+      | some r2 =>
+        rw [e2] at hf
+        obtain ⟨⟨m2, p2, f2⟩, g2⟩ := r2
+        simp only [Option.map_some, folOutNoun, FolOut.toNoun] at hf
+        rcases s1 with _ | ⟨c1, d1⟩ <;> cases f1 <;> simp at hbad <;>
+        simp only [sock_mk_toNoun, sock_void_toNoun] at h <;> cases f2 <;>
+        simp [nock_exec, Ana.folStep, shape, Ana.spotHint, Ana.meanArm, Ana.fastHint, e, h, e2,
+          hf, Tag.spot, Tag.mean, Tag.memo, Tag.fast, flag] <;>
+        simp [folOutNoun, FolOut.toNoun, Nomm.toNoun, Anno.toNoun, flag]
+
+/-- `[%11 [a=@ h=^] f=*]`, every tag. -/
+theorem fol_loop_op11d (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap R)
+    (go : FolGoS FinMap R) (rest : Noun) (hgo : GoIs regsNoun rest go)
+    (hana : slot? 511 rest = some ana) (hsoft : SoftSpotIs env) (hreg : RegisterFastIs regsNoun env)
+    (tag : Nat) (h1 h2 f : Noun) (sub : Anno) (seat mk : Option Noun) (bc df : Bool)
+    (gen : GenS FinMap R) :
+    nock (folSubj regsNoun rest (C (A 11) (C (C (A tag) (C h1 h2)) f)) sub seat mk bc df gen)
+        fol_loop.battery
+      = (Ana.folStep env res go (C (A 11) (C (C (A tag) (C h1 h2)) f)) sub seat mk bc df gen).map
+          (folOutNoun regsNoun) := by
+  by_cases hsp : tag = Tag.spot
+  · subst hsp; exact fol_loop_op11d_spot regsNoun env res go rest hgo hana hsoft h1 h2 f sub seat mk
+      bc df gen
+  by_cases hme : tag = Tag.memo
+  · subst hme; exact fol_loop_op11d_memo regsNoun env res go rest hgo h1 h2 f sub seat mk bc df gen
+  by_cases hmn : tag = Tag.mean
+  · subst hmn; exact fol_loop_op11d_mean regsNoun env res go rest hgo hana h1 h2 f sub seat mk bc df
+      gen
+  by_cases hfa : tag = Tag.fast
+  · subst hfa; exact fol_loop_op11d_fast regsNoun env res go rest hgo hana hreg h1 h2 f sub seat mk
+      bc df gen
+  exact fol_loop_op11d_plain regsNoun env res go rest hgo tag hsp hme hmn hfa h1 h2 f sub seat mk bc
+    df gen
+
 end Compiler
 end Formalization
