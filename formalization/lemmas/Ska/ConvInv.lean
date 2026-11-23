@@ -34,8 +34,8 @@ open Nock
 inductive AnsW (G : Entry → Prop) : Sock → Noun → TabEntry → Prop where
   | exact {e : Entry} : G e → AnsW G e.more e.fol e.d.tab
   | hit {e : Entry} {s : Sock} : G e → hitTest e s = some true → AnsW G s e.fol (patchDatum e.d s).tab
-  | gen {s s' m : Sock} {f : Noun} {a : TabEntry} : WellFormed s' → msgSock s s' = some m → AnsW G m f a →
-      AnsW G s f a
+  | gen {s s' m : Sock} {f : Noun} {a : TabEntry} : WellFormed s' → NormSock s' → msgSock s s' = some m →
+      AnsW G m f a → AnsW G s f a
 
 /-- Two entries alike for a caller: the same identity and the same
 `TabEntry`. -/
@@ -69,7 +69,7 @@ theorem AnsW.transfer {G G' : Entry → Prop} (hG : ∀ e, G e → ∃ e', G' e'
     obtain ⟨e', he', hal⟩ := hG _ he
     have := AnsW.hit (G := G') he' (by rw [hitTest_alike hal]; exact ht)
     rw [hal.2.1, patchDatum_tab_alike hal] at this; exact this
-  | gen hw hm _ ih => exact AnsW.gen hw hm ih
+  | gen hw hn hm _ ih => exact AnsW.gen hw hn hm ih
 
 theorem AnsW.mono {G G' : Entry → Prop} (hG : ∀ e, G e → G' e) {s : Sock} {f : Noun} {a : TabEntry}
     (h : AnsW G s f a) : AnsW G' s f a :=
@@ -80,14 +80,21 @@ theorem AnsW.toAnswers {G : Entry → Prop} {s : Sock} {f : Noun} {a : TabEntry}
   induction h with
   | exact he => exact Answers.exact he
   | hit he ht => exact Answers.hit he ht
-  | gen _ hm _ ih => exact Answers.gen hm ih
+  | gen _ _ hm _ ih => exact Answers.gen hm ih
 
 theorem AnsW.wf {G : Entry → Prop} (hG : ∀ e, G e → WellFormed e.more ∧ WellFormed e.d.prod)
     {s : Sock} {f : Noun} {a : TabEntry} (h : AnsW G s f a) : WellFormed s → WellFormed a.prod := by
   induction h with
   | exact he => exact fun _ => (hG _ he).2
   | hit he _ => exact fun hs => wf_patchDatum (hG _ he).2 hs
-  | gen hw hm _ ih => exact fun hs => ih (wf_msgSock hs hw hm)
+  | gen hw _ hm _ ih => exact fun hs => ih (wf_msgSock hs hw hm)
+
+theorem AnsW.norm {G : Entry → Prop} (hG : ∀ e, G e → NormSock e.d.prod)
+    {s : Sock} {f : Noun} {a : TabEntry} (h : AnsW G s f a) : NormSock s → NormSock a.prod := by
+  induction h with
+  | exact he => exact fun _ => hG _ he
+  | hit he _ => exact fun hs => normSock_patchDatum (hG _ he) hs
+  | gen _ hn hm _ ih => exact fun hs => ih (normSock_msgSock hs hn hm)
 
 theorem answers_mono {G G' : Entry → Prop} (hG : ∀ e, G e → G' e) {s : Sock} {f : Noun} {a : TabEntry}
     (h : Answers G s f a) : Answers G' s f a := by
@@ -95,6 +102,44 @@ theorem answers_mono {G G' : Entry → Prop} (hG : ∀ e, G e → G' e) {s : Soc
   | exact he => exact Answers.exact (hG _ he)
   | hit he ht => exact Answers.hit (hG _ he) ht
   | gen hm _ ih => exact Answers.gen hm ih
+
+theorem knit_nv {a b : Sock} (ha : a ≠ Sock.void) (hb : b ≠ Sock.void) : So.knit a b ≠ Sock.void := by
+  cases a with
+  | void => exact absurd rfl ha
+  | mk c1 d1 =>
+    cases b with
+    | void => exact absurd rfl hb
+    | mk c2 d2 =>
+      simp only [So.knit]
+      split
+      · exact fun e => Sock.noConfusion e
+      · exact fun e => Sock.noConfusion e
+
+theorem msgSock_nv' : ∀ (k : Nat) (a b m : Sock), nsize a.data < k → a ≠ Sock.void →
+    msgSock a b = some m → m ≠ Sock.void := by
+  intro k
+  induction k with
+  | zero => intro _ _ _ h; omega
+  | succ k ih =>
+  intro a b m hk ha hm
+  unfold msgSock at hm
+  split at hm
+  · cases hm; exact ha
+  · split at hm
+    · exact absurd rfl ha
+    · cases hm; exact ha
+    · rename_i ah aT ad1 ad2 bh bT bd1 bd2 _
+      simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at hm
+      obtain ⟨h, hh, t, ht, rfl⟩ := hm
+      simp only [Sock.data, nsize] at hk
+      exact knit_nv (ih _ _ _ (by simp only [Sock.data]; omega) (fun e => Sock.noConfusion e) hh)
+        (ih _ _ _ (by simp only [Sock.data]; omega) (fun e => Sock.noConfusion e) ht)
+    · cases hm
+    · cases hm; exact fun e => Sock.noConfusion e
+
+/-- **`+msg-sock` of a sock that is not `%void` is not `%void`.** -/
+theorem msgSock_nv {a b m : Sock} (ha : a ≠ Sock.void) (hm : msgSock a b = some m) : m ≠ Sock.void :=
+  msgSock_nv' _ a b m (Nat.lt_succ_self _) ha hm
 
 namespace Ana
 
@@ -119,23 +164,34 @@ def calleesOf (st : SkaState M R) (m : Ident) : M CalleeEntry Unit := (gitG st.g
 /-- The `+pop` of an entry: a `%void` product becomes `|+~`. -/
 def postPop (d : FDatum M) : FDatum M := if d.prod = Sock.void then { d with prod := Sock.dunno } else d
 
+/-- The entries of a memo have normal code requirements and products. -/
+def MemoNorm (m : Memo M) : Prop :=
+  ∀ f ms s e, Treap.get m f = some ms → Treap.get ms s = some e → NormSock e.2.less ∧ NormSock e.2.prod
+
 /-- A memo hit of the persistent memo, as `+analyze` puts it in the graph. -/
 def MemoHitE (memoF : Memo M) (e : Entry) : Prop :=
   ∃ i d, gitMi memoF e.fol e.more = some (some (i, d)) ∧ e.d = d.core
 
-/-- **Frozen entries justify themselves**: each is a memo hit, or was written
-by a run whose every answer is an answer of the frozen entries. -/
-def FrozenOK (memoF : Memo M) (F : Entry → Prop) : Prop :=
-  ∀ e, F e → (∃ P : Sock → Noun → TabEntry → Prop, (∀ s f a, P s f a → Answers F s f a) ∧ RunEntryR P e) ∨
-    MemoHitE memoF e
+/-- The entries of `F` whose identity is among the callees `cs`. -/
+def FC (F : Entry → Prop) (cs : M CalleeEntry Unit) : Entry → Prop := fun e =>
+  F e ∧ InCallees cs (e.more, e.fol)
 
-theorem FrozenOK.mono {memoF : Memo M} {F F' : Entry → Prop} (h : FrozenOK memoF F) (hF : ∀ e, F e → F' e)
-    {e : Entry} (he : F e) :
-    (∃ P : Sock → Noun → TabEntry → Prop, (∀ s f a, P s f a → Answers F' s f a) ∧ RunEntryR P e) ∨
+/-- **Frozen entries justify themselves**: each is a memo hit, or was written
+by a run whose every answer is an answer of the frozen entries among its
+callees `cal` (the callees of its identity in the graph). -/
+def FrozenOK (memoF : Memo M) (F : Entry → Prop) (cal : Ident → M CalleeEntry Unit) : Prop :=
+  ∀ e, F e → (∃ P : Sock → Noun → TabEntry → Prop,
+    (∀ s f a, P s f a → Answers (FC F (cal (e.more, e.fol))) s f a) ∧ RunEntryR P e) ∨ MemoHitE memoF e
+
+theorem FrozenOK.mono {memoF : Memo M} {F F' : Entry → Prop} {cal cal' : Ident → M CalleeEntry Unit}
+    (h : FrozenOK memoF F cal) (hF : ∀ e, F e → F' e)
+    (hcal : ∀ e, F e → cal' (e.more, e.fol) = cal (e.more, e.fol)) {e : Entry} (he : F e) :
+    (∃ P : Sock → Noun → TabEntry → Prop,
+      (∀ s f a, P s f a → Answers (FC F' (cal' (e.more, e.fol))) s f a) ∧ RunEntryR P e) ∨
       MemoHitE memoF e := by
   rcases h e he with ⟨P, hP, hr⟩ | hm
   · refine Or.inl ⟨P, fun s f a hp => ?_, hr⟩
-    exact answers_mono hF (hP s f a hp)
+    exact answers_mono (fun e' he' => ⟨hF _ he'.1, by rw [hcal e he]; exact he'.2⟩) (hP s f a hp)
   · exact Or.inr hm
 
 /-- **The frozen entries of a state**: `F` justifies itself, holds every
@@ -143,18 +199,19 @@ finalized entry of the graph (in the graph, not in `order`) and every entry of
 `done`, and holds only entries of finalized identities, with well-formed
 products. -/
 structure FrzInv (memoF : Memo M) (st : SkaState M R) (F : Entry → Prop) : Prop where
-  ok : FrozenOK memoF F
+  ok : FrozenOK memoF F (calleesOf st)
   cover : ∀ i d, Treap.get st.g i = some d → Treap.get st.order i = none → F (entOf i d)
-  sub : ∀ e, F e → (∃ d, Treap.get st.g (e.more, e.fol) = some d) ∧ Treap.get st.order (e.more, e.fol) = none
+  sub : ∀ e, F e → (∃ d, Treap.get st.g (e.more, e.fol) = some d ∧ e.d.less = d.less) ∧
+    Treap.get st.order (e.more, e.fol) = none
   wf : ∀ e, F e → WellFormed e.d.prod
   done : ∀ f ms s ent, Treap.get st.done f = some ms → Treap.get ms s = some ent →
     F (entOf ent.1 ent.2) ∧ ent.1.2 = f ∧ Treap.get st.g ent.1 = some ent.2
 
-/-- What a member may have read: a frozen entry, or a callee on the stack
-below the bound `L`, whose entry is still the one read unless it changed at
-or after the member's last run. -/
+/-- What a member may have read: a frozen entry among its callees, or a
+callee on the stack below the bound `L`, whose entry is still the one read
+unless it changed at or after the member's last run. -/
 def MB (st : SkaState M R) (F : Entry → Prop) (m : Ident) (L : Nat) : Entry → Prop := fun e =>
-  F e ∨ (InCallees (calleesOf st m) (e.more, e.fol) ∧
+  FC F (calleesOf st m) e ∨ (InCallees (calleesOf st m) (e.more, e.fol) ∧
     (∃ o, Treap.get st.order (e.more, e.fol) = some o ∧ o < L) ∧
     (chgOf st (e.more, e.fol) < ranOf st m →
       ∃ d, Treap.get st.g (e.more, e.fol) = some d ∧ d.core.tab = e.d.tab))
@@ -186,6 +243,11 @@ structure CInv (memoF : Memo M) (st : SkaState M R) (F : Entry → Prop) : Prop 
   frz : FrzInv memoF st F
   mem : MemInv st F
   tkeys : ∀ j, Treap.get st.ticks j ≠ none → Treap.get st.order j ≠ none
+  /-- No identity of the graph has a `%void` subject sock. -/
+  nv : ∀ i d, Treap.get st.g i = some d → i.1 ≠ Sock.void
+  /-- The identities, code requirements and products of the graph have
+  normal capes. -/
+  norm : ∀ i d, Treap.get st.g i = some d → NormSock i.1 ∧ NormSock d.less ∧ NormSock d.prod
 
 /-! ## `+pop`, entry by entry -/
 
@@ -335,30 +397,42 @@ theorem pop_frozen {memoF : Memo M} {id : Ident} {st st' : SkaState M R} {F : En
   have hFF' : ∀ e, F e → F' e := fun e he => Or.inl he
   -- the answers of a popped member are answers of `F'`
   have hans : ∀ x ∈ ab0 ++ [id], ∀ d, Treap.get st.g x = some d →
-      ∃ P : Sock → Noun → TabEntry → Prop, RunEntryR P (entOf x d) ∧ ∀ s f a, P s f a → Answers F' s f a := by
+      ∃ P : Sock → Noun → TabEntry → Prop, RunEntryR P (entOf x d) ∧
+        ∀ s f a, P s f a → Answers (FC F' (calleesOf st x)) s f a := by
     intro x hx d hd
     obtain ⟨hr, hcal⟩ := hready x hx
     obtain ⟨o, hxo⟩ := hmemP x hx
     obtain ⟨P, L, _, hrun, hP⟩ := hc.mem x o hxo d hd hr
     refine ⟨P, hrun, fun s f a hp => (AnsW.transfer (fun e he => ?_) (hP s f a hp)).toAnswers⟩
-    rcases he with he | ⟨hce, ⟨oc, hco, _⟩, htab⟩
-    · exact ⟨e, Or.inl he, rfl, rfl, rfl⟩
+    rcases he with ⟨he, hce⟩ | ⟨hce, ⟨oc, hco, _⟩, htab⟩
+    · exact ⟨e, ⟨Or.inl he, hce⟩, rfl, rfl, rfl⟩
     · obtain ⟨hlt, hle⟩ := hcal _ hce oc hco
       obtain ⟨dc, hdc, htc⟩ := htab hlt
-      exact ⟨entOf (e.more, e.fol) dc, Or.inr ⟨_, hinP _ oc hco hle, dc, hdc, Or.inl rfl⟩, rfl, rfl, htc⟩
-  have hok : FrozenOK memoF F' := by
+      exact ⟨entOf (e.more, e.fol) dc, ⟨Or.inr ⟨_, hinP _ oc hco hle, dc, hdc, Or.inl rfl⟩, hce⟩, rfl, rfl, htc⟩
+  have hcalP : ∀ x ∈ ab0 ++ [id], calleesOf st' x = calleesOf st x := fun x hx => by
+    obtain ⟨d, hd⟩ := hin x hx
+    simp only [calleesOf, gitG, Treap.gut, a6, if_pos hx, hd, Option.map_some, Option.getD_some, postPop]
+    split <;> rfl
+  have hok : FrozenOK memoF F' (calleesOf st') := by
     intro e he
     rcases he with he | ⟨x, hx, d, hd, rfl | rfl⟩
-    · exact hc.frz.ok.mono hFF' he
+    · refine hc.frz.ok.mono hFF' (fun e he => ?_) he
+      have hn : (e.more, e.fol) ∉ ab0 ++ [id] := fun hx => by
+        obtain ⟨o, ho⟩ := hmemP _ hx; rw [(hc.frz.sub e he).2] at ho; cases ho
+      simp only [calleesOf, gitG, Treap.gut, a6, if_neg hn]
     · obtain ⟨P, hrun, hP⟩ := hans x hx d hd
-      exact Or.inl ⟨P, hP, hrun⟩
+      refine Or.inl ⟨P, fun s f a hp => ?_, hrun⟩
+      show Answers (FC F' (calleesOf st' x)) s f a
+      rw [hcalP x hx]; exact hP s f a hp
     · obtain ⟨P, hrun, hP⟩ := hans x hx d hd
-      refine Or.inl ⟨P, hP, ?_⟩
-      unfold entOf
-      rw [FDatum.postPop_core]
-      split
-      · exact RunEntryR.pop hrun (by assumption)
-      · exact hrun
+      refine Or.inl ⟨P, fun s f a hp => ?_, ?_⟩
+      · show Answers (FC F' (calleesOf st' x)) s f a
+        rw [hcalP x hx]; exact hP s f a hp
+      · unfold entOf
+        rw [FDatum.postPop_core]
+        split
+        · exact RunEntryR.pop hrun (by assumption)
+        · exact hrun
   have hgP : ∀ x ∈ ab0 ++ [id], Treap.get st'.g x = (Treap.get st.g x).map postPop := fun x hx => by
     rw [a6, if_pos hx]
   have hgN : ∀ x, x ∉ ab0 ++ [id] → Treap.get st'.g x = Treap.get st.g x := fun x hx => by
@@ -370,7 +444,7 @@ theorem pop_frozen {memoF : Memo M} {id : Ident} {st st' : SkaState M R} {F : En
     unfold Treap.gut; rw [a5, if_neg hx]
   have hpopNot : ∀ x o, Treap.get st.order x = some o → o < index → x ∉ ab0 ++ [id] := fun x o hxo hlt hx =>
     absurd (hup x hx o hxo) (by omega)
-  refine ⟨F', hFF', ⟨pop_ok hc.s h hs |>.1, fun m => ?_, ⟨fun i o hio => ?_, ?_⟩, ⟨hok, ?_, ?_, ?_, ?_⟩, ?_, ?_⟩⟩
+  refine ⟨F', hFF', ⟨pop_ok hc.s h hs |>.1, fun m => ?_, ⟨fun i o hio => ?_, ?_⟩, ⟨hok, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_⟩⟩
   · -- ticks
     by_cases hm : m ∈ ab0 ++ [id]
     · simp only [ranOf, chgOf, Treap.gut, a5, if_pos hm, Option.getD_none]; omega
@@ -400,14 +474,14 @@ theorem pop_frozen {memoF : Memo M} {id : Ident} {st st' : SkaState M R} {F : En
   · -- sub
     intro e he
     rcases he with he | ⟨x, hx, d, hd, rfl | rfl⟩
-    · obtain ⟨⟨d0, hd0⟩, hno⟩ := hc.frz.sub e he
+    · obtain ⟨⟨d0, hd0, hl0⟩, hno⟩ := hc.frz.sub e he
       have hn : (e.more, e.fol) ∉ ab0 ++ [id] := fun hx => by
         obtain ⟨o, ho⟩ := hmemP _ hx; rw [hno] at ho; cases ho
-      exact ⟨⟨d0, by rw [hgN _ hn]; exact hd0⟩, by rw [hoN _ hn]; exact hno⟩
+      exact ⟨⟨d0, by rw [hgN _ hn]; exact hd0, hl0⟩, by rw [hoN _ hn]; exact hno⟩
     · have e1 : Treap.get st'.g x = some (postPop d) := by rw [hgP x hx, hd]; rfl
-      exact ⟨⟨postPop d, e1⟩, hoP x hx⟩
+      exact ⟨⟨postPop d, e1, by unfold postPop; split <;> rfl⟩, hoP x hx⟩
     · have e1 : Treap.get st'.g x = some (postPop d) := by rw [hgP x hx, hd]; rfl
-      exact ⟨⟨postPop d, e1⟩, hoP x hx⟩
+      exact ⟨⟨postPop d, e1, rfl⟩, hoP x hx⟩
   · -- wf
     intro e he
     rcases he with he | ⟨x, hx, d, hd, rfl | rfl⟩
@@ -449,11 +523,11 @@ theorem pop_frozen {memoF : Memo M} {id : Ident} {st st' : SkaState M R} {F : En
     obtain ⟨P, L, hL, hrun, hP⟩ := hrest m hmr d hd hr
     refine ⟨P, L, ?_, hrun, fun s f a hp => (hP s f a hp).mono (fun e he => ?_)⟩
     · rw [a2]; exact Nat.le_trans hL (Nat.le_of_lt (hc.ord.1 id index hidx))
-    · rcases he with he | ⟨hce, ⟨oc, hco, hlt⟩, htab⟩
-      · exact Or.inl (hFF' e he)
+    · have hcal : calleesOf st' m = calleesOf st m := by
+        simp only [calleesOf, gitG, Treap.gut, hgN m hmN]
+      rcases he with ⟨he, hce⟩ | ⟨hce, ⟨oc, hco, hlt⟩, htab⟩
+      · exact Or.inl ⟨hFF' e he, by rw [hcal]; exact hce⟩
       · have hcN := hpopNot _ oc hco (Nat.lt_of_lt_of_le hlt hL)
-        have hcal : calleesOf st' m = calleesOf st m := by
-          simp only [calleesOf, gitG, Treap.gut, hgN m hmN]
         refine Or.inr ⟨by rw [hcal]; exact hce, ⟨oc, by rw [hoN _ hcN]; exact hco, hlt⟩, ?_⟩
         intro hlt'
         simp only [chgOf, ranOf, htN _ hcN, htN m hmN] at hlt'
@@ -465,6 +539,27 @@ theorem pop_frozen {memoF : Memo M} {id : Ident} {st st' : SkaState M R} {F : En
     split
     · rename_i hjP; rw [if_pos hjP] at hj; exact absurd rfl hj
     · rename_i hjP; rw [if_neg hjP] at hj; exact hc.tkeys j hj
+  · -- no `%void` identity
+    intro i d hd
+    by_cases hi : i ∈ ab0 ++ [id]
+    · rw [hgP i hi] at hd
+      obtain ⟨d0, hd0, _⟩ := Option.map_eq_some_iff.mp hd
+      exact hc.nv i d0 hd0
+    · rw [hgN i hi] at hd; exact hc.nv i d hd
+  · -- normal capes
+    intro i d hd
+    by_cases hi : i ∈ ab0 ++ [id]
+    · rw [hgP i hi] at hd
+      obtain ⟨d0, hd0, rfl⟩ := Option.map_eq_some_iff.mp hd
+      obtain ⟨n1, n2, n3⟩ := hc.norm i d0 hd0
+      refine ⟨n1, ?_, ?_⟩
+      · unfold postPop; split
+        · exact n2
+        · exact n2
+      · unfold postPop; split
+        · exact normSock_dunno
+        · exact n3
+    · rw [hgN i hi] at hd; exact hc.norm i d hd
 
 end Ana
 end SkaModel

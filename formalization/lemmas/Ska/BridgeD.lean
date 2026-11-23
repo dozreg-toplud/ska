@@ -1,4 +1,5 @@
 import lemmas.Ska.AnaInv
+import lemmas.Ska.FolNorm
 
 /-!
 # The bridge with answers judged at the end of the run
@@ -78,12 +79,15 @@ theorem LocalStable.toC {Inv : GenS M R → Prop} (hL : LocalStable Inv) : Local
   fun gs gs' hi h _ => hL gs gs' hi h.1 h.2.1 h.2.2.1 h.2.2.2.1 h.2.2.2.2.1 h.2.2.2.2.2.1
     h.2.2.2.2.2.2.1 h.2.2.2.2.2.2.2.1 h.2.2.2.2.2.2.2.2.1 h.2.2.2.2.2.2.2.2.2
 
+/-- What the bridge needs of a subject sock: well formed, with a normal cape. -/
+def SubOK (s : Sock) : Prop := WellFormed s ∧ NormSock s
+
 /-- What the bridge asks of `resolve`: it keeps the capes of `gen`, its
 answers only grow, and the `gen` that `fol-loop` makes after the call (the
 result with the identity of the answer among its callees) has `Inv` and the
 answer among its answers. -/
 def ResOKD (Pf : PFam M R) (Inv : GenS M R → Prop) (res : ResGo M R) : Prop :=
-  ∀ idT gs r gs', Inv gs → WellFormed idT.1 → res idT gs = some (r, gs') →
+  ∀ idT gs r gs', Inv gs → SubOK idT.1 → idT.1 ≠ Sock.void → res idT gs = some (r, gs') →
     gs'.gen = gs.gen ∧ PLe Pf gs gs' ∧
     ∀ (gs'' : GenS M R) seat, LFEq gs' gs'' → gs''.callees = Treap.ins gs'.callees ⟨seat, r.1⟩ →
       Inv gs'' ∧ Pf gs'' idT.1 idT.2 r.2.core.tab
@@ -91,7 +95,7 @@ def ResOKD (Pf : PFam M R) (Inv : GenS M R → Prop) (res : ResGo M R) : Prop :=
 /-- What the bridge gives of a recursion: `Inv` kept, answers that grow, and
 results in `FolR` with the answers at the end. -/
 def GoOKD (Pf : PFam M R) (Inv : GenS M R → Prop) (n : Nat) (go : FolGoS M R) : Prop :=
-  ∀ fol sub seat mk bc df gs out gs', Inv gs → WellFormed sub.sock → go fol sub seat mk bc df gs = some (out, gs') →
+  ∀ fol sub seat mk bc df gs out gs', Inv gs → SubOK sub.sock → go fol sub seat mk bc df gs = some (out, gs') →
     Inv gs' ∧ PLe Pf gs gs' ∧ ∀ γ, FolR (Pf gs') n fol sub mk bc df (gs.at γ) out gs'.gen
 
 section Step
@@ -99,26 +103,27 @@ section Step
 variable {Pf : PFam M R} {Inv : GenS M R → Prop} {res : ResGo M R} {go : FolGoS M R} {n : Nat}
 
 theorem GoOKD.ch (hgo : GoOKD Pf Inv n go) {fol : Noun} {sub : Anno} {seat mk : Option Noun} {bc df : Bool}
-    {gs gs' : GenS M R} {out : FolOut} (hi : Inv gs) (hs : WellFormed sub.sock)
+    {gs gs' : GenS M R} {out : FolOut} (hi : Inv gs) (hs : SubOK sub.sock)
     (h : go fol sub seat mk bc df gs = some (out, gs')) {g : GenS M R} (hle : PLe Pf gs' g)
     (γ γ' : Nat) : FolR (Pf g) n fol sub mk bc df (gs.at γ) out (gs'.at γ') :=
   folR_reghost (folR_monoP hle n ((hgo _ _ _ _ _ _ _ _ _ hi hs h).2.2 γ)) rfl
 
 theorem GoOKD.le (hgo : GoOKD Pf Inv n go) {fol : Noun} {sub : Anno} {seat mk : Option Noun} {bc df : Bool}
-    {gs gs' : GenS M R} {out : FolOut} (hi : Inv gs) (hs : WellFormed sub.sock)
+    {gs gs' : GenS M R} {out : FolOut} (hi : Inv gs) (hs : SubOK sub.sock)
     (h : go fol sub seat mk bc df gs = some (out, gs')) : PLe Pf gs gs' :=
   (hgo _ _ _ _ _ _ _ _ _ hi hs h).2.1
 
 theorem GoOKD.inv (hgo : GoOKD Pf Inv n go) {fol : Noun} {sub : Anno} {seat mk : Option Noun} {bc df : Bool}
-    {gs gs' : GenS M R} {out : FolOut} (hi : Inv gs) (hs : WellFormed sub.sock)
+    {gs gs' : GenS M R} {out : FolOut} (hi : Inv gs) (hs : SubOK sub.sock)
     (h : go fol sub seat mk bc df gs = some (out, gs')) : Inv gs' :=
   (hgo _ _ _ _ _ _ _ _ _ hi hs h).1
 
-theorem GoOKD.wf (hP : ∀ g tab, TabIn (Pf g) tab → TabWF tab) (hgo : GoOKD Pf Inv n go) {fol : Noun}
+theorem GoOKD.wf (hP : ∀ g tab, TabIn (Pf g) tab → TabWF tab ∧ TabNorm tab) (hgo : GoOKD Pf Inv n go) {fol : Noun}
     {sub : Anno} {seat mk : Option Noun} {bc df : Bool}
-    {gs gs' : GenS M R} {out : FolOut} (hi : Inv gs) (hs : WellFormed sub.sock)
-    (h : go fol sub seat mk bc df gs = some (out, gs')) : WellFormed out.prod.sock :=
-  folR_wf (hP gs') n hs ((hgo _ _ _ _ _ _ _ _ _ hi hs h).2.2 0)
+    {gs gs' : GenS M R} {out : FolOut} (hi : Inv gs) (hs : SubOK sub.sock)
+    (h : go fol sub seat mk bc df gs = some (out, gs')) : SubOK out.prod.sock :=
+  ⟨folR_wf (fun t ht => (hP gs' t ht).1) n hs.1 ((hgo _ _ _ _ _ _ _ _ _ hi hs h).2.2 0),
+   folR_norm (fun t ht => (hP gs' t ht).2) n hs.2 ((hgo _ _ _ _ _ _ _ _ _ hi hs h).2.2 0)⟩
 
 theorem spotHint_invC {Inv : GenS M R → Prop} (hL : LocalStableC Inv) (env : Env R) (tag : Nat)
     (h1 h2 : Noun) (seat : Option Noun) {gen : GenS M R} (hi : Inv gen) :
@@ -161,10 +166,10 @@ theorem fastHint_le {Pf : PFam M R} {Inv : GenS M R → Prop} (hL : LocalStableC
 
 /-- **One level of the state-passing `fol-loop` is in `FolR`, with the
 answers at its end.** -/
-theorem bridge_stepD (env : Env R) (hP : ∀ g tab, TabIn (Pf g) tab → TabWF tab) (hL : LocalStableC Inv)
+theorem bridge_stepD (env : Env R) (hP : ∀ g tab, TabIn (Pf g) tab → TabWF tab ∧ TabNorm tab) (hL : LocalStableC Inv)
     (hS : PStable Pf) (hres : ResOKD Pf Inv res) (hgo : GoOKD Pf Inv n go)
     {fol : Noun} {sub : Anno} {seat mk : Option Noun} {bc df : Bool} {gs gs' : GenS M R} {out : FolOut}
-    (hi : Inv gs) (hsub : WellFormed sub.sock) (h : folStep env res go fol sub seat mk bc df gs = some (out, gs')) :
+    (hi : Inv gs) (hsub : SubOK sub.sock) (h : folStep env res go fol sub seat mk bc df gs = some (out, gs')) :
     Inv gs' ∧ PLe Pf gs gs' ∧ ∀ γ, FolR (Pf gs') (n + 1) fol sub mk bc df (gs.at γ) out gs'.gen := by
   cases hs : shape fol with
   | cons a b q =>
@@ -195,7 +200,7 @@ theorem bridge_stepD (env : Env R) (hP : ∀ g tab, TabIn (Pf g) tab → TabWF t
     obtain ⟨⟨s1, g1⟩, h1, ⟨f1, g2⟩, h2, h3⟩ := h
     dsimp only at h2 h3
     have i1 := hgo.inv hi hsub h1
-    have ws1 : WellFormed s1.prod.sock := hgo.wf hP hi hsub h1
+    have ws1 : SubOK s1.prod.sock := hgo.wf hP hi hsub h1
     have i2 := hgo.inv i1 hsub h2
     have l1 := hgo.le hi hsub h1
     have l2 := hgo.le i1 hsub h2
@@ -203,7 +208,7 @@ theorem bridge_stepD (env : Env R) (hP : ∀ g tab, TabIn (Pf g) tab → TabWF t
       hL.app i2 rfl rfl rfl rfl rfl rfl rfl rfl rfl rfl rfl
     have l2' : PLe Pf g2 ({ g2 with want := Ca.uni g2.want (distribute Cape.yes f1.prod.src) } : GenS M R) :=
       hS.app rfl rfl rfl rfl rfl rfl rfl rfl rfl rfl rfl
-    rcases callStep_cases h3 with ⟨el, eb, est, ec, hc⟩ | ⟨fa, fb, i, g3, h4, rfl, hc⟩ | ⟨fa, fb, r, g3, h4, el, eb, est, ec, hc⟩
+    rcases callStep_cases h3 with ⟨el, eb, est, ec, hc⟩ | ⟨fa, fb, i, g3, h4, rfl, hc⟩ | ⟨fa, fb, r, g3, h4, hnv4, el, eb, est, ec, hc⟩
     · have l3 : PLe Pf g2 gs' := hS.app el eb (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est])
         (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est]) ec
       refine ⟨hL.app i2 el eb (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est])
@@ -232,7 +237,7 @@ theorem bridge_stepD (env : Env R) (hP : ∀ g tab, TabIn (Pf g) tab → TabWF t
         rw [goL_tl (by simp [GenS.at]), goL_hd]; simp only [Option.bind_some]
         refine hc _ _ _ _ ?_
         rw [goL_tl (by simp [GenS.at]), goL_tl (by simp [GenS.at]), goL_hd]
-    · obtain ⟨hg3, l3, hp⟩ := hres _ _ _ _ i2 ws1 h4
+    · obtain ⟨hg3, l3, hp⟩ := hres _ _ _ _ i2 ws1 hnv4 h4
       have hlf : LFEq g3 gs' := ⟨el, eb, by rw [est], by rw [est], by rw [est], by rw [est], by rw [est],
         by rw [est], by rw [est], by rw [est]⟩
       have l4 : PLe Pf g3 gs' := hS g3 gs' hlf (fun c h => by
@@ -298,7 +303,7 @@ theorem bridge_stepD (env : Env R) (hP : ∀ g tab, TabIn (Pf g) tab → TabWF t
     simp only [folStep, hs, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨⟨p1, g1⟩, h1, ⟨q1, g2⟩, h2, rfl, rfl⟩ := h
     have i1 := hgo.inv hi hsub h1
-    have wp1 : WellFormed p1.prod.sock := hgo.wf hP hi hsub h1
+    have wp1 : SubOK p1.prod.sock := hgo.wf hP hi hsub h1
     have l2 := hgo.le i1 wp1 h2
     refine ⟨hgo.inv i1 wp1 h2, (hgo.le hi hsub h1).trans l2, fun γ => ?_⟩
     refine folR_of_calls (calls := [((C a b, sub, mk, bc, df, gs.at γ), (p1, g1.at (γ + 1))),
@@ -373,7 +378,7 @@ theorem bridge_stepD (env : Env R) (hP : ∀ g tab, TabIn (Pf g) tab → TabWF t
       fun γ => GenS.at_eq (spotHint_gen env tag h1 h2 seat gs) γ
     have i1 := hgo.inv i0 hsub e1
     have l1 := hgo.le i0 hsub e1
-    have whh : WellFormed hh.prod.sock := hgo.wf hP i0 hsub e1
+    have whh : SubOK hh.prod.sock := hgo.wf hP i0 hsub e1
     have F1 : ∀ {g : GenS M R}, PLe Pf g1 g → ∀ γ γ', FolR (Pf g) n (C h1 h2) sub mk bc df (gs.at γ) hh (g1.at γ') :=
       fun hle γ γ' => by rw [← hat0 γ]; exact hgo.ch i0 hsub e1 hle _ _
     split at h
@@ -445,7 +450,7 @@ end Step
 /-- **The state-passing `fol-loop` is in `FolR`, with the answers at the end
 of each call.** -/
 theorem folLoop_goOKD {Pf : PFam M R} {Inv : GenS M R → Prop} (env : Env R) (memoF : Memo M)
-    (hP : ∀ g tab, TabIn (Pf g) tab → TabWF tab) (hL : LocalStableC Inv) (hS : PStable Pf) :
+    (hP : ∀ g tab, TabIn (Pf g) tab → TabWF tab ∧ TabNorm tab) (hL : LocalStableC Inv) (hS : PStable Pf) :
     ∀ n, (∀ k, k < n → ResOKD Pf Inv (resolve env memoF k)) → GoOKD Pf Inv n (folLoop env memoF n)
   | 0 => fun _ _ _ _ _ _ _ _ _ _ _ _ h => by rw [folLoop_zero] at h; cases h
   | n + 1 => fun hres _ _ _ _ _ _ _ _ _ hi hs h => by
@@ -455,9 +460,9 @@ theorem folLoop_goOKD {Pf : PFam M R} {Inv : GenS M R → Prop} (env : Env R) (m
 
 /-- **The run of `+run` on `id` is a run with the answers of its last `gen`.** -/
 theorem run_folTopRD {Pf : PFam M R} {Inv : GenS M R → Prop} (env : Env R) (memoF : Memo M)
-    (hP : ∀ g tab, TabIn (Pf g) tab → TabWF tab) (hL : LocalStableC Inv) (hS : PStable Pf) {n index : Nat}
+    (hP : ∀ g tab, TabIn (Pf g) tab → TabWF tab ∧ TabNorm tab) (hL : LocalStableC Inv) (hS : PStable Pf) {n index : Nat}
     (hres : ∀ k, k < n → ResOKD Pf Inv (resolve env memoF k)) {id : Ident} {st : SkaState M R}
-    {out : FolOut} {gs' : GenS M R} (hi : Inv (genInit index st)) (hw : WellFormed id.1)
+    {out : FolOut} {gs' : GenS M R} (hi : Inv (genInit index st)) (hw : SubOK id.1)
     (h : folLoop env memoF n id.2 ⟨id.1, A 1⟩ none none false false (genInit index st) = some (out, gs')) :
     Inv gs' ∧ PLe Pf (genInit index st) gs' ∧ FolTopR (Pf gs') n id.1 id.2 out gs'.gen := by
   obtain ⟨i', l', F⟩ := folLoop_goOKD env memoF hP hL hS n hres _ _ _ _ _ _ _ _ _ hi hw h

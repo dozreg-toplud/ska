@@ -33,7 +33,7 @@ def pushSt (st : SkaState M R) (id : Ident) : SkaState M R :=
 
 /-- **A push keeps the convergence invariant.** -/
 theorem push_cinv {memoF : Memo M} {st : SkaState M R} {F : Entry → Prop} (hc : CInv memoF st F) {id : Ident}
-    (hw : WellFormed id.1) (hg : Treap.get st.g id = none) :
+    (hw : WellFormed id.1) (hnm : NormSock id.1) (hnv : id.1 ≠ Sock.void) (hg : Treap.get st.g id = none) :
     CInv memoF (pushSt st id) F ∧
     GStepsR (gCore st.g) (gCore (Treap.put st.g id FDatum.bunt)) ∧
     Keep st.stk (· ∈ st.stk) st (pushSt st id) ∧
@@ -52,9 +52,16 @@ theorem push_cinv {memoF : Memo M} {st : SkaState M R} {F : Entry → Prop} (hc 
   have hmem : ∀ m L, m ∈ st.stk → MemOK st F m L → MemOK (pushSt st id) F m L :=
     fun m L hm h => memOK_frame hc.s hm k1 (fun _ _ => rfl) (fun _ h => h) h
   have hneid : ∀ i, Treap.get st.g i ≠ none → i ≠ id := fun i hi e => hi (e ▸ hg)
-  unfold pushSt at hmem ⊢
-  refine ⟨⟨i1, fun m => hc.tick m, ⟨fun i o hio => ?_, ?_⟩, ⟨hc.frz.ok, fun i d h1 h2 => ?_, fun e he => ?_,
-    hc.frz.wf, fun f ms s ent h1 h2 => ?_⟩, fun m o hmo => ?_, fun j hj => ?_⟩, s1, k1,
+  have hcalF : ∀ e, F e → calleesOf (pushSt st id) (e.more, e.fol) = calleesOf st (e.more, e.fol) :=
+    fun e he => by
+      obtain ⟨⟨d, hd, _⟩, _⟩ := hc.frz.sub e he
+      have hi := hneid _ (by rw [hd]; simp)
+      simp only [pushSt, calleesOf, gitG, Treap.gut, Treap.get_put, if_neg hi]
+  unfold pushSt at hmem hcalF ⊢
+  refine ⟨⟨i1, fun m => hc.tick m, ⟨fun i o hio => ?_, ?_⟩, ⟨fun e he => hc.frz.ok.mono (fun _ h => h) hcalF he,
+    fun i d h1 h2 => ?_, fun e he => ?_,
+    hc.frz.wf, fun f ms s ent h1 h2 => ?_⟩, fun m o hmo => ?_, fun j hj => ?_, fun i d hd => ?_,
+    fun i d hd => ?_⟩, s1, k1,
     ⟨fun i d h1 h2 => ?_, fun _ _ => rfl, Nat.le_succ _, Nat.le_refl _, fun x o hxo hx => ?_⟩, hmem⟩
   · simp only [Treap.get_put] at hio
     split at hio
@@ -75,9 +82,10 @@ theorem push_cinv {memoF : Memo M} {st : SkaState M R} {F : Entry → Prop} (hc 
   · have hi : i ≠ id := by intro e; subst e; simp [Treap.get_put] at h2
     simp only [Treap.get_put, if_neg hi] at h1 h2
     exact hc.frz.cover i d h1 h2
-  · obtain ⟨⟨d, hd⟩, ho⟩ := hc.frz.sub e he
+  · obtain ⟨⟨d, hd, hl⟩, ho⟩ := hc.frz.sub e he
     have hi := hneid _ (by rw [hd]; simp)
-    exact ⟨⟨d, by simp only [Treap.get_put, if_neg hi]; exact hd⟩, by simp only [Treap.get_put, if_neg hi]; exact ho⟩
+    exact ⟨⟨d, by simp only [Treap.get_put, if_neg hi]; exact hd, hl⟩,
+      by simp only [Treap.get_put, if_neg hi]; exact ho⟩
   · obtain ⟨hF, hk, hge⟩ := hc.frz.done f ms s ent h1 h2
     have hi := hneid _ (by rw [hge]; simp)
     exact ⟨hF, hk, by simp only [Treap.get_put, if_neg hi]; exact hge⟩
@@ -91,6 +99,14 @@ theorem push_cinv {memoF : Memo M} {st : SkaState M R} {F : Entry → Prop} (hc 
   · by_cases hj' : j = id
     · subst hj'; simp [Treap.get_put]
     · simp only [Treap.get_put, if_neg hj']; exact hc.tkeys j hj
+  · simp only [Treap.get_put] at hd
+    split at hd
+    · rename_i e; rw [e]; exact hnv
+    · exact hc.nv i d hd
+  · simp only [Treap.get_put] at hd
+    split at hd
+    · rename_i e; cases hd; rw [e]; exact ⟨hnm, normSock_dunno, normSock_void⟩
+    · exact hc.norm i d hd
   · have hi : i ≠ id := hneid i (by rw [h1]; simp)
     exact ⟨by simp only [Treap.get_put, if_neg hi]; exact h1, by simp only [Treap.get_put, if_neg hi]; exact h2⟩
   · simp only [Treap.get_put] at hxo
@@ -133,13 +149,26 @@ theorem cullPass_ok2 {memoF : Memo M} {n : Nat} {pass : PassGo M R} (hpass : Pas
     (fr3.weaken (fun j hj => List.mem_cons_of_mem _ hj)).trans2 fr4 (fun j hj => hj), hcl4, hid4, hlo4, hlt4⟩
 
 /-- The state after `+analyze` takes a memo hit. -/
+theorem gitMi_norm {m : Memo M} (hm : MemoNorm m) {f : Noun} {s : Sock} {i : Ident} {d : FDatum M}
+    (hs : NormSock s) (h : gitMi m f s = some (some (i, d))) : NormSock d.less ∧ NormSock d.prod := by
+  obtain ⟨k, d0, hg, _, hc, hp⟩ := gitMi_hit h
+  have hl : d.less = d0.less := congrArg Datum.less hc
+  have hg' : Treap.get m f = some (gutMi m f) ∨ gutMi m f = Treap.empty := by
+    unfold gutMi Treap.gut
+    cases e : Treap.get m f <;> simp
+  rcases hg' with hg' | hg'
+  · obtain ⟨n1, n2⟩ := hm f _ k _ hg' hg
+    exact ⟨by rw [hl]; exact n1, by rw [hp]; exact normSock_patchDatum n2 hs⟩
+  · rw [hg', Treap.get_empty] at hg; cases hg
+
 def hitSt (st : SkaState M R) (id : Ident) (d : FDatum M) : SkaState M R :=
   { st with g := Treap.put st.g id d, done := putMi st.done id d }
 
 /-- **A memo hit of an earlier poke is a new frozen entry.** -/
-theorem hit_cinv {memoF : Memo M} (hmF : MemoWF memoF) {st : SkaState M R} {F : Entry → Prop}
-    (hc : CInv memoF st F) {id : Ident} (hw : WellFormed id.1) (hg : Treap.get st.g id = none)
-    {hit : Ident × FDatum M} (h : gitMi memoF id.2 id.1 = some (some hit)) :
+theorem hit_cinv {memoF : Memo M} (hmF : MemoWF memoF) (hmN : MemoNorm memoF) {st : SkaState M R}
+    {F : Entry → Prop} (hc : CInv memoF st F) {id : Ident} (hw : WellFormed id.1) (hnm : NormSock id.1)
+    (hnv : id.1 ≠ Sock.void)
+    (hg : Treap.get st.g id = none) {hit : Ident × FDatum M} (h : gitMi memoF id.2 id.1 = some (some hit)) :
     CInv memoF (hitSt st id hit.2) (fun e => F e ∨ e = entOf id hit.2) ∧
     GStepsR (gCore st.g) (gCore (hitSt st id hit.2).g) ∧ Keep st.stk (· ∈ st.stk) st (hitSt st id hit.2) ∧
     Frame (· ∈ st.stk) st (hitSt st id hit.2) := by
@@ -153,20 +182,24 @@ theorem hit_cinv {memoF : Memo M} (hmF : MemoWF memoF) {st : SkaState M R} {F : 
   have hF : ∀ e, F e → F e ∨ e = entOf id hit.2 := fun e h => Or.inl h
   unfold hitSt
   refine ⟨⟨i1, fun m => hc.tick m, hc.ord, ⟨fun e he => ?_, fun i d h1 h2 => ?_, fun e he => ?_, fun e he => ?_,
-    fun f ms s ent h1 h2 => ?_⟩, fun m o hmo => ?_, hc.tkeys⟩, s1, k1,
+    fun f ms s ent h1 h2 => ?_⟩, fun m o hmo => ?_, hc.tkeys, fun i d hd => ?_,
+    fun i d hd => ?_⟩, s1, k1,
     ⟨fun i d h1 h2 => ?_, fun _ _ => rfl, Nat.le_refl _, Nat.le_refl _, fun x o hxo hx => absurd hxo hx⟩⟩
   · rcases he with he | rfl
-    · exact hc.frz.ok.mono hF he
+    · refine hc.frz.ok.mono hF (fun e he => ?_) he
+      obtain ⟨⟨d, hd, _⟩, _⟩ := hc.frz.sub e he
+      have hi := hneid _ (by rw [hd]; simp)
+      simp only [calleesOf, gitG, Treap.gut, Treap.get_put, if_neg hi]
     · exact Or.inr ⟨hit.1, hit.2, h, rfl⟩
   · simp only [Treap.get_put] at h1
     split at h1
     · rename_i e; cases h1; exact Or.inr (by rw [e])
     · exact Or.inl (hc.frz.cover i d h1 h2)
   · rcases he with he | rfl
-    · obtain ⟨⟨d, hd⟩, ho⟩ := hc.frz.sub e he
+    · obtain ⟨⟨d, hd, hl⟩, ho⟩ := hc.frz.sub e he
       have hi := hneid _ (by rw [hd]; simp)
-      exact ⟨⟨d, by simp only [Treap.get_put, if_neg hi]; exact hd⟩, ho⟩
-    · exact ⟨⟨hit.2, by simp [entOf, Treap.get_put]⟩, hno⟩
+      exact ⟨⟨d, by simp only [Treap.get_put, if_neg hi]; exact hd, hl⟩, ho⟩
+    · exact ⟨⟨hit.2, by simp [entOf, Treap.get_put], rfl⟩, hno⟩
   · rcases he with he | rfl
     · exact hc.frz.wf e he
     · exact gitMi_wf hmF hw h
@@ -176,13 +209,21 @@ theorem hit_cinv {memoF : Memo M} (hmF : MemoWF memoF) {st : SkaState M R} {F : 
       exact ⟨Or.inl hF', hk, by simp only [Treap.get_put, if_neg hi]; exact hge⟩
     · exact ⟨Or.inr rfl, rfl, by simp [Treap.get_put]⟩
   · exact memOK_frame hc.s ((hc.s.ord_stk m).mp ⟨o, hmo⟩) k1 (fun _ _ => rfl) hF (hc.mem m o hmo)
+  · simp only [Treap.get_put] at hd
+    split at hd
+    · rename_i e; rw [e]; exact hnv
+    · exact hc.nv i d hd
+  · simp only [Treap.get_put] at hd
+    split at hd
+    · rename_i e; cases hd; rw [e]; exact ⟨hnm, gitMi_norm hmN hnm h⟩
+    · exact hc.norm i d hd
   · have hi := hneid i (by rw [h1]; simp)
     exact ⟨by simp only [Treap.get_put, if_neg hi]; exact h1, h2⟩
 
 /-- **`+analyze` keeps the convergence invariant.** -/
-theorem analyzeStep_ok2 {memoF : Memo M} (hmF : MemoWF memoF) {n : Nat} {run : RunGo M R} {pass : PassGo M R}
+theorem analyzeStep_ok2 {memoF : Memo M} (hmF : MemoWF memoF) (hmN : MemoNorm memoF) {n : Nat} {run : RunGo M R} {pass : PassGo M R}
     (hrun : RunP2 memoF run) (hpass : PassP2 memoF pass) : AnaP2 memoF (analyzeStep n memoF run pass) := by
-  intro id st low st' F hc hw hg e
+  intro id st low st' F hc hw hnm hnv hg e
   have hn : id ∉ st.stk := hc.s.not_mem hg
   unfold analyzeStep at e
   split at e
@@ -190,7 +231,7 @@ theorem analyzeStep_ok2 {memoF : Memo M} (hmF : MemoWF memoF) {n : Nat} {run : R
   · rename_i hit hh
     simp only [Option.some.injEq, Prod.mk.injEq] at e
     obtain ⟨rfl, rfl⟩ := e
-    obtain ⟨c1, s1, k1, fr1⟩ := hit_cinv hmF hc hw hg hh
+    obtain ⟨c1, s1, k1, fr1⟩ := hit_cinv hmF hmN hc hw hnm hnv hg hh
     have hno : Treap.get st.order id = none := by
       cases e : Treap.get st.order id with
       | none => rfl
@@ -199,7 +240,7 @@ theorem analyzeStep_ok2 {memoF : Memo M} (hmF : MemoWF memoF) {n : Nat} {run : R
       fun x o hxo hx => absurd ((hc.s.ord_stk x).mp ⟨o, hxo⟩) hx, ⟨hit.2, by simp [Treap.get_put]⟩,
       fun o ho => absurd (ho.symm.trans hno) (by simp),
       fun x o hxo hx => absurd ((hc.s.ord_stk x).mp ⟨o, hxo⟩) hx⟩
-  · obtain ⟨c1, s1, k1, fr1, hm1⟩ := push_cinv hc hw hg
+  · obtain ⟨c1, s1, k1, fr1, hm1⟩ := push_cinv hc hw hnm hnv hg
     simp only [Option.bind_eq_some_iff] at e
     obtain ⟨⟨r1, st2⟩, hr, e⟩ := e
     have hid1 : id ∈ (pushSt st id).stk := List.mem_cons_self
@@ -306,7 +347,7 @@ def AllP2 (env : Env R) (memoF : Memo M) (n : Nat) : Prop :=
     PassP2 memoF (passLoop env memoF n) ∧ MemP2 memoF (memberLoop env memoF n)
 
 theorem allP2_zero (env : Env R) (memoF : Memo M) : AllP2 env memoF 0 := by
-  refine ⟨fun _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ h => ?_,
+  refine ⟨fun _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ h => ?_,
     fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_⟩
   · rw [resolve_zero] at h; cases h
   · rw [analyze_zero] at h; cases h
@@ -316,19 +357,20 @@ theorem allP2_zero (env : Env R) (memoF : Memo M) : AllP2 env memoF 0 := by
 
 /-- **Every arm of the analysis keeps the convergence invariant**, at every
 fuel, for a persistent memo with well-formed products. -/
-theorem allP2 (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) : ∀ n, ∀ k, k ≤ n → AllP2 env memoF k
+theorem allP2 (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmN : MemoNorm memoF) :
+    ∀ n, ∀ k, k ≤ n → AllP2 env memoF k
   | 0 => fun k hk => by rw [Nat.le_zero.mp hk]; exact allP2_zero env memoF
   | n + 1 => fun k hk => by
     rcases Nat.lt_or_ge k (n + 1) with hl | hl
-    · exact allP2 env memoF hmF n k (Nat.le_of_lt_succ hl)
+    · exact allP2 env memoF hmF hmN n k (Nat.le_of_lt_succ hl)
     · have e : k = n + 1 := Nat.le_antisymm hk hl
       subst e
-      obtain ⟨r, a, u, p, m⟩ := allP2 env memoF hmF n n (Nat.le_refl n)
+      obtain ⟨r, a, u, p, m⟩ := allP2 env memoF hmF hmN n n (Nat.le_refl n)
       refine ⟨?_, ?_, ?_, ?_, ?_⟩
       · rw [resolve_succ]; exact resolveStep_ok2 env memoF r a
-      · rw [analyze_succ]; exact analyzeStep_ok2 hmF u p
+      · rw [analyze_succ]; exact analyzeStep_ok2 hmF hmN u p
       · rw [run_succ]
-        exact runStep_ok2 env memoF (fun k hk => (allP2 env memoF hmF n k (Nat.le_of_lt hk)).1)
+        exact runStep_ok2 env memoF (fun k hk => (allP2 env memoF hmF hmN n k (Nat.le_of_lt hk)).1)
       · rw [passLoop_succ]; exact passStep_ok2 m p
       · rw [memberLoop_succ]; exact memberStep_ok2 u m
 
@@ -342,25 +384,31 @@ theorem CInv.init (memoF : Memo M) (reg : R) : CInv memoF (SkaState.init reg : S
     fun _ h => h.elim, fun f ms s ent h _ => by simp [SkaState.init, Treap.get_empty] at h⟩
   mem := fun m o h => by simp [SkaState.init, Treap.get_empty] at h
   tkeys := fun j h => by simp [SkaState.init, Treap.get_empty] at h
+  nv := fun i d h => by simp [SkaState.init, Treap.get_empty] at h
+  norm := fun i d h => by simp [SkaState.init, Treap.get_empty] at h
 
 /-- **The final graph of `+ska-callgraph` is frozen**: every entry is a memo
 hit of an earlier poke, or was written by its last run with answers that are
 answers of the frozen entries (the entries of the final graph and the
-versions of them before `+pop`); for a root with a well-formed subject sock
-and a persistent memo with well-formed products.  No assumption on the
-scheduling: this is convergence, for the Hoon with the cull before the first
-pass. -/
-theorem skaCallgraph_frozen (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) {n : Nat} {root : Ident}
-    {reg reg' : R} {g : Callgraph M} (hw : WellFormed root.1)
+versions of them before `+pop`), each answer an entry of its callees in the
+final graph; for a root with a well-formed subject sock that is not `%void`
+and a persistent memo with well-formed products.  No identity of the final
+graph has a `%void` subject sock.  No assumption on the scheduling: this is
+convergence, for the Hoon with the cull before the first pass. -/
+theorem skaCallgraph_frozen (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmN : MemoNorm memoF)
+    {n : Nat} {root : Ident} {reg reg' : R} {g : Callgraph M} (hw : WellFormed root.1) (hnr : NormSock root.1)
+    (hnvr : root.1 ≠ Sock.void)
     (h : skaCallgraph env n root memoF reg = some (g, reg')) :
-    ∃ F : Entry → Prop, FrozenOK memoF F ∧ (∀ i d, Treap.get g i = some d → F (entOf i d)) ∧
-      (∀ e, F e → ∃ d, Treap.get g (e.more, e.fol) = some d) ∧ (∀ e, F e → WellFormed e.d.prod) ∧
-      GStepsR (fun _ => none) (gCore g) := by
+    ∃ F : Entry → Prop, FrozenOK memoF F (fun i => (gitG g i).callees) ∧
+      (∀ i d, Treap.get g i = some d → F (entOf i d)) ∧
+      (∀ e, F e → ∃ d, Treap.get g (e.more, e.fol) = some d ∧ e.d.less = d.less) ∧ (∀ e, F e → WellFormed e.d.prod) ∧
+      GStepsR (fun _ => none) (gCore g) ∧ (∀ i d, Treap.get g i = some d → i.1 ≠ Sock.void) ∧
+      (∀ i d, Treap.get g i = some d → NormSock i.1 ∧ NormSock d.less ∧ NormSock d.prod) := by
   unfold skaCallgraph at h
   simp only [Option.map_eq_some_iff, Prod.mk.injEq] at h
   obtain ⟨⟨low, st⟩, ha, rfl, _⟩ := h
-  obtain ⟨⟨F, _, c⟩, s, _, _, _, _, _, hlt⟩ := (allP2 env memoF hmF n n (Nat.le_refl n)).2.1 root
-    (SkaState.init reg) low st (fun _ => False) (CInv.init memoF reg) hw
+  obtain ⟨⟨F, _, c⟩, s, _, _, _, _, _, hlt⟩ := (allP2 env memoF hmF hmN n n (Nat.le_refl n)).2.1 root
+    (SkaState.init reg) low st (fun _ => False) (CInv.init memoF reg) hw hnr hnvr
     (by simp [SkaState.init, Treap.get_empty]) ha
   have hempty : ∀ x, Treap.get st.order x = none := by
     intro x
@@ -371,7 +419,7 @@ theorem skaCallgraph_frozen (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) 
       simp [SkaState.init] at this
   rw [show gCore (SkaState.init reg : SkaState M R).g = fun _ => none from gCore_empty] at s
   exact ⟨F, c.frz.ok, fun i d hd => c.frz.cover i d hd (hempty i), fun e he => (c.frz.sub e he).1,
-    c.frz.wf, s⟩
+    c.frz.wf, s, c.nv, c.norm⟩
 
 /-! ## To `ConvergedGraphM` -/
 
@@ -403,18 +451,18 @@ theorem memoHit_hitEntry {lib : Lib} {code : Bell → Option Nomm} {memo : Memo 
 /-- **Convergence as `ConvergedGraphM`**: the frozen entries of the final
 graph, with the memo hits as `HitEntry`s of the persistent memo. -/
 theorem skaCallgraph_convergedM {lib : Lib} {code : Bell → Option Nomm} (env : Env R) (memoF : Memo M)
-    (hmF : MemoWF memoF) (hkey : MemoKeys memoF) (hok : ∀ m, MemEnt memoF m → MemoEntryOK lib code m)
+    (hmF : MemoWF memoF) (hmN : MemoNorm memoF) (hkey : MemoKeys memoF)
+    (hok : ∀ m, MemEnt memoF m → MemoEntryOK lib code m)
     {n : Nat} {root : Ident} {reg reg' : R} {g : Callgraph M} (hw : WellFormed root.1)
-    (hnv : ∀ i d, Treap.get g i = some d → i.1 ≠ Sock.void)
-    (h : skaCallgraph env n root memoF reg = some (g, reg')) :
+    (hnr : NormSock root.1) (hnvr : root.1 ≠ Sock.void) (h : skaCallgraph env n root memoF reg = some (g, reg')) :
     ∃ G : Entry → Prop, ConvergedGraphM lib code (MemEnt memoF) G ∧
       (∀ i d, Treap.get g i = some d → G (entOf i d)) ∧
       (∀ e, G e → ∃ d, Treap.get g (e.more, e.fol) = some d) ∧ GStepsR (fun _ => none) (gCore g) := by
-  obtain ⟨F, hok', hcov, hsub, _, hs⟩ := skaCallgraph_frozen env memoF hmF hw h
-  refine ⟨F, fun e he => ?_, hcov, hsub, hs⟩
-  rcases hok' e he with hr | hm
-  · exact Or.inl hr
-  · obtain ⟨d, hd⟩ := hsub e he
+  obtain ⟨F, hok', hcov, hsub, _, hs, hnv, _⟩ := skaCallgraph_frozen env memoF hmF hmN hw hnr hnvr h
+  refine ⟨F, fun e he => ?_, hcov, fun e he => (hsub e he).imp fun _ h => h.1, hs⟩
+  rcases hok' e he with ⟨P, hP, hr⟩ | hm
+  · exact Or.inl ⟨P, fun s f a hp => answers_mono (fun _ h => h.1) (hP s f a hp), hr⟩
+  · obtain ⟨d, hd, _⟩ := hsub e he
     exact Or.inr (memoHit_hitEntry hkey hok (hnv _ d hd) hm)
 
 end Ana
