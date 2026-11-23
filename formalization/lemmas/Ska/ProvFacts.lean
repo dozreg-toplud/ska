@@ -467,5 +467,296 @@ theorem provO_knit {y : Noun} {Sl Sr : Sock} {σl σr : Noun} {o : Option Noun}
       · exact hl.const ρ e
       · exact hr.const ρ e
 
+/-! ## `+double-int` -/
+
+theorem provO_doubleInt_left' : ∀ (k : Nat) (a b : Anno), Sock.msr a.sock + Sock.msr b.sock < k →
+    ∀ (y : Noun) (o : Option Noun), ProvO y a.sock a.src o →
+      ProvO y (doubleInt a b).sock (doubleInt a b).src o := by
+  intro k
+  induction k with
+  | zero => intro _ _ h; omega
+  | succ k ih =>
+  intro a b hk y o hp
+  by_cases hab : a = b
+  · subst hab; rw [doubleInt_self]; exact hp
+  obtain ⟨sa, ra⟩ := a
+  obtain ⟨sb, rb⟩ := b
+  cases sa with
+  | void => exact absurd rfl hp.nonvoid
+  | mk ca da =>
+  cases sb with
+  | void => rw [doubleInt_void_right rfl (by simp) hab]; exact hp
+  | mk cb db =>
+    apply doubleInt_cases (fun r => ProvO y r.sock r.src o) hab (provO_dunno y o)
+    intro hno
+    simp only [not_or] at hno
+    have h1 : Sock.msr (So.hed (Sock.mk ca da)) + Sock.msr (So.hed (Sock.mk cb db)) < k := by
+      have := msr_hed_lt hno.1 da; have := msr_hed_lt hno.2 db; simp only at hk; omega
+    have h2 : Sock.msr (So.tel (Sock.mk ca da)) + Sock.msr (So.tel (Sock.mk cb db)) < k := by
+      have := msr_tel_lt hno.1 da; have := msr_tel_lt hno.2 db; simp only at hk; omega
+    exact provO_knit (ih _ _ h1 y _ (hp.part [false])) (ih _ _ h2 y _ (hp.part [true]))
+
+theorem provO_doubleInt_right' : ∀ (k : Nat) (a b : Anno), Sock.msr a.sock + Sock.msr b.sock < k →
+    ∀ (y : Noun) (o : Option Noun), ProvO y b.sock b.src o →
+      ProvO y (doubleInt a b).sock (doubleInt a b).src o := by
+  intro k
+  induction k with
+  | zero => intro _ _ h; omega
+  | succ k ih =>
+  intro a b hk y o hp
+  by_cases hab : a = b
+  · subst hab; rw [doubleInt_self]; exact hp
+  obtain ⟨sa, ra⟩ := a
+  obtain ⟨sb, rb⟩ := b
+  cases sb with
+  | void => exact absurd rfl hp.nonvoid
+  | mk cb db =>
+  cases sa with
+  | void => rw [doubleInt_void_left rfl hab]; exact hp
+  | mk ca da =>
+    apply doubleInt_cases (fun r => ProvO y r.sock r.src o) hab (provO_dunno y o)
+    intro hno
+    simp only [not_or] at hno
+    have h1 : Sock.msr (So.hed (Sock.mk ca da)) + Sock.msr (So.hed (Sock.mk cb db)) < k := by
+      have := msr_hed_lt hno.1 da; have := msr_hed_lt hno.2 db; simp only at hk; omega
+    have h2 : Sock.msr (So.tel (Sock.mk ca da)) + Sock.msr (So.tel (Sock.mk cb db)) < k := by
+      have := msr_tel_lt hno.1 da; have := msr_tel_lt hno.2 db; simp only at hk; omega
+    exact provO_knit (ih _ _ h1 y _ (hp.part [false])) (ih _ _ h2 y _ (hp.part [true]))
+
+/-- **`+double-int` keeps the invariant of its first side.** -/
+theorem provO_doubleInt_left {y : Noun} {o : Option Noun} (a b : Anno) (h : ProvO y a.sock a.src o) :
+    ProvO y (doubleInt a b).sock (doubleInt a b).src o :=
+  provO_doubleInt_left' _ a b (Nat.lt_succ_self _) y o h
+
+/-- **`+double-int` keeps the invariant of its second side.** -/
+theorem provO_doubleInt_right {y : Noun} {o : Option Noun} (a b : Anno) (h : ProvO y b.sock b.src o) :
+    ProvO y (doubleInt a b).sock (doubleInt a b).src o :=
+  provO_doubleInt_right' _ a b (Nat.lt_succ_self _) y o h
+
+/-! ## Nock 10: `+darn:so` with `+edit:pi` -/
+
+/-- `+edit:pi` without its accumulator. -/
+def editAt (rec : Noun) (ax : Nat) (don : Noun) : Noun :=
+  if ax = 1 then don else
+  if _hax : ax < 2 then A 0 else
+  if cap ax = 2 then Pi.cons (editAt (Pi.hed rec) (mas ax) don) (Pi.tel rec)
+  else Pi.cons (Pi.hed rec) (editAt (Pi.tel rec) (mas ax) don)
+termination_by ax
+decreasing_by all_goals exact mas_lt ax (by omega)
+
+theorem editUp_eq (don : Noun) (k : Nat) (p : Noun) (tack : List (Nat × Noun)) :
+    Pi.editUp don ((k, p) :: tack) =
+      if k = 2 then Pi.editUp (Pi.cons don p) tack else Pi.editUp (Pi.cons p don) tack := by
+  by_cases hk : k = 2
+  · subst hk; simp [Pi.editUp]
+  · rw [if_neg hk]
+    match k, hk with
+    | 0, _ => rfl
+    | 1, _ => rfl
+    | n + 3, _ => rfl
+
+theorem editDown_eq : ∀ (ax : Nat) (rec don : Noun) (tack : List (Nat × Noun)), 1 ≤ ax →
+    Pi.editDown rec ax don tack = Pi.editUp (editAt rec ax don) tack := by
+  intro ax
+  induction ax using Nat.strongRecOn with
+  | _ ax ih =>
+  intro rec don tack h1
+  rw [Pi.editDown.eq_def, editAt.eq_def]
+  split
+  · rfl
+  · split
+    · omega
+    · rename_i h1 h2
+      have hlt := mas_lt ax (by omega)
+      have hm := mas_pos ax (by omega)
+      split
+      · rw [ih _ hlt _ _ _ hm, editUp_eq]; simp
+      · rw [ih _ hlt _ _ _ hm, editUp_eq]; simp
+
+theorem exactAt_cons {y x z : Noun} {o : Option Noun} (hl : ExactAt y x (slotO o [false]))
+    (hr : ExactAt y z (slotO o [true])) : ExactAt y (Pi.cons x z) o := by
+  intro π a e ha
+  cases π with
+  | nil => exact absurd (cons_ne_atom e).1 ha
+  | cons b ρ =>
+    rw [springAt_cons_cons] at e
+    rw [slotO_cons]
+    cases b
+    · exact hl ρ a e ha
+    · exact hr ρ a e ha
+
+theorem slotO_some_cell_false (x z : Noun) : slotO (some (C x z)) [false] = some x := by
+  simp [slotO, slotAtPath]
+
+theorem slotO_some_cell_true (x z : Noun) : slotO (some (C x z)) [true] = some z := by
+  simp [slotO, slotAtPath]
+
+theorem exactAt_editAt : ∀ (ax : Nat) (y rec don n v n'' : Noun), ExactAt y rec (some n) →
+    ExactAt y don (some v) → edit? ax v n = some n'' → ExactAt y (editAt rec ax don) (some n'') := by
+  intro ax
+  induction ax using Nat.strongRecOn with
+  | _ ax ih =>
+  intro y rec don n v n'' hr hd he
+  rw [editAt.eq_def]
+  split
+  · rename_i h1; subst h1
+    simp only [edit?_one, Option.some.injEq] at he
+    subst he; exact hd
+  · split
+    · exact exactAt_zero _ _
+    · rename_i h1 h2
+      have h2' : 2 ≤ ax := by omega
+      have hlt := mas_lt ax h2'
+      rw [edit?_cap h2'] at he
+      cases n with
+      | atom _ => simp at he
+      | cell nh nt =>
+        simp only at he
+        split
+        · rename_i hc
+          rw [if_pos hc] at he
+          obtain ⟨h', he', rfl⟩ := Option.map_eq_some_iff.mp he
+          apply exactAt_cons
+          · rw [slotO_some_cell_false]
+            exact ih _ hlt y _ don nh v h' (by have := hr.part [false]; rwa [slotO_some_cell_false] at this) hd he'
+          · rw [slotO_some_cell_true]
+            have := hr.part [true]; rwa [slotO_some_cell_true] at this
+        · rename_i hc
+          rw [if_neg hc] at he
+          obtain ⟨t', he', rfl⟩ := Option.map_eq_some_iff.mp he
+          apply exactAt_cons
+          · rw [slotO_some_cell_false]
+            have := hr.part [false]; rwa [slotO_some_cell_false] at this
+          · rw [slotO_some_cell_true]
+            exact ih _ hlt y _ don nt v t' (by have := hr.part [true]; rwa [slotO_some_cell_true] at this) hd he'
+
+/-- The siblings left on the way down, as socks, provenances and nouns. -/
+inductive CtxProv (y : Noun) : List (Nat × Sock) → List (Nat × Noun) → List (Nat × Noun) → Prop where
+  | nil : CtxProv y [] [] []
+  | cons {k : Nat} {s : Sock} {p x : Noun} {acc tack ctx} : ProvO y s p (some x) →
+      CtxProv y acc tack ctx → CtxProv y ((k, s) :: acc) ((k, p) :: tack) ((k, x) :: ctx)
+
+theorem provO_up : ∀ {y : Noun} {acc : List (Nat × Sock)} {tack ctx : List (Nat × Noun)} {two : Sock}
+    {don v : Noun}, CtxProv y acc tack ctx → ProvO y two don (some v) →
+    ProvO y (So.darnUp two acc) (Pi.editUp don tack) (some (plug v ctx))
+  | _, [], [], [], _, _, _, CtxProv.nil, h => h
+  | y, (k, s) :: acc, (_, p) :: tack, (_, x) :: ctx, two, don, v, CtxProv.cons hs hrest, h => by
+    rw [darnUp_eq, editUp_eq]
+    simp only [plug]
+    split
+    · exact provO_up hrest (provO_knit (by rw [slotO_some_cell_false]; exact h)
+        (by rw [slotO_some_cell_true]; exact hs))
+    · exact provO_up hrest (provO_knit (by rw [slotO_some_cell_false]; exact hs)
+        (by rw [slotO_some_cell_true]; exact h))
+
+theorem provO_darnDown : ∀ (ax : Nat) (y : Noun) (one two : Sock) (rec don : Noun)
+    (acc : List (Nat × Sock)) (tack ctx : List (Nat × Noun)) (n v n'' : Noun) (s : Sock),
+    ProvO y one rec (some n) → ProvO y two don (some v) → edit? ax v n = some n'' →
+    CtxProv y acc tack ctx → So.darnDown one ax two acc = some s →
+    ProvO y s (Pi.editDown rec ax don tack) (some (plug n'' ctx)) := by
+  intro ax
+  induction ax using Nat.strongRecOn with
+  | _ ax ih =>
+  intro y one two rec don acc tack ctx n v n'' s h1 h2 he hc hd
+  rw [So.darnDown.eq_def] at hd
+  split at hd
+  · rename_i hstop
+    simp only [Option.some.injEq] at hd
+    subst hd
+    have hax1 : 1 ≤ ax := by
+      rcases hstop with h | _
+      · omega
+      · rcases Nat.lt_or_ge ax 1 with h | h
+        · have : ax = 0 := by omega
+          subst this; simp [edit?, axisPath_zero] at he
+        · exact h
+    rw [editDown_eq _ _ _ _ hax1]
+    apply provO_up hc
+    rcases hstop with rfl | ⟨_, hno⟩
+    · simp only [edit?_one, Option.some.injEq] at he
+      subst he
+      rw [editAt.eq_def]; simpa using h2
+    · apply provO_blank
+      · cases two with
+        | void => exact absurd rfl h2.nonvoid
+        | mk c d =>
+          refine ⟨c, d, rfl, ?_⟩
+          cases c <;> simp_all [Sock.isNo, Cape.isNo]
+      · exact exactAt_editAt ax y rec don n v n'' h1.exact h2.exact he
+  · rename_i hstop
+    split at hd
+    · simp at hd
+    · rename_i h0
+      have h2' : 2 ≤ ax := by omega
+      have hlt := mas_lt ax h2'
+      rw [edit?_cap h2'] at he
+      rw [Pi.editDown.eq_def, if_neg (by omega), dif_neg (by omega)]
+      cases n with
+      | atom _ => simp at he
+      | cell nh nt =>
+        simp only at he
+        split at hd
+        · rename_i hcap
+          rw [if_pos hcap] at he
+          rw [if_pos hcap]
+          obtain ⟨h', he', rfl⟩ := Option.map_eq_some_iff.mp he
+          have := ih _ hlt y _ _ (Pi.hed rec) don _ ((2, Pi.tel rec) :: tack) ((2, nt) :: ctx) nh v h' s
+            (by have := h1.part [false]; rwa [slotO_some_cell_false] at this) h2 he'
+            (CtxProv.cons (by have := h1.part [true]; rwa [slotO_some_cell_true] at this) hc) hd
+          simpa [plug] using this
+        · rename_i hcap
+          rw [if_neg hcap] at he
+          rw [if_neg hcap]
+          obtain ⟨t', he', rfl⟩ := Option.map_eq_some_iff.mp he
+          have := ih _ hlt y _ _ (Pi.tel rec) don _ ((3, Pi.hed rec) :: tack) ((3, nh) :: ctx) nt v t' s
+            (by have := h1.part [true]; rwa [slotO_some_cell_true] at this) h2 he'
+            (CtxProv.cons (by have := h1.part [false]; rwa [slotO_some_cell_false] at this) hc) hd
+          simpa [plug] using this
+
+/-- **Nock 10 keeps the invariant**: `+darn:so` with `+edit:pi`. -/
+theorem provO_darn {y : Noun} {one two s : Sock} {rec don : Noun} {ax : Nat} {n v n'' : Noun}
+    (h1 : ProvO y one rec (some n)) (h2 : ProvO y two don (some v)) (he : edit? ax v n = some n'')
+    (hd : So.darn one ax two = some s) : ProvO y s (Pi.edit rec ax don) (some n'') := by
+  unfold So.darn at hd
+  unfold Pi.edit
+  split at hd
+  · rename_i hax
+    subst hax
+    simp only [edit?_one, Option.some.injEq] at he hd
+    subst he; subst hd
+    simpa using h2
+  · rename_i hax
+    rw [if_neg hax]
+    have hax1 : 1 ≤ ax := by
+      rcases Nat.lt_or_ge ax 1 with h | h
+      · have : ax = 0 := by omega
+        subst this; simp [edit?, axisPath_zero] at he
+      · exact h
+    split at hd
+    · rename_i hv
+      rcases hv with rfl | rfl
+      · exact absurd rfl h1.nonvoid
+      · exact absurd rfl h2.nonvoid
+    · rename_i hv
+      have hexact : ExactAt y (if rec = A 0 ∧ don = A 0 then A 0 else Pi.editDown rec ax don []) (some n'') := by
+        split
+        · exact exactAt_zero _ _
+        · rw [editDown_eq _ _ _ _ hax1]; exact exactAt_editAt ax y rec don n v n'' h1.exact h2.exact he
+      split at hd
+      · simp only [Option.some.injEq] at hd
+        subst hd
+        exact provO_blank dunno_blank hexact
+      · rename_i hno
+        split
+        · rename_i hz
+          obtain ⟨rfl, rfl⟩ := hz
+          have f1 : Fits one n := by simpa [FitsOpt, sockAt, slotO_nil] using h1.const [] rfl
+          have f2 : Fits two v := by simpa [FitsOpt, sockAt, slotO_nil] using h2.const [] rfl
+          have fs := darn_fits f1 f2 he (by unfold So.darn; rw [if_neg hax, if_neg hv, if_neg hno]; exact hd)
+          refine ⟨?_, exactAt_zero _ _, fun π _ => fitsOpt_sockAt π fs⟩
+          intro h; subst h; exact fs
+        · have := provO_darnDown ax y one two rec don [] [] [] n v n'' s h1 h2 he CtxProv.nil hd
+          simpa [plug] using this
+
 end SkaModel
 end Formalization
