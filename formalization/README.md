@@ -152,6 +152,10 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/CompCoerce.lean` | What the ops of `+kern-need` and of the sure loop do (`kernLoop_spec`, `sureLoop_spec`), and so what `+coerce-lazy` does (`coerceSpec`). |
 | `Ska/CompFinal.lean` | `finish_bellContract'`: the final pass meets `BellContract` on the fragment `Frag` with no assumption about the model of `+comp`. It still assumes that nothing is baked and that the bell's cape has no `[| |]`. |
 | `Ska/CompUnaryMore.lean`, `Ska/CompCollapse.lean` | `[3 p]` for `%done`; `+collapse-lazy-atom` (`collapse_ok`) and `[4 p]` for `%next`. |
+| `Ska/CompForl.lean` | `+forl` (`forl_ok`) and `[3 p]` for `%next`. |
+| `Ska/CompClean.lean` | `run_clean`: no need that `run` returns has a subterm `pair none none` when the goal's has none, so `cons-need` never drops a cell check. |
+| `Ska/CompCopy.lean`, `Ska/CompBinary.lean` | `+copy-need-make-ops` (`copyNeed_spec`) and the block of `+copy`; `binary_ok`, the shape shared by `%5` and cons. |
+| `Ska/CompN5.lean`, `Ska/CompSplit.lean`, `Ska/CompCons.lean` | `[5 p q]`, `+split` and cons, for every goal. With these the fragment `Frag` is every nomm built from cons, `%0`, `%1`, `%3`, `%4`, `%5` and `%7`, under every goal, and `finish_bellContract'` covers it. |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
