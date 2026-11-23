@@ -40,7 +40,8 @@ bunt's, `|+~`, during that function's first run, so always then).  Only then
 is a new identity analysed.  So a second identity of a code bell is made
 only when its subject does not provide the code requirement of the first
 when it is called (which, as code requirements only grow, means it never
-does, so the two bells differ), or by the `.indi` test of both arms, or by a
+does, so the two bells differ, if `+huge:so` says yes whenever the subject
+provides the code requirement), or by the `.indi` test of both arms, or by a
 `%he` generalization.  Within a component, the members run until no entry
 changes, so a caller's final run read its callees' final entries, except that
 `+pop` turns a `%void` product into `|+~`, which knows less.  And
