@@ -139,8 +139,8 @@ theorem memOK_congr {st st' : SkaState M R} {F : Entry → Prop} {m : Ident} {Lm
 theorem CInv.congr {memoF : Memo M} {st st' : SkaState M R} {F : Entry → Prop} (h : CInv memoF st F)
     (hg : st'.g = st.g) (hd : st'.done = st.done) (ho : st'.order = st.order) (hs : st'.stk = st.stk)
     (hn : st'.next = st.next) (htk : st'.tick = st.tick) (hts : st'.ticks = st.ticks) : CInv memoF st' F := by
-  obtain ⟨a, b, c, d, e⟩ := h
-  refine ⟨a.congr hg hd ho hs, ?_, ?_, ?_, ?_⟩
+  obtain ⟨a, b, c, d, e, f⟩ := h
+  refine ⟨a.congr hg hd ho hs, ?_, ?_, ?_, ?_, fun j hj => by rw [ho]; rw [hts] at hj; exact f j hj⟩
   · intro m; simp only [ranOf, chgOf, hts, htk]; exact b m
   · simp only [OrdInv, ho, hs, hn]; exact c
   · obtain ⟨d1, d2, d3, d4, d5⟩ := d
@@ -488,7 +488,7 @@ theorem runStep_ok2 (env : Env R) (memoF : Memo M) {n : Nat}
       (fun h' => ⟨by rw [hchgid, if_neg (by simp [h'])], hunch h'⟩) h
   -- the invariant after the write
   have cS : CInv memoF (runEnd id data out gs).2 F1 := by
-    refine ⟨iS, fun m => ?_, ?_, ⟨c1.frz.ok, fun i d h1 h2 => ?_, fun e he => ?_, c1.frz.wf, ?_⟩, ?_⟩
+    refine ⟨iS, fun m => ?_, ?_, ⟨c1.frz.ok, fun i d h1 h2 => ?_, fun e he => ?_, c1.frz.wf, ?_⟩, ?_, ?_⟩
     · by_cases hm : m = id
       · subst hm
         rw [hranid, hchgid, etk]
@@ -550,6 +550,11 @@ theorem runStep_ok2 (env : Env R) (memoF : Memo M) {n : Nat}
                   simp [gitG, Treap.gut, hd]
               · exact ⟨d, by rw [hgj, if_neg hci]; exact hd, ht⟩
       · exact hmem m _ hm (c1.mem m o hmo)
+    · intro j hj
+      rw [eo]
+      by_cases hji : j = id
+      · rw [hji]; obtain ⟨o, ho⟩ := hidO; rw [ho]; simp
+      · rw [htsj j hji] at hj; exact c1.tkeys j hj
   refine ⟨⟨F1, hF01, cS, fun m Lmax hm hmi h => hmem m Lmax hmi
     (memOK_frame c0.s hm k1 (fun j hj => fr1.ticks j hj) hF01 (memOK_congr rfl rfl rfl h))⟩,
     ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩

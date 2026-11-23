@@ -185,6 +185,7 @@ structure CInv (memoF : Memo M) (st : SkaState M R) (F : Entry → Prop) : Prop 
   ord : OrdInv st
   frz : FrzInv memoF st F
   mem : MemInv st F
+  tkeys : ∀ j, Treap.get st.ticks j ≠ none → Treap.get st.order j ≠ none
 
 /-! ## `+pop`, entry by entry -/
 
@@ -369,7 +370,7 @@ theorem pop_frozen {memoF : Memo M} {id : Ident} {st st' : SkaState M R} {F : En
     unfold Treap.gut; rw [a5, if_neg hx]
   have hpopNot : ∀ x o, Treap.get st.order x = some o → o < index → x ∉ ab0 ++ [id] := fun x o hxo hlt hx =>
     absurd (hup x hx o hxo) (by omega)
-  refine ⟨F', hFF', ⟨pop_ok hc.s h hs |>.1, fun m => ?_, ⟨fun i o hio => ?_, ?_⟩, ⟨hok, ?_, ?_, ?_, ?_⟩, ?_⟩⟩
+  refine ⟨F', hFF', ⟨pop_ok hc.s h hs |>.1, fun m => ?_, ⟨fun i o hio => ?_, ?_⟩, ⟨hok, ?_, ?_, ?_, ?_⟩, ?_, ?_⟩⟩
   · -- ticks
     by_cases hm : m ∈ ab0 ++ [id]
     · simp only [ranOf, chgOf, Treap.gut, a5, if_pos hm, Option.getD_none]; omega
@@ -458,6 +459,12 @@ theorem pop_frozen {memoF : Memo M} {id : Ident} {st st' : SkaState M R} {F : En
         simp only [chgOf, ranOf, htN _ hcN, htN m hmN] at hlt'
         obtain ⟨dc, hdc, htc⟩ := htab hlt'
         exact ⟨dc, by rw [hgN _ hcN]; exact hdc, htc⟩
+  · -- the keys of the ticks
+    intro j hj
+    rw [a5] at hj; rw [a4]
+    split
+    · rename_i hjP; rw [if_pos hjP] at hj; exact absurd rfl hj
+    · rename_i hjP; rw [if_neg hjP] at hj; exact hc.tkeys j hj
 
 end Ana
 end SkaModel
