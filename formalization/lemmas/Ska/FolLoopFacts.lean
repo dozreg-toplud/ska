@@ -270,6 +270,18 @@ theorem mink_mk_cons {x a b q p1 p2 : Noun} (h1 : Mink lib gul [] x (C a b) (Ton
   simp only [minkStep]
   rw [minkF_lift (Nat.le_max_left _ _) e1, tbind_zero, minkF_lift (Nat.le_max_right _ _) e2, tbind_zero]
 
+theorem mink_mk_n2 {x b c y g p : Noun} (h1 : Mink lib gul [] x b (Tone.zero y))
+    (h2 : Mink lib gul [] x c (Tone.zero g)) (h3 : Mink lib gul [] y g (Tone.zero p)) :
+    Mink lib gul [] x (n3 (A 2) b c) (Tone.zero p) := by
+  obtain ⟨n1, e1⟩ := h1
+  obtain ⟨n2, e2⟩ := h2
+  obtain ⟨n3, e3⟩ := h3
+  refine ⟨max n1 (max n2 n3) + 1, ?_⟩
+  rw [minkF_succ_eq]
+  simp only [minkStep]
+  rw [minkF_lift (by omega) e1, tbind_zero, minkF_lift (by omega) e2, tbind_zero]
+  exact minkF_lift (by omega) e3
+
 theorem mink_mk_n1 (x k : Noun) : Mink lib gul [] x (C (A 1) k) (Tone.zero k) := ⟨1, rfl⟩
 
 theorem mink_mk_n0 {x p : Noun} {ax : Nat} (h : slot? ax x = some p) :
