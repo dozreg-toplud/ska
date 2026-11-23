@@ -1,10 +1,11 @@
-import lemmas.Ska.CompCons
+import lemmas.Ska.CompN10
 
 /-!
 # The relation for a fragment of nomm, by induction
 
 `run_ok`: for every nomm and goal of `Frag` (`%0` and `%1` for every goal,
-`[7 p q]`, `[3 p]`, `[4 p]`, `[5 p q]` and cons for every goal), what the
+`[7 p q]`, `[3 p]`, `[4 p]`, `[5 p q]`, `[10 [a v] q]` and cons for every
+goal), what the
 model of `run` returns satisfies `RunOK`, from any state, for any goal whose
 registers are allocated and distinct.
 -/
@@ -30,6 +31,7 @@ def Frag : Nomm → CGoal S → Prop
   | Nomm.n3 p, CGoal.next _ _ => ∀ laz th, Frag p (CGoal.next laz th)
   | Nomm.n5 p q, _ => (∀ laz th, Frag p (CGoal.next laz th)) ∧ ∀ laz th, Frag q (CGoal.next laz th)
   | Nomm.cons p q, _ => (∀ laz th, Frag p (CGoal.next laz th)) ∧ ∀ laz th, Frag q (CGoal.next laz th)
+  | Nomm.n10 _ v q, _ => (∀ laz th, Frag v (CGoal.next laz th)) ∧ ∀ laz th, Frag q (CGoal.next laz th)
   | _, _ => False
 
 /-- **`run` meets the relation on the fragment**, for a goal whose need has
@@ -75,7 +77,10 @@ theorem run_ok (lib : Lib) : ∀ (nm : Nomm) (goal : CGoal S) (g0 g1 : Gen Map) 
       (fun laz th g g' n hg' hc' h' => ihq _ g g' n (hf.2 laz th) hg' hc' h')
   | n2 => intro _ _ _ _ hf; exact hf.elim
   | n6 => intro _ _ _ _ hf; exact hf.elim
-  | n10 => intro _ _ _ _ hf; exact hf.elim
+  | n10 a v q ihv ihq =>
+    intro goal g0 g1 nex hf hg hc h
+    exact run_n10_ok h hg hc (fun laz th g g' n hg' hc' h' => ihv _ g g' n (hf.1 laz th) hg' hc' h')
+      (fun laz th g g' n hg' hc' h' => ihq _ g g' n (hf.2 laz th) hg' hc' h')
   | n11s => intro _ _ _ _ hf; exact hf.elim
   | n11d => intro _ _ _ _ hf; exact hf.elim
   | n12 => intro _ _ _ _ hf; exact hf.elim
