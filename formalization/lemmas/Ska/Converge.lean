@@ -17,7 +17,8 @@ the call's subject sock, or a `%he` generalization), then the table is
   subject sock.  For an entry made by a run with a table that is `RTab`,
   this is `folLoop_relProd`; at convergence the table is made of the
   entries themselves, so `ProdRel` needs an induction on the runs of
-  `+mink` (the fuel induction), not done here.
+  `+mink` (the fuel induction), which `ConvergeProd.lean` does
+  (`prodRel_of_converged`).
 
 `codeOK_of_converged`: from a converged graph, `CodeOK`, with `ProdRel`,
 `CodeHas`, `CodeIs` and well-formed subject socks as the only assumptions
@@ -261,7 +262,8 @@ down to the entry's subject sock. -/
 def LessRel (G : Entry → Prop) : Prop :=
   ∀ e lc dl, G e → e.d.less = Sock.mk lc dl → ∀ y, Fits (Ca.app lc e.more) y → Fits e.d.less y
 
-/-- **The relative product soundness of the entries** (not proved here):
+/-- **The relative product soundness of the entries** (proved at
+convergence in `ConvergeProd.lean`, `prodRel_of_converged`):
 on every subject of its code requirement, an entry's product satisfies the
 provenance invariant and the static condition on its subject sock. -/
 def ProdRel (lib : Lib) (G : Entry → Prop) : Prop :=
