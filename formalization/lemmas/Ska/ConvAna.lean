@@ -61,7 +61,7 @@ theorem push_cinv {memoF : Memo M} {st : SkaState M R} {F : Entry → Prop} (hc 
   refine ⟨⟨i1, fun m => hc.tick m, ⟨fun i o hio => ?_, ?_⟩, ⟨fun e he => hc.frz.ok.mono (fun _ h => h) hcalF he,
     fun i d h1 h2 => ?_, fun e he => ?_,
     hc.frz.wf, fun f ms s ent h1 h2 => ?_⟩, fun m o hmo => ?_, fun j hj => ?_, fun i d hd => ?_,
-    fun i d hd => ?_⟩, s1, k1,
+    fun i d hd => ?_, fun i d hd => ?_⟩, s1, k1,
     ⟨fun i d h1 h2 => ?_, fun _ _ => rfl, Nat.le_succ _, Nat.le_refl _, fun x o hxo hx => ?_⟩, hmem⟩
   · simp only [Treap.get_put] at hio
     split at hio
@@ -107,6 +107,16 @@ theorem push_cinv {memoF : Memo M} {st : SkaState M R} {F : Entry → Prop} (hc 
     split at hd
     · rename_i e; cases hd; rw [e]; exact ⟨hnm, normSock_dunno, normSock_void⟩
     · exact hc.norm i d hd
+  · simp only [Treap.get_put] at hd
+    split at hd
+    · rename_i e
+      cases hd
+      refine Or.inr ⟨trivial, ⟨A 0, fits_dunno _⟩, fun ho => ?_⟩
+      simp only [Treap.get_put, if_pos e] at ho
+      cases ho
+    · rename_i e
+      have := hc.dat i d hd
+      simpa only [Treap.get_put, if_neg e] using this
   · have hi : i ≠ id := hneid i (by rw [h1]; simp)
     exact ⟨by simp only [Treap.get_put, if_neg hi]; exact h1, by simp only [Treap.get_put, if_neg hi]; exact h2⟩
   · simp only [Treap.get_put] at hxo
@@ -183,7 +193,7 @@ theorem hit_cinv {memoF : Memo M} (hmF : MemoWF memoF) (hmN : MemoNorm memoF) {s
   unfold hitSt
   refine ⟨⟨i1, fun m => hc.tick m, hc.ord, ⟨fun e he => ?_, fun i d h1 h2 => ?_, fun e he => ?_, fun e he => ?_,
     fun f ms s ent h1 h2 => ?_⟩, fun m o hmo => ?_, hc.tkeys, fun i d hd => ?_,
-    fun i d hd => ?_⟩, s1, k1,
+    fun i d hd => ?_, fun i d hd => ?_⟩, s1, k1,
     ⟨fun i d h1 h2 => ?_, fun _ _ => rfl, Nat.le_refl _, Nat.le_refl _, fun x o hxo hx => absurd hxo hx⟩⟩
   · rcases he with he | rfl
     · refine hc.frz.ok.mono hF (fun e he => ?_) he
@@ -217,6 +227,11 @@ theorem hit_cinv {memoF : Memo M} (hmF : MemoWF memoF) (hmN : MemoNorm memoF) {s
     split at hd
     · rename_i e; cases hd; rw [e]; exact ⟨hnm, gitMi_norm hmN hnm h⟩
     · exact hc.norm i d hd
+  · simp only [Treap.get_put] at hd
+    split at hd
+    · rename_i e; cases hd; rw [e]
+      exact Or.inl ⟨⟨hit.1, hit.2, h, rfl⟩, hno⟩
+    · exact hc.dat i d hd
   · have hi := hneid i (by rw [h1]; simp)
     exact ⟨by simp only [Treap.get_put, if_neg hi]; exact h1, h2⟩
 
@@ -386,6 +401,7 @@ theorem CInv.init (memoF : Memo M) (reg : R) : CInv memoF (SkaState.init reg : S
   tkeys := fun j h => by simp [SkaState.init, Treap.get_empty] at h
   nv := fun i d h => by simp [SkaState.init, Treap.get_empty] at h
   norm := fun i d h => by simp [SkaState.init, Treap.get_empty] at h
+  dat := fun i d h => by simp [SkaState.init, Treap.get_empty] at h
 
 /-- **The final graph of `+ska-callgraph` is frozen**: every entry is a memo
 hit of an earlier poke, or was written by its last run with answers that are
@@ -420,6 +436,65 @@ theorem skaCallgraph_frozen (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) 
   rw [show gCore (SkaState.init reg : SkaState M R).g = fun _ => none from gCore_empty] at s
   exact ⟨F, c.frz.ok, fun i d hd => c.frz.cover i d hd (hempty i), fun e he => (c.frz.sub e he).1,
     c.frz.wf, s, c.nv, c.norm⟩
+
+/-! ## The datums of the final graph -/
+
+/-- **The datums of a memo**: no `%10` at axis `0`, and a code requirement
+and a product with a noun. -/
+def MemoDat (memo : Memo M) : Prop :=
+  ∀ f ms s ent, Treap.get memo f = some ms → Treap.get ms s = some ent →
+    Bake.NoAx0 ent.2.nomm ∧ (∃ y, Fits ent.2.less y) ∧ ∃ y, Fits ent.2.prod y
+
+/-- **A memo hit keeps the facts about the datums**, on a subject sock with a
+noun: the nomm and the code requirement are the memo entry's, the product is
+its product patched for the subject sock. -/
+theorem memoHit_dat {memoF : Memo M} (hm : MemoDat memoF) {i : Ident} {d : FDatum M}
+    (hi : ∃ y, Fits i.1 y) (h : MemoHitE memoF (entOf i d)) :
+    Bake.NoAx0 d.nomm ∧ (∃ y, Fits d.less y) ∧ ∃ y, Fits d.prod y := by
+  obtain ⟨i', d1, hg, hd⟩ := h
+  change gitMi memoF i.2 i.1 = some (some (i', d1)) at hg
+  change d.core = d1.core at hd
+  obtain ⟨k, d0, hg0, _, hc, _⟩ := gitMi_hit hg
+  have hg' : Treap.get memoF i.2 = some (gutMi memoF i.2) ∨ gutMi memoF i.2 = Treap.empty := by
+    unfold gutMi Treap.gut
+    cases e : Treap.get memoF i.2 <;> simp
+  rcases hg' with hg' | hg'
+  · obtain ⟨n1, n2, n3⟩ := hm _ _ k _ hg' hg0
+    have hcore : d.core = patchDatum d0.core i.1 := by rw [← hc]; exact hd
+    have en : d.nomm = d0.nomm := congrArg Datum.nomm hcore
+    have el : d.less = d0.less := congrArg Datum.less hcore
+    have ep : d.prod = (patchProd d0.prod d0.map i.1).sock := congrArg Datum.prod hcore
+    refine ⟨by rw [en]; exact n1, by rw [el]; exact n2, ?_⟩
+    rw [ep]
+    exact patchProd_inhab hi _ _ n3
+  · rw [hg', Treap.get_empty] at hg0; cases hg0
+
+/-- **The datums of the graph of `+ska-callgraph`**: every entry has no
+`%10` at axis `0`, and a code requirement and a product with a noun, for a
+persistent memo whose entries have them. -/
+theorem skaCallgraph_dat (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmN : MemoNorm memoF)
+    (hmD : MemoDat memoF) {n : Nat} {root : Ident} {reg reg' : R} {g : Callgraph M} (hw : WellFormed root.1)
+    (hnr : NormSock root.1) (hnvr : root.1 ≠ Sock.void)
+    (h : skaCallgraph env n root memoF reg = some (g, reg')) :
+    ∀ i d, Treap.get g i = some d → Bake.NoAx0 d.nomm ∧ (∃ y, Fits d.less y) ∧ ∃ y, Fits d.prod y := by
+  unfold skaCallgraph at h
+  simp only [Option.map_eq_some_iff, Prod.mk.injEq] at h
+  obtain ⟨⟨low, st⟩, ha, rfl, _⟩ := h
+  obtain ⟨⟨F, _, c⟩, _, _, _, _, _, _, hlt⟩ := (allP2 env memoF hmF hmN n n (Nat.le_refl n)).2.1 root
+    (SkaState.init reg) low st (fun _ => False) (CInv.init memoF reg) hw hnr hnvr
+    (by simp [SkaState.init, Treap.get_empty]) ha
+  have hempty : ∀ x, Treap.get st.order x = none := by
+    intro x
+    cases e : Treap.get st.order x with
+    | none => rfl
+    | some o =>
+      have := hlt x o e (by simp [SkaState.init])
+      simp [SkaState.init] at this
+  intro i d hd
+  obtain ⟨wi, wp⟩ := c.s.wf_get hd
+  rcases c.dat i d hd with ⟨hh, _⟩ | ⟨n1, n2, n3⟩
+  · exact memoHit_dat hmD (wf_inhab wi (c.nv i d hd)) hh
+  · exact ⟨n1, n2, wf_inhab wp (n3 (hempty i))⟩
 
 /-! ## To `ConvergedGraphM` -/
 

@@ -335,3 +335,12 @@ open Formalization.SkaModel
 #print axioms Bake.sitesMeet_of_lessNF
 #print axioms Bake.prodMeet_of_same
 #print axioms PokeM.pokeSites_of_nf
+#print axioms Ana.folLoop_noAx0
+#print axioms wf_inhab
+#print axioms patchProd_inhab
+#print axioms Ana.skaCallgraph_dat
+#print axioms Ana.skaPoke_dat
+#print axioms Ana.skaPoke_sound
+#print axioms PokeM.poke_datFacts
+#print axioms PokeM.pokeNF_of_lessNF
+#print axioms PokeM.pokeSites_of_lessNF

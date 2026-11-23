@@ -396,7 +396,7 @@ theorem cull_ok2 {memoF : Memo M} {n : Nat} {id : Ident} {st st' : SkaState M R}
   refine ⟨⟨si, fun m => ?_, ⟨fun i o hio => ?_, ?_⟩, ⟨fun e he => hc.frz.ok.mono (fun _ h => h) hcalF he,
     fun i d h1 h2 => ?_, fun e he => ?_, hc.frz.wf,
     fun f ms s ent h1 h2 => ?_⟩, fun m o hmo => ?_, fun j hj => ?_, fun i d hd => ?_,
-    fun i d hd => ?_⟩, sg, sk, ⟨fun i d h1 h2 => ?_, fun j hj => ?_,
+    fun i d hd => ?_, fun i d hd => ?_⟩, sg, sk, ⟨fun i d h1 h2 => ?_, fun j hj => ?_,
     by rw [en]; exact Nat.le_refl _, by rw [etk]; exact Nat.le_refl _, fun x o hxo hx => ?_⟩, fun x hx => ?_,
     fun x o hxo hx => ?_⟩
   · -- ticks
@@ -463,6 +463,10 @@ theorem cull_ok2 {memoF : Memo M} {n : Nat} {id : Ident} {st st' : SkaState M R}
     by_cases hiD : D i
     · rw [hDg' i hiD] at hd; cases hd
     · rw [hDg i hiD] at hd; exact hc.norm i d hd
+  · -- the datums
+    by_cases hiD : D i
+    · rw [hDg' i hiD] at hd; cases hd
+    · rw [hDg i hiD] at hd; rw [hDo i hiD]; exact hc.dat i d hd
   · -- frame: finalized
     have hn := hfinD i h2
     exact ⟨by rw [hDg i hn]; exact h1, by rw [hDo i hn]; exact h2⟩

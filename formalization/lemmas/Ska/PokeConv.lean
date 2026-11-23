@@ -233,6 +233,9 @@ structure PokeInv (lib : Lib) (memo : Memo M) (code : Bell → Option Nomm) : Pr
   norm : ∀ m, MemEnt memo m → NormSock m.d.less ∧ NormSock m.d.prod
   /-- Every bell of the table has a normal cape. -/
   bellNorm : ∀ bl nb, code bl = some nb → NormSock bl.less
+  /-- The memo's nomms have no `%10` at axis `0`, and its code requirements
+  and products have nouns (`MemoDat`), as `+bake-graph` needs of `dat`. -/
+  dat : MemoDat memo
 
 theorem PokeInv.wf {lib : Lib} {memo : Memo M} {code : Bell → Option Nomm} (h : PokeInv lib memo code) :
     MemoWF memo := fun f ms s e h1 h2 => (h.ok _ ⟨f, ms, s, e, h1, h2, rfl⟩).wf
@@ -255,6 +258,7 @@ theorem PokeInv.init (lib : Lib) : PokeInv lib (Treap.empty : Memo M) (fun _ => 
   codeOK := fun _ _ h => by cases h
   norm := fun _ ⟨_, _, _, _, h, _⟩ => by simp [Treap.get_empty] at h
   bellNorm := fun _ _ h => by cases h
+  dat := fun _ _ _ _ h _ => by simp [Treap.get_empty] at h
 
 theorem _root_.Formalization.SkaModel.MemoEntryOK.mono_code {lib : Lib} {code code' : Bell → Option Nomm}
     (hcc : ∀ bl nb, code bl = some nb → ∃ nb', code' bl = some nb') {m : Entry} (h : MemoEntryOK lib code m) :
@@ -331,8 +335,10 @@ theorem skaPoke_sound {lib : Lib} (env : Env R) {n : Nat} {root : Ident} {memo m
     · obtain ⟨d, hd, rfl⟩ := Option.map_eq_some_iff.mp hb'
       obtain ⟨i, hi, rfl⟩ := d1 bl d hd
       exact annot_of_graphM hG hhas hwf1 (hcovP i d hi)
+  have hdatG := skaCallgraph_dat env memo hinv.wf hinv.memoNorm hinv.dat hw hnr hnvr hg
+  have hpsub := (pruneCallgraph_spec hpr).1
   refine ⟨⟨fun f ms s ent h1 h2 => ?_, fun m hm => ?_, fun m hm => ?_, hcode, fun m hm => ?_,
-    fun bl nb hb => ?_⟩, ?_⟩
+    fun bl nb hb => ?_, fun f ms s ent h1 h2 => ?_⟩, ?_⟩
   · rcases d3 f ms s ent h1 h2 with ⟨ms', e1, e2⟩ | ⟨i, d, _, rfl, rfl⟩
     · exact hinv.keys f ms' s ent e1 e2
     · rfl
@@ -357,9 +363,31 @@ theorem skaPoke_sound {lib : Lib} (env : Env R) {n : Nat} {root : Ident} {memo m
     · obtain ⟨d, hd, rfl⟩ := Option.map_eq_some_iff.mp hb
       obtain ⟨i, hi, rfl⟩ := d1 bl d hd
       exact (hnP i d hi).2.1
+  · rcases d3 f ms s ent h1 h2 with ⟨ms', e1, e2⟩ | ⟨i, d, hd, rfl, rfl⟩
+    · exact hinv.dat f ms' s ent e1 e2
+    · exact hdatG i d (hpsub i d hd)
   · intro bl d hd x hx gul t r
     obtain ⟨i, hi, rfl⟩ := d1 bl d hd
     exact nomm_agree lib gul code' hcode (annot_of_graphM hG hhas hwf1 (hcovP i d hi)) hx t r
+
+/-- **The datums of a poke**: every datum by code bell has no `%10` at axis
+`0`, and a code requirement and a product with a noun. -/
+theorem skaPoke_dat {lib : Lib} (env : Env R) {n : Nat} {root : Ident} {memo memo' : Memo M} {reg reg' : R}
+    {code : Bell → Option Nomm} {pruned : Callgraph M} {dats : M Bell (FDatum M)} {rd : FDatum M}
+    (hinv : PokeInv lib memo code) (hw : WellFormed root.1) (hnr : NormSock root.1) (hnvr : root.1 ≠ Sock.void)
+    (h : skaPoke env n root memo reg = some (pruned, dats, memo', rd, reg')) :
+    ∀ bl d, Treap.get dats bl = some d →
+      bl.less = d.less ∧ Bake.NoAx0 d.nomm ∧ (∃ y, Fits d.less y) ∧ ∃ y, Fits d.prod y := by
+  unfold skaPoke at h
+  simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  obtain ⟨⟨g, regG⟩, hg, pr, hpr, rd', _, he⟩ := h
+  simp only [Prod.mk.injEq] at he
+  obtain ⟨rfl, hdats, -, _, _⟩ := he
+  subst hdats
+  have hdatG := skaCallgraph_dat env memo hinv.wf hinv.memoNorm hinv.dat hw hnr hnvr hg
+  intro bl d hd
+  obtain ⟨i, hi, rfl⟩ := (pokeMemo_spec pr memo).1 bl d hd
+  exact ⟨rfl, hdatG i d ((pruneCallgraph_spec hpr).1 i d hi)⟩
 
 end Ana
 end SkaModel

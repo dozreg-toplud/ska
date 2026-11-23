@@ -123,9 +123,10 @@ theorem memOK_congr {st st' : SkaState M R} {F : Entry → Prop} {m : Ident} {Lm
 theorem CInv.congr {memoF : Memo M} {st st' : SkaState M R} {F : Entry → Prop} (h : CInv memoF st F)
     (hg : st'.g = st.g) (hd : st'.done = st.done) (ho : st'.order = st.order) (hs : st'.stk = st.stk)
     (hn : st'.next = st.next) (htk : st'.tick = st.tick) (hts : st'.ticks = st.ticks) : CInv memoF st' F := by
-  obtain ⟨a, b, c, d, e, f, g, k⟩ := h
+  obtain ⟨a, b, c, d, e, f, g, k, l⟩ := h
   refine ⟨a.congr hg hd ho hs, ?_, ?_, ?_, ?_, fun j hj => by rw [ho]; rw [hts] at hj; exact f j hj,
-    fun i d hd => g i d (by rw [← hg]; exact hd), fun i d hd => k i d (by rw [← hg]; exact hd)⟩
+    fun i d hd => g i d (by rw [← hg]; exact hd), fun i d hd => k i d (by rw [← hg]; exact hd),
+    fun i d hd => by rw [ho]; exact l i d (by rw [← hg]; exact hd)⟩
   · intro m; simp only [ranOf, chgOf, hts, htk]; exact b m
   · simp only [OrdInv, ho, hs, hn]; exact c
   · obtain ⟨d1, d2, d3, d4, d5⟩ := d
@@ -479,7 +480,7 @@ theorem runStep_ok2 (env : Env R) (memoF : Memo M) {n : Nat}
           intro h; obtain ⟨o, ho'⟩ := hidO; rw [← h, (c1.frz.sub e he).2] at ho'; cases ho'
         unfold calleesOf; rw [hgx _ hi]
     refine ⟨iS, fun m => ?_, ?_, ⟨fun e he => c1.frz.ok.mono (fun _ h => h) hcalF he, fun i d h1 h2 => ?_,
-      fun e he => ?_, c1.frz.wf, ?_⟩, ?_, ?_, ?_, ?_⟩
+      fun e he => ?_, c1.frz.wf, ?_⟩, ?_, ?_, ?_, ?_, ?_⟩
     · by_cases hm : m = id
       · subst hm
         rw [hranid, hchgid, etk]
@@ -565,6 +566,24 @@ theorem runStep_ok2 (env : Env R) (memoF : Memo M) {n : Nat}
         · rw [← hdn]; exact r1
         · rw [← hdn]; exact r2
       · exact c1.norm i d hd
+    · intro i d hd
+      rw [hgj] at hd
+      split at hd
+      · rename_i hi
+        cases hd
+        rw [hi]
+        refine Or.inr ⟨?_, ?_, fun ho => ?_⟩
+        · rw [← hdn]
+          show Bake.NoAx0 rd.1.nomm
+          rw [← hrd]
+          exact (folLoop_noAx0 env memoF n _ _ _ _ _ _ _ _ _ hf : Bake.NoAx0 out.nomm)
+        · rw [← hdn]
+          show ∃ y, Fits rd.1.less y
+          rw [← hrd]
+          obtain ⟨y, hy⟩ := wf_inhab (hc.s.wf_stk hid) (c1.nv id d0 (by rw [hg0]; exact hd0))
+          exact ⟨y, app_fits gs.gen.want id.1 y hy⟩
+        · rw [eo] at ho; obtain ⟨o, ho'⟩ := hidO; rw [ho'] at ho; cases ho
+      · rw [eo]; exact c1.dat i d hd
   refine ⟨⟨F1, hF01, cS, fun m Lmax hm hmi h => hmem m Lmax hmi
     (memOK_frame c0.s hm k1 (fun j hj => fr1.ticks j hj) hF01 (memOK_congr rfl rfl rfl h))⟩,
     ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩

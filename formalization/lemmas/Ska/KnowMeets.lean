@@ -35,6 +35,10 @@ What this assumes, each a named hypothesis of `knowMeetsNF_of`:
    turns those into `[0 0]`, see `Analysis.lean`, and the Hoon type of
    `nomm` says `p.p != 0`).
 
+All three are proved for the `dat` of every poke from `InvB`
+(`poke_datFacts`, at the end of this file), so `PokeSites` follows from
+`LessProvidesNF` alone (`pokeSites_of_lessNF`).
+
 Checked on the real compiler (runhoon.sh, 2026-11-24), with no failure.
 `tools/hoon/sitesmeet4.hoon` (the fifteen pokes of `sitesmeet3.hoon`, with
 a copy of `+know` that takes `fold` as a sample): after the last poke, 3,033
@@ -364,24 +368,9 @@ theorem knowGo_lit (fold : Bool) (dat : Bell → Option Datum) (res : Bell → S
     obtain ⟨a, _, v, _, c, _, rfl⟩ := h
     simp [lit] at hx
 
-/-! ## Run B returns -/
+/-! ## Run B returns
 
-/-- No `%10` of the nomm has axis `0`. -/
-def NoAx0 : Nomm → Prop
-  | Nomm.cons p q => NoAx0 p ∧ NoAx0 q
-  | Nomm.n0 _ => True
-  | Nomm.n1 _ => True
-  | Nomm.n2 p q _ => NoAx0 p ∧ NoAx0 q
-  | Nomm.n3 p => NoAx0 p
-  | Nomm.n4 p => NoAx0 p
-  | Nomm.n5 p q => NoAx0 p ∧ NoAx0 q
-  | Nomm.n6 p q r => NoAx0 p ∧ NoAx0 q ∧ NoAx0 r
-  | Nomm.n7 p q => NoAx0 p ∧ NoAx0 q
-  | Nomm.n10 a v q => a ≠ 0 ∧ NoAx0 v ∧ NoAx0 q
-  | Nomm.n11s _ q _ => NoAx0 q
-  | Nomm.n11d _ h q _ => NoAx0 h ∧ NoAx0 q
-  | Nomm.n12 p q => NoAx0 p ∧ NoAx0 q
-  | Nomm.mean p _ q _ _ => NoAx0 p ∧ NoAx0 q
+`NoAx0` (no `%10` of the nomm has axis `0`) is defined in `DatFacts.lean`. -/
 
 /-- **`+know` without folding and with `idc` never crashes** on a nomm with
 no `%10` at axis `0`: its only crash is `+darn:so` there. -/
@@ -772,7 +761,19 @@ Two forms of the residue, over the entries of one call graph:
 `tools/hoon/sitesmeet5.hoon` checks `ProdMeet` (with the sock `less.c` and
 the two identities' subjects) and the equality of the patched products
 under `less.c`, over every two entries of one code bell in the pruned graph
-of each poke: there were none in the fifteen pokes. -/
+of each poke: there were none in the fifteen pokes.
+
+`tools/hoon/prodsame.hoon` makes such entries on purpose: a gate whose
+sample is the formula of an indirect call, `|=(a=* .*(a a))`, called first
+with an unknown sample (`(f (add 2 3))`, so the sample joins `indi`) and then
+with a known atom (`(f 5)`): `+git:mi` misses on the `.indi` test, and since
+an atom is no formula the call stays indirect, so the new identity has the
+same code requirement.  On seven such pokes (runhoon.sh, 2026-11-24) the
+pruned graphs held 8 groups of two identities of one code bell, with no
+failure of `ProdMeet` and no pair whose patched products under `less.c`
+differ; `tools/hoon/prodsame4.hoon` found, after the last poke, 34 pairs of
+a code bell and a bake (10 strict) and 64 sites, with no failure of
+`LessProvidesNF`, `KnowMeetsNF` or `SitesMeet`. -/
 
 section Residue
 
@@ -829,6 +830,88 @@ theorem pokeSites_of_nf {lib : Lib} {env : Env R} {jet : H → J → (Bell → O
   fun s f L j hot pr dats memo' rd reg' hI hs =>
     let ⟨hl, hp, hi, hn⟩ := h s f L j hot pr dats memo' rd reg' hI hs
     sitesMeet_of_lessNF hl hp hi hn
+
+/-! ## The three facts about the datums, proved
+
+`dat` of a poke reads this poke's datums (`skaPoke_dat`: entries of the final
+graph) and the persistent memo after the poke (`PokeInv.dat`, kept by
+`skaPoke_sound`), so the three facts are the invariant `MemoDat` of the memo
+(a field of `PokeInv`, hence of `InvB`) and `CInv.dat` of the analysis: every
+entry of the graph is a memo hit, or has a nomm without `%10` at axis `0`
+(`folLoop_noAx0`), a code requirement `+app:ca` of its subject sock, which
+has a noun (`wf_inhab`), and once popped a product that is not `%void`.  For
+example the datum of `[0 0]` has the product `|+~` after `+pop`. -/
+
+/-- **What `dat` gives in a poke**: a datum with no `%10` at axis `0` and a
+product with a noun, for a code bell whose code requirement has a noun. -/
+theorem pokeDat_dat {dats : M Bell (FDatum M)} {memo : Memo M}
+    (hds : ∀ bl d, Treap.get dats bl = some d →
+      bl.less = d.less ∧ NoAx0 d.nomm ∧ (∃ y, Fits d.less y) ∧ ∃ y, Fits d.prod y)
+    (hmd : Ana.MemoDat memo) (hlk : LessKeys memo) {t : Bell} {d : Datum}
+    (h : pokeDat dats memo t = some d) : NoAx0 d.nomm ∧ (∃ y, Fits t.less y) ∧ ∃ y, Fits d.prod y := by
+  unfold pokeDat at h
+  split at h
+  · rename_i d' hd'
+    cases h
+    obtain ⟨e, n1, n2, n3⟩ := hds t d' hd'
+    exact ⟨n1, by rw [e]; exact n2, n3⟩
+  · simp only [Option.map_eq_some_iff] at h
+    obtain ⟨ent, he, rfl⟩ := h
+    unfold gutMi Treap.gut at he
+    cases hm : Treap.get memo t.fol with
+    | none => simp [hm, Treap.get_empty] at he
+    | some ms =>
+      simp only [hm, Option.getD_some] at he
+      obtain ⟨n1, n2, n3⟩ := hmd _ _ _ _ hm he
+      have hl : ent.2.less = t.less := hlk _ _ _ _ hm he
+      exact ⟨n1, by rw [← hl]; exact n2, n3⟩
+
+/-- **`DatInhab`, `LessInhab` and `NoAx0Dat` of every poke** from a state
+that satisfies `InvB`. -/
+theorem poke_datFacts {lib : Lib} {env : Env R} {jet : H → J → (Bell → Option Datum) → R → Bell → Bool}
+    {fold frozen : Bool} {s f : Noun} {L : LongB M} {j : J} {hot : H} {n : Nat} {reg : R}
+    {pr : Callgraph M} {dats : M Bell (FDatum M)} {memo' : Memo M} {rd : FDatum M} {reg' : R}
+    (hI : InvB lib L) (hs : skaPoke env n (Sock.mk Cape.yes s, f) L.memo reg = some (pr, dats, memo', rd, reg')) :
+    DatInhab (anaEnv jet fold frozen s f L j hot dats memo' rd reg') ∧
+    LessInhab (anaEnv jet fold frozen s f L j hot dats memo' rd reg') ∧
+    NoAx0Dat (anaEnv jet fold frozen s f L j hot dats memo' rd reg') := by
+  obtain ⟨code, hpi⟩ := hI.ghost
+  have hroot : (Sock.mk Cape.yes s, f).1 ≠ Sock.void := Sock.noConfusion
+  have hds := Ana.skaPoke_dat env hpi (wf_root s) (normSock_yes s) hroot hs
+  have hmd := (Ana.skaPoke_sound env hpi (wf_root s) (normSock_yes s) hroot hs).1.dat
+  have hlk : LessKeys memo' := by
+    unfold skaPoke at hs
+    simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at hs
+    obtain ⟨_, _, pr', _, _, _, he⟩ := hs
+    simp only [Prod.mk.injEq] at he
+    obtain ⟨-, -, rfl, -, -⟩ := he
+    exact lessKeys_pokeMemo _ hI.lessKeys
+  have key : ∀ t d, pokeDat dats memo' t = some d →
+      NoAx0 d.nomm ∧ (∃ y, Fits t.less y) ∧ ∃ y, Fits d.prod y :=
+    fun t d h => pokeDat_dat hds hmd hlk h
+  exact ⟨fun b d h => (key b d h).2.2, fun cur d h => (key cur d h).2.1, fun cur d h => (key cur d h).1⟩
+
+/-- **`LessProvidesNF` of every poke** from a state that satisfies `InvB`:
+what is left of `PokeNF` once the three facts about the datums are proved. -/
+def PokeLessNF (lib : Lib) (env : Env R) (jet : H → J → (Bell → Option Datum) → R → Bell → Bool)
+    (fold frozen : Bool) (fuel : Noun → Noun → LongB M → J → Nat) (regOf : J → R) : Prop :=
+  ∀ s f (L : LongB M) j hot pr dats memo' rd reg', InvB lib L →
+    skaPoke env (fuel s f L j) (Sock.mk Cape.yes s, f) L.memo (regOf j) = some (pr, dats, memo', rd, reg') →
+    LessProvidesNF (anaEnv jet fold frozen s f L j hot dats memo' rd reg')
+
+/-- **`PokeNF` from `LessProvidesNF` alone.** -/
+theorem pokeNF_of_lessNF {lib : Lib} {env : Env R} {jet : H → J → (Bell → Option Datum) → R → Bell → Bool}
+    {fold frozen : Bool} {fuel : Noun → Noun → LongB M → J → Nat} {regOf : J → R}
+    (h : PokeLessNF lib env jet fold frozen fuel regOf) : PokeNF lib env jet fold frozen fuel regOf :=
+  fun s f L j hot pr dats memo' rd reg' hI hs =>
+    let ⟨a, b, c⟩ := poke_datFacts (jet := jet) (fold := fold) (frozen := frozen) (j := j) (hot := hot) hI hs
+    ⟨h s f L j hot pr dats memo' rd reg' hI hs, a, b, c⟩
+
+/-- **`PokeSites` from `LessProvidesNF` alone.** -/
+theorem pokeSites_of_lessNF {lib : Lib} {env : Env R} {jet : H → J → (Bell → Option Datum) → R → Bell → Bool}
+    {fold frozen : Bool} {fuel : Noun → Noun → LongB M → J → Nat} {regOf : J → R}
+    (h : PokeLessNF lib env jet fold frozen fuel regOf) : PokeSites lib env jet fold frozen fuel regOf :=
+  pokeSites_of_nf (pokeNF_of_lessNF h)
 
 end PokeM
 

@@ -1,4 +1,4 @@
-import lemmas.Ska.BridgeD
+import lemmas.Ska.DatFacts
 
 /-!
 # The convergence invariant of the state-passing analysis
@@ -248,6 +248,11 @@ structure CInv (memoF : Memo M) (st : SkaState M R) (F : Entry → Prop) : Prop 
   /-- The identities, code requirements and products of the graph have
   normal capes. -/
   norm : ∀ i d, Treap.get st.g i = some d → NormSock i.1 ∧ NormSock d.less ∧ NormSock d.prod
+  /-- Every entry is a memo hit of `memoF` that `order` does not hold, or its
+  nomm has no `%10` at axis `0`, its code requirement has a noun, and its
+  product is not `%void` once `order` does not hold it (`DatFacts.lean`). -/
+  dat : ∀ i d, Treap.get st.g i = some d → (MemoHitE memoF (entOf i d) ∧ Treap.get st.order i = none) ∨
+    (Bake.NoAx0 d.nomm ∧ (∃ y, Fits d.less y) ∧ (Treap.get st.order i = none → d.prod ≠ Sock.void))
 
 /-! ## `+pop`, entry by entry -/
 
@@ -444,7 +449,7 @@ theorem pop_frozen {memoF : Memo M} {id : Ident} {st st' : SkaState M R} {F : En
     unfold Treap.gut; rw [a5, if_neg hx]
   have hpopNot : ∀ x o, Treap.get st.order x = some o → o < index → x ∉ ab0 ++ [id] := fun x o hxo hlt hx =>
     absurd (hup x hx o hxo) (by omega)
-  refine ⟨F', hFF', ⟨pop_ok hc.s h hs |>.1, fun m => ?_, ⟨fun i o hio => ?_, ?_⟩, ⟨hok, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_⟩⟩
+  refine ⟨F', hFF', ⟨pop_ok hc.s h hs |>.1, fun m => ?_, ⟨fun i o hio => ?_, ?_⟩, ⟨hok, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_⟩⟩
   · -- ticks
     by_cases hm : m ∈ ab0 ++ [id]
     · simp only [ranOf, chgOf, Treap.gut, a5, if_pos hm, Option.getD_none]; omega
@@ -560,6 +565,25 @@ theorem pop_frozen {memoF : Memo M} {id : Ident} {st st' : SkaState M R} {F : En
         · exact normSock_dunno
         · exact n3
     · rw [hgN i hi] at hd; exact hc.norm i d hd
+  · -- the datums
+    intro i d hd
+    by_cases hi : i ∈ ab0 ++ [id]
+    · rw [hgP i hi] at hd
+      obtain ⟨d0, hd0, rfl⟩ := Option.map_eq_some_iff.mp hd
+      obtain ⟨o, ho⟩ := hmemP i hi
+      rcases hc.dat i d0 hd0 with ⟨_, hn⟩ | ⟨n1, n2, _⟩
+      · rw [ho] at hn; cases hn
+      · refine Or.inr ⟨?_, ?_, fun _ => ?_⟩
+        · unfold postPop; split
+          · exact n1
+          · exact n1
+        · unfold postPop; split
+          · exact n2
+          · exact n2
+        · unfold postPop; split
+          · exact Sock.noConfusion
+          · assumption
+    · rw [hgN i hi] at hd; rw [hoN i hi]; exact hc.dat i d hd
 
 end Ana
 end SkaModel
