@@ -1128,7 +1128,8 @@ def main():
     for lname, want, avoid in (('eval_pole', ['imm', 'csm'], []),
                                ('eval_blob', ['lti', 'jsf'], []),
                                ('eval_top', ['bare', 'full'], ['imm', 'lti']),
-                               ('eval_rend', ['meac', 'meaf'], ['imm', 'lti', 'lose'])):
+                               ('eval_rend', ['meac', 'meaf'], ['imm', 'lti', 'lose']),
+                               ('eval_mook', ['lose'], ['imm', 'lti', 'meac', 'full'])):
         a = tagged(want, avoid)
         name(a, lname + '.arm')
         formulas.add(a)
@@ -1149,6 +1150,7 @@ def main():
     # the core of +poke that the interpreter threads, as the pill builds it
     name(tail(interp), 'cor')
     facts.append(('interp_cor', 'slot? 3 interp = some cor'))
+    facts.append(('interp_eq', 'interp = C interp.battery cor'))
 
     # ---- write
     emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, len(data))
