@@ -1,4 +1,15 @@
 import lemmas.Hoon.Arith
+import lemmas.Pill.Arm.Lent
+import lemmas.Pill.Arm.Weld
+import lemmas.Pill.Arm.Flop
+import lemmas.Pill.Arm.Homo
+import lemmas.Pill.Arm.Snag
+import lemmas.Pill.Arm.Scag
+import lemmas.Pill.Arm.Slag
+import lemmas.Pill.Arm.Turn
+import lemmas.Pill.Arm.Roll
+import lemmas.Pill.Arm.Levy
+import lemmas.Pill.Arm.Lien
 
 /-!
 The list arms of the pill's `hoon.hoon`, against `List Noun`:
@@ -38,10 +49,6 @@ abbrev HomoIn (c : Noun) : Prop := slot? homo.axis c = some homo.arm
 @[nock_exec] theorem homo_arm (c : Noun) :
     nock c homo.arm = some (C (C (A 0) (A 6)) (C (A 0) c)) := by
   nock_open homo.arm; simp only [nock_exec]
-
-theorem homoIn_layer2 : HomoIn layer2 := homo.arm_at
-
-theorem decIn_below_layer2 : Below DecIn layer2 := decIn_layer1
 
 /-! ## The arms build their gates -/
 

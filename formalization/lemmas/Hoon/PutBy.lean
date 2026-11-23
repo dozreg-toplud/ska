@@ -1,5 +1,6 @@
 import lemmas.Hoon.Order
 import lemmas.Hoon.Treap
+import lemmas.Pill.Arm.By
 
 /-!
 `+put:by` of the pill's `hoon.hoon` inserts into a map.
@@ -92,15 +93,6 @@ theorem put_by {mug : Noun → Nat} (ctx : Noun) (hc : GorIn mug ctx ∧ MorIn m
       ∀ k' v', Get out k' v' ↔ (k' = k ∧ v' = v) ∨ (k' ≠ k ∧ Get a k' v') := by
   obtain ⟨out, hput, hmap, hget⟩ := putF_spec mug a k v h
   exact ⟨out, eval_of_nock (put_gate ctx hc k v a out hput), hmap, hget⟩
-
-/-- The same in the pill's second layer, given `+mug`. -/
-theorem put_by_layer2 {mug : Noun → Nat} (hmug : MugSpec mug layer2)
-    (a k v : Noun) (h : IsMap mug a) :
-    ∃ out,
-      Eval (C by.put.battery (C (C k v) (C by.battery (C a layer2)))) by.put.battery out ∧
-      IsMap mug out ∧
-      ∀ k' v', Get out k' v' ↔ (k' = k ∧ v' = v) ∨ (k' ≠ k ∧ Get a k' v') :=
-  put_by layer2 (gorIn_layer2 hmug) a k v h
 
 end Hoon
 end Formalization

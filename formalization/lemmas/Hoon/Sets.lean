@@ -1,4 +1,5 @@
 import lemmas.Hoon.Maps
+import lemmas.Pill.Arm.In
 
 /-!
 `+put:in` and `+has:in` of the pill's `hoon.hoon`: insertion into and lookup

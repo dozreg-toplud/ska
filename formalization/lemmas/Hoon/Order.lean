@@ -1,5 +1,9 @@
 import lemmas.Hoon.Arith
 import lemmas.Hoon.MapModel
+import lemmas.Pill.Arm.Dor
+import lemmas.Pill.Arm.Gor
+import lemmas.Pill.Arm.Mor
+import lemmas.Pill.Arm.Mug
 
 /-!
 The noun orders of the pill's `hoon.hoon` compute their Lean models: `+dor`
@@ -124,16 +128,6 @@ theorem mor_gate {mug : Noun → Nat} (c : Noun) (hc : MugIn mug c ∧ DorIn c) 
   by_cases h : mug (A (mug a)) = mug (A (mug b))
   · simp [nock_exec, h, morF, hd, dor_arm, hdor]
   · simp [nock_exec, h, morF, ht, lth_gate t ht.2]
-
-/-! ## The pill's second layer -/
-
-theorem dorIn_layer2 : DorIn layer2 := ⟨dor.arm_at, arith_layer1.2.2.2.1⟩
-
-/-- `layer2` holds `+gor` and `+mor` with what they read, given `+mug`. -/
-theorem gorIn_layer2 {mug : Noun → Nat} (hmug : MugSpec mug layer2) :
-    GorIn mug layer2 ∧ MorIn mug layer2 :=
-  ⟨⟨gor.arm_at, ⟨Pill.mug.arm_at, hmug⟩, dorIn_layer2⟩,
-    ⟨mor.arm_at, ⟨Pill.mug.arm_at, hmug⟩, dorIn_layer2⟩⟩
 
 end Hoon
 end Formalization

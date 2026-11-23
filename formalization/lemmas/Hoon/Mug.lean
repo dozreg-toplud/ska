@@ -1,5 +1,6 @@
 import lemmas.Hoon.Muk
 import lemmas.Hoon.Order
+import lemmas.Pill.Arm.Mug
 
 /-!
 `+mug` of the pill's `hoon.hoon` computes the Lean model `mugF`, which
@@ -170,23 +171,6 @@ theorem mug_spec (c : Noun) (hc : MugNeeds c) : MugSpec mugF c := by
   intro a
   nock_open Pill.mug.battery
   simp only [nock_exec, mug_buc c hc a]
-
-/-! ## The pill's second layer -/
-
-/-- `layer2` holds `+mug` and everything it reads. -/
-theorem mugNeeds_layer2 : MugNeeds layer2 := by
-  obtain ⟨ha, hs, hm, _, _, _, _, _, _, _, hdv, hmd⟩ := arith_layer1
-  have hbex : BexIn layer2 := ⟨bex.arm_at, hm⟩
-  have hrsh : RshIn layer2 := ⟨rsh.arm_at, hbex, hdv⟩
-  have hlsh : LshIn layer2 := ⟨lsh.arm_at, hbex⟩
-  have hend : EndIn layer2 := ⟨end.arm_at, hbex, hmd⟩
-  have hlog : LogicNeeds layer2 := ⟨hrsh, hlsh, hend, ha⟩
-  have hmet : MetIn layer2 := ⟨met.arm_at, hrsh⟩
-  exact ⟨muk.arm_at, ⟨fe.arm_at, ⟨⟨con.arm_at, hlog⟩, hs, hmd⟩, ⟨cut.arm_at, hend, hrsh⟩,
-    ⟨mix.arm_at, hlog⟩, ⟨dis.arm_at, hlog⟩, hdv, hm⟩, hmet, ⟨cat.arm_at, hlsh, hmet, ha⟩⟩
-
-/-- The pill's `+mug` gate computes `mugF`. -/
-theorem mug_layer2 : MugSpec mugF layer2 := mug_spec layer2 mugNeeds_layer2
 
 end Hoon
 end Formalization

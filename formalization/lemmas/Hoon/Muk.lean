@@ -1,4 +1,6 @@
 import lemmas.Hoon.Bits
+import lemmas.Pill.Arm.Fe
+import lemmas.Pill.Arm.Muk
 
 /-!
 `+muk` of the pill's `hoon.hoon` (murmur3, as `+mug` uses it), and the arms

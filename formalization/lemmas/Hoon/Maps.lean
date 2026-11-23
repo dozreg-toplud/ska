@@ -1,4 +1,5 @@
 import lemmas.Hoon.PutBy
+import lemmas.Pill.Arm.Some
 
 /-!
 `+get:by` and `+has:by` of the pill's `hoon.hoon` look a key up in a map.
@@ -155,9 +156,6 @@ theorem has_by {mug : Noun → Nat} (ctx : Noun) (hc : SomeIn ctx ∧ GorIn mug 
     refine ⟨false, eval_of_nock ?_, by simp; exact hn⟩
     rw [has_gate ctx hc k a _ (getF_none h hn)]
     simp
-
-/-- The pill's second layer holds `+some`. -/
-theorem someIn_layer2 : SomeIn layer2 := some.arm_at
 
 end Hoon
 end Formalization

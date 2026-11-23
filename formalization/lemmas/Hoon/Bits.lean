@@ -1,4 +1,15 @@
-import lemmas.Hoon.Lists
+import lemmas.Hoon.Arith
+import lemmas.Pill.Arm.Bex
+import lemmas.Pill.Arm.Lsh
+import lemmas.Pill.Arm.Rsh
+import lemmas.Pill.Arm.End
+import lemmas.Pill.Arm.Met
+import lemmas.Pill.Arm.Cut
+import lemmas.Pill.Arm.Cat
+import lemmas.Pill.Arm.Mix
+import lemmas.Pill.Arm.Dis
+import lemmas.Pill.Arm.ConArm
+import lemmas.Pill.Arm.Can
 
 /-!
 The bit arithmetic of the pill's `hoon.hoon`, against `Nat`:

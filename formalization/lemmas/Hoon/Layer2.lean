@@ -1,9 +1,11 @@
+import lemmas.Hoon.Layer1
 import lemmas.Hoon.Mug
 import lemmas.Hoon.Sets
+import lemmas.Hoon.Lists
 
 /-!
-The theorems about the orders, maps and sets, in the pill's second layer and
-with no assumption: the predicates on the context hold for `layer2`, and the
+The pill's second layer satisfies the predicates of its arms, and the
+theorems about the orders, maps and sets hold there with no assumption: the
 hash is `mugF`, which the pill's `+mug` computes (`mug_layer2`).
 -/
 
@@ -11,6 +13,45 @@ namespace Formalization
 namespace Hoon
 
 open Nock Pill
+
+theorem homoIn_layer2 : HomoIn layer2 := homo.arm_at
+
+theorem decIn_below_layer2 : Below DecIn layer2 := decIn_layer1
+
+/-- The pill's second layer holds `+some`. -/
+theorem someIn_layer2 : SomeIn layer2 := some.arm_at
+
+theorem dorIn_layer2 : DorIn layer2 := ⟨dor.arm_at, arith_layer1.2.2.2.1⟩
+
+/-- `layer2` holds `+gor` and `+mor` with what they read, given `+mug`. -/
+theorem gorIn_layer2 {mug : Noun → Nat} (hmug : MugSpec mug layer2) :
+    GorIn mug layer2 ∧ MorIn mug layer2 :=
+  ⟨⟨gor.arm_at, ⟨Pill.mug.arm_at, hmug⟩, dorIn_layer2⟩,
+    ⟨mor.arm_at, ⟨Pill.mug.arm_at, hmug⟩, dorIn_layer2⟩⟩
+
+/-- `layer2` holds `+mug` and everything it reads. -/
+theorem mugNeeds_layer2 : MugNeeds layer2 := by
+  obtain ⟨ha, hs, hm, _, _, _, _, _, _, _, hdv, hmd⟩ := arith_layer1
+  have hbex : BexIn layer2 := ⟨bex.arm_at, hm⟩
+  have hrsh : RshIn layer2 := ⟨rsh.arm_at, hbex, hdv⟩
+  have hlsh : LshIn layer2 := ⟨lsh.arm_at, hbex⟩
+  have hend : EndIn layer2 := ⟨end.arm_at, hbex, hmd⟩
+  have hlog : LogicNeeds layer2 := ⟨hrsh, hlsh, hend, ha⟩
+  have hmet : MetIn layer2 := ⟨met.arm_at, hrsh⟩
+  exact ⟨muk.arm_at, ⟨fe.arm_at, ⟨⟨con.arm_at, hlog⟩, hs, hmd⟩, ⟨cut.arm_at, hend, hrsh⟩,
+    ⟨mix.arm_at, hlog⟩, ⟨dis.arm_at, hlog⟩, hdv, hm⟩, hmet, ⟨cat.arm_at, hlsh, hmet, ha⟩⟩
+
+/-- The pill's `+mug` gate computes `mugF`. -/
+theorem mug_layer2 : MugSpec mugF layer2 := mug_spec layer2 mugNeeds_layer2
+
+/-- The same in the pill's second layer, given `+mug`. -/
+theorem put_by_layer2 {mug : Noun → Nat} (hmug : MugSpec mug layer2)
+    (a k v : Noun) (h : IsMap mug a) :
+    ∃ out,
+      Eval (C by.put.battery (C (C k v) (C by.battery (C a layer2)))) by.put.battery out ∧
+      IsMap mug out ∧
+      ∀ k' v', Get out k' v' ↔ (k' = k ∧ v' = v) ∨ (k' ≠ k ∧ Get a k' v') :=
+  put_by layer2 (gorIn_layer2 hmug) a k v h
 
 theorem gorIn_morIn_layer2 : GorIn mugF layer2 ∧ MorIn mugF layer2 := gorIn_layer2 mug_layer2
 

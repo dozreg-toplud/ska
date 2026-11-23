@@ -1,4 +1,5 @@
 import lemmas.Hoon.Basic
+import lemmas.Pill.Arm.Dec
 
 /-!
 `+dec` of the pill's `hoon.hoon`, proved against `Nat` subtraction.
@@ -27,8 +28,6 @@ open Nock Pill
 
 /-- The context `c` holds the arm `+dec` at its axis. -/
 abbrev DecIn (c : Noun) : Prop := slot? dec.axis c = some dec.arm
-
-theorem decIn_layer1 : DecIn layer1 := dec.arm_at
 
 /-- The loop of `+dec` with counter `b`, in the gate whose sample is `n`. -/
 theorem dec_loop (c : Noun) (n : Nat) : ∀ (k b : Nat), b + k + 1 = n →

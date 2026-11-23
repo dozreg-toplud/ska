@@ -1,5 +1,4 @@
 import lemmas.Exec
-import lemmas.Pill.Facts
 
 /-!
 What the proofs about the arms of `hoon.hoon` share: flags, lists as nouns,
@@ -24,7 +23,7 @@ The predicates are `abbrev`s, so `simp only [nock_exec, hc]` with a hypothesis
 namespace Formalization
 namespace Hoon
 
-open Nock Pill
+open Nock
 
 /-! ## Flags -/
 
