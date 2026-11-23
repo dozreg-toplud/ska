@@ -17,6 +17,7 @@ import lemmas.Hoon.MapFolds
 import lemmas.Hoon.SetFolds
 import lemmas.Hoon.ListsMore
 import lemmas.Compiler.Ca
+import lemmas.Compiler.So
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -132,3 +133,6 @@ open Formalization
 #print axioms Compiler.ca_int_gate
 #print axioms Compiler.ca_uni_gate
 #print axioms Compiler.ca_lack_gate
+#print axioms Compiler.so_hed_gate
+#print axioms Compiler.so_tel_gate
+#print axioms Compiler.so_jibe_gate
