@@ -323,7 +323,7 @@ abbrev OKP (lib : Lib) (goal : CGoal S) (nm : Nomm) : Prop :=
 /-- **`[6 c a b]` for `%done` or `%pick`**, from `RunOKP` of the test for
 `%pick` and of the branches for the goal. -/
 theorem sixP_ok (lib : Lib) {goal : CGoal S} {c a b : Nomm} (hcp : c.pure = true)
-    (ihc : ∀ z o, OKP (Map := Map) lib (CGoal.pick z o : CGoal S) c) (iha : OKP (Map := Map) lib goal a)
+    (ihc : ∀ z o : Jmp, z.args = [] → o.args = [] → OKP (Map := Map) lib (CGoal.pick z o : CGoal S) c) (iha : OKP (Map := Map) lib goal a)
     (ihb : OKP (Map := Map) lib goal b) : OKP (Map := Map) lib goal (Nomm.n6 c a b) := by
   intro region g0 g4 nex hg hj hcount b0 d0 hu h
   rw [runL_n6_body c a b hg] at h
@@ -347,7 +347,7 @@ theorem sixP_ok (lib : Lib) {goal : CGoal S} {c a b : Nomm} (hcp : c.pure = true
     have := Ra.size; have := Rb.size; simp only [lazyMax]; omega
   -- the test
   have dG : (sixGenL g2 x0.th x1.th region).drop = false := by simp [d2]
-  have Rc := ihc (jmp0 g2.bo) (jmp0 (g2.bo + 1)) trivial
+  have Rc := ihc (jmp0 g2.bo) (jmp0 (g2.bo + 1)) rfl rfl trivial
     ⟨⟨by simp only [jmp0]; omega, by simp only [jmp0, sixGenL_bo]; omega⟩,
       by simp only [jmp0]; omega, by simp only [jmp0, sixGenL_bo]; omega⟩ (by omega)
     (by simp only [sixGenL_bo]; omega) dG uG h3
@@ -599,7 +599,7 @@ theorem runP_ok (lib : Lib) {goal : CGoal S} {nm : Nomm} (hf : FragP goal nm) :
   induction hf with
   | frag hf => intro region g0 g1 nex hg hj _ b0 d0 hu h; exact runOKP_frag lib hf hg hj b0 d0 hu h
   | @six goal c a b hc _ _ ihc iha ihb =>
-    exact sixP_ok lib (fragP_pure (hc (jmp0 0) (jmp0 0))) ihc iha ihb
+    exact sixP_ok lib (fragP_pure (hc (jmp0 0) (jmp0 0))) (fun z o _ _ => ihc z o) iha ihb
 
 end Comp
 end SkaModel

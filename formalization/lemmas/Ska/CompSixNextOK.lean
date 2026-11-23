@@ -97,7 +97,7 @@ theorem lazyBlkN {lib : Lib} {σ : Type} {O : Oracle σ} {cc : Straight Map} {gu
 /-- **`%6` under a fork-free `%next` meets `RunOKN`**, from the relations of
 its test and branches. -/
 theorem sixNext_okN (lib : Lib) {c a b : Nomm} (hcp : c.pure = true)
-    (ihc : ∀ (z o : Jmp) {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
+    (ihc : ∀ (z o : Jmp), z.args = [] → o.args = [] → ∀ {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
       GJ g0.bo (CGoal.pick z o : CGoal S) → sixCount c ≤ 255 → 1 ≤ g0.bo → g0.drop = false → UpBelow g0 →
       runL c (CGoal.toL (CGoal.pick z o : CGoal S)) region g0 = some (nex, g1) →
       RunOKP (Map := Map) lib c (CGoal.pick z o) g0 g1 nex)
@@ -155,7 +155,7 @@ theorem sixNext_okN (lib : Lib) {c a b : Nomm} (hcp : c.pure = true)
     (growU_same SB.2.1 SB.2.2.2.1 SB.2.2.2.2.2.2)
   have uS : UpBelow gS := GQS.up uQ
   -- the test
-  have Rc := ihc (jmp0 gQ.bo) (jmp0 (gQ.bo + 1)) (region := region)
+  have Rc := ihc (jmp0 gQ.bo) (jmp0 (gQ.bo + 1)) rfl rfl (region := region)
     ⟨⟨by simp only [jmp0]; omega, by simp only [jmp0]; omega⟩, by simp only [jmp0]; omega,
       by simp only [jmp0]; omega⟩ (by omega) (by omega) dS uS hC
   have uC : UpBelow gC := Rc.grow.up uS
@@ -423,7 +423,7 @@ theorem runN_ok (lib : Lib) {nm : Nomm} (hf : FragN (S := S) nm) :
   | six hc _ _ iha ihb =>
     intro sur th region g0 g1 nex hj hth hok hcl hcount b0 d0 hu h
     exact sixNext_okN lib (fragP_pure (hc (jmp0 0) (jmp0 0)))
-      (fun z o _ _ _ _ hj' hc' b' d' u' h' => runP_ok lib (hc z o) trivial hj' hc' b' d' u' h') iha ihb
+      (fun z o _ _ => runP_ok lib (hc z o) trivial) iha ihb
       hj hth hok hcl hcount b0 d0 hu h
 
 end Comp
