@@ -211,7 +211,7 @@ python3 tools/pill2core.py pill/steel.pill core/Pill.lean
 python3 tools/pill2lean.py pill/steel.pill lemmas/Pill
 ```
 
-`pill/steel.pill` is the steel pill of this branch (sha256 `0d6574cd...`): its
+`pill/steel.pill` is the steel pill of this branch (sha256 `b14da7b3...`): its
 `desk/sys/hoon.hoon` built from nothing and `desk/lib/nock-compilation.hoon`
 on it, by the vere test harness without a ship (`U3NC_STEEL_GEN=out.pill`,
 `U3NC_STEEL_SYS`, `U3NC_STEEL_LIB`).  `pill2lean.py` finds the arms by their
