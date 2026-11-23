@@ -2,6 +2,7 @@ import lemmas.Compiler.EvalPole
 import lemmas.Pill.Arm.Eval_blob
 import lemmas.Pill.Arm.Eval_top
 import lemmas.Compiler.TreapList
+import lemmas.Ska.Interp
 
 /-!
 # The ops of `+eval-pole` that leave the function
@@ -111,6 +112,167 @@ theorem eval_pole_nok (cr : Noun) (hc : CorIn cr) (lib : Lib) (O : Oracle Noun) 
     · nock_open eval_pole.battery
       simp [nock_exec, Pole.toNoun, Tag.nok, hld, e1, e2, e3, execPole, htarm, ht, resN,
         Tone.toNoun, poleOutS, hl2, weld.arm_at, weld_arm, weld_listNoun]
+
+/-! ## The calls -/
+
+/-- The axis of `+poke` in the compiler's core, `axPoke` of `core/Statement.lean`
+(which cannot be imported here: it is a module over the plain `core/Pill.lean`). -/
+abbrev poke.axis : Nat := 23
+
+/-- `(poke ovo)` on the compiler's core `cr`, as the interpreter's arms run it:
+pull the arm at `poke.axis`, put the sample in, kick. -/
+def pokeN (cr ovo : Noun) : Option Noun :=
+  ((slot? poke.axis cr).bind fun a => nock cr a).bind fun g =>
+    (edit? 6 ovo g).bind fun g' => (slot? 2 g').bind fun f => nock g' f
+
+/-- The poke of `cr` is the model `pk` on every ovum, and every core it returns
+keeps what the interpreter reads through it. -/
+def PokeIs (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (cr : Noun) : Prop :=
+  (∀ ov, pokeN cr ov.toNoun = (pk cr ov).map fun r => C r.1.toNoun r.2) ∧
+    ∀ ov r, pk cr ov = some r → CorIn r.2
+
+/-- The gate of `+eval-blob` on `[[regs trace] b s params scry]` in `icore cr`. -/
+abbrev blobS (cr : Noun) (regs : TreapMap mugF Noun) (trace : Trace) (b : Blob)
+    (s : Straight (TreapMap mugF)) (params : List (Option Nat)) (scry : Noun) : Noun :=
+  C eval_blob.battery (C (C (C (HoonMap.toNoun id regs) (listNoun Frame.toNoun trace))
+    (C b.toNoun (C s.toNoun (C (argsN params) scry)))) (icore cr))
+
+/-- `+eval-blob` is the model `execBlob` with the oracle `O`, on every core
+that keeps what the interpreter reads, and returns such cores. -/
+def BlobIs (lib : Lib) (O : Oracle Noun) : Prop :=
+  ∀ cr, CorIn cr → ∀ regs trace b s params scry,
+    nock (blobS cr regs trace b s params scry) eval_blob.battery
+      = (execBlob lib O s scry cr regs trace b params).map resN ∧
+    ∀ r, execBlob lib O s scry cr regs trace b params = some r → CorIn r.2
+
+theorem regsFrom_toNoun_put (r : Nat) (v : Noun) (vs : List Noun) (out : TreapMap mugF Noun) :
+    regsFrom (r + 1) vs (HoonMap.put out r v) = regsFrom r (v :: vs) out := rfl
+
+set_option maxHeartbeats 4000000 in
+/-- The loop of `%cal` that puts the values of the registers `v` in the
+registers `r, r+1, ...` of `out`, reading them through `+read` of `regs`. -/
+theorem eval_pole_loop (cr : Noun) (hc : CorIn cr) (p an : Noun) (d : Nat) (regs : TreapMap mugF Noun)
+    (tn scry : Noun) :
+    ∀ (v : List Nat) (r : Nat) (out : TreapMap mugF Noun),
+    nock (C eval_pole.loop (C (A r) (C (HoonMap.toNoun id out) (C p (C eval_pole.battery
+        (C (C (C (A Tag.cal) (C an (C (listNoun A v) (A d)))) (C (C (HoonMap.toNoun id regs) tn) scry))
+          (icore cr))))))) eval_pole.loop
+      = (v.mapM (SkaModel.read · regs)).map fun vs => HoonMap.toNoun id (regsFrom r vs out) := by
+  have hpi := evalPoleIn_icore hc
+  obtain ⟨_, hrd, _, hrc⟩ := hpi
+  have hld := eval_pole_load (icore cr) hrd hrc regs
+  have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc
+  simp only [read.layer2.axis, icore, nock_exec] at hl2
+  obtain ⟨hgor, hmor⟩ := gorIn_morIn_layer2
+  intro v
+  induction v with
+  | nil =>
+    intro r out
+    nock_open eval_pole.loop
+    simp [nock_exec, listNoun, regsFrom]
+  | cons x v ih =>
+    intro r out
+    cases e : SkaModel.read x regs with
+    | none =>
+      nock_open eval_pole.loop
+      simp [nock_exec, listNoun, hld, e]
+    | some vx =>
+      have hput := putF_hoonMap id out r vx
+      simp only [id_eq] at hput
+      nock_open eval_pole.loop
+      simp [nock_exec, listNoun, hld, e, hl2, by.arm_at, by_arm, by.put.arm_at, put_arm,
+        put_gate layer2 ⟨hgor, hmor⟩ _ _ _ _ hput, ih, List.mapM_cons]
+      cases List.mapM (fun x => SkaModel.read x regs) v <;> simp [regsFrom]
+
+/-- What `+eval-pole` reads through a core after a call: layer 2, as facts in
+the form the executor leaves them. -/
+theorem corIn_facts {cr : Noun} (hc : CorIn cr) :
+    (∀ r v (regs : TreapMap mugF Noun),
+      nock (C store.battery (C (C (A r) (C v (HoonMap.toNoun id regs))) (icore cr))) store.battery
+        = some (HoonMap.toNoun id (SkaModel.store r v regs))) ∧
+    slot? read.layer2.axis (icore cr) = some layer2 :=
+  ⟨store_model (icore cr) (regsIn_icore hc), hc⟩
+
+set_option maxHeartbeats 8000000 in
+/-- `+eval-pole` on `%cal`: poke `%dire`, put the arguments in registers
+`0 ..`, run block `0` of the callee with `+eval-blob`, and store the product. -/
+theorem eval_pole_cal (cr : Noun) (hc : CorIn cr) (lib : Lib)
+    (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
+    (O : Oracle Noun) (hO : BlobIs lib O) (nk : Noun → Noun → Noun → Noun → Option (Tone × Noun))
+    (scry : Noun) (a : Bell) (v : List Nat) (d : Nat) (regs : TreapMap mugF Noun) (trace : Trace) :
+    nock (poleS cr (Pole.cal a v d) regs trace scry) eval_pole.battery
+      = (execPole lib ⟨callBody lib pk O, nk⟩ scry cr (Pole.cal a v d) regs trace).map poleOutS := by
+  obtain ⟨hpkN, hpkG⟩ := hpk
+  have hp := hpkN (Ovum.dire a false)
+  simp only [pokeN, poke.axis, Ovum.toNoun, flag, Bool.false_eq_true, if_false, Tag.dire] at hp
+  cases e1 : pk cr (Ovum.dire a false) with
+  | none =>
+    rw [e1] at hp
+    nock_open eval_pole.battery
+    simp [nock_exec, Pole.toNoun, Tag.cal, Tag.nok, Tag.dire, hp, execPole, callBody, e1]
+  | some r =>
+  obtain ⟨p, cr'⟩ := r
+  have hc' := hpkG _ _ e1
+  rw [e1] at hp
+  have hpi := evalPoleIn_icore hc'
+  obtain ⟨_, hrd, _, hrc⟩ := hpi
+  have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'
+  simp only [read.layer2.axis, icore, nock_exec] at hl2
+  obtain ⟨hneed, hsome, hgor, _⟩ := (⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1, 0⟩ :
+    NeedIn layer2 ∧ SomeIn layer2 ∧ GorIn mugF layer2 ∧ Nat)
+  rcases p with _ | ⟨b, c, new⟩ | ps
+  · nock_open eval_pole.battery
+    simp [nock_exec, Pole.toNoun, Tag.cal, Tag.nok, Tag.dire, hp, execPole, callBody, e1,
+      SkaModel.Prod.toNoun]
+  rotate_left
+  · nock_open eval_pole.battery
+    simp [nock_exec, Pole.toNoun, Tag.cal, Tag.nok, Tag.dire, Tag.ir, Tag.drop, hp, execPole,
+      callBody, e1, SkaModel.Prod.toNoun]
+  have hloop := eval_pole_loop cr' hc' (SkaModel.Prod.toNoun (SkaModel.Prod.ir b c new)) a.toNoun d
+    regs (listNoun Frame.toNoun trace) scry v 0 HoonMap.empty
+  simp only [SkaModel.Prod.toNoun, Tag.ir, Tag.cal, icore, HoonMap.toNoun_empty, Straight.toNoun] at hloop
+  cases e2 : v.mapM (SkaModel.read · regs) with
+  | none =>
+    rw [e2] at hloop
+    nock_open eval_pole.battery
+    simp [nock_exec, Pole.toNoun, Tag.cal, Tag.nok, Tag.dire, Tag.ir, hp, execPole, callBody, e1,
+      SkaModel.Prod.toNoun, hloop, e2, Straight.toNoun]
+  | some vs =>
+  rw [e2] at hloop
+  have hg := getF_hoonMap Blob.toNoun c.blocks 0
+  cases e3 : HoonMap.get c.blocks 0 with
+  | none =>
+    rw [e3] at hg
+    nock_open eval_pole.battery
+    simp [nock_exec, Pole.toNoun, Tag.cal, Tag.nok, Tag.dire, Tag.ir, hp, execPole, callBody, e1,
+      SkaModel.Prod.toNoun, hloop, e2, Straight.toNoun, hl2, by.arm_at, by_arm, by.got.arm_at,
+      got_arm, got_gate_nil layer2 ⟨hneed, hsome, hgor⟩ _ _ hg, execEntry, e3]
+  | some b0 =>
+  rw [e3] at hg
+  obtain ⟨hb, hbg⟩ := hO cr' hc' (regsOf vs) trace b0 c [] scry
+  simp only [blobS, icore, Straight.toNoun, regsOf, argsN, listNoun] at hb
+  cases e4 : execBlob lib O c scry cr' (regsOf vs) trace b0 [] with
+  | none =>
+    rw [e4] at hb
+    nock_open eval_pole.battery
+    simp [nock_exec, Pole.toNoun, Tag.cal, Tag.nok, Tag.dire, Tag.ir, hp, execPole, callBody, e1,
+      SkaModel.Prod.toNoun, hloop, e2, Straight.toNoun, hl2, by.arm_at, by_arm, by.got.arm_at,
+      got_arm, got_gate layer2 ⟨hneed, hsome, hgor⟩ _ _ _ hg, execEntry, e3, unitNoun,
+      eval_blob.arm, hb, regsOf, argsN, listNoun]
+  | some r =>
+  obtain ⟨ton, cr''⟩ := r
+  have hc'' := hbg _ e4
+  rw [e4] at hb
+  obtain ⟨hsm, hl2''⟩ := corIn_facts hc''
+  simp only at hsm hl2''
+  rcases ton with q | q | q
+  all_goals
+    nock_open eval_pole.battery
+    simp [nock_exec, Pole.toNoun, Tag.cal, Tag.nok, Tag.dire, Tag.ir, hp, execPole, callBody, e1,
+      SkaModel.Prod.toNoun, hloop, e2, Straight.toNoun, hl2, by.arm_at, by_arm, by.got.arm_at,
+      got_arm, got_gate layer2 ⟨hneed, hsome, hgor⟩ _ _ _ hg, execEntry, e3, unitNoun,
+      eval_blob.arm, hb, regsOf, argsN, listNoun, resN, Tone.toNoun, afterCall, poleOutS, hsm,
+      store_arm]
 
 end Compiler
 end Formalization
