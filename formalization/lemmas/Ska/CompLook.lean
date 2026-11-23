@@ -276,6 +276,118 @@ theorem lookPath_spec : ∀ (axe : Nat), 1 ≤ axe → ∀ (ned ned' : Need) (g0
         · exact (d4 r e).2 h
         · have := hb r ((m0 r).mpr (Or.inl e)); omega
 
+/-- One step of the fold of `+sure-require-look`. -/
+def lookStep (axe : Nat) (ned : Need) : CM Map Need :=
+  if axe = 1 then pure ned else
+  if axe = 0 then fun _ => Option.none else
+  lookPath ned axe
+
+theorem foldl_look (xs : List Nat) (m : CM Map Need) :
+    xs.foldl (fun acc axe => acc >>= lookStep axe) m =
+      m >>= fun n => xs.foldl (fun acc axe => acc >>= lookStep axe) (pure n) := by
+  induction xs generalizing m with
+  | nil => simp
+  | cons x xs ih =>
+    simp only [List.foldl_cons]
+    rw [ih, bind_assoc]
+    congr 1; funext n
+    rw [ih (pure n >>= lookStep x), pure_bind]
+
+theorem sureRequireLook_eq (sur : Sure S) :
+    (sureRequireLook sur : CM Map Need) =
+      (HoonSet.toList sur.lok).foldl (fun acc axe => acc >>= lookStep axe) (pure sur.ned) := rfl
+
+/-- What `+sure-require-look` makes. -/
+structure SureOK (ned0 : Need) (xs : List Nat) (g0 g1 : Gen Map) (ned' : Need) : Prop where
+  gen : ∃ k, g1 = { g0 with re := k }
+  le : g0.re ≤ g1.re
+  holds : ∀ (regs : Map Noun) n, HoldsN ned' regs n → HoldsN ned0 regs n
+  fits : ∀ n, Fits ned' n ↔ Fits ned0 n ∧ ∀ x ∈ xs, (slot? x n).isSome
+  mem : ∀ r, NMem ned' r → NMem ned0 r ∨ (g0.re ≤ r ∧ r < g1.re)
+  dist : Distinct ned0 → (∀ r, NMem ned0 r → r < g0.re) → Distinct ned'
+  same : (∀ x ∈ xs, x = 1) → ned' = ned0
+  big : (∃ x ∈ xs, 2 ≤ x) → (∃ p q, ned' = Need.pair p q) ∨ (∃ r p q, ned' = Need.both r p q)
+  keep : ((∃ p q, ned0 = Need.pair p q) ∨ (∃ r p q, ned0 = Need.both r p q)) →
+    (∃ p q, ned' = Need.pair p q) ∨ (∃ r p q, ned' = Need.both r p q)
+
+theorem foldLook_spec : ∀ (xs : List Nat) (ned0 ned' : Need) (g0 g1 : Gen Map),
+    (xs.foldl (fun acc axe => acc >>= lookStep axe) (pure ned0) : CM Map Need) g0 = some (ned', g1) →
+    SureOK ned0 xs g0 g1 ned' := by
+  intro xs
+  induction xs with
+  | nil =>
+    intro ned0 ned' g0 g1 h
+    simp only [List.foldl_nil, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨⟨g0.re, rfl⟩, Nat.le_refl _, fun _ _ h => h, fun n => (by simp), fun r h => Or.inl h,
+      fun h _ => h, fun _ => rfl, fun h => (by obtain ⟨x, hx, _⟩ := h; simp at hx), fun h => h⟩
+  | cons x xs ih =>
+    intro ned0 ned' g0 g1 h
+    rw [List.foldl_cons, foldl_look] at h
+    obtain ⟨n1, g', h1, h2⟩ := bind_some h
+    rw [pure_bind] at h1
+    have I := ih n1 ned' g' g1 h2
+    -- the step at x
+    have S1 : (2 ≤ x ∧ LookOK ned0 x g0 g' n1) ∨ (x = 1 ∧ n1 = ned0 ∧ g' = g0) := by
+      unfold lookStep at h1
+      by_cases e1 : x = 1
+      · simp only [e1, if_true, pure_apply, Option.some.injEq, Prod.mk.injEq] at h1
+        exact Or.inr ⟨e1, h1.1.symm, h1.2.symm⟩
+      · by_cases e0 : x = 0
+        · simp [e1, e0] at h1
+        · simp only [e1, e0, if_false] at h1
+          exact Or.inl ⟨by omega, lookPath_spec x (by omega) ned0 n1 g0 g' h1⟩
+    rcases S1 with ⟨hx2, L⟩ | ⟨e1, rfl, rfl⟩
+    · obtain ⟨k1, rfl⟩ := L.gen
+      obtain ⟨k2, rfl⟩ := I.gen
+      refine ⟨⟨k2, rfl⟩, Nat.le_trans L.le I.le, fun regs n h => L.holds regs n (I.holds regs n h), ?_, ?_, ?_,
+        ?_, ?_, ?_⟩
+      · intro n
+        rw [I.fits, L.fits]
+        simp only [List.mem_cons, forall_eq_or_imp]
+        exact ⟨fun ⟨⟨a, b⟩, c⟩ => ⟨a, b, c⟩, fun ⟨a, b, c⟩ => ⟨⟨a, b⟩, c⟩⟩
+      · intro r hr
+        rcases I.mem r hr with h | h
+        · rcases L.mem r h with h' | h'
+          · exact Or.inl h'
+          · exact Or.inr ⟨h'.1, Nat.lt_of_lt_of_le h'.2 I.le⟩
+        · exact Or.inr ⟨Nat.le_trans L.le h.1, h.2⟩
+      · intro hd hb
+        refine I.dist (L.dist hd hb) fun r hr => ?_
+        rcases L.mem r hr with h | h
+        · exact Nat.lt_of_lt_of_le (hb r h) L.le
+        · exact h.2
+      · intro hall
+        have e1 := hall x (List.mem_cons_self ..)
+        omega
+      · intro _
+        exact I.keep (L.shape hx2)
+      · intro _
+        exact I.keep (L.shape hx2)
+    · refine ⟨I.gen, I.le, I.holds, ?_, I.mem, I.dist, ?_, ?_, I.keep⟩
+      · intro n
+        rw [I.fits]
+        simp only [List.mem_cons, forall_eq_or_imp, e1, slot?_one, Option.isSome_some, true_and]
+      · intro hall
+        exact I.same fun y hy => hall y (List.mem_cons_of_mem _ hy)
+      · intro ⟨y, hy, h2⟩
+        rcases List.mem_cons.mp hy with e | e
+        · omega
+        · exact I.big ⟨y, e, h2⟩
+
+theorem sureRequireLook_spec {sur : Sure S} {ned' : Need} {g0 g1 : Gen Map}
+    (h : sureRequireLook sur g0 = some (ned', g1)) : SureOK sur.ned (HoonSet.toList sur.lok) g0 g1 ned' :=
+  foldLook_spec _ _ _ _ _ (by rw [← sureRequireLook_eq]; exact h)
+
+theorem holdsS_of_sure {sur : Sure S} {ned' : Need} {g0 g1 : Gen Map}
+    (L : SureOK sur.ned (HoonSet.toList sur.lok) g0 g1 ned') {regs : Map Noun} {n : Noun}
+    (h : HoldsN ned' regs n) : HoldsS sur regs n :=
+  ⟨L.holds regs n h, ((L.fits n).mp (fits_of_holds _ h)).2⟩
+
+theorem fits_sure {sur : Sure S} {ned' : Need} {g0 g1 : Gen Map}
+    (L : SureOK sur.ned (HoonSet.toList sur.lok) g0 g1 ned') (n : Noun) : Fits ned' n ↔ FitsS sur n :=
+  L.fits n
+
 end Comp
 end SkaModel
 end Formalization
