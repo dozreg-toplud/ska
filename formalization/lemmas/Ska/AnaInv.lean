@@ -438,6 +438,146 @@ theorem pop_ok {id : Ident} {st st' : SkaState M R} (hi : SInv st) (h : pop id s
   have hu := nodup_split_unique (hs ▸ hi.nodup) (hs.symm.trans hpre)
   refine ⟨i', s', ⟨⟨[], by rw [← hu.2]; rfl⟩, fun j hj => (k' j (hu.2 ▸ hj)).1, fun j hj => (k' j (hu.2 ▸ hj)).2⟩⟩
 
+/-! ## `+cull` -/
+
+theorem liveLoop_mono {st : SkaState M R} {members : M Ident Unit} : ∀ (n : Nat) (q : List Ident)
+    (live live' : M Ident Unit), liveLoop st members n q live = some live' →
+    ∀ k, Treap.has live k = true → Treap.has live' k = true
+  | 0, _, _, _, h => by simp [liveLoop] at h
+  | n + 1, [], live, live', h => by
+    simp only [liveLoop, Option.some.injEq] at h; subst h; exact fun _ h => h
+  | n + 1, i :: q, live, live', h => by
+    unfold liveLoop at h
+    split at h
+    · exact liveLoop_mono n q live live' h
+    · intro k hk; exact liveLoop_mono n _ _ live' h k ((Treap.has_ins _ _ _).mpr (Or.inr hk))
+
+theorem liveLoop_head {st : SkaState M R} {members : M Ident Unit} {n : Nat} {i : Ident} {q : List Ident}
+    {live live' : M Ident Unit} (h : liveLoop st members n (i :: q) live = some live')
+    (hm : Treap.has members i = true) : Treap.has live' i = true := by
+  cases n with
+  | zero => simp [liveLoop] at h
+  | succ n =>
+    unfold liveLoop at h
+    split at h
+    · rename_i hc
+      rcases hc with hc | hc
+      · exact liveLoop_mono n q live live' h i hc
+      · rw [hm] at hc; cases hc
+    · exact liveLoop_mono n _ _ live' h i ((Treap.has_ins _ _ _).mpr (Or.inl rfl))
+
+theorem gCore_del (g : Callgraph M) (i : Ident) : gCore (Treap.del g i) = Graph.del (gCore g) i := by
+  funext j
+  simp only [gCore, Graph.del, Treap.get_del]
+  split <;> rfl
+
+/-- One deletion of `+cull`. -/
+def cullStep (st : SkaState M R) (i : Ident × Unit) : SkaState M R :=
+  { st with order := Treap.del st.order i.1, ticks := Treap.del st.ticks i.1, g := Treap.del st.g i.1 }
+
+theorem cullFold_ok : ∀ (l : List (Ident × Unit)) (st : SkaState M R),
+    (l.foldl cullStep st).stk = st.stk ∧ (l.foldl cullStep st).done = st.done ∧
+    (∀ k, Treap.get (l.foldl cullStep st).order k = if k ∈ l.map (·.1) then none else Treap.get st.order k) ∧
+    (∀ k, Treap.get (l.foldl cullStep st).g k = if k ∈ l.map (·.1) then none else Treap.get st.g k) ∧
+    GStepsR (gCore st.g) (gCore (l.foldl cullStep st).g)
+  | [], st => ⟨rfl, rfl, fun k => by simp, fun k => by simp, GStepsR.refl _⟩
+  | x :: l, st => by
+    obtain ⟨a1, a2, a3, a4, a5⟩ := cullFold_ok l (cullStep st x)
+    refine ⟨a1, a2, fun k => ?_, fun k => ?_, gStepsR_trans (gStepsR_one ?_) a5⟩
+    · rw [List.foldl_cons, a3]
+      simp only [cullStep, Treap.get_del, List.map_cons, List.mem_cons]
+      by_cases h1 : k ∈ l.map (·.1) <;> by_cases h2 : k = x.1 <;> simp [h1, h2]
+    · rw [List.foldl_cons, a4]
+      simp only [cullStep, Treap.get_del, List.map_cons, List.mem_cons]
+      by_cases h1 : k ∈ l.map (·.1) <;> by_cases h2 : k = x.1 <;> simp [h1, h2]
+    · simp only [cullStep]; rw [gCore_del]; exact GStepR.cull
+
+theorem mem_rap_keys {κ : Type} [DecidableEq κ] (m : M κ Unit) (k : κ) :
+    k ∈ (Treap.rap m).map (·.1) ↔ Treap.has m k = true := by
+  rw [Treap.has_iff]
+  constructor
+  · intro h
+    obtain ⟨⟨k', v⟩, hm, rfl⟩ := List.mem_map.mp h
+    exact ⟨v, (Treap.mem_rap m k' v).mp hm⟩
+  · rintro ⟨v, hv⟩
+    exact List.mem_map.mpr ⟨(k, v), (Treap.mem_rap m k v).mpr hv, rfl⟩
+
+/-- `+cull` with its deletions as `cullStep`. -/
+theorem cull_eq (n : Nat) (id : Ident) (st : SkaState M R) : cull n id st =
+    (above id st.stk).bind fun ab =>
+    (liveLoop st (Treap.silt ab) n [id] Treap.empty).map fun live =>
+    if Treap.tap (Treap.dif (Treap.silt ab : M Ident Unit) live) = [] then st else
+    (Treap.rap (Treap.dif (Treap.silt ab : M Ident Unit) live)).foldl cullStep
+      { st with stats := { st.stats with culled := st.stats.culled + Treap.wyt (Treap.dif (Treap.silt ab : M Ident Unit) live) },
+                stk := st.stk.filter (fun i => !Treap.has (Treap.dif (Treap.silt ab : M Ident Unit) live) i),
+                moved := Treap.dif st.moved (Treap.dif (Treap.silt ab : M Ident Unit) live) } := rfl
+
+/-- **`+cull` keeps the invariant**: it deletes from the graph (`GStepR.cull`)
+members above `id` only, and keeps `id` and the stack below it. -/
+theorem cull_ok {n : Nat} {id : Ident} {st st' : SkaState M R} (hi : SInv st) (h : cull n id st = some st')
+    {ab0 rest : List Ident} (hs : st.stk = ab0 ++ id :: rest) :
+    SInv st' ∧ GStepsR (gCore st.g) (gCore st'.g) ∧ Keep (id :: rest) (· ∈ id :: rest) st st' := by
+  rw [cull_eq] at h
+  simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  obtain ⟨ab, hab, live, hlive, hst⟩ := h
+  obtain ⟨ab0', rest', rfl, hs', _⟩ := above_eq hab
+  obtain ⟨rfl, rfl⟩ := nodup_split_unique (hs ▸ hi.nodup) (hs.symm.trans hs')
+  have hnd := hs ▸ hi.nodup
+  have hmem : ∀ k, Treap.has (Treap.silt (ab0 ++ [id]) : M Ident Unit) k = true ↔ k ∈ ab0 ++ [id] :=
+    fun k => Treap.has_silt _ k
+  have hid : Treap.has live id = true := liveLoop_head hlive ((hmem id).mpr (by simp))
+  generalize hdd : (Treap.dif (Treap.silt (ab0 ++ [id])) live : M Ident Unit) = dead at hst
+  have hdead : ∀ k, Treap.has dead k = true → Treap.has live k ≠ true ∧ k ∈ ab0 ++ [id] := by
+    intro k hk
+    rw [← hdd] at hk
+    rw [← hmem k]
+    have e : Treap.has (Treap.dif (Treap.silt (ab0 ++ [id]) : M Ident Unit) live) k =
+        (Treap.get (Treap.dif (Treap.silt (ab0 ++ [id]) : M Ident Unit) live) k).isSome := rfl
+    rw [e, Treap.get_dif] at hk
+    by_cases hl : Treap.has live k = true
+    · rw [if_pos hl] at hk; cases hk
+    · rw [if_neg hl] at hk; exact ⟨hl, hk⟩
+  have hnd2 : ((ab0 ++ [id]) ++ rest).Nodup := by simpa using hnd
+  have hkeep : ∀ j ∈ id :: rest, Treap.has dead j ≠ true := by
+    intro j hj hd
+    obtain ⟨hl, hm⟩ := hdead j hd
+    rcases List.mem_cons.mp hj with rfl | hj
+    · exact hl hid
+    · exact (List.nodup_append.mp hnd2).2.2 j hm j hj rfl
+  split at hst
+  · subst hst
+    exact ⟨hi, GStepsR.refl _, ⟨⟨ab0, hs⟩, fun _ _ => rfl, fun _ _ => rfl⟩⟩
+  · subst hst
+    obtain ⟨a1, a2, a3, a4, a5⟩ := cullFold_ok (Treap.rap dead)
+      { st with stats := { st.stats with culled := st.stats.culled + Treap.wyt dead },
+                stk := st.stk.filter (fun i => !Treap.has dead i), moved := Treap.dif st.moved dead }
+    have hL : ∀ k, k ∈ (Treap.rap dead).map (·.1) ↔ Treap.has dead k = true := mem_rap_keys dead
+    refine ⟨⟨graphWF_stepsR a5 hi.g_wf, by rw [a2]; exact hi.done_wf, fun i o ho => ?_, fun i => ?_, ?_⟩, a5, ⟨⟨ab0.filter (fun i => !Treap.has dead i), ?_⟩, fun j hj => ?_, fun j hj => ?_⟩⟩
+    · rw [a3] at ho
+      split at ho
+      · cases ho
+      · rename_i hn
+        obtain ⟨d, hd⟩ := hi.ord_g i o ho
+        exact ⟨d, by rw [a4, if_neg hn]; exact hd⟩
+    · rw [a3, a1]
+      simp only [List.mem_filter, Bool.not_eq_true', ← hi.ord_stk i]
+      by_cases hd : Treap.has dead i = true
+      · simp [(hL i).mpr hd, hd]
+      · have : Treap.has dead i = false := by simpa using hd
+        simp only [this, Bool.false_eq_true, not_false_eq_true, and_true]
+        rw [if_neg (fun h => hd ((hL i).mp h))]
+    · rw [a1]; exact hi.nodup.filter _
+    · rw [a1, hs, List.filter_append, List.filter_cons]
+      have hid' : Treap.has dead id ≠ true := hkeep id (by simp)
+      have hr : rest.filter (fun i => !Treap.has dead i) = rest := by
+        apply List.filter_eq_self.mpr
+        intro j hj
+        have := hkeep j (List.mem_cons_of_mem _ hj)
+        simpa using this
+      simp only [show (!Treap.has dead id) = true by simpa using hid', if_true, hr]
+    · rw [a3, if_neg (fun h => hkeep j hj ((hL j).mp h))]
+    · rw [a4, if_neg (fun h => hkeep j hj ((hL j).mp h))]
+
 end Ana
 end SkaModel
 end Formalization
