@@ -987,6 +987,169 @@ def main():
     name(gate_battery(inl), 'inlineable.battery')
     formulas.add(gate_battery(inl))
 
+    # the analysis core `ana` (the |% of +ska-callgraph, the second core above
+    # `lib` on the tail spine): the first spine core whose battery holds
+    # +patch-prod.  Its arms +patch-prod and +msg-anno carry %fast labels;
+    # +knit-anno, +msg-sock, +safe-nomm and +safe-fol-fol are found through
+    # their callers.  `knit_anno.lib.axis` is the axis of `lib` in `ana`,
+    # through which +knit-anno, +patch-prod and +msg-anno reach +so and +pi.
+    (pp_arm,) = arms_of('patch-prod')
+    ana = core
+    while True:
+        if type(NODES[head(ana)]) is tuple:
+            ana_arms = dict((a, ax) for ax, a in fe_arms(head(ana), 2, limit=20))
+            if pp_arm in ana_arms:
+                break
+        ana = tail(ana)
+    name(ana, 'ana')
+    facts.append(('core_ana', 'slot? %d core = some ana' % spine_axis(core, ana)))
+    def ana_arm(a, lname, labelled):
+        name(a, lname + '.arm')
+        formulas.add(a)
+        g = gate_battery(a) if labelled else door_gate_battery(a)
+        name(g, lname + '.battery')
+        formulas.add(g)
+        axes.append((lname, ana_arms[a], 'slot? %s.axis ana = some %s.arm' % (lname, lname)))
+        return g
+    pp_bat = ana_arm(pp_arm, 'patch_prod', True)
+    (ma_arm,) = arms_of('msg-anno')
+    ma_bat = ana_arm(ma_arm, 'msg_anno', True)
+    # +knit-anno: the one arm that +patch-prod pulls from its context, the core
+    knit_ax = callee(pp_bat, 7)
+    assert callee(ma_bat, 7) == knit_ax
+    knit_bat = ana_arm(slot(knit_ax, ana), 'knit_anno', False)
+    lib_in_ana = spine_axis(ana, lib)
+    # +knit-anno reaches +so and +pi through `lib`, at axis 7 of its context
+    assert set(c for _, c in pulls(knit_bat) if c != 1) == {4 * lib_in_ana + 3}
+    axes.append(('knit_anno.lib', lib_in_ana, 'slot? knit_anno.lib.axis ana = some lib'))
+    # +msg-sock: the gate of `ana` that +recursive-call pulls and that pulls
+    # nothing but +knit:so (the arm `knit` of the core of +so, at axis 31)
+    (rc_arm,) = arms_of('recursive-call')
+    knit_so_ax = dict((nm, ax_) for nm, ax_, _ in axes)['so.knit']
+    cands = []
+    for ax_, c in pulls(gate_battery(rc_arm)):
+        try:
+            a = slot(ax_, ana)
+        except Exception:
+            continue
+        if a in ana_arms and is_gate_builder(a) and not label_of(a):
+            ps = set(pulls(door_gate_battery(a)))
+            if ps == {(so_lib, 4 * lib_in_ana + 3), (knit_so_ax, 1)}:
+                cands.append(a)
+    (ms_arm,) = set(cands)
+    ana_arm(ms_arm, 'msg_sock', False)
+    # +safe-fol-fol and +safe-nomm: the gates of `ana` whose formulas test for
+    # the tags %memo and %mean, of which +safe-fol-fol pulls +safe-nomm from
+    # its context and +safe-nomm pulls nothing
+    def atoms_in(i):
+        return set(NODES[j] for j in reach([i]) if type(NODES[j]) is int)
+    MEAN, MEMO = cord('mean'), cord('memo')
+    sn, sff = [], []
+    for a, ax_ in ana_arms.items():
+        if label_of(a) or not is_gate_builder(a):
+            continue
+        g = door_gate_battery(a)
+        if not {MEAN, MEMO} <= atoms_in(g):
+            continue
+        ps = pulls(g)
+        if ps == []:
+            sn.append(a)
+        elif len(ps) == 1 and ps[0][1] == 7:
+            sff.append((ps[0][0], a))
+    (sn_arm,) = sn
+    (sff_arm,) = [a for ax_, a in sff if slot(ax_, ana) == sn_arm]
+    ana_arm(sn_arm, 'safe_nomm', False)
+    ana_arm(sff_arm, 'safe_fol_fol', False)
+
+    # the interpreter core `interp` ("Formal definition of the interpreter"),
+    # the tail of `core`.  Its arms have no %fast labels: +read and +store are
+    # the gates that run `got` and `put` of the door +by, +move the gate that
+    # pulls just those two, +eval-pass the gate that pulls +move and +levy.
+    # `read.layer2.axis` is the axis of layer 2 in `interp`, where +by is.
+    interp = tail(core)
+    name(interp, 'interp')
+    facts.append(('core_interp', 'slot? 3 core = some interp'))
+    int_arms = dict((a, ax) for ax, a in fe_arms(head(interp), 2))
+    ax_all = dict((nm, ax_) for nm, ax_, _ in axes)
+    l2_in_interp = spine_axis(interp, layer2)
+    axes.append(('read.layer2', l2_in_interp, 'slot? read.layer2.axis interp = some layer2'))
+    def runs_arm(g, ax_):
+        """does the formula g pull the arm ax_ of a core, [9 ax_ ...]"""
+        for i in reach([g]):
+            n = NODES[i]
+            if type(n) is tuple and NODES[n[0]] == 9 and type(NODES[n[1]]) is tuple \
+                    and NODES[head(n[1])] == ax_:
+                return True
+        return False
+    by_pull = (ax_all['by'], 4 * l2_in_interp + 3)
+    def int_arm(a, lname):
+        name(a, lname + '.arm')
+        formulas.add(a)
+        g = door_gate_battery(a)
+        name(g, lname + '.battery')
+        formulas.add(g)
+        axes.append((lname, int_arms[a], 'slot? %s.axis interp = some %s.arm' % (lname, lname)))
+        return g
+    int_gates = [(a, door_gate_battery(a)) for a in int_arms if is_gate_builder(a)]
+    (rd,) = [a for a, g in int_gates if pulls(g) == [by_pull] and runs_arm(g, ax_all['by.got'])]
+    (st_,) = [a for a, g in int_gates if pulls(g) == [by_pull] and runs_arm(g, ax_all['by.put'])]
+    int_arm(rd, 'read')
+    int_arm(st_, 'store')
+    (mv,) = [a for a, g in int_gates
+             if sorted(pulls(g)) == sorted([(int_arms[rd], 7), (int_arms[st_], 7)])]
+    int_arm(mv, 'move')
+    (ep,) = [a for a, g in int_gates
+             if (int_arms[mv], 15) in pulls(g) and any(x == ax_all['levy'] for x, _ in pulls(g))]
+    ep_bat = int_arm(ep, 'eval_pass')
+    # +eval-pass: its loop, the gate that +levy runs on each argument
+    # (`eval_pass.chk`) and the gate that +lien runs inside it (`eval_pass.mem`)
+    name_loops('eval_pass', ep_bat, 1)
+    builders = [i for i in reach([ep_bat]) if is_gate_builder(i)]
+    (chk,) = [i for i in builders if any(is_gate_builder(j) and j != i
+                                          for j in reach([door_gate_battery(i)]))]
+    (mem,) = [i for i in builders if i != chk]
+    name(door_gate_battery(chk), 'eval_pass.chk')
+    formulas.add(door_gate_battery(chk))
+    name(door_gate_battery(mem), 'eval_pass.mem')
+    formulas.add(door_gate_battery(mem))
+    # the arms that thread the core `cor` (`=*  cor  ..poke`): [7 [0 1] gate],
+    # told apart by the tags they test for
+    def tagged(want, avoid=()):
+        res = []
+        for a, ax_ in int_arms.items():
+            if NODES[head(a)] != 7 or tail(head(tail(a))) != atom(1) \
+                    or not is_gate_builder(tail(tail(a))):
+                continue
+            at = set(NODES[j] for j in reach([a]) if type(NODES[j]) is int)
+            if all(cord(w) in at for w in want) and not any(cord(w) in at for w in avoid):
+                res.append(a)
+        (a,) = res
+        return a
+    for lname, want, avoid in (('eval_pole', ['imm', 'csm'], []),
+                               ('eval_blob', ['lti', 'jsf'], []),
+                               ('eval_top', ['bare', 'full'], ['imm', 'lti']),
+                               ('eval_rend', ['meac', 'meaf'], ['imm', 'lti', 'lose'])):
+        a = tagged(want, avoid)
+        name(a, lname + '.arm')
+        formulas.add(a)
+        g = door_gate_battery(tail(tail(a)))
+        name(g, lname + '.battery')
+        formulas.add(g)
+        axes.append((lname, int_arms[a], '∀ x, slot? %s.axis (C interp.battery x) = some %s.arm'
+                     % (lname, lname)))
+        if lname == 'eval_pole':
+            # the gate of the alias `load`, which runs +read
+            loads = set(door_gate_battery(i) for i in reach([g]) if is_gate_builder(i)
+                        and [x for x, _ in pulls(door_gate_battery(i))] == [int_arms[rd]])
+            (ld,) = loads
+            name(ld, 'eval_pole.load')
+            formulas.add(ld)
+    name(head(interp), 'interp.battery')
+    IN_BULK.add('interp.battery')
+    # the core of +poke that the interpreter threads, as the pill builds it
+    name(tail(interp), 'cor')
+    facts.append(('interp_cor', 'slot? 3 interp = some cor'))
+
     # ---- write
     emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, len(data))
     print('steps', steps)
@@ -1007,7 +1170,8 @@ def main():
 # content, in which a named noun counts by its name, so a region that did not
 # change regenerates to the same text.
 
-BULK = {'root', 'nok', 'trap', 'core', 'layer0', 'layer1', 'layer2', 'layer3', 'layer4', 'lib'}
+BULK = {'root', 'nok', 'trap', 'core', 'layer0', 'layer1', 'layer2', 'layer3', 'layer4', 'lib',
+        'ana', 'interp', 'cor'}
 IN_BULK = set()      # names of other families that belong to the bulk
 
 CHUNK_MIN = 1000     # bulk definitions per chain file, at least

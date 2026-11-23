@@ -21,6 +21,11 @@ public import lemmas.Pill.Arm.Dor
 public import lemmas.Pill.Arm.Double_int
 public import lemmas.Pill.Arm.Dvr
 public import lemmas.Pill.Arm.End
+public import lemmas.Pill.Arm.Eval_blob
+public import lemmas.Pill.Arm.Eval_pass
+public import lemmas.Pill.Arm.Eval_pole
+public import lemmas.Pill.Arm.Eval_rend
+public import lemmas.Pill.Arm.Eval_top
 public import lemmas.Pill.Arm.Fall
 public import lemmas.Pill.Arm.Fe
 public import lemmas.Pill.Arm.Flop
@@ -32,6 +37,7 @@ public import lemmas.Pill.Arm.In
 public import lemmas.Pill.Arm.Inlineable
 public import lemmas.Pill.Arm.Ja
 public import lemmas.Pill.Arm.Ju
+public import lemmas.Pill.Arm.Knit_anno
 public import lemmas.Pill.Arm.Lent
 public import lemmas.Pill.Arm.Levy
 public import lemmas.Pill.Arm.Lien
@@ -50,17 +56,24 @@ public import lemmas.Pill.Arm.Mod
 public import lemmas.Pill.Arm.Monk
 public import lemmas.Pill.Arm.Mook
 public import lemmas.Pill.Arm.Mor
+public import lemmas.Pill.Arm.Move
+public import lemmas.Pill.Arm.Msg_anno
+public import lemmas.Pill.Arm.Msg_sock
 public import lemmas.Pill.Arm.Mug
 public import lemmas.Pill.Arm.Muk
 public import lemmas.Pill.Arm.Mul
 public import lemmas.Pill.Arm.Murn
 public import lemmas.Pill.Arm.Need
+public import lemmas.Pill.Arm.Patch_prod
 public import lemmas.Pill.Arm.Peg
 public import lemmas.Pill.Arm.Pi
+public import lemmas.Pill.Arm.Read
 public import lemmas.Pill.Arm.Rear
 public import lemmas.Pill.Arm.Rip
 public import lemmas.Pill.Arm.Roll
 public import lemmas.Pill.Arm.Rsh
+public import lemmas.Pill.Arm.Safe_fol_fol
+public import lemmas.Pill.Arm.Safe_nomm
 public import lemmas.Pill.Arm.Scag
 public import lemmas.Pill.Arm.Scow
 public import lemmas.Pill.Arm.Skid
@@ -75,6 +88,7 @@ public import lemmas.Pill.Arm.Soft
 public import lemmas.Pill.Arm.Some
 public import lemmas.Pill.Arm.Sort
 public import lemmas.Pill.Arm.Spin
+public import lemmas.Pill.Arm.Store
 public import lemmas.Pill.Arm.Sub
 public import lemmas.Pill.Arm.Tank
 public import lemmas.Pill.Arm.Turn
@@ -99,6 +113,11 @@ import all lemmas.Pill.Arm.Dor
 import all lemmas.Pill.Arm.Double_int
 import all lemmas.Pill.Arm.Dvr
 import all lemmas.Pill.Arm.End
+import all lemmas.Pill.Arm.Eval_blob
+import all lemmas.Pill.Arm.Eval_pass
+import all lemmas.Pill.Arm.Eval_pole
+import all lemmas.Pill.Arm.Eval_rend
+import all lemmas.Pill.Arm.Eval_top
 import all lemmas.Pill.Arm.Fall
 import all lemmas.Pill.Arm.Fe
 import all lemmas.Pill.Arm.Flop
@@ -110,6 +129,7 @@ import all lemmas.Pill.Arm.In
 import all lemmas.Pill.Arm.Inlineable
 import all lemmas.Pill.Arm.Ja
 import all lemmas.Pill.Arm.Ju
+import all lemmas.Pill.Arm.Knit_anno
 import all lemmas.Pill.Arm.Lent
 import all lemmas.Pill.Arm.Levy
 import all lemmas.Pill.Arm.Lien
@@ -128,17 +148,24 @@ import all lemmas.Pill.Arm.Mod
 import all lemmas.Pill.Arm.Monk
 import all lemmas.Pill.Arm.Mook
 import all lemmas.Pill.Arm.Mor
+import all lemmas.Pill.Arm.Move
+import all lemmas.Pill.Arm.Msg_anno
+import all lemmas.Pill.Arm.Msg_sock
 import all lemmas.Pill.Arm.Mug
 import all lemmas.Pill.Arm.Muk
 import all lemmas.Pill.Arm.Mul
 import all lemmas.Pill.Arm.Murn
 import all lemmas.Pill.Arm.Need
+import all lemmas.Pill.Arm.Patch_prod
 import all lemmas.Pill.Arm.Peg
 import all lemmas.Pill.Arm.Pi
+import all lemmas.Pill.Arm.Read
 import all lemmas.Pill.Arm.Rear
 import all lemmas.Pill.Arm.Rip
 import all lemmas.Pill.Arm.Roll
 import all lemmas.Pill.Arm.Rsh
+import all lemmas.Pill.Arm.Safe_fol_fol
+import all lemmas.Pill.Arm.Safe_nomm
 import all lemmas.Pill.Arm.Scag
 import all lemmas.Pill.Arm.Scow
 import all lemmas.Pill.Arm.Skid
@@ -153,6 +180,7 @@ import all lemmas.Pill.Arm.Soft
 import all lemmas.Pill.Arm.Some
 import all lemmas.Pill.Arm.Sort
 import all lemmas.Pill.Arm.Spin
+import all lemmas.Pill.Arm.Store
 import all lemmas.Pill.Arm.Sub
 import all lemmas.Pill.Arm.Tank
 import all lemmas.Pill.Arm.Turn
@@ -190,6 +218,12 @@ theorem layer4_layer3 : slot? 3 layer4 = some layer3 := by kernel_rfl
 theorem layer3_layer2 : slot? 3 layer3 = some layer2 := by kernel_rfl
 
 theorem core_lib : slot? 8191 core = some lib := by kernel_rfl
+
+theorem core_ana : slot? 2047 core = some ana := by kernel_rfl
+
+theorem core_interp : slot? 3 core = some interp := by kernel_rfl
+
+theorem interp_cor : slot? 3 interp = some cor := by kernel_rfl
 
 /-! Each named arm sits at its axis.  The constants `x.axis` are in the
 arm files. -/
@@ -553,6 +587,42 @@ theorem ca.lib.layer1.arm_at : slot? ca.lib.layer1.axis lib = some layer1 := by 
 theorem distribute.arm_at : slot? distribute.axis lib = some distribute.arm := by kernel_rfl
 
 theorem double_int.arm_at : slot? double_int.axis lib = some double_int.arm := by kernel_rfl
+
+theorem patch_prod.arm_at : slot? patch_prod.axis ana = some patch_prod.arm := by kernel_rfl
+
+theorem msg_anno.arm_at : slot? msg_anno.axis ana = some msg_anno.arm := by kernel_rfl
+
+theorem knit_anno.arm_at : slot? knit_anno.axis ana = some knit_anno.arm := by kernel_rfl
+
+theorem knit_anno.lib.arm_at : slot? knit_anno.lib.axis ana = some lib := by kernel_rfl
+
+theorem msg_sock.arm_at : slot? msg_sock.axis ana = some msg_sock.arm := by kernel_rfl
+
+theorem safe_nomm.arm_at : slot? safe_nomm.axis ana = some safe_nomm.arm := by kernel_rfl
+
+theorem safe_fol_fol.arm_at : slot? safe_fol_fol.axis ana = some safe_fol_fol.arm := by kernel_rfl
+
+theorem read.layer2.arm_at : slot? read.layer2.axis interp = some layer2 := by kernel_rfl
+
+theorem read.arm_at : slot? read.axis interp = some read.arm := by kernel_rfl
+
+theorem store.arm_at : slot? store.axis interp = some store.arm := by kernel_rfl
+
+theorem move.arm_at : slot? move.axis interp = some move.arm := by kernel_rfl
+
+theorem eval_pass.arm_at : slot? eval_pass.axis interp = some eval_pass.arm := by kernel_rfl
+
+theorem eval_pole.arm_at : ∀ x, slot? eval_pole.axis (C interp.battery x) = some eval_pole.arm := by
+  intro x; kernel_rfl
+
+theorem eval_blob.arm_at : ∀ x, slot? eval_blob.axis (C interp.battery x) = some eval_blob.arm := by
+  intro x; kernel_rfl
+
+theorem eval_top.arm_at : ∀ x, slot? eval_top.axis (C interp.battery x) = some eval_top.arm := by
+  intro x; kernel_rfl
+
+theorem eval_rend.arm_at : ∀ x, slot? eval_rend.axis (C interp.battery x) = some eval_rend.arm := by
+  intro x; kernel_rfl
 
 end Pill
 end Formalization

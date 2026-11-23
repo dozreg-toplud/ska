@@ -18,7 +18,7 @@ is not ported to Lean and no port is trusted.
 ```sh
 cd formalization
 tools/capped.sh -m 3G lake build core              # 3 s
-tools/capped.sh -m 3G lake build                   # about 63 s from scratch, 2.5 GB peak
+tools/capped.sh -m 3G lake build                   # about 73 s from scratch, 2.6 GB peak
 tools/capped.sh -m 3G lake env lean lemmas/Audit.lean  # axioms of the main theorems
 ```
 
@@ -58,7 +58,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `CueSpec.lean` | `cue` of `core/` checked by the kernel on jams made by `tools/nouns.py`. |
 | `CueWords.lean`, `CueExample.lean` | An earlier `cue` on 32-bit words, built for the kernel, checked on a 150-cell jam. |
 | `Pill/Arm/<Family>.lean` | Generated: the named nouns of one arm family (`dec.arm`, `dec.battery`, `dec.loop`, ..., and the axis constant `dec.axis`), as a Lean module whose nouns are public but whose bodies are not exposed. |
-| `Pill/Nouns/P000.lean`, ... | Generated: the rest of the pill's noun and of the SKA core (definitions named by a hash of their content), as a chain of modules.  A few named nouns live here too: the library core `lib`, the batteries `ca.battery` and `so.battery`, and the arms `dif` of `+ca` and `huge` of `+so`, which quote a noun holding the hoon core. |
+| `Pill/Nouns/P000.lean`, ... | Generated: the rest of the pill's noun and of the SKA core (definitions named by a hash of their content), as a chain of modules.  A few named nouns live here too: the library core `lib`, the batteries `ca.battery` and `so.battery`, and the arms `dif` of `+ca` and `huge` of `+so`, which quote a noun holding the hoon core, and the analysis core `ana` (the `|%` of `+ska-callgraph`, two cores above `lib`), whose arms `+patch-prod`, `+knit-anno`, `+msg-sock`, `+msg-anno`, `+safe-nomm`, `+safe-fol-fol` have their own arm files. |
 | `Pill/Facts.lean` | Generated, kernel-checked: the pill's formula on its trap evaluates to the core, and the arms sit at their axes (`x.arm_at`). |
 | `Hoon/Basic.lean` | Flags (`loob`), lists as nouns (`listN`, `appendN`), and `Below`, the predicate on the context of a second-layer arm that reads the first layer. |
 | `Hoon/Dec.lean` | `+dec`: `dec_gate (c) (n) (h : 0 < n) : nock [dec.battery n c] dec.battery = some (n - 1)`, and `(dec 0)` crashes. |
@@ -97,6 +97,11 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/Pi.lean` | `cons`, `hed`, `tel`, `slot` (on an axis of at least `1`) and `compose` of the provenance core `+pi` compute B's models of `Ska/Pi.lean`; `hed`, `tel`, `slot` read `+peg` (and `+cap`, `+mas`) of layer 1 through the library core (`PegOf`, `AxisOf`). |
 | `Compiler/PiEdit.lean` | `edit` and `prune` of `+pi`, `+distribute` and `+double-int` against B's models (`pi_edit_gate`, `pi_prune_gate`, `distribute_gate`, `double_int_gate'`), and on the pill's library core with no assumption (`*_pill`).  The upward loop of `edit` is the noun of the upward loop of `+darn:so` (`pi_edit_up`); `prune` computes `distribute` with its arguments swapped. |
 | `Compiler/Inlineable.lean` | `+inlineable` computes `inlineable` of `Ska/FolLoop.lean` on every noun and in every context (`inlineable_gate'`); it reads nothing from its context. |
+| `Compiler/Safe.lean` | `+safe-nomm` and `+safe-fol-fol` of the analysis core `ana` compute `safeNomm` and `safeFolFol` of `Ska/FolLoop.lean` on `Nomm.toNoun` of every nomm (`safe_nomm_gate`, `safe_fol_fol_gate`, and `*_pill` on `ana`).  `+safe-nomm` reads nothing from its context, `+safe-fol-fol` reads `+safe-nomm`. |
+| `Compiler/Anno.lean` | `+knit-anno`, `+patch-prod`, `+msg-sock` and `+msg-anno` of `ana` against `knitAnno`, `patchProd`, `msgSock` (with its crash as `none`) and `msgAnno` of `Ska/CallGraph.lean`, on every sock and spring (`*_gate`), and on `ana` with no assumption (`*_pill`).  They reach `+so` and `+pi` through `lib` at `knit_anno.lib.axis` of `ana`. |
+| `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
+| `Compiler/Regs.lean`, `Compiler/EvalPass.lean` | `+read`, `+store`, `+move` and `+eval-pass` of the interpreter core `interp` against `read`, `store`, `move`, `evalPass` of `Ska/Interp.lean` on maps of `TreapMap mugF` (`read_pill`, `store_pill`, `move_pill`, `eval_pass_pill`), from gate theorems that assume what the arms read through layer 2 (`RegsIn`, `MoveIn`, `EvalPassIn`). |
+| `Compiler/EvalPole.lean` | `+eval-pole` on every op that stays in the function (all but `%nok` and the calls) against `localPole` of `Ska/Interp.lean` (`eval_pole_local`, `eval_pole_hmp`, `eval_pole_spy`), in a context `ctx` whose tail is the compiler's core `cor`; `%spy` assumes `SlamIsNock lib`.  On the pill's `interp` with its own `cor`: `eval_pole_local_pill`. |
 | `Compiler/Lib.lean` | `dif` of `+ca` and `huge` of `+so`, whose crash messages quote a noun that holds the hoon core, so that the generator names them in the bulk chain (`ca.dif.mean` is the quoted noun).  And the pill's library core `lib` satisfies `CaOf`, `SoOf`, `AxisOf`, `YeaOf`: every gate of `+ca` and `+so` computes its model on the pill's core (`ca_int_pill`, ..., `so_darn_pill`) with no assumption. |
 | `Compiler/Axes.lean` | `pat`, `lot` of `+ca` and `pull` of `+so`, which walk an axis with `+cap` and `+mas` of layer 1, read through the library core at `ca.lib.layer1.axis`; B's `cap` and `mas` equal `capF` and `masF`.  And `yea` of `+ca`, with `+peg` and `+weld`, and `darn` of `+so`. |
 | `Ska/Types.lean` | Models of the IR types (`Bell`, `Sock`, `Cape`, `Pole`, `Termin`, `Blob`, `Straight`, `Tone`, ...), each with its Hoon noun layout. |
@@ -131,6 +136,13 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/ConvergeRel.lean` | Agreement from the final graph with each last run in `FolR` (`ConvergedGraphR`, `GStepR`, `agree_pokeR`); the older statements as special cases; `RunEntryR.pop`. |
 | `Ska/Bridge.lean` | The state-passing `fol-loop`, projected, is in `FolR` (`bridge_step`, `folLoop_goOK`, `run_folTopR`), under an invariant that `resolve` keeps, which is assumed; the write of `+run` is a `GStepR.run`. |
 | `Ska/MemoPoke.lean` | Memo hits from earlier pokes: `MemoEntryOK`, the hit entry as a third kind (`ConvergedGraphM`, `agree_pokeM`), and the memo invariant kept by every poke (`MemoInv`, `memoInv_poke`). |
+| `Ska/CompModel.lean` | A model of `+comp`'s `run` for nomm without calls, hints and forks (`[^ *]`, `%0`, `%1`, `%3`, `%4`, `%5`, `%7`) and its helpers (`emit`, `from`, `split`, `copy`, `mede`, `collapse-lazy-atom`, `forl`); `HoonSet` abstracts the sets. |
+| `Ska/CompSem.lean` | `RunOK`, the relation for one run of `run` against `execBlob` (goals with looks and jump arguments, the necessity of the looks). |
+| `Ska/CompRun.lean`, `Ska/CompLook.lean`, `Ska/CompMede.lean`, `Ska/CompUnary.lean` | `%0`, `%1`, `%7`, `%4` (`%done`, `%pick`) and `%3` (`%pick`) meet `RunOK`; `+sure-require-look`; `+mede`. |
+| `Ska/CompFrag.lean` | `run_ok`: the model of `run` meets `RunOK` on the fragment `Frag`, by induction, with no assumption about `+comp`. |
+| `Ska/CompTop.lean` | A model of the end of `+comp` (`+need-ord-alloc-regs`, `+kern-need`, `+coerce-lazy` without forks, `+to-straight`'s renaming path with `+chase`) and of the final pass `finish`. `+shape-collapse` and `+bake-need` are parameters. |
+| `Ska/CompStraight.lean`, `Ska/CompEntry.lean` | The renaming and chasing of `+to-straight` keep what the code does (`sim_block`), and entering the result does what the entry block did (`toStraight_entry`). |
+| `Ska/CompTopOK.lean` | `finish_bellContract`: on the fragment `Frag`, the final pass meets `BellContract` for every shape on which it does not crash, when nothing is baked and the bell's cape has no `[| |]`. It still assumes `RunDown` (blocks jump only to smaller labels) and `CoerceSpec` (what the ops of `+coerce-lazy` do), which are facts about the model that are not proved yet. |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
@@ -207,8 +219,8 @@ import only its theorems.  So:
 2. A change to a declaration of the chain rebuilds the rest of the chain,
    `Facts.lean` and the layer files, and no gate theorem file.  A comment
    rebuilds the edited file only.
-3. A clean build takes about 63 seconds (3 min 40 s of CPU) and peaks at
-   2.5 GB for the whole build (measured 2026-11-23 under a 3 GB scope).
+3. A clean build takes about 73 seconds (4 min 12 s of CPU) and peaks at
+   2.6 GB for the whole build (measured 2026-11-23 under a 3 GB scope).
 
 ## Gaps
 
@@ -236,5 +248,18 @@ import only its theorems.  So:
    `+mack`, `+mook` and `+mock`.  `+scow`, `+smyt`, `+crip` and `+soft` are
    not proved; `mock_pill_iff` assumes what they compute, field by field of
    `Lib`.
-8. **Not done among the compiler's arms:** `+safe-nomm`, `+safe-fol-fol`,
-   `+knit-anno`, `+patch-prod`, `+msg-sock`, `+msg-anno`.
+8. **The small arms of the analysis are done:** `+inlineable`, `+safe-nomm`,
+   `+safe-fol-fol`, `+knit-anno`, `+patch-prod`, `+msg-sock`, `+msg-anno`
+   agree with their models on every input.
+9. **The interpreter is done in part.**  `+read`, `+store`, `+move`,
+   `+eval-pass` and the ops of `+eval-pole` that stay in the function agree
+   with `Ska/Interp.lean` on maps of `TreapMap mugF`.  Not done: the ops of
+   `+eval-pole` that leave the function (`%nok`, `%cal`, `%caf`, `%cam`,
+   `%csl`, `%csf`, `%csm`), `+eval-blob`, `+eval-top`, `+eval-mook` and
+   `+eval-rend`.  The arms that thread the compiler's core read their context
+   through its tail `cor`, so after a poke they read the new `cor`: a theorem
+   about them needs the poke to keep layer 2 at `read.layer2.axis`.
+10. **`Treap` of `Ska/Analysis.lean` has no instance from `lemmas/Hoon/`.**  The
+   class orders nothing by key nouns (its `put` and `tap` take no layout of
+   the keys, which `+put:by` and `+tap:by` order by `+gor` and `+mor`), and its
+   law `ext` needs treaps to be canonical, which is not proved.
