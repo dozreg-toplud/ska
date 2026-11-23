@@ -502,6 +502,50 @@ theorem cull_ok2 {memoF : Memo M} {n : Nat} {id : Ident} {st st' : SkaState M R}
         · exact fun hcr => (List.nodup_append.mp hnd2).2.2 c hcl c hcr rfl
     exact key x hR
 
+/-! ## The member loop -/
+
+theorem dirty_eq (m : Ident) (st : SkaState M R) :
+    dirty m st = (Treap.tap (calleesOf st m)).any (fun ce => decide (ranOf st m ≤ chgOf st ce.1.id)) := rfl
+
+/-- A member that is not dirty: its callees changed before its last run. -/
+theorem not_dirty {m : Ident} {st : SkaState M R} (h : dirty m st = false) :
+    ∀ c, InCallees (calleesOf st m) c → chgOf st c < ranOf st m := by
+  intro c ⟨seat, hs⟩
+  rw [dirty_eq, List.any_eq_false] at h
+  obtain ⟨v, hv⟩ := (Treap.has_iff _ _).mp hs
+  have := h (⟨seat, c⟩, v) ((Treap.mem_tap _ _ _).mpr hv)
+  simp only [decide_eq_true_eq] at this
+  omega
+
+theorem dirty_false_of {m : Ident} {st : SkaState M R}
+    (h : ∀ c, InCallees (calleesOf st m) c → chgOf st c < ranOf st m) : dirty m st = false := by
+  rw [dirty_eq, List.any_eq_false]
+  intro ce hce
+  have hin : InCallees (calleesOf st m) ce.1.id :=
+    ⟨ce.1.seat, (Treap.has_iff _ _).mpr ⟨ce.2, (Treap.mem_tap _ _ _).mp (by simpa using hce)⟩⟩
+  have := h _ hin
+  simp only [decide_eq_true_eq]
+  omega
+
+/-- What the member loop of a pass at the root `id` keeps and gives: the
+members below the root keep their answers with the bound `index`; every
+member above the root has run and reads nothing below the `low` it returns;
+and in a pass with no change and no new function, the members listed are not
+dirty at the end, and nothing else moved. -/
+def MemP2 (memoF : Memo M) (mem : MemGo M R) : Prop :=
+  ∀ index pass ms st r st' (F : Entry → Prop) (ab0 rest : List Ident) (id : Ident),
+    CInv memoF st F → st.stk = ab0 ++ id :: rest → Treap.get st.order id = some index →
+    (∀ m ∈ ms, m ∈ st.stk ∧ m ∉ rest) → (∀ m ∈ rest, MemOK st F m index) →
+    (∀ x o, Treap.get st.order x = some o → x ∉ rest → 1 ≤ ranOf st x ∧ LowB st x index) →
+    mem index pass ms st = some (r, st') →
+    (∃ F', (∀ e, F e → F' e) ∧ CInv memoF st' F' ∧ ∀ m ∈ rest, MemOK st' F' m index) ∧
+    GStepsR (gCore st.g) (gCore st'.g) ∧ Keep st.stk (· ∈ rest) st st' ∧ Frame (· ∈ rest) st st' ∧
+    r.1 ≤ index ∧ (∀ x o, Treap.get st'.order x = some o → x ∉ rest → 1 ≤ ranOf st' x ∧ LowB st' x r.1) ∧
+    (r.1 = index → r.2 = false → st'.next = st.next →
+      (∀ x, Treap.get st'.order x = Treap.get st.order x) ∧ (∀ j, chgOf st' j = chgOf st j) ∧
+      (∀ j ∈ st.stk, j ∉ ms → ranOf st' j = ranOf st j ∧ calleesOf st' j = calleesOf st j) ∧
+      ∀ m ∈ ms, dirty m st' = false)
+
 end Ana
 end SkaModel
 end Formalization
