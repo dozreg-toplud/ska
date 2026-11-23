@@ -43,6 +43,7 @@ def AgreeF (lib : Lib) {σ : Type} (O : Oracle σ) (c : Straight Map) (gul : Nou
 structure RunOKD (lib : Lib) (nm : Nomm) (g0 g1 : Gen Map) (nex : NextL S) : Prop where
   ext : Ext g0 g1
   grow : Grow g0 g1
+  cnd : g1.cond = g0.cond
   lo : 1 ≤ nex.th.there
   hi : nex.th.there < g1.bo
   ent : ∃ B fin, HoonMap.get g1.blocks nex.th.there = some ⟨[], B, fin⟩
@@ -119,7 +120,7 @@ theorem runOKD_frag (lib : Lib) {nm : Nomm} (hf : Frag nm (CGoal.done : CGoal S)
   have R := run_ok lib nm CGoal.done g0 g n hf trivial trivial hr
   have D := run_down (S := S) (Map := Map) nm CGoal.done g0 g n trivial b0 d0 hr
   have en : entries (Next.toL n).laz = [] := entries_ofSure _
-  refine ⟨R.ext, D.grow, D.lo, D.hi, ?_, fun r hr => ?_, R.dist, by simp [Next.toL, entries_ofSure], by simp [Next.toL, entries_ofSure], by simp [Next.toL, entries_ofSure],
+  refine ⟨R.ext, D.grow, (kc_run nm CGoal.done).keep g0 n g hr, D.lo, D.hi, ?_, fun r hr => ?_, R.dist, by simp [Next.toL, entries_ofSure], by simp [Next.toL, entries_ofSure], by simp [Next.toL, entries_ofSure],
     by simp [Next.toL, entries_ofSure], fun s hs => ?_, ?_⟩
   · rcases D.entry with ⟨b, hb, hp⟩ | e
     · exact ⟨b.body, b.fin, by rw [show (Next.toL n).th = n.th from rfl, hb, ← hp]⟩
@@ -237,12 +238,14 @@ theorem runD_ok (lib : Lib) {nm : Nomm} (hf : FragD (S := S) nm) : ∀ {region :
       x0.laz x1.laz
     have reB : ∀ r, g1.re ≤ r → r < g2.re → g0.re ≤ r ∧ r < g4.re := fun r h1 h2 => ⟨by omega, by omega⟩
     have reA : ∀ r, g0.re ≤ r → r < g1.re → g0.re ≤ r ∧ r < g4.re := fun r h1 h2 => ⟨h1, by omega⟩
-    refine ⟨E04, ?_, by simp only [jmp0]; omega, by simp only [jmp0]; omega, ⟨[], Termin.hop nc.th, h4o⟩,
+    refine ⟨E04, ?_, ?_, by simp only [jmp0]; omega, by simp only [jmp0]; omega, ⟨[], Termin.hop nc.th, h4o⟩,
       fun r hr => ?_, Rc.dist, ?_, ?_, ?_, ?_, fun s hs => ?_, ?_⟩
     · -- grow
       exact Rb.grow.trans (Ra.grow.trans ((grow_sixGenL region (jumpsBelow_hop Ra.lo Ra.hi)
         (jumpsBelow_hop Rb.lo (by have := Rb.hi; omega))).trans
         (Dc.grow.trans ((grow_emit (jumpsBelow_hop Dc.lo Dc.hi)).trans (grow_addOps hadd)))))
+    · -- cond
+      rw [(KC.addOps' _ _).keep _ _ _ hadd, emitted_cond, (kc_run c _).keep _ _ _ h3, sixGenL_cond, Ra.cnd, Rb.cnd]
     · -- regs
       rcases Rc.regs r hr with e | e
       · exact e.elim
