@@ -105,7 +105,11 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/Stat.lean` | The static condition `StatOK` (the product sock generalizes what the subject sock knows at each axis provenance), kept by every sock operation of `fol-loop`. |
 | `Ska/AppMask.lean` | `+app:ca` under a mask, and the subject half of a call site, `call_sub_fits`: on the code requirement, a call's subject fits the callee's requirement. |
 | `Ska/FolLoopRel.lean` | `folLoop_rgood`: the soundness of `fol-loop` relative to the code requirement, every case; `folLoop_wantSound`, `folLoop_relProd`. |
-| `Ska/Converge.lean` | `converged_agree`: the analysis output of every entry of a converged graph agrees with `+mink` on its code requirement. It still assumes `ProdRel` (products of entries satisfy the provenance invariant), well-formed subject socks, and that the graph converged. |
+| `Ska/Converge.lean` | `converged_agree`: the analysis output of every entry of a converged graph agrees with `+mink` on its code requirement. `ConvergeProd.lean` removes its assumption `ProdRel`. |
+| `Ska/MinkFuel.lean` | `+mink` taken apart with its fuel: a run with fuel `k+1` has its parts, and the callee of Nock 2, with fuel `k`. |
+| `Ska/FolLoopProd.lean` | `folLoop_rprod`: the product half of `folLoop_rgood` for runs with fuel `K+1`, from a table right on callee runs with fuel `K`. |
+| `Ska/ConvergeProd.lean` | `prodRel_of_converged`: `ProdRel` at convergence, by induction on the fuel. `agree_at_convergence`: agreement with `+mink` assuming convergence (`RunEntryP`, `Answers`, `CodeIs`, `CodeHas`) and well-formed subject socks. `RunEntryP` asks that the stored product is the last run's, which is stronger than the Hoon's test (the stored product is the merge of the run's and the old one). |
+| `Ska/CompSim.lean` | The relation `+comp` must establish for nomm without calls and hints (`CompDone`, `CompRel` per block and goal), which gives `BellContract`; composition for `%7` and `%6`; the leaves `[1 k]`, `[0 1]`, `[0 0]` meet the contract. `+comp` itself is not modelled. |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
