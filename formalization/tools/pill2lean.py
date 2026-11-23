@@ -1003,13 +1003,15 @@ def main():
         ana = tail(ana)
     name(ana, 'ana')
     facts.append(('core_ana', 'slot? %d core = some ana' % spine_axis(core, ana)))
-    def ana_arm(a, lname, labelled):
+    def ana_arm(a, lname, labelled, full=True, axname=None):
         name(a, lname + '.arm')
         formulas.add(a)
         g = gate_battery(a) if labelled else door_gate_battery(a)
         name(g, lname + '.battery')
-        formulas.add(g)
-        axes.append((lname, ana_arms[a], 'slot? %s.axis ana = some %s.arm' % (lname, lname)))
+        if full:
+            formulas.add(g)
+        axes.append((axname or lname, ana_arms[a], 'slot? %s.axis ana = some %s.arm'
+                     % (axname or lname, lname)))
         return g
     pp_bat = ana_arm(pp_arm, 'patch_prod', True)
     (ma_arm,) = arms_of('msg-anno')
@@ -1060,6 +1062,88 @@ def main():
     (sff_arm,) = [a for ax_, a in sff if slot(ax_, ana) == sn_arm]
     ana_arm(sn_arm, 'safe_nomm', False)
     ana_arm(sff_arm, 'safe_fol_fol', False)
+
+    # the arms of `ana` that fol-loop calls.  +he-sock, +recursive-call and
+    # +register-fast carry %fast labels (+register-fast quotes the hoon core,
+    # so it is named in the bulk); +cape-size is the arm that +he-sock
+    # pulls from its context, +git-g the one that the loop of +recursive-call
+    # pulls from `ana` (axis 63 of the loop's subject), +soft-spot the one
+    # that the trap `nock-11-soft` of fol-loop pulls.  +register-fast is
+    # named but not written out as a formula: its tree has 2 million cells.
+    (hs_arm,) = arms_of('he-sock')
+    hs_bat = ana_arm(hs_arm, 'he_sock', True)
+    ana_arm(slot(callee(hs_bat, 7), ana), 'cape_size', False)
+    rc_bat = ana_arm(rc_arm, 'recursive_call', True)
+    name_loops('recursive_call', rc_bat, 1)
+    (rc_loop,) = find_loops(rc_bat)
+    (rc_cnt,) = [i for i in reach([rc_bat]) if is_gate_builder(i)]
+    name(door_gate_battery(rc_cnt), 'recursive_call.cnt')
+    formulas.add(door_gate_battery(rc_cnt))
+    ana_arm(slot(callee(rc_loop, 63), ana), 'git_g', False)
+    (rf_arm,) = arms_of('register-fast')
+    # it quotes a noun that holds the hoon core, as +dif:ca does, so its axis
+    # constant lives with fol-loop
+    assert reach([rf_arm]) & bulk_named
+    IN_BULK.update(['register_fast.arm', 'register_fast.battery'])
+    ana_arm(rf_arm, 'register_fast', True, full=False, axname='fol_loop.register_fast')
+    # the core +mi: the arm [[1 battery] 0 1] of `ana` whose battery holds
+    # +git:mi and +put:mi (labels git-mi, put-mi), and +gut:mi, the gate that
+    # +put:mi pulls from its context
+    (gm_arm,) = arms_of('git-mi')
+    (pm_arm,) = arms_of('put-mi')
+    (mi_ax,) = [ax_ // 2 for a, ax_ in ana_arms.items()
+                if NODES[head(a)] == 1 and gm_arm in reach([tail(a)])]
+    mi_arm = slot(mi_ax, ana)
+    assert tail(mi_arm) == cell(atom(0), atom(1))
+    mi_bat = tail(head(mi_arm))
+    name(mi_arm, 'mi.arm')
+    formulas.add(mi_arm)
+    name(mi_bat, 'mi.battery')
+    axes.append(('mi', mi_ax, 'slot? mi.axis ana = some mi.arm'))
+    mi_core = cell(mi_bat, atom(0))
+    gut_ax = callee(gate_battery(pm_arm), 7)
+    for lab, a, labelled, loops in (('git', gm_arm, True, 1), ('put', pm_arm, True, 0),
+                                    ('gut', slot(gut_ax, mi_core), False, 0)):
+        name(a, 'mi.%s.arm' % lab)
+        formulas.add(a)
+        gb = gate_battery(a) if labelled else door_gate_battery(a)
+        name(gb, 'mi.%s.battery' % lab)
+        formulas.add(gb)
+        name_loops('mi.' + lab, gb, loops)
+        axes.append(('mi.' + lab, find_axis(mi_core, a),
+                     '∀ x, slot? mi.%s.axis (C mi.battery x) = some mi.%s.arm' % (lab, lab)))
+    # the trap fol-loop of +run: [8 [[1 battery] hint] 9 2 0 1], and in its
+    # battery the traps `nock-2-direct-non-inlined` and `nock-11-soft`, kicked
+    # in place, and the loop `resolve`
+    def hinted_trap(label):
+        hint = hint_of(label)
+        (tc,) = [i for i in live if type(NODES[i]) is tuple and tail(i) == hint
+                 and type(NODES[head(i)]) is tuple and NODES[head(head(i))] == 1]
+        return tc, tail(head(tc))
+    fl_core, fl_bat = hinted_trap('fol-loop')
+    name(fl_bat, 'fol_loop.battery')
+    formulas.add(fl_bat)
+    for label, lname in (('nock-2-direct-non-inlined', 'direct'), ('nock-11-soft', 'soft')):
+        _, tb = hinted_trap(label)
+        name(tb, 'fol_loop.' + lname)
+        formulas.add(tb)
+    (fl_res,) = find_loops(fl_bat)
+    name(fl_res, 'fol_loop.resolve')
+    formulas.add(fl_res)
+    soft_bat_ = [i for i, nm in names.items() if nm == 'fol_loop.soft'][0]
+    (sp_ax,) = set(x for x, _ in pulls(soft_bat_))
+    sp_bat = ana_arm(slot(sp_ax, ana), 'soft_spot', False)
+    name_loops('soft_spot', sp_bat, 'any')
+    # +analyze and +run of the core of +ska-callgraph (labels ska-analyze and
+    # ska-callgraph-iteration), named without axes
+    for label, lname in (('ska-analyze', 'ska_analyze'), ('ska-callgraph-iteration', 'ska_run')):
+        (a,) = arms_of(label)
+        name(a, lname + '.arm')
+        formulas.add(a)
+        g = gate_battery(a)
+        name(g, lname + '.battery')
+        formulas.add(g)
+        name_loops(lname, g, 'any')
 
     # the interpreter core `interp` ("Formal definition of the interpreter"),
     # the tail of `core`.  Its arms have no %fast labels: +read and +store are
