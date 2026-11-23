@@ -741,5 +741,219 @@ theorem eval_blob_jsp_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
     by.got.arm_at, got_arm, got_gate layer2 ⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩ _ _ _ hg,
     unitNoun, eval_blob.arm, hB]
 
+theorem slot_tail_of {k : Nat} {s y z : Noun} (h : slot? k s = some y) (h3 : slot? 3 y = some z) :
+    slot? (2 * k + 1) s = some z := by
+  cases y with
+  | atom _ => simp [nock_exec] at h3
+  | cell a b =>
+    simp only [nock_exec, Option.some.injEq] at h3
+    subst h3
+    exact slot?_right h
+
+set_option maxHeartbeats 16000000 in
+/-- What `execBlob` returns, the pill's `+eval-blob` returns: by the partial
+correctness of `execBlob`, one case of the loop at a time, with the ops by
+`eval_pole_le`, the calls at the end of a block by `eval_blob_jmp_le` and
+`eval_blob_jsp_le`, and the jumps within the function by the hypothesis of the
+induction. -/
+theorem eval_blob_le (lib : Lib) (hslam : SlamIsNock lib)
+    (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun))
+    (hpk : ∀ cr, CorIn cr → PokeIs pk cr)
+    (Ob : Oracle Noun) (hOb : BlobLe lib Ob) (O : Oracle Noun) (hcall : CallLe lib pk Ob O)
+    (hnok : TopLe O) : BlobLe lib O := by
+  intro cr hc regs trace b s params scry r h
+  revert hc
+  refine execBlob.partial_correctness lib O s scry
+    (fun st regs trace b params r => CorIn st →
+      nock (blobS st regs trace b s params scry) eval_blob.battery = some (resN r) ∧ CorIn r.2)
+    ?_ cr regs trace b params r h
+  intro rec ih st regs trace b params r h hc
+  have hpi := evalPoleIn_icore hc
+  obtain ⟨hmv, hrd, _, hrc⟩ := hpi
+  have hrm := read_model (icore st) hrc
+  have hl1 := slot_tail_of (hc : slot? read.layer2.axis (icore st) = some layer2) layer2_layer1
+  have hl2 : slot? read.layer2.axis (icore st) = some layer2 := hc
+  have hep := eval_pass_gate (icore st) ⟨hmv, ⟨hrd, ‹_›, hrc⟩, layer2, hc, levy.arm_at, lien.arm_at⟩
+  simp only [read.layer2.axis, icore, Nat.reduceMul, Nat.reduceAdd] at hl1
+  simp only [nock_exec] at hl1
+  simp only [read.layer2.axis, icore, nock_exec] at hl2
+  simp only [read.axis, icore, nock_exec] at hrd
+  have hlth := arith_layer1.2.2.2.1
+  have hgot : ∀ j : Nat, ∀ b' : Blob, HoonMap.get s.blocks j = some b' →
+      getF mugF (A j) (HoonMap.toNoun Blob.toNoun s.blocks) = some (C (A 0) b'.toNoun) := by
+    intro j b' e; have := getF_hoonMap Blob.toNoun s.blocks j; rw [e] at this; exact this
+  have hgot0 : ∀ j : Nat, HoonMap.get s.blocks j = none →
+      getF mugF (A j) (HoonMap.toNoun Blob.toNoun s.blocks) = some (A 0) := by
+    intro j e; have := getF_hoonMap Blob.toNoun s.blocks j; rw [e] at this; exact this
+  have hnd : NeedIn layer2 ∧ SomeIn layer2 ∧ GorIn mugF layer2 :=
+    ⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩
+  -- a jump within the function
+  have hop : ∀ (j : Jmp), (∃ b', HoonMap.get s.blocks j.there = some b' ∧
+      rec st regs trace b' j.args = some r) →
+      ∃ b' : Blob, getF mugF (A j.there) (HoonMap.toNoun Blob.toNoun s.blocks) = some (C (A 0) b'.toNoun) ∧
+        nock (C eval_blob.battery (C (C (C (HoonMap.toNoun id regs) (listNoun Frame.toNoun trace))
+          (C b'.toNoun (C s.toNoun (C (listNoun (unitNoun A) j.args) scry)))) (C interp.battery st)))
+          eval_blob.battery = some (resN r) ∧ CorIn r.2 := by
+    intro j hj
+    obtain ⟨b', e, hr⟩ := hj
+    exact ⟨b', hgot _ _ e, ih _ _ _ _ _ _ hr hc⟩
+  obtain ⟨bpar, bbody, bfin⟩ := b
+  simp only [Option.bind_eq_bind] at h
+  by_cases hp : params ≠ [] ∨ bpar ≠ []
+  · rw [if_pos hp, Option.bind_eq_some_iff] at h
+    obtain ⟨regs', e1, h⟩ := h
+    obtain ⟨hI, hC⟩ := ih _ _ _ _ _ _ h hc
+    refine ⟨?_, hC⟩
+    have hp2 := hep params bpar regs
+    rw [e1, Option.map_some] at hp2
+    simp only [blobS, icore, Blob.toNoun, argsN, listNoun] at hI
+    rcases params with _ | ⟨p0, ps⟩ <;> rcases bpar with _ | ⟨q0, qs⟩
+    · simp at hp
+    all_goals
+      simp only [argsN, parN, listNoun] at hp2
+      simp only [blobS, icore, Blob.toNoun, argsN, listNoun]
+      blob_simp [hp2, hI, eval_pass_arm]
+  have hp' : params = [] ∧ bpar = [] := by simpa using hp
+  obtain ⟨rfl, rfl⟩ := hp'
+  rw [if_neg hp] at h
+  cases bbody with
+  | cons p rest =>
+    simp only [Option.bind_eq_some_iff] at h
+    obtain ⟨⟨ton, regs', trace', st'⟩, e1, h⟩ := h
+    obtain ⟨hP, hC'⟩ :=
+      eval_pole_le st hc lib hslam pk (hpk st hc) Ob hOb O hcall hnok scry p regs trace _ e1
+    simp only [poleS, icore, poleOutS] at hP
+    simp only [blobS, icore, Blob.toNoun, argsN, listNoun]
+    cases ton with
+    | zero q =>
+      obtain ⟨hI, hC⟩ := ih _ _ _ _ _ _ h hC'
+      simp only [blobS, icore, Blob.toNoun, argsN, listNoun] at hI
+      refine ⟨?_, hC⟩
+      blob_simp [hP, hI, eval_pole.arm, Tone.toNoun]
+    | one q =>
+      simp only [Option.some.injEq] at h; subst h
+      refine ⟨?_, hC'⟩
+      blob_simp [hP, eval_pole.arm, Tone.toNoun, resN]
+    | two q =>
+      simp only [Option.some.injEq] at h; subst h
+      refine ⟨?_, hC'⟩
+      blob_simp [hP, eval_pole.arm, Tone.toNoun, resN]
+  | nil =>
+  cases bfin with
+  | jmp a v => exact eval_blob_jmp_le st hc lib pk (hpk st hc) Ob hOb O hcall s scry a v regs trace r h
+  | jsp a sr => exact eval_blob_jsp_le st hc lib pk (hpk st hc) Ob hOb O hcall s scry a sr regs trace r h
+  | jmf a v n =>
+    have e : nock (blobS st regs trace ⟨[], [], Termin.jmf a v n⟩ s [] scry) eval_blob.battery
+        = nock (blobS st regs trace ⟨[], [], Termin.jmp a v⟩ s [] scry) eval_blob.battery := by
+      simp only [blobS, icore, Blob.toNoun, argsN, listNoun, Termin.toNoun]
+      blob_simp []
+    rw [e]
+    exact eval_blob_jmp_le st hc lib pk (hpk st hc) Ob hOb O hcall s scry a v regs trace r h
+  | jsf a sr n =>
+    have e : nock (blobS st regs trace ⟨[], [], Termin.jsf a sr n⟩ s [] scry) eval_blob.battery
+        = nock (blobS st regs trace ⟨[], [], Termin.jsp a sr⟩ s [] scry) eval_blob.battery := by
+      simp only [blobS, icore, Blob.toNoun, argsN, listNoun, Termin.toNoun]
+      blob_simp []
+    rw [e]
+    exact eval_blob_jsp_le st hc lib pk (hpk st hc) Ob hOb O hcall s scry a sr regs trace r h
+  | hop t =>
+    obtain ⟨b', hg, hI, hC⟩ := hop t (Option.bind_eq_some_iff.1 h)
+    refine ⟨?_, hC⟩
+    simp only [blobS, icore, Blob.toNoun, argsN, listNoun, Termin.toNoun, Jmp.toNoun]
+    blob_simp [hl2, by.arm_at, by_arm, by.got.arm_at, got_arm, got_gate layer2 hnd _ _ _ hg, hI]
+  | don sr =>
+    simp only [Option.bind_eq_some_iff] at h
+    obtain ⟨v, e1, h⟩ := h
+    simp only [Option.some.injEq] at h; subst h
+    refine ⟨?_, hc⟩
+    simp only [blobS, icore, Blob.toNoun, argsN, listNoun, Termin.toNoun]
+    blob_simp [hrd, read_arm, hrm, e1, resN, Tone.toNoun]
+  | bom o =>
+    simp only [Option.some.injEq] at h; subst h
+    refine ⟨?_, hc⟩
+    simp only [blobS, icore, Blob.toNoun, argsN, listNoun, Termin.toNoun]
+    cases o <;> blob_simp [resN, Tone.toNoun, unitNoun]
+  | lti n sr z o =>
+    simp only [Option.bind_eq_some_iff] at h
+    obtain ⟨v, e1, h⟩ := h
+    simp only [blobS, icore, Blob.toNoun, argsN, listNoun, Termin.toNoun, Jmp.toNoun]
+    rcases v with a | ⟨v1, v2⟩
+    · by_cases hlt : a < n
+      · simp only [hlt, decide_true, if_true] at h
+        obtain ⟨b', hg, hI, hC⟩ := hop z (by simpa using h)
+        refine ⟨?_, hC⟩
+        blob_simp [hrd, read_arm, hrm, e1, hl1, lth.arm_at, lth_arm, lth_gate layer1 hlth.2, hlt,
+          hl2, by.arm_at, by_arm, by.got.arm_at, got_arm, got_gate layer2 hnd _ _ _ hg, hI]
+      · simp only [hlt, decide_false, Bool.false_eq_true, if_false] at h
+        obtain ⟨b', hg, hI, hC⟩ := hop o (by simpa using h)
+        refine ⟨?_, hC⟩
+        blob_simp [hrd, read_arm, hrm, e1, hl1, lth.arm_at, lth_arm, lth_gate layer1 hlth.2, hlt,
+          hl2, by.arm_at, by_arm, by.got.arm_at, got_arm, got_gate layer2 hnd _ _ _ hg, hI]
+    · obtain ⟨b', hg, hI, hC⟩ := hop o (by simpa using h)
+      refine ⟨?_, hC⟩
+      blob_simp [hrd, read_arm, hrm, e1, hl2, by.arm_at, by_arm, by.got.arm_at, got_arm,
+        got_gate layer2 hnd _ _ _ hg, hI]
+  | clq sr z o =>
+    simp only [Option.bind_eq_some_iff] at h
+    obtain ⟨v, e1, h⟩ := h
+    simp only [blobS, icore, Blob.toNoun, argsN, listNoun, Termin.toNoun, Jmp.toNoun]
+    rcases v with a | ⟨v1, v2⟩
+    · obtain ⟨b', hg, hI, hC⟩ := hop o (by simpa using h)
+      refine ⟨?_, hC⟩
+      blob_simp [hrd, read_arm, hrm, e1, hl2, by.arm_at, by_arm, by.got.arm_at, got_arm,
+        got_gate layer2 hnd _ _ _ hg, hI]
+    · obtain ⟨b', hg, hI, hC⟩ := hop z (by simpa using h)
+      refine ⟨?_, hC⟩
+      blob_simp [hrd, read_arm, hrm, e1, hl2, by.arm_at, by_arm, by.got.arm_at, got_arm,
+        got_gate layer2 hnd _ _ _ hg, hI]
+  | eqq l rr z o =>
+    simp only [Option.bind_eq_some_iff] at h
+    obtain ⟨x, e1, y, e2, h⟩ := h
+    simp only [blobS, icore, Blob.toNoun, argsN, listNoun, Termin.toNoun, Jmp.toNoun]
+    by_cases hxy : x = y
+    · subst hxy
+      obtain ⟨b', hg, hI, hC⟩ := hop z (by simpa using h)
+      refine ⟨?_, hC⟩
+      blob_simp [hrd, read_arm, hrm, e1, e2, hl2, by.arm_at, by_arm, by.got.arm_at, got_arm,
+        got_gate layer2 hnd _ _ _ hg, hI]
+    · obtain ⟨b', hg, hI, hC⟩ := hop o (by simpa [hxy] using h)
+      refine ⟨?_, hC⟩
+      blob_simp [hrd, read_arm, hrm, e1, e2, hl2, by.arm_at, by_arm, by.got.arm_at, got_arm,
+        got_gate layer2 hnd _ _ _ hg, hI, hxy]
+  | brz sr z o =>
+    simp only [Option.bind_eq_some_iff] at h
+    obtain ⟨v, e1, h⟩ := h
+    simp only [blobS, icore, Blob.toNoun, argsN, listNoun, Termin.toNoun, Jmp.toNoun]
+    by_cases hv : v = A 0
+    · subst hv
+      obtain ⟨b', hg, hI, hC⟩ := hop z (by simpa using h)
+      refine ⟨?_, hC⟩
+      blob_simp [hrd, read_arm, hrm, e1, hl2, by.arm_at, by_arm, by.got.arm_at, got_arm,
+        got_gate layer2 hnd _ _ _ hg, hI]
+    · obtain ⟨b', hg, hI, hC⟩ := hop o (by simpa [hv] using h)
+      refine ⟨?_, hC⟩
+      have hv' : ¬ A 0 = v := fun e => hv e.symm
+      blob_simp [hrd, read_arm, hrm, e1, hl2, by.arm_at, by_arm, by.got.arm_at, got_arm,
+        got_gate layer2 hnd _ _ _ hg, hI, hv']
+  | brn sr z o =>
+    simp only [Option.bind_eq_some_iff] at h
+    obtain ⟨v, e1, h⟩ := h
+    simp only [blobS, icore, Blob.toNoun, argsN, listNoun, Termin.toNoun, Jmp.toNoun]
+    rcases v with (_ | _ | k) | ⟨v1, v2⟩
+    · obtain ⟨b', hg, hI, hC⟩ := hop z (by simpa [Option.bind_eq_some_iff] using h)
+      refine ⟨?_, hC⟩
+      blob_simp [hrd, read_arm, hrm, e1, hl2, by.arm_at, by_arm, by.got.arm_at, got_arm,
+        got_gate layer2 hnd _ _ _ hg, hI]
+    · obtain ⟨b', hg, hI, hC⟩ := hop o (by simpa [Option.bind_eq_some_iff] using h)
+      refine ⟨?_, hC⟩
+      blob_simp [hrd, read_arm, hrm, e1, hl2, by.arm_at, by_arm, by.got.arm_at, got_arm,
+        got_gate layer2 hnd _ _ _ hg, hI]
+    · simp at h; subst h
+      refine ⟨?_, hc⟩
+      blob_simp [hrd, read_arm, hrm, e1, resN, Tone.toNoun]
+    · simp at h; subst h
+      refine ⟨?_, hc⟩
+      blob_simp [hrd, read_arm, hrm, e1, resN, Tone.toNoun]
+
 end Compiler
 end Formalization
