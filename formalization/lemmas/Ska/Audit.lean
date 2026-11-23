@@ -1,4 +1,6 @@
 import lemmas.Ska.Statements
+import lemmas.Ska.AnaInv
+import lemmas.Ska.StaleWitness
 import lemmas.Ska.CapeFacts
 import lemmas.Ska.ContractExamples
 import lemmas.Ska.BugWitness
@@ -183,5 +185,12 @@ open Formalization.SkaModel
 #print axioms memoInv_poke
 #print axioms agree_pokeM
 #print axioms mergeProd_void
+#print axioms Ana.resolveStep_ok
+#print axioms Ana.runStep_ok
+#print axioms Ana.passStep_ok
+#print axioms Ana.analyzeStep_ok
+#print axioms Ana.allP
+#print axioms Ana.skaCallgraph_steps
+#print axioms Ana.run_ok
 #print axioms RunEntryR.pop
 #print axioms Ana.runEnd_gStepR

@@ -2233,6 +2233,13 @@
     ::  callee has run) and the members of a component that was found stable
     ::  before its real root was known.
     ::
+    ::  Members that .id does not reach are dropped before the first pass
+    ::  too, as after every pass: a nested component that turned out not to
+    ::  be one leaves its members on the stack, and a member that the sweep
+    ::  does not list is never run again, while a run later in the pass can
+    ::  call it and read its entry from before its callees changed.
+    ::
+    =.  st  (cull id st)
     =/  pass=@  1
     |-  ^-  [@ ska-state]
     =*  pass-loop  $
