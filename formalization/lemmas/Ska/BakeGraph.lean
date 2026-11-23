@@ -114,7 +114,7 @@ def touchStep (E : BEnv M) (cur : Bell) (new : M Bell (List Sock))
   let m := innUpd new cur c (Treap.gut st.inn c Treap.empty)
   let st := { st with inn := Treap.put st.inn c m }
   if c = E.root then some (changed, st) else
-  let st := if E.jetted c then { st with fix := Treap.put st.fix c () } else st
+  let st := { st with fix := if E.jetted c then Treap.put st.fix c () else st.fix }
   let ks := ((Treap.tap m).map Prod.snd).flatten
   (bakeOf (E.frozen || Treap.has st.fix c) c.less ks).bind fun bake =>
   let old := Treap.get st.bak c
@@ -322,6 +322,103 @@ theorem newFold_spec (vars : M Bell (M Bell Unit)) :
           exact ⟨ks', h1, h2 k List.mem_cons_self⟩
         · exact acc'.2 b k hm hpk
 
+
+/-! ## Recomputing the bakes of the touched callees -/
+
+/-- A site's subjects fit the bake of its callee. -/
+def GoodSite (st : BSt M) (b : Bell) (k : Sock) : Prop :=
+  ∃ s, Treap.get st.bak b = some s ∧ ∀ y, Fits b.less y → Fits k y → Fits s y
+
+theorem rebakeG_fits {bake s : Sock} {old : Option Sock} {g g' : Nat} {y : Noun} (hb : Fits bake y)
+    (h : rebakeG bake old g = some (s, g')) : Fits s y := by
+  unfold rebakeG at h
+  split at h
+  · cases h; exact hb
+  · simp only [Option.bind_eq_some_iff] at h
+    obtain ⟨b, _, h⟩ := h
+    split at h
+    · cases h; exact hb
+    · simp only [Option.map_eq_some_iff, Prod.mk.injEq] at h
+      obtain ⟨b', hb', rfl, _⟩ := h
+      exact normSockH_fits (purr_fits_left _ _ _ hb) hb'
+
+theorem touchFold_none (E : BEnv M) (cur : Bell) (new : M Bell (List Sock)) :
+    ∀ (l : List Bell), l.foldl (touchStep E cur new) none = none
+  | [] => rfl
+  | _ :: l => touchFold_none E cur new l
+
+theorem gut_eq_of_get {ν μ : Type} {a b : M Bell (M ν μ)} {k : Bell} (h : Treap.get a k = Treap.get b k) (d : M ν μ) :
+    Treap.gut a k d = Treap.gut b k d := by
+  unfold Treap.gut; rw [h]
+
+/-- One callee, unfolded: its `inn` updated, and when it is not the root its
+bake recomputed from it and kept (and queued) when it changed. -/
+theorem touchStep_cases {E : BEnv M} {cur : Bell} {new : M Bell (List Sock)} {c : Bell}
+    {changed0 changed1 : List Bell} {st0 st1 : BSt M}
+    (h : touchStep E cur new (some (changed0, st0)) c = some (changed1, st1)) :
+    st1.inn = Treap.put st0.inn c (innUpd new cur c (Treap.gut st0.inn c Treap.empty)) ∧
+    ((c = E.root ∧ st1.bak = st0.bak ∧ changed1 = changed0) ∨
+     (c ≠ E.root ∧ ∃ fixed bake bake' g g',
+        bakeOf fixed c.less (((Treap.tap (innUpd new cur c (Treap.gut st0.inn c Treap.empty))).map Prod.snd).flatten) = some bake ∧
+        rebakeG bake (Treap.get st0.bak c) g = some (bake', g') ∧
+        ((some bake' = Treap.get st0.bak c ∧ st1.bak = st0.bak ∧ changed1 = changed0) ∨
+         (st1.bak = Treap.put st0.bak c bake' ∧ changed1 = c :: changed0)))) := by
+  simp only [touchStep, Option.bind_some] at h
+  by_cases hc : c = E.root
+  · rw [if_pos hc] at h
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨rfl, Or.inl ⟨hc, rfl, rfl⟩⟩
+  · rw [if_neg hc] at h
+    simp only [Option.bind_eq_some_iff] at h
+    obtain ⟨bake, hbake, ⟨bake', grew'⟩, hre, h⟩ := h
+    by_cases hold : some bake' = Treap.get st0.bak c
+    · rw [if_pos hold] at h
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact ⟨rfl, Or.inr ⟨hc, _, bake, bake', _, grew', hbake, hre, Or.inl ⟨hold, rfl, rfl⟩⟩⟩
+    · rw [if_neg hold] at h
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact ⟨rfl, Or.inr ⟨hc, _, bake, bake', _, grew', hbake, hre, Or.inr ⟨rfl, rfl⟩⟩⟩
+
+/-- One callee: what changes and what its bake keeps. -/
+theorem touchStep_spec {E : BEnv M} {cur : Bell} {new : M Bell (List Sock)} {c : Bell}
+    {changed0 changed1 : List Bell} {st0 st1 : BSt M}
+    (h : touchStep E cur new (some (changed0, st0)) c = some (changed1, st1)) :
+    (∀ b, b ≠ c → Treap.get st1.inn b = Treap.get st0.inn b ∧ Treap.get st1.bak b = Treap.get st0.bak b) ∧
+    Treap.gut st1.inn c Treap.empty = innUpd new cur c (Treap.gut st0.inn c Treap.empty) ∧
+    (c ≠ E.root → ∀ c' ks, Treap.get (Treap.gut st1.inn c Treap.empty) c' = some ks → ∀ k ∈ ks, GoodSite st1 c k) ∧
+    (∀ b, Treap.get st1.bak b ≠ Treap.get st0.bak b → b ∈ changed1) ∧
+    (∀ b ∈ changed0, b ∈ changed1) ∧
+    (c = E.root → Treap.get st1.bak E.root = Treap.get st0.bak E.root) := by
+  obtain ⟨hinn, hcase⟩ := touchStep_cases h
+  have hgut : Treap.gut st1.inn c Treap.empty = innUpd new cur c (Treap.gut st0.inn c Treap.empty) := by
+    rw [hinn]; simp [Treap.gut, Treap.get_put]
+  have hinnb : ∀ b, b ≠ c → Treap.get st1.inn b = Treap.get st0.inn b := fun b hb => by
+    rw [hinn, Treap.get_put, if_neg hb]
+  rcases hcase with ⟨hc, hbak, hch⟩ | ⟨hc, fixed, bake, bake', g, g', hbake, hre, hcase⟩
+  · subst hch
+    refine ⟨fun b hb => ⟨hinnb b hb, by rw [hbak]⟩, hgut, fun h => absurd hc h,
+      fun b hb => absurd (by rw [hbak]) hb, fun b hb => hb, fun _ => by rw [hbak]⟩
+  · have hfit : ∀ c' ks, Treap.get (Treap.gut st1.inn c Treap.empty) c' = some ks →
+        ∀ k ∈ ks, ∀ y, Fits c.less y → Fits k y → Fits bake' y := by
+      intro c' ks hks k hk y hy hky
+      rw [hgut] at hks
+      refine rebakeG_fits (bakeOf_fits hy hky ?_ hbake) hre
+      exact List.mem_flatten.mpr ⟨ks, List.mem_map.mpr ⟨(c', ks), (Treap.mem_tap _ _ _).mpr hks, rfl⟩, hk⟩
+    rcases hcase with ⟨hold, hbak, hch⟩ | ⟨hbak, hch⟩
+    · subst hch
+      refine ⟨fun b hb => ⟨hinnb b hb, by rw [hbak]⟩, hgut, fun _ c' ks hks k hk => ⟨bake', ?_, hfit c' ks hks k hk⟩,
+        fun b hb => absurd (by rw [hbak]) hb, fun b hb => hb, fun h => absurd h hc⟩
+      rw [hbak, ← hold]
+    · subst hch
+      refine ⟨fun b hb => ⟨hinnb b hb, by rw [hbak, Treap.get_put, if_neg hb]⟩, hgut,
+        fun _ c' ks hks k hk => ⟨bake', by rw [hbak, Treap.get_put, if_pos rfl], hfit c' ks hks k hk⟩,
+        fun b hb => ?_, fun b hb => List.mem_cons_of_mem _ hb, fun h => absurd h hc⟩
+      by_cases e : b = c
+      · subst e; exact List.mem_cons_self
+      · rw [hbak, Treap.get_put, if_neg e] at hb; exact absurd rfl hb
 
 end Bake
 
