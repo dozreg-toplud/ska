@@ -387,6 +387,33 @@ theorem sixNext_okN (lib : Lib) {c a b : Nomm} (hcp : c.pure = true)
       · exact goalSem_none _ (e0.trans Hc)
       · exact goalSem_none _ (e0.trans Hc)
 
+/-! ## The fragment for fork-free `%next` goals -/
+
+/-- **The fragment for fork-free goals `%next`**: a nomm of `Frag` for every
+such goal, and `[6 c a b]` with a test of `FragP` for `%pick` and branches of
+`FragN`, so `%6` nests in the branches and in the tests. -/
+inductive FragN : Nomm → Prop
+  | frag {nm : Nomm} : (∀ (sur : Sure S) (th : Jmp), Frag nm (CGoal.next sur th)) → FragN nm
+  | six {c a b : Nomm} : (∀ z o, FragP (S := S) (CGoal.pick z o) c) → FragN a → FragN b →
+      FragN (Nomm.n6 c a b)
+
+/-- **`runL` meets `RunOKN` on `FragN`**, for a fork-free goal `%next` whose
+jump has no arguments, when the nomm has at most 255 `%6`. -/
+theorem runN_ok (lib : Lib) {nm : Nomm} (hf : FragN (S := S) nm) :
+    ∀ {sur : Sure S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
+    GJ g0.bo (CGoal.next sur th) → th.args = [] → GoalOK g0 (CGoal.next sur th) → Clean sur.ned →
+    sixCount nm ≤ 255 → 1 ≤ g0.bo → g0.drop = false →
+    runL nm (CGoalL.next (ofSure sur) th) region g0 = some (nex, g1) → RunOKN (Map := Map) lib nm sur th g0 g1 nex := by
+  induction hf with
+  | frag hf =>
+    intro sur th region g0 g1 nex hj _ hok hcl _ b0 d0 h
+    exact runOKN_frag lib (hf sur th) hj b0 d0 hok hcl h
+  | six hc _ _ iha ihb =>
+    intro sur th region g0 g1 nex hj hth hok hcl hcount b0 d0 h
+    exact sixNext_okN lib (fragP_pure (hc (jmp0 0) (jmp0 0)))
+      (fun z o _ _ _ _ hj' hc' b' d' h' => runP_ok lib (hc z o) trivial hj' hc' b' d' h') iha ihb
+      hj hth hok hcl hcount b0 d0 h
+
 end Comp
 end SkaModel
 end Formalization
