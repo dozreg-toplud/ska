@@ -86,3 +86,4 @@ open Formalization.SkaModel
 #print axioms distribute_has
 #print axioms folLoopF_want_mono
 #print axioms fitsOpt_app_part
+#print axioms known_formula

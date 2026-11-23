@@ -192,5 +192,82 @@ theorem fitsOpt_app_part : ∀ (q : List Bool) (W : Cape) (s : Sock) (o : Option
                 rw [et] at h'
                 exact ih wt _ o (fun r => hW r) h'
 
+/-! ## A formula the analysis knows, on a subject of the code requirement -/
+
+/-- **The static condition** of a sock-annotated noun `[S σ]` within a
+function on the subject sock `T`: at each part that comes from an axis of
+the subject, `S` knows no more than `T` there. -/
+def StatS (T S : Sock) (σ : Noun) : Prop :=
+  ∀ π b, springAt σ π = A b → b ≠ 0 → ∃ q, axisPath b = some q ∧ PosLe (sockAt T q) (sockAt S π)
+
+/-- Where the provenance is a cell, the sock may stand for a cell. -/
+def ShapeOK (S : Sock) (σ : Noun) : Prop :=
+  ∀ π, isCellN (springAt σ π) = true → Cellish (sockAt S π)
+
+theorem slotO_eq_cell {o : Option Noun} {a b : Noun} (h1 : slotO o [false] = some a)
+    (h2 : slotO o [true] = some b) : o = some (C a b) := by
+  cases o with
+  | none => cases h1
+  | some n =>
+    cases n with
+    | atom _ => simp [slotO, slotAtPath] at h1
+    | cell x y =>
+      simp [slotO, slotAtPath] at h1 h2
+      rw [h1, h2]
+
+theorem fitsOpt_yes {F : Noun} {o : Option Noun} (h : FitsOpt (Sock.mk Cape.yes F) o) : o = some F := by
+  cases o with
+  | none => obtain ⟨_, _, e, hn⟩ := h; cases e; simp [Cape.isNo] at hn
+  | some n => simp only [FitsOpt, Fits, FitsCape] at h; rw [h]
+
+/-- **A part that the analysis knows fully is the same on every subject of
+the code requirement**, if `want` covers its provenance: for a product `p`
+satisfying the invariant on a subject `x` of `app:ca W bus`, with the static
+condition and the shape condition, wherever the sock knows the part as `F`,
+the part is `F`. -/
+theorem known_part {x p : Noun} {bus S : Sock} {σ : Noun} {W : Cape}
+    (hp : ProvO x S σ (some p)) (hst : StatS bus S σ) (hsh : ShapeOK S σ)
+    (hX : Fits (Ca.app W bus) x) (hW : ∀ q, (distribute Cape.yes σ).Has q → W.Has q) :
+    ∀ σ' π F, springAt σ π = σ' → sockAt S π = Sock.mk Cape.yes F → slotAtPath p π = some F := by
+  intro σ'
+  induction σ' with
+  | atom b =>
+    intro π F e hs
+    by_cases hb : b = 0
+    · subst hb
+      have := hp.const π e
+      rw [hs] at this
+      exact fitsOpt_yes this
+    · obtain ⟨q, hq, hle⟩ := hst π b e hb
+      have hx := hp.exact π b e hb
+      have h1 : FitsOpt (sockAt (Ca.app W bus) q) (slotO (some x) q) := fitsOpt_sockAt q hX
+      have h2 := fitsOpt_app_part q W bus _ (fun r => hW _ (distribute_has σ Cape.yes π r b q trivial e hb hq)) h1
+      have h3 := hle [] _ h2
+      rw [show sockAt (sockAt S π) [] = sockAt S π from rfl, hs] at h3
+      have h4 := fitsOpt_yes h3
+      rw [show slotAtPath p π = slotO (some p) π from rfl, hx]
+      simpa [slot?, hq, slotO] using h4
+  | cell h t ih1 ih2 =>
+    intro π F e hs
+    have hc := hsh π (by rw [e]; rfl)
+    rw [hs] at hc
+    cases F with
+    | atom _ => exact absurd hc id
+    | cell F1 F2 =>
+      have a1 := ih1 (π ++ [false]) F1 (by rw [springAt_app, e]; rfl) (by rw [sockAt_app, hs]; rfl)
+      have a2 := ih2 (π ++ [true]) F2 (by rw [springAt_app, e]; rfl) (by rw [sockAt_app, hs]; rfl)
+      rw [slotAtPath_app] at a1 a2
+      exact slotO_eq_cell a1 a2
+
+/-- **A formula the analysis knows is the formula on every subject of the
+code requirement**: the use at a direct or an inlined call, where `want`
+records `distribute & src` of the formula's product. -/
+theorem known_formula {x p F : Noun} {bus : Sock} {σ : Noun} {W : Cape}
+    (hp : ProvO x (Sock.mk Cape.yes F) σ (some p)) (hst : StatS bus (Sock.mk Cape.yes F) σ)
+    (hsh : ShapeOK (Sock.mk Cape.yes F) σ) (hX : Fits (Ca.app W bus) x)
+    (hW : ∀ q, (distribute Cape.yes σ).Has q → W.Has q) : p = F := by
+  have := known_part hp hst hsh hX hW σ [] F rfl rfl
+  simpa [slotAtPath] using this
+
 end SkaModel
 end Formalization
