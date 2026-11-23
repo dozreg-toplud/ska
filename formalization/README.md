@@ -69,7 +69,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Hoon/Lists.lean` | `+lent`, `+weld`, `+flop`, `+snag`, `+scag`, `+slag` against `List Noun`; `+turn`, `+roll`, `+levy`, `+lien` given what their gate argument computes on the elements. |
 | `Hoon/Maps.lean` | `+get:by` and `+has:by` on an `IsMap`. |
 | `Hoon/Sets.lean` | `+put:in` and `+has:in`, with a set read as the map of its keys to `~`. |
-| `Hoon/Bits.lean` | `+bex`, `+lsh`, `+rsh`, `+end`, `+met`, `+cut`, `+cat`, and `+mix`, `+dis`, `+con` as `^^^`, `&&&`, `|||`. |
+| `Hoon/Bits.lean` | `+bex`, `+lsh`, `+rsh`, `+end`, `+met`, `+cut`, `+cat`, `+can`, and `+mix`, `+dis`, `+con` as `^^^`, `&&&`, `|||`. |
 | `Hoon/Muk.lean` | The arms `sit`, `sum`, `rol` of the door `+fe`, and `+muk` against the model `mukF`. |
 | `Hoon/Mug.lean` | `mug_spec`: `+mug` computes `mugF` on every noun, which proves `MugSpec mugF`. |
 | `Hoon/Layer2.lean` | `+gor`, `+mor` and the map and set theorems on the pill's `layer2` with no assumption. |
@@ -141,4 +141,5 @@ them after a change to the arms of the last three cores of the library.
    proved about gates slammed on nouns of the wrong shape, nor about nouns on
    which a model is `none`.
 5. **Not done among the arms of the library:** `+del:by`, `+gas:by`,
-   `+tap:by`, `+can`, `+apt:by`, and the wet arms other than those above.
+   `+tap:by` and `+apt:by`.  They need new names in `Pill/Nouns.lean`, and
+   compiling that file peaks near 8 GB.

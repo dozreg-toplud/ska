@@ -62,6 +62,7 @@ open Formalization
 #print axioms Hoon.mix_gate
 #print axioms Hoon.dis_gate
 #print axioms Hoon.con_gate
+#print axioms Hoon.can_gate
 #print axioms Hoon.sit_gate
 #print axioms Hoon.sum_gate
 #print axioms Hoon.rol_gate

@@ -380,5 +380,39 @@ theorem con_gate (c : Noun) (hc : LogicNeeds c) (a b : Nat) :
   nock_open con.battery
   simp [nock_exec, con_loop c hc (a + b + 1) a b 0 0 (by omega)]
 
+/-! ## `+can` -/
+
+/-- `+can`: assemble the list of `[step atom]` pairs, low blocks first. -/
+def canF (a : Nat) : List (Nat × Nat) → Nat
+  | [] => 0
+  | (p, q) :: r => q % 2 ^ (2 ^ a * p) + canF a r * 2 ^ (2 ^ a * p)
+
+/-- The noun of a pair of atoms. -/
+def pairN (x : Nat × Nat) : Noun := C (A x.1) (A x.2)
+
+@[nock_exec] theorem can_arm (c : Noun) :
+    nock c can.arm = some (C can.battery (C (C (A 0) (A 0)) c)) := by
+  nock_open can.arm; simp only [nock_exec]
+
+/-- Slamming the `+can` gate on a bloq and a list of `[step atom]` pairs. -/
+theorem can_gate (c : Noun) (hc : EndIn c ∧ LshIn c ∧ Below AddIn c) (a : Nat) :
+    ∀ (l : List (Nat × Nat)),
+      nock (C can.battery (C (C (A a) (listN (l.map pairN))) c)) can.battery
+        = some (A (canF a l)) := by
+  obtain ⟨he, hl, ha⟩ := hc
+  have hend := end_gate c he
+  have hlsh := lsh_gate c hl.2
+  obtain ⟨bat, t, rfl, ht⟩ := ha.elim
+  intro l
+  induction l with
+  | nil =>
+    nock_open can.battery
+    simp [nock_exec, canF]
+  | cons x r ih =>
+    obtain ⟨p, q⟩ := x
+    nock_open can.battery
+    simp [nock_exec, pairN, he, hl, ht, end_arm, lsh_arm, add_arm, ih,
+      hend _ a p q (BiteIs.cell a p), hlsh _ a p _ (BiteIs.cell a p), add_gate t ht.2, canF]
+
 end Hoon
 end Formalization
