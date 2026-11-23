@@ -2379,7 +2379,10 @@
     =.  runs.stats.st  +(runs.stats.st)
     =/  data=datum  (git-g g.st id)
     =/  bus=sock  more.id
-    =/  fol  fol.id
+    ::  any noun: an operand that is no formula crashes when it is run, after
+    ::  the operands before it, as in +mink
+    ::
+    =/  fol=*  fol.id
     =/  sub=sock-anno  [bus 1]
     =*  fol-result
       $:  [=nomm pro=sock-anno *]
@@ -2484,7 +2487,7 @@
     =*  fol-loop  $
     =*  dunno  *sock-anno
     ?+    fol  [[0+0 dunno |] gen]
-        [p=^ q=^]
+        [p=^ q=*]
       =^  l  gen  fol-loop(fol p.fol)
       =^  r  gen  fol-loop(fol q.fol)
       :_  gen
@@ -2507,7 +2510,7 @@
         [%1 p=*]
       [[[%1 p.fol] [&+p.fol ~] &] gen]
     ::
-        [%2 p=^ q=^]
+        [%2 p=^ q=*]
       ::  memo-key might have been set by %11 %memo which redirected us here.
       ::  but there is no reason to unset it when we decend into children: if it
       ::  was set, then the child expressions will be [%0 1] and [%1 fol],
@@ -2538,7 +2541,10 @@
       ::  out the condition and the first branch - useful during debugging to
       ::  rule out stuff.
       ::
-      ?:  &(?=(~ memo-key) !defer (inlineable fol-new))
+      ::  The formula of the formula is dropped with the call: only when it
+      ::  is safe, as for the calls that +inlined drops later
+      ::
+      ?:  &(?=(~ memo-key) !defer (inlineable fol-new) (safe-fol-fol nomm.f))
         =.  want.gen  (uni:ca want.gen (distribute & src.prod.f))
         =^  inline  gen  fol-loop(fol fol-new, sub prod.s)
         :_  gen
@@ -2614,12 +2620,12 @@
       =^  p  gen  fol-loop(fol p.fol)
       [[[%4 nomm.p] dunno |] gen]
     ::
-        [%5 p=^ q=^]
+        [%5 p=^ q=*]
       =^  p  gen  fol-loop(fol p.fol)
       =^  q  gen  fol-loop(fol q.fol)
       [[[%5 nomm.p nomm.q] dunno |] gen]
     ::
-        [%6 p=^ q=^ r=^]
+        [%6 p=^ q=* r=*]
       =^  p  gen  fol-loop(fol p.fol)
       =^  q  gen  fol-loop(fol q.fol)
       =^  r  gen  fol-loop(fol r.fol)
@@ -2627,18 +2633,18 @@
       :-  [%6 nomm.p nomm.q nomm.r]
       [(double-int prod.q prod.r) |]
     ::
-        [%7 p=^ q=^]
+        [%7 p=^ q=*]
       =^  p  gen  fol-loop(fol p.fol)
       =^  q  gen  fol-loop(fol q.fol, sub prod.p)
       [[[%7 nomm.p nomm.q] prod.q |] gen]
     ::
-        [%8 p=^ q=^]
+        [%8 p=^ q=*]
       fol-loop(fol [%7 [p.fol 0+1] q.fol])
     ::
         [%9 p=@ q=^]
       fol-loop(fol [%7 q.fol %2 [%0 1] %0 p.fol])
     ::
-        [%10 [a=@ don=^] rec=^]
+        [%10 [a=@ don=*] rec=^]
       ?:  =(0 a.fol)  [[0+0 dunno |] gen]
       =^  don  gen  fol-loop(fol don.fol)
       =^  rec  gen  fol-loop(fol rec.fol)
@@ -2662,7 +2668,7 @@
       :-  [%11 p.fol nomm.q q.fol]
       [prod.q |]
     ::
-        [%11 [a=@ h=^] f=^]
+        [%11 [a=@ h=^] f=*]
       =?  .  &(=(a.fol %spot) =(1 -.h.fol))
         =*  dot  .
         =<  $
@@ -2710,7 +2716,7 @@
       ?^  arm  [%mean nomm.h b.u.arm nomm.f f.fol k.u.arm]
       [%11 [a.fol nomm.h] nomm.f f.fol]
     ::
-        [%12 p=^ q=^]
+        [%12 p=^ q=*]
       =^  p  gen  fol-loop(fol p.fol)
       =^  q  gen  fol-loop(fol q.fol)
       [[[%12 nomm.p nomm.q] dunno |] gen]
