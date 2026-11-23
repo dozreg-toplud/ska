@@ -21,7 +21,11 @@ public import lemmas.Pill.Arm.Dor
 public import lemmas.Pill.Arm.Double_int
 public import lemmas.Pill.Arm.Dvr
 public import lemmas.Pill.Arm.End
+public import lemmas.Pill.Arm.Eval_blob
 public import lemmas.Pill.Arm.Eval_pass
+public import lemmas.Pill.Arm.Eval_pole
+public import lemmas.Pill.Arm.Eval_rend
+public import lemmas.Pill.Arm.Eval_top
 public import lemmas.Pill.Arm.Fall
 public import lemmas.Pill.Arm.Fe
 public import lemmas.Pill.Arm.Flop
@@ -109,7 +113,11 @@ import all lemmas.Pill.Arm.Dor
 import all lemmas.Pill.Arm.Double_int
 import all lemmas.Pill.Arm.Dvr
 import all lemmas.Pill.Arm.End
+import all lemmas.Pill.Arm.Eval_blob
 import all lemmas.Pill.Arm.Eval_pass
+import all lemmas.Pill.Arm.Eval_pole
+import all lemmas.Pill.Arm.Eval_rend
+import all lemmas.Pill.Arm.Eval_top
 import all lemmas.Pill.Arm.Fall
 import all lemmas.Pill.Arm.Fe
 import all lemmas.Pill.Arm.Flop
@@ -601,6 +609,18 @@ theorem store.arm_at : slot? store.axis interp = some store.arm := by kernel_rfl
 theorem move.arm_at : slot? move.axis interp = some move.arm := by kernel_rfl
 
 theorem eval_pass.arm_at : slot? eval_pass.axis interp = some eval_pass.arm := by kernel_rfl
+
+theorem eval_pole.arm_at : ∀ x, slot? eval_pole.axis (C interp.battery x) = some eval_pole.arm := by
+  intro x; kernel_rfl
+
+theorem eval_blob.arm_at : ∀ x, slot? eval_blob.axis (C interp.battery x) = some eval_blob.arm := by
+  intro x; kernel_rfl
+
+theorem eval_top.arm_at : ∀ x, slot? eval_top.axis (C interp.battery x) = some eval_top.arm := by
+  intro x; kernel_rfl
+
+theorem eval_rend.arm_at : ∀ x, slot? eval_rend.axis (C interp.battery x) = some eval_rend.arm := by
+  intro x; kernel_rfl
 
 end Pill
 end Formalization

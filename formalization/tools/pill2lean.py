@@ -1112,6 +1112,33 @@ def main():
     formulas.add(door_gate_battery(chk))
     name(door_gate_battery(mem), 'eval_pass.mem')
     formulas.add(door_gate_battery(mem))
+    # the arms that thread the core `cor` (`=*  cor  ..poke`): [7 [0 1] gate],
+    # told apart by the tags they test for
+    def tagged(want, avoid=()):
+        res = []
+        for a, ax_ in int_arms.items():
+            if NODES[head(a)] != 7 or tail(head(tail(a))) != atom(1) \
+                    or not is_gate_builder(tail(tail(a))):
+                continue
+            at = set(NODES[j] for j in reach([a]) if type(NODES[j]) is int)
+            if all(cord(w) in at for w in want) and not any(cord(w) in at for w in avoid):
+                res.append(a)
+        (a,) = res
+        return a
+    for lname, want, avoid in (('eval_pole', ['imm', 'csm'], []),
+                               ('eval_blob', ['lti', 'jsf'], []),
+                               ('eval_top', ['bare', 'full'], ['imm', 'lti']),
+                               ('eval_rend', ['meac', 'meaf'], ['imm', 'lti', 'lose'])):
+        a = tagged(want, avoid)
+        name(a, lname + '.arm')
+        formulas.add(a)
+        g = door_gate_battery(tail(tail(a)))
+        name(g, lname + '.battery')
+        formulas.add(g)
+        axes.append((lname, int_arms[a], '∀ x, slot? %s.axis (C interp.battery x) = some %s.arm'
+                     % (lname, lname)))
+    name(head(interp), 'interp.battery')
+    IN_BULK.add('interp.battery')
 
     # ---- write
     emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, len(data))

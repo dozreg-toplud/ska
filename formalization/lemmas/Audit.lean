@@ -30,6 +30,7 @@ import lemmas.Compiler.Safe
 import lemmas.Compiler.Anno
 import lemmas.Compiler.Regs
 import lemmas.Compiler.EvalPass
+import lemmas.Compiler.EvalPole
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -253,3 +254,4 @@ open Formalization
 #print axioms Compiler.store_pill
 #print axioms Compiler.move_pill
 #print axioms Compiler.eval_pass_pill
+#print axioms Compiler.eval_pole_local
