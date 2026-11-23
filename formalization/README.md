@@ -18,7 +18,7 @@ is not ported to Lean and no port is trusted.
 ```sh
 cd formalization
 tools/capped.sh -m 3G lake build core              # 3 s
-tools/capped.sh -m 3G lake build                   # about 63 s from scratch, 2.5 GB peak
+tools/capped.sh -m 3G lake build                   # about 73 s from scratch, 2.6 GB peak
 tools/capped.sh -m 3G lake env lean lemmas/Audit.lean  # axioms of the main theorems
 ```
 
@@ -216,8 +216,8 @@ import only its theorems.  So:
 2. A change to a declaration of the chain rebuilds the rest of the chain,
    `Facts.lean` and the layer files, and no gate theorem file.  A comment
    rebuilds the edited file only.
-3. A clean build takes about 63 seconds (3 min 40 s of CPU) and peaks at
-   2.5 GB for the whole build (measured 2026-11-23 under a 3 GB scope).
+3. A clean build takes about 73 seconds (4 min 12 s of CPU) and peaks at
+   2.6 GB for the whole build (measured 2026-11-23 under a 3 GB scope).
 
 ## Gaps
 
@@ -248,3 +248,15 @@ import only its theorems.  So:
 8. **The small arms of the analysis are done:** `+inlineable`, `+safe-nomm`,
    `+safe-fol-fol`, `+knit-anno`, `+patch-prod`, `+msg-sock`, `+msg-anno`
    agree with their models on every input.
+9. **The interpreter is done in part.**  `+read`, `+store`, `+move`,
+   `+eval-pass` and the ops of `+eval-pole` that stay in the function agree
+   with `Ska/Interp.lean` on maps of `TreapMap mugF`.  Not done: the ops of
+   `+eval-pole` that leave the function (`%nok`, `%cal`, `%caf`, `%cam`,
+   `%csl`, `%csf`, `%csm`), `+eval-blob`, `+eval-top`, `+eval-mook` and
+   `+eval-rend`.  The arms that thread the compiler's core read their context
+   through its tail `cor`, so after a poke they read the new `cor`: a theorem
+   about them needs the poke to keep layer 2 at `read.layer2.axis`.
+10. **`Treap` of `Ska/Analysis.lean` has no instance from `lemmas/Hoon/`.**  The
+   class orders nothing by key nouns (its `put` and `tap` take no layout of
+   the keys, which `+put:by` and `+tap:by` order by `+gor` and `+mor`), and its
+   law `ext` needs treaps to be canonical, which is not proved.
