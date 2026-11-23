@@ -546,6 +546,183 @@ def MemP2 (memoF : Memo M) (mem : MemGo M R) : Prop :=
       (∀ j ∈ st.stk, j ∉ ms → ranOf st' j = ranOf st j ∧ calleesOf st' j = calleesOf st j) ∧
       ∀ m ∈ ms, dirty m st' = false)
 
+theorem lowB_mono {st : SkaState M R} {x : Ident} {a b : Nat} (h : LowB st x b) (hab : a ≤ b) : LowB st x a :=
+  fun c hc o ho => Nat.le_trans hab (h c hc o ho)
+
+/-- The part of the member loop after the dirty check, at `st1`, which is
+`st` up to the statistics. -/
+theorem member_tail2 {memoF : Memo M} {run : RunGo M R} {mem : MemGo M R} (hrun : RunP2 memoF run)
+    (hmem : MemP2 memoF mem) {index pass : Nat} {m : Ident} {ms : List Ident} {st st1 st' : SkaState M R}
+    {r : Nat × Bool} {F : Entry → Prop} {ab0 rest : List Ident} {id : Ident}
+    (hc : CInv memoF st F) (hs : st.stk = ab0 ++ id :: rest) (hidx : Treap.get st.order id = some index)
+    (hm : m ∈ st.stk ∧ m ∉ rest) (hms : ∀ m ∈ ms, m ∈ st.stk ∧ m ∉ rest)
+    (hrest : ∀ m ∈ rest, MemOK st F m index)
+    (hcl : ∀ x o, Treap.get st.order x = some o → x ∉ rest → 1 ≤ ranOf st x ∧ LowB st x index)
+    (h1 : st1.g = st.g) (h2 : st1.done = st.done) (h3 : st1.order = st.order) (h4 : st1.stk = st.stk)
+    (h5 : st1.next = st.next) (h6 : st1.tick = st.tick) (h7 : st1.ticks = st.ticks)
+    (e : ((Treap.get st.order m).bind fun o => (run m o st1).bind fun q =>
+      if q.1.1 < index then some ((q.1.1, q.1.2.2), q.2) else
+      (mem index pass ms q.2).map fun t => ((min q.1.1 t.1.1, q.1.2.2 || t.1.2), t.2)) = some (r, st')) :
+    (∃ F', (∀ e, F e → F' e) ∧ CInv memoF st' F' ∧ ∀ m ∈ rest, MemOK st' F' m index) ∧
+    GStepsR (gCore st.g) (gCore st'.g) ∧ Keep st.stk (· ∈ rest) st st' ∧ Frame (· ∈ rest) st st' ∧
+    r.1 ≤ index ∧ (∀ x o, Treap.get st'.order x = some o → x ∉ rest → 1 ≤ ranOf st' x ∧ LowB st' x r.1) ∧
+    (r.1 = index → r.2 = false → st'.next = st.next →
+      (∀ x, Treap.get st'.order x = Treap.get st.order x) ∧ (∀ j, chgOf st' j = chgOf st j) ∧
+      (∀ j ∈ st.stk, j ∉ m :: ms → ranOf st' j = ranOf st j ∧ calleesOf st' j = calleesOf st j) ∧
+      dirty m st' = false ∧ ∀ m' ∈ ms, dirty m' st' = false) := by
+  simp only [Option.bind_eq_some_iff] at e
+  obtain ⟨o, ho, ⟨r1, st2⟩, hr, e⟩ := e
+  have c1 : CInv memoF st1 F := hc.congr h1 h2 h3 h4 h5 h6 h7
+  obtain ⟨⟨F2, hF2, c2, hmo2⟩, s2, k2, fr2, hran2, htick2, hch2, _, hlow2, hlb2, hpush2, _⟩ :=
+    hrun m o st1 r1 st2 F c1 (by rw [h4]; exact hm.1) (by rw [h3]; exact ho) hr
+  have hrest1 : ∀ x ∈ rest, MemOK st1 F x index := fun x hx => memOK_congr h1 h3 h7 (hrest x hx)
+  have hrest2 : ∀ x ∈ rest, MemOK st2 F2 x index := fun x hx =>
+    hmo2 x index (by rw [h4, hs]; simp [hx]) (fun e => hm.2 (e ▸ hx)) (hrest1 x hx)
+  have hS1 : ∀ j ∈ st.stk, j ≠ m → Treap.get st2.g j = Treap.get st.g j ∧
+      Treap.get st2.order j = Treap.get st.order j ∧ Treap.get st2.ticks j = Treap.get st.ticks j := by
+    intro j hj hjm
+    refine ⟨by rw [k2.2.2 j ⟨by rw [h4]; exact hj, hjm⟩, h1], by rw [k2.2.1 j (by rw [h4]; exact hj), h3],
+      by rw [fr2.ticks j ⟨by rw [h4]; exact hj, hjm⟩, h7]⟩
+  have hordm : Treap.get st2.order m = Treap.get st.order m := by rw [k2.2.1 m (by rw [h4]; exact hm.1), h3]
+  have hst2 : ∃ l, st2.stk = l ++ st.stk := by obtain ⟨l, el⟩ := k2.1; exact ⟨l, by rw [el, h4]⟩
+  have hnew : ∀ c oc, Treap.get st2.order c = some oc → c ∉ st.stk → st.next ≤ oc := fun c oc hco hcn => by
+    have := fr2.newOrd c oc hco (by rw [h4]; exact hcn); rw [h5] at this; exact this
+  have hidx0 : index < st.next := hc.ord.1 id index hidx
+  have hcalm : ∀ j ∈ st.stk, j ≠ m → calleesOf st2 j = calleesOf st j := fun j hj hjm => by
+    simp only [calleesOf, gitG, Treap.gut, (hS1 j hj hjm).1]
+  have hranj : ∀ j ∈ st.stk, j ≠ m → ranOf st2 j = ranOf st j := fun j hj hjm => by
+    simp only [ranOf, Treap.gut, (hS1 j hj hjm).2.2]
+  have hchgj : ∀ j ∈ st.stk, j ≠ m → chgOf st2 j = chgOf st j := fun j hj hjm => by
+    simp only [chgOf, Treap.gut, (hS1 j hj hjm).2.2]
+  -- the members after the run read nothing below `low` of the run
+  have hcl2 : ∀ L, L ≤ index → L ≤ r1.1 → ∀ x ox, Treap.get st2.order x = some ox → x ∉ rest →
+      1 ≤ ranOf st2 x ∧ LowB st2 x L := by
+    intro L hL hL' x ox hxo hxr
+    by_cases hxs : x ∈ st.stk
+    · by_cases hxm : x = m
+      · subst hxm
+        refine ⟨by rw [hran2]; have := htick2; omega, lowB_mono hlb2 hL'⟩
+      · have hox : Treap.get st.order x = some ox := by rw [← (hS1 x hxs hxm).2.1]; exact hxo
+        obtain ⟨hr0, hlb0⟩ := hcl x ox hox hxr
+        refine ⟨by rw [hranj x hxs hxm]; exact hr0, fun c hce oc hco => ?_⟩
+        rw [hcalm x hxs hxm] at hce
+        by_cases hcs : c ∈ st.stk
+        · by_cases hcm : c = m
+          · subst hcm; rw [hordm] at hco; exact Nat.le_trans hL (hlb0 c hce oc hco)
+          · rw [(hS1 c hcs hcm).2.1] at hco; exact Nat.le_trans hL (hlb0 c hce oc hco)
+        · have := hnew c oc hco hcs; omega
+    · exact ⟨(hpush2 x ox hxo (by rw [h4]; exact hxs)).1,
+        lowB_mono (hpush2 x ox hxo (by rw [h4]; exact hxs)).2 hL'⟩
+  have hkeep2 : Keep st.stk (· ∈ rest) st st2 := by
+    obtain ⟨l, el⟩ := hst2
+    refine ⟨⟨l, el⟩, fun j hj => by rw [k2.2.1 j (by rw [h4]; exact hj), h3], fun j hj => ?_⟩
+    have hjs : j ∈ st.stk := by rw [hs]; simp [hj]
+    exact (hS1 j hjs (fun e => hm.2 (e ▸ hj))).1
+  have hfr2 : Frame (· ∈ rest) st st2 := by
+    refine ⟨fun i d a b => ?_, fun j hj => ?_, by rw [← h5]; exact fr2.next, by rw [← h6]; exact fr2.tick,
+      fun x ox hxo hx => ?_⟩
+    · exact fr2.fin i d (by rw [h1]; exact a) (by rw [h3]; exact b)
+    · have hjs : j ∈ st.stk := by rw [hs]; simp [hj]
+      exact (hS1 j hjs (fun e => hm.2 (e ▸ hj))).2.2
+    · rw [← h5]; exact fr2.newOrd x ox hxo (by rw [h4]; exact hx)
+  split at e
+  · -- the run reached below the root: the pass stops
+    rename_i hlt
+    simp only at hlt
+    simp only [Option.some.injEq, Prod.mk.injEq] at e
+    obtain ⟨rfl, rfl⟩ := e
+    exact ⟨⟨F2, hF2, c2, hrest2⟩, by rw [← h1]; exact s2, hkeep2, hfr2, by omega,
+      hcl2 r1.1 (by omega) (Nat.le_refl _), fun h => absurd h (by omega)⟩
+  · rename_i hge
+    simp only at hge
+    simp only [Option.map_eq_some_iff] at e
+    obtain ⟨⟨t, st3⟩, ht, e⟩ := e
+    cases e
+    have hst2' : st2.stk = ((st2.stk.take (st2.stk.length - st.stk.length)) ++ ab0) ++ id :: rest := by
+      obtain ⟨l, el⟩ := hst2
+      rw [el, hs]; simp
+    obtain ⟨⟨F3, hF3, c3, hrest3⟩, s3, k3, fr3, hlow3, hcl3, hstab3⟩ :=
+      hmem index pass ms st2 t st3 F2 _ rest id c2 hst2'
+        (by rw [k2.2.1 id (by rw [h4, hs]; simp), h3]; exact hidx)
+        (fun m' hm' => by
+          obtain ⟨hm1, hm2⟩ := hms m' hm'
+          obtain ⟨l, el⟩ := hst2
+          exact ⟨by rw [el]; exact List.mem_append_right _ hm1, hm2⟩)
+        hrest2 (hcl2 index (Nat.le_refl _) (by omega)) ht
+    have hk23 : Keep st.stk (· ∈ rest) st st3 := by
+      obtain ⟨l, el⟩ := hst2
+      refine hkeep2.trans (k3.weaken ⟨l, el⟩ (fun j hj => hj))
+    refine ⟨⟨F3, fun e he => hF3 e (hF2 e he), c3, hrest3⟩, gStepsR_trans (by rw [← h1]; exact s2) s3, hk23,
+      hfr2.trans fr3 (fun j hj => hj) k3.2.1 c2.s, by simp only; omega,
+      fun x ox hxo hxr => ⟨(hcl3 x ox hxo hxr).1, lowB_mono (hcl3 x ox hxo hxr).2 (Nat.min_le_right _ _)⟩, ?_⟩
+    intro hidx' hch hnx
+    simp only at hidx' hch hnx
+    have hchb : r1.2.2 = false ∧ t.2 = false := by simpa using hch
+    obtain ⟨hch1, hch2'⟩ := hchb
+    have ht1 : t.1 = index := by have := Nat.min_le_right r1.1 t.1; omega
+    have hn12 : st2.next = st.next := by
+      have a := fr2.next; have b := fr3.next; rw [h5] at a; omega
+    obtain ⟨o3, c3', rc3, d3⟩ := hstab3 ht1 hch2' (by rw [hnx, hn12])
+    -- the run made no new member and no change
+    have hord2 : ∀ x, Treap.get st2.order x = Treap.get st.order x := by
+      intro x
+      by_cases hxs : x ∈ st.stk
+      · by_cases hxm : x = m
+        · rw [hxm, hordm]
+        · exact (hS1 x hxs hxm).2.1
+      · cases hx2 : Treap.get st2.order x with
+        | none =>
+          cases hx1 : Treap.get st.order x with
+          | none => rfl
+          | some ox => exact absurd ((hc.s.ord_stk x).mp ⟨ox, hx1⟩) hxs
+        | some ox =>
+          have a := hnew x ox hx2 hxs
+          have b := c2.ord.1 x ox hx2
+          omega
+    have hchg2 : ∀ j, chgOf st2 j = chgOf st j := by
+      intro j
+      by_cases hjs : j ∈ st.stk
+      · by_cases hjm : j = m
+        · subst hjm
+          rw [(hch2 hch1).1]
+          simp only [chgOf, Treap.gut, h7]
+        · exact hchgj j hjs hjm
+      · have hn1 : Treap.get st.order j = none := by
+          cases e1 : Treap.get st.order j with
+          | none => rfl
+          | some oj => exact absurd ((hc.s.ord_stk j).mp ⟨oj, e1⟩) hjs
+        have t1 : Treap.get st.ticks j = none := by
+          cases e2 : Treap.get st.ticks j with
+          | none => rfl
+          | some v => exact absurd hn1 (hc.tkeys j (by rw [e2]; simp))
+        have t2 : Treap.get st2.ticks j = none := by
+          cases e2 : Treap.get st2.ticks j with
+          | none => rfl
+          | some v => exact absurd (by rw [hord2 j]; exact hn1) (c2.tkeys j (by rw [e2]; simp))
+        simp only [chgOf, Treap.gut, t1, t2]
+    have hdm2 : dirty m st2 = false := by
+      apply dirty_false_of
+      intro c _
+      rw [hran2, hchg2 c]
+      have := (hc.tick c).2
+      have := htick2
+      rw [h6] at this
+      omega
+    refine ⟨fun x => by rw [o3, hord2], fun j => by rw [c3', hchg2], fun j hj hjn => ?_, ?_, d3⟩
+    · have hjm : j ≠ m := fun e => hjn (e ▸ List.mem_cons_self)
+      have hjms : j ∉ ms := fun h => hjn (List.mem_cons_of_mem _ h)
+      obtain ⟨l, el⟩ := hst2
+      obtain ⟨a1, a2⟩ := rc3 j (by rw [el]; exact List.mem_append_right _ hj) hjms
+      exact ⟨by rw [a1, hranj j hj hjm], by rw [a2, hcalm j hj hjm]⟩
+    · by_cases hmm : m ∈ ms
+      · exact d3 m hmm
+      · obtain ⟨l, el⟩ := hst2
+        obtain ⟨a1, a2⟩ := rc3 m (by rw [el]; exact List.mem_append_right _ hm.1) hmm
+        rw [dirty_eq, a1, a2]
+        have hc3 : (fun ce : CalleeEntry × Unit => decide (ranOf st2 m ≤ chgOf st3 ce.1.id)) =
+            (fun ce => decide (ranOf st2 m ≤ chgOf st2 ce.1.id)) := by funext ce; rw [c3']
+        rw [hc3, ← dirty_eq]; exact hdm2
+
 end Ana
 end SkaModel
 end Formalization
