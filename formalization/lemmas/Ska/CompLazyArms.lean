@@ -205,7 +205,144 @@ end
 theorem fromL_ofSure (axe : Nat) (s : Sure S) : fromL axe (ofSure s) = («from» axe s).map ofSure := by
   simp [fromL, ofSure, «from»]
 
+/-! ## `+split` and `+into` -/
+
+/-- A fork: the yes branch and the no branch, each a lazy block and a need. -/
+abbrev ForkE (S : Type) := (Nat × Lazy S) × (Nat × Lazy S)
+
+mutual
+/-- The loop `split-loop` of `+split`: the sure need is split by
+`+split-sure` into block `o`, each fork's and bond's needs into their own
+blocks, and the two halves are pruned. -/
+def splitLoop : Lazy S → Nat → CM Map (Lazy S × Lazy S)
+  | mk s f b, o => do
+    let (sh, st) ← splitSure s o
+    if f.isEmpty && b.isEmpty then pure (ofSure sh, ofSure st) else do
+    let (fh, ft) ← splitForks f
+    let (bh, bt) ← splitBonds b
+    pure (lazyPrune (mk sh fh bh), lazyPrune (mk st ft bt))
+
+/-- Its `spin-split` over the forks. -/
+def splitForks : List (ForkE S) → CM Map (List (ForkE S) × List (ForkE S))
+  | [] => pure ([], [])
+  | ((oy, y), (on, n)) :: rest => do
+    let (yh, yt) ← splitLoop y oy
+    let (nh, nt) ← splitLoop n on
+    let (rh, rt) ← splitForks rest
+    pure (((oy, yh), (on, nh)) :: rh, ((oy, yt), (on, nt)) :: rt)
+
+/-- Its `spin-split` over the bonds. -/
+def splitBonds : List (Nat × Lazy S) → CM Map (List (Nat × Lazy S) × List (Nat × Lazy S))
+  | [] => pure ([], [])
+  | (o, l) :: rest => do
+    let (lh, lt) ← splitLoop l o
+    let (rh, rt) ← splitBonds rest
+    pure ((o, lh) :: rh, (o, lt) :: rt)
+end
+
+theorem splitLoop_ofSure (s : Sure S) (o : Nat) :
+    (splitLoop (ofSure s) o : CM Map (Lazy S × Lazy S)) =
+      (do let (h, t) ← splitSure s o; pure (ofSure h, ofSure t)) := by
+  simp [splitLoop, ofSure]
+
+mutual
+/-- The loop `split-loop` of `+into`: the same walk as `splitLoop` with
+`+into-sure`, the donor's half first. -/
+def intoLoopL (axe : Nat) : Lazy S → Nat → CM Map (Lazy S × Lazy S)
+  | mk s f b, o => do
+    let (sd, sr) ← intoSure axe s o
+    if f.isEmpty && b.isEmpty then pure (ofSure sd, ofSure sr) else do
+    let (fd, fr) ← intoForks axe f
+    let (bd, br) ← intoBonds axe b
+    pure (lazyPrune (mk sd fd bd), lazyPrune (mk sr fr br))
+
+/-- Its `spin-split` over the forks. -/
+def intoForks (axe : Nat) : List (ForkE S) → CM Map (List (ForkE S) × List (ForkE S))
+  | [] => pure ([], [])
+  | ((oy, y), (on, n)) :: rest => do
+    let (yd, yr) ← intoLoopL axe y oy
+    let (nd, nr) ← intoLoopL axe n on
+    let (rd, rr) ← intoForks axe rest
+    pure (((oy, yd), (on, nd)) :: rd, ((oy, yr), (on, nr)) :: rr)
+
+/-- Its `spin-split` over the bonds. -/
+def intoBonds (axe : Nat) : List (Nat × Lazy S) → CM Map (List (Nat × Lazy S) × List (Nat × Lazy S))
+  | [] => pure ([], [])
+  | (o, l) :: rest => do
+    let (ld, lr) ← intoLoopL axe l o
+    let (rd, rr) ← intoBonds axe rest
+    pure ((o, ld) :: rd, (o, lr) :: rr)
+end
+
+theorem intoLoopL_ofSure (axe : Nat) (s : Sure S) (o : Nat) :
+    (intoLoopL axe (ofSure s) o : CM Map (Lazy S × Lazy S)) =
+      (do let (d, r) ← intoSure axe s o; pure (ofSure d, ofSure r)) := by
+  simp [intoLoopL, ofSure]
+
+/-! ## `+copy-lazy` -/
+
+/-- `(malt (turn l |=(e [key e])))` and `get` on it: the last entry of `l`
+under the key, through the map laws. -/
+def index {α : Type} (key : α → Nat) (l : List α) : Map α :=
+  l.foldl (fun m e => HoonMap.put m (key e) e) HoonMap.empty
+
+/-- `(silt (turn l key))` and `has` on it. -/
+def seen {α : Type} (key : α → Nat) (l : List α) (k : Nat) : Bool :=
+  decide (k ∈ HoonSet.toList ((l.map key).foldl HoonSet.put (HoonSet.empty : S)))
+
+mutual
+/-- `+copy-lazy`: the sure needs are merged by `+copy-need-make-ops` with
+the moves into block `o`; forks and bonds of the two needs that name the
+same lazy block are merged the same way into that block, the others are
+kept, those of `first` first. -/
+def copyLazyL (o : Nat) : Lazy S → Lazy S → CM Map (Lazy S)
+  | mk s1 f1 b1, second => do
+    let (ned, ops) ← copyNeed s1.ned second.sure.ned []
+    addOps o ops
+    let fork ← (if second.fork.isEmpty then pure f1 else if f1.isEmpty then pure second.fork else do
+      let merged ← mergeForks (index (Map := Map) (fun e : ForkE S => e.1.1) second.fork) f1
+      pure (merged ++ second.fork.filter fun e => !(seen (S := S) (fun e : ForkE S => e.1.1) f1 e.1.1)) :
+        CM Map (List (ForkE S)))
+    let bond ← (if second.bond.isEmpty then pure b1 else if b1.isEmpty then pure second.bond else do
+      let merged ← mergeBonds (index (Map := Map) (fun e : Nat × Lazy S => e.1) second.bond) b1
+      pure (merged ++ second.bond.filter fun e => !(seen (S := S) (fun e : Nat × Lazy S => e.1) b1 e.1)) :
+        CM Map (List (Nat × Lazy S)))
+    pure (mk ⟨ned, HoonSet.uni s1.lok second.sure.lok⟩ fork bond)
+
+/-- The `spin` over the forks of `first`. -/
+def mergeForks (idx : Map (ForkE S)) : List (ForkE S) → CM Map (List (ForkE S))
+  | [] => pure []
+  | ((oy, y), (on, n)) :: rest => do
+    let e ← (match HoonMap.get idx oy with
+      | Option.none => pure ((oy, y), (on, n))
+      | some ((_, my), (mon, mn)) =>
+        if on = mon then do
+          let y' ← copyLazyL oy y my
+          let n' ← copyLazyL on n mn
+          pure ((oy, y'), (on, n'))
+        else fun _ => Option.none : CM Map (ForkE S))
+    let r ← mergeForks idx rest
+    pure (e :: r)
+
+/-- The `spin` over the bonds of `first`. -/
+def mergeBonds (idx : Map (Nat × Lazy S)) : List (Nat × Lazy S) → CM Map (List (Nat × Lazy S))
+  | [] => pure []
+  | (ob, l) :: rest => do
+    let e ← (match HoonMap.get idx ob with
+      | Option.none => pure (ob, l)
+      | some (_, m) => do
+        let l' ← copyLazyL ob l m
+        pure (ob, l') : CM Map (Nat × Lazy S))
+    let r ← mergeBonds idx rest
+    pure (e :: r)
+end
+
+theorem copyLazyL_ofSure (o : Nat) (s1 s2 : Sure S) :
+    (copyLazyL o (ofSure s1) (ofSure s2) : CM Map (Lazy S)) = (copyLazy o s1 s2 >>= fun s => pure (ofSure s)) := by
+  simp [copyLazyL, ofSure, copyLazy]
+
 end Lazy
+
 
 end Comp
 end SkaModel
