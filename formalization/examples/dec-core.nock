@@ -1,0 +1,14 @@
+:: Compact Nock core for the decrement arm in examples/dec.hoon.
+:: Brackets use the Nock convention [a b c] == [a [b c]].
+::
+:: dec-loop-battery
+[6 [5 [4 0 7] 0 6] [0 7] 9 2 10 [3 [0 6] 4 0 7] 0 1]
+::
+:: dec-gate-battery
+[9 2 [1 6 [5 [4 0 7] 0 6] [0 7] 9 2 10 [3 [0 6] 4 0 7] 0 1] [0 3] 1 0]
+::
+:: dec-core-3
+[[9 2 [1 6 [5 [4 0 7] 0 6] [0 7] 9 2 10 [3 [0 6] 4 0 7] 0 1] [0 3] 1 0] 3]
+::
+:: dec-call
+[9 2 0 1]
