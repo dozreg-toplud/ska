@@ -1136,6 +1136,8 @@ def main():
         g = door_gate_battery(tail(tail(a)))
         name(g, lname + '.battery')
         formulas.add(g)
+        # the inline loops (the registers of a callee, the frames of a trace)
+        name_loops(lname, g, 'any')
         axes.append((lname, int_arms[a], '∀ x, slot? %s.axis (C interp.battery x) = some %s.arm'
                      % (lname, lname)))
         if lname == 'eval_pole':
