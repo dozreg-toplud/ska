@@ -1,10 +1,10 @@
-import lemmas.Ska.CompForl
+import lemmas.Ska.CompN5
 
 /-!
 # The relation for a fragment of nomm, by induction
 
 `run_ok`: for every nomm and goal of `Frag` (`%0` and `%1` for every goal,
-`[7 p q]`, `[4 p]` and `[3 p]` for every goal), what the
+`[7 p q]`, `[3 p]`, `[4 p]` and `[5 p q]` for every goal), what the
 model of `run` returns satisfies `RunOK`, from any state, for any goal whose
 registers are allocated and distinct.
 -/
@@ -28,6 +28,7 @@ def Frag : Nomm → CGoal S → Prop
   | Nomm.n3 p, CGoal.pick _ _ => ∀ laz th, Frag p (CGoal.next laz th)
   | Nomm.n3 p, CGoal.done => ∀ laz th, Frag p (CGoal.next laz th)
   | Nomm.n3 p, CGoal.next _ _ => ∀ laz th, Frag p (CGoal.next laz th)
+  | Nomm.n5 p q, _ => (∀ laz th, Frag p (CGoal.next laz th)) ∧ ∀ laz th, Frag q (CGoal.next laz th)
   | _, _ => False
 
 /-- **`run` meets the relation on the fragment.** -/
@@ -62,7 +63,10 @@ theorem run_ok (lib : Lib) : ∀ (nm : Nomm) (goal : CGoal S) (g0 g1 : Gen Map) 
     | next laz th => exact run_n3_next_ok h hg fun laz th g g' n hg' h' => ihp _ g g' n (hf laz th) hg' h'
   | cons => intro _ _ _ _ hf; exact hf.elim
   | n2 => intro _ _ _ _ hf; exact hf.elim
-  | n5 => intro _ _ _ _ hf; exact hf.elim
+  | n5 p q ihp ihq =>
+    intro goal g0 g1 nex hf hg h
+    exact run_n5_ok h hg (fun laz th g g' n hg' h' => ihp _ g g' n (hf.1 laz th) hg' h')
+      (fun laz th g g' n hg' h' => ihq _ g g' n (hf.2 laz th) hg' h')
   | n6 => intro _ _ _ _ hf; exact hf.elim
   | n10 => intro _ _ _ _ hf; exact hf.elim
   | n11s => intro _ _ _ _ hf; exact hf.elim
