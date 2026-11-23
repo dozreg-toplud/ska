@@ -1186,6 +1186,28 @@ theorem knowGo_sound (hc : CodeOK lib code) (hdat : DatOK lib dat) (hres : ResOK
     obtain ⟨s, rfl, fq, rfl, rfl⟩ := h
     exact ⟨Annot.bareLit hb fun x hx => hd x (hQ x hx).1, fun _ _ _ _ _ _ _ => fits_dunno _⟩
 
+/-- **A variant's nomm**: `+know` of a code bell's nomm under a bake stands
+for the code bell's formula on the subjects that fit both the code
+requirement and the bake. -/
+theorem know_annot (hc : CodeOK lib code) (hdat : DatOK lib dat) {c : Bell} {nm : Nomm}
+    (hA : Annot lib code (Fits c.less) c.fol nm) {s : Sock} {n' : Nomm} {sites : List Site}
+    (h : know fold nm s dat res = some (n', sites)) (hres : ResOK code' res sites) :
+    Annot lib code' (fun x => Fits c.less x ∧ Fits s x) c.fol n' := by
+  simp only [know, Option.map_eq_some_iff] at h
+  obtain ⟨r, hr, e⟩ := h
+  simp only [Prod.mk.injEq] at e
+  obtain ⟨rfl, rfl⟩ := e
+  exact (knowGo_sound (stF := r.2) hc hdat hres hA ⟨s, A 1⟩ [] r hr (List.suffix_refl _) _
+    (fun x hx => hx)).1
+
+/-- With a bake that implies the code requirement, the variant's nomm stands
+for the formula on every subject of the bake. -/
+theorem know_annot_of_implies (hc : CodeOK lib code) (hdat : DatOK lib dat) {c : Bell} {nm : Nomm}
+    (hA : Annot lib code (Fits c.less) c.fol nm) {s : Sock} {n' : Nomm} {sites : List Site}
+    (h : know fold nm s dat res = some (n', sites)) (hres : ResOK code' res sites)
+    (himp : ∀ x, Fits s x → Fits c.less x) : Annot lib code' (Fits s) c.fol n' :=
+  (know_annot hc hdat hA h hres).mono fun x hx => ⟨himp x hx, hx⟩
+
 end Sound
 
 end Bake
