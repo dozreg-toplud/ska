@@ -2,6 +2,7 @@ module
 
 public import lemmas.Hoon.Sets
 public import lemmas.Hoon.GasBy
+public import lemmas.Hoon.SetFolds
 public import lemmas.Pill.Arm.Ju
 public import lemmas.Pill.Arm.Ja
 import all lemmas.Pill.Arm.Ju
@@ -93,6 +94,12 @@ def juHasF (mug : Noun → Nat) (b c a : Noun) : Option Bool :=
 /-- `+add:ja`: push `c` onto the list under `b`. -/
 def jaAddF (mug : Noun → Nat) (b c a : Noun) : Option Noun :=
   (juGetF mug b a).bind fun d => putF mug b (C c d) a
+
+/-- `+del:ju`: delete `c` from the set under `b`, and the key when the set
+becomes empty. -/
+def juDelF (mug : Noun → Nat) (b c a : Noun) : Option Noun :=
+  (juGetF mug b a).bind fun d => (delInF mug c d).bind fun e =>
+    if e = A 0 then delF mug b a else putF mug b e a
 
 /-- `+gas:ju`: `juPutF` of each pair, in order. -/
 def juGasF (mug : Noun → Nat) : Noun → List (Noun × Noun) → Option Noun
@@ -197,6 +204,37 @@ theorem ja_add_gate {mug : Noun → Nat} (ctx : Noun) (hc : JuIn mug ctx) (b c a
     obtain ⟨hby, hin, hs, hgo, hmo⟩ := hc
     nock_open ja.add.battery
     simp [nock_exec, hby, by_arm, hju, put_arm, put_gate ctx ⟨hgo, hmo⟩ b _ a out h]
+
+@[nock_exec] theorem ju_del_arm (d : Noun) :
+    nock d ju.del.arm = some (C ju.del.battery (C (C (A 0) (A 0)) d)) := by
+  nock_open ju.del.arm; simp only [nock_exec]
+
+theorem ju_del_gate {mug : Noun → Nat} (ctx : Noun) (hc : JuIn mug ctx) (b c a out : Noun)
+    (h : juDelF mug b c a = some out) :
+    nock (C ju.del.battery (C (C b c) (C ju.battery (C a ctx)))) ju.del.battery = some out := by
+  unfold juDelF juGetF at h
+  cases hg : getF mug b a with
+  | none => rw [hg] at h; cases h
+  | some g =>
+    rw [hg] at h
+    simp only [Option.map_some, Option.bind_some] at h
+    cases hd : delInF mug c (unUnit g) with
+    | none => rw [hd] at h; cases h
+    | some e =>
+      rw [hd] at h
+      simp only [Option.bind_some] at h
+      have hju := ju_get_gate ctx hc ju.battery b a g hg
+      obtain ⟨hby, hin, hs, hgo, hmo⟩ := hc
+      nock_open ju.del.battery
+      by_cases e0 : e = A 0
+      · subst e0
+        simp only [if_true] at h
+        simp [nock_exec, hby, hin, by_arm, in_arm, hju, del_arm, del_in_arm,
+          del_in_gate ctx ⟨hgo, hmo⟩ c (unUnit g) _ hd, del_gate ctx ⟨hgo, hmo⟩ b a out h]
+      · simp only [e0, if_false] at h
+        have e0' : ¬ (A 0 = e) := Ne.symm e0
+        simp [nock_exec, hby, hin, by_arm, in_arm, hju, del_in_arm, put_arm, e0',
+          del_in_gate ctx ⟨hgo, hmo⟩ c (unUnit g) e hd, put_gate ctx ⟨hgo, hmo⟩ b e a out h]
 
 theorem ju_gas_loop {mug : Noun → Nat} (ctx : Noun) (hc : JuIn mug ctx) :
     ∀ (l : List (Noun × Noun)) (a out : Noun), juGasF mug a l = some out →

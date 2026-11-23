@@ -117,3 +117,4 @@ open Formalization
 #print axioms Hoon.run_in_loop
 #print axioms Hoon.runInF_spec
 #print axioms Hoon.del_in
+#print axioms Hoon.ju_del_gate
