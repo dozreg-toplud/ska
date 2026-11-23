@@ -86,7 +86,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Hoon/Mug.lean` | `mug_spec`: `+mug` computes `mugF` on every noun, which proves `MugSpec mugF`. |
 | `Hoon/Layer1.lean`, `Hoon/Layer2.lean` | The pill's layers satisfy the predicates of their arms, and `+gor`, `+mor` and the map and set theorems hold on `layer2` with no assumption.  The only theorem files that import `Facts.lean` and the bulk. |
 | `Compiler/Ca.lean`, `Compiler/So.lean` | The pill's Nock of the arms `hed`, `tel`, `con`, `all`, `int`, `uni`, `lack`, `app` of `+ca` and `hed`, `tel`, `jibe`, `knit`, `purr` of `+so` computes the models of `Ska/Sock.lean` on every cape and sock.  The arms that read the library core assume only what it gives at the named axes `ca.lib.axis` and `so.lib.axis`.  These are plain files, because the models are. |
-| `Compiler/Axes.lean` | `pat`, `lot` of `+ca` and `pull` of `+so`, which walk an axis with `+cap` and `+mas` of layer 1, read through the library core at `ca.lib.layer1.axis`; B's `cap` and `mas` equal `capF` and `masF`.  And `yea` of `+ca`, with `+peg` and `+weld`. |
+| `Compiler/Axes.lean` | `pat`, `lot` of `+ca` and `pull` of `+so`, which walk an axis with `+cap` and `+mas` of layer 1, read through the library core at `ca.lib.layer1.axis`; B's `cap` and `mas` equal `capF` and `masF`.  And `yea` of `+ca`, with `+peg` and `+weld`, and `darn` of `+so`. |
 | `Ska/Types.lean` | Models of the IR types (`Bell`, `Sock`, `Cape`, `Pole`, `Termin`, `Blob`, `Straight`, `Tone`, ...), each with its Hoon noun layout. |
 | `Ska/Mink.lean`, `Ska/MinkTrace.lean` | Models of `+mink`, `+mook` and `+mock`; what Nock computes, `+mink` returns. |
 | `Ska/Interp.lean`, `Ska/Steps.lean` | A model of the Hoon interpreter (`+eval-top`, `+eval-blob`, `+eval-pole`, `+eval-mook`), with the compiler as a parameter that answers pokes. |
@@ -185,6 +185,7 @@ import only its theorems.  So:
    which a model is `none`.
 5. **Not done among the arms of the library:** `+uni`, `+int`, `+dif` of `+by`
    and `+in`.
-6. **Not done among the arms of the compiler's leaf cores:** `dif` of `+ca`,
-   and `darn`, `huge` of `+so`.  `dif:ca` and `huge:so` quote data that
-   holds the hoon core, so the generator does not name them.
+6. **Not done among the arms of the compiler's leaf cores:** `dif` of `+ca`
+   and `huge` of `+so`.  Their crash messages quote data that holds the hoon
+   core, so the generator does not name them.  No arm of `+ca` or `+so` that
+   is proved disagrees with B's model.

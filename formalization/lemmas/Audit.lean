@@ -156,5 +156,6 @@ open Formalization
 #print axioms Compiler.ca_pat_gate
 #print axioms Compiler.ca_lot_gate
 #print axioms Compiler.ca_yea_gate
+#print axioms Compiler.so_darn_gate
 #print axioms Compiler.capF_eq_cap
 #print axioms Compiler.masF_eq_mas

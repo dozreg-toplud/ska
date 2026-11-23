@@ -6,7 +6,9 @@ import lemmas.Hoon.Lists
 The arms of `+ca` and `+so` that walk an axis with `+cap` and `+mas` of
 `hoon.hoon`: `pat` and `lot` of `+ca`, `pull` of `+so`.  They compute track
 B's models in `lemmas/Ska/Sock.lean`, with a crash (`none`) on axis `0`.  And
-`yea` of `+ca`, which builds axes with `+peg` and joins lists with `+weld`.
+`yea` of `+ca`, which builds axes with `+peg` and joins lists with `+weld`,
+and `darn` of `+so`, which walks down an axis with `+cap`, `+mas`, `hed`,
+`tel` and back up with `knit`.
 
 These arms read `+cap` and `+mas` from layer 1 of `hoon.hoon`, below the
 library core: `AxisOf lib` says that the noun at `ca.lib.layer1.axis` in the
@@ -241,6 +243,135 @@ theorem ca_yea_gate (ctx : Noun) (hc : YeaIn ctx) (c : Cape) :
       = some (Hoon.listN ((Ca.yea c).map A)) := by
   nock_open ca.yea.battery
   simp only [nock_exec, ca_yea_loop ctx hc c 1 (by omega), Ca.yea]
+
+/-! ## `+darn:so` -/
+
+/-- The list that `+darn` keeps on its way down: pairs of `2` or `3` and the
+sock beside the path. -/
+def accN (acc : List (Nat × Sock)) : Noun := Hoon.listN (acc.map fun e => C (A e.1) e.2.toNoun)
+
+theorem accN_nil : accN [] = A 0 := rfl
+
+theorem accN_cons (n : Nat) (s : Sock) (acc : List (Nat × Sock)) :
+    accN ((n, s) :: acc) = C (C (A n) s.toNoun) (accN acc) := rfl
+
+/-- What `+darn` reads from its context, the core of `+so`: `knit`, `hed`, `tel`
+of that core, and `+cap`, `+mas` through the library core. -/
+abbrev DarnIn (c : Noun) : Prop := PurrIn c ∧ AxisIn c
+
+@[nock_exec] theorem so_darn_arm (c : Noun) :
+    nock c so.darn.arm = some (C so.darn.battery (C (C (C (A 1) (A 0)) (C (A 0) (C (A 1) (A 0)))) c)) := by
+  nock_open so.darn.arm; simp only [nock_exec]
+
+/-- The loop of `+darn` on its way up. -/
+theorem so_darn_up (c : Noun) (hk : slot? so.knit.axis c = some so.knit.arm) (hkc : KnitIn c)
+    (o x : Noun) : ∀ (acc : List (Nat × Sock)) (two : Sock), (∀ e ∈ acc, e.1 = 2 ∨ e.1 = 3) →
+    nock (C so.darn.loop0 (C so.darn.loop1 (C (accN acc)
+        (C so.darn.battery (C (C o (C x two.toNoun)) c))))) so.darn.loop0
+      = some (So.darnUp two acc).toNoun := by
+  intro acc
+  induction acc with
+  | nil => intro two _; nock_open so.darn.loop0; simp [nock_exec, accN_nil, So.darnUp]
+  | cons e rest ih =>
+    intro two he
+    obtain ⟨n, s⟩ := e
+    have hn : n = 2 ∨ n = 3 := he (n, s) List.mem_cons_self
+    have hr : ∀ e ∈ rest, e.1 = 2 ∨ e.1 = 3 := fun e' h' => he e' (List.mem_cons_of_mem _ h')
+    rcases hn with rfl | rfl
+    · have i := ih (So.knit two s) hr
+      nock_open so.darn.loop0
+      simp [nock_exec, accN_cons, hk, so_knit_arm, so_knit_gate c hkc, i, So.darnUp]
+    · have i := ih (So.knit s two) hr
+      nock_open so.darn.loop0
+      simp [nock_exec, accN_cons, hk, so_knit_arm, so_knit_gate c hkc, i, So.darnUp]
+
+/-- The loop of `+darn` on its way down. -/
+theorem so_darn_down (c : Noun) (hc : DarnIn c) (two : Sock) : ∀ (axe : Nat) (one : Sock)
+    (acc : List (Nat × Sock)), (∀ e ∈ acc, e.1 = 2 ∨ e.1 = 3) →
+    nock (C so.darn.loop1 (C (accN acc)
+        (C so.darn.battery (C (C one.toNoun (C (A axe) two.toNoun)) c)))) so.darn.loop1
+      = (So.darnDown one axe two acc).map Sock.toNoun := by
+  obtain ⟨⟨hk, hh, ht, hkc⟩, hax⟩ := hc
+  obtain ⟨bat, lib, rfl, l1, hl, ⟨hcap, hdiv⟩, ⟨hmas, hadd, hmod, hmul, hdiv'⟩⟩ := hax.elim
+  have up := so_darn_up (C bat lib) hk hkc
+  intro axe
+  induction axe using Nat.strongRecOn with
+  | ind axe ih =>
+    intro one acc hacc
+    have hup := up one.toNoun (A axe) acc two hacc
+    rw [So.darnDown.eq_def]
+    by_cases a1 : axe = 1
+    · subst a1; nock_open so.darn.loop1; simp [nock_exec, hup]
+    by_cases a0 : axe = 0
+    · subst a0
+      have hcap0 := Hoon.cap_gate_lt l1 0 (by omega)
+      nock_open so.darn.loop1
+      rcases two with _ | ⟨c2, d2⟩ <;> rcases one with _ | ⟨c1, d1⟩
+      all_goals try simp only [sock_toNoun_mk, sock_toNoun_void] at hup ⊢
+      all_goals first
+        | (rcases c1 with _ | _ | ⟨_, _⟩ <;> rcases c2 with _ | _ | ⟨_, _⟩)
+        | (rcases c1 with _ | _ | ⟨_, _⟩)
+        | (rcases c2 with _ | _ | ⟨_, _⟩)
+        | skip
+      all_goals try simp only [Cape.toNoun] at hup
+      all_goals simp [nock_exec, Cape.toNoun, Sock.isNo, hl, hcap, Hoon.cap_arm, hcap0, hup]
+    have h2 : 2 ≤ axe := by omega
+    have hcap' := Hoon.cap_gate l1 hdiv axe h2
+    have hmas' := Hoon.mas_gate l1 ⟨hadd, hmod, hmul, hdiv'⟩ axe h2
+    rw [capF_eq_cap] at hcap'
+    rw [masF_eq_mas] at hmas'
+    have hlt := SkaModel.mas_lt axe h2
+    have hh1 := so_hed_gate (C bat lib) one
+    have ht1 := so_tel_gate (C bat lib) one
+    have ih2 := ih (SkaModel.mas axe) hlt (So.hed one) ((2, So.tel one) :: acc)
+      (fun e h => by
+        rcases List.mem_cons.1 h with rfl | h
+        · exact Or.inl rfl
+        · exact hacc e h)
+    have ih3 := ih (SkaModel.mas axe) hlt (So.tel one) ((3, So.hed one) :: acc)
+      (fun e h => by
+        rcases List.mem_cons.1 h with rfl | h
+        · exact Or.inr rfl
+        · exact hacc e h)
+    simp only [accN_cons] at ih2 ih3
+    have hne1 : ¬ (1 = axe) := by omega
+    nock_open so.darn.loop1
+    rcases two with _ | ⟨c2, d2⟩ <;> rcases one with _ | ⟨c1, d1⟩
+    all_goals try simp only [sock_toNoun_mk, sock_toNoun_void] at hup hh1 ht1 ih2 ih3 ⊢
+    all_goals first
+      | (rcases c1 with _ | _ | ⟨_, _⟩ <;> rcases c2 with _ | _ | ⟨_, _⟩)
+      | (rcases c1 with _ | _ | ⟨_, _⟩)
+      | (rcases c2 with _ | _ | ⟨_, _⟩)
+      | skip
+    all_goals try simp only [Cape.toNoun] at hup hh1 ht1 ih2 ih3
+    all_goals rcases cap_cases axe h2 with hc2 | hc3
+    all_goals first
+      | simp [nock_exec, Cape.toNoun, Sock.isNo, a1, a0, hne1, hl, hcap, hmas, hh, ht,
+          Hoon.cap_arm, Hoon.mas_arm, so_hed_arm, so_tel_arm, hcap', hmas', hh1, ht1, ih2, hup, hc2]
+      | simp [nock_exec, Cape.toNoun, Sock.isNo, a1, a0, hne1, hl, hcap, hmas, hh, ht,
+          Hoon.cap_arm, Hoon.mas_arm, so_hed_arm, so_tel_arm, hcap', hmas', hh1, ht1, ih3, hup, hc3]
+
+/-- Slamming `darn` of `+so` on a sock, an axis and a sock: the first sock
+edited at the axis with the second. -/
+theorem so_darn_gate (c : Noun) (hc : DarnIn c) (one : Sock) (axe : Nat) (two : Sock) :
+    nock (C so.darn.battery (C (C one.toNoun (C (A axe) two.toNoun)) c)) so.darn.battery
+      = (So.darn one axe two).map Sock.toNoun := by
+  have hd := so_darn_down c hc two axe one [] (by simp)
+  simp only [accN_nil] at hd
+  nock_open so.darn.battery
+  by_cases a1 : axe = 1
+  · subst a1; simp [nock_exec, So.darn]
+  have hne1 : ¬ (1 = axe) := by omega
+  rcases two with _ | ⟨c2, d2⟩ <;> rcases one with _ | ⟨c1, d1⟩
+  all_goals try simp only [sock_toNoun_mk, sock_toNoun_void] at hd ⊢
+  all_goals first
+    | (rcases c1 with _ | _ | ⟨_, _⟩ <;> rcases c2 with _ | _ | ⟨_, _⟩)
+    | (rcases c1 with _ | _ | ⟨_, _⟩)
+    | (rcases c2 with _ | _ | ⟨_, _⟩)
+    | skip
+  all_goals try simp only [Cape.toNoun] at hd
+  all_goals simp [nock_exec, Cape.toNoun, Sock.isNo, So.darn, a1, hne1, Sock.dunno, Tag.void, hd,
+    sock_toNoun_void, sock_toNoun_mk]
 
 end Compiler
 end Formalization
