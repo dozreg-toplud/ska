@@ -13,6 +13,10 @@ variables of `+run` that the trap reads and changes, pushed in this order
 the subject of `+run` (`rest`) at `511`.  A call of the trap to itself edits
 some of these and kicks the battery: `go` says what such a run returns, as the
 noun of `FolOut` and `GenS` (`folOutNoun`).
+
+The cases that read the library core or `ana` assume `ana` at axis `511` of
+`rest` (`hana`); `%spot` assumes `SoftSpotIs` and `%fast` `RegisterFastIs`.
+`fol_loop_step` puts every case but `%2` together.
 -/
 
 namespace Formalization
