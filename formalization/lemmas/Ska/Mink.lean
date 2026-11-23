@@ -270,6 +270,40 @@ theorem EvalH.toEval {s f p : Noun} (h : EvalH s f p) : Eval s f p := by
 theorem minkF_succ_eq (lib : Lib) (gul : Noun) (n : Nat) (t : Trace) (s f : Noun) :
     minkF lib gul (n + 1) t s f = minkStep lib gul (minkF lib gul n) t s f := rfl
 
+/-- `EvalA` of `core/Nock.lean` (Nock with atom hint tags) is `EvalH`, which
+states opcode 9 by its arm for the inductions here. -/
+theorem EvalA.toEvalH {s f p : Noun} (h : EvalA s f p) : EvalH s f p := by
+  induction h with
+  | cell _ _ ih1 ih2 => exact EvalH.cell ih1 ih2
+  | op0 hs => exact EvalH.op0 hs
+  | op1 => exact EvalH.op1
+  | op2 _ _ _ ih1 ih2 ih3 => exact EvalH.op2 ih1 ih2 ih3
+  | op3 _ ih => exact EvalH.op3 ih
+  | op4 _ ih => exact EvalH.op4 ih
+  | op5 _ _ ih1 ih2 => exact EvalH.op5 ih1 ih2
+  | op6_zero _ _ ih1 ih2 => exact EvalH.op6_zero ih1 ih2
+  | op6_one _ _ ih1 ih2 => exact EvalH.op6_one ih1 ih2
+  | op7 _ _ ih1 ih2 => exact EvalH.op7 ih1 ih2
+  | op8 _ _ ih1 ih2 => exact EvalH.op8 ih1 ih2
+  | op9 _ _ ih1 ih2 =>
+    cases ih2 with
+    | op2 h1 h2 h3 =>
+      cases h1 with
+      | op0 hs1 =>
+        cases h2 with
+        | op0 hs2 =>
+          cases Slot.deterministic hs1 Slot.one
+          exact EvalH.op9 ih1 hs2 h3
+  | op10 _ _ he ih1 ih2 => exact EvalH.op10 ih1 ih2 he
+  | op11_cell _ _ _ ih1 ih2 ih3 =>
+    cases ih3 with
+    | op0 hs =>
+      have := slot?_complete hs
+      simp [slot?_step 3 (by omega), child] at this
+      subst this
+      exact EvalH.op11_cell ih1 ih2
+  | op11_atom _ ih => exact EvalH.op11_atom ih
+
 /-- If Nock computes `p` from `s` and `f` with atom hint tags, then `+mink`
 returns `[%0 p]`, from any trace and with any scry gate. -/
 theorem mink_of_evalH (lib : Lib) (gul : Noun) {s f p : Noun} (h : EvalH s f p) :

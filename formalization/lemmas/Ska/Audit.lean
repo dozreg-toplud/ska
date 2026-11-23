@@ -42,3 +42,6 @@ open Formalization.SkaModel
 #print axioms lack_has
 #print axioms bare_loops
 #print axioms eval_bare
+#print axioms bare_runs
+#print axioms EvalA.toEvalH
+#print axioms toneRel_mink_self

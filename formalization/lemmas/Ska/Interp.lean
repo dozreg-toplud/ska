@@ -242,12 +242,19 @@ def callBody (lib : Lib) (poke : σ → Ovum → Option (Prod Map × σ)) (O : O
     | Prod.ir _ c _ => execEntry lib O st' c vals trace scry
     | _ => none
 
-/-- `+eval-top`. -/
-def topBody (lib : Lib) (poke : σ → Ovum → Option (Prod Map × σ)) (O : Oracle σ)
+/-- `?=([%11 %bare *] f)`: a formula under a `%bare` hint. -/
+def isBare : Noun → Bool
+  | Noun.cell (Noun.atom 11) (Noun.cell (Noun.atom t) _) => t == Tag.bare
+  | _ => false
+
+/-- `+eval-top`.  A formula under `%bare` is run by `+mink`, here with `k`
+levels of fuel; any other is compiled and run. -/
+def topBody (lib : Lib) (poke : σ → Ovum → Option (Prod Map × σ)) (O : Oracle σ) (k : Nat)
     (st : σ) (s f scry : Noun) : Option (Tone × σ) :=
   match f with
   | Noun.atom _ => some (Tone.two [], st)
   | Noun.cell _ _ =>
+    if isBare f then (minkF lib scry k [] s f).map fun r => (r, st) else
     (poke st (Ovum.full s f)).bind fun (p, st') =>
       match p with
       | Prod.ir _ c _ =>
@@ -260,7 +267,7 @@ def topBody (lib : Lib) (poke : σ → Ovum → Option (Prod Map × σ)) (O : Or
 /-- The interpreter's own oracle, with `k` levels of calls. -/
 def interp (lib : Lib) (poke : σ → Ovum → Option (Prod Map × σ)) : Nat → Oracle σ
   | 0 => ⟨fun _ _ _ _ _ _ => none, fun _ _ _ _ => none⟩
-  | k + 1 => ⟨callBody lib poke (interp lib poke k), topBody lib poke (interp lib poke k)⟩
+  | k + 1 => ⟨callBody lib poke (interp lib poke k), topBody lib poke (interp lib poke k) k⟩
 
 /-- `(eval-top [s f] gul)` in the state `st` returns the tone `ton` and the
 state `st'`. -/

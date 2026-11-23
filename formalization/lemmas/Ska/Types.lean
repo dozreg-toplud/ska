@@ -88,6 +88,8 @@ def meaf : Nat := 0x6661656d
 def meac : Nat := 0x6361656d
 -- tank
 def leaf : Nat := 0x6661656c
+-- the hint that keeps a formula out of compiled Nock
+def bare : Nat := 0x65726162
 end Tag
 
 /-! ## Generic layouts -/

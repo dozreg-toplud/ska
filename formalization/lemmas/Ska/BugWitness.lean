@@ -4,7 +4,16 @@ import lemmas.Ska.ContractExamples
 import lemmas.Ska.Theorems
 
 /-!
-# Two places where the analysis and `+mink` part ways
+# Where the analysis and `+mink` parted ways (a record)
+
+**A record of the old behaviour.**  All three findings below were reproduced
+on the compiler in u3n with the `+mink` jet off, and fixed in
+`nock-compilation.hoon`: `+fol-loop` inlines only when `+safe-fol-fol` holds
+(1), takes any noun for an operand that is not run first and analyses an atom
+operand as `[%0 0]` in its place (2), and `+eval-top` gives a `%bare` formula
+to `+mink` (3; modelled in `topBody`, see `bare_runs`).  The theorems stay
+true as they are: they are about the contract and the interpreter, not about
+the old analysis.
 
 Found by reading `+ska-callgraph` (the `fol-loop` of `+run`), against the
 contract.  The analysis is not modelled in Lean yet, so what it produces on
@@ -126,7 +135,7 @@ def selfNok (f : Noun) : Straight Map :=
 indirect call of `f` itself, from every state, makes the interpreter never
 return on `[s f]`, at any depth of calls. -/
 theorem bare_loops (lib : Lib) {σ : Type} (poke : σ → Ovum → Option (Prod Map × σ))
-    (s f₁ f₂ gul : Noun)
+    (s f₁ f₂ gul : Noun) (hb : isBare (C f₁ f₂) = false)
     (hp : ∀ st, ∃ b new st', poke st (Ovum.full s (C f₁ f₂)) =
       some (Prod.ir b (selfNok (Map := Map) (C f₁ f₂)) new, st')) :
     ∀ k st, (interp lib poke k).nok st s (C f₁ f₂) gul = none := by
@@ -137,11 +146,21 @@ theorem bare_loops (lib : Lib) {σ : Type} (poke : σ → Ovum → Option (Prod 
     intro st
     obtain ⟨b, new, st', hpk⟩ := hp st
     simp only [interp]
-    rw [topBody_cell hpk rfl rfl]
+    rw [topBody_cell hb hpk rfl rfl]
     rw [selfNok, execEntry_oneBlock, execBlob_body, execPole_imm, Option.bind_some]
     simp only
     rw [execBlob_body]
     simp [execPole, read_store, read_put, ih]
+
+/-- The fix of the third finding, in the model: `+eval-top` runs
+`[11 %bare 1 42]` by `+mink` and returns `[%0 42]`, whatever the compiler. -/
+theorem bare_runs (lib : Lib) {σ : Type} (poke : σ → Ovum → Option (Prod Map × σ))
+    (st : σ) (s gul : Noun) (k : Nat) :
+    (interp lib poke (k + 3)).nok st s (n3 (A 11) (A Tag.bare) (quote (A 42))) gul =
+      some (Tone.zero (A 42), st) := by
+  have hb : isBare (n3 (A 11) (A Tag.bare) (quote (A 42))) = true := by decide
+  simp only [interp, topBody, hb, if_true]
+  rfl
 
 /-- Nock reduces `[11 %bare 1 42]` to `42`: `%bare` is
 `0x65726162`. -/

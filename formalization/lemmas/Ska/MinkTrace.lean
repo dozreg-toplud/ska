@@ -99,5 +99,92 @@ theorem minkF_trace (lib : Lib) (gul : Noun) :
           | some d => cases d <;> rfl
     · rfl
 
+/-! ## The frames that `+mink` pushes -/
+
+/-- Every frame of the crash trace of `r` is one that `+mink` pushes (the
+frame of a dynamic hint, or of a failed scry), or a frame of `t`. -/
+def GoodTone (t : Trace) (r : Tone) : Prop :=
+  ∀ tr, r = Tone.two tr → ∀ fr ∈ tr, stopTag fr.1 = true ∨ fr ∈ t
+
+theorem tbind_good {t : Trace} {x : Option Tone} {k : Noun → Option Tone} {r : Tone}
+    (hx : ∀ r, x = some r → GoodTone t r) (hk : ∀ p r, k p = some r → GoodTone t r)
+    (h : tbind x k = some r) : GoodTone t r := by
+  rcases tbind_eq_some h with ⟨p, _, hkp⟩ | ⟨hx', _⟩
+  · exact hk p r hkp
+  · exact hx r hx'
+
+theorem minkF_good (lib : Lib) (gul : Noun) :
+    ∀ n t s f r, minkF lib gul n t s f = some r → GoodTone t r := by
+  intro n
+  induction n with
+  | zero => intro t s f r h; simp [minkF] at h
+  | succ n ih =>
+    intro t s f r h
+    rw [minkF_succ_eq] at h
+    unfold minkStep at h
+    have Z : ∀ p, GoodTone t (Tone.zero p) := fun p tr h => by cases h
+    have O : ∀ p, GoodTone t (Tone.one p) := fun p tr h => by cases h
+    have T : GoodTone t (Tone.two t) := fun tr h fr hfr => by cases h; exact Or.inr hfr
+    have S : ∀ x r', some x = some r' → GoodTone t x → GoodTone t r' := fun x _ h g => by
+      cases h; exact g
+    have I := fun s f r (h : minkF lib gul n t s f = some r) => ih t s f r h
+    split at h
+    · exact tbind_good (I _ _) (fun _ _ h => tbind_good (I _ _) (fun _ _ h => S _ _ h (Z _)) h) h
+    · split at h
+      · exact S _ _ h T
+      · exact S _ _ h (Z _)
+    · exact S _ _ h (Z _)
+    · exact tbind_good (I _ _) (fun _ _ h => tbind_good (I _ _) (fun _ _ h => I _ _ _ h) h) h
+    · exact tbind_good (I _ _) (fun _ _ h => S _ _ h (Z _)) h
+    · refine tbind_good (I _ _) (fun _ _ h => ?_) h
+      split at h
+      · exact S _ _ h T
+      · exact S _ _ h (Z _)
+    · exact tbind_good (I _ _) (fun _ _ h => tbind_good (I _ _) (fun _ _ h => S _ _ h (Z _)) h) h
+    · refine tbind_good (I _ _) (fun _ _ h => ?_) h
+      split at h
+      · exact I _ _ _ h
+      · exact I _ _ _ h
+      · exact S _ _ h T
+    · exact tbind_good (I _ _) (fun _ _ h => ih _ _ _ _ h) h
+    · exact tbind_good (I _ _) (fun _ _ h => ih _ _ _ _ h) h
+    · refine tbind_good (I _ _) (fun _ _ h => ?_) h
+      split at h
+      · exact S _ _ h T
+      · exact ih _ _ _ _ h
+    · split at h
+      · exact S _ _ h T
+      · refine tbind_good (I _ _) (fun _ _ h => tbind_good (I _ _) (fun _ _ h => ?_) h) h
+        split at h
+        · exact S _ _ h T
+        · exact S _ _ h (Z _)
+    · exact tbind_good (I _ _) (fun _ _ h => S _ _ h (Z _)) h
+    · rename_i tag _ _
+      refine tbind_good (I _ _) (fun c _ h => tbind_good (fun r h' => ?_) (fun _ _ h => S _ _ h (Z _)) h) h
+      intro tr hr fr hfr
+      rcases ih _ _ _ _ h' tr hr fr hfr with hs | hm
+      · exact Or.inl hs
+      · split at hm
+        · rename_i hst
+          rcases List.mem_cons.mp hm with rfl | hm'
+          · exact Or.inl hst
+          · exact Or.inr hm'
+        · exact Or.inr hm
+    · refine tbind_good (I _ _) (fun _ _ h => tbind_good (I _ _) (fun _ _ h => ?_) h) h
+      split at h
+      · exact S _ _ h T
+      · simp only [Option.bind_eq_some_iff] at h
+        obtain ⟨_, _, d, _, h⟩ := h
+        cases d with
+        | block => exact S _ _ h (O _)
+        | hunk =>
+          refine S _ _ h (fun tr hr fr hfr => ?_)
+          cases hr
+          rcases List.mem_cons.mp hfr with rfl | hm
+          · exact Or.inl (show stopTag Tag.hunk = true by decide)
+          · exact Or.inr hm
+        | val _ => exact S _ _ h (Z _)
+    · exact S _ _ h T
+
 end SkaModel
 end Formalization

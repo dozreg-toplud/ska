@@ -1,4 +1,5 @@
 import lemmas.Ska.Steps
+import lemmas.Ska.MinkTrace
 
 /-!
 # The interpreter agrees with `+mink`, given the contract
@@ -35,11 +36,13 @@ theorem execBlob_par {lib : Lib} {O : Oracle σ} {c : Straight Map} {scry : Noun
 /-- `+eval-top` on a formula that is a cell, once the compiler answered: the
 checks of `+eval-top`, then the code entered as a function of one argument. -/
 theorem topBody_cell {lib : Lib} {poke : σ → Ovum → Option (Prod Map × σ)} {O : Oracle σ}
-    {st st1 : σ} {s f₁ f₂ scry : Noun} {b : Bell} {c : Straight Map} {new : Noun}
+    {k : Nat} {st st1 : σ} {s f₁ f₂ scry : Noun} {b : Bell} {c : Straight Map} {new : Noun}
+    (hb : isBare (C f₁ f₂) = false)
     (hp : poke st (Ovum.full s (C f₁ f₂)) = some (Prod.ir b c new, st1))
     (hn : c.nargs = 1) (hneed : c.need = NeedOrd.this) :
-    topBody lib poke O st s (C f₁ f₂) scry = execEntry lib O st1 c [s] [] scry := by
-  simp only [topBody, hp, Option.bind_some, hn, hneed, and_self, if_true, execEntry]
+    topBody lib poke O k st s (C f₁ f₂) scry = execEntry lib O st1 c [s] [] scry := by
+  simp only [topBody, hb, Bool.false_eq_true, if_false, hp, Option.bind_some, hn, hneed, and_self,
+    if_true, execEntry]
   cases HoonMap.get c.blocks 0 with
   | none => rfl
   | some blk =>
@@ -49,11 +52,11 @@ theorem topBody_cell {lib : Lib} {poke : σ → Ovum → Option (Prod Map × σ)
     · rw [if_neg hpar, execBlob_par hpar]
 
 theorem topBody_cell_inv {lib : Lib} {poke : σ → Ovum → Option (Prod Map × σ)} {O : Oracle σ}
-    {st : σ} {s f₁ f₂ scry : Noun} {x : Tone × σ}
-    (h : topBody lib poke O st s (C f₁ f₂) scry = some x) :
+    {k : Nat} {st : σ} {s f₁ f₂ scry : Noun} {x : Tone × σ} (hb : isBare (C f₁ f₂) = false)
+    (h : topBody lib poke O k st s (C f₁ f₂) scry = some x) :
     ∃ b c new st1, poke st (Ovum.full s (C f₁ f₂)) = some (Prod.ir b c new, st1) ∧
       c.nargs = 1 ∧ c.need = NeedOrd.this ∧ execEntry lib O st1 c [s] [] scry = some x := by
-  simp only [topBody, Option.bind_eq_some_iff] at h
+  simp only [topBody, hb, Bool.false_eq_true, if_false, Option.bind_eq_some_iff] at h
   obtain ⟨⟨p, st1⟩, hp, h⟩ := h
   cases p with
   | nil => simp at h
@@ -62,8 +65,9 @@ theorem topBody_cell_inv {lib : Lib} {poke : σ → Ovum → Option (Prod Map ×
     simp only at h
     by_cases hc : c.nargs = 1 ∧ c.need = NeedOrd.this
     · refine ⟨b, c, new, st1, hp, hc.1, hc.2, ?_⟩
-      rw [← topBody_cell hp hc.1 hc.2]
-      simp only [topBody, hp, Option.bind_some, hc.1, hc.2, and_self, if_true]
+      rw [← topBody_cell (k := k) hb hp hc.1 hc.2]
+      simp only [topBody, hb, Bool.false_eq_true, if_false, hp, Option.bind_some, hc.1, hc.2,
+        and_self, if_true]
       rw [if_pos hc] at h
       exact h
     · rw [if_neg hc] at h; simp at h
@@ -106,11 +110,31 @@ theorem argsFor_some {N : Needs} {b : Bell} {m : Bool} {s : Noun} {vals : List N
 
 /-! ## The forward direction -/
 
+theorem Forall2.refl_of {α : Type} {R : α → α → Prop} :
+    ∀ {l : List α}, (∀ x ∈ l, R x x) → Forall2 R l l
+  | [], _ => Forall2.nil
+  | x :: _, h => Forall2.cons (h x (List.mem_cons_self ..))
+      (Forall2.refl_of fun y hy => h y (List.mem_cons_of_mem _ hy))
+
+/-- A tone of `+mink` from `~` stands for itself: its frames are all ones that
+the interpreter keeps too. -/
+theorem toneRel_mink_self (lib : Lib) (N : Needs) {gul : Noun} {n : Nat} {s f : Noun} {r : Tone}
+    (h : minkF lib gul n [] s f = some r) : ToneRel lib N r r := by
+  have hg := minkF_good lib gul n [] s f r h
+  cases r with
+  | zero p => exact ToneRel.zero p
+  | one p => exact ToneRel.one p
+  | two tr =>
+    refine ToneRel.two (Forall2.refl_of fun fr hfr => ?_)
+    rcases hg tr rfl fr hfr with hs | hm
+    · exact FrameRel.same hs
+    · cases hm
+
 /-- One more level of calls answers one more level of fuel. -/
 theorem interp_fwd_step (lib : Lib) {poke : σ → Ovum → Option (Prod Map × σ)} {InvC : σ → Prop}
-    (hS : Sound lib poke InvC) (hF : FullAnswers poke InvC) {k n : Nat}
-    (h : OracleFwd lib InvC (needOf poke) (interp lib poke k) n) :
-    OracleFwd lib InvC (needOf poke) (interp lib poke (k + 1)) (n + 1) := by
+    (hS : Sound lib poke InvC) (hF : FullAnswers poke InvC) {k : Nat}
+    (h : OracleFwd lib InvC (needOf poke) (interp lib poke k) k) :
+    OracleFwd lib InvC (needOf poke) (interp lib poke (k + 1)) (k + 1) := by
   have hsteps := interp_steps lib hS.toPokeSteps k
   constructor
   · intro st b m vals ti tm gul s j r hI hj hfit hargs htr hmink
@@ -135,6 +159,12 @@ theorem interp_fwd_step (lib : Lib) {poke : σ → Ovum → Option (Prod Map × 
       rw [minkF_atom lib gul j [] u a hmink]
       exact ⟨Tone.two [], st, rfl, ToneRel.two Forall2.nil⟩
     | cell f₁ f₂ =>
+      cases hb : isBare (C f₁ f₂) with
+      | true =>
+        have hm := minkF_le lib gul (Nat.le_of_lt_succ hj) _ _ _ _ hmink
+        refine ⟨r, st, ?_, toneRel_mink_self lib _ hmink⟩
+        simp [interp, topBody, hb, hm]
+      | false =>
       obtain ⟨⟨p, st1⟩, hp⟩ := hF st u f₁ f₂ hI
       obtain ⟨b, c, new, hpeq, hn, hneed, hfwd, -⟩ := hS.full_code _ _ _ _ _ hI hp
       cases hpeq
@@ -145,7 +175,7 @@ theorem interp_fwd_step (lib : Lib) {poke : σ → Ovum → Option (Prod Map × 
           (h.weaken (fun _ hx => hx.1) (by omega)) hmink st1 ⟨hI1, Needs.le_refl _⟩ Forall2.nil
       refine ⟨ton, st', ?_, hrel⟩
       simp only [interp]
-      rw [topBody_cell hp hn hneed]
+      rw [topBody_cell hb hp hn hneed]
       exact hrun
 
 /-- **The interpreter answers what `+mink` computes.**  With `k` levels of
@@ -199,7 +229,13 @@ theorem interp_bwd (lib : Lib) {poke : σ → Ovum → Option (Prod Map × σ)} 
         cases h
         exact ⟨Tone.two [], ⟨1, rfl⟩, ToneRel.two Forall2.nil⟩
       | cell f₁ f₂ =>
-        obtain ⟨b, c, new, st1, hp, hn, hneed, h⟩ := topBody_cell_inv h
+        cases hb : isBare (C f₁ f₂) with
+        | true =>
+          simp only [interp, topBody, hb, if_true, Option.map_eq_some_iff, Prod.mk.injEq] at h
+          obtain ⟨r, hr, rfl, rfl⟩ := h
+          exact ⟨r, ⟨k, hr⟩, toneRel_mink_self lib _ hr⟩
+        | false =>
+        obtain ⟨b, c, new, st1, hp, hn, hneed, h⟩ := topBody_cell_inv hb h
         obtain ⟨b', c', new', hpeq, -, -, -, hbwd⟩ := hS.full_code _ _ _ _ _ hI hp
         cases hpeq
         obtain ⟨hI1, -⟩ := hS.full _ _ _ _ _ hI hp

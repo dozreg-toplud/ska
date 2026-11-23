@@ -173,7 +173,10 @@ theorem interp_steps (lib : Lib) {poke : σ → Ovum → Option (Prod Map × σ)
       simp only [interp, topBody] at h
       split at h
       · cases h; exact ⟨hI, Needs.le_refl _⟩
-      · simp only [Option.bind_eq_some_iff] at h
+      · split at h
+        · obtain ⟨_, _, h⟩ := Option.map_eq_some_iff.mp h
+          cases h; exact ⟨hI, Needs.le_refl _⟩
+        simp only [Option.bind_eq_some_iff] at h
         obtain ⟨⟨p, st1⟩, hp, h⟩ := h
         have h1 := hP.full _ _ _ _ _ hI hp
         split at h

@@ -7,13 +7,14 @@ The model-level versions of `Meek`, `Weak` and `Converse` of
 `core/Statement.lean`, for any compiler that satisfies the contract (`Sound`),
 and the same over every state the compiler reaches (`ReachI`).
 
-* `meek`: if Nock computes `p` (with atom hint tags, `EvalH`), `+eval-top`
+* `meek`: if Nock computes `p` (with atom hint tags, `EvalA`), `+eval-top`
   returns `[%0 p]`.  Needs `FullAnswers`, the model's `Halts`.
 * `weak`: what `+mock` returns, `+eval-top` then `+eval-mook` return.  Needs
   `FullAnswers`.
 * `converse`: what `+eval-top` then `+eval-mook` return, `+mock` returns.
-* `meek_cell_tag`: `Meek` stated with `Eval` fails for every sound compiler:
-  `+eval-top` returns `[%2 ~]` on a formula that Nock reduces.
+* `meek_cell_tag`: why `Meek` takes `EvalA`: with `Eval` it fails for every
+  sound compiler, as `+eval-top` returns `[%2 ~]` on a formula that Nock
+  reduces with a cell hint tag.
 -/
 
 namespace Formalization
@@ -214,9 +215,9 @@ atom hint tags), the interpreter returns `[%0 p]`, from any state where the
 compiler's invariant holds and whatever the scry gate. -/
 theorem meek (lib : Lib) {poke : σ → Ovum → Option (Prod Map × σ)} {InvC : σ → Prop}
     (hS : Sound lib poke InvC) (hF : FullAnswers poke InvC) {st : σ} {s f p gul : Noun}
-    (hI : InvC st) (h : EvalH s f p) :
+    (hI : InvC st) (h : EvalA s f p) :
     ∃ st', EvalTop lib poke st s f gul (Tone.zero p) st' := by
-  obtain ⟨n, hn⟩ := mink_of_evalH lib gul h
+  obtain ⟨n, hn⟩ := mink_of_evalH lib gul (EvalA.toEvalH h)
   obtain ⟨ton, st', hrun, hrel⟩ :=
     (interp_fwd lib hS hF (n + 1)).nok st s f gul n _ hI (Nat.lt_succ_self _) (hn [])
   rw [hrel.zero_right] at hrun
@@ -349,7 +350,7 @@ theorem meek_reach (lib : Lib) {poke : σ → Ovum → Option (Prod Map × σ)} 
     (hS : Sound lib poke InvC) (hF : FullAnswers poke InvC)
     (hother : ∀ st ov p st', InvC st → ¬ HotOvum ov → poke st ov = some (p, st') → InvC st')
     {st₀ st : σ} {s f p gul : Noun} (h₀ : InvC st₀) (hr : ReachI lib poke st₀ st)
-    (h : EvalH s f p) : ∃ st', EvalTop lib poke st s f gul (Tone.zero p) st' :=
+    (h : EvalA s f p) : ∃ st', EvalTop lib poke st s f gul (Tone.zero p) st' :=
   meek lib hS hF (reach_inv lib hS.toPokeSteps hother h₀ hr) h
 
 /-- `Weak` over every state the compiler reaches from `st₀`. -/
