@@ -20,6 +20,8 @@ import lemmas.Hoon.ListsSort
 import lemmas.Compiler.Ca
 import lemmas.Compiler.So
 import lemmas.Compiler.Axes
+import lemmas.Compiler.Lib
+import lemmas.Compiler.MinkPill
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -159,3 +161,45 @@ open Formalization
 #print axioms Compiler.so_darn_gate
 #print axioms Compiler.capF_eq_cap
 #print axioms Compiler.masF_eq_mas
+#print axioms Compiler.ca_dif_gate
+#print axioms Compiler.so_huge_gate
+#print axioms Compiler.caIn_pill
+#print axioms Compiler.soIn_pill
+#print axioms Compiler.ca_int_pill
+#print axioms Compiler.ca_uni_pill
+#print axioms Compiler.ca_lack_pill
+#print axioms Compiler.ca_dif_pill
+#print axioms Compiler.ca_app_pill
+#print axioms Compiler.ca_pat_pill
+#print axioms Compiler.ca_lot_pill
+#print axioms Compiler.ca_yea_pill
+#print axioms Compiler.so_knit_pill
+#print axioms Compiler.so_purr_pill
+#print axioms Compiler.so_pull_pill
+#print axioms Compiler.so_darn_pill
+#print axioms Nock.nock_eq_nockW
+#print axioms Nock.iterN_sound
+#print axioms Nock.iterN_complete
+#print axioms Hoon.mink_frag_gate
+#print axioms Hoon.mink_edit_gate
+#print axioms Compiler.mink_loop_unfold
+#print axioms Compiler.nstep_exact
+#print axioms Compiler.mink_gate_iff
+#print axioms Compiler.mink_gate_of_model
+#print axioms Compiler.mink_gate_to_model
+#print axioms Compiler.mink_pill_iff
+#print axioms Compiler.mink_pill_call
+#print axioms Compiler.monk_gate_iff
+#print axioms Compiler.mack_gate_iff
+#print axioms Compiler.monk_pill_iff
+#print axioms Compiler.mack_pill_iff
+#print axioms Compiler.pi_cons_gate
+#print axioms Compiler.pi_hed_gate
+#print axioms Compiler.pi_tel_gate
+#print axioms Compiler.pi_slot_gate
+#print axioms Compiler.pi_hed_pill
+#print axioms Compiler.pi_tel_pill
+#print axioms Compiler.pi_slot_pill
+#print axioms Compiler.pegF_eq_peg
+#print axioms Compiler.pi_compose_gate
+#print axioms Compiler.pi_compose_pill

@@ -10,9 +10,8 @@ Proved here: `hed`, `tel`, `jibe`, which read nothing from their context,
 `knit`, `hed`, `tel` from its own core, and `app` of `+ca`, which reads `+so`
 through the library core.  Each agrees with B's model on every sock.
 
-The library core is not named: the battery of `+ca` quotes a noun that holds
-the hoon core.  So the predicates on contexts say what the library core `lib`
-gives at the named axes: `CaOf lib` says that the arm at `ca.lib.axis` builds
+The predicates on contexts say what a library core `lib` gives at the named
+axes (`Lib.lean` proves them of the pill's own library core): `CaOf lib` says that the arm at `ca.lib.axis` builds
 a core that holds `+con:ca`, and `SoOf lib` that the arm at `so.lib.axis`
 builds a core that holds `+knit`, `+hed`, `+tel` of `+so`.
 -/

@@ -35,12 +35,16 @@ public import lemmas.Pill.Arm.Lien
 public import lemmas.Pill.Arm.Lsh
 public import lemmas.Pill.Arm.Lte
 public import lemmas.Pill.Arm.Lth
+public import lemmas.Pill.Arm.Mack
 public import lemmas.Pill.Arm.Mas
 public import lemmas.Pill.Arm.Max
 public import lemmas.Pill.Arm.Met
 public import lemmas.Pill.Arm.Min
+public import lemmas.Pill.Arm.Mink
 public import lemmas.Pill.Arm.Mix
+public import lemmas.Pill.Arm.Mock
 public import lemmas.Pill.Arm.Mod
+public import lemmas.Pill.Arm.Monk
 public import lemmas.Pill.Arm.Mor
 public import lemmas.Pill.Arm.Mug
 public import lemmas.Pill.Arm.Muk
@@ -48,6 +52,7 @@ public import lemmas.Pill.Arm.Mul
 public import lemmas.Pill.Arm.Murn
 public import lemmas.Pill.Arm.Need
 public import lemmas.Pill.Arm.Peg
+public import lemmas.Pill.Arm.Pi
 public import lemmas.Pill.Arm.Rear
 public import lemmas.Pill.Arm.Roll
 public import lemmas.Pill.Arm.Rsh
@@ -100,12 +105,16 @@ import all lemmas.Pill.Arm.Lien
 import all lemmas.Pill.Arm.Lsh
 import all lemmas.Pill.Arm.Lte
 import all lemmas.Pill.Arm.Lth
+import all lemmas.Pill.Arm.Mack
 import all lemmas.Pill.Arm.Mas
 import all lemmas.Pill.Arm.Max
 import all lemmas.Pill.Arm.Met
 import all lemmas.Pill.Arm.Min
+import all lemmas.Pill.Arm.Mink
 import all lemmas.Pill.Arm.Mix
+import all lemmas.Pill.Arm.Mock
 import all lemmas.Pill.Arm.Mod
+import all lemmas.Pill.Arm.Monk
 import all lemmas.Pill.Arm.Mor
 import all lemmas.Pill.Arm.Mug
 import all lemmas.Pill.Arm.Muk
@@ -113,6 +122,7 @@ import all lemmas.Pill.Arm.Mul
 import all lemmas.Pill.Arm.Murn
 import all lemmas.Pill.Arm.Need
 import all lemmas.Pill.Arm.Peg
+import all lemmas.Pill.Arm.Pi
 import all lemmas.Pill.Arm.Rear
 import all lemmas.Pill.Arm.Roll
 import all lemmas.Pill.Arm.Rsh
@@ -158,6 +168,12 @@ theorem core_evalFuel : evalFuel 252 (C trap (A 0)) nok = some core := by kernel
 theorem core_layer2 : slot? 8388607 core = some layer2 := by kernel_rfl
 
 theorem layer2_layer1 : slot? 3 layer2 = some layer1 := by kernel_rfl
+
+theorem layer4_layer3 : slot? 3 layer4 = some layer3 := by kernel_rfl
+
+theorem layer3_layer2 : slot? 3 layer3 = some layer2 := by kernel_rfl
+
+theorem core_lib : slot? 8191 core = some lib := by kernel_rfl
 
 /-! Each named arm sits at its axis.  The constants `x.axis` are in the
 arm files. -/
@@ -404,6 +420,107 @@ theorem in.wyt.arm_at : ∀ x, slot? in.wyt.axis (C in.battery x) = some by.wyt.
 theorem snoc.arm_at : slot? snoc.axis layer2 = some snoc.arm := by kernel_rfl
 
 theorem biff.arm_at : slot? biff.axis layer2 = some biff.arm := by kernel_rfl
+
+theorem mink.arm_at : slot? mink.axis layer4 = some mink.arm := by kernel_rfl
+
+theorem mink.layer1.arm_at : slot? mink.layer1.axis layer4 = some layer1 := by kernel_rfl
+
+theorem monk.arm_at : slot? monk.axis layer4 = some monk.arm := by kernel_rfl
+
+theorem mock.arm_at : slot? mock.axis layer4 = some mock.arm := by kernel_rfl
+
+theorem mack.arm_at : slot? mack.axis layer4 = some mack.arm := by kernel_rfl
+
+theorem ca.con.arm_at : ∀ x, slot? ca.con.axis (C ca.battery x) = some ca.con.arm := by
+  intro x; kernel_rfl
+
+theorem ca.hed.arm_at : ∀ x, slot? ca.hed.axis (C ca.battery x) = some ca.hed.arm := by
+  intro x; kernel_rfl
+
+theorem ca.uni.arm_at : ∀ x, slot? ca.uni.axis (C ca.battery x) = some ca.uni.arm := by
+  intro x; kernel_rfl
+
+theorem ca.int.arm_at : ∀ x, slot? ca.int.axis (C ca.battery x) = some ca.int.arm := by
+  intro x; kernel_rfl
+
+theorem ca.app.arm_at : ∀ x, slot? ca.app.axis (C ca.battery x) = some ca.app.arm := by
+  intro x; kernel_rfl
+
+theorem ca.lack.arm_at : ∀ x, slot? ca.lack.axis (C ca.battery x) = some ca.lack.arm := by
+  intro x; kernel_rfl
+
+theorem ca.yea.arm_at : ∀ x, slot? ca.yea.axis (C ca.battery x) = some ca.yea.arm := by
+  intro x; kernel_rfl
+
+theorem ca.dif.arm_at : ∀ x, slot? ca.dif.axis (C ca.battery x) = some ca.dif.arm := by
+  intro x; kernel_rfl
+
+theorem ca.all.arm_at : ∀ x, slot? ca.all.axis (C ca.battery x) = some ca.all.arm := by
+  intro x; kernel_rfl
+
+theorem ca.pat.arm_at : ∀ x, slot? ca.pat.axis (C ca.battery x) = some ca.pat.arm := by
+  intro x; kernel_rfl
+
+theorem ca.tel.arm_at : ∀ x, slot? ca.tel.axis (C ca.battery x) = some ca.tel.arm := by
+  intro x; kernel_rfl
+
+theorem ca.lot.arm_at : ∀ x, slot? ca.lot.axis (C ca.battery x) = some ca.lot.arm := by
+  intro x; kernel_rfl
+
+theorem so.jibe.arm_at : ∀ x, slot? so.jibe.axis (C so.battery x) = some so.jibe.arm := by
+  intro x; kernel_rfl
+
+theorem so.huge.arm_at : ∀ x, slot? so.huge.axis (C so.battery x) = some so.huge.arm := by
+  intro x; kernel_rfl
+
+theorem so.purr.arm_at : ∀ x, slot? so.purr.axis (C so.battery x) = some so.purr.arm := by
+  intro x; kernel_rfl
+
+theorem so.knit.arm_at : ∀ x, slot? so.knit.axis (C so.battery x) = some so.knit.arm := by
+  intro x; kernel_rfl
+
+theorem so.pull.arm_at : ∀ x, slot? so.pull.axis (C so.battery x) = some so.pull.arm := by
+  intro x; kernel_rfl
+
+theorem so.hed.arm_at : ∀ x, slot? so.hed.axis (C so.battery x) = some so.hed.arm := by
+  intro x; kernel_rfl
+
+theorem so.darn.arm_at : ∀ x, slot? so.darn.axis (C so.battery x) = some so.darn.arm := by
+  intro x; kernel_rfl
+
+theorem so.tel.arm_at : ∀ x, slot? so.tel.axis (C so.battery x) = some so.tel.arm := by
+  intro x; kernel_rfl
+
+theorem pi.edit.arm_at : ∀ x, slot? pi.edit.axis (C pi.battery x) = some pi.edit.arm := by
+  intro x; kernel_rfl
+
+theorem pi.hed.arm_at : ∀ x, slot? pi.hed.axis (C pi.battery x) = some pi.hed.arm := by
+  intro x; kernel_rfl
+
+theorem pi.prune.arm_at : ∀ x, slot? pi.prune.axis (C pi.battery x) = some pi.prune.arm := by
+  intro x; kernel_rfl
+
+theorem pi.cons.arm_at : ∀ x, slot? pi.cons.axis (C pi.battery x) = some pi.cons.arm := by
+  intro x; kernel_rfl
+
+theorem pi.slot.arm_at : ∀ x, slot? pi.slot.axis (C pi.battery x) = some pi.slot.arm := by
+  intro x; kernel_rfl
+
+theorem pi.tel.arm_at : ∀ x, slot? pi.tel.axis (C pi.battery x) = some pi.tel.arm := by
+  intro x; kernel_rfl
+
+theorem pi.compose.arm_at : ∀ x, slot? pi.compose.axis (C pi.battery x) = some pi.compose.arm := by
+  intro x; kernel_rfl
+
+theorem ca.lib.arm_at : slot? ca.lib.axis lib = some ca.lib.arm := by kernel_rfl
+
+theorem so.lib.arm_at : slot? so.lib.axis lib = some so.lib.arm := by kernel_rfl
+
+theorem pi.lib.arm_at : slot? pi.lib.axis lib = some pi.lib.arm := by kernel_rfl
+
+theorem ca.lib.layer2.arm_at : slot? ca.lib.layer2.axis lib = some layer2 := by kernel_rfl
+
+theorem ca.lib.layer1.arm_at : slot? ca.lib.layer1.axis lib = some layer1 := by kernel_rfl
 
 end Pill
 end Formalization

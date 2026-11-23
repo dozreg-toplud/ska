@@ -18,7 +18,7 @@ is not ported to Lean and no port is trusted.
 ```sh
 cd formalization
 tools/capped.sh -m 3G lake build core              # 3 s
-tools/capped.sh -m 3G lake build                   # about 50 s from scratch, 1.6 GB peak
+tools/capped.sh -m 3G lake build                   # about 55 s from scratch, 2.4 GB peak
 tools/capped.sh -m 3G lake env lean lemmas/Audit.lean  # axioms of the main theorems
 ```
 
@@ -58,7 +58,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `CueSpec.lean` | `cue` of `core/` checked by the kernel on jams made by `tools/nouns.py`. |
 | `CueWords.lean`, `CueExample.lean` | An earlier `cue` on 32-bit words, built for the kernel, checked on a 150-cell jam. |
 | `Pill/Arm/<Family>.lean` | Generated: the named nouns of one arm family (`dec.arm`, `dec.battery`, `dec.loop`, ..., and the axis constant `dec.axis`), as a Lean module whose nouns are public but whose bodies are not exposed. |
-| `Pill/Nouns/P000.lean`, ... | Generated: the rest of the pill's noun and of the SKA core (21,478 definitions named by a hash of their content), as a chain of modules. |
+| `Pill/Nouns/P000.lean`, ... | Generated: the rest of the pill's noun and of the SKA core (definitions named by a hash of their content), as a chain of modules.  A few named nouns live here too: the library core `lib`, the batteries `ca.battery` and `so.battery`, and the arms `dif` of `+ca` and `huge` of `+so`, which quote a noun holding the hoon core. |
 | `Pill/Facts.lean` | Generated, kernel-checked: the pill's formula on its trap evaluates to the core, and the arms sit at their axes (`x.arm_at`). |
 | `Hoon/Basic.lean` | Flags (`loob`), lists as nouns (`listN`, `appendN`), and `Below`, the predicate on the context of a second-layer arm that reads the first layer. |
 | `Hoon/Dec.lean` | `+dec`: `dec_gate (c) (n) (h : 0 < n) : nock [dec.battery n c] dec.battery = some (n - 1)`, and `(dec 0)` crashes. |
@@ -86,6 +86,13 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Hoon/Mug.lean` | `mug_spec`: `+mug` computes `mugF` on every noun, which proves `MugSpec mugF`. |
 | `Hoon/Layer1.lean`, `Hoon/Layer2.lean` | The pill's layers satisfy the predicates of their arms, and `+gor`, `+mor` and the map and set theorems hold on `layer2` with no assumption.  The only theorem files that import `Facts.lean` and the bulk. |
 | `Compiler/Ca.lean`, `Compiler/So.lean` | The pill's Nock of the arms `hed`, `tel`, `con`, `all`, `int`, `uni`, `lack`, `app` of `+ca` and `hed`, `tel`, `jibe`, `knit`, `purr` of `+so` computes the models of `Ska/Sock.lean` on every cape and sock.  The arms that read the library core assume only what it gives at the named axes `ca.lib.axis` and `so.lib.axis`.  These are plain files, because the models are. |
+| `Iter.lean` | `nockW call`, Nock whose opcodes `2` and `9` hand the formula they compute to `call`, and `iterN k`, Nock with calls at most `k` deep: `nock = nockW nock`, and `nock` returns `p` exactly when some `iterN k` does.  An induction on `k` meets a loop's calls to itself at `iterN k`. |
+| `Hoon/Mink.lean` | The gates `frag` and `edit` of the `|^` core of `+mink` are `slot?` and `edit?` as units (`mink_frag_gate`, `mink_edit_gate`), with `+cap` and `+mas` from the context (`MinkIn`). |
+| `Compiler/Mink.lean` | `+mink` against `minkF`: one symbolic run of its loop (`mink_loop_unfold`) gives `NStep`, the loop on nouns with its calls as parameters; `NStep` with `nock` is `minkStep` encoded (`nstep_exact`); `mink_gate_iff`: the gate returns `x` exactly when `Mink` returns a tone that `x` encodes, given `MinkIn` and `SlamIsNock lib`. |
+| `Compiler/Monk.lean` | `+monk` and `+mack` from `+mink`: `+monk` drops the trace, `+mack` keeps the product of a `%0` (`monk_gate_iff`, `mack_gate_iff`). |
+| `Compiler/MinkPill.lean` | The same in the pill's layer 4, where `MinkIn`, `MonkIn`, `MackIn` hold (`mink_pill_iff`, `mink_pill_call`, `monk_pill_iff`, `mack_pill_iff`). |
+| `Compiler/Pi.lean` | `cons`, `hed`, `tel`, `slot` (on an axis of at least `1`) and `compose` of the provenance core `+pi` compute B's models of `Ska/Pi.lean`; `hed`, `tel`, `slot` read `+peg` (and `+cap`, `+mas`) of layer 1 through the library core (`PegOf`, `AxisOf`). |
+| `Compiler/Lib.lean` | `dif` of `+ca` and `huge` of `+so`, whose crash messages quote a noun that holds the hoon core, so that the generator names them in the bulk chain (`ca.dif.mean` is the quoted noun).  And the pill's library core `lib` satisfies `CaOf`, `SoOf`, `AxisOf`, `YeaOf`: every gate of `+ca` and `+so` computes its model on the pill's core (`ca_int_pill`, ..., `so_darn_pill`) with no assumption. |
 | `Compiler/Axes.lean` | `pat`, `lot` of `+ca` and `pull` of `+so`, which walk an axis with `+cap` and `+mas` of layer 1, read through the library core at `ca.lib.layer1.axis`; B's `cap` and `mas` equal `capF` and `masF`.  And `yea` of `+ca`, with `+peg` and `+weld`, and `darn` of `+so`. |
 | `Ska/Types.lean` | Models of the IR types (`Bell`, `Sock`, `Cape`, `Pole`, `Termin`, `Blob`, `Straight`, `Tone`, ...), each with its Hoon noun layout. |
 | `Ska/Mink.lean`, `Ska/MinkTrace.lean` | Models of `+mink`, `+mook` and `+mock`; what Nock computes, `+mink` returns. |
@@ -147,6 +154,13 @@ definition whose body calls the murmur3 arithmetic, or an `rfl` between two
 such expressions that are not syntactically equal, took the elaborator past
 3 GB.
 
+A function that `simp` runs on the pill's formulas must not be structurally
+recursive.  `nockW` of `Iter.lean` was first defined by structural recursion
+on the formula, and `simp only` with its rules on the loop of `+mink` took
+more than 2 GB after a few hundred steps, where the same rules for `nock` ran
+in half a second.  Defined with `partial_fixpoint`, like `nock`, it runs as
+fast as `nock`.
+
 ## Regenerating from a new pill
 
 ```sh
@@ -179,8 +193,8 @@ import only its theorems.  So:
 2. A change to a declaration of the chain rebuilds the rest of the chain,
    `Facts.lean` and the layer files, and no gate theorem file.  A comment
    rebuilds the edited file only.
-3. A clean build takes about 55 seconds and peaks at 2.2 GB for the whole
-   build (1.8 GB for the largest process).
+3. A clean build takes about 55 seconds and peaks at 2.4 GB for the whole
+   build.
 
 ## Gaps
 
@@ -202,7 +216,10 @@ import only its theorems.  So:
    which a model is `none`.
 5. **Not done among the arms of the library:** `+uni`, `+int`, `+dif` of `+by`
    and `+in`.
-6. **Not done among the arms of the compiler's leaf cores:** `dif` of `+ca`
-   and `huge` of `+so`.  Their crash messages quote data that holds the hoon
-   core, so the generator does not name them.  No arm of `+ca` or `+so` that
-   is proved disagrees with B's model.
+6. **The arms of `+ca` and `+so` are all done.**  No arm of `+ca` or `+so`
+   disagrees with B's model.
+7. **Not done among the virtualization arms:** `+mook` and `+mock`.  `+mink`,
+   `+monk` and `+mack` are done (`Compiler/Mink.lean`, `Compiler/Monk.lean`).
+8. **Not done among the compiler's arms:** `edit` and `prune` of `+pi`,
+   `+distribute`, `+double-int`, `+safe-nomm`, `+safe-fol-fol`,
+   `+inlineable`.

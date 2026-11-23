@@ -271,6 +271,9 @@ def main():
         if loops != 'any':
             assert loops is None or len(ls) == loops, (label, len(ls))
         for k, l in enumerate(ls):
+            # a loop whose Nock is that of a loop named before keeps that name
+            if l in names:
+                continue
             name(l, label + ('.loop' if len(ls) == 1 else '.loop%d' % k))
             formulas.add(l)
 
@@ -706,6 +709,54 @@ def main():
     name(cmp, 'sort.cmp')
     formulas.add(cmp)
 
+    # ---- layers 3 and 4 of hoon.hoon, and +mink with the arms of its |^ core:
+    # the loop `$` and the gates `frag` and `edit`
+    (mink_a,) = arms_of('mink')
+    l4 = [i for i in live if type(NODES[i]) is tuple and type(NODES[head(i)]) is tuple
+          and type(NODES[tail(i)]) is tuple and tail(tail(i)) == layer2]
+    l4 = [i for i in l4 if type(NODES[head(i)]) is tuple and mink_a in reach([head(i)])]
+    (layer4,) = l4
+    layer3 = tail(layer4)
+    assert tail(layer3) == layer2
+    names.update({layer3: 'layer3', layer4: 'layer4'})
+    facts.append(('layer4_layer3', 'slot? 3 layer4 = some layer3'))
+    facts.append(('layer3_layer2', 'slot? 3 layer3 = some layer2'))
+    mink_a = arm('mink', layer4, 'layer4', loops=None)
+    # the layer of +cap and +mas, which `frag` and `edit` read
+    axes.append(('mink.layer1', 15, 'slot? mink.layer1.axis layer4 = some layer1'))
+    assert tail(tail(tail(layer4))) == layer1
+    g = gate_battery(mink_a)
+    # [8 [1 0] [8 [1 battery] [9 11 0 1]]]: =| trace, then the |^ core
+    assert NODES[head(g)] == 8 and tail(head(tail(g))) == atom(0)
+    x = tail(tail(g))
+    assert tail(tail(x)) == cell(atom(9), cell(atom(11), cell(atom(0), atom(1))))
+    mbat = tail(head(tail(x)))
+    name(mbat, 'mink.core')
+    name(tail(tail(mbat)), 'mink.loop')
+    formulas.add(tail(tail(mbat)))
+    for lab, a in (('frag', head(mbat)), ('edit', head(tail(mbat)))):
+        name(a, 'mink.%s.arm' % lab)
+        formulas.add(a)
+        gb = door_gate_battery(a)
+        name(gb, 'mink.%s.battery' % lab)
+        formulas.add(gb)
+        name_loops('mink.' + lab, gb, 'any')
+
+    # +monk and +mock, and +mack, the gate of layer 4 that slams +monk from
+    # its context and has no %fast label
+    arm('monk', layer4, 'layer4', loops=None)
+    arm('mock', layer4, 'layer4', loops=None)
+    monk_ax = [ax for nm, ax, _ in axes if nm == 'monk'][0]
+    macks = [(ax, a) for ax, a in fe_arms(head(layer4), 2, limit=40)
+             if is_gate_builder(a) and (monk_ax, 7) in pulls(door_gate_battery(a))]
+    assert len(macks) == 1, len(macks)
+    mack_ax, mack_a = macks[0]
+    name(mack_a, 'mack.arm')
+    formulas.add(mack_a)
+    name(door_gate_battery(mack_a), 'mack.battery')
+    formulas.add(door_gate_battery(mack_a))
+    axes.append(('mack', mack_ax, 'slot? mack.axis layer4 = some mack.arm'))
+
     # ---- the compiler's leaf cores +ca and +so: arms of the library core,
     # [[1 battery] [11 [%fast [1 [label [0 511] 0]]] [0 1]]], whose own arms
     # carry %fast labels except for a few
@@ -735,16 +786,23 @@ def main():
         except (TypeError, IndexError):
             return None
 
-    # Their batteries are not named: an arm of +ca (+dif, through its crash
-    # message) quotes a noun that holds the whole hoon core.  Each arm is named
-    # on its own, unless it reaches a noun of the bulk; its axis is relative to
-    # its core [battery payload].
-    unlabeled = {'ca': {95: 'lot', 171: 'lack', 87: 'dif'}, 'so': {4: 'jibe'}}
+    # Each arm is named on its own; its axis is relative to its core
+    # [battery payload], and Facts.lean checks it on [battery x] for every x.
+    # The batteries `ca.battery` and `so.battery` belong to the bulk, because
+    # two arms quote a noun that holds the hoon core: +dif of +ca and +huge of
+    # +so, through their crash messages.  Such an arm is named in the bulk
+    # (IN_BULK), and so is the quoted noun (`ca.dif.mean`, the battery of the
+    # trap of its %mean hint), so that the arm's formula is written out down
+    # to that name.
+    unlabeled = {'ca': {95: 'lot', 171: 'lack', 87: 'dif'}, 'so': {4: 'jibe'}, 'pi': {}}
     bulk_named = set(i for i, nm in names.items() if nm.split('.')[0] in
-                     ('root', 'nok', 'trap', 'core', 'layer0', 'layer1', 'layer2'))
-    skipped = []
-    for clabel in ['ca', 'so']:
+                     ('root', 'nok', 'trap', 'core', 'layer0', 'layer1', 'layer2',
+                      'layer3', 'layer4'))
+    in_bulk = []
+    for clabel in ['ca', 'so', 'pi']:
         carm, cbat = core_label_arm(clabel)
+        name(cbat, clabel + '.battery')
+        IN_BULK.add(clabel + '.battery')
         core_cell = cell(cbat, atom(0))
         for ax, a in fe_arms(cbat, 2):
             lab = label_of(a)
@@ -758,15 +816,29 @@ def main():
                 continue
             full = clabel + '.' + lab
             if reach([a]) & bulk_named:
-                skipped.append(full)
-                continue
+                # the outermost constants [1 q] of the formula that reach the bulk
+                quotes = set()
+                st = [g]
+                while st:
+                    i = st.pop()
+                    if type(NODES[i]) is int or not reach([i]) & bulk_named:
+                        continue
+                    if NODES[head(i)] == 1:
+                        quotes.add(tail(i))
+                    else:
+                        st.extend(NODES[i])
+                assert len(quotes) == 1, (full, len(quotes))
+                name(quotes.pop(), full + '.mean')
+                IN_BULK.update([full + '.arm', full + '.battery', full + '.mean'])
+                in_bulk.append(full)
             name(a, full + '.arm')
             formulas.add(a)
             name(g, full + '.battery')
             formulas.add(g)
-            name_loops(full, g, 'any')
-            axes.append((full, full_ax, None))
-    sys.stderr.write('compiler arms skipped (they reach the bulk): %s\n' % skipped)
+            name_loops(full, g, 'any' if full not in in_bulk else None)
+            axes.append((full, full_ax, '∀ x, slot? %s.axis (C %s.battery x) = some %s.arm'
+                         % (full, clabel, full)))
+    sys.stderr.write('compiler arms named in the bulk: %s\n' % in_bulk)
 
     # the library core: the first core on the tail spine of `core` whose
     # battery holds the arms [8 [1 battery] hint] of +ca and +so.  Its axes of
@@ -774,12 +846,13 @@ def main():
     # that the arms of +ca and +so read.
     ca_arm8 = cell(atom(8), core_label_arm('ca')[0])
     so_arm8 = cell(atom(8), core_label_arm('so')[0])
+    pi_arm8 = cell(atom(8), core_label_arm('pi')[0])
     lib = core
     while True:
         if type(NODES[head(lib)]) is tuple:
             lib_arms = dict((a, ax) for ax, a in fe_arms(head(lib), 2, limit=20))
             if ca_arm8 in lib_arms and so_arm8 in lib_arms:
-                ca_lib, so_lib = lib_arms[ca_arm8], lib_arms[so_arm8]
+                ca_lib, so_lib, pi_lib = lib_arms[ca_arm8], lib_arms[so_arm8], lib_arms[pi_arm8]
                 break
         lib = tail(lib)
     def spine_axis(x, target):
@@ -790,10 +863,19 @@ def main():
         return ax
     knit_battery = [i for i, nm in names.items() if nm == 'so.knit.battery'][0]
     assert (ca_lib, 15) in pulls(knit_battery), (ca_lib, so_lib, spine_axis(core, lib), pulls(knit_battery))
-    axes.append(('ca.lib', ca_lib, None))
-    axes.append(('so.lib', so_lib, None))
-    axes.append(('ca.lib.layer2', spine_axis(lib, layer2), None))
-    axes.append(('ca.lib.layer1', spine_axis(lib, layer1), None))
+    name(lib, 'lib')
+    facts.append(('core_lib', 'slot? %d core = some lib' % spine_axis(core, lib)))
+    for clabel, ax, arm8 in (('ca', ca_lib, ca_arm8), ('so', so_lib, so_arm8),
+                             ('pi', pi_lib, pi_arm8)):
+        name(arm8, clabel + '.lib.arm')
+        IN_BULK.add(clabel + '.lib.arm')
+        formulas.add(arm8)
+        axes.append((clabel + '.lib', ax, 'slot? %s.lib.axis lib = some %s.lib.arm'
+                     % (clabel, clabel)))
+    axes.append(('ca.lib.layer2', spine_axis(lib, layer2),
+                 'slot? ca.lib.layer2.axis lib = some layer2'))
+    axes.append(('ca.lib.layer1', spine_axis(lib, layer1),
+                 'slot? ca.lib.layer1.axis lib = some layer1'))
 
     # ---- write
     emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, len(data))
@@ -815,7 +897,8 @@ def main():
 # content, in which a named noun counts by its name, so a region that did not
 # change regenerates to the same text.
 
-BULK = {'root', 'nok', 'trap', 'core', 'layer0', 'layer1', 'layer2'}
+BULK = {'root', 'nok', 'trap', 'core', 'layer0', 'layer1', 'layer2', 'layer3', 'layer4', 'lib'}
+IN_BULK = set()      # names of other families that belong to the bulk
 
 CHUNK_MIN = 1000     # bulk definitions per chain file, at least
 CHUNK_DIV = 500      # a file ends after a definition whose hash is 0 mod this
@@ -823,6 +906,8 @@ CHUNK_MAX = 2000     # bulk definitions per chain file, at most
 
 
 def family_of(nm):
+    if nm in IN_BULK:
+        return None
     f = nm.split('.')[0]
     return None if f in BULK else f
 
@@ -1057,7 +1142,7 @@ def emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, nbyte
 
     axes_of = {}
     for nm, ax, st in axes:
-        axes_of.setdefault(unit_of[family_of(nm)], []).append((nm, ax))
+        axes_of.setdefault(unit_of[nm.split('.')[0]], []).append((nm, ax))
 
     arm_dir = os.path.join(outdir, 'Arm')
     os.makedirs(arm_dir, exist_ok=True)
@@ -1092,7 +1177,8 @@ def emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, nbyte
             fh.write('\nend Pill\nend Formalization\n')
 
     # the bulk, as a chain of files
-    bulk = Unit(sorted(bulk_roots, key=lambda i: named[i]), named, set(), 'n')
+    bulk = Unit(sorted(bulk_roots, key=lambda i: named[i]), named,
+                set(i for i in bulk_roots if i in formulas), 'n')
     defs = []
     st_done = set()
     texts = {}
