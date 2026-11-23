@@ -4,6 +4,7 @@ import lemmas.Compiler.ListMold
 import lemmas.Compiler.Validate
 import lemmas.Ska.Statements
 import lemmas.Pill.Cue.Root
+import lemmas.Compiler.OvumMold
 
 /-!
 # The assembly
@@ -147,11 +148,13 @@ def PokeModel : Prop :=
 /-- The mold `ovum` of the pill (arm `685` of `vcore`, which `+validate-ovum`
 slams on `%full`, `%jets` and `%fast`) returns on a `%full` only when its tail
 is a cell, and on a `%fast` only when its tail is a flag and a noun.  With it,
-the poke crashes on every noun that is no ovum (`pokeValid`).  Owner: pill to
-model: the `$%` mold of `+ovum` on two of its cases. -/
+the poke crashes on every noun that is no ovum (`pokeValid`).  Proved
+(`ovumMold`), in `lemmas/Compiler/OvumMold.lean`. -/
 def OvumMold : Prop :=
   ∀ tl w, (slamAt vcore 685 (C (A Tag.full) tl) = some w → ∃ s f, tl = C s f) ∧
     (slamAt vcore 685 (C (A Tag.fast) tl) = some w → ∃ r p, tl = C (flag r) p)
+
+theorem ovumMold : OvumMold := fun tl w => ⟨mold_full tl w, mold_fast tl w⟩
 
 /-- The inner `+poke` crashes on every noun that is no ovum. -/
 def PokeValid : Prop :=
@@ -322,7 +325,6 @@ variable {lib : Lib} {pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mug
 structure Gap (lib : Lib) (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun))
     (InvC : Noun → Prop) : Prop where
   pokeModel : PokeModel pk
-  ovumMold : OvumMold
   mookOther : MookOther
   contract : Contract lib pk InvC
   halting : Halting pk InvC
@@ -334,14 +336,14 @@ structure Gap (lib : Lib) (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMa
 
 theorem Gap.reach (g : Gap lib pk InvC) {core₀ c : Noun} (h0 : Ska.IsCore core₀)
     (h : Ska.Reach core₀ c) : ∃ cr, c = C ob (icore cr) ∧ CorIn cr ∧ InvC cr := by
-  obtain ⟨cr, rfl, hc, hr⟩ := reach_model cueRoot g.libSlam g.pokeModel g.ovumMold
+  obtain ⟨cr, rfl, hc, hr⟩ := reach_model cueRoot g.libSlam g.pokeModel ovumMold
     g.mookOther g.libFormat g.mookFormat h0 h
   exact ⟨cr, rfl, hc, reach_inv lib g.contract.toPokeSteps g.invKept g.invStart hr⟩
 
 theorem meek_of (g : Gap lib pk InvC) : Ska.Meek := by
   intro core₀ c s f p gul h0 hr hA
   have hpk := pokeIs_all g.pokeModel
-  obtain ⟨cr, rfl, hc, hr'⟩ := reach_model cueRoot g.libSlam g.pokeModel g.ovumMold
+  obtain ⟨cr, rfl, hc, hr'⟩ := reach_model cueRoot g.libSlam g.pokeModel ovumMold
     g.mookOther g.libFormat g.mookFormat h0 hr
   obtain ⟨st', he⟩ := meek_reach lib g.contract g.halting g.invKept (gul := gul) g.invStart hr' hA
   exact ⟨_, (top_iff lib g.libSlam pk hpk ob cr hc s f gul _ _).2 ⟨_, st', rfl, rfl, he⟩⟩
@@ -354,7 +356,7 @@ theorem weak_of (g : Gap lib pk InvC) : Ska.Weak := by
   have hmm : EvalMookMsgIs lib := g.mookFormat
   have hrb := rendBaseIs_layer4 lib hleaf hhand hrest
   have e0 := isCore_eq cueRoot h0
-  obtain ⟨cr, rfl, hc, hr'⟩ := reach_model cueRoot g.libSlam g.pokeModel g.ovumMold
+  obtain ⟨cr, rfl, hc, hr'⟩ := reach_model cueRoot g.libSlam g.pokeModel ovumMold
     g.mookOther g.libFormat g.mookFormat h0 hr
   subst e0
   obtain ⟨t, rfl, ht⟩ := (mock_iff lib g.libSlam hleaf hhand hrest hst hmsg core core_layer4
@@ -371,7 +373,7 @@ theorem converse_of (g : Gap lib pk InvC) : Ska.Converse := by
   have hmm : EvalMookMsgIs lib := g.mookFormat
   have hrb := rendBaseIs_layer4 lib hleaf hhand hrest
   have e0 := isCore_eq cueRoot h0
-  obtain ⟨cr, rfl, hc, hr'⟩ := reach_model cueRoot g.libSlam g.pokeModel g.ovumMold
+  obtain ⟨cr, rfl, hc, hr'⟩ := reach_model cueRoot g.libSlam g.pokeModel ovumMold
     g.mookOther g.libFormat g.mookFormat h0 hr
   subst e0
   obtain ⟨tn, cr'', rfl, rfl, hR⟩ :=
