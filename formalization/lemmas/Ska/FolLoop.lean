@@ -103,14 +103,18 @@ def safeFolFol : Nomm → Bool
 
 /-- The parts of `gen` that the model threads: what the function uses of its
 subject as code (`want`), as code it could not find (`indi`), and where an
-indirect call sought its formula (`seek`). -/
+indirect call sought its formula (`seek`).  `ghost` is not in the Hoon and
+nothing reads it: it lets a projection of the state-passing model
+(`Ana.folLoop`, `Bridge.lean`) tell apart two calls of the recursion with the
+same arguments, which the hidden state can answer differently. -/
 structure Gen where
   want : Cape
   indi : Cape
   seek : Cape
+  ghost : Nat := 0
 
 /-- `gen` at the start of `+run`: `[| | | ~ ~ index | st]`, its capes. -/
-def Gen.init : Gen := ⟨Cape.no, Cape.no, Cape.no⟩
+def Gen.init : Gen := ⟨Cape.no, Cape.no, Cape.no, 0⟩
 
 /-- The parts of the callee's `datum` that a direct call reads:
 `less-code`, `indi`, `seek`, `prod` and `map`. -/
@@ -251,7 +255,8 @@ def callStep (tab : Tab) (go : FolGo) (mk : Option Noun) (bc df : Bool) (s f : F
       | Sock.mk lc _ =>
         some (⟨Nomm.n2 s.nomm f.nomm (some (⟨d.less, C fa fb⟩, mk)),
             ⟨d.prod, Pi.compose d.map s.prod.src⟩, false⟩,
-          { want := Ca.uni gen.want (Ca.uni (distribute Cape.yes f.prod.src)
+          { gen with
+            want := Ca.uni gen.want (Ca.uni (distribute Cape.yes f.prod.src)
               (distribute lc s.prod.src)),
             indi := Ca.uni gen.indi (distribute d.indi s.prod.src),
             seek := Ca.uni gen.seek (distribute d.seek s.prod.src) })

@@ -207,7 +207,7 @@ def GenS.toNoun (regsNoun : R → Noun) (g : GenS M R) : Noun :=
       (C (A g.low) (C (flag g.back) (g.st.toNoun regsNoun)))))))
 
 /-- The capes of `gen` that the fixed-table model keeps. -/
-def GenS.gen (g : GenS M R) : Gen := ⟨g.want, g.indi, g.seek⟩
+def GenS.gen (g : GenS M R) : Gen := { want := g.want, indi := g.indi, seek := g.seek }
 
 /-- The arms that are parameters. -/
 structure Env (R : Type) where
