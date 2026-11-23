@@ -445,13 +445,13 @@ theorem run_clean : ∀ (nm : Nomm), CleanIH S Map nm := by
     obtain ⟨⟨don, rec, o⟩, g3, h3, h⟩ := bind_some h
     have CI := clean_into h3 C0
     simp only at h
-    obtain ⟨nexD, g3', hpd, h⟩ := bind_some h
-    obtain ⟨rfl, rfl⟩ := past_some hpd
-    obtain ⟨nexRec, g4, h4, h⟩ := bind_some h
-    obtain ⟨nexRec', g4', hpr, h⟩ := bind_some h
+    obtain ⟨nexR, g3', hpr, h⟩ := bind_some h
     obtain ⟨rfl, rfl⟩ := past_some hpr
-    obtain ⟨nexDon, g5, h5, h⟩ := bind_some h
-    exact clean_copy h (ihv _ _ _ _ (by exact CI.1) h5) (ihq _ _ _ _ (by exact CI.2) h4)
+    obtain ⟨nexDon, g4, h4, h⟩ := bind_some h
+    obtain ⟨nexDon', g4', hpd, h⟩ := bind_some h
+    obtain ⟨rfl, rfl⟩ := past_some hpd
+    obtain ⟨nexRec, g5, h5, h⟩ := bind_some h
+    exact clean_copy h (ihq _ _ _ _ (by exact CI.2) h5) (ihv _ _ _ _ (by exact CI.1) h4)
   | n11s => intro goal g0 g1 nex _ h; simp only [run] at h; cases h
   | n11d => intro goal g0 g1 nex _ h; simp only [run] at h; cases h
   | n12 => intro goal g0 g1 nex _ h; simp only [run] at h; cases h

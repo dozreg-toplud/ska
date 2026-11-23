@@ -17,9 +17,10 @@ fork, and no hint, so none has a bond: every `need-lazy` here is
 `[sure ~ ~]`, and the model of `need-lazy` is its `sure`.  Every arm that
 tests `&(?=(~ fork.laz) ?=(~ bond.laz))` takes the branch that test selects,
 and that branch is what is modelled.  Without calls the state's `soft` map
-stays empty, so its tests (`(~(has by soft.gen) o)`) are false; `tags`,
-`cond`, `cache` and `sofs` are neither read nor written, and are left out
-of `Gen`.  `+past` is modelled with `+hinted`; its branch for a hinted nomm
+stays empty, so its tests (`(~(has by soft.gen) o)`) are false; `cache`
+and `sofs` are neither read nor written, and are left out of `Gen`.  `tags`
+and `cond` are in `Gen` for the arms that walk forks (`CompLazyArms.lean`);
+the arms of this file leave them alone.  `+past` is modelled with `+hinted`; its branch for a hinted nomm
 makes a bond and is not modelled.  It returns its `next` unchanged on every
 pure nomm (`past_pure`), and wherever it returns at all (`past_some`).
 
@@ -169,6 +170,10 @@ structure Gen (Map : Type → Type) where
   /-- `?=(%drop mode.gen)`. -/
   drop : Bool
   blocks : Map Blob
+  /-- `tags`: the region of each lazy block, a list of `@uxid`. -/
+  tags : Map (List Nat)
+  /-- `cond`: a proxy register to its definition and region. -/
+  cond : Map (Nat × List Nat)
 
 variable {Map : Type → Type} [HoonMap Map]
 
@@ -180,6 +185,13 @@ def re : CM Map Nat := fun g => some (g.re, { g with re := g.re + 1 })
 
 /-- `+oo`: a fresh block label. -/
 def oo : CM Map Nat := fun g => some (g.bo, { g with bo := g.bo + 1 })
+
+/-- `+id`: a fresh region identifier (named so as not to hide `id`). -/
+def freshId : CM Map Nat := fun g => some (g.id, { g with id := g.id + 1 })
+
+/-- `+set-tag`: the region of block `o`, unless dropping. -/
+def setTag (o : Nat) (region : List Nat) : CM Map Unit := fun g =>
+  some ((), if g.drop then g else { g with tags := HoonMap.put g.tags o region })
 
 /-- `+emir`: put a block, unless dropping. -/
 def emir (o : Nat) (b : Blob) : CM Map Unit := fun g =>
@@ -617,7 +629,8 @@ def doneBlocks : CM Map (Nat × Nat) := do
 
 /-- `run` of `+comp`, for the cases `[^ *]`, `%0`, `%1`, `%3`, `%4`, `%5`,
 `%7`, `%10` (the parameters `mono`, `region`, `sup` are read by no case of the
-fragment).  `none` on the other cases: they are not modelled. -/
+fragment).  The case `%10` follows f6a76c2: the recipient `q` is computed
+first and the donor `v` second, as in `+mink`.  `none` on the other cases: they are not modelled. -/
 def run : Nomm → CGoal S → CM Map (Next S)
   | Nomm.cons p q, goal => do
       let goal ← (match goal with
@@ -732,11 +745,11 @@ def run : Nomm → CGoal S → CM Map (Next S)
   | Nomm.n10 a v q, goal => do
       let next ← simpleNext goal
       let (don, rec, o) ← into next a
-      let nexD ← past noCode ⟨don, jmp0 o⟩ q
-      let nexRec ← run q (CGoal.next rec nexD.th)
-      let nexRec ← past noCode nexRec v
-      let nexDon ← run v (CGoal.next nexD.laz nexRec.th)
-      copy nexDon nexRec.laz
+      let nexR ← past noCode ⟨rec, jmp0 o⟩ v
+      let nexDon ← run v (CGoal.next don nexR.th)
+      let nexDon ← past noCode nexDon q
+      let nexRec ← run q (CGoal.next nexR.laz nexDon.th)
+      copy nexRec nexDon.laz
   | _, _ => fun _ => Option.none
 
 end Comp

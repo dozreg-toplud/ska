@@ -1,4 +1,5 @@
 import lemmas.Ska.CompFinal
+import lemmas.Ska.CompLazyFinal
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -75,3 +76,27 @@ open Formalization.SkaModel.Comp
 #print axioms past_some
 #print axioms hinted_pure
 #print axioms past_pure
+#print axioms n10_next_ok
+#print axioms Lazy.toNoun_ofSure
+#print axioms Lazy.noneEquivalentL_ofSure
+#print axioms Lazy.lazyBig_ofSure
+#print axioms Lazy.softLess_noSoft
+#print axioms Lazy.pastFork_pure
+#print axioms Lazy.walkLazy_ofSure
+#print axioms Lazy.fromL_ofSure
+#print axioms Lazy.splitLoop_ofSure
+#print axioms Lazy.intoLoopL_ofSure
+#print axioms Lazy.copyLazyL_ofSure
+#print axioms simpleNextL_toL
+#print axioms splitL_toL
+#print axioms intoL_toL
+#print axioms copyL_toL
+#print axioms pastL_pure
+#print axioms medeL_toL
+#print axioms collapseLazyAtomL_toL
+#print axioms runL_toL
+#print axioms frag_pure_noSix
+#print axioms runL_ok
+#print axioms coerceLazyL_ofSure
+#print axioms finishL_eq
+#print axioms finishL_bellContract
