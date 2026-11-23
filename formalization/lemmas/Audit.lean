@@ -16,6 +16,7 @@ import lemmas.Hoon.Ju
 import lemmas.Hoon.MapFolds
 import lemmas.Hoon.SetFolds
 import lemmas.Hoon.ListsMore
+import lemmas.Hoon.ListsSort
 import lemmas.Compiler.Ca
 import lemmas.Compiler.So
 
@@ -126,6 +127,17 @@ open Formalization
 #print axioms Hoon.murn_gate
 #print axioms Hoon.rear_gate
 #print axioms Hoon.snip_gate
+#print axioms Hoon.welp_gate
+#print axioms Hoon.zing_gate
+#print axioms Hoon.snoc_gate
+#print axioms Hoon.skid_gate
+#print axioms Hoon.sort_gate
+#print axioms Hoon.qsort_perm
+#print axioms Hoon.spin_gate
+#print axioms Hoon.biff_gate_nil
+#print axioms Hoon.biff_gate_some
+#print axioms Hoon.wyt_by
+#print axioms Hoon.wyt_in
 #print axioms Compiler.ca_hed_gate
 #print axioms Compiler.ca_tel_gate
 #print axioms Compiler.ca_con_gate

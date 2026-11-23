@@ -2,11 +2,12 @@ module
 
 public import lemmas.Hoon.Sets
 public import lemmas.Hoon.RepBy
+public import lemmas.Hoon.Arith
 import all lemmas.Pill.Arm.By
 import all lemmas.Pill.Arm.In
 
 /-!
-`+key:by`, `+run:by` and `+any:by` of the pill's `hoon.hoon`.
+`+key:by`, `+run:by`, `+any:by` and `+wyt` of the pill's `hoon.hoon`.
 
 ```hoon
 ++  key                                               ::  set of keys
@@ -31,7 +32,16 @@ import all lemmas.Pill.Arm.In
   ?~  a
     |
   ?|((b q.n.a) $(a l.a) $(a r.a))
+::
+++  wyt                                               ::  depth of map
+  =<  $
+  ~%  %wyt  +  ~
+  |.  ^-  @
+  ?~(a 0 +((add $(a l.a) $(a r.a))))
 ```
+
+`+wyt` of `+in` is the same noun as `+wyt` of `+by`.  It reads `+add` from the
+context of the layer that holds the doors.
 
 All three go through the nodes in pre-order: the root, then the left
 subtree, then the right subtree.  `+key:by` puts each key into its set in that
@@ -255,6 +265,33 @@ theorem anyByF_spec (g : Noun → Bool) {mug : Noun → Nat} {a : Noun} (h : IsM
           · exact absurd hv hq
           · exact absurd (htl.2 ⟨k, v, hk, hv⟩) (by simp)
           · exact ⟨k, v, hk, hv⟩
+
+/-! ## `+wyt` -/
+
+theorem wyt_arm (d : Noun) :
+    nock d by.wyt.arm = nock (C by.wyt.battery d) by.wyt.battery := by
+  nock_open by.wyt.arm; simp only [nock_exec]
+
+theorem wyt_loop (ctx : Noun) (hc : Below AddIn ctx) (B : Noun) : ∀ (a : Noun), Tree a →
+    nock (C by.wyt.battery (C B (C a ctx))) by.wyt.battery = some (A (preorder a).length) := by
+  obtain ⟨bat, t, rfl, hadd, hdec⟩ := hc.elim
+  intro a h
+  induction h with
+  | nil => nock_open by.wyt.battery; simp [nock_exec, preorder]
+  | @node n l r _ _ ihl ihr =>
+    nock_open by.wyt.battery
+    simp [nock_exec, ihl, ihr, hadd, add_gate t hdec, preorder]
+
+/-- `~(wyt by a)` on a tree: the number of its nodes. -/
+theorem wyt_by (ctx : Noun) (hc : Below AddIn ctx) (a : Noun) (h : Tree a) :
+    Eval (C by.battery (C a ctx)) by.wyt.arm (A (preorder a).length) :=
+  eval_of_nock (by rw [wyt_arm, wyt_loop ctx hc by.battery a h])
+
+/-- `~(wyt in a)` on a tree: the number of its nodes.  The arm at `in.wyt.axis`
+of `+in` is `by.wyt.arm`. -/
+theorem wyt_in (ctx : Noun) (hc : Below AddIn ctx) (a : Noun) (h : Tree a) :
+    Eval (C in.battery (C a ctx)) by.wyt.arm (A (preorder a).length) :=
+  eval_of_nock (by rw [wyt_arm, wyt_loop ctx hc in.battery a h])
 
 end Hoon
 end Formalization
