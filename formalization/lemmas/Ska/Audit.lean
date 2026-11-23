@@ -132,3 +132,7 @@ open Formalization.SkaModel
 #print axioms const_contract
 #print axioms slot1_contract
 #print axioms bomb_contract
+#print axioms Holds.agree
+#print axioms GoalRel.transfer
+#print axioms compRel_n7
+#print axioms compRel_n6

@@ -24,11 +24,15 @@ relation gives the contract of `Contract.lean`.
 * `CompRel`: the relation for one block and each goal of `+comp` (`%done`,
   `%next`, `%pick`), with the subject held in registers by a need with
   registers (`RNeed`, `Holds`).  `compDone_of_compRel` derives `CompDone`
-  from `CompRel` at the entry block, for a function whose need is one
-  register for the whole subject.
-* `oneConst`: the code that the case `[%1 *]` with goal `%done` of `+comp`
-  emits, `(emit ~ ~[imm+[p.nomm r]] don+r)`, as a whole function with no
-  argument; `oneConst_compRel` and `oneConst_contract`.
+  from `CompRel` at the entry block, given that the registers the
+  interpreter enters with hold the subject as the entry block's need asks.
+* `compRel_done_of_next`, `compRel_n7`, `compRel_n6`: the relation composes
+  as `+comp` composes goals: `%done` from `%next` into a block `[%don r]`,
+  `[7 p q]` through `%next`, `[6 p q r]` through `%pick`.
+* `const_contract`, `slot1_contract`, `bomb_contract`: the blocks that the
+  cases `[%1 *]` and `[%0 *]` of `run` emit for the goal `%done`
+  (`(emit ~ ~[imm+[p.nomm r]] don+r)`, `simple-next`, `bomb`), as whole
+  functions, satisfy the contract of every bell with that formula.
 -/
 
 set_option linter.unusedSimpArgs false
@@ -400,10 +404,10 @@ def GoalRel (lib : Lib) (c : Straight Map) (keep : Nat → Prop) {σ : Type} (O 
   | Goal.next nd k, some p => ∃ regs' bk, HoonMap.get c.blocks k = some bk ∧ Holds nd regs' p ∧
       (∀ r, keep r → SkaModel.read r regs' = SkaModel.read r regs) ∧
       execBlob lib O c gul st regs t b [] = execBlob lib O c gul st regs' t bk []
-  | Goal.pick z o, some (Noun.atom 0) => ∃ regs' bz, HoonMap.get c.blocks z = some bz ∧
+  | Goal.pick z _, some (Noun.atom 0) => ∃ regs' bz, HoonMap.get c.blocks z = some bz ∧
       (∀ r, keep r → SkaModel.read r regs' = SkaModel.read r regs) ∧
       execBlob lib O c gul st regs t b [] = execBlob lib O c gul st regs' t bz []
-  | Goal.pick z o, some (Noun.atom 1) => ∃ regs' bo, HoonMap.get c.blocks o = some bo ∧
+  | Goal.pick _ o, some (Noun.atom 1) => ∃ regs' bo, HoonMap.get c.blocks o = some bo ∧
       (∀ r, keep r → SkaModel.read r regs' = SkaModel.read r regs) ∧
       execBlob lib O c gul st regs t b [] = execBlob lib O c gul st regs' t bo []
   | _, _ => execBlob lib O c gul st regs t b [] = some (Tone.two t, st)
@@ -461,6 +465,119 @@ theorem compRel_done_of_next {lib : Lib} {c : Straight Map} {nm : Nomm} {b : Blo
     rw [he, execBlob_don]
     simp only [Holds] at hh
     simp [hh, toneOf]
+
+/-! ## Composition: `%7` through `%next`, `%6` through `%pick`
+
+`+comp` compiles `[7 p q]` for a goal by compiling `q` for the goal, then
+`p` for the goal `%next` into the need and block of `q`; and `[6 p q r]`
+by compiling `q` and `r` for the goal, then `p` for the goal `%pick` into
+their blocks.  The relation composes the same way, provided the registers
+that the code after a block reads are kept by the code before it. -/
+
+/-- The registers of a need. -/
+def RNeed.Mem : RNeed → Nat → Prop
+  | RNeed.none, _ => False
+  | RNeed.this r, x => x = r
+  | RNeed.pair p q, x => p.Mem x ∨ q.Mem x
+  | RNeed.both r p q, x => x = r ∨ p.Mem x ∨ q.Mem x
+
+/-- Registers that agree on a need's registers hold what it holds. -/
+theorem Holds.agree : ∀ (nd : RNeed) {regs regs' : Map Noun} {n : Noun},
+    (∀ x, nd.Mem x → SkaModel.read x regs' = SkaModel.read x regs) → Holds nd regs n → Holds nd regs' n
+  | RNeed.none, _, _, _, _, h => h
+  | RNeed.this r, _, _, _, ha, h => by
+    simp only [Holds] at h ⊢; rw [ha r (by simp [RNeed.Mem])]; exact h
+  | RNeed.pair p q, _, _, Noun.cell a b, ha, h =>
+    ⟨Holds.agree p (fun x hx => ha x (Or.inl hx)) h.1, Holds.agree q (fun x hx => ha x (Or.inr hx)) h.2⟩
+  | RNeed.pair _ _, _, _, Noun.atom _, _, h => by simp [Holds] at h
+  | RNeed.both r p q, _, _, Noun.cell a b, ha, h =>
+    ⟨by rw [ha r (Or.inl rfl)]; exact h.1, Holds.agree p (fun x hx => ha x (Or.inr (Or.inl hx))) h.2.1,
+      Holds.agree q (fun x hx => ha x (Or.inr (Or.inr hx))) h.2.2⟩
+  | RNeed.both _ _ _, _, _, Noun.atom _, _, h => by simp [Holds] at h
+
+section
+variable {lib : Lib} {c : Straight Map} {K : Nat → Prop} {σ : Type} {O : Oracle σ} {st : σ}
+  {t : Trace} {gul : Noun}
+
+/-- A block that crashes does what every goal asks where there is no value. -/
+theorem goalRel_crash {regs : Map Noun} {b : Blob} (g : Goal)
+    (h : execBlob lib O c gul st regs t b [] = some (Tone.two t, st)) :
+    GoalRel lib c K O st regs t gul b g none := by
+  cases g <;> simp only [GoalRel, toneOf] <;> exact h
+
+/-- What a block does for a goal, a block that runs as it does does too. -/
+theorem GoalRel.transfer {regs regs' : Map Noun} {b b' : Blob} {g : Goal} {v : Option Noun}
+    (he : execBlob lib O c gul st regs t b [] = execBlob lib O c gul st regs' t b' [])
+    (hk : ∀ r, K r → SkaModel.read r regs' = SkaModel.read r regs)
+    (h : GoalRel lib c K O st regs' t gul b' g v) : GoalRel lib c K O st regs t gul b g v := by
+  cases g with
+  | done => simp only [GoalRel] at h ⊢; rw [he]; exact h
+  | next nd k =>
+    cases v with
+    | none => simp only [GoalRel] at h ⊢; rw [he]; exact h
+    | some p =>
+      obtain ⟨r2, bk, hbk, hh, hk2, he2⟩ := h
+      exact ⟨r2, bk, hbk, hh, fun r hr => (hk2 r hr).trans (hk r hr), he.trans he2⟩
+  | pick z o =>
+    rcases v with _ | ⟨⟨_ | _ | k⟩ | ⟨a, b⟩⟩
+    · simp only [GoalRel] at h ⊢; rw [he]; exact h
+    · obtain ⟨r2, bk, hbk, hk2, he2⟩ := h
+      exact ⟨r2, bk, hbk, fun r hr => (hk2 r hr).trans (hk r hr), he.trans he2⟩
+    · obtain ⟨r2, bk, hbk, hk2, he2⟩ := h
+      exact ⟨r2, bk, hbk, fun r hr => (hk2 r hr).trans (hk r hr), he.trans he2⟩
+    · simp only [GoalRel] at h ⊢; rw [he]; exact h
+    · simp only [GoalRel] at h ⊢; rw [he]; exact h
+
+end
+
+/-- **`[7 p q]`**: `p` for the goal `%next` into the need and block of `q`,
+`q` for the goal. -/
+theorem compRel_n7 {lib : Lib} {c : Straight Map} {p q : Nomm} {g : Goal} {bp bq : Blob}
+    {nd ndq : RNeed} {K Kp : Nat → Prop} {kq : Nat} (hkq : HoonMap.get c.blocks kq = some bq)
+    (hp : CompRel lib c p (Goal.next ndq kq) bp nd Kp) (hq : CompRel lib c q g bq ndq K)
+    (hK : ∀ r, K r → Kp r) : CompRel lib c (Nomm.n7 p q) g bp nd K := by
+  intro σ O st s regs t gul hs
+  have Hp := hp σ O st s regs t gul hs
+  simp only [pureEval]
+  cases e : pureEval p s with
+  | none =>
+    rw [e] at Hp
+    exact goalRel_crash g Hp
+  | some s' =>
+    rw [e] at Hp
+    obtain ⟨regs', bk, hbk, hh, hk, he⟩ := Hp
+    rw [hkq] at hbk; cases hbk
+    exact GoalRel.transfer he (fun r hr => hk r (hK r hr)) (hq σ O st s' regs' t gul hh)
+
+/-- **`[6 p q r]`**: `p` for the goal `%pick` into the blocks of `q` and
+`r`, both for the goal, with the subject's registers kept by `p`. -/
+theorem compRel_n6 {lib : Lib} {c : Straight Map} {p q r : Nomm} {g : Goal} {bp bq br : Blob}
+    {nd : RNeed} {K Kp : Nat → Prop} {kq kr : Nat} (hkq : HoonMap.get c.blocks kq = some bq)
+    (hkr : HoonMap.get c.blocks kr = some br)
+    (hp : CompRel lib c p (Goal.pick kq kr) bp nd Kp) (hq : CompRel lib c q g bq nd K)
+    (hr : CompRel lib c r g br nd K) (hK : ∀ x, K x → Kp x) (hnd : ∀ x, nd.Mem x → Kp x) :
+    CompRel lib c (Nomm.n6 p q r) g bp nd K := by
+  intro σ O st s regs t gul hs
+  have Hp := hp σ O st s regs t gul hs
+  simp only [pureEval]
+  cases e : pureEval p s with
+  | none =>
+    rw [e] at Hp
+    exact goalRel_crash g Hp
+  | some v =>
+    rw [e] at Hp
+    simp only [Option.bind_some]
+    rcases v with ⟨_ | _ | k⟩ | ⟨a, b⟩
+    · obtain ⟨regs', bz, hbz, hk, he⟩ := Hp
+      rw [hkq] at hbz; cases hbz
+      exact GoalRel.transfer he (fun x hx => hk x (hK x hx))
+        (hq σ O st s regs' t gul (Holds.agree nd (fun x hx => hk x (hnd x hx)) hs))
+    · obtain ⟨regs', bo, hbo, hk, he⟩ := Hp
+      rw [hkr] at hbo; cases hbo
+      exact GoalRel.transfer he (fun x hx => hk x (hK x hx))
+        (hr σ O st s regs' t gul (Holds.agree nd (fun x hx => hk x (hnd x hx)) hs))
+    · simp only [GoalRel] at Hp; exact goalRel_crash g Hp
+    · simp only [GoalRel] at Hp; exact goalRel_crash g Hp
 
 /-! ## The leaves of `+comp` with the goal `%done`
 
