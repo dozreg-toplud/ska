@@ -41,6 +41,7 @@ import lemmas.Compiler.PokeFrame
 import lemmas.Assembly
 import lemmas.Compiler.TreapKey
 import lemmas.Compiler.Mi
+import lemmas.Compiler.GitMi
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -345,3 +346,6 @@ open Formalization
 #print axioms Compiler.mi_put_gate
 #print axioms Compiler.mi_gut_pill
 #print axioms Compiler.mi_put_pill
+#print axioms Compiler.mi_git_loop
+#print axioms Compiler.mi_git_gate
+#print axioms Compiler.mi_git_pill
