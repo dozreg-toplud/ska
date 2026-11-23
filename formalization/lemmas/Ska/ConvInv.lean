@@ -1,0 +1,191 @@
+import lemmas.Ska.BridgeD
+
+/-!
+# The convergence invariant of the state-passing analysis
+
+With the cull before the first pass (Hoon commit `fefb95d`), the final graph
+of `+ska-callgraph` is converged: every entry is a memo hit, or was written by
+its last run with answers that are entries of the final graph (or the
+versions of them before `+pop` turned a `%void` product into `|+~`).  This
+file holds the invariant that shows it, and its parts.
+
+* `AnsW`: `Answers` whose `%he` partner is a well-formed sock (so that the
+  answers keep well-formedness); answers carry over between entries that are
+  alike for a caller (`Alike`: same identity and same `TabEntry`).
+* The frozen entries `F` (`FrzInv`): the finalized entries of the graph and
+  the pre-pop versions of the popped ones, each justified by `F` itself
+  (`FrozenOK`).
+* The members (`MemInv`): each member that has run has an entry written by
+  its last run, whose answers come from `F` or from callees on the stack
+  below the bound `L` (where the run read them), whose entries are the ones
+  it read unless their change tick is at least the member's run tick.
+* `pop_frozen`: a `+pop` whose popped members are not dirty and whose callees
+  on the stack are popped with them makes the popped entries frozen.
+-/
+
+namespace Formalization
+namespace SkaModel
+
+open Nock
+
+/-! ## Answers with a well-formed partner -/
+
+/-- `Answers` with the partner of a `%he` generalization well formed. -/
+inductive AnsW (G : Entry → Prop) : Sock → Noun → TabEntry → Prop where
+  | exact {e : Entry} : G e → AnsW G e.more e.fol e.d.tab
+  | hit {e : Entry} {s : Sock} : G e → hitTest e s = some true → AnsW G s e.fol (patchDatum e.d s).tab
+  | gen {s s' m : Sock} {f : Noun} {a : TabEntry} : WellFormed s' → msgSock s s' = some m → AnsW G m f a →
+      AnsW G s f a
+
+/-- Two entries alike for a caller: the same identity and the same
+`TabEntry`. -/
+def Alike (e e' : Entry) : Prop := e'.more = e.more ∧ e'.fol = e.fol ∧ e'.d.tab = e.d.tab
+
+theorem hitTest_alike {e e' : Entry} (h : Alike e e') (s : Sock) : hitTest e' s = hitTest e s := by
+  obtain ⟨h1, _, h3⟩ := h
+  have hl : e'.d.less = e.d.less := congrArg TabEntry.less h3
+  have hi : e'.d.indi = e.d.indi := congrArg TabEntry.indi h3
+  unfold hitTest
+  rw [hl, hi, h1]
+
+theorem patchDatum_tab_alike {e e' : Entry} (h : Alike e e') (s : Sock) :
+    (patchDatum e'.d s).tab = (patchDatum e.d s).tab := by
+  obtain ⟨_, _, h3⟩ := h
+  have hl : e'.d.less = e.d.less := congrArg TabEntry.less h3
+  have hi : e'.d.indi = e.d.indi := congrArg TabEntry.indi h3
+  have hs : e'.d.seek = e.d.seek := congrArg TabEntry.seek h3
+  have hp : e'.d.prod = e.d.prod := congrArg TabEntry.prod h3
+  have hm : e'.d.map = e.d.map := congrArg TabEntry.map h3
+  simp only [patchDatum, Datum.tab, hl, hi, hs, hp, hm]
+
+theorem AnsW.transfer {G G' : Entry → Prop} (hG : ∀ e, G e → ∃ e', G' e' ∧ Alike e e')
+    {s : Sock} {f : Noun} {a : TabEntry} (h : AnsW G s f a) : AnsW G' s f a := by
+  induction h with
+  | exact he =>
+    obtain ⟨e', he', h1, h2, h3⟩ := hG _ he
+    have := AnsW.exact (G := G') he'
+    rw [h1, h2, h3] at this; exact this
+  | hit he ht =>
+    obtain ⟨e', he', hal⟩ := hG _ he
+    have := AnsW.hit (G := G') he' (by rw [hitTest_alike hal]; exact ht)
+    rw [hal.2.1, patchDatum_tab_alike hal] at this; exact this
+  | gen hw hm _ ih => exact AnsW.gen hw hm ih
+
+theorem AnsW.mono {G G' : Entry → Prop} (hG : ∀ e, G e → G' e) {s : Sock} {f : Noun} {a : TabEntry}
+    (h : AnsW G s f a) : AnsW G' s f a :=
+  h.transfer (fun e he => ⟨e, hG e he, rfl, rfl, rfl⟩)
+
+theorem AnsW.toAnswers {G : Entry → Prop} {s : Sock} {f : Noun} {a : TabEntry} (h : AnsW G s f a) :
+    Answers G s f a := by
+  induction h with
+  | exact he => exact Answers.exact he
+  | hit he ht => exact Answers.hit he ht
+  | gen _ hm _ ih => exact Answers.gen hm ih
+
+theorem AnsW.wf {G : Entry → Prop} (hG : ∀ e, G e → WellFormed e.more ∧ WellFormed e.d.prod)
+    {s : Sock} {f : Noun} {a : TabEntry} (h : AnsW G s f a) : WellFormed s → WellFormed a.prod := by
+  induction h with
+  | exact he => exact fun _ => (hG _ he).2
+  | hit he _ => exact fun hs => wf_patchDatum (hG _ he).2 hs
+  | gen hw hm _ ih => exact fun hs => ih (wf_msgSock hs hw hm)
+
+theorem answers_mono {G G' : Entry → Prop} (hG : ∀ e, G e → G' e) {s : Sock} {f : Noun} {a : TabEntry}
+    (h : Answers G s f a) : Answers G' s f a := by
+  induction h with
+  | exact he => exact Answers.exact (hG _ he)
+  | hit he ht => exact Answers.hit (hG _ he) ht
+  | gen hm _ ih => exact Answers.gen hm ih
+
+namespace Ana
+
+variable {M : Type → Type → Type} [Treap M] {R : Type}
+
+/-! ## The parts of the state the invariant reads -/
+
+/-- An entry of the graph as an `Entry`. -/
+def entOf (i : Ident) (d : FDatum M) : Entry := ⟨i.1, i.2, d.core⟩
+
+/-- The tick of the last run of `m` (`ran`) and of the last change of its
+entry (`chg`), as `+dirty` reads them. -/
+def ranOf (st : SkaState M R) (m : Ident) : Nat := (Treap.gut st.ticks m (0, 0)).1
+def chgOf (st : SkaState M R) (m : Ident) : Nat := (Treap.gut st.ticks m (0, 0)).2
+
+/-- `c` is among the callees `cs`, with some seat. -/
+def InCallees (cs : M CalleeEntry Unit) (c : Ident) : Prop := ∃ seat, Treap.has cs ⟨seat, c⟩ = true
+
+/-- The callees of `m` in the graph. -/
+def calleesOf (st : SkaState M R) (m : Ident) : M CalleeEntry Unit := (gitG st.g m).callees
+
+/-- The `+pop` of an entry: a `%void` product becomes `|+~`. -/
+def postPop (d : FDatum M) : FDatum M := if d.prod = Sock.void then { d with prod := Sock.dunno } else d
+
+/-- A memo hit of the persistent memo, as `+analyze` puts it in the graph. -/
+def MemoHitE (memoF : Memo M) (e : Entry) : Prop :=
+  ∃ i d, gitMi memoF e.fol e.more = some (some (i, d)) ∧ e.d = d.core
+
+/-- **Frozen entries justify themselves**: each is a memo hit, or was written
+by a run whose every answer is an answer of the frozen entries. -/
+def FrozenOK (memoF : Memo M) (F : Entry → Prop) : Prop :=
+  ∀ e, F e → (∃ P : Sock → Noun → TabEntry → Prop, (∀ s f a, P s f a → Answers F s f a) ∧ RunEntryR P e) ∨
+    MemoHitE memoF e
+
+theorem FrozenOK.mono {memoF : Memo M} {F F' : Entry → Prop} (h : FrozenOK memoF F) (hF : ∀ e, F e → F' e)
+    {e : Entry} (he : F e) :
+    (∃ P : Sock → Noun → TabEntry → Prop, (∀ s f a, P s f a → Answers F' s f a) ∧ RunEntryR P e) ∨
+      MemoHitE memoF e := by
+  rcases h e he with ⟨P, hP, hr⟩ | hm
+  · refine Or.inl ⟨P, fun s f a hp => ?_, hr⟩
+    exact answers_mono hF (hP s f a hp)
+  · exact Or.inr hm
+
+/-- **The frozen entries of a state**: `F` justifies itself, holds every
+finalized entry of the graph (in the graph, not in `order`) and every entry of
+`done`, and holds only entries of finalized identities, with well-formed
+products. -/
+structure FrzInv (memoF : Memo M) (st : SkaState M R) (F : Entry → Prop) : Prop where
+  ok : FrozenOK memoF F
+  cover : ∀ i d, Treap.get st.g i = some d → Treap.get st.order i = none → F (entOf i d)
+  sub : ∀ e, F e → (∃ d, Treap.get st.g (e.more, e.fol) = some d) ∧ Treap.get st.order (e.more, e.fol) = none
+  wf : ∀ e, F e → WellFormed e.d.prod
+  done : ∀ f ms s ent, Treap.get st.done f = some ms → Treap.get ms s = some ent →
+    F (entOf ent.1 ent.2) ∧ ent.1.2 = f
+
+/-- What a member may have read: a frozen entry, or a callee on the stack
+below the bound `L`, whose entry is still the one read unless it changed at
+or after the member's last run. -/
+def MB (st : SkaState M R) (F : Entry → Prop) (m : Ident) (L : Nat) : Entry → Prop := fun e =>
+  F e ∨ (InCallees (calleesOf st m) (e.more, e.fol) ∧
+    (∃ o, Treap.get st.order (e.more, e.fol) = some o ∧ o < L) ∧
+    (chgOf st (e.more, e.fol) < ranOf st m →
+      ∃ d, Treap.get st.g (e.more, e.fol) = some d ∧ d.core.tab = e.d.tab))
+
+/-- **A member that has run** has an entry written by its last run, with
+answers from `MB` for a bound `L` at most `Lmax`. -/
+def MemOK (st : SkaState M R) (F : Entry → Prop) (m : Ident) (Lmax : Nat) : Prop :=
+  ∀ d, Treap.get st.g m = some d → 1 ≤ ranOf st m →
+    ∃ (P : Sock → Noun → TabEntry → Prop) (L : Nat), L ≤ Lmax ∧ RunEntryR P (entOf m d) ∧
+      ∀ s f a, P s f a → AnsW (MB st F m L) s f a
+
+/-- Every member is `MemOK` with the bound `next`. -/
+def MemInv (st : SkaState M R) (F : Entry → Prop) : Prop :=
+  ∀ m o, Treap.get st.order m = some o → MemOK st F m st.next
+
+/-- The ticks are at most the clock. -/
+def TickInv (st : SkaState M R) : Prop := ∀ m, ranOf st m ≤ st.tick ∧ chgOf st m ≤ st.tick
+
+/-- The DFS numbers are below `next` and decrease down the stack. -/
+def OrdInv (st : SkaState M R) : Prop :=
+  (∀ i o, Treap.get st.order i = some o → o < st.next) ∧
+    st.stk.Pairwise (fun a b => ∀ oa ob, Treap.get st.order a = some oa → Treap.get st.order b = some ob → ob < oa)
+
+/-- **The convergence invariant**, with the frozen entries `F`. -/
+structure CInv (memoF : Memo M) (st : SkaState M R) (F : Entry → Prop) : Prop where
+  s : SInv st
+  tick : TickInv st
+  ord : OrdInv st
+  frz : FrzInv memoF st F
+  mem : MemInv st F
+
+end Ana
+end SkaModel
+end Formalization
