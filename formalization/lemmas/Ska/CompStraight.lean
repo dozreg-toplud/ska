@@ -480,9 +480,10 @@ theorem body_sim {lib : Lib} {σ : Type} {O : Oracle σ} {gul : Noun} (hi : Inj 
     · rfl
     · rfl
 
-/-- **A block and its renamed, chased copy do the same.** -/
+/-- **A block and its renamed, chased copy do the same**, for a block that
+jumps below `k` (a block of `c` at `k`, or one that is not in `c`). -/
 theorem sim_block (hs : Sim c c' bs ren o) (lib : Lib) {σ : Type} (O : Oracle σ) (gul : Noun) :
-    ∀ k b, HoonMap.get c.blocks k = some b → ∀ fin', chaseFin bs ren b.fin = some fin' →
+    ∀ k (b : Blob), (∀ j ∈ finJumps b.fin, 1 ≤ j.there ∧ j.there < k) → ∀ fin', chaseFin bs ren b.fin = some fin' →
     ∀ (st : σ) (R R' : Map Noun) t (params : List (Option Nat)), RenRel ren R R' →
     execBlob lib O c gul st R t b params =
       execBlob lib O c' gul st R' t (renB ren b fin') (params.map (Option.map ren)) := by
@@ -492,13 +493,13 @@ theorem sim_block (hs : Sim c c' bs ren o) (lib : Lib) {σ : Type} (O : Oracle �
     intro b hb fin' hf st R R' t params h
     have hj : JGo lib O c c' gul bs ren b.fin := by
       intro j hjm br j' hc st R R' t h
-      have hd := (hs.down k b hb).2 j hjm
+      have hd := hb j hjm
       obtain ⟨hgo, hle, hno, b', hb', hby⟩ :=
         chase_spec hs lib O gul (j.there + 1) j br j' (Nat.lt_succ_self _) hd.1 hc
       rw [hgo]
       obtain ⟨fin2, hf2, hc2⟩ := hs.kept _ _ hb' hno (bypassable_false hby)
       simp only [goJ, hb', hc2, Option.bind_some, renJmp]
-      exact ih j'.there (by omega) b' hb' fin2 hf2 st R R' t j'.args h
+      exact ih j'.there (by omega) b' (hs.down _ _ hb').2 fin2 hf2 st R R' t j'.args h
     have hbody := body_sim (lib := lib) (O := O) (gul := gul) hs.inj
       (fun st R R' t h => fin_sim hf hj st t h)
     rcases b with ⟨par, body, fin⟩

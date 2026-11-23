@@ -190,9 +190,10 @@ theorem holds_of_split : ∀ (ned : Need) (k : Nat) (s : Noun) (a : List Noun) (
 /-- **Entering what `+to-straight` makes.**  The program `c` holds the
 blocks; entering `c'` on the arguments `split` takes out of `s` does what
 block `o` of `c` does from registers that hold `s` as `ned` asks. -/
-theorem toStraight_entry [HoonMapKeys Map] {c : Straight Map} {ned : Need} {o : Nat} {c' : Straight Map}
-    (h : toStraight c.blocks ned o = some c') (hd : Down c.blocks) :
-    c'.need = needToOrd ned ∧ ∃ start, HoonMap.get c.blocks o = some start ∧
+theorem toStraight_entry [HoonMapKeys Map] {blocks : Map Blob} {c : Straight Map} {ned : Need} {o : Nat}
+    {c' : Straight Map} (h : toStraight blocks ned o = some c') (hdb : Down blocks) (hd : Down c.blocks)
+    (hag : ∀ k, k ≠ o → HoonMap.get c.blocks k = HoonMap.get blocks k) :
+    c'.need = needToOrd ned ∧ ∃ start, HoonMap.get blocks o = some start ∧
       ∀ (lib : Lib) {σ : Type} (O : Oracle σ) (st : σ) (s : Noun) (args : List Noun) (t : Trace) (gul : Noun),
         SkaModel.split c'.need s = some args → ∃ R : Map Noun, HoldsN ned R s ∧
           execEntry lib O st c' args t gul = execBlob lib O c gul st R t start [] := by
@@ -202,14 +203,14 @@ theorem toStraight_entry [HoonMapKeys Map] {c : Straight Map} {ned : Need} {o : 
   · cases h
   rename_i hrun
   simp only [Bool.not_eq_false] at hrun
-  cases hst : HoonMap.get c.blocks o with
+  cases hst : HoonMap.get blocks o with
   | none => rw [hst] at h; cases h
   | some start =>
     rw [hst, Option.bind_some] at h
     obtain ⟨new, hnew, rfl⟩ := Option.map_eq_some_iff.mp h
     refine ⟨rfl, start, rfl, ?_⟩
     intro lib σ O st s args t gul hsp
-    have ho1 : 1 ≤ o := (hd o start hst).1
+    have ho1 : 1 ≤ o := (hdb o start hst).1
     generalize hins_def : flattenNeed ned = ins at hrun hnew
     generalize hr0 : ins.headD 0 = r0 at hrun hnew
     have hins : ins = List.range' r0 ins.length := by
@@ -221,13 +222,14 @@ theorem toStraight_entry [HoonMapKeys Map] {c : Straight Map} {ned : Need} {o : 
       rw [if_pos (by omega)]; simp
     have hren := renRel_entry (Map := Map) r0 args
     rw [hlen] at hren
-    generalize hbs : HoonMap.put (HoonMap.del c.blocks o) 0 start = bs at hnew
+    generalize hbs : HoonMap.put (HoonMap.del blocks o) 0 start = bs at hnew
     have hsim : Sim c ⟨needToOrd ned, countArgs (needToOrd ned), new⟩ bs (renReg r0 ins.length) o := by
       refine ⟨renReg_inj _ _, hd, fun k h0 hk => ?_, ?_, fun k b hb hk hby => ?_⟩
-      · simp [← hbs, HoonMap.get_put, HoonMap.get_del, h0, hk]
+      · simp [← hbs, HoonMap.get_put, HoonMap.get_del, h0, hk, hag k hk]
       · simp [← hbs, HoonMap.get_put, HoonMap.get_del, show o ≠ 0 by omega]
       · have hk0 : k ≠ 0 := by have := (hd k b hb).1; omega
-        have hbs : HoonMap.get bs k = some b := by simp [← hbs, HoonMap.get_put, HoonMap.get_del, hk0, hk, hb]
+        have hbs : HoonMap.get bs k = some b := by
+          simp [← hbs, HoonMap.get_put, HoonMap.get_del, hk0, hk, ← hag k hk, hb]
         obtain ⟨kb, hkb, hget⟩ := renameBlocks_spec hnew k b hbs
         simp only [keepBlock, hk0, hby, ne_eq, not_false_eq_true, and_false, if_false] at hkb
         obtain ⟨fin', hf, rfl⟩ := Option.map_eq_some_iff.mp hkb
@@ -237,7 +239,7 @@ theorem toStraight_entry [HoonMapKeys Map] {c : Straight Map} {ned : Need} {o : 
     simp only [keepBlock, ne_eq, not_true_eq_false, false_and, if_false] at hkb
     obtain ⟨fin', hf, rfl⟩ := Option.map_eq_some_iff.mp hkb
     simp only [execEntry, hget, Option.bind_some]
-    exact (sim_block hsim lib O gul o start hst fin' hf st _ _ t [] hren).symm
+    exact (sim_block hsim lib O gul o start (hdb o start hst).2 fin' hf st _ _ t [] hren).symm
 
 end Comp
 end SkaModel
