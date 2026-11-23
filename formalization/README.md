@@ -159,6 +159,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/SockNorm.lean` | Normal capes (no `[| |]`; `NormCape`, `NormSock`) are kept by every cape and sock operation of the analysis. Not yet lifted to every bell of the graph. |
 | `Ska/BridgeD.lean` | The bridge between the state-passing run and `FolR`, with answers judged at the end of the run. |
 | `Ska/ConvInv.lean`, `Ska/ConvArms.lean`, `Ska/ConvPass.lean`, `Ska/ConvAna.lean` | Convergence of `+ska-callgraph`: the invariant `CInv` and every arm keeping it. `skaCallgraph_frozen`: at the end the stack is empty and every entry of the final graph was written by its last run with answers that are answers of the final entries, with no assumption on scheduling. `skaCallgraph_convergedM` gives `ConvergedGraphM`. |
+| `Ska/CompIntoLook.lean`, `Ska/CompInto.lean`, `Ska/CompN10.lean` | `+gep` against `+peg`; the looks of `+into-sure`; `into_ok`, what the `+into` block does; `[10 [a v] q]` meets `RunOK` for every goal, so the fragment includes `%10`. The model also has `+hinted` and `+past` now, with `past_pure`: on a pure nomm `+past` is the identity. |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
