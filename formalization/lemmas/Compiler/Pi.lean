@@ -120,5 +120,39 @@ theorem pi_slot_gate (ctx : Noun) (hc : PiSlotIn ctx) : ∀ (ax : Nat), 1 ≤ ax
       · simp [nock_exec, hne, hlt, hl, hcap, hmas, Hoon.cap_arm, Hoon.mas_arm, hcap', hmas', hc3,
           ih']
 
+/-! ## `compose` -/
+
+/-- What `compose` of `+pi` reads from its context, the core of `+pi`: its arms
+`slot` and `cons`, and what `slot` reads. -/
+abbrev ComposeIn (c : Noun) : Prop :=
+  slot? pi.slot.axis c = some pi.slot.arm ∧ slot? pi.cons.axis c = some pi.cons.arm ∧ PiSlotIn c
+
+@[nock_exec] theorem pi_compose_arm (c : Noun) :
+    nock c pi.compose.arm = some (C pi.compose.battery (C (C (A 0) (A 0)) c)) := by
+  nock_open pi.compose.arm; simp only [nock_exec]
+
+theorem pi_compose_loop (ctx : Noun) (hc : ComposeIn ctx) (b : Noun) : ∀ (a : Noun),
+    nock (C pi.compose.loop (C pi.compose.battery (C (C a b) ctx))) pi.compose.loop
+      = some (Pi.composeLoop b a) := by
+  obtain ⟨hs, hcons, hsl⟩ := hc
+  intro a
+  induction a with
+  | atom p =>
+    nock_open pi.compose.loop
+    rcases p with _ | p
+    · simp [nock_exec, Pi.composeLoop]
+    · simp [nock_exec, Pi.composeLoop, hs, pi_slot_arm, pi_slot_gate ctx hsl (p + 1) (by omega)]
+  | cell h t ih it =>
+    nock_open pi.compose.loop
+    simp [nock_exec, Pi.composeLoop, hcons, pi_cons_arm, ih, it, pi_cons_gate]
+
+/-- Slamming `compose` of `+pi` on two provenances. -/
+theorem pi_compose_gate (ctx : Noun) (hc : ComposeIn ctx) (a b : Noun) :
+    nock (C pi.compose.battery (C (C a b) ctx)) pi.compose.battery = some (Pi.compose a b) := by
+  nock_open pi.compose.battery
+  by_cases hb : A 0 = b
+  · subst hb; simp [nock_exec, Pi.compose]
+  · simp [nock_exec, Pi.compose, hb, Ne.symm hb, pi_compose_loop ctx hc b a]
+
 end Compiler
 end Formalization

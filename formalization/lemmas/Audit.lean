@@ -201,3 +201,5 @@ open Formalization
 #print axioms Compiler.pi_tel_pill
 #print axioms Compiler.pi_slot_pill
 #print axioms Compiler.pegF_eq_peg
+#print axioms Compiler.pi_compose_gate
+#print axioms Compiler.pi_compose_pill

@@ -239,5 +239,11 @@ theorem pi_slot_pill (pin : Noun) (ax : Nat) (h : 1 ≤ ax) :
       = some (Pi.slot pin ax) :=
   pi_slot_gate _ (Hoon.Below.cell ⟨axisOf_lib, pegOf_lib⟩) ax h pin
 
+theorem pi_compose_pill (a b : Noun) :
+    nock (C pi.compose.battery (C (C a b) (C pi.battery lib))) pi.compose.battery
+      = some (Pi.compose a b) :=
+  pi_compose_gate _ ⟨pi.slot.arm_at lib, pi.cons.arm_at lib,
+    Hoon.Below.cell ⟨axisOf_lib, pegOf_lib⟩⟩ a b
+
 end Compiler
 end Formalization
