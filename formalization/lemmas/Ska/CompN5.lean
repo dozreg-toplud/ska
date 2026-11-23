@@ -37,23 +37,6 @@ theorem execBlob_eqq (regs : Map Noun) (t : Trace) (l r : Nat) (z o : Jmp) :
     | none => rfl
     | some y => by_cases e : x = y <;> simp [e]
 
-/-- Fewer registers kept. -/
-theorem GoalSem.mono {K K' : Nat → Prop} {regs : Map Noun} {t : Trace} {je : Jmp} {goal : CGoal S}
-    {v : Option Noun} (hK : ∀ r, K' r → K r) (h : GoalSem lib O c gul st K regs t je goal v) :
-    GoalSem lib O c gul st K' regs t je goal v := by
-  cases goal with
-  | done => exact h
-  | next laz th =>
-    cases v with
-    | none => exact h
-    | some p => exact ⟨fun hf => let ⟨r2, h1, h2, h3⟩ := h.1 hf; ⟨r2, h1, fun r hr => h2 r (hK r hr), h3⟩, h.2⟩
-  | pick z o =>
-    rcases v with _ | ⟨⟨_ | _ | k⟩ | ⟨a, b⟩⟩
-    · exact h
-    · obtain ⟨r2, h2, h3⟩ := h; exact ⟨r2, fun r hr => h2 r (hK r hr), h3⟩
-    · obtain ⟨r2, h2, h3⟩ := h; exact ⟨r2, fun r hr => h2 r (hK r hr), h3⟩
-    · exact h
-    · exact h
 
 end
 
@@ -68,7 +51,7 @@ theorem n5_of_block {lib : Lib} {p q : Nomm} {goal : CGoal S} {g0 g2 g3 g4 g1 : 
     (hg : GoalOK g0 goal) (E : Ext g0 g2) (hre : g0.re + 2 ≤ g2.re)
     (hblk : ∀ (c : Straight Map), Agree c g0 g2 → g0.drop = false → ∀ (σ : Type) (O : Oracle σ) st regs t gul x y,
       SkaModel.read g0.re regs = some x → SkaModel.read (g0.re + 1) regs = some y →
-      GoalSem lib O c gul st (Keep g0 goal) regs t (jmp0 o) goal (some (eqCode x y)))
+      GoalSem lib O c gul st (Keep g0 g2 goal) regs t (jmp0 o) goal (some (eqCode x y)))
     (h3 : run q (CGoal.next (lazyReg (g0.re + 1)) (jmp0 o)) g2 = some (nexq, g3))
     (h4 : run p (CGoal.next (lazyReg g0.re) nexq.th) g3 = some (nexp, g4))
     (h : copy nexp nexq.laz g4 = some (nex, g1))
@@ -106,7 +89,7 @@ theorem run_n5_ok {lib : Lib} {p q : Nomm} {goal : CGoal S} {g0 g1 : Gen Map} {n
   suffices B : Ext g0 g2 ∧ g0.re + 2 ≤ g2.re ∧ ∀ (c : Straight Map), Agree c g0 g2 → g0.drop = false →
       ∀ (σ : Type) (O : Oracle σ) st regs t gul x y, SkaModel.read g0.re regs = some x →
       SkaModel.read (g0.re + 1) regs = some y →
-      GoalSem lib O c gul st (Keep g0 goal) regs t (jmp0 o) goal (some (eqCode x y)) from
+      GoalSem lib O c gul st (Keep g0 g2 goal) regs t (jmp0 o) goal (some (eqCode x y)) from
     n5_of_block hg B.1 B.2.1 B.2.2 h3 h4 h ihp ihq
   clear h3 h4 h
   cases goal with
@@ -189,12 +172,11 @@ theorem run_n5_ok {lib : Lib} {p q : Nomm} {goal : CGoal S} {g0 g1 : Gen Map} {n
       simp only [Option.bind_some] at hj
       have F' := F hd5 c ((hc.right (G0.trans E5)).left E6 Ep) lib σ O st regs t gul
       have hagX := (hc.right G0).left E5 (E6.trans Ep)
-      have keepX : ∀ rr, Keep g0 (CGoal.next laz th) rr →
-          Keep { { g0 with re := g0.re + 1 } with re := g0.re + 1 + 1 } (CGoal.next laz th) rr :=
-        fun rr ⟨k1, k2⟩ => ⟨by simp; omega, k2⟩
-      have keep : ∀ (v : Noun) (k rr : Nat), g5.re ≤ k → Keep g0 (CGoal.next laz th) rr →
+      have keep : ∀ (v : Noun) (k rr : Nat), g5.re ≤ k → k < g5.re + 2 →
+          Keep g0 (g6.emitted ⟨[], [], Termin.eqq g0.re (g0.re + 1) (jmp0 z) (jmp0 o')⟩) (CGoal.next laz th) rr →
           SkaModel.read rr (store r v (store k v regs)) = SkaModel.read rr regs := by
-        intro v k rr hk ⟨k1, k2⟩
+        intro v k rr hk hk' ⟨k1, k2⟩
+        simp only [emitted_re, er6] at k1
         have hne : rr ≠ r := fun e => by
           subst e
           rcases hmr with hm | ⟨hm, _⟩
@@ -204,12 +186,12 @@ theorem run_n5_ok {lib : Lib} {p q : Nomm} {goal : CGoal S} {g0 g1 : Gen Map} {n
       by_cases e : x = y
       · rw [if_pos e] at hj
         simp only [eqCode, if_pos e]
-        exact GoalSem.transfer (hj.trans F'.1) (keep (A 0) g5.re · (Nat.le_refl _))
-          (GoalSem.mono keepX (hs hd c hagX lib σ O st _ t gul 0 (read_store_eq _ _ _)))
+        exact GoalSem.transfer (hj.trans F'.1) (keep (A 0) g5.re · (Nat.le_refl _) (by omega))
+          (hs hd c hagX lib σ O st _ t gul 0 (read_store_eq _ _ _))
       · rw [if_neg e] at hj
         simp only [eqCode, if_neg e]
-        exact GoalSem.transfer (hj.trans F'.2) (keep (A 1) (g5.re + 1) · (Nat.le_succ _))
-          (GoalSem.mono keepX (hs hd c hagX lib σ O st _ t gul 1 (read_store_eq _ _ _)))
+        exact GoalSem.transfer (hj.trans F'.2) (keep (A 1) (g5.re + 1) · (Nat.le_succ _) (by omega))
+          (hs hd c hagX lib σ O st _ t gul 1 (read_store_eq _ _ _))
 
 end Comp
 end SkaModel

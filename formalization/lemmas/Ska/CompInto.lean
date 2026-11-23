@@ -183,7 +183,7 @@ structure IntoOK (axe : Nat) (ned d r : Need) (ops : List Pole) (g g' : Gen Map)
     (∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (tr : Trace)
       (R : Map Noun) (x t n : Noun), edit? axe x t = some n → HoldsN d R x → HoldsN r R t →
       ∃ R', Runs lib O c gul st tr ops R R' ∧ HoldsN ned R' n ∧
-        ∀ y, ¬ NMem ned y → y < g.re → SkaModel.read y R' = SkaModel.read y R)
+        ∀ y, ¬ NMem ned y → (y < g.re ∨ g'.re ≤ y) → SkaModel.read y R' = SkaModel.read y R)
 
 theorem intoRec_ok : ∀ (axe : Nat) (ned : Need) (g g' : Gen Map) (d r : Need) (ops : List Pole),
     1 ≤ axe → intoRec axe ned g = some ((d, r, ops), g') → IntoOK axe ned d r ops g g' := by
@@ -276,13 +276,13 @@ theorem intoRec_ok : ∀ (axe : Nat) (ned : Need) (g g' : Gen Map) (d r : Need) 
       have ho1 : SkaModel.read (if b then g.re + 1 else g.re) R1 = some v :=
         (fr1 _ (fun e => by
           have : (if b then g.re + 1 else g.re) = (if b then g.re else g.re + 1) := e
-          cases b <;> simp at this) (by show (if b then g.re + 1 else g.re) < g.re + 1 + 1; split <;> omega)).trans hold'
+          cases b <;> simp at this) (Or.inl (by show (if b then g.re + 1 else g.re) < g.re + 1 + 1; split <;> omega))).trans hold'
       refine ⟨store x0 (cellOn b w v) R1, Runs.append r1 (runs_con_on b hn1 ho1), read_store_eq _ _ _,
         fun y hy hlt => ?_⟩
       rw [read_store_ne (fun e => hy e)]
       exact fr1 y (fun e => by
         have : y = if b then g.re else g.re + 1 := e
-        cases b <;> simp at this <;> omega) (by show y < g.re + 1 + 1; omega)
+        cases b <;> simp at this <;> omega) (by simp only at hlt ⊢; omega)
   | pair p q =>
     obtain ⟨⟨d0, r0, ops0⟩, g1, e1, h⟩ := bind_some h
     simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
@@ -324,7 +324,7 @@ theorem intoRec_ok : ∀ (axe : Nat) (ned : Need) (g g' : Gen Map) (d r : Need) 
       obtain ⟨hr0, hold⟩ := (holds_side _ _ _ _ _ _).mp hr
       obtain ⟨R1, r1, hn1, fr1⟩ := H lib σ O c gul st tr R x u w e2 hd hr0
       refine ⟨R1, r1, (holds_pair_on _ _ _ _ _ _).mpr ⟨hn1, HoldsN.agree _ (fun y hy =>
-        fr1 y (fun e => dno.2.2 y e hy) (lo y (sub_old y hy))) hold⟩, fun y hy hlt =>
+        fr1 y (fun e => dno.2.2 y e hy) (Or.inl (lo y (sub_old y hy)))) hold⟩, fun y hy hlt =>
         fr1 y (fun e => hy (sub_new y e)) hlt⟩
   | both x0 hh tt =>
     obtain ⟨⟨rl, nl⟩, g1, h1, h⟩ := bind_some h
@@ -425,7 +425,7 @@ theorem intoRec_ok : ∀ (axe : Nat) (ned : Need) (g g' : Gen Map) (d r : Need) 
       obtain ⟨hr0, hold⟩ := (holds_side _ _ _ _ _ _).mp hr
       obtain ⟨R1, r1, hn1, fr1⟩ := H lib σ O c gul st tr R x u w e2 hd hr0
       have ho1 : HoldsN (if b then nt else nl) R1 v :=
-        HoldsN.agree _ (fun y hy => fr1 y (fun e => dno y e hy) (loold y hy)) hold
+        HoldsN.agree _ (fun y hy => fr1 y (fun e => dno y e hy) (Or.inl (loold y hy))) hold
       have hn : SkaModel.read (if b then rl else rt) R1 = some w ∧ HoldsN (if b then hh else tt) R1 w := by
         cases b
         · exact H2 R1 w hn1
@@ -450,7 +450,7 @@ theorem intoRec_ok : ∀ (axe : Nat) (ned : Need) (g g' : Gen Map) (d r : Need) 
       refine fr1 y (fun e => ?_) (by omega)
       rcases sub_new y e with e | e
       · exact hy e
-      · omega
+      · have := I.le; omega
 
 /-! ## `+into` -/
 
@@ -508,7 +508,7 @@ theorem into_ok {laz : Sure S} {th : Jmp} {axe : Nat} {g g' : Gen Map} {don rec 
       (g.drop = false → ∀ (c : Straight Map), Agree c g g' → ∀ (lib : Lib) (σ : Type) (O : Oracle σ) st tr
         (R : Map Noun) x t n gul, edit? axe x t = some n → HoldsN don.ned R x → HoldsN rec.ned R t →
         ∃ R', HoldsN laz.ned R' n ∧
-          (∀ y, ¬ NMem laz.ned y → y < g.re → SkaModel.read y R' = SkaModel.read y R) ∧
+          (∀ y, ¬ NMem laz.ned y → (y < g.re ∨ g'.re ≤ y) → SkaModel.read y R' = SkaModel.read y R) ∧
           goJ lib O c gul st R tr (jmp0 o) = goJ lib O c gul st R' tr th)) := by
   simp only [into] at h
   obtain ⟨o', g0, h0, h⟩ := bind_some h
@@ -561,7 +561,7 @@ theorem into_ok {laz : Sure S} {th : Jmp} {axe : Nat} {g g' : Gen Map} {don rec 
       rw [hc g.bo (Nat.le_refl _) (by omega)]
       have := Fr'.blk _ _ (emitted_get g _ hd)
       simpa using this
-    refine ⟨R', hl', u, ?_⟩
+    refine ⟨R', hl', fun y hy hlt => u y hy (by simp only [emitted_re]; omega), ?_⟩
     rw [goJ_jmp0 _ _ _ _ hb0, r1, execBlob_hop]
 
 end Comp

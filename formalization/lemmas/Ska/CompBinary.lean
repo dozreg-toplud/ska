@@ -53,7 +53,7 @@ theorem binary_ok {lib : Lib} {nm p q : Nomm} {goal : CGoal S} {g0 g' g1 g2 g3 :
     (hnot : ∀ x y, ¬ FitsS lp x ∨ ¬ FitsS lq y → f x y = none ∨ ∃ v, f x y = some v ∧ GNot goal v)
     (hblk : ∀ (c : Straight Map), Agree c g0 g' → g0.drop = false →
       ∀ (σ : Type) (O : Oracle σ) st regs t gul x y, FitsS lp x → FitsS lq y → HoldsN lp.ned regs x →
-        HoldsN lq.ned regs y → GoalSem lib O c gul st (Keep g0 goal) regs t (jmp0 o) goal (f x y)) :
+        HoldsN lq.ned regs y → GoalSem lib O c gul st (Keep g0 g' goal) regs t (jmp0 o) goal (f x y)) :
     RunOK lib nm goal g0 g3 nex := by
   obtain ⟨EC, eth, _, CM, CS⟩ := copy_ok hc
   have gm : ∀ r, GMem goal r → r < g0.re := fun r hr => by
@@ -97,6 +97,15 @@ theorem binary_ok {lib : Lib} {nm p q : Nomm} {goal : CGoal S} {g0 g' g1 g2 g3 :
     rcases hlq r hm with h | ⟨h, _⟩
     · exact h2 h
     · omega
+  have l3 := EC.1
+  have outp' : ∀ r, (r < g0.re ∨ g3.re ≤ r) → ¬ GMem goal r → ¬ NMem lp.ned r := fun r h1 h2 hm => by
+    rcases h1 with h1 | h1
+    · exact outp r h1 h2 hm
+    · have := lpl r hm; omega
+  have outq' : ∀ r, (r < g0.re ∨ g3.re ≤ r) → ¬ GMem goal r → ¬ NMem lq.ned r := fun r h1 h2 hm => by
+    rcases h1 with h1 | h1
+    · exact outq r h1 h2 hm
+    · have := lql r hm; omega
   refine {
     ext := hpre.trans (hq.ext.trans (hp.ext.trans EC))
     regs := fun r hr => ?_
@@ -144,14 +153,14 @@ theorem binary_ok {lib : Lib} {nm p q : Nomm} {goal : CGoal S} {g0 g' g1 g2 g3 :
     have Hp := hp.sem (hq.ext.2.2.1.trans (hpre.2.2.1.trans hd)) c
       ((hag.right (hpre.trans hq.ext)).left hp.ext EC) σ O st s R1 t gul hs1
     -- the kept registers of the goal are in neither need of the subject
-    have keep1 : ∀ r, Keep g0 goal r → SkaModel.read r R1 = SkaModel.read r regs := by
+    have keep1 : ∀ r, Keep g0 g3 goal r → SkaModel.read r R1 = SkaModel.read r regs := by
       intro r ⟨k1, k2⟩
       refine u1 r (fun hm => ?_) (fun hm => ?_)
-      · rcases mp r hm with a | ⟨a, _⟩
-        · exact outp r k1 k2 a
+      · rcases mp r hm with a | ⟨a, a'⟩
+        · exact outp' r k1 k2 a
         · have := hpre.1; omega
-      · rcases mq r hm with a | ⟨a, _⟩
-        · exact outq r k1 k2 a
+      · rcases mq r hm with a | ⟨a, a'⟩
+        · exact outq' r k1 k2 a
         · have := hpre.1; omega
     rw [hev]
     cases ep : pureEval p s with
@@ -166,8 +175,8 @@ theorem binary_ok {lib : Lib} {nm p q : Nomm} {goal : CGoal S} {g0 g' g1 g2 g3 :
         have hq2 : HoldsS nexq.laz R2 s := by
           refine ⟨HoldsN.agree _ (fun r hr => k2 r ⟨?_, ?_⟩) hs1'.1, hs1'.2⟩
           · rcases mq r hr with a | ⟨_, a⟩
-            · have := lql r a; omega
-            · exact a
+            · have := lql r a; exact Or.inl (by omega)
+            · exact Or.inl a
           · intro hm
             rcases mq r hr with a | ⟨a, _⟩
             · exact hpq r hm a
@@ -184,12 +193,14 @@ theorem binary_ok {lib : Lib} {nm p q : Nomm} {goal : CGoal S} {g0 g' g1 g2 g3 :
           by_cases fy : FitsS lq y
           · obtain ⟨R3, hq3, k3, e3⟩ := Hq.1 fy
             have hl3 : HoldsN lp.ned R3 x :=
-              HoldsN.agree _ (fun r hr => k3 r ⟨lpl r hr, hpq r hr⟩) hl2
+              HoldsN.agree _ (fun r hr => k3 r ⟨Or.inl (lpl r hr), hpq r hr⟩) hl2
             have B := hblk c (hag.left hpre (hq.ext.trans (hp.ext.trans EC))) hd σ O st R3 t gul x y fx fy hl3 hq3
-            refine GoalSem.transfer (by rw [eth] at e1 ⊢; exact e1.trans (e2.trans e3)) (fun r hk => ?_) B
+            refine GoalSem.transfer (by rw [eth] at e1 ⊢; exact e1.trans (e2.trans e3)) (fun r hk => ?_)
+              (GoalSem.mono (keep_left (by omega)) B)
             have ⟨k1, k2'⟩ := hk
-            rw [k3 r ⟨Nat.lt_of_lt_of_le k1 hpre.1, outq r k1 k2'⟩,
-              k2 r ⟨Nat.lt_of_lt_of_le k1 (Nat.le_trans hpre.1 hq.ext.1), outp r k1 k2'⟩, keep1 r hk]
+            have hp0 := hpre.1
+            rw [k3 r ⟨k1.imp (fun h => by omega) (fun h => by omega), outq' r k1 k2'⟩,
+              k2 r ⟨k1.imp (fun h => by omega) (fun h => by omega), outp' r k1 k2'⟩, keep1 r hk]
           · exact goalSem_crash_or (hnot x y (Or.inr fy))
               (by rw [eth] at e1 ⊢; exact e1.trans (e2.trans (Hq.2 fy)))
       · have hc2 := Hp.2 fx

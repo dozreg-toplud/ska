@@ -185,7 +185,7 @@ theorem run_n1_next_ok {lib : Lib} {k : Noun} {laz : Sure S} {th : Jmp} {g0 g1 :
     refine ⟨regs', (holdsS_of_sure L H).1, fun r ⟨hr1, hr2⟩ => K r fun hm => ?_, by rw [R, execBlob_hop]⟩
     rcases L.mem r hm with h | h
     · exact hr2 h
-    · simp [emitted_re] at h; omega
+    · have h' := F.le; simp [emitted_re] at h h'; omega
   · exact (SP lib σ O c gul st t regs hdist).2 (fun hf => hn ((fits_sure L k).mp hf)) [] _
 
 end Comp

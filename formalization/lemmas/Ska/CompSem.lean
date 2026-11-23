@@ -21,7 +21,7 @@ blocks it emits, against the interpreter's `execBlob`.
   product that has not those of the goal (`nec`), and, in any program that
   holds the blocks of `g1` at the labels `run` allocated, entering `nex`
   with the subject held does what `GoalSem` says, keeping the registers
-  allocated before `g0` that the goal does not name (`sem`).
+  allocated before `g0` or from `g1` on that the goal does not name (`sem`).
 -/
 
 set_option linter.unusedSimpArgs false
@@ -141,9 +141,10 @@ def GNot : CGoal S → Noun → Prop
   | CGoal.next laz _, p => ¬ FitsS laz p
   | _, _ => False
 
-/-- The registers that the code for a goal keeps: allocated before it, and
-not named by the goal. -/
-def Keep (g0 : Gen Map) (goal : CGoal S) (r : Nat) : Prop := r < g0.re ∧ ¬ GMem goal r
+/-- The registers that the code for a goal keeps: allocated before it or
+after it (the code of a run writes only the registers it allocated and those
+of its goal), and not named by the goal. -/
+def Keep (g0 g1 : Gen Map) (goal : CGoal S) (r : Nat) : Prop := (r < g0.re ∨ g1.re ≤ r) ∧ ¬ GMem goal r
 
 section Exec
 variable (lib : Lib) {σ : Type} (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ)
@@ -211,7 +212,7 @@ structure RunOK (lib : Lib) (nm : Nomm) (goal : CGoal S) (g0 g1 : Gen Map) (nex 
   dist : Distinct nex.laz.ned
   sem : g0.drop = false → ∀ (c : Straight Map), Agree c g0 g1 → ∀ (σ : Type) (O : Oracle σ) (st : σ) (s : Noun)
     (regs : Map Noun) (t : Trace) (gul : Noun), HoldsS nex.laz regs s →
-    GoalSem lib O c gul st (Keep g0 goal) regs t nex.th goal (pureEval nm s)
+    GoalSem lib O c gul st (Keep g0 g1 goal) regs t nex.th goal (pureEval nm s)
 
 /-! ## The monad -/
 

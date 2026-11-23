@@ -27,7 +27,7 @@ theorem unary_ok {lib : Lib} {nm p : Nomm} {goal : CGoal S} {g0 g' g1 : Gen Map}
     (hp : RunOK lib p (CGoal.next (lazyReg a) (jmp0 o)) g' g1 nexp)
     (hblk : ∀ (c : Straight Map), Agree c g0 g' → g0.drop = false →
       ∀ (σ : Type) (O : Oracle σ) st regs t gul x, SkaModel.read a regs = some x →
-      GoalSem lib O c gul st (Keep g0 goal) regs t (jmp0 o) goal (f x))
+      GoalSem lib O c gul st (Keep g0 g' goal) regs t (jmp0 o) goal (f x))
     (hgo : g0.bo ≤ o) :
     RunOK lib nm goal g0 g1 nexp where
   ext := hpre.trans hp.ext
@@ -51,9 +51,10 @@ theorem unary_ok {lib : Lib} {nm p : Nomm} {goal : CGoal S} {g0 g' g1 : Gen Map}
     | some x =>
       rw [e] at Hp
       obtain ⟨regs', hh', hk, he⟩ := Hp.1 ⟨trivial, looks_empty x⟩
-      exact GoalSem.transfer he (fun r ⟨h1, h2⟩ => hk r ⟨Nat.lt_of_lt_of_le h1 hpre.1, fun e => by
-          simp only [GMem, lazyReg, NMem] at e; omega⟩)
-        (hblk c (hag.left hpre hp.ext) hd σ O st regs' t gul x hh')
+      have l1 := hp.ext.1
+      exact GoalSem.transfer he (fun r ⟨h1, h2⟩ => hk r ⟨h1.imp (fun h => Nat.lt_of_lt_of_le h hpre.1) id,
+          fun e => by simp only [GMem, lazyReg, NMem] at e; omega⟩)
+        (GoalSem.mono (keep_left l1) (hblk c (hag.left hpre hp.ext) hd σ O st regs' t gul x hh'))
 
 /-- `[4 p]`: the value through `+(x)`. -/
 def incF : Noun → Option Noun
@@ -114,7 +115,7 @@ theorem run_n4_pick_ok {lib : Lib} {p : Nomm} {z o : Jmp} {g0 g1 : Gen Map} {nex
       Option.bind_some] at hj
     rcases n with _ | n
     · simp only [incF]
-      refine ⟨store g0.re (A (0 + 1)) regs, fun r ⟨h1, _⟩ => read_store_ne (show r ≠ g0.re by omega) _ _, ?_⟩
+      refine ⟨store g0.re (A (0 + 1)) regs, fun r ⟨h1, _⟩ => read_store_ne (show r ≠ g0.re by simp [emitted_re] at h1; omega) _ _, ?_⟩
       rw [hj]; simp
     · simp only [incF]
       exact goalSem_pick_other (by simp) (by simp) (by rw [hj]; simp)

@@ -158,8 +158,8 @@ theorem collapse_ok {laz : Sure S} {th : Jmp} {g g' : Gen Map} {a : Option (Nat 
     Ext g g' ∧ th.args = [] ∧ (a = Option.none → laz.ned = Need.none ∧ ∀ x ∈ HoonSet.toList laz.lok, x = 1) ∧
     ∀ r o, a = some (r, o) → (NMem laz.ned r ∨ (g.re ≤ r ∧ r < g'.re)) ∧ (o = th.there ∨ (g.bo ≤ o ∧ o < g'.bo)) ∧
       (g.drop = false → ∀ (c : Straight Map), Agree c g g' → ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (st : σ)
-        regs t gul n, SkaModel.read r regs = some (A n) →
-        GoalSem lib O c gul st (Keep g (CGoal.next laz th)) regs t (jmp0 o) (CGoal.next laz th) (some (A n))) := by
+        regs t gul n, SkaModel.read r regs = some (A n) → ∀ {K : Nat → Prop},
+        GoalSem lib O c gul st K regs t (jmp0 o) (CGoal.next laz th) (some (A n))) := by
   unfold collapseLazyAtom at h
   dsimp only at h
   by_cases ea : th.args ≠ []
@@ -191,10 +191,10 @@ theorem collapse_ok {laz : Sure S} {th : Jmp} {g g' : Gen Map} {a : Option (Nat 
   -- the case where `r` takes the atom and the goal's block follows
   have direct : ∀ (r' : Nat), (∀ (regs : Map Noun) v, SkaModel.read r' regs = some v → HoldsN nedS regs v) →
       ∀ (c : Straight Map) (lib : Lib) (σ : Type) (O : Oracle σ) (st : σ) regs t gul n,
-        SkaModel.read r' regs = some (A n) →
-        GoalSem lib O c gul st (Keep g (CGoal.next laz th)) regs t (jmp0 th.there)
+        SkaModel.read r' regs = some (A n) → ∀ {K : Nat → Prop},
+        GoalSem lib O c gul st K regs t (jmp0 th.there)
           (CGoal.next laz th) (some (A n)) := by
-    intro r' hh c lib σ O st regs t gul n hr
+    intro r' hh c lib σ O st regs t gul n hr K
     have hs := hh regs (A n) hr
     refine ⟨fun _ => ⟨regs, L.holds regs (A n) hs, fun _ _ => rfl, by rw [jmp0_of_args ea']⟩, fun hn => ?_⟩
     exact absurd (holdsS_of_sure L hs |> fitsS_of_holdsS) hn
@@ -207,11 +207,11 @@ theorem collapse_ok {laz : Sure S} {th : Jmp} {g g' : Gen Map} {a : Option (Nat 
     intro r o e
     simp only [Option.some.injEq, Prod.mk.injEq] at e
     obtain ⟨rfl, rfl⟩ := e
-    refine ⟨?_, Or.inl rfl, fun _ c _ lib σ O st regs t gul n hr => ?_⟩
+    refine ⟨?_, Or.inl rfl, fun _ c _ lib σ O st regs t gul n hr K => ?_⟩
     · rcases L.mem _ rfl with hm | hm
       · exact Or.inl hm
       · exact Or.inr ⟨hm.1, Nat.lt_of_lt_of_le hm.2 hk⟩
-    · have D := direct x (fun regs v hr' => hr') c lib σ O st regs t gul n hr
+    · have D := direct x (fun regs v hr' => hr') c lib σ O st regs t gul n hr (K := K)
       exact GoalSem.transfer rfl (fun _ _ => rfl) (by simpa using D)
   | none =>
     simp only [bind_apply, re_apply, Option.bind_some, pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
@@ -223,8 +223,8 @@ theorem collapse_ok {laz : Sure S} {th : Jmp} {g g' : Gen Map} {a : Option (Nat 
     intro r o e
     simp only [Option.some.injEq, Prod.mk.injEq] at e
     obtain ⟨rfl, rfl⟩ := e
-    refine ⟨Or.inr ⟨l1, show k1 < k by omega⟩, Or.inl rfl, fun _ c _ lib σ O st regs t gul n hr => ?_⟩
-    have D := direct k1 (fun regs v _ => trivial) c lib σ O st regs t gul n hr
+    refine ⟨Or.inr ⟨l1, show k1 < k by omega⟩, Or.inl rfl, fun _ c _ lib σ O st regs t gul n hr K => ?_⟩
+    have D := direct k1 (fun regs v _ => trivial) c lib σ O st regs t gul n hr (K := K)
     exact GoalSem.transfer rfl (fun _ _ => rfl) (by simpa using D)
   | pair p q =>
     simp only [bind_apply, re_apply, emit_apply, Option.bind_some, pure_apply, Option.some.injEq,
@@ -269,8 +269,8 @@ theorem run_n4_next_ok {lib : Lib} {p : Nomm} {laz : Sure S} {th : Jmp} {g0 g1 :
   -- the register of the product and the block after the increment
   have P : Ext g2 g3 ∧ (NMem laz.ned pro ∨ (g0.re ≤ pro ∧ pro < g3.re)) ∧
       (g0.drop = false → ∀ (c : Straight Map), Agree c g0 g2 → ∀ (σ : Type) (O : Oracle σ) (st : σ) regs t gul n,
-        SkaModel.read pro regs = some (A n) →
-        GoalSem lib O c gul st (Keep g0 (CGoal.next laz th)) regs t (jmp0 th') (CGoal.next laz th) (some (A n))) := by
+        SkaModel.read pro regs = some (A n) → ∀ {K : Nat → Prop},
+        GoalSem lib O c gul st K regs t (jmp0 th') (CGoal.next laz th) (some (A n))) := by
     cases a with
     | some x =>
       simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h3
@@ -299,13 +299,13 @@ theorem run_n4_next_ok {lib : Lib} {p : Nomm} {laz : Sure S} {th : Jmp} {g0 g1 :
   cases x with
   | atom n =>
     rw [show [Pole.inc _ _] = [Pole.inc _ _] ++ [] from rfl, runs_inc hx, execBlob_hop] at hj
-    have G := P.2.2 hd c (hc.left E2 (P.1.trans ((ext_re _).trans (ext_emit _ _)))) σ O st
-      (store pro (A (n + 1)) regs) t gul (n + 1) (read_store_eq _ _ _)
-    refine GoalSem.transfer hj (fun r ⟨h1, h2⟩ => read_store_ne (fun e => ?_) _ _) G
+    refine GoalSem.transfer hj (fun r ⟨h1, h2⟩ => read_store_ne (fun e => ?_) _ _)
+      (P.2.2 hd c (hc.left E2 (P.1.trans ((ext_re _).trans (ext_emit _ _)))) σ O st
+        (store pro (A (n + 1)) regs) t gul (n + 1) (read_store_eq _ _ _))
     subst e
-    rcases P.2.1 with hm | ⟨hm, _⟩
+    rcases P.2.1 with hm | ⟨hm, hm'⟩
     · exact h2 hm
-    · omega
+    · simp [emitted_re] at h1; omega
   | cell u v =>
     apply goalSem_crash
     rw [hj, show [Pole.inc _ _] = [Pole.inc _ _] ++ [] from rfl, crashes_inc hx]

@@ -267,6 +267,24 @@ theorem GoalSem.transfer {K : Nat → Prop} {regs regs' : Map Noun} {t : Trace} 
     · simp only [GoalSem] at h ⊢; rw [he]; exact h
     · simp only [GoalSem] at h ⊢; rw [he]; exact h
 
+/-- Fewer registers kept. -/
+theorem GoalSem.mono {K K' : Nat → Prop} {regs : Map Noun} {t : Trace} {je : Jmp} {goal : CGoal S}
+    {v : Option Noun} (hK : ∀ r, K' r → K r) (h : GoalSem lib O c gul st K regs t je goal v) :
+    GoalSem lib O c gul st K' regs t je goal v := by
+  cases goal with
+  | done => exact h
+  | next laz th =>
+    cases v with
+    | none => exact h
+    | some p => exact ⟨fun hf => let ⟨r2, h1, h2, h3⟩ := h.1 hf; ⟨r2, h1, fun r hr => h2 r (hK r hr), h3⟩, h.2⟩
+  | pick z o =>
+    rcases v with _ | ⟨⟨_ | _ | k⟩ | ⟨a, b⟩⟩
+    · exact h
+    · obtain ⟨r2, h2, h3⟩ := h; exact ⟨r2, fun r hr => h2 r (hK r hr), h3⟩
+    · obtain ⟨r2, h2, h3⟩ := h; exact ⟨r2, fun r hr => h2 r (hK r hr), h3⟩
+    · exact h
+    · exact h
+
 /-- A product without the goal's shape or looks: the code must crash. -/
 theorem goalSem_not {K : Nat → Prop} {regs : Map Noun} {t : Trace} {je : Jmp} {goal : CGoal S} {p : Noun}
     (hn : GNot goal p) (h : goJ lib O c gul st regs t je = some (Tone.two t, st)) :
@@ -286,14 +304,21 @@ theorem goalOK_of_runOK {lib : Lib} {nm : Nomm} {goal : CGoal S} {g0 g1 : Gen Ma
     | _ => exact hm.elim
   · exact h2
 
-theorem keep_mono {g0 g1 : Gen Map} {goal : CGoal S} {nex : Next S} (he : Ext g0 g1)
+theorem keep_mono {g0 g1 g2 : Gen Map} {goal : CGoal S} {nex : Next S} (he : Ext g0 g1) (he2 : g1.re ≤ g2.re)
     (hregs : ∀ r, NMem nex.laz.ned r → GMem goal r ∨ (g0.re ≤ r ∧ r < g1.re)) :
-    ∀ r, Keep g0 goal r → Keep g1 nex.goal r := by
+    ∀ r, Keep g0 g2 goal r → Keep g1 g2 nex.goal r := by
   intro r ⟨h1, h2⟩
-  refine ⟨Nat.lt_of_lt_of_le h1 he.1, fun hm => ?_⟩
-  rcases hregs r hm with h | ⟨h3, _⟩
+  refine ⟨h1.imp (fun h => Nat.lt_of_lt_of_le h he.1) id, fun hm => ?_⟩
+  rcases hregs r hm with h | ⟨h3, h4⟩
   · exact h2 h
-  · omega
+  · rcases h1 with h1 | h1
+    · omega
+    · omega
+
+/-- The registers kept by a longer run are kept by its first part. -/
+theorem keep_left {g0 g1 g2 : Gen Map} {goal : CGoal S} (h : g1.re ≤ g2.re) :
+    ∀ r, Keep g0 g2 goal r → Keep g0 g1 goal r :=
+  fun _ ⟨h1, h2⟩ => ⟨h1.imp id (fun h' => Nat.le_trans h h'), h2⟩
 
 /-- **`[7 p q]`**: `q` for the goal, then `p` for the `next` of `q`. -/
 theorem run_n7_ok {lib : Lib} {p q : Nomm} {goal : CGoal S} {g0 g1 g2 : Gen Map} {nexq nex : Next S}
@@ -323,8 +348,8 @@ theorem run_n7_ok {lib : Lib} {p q : Nomm} {goal : CGoal S} {g0 g1 g2 : Gen Map}
       simp only [Option.bind_some]
       by_cases hf : FitsS nexq.laz s'
       · obtain ⟨regs', hh', hk, he⟩ := Hp.1 hf
-        exact GoalSem.transfer he (fun r hr => hk r (keep_mono hq.ext hq.regs r hr))
-          (hq.sem hd c (hag.left hq.ext hp.ext) σ O st s' regs' t gul ⟨hh', hf.2⟩)
+        exact GoalSem.transfer he (fun r hr => hk r (keep_mono hq.ext hp.ext.1 hq.regs r hr))
+          (GoalSem.mono (keep_left hp.ext.1) (hq.sem hd c (hag.left hq.ext hp.ext) σ O st s' regs' t gul ⟨hh', hf.2⟩))
       · have hc := Hp.2 hf
         rcases hq.nec s' hf with h | ⟨v, h1, h2⟩
         · rw [h]; exact goalSem_crash goal hc

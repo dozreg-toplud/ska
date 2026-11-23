@@ -148,18 +148,20 @@ theorem run_n3_next_ok {lib : Lib} {p : Nomm} {laz : Sure S} {th : Jmp} {g0 g1 :
   have F' := F hd2 c ((hc.right E2).left E3 Ep) lib σ O st regs t gul
   have hag2 : Agree c g0 g2 := hc.left E2 (E3.trans Ep)
   -- the kept registers are neither `r` nor the fresh register of `+forl`
-  have keep : ∀ (v : Noun) (rr : Nat), Keep g0 (CGoal.next laz th) rr →
+  have keep : ∀ (v : Noun) (rr : Nat), (rr < g0.re ∨ g3.re ≤ rr) → ¬ GMem (CGoal.next laz th) rr →
       SkaModel.read rr (store r v (store g2.re v regs)) = SkaModel.read rr regs := by
-    intro v rr ⟨k1, k2⟩
+    intro v rr k1 k2
+    have := er3
     have hne : rr ≠ r := fun e => by
       subst e
       rcases hmr with hm | ⟨hm, _⟩
       · exact k2 hm
       · omega
     rw [read_store_ne hne, read_store_ne (show rr ≠ g2.re by have := E2.1; omega)]
-  have keep1 : ∀ (rr : Nat), Keep g0 (CGoal.next laz th) rr →
+  have keep1 : ∀ (rr : Nat), (rr < g0.re ∨ g3.re ≤ rr) → ¬ GMem (CGoal.next laz th) rr →
       SkaModel.read rr (store r (A 1) (store (g2.re + 1) (A 1) regs)) = SkaModel.read rr regs := by
-    intro rr ⟨k1, k2⟩
+    intro rr k1 k2
+    have := er3
     have hne : rr ≠ r := fun e => by
       subst e
       rcases hmr with hm | ⟨hm, _⟩
@@ -168,11 +170,13 @@ theorem run_n3_next_ok {lib : Lib} {p : Nomm} {laz : Sure S} {th : Jmp} {g0 g1 :
     rw [read_store_ne hne, read_store_ne (show rr ≠ g2.re + 1 by have := E2.1; omega)]
   cases x with
   | cell u v =>
-    have G := hs hd c hag2 lib σ O st (store r (A 0) (store g2.re (A 0) regs)) t gul 0 (read_store_eq _ _ _)
-    exact GoalSem.transfer (hj.trans F'.1) (keep (A 0)) G
+    exact GoalSem.transfer (hj.trans F'.1)
+      (fun rr ⟨k1, k2⟩ => keep (A 0) rr (k1.imp id (fun h => by simp [emitted_re] at h; omega)) k2)
+      (hs hd c hag2 lib σ O st (store r (A 0) (store g2.re (A 0) regs)) t gul 0 (read_store_eq _ _ _))
   | atom n =>
-    have G := hs hd c hag2 lib σ O st (store r (A 1) (store (g2.re + 1) (A 1) regs)) t gul 1 (read_store_eq _ _ _)
-    exact GoalSem.transfer (hj.trans F'.2) keep1 G
+    exact GoalSem.transfer (hj.trans F'.2)
+      (fun rr ⟨k1, k2⟩ => keep1 rr (k1.imp id (fun h => by simp [emitted_re] at h; omega)) k2)
+      (hs hd c hag2 lib σ O st (store r (A 1) (store (g2.re + 1) (A 1) regs)) t gul 1 (read_store_eq _ _ _))
 
 end Comp
 end SkaModel
