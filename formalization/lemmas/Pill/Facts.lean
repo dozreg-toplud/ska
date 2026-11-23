@@ -195,6 +195,10 @@ abbrev by.get.axis : Nat := 764
 theorem by.get.arm_at : ∀ x, slot? by.get.axis (C by.battery x) = some by.get.arm := by
   intro x; kernel_rfl
 
+abbrev some.axis : Nat := 5982
+
+theorem some.arm_at : slot? some.axis layer2 = some some.arm := by kernel_rfl
+
 abbrev by.has.axis : Nat := 3061
 
 theorem by.has.arm_at : ∀ x, slot? by.has.axis (C by.battery x) = some by.has.arm := by

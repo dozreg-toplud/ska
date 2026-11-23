@@ -293,8 +293,9 @@ def main():
         axes.append((label, ax, 'slot? %s.axis %s = some %s.arm' % (label, lname, label)))
         return a
 
-    def callee(formula, ctx):
-        """the axis of the one arm that `formula` pulls with [9 axis 0 ctx]"""
+    def callee(formula, ctx, exclude=()):
+        """the axis of the one arm, other than those at the axes in `exclude`,
+        that `formula` pulls with [9 axis 0 ctx]"""
         res = set()
         for i in reach([formula]):
             n = NODES[i]
@@ -303,7 +304,7 @@ def main():
             m = NODES[n[1]]
             if type(m) is int or type(NODES[m[0]]) is not int:
                 continue
-            if m[1] == cell(atom(0), atom(ctx)):
+            if m[1] == cell(atom(0), atom(ctx)) and NODES[m[0]] not in exclude:
                 res.add(NODES[m[0]])
         assert len(res) == 1, res
         return res.pop()
@@ -380,11 +381,24 @@ def main():
 
     by_battery = door('by', layer2, 'layer2')
     door_arm('by', by_battery, 'put', 1)
-    door_arm('by', by_battery, 'get', 1)
+    get_arm = door_arm('by', by_battery, 'get', 1)
+    # +some has no %fast label: it is the arm other than +gor that the loop of
+    # +get:by pulls from the context of the door
+    (get_loop,) = find_loops(gate_battery(get_arm))
+    gor_ax = [ax for nm, ax, _ in axes if nm == 'gor'][0]
+    some_ax = callee(get_loop, 63, exclude=(gor_ax,))
+    name(slot(some_ax, layer2), 'some.arm')
+    formulas.add(slot(some_ax, layer2))
+    axes.append(('some', some_ax, 'slot? some.axis layer2 = some some.arm'))
     door_arm('by', by_battery, 'has', 0)
     in_battery = door('in', layer2, 'layer2')
     door_arm('in', in_battery, 'put', 1)
-    door_arm('in', in_battery, 'has', None)
+    has_in = door_arm('in', in_battery, 'has', 1)
+    # +has:in slams an inner gate [8 [8 [1 0] [1 gate] 0 1] 9 2 10 ...]
+    inner = tail(head(tail(tail(head(tail(gate_battery(has_in)))))))
+    assert NODES[head(inner)] == 7
+    name(inner, 'in.has.gate')
+    formulas.add(inner)
 
     # ---- write
     em = Emitter([root, core], names, formulas)
