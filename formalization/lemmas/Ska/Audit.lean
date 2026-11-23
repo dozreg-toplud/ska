@@ -306,3 +306,6 @@ open Formalization.SkaModel
 #print axioms Bake.kapS_lt
 #print axioms Bake.canon_ext
 #print axioms Bake.rebakeG_canon
+#print axioms Bake.normCD_of_canon
+#print axioms Bake.noLoss_lessc
+#print axioms Bake.bakes_canon

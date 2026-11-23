@@ -15,7 +15,10 @@ socks that `+norm-sock` makes:
   counts `2 n + 1`, `|` counts `0`, a cell the sum of its halves);
 * `kap_sub`: on normal socks, `Sub a b` gives `kap b ≤ kap a`, and
   `kap b < kap a` when `a ≠ b`;
-* `canon_ext`: two normal socks with the same nouns are equal.
+* `canon_ext`: two normal socks with the same nouns are equal, and
+  `normCD_of_canon`: `+norm-sock` leaves a normal sock as it is;
+* `noLoss_lessc`: a change of a bake that keeps its nouns goes to or from
+  `less.c`.
 
 For example `[[& |] [7 0]]` (cells whose head is `7`) has `kap = 3`, and
 `&` on `[7 8]` has `kap = 7`: the second is under the first and knows more.
@@ -23,7 +26,16 @@ For example `[[& |] [7 0]]` (cells whose head is `7`) has `kap = 3`, and
 What `BakeEnds` still needs: a bake is `less.c` or the output of
 `+norm-sock` (`rebakeG_canon`), and `less.c` need not be normal (the analysis
 keeps `[& &]` apart from `&`), so a bake can change between `less.c` and a
-normal sock with the same nouns without a loss.
+normal sock with the same nouns without a loss (`noLoss_lessc`: only so).  On
+the real compiler most code requirements are not normal: after pokes of
+fifteen programs up to `(ream '(add 1 2)')`, 2,045 of 3,033 pairs of a code
+bell and a bake (every variant, and every memo entry under its own code
+requirement) had `!=(less.c (norm-sock less.c))`.  So "the output of
+`+app:ca` is normal" is false, and the way left is to bound the changes back
+to `less.c`, which happen only when no caller's site informs the callee any
+more (`ks = []`): for example from a `+know` whose sites do not shrink when
+the caller's bake loses knowledge, or by counting such changes against the
+losses of the callers' bakes.
 -/
 
 namespace Formalization
@@ -73,6 +85,22 @@ theorem normSockH_canon {s s' : Sock} (h : normSockH s = some s') : Canon s' := 
     simp only [normSockH, Option.map_eq_some_iff] at h
     obtain ⟨p, hp, rfl⟩ := h
     exact normCD_canon hp
+
+/-- `+norm-sock` leaves a normal sock as it is. -/
+theorem normCD_of_canon : ∀ {c : Cape} {d : Noun}, CanonCD c d → normCD c d = some (c, d)
+  | Cape.no, _, h => by simp only [CanonCD] at h; subst h; rfl
+  | Cape.yes, _, _ => rfl
+  | Cape.cell h t, _, ⟨dh, dt, rfl, ch, ct, hnn, hyy⟩ => by
+    simp only [normCD, normCD_of_canon ch, normCD_of_canon ct, Option.bind_some, Option.map_some]
+    rw [if_neg hnn, if_neg]
+    rintro ⟨hy | hy, e⟩
+    · exact hyy ⟨hy, e ▸ hy⟩
+    · exact hnn ⟨hy, e ▸ hy⟩
+
+theorem normSockH_of_canon {s : Sock} (h : Canon s) : normSockH s = some s := by
+  cases s with
+  | void => rfl
+  | mk c d => simp only [normSockH, normCD_of_canon (c := c) (d := d) h, Option.map_some]
 
 /-! ## The nouns of a normal sock -/
 
@@ -307,6 +335,32 @@ theorem rebakeG_canon {lessc bake s : Sock} {old : Option Sock} {g g' : Nat} (hb
     · simp only [Option.map_eq_some_iff, Prod.mk.injEq] at h
       obtain ⟨s', hs', rfl, -⟩ := h
       exact Or.inr (normSockH_canon hs')
+
+/-- **A change without a loss goes to or from `less.c`**: when two bakes
+that are each `less.c` or normal have the same nouns and differ, one of
+them is `less.c`.  So the only changes of a bake that `kapS` may miss are the
+changes between `less.c` and the normal sock with its nouns. -/
+theorem noLoss_lessc {lessc o s : Sock} (hs : s = lessc ∨ Canon s) (ho : o = lessc ∨ Canon o)
+    (h1 : Sub o s) (h2 : Sub s o) (hne : s ≠ o) : s = lessc ∨ o = lessc := by
+  rcases hs with hs | hs
+  · exact Or.inl hs
+  rcases ho with ho | ho
+  · exact Or.inr ho
+  exact absurd (canon_ext hs ho h2 h1) hne
+
+section Loop
+
+variable {M : Type → Type → Type} [Treap M]
+
+/-- **Every bake at the end of the worklist is its code requirement or
+normal.** -/
+theorem bakes_canon (E : BEnv M) {n : Nat} {st : BSt M}
+    (h : bakeLoop E n [E.root] (Treap.put Treap.empty E.root ()) (bakeInit E) = some st) :
+    ∀ c s, Treap.get st.bak c = some s → s = c.less ∨ Canon s :=
+  bakeLoop_pred E (I := fun _ _ => True) (Or.inl rfl) (fun _ _ _ _ _ _ _ _ _ _ _ => trivial)
+    (fun _ _ _ _ _ _ _ _ _ _ hb _ hre => rebakeG_canon (bakeOf_canon hb) hre) h
+
+end Loop
 
 end Bake
 
