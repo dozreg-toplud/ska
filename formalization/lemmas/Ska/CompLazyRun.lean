@@ -1,4 +1,5 @@
 import lemmas.Ska.CompLazyArms
+import lemmas.Ska.CompTop
 
 /-!
 # `run` over lazy needs with forks and bonds
@@ -6,7 +7,7 @@ import lemmas.Ska.CompLazyArms
 Goals and `next` over `Lazy`, the arms of `+comp` that take or return a
 `next` (`+simple-next`, `+bomb`, `+split`, `+into`, `+copy`, `+past` with its
 branch for a hinted nomm, `+lazy-bound`, `+mede`, `+collapse-lazy-atom`
-with `+proxy`, `+kern` with `+kern-need`, `+lazy-shut`), and `runL`, the
+with `+proxy`, `+kern`, `+lazy-shut`), and `runL`, the
 model of `run` with the parameter `region` and the case `%6` for the goals
 `%done` and `%pick`.
 
@@ -181,30 +182,7 @@ def collapseLazyAtomL (nex : NextL S) : CM Map (Option (Nat × Nat)) := do
     walkLazy (collapseGate r there) there (mk ⟨Need.this r, nex.laz.sure.lok⟩ nex.laz.fork nex.laz.bond)
     pure (some (r, there))
 
-/-- The case `%both` of the loop of `+kern-need`, for the register `x` of
-the need and the loops `kh`, `kt` on its head and its tail. -/
-def kernBoth (r x : Nat) (kh kt : Nat → List Pole → CM Map (List Pole)) (ops : List Pole) :
-    CM Map (List Pole) := do
-  let rt ← re
-  let ops1 ← kt rt ops
-  let ops1 := if ops1 ≠ ops then Pole.tal x rt :: ops1 else ops1
-  let ops := ops1
-  let rh ← re
-  let ops1 ← kh rh ops
-  let ops1 := if ops1 ≠ ops then Pole.hed x rh :: ops1 else ops1
-  let ops := Pole.cel x :: ops1
-  if r = x then fun _ => Option.none else pure (Pole.mov r x :: ops)
-
-/-- `+kern-need`: the ops that move `r` into the registers of `ned`, taking
-it apart with a `%cel` check where the need wants parts.  `ops` are the ops
-that follow.  A pair gets a fresh register and is taken as `%both`. -/
-def kernNeed (r : Nat) : Need → List Pole → CM Map (List Pole)
-  | Need.none, ops => pure ops
-  | Need.this x, ops => if r = x then fun _ => Option.none else pure (Pole.mov r x :: ops)
-  | Need.pair p q, ops => do
-    let rn ← re
-    kernBoth r rn (fun r' o => kernNeed r' p o) (fun r' o => kernNeed r' q o) ops
-  | Need.both x h t, ops => kernBoth r x (fun r' o => kernNeed r' h o) (fun r' o => kernNeed r' t o) ops
+/-! `+kern-need` is `kernNeed` of `CompTop.lean`. -/
 
 /-- `+kern`: the lazy need met from one register `r`, with the moves and the
 taking apart in each lazy block (through a proxy in the blocks other than
@@ -218,7 +196,7 @@ def kern (o : Nat) (laz : Lazy S) : CM Map Nat := do
       if ned = Need.none then pure () else do
       let src ← (if oLaz = o then pure r else proxy r oLaz : CM Map Nat)
       if noSoft oLaz then fun _ => Option.none else do
-      let ops ← kernNeed src ned []
+      let ops ← kernNeed src ned
       addOps oLaz ops) o laz
     pure r
 
