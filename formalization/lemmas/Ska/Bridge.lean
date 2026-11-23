@@ -598,7 +598,7 @@ theorem resolve_succ (env : Env R) (memoF : Memo M) (n : Nat) :
   conv => lhs; unfold resolve
 
 theorem analyze_succ (env : Env R) (memoF : Memo M) (n : Nat) :
-    analyze env memoF (n + 1) = analyzeStep memoF (run env memoF n) (passLoop env memoF n) := by
+    analyze env memoF (n + 1) = analyzeStep n memoF (run env memoF n) (passLoop env memoF n) := by
   conv => lhs; unfold analyze
 
 theorem run_succ (env : Env R) (memoF : Memo M) (n : Nat) :

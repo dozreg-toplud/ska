@@ -1,11 +1,19 @@
 import core.Nock
 
 /-!
-# A member left stale by the first pass at a root
+# A member left stale by the first pass at a root (fixed)
+
+**Fixed in the Hoon** (commit `fefb95d`): `+analyze` now runs
+`=.  st  (cull id st)` once before the pass loop, so the members that the
+root does not reach are dropped before the first pass, as they are after
+every pass.  `Ana.analyzeStep` makes that cull (`Ana.cullPass`).  On the
+fixed compiler the poke below leaves no stale `m2`, and the compiled `fR`
+crashes on `x` as `+mink` does.  The formulas are kept as a regression test.
+What follows describes the Hoon before the fix.
 
 The pass loop of `+analyze` sweeps, in each pass, the members of the
 component that the root reaches over the current callees (`+sweep`), and
-`+cull` drops the members it does not reach only after the member loop.  So
+`+cull` dropped the members it does not reach only after the member loop.  So
 the first pass at a root does not run a member that was left on the stack by
 a nested pass loop which exited early (`low < index`) and that the root does
 not reach when the pass starts.  If a run in that pass reaches the member
