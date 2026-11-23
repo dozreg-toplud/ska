@@ -1,6 +1,6 @@
-import lemmas.Exec
-import lemmas.Pill.Facts
+module
 
+public import lemmas.Exec
 /-!
 What the proofs about the arms of `hoon.hoon` share: flags, lists as nouns,
 and the way a theorem states what an arm reads from its context.
@@ -21,10 +21,12 @@ The predicates are `abbrev`s, so `simp only [nock_exec, hc]` with a hypothesis
 `hc : XIn c` rewrites every `slot? x.axis c` that the execution reaches.
 -/
 
+@[expose] public section
+
 namespace Formalization
 namespace Hoon
 
-open Nock Pill
+open Nock
 
 /-! ## Flags -/
 
@@ -87,3 +89,5 @@ theorem listN_eq_atom {l : List Noun} {n : Nat} (h : listN l = A n) : l = [] ∧
 
 end Hoon
 end Formalization
+
+end

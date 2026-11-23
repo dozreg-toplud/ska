@@ -1,5 +1,28 @@
-import lemmas.Hoon.Lists
+module
 
+public import lemmas.Hoon.Arith
+public import lemmas.Pill.Arm.Bex
+public import lemmas.Pill.Arm.Lsh
+public import lemmas.Pill.Arm.Rsh
+public import lemmas.Pill.Arm.End
+public import lemmas.Pill.Arm.Met
+public import lemmas.Pill.Arm.Cut
+public import lemmas.Pill.Arm.Cat
+public import lemmas.Pill.Arm.Mix
+public import lemmas.Pill.Arm.Dis
+public import lemmas.Pill.Arm.ConArm
+public import lemmas.Pill.Arm.Can
+import all lemmas.Pill.Arm.Bex
+import all lemmas.Pill.Arm.Lsh
+import all lemmas.Pill.Arm.Rsh
+import all lemmas.Pill.Arm.End
+import all lemmas.Pill.Arm.Met
+import all lemmas.Pill.Arm.Cut
+import all lemmas.Pill.Arm.Cat
+import all lemmas.Pill.Arm.Mix
+import all lemmas.Pill.Arm.Dis
+import all lemmas.Pill.Arm.ConArm
+import all lemmas.Pill.Arm.Can
 /-!
 The bit arithmetic of the pill's `hoon.hoon`, against `Nat`:
 
@@ -20,6 +43,8 @@ and `+add` of the first layer through the tail of their context.
 A `bite` is a bloq `a`, which means the step `1`, or a cell `[bloq step]`:
 `BiteIs x bloq step`.
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Hoon
@@ -416,3 +441,5 @@ theorem can_gate (c : Noun) (hc : EndIn c ∧ LshIn c ∧ Below AddIn c) (a : Na
 
 end Hoon
 end Formalization
+
+end

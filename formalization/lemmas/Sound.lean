@@ -1,5 +1,6 @@
-import lemmas.Fuel
+module
 
+public import lemmas.Fuel
 /-!
 The executable helpers of `Nock.lean` (`slot?`, `edit?`, `evalFuel`) agree
 with the relations that state the specification (`Slot`, `Edit`, `Eval`).
@@ -9,6 +10,8 @@ with the relations that state the specification (`Slot`, `Edit`, `Eval`).
   `Eval`.  It is what lets the kernel compute a concrete evaluation and hand
   back a fact about the relational semantics.
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Nock
@@ -384,3 +387,5 @@ theorem evalFuel_sound : ∀ (fuel : Nat) {subject formula out : Noun},
 
 end Nock
 end Formalization
+
+end

@@ -1,5 +1,10 @@
-import lemmas.Hoon.PutBy
+module
 
+public import lemmas.Hoon.PutBy
+public import lemmas.Hoon.Units
+public import lemmas.Pill.Arm.Some
+import all lemmas.Pill.Arm.Some
+import all lemmas.Pill.Arm.By
 /-!
 `+get:by` and `+has:by` of the pill's `hoon.hoon` look a key up in a map.
 
@@ -27,6 +32,8 @@ As for `+put:by`, `get_loop` shows that the Nock computes the model `getF`,
 and `getF_some`, `getF_none` show what `getF` returns on a map.  The gate of
 `+get:by` reads `+gor` and `+some` from the context of the door.
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Hoon
@@ -156,8 +163,81 @@ theorem has_by {mug : Noun → Nat} (ctx : Noun) (hc : SomeIn ctx ∧ GorIn mug 
     rw [has_gate ctx hc k a _ (getF_none h hn)]
     simp
 
-/-- The pill's second layer holds `+some`. -/
-theorem someIn_layer2 : SomeIn layer2 := some.arm_at
+/-! ## `+got:by` and `+gut:by`
+
+```hoon
+++  got                                               ::  need value by key
+  |*  b=*
+  (need (get b))
+::
+++  gut                                               ::  fall value by key
+  |*  [b=* c=*]
+  (fall (get b) c)
+```
+-/
+
+@[nock_exec] theorem got_arm (d : Noun) :
+    nock d by.got.arm = some (C by.got.battery (C (A 0) d)) := by
+  nock_open by.got.arm; simp only [nock_exec]
+
+@[nock_exec] theorem gut_arm (d : Noun) :
+    nock d by.gut.arm = some (C by.gut.battery (C (C (A 0) (A 0)) d)) := by
+  nock_open by.gut.arm; simp only [nock_exec]
+
+/-- The gate `got` of the door `by` with map `a`, slammed on a key whose
+lookup gives `[~ v]`. -/
+theorem got_gate {mug : Noun → Nat} (ctx : Noun) (hc : NeedIn ctx ∧ SomeIn ctx ∧ GorIn mug ctx)
+    (b a v : Noun) (h : getF mug b a = some (C (A 0) v)) :
+    nock (C by.got.battery (C b (C by.battery (C a ctx)))) by.got.battery = some v := by
+  nock_open by.got.battery
+  simp only [nock_exec, hc.1, get_arm, get_gate ctx hc.2 b a _ h, need_arm, need_gate]
+
+/-- The gate `got` crashes on a key whose lookup gives `~`. -/
+theorem got_gate_nil {mug : Noun → Nat} (ctx : Noun) (hc : NeedIn ctx ∧ SomeIn ctx ∧ GorIn mug ctx)
+    (b a : Noun) (h : getF mug b a = some (A 0)) :
+    nock (C by.got.battery (C b (C by.battery (C a ctx)))) by.got.battery = none := by
+  nock_open by.got.battery
+  simp only [nock_exec, hc.1, get_arm, get_gate ctx hc.2 b a _ h, need_arm, need_gate_nil]
+
+/-- The gate `gut` of the door `by` with map `a`, slammed on `[b c]`. -/
+theorem gut_gate {mug : Noun → Nat} (ctx : Noun) (hc : FallIn ctx ∧ SomeIn ctx ∧ GorIn mug ctx)
+    (b c a out : Noun) (h : getF mug b a = some out) (hout : out = A 0 ∨ ∃ v, out = C (A 0) v) :
+    nock (C by.gut.battery (C (C b c) (C by.battery (C a ctx)))) by.gut.battery
+      = some (if out = A 0 then c else match out with | Noun.cell _ v => v | _ => c) := by
+  nock_open by.gut.battery
+  rcases hout with rfl | ⟨v, rfl⟩
+  · simp only [nock_exec, hc.1, get_arm, get_gate ctx hc.2 b a _ h, fall_arm, fall_gate_nil,
+      if_true]
+  · simp [nock_exec, hc.1, get_arm, get_gate ctx hc.2 b a _ h, fall_arm, fall_gate_some]
+
+/-- `+got:by` on a map: the value under the key `k`, and a crash when the map
+does not hold `k`. -/
+theorem got_by {mug : Noun → Nat} (ctx : Noun) (hc : NeedIn ctx ∧ SomeIn ctx ∧ GorIn mug ctx)
+    (a k : Noun) (h : IsMap mug a) :
+    (∀ v, Get a k v →
+      Eval (C by.got.battery (C k (C by.battery (C a ctx)))) by.got.battery v) ∧
+    ((∀ v, ¬ Get a k v) →
+      ∀ p, ¬ Eval (C by.got.battery (C k (C by.battery (C a ctx)))) by.got.battery p) := by
+  refine ⟨fun v hg => eval_of_nock (got_gate ctx hc k a v (getF_some h hg)), ?_⟩
+  intro hn p he
+  have := nock_of_eval he
+  rw [got_gate_nil ctx hc k a (getF_none h hn)] at this
+  cases this
+
+/-- `+gut:by` on a map: the value under the key `k`, or the default `c`. -/
+theorem gut_by {mug : Noun → Nat} (ctx : Noun) (hc : FallIn ctx ∧ SomeIn ctx ∧ GorIn mug ctx)
+    (a k c : Noun) (h : IsMap mug a) :
+    (∀ v, Get a k v →
+      Eval (C by.gut.battery (C (C k c) (C by.battery (C a ctx)))) by.gut.battery v) ∧
+    ((∀ v, ¬ Get a k v) →
+      Eval (C by.gut.battery (C (C k c) (C by.battery (C a ctx)))) by.gut.battery c) := by
+  refine ⟨fun v hg => eval_of_nock ?_, fun hn => eval_of_nock ?_⟩
+  · rw [gut_gate ctx hc k c a _ (getF_some h hg) (Or.inr ⟨v, rfl⟩)]
+    simp
+  · rw [gut_gate ctx hc k c a _ (getF_none h hn) (Or.inl rfl)]
+    simp
 
 end Hoon
 end Formalization
+
+end

@@ -1,5 +1,6 @@
-import lemmas.Fuel
+module
 
+public import lemmas.Fuel
 /-!
 Lean models of the `hoon.hoon` arms behind `+put:by`, as functions on nouns.
 
@@ -10,6 +11,8 @@ what they do to a map.
 `mug` is a parameter.  The proofs need a hash that is a function of the noun
 and nothing else about it.
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Hoon
@@ -76,3 +79,5 @@ inductive IsMap (mug : Noun → Nat) : Noun → Prop where
 
 end Hoon
 end Formalization
+
+end

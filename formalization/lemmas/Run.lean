@@ -1,11 +1,14 @@
-import lemmas.Sound
+module
 
+public import lemmas.Sound
 /-!
 `nock` is the Nock evaluator as a partial function.  It is the same relation
 as `Eval` (`nock_eq_some_iff`), in a form that `simp` can run: each opcode has
 one rewrite rule, and a proof about an arm unfolds the arm's formula once and
 lets those rules execute it on a subject that is partly symbolic.
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Nock
@@ -255,3 +258,5 @@ theorem nock_of_evalFuel {fuel : Nat} {subject formula out : Noun}
 
 end Nock
 end Formalization
+
+end

@@ -1,10 +1,13 @@
-import core.Nock
+module
 
+public import core.Nock
 /-!
 Executable counterparts of the specification in `core/Nock.lean`: `slot?`,
 `edit?` and the fuelled `evalFuel`.  Nothing here is trusted; `Sound.lean`
 proves them against `Slot`, `Edit` and `Eval`.
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Nock
@@ -124,3 +127,5 @@ def evalFuel (fuel : Nat) (subject formula : Noun) : Option Noun :=
 
 end Nock
 end Formalization
+
+end

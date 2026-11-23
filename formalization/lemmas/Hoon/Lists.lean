@@ -1,5 +1,28 @@
-import lemmas.Hoon.Arith
+module
 
+public import lemmas.Hoon.Arith
+public import lemmas.Pill.Arm.Lent
+public import lemmas.Pill.Arm.Weld
+public import lemmas.Pill.Arm.Flop
+public import lemmas.Pill.Arm.Homo
+public import lemmas.Pill.Arm.Snag
+public import lemmas.Pill.Arm.Scag
+public import lemmas.Pill.Arm.Slag
+public import lemmas.Pill.Arm.Turn
+public import lemmas.Pill.Arm.Roll
+public import lemmas.Pill.Arm.Levy
+public import lemmas.Pill.Arm.Lien
+import all lemmas.Pill.Arm.Lent
+import all lemmas.Pill.Arm.Weld
+import all lemmas.Pill.Arm.Flop
+import all lemmas.Pill.Arm.Homo
+import all lemmas.Pill.Arm.Snag
+import all lemmas.Pill.Arm.Scag
+import all lemmas.Pill.Arm.Slag
+import all lemmas.Pill.Arm.Turn
+import all lemmas.Pill.Arm.Roll
+import all lemmas.Pill.Arm.Levy
+import all lemmas.Pill.Arm.Lien
 /-!
 The list arms of the pill's `hoon.hoon`, against `List Noun`:
 
@@ -25,6 +48,8 @@ theorems assume what slamming `b` does on the elements of the list:
 slams `b` on `x`.
 -/
 
+@[expose] public section
+
 namespace Formalization
 namespace Hoon
 
@@ -38,10 +63,6 @@ abbrev HomoIn (c : Noun) : Prop := slot? homo.axis c = some homo.arm
 @[nock_exec] theorem homo_arm (c : Noun) :
     nock c homo.arm = some (C (C (A 0) (A 6)) (C (A 0) c)) := by
   nock_open homo.arm; simp only [nock_exec]
-
-theorem homoIn_layer2 : HomoIn layer2 := homo.arm_at
-
-theorem decIn_below_layer2 : Below DecIn layer2 := decIn_layer1
 
 /-! ## The arms build their gates -/
 
@@ -389,3 +410,5 @@ theorem lien_gate (c bp bs bc : Noun) (p : Noun → Bool) (l : List Noun)
 
 end Hoon
 end Formalization
+
+end

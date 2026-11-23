@@ -17,9 +17,9 @@ is not ported to Lean and no port is trusted.
 
 ```sh
 cd formalization
-tools/capped.sh lake build core                    # 3 s
-tools/capped.sh lake build                         # about 1 minute from scratch, most of it Pill/Nouns.lean
-tools/capped.sh lake env lean lemmas/Audit.lean    # axioms of the main theorems
+tools/capped.sh -m 3G lake build core              # 3 s
+tools/capped.sh -m 3G lake build                   # about 50 s from scratch, 1.6 GB peak
+tools/capped.sh -m 3G lake env lean lemmas/Audit.lean  # axioms of the main theorems
 ```
 
 `tools/capped.sh` runs a command under a memory cap (8 GB unless `-m SIZE`).
@@ -57,22 +57,28 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Exec.lean` | Symbolic execution with `simp only [nock_exec]`, and simprocs that compute `slot?` and `edit?` at a literal axis. |
 | `CueSpec.lean` | `cue` of `core/` checked by the kernel on jams made by `tools/nouns.py`. |
 | `CueWords.lean`, `CueExample.lean` | An earlier `cue` on 32-bit words, built for the kernel, checked on a 150-cell jam. |
-| `Pill/Nouns.lean` | Generated: the pill's noun and the SKA core that the pill builds, 21,812 definitions, with names for the nouns the proofs use. |
-| `Pill/Facts.lean` | Generated, kernel-checked: the pill's formula on its trap evaluates to the core, and the arms sit at their axes.  Each named arm `x` has its axis as the constant `x.axis`, and `x.arm_at : slot? x.axis layer = some x.arm`. |
+| `Pill/Arm/<Family>.lean` | Generated: the named nouns of one arm family (`dec.arm`, `dec.battery`, `dec.loop`, ..., and the axis constant `dec.axis`), as a Lean module whose nouns are public but whose bodies are not exposed. |
+| `Pill/Nouns/P000.lean`, ... | Generated: the rest of the pill's noun and of the SKA core (21,478 definitions named by a hash of their content), as a chain of modules. |
+| `Pill/Facts.lean` | Generated, kernel-checked: the pill's formula on its trap evaluates to the core, and the arms sit at their axes (`x.arm_at`). |
 | `Hoon/Basic.lean` | Flags (`loob`), lists as nouns (`listN`, `appendN`), and `Below`, the predicate on the context of a second-layer arm that reads the first layer. |
 | `Hoon/Dec.lean` | `+dec`: `dec_gate (c) (n) (h : 0 < n) : nock [dec.battery n c] dec.battery = some (n - 1)`, and `(dec 0)` crashes. |
 | `Hoon/Arith.lean` | `+add`, `+sub`, `+mul`, `+lth`, `+lte`, `+gte`, `+gth`, `+max`, `+min`, `+dvr`, `+div`, `+mod` compute their `Nat` operations; `+sub` crashes below zero and `+dvr`, `+div`, `+mod` on a zero divisor. |
+| `Hoon/MugSpec.lean` | `MugSpec`, what the arms that hash need from `+mug`. |
 | `Hoon/Order.lean` | `+dor`, `+gor`, `+mor` compute `dorF`, `gorF`, `morF`, given `MugSpec`. |
 | `Hoon/MapModel.lean` | The Lean models `dorF`, `gorF`, `morF`, `putF`, and the map invariant `IsMap`. |
 | `Hoon/Treap.lean` | Pure Lean: the three orders are total orders, and `putF` inserts into an `IsMap`. |
 | `Hoon/PutBy.lean` | `put_by`: `+put:by` ends on an `IsMap`, keeps the invariant, and holds the new pair and the old pairs under other keys. |
 | `Hoon/Lists.lean` | `+lent`, `+weld`, `+flop`, `+snag`, `+scag`, `+slag` against `List Noun`; `+turn`, `+roll`, `+levy`, `+lien` given what their gate argument computes on the elements. |
-| `Hoon/Maps.lean` | `+get:by` and `+has:by` on an `IsMap`. |
+| `Hoon/Units.lean` | `+need` and `+fall` on units. |
+| `Hoon/Maps.lean` | `+get:by`, `+has:by`, `+got:by`, `+gut:by` on an `IsMap`. |
+| `Hoon/Apt.lean` | `apt_by`: the pill's `+apt:by` says yes exactly on `IsMap` nouns and on the lone nodes `[x ~ ~]` with an atom `x`. |
+| `Hoon/TapBy.lean`, `Hoon/TapIn.lean` | `+tap:by` and `+tap:in` (the same noun): the list of the pairs of a map, of the keys of a set. |
+| `Hoon/Axis.lean` | `+cap`, `+mas`, `+peg`, and what they mean for `slot?` (`slot_pegF`, `slot_cap_mas`). |
 | `Hoon/Sets.lean` | `+put:in` and `+has:in`, with a set read as the map of its keys to `~`. |
 | `Hoon/Bits.lean` | `+bex`, `+lsh`, `+rsh`, `+end`, `+met`, `+cut`, `+cat`, `+can`, and `+mix`, `+dis`, `+con` as `^^^`, `&&&`, `|||`. |
 | `Hoon/Muk.lean` | The arms `sit`, `sum`, `rol` of the door `+fe`, and `+muk` against the model `mukF`. |
 | `Hoon/Mug.lean` | `mug_spec`: `+mug` computes `mugF` on every noun, which proves `MugSpec mugF`. |
-| `Hoon/Layer2.lean` | `+gor`, `+mor` and the map and set theorems on the pill's `layer2` with no assumption. |
+| `Hoon/Layer1.lean`, `Hoon/Layer2.lean` | The pill's layers satisfy the predicates of their arms, and `+gor`, `+mor` and the map and set theorems hold on `layer2` with no assumption.  The only theorem files that import `Facts.lean` and the bulk. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
 Every main theorem depends on `propext`, `Classical.choice` and `Quot.sound`
@@ -120,26 +126,47 @@ python3 tools/pill2lean.py pill/steel.pill lemmas/Pill
 `desk/sys/hoon.hoon` built from nothing and `desk/lib/nock-compilation.hoon`
 on it, by the vere test harness without a ship (`U3NC_STEEL_GEN=out.pill`,
 `U3NC_STEEL_SYS`, `U3NC_STEEL_LIB`).  `pill2lean.py` finds the arms by their
-`%fast` labels, so a new pill needs no edits to the proofs unless the Nock of
-an arm changed.  The axes in `core/Statement.lean` are not regenerated: check
-them after a change to the arms of the last three cores of the library.
+`%fast` labels, and the few arms without one through the arms that call them,
+so a new pill needs no edits to the proofs unless the Nock of an arm changed.
+The axes in `core/Statement.lean` are not regenerated: check them after a
+change to the arms of the last three cores of the library.
+
+## Caching
+
+The generated files and the theorem files are Lean modules.  An arm file
+exports its nouns without their bodies, except the exposed axis constants.
+The arm's own theorem file reads the bodies with `import all`, and its callers
+import only its theorems.  So:
+
+1. A change to the Nock of one arm, after regeneration, changes its arm file
+   only: an arm file is byte-identical when the arm's Nock and axis did not
+   change, and the chain refers to arms by name.  It rechecks the arm file,
+   the arm's theorem file, `Facts.lean` and `Audit.lean`, and nothing else,
+   as long as the arm's theorems still hold.  (Measured by changing a
+   character of the tape in `dec.battery`.)
+2. A change to a declaration of the chain rebuilds the rest of the chain,
+   `Facts.lean` and the layer files, and no gate theorem file.  A comment
+   rebuilds the edited file only.
+3. A clean build takes about 50 seconds and peaks at 1.6 GB.
 
 ## Gaps
 
 1. **Nothing connects to the statements.**  The compiler and the interpreter
    have no Lean models yet, and no proofs.
 2. **The pill is not tied to `root`.**  No theorem says `cue pill = some root`,
-   where `root` is the noun of `lemmas/Pill/Nouns.lean`.  The kernel cannot
+   where `root` is the noun of `lemmas/Pill/Nouns/`.  The kernel cannot
    evaluate `cue` on 792 KB in one piece.  The way through is a proof in
    pieces: a relation `Enc pill pos noun end` with one lemma per definition of
    `Nouns.lean`, each small enough for the kernel, and one general theorem
    that `cue` returns what the relation accepts.
-3. **`IsMap` is not `+apt:by`.**  It is the same invariant stated for every key
-   of a subtree.  That the pill's `+apt` computes it is not proved.
+3. **`IsMap` and `+apt:by` differ on one shape.**  `apt_by` proves that the
+   pill's `+apt:by` accepts exactly the `IsMap` nouns and the lone nodes
+   `[x ~ ~]` with an atom `x`: on a node without bounds and without children
+   `+apt:by` never reads its head.
 4. **Failure is proved for few arms.**  `(dec 0)`, `+sub` below zero,
    `+dvr`, `+div`, `+mod` by zero and `+snag` past the end crash; nothing is
    proved about gates slammed on nouns of the wrong shape, nor about nouns on
    which a model is `none`.
 5. **Not done among the arms of the library:** `+del:by`, `+gas:by`,
-   `+tap:by` and `+apt:by`.  They need new names in `Pill/Nouns.lean`, and
-   compiling that file peaks near 8 GB.
+   `+rep:by`, `+jab:by`, `+uni:by`, the `+ju` and `+ja` doors, and the rest of
+   the usage table in the last report.
