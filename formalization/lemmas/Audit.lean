@@ -41,6 +41,10 @@ import lemmas.Compiler.PokeFrame
 import lemmas.Assembly
 import lemmas.Compiler.TreapKey
 import lemmas.Compiler.Mi
+import lemmas.Compiler.GitMi
+import lemmas.Compiler.HeSock
+import lemmas.Compiler.RecCall
+import lemmas.Compiler.FolLoopLink
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -345,3 +349,19 @@ open Formalization
 #print axioms Compiler.mi_put_gate
 #print axioms Compiler.mi_gut_pill
 #print axioms Compiler.mi_put_pill
+#print axioms Compiler.mi_git_loop
+#print axioms Compiler.mi_git_gate
+#print axioms Compiler.mi_git_pill
+#print axioms Compiler.he_sock_gate
+#print axioms Compiler.he_sock_pill
+#print axioms Compiler.rc_loop
+#print axioms Compiler.recursive_call_gate
+#print axioms Compiler.recursive_call_pill
+#print axioms Compiler.fol_loop_op1
+#print axioms Compiler.fol_loop_op3
+#print axioms Compiler.fol_loop_op4
+#print axioms Compiler.fol_loop_op7
+#print axioms Compiler.fol_loop_op5
+#print axioms Compiler.fol_loop_op12
+#print axioms Compiler.fol_loop_op8
+#print axioms Compiler.fol_loop_op9
