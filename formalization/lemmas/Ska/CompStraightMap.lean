@@ -240,6 +240,157 @@ theorem toStraightF_eq [HoonMapKeys Map] {cond : Map (Nat × List Nat)} (hc : �
     rw [rewriteInputGo_run]
     simp only [Option.bind_some, Bool.true_eq_false, if_false]
 
+/-! ## On a run of inputs the map path is a renaming
+
+When the inputs are a run, as they are when nothing is baked, `+rer` reads
+and writes no state: it renames by `ren` after unproxying.  So the map path
+is the renaming path with the renaming `ren ∘ unproxy`, which is not
+injective: a proxy register and its definition get one name.
+-/
+
+/-- The renaming of the map path on a run of inputs. -/
+def proxRen (cond : Map (Nat × List Nat)) (proxies : Bool) (ren : Nat → Nat) (r : Nat) : Nat :=
+  ren (if proxies then unproxy cond r else r)
+
+theorem pureR_apply {α : Type} (a : α) (st : Nat × Map Nat) : (pure a : RM Map α) st = some (a, st) := rfl
+
+section Stateless
+variable {rr : Nat → RM Map Nat} {f : Nat → Nat} (hr : ∀ a st, rr a st = some (f a, st))
+include hr
+
+theorem mapM_stateless : ∀ (l : List Nat) (st : Nat × Map Nat), l.mapM rr st = some (l.map f, st)
+  | [], st => rfl
+  | a :: l, st => by
+    simp only [List.mapM_cons, bindR_apply, hr, Option.bind_some, mapM_stateless l st, List.map_cons]; rfl
+
+theorem rewriteOp_stateless (p : Pole) (st : Nat × Map Nat) : rewriteOp rr p st = some (renPole f p, st) := by
+  cases p <;> simp only [rewriteOp, renPole, rewritePar, bindR_apply, hr, Option.bind_some, pureR_apply,
+    mapM_stateless hr]
+
+theorem rewriteBody_stateless : ∀ (l : List Pole) (st : Nat × Map Nat),
+    rewriteBody rr l st = some (l.map (renPole f), st)
+  | [], st => rfl
+  | a :: l, st => by
+    unfold rewriteBody
+    simp only [List.mapM_cons, bindR_apply, rewriteOp_stateless hr, Option.bind_some, List.map_cons]
+    have := rewriteBody_stateless l st
+    unfold rewriteBody at this
+    rw [this]; rfl
+
+theorem rewriteArgs_stateless (j : Jmp) (st : Nat × Map Nat) : rewriteArgs rr j st = some (renJmp f j, st) := by
+  rcases j with ⟨args, there⟩
+  unfold rewriteArgs
+  by_cases h : args = []
+  · subst h; rfl
+  · simp only [h, if_false, bindR_apply]
+    have : ∀ (l : List (Option Nat)) st, (l.mapM (fun a => match a with
+        | Option.none => pure Option.none
+        | some r => do let r1 ← rr r; pure (some r1)) : RM Map (List (Option Nat))) st =
+          some (l.map (Option.map f), st) := by
+      intro l
+      induction l with
+      | nil => intro st; rfl
+      | cons a l ih =>
+        intro st
+        cases a <;> simp only [List.mapM_cons, bindR_apply, pureR_apply, hr, Option.bind_some, ih,
+          List.map_cons, Option.map_none, Option.map_some]
+    rw [this]; rfl
+
+theorem rewriteFin_stateless (bs : Map Blob) (fin : Termin) (st : Nat × Map Nat) :
+    rewriteFin rr bs fin st = (chaseFin bs f fin).map fun t => (t, st) := by
+  cases fin with
+  | clq s z o | eqq _ s z o | brn s z o | brz s z o =>
+    simp only [rewriteFin, chaseFin, rewriteJump, liftR, bindR_apply, hr, Option.bind_some]
+    cases chase bs true z <;> cases chase bs true o <;>
+      simp [rewriteArgs_stateless hr, pureR_apply]
+  | hop t =>
+    simp only [rewriteFin, chaseFin, rewriteHop, liftR, bindR_apply]
+    cases chase bs false t <;> simp [rewriteArgs_stateless hr, pureR_apply]
+  | bom x =>
+    cases x with
+    | none => rfl
+    | some x =>
+      simp only [rewriteFin, chaseFin, liftR, bindR_apply]
+      cases chase bs true ⟨[], x⟩ <;> simp [pureR_apply]
+  | lti _ _ _ _ => rfl
+  | _ => simp only [rewriteFin, chaseFin, rewritePar, bindR_apply, hr, mapM_stateless hr, Option.bind_some,
+      pureR_apply, Option.map_some]
+
+theorem rewriteBlob_stateless (bs : Map Blob) (b : Blob) (st : Nat × Map Nat) :
+    rewriteBlob rr bs b st =
+      (chaseFin bs f b.fin).map fun t => (⟨b.par.map f, b.body.map (renPole f), t⟩, st) := by
+  unfold rewriteBlob rewritePar
+  simp only [bindR_apply, mapM_stateless hr, Option.bind_some, rewriteBody_stateless hr,
+    rewriteFin_stateless hr]
+  cases chaseFin bs f b.fin <;> rfl
+
+theorem mapBlocks_stateless [HoonMapKeys Map] (bs : Map Blob) (st : Nat × Map Nat) :
+    mapBlocks rr bs st = renameBlocks bs f := by
+  unfold mapBlocks renameBlocks
+  suffices H : ∀ (ks : List Nat) (acc : Option (Map Blob)),
+      (ks.foldl (fun acc k => acc.bind fun (new, st) =>
+        (HoonMap.get bs k).bind fun b =>
+          if k ≠ 0 ∧ bypassable true b then some (new, st) else
+          (rewriteBlob rr bs b st).map fun (b1, st1) => (HoonMap.put new k b1, st1))
+        (acc.map fun m => (m, st))) =
+      (ks.foldl (fun acc k => acc.bind fun new =>
+        (HoonMap.get bs k).bind fun b => (keepBlock bs f k b).map fun kb =>
+          match kb with
+          | Option.none => new
+          | some b1 => HoonMap.put new k b1) acc).map fun m => (m, st) by
+    have := H (HoonMapKeys.keys bs) (some HoonMap.empty)
+    simp only [Option.map_some] at this
+    rw [this, Option.map_map]
+    simp only [Function.comp_def, Option.map_id']
+    rfl
+  intro ks
+  induction ks with
+  | nil => intro acc; rfl
+  | cons k ks ih =>
+    intro acc
+    simp only [List.foldl_cons]
+    rw [← ih]
+    congr 1
+    cases acc with
+    | none => rfl
+    | some m =>
+      simp only [Option.map_some, Option.bind_some]
+      cases HoonMap.get bs k with
+      | none => rfl
+      | some b =>
+        simp only [Option.bind_some, keepBlock]
+        by_cases e : k ≠ 0 ∧ bypassable true b = true
+        · rw [if_pos e, if_pos e]; rfl
+        · rw [if_neg e, if_neg e, rewriteBlob_stateless hr]
+          cases chaseFin bs f b.fin <;> rfl
+
+end Stateless
+
+theorem rer_run (cond : Map (Nat × List Nat)) (proxies : Bool) (ren : Nat → Nat) (r : Nat) (st : Nat × Map Nat) :
+    rer cond proxies true ren r st = some (proxRen cond proxies ren r, st) := rfl
+
+/-- **On a run of inputs, `+to-straight` is the renaming path with each
+proxy register renamed as its definition.** -/
+theorem toStraightF_run [HoonMapKeys Map] (cond : Map (Nat × List Nat)) (blocks : Map Blob) {ned : Need} (o : Nat)
+    (hrun : isRun (flattenNeed ned) ((flattenNeed ned).headD 0) 0 = true) :
+    toStraightF cond blocks ned o = (HoonMap.get blocks o).bind fun start =>
+      (renameBlocks (HoonMap.put (HoonMap.del blocks o) 0 start)
+        (proxRen cond (hasProxies cond) (renReg ((flattenNeed ned).headD 0) (flattenNeed ned).length))).map
+        fun new => ⟨needToOrd ned, countArgs (needToOrd ned), new⟩ := by
+  unfold toStraightF
+  simp only [hrun, Bool.true_and]
+  cases HoonMap.get blocks o with
+  | none => rfl
+  | some start =>
+    simp only [Option.bind_some, rewriteInput, if_true]
+    rw [rewriteInputGo_run]
+    simp only [Option.bind_some]
+    cases hp : hasProxies cond
+    · simp only [Bool.not_false, if_true]
+      congr 1
+    · simp only [Bool.not_true, Bool.false_eq_true, if_false]
+      rw [mapBlocks_stateless (rer_run cond true _)]
+
 end Comp
 end SkaModel
 end Formalization

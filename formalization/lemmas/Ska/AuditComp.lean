@@ -123,3 +123,5 @@ open Formalization.SkaModel.Comp
 #print axioms mergeForks_fresh
 #print axioms mergeBonds_fresh
 #print axioms copyLazyL_apart
+#print axioms mapBlocks_stateless
+#print axioms toStraightF_run
