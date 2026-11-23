@@ -630,7 +630,7 @@ theorem eval_pole_le (cr : Noun) (hc : CorIn cr) (lib : Lib) (hslam : SlamIsNock
 /-- The tags of the ends of a block, for the dispatch of `+eval-blob`. -/
 macro "blob_simp" "[" ts:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(tactic|
   (nock_open eval_blob.battery
-   simp [nock_exec, Blob.toNoun, Termin.toNoun, Jmp.toNoun, Tag.lti, Tag.clq, Tag.eqq, Tag.brn,
+   simp [nock_exec, Tag.lti, Tag.clq, Tag.eqq, Tag.brn,
      Tag.brz, Tag.hop, Tag.jmp, Tag.jmf, Tag.jsp, Tag.jsf, Tag.don, Tag.bom, argsN, listNoun,
      $ts,*]))
 
@@ -670,6 +670,76 @@ theorem eval_blob_loop (cr : Noun) (hc : CorIn cr) (p an : Noun) (regs : TreapMa
       simp [nock_exec, listNoun, hrd, read_arm, hrm, e, hl2, by.arm_at, by_arm, by.put.arm_at,
         put_arm, put_gate layer2 ⟨hgor, hmor⟩ _ _ _ _ hput, ih, List.mapM_cons]
       cases List.mapM (fun x => SkaModel.read x regs) v <;> simp [regsFrom]
+
+set_option maxHeartbeats 8000000 in
+/-- `%jmp` at the end of a block: poke `%dire`, put the arguments in registers
+`0 ..` and run block `0` of the callee, whose result is the block's. -/
+theorem eval_blob_jmp_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
+    (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
+    (Ob : Oracle Noun) (hOb : BlobLe lib Ob) (O : Oracle Noun) (hcall : CallLe lib pk Ob O)
+    (s : Straight (TreapMap mugF)) (scry : Noun) (a : Bell) (v : List Nat)
+    (regs : TreapMap mugF Noun) (trace : Trace) (r : Tone × Noun)
+    (h : (v.mapM (SkaModel.read · regs)).bind (fun vs => O.call cr a false vs trace scry) = some r) :
+    nock (blobS cr regs trace ⟨[], [], Termin.jmp a v⟩ s [] scry) eval_blob.battery
+      = some (resN r) ∧ CorIn r.2 := by
+  obtain ⟨vs, e2, e3⟩ := Option.bind_eq_some_iff.1 h
+  obtain ⟨b, c, new, cr', b0, e1, e4, e5⟩ := callBody_some (hcall _ _ _ _ _ _ _ e3)
+  have hc' := hpk.2 _ _ e1
+  obtain ⟨hB, hC⟩ := hOb cr' hc' _ _ _ _ _ _ _ e5
+  refine ⟨?_, hC⟩
+  have hp := hpk.1 (Ovum.dire a false)
+  simp only [pokeN, poke.axis, Ovum.toNoun, flag, Bool.false_eq_true, if_false, Tag.dire, e1,
+    Option.map_some] at hp
+  have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'
+  simp only [read.layer2.axis, icore, nock_exec] at hl2
+  have hloop := eval_blob_loop cr' hc' (SkaModel.Prod.toNoun (SkaModel.Prod.ir b c new)) a.toNoun
+    regs (listNoun Frame.toNoun trace) s.toNoun scry v 0 HoonMap.empty
+  rw [e2, Option.map_some] at hloop
+  rw [show regsFrom 0 vs HoonMap.empty = regsOf vs from rfl] at hloop
+  simp only [SkaModel.Prod.toNoun, Tag.ir, Tag.jmp, icore, HoonMap.toNoun_empty, Straight.toNoun]
+    at hloop
+  have hg := getF_hoonMap Blob.toNoun c.blocks 0
+  rw [e4] at hg
+  simp only [blobS, icore, Straight.toNoun, argsN, listNoun] at hB
+  simp only [blobS, Blob.toNoun, Termin.toNoun, listNoun]
+  blob_simp [hp, hloop, SkaModel.Prod.toNoun, Straight.toNoun, Tag.ir, hl2, by.arm_at, by_arm,
+    by.got.arm_at, got_arm, got_gate layer2 ⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩ _ _ _ hg,
+    unitNoun, eval_blob.arm, hB]
+
+set_option maxHeartbeats 8000000 in
+/-- `%jsp` at the end of a block: poke `%dire` for a call whose subject goes
+whole, in register `0`, and run block `0` of the callee. -/
+theorem eval_blob_jsp_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
+    (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
+    (Ob : Oracle Noun) (hOb : BlobLe lib Ob) (O : Oracle Noun) (hcall : CallLe lib pk Ob O)
+    (s : Straight (TreapMap mugF)) (scry : Noun) (a : Bell) (sr : Nat)
+    (regs : TreapMap mugF Noun) (trace : Trace) (r : Tone × Noun)
+    (h : (SkaModel.read sr regs).bind (fun vs => O.call cr a true [vs] trace scry) = some r) :
+    nock (blobS cr regs trace ⟨[], [], Termin.jsp a sr⟩ s [] scry) eval_blob.battery
+      = some (resN r) ∧ CorIn r.2 := by
+  obtain ⟨vs, e2, e3⟩ := Option.bind_eq_some_iff.1 h
+  obtain ⟨b, c, new, cr', b0, e1, e4, e5⟩ := callBody_some (hcall _ _ _ _ _ _ _ e3)
+  have hc' := hpk.2 _ _ e1
+  obtain ⟨hB, hC⟩ := hOb cr' hc' _ _ _ _ _ _ _ e5
+  refine ⟨?_, hC⟩
+  have hp := hpk.1 (Ovum.dire a true)
+  simp only [pokeN, poke.axis, Ovum.toNoun, flag, if_true, Tag.dire, e1,
+    Option.map_some] at hp
+  have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'
+  simp only [read.layer2.axis, icore, nock_exec] at hl2
+  have hpi' := evalPoleIn_icore hc'
+  obtain ⟨_, hrd', _, hrc'⟩ := hpi'
+  have hrm := read_model (icore cr') hrc'
+  simp only [read.axis, icore, nock_exec] at hrd'
+  have hreg : HoonMap.toNoun id (regsOf [vs] : TreapMap mugF Noun)
+      = C (C (A 0) vs) (C (A 0) (A 0)) := rfl
+  have hg := getF_hoonMap Blob.toNoun c.blocks 0
+  rw [e4] at hg
+  simp only [blobS, icore, Straight.toNoun, argsN, listNoun, hreg] at hB
+  simp only [blobS, Blob.toNoun, Termin.toNoun, listNoun]
+  blob_simp [hp, hrd', read_arm, hrm, e2, SkaModel.Prod.toNoun, Straight.toNoun, Tag.ir, hl2, by.arm_at, by_arm,
+    by.got.arm_at, got_arm, got_gate layer2 ⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩ _ _ _ hg,
+    unitNoun, eval_blob.arm, hB]
 
 end Compiler
 end Formalization
