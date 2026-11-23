@@ -482,6 +482,137 @@ theorem touchFold_spec (E : BEnv M) (cur : Bell) (new : M Bell (List Sock)) :
         · rw [F6, S6 e]
         · rw [F6, (S1 E.root (fun h => e h.symm)).2]
 
+/-! ## The worklist's invariant -/
+
+/-- The invariant of the worklist: the root keeps its code requirement, every
+queued function is on the list, every site that a callee's `inn` records
+fits the callee's bake, and every function that is not queued has the sites
+of its current bake recorded in the `inn` of their callees. -/
+structure LoopInv (E : BEnv M) (q : List Bell) (qs : M Bell Unit) (st : BSt M) : Prop where
+  root : Treap.get st.bak E.root = some E.root.less
+  queued : ∀ c, Treap.has qs c = true → c ∈ q
+  inn : ∀ b, b ≠ E.root → ∀ c ks, Treap.get (Treap.gut st.inn b Treap.empty) c = some ks →
+    ∀ k ∈ ks, GoodSite st b k
+  sites : ∀ c, Treap.has qs c = false → ∀ sites, sitesOf E st c = some sites →
+    ∀ b k, (b, k) ∈ sites → pick E.vars b k = some none →
+      b = E.root ∨ ∃ ks, Treap.get (Treap.gut st.inn b Treap.empty) c = some ks ∧ k ∈ ks
+
+theorem sitesOf_eq {E : BEnv M} {st st' : BSt M} {c : Bell} (h : Treap.get st'.bak c = Treap.get st.bak c) :
+    sitesOf E st' c = sitesOf E st c := by
+  unfold sitesOf; rw [h]
+
+theorem loopInv_init (E : BEnv M) : LoopInv E [E.root] (Treap.put Treap.empty E.root ()) (bakeInit E) where
+  root := by simp [bakeInit, Treap.get_put]
+  queued := fun c h => by
+    rw [has_iff] at h
+    obtain ⟨_, h⟩ := h
+    simp only [Treap.get_put, Treap.get_empty] at h
+    split at h
+    · rename_i e; exact e ▸ List.mem_singleton_self _
+    · cases h
+  inn := fun b _ c ks h => by simp [bakeInit, Treap.gut, Treap.get_empty] at h
+  sites := fun c hq sites h => by
+    have hc : c ≠ E.root := fun e => by subst e; simp [Treap.has, Treap.get_put] at hq
+    simp [sitesOf, bakeInit, Treap.get_put, Treap.get_empty, hc] at h
+
+theorem not_mem_of_has {qs : M Bell Unit} {fresh : List Bell} {c : Bell}
+    (h : Treap.has (gasIn qs fresh) c = false) : Treap.has qs c = false ∧ c ∉ fresh := by
+  constructor
+  · cases hh : Treap.has qs c
+    · rfl
+    · exact absurd ((has_gasIn qs fresh c).mpr (Or.inl hh)) (by simp [h])
+  · intro hm
+    exact absurd ((has_gasIn qs fresh c).mpr (Or.inr hm)) (by simp [h])
+
+/-- **One evaluation keeps the invariant.** -/
+theorem bakeStep_inv {E : BEnv M} {cur : Bell} {rest q' : List Bell} {qs qs' : M Bell Unit} {st st' : BSt M}
+    (hI : LoopInv E (cur :: rest) qs st) (h : bakeStep E cur rest qs st = some (q', qs', st')) :
+    LoopInv E q' qs' st' := by
+  simp only [bakeStep, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  obtain ⟨sites, hsites, new, hnew, ⟨changed, st3⟩, hfold, he⟩ := h
+  simp only [Prod.mk.injEq] at he
+  obtain ⟨rfl, rfl, rfl⟩ := he
+  obtain ⟨F1, F2, F3, F4, -, F6⟩ := touchFold_spec E cur new _ [] changed _ st3 hfold
+  have hN := (newFold_spec E.vars sites Treap.empty new hnew).2
+  -- the touched callees are those `cur` calls now or called before
+  have hL : ∀ b ks, Treap.get new b = some ks →
+      b ∈ (Treap.tap (uniIn (Treap.gut st.out cur Treap.empty) (keySet new))).map Prod.fst := by
+    intro b ks hb
+    rw [mem_tap_keys, has_uniIn]
+    exact Or.inr ((has_keySet new b).mpr ⟨ks, hb⟩)
+  refine ⟨?_, fun c hc => ?_, fun b hb c ks hks k hk => ?_, fun c hq sites' hs' b k hm hp => ?_⟩
+  · rw [F6]; exact hI.root
+  · rcases (has_gasIn _ _ c).mp hc with hc | hc
+    · obtain ⟨hc, hne⟩ := (has_del qs cur c).mp hc
+      rcases List.mem_cons.mp (hI.queued c hc) with e | e
+      · exact absurd e hne
+      · exact List.mem_append_left _ e
+    · exact List.mem_append_right _ hc
+  · by_cases hbL : b ∈ (Treap.tap (uniIn (Treap.gut st.out cur Treap.empty) (keySet new))).map Prod.fst
+    · exact F3 b hbL hb c ks hks k hk
+    · rw [gut_eq_of_get (F1 b hbL).1] at hks
+      exact goodSite_of_bak (F1 b hbL).2 (hI.inn b hb c ks hks k hk)
+  · obtain ⟨hq1, hq2⟩ := not_mem_of_has hq
+    have hbak : Treap.get st3.bak c = Treap.get st.bak c := by
+      by_cases hne : Treap.get st3.bak c = Treap.get st.bak c
+      · exact hne
+      · exact absurd (List.mem_filter.mpr ⟨F4 c hne, by simp [hq1]⟩) hq2
+    rw [sitesOf_eq hbak] at hs'
+    have hinnEq : ∀ c', c' ≠ cur → Treap.get (Treap.gut st3.inn b Treap.empty) c' =
+        Treap.get (Treap.gut st.inn b Treap.empty) c' := by
+      intro c' hc'
+      by_cases hbL : b ∈ (Treap.tap (uniIn (Treap.gut st.out cur Treap.empty) (keySet new))).map Prod.fst
+      · rw [F2 b hbL, innUpd_other new b _ hc']
+      · rw [gut_eq_of_get (F1 b hbL).1]
+    by_cases e : c = cur
+    · subst e
+      rw [hsites] at hs'
+      cases hs'
+      obtain ⟨ks, hks, hk⟩ := hN b k hm hp
+      refine Or.inr ⟨ks, ?_, hk⟩
+      rw [F2 b (hL b ks hks)]
+      exact innUpd_cur new c b _ hks
+    · have hq0 : Treap.has qs c = false := by
+        cases hh : Treap.has qs c
+        · rfl
+        · exact absurd ((has_del qs cur c).mpr ⟨hh, e⟩) (by simp [hq1])
+      rcases hI.sites c hq0 sites' hs' b k hm hp with hr | ⟨ks, hks, hk⟩
+      · exact Or.inl hr
+      · exact Or.inr ⟨ks, by rw [hinnEq c e]; exact hks, hk⟩
+
+theorem bakeLoop_inv (E : BEnv M) :
+    ∀ (n : Nat) (q : List Bell) (qs : M Bell Unit) (st st' : BSt M), LoopInv E q qs st →
+      bakeLoop E n q qs st = some st' → ∃ qs', LoopInv E [] qs' st'
+  | 0, _, _, _, _, _, h => by simp [bakeLoop] at h
+  | n + 1, [], qs, st, st', hI, h => by
+    simp only [bakeLoop, Option.some.injEq] at h
+    subst h; exact ⟨qs, hI⟩
+  | n + 1, cur :: rest, qs, st, st', hI, h => by
+    simp only [bakeLoop, Option.bind_eq_some_iff] at h
+    obtain ⟨⟨q', qs', st1⟩, h1, h2⟩ := h
+    exact bakeLoop_inv E n q' qs' st1 st' (bakeStep_inv hI h1) h2
+
+/-- **The fixed point of the worklist**: when it ends, every site of every
+function under its bake that `+pick` sends to no existing variant has a bake
+for its callee that every subject fitting both the callee's code requirement
+and the site's sock fits. -/
+theorem bakeLoop_sound {E : BEnv M} {n : Nat} {st : BSt M}
+    (h : bakeLoop E n [E.root] (Treap.put Treap.empty E.root ()) (bakeInit E) = some st) :
+    ∀ c sites, sitesOf E st c = some sites → ∀ b k, (b, k) ∈ sites → pick E.vars b k = some none →
+      GoodSite st b k := by
+  obtain ⟨qs, hI⟩ := bakeLoop_inv E n _ _ _ st (loopInv_init E) h
+  intro c sites hs b k hm hp
+  have hq : Treap.has qs c = false := by
+    cases hh : Treap.has qs c
+    · rfl
+    · exact absurd (hI.queued c hh) (List.not_mem_nil)
+  rcases hI.sites c hq sites hs b k hm hp with hr | ⟨ks, hks, hk⟩
+  · subst hr
+    exact ⟨_, hI.root, fun y hy _ => hy⟩
+  · by_cases hr : b = E.root
+    · subst hr; exact ⟨_, hI.root, fun y hy _ => hy⟩
+    · exact hI.inn b hr c ks hks k hk
+
 end Bake
 
 end SkaModel
