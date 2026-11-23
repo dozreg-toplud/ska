@@ -1,6 +1,8 @@
-import core.Nock
-import core.Cue
-import core.Pill
+module
+
+public import core.Nock
+public import core.Cue
+public import core.Pill
 
 /-!
 # The statements
@@ -35,6 +37,8 @@ The statements:
 
 Nothing is proved here.
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Ska
