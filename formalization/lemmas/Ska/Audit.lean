@@ -113,3 +113,4 @@ open Formalization.SkaModel
 #print axioms rtab_of_answers
 #print axioms codeOK_of_converged
 #print axioms converged_agree
+#print axioms prodRel_of_rtab

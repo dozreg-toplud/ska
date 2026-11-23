@@ -342,5 +342,32 @@ theorem converged_agree {lib : Lib} {code : Bell → Option Nomm} {tab : Tab} {G
   rw [hn]
   exact nomm_agree lib gul code hok (folLoop_wantSound hT (hwf e he) h) hx t r
 
+/-! ## Where `ProdRel` comes from -/
+
+/-- An entry made by a converged run whose product did not move: its
+product sock and provenance are those of the run. -/
+def RunEntryP (tab : Tab) (e : Entry) : Prop :=
+  ∃ n out gen', folLoopTop tab n e.more e.fol = some (out, gen') ∧
+    e.d.nomm = out.nomm ∧ e.d.less = Ca.app gen'.want e.more ∧
+    e.d.prod = out.prod.sock ∧ e.d.map = out.prod.src
+
+theorem RunEntryP.run {tab : Tab} {e : Entry} (h : RunEntryP tab e) : RunEntry tab e :=
+  let ⟨n, out, gen', h1, h2, h3, _⟩ := h
+  ⟨n, out, gen', h1, h2, h3⟩
+
+/-- **`ProdRel` from a table that is right relative to its call sites.**
+At convergence the table's `exact` answers are the entries themselves, so
+this and `rtab_of_answers` only show that `ProdRel` and `RTab` follow from
+each other; breaking the circle is the induction on the runs of `+mink`
+that `ProdRel` still needs. -/
+theorem prodRel_of_rtab {lib : Lib} {code : Bell → Option Nomm} {tab : Tab} {G : Entry → Prop}
+    (hT : RTab lib code tab) (hr : ∀ e, G e → RunEntryP tab e) (hwf : ∀ e, G e → WellFormed e.more) :
+    ProdRel lib G := by
+  intro e he y gul p hy hm
+  obtain ⟨n, out, gen', h, _, hl, hp, hmap⟩ := hr e he
+  rw [hl] at hy
+  rw [hp, hmap]
+  exact folLoop_relProd hT (hwf e he) h hy hm
+
 end SkaModel
 end Formalization
