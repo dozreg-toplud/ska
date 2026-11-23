@@ -26,11 +26,15 @@ open Nock Pill SkaModel Hoon
 /-- The interpreter core with the compiler's core `cr` as its tail. -/
 abbrev icore (cr : Noun) : Noun := C interp.battery cr
 
-/-- What the interpreter's arms read through the compiler's core: layer 2. -/
-def CorIn (cr : Noun) : Prop := slot? read.layer2.axis (icore cr) = some layer2
+/-- What the interpreter's arms read through the compiler's core: layer 2 at
+`read.layer2.axis` of the interpreter core, and layer 4 (where `+eval-top`
+pulls `+mink`) two cores above it. -/
+def CorIn (cr : Noun) : Prop :=
+  slot? read.layer2.axis (icore cr) = some layer2 ∧
+    slot? (read.layer2.axis / 4) (icore cr) = some layer4
 
 theorem regsIn_icore {cr : Noun} (h : CorIn cr) : RegsIn mugF (icore cr) :=
-  ⟨layer2, h, by.arm_at, need.arm_at, someIn_layer2, gorIn_morIn_layer2.1, gorIn_morIn_layer2.2⟩
+  ⟨layer2, h.1, by.arm_at, need.arm_at, someIn_layer2, gorIn_morIn_layer2.1, gorIn_morIn_layer2.2⟩
 
 
 theorem evalPoleIn_icore {cr : Noun} (h : CorIn cr) : EvalPoleIn (icore cr) := by
@@ -102,7 +106,7 @@ theorem eval_pole_nok (cr : Noun) (hc : CorIn cr) (lib : Lib) (O : Oracle Noun) 
     have hc' := hgood vu vf _ e1 e2 e3
     rw [e3] at ht
     have hsm := store_model (icore cr') (regsIn_icore hc')
-    have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'
+    have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
     simp only [read.layer2.axis, icore, nock_exec] at hl2
     rcases ton with p | b | tr
     · nock_open eval_pole.battery
@@ -163,7 +167,7 @@ theorem eval_pole_loop (cr : Noun) (hc : CorIn cr) (p an : Noun) (d : Nat) (regs
   have hpi := evalPoleIn_icore hc
   obtain ⟨_, hrd, _, hrc⟩ := hpi
   have hld := eval_pole_load (icore cr) hrd hrc regs
-  have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc
+  have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc.1
   simp only [read.layer2.axis, icore, nock_exec] at hl2
   obtain ⟨hgor, hmor⟩ := gorIn_morIn_layer2
   intro v
@@ -193,7 +197,7 @@ theorem corIn_facts {cr : Noun} (hc : CorIn cr) :
       nock (C store.battery (C (C (A r) (C v (HoonMap.toNoun id regs))) (icore cr))) store.battery
         = some (HoonMap.toNoun id (SkaModel.store r v regs))) ∧
     slot? read.layer2.axis (icore cr) = some layer2 :=
-  ⟨store_model (icore cr) (regsIn_icore hc), hc⟩
+  ⟨store_model (icore cr) (regsIn_icore hc), hc.1⟩
 
 set_option maxHeartbeats 8000000 in
 /-- `+eval-pole` on `%cal`: poke `%dire`, put the arguments in registers
@@ -223,7 +227,7 @@ theorem eval_pole_cal (cr : Noun) (hc : CorIn cr) (lib : Lib)
   rw [e1] at hp
   have hpi := evalPoleIn_icore hc'
   obtain ⟨_, hrd, _, hrc⟩ := hpi
-  have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'
+  have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
   simp only [read.layer2.axis, icore, nock_exec] at hl2
   have hneed : NeedIn layer2 := need.arm_at
   have hsome := someIn_layer2
@@ -313,7 +317,7 @@ theorem eval_pole_csl (cr : Noun) (hc : CorIn cr) (lib : Lib)
   rw [e1] at hp
   have hpi := evalPoleIn_icore hc'
   obtain ⟨_, hrd, _, hrc⟩ := hpi
-  have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'
+  have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
   simp only [read.layer2.axis, icore, nock_exec] at hl2
   have hneed : NeedIn layer2 := need.arm_at
   have hsome := someIn_layer2
@@ -440,7 +444,7 @@ theorem eval_pole_gate (cr : Noun) (hc : CorIn cr) (lib : Lib) (hslam : SlamIsNo
       = (execPole lib ⟨callBody lib pk Ob, nk⟩ scry cr pole regs trace).map poleOutS := by
   have hcor : slot? 3 (icore cr) = some cr := by simp [nock_exec]
   have hpi := evalPoleIn_icore hc
-  have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc
+  have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc.1
   cases pole with
   | nok u f d =>
     exact eval_pole_nok cr hc lib _ scry u f d regs trace (fun vu vf _ _ => htop.1 vu vf)
@@ -592,7 +596,7 @@ theorem eval_pole_le (cr : Noun) (hc : CorIn cr) (lib : Lib) (hslam : SlamIsNock
       CorIn r.2.2.2 := by
   have hcor : slot? 3 (icore cr) = some cr := by simp [nock_exec]
   have hpi := evalPoleIn_icore hc
-  have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc
+  have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc.1
   have loc : ∀ (e : nock (poleS cr pole regs trace scry) eval_pole.battery
       = (localPole lib scry pole regs trace).map (poleOut cr)),
       execPole lib O scry cr pole regs trace = (localPole lib scry pole regs trace).map
@@ -647,7 +651,7 @@ theorem eval_blob_loop (cr : Noun) (hc : CorIn cr) (p an : Noun) (regs : TreapMa
   have hpi := evalPoleIn_icore hc
   obtain ⟨_, hrd, _, hrc⟩ := hpi
   have hrm := read_model (icore cr) hrc
-  have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc
+  have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc.1
   simp only [read.layer2.axis, icore, nock_exec] at hl2
   simp only [read.axis, icore, nock_exec] at hrd
   obtain ⟨hgor, hmor⟩ := gorIn_morIn_layer2
@@ -690,7 +694,7 @@ theorem eval_blob_jmp_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
   have hp := hpk.1 (Ovum.dire a false)
   simp only [pokeN, poke.axis, Ovum.toNoun, flag, Bool.false_eq_true, if_false, Tag.dire, e1,
     Option.map_some] at hp
-  have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'
+  have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
   simp only [read.layer2.axis, icore, nock_exec] at hl2
   have hloop := eval_blob_loop cr' hc' (SkaModel.Prod.toNoun (SkaModel.Prod.ir b c new)) a.toNoun
     regs (listNoun Frame.toNoun trace) s.toNoun scry v 0 HoonMap.empty
@@ -725,7 +729,7 @@ theorem eval_blob_jsp_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
   have hp := hpk.1 (Ovum.dire a true)
   simp only [pokeN, poke.axis, Ovum.toNoun, flag, if_true, Tag.dire, e1,
     Option.map_some] at hp
-  have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'
+  have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
   simp only [read.layer2.axis, icore, nock_exec] at hl2
   have hpi' := evalPoleIn_icore hc'
   obtain ⟨_, hrd', _, hrc'⟩ := hpi'
@@ -771,9 +775,9 @@ theorem eval_blob_le (lib : Lib) (hslam : SlamIsNock lib)
   have hpi := evalPoleIn_icore hc
   obtain ⟨hmv, hrd, _, hrc⟩ := hpi
   have hrm := read_model (icore st) hrc
-  have hl1 := slot_tail_of (hc : slot? read.layer2.axis (icore st) = some layer2) layer2_layer1
-  have hl2 : slot? read.layer2.axis (icore st) = some layer2 := hc
-  have hep := eval_pass_gate (icore st) ⟨hmv, ⟨hrd, ‹_›, hrc⟩, layer2, hc, levy.arm_at, lien.arm_at⟩
+  have hl1 := slot_tail_of hc.1 layer2_layer1
+  have hl2 : slot? read.layer2.axis (icore st) = some layer2 := hc.1
+  have hep := eval_pass_gate (icore st) ⟨hmv, ⟨hrd, ‹_›, hrc⟩, layer2, hc.1, levy.arm_at, lien.arm_at⟩
   simp only [read.layer2.axis, icore, Nat.reduceMul, Nat.reduceAdd] at hl1
   simp only [nock_exec] at hl1
   simp only [read.layer2.axis, icore, nock_exec] at hl2
