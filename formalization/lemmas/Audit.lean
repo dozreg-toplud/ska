@@ -43,6 +43,7 @@ import lemmas.Compiler.TreapKey
 import lemmas.Compiler.Mi
 import lemmas.Compiler.GitMi
 import lemmas.Compiler.HeSock
+import lemmas.Compiler.RecCall
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -352,3 +353,6 @@ open Formalization
 #print axioms Compiler.mi_git_pill
 #print axioms Compiler.he_sock_gate
 #print axioms Compiler.he_sock_pill
+#print axioms Compiler.rc_loop
+#print axioms Compiler.recursive_call_gate
+#print axioms Compiler.recursive_call_pill
