@@ -7,7 +7,7 @@ import lemmas.Ska.CompSixNextCond
 registers (`NCopy`), a join block `barg` whose parameters are the registers
 of `ned` and which hops to the goal's block, and the blocks `o0` and `o1`,
 which hop to `barg` passing the registers of `n0` and of `n1`
-(`forkNeed_spec`).  Every argument is `some r`, so `+eval-pass` deletes
+(`forkNeed_spec`).  Every argument is `some r`, so `+eval-pass` poisons
 nothing: entering `o0` with `n0` holding a noun enters the goal's block with
 `ned` holding it and every other register unchanged (`goJ_fork`).
 -/
