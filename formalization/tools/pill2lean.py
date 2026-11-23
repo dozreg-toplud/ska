@@ -706,6 +706,39 @@ def main():
     name(cmp, 'sort.cmp')
     formulas.add(cmp)
 
+    # ---- layers 3 and 4 of hoon.hoon, and +mink with the arms of its |^ core:
+    # the loop `$` and the gates `frag` and `edit`
+    (mink_a,) = arms_of('mink')
+    l4 = [i for i in live if type(NODES[i]) is tuple and type(NODES[head(i)]) is tuple
+          and type(NODES[tail(i)]) is tuple and tail(tail(i)) == layer2]
+    l4 = [i for i in l4 if type(NODES[head(i)]) is tuple and mink_a in reach([head(i)])]
+    (layer4,) = l4
+    layer3 = tail(layer4)
+    assert tail(layer3) == layer2
+    names.update({layer3: 'layer3', layer4: 'layer4'})
+    facts.append(('layer4_layer3', 'slot? 3 layer4 = some layer3'))
+    facts.append(('layer3_layer2', 'slot? 3 layer3 = some layer2'))
+    mink_a = arm('mink', layer4, 'layer4', loops=None)
+    # the layer of +cap and +mas, which `frag` and `edit` read
+    axes.append(('mink.layer1', 15, 'slot? mink.layer1.axis layer4 = some layer1'))
+    assert tail(tail(tail(layer4))) == layer1
+    g = gate_battery(mink_a)
+    # [8 [1 0] [8 [1 battery] [9 11 0 1]]]: =| trace, then the |^ core
+    assert NODES[head(g)] == 8 and tail(head(tail(g))) == atom(0)
+    x = tail(tail(g))
+    assert tail(tail(x)) == cell(atom(9), cell(atom(11), cell(atom(0), atom(1))))
+    mbat = tail(head(tail(x)))
+    name(mbat, 'mink.core')
+    name(tail(tail(mbat)), 'mink.loop')
+    formulas.add(tail(tail(mbat)))
+    for lab, a in (('frag', head(mbat)), ('edit', head(tail(mbat)))):
+        name(a, 'mink.%s.arm' % lab)
+        formulas.add(a)
+        gb = door_gate_battery(a)
+        name(gb, 'mink.%s.battery' % lab)
+        formulas.add(gb)
+        name_loops('mink.' + lab, gb, 'any')
+
     # ---- the compiler's leaf cores +ca and +so: arms of the library core,
     # [[1 battery] [11 [%fast [1 [label [0 511] 0]]] [0 1]]], whose own arms
     # carry %fast labels except for a few
@@ -745,7 +778,8 @@ def main():
     # to that name.
     unlabeled = {'ca': {95: 'lot', 171: 'lack', 87: 'dif'}, 'so': {4: 'jibe'}}
     bulk_named = set(i for i, nm in names.items() if nm.split('.')[0] in
-                     ('root', 'nok', 'trap', 'core', 'layer0', 'layer1', 'layer2'))
+                     ('root', 'nok', 'trap', 'core', 'layer0', 'layer1', 'layer2',
+                      'layer3', 'layer4'))
     in_bulk = []
     for clabel in ['ca', 'so']:
         carm, cbat = core_label_arm(clabel)
@@ -843,7 +877,7 @@ def main():
 # content, in which a named noun counts by its name, so a region that did not
 # change regenerates to the same text.
 
-BULK = {'root', 'nok', 'trap', 'core', 'layer0', 'layer1', 'layer2', 'lib'}
+BULK = {'root', 'nok', 'trap', 'core', 'layer0', 'layer1', 'layer2', 'layer3', 'layer4', 'lib'}
 IN_BULK = set()      # names of other families that belong to the bulk
 
 CHUNK_MIN = 1000     # bulk definitions per chain file, at least

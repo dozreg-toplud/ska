@@ -57,6 +57,11 @@ theorem Below.elim {P : Noun → Prop} {c : Noun} (h : Below P c) :
   | atom _ => exact absurd h id
   | cell bat t => exact ⟨bat, t, rfl, h⟩
 
+/-- A unit: `~` or `[~ u]`. -/
+def unitN : Option Noun → Noun
+  | none => A 0
+  | some u => C (A 0) u
+
 /-! ## Lists -/
 
 /-- `l` followed by the noun `t`: `[l_0 l_1 ... t]`. -/

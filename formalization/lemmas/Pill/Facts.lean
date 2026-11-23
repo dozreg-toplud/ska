@@ -2,7 +2,7 @@ module
 
 public import lemmas.Sound
 public import lemmas.KernelRfl
-public import lemmas.Pill.Nouns.P014
+public import lemmas.Pill.Nouns.P015
 public import lemmas.Pill.Arm.Add
 public import lemmas.Pill.Arm.Bex
 public import lemmas.Pill.Arm.Biff
@@ -39,6 +39,7 @@ public import lemmas.Pill.Arm.Mas
 public import lemmas.Pill.Arm.Max
 public import lemmas.Pill.Arm.Met
 public import lemmas.Pill.Arm.Min
+public import lemmas.Pill.Arm.Mink
 public import lemmas.Pill.Arm.Mix
 public import lemmas.Pill.Arm.Mod
 public import lemmas.Pill.Arm.Mor
@@ -104,6 +105,7 @@ import all lemmas.Pill.Arm.Mas
 import all lemmas.Pill.Arm.Max
 import all lemmas.Pill.Arm.Met
 import all lemmas.Pill.Arm.Min
+import all lemmas.Pill.Arm.Mink
 import all lemmas.Pill.Arm.Mix
 import all lemmas.Pill.Arm.Mod
 import all lemmas.Pill.Arm.Mor
@@ -158,6 +160,10 @@ theorem core_evalFuel : evalFuel 252 (C trap (A 0)) nok = some core := by kernel
 theorem core_layer2 : slot? 8388607 core = some layer2 := by kernel_rfl
 
 theorem layer2_layer1 : slot? 3 layer2 = some layer1 := by kernel_rfl
+
+theorem layer4_layer3 : slot? 3 layer4 = some layer3 := by kernel_rfl
+
+theorem layer3_layer2 : slot? 3 layer3 = some layer2 := by kernel_rfl
 
 theorem core_lib : slot? 8191 core = some lib := by kernel_rfl
 
@@ -406,6 +412,10 @@ theorem in.wyt.arm_at : ∀ x, slot? in.wyt.axis (C in.battery x) = some by.wyt.
 theorem snoc.arm_at : slot? snoc.axis layer2 = some snoc.arm := by kernel_rfl
 
 theorem biff.arm_at : slot? biff.axis layer2 = some biff.arm := by kernel_rfl
+
+theorem mink.arm_at : slot? mink.axis layer4 = some mink.arm := by kernel_rfl
+
+theorem mink.layer1.arm_at : slot? mink.layer1.axis layer4 = some layer1 := by kernel_rfl
 
 theorem ca.con.arm_at : ∀ x, slot? ca.con.axis (C ca.battery x) = some ca.con.arm := by
   intro x; kernel_rfl

@@ -11,11 +11,6 @@ namespace Hoon
 
 open Nock Pill
 
-/-- A unit: `~` or `[~ u]`. -/
-def unitN : Option Noun → Noun
-  | none => A 0
-  | some u => C (A 0) u
-
 /-- `?&` of two flags that the Nock computes in order: a crash or `|` of the
 first ends it. -/
 def andB (x k : Option Bool) : Option Bool := x.bind fun b => if b then k else some false

@@ -21,6 +21,7 @@ import lemmas.Compiler.Ca
 import lemmas.Compiler.So
 import lemmas.Compiler.Axes
 import lemmas.Compiler.Lib
+import lemmas.Compiler.MinkPill
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -176,3 +177,15 @@ open Formalization
 #print axioms Compiler.so_purr_pill
 #print axioms Compiler.so_pull_pill
 #print axioms Compiler.so_darn_pill
+#print axioms Nock.nock_eq_nockW
+#print axioms Nock.iterN_sound
+#print axioms Nock.iterN_complete
+#print axioms Hoon.mink_frag_gate
+#print axioms Hoon.mink_edit_gate
+#print axioms Compiler.mink_loop_unfold
+#print axioms Compiler.nstep_exact
+#print axioms Compiler.mink_gate_iff
+#print axioms Compiler.mink_gate_of_model
+#print axioms Compiler.mink_gate_to_model
+#print axioms Compiler.mink_pill_iff
+#print axioms Compiler.mink_pill_call
