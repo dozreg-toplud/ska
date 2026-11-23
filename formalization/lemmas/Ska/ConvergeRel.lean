@@ -198,5 +198,99 @@ theorem agree_poke_of_fixed {lib : Lib} {g : Graph} {G : Entry → Prop} {es : L
     Mink lib gul t x e.fol r ↔ ∃ m, nommF lib gul (codeOf es) m t x e.d.nomm = some r :=
   agree_pokeR hs.toR hin hG.toR hes hbell he hx gul t r
 
+/-! ## The entry after `+pop` -/
+
+theorem msgAnno_ne_void' : ∀ (k : Nat) (a b : Anno), Sock.msr a.sock + Sock.msr b.sock < k →
+    a.sock ≠ Sock.void → (msgAnno a b).sock ≠ Sock.void := by
+  intro k
+  induction k with
+  | zero => intro _ _ h; omega
+  | succ k ih =>
+  intro a b hk ha
+  obtain ⟨sa, ra⟩ := a
+  obtain ⟨sb, rb⟩ := b
+  unfold msgAnno
+  split
+  · exact ha
+  · split
+    · rename_i heq; simp only [Anno.mk.injEq] at heq; exact absurd heq.1 ha
+    · exact ha
+    · rename_i ah aT da ra' bh bT db rb' heq1 heq2
+      simp only [Anno.mk.injEq] at heq1 heq2
+      obtain ⟨rfl, rfl⟩ := heq1
+      obtain ⟨rfl, rfl⟩ := heq2
+      simp only at hk
+      exact knit_ne_void
+        (ih _ _ (by have := msr_hed_lt (c := Cape.cell ah aT) (by simp) da
+                    have := msr_hed_lt (c := Cape.cell bh bT) (by simp) db; simp only at hk ⊢; omega)
+          (hed_ne_void (s := Sock.mk (Cape.cell ah aT) da) (by simp)))
+        (ih _ _ (by have := msr_tel_lt (c := Cape.cell ah aT) (by simp) da
+                    have := msr_tel_lt (c := Cape.cell bh bT) (by simp) db; simp only at hk ⊢; omega)
+          (tel_ne_void (s := Sock.mk (Cape.cell ah aT) da) (by simp)))
+    · simp [Anno.dunno, Sock.dunno]
+
+theorem doubleInt_ne_void' : ∀ (k : Nat) (a b : Anno), Sock.msr a.sock + Sock.msr b.sock < k →
+    a.sock ≠ Sock.void → (doubleInt a b).sock ≠ Sock.void := by
+  intro k
+  induction k with
+  | zero => intro _ _ h; omega
+  | succ k ih =>
+  intro a b hk ha
+  by_cases hab : a = b
+  · subst hab; rw [doubleInt_self]; exact ha
+  obtain ⟨sa, ra⟩ := a
+  obtain ⟨sb, rb⟩ := b
+  cases sa with
+  | void => exact absurd rfl ha
+  | mk ca da =>
+  cases sb with
+  | void => rw [doubleInt_void_right rfl ha hab]; exact ha
+  | mk cb db =>
+  rw [doubleInt_mk hab]
+  split
+  · simp [Anno.dunno, Sock.dunno]
+  · rename_i hc
+    split
+    · simp [Anno.dunno, Sock.dunno]
+    · simp only [not_or] at hc
+      simp only at hk
+      exact knit_ne_void
+        (ih _ _ (by have := msr_hed_lt hc.1 da; have := msr_hed_lt hc.2 db; simp only at hk ⊢; omega)
+          (hed_ne_void (s := Sock.mk ca da) (by simp)))
+        (ih _ _ (by have := msr_tel_lt hc.1 da; have := msr_tel_lt hc.2 db; simp only at hk ⊢; omega)
+          (tel_ne_void (s := Sock.mk ca da) (by simp)))
+
+/-- A merge is `%void` only if the run's product is. -/
+theorem mergeProd_void {moved : Bool} {a b : Anno} (h : (mergeProd moved a b).sock = Sock.void) :
+    a.sock = Sock.void := by
+  apply Classical.byContradiction
+  intro ha
+  unfold mergeProd at h
+  split at h
+  · exact msgAnno_ne_void' _ a b (Nat.lt_succ_self _) ha h
+  · exact doubleInt_ne_void' _ a b (Nat.lt_succ_self _) ha h
+
+/-- **The entry after `+pop`**: an entry written by a run, whose product is
+`%void`, with `|+~` in its place (and the same provenance), is still the
+merge of the run's product with an older one.  So `RunEntryR` holds of both
+versions of a member of a component, the one its callers in the component
+read in their last runs and the one the final graph keeps. -/
+theorem RunEntryR.pop {P : Sock → Noun → TabEntry → Prop} {e : Entry} (h : RunEntryR P e)
+    (hv : e.d.prod = Sock.void) : RunEntryR P ⟨e.more, e.fol, { e.d with prod := Sock.dunno }⟩ := by
+  obtain ⟨n, out, gen', moved, old, hr, hn, hl, hpm⟩ := h
+  have hov : out.prod.sock = Sock.void := by
+    apply mergeProd_void (moved := moved) (b := old)
+    rw [← hpm]; exact hv
+  refine ⟨n, out, gen', true, ⟨Sock.dunno, e.d.map⟩, hr, hn, hl, ?_⟩
+  show (⟨Sock.dunno, e.d.map⟩ : Anno) = msgAnno out.prod ⟨Sock.dunno, e.d.map⟩
+  have key : ∀ (a : Anno), a.sock = Sock.void → (⟨Sock.dunno, e.d.map⟩ : Anno) = msgAnno a ⟨Sock.dunno, e.d.map⟩ := by
+    intro a ha
+    obtain ⟨os, osrc⟩ := a
+    simp only at ha
+    subst ha
+    unfold msgAnno
+    simp [Sock.dunno]
+  exact key _ hov
+
 end SkaModel
 end Formalization
