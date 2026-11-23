@@ -218,8 +218,9 @@ theorem eval_pole_cal (cr : Noun) (hc : CorIn cr) (lib : Lib)
   obtain ⟨_, hrd, _, hrc⟩ := hpi
   have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'
   simp only [read.layer2.axis, icore, nock_exec] at hl2
-  obtain ⟨hneed, hsome, hgor, _⟩ := (⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1, 0⟩ :
-    NeedIn layer2 ∧ SomeIn layer2 ∧ GorIn mugF layer2 ∧ Nat)
+  have hneed : NeedIn layer2 := need.arm_at
+  have hsome := someIn_layer2
+  have hgor := gorIn_morIn_layer2.1
   rcases p with _ | ⟨b, c, new⟩ | ps
   · nock_open eval_pole.battery
     simp [nock_exec, Pole.toNoun, Tag.cal, Tag.nok, Tag.dire, hp, execPole, callBody, e1,
@@ -239,6 +240,8 @@ theorem eval_pole_cal (cr : Noun) (hc : CorIn cr) (lib : Lib)
       SkaModel.Prod.toNoun, hloop, e2, Straight.toNoun]
   | some vs =>
   rw [e2] at hloop
+  simp only [Option.map_some] at hloop
+  rw [show regsFrom 0 vs HoonMap.empty = regsOf vs from rfl] at hloop
   have hg := getF_hoonMap Blob.toNoun c.blocks 0
   cases e3 : HoonMap.get c.blocks 0 with
   | none =>
@@ -250,19 +253,20 @@ theorem eval_pole_cal (cr : Noun) (hc : CorIn cr) (lib : Lib)
   | some b0 =>
   rw [e3] at hg
   obtain ⟨hb, hbg⟩ := hO cr' hc' (regsOf vs) trace b0 c [] scry
-  simp only [blobS, icore, Straight.toNoun, regsOf, argsN, listNoun] at hb
   cases e4 : execBlob lib O c scry cr' (regsOf vs) trace b0 [] with
   | none =>
     rw [e4] at hb
+    simp only [blobS, icore, Straight.toNoun, argsN, listNoun] at hb
     nock_open eval_pole.battery
     simp [nock_exec, Pole.toNoun, Tag.cal, Tag.nok, Tag.dire, Tag.ir, hp, execPole, callBody, e1,
       SkaModel.Prod.toNoun, hloop, e2, Straight.toNoun, hl2, by.arm_at, by_arm, by.got.arm_at,
       got_arm, got_gate layer2 ⟨hneed, hsome, hgor⟩ _ _ _ hg, execEntry, e3, unitNoun,
-      eval_blob.arm, hb, regsOf, argsN, listNoun]
+      eval_blob.arm, hb, argsN, listNoun, e4]
   | some r =>
   obtain ⟨ton, cr''⟩ := r
   have hc'' := hbg _ e4
   rw [e4] at hb
+  simp only [blobS, icore, Straight.toNoun, argsN, listNoun] at hb
   obtain ⟨hsm, hl2''⟩ := corIn_facts hc''
   simp only at hsm hl2''
   rcases ton with q | q | q
@@ -271,7 +275,7 @@ theorem eval_pole_cal (cr : Noun) (hc : CorIn cr) (lib : Lib)
     simp [nock_exec, Pole.toNoun, Tag.cal, Tag.nok, Tag.dire, Tag.ir, hp, execPole, callBody, e1,
       SkaModel.Prod.toNoun, hloop, e2, Straight.toNoun, hl2, by.arm_at, by_arm, by.got.arm_at,
       got_arm, got_gate layer2 ⟨hneed, hsome, hgor⟩ _ _ _ hg, execEntry, e3, unitNoun,
-      eval_blob.arm, hb, regsOf, argsN, listNoun, resN, Tone.toNoun, afterCall, poleOutS, hsm,
+      eval_blob.arm, hb, argsN, listNoun, resN, Tone.toNoun, afterCall, poleOutS, hsm, e4,
       store_arm]
 
 end Compiler
