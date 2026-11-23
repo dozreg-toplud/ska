@@ -1,12 +1,13 @@
 import lemmas.Ska.CompSimOps
 import lemmas.Ska.SockFacts
 import lemmas.Hoon.Axis
+import lemmas.Hoon.Bits
 
 /-!
 # A model of `+comp` for nomm without calls, hints and forks
 
 The arms of the door `+comp` of `desk/lib/nock-compilation.hoon` that the
-cases `[^ *]`, `%0`, `%1`, `%3`, `%4`, `%5` and `%7` of `run` reach, each
+cases `[^ *]`, `%0`, `%1`, `%3`, `%4`, `%5`, `%7` and `%10` of `run` reach, each
 as one Lean function with the arm's name, its case order and its order of
 allocations, so that the registers and the block labels it hands out are
 the Hoon's.
@@ -281,6 +282,96 @@ def split (nex : Next S) : CM Map (Sure S × Sure S × Nat) := do
   let (h, t) ← splitSure nex.laz o
   pure (h, t, o)
 
+/-! ## `+into`
+
+`+into` is the `+split` of Nock 10: the need of the edited noun, as the need
+of the donor (the noun put at the axis) and the need of the recipient (the
+noun it is put into). -/
+
+/-- `+gep` (an arm of the library at the end of the file): the axis of `b`
+within the axis `a`, when `b` is `a` or below it.  `none` is a crash (the
+`?<` on a zero axis), `some none` is `~`. -/
+def gep (a b : Nat) : Option (Option Nat) :=
+  if a = 0 then Option.none else
+  if b = 0 then Option.none else
+  if a = b then some (some 1) else
+  if b < a then some Option.none else
+  let difWid := Hoon.metF 0 b - Hoon.metF 0 a
+  let topB := b / 2 ^ difWid
+  if topB ≠ a then some Option.none else
+  let x := 2 ^ difWid
+  let lowB := b &&& (x - 1)
+  some (some (lowB ||| x))
+
+/-- One step of the `rep` of `+into-sure` over the looked-at axes: an axis
+under `axe` goes to the donor's looks as an axis within it (or nowhere, when
+it is `axe` itself), any other to the recipient's. -/
+def intoStep (axe : Nat) (acc : Option (S × S)) (l : Nat) : Option (S × S) :=
+  acc.bind fun (ld, lr) =>
+    if axe = 0 then Option.none else
+    match gep axe l with
+    | Option.none => Option.none
+    | some Option.none => some (ld, HoonSet.put lr l)
+    | some (some r) => if r = 1 then some (ld, lr) else some (HoonSet.put ld r, lr)
+
+/-- The looks of the donor and of the recipient, before `+into-sure` adds
+`axe` to the latter. -/
+def intoLok (axe : Nat) (lok : S) : Option (S × S) :=
+  (HoonSet.toList lok).foldl (intoStep axe) (some (HoonSet.empty, HoonSet.empty))
+
+/-- The gate of the `roll` at the end of `+into-need`: the need built so far
+goes into the head when the path went into the head. -/
+def side (h : Bool) (acc n : Need) : Need := if h then consNeed acc n else consNeed n acc
+
+/-- `(roll tack ...)` from `[%none ~]`. -/
+def rollTack (tack : List (Bool × Need)) : Need :=
+  tack.foldl (fun acc e => side e.1 acc e.2) Need.none
+
+/-- The loop of `+into-need`.  Its axis is never `0` (`+into-need` checks
+it, and `mas` of an axis of at least `2` is at least `1`), so its test
+`=(1 axe)` is `axe ≤ 1` here. -/
+def intoLoop (o : Nat) (axe : Nat) (ned : Need) (tack : List (Bool × Need)) (ops : List Pole) :
+    CM Map (Need × Need) :=
+  if _h : axe ≤ 1 then do
+    addOps o ops
+    pure (ned, rollTack tack)
+  else
+    let h := decide (cap axe = 2)
+    match ned with
+    | Need.none => intoLoop o (mas axe) Need.none ((h, Need.none) :: tack) ops
+    | Need.this r => do
+        let l ← re
+        let r' ← re
+        intoLoop o (mas axe) (Need.this (if h then l else r')) ((h, Need.this (if h then r' else l)) :: tack)
+          (Pole.con l r' r :: ops)
+    | Need.pair p q =>
+        intoLoop o (mas axe) (if h then p else q) ((h, if h then q else p) :: tack) ops
+    | Need.both r hh t => do
+        let l ← must hh
+        let r' ← must t
+        intoLoop o (mas axe) (if h then l.2 else r'.2) ((h, if h then r'.2 else l.2) :: tack)
+          (Pole.con l.1 r'.1 r :: ops)
+termination_by axe
+decreasing_by all_goals exact mas_lt axe (by omega)
+
+/-- `+into-need`. -/
+def intoNeed (axe : Nat) (ned : Need) (o : Nat) : CM Map (Need × Need) :=
+  if axe = 0 then fun _ => Option.none else
+  if axe = 1 then pure (ned, Need.none) else
+  intoLoop o axe ned [] []
+
+/-- `+into-sure`. -/
+def intoSure (axe : Nat) (sur : Sure S) (o : Nat) : CM Map (Sure S × Sure S) := fun g =>
+  (intoLok axe sur.lok).bind fun (ld, lr) =>
+    (intoNeed axe sur.ned o g).map fun ((nd, nr), g') =>
+      ((⟨nd, ld⟩, ⟨nr, if axe = 1 then lr else HoonSet.put lr axe⟩), g')
+
+/-- `+into` on a fork-free lazy need. -/
+def into (nex : Next S) (axe : Nat) : CM Map (Sure S × Sure S × Nat) := do
+  let o ← emit ⟨[], [], Termin.hop nex.th⟩
+  let (d, r) ← intoSure axe nex.laz o
+  pure (d, r, o)
+
 /-! ## `+copy` -/
 
 /-- `+copy-need-make-ops`.  The Hoon walks a work list depth first, head
@@ -456,7 +547,7 @@ def doneBlocks : CM Map (Nat × Nat) := do
   pure (o0, o1)
 
 /-- `run` of `+comp`, for the cases `[^ *]`, `%0`, `%1`, `%3`, `%4`, `%5`,
-`%7` (the parameters `mono`, `region`, `sup` are read by no case of the
+`%7`, `%10` (the parameters `mono`, `region`, `sup` are read by no case of the
 fragment).  `none` on the other cases: they are not modelled. -/
 def run : Nomm → CGoal S → CM Map (Next S)
   | Nomm.cons p q, goal => do
@@ -566,6 +657,15 @@ def run : Nomm → CGoal S → CM Map (Next S)
   | Nomm.n7 p q, goal => do
       let nex ← run q goal
       run p nex.goal
+  | Nomm.n10 a v q, goal => do
+      let next ← simpleNext goal
+      let (don, rec, o) ← into next a
+      -- `(past [%next don ~ o] q.nomm region)`, the identity here
+      let nexD : Next S := ⟨don, jmp0 o⟩
+      let nexRec ← run q (CGoal.next rec nexD.th)
+      -- `(past nex-rec q.p.nomm region)`, the identity here
+      let nexDon ← run v (CGoal.next nexD.laz nexRec.th)
+      copy nexDon nexRec.laz
   | _, _ => fun _ => Option.none
 
 end Comp
