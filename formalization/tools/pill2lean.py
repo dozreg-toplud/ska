@@ -979,6 +979,14 @@ def main():
         formulas.add(gate_battery(a))
         axes.append((lname, ax, 'slot? %s.axis lib = some %s.arm' % (lname, lname)))
 
+    # +inlineable, a gate whose %fast parent is ..ride and which reads nothing
+    # from its context: named without an axis
+    (inl,) = arms_of('inlineable')
+    name(inl, 'inlineable.arm')
+    formulas.add(inl)
+    name(gate_battery(inl), 'inlineable.battery')
+    formulas.add(gate_battery(inl))
+
     # ---- write
     emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, len(data))
     print('steps', steps)

@@ -29,6 +29,7 @@ public import lemmas.Pill.Arm.Gte
 public import lemmas.Pill.Arm.Gth
 public import lemmas.Pill.Arm.Homo
 public import lemmas.Pill.Arm.In
+public import lemmas.Pill.Arm.Inlineable
 public import lemmas.Pill.Arm.Ja
 public import lemmas.Pill.Arm.Ju
 public import lemmas.Pill.Arm.Lent
@@ -106,6 +107,7 @@ import all lemmas.Pill.Arm.Gte
 import all lemmas.Pill.Arm.Gth
 import all lemmas.Pill.Arm.Homo
 import all lemmas.Pill.Arm.In
+import all lemmas.Pill.Arm.Inlineable
 import all lemmas.Pill.Arm.Ja
 import all lemmas.Pill.Arm.Ju
 import all lemmas.Pill.Arm.Lent
