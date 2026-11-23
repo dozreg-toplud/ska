@@ -1100,7 +1100,18 @@ def main():
     int_arm(mv, 'move')
     (ep,) = [a for a, g in int_gates
              if (int_arms[mv], 15) in pulls(g) and any(x == ax_all['levy'] for x, _ in pulls(g))]
-    int_arm(ep, 'eval_pass')
+    ep_bat = int_arm(ep, 'eval_pass')
+    # +eval-pass: its loop, the gate that +levy runs on each argument
+    # (`eval_pass.chk`) and the gate that +lien runs inside it (`eval_pass.mem`)
+    name_loops('eval_pass', ep_bat, 1)
+    builders = [i for i in reach([ep_bat]) if is_gate_builder(i)]
+    (chk,) = [i for i in builders if any(is_gate_builder(j) and j != i
+                                          for j in reach([door_gate_battery(i)]))]
+    (mem,) = [i for i in builders if i != chk]
+    name(door_gate_battery(chk), 'eval_pass.chk')
+    formulas.add(door_gate_battery(chk))
+    name(door_gate_battery(mem), 'eval_pass.mem')
+    formulas.add(door_gate_battery(mem))
 
     # ---- write
     emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, len(data))
