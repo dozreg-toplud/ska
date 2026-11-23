@@ -32,7 +32,21 @@ What this assumes, each a named hypothesis of `knowMeetsNF_of`:
 2. `LessInhab`: every code bell with a datum has a code requirement with a
    noun, so that the bake meets it (`meets_of_bakeOK`).
 3. `NoAx0Dat`: no `%10` of a datum's nomm has axis `0` (the analysis
-   turns those into `[0 0]`, see `Analysis.lean`).
+   turns those into `[0 0]`, see `Analysis.lean`, and the Hoon type of
+   `nomm` says `p.p != 0`).
+
+Checked on the real compiler (runhoon.sh, 2026-11-24), with no failure.
+`tools/hoon/sitesmeet4.hoon` (the fifteen pokes of `sitesmeet3.hoon`, with
+a copy of `+know` that takes `fold` as a sample): after the last poke, 3,033
+pairs of a code bell and a bake (1,555 strict), 11,370 sites under the
+bakes with folding and 11,661 sites of the runs without folding under
+`less.cur`; `LessProvidesNF` failed at 0 sites (roots included),
+`KnowMeetsNF` at 0 sites (roots included), `SitesMeet` at 0, and `+know`
+without folding never crashed.  `tools/hoon/sitesmeet5.hoon`: after every
+poke, no datum of the memo (1,463 after the last poke) has a product or a
+code requirement without a noun, and no nomm has a `%10` at axis `0`; no
+pruned graph (1,094 entries for the last poke) has two identities of one
+code bell, so the residue below was not exercised.
 -/
 
 namespace Formalization
@@ -755,8 +769,10 @@ Two forms of the residue, over the entries of one call graph:
    analysis' walk and `+know`'s walk related node by node, as
    `knowGo_meets` relates two walks of `+know`).
 
-Checked on the real compiler with `tools/hoon/sitesmeet5.hoon` (see the
-README of this track's report). -/
+`tools/hoon/sitesmeet5.hoon` checks `ProdMeet` (with the sock `less.c` and
+the two identities' subjects) and the equality of the patched products
+under `less.c`, over every two entries of one code bell in the pruned graph
+of each poke: there were none in the fifteen pokes. -/
 
 section Residue
 
