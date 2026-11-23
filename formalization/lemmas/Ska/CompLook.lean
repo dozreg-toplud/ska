@@ -124,6 +124,158 @@ theorem lookPath_ne_none : ∀ (axe : Nat), 1 ≤ axe → ∀ (ned ned' : Need) 
       simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h6
       rw [← h6.1]; exact fin _ _ _ (Or.inr (ihm _ x g0 g h5))
 
+theorem consNeed_pair {a b : Need} (h : a ≠ Need.none ∨ b ≠ Need.none) : consNeed a b = Need.pair a b := by
+  unfold consNeed; rw [if_neg]; rintro ⟨h1, h2⟩; rcases h with h | h <;> contradiction
+
+/-- The step of the loop, from what the parts satisfy. -/
+theorem lookStep_ok {ned hr tr : Need} {axe : Nat} {g0 g1 : Gen Map} (h2 : 2 ≤ axe)
+    (gen : ∃ k, g1 = { g0 with re := k }) (le : g0.re ≤ g1.re)
+    (nz : hr ≠ Need.none ∨ tr ≠ Need.none)
+    (hh : ∀ (regs : Map Noun) a, HoldsN hr regs a → HoldsN (split3 ned).2.1 regs a)
+    (ht : ∀ (regs : Map Noun) b, HoldsN tr regs b → HoldsN (split3 ned).2.2 regs b)
+    (hf : ∀ a b, Fits hr a ∧ Fits tr b ↔ (Fits (split3 ned).2.1 a ∧ Fits (split3 ned).2.2 b) ∧
+      (slot? axe (C a b)).isSome)
+    (hm : ∀ r, NMem hr r ∨ NMem tr r → NMem (split3 ned).2.1 r ∨ NMem (split3 ned).2.2 r ∨
+      (g0.re ≤ r ∧ r < g1.re))
+    (hd : Distinct ned → (∀ r, NMem ned r → r < g0.re) → Distinct hr ∧ Distinct tr ∧
+      (∀ x, NMem hr x → ¬ NMem tr x) ∧ ∀ r, (split3 ned).1 = some r → ¬ NMem hr r ∧ ¬ NMem tr r) :
+    LookOK ned axe g0 g1 (wrapN (split3 ned).1 (consNeed hr tr)) := by
+  rw [consNeed_pair nz]
+  have hp : ∃ p q, Need.pair hr tr = Need.pair p q := ⟨_, _, rfl⟩
+  refine ⟨gen, le, ?_, ?_, ?_, ?_, ?_, fun h => absurd h (by omega)⟩
+  · intro regs n hn
+    rw [wrap_holds _ hp] at hn
+    obtain ⟨hr', hn⟩ := hn
+    cases n with
+    | atom _ => exact hn.elim
+    | cell a b => exact split3_holds ned regs a b hr' (hh regs a hn.1) (ht regs b hn.2)
+  · intro n
+    rw [wrap_fits _ hp]
+    cases n with
+    | atom _ =>
+      constructor
+      · intro h; simp only [Fits] at h
+      · intro ⟨_, h⟩; rw [slot?_cap h2] at h; simp at h
+    | cell a b => simp only [Fits]; rw [hf a b, split3_fits]
+  · intro r hr'
+    rw [wrap_mem _ hp] at hr'
+    rcases hr' with h | h
+    · exact Or.inl ((split3_mem ned r).mpr (Or.inl h))
+    · rcases hm r h with h' | h' | h'
+      · exact Or.inl ((split3_mem ned r).mpr (Or.inr (Or.inl h')))
+      · exact Or.inl ((split3_mem ned r).mpr (Or.inr (Or.inr h')))
+      · exact Or.inr h'
+  · intro hdn hb
+    obtain ⟨d1, d2, d3, d4⟩ := hd hdn hb
+    cases e : (split3 ned).1 with
+    | none => simp only [wrapN]; exact ⟨d1, d2, d3⟩
+    | some r =>
+      have : wrapN (some r) (Need.pair hr tr) = Need.both r hr tr := by simp [wrapN]
+      rw [this]; exact ⟨d1, d2, d3, (d4 r e).1, (d4 r e).2⟩
+  · intro _
+    cases (split3 ned).1 with
+    | none => exact Or.inl ⟨_, _, rfl⟩
+    | some r => exact Or.inr ⟨r, hr, tr, by simp [wrapN]⟩
+
+theorem lookPath_spec : ∀ (axe : Nat), 1 ≤ axe → ∀ (ned ned' : Need) (g0 g1 : Gen Map),
+    lookPath ned axe g0 = some (ned', g1) → LookOK ned axe g0 g1 ned' := by
+  intro axe
+  induction axe using Nat.strongRecOn with
+  | ind axe ih =>
+  intro ha ned ned' g0 g1 h
+  by_cases h1 : axe ≤ 1
+  · have e1 : axe = 1 := by omega
+    subst e1
+    rw [lookPath.eq_def] at h
+    simp only [show (1 : Nat) ≤ 1 from Nat.le_refl 1, dif_pos] at h
+    cases ned with
+    | none =>
+      simp only [bind_apply, re_apply, pure_apply, Option.bind_some, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact { gen := ⟨_, rfl⟩, le := Nat.le_succ _, holds := fun _ _ _ => trivial,
+              fits := fun n => by simp [Fits, slot?_one],
+              mem := fun r hr => by simp only [NMem] at hr; subst hr; right; simp,
+              dist := fun _ _ => trivial, shape := fun h => absurd h (by omega),
+              one := fun _ => Or.inr ⟨rfl, _, rfl⟩ }
+    | pair p q =>
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact { gen := ⟨g0.re, rfl⟩, le := Nat.le_refl _, holds := fun _ _ h => h,
+              fits := fun n => by simp [slot?_one], mem := fun r hr => Or.inl hr,
+              dist := fun h _ => h, shape := fun h => absurd h (by omega), one := fun _ => Or.inl rfl }
+    | both r p q =>
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact { gen := ⟨g0.re, rfl⟩, le := Nat.le_refl _, holds := fun _ _ h => h,
+              fits := fun n => by simp [slot?_one], mem := fun r hr => Or.inl hr,
+              dist := fun h _ => h, shape := fun h => absurd h (by omega), one := fun _ => Or.inl rfl }
+    | this r =>
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact { gen := ⟨g0.re, rfl⟩, le := Nat.le_refl _, holds := fun _ _ h => h,
+              fits := fun n => by simp [slot?_one], mem := fun r hr => Or.inl hr,
+              dist := fun h _ => h, shape := fun h => absurd h (by omega), one := fun _ => Or.inl rfl }
+  have h2 : 2 ≤ axe := by omega
+  have ihm := ih (mas axe) (mas_lt axe h2) (mas_pos axe h2)
+  have hnz := lookPath_ne_none (Map := Map) (mas axe) (mas_pos axe h2)
+  rw [lookPath_step ned h2] at h
+  have d0 := split3_dist ned
+  have m0 := split3_mem ned
+  split at h
+  · rename_i hc
+    obtain ⟨x, g, h5, h6⟩ := bind_some h
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h6
+    obtain ⟨rfl, rfl⟩ := h6
+    have L := ihm _ x g0 g h5
+    refine lookStep_ok h2 L.gen L.le (Or.inl (hnz _ _ _ _ h5)) (fun regs a h => L.holds regs a h)
+      (fun _ _ h => h) (fun a b => by
+        rw [L.fits, slot?_cap h2]; simp only [hc, if_true]
+        exact ⟨fun ⟨⟨h1, h2⟩, h3⟩ => ⟨⟨h1, h3⟩, h2⟩, fun ⟨⟨h1, h3⟩, h2⟩ => ⟨⟨h1, h2⟩, h3⟩⟩) ?_ ?_
+    · intro r hr
+      rcases hr with hr | hr
+      · rcases L.mem r hr with h | h
+        · exact Or.inl h
+        · exact Or.inr (Or.inr h)
+      · exact Or.inr (Or.inl hr)
+    · intro hd hb
+      obtain ⟨d1, d2, d3, d4⟩ := d0 hd
+      have hbh : ∀ r, NMem (split3 ned).2.1 r → r < g0.re := fun r h => hb r ((m0 r).mpr (Or.inr (Or.inl h)))
+      have hbt : ∀ r, NMem (split3 ned).2.2 r → r < g0.re := fun r h => hb r ((m0 r).mpr (Or.inr (Or.inr h)))
+      refine ⟨L.dist d1 hbh, d2, fun y hy hy' => ?_, fun r e => ⟨fun hx => ?_, (d4 r e).2⟩⟩
+      · rcases L.mem y hy with h | h
+        · exact d3 y h hy'
+        · have := hbt y hy'; omega
+      · rcases L.mem r hx with h | h
+        · exact (d4 r e).1 h
+        · have := hb r ((m0 r).mpr (Or.inl e)); omega
+  · rename_i hc
+    have hc3 : cap axe = 3 := by rcases cap_cases axe h2 with e | e; exact absurd e hc; exact e
+    obtain ⟨x, g, h5, h6⟩ := bind_some h
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h6
+    obtain ⟨rfl, rfl⟩ := h6
+    have L := ihm _ x g0 g h5
+    refine lookStep_ok h2 L.gen L.le (Or.inr (hnz _ _ _ _ h5)) (fun _ _ h => h)
+      (fun regs a h => L.holds regs a h) (fun a b => by
+        rw [L.fits, slot?_cap h2]; simp only [hc3, show (3 : Nat) ≠ 2 by decide, if_false]
+        exact ⟨fun ⟨h1, h2, h3⟩ => ⟨⟨h1, h2⟩, h3⟩, fun ⟨⟨h1, h2⟩, h3⟩ => ⟨h1, h2, h3⟩⟩) ?_ ?_
+    · intro r hr
+      rcases hr with hr | hr
+      · exact Or.inl hr
+      · rcases L.mem r hr with h | h
+        · exact Or.inr (Or.inl h)
+        · exact Or.inr (Or.inr h)
+    · intro hd hb
+      obtain ⟨d1, d2, d3, d4⟩ := d0 hd
+      have hbh : ∀ r, NMem (split3 ned).2.1 r → r < g0.re := fun r h => hb r ((m0 r).mpr (Or.inr (Or.inl h)))
+      have hbt : ∀ r, NMem (split3 ned).2.2 r → r < g0.re := fun r h => hb r ((m0 r).mpr (Or.inr (Or.inr h)))
+      refine ⟨d1, L.dist d2 hbt, fun y hy hy' => ?_, fun r e => ⟨(d4 r e).1, fun hx => ?_⟩⟩
+      · rcases L.mem y hy' with h | h
+        · exact d3 y hy h
+        · have := hbh y hy; omega
+      · rcases L.mem r hx with h | h
+        · exact (d4 r e).2 h
+        · have := hb r ((m0 r).mpr (Or.inl e)); omega
+
 end Comp
 end SkaModel
 end Formalization
