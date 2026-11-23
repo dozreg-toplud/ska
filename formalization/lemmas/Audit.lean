@@ -40,6 +40,7 @@ import lemmas.Compiler.Connect
 import lemmas.Compiler.PokeFrame
 import lemmas.Assembly
 import lemmas.Compiler.TreapKey
+import lemmas.Compiler.Mi
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -335,3 +336,12 @@ open Formalization
 #print axioms Compiler.instTreapFinMap
 #print axioms Compiler.FinMap.tapList_toNoun
 #print axioms Compiler.FinMap.preorder_toNoun
+#print axioms Compiler.cape_size_gate
+#print axioms Compiler.cape_size_cape
+#print axioms Compiler.cape_size_pill
+#print axioms Compiler.git_g_gate
+#print axioms Compiler.git_g_pill
+#print axioms Compiler.mi_gut_gate
+#print axioms Compiler.mi_put_gate
+#print axioms Compiler.mi_gut_pill
+#print axioms Compiler.mi_put_pill

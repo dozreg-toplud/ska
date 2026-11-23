@@ -104,6 +104,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/Inlineable.lean` | `+inlineable` computes `inlineable` of `Ska/FolLoop.lean` on every noun and in every context (`inlineable_gate'`); it reads nothing from its context. |
 | `Compiler/Safe.lean` | `+safe-nomm` and `+safe-fol-fol` of the analysis core `ana` compute `safeNomm` and `safeFolFol` of `Ska/FolLoop.lean` on `Nomm.toNoun` of every nomm (`safe_nomm_gate`, `safe_fol_fol_gate`, and `*_pill` on `ana`).  `+safe-nomm` reads nothing from its context, `+safe-fol-fol` reads `+safe-nomm`. |
 | `Compiler/Anno.lean` | `+knit-anno`, `+patch-prod`, `+msg-sock` and `+msg-anno` of `ana` against `knitAnno`, `patchProd`, `msgSock` (with its crash as `none`) and `msgAnno` of `Ska/CallGraph.lean`, on every sock and spring (`*_gate`), and on `ana` with no assumption (`*_pill`).  They reach `+so` and `+pi` through `lib` at `knit_anno.lib.axis` of `ana`. |
+| `Compiler/CapeSize.lean`, `Compiler/GitG.lean`, `Compiler/Mi.lean` | Callees of `fol-loop` in `ana`: `+cape-size` counts the leaves of any noun (`cape_size_gate`, against `capeSize`, written here after the Hoon, and `leafCount`); `+git-g` is `Ana.gitG` on call graphs of `FinMap`, the bunt datum being the noun of `FDatum.bunt` (`git_g_gate`); `gut` and `put` of the core `+mi` are `Ana.gutMi` and `Ana.putMi` on memos of `FinMap` (`mi_gut_gate`, `mi_put_gate`). Each reads `+by` (or `+add`) of the library's layers at an axis of `ana` (`8191` for layer 2, `16383` for layer 1, through `lib` by `slot_spine`), and holds on `ana` with no assumption (`*_pill`). |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`. |
 | `Compiler/TreapKey.lean` | The instance of `Treap` (`Ska/Analysis.lean`) for the analysis model: `FinMap κ ν`, finite maps as lookups, whose noun `toNoun f m` is made with `+put:by` on the encoded keys when the encoding is given; it is an `IsMap mugF` with exactly the pairs of `m` (`isMap_toNoun`, `get_toNoun`), so by `isMap_ext` the pill's `+put:by`, `+del:by`, `+get:by` on it give the nouns of `put`, `del`, `get` (`putF_toNoun`, `delF_toNoun`, `getF_toNoun`).  `tap` and `rap` read the keys off `~(tap by ...)` and the pre-order of `+rep`, and are those listings on every layout (`tapList_toNoun`, `preorder_toNoun`).  `M κ ν` comes before the encoding in the class, so it cannot hold a treap ordered by it. |
@@ -335,7 +336,8 @@ import only its theorems.  So:
 
    `PokeModel` needs every arm that `+poke` runs linked to its model.  The
    map of the arms of `nock-compilation.hoon` (from the arm list, 2026-11-23):
-   - *Linked* (the pill's Nock computes a model): all of `+ca` and `+so`;
+   - *Linked* (the pill's Nock computes a model): `+cape-size`, `+git-g`,
+     `gut` and `put` of `+mi`; all of `+ca` and `+so`;
      `cons`, `hed`, `tel`, `prune`, `slot`, `compose`, `edit` of `+pi`,
      `+distribute`, `+double-int`; `+msg-sock`, `+patch-prod`, `+knit-anno`,
      `+msg-anno`, `+safe-nomm`, `+safe-fol-fol`, `+inlineable`; the
@@ -345,12 +347,12 @@ import only its theorems.  So:
    - *Modelled, not linked*: `fol-loop` (`Ana.folStep`), `resolve`,
      `+analyze`, `+run`, the pass and member loops, `+dirty`, `+sweep`,
      `+above`, `+cull`, `+pop`, `+ska-callgraph`, `+prune-callgraph`,
-     `+memo-final-entry`, the analysis part of `+ska-poke`;
+     `+memo-final-entry`, the analysis part of `+ska-poke`; `+git:mi`,
      `+recursive-call`; `+uni-sock`, `+norm-sock`, `+know`,
      `+bake-graph`; `+reverse-bell-graph`, `+hot-stale`, `+del-bells`;
      `+compiled-mono`, `+compiled-nary`, the `%full` and `%dire` branches of
      `+poke`; `run` of `+comp` and its helpers (`Comp*.lean`).
-   - *Parameters with no model*: `+soft-spot`, `+register-fast`,
+   - *Parameters with no model*: `+he-sock`, `+soft-spot`, `+register-fast`,
      `+shape-collapse`, `+bake-need`.
    - *No model*: `+msg-ca`, `+register-template`, `+index-arms`,
      `+fast-parent`, the `*-ju` arms, the cole arms, `+eval-finalized`,
@@ -370,8 +372,14 @@ import only its theorems.  So:
    shape of the treap does not depend on its values (`toNoun_relabel`).
 11. **`fol-loop` against `Ana.folStep` is not started.**  The trap is the
    formula `[8 [1 bat] [11 [%fast fol-loop-clue] [0 1]]]`, kicked by
-   `[9 2 0 1]`; `bat` is 2785 cells.  `hint_of('fol-loop')` of the generator
-   finds the `%fast` hint; its parent's head is `[1 bat]`.  A proof needs the
-   battery named, the nouns of `GenS`, `Anno` and `FolOut`, and `go` (the
-   calls of the trap to itself) as a parameter, as `+eval-blob` has in
-   `Compiler/EvalCall.lean`.
+   `[9 2 0 1]`.  The generator names its battery `fol_loop.battery` (5569
+   cells as a tree), the traps it kicks in place `fol_loop.direct`
+   (`nock-2-direct-non-inlined`) and `fol_loop.soft` (`nock-11-soft`), the
+   loop `fol_loop.resolve`, and the arms it pulls from `ana`: `he_sock`,
+   `recursive_call` (with its loop and the gate `recursive_call.cnt` that
+   `+roll` runs), `git_g`, `mi` (`mi.git`, `mi.put`, `mi.gut`), `soft_spot`,
+   and `register_fast`, which quotes the hoon core and so lives in the bulk
+   with its axis `fol_loop.register_fast.axis`; also `ska_analyze` and
+   `ska_run` (`+analyze`, `+run`).  A proof needs the nouns of `GenS`,
+   `Anno` and `FolOut`, and `go` (the calls of the trap to itself) as a
+   parameter, as `+eval-blob` has in `Compiler/EvalCall.lean`.
