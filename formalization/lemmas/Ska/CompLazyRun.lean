@@ -424,6 +424,48 @@ def copyAll (nex : NextL S) : List (Lazy S) → CM Map (NextL S)
     let nex ← copyL nex b
     copyAll nex rest
 
+/-- The branch of the case `%6` for a goal `%next` that forks the goal's
+lazy need on the test's register (`+fork`) and joins the branches with
+`+sect`. -/
+def sixNextFork [HoonMapKeys Map] (rp rq rr : CGoalL S → List Nat → CM Map (NextL S)) (p : Nomm)
+    (laz : Lazy S) (th : Jmp) (region : List Nat) : CM Map (NextL S) := do
+  let rCond ← re
+  let (g0, g1) ← forkL ⟨laz, th⟩ rCond
+  let rid ← idM
+  let rb := rid :: region
+  let condBefore ← getCond
+  let nex1 ← rr (CGoalL.next g1.laz g1.th) rb
+  let condBetween ← getCond
+  let nex0 ← rq (CGoalL.next g0.laz g0.th) rb
+  let (lazy, yes, nuh) ← sect nex0 nex1 g0.th.there g1.th.there rb condBefore condBetween
+  let lazy ← liftO (pastFork noCode lazy p)
+  let o ← emit ⟨[], [], Termin.brn rCond (jmp0 yes) (jmp0 nuh)⟩
+  let lazy ← lazyShut o lazy
+  let nexCond ← rp (CGoalL.next (ofSure ⟨Need.this rCond, HoonSet.empty⟩) (jmp0 o)) region
+  copyL nexCond lazy
+
+/-- The simpler branch of the case `%6` for a goal `%next`: the sure need
+is forked (`+fork-sure`), the branches are compiled in a new region and
+joined with `+sect`, and the test is compiled for `%pick`. -/
+def sixNextSimple [HoonMapKeys Map] (rp rq rr : CGoalL S → List Nat → CM Map (NextL S)) (p : Nomm)
+    (laz : Lazy S) (th : Jmp) (region : List Nat) : CM Map (NextL S) := do
+  let o0 ← oo
+  let o1 ← oo
+  let (s0, s1) ← forkSure laz.sure th.there o0 o1
+  let rid ← idM
+  let rb := rid :: region
+  let condBefore ← getCond
+  let nex1 ← rr (CGoalL.next (ofSure s1) (jmp0 o1)) rb
+  let condBetween ← getCond
+  let nex0 ← rq (CGoalL.next (ofSure s0) (jmp0 o0)) rb
+  let (lazy, yes, nuh) ← sect nex0 nex1 o0 o1 rb condBefore condBetween
+  let lazy ← liftO (pastFork noCode lazy p)
+  let nexCond ← rp (CGoalL.pick (jmp0 yes) (jmp0 nuh)) region
+  if !(lazyBig (softLess noSoft lazy)) then copyL nexCond lazy else do
+    let o ← emit ⟨[], [], Termin.hop nexCond.th⟩
+    let lazy ← lazyShut o lazy
+    copyL ⟨nexCond.laz, jmp0 o⟩ lazy
+
 /-- **The case `%6` of `run` for a goal `%next laz th`**, with the runs of
 the test and the branches as parameters.  `fuel` bounds the times the case
 runs itself again with another goal (after `+leap`, after `+kerf`): it does
@@ -456,38 +498,19 @@ def sixNextL [HoonMapKeys Map] (rp rq rr : CGoalL S → List Nat → CM Map (Nex
             softFork noSoft (fun _ => false) laz then do
           let (out, pro) ← kerf ⟨laz, th⟩
           sixNextL rp rq rr p q r fuel (ofSure ⟨Need.this pro, HoonSet.empty⟩) (jmp0 out) region
-        else do
-          let rCond ← re
-          let (g0, g1) ← forkL ⟨laz, th⟩ rCond
-          let rid ← idM
-          let rb := rid :: region
-          let condBefore ← getCond
-          let nex1 ← rr (CGoalL.next g1.laz g1.th) rb
-          let condBetween ← getCond
-          let nex0 ← rq (CGoalL.next g0.laz g0.th) rb
-          let (lazy, yes, nuh) ← sect nex0 nex1 g0.th.there g1.th.there rb condBefore condBetween
-          let lazy ← liftO (pastFork noCode lazy p)
-          let o ← emit ⟨[], [], Termin.brn rCond (jmp0 yes) (jmp0 nuh)⟩
-          let lazy ← lazyShut o lazy
-          let nexCond ← rp (CGoalL.next (ofSure ⟨Need.this rCond, HoonSet.empty⟩) (jmp0 o)) region
-          copyL nexCond lazy
-      else do
-        let o0 ← oo
-        let o1 ← oo
-        let (s0, s1) ← forkSure laz.sure th.there o0 o1
-        let rid ← idM
-        let rb := rid :: region
-        let condBefore ← getCond
-        let nex1 ← rr (CGoalL.next (ofSure s1) (jmp0 o1)) rb
-        let condBetween ← getCond
-        let nex0 ← rq (CGoalL.next (ofSure s0) (jmp0 o0)) rb
-        let (lazy, yes, nuh) ← sect nex0 nex1 o0 o1 rb condBefore condBetween
-        let lazy ← liftO (pastFork noCode lazy p)
-        let nexCond ← rp (CGoalL.pick (jmp0 yes) (jmp0 nuh)) region
-        if !(lazyBig (softLess noSoft lazy)) then copyL nexCond lazy else do
-          let o ← emit ⟨[], [], Termin.hop nexCond.th⟩
-          let lazy ← lazyShut o lazy
-          copyL ⟨nexCond.laz, jmp0 o⟩ lazy
+        else sixNextFork rp rq rr p laz th region
+      else sixNextSimple rp rq rr p laz th region
+
+/-- **On a fork-free goal the case `%6` takes its simpler branch.** -/
+theorem sixNextL_ofSure [HoonMapKeys Map] (rp rq rr : CGoalL S → List Nat → CM Map (NextL S)) (p q r : Nomm)
+    (fuel : Nat) (s : Sure S) (th : Jmp) (region : List Nat) :
+    sixNextL rp rq rr p q r (fuel + 1) (ofSure s) th region = sixNextSimple rp rq rr p (ofSure s) th region := by
+  have hl : leap (ofSure s) q r = some Option.none := by simp [leap, ofSure]
+  have hs : HoonSet.small (HoonSet.empty : S) = true :=
+    (HoonSet.small_iff _).mpr (fun x hx => absurd hx (HoonSet.mem_empty x))
+  have hn : noneEquivalentL (mk (Sure.bunt : Sure S) (ofSure s).fork (ofSure s).bond) = true := by
+    simp [noneEquivalentL, ofSure, Sure.bunt, noneForks, noneBonds, hs]
+  simp only [sixNextL, hl, hn, Bool.not_true, Bool.false_eq_true, if_false]
 
 /-! ## `run` -/
 
