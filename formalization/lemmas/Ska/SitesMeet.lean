@@ -24,7 +24,10 @@ checked on the real compiler (see below):
    nomm, from the monotonicity of each sock operation (`+pull:so`,
    `+knit:so`, `+darn:so`, `+patch-prod` in its new sock, and `+double-int`,
    whose provenance test is the one place where a fold, which drops
-   provenance, has to be looked at).
+   provenance, has to be looked at).  That last case defeats it:
+   `knowMono_false` (`KnowMonoFalse.lean`) is a model counterexample, and
+   `SitesMeetNF.lean` replaces `KnowMono` and `LessProvides` by forms that
+   compare with `+know` without folding under `less.cur`.
 3. `SitesInhab`: under a bake, every site's sock has a noun (it is not
    `%void`).
 
