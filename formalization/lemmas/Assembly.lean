@@ -21,7 +21,8 @@ The way through:
    and `cr` reached by the model (`ReachI`) from the pill's `cor`
    (`reach_model`), by induction on `Reach` with `poke_iff`, `top_iff` and
    `mook_iff`.  `Reach` pokes any noun that is not a hot `%jets` and runs
-   `+eval-mook` on any noun: `PokeValid` and `MookOther` say that the pill
+   `+eval-mook` on any noun: `pokeValid` (from `OvumMold`) and `MookOther`
+   say that the pill
    does nothing there that the model cannot follow.
 4. On such cores the statements are the model's (`meek_reach`, `weak_reach`,
    `converse_reach`), through `top_iff`, `run_iff` and `mock_iff`.
@@ -140,10 +141,32 @@ def PokeModel : Prop :=
   ∀ cr, CorIn cr → ∀ ov : Ovum, ¬ Ska.Hot ov.toNoun →
     pokeN cr ov.toNoun = (pk cr ov).map fun r => C r.1.toNoun r.2
 
-/-- The inner `+poke` crashes on every noun that is no ovum: what
-`+validate-ovum` accepts is the noun of an `Ovum`.  Owner: pill to model. -/
+/-- The mold `ovum` of the pill (arm `685` of `vcore`, which `+validate-ovum`
+slams on `%full`, `%jets` and `%fast`) returns on a `%full` only when its tail
+is a cell, and on a `%fast` only when its tail is a flag and a noun.  With it,
+the poke crashes on every noun that is no ovum (`pokeValid`).  Owner: pill to
+model: the `$%` mold of `+ovum` on two of its cases. -/
+def OvumMold : Prop :=
+  ∀ tl w, (slamAt vcore 685 (C (A Tag.full) tl) = some w → ∃ s f, tl = C s f) ∧
+    (slamAt vcore 685 (C (A Tag.fast) tl) = some w → ∃ r p, tl = C (flag r) p)
+
+/-- The inner `+poke` crashes on every noun that is no ovum. -/
 def PokeValid : Prop :=
   ∀ cr, CorIn cr → ∀ ovo x, pokeN cr ovo = some x → ∃ ov : Ovum, ovo = ov.toNoun
+
+theorem pokeValid (hm : OvumMold) : PokeValid := by
+  intro cr hc ovo x h
+  obtain ⟨v, hv⟩ := pokeN_validates hc h
+  obtain ⟨hd, tl, rfl, hj | ⟨hff, w, hw⟩ | ⟨rfl, b, m, bb, rfl, hbb⟩⟩ :=
+    vovum_shape vcore vcore_cape vcore_bell ovo v hv
+  · subst hj; exact ⟨Ovum.jets tl, rfl⟩
+  · rcases hff with rfl | rfl
+    · obtain ⟨s, f, rfl⟩ := (hm tl w).1 hw
+      exact ⟨Ovum.full s f, rfl⟩
+    · obtain ⟨r, p, rfl⟩ := (hm tl w).2 hw
+      exact ⟨Ovum.fast r p, rfl⟩
+  · refine ⟨Ovum.dire bb m, ?_⟩
+    simp [Ovum.toNoun, bell_ofNoun_toNoun hbb]
 
 /-- `+eval-mook` on a noun that is no tone leaves a core that it also leaves on
 some tone.  `Reach` of `core/Statement.lean` runs `+eval-mook` on any noun,
@@ -246,7 +269,7 @@ theorem pokeIs_all (hpm : PokeModel pk) : ∀ cr, CorIn cr → PokeIs pk cr :=
 interpreter core of a compiler's core `cr` that keeps what the interpreter
 reads and that the model reaches from the pill's `cor`. -/
 theorem reach_model (hcue : CueRoot) (hslam : LibSlam lib) (hpm : PokeModel pk)
-    (hpv : PokeValid) (hmo : MookOther) (hfmt : LibFormat lib)
+    (hpv : OvumMold) (hmo : MookOther) (hfmt : LibFormat lib)
     (hmf : MookFormat lib) {core₀ c : Noun} (h0 : Ska.IsCore core₀) (h : Ska.Reach core₀ c) :
     ∃ cr, c = C ob (icore cr) ∧ CorIn cr ∧ ReachI lib pk cor cr := by
   have hpk := pokeIs_all hpm
@@ -261,7 +284,7 @@ theorem reach_model (hcue : CueRoot) (hslam : LibSlam lib) (hpm : PokeModel pk)
   | @poke c ovo prod core' _ hp hhot ih =>
     obtain ⟨cr, rfl, hc, hr⟩ := ih
     obtain ⟨cr', hn, rfl⟩ := (poke_iff cr ovo prod core').1 hp
-    obtain ⟨ov, rfl⟩ := hpv cr hc ovo _ hn
+    obtain ⟨ov, rfl⟩ := pokeValid hpv cr hc ovo _ hn
     have e := (hpk cr hc).1 ov hhot
     rw [hn] at e
     cases e1 : pk cr ov with
@@ -297,7 +320,7 @@ structure Gap (lib : Lib) (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMa
     (InvC : Noun → Prop) : Prop where
   cueRoot : CueRoot
   pokeModel : PokeModel pk
-  pokeValid : PokeValid
+  ovumMold : OvumMold
   mookOther : MookOther
   contract : Contract lib pk InvC
   halting : Halting pk InvC
@@ -309,14 +332,14 @@ structure Gap (lib : Lib) (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMa
 
 theorem Gap.reach (g : Gap lib pk InvC) {core₀ c : Noun} (h0 : Ska.IsCore core₀)
     (h : Ska.Reach core₀ c) : ∃ cr, c = C ob (icore cr) ∧ CorIn cr ∧ InvC cr := by
-  obtain ⟨cr, rfl, hc, hr⟩ := reach_model g.cueRoot g.libSlam g.pokeModel g.pokeValid
+  obtain ⟨cr, rfl, hc, hr⟩ := reach_model g.cueRoot g.libSlam g.pokeModel g.ovumMold
     g.mookOther g.libFormat g.mookFormat h0 h
   exact ⟨cr, rfl, hc, reach_inv lib g.contract.toPokeSteps g.invKept g.invStart hr⟩
 
 theorem meek_of (g : Gap lib pk InvC) : Ska.Meek := by
   intro core₀ c s f p gul h0 hr hA
   have hpk := pokeIs_all g.pokeModel
-  obtain ⟨cr, rfl, hc, hr'⟩ := reach_model g.cueRoot g.libSlam g.pokeModel g.pokeValid
+  obtain ⟨cr, rfl, hc, hr'⟩ := reach_model g.cueRoot g.libSlam g.pokeModel g.ovumMold
     g.mookOther g.libFormat g.mookFormat h0 hr
   obtain ⟨st', he⟩ := meek_reach lib g.contract g.halting g.invKept (gul := gul) g.invStart hr' hA
   exact ⟨_, (top_iff lib g.libSlam pk hpk ob cr hc s f gul _ _).2 ⟨_, st', rfl, rfl, he⟩⟩
@@ -329,7 +352,7 @@ theorem weak_of (g : Gap lib pk InvC) : Ska.Weak := by
   have hmm : EvalMookMsgIs lib := g.mookFormat
   have hrb := rendBaseIs_layer4 lib hleaf hhand hrest
   have e0 := isCore_eq g.cueRoot h0
-  obtain ⟨cr, rfl, hc, hr'⟩ := reach_model g.cueRoot g.libSlam g.pokeModel g.pokeValid
+  obtain ⟨cr, rfl, hc, hr'⟩ := reach_model g.cueRoot g.libSlam g.pokeModel g.ovumMold
     g.mookOther g.libFormat g.mookFormat h0 hr
   subst e0
   obtain ⟨t, rfl, ht⟩ := (mock_iff lib g.libSlam hleaf hhand hrest hst hmsg core core_layer4
@@ -346,7 +369,7 @@ theorem converse_of (g : Gap lib pk InvC) : Ska.Converse := by
   have hmm : EvalMookMsgIs lib := g.mookFormat
   have hrb := rendBaseIs_layer4 lib hleaf hhand hrest
   have e0 := isCore_eq g.cueRoot h0
-  obtain ⟨cr, rfl, hc, hr'⟩ := reach_model g.cueRoot g.libSlam g.pokeModel g.pokeValid
+  obtain ⟨cr, rfl, hc, hr'⟩ := reach_model g.cueRoot g.libSlam g.pokeModel g.ovumMold
     g.mookOther g.libFormat g.mookFormat h0 hr
   subst e0
   obtain ⟨tn, cr'', rfl, rfl, hR⟩ :=

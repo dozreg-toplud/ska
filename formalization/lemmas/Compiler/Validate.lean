@@ -133,5 +133,65 @@ theorem pokeDireBad {cr : Noun} (hc : CorIn cr) : PokeDireBad cr := by
     rw [vovum_dire vcore vcore_cape vcore_bell, hn] at hv
     cases hv
 
+/-! ## What `+validate-ovum` returns on -/
+
+/-- Slamming the gate that the arm at `axis` of `c` builds on `sam`. -/
+def slamAt (c : Noun) (axis : Nat) (sam : Noun) : Option Noun :=
+  ((slot? axis c).bind fun a => nock c a).bind fun g =>
+    (edit? 6 sam g).bind fun g' => (slot? 2 g').bind fun f => nock g' f
+
+theorem vovum_shape (c : Noun) (hc : slot? 84 c = some (gateArm vcapeBat))
+    (hb : slot? 343 c = some (gateArm vbellBat)) (n v : Noun)
+    (h : nock (C vovumBat (C n c)) vovumBat = some v) :
+    ∃ hd tl, n = C hd tl ∧ (hd = A Tag.jets ∨
+      ((hd = A Tag.full ∨ hd = A Tag.fast) ∧ ∃ w, slamAt c 685 n = some w) ∨
+      (hd = A Tag.dire ∧ ∃ b m bb, tl = C b (flag m) ∧ Bell.ofNoun? b = some bb)) := by
+  have h0 := h
+  conv at h => lhs; arg 2; unfold vovumBat
+  rcases n with a | ⟨hd, tl⟩
+  · simp [nock_exec] at h
+  refine ⟨hd, tl, rfl, ?_⟩
+  by_cases e1 : hd = A Tag.jets
+  · exact Or.inl e1
+  right
+  by_cases e2 : hd = A Tag.full ∨ hd = A Tag.fast
+  · left
+    refine ⟨e2, ?_⟩
+    rcases e2 with rfl | rfl <;>
+    · simp [nock_exec, Tag.full, Tag.fast] at h
+      exact ⟨v, by simpa [slamAt, Tag.full, Tag.fast] using h⟩
+  · right
+    have e4 : ¬ hd = A Tag.full := fun e => e2 (Or.inl e)
+    have e5 : ¬ hd = A Tag.fast := fun e => e2 (Or.inr e)
+    by_cases e3 : hd = A Tag.dire
+    · subst e3
+      refine ⟨rfl, ?_⟩
+      rcases tl with a | ⟨b, a | ⟨x, y⟩⟩
+      · simp [nock_exec, Tag.dire] at h
+      · rcases (by omega : a = 0 ∨ a = 1 ∨ 2 ≤ a) with rfl | rfl | ha
+        · cases e : Bell.ofNoun? b with
+          | some bb => exact ⟨b, true, bb, rfl, e⟩
+          | none =>
+            have := vovum_dire c hc hb b true
+            simp only [flag, if_true, e, Option.map_none] at this
+            rw [this] at h0; cases h0
+        · cases e : Bell.ofNoun? b with
+          | some bb => exact ⟨b, false, bb, rfl, e⟩
+          | none =>
+            have := vovum_dire c hc hb b false
+            simp only [flag, Bool.false_eq_true, if_false, e, Option.map_none] at this
+            rw [this] at h0; cases h0
+        · have h1 : ¬ (1 = a) := by omega
+          have h0 : ¬ (0 = a) := by omega
+          simp [nock_exec, Tag.dire, h0, h1] at h
+      · simp [nock_exec, Tag.dire] at h
+    · exfalso
+      have e1' : ¬ A Tag.jets = hd := fun e => e1 e.symm
+      have e4' : ¬ A Tag.full = hd := fun e => e4 e.symm
+      have e5' : ¬ A Tag.fast = hd := fun e => e5 e.symm
+      have e3' : ¬ A Tag.dire = hd := fun e => e3 e.symm
+      simp only [Tag.jets, Tag.full, Tag.fast, Tag.dire] at e1' e4' e5' e3'
+      simp [nock_exec, e1', e4', e5', e3'] at h
+
 end Compiler
 end Formalization
