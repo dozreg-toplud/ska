@@ -331,29 +331,40 @@ def copy (first : Next S) (second : Sure S) : CM Map (Next S) := do
 
 /-! ## Looks, constants and atoms -/
 
+/-- The register, head and tail of a need, as the loop of
+`+sure-require-look` takes it apart (`here`, `h`, `t`). -/
+def split3 : Need → Option Nat × Need × Need
+  | Need.none => (Option.none, Need.none, Need.none)
+  | Need.this r => (some r, Need.none, Need.none)
+  | Need.pair p q => (Option.none, p, q)
+  | Need.both r h t => (some r, h, t)
+
+/-- The end of that loop: `?~  here  x`, `?@  -.x  [%this u.here]`,
+`[%both u.here x]`. -/
+def wrapN : Option Nat → Need → Need
+  | Option.none, x => x
+  | some r, x => if x = Need.none then Need.this r else
+      match x with
+      | Need.pair p q => Need.both r p q
+      | Need.both _ _ _ => Need.both r Need.none Need.none
+      | Need.this _ => Need.both r Need.none Need.none
+      | Need.none => Need.both r Need.none Need.none
+
 /-- The loop of `+sure-require-look` for one axis. -/
 def lookPath (ned : Need) (axe : Nat) : CM Map Need :=
   if _h : axe ≤ 1 then
     match ned with
     | Need.none => do let r ← re; pure (Need.this r)
-    | _ => pure ned
+    | Need.this r => pure (Need.this r)
+    | Need.pair p q => pure (Need.pair p q)
+    | Need.both r h t => pure (Need.both r h t)
   else
-    let (here, hd, tl) : Option Nat × Need × Need :=
-      match ned with
-      | Need.none => (Option.none, Need.none, Need.none)
-      | Need.this r => (some r, Need.none, Need.none)
-      | Need.pair p q => (Option.none, p, q)
-      | Need.both r h t => (some r, h, t)
-    do
-      let (hr, tr) ← if cap axe = 2 then do let x ← lookPath hd (mas axe); pure (x, tl)
-                     else do let x ← lookPath tl (mas axe); pure (hd, x)
-      let x := consNeed hr tr
-      match here with
-      | Option.none => pure x
-      | some r => if x = Need.none then pure (Need.this r) else
-          match x with
-          | Need.pair p q => pure (Need.both r p q)
-          | _ => pure (Need.both r Need.none Need.none)
+    if cap axe = 2 then do
+      let x ← lookPath (split3 ned).2.1 (mas axe)
+      pure (wrapN (split3 ned).1 (consNeed x (split3 ned).2.2))
+    else do
+      let x ← lookPath (split3 ned).2.2 (mas axe)
+      pure (wrapN (split3 ned).1 (consNeed (split3 ned).2.1 x))
 termination_by axe
 decreasing_by all_goals exact mas_lt axe (by omega)
 
