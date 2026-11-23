@@ -2,7 +2,7 @@ module
 
 public import lemmas.Sound
 public import lemmas.KernelRfl
-public import lemmas.Pill.Nouns.P014
+public import lemmas.Pill.Nouns.P015
 public import lemmas.Pill.Arm.Add
 public import lemmas.Pill.Arm.Bex
 public import lemmas.Pill.Arm.Biff
@@ -45,6 +45,7 @@ public import lemmas.Pill.Arm.Mix
 public import lemmas.Pill.Arm.Mock
 public import lemmas.Pill.Arm.Mod
 public import lemmas.Pill.Arm.Monk
+public import lemmas.Pill.Arm.Mook
 public import lemmas.Pill.Arm.Mor
 public import lemmas.Pill.Arm.Mug
 public import lemmas.Pill.Arm.Muk
@@ -65,10 +66,12 @@ public import lemmas.Pill.Arm.Snag
 public import lemmas.Pill.Arm.Snip
 public import lemmas.Pill.Arm.Snoc
 public import lemmas.Pill.Arm.So
+public import lemmas.Pill.Arm.Soft
 public import lemmas.Pill.Arm.Some
 public import lemmas.Pill.Arm.Sort
 public import lemmas.Pill.Arm.Spin
 public import lemmas.Pill.Arm.Sub
+public import lemmas.Pill.Arm.Tank
 public import lemmas.Pill.Arm.Turn
 public import lemmas.Pill.Arm.Weld
 public import lemmas.Pill.Arm.Welp
@@ -115,6 +118,7 @@ import all lemmas.Pill.Arm.Mix
 import all lemmas.Pill.Arm.Mock
 import all lemmas.Pill.Arm.Mod
 import all lemmas.Pill.Arm.Monk
+import all lemmas.Pill.Arm.Mook
 import all lemmas.Pill.Arm.Mor
 import all lemmas.Pill.Arm.Mug
 import all lemmas.Pill.Arm.Muk
@@ -135,10 +139,12 @@ import all lemmas.Pill.Arm.Snag
 import all lemmas.Pill.Arm.Snip
 import all lemmas.Pill.Arm.Snoc
 import all lemmas.Pill.Arm.So
+import all lemmas.Pill.Arm.Soft
 import all lemmas.Pill.Arm.Some
 import all lemmas.Pill.Arm.Sort
 import all lemmas.Pill.Arm.Spin
 import all lemmas.Pill.Arm.Sub
+import all lemmas.Pill.Arm.Tank
 import all lemmas.Pill.Arm.Turn
 import all lemmas.Pill.Arm.Weld
 import all lemmas.Pill.Arm.Welp
@@ -430,6 +436,12 @@ theorem monk.arm_at : slot? monk.axis layer4 = some monk.arm := by kernel_rfl
 theorem mock.arm_at : slot? mock.axis layer4 = some mock.arm := by kernel_rfl
 
 theorem mack.arm_at : slot? mack.axis layer4 = some mack.arm := by kernel_rfl
+
+theorem mook.arm_at : slot? mook.axis layer4 = some mook.arm := by kernel_rfl
+
+theorem soft.arm_at : slot? soft.axis layer4 = some soft.arm := by kernel_rfl
+
+theorem tank.arm_at : slot? tank.axis layer2 = some tank.arm := by kernel_rfl
 
 theorem ca.con.arm_at : ∀ x, slot? ca.con.axis (C ca.battery x) = some ca.con.arm := by
   intro x; kernel_rfl
