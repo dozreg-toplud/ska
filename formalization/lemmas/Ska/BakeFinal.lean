@@ -247,6 +247,151 @@ theorem knowGo_res (fold : Bool) (dat : Bell → Option Datum) (res res2 : Bell 
     simp only [knowGo, ha', Option.bind_some, hv2', hc', Option.map_some]
     exact ⟨_, rfl, by simp only [eraseN, ea, ec], pc, sc⟩
 
+/-! ## Every bell with a bake was evaluated under it -/
+
+section Loop
+
+variable {M : Type → Type → Type} [Treap M]
+
+/-- Every bell with a bake is queued, or was evaluated under its bake: it has
+a datum, `+know` returned under the bake, and `+pick` returned on each of its
+sites. -/
+def Evald (E : BEnv M) (qs : M Bell Unit) (st : BSt M) : Prop :=
+  ∀ c s, Treap.get st.bak c = some s → Treap.has qs c = true ∨
+    ∃ sites, sitesOf E st c = some sites ∧ ∀ x ∈ sites, (pick E.vars x.1 x.2).isSome = true
+
+/-- When the `roll` over the sites returns, `+pick` returned on each. -/
+theorem newFold_pick (vars : M Bell (M Bell Unit)) :
+    ∀ (l : List Site) (acc new : M Bell (List Sock)), l.foldl (newStep vars) (some acc) = some new →
+      ∀ x ∈ l, (pick vars x.1 x.2).isSome = true
+  | [], _, _, _ => fun x hx => absurd hx List.not_mem_nil
+  | s :: l, acc, new, h => by
+    simp only [List.foldl_cons] at h
+    cases h1 : newStep vars (some acc) s with
+    | none => rw [h1, newFold_none] at h; cases h
+    | some acc1 =>
+      rw [h1] at h
+      intro x hx
+      rcases List.mem_cons.mp hx with rfl | hx
+      · simp only [newStep, Option.bind_some, Option.map_eq_some_iff] at h1
+        obtain ⟨p, hp, _⟩ := h1
+        rw [hp]; rfl
+      · exact newFold_pick vars l acc1 new h x hx
+
+theorem evald_init (E : BEnv M) : Evald E (Treap.put Treap.empty E.root ()) (bakeInit E) := by
+  intro c s hs
+  left
+  simp only [bakeInit, Treap.get_put, Treap.get_empty] at hs
+  split at hs
+  · rename_i e; subst e; simp [Treap.has, Treap.get_put]
+  · cases hs
+
+theorem bakeStep_evald {E : BEnv M} {cur : Bell} {rest q' : List Bell} {qs qs' : M Bell Unit} {st st' : BSt M}
+    (hI : Evald E qs st) (h : bakeStep E cur rest qs st = some (q', qs', st')) : Evald E qs' st' := by
+  simp only [bakeStep, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  obtain ⟨sites, hsites, new, hnew, ⟨changed, st3⟩, hfold, he⟩ := h
+  simp only [Prod.mk.injEq] at he
+  obtain ⟨rfl, rfl, rfl⟩ := he
+  obtain ⟨-, -, -, F4, -, -⟩ := touchFold_spec E cur new _ [] changed _ st3 hfold
+  have hpick := newFold_pick E.vars sites _ new hnew
+  intro c s hs
+  by_cases hc : c ∈ changed
+  · left
+    rw [has_gasIn]
+    by_cases hq : Treap.has (Treap.del qs cur) c = true
+    · exact Or.inl hq
+    · exact Or.inr (List.mem_filter.mpr ⟨hc, by simpa using hq⟩)
+  · have hb : Treap.get st3.bak c = Treap.get st.bak c := by
+      by_cases hne : Treap.get st3.bak c = Treap.get st.bak c
+      · exact hne
+      · exact absurd (F4 c hne) hc
+    have hse : sitesOf E st3 c = sitesOf E st c := sitesOf_eq hb
+    by_cases hcur : c = cur
+    · subst hcur
+      exact Or.inr ⟨sites, hse.trans hsites, hpick⟩
+    · rcases hI c s (hb ▸ hs) with hq | ⟨sites', hs', hp'⟩
+      · left
+        rw [has_gasIn]
+        exact Or.inl ((has_del _ _ _).mpr ⟨hq, hcur⟩)
+      · exact Or.inr ⟨sites', hse.trans hs', hp'⟩
+
+theorem bakeLoop_evald (E : BEnv M) : ∀ (n : Nat) (q : List Bell) (qs : M Bell Unit) (st st' : BSt M),
+    LoopInv E q qs st → Evald E qs st → bakeLoop E n q qs st = some st' →
+      ∃ qs', LoopInv E [] qs' st' ∧ Evald E qs' st'
+  | 0, _, _, _, _, _, _, h => by simp [bakeLoop] at h
+  | n + 1, [], qs, st, st', hI, hE, h => by
+    simp only [bakeLoop, Option.some.injEq] at h
+    subst h; exact ⟨qs, hI, hE⟩
+  | n + 1, cur :: rest, qs, st, st', hI, hE, h => by
+    simp only [bakeLoop, Option.bind_eq_some_iff] at h
+    obtain ⟨⟨q', qs', st1⟩, h1, h2⟩ := h
+    exact bakeLoop_evald E n q' qs' st1 st' (bakeStep_inv hI h1) (bakeStep_evald hE h1) h2
+
+theorem mapM_some {α β : Type} (f : α → Option β) :
+    ∀ (l : List α), (∀ x ∈ l, (f x).isSome = true) → ∃ ys, l.mapM f = some ys
+  | [], _ => ⟨[], rfl⟩
+  | x :: l, h => by
+    obtain ⟨y, hy⟩ := Option.isSome_iff_exists.mp (h x List.mem_cons_self)
+    obtain ⟨ys, hys⟩ := mapM_some f l (fun z hz => h z (List.mem_cons_of_mem _ hz))
+    exact ⟨y :: ys, by simp [List.mapM_cons, hy, hys]⟩
+
+/-- **The final pass returns** whenever the worklist ends. -/
+theorem finalPass_some {E : BEnv M} {n : Nat} {st : BSt M}
+    (h : bakeLoop E n [E.root] (Treap.put Treap.empty E.root ()) (bakeInit E) = some st) :
+    ∃ out, (Treap.rap st.bak).foldl (finalStep E st) (some (Treap.empty, E.vars)) = some out := by
+  obtain ⟨qs, hI, hE⟩ := bakeLoop_evald E n _ _ _ st (loopInv_init E) (evald_init E) h
+  -- every bell with a bake: a datum, and `+know` under `bakeRes`
+  have hone : ∀ c s, Treap.get st.bak c = some s → ∀ acc,
+      ∃ acc', finalStep E st (some acc) (c, s) = some acc' := by
+    intro c s hs acc
+    have hq : Treap.has qs c = false := by
+      cases hh : Treap.has qs c
+      · rfl
+      · exact absurd (hI.queued c hh) List.not_mem_nil
+    rcases hE c s hs with hq' | ⟨sites, hsites, hpick⟩
+    · rw [hq] at hq'; cases hq'
+    have hsites' := hsites
+    unfold sitesOf at hsites'
+    simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at hsites'
+    obtain ⟨d, hd, s', hs', ⟨nm, sites0⟩, hk, rfl⟩ := hsites'
+    rw [hs] at hs'
+    cases hs'
+    -- `bakeRes` returns on every site
+    have hres : ResAll (bakeRes E st) sites0 := by
+      intro x hx
+      obtain ⟨p, hp⟩ := Option.isSome_iff_exists.mp (hpick x hx)
+      unfold bakeRes
+      rw [hp]
+      cases p with
+      | some v => rfl
+      | none =>
+        obtain ⟨s2, hs2, -⟩ := bakeLoop_sound h c sites0 hsites x.1 x.2 hx hp
+        simp [hs2]
+    unfold know at hk
+    simp only [Option.map_eq_some_iff] at hk
+    obtain ⟨r, hr, he⟩ := hk
+    simp only [Prod.mk.injEq] at he
+    obtain ⟨-, rfl⟩ := he
+    obtain ⟨r', hr', -, -, hsr⟩ := knowGo_res E.fold E.dat idc (bakeRes E st) d.nomm _ [] r hr hres
+    obtain ⟨vs, hvs⟩ := mapM_some (fun x : Site => bakeRes E st x.1 x.2) r.2 hres
+    have hk2 : know E.fold d.nomm s E.dat (bakeRes E st) = some (r'.1.1, r.2) := by
+      unfold know; rw [hr', ← hsr]; rfl
+    obtain ⟨out0, vars0⟩ := acc
+    simp only [finalStep, Option.bind_some, hd, hk2, hvs, Option.map_some, Option.some.injEq, exists_eq']
+  suffices ∀ (l : List (Bell × Sock)) acc, (∀ e ∈ l, Treap.get st.bak e.1 = some e.2) →
+      ∃ out, l.foldl (finalStep E st) (some acc) = some out from
+    this _ _ fun e he => (Treap.mem_rap _ _ _).mp he
+  intro l
+  induction l with
+  | nil => intro acc _; exact ⟨acc, rfl⟩
+  | cons e l ih =>
+    intro acc hl
+    obtain ⟨acc', ha⟩ := hone e.1 e.2 (hl e List.mem_cons_self) acc
+    simp only [List.foldl_cons, ha]
+    exact ih acc' fun x hx => hl x (List.mem_cons_of_mem _ hx)
+
+end Loop
+
 end Bake
 
 end SkaModel

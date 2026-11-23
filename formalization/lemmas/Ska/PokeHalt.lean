@@ -1,4 +1,5 @@
 import lemmas.Ska.PokeAna
+import lemmas.Ska.BakeFinal
 
 /-!
 # When `+poke` answers `%full`: the loops that must end
@@ -20,6 +21,10 @@ loop, each stated on the fuel the model gives that loop:
 
 besides the soundness hypotheses (`CompHyp`, `PokeSites`), which give the
 invariant of the state the compile step starts from.
+
+`FinalEnds` always holds (`finalEnds_always`, from `finalPass_some` of
+`BakeFinal.lean`), so `fullAnswers_of_loops` needs only `AnaEnds`,
+`BakeEnds` and `RootAnswers`.
 
 What is proved of the loops here: the worklist does not depend on extra
 fuel (`bakeLoop_mono`), so `BakeEnds` holds of any fuel function at least
@@ -224,6 +229,26 @@ theorem fullAnswers_of (A : Arms M Map J H CR) {lib : Lib} {ref : Ref M Map J H}
     obtain ⟨x, hx⟩ := hr st s (C f1 f2) r hI hk hj
     obtain ⟨p, hp⟩ := Option.isSome_iff_exists.mp (hC.answers _ r.1 true x hI1 hx)
     exact ⟨_, by rw [hp]; rfl⟩
+
+/-- **The final pass never crashes** once the worklist ends. -/
+theorem finalEnds_always (lib : Lib) (env : Env R) (jet : H → J → (Bell → Option Datum) → R → Bell → Bool)
+    (fold frozen : Bool) (fuel : Noun → Noun → LongB M → J → Nat) (regOf : J → R) :
+    FinalEnds lib env jet fold frozen fuel regOf :=
+  fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ h => finalPass_some h
+
+/-- **`+poke` answers every `%full` poke** from a state that satisfies its
+invariant, given that the analysis and the worklist end and the root bell
+has a form. -/
+theorem fullAnswers_of_loops (A : Arms M Map J H CR) {lib : Lib} {ref : Ref M Map J H} {env : Env R}
+    {jet : H → J → (Bell → Option Datum) → R → Bell → Bool} {fold frozen : Bool}
+    {fuel : Noun → Noun → LongB M → J → Nat} {bf : BEnv M → Nat} {regOf : J → R} {jetsOf : J → R → J}
+    {newOf : R → Noun}
+    (hC : CompHyp A lib ref) (hA : A.skaPoke = anaArm env jet fold frozen fuel bf regOf jetsOf newOf)
+    (hs : PokeSites lib env jet fold frozen fuel regOf)
+    (ha : AnaEnds lib env fuel regOf) (hb : BakeEnds lib env jet fold frozen fuel bf regOf)
+    (hr : RootAnswers lib A ref) :
+    FullAnswers (pokeS A) (InvS lib ref) :=
+  fullAnswers_of A hC hA hs ha hb (finalEnds_always lib env jet fold frozen fuel regOf) hr
 
 end PokeM
 

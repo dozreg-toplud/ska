@@ -293,6 +293,10 @@ open Formalization.SkaModel
 #print axioms Bake.bakeLoop_grows
 #print axioms PokeM.anaArm_some
 #print axioms PokeM.fullAnswers_of
+#print axioms Bake.knowGo_res
+#print axioms Bake.finalPass_some
+#print axioms PokeM.finalEnds_always
+#print axioms PokeM.fullAnswers_of_loops
 #print axioms Jets.reverseGraph_has
 #print axioms Jets.hotStale_closed
 #print axioms Jets.delBells_get
