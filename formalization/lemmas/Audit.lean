@@ -26,6 +26,7 @@ import lemmas.Compiler.MinkPill
 import lemmas.Compiler.MockPill
 import lemmas.Compiler.PiEdit
 import lemmas.Compiler.Inlineable
+import lemmas.Compiler.Safe
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -231,3 +232,7 @@ open Formalization
 #print axioms Compiler.distribute_pill
 #print axioms Compiler.double_int_pill
 #print axioms Compiler.inlineable_gate'
+#print axioms Compiler.safe_nomm_gate
+#print axioms Compiler.safe_fol_fol_gate
+#print axioms Compiler.safe_nomm_pill
+#print axioms Compiler.safe_fol_fol_pill
