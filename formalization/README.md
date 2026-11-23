@@ -18,7 +18,7 @@ is not ported to Lean and no port is trusted.
 ```sh
 cd formalization
 tools/capped.sh -m 3G lake build core              # 3 s
-tools/capped.sh -m 3G lake build                   # about 55 s from scratch, 2.4 GB peak
+tools/capped.sh -m 3G lake build                   # about 63 s from scratch, 2.5 GB peak
 tools/capped.sh -m 3G lake env lean lemmas/Audit.lean  # axioms of the main theorems
 ```
 
@@ -198,8 +198,8 @@ import only its theorems.  So:
 2. A change to a declaration of the chain rebuilds the rest of the chain,
    `Facts.lean` and the layer files, and no gate theorem file.  A comment
    rebuilds the edited file only.
-3. A clean build takes about 55 seconds and peaks at 2.4 GB for the whole
-   build.
+3. A clean build takes about 63 seconds (3 min 40 s of CPU) and peaks at
+   2.5 GB for the whole build (measured 2026-11-23 under a 3 GB scope).
 
 ## Gaps
 
