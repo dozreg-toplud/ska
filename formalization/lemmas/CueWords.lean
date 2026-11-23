@@ -22,6 +22,8 @@ Zero is the single bit `1`.
 
 namespace Formalization
 namespace Nock
+/-! The names live in `Words`, apart from the `cue` of `core/Cue.lean`. -/
+namespace Words
 
 def wordBits : Nat := 32
 
@@ -165,5 +167,6 @@ def cue (words : List Nat) : Option Noun :=
   | none => none
   | some (noun, _, _, _) => some noun
 
+end Words
 end Nock
 end Formalization

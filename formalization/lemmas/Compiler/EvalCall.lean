@@ -4,6 +4,7 @@ import lemmas.Pill.Arm.Eval_top
 import lemmas.Compiler.TreapList
 import lemmas.Compiler.MinkPill
 import lemmas.Ska.Interp
+import core.Statement
 
 /-!
 # The ops of `+eval-pole` that leave the function
@@ -122,14 +123,10 @@ theorem eval_pole_nok (cr : Noun) (hc : CorIn cr) (lib : Lib) (O : Oracle Noun) 
 
 /-! ## The calls -/
 
-/-- The axis of `+poke` in the compiler's core, `axPoke` of `core/Statement.lean`
-(which cannot be imported here: it is a module over the plain `core/Pill.lean`). -/
-abbrev poke.axis : Nat := 23
-
 /-- `(poke ovo)` on the compiler's core `cr`, as the interpreter's arms run it:
-pull the arm at `poke.axis`, put the sample in, kick. -/
+pull the arm at `axPoke` of `core/Statement.lean`, put the sample in, kick. -/
 def pokeN (cr ovo : Noun) : Option Noun :=
-  ((slot? poke.axis cr).bind fun a => nock cr a).bind fun g =>
+  ((slot? Ska.axPoke cr).bind fun a => nock cr a).bind fun g =>
     (edit? 6 ovo g).bind fun g' => (slot? 2 g').bind fun f => nock g' f
 
 /-- The poke of `cr` is the model `pk` on every ovum, and every core it returns
@@ -216,7 +213,7 @@ theorem eval_pole_cal (cr : Noun) (hc : CorIn cr) (lib : Lib)
       = (execPole lib ⟨callBody lib pk O, nk⟩ scry cr (Pole.cal a v d) regs trace).map poleOutS := by
   obtain ⟨hpkN, hpkG⟩ := hpk
   have hp := hpkN (Ovum.dire a false)
-  simp only [pokeN, poke.axis, Ovum.toNoun, flag, Bool.false_eq_true, if_false, Tag.dire] at hp
+  simp only [pokeN, Ska.axPoke, Ovum.toNoun, flag, Bool.false_eq_true, if_false, Tag.dire] at hp
   cases e1 : pk cr (Ovum.dire a false) with
   | none =>
     rw [e1] at hp
@@ -306,7 +303,7 @@ theorem eval_pole_csl (cr : Noun) (hc : CorIn cr) (lib : Lib)
       = (execPole lib ⟨callBody lib pk O, nk⟩ scry cr (Pole.csl a sr d) regs trace).map poleOutS := by
   obtain ⟨hpkN, hpkG⟩ := hpk
   have hp := hpkN (Ovum.dire a true)
-  simp only [pokeN, poke.axis, Ovum.toNoun, flag, if_true, Tag.dire] at hp
+  simp only [pokeN, Ska.axPoke, Ovum.toNoun, flag, if_true, Tag.dire] at hp
   cases e1 : pk cr (Ovum.dire a true) with
   | none =>
     rw [e1] at hp
@@ -695,7 +692,7 @@ theorem eval_blob_jmp_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
   obtain ⟨hB, hC⟩ := hOb cr' hc' _ _ _ _ _ _ _ e5
   refine ⟨?_, hC⟩
   have hp := hpk.1 (Ovum.dire a false)
-  simp only [pokeN, poke.axis, Ovum.toNoun, flag, Bool.false_eq_true, if_false, Tag.dire, e1,
+  simp only [pokeN, Ska.axPoke, Ovum.toNoun, flag, Bool.false_eq_true, if_false, Tag.dire, e1,
     Option.map_some] at hp
   have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
   simp only [read.layer2.axis, icore, nock_exec] at hl2
@@ -731,7 +728,7 @@ theorem eval_blob_jsp_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
   obtain ⟨hB, hC⟩ := hOb cr' hc' _ _ _ _ _ _ _ e5
   refine ⟨?_, hC⟩
   have hp := hpk.1 (Ovum.dire a true)
-  simp only [pokeN, poke.axis, Ovum.toNoun, flag, if_true, Tag.dire, e1,
+  simp only [pokeN, Ska.axPoke, Ovum.toNoun, flag, if_true, Tag.dire, e1,
     Option.map_some] at hp
   have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
   simp only [read.layer2.axis, icore, nock_exec] at hl2
@@ -1028,7 +1025,7 @@ theorem eval_top_le (lib : Lib) (hslam : SlamIsNock lib)
     simp only [blobS, icore, Straight.toNoun, argsN, listNoun, hreg, Blob.toNoun, hn.1, hn.2,
       NeedOrd.toNoun, Tag.this] at hB
     have hp := (hpk cr hc).1 (Ovum.full s (C fh ft))
-    simp only [pokeN, poke.axis, Ovum.toNoun, Tag.full, e1, Option.map_some] at hp
+    simp only [pokeN, Ska.axPoke, Ovum.toNoun, Tag.full, e1, Option.map_some] at hp
     have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
     simp only [read.layer2.axis, icore, nock_exec] at hl2
     have hg := getF_hoonMap Blob.toNoun c.blocks 0
