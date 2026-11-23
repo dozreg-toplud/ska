@@ -22,6 +22,7 @@ public import lemmas.Pill.Arm.Double_int
 public import lemmas.Pill.Arm.Dvr
 public import lemmas.Pill.Arm.End
 public import lemmas.Pill.Arm.Eval_blob
+public import lemmas.Pill.Arm.Eval_mook
 public import lemmas.Pill.Arm.Eval_pass
 public import lemmas.Pill.Arm.Eval_pole
 public import lemmas.Pill.Arm.Eval_rend
@@ -114,6 +115,7 @@ import all lemmas.Pill.Arm.Double_int
 import all lemmas.Pill.Arm.Dvr
 import all lemmas.Pill.Arm.End
 import all lemmas.Pill.Arm.Eval_blob
+import all lemmas.Pill.Arm.Eval_mook
 import all lemmas.Pill.Arm.Eval_pass
 import all lemmas.Pill.Arm.Eval_pole
 import all lemmas.Pill.Arm.Eval_rend
@@ -224,6 +226,8 @@ theorem core_ana : slot? 2047 core = some ana := by kernel_rfl
 theorem core_interp : slot? 3 core = some interp := by kernel_rfl
 
 theorem interp_cor : slot? 3 interp = some cor := by kernel_rfl
+
+theorem interp_eq : interp = C interp.battery cor := by kernel_rfl
 
 /-! Each named arm sits at its axis.  The constants `x.axis` are in the
 arm files. -/
@@ -622,6 +626,9 @@ theorem eval_top.arm_at : ∀ x, slot? eval_top.axis (C interp.battery x) = some
   intro x; kernel_rfl
 
 theorem eval_rend.arm_at : ∀ x, slot? eval_rend.axis (C interp.battery x) = some eval_rend.arm := by
+  intro x; kernel_rfl
+
+theorem eval_mook.arm_at : ∀ x, slot? eval_mook.axis (C interp.battery x) = some eval_mook.arm := by
   intro x; kernel_rfl
 
 end Pill
