@@ -75,13 +75,13 @@ theorem emitted_get' {g : Gen Map} {b : Blob} (hd : g.drop = false) {c : Straigh
 
 theorem run_n4_done_ok {lib : Lib} {p : Nomm} {g0 g1 : Gen Map} {nex : Next S}
     (h : run (Nomm.n4 p) (CGoal.done : CGoal S) g0 = some (nex, g1))
-    (ih : ∀ (goal : CGoal S) (g g' : Gen Map) (nex' : Next S), GoalOK g goal → run p goal g = some (nex', g') →
-      RunOK lib p goal g g' nex') :
+    (ih : ∀ (laz : Sure S) (th : Jmp) (g g' : Gen Map) (nex' : Next S), GoalOK g (CGoal.next laz th) →
+      run p (CGoal.next laz th) g = some (nex', g') → RunOK lib p (CGoal.next laz th) g g' nex') :
     RunOK lib (Nomm.n4 p) CGoal.done g0 g1 nex := by
   simp only [run, bind_apply, re_apply, emit_apply, Option.bind_some] at h
   refine unary_ok (pureEval_n4 p) ((ext_re _).trans ((ext_re _).trans (ext_emit _ _)))
     ⟨Nat.le_succ _, by simp [emitted_re]⟩ (by simp [emitted_bo])
-    (ih _ _ _ _ ⟨trivial, fun r hr => by simp [lazyReg, NMem] at hr; subst hr; simp [emitted_re]⟩ h) ?_
+    (ih _ _ _ _ _ ⟨trivial, fun r hr => by simp [lazyReg, NMem] at hr; subst hr; simp [emitted_re]⟩ h) ?_
     (by simp)
   intro c hc hd σ O st regs t gul x hx
   have hb := emitted_get' (by simpa using hd) (hc _ (by simp) (by simp [emitted_bo]))
@@ -97,13 +97,13 @@ theorem run_n4_done_ok {lib : Lib} {p : Nomm} {g0 g1 : Gen Map} {nex : Next S}
 
 theorem run_n4_pick_ok {lib : Lib} {p : Nomm} {z o : Jmp} {g0 g1 : Gen Map} {nex : Next S}
     (h : run (Nomm.n4 p) (CGoal.pick z o : CGoal S) g0 = some (nex, g1))
-    (ih : ∀ (goal : CGoal S) (g g' : Gen Map) (nex' : Next S), GoalOK g goal → run p goal g = some (nex', g') →
-      RunOK lib p goal g g' nex') :
+    (ih : ∀ (laz : Sure S) (th : Jmp) (g g' : Gen Map) (nex' : Next S), GoalOK g (CGoal.next laz th) →
+      run p (CGoal.next laz th) g = some (nex', g') → RunOK lib p (CGoal.next laz th) g g' nex') :
     RunOK lib (Nomm.n4 p) (CGoal.pick z o) g0 g1 nex := by
   simp only [run, bind_apply, re_apply, emit_apply, Option.bind_some] at h
   refine unary_ok (pureEval_n4 p) ((ext_re _).trans ((ext_re _).trans (ext_emit _ _)))
     ⟨Nat.le_succ _, by simp [emitted_re]⟩ (by simp [emitted_bo])
-    (ih _ _ _ _ ⟨trivial, fun r hr => by simp [lazyReg, NMem] at hr; subst hr; simp [emitted_re]⟩ h) ?_
+    (ih _ _ _ _ _ ⟨trivial, fun r hr => by simp [lazyReg, NMem] at hr; subst hr; simp [emitted_re]⟩ h) ?_
     (by simp)
   intro c hc hd σ O st regs t gul x hx
   have hb := emitted_get' (by simpa using hd) (hc _ (by simp) (by simp [emitted_bo]))
@@ -135,13 +135,13 @@ theorem execBlob_clq {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} 
 
 theorem run_n3_pick_ok {lib : Lib} {p : Nomm} {z o : Jmp} {g0 g1 : Gen Map} {nex : Next S}
     (h : run (Nomm.n3 p) (CGoal.pick z o : CGoal S) g0 = some (nex, g1))
-    (ih : ∀ (goal : CGoal S) (g g' : Gen Map) (nex' : Next S), GoalOK g goal → run p goal g = some (nex', g') →
-      RunOK lib p goal g g' nex') :
+    (ih : ∀ (laz : Sure S) (th : Jmp) (g g' : Gen Map) (nex' : Next S), GoalOK g (CGoal.next laz th) →
+      run p (CGoal.next laz th) g = some (nex', g') → RunOK lib p (CGoal.next laz th) g g' nex') :
     RunOK lib (Nomm.n3 p) (CGoal.pick z o) g0 g1 nex := by
   simp only [run, bind_apply, re_apply, emit_apply, Option.bind_some] at h
   refine unary_ok (pureEval_n3 p) ((ext_re _).trans (ext_emit _ _))
     ⟨Nat.le_refl _, by simp [emitted_re]⟩ (by simp [emitted_bo])
-    (ih _ _ _ _ ⟨trivial, fun r hr => by simp [lazyReg, NMem] at hr; subst hr; simp [emitted_re]⟩ h) ?_
+    (ih _ _ _ _ _ ⟨trivial, fun r hr => by simp [lazyReg, NMem] at hr; subst hr; simp [emitted_re]⟩ h) ?_
     (by simp)
   intro c hc hd σ O st regs t gul x hx
   have hb := emitted_get' (by simpa using hd) (hc _ (by simp) (by simp [emitted_bo]))
