@@ -142,6 +142,52 @@ theorem medeLoop_spec {o : Nat} : ∀ (som : Noun) (ned : Need) (g0 g1 : Gen Map
           (Crashes.append_left ((S1 lib σ O c gul st t regs2 dp).2 fun hp => hn ⟨hp, hq⟩))
       · exact Crashes.append_left ((S2 lib σ O c gul st t regs dq).2 hq)
 
+theorem get_apply (g : Gen Map) : (get : CM Map (Gen Map)) g = some (g, g) := rfl
+
+/-- **The case `%1` of `run` for `%next`**: `+mede`. -/
+theorem run_n1_next_ok {lib : Lib} {k : Noun} {laz : Sure S} {th : Jmp} {g0 g1 : Gen Map} {nex : Next S}
+    (h : run (Nomm.n1 k) (CGoal.next laz th) g0 = some (nex, g1)) (hg : GoalOK g0 (CGoal.next laz th)) :
+    RunOK lib (Nomm.n1 k) (CGoal.next laz th) g0 g1 nex := by
+  simp only [run, mede, bind_apply, emit_apply, Option.bind_some, get_apply] at h
+  by_cases hd : g0.drop = true
+  · -- dropping: nothing is emitted, and `sem` asks nothing
+    simp only [emitted_drop, hd, if_true, pure_apply, Option.bind_some, Option.some.injEq,
+      Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨ext_emit _ _, fun r hr => by simp [Sure.bunt, NMem] at hr, fun s hs => absurd (fitsS_bunt s) hs,
+      trivial, fun hd' => by simp [hd] at hd'⟩
+  have hd0 : g0.drop = false := by simpa using hd
+  simp only [emitted_drop, hd0, Bool.false_eq_true, if_false] at h
+  obtain ⟨⟨o', g3'⟩, hX, hP⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨ned, g2, h2, h3⟩ := bind_some hX
+  obtain ⟨u, g3, h4, h5⟩ := bind_some h3
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h5 hP
+  obtain ⟨rfl, rfl⟩ := h5
+  obtain ⟨rfl, rfl⟩ := hP
+  have L := sureRequireLook_spec h2
+  obtain ⟨kk, rfl⟩ := L.gen
+  obtain ⟨A, F, SP⟩ := medeLoop_spec k ned _ _ u h4 (by simp [emitted_drop, hd0])
+  have hblk : HoonMap.get g3.blocks g0.bo = some ⟨[], A ++ [], Termin.hop th⟩ :=
+    F.blk _ _ (by simpa using emitted_get g0 ⟨[], [], Termin.hop th⟩ hd0)
+  have hre : g0.re ≤ g3.re := Nat.le_trans L.le F.le
+  refine ⟨⟨hre, by rw [F.bo]; simp [emitted_bo], by rw [F.drop]; rfl, fun o ho => ?_⟩,
+    fun r hr => by simp [Sure.bunt, NMem] at hr, fun s hs => absurd (fitsS_bunt s) hs, trivial, ?_⟩
+  · rw [F.other o (Nat.ne_of_lt ho)]
+    simp [Gen.emitted, hd0, HoonMap.get_put, Nat.ne_of_lt ho]
+  intro _ c hag σ O st s regs t gul _
+  have hc : HoonMap.get c.blocks g0.bo = some ⟨[], A ++ [], Termin.hop th⟩ :=
+    (hag g0.bo (Nat.le_refl _) (by rw [F.bo]; simp [emitted_bo])).trans hblk
+  have hdist : Distinct ned := L.dist hg.1 (fun r hr => by simpa [emitted_re] using hg.2 r hr)
+  simp only [pureEval, GoalSem]
+  rw [goJ_jmp0 _ _ _ _ hc]
+  refine ⟨fun hf => ?_, fun hn => ?_⟩
+  · obtain ⟨regs', R, H, K⟩ := (SP lib σ O c gul st t regs hdist).1 ((fits_sure L k).mpr hf)
+    refine ⟨regs', (holdsS_of_sure L H).1, fun r ⟨hr1, hr2⟩ => K r fun hm => ?_, by rw [R, execBlob_hop]⟩
+    rcases L.mem r hm with h | h
+    · exact hr2 h
+    · simp [emitted_re] at h; omega
+  · exact (SP lib σ O c gul st t regs hdist).2 (fun hf => hn ((fits_sure L k).mp hf)) [] _
+
 end Comp
 end SkaModel
 end Formalization
