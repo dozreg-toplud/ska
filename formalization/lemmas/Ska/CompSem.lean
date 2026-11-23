@@ -60,6 +60,13 @@ def NMem : Need → Nat → Prop
   | Need.pair p q, x => NMem p x ∨ NMem q x
   | Need.both r p q, x => x = r ∨ NMem p x ∨ NMem q x
 
+/-- No register appears twice in a need. -/
+def Distinct : Need → Prop
+  | Need.none => True
+  | Need.this _ => True
+  | Need.pair p q => Distinct p ∧ Distinct q ∧ ∀ x, NMem p x → ¬ NMem q x
+  | Need.both r p q => Distinct p ∧ Distinct q ∧ (∀ x, NMem p x → ¬ NMem q x) ∧ ¬ NMem p r ∧ ¬ NMem q r
+
 def Looks (lok : S) (n : Noun) : Prop := ∀ a ∈ HoonSet.toList lok, (slot? a n).isSome
 
 def FitsS (s : Sure S) (n : Noun) : Prop := Fits s.ned n ∧ Looks s.lok n
@@ -178,12 +185,19 @@ theorem Agree.left {c : Straight Map} {g0 g1 g2 : Gen Map} (h : Agree c g0 g2) (
 theorem Agree.right {c : Straight Map} {g0 g1 g2 : Gen Map} (h : Agree c g0 g2) (e01 : Ext g0 g1) :
     Agree c g1 g2 := fun o h0 h1 => h o (Nat.le_trans e01.2.1 h0) h1
 
+/-- What `run` assumes of its goal: the registers it names are allocated
+and distinct. -/
+def GoalOK (g0 : Gen Map) : CGoal S → Prop
+  | CGoal.next laz _ => Distinct laz.ned ∧ ∀ r, NMem laz.ned r → r < g0.re
+  | _ => True
+
 /-- **The relation for one run.** -/
 structure RunOK (lib : Lib) (nm : Nomm) (goal : CGoal S) (g0 g1 : Gen Map) (nex : Next S) : Prop where
   ext : Ext g0 g1
   regs : ∀ r, NMem nex.laz.ned r → GMem goal r ∨ (g0.re ≤ r ∧ r < g1.re)
   nec : ∀ s, ¬ FitsS nex.laz s → pureEval nm s = none ∨ ∃ p, pureEval nm s = some p ∧ GNot goal p
-  sem : ∀ (c : Straight Map), Agree c g0 g1 → ∀ (σ : Type) (O : Oracle σ) (st : σ) (s : Noun)
+  dist : Distinct nex.laz.ned
+  sem : g0.drop = false → ∀ (c : Straight Map), Agree c g0 g1 → ∀ (σ : Type) (O : Oracle σ) (st : σ) (s : Noun)
     (regs : Map Noun) (t : Trace) (gul : Noun), HoldsS nex.laz regs s →
     GoalSem lib O c gul st (Keep g0 goal) regs t nex.th goal (pureEval nm s)
 
@@ -383,6 +397,98 @@ theorem fromSure_spec {axe : Nat} {sur sur' : Sure S} (h : fromSure axe sur = so
       exact ⟨p, hp, hh', (looks_setRun_peg ha _ s p hp).mp hl⟩
     · intro s p hp ⟨hf, hl⟩
       exact ⟨(fits_fromPath _ axe ha s).mpr ⟨p, hp, hf⟩, (looks_setRun_peg ha _ s p hp).mpr hl⟩
+
+/-! ## Ops that do not leave the block -/
+
+section Ops
+variable {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ} {t : Trace}
+
+/-- The ops `A` run from `regs` to `regs'`, whatever follows them. -/
+def Runs (lib : Lib) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace)
+    (A : List Pole) (regs regs' : Map Noun) : Prop :=
+  ∀ (rest : List Pole) (fin : Termin), execBlob lib O c gul st regs t ⟨[], A ++ rest, fin⟩ [] =
+    execBlob lib O c gul st regs' t ⟨[], rest, fin⟩ []
+
+/-- The ops `A` crash from `regs`, with the trace the block was entered with. -/
+def Crashes (lib : Lib) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace)
+    (A : List Pole) (regs : Map Noun) : Prop :=
+  ∀ (rest : List Pole) (fin : Termin), execBlob lib O c gul st regs t ⟨[], A ++ rest, fin⟩ [] =
+    some (Tone.two t, st)
+
+theorem Runs.nil (regs : Map Noun) : Runs lib O c gul st t [] regs regs := fun _ _ => rfl
+
+theorem Runs.append {A B : List Pole} {r0 r1 r2 : Map Noun} (a : Runs lib O c gul st t A r0 r1)
+    (b : Runs lib O c gul st t B r1 r2) : Runs lib O c gul st t (A ++ B) r0 r2 := fun rest fin => by
+  rw [List.append_assoc, a, b]
+
+theorem Crashes.append_left {A B : List Pole} {r0 : Map Noun} (a : Crashes lib O c gul st t A r0) :
+    Crashes lib O c gul st t (A ++ B) r0 := fun rest fin => by rw [List.append_assoc, a]
+
+theorem Crashes.append_right {A B : List Pole} {r0 r1 : Map Noun} (a : Runs lib O c gul st t A r0 r1)
+    (b : Crashes lib O c gul st t B r1) : Crashes lib O c gul st t (A ++ B) r0 := fun rest fin => by
+  rw [List.append_assoc, a, b]
+
+/-- One local op that ends with `[%0 ~]` runs on. -/
+theorem Runs.one {p : Pole} {regs regs' : Map Noun}
+    (h : localPole lib gul p regs t = some (Tone.zero (A 0), regs', t))
+    (hl : ∀ u f d, p ≠ Pole.nok u f d) (hc : ∀ a v d, p ≠ Pole.cal a v d) :
+    Runs lib O c gul st t [p] regs regs' := fun rest fin => by
+  rw [List.singleton_append, execBlob_cons]
+  have : execPole lib O gul st p regs t = some (Tone.zero (A 0), regs', t, st) := by
+    cases p <;> first | (simp_all [execPole]; done) | (simp [localPole] at h)
+  rw [this]; rfl
+
+theorem runs_imm (n : Noun) (d : Nat) (regs : Map Noun) :
+    Runs lib O c gul st t [Pole.imm n d] regs (store d n regs) :=
+  Runs.one rfl (by simp) (by simp)
+
+theorem runs_mov {s d : Nat} {regs : Map Noun} {v : Noun} (h : SkaModel.read s regs = some v) :
+    Runs lib O c gul st t [Pole.mov s d] regs (store d v regs) :=
+  Runs.one (by simp [localPole, move, h]) (by simp) (by simp)
+
+theorem runs_con {h tl d : Nat} {regs : Map Noun} {a b : Noun} (ha : SkaModel.read h regs = some a)
+    (hb : SkaModel.read tl regs = some b) :
+    Runs lib O c gul st t [Pole.con h tl d] regs (store d (C a b) regs) :=
+  Runs.one (by simp [localPole, ha, hb]) (by simp) (by simp)
+
+theorem runs_cel {p : Nat} {regs : Map Noun} {a b : Noun} (h : SkaModel.read p regs = some (C a b)) :
+    Runs lib O c gul st t [Pole.cel p] regs regs :=
+  Runs.one (by simp [localPole, h]) (by simp) (by simp)
+
+theorem crashes_cel {p : Nat} {regs : Map Noun} {a : Nat} (h : SkaModel.read p regs = some (A a)) :
+    Crashes lib O c gul st t [Pole.cel p] regs := fun rest fin => by
+  rw [List.singleton_append, execBlob_cons]
+  simp [execPole, localPole, h]
+
+theorem runs_inc {s d : Nat} {regs : Map Noun} {a : Nat} (h : SkaModel.read s regs = some (A a)) :
+    Runs lib O c gul st t [Pole.inc s d] regs (store d (A (a + 1)) regs) :=
+  Runs.one (by simp [localPole, h]) (by simp) (by simp)
+
+theorem crashes_inc {s d : Nat} {regs : Map Noun} {a b : Noun} (h : SkaModel.read s regs = some (C a b)) :
+    Crashes lib O c gul st t [Pole.inc s d] regs := fun rest fin => by
+  rw [List.singleton_append, execBlob_cons]
+  simp [execPole, localPole, h]
+
+theorem runs_hed {s d : Nat} {regs : Map Noun} {a b : Noun} (h : SkaModel.read s regs = some (C a b)) :
+    Runs lib O c gul st t [Pole.hed s d] regs (store d a regs) :=
+  Runs.one (by simp [localPole, h]) (by simp) (by simp)
+
+theorem runs_tal {s d : Nat} {regs : Map Noun} {a b : Noun} (h : SkaModel.read s regs = some (C a b)) :
+    Runs lib O c gul st t [Pole.tal s d] regs (store d b regs) :=
+  Runs.one (by simp [localPole, h]) (by simp) (by simp)
+
+theorem runs_equ {l r : Nat} {regs : Map Noun} {a b : Noun} (ha : SkaModel.read l regs = some a)
+    (hb : SkaModel.read r regs = some b) : Runs lib O c gul st t [Pole.equ l r] regs regs :=
+  Runs.one (by simp [localPole, ha, hb]) (by simp) (by simp)
+
+theorem read_store_eq (r : Nat) (v : Noun) (regs : Map Noun) : SkaModel.read r (store r v regs) = some v := by
+  simp [SkaModel.read, store, HoonMap.get_put]
+
+theorem read_store_ne {r r' : Nat} (h : r' ≠ r) (v : Noun) (regs : Map Noun) :
+    SkaModel.read r' (store r v regs) = SkaModel.read r' regs := by
+  simp [SkaModel.read, store, HoonMap.get_put, h]
+
+end Ops
 
 end Comp
 end SkaModel
