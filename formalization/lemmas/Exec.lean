@@ -1,6 +1,6 @@
 import Lean
-import Formalization.Run
-import Formalization.Attr
+import lemmas.Run
+import lemmas.Attr
 
 /-!
 Symbolic execution of Nock with `simp`.

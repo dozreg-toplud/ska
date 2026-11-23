@@ -1,4 +1,4 @@
-import Formalization.Nock
+import lemmas.Fuel
 
 /-!
 The executable helpers of `Nock.lean` (`slot?`, `edit?`, `evalFuel`) agree

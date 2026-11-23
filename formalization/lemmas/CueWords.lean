@@ -1,4 +1,4 @@
-import Formalization.Nock
+import lemmas.Fuel
 
 /-!
 `cue` decodes a jammed noun.  The jam is given as its little-endian 32-bit

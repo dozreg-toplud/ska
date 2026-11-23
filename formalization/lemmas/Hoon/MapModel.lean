@@ -1,4 +1,4 @@
-import Formalization.Nock
+import lemmas.Fuel
 
 /-!
 Lean models of the `hoon.hoon` arms behind `+put:by`, as functions on nouns.

@@ -1,4 +1,4 @@
-import Formalization.Sound
+import lemmas.Sound
 
 /-!
 `nock` is the Nock evaluator as a partial function.  It is the same relation

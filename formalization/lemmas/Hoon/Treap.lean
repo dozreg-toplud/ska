@@ -1,4 +1,4 @@
-import Formalization.Hoon.MapModel
+import lemmas.Hoon.MapModel
 
 /-!
 What the models of `Hoon/MapModel.lean` do to a map.

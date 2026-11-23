@@ -1,5 +1,5 @@
-import Formalization.Cue
-import Formalization.KernelRfl
+import lemmas.CueWords
+import lemmas.KernelRfl
 
 /-!
 A kernel-checked run of `cue` on a small jam: a sub-noun of the steel pill

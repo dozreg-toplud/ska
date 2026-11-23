@@ -1,4 +1,4 @@
-import Formalization.Nock
+import lemmas.Fuel
 
 namespace Formalization
 namespace Nock

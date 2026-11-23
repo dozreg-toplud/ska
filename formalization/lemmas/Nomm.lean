@@ -1,4 +1,4 @@
-import Formalization.Nock
+import lemmas.Fuel
 
 /-!
 This module models the SKA `nomm`/`nomm-1` intermediate representation from

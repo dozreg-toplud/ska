@@ -1,6 +1,8 @@
-import Formalization
+import lemmas.Run
+import lemmas.CueExample
+import lemmas.Hoon.PutBy
 
-/-! The axioms behind the main statements.  Run with `lake env lean Formalization/Audit.lean`. -/
+/-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
 open Formalization
 

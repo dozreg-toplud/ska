@@ -1,5 +1,5 @@
-import Formalization.Exec
-import Formalization.Pill.Facts
+import lemmas.Exec
+import lemmas.Pill.Facts
 
 /-!
 `+dec` of the pill's `hoon.hoon`, proved against `Nat` subtraction.

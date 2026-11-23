@@ -1,5 +1,5 @@
-import Formalization.Hoon.Order
-import Formalization.Hoon.Treap
+import lemmas.Hoon.Order
+import lemmas.Hoon.Treap
 
 /-!
 `+put:by` of the pill's `hoon.hoon` inserts into a map.

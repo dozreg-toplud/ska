@@ -1,5 +1,5 @@
-import Formalization.Hoon.Dec
-import Formalization.Hoon.MapModel
+import lemmas.Hoon.Dec
+import lemmas.Hoon.MapModel
 
 /-!
 The comparison arms of the pill's `hoon.hoon` compute their Lean models:
