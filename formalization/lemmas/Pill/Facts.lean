@@ -21,6 +21,7 @@ public import lemmas.Pill.Arm.Dor
 public import lemmas.Pill.Arm.Double_int
 public import lemmas.Pill.Arm.Dvr
 public import lemmas.Pill.Arm.End
+public import lemmas.Pill.Arm.Eval_pass
 public import lemmas.Pill.Arm.Fall
 public import lemmas.Pill.Arm.Fe
 public import lemmas.Pill.Arm.Flop
@@ -51,6 +52,7 @@ public import lemmas.Pill.Arm.Mod
 public import lemmas.Pill.Arm.Monk
 public import lemmas.Pill.Arm.Mook
 public import lemmas.Pill.Arm.Mor
+public import lemmas.Pill.Arm.Move
 public import lemmas.Pill.Arm.Msg_anno
 public import lemmas.Pill.Arm.Msg_sock
 public import lemmas.Pill.Arm.Mug
@@ -61,6 +63,7 @@ public import lemmas.Pill.Arm.Need
 public import lemmas.Pill.Arm.Patch_prod
 public import lemmas.Pill.Arm.Peg
 public import lemmas.Pill.Arm.Pi
+public import lemmas.Pill.Arm.Read
 public import lemmas.Pill.Arm.Rear
 public import lemmas.Pill.Arm.Rip
 public import lemmas.Pill.Arm.Roll
@@ -81,6 +84,7 @@ public import lemmas.Pill.Arm.Soft
 public import lemmas.Pill.Arm.Some
 public import lemmas.Pill.Arm.Sort
 public import lemmas.Pill.Arm.Spin
+public import lemmas.Pill.Arm.Store
 public import lemmas.Pill.Arm.Sub
 public import lemmas.Pill.Arm.Tank
 public import lemmas.Pill.Arm.Turn
@@ -105,6 +109,7 @@ import all lemmas.Pill.Arm.Dor
 import all lemmas.Pill.Arm.Double_int
 import all lemmas.Pill.Arm.Dvr
 import all lemmas.Pill.Arm.End
+import all lemmas.Pill.Arm.Eval_pass
 import all lemmas.Pill.Arm.Fall
 import all lemmas.Pill.Arm.Fe
 import all lemmas.Pill.Arm.Flop
@@ -135,6 +140,7 @@ import all lemmas.Pill.Arm.Mod
 import all lemmas.Pill.Arm.Monk
 import all lemmas.Pill.Arm.Mook
 import all lemmas.Pill.Arm.Mor
+import all lemmas.Pill.Arm.Move
 import all lemmas.Pill.Arm.Msg_anno
 import all lemmas.Pill.Arm.Msg_sock
 import all lemmas.Pill.Arm.Mug
@@ -145,6 +151,7 @@ import all lemmas.Pill.Arm.Need
 import all lemmas.Pill.Arm.Patch_prod
 import all lemmas.Pill.Arm.Peg
 import all lemmas.Pill.Arm.Pi
+import all lemmas.Pill.Arm.Read
 import all lemmas.Pill.Arm.Rear
 import all lemmas.Pill.Arm.Rip
 import all lemmas.Pill.Arm.Roll
@@ -165,6 +172,7 @@ import all lemmas.Pill.Arm.Soft
 import all lemmas.Pill.Arm.Some
 import all lemmas.Pill.Arm.Sort
 import all lemmas.Pill.Arm.Spin
+import all lemmas.Pill.Arm.Store
 import all lemmas.Pill.Arm.Sub
 import all lemmas.Pill.Arm.Tank
 import all lemmas.Pill.Arm.Turn
@@ -204,6 +212,8 @@ theorem layer3_layer2 : slot? 3 layer3 = some layer2 := by kernel_rfl
 theorem core_lib : slot? 8191 core = some lib := by kernel_rfl
 
 theorem core_ana : slot? 2047 core = some ana := by kernel_rfl
+
+theorem core_interp : slot? 3 core = some interp := by kernel_rfl
 
 /-! Each named arm sits at its axis.  The constants `x.axis` are in the
 arm files. -/
@@ -581,6 +591,16 @@ theorem msg_sock.arm_at : slot? msg_sock.axis ana = some msg_sock.arm := by kern
 theorem safe_nomm.arm_at : slot? safe_nomm.axis ana = some safe_nomm.arm := by kernel_rfl
 
 theorem safe_fol_fol.arm_at : slot? safe_fol_fol.axis ana = some safe_fol_fol.arm := by kernel_rfl
+
+theorem read.layer2.arm_at : slot? read.layer2.axis interp = some layer2 := by kernel_rfl
+
+theorem read.arm_at : slot? read.axis interp = some read.arm := by kernel_rfl
+
+theorem store.arm_at : slot? store.axis interp = some store.arm := by kernel_rfl
+
+theorem move.arm_at : slot? move.axis interp = some move.arm := by kernel_rfl
+
+theorem eval_pass.arm_at : slot? eval_pass.axis interp = some eval_pass.arm := by kernel_rfl
 
 end Pill
 end Formalization

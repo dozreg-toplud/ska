@@ -1061,6 +1061,47 @@ def main():
     ana_arm(sn_arm, 'safe_nomm', False)
     ana_arm(sff_arm, 'safe_fol_fol', False)
 
+    # the interpreter core `interp` ("Formal definition of the interpreter"),
+    # the tail of `core`.  Its arms have no %fast labels: +read and +store are
+    # the gates that run `got` and `put` of the door +by, +move the gate that
+    # pulls just those two, +eval-pass the gate that pulls +move and +levy.
+    # `read.layer2.axis` is the axis of layer 2 in `interp`, where +by is.
+    interp = tail(core)
+    name(interp, 'interp')
+    facts.append(('core_interp', 'slot? 3 core = some interp'))
+    int_arms = dict((a, ax) for ax, a in fe_arms(head(interp), 2))
+    ax_all = dict((nm, ax_) for nm, ax_, _ in axes)
+    l2_in_interp = spine_axis(interp, layer2)
+    axes.append(('read.layer2', l2_in_interp, 'slot? read.layer2.axis interp = some layer2'))
+    def runs_arm(g, ax_):
+        """does the formula g pull the arm ax_ of a core, [9 ax_ ...]"""
+        for i in reach([g]):
+            n = NODES[i]
+            if type(n) is tuple and NODES[n[0]] == 9 and type(NODES[n[1]]) is tuple \
+                    and NODES[head(n[1])] == ax_:
+                return True
+        return False
+    by_pull = (ax_all['by'], 4 * l2_in_interp + 3)
+    def int_arm(a, lname):
+        name(a, lname + '.arm')
+        formulas.add(a)
+        g = door_gate_battery(a)
+        name(g, lname + '.battery')
+        formulas.add(g)
+        axes.append((lname, int_arms[a], 'slot? %s.axis interp = some %s.arm' % (lname, lname)))
+        return g
+    int_gates = [(a, door_gate_battery(a)) for a in int_arms if is_gate_builder(a)]
+    (rd,) = [a for a, g in int_gates if pulls(g) == [by_pull] and runs_arm(g, ax_all['by.got'])]
+    (st_,) = [a for a, g in int_gates if pulls(g) == [by_pull] and runs_arm(g, ax_all['by.put'])]
+    int_arm(rd, 'read')
+    int_arm(st_, 'store')
+    (mv,) = [a for a, g in int_gates
+             if sorted(pulls(g)) == sorted([(int_arms[rd], 7), (int_arms[st_], 7)])]
+    int_arm(mv, 'move')
+    (ep,) = [a for a, g in int_gates
+             if (int_arms[mv], 15) in pulls(g) and any(x == ax_all['levy'] for x, _ in pulls(g))]
+    int_arm(ep, 'eval_pass')
+
     # ---- write
     emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, len(data))
     print('steps', steps)
@@ -1082,7 +1123,7 @@ def main():
 # change regenerates to the same text.
 
 BULK = {'root', 'nok', 'trap', 'core', 'layer0', 'layer1', 'layer2', 'layer3', 'layer4', 'lib',
-        'ana'}
+        'ana', 'interp'}
 IN_BULK = set()      # names of other families that belong to the bulk
 
 CHUNK_MIN = 1000     # bulk definitions per chain file, at least
