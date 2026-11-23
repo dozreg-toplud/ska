@@ -6,6 +6,7 @@ import lemmas.Ska.NommSem
 import lemmas.Ska.NommAgree
 import lemmas.Ska.FolLoopSound
 import lemmas.Ska.CallGraph
+import lemmas.Ska.Prov
 
 /-! The axioms of the main theorems of `lemmas/Ska`.  `lake build` prints
 them; each should be `propext`, `Classical.choice` and `Quot.sound` at most. -/
@@ -68,3 +69,6 @@ open Formalization.SkaModel
 #print axioms entry_agree
 #print axioms codeOK_of_entries
 #print axioms entry_ok_of_run
+#print axioms pull_blank_of_none
+#print axioms patchProd_sound
+#print axioms hit_prod
