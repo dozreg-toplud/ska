@@ -488,5 +488,117 @@ theorem fol_loop_op10 (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap 
           pi.edit.arm_at, pi_edit_arm]
         simp [folOutNoun, FolOut.toNoun, Nomm.toNoun, Anno.toNoun, flag]
 
+/-! ## The default and the static hint -/
+
+/-- The default of the `?+`: a formula of no case (`shape` says `other`) is
+`[0 0]` with no knowledge. -/
+theorem fol_loop_other (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap R)
+    (go : FolGoS FinMap R) (rest fol : Noun) (hs : shape fol = Shape.other) (sub : Anno)
+    (seat mk : Option Noun) (bc df : Bool) (gen : GenS FinMap R) :
+    nock (folSubj regsNoun rest fol sub seat mk bc df gen) fol_loop.battery
+      = (Ana.folStep env res go fol sub seat mk bc df gen).map (folOutNoun regsNoun) := by
+  have hstep : Ana.folStep env res go fol sub seat mk bc df gen
+      = some (⟨Nomm.n0 0, Anno.dunno, false⟩, gen) := by
+    simp [Ana.folStep, hs]
+  rw [hstep]
+  simp only [Option.map_some, folOutNoun, FolOut.toNoun, Nomm.toNoun, Anno.toNoun, Anno.dunno,
+    Sock.dunno, Sock.toNoun, Cape.toNoun, flag, folSubj]
+  generalize flag df = n1
+  generalize flag bc = n2
+  generalize unitNoun id mk = n3
+  generalize unitNoun id seat = n4
+  generalize GenS.toNoun regsNoun gen = n5
+  generalize sub.toNoun = n6
+  nock_open fol_loop.battery
+  match fol, hs with
+  | .atom _, _ => simp [nock_exec]
+  | .cell (.cell _ _) _, hs => simp [shape] at hs
+  | .cell (.atom 0) (.atom _), hs => simp [shape] at hs
+  | .cell (.atom 0) (.cell _ _), _ => simp [nock_exec]
+  | .cell (.atom 1) _, hs => simp [shape] at hs
+  | .cell (.atom 2) (.atom _), _ => simp [nock_exec]
+  | .cell (.atom 2) (.cell (.atom _) _), _ => simp [nock_exec]
+  | .cell (.atom 2) (.cell (.cell _ _) _), hs => simp [shape] at hs
+  | .cell (.atom 5) (.atom _), _ => simp [nock_exec]
+  | .cell (.atom 5) (.cell (.atom _) _), _ => simp [nock_exec]
+  | .cell (.atom 5) (.cell (.cell _ _) _), hs => simp [shape] at hs
+  | .cell (.atom 7) (.atom _), _ => simp [nock_exec]
+  | .cell (.atom 7) (.cell (.atom _) _), _ => simp [nock_exec]
+  | .cell (.atom 7) (.cell (.cell _ _) _), hs => simp [shape] at hs
+  | .cell (.atom 8) (.atom _), _ => simp [nock_exec]
+  | .cell (.atom 8) (.cell (.atom _) _), _ => simp [nock_exec]
+  | .cell (.atom 8) (.cell (.cell _ _) _), hs => simp [shape] at hs
+  | .cell (.atom 12) (.atom _), _ => simp [nock_exec]
+  | .cell (.atom 12) (.cell (.atom _) _), _ => simp [nock_exec]
+  | .cell (.atom 12) (.cell (.cell _ _) _), hs => simp [shape] at hs
+  | .cell (.atom 3) (.atom _), _ => simp [nock_exec]
+  | .cell (.atom 3) (.cell _ _), hs => simp [shape] at hs
+  | .cell (.atom 4) (.atom _), _ => simp [nock_exec]
+  | .cell (.atom 4) (.cell _ _), hs => simp [shape] at hs
+  | .cell (.atom 6) (.atom _), _ => simp [nock_exec]
+  | .cell (.atom 6) (.cell (.atom _) _), _ => simp [nock_exec]
+  | .cell (.atom 6) (.cell (.cell _ _) (.atom _)), _ => simp [nock_exec]
+  | .cell (.atom 6) (.cell (.cell _ _) (.cell _ _)), hs => simp [shape] at hs
+  | .cell (.atom 9) (.atom _), _ => simp [nock_exec]
+  | .cell (.atom 9) (.cell (.cell _ _) _), _ => simp [nock_exec]
+  | .cell (.atom 9) (.cell (.atom _) (.atom _)), _ => simp [nock_exec]
+  | .cell (.atom 9) (.cell (.atom _) (.cell _ _)), hs => simp [shape] at hs
+  | .cell (.atom 10) (.atom _), _ => simp [nock_exec]
+  | .cell (.atom 10) (.cell (.atom _) _), _ => simp [nock_exec]
+  | .cell (.atom 10) (.cell (.cell (.cell _ _) _) _), _ => simp [nock_exec]
+  | .cell (.atom 10) (.cell (.cell (.atom _) _) (.atom _)), _ => simp [nock_exec]
+  | .cell (.atom 10) (.cell (.cell (.atom _) _) (.cell _ _)), hs => simp [shape] at hs
+  | .cell (.atom 11) (.atom _), _ => simp [nock_exec]
+  | .cell (.atom 11) (.cell (.atom _) (.atom _)), _ => simp [nock_exec]
+  | .cell (.atom 11) (.cell (.atom _) (.cell _ _)), hs => simp [shape] at hs
+  | .cell (.atom 11) (.cell (.cell (.cell _ _) _) _), _ => simp [nock_exec]
+  | .cell (.atom 11) (.cell (.cell (.atom _) (.atom _)) _), _ => simp [nock_exec]
+  | .cell (.atom 11) (.cell (.cell (.atom _) (.cell _ _)) _), hs => simp [shape] at hs
+  | .cell (.atom (_ + 13)) _, _ => simp [nock_exec]
+
+/-- `[%11 p=@ q=^]`: a static hint; `%bare` is analysed as the indirect call
+`[%2 [%0 1] %1 fol]` with `bare-call` set. -/
+theorem fol_loop_op11s (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap R)
+    (go : FolGoS FinMap R) (rest : Noun) (hgo : GoIs regsNoun rest go) (p : Nat) (a b : Noun)
+    (sub : Anno) (seat mk : Option Noun) (bc df : Bool) (gen : GenS FinMap R) :
+    nock (folSubj regsNoun rest (C (A 11) (C (A p) (C a b))) sub seat mk bc df gen)
+        fol_loop.battery
+      = (Ana.folStep env res go (C (A 11) (C (A p) (C a b))) sub seat mk bc df gen).map
+          (folOutNoun regsNoun) := by
+  by_cases hp : p = Tag.bare
+  · obtain rfl : p = 0x65726162 := hp
+    have h := hgo (Nock.n3 (A 2) (Nock.slot 1) (Nock.quote (C (A 11) (C (A 0x65726162) (C a b)))))
+      sub seat mk true df gen
+    unfold folSubj at h ⊢
+    simp only [Nock.n3, Nock.n2, Nock.slot, Nock.quote] at h
+    rw [show flag true = A 0 from rfl] at h
+    generalize flag df = n1 at h ⊢
+    generalize unitNoun id mk = n3 at h ⊢
+    generalize unitNoun id seat = n4 at h ⊢
+    generalize GenS.toNoun regsNoun gen = n5 at h ⊢
+    generalize sub.toNoun = n6 at h ⊢
+    nock_open fol_loop.battery
+    simp [nock_exec, Ana.folStep, shape, h, Tag.bare, Nock.n3, Nock.n2, Nock.slot, Nock.quote]
+  · have hp' : ¬ (0x65726162 = p) := fun e => hp (by rw [← e]; rfl)
+    have h := hgo (C a b) sub seat mk bc df gen
+    unfold folSubj at h ⊢
+    nock_open fol_loop.battery
+    cases e : go (C a b) sub seat mk bc df gen with
+    | none =>
+      rw [e] at h
+      simp [nock_exec, Ana.folStep, shape, e, h, hp, hp']
+    | some r =>
+      rw [e] at h
+      obtain ⟨o, g⟩ := r
+      simp only [Option.map_some, folOutNoun, FolOut.toNoun] at h
+      generalize flag df = n1 at h ⊢
+      generalize flag bc = n2 at h ⊢
+      generalize unitNoun id mk = n3 at h ⊢
+      generalize unitNoun id seat = n4 at h ⊢
+      generalize GenS.toNoun regsNoun gen = n5 at h ⊢
+      generalize sub.toNoun = n6 at h ⊢
+      simp [nock_exec, Ana.folStep, shape, e, h, hp, hp']
+      simp [folOutNoun, FolOut.toNoun, Nomm.toNoun, flag]
+
 end Compiler
 end Formalization
