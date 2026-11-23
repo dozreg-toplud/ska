@@ -279,6 +279,91 @@ theorem runDatum_runEntryR {P : Sock → Noun → TabEntry → Prop} {n : Nat} {
     RunEntryR P ⟨bus, fol, (runDatum moved bus out gen' old).1⟩ :=
   ⟨n, out, gen', moved, ⟨old.prod, old.map⟩, h, rfl, rfl, rfl⟩
 
+theorem inCallees_ins {cs : M CalleeEntry Unit} {seat : Option Noun} {i c : Ident}
+    (h : InCallees (Treap.ins cs ⟨seat, i⟩) c) : c = i ∨ InCallees cs c := by
+  obtain ⟨seat', hs⟩ := h
+  rcases (Treap.has_ins _ _ _).mp hs with e | e
+  · left; cases e; rfl
+  · exact Or.inr ⟨seat', e⟩
+
+theorem not_inCallees_empty (c : Ident) : ¬ InCallees (Treap.empty : M CalleeEntry Unit) c := by
+  rintro ⟨seat, h⟩
+  simp [Treap.has, Treap.get_empty] at h
+
+/-- **`resolve` meets what the bridge asks**, at the `gen`s of a run. -/
+theorem resOKD_of_resP2 {memoF : Memo M} {res : ResGo M R} (h : ResP2 memoF res) (st0 : SkaState M R)
+    (F0 : Entry → Prop) (index : Nat) (hidx : index < st0.next) :
+    ResOKD PfR (RunInv memoF st0 F0 index) res := by
+  intro idT gs r gs' hi hw e
+  obtain ⟨F, hF0, hc, s1, k1, fr1, hlow, hpush, hcl, hbk⟩ := hi
+  obtain ⟨⟨F', hFF', hc'⟩, s2, k2, fr2, hgen, hcal, hle, hpush2, hr1, hback, hans⟩ := h idT gs r gs' F hc hw e
+  have hst0 : ∀ j ∈ st0.stk, j ∈ gs.st.stk := fun j hj => by
+    obtain ⟨l, el⟩ := k1.1; rw [el]; exact List.mem_append_right _ hj
+  have hnew : ∀ c o, Treap.get gs'.st.order c = some o → c ∉ gs.st.stk → gs'.low ≤ o := fun c o hco hcn => by
+    have := fr2.newOrd c o hco hcn
+    have := fr1.next
+    omega
+  have hold : ∀ c o, Treap.get gs'.st.order c = some o → c ∈ gs.st.stk → Treap.get gs.st.order c = some o :=
+    fun c o hco hcs => by rw [← k2.2.1 c hcs]; exact hco
+  refine ⟨hgen, ?_, fun gs'' seat hlf hcs => ?_⟩
+  · intro s f a ha
+    refine ha.mono (fun e he => ?_)
+    obtain ⟨⟨d, hd, ht⟩, w1, w2, ho⟩ := he
+    by_cases hn : Treap.get gs.st.order (e.more, e.fol) = none
+    · obtain ⟨a1, a2⟩ := fr2.fin _ d hd hn
+      exact ⟨⟨d, a1, ht⟩, w1, w2, Or.inl a2⟩
+    · rcases ho with ho | ho
+      · exact absurd ho hn
+      · obtain ⟨o, hoo⟩ := Option.ne_none_iff_exists'.mp hn
+        have hs : (e.more, e.fol) ∈ gs.st.stk := (hc.s.ord_stk _).mp ⟨o, hoo⟩
+        exact ⟨⟨d, by rw [k2.2.2 _ hs]; exact hd, ht⟩, w1, w2, Or.inr (by rw [hcal]; exact ho)⟩
+  obtain ⟨e1, e2, e3, e4, e5, e6, e7, e8, e9, e10⟩ := hlf
+  refine ⟨⟨F', fun x hx => hFF' x (hF0 x hx), hc'.congr e3 e4 e5 e6 e7 e9 e10, by rw [e3]; exact gStepsR_trans s1 s2,
+    (k1.trans (k2.weaken k1.1 (fun j hj => hst0 j hj))).congr2 e3 e5 e6,
+    (fr1.trans fr2 hst0 k2.2.1 hc.s).congr2 e3 e5 e7 e9 e10, by rw [e1]; exact Nat.le_trans hle hlow, ?_, ?_, ?_⟩, ?_⟩
+  · -- the members left on the stack
+    refine Pushed.congr (fun x o hxo hx0 => ?_) e3 e5 e10
+    rw [e1]
+    by_cases hxs : x ∈ gs.st.stk
+    · obtain ⟨hr, hlb⟩ := hpush x o (hold x o hxo hxs) hx0
+      have hran : ranOf gs'.st x = ranOf gs.st x := by simp only [ranOf, Treap.gut, fr2.ticks x hxs]
+      refine ⟨by rw [hran]; exact hr, fun c hce oc hco => ?_⟩
+      have hcal' : calleesOf gs'.st x = calleesOf gs.st x := by
+        simp only [calleesOf, gitG, Treap.gut, k2.2.2 x hxs]
+      rw [hcal'] at hce
+      by_cases hcs : c ∈ gs.st.stk
+      · exact Nat.le_trans hle (hlb c hce oc (hold c oc hco hcs))
+      · exact hnew c oc hco hcs
+    · exact hpush2 x o hxo hxs
+  · -- the callees
+    intro c hc0 o ho
+    rw [e5] at ho; rw [e1]
+    rw [hcs] at hc0
+    rcases inCallees_ins hc0 with rfl | hc0
+    · exact hr1 o ho
+    · rw [hcal] at hc0
+      by_cases hcs' : c ∈ gs.st.stk
+      · exact Nat.le_trans hle (hcl c hc0 o (hold c o ho hcs'))
+      · exact hnew c o ho hcs'
+  · -- `back`
+    intro hb c hc0 o ho
+    rw [e5] at ho; rw [e2] at hb
+    obtain ⟨hb0, hbr⟩ := hback hb
+    rw [hcs] at hc0
+    rcases inCallees_ins hc0 with rfl | hc0
+    · exact fun h0 => hbr o ho (hst0 _ h0)
+    · rw [hcal] at hc0
+      by_cases hcs' : c ∈ gs.st.stk
+      · exact hbk hb0 c hc0 o (hold c o ho hcs')
+      · exact fun h0 => hcs' (hst0 _ h0)
+  · -- the answer
+    refine hans.mono (fun e he => ?_)
+    obtain ⟨⟨d, hd, ht⟩, w1, w2, ho⟩ := he
+    refine ⟨⟨d, by rw [e3]; exact hd, ht⟩, w1, w2, ?_⟩
+    rcases ho with ho | ho
+    · exact Or.inl (by rw [e5]; exact ho)
+    · exact Or.inr ⟨seat, by rw [hcs, ho]; exact (Treap.has_ins _ _ _).mpr (Or.inl rfl)⟩
+
 end Ana
 end SkaModel
 end Formalization
