@@ -6,7 +6,7 @@ import lemmas.Ska.FolLoopProd
 
 `prodRel_of_converged`: if every entry of the graph is made by the last run
 of `fol-loop` on its identity with the final table, and its stored product
-is a fixed point of the merge with that run's product (`RunEntryM`: `pm` in
+is the merge of that run's product with an older one (`RunEntryM`: `pm` in
 `+run`, by `+msg-anno` or `+double-int`), and every answer of the table
 comes from the graph (`Answers`), then the entries are right on products
 relative to their code requirements (`ProdRel`), given well-formed subject
@@ -123,21 +123,47 @@ theorem mergeProd_rel {y p : Noun} {T : Sock} (moved : Bool) (new old : Anno)
 
 /-! ## The condition the Hoon reaches -/
 
-/-- **An entry of a converged graph, as `+run` leaves it**: its nomm and code
-requirement are those of the last run of `fol-loop` on its identity with the
-final table, and its product (`prod`, `map`) is the merge (`pm` in `+run`) of
-the run's product with itself, by `+msg-anno` or `+double-int` as `moved`
-says.  This is what `changed` being false gives in `+run`: the datum with
-the merged product equals the old one, so the stored product is a fixed
-point of the merge with the run's product.  It is weaker than `RunEntryP`,
-which asks that the stored product be the run's. -/
+/-- **An entry as `+run` leaves it**: its nomm and code requirement are those
+of the last run of `fol-loop` on its identity with the final table, and its
+product (`prod`, `map`) is the merge (`pm` in `+run`) of the run's product
+with some earlier product `old`, by `+msg-anno` or `+double-int` as `moved`
+says.  Convergence would give `old` = the entry's own product, but the
+proofs need no fixed point: both merges keep the invariants of the run's
+product.  This matters, because the Hoon does not always reach the fixed
+point: a member of a component whose product changed in its last run is not
+run again when none of its callees changed since (`+dirty`), and then its
+product is `merge(out, old)` with an older `old`.  It also covers the entry
+after `+pop`, which turns a `%void` product into `|+~`: a run whose product
+is `%void` merges to `old` whatever `old` is.  It is weaker than
+`RunEntryP`, which asks that the stored product be the run's. -/
 def RunEntryM (tab : Tab) (e : Entry) : Prop :=
-  ∃ n out gen' moved, folLoopTop tab n e.more e.fol = some (out, gen') ∧
+  ∃ n out gen' moved old, folLoopTop tab n e.more e.fol = some (out, gen') ∧
     e.d.nomm = out.nomm ∧ e.d.less = Ca.app gen'.want e.more ∧
-    (⟨e.d.prod, e.d.map⟩ : Anno) = mergeProd moved out.prod ⟨e.d.prod, e.d.map⟩
+    (⟨e.d.prod, e.d.map⟩ : Anno) = mergeProd moved out.prod old
+
+/-- **The merges have no common fixed point**, which is why `RunEntryM` asks
+for none.  With the run's product `out = [&+[1 2] [2 3]]` and the old
+product `[&+[1 2] [2 0]]`, `+double-int` stores `D = [[& |]+[1 0] [2 0]]`,
+a change, so the entry joins `moved`; a further run with the same callees
+would store `+msg-anno` of `out` and `D`, which is `|+~`, another change.
+If no callee of the entry changed since it ran, `+dirty` does not run it
+again, and the graph is final with `D`, which is not `msg-anno(out, D)`. -/
+theorem merge_no_fixed_point :
+    doubleInt ⟨Sock.mk Cape.yes (C (A 1) (A 2)), C (A 2) (A 3)⟩
+      ⟨Sock.mk Cape.yes (C (A 1) (A 2)), C (A 2) (A 0)⟩ =
+      ⟨Sock.mk (Cape.cell Cape.yes Cape.no) (C (A 1) (A 0)), C (A 2) (A 0)⟩ ∧
+    msgAnno ⟨Sock.mk Cape.yes (C (A 1) (A 2)), C (A 2) (A 3)⟩
+      ⟨Sock.mk (Cape.cell Cape.yes Cape.no) (C (A 1) (A 0)), C (A 2) (A 0)⟩ = Anno.dunno := by
+  constructor
+  · rw [doubleInt_mk (by decide)]
+    simp only [So.hed, So.tel, Pi.hed, Pi.tel]
+    rw [doubleInt_self, doubleInt_mk (by decide)]
+    decide
+  · unfold msgAnno
+    simp
 
 theorem RunEntryM.run {tab : Tab} {e : Entry} (h : RunEntryM tab e) : RunEntry tab e :=
-  let ⟨n, out, gen', _, h1, h2, h3, _⟩ := h
+  let ⟨n, out, gen', _, _, h1, h2, h3, _⟩ := h
   ⟨n, out, gen', h1, h2, h3⟩
 
 theorem msgAnno_self (a : Anno) : msgAnno a a = a := by
@@ -151,7 +177,7 @@ theorem mergeProd_self (moved : Bool) (a : Anno) : mergeProd moved a a = a := by
 /-- `RunEntryP` is the special case where the stored product is the run's. -/
 theorem RunEntryP.toM {tab : Tab} {e : Entry} (h : RunEntryP tab e) : RunEntryM tab e := by
   obtain ⟨n, out, gen', h1, h2, h3, hp, hm⟩ := h
-  refine ⟨n, out, gen', false, h1, h2, h3, ?_⟩
+  refine ⟨n, out, gen', false, out.prod, h1, h2, h3, ?_⟩
   have : (⟨e.d.prod, e.d.map⟩ : Anno) = out.prod := by rw [hp, hm]
   rw [this, mergeProd_self]
 
@@ -212,16 +238,16 @@ theorem prodRelN_of_converged {lib : Lib} {tab : Tab} {G : Entry → Prop}
   | zero => intro e _ y gul p _ hm; simp [minkF] at hm
   | succ K ih =>
     intro e he y gul p hy hm
-    obtain ⟨n, out, gen', moved, h, _, hl, hpm⟩ := hr e he
+    obtain ⟨n, out, gen', moved, old, h, _, hl, hpm⟩ := hr e he
     rw [hl] at hy
-    have R := mergeProd_rel moved out.prod ⟨e.d.prod, e.d.map⟩
+    have R := mergeProd_rel moved out.prod old
       (folLoop_relProdN hL (rtabP_of_answers ih hans) (hwf e he) h hy hm)
     rw [← hpm] at R
     exact R
 
 /-- **`ProdRel` at convergence.**  Every entry is made by the last run of
-`fol-loop` on its identity with the final table and its product is a fixed
-point of the merge with the run's (`hr`), every answer of the table comes from the graph (`hans`), and
+`fol-loop` on its identity with the final table and its product is the
+merge of the run's with an older one (`hr`), every answer of the table comes from the graph (`hans`), and
 every entry's subject sock is well formed (`hwf`). -/
 theorem prodRel_of_converged {lib : Lib} {tab : Tab} {G : Entry → Prop}
     (hr : ∀ e, G e → RunEntryM tab e) (hans : ∀ s f a, tab s f = some a → Answers G s f a)
@@ -232,7 +258,7 @@ theorem prodRel_of_converged {lib : Lib} {tab : Tab} {G : Entry → Prop}
 
 /-- **A converged call graph gives `CodeOK`**, with no assumption on
 products: every entry is made by the last run of `fol-loop` on its identity
-with the final table, with a product that the merge with the run's keeps (`hr`, which holds
+with the final table, with a product merged from the run's (`hr`, which holds
 the termination of the runs), every answer of the table comes from the graph
 (`hans`), the code table holds exactly the entries' nomms under their bells
 (`hc`, `hhas`), and every entry's subject sock is well formed (`hwf`). -/
