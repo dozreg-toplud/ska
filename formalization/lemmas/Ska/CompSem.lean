@@ -279,7 +279,7 @@ def Gen.emitted (g : Gen Map) (b : Blob) : Gen Map :=
 
 theorem emit_apply (b : Blob) (g : Gen Map) : (emit b : CM Map Nat) g =
     some (g.bo, g.emitted b) := by
-  rcases g with ⟨re, bo, id, drop, blocks⟩
+  rcases g with ⟨re, bo, id, drop, blocks, tags, cond⟩
   cases drop <;> rfl
 
 theorem ext_re (g : Gen Map) : Ext g { g with re := g.re + 1 } :=

@@ -277,7 +277,7 @@ def toStraight [HoonMapKeys Map] (blocks : Map Blob) (ned : Need) (o : Nat) : Op
 
 /-- The initial state of `+comp` in the final pass: `*line-short` with mode
 `%run`. -/
-def gen0 : Gen Map := ⟨0, 1, 0, false, HoonMap.empty⟩
+def gen0 : Gen Map := ⟨0, 1, 0, false, HoonMap.empty, HoonMap.empty, HoonMap.empty⟩
 
 /-- The final pass of `member` in `+compile-scc-in` for a function alone in
 its SCC, on the nomm `nm`: `run` for `%done`, `+collapse-shape` with the
