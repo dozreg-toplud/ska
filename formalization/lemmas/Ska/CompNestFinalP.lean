@@ -25,15 +25,18 @@ open Nock Lazy
 
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
 
-/-- **The final pass on `FragP` for `%done` meets the relation at the entry.** -/
-theorem finishLF_compDoneP (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.done nm)
-    (hcount : sixCount nm ≤ 255) {ord : NeedOrd} {less : Cape} {bake : Need → Need × List (Nat × Noun)}
+/-- **The final pass meets the relation at the entry**, for any nomm whose
+run for `%done` from `gen0` meets `RunOKP`. -/
+theorem finishLF_compDoneR (lib : Lib) {nm : Nomm}
+    (hR : ∀ {nex : NextL S} {g4 : Gen Map}, runL nm (CGoalL.done : CGoalL S) [] (gen0 : Gen Map) = some (nex, g4) →
+      RunOKP (Map := Map) lib nm CGoal.done gen0 g4 nex)
+    {ord : NeedOrd} {less : Cape} {bake : Need → Need × List (Nat × Noun)}
     (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
     (h : finishLF (S := S) nm ord less bake = some c') : CompDoneOn lib c' nm (CapeAxes less) := by
-  rw [finishLF_eq hbake (fun _ _ h1 => (runP_ok (Map := Map) lib hf trivial trivial hcount (by simp [gen0]) rfl h1).cnd)] at h
+  rw [finishLF_eq hbake (fun _ _ h1 => (hR h1).cnd)] at h
   unfold finishL at h
   obtain ⟨⟨nex, g4⟩, h1, h⟩ := Option.bind_eq_some_iff.mp h
-  have R := runP_ok (Map := Map) lib hf trivial trivial hcount (by simp [gen0]) rfl h1
+  have R := hR h1
   simp only at h
   split at h
   · cases h
@@ -47,7 +50,7 @@ theorem finishLF_compDoneP (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.do
   obtain ⟨⟨k5, rfl⟩, l5, dist5, mem5⟩ := needOrdAllocRegs_spec ord g4 _ nedF h5
   simp only at l5 mem5
   obtain ⟨B, fin, hB⟩ : ∃ B fin, HoonMap.get g4.blocks nex.th.there = some ⟨[], B, fin⟩ := by
-    rcases R.ent with ⟨b, hb, hp⟩ | e
+    rcases R.ent with ⟨b, hb, hp, _⟩ | e
     · exact ⟨b.body, b.fin, by rw [hb, ← hp]⟩
     · exact e.elim
   have regs4 : ∀ r, NMem nex.laz.sure.ned r → r < g4.re := fun r hr => (R.regs r hr).2
@@ -78,8 +81,8 @@ theorem finishLF_compDoneP (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.do
       HoonMap.get g9.blocks o = HoonMap.get g4.blocks o := fun o h1 h2 =>
     (F9.other o h1).trans (oth8 o h1 h2)
   -- every block goes down
-  have D4 : Down g4.blocks := R.grow.down (fun k b hb => by simp [gen0, HoonMap.get_empty] at hb) (by simp [gen0])
-  have D9 : Down g9.blocks := down_of_fins D4 fun k b' hk => by
+  have D4 : DownRk (upRk g4.blocks) g4.blocks := downRk_gen0 R.grow
+  have D9 : DownRk (upRk g4.blocks) g9.blocks := downRk_of_fins D4 fun k b' hk => by
     by_cases e1 : k = nex.th.there
     · subst e1; rw [hB9] at hk; cases hk; exact ⟨_, hB, rfl⟩
     by_cases e2 : k ∈ (entries nex.laz).map Prod.fst
@@ -92,12 +95,12 @@ theorem finishLF_compDoneP (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.do
   have hc1o : HoonMap.get c1.blocks nex.th.there = some ⟨[], B, fin⟩ := by simp [c1, HoonMap.get_put]
   have hag : ∀ k, k ≠ nex.th.there → HoonMap.get c1.blocks k = HoonMap.get g9.blocks k := fun k hk => by
     simp [c1, HoonMap.get_put, hk]
-  have D1 : Down c1.blocks := by
+  have D1 : DownRk (upRk g4.blocks) c1.blocks := by
     intro k b hk
     by_cases e : k = nex.th.there
     · subst e; rw [hc1o] at hk; cases hk; exact D4 _ _ hB
     · rw [hag k e] at hk; exact D9 k b hk
-  obtain ⟨_, start, hst, hent⟩ := toStraight_entry hts D9 D1 hag
+  obtain ⟨_, start, hst, hent⟩ := toStraight_entryR hts D9 D1 hag
   rw [hB9] at hst; cases hst
   intro σ O st s args t gul hP hsp
   obtain ⟨R0, hR0, he⟩ := hent lib O st s args t gul hsp
@@ -125,6 +128,46 @@ theorem finishLF_compDoneP (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.do
     rw [hj, goJ_jmp0 _ _ _ _ hc1o] at this
     exact this
   · rw [SoC fo, R.nec s fo]; rfl
+
+/-- **The final pass on `FragP` for `%done` meets the relation at the entry.** -/
+theorem finishLF_compDoneP (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.done nm)
+    (hcount : sixCount nm ≤ 255) {ord : NeedOrd} {less : Cape} {bake : Need → Need × List (Nat × Noun)}
+    (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
+    (h : finishLF (S := S) nm ord less bake = some c') : CompDoneOn lib c' nm (CapeAxes less) :=
+  finishLF_compDoneR lib (fun h1 => runP_ok (Map := Map) lib hf trivial trivial hcount (by simp [gen0]) rfl
+    upBelow_gen0 h1) hbake h
+
+/-- **The final pass meets the contract**, for any nomm whose run for
+`%done` from `gen0` meets `RunOKP`, when nothing is baked and the bell's cape
+has no `[| |]`. -/
+theorem finishLF_bellContractR {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
+    {bl : Bell} {nm : Nomm} (hp : nm.pure = true) (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol nm)
+    (hR : ∀ {nex : NextL S} {g4 : Gen Map}, runL nm (CGoalL.done : CGoalL S) [] (gen0 : Gen Map) = some (nex, g4) →
+      RunOKP (Map := Map) lib nm CGoal.done gen0 g4 nex)
+    {cape : Cape} {data : Noun}
+    (hbl : bl.less = Sock.mk cape data) (hn : CapeNorm cape) {ord : NeedOrd}
+    {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
+    (h : finishLF (S := S) nm ord cape bake = some c') (N : Needs) : BellContract lib N bl false c' := by
+  have hc' := finishLF_compDoneR lib hR hbake h
+  refine bellContract_of_compDoneOn hok hp hA (fun σ O st s args t gul hs hsp => ?_) N
+  rw [hbl] at hs
+  exact hc' σ O st s args t gul (fun axe h1 ha => capeAxes_of_fits axe h1 cape data s hn hs ha) hsp
+
+/-- **The compiled code crashes exactly when the nomm does**, for any nomm
+whose run for `%done` from `gen0` meets `RunOKP`. -/
+theorem crash_iffR (lib : Lib) {nm : Nomm}
+    (hR : ∀ {nex : NextL S} {g4 : Gen Map}, runL nm (CGoalL.done : CGoalL S) [] (gen0 : Gen Map) = some (nex, g4) →
+      RunOKP (Map := Map) lib nm CGoal.done gen0 g4 nex)
+    {ord : NeedOrd} {less : Cape} {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, []))
+    {c' : Straight Map} (h : finishLF (S := S) nm ord less bake = some c') {σ : Type} (O : Oracle σ) (st : σ)
+    (s : Noun) (args : List Noun) (t : Trace) (gul : Noun) (hP : CapeAxes less s)
+    (hsp : SkaModel.split c'.need s = some args) :
+    (execEntry lib O st c' args t gul = some (Tone.two t, st) ↔ pureEval nm s = none) ∧
+    ∀ v, execEntry lib O st c' args t gul = some (Tone.zero v, st) ↔ pureEval nm s = some v := by
+  rw [finishLF_compDoneR lib hR hbake h σ O st s args t gul hP hsp, pureTone]
+  constructor
+  · cases pureEval nm s <;> simp [toneOf]
+  · intro v; cases pureEval nm s <;> simp [toneOf]
 
 /-- **The final pass meets the contract on `FragP` for `%done`**, when the nomm has at
 most 255 `%6`, nothing is baked and the bell's cape has no `[| |]`. -/

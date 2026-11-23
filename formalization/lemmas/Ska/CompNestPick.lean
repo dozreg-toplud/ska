@@ -1,5 +1,6 @@
 import lemmas.Ska.CompNestFinal
 import lemmas.Ska.CompCopyFresh
+import lemmas.Ska.CompGrowU
 
 /-!
 # Nested `[6 c a b]` under `%done` and `%pick`, and as a test
@@ -176,7 +177,7 @@ def AgreeP (lib : Lib) {σ : Type} (O : Oracle σ) (c : Straight Map) (gul : Nou
 /-- **The relation for one run of `runL` for `%done` or `%pick`.** -/
 structure RunOKP (lib : Lib) (nm : Nomm) (goal : CGoal S) (g0 g1 : Gen Map) (nex : NextL S) : Prop where
   ext : Ext g0 g1
-  grow : Grow g0 g1
+  grow : GrowU g0 g1
   cnd : g1.cond = g0.cond
   lo : 1 ≤ nex.th.there
   hi : nex.th.there < g1.bo
@@ -286,7 +287,7 @@ theorem notNext_gnot {goal : CGoal S} (hg : NotNext goal) (p : Noun) : ¬ GNot g
 
 theorem runOKP_frag (lib : Lib) {goal : CGoal S} {nm : Nomm} (hf : Frag nm goal) (hg : NotNext goal)
     {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S} (hj : GJ g0.bo goal) (b0 : 1 ≤ g0.bo)
-    (d0 : g0.drop = false) (h : runL nm (CGoal.toL goal) region g0 = some (nex, g1)) :
+    (d0 : g0.drop = false) (hu : UpBelow g0) (h : runL nm (CGoal.toL goal) region g0 = some (nex, g1)) :
     RunOKP (Map := Map) lib nm goal g0 g1 nex := by
   rw [runL_frag hf] at h
   obtain ⟨⟨n, g⟩, hr, e⟩ := Option.map_eq_some_iff.mp h
@@ -296,7 +297,7 @@ theorem runOKP_frag (lib : Lib) {goal : CGoal S} {nm : Nomm} (hf : Frag nm goal)
   have hcl : GClean goal := by cases goal with | next => exact hg.elim | _ => trivial
   have R := run_ok lib nm goal g0 g n hf hok hcl hr
   have D := run_down (S := S) (Map := Map) nm goal g0 g n hj b0 d0 hr
-  refine ⟨R.ext, D.grow, (kc_run nm goal).keep g0 n g hr, D.lo, D.hi, D.entry, fun r hr => ?_, R.dist,
+  refine ⟨R.ext, D.grow.toU hu, (kc_run nm goal).keep g0 n g hr, D.lo, D.hi, D.entry, fun r hr => ?_, R.dist,
     by simp [Next.toL, entries_ofSure], by simp [Next.toL, entries_ofSure], by simp [Next.toL, entries_ofSure],
     by simp [Next.toL, entries_ofSure], fun s hs => ?_, ?_⟩
   · rcases R.regs r hr with e | e
@@ -316,22 +317,27 @@ theorem runOKP_frag (lib : Lib) {goal : CGoal S} {nm : Nomm} (hf : Frag nm goal)
 nomm has at most 255 `%6`. -/
 theorem runP_ok (lib : Lib) {goal : CGoal S} {nm : Nomm} (hf : FragP goal nm) :
     ∀ {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S}, NotNext goal → GJ g0.bo goal →
-    sixCount nm ≤ 255 → 1 ≤ g0.bo → g0.drop = false →
+    sixCount nm ≤ 255 → 1 ≤ g0.bo → g0.drop = false → UpBelow g0 →
     runL nm (CGoal.toL goal) region g0 = some (nex, g1) → RunOKP (Map := Map) lib nm goal g0 g1 nex := by
   induction hf with
-  | frag hf => intro region g0 g1 nex hg hj _ b0 d0 h; exact runOKP_frag lib hf hg hj b0 d0 h
+  | frag hf => intro region g0 g1 nex hg hj _ b0 d0 hu h; exact runOKP_frag lib hf hg hj b0 d0 hu h
   | @six goal c a b hc _ _ ihc iha ihb =>
-    intro region g0 g4 nex hg hj hcount b0 d0 h
+    intro region g0 g4 nex hg hj hcount b0 d0 hu h
     rw [runL_n6_body c a b hg] at h
     obtain ⟨x1, x0, xc, g1, g2, g3, h1, h2, _, _, h3, hrest⟩ := sixBody_apart (fragP_pure (hc (jmp0 0) (jmp0 0))) h
     simp only [sixCount] at hcount
-    have Rb := ihb hg hj (by omega) b0 d0 h1
+    have Rb := ihb hg hj (by omega) b0 d0 hu h1
+    have u1 : UpBelow g1 := Rb.grow.up hu
     have d1 : g1.drop = false := Rb.ext.2.2.1.trans d0
     have b01 : g0.bo ≤ g1.bo := Rb.ext.2.1
     have b1 : 1 ≤ g1.bo := Nat.le_trans b0 b01
-    have Ra := iha hg (hj.mono b01) (by omega) b1 d1 h2
+    have Ra := iha hg (hj.mono b01) (by omega) b1 d1 u1 h2
+    have u2 : UpBelow g2 := Ra.grow.up u1
     have d2 : g2.drop = false := Ra.ext.2.2.1.trans d1
     have b12 : g1.bo ≤ g2.bo := Ra.ext.2.1
+    have GU : GrowU g2 (sixGenL g2 x0.th x1.th region) := (grow_sixGenL region (jumpsBelow_hop Ra.lo Ra.hi)
+      (jumpsBelow_hop Rb.lo (by have := Rb.hi; omega))).toU u2
+    have uG : UpBelow (sixGenL g2 x0.th x1.th region) := GU.up u2
     have hbig : lazyBig (mk (Sure.bunt : Sure S) [((g2.bo, x0.laz), (g2.bo + 1, x1.laz))] []) = false := by
       apply lazyBig_entries
       rw [entries_six]; simp only [List.length_append, List.length_cons]
@@ -341,7 +347,8 @@ theorem runP_ok (lib : Lib) {goal : CGoal S} {nm : Nomm} (hf : FragP goal nm) :
     have Rc := ihc (jmp0 g2.bo) (jmp0 (g2.bo + 1)) trivial
       ⟨⟨by simp only [jmp0]; omega, by simp only [jmp0, sixGenL_bo]; omega⟩,
         by simp only [jmp0]; omega, by simp only [jmp0, sixGenL_bo]; omega⟩ (by omega)
-      (by simp only [sixGenL_bo]; omega) dG h3
+      (by simp only [sixGenL_bo]; omega) dG uG h3
+    have u3 : UpBelow g3 := Rc.grow.up uG
     have d3 : g3.drop = false := Rc.ext.2.2.1.trans dG
     have bG3 : g2.bo + 2 ≤ g3.bo := by have := Rc.ext.2.1; simpa using this
     have hap : ∀ e ∈ xc.laz.fork, e.1.1 ≠ g2.bo := fun e he => by
@@ -421,11 +428,11 @@ theorem runP_ok (lib : Lib) {goal : CGoal S} {nm : Nomm} (hf : FragP goal nm) :
     have reB : ∀ r, g1.re ≤ r → r < g2.re → g0.re ≤ r ∧ r < g4'.re := fun r h1 h2 => ⟨by omega, by omega⟩
     have reA : ∀ r, g0.re ≤ r → r < g1.re → g0.re ≤ r ∧ r < g4'.re := fun r h1 h2 => ⟨h1, by omega⟩
     refine ⟨E04, ?_, ?_, by simp only [jmp0]; omega, by simp only [jmp0]; omega,
-      Or.inl ⟨⟨[], [], Termin.hop xc.th⟩, h4o, rfl⟩, fun r hr => ?_, Rc.dist, ?_, ?_, ?_, ?_, fun s hs => ?_, ?_⟩
+      Or.inl ⟨⟨[], [], Termin.hop xc.th⟩, h4o, rfl, rfl⟩, fun r hr => ?_, Rc.dist, ?_, ?_, ?_, ?_, fun s hs => ?_, ?_⟩
     · -- grow
-      exact Rb.grow.trans (Ra.grow.trans ((grow_sixGenL region (jumpsBelow_hop Ra.lo Ra.hi)
-        (jumpsBelow_hop Rb.lo (by have := Rb.hi; omega))).trans
-        (Rc.grow.trans ((grow_emit (jumpsBelow_hop Rc.lo Rc.hi)).trans (grow_addOps hadd)))))
+      have GE := growU_emit (b := ⟨[], [], Termin.hop xc.th⟩) (jumpsBelow_hop Rc.lo Rc.hi) u3
+      exact Rb.grow.trans (Ra.grow.trans (GU.trans
+        (Rc.grow.trans (GE.trans (growU_addOps hadd (GE.up u3))))))
     · -- cond
       rw [(KC.addOps' _ _).keep _ _ _ hadd, emitted_cond, Rc.cnd, sixGenL_cond, Ra.cnd, Rb.cnd]
     · -- regs

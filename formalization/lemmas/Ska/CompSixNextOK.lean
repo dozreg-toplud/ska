@@ -98,21 +98,21 @@ theorem lazyBlkN {lib : Lib} {σ : Type} {O : Oracle σ} {cc : Straight Map} {gu
 its test and branches. -/
 theorem sixNext_okN (lib : Lib) {c a b : Nomm} (hcp : c.pure = true)
     (ihc : ∀ (z o : Jmp) {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
-      GJ g0.bo (CGoal.pick z o : CGoal S) → sixCount c ≤ 255 → 1 ≤ g0.bo → g0.drop = false →
+      GJ g0.bo (CGoal.pick z o : CGoal S) → sixCount c ≤ 255 → 1 ≤ g0.bo → g0.drop = false → UpBelow g0 →
       runL c (CGoal.toL (CGoal.pick z o : CGoal S)) region g0 = some (nex, g1) →
       RunOKP (Map := Map) lib c (CGoal.pick z o) g0 g1 nex)
     (iha : ∀ {sur : Sure S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
       GJ g0.bo (CGoal.next sur th) → th.args = [] → GoalOK g0 (CGoal.next sur th) → Clean sur.ned →
-      sixCount a ≤ 255 → 1 ≤ g0.bo → g0.drop = false →
+      sixCount a ≤ 255 → 1 ≤ g0.bo → g0.drop = false → UpBelow g0 →
       runL a (CGoalL.next (ofSure sur) th) region g0 = some (nex, g1) → RunOKN (Map := Map) lib a sur th g0 g1 nex)
     (ihb : ∀ {sur : Sure S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
       GJ g0.bo (CGoal.next sur th) → th.args = [] → GoalOK g0 (CGoal.next sur th) → Clean sur.ned →
-      sixCount b ≤ 255 → 1 ≤ g0.bo → g0.drop = false →
+      sixCount b ≤ 255 → 1 ≤ g0.bo → g0.drop = false → UpBelow g0 →
       runL b (CGoalL.next (ofSure sur) th) region g0 = some (nex, g1) → RunOKN (Map := Map) lib b sur th g0 g1 nex)
     {sur : Sure S} {th : Jmp} {region : List Nat} {g0 g9 : Gen Map} {nex : NextL S}
     (hj : GJ g0.bo (CGoal.next sur th)) (hth : th.args = []) (hok : GoalOK g0 (CGoal.next sur th))
     (hcl : Clean sur.ned) (hcount : sixCount (Nomm.n6 c a b) ≤ 255) (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false)
-    (h : runL (Nomm.n6 c a b) (CGoalL.next (ofSure sur) th) region g0 = some (nex, g9)) :
+    (hu : UpBelow g0) (h : runL (Nomm.n6 c a b) (CGoalL.next (ofSure sur) th) region g0 = some (nex, g9)) :
     RunOKN (Map := Map) lib (Nomm.n6 c a b) sur th g0 g9 nex := by
   rw [runL_n6_next, sixNextL_ofSure] at h
   obtain ⟨u0, u1, x1, x0, xc, lz, yes, nuh, gF, gR, gQ, gS, gC, hF, hR, hQ, hS, hC, hrest⟩ :=
@@ -122,17 +122,20 @@ theorem sixNext_okN (lib : Lib) {c a b : Nomm} (hcp : c.pure = true)
     forkSure_spec hF' d0
   simp only [sixCount] at hcount
   have dF : gF.drop = false := drF.trans d0
+  have GF : GrowU g0 gF := growU_forkSure hF' d0 hj.1 hj.2 hu
+  have uF : UpBelow { gF with id := gF.id + 1 } := GF.up hu
   -- the no branch
   have Rb := ihb (sur := u1) (th := jmp0 (g0.bo + 1)) (region := gF.id :: region)
     (g0 := { gF with id := gF.id + 1 }) ⟨by simp [jmp0], by simp [jmp0]; omega⟩ rfl
-    ⟨du1, fun r hr => (r01 r (Or.inr hr)).2⟩ (cp1.clean hcl) (by omega) (by simp; omega) dF hR
+    ⟨du1, fun r hr => (r01 r (Or.inr hr)).2⟩ (cp1.clean hcl) (by omega) (by simp; omega) dF uF hR
   have dR : gR.drop = false := Rb.ext.2.2.1.trans dF
   have bFR : gF.bo ≤ gR.bo := Rb.ext.2.1
   have rFR : gF.re ≤ gR.re := Rb.ext.1
+  have uR : UpBelow gR := Rb.grow.up uF
   -- the yes branch
   have Ra := iha (sur := u0) (th := jmp0 g0.bo) (region := gF.id :: region) (g0 := gR)
     ⟨by simp [jmp0]; omega, by simp [jmp0]; omega⟩ rfl
-    ⟨du0, fun r hr => by have := (r01 r (Or.inl hr)).2; omega⟩ (cp0.clean hcl) (by omega) (by omega) dR hQ
+    ⟨du0, fun r hr => by have := (r01 r (Or.inl hr)).2; omega⟩ (cp0.clean hcl) (by omega) (by omega) dR uR hQ
   have dQ : gQ.drop = false := Ra.ext.2.2.1.trans dR
   have bRQ : gR.bo ≤ gQ.bo := Ra.ext.2.1
   have rRQ : gR.re ≤ gQ.re := Ra.ext.1
@@ -146,10 +149,16 @@ theorem sixNext_okN (lib : Lib) {c a b : Nomm} (hcp : c.pure = true)
   have reS : gS.re = gQ.re := SB.1.trans (sixGenL_re _ _ _ _)
   have cS : gS.cond = gQ.cond := SB.2.2.2.2.2.1.trans (sixGenL_cond _ _ _ _)
   have blkS := SB.2.2.2.2.2.2
+  have uQ : UpBelow gQ := Ra.grow.up uR
+  have GQS : GrowU gQ gS := ((grow_sixGenL (gF.id :: region) (jumpsBelow_hop Ra.lo Ra.hi)
+    (jumpsBelow_hop Rb.lo (by have := Rb.hi; omega))).toU uQ).trans
+    (growU_same SB.2.1 SB.2.2.2.1 SB.2.2.2.2.2.2)
+  have uS : UpBelow gS := GQS.up uQ
   -- the test
   have Rc := ihc (jmp0 gQ.bo) (jmp0 (gQ.bo + 1)) (region := region)
     ⟨⟨by simp only [jmp0]; omega, by simp only [jmp0]; omega⟩, by simp only [jmp0]; omega,
-      by simp only [jmp0]; omega⟩ (by omega) (by omega) dS hC
+      by simp only [jmp0]; omega⟩ (by omega) (by omega) dS uS hC
+  have uC : UpBelow gC := Rc.grow.up uS
   have dC : gC.drop = false := Rc.ext.2.2.1.trans dS
   have bSC : gQ.bo + 2 ≤ gC.bo := by have := Rc.ext.2.1; omega
   have rSC : gQ.re ≤ gC.re := by have := Rc.ext.1; omega
@@ -234,8 +243,11 @@ theorem sixNext_okN (lib : Lib) {c a b : Nomm} (hcp : c.pure = true)
     · exact Or.inr (Or.inr (Or.inl ⟨(la e h).1, (la e h).2, h⟩))
     · exact Or.inr (Or.inr (Or.inr (Or.inl (by rw [h]))))
     · exact Or.inr (Or.inr (Or.inr (Or.inr ⟨(lb e h).1, (lb e h).2, h⟩)))
-  refine ⟨E09, ?_, by simp only [jmp0]; omega, by simp only [jmp0]; omega,
-    Or.inl ⟨⟨[], [], Termin.hop xc.th⟩, h9o, rfl⟩, fun r hr => ?_, Rc.dist, ?_, ?_, ?_, ?_, fun s hs => ?_, ?_⟩
+  have GE := growU_emit (b := ⟨[], [], Termin.hop xc.th⟩) (jumpsBelow_hop Rc.lo Rc.hi) uC
+  have G09 : GrowU g0 g9' := GF.trans ((growU_same (g := gF) (g' := { gF with id := gF.id + 1 }) rfl rfl (fun _ => rfl)).trans (Rb.grow.trans
+    (Ra.grow.trans (GQS.trans (Rc.grow.trans (GE.trans (growU_addOps hadd (GE.up uC))))))))
+  refine ⟨E09, G09, ?_, by simp only [jmp0]; omega, by simp only [jmp0]; omega,
+    Or.inl ⟨⟨[], [], Termin.hop xc.th⟩, h9o, rfl, rfl⟩, fun r hr => ?_, Rc.dist, ?_, ?_, ?_, ?_, fun s hs => ?_, ?_⟩
   · -- cond
     rw [(KC.addOps' _ _).keep _ _ _ hadd, emitted_cond, Rc.cnd, cS, cQ, cnF]
   · -- regs
@@ -402,17 +414,17 @@ jump has no arguments, when the nomm has at most 255 `%6`. -/
 theorem runN_ok (lib : Lib) {nm : Nomm} (hf : FragN (S := S) nm) :
     ∀ {sur : Sure S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
     GJ g0.bo (CGoal.next sur th) → th.args = [] → GoalOK g0 (CGoal.next sur th) → Clean sur.ned →
-    sixCount nm ≤ 255 → 1 ≤ g0.bo → g0.drop = false →
+    sixCount nm ≤ 255 → 1 ≤ g0.bo → g0.drop = false → UpBelow g0 →
     runL nm (CGoalL.next (ofSure sur) th) region g0 = some (nex, g1) → RunOKN (Map := Map) lib nm sur th g0 g1 nex := by
   induction hf with
   | frag hf =>
-    intro sur th region g0 g1 nex hj _ hok hcl _ b0 d0 h
-    exact runOKN_frag lib (hf sur th) hj b0 d0 hok hcl h
+    intro sur th region g0 g1 nex hj _ hok hcl _ b0 d0 hu h
+    exact runOKN_frag lib (hf sur th) hj b0 d0 hu hok hcl h
   | six hc _ _ iha ihb =>
-    intro sur th region g0 g1 nex hj hth hok hcl hcount b0 d0 h
+    intro sur th region g0 g1 nex hj hth hok hcl hcount b0 d0 hu h
     exact sixNext_okN lib (fragP_pure (hc (jmp0 0) (jmp0 0)))
-      (fun z o _ _ _ _ hj' hc' b' d' h' => runP_ok lib (hc z o) trivial hj' hc' b' d' h') iha ihb
-      hj hth hok hcl hcount b0 d0 h
+      (fun z o _ _ _ _ hj' hc' b' d' u' h' => runP_ok lib (hc z o) trivial hj' hc' b' d' u' h') iha ihb
+      hj hth hok hcl hcount b0 d0 hu h
 
 end Comp
 end SkaModel
