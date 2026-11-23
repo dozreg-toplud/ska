@@ -3,9 +3,7 @@ import lemmas.Ska.CompNestCoerce
 /-!
 # Nested `[6 c a b]` under `%done`: the model taken apart
 
-`FragD`: the nomm of `Frag` for `%done`, and `[6 c a b]` whose test is on
-`Frag` for `%pick` and whose branches are again `FragD`, so that `%6` nests
-in the branches to any depth.  `sixCount` counts the `%6` of a nomm.
+`sixCount` counts the `%6` of a nomm.
 
 The lazy need that `runL` returns for such a nomm has at most two entries
 per `%6` (`entries` of `CompNestCoerce.lean`), and `+lazy-size` is one more
@@ -25,7 +23,7 @@ namespace Comp
 
 open Nock Lazy
 
-variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
+variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
 
 /-! ## Counting `%6` -/
 
@@ -111,13 +109,6 @@ theorem lazyBig_entries {l : Lazy S} (h : 1 + (entries l).length ≤ lazyMax) : 
   unfold lazyBig lazySize
   rw [lazySizeGo_eq l 0 (by omega)]
   simp only [decide_eq_false_iff_not]; omega
-
-/-! ## The fragment -/
-
-/-- **The fragment with `%6` nested in the branches**, for `%done`. -/
-inductive FragD : Nomm → Prop
-  | frag {nm : Nomm} : Frag nm (CGoal.done : CGoal S) → FragD nm
-  | six {c a b : Nomm} : (∀ z o, Frag c (CGoal.pick z o : CGoal S)) → FragD a → FragD b → FragD (Nomm.n6 c a b)
 
 /-! ## The case `%6` taken apart -/
 

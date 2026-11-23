@@ -20,7 +20,7 @@ namespace Comp
 
 open Nock Lazy
 
-variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
+variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
 
 mutual
 /-- `+coerce-lazy`: the code that takes the subject held as `ned` apart for
@@ -54,7 +54,7 @@ theorem coerceLazyL_ofSure (ned : Need) (less : Cape) (o : Nat) (s : Sure S) :
 
 /-- The final pass of `member` in `+compile-scc-in`, as `finish`, with the
 model of `run` over full lazy needs. -/
-def finishL [HoonMapKeys Map] (nm : Nomm) (ord : NeedOrd) (less : Cape)
+def finishL (nm : Nomm) (ord : NeedOrd) (less : Cape)
     (bake : Need → Need × List (Nat × Noun)) : Option (Straight Map) :=
   (runL nm (CGoalL.done : CGoalL S) [] gen0).bind fun (nex, g1) =>
     if nex.th.args ≠ [] then Option.none else
@@ -66,7 +66,7 @@ def finishL [HoonMapKeys Map] (nm : Nomm) (ord : NeedOrd) (less : Cape)
 
 /-- **On a pure nomm without `%6` the final pass over full lazy needs is
 the fork-free one.** -/
-theorem finishL_eq [HoonMapKeys Map] {nm : Nomm} (hp : nm.pure = true) (h6 : noSix nm = true)
+theorem finishL_eq {nm : Nomm} (hp : nm.pure = true) (h6 : noSix nm = true)
     (ord : NeedOrd) (less : Cape) (bake : Need → Need × List (Nat × Noun)) :
     finishL (S := S) (Map := Map) nm ord less bake = finish (S := S) nm ord less bake := by
   have e := runL_toL (S := S) (Map := Map) nm hp h6 CGoal.done []
@@ -82,7 +82,7 @@ theorem finishL_eq [HoonMapKeys Map] {nm : Nomm} (hp : nm.pure = true) (h6 : noS
 
 /-- **The final pass over full lazy needs meets the contract** of its bell,
 on the fragment, under the hypotheses of `finish_bellContract'`. -/
-theorem finishL_bellContract [HoonMapKeys Map] {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
+theorem finishL_bellContract {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
     {b : Bell} {nm : Nomm} (hp : nm.pure = true) (hA : Annot lib code (SkaModel.Fits b.less) b.fol nm)
     (hf : Frag nm (CGoal.done : CGoal S)) {cape : Cape} {data : Noun} (hb : b.less = Sock.mk cape data)
     (hn : CapeNorm cape) {ord : NeedOrd} {bake : Need → Need × List (Nat × Noun)}

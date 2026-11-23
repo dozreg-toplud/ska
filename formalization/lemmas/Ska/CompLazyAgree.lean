@@ -20,7 +20,7 @@ namespace Comp
 
 open Nock Lazy
 
-variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
+variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
 
 theorem simpleNextL_toL (goal : CGoal S) :
     (simpleNextL (CGoal.toL goal) : CM Map (NextL S)) = Next.toL <$> simpleNext goal := by

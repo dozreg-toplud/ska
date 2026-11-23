@@ -3,8 +3,8 @@ import lemmas.Ska.CompLazyFinal
 import lemmas.Ska.CompSix
 import lemmas.Ska.CompFinishF
 import lemmas.Ska.CompCopyFresh
-import lemmas.Ska.CompNestFinal
 import lemmas.Ska.CompNestFinalP
+import lemmas.Ska.CompSixNext
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -133,10 +133,6 @@ open Formalization.SkaModel.Comp
 #print axioms lazySizeGo_eq
 #print axioms lazyBig_entries
 #print axioms runL_six_doneL
-#print axioms runD_ok
-#print axioms finishLF_compDoneD
-#print axioms finishLF_bellContractD
-#print axioms crash_iffD
 #print axioms sixBody_apart
 #print axioms copyL_six_apart
 #print axioms runP_ok
@@ -144,3 +140,6 @@ open Formalization.SkaModel.Comp
 #print axioms finishLF_bellContractP
 #print axioms crash_iffP
 #print axioms finishLF_bellContract6'
+#print axioms runL_n6_next
+#print axioms sixNextSimple_apart
+#print axioms sixNextL_ofSure

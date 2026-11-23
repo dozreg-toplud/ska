@@ -22,12 +22,12 @@ namespace Comp
 
 open Nock Lazy
 
-variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
+variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
 
 /-- **The final pass of `member` in `+compile-scc-in`** for a function
 alone in its SCC, as `finishL`, ending with the whole of `+to-straight`
 on the proxy map the run left. -/
-def finishLF [HoonMapKeys Map] (nm : Nomm) (ord : NeedOrd) (less : Cape)
+def finishLF (nm : Nomm) (ord : NeedOrd) (less : Cape)
     (bake : Need → Need × List (Nat × Noun)) : Option (Straight Map) :=
   (runL nm (CGoalL.done : CGoalL S) [] gen0).bind fun (nex, g1) =>
     if nex.th.args ≠ [] then Option.none else
@@ -39,7 +39,7 @@ def finishLF [HoonMapKeys Map] (nm : Nomm) (ord : NeedOrd) (less : Cape)
 
 /-- **When the run leaves no proxy and nothing is baked, the final pass
 is `finishL`.** -/
-theorem finishLF_eq [HoonMapKeys Map] {nm : Nomm} {ord : NeedOrd} {less : Cape}
+theorem finishLF_eq {nm : Nomm} {ord : NeedOrd} {less : Cape}
     {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, []))
     (hrun : ∀ nex g1, runL nm (CGoalL.done : CGoalL S) [] (gen0 : Gen Map) = some (nex, g1) →
       g1.cond = (gen0 : Gen Map).cond) :
@@ -96,7 +96,7 @@ theorem runL_cond_frag6 {nm : Nomm} (hf : Frag6 (S := S) nm) {g0 : Gen Map} {nex
 
 /-- **The final pass with the whole of `+to-straight` meets the contract on
 `Frag6`**, under the hypotheses of `finishL_bellContract6`. -/
-theorem finishLF_bellContract6 [HoonMapKeys Map] {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
+theorem finishLF_bellContract6 {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
     {bl : Bell} {nm : Nomm} (hp : nm.pure = true) (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol nm)
     (hf : Frag6 (S := S) nm) {cape : Cape} {data : Noun} (hbl : bl.less = Sock.mk cape data)
     (hn : CapeNorm cape) {ord : NeedOrd} {bake : Need → Need × List (Nat × Noun)}
@@ -107,7 +107,7 @@ theorem finishLF_bellContract6 [HoonMapKeys Map] {lib : Lib} {code : Bell → Op
 
 /-- **The compiled `[6 c a b]` crashes exactly when the nomm does**, with
 the whole of `+to-straight`. -/
-theorem six_crash_iffF [HoonMapKeys Map] (lib : Lib) {c a b : Nomm}
+theorem six_crash_iffF (lib : Lib) {c a b : Nomm}
     (hc : ∀ z o, Frag c (CGoal.pick z o : CGoal S)) (ha : Frag a (CGoal.done : CGoal S))
     (hb : Frag b (CGoal.done : CGoal S)) {ord : NeedOrd} {less : Cape}
     {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}

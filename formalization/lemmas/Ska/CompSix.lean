@@ -32,7 +32,7 @@ namespace Comp
 
 open Nock Lazy
 
-variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
+variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
 
 /-- The state after `(set-tag o region)`. -/
 def Gen.tagged (g : Gen Map) (o : Nat) (region : List Nat) : Gen Map :=
@@ -166,7 +166,7 @@ theorem looks_uni_empty (l : S) (s : Noun) : Looks (HoonSet.uni l HoonSet.empty)
   exact ⟨fun h a ha => h a (Or.inl ha), fun h a ha => ha.elim (h a) (fun e => absurd e (HoonSet.mem_empty a))⟩
 
 /-- The final pass on `[6 c a b]`, taken apart. -/
-theorem finishL_six_parts [HoonMapKeys Map] {c a b : Nomm} (hc : ∀ z o, Frag c (CGoal.pick z o : CGoal S))
+theorem finishL_six_parts {c a b : Nomm} (hc : ∀ z o, Frag c (CGoal.pick z o : CGoal S))
     (ha : Frag a (CGoal.done : CGoal S)) (hb : Frag b (CGoal.done : CGoal S)) {ord : NeedOrd} {less : Cape}
     {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
     (h : finishL (S := S) (Nomm.n6 c a b) ord less bake = some c') :
@@ -217,7 +217,7 @@ theorem jumpsBelow_hop {j : Jmp} {k : Nat} (h1 : 1 ≤ j.there) (h2 : j.there < 
 
 /-- **The final pass on `[6 c a b]` meets the relation at the entry**: the
 compiled code returns what the nomm returns, and crashes where it crashes. -/
-theorem finishL_six_compDone [HoonMapKeys Map] (lib : Lib) {c a b : Nomm}
+theorem finishL_six_compDone (lib : Lib) {c a b : Nomm}
     (hc : ∀ z o, Frag c (CGoal.pick z o : CGoal S)) (ha : Frag a (CGoal.done : CGoal S))
     (hb : Frag b (CGoal.done : CGoal S)) {ord : NeedOrd} {less : Cape}
     {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
@@ -392,7 +392,7 @@ theorem finishL_six_compDone [HoonMapKeys Map] (lib : Lib) {c a b : Nomm}
 
 /-- **The final pass on `[6 c a b]` meets the contract** of its bell, when
 nothing is baked and the bell's cape has no `[| |]`. -/
-theorem finishL_six_bellContract [HoonMapKeys Map] {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
+theorem finishL_six_bellContract {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
     {bl : Bell} {c a b : Nomm} (hp : (Nomm.n6 c a b).pure = true)
     (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol (Nomm.n6 c a b))
     (hc : ∀ z o, Frag c (CGoal.pick z o : CGoal S)) (ha : Frag a (CGoal.done : CGoal S))
@@ -414,7 +414,7 @@ def Frag6 (nm : Nomm) : Prop :=
     Frag a (CGoal.done : CGoal S) ∧ Frag b (CGoal.done : CGoal S)
 
 /-- **The final pass over full lazy needs meets the contract on `Frag6`.** -/
-theorem finishL_bellContract6 [HoonMapKeys Map] {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
+theorem finishL_bellContract6 {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
     {bl : Bell} {nm : Nomm} (hp : nm.pure = true) (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol nm)
     (hf : Frag6 (S := S) nm) {cape : Cape} {data : Noun} (hbl : bl.less = Sock.mk cape data)
     (hn : CapeNorm cape) {ord : NeedOrd} {bake : Need → Need × List (Nat × Noun)}
@@ -428,7 +428,7 @@ theorem finishL_bellContract6 [HoonMapKeys Map] {lib : Lib} {code : Bell → Opt
 every subject that has the axes the cape says it has, whatever the shape
 `ord` of the inputs: a subject that lacks a part that only the branch not
 taken reads does not make it crash. -/
-theorem six_crash_iff [HoonMapKeys Map] (lib : Lib) {c a b : Nomm}
+theorem six_crash_iff (lib : Lib) {c a b : Nomm}
     (hc : ∀ z o, Frag c (CGoal.pick z o : CGoal S)) (ha : Frag a (CGoal.done : CGoal S))
     (hb : Frag b (CGoal.done : CGoal S)) {ord : NeedOrd} {less : Cape}
     {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
@@ -452,7 +452,7 @@ theorem capeAxes_no (s : Noun) : CapeAxes Cape.no s := by
 /-- **The example**: `[6 [0 2] [0 6] [0 14]]` on `[0 1 2]`, whose test is `0`
 and whose no branch reads the axis `14` that the subject lacks, returns `1`,
 for every shape of the inputs for which the final pass returns a program. -/
-theorem six_example [HoonMapKeys Map] (lib : Lib) {ord : NeedOrd} {bake : Need → Need × List (Nat × Noun)}
+theorem six_example (lib : Lib) {ord : NeedOrd} {bake : Need → Need × List (Nat × Noun)}
     (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
     (h : finishL (S := S) (Nomm.n6 (Nomm.n0 2) (Nomm.n0 6) (Nomm.n0 14)) ord Cape.no bake = some c')
     {σ : Type} (O : Oracle σ) (st : σ) (args : List Noun) (t : Trace) (gul : Noun)

@@ -14,10 +14,23 @@ side with the fork of the two branches, since their lazy blocks were
 allocated after those of the branches (`copyL_six_apart`, from
 `copyLazyL_apart`).
 
-`RunOKP` is `RunOKD` of `CompNestRun.lean` for a goal: under `%pick` the
-code keeps the registers allocated before the run and the input registers
-(`GoalSem` with that set), and the ops in front of the lazy blocks keep the
-registers allocated before the end of the run outside their own need's.
+`RunOKP nm goal g0 g1 nex`: the relation for one run of `runL`.  The state
+grew, every lazy block of the need (`entries`) was allocated in the run, is
+the block `⟨[], [], hop th⟩` and lies below the block `nex` enters, their
+labels are distinct, and the registers of every need in the tree were
+allocated in the run.  `sem`: in a program that holds the blocks of `g1`
+outside the lazy blocks and, at each lazy block, ops in front that fill the
+need taken there from the input registers `ned` (`AgreeP`), entering `nex`
+with the sure part held for the subject `s` of the run and the input
+registers holding the subject `s0` of the function does what `+mink` does,
+for the goal (`GoalSem`).  The lazy blocks are filled for `s` from
+registers that hold `s0` (`FillSem` with two subjects); here, inside one
+`%6`, the two are the same, and the final pass takes `s0 = s`.  Under `%pick` the code keeps
+the registers allocated before the run and the input registers, and the ops
+in front of the lazy blocks keep the registers allocated before the end of
+the run outside their own need's.  `nec`: only the sure part is checked at
+the entry; the needs in the forks are checked in their lazy blocks, that is
+only on the branch taken.
 `runP_ok`: `runL` meets it on `FragP` when the nomm has at most 255 `%6`.
 -/
 
@@ -29,7 +42,7 @@ namespace Comp
 
 open Nock Lazy
 
-variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
+variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
 
 /-! ## The fragment -/
 
@@ -154,11 +167,11 @@ theorem copyL_six_apart (xc : NextL S) (l0 l1 : Lazy S) (y n : Nat) (g : Gen Map
 /-- `AgreeF` with the ops of the lazy blocks keeping the registers below the
 end of the run. -/
 def AgreeP (lib : Lib) {σ : Type} (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace)
-    (ned : Need) (g0 g1 : Gen Map) (laz : Lazy S) (s : Noun) : Prop :=
+    (ned : Need) (g0 g1 : Gen Map) (laz : Lazy S) (s0 s : Noun) : Prop :=
   (∀ o, g0.bo ≤ o → o < g1.bo → o ∉ (entries laz).map Prod.fst →
     HoonMap.get c.blocks o = HoonMap.get g1.blocks o) ∧
   ∀ e ∈ entries laz, ∃ A th, HoonMap.get g1.blocks e.1 = some ⟨[], [], Termin.hop th⟩ ∧
-    HoonMap.get c.blocks e.1 = some ⟨[], A, Termin.hop th⟩ ∧ FillSem lib O c gul st t ned g1.re e.2.sure A s
+    HoonMap.get c.blocks e.1 = some ⟨[], A, Termin.hop th⟩ ∧ FillSem lib O c gul st t ned g1.re e.2.sure A s0 s
 
 /-- **The relation for one run of `runL` for `%done` or `%pick`.** -/
 structure RunOKP (lib : Lib) (nm : Nomm) (goal : CGoal S) (g0 g1 : Gen Map) (nex : NextL S) : Prop where
@@ -176,9 +189,9 @@ structure RunOKP (lib : Lib) (nm : Nomm) (goal : CGoal S) (g0 g1 : Gen Map) (nex
   nodup : ((entries nex.laz).map Prod.fst).Nodup
   size : (entries nex.laz).length ≤ 2 * sixCount nm
   nec : ∀ s, ¬ FitsS nex.laz.sure s → pureEval nm s = none
-  sem : ∀ (c : Straight Map) (ned : Need) (σ : Type) (O : Oracle σ) (st : σ) (t : Trace) (gul : Noun) (s : Noun),
-    AgreeP lib O c gul st t ned g0 g1 nex.laz s → (∀ r, NMem ned r → g1.re ≤ r) →
-    ∀ regs, HoldsS nex.laz.sure regs s → HoldsN ned regs s →
+  sem : ∀ (c : Straight Map) (ned : Need) (σ : Type) (O : Oracle σ) (st : σ) (t : Trace) (gul : Noun) (s0 s : Noun),
+    AgreeP lib O c gul st t ned g0 g1 nex.laz s0 s → (∀ r, NMem ned r → g1.re ≤ r) →
+    ∀ regs, HoldsS nex.laz.sure regs s → HoldsN ned regs s0 →
     GoalSem lib O c gul st (fun r => r < g0.re ∨ NMem ned r) regs t nex.th goal (pureEval nm s)
 
 /-! ## `GoalSem` -/
@@ -230,8 +243,8 @@ theorem goalSem_none {K : Nat → Prop} {regs : Map Noun} {je : Jmp} :
 end GS
 
 theorem fillSem_runK {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ} {t : Trace}
-    {ned : Need} {lo : Nat} {L : Sure S} {A : List Pole} {s : Noun} (F : FillSem lib O c gul st t ned lo L A s)
-    {R : Map Noun} (hR : HoldsN ned R s) (th : Jmp) :
+    {ned : Need} {lo : Nat} {L : Sure S} {A : List Pole} {s0 s : Noun} (F : FillSem lib O c gul st t ned lo L A s0 s)
+    {R : Map Noun} (hR : HoldsN ned R s0) (th : Jmp) :
     (FitsS L s → ∃ R', HoldsS L R' s ∧
       (∀ x, (NMem ned x ∨ x < lo) → ¬ NMem L.ned x → SkaModel.read x R' = SkaModel.read x R) ∧
       execBlob lib O c gul st R t ⟨[], A, Termin.hop th⟩ [] = goJ lib O c gul st R' t th) ∧
@@ -247,7 +260,7 @@ theorem fillSem_runK {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} 
 
 theorem FillSem.mono' {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ}
     {t : Trace} {ned : Need} {lo lo' : Nat} {L : Sure S} {A : List Pole} {s : Noun}
-    (h : FillSem lib O c gul st t ned lo L A s) (hl : lo' ≤ lo) : FillSem lib O c gul st t ned lo' L A s :=
+    (h : FillSem lib O c gul st t ned lo L A s0 s) (hl : lo' ≤ lo) : FillSem lib O c gul st t ned lo' L A s0 s :=
   FillSem.mono h hl
 
 theorem entries_eq (l : Lazy S) : entries l = bondEntries l.bond ++ forkEntries l.fork := by
@@ -292,7 +305,7 @@ theorem runOKP_frag (lib : Lib) {goal : CGoal S} {nm : Nomm} (hf : Frag nm goal)
   · rcases R.nec s hs with e | ⟨p, _, e⟩
     · exact e
     · exact (notNext_gnot hg p e).elim
-  · intro c ned σ O st t gul s ag hned regs hh _
+  · intro c ned σ O st t gul s0 s ag hned regs hh _
     have := R.sem d0 c (fun o h0 h1 => ag.1 o h0 h1 (by simp [Next.toL, entries_ofSure])) σ O st s regs t gul hh
     refine goalSem_mono (fun r hr => ⟨?_, notNext_gmem hg r⟩) goal _ this
     rcases hr with e | e
@@ -466,7 +479,7 @@ theorem runP_ok (lib : Lib) {goal : CGoal S} {nm : Nomm} (hf : FragP goal nm) :
       have fo' : ¬ FitsS xc.laz.sure s := fun f => hs ⟨f.1, (looks_uni_empty _ _).mpr f.2⟩
       rw [pureEval_n6, Rc.nec s fo']; rfl
     · -- sem
-      intro cc ned σ O st t gul s ag hned regs hh hn
+      intro cc ned σ O st t gul s0 s ag hned regs hh hn
       have notLab : ∀ o, g0.bo ≤ o → o < g4'.bo → (g3.bo ≤ o ∨
           (g2.bo + 2 ≤ o ∧ o < g3.bo ∧ o ∉ (entries xc.laz).map Prod.fst) ∨
           (g1.bo ≤ o ∧ o < g2.bo ∧ o ∉ (entries x0.laz).map Prod.fst) ∨
@@ -496,18 +509,18 @@ theorem runP_ok (lib : Lib) {goal : CGoal S} {nm : Nomm} (hf : FragP goal nm) :
       have hc3 : HoonMap.get cc.blocks g3.bo = some ⟨[], [], Termin.hop xc.th⟩ :=
         (notLab g3.bo (by omega) (by omega) (Or.inl (Nat.le_refl _))).trans h4o
       have hre4 : ∀ r, NMem ned r → g4'.re ≤ r := hned
-      have agC : AgreeP lib O cc gul st t ned (sixGenL g2 x0.th x1.th region) g3 xc.laz s := by
+      have agC : AgreeP lib O cc gul st t ned (sixGenL g2 x0.th x1.th region) g3 xc.laz s0 s := by
         refine ⟨fun o h0 h1 hnl => ?_, fun e he => ?_⟩
         · simp only [sixGenL_bo] at h0
           rw [notLab o (by omega) (by omega) (Or.inr (Or.inl ⟨h0, h1, hnl⟩)), h4k o (by omega)]
         · obtain ⟨A, th, hg, hcb, hF⟩ := ag.2 e ((memE e).mpr (Or.inl he))
           exact ⟨A, th, (h4k _ (by have := lc e he; omega)).symm.trans hg, hcb, hF.mono (by omega)⟩
-      have agA : AgreeP lib O cc gul st t ned g1 g2 x0.laz s := by
+      have agA : AgreeP lib O cc gul st t ned g1 g2 x0.laz s0 s := by
         refine ⟨fun o h0 h1 hnl => ?_, fun e he => ?_⟩
         · rw [notLab o (by omega) (by omega) (Or.inr (Or.inr (Or.inl ⟨h0, h1, hnl⟩))), h42 o h1]
         · obtain ⟨A, th, hg, hcb, hF⟩ := ag.2 e ((memE e).mpr (Or.inr (Or.inr (Or.inl he))))
           exact ⟨A, th, (h42 _ (la e he).2).symm.trans hg, hcb, hF.mono (by omega)⟩
-      have agB : AgreeP lib O cc gul st t ned g0 g1 x1.laz s := by
+      have agB : AgreeP lib O cc gul st t ned g0 g1 x1.laz s0 s := by
         refine ⟨fun o h0 h1 hnl => ?_, fun e he => ?_⟩
         · rw [notLab o (by omega) (by omega) (Or.inr (Or.inr (Or.inr ⟨h1, hnl⟩))), h41 o h1]
         · obtain ⟨A, th, hg, hcb, hF⟩ := ag.2 e ((memE e).mpr (Or.inr (Or.inr (Or.inr (Or.inr he)))))
@@ -517,8 +530,8 @@ theorem runP_ok (lib : Lib) {goal : CGoal S} {nm : Nomm} (hf : FragP goal nm) :
           (o, x.laz) ∈ entries (mk (⟨xc.laz.sure.ned, HoonSet.uni xc.laz.sure.lok HoonSet.empty⟩ : Sure S)
             (xc.laz.fork ++ [((g2.bo, x0.laz), (g2.bo + 1, x1.laz))]) xc.laz.bond) →
           HoonMap.get g4'.blocks o = some ⟨[], [], Termin.hop x.th⟩ → RunOKP (Map := Map) lib nm' goal gA gB x →
-          AgreeP lib O cc gul st t ned gA gB x.laz s → gB.re ≤ g4'.re → g0.re ≤ gA.re →
-          ∀ R2, HoldsN ned R2 s →
+          AgreeP lib O cc gul st t ned gA gB x.laz s0 s → gB.re ≤ g4'.re → g0.re ≤ gA.re →
+          ∀ R2, HoldsN ned R2 s0 →
             GoalSem lib O cc gul st (fun r => r < g0.re ∨ NMem ned r) R2 t (jmp0 o) goal (pureEval nm' s) := by
         intro o x nm' gA gB hm hb R agX hre hlo R2 hR2
         obtain ⟨A, th, hg, hcb, hF⟩ := ag.2 _ hm
@@ -531,8 +544,8 @@ theorem runP_ok (lib : Lib) {goal : CGoal S} {nm : Nomm} (hf : FragP goal nm) :
             execBlob lib O cc gul st R2 t ⟨[], A, Termin.hop x.th⟩ [] := goJ_jmp0 _ _ _ _ hcb
         by_cases f : FitsS x.laz.sure s
         · obtain ⟨R3, hh3, k3, e3⟩ := (fillSem_runK hF hR2 x.th).1 f
-          have hn3 : HoldsN ned R3 s := HoldsN.agree ned (fun y hy => k3 y (Or.inl hy) (dj y hy)) hR2
-          have S3 := R.sem cc ned σ O st t gul s agX (fun r hr => Nat.le_trans hre (hned r hr)) R3 hh3 hn3
+          have hn3 : HoldsN ned R3 s0 := HoldsN.agree ned (fun y hy => k3 y (Or.inl hy) (dj y hy)) hR2
+          have S3 := R.sem cc ned σ O st t gul s0 s agX (fun r hr => Nat.le_trans hre (hned r hr)) R3 hh3 hn3
           refine goalSem_pre (fun r hr => ?_) (e0.trans e3) goal _
             (goalSem_mono (fun r hr => hr.elim (fun h => Or.inl (by omega)) Or.inr) goal _ S3)
           rcases hr with hr | hr
@@ -540,7 +553,7 @@ theorem runP_ok (lib : Lib) {goal : CGoal S} {nm : Nomm} (hf : FragP goal nm) :
           · exact k3 r (Or.inl hr) (dj r hr)
         · rw [R.nec s f]
           exact goalSem_none goal (e0.trans ((fillSem_runK hF hR2 x.th).2 f))
-      have Hc := Rc.sem cc ned σ O st t gul s agC (fun r hr => by have := hned r hr; omega) regs
+      have Hc := Rc.sem cc ned σ O st t gul s0 s agC (fun r hr => by have := hned r hr; omega) regs
         ⟨hh.1, (looks_uni_empty _ _).mp hh.2⟩ hn
       have e0 : goJ lib O cc gul st regs t (jmp0 g3.bo) = goJ lib O cc gul st regs t xc.th := by
         rw [goJ_jmp0 _ _ _ _ hc3, execBlob_hop]

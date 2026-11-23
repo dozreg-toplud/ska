@@ -3,10 +3,16 @@ import lemmas.Ska.CompNestPick
 /-!
 # The final pass on `FragP`
 
-`finishLF_compDoneP`, `finishLF_bellContractP`, `crash_iffP`: the theorems
-of `CompNestFinal.lean` on the larger fragment `FragP` for `%done`, where
-`%6` nests in the branches and in the tests to any depth, when the nomm has
-at most 255 `%6`.
+`finishLF_compDoneP`: on a nomm of `FragP` for `%done` with at most 255
+`%6`, the final pass with the whole of `+to-straight` returns code that does
+what `+mink` does, on every subject that has the axes the bell's cape says
+it has.  The run makes no proxy register (`RunOKP.cnd`), so `+to-straight`
+takes its renaming path; `+coerce-lazy` fills the entry block and every lazy
+block of the tree from the input registers (`coerceLazyL_spec`), which is
+what `RunOKP.sem` asks.  `finishLF_bellContractP`: so the final pass meets
+the contract of its bell, and `crash_iffP`: the compiled code crashes
+exactly when the nomm does, so it never crashes on a part of the subject
+that only a branch not taken reads, at any depth of nesting.
 -/
 
 set_option linter.unusedSectionVars false
@@ -17,10 +23,10 @@ namespace Comp
 
 open Nock Lazy
 
-variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
+variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
 
 /-- **The final pass on `FragP` for `%done` meets the relation at the entry.** -/
-theorem finishLF_compDoneP [HoonMapKeys Map] (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.done nm)
+theorem finishLF_compDoneP (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.done nm)
     (hcount : sixCount nm ≤ 255) {ord : NeedOrd} {less : Cape} {bake : Need → Need × List (Nat × Noun)}
     (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
     (h : finishLF (S := S) nm ord less bake = some c') : CompDoneOn lib c' nm (CapeAxes less) := by
@@ -62,7 +68,7 @@ theorem finishLF_compDoneP [HoonMapKeys Map] (lib : Lib) {nm : Nomm} (hf : FragP
   have hents : ∀ e ∈ entries nex.laz, ∃ A th, HoonMap.get g4.blocks e.1 = some ⟨[], [], Termin.hop th⟩ ∧
       HoonMap.get g9.blocks e.1 = some ⟨[], A, Termin.hop th⟩ ∧
       ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) gul st t s,
-        CapeAxes less s → FillSem lib O c gul st t nedF k5 e.2.sure A s := by
+        CapeAxes less s → FillSem lib O c gul st t nedF k5 e.2.sure A s s := by
     intro e he
     obtain ⟨_, lt, th, hth⟩ := R.labs e he
     obtain ⟨A, hA, sA⟩ := Fents e he [] (Termin.hop th) hth
@@ -98,7 +104,7 @@ theorem finishLF_compDoneP [HoonMapKeys Map] (lib : Lib) {nm : Nomm} (hf : FragP
   rw [he]
   have hj : nex.th = jmp0 nex.th.there := by
     rcases hth : nex.th with ⟨args', there⟩; rw [hth] at hargs; simp at hargs; subst hargs; rfl
-  have ag : AgreeP lib O c1 gul st t nedF gen0 g4 nex.laz s := by
+  have ag : AgreeP lib O c1 gul st t nedF gen0 g4 nex.laz s s := by
     refine ⟨fun o _ _ hnl => ?_, fun e he => ?_⟩
     · by_cases e : o = nex.th.there
       · subst e; rw [hc1o, hB]
@@ -114,7 +120,7 @@ theorem finishLF_compDoneP [HoonMapKeys Map] (lib : Lib) {nm : Nomm} (hf : FragP
   · obtain ⟨R1, hr1, hh1, kr1⟩ := SoF fo
     rw [hr1]
     have hn1 : HoldsN nedF R1 s := HoldsN.agree nedF (fun x hx => kr1 x (Or.inl hx) (dj x hx)) hR0
-    have := R.sem c1 nedF σ O st t gul s ag (fun r hr => (mem5 r hr).1) R1 hh1 hn1
+    have := R.sem c1 nedF σ O st t gul s s ag (fun r hr => (mem5 r hr).1) R1 hh1 hn1
     simp only [GoalSem] at this
     rw [hj, goJ_jmp0 _ _ _ _ hc1o] at this
     exact this
@@ -122,7 +128,7 @@ theorem finishLF_compDoneP [HoonMapKeys Map] (lib : Lib) {nm : Nomm} (hf : FragP
 
 /-- **The final pass meets the contract on `FragP` for `%done`**, when the nomm has at
 most 255 `%6`, nothing is baked and the bell's cape has no `[| |]`. -/
-theorem finishLF_bellContractP [HoonMapKeys Map] {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
+theorem finishLF_bellContractP {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
     {bl : Bell} {nm : Nomm} (hp : nm.pure = true) (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol nm)
     (hf : FragP (S := S) CGoal.done nm) (hcount : sixCount nm ≤ 255) {cape : Cape} {data : Noun}
     (hbl : bl.less = Sock.mk cape data) (hn : CapeNorm cape) {ord : NeedOrd}
@@ -135,7 +141,7 @@ theorem finishLF_bellContractP [HoonMapKeys Map] {lib : Lib} {code : Bell → Op
 
 /-- **The compiled code of a `FragP` for `%done` nomm crashes exactly when the nomm
 does**, on every subject that has the axes the cape says it has. -/
-theorem crash_iffP [HoonMapKeys Map] (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.done nm) (hcount : sixCount nm ≤ 255)
+theorem crash_iffP (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.done nm) (hcount : sixCount nm ≤ 255)
     {ord : NeedOrd} {less : Cape} {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, []))
     {c' : Straight Map} (h : finishLF (S := S) nm ord less bake = some c') {σ : Type} (O : Oracle σ) (st : σ)
     (s : Noun) (args : List Noun) (t : Trace) (gul : Noun) (hP : CapeAxes less s)
@@ -159,7 +165,7 @@ theorem sixCount_frag6 {nm : Nomm} (h : Frag6 (S := S) nm) : sixCount nm ≤ 1 :
   · simp only [sixCount, sixCount_frag (hc (jmp0 0) (jmp0 0)), sixCount_frag ha, sixCount_frag hb]; omega
 
 /-- **`finishLF_bellContract6` again, as a case of `FragP`.** -/
-theorem finishLF_bellContract6' [HoonMapKeys Map] {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
+theorem finishLF_bellContract6' {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
     {bl : Bell} {nm : Nomm} (hp : nm.pure = true) (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol nm)
     (hf : Frag6 (S := S) nm) {cape : Cape} {data : Noun} (hbl : bl.less = Sock.mk cape data)
     (hn : CapeNorm cape) {ord : NeedOrd} {bake : Need → Need × List (Nat × Noun)}
