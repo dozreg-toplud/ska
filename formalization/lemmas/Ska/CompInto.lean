@@ -452,6 +452,118 @@ theorem intoRec_ok : ∀ (axe : Nat) (ned : Need) (g g' : Gen Map) (d r : Need) 
       · exact hy e
       · omega
 
+/-! ## `+into` -/
+
+theorem looks_put {lok : S} {a : Nat} {t : Noun} :
+    Looks (HoonSet.put lok a) t ↔ Looks lok t ∧ (slot? a t).isSome := by
+  constructor
+  · intro h
+    exact ⟨fun y hy => h y ((HoonSet.mem_put _ _ _).mpr (Or.inr hy)),
+      h a ((HoonSet.mem_put _ _ _).mpr (Or.inl rfl))⟩
+  · intro ⟨h1, h2⟩ y hy
+    rcases (HoonSet.mem_put _ _ _).mp hy with rfl | hy
+    · exact h2
+    · exact h1 y hy
+
+/-- `+into-need` from the state after the emit: the recursion's run, and
+the one `+add-ops`. -/
+theorem intoNeed_rec {axe : Nat} {ned : Need} {o : Nat} {g0 g2 : Gen Map} {x : Need × Need}
+    (h : intoNeed axe ned o g0 = some (x, g2)) :
+    1 ≤ axe ∧ ∃ ops g1, IntoOK axe ned x.1 x.2 ops g0 g1 ∧ g2.re = g1.re ∧ g2.bo = g1.bo ∧ g2.drop = g1.drop ∧
+      (∀ o', o' ≠ o → HoonMap.get g2.blocks o' = HoonMap.get g1.blocks o') ∧
+      (g1.drop = false → Front o g1 g2 ops) := by
+  simp only [intoNeed] at h
+  by_cases a0 : axe = 0
+  · simp [a0] at h
+  rw [if_neg a0] at h
+  refine ⟨by omega, ?_⟩
+  by_cases a1 : axe = 1
+  · rw [if_pos a1] at h
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    subst a1
+    have I := intoRec_ok 1 ned g0 g0 ned Need.none [] (Nat.le_refl _) (by rw [intoRec]; rfl)
+    exact ⟨[], g0, I, rfl, rfl, rfl, fun _ _ => rfl, fun _ => front_nil o g0⟩
+  rw [if_neg a1] at h
+  obtain ⟨d, r, ops', g1, e1, e2, rfl⟩ := intoLoop_rec _ _ _ _ _ _ _ h
+  have I := intoRec_ok axe ned g0 g1 d r ops' (by omega) e1
+  obtain ⟨q1, q2, q3, q4⟩ := addOps_gen e2
+  rw [List.append_nil] at e2
+  exact ⟨ops', g1, I, q1, q2, q3, q4, fun hd => front_addOps e2 hd⟩
+
+/-- **`+into`.**  The block `o` that it emits puts together, from the needs
+of the donor and the recipient it returns, the need `laz` of the edited
+noun, and goes on to `th`.  When the edit succeeds, the edited noun has the
+shape and the looks of `laz` exactly when the donor and the recipient have
+theirs; a recipient with its looks has the edited axis. -/
+theorem into_ok {laz : Sure S} {th : Jmp} {axe : Nat} {g g' : Gen Map} {don rec : Sure S} {o : Nat}
+    (h : into ⟨laz, th⟩ axe g = some ((don, rec, o), g')) :
+    1 ≤ axe ∧ o = g.bo ∧ Ext g g' ∧ g'.bo = g.bo + 1 ∧
+    (∀ y, NMem don.ned y → NMem laz.ned y ∨ (g.re ≤ y ∧ y < g'.re)) ∧
+    (∀ y, NMem rec.ned y → NMem laz.ned y ∨ (g.re ≤ y ∧ y < g'.re)) ∧
+    (∀ x t, FitsS rec t → (edit? axe x t).isSome) ∧
+    (Distinct laz.ned → (∀ y, NMem laz.ned y → y < g.re) →
+      Distinct don.ned ∧ Distinct rec.ned ∧ (∀ y, NMem don.ned y → ¬ NMem rec.ned y) ∧
+      (∀ x t n, edit? axe x t = some n → (FitsS laz n ↔ FitsS don x ∧ FitsS rec t)) ∧
+      (g.drop = false → ∀ (c : Straight Map), Agree c g g' → ∀ (lib : Lib) (σ : Type) (O : Oracle σ) st tr
+        (R : Map Noun) x t n gul, edit? axe x t = some n → HoldsN don.ned R x → HoldsN rec.ned R t →
+        ∃ R', HoldsN laz.ned R' n ∧
+          (∀ y, ¬ NMem laz.ned y → y < g.re → SkaModel.read y R' = SkaModel.read y R) ∧
+          goJ lib O c gul st R tr (jmp0 o) = goJ lib O c gul st R' tr th)) := by
+  simp only [into] at h
+  obtain ⟨o', g0, h0, h⟩ := bind_some h
+  rw [emit_apply] at h0
+  simp only [Option.some.injEq, Prod.mk.injEq] at h0
+  obtain ⟨rfl, rfl⟩ := h0
+  obtain ⟨⟨sd, sr⟩, g1, h2, h⟩ := bind_some h
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨⟨rfl, rfl, rfl⟩, rfl⟩ := h
+  simp only [intoSure] at h2
+  obtain ⟨⟨ld, lr⟩, hl, h2⟩ := Option.bind_eq_some_iff.mp h2
+  obtain ⟨⟨⟨nd, nr⟩, g2⟩, h3, h4⟩ := Option.map_eq_some_iff.mp h2
+  simp only [Option.some.injEq, Prod.mk.injEq] at h4
+  obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h4
+  obtain ⟨a1, ops, g3, I, q1, q2, q3, q4, Fr⟩ := intoNeed_rec h3
+  simp only at I
+  have E0 := ext_emit g ⟨[], [], Termin.hop th⟩
+  have b3 : g3.bo = g.bo + 1 := by rw [I.gen]; rfl
+  have d3 : g3.drop = g.drop := by rw [I.gen]; rfl
+  have k3 : g3.blocks = (g.emitted ⟨[], [], Termin.hop th⟩).blocks := by rw [I.gen]
+  have r3 : g.re ≤ g3.re := I.le
+  have E : Ext g g2 := ⟨by omega, by omega, by rw [q3, d3], fun o' ho' => by
+    rw [q4 o' (by omega), k3]; exact E0.2.2.2 o' ho'⟩
+  -- the recipient's looks, with the edited axis
+  have lk : ∀ t, Looks (if axe = 1 then lr else HoonSet.put lr axe) t ↔ Looks lr t ∧ (slot? axe t).isSome := by
+    intro t
+    by_cases e : axe = 1
+    · subst e; simp
+    · rw [if_neg e]; exact looks_put
+  refine ⟨a1, rfl, E, by omega, fun y hy => ?_, fun y hy => ?_, fun x t ht => ?_, fun dn lo => ?_⟩
+  · rcases I.md y hy with e | e
+    · exact Or.inl e
+    · exact Or.inr ⟨e.1, by omega⟩
+  · rcases I.mr y hy with e | e
+    · exact Or.inl e
+    · exact Or.inr ⟨e.1, by omega⟩
+  · exact edit_isSome ((lk t).mp ht.2).2
+  obtain ⟨Dd, Dr, Ddr, F, H⟩ := I.sem dn lo
+  refine ⟨Dd, Dr, Ddr, fun x t n he => ?_, fun hd c hc lib σ O st' tr R x t n gul he hdx hrt => ?_⟩
+  · simp only [FitsS]
+    rw [F x t n he, intoLok_looks hl he, lk t]
+    have := (slot_edit he).2
+    simp only [this, and_true]
+    exact ⟨fun ⟨⟨a, b⟩, c, d⟩ => ⟨⟨a, c⟩, b, d⟩, fun ⟨⟨a, c⟩, b, d⟩ => ⟨⟨a, b⟩, c, d⟩⟩
+  · obtain ⟨R', r1, hl', u⟩ := H lib σ O c gul st' tr R x t n he hdx hrt
+    have F0 : Front g.bo (g.emitted ⟨[], [], Termin.hop th⟩) g3 [] :=
+      ⟨fun B fin hb => by rw [k3]; simpa using hb, fun o' _ => by rw [k3], b3.trans (emitted_bo g _).symm, by rw [d3]; rfl, r3⟩
+    have Fr' := F0.trans (Fr (by rw [d3]; exact hd))
+    have hb0 : HoonMap.get c.blocks g.bo = some ⟨[], ops ++ [], Termin.hop th⟩ := by
+      rw [hc g.bo (Nat.le_refl _) (by omega)]
+      have := Fr'.blk _ _ (emitted_get g _ hd)
+      simpa using this
+    refine ⟨R', hl', u, ?_⟩
+    rw [goJ_jmp0 _ _ _ _ hb0, r1, execBlob_hop]
+
 end Comp
 end SkaModel
 end Formalization
