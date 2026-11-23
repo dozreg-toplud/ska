@@ -22,6 +22,7 @@ import lemmas.Ska.ConvergeGraph
 import lemmas.Ska.CompSimOps
 import lemmas.Ska.Bridge
 import lemmas.Ska.MemoPoke
+import lemmas.Ska.SockNorm
 
 /-! The axioms of the main theorems of `lemmas/Ska`.  `lake build` prints
 them; each should be `propext`, `Classical.choice` and `Quot.sound` at most. -/
@@ -194,3 +195,20 @@ open Formalization.SkaModel
 #print axioms Ana.run_ok
 #print axioms RunEntryR.pop
 #print axioms Ana.runEnd_gStepR
+#print axioms normCape_con
+#print axioms normCape_uni
+#print axioms normCape_int
+#print axioms normCape_lack
+#print axioms normCape_dif
+#print axioms normCape_pat
+#print axioms normCape_msgCa
+#print axioms normSock_knit
+#print axioms normSock_pull
+#print axioms normSock_darn
+#print axioms normSock_purr
+#print axioms normSock_app
+#print axioms normSock_doubleInt
+#print axioms normSock_msgAnno
+#print axioms normSock_msgSock
+#print axioms normSock_patchProd
+#print axioms runDatum_norm
