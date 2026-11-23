@@ -297,16 +297,21 @@ theorem cons_next_clean {p q : Nomm} (ihp : CleanIH S Map p) (ihq : CleanIH S Ma
     {laz : Sure S} {th : Jmp} {g0 g1 : Gen Map} {nex : Next S}
     (h : (do
       let (hed, tel, o) ← Comp.split ⟨laz, th⟩
-      let nexh : Next S := ⟨hed, jmp0 o⟩
+      let nexh ← past noCode ⟨hed, jmp0 o⟩ q
       let nex2 ← run q (CGoal.next tel nexh.th)
+      let nex2 ← past noCode nex2 p
       let nex1 ← run p (CGoal.next nexh.laz nex2.th)
       copy nex1 nex2.laz : CM Map (Next S)) g0 = some (nex, g1))
     (hc : Clean laz.ned) : Clean nex.laz.ned := by
   obtain ⟨⟨hed, tel, o⟩, g2, h2, h⟩ := bind_some h
   have Sp := clean_split h2 hc
   simp only at Sp
+  obtain ⟨nexh, g2', hph, h⟩ := bind_some h
+  obtain ⟨rfl, rfl⟩ := past_some hph
   obtain ⟨nex2, g3, h3, h⟩ := bind_some h
   have Cq := ihq (CGoal.next _ _) g2 g3 nex2 Sp.2 h3
+  obtain ⟨nex2', g3', hp2, h⟩ := bind_some h
+  obtain ⟨rfl, rfl⟩ := past_some hp2
   obtain ⟨nex1, g4, h4, h⟩ := bind_some h
   have Cp := ihp (CGoal.next _ _) g3 g4 nex1 Sp.1 h4
   exact clean_copy h Cp Cq
@@ -410,6 +415,8 @@ theorem run_clean : ∀ (nm : Nomm), CleanIH S Map nm := by
     simp only [run, bind_apply, re_apply, Option.bind_some] at h
     obtain ⟨⟨o, g2⟩, h2, h⟩ := Option.bind_eq_some_iff.mp h
     obtain ⟨⟨nexq, g3⟩, h3, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨⟨nexq', g3'⟩, hp, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨rfl, rfl⟩ := past_some hp
     obtain ⟨⟨nexp, g4⟩, h4, h⟩ := Option.bind_eq_some_iff.mp h
     exact clean_copy h (ihp _ _ _ _ (by trivial) h4) (ihq _ _ _ _ (by trivial) h3)
   | cons p q ihp ihq =>
@@ -424,6 +431,8 @@ theorem run_clean : ∀ (nm : Nomm), CleanIH S Map nm := by
     | pick z o =>
       simp only [run, bind_apply, pure_apply, emit_apply, Option.bind_some] at h
       obtain ⟨⟨nex2, g3⟩, h3, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨⟨nex2', g3'⟩, hp, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨rfl, rfl⟩ := past_some hp
       obtain ⟨⟨nex1, g4⟩, h4, h⟩ := Option.bind_eq_some_iff.mp h
       exact clean_copy h (ihp _ _ _ _ (by trivial) h4) (ihq _ _ _ _ (by trivial) h3)
   | n2 => intro goal g0 g1 nex _ h; simp only [run] at h; cases h
@@ -436,7 +445,11 @@ theorem run_clean : ∀ (nm : Nomm), CleanIH S Map nm := by
     obtain ⟨⟨don, rec, o⟩, g3, h3, h⟩ := bind_some h
     have CI := clean_into h3 C0
     simp only at h
+    obtain ⟨nexD, g3', hpd, h⟩ := bind_some h
+    obtain ⟨rfl, rfl⟩ := past_some hpd
     obtain ⟨nexRec, g4, h4, h⟩ := bind_some h
+    obtain ⟨nexRec', g4', hpr, h⟩ := bind_some h
+    obtain ⟨rfl, rfl⟩ := past_some hpr
     obtain ⟨nexDon, g5, h5, h⟩ := bind_some h
     exact clean_copy h (ihv _ _ _ _ (by exact CI.1) h5) (ihq _ _ _ _ (by exact CI.2) h4)
   | n11s => intro goal g0 g1 nex _ h; simp only [run] at h; cases h

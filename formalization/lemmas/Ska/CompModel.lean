@@ -19,8 +19,9 @@ tests `&(?=(~ fork.laz) ?=(~ bond.laz))` takes the branch that test selects,
 and that branch is what is modelled.  Without calls the state's `soft` map
 stays empty, so its tests (`(~(has by soft.gen) o)`) are false; `tags`,
 `cond`, `cache` and `sofs` are neither read nor written, and are left out
-of `Gen`.  `+past` returns its `next` unchanged when `(hinted nom ...)` is
-false, which it is on every nomm of the fragment; it is the identity here.
+of `Gen`.  `+past` is modelled with `+hinted`; its branch for a hinted nomm
+makes a bond and is not modelled.  It returns its `next` unchanged on every
+pure nomm (`past_pure`), and wherever it returns at all (`past_some`).
 
 What `none` means.  A model returns `none` where the Hoon crashes: a failed
 `?>` or `?<`, `!!`, `got` on a missing key.
@@ -535,6 +536,72 @@ def forl (r o : Nat) : CM Map (Nat × Nat) := do
   let if1 ← emit ⟨[], [Pole.imm (A 1) r1], Termin.hop ⟨[some r1], barg⟩⟩
   pure (if0, if1)
 
+/-! ## `+hinted` and `+past` -/
+
+/-! The cords of the hint tags `+hinted` tests. -/
+namespace HintTag
+def bout : Nat := 0x74756f62
+def xray : Nat := 0x79617278
+def spin : Nat := 0x6e697073
+def jinx : Nat := 0x786e696a
+def live : Nat := 0x6576696c
+def slog : Nat := 0x676f6c73
+end HintTag
+
+/-- `$hint-static`, `?(%bout %xray)`. -/
+def hintStatic (t : Nat) : Bool := t = HintTag.bout || t = HintTag.xray
+
+/-- `$hint-dynamic`: `?(%bout %xray %spin %jinx %live hint-dynamic-stop)`,
+with `$hint-dynamic-stop` `?(%hunk %hand %lose %mean %spot %slog)`. -/
+def hintDynamic (t : Nat) : Bool :=
+  t = HintTag.bout || t = HintTag.xray || t = HintTag.spin || t = HintTag.jinx || t = HintTag.live ||
+  t = Tag.hunk || t = Tag.hand || t = Tag.lose || t = Tag.mean || t = Tag.spot || t = HintTag.slog
+
+/-- `|(a b)`: `b` is not evaluated when `a` is yes, so a crash in it is
+not reached. -/
+def orB : Option Bool → Option Bool → Option Bool
+  | some true, _ => some true
+  | some false, b => b
+  | Option.none, _ => Option.none
+
+/-- `+hinted`, with the code table `code.long-ska` read only for the
+purity of a direct callee (`pure:(~(got by cod) b)`): `cod b` is that flag,
+`none` where `got` crashes.  `none` is a crash. -/
+def hinted (cod : Bell → Option Bool) : Nomm → Option Bool
+  | Nomm.n0 _ => some false
+  | Nomm.n1 _ => some false
+  | Nomm.n3 p => hinted cod p
+  | Nomm.n4 p => hinted cod p
+  | Nomm.mean _ _ _ _ _ => some true
+  | Nomm.n12 _ _ => some true
+  | Nomm.cons p q => orB (hinted cod p) (hinted cod q)
+  | Nomm.n5 p q => orB (hinted cod p) (hinted cod q)
+  | Nomm.n6 p q r => orB (hinted cod p) (orB (hinted cod q) (hinted cod r))
+  | Nomm.n7 p q => orB (hinted cod p) (hinted cod q)
+  | Nomm.n10 _ v q => orB (hinted cod v) (hinted cod q)
+  | Nomm.n2 p q info =>
+      match info with
+      | Option.none => some true
+      | some (b, _) => orB ((cod b).map (! ·)) (orB (hinted cod p) (hinted cod q))
+  | Nomm.n11s tag q _ => orB (some (hintStatic tag)) (hinted cod q)
+  | Nomm.n11d tag h q _ => orB (some (hintDynamic tag)) (orB (hinted cod h) (hinted cod q))
+
+/-- `+past` on a fork-free lazy need.  When the need asks something and
+`nom` is hinted, the Hoon parks the need in a bond behind a new block; a
+fork-free need has no bond, so that branch is not modelled (`none`, as the
+cases of `run` that are not modelled).  Every other branch returns `nex`. -/
+def past (cod : Bell → Option Bool) (nex : Next S) (nom : Nomm) : CM Map (Next S) :=
+  if nex.laz.ned = Need.none ∧ HoonSet.small nex.laz.lok = true then pure nex else
+  match hinted cod nom with
+  | some false => pure nex
+  | _ => fun _ => Option.none
+
+/-- The code table the model of `run` hands `+past`.  `+hinted` reads the
+table only at a `%2` with a callee, which no nomm the model compiles has
+(`run` is `none` on `%2`); on the others the answer does not depend on the
+table (`hinted_pure`). -/
+def noCode : Bell → Option Bool := fun _ => Option.none
+
 /-! ## `run` -/
 
 /-- The goal `%pick` into the two blocks that return `0` and `1`, as the
@@ -561,12 +628,14 @@ def run : Nomm → CGoal S → CM Map (Next S)
       | CGoal.pick _ _ => do
           let o ← emit ⟨[], [], Termin.bom Option.none⟩
           let nex2 ← run q (CGoal.next Sure.bunt (jmp0 o))
+          let nex2 ← past noCode nex2 p
           let nex1 ← run p (CGoal.next Sure.bunt nex2.th)
           copy nex1 nex2.laz
       | CGoal.next laz th => do
           let (hed, tel, o) ← split ⟨laz, th⟩
-          let nexh : Next S := ⟨hed, jmp0 o⟩
+          let nexh ← past noCode ⟨hed, jmp0 o⟩ q
           let nex2 ← run q (CGoal.next tel nexh.th)
+          let nex2 ← past noCode nex2 p
           let nex1 ← run p (CGoal.next nexh.laz nex2.th)
           copy nex1 nex2.laz
       | CGoal.done => fun _ => Option.none
@@ -652,6 +721,7 @@ def run : Nomm → CGoal S → CM Map (Next S)
                 let (z, o') ← forl r o
                 emit ⟨[], [], Termin.eqq rp rq (jmp0 z) (jmp0 o')⟩ : CM Map Nat)
       let nexq ← run q (CGoal.next (lazyReg rq) (jmp0 o))
+      let nexq ← past noCode nexq p
       let nexp ← run p (CGoal.next (lazyReg rp) nexq.th)
       copy nexp nexq.laz
   | Nomm.n7 p q, goal => do
@@ -660,10 +730,9 @@ def run : Nomm → CGoal S → CM Map (Next S)
   | Nomm.n10 a v q, goal => do
       let next ← simpleNext goal
       let (don, rec, o) ← into next a
-      -- `(past [%next don ~ o] q.nomm region)`, the identity here
-      let nexD : Next S := ⟨don, jmp0 o⟩
+      let nexD ← past noCode ⟨don, jmp0 o⟩ q
       let nexRec ← run q (CGoal.next rec nexD.th)
-      -- `(past nex-rec q.p.nomm region)`, the identity here
+      let nexRec ← past noCode nexRec v
       let nexDon ← run v (CGoal.next nexD.laz nexRec.th)
       copy nexDon nexRec.laz
   | _, _ => fun _ => Option.none

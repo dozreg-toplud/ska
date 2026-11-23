@@ -222,6 +222,57 @@ theorem pure_apply {α : Type} (a : α) (g : Gen Map) : (pure a : CM Map α) g =
 
 theorem re_apply (g : Gen Map) : (re : CM Map Nat) g = some (g.re, { g with re := g.re + 1 }) := rfl
 
+/-! ## `+past` -/
+
+/-- Where `+past` returns, it returns its `next` and leaves the state. -/
+theorem past_some {cod : Bell → Option Bool} {nex : Next S} {nom : Nomm} {g g' : Gen Map} {x : Next S}
+    (h : past cod nex nom g = some (x, g')) : nex = x ∧ g = g' := by
+  unfold past at h
+  split at h
+  · simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h; exact h
+  · cases e : hinted cod nom with
+    | none => rw [e] at h; cases h
+    | some b =>
+      cases b with
+      | true => rw [e] at h; cases h
+      | false =>
+        rw [e] at h
+        simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h; exact h
+
+/-- **A pure nomm is not hinted**, whatever the code table. -/
+theorem hinted_pure (cod : Bell → Option Bool) : ∀ (nm : Nomm), nm.pure = true → hinted cod nm = some false
+  | Nomm.n0 _, _ => rfl
+  | Nomm.n1 _, _ => rfl
+  | Nomm.n3 p, h => hinted_pure cod p h
+  | Nomm.n4 p, h => hinted_pure cod p h
+  | Nomm.cons p q, h => by
+      simp only [Nomm.pure, Bool.and_eq_true] at h
+      simp only [hinted, hinted_pure cod p h.1, hinted_pure cod q h.2, orB]
+  | Nomm.n5 p q, h => by
+      simp only [Nomm.pure, Bool.and_eq_true] at h
+      simp only [hinted, hinted_pure cod p h.1, hinted_pure cod q h.2, orB]
+  | Nomm.n7 p q, h => by
+      simp only [Nomm.pure, Bool.and_eq_true] at h
+      simp only [hinted, hinted_pure cod p h.1, hinted_pure cod q h.2, orB]
+  | Nomm.n10 _ p q, h => by
+      simp only [Nomm.pure, Bool.and_eq_true] at h
+      simp only [hinted, hinted_pure cod p h.1, hinted_pure cod q h.2, orB]
+  | Nomm.n6 p q r, h => by
+      simp only [Nomm.pure, Bool.and_eq_true] at h
+      simp only [hinted, hinted_pure cod p h.1.1, hinted_pure cod q h.1.2, hinted_pure cod r h.2, orB]
+  | Nomm.n2 _ _ _, h => by simp [Nomm.pure] at h
+  | Nomm.n11s _ _ _, h => by simp [Nomm.pure] at h
+  | Nomm.n11d _ _ _ _, h => by simp [Nomm.pure] at h
+  | Nomm.n12 _ _, h => by simp [Nomm.pure] at h
+  | Nomm.mean _ _ _ _ _, h => by simp [Nomm.pure] at h
+
+/-- **On a pure nomm `+past` is the identity.** -/
+theorem past_pure (cod : Bell → Option Bool) (nex : Next S) {nom : Nomm} (h : nom.pure = true) :
+    (past cod nex nom : CM Map (Next S)) = pure nex := by
+  unfold past
+  simp only [hinted_pure cod nom h]
+  split <;> rfl
+
 /-- The state after `(emit b)`. -/
 def Gen.emitted (g : Gen Map) (b : Blob) : Gen Map :=
   { g with bo := g.bo + 1, blocks := (if g.drop then g.blocks else HoonMap.put g.blocks g.bo b) }

@@ -99,6 +99,8 @@ theorem run_n5_ok {lib : Lib} {p q : Nomm} {goal : CGoal S} {g0 g1 : Gen Map} {n
   simp only [run, bind_apply, re_apply, Option.bind_some] at h
   obtain ⟨⟨o, g2⟩, h2, h⟩ := Option.bind_eq_some_iff.mp h
   obtain ⟨⟨nexq, g3⟩, h3, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨⟨nexq', g3'⟩, hp, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨rfl, rfl⟩ := past_some hp
   obtain ⟨⟨nexp, g4⟩, h4, h⟩ := Option.bind_eq_some_iff.mp h
   have G0 : Ext g0 { { g0 with re := g0.re + 1 } with re := g0.re + 1 + 1 } := (ext_re _).trans (ext_re _)
   suffices B : Ext g0 g2 ∧ g0.re + 2 ≤ g2.re ∧ ∀ (c : Straight Map), Agree c g0 g2 → g0.drop = false →

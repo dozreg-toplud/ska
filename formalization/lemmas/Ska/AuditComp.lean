@@ -72,3 +72,6 @@ open Formalization.SkaModel.Comp
 #print axioms into_down
 #print axioms run_n10_down
 #print axioms run_n10_ok
+#print axioms past_some
+#print axioms hinted_pure
+#print axioms past_pure

@@ -813,6 +813,8 @@ theorem run_n5_down {p q : Nomm} (ihp : DownIH S Map p) (ihq : DownIH S Map q) :
           Nat.le_trans h1 (Nat.le_trans C.1.bo F.1.bo), by simp [emitted_bo]⟩
   obtain ⟨⟨nexq, g3⟩, h3, h⟩ := Option.bind_eq_some_iff.mp h
   have Dq := ihq (CGoal.next _ _) g2 g3 nexq ⟨O.2.1, O.2.2⟩ (Nat.le_trans h1 O.1.bo) (O.1.drop.trans hd) h3
+  obtain ⟨⟨nexq', g3'⟩, hp, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨rfl, rfl⟩ := past_some hp
   obtain ⟨⟨nexp, g4⟩, h4, h⟩ := Option.bind_eq_some_iff.mp h
   have Dp := ihp (CGoal.next _ _) g3 g4 nexp ⟨Dq.lo, Dq.hi⟩ (Nat.le_trans h1 (Nat.le_trans O.1.bo Dq.grow.bo))
     (Dq.grow.drop.trans (O.1.drop.trans hd)) h4
@@ -825,8 +827,9 @@ theorem cons_next_down {p q : Nomm} (ihp : DownIH S Map p) (ihq : DownIH S Map q
     {laz : Sure S} {th : Jmp} {g0 g1 : Gen Map} {nex : Next S}
     (h : (do
       let (hed, tel, o) ← Comp.split ⟨laz, th⟩
-      let nexh : Next S := ⟨hed, jmp0 o⟩
+      let nexh ← past noCode ⟨hed, jmp0 o⟩ q
       let nex2 ← run q (CGoal.next tel nexh.th)
+      let nex2 ← past noCode nex2 p
       let nex1 ← run p (CGoal.next nexh.laz nex2.th)
       copy nex1 nex2.laz : CM Map (Next S)) g0 = some (nex, g1))
     (hl : 1 ≤ th.there) (hh : th.there < g0.bo) (h1 : 1 ≤ g0.bo) (hd : g0.drop = false) :
@@ -834,9 +837,13 @@ theorem cons_next_down {p q : Nomm} (ihp : DownIH S Map p) (ihq : DownIH S Map q
   obtain ⟨⟨hed, tel, o⟩, g2, h2, h⟩ := bind_some h
   have Sp := split_down h2 hl hh hd
   simp only at Sp
+  obtain ⟨nexh, g2', hph, h⟩ := bind_some h
+  obtain ⟨rfl, rfl⟩ := past_some hph
   obtain ⟨nex2, g3, h3, h⟩ := bind_some h
   have Dq := ihq (CGoal.next _ _) g2 g3 nex2 ⟨by rw [Sp.2.1]; exact h1, by simp [jmp0]; omega⟩
     (Nat.le_trans h1 Sp.1.bo) (Sp.1.drop.trans hd) h3
+  obtain ⟨nex2', g3', hp2, h⟩ := bind_some h
+  obtain ⟨rfl, rfl⟩ := past_some hp2
   obtain ⟨nex1, g4, h4, h⟩ := bind_some h
   have Dp := ihp (CGoal.next _ _) g3 g4 nex1 ⟨Dq.lo, Dq.hi⟩ (Nat.le_trans h1 (Nat.le_trans Sp.1.bo Dq.grow.bo))
     (Dq.grow.drop.trans (Sp.1.drop.trans hd)) h4
@@ -854,9 +861,13 @@ theorem run_n10_down {a : Nat} {v q : Nomm} (ihv : DownIH S Map v) (ihq : DownIH
   have I := into_down h3 D0.lo D0.hi (D0.grow.drop.trans hd)
   simp only at I h
   have b2 : 1 ≤ g2.bo := Nat.le_trans h1 D0.grow.bo
+  obtain ⟨nexD, g3', hpd, h⟩ := bind_some h
+  obtain ⟨rfl, rfl⟩ := past_some hpd
   obtain ⟨nexRec, g4, h4, h⟩ := bind_some h
   have Dq := ihq (CGoal.next _ _) g3 g4 nexRec ⟨by rw [I.2.1]; exact b2, by simp [jmp0]; omega⟩
     (Nat.le_trans b2 I.1.bo) (I.1.drop.trans (D0.grow.drop.trans hd)) h4
+  obtain ⟨nexRec', g4', hpr, h⟩ := bind_some h
+  obtain ⟨rfl, rfl⟩ := past_some hpr
   obtain ⟨nexDon, g5, h5, h⟩ := bind_some h
   have G0 := D0.grow.trans (I.1.trans Dq.grow)
   have Dv := ihv (CGoal.next _ _) g4 g5 nexDon ⟨Dq.lo, Dq.hi⟩ (Nat.le_trans h1 G0.bo) (G0.drop.trans hd) h5
@@ -882,6 +893,8 @@ theorem run_cons_down {p q : Nomm} (ihp : DownIH S Map p) (ihq : DownIH S Map q)
     have G0 : Grow g0 (g0.emitted ⟨[], [], Termin.bom Option.none⟩) := grow_emit (jumpsBelow_nil rfl _)
     have Dq := ihq (CGoal.next _ _) _ g3 nex2 ⟨h1, by simp [jmp0, emitted_bo]⟩ (by simp only [emitted_bo]; omega)
       ((emitted_drop _ _).trans hd) h3
+    obtain ⟨⟨nex2', g3'⟩, hp, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨rfl, rfl⟩ := past_some hp
     obtain ⟨⟨nex1, g4⟩, h4, h⟩ := Option.bind_eq_some_iff.mp h
     have Dp := ihp (CGoal.next _ _) g3 g4 nex1 ⟨Dq.lo, Dq.hi⟩ (Nat.le_trans h1 (Nat.le_trans G0.bo Dq.grow.bo))
       (Dq.grow.drop.trans (G0.drop.trans hd)) h4

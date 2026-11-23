@@ -83,7 +83,11 @@ theorem run_n10_ok {lib : Lib} {a : Nat} {v q : Nomm} {goal : CGoal S} {g0 g1 : 
   obtain ⟨nex0, gs, hs, h⟩ := bind_some h
   obtain ⟨⟨don, rec, o⟩, g2, h1, h⟩ := bind_some h
   simp only at h
+  obtain ⟨nexD, g2', hpd, h⟩ := bind_some h
+  obtain ⟨rfl, rfl⟩ := past_some hpd
   obtain ⟨nexRec, g3, h2, h⟩ := bind_some h
+  obtain ⟨nexRec', g3', hpr, h⟩ := bind_some h
+  obtain ⟨rfl, rfl⟩ := past_some hpr
   obtain ⟨nexDon, g4, h3, h4⟩ := bind_some h
   cases goal with
   | next laz th =>
