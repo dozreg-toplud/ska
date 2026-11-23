@@ -18,7 +18,7 @@ is not ported to Lean and no port is trusted.
 ```sh
 cd formalization
 tools/capped.sh -m 3G lake build core              # 3 s
-tools/capped.sh -m 3G lake build                   # about 80 s from scratch, 2.5 GB peak
+tools/capped.sh -m 3G lake build                   # about 100 s from scratch, 2.5 GB peak
 tools/capped.sh -m 3G lake env lean lemmas/Audit.lean  # axioms of the main theorems
 ```
 
@@ -37,8 +37,9 @@ on the whole pill took the machine down.
 
 The statements quantify over every core that the pill's core can become by
 pokes and by runs of the interpreter, except through a `%jets` poke that names
-a jet.  Nothing in `core/` is proved, and nothing in `lemmas/` connects to
-`Statement.lean` yet.
+a jet.  Nothing in `core/` is proved.  `lemmas/Compiler/Connect.lean` ties
+`Top`, `Mook`, `Run` and `Mock` to the models; `Reach` and the four
+statements themselves are not yet proved.
 
 What a reader of `core/` has to take on trust beyond the Lean kernel:
 
@@ -56,7 +57,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Run.lean` | `nock`, the evaluator as a partial function, with one rewrite rule per opcode and `nock_eq_some_iff : nock s f = some p ↔ Eval s f p`. |
 | `Exec.lean` | Symbolic execution with `simp only [nock_exec]`, and simprocs that compute `slot?` and `edit?` at a literal axis.  An axis whose path runs through a variable `v` becomes `slot? rest v`, so a hypothesis about `v` applies. |
 | `CueSpec.lean` | `cue` of `core/` checked by the kernel on jams made by `tools/nouns.py`. |
-| `CueWords.lean`, `CueExample.lean` | An earlier `cue` on 32-bit words, built for the kernel, checked on a 150-cell jam. |
+| `CueWords.lean`, `CueExample.lean` | An earlier `cue` on 32-bit words (namespace `Nock.Words`, apart from the `cue` of `core/`), built for the kernel, checked on a 150-cell jam. |
 | `Pill/Arm/<Family>.lean` | Generated: the named nouns of one arm family (`dec.arm`, `dec.battery`, `dec.loop`, ..., and the axis constant `dec.axis`), as a Lean module whose nouns are public but whose bodies are not exposed. |
 | `Pill/Nouns/P000.lean`, ... | Generated: the rest of the pill's noun and of the SKA core (definitions named by a hash of their content), as a chain of modules.  A few named nouns live here too: the library core `lib`, the batteries `ca.battery` and `so.battery`, and the arms `dif` of `+ca` and `huge` of `+so`, which quote a noun holding the hoon core, and the analysis core `ana` (the `|%` of `+ska-callgraph`, two cores above `lib`), whose arms `+patch-prod`, `+knit-anno`, `+msg-sock`, `+msg-anno`, `+safe-nomm`, `+safe-fol-fol` have their own arm files. |
 | `Pill/Facts.lean` | Generated, kernel-checked: the pill's formula on its trap evaluates to the core, and the arms sit at their axes (`x.arm_at`). |
@@ -105,6 +106,10 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/Regs.lean`, `Compiler/EvalPass.lean` | `+read`, `+store`, `+move` and `+eval-pass` of the interpreter core `interp` against `read`, `store`, `move`, `evalPass` of `Ska/Interp.lean` on maps of `TreapMap mugF` (`read_pill`, `store_pill`, `move_pill`, `eval_pass_pill`), from gate theorems that assume what the arms read through layer 2 (`RegsIn`, `MoveIn`, `EvalPassIn`). |
 | `Compiler/EvalPole.lean` | `+eval-pole` on every op that stays in the function (all but `%nok` and the calls) against `localPole` of `Ska/Interp.lean` (`eval_pole_local`, `eval_pole_hmp`, `eval_pole_spy`), in a context `ctx` whose tail is the compiler's core `cor`; `%spy` assumes `SlamIsNock lib`.  On the pill's `interp` with its own `cor`: `eval_pole_local_pill`. |
 | `Compiler/EvalCall.lean` | The ops of `+eval-pole` that leave the function and the calls at the end of a block of `+eval-blob`, with the compiler's core `cr` as the state (`icore cr` is the interpreter core over it, `CorIn cr` says it keeps layer 2 at `read.layer2.axis`).  The poke is a parameter `pk` that computes the pill's poke on every ovum and keeps `CorIn` (`PokeIs`).  As equations, given the oracles exactly at the inputs used: `eval_pole_nok`, `eval_pole_cal`, `eval_pole_csl`, `%caf`, `%cam`, `%csf`, `%csm` as the plain calls (`eval_pole_caf`, ...), and `eval_pole_gate` on every op.  As what the model returns, the pill returns (`CallLe`, `BlobLe`, `TopLe`): `eval_pole_le` on every op, `eval_blob_jmp_le`, `eval_blob_jsp_le`, `eval_blob_le` (`+eval-blob`, by `execBlob.partial_correctness`), `eval_top_le` (`+eval-top`: an atom, `%bare` by `+mink`, `%full`), `interp_le` (every depth of calls, by induction), and `eval_top_of_model`: what `EvalTop` says, the pill's `+eval-top` returns.  The inline loops that put the arguments of a call in registers: `eval_pole_loop`, `eval_blob_loop`. |
+| `Compiler/EvalConv.lean` | The converse: what the pill's `+eval-top` returns, `EvalTop` says (`eval_top_to_model`, `eval_top_iff`).  By induction on the depth of the calls of `+eval-top`, `+eval-blob` and `+eval-pole` (`interp_ge`): a run at depth `k + 1` is a run of `nockW (hyb k)`, which sends those calls to `iterN k` and every other call to `nock`, with the gate `hop` of `+eval-blob` (`hopB`) run inline.  The model's side holds from some level on (`Ev`), and the values come from `interp_le` and the determinism of Nock.  The poke under `hyb k` crashes or returns what `pk` says (`pokeW_cases`). |
+| `Compiler/EvalRend.lean` | `+eval-rend` and `+eval-mook` against `evalRend` and `evalMook`, both ways (`eval_rend_le`, `eval_rend_ge`, `eval_mook_le`, `eval_mook_ge`, `eval_mook_iff`).  `Bell.ofNoun?` inverts `Bell.toNoun` on what `+validate-bell` accepts (`bell_ofNoun_toNoun`).  Assumed: the list mold of layer 1 (`ListMoldIs`), the cord of `+eval-mook` (`EvalMookMsgIs`), and for the direction from the pill, that the poke crashes on a bell `+validate-bell` rejects (`PokeDireBad`). |
+| `Compiler/Connect.lean` | `Top`, `Mook`, `Run` and `Mock` of `core/Statement.lean` hold exactly when the models do (`top_iff`, `mook_iff`, `run_iff`, `mock_iff`), on every core of the pill's shape (`core_shape`, `core_layer4`); the axes of `Statement.lean` are the generated ones (`axes_agree`). |
+| `Compiler/PokeFrame.lean` | `CorIn` reads the compiler's core only under axis `15` (`corIn_of_tail`); the second half of `PokeIs` follows from its first half and `PokeFrame`, a statement on the Nock of `+poke` alone (`pokeIs_of_frame`). |
 | `Compiler/Lib.lean` | `dif` of `+ca` and `huge` of `+so`, whose crash messages quote a noun that holds the hoon core, so that the generator names them in the bulk chain (`ca.dif.mean` is the quoted noun).  And the pill's library core `lib` satisfies `CaOf`, `SoOf`, `AxisOf`, `YeaOf`: every gate of `+ca` and `+so` computes its model on the pill's core (`ca_int_pill`, ..., `so_darn_pill`) with no assumption. |
 | `Compiler/Axes.lean` | `pat`, `lot` of `+ca` and `pull` of `+so`, which walk an axis with `+cap` and `+mas` of layer 1, read through the library core at `ca.lib.layer1.axis`; B's `cap` and `mas` equal `capF` and `masF`.  And `yea` of `+ca`, with `+peg` and `+weld`, and `darn` of `+so`. |
 | `Ska/Types.lean` | Models of the IR types (`Bell`, `Sock`, `Cape`, `Pole`, `Termin`, `Blob`, `Straight`, `Tone`, ...), each with its Hoon noun layout. |
@@ -236,13 +241,17 @@ import only its theorems.  So:
 2. A change to a declaration of the chain rebuilds the rest of the chain,
    `Facts.lean` and the layer files, and no gate theorem file.  A comment
    rebuilds the edited file only.
-3. A clean build takes about 80 seconds (4 min 35 s of CPU) and peaks at
+3. A clean build takes about 100 seconds (5 min 27 s of CPU) and peaks at
    2.5 GB for the whole build (measured 2026-11-23 under a 3 GB scope).
 
 ## Gaps
 
-1. **Nothing connects to the statements.**  The compiler and the interpreter
-   have no Lean models yet, and no proofs.
+1. **The statements are not yet proved.**  `Compiler/Connect.lean` reduces
+   `Top`, `Mook`, `Run` and `Mock` to the models, given `PokeIs` for every
+   core with `CorIn`, the formatting fields of `Lib`, `ListMoldIs`,
+   `EvalMookMsgIs`, `PokeDireBad`, and that the pill's core is `core` (gap 2).
+   `Reach` (pokes keep the shape of the core) and the model-level proofs of
+   `Meek`, `Weak`, `Converse` and `Halts` from these are not done.
 2. **The pill is not tied to `root`.**  No theorem says `cue pill = some root`,
    where `root` is the noun of `lemmas/Pill/Nouns/`.  The kernel cannot
    evaluate `cue` on 792 KB in one piece.  The way through is a proof in
@@ -273,11 +282,11 @@ import only its theorems.  So:
    with `Ska/Interp.lean` on maps of `TreapMap mugF`, and so do the ops that
    leave it (`Compiler/EvalCall.lean`), given the poke and what `+eval-top`
    and `+eval-blob` compute, and what `EvalTop` says, the pill's `+eval-top`
-   returns (`eval_top_of_model`), for a poke that a model `pk` computes and
-   that keeps layers 2 and 4 (`PokeIs`, `CorIn`).  Not done: the converse
-   (what the pill returns, the model returns, which needs the induction on
-   `iterN`), `+eval-mook` and `+eval-rend`, and the proof from the Nock of
-   `+poke` that it keeps the layers.  The arms that thread the compiler's core read their context
+   returns (`eval_top_of_model`) and conversely (`eval_top_iff`), for a poke
+   that a model `pk` computes and that keeps layers 2 and 4 (`PokeIs`,
+   `CorIn`); `+eval-rend` and `+eval-mook` likewise (`Compiler/EvalRend.lean`).
+   Not done: the proof from the Nock of `+poke` that it keeps the layers
+   (`PokeFrame`), and that it computes `pk`.  The arms that thread the compiler's core read their context
    through its tail `cor`, so after a poke they read the new `cor`: a theorem
    about them needs the poke to keep layer 2 at `read.layer2.axis`.
 10. **`Treap` of `Ska/Analysis.lean` has no instance from `lemmas/Hoon/`.**  The
