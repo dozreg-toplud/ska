@@ -37,3 +37,5 @@ open Formalization.SkaModel
 #print axioms nok_bwd
 #print axioms inline_drop
 #print axioms default_crash
+#print axioms dif_has
+#print axioms lack_has
