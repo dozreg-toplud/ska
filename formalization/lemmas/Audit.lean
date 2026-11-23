@@ -14,6 +14,7 @@ import lemmas.Hoon.RepBy
 import lemmas.Hoon.JabBy
 import lemmas.Hoon.Ju
 import lemmas.Hoon.MapFolds
+import lemmas.Hoon.SetFolds
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -110,3 +111,9 @@ open Formalization
 #print axioms Hoon.run_by
 #print axioms Hoon.any_by_loop
 #print axioms Hoon.anyByF_spec
+#print axioms Hoon.gas_in
+#print axioms Hoon.any_in_loop
+#print axioms Hoon.anyInF_spec
+#print axioms Hoon.run_in_loop
+#print axioms Hoon.runInF_spec
+#print axioms Hoon.del_in
