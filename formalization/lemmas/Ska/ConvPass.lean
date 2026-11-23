@@ -866,7 +866,8 @@ def PassP2 (memoF : Memo M) (pass : PassGo M R) : Prop :=
     (∃ F', (∀ e, F e → F' e) ∧ CInv memoF st' F') ∧
     GStepsR (gCore st.g) (gCore st'.g) ∧ Keep rest (· ∈ rest) st st' ∧ Frame (· ∈ rest) st st' ∧
     (∀ x o, Treap.get st'.order x = some o → x ∉ rest → 1 ≤ ranOf st' x ∧ LowB st' x low) ∧
-    (∃ d, Treap.get st'.g id = some d) ∧ (∀ o, Treap.get st'.order id = some o → low ≤ o)
+    (∃ d, Treap.get st'.g id = some d) ∧ (∀ o, Treap.get st'.order id = some o → low ≤ o) ∧
+    (∀ x o, Treap.get st'.order x = some o → x ∉ rest → low < index)
 
 theorem Frame.trans2 {bt bt' : Ident → Prop} {st1 st2 st3 : SkaState M R} (h1 : Frame bt st1 st2)
     (h2 : Frame bt' st2 st3) (hb : ∀ j, bt j → bt' j) : Frame bt st1 st3 where
@@ -930,11 +931,14 @@ theorem passStep_ok2 {memoF : Memo M} {n : Nat} {mem : MemGo M R} {pass : PassGo
   simp only at e
   split at e
   · -- the pass reached below the root
+    rename_i hne0
+    have hne : r1.1 ≠ index := by simpa using hne0
     simp only [Option.some.injEq, Prod.mk.injEq] at e
     obtain ⟨rfl, rfl⟩ := e
-    refine ⟨⟨F2, hF2, c2⟩, s2, k2', fr2', hcl2, ?_, fun o ho => ?_⟩
+    refine ⟨⟨F2, hF2, c2⟩, s2, k2', fr2', hcl2, ?_, fun o ho => ?_, fun _ _ _ _ => ?_⟩
     · obtain ⟨d, hd⟩ := c2.s.ord_g id index hidx2; exact ⟨d, hd⟩
     · rw [hidx2] at ho; cases ho; exact hlow2
+    · omega
   · rename_i hidxr
     have hr1 : r1.1 = index := by simpa using hidxr
     simp only [Option.bind_eq_some_iff] at e
@@ -998,18 +1002,21 @@ theorem passStep_ok2 {memoF : Memo M} {n : Nat} {mem : MemGo M R} {pass : PassGo
       obtain ⟨_, s4, k4⟩ := pop_ok c3.s hpop el3
       refine ⟨⟨F3, fun e he => hF3 e (hF2 e he), c4⟩, gStepsR_trans s2 (gStepsR_trans s3 s4), k23.trans k4,
         fr23.trans2 (pop_frame c3.s el3 hpop) (fun j hj => hj), fun x o hxo hx => ?_, ?_,
-        fun o ho => ?_⟩
+        fun o ho => ?_, fun x o hxo hx => ?_⟩
       · exfalso
         have hxs := (c4.s.ord_stk x).mp ⟨o, hxo⟩
         rw [a1] at hxs; exact hx hxs
       · obtain ⟨d, hd⟩ := c3.s.mem_g (by rw [el3]; exact List.mem_append_right _ List.mem_cons_self)
         rw [a6, if_pos (List.mem_append_right _ (List.mem_singleton.mpr rfl)), hd]; exact ⟨_, rfl⟩
       · rw [a4, if_pos (List.mem_append_right _ (List.mem_singleton.mpr rfl))] at ho; cases ho
+      · exfalso
+        have hxs := (c4.s.ord_stk x).mp ⟨o, hxo⟩
+        rw [a1] at hxs; exact hx hxs
     · -- not stable: the next pass
-      obtain ⟨⟨F4, hF4, c4⟩, s4, k4, fr4, hcl4, hid4, hlo4⟩ :=
+      obtain ⟨⟨F4, hF4, c4⟩, s4, k4, fr4, hcl4, hid4, hlo4, hlt4⟩ :=
         hpass id index (p + 1) st3 low st' F2 l3 rest c3 el3 hidx3 hrest3 hcl3 hreach3 e
       exact ⟨⟨F4, fun e he => hF4 e (hF2 e he), c4⟩, gStepsR_trans s2 (gStepsR_trans s3 s4), k23.trans k4,
-        fr23.trans2 fr4 (fun j hj => hj), hcl4, hid4, hlo4⟩
+        fr23.trans2 fr4 (fun j hj => hj), hcl4, hid4, hlo4, hlt4⟩
 
 end Ana
 end SkaModel
