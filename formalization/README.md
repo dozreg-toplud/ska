@@ -18,7 +18,7 @@ is not ported to Lean and no port is trusted.
 ```sh
 cd formalization
 tools/capped.sh lake build core                    # 3 s
-tools/capped.sh lake build                         # about 1 minute from scratch
+tools/capped.sh lake build                         # about 1 minute from scratch, most of it Pill/Nouns.lean
 tools/capped.sh lake env lean lemmas/Audit.lean    # axioms of the main theorems
 ```
 
@@ -57,13 +57,22 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Exec.lean` | Symbolic execution with `simp only [nock_exec]`, and simprocs that compute `slot?` and `edit?` at a literal axis. |
 | `CueSpec.lean` | `cue` of `core/` checked by the kernel on jams made by `tools/nouns.py`. |
 | `CueWords.lean`, `CueExample.lean` | An earlier `cue` on 32-bit words, built for the kernel, checked on a 150-cell jam. |
-| `Pill/Nouns.lean` | Generated: the pill's noun and the SKA core that the pill builds, 21,710 definitions, with names for the nouns the proofs use. |
-| `Pill/Facts.lean` | Generated, kernel-checked: the pill's formula on its trap evaluates to the core, and the arms sit at their axes. |
-| `Hoon/Dec.lean` | `+dec` of the pill: `dec_gate_eval (n) (h : 0 < n) : Eval [dec.battery n layer1] dec.battery (n - 1)`. |
-| `Hoon/Order.lean` | `+lth`, `+dor`, `+gor`, `+mor` of the pill compute `<`, `dorF`, `gorF`, `morF`. |
+| `Pill/Nouns.lean` | Generated: the pill's noun and the SKA core that the pill builds, 21,812 definitions, with names for the nouns the proofs use. |
+| `Pill/Facts.lean` | Generated, kernel-checked: the pill's formula on its trap evaluates to the core, and the arms sit at their axes.  Each named arm `x` has its axis as the constant `x.axis`, and `x.arm_at : slot? x.axis layer = some x.arm`. |
+| `Hoon/Basic.lean` | Flags (`loob`), lists as nouns (`listN`, `appendN`), and `Below`, the predicate on the context of a second-layer arm that reads the first layer. |
+| `Hoon/Dec.lean` | `+dec`: `dec_gate (c) (n) (h : 0 < n) : nock [dec.battery n c] dec.battery = some (n - 1)`, and `(dec 0)` crashes. |
+| `Hoon/Arith.lean` | `+add`, `+sub`, `+mul`, `+lth`, `+lte`, `+gte`, `+gth`, `+max`, `+min`, `+dvr`, `+div`, `+mod` compute their `Nat` operations; `+sub` crashes below zero and `+dvr`, `+div`, `+mod` on a zero divisor. |
+| `Hoon/Order.lean` | `+dor`, `+gor`, `+mor` compute `dorF`, `gorF`, `morF`, given `MugSpec`. |
 | `Hoon/MapModel.lean` | The Lean models `dorF`, `gorF`, `morF`, `putF`, and the map invariant `IsMap`. |
 | `Hoon/Treap.lean` | Pure Lean: the three orders are total orders, and `putF` inserts into an `IsMap`. |
-| `Hoon/PutBy.lean` | `put_by`: `+put:by` of the pill ends on an `IsMap`, keeps the invariant, and holds the new pair and the old pairs under other keys. |
+| `Hoon/PutBy.lean` | `put_by`: `+put:by` ends on an `IsMap`, keeps the invariant, and holds the new pair and the old pairs under other keys. |
+| `Hoon/Lists.lean` | `+lent`, `+weld`, `+flop`, `+snag`, `+scag`, `+slag` against `List Noun`; `+turn`, `+roll`, `+levy`, `+lien` given what their gate argument computes on the elements. |
+| `Hoon/Maps.lean` | `+get:by` and `+has:by` on an `IsMap`. |
+| `Hoon/Sets.lean` | `+put:in` and `+has:in`, with a set read as the map of its keys to `~`. |
+| `Hoon/Bits.lean` | `+bex`, `+lsh`, `+rsh`, `+end`, `+met`, `+cut`, `+cat`, and `+mix`, `+dis`, `+con` as `^^^`, `&&&`, `|||`. |
+| `Hoon/Muk.lean` | The arms `sit`, `sum`, `rol` of the door `+fe`, and `+muk` against the model `mukF`. |
+| `Hoon/Mug.lean` | `mug_spec`: `+mug` computes `mugF` on every noun, which proves `MugSpec mugF`. |
+| `Hoon/Layer2.lean` | `+gor`, `+mor` and the map and set theorems on the pill's `layer2` with no assumption. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
 Every main theorem depends on `propext`, `Classical.choice` and `Quot.sound`
@@ -80,6 +89,25 @@ Nock of `+put:by` computes `putF` is nine lines for ten cases.
 
 Formulas that are constants stay closed until a proof opens them, so a
 recursive call cannot unfold forever.
+
+A theorem about a gate quantifies over the gate's context `c` and assumes
+only what the gate's Nock reads from it: a predicate such as `LthIn c` says
+that `c` holds the arm `+lth` at `lth.axis` and what `+lth` reads in turn.
+The predicates are `abbrev`s of conjunctions of `slot?` equations, so a
+hypothesis `hc : LthIn c` given to `simp` rewrites the `slot?` that the
+executor cannot compute on the variable `c`.  Each family file proves that
+the pill's layer satisfies its predicates (`arith_layer1`,
+`mugNeeds_layer2`), so a change elsewhere in the pill leaves the theorems
+standing.
+
+Arithmetic in models stays out of reach of reduction.  The models of `+muk`
+and `+mug` recurse through generic combinators (`iterDown`, `retry`,
+`foldNoun`), and they are tied to the expressions that the execution
+produces by small equations over variables (`mukBlock_eq`, `fmix32_eq`),
+proved by `delta` and `Eq.refl`.  An equation lemma of a recursive
+definition whose body calls the murmur3 arithmetic, or an `rfl` between two
+such expressions that are not syntactically equal, took the elaborator past
+3 GB.
 
 ## Regenerating from a new pill
 
@@ -106,10 +134,11 @@ them after a change to the arms of the last three cores of the library.
    pieces: a relation `Enc pill pos noun end` with one lemma per definition of
    `Nouns.lean`, each small enough for the kernel, and one general theorem
    that `cue` returns what the relation accepts.
-3. **`+mug` is assumed.**  `gor_gate`, `mor_gate` and `put_by` take
-   `MugSpec mug`: the pill's `+mug` gate ends on every noun with an atom.
-4. **`IsMap` is not `+apt:by`.**  It is the same invariant stated for every key
+3. **`IsMap` is not `+apt:by`.**  It is the same invariant stated for every key
    of a subtree.  That the pill's `+apt` computes it is not proved.
-5. **Only success is proved for the arms.**  `dec_gate` says nothing about
-   `(dec 0)`, and `put_loop` says nothing about nouns on which `putF` is
-   `none`.
+4. **Failure is proved for few arms.**  `(dec 0)`, `+sub` below zero,
+   `+dvr`, `+div`, `+mod` by zero and `+snag` past the end crash; nothing is
+   proved about gates slammed on nouns of the wrong shape, nor about nouns on
+   which a model is `none`.
+5. **Not done among the arms of the library:** `+del:by`, `+gas:by`,
+   `+tap:by`, `+can`, `+apt:by`, and the wet arms other than those above.
