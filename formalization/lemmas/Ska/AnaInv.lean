@@ -758,6 +758,215 @@ theorem runStep_ok (env : Env R) (memoF : Memo M) {n : Nat}
   refine ⟨i2, gStepsR_trans s1 (gStepsR_one hstep), ?_⟩
   refine (k1.mono (fun j hj => hj.1)).trans (k2.weaken k1.1 (fun j hj => hj.2))
 
+theorem member_tail {run : RunGo M R} {mem : MemGo M R} (hrun : RunP run) (hmem : MemP mem)
+    {index pass : Nat} {m : Ident} {ms : List Ident} {st st1 st' : SkaState M R} {r : Nat × Bool}
+    {bo : List Ident} {bg : Ident → Prop} (hi : SInv st) (h1 : st1.g = st.g) (h2 : st1.done = st.done)
+    (h3 : st1.order = st.order) (h4 : st1.stk = st.stk) (hbo : ∃ l, st.stk = l ++ bo)
+    (hbg : ∀ j, bg j → j ∈ bo) (hm : ¬ bg m) (hms : ∀ m ∈ ms, ¬ bg m)
+    (e : ((Treap.get st.order m).bind fun o => (run m o st1).bind fun r =>
+      if r.1.1 < index then some ((r.1.1, r.1.2.2), r.2) else
+      (mem index pass ms r.2).map fun t => ((min r.1.1 t.1.1, r.1.2.2 || t.1.2), t.2)) = some (r, st')) :
+    SInv st' ∧ GStepsR (gCore st.g) (gCore st'.g) ∧ Keep bo bg st st' := by
+  simp only [Option.bind_eq_some_iff] at e
+  obtain ⟨o, ho, ⟨r1, st2⟩, hr, e⟩ := e
+  have i1 : SInv st1 := hi.congr h1 h2 h3 h4
+  have hm1 : m ∈ st1.stk := (i1.ord_stk m).mp ⟨o, by rw [h3]; exact ho⟩
+  obtain ⟨i2, s2, k2⟩ := hrun m o st1 r1 st2 i1 hm1 hr
+  have hbo1 : ∃ l, st1.stk = l ++ bo := by rw [h4]; exact hbo
+  have hgj : ∀ j, bg j → j ∈ st1.stk ∧ j ≠ m := by
+    intro j hj
+    obtain ⟨l, el⟩ := hbo
+    refine ⟨?_, fun e => hm (e ▸ hj)⟩
+    rw [h4, el]; exact List.mem_append_right _ (hbg j hj)
+  have K : Keep bo bg st st2 := by
+    obtain ⟨⟨l, el⟩, ko, kg⟩ := k2.weaken hbo1 hgj
+    exact ⟨⟨l, el⟩, fun j hj => by rw [ko j hj, h3], fun j hj => by rw [kg j hj, h1]⟩
+  have S : GStepsR (gCore st.g) (gCore st2.g) := by rw [← h1]; exact s2
+  split at e
+  · simp only [Option.some.injEq, Prod.mk.injEq] at e
+    obtain ⟨_, rfl⟩ := e
+    exact ⟨i2, S, K⟩
+  · simp only [Option.map_eq_some_iff] at e
+    obtain ⟨⟨t1, st3⟩, ht, e⟩ := e
+    cases e
+    obtain ⟨i3, s3, k3⟩ := hmem index pass ms st2 t1 st3 bo bg i2 K.1 hbg hms ht
+    exact ⟨i3, gStepsR_trans S s3, K.trans k3⟩
+
+theorem memberStep_ok {run : RunGo M R} {mem : MemGo M R} (hrun : RunP run) (hmem : MemP mem) :
+    MemP (memberStep run mem) := by
+  intro index pass ms st r st' bo bg hi hbo hbg hms e
+  cases ms with
+  | nil =>
+    simp only [memberStep, Option.some.injEq, Prod.mk.injEq] at e
+    obtain ⟨_, rfl⟩ := e
+    exact ⟨hi, GStepsR.refl _, ⟨hbo, fun _ _ => rfl, fun _ _ => rfl⟩⟩
+  | cons m ms =>
+    have hms' : ∀ m' ∈ ms, ¬ bg m' := fun m' h => hms m' (List.mem_cons_of_mem _ h)
+    have hm : ¬ bg m := hms m List.mem_cons_self
+    simp only [memberStep] at e
+    split at e
+    · exact hmem index pass ms st r st' bo bg hi hbo hbg hms' e
+    · by_cases hp : pass > 1
+      · simp only [hp, if_true] at e
+        exact member_tail (st1 := { st with stats := { st.stats with lateRuns := st.stats.lateRuns + 1 } })
+          hrun hmem hi rfl rfl rfl rfl hbo hbg hm hms' e
+      · simp only [hp, if_false] at e
+        exact member_tail (st1 := st) hrun hmem hi rfl rfl rfl rfl hbo hbg hm hms' e
+
+theorem passStep_ok {n : Nat} {mem : MemGo M R} {pass : PassGo M R} (hmem : MemP mem) (hpass : PassP pass) :
+    PassP (passStep n mem pass) := by
+  intro id index p st low st' ab0 rest hi hs e
+  unfold passStep at e
+  simp only [Option.bind_eq_some_iff] at e
+  obtain ⟨ab, hab, members, hsw, e⟩ := e
+  obtain ⟨ab0', rest', rfl, hs', _⟩ := above_eq hab
+  obtain ⟨rfl, rfl⟩ := nodup_split_unique (hs ▸ hi.nodup) (hs.symm.trans hs')
+  have hnd2 : ((ab0 ++ [id]) ++ rest).Nodup := by simpa using (hs ▸ hi.nodup)
+  have hms : ∀ m ∈ members, ¬ (m ∈ rest) := by
+    intro m hm hr
+    have hm' : m ∈ ab0 ++ [id] := by
+      rcases sweep_mem hsw m hm with rfl | h
+      · simp
+      · exact (Treap.has_silt _ _).mp h
+    exact (List.nodup_append.mp hnd2).2.2 m hm' m hr rfl
+  obtain ⟨⟨r1, st2⟩, hm, e⟩ := e
+  have i1 : SInv ({ st with stats := { st.stats with passes := st.stats.passes + 1 } } : SkaState M R) :=
+    hi.congr rfl rfl rfl rfl
+  obtain ⟨i2, s2, k2⟩ := hmem index p members _ r1 st2 (id :: rest) (· ∈ rest) i1 ⟨ab0, hs⟩
+    (fun j hj => List.mem_cons_of_mem _ hj) hms hm
+  have K2 : Keep (id :: rest) (· ∈ rest) st st2 := k2
+  simp only at e
+  split at e
+  · simp only [Option.some.injEq, Prod.mk.injEq] at e
+    obtain ⟨_, rfl⟩ := e
+    exact ⟨i2, s2, K2.weaken ⟨[id], rfl⟩ (fun _ h => h)⟩
+  · simp only [Option.bind_eq_some_iff] at e
+    obtain ⟨st3, hc, e⟩ := e
+    obtain ⟨l2, el2⟩ := K2.1
+    obtain ⟨i3, s3, k3⟩ := cull_ok i2 hc el2
+    have K3 : Keep (id :: rest) (· ∈ rest) st st3 := K2.trans (k3.mono (fun j hj => List.mem_cons_of_mem _ hj))
+    obtain ⟨l3, el3⟩ := K3.1
+    split at e
+    · simp only [Option.map_eq_some_iff] at e
+      obtain ⟨st4, hp, e⟩ := e
+      cases e
+      obtain ⟨i4, s4, k4⟩ := pop_ok i3 hp el3
+      exact ⟨i4, gStepsR_trans s2 (gStepsR_trans s3 s4), (K3.weaken ⟨[id], rfl⟩ (fun _ h => h)).trans k4⟩
+    · obtain ⟨i4, s4, k4⟩ := hpass id index (p + 1) st3 low st' l3 rest i3 el3 e
+      exact ⟨i4, gStepsR_trans s2 (gStepsR_trans s3 s4), (K3.weaken ⟨[id], rfl⟩ (fun _ h => h)).trans k4⟩
+
+theorem analyzeStep_ok {memoF : Memo M} (hmF : MemoWF memoF) {run : RunGo M R} {pass : PassGo M R}
+    (hrun : RunP run) (hpass : PassP pass) : AnaP (analyzeStep memoF run pass) := by
+  intro id st low st' hi hw hg e
+  unfold analyzeStep at e
+  split at e
+  · cases e
+  · rename_i hit hh
+    simp only [Option.some.injEq, Prod.mk.injEq] at e
+    obtain ⟨_, rfl⟩ := e
+    exact hit_ok hmF hi hw hg hh
+  · obtain ⟨i1, s1, k1⟩ := push_ok hi hw hg st.next
+    simp only [Option.bind_eq_some_iff] at e
+    obtain ⟨⟨r1, st2⟩, hr, e⟩ := e
+    obtain ⟨i2, s2, k2⟩ := hrun id st.next _ _ st2 i1 List.mem_cons_self hr
+    have hn := hi.not_mem hg
+    have K2 : Keep st.stk (· ∈ st.stk) st st2 :=
+      k1.trans (k2.weaken ⟨[id], rfl⟩ (fun j hj => ⟨List.mem_cons_of_mem _ hj, fun e => hn (e ▸ hj)⟩))
+    have S2 := gStepsR_trans s1 s2
+    obtain ⟨l2, el2⟩ := k2.1
+    have el2' : st2.stk = l2 ++ id :: st.stk := el2
+    simp only at e
+    split at e
+    · simp only [Option.some.injEq, Prod.mk.injEq] at e
+      obtain ⟨_, rfl⟩ := e
+      exact ⟨i2, S2, K2⟩
+    · split at e
+      · obtain ⟨i3, s3, k3⟩ := hpass id st.next 1 st2 low st' l2 st.stk i2 el2' e
+        exact ⟨i3, gStepsR_trans S2 s3, K2.trans k3⟩
+      · simp only [Option.bind_eq_some_iff] at e
+        obtain ⟨ab, _, e⟩ := e
+        split at e
+        · obtain ⟨i3, s3, k3⟩ := hpass id st.next 1 st2 low st' l2 st.stk i2 el2' e
+          exact ⟨i3, gStepsR_trans S2 s3, K2.trans k3⟩
+        · simp only [Option.map_eq_some_iff] at e
+          obtain ⟨st3, hp, e⟩ := e
+          cases e
+          obtain ⟨i3, s3, k3⟩ := pop_ok i2 hp el2'
+          exact ⟨i3, gStepsR_trans S2 s3, K2.trans k3⟩
+
+/-! ## The induction -/
+
+theorem resolve_zero (env : Env R) (memoF : Memo M) : resolve env memoF 0 = fun _ _ => none := by
+  unfold resolve; rfl
+theorem analyze_zero (env : Env R) (memoF : Memo M) : analyze env memoF 0 = fun _ _ => none := by
+  unfold analyze; rfl
+theorem run_zero (env : Env R) (memoF : Memo M) : run env memoF 0 = fun _ _ _ => none := by
+  unfold run; rfl
+theorem passLoop_zero (env : Env R) (memoF : Memo M) : passLoop env memoF 0 = fun _ _ _ _ => none := by
+  unfold passLoop; rfl
+theorem memberLoop_zero (env : Env R) (memoF : Memo M) : memberLoop env memoF 0 = fun _ _ _ _ => none := by
+  unfold memberLoop; rfl
+
+/-- The arms at the fuel `n` keep the invariant. -/
+def AllP (env : Env R) (memoF : Memo M) (n : Nat) : Prop :=
+  ResP (resolve env memoF n) ∧ AnaP (analyze env memoF n) ∧ RunP (run env memoF n) ∧
+    PassP (passLoop env memoF n) ∧ MemP (memberLoop env memoF n)
+
+theorem allP_zero (env : Env R) (memoF : Memo M) : AllP env memoF 0 := by
+  refine ⟨fun _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ h => ?_,
+    fun _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ _ _ _ h => ?_⟩
+  · rw [resolve_zero] at h; cases h
+  · rw [analyze_zero] at h; cases h
+  · rw [run_zero] at h; cases h
+  · rw [passLoop_zero] at h; cases h
+  · rw [memberLoop_zero] at h; cases h
+
+/-- **Every arm of the analysis keeps the construction invariant**, at every
+fuel, for a persistent memo with well-formed products. -/
+theorem allP (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) : ∀ n, ∀ k, k ≤ n → AllP env memoF k
+  | 0 => fun k hk => by rw [Nat.le_zero.mp hk]; exact allP_zero env memoF
+  | n + 1 => fun k hk => by
+    rcases Nat.lt_or_ge k (n + 1) with hl | hl
+    · exact allP env memoF hmF n k (Nat.le_of_lt_succ hl)
+    · have e : k = n + 1 := Nat.le_antisymm hk hl
+      subst e
+      obtain ⟨r, a, u, p, m⟩ := allP env memoF hmF n n (Nat.le_refl n)
+      refine ⟨?_, ?_, ?_, ?_, ?_⟩
+      · rw [resolve_succ]; exact resolveStep_ok env r a
+      · rw [analyze_succ]; exact analyzeStep_ok hmF u p
+      · rw [run_succ]
+        exact runStep_ok env memoF (fun k hk => (allP env memoF hmF n k (Nat.le_of_lt hk)).1)
+      · rw [passLoop_succ]; exact passStep_ok m p
+      · rw [memberLoop_succ]; exact memberStep_ok u m
+
+/-! ## `+ska-callgraph` -/
+
+theorem gCore_empty : gCore (Treap.empty : Callgraph M) = fun _ => none := by
+  funext i; simp [gCore, Treap.get_empty]
+
+/-- **The graph of `+ska-callgraph` is made by the abstract writes**: from
+the empty graph, by `GStepR` only, so it is well formed; for a root with a
+well-formed subject sock and a persistent memo with well-formed products. -/
+theorem skaCallgraph_steps (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) {n : Nat} {root : Ident}
+    {reg reg' : R} {g : Callgraph M} (hw : WellFormed root.1)
+    (h : skaCallgraph env n root memoF reg = some (g, reg')) :
+    GStepsR (fun _ => none) (gCore g) ∧ GraphWF (gCore g) := by
+  unfold skaCallgraph at h
+  simp only [Option.map_eq_some_iff, Prod.mk.injEq] at h
+  obtain ⟨⟨low, st⟩, ha, rfl, _⟩ := h
+  obtain ⟨i, s, _⟩ := (allP env memoF hmF n n (Nat.le_refl n)).2.1 root (SkaState.init reg) low st
+    (SInv.init reg) hw (by simp [SkaState.init, Treap.get_empty]) ha
+  rw [show gCore (SkaState.init reg : SkaState M R).g = fun _ => none from gCore_empty] at s
+  exact ⟨s, i.g_wf⟩
+
+/-- **Every run of `+run` in the analysis is a run with answers in `PWF`**
+(well-formed products at well-formed subject socks), and its write is a
+`GStepR.run`; this is `run_folTopR` and `runEnd_gStepR` with their
+hypotheses discharged. -/
+theorem run_ok (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (n : Nat) :
+    RunP (run env memoF n) :=
+  (allP env memoF hmF n n (Nat.le_refl n)).2.2.1
+
 end Ana
 end SkaModel
 end Formalization
