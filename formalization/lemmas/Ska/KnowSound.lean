@@ -685,6 +685,507 @@ theorem n8_core (hc : CodeOK lib code) {P : Noun → Prop} {b c : Noun} {p r' q 
       obtain ⟨z, m', hz, hzq⟩ := hsem x hx gul t m y hm
       exact K3.2 z hz gul t m' y hzq
 
+/-- **`+know` is sound.**  If a nomm stands for a formula on the subjects of
+`P` with the analysis' table `code`, then on every set `Q` of subjects in
+`P` that fit the sock `+know` starts from, the nomm `knowGo` folds stands for
+the same formula with the variants' table `code'`, and its product sock fits
+every product of the original nomm (`KnowOK`). -/
+theorem knowGo_sound (hc : CodeOK lib code) (hdat : DatOK lib dat) (hres : ResOK code' res stF) :
+    ∀ {P f nm}, Annot lib code P f nm → IHK lib code code' fold dat res stF P f nm := by
+  intro P f nm hA
+  induction hA with
+  | cons hA1 hA2 ih1 ih2 =>
+    rename_i P a1 a2 b p q
+    intro sub st r h hsuf Q hQ
+    simp only [knowGo, Option.bind_eq_some_iff] at h
+    obtain ⟨l, hl, r', hr, h⟩ := h
+    have hr2 : r'.2 <:+ stF := by split at h <;> (cases h; exact hsuf)
+    have hl2 : l.2 <:+ stF := (knowGo_suffix fold dat res q _ _ _ hr).trans hr2
+    have hQP : ∀ x, Q x → P x := fun x hx => (hQ x hx).1
+    have K1 := ih1 sub st l hl hl2 Q hQ
+    have K2 := ih2 sub l.2 r' hr hr2 Q hQ
+    have hsem : ∀ x, Q x → ∀ gul t m y, nommF lib gul code m t x (Nomm.cons p q) = some (Tone.zero y) →
+        ∃ m' u w, nommF lib gul code m' t x p = some (Tone.zero u) ∧
+          nommF lib gul code m' t x q = some (Tone.zero w) ∧ y = C u w := by
+      intro x hx gul t m y hm
+      obtain ⟨m', rfl, hm'⟩ := nommF_succ_inv hm
+      simp only [nommStep] at hm'
+      obtain ⟨u, hu, hm'⟩ := tbind_zero_inv hm'
+      obtain ⟨w, hw, hm'⟩ := tbind_zero_inv hm'
+      cases hm'
+      exact ⟨m', u, w, hu, hw, rfl⟩
+    split at h
+    · rename_i x1 x2 h1 h2
+      cases h
+      have K11 := K1.1
+      rw [lit_eq h1] at K11
+      have K21 := K2.1
+      rw [lit_eq h2] at K21
+      refine ⟨Annot.fold fun x gul hx =>
+        mink_mk_cons (annot_lit K11 x1 rfl x gul hx) (annot_lit K21 x2 rfl x gul hx), ?_⟩
+      intro x hx gul t m y hm
+      obtain ⟨m', u, w, hu, hw, rfl⟩ := hsem x hx gul t m y hm
+      exact fits_litAnno (by rw [lit_val hc hA1 hQP K11 hx hu, lit_val hc hA2 hQP K21 hx hw])
+    · cases h
+      refine ⟨Annot.cons K1.1 K2.1, ?_⟩
+      intro x hx gul t m y hm
+      obtain ⟨m', u, w, hu, hw, rfl⟩ := hsem x hx gul t m y hm
+      exact knit_fits (K1.2 x hx gul t m' u hu) (K2.2 x hx gul t m' w hw)
+  | n0 =>
+    intro sub st r h hsuf Q hQ
+    exact (knowGo_n0 h (fun x hx => (hQ x hx).2)).2.1
+  | n1 =>
+    intro sub st r h hsuf Q hQ
+    simp only [knowGo, Option.some.injEq] at h
+    cases h
+    refine ⟨Annot.n1, ?_⟩
+    intro x hx gul t m y hm
+    obtain ⟨m', rfl, hm'⟩ := nommF_succ_inv hm
+    simp only [nommStep, Option.some.injEq, Tone.zero.injEq] at hm'
+    exact fits_litAnno hm'.symm
+  | indirect hA1 hA2 ih1 ih2 =>
+    rename_i P b c p q
+    intro sub st r h hsuf Q hQ
+    simp only [knowGo, Option.bind_eq_some_iff, Option.some.injEq] at h
+    obtain ⟨s, hs, fq, hf, rfl⟩ := h
+    have hs2 : s.2 <:+ stF := (knowGo_suffix fold dat res q _ _ _ hf).trans hsuf
+    exact ⟨Annot.indirect (ih1 sub st s hs hs2 Q hQ).1 (ih2 sub s.2 fq hf hsuf Q hQ).1,
+      fun _ _ _ _ _ _ _ => fits_dunno _⟩
+  | direct hA1 hA2 hcode hy hg ih1 ih2 =>
+    rename_i P b c p q bl k nb
+    intro sub st r h hsuf Q hQ
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨s, hs, fq, hf, v, hv, rfl⟩ := h
+    have hmem : (bl, s.1.2.sock) ∈ stF := hsuf.subset List.mem_cons_self
+    obtain ⟨hvf, ⟨nb', hnb'⟩, hvfit⟩ := hres bl s.1.2.sock v hmem hv
+    have hf2 : fq.2 <:+ stF := (List.suffix_cons _ _).trans hsuf
+    have hs2 : s.2 <:+ stF := (knowGo_suffix fold dat res q _ _ _ hf).trans hf2
+    have hQP : ∀ x, Q x → P x := fun x hx => (hQ x hx).1
+    have K1 := ih1 sub st s hs hs2 Q hQ
+    have K2 := ih2 sub s.2 fq hf hf2 Q hQ
+    refine ⟨Annot.direct K1.1 K2.1 hnb' (fun x gul y hx hm => hvfit y (hy x gul y (hQP x hx) hm) ?_)
+      (fun x gul g hx hm => (hg x gul g (hQP x hx) hm).trans hvf.symm), ?_⟩
+    · obtain ⟨m, hm'⟩ := mink_nomm hc hA1 (hQP x hx) hm
+      exact K1.2 x hx gul [] m y hm'
+    · intro x hx gul t m y hm
+      obtain ⟨m', rfl, hm'⟩ := nommF_succ_inv hm
+      simp only [nommStep] at hm'
+      obtain ⟨s', hs', hm'⟩ := tbind_zero_inv hm'
+      obtain ⟨g, hg', hm'⟩ := tbind_zero_inv hm'
+      rw [hcode, Option.bind_some] at hm'
+      dsimp only
+      split
+      · exact fits_dunno _
+      · rename_i d hd
+        have hsfit : Fits bl.less s' := hy x gul s' (hQP x hx) (nomm_mink hc hA1 (hQP x hx) hs')
+        have hk : Fits s.1.2.sock s' := K1.2 x hx gul t m' s' hs'
+        exact hdat bl d hd s.1.2.sock s' y gul hsfit hk (nomm_mink hc (hc bl nb hcode) hsfit hm')
+  | inline hA1 htot hA2 ih1 ih2 =>
+    exact seven_core hc hA1 hA2 ih1 ih2
+      (fun hQP a1 a2 => Annot.inline a1 (fun x gul hx => htot x gul (hQP x hx)) a2)
+      (fun hQP _ x gul _ hx hz hzv => mink_mk_n2 hz (htot x gul (hQP x hx)) hzv)
+  | n3 hA1 ih1 =>
+    rename_i P b p
+    intro sub st r h hsuf Q hQ
+    simp only [knowGo, Option.map_eq_some_iff] at h
+    obtain ⟨pp, hp, h⟩ := h
+    have hp2 : pp.2 <:+ stF := by split at h <;> (cases h; exact hsuf)
+    have hQP : ∀ x, Q x → P x := fun x hx => (hQ x hx).1
+    have K1 := ih1 sub st pp hp hp2 Q hQ
+    have hsem : ∀ x, Q x → ∀ gul t m y, nommF lib gul code m t x (Nomm.n3 p) = some (Tone.zero y) →
+        ∃ m' z, nommF lib gul code m' t x p = some (Tone.zero z) ∧ y = wut z := by
+      intro x hx gul t m y hm
+      obtain ⟨m', rfl, hm'⟩ := nommF_succ_inv hm
+      simp only [nommStep] at hm'
+      obtain ⟨z, hz, hm'⟩ := tbind_zero_inv hm'
+      cases hm'
+      exact ⟨m', z, hz, rfl⟩
+    split at h
+    · rename_i d hd hs
+      cases h
+      refine ⟨Annot.fold fun x gul hx => ?_, ?_⟩
+      · rw [← wut_eq]; exact mink_mk_n3 (safe_known hc hA1 hQP K1 hs hd x gul hx)
+      · intro x hx gul t m y hm
+        obtain ⟨m', z, hz, rfl⟩ := hsem x hx gul t m y hm
+        rw [known_fits hd (K1.2 x hx gul t m' z hz)]
+        exact fits_litAnno (wut_eq d)
+    · cases h
+      exact ⟨Annot.n3 K1.1, fun _ _ _ _ _ _ _ => fits_dunno _⟩
+  | n4 hA1 ih1 =>
+    rename_i P b p
+    intro sub st r h hsuf Q hQ
+    simp only [knowGo, Option.map_eq_some_iff] at h
+    obtain ⟨pp, hp, h⟩ := h
+    have hp2 : pp.2 <:+ stF := by split at h <;> (cases h; exact hsuf)
+    have hQP : ∀ x, Q x → P x := fun x hx => (hQ x hx).1
+    have K1 := ih1 sub st pp hp hp2 Q hQ
+    have hsem : ∀ x, Q x → ∀ gul t m y, nommF lib gul code m t x (Nomm.n4 p) = some (Tone.zero y) →
+        ∃ m' a, nommF lib gul code m' t x p = some (Tone.zero (A a)) ∧ y = A (a + 1) := by
+      intro x hx gul t m y hm
+      obtain ⟨m', rfl, hm'⟩ := nommF_succ_inv hm
+      simp only [nommStep] at hm'
+      obtain ⟨z, hz, hm'⟩ := tbind_zero_inv hm'
+      cases z with
+      | cell _ _ => cases hm'
+      | atom a => cases hm'; exact ⟨m', a, hz, rfl⟩
+    split at h
+    · rename_i a hd hs
+      cases h
+      refine ⟨Annot.fold fun x gul hx => mink_mk_n4 (safe_known hc hA1 hQP K1 hs hd x gul hx), ?_⟩
+      intro x hx gul t m y hm
+      obtain ⟨m', a', hz, rfl⟩ := hsem x hx gul t m y hm
+      have e := known_fits hd (K1.2 x hx gul t m' _ hz)
+      cases e
+      exact fits_litAnno rfl
+    · cases h
+      exact ⟨Annot.n4 K1.1, fun _ _ _ _ _ _ _ => fits_dunno _⟩
+  | n5 hA1 hA2 ih1 ih2 =>
+    rename_i P b c p q
+    intro sub st r h hsuf Q hQ
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨pp, hp, qq, hq, h⟩ := h
+    have hq2 : qq.2 <:+ stF := by split at h <;> (cases h; exact hsuf)
+    have hp2 : pp.2 <:+ stF := (knowGo_suffix fold dat res q _ _ _ hq).trans hq2
+    have hQP : ∀ x, Q x → P x := fun x hx => (hQ x hx).1
+    have K1 := ih1 sub st pp hp hp2 Q hQ
+    have K2 := ih2 sub pp.2 qq hq hq2 Q hQ
+    have hsem : ∀ x, Q x → ∀ gul t m y, nommF lib gul code m t x (Nomm.n5 p q) = some (Tone.zero y) →
+        ∃ m' u w, nommF lib gul code m' t x p = some (Tone.zero u) ∧
+          nommF lib gul code m' t x q = some (Tone.zero w) ∧ y = eqCode u w := by
+      intro x hx gul t m y hm
+      obtain ⟨m', rfl, hm'⟩ := nommF_succ_inv hm
+      simp only [nommStep] at hm'
+      obtain ⟨u, hu, hm'⟩ := tbind_zero_inv hm'
+      obtain ⟨w, hw, hm'⟩ := tbind_zero_inv hm'
+      cases hm'
+      exact ⟨m', u, w, hu, hw, rfl⟩
+    split at h
+    · rename_i dp dq hdp hsp hdq hsq
+      cases h
+      refine ⟨Annot.fold fun x gul hx => ?_, ?_⟩
+      · rw [← eqCode_eq]
+        exact mink_mk_n5 (safe_known hc hA1 hQP K1 hsp hdp x gul hx) (safe_known hc hA2 hQP K2 hsq hdq x gul hx)
+      · intro x hx gul t m y hm
+        obtain ⟨m', u, w, hu, hw, rfl⟩ := hsem x hx gul t m y hm
+        rw [known_fits hdp (K1.2 x hx gul t m' u hu), known_fits hdq (K2.2 x hx gul t m' w hw)]
+        exact fits_litAnno (eqCode_eq dp dq)
+    · cases h
+      exact ⟨Annot.n5 K1.1 K2.1, fun _ _ _ _ _ _ _ => fits_dunno _⟩
+  | n6 hA1 hA2 hA3 ih1 ih2 ih3 =>
+    rename_i P b c d p q r0
+    intro sub st r h hsuf Q hQ
+    simp only [knowGo, Option.bind_eq_some_iff] at h
+    obtain ⟨pp, hp, h⟩ := h
+    have hQP : ∀ x, Q x → P x := fun x hx => (hQ x hx).1
+    have hsem : ∀ x, Q x → ∀ gul t m y, nommF lib gul code m t x (Nomm.n6 p q r0) = some (Tone.zero y) →
+        ∃ m' z, nommF lib gul code m' t x p = some (Tone.zero z) ∧
+          ((z = A 0 ∧ nommF lib gul code m' t x q = some (Tone.zero y)) ∨
+            (z = A 1 ∧ nommF lib gul code m' t x r0 = some (Tone.zero y))) := by
+      intro x hx gul t m y hm
+      obtain ⟨m', rfl, hm'⟩ := nommF_succ_inv hm
+      simp only [nommStep] at hm'
+      obtain ⟨z, hz, hm'⟩ := tbind_zero_inv hm'
+      refine ⟨m', z, hz, ?_⟩
+      match z, hm' with
+      | Noun.atom 0, hm' => exact Or.inl ⟨rfl, hm'⟩
+      | Noun.atom 1, hm' => exact Or.inr ⟨rfl, hm'⟩
+      | Noun.atom (k + 2), hm' => cases hm'
+      | Noun.cell _ _, hm' => cases hm'
+    split at h
+    · rename_i hd hs
+      have hq2 := h
+      have hp2 : pp.2 <:+ stF := (knowGo_suffix _ dat res q _ _ _ h).trans hsuf
+      have K1 := ih1 sub st pp hp hp2 Q hQ
+      have K2 := ih2 sub pp.2 r h hsuf Q hQ
+      refine ⟨Annot.six0 (safe_known hc hA1 hQP K1 hs hd) K2.1, ?_⟩
+      intro x hx gul t m y hm
+      obtain ⟨m', z, hz, ⟨rfl, hzq⟩ | ⟨rfl, _⟩⟩ := hsem x hx gul t m y hm
+      · exact K2.2 x hx gul t m' y hzq
+      · cases known_fits hd (K1.2 x hx gul t m' _ hz)
+    · rename_i hd hs
+      have hp2 : pp.2 <:+ stF := (knowGo_suffix _ dat res r0 _ _ _ h).trans hsuf
+      have K1 := ih1 sub st pp hp hp2 Q hQ
+      have K3 := ih3 sub pp.2 r h hsuf Q hQ
+      refine ⟨Annot.six1 (safe_known hc hA1 hQP K1 hs hd) K3.1, ?_⟩
+      intro x hx gul t m y hm
+      obtain ⟨m', z, hz, ⟨rfl, _⟩ | ⟨rfl, hzr⟩⟩ := hsem x hx gul t m y hm
+      · cases known_fits hd (K1.2 x hx gul t m' _ hz)
+      · exact K3.2 x hx gul t m' y hzr
+    · simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+      obtain ⟨qq, hq, rr, hr, rfl⟩ := h
+      have hr2 : rr.2 <:+ stF := hsuf
+      have hq2 : qq.2 <:+ stF := (knowGo_suffix _ dat res r0 _ _ _ hr).trans hr2
+      have hp2 : pp.2 <:+ stF := (knowGo_suffix _ dat res q _ _ _ hq).trans hq2
+      have K1 := ih1 sub st pp hp hp2 Q hQ
+      have K2 := ih2 sub pp.2 qq hq hq2 Q hQ
+      have K3 := ih3 sub qq.2 rr hr hr2 Q hQ
+      refine ⟨Annot.n6 K1.1 K2.1 K3.1, ?_⟩
+      intro x hx gul t m y hm
+      obtain ⟨m', z, hz, ⟨_, hzq⟩ | ⟨_, hzr⟩⟩ := hsem x hx gul t m y hm
+      · exact doubleInt_fits_left _ _ (K2.2 x hx gul t m' y hzq)
+      · exact doubleInt_fits_right _ _ (K3.2 x hx gul t m' y hzr)
+  | n7 hA1 hA2 ih1 ih2 =>
+    exact seven_core hc hA1 hA2 ih1 ih2 (fun _ a1 a2 => Annot.n7 a1 a2)
+      (fun _ _ _ _ _ _ hz hzv => mink_mk_n7 hz hzv)
+  | n8 hA1 hA2 ih1 ih2 =>
+    refine n8_core hc hA1 Annot.n0 hA2 ih1 ?_ ih2
+    intro sub st r h hsuf Q hQ
+    exact (knowGo_n0 h (fun x hx => (hQ x hx).2)).2.1
+  | n9 hA1 hA2 ih1 ih2 =>
+    exact seven_core hc hA1 hA2 ih1 ih2 (fun _ a1 a2 => Annot.n9 a1 a2)
+      (fun _ _ _ _ _ _ hz hzv => mink_mk_n9 hz hzv)
+  | n10 hax hA1 hA2 ih1 ih2 =>
+    rename_i P axis v t0 p q
+    intro sub st r h hsuf Q hQ
+    simp only [knowGo, Option.bind_eq_some_iff] at h
+    obtain ⟨dn, hdn, rc, hrc, h⟩ := h
+    have hrc2 : rc.2 <:+ stF := by
+      split at h
+      · cases h; exact hsuf
+      · simp only [Option.map_eq_some_iff] at h
+        obtain ⟨_, _, rfl⟩ := h
+        exact hsuf
+    have hdn2 : dn.2 <:+ stF := (knowGo_suffix fold dat res q _ _ _ hrc).trans hrc2
+    have hQP : ∀ x, Q x → P x := fun x hx => (hQ x hx).1
+    have K1 := ih1 sub st dn hdn hdn2 Q hQ
+    have K2 := ih2 sub dn.2 rc hrc hrc2 Q hQ
+    have hsem : ∀ x, Q x → ∀ gul t m y, nommF lib gul code m t x (Nomm.n10 axis p q) = some (Tone.zero y) →
+        ∃ m' a b, nommF lib gul code m' t x p = some (Tone.zero a) ∧
+          nommF lib gul code m' t x q = some (Tone.zero b) ∧ edit? axis a b = some y := by
+      intro x hx gul t m y hm
+      obtain ⟨m', rfl, hm'⟩ := nommF_succ_inv hm
+      simp only [nommStep, hax, if_false] at hm'
+      obtain ⟨b, hb, hm'⟩ := tbind_zero_inv hm'
+      obtain ⟨a, ha, hm'⟩ := tbind_zero_inv hm'
+      split at hm'
+      · cases hm'
+      · rename_i u hu
+        cases hm'
+        exact ⟨m', a, b, ha, hb, hu⟩
+    split at h
+    · rename_i u hu
+      cases h
+      -- the literal: both parts are literals and the edit succeeds
+      revert hu
+      split
+      · rename_i x1 x2 h1 h2
+        intro hu
+        have K11 := K1.1
+        rw [lit_eq h1] at K11
+        have K21 := K2.1
+        rw [lit_eq h2] at K21
+        refine ⟨Annot.fold fun x gul hx =>
+          mink_mk_n10 hax (annot_lit K11 x1 rfl x gul hx) (annot_lit K21 x2 rfl x gul hx) hu, ?_⟩
+        intro x hx gul t m y hm
+        obtain ⟨m', a, b, ha, hb, he⟩ := hsem x hx gul t m y hm
+        rw [lit_val hc hA1 hQP K11 hx ha, lit_val hc hA2 hQP K21 hx hb, hu] at he
+        exact fits_litAnno (Option.some.inj he).symm
+      · intro hu; cases hu
+    · rename_i hl
+      simp only [Option.map_eq_some_iff] at h
+      obtain ⟨s', hs', rfl⟩ := h
+      refine ⟨Annot.n10 hax K1.1 K2.1, ?_⟩
+      intro x hx gul t m y hm
+      obtain ⟨m', a, b, ha, hb, he⟩ := hsem x hx gul t m y hm
+      exact darn_fits (K2.2 x hx gul t m' b hb) (K1.2 x hx gul t m' a ha) he hs'
+  | n11s hA1 ih1 =>
+    rename_i P tag q f0
+    intro sub st r h hsuf Q hQ
+    simp only [knowGo, Option.map_eq_some_iff] at h
+    obtain ⟨qq, hq, h⟩ := h
+    have hq2 : qq.2 <:+ stF := by split at h <;> (cases h; exact hsuf)
+    have hQP : ∀ x, Q x → P x := fun x hx => (hQ x hx).1
+    have K1 := ih1 sub st qq hq hq2 Q hQ
+    have hsem : ∀ x, Q x → ∀ gul t m y, nommF lib gul code m t x (Nomm.n11s tag q f0) = some (Tone.zero y) →
+        ∃ m', nommF lib gul code m' t x q = some (Tone.zero y) := by
+      intro x hx gul t m y hm
+      obtain ⟨m', rfl, hm'⟩ := nommF_succ_inv hm
+      simp only [nommStep] at hm'
+      obtain ⟨z, hz, hm'⟩ := tbind_zero_inv hm'
+      cases hm'
+      exact ⟨m', hz⟩
+    split at h
+    · rename_i v hfree hv
+      cases h
+      have K11 := K1.1
+      rw [lit_eq hv] at K11
+      refine ⟨?_, ?_⟩
+      · show Annot lib code' Q _ qq.1.1
+        rw [lit_eq hv]
+        exact Annot.fold fun x gul hx => mink_mk_n11s tag (annot_lit K11 v rfl x gul hx)
+      · intro x hx gul t m y hm
+        obtain ⟨m', hm'⟩ := hsem x hx gul t m y hm
+        exact fits_litAnno (lit_val hc hA1 hQP K11 hx hm')
+    · cases h
+      refine ⟨Annot.n11s K1.1, ?_⟩
+      intro x hx gul t m y hm
+      obtain ⟨m', hm'⟩ := hsem x hx gul t m y hm
+      exact K1.2 x hx gul t m' y hm'
+  | n11d hA1 hA2 ih1 ih2 =>
+    rename_i P tag h0 f0 p q
+    intro sub st r h hsuf Q hQ
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨hh, hhh, qq, hq, h⟩ := h
+    have hq2 : qq.2 <:+ stF := by split at h <;> (cases h; exact hsuf)
+    have hh2 : hh.2 <:+ stF := (knowGo_suffix fold dat res q _ _ _ hq).trans hq2
+    have hQP : ∀ x, Q x → P x := fun x hx => (hQ x hx).1
+    have K1 := ih1 sub st hh hhh hh2 Q hQ
+    have K2 := ih2 sub hh.2 qq hq hq2 Q hQ
+    have hsem : ∀ x, Q x → ∀ gul t m y, nommF lib gul code m t x (Nomm.n11d tag p q f0) = some (Tone.zero y) →
+        ∃ m' t', nommF lib gul code m' t' x q = some (Tone.zero y) := by
+      intro x hx gul t m y hm
+      obtain ⟨m', rfl, hm'⟩ := nommF_succ_inv hm
+      simp only [nommStep] at hm'
+      obtain ⟨c0, _, hm'⟩ := tbind_zero_inv hm'
+      obtain ⟨z, hz, hm'⟩ := tbind_zero_inv hm'
+      cases hm'
+      exact ⟨m', _, hz⟩
+    split at h
+    · rename_i v hfree hs hv
+      cases h
+      have K21 := K2.1
+      rw [lit_eq hv] at K21
+      refine ⟨?_, ?_⟩
+      · show Annot lib code' Q _ qq.1.1
+        rw [lit_eq hv]
+        refine Annot.fold fun x gul hx => ?_
+        obtain ⟨c0, hc0⟩ := annot_safe_total K1.1 hs x gul hx
+        exact mink_mk_n11d tag hc0 (annot_lit K21 v rfl x gul hx)
+      · intro x hx gul t m y hm
+        obtain ⟨m', t', hm'⟩ := hsem x hx gul t m y hm
+        exact fits_litAnno (lit_val hc hA2 hQP K21 hx hm')
+    · cases h
+      refine ⟨Annot.n11d K1.1 K2.1, ?_⟩
+      intro x hx gul t m y hm
+      obtain ⟨m', t', hm'⟩ := hsem x hx gul t m y hm
+      exact K2.2 x hx gul t' m' y hm'
+  | mean hA1 hA2 ih1 ih2 =>
+    rename_i P h0 f0 p q b k
+    intro sub st r h hsuf Q hQ
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨pp, hp, v, hv, qq, hq, rfl⟩ := h
+    have hp2 : pp.2 <:+ stF :=
+      (List.suffix_cons _ _).trans ((knowGo_suffix fold dat res q _ _ _ hq).trans hsuf)
+    have K1 := ih1 sub st pp hp hp2 Q hQ
+    have K2 := ih2 sub _ qq hq hsuf Q hQ
+    refine ⟨Annot.mean K1.1 K2.1, ?_⟩
+    intro x hx gul t m y hm
+    obtain ⟨m', rfl, hm'⟩ := nommF_succ_inv hm
+    simp only [nommStep] at hm'
+    obtain ⟨c0, _, hm'⟩ := tbind_zero_inv hm'
+    obtain ⟨z, hz, hm'⟩ := tbind_zero_inv hm'
+    cases hm'
+    exact K2.2 x hx gul _ m' _ hz
+  | n12 hA1 hA2 ih1 ih2 =>
+    rename_i P b c p q
+    intro sub st r h hsuf Q hQ
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨pp, hp, qq, hq, rfl⟩ := h
+    have hp2 : pp.2 <:+ stF := (knowGo_suffix fold dat res q _ _ _ hq).trans hsuf
+    exact ⟨Annot.n12 (ih1 sub st pp hp hp2 Q hQ).1 (ih2 sub pp.2 qq hq hsuf Q hQ).1,
+      fun _ _ _ _ _ _ _ => fits_dunno _⟩
+  | bare hb =>
+    rename_i P f0
+    intro sub st r h hsuf Q hQ
+    have e2 : knowGo fold dat res (Nomm.n2 (Nomm.n0 1) (Nomm.n1 f0) none) sub st =
+        (knowGo fold dat res (Nomm.n0 1) sub st).bind fun s =>
+          (knowGo fold dat res (Nomm.n1 f0) sub s.2).bind fun fq =>
+            some ((Nomm.n2 s.1.1 fq.1.1 none, Anno.dunno), fq.2) := rfl
+    rw [e2] at h
+    simp only [Option.bind_eq_some_iff, Option.some.injEq] at h
+    obtain ⟨s, hs, fq, hf, rfl⟩ := h
+    obtain ⟨_, _, hshape⟩ := knowGo_n0 (lib := lib) (code := code) (code' := code') hs (Q := Q) (fun x hx => (hQ x hx).2)
+    simp only [knowGo, Option.some.injEq] at hf
+    cases hf
+    refine ⟨?_, fun _ _ _ _ _ _ _ => fits_dunno _⟩
+    rcases hshape with e | ⟨d, e, hd⟩
+    · show Annot lib code' Q f0 (Nomm.n2 s.1.1 (Nomm.n1 f0) none)
+      rw [e]; exact Annot.bare hb
+    · show Annot lib code' Q f0 (Nomm.n2 s.1.1 (Nomm.n1 f0) none)
+      rw [e]
+      exact Annot.bareLit hb fun x hx => by
+        have := hd x hx
+        simp only [slot?_one, Option.some.injEq] at this
+        exact this
+  | memo hh hA1 ih1 =>
+    intro sub st r h hsuf Q hQ
+    have hQP : ∀ x, Q x → _ := fun x hx => (hQ x hx).1
+    have K1 := ih1 sub st r h hsuf Q hQ
+    exact ⟨Annot.memo (fun x gul hx => hh x gul (hQP x hx)) K1.1, K1.2⟩
+  | crash hcr =>
+    intro sub st r h hsuf Q hQ
+    simp only [knowGo, if_true, Option.some.injEq] at h
+    cases h
+    exact ⟨Annot.crash hcr, fun _ _ _ _ _ _ _ => fits_dunno _⟩
+  | fold hv =>
+    rename_i P f0 v
+    intro sub st r h hsuf Q hQ
+    simp only [knowGo, Option.some.injEq] at h
+    cases h
+    refine ⟨Annot.fold fun x gul hx => hv x gul (hQ x hx).1, ?_⟩
+    intro x hx gul t m y hm
+    obtain ⟨m', rfl, hm'⟩ := nommF_succ_inv hm
+    simp only [nommStep, Option.some.injEq, Tone.zero.injEq] at hm'
+    exact fits_litAnno hm'.symm
+  | six0 hb hA1 ih1 =>
+    intro sub st r h hsuf Q hQ
+    have K1 := ih1 sub st r h hsuf Q hQ
+    exact ⟨Annot.six0 (fun x gul hx => hb x gul (hQ x hx).1) K1.1, K1.2⟩
+  | six1 hb hA1 ih1 =>
+    intro sub st r h hsuf Q hQ
+    have K1 := ih1 sub st r h hsuf Q hQ
+    exact ⟨Annot.six1 (fun x gul hx => hb x gul (hQ x hx).1) K1.1, K1.2⟩
+  | n8g hA1 hA2 hA3 ih1 ih2 ih3 => exact n8_core hc hA1 hA2 hA3 ih1 ih2 ih3
+  | n8l hb hA1 ih1 =>
+    rename_i P b c y d q
+    intro sub st r h hsuf Q hQ
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff, Option.some.injEq] at h
+    obtain ⟨pp, rfl, qq, hq, h⟩ := h
+    have hq2 : qq.2 <:+ stF := by split at h <;> (cases h; exact hsuf)
+    have hQP : ∀ x, Q x → P x := fun x hx => (hQ x hx).1
+    have hQ2 : ∀ z, Img8 lib Q b z → Img8 lib P b z ∧ Fits (litAnno (C y d)).sock z := by
+      rintro z ⟨x, y', gul, hx, hy, rfl⟩
+      refine ⟨⟨x, y', gul, hQP x hx, hy, rfl⟩, ?_⟩
+      obtain ⟨hby, hxd⟩ := hb x gul (hQP x hx)
+      cases Mink.det hy hby
+      exact fits_litAnno (by rw [hxd])
+    have K1 := ih1 _ _ qq hq hq2 (Img8 lib Q b) hQ2
+    have hsem : ∀ x, Q x → ∀ gul t m v, nommF lib gul code m t x (Nomm.n7 (Nomm.n1 (C y d)) q) =
+        some (Tone.zero v) → ∃ m', Img8 lib Q b (C y d) ∧ nommF lib gul code m' t (C y d) q = some (Tone.zero v) := by
+      intro x hx gul t m v hm
+      obtain ⟨m', rfl, hm'⟩ := nommF_succ_inv hm
+      simp only [nommStep] at hm'
+      obtain ⟨z, hz, hzq⟩ := tbind_zero_inv hm'
+      obtain ⟨m'', rfl, hz'⟩ := nommF_succ_inv hz
+      simp only [nommStep, Option.some.injEq, Tone.zero.injEq] at hz'
+      subst hz'
+      obtain ⟨hby, hxd⟩ := hb x gul (hQP x hx)
+      exact ⟨_, ⟨x, y, gul, hx, hby, by rw [hxd]⟩, hzq⟩
+    split at h
+    · rename_i v hv hs
+      cases h
+      have K11 := K1.1
+      rw [lit_eq hv] at K11
+      refine ⟨?_, ?_⟩
+      · show Annot lib code' Q _ qq.1.1
+        rw [lit_eq hv]
+        refine Annot.fold fun x gul hx => ?_
+        obtain ⟨hby, hxd⟩ := hb x gul (hQP x hx)
+        exact mink_mk_n8 hby (annot_lit K11 v rfl _ gul ⟨x, y, gul, hx, hby, rfl⟩)
+      · intro x hx gul t m w hm
+        obtain ⟨m', hz, hzq⟩ := hsem x hx gul t m w hm
+        exact fits_litAnno (lit_val hc hA1 (fun z hz => (hQ2 z hz).1) K11 hz hzq)
+    · cases h
+      refine ⟨Annot.n8l (fun x gul hx => hb x gul (hQP x hx)) K1.1, ?_⟩
+      intro x hx gul t m w hm
+      obtain ⟨m', hz, hzq⟩ := hsem x hx gul t m w hm
+      exact K1.2 _ hz gul t m' w hzq
+  | bareLit hb hd =>
+    intro sub st r h hsuf Q hQ
+    simp only [knowGo, Option.bind_eq_some_iff, Option.some.injEq] at h
+    obtain ⟨s, rfl, fq, rfl, rfl⟩ := h
+    exact ⟨Annot.bareLit hb fun x hx => hd x (hQ x hx).1, fun _ _ _ _ _ _ _ => fits_dunno _⟩
+
 end Sound
 
 end Bake
