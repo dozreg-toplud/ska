@@ -1,3 +1,4 @@
+module
 /- Verbatim local specification from docs/nock/4.txt:
 
 Nock 4K
@@ -48,6 +49,8 @@ nock(a)             *a
 
 *a                  *a
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Nock

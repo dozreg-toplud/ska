@@ -1,4 +1,6 @@
-import core.Nock
+module
+
+public import core.Nock
 
 /-!
 `cue`: the noun that an atom decodes to.  It follows `+cue` and `+rub` of
@@ -15,6 +17,8 @@ A length-prefixed atom of `e` bits is `c` zeros, a one, the low `c - 1` bits
 of `e` (its top bit is implied), and the `e` bits of the atom, where `c` is
 the bit length of `e`.  The atom 0 is the single bit `1`.
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Nock
