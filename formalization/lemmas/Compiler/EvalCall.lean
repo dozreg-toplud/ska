@@ -28,12 +28,29 @@ open Nock Pill SkaModel Hoon
 /-- The interpreter core with the compiler's core `cr` as its tail. -/
 abbrev icore (cr : Noun) : Noun := C interp.battery cr
 
+/-- `(poke ovo)` on the compiler's core `cr`, as the interpreter's arms run it:
+pull the arm at `axPoke` of `core/Statement.lean`, put the sample in, kick. -/
+def pokeN (cr ovo : Noun) : Option Noun :=
+  ((slot? Ska.axPoke cr).bind fun a => nock cr a).bind fun g =>
+    (edit? 6 ovo g).bind fun g' => (slot? 2 g').bind fun f => nock g' f
+
+/-- The compilers' cores that the pill's `cor` becomes by its own pokes, of
+any noun but a `%jets` that names a jet (as `Reach` of `core/Statement.lean`).  The code of `+poke` is part of the core it runs on, so a statement
+about the poke of every core holds only on cores whose code is the pill's:
+these are. -/
+inductive PokeReach : Noun → Prop where
+  | start : PokeReach cor
+  | poke {c ovo p c' : Noun} : PokeReach c → pokeN c ovo = some (C p c') → ¬ Ska.Hot ovo →
+      PokeReach c'
+
 /-- What the interpreter's arms read through the compiler's core: layer 2 at
 `read.layer2.axis` of the interpreter core, and layer 4 (where `+eval-top`
-pulls `+mink`) two cores above it. -/
+pulls `+mink`) two cores above it; and the core is one that the pill's
+compiler reaches by pokes (`PokeReach`), so that what its `+poke` does is
+the pill's. -/
 def CorIn (cr : Noun) : Prop :=
   slot? read.layer2.axis (icore cr) = some layer2 ∧
-    slot? (read.layer2.axis / 4) (icore cr) = some layer4
+    slot? (read.layer2.axis / 4) (icore cr) = some layer4 ∧ PokeReach cr
 
 theorem regsIn_icore {cr : Noun} (h : CorIn cr) : RegsIn mugF (icore cr) :=
   ⟨layer2, h.1, by.arm_at, need.arm_at, someIn_layer2, gorIn_morIn_layer2.1, gorIn_morIn_layer2.2⟩
@@ -123,17 +140,20 @@ theorem eval_pole_nok (cr : Noun) (hc : CorIn cr) (lib : Lib) (O : Oracle Noun) 
 
 /-! ## The calls -/
 
-/-- `(poke ovo)` on the compiler's core `cr`, as the interpreter's arms run it:
-pull the arm at `axPoke` of `core/Statement.lean`, put the sample in, kick. -/
-def pokeN (cr ovo : Noun) : Option Noun :=
-  ((slot? Ska.axPoke cr).bind fun a => nock cr a).bind fun g =>
-    (edit? 6 ovo g).bind fun g' => (slot? 2 g').bind fun f => nock g' f
-
-/-- The poke of `cr` is the model `pk` on every ovum, and every core it returns
-keeps what the interpreter reads through it. -/
+/-- The poke of `cr` is the model `pk` on every ovum but a `%jets` that names a
+jet, and every core it returns there keeps what the interpreter reads through
+it. -/
 def PokeIs (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (cr : Noun) : Prop :=
-  (∀ ov, pokeN cr ov.toNoun = (pk cr ov).map fun r => C r.1.toNoun r.2) ∧
-    ∀ ov r, pk cr ov = some r → CorIn r.2
+  (∀ ov, ¬ Ska.Hot ov.toNoun → pokeN cr ov.toNoun = (pk cr ov).map fun r => C r.1.toNoun r.2) ∧
+    ∀ ov r, pk cr ov = some r → ¬ Ska.Hot ov.toNoun → CorIn r.2
+
+theorem nh_dire (b : Bell) (m : Bool) : ¬ Ska.Hot (Ovum.dire b m).toNoun := by
+  rintro ⟨_, _, h⟩
+  simp [Ovum.toNoun, Tag.dire, Ska.jets] at h
+
+theorem nh_full (s f : Noun) : ¬ Ska.Hot (Ovum.full s f).toNoun := by
+  rintro ⟨_, _, h⟩
+  simp [Ovum.toNoun, Tag.full, Ska.jets] at h
 
 /-- The gate of `+eval-blob` on `[[regs trace] b s params scry]` in `icore cr`. -/
 abbrev blobS (cr : Noun) (regs : TreapMap mugF Noun) (trace : Trace) (b : Blob)
@@ -212,7 +232,7 @@ theorem eval_pole_cal (cr : Noun) (hc : CorIn cr) (lib : Lib)
     nock (poleS cr (Pole.cal a v d) regs trace scry) eval_pole.battery
       = (execPole lib ⟨callBody lib pk O, nk⟩ scry cr (Pole.cal a v d) regs trace).map poleOutS := by
   obtain ⟨hpkN, hpkG⟩ := hpk
-  have hp := hpkN (Ovum.dire a false)
+  have hp := hpkN (Ovum.dire a false) (nh_dire _ _)
   simp only [pokeN, Ska.axPoke, Ovum.toNoun, flag, Bool.false_eq_true, if_false, Tag.dire] at hp
   cases e1 : pk cr (Ovum.dire a false) with
   | none =>
@@ -221,7 +241,7 @@ theorem eval_pole_cal (cr : Noun) (hc : CorIn cr) (lib : Lib)
     simp [nock_exec, Pole.toNoun, Tag.cal, Tag.nok, Tag.dire, hp, execPole, callBody, e1]
   | some r =>
   obtain ⟨p, cr'⟩ := r
-  have hc' := hpkG _ _ e1
+  have hc' := hpkG _ _ e1 (nh_dire _ _)
   rw [e1] at hp
   have hpi := evalPoleIn_icore hc'
   obtain ⟨_, hrd, _, hrc⟩ := hpi
@@ -302,7 +322,7 @@ theorem eval_pole_csl (cr : Noun) (hc : CorIn cr) (lib : Lib)
     nock (poleS cr (Pole.csl a sr d) regs trace scry) eval_pole.battery
       = (execPole lib ⟨callBody lib pk O, nk⟩ scry cr (Pole.csl a sr d) regs trace).map poleOutS := by
   obtain ⟨hpkN, hpkG⟩ := hpk
-  have hp := hpkN (Ovum.dire a true)
+  have hp := hpkN (Ovum.dire a true) (nh_dire _ _)
   simp only [pokeN, Ska.axPoke, Ovum.toNoun, flag, if_true, Tag.dire] at hp
   cases e1 : pk cr (Ovum.dire a true) with
   | none =>
@@ -311,7 +331,7 @@ theorem eval_pole_csl (cr : Noun) (hc : CorIn cr) (lib : Lib)
     simp [nock_exec, Pole.toNoun, Tag.csl, Tag.cal, Tag.nok, Tag.dire, hp, execPole, callBody, e1]
   | some r =>
   obtain ⟨p, cr'⟩ := r
-  have hc' := hpkG _ _ e1
+  have hc' := hpkG _ _ e1 (nh_dire _ _)
   rw [e1] at hp
   have hpi := evalPoleIn_icore hc'
   obtain ⟨_, hrd, _, hrc⟩ := hpi
@@ -449,22 +469,22 @@ theorem eval_pole_gate (cr : Noun) (hc : CorIn cr) (lib : Lib) (hslam : SlamIsNo
       (fun vu vf r _ _ => htop.2 vu vf r)
   | cal a v d =>
     exact eval_pole_cal cr hc lib pk hpk Ob nk scry a v d regs trace
-      (fun _ c _ cr' vs b0 e1 _ _ => hO cr' (hpk.2 _ _ e1) (regsOf vs) trace b0 c [] scry)
+      (fun _ c _ cr' vs b0 e1 _ _ => hO cr' (hpk.2 _ _ e1 (nh_dire _ _)) (regsOf vs) trace b0 c [] scry)
   | caf a v d n =>
     rw [eval_pole_caf, eval_pole_cal cr hc lib pk hpk Ob nk scry a v d regs trace
-      (fun _ c _ cr' vs b0 e1 _ _ => hO cr' (hpk.2 _ _ e1) (regsOf vs) trace b0 c [] scry)]; rfl
+      (fun _ c _ cr' vs b0 e1 _ _ => hO cr' (hpk.2 _ _ e1 (nh_dire _ _)) (regsOf vs) trace b0 c [] scry)]; rfl
   | cam a v d k =>
     rw [eval_pole_cam, eval_pole_cal cr hc lib pk hpk Ob nk scry a v d regs trace
-      (fun _ c _ cr' vs b0 e1 _ _ => hO cr' (hpk.2 _ _ e1) (regsOf vs) trace b0 c [] scry)]; rfl
+      (fun _ c _ cr' vs b0 e1 _ _ => hO cr' (hpk.2 _ _ e1 (nh_dire _ _)) (regsOf vs) trace b0 c [] scry)]; rfl
   | csl a sr d =>
     exact eval_pole_csl cr hc lib pk hpk Ob nk scry a sr d regs trace
-      (fun _ c _ cr' vs0 b0 e1 _ _ => hO cr' (hpk.2 _ _ e1) (regsOf [vs0]) trace b0 c [] scry)
+      (fun _ c _ cr' vs0 b0 e1 _ _ => hO cr' (hpk.2 _ _ e1 (nh_dire _ _)) (regsOf [vs0]) trace b0 c [] scry)
   | csf a sr d n =>
     rw [eval_pole_csf, eval_pole_csl cr hc lib pk hpk Ob nk scry a sr d regs trace
-      (fun _ c _ cr' vs0 b0 e1 _ _ => hO cr' (hpk.2 _ _ e1) (regsOf [vs0]) trace b0 c [] scry)]; rfl
+      (fun _ c _ cr' vs0 b0 e1 _ _ => hO cr' (hpk.2 _ _ e1 (nh_dire _ _)) (regsOf [vs0]) trace b0 c [] scry)]; rfl
   | csm a sr d k =>
     rw [eval_pole_csm, eval_pole_csl cr hc lib pk hpk Ob nk scry a sr d regs trace
-      (fun _ c _ cr' vs0 b0 e1 _ _ => hO cr' (hpk.2 _ _ e1) (regsOf [vs0]) trace b0 c [] scry)]; rfl
+      (fun _ c _ cr' vs0 b0 e1 _ _ => hO cr' (hpk.2 _ _ e1 (nh_dire _ _)) (regsOf [vs0]) trace b0 c [] scry)]; rfl
   | hmp a v f =>
     rw [eval_pole_hmp (icore cr) cr hcor hpi layer2 hl2 turn.arm_at homoIn_layer2 lib scry a v f
       regs trace]
@@ -546,7 +566,7 @@ theorem eval_pole_cal_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
   obtain ⟨vs, e2, ⟨ton, cr''⟩, e3, h⟩ := h
   obtain ⟨Ob, hOb, e3'⟩ := hcall _ _ _ _ _ _ _ e3
   obtain ⟨b, c, new, cr', b0, e1, e4, e5⟩ := callBody_some e3'
-  obtain ⟨hB, hC⟩ := hOb cr' (hpk.2 _ _ e1) _ _ _ _ _ _ _ e5
+  obtain ⟨hB, hC⟩ := hOb cr' (hpk.2 _ _ e1 (nh_dire _ _)) _ _ _ _ _ _ _ e5
   refine ⟨?_, ?_⟩
   · rw [eval_pole_cal cr hc lib pk hpk Ob O.nok scry a v d regs trace
       (fun b' c' new' cr₁ vs' b0' e1' e2' e4' => by
@@ -571,7 +591,7 @@ theorem eval_pole_csl_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
   obtain ⟨vs0, e2, ⟨ton, cr''⟩, e3, h⟩ := h
   obtain ⟨Ob, hOb, e3'⟩ := hcall _ _ _ _ _ _ _ e3
   obtain ⟨b, c, new, cr', b0, e1, e4, e5⟩ := callBody_some e3'
-  obtain ⟨hB, hC⟩ := hOb cr' (hpk.2 _ _ e1) _ _ _ _ _ _ _ e5
+  obtain ⟨hB, hC⟩ := hOb cr' (hpk.2 _ _ e1 (nh_dire _ _)) _ _ _ _ _ _ _ e5
   refine ⟨?_, ?_⟩
   · rw [eval_pole_csl cr hc lib pk hpk Ob O.nok scry a sr d regs trace
       (fun b' c' new' cr₁ vs' b0' e1' e2' e4' => by
@@ -688,10 +708,10 @@ theorem eval_blob_jmp_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
   obtain ⟨vs, e2, e3⟩ := Option.bind_eq_some_iff.1 h
   obtain ⟨Ob, hOb, e3'⟩ := hcall _ _ _ _ _ _ _ e3
   obtain ⟨b, c, new, cr', b0, e1, e4, e5⟩ := callBody_some e3'
-  have hc' := hpk.2 _ _ e1
+  have hc' := hpk.2 _ _ e1 (nh_dire _ _)
   obtain ⟨hB, hC⟩ := hOb cr' hc' _ _ _ _ _ _ _ e5
   refine ⟨?_, hC⟩
-  have hp := hpk.1 (Ovum.dire a false)
+  have hp := hpk.1 (Ovum.dire a false) (nh_dire _ _)
   simp only [pokeN, Ska.axPoke, Ovum.toNoun, flag, Bool.false_eq_true, if_false, Tag.dire, e1,
     Option.map_some] at hp
   have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
@@ -724,10 +744,10 @@ theorem eval_blob_jsp_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
   obtain ⟨vs, e2, e3⟩ := Option.bind_eq_some_iff.1 h
   obtain ⟨Ob, hOb, e3'⟩ := hcall _ _ _ _ _ _ _ e3
   obtain ⟨b, c, new, cr', b0, e1, e4, e5⟩ := callBody_some e3'
-  have hc' := hpk.2 _ _ e1
+  have hc' := hpk.2 _ _ e1 (nh_dire _ _)
   obtain ⟨hB, hC⟩ := hOb cr' hc' _ _ _ _ _ _ _ e5
   refine ⟨?_, hC⟩
-  have hp := hpk.1 (Ovum.dire a true)
+  have hp := hpk.1 (Ovum.dire a true) (nh_dire _ _)
   simp only [pokeN, Ska.axPoke, Ovum.toNoun, flag, if_true, Tag.dire, e1,
     Option.map_some] at hp
   have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
@@ -982,7 +1002,7 @@ theorem eval_top_le (lib : Lib) (hslam : SlamIsNock lib)
     (cr : Noun) (hc : CorIn cr) (s f scry : Noun) (r : Tone × Noun)
     (h : topBody lib pk O k cr s f scry = some r) :
     nock (topS cr s f scry) eval_top.battery = some (resN r) ∧ CorIn r.2 := by
-  have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2
+  have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2.1
   simp only [read.layer2.axis, icore, Nat.reduceDiv, nock_exec] at hl4
   rcases f with fa | ⟨fh, ft⟩
   · simp only [topBody, Option.some.injEq] at h; subst h
@@ -1017,14 +1037,14 @@ theorem eval_top_le (lib : Lib) (hslam : SlamIsNock lib)
     · simp [hp0] at h
     subst hp0
     simp only [if_true] at h
-    have hc' := (hpk cr hc).2 _ _ e1
+    have hc' := (hpk cr hc).2 _ _ e1 (nh_full _ _)
     obtain ⟨hB, hC⟩ := hO cr' hc' _ _ _ _ _ _ _ h
     refine ⟨?_, hC⟩
     have hreg : HoonMap.toNoun id (regsOf [s] : TreapMap mugF Noun)
         = C (C (A 0) s) (C (A 0) (A 0)) := rfl
     simp only [blobS, icore, Straight.toNoun, argsN, listNoun, hreg, Blob.toNoun, hn.1, hn.2,
       NeedOrd.toNoun, Tag.this] at hB
-    have hp := (hpk cr hc).1 (Ovum.full s (C fh ft))
+    have hp := (hpk cr hc).1 (Ovum.full s (C fh ft)) (nh_full _ _)
     simp only [pokeN, Ska.axPoke, Ovum.toNoun, Tag.full, e1, Option.map_some] at hp
     have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
     simp only [read.layer2.axis, icore, nock_exec] at hl2

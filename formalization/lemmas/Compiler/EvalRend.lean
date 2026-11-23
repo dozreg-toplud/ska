@@ -72,7 +72,7 @@ theorem eval_rend_mook_some (cr : Noun) (hc : CorIn cr) (tag : Nat) (dat t : Nou
     (hm : nock (C mook.battery (C (Tone.two [(tag, dat)]).toNoun layer4)) mook.battery
       = some (Toon.two [t]).toNoun) :
     nock (rendS cr tag dat) eval_rend.battery = some (C t cr) := by
-  have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2
+  have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2.1
   simp only [read.layer2.axis, icore, Nat.reduceDiv, nock_exec] at hl4
   have h1' : ¬ A 0x6361656d = A tag := by simpa [Tag.meac, eq_comm] using h1
   have h2' : ¬ A 0x6661656d = A tag := by simpa [Tag.meaf, eq_comm] using h2
@@ -85,7 +85,7 @@ theorem eval_rend_mook_none (cr : Noun) (hc : CorIn cr) (tag : Nat) (dat : Noun)
     (h1 : tag ≠ Tag.meac) (h2 : tag ≠ Tag.meaf)
     (hm : nock (C mook.battery (C (Tone.two [(tag, dat)]).toNoun layer4)) mook.battery = none) :
     nock (rendS cr tag dat) eval_rend.battery = none := by
-  have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2
+  have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2.1
   simp only [read.layer2.axis, icore, Nat.reduceDiv, nock_exec] at hl4
   have h1' : ¬ A 0x6361656d = A tag := by simpa [Tag.meac, eq_comm] using h1
   have h2' : ¬ A 0x6661656d = A tag := by simpa [Tag.meaf, eq_comm] using h2
@@ -99,7 +99,7 @@ tank. -/
 theorem eval_rend_meac (lib : Lib) (hst : SoftTankIs lib layer4) (cr : Noun) (hc : CorIn cr)
     (dat : Noun) :
     nock (rendS cr Tag.meac dat) eval_rend.battery = some (C (rendProduct lib dat) cr) := by
-  have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2
+  have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2.1
   have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc.1
   simp only [read.layer2.axis, icore, Nat.reduceDiv, nock_exec] at hl4 hl2
   have hs := hst layer2 mook.layer2.arm_at dat
@@ -171,21 +171,21 @@ theorem eval_rend_meaf_le (lib : Lib) (hslam : SlamIsNock lib)
   subst ha
   obtain ⟨Ob, hOb, e3'⟩ := interp_call_le lib hslam pk hpk m _ _ _ _ _ _ _ e3
   obtain ⟨b, c, new, cr', b0, e4, e5, e6⟩ := callBody_some e3'
-  have hc' := (hpk cr hc).2 _ _ e4
+  have hc' := (hpk cr hc).2 _ _ e4 (nh_dire _ _)
   obtain ⟨hB, hC⟩ := hOb cr' hc' _ _ _ _ _ _ _ e6
-  have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2
+  have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2.1
   have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc.1
   have hl1 := slot_tail_of hc.1 layer2_layer1
   simp only [read.layer2.axis, icore, Nat.reduceDiv, Nat.reduceMul, Nat.reduceAdd, nock_exec]
     at hl4 hl2 hl1
-  have hl4' : slot? (read.layer2.axis / 4) (icore cr') = some layer4 := hc'.2
+  have hl4' : slot? (read.layer2.axis / 4) (icore cr') = some layer4 := hc'.2.1
   have hl2' : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
-  have hl4'' : slot? (read.layer2.axis / 4) (icore cr'') = some layer4 := hC.2
+  have hl4'' : slot? (read.layer2.axis / 4) (icore cr'') = some layer4 := hC.2.1
   have hl2'' : slot? read.layer2.axis (icore cr'') = some layer2 := hC.1
   simp only [read.layer2.axis, icore, Nat.reduceDiv, nock_exec] at hl4' hl2' hl4'' hl2''
   have hlm := hlist tl
   simp [listMoldF, nock_exec, e1] at hlm
-  have hp := (hpk cr hc).1 (Ovum.dire a false)
+  have hp := (hpk cr hc).1 (Ovum.dire a false) (nh_dire _ _)
   simp only [pokeN, Ska.axPoke, Ovum.toNoun, flag, Bool.false_eq_true, if_false, Tag.dire, e4,
     Option.map_some] at hp
   have hloop := eval_rend_loop cr' hc' (SkaModel.Prod.toNoun (SkaModel.Prod.ir b c new))
@@ -249,7 +249,7 @@ theorem eval_rend_meaf_ge (lib : Lib) (hslam : SlamIsNock lib)
     (h : nock (rendS cr Tag.meaf dat) eval_rend.battery = some x) :
     ∃ v, Ev (fun m => evalRend lib (SkaModel.interp lib pk m) m cr (Tag.meaf, dat)) v := by
   have hne : ¬ Tag.meaf = Tag.meac := by decide
-  have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2
+  have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2.1
   have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc.1
   have hl1 := slot_tail_of hc.1 layer2_layer1
   simp only [read.layer2.axis, icore, Nat.reduceDiv, Nat.reduceMul, Nat.reduceAdd, nock_exec]
@@ -277,7 +277,7 @@ theorem eval_rend_meaf_ge (lib : Lib) (hslam : SlamIsNock lib)
   | some a =>
   have ha := bell_ofNoun_toNoun e2
   subst ha
-  have hp := (hpk cr hc).1 (Ovum.dire a false)
+  have hp := (hpk cr hc).1 (Ovum.dire a false) (nh_dire _ _)
   simp only [pokeN, Ska.axPoke, Ovum.toNoun, flag, Bool.false_eq_true, if_false, Tag.dire] at hp
   cases e4 : pk cr (Ovum.dire a false) with
   | none =>
@@ -288,7 +288,7 @@ theorem eval_rend_meaf_ge (lib : Lib) (hslam : SlamIsNock lib)
   obtain ⟨p, cr'⟩ := pr
   rw [e4, Option.map_some] at hp
   simp [hp] at h
-  have hc' := (hpk cr hc).2 _ _ e4
+  have hc' := (hpk cr hc).2 _ _ e4 (nh_dire _ _)
   have hl2' : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
   simp only [read.layer2.axis, icore, nock_exec] at hl2'
   rcases p with _ | ⟨b, c, new⟩ | ps

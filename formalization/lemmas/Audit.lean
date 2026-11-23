@@ -37,6 +37,8 @@ import lemmas.Compiler.EvalConv
 import lemmas.Compiler.EvalRend
 import lemmas.Compiler.Connect
 import lemmas.Compiler.PokeFrame
+import lemmas.Assembly
+import lemmas.Compiler.TreapKey
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -297,3 +299,26 @@ open Formalization
 #print axioms Compiler.mock_iff
 #print axioms Compiler.corIn_of_tail
 #print axioms Compiler.pokeIs_of_frame
+#print axioms Assembly.poke_iff
+#print axioms Assembly.reach_model
+#print axioms Assembly.meek_of
+#print axioms Assembly.weak_of
+#print axioms Assembly.converse_of
+#print axioms Assembly.halts_of
+#print axioms Assembly.full_of
+#print axioms Frame.absNock_sound
+#print axioms Compiler.poke_frame
+#print axioms Compiler.pokeReach_frame
+#print axioms Compiler.pokeFrame_corIn
+#print axioms Compiler.listMoldIs
+#print axioms Compiler.pokeDireBad
+#print axioms Compiler.FinMap.isMap_toNoun
+#print axioms Compiler.FinMap.get_toNoun
+#print axioms Compiler.FinMap.mem_tap
+#print axioms Compiler.FinMap.mem_rap
+#print axioms Compiler.FinMap.putF_toNoun
+#print axioms Compiler.FinMap.delF_toNoun
+#print axioms Compiler.FinMap.getF_toNoun
+#print axioms Compiler.instTreapFinMap
+#print axioms Compiler.FinMap.tapList_toNoun
+#print axioms Compiler.FinMap.preorder_toNoun

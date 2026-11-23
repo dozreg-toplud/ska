@@ -167,7 +167,7 @@ theorem pokeW_le {c : Noun → Noun → Option Noun} (hc : ∀ s f, Below? (c s 
 
 /-- Under `hyb k`, the poke crashes or returns what the model `pk` says. -/
 theorem pokeW_cases {pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)}
-    {cr : Noun} (hpk : PokeIs pk cr) (k : Nat) (ov : Ovum) :
+    {cr : Noun} (hpk : PokeIs pk cr) (k : Nat) (ov : Ovum) (hov : ¬ Ska.Hot ov.toNoun) :
     pokeW (hyb k) cr ov.toNoun = none ∨
       ∃ p cr', pk cr ov = some (p, cr') ∧ pokeW (hyb k) cr ov.toNoun = some (C p.toNoun cr') := by
   cases e : pokeW (hyb k) cr ov.toNoun with
@@ -175,7 +175,7 @@ theorem pokeW_cases {pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF
   | some y =>
     right
     have h1 := pokeW_le (hyb_le k) cr ov.toNoun y e
-    rw [hpk.1 ov] at h1
+    rw [hpk.1 ov hov] at h1
     obtain ⟨⟨p, cr'⟩, e1, rfl⟩ := Option.map_eq_some_iff.1 h1
     exact ⟨p, cr', e1, rfl⟩
 
@@ -300,7 +300,7 @@ any other by the poke and `+eval-blob` at depth `k`. -/
 theorem top_step (k : Nat) (hB : BlobGe lib pk k) : TopGe lib pk (k + 1) := by
   intro cr hc s f scry x h
   have h' := iterN_succ_hyb h
-  have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2
+  have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2.1
   simp only [read.layer2.axis, icore, Nat.reduceDiv, nock_exec] at hl4
   rcases f with fa | ⟨fh, ft⟩
   · exact ⟨(Tone.two [], cr), Ev.succ ⟨0, fun m _ => by simp [SkaModel.interp, topBody]⟩⟩
@@ -331,7 +331,7 @@ theorem top_step (k : Nat) (hB : BlobGe lib pk k) : TopGe lib pk (k + 1) := by
         · refine Or.inr (Or.inr ⟨rfl, th, tt, rfl, fun e => ?_⟩)
           subst e; simp [isBare] at hb
       · exact Or.inl fun e => h11 e.symm
-    rcases pokeW_cases (hpk cr hc) k (Ovum.full s (C fh ft)) with hw | ⟨p, cr', e1, hw⟩
+    rcases pokeW_cases (hpk cr hc) k (Ovum.full s (C fh ft)) (nh_full _ _) with hw | ⟨p, cr', e1, hw⟩
     · exfalso
       simp only [pokeW, Ska.axPoke, Ovum.toNoun, Tag.full] at hw
       rcases hdisp with hd | ⟨rfl, t, rfl⟩ | ⟨rfl, th, tt, rfl, hd⟩
@@ -340,7 +340,7 @@ theorem top_step (k : Nat) (hB : BlobGe lib pk k) : TopGe lib pk (k + 1) := by
       · simp only [Tag.bare] at hd
         top_simp_at h' [hw, hd]
     · simp only [pokeW, Ska.axPoke, Ovum.toNoun, Tag.full] at hw
-      have hc' := (hpk cr hc).2 _ _ e1
+      have hc' := (hpk cr hc).2 _ _ e1 (nh_full _ _)
       have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
       simp only [read.layer2.axis, icore, nock_exec] at hl2
       have hnd : NeedIn layer2 ∧ SomeIn layer2 ∧ GorIn mugF layer2 :=
@@ -471,13 +471,13 @@ theorem pole_step (k : Nat) (hB : BlobGe lib pk k) (hT : TopGe lib pk k) (hP : P
         exact rfl
       · cases ton <;> simp
   | cal a v d =>
-    rcases pokeW_cases (hpk cr hc) k (Ovum.dire a false) with hw | ⟨p, cr', e1, hw⟩
+    rcases pokeW_cases (hpk cr hc) k (Ovum.dire a false) (nh_dire _ _) with hw | ⟨p, cr', e1, hw⟩
     · exfalso
       simp only [pokeW, Ska.axPoke, Ovum.toNoun, flag, Bool.false_eq_true, if_false, Tag.dire] at hw
       pole_simp_at h' [Tag.dire, hw]
     simp only [pokeW, Ska.axPoke, Ovum.toNoun, flag, Bool.false_eq_true, if_false, Tag.dire] at hw
     pole_simp_at h' [Tag.dire, hw]
-    have hc' := (hpk cr hc).2 _ _ e1
+    have hc' := (hpk cr hc).2 _ _ e1 (nh_dire _ _)
     have hl2' : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
     simp only [read.layer2.axis, icore, nock_exec] at hl2'
     have hnd : NeedIn layer2 ∧ SomeIn layer2 ∧ GorIn mugF layer2 :=
@@ -522,13 +522,13 @@ theorem pole_step (k : Nat) (hB : BlobGe lib pk k) (hT : TopGe lib pk k) (hP : P
         exact rfl
       · cases ton <;> simp [afterCall]
   | csl a sr d =>
-    rcases pokeW_cases (hpk cr hc) k (Ovum.dire a true) with hw | ⟨p, cr', e1, hw⟩
+    rcases pokeW_cases (hpk cr hc) k (Ovum.dire a true) (nh_dire _ _) with hw | ⟨p, cr', e1, hw⟩
     · exfalso
       simp only [pokeW, Ska.axPoke, Ovum.toNoun, flag, if_true, Tag.dire] at hw
       pole_simp_at h' [Tag.dire, hw]
     simp only [pokeW, Ska.axPoke, Ovum.toNoun, flag, if_true, Tag.dire] at hw
     pole_simp_at h' [Tag.dire, hw]
-    have hc' := (hpk cr hc).2 _ _ e1
+    have hc' := (hpk cr hc).2 _ _ e1 (nh_dire _ _)
     have hl2' : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
     simp only [read.layer2.axis, icore, nock_exec] at hl2'
     have hnd : NeedIn layer2 ∧ SomeIn layer2 ∧ GorIn mugF layer2 :=
@@ -763,13 +763,13 @@ theorem blob_step (k : Nat) (hP : PoleGe lib pk k) (hB : BlobGe lib pk k) :
     conv => { rhs; rw [execBlob] }
     simp
   | jmp a v =>
-    rcases pokeW_cases (hpk cr hc) k (Ovum.dire a false) with hw | ⟨p, cr', e1, hw⟩
+    rcases pokeW_cases (hpk cr hc) k (Ovum.dire a false) (nh_dire _ _) with hw | ⟨p, cr', e1, hw⟩
     · exfalso
       simp only [pokeW, Ska.axPoke, Ovum.toNoun, flag, Bool.false_eq_true, if_false, Tag.dire] at hw
       blob_simp_at h' [Blob.toNoun, Termin.toNoun, Tag.dire, hw]
     simp only [pokeW, Ska.axPoke, Ovum.toNoun, flag, Bool.false_eq_true, if_false, Tag.dire] at hw
     blob_simp_at h' [Blob.toNoun, Termin.toNoun, Tag.dire, hw]
-    have hc' := (hpk cr hc).2 _ _ e1
+    have hc' := (hpk cr hc).2 _ _ e1 (nh_dire _ _)
     have hl2' : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
     simp only [read.layer2.axis, icore, nock_exec] at hl2'
     rcases p with _ | ⟨b, c, new⟩ | ps
@@ -810,13 +810,13 @@ theorem blob_step (k : Nat) (hP : PoleGe lib pk k) (hB : BlobGe lib pk k) :
       rw [execBlob]
       simp [e2, SkaModel.interp, callBody, e1, execEntry, e3, hm m' (by omega)]
   | jsp a sr =>
-    rcases pokeW_cases (hpk cr hc) k (Ovum.dire a true) with hw | ⟨p, cr', e1, hw⟩
+    rcases pokeW_cases (hpk cr hc) k (Ovum.dire a true) (nh_dire _ _) with hw | ⟨p, cr', e1, hw⟩
     · exfalso
       simp only [pokeW, Ska.axPoke, Ovum.toNoun, flag, if_true, Tag.dire] at hw
       blob_simp_at h' [Blob.toNoun, Termin.toNoun, Tag.dire, hw]
     simp only [pokeW, Ska.axPoke, Ovum.toNoun, flag, if_true, Tag.dire] at hw
     blob_simp_at h' [Blob.toNoun, Termin.toNoun, Tag.dire, hw]
-    have hc' := (hpk cr hc).2 _ _ e1
+    have hc' := (hpk cr hc).2 _ _ e1 (nh_dire _ _)
     have hl2' : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
     simp only [read.layer2.axis, icore, nock_exec] at hl2'
     obtain ⟨_, hrd', _, hrc'⟩ := evalPoleIn_icore hc'
