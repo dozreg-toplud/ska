@@ -99,6 +99,9 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/FolLoop.lean`, `Ska/FolLoopFacts.lean` | A model of `fol-loop` for one function, with direct calls answered from a table, and of `+inlineable`, `+safe-nomm`, `+safe-fol-fol`. |
 | `Ska/FolLoopSound.lean` | `folLoop_good`: given a sound table, the nomm of `fol-loop` satisfies `Annot` and its product sock holds of every product; `+safe-fol-fol` and `saf` give what the inline and memo cases assume. |
 | `Ska/CallGraph.lean` | Models of the call graph's arms (`+patch-prod`, `+msg-anno`, `+git:mi`, `+recursive-call`), and what a converged graph gives. The fixed point itself is not proved: `WantSound` and the soundness of the table on products are hypotheses. |
+| `Ska/Prov.lean`, `Ska/ProvFacts.lean` | The provenance invariant on products (`ProvR`, `ProvO`): a part with axis provenance is that axis of the function's subject. Nock 0, cons, Nock 10, the join of two branches and a direct call through `compose:pi` keep it; `+patch-prod` is sound under it. |
+| `Ska/WantMono.lean` | `want` only grows along a run of `fol-loop`. |
+| `Ska/AppPath.lean` | `app:ca` below a covered path; the static conditions `StatS` and `ShapeOK`; `known_formula`: on subjects of the code requirement, a fully known formula-formula is that formula. |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
