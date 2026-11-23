@@ -108,7 +108,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/GitMi.lean` | `+git:mi` against `Ana.gitMi`, crashes included (`mi_git_gate`, `mi_git_pill`): `gut`, then `+tap:by` of the library's second layer gives `Treap.tap` of the inner map (`tap_inner`), and the loop is `Ana.gitLoop` with `hitTest` (`mi_git_loop`), through `+huge:so`, `+app:ca` of the pill's library core at axis `7` of the context and `+patch-prod` at axis `22` (`MiGitIn`). |
 | `Compiler/HeSock.lean` | `+he-sock` against `heSock`, written there after the Hoon, line by line (`he_sock_gate`, `he_sock_pill`): the gate never crashes on two socks, so the model is a `Bool`, and `Env.he` of `Ska/Analysis.lean` is instantiated with it (`heEnv`, with `he-threshold` `32`).  It reads `+lth` and `+add` of the library's first layer at axis `16383` of its context, `+cape-size` at `22495`, and `+hed:so`, `+tel:so` through the pill's library core at `7` (`HeSockIn`); the proof is by induction on the size of the two capes. |
 | `Compiler/RecCall.lean` | `+recursive-call` against `recursiveCall heSock` of `Ska/CallGraph.lean` on call graphs of `FinMap` read through `gCore` (`recursive_call_gate`, and `recursive_call_pill` with the threshold `32` read at axis `510` of `ana`, `ana_threshold`), crashes of `+huge:so` and `+msg-sock` included.  The count is the `+roll` of layer 2 with the gate `recursive_call.cnt` (`rc_count`), and the loop is `recLoop` (`rc_loop`), through `+git-g`, `+he-sock` and `+msg-sock` of the context (`RcIn`). |
-| `Compiler/FolLoopLink.lean` | The trap `fol-loop` against `Ana.folStep`, case by case, with the calls of the trap to itself as the parameter `go` (`GoIs`: every run of the trap's battery on `folSubj` returns `go` as `folOutNoun`).  `folSubj` is the trap's subject: `defer` at `6`, `bare-call` at `14`, `memo-key` at `30`, `seat` at `62`, `gen` at `126`, `sub` at `254`, `fol` at `510`, and the rest of the subject of `+run` at `511`.  Done: `%1`, `%3`, `%4`, `%5`, `%7`, `%8`, `%9`, `%12` (`fol_loop_op1`, ...), crashes of the calls included. |
+| `Compiler/FolLoopLink.lean` | The trap `fol-loop` against `Ana.folStep`, case by case, with the calls of the trap to itself as the parameter `go` (`GoIs`: every run of the trap's battery on `folSubj` returns `go` as `folOutNoun`).  `folSubj` is the trap's subject: `defer` at `6`, `bare-call` at `14`, `memo-key` at `30`, `seat` at `62`, `gen` at `126`, `sub` at `254`, `fol` at `510`, and the rest of the subject of `+run` at `511`, which holds `ana` at its axis `511` (`[bus [data run-gate]]`, the gate's context the core of `+ska-callgraph`, whose context is its gate in `ana`), so `lib` at `2047` (`rest_lib`).  Done, crashes of the calls included: every case but `%2` (`fol_loop_step`), from `fol_loop_cons`, `fol_loop_op0`, ..., `fol_loop_op12`, `fol_loop_other` (every formula that `shape` sends to the default) and `fol_loop_op11d` (the dynamic hint, every tag: `%spot` through the trap `nock-11-soft`, `fol_loop_soft`, `%memo`, `%mean` with its deferred call and the check of its nomm, `%fast`).  Cons, `%0`, `%6`, `%10` and `%mean` read `+so`, `+pi`, `+double-int` and `+all:ca` of the pill's `lib`; `%spot` assumes `SoftSpotIs env` (`+soft-spot` of `ana` computes `env.softSpot` as a unit) and `%fast` assumes `RegisterFastIs regsNoun env` (the gate of `+register-fast` of `ana` returns `[miss regs]` as `env.registerFast` says). |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`. |
 | `Compiler/TreapKey.lean` | The instance of `Treap` (`Ska/Analysis.lean`) for the analysis model: `FinMap κ ν`, finite maps as lookups, whose noun `toNoun f m` is made with `+put:by` on the encoded keys when the encoding is given; it is an `IsMap mugF` with exactly the pairs of `m` (`isMap_toNoun`, `get_toNoun`), so by `isMap_ext` the pill's `+put:by`, `+del:by`, `+get:by` on it give the nouns of `put`, `del`, `get` (`putF_toNoun`, `delF_toNoun`, `getF_toNoun`).  `tap` and `rap` read the keys off `~(tap by ...)` and the pre-order of `+rep`, and are those listings on every layout (`tapList_toNoun`, `preorder_toNoun`).  `M κ ν` comes before the encoding in the class, so it cannot hold a treap ordered by it. |
@@ -362,9 +362,9 @@ import only its theorems.  So:
      validators; the interpreter (`+eval-top`, `+eval-blob`, `+eval-pole`,
      `+eval-pass`, `+move`, `+read`, `+store`, `+eval-mook`, `+eval-rend`);
      of `+poke` its frame, that it validates first, and the outer `+poke`.
-   - *Modelled, not linked*: the cases of `fol-loop` (`Ana.folStep`) for
-     cons, `%0`, `%2` (with `callStep`), `%6`, `%10`, `%11` and the default,
-     and the induction that turns `GoIs` into a theorem; `resolve`,
+   - *Modelled, not linked*: the case `%2` of `fol-loop` (`callStep`, with
+     the traps `fol_loop.direct` and `fol_loop.resolve`), and the induction
+     on `iterN` that turns `GoIs` into a theorem; `resolve`,
      `+analyze`, `+run`, the pass and member loops, `+dirty`, `+sweep`,
      `+above`, `+cull`, `+pop`, `+ska-callgraph`, `+prune-callgraph`,
      `+memo-final-entry`, the analysis part of `+ska-poke`;
@@ -372,8 +372,11 @@ import only its theorems.  So:
      `+bake-graph`; `+reverse-bell-graph`, `+hot-stale`, `+del-bells`;
      `+compiled-mono`, `+compiled-nary`, the `%full` and `%dire` branches of
      `+poke`; `run` of `+comp` and its helpers (`Comp*.lean`).
-   - *Parameters with no model*: `+soft-spot`, `+register-fast`,
-     `+shape-collapse`, `+bake-need`.
+   - *Parameters with no model*: `+soft-spot` (`Env.softSpot`, tied to the
+     pill by the hypothesis `SoftSpotIs`; the Hoon never crashes, so a Lean
+     model `softSpotF` would discharge it), `+register-fast`
+     (`Env.registerFast`, tied by `RegisterFastIs`; for `R := Noun` it can be
+     the pill's run of the gate), `+shape-collapse`, `+bake-need`.
    - *No model*: `+msg-ca`, `+register-template`, `+index-arms`,
      `+fast-parent`, the `*-ju` arms, the cole arms, `+eval-finalized`,
      `+have`, `+simple-bell-graph-and-reversed`, `+tarjan`, `+scc-of`;
@@ -390,13 +393,19 @@ import only its theorems.  So:
    the pre-order of `+rep` on the noun of `m`, under every layout of the
    values, list `tap m` and `rap m` (`tapList_toNoun`, `preorder_toNoun`): the
    shape of the treap does not depend on its values (`toNoun_relabel`).
-11. **`fol-loop` against `Ana.folStep` is begun** (`Compiler/FolLoopLink.lean`):
-   the cases that read nothing beyond the trap's own variables are done.  The
-   cases cons, `%0`, `%6`, `%10` read `+so`, `+pi` and `+double-int` through
-   the library core in the rest of the subject of `+run` (axis `511` of the
-   trap), at axes that depend on the pushes of each case (`[9 11 0 0x7ffff]`,
-   `[9 11 0 0xfffff]`, `[9 11 0 0x1fffff]` in the battery), so they need a
-   hypothesis on that rest; `%2` and `%11` need `res` and the hint arms too.  The trap is the
+11. **`fol-loop` against `Ana.folStep` is done but for `%2` and the
+   induction** (`Compiler/FolLoopLink.lean`): `fol_loop_step` gives one level
+   of the trap on every formula but a `%2`, from `GoIs` (the calls of the trap
+   to itself compute `go`).  The battery reads the library core at
+   `[9 11 0 0x7ffff]`, `[9 11 0 0xfffff]`, `[9 11 0 0x1fffff]` (with `0`, `1`,
+   `2` values pushed), and `ana` at `[9 94 0 0xfffff]` (`+register-fast`) and
+   through the soft trap at `0x3ffff`: all of it is `ana` at axis `511` of the
+   rest of the subject of `+run` (`hana`).  Left: `%2`, which needs `res`
+   through `fol_loop.direct` and `fol_loop.resolve`, with `mi_git_gate`,
+   `recursive_call_gate`, `git_g_gate` and `ska_analyze` as a parameter; then
+   the induction on `iterN` (as `interp_le` and `interp_ge` of
+   `Compiler/EvalCall.lean`, `EvalConv.lean`) that turns `GoIs` into a
+   theorem.  The trap is the
    formula `[8 [1 bat] [11 [%fast fol-loop-clue] [0 1]]]`, kicked by
    `[9 2 0 1]`.  The generator names its battery `fol_loop.battery` (5569
    cells as a tree), the traps it kicks in place `fol_loop.direct`

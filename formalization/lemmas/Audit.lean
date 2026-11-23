@@ -365,3 +365,17 @@ open Formalization
 #print axioms Compiler.fol_loop_op12
 #print axioms Compiler.fol_loop_op8
 #print axioms Compiler.fol_loop_op9
+#print axioms Compiler.fol_loop_cons
+#print axioms Compiler.fol_loop_op0
+#print axioms Compiler.fol_loop_op6
+#print axioms Compiler.fol_loop_op10
+#print axioms Compiler.fol_loop_other
+#print axioms Compiler.fol_loop_op11s
+#print axioms Compiler.fol_loop_soft
+#print axioms Compiler.fol_loop_op11d_plain
+#print axioms Compiler.fol_loop_op11d_memo
+#print axioms Compiler.fol_loop_op11d_fast
+#print axioms Compiler.fol_loop_op11d_spot
+#print axioms Compiler.fol_loop_op11d_mean
+#print axioms Compiler.fol_loop_op11d
+#print axioms Compiler.fol_loop_step
