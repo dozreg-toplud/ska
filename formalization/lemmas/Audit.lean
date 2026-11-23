@@ -371,3 +371,6 @@ open Formalization
 #print axioms Compiler.fol_loop_op10
 #print axioms Compiler.fol_loop_other
 #print axioms Compiler.fol_loop_op11s
+#print axioms Compiler.fol_loop_soft
+#print axioms Compiler.fol_loop_op11d_plain
+#print axioms Compiler.fol_loop_op11d_memo
