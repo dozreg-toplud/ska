@@ -19,18 +19,22 @@ conditions what the analysis must ensure:
   callee's sock and a formula from `q` that is the callee's formula;
 * at an inlined call, the formula-formula `q`, which the nomm drops, returns
   the inlined formula on every subject in `P`, from any scry gate: it neither
-  crashes, nor loops, nor blocks.  The analysis does not check this (see
-  `BugWitness.lean`);
-* the default case, a crash, only for formulas on which `+mink` crashes at
-  once.  The analysis does not check this either.
+  crashes, nor loops, nor blocks (the fixed `+fol-loop` inlines only when
+  `+safe-fol-fol` holds of its nomm, which should imply this);
+* the default case, a crash, only for formulas on which `+mink` crashes with
+  the trace as it is (the fixed `+fol-loop` analyses an atom operand as
+  `[%0 0]` in its place, which is this case for the atom).
+
+The table of callees is a separate invariant, `CodeOK`: an inductive `Annot`
+cannot hold the callee's annotation, which for a recursive function would hold
+the caller's again.
 
 There is no case for `%bare`: `fol-loop` makes `[11 %bare q]` an indirect call
 of itself, which the interpreter runs by `+eval-top` again, for ever
 (`bare_loops` in `BugWitness.lean`).
 
-Not done: the theorem that `Annot` and a code table whose entries satisfy it
-make `nommF` agree with `minkF` (both directions, by induction on fuel, with
-the cases of `%8` and `%9` inverted one level), and a model of the analysis.
+`NommAgree.lean` proves that `Annot` and `CodeOK` make `nommF` agree with
+`minkF`.
 -/
 
 namespace Formalization
@@ -138,9 +142,10 @@ def Img (lib : Lib) (P : Noun → Prop) (b : Noun) : Noun → Prop :=
 def Img8 (lib : Lib) (P : Noun → Prop) (b : Noun) : Noun → Prop :=
   fun z => ∃ x y gul, P x ∧ Mink lib gul [] x b (Tone.zero y) ∧ z = C y x
 
-/-- `+mink` crashes at once on `f`, before it runs any part of it. -/
+/-- `+mink` crashes on `f` with the trace as it is, on every subject: an atom,
+or a formula whose first operand is no formula. -/
 def CrashesAtOnce (lib : Lib) (f : Noun) : Prop :=
-  ∀ gul go t s, minkStep lib gul go t s f = some (Tone.two t)
+  ∀ gul t s, Mink lib gul t s f (Tone.two t)
 
 /-- **The invariant of nomm.**  `Annot lib code P f n`: the nomm `n` stands
 for the formula `f` on the subjects of `P`, with the callees' nomms in
@@ -153,10 +158,10 @@ inductive Annot (lib : Lib) (code : Bell → Option Nomm) : (Noun → Prop) → 
   /-- An indirect call. -/
   | indirect {P b c p q} : Annot lib code P b p → Annot lib code P c q →
       Annot lib code P (n3 (A 2) b c) (Nomm.n2 p q none)
-  /-- A direct call of the bell `bl`, whose nomm in the table stands for its
-  formula on its sock. -/
+  /-- A direct call of the bell `bl`, which has a nomm in the table (`CodeOK`
+  says what it is). -/
   | direct {P b c p q bl k nb} : Annot lib code P b p → Annot lib code P c q →
-      code bl = some nb → Annot lib code (Fits bl.less) bl.fol nb →
+      code bl = some nb →
       (∀ x gul y, P x → Mink lib gul [] x b (Tone.zero y) → Fits bl.less y) →
       (∀ x gul g, P x → Mink lib gul [] x c (Tone.zero g) → g = bl.fol) →
       Annot lib code P (n3 (A 2) b c) (Nomm.n2 p q (some (bl, k)))
@@ -194,6 +199,10 @@ inductive Annot (lib : Lib) (code : Bell → Option Nomm) : (Noun → Prop) → 
   /-- The default case of `fol-loop`: a crash, for formulas on which `+mink`
   crashes at once. -/
   | crash {P f} : CrashesAtOnce lib f → Annot lib code P f (Nomm.n0 0)
+
+/-- Every nomm of the table stands for its bell's formula on the bell's sock. -/
+def CodeOK (lib : Lib) (code : Bell → Option Nomm) : Prop :=
+  ∀ bl nb, code bl = some nb → Annot lib code (Fits bl.less) bl.fol nb
 
 end SkaModel
 end Formalization
