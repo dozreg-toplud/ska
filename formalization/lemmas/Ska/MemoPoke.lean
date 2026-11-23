@@ -69,7 +69,8 @@ theorem wf_hit {lib : Lib} {code : Bell → Option Nomm} {Mem : Entry → Prop} 
 /-- **What the final graph of a poke gives, with memo hits**: every entry was
 written by a run whose answers come from the graph, or is a memo hit. -/
 def ConvergedGraphM (lib : Lib) (code : Bell → Option Nomm) (Mem G : Entry → Prop) : Prop :=
-  ∀ e, G e → RunEntryR (AnswersS G) e ∨ HitEntry lib code Mem e
+  ∀ e, G e → (∃ P : Sock → Noun → TabEntry → Prop, (∀ s f a, P s f a → Answers G s f a) ∧ RunEntryR P e) ∨
+    HitEntry lib code Mem e
 
 theorem ConvergedGraphR.toM {lib : Lib} {code : Bell → Option Nomm} {Mem G : Entry → Prop}
     (h : ConvergedGraphR G) : ConvergedGraphM lib code Mem G := fun e he => Or.inl (h e he)
@@ -81,7 +82,7 @@ variable {lib : Lib} {code : Bell → Option Nomm} {Mem G : Entry → Prop}
 theorem lessRel_of_graphM (hG : ConvergedGraphM lib code Mem G) : LessRel G := by
   intro e lc dl he hl y hy
   rcases hG e he with hr | hh
-  · obtain ⟨_, _, gen', _, _, _, _, hle, _⟩ := hr
+  · obtain ⟨_, _, _, _, gen', _, _, _, _, hle, _⟩ := hr
     rw [hle] at hl ⊢
     exact app_cape_fits gen'.want e.more lc dl (some y) hl hy
   · exact lessRel_hit hh lc dl hl y hy
@@ -95,11 +96,11 @@ theorem prodRelN_of_graphM (hG : ConvergedGraphM lib code Mem G)
   | succ K ih =>
     intro e he y gul p hy hm
     rcases hG e he with hr | hh
-    · obtain ⟨n, out, gen', moved, old, h, _, hl, hpm⟩ := hr
+    · obtain ⟨P, hPA, n, out, gen', moved, old, h, _, hl, hpm⟩ := hr
       rw [hl] at hy
       have R := mergeProd_rel moved out.prod old
-        (folTopR_relProdN (fun tab ht => rtabL_of_answers hL (answers_of_S ht))
-          (fun tab ht => rtabP_of_answers ih (answers_of_S ht)) (hwf e he) h hy hm)
+        (folTopR_relProdN (fun tab ht => rtabL_of_answers hL (fun s f a h => hPA _ _ _ (ht s f a h)))
+          (fun tab ht => rtabP_of_answers ih (fun s f a h => hPA _ _ _ (ht s f a h))) (hwf e he) h hy hm)
       rw [← hpm] at R
       exact R
     · exact prodRel_hit hh y gul p hy ⟨K + 1, hm⟩
@@ -117,9 +118,10 @@ theorem annot_of_graphM (hG : ConvergedGraphM lib code Mem G) (hhas : CodeHas co
   have hL := lessRel_of_graphM hG
   have hP := prodRel_of_graphM hG hwf
   rcases hG e he with hr | hh
-  · obtain ⟨n, out, gen', _, _, h, hn, hl, _⟩ := hr
+  · obtain ⟨P, hPA, n, out, gen', _, _, h, hn, hl, _⟩ := hr
     rw [hn, hl]
-    exact folTopR_wantSound (fun tab ht => rtab_of_answers hL hP hhas (answers_of_S ht)) (hwf e he) h
+    exact folTopR_wantSound (fun tab ht => rtab_of_answers hL hP hhas (fun s f a h => hPA _ _ _ (ht s f a h)))
+      (hwf e he) h
   · obtain ⟨m, _, hm, _, _, hf, hd⟩ := hh
     rw [hd, hf]
     exact hm.annot

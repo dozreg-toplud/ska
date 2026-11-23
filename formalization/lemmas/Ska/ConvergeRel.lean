@@ -26,8 +26,13 @@ def RunEntryR (P : Sock → Noun → TabEntry → Prop) (e : Entry) : Prop :=
     (⟨e.d.prod, e.d.map⟩ : Anno) = mergeProd moved out.prod old
 
 /-- **What the final graph gives**, with runs whose answers change: every
-entry of `G` was written by a run whose every answer comes from `G`. -/
-def ConvergedGraphR (G : Entry → Prop) : Prop := ∀ e, G e → RunEntryR (AnswersS G) e
+entry of `G` was written by a run whose every answer comes from `G`
+(`Answers G`: an entry of `G`, a hit of one patched for the call, or a
+generalization of the call's subject sock by `+msg-sock`, against any sock:
+the partner of a `%he` generalization is a function on the stack, which a
+later `+cull` can drop while the caller stays). -/
+def ConvergedGraphR (G : Entry → Prop) : Prop :=
+  ∀ e, G e → ∃ P : Sock → Noun → TabEntry → Prop, (∀ s f a, P s f a → Answers G s f a) ∧ RunEntryR P e
 
 theorem RunEntryM.toR {P : Sock → Noun → TabEntry → Prop} {tab : Tab} {e : Entry}
     (ht : TabIn P tab) (h : RunEntryM tab e) : RunEntryR P e := by
@@ -38,11 +43,11 @@ theorem RunEntryM.toR {P : Sock → Noun → TabEntry → Prop} {tab : Tab} {e :
 theorem ConvergedGraph.toR {G : Entry → Prop} (h : ConvergedGraph G) : ConvergedGraphR G := by
   intro e he
   obtain ⟨tab, hans, hm⟩ := h e he
-  exact hm.toR hans
+  exact ⟨_, fun s f a h => AnswersS.toAnswers h, hm.toR hans⟩
 
 theorem lessRel_of_graphR {G : Entry → Prop} (hG : ConvergedGraphR G) : LessRel G := by
   intro e lc dl he hl y hy
-  obtain ⟨_, _, gen', _, _, _, _, hle, _⟩ := hG e he
+  obtain ⟨_, _, _, _, gen', _, _, _, _, hle, _⟩ := hG e he
   rw [hle] at hl ⊢
   exact app_cape_fits gen'.want e.more lc dl (some y) hl hy
 
@@ -54,11 +59,11 @@ theorem prodRelN_of_graphR {lib : Lib} {G : Entry → Prop} (hG : ConvergedGraph
   | zero => intro e _ y gul p _ hm; simp [minkF] at hm
   | succ K ih =>
     intro e he y gul p hy hm
-    obtain ⟨n, out, gen', moved, old, h, _, hl, hpm⟩ := hG e he
+    obtain ⟨P, hPA, n, out, gen', moved, old, h, _, hl, hpm⟩ := hG e he
     rw [hl] at hy
     have R := mergeProd_rel moved out.prod old
-      (folTopR_relProdN (fun tab ht => rtabL_of_answers hL (answers_of_S ht))
-        (fun tab ht => rtabP_of_answers ih (answers_of_S ht)) (hwf e he) h hy hm)
+      (folTopR_relProdN (fun tab ht => rtabL_of_answers hL (fun s f a h => hPA _ _ _ (ht s f a h)))
+        (fun tab ht => rtabP_of_answers ih (fun s f a h => hPA _ _ _ (ht s f a h))) (hwf e he) h hy hm)
     rw [← hpm] at R
     exact R
 
@@ -74,9 +79,10 @@ theorem codeOK_of_graphR {lib : Lib} {code : Bell → Option Nomm} {G : Entry �
   have hL := lessRel_of_graphR hG
   have hP := prodRel_of_graphR (lib := lib) hG hwf
   refine codeOK_of_entries hc fun e he => ?_
-  obtain ⟨n, out, gen', _, _, h, hn, hl, _⟩ := hG e he
+  obtain ⟨P, hPA, n, out, gen', _, _, h, hn, hl, _⟩ := hG e he
   rw [hn, hl]
-  exact folTopR_wantSound (fun tab ht => rtab_of_answers hL hP hhas (answers_of_S ht)) (hwf e he) h
+  exact folTopR_wantSound (fun tab ht => rtab_of_answers hL hP hhas (fun s f a h => hPA _ _ _ (ht s f a h)))
+    (hwf e he) h
 
 /-- **Agreement from the final graph, with runs whose answers change.** -/
 theorem agree_converged_graphR {lib : Lib} {code : Bell → Option Nomm} {G : Entry → Prop}
@@ -85,13 +91,14 @@ theorem agree_converged_graphR {lib : Lib} {code : Bell → Option Nomm} {G : En
     (gul : Noun) (t : Trace) (r : Tone) :
     Mink lib gul t x e.fol r ↔ ∃ m, nommF lib gul code m t x e.d.nomm = some r := by
   have hok := codeOK_of_graphR (lib := lib) hG hc hhas hwf
-  obtain ⟨n, out, gen', _, _, h, hn, hl, _⟩ := hG e he
+  obtain ⟨P, hPA, n, out, gen', _, _, h, hn, hl, _⟩ := hG e he
   have hL := lessRel_of_graphR hG
   have hP := prodRel_of_graphR (lib := lib) hG hwf
   rw [hl] at hx
   rw [hn]
   exact nomm_agree lib gul code hok
-    (folTopR_wantSound (fun tab ht => rtab_of_answers hL hP hhas (answers_of_S ht)) (hwf e he) h) hx t r
+    (folTopR_wantSound (fun tab ht => rtab_of_answers hL hP hhas (fun s f a h => hPA _ _ _ (ht s f a h)))
+      (hwf e he) h) hx t r
 
 /-! ## The writes, with runs whose answers change -/
 
