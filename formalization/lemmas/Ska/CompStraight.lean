@@ -280,6 +280,246 @@ theorem execPole_ren (hi : Inj ren) (lib : Lib) {σ : Type} (O : Oracle σ) (gul
 
 end Ren
 
+/-! ## Blocks under the renaming and the chasing -/
+
+/-- The jumps of a terminator. -/
+def finJumps : Termin → List Jmp
+  | Termin.clq _ z o => [z, o]
+  | Termin.eqq _ _ z o => [z, o]
+  | Termin.brn _ z o => [z, o]
+  | Termin.brz _ z o => [z, o]
+  | Termin.lti _ _ z o => [z, o]
+  | Termin.hop t => [t]
+  | _ => []
+
+/-- Every block is at a label of at least `1`, and jumps only to labels of
+at least `1` below its own. -/
+def Down (bl : Map Blob) : Prop :=
+  ∀ k b, HoonMap.get bl k = some b → 1 ≤ k ∧ ∀ j ∈ finJumps b.fin, 1 ≤ j.there ∧ j.there < k
+
+/-- A block renamed, with the terminator `fin`. -/
+def renB (ren : Nat → Nat) (b : Blob) (fin : Termin) : Blob :=
+  ⟨b.par.map ren, b.body.map (renPole ren), fin⟩
+
+/-- `c'` is `c` renamed and chased: `bs` is the map `+chase` reads (the
+blocks of `c` with the one at `o` moved to `0`), and each block of `c` at a
+label other than `o` that is not bypassed is in `c'`, renamed, with its
+terminator chased. -/
+structure Sim (c c' : Straight Map) (bs : Map Blob) (ren : Nat → Nat) (o : Nat) : Prop where
+  inj : Inj ren
+  down : Down c.blocks
+  bs_eq : ∀ k, k ≠ 0 → k ≠ o → HoonMap.get bs k = HoonMap.get c.blocks k
+  bs_o : HoonMap.get bs o = Option.none
+  kept : ∀ k b, HoonMap.get c.blocks k = some b → k ≠ o → bypassable true b = false →
+    ∃ fin', chaseFin bs ren b.fin = some fin' ∧ HoonMap.get c'.blocks k = some (renB ren b fin')
+
+theorem bypassable_shape {br : Bool} {b : Blob} (h : bypassable br b = true) :
+    ∃ t, b = ⟨[], [], Termin.hop t⟩ := by
+  rcases b with ⟨par, body, fin⟩
+  cases par <;> cases body <;> cases fin <;> simp [bypassable] at h ⊢
+
+theorem bypassable_false {br : Bool} {b : Blob} (h : bypassable br b = false) : bypassable true b = false := by
+  rcases b with ⟨par, body, fin⟩
+  cases br
+  · cases par <;> cases body <;> cases fin <;> simp_all [bypassable]
+  · exact h
+
+section Chase
+variable {c c' : Straight Map} {bs : Map Blob} {ren : Nat → Nat} {o : Nat}
+
+theorem chase_spec (hs : Sim c c' bs ren o) (lib : Lib) {σ : Type} (O : Oracle σ) (gul : Noun) :
+    ∀ n (j : Jmp) (br : Bool) (j' : Jmp), j.there < n → 1 ≤ j.there → chase bs br j = some j' →
+    (∀ st (R : Map Noun) t, goJ lib O c gul st R t j = goJ lib O c gul st R t j') ∧ j'.there ≤ j.there ∧
+      j'.there ≠ o ∧ ∃ b', HoonMap.get c.blocks j'.there = some b' ∧ bypassable br b' = false
+  | 0, _, _, _, hn, _, _ => absurd hn (Nat.not_lt_zero _)
+  | n + 1, j, br, j', hn, h1, hc => by
+    rw [chase] at hc
+    have ho : j.there ≠ o := fun e => by rw [e, hs.bs_o] at hc; simp at hc
+    rw [hs.bs_eq _ (by omega) ho] at hc
+    cases hb : HoonMap.get c.blocks j.there with
+    | none => rw [hb] at hc; simp at hc
+    | some b =>
+      rw [hb] at hc
+      simp only [Option.bind_eq_bind, Option.bind_some] at hc
+      split at hc
+      · rename_i t heq
+        by_cases hby : bypassable br b = true
+        · rw [if_pos hby] at hc
+          by_cases ha : j.args = []
+          · rw [if_pos ha] at hc
+            have hd := (hs.down _ _ hb).2 t (by simp [finJumps, heq])
+            obtain ⟨hgo, hle, hno, b', hb', hby'⟩ := chase_spec hs lib O gul n t br j' (by omega) hd.1 hc
+            obtain ⟨t', rfl⟩ := bypassable_shape hby
+            simp only [Termin.hop.injEq] at heq
+            subst heq
+            refine ⟨fun st R tr => ?_, by omega, hno, b', hb', hby'⟩
+            rw [← hgo]
+            simp only [goJ, hb, Option.bind_some, ha]
+            exact execBlob_hop _ _ _
+          · rw [if_neg ha] at hc; simp at hc
+        · rw [if_neg hby] at hc
+          cases hc
+          exact ⟨fun _ _ _ => rfl, Nat.le_refl _, ho, b, hb, by simpa using hby⟩
+      · cases hc
+        refine ⟨fun _ _ _ => rfl, Nat.le_refl _, ho, b, hb, ?_⟩
+        rename_i hne
+        rcases b with ⟨par, body, fin⟩
+        cases par <;> cases body <;> cases fin <;> simp_all [bypassable]
+
+/-- The jumps of a terminator go, on related registers, where their chased
+renamed jumps go in `c'`. -/
+def JGo (lib : Lib) {σ : Type} (O : Oracle σ) (c c' : Straight Map) (gul : Noun) (bs : Map Blob)
+    (ren : Nat → Nat) (fin : Termin) : Prop :=
+  ∀ j ∈ finJumps fin, ∀ br j', chase bs br j = some j' → ∀ st (R R' : Map Noun) t, RenRel ren R R' →
+    goJ lib O c gul st R t j = goJ lib O c' gul st R' t (renJmp ren j')
+
+theorem fin_sim {lib : Lib} {σ : Type} {O : Oracle σ} {gul : Noun} {fin fin' : Termin}
+    (hc : chaseFin bs ren fin = some fin') (hj : JGo lib O c c' gul bs ren fin) (st : σ) {R R' : Map Noun}
+    (t : Trace) (h : RenRel ren R R') :
+    execBlob lib O c gul st R t ⟨[], [], fin⟩ [] = execBlob lib O c' gul st R' t ⟨[], [], fin'⟩ [] := by
+  cases fin with
+  | clq s z o =>
+    simp only [chaseFin, Option.bind_eq_some_iff, Option.some.injEq] at hc
+    obtain ⟨z', hz, o', ho, rfl⟩ := hc
+    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h s]
+    cases SkaModel.read s R with
+    | none => rfl
+    | some v =>
+      cases v
+      · exact hj o (by simp [finJumps]) true o' ho st R R' t h
+      · exact hj z (by simp [finJumps]) true z' hz st R R' t h
+  | eqq l r z o =>
+    simp only [chaseFin, Option.bind_eq_some_iff, Option.some.injEq] at hc
+    obtain ⟨z', hz, o', ho, rfl⟩ := hc
+    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h l, h r]
+    cases SkaModel.read l R with
+    | none => rfl
+    | some x =>
+      cases SkaModel.read r R with
+      | none => rfl
+      | some y =>
+        by_cases e : x = y
+        · simp only [Option.bind_eq_bind, Option.bind_some, if_pos e]
+          exact hj z (by simp [finJumps]) true z' hz st R R' t h
+        · simp only [Option.bind_eq_bind, Option.bind_some, if_neg e]
+          exact hj o (by simp [finJumps]) true o' ho st R R' t h
+  | brn s z o =>
+    simp only [chaseFin, Option.bind_eq_some_iff, Option.some.injEq] at hc
+    obtain ⟨z', hz, o', ho, rfl⟩ := hc
+    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h s]
+    cases SkaModel.read s R with
+    | none => rfl
+    | some v =>
+      simp only [Option.bind_eq_bind, Option.bind_some]
+      by_cases e0 : v = A 0
+      · simp only [if_pos e0]; exact hj z (by simp [finJumps]) true z' hz st R R' t h
+      · by_cases e1 : v = A 1
+        · simp only [if_neg e0, if_pos e1]; exact hj o (by simp [finJumps]) true o' ho st R R' t h
+        · simp only [if_neg e0, if_neg e1]
+  | brz s z o =>
+    simp only [chaseFin, Option.bind_eq_some_iff, Option.some.injEq] at hc
+    obtain ⟨z', hz, o', ho, rfl⟩ := hc
+    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h s]
+    cases SkaModel.read s R with
+    | none => rfl
+    | some v =>
+      simp only [Option.bind_eq_bind, Option.bind_some]
+      by_cases e0 : v = A 0
+      · simp only [if_pos e0]; exact hj z (by simp [finJumps]) true z' hz st R R' t h
+      · simp only [if_neg e0]; exact hj o (by simp [finJumps]) true o' ho st R R' t h
+  | hop j =>
+    simp only [chaseFin, Option.bind_eq_some_iff, Option.some.injEq] at hc
+    obtain ⟨j', hj', rfl⟩ := hc
+    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false]
+    exact hj j (by simp [finJumps]) false j' hj' st R R' t h
+  | jmp a v =>
+    simp only [chaseFin, Option.some.injEq] at hc; subst hc
+    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h.mapM v]
+  | jmf a v n =>
+    simp only [chaseFin, Option.some.injEq] at hc; subst hc
+    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h.mapM v]
+  | jsp a s =>
+    simp only [chaseFin, Option.some.injEq] at hc; subst hc
+    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h s]
+  | jsf a s n =>
+    simp only [chaseFin, Option.some.injEq] at hc; subst hc
+    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h s]
+  | don s =>
+    simp only [chaseFin, Option.some.injEq] at hc; subst hc
+    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h s]
+  | bom m =>
+    cases m with
+    | none =>
+      simp only [chaseFin, Option.some.injEq] at hc; subst hc
+      rw [execBlob, execBlob]; simp
+    | some x =>
+      simp only [chaseFin, Option.bind_eq_some_iff, Option.some.injEq] at hc
+      obtain ⟨j, _, rfl⟩ := hc
+      rw [execBlob, execBlob]; simp
+  | lti n s z o => simp [chaseFin] at hc
+
+theorem body_sim {lib : Lib} {σ : Type} {O : Oracle σ} {gul : Noun} (hi : Inj ren) {fin fin' : Termin}
+    (hf : ∀ (st : σ) (R R' : Map Noun) t, RenRel ren R R' →
+      execBlob lib O c gul st R t ⟨[], [], fin⟩ [] = execBlob lib O c' gul st R' t ⟨[], [], fin'⟩ []) :
+    ∀ (body : List Pole) (st : σ) (R R' : Map Noun) t, RenRel ren R R' →
+      execBlob lib O c gul st R t ⟨[], body, fin⟩ [] =
+        execBlob lib O c' gul st R' t ⟨[], body.map (renPole ren), fin'⟩ []
+  | [], st, R, R', t, h => hf st R R' t h
+  | p :: rest, st, R, R', t, h => by
+    rw [execBlob_cons, List.map_cons, execBlob_cons]
+    have := execPole_ren hi lib O gul st p t h
+    revert this
+    cases execPole lib O gul st p R t <;> cases execPole lib O gul st (renPole ren p) R' t <;>
+      simp only [PRel, Option.bind_none, Option.bind_some, imp_self, false_implies]
+    rename_i a b
+    obtain ⟨ton, R1, t1, st1⟩ := a
+    obtain ⟨ton', R1', t1', st1'⟩ := b
+    rintro ⟨rfl, rfl, rfl, hR⟩
+    cases ton
+    · exact body_sim hi hf rest _ _ _ _ hR
+    · rfl
+    · rfl
+
+/-- **A block and its renamed, chased copy do the same.** -/
+theorem sim_block (hs : Sim c c' bs ren o) (lib : Lib) {σ : Type} (O : Oracle σ) (gul : Noun) :
+    ∀ k b, HoonMap.get c.blocks k = some b → ∀ fin', chaseFin bs ren b.fin = some fin' →
+    ∀ (st : σ) (R R' : Map Noun) t (params : List (Option Nat)), RenRel ren R R' →
+    execBlob lib O c gul st R t b params =
+      execBlob lib O c' gul st R' t (renB ren b fin') (params.map (Option.map ren)) := by
+  intro k
+  induction k using Nat.strongRecOn with
+  | ind k ih =>
+    intro b hb fin' hf st R R' t params h
+    have hj : JGo lib O c c' gul bs ren b.fin := by
+      intro j hjm br j' hc st R R' t h
+      have hd := (hs.down k b hb).2 j hjm
+      obtain ⟨hgo, hle, hno, b', hb', hby⟩ :=
+        chase_spec hs lib O gul (j.there + 1) j br j' (Nat.lt_succ_self _) hd.1 hc
+      rw [hgo]
+      obtain ⟨fin2, hf2, hc2⟩ := hs.kept _ _ hb' hno (bypassable_false hby)
+      simp only [goJ, hb', hc2, Option.bind_some, renJmp]
+      exact ih j'.there (by omega) b' hb' fin2 hf2 st R R' t j'.args h
+    have hbody := body_sim (lib := lib) (O := O) (gul := gul) hs.inj
+      (fun st R R' t h => fin_sim hf hj st t h)
+    rcases b with ⟨par, body, fin⟩
+    by_cases hp : params ≠ [] ∨ par ≠ []
+    · have hp' : params.map (Option.map ren) ≠ [] ∨ par.map ren ≠ [] := by
+        simpa [List.map_eq_nil_iff] using hp
+      rw [execBlob, execBlob]
+      simp only [renB] at hp' ⊢
+      simp only [hp, hp', ↓reduceIte]
+      have := evalPass_ren hs.inj params par h
+      revert this
+      cases evalPass params par R <;> cases evalPass (params.map (Option.map ren)) (par.map ren) R' <;>
+        simp only [ORel, Option.bind_eq_bind, Option.bind_none, Option.bind_some, imp_self, false_implies]
+      intro hR
+      exact hbody body st _ _ t hR
+    · simp only [not_or, ne_eq, Decidable.not_not] at hp
+      obtain ⟨rfl, rfl⟩ := hp
+      exact hbody body st R R' t h
+
+end Chase
+
 end Comp
 end SkaModel
 end Formalization
