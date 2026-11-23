@@ -25,6 +25,7 @@ import lemmas.Ska.MemoPoke
 import lemmas.Ska.SockNorm
 import lemmas.Ska.ConvAna
 import lemmas.Ska.PokeConv
+import lemmas.Ska.FolNorm
 
 /-! The axioms of the main theorems of `lemmas/Ska`.  `lake build` prints
 them; each should be `propext`, `Classical.choice` and `Quot.sound` at most. -/
@@ -233,3 +234,4 @@ open Formalization.SkaModel
 #print axioms Ana.skaCallgraph_prunedM
 #print axioms Ana.skaPoke_sound
 #print axioms Ana.PokeInv.agree
+#print axioms folR_norm

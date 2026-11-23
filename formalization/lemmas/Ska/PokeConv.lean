@@ -173,17 +173,21 @@ theorem pokeMemo_spec (pruned : Callgraph M) (memo : Memo M) :
 /-- **The pruned entries are converged among themselves**: the frozen entries
 of pruned identities form a `ConvergedGraphM` (their answers come from their
 callees, which the pruned graph holds), for a memo whose entries are sound
-for `code` and a root whose subject sock is not `%void`. -/
+for `code` and a root whose subject sock is not `%void`.  The pruned
+identities, code requirements and products have normal capes, for a root and
+memo entries that have. -/
 theorem skaCallgraph_prunedM {lib : Lib} {code : Bell → Option Nomm} (env : Env R) (memoF : Memo M)
-    (hmF : MemoWF memoF) (hkey : MemoKeys memoF) (hok : ∀ m, MemEnt memoF m → MemoEntryOK lib code m)
+    (hmF : MemoWF memoF) (hmN : MemoNorm memoF) (hkey : MemoKeys memoF)
+    (hok : ∀ m, MemEnt memoF m → MemoEntryOK lib code m)
     {n n' : Nat} {root : Ident} {reg reg' : R} {g pruned : Callgraph M} (hw : WellFormed root.1)
-    (hnvr : root.1 ≠ Sock.void) (h : skaCallgraph env n root memoF reg = some (g, reg'))
+    (hnr : NormSock root.1) (hnvr : root.1 ≠ Sock.void) (h : skaCallgraph env n root memoF reg = some (g, reg'))
     (hp : pruneCallgraph n' g root = some pruned) :
     ∃ G : Entry → Prop, ConvergedGraphM lib code (MemEnt memoF) G ∧
       (∀ i d, Treap.get pruned i = some d → G (entOf i d)) ∧
       (∀ e, G e → ∃ d, Treap.get pruned (e.more, e.fol) = some d ∧ e.d.less = d.less) ∧
-      (∀ e, G e → WellFormed e.more ∧ WellFormed e.d.prod) := by
-  obtain ⟨F, hok', hcov, hsub, hwfp, hs, hnv⟩ := skaCallgraph_frozen env memoF hmF hw hnvr h
+      (∀ e, G e → WellFormed e.more ∧ WellFormed e.d.prod) ∧
+      (∀ i d, Treap.get pruned i = some d → NormSock i.1 ∧ NormSock d.less ∧ NormSock d.prod) := by
+  obtain ⟨F, hok', hcov, hsub, hwfp, hs, hnv, hnorm⟩ := skaCallgraph_frozen env memoF hmF hmN hw hnr hnvr h
   obtain ⟨psub, _, pcl⟩ := pruneCallgraph_spec hp
   have hgw := graphWF_stepsR hs graphWF_empty
   let G : Entry → Prop := fun e => F e ∧ Treap.has pruned (e.more, e.fol) = true
@@ -194,7 +198,7 @@ theorem skaCallgraph_prunedM {lib : Lib} {code : Bell → Option Nomm} (env : En
     rw [psub _ _ hd] at hd'; cases hd'
     exact ⟨d, hd, hl⟩
   refine ⟨G, fun e he => ?_, fun i d hd => ⟨hcov i d (psub i d hd), (Treap.has_iff _ _).mpr ⟨d, hd⟩⟩, hGp,
-    fun e he => ?_⟩
+    fun e he => ?_, fun i d hd => hnorm i d (psub i d hd)⟩
   · obtain ⟨d, hd, _⟩ := hGp e he
     rcases hok' e he.1 with ⟨P, hP, hr⟩ | hm
     · refine Or.inl ⟨P, fun s f a hp => answers_mono (fun e' he' => ⟨he'.1, ?_⟩) (hP s f a hp), hr⟩
@@ -224,24 +228,33 @@ structure PokeInv (lib : Lib) (memo : Memo M) (code : Bell → Option Nomm) : Pr
   keys : MemoKeys memo
   bells : ∀ m, MemEnt memo m → ∃ nb, code ⟨m.d.less, m.fol⟩ = some nb
   ok : ∀ m, MemEnt memo m → MemoEntryOK lib code m
-  code : CodeOK lib code
+  codeOK : CodeOK lib code
+  /-- The memo's code requirements and products have normal capes. -/
+  norm : ∀ m, MemEnt memo m → NormSock m.d.less ∧ NormSock m.d.prod
+  /-- Every bell of the table has a normal cape. -/
+  bellNorm : ∀ bl nb, code bl = some nb → NormSock bl.less
 
 theorem PokeInv.wf {lib : Lib} {memo : Memo M} {code : Bell → Option Nomm} (h : PokeInv lib memo code) :
     MemoWF memo := fun f ms s e h1 h2 => (h.ok _ ⟨f, ms, s, e, h1, h2, rfl⟩).wf
+
+theorem PokeInv.memoNorm {lib : Lib} {memo : Memo M} {code : Bell → Option Nomm} (h : PokeInv lib memo code) :
+    MemoNorm memo := fun f ms s e h1 h2 => h.norm _ ⟨f, ms, s, e, h1, h2, rfl⟩
 
 /-- **Every bell of a table that satisfies `PokeInv` agrees with `+mink`** on
 every subject that fits it. -/
 theorem PokeInv.agree {lib : Lib} {memo : Memo M} {code : Bell → Option Nomm} (h : PokeInv lib memo code)
     {bl : Bell} {nb : Nomm} (hb : code bl = some nb) {x : Noun} (hx : Fits bl.less x) (gul : Noun) (t : Trace)
     (r : Tone) : Mink lib gul t x bl.fol r ↔ ∃ m, nommF lib gul code m t x nb = some r :=
-  nomm_agree lib gul code h.code (h.code bl nb hb) hx t r
+  nomm_agree lib gul code h.codeOK (h.codeOK bl nb hb) hx t r
 
 /-- Before the first poke: an empty memo and an empty table. -/
 theorem PokeInv.init (lib : Lib) : PokeInv lib (Treap.empty : Memo M) (fun _ => none) where
   keys := fun f ms s ent h _ => by simp [Treap.get_empty] at h
   bells := fun _ ⟨_, _, _, _, h, _⟩ => by simp [Treap.get_empty] at h
   ok := fun _ ⟨_, _, _, _, h, _⟩ => by simp [Treap.get_empty] at h
-  code := fun _ _ h => by cases h
+  codeOK := fun _ _ h => by cases h
+  norm := fun _ ⟨_, _, _, _, h, _⟩ => by simp [Treap.get_empty] at h
+  bellNorm := fun _ _ h => by cases h
 
 theorem _root_.Formalization.SkaModel.MemoEntryOK.mono_code {lib : Lib} {code code' : Bell → Option Nomm}
     (hcc : ∀ bl nb, code bl = some nb → ∃ nb', code' bl = some nb') {m : Entry} (h : MemoEntryOK lib code m) :
@@ -261,15 +274,18 @@ theorem extendCode_has {code : Bell → Option Nomm} {dats : M Bell (FDatum M)} 
 a root with a well-formed subject sock and from a memo and code table that
 satisfy `PokeInv`, then every bell of the poke's datums `dats` agrees with
 `+mink` on every subject that fits it, run with the code table of the earlier
-pokes extended by `dats`, and `PokeInv` holds of the new memo and that table.
+pokes extended by `dats`, and `PokeInv` holds of the new memo and that table
+(so every bell of that table has a normal cape, as the compilation of a bell
+assumes).
 
 Termination is not part of this: `Ana.skaPoke` is fuelled, and the statement
 is about every fuel that is enough for it to return (`some`).  The root's
-subject sock is well formed and not `%void` (the root of `+ska-poke` is
-`[bus fol]` with `bus` from the caller, `&+sub` for a whole subject). -/
+subject sock is well formed, normal and not `%void` (the root of
+`+ska-poke` is `[bus fol]` with `bus` from the caller, `&+sub` for a whole
+subject, which is all three). -/
 theorem skaPoke_sound {lib : Lib} (env : Env R) {n : Nat} {root : Ident} {memo memo' : Memo M} {reg reg' : R}
     {code : Bell → Option Nomm} {pruned : Callgraph M} {dats : M Bell (FDatum M)} {rd : FDatum M}
-    (hinv : PokeInv lib memo code) (hw : WellFormed root.1) (hnvr : root.1 ≠ Sock.void)
+    (hinv : PokeInv lib memo code) (hw : WellFormed root.1) (hnr : NormSock root.1) (hnvr : root.1 ≠ Sock.void)
     (h : skaPoke env n root memo reg = some (pruned, dats, memo', rd, reg')) :
     PokeInv lib memo' (extendCode code dats) ∧
     ∀ bl d, Treap.get dats bl = some d → ∀ x, Fits bl.less x → ∀ gul t r,
@@ -284,8 +300,8 @@ theorem skaPoke_sound {lib : Lib} (env : Env R) {n : Nat} {root : Ident} {memo m
   have hcc : ∀ bl nb, code bl = some nb → ∃ nb', code' bl = some nb' := by
     rw [← hcd]; exact extendCode_has
   have hok' : ∀ m, MemEnt memo m → MemoEntryOK lib code' m := fun m hm => (hinv.ok m hm).mono_code hcc
-  obtain ⟨G, hG, hcovP, hGp, hwfG⟩ := skaCallgraph_prunedM (lib := lib) (code := code') env memo hinv.wf hinv.keys
-    hok' hw hnvr hg hpr
+  obtain ⟨G, hG, hcovP, hGp, hwfG, hnP⟩ := skaCallgraph_prunedM (lib := lib) (code := code') env memo hinv.wf
+    hinv.memoNorm hinv.keys hok' hw hnr hnvr hg hpr
   obtain ⟨d1, d2, d3⟩ := pokeMemo_spec pr memo
   have hdat : ∀ i d, Treap.get pr i = some d → ∃ nb, code' ⟨d.less, i.2⟩ = some nb := by
     intro i d hd
@@ -311,11 +327,12 @@ theorem skaPoke_sound {lib : Lib} (env : Env R) {n : Nat} {root : Ident} {memo m
     split at hb'
     · rename_i nb0 hc0
       cases hb'
-      exact (hinv.code bl _ hc0).mono_code hcc
+      exact (hinv.codeOK bl _ hc0).mono_code hcc
     · obtain ⟨d, hd, rfl⟩ := Option.map_eq_some_iff.mp hb'
       obtain ⟨i, hi, rfl⟩ := d1 bl d hd
       exact annot_of_graphM hG hhas hwf1 (hcovP i d hi)
-  refine ⟨⟨fun f ms s ent h1 h2 => ?_, fun m hm => ?_, fun m hm => ?_, hcode⟩, ?_⟩
+  refine ⟨⟨fun f ms s ent h1 h2 => ?_, fun m hm => ?_, fun m hm => ?_, hcode, fun m hm => ?_,
+    fun bl nb hb => ?_⟩, ?_⟩
   · rcases d3 f ms s ent h1 h2 with ⟨ms', e1, e2⟩ | ⟨i, d, _, rfl, rfl⟩
     · exact hinv.keys f ms' s ent e1 e2
     · rfl
@@ -328,6 +345,18 @@ theorem skaPoke_sound {lib : Lib} (env : Env R) {n : Nat} {root : Ident} {memo m
     rcases d3 f ms s ent h1 h2 with ⟨ms', e1, e2⟩ | ⟨i, d, hd, rfl, rfl⟩
     · exact hok' _ ⟨f, ms', s, ent, e1, e2, rfl⟩
     · exact memoEntryOK_final hG hhas hwfG (hcovP i d hd) (fun bl nb h => ⟨nb, h⟩)
+  · obtain ⟨f, ms, s, ent, h1, h2, rfl⟩ := hm
+    rcases d3 f ms s ent h1 h2 with ⟨ms', e1, e2⟩ | ⟨i, d, hd, rfl, rfl⟩
+    · exact hinv.norm _ ⟨f, ms', s, ent, e1, e2, rfl⟩
+    · exact ⟨(hnP i d hd).2.1, (hnP i d hd).2.2⟩
+  · rw [← hcd] at hb
+    unfold extendCode at hb
+    split at hb
+    · rename_i nb0 hc0
+      exact hinv.bellNorm bl _ hc0
+    · obtain ⟨d, hd, rfl⟩ := Option.map_eq_some_iff.mp hb
+      obtain ⟨i, hi, rfl⟩ := d1 bl d hd
+      exact (hnP i d hi).2.1
   · intro bl d hd x hx gul t r
     obtain ⟨i, hi, rfl⟩ := d1 bl d hd
     exact nomm_agree lib gul code' hcode (annot_of_graphM hG hhas hwf1 (hcovP i d hi)) hx t r

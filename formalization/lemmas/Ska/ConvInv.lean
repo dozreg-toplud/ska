@@ -34,8 +34,8 @@ open Nock
 inductive AnsW (G : Entry → Prop) : Sock → Noun → TabEntry → Prop where
   | exact {e : Entry} : G e → AnsW G e.more e.fol e.d.tab
   | hit {e : Entry} {s : Sock} : G e → hitTest e s = some true → AnsW G s e.fol (patchDatum e.d s).tab
-  | gen {s s' m : Sock} {f : Noun} {a : TabEntry} : WellFormed s' → msgSock s s' = some m → AnsW G m f a →
-      AnsW G s f a
+  | gen {s s' m : Sock} {f : Noun} {a : TabEntry} : WellFormed s' → NormSock s' → msgSock s s' = some m →
+      AnsW G m f a → AnsW G s f a
 
 /-- Two entries alike for a caller: the same identity and the same
 `TabEntry`. -/
@@ -69,7 +69,7 @@ theorem AnsW.transfer {G G' : Entry → Prop} (hG : ∀ e, G e → ∃ e', G' e'
     obtain ⟨e', he', hal⟩ := hG _ he
     have := AnsW.hit (G := G') he' (by rw [hitTest_alike hal]; exact ht)
     rw [hal.2.1, patchDatum_tab_alike hal] at this; exact this
-  | gen hw hm _ ih => exact AnsW.gen hw hm ih
+  | gen hw hn hm _ ih => exact AnsW.gen hw hn hm ih
 
 theorem AnsW.mono {G G' : Entry → Prop} (hG : ∀ e, G e → G' e) {s : Sock} {f : Noun} {a : TabEntry}
     (h : AnsW G s f a) : AnsW G' s f a :=
@@ -80,14 +80,21 @@ theorem AnsW.toAnswers {G : Entry → Prop} {s : Sock} {f : Noun} {a : TabEntry}
   induction h with
   | exact he => exact Answers.exact he
   | hit he ht => exact Answers.hit he ht
-  | gen _ hm _ ih => exact Answers.gen hm ih
+  | gen _ _ hm _ ih => exact Answers.gen hm ih
 
 theorem AnsW.wf {G : Entry → Prop} (hG : ∀ e, G e → WellFormed e.more ∧ WellFormed e.d.prod)
     {s : Sock} {f : Noun} {a : TabEntry} (h : AnsW G s f a) : WellFormed s → WellFormed a.prod := by
   induction h with
   | exact he => exact fun _ => (hG _ he).2
   | hit he _ => exact fun hs => wf_patchDatum (hG _ he).2 hs
-  | gen hw hm _ ih => exact fun hs => ih (wf_msgSock hs hw hm)
+  | gen hw _ hm _ ih => exact fun hs => ih (wf_msgSock hs hw hm)
+
+theorem AnsW.norm {G : Entry → Prop} (hG : ∀ e, G e → NormSock e.d.prod)
+    {s : Sock} {f : Noun} {a : TabEntry} (h : AnsW G s f a) : NormSock s → NormSock a.prod := by
+  induction h with
+  | exact he => exact fun _ => hG _ he
+  | hit he _ => exact fun hs => normSock_patchDatum (hG _ he) hs
+  | gen _ hn hm _ ih => exact fun hs => ih (normSock_msgSock hs hn hm)
 
 theorem answers_mono {G G' : Entry → Prop} (hG : ∀ e, G e → G' e) {s : Sock} {f : Noun} {a : TabEntry}
     (h : Answers G s f a) : Answers G' s f a := by
@@ -156,6 +163,10 @@ def calleesOf (st : SkaState M R) (m : Ident) : M CalleeEntry Unit := (gitG st.g
 
 /-- The `+pop` of an entry: a `%void` product becomes `|+~`. -/
 def postPop (d : FDatum M) : FDatum M := if d.prod = Sock.void then { d with prod := Sock.dunno } else d
+
+/-- The entries of a memo have normal code requirements and products. -/
+def MemoNorm (m : Memo M) : Prop :=
+  ∀ f ms s e, Treap.get m f = some ms → Treap.get ms s = some e → NormSock e.2.less ∧ NormSock e.2.prod
 
 /-- A memo hit of the persistent memo, as `+analyze` puts it in the graph. -/
 def MemoHitE (memoF : Memo M) (e : Entry) : Prop :=
@@ -234,6 +245,9 @@ structure CInv (memoF : Memo M) (st : SkaState M R) (F : Entry → Prop) : Prop 
   tkeys : ∀ j, Treap.get st.ticks j ≠ none → Treap.get st.order j ≠ none
   /-- No identity of the graph has a `%void` subject sock. -/
   nv : ∀ i d, Treap.get st.g i = some d → i.1 ≠ Sock.void
+  /-- The identities, code requirements and products of the graph have
+  normal capes. -/
+  norm : ∀ i d, Treap.get st.g i = some d → NormSock i.1 ∧ NormSock d.less ∧ NormSock d.prod
 
 /-! ## `+pop`, entry by entry -/
 
@@ -430,7 +444,7 @@ theorem pop_frozen {memoF : Memo M} {id : Ident} {st st' : SkaState M R} {F : En
     unfold Treap.gut; rw [a5, if_neg hx]
   have hpopNot : ∀ x o, Treap.get st.order x = some o → o < index → x ∉ ab0 ++ [id] := fun x o hxo hlt hx =>
     absurd (hup x hx o hxo) (by omega)
-  refine ⟨F', hFF', ⟨pop_ok hc.s h hs |>.1, fun m => ?_, ⟨fun i o hio => ?_, ?_⟩, ⟨hok, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_⟩⟩
+  refine ⟨F', hFF', ⟨pop_ok hc.s h hs |>.1, fun m => ?_, ⟨fun i o hio => ?_, ?_⟩, ⟨hok, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_⟩⟩
   · -- ticks
     by_cases hm : m ∈ ab0 ++ [id]
     · simp only [ranOf, chgOf, Treap.gut, a5, if_pos hm, Option.getD_none]; omega
@@ -532,6 +546,20 @@ theorem pop_frozen {memoF : Memo M} {id : Ident} {st st' : SkaState M R} {F : En
       obtain ⟨d0, hd0, _⟩ := Option.map_eq_some_iff.mp hd
       exact hc.nv i d0 hd0
     · rw [hgN i hi] at hd; exact hc.nv i d hd
+  · -- normal capes
+    intro i d hd
+    by_cases hi : i ∈ ab0 ++ [id]
+    · rw [hgP i hi] at hd
+      obtain ⟨d0, hd0, rfl⟩ := Option.map_eq_some_iff.mp hd
+      obtain ⟨n1, n2, n3⟩ := hc.norm i d0 hd0
+      refine ⟨n1, ?_, ?_⟩
+      · unfold postPop; split
+        · exact n2
+        · exact n2
+      · unfold postPop; split
+        · exact normSock_dunno
+        · exact n3
+    · rw [hgN i hi] at hd; exact hc.norm i d hd
 
 end Ana
 end SkaModel
