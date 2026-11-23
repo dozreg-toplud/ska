@@ -15,8 +15,10 @@ public import lemmas.Pill.Arm.ConArm
 public import lemmas.Pill.Arm.Cut
 public import lemmas.Pill.Arm.Dec
 public import lemmas.Pill.Arm.Dis
+public import lemmas.Pill.Arm.Distribute
 public import lemmas.Pill.Arm.Div
 public import lemmas.Pill.Arm.Dor
+public import lemmas.Pill.Arm.Double_int
 public import lemmas.Pill.Arm.Dvr
 public import lemmas.Pill.Arm.End
 public import lemmas.Pill.Arm.Fall
@@ -27,6 +29,7 @@ public import lemmas.Pill.Arm.Gte
 public import lemmas.Pill.Arm.Gth
 public import lemmas.Pill.Arm.Homo
 public import lemmas.Pill.Arm.In
+public import lemmas.Pill.Arm.Inlineable
 public import lemmas.Pill.Arm.Ja
 public import lemmas.Pill.Arm.Ju
 public import lemmas.Pill.Arm.Lent
@@ -45,6 +48,7 @@ public import lemmas.Pill.Arm.Mix
 public import lemmas.Pill.Arm.Mock
 public import lemmas.Pill.Arm.Mod
 public import lemmas.Pill.Arm.Monk
+public import lemmas.Pill.Arm.Mook
 public import lemmas.Pill.Arm.Mor
 public import lemmas.Pill.Arm.Mug
 public import lemmas.Pill.Arm.Muk
@@ -54,9 +58,11 @@ public import lemmas.Pill.Arm.Need
 public import lemmas.Pill.Arm.Peg
 public import lemmas.Pill.Arm.Pi
 public import lemmas.Pill.Arm.Rear
+public import lemmas.Pill.Arm.Rip
 public import lemmas.Pill.Arm.Roll
 public import lemmas.Pill.Arm.Rsh
 public import lemmas.Pill.Arm.Scag
+public import lemmas.Pill.Arm.Scow
 public import lemmas.Pill.Arm.Skid
 public import lemmas.Pill.Arm.Skim
 public import lemmas.Pill.Arm.Skip
@@ -65,10 +71,12 @@ public import lemmas.Pill.Arm.Snag
 public import lemmas.Pill.Arm.Snip
 public import lemmas.Pill.Arm.Snoc
 public import lemmas.Pill.Arm.So
+public import lemmas.Pill.Arm.Soft
 public import lemmas.Pill.Arm.Some
 public import lemmas.Pill.Arm.Sort
 public import lemmas.Pill.Arm.Spin
 public import lemmas.Pill.Arm.Sub
+public import lemmas.Pill.Arm.Tank
 public import lemmas.Pill.Arm.Turn
 public import lemmas.Pill.Arm.Weld
 public import lemmas.Pill.Arm.Welp
@@ -85,8 +93,10 @@ import all lemmas.Pill.Arm.ConArm
 import all lemmas.Pill.Arm.Cut
 import all lemmas.Pill.Arm.Dec
 import all lemmas.Pill.Arm.Dis
+import all lemmas.Pill.Arm.Distribute
 import all lemmas.Pill.Arm.Div
 import all lemmas.Pill.Arm.Dor
+import all lemmas.Pill.Arm.Double_int
 import all lemmas.Pill.Arm.Dvr
 import all lemmas.Pill.Arm.End
 import all lemmas.Pill.Arm.Fall
@@ -97,6 +107,7 @@ import all lemmas.Pill.Arm.Gte
 import all lemmas.Pill.Arm.Gth
 import all lemmas.Pill.Arm.Homo
 import all lemmas.Pill.Arm.In
+import all lemmas.Pill.Arm.Inlineable
 import all lemmas.Pill.Arm.Ja
 import all lemmas.Pill.Arm.Ju
 import all lemmas.Pill.Arm.Lent
@@ -115,6 +126,7 @@ import all lemmas.Pill.Arm.Mix
 import all lemmas.Pill.Arm.Mock
 import all lemmas.Pill.Arm.Mod
 import all lemmas.Pill.Arm.Monk
+import all lemmas.Pill.Arm.Mook
 import all lemmas.Pill.Arm.Mor
 import all lemmas.Pill.Arm.Mug
 import all lemmas.Pill.Arm.Muk
@@ -124,9 +136,11 @@ import all lemmas.Pill.Arm.Need
 import all lemmas.Pill.Arm.Peg
 import all lemmas.Pill.Arm.Pi
 import all lemmas.Pill.Arm.Rear
+import all lemmas.Pill.Arm.Rip
 import all lemmas.Pill.Arm.Roll
 import all lemmas.Pill.Arm.Rsh
 import all lemmas.Pill.Arm.Scag
+import all lemmas.Pill.Arm.Scow
 import all lemmas.Pill.Arm.Skid
 import all lemmas.Pill.Arm.Skim
 import all lemmas.Pill.Arm.Skip
@@ -135,10 +149,12 @@ import all lemmas.Pill.Arm.Snag
 import all lemmas.Pill.Arm.Snip
 import all lemmas.Pill.Arm.Snoc
 import all lemmas.Pill.Arm.So
+import all lemmas.Pill.Arm.Soft
 import all lemmas.Pill.Arm.Some
 import all lemmas.Pill.Arm.Sort
 import all lemmas.Pill.Arm.Spin
 import all lemmas.Pill.Arm.Sub
+import all lemmas.Pill.Arm.Tank
 import all lemmas.Pill.Arm.Turn
 import all lemmas.Pill.Arm.Weld
 import all lemmas.Pill.Arm.Welp
@@ -275,6 +291,8 @@ theorem cut.arm_at : slot? cut.axis layer2 = some cut.arm := by kernel_rfl
 theorem cat.arm_at : slot? cat.axis layer2 = some cat.arm := by kernel_rfl
 
 theorem can.arm_at : slot? can.axis layer2 = some can.arm := by kernel_rfl
+
+theorem rip.arm_at : slot? rip.axis layer2 = some rip.arm := by kernel_rfl
 
 theorem met.arm_at : slot? met.axis layer2 = some met.arm := by kernel_rfl
 
@@ -431,6 +449,16 @@ theorem mock.arm_at : slot? mock.axis layer4 = some mock.arm := by kernel_rfl
 
 theorem mack.arm_at : slot? mack.axis layer4 = some mack.arm := by kernel_rfl
 
+theorem mook.arm_at : slot? mook.axis layer4 = some mook.arm := by kernel_rfl
+
+theorem soft.arm_at : slot? soft.axis layer4 = some soft.arm := by kernel_rfl
+
+theorem tank.arm_at : slot? tank.axis layer2 = some tank.arm := by kernel_rfl
+
+theorem scow.arm_at : slot? scow.axis layer4 = some scow.arm := by kernel_rfl
+
+theorem mook.layer2.arm_at : slot? mook.layer2.axis layer4 = some layer2 := by kernel_rfl
+
 theorem ca.con.arm_at : ∀ x, slot? ca.con.axis (C ca.battery x) = some ca.con.arm := by
   intro x; kernel_rfl
 
@@ -521,6 +549,10 @@ theorem pi.lib.arm_at : slot? pi.lib.axis lib = some pi.lib.arm := by kernel_rfl
 theorem ca.lib.layer2.arm_at : slot? ca.lib.layer2.axis lib = some layer2 := by kernel_rfl
 
 theorem ca.lib.layer1.arm_at : slot? ca.lib.layer1.axis lib = some layer1 := by kernel_rfl
+
+theorem distribute.arm_at : slot? distribute.axis lib = some distribute.arm := by kernel_rfl
+
+theorem double_int.arm_at : slot? double_int.axis lib = some double_int.arm := by kernel_rfl
 
 end Pill
 end Formalization

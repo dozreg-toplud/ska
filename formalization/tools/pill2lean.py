@@ -359,7 +359,7 @@ def main():
     arm('need', layer2, 'layer2')
 
     # bit arithmetic
-    for label in ['bex', 'rsh', 'lsh', 'end', 'cut', 'cat', 'can']:
+    for label in ['bex', 'rsh', 'lsh', 'end', 'cut', 'cat', 'can', 'rip']:
         arm(label, layer2, 'layer2')
     for label in ['met', 'mix', 'dis', 'con']:
         arm(label, layer2, 'layer2', loops=1)
@@ -757,6 +757,91 @@ def main():
     formulas.add(door_gate_battery(mack_a))
     axes.append(('mack', mack_ax, 'slot? mack.axis layer4 = some mack.arm'))
 
+    # +mook has no %fast label: it is the arm other than +mink that +mock pulls
+    # from its context.  Its battery is ?.(?=([%2 *] ton) ton [8 [1 core] 9 11 0 1]),
+    # the |^ core [rend skip buc] with the gate `rend`, the arm `skip` and the
+    # arm `$` (`buc`).  The branches of `rend` are a chain of tests of the tag;
+    # the %mean branch slams +mack and then (soft tank), which names +soft of
+    # layer 4 and the mold +tank of layer 2.
+    ax_of = dict((nm, ax) for nm, ax, _ in axes)
+    mock_battery = [i for i, nm in names.items() if nm == 'mock.battery'][0]
+    mook_ax = callee(mock_battery, 7, exclude=(ax_of['mink'],))
+    mook_a = slot(mook_ax, layer4)
+    name(mook_a, 'mook.arm')
+    formulas.add(mook_a)
+    mook_bat = door_gate_battery(mook_a)
+    name(mook_bat, 'mook.battery')
+    formulas.add(mook_bat)
+    axes.append(('mook', mook_ax, 'slot? mook.axis layer4 = some mook.arm'))
+    assert NODES[head(mook_bat)] == 6
+    yes = head(tail(tail(mook_bat)))
+    assert NODES[head(yes)] == 8 and tail(tail(yes)) == \
+        cell(atom(9), cell(atom(11), cell(atom(0), atom(1))))
+    mook_core = tail(head(tail(yes)))
+    name(mook_core, 'mook.core')
+    rend_a, skip_a, buc = head(mook_core), head(tail(mook_core)), tail(tail(mook_core))
+    name(rend_a, 'mook.rend.arm')
+    formulas.add(rend_a)
+    rend_bat = door_gate_battery(rend_a)
+    name(rend_bat, 'mook.rend.battery')
+    name(skip_a, 'mook.skip')
+    formulas.add(skip_a)
+    name(buc, 'mook.buc')
+    formulas.add(buc)
+    # the cord of the %lose frame that +skip puts in: [[1 %lose] msg]
+    msgs = [tail(i) for i in reach([skip_a]) if type(NODES[i]) is tuple
+            and head(i) == cell(atom(1), atom(cord('lose')))]
+    (msg,) = msgs
+    name(msg, 'mook.skip.msg')
+    # the branches of rend: [6 [5 [1 tag] 0 12] yes no], in the order of the ?+
+    br = rend_bat
+    for tag in ['hunk', 'lose', 'hand', 'mean', 'spot']:
+        t5, yes_b, no_b = head(tail(br)), head(tail(tail(br))), tail(tail(tail(br)))
+        assert NODES[head(br)] == 6 and t5 == cell(atom(5), cell(cell(atom(1), atom(cord(tag))),
+                                                                cell(atom(0), atom(12)))), tag
+        name(yes_b, 'mook.rend.%s' % tag)
+        formulas.add(yes_b)
+        br = no_b
+    name(br, 'mook.rend.other')
+    formulas.add(br)
+    formulas.add(rend_bat)
+    # the loop of a tape interpolation, ?@(a b [i.a $(a t.a)]); the other
+    # [8 [1 L] 9 2 0 1] of rend are traps that build tapes
+    (weld_l,) = [l for l in find_loops(rend_bat) if NODES[head(l)] == 6]
+    name(weld_l, 'mook.rend.loop')
+    formulas.add(weld_l)
+    # the %mean branch: [6 atom-test leaf [8 mack-call [6 [5 [1 0] 0 2] hash [8 sof ..]]]]
+    mean_b = [i for i, nm in names.items() if nm == 'mook.rend.mean'][0]
+    cell_b = tail(tail(tail(mean_b)))
+    sof = head(tail(tail(tail(tail(tail(tail(cell_b)))))))
+    # sof = [8 [8 [9 soft 0 127] 9 2 10 [6 7 [0 3] 9 tank 0 511] 0 2] 9 2 10 [6 0 13] 0 2]
+    inner = head(tail(sof))
+    soft_ax = NODES[head(tail(head(tail(inner))))]
+    assert tail(tail(head(tail(inner)))) == cell(atom(0), atom(127))
+    smp = tail(head(tail(tail(tail(tail(tail(inner)))))))
+    # smp = [7 [0 3] 9 tank 0 511]
+    tk = tail(tail(smp))
+    assert NODES[head(tk)] == 9 and tail(tail(tk)) == cell(atom(0), atom(511))
+    tank_ax = NODES[head(tail(tk))]
+    soft_a = slot(soft_ax, layer4)
+    name(soft_a, 'soft.arm')
+    formulas.add(soft_a)
+    axes.append(('soft', soft_ax, 'slot? soft.axis layer4 = some soft.arm'))
+    # +soft is a gate whose product is the gate |=(fud=* ...)
+    soft_bat = door_gate_battery(soft_a)
+    name(soft_bat, 'soft.battery')
+    formulas.add(soft_bat)
+    name(door_gate_battery(soft_bat), 'soft.gate.battery')
+    tank_a = slot(tank_ax, layer2)
+    name(tank_a, 'tank.arm')
+    formulas.add(tank_a)
+    axes.append(('tank', tank_ax, 'slot? tank.axis layer2 = some tank.arm'))
+    name(door_gate_battery(tank_a), 'tank.battery')
+    # +scow, which the %hand branch of rend slams on [%p (mug dat)]
+    arm('scow', layer4, 'layer4')
+    # the layer of +turn, +lent, +weld, +scag, +slag that +mook reads
+    axes.append(('mook.layer2', 7, 'slot? mook.layer2.axis layer4 = some layer2'))
+
     # ---- the compiler's leaf cores +ca and +so: arms of the library core,
     # [[1 battery] [11 [%fast [1 [label [0 511] 0]]] [0 1]]], whose own arms
     # carry %fast labels except for a few
@@ -876,6 +961,31 @@ def main():
                  'slot? ca.lib.layer2.axis lib = some layer2'))
     axes.append(('ca.lib.layer1', spine_axis(lib, layer1),
                  'slot? ca.lib.layer1.axis lib = some layer1'))
+
+    # the gates +distribute and +double-int of the library core, which recurse
+    # on themselves (the Lean names drop the dash)
+    for label, lname in (('distribute', 'distribute'), ('double-int', 'double_int')):
+        res = []
+        for a in arms_of(label):
+            try:
+                find_axis(head(lib), a)
+                res.append((find_axis(lib, a), a))
+            except KeyError:
+                pass
+        (ax, a), = res
+        name(a, lname + '.arm')
+        formulas.add(a)
+        name(gate_battery(a), lname + '.battery')
+        formulas.add(gate_battery(a))
+        axes.append((lname, ax, 'slot? %s.axis lib = some %s.arm' % (lname, lname)))
+
+    # +inlineable, a gate whose %fast parent is ..ride and which reads nothing
+    # from its context: named without an axis
+    (inl,) = arms_of('inlineable')
+    name(inl, 'inlineable.arm')
+    formulas.add(inl)
+    name(gate_battery(inl), 'inlineable.battery')
+    formulas.add(gate_battery(inl))
 
     # ---- write
     emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, len(data))

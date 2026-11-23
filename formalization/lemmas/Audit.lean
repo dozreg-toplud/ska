@@ -17,11 +17,15 @@ import lemmas.Hoon.MapFolds
 import lemmas.Hoon.SetFolds
 import lemmas.Hoon.ListsMore
 import lemmas.Hoon.ListsSort
+import lemmas.Hoon.Rip
 import lemmas.Compiler.Ca
 import lemmas.Compiler.So
 import lemmas.Compiler.Axes
 import lemmas.Compiler.Lib
 import lemmas.Compiler.MinkPill
+import lemmas.Compiler.MockPill
+import lemmas.Compiler.PiEdit
+import lemmas.Compiler.Inlineable
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -193,6 +197,19 @@ open Formalization
 #print axioms Compiler.mack_gate_iff
 #print axioms Compiler.monk_pill_iff
 #print axioms Compiler.mack_pill_iff
+#print axioms Hoon.turn_gate_mapM
+#print axioms Compiler.mook_skip
+#print axioms Compiler.rend_mean
+#print axioms Compiler.rend_frame_iff
+#print axioms Compiler.mook_gate_iff
+#print axioms Compiler.mock_gate_iff
+#print axioms Compiler.mook_pill_iff
+#print axioms Compiler.mock_pill_iff
+#print axioms Hoon.rip_gate
+#print axioms Compiler.rend_leaf
+#print axioms Compiler.rend_hand
+#print axioms Compiler.rendBaseIs_of
+#print axioms Compiler.rendBaseIs_layer4
 #print axioms Compiler.pi_cons_gate
 #print axioms Compiler.pi_hed_gate
 #print axioms Compiler.pi_tel_gate
@@ -203,3 +220,14 @@ open Formalization
 #print axioms Compiler.pegF_eq_peg
 #print axioms Compiler.pi_compose_gate
 #print axioms Compiler.pi_compose_pill
+#print axioms Compiler.pi_edit_up
+#print axioms Compiler.pi_edit_down
+#print axioms Compiler.pi_edit_gate
+#print axioms Compiler.distribute_gate
+#print axioms Compiler.pi_prune_gate
+#print axioms Compiler.double_int_gate'
+#print axioms Compiler.pi_edit_pill
+#print axioms Compiler.pi_prune_pill
+#print axioms Compiler.distribute_pill
+#print axioms Compiler.double_int_pill
+#print axioms Compiler.inlineable_gate'

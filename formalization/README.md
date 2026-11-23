@@ -18,7 +18,7 @@ is not ported to Lean and no port is trusted.
 ```sh
 cd formalization
 tools/capped.sh -m 3G lake build core              # 3 s
-tools/capped.sh -m 3G lake build                   # about 55 s from scratch, 2.4 GB peak
+tools/capped.sh -m 3G lake build                   # about 63 s from scratch, 2.5 GB peak
 tools/capped.sh -m 3G lake env lean lemmas/Audit.lean  # axioms of the main theorems
 ```
 
@@ -81,6 +81,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Hoon/ListsSort.lean` | `+welp`, `+zing`, `+snoc`, `+skid`, `+spin`, and `+sort` against the quicksort `qsort`, which permutes its list. |
 | `Hoon/Axis.lean` | `+cap`, `+mas`, `+peg`, and what they mean for `slot?` (`slot_pegF`, `slot_cap_mas`). |
 | `Hoon/Sets.lean` | `+put:in` and `+has:in`, with a set read as the map of its keys to `~`. |
+| `Hoon/Rip.lean` | `+rip` on a bite of step at least 1: the blocks of an atom, least significant first (`ripF`). |
 | `Hoon/Bits.lean` | `+bex`, `+lsh`, `+rsh`, `+end`, `+met`, `+cut`, `+cat`, `+can`, and `+mix`, `+dis`, `+con` as `^^^`, `&&&`, `|||`. |
 | `Hoon/Muk.lean` | The arms `sit`, `sum`, `rol` of the door `+fe`, and `+muk` against the model `mukF`. |
 | `Hoon/Mug.lean` | `mug_spec`: `+mug` computes `mugF` on every noun, which proves `MugSpec mugF`. |
@@ -91,7 +92,11 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/Mink.lean` | `+mink` against `minkF`: one symbolic run of its loop (`mink_loop_unfold`) gives `NStep`, the loop on nouns with its calls as parameters; `NStep` with `nock` is `minkStep` encoded (`nstep_exact`); `mink_gate_iff`: the gate returns `x` exactly when `Mink` returns a tone that `x` encodes, given `MinkIn` and `SlamIsNock lib`. |
 | `Compiler/Monk.lean` | `+monk` and `+mack` from `+mink`: `+monk` drops the trace, `+mack` keeps the product of a `%0` (`monk_gate_iff`, `mack_gate_iff`). |
 | `Compiler/MinkPill.lean` | The same in the pill's layer 4, where `MinkIn`, `MonkIn`, `MackIn` hold (`mink_pill_iff`, `mink_pill_call`, `monk_pill_iff`, `mack_pill_iff`). |
+| `Compiler/Mook.lean` | `+mook` and `+mock` against `mookF` and `Mock`: the test of the tone, `+skip` (`mook_skip`), the `+turn` of `rend` over the trace, `rend` on a `%mean` of a cell through `+mack` and `(soft tank)` (`rend_mean`), and the branches of `rend` that format with constants, `+rip` and `+scow %p` of `+mug` (`rend_leaf`, `rend_hand`).  `mook_gate_iff`, `mock_gate_iff`. |
+| `Compiler/MockPill.lean` | The same in layer 4 (`mock_pill_iff`).  What stays assumed of `Lib`, each a statement about the pill's Nock for one field: `(soft tank)` (`SoftTankIs`), the cord of `+skip` (`SkipMsgIs`), `+scow %p` (`HandIs`), and `rend` on `%hunk` of a cell and on `%spot` (`RendRestIs`); and, on `Lib` alone, the frames that `rend` formats with constants and `+rip` (`RendLeafIs`). |
 | `Compiler/Pi.lean` | `cons`, `hed`, `tel`, `slot` (on an axis of at least `1`) and `compose` of the provenance core `+pi` compute B's models of `Ska/Pi.lean`; `hed`, `tel`, `slot` read `+peg` (and `+cap`, `+mas`) of layer 1 through the library core (`PegOf`, `AxisOf`). |
+| `Compiler/PiEdit.lean` | `edit` and `prune` of `+pi`, `+distribute` and `+double-int` against B's models (`pi_edit_gate`, `pi_prune_gate`, `distribute_gate`, `double_int_gate'`), and on the pill's library core with no assumption (`*_pill`).  The upward loop of `edit` is the noun of the upward loop of `+darn:so` (`pi_edit_up`); `prune` computes `distribute` with its arguments swapped. |
+| `Compiler/Inlineable.lean` | `+inlineable` computes `inlineable` of `Ska/FolLoop.lean` on every noun and in every context (`inlineable_gate'`); it reads nothing from its context. |
 | `Compiler/Lib.lean` | `dif` of `+ca` and `huge` of `+so`, whose crash messages quote a noun that holds the hoon core, so that the generator names them in the bulk chain (`ca.dif.mean` is the quoted noun).  And the pill's library core `lib` satisfies `CaOf`, `SoOf`, `AxisOf`, `YeaOf`: every gate of `+ca` and `+so` computes its model on the pill's core (`ca_int_pill`, ..., `so_darn_pill`) with no assumption. |
 | `Compiler/Axes.lean` | `pat`, `lot` of `+ca` and `pull` of `+so`, which walk an axis with `+cap` and `+mas` of layer 1, read through the library core at `ca.lib.layer1.axis`; B's `cap` and `mas` equal `capF` and `masF`.  And `yea` of `+ca`, with `+peg` and `+weld`, and `darn` of `+so`. |
 | `Ska/Types.lean` | Models of the IR types (`Bell`, `Sock`, `Cape`, `Pole`, `Termin`, `Blob`, `Straight`, `Tone`, ...), each with its Hoon noun layout. |
@@ -197,8 +202,8 @@ import only its theorems.  So:
 2. A change to a declaration of the chain rebuilds the rest of the chain,
    `Facts.lean` and the layer files, and no gate theorem file.  A comment
    rebuilds the edited file only.
-3. A clean build takes about 55 seconds and peaks at 2.4 GB for the whole
-   build.
+3. A clean build takes about 63 seconds (3 min 40 s of CPU) and peaks at
+   2.5 GB for the whole build (measured 2026-11-23 under a 3 GB scope).
 
 ## Gaps
 
@@ -222,8 +227,9 @@ import only its theorems.  So:
    and `+in`.
 6. **The arms of `+ca` and `+so` are all done.**  No arm of `+ca` or `+so`
    disagrees with B's model.
-7. **Not done among the virtualization arms:** `+mook` and `+mock`.  `+mink`,
-   `+monk` and `+mack` are done (`Compiler/Mink.lean`, `Compiler/Monk.lean`).
-8. **Not done among the compiler's arms:** `edit` and `prune` of `+pi`,
-   `+distribute`, `+double-int`, `+safe-nomm`, `+safe-fol-fol`,
-   `+inlineable`.
+7. **The virtualization arms are done** up to formatting: `+mink`, `+monk`,
+   `+mack`, `+mook` and `+mock`.  `+scow`, `+smyt`, `+crip` and `+soft` are
+   not proved; `mock_pill_iff` assumes what they compute, field by field of
+   `Lib`.
+8. **Not done among the compiler's arms:** `+safe-nomm`, `+safe-fol-fol`,
+   `+knit-anno`, `+patch-prod`, `+msg-sock`, `+msg-anno`.

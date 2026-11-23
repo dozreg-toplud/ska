@@ -326,6 +326,37 @@ theorem turn_gate (c : Noun) (hc : HomoIn c) (bp bs bc : Noun) (f : Noun → Nou
   nock_open turn.battery
   simp only [nock_exec, hc, homo_arm, turn_loop c bp bs bc f l hf]
 
+theorem turn_loop_mapM (c bp bs bc : Noun) (g : Noun → Option Noun) : ∀ (l : List Noun),
+    (∀ x ∈ l, nock (C bp (C x bc)) bp = g x) →
+    nock (C turn.loop (C turn.battery (C (C (listN l) (C bp (C bs bc))) c))) turn.loop
+      = (l.mapM g).map listN := by
+  intro l
+  induction l with
+  | nil =>
+    intro _
+    nock_open turn.loop
+    simp [nock_exec]
+  | cons x xs ih =>
+    intro hf
+    have hx := hf x (by simp)
+    have hxs := ih (fun y hy => hf y (by simp [hy]))
+    nock_open turn.loop
+    rcases hg : g x with _ | y
+    · simp [nock_exec, hx, hg]
+    · rcases hm : xs.mapM g with _ | ys
+      · simp [nock_exec, hx, hxs, hg, hm]
+      · simp [nock_exec, hx, hxs, hg, hm]
+
+/-- Slamming the `+turn` gate on a list and a gate `[bp bs bc]` whose slam on
+an element `x` gives `g x`, a crash being `none`: the list of the products, or
+a crash if one slam crashes. -/
+theorem turn_gate_mapM (c : Noun) (hc : HomoIn c) (bp bs bc : Noun) (g : Noun → Option Noun)
+    (l : List Noun) (hf : ∀ x ∈ l, nock (C bp (C x bc)) bp = g x) :
+    nock (C turn.battery (C (C (listN l) (C bp (C bs bc))) c)) turn.battery
+      = (l.mapM g).map listN := by
+  nock_open turn.battery
+  simp only [nock_exec, hc, homo_arm, turn_loop_mapM c bp bs bc g l hf]
+
 /-! ## `+roll` -/
 
 theorem roll_loop (c bp e bc : Noun) (f : Noun → Noun → Noun) : ∀ (l : List Noun) (acc : Noun),
