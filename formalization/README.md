@@ -332,6 +332,36 @@ import only its theorems.  So:
    it keeps the layers is proved (`pokeFrame_corIn`).  The arms that thread the compiler's core read their context
    through its tail `cor`, so after a poke they read the new `cor`: a theorem
    about them needs the poke to keep layer 2 at `read.layer2.axis`.
+
+   `PokeModel` needs every arm that `+poke` runs linked to its model.  The
+   map of the arms of `nock-compilation.hoon` (from the arm list, 2026-11-23):
+   - *Linked* (the pill's Nock computes a model): all of `+ca` and `+so`;
+     `cons`, `hed`, `tel`, `prune`, `slot`, `compose`, `edit` of `+pi`,
+     `+distribute`, `+double-int`; `+msg-sock`, `+patch-prod`, `+knit-anno`,
+     `+msg-anno`, `+safe-nomm`, `+safe-fol-fol`, `+inlineable`; the
+     validators; the interpreter (`+eval-top`, `+eval-blob`, `+eval-pole`,
+     `+eval-pass`, `+move`, `+read`, `+store`, `+eval-mook`, `+eval-rend`);
+     of `+poke` its frame, that it validates first, and the outer `+poke`.
+   - *Modelled, not linked*: `fol-loop` (`Ana.folStep`), `resolve`,
+     `+analyze`, `+run`, the pass and member loops, `+dirty`, `+sweep`,
+     `+above`, `+cull`, `+pop`, `+ska-callgraph`, `+prune-callgraph`,
+     `+memo-final-entry`, the analysis part of `+ska-poke`;
+     `+recursive-call`; `+uni-sock`, `+norm-sock`, `+know`,
+     `+bake-graph`; `+reverse-bell-graph`, `+hot-stale`, `+del-bells`;
+     `+compiled-mono`, `+compiled-nary`, the `%full` and `%dire` branches of
+     `+poke`; `run` of `+comp` and its helpers (`Comp*.lean`).
+   - *Parameters with no model*: `+soft-spot`, `+register-fast`,
+     `+shape-collapse`, `+bake-need`.
+   - *No model*: `+msg-ca`, `+register-template`, `+index-arms`,
+     `+fast-parent`, the `*-ju` arms, the cole arms, `+eval-finalized`,
+     `+have`, `+simple-bell-graph-and-reversed`, `+tarjan`, `+scc-of`;
+     register allocation (`lazy-from-need`, `lazy-from-reg`,
+     `get-reg-safe-assignment`, `get-regs`, `jmp-regs`, `get-jmps`,
+     `map-regs`); the compile driver (`nomm-size`, `inlined`,
+     `compile-unary`, `compile-scc`, `compile-scc-in`, `need-fits`,
+     `known-sock`, `bake-need-ord`, `need-normalize`, `mono-try-call`); the
+     families `soft-*`, `laze-*`, `inter1`, `inter2`; the optimizer;
+     `+hot-diff`, `+load`, `+peek`, `+wish`.
 10. **`Treap` of `Ska/Analysis.lean` has an instance** (`Compiler/TreapKey.lean`):
    finite maps, with the treap noun made when the key encoding is given.  Its
    `ext` is function extensionality (on nouns, `isMap_ext`).  `+tap:by` and

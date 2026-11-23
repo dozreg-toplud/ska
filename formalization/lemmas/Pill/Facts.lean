@@ -10,6 +10,7 @@ public import lemmas.Pill.Arm.By
 public import lemmas.Pill.Arm.Ca
 public import lemmas.Pill.Arm.Can
 public import lemmas.Pill.Arm.Cap
+public import lemmas.Pill.Arm.Cape_size
 public import lemmas.Pill.Arm.Cat
 public import lemmas.Pill.Arm.ConArm
 public import lemmas.Pill.Arm.Cut
@@ -30,9 +31,12 @@ public import lemmas.Pill.Arm.Eval_top
 public import lemmas.Pill.Arm.Fall
 public import lemmas.Pill.Arm.Fe
 public import lemmas.Pill.Arm.Flop
+public import lemmas.Pill.Arm.Fol_loop
+public import lemmas.Pill.Arm.Git_g
 public import lemmas.Pill.Arm.Gor
 public import lemmas.Pill.Arm.Gte
 public import lemmas.Pill.Arm.Gth
+public import lemmas.Pill.Arm.He_sock
 public import lemmas.Pill.Arm.Homo
 public import lemmas.Pill.Arm.In
 public import lemmas.Pill.Arm.Inlineable
@@ -49,6 +53,7 @@ public import lemmas.Pill.Arm.Mack
 public import lemmas.Pill.Arm.Mas
 public import lemmas.Pill.Arm.Max
 public import lemmas.Pill.Arm.Met
+public import lemmas.Pill.Arm.Mi
 public import lemmas.Pill.Arm.Min
 public import lemmas.Pill.Arm.Mink
 public import lemmas.Pill.Arm.Mix
@@ -70,6 +75,7 @@ public import lemmas.Pill.Arm.Peg
 public import lemmas.Pill.Arm.Pi
 public import lemmas.Pill.Arm.Read
 public import lemmas.Pill.Arm.Rear
+public import lemmas.Pill.Arm.Recursive_call
 public import lemmas.Pill.Arm.Rip
 public import lemmas.Pill.Arm.Roll
 public import lemmas.Pill.Arm.Rsh
@@ -77,6 +83,8 @@ public import lemmas.Pill.Arm.Safe_fol_fol
 public import lemmas.Pill.Arm.Safe_nomm
 public import lemmas.Pill.Arm.Scag
 public import lemmas.Pill.Arm.Scow
+public import lemmas.Pill.Arm.Ska_analyze
+public import lemmas.Pill.Arm.Ska_run
 public import lemmas.Pill.Arm.Skid
 public import lemmas.Pill.Arm.Skim
 public import lemmas.Pill.Arm.Skip
@@ -86,6 +94,7 @@ public import lemmas.Pill.Arm.Snip
 public import lemmas.Pill.Arm.Snoc
 public import lemmas.Pill.Arm.So
 public import lemmas.Pill.Arm.Soft
+public import lemmas.Pill.Arm.Soft_spot
 public import lemmas.Pill.Arm.Some
 public import lemmas.Pill.Arm.Sort
 public import lemmas.Pill.Arm.Spin
@@ -103,6 +112,7 @@ import all lemmas.Pill.Arm.By
 import all lemmas.Pill.Arm.Ca
 import all lemmas.Pill.Arm.Can
 import all lemmas.Pill.Arm.Cap
+import all lemmas.Pill.Arm.Cape_size
 import all lemmas.Pill.Arm.Cat
 import all lemmas.Pill.Arm.ConArm
 import all lemmas.Pill.Arm.Cut
@@ -123,9 +133,12 @@ import all lemmas.Pill.Arm.Eval_top
 import all lemmas.Pill.Arm.Fall
 import all lemmas.Pill.Arm.Fe
 import all lemmas.Pill.Arm.Flop
+import all lemmas.Pill.Arm.Fol_loop
+import all lemmas.Pill.Arm.Git_g
 import all lemmas.Pill.Arm.Gor
 import all lemmas.Pill.Arm.Gte
 import all lemmas.Pill.Arm.Gth
+import all lemmas.Pill.Arm.He_sock
 import all lemmas.Pill.Arm.Homo
 import all lemmas.Pill.Arm.In
 import all lemmas.Pill.Arm.Inlineable
@@ -142,6 +155,7 @@ import all lemmas.Pill.Arm.Mack
 import all lemmas.Pill.Arm.Mas
 import all lemmas.Pill.Arm.Max
 import all lemmas.Pill.Arm.Met
+import all lemmas.Pill.Arm.Mi
 import all lemmas.Pill.Arm.Min
 import all lemmas.Pill.Arm.Mink
 import all lemmas.Pill.Arm.Mix
@@ -163,6 +177,7 @@ import all lemmas.Pill.Arm.Peg
 import all lemmas.Pill.Arm.Pi
 import all lemmas.Pill.Arm.Read
 import all lemmas.Pill.Arm.Rear
+import all lemmas.Pill.Arm.Recursive_call
 import all lemmas.Pill.Arm.Rip
 import all lemmas.Pill.Arm.Roll
 import all lemmas.Pill.Arm.Rsh
@@ -170,6 +185,8 @@ import all lemmas.Pill.Arm.Safe_fol_fol
 import all lemmas.Pill.Arm.Safe_nomm
 import all lemmas.Pill.Arm.Scag
 import all lemmas.Pill.Arm.Scow
+import all lemmas.Pill.Arm.Ska_analyze
+import all lemmas.Pill.Arm.Ska_run
 import all lemmas.Pill.Arm.Skid
 import all lemmas.Pill.Arm.Skim
 import all lemmas.Pill.Arm.Skip
@@ -179,6 +196,7 @@ import all lemmas.Pill.Arm.Snip
 import all lemmas.Pill.Arm.Snoc
 import all lemmas.Pill.Arm.So
 import all lemmas.Pill.Arm.Soft
+import all lemmas.Pill.Arm.Soft_spot
 import all lemmas.Pill.Arm.Some
 import all lemmas.Pill.Arm.Sort
 import all lemmas.Pill.Arm.Spin
@@ -605,6 +623,29 @@ theorem msg_sock.arm_at : slot? msg_sock.axis ana = some msg_sock.arm := by kern
 theorem safe_nomm.arm_at : slot? safe_nomm.axis ana = some safe_nomm.arm := by kernel_rfl
 
 theorem safe_fol_fol.arm_at : slot? safe_fol_fol.axis ana = some safe_fol_fol.arm := by kernel_rfl
+
+theorem he_sock.arm_at : slot? he_sock.axis ana = some he_sock.arm := by kernel_rfl
+
+theorem cape_size.arm_at : slot? cape_size.axis ana = some cape_size.arm := by kernel_rfl
+
+theorem recursive_call.arm_at : slot? recursive_call.axis ana = some recursive_call.arm := by kernel_rfl
+
+theorem git_g.arm_at : slot? git_g.axis ana = some git_g.arm := by kernel_rfl
+
+theorem fol_loop.register_fast.arm_at : slot? fol_loop.register_fast.axis ana = some register_fast.arm := by kernel_rfl
+
+theorem mi.arm_at : slot? mi.axis ana = some mi.arm := by kernel_rfl
+
+theorem mi.git.arm_at : ∀ x, slot? mi.git.axis (C mi.battery x) = some mi.git.arm := by
+  intro x; kernel_rfl
+
+theorem mi.put.arm_at : ∀ x, slot? mi.put.axis (C mi.battery x) = some mi.put.arm := by
+  intro x; kernel_rfl
+
+theorem mi.gut.arm_at : ∀ x, slot? mi.gut.axis (C mi.battery x) = some mi.gut.arm := by
+  intro x; kernel_rfl
+
+theorem soft_spot.arm_at : slot? soft_spot.axis ana = some soft_spot.arm := by kernel_rfl
 
 theorem read.layer2.arm_at : slot? read.layer2.axis interp = some layer2 := by kernel_rfl
 

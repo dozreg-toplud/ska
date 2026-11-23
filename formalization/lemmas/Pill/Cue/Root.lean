@@ -9,6 +9,7 @@ import all lemmas.Pill.Arm.By
 import all lemmas.Pill.Arm.Ca
 import all lemmas.Pill.Arm.Can
 import all lemmas.Pill.Arm.Cap
+import all lemmas.Pill.Arm.Cape_size
 import all lemmas.Pill.Arm.Cat
 import all lemmas.Pill.Arm.ConArm
 import all lemmas.Pill.Arm.Cut
@@ -29,9 +30,12 @@ import all lemmas.Pill.Arm.Eval_top
 import all lemmas.Pill.Arm.Fall
 import all lemmas.Pill.Arm.Fe
 import all lemmas.Pill.Arm.Flop
+import all lemmas.Pill.Arm.Fol_loop
+import all lemmas.Pill.Arm.Git_g
 import all lemmas.Pill.Arm.Gor
 import all lemmas.Pill.Arm.Gte
 import all lemmas.Pill.Arm.Gth
+import all lemmas.Pill.Arm.He_sock
 import all lemmas.Pill.Arm.Homo
 import all lemmas.Pill.Arm.In
 import all lemmas.Pill.Arm.Inlineable
@@ -48,6 +52,7 @@ import all lemmas.Pill.Arm.Mack
 import all lemmas.Pill.Arm.Mas
 import all lemmas.Pill.Arm.Max
 import all lemmas.Pill.Arm.Met
+import all lemmas.Pill.Arm.Mi
 import all lemmas.Pill.Arm.Min
 import all lemmas.Pill.Arm.Mink
 import all lemmas.Pill.Arm.Mix
@@ -69,6 +74,7 @@ import all lemmas.Pill.Arm.Peg
 import all lemmas.Pill.Arm.Pi
 import all lemmas.Pill.Arm.Read
 import all lemmas.Pill.Arm.Rear
+import all lemmas.Pill.Arm.Recursive_call
 import all lemmas.Pill.Arm.Rip
 import all lemmas.Pill.Arm.Roll
 import all lemmas.Pill.Arm.Rsh
@@ -76,6 +82,8 @@ import all lemmas.Pill.Arm.Safe_fol_fol
 import all lemmas.Pill.Arm.Safe_nomm
 import all lemmas.Pill.Arm.Scag
 import all lemmas.Pill.Arm.Scow
+import all lemmas.Pill.Arm.Ska_analyze
+import all lemmas.Pill.Arm.Ska_run
 import all lemmas.Pill.Arm.Skid
 import all lemmas.Pill.Arm.Skim
 import all lemmas.Pill.Arm.Skip
@@ -85,6 +93,7 @@ import all lemmas.Pill.Arm.Snip
 import all lemmas.Pill.Arm.Snoc
 import all lemmas.Pill.Arm.So
 import all lemmas.Pill.Arm.Soft
+import all lemmas.Pill.Arm.Soft_spot
 import all lemmas.Pill.Arm.Some
 import all lemmas.Pill.Arm.Sort
 import all lemmas.Pill.Arm.Spin
