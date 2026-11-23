@@ -140,6 +140,66 @@ theorem runL_six_done {c a b : Nomm} (hc : ∀ z o, Frag c (CGoal.pick z o : CGo
   obtain ⟨rfl, rfl⟩ := h
   exact ⟨n1, n0, nc, g1, g2, g3, h1', h2', a0, a1, h3', h4, rfl⟩
 
+/-! ## The final pass -/
+
+theorem grow_tagged (g : Gen Map) (o : Nat) (region : List Nat) : Grow g (g.tagged o region) := by
+  unfold Gen.tagged; split
+  · exact Grow.refl g
+  · exact ⟨Nat.le_refl _, rfl, fun _ b _ hb => ⟨b, hb, rfl, rfl⟩, fun _ b hb => Or.inl ⟨b, hb, rfl, rfl⟩⟩
+
+/-- `(add-ops o ~)` changes no block. -/
+theorem addOps_nil {o : Nat} {g g' : Gen Map} {u : Unit} (h : addOps o [] g = some (u, g')) :
+    (∀ k, HoonMap.get g'.blocks k = HoonMap.get g.blocks k) ∧ g'.re = g.re ∧ g'.bo = g.bo ∧ g'.drop = g.drop := by
+  cases hd : g.drop
+  · obtain ⟨b, hb, rfl⟩ := addOps_spec h hd
+    refine ⟨fun k => ?_, rfl, rfl, hd⟩
+    by_cases e : k = o
+    · subst e; simp [HoonMap.get_put, hb]
+    · simp [HoonMap.get_put, e]
+  · unfold addOps at h
+    simp only [hd, if_true, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨_, rfl⟩ := h
+    exact ⟨fun _ => rfl, rfl, rfl, hd⟩
+
+theorem looks_uni_empty (l : S) (s : Noun) : Looks (HoonSet.uni l HoonSet.empty) s ↔ Looks l s := by
+  simp only [Looks, HoonSet.mem_uni]
+  exact ⟨fun h a ha => h a (Or.inl ha), fun h a ha => ha.elim (h a) (fun e => absurd e (HoonSet.mem_empty a))⟩
+
+/-- The final pass on `[6 c a b]`, taken apart. -/
+theorem finishL_six_parts [HoonMapKeys Map] {c a b : Nomm} (hc : ∀ z o, Frag c (CGoal.pick z o : CGoal S))
+    (ha : Frag a (CGoal.done : CGoal S)) (hb : Frag b (CGoal.done : CGoal S)) {ord : NeedOrd} {less : Cape}
+    {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
+    (h : finishL (S := S) (Nomm.n6 c a b) ord less bake = some c') :
+    ∃ (n1 n0 nc : Next S) (g1 g2 g3 g4 g5 g6 g7 g8 g9 : Gen Map) (nedF : Need),
+      run b CGoal.done gen0 = some (n1, g1) ∧ run a CGoal.done g1 = some (n0, g2) ∧
+      n0.th.args = [] ∧ n1.th.args = [] ∧
+      run c (CGoal.pick (jmp0 g2.bo) (jmp0 (g2.bo + 1))) (sixGen g2 n0 n1) = some (nc, g3) ∧
+      addOps g3.bo [] (g3.emitted ⟨[], [], Termin.hop nc.th⟩) = some ((), g4) ∧
+      needOrdAllocRegs ord g4 = some (nedF, g5) ∧
+      coerceLazy nedF g3.bo ⟨nc.laz.ned, HoonSet.uni nc.laz.lok HoonSet.empty⟩ less g5 = some ((), g6) ∧
+      coerceLazy nedF g2.bo n0.laz less g6 = some ((), g7) ∧
+      coerceLazy nedF (g2.bo + 1) n1.laz less g7 = some ((), g8) ∧
+      addOps g3.bo [] g8 = some ((), g9) ∧
+      toStraight g9.blocks nedF g3.bo = some c' := by
+  unfold finishL at h
+  obtain ⟨⟨nex, g4⟩, h1, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨n1, n0, nc, g1, g2, g3, hrb, hra, a0, a1, hrc, hadd, rfl⟩ := runL_six_done hc ha hb h1
+  simp only [jmp0, ne_eq, not_true_eq_false, if_false, hbake, List.map_nil] at h
+  obtain ⟨⟨nedF, g5⟩, h5, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨⟨u8, g8⟩, h8, h⟩ := Option.bind_eq_some_iff.mp h
+  simp only at h
+  obtain ⟨⟨u9, g9⟩, h9, hts⟩ := Option.bind_eq_some_iff.mp h
+  simp only at hts
+  simp only [coerceLazyL, bind_apply] at h8
+  obtain ⟨⟨u6, g6⟩, h6, h8⟩ := Option.bind_eq_some_iff.mp h8
+  simp only [List.isEmpty_cons, Bool.false_and, Bool.false_eq_true, if_false, coerceBonds, coerceForks,
+    coerceLazyL_ofSure, bind_apply, pure_apply, Option.bind_some] at h8
+  obtain ⟨⟨u7, g7⟩, h7, h8⟩ := Option.bind_eq_some_iff.mp h8
+  obtain ⟨⟨u8', g8'⟩, h8', h8⟩ := Option.bind_eq_some_iff.mp h8
+  simp only [Option.some.injEq, Prod.mk.injEq] at h8
+  obtain ⟨_, rfl⟩ := h8
+  exact ⟨n1, n0, nc, g1, g2, g3, g4, g5, g6, g7, g8', g9, nedF, hrb, hra, a0, a1, hrc, hadd, h5, h6, h7, h8', h9, hts⟩
+
 end Comp
 end SkaModel
 end Formalization
