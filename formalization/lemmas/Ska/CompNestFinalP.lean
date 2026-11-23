@@ -147,6 +147,26 @@ theorem crash_iffP [HoonMapKeys Map] (lib : Lib) {nm : Nomm} (hf : FragP (S := S
   · cases pureEval nm s <;> simp [toneOf]
   · intro v; cases pureEval nm s <;> simp [toneOf]
 
+/-- `FragP` for `%done` contains `Frag6`. -/
+theorem fragP_of_frag6 {nm : Nomm} (h : Frag6 (S := S) nm) : FragP (S := S) CGoal.done nm := by
+  rcases h with h | ⟨c, a, b, rfl, hc, ha, hb⟩
+  · exact FragP.frag h
+  · exact FragP.six (fun z o => FragP.frag (hc z o)) (FragP.frag ha) (FragP.frag hb)
+
+theorem sixCount_frag6 {nm : Nomm} (h : Frag6 (S := S) nm) : sixCount nm ≤ 1 := by
+  rcases h with h | ⟨c, a, b, rfl, hc, ha, hb⟩
+  · rw [sixCount_frag h]; omega
+  · simp only [sixCount, sixCount_frag (hc (jmp0 0) (jmp0 0)), sixCount_frag ha, sixCount_frag hb]; omega
+
+/-- **`finishLF_bellContract6` again, as a case of `FragP`.** -/
+theorem finishLF_bellContract6' [HoonMapKeys Map] {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
+    {bl : Bell} {nm : Nomm} (hp : nm.pure = true) (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol nm)
+    (hf : Frag6 (S := S) nm) {cape : Cape} {data : Noun} (hbl : bl.less = Sock.mk cape data)
+    (hn : CapeNorm cape) {ord : NeedOrd} {bake : Need → Need × List (Nat × Noun)}
+    (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
+    (h : finishLF (S := S) nm ord cape bake = some c') (N : Needs) : BellContract lib N bl false c' :=
+  finishLF_bellContractP hok hp hA (fragP_of_frag6 hf) (by have := sixCount_frag6 hf; omega) hbl hn hbake h N
+
 end Comp
 end SkaModel
 end Formalization

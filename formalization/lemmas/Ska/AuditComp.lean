@@ -143,3 +143,4 @@ open Formalization.SkaModel.Comp
 #print axioms finishLF_compDoneP
 #print axioms finishLF_bellContractP
 #print axioms crash_iffP
+#print axioms finishLF_bellContract6'
