@@ -25,18 +25,6 @@ open Nock
 
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
 
-/-- A need with no subterm `pair none none`. -/
-def Clean : Need → Prop
-  | Need.none => True
-  | Need.this _ => True
-  | Need.pair p q => ¬ (p = Need.none ∧ q = Need.none) ∧ Clean p ∧ Clean q
-  | Need.both _ p q => Clean p ∧ Clean q
-
-/-- The need of a goal `%next` is clean. -/
-def GClean : CGoal S → Prop
-  | CGoal.next laz _ => Clean laz.ned
-  | _ => True
-
 theorem clean_consNeed {a b : Need} (ha : Clean a) (hb : Clean b) : Clean (consNeed a b) := by
   unfold consNeed
   split

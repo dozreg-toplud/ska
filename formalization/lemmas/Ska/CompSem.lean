@@ -124,6 +124,18 @@ def GMem : CGoal S → Nat → Prop
   | CGoal.next laz _, r => NMem laz.ned r
   | _, _ => False
 
+/-- A need with no subterm `pair none none`. -/
+def Clean : Need → Prop
+  | Need.none => True
+  | Need.this _ => True
+  | Need.pair p q => ¬ (p = Need.none ∧ q = Need.none) ∧ Clean p ∧ Clean q
+  | Need.both _ p q => Clean p ∧ Clean q
+
+/-- The need of a goal `%next` is clean. -/
+def GClean : CGoal S → Prop
+  | CGoal.next laz _ => Clean laz.ned
+  | _ => True
+
 /-- A product that has not the shape or the looks the goal asks. -/
 def GNot : CGoal S → Noun → Prop
   | CGoal.next laz _, p => ¬ FitsS laz p

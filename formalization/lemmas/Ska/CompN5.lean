@@ -72,14 +72,14 @@ theorem n5_of_block {lib : Lib} {p q : Nomm} {goal : CGoal S} {g0 g2 g3 g4 g1 : 
     (h3 : run q (CGoal.next (lazyReg (g0.re + 1)) (jmp0 o)) g2 = some (nexq, g3))
     (h4 : run p (CGoal.next (lazyReg g0.re) nexq.th) g3 = some (nexp, g4))
     (h : copy nexp nexq.laz g4 = some (nex, g1))
-    (ihp : ∀ (laz : Sure S) (th : Jmp) (g g' : Gen Map) (nex' : Next S), GoalOK g (CGoal.next laz th) →
+    (ihp : ∀ (laz : Sure S) (th : Jmp) (g g' : Gen Map) (nex' : Next S), GoalOK g (CGoal.next laz th) → Clean laz.ned →
       run p (CGoal.next laz th) g = some (nex', g') → RunOK lib p (CGoal.next laz th) g g' nex')
-    (ihq : ∀ (laz : Sure S) (th : Jmp) (g g' : Gen Map) (nex' : Next S), GoalOK g (CGoal.next laz th) →
+    (ihq : ∀ (laz : Sure S) (th : Jmp) (g g' : Gen Map) (nex' : Next S), GoalOK g (CGoal.next laz th) → Clean laz.ned →
       run q (CGoal.next laz th) g = some (nex', g') → RunOK lib q (CGoal.next laz th) g g' nex') :
     RunOK lib (Nomm.n5 p q) goal g0 g1 nex := by
-  have hq := ihq (lazyReg (g0.re + 1)) _ _ _ _ ⟨trivial, fun r hr => by simp only [lazyReg, NMem] at hr; omega⟩ h3
+  have hq := ihq (lazyReg (g0.re + 1)) _ _ _ _ ⟨trivial, fun r hr => by simp only [lazyReg, NMem] at hr; omega⟩ trivial h3
   have hp := ihp (lazyReg g0.re) _ _ _ _ ⟨trivial, fun r hr => by
-    simp only [lazyReg, NMem] at hr; have := hq.ext.1; omega⟩ h4
+    simp only [lazyReg, NMem] at hr; have := hq.ext.1; omega⟩ trivial h4
   refine binary_ok (pureEval_n5 p q) hg E (fun r hr => ?_) (fun r hr => ?_) (fun r h1 h2 => ?_) hq hp
     (run_clean q _ _ _ _ (by trivial) h3) (run_clean p _ _ _ _ (by trivial) h4) h
     (fun x y hn => absurd (hn.elim (fun a => a (fitsS_lazyReg _ x)) (fun a => a (fitsS_lazyReg _ y))) id)
@@ -91,9 +91,9 @@ theorem n5_of_block {lib : Lib} {p q : Nomm} {goal : CGoal S} {g0 g2 g3 g4 g1 : 
 /-- **`[5 p q]`.** -/
 theorem run_n5_ok {lib : Lib} {p q : Nomm} {goal : CGoal S} {g0 g1 : Gen Map} {nex : Next S}
     (h : run (Nomm.n5 p q) goal g0 = some (nex, g1)) (hg : GoalOK g0 goal)
-    (ihp : ∀ (laz : Sure S) (th : Jmp) (g g' : Gen Map) (nex' : Next S), GoalOK g (CGoal.next laz th) →
+    (ihp : ∀ (laz : Sure S) (th : Jmp) (g g' : Gen Map) (nex' : Next S), GoalOK g (CGoal.next laz th) → Clean laz.ned →
       run p (CGoal.next laz th) g = some (nex', g') → RunOK lib p (CGoal.next laz th) g g' nex')
-    (ihq : ∀ (laz : Sure S) (th : Jmp) (g g' : Gen Map) (nex' : Next S), GoalOK g (CGoal.next laz th) →
+    (ihq : ∀ (laz : Sure S) (th : Jmp) (g g' : Gen Map) (nex' : Next S), GoalOK g (CGoal.next laz th) → Clean laz.ned →
       run q (CGoal.next laz th) g = some (nex', g') → RunOK lib q (CGoal.next laz th) g g' nex') :
     RunOK lib (Nomm.n5 p q) goal g0 g1 nex := by
   simp only [run, bind_apply, re_apply, Option.bind_some] at h

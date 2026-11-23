@@ -111,15 +111,15 @@ theorem runOK_n3_of_none {lib : Lib} {p : Nomm} {laz : Sure S} {th : Jmp} {g0 g1
 /-- **`[3 p]` for `%next`.** -/
 theorem run_n3_next_ok {lib : Lib} {p : Nomm} {laz : Sure S} {th : Jmp} {g0 g1 : Gen Map} {nex : Next S}
     (h : run (Nomm.n3 p) (CGoal.next laz th) g0 = some (nex, g1))
-    (hg : GoalOK g0 (CGoal.next laz th))
-    (ih : ∀ (laz : Sure S) (th : Jmp) (g g' : Gen Map) (nex' : Next S), GoalOK g (CGoal.next laz th) →
+    (hg : GoalOK g0 (CGoal.next laz th)) (hc : Clean laz.ned)
+    (ih : ∀ (laz : Sure S) (th : Jmp) (g g' : Gen Map) (nex' : Next S), GoalOK g (CGoal.next laz th) → Clean laz.ned →
       run p (CGoal.next laz th) g = some (nex', g') → RunOK lib p (CGoal.next laz th) g g' nex') :
     RunOK lib (Nomm.n3 p) (CGoal.next laz th) g0 g1 nex := by
   by_cases en : noneEquivalent laz = true
   · simp only [run, en, if_true] at h
     have en' := en
     simp only [noneEquivalent, Bool.and_eq_true, decide_eq_true_eq, HoonSet.small_iff] at en'
-    exact runOK_n3_of_none en'.1 en'.2 (ih _ _ _ _ _ hg h)
+    exact runOK_n3_of_none en'.1 en'.2 (ih _ _ _ _ _ hg hc h)
   simp only [run, en, Bool.false_eq_true, if_false] at h
   obtain ⟨a, g2, h2, h⟩ := bind_some h
   obtain ⟨E2, ea, _, hsome⟩ := collapse_ok h2
@@ -136,7 +136,7 @@ theorem run_n3_next_ok {lib : Lib} {p : Nomm} {laz : Sure S} {th : Jmp} {g0 g1 :
   have Ep := (ext_re g3).trans (ext_emit { g3 with re := g3.re + 1 } ⟨[], [], Termin.clq g3.re (jmp0 z) (jmp0 o')⟩)
   refine unary_ok (pureEval_n3 p) (E2.trans (E3.trans Ep))
     ⟨by have := E2.1; have := E3.1; omega, by simp [emitted_re]⟩ (by simp [emitted_bo])
-    (ih _ _ _ _ _ ⟨trivial, fun r hr => by simp [lazyReg, NMem] at hr; subst hr; simp [emitted_re]⟩ h) ?_
+    (ih _ _ _ _ _ ⟨trivial, fun r hr => by simp [lazyReg, NMem] at hr; subst hr; simp [emitted_re]⟩ trivial h) ?_
     (by have := E2.2.1; have := E3.2.1; show g0.bo ≤ g3.bo; omega)
   intro c hc hd σ O st regs t gul x hx
   have hd2 : g2.drop = false := E2.2.2.1.trans hd

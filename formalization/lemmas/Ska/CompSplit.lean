@@ -302,6 +302,52 @@ theorem splitNeed_spec {ned : Need} {o : Nat} {g g' : Gen Map} {x : Need × Need
         HoldsN.agree t (fun y hy => read_store_ne (fun e => by subst e; exact nt hy) _ _) hb'⟩,
         fun y hy => read_store_ne (fun e => hy (Or.inl e)) _ _⟩
 
+/-- **`+split`.** -/
+theorem split_ok {laz : Sure S} {th : Jmp} {g g' : Gen Map} {hed tel : Sure S} {o : Nat}
+    (h : Comp.split ⟨laz, th⟩ g = some ((hed, tel, o), g')) :
+    o = g.bo ∧ Ext g g' ∧ g'.bo = g.bo + 1 ∧
+    (∀ y, NMem hed.ned y → NMem laz.ned y ∨ (g.re ≤ y ∧ y < g'.re)) ∧
+    (∀ y, NMem tel.ned y → NMem laz.ned y ∨ (g.re ≤ y ∧ y < g'.re)) ∧
+    (Distinct laz.ned → (∀ y, NMem laz.ned y → y < g.re) →
+      Distinct hed.ned ∧ Distinct tel.ned ∧ (∀ y, NMem hed.ned y → ¬ NMem tel.ned y) ∧
+      (∀ a b, FitsS laz (C a b) ↔ FitsS hed a ∧ FitsS tel b) ∧
+      (g.drop = false → ∀ (c : Straight Map), Agree c g g' → ∀ (lib : Lib) (σ : Type) (O : Oracle σ) st t
+        (R : Map Noun) a b gul, HoldsN hed.ned R a → HoldsN tel.ned R b →
+        ∃ R', HoldsN laz.ned R' (C a b) ∧ (∀ y, ¬ NMem laz.ned y → SkaModel.read y R' = SkaModel.read y R) ∧
+          goJ lib O c gul st R t (jmp0 o) = goJ lib O c gul st R' t th)) := by
+  simp only [Comp.split] at h
+  obtain ⟨o', g0, h0, h⟩ := bind_some h
+  rw [emit_apply] at h0
+  simp only [Option.some.injEq, Prod.mk.injEq] at h0
+  obtain ⟨rfl, rfl⟩ := h0
+  obtain ⟨⟨sh, st⟩, g1, h2, h⟩ := bind_some h
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨⟨rfl, rfl, rfl⟩, rfl⟩ := h
+  simp only [splitSure] at h2
+  obtain ⟨⟨lh, lt⟩, hl, h2⟩ := Option.bind_eq_some_iff.mp h2
+  obtain ⟨⟨⟨nh, nt⟩, g2⟩, h3, h4⟩ := Option.map_eq_some_iff.mp h2
+  simp only [Option.some.injEq, Prod.mk.injEq] at h4
+  obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h4
+  obtain ⟨eb, ed, er, eo, M1, M2, D, SB⟩ := splitNeed_spec h3
+  replace eb : g2.bo = g.bo + 1 := eb
+  replace er : g.re ≤ g2.re := er
+  replace ed : g2.drop = g.drop := ed
+  have E0 := ext_emit g ⟨[], [], Termin.hop th⟩
+  have E : Ext g g2 := ⟨er, by rw [eb]; omega,
+    ed, fun o' ho' => (eo o' (by omega)).trans (E0.2.2.2 o' ho')⟩
+  refine ⟨rfl, E, by rw [eb], M1, M2, fun d lo => ?_⟩
+  obtain ⟨Dh, Dt, Dht, F⟩ := D d lo
+  refine ⟨Dh, Dt, Dht, fun a b => ?_, fun hd c hc lib σ O st' t R a b gul ha hb => ?_⟩
+  · simp only [FitsS, F a b, splitLok_looks hl a b]
+    exact ⟨fun ⟨⟨x, y⟩, z, w⟩ => ⟨⟨x, z⟩, y, w⟩, fun ⟨⟨x, z⟩, y, w⟩ => ⟨⟨x, y⟩, z, w⟩⟩
+  · obtain ⟨A, Fr, Sm⟩ := SB hd
+    obtain ⟨R', r1, hl', u⟩ := Sm d lo lib σ O c gul st' t R a b ha hb
+    have hb0 : HoonMap.get c.blocks g.bo = some ⟨[], A ++ [], Termin.hop th⟩ := by
+      rw [hc g.bo (Nat.le_refl _) (by rw [eb]; simp [emitted_bo])]
+      exact Fr.blk _ _ (emitted_get g _ hd)
+    refine ⟨R', hl', u, ?_⟩
+    rw [goJ_jmp0 _ _ _ _ hb0, r1, execBlob_hop]
+
 end Comp
 end SkaModel
 end Formalization
