@@ -1,10 +1,12 @@
 import lemmas.Compiler.So
 import lemmas.Hoon.Axis
+import lemmas.Hoon.Lists
 
 /-!
 The arms of `+ca` and `+so` that walk an axis with `+cap` and `+mas` of
 `hoon.hoon`: `pat` and `lot` of `+ca`, `pull` of `+so`.  They compute track
-B's models in `lemmas/Ska/Sock.lean`, with a crash (`none`) on axis `0`.
+B's models in `lemmas/Ska/Sock.lean`, with a crash (`none`) on axis `0`.  And
+`yea` of `+ca`, which builds axes with `+peg` and joins lists with `+weld`.
 
 These arms read `+cap` and `+mas` from layer 1 of `hoon.hoon`, below the
 library core: `AxisOf lib` says that the noun at `ca.lib.layer1.axis` in the
@@ -196,6 +198,49 @@ theorem ca_lot_gate (ctx : Noun) (hc : AxisIn ctx) (c : Cape) (axe : Nat) :
   · subst a0; nock_open ca.lot.battery; simp [nock_exec, Ca.lot]
   rw [ca_lot_loop ctx hc axe (by omega) c]
   simp [Ca.lot, a0]
+
+/-! ## `+yea:ca` -/
+
+theorem pegF_two (a : Nat) : Hoon.pegF a 2 = a * 2 := by rw [Hoon.pegF_eq]; simp
+
+theorem pegF_three (a : Nat) : Hoon.pegF a 3 = a * 2 + 1 := by rw [Hoon.pegF_eq]; simp
+
+/-- The library core `lib` holds layer 2 of `hoon.hoon` with `+weld`, and
+layer 1 with `+peg`. -/
+abbrev YeaOf (lib : Noun) : Prop :=
+  ∃ l2 l1, slot? ca.lib.layer2.axis lib = some l2 ∧ slot? weld.axis l2 = some weld.arm ∧
+    slot? ca.lib.layer1.axis lib = some l1 ∧ Hoon.PegIn l1
+
+abbrev YeaIn (c : Noun) : Prop := Hoon.Below YeaOf c
+
+@[nock_exec] theorem ca_yea_arm (c : Noun) :
+    nock c ca.yea.arm = some (C ca.yea.battery (C (A 1) c)) := by
+  nock_open ca.yea.arm; simp only [nock_exec]
+
+theorem ca_yea_loop (ctx : Noun) (hc : YeaIn ctx) : ∀ (c : Cape) (axe : Nat), 1 ≤ axe →
+    nock (C ca.yea.loop (C (A axe) (C ca.yea.battery (C c.toNoun ctx)))) ca.yea.loop
+      = some (Hoon.listN ((Ca.yeaAt c axe).map A)) := by
+  obtain ⟨bat, lib, rfl, l2, l1, hl2, hweld, hl1, hpeg⟩ := hc.elim
+  intro c
+  induction c with
+  | no => intro axe _; nock_open ca.yea.loop; simp [nock_exec, Cape.toNoun, Ca.yeaAt]
+  | yes => intro axe _; nock_open ca.yea.loop; simp [nock_exec, Cape.toNoun, Ca.yeaAt]
+  | cell h t ih it =>
+    intro axe h1
+    have p2 := Hoon.peg_gate l1 hpeg.2 axe h1 2 (by omega)
+    have p3 := Hoon.peg_gate l1 hpeg.2 axe h1 3 (by omega)
+    rw [pegF_two] at p2
+    rw [pegF_three] at p3
+    nock_open ca.yea.loop
+    simp [nock_exec, Cape.toNoun, Ca.yeaAt, hl2, hweld, hl1, hpeg.1, Hoon.peg_arm, Hoon.weld_arm,
+      p2, p3, ih (axe * 2) (by omega), it (axe * 2 + 1) (by omega), Hoon.weld_gate_list]
+
+/-- Slamming `yea` of `+ca` on a cape: its list of known axes. -/
+theorem ca_yea_gate (ctx : Noun) (hc : YeaIn ctx) (c : Cape) :
+    nock (C ca.yea.battery (C c.toNoun ctx)) ca.yea.battery
+      = some (Hoon.listN ((Ca.yea c).map A)) := by
+  nock_open ca.yea.battery
+  simp only [nock_exec, ca_yea_loop ctx hc c 1 (by omega), Ca.yea]
 
 end Compiler
 end Formalization
