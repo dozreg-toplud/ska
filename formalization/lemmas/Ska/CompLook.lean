@@ -23,7 +23,7 @@ variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
 structure LookOK (ned : Need) (axe : Nat) (g0 g1 : Gen Map) (ned' : Need) : Prop where
   gen : ∃ k, g1 = { g0 with re := k }
   le : g0.re ≤ g1.re
-  holds : ∀ (regs : Map Noun) n, HoldsN ned' regs n → HoldsN ned regs n
+  holds : ∀ (regs : Map (Option Noun)) n, HoldsN ned' regs n → HoldsN ned regs n
   fits : ∀ n, Fits ned' n ↔ Fits ned n ∧ (slot? axe n).isSome
   mem : ∀ r, NMem ned' r → NMem ned r ∨ (g0.re ≤ r ∧ r < g1.re)
   dist : Distinct ned → (∀ r, NMem ned r → r < g0.re) → Distinct ned'
@@ -40,11 +40,11 @@ theorem lookPath_step (ned : Need) {axe : Nat} (h2 : 2 ≤ axe) :
   rw [lookPath.eq_def]
   simp only [show ¬ axe ≤ 1 by omega, dif_neg, not_false_eq_true]
 
-theorem consNeed_holds {a b : Need} (h : ¬ (a = Need.none ∧ b = Need.none)) (regs : Map Noun) (n : Noun) :
+theorem consNeed_holds {a b : Need} (h : ¬ (a = Need.none ∧ b = Need.none)) (regs : Map (Option Noun)) (n : Noun) :
     HoldsN (consNeed a b) regs n ↔ HoldsN (Need.pair a b) regs n := by
   simp [consNeed, h]
 
-theorem wrap_holds (here : Option Nat) {x : Need} (hx : ∃ p q, x = Need.pair p q) (regs : Map Noun) (n : Noun) :
+theorem wrap_holds (here : Option Nat) {x : Need} (hx : ∃ p q, x = Need.pair p q) (regs : Map (Option Noun)) (n : Noun) :
     HoldsN (wrapN here x) regs n ↔ (∀ r, here = some r → SkaModel.read r regs = some n) ∧ HoldsN x regs n := by
   obtain ⟨p, q, rfl⟩ := hx
   cases here with
@@ -65,7 +65,7 @@ theorem wrap_mem (here : Option Nat) {x : Need} (hx : ∃ p q, x = Need.pair p q
   | none => simp [wrapN]
   | some r' => simp [wrapN, NMem, eq_comm]
 
-theorem split3_holds : ∀ (ned : Need) (regs : Map Noun) (a b : Noun),
+theorem split3_holds : ∀ (ned : Need) (regs : Map (Option Noun)) (a b : Noun),
     (∀ r, (split3 ned).1 = some r → SkaModel.read r regs = some (C a b)) →
     HoldsN (split3 ned).2.1 regs a → HoldsN (split3 ned).2.2 regs b → HoldsN ned regs (C a b)
   | Need.none, _, _, _, _, _, _ => trivial
@@ -131,8 +131,8 @@ theorem consNeed_pair {a b : Need} (h : a ≠ Need.none ∨ b ≠ Need.none) : c
 theorem lookStep_ok {ned hr tr : Need} {axe : Nat} {g0 g1 : Gen Map} (h2 : 2 ≤ axe)
     (gen : ∃ k, g1 = { g0 with re := k }) (le : g0.re ≤ g1.re)
     (nz : hr ≠ Need.none ∨ tr ≠ Need.none)
-    (hh : ∀ (regs : Map Noun) a, HoldsN hr regs a → HoldsN (split3 ned).2.1 regs a)
-    (ht : ∀ (regs : Map Noun) b, HoldsN tr regs b → HoldsN (split3 ned).2.2 regs b)
+    (hh : ∀ (regs : Map (Option Noun)) a, HoldsN hr regs a → HoldsN (split3 ned).2.1 regs a)
+    (ht : ∀ (regs : Map (Option Noun)) b, HoldsN tr regs b → HoldsN (split3 ned).2.2 regs b)
     (hf : ∀ a b, Fits hr a ∧ Fits tr b ↔ (Fits (split3 ned).2.1 a ∧ Fits (split3 ned).2.2 b) ∧
       (slot? axe (C a b)).isSome)
     (hm : ∀ r, NMem hr r ∨ NMem tr r → NMem (split3 ned).2.1 r ∨ NMem (split3 ned).2.2 r ∨
@@ -301,7 +301,7 @@ theorem sureRequireLook_eq (sur : Sure S) :
 structure SureOK (ned0 : Need) (xs : List Nat) (g0 g1 : Gen Map) (ned' : Need) : Prop where
   gen : ∃ k, g1 = { g0 with re := k }
   le : g0.re ≤ g1.re
-  holds : ∀ (regs : Map Noun) n, HoldsN ned' regs n → HoldsN ned0 regs n
+  holds : ∀ (regs : Map (Option Noun)) n, HoldsN ned' regs n → HoldsN ned0 regs n
   fits : ∀ n, Fits ned' n ↔ Fits ned0 n ∧ ∀ x ∈ xs, (slot? x n).isSome
   mem : ∀ r, NMem ned' r → NMem ned0 r ∨ (g0.re ≤ r ∧ r < g1.re)
   dist : Distinct ned0 → (∀ r, NMem ned0 r → r < g0.re) → Distinct ned'
@@ -380,7 +380,7 @@ theorem sureRequireLook_spec {sur : Sure S} {ned' : Need} {g0 g1 : Gen Map}
   foldLook_spec _ _ _ _ _ (by rw [← sureRequireLook_eq]; exact h)
 
 theorem holdsS_of_sure {sur : Sure S} {ned' : Need} {g0 g1 : Gen Map}
-    (L : SureOK sur.ned (HoonSet.toList sur.lok) g0 g1 ned') {regs : Map Noun} {n : Noun}
+    (L : SureOK sur.ned (HoonSet.toList sur.lok) g0 g1 ned') {regs : Map (Option Noun)} {n : Noun}
     (h : HoldsN ned' regs n) : HoldsS sur regs n :=
   ⟨L.holds regs n h, ((L.fits n).mp (fits_of_holds _ h)).2⟩
 

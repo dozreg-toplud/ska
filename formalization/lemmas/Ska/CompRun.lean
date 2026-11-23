@@ -36,13 +36,13 @@ section
 variable {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ}
 
 /-- Where the code crashes, it does what every goal asks of no value. -/
-theorem goalSem_crash {K : Nat → Prop} {regs : Map Noun} {t : Trace} {je : Jmp} (goal : CGoal S)
+theorem goalSem_crash {K : Nat → Prop} {regs : Map (Option Noun)} {t : Trace} {je : Jmp} (goal : CGoal S)
     (h : goJ lib O c gul st regs t je = some (Tone.two t, st)) :
     GoalSem lib O c gul st K regs t je goal none := by
   cases goal <;> simp only [GoalSem, toneOf] <;> exact h
 
 /-- A product that is no loobean, on `%pick`. -/
-theorem goalSem_pick_other {K : Nat → Prop} {regs : Map Noun} {t : Trace} {je z o : Jmp} {k : Noun}
+theorem goalSem_pick_other {K : Nat → Prop} {regs : Map (Option Noun)} {t : Trace} {je z o : Jmp} {k : Noun}
     (h0 : k ≠ A 0) (h1 : k ≠ A 1) (h : goJ lib O c gul st regs t je = some (Tone.two t, st)) :
     GoalSem lib O c gul st K regs t je (CGoal.pick z o : CGoal S) (some k) := by
   rcases k with ⟨_ | _ | k⟩ | ⟨a, b⟩
@@ -246,7 +246,7 @@ section
 variable {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ}
 
 /-- What the code does for a goal, a code that goes on as it does does too. -/
-theorem GoalSem.transfer {K : Nat → Prop} {regs regs' : Map Noun} {t : Trace} {je je' : Jmp}
+theorem GoalSem.transfer {K : Nat → Prop} {regs regs' : Map (Option Noun)} {t : Trace} {je je' : Jmp}
     {goal : CGoal S} {v : Option Noun}
     (he : goJ lib O c gul st regs t je = goJ lib O c gul st regs' t je')
     (hk : ∀ r, K r → SkaModel.read r regs' = SkaModel.read r regs)
@@ -268,7 +268,7 @@ theorem GoalSem.transfer {K : Nat → Prop} {regs regs' : Map Noun} {t : Trace} 
     · simp only [GoalSem] at h ⊢; rw [he]; exact h
 
 /-- Fewer registers kept. -/
-theorem GoalSem.mono {K K' : Nat → Prop} {regs : Map Noun} {t : Trace} {je : Jmp} {goal : CGoal S}
+theorem GoalSem.mono {K K' : Nat → Prop} {regs : Map (Option Noun)} {t : Trace} {je : Jmp} {goal : CGoal S}
     {v : Option Noun} (hK : ∀ r, K' r → K r) (h : GoalSem lib O c gul st K regs t je goal v) :
     GoalSem lib O c gul st K' regs t je goal v := by
   cases goal with
@@ -286,7 +286,7 @@ theorem GoalSem.mono {K K' : Nat → Prop} {regs : Map Noun} {t : Trace} {je : J
     · exact h
 
 /-- A product without the goal's shape or looks: the code must crash. -/
-theorem goalSem_not {K : Nat → Prop} {regs : Map Noun} {t : Trace} {je : Jmp} {goal : CGoal S} {p : Noun}
+theorem goalSem_not {K : Nat → Prop} {regs : Map (Option Noun)} {t : Trace} {je : Jmp} {goal : CGoal S} {p : Noun}
     (hn : GNot goal p) (h : goJ lib O c gul st regs t je = some (Tone.two t, st)) :
     GoalSem lib O c gul st K regs t je goal (some p) := by
   cases goal with

@@ -202,7 +202,7 @@ theorem top_val {k : Nat} {cr s f scry x : Noun} {r : Tone × Noun} (hc : CorIn 
   rw [h1] at h3
   exact ⟨(Option.some.inj h3).symm, h2⟩
 
-theorem blob_val {k : Nat} {cr : Noun} {regs : TreapMap mugF Noun} {trace : Trace} {b : Blob}
+theorem blob_val {k : Nat} {cr : Noun} {regs : TreapMap mugF (Option Noun)} {trace : Trace} {b : Blob}
     {s : Straight (TreapMap mugF)} {params : List (Option Nat)} {scry x : Noun} {r : Tone × Noun}
     (hc : CorIn cr)
     (hr : Ev (fun m => execBlob lib (SkaModel.interp lib pk m) s scry cr regs trace b params) r)
@@ -214,8 +214,8 @@ theorem blob_val {k : Nat} {cr : Noun} {regs : TreapMap mugF Noun} {trace : Trac
   rw [h1] at h3
   exact ⟨(Option.some.inj h3).symm, h2⟩
 
-theorem pole_val {k : Nat} {cr : Noun} {pole : Pole} {regs : TreapMap mugF Noun} {trace : Trace}
-    {scry x : Noun} {r : Tone × TreapMap mugF Noun × Trace × Noun} (hc : CorIn cr)
+theorem pole_val {k : Nat} {cr : Noun} {pole : Pole} {regs : TreapMap mugF (Option Noun)} {trace : Trace}
+    {scry x : Noun} {r : Tone × TreapMap mugF (Option Noun) × Trace × Noun} (hc : CorIn cr)
     (hr : Ev (fun m => execPole lib (SkaModel.interp lib pk m) scry cr pole regs trace) r)
     (h : iterN k (poleS cr pole regs trace scry) eval_pole.battery = some x) :
     x = poleOutS r ∧ CorIn r.2.2.2 := by
@@ -271,7 +271,7 @@ macro "blob_simp_at" h:ident "[" ts:Lean.Parser.Tactic.simpLemma,* "]" : tactic 
 
 /-- The model of a block that ends in a jump, from the model of the jump. -/
 theorem ev_jump {lib : Lib} {O : Nat → Oracle Noun} {s : Straight (TreapMap mugF)} {scry cr : Noun}
-    {regs : TreapMap mugF Noun} {trace : Trace} {fin : Termin} (j : Jmp)
+    {regs : TreapMap mugF (Option Noun)} {trace : Trace} {fin : Termin} (j : Jmp)
     (hx : ∀ m, execBlob lib (O m) s scry cr regs trace ⟨[], [], fin⟩ [] =
       (HoonMap.get s.blocks j.there).bind fun b' => execBlob lib (O m) s scry cr regs trace b' j.args)
     {b' : Blob} (e : HoonMap.get s.blocks j.there = some b') {r : Tone × Noun}
@@ -345,8 +345,8 @@ theorem top_step (k : Nat) (hB : BlobGe lib pk k) : TopGe lib pk (k + 1) := by
       simp only [read.layer2.axis, icore, nock_exec] at hl2
       have hnd : NeedIn layer2 ∧ SomeIn layer2 ∧ GorIn mugF layer2 :=
         ⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩
-      have hreg : HoonMap.toNoun id (regsOf [s] : TreapMap mugF Noun)
-          = C (C (A 0) s) (C (A 0) (A 0)) := rfl
+      have hreg : HoonMap.toNoun (unitNoun id) (regsOf [s] : TreapMap mugF (Option Noun))
+          = C (C (A 0) (C (A 0) s)) (C (A 0) (A 0)) := rfl
       rcases hdisp with hd | ⟨rfl, t, rfl⟩ | ⟨rfl, th, tt, rfl, hd⟩
       all_goals (try simp only [Tag.bare] at hd)
       all_goals first | top_simp_at h' [hw, hd] | top_simp_at h' [hw]
@@ -543,8 +543,8 @@ theorem pole_step (k : Nat) (hB : BlobGe lib pk k) (hT : TopGe lib pk k) (hP : P
     | none =>
       hyb_simp_at h' [SkaModel.Prod.toNoun, Tag.ir, hld, e2, Straight.toNoun]
     | some vs0 =>
-    have hreg : HoonMap.toNoun id (regsOf [vs0] : TreapMap mugF Noun)
-        = C (C (A 0) vs0) (C (A 0) (A 0)) := rfl
+    have hreg : HoonMap.toNoun (unitNoun id) (regsOf [vs0] : TreapMap mugF (Option Noun))
+        = C (C (A 0) (C (A 0) vs0)) (C (A 0) (A 0)) := rfl
     have hg := getF_hoonMap Blob.toNoun c.blocks 0
     cases e3 : HoonMap.get c.blocks 0 with
     | none =>
@@ -616,7 +616,7 @@ theorem blob_step (k : Nat) (hP : PoleGe lib pk k) (hB : BlobGe lib pk k) :
   have hrm := read_model (icore cr) hrc
   have hl1 := slot_tail_of hc.1 layer2_layer1
   have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc.1
-  have hep := eval_pass_gate (icore cr) ⟨hmv, ⟨hrd, hst, hrc⟩, layer2, hc.1, levy.arm_at, lien.arm_at⟩
+  have hep := eval_pass_gate (icore cr) ⟨hmv, hrc, layer2, hc.1, levy.arm_at, lien.arm_at⟩
   simp only [read.layer2.axis, icore, Nat.reduceMul, Nat.reduceAdd] at hl1
   simp only [nock_exec] at hl1
   simp only [read.layer2.axis, icore, nock_exec] at hl2
@@ -831,8 +831,8 @@ theorem blob_step (k : Nat) (hP : PoleGe lib pk k) (hB : BlobGe lib pk k) :
     | none =>
       hyb_simp_at h' [SkaModel.Prod.toNoun, Tag.ir, Straight.toNoun, hrd', read_arm, hrm', e2]
     | some vs =>
-    have hreg : HoonMap.toNoun id (regsOf [vs] : TreapMap mugF Noun)
-        = C (C (A 0) vs) (C (A 0) (A 0)) := rfl
+    have hreg : HoonMap.toNoun (unitNoun id) (regsOf [vs] : TreapMap mugF (Option Noun))
+        = C (C (A 0) (C (A 0) vs)) (C (A 0) (A 0)) := rfl
     cases e3 : HoonMap.get c.blocks 0 with
     | none =>
       rw [e3] at hg

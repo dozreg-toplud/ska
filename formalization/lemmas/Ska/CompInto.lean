@@ -134,7 +134,7 @@ theorem fits_side (h : Bool) (a b : Need) (u v : Noun) :
   cases h <;> simp only [side, consNeed, cellOn, Bool.false_eq_true, if_true, if_false] <;> split <;>
     rename_i e <;> (try obtain ⟨rfl, rfl⟩ := e) <;> simp [Fits, and_comm]
 
-theorem holds_side (h : Bool) (a b : Need) (R : Map Noun) (u v : Noun) :
+theorem holds_side (h : Bool) (a b : Need) (R : Map (Option Noun)) (u v : Noun) :
     HoldsN (side h a b) R (cellOn h u v) ↔ HoldsN a R u ∧ HoldsN b R v := by
   cases h <;> simp only [side, consNeed, cellOn, Bool.false_eq_true, if_true, if_false] <;> split <;>
     rename_i e <;> (try obtain ⟨rfl, rfl⟩ := e) <;> simp [HoldsN, and_comm]
@@ -143,7 +143,7 @@ theorem fits_pair_on (h : Bool) (p q : Need) (u v : Noun) :
     Fits (Need.pair p q) (cellOn h u v) ↔ Fits (if h then p else q) u ∧ Fits (if h then q else p) v := by
   cases h <;> simp [cellOn, Fits, and_comm]
 
-theorem holds_pair_on (h : Bool) (p q : Need) (R : Map Noun) (u v : Noun) :
+theorem holds_pair_on (h : Bool) (p q : Need) (R : Map (Option Noun)) (u v : Noun) :
     HoldsN (Need.pair p q) R (cellOn h u v) ↔
       HoldsN (if h then p else q) R u ∧ HoldsN (if h then q else p) R v := by
   cases h <;> simp [cellOn, HoldsN, and_comm]
@@ -152,7 +152,7 @@ theorem fits_both_on (h : Bool) (x : Nat) (p q : Need) (u v : Noun) :
     Fits (Need.both x p q) (cellOn h u v) ↔ Fits (if h then p else q) u ∧ Fits (if h then q else p) v := by
   cases h <;> simp [cellOn, Fits, and_comm]
 
-theorem holds_both_on (h : Bool) (x : Nat) (p q : Need) (R : Map Noun) (u v : Noun) :
+theorem holds_both_on (h : Bool) (x : Nat) (p q : Need) (R : Map (Option Noun)) (u v : Noun) :
     HoldsN (Need.both x p q) R (cellOn h u v) ↔ SkaModel.read x R = some (cellOn h u v) ∧
       HoldsN (if h then p else q) R u ∧ HoldsN (if h then q else p) R v := by
   cases h <;> simp [cellOn, HoldsN, and_comm]
@@ -160,7 +160,7 @@ theorem holds_both_on (h : Bool) (x : Nat) (p q : Need) (R : Map Noun) (u v : No
 section
 variable {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ} {tr : Trace}
 
-theorem runs_con_on (h : Bool) {l r' x0 : Nat} {R : Map Noun} {w v : Noun}
+theorem runs_con_on (h : Bool) {l r' x0 : Nat} {R : Map (Option Noun)} {w v : Noun}
     (hn : SkaModel.read (if h then l else r') R = some w) (ho : SkaModel.read (if h then r' else l) R = some v) :
     Runs lib O c gul st tr [Pole.con l r' x0] R (store x0 (cellOn h w v) R) := by
   cases h
@@ -181,7 +181,7 @@ structure IntoOK (axe : Nat) (ned d r : Need) (ops : List Pole) (g g' : Gen Map)
     Distinct d ∧ Distinct r ∧ (∀ y, NMem d y → ¬ NMem r y) ∧
     (∀ x t n, edit? axe x t = some n → (Fits ned n ↔ Fits d x ∧ Fits r t)) ∧
     (∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (tr : Trace)
-      (R : Map Noun) (x t n : Noun), edit? axe x t = some n → HoldsN d R x → HoldsN r R t →
+      (R : Map (Option Noun)) (x t n : Noun), edit? axe x t = some n → HoldsN d R x → HoldsN r R t →
       ∃ R', Runs lib O c gul st tr ops R R' ∧ HoldsN ned R' n ∧
         ∀ y, ¬ NMem ned y → (y < g.re ∨ g'.re ≤ y) → SkaModel.read y R' = SkaModel.read y R)
 
@@ -506,7 +506,7 @@ theorem into_ok {laz : Sure S} {th : Jmp} {axe : Nat} {g g' : Gen Map} {don rec 
       Distinct don.ned ∧ Distinct rec.ned ∧ (∀ y, NMem don.ned y → ¬ NMem rec.ned y) ∧
       (∀ x t n, edit? axe x t = some n → (FitsS laz n ↔ FitsS don x ∧ FitsS rec t)) ∧
       (g.drop = false → ∀ (c : Straight Map), Agree c g g' → ∀ (lib : Lib) (σ : Type) (O : Oracle σ) st tr
-        (R : Map Noun) x t n gul, edit? axe x t = some n → HoldsN don.ned R x → HoldsN rec.ned R t →
+        (R : Map (Option Noun)) x t n gul, edit? axe x t = some n → HoldsN don.ned R x → HoldsN rec.ned R t →
         ∃ R', HoldsN laz.ned R' n ∧
           (∀ y, ¬ NMem laz.ned y → (y < g.re ∨ g'.re ≤ y) → SkaModel.read y R' = SkaModel.read y R) ∧
           goJ lib O c gul st R tr (jmp0 o) = goJ lib O c gul st R' tr th)) := by

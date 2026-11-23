@@ -477,25 +477,21 @@ a `%6` (the outer one) is compiled for a goal whose lazy need has forks, and
 one of its branches is again such a `%6` (the inner one), `+sect` of the
 inner `%6` reads a proxy made in one inner branch through a new parameter of
 the inner join, to which the other inner branch passes `~` (the parameter
-is deleted); `+sect` of the outer `%6` then threads that parameter through
-the outer join, and the outer branch's end reads it on every path, so on the
-path through the other inner branch the code reads a deleted register
-(`+read` is `got`: a crash of the interpreter), where `+mink` returns a
-value.  Smallest case: `[7 [6 [0 2] [0 2] [6 [0 2] [3 [0 14]] [0 1]]] [6 [1 1]
-[0 0] [0 3]]]` on `[1 5 7 8]`, which `+mink` takes to `[5 7 8]`.
+is poisoned); `+sect` of the outer `%6` then threads that parameter through
+the outer join, which moves it on, poison included, on the path through the
+other inner branch.  Smallest case: `[7 [6 [0 2] [0 2] [6 [0 2] [3 [0 14]]
+[0 1]]] [6 [1 1] [0 0] [0 3]]]` on `[1 5 7 8]`, which `+mink` takes to
+`[5 7 8]`.
 
-On the real compiler (2026-11-23): of 162 formulas on which this model's code
-gets stuck, 85 crash the interpreter in the code of `+comp` before
-`+optimize` (the others have a constant test or a constant part such as
-`[3 [1 1]]`, which `+know` folds and this model does not: checked by hand
-on four of them), and none
-disagrees with `+mink` after `+optimize`.  The pass that removes the read is
-`+remove-empty-middle`, whose `rewrite-hop` bypasses an empty join and
-passes `~` through it; without it 24 of the 85 still crash, for example
-`[7 [6 [5 [0 3] [1 5]] [0 1] [6 [0 2] [6 [0 2] [1 1] [0 7]] [0 6]]] [6 [0 2]
-[0 2] [0 15]]]` on `[1 [0 2] [3 4] 5]` (`+mink`: `0`).  Without `+alias` 6
-of the 85 crash, without `+remove-hops` 1, and without any other single pass
-none. -/
+This is no bug of anything.  The interpreter used to delete a parameter
+passed `~`, and then that move crashed it: on the real compiler
+(2026-11-23), of 162 formulas on which this model's code got stuck in the
+old model of the interpreter, 85 crashed the interpreter in the code of `+comp` before `+optimize` (the
+others have a constant test or a constant part such as `[3 [1 1]]`, which
+`+know` folds and this model does not), and none after it.  The interpreter
+now keeps such a register poisoned (`+move` copies the poison, only `+read`
+fails on it), and all 162 run right before and after `+optimize`.
+-/
 def sixNextL [HoonMapKeys Map] (rp rq rr : CGoalL S → List Nat → CM Map (NextL S)) (p q r : Nomm) :
     Nat → Lazy S → Jmp → List Nat → CM Map (NextL S)
   | 0, _, _, _ => fun _ => Option.none

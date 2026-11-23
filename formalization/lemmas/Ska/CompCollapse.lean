@@ -189,7 +189,7 @@ theorem collapse_ok {laz : Sure S} {th : Jmp} {g g' : Gen Map} {a : Option (Nat 
       · exact absurd e (hb y p q)
     · omega
   -- the case where `r` takes the atom and the goal's block follows
-  have direct : ∀ (r' : Nat), (∀ (regs : Map Noun) v, SkaModel.read r' regs = some v → HoldsN nedS regs v) →
+  have direct : ∀ (r' : Nat), (∀ (regs : Map (Option Noun)) v, SkaModel.read r' regs = some v → HoldsN nedS regs v) →
       ∀ (c : Straight Map) (lib : Lib) (σ : Type) (O : Oracle σ) (st : σ) regs t gul n,
         SkaModel.read r' regs = some (A n) → ∀ {K : Nat → Prop},
         GoalSem lib O c gul st K regs t (jmp0 th.there)

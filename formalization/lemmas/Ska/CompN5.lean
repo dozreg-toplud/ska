@@ -25,7 +25,7 @@ variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
 section
 variable {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ}
 
-theorem execBlob_eqq (regs : Map Noun) (t : Trace) (l r : Nat) (z o : Jmp) :
+theorem execBlob_eqq (regs : Map (Option Noun)) (t : Trace) (l r : Nat) (z o : Jmp) :
     execBlob lib O c gul st regs t ⟨[], [], Termin.eqq l r z o⟩ [] =
       (SkaModel.read l regs).bind fun x => (SkaModel.read r regs).bind fun y =>
         if x = y then goJ lib O c gul st regs t z else goJ lib O c gul st regs t o := by

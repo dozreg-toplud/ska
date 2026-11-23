@@ -50,32 +50,94 @@ structure Oracle (σ : Type) where
 section
 variable {Map : Type → Type} [HoonMap Map]
 
-/-- `+read`: `(~(got by regs) r)`, a crash if the register is not there. -/
-def read (r : Nat) (regs : Map Noun) : Option Noun := HoonMap.get regs r
+/-! ## The registers
 
-/-- `+store`: `(~(put by regs) r v)`. -/
-def store (r : Nat) (v : Noun) (regs : Map Noun) : Map Noun := HoonMap.put regs r v
+The Hoon keeps the registers as a `(map @uvre (unit *))`: `[~ v]` is the
+value `v`, `~` is poison, the mark of a parameter that a hop passed `~`.  A
+poisoned register is defined: `+move` copies it.  Only a real read, `+read`,
+asks for a value.  Here the map is a `Map (Option Noun)`, whose noun is
+`HoonMap.toNoun (unitNoun id) regs`. -/
 
-/-- `+move`: `(store d (read s regs) regs)`. -/
-def move (s d : Nat) (regs : Map Noun) : Option (Map Noun) :=
-  (read s regs).map fun v => store d v regs
+/-- `+read`: `(~(got by regs) r)`, which must be a value: a crash if the
+register is not there or is poisoned. -/
+def read (r : Nat) (regs : Map (Option Noun)) : Option Noun :=
+  match HoonMap.get regs r with
+  | some (some v) => some v
+  | _ => none
 
-/-- The loop of `+eval-pass`. -/
-def evalPassLoop : List (Option Nat) → List Nat → Map Noun → Option (Map Noun)
+/-- `+store`: `(~(put by regs) r `v)`. -/
+def store (r : Nat) (v : Noun) (regs : Map (Option Noun)) : Map (Option Noun) :=
+  HoonMap.put regs r (some v)
+
+/-- `+move`: `(~(put by regs) d (~(got by regs) s))`, which copies a value or
+poison, and crashes if `s` is not there. -/
+def move (s d : Nat) (regs : Map (Option Noun)) : Option (Map (Option Noun)) :=
+  (HoonMap.get regs s).map fun u => HoonMap.put regs d u
+
+/-- `(~(put by regs) p ~)`: the register `p` is poisoned. -/
+def poison (p : Nat) (regs : Map (Option Noun)) : Map (Option Noun) := HoonMap.put regs p none
+
+/-- The loop of `+eval-pass`: an argument `~` poisons its parameter, a
+register is moved to it. -/
+def evalPassLoop : List (Option Nat) → List Nat → Map (Option Noun) → Option (Map (Option Noun))
   | [], par, regs => if par = [] then some regs else none
   | _ :: _, [], _ => none
   | a :: args, p :: par, regs =>
       (match a with
-       | none => some (HoonMap.del regs p)
+       | none => some (poison p regs)
        | some r => move r p regs).bind (evalPassLoop args par)
 
 /-- `+eval-pass`: the arguments of a jump to the parameters of a block.  It
 checks that no argument is a parameter. -/
-def evalPass (args : List (Option Nat)) (par : List Nat) (regs : Map Noun) :
-    Option (Map Noun) :=
+def evalPass (args : List (Option Nat)) (par : List Nat) (regs : Map (Option Noun)) :
+    Option (Map (Option Noun)) :=
   if args.all (fun a => match a with | none => true | some r => !par.contains r) then
     evalPassLoop args par regs
   else none
+
+/-! ### What the proofs use of the registers -/
+
+theorem read_eq_some {r : Nat} {regs : Map (Option Noun)} {v : Noun} :
+    read r regs = some v ↔ HoonMap.get regs r = some (some v) := by
+  unfold read; split <;> simp_all
+
+theorem read_store_self (r : Nat) (v : Noun) (regs : Map (Option Noun)) :
+    read r (store r v regs) = some v := by
+  simp [read, store, HoonMap.get_put]
+
+theorem read_store_other {r r' : Nat} (h : r' ≠ r) (v : Noun) (regs : Map (Option Noun)) :
+    read r' (store r v regs) = read r' regs := by
+  simp [read, store, HoonMap.get_put, h]
+
+theorem read_poison_self (p : Nat) (regs : Map (Option Noun)) : read p (poison p regs) = none := by
+  simp [read, poison, HoonMap.get_put]
+
+theorem read_poison_other {r p : Nat} (h : r ≠ p) (regs : Map (Option Noun)) :
+    read r (poison p regs) = read r regs := by
+  simp [read, poison, HoonMap.get_put, h]
+
+/-- A move of a value is a store of it. -/
+theorem move_of_read {s d : Nat} {regs : Map (Option Noun)} {v : Noun} (h : read s regs = some v) :
+    move s d regs = some (store d v regs) := by
+  rw [read_eq_some] at h; simp [move, store, h]
+
+/-- After a move, `d` reads as `s` read before, the others as before. -/
+theorem read_move {s d : Nat} {regs regs' : Map (Option Noun)} (h : move s d regs = some regs')
+    (r : Nat) : read r regs' = if r = d then read s regs else read r regs := by
+  unfold move at h
+  cases e : HoonMap.get regs s with
+  | none => simp [e] at h
+  | some u =>
+    simp only [e, Option.map_some, Option.some.injEq] at h
+    subst h
+    by_cases hr : r = d
+    · subst hr; simp [read, HoonMap.get_put, e]
+    · simp [read, HoonMap.get_put, hr]
+
+/-- A move crashes only on a register that is not there. -/
+theorem move_isSome {s d : Nat} {regs : Map (Option Noun)} :
+    (move s d regs).isSome = (HoonMap.get regs s).isSome := by
+  simp [move]
 
 /-- `pop`: `+.trace`, a crash on an empty trace. -/
 def popTrace : Trace → Option Trace
@@ -85,8 +147,8 @@ def popTrace : Trace → Option Trace
 variable {σ : Type}
 
 /-- After a call: `%0` stores the product, `%1` and `%2` end the block. -/
-def afterCall (st : σ) (regs : Map Noun) (trace : Trace) (d : Nat) :
-    Tone → Option (Tone × Map Noun × Trace × σ)
+def afterCall (st : σ) (regs : Map (Option Noun)) (trace : Trace) (d : Nat) :
+    Tone → Option (Tone × Map (Option Noun) × Trace × σ)
   | Tone.zero p => some (Tone.zero (A 0), store d p regs, trace, st)
   | Tone.one b => some (Tone.one b, regs, trace, st)
   | Tone.two tr => some (Tone.two tr, regs, trace, st)
@@ -96,9 +158,9 @@ registers and the trace only.  `fine` is `[%0 ~]`, `boom` is `[%2 trace]`; a
 crash of the Hoon (a register that is not there, the head of an atom, a pop
 of an empty trace, a scry gate that crashes) is `none`.  The ops that leave
 the function, `%nok` and the calls, are not local; `execPole` runs them. -/
-def localPole (lib : Lib) (scry : Noun) (pole : Pole) (regs : Map Noun) (trace : Trace) :
-    Option (Tone × Map Noun × Trace) :=
-  let fine := fun (regs : Map Noun) (trace : Trace) => some (Tone.zero (A 0), regs, trace)
+def localPole (lib : Lib) (scry : Noun) (pole : Pole) (regs : Map (Option Noun)) (trace : Trace) :
+    Option (Tone × Map (Option Noun) × Trace) :=
+  let fine := fun (regs : Map (Option Noun)) (trace : Trace) => some (Tone.zero (A 0), regs, trace)
   let boom := some (Tone.two trace, regs, trace)
   match pole with
   | Pole.imm n d => fine (store d n regs) trace
@@ -152,7 +214,7 @@ def localPole (lib : Lib) (scry : Noun) (pole : Pole) (regs : Map Noun) (trace :
 an empty trace, whose trace on a crash goes on top of ours; the calls are the
 oracle's `call`.  The other ops are `localPole`. -/
 def execPole (lib : Lib) (O : Oracle σ) (scry : Noun) (st : σ) (pole : Pole)
-    (regs : Map Noun) (trace : Trace) : Option (Tone × Map Noun × Trace × σ) :=
+    (regs : Map (Option Noun)) (trace : Trace) : Option (Tone × Map (Option Noun) × Trace × σ) :=
   match pole with
   | Pole.nok u f d => (read u regs).bind fun vu => (read f regs).bind fun vf =>
       (O.nok st vu vf scry).bind fun (ton, st') =>
@@ -177,7 +239,7 @@ def execPole (lib : Lib) (O : Oracle σ) (scry : Noun) (st : σ) (pole : Pole)
 /-- `+eval-blob`: run the block `b` of the function `s`, after passing
 `params` to its parameters, then its ops, then its end. -/
 def execBlob (lib : Lib) (O : Oracle σ) (s : Straight Map) (scry : Noun)
-    (st : σ) (regs : Map Noun) (trace : Trace) (b : Blob) (params : List (Option Nat)) :
+    (st : σ) (regs : Map (Option Noun)) (trace : Trace) (b : Blob) (params : List (Option Nat)) :
     Option (Tone × σ) :=
   if params ≠ [] ∨ b.par ≠ [] then
     (evalPass params b.par regs) >>= fun regs' =>
@@ -219,12 +281,13 @@ def execBlob (lib : Lib) (O : Oracle σ) (s : Straight Map) (scry : Noun)
     | Termin.bom _ => some (Tone.two trace, st)
 partial_fixpoint
 
-/-- The registers of a callee: value `i` in register `i`, put in order. -/
-def regsFrom : Nat → List Noun → Map Noun → Map Noun
+/-- The registers of a callee: value `i` in register `i`, put in order, each
+wrapped in a unit. -/
+def regsFrom : Nat → List Noun → Map (Option Noun) → Map (Option Noun)
   | _, [], out => out
-  | r, v :: vs, out => regsFrom (r + 1) vs (HoonMap.put out r v)
+  | r, v :: vs, out => regsFrom (r + 1) vs (HoonMap.put out r (some v))
 
-def regsOf (vals : List Noun) : Map Noun := regsFrom 0 vals HoonMap.empty
+def regsOf (vals : List Noun) : Map (Option Noun) := regsFrom 0 vals HoonMap.empty
 
 /-- Entering a function: its block 0, with the argument values in registers
 `0 ..`, no parameters passed. -/

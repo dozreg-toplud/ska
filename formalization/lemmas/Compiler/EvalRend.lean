@@ -126,10 +126,10 @@ set_option maxHeartbeats 4000000 in
 /-- The loop of `%meaf` that puts the values `vs` in registers `r, r+1, ...`
 of `out`. -/
 theorem eval_rend_loop (cr : Noun) (hc : CorIn cr) (P D : Noun) :
-    ∀ (vs : List Noun) (r : Nat) (out : TreapMap mugF Noun),
-    nock (C eval_rend.loop (C (A r) (C (HoonMap.toNoun id out) (C P (C (listNoun id vs)
+    ∀ (vs : List Noun) (r : Nat) (out : TreapMap mugF (Option Noun)),
+    nock (C eval_rend.loop (C (A r) (C (HoonMap.toNoun (unitNoun id) out) (C P (C (listNoun id vs)
         (C eval_rend.battery (C D (icore cr)))))))) eval_rend.loop
-      = some (HoonMap.toNoun id (regsFrom r vs out)) := by
+      = some (HoonMap.toNoun (unitNoun id) (regsFrom r vs out)) := by
   have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc.1
   simp only [read.layer2.axis, icore, nock_exec] at hl2
   obtain ⟨hgor, hmor⟩ := gorIn_morIn_layer2
@@ -141,8 +141,8 @@ theorem eval_rend_loop (cr : Noun) (hc : CorIn cr) (P D : Noun) :
     simp [nock_exec, listNoun, regsFrom]
   | cons v vs ih =>
     intro r out
-    have hput := putF_hoonMap id out r v
-    simp only [id_eq] at hput
+    have hput := putF_hoonMap (unitNoun id) out r (some v)
+    simp only [unitNoun, id_eq] at hput
     nock_open eval_rend.loop
     simp [nock_exec, listNoun, hl2, by.arm_at, by_arm, by.put.arm_at, put_arm,
       put_gate layer2 ⟨hgor, hmor⟩ _ _ _ _ hput, ih, regsFrom]
@@ -229,7 +229,7 @@ theorem eval_rend_meaf_le (lib : Lib) (hslam : SlamIsNock lib)
 on. -/
 theorem eval_blob_to_model (lib : Lib) (hslam : SlamIsNock lib)
     (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun))
-    (hpk : ∀ cr, CorIn cr → PokeIs pk cr) (cr : Noun) (hc : CorIn cr) (regs : TreapMap mugF Noun)
+    (hpk : ∀ cr, CorIn cr → PokeIs pk cr) (cr : Noun) (hc : CorIn cr) (regs : TreapMap mugF (Option Noun))
     (trace : Trace) (b : Blob) (s : Straight (TreapMap mugF)) (params : List (Option Nat))
     (scry x : Noun) (h : nock (blobS cr regs trace b s params scry) eval_blob.battery = some x) :
     ∃ r, x = resN r ∧ CorIn r.2 ∧

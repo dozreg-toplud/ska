@@ -57,7 +57,7 @@ theorem front_re {o : Nat} {g g' : Gen Map} {A : List Pole} (h : Front o { g wit
 section
 variable {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ} {t : Trace}
 
-theorem crashes_imm_cel (n : Nat) (r : Nat) (fill : List Pole) (regs : Map Noun) :
+theorem crashes_imm_cel (n : Nat) (r : Nat) (fill : List Pole) (regs : Map (Option Noun)) :
     Crashes lib O c gul st t (Pole.imm (A n) r :: Pole.cel r :: fill) regs := by
   have h1 : Pole.imm (A n) r :: Pole.cel r :: fill = [Pole.imm (A n) r] ++ ([Pole.cel r] ++ fill) := rfl
   rw [h1]

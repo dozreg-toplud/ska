@@ -1148,7 +1148,7 @@ def main():
     # the interpreter core `interp` ("Formal definition of the interpreter"),
     # the tail of `core`.  Its arms have no %fast labels: +read and +store are
     # the gates that run `got` and `put` of the door +by, +move the gate that
-    # pulls just those two, +eval-pass the gate that pulls +move and +levy.
+    # runs both, +eval-pass the gate that pulls +move and +levy.
     # `read.layer2.axis` is the axis of layer 2 in `interp`, where +by is.
     interp = tail(core)
     name(interp, 'interp')
@@ -1175,12 +1175,18 @@ def main():
         axes.append((lname, int_arms[a], 'slot? %s.axis interp = some %s.arm' % (lname, lname)))
         return g
     int_gates = [(a, door_gate_battery(a)) for a in int_arms if is_gate_builder(a)]
-    (rd,) = [a for a, g in int_gates if pulls(g) == [by_pull] and runs_arm(g, ax_all['by.got'])]
-    (st_,) = [a for a, g in int_gates if pulls(g) == [by_pull] and runs_arm(g, ax_all['by.put'])]
+    # +read runs `got` alone, +store `put` alone, +move both (it copies the
+    # unit that a register holds, poison included)
+    def by_only(g):
+        return set(pulls(g)) == {by_pull}
+    (rd,) = [a for a, g in int_gates if by_only(g) and runs_arm(g, ax_all['by.got'])
+             and not runs_arm(g, ax_all['by.put'])]
+    (st_,) = [a for a, g in int_gates if by_only(g) and runs_arm(g, ax_all['by.put'])
+              and not runs_arm(g, ax_all['by.got'])]
     int_arm(rd, 'read')
     int_arm(st_, 'store')
-    (mv,) = [a for a, g in int_gates
-             if sorted(pulls(g)) == sorted([(int_arms[rd], 7), (int_arms[st_], 7)])]
+    (mv,) = [a for a, g in int_gates if by_only(g) and runs_arm(g, ax_all['by.got'])
+             and runs_arm(g, ax_all['by.put'])]
     int_arm(mv, 'move')
     (ep,) = [a for a, g in int_gates
              if (int_arms[mv], 15) in pulls(g) and any(x == ax_all['levy'] for x, _ in pulls(g))]

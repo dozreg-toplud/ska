@@ -21,7 +21,7 @@ variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
 
 theorem goJ_imm_don {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ}
     {o : Nat} {k : Noun} {r : Nat} (hb : HoonMap.get c.blocks o = some ⟨[], [Pole.imm k r], Termin.don r⟩)
-    (regs : Map Noun) (t : Trace) :
+    (regs : Map (Option Noun)) (t : Trace) :
     goJ lib O c gul st regs t (jmp0 o) = some (Tone.zero k, st) := by
   rw [goJ_jmp0 _ _ _ _ hb, show [Pole.imm k r] = [Pole.imm k r] ++ [] from rfl, runs_imm, execBlob_don',
     read_store_eq]

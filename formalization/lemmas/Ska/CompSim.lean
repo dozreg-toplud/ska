@@ -376,7 +376,7 @@ inductive RNeed where
 
 /-- The registers `regs` hold the noun `n` as the need asks: a pair or a
 `%both` asks for a cell. -/
-def Holds : RNeed → Map Noun → Noun → Prop
+def Holds : RNeed → Map (Option Noun) → Noun → Prop
   | RNeed.none, _, _ => True
   | RNeed.this r, regs, n => SkaModel.read r regs = some n
   | RNeed.pair p q, regs, Noun.cell h t => Holds p regs h ∧ Holds q regs t
@@ -399,7 +399,7 @@ the trace the block was entered with.  On `%next` and `%pick` the block goes
 on in the target block with registers that agree with `regs` on the
 registers `keep` that the code after it reads. -/
 def GoalRel (lib : Lib) (c : Straight Map) (keep : Nat → Prop) {σ : Type} (O : Oracle σ) (st : σ)
-    (regs : Map Noun) (t : Trace) (gul : Noun) (b : Blob) : Goal → Option Noun → Prop
+    (regs : Map (Option Noun)) (t : Trace) (gul : Noun) (b : Blob) : Goal → Option Noun → Prop
   | Goal.done, v => execBlob lib O c gul st regs t b [] = some (toneOf t v, st)
   | Goal.next nd k, some p => ∃ regs' bk, HoonMap.get c.blocks k = some bk ∧ Holds nd regs' p ∧
       (∀ r, keep r → SkaModel.read r regs' = SkaModel.read r regs) ∧
@@ -418,7 +418,7 @@ does for the goal `g` what the value of the pure nomm `nm` says, against
 every oracle. -/
 def CompRel (lib : Lib) (c : Straight Map) (nm : Nomm) (g : Goal) (b : Blob) (nd : RNeed)
     (keep : Nat → Prop) : Prop :=
-  ∀ (σ : Type) (O : Oracle σ) (st : σ) (s : Noun) (regs : Map Noun) (t : Trace) (gul : Noun),
+  ∀ (σ : Type) (O : Oracle σ) (st : σ) (s : Noun) (regs : Map (Option Noun)) (t : Trace) (gul : Noun),
     Holds nd regs s → GoalRel lib c keep O st regs t gul b g (pureEval nm s)
 
 /-- **`CompDone` from the relation at the entry block**: block `0` is `b`,
@@ -436,13 +436,13 @@ theorem compDone_of_compRel {lib : Lib} {c : Straight Map} {nm : Nomm} {b : Blob
   exact this
 
 theorem execBlob_don {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ}
-    {regs : Map Noun} {t : Trace} (r : Nat) :
+    {regs : Map (Option Noun)} {t : Trace} (r : Nat) :
     execBlob lib O c gul st regs t ⟨[], [], Termin.don r⟩ [] =
       (SkaModel.read r regs).bind fun v => some (Tone.zero v, st) := by
   rw [execBlob]; simp
 
 theorem execBlob_bom {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ}
-    {regs : Map Noun} {t : Trace} (o : Option Nat) :
+    {regs : Map (Option Noun)} {t : Trace} (o : Option Nat) :
     execBlob lib O c gul st regs t ⟨[], [], Termin.bom o⟩ [] = some (Tone.two t, st) := by
   rw [execBlob]; simp
 
@@ -482,7 +482,7 @@ def RNeed.Mem : RNeed → Nat → Prop
   | RNeed.both r p q, x => x = r ∨ p.Mem x ∨ q.Mem x
 
 /-- Registers that agree on a need's registers hold what it holds. -/
-theorem Holds.agree : ∀ (nd : RNeed) {regs regs' : Map Noun} {n : Noun},
+theorem Holds.agree : ∀ (nd : RNeed) {regs regs' : Map (Option Noun)} {n : Noun},
     (∀ x, nd.Mem x → SkaModel.read x regs' = SkaModel.read x regs) → Holds nd regs n → Holds nd regs' n
   | RNeed.none, _, _, _, _, h => h
   | RNeed.this r, _, _, _, ha, h => by
@@ -500,13 +500,13 @@ variable {lib : Lib} {c : Straight Map} {K : Nat → Prop} {σ : Type} {O : Orac
   {t : Trace} {gul : Noun}
 
 /-- A block that crashes does what every goal asks where there is no value. -/
-theorem goalRel_crash {regs : Map Noun} {b : Blob} (g : Goal)
+theorem goalRel_crash {regs : Map (Option Noun)} {b : Blob} (g : Goal)
     (h : execBlob lib O c gul st regs t b [] = some (Tone.two t, st)) :
     GoalRel lib c K O st regs t gul b g none := by
   cases g <;> simp only [GoalRel, toneOf] <;> exact h
 
 /-- What a block does for a goal, a block that runs as it does does too. -/
-theorem GoalRel.transfer {regs regs' : Map Noun} {b b' : Blob} {g : Goal} {v : Option Noun}
+theorem GoalRel.transfer {regs regs' : Map (Option Noun)} {b b' : Blob} {g : Goal} {v : Option Noun}
     (he : execBlob lib O c gul st regs t b [] = execBlob lib O c gul st regs' t b' [])
     (hk : ∀ r, K r → SkaModel.read r regs' = SkaModel.read r regs)
     (h : GoalRel lib c K O st regs' t gul b' g v) : GoalRel lib c K O st regs t gul b g v := by

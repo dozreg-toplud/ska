@@ -20,29 +20,35 @@ open Nock Pill SkaModel Hoon
 
 /-- `+read` on a map of `TreapMap mugF`, in any context that holds what it
 reads. -/
-theorem read_model (c : Noun) (hc : RegsIn mugF c) (r : Nat) (regs : TreapMap mugF Noun) :
-    nock (C read.battery (C (C (A r) (HoonMap.toNoun id regs)) c)) read.battery
+theorem read_model (c : Noun) (hc : RegsIn mugF c) (r : Nat) (regs : TreapMap mugF (Option Noun)) :
+    nock (C read.battery (C (C (A r) (HoonMap.toNoun (unitNoun id) regs)) c)) read.battery
       = SkaModel.read r regs := by
-  have h := getF_hoonMap id regs r
+  have h := getF_hoonMap (unitNoun id) regs r
   unfold SkaModel.read
   cases e : HoonMap.get regs r with
   | none => rw [e] at h; exact read_gate_nil _ hc r _ h
-  | some v => rw [e] at h; exact read_gate _ hc r _ v h
+  | some u =>
+    rw [e] at h
+    cases u with
+    | none => exact read_gate_poison _ hc r _ 0 h
+    | some v => exact read_gate _ hc r _ (A 0) v h
 
 /-- `+store` on a map of `TreapMap mugF`. -/
 theorem store_model (c : Noun) (hc : RegsIn mugF c) (r : Nat) (v : Noun)
-    (regs : TreapMap mugF Noun) :
-    nock (C store.battery (C (C (A r) (C v (HoonMap.toNoun id regs))) c)) store.battery
-      = some (HoonMap.toNoun id (SkaModel.store r v regs)) :=
-  store_gate _ hc r v _ _ (putF_hoonMap id regs r v)
+    (regs : TreapMap mugF (Option Noun)) :
+    nock (C store.battery (C (C (A r) (C v (HoonMap.toNoun (unitNoun id) regs))) c)) store.battery
+      = some (HoonMap.toNoun (unitNoun id) (SkaModel.store r v regs)) :=
+  store_gate _ hc r v _ _ (putF_hoonMap (unitNoun id) regs r (some v))
 
 /-- What `+eval-pole` reads from its context for the local ops: `+read`,
 `+store`, `+move` and what they read. -/
-abbrev EvalPoleIn (c : Noun) : Prop := slot? move.axis c = some move.arm ∧ MoveIn mugF c
+abbrev EvalPoleIn (c : Noun) : Prop :=
+  slot? move.axis c = some move.arm ∧
+    (slot? read.axis c = some read.arm ∧ slot? store.axis c = some store.arm ∧ MoveIn mugF c)
 
 /-- The product of `+eval-pole` as a noun. -/
-def poleOut (cor : Noun) (r : Tone × TreapMap mugF Noun × Trace) : Noun :=
-  C r.1.toNoun (C (HoonMap.toNoun id r.2.1) (C (listNoun Frame.toNoun r.2.2) cor))
+def poleOut (cor : Noun) (r : Tone × TreapMap mugF (Option Noun) × Trace) : Noun :=
+  C r.1.toNoun (C (HoonMap.toNoun (unitNoun id) r.2.1) (C (listNoun Frame.toNoun r.2.2) cor))
 
 /-- The ops that `localPole` runs, other than `%spy` and `%hmp`. -/
 def PlainLocal : Pole → Prop
@@ -73,25 +79,25 @@ macro "pole_simp" : tactic => `(tactic|
 /-- The gate of the alias `load` of `+eval-pole`, which runs `+read` on the
 registers of the gate's sample. -/
 theorem eval_pole_load (ctx : Noun) (hrd : slot? read.axis ctx = some read.arm)
-    (hrc : RegsIn mugF ctx) (regs : TreapMap mugF Noun) (B P T Y : Noun) (r : Nat) :
-    nock (C eval_pole.load (C (A r) (C B (C (C P (C (C (HoonMap.toNoun id regs) T) Y)) ctx))))
+    (hrc : RegsIn mugF ctx) (regs : TreapMap mugF (Option Noun)) (B P T Y : Noun) (r : Nat) :
+    nock (C eval_pole.load (C (A r) (C B (C (C P (C (C (HoonMap.toNoun (unitNoun id) regs) T) Y)) ctx))))
       eval_pole.load = SkaModel.read r regs := by
   nock_open eval_pole.load; simp [nock_exec, hrd, read_arm, read_model ctx hrc]
 
 set_option maxHeartbeats 2000000 in
 /-- `+eval-pole` on an op that changes only the registers and the trace. -/
 theorem eval_pole_local (ctx cor : Noun) (hcor : slot? 3 ctx = some cor) (hc : EvalPoleIn ctx)
-    (lib : Lib) (scry : Noun) (pole : Pole) (hp : PlainLocal pole) (regs : TreapMap mugF Noun)
+    (lib : Lib) (scry : Noun) (pole : Pole) (hp : PlainLocal pole) (regs : TreapMap mugF (Option Noun))
     (trace : Trace) :
     nock (C eval_pole.battery (C (C pole.toNoun
-        (C (C (HoonMap.toNoun id regs) (listNoun Frame.toNoun trace)) scry)) ctx)) eval_pole.battery
+        (C (C (HoonMap.toNoun (unitNoun id) regs) (listNoun Frame.toNoun trace)) scry)) ctx)) eval_pole.battery
       = (localPole lib scry pole regs trace).map (poleOut cor) := by
   obtain ⟨hmv, hmc⟩ := hc
   have hrc : RegsIn mugF ctx := hmc.2.2
   obtain ⟨hrd, hst, _⟩ := hmc
   have hsm := store_model ctx hrc
   have hrm := read_model ctx hrc
-  have hmm := move_model ctx ⟨hrd, hst, hrc⟩
+  have hmm := move_model ctx hrc
   have hld := eval_pole_load ctx hrd hrc regs
   cases pole with
   | imm n d => pole_simp
@@ -150,10 +156,10 @@ its registers, read by `+turn` of layer 2. -/
 theorem eval_pole_hmp (ctx cor : Noun) (hcor : slot? 3 ctx = some cor) (hc : EvalPoleIn ctx)
     (l2 : Noun) (hl2 : slot? read.layer2.axis ctx = some l2)
     (hturn : slot? turn.axis l2 = some turn.arm) (hhomo : HomoIn l2)
-    (lib : Lib) (scry : Noun) (a : Bell) (v : List Nat) (f : Noun) (regs : TreapMap mugF Noun)
+    (lib : Lib) (scry : Noun) (a : Bell) (v : List Nat) (f : Noun) (regs : TreapMap mugF (Option Noun))
     (trace : Trace) :
     nock (C eval_pole.battery (C (C (Pole.hmp a v f).toNoun
-        (C (C (HoonMap.toNoun id regs) (listNoun Frame.toNoun trace)) scry)) ctx)) eval_pole.battery
+        (C (C (HoonMap.toNoun (unitNoun id) regs) (listNoun Frame.toNoun trace)) scry)) ctx)) eval_pole.battery
       = (localPole lib scry (Pole.hmp a v f) regs trace).map (poleOut cor) := by
   obtain ⟨hmv, hmc⟩ := hc
   have hrc : RegsIn mugF ctx := hmc.2.2
@@ -162,7 +168,7 @@ theorem eval_pole_hmp (ctx cor : Noun) (hcor : slot? 3 ctx = some cor) (hc : Eva
   have hld := eval_pole_load ctx hrd hrc regs
   have ht : ∀ (B P T Y : Noun),
       nock (C turn.battery (C (C (listN (v.map A)) (C eval_pole.load (C (A 0)
-        (C B (C (C P (C (C (HoonMap.toNoun id regs) T) Y)) ctx))))) l2)) turn.battery
+        (C B (C (C P (C (C (HoonMap.toNoun (unitNoun id) regs) T) Y)) ctx))))) l2)) turn.battery
         = (v.mapM (fun r => SkaModel.read r regs)).map listN := by
     intro B P T Y
     rw [turn_gate_mapM l2 hhomo _ _ _
@@ -180,10 +186,10 @@ set_option maxHeartbeats 2000000 in
 /-- `+eval-pole` on `%spy`, which slams the scry gate on the values of two
 registers, given that `lib.slam` is Nock's slam. -/
 theorem eval_pole_spy (ctx cor : Noun) (hcor : slot? 3 ctx = some cor) (hc : EvalPoleIn ctx)
-    (lib : Lib) (hslam : SlamIsNock lib) (scry : Noun) (e p d : Nat) (regs : TreapMap mugF Noun)
+    (lib : Lib) (hslam : SlamIsNock lib) (scry : Noun) (e p d : Nat) (regs : TreapMap mugF (Option Noun))
     (trace : Trace) :
     nock (C eval_pole.battery (C (C (Pole.spy e p d).toNoun
-        (C (C (HoonMap.toNoun id regs) (listNoun Frame.toNoun trace)) scry)) ctx)) eval_pole.battery
+        (C (C (HoonMap.toNoun (unitNoun id) regs) (listNoun Frame.toNoun trace)) scry)) ctx)) eval_pole.battery
       = (localPole lib scry (Pole.spy e p d) regs trace).map (poleOut cor) := by
   obtain ⟨hmv, hmc⟩ := hc
   have hrc : RegsIn mugF ctx := hmc.2.2
@@ -212,14 +218,15 @@ theorem eval_pole_spy (ctx cor : Noun) (hcor : slot? 3 ctx = some cor) (hc : Eva
 
 /-! ## On the pill's interpreter core, with its own `cor` -/
 
-theorem evalPoleIn_interp : EvalPoleIn interp := ⟨move.arm_at, moveIn_interp⟩
+theorem evalPoleIn_interp : EvalPoleIn interp :=
+  ⟨move.arm_at, read.arm_at, store.arm_at, moveIn_interp⟩
 
 /-- Every local op of `+eval-pole`, on the pill's interpreter core. -/
 theorem eval_pole_local_pill (lib : Lib) (hslam : SlamIsNock lib) (scry : Noun) (pole : Pole)
     (hp : PlainLocal pole ∨ (∃ a v f, pole = Pole.hmp a v f) ∨ (∃ e p d, pole = Pole.spy e p d))
-    (regs : TreapMap mugF Noun) (trace : Trace) :
+    (regs : TreapMap mugF (Option Noun)) (trace : Trace) :
     nock (C eval_pole.battery (C (C pole.toNoun
-        (C (C (HoonMap.toNoun id regs) (listNoun Frame.toNoun trace)) scry)) interp))
+        (C (C (HoonMap.toNoun (unitNoun id) regs) (listNoun Frame.toNoun trace)) scry)) interp))
         eval_pole.battery
       = (localPole lib scry pole regs trace).map (poleOut cor) := by
   rcases hp with hp | ⟨a, v, f, rfl⟩ | ⟨e, p, d, rfl⟩

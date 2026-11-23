@@ -26,13 +26,15 @@ open Nock
 section
 variable {Map : Type → Type} [HoonMap Map]
 
-theorem read_store (r r' : Nat) (v : Noun) (regs : Map Noun) :
-    SkaModel.read r (store r' v regs) = if r = r' then some v else SkaModel.read r regs :=
-  HoonMap.get_put regs r' v r
+theorem read_store (r r' : Nat) (v : Noun) (regs : Map (Option Noun)) :
+    SkaModel.read r (store r' v regs) = if r = r' then some v else SkaModel.read r regs := by
+  by_cases h : r = r'
+  · subst h; simp [read_store_self]
+  · simp [read_store_other h, h]
 
-theorem read_put (r r' : Nat) (v : Noun) (regs : Map Noun) :
-    SkaModel.read r (HoonMap.put regs r' v) = if r = r' then some v else SkaModel.read r regs :=
-  HoonMap.get_put regs r' v r
+theorem read_put (r r' : Nat) (v : Noun) (regs : Map (Option Noun)) :
+    SkaModel.read r (HoonMap.put regs r' (some v)) = if r = r' then some v else SkaModel.read r regs :=
+  read_store r r' v regs
 
 /-- A function of one block, entered with the whole subject in register 0. -/
 def oneBlock (b : Blob) : Straight Map := ⟨NeedOrd.this, 1, HoonMap.put HoonMap.empty 0 b⟩
@@ -40,11 +42,11 @@ def oneBlock (b : Blob) : Straight Map := ⟨NeedOrd.this, 1, HoonMap.put HoonMa
 theorem execEntry_oneBlock (lib : Lib) {σ : Type} (O : Oracle σ) (st : σ) (b : Blob)
     (s : Noun) (t : Trace) (gul : Noun) :
     execEntry lib O st (oneBlock (Map := Map) b) [s] t gul =
-      execBlob lib O (oneBlock (Map := Map) b) gul st (HoonMap.put HoonMap.empty 0 s) t b [] := by
+      execBlob lib O (oneBlock (Map := Map) b) gul st (HoonMap.put HoonMap.empty 0 (some s)) t b [] := by
   simp [execEntry, oneBlock, HoonMap.get_put, regsOf, regsFrom]
 
 theorem execBlob_body {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun}
-    {st : σ} {regs : Map Noun} {t : Trace} (p : Pole) (rest : List Pole) (fin : Termin) :
+    {st : σ} {regs : Map (Option Noun)} {t : Trace} (p : Pole) (rest : List Pole) (fin : Termin) :
     execBlob lib O c gul st regs t ⟨[], p :: rest, fin⟩ [] =
       (execPole lib O gul st p regs t).bind fun (ton, regs', t', st') =>
         match ton with
@@ -108,18 +110,18 @@ theorem tail_bwd (lib : Lib) (N : Needs) (g : Noun) (g' : Bell) (s : Noun)
 section
 variable {σ : Type} {lib : Lib} {Inv : σ → Prop} {ν : σ → Needs} {O : Oracle σ}
 
-theorem execPole_imm (gul : Noun) (st : σ) (n : Noun) (d : Nat) (regs : Map Noun) (t : Trace) :
+theorem execPole_imm (gul : Noun) (st : σ) (n : Noun) (d : Nat) (regs : Map (Option Noun)) (t : Trace) :
     execPole lib O gul st (Pole.imm n d) regs t = some (Tone.zero (A 0), store d n regs, t, st) :=
   rfl
 
 /-- The outcome of an indirect call against `+mink`'s: the product stored,
 or a tone that stands for `+mink`'s, which ends the block. -/
-def NokOut (lib : Lib) (N : Needs) (d : Nat) (regs : Map Noun) (ton : Tone) (regs' : Map Noun)
+def NokOut (lib : Lib) (N : Needs) (d : Nat) (regs : Map (Option Noun)) (ton : Tone) (regs' : Map (Option Noun))
     (r : Tone) : Prop :=
   (∃ p, r = Tone.zero p ∧ ton = Tone.zero (A 0) ∧ regs' = store d p regs) ∨
     ((∀ p, r ≠ Tone.zero p) ∧ (∀ p, ton ≠ Tone.zero p) ∧ ToneRel lib N ton r)
 
-theorem nokOut_of_rel {N : Needs} {d : Nat} {regs : Map Noun} {ti tm : Trace} {ton0 r0 : Tone}
+theorem nokOut_of_rel {N : Needs} {d : Nat} {regs : Map (Option Noun)} {ti tm : Trace} {ton0 r0 : Tone}
     (hrel : ToneRel lib N ton0 r0) (htr : Forall2 (FrameRel lib N) ti tm) :
     NokOut lib N d regs (match ton0 with
         | Tone.zero _ => Tone.zero (A 0)
@@ -137,7 +139,7 @@ theorem nokOut_of_rel {N : Needs} {d : Nat} {regs : Map Noun} {ti tm : Trace} {t
       ToneRel.two (Forall2.append hl htr)⟩
 
 theorem nok_step_fwd {n : Nat} (hO : OracleFwd lib Inv ν O n) (hS : OracleSteps Inv ν O)
-    {gul : Noun} {st : σ} {regs : Map Noun} {ti tm : Trace} {u f d : Nat} {x y : Noun} {j : Nat}
+    {gul : Noun} {st : σ} {regs : Map (Option Noun)} {ti tm : Trace} {u f d : Nat} {x y : Noun} {j : Nat}
     {r : Tone} (hI : Inv st) (htr : Forall2 (FrameRel lib (ν st)) ti tm)
     (hu : read u regs = some x) (hf : read f regs = some y) (hj : j < n)
     (hm : minkF lib gul j tm x y = some r) :
@@ -152,7 +154,7 @@ theorem nok_step_fwd {n : Nat} (hO : OracleFwd lib Inv ν O n) (hS : OracleSteps
   cases ton0 <;> rfl
 
 theorem nok_step_bwd (hO : OracleBwd lib Inv ν O) (hS : OracleSteps Inv ν O)
-    {gul : Noun} {st st' : σ} {regs regs' : Map Noun} {ti tm t' : Trace} {u f d : Nat}
+    {gul : Noun} {st st' : σ} {regs regs' : Map (Option Noun)} {ti tm t' : Trace} {u f d : Nat}
     {x y : Noun} {ton : Tone} (hI : Inv st) (htr : Forall2 (FrameRel lib (ν st)) ti tm)
     (hu : read u regs = some x) (hf : read f regs = some y)
     (h : execPole lib O gul st (Pole.nok u f d) regs ti = some (ton, regs', t', st')) :
@@ -198,7 +200,7 @@ theorem nok_fwd (lib : Lib) (N : Needs) (s b c : Noun) :
   | some rb =>
   rw [hb] at hmink
   obtain ⟨ton1, regs2, st1, hp1, hI1, hle1, hout1⟩ := nok_step_fwd (u := 0) (f := 1) (d := 2) (x := s) (y := b)
-    (regs := (store 1 b (HoonMap.put HoonMap.empty 0 s) : Map Noun)) hO hS hI htr
+    (regs := (store 1 b (HoonMap.put HoonMap.empty 0 (some s)) : Map (Option Noun))) hO hS hI htr
     (by simp [read_store, read_put]) (by simp [read_store, read_put])
     (Nat.lt_succ_self m) hb
   rw [hp1, Option.bind_some]
@@ -215,7 +217,7 @@ theorem nok_fwd (lib : Lib) (N : Needs) (s b c : Noun) :
     | some rc =>
     rw [hc] at hmink
     obtain ⟨ton2, regs4, st2, hp2, hI2, hle2, hout2⟩ := nok_step_fwd (u := 0) (f := 3) (d := 4) (x := s) (y := c)
-      (regs := (store 3 c (store 2 s' (store 1 b (HoonMap.put HoonMap.empty 0 s))) : Map Noun)) hO hS hI1 htr1
+      (regs := (store 3 c (store 2 s' (store 1 b (HoonMap.put HoonMap.empty 0 (some s)))) : Map (Option Noun))) hO hS hI1 htr1
       (by simp [read_store, read_put]) (by simp [read_store, read_put])
       (Nat.lt_succ_self m) hc
     rw [hp2, Option.bind_some]
@@ -226,7 +228,7 @@ theorem nok_fwd (lib : Lib) (N : Needs) (s b c : Noun) :
       rw [execBlob_body]
       have htr2 := htr1.imp fun _ _ => FrameRel.mono hle2
       obtain ⟨ton3, regs5, st3, hp3, hI3, hle3, hout3⟩ := nok_step_fwd (u := 2) (f := 4) (d := 5) (x := s') (y := f')
-        (regs := (store 4 f' (store 3 c (store 2 s' (store 1 b (HoonMap.put HoonMap.empty 0 s)))) : Map Noun))
+        (regs := (store 4 f' (store 3 c (store 2 s' (store 1 b (HoonMap.put HoonMap.empty 0 (some s))))) : Map (Option Noun)))
         hO hS hI2 htr2
         (by simp [read_store, read_put]) (by simp [read_store, read_put])
         (Nat.lt_succ_self m) hmink
@@ -273,7 +275,7 @@ theorem nok_bwd (lib : Lib) (N : Needs) (s b c : Noun) :
   obtain ⟨⟨t1, regs2, tr2, st1⟩, hp1, hrun1⟩ := Option.bind_eq_some_iff.mp hrun
   clear hrun
   obtain ⟨hI1, hle1, rfl, r1, ⟨k1, hk1⟩, hout1⟩ := nok_step_bwd (u := 0) (f := 1) (x := s) (y := b)
-    (regs := (store 1 b (HoonMap.put HoonMap.empty 0 s) : Map Noun)) hO hS hI htr
+    (regs := (store 1 b (HoonMap.put HoonMap.empty 0 (some s)) : Map (Option Noun))) hO hS hI htr
     (by simp [read_store, read_put]) (by simp [read_store, read_put]) hp1
   simp only at hrun1
   rcases hout1 with ⟨s', rfl, rfl, rfl⟩ | ⟨hr1, ht1, hrel1⟩
@@ -285,7 +287,7 @@ theorem nok_bwd (lib : Lib) (N : Needs) (s b c : Noun) :
     obtain ⟨⟨t2, regs4, tr4, st2⟩, hp2, hrun2⟩ := Option.bind_eq_some_iff.mp hrun1
     clear hrun1
     obtain ⟨hI2, hle2, rfl, r2, ⟨k2, hk2⟩, hout2⟩ := nok_step_bwd (u := 0) (f := 3) (x := s) (y := c)
-      (regs := (store 3 c (store 2 s' (store 1 b (HoonMap.put HoonMap.empty 0 s))) : Map Noun))
+      (regs := (store 3 c (store 2 s' (store 1 b (HoonMap.put HoonMap.empty 0 (some s)))) : Map (Option Noun)))
       hO hS hI1 htr1 (by simp [read_store, read_put]) (by simp [read_store, read_put]) hp2
     simp only at hrun2
     rcases hout2 with ⟨f', rfl, rfl, rfl⟩ | ⟨hr2, ht2, hrel2⟩
@@ -296,8 +298,8 @@ theorem nok_bwd (lib : Lib) (N : Needs) (s b c : Noun) :
       clear hrun2
       obtain ⟨hI3, hle3, rfl, r3, ⟨k3, hk3⟩, hout3⟩ := nok_step_bwd (u := 2) (f := 4) (x := s')
         (y := f')
-        (regs := (store 4 f' (store 3 c (store 2 s' (store 1 b (HoonMap.put HoonMap.empty 0 s))))
-          : Map Noun))
+        (regs := (store 4 f' (store 3 c (store 2 s' (store 1 b (HoonMap.put HoonMap.empty 0 (some s)))))
+          : Map (Option Noun)))
         hO hS hI2 htr2 (by simp [read_store, read_put]) (by simp [read_store, read_put]) hp3
       simp only at hrun3
       have hm : ∀ K, k1 ≤ K → k2 ≤ K → k3 ≤ K → minkF lib gul (K + 1) tm s (n3 (A 2) b c) =

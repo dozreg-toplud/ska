@@ -24,43 +24,46 @@ variable {Map : Type → Type} [HoonMap Map]
 
 /-! ## Registers under a renaming -/
 
-/-- `R'` holds at `ren r` what `R` holds at `r`. -/
-def RenRel (ren : Nat → Nat) (R R' : Map Noun) : Prop :=
-  ∀ r, SkaModel.read (ren r) R' = SkaModel.read r R
+/-- `R'` holds at `ren r` what `R` holds at `r`: the same value, the same
+poison, or nothing. -/
+def RenRel (ren : Nat → Nat) (R R' : Map (Option Noun)) : Prop :=
+  ∀ r, HoonMap.get R' (ren r) = HoonMap.get R r
 
 def Inj (ren : Nat → Nat) : Prop := ∀ a b, ren a = ren b → a = b
 
 section Ren
 variable {ren : Nat → Nat}
 
-theorem RenRel.store (hi : Inj ren) {R R' : Map Noun} (h : RenRel ren R R') (d : Nat) (v : Noun) :
-    RenRel ren (store d v R) (store (ren d) v R') := by
+theorem RenRel.rd {R R' : Map (Option Noun)} (h : RenRel ren R R') (r : Nat) :
+    SkaModel.read (ren r) R' = SkaModel.read r R := by
+  unfold SkaModel.read; rw [h r]
+
+theorem RenRel.put (hi : Inj ren) {R R' : Map (Option Noun)} (h : RenRel ren R R') (d : Nat)
+    (u : Option Noun) : RenRel ren (HoonMap.put R d u) (HoonMap.put R' (ren d) u) := by
   intro r
+  simp only [HoonMap.get_put]
   by_cases e : r = d
-  · subst e; simp [read_store_eq]
-  · rw [read_store_ne (fun h' => e (hi _ _ h')), read_store_ne e, h r]
-
-theorem RenRel.del (hi : Inj ren) {R R' : Map Noun} (h : RenRel ren R R') (p : Nat) :
-    RenRel ren (HoonMap.del R p) (HoonMap.del R' (ren p)) := by
-  intro r
-  have hr := h r
-  simp only [SkaModel.read, HoonMap.get_del] at hr ⊢
-  by_cases e : r = p
   · subst e; simp
-  · rw [if_neg (fun h' => e (hi _ _ h')), if_neg e]; exact hr
+  · rw [if_neg (fun h' => e (hi _ _ h')), if_neg e]; exact h r
 
-theorem RenRel.mapM {R R' : Map Noun} (h : RenRel ren R R') : ∀ (v : List Nat),
+theorem RenRel.store (hi : Inj ren) {R R' : Map (Option Noun)} (h : RenRel ren R R') (d : Nat) (v : Noun) :
+    RenRel ren (store d v R) (store (ren d) v R') := h.put hi d (some v)
+
+theorem RenRel.poison (hi : Inj ren) {R R' : Map (Option Noun)} (h : RenRel ren R R') (p : Nat) :
+    RenRel ren (poison p R) (poison (ren p) R') := h.put hi p none
+
+theorem RenRel.mapM {R R' : Map (Option Noun)} (h : RenRel ren R R') : ∀ (v : List Nat),
     (v.map ren).mapM (SkaModel.read · R') = v.mapM (SkaModel.read · R)
   | [] => rfl
-  | x :: xs => by simp only [List.map_cons, List.mapM_cons, h x, RenRel.mapM h xs]
+  | x :: xs => by simp only [List.map_cons, List.mapM_cons, h.rd x, RenRel.mapM h xs]
 
 /-- Related optional register maps. -/
-def ORel (ren : Nat → Nat) : Option (Map Noun) → Option (Map Noun) → Prop
+def ORel (ren : Nat → Nat) : Option (Map (Option Noun)) → Option (Map (Option Noun)) → Prop
   | Option.none, Option.none => True
   | some a, some b => RenRel ren a b
   | _, _ => False
 
-theorem evalPassLoop_ren (hi : Inj ren) : ∀ (args : List (Option Nat)) (par : List Nat) {R R' : Map Noun},
+theorem evalPassLoop_ren (hi : Inj ren) : ∀ (args : List (Option Nat)) (par : List Nat) {R R' : Map (Option Noun)},
     RenRel ren R R' →
     ORel ren (evalPassLoop args par R) (evalPassLoop (args.map (Option.map ren)) (par.map ren) R')
   | [], par, R, R', h => by cases par <;> simp [evalPassLoop, ORel, h]
@@ -69,13 +72,13 @@ theorem evalPassLoop_ren (hi : Inj ren) : ∀ (args : List (Option Nat)) (par : 
       cases a with
       | none =>
         simp only [evalPassLoop, List.map_cons, Option.map_none, Option.bind_some]
-        exact evalPassLoop_ren hi args par (h.del hi p)
+        exact evalPassLoop_ren hi args par (h.poison hi p)
       | some r =>
         simp only [evalPassLoop, List.map_cons, Option.map_some, move]
         rw [h r]
-        cases e : SkaModel.read r R with
+        cases e : HoonMap.get R r with
         | none => simp [ORel]
-        | some v => simpa using evalPassLoop_ren hi args par (h.store hi p v)
+        | some u => simpa using evalPassLoop_ren hi args par (h.put hi p u)
 
 theorem contains_map (hi : Inj ren) (par : List Nat) (r : Nat) :
     (par.map ren).contains (ren r) = par.contains r := by
@@ -83,7 +86,7 @@ theorem contains_map (hi : Inj ren) (par : List Nat) (r : Nat) :
   simp only [List.contains_iff_mem, List.mem_map]
   exact ⟨fun ⟨x, hx, e⟩ => hi _ _ e ▸ hx, fun h => ⟨r, h, rfl⟩⟩
 
-theorem evalPass_ren (hi : Inj ren) (args : List (Option Nat)) (par : List Nat) {R R' : Map Noun}
+theorem evalPass_ren (hi : Inj ren) (args : List (Option Nat)) (par : List Nat) {R R' : Map (Option Noun)}
     (h : RenRel ren R R') :
     ORel ren (evalPass args par R) (evalPass (args.map (Option.map ren)) (par.map ren) R') := by
   unfold evalPass
@@ -108,60 +111,60 @@ theorem evalPass_ren (hi : Inj ren) (args : List (Option Nat)) (par : List Nat) 
 /-! ## Ops under a renaming -/
 
 /-- Related results of an op. -/
-def PRel (ren : Nat → Nat) {σ : Type} : Option (Tone × Map Noun × Trace × σ) →
-    Option (Tone × Map Noun × Trace × σ) → Prop
+def PRel (ren : Nat → Nat) {σ : Type} : Option (Tone × Map (Option Noun) × Trace × σ) →
+    Option (Tone × Map (Option Noun) × Trace × σ) → Prop
   | Option.none, Option.none => True
   | some (a, R, t, s), some (a', R', t', s') => a = a' ∧ t = t' ∧ s = s' ∧ RenRel ren R R'
   | _, _ => False
 
 /-- Related results of a local op. -/
-def LRel (ren : Nat → Nat) : Option (Tone × Map Noun × Trace) → Option (Tone × Map Noun × Trace) → Prop
+def LRel (ren : Nat → Nat) : Option (Tone × Map (Option Noun) × Trace) → Option (Tone × Map (Option Noun) × Trace) → Prop
   | Option.none, Option.none => True
   | some (a, R, t), some (a', R', t') => a = a' ∧ t = t' ∧ RenRel ren R R'
   | _, _ => False
 
-theorem localPole_ren (hi : Inj ren) (lib : Lib) (gul : Noun) (p : Pole) {R R' : Map Noun} (t : Trace)
+theorem localPole_ren (hi : Inj ren) (lib : Lib) (gul : Noun) (p : Pole) {R R' : Map (Option Noun)} (t : Trace)
     (h : RenRel ren R R') : LRel ren (localPole lib gul p R t) (localPole lib gul (renPole ren p) R' t) := by
   cases p with
   | imm n d => simpa [localPole, renPole, LRel] using h.store hi d n
   | mov s d =>
     simp only [localPole, renPole, move, h s]
-    cases SkaModel.read s R <;> simp [LRel, h.store hi]
+    cases HoonMap.get R s <;> simp [LRel, h.put hi]
   | inc s d =>
-    simp only [localPole, renPole, h s]
+    simp only [localPole, renPole, h.rd s]
     cases e : SkaModel.read s R with
     | none => simp [LRel]
     | some v => cases v <;> simp [LRel, h, h.store hi]
   | con a b d =>
-    simp only [localPole, renPole, h a, h b]
+    simp only [localPole, renPole, h.rd a, h.rd b]
     cases SkaModel.read a R <;> cases SkaModel.read b R <;> simp [LRel, h.store hi]
   | hed s d =>
-    simp only [localPole, renPole, h s]
+    simp only [localPole, renPole, h.rd s]
     cases e : SkaModel.read s R with
     | none => simp [LRel]
     | some v => cases v <;> simp [LRel, h.store hi]
   | tal s d =>
-    simp only [localPole, renPole, h s]
+    simp only [localPole, renPole, h.rd s]
     cases e : SkaModel.read s R with
     | none => simp [LRel]
     | some v => cases v <;> simp [LRel, h.store hi]
   | cel q =>
-    simp only [localPole, renPole, h q]
+    simp only [localPole, renPole, h.rd q]
     cases e : SkaModel.read q R with
     | none => simp [LRel]
     | some v => cases v <;> simp [LRel, h]
   | lob q =>
-    simp only [localPole, renPole, h q]
+    simp only [localPole, renPole, h.rd q]
     cases e : SkaModel.read q R with
     | none => simp [LRel]
     | some v => by_cases hv : v = A 0 ∨ v = A 1 <;> simp [LRel, h, hv]
   | equ a b =>
-    simp only [localPole, renPole, h a, h b]
+    simp only [localPole, renPole, h.rd a, h.rd b]
     cases SkaModel.read a R <;> cases SkaModel.read b R <;> simp [LRel, h]
   | hsp n f => simp [localPole, renPole, LRel, h]
   | hse n f => simp [localPole, renPole, LRel, h]
   | hdp n q f =>
-    simp only [localPole, renPole, h q]
+    simp only [localPole, renPole, h.rd q]
     split
     · cases SkaModel.read q R <;> simp [LRel, h]
     · simp [LRel, h]
@@ -181,7 +184,7 @@ theorem localPole_ren (hi : Inj ren) (lib : Lib) (gul : Noun) (p : Pole) {R R' :
     simp only [localPole, renPole]
     cases popTrace t <;> simp [LRel, h]
   | spy e q d =>
-    simp only [localPole, renPole, h e, h q]
+    simp only [localPole, renPole, h.rd e, h.rd q]
     split
     · simp [LRel, h]
     · cases SkaModel.read e R <;> cases SkaModel.read q R <;> simp only [Option.bind_none, Option.bind_some, LRel]
@@ -199,12 +202,12 @@ theorem localPole_ren (hi : Inj ren) (lib : Lib) (gul : Noun) (p : Pole) {R R' :
   | csf a s d n => simp [localPole, renPole, LRel]
   | csm a s d k => simp [localPole, renPole, LRel]
 
-theorem afterCall_ren (hi : Inj ren) {σ : Type} (st : σ) {R R' : Map Noun} (t : Trace) (d : Nat)
+theorem afterCall_ren (hi : Inj ren) {σ : Type} (st : σ) {R R' : Map (Option Noun)} (t : Trace) (d : Nat)
     (h : RenRel ren R R') (ton : Tone) : PRel ren (afterCall st R t d ton) (afterCall st R' t (ren d) ton) := by
   cases ton <;> simp [afterCall, PRel, h, h.store hi]
 
 theorem execPole_local (lib : Lib) {σ : Type} (O : Oracle σ) (gul : Noun) (st : σ) (q : Pole)
-    (R : Map Noun) (t : Trace)
+    (R : Map (Option Noun)) (t : Trace)
     (h1 : ∀ u f d, q ≠ Pole.nok u f d) (h2 : ∀ a v d, q ≠ Pole.cal a v d) (h3 : ∀ a v d n, q ≠ Pole.caf a v d n)
     (h4 : ∀ a v d k, q ≠ Pole.cam a v d k) (h5 : ∀ a s d, q ≠ Pole.csl a s d)
     (h6 : ∀ a s d n, q ≠ Pole.csf a s d n) (h7 : ∀ a s d k, q ≠ Pole.csm a s d k) :
@@ -220,7 +223,7 @@ theorem execPole_local (lib : Lib) {σ : Type} (O : Oracle σ) (gul : Noun) (st 
   | _ => rfl
 
 theorem execPole_ren (hi : Inj ren) (lib : Lib) {σ : Type} (O : Oracle σ) (gul : Noun) (st : σ) (p : Pole)
-    {R R' : Map Noun} (t : Trace) (h : RenRel ren R R') :
+    {R R' : Map (Option Noun)} (t : Trace) (h : RenRel ren R R') :
     PRel ren (execPole lib O gul st p R t) (execPole lib O gul st (renPole ren p) R' t) := by
   have hloc : ∀ q : Pole,
       PRel ren ((localPole lib gul q R t).map fun (ton, regs', trace') => (ton, regs', trace', st))
@@ -231,7 +234,7 @@ theorem execPole_ren (hi : Inj ren) (lib : Lib) {σ : Type} (O : Oracle σ) (gul
     cases localPole lib gul q R t <;> cases localPole lib gul (renPole ren q) R' t <;> simp [LRel, PRel]
   cases p with
   | nok u f d =>
-    simp only [execPole, renPole, h u, h f]
+    simp only [execPole, renPole, h.rd u, h.rd f]
     cases SkaModel.read u R <;> cases SkaModel.read f R <;> simp only [Option.bind_none, Option.bind_some, PRel]
     rename_i vu vf
     cases O.nok st vu vf gul <;> simp only [Option.bind_none, Option.bind_some, PRel]
@@ -256,19 +259,19 @@ theorem execPole_ren (hi : Inj ren) (lib : Lib) {σ : Type} (O : Oracle σ) (gul
     cases O.call st a false vs t gul <;> simp only [Option.bind_none, Option.bind_some, PRel]
     exact afterCall_ren hi _ t d h _
   | csl a s d =>
-    simp only [execPole, renPole, h s]
+    simp only [execPole, renPole, h.rd s]
     cases SkaModel.read s R <;> simp only [Option.bind_none, Option.bind_some, PRel]
     rename_i vs
     cases O.call st a true [vs] t gul <;> simp only [Option.bind_none, Option.bind_some, PRel]
     exact afterCall_ren hi _ t d h _
   | csf a s d n =>
-    simp only [execPole, renPole, h s]
+    simp only [execPole, renPole, h.rd s]
     cases SkaModel.read s R <;> simp only [Option.bind_none, Option.bind_some, PRel]
     rename_i vs
     cases O.call st a true [vs] t gul <;> simp only [Option.bind_none, Option.bind_some, PRel]
     exact afterCall_ren hi _ t d h _
   | csm a s d k =>
-    simp only [execPole, renPole, h s]
+    simp only [execPole, renPole, h.rd s]
     cases SkaModel.read s R <;> simp only [Option.bind_none, Option.bind_some, PRel]
     rename_i vs
     cases O.call st a true [vs] t gul <;> simp only [Option.bind_none, Option.bind_some, PRel]
@@ -338,7 +341,7 @@ variable {c c' : Straight Map} {bs : Map Blob} {ren : Nat → Nat} {o : Nat}
 
 theorem chase_spec {ρ : Nat → Nat} (hs : Sim c c' bs ren o ρ) (lib : Lib) {σ : Type} (O : Oracle σ) (gul : Noun) :
     ∀ n (j : Jmp) (br : Bool) (j' : Jmp), ρ j.there < n → 1 ≤ j.there → chase bs br j = some j' →
-    (∀ st (R : Map Noun) t, goJ lib O c gul st R t j = goJ lib O c gul st R t j') ∧ ρ j'.there ≤ ρ j.there ∧
+    (∀ st (R : Map (Option Noun)) t, goJ lib O c gul st R t j = goJ lib O c gul st R t j') ∧ ρ j'.there ≤ ρ j.there ∧
       j'.there ≠ o ∧ ∃ b', HoonMap.get c.blocks j'.there = some b' ∧ bypassable br b' = false
   | 0, _, _, _, hn, _, _ => absurd hn (Nat.not_lt_zero _)
   | n + 1, j, br, j', hn, h1, hc => by
@@ -379,18 +382,18 @@ theorem chase_spec {ρ : Nat → Nat} (hs : Sim c c' bs ren o ρ) (lib : Lib) {�
 renamed jumps go in `c'`. -/
 def JGo (lib : Lib) {σ : Type} (O : Oracle σ) (c c' : Straight Map) (gul : Noun) (bs : Map Blob)
     (ren : Nat → Nat) (fin : Termin) : Prop :=
-  ∀ j ∈ finJumps fin, ∀ br j', chase bs br j = some j' → ∀ st (R R' : Map Noun) t, RenRel ren R R' →
+  ∀ j ∈ finJumps fin, ∀ br j', chase bs br j = some j' → ∀ st (R R' : Map (Option Noun)) t, RenRel ren R R' →
     goJ lib O c gul st R t j = goJ lib O c' gul st R' t (renJmp ren j')
 
 theorem fin_sim {lib : Lib} {σ : Type} {O : Oracle σ} {gul : Noun} {fin fin' : Termin}
-    (hc : chaseFin bs ren fin = some fin') (hj : JGo lib O c c' gul bs ren fin) (st : σ) {R R' : Map Noun}
+    (hc : chaseFin bs ren fin = some fin') (hj : JGo lib O c c' gul bs ren fin) (st : σ) {R R' : Map (Option Noun)}
     (t : Trace) (h : RenRel ren R R') :
     execBlob lib O c gul st R t ⟨[], [], fin⟩ [] = execBlob lib O c' gul st R' t ⟨[], [], fin'⟩ [] := by
   cases fin with
   | clq s z o =>
     simp only [chaseFin, Option.bind_eq_some_iff, Option.some.injEq] at hc
     obtain ⟨z', hz, o', ho, rfl⟩ := hc
-    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h s]
+    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h.rd s]
     cases SkaModel.read s R with
     | none => rfl
     | some v =>
@@ -400,7 +403,7 @@ theorem fin_sim {lib : Lib} {σ : Type} {O : Oracle σ} {gul : Noun} {fin fin' :
   | eqq l r z o =>
     simp only [chaseFin, Option.bind_eq_some_iff, Option.some.injEq] at hc
     obtain ⟨z', hz, o', ho, rfl⟩ := hc
-    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h l, h r]
+    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h.rd l, h.rd r]
     cases SkaModel.read l R with
     | none => rfl
     | some x =>
@@ -415,7 +418,7 @@ theorem fin_sim {lib : Lib} {σ : Type} {O : Oracle σ} {gul : Noun} {fin fin' :
   | brn s z o =>
     simp only [chaseFin, Option.bind_eq_some_iff, Option.some.injEq] at hc
     obtain ⟨z', hz, o', ho, rfl⟩ := hc
-    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h s]
+    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h.rd s]
     cases SkaModel.read s R with
     | none => rfl
     | some v =>
@@ -428,7 +431,7 @@ theorem fin_sim {lib : Lib} {σ : Type} {O : Oracle σ} {gul : Noun} {fin fin' :
   | brz s z o =>
     simp only [chaseFin, Option.bind_eq_some_iff, Option.some.injEq] at hc
     obtain ⟨z', hz, o', ho, rfl⟩ := hc
-    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h s]
+    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h.rd s]
     cases SkaModel.read s R with
     | none => rfl
     | some v =>
@@ -449,13 +452,13 @@ theorem fin_sim {lib : Lib} {σ : Type} {O : Oracle σ} {gul : Noun} {fin fin' :
     rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h.mapM v]
   | jsp a s =>
     simp only [chaseFin, Option.some.injEq] at hc; subst hc
-    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h s]
+    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h.rd s]
   | jsf a s n =>
     simp only [chaseFin, Option.some.injEq] at hc; subst hc
-    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h s]
+    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h.rd s]
   | don s =>
     simp only [chaseFin, Option.some.injEq] at hc; subst hc
-    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h s]
+    rw [execBlob, execBlob]; simp only [ne_eq, not_true_eq_false, or_self, if_false, h.rd s]
   | bom m =>
     cases m with
     | none =>
@@ -468,9 +471,9 @@ theorem fin_sim {lib : Lib} {σ : Type} {O : Oracle σ} {gul : Noun} {fin fin' :
   | lti n s z o => simp [chaseFin] at hc
 
 theorem body_sim {lib : Lib} {σ : Type} {O : Oracle σ} {gul : Noun} (hi : Inj ren) {fin fin' : Termin}
-    (hf : ∀ (st : σ) (R R' : Map Noun) t, RenRel ren R R' →
+    (hf : ∀ (st : σ) (R R' : Map (Option Noun)) t, RenRel ren R R' →
       execBlob lib O c gul st R t ⟨[], [], fin⟩ [] = execBlob lib O c' gul st R' t ⟨[], [], fin'⟩ []) :
-    ∀ (body : List Pole) (st : σ) (R R' : Map Noun) t, RenRel ren R R' →
+    ∀ (body : List Pole) (st : σ) (R R' : Map (Option Noun)) t, RenRel ren R R' →
       execBlob lib O c gul st R t ⟨[], body, fin⟩ [] =
         execBlob lib O c' gul st R' t ⟨[], body.map (renPole ren), fin'⟩ []
   | [], st, R, R', t, h => hf st R R' t h
@@ -493,7 +496,7 @@ theorem body_sim {lib : Lib} {σ : Type} {O : Oracle σ} {gul : Noun} (hi : Inj 
 jumps below `k` (a block of `c` at `k`, or one that is not in `c`). -/
 theorem sim_block {ρ : Nat → Nat} (hs : Sim c c' bs ren o ρ) (lib : Lib) {σ : Type} (O : Oracle σ) (gul : Noun) :
     ∀ k (b : Blob), (∀ j ∈ finJumps b.fin, 1 ≤ j.there ∧ ρ j.there < k) → ∀ fin', chaseFin bs ren b.fin = some fin' →
-    ∀ (st : σ) (R R' : Map Noun) t (params : List (Option Nat)), RenRel ren R R' →
+    ∀ (st : σ) (R R' : Map (Option Noun)) t (params : List (Option Nat)), RenRel ren R R' →
     execBlob lib O c gul st R t b params =
       execBlob lib O c' gul st R' t (renB ren b fin') (params.map (Option.map ren)) := by
   intro k

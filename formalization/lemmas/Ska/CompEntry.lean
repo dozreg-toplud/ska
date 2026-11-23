@@ -111,8 +111,9 @@ theorem renReg_inj (r0 n : Nat) : Inj (renReg r0 n) := by
   repeat' split at h
   all_goals omega
 
-theorem get_regsFrom : ∀ (vs : List Noun) (k : Nat) (m : Map Noun) (x : Nat),
-    HoonMap.get (regsFrom k vs m) x = if k ≤ x ∧ x < k + vs.length then vs[x - k]? else HoonMap.get m x
+theorem get_regsFrom : ∀ (vs : List Noun) (k : Nat) (m : Map (Option Noun)) (x : Nat),
+    HoonMap.get (regsFrom k vs m) x =
+      if k ≤ x ∧ x < k + vs.length then vs[x - k]?.map some else HoonMap.get m x
   | [], k, m, x => by simp only [regsFrom, List.length_nil, Nat.add_zero]; rw [if_neg (by omega)]
   | v :: vs, k, m, x => by
     simp only [regsFrom, get_regsFrom vs (k + 1), HoonMap.get_put, List.length_cons]
@@ -126,9 +127,9 @@ theorem get_regsFrom : ∀ (vs : List Noun) (k : Nat) (m : Map Noun) (x : Nat),
 
 /-- The registers of the entry, renamed back: argument `i` in `r0 + i`. -/
 theorem renRel_entry (r0 : Nat) (args : List Noun) :
-    RenRel (renReg r0 args.length) (regsFrom r0 args (HoonMap.empty : Map Noun)) (regsOf args) := by
+    RenRel (renReg r0 args.length) (regsFrom r0 args (HoonMap.empty : Map (Option Noun))) (regsOf args) := by
   intro r
-  simp only [SkaModel.read, regsOf, get_regsFrom, HoonMap.get_empty, renReg]
+  simp only [regsOf, get_regsFrom, HoonMap.get_empty, renReg]
   by_cases h1 : r < r0
   · rw [if_pos h1, if_neg (by omega), if_neg (by omega)]
   · rw [if_neg h1]
@@ -138,7 +139,7 @@ theorem renRel_entry (r0 : Nat) (args : List Noun) :
 
 /-- Registers that hold the arguments that `split` takes out of `s` hold
 `s` as the need asks, when the need's registers are a run. -/
-theorem holds_of_split : ∀ (ned : Need) (k : Nat) (s : Noun) (a : List Noun) (R : Map Noun),
+theorem holds_of_split : ∀ (ned : Need) (k : Nat) (s : Noun) (a : List Noun) (R : Map (Option Noun)),
     flattenNeed ned = List.range' k (flattenNeed ned).length →
     SkaModel.split (needToOrd ned) s = some a →
     a.length = (flattenNeed ned).length ∧
@@ -196,7 +197,7 @@ theorem toStraight_entryR [HoonMapKeys Map] {ρ : Nat → Nat} {blocks : Map Blo
     (hag : ∀ k, k ≠ o → HoonMap.get c.blocks k = HoonMap.get blocks k) :
     c'.need = needToOrd ned ∧ ∃ start, HoonMap.get blocks o = some start ∧
       ∀ (lib : Lib) {σ : Type} (O : Oracle σ) (st : σ) (s : Noun) (args : List Noun) (t : Trace) (gul : Noun),
-        SkaModel.split c'.need s = some args → ∃ R : Map Noun, HoldsN ned R s ∧
+        SkaModel.split c'.need s = some args → ∃ R : Map (Option Noun), HoldsN ned R s ∧
           execEntry lib O st c' args t gul = execBlob lib O c gul st R t start [] := by
   unfold toStraight at h
   simp only at h
@@ -216,11 +217,11 @@ theorem toStraight_entryR [HoonMapKeys Map] {ρ : Nat → Nat} {blocks : Map Blo
     generalize hr0 : ins.headD 0 = r0 at hrun hnew
     have hins : ins = List.range' r0 ins.length := by
       have := (isRun_iff ins r0 0).mp hrun; simpa using this
-    obtain ⟨hlen, hholds⟩ := holds_of_split ned r0 s args (regsFrom r0 args (HoonMap.empty : Map Noun)) (hins_def ▸ hins) hsp
+    obtain ⟨hlen, hholds⟩ := holds_of_split ned r0 s args (regsFrom r0 args (HoonMap.empty : Map (Option Noun))) (hins_def ▸ hins) hsp
     rw [hins_def] at hlen
-    refine ⟨regsFrom r0 args (HoonMap.empty : Map Noun), hholds fun i hi => ?_, ?_⟩
+    refine ⟨regsFrom r0 args (HoonMap.empty : Map (Option Noun)), hholds fun i hi => ?_, ?_⟩
     · simp only [SkaModel.read, get_regsFrom, HoonMap.get_empty]
-      rw [if_pos (by omega)]; simp
+      rw [if_pos (by omega), Nat.add_sub_cancel_left]; cases args[i]? <;> rfl
     have hren := renRel_entry (Map := Map) r0 args
     rw [hlen] at hren
     generalize hbs : HoonMap.put (HoonMap.del blocks o) 0 start = bs at hnew
@@ -248,7 +249,7 @@ theorem toStraight_entry [HoonMapKeys Map] {blocks : Map Blob} {c : Straight Map
     (hag : ∀ k, k ≠ o → HoonMap.get c.blocks k = HoonMap.get blocks k) :
     c'.need = needToOrd ned ∧ ∃ start, HoonMap.get blocks o = some start ∧
       ∀ (lib : Lib) {σ : Type} (O : Oracle σ) (st : σ) (s : Noun) (args : List Noun) (t : Trace) (gul : Noun),
-        SkaModel.split c'.need s = some args → ∃ R : Map Noun, HoldsN ned R s ∧
+        SkaModel.split c'.need s = some args → ∃ R : Map (Option Noun), HoldsN ned R s ∧
           execEntry lib O st c' args t gul = execBlob lib O c gul st R t start [] :=
   toStraight_entryR h hdb.rank hd.rank hag
 

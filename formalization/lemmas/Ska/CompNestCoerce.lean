@@ -111,7 +111,7 @@ for `s0` itself, and in `[7 p q]` the lazy blocks of `q` are filled for the
 product of `p`. -/
 def FillSem (lib : Lib) {σ : Type} (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace)
     (ned : Need) (lo : Nat) (L : Sure S) (A : List Pole) (s0 s : Noun) : Prop :=
-  ∀ R : Map Noun, HoldsN ned R s0 →
+  ∀ R : Map (Option Noun), HoldsN ned R s0 →
     (FitsS L s → ∃ R', Runs lib O c gul st t A R R' ∧ HoldsS L R' s ∧
       ∀ x, (NMem ned x ∨ x < lo) → ¬ NMem L.ned x → SkaModel.read x R' = SkaModel.read x R) ∧
     (¬ FitsS L s → Crashes lib O c gul st t A R)

@@ -28,7 +28,7 @@ section
 variable {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ}
 
 /-- A crash where the value is none or has not what the goal asks. -/
-theorem goalSem_crash_or {K : Nat → Prop} {regs : Map Noun} {t : Trace} {je : Jmp} {goal : CGoal S}
+theorem goalSem_crash_or {K : Nat → Prop} {regs : Map (Option Noun)} {t : Trace} {je : Jmp} {goal : CGoal S}
     {v : Option Noun} (hv : v = none ∨ ∃ w, v = some w ∧ GNot goal w)
     (h : goJ lib O c gul st regs t je = some (Tone.two t, st)) :
     GoalSem lib O c gul st K regs t je goal v := by

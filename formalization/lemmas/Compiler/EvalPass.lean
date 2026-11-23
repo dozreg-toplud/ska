@@ -7,16 +7,16 @@ import lemmas.Ska.Interp
 
 ```hoon
 ++  eval-pass
-  |=  [args=(list (unit @uvre)) par=(list @uvre) regs=(map @uvre *)]
-  ^-  (map @uvre *)
+  |=  [args=(list (unit @uvre)) par=(list @uvre) regs=(map @uvre (unit *))]
+  ^-  (map @uvre (unit *))
   ?>  %+  levy  args
       |=  a=(unit @uvre)
       |(?=(~ a) !(lien par |=(p=@uvre =(p u.a))))
-  |-  ^-  (map @uvre *)
+  |-  ^-  (map @uvre (unit *))
   ?~  args  ?>(?=(~ par) regs)
   ?>  ?=(^ par)
   =.  regs
-    ?~  i.args  (~(del by regs) i.par)
+    ?~  i.args  (~(put by regs) i.par ~)
     (move u.i.args i.par regs)
   $(args t.args, par t.par)
 ```
@@ -54,34 +54,35 @@ theorem listNoun_eq_listN {α : Type} (f : α → Noun) :
 
 /-- `+move` on a map of `TreapMap mugF`, in any context that holds what it
 reads. -/
-theorem move_model (c : Noun) (hc : MoveIn mugF c) (s d : Nat) (regs : TreapMap mugF Noun) :
-    nock (C move.battery (C (C (A s) (C (A d) (HoonMap.toNoun id regs))) c)) move.battery
-      = (SkaModel.move s d regs).map (HoonMap.toNoun id) := by
-  have h := getF_hoonMap id regs s
-  unfold SkaModel.move SkaModel.read
+theorem move_model (c : Noun) (hc : MoveIn mugF c) (s d : Nat) (regs : TreapMap mugF (Option Noun)) :
+    nock (C move.battery (C (C (A s) (C (A d) (HoonMap.toNoun (unitNoun id) regs))) c)) move.battery
+      = (SkaModel.move s d regs).map (HoonMap.toNoun (unitNoun id)) := by
+  have h := getF_hoonMap (unitNoun id) regs s
+  unfold SkaModel.move
   cases e : HoonMap.get regs s with
   | none => rw [e] at h; simpa using move_gate_nil _ hc s d _ h
-  | some v =>
+  | some u =>
     rw [e] at h
-    simpa [SkaModel.store] using move_gate _ hc s d _ v _ h (putF_hoonMap id regs d v)
+    simpa using move_gate _ hc s d _ (unitNoun id u) _ h (putF_hoonMap (unitNoun id) regs d u)
 
-/-- `+del:by` through layer 2 of the context, on a map of `TreapMap mugF`. -/
-theorem del_model (l2 : Noun) (hc : GorIn mugF l2 ∧ MorIn mugF l2) (p : Nat)
-    (regs : TreapMap mugF Noun) :
-    nock (C by.del.battery (C (A p) (C by.battery (C (HoonMap.toNoun id regs) l2))))
-        by.del.battery
-      = some (HoonMap.toNoun id (HoonMap.del regs p)) :=
-  del_gate l2 hc (A p) _ _ (delF_hoonMap id regs p)
+/-- `(~(put by regs) p ~)` through layer 2 of the context, on a map of
+`TreapMap mugF`: the poison of `p`. -/
+theorem poison_model (l2 : Noun) (hc : GorIn mugF l2 ∧ MorIn mugF l2) (p : Nat)
+    (regs : TreapMap mugF (Option Noun)) :
+    nock (C by.put.battery (C (C (A p) (A 0)) (C by.battery (C (HoonMap.toNoun (unitNoun id) regs) l2))))
+        by.put.battery
+      = some (HoonMap.toNoun (unitNoun id) (SkaModel.poison p regs)) :=
+  put_gate l2 hc (A p) (A 0) _ _ (putF_hoonMap (unitNoun id) regs p none)
 
 /-- The loop of `+eval-pass`. -/
 theorem eval_pass_loop (c : Noun) (hc : EvalPassIn c) :
-    ∀ (args : List (Option Nat)) (par : List Nat) (regs : TreapMap mugF Noun),
+    ∀ (args : List (Option Nat)) (par : List Nat) (regs : TreapMap mugF (Option Noun)),
     nock (C eval_pass.loop (C eval_pass.battery
-        (C (C (argsN args) (C (parN par) (HoonMap.toNoun id regs))) c))) eval_pass.loop
-      = (evalPassLoop args par regs).map (HoonMap.toNoun id) := by
+        (C (C (argsN args) (C (parN par) (HoonMap.toNoun (unitNoun id) regs))) c))) eval_pass.loop
+      = (evalPassLoop args par regs).map (HoonMap.toNoun (unitNoun id)) := by
   obtain ⟨hmv, hmc, l2, hl2, _, _⟩ := hc
   have hmove := hmc
-  obtain ⟨_, _, l2', hl2', hby, _, _, hgor, hmor⟩ := hmc
+  obtain ⟨l2', hl2', hby, _, _, hgor, hmor⟩ := hmc
   obtain rfl : l2 = l2' := Option.some.inj (hl2.symm.trans hl2')
   intro args
   induction args with
@@ -95,11 +96,11 @@ theorem eval_pass_loop (c : Noun) (hc : EvalPassIn c) :
     rcases par with _ | ⟨p, par⟩
     · nock_open eval_pass.loop; simp [nock_exec, argsN, parN, listNoun, evalPassLoop]
     · rcases a with _ | r
-      · have h1 := ih par (HoonMap.del regs p)
+      · have h1 := ih par (SkaModel.poison p regs)
         simp only [argsN, parN] at h1
         nock_open eval_pass.loop
         simp [nock_exec, argsN, parN, listNoun, unitNoun, evalPassLoop, hl2, hby, by_arm,
-          by.del.arm_at, del_arm, del_model l2 ⟨hgor, hmor⟩, h1]
+          by.put.arm_at, put_arm, poison_model l2 ⟨hgor, hmor⟩, h1]
       · have hm := move_model c hmove r p regs
         cases e : SkaModel.move r p regs with
         | none =>
@@ -168,22 +169,22 @@ theorem all_argOKN (par : List Nat) (args : List (Option Nat)) :
   | cons a as ih => rw [List.map_cons, List.all_cons, ih, argOKN_unit, List.all_cons]
 
 theorem evalPass_eq {Map : Type → Type} [HoonMap Map] (args : List (Option Nat)) (par : List Nat)
-    (regs : Map Noun) :
+    (regs : Map (Option Noun)) :
     evalPass args par regs = if args.all (argOK par) = true then evalPassLoop args par regs else none :=
   rfl
 
 /-- `+eval-pass` computes `evalPass` of `Interp.lean`. -/
 theorem eval_pass_gate (c : Noun) (hc : EvalPassIn c) (args : List (Option Nat)) (par : List Nat)
-    (regs : TreapMap mugF Noun) :
-    nock (C eval_pass.battery (C (C (argsN args) (C (parN par) (HoonMap.toNoun id regs))) c))
+    (regs : TreapMap mugF (Option Noun)) :
+    nock (C eval_pass.battery (C (C (argsN args) (C (parN par) (HoonMap.toNoun (unitNoun id) regs))) c))
         eval_pass.battery
-      = (evalPass args par regs).map (HoonMap.toNoun id) := by
+      = (evalPass args par regs).map (HoonMap.toNoun (unitNoun id)) := by
   have hloop := eval_pass_loop c hc args par regs
   obtain ⟨_, _, l2, hl2, hlevy, hlien⟩ := hc
   simp only [argsN, parN, listNoun_eq_listN] at hloop
   have hlv := levy_gate l2 eval_pass.chk (A 0)
     (C eval_pass.battery (C (C (listN (args.map (unitNoun A))) (C (listN (par.map A))
-      (HoonMap.toNoun id regs))) c))
+      (HoonMap.toNoun (unitNoun id) regs))) c))
     (argOKN par) (args.map (unitNoun A)) (by
       intro n hn
       obtain ⟨x, _, rfl⟩ := List.mem_map.1 hn
@@ -203,10 +204,10 @@ theorem evalPassIn_interp : EvalPassIn interp :=
   ⟨move.arm_at, moveIn_interp, layer2, read.layer2.arm_at, levy.arm_at, lien.arm_at⟩
 
 /-- `+eval-pass` of the pill computes `evalPass`. -/
-theorem eval_pass_pill (args : List (Option Nat)) (par : List Nat) (regs : TreapMap mugF Noun) :
-    nock (C eval_pass.battery (C (C (argsN args) (C (parN par) (HoonMap.toNoun id regs))) interp))
+theorem eval_pass_pill (args : List (Option Nat)) (par : List Nat) (regs : TreapMap mugF (Option Noun)) :
+    nock (C eval_pass.battery (C (C (argsN args) (C (parN par) (HoonMap.toNoun (unitNoun id) regs))) interp))
         eval_pass.battery
-      = (evalPass args par regs).map (HoonMap.toNoun id) :=
+      = (evalPass args par regs).map (HoonMap.toNoun (unitNoun id)) :=
   eval_pass_gate interp evalPassIn_interp args par regs
 
 end Compiler
