@@ -493,8 +493,9 @@ disagrees with `+mink` after `+optimize`.  The pass that removes the read is
 `+remove-empty-middle`, whose `rewrite-hop` bypasses an empty join and
 passes `~` through it; without it 24 of the 85 still crash, for example
 `[7 [6 [5 [0 3] [1 5]] [0 1] [6 [0 2] [6 [0 2] [1 1] [0 7]] [0 6]]] [6 [0 2]
-[0 2] [0 15]]]` on `[1 [0 2] [3 4] 5]` (`+mink`: `0`).  In the other cases
-`+alias` folds the inner branch or the passes rescue it together. -/
+[0 2] [0 15]]]` on `[1 [0 2] [3 4] 5]` (`+mink`: `0`).  Without `+alias` 6
+of the 85 crash, without `+remove-hops` 1, and without any other single pass
+none. -/
 def sixNextL [HoonMapKeys Map] (rp rq rr : CGoalL S → List Nat → CM Map (NextL S)) (p q r : Nomm) :
     Nat → Lazy S → Jmp → List Nat → CM Map (NextL S)
   | 0, _, _, _ => fun _ => Option.none
