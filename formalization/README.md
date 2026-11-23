@@ -131,6 +131,10 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/ConvergeRel.lean` | Agreement from the final graph with each last run in `FolR` (`ConvergedGraphR`, `GStepR`, `agree_pokeR`); the older statements as special cases; `RunEntryR.pop`. |
 | `Ska/Bridge.lean` | The state-passing `fol-loop`, projected, is in `FolR` (`bridge_step`, `folLoop_goOK`, `run_folTopR`), under an invariant that `resolve` keeps, which is assumed; the write of `+run` is a `GStepR.run`. |
 | `Ska/MemoPoke.lean` | Memo hits from earlier pokes: `MemoEntryOK`, the hit entry as a third kind (`ConvergedGraphM`, `agree_pokeM`), and the memo invariant kept by every poke (`MemoInv`, `memoInv_poke`). |
+| `Ska/CompModel.lean` | A model of `+comp`'s `run` for nomm without calls, hints and forks (`[^ *]`, `%0`, `%1`, `%3`, `%4`, `%5`, `%7`) and its helpers (`emit`, `from`, `split`, `copy`, `mede`, `collapse-lazy-atom`, `forl`); `HoonSet` abstracts the sets. |
+| `Ska/CompSem.lean` | `RunOK`, the relation for one run of `run` against `execBlob` (goals with looks and jump arguments, the necessity of the looks). |
+| `Ska/CompRun.lean`, `Ska/CompLook.lean`, `Ska/CompMede.lean`, `Ska/CompUnary.lean` | `%0`, `%1`, `%7`, `%4` (`%done`, `%pick`) and `%3` (`%pick`) meet `RunOK`; `+sure-require-look`; `+mede`. |
+| `Ska/CompFrag.lean` | `run_ok`: the model of `run` meets `RunOK` on the fragment `Frag`, by induction, with no assumption about `+comp`. Not yet connected to `BellContract`: `coerce-lazy` and `to-straight` are not modelled. |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
