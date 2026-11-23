@@ -27,6 +27,7 @@ import lemmas.Ska.ConvAna
 import lemmas.Ska.PokeConv
 import lemmas.Ska.FolNorm
 import lemmas.Ska.Bake
+import lemmas.Ska.Know
 
 /-! The axioms of the main theorems of `lemmas/Ska`.  `lake build` prints
 them; each should be `propext`, `Classical.choice` and `Quot.sound` at most. -/
