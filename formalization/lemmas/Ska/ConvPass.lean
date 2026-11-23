@@ -384,14 +384,17 @@ theorem cull_ok2 {memoF : Memo M} {n : Nat} {id : Ident} {st st' : SkaState M R}
     rw [hDg m hm] at hd; rw [hran m hm] at hr
     obtain ⟨P, L', hL', hrun, hP⟩ := h d hd hr
     refine ⟨P, L', Nat.le_trans hL' hL, hrun, fun s f a hp => (hP s f a hp).mono (fun e he => ?_)⟩
-    rcases he with he | ⟨hce, ⟨o, hco, hlt⟩, htab⟩
-    · exact Or.inl he
+    rcases he with ⟨he, hce⟩ | ⟨hce, ⟨o, hco, hlt⟩, htab⟩
+    · exact Or.inl ⟨he, by rw [hcal m hm]; exact hce⟩
     · have hcD := hw _ hce o hco (Nat.lt_of_lt_of_le hlt hL')
       refine Or.inr ⟨by rw [hcal m hm]; exact hce, ⟨o, by rw [hDo _ hcD]; exact hco, hlt⟩, fun hlt' => ?_⟩
       rw [hchg _ hcD, hran m hm] at hlt'
       obtain ⟨dc, hdc, htc⟩ := htab hlt'
       exact ⟨dc, by rw [hDg _ hcD]; exact hdc, htc⟩
-  refine ⟨⟨si, fun m => ?_, ⟨fun i o hio => ?_, ?_⟩, ⟨hc.frz.ok, fun i d h1 h2 => ?_, fun e he => ?_, hc.frz.wf,
+  have hcalF : ∀ e, F e → calleesOf st' (e.more, e.fol) = calleesOf st (e.more, e.fol) := fun e he =>
+    hcal _ (hfinD _ (hc.frz.sub e he).2)
+  refine ⟨⟨si, fun m => ?_, ⟨fun i o hio => ?_, ?_⟩, ⟨fun e he => hc.frz.ok.mono (fun _ h => h) hcalF he,
+    fun i d h1 h2 => ?_, fun e he => ?_, hc.frz.wf,
     fun f ms s ent h1 h2 => ?_⟩, fun m o hmo => ?_, fun j hj => ?_⟩, sg, sk, ⟨fun i d h1 h2 => ?_, fun j hj => ?_,
     by rw [en]; exact Nat.le_refl _, by rw [etk]; exact Nat.le_refl _, fun x o hxo hx => ?_⟩, fun x hx => ?_,
     fun x o hxo hx => ?_⟩
@@ -415,9 +418,9 @@ theorem cull_ok2 {memoF : Memo M} {n : Nat} {id : Ident} {st st' : SkaState M R}
   · by_cases hi : D i
     · rw [hDg' i hi] at h1; cases h1
     · rw [hDg i hi] at h1; rw [hDo i hi] at h2; exact hc.frz.cover i d h1 h2
-  · obtain ⟨⟨d, hd⟩, ho⟩ := hc.frz.sub e he
+  · obtain ⟨⟨d, hd, hl⟩, ho⟩ := hc.frz.sub e he
     have hn := hfinD _ ho
-    exact ⟨⟨d, by rw [hDg _ hn]; exact hd⟩, by rw [hDo _ hn]; exact ho⟩
+    exact ⟨⟨d, by rw [hDg _ hn]; exact hd, hl⟩, by rw [hDo _ hn]; exact ho⟩
   · rw [ed] at h1
     obtain ⟨hF, hk, hge⟩ := hc.frz.done f ms s ent h1 h2
     have hn : ¬ D ent.1 := hfinD _ (by simpa [entOf] using (hc.frz.sub _ hF).2)
@@ -808,8 +811,9 @@ theorem memOK_keepRest {st st' : SkaState M R} {F F' : Entry → Prop} {ab0 rest
   rw [hgm] at hd; rw [hran] at hr
   obtain ⟨P, L, hL, hrun, hP⟩ := h d hd hr
   refine ⟨P, L, hL, hrun, fun s f a hp => (hP s f a hp).mono (fun e he => ?_)⟩
-  rcases he with he | ⟨hce, ⟨o, hco, hlt⟩, htab⟩
-  · exact Or.inl (hF e he)
+  have hcal : calleesOf st' m = calleesOf st m := by simp only [calleesOf, gitG, Treap.gut, hgm]
+  rcases he with ⟨he, hce⟩ | ⟨hce, ⟨o, hco, hlt⟩, htab⟩
+  · exact Or.inl ⟨hF e he, by rw [hcal]; exact hce⟩
   · have hcs : (e.more, e.fol) ∈ id :: rest := by
       have hst : (e.more, e.fol) ∈ st.stk := (hi.ord_stk _).mp ⟨o, hco⟩
       rw [hs] at hst
@@ -818,7 +822,6 @@ theorem memOK_keepRest {st st' : SkaState M R} {F F' : Entry → Prop} {ab0 rest
       · exact absurd (Nat.lt_of_lt_of_le hlt hL) (Nat.not_lt.mpr ((ordInv_split ho hs hidx).1 _ (by simp [h1]) o hco))
       · rw [h1]; exact List.mem_cons_self
       · exact List.mem_cons_of_mem _ h1
-    have hcal : calleesOf st' m = calleesOf st m := by simp only [calleesOf, gitG, Treap.gut, hgm]
     refine Or.inr ⟨by rw [hcal]; exact hce, ⟨o, by rw [hk.2.1 _ hcs]; exact hco, hlt⟩, fun hlt' => ?_⟩
     have hchg : chgOf st' (e.more, e.fol) = chgOf st (e.more, e.fol) := by
       simp only [chgOf, Treap.gut, hts _ hcs]

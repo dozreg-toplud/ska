@@ -52,8 +52,14 @@ theorem push_cinv {memoF : Memo M} {st : SkaState M R} {F : Entry → Prop} (hc 
   have hmem : ∀ m L, m ∈ st.stk → MemOK st F m L → MemOK (pushSt st id) F m L :=
     fun m L hm h => memOK_frame hc.s hm k1 (fun _ _ => rfl) (fun _ h => h) h
   have hneid : ∀ i, Treap.get st.g i ≠ none → i ≠ id := fun i hi e => hi (e ▸ hg)
-  unfold pushSt at hmem ⊢
-  refine ⟨⟨i1, fun m => hc.tick m, ⟨fun i o hio => ?_, ?_⟩, ⟨hc.frz.ok, fun i d h1 h2 => ?_, fun e he => ?_,
+  have hcalF : ∀ e, F e → calleesOf (pushSt st id) (e.more, e.fol) = calleesOf st (e.more, e.fol) :=
+    fun e he => by
+      obtain ⟨⟨d, hd, _⟩, _⟩ := hc.frz.sub e he
+      have hi := hneid _ (by rw [hd]; simp)
+      simp only [pushSt, calleesOf, gitG, Treap.gut, Treap.get_put, if_neg hi]
+  unfold pushSt at hmem hcalF ⊢
+  refine ⟨⟨i1, fun m => hc.tick m, ⟨fun i o hio => ?_, ?_⟩, ⟨fun e he => hc.frz.ok.mono (fun _ h => h) hcalF he,
+    fun i d h1 h2 => ?_, fun e he => ?_,
     hc.frz.wf, fun f ms s ent h1 h2 => ?_⟩, fun m o hmo => ?_, fun j hj => ?_⟩, s1, k1,
     ⟨fun i d h1 h2 => ?_, fun _ _ => rfl, Nat.le_succ _, Nat.le_refl _, fun x o hxo hx => ?_⟩, hmem⟩
   · simp only [Treap.get_put] at hio
@@ -75,9 +81,10 @@ theorem push_cinv {memoF : Memo M} {st : SkaState M R} {F : Entry → Prop} (hc 
   · have hi : i ≠ id := by intro e; subst e; simp [Treap.get_put] at h2
     simp only [Treap.get_put, if_neg hi] at h1 h2
     exact hc.frz.cover i d h1 h2
-  · obtain ⟨⟨d, hd⟩, ho⟩ := hc.frz.sub e he
+  · obtain ⟨⟨d, hd, hl⟩, ho⟩ := hc.frz.sub e he
     have hi := hneid _ (by rw [hd]; simp)
-    exact ⟨⟨d, by simp only [Treap.get_put, if_neg hi]; exact hd⟩, by simp only [Treap.get_put, if_neg hi]; exact ho⟩
+    exact ⟨⟨d, by simp only [Treap.get_put, if_neg hi]; exact hd, hl⟩,
+      by simp only [Treap.get_put, if_neg hi]; exact ho⟩
   · obtain ⟨hF, hk, hge⟩ := hc.frz.done f ms s ent h1 h2
     have hi := hneid _ (by rw [hge]; simp)
     exact ⟨hF, hk, by simp only [Treap.get_put, if_neg hi]; exact hge⟩
@@ -156,17 +163,20 @@ theorem hit_cinv {memoF : Memo M} (hmF : MemoWF memoF) {st : SkaState M R} {F : 
     fun f ms s ent h1 h2 => ?_⟩, fun m o hmo => ?_, hc.tkeys⟩, s1, k1,
     ⟨fun i d h1 h2 => ?_, fun _ _ => rfl, Nat.le_refl _, Nat.le_refl _, fun x o hxo hx => absurd hxo hx⟩⟩
   · rcases he with he | rfl
-    · exact hc.frz.ok.mono hF he
+    · refine hc.frz.ok.mono hF (fun e he => ?_) he
+      obtain ⟨⟨d, hd, _⟩, _⟩ := hc.frz.sub e he
+      have hi := hneid _ (by rw [hd]; simp)
+      simp only [calleesOf, gitG, Treap.gut, Treap.get_put, if_neg hi]
     · exact Or.inr ⟨hit.1, hit.2, h, rfl⟩
   · simp only [Treap.get_put] at h1
     split at h1
     · rename_i e; cases h1; exact Or.inr (by rw [e])
     · exact Or.inl (hc.frz.cover i d h1 h2)
   · rcases he with he | rfl
-    · obtain ⟨⟨d, hd⟩, ho⟩ := hc.frz.sub e he
+    · obtain ⟨⟨d, hd, hl⟩, ho⟩ := hc.frz.sub e he
       have hi := hneid _ (by rw [hd]; simp)
-      exact ⟨⟨d, by simp only [Treap.get_put, if_neg hi]; exact hd⟩, ho⟩
-    · exact ⟨⟨hit.2, by simp [entOf, Treap.get_put]⟩, hno⟩
+      exact ⟨⟨d, by simp only [Treap.get_put, if_neg hi]; exact hd, hl⟩, ho⟩
+    · exact ⟨⟨hit.2, by simp [entOf, Treap.get_put], rfl⟩, hno⟩
   · rcases he with he | rfl
     · exact hc.frz.wf e he
     · exact gitMi_wf hmF hw h
@@ -353,8 +363,9 @@ pass. -/
 theorem skaCallgraph_frozen (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) {n : Nat} {root : Ident}
     {reg reg' : R} {g : Callgraph M} (hw : WellFormed root.1)
     (h : skaCallgraph env n root memoF reg = some (g, reg')) :
-    ∃ F : Entry → Prop, FrozenOK memoF F ∧ (∀ i d, Treap.get g i = some d → F (entOf i d)) ∧
-      (∀ e, F e → ∃ d, Treap.get g (e.more, e.fol) = some d) ∧ (∀ e, F e → WellFormed e.d.prod) ∧
+    ∃ F : Entry → Prop, FrozenOK memoF F (fun i => (gitG g i).callees) ∧
+      (∀ i d, Treap.get g i = some d → F (entOf i d)) ∧
+      (∀ e, F e → ∃ d, Treap.get g (e.more, e.fol) = some d ∧ e.d.less = d.less) ∧ (∀ e, F e → WellFormed e.d.prod) ∧
       GStepsR (fun _ => none) (gCore g) := by
   unfold skaCallgraph at h
   simp only [Option.map_eq_some_iff, Prod.mk.injEq] at h
@@ -411,10 +422,10 @@ theorem skaCallgraph_convergedM {lib : Lib} {code : Bell → Option Nomm} (env :
       (∀ i d, Treap.get g i = some d → G (entOf i d)) ∧
       (∀ e, G e → ∃ d, Treap.get g (e.more, e.fol) = some d) ∧ GStepsR (fun _ => none) (gCore g) := by
   obtain ⟨F, hok', hcov, hsub, _, hs⟩ := skaCallgraph_frozen env memoF hmF hw h
-  refine ⟨F, fun e he => ?_, hcov, hsub, hs⟩
-  rcases hok' e he with hr | hm
-  · exact Or.inl hr
-  · obtain ⟨d, hd⟩ := hsub e he
+  refine ⟨F, fun e he => ?_, hcov, fun e he => (hsub e he).imp fun _ h => h.1, hs⟩
+  rcases hok' e he with ⟨P, hP, hr⟩ | hm
+  · exact Or.inl ⟨P, fun s f a hp => answers_mono (fun _ h => h.1) (hP s f a hp), hr⟩
+  · obtain ⟨d, hd, _⟩ := hsub e he
     exact Or.inr (memoHit_hitEntry hkey hok (hnv _ d hd) hm)
 
 end Ana
