@@ -171,7 +171,7 @@ theorem eval_rend_meaf_le (lib : Lib) (hslam : SlamIsNock lib)
   subst ha
   obtain ⟨Ob, hOb, e3'⟩ := interp_call_le lib hslam pk hpk m _ _ _ _ _ _ _ e3
   obtain ⟨b, c, new, cr', b0, e4, e5, e6⟩ := callBody_some e3'
-  have hc' := (hpk cr hc).2 _ _ e4
+  have hc' := (hpk cr hc).2 _ _ e4 (nh_dire _ _)
   obtain ⟨hB, hC⟩ := hOb cr' hc' _ _ _ _ _ _ _ e6
   have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2.1
   have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc.1
@@ -185,7 +185,7 @@ theorem eval_rend_meaf_le (lib : Lib) (hslam : SlamIsNock lib)
   simp only [read.layer2.axis, icore, Nat.reduceDiv, nock_exec] at hl4' hl2' hl4'' hl2''
   have hlm := hlist tl
   simp [listMoldF, nock_exec, e1] at hlm
-  have hp := (hpk cr hc).1 (Ovum.dire a false)
+  have hp := (hpk cr hc).1 (Ovum.dire a false) (nh_dire _ _)
   simp only [pokeN, Ska.axPoke, Ovum.toNoun, flag, Bool.false_eq_true, if_false, Tag.dire, e4,
     Option.map_some] at hp
   have hloop := eval_rend_loop cr' hc' (SkaModel.Prod.toNoun (SkaModel.Prod.ir b c new))
@@ -277,7 +277,7 @@ theorem eval_rend_meaf_ge (lib : Lib) (hslam : SlamIsNock lib)
   | some a =>
   have ha := bell_ofNoun_toNoun e2
   subst ha
-  have hp := (hpk cr hc).1 (Ovum.dire a false)
+  have hp := (hpk cr hc).1 (Ovum.dire a false) (nh_dire _ _)
   simp only [pokeN, Ska.axPoke, Ovum.toNoun, flag, Bool.false_eq_true, if_false, Tag.dire] at hp
   cases e4 : pk cr (Ovum.dire a false) with
   | none =>
@@ -288,7 +288,7 @@ theorem eval_rend_meaf_ge (lib : Lib) (hslam : SlamIsNock lib)
   obtain ⟨p, cr'⟩ := pr
   rw [e4, Option.map_some] at hp
   simp [hp] at h
-  have hc' := (hpk cr hc).2 _ _ e4
+  have hc' := (hpk cr hc).2 _ _ e4 (nh_dire _ _)
   have hl2' : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
   simp only [read.layer2.axis, icore, nock_exec] at hl2'
   rcases p with _ | ⟨b, c, new⟩ | ps

@@ -61,13 +61,13 @@ def PokeFrame (cr : Noun) : Prop :=
 poke. -/
 theorem pokeIs_of_frame {pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)}
     {cr : Noun} (hc : CorIn cr) (hf : PokeFrame cr)
-    (hpk : ∀ ov, pokeN cr ov.toNoun = (pk cr ov).map fun r => C r.1.toNoun r.2) :
+    (hpk : ∀ ov, ¬ Ska.Hot ov.toNoun → pokeN cr ov.toNoun = (pk cr ov).map fun r => C r.1.toNoun r.2) :
     PokeIs pk cr := by
-  refine ⟨hpk, fun ov r e => ?_⟩
-  have h := hpk ov
+  refine ⟨hpk, fun ov r e hh => ?_⟩
+  have h := hpk ov hh
   rw [e, Option.map_some] at h
   obtain ⟨prod, cr', e1, e2⟩ := hf _ _ h
-  have hr := PokeReach.poke hc.2.2 h
+  have hr := PokeReach.poke hc.2.2 h hh
   simp only [Noun.cell.injEq] at e1
   rw [← e1.2] at e2
   exact corIn_of_tail hc e2 hr

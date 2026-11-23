@@ -131,11 +131,12 @@ def CueRoot : Prop := cue pill = some root
 
 /-- The inner `+poke` of every compiler's core that the pill's `cor` reaches by
 pokes and that keeps what the interpreter reads (`CorIn`) computes the model
-`pk` on every ovum.  Owner: pill to model
+`pk` on every ovum but a `%jets` that names a jet.  Owner: pill to model
 (`lemmas/Compiler/`): `+poke` and the arms it calls, `+ska-poke`,
 `+compiled-mono`, `+compiled-nary`, `+optimize` and the arms of the jets. -/
 def PokeModel : Prop :=
-  ∀ cr, CorIn cr → ∀ ov : Ovum, pokeN cr ov.toNoun = (pk cr ov).map fun r => C r.1.toNoun r.2
+  ∀ cr, CorIn cr → ∀ ov : Ovum, ¬ Ska.Hot ov.toNoun →
+    pokeN cr ov.toNoun = (pk cr ov).map fun r => C r.1.toNoun r.2
 
 /-- The inner `+poke` returns `[prod cr']` with `cr'` equal to `cr` under axis
 `15`: it changes the state only (`PokeFrame`).  Owner: pill to model. -/
@@ -264,14 +265,14 @@ theorem reach_model (hcue : CueRoot) (hslam : LibSlam lib) (hpm : PokeModel pk) 
     obtain ⟨cr, rfl, hc, hr⟩ := ih
     obtain ⟨cr', hn, rfl⟩ := (poke_iff cr ovo prod core').1 hp
     obtain ⟨ov, rfl⟩ := hpv cr hc ovo _ hn
-    have e := (hpk cr hc).1 ov
+    have e := (hpk cr hc).1 ov hhot
     rw [hn] at e
     cases e1 : pk cr ov with
     | none => rw [e1] at e; cases e
     | some r =>
       rw [e1, Option.map_some, Option.some.injEq, Noun.cell.injEq] at e
       obtain ⟨-, rfl⟩ := e
-      exact ⟨r.2, rfl, (hpk cr hc).2 ov r e1,
+      exact ⟨r.2, rfl, (hpk cr hc).2 ov r e1 hhot,
         ReachI.poke hr (p := r.1) e1 fun hh => hhot (hot_of hh)⟩
   | @top c s f gul ton core' _ ht ih =>
     obtain ⟨cr, rfl, hc, hr⟩ := ih
@@ -360,7 +361,7 @@ theorem halts_of (g : Gap lib pk InvC) : Ska.Halts := by
   intro core₀ c s f₁ f₂ h0 hr
   obtain ⟨cr, rfl, hc, hI⟩ := g.reach h0 hr
   obtain ⟨r, hr1⟩ := g.halting cr s f₁ f₂ hI
-  have e := g.pokeModel cr hc (Ovum.full s (C f₁ f₂))
+  have e := g.pokeModel cr hc (Ovum.full s (C f₁ f₂)) (nh_full _ _)
   rw [hr1, Option.map_some] at e
   exact ⟨r.1.toNoun, C ob (icore r.2), (poke_iff cr _ _ _).2 ⟨r.2, e, rfl⟩⟩
 
