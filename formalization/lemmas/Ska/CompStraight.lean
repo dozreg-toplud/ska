@@ -297,6 +297,15 @@ at least `1` below its own. -/
 def Down (bl : Map Blob) : Prop :=
   ∀ k b, HoonMap.get bl k = some b → 1 ≤ k ∧ ∀ j ∈ finJumps b.fin, 1 ≤ j.there ∧ j.there < k
 
+/-- `Down` with a rank: every block is at a label of at least `1`, and jumps
+only to labels of at least `1` whose rank `ρ` is below its own.  `Down` is
+`DownRk id`.  The code of `%6` under `%next` needs another rank: its fork
+blocks jump up, to the join of `+fork-need`. -/
+def DownRk (ρ : Nat → Nat) (bl : Map Blob) : Prop :=
+  ∀ k b, HoonMap.get bl k = some b → 1 ≤ k ∧ ∀ j ∈ finJumps b.fin, 1 ≤ j.there ∧ ρ j.there < ρ k
+
+theorem Down.rank {bl : Map Blob} (h : Down bl) : DownRk id bl := h
+
 /-- A block renamed, with the terminator `fin`. -/
 def renB (ren : Nat → Nat) (b : Blob) (fin : Termin) : Blob :=
   ⟨b.par.map ren, b.body.map (renPole ren), fin⟩
@@ -305,9 +314,9 @@ def renB (ren : Nat → Nat) (b : Blob) (fin : Termin) : Blob :=
 blocks of `c` with the one at `o` moved to `0`), and each block of `c` at a
 label other than `o` that is not bypassed is in `c'`, renamed, with its
 terminator chased. -/
-structure Sim (c c' : Straight Map) (bs : Map Blob) (ren : Nat → Nat) (o : Nat) : Prop where
+structure Sim (c c' : Straight Map) (bs : Map Blob) (ren : Nat → Nat) (o : Nat) (ρ : Nat → Nat) : Prop where
   inj : Inj ren
-  down : Down c.blocks
+  down : DownRk ρ c.blocks
   bs_eq : ∀ k, k ≠ 0 → k ≠ o → HoonMap.get bs k = HoonMap.get c.blocks k
   bs_o : HoonMap.get bs o = Option.none
   kept : ∀ k b, HoonMap.get c.blocks k = some b → k ≠ o → bypassable true b = false →
@@ -327,9 +336,9 @@ theorem bypassable_false {br : Bool} {b : Blob} (h : bypassable br b = false) : 
 section Chase
 variable {c c' : Straight Map} {bs : Map Blob} {ren : Nat → Nat} {o : Nat}
 
-theorem chase_spec (hs : Sim c c' bs ren o) (lib : Lib) {σ : Type} (O : Oracle σ) (gul : Noun) :
-    ∀ n (j : Jmp) (br : Bool) (j' : Jmp), j.there < n → 1 ≤ j.there → chase bs br j = some j' →
-    (∀ st (R : Map Noun) t, goJ lib O c gul st R t j = goJ lib O c gul st R t j') ∧ j'.there ≤ j.there ∧
+theorem chase_spec {ρ : Nat → Nat} (hs : Sim c c' bs ren o ρ) (lib : Lib) {σ : Type} (O : Oracle σ) (gul : Noun) :
+    ∀ n (j : Jmp) (br : Bool) (j' : Jmp), ρ j.there < n → 1 ≤ j.there → chase bs br j = some j' →
+    (∀ st (R : Map Noun) t, goJ lib O c gul st R t j = goJ lib O c gul st R t j') ∧ ρ j'.there ≤ ρ j.there ∧
       j'.there ≠ o ∧ ∃ b', HoonMap.get c.blocks j'.there = some b' ∧ bypassable br b' = false
   | 0, _, _, _, hn, _, _ => absurd hn (Nat.not_lt_zero _)
   | n + 1, j, br, j', hn, h1, hc => by
@@ -482,8 +491,8 @@ theorem body_sim {lib : Lib} {σ : Type} {O : Oracle σ} {gul : Noun} (hi : Inj 
 
 /-- **A block and its renamed, chased copy do the same**, for a block that
 jumps below `k` (a block of `c` at `k`, or one that is not in `c`). -/
-theorem sim_block (hs : Sim c c' bs ren o) (lib : Lib) {σ : Type} (O : Oracle σ) (gul : Noun) :
-    ∀ k (b : Blob), (∀ j ∈ finJumps b.fin, 1 ≤ j.there ∧ j.there < k) → ∀ fin', chaseFin bs ren b.fin = some fin' →
+theorem sim_block {ρ : Nat → Nat} (hs : Sim c c' bs ren o ρ) (lib : Lib) {σ : Type} (O : Oracle σ) (gul : Noun) :
+    ∀ k (b : Blob), (∀ j ∈ finJumps b.fin, 1 ≤ j.there ∧ ρ j.there < k) → ∀ fin', chaseFin bs ren b.fin = some fin' →
     ∀ (st : σ) (R R' : Map Noun) t (params : List (Option Nat)), RenRel ren R R' →
     execBlob lib O c gul st R t b params =
       execBlob lib O c' gul st R' t (renB ren b fin') (params.map (Option.map ren)) := by
@@ -495,11 +504,11 @@ theorem sim_block (hs : Sim c c' bs ren o) (lib : Lib) {σ : Type} (O : Oracle �
       intro j hjm br j' hc st R R' t h
       have hd := hb j hjm
       obtain ⟨hgo, hle, hno, b', hb', hby⟩ :=
-        chase_spec hs lib O gul (j.there + 1) j br j' (Nat.lt_succ_self _) hd.1 hc
+        chase_spec hs lib O gul (ρ j.there + 1) j br j' (Nat.lt_succ_self _) hd.1 hc
       rw [hgo]
       obtain ⟨fin2, hf2, hc2⟩ := hs.kept _ _ hb' hno (bypassable_false hby)
       simp only [goJ, hb', hc2, Option.bind_some, renJmp]
-      exact ih j'.there (by omega) b' (hs.down _ _ hb').2 fin2 hf2 st R R' t j'.args h
+      exact ih (ρ j'.there) (by omega) b' (hs.down _ _ hb').2 fin2 hf2 st R R' t j'.args h
     have hbody := body_sim (lib := lib) (O := O) (gul := gul) hs.inj
       (fun st R R' t h => fin_sim hf hj st t h)
     rcases b with ⟨par, body, fin⟩
