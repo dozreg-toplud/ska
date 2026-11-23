@@ -78,13 +78,14 @@ structure LongB (M : Type → Type → Type) where
 bake, and the new code.  `jet` is the `jetted` gate, from `dat` and the
 registrations of the poke (it also reads `call.cole.jets.lon` and the hot
 jets, which it closes over); `fold` and `frozen` are the flags of
-`bake-mode`.  The result is the root bell, the new state and the
+`bake-mode`; `n` is the fuel of the analysis and `bf E` that of the
+worklist of `+bake-graph` on its environment `E`.  The result is the root bell, the new state and the
 registrations. -/
 def skaPokeB (env : Env R) (jet : (Bell → Option Datum) → R → Bell → Bool) (fold frozen : Bool) (n : Nat)
-    (root : Ident) (L : LongB M) (reg : R) : Option (Bell × LongB M × R) :=
+    (bf : BEnv M → Nat) (root : Ident) (L : LongB M) (reg : R) : Option (Bell × LongB M × R) :=
   (skaPoke env n root L.memo reg).bind fun r =>
   let E := pokeEnv (jet (pokeDat r.2.1 r.2.2.1) r.2.2.2.2) fold frozen L.vars root r.2.1 r.2.2.1 r.2.2.2.1
-  (bakeGraph E n).map fun bg =>
+  (bakeGraph E (bf E)).map fun bg =>
   (E.root, ⟨r.2.2.1, addCode L.code (newCode L.code bg.1), bg.2⟩, r.2.2.2.2)
 
 /-! ## The invariant -/
@@ -477,11 +478,11 @@ entry in the table.  It assumes, of the poke, what `skaPoke_sound` assumes
 (a root sock that is well formed, normal and not `%void`) and HImp for this
 poke's `+bake-graph` (`himp`). -/
 theorem skaPokeB_sound {lib : Lib} (env : Env R) {jet : (Bell → Option Datum) → R → Bell → Bool}
-    {fold frozen : Bool} {n : Nat} {root : Ident} {L L' : LongB M} {reg reg' : R} {rb : Bell}
+    {fold frozen : Bool} {n : Nat} {bf : BEnv M → Nat} {root : Ident} {L L' : LongB M} {reg reg' : R} {rb : Bell}
     (hinv : InvB lib L) (hw : WellFormed root.1) (hnr : NormSock root.1) (hnvr : root.1 ≠ Sock.void)
     (himp : ∀ pr dats memo' rd reg'', skaPoke env n root L.memo reg = some (pr, dats, memo', rd, reg'') →
       BakesImply (pokeEnv (jet (pokeDat dats memo') reg'') fold frozen L.vars root dats memo' rd))
-    (h : skaPokeB env jet fold frozen n root L reg = some (rb, L', reg')) :
+    (h : skaPokeB env jet fold frozen n bf root L reg = some (rb, L', reg')) :
     InvB lib L' ∧ ∃ nb, realOf L'.code rb = some nb := by
   obtain ⟨code, hpi⟩ := hinv.ghost
   unfold skaPokeB at h
@@ -511,7 +512,7 @@ theorem skaPokeB_sound {lib : Lib} (env : Env R) {jet : (Bell → Option Datum) 
   simp only [Option.bind_eq_some_iff] at hbg
   obtain ⟨st, hloop, hfin⟩ := hbg
   obtain ⟨f1, -, f3, f4⟩ := finalFold_spec E st _ _ _ _ _ hfin
-  obtain ⟨qs, hI⟩ := bakeLoop_inv E n _ _ _ st (loopInv_init E) hloop
+  obtain ⟨qs, hI⟩ := bakeLoop_inv E _ _ _ _ st (loopInv_init E) hloop
   generalize hc' : realOf (addCode L.code (newCode L.code baked)) = code'
   have hold : ∀ bl nb, realOf L.code bl = some nb → ∃ nb', code' bl = some nb' := by
     rw [← hc']; exact realOf_add_old
@@ -546,7 +547,7 @@ theorem skaPokeB_sound {lib : Lib} (env : Env R) {jet : (Bell → Option Datum) 
       · have hs : Treap.get st.bak e.1 = some e.2 := (Treap.mem_rap _ _ _).mp hel
         have hva := variant_annot (code := extendCode code dats) (code' := code') hpi'.codeOK hdatOK hloop
           hvars hbake hd hs (hA e.1 d hd) hk
-        exact hva.mono fun x hx => ⟨himpE n st hloop e.1 e.2 hs x hx, hx⟩
+        exact hva.mono fun x hx => ⟨himpE _ st hloop e.1 e.2 hs x hx, hx⟩
   have hnorm := bakes_norm hloop
   refine ⟨⟨⟨_, hpi'⟩, hlk', ?_, ?_, ?_⟩, ?_⟩
   · show CodeOK lib (realOf (addCode L.code (newCode L.code baked)))
