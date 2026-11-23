@@ -103,7 +103,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/Anno.lean` | `+knit-anno`, `+patch-prod`, `+msg-sock` and `+msg-anno` of `ana` against `knitAnno`, `patchProd`, `msgSock` (with its crash as `none`) and `msgAnno` of `Ska/CallGraph.lean`, on every sock and spring (`*_gate`), and on `ana` with no assumption (`*_pill`).  They reach `+so` and `+pi` through `lib` at `knit_anno.lib.axis` of `ana`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`. |
-| `Compiler/TreapKey.lean` | The instance of `Treap` (`Ska/Analysis.lean`) for the analysis model: `FinMap κ ν`, finite maps as lookups, whose noun `toNoun f m` is made with `+put:by` on the encoded keys when the encoding is given; it is an `IsMap mugF` with exactly the pairs of `m` (`isMap_toNoun`, `get_toNoun`), so by `isMap_ext` the pill's `+put:by`, `+del:by`, `+get:by` on it give the nouns of `put`, `del`, `get` (`putF_toNoun`, `delF_toNoun`, `getF_toNoun`).  `tap` and `rap` read the keys off `~(tap by ...)` and the pre-order of `+rep`.  `M κ ν` comes before the encoding in the class, so it cannot hold a treap ordered by it. |
+| `Compiler/TreapKey.lean` | The instance of `Treap` (`Ska/Analysis.lean`) for the analysis model: `FinMap κ ν`, finite maps as lookups, whose noun `toNoun f m` is made with `+put:by` on the encoded keys when the encoding is given; it is an `IsMap mugF` with exactly the pairs of `m` (`isMap_toNoun`, `get_toNoun`), so by `isMap_ext` the pill's `+put:by`, `+del:by`, `+get:by` on it give the nouns of `put`, `del`, `get` (`putF_toNoun`, `delF_toNoun`, `getF_toNoun`).  `tap` and `rap` read the keys off `~(tap by ...)` and the pre-order of `+rep`, and are those listings on every layout (`tapList_toNoun`, `preorder_toNoun`).  `M κ ν` comes before the encoding in the class, so it cannot hold a treap ordered by it. |
 | `Compiler/Regs.lean`, `Compiler/EvalPass.lean` | `+read`, `+store`, `+move` and `+eval-pass` of the interpreter core `interp` against `read`, `store`, `move`, `evalPass` of `Ska/Interp.lean` on maps of `TreapMap mugF` (`read_pill`, `store_pill`, `move_pill`, `eval_pass_pill`), from gate theorems that assume what the arms read through layer 2 (`RegsIn`, `MoveIn`, `EvalPassIn`). |
 | `Compiler/EvalPole.lean` | `+eval-pole` on every op that stays in the function (all but `%nok` and the calls) against `localPole` of `Ska/Interp.lean` (`eval_pole_local`, `eval_pole_hmp`, `eval_pole_spy`), in a context `ctx` whose tail is the compiler's core `cor`; `%spy` assumes `SlamIsNock lib`.  On the pill's `interp` with its own `cor`: `eval_pole_local_pill`. |
 | `Compiler/EvalCall.lean` | The ops of `+eval-pole` that leave the function and the calls at the end of a block of `+eval-blob`, with the compiler's core `cr` as the state (`icore cr` is the interpreter core over it, `CorIn cr` says it keeps layer 2 at `read.layer2.axis` and that the pill's `cor` reaches it by pokes, `PokeReach`).  The poke is a parameter `pk` that computes the pill's poke on every ovum and keeps `CorIn` (`PokeIs`).  As equations, given the oracles exactly at the inputs used: `eval_pole_nok`, `eval_pole_cal`, `eval_pole_csl`, `%caf`, `%cam`, `%csf`, `%csm` as the plain calls (`eval_pole_caf`, ...), and `eval_pole_gate` on every op.  As what the model returns, the pill returns (`CallLe`, `BlobLe`, `TopLe`): `eval_pole_le` on every op, `eval_blob_jmp_le`, `eval_blob_jsp_le`, `eval_blob_le` (`+eval-blob`, by `execBlob.partial_correctness`), `eval_top_le` (`+eval-top`: an atom, `%bare` by `+mink`, `%full`), `interp_le` (every depth of calls, by induction), and `eval_top_of_model`: what `EvalTop` says, the pill's `+eval-top` returns.  The inline loops that put the arguments of a call in registers: `eval_pole_loop`, `eval_blob_loop`. |
@@ -249,8 +249,8 @@ import only its theorems.  So:
 2. A change to a declaration of the chain rebuilds the rest of the chain,
    `Facts.lean` and the layer files, and no gate theorem file.  A comment
    rebuilds the edited file only.
-3. A clean build takes about 100 seconds (5 min 27 s of CPU) and peaks at
-   2.5 GB for the whole build (measured 2026-11-23 under a 3 GB scope).
+3. A clean build takes about 100 seconds (5 min 35 s of CPU) and peaks at
+   2.6 GB for the whole build (measured 2026-11-23 under a 3 GB scope).
 
 ## Gaps
 
@@ -296,8 +296,14 @@ import only its theorems.  So:
    about them needs the poke to keep layer 2 at `read.layer2.axis`.
 10. **`Treap` of `Ska/Analysis.lean` has an instance** (`Compiler/TreapKey.lean`):
    finite maps, with the treap noun made when the key encoding is given.  Its
-   `ext` is function extensionality (on nouns, `isMap_ext`).  Not done: that
-   `tap` and `rap` list the pairs of `toNoun f m` in the order of `+tap:by`
-   and `+rep` for every layout `f` (for the layout `~` it holds by
-   definition; the others need that the shape of a treap does not depend on
-   its values).
+   `ext` is function extensionality (on nouns, `isMap_ext`).  `+tap:by` and
+   the pre-order of `+rep` on the noun of `m`, under every layout of the
+   values, list `tap m` and `rap m` (`tapList_toNoun`, `preorder_toNoun`): the
+   shape of the treap does not depend on its values (`toNoun_relabel`).
+11. **`fol-loop` against `Ana.folStep` is not started.**  The trap is the
+   formula `[8 [1 bat] [11 [%fast fol-loop-clue] [0 1]]]`, kicked by
+   `[9 2 0 1]`; `bat` is 2785 cells.  `hint_of('fol-loop')` of the generator
+   finds the `%fast` hint; its parent's head is `[1 bat]`.  A proof needs the
+   battery named, the nouns of `GenS`, `Anno` and `FolOut`, and `go` (the
+   calls of the trap to itself) as a parameter, as `+eval-blob` has in
+   `Compiler/EvalCall.lean`.

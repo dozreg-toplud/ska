@@ -266,6 +266,99 @@ theorem getF_toNoun (f : ν → Noun) (m : FinMap κ ν) (k : κ) :
       rw [TKey.enc_inj _ _ h2.symm, e] at h1
       cases h1
 
+/-! ## The listings, on every layout of the values -/
+
+/-- The values of a map noun relabelled: `rp k v` for the pair `[k v]`. -/
+def relabel (rp : Noun → Noun → Noun) : Noun → Noun
+  | Noun.cell (Noun.cell kn vn) (Noun.cell l r) =>
+      C (C kn (rp kn vn)) (C (relabel rp l) (relabel rp r))
+  | x => x
+
+def relPair (rp : Noun → Noun → Noun) : Noun → Noun
+  | Noun.cell kn vn => C kn (rp kn vn)
+  | x => x
+
+theorem get_relabel (rp : Noun → Noun → Noun) {a : Noun} (h : IsMap mugF a) (k v : Noun) :
+    Get (relabel rp a) k v ↔ ∃ v0, Get a k v0 ∧ v = rp k v0 := by
+  induction h generalizing k v with
+  | nil => simp [relabel, Get_atom]
+  | @node p q l r _ _ _ _ ihl ihr =>
+    simp only [relabel, Get_node, ihl, ihr]
+    constructor
+    · rintro (⟨rfl, rfl⟩ | ⟨v0, h0, rfl⟩ | ⟨v0, h0, rfl⟩)
+      · exact ⟨q, Or.inl ⟨rfl, rfl⟩, rfl⟩
+      · exact ⟨v0, Or.inr (Or.inl h0), rfl⟩
+      · exact ⟨v0, Or.inr (Or.inr h0), rfl⟩
+    · rintro ⟨v0, ⟨rfl, rfl⟩ | h0 | h0, rfl⟩
+      · exact Or.inl ⟨rfl, rfl⟩
+      · exact Or.inr (Or.inl ⟨v0, h0, rfl⟩)
+      · exact Or.inr (Or.inr ⟨v0, h0, rfl⟩)
+
+theorem isMap_relabel (rp : Noun → Noun → Noun) {a : Noun} (h : IsMap mugF a) :
+    IsMap mugF (relabel rp a) := by
+  induction h with
+  | nil => exact IsMap.nil
+  | @node p q l r hl hr hL hR ihl ihr =>
+    refine IsMap.node ihl ihr (fun k v hg => ?_) (fun k v hg => ?_)
+    · obtain ⟨v0, h0, -⟩ := (get_relabel rp hl k v).1 hg; exact hL k v0 h0
+    · obtain ⟨v0, h0, -⟩ := (get_relabel rp hr k v).1 hg; exact hR k v0 h0
+
+theorem tapList_relabel (rp : Noun → Noun → Noun) {a : Noun} (h : IsMap mugF a) :
+    tapList (relabel rp a) = (tapList a).map (relPair rp) := by
+  induction h with
+  | nil => rfl
+  | node _ _ _ _ ihl ihr => simp [relabel, tapList, ihl, ihr, relPair]
+
+theorem preorder_relabel (rp : Noun → Noun → Noun) {a : Noun} (h : IsMap mugF a) :
+    preorder (relabel rp a) = (preorder a).map (relPair rp) := by
+  induction h with
+  | nil => rfl
+  | node _ _ _ _ ihl ihr => simp [relabel, preorder, ihl, ihr, relPair]
+
+/-- The value that `m` gives the key of a noun, laid out by `f`. -/
+noncomputable def valOf (f : ν → Noun) (m : FinMap κ ν) (kn _ : Noun) : Noun :=
+  match decode? kn with
+  | some k => match m.1 k with
+    | some v => f v
+    | none => A 0
+  | none => A 0
+
+/-- The noun of `m` under the layout `f` is that under `~`, relabelled: the
+shape of the treap does not depend on the values. -/
+theorem toNoun_relabel (f : ν → Noun) (m : FinMap κ ν) :
+    m.toNoun f = relabel (valOf f m) (m.toNoun fun _ => A 0) := by
+  refine isMap_ext (isMap_toNoun f m) (isMap_relabel _ (isMap_toNoun _ m)) fun kn vn => ?_
+  rw [get_relabel _ (isMap_toNoun _ m), get_toNoun]
+  constructor
+  · rintro ⟨k, v, h1, rfl, rfl⟩
+    exact ⟨A 0, (get_toNoun _ m _ _).2 ⟨k, v, h1, rfl, rfl⟩, by simp [valOf, decode?_enc, h1]⟩
+  · rintro ⟨v0, h0, rfl⟩
+    obtain ⟨k, v, h1, rfl, rfl⟩ := (get_toNoun _ m _ _).1 h0
+    exact ⟨k, v, h1, rfl, by simp [valOf, decode?_enc, h1]⟩
+
+theorem map_filterMap_entry (f : ν → Noun) (m : FinMap κ ν) :
+    ∀ (l : List Noun), (∀ x ∈ l, ∃ kn vn, x = C kn vn ∧ Get (m.toNoun fun _ => A 0) kn vn) →
+      l.map (relPair (valOf f m)) = (l.filterMap m.entry).map fun e => C (TKey.enc e.1) (f e.2)
+  | [], _ => rfl
+  | x :: l, h => by
+    obtain ⟨kn, vn, rfl, hg⟩ := h x List.mem_cons_self
+    obtain ⟨k, v, h1, rfl, rfl⟩ := (get_toNoun _ m _ _).1 hg
+    have ih := map_filterMap_entry f m l fun y hy => h y (List.mem_cons_of_mem _ hy)
+    simp [List.filterMap_cons, entry, decode?_enc, h1, ih, relPair, valOf]
+
+/-- `~(tap by ...)` of the noun of `m`, under every layout, is `tap m`. -/
+theorem tapList_toNoun (f : ν → Noun) (m : FinMap κ ν) :
+    tapList (m.toNoun f) = m.tap.map fun e => C (TKey.enc e.1) (f e.2) := by
+  rw [toNoun_relabel, tapList_relabel _ (isMap_toNoun _ m)]
+  exact map_filterMap_entry f m _ fun x hx => (mem_tapList (isMap_toNoun _ m) x).1 hx
+
+/-- The pre-order of `+rep` on the noun of `m`, under every layout, is
+`rap m`. -/
+theorem preorder_toNoun (f : ν → Noun) (m : FinMap κ ν) :
+    preorder (m.toNoun f) = m.rap.map fun e => C (TKey.enc e.1) (f e.2) := by
+  rw [toNoun_relabel, preorder_relabel _ (isMap_toNoun _ m)]
+  exact map_filterMap_entry f m _ fun x hx => (mem_preorder (isMap_toNoun _ m) x).1 hx
+
 end FinMap
 
 end Compiler

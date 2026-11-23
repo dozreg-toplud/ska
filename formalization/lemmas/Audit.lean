@@ -320,3 +320,5 @@ open Formalization
 #print axioms Compiler.FinMap.delF_toNoun
 #print axioms Compiler.FinMap.getF_toNoun
 #print axioms Compiler.instTreapFinMap
+#print axioms Compiler.FinMap.tapList_toNoun
+#print axioms Compiler.FinMap.preorder_toNoun
