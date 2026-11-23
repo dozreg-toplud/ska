@@ -353,6 +353,108 @@ theorem invS_init (lib : Lib) (ref : Ref M Map J H) (jets : J) (hot : H) (rest :
       ⟨Treap.empty, Treap.empty, Treap.empty, rest⟩⟩ : CSt M Map J H CR) :=
   ⟨InvB.init lib, fun _ _ h => by simp [Treap.get_empty] at h, fun _ _ h => by simp [Treap.get_empty] at h⟩
 
+/-! ## On nouns
+
+`Gap` takes the compiler's state as a noun.  A model on a state type `σ`
+with an injective encoding `enc` gives one on nouns: on the encoding of a
+state, the model's poke with the new state encoded; on a noun that encodes
+no state, no answer (`liftPoke`).  Soundness, the invariant kept, and the
+answers to `%full` carry over (`sound_lift`, `invKept_lift`,
+`fullAnswers_lift`). -/
+
+section Lift
+
+variable {σ τ : Type} {Map' : Type → Type}
+
+/-- The poke on encodings of states. -/
+noncomputable def liftPoke (enc : σ → τ) (poke : σ → Ovum → Option (Prod Map' × σ)) :
+    τ → Ovum → Option (Prod Map' × τ) := fun t ov =>
+  open Classical in
+  if h : ∃ st, enc st = t then (poke (Classical.choose h) ov).map fun r => (r.1, enc r.2) else none
+
+/-- The invariant on encodings of states. -/
+def liftInv (enc : σ → τ) (Inv : σ → Prop) : τ → Prop := fun t => ∃ st, enc st = t ∧ Inv st
+
+variable {enc : σ → τ} {poke : σ → Ovum → Option (Prod Map' × σ)}
+
+theorem liftPoke_enc (henc : ∀ a b, enc a = enc b → a = b) (st : σ) (ov : Ovum) :
+    liftPoke enc poke (enc st) ov = (poke st ov).map fun r => (r.1, enc r.2) := by
+  have h : ∃ st', enc st' = enc st := ⟨st, rfl⟩
+  unfold liftPoke
+  rw [dif_pos h, henc _ _ (Classical.choose_spec h)]
+
+theorem liftPoke_some (henc : ∀ a b, enc a = enc b → a = b) {st : σ} {ov : Ovum} {p : Prod Map'} {t' : τ}
+    (h : liftPoke enc poke (enc st) ov = some (p, t')) : ∃ st', poke st ov = some (p, st') ∧ t' = enc st' := by
+  rw [liftPoke_enc henc] at h
+  simp only [Option.map_eq_some_iff, Prod.mk.injEq] at h
+  obtain ⟨⟨p0, st0⟩, h0, rfl, rfl⟩ := h
+  exact ⟨st0, h0, rfl⟩
+
+theorem needOf_lift (henc : ∀ a b, enc a = enc b → a = b) (st : σ) :
+    needOf (liftPoke enc poke) (enc st) = needOf poke st := by
+  funext b m
+  unfold needOf
+  rw [liftPoke_enc henc]
+  cases poke st (Ovum.dire b m) with
+  | none => rfl
+  | some r => obtain ⟨p, _⟩ := r; cases p <;> rfl
+
+variable [HoonMap Map']
+
+theorem sound_lift (henc : ∀ a b, enc a = enc b → a = b) {lib : Lib} {Inv : σ → Prop} (h : Sound lib poke Inv) :
+    Sound lib (liftPoke enc poke) (liftInv enc Inv) where
+  dire := by
+    rintro _ b m p t' ⟨st, rfl, hI⟩ hp
+    obtain ⟨st', h1, rfl⟩ := liftPoke_some henc hp
+    obtain ⟨hI', hle⟩ := h.dire st b m p st' hI h1
+    rw [needOf_lift henc, needOf_lift henc]
+    exact ⟨⟨st', rfl, hI'⟩, hle⟩
+  full := by
+    rintro _ s f p t' ⟨st, rfl, hI⟩ hp
+    obtain ⟨st', h1, rfl⟩ := liftPoke_some henc hp
+    obtain ⟨hI', hle⟩ := h.full st s f p st' hI h1
+    rw [needOf_lift henc, needOf_lift henc]
+    exact ⟨⟨st', rfl, hI'⟩, hle⟩
+  dire_code := by
+    rintro _ b m p t' ⟨st, rfl, hI⟩ hp
+    obtain ⟨st', h1, rfl⟩ := liftPoke_some henc hp
+    rw [needOf_lift henc]
+    exact h.dire_code st b m p st' hI h1
+  full_code := by
+    rintro _ s f p t' ⟨st, rfl, hI⟩ hp
+    obtain ⟨st', h1, rfl⟩ := liftPoke_some henc hp
+    rw [needOf_lift henc]
+    exact h.full_code st s f p st' hI h1
+
+theorem invKept_lift (henc : ∀ a b, enc a = enc b → a = b) {Inv : σ → Prop}
+    (h : ∀ st ov p st', Inv st → ¬ HotOvum ov → poke st ov = some (p, st') → Inv st') :
+    ∀ t ov p t', liftInv enc Inv t → ¬ HotOvum ov → liftPoke enc poke t ov = some (p, t') → liftInv enc Inv t' := by
+  rintro _ ov p t' ⟨st, rfl, hI⟩ hh hp
+  obtain ⟨st', h1, rfl⟩ := liftPoke_some henc hp
+  exact ⟨st', rfl, h st ov p st' hI hh h1⟩
+
+theorem fullAnswers_lift (henc : ∀ a b, enc a = enc b → a = b) {Inv : σ → Prop} (h : FullAnswers poke Inv) :
+    FullAnswers (liftPoke enc poke) (liftInv enc Inv) := by
+  rintro _ s f1 f2 ⟨st, rfl, hI⟩
+  obtain ⟨r, hr⟩ := h st s f1 f2 hI
+  exact ⟨(r.1, enc r.2), by rw [liftPoke_enc henc, hr]; rfl⟩
+
+end Lift
+
+/-- **The shapes of `Gap.contract`, `Gap.invKept` and `Gap.invStart`** for
+the model of `+poke` on nouns, from `CompHyp` and `AnaHyp`, for any
+injective encoding of the state (`invStart` holds of the encoding of the
+bunt state; that the pill's core holds that noun is for the pill track). -/
+theorem gap_of {lib : Lib} {ref : Ref M Map J H} (hC : CompHyp A lib ref) (hA : AnaHyp A lib)
+    (enc : CSt M Map J H CR → Noun) (henc : ∀ a b, enc a = enc b → a = b) :
+    Sound lib (liftPoke enc (pokeS A)) (liftInv enc (InvS lib ref)) ∧
+    (∀ t ov p t', liftInv enc (InvS lib ref) t → ¬ HotOvum ov → liftPoke enc (pokeS A) t ov = some (p, t') →
+      liftInv enc (InvS lib ref) t') ∧
+    ∀ jets hot rest, liftInv enc (InvS lib ref)
+      (enc ⟨⟨Treap.empty, Treap.empty, Treap.empty⟩, jets, hot, ⟨Treap.empty, Treap.empty, Treap.empty, rest⟩⟩) :=
+  ⟨sound_lift henc (pokeS_sound A hC hA), invKept_lift henc (pokeS_invKept A hC hA),
+    fun jets hot rest => ⟨_, rfl, invS_init lib ref jets hot rest⟩⟩
+
 end PokeM
 
 end SkaModel

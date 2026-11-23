@@ -277,3 +277,5 @@ open Formalization.SkaModel
 #print axioms PokeM.pokeS_sound
 #print axioms PokeM.pokeS_invKept
 #print axioms PokeM.invS_init
+#print axioms PokeM.sound_lift
+#print axioms PokeM.gap_of
