@@ -821,6 +821,99 @@ theorem knowGo_idc (fold : Bool) (dat : Bell → Option Datum) (res : Bell → S
     simp only [knowGo, ha', Option.bind_some, idc, hc', Option.map_some]
     exact ⟨_, rfl, by simp only [eraseN, ea, ec], pc, sc⟩
 
+/-! ## The `res` of the final pass -/
+
+theorem pickFold_spec (k : Sock) (L : List Bell) :
+    ∀ (l : List Bell), (∀ v ∈ l, v ∈ L) → ∀ acc : Option (Option Bell),
+      (∀ u, acc = some (some u) → u ∈ L ∧ So.huge u.less k = some true) →
+      ∀ u, l.foldl (pickGate k) acc = some (some u) → u ∈ L ∧ So.huge u.less k = some true
+  | [], _, acc, hacc, u, h => hacc u h
+  | v :: l, hl, acc, hacc, u, h => by
+    simp only [List.foldl_cons] at h
+    refine pickFold_spec k L l (fun w hw => hl w (List.mem_cons_of_mem _ hw)) _ ?_ u h
+    intro w hw
+    simp only [pickGate, Option.bind_eq_some_iff] at hw
+    obtain ⟨best, rfl, hv, hhv, hw⟩ := hw
+    split at hw
+    · rename_i htrue
+      subst htrue
+      split at hw
+      · cases hw; exact ⟨hl _ List.mem_cons_self, hhv⟩
+      · rename_i u' 
+        simp only [Option.map_eq_some_iff] at hw
+        obtain ⟨b, _, hb⟩ := hw
+        split at hb
+        · cases hb; exact ⟨hl _ List.mem_cons_self, hhv⟩
+        · cases hb; exact hacc w rfl
+    · cases hw; exact hacc w rfl
+
+/-- **What `+pick` finds**: a variant of the code bell that the site's sock
+provides. -/
+theorem pick_spec {vars : M Bell (M Bell Unit)} {c : Bell} {k : Sock} {v : Bell}
+    (h : pick vars c k = some (some v)) :
+    Treap.has (Treap.gut vars c Treap.empty) v = true ∧ So.huge v.less k = some true := by
+  simp only [pick, Option.bind_eq_some_iff] at h
+  obtain ⟨hc, _, h⟩ := h
+  split at h
+  · obtain ⟨hm, hh⟩ := pickFold_spec k _ _ (fun w hw => hw) (some none) (fun u hu => by cases hu) v h
+    refine ⟨?_, hh⟩
+    obtain ⟨e, he, rfl⟩ := List.mem_map.mp hm
+    exact (has_iff _ _).mpr ⟨e.2, (Treap.mem_rap _ _ _).mp he⟩
+  · cases h
+
+/-- **The `res` of the final pass is sound** on the sites of a variant: it
+names a variant with the callee's formula, in the table `code'`, whose bell
+every subject of the site fits.  It assumes of the variants of earlier pokes
+(`vars`) that they have their code bell's formula and are in `code'`, and of
+`code'` that it has the variants of this poke. -/
+theorem bakeRes_ok {E : BEnv M} {n : Nat} {st : BSt M} {code' : Bell → Option Nomm}
+    (hloop : bakeLoop E n [E.root] (Treap.put Treap.empty E.root ()) (bakeInit E) = some st)
+    (hvars : ∀ c v, Treap.has (Treap.gut E.vars c Treap.empty) v = true → v.fol = c.fol ∧ ∃ nb, code' v = some nb)
+    (hcode : ∀ c s, Treap.get st.bak c = some s → ∃ nb, code' ⟨s, c.fol⟩ = some nb)
+    {t : Bell} {s : Sock} {d : Datum} {nomm : Nomm} {sites : List Site}
+    (hd : E.dat t = some d) (hs : Treap.get st.bak t = some s)
+    (hk : know E.fold d.nomm s E.dat (bakeRes E st) = some (nomm, sites)) :
+    ResOK code' (bakeRes E st) sites := by
+  intro b k v hm hv
+  -- the worklist saw these sites
+  simp only [know, Option.map_eq_some_iff] at hk
+  obtain ⟨r, hr, e⟩ := hk
+  simp only [Prod.mk.injEq] at e
+  obtain ⟨-, rfl⟩ := e
+  obtain ⟨r', hr', -, -, hsr⟩ := knowGo_idc E.fold E.dat (bakeRes E st) d.nomm ⟨s, A 1⟩ [] r hr
+  have hsites : sitesOf E st t = some r.2 := by
+    simp only [sitesOf, hd, Option.bind_some, hs, know, hr', Option.map_some, hsr]
+  simp only [bakeRes, Option.bind_eq_some_iff] at hv
+  obtain ⟨p, hp, hv⟩ := hv
+  cases p with
+  | some u =>
+    cases hv
+    obtain ⟨hu, hh⟩ := pick_spec hp
+    obtain ⟨hf, hc⟩ := hvars b v hu
+    exact ⟨hf, hc, fun y _ hy => pick_fits hh hy⟩
+  | none =>
+    simp only [Option.map_eq_some_iff] at hv
+    obtain ⟨sb, hsb, rfl⟩ := hv
+    obtain ⟨s', hs', hfit⟩ := bakeLoop_sound hloop t r.2 hsites b k hm hp
+    rw [hsb] at hs'
+    cases hs'
+    exact ⟨rfl, hcode b sb hsb, fun y hy hk => hfit y hy hk⟩
+
+/-- **A variant of the final pass stands for its code bell's formula** on
+every subject that fits both the code requirement and the bake, given a
+sound table `code` for the code bells' nomms, sound datum products, and the
+assumptions of `bakeRes_ok` on the variants' table `code'`. -/
+theorem variant_annot {lib : Lib} {code code' : Bell → Option Nomm} {E : BEnv M} {n : Nat} {st : BSt M}
+    (hc : CodeOK lib code) (hdat : DatOK lib E.dat)
+    (hloop : bakeLoop E n [E.root] (Treap.put Treap.empty E.root ()) (bakeInit E) = some st)
+    (hvars : ∀ c v, Treap.has (Treap.gut E.vars c Treap.empty) v = true → v.fol = c.fol ∧ ∃ nb, code' v = some nb)
+    (hcode : ∀ c s, Treap.get st.bak c = some s → ∃ nb, code' ⟨s, c.fol⟩ = some nb)
+    {t : Bell} {s : Sock} {d : Datum} {nomm : Nomm} {sites : List Site}
+    (hd : E.dat t = some d) (hs : Treap.get st.bak t = some s) (hA : Annot lib code (Fits t.less) t.fol d.nomm)
+    (hk : know E.fold d.nomm s E.dat (bakeRes E st) = some (nomm, sites)) :
+    Annot lib code' (fun x => Fits t.less x ∧ Fits s x) t.fol nomm :=
+  know_annot hc hdat hA hk (bakeRes_ok hloop hvars hcode hd hs hk)
+
 end Bake
 
 end SkaModel

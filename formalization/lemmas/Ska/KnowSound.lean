@@ -1,6 +1,7 @@
 import lemmas.Ska.Know
 import lemmas.Ska.NommAgree
 import lemmas.Ska.FolLoopFacts
+import lemmas.Ska.Prov
 
 /-!
 # `+know` is sound
@@ -1207,6 +1208,13 @@ theorem know_annot_of_implies (hc : CodeOK lib code) (hdat : DatOK lib dat) {c :
     (h : know fold nm s dat res = some (n', sites)) (hres : ResOK code' res sites)
     (himp : ∀ x, Fits s x → Fits c.less x) : Annot lib code' (Fits s) c.fol n' :=
   (know_annot hc hdat hA h hres).mono fun x hx => ⟨himp x hx, hx⟩
+
+/-- `DatOK` from the provenance invariant of the datums' products on their
+code requirements (what `MemoEntryOK.prov` and `ProdRel` give). -/
+theorem datOK_of_prov {lib : Lib} {dat : Bell → Option Datum}
+    (h : ∀ b d, dat b = some d → ∀ y gul p, Fits b.less y → Mink lib gul [] y b.fol (Tone.zero p) →
+      ProvR y d.prod d.map p) : DatOK lib dat :=
+  fun b d hd _ s y gul hl hk hm => patchProd_sound hk d.map d.prod y (h b d hd s gul y hl hm)
 
 end Sound
 
