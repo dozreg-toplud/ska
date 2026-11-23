@@ -297,6 +297,81 @@ theorem analyzeStep_ok2 {memoF : Memo M} (hmF : MemoWF memoF) {n : Nat} {run : R
             have hxs := (c3.s.ord_stk x).mp ⟨o, hxo⟩
             rw [a1] at hxs; exact hx hxs
 
+/-! ## The induction on the fuel -/
+
+/-- The arms at the fuel `n` keep the convergence invariant. -/
+def AllP2 (env : Env R) (memoF : Memo M) (n : Nat) : Prop :=
+  ResP2 memoF (resolve env memoF n) ∧ AnaP2 memoF (analyze env memoF n) ∧ RunP2 memoF (run env memoF n) ∧
+    PassP2 memoF (passLoop env memoF n) ∧ MemP2 memoF (memberLoop env memoF n)
+
+theorem allP2_zero (env : Env R) (memoF : Memo M) : AllP2 env memoF 0 := by
+  refine ⟨fun _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ h => ?_,
+    fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_⟩
+  · rw [resolve_zero] at h; cases h
+  · rw [analyze_zero] at h; cases h
+  · rw [run_zero] at h; cases h
+  · rw [passLoop_zero] at h; cases h
+  · rw [memberLoop_zero] at h; cases h
+
+/-- **Every arm of the analysis keeps the convergence invariant**, at every
+fuel, for a persistent memo with well-formed products. -/
+theorem allP2 (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) : ∀ n, ∀ k, k ≤ n → AllP2 env memoF k
+  | 0 => fun k hk => by rw [Nat.le_zero.mp hk]; exact allP2_zero env memoF
+  | n + 1 => fun k hk => by
+    rcases Nat.lt_or_ge k (n + 1) with hl | hl
+    · exact allP2 env memoF hmF n k (Nat.le_of_lt_succ hl)
+    · have e : k = n + 1 := Nat.le_antisymm hk hl
+      subst e
+      obtain ⟨r, a, u, p, m⟩ := allP2 env memoF hmF n n (Nat.le_refl n)
+      refine ⟨?_, ?_, ?_, ?_, ?_⟩
+      · rw [resolve_succ]; exact resolveStep_ok2 env memoF r a
+      · rw [analyze_succ]; exact analyzeStep_ok2 hmF u p
+      · rw [run_succ]
+        exact runStep_ok2 env memoF (fun k hk => (allP2 env memoF hmF n k (Nat.le_of_lt hk)).1)
+      · rw [passLoop_succ]; exact passStep_ok2 m p
+      · rw [memberLoop_succ]; exact memberStep_ok2 u m
+
+/-! ## The final graph -/
+
+theorem CInv.init (memoF : Memo M) (reg : R) : CInv memoF (SkaState.init reg : SkaState M R) (fun _ => False) where
+  s := SInv.init reg
+  tick := fun m => by simp [ranOf, chgOf, Treap.gut, SkaState.init, Treap.get_empty]
+  ord := ⟨fun i o h => by simp [SkaState.init, Treap.get_empty] at h, List.Pairwise.nil⟩
+  frz := ⟨fun _ h => h.elim, fun i d h _ => by simp [SkaState.init, Treap.get_empty] at h, fun _ h => h.elim,
+    fun _ h => h.elim, fun f ms s ent h _ => by simp [SkaState.init, Treap.get_empty] at h⟩
+  mem := fun m o h => by simp [SkaState.init, Treap.get_empty] at h
+  tkeys := fun j h => by simp [SkaState.init, Treap.get_empty] at h
+
+/-- **The final graph of `+ska-callgraph` is frozen**: every entry is a memo
+hit of an earlier poke, or was written by its last run with answers that are
+answers of the frozen entries (the entries of the final graph and the
+versions of them before `+pop`); for a root with a well-formed subject sock
+and a persistent memo with well-formed products.  No assumption on the
+scheduling: this is convergence, for the Hoon with the cull before the first
+pass. -/
+theorem skaCallgraph_frozen (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) {n : Nat} {root : Ident}
+    {reg reg' : R} {g : Callgraph M} (hw : WellFormed root.1)
+    (h : skaCallgraph env n root memoF reg = some (g, reg')) :
+    ∃ F : Entry → Prop, FrozenOK memoF F ∧ (∀ i d, Treap.get g i = some d → F (entOf i d)) ∧
+      (∀ e, F e → ∃ d, Treap.get g (e.more, e.fol) = some d) ∧ (∀ e, F e → WellFormed e.d.prod) ∧
+      GStepsR (fun _ => none) (gCore g) := by
+  unfold skaCallgraph at h
+  simp only [Option.map_eq_some_iff, Prod.mk.injEq] at h
+  obtain ⟨⟨low, st⟩, ha, rfl, _⟩ := h
+  obtain ⟨⟨F, _, c⟩, s, _, _, _, _, _, hlt⟩ := (allP2 env memoF hmF n n (Nat.le_refl n)).2.1 root
+    (SkaState.init reg) low st (fun _ => False) (CInv.init memoF reg) hw
+    (by simp [SkaState.init, Treap.get_empty]) ha
+  have hempty : ∀ x, Treap.get st.order x = none := by
+    intro x
+    cases e : Treap.get st.order x with
+    | none => rfl
+    | some o =>
+      have := hlt x o e (by simp [SkaState.init])
+      simp [SkaState.init] at this
+  rw [show gCore (SkaState.init reg : SkaState M R).g = fun _ => none from gCore_empty] at s
+  exact ⟨F, c.frz.ok, fun i d hd => c.frz.cover i d hd (hempty i), fun e he => (c.frz.sub e he).1,
+    c.frz.wf, s⟩
+
 end Ana
 end SkaModel
 end Formalization
