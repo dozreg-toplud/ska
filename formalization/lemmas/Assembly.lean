@@ -1,5 +1,6 @@
 import lemmas.Compiler.Connect
 import lemmas.Compiler.PokeFrame
+import lemmas.Compiler.ListMold
 import lemmas.Ska.Statements
 
 /-!
@@ -188,9 +189,10 @@ def LibFormat : Prop :=
   RendLeafIs lib ∧ HandIs lib mugF layer4 ∧ RendRestIs lib layer4 ∧ SoftTankIs lib layer4 ∧
     SkipMsgIs lib layer4
 
-/-- The list mold of layer 1 (`ListMoldIs`) and the cord of `+eval-mook`
-(`EvalMookMsgIs`).  Owner: pill to model. -/
-def MookFormat : Prop := ListMoldIs ∧ EvalMookMsgIs lib
+/-- The cord of `+eval-mook` (`EvalMookMsgIs`): `+scow %ud` and `+crip`.
+Owner: pill to model.  (The list mold of layer 1, `ListMoldIs`, is proved:
+`listMoldIs`.) -/
+def MookFormat : Prop := EvalMookMsgIs lib
 
 end
 
@@ -252,7 +254,8 @@ theorem reach_model (hcue : CueRoot) (hslam : LibSlam lib) (hpm : PokeModel pk)
     ∃ cr, c = C ob (icore cr) ∧ CorIn cr ∧ ReachI lib pk cor cr := by
   have hpk := pokeIs_all hpm
   obtain ⟨hleaf, hhand, hrest, hst, hm⟩ := hfmt
-  obtain ⟨hlist, hmsg⟩ := hmf
+  have hlist := listMoldIs
+  have hmsg : EvalMookMsgIs lib := hmf
   have hrb := rendBaseIs_layer4 lib hleaf hhand hrest
   rw [isCore_eq hcue h0] at h
   induction h with
@@ -325,7 +328,8 @@ theorem weak_of (g : Gap lib pk InvC) : Ska.Weak := by
   intro core₀ c s f gul toon h0 hr hm
   have hpk := pokeIs_all g.pokeModel
   obtain ⟨hleaf, hhand, hrest, hst, hmsg⟩ := g.libFormat
-  obtain ⟨hlist, hmm⟩ := g.mookFormat
+  have hlist := listMoldIs
+  have hmm : EvalMookMsgIs lib := g.mookFormat
   have hrb := rendBaseIs_layer4 lib hleaf hhand hrest
   have e0 := isCore_eq g.cueRoot h0
   obtain ⟨cr, rfl, hc, hr'⟩ := reach_model g.cueRoot g.libSlam g.pokeModel g.pokeValid
@@ -341,7 +345,8 @@ theorem converse_of (g : Gap lib pk InvC) : Ska.Converse := by
   intro core₀ c s f gul toon c' h0 hr hrun
   have hpk := pokeIs_all g.pokeModel
   obtain ⟨hleaf, hhand, hrest, hst, hmsg⟩ := g.libFormat
-  obtain ⟨hlist, hmm⟩ := g.mookFormat
+  have hlist := listMoldIs
+  have hmm : EvalMookMsgIs lib := g.mookFormat
   have hrb := rendBaseIs_layer4 lib hleaf hhand hrest
   have e0 := isCore_eq g.cueRoot h0
   obtain ⟨cr, rfl, hc, hr'⟩ := reach_model g.cueRoot g.libSlam g.pokeModel g.pokeValid
