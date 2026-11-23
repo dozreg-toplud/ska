@@ -1,10 +1,10 @@
-import lemmas.Ska.CompUnary
+import lemmas.Ska.CompCollapse
 
 /-!
 # The relation for a fragment of nomm, by induction
 
 `run_ok`: for every nomm and goal of `Frag` (`%0` and `%1` for every goal,
-`[7 p q]`, `[4 p]` for `%done` and `%pick`, `[3 p]` for `%pick`), what the
+`[7 p q]`, `[4 p]` for every goal, `[3 p]` for `%pick` and `%done`), what the
 model of `run` returns satisfies `RunOK`, from any state, for any goal whose
 registers are allocated and distinct.
 -/
@@ -24,7 +24,9 @@ def Frag : Nomm → CGoal S → Prop
   | Nomm.n7 p q, g => Frag q g ∧ ∀ laz th, Frag p (CGoal.next laz th)
   | Nomm.n4 p, CGoal.done => ∀ laz th, Frag p (CGoal.next laz th)
   | Nomm.n4 p, CGoal.pick _ _ => ∀ laz th, Frag p (CGoal.next laz th)
+  | Nomm.n4 p, CGoal.next _ _ => ∀ laz th, Frag p (CGoal.next laz th)
   | Nomm.n3 p, CGoal.pick _ _ => ∀ laz th, Frag p (CGoal.next laz th)
+  | Nomm.n3 p, CGoal.done => ∀ laz th, Frag p (CGoal.next laz th)
   | _, _ => False
 
 /-- **`run` meets the relation on the fragment.** -/
@@ -50,12 +52,12 @@ theorem run_ok (lib : Lib) : ∀ (nm : Nomm) (goal : CGoal S) (g0 g1 : Gen Map) 
     cases goal with
     | done => exact run_n4_done_ok h fun laz th g g' n hg' h' => ihp _ g g' n (hf laz th) hg' h'
     | pick z o => exact run_n4_pick_ok h fun laz th g g' n hg' h' => ihp _ g g' n (hf laz th) hg' h'
-    | next laz th => exact hf.elim
+    | next laz th => exact run_n4_next_ok h fun laz th g g' n hg' h' => ihp _ g g' n (hf laz th) hg' h'
   | n3 p ihp =>
     intro goal g0 g1 nex hf hg h
     cases goal with
     | pick z o => exact run_n3_pick_ok h fun laz th g g' n hg' h' => ihp _ g g' n (hf laz th) hg' h'
-    | done => exact hf.elim
+    | done => exact run_n3_done_ok h fun laz th g g' n hg' h' => ihp _ g g' n (hf laz th) hg' h'
     | next laz th => exact hf.elim
   | cons => intro _ _ _ _ hf; exact hf.elim
   | n2 => intro _ _ _ _ hf; exact hf.elim
