@@ -186,6 +186,98 @@ structure CInv (memoF : Memo M) (st : SkaState M R) (F : Entry → Prop) : Prop 
   frz : FrzInv memoF st F
   mem : MemInv st F
 
+/-! ## `+pop`, entry by entry -/
+
+theorem putMi_get {m : Memo M} {i : Ident} {d : FDatum M} {f : Noun} {ms : M Sock (Ident × FDatum M)}
+    {s : Sock} {ent : Ident × FDatum M}
+    (h1 : Treap.get (putMi m i d) f = some ms) (h2 : Treap.get ms s = some ent) :
+    (∃ ms', Treap.get m f = some ms' ∧ Treap.get ms' s = some ent) ∨ (ent = (i, d) ∧ f = i.2) := by
+  unfold putMi at h1
+  rw [Treap.get_put] at h1
+  split at h1
+  · rename_i hf
+    cases h1
+    rw [Treap.get_put] at h2
+    split at h2
+    · cases h2; exact Or.inr ⟨rfl, hf⟩
+    · left
+      subst hf
+      unfold gutMi Treap.gut at h2
+      cases e : Treap.get m i.2 with
+      | none => rw [e] at h2; simp [Treap.get_empty] at h2
+      | some ms' => rw [e] at h2; exact ⟨ms', rfl, h2⟩
+  · exact Or.inl ⟨ms, h1, h2⟩
+
+/-- **What `+pop` does**: it takes `pre ++ [id]` off the stack, deletes their
+`order` and `ticks`, puts their entries back through `postPop`, and memoizes
+them in `done`. -/
+theorem popGo_eff {id : Ident} : ∀ (pre : List Ident) (st st' : SkaState M R) (rest : List Ident),
+    st.stk = pre ++ id :: rest → (pre ++ id :: rest).Nodup →
+    (∀ j ∈ pre ++ [id], ∃ d, Treap.get st.g j = some d) → popGo id st.stk st = some st' →
+    st'.stk = rest ∧ st'.next = st.next ∧ st'.tick = st.tick ∧
+    (∀ j, Treap.get st'.order j = if j ∈ pre ++ [id] then none else Treap.get st.order j) ∧
+    (∀ j, Treap.get st'.ticks j = if j ∈ pre ++ [id] then none else Treap.get st.ticks j) ∧
+    (∀ j, Treap.get st'.g j = if j ∈ pre ++ [id] then (Treap.get st.g j).map postPop else Treap.get st.g j) ∧
+    (∀ f ms s ent, Treap.get st'.done f = some ms → Treap.get ms s = some ent →
+      (∃ ms', Treap.get st.done f = some ms' ∧ Treap.get ms' s = some ent) ∨
+      (∃ j ∈ pre ++ [id], ent = (j, postPop (gitG st.g j)) ∧ f = j.2))
+  | [], st, st', rest, hs, _, _, h => by
+    rw [hs] at h
+    simp only [List.nil_append, popGo, if_true] at h
+    cases h
+    refine ⟨rfl, rfl, rfl, fun j => ?_, fun j => ?_, fun j => ?_, fun f ms s ent h1 h2 => ?_⟩
+    · simp only [List.nil_append, List.mem_singleton, Treap.get_del]
+    · simp only [List.nil_append, List.mem_singleton, Treap.get_del]
+    · simp only [List.nil_append, List.mem_singleton, Treap.get_put]
+      split
+      · rename_i e; subst e
+        cases e2 : Treap.get st.g j with
+        | none => simp [gitG, e2] at *
+        | some d => simp [gitG, Treap.gut, e2, postPop]
+      · rfl
+    · rcases putMi_get h1 h2 with h | ⟨rfl, rfl⟩
+      · exact Or.inl h
+      · exact Or.inr ⟨id, by simp, by simp [postPop], rfl⟩
+  | x :: pre, st, st', rest, hs, hnd, hin, h => by
+    rw [hs] at h
+    have hx : x ≠ id := by
+      intro e; subst e; simp at hnd
+    simp only [List.cons_append, popGo, if_neg hx] at h
+    have hnd' : (pre ++ id :: rest).Nodup := (List.nodup_cons.mp (by simpa using hnd)).2
+    have hxn : x ∉ pre ++ id :: rest := (List.nodup_cons.mp (by simpa using hnd)).1
+    obtain ⟨dx, hdx⟩ := hin x (by simp)
+    let st2 : SkaState M R := { st with stk := pre ++ id :: rest, order := Treap.del st.order x, ticks := Treap.del st.ticks x, g := Treap.put st.g x (postPop (gitG st.g x)), done := putMi st.done x (postPop (gitG st.g x)) }
+    have hin2 : ∀ j ∈ pre ++ [id], ∃ d, Treap.get st2.g j = some d := by
+      intro j hj
+      have hjx : j ≠ x := by
+        rintro rfl; exact hxn (by simp at hj ⊢; rcases hj with hj | hj <;> simp [hj])
+      simp only [st2, Treap.get_put, if_neg hjx]
+      exact hin j (by simp at hj ⊢; rcases hj with hj | hj <;> simp [hj])
+    obtain ⟨a1, a2, a3, a4, a5, a6, a7⟩ := popGo_eff pre st2 st' rest rfl hnd' hin2 (by
+      simpa [st2, gitG, postPop] using h)
+    have hmem : ∀ j, j ∈ x :: pre ++ [id] ↔ j = x ∨ j ∈ pre ++ [id] := by simp
+    refine ⟨a1, a2, a3, fun j => ?_, fun j => ?_, fun j => ?_, fun f ms s ent h1 h2 => ?_⟩
+    · rw [a4]; simp only [st2, Treap.get_del]
+      by_cases e1 : j ∈ pre ++ [id] <;> by_cases e2 : j = x <;> simp_all
+    · rw [a5]; simp only [st2, Treap.get_del]
+      by_cases e1 : j ∈ pre ++ [id] <;> by_cases e2 : j = x <;> simp_all
+    · rw [a6]; simp only [st2, Treap.get_put]
+      by_cases e1 : j ∈ pre ++ [id]
+      · have e2 : j ≠ x := by rintro rfl; exact hxn (by simp at e1 ⊢; rcases e1 with e1 | e1 <;> simp [e1])
+        simp [e1, e2]
+      · by_cases e2 : j = x
+        · subst e2
+          have hg : gitG st.g j = dx := by simp [gitG, Treap.gut, hdx]
+          simp [e1, hdx, hg]
+        · simp [e1, e2]
+    · rcases a7 f ms s ent h1 h2 with ⟨ms', e1, e2⟩ | ⟨j, hj, rfl, rfl⟩
+      · rcases putMi_get e1 e2 with h | ⟨rfl, rfl⟩
+        · exact Or.inl h
+        · exact Or.inr ⟨x, by simp, rfl, rfl⟩
+      · have hjx : j ≠ x := by rintro rfl; exact hxn (by simp at hj ⊢; rcases hj with hj | hj <;> simp [hj])
+        refine Or.inr ⟨j, by simp at hj ⊢; rcases hj with hj | hj <;> simp [hj], ?_, rfl⟩
+        simp [st2, gitG, Treap.gut, Treap.get_put, hjx]
+
 end Ana
 end SkaModel
 end Formalization
