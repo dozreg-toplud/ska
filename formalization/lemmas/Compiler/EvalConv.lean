@@ -300,7 +300,7 @@ any other by the poke and `+eval-blob` at depth `k`. -/
 theorem top_step (k : Nat) (hB : BlobGe lib pk k) : TopGe lib pk (k + 1) := by
   intro cr hc s f scry x h
   have h' := iterN_succ_hyb h
-  have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2
+  have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2.1
   simp only [read.layer2.axis, icore, Nat.reduceDiv, nock_exec] at hl4
   rcases f with fa | ⟨fh, ft⟩
   · exact ⟨(Tone.two [], cr), Ev.succ ⟨0, fun m _ => by simp [SkaModel.interp, topBody]⟩⟩

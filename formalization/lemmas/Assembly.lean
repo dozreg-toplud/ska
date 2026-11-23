@@ -129,8 +129,9 @@ variable (lib : Lib) (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mug
 track (gap 2 of the README: a proof of `cue` in pieces). -/
 def CueRoot : Prop := cue pill = some root
 
-/-- The inner `+poke` of every compiler's core that keeps what the interpreter
-reads (`CorIn`) computes the model `pk` on every ovum.  Owner: pill to model
+/-- The inner `+poke` of every compiler's core that the pill's `cor` reaches by
+pokes and that keeps what the interpreter reads (`CorIn`) computes the model
+`pk` on every ovum.  Owner: pill to model
 (`lemmas/Compiler/`): `+poke` and the arms it calls, `+ska-poke`,
 `+compiled-mono`, `+compiled-nary`, `+optimize` and the arms of the jets. -/
 def PokeModel : Prop :=

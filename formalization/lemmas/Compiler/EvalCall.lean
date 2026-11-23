@@ -28,12 +28,28 @@ open Nock Pill SkaModel Hoon
 /-- The interpreter core with the compiler's core `cr` as its tail. -/
 abbrev icore (cr : Noun) : Noun := C interp.battery cr
 
+/-- `(poke ovo)` on the compiler's core `cr`, as the interpreter's arms run it:
+pull the arm at `axPoke` of `core/Statement.lean`, put the sample in, kick. -/
+def pokeN (cr ovo : Noun) : Option Noun :=
+  ((slot? Ska.axPoke cr).bind fun a => nock cr a).bind fun g =>
+    (edit? 6 ovo g).bind fun g' => (slot? 2 g').bind fun f => nock g' f
+
+/-- The compilers' cores that the pill's `cor` becomes by its own pokes, of
+any noun.  The code of `+poke` is part of the core it runs on, so a statement
+about the poke of every core holds only on cores whose code is the pill's:
+these are. -/
+inductive PokeReach : Noun → Prop where
+  | start : PokeReach cor
+  | poke {c ovo p c' : Noun} : PokeReach c → pokeN c ovo = some (C p c') → PokeReach c'
+
 /-- What the interpreter's arms read through the compiler's core: layer 2 at
 `read.layer2.axis` of the interpreter core, and layer 4 (where `+eval-top`
-pulls `+mink`) two cores above it. -/
+pulls `+mink`) two cores above it; and the core is one that the pill's
+compiler reaches by pokes (`PokeReach`), so that what its `+poke` does is
+the pill's. -/
 def CorIn (cr : Noun) : Prop :=
   slot? read.layer2.axis (icore cr) = some layer2 ∧
-    slot? (read.layer2.axis / 4) (icore cr) = some layer4
+    slot? (read.layer2.axis / 4) (icore cr) = some layer4 ∧ PokeReach cr
 
 theorem regsIn_icore {cr : Noun} (h : CorIn cr) : RegsIn mugF (icore cr) :=
   ⟨layer2, h.1, by.arm_at, need.arm_at, someIn_layer2, gorIn_morIn_layer2.1, gorIn_morIn_layer2.2⟩
@@ -122,12 +138,6 @@ theorem eval_pole_nok (cr : Noun) (hc : CorIn cr) (lib : Lib) (O : Oracle Noun) 
         Tone.toNoun, poleOutS, hl2, weld.arm_at, weld_arm, weld_listNoun]
 
 /-! ## The calls -/
-
-/-- `(poke ovo)` on the compiler's core `cr`, as the interpreter's arms run it:
-pull the arm at `axPoke` of `core/Statement.lean`, put the sample in, kick. -/
-def pokeN (cr ovo : Noun) : Option Noun :=
-  ((slot? Ska.axPoke cr).bind fun a => nock cr a).bind fun g =>
-    (edit? 6 ovo g).bind fun g' => (slot? 2 g').bind fun f => nock g' f
 
 /-- The poke of `cr` is the model `pk` on every ovum, and every core it returns
 keeps what the interpreter reads through it. -/
@@ -982,7 +992,7 @@ theorem eval_top_le (lib : Lib) (hslam : SlamIsNock lib)
     (cr : Noun) (hc : CorIn cr) (s f scry : Noun) (r : Tone × Noun)
     (h : topBody lib pk O k cr s f scry = some r) :
     nock (topS cr s f scry) eval_top.battery = some (resN r) ∧ CorIn r.2 := by
-  have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2
+  have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2.1
   simp only [read.layer2.axis, icore, Nat.reduceDiv, nock_exec] at hl4
   rcases f with fa | ⟨fh, ft⟩
   · simp only [topBody, Option.some.injEq] at h; subst h

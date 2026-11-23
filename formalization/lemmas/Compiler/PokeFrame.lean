@@ -12,14 +12,15 @@ reads through `cr` (layers 2 and 4, `CorIn`) is under axis `15`.
 `+poke` returns `[prod ..poke]`, where `..poke` is its own core with the state
 changed by `=^`, `=.` and `%=`, which compile to Nock `10` edits of axes under
 `14`.  So a returned core agrees with `cr` at axis `15` (`PokeFrame`), and that
-is all `CorIn` needs (`corIn_of_tail`).  `PokeFrame` is stated on the pill's
-Nock alone, and with the first half of `PokeIs` it gives the second half
-(`pokeIs_of_frame`).  It is not proved: the arm's Nock (about a thousand cells
-before the arms it calls) branches four ways and calls `+ska-poke`,
-`+compiled-mono`, `+optimize` and the cache arms, whose products go into the
-state only; a proof needs either each branch run symbolically with the calls
-left opaque, or an abstract interpretation of the formula that tracks which
-axes of the subject a value can differ from `cr` at.
+is all the layers of `CorIn` need (`corIn_of_tail`).  `PokeFrame` is stated on
+the pill's Nock alone, and with the first half of `PokeIs` it gives the second
+half (`pokeIs_of_frame`).
+
+`CorIn` also asks that the pill's `cor` reach `cr` by pokes (`PokeReach`).
+Without that, `∀ cr, CorIn cr → PokeIs pk cr` held for no `pk`: the code of
+`+poke` sits in `cr` itself, at axis `2`, and a core with the layers in place
+and a battery of its own can return anything (`junk_layers`, whose poke
+returns `[0 0]`; `PokeIs` would then ask `CorIn 0`).
 -/
 
 namespace Formalization
@@ -40,12 +41,12 @@ theorem slot_under {s t : Noun} {a : Nat} (ha : 0 < a) (h : slot? a s = slot? a 
       · exact hl
     rw [slot?_step n h2, slot?_step n h2, slot_under ha h k (n / 2) hn']
 
-/-- `CorIn` reads `cr` under axis `15` only. -/
-theorem corIn_of_tail {cr cr' : Noun} (hc : CorIn cr) (h : slot? 15 cr' = slot? 15 cr) :
-    CorIn cr' := by
-  obtain ⟨h2, h4⟩ := hc
+/-- The layers of `CorIn` are read in `cr` under axis `15` only. -/
+theorem corIn_of_tail {cr cr' : Noun} (hc : CorIn cr) (h : slot? 15 cr' = slot? 15 cr)
+    (hr : PokeReach cr') : CorIn cr' := by
+  obtain ⟨h2, h4, -⟩ := hc
   simp only [read.layer2.axis, icore, Nat.reduceDiv, nock_exec] at h2 h4
-  refine ⟨?_, ?_⟩
+  refine ⟨?_, ?_, hr⟩
   · simp only [read.layer2.axis, icore, nock_exec]
     rw [slot_under (by decide) h 17 _ (by decide)]; exact h2
   · simp only [read.layer2.axis, icore, Nat.reduceDiv, nock_exec]
@@ -66,9 +67,38 @@ theorem pokeIs_of_frame {pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap 
   have h := hpk ov
   rw [e, Option.map_some] at h
   obtain ⟨prod, cr', e1, e2⟩ := hf _ _ h
+  have hr := PokeReach.poke hc.2.2 h
   simp only [Noun.cell.injEq] at e1
   rw [← e1.2] at e2
-  exact corIn_of_tail hc e2
+  exact corIn_of_tail hc e2 hr
+
+/-! ## Why `CorIn` asks for `PokeReach` -/
+
+/-- The head and the tail of the pill's `cor`. -/
+def corHead : Noun := match cor with | Noun.cell h _ => h | Noun.atom _ => A 0
+def corTail : Noun := match cor with | Noun.cell _ t => t | Noun.atom _ => A 0
+
+theorem cor_eq : cor = C corHead corTail := by kernel_rfl
+
+/-- A battery whose `+poke` builds a gate that returns `[0 0]`. -/
+def junkBattery : Noun :=
+  C (A 0) (C (A 0) (C (A 0) (C (A 1) (C (C (A 1) (C (A 0) (A 0))) (C (A 0) (A 0))))))
+
+/-- With the pill's tail and another battery, a core has layers 2 and 4 where
+the interpreter reads them, and its poke returns `[0 0]` on every noun.  So
+the layers alone do not make `PokeIs` satisfiable: it would ask `CorIn 0`. -/
+theorem junk_layers :
+    slot? read.layer2.axis (icore (C junkBattery corTail)) = some layer2 ∧
+      slot? (read.layer2.axis / 4) (icore (C junkBattery corTail)) = some layer4 ∧
+      ∀ ovo, pokeN (C junkBattery corTail) ovo = some (C (A 0) (A 0)) := by
+  have h2 : slot? read.layer2.axis (icore cor) = some layer2 := by unfold icore; kernel_rfl
+  have h4 : slot? (read.layer2.axis / 4) (icore cor) = some layer4 := by unfold icore; kernel_rfl
+  rw [cor_eq] at h2 h4
+  simp only [read.layer2.axis, icore, Nat.reduceDiv, nock_exec] at h2 h4
+  refine ⟨?_, ?_, fun ovo => ?_⟩
+  · simpa [read.layer2.axis, icore, nock_exec] using h2
+  · simpa [read.layer2.axis, icore, nock_exec] using h4
+  · simp [pokeN, junkBattery, Ska.axPoke, nock_exec]
 
 end Compiler
 end Formalization

@@ -51,7 +51,7 @@ theorem core_layer4 : slot? Ska.axHoon core = some layer4 := by
 /-- The pill's core is an outer battery over the interpreter core of its
 compiler's core `cor`, which keeps layers 2 and 4. -/
 theorem core_shape : ∃ ob, core = C ob (icore cor) ∧ CorIn cor := by
-  refine ⟨_, rfl, ?_, ?_⟩
+  refine ⟨_, rfl, ?_, ?_, PokeReach.start⟩
   · unfold icore; kernel_rfl
   · unfold icore; kernel_rfl
 
