@@ -305,3 +305,7 @@ open Formalization
 #print axioms Assembly.converse_of
 #print axioms Assembly.halts_of
 #print axioms Assembly.full_of
+#print axioms Frame.absNock_sound
+#print axioms Compiler.poke_frame
+#print axioms Compiler.pokeReach_frame
+#print axioms Compiler.pokeFrame_corIn

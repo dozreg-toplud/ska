@@ -1,4 +1,5 @@
 import lemmas.Compiler.EvalCall
+import lemmas.Compiler.Frame
 
 /-!
 # What the poke keeps
@@ -14,7 +15,11 @@ changed by `=^`, `=.` and `%=`, which compile to Nock `10` edits of axes under
 `14`.  So a returned core agrees with `cr` at axis `15` (`PokeFrame`), and that
 is all the layers of `CorIn` need (`corIn_of_tail`).  `PokeFrame` is stated on
 the pill's Nock alone, and with the first half of `PokeIs` it gives the second
-half (`pokeIs_of_frame`).
+half (`pokeIs_of_frame`).  It holds of every core with `CorIn`
+(`pokeFrame_corIn`): the abstract interpreter of `Frame.lean`, run by the
+kernel on the arm, shows that the poke of a core with the pill's battery
+returns a core equal to it at axes `2`, `6` and `15` (`poke_frame`), so every
+core the pill reaches by pokes has the pill's battery (`pokeReach_frame`).
 
 `CorIn` also asks that the pill's `cor` reach `cr` by pokes (`PokeReach`).
 Without that, `∀ cr, CorIn cr → PokeIs pk cr` held for no `pk`: the code of
@@ -99,6 +104,106 @@ theorem junk_layers :
   · simpa [read.layer2.axis, icore, nock_exec] using h2
   · simpa [read.layer2.axis, icore, nock_exec] using h4
   · simp [pokeN, junkBattery, Ska.axPoke, nock_exec]
+
+/-! ## The frame of the pill's `+poke`
+
+The kernel runs the abstract interpreter of `Frame.lean` on the battery of
+the gate that the pill's inner `+poke` builds, from the subject
+`[battery [ovo cr]]` as the base: every shape of the product (37 of them,
+one per path through the branches) has the base's `cr` at axes `2`, `6` and
+`15` of its tail.  There are 72 shapes, one per path through the branches
+that the abstract run cannot decide.  Every call of the arm returns an
+unknown noun there, and the products of the calls go into the state only. -/
+
+/-- The arm of the inner `+poke` and the battery of its gate. -/
+def ipokeArm : Noun := (slot? Ska.axPoke cor).getD (A 0)
+
+def ipokeBat : Noun :=
+  match ipokeArm with
+  | Noun.cell _ (Noun.cell _ (Noun.cell (Noun.cell _ b) _)) => b
+  | _ => A 0
+
+theorem cor_ipoke : slot? Ska.axPoke cor =
+    some (C (A 8) (C (C (A 1) (A 0)) (C (C (A 1) ipokeBat) (C (A 0) (A 1))))) := by
+  unfold Ska.axPoke; kernel_rfl
+
+/-- The shape has `sub q` at the path `p`. -/
+def isSubAt (p q : List Bool) (r : Frame.Ab) : Bool :=
+  match Frame.aslotPath p r with
+  | [Frame.Ab.sub q'] => q' == q
+  | _ => false
+
+theorem isSubAt_eq {p q : List Bool} {r : Frame.Ab} (h : isSubAt p q r = true) :
+    Frame.aslotPath p r = [Frame.Ab.sub q] := by
+  unfold isSubAt at h
+  split at h
+  · rename_i q' e
+    rw [e, beq_iff_eq.1 h]
+  · cases h
+
+/-- The tail of the product agrees with the base's `cr` (at `[true, true]`)
+at axes `2`, `6` and `15`. -/
+def frameOK (r : Frame.Ab) : Bool :=
+  isSubAt [true, false] [true, true, false] r &&
+    isSubAt [true, true, false] [true, true, true, false] r &&
+    isSubAt [true, true, true, true] [true, true, true, true, true] r
+
+theorem ipoke_check : (Frame.absNock 1000 (.sub []) ipokeBat).all frameOK = true := by
+  kernel_rfl
+
+theorem slot2_path (n : Noun) : slot? 2 n = slotAtPath n [false] := rfl
+theorem slot6_path (n : Noun) : slot? 6 n = slotAtPath n [true, false] := rfl
+theorem slot15_path (n : Noun) : slot? 15 n = slotAtPath n [true, true, true] := rfl
+
+/-- The pill's poke, on any core whose battery is the pill's, returns
+`[prod cr']` with `cr'` equal to `cr` at axes `2`, `6` and `15`: everywhere
+but the state at `14`. -/
+theorem poke_frame {cr : Noun} (hb : slot? 2 cr = slot? 2 cor) {ovo x : Noun}
+    (h : pokeN cr ovo = some x) :
+    ∃ prod cr', x = C prod cr' ∧ slot? 2 cr' = slot? 2 cr ∧ slot? 6 cr' = slot? 6 cr ∧
+      slot? 15 cr' = slot? 15 cr := by
+  have h23 : slot? Ska.axPoke cr = slot? Ska.axPoke cor :=
+    slot_under (by decide) hb 3 _ (by decide)
+  unfold pokeN at h
+  rw [h23, cor_ipoke] at h
+  simp only [nock_exec] at h
+  have he := nock_eq_some_iff.1 h
+  obtain ⟨r, hr, gr⟩ := Frame.absNock_sound (S := C ipokeBat (C ovo cr)) he 1000 (.sub [])
+    (by simp [Frame.Ab.Gam, slotAtPath])
+  have hok := List.all_eq_true.1 ipoke_check r hr
+  simp only [frameOK, Bool.and_eq_true] at hok
+  obtain ⟨⟨h1, h2⟩, h3⟩ := hok
+  have e1 := Frame.slotAtPath_sub _ gr (isSubAt_eq h1)
+  have e2 := Frame.slotAtPath_sub _ gr (isSubAt_eq h2)
+  have e3 := Frame.slotAtPath_sub _ gr (isSubAt_eq h3)
+  obtain ⟨b, hb'⟩ : ∃ b, slot? 2 cr = some b := by
+    rw [hb, cor_eq]; exact ⟨_, rfl⟩
+  rw [slot2_path] at hb'
+  cases x with
+  | atom _ => simp [slotAtPath] at e1; simp [slotAtPath, hb'] at e1
+  | cell prod cr' =>
+    refine ⟨prod, cr', rfl, ?_, ?_, ?_⟩
+    · rw [slot2_path, slot2_path]; simpa [slotAtPath] using e1
+    · rw [slot6_path, slot6_path]; simpa [slotAtPath] using e2
+    · rw [slot15_path, slot15_path]; simpa [slotAtPath] using e3
+
+/-- Every core the pill reaches by pokes has the pill's battery, and the
+library of `cor` under axis `15`. -/
+theorem pokeReach_frame {cr : Noun} (h : PokeReach cr) :
+    slot? 2 cr = slot? 2 cor ∧ slot? 6 cr = slot? 6 cor ∧ slot? 15 cr = slot? 15 cor := by
+  induction h with
+  | start => exact ⟨rfl, rfl, rfl⟩
+  | poke _ hp _ ih =>
+    obtain ⟨prod, cr', e, h2, h6, h15⟩ := poke_frame ih.1 hp
+    simp only [Noun.cell.injEq] at e
+    obtain ⟨-, rfl⟩ := e
+    exact ⟨h2.trans ih.1, h6.trans ih.2.1, h15.trans ih.2.2⟩
+
+/-- **`PokeFrame`** holds of every core with `CorIn`. -/
+theorem pokeFrame_corIn {cr : Noun} (hc : CorIn cr) : PokeFrame cr := by
+  intro ovo x h
+  obtain ⟨prod, cr', e, -, -, h15⟩ := poke_frame (pokeReach_frame hc.2.2).1 h
+  exact ⟨prod, cr', e, h15⟩
 
 end Compiler
 end Formalization
