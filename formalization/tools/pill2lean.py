@@ -735,16 +735,22 @@ def main():
         except (TypeError, IndexError):
             return None
 
-    # Their batteries are not named: an arm of +ca (+dif, through its crash
-    # message) quotes a noun that holds the whole hoon core.  Each arm is named
-    # on its own, unless it reaches a noun of the bulk; its axis is relative to
-    # its core [battery payload].
+    # Each arm is named on its own; its axis is relative to its core
+    # [battery payload], and Facts.lean checks it on [battery x] for every x.
+    # The batteries `ca.battery` and `so.battery` belong to the bulk, because
+    # two arms quote a noun that holds the hoon core: +dif of +ca and +huge of
+    # +so, through their crash messages.  Such an arm is named in the bulk
+    # (IN_BULK), and so is the quoted noun (`ca.dif.mean`, the battery of the
+    # trap of its %mean hint), so that the arm's formula is written out down
+    # to that name.
     unlabeled = {'ca': {95: 'lot', 171: 'lack', 87: 'dif'}, 'so': {4: 'jibe'}}
     bulk_named = set(i for i, nm in names.items() if nm.split('.')[0] in
                      ('root', 'nok', 'trap', 'core', 'layer0', 'layer1', 'layer2'))
-    skipped = []
+    in_bulk = []
     for clabel in ['ca', 'so']:
         carm, cbat = core_label_arm(clabel)
+        name(cbat, clabel + '.battery')
+        IN_BULK.add(clabel + '.battery')
         core_cell = cell(cbat, atom(0))
         for ax, a in fe_arms(cbat, 2):
             lab = label_of(a)
@@ -758,15 +764,29 @@ def main():
                 continue
             full = clabel + '.' + lab
             if reach([a]) & bulk_named:
-                skipped.append(full)
-                continue
+                # the outermost constants [1 q] of the formula that reach the bulk
+                quotes = set()
+                st = [g]
+                while st:
+                    i = st.pop()
+                    if type(NODES[i]) is int or not reach([i]) & bulk_named:
+                        continue
+                    if NODES[head(i)] == 1:
+                        quotes.add(tail(i))
+                    else:
+                        st.extend(NODES[i])
+                assert len(quotes) == 1, (full, len(quotes))
+                name(quotes.pop(), full + '.mean')
+                IN_BULK.update([full + '.arm', full + '.battery', full + '.mean'])
+                in_bulk.append(full)
             name(a, full + '.arm')
             formulas.add(a)
             name(g, full + '.battery')
             formulas.add(g)
-            name_loops(full, g, 'any')
-            axes.append((full, full_ax, None))
-    sys.stderr.write('compiler arms skipped (they reach the bulk): %s\n' % skipped)
+            name_loops(full, g, 'any' if full not in in_bulk else None)
+            axes.append((full, full_ax, '∀ x, slot? %s.axis (C %s.battery x) = some %s.arm'
+                         % (full, clabel, full)))
+    sys.stderr.write('compiler arms named in the bulk: %s\n' % in_bulk)
 
     # the library core: the first core on the tail spine of `core` whose
     # battery holds the arms [8 [1 battery] hint] of +ca and +so.  Its axes of
@@ -790,10 +810,18 @@ def main():
         return ax
     knit_battery = [i for i, nm in names.items() if nm == 'so.knit.battery'][0]
     assert (ca_lib, 15) in pulls(knit_battery), (ca_lib, so_lib, spine_axis(core, lib), pulls(knit_battery))
-    axes.append(('ca.lib', ca_lib, None))
-    axes.append(('so.lib', so_lib, None))
-    axes.append(('ca.lib.layer2', spine_axis(lib, layer2), None))
-    axes.append(('ca.lib.layer1', spine_axis(lib, layer1), None))
+    name(lib, 'lib')
+    facts.append(('core_lib', 'slot? %d core = some lib' % spine_axis(core, lib)))
+    for clabel, ax, arm8 in (('ca', ca_lib, ca_arm8), ('so', so_lib, so_arm8)):
+        name(arm8, clabel + '.lib.arm')
+        IN_BULK.add(clabel + '.lib.arm')
+        formulas.add(arm8)
+        axes.append((clabel + '.lib', ax, 'slot? %s.lib.axis lib = some %s.lib.arm'
+                     % (clabel, clabel)))
+    axes.append(('ca.lib.layer2', spine_axis(lib, layer2),
+                 'slot? ca.lib.layer2.axis lib = some layer2'))
+    axes.append(('ca.lib.layer1', spine_axis(lib, layer1),
+                 'slot? ca.lib.layer1.axis lib = some layer1'))
 
     # ---- write
     emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, len(data))
@@ -815,7 +843,8 @@ def main():
 # content, in which a named noun counts by its name, so a region that did not
 # change regenerates to the same text.
 
-BULK = {'root', 'nok', 'trap', 'core', 'layer0', 'layer1', 'layer2'}
+BULK = {'root', 'nok', 'trap', 'core', 'layer0', 'layer1', 'layer2', 'lib'}
+IN_BULK = set()      # names of other families that belong to the bulk
 
 CHUNK_MIN = 1000     # bulk definitions per chain file, at least
 CHUNK_DIV = 500      # a file ends after a definition whose hash is 0 mod this
@@ -823,6 +852,8 @@ CHUNK_MAX = 2000     # bulk definitions per chain file, at most
 
 
 def family_of(nm):
+    if nm in IN_BULK:
+        return None
     f = nm.split('.')[0]
     return None if f in BULK else f
 
@@ -1057,7 +1088,7 @@ def emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, nbyte
 
     axes_of = {}
     for nm, ax, st in axes:
-        axes_of.setdefault(unit_of[family_of(nm)], []).append((nm, ax))
+        axes_of.setdefault(unit_of[nm.split('.')[0]], []).append((nm, ax))
 
     arm_dir = os.path.join(outdir, 'Arm')
     os.makedirs(arm_dir, exist_ok=True)
@@ -1092,7 +1123,8 @@ def emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, nbyte
             fh.write('\nend Pill\nend Formalization\n')
 
     # the bulk, as a chain of files
-    bulk = Unit(sorted(bulk_roots, key=lambda i: named[i]), named, set(), 'n')
+    bulk = Unit(sorted(bulk_roots, key=lambda i: named[i]), named,
+                set(i for i in bulk_roots if i in formulas), 'n')
     defs = []
     st_done = set()
     texts = {}

@@ -20,6 +20,7 @@ open Nock
 public abbrev ca.all.axis : Nat := 22
 public abbrev ca.app.axis : Nat := 341
 public abbrev ca.con.axis : Nat := 4
+public abbrev ca.dif.axis : Nat := 87
 public abbrev ca.hed.axis : Nat := 20
 public abbrev ca.int.axis : Nat := 340
 public abbrev ca.lack.axis : Nat := 171

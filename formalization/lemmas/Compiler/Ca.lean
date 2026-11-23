@@ -14,7 +14,7 @@ The gates of `+ca` have the core of `+ca` as their context; those that call
 `+con:ca` read it from there (`CaConIn`).  Proved here: `hed`, `tel`, `con`,
 `all`, `int`, `uni`, `lack`.  Not here: `app` (it reads `+so`), `pat`, `lot`,
 `yea` (they read `+cap`, `+mas`, `+peg`, `+weld` of `hoon.hoon` deep in the
-context), and `dif`, which the generator does not name.
+context, `Axes.lean`), and `dif`, which is named in the bulk (`Lib.lean`).
 -/
 
 namespace Formalization
