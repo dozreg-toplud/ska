@@ -21,6 +21,7 @@ public abbrev so.darn.axis : Nat := 22
 public abbrev so.hed.axis : Nat := 175
 public abbrev so.jibe.axis : Nat := 4
 public abbrev so.knit.axis : Nat := 86
+public abbrev so.lib.axis : Nat := 11
 public abbrev so.pull.axis : Nat := 174
 public abbrev so.purr.axis : Nat := 42
 public abbrev so.tel.axis : Nat := 23

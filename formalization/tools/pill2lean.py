@@ -768,6 +768,33 @@ def main():
             axes.append((full, full_ax, None))
     sys.stderr.write('compiler arms skipped (they reach the bulk): %s\n' % skipped)
 
+    # the library core: the first core on the tail spine of `core` whose
+    # battery holds the arms [8 [1 battery] hint] of +ca and +so.  Its axes of
+    # +ca and +so, and of the layers of hoon.hoon below it, name the context
+    # that the arms of +ca and +so read.
+    ca_arm8 = cell(atom(8), core_label_arm('ca')[0])
+    so_arm8 = cell(atom(8), core_label_arm('so')[0])
+    lib = core
+    while True:
+        if type(NODES[head(lib)]) is tuple:
+            lib_arms = dict((a, ax) for ax, a in fe_arms(head(lib), 2, limit=20))
+            if ca_arm8 in lib_arms and so_arm8 in lib_arms:
+                ca_lib, so_lib = lib_arms[ca_arm8], lib_arms[so_arm8]
+                break
+        lib = tail(lib)
+    def spine_axis(x, target):
+        ax = 1
+        while x != target:
+            x = tail(x)
+            ax = 2 * ax + 1
+        return ax
+    knit_battery = [i for i, nm in names.items() if nm == 'so.knit.battery'][0]
+    assert (ca_lib, 15) in pulls(knit_battery), (ca_lib, so_lib, spine_axis(core, lib), pulls(knit_battery))
+    axes.append(('ca.lib', ca_lib, None))
+    axes.append(('so.lib', so_lib, None))
+    axes.append(('ca.lib.layer2', spine_axis(lib, layer2), None))
+    axes.append(('ca.lib.layer1', spine_axis(lib, layer1), None))
+
     # ---- write
     emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, len(data))
     print('steps', steps)

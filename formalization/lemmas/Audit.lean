@@ -148,3 +148,6 @@ open Formalization
 #print axioms Compiler.so_hed_gate
 #print axioms Compiler.so_tel_gate
 #print axioms Compiler.so_jibe_gate
+#print axioms Compiler.so_knit_gate
+#print axioms Compiler.so_purr_gate
+#print axioms Compiler.ca_app_gate
