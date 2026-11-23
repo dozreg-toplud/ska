@@ -258,7 +258,7 @@ python3 tools/pill2cue.py pill/steel.pill lemmas/Pill/Cue   # after pill2lean
 terms: the windows and the nouns are defined by the commands of
 `CueTac.lean` from the bits of `pill`, and the theorems are one line each.
 
-`pill/steel.pill` is the steel pill of this branch (sha256 `b14da7b3...`): its
+`pill/steel.pill` is the steel pill of this branch (sha256 `31eb804e...`): its
 `desk/sys/hoon.hoon` built from nothing and `desk/lib/nock-compilation.hoon`
 on it, by the vere test harness without a ship (`U3NC_STEEL_GEN=out.pill`,
 `U3NC_STEEL_SYS`, `U3NC_STEEL_LIB`).  `pill2lean.py` finds the arms by their

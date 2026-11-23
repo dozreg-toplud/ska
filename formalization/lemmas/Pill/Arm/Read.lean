@@ -20,7 +20,7 @@ open Nock
 public abbrev read.axis : Nat := 186
 public abbrev read.layer2.axis : Nat := 4194303
 
-public def read.battery : Noun := C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0xffffff)))) (C (A 9) (C (A 701) (C (A 10) (C (C (A 6) (C (A 0) (A 29))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 28))) (C (A 0) (A 2)))))))
+public def read.battery : Noun := C (A 8) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0xffffff)))) (C (A 9) (C (A 701) (C (A 10) (C (C (A 6) (C (A 0) (A 29))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 28))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 3) (C (A 0) (A 2))) (C (C (A 0) (A 5)) (C (A 0) (A 0))))))
 public def read.arm : Noun := C (A 8) (C (C (A 1) (C (A 0) (A 0))) (C (C (A 1) read.battery) (C (A 0) (A 1))))
 
 end Pill
