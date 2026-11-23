@@ -364,6 +364,214 @@ theorem resOKD_of_resP2 {memoF : Memo M} {res : ResGo M R} (h : ResP2 memoF res)
     · exact Or.inl (by rw [e5]; exact ho)
     · exact Or.inr ⟨seat, by rw [hcs, ho]; exact (Treap.has_ins _ _ _).mpr (Or.inl rfl)⟩
 
+/-- **The other members keep their answers across the write of `+run`**:
+the entry of `id` changes only with its change tick moving to the new clock,
+or keeps its `TabEntry`. -/
+theorem memOK_runEnd {st st' : SkaState M R} {F : Entry → Prop} {m id : Ident} {L : Nat} {dn : FDatum M}
+    {chg : Bool} (hmi : m ≠ id) (htk : TickInv st)
+    (hg : ∀ j, Treap.get st'.g j = if j = id then some dn else Treap.get st.g j)
+    (ho : st'.order = st.order) (hts : ∀ j, j ≠ id → Treap.get st'.ticks j = Treap.get st.ticks j)
+    (hch : chg = true → st.tick < chgOf st' id)
+    (hun : chg = false → chgOf st' id = chgOf st id ∧ dn.core.tab = (gitG st.g id).core.tab)
+    (h : MemOK st F m L) : MemOK st' F m L := by
+  intro d hd hr
+  have hgm : Treap.get st'.g m = Treap.get st.g m := by rw [hg, if_neg hmi]
+  have hran : ranOf st' m = ranOf st m := by simp only [ranOf, Treap.gut, hts m hmi]
+  rw [hgm] at hd; rw [hran] at hr
+  obtain ⟨P, L', hL, hrun, hP⟩ := h d hd hr
+  refine ⟨P, L', hL, hrun, fun s f a hp => (hP s f a hp).mono (fun e he => ?_)⟩
+  rcases he with he | ⟨hce, ⟨o, hco, hlt⟩, htab⟩
+  · exact Or.inl he
+  · have hcal : calleesOf st' m = calleesOf st m := by simp only [calleesOf, gitG, Treap.gut, hgm]
+    refine Or.inr ⟨by rw [hcal]; exact hce, ⟨o, by rw [ho]; exact hco, hlt⟩, fun hlt' => ?_⟩
+    rw [hran] at hlt'
+    by_cases hci : (e.more, e.fol) = id
+    · rw [hci] at hlt' ⊢
+      cases chg with
+      | true =>
+        have := hch rfl
+        have := (htk m).1
+        omega
+      | false =>
+        obtain ⟨hc1, hc2⟩ := hun rfl
+        rw [hc1] at hlt'
+        obtain ⟨dc, hdc, htc⟩ := htab (by rw [hci]; exact hlt')
+        rw [hci] at hdc
+        refine ⟨dn, by rw [hg, if_pos rfl], ?_⟩
+        rw [hc2, ← htc]
+        simp [gitG, Treap.gut, hdc]
+    · have hc1 : chgOf st' (e.more, e.fol) = chgOf st (e.more, e.fol) := by
+        simp only [chgOf, Treap.gut, hts _ hci]
+      rw [hc1] at hlt'
+      obtain ⟨dc, hdc, htc⟩ := htab hlt'
+      exact ⟨dc, by rw [hg, if_neg hci]; exact hdc, htc⟩
+
+/-- **`+run` keeps the convergence invariant**, given that `resolve` does at
+every lower fuel. -/
+theorem runStep_ok2 (env : Env R) (memoF : Memo M) {n : Nat}
+    (hres : ∀ k, k < n → ResP2 memoF (resolve env memoF k)) : RunP2 memoF (runStep (folLoop env memoF n)) := by
+  intro id index st r st' F hc hid hidx e
+  unfold runStep at e
+  simp only [Option.map_eq_some_iff] at e
+  obtain ⟨⟨out, gs⟩, hf, e⟩ := e
+  have e' : runEnd id (gitG st.g id) out gs = (r, st') := e
+  have est : st' = (runEnd id (gitG st.g id) out gs).2 := (congrArg Prod.snd e').symm
+  have er0 : r = (runEnd id (gitG st.g id) out gs).1 := (congrArg Prod.fst e').symm
+  subst est er0
+  generalize hdat : gitG st.g id = data
+  let st0 : SkaState M R := { st with stats := { st.stats with runs := st.stats.runs + 1 } }
+  have c0 : CInv memoF st0 F := hc.congr rfl rfl rfl rfl rfl rfl rfl
+  have hidx0 : index < st0.next := hc.ord.1 id index hidx
+  have r0 : RunInv memoF st0 F index (genInit index st0) := by
+    refine ⟨F, fun _ h => h, c0, GStepsR.refl _, Keep.refl' _ rfl rfl rfl,
+      Frame.refl' rfl rfl rfl rfl rfl rfl c0.s, Nat.le_refl _, ?_, ?_, ?_⟩
+    · intro x o hxo hx; exact absurd ((c0.s.ord_stk x).mp ⟨o, hxo⟩) hx
+    · intro c hc'; exact absurd hc' (not_inCallees_empty c)
+    · intro _ c hc'; exact absurd hc' (not_inCallees_empty c)
+  obtain ⟨i1, _, hF⟩ := run_folTopRD env memoF pfR_wf (runInv_stable memoF st0 F index) pfR_stable
+    (fun k hk => resOKD_of_resP2 (hres k hk) st0 F index hidx0) r0 (hc.s.wf_stk hid) hf
+  obtain ⟨F1, hF01, c1, s1, k1, fr1, hlow1, hpush1, hcl1, hbk1⟩ := i1
+  obtain ⟨er, eg, eo, es, ed, en, etk, ets⟩ := runEnd_eff id data out gs
+  generalize hrd : runDatum (Treap.has gs.st.moved id) id.1 out gs.gen data.core = rd at er eg ets
+  generalize hdn : (⟨gs.callees, rd.1.nomm, rd.1.less, rd.1.indi, rd.1.seek, rd.1.prod, rd.1.map, gs.area⟩ :
+    FDatum M) = dn at eg
+  have hdc : dn.core = rd.1 := by rw [← hdn]; rfl
+  obtain ⟨d0, hd0⟩ := hc.s.mem_g hid
+  have hg0 : Treap.get gs.st.g id = Treap.get st.g id := k1.2.2 id hid
+  have hgit : gitG gs.st.g id = data := by rw [← hdat]; unfold gitG Treap.gut; rw [hg0]
+  have hold : gCore gs.st.g id = some data.core := by
+    rw [← hdat]
+    simp only [gCore, hg0]
+    simp [hd0, gitG, Treap.gut]
+  have hgid : gitG (runEnd id data out gs).2.g id = dn := by
+    unfold gitG Treap.gut; rw [eg, Treap.get_put, if_pos rfl]; rfl
+  have hgx : ∀ x, x ≠ id → gitG (runEnd id data out gs).2.g x = gitG gs.st.g x := fun x hx => by
+    unfold gitG Treap.gut; rw [eg, Treap.get_put, if_neg hx]
+  have hcalid : calleesOf (runEnd id data out gs).2 id = gs.callees := by
+    unfold calleesOf; rw [hgid, ← hdn]
+  have hstep := runEnd_gStepR (pfR_wf gs) hF hold
+  obtain ⟨iS, kS⟩ := runEnd_ok c1.s hstep
+  have hidS : id ∈ gs.st.stk := by obtain ⟨l, el⟩ := k1.1; rw [el]; exact List.mem_append_right _ hid
+  have hidO : ∃ o, Treap.get gs.st.order id = some o := (c1.s.ord_stk id).mpr hidS
+  have hgj : ∀ j, Treap.get (runEnd id data out gs).2.g j =
+      if j = id then some dn else Treap.get gs.st.g j := fun j => by rw [eg, Treap.get_put]
+  have htsj : ∀ j, j ≠ id → Treap.get (runEnd id data out gs).2.ticks j = Treap.get gs.st.ticks j :=
+    fun j hj => by rw [ets, Treap.get_put, if_neg hj]
+  have hchgid : chgOf (runEnd id data out gs).2 id =
+      if rd.2.2 then gs.st.tick + 1 else chgOf gs.st id := by
+    simp [chgOf, Treap.gut, ets, Treap.get_put]
+  have hranid : ranOf (runEnd id data out gs).2 id = gs.st.tick + 1 := by
+    simp [ranOf, Treap.gut, ets, Treap.get_put]
+  have hunch : rd.2.2 = false → dn.core.tab = (gitG gs.st.g id).core.tab := fun h => by
+    rw [hdc, hgit, ← hrd]; exact runDatum_unchanged (by rw [hrd]; exact h)
+  have hmem : ∀ m L, m ≠ id → MemOK gs.st F1 m L → MemOK (runEnd id data out gs).2 F1 m L :=
+    fun m L hmi h => memOK_runEnd (chg := rd.2.2) hmi c1.tick hgj eo htsj
+      (fun h' => by rw [hchgid, if_pos h']; omega)
+      (fun h' => ⟨by rw [hchgid, if_neg (by simp [h'])], hunch h'⟩) h
+  -- the invariant after the write
+  have cS : CInv memoF (runEnd id data out gs).2 F1 := by
+    refine ⟨iS, fun m => ?_, ?_, ⟨c1.frz.ok, fun i d h1 h2 => ?_, fun e he => ?_, c1.frz.wf, ?_⟩, ?_⟩
+    · by_cases hm : m = id
+      · subst hm
+        rw [hranid, hchgid, etk]
+        obtain ⟨_, h2⟩ := c1.tick m
+        refine ⟨Nat.le_refl _, ?_⟩
+        split <;> omega
+      · have e1 : ranOf (runEnd id data out gs).2 m = ranOf gs.st m := by
+          simp only [ranOf, Treap.gut, htsj m hm]
+        have e2 : chgOf (runEnd id data out gs).2 m = chgOf gs.st m := by
+          simp only [chgOf, Treap.gut, htsj m hm]
+        rw [e1, e2, etk]
+        obtain ⟨h1, h2⟩ := c1.tick m
+        omega
+    · simp only [OrdInv, eo, es, en]; exact c1.ord
+    · rw [eo] at h2
+      have hi : i ≠ id := by rintro rfl; obtain ⟨o, ho⟩ := hidO; rw [h2] at ho; cases ho
+      rw [hgj, if_neg hi] at h1
+      exact c1.frz.cover i d h1 h2
+    · obtain ⟨⟨d, hd⟩, ho⟩ := c1.frz.sub e he
+      have hi : (e.more, e.fol) ≠ id := by intro h; obtain ⟨o, ho'⟩ := hidO; rw [← h, ho] at ho'; cases ho'
+      exact ⟨⟨d, by rw [hgj, if_neg hi]; exact hd⟩, by rw [eo]; exact ho⟩
+    · rw [ed]; exact c1.frz.done
+    · intro m o hmo
+      rw [eo] at hmo; rw [en]
+      by_cases hm : m = id
+      · subst hm
+        intro d hd _
+        rw [hgj, if_pos rfl] at hd
+        cases hd
+        refine ⟨PfR gs, gs.st.next, Nat.le_refl _, ?_, fun s f a hp => hp.transfer (fun e he => ?_)⟩
+        · show RunEntryR (PfR gs) ⟨m.1, m.2, dn.core⟩
+          rw [hdc, ← hrd]; exact runDatum_runEntryR hF _ _
+        · obtain ⟨⟨d, hd, ht⟩, _, _, ho⟩ := he
+          by_cases hn : Treap.get gs.st.order (e.more, e.fol) = none
+          · exact ⟨entOf (e.more, e.fol) d, Or.inl (c1.frz.cover _ d hd hn), rfl, rfl, ht⟩
+          · rcases ho with ho | ho
+            · exact absurd ho hn
+            obtain ⟨oc, hoc⟩ := Option.ne_none_iff_exists'.mp hn
+            refine ⟨e, Or.inr ⟨?_, ⟨oc, by rw [eo]; exact hoc, c1.ord.1 _ oc hoc⟩, fun hlt => ?_⟩,
+              rfl, rfl, rfl⟩
+            · rw [hcalid]; exact ho
+            · by_cases hci : (e.more, e.fol) = m
+              · rw [hci] at hlt ⊢
+                rw [hranid, hchgid] at hlt
+                cases hch : rd.2.2 with
+                | true => rw [hch] at hlt; simp at hlt
+                | false =>
+                  refine ⟨dn, by rw [hgj, if_pos rfl], ?_⟩
+                  rw [hunch hch, ← ht]
+                  rw [hci] at hd
+                  simp [gitG, Treap.gut, hd]
+              · exact ⟨d, by rw [hgj, if_neg hci]; exact hd, ht⟩
+      · exact hmem m _ hm (c1.mem m o hmo)
+  refine ⟨⟨F1, hF01, cS, fun m Lmax hm hmi h => hmem m Lmax hmi
+    (memOK_frame c0.s hm k1 (fun j hj => fr1.ticks j hj) hF01 (memOK_congr rfl rfl rfl h))⟩,
+    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · exact gStepsR_trans s1 (gStepsR_one hstep)
+  · exact (k1.mono (fun j hj => hj.1)).trans (kS.weaken k1.1 (fun j hj => hj.2))
+  · refine ⟨fun i d h1 h2 => ?_, fun j hj => ?_, ?_, ?_, fun x o hxo hx => ?_⟩
+    · obtain ⟨a1, a2⟩ := fr1.fin i d h1 h2
+      have hi : i ≠ id := by rintro rfl; obtain ⟨o, ho⟩ := hidO; rw [a2] at ho; cases ho
+      exact ⟨by rw [hgj, if_neg hi]; exact a1, by rw [eo]; exact a2⟩
+    · obtain ⟨hj1, hj2⟩ := hj
+      rw [htsj j hj2]; exact fr1.ticks j hj1
+    · rw [en]; exact fr1.next
+    · rw [etk]; have h1 : st.tick ≤ gs.st.tick := fr1.tick; omega
+    · rw [eo] at hxo; exact fr1.newOrd x o hxo hx
+  · rw [hranid, etk]
+  · rw [etk]; have h1 : st.tick ≤ gs.st.tick := fr1.tick; omega
+  · intro hch
+    rw [er] at hch
+    simp only at hch
+    refine ⟨?_, ?_⟩
+    · rw [hchgid, if_neg (by simp [hch])]
+      simp only [chgOf, Treap.gut, fr1.ticks id hid]; rfl
+    · rw [hgid, hunch hch, hgit]
+  · intro hch
+    rw [er] at hch
+    simp only at hch
+    rw [hchgid, if_pos hch, etk]
+  · rw [er]; exact hlow1
+  · intro c hce o hco
+    rw [er]
+    rw [hcalid] at hce; rw [eo] at hco
+    exact hcl1 c hce o hco
+  · intro x o hxo hx
+    rw [er]
+    rw [eo] at hxo
+    have hxi : x ≠ id := by rintro rfl; exact hx hid
+    obtain ⟨hr, hlb⟩ := hpush1 x o hxo hx
+    refine ⟨by simp only [ranOf, Treap.gut, htsj x hxi] at hr ⊢; exact hr, fun c hce oc hco => ?_⟩
+    have : calleesOf (runEnd id data out gs).2 x = calleesOf gs.st x := by
+      unfold calleesOf; rw [hgx x hxi]
+    rw [this] at hce; rw [eo] at hco
+    exact hlb c hce oc hco
+  · intro hb c hce o hco
+    rw [er] at hb
+    simp only at hb
+    rw [hcalid] at hce; rw [eo] at hco
+    exact hbk1 hb c hce o hco
+
 end Ana
 end SkaModel
 end Formalization
