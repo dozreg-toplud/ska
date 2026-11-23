@@ -519,6 +519,95 @@ theorem copyNeed_spec : ∀ (l r : Need) (ops : List Pole) (g g' : Gen Map) (x :
         · exact fun hm => hy (hm.elim (fun h => Or.inl (Or.inr (Or.inl h))) (fun h => Or.inr (Or.inr (Or.inl h))))
         · exact fun hm => hy (hm.elim (fun h => Or.inl (Or.inr (Or.inr h))) (fun h => Or.inr (Or.inr (Or.inr h))))
 
+/-- Ops put in front of a block allocated after `g`. -/
+theorem ext_addOps_after {o : Nat} {ops : List Pole} {g g1 g2 : Gen Map} {u : Unit}
+    (h : addOps o ops g1 = some (u, g2)) (e : Ext g g1) (ho : g.bo ≤ o) : Ext g g2 := by
+  by_cases hd : g1.drop = false
+  · have F := front_addOps h hd
+    exact ⟨Nat.le_trans e.1 F.le, by rw [F.bo]; exact e.2.1, F.drop.trans e.2.2.1,
+      fun o' ho' => (F.other o' (by omega)).trans (e.2.2.2 o' ho')⟩
+  · simp only [Bool.not_eq_false] at hd
+    unfold addOps at h
+    simp only [hd, if_true, Option.some.injEq, Prod.mk.injEq] at h
+    rw [← h.2]; exact e
+
+theorem looks_uni (a b : S) (s : Noun) : Looks (HoonSet.uni a b) s ↔ Looks a s ∧ Looks b s := by
+  constructor
+  · intro h
+    exact ⟨fun x hx => h x ((HoonSet.mem_uni a b x).mpr (Or.inl hx)),
+      fun x hx => h x ((HoonSet.mem_uni a b x).mpr (Or.inr hx))⟩
+  · intro ⟨h1, h2⟩ x hx
+    rcases (HoonSet.mem_uni a b x).mp hx with hx | hx
+    · exact h1 x hx
+    · exact h2 x hx
+
+/-- **`+copy`**: the block it emits fills the needs of both halves from the
+need it returns, and goes on to the code of the first. -/
+theorem copy_ok {first : Next S} {second : Sure S} {g g' : Gen Map} {nex : Next S}
+    (h : copy first second g = some (nex, g')) :
+    Ext g g' ∧ nex.th = jmp0 g.bo ∧ g'.bo = g.bo + 1 ∧
+    (∀ y, NMem nex.laz.ned y → NMem first.laz.ned y ∨ NMem second.ned y ∨ (g.re ≤ y ∧ y < g'.re)) ∧
+    (CopyPre first.laz.ned second.ned g.re →
+      Distinct nex.laz.ned ∧ (∀ s, FitsS nex.laz s ↔ FitsS first.laz s ∧ FitsS second s) ∧
+      (g.drop = false → ∀ (c : Straight Map), Agree c g g' → ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (st : σ)
+        (R : Map Noun) t gul s, HoldsS nex.laz R s → ∃ R', HoldsS first.laz R' s ∧ HoldsS second R' s ∧
+          (∀ y, ¬ NMem first.laz.ned y → ¬ NMem second.ned y → SkaModel.read y R' = SkaModel.read y R) ∧
+          goJ lib O c gul st R t nex.th = goJ lib O c gul st R' t first.th)) := by
+  simp only [copy] at h
+  obtain ⟨o, g0, h0, h⟩ := bind_some h
+  rw [emit_apply] at h0
+  simp only [Option.some.injEq, Prod.mk.injEq] at h0
+  obtain ⟨rfl, rfl⟩ := h0
+  obtain ⟨laz, g1, h1', h⟩ := bind_some h
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨rfl, rfl⟩ := h
+  simp only [copyLazy] at h1'
+  obtain ⟨⟨n1, o1⟩, g2, h2, h1'⟩ := bind_some h1'
+  obtain ⟨_, g3, h3, h1'⟩ := bind_some h1'
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h1'
+  obtain ⟨rfl, rfl⟩ := h1'
+  obtain ⟨Aops, eA, O⟩ := copyNeed_spec _ _ _ _ _ _ h2
+  simp only [List.append_nil] at eA
+  subst eA
+  simp only at O
+  have E0 := ext_emit g ⟨[], [], Termin.hop first.th⟩
+  have e02 : Ext (g.emitted ⟨[], [], Termin.hop first.th⟩) g2 := by
+    rw [O.gen]; exact ext_reg_le O.le
+  have E := ext_addOps_after h3 (E0.trans e02) (Nat.le_refl _)
+  have bo3 : g3.bo = g.bo + 1 := by
+    by_cases hd : g2.drop = false
+    · rw [(front_addOps h3 hd).bo, O.gen]; rfl
+    · simp only [Bool.not_eq_false] at hd
+      unfold addOps at h3
+      simp only [hd, if_true, Option.some.injEq, Prod.mk.injEq] at h3
+      rw [← h3.2, O.gen]; rfl
+  have re3 : g2.re ≤ g3.re := by
+    by_cases hd : g2.drop = false
+    · exact (front_addOps h3 hd).le
+    · simp only [Bool.not_eq_false] at hd
+      unfold addOps at h3
+      simp only [hd, if_true, Option.some.injEq, Prod.mk.injEq] at h3
+      rw [← h3.2]; exact Nat.le_refl _
+  refine ⟨E, rfl, bo3, fun y hy => ?_, fun P => ?_⟩
+  · rcases O.mem y hy with (h | h) | ⟨h1, h2⟩
+    · exact Or.inl h
+    · exact Or.inr (Or.inl h)
+    · exact Or.inr (Or.inr ⟨h1, Nat.lt_of_lt_of_le h2 re3⟩)
+  obtain ⟨D, _, F, C⟩ := O.sem P
+  refine ⟨D, fun s => ?_, fun hd c hc lib σ O' st R t gul s hs => ?_⟩
+  · simp only [FitsS, F s, looks_uni]
+    exact ⟨fun ⟨⟨a, b⟩, c, d⟩ => ⟨⟨a, c⟩, b, d⟩, fun ⟨⟨a, c⟩, b, d⟩ => ⟨⟨a, b⟩, c, d⟩⟩
+  have hd2 : g2.drop = false := by rw [O.gen]; exact hd
+  have F3 := front_addOps h3 hd2
+  have hb2 : HoonMap.get g2.blocks g.bo = some ⟨[], [], Termin.hop first.th⟩ := by
+    rw [O.gen]; exact emitted_get g _ hd
+  have hb : HoonMap.get c.blocks g.bo = some ⟨[], o1 ++ [], Termin.hop first.th⟩ := by
+    rw [hc g.bo (Nat.le_refl _) (by rw [bo3]; omega)]; exact F3.blk _ _ hb2
+  obtain ⟨R', r1, hl, hr, u⟩ := C lib σ O' c gul st t R s hs.1
+  have lk := (looks_uni _ _ s).mp hs.2
+  refine ⟨R', ⟨hl, lk.1⟩, ⟨hr, lk.2⟩, fun y n1 n2 => u y (fun hm => hm.elim n1 n2), ?_⟩
+  rw [goJ_jmp0 _ _ _ _ hb, r1, execBlob_hop]
+
 end Comp
 end SkaModel
 end Formalization
