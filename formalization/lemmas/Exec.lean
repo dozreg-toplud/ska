@@ -86,8 +86,7 @@ open Lean Meta
 meta inductive Found where
   /-- `noun` with a proof of `slot? axis subject = some noun` -/
   | noun (noun proof : Expr)
-  /-- the path runs into an atom; a proof of `slot? axis subject = some (A a)` one level up
-  gives the caller `none` -/
+  /-- the path runs into an atom: a proof of `slot? axis subject = none` -/
   | atom (proof : Expr)
   /-- the path runs into a term that is neither a cell nor an atom -/
   | stuck
@@ -99,7 +98,13 @@ meta partial def findSlot (subject : Expr) (axis : Nat) : MetaM Found := do
   let k := axis / 2
   match ← findSlot subject k with
   | .stuck => return .stuck
-  | .atom _ => return .stuck
+  | .atom proof =>
+    -- `proof : slot? k subject = none`, so every axis below `k` is `none` too
+    let hk ← mkDecideProof (← mkLt (mkNatLit 0) (mkNatLit k))
+    if axis % 2 == 0 then
+      return .atom (mkApp4 (mkConst ``slot?_left_none) (mkNatLit k) subject hk proof)
+    else
+      return .atom (mkApp4 (mkConst ``slot?_right_none) (mkNatLit k) subject hk proof)
   | .noun parent proof =>
     let parent ← whnfD parent
     if parent.isAppOfArity ``Noun.cell 2 then
