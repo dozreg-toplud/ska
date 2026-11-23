@@ -343,7 +343,8 @@ def main():
                   'lien']:
         arm(label, layer2, 'layer2', loops=1)
     flop = arm('flop', layer2, 'layer2', loops=1)
-    for label in ['skip', 'murn', 'zing', 'spin', 'skim', 'rear', 'snip', 'sort']:
+    for label in ['skip', 'murn', 'zing', 'spin', 'skim', 'rear', 'snip', 'sort', 'welp',
+                  'skid']:
         arm(label, layer2, 'layer2', loops='any')
     # +homo has no %fast label: it is the arm that +flop pulls from its context
     homo_ax = callee(gate_battery(flop), 7)
@@ -411,15 +412,15 @@ def main():
     axes.append(('fe', fe_ax, 'slot? fe.axis layer2 = some fe.arm'))
     ax_of = dict((nm, ax) for nm, ax, _ in axes)
 
-    def fe_arms(i, ax, depth=0):
+    def fe_arms(i, ax, depth=0, limit=12):
         """the arms of a battery: the leaves of its tree of cells whose heads
-        are cells, down to a depth that no battery here exceeds"""
+        are cells, down to a depth `limit` (the battery of layer 2 needs 40)"""
         n = NODES[i]
-        if type(NODES[n[0]]) is int or depth >= 12:
+        if type(NODES[n[0]]) is int or depth >= limit:
             yield ax, i
             return
-        yield from fe_arms(n[0], 2 * ax, depth + 1)
-        yield from fe_arms(n[1], 2 * ax + 1, depth + 1)
+        yield from fe_arms(n[0], 2 * ax, depth + 1, limit)
+        yield from fe_arms(n[1], 2 * ax + 1, depth + 1, limit)
 
     def pulls(formula):
         """the [axis ctx] of every [9 axis 0 ctx] in formula, in pre-order,
@@ -650,6 +651,60 @@ def main():
     door_arm_pulling('ju', 'gas', lambda ps: (ju_put, 15) in ps, 1)
     ja_get = door_arm_pulling('ja', 'get', lambda ps: ps == {(by_ax, 31)}, 0)
     door_arm_pulling('ja', 'add', lambda ps: ps == {(ja_get, 7), (by_ax, 63)}, 0)
+
+    # +wyt of +by and +in (one noun): the trap [7 [8 [1 battery] hint] 9 2 0 1]
+    # whose hint has the %fast label wyt
+    wyt_hint = hint_of('wyt')
+    (wyt_core,) = [i for i in live if type(NODES[i]) is tuple and tail(i) == wyt_hint
+                   and type(NODES[head(i)]) is tuple and NODES[head(head(i))] == 1]
+    wyt_arm = cell(atom(7), cell(cell(atom(8), wyt_core),
+                                 cell(atom(9), cell(atom(2), cell(atom(0), atom(1))))))
+    for dlabel, battery in [('by', by_battery), ('in', in_battery)]:
+        ax = find_axis(cell(battery, atom(0)), wyt_arm)
+        full = dlabel + '.wyt'
+        if wyt_arm in names:
+            axes.append((full, ax, '∀ x, slot? %s.axis (C %s.battery x) = some %s'
+                         % (full, dlabel, names[wyt_arm])))
+            continue
+        name(wyt_arm, full + '.arm')
+        formulas.add(wyt_arm)
+        name(tail(head(wyt_core)), full + '.battery')
+        formulas.add(tail(head(wyt_core)))
+        axes.append((full, ax, '∀ x, slot? %s.axis (C %s.battery x) = some %s.arm'
+                     % (full, dlabel, full)))
+
+    # +snoc and +biff have no %fast labels: +snoc is the gate arm of layer 2
+    # whose battery pulls +weld and nothing else, +biff the gate arm whose
+    # battery is ?~(a ~ (b u.a))
+    def layer2_gate(label, pred):
+        res = [(ax, a) for ax, a in fe_arms(head(layer2), 2, limit=40)
+               if is_gate_builder(a) and pred(door_gate_battery(a))]
+        assert len(res) == 1, (label, res)
+        ax, a = res[0]
+        name(a, label + '.arm')
+        formulas.add(a)
+        name(door_gate_battery(a), label + '.battery')
+        formulas.add(door_gate_battery(a))
+        axes.append((label, find_axis(layer2, a), 'slot? %s.axis layer2 = some %s.arm'
+                     % (label, label)))
+    ax_of = dict((nm, ax) for nm, ax, _ in axes)
+    layer2_gate('snoc', lambda g: pulls(g) == [(ax_of['weld'], 7)])
+    def f0(ax): return cell(atom(0), atom(ax))
+    def f1(x): return cell(atom(1), x)
+    slam = cell(atom(9), cell(atom(2), cell(atom(10), cell(cell(atom(6), f0(57)), f0(2)))))
+    biff_battery = cell(atom(6), cell(cell(atom(5), cell(f1(atom(0)), f0(12))),
+                                      cell(f1(atom(0)), cell(atom(8), cell(f0(13), slam)))))
+    layer2_gate('biff', lambda g: g == biff_battery)
+
+    # the gate that +sort hands to +skid: the one core [[1 battery] 0 1] that
+    # its loop builds
+    sort_loop = [i for i, nm in names.items() if nm == 'sort.loop'][0]
+    cmp = set(tail(head(i)) for i in reach([sort_loop])
+              if type(NODES[i]) is tuple and tail(i) == f0(1)
+              and type(NODES[head(i)]) is tuple and NODES[head(head(i))] == 1)
+    (cmp,) = cmp
+    name(cmp, 'sort.cmp')
+    formulas.add(cmp)
 
     # ---- the compiler's leaf cores +ca and +so: arms of the library core,
     # [[1 battery] [11 [%fast [1 [label [0 511] 0]]] [0 1]]], whose own arms

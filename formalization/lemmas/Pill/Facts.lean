@@ -5,6 +5,7 @@ public import lemmas.KernelRfl
 public import lemmas.Pill.Nouns.P014
 public import lemmas.Pill.Arm.Add
 public import lemmas.Pill.Arm.Bex
+public import lemmas.Pill.Arm.Biff
 public import lemmas.Pill.Arm.By
 public import lemmas.Pill.Arm.Ca
 public import lemmas.Pill.Arm.Can
@@ -51,11 +52,13 @@ public import lemmas.Pill.Arm.Rear
 public import lemmas.Pill.Arm.Roll
 public import lemmas.Pill.Arm.Rsh
 public import lemmas.Pill.Arm.Scag
+public import lemmas.Pill.Arm.Skid
 public import lemmas.Pill.Arm.Skim
 public import lemmas.Pill.Arm.Skip
 public import lemmas.Pill.Arm.Slag
 public import lemmas.Pill.Arm.Snag
 public import lemmas.Pill.Arm.Snip
+public import lemmas.Pill.Arm.Snoc
 public import lemmas.Pill.Arm.So
 public import lemmas.Pill.Arm.Some
 public import lemmas.Pill.Arm.Sort
@@ -63,9 +66,11 @@ public import lemmas.Pill.Arm.Spin
 public import lemmas.Pill.Arm.Sub
 public import lemmas.Pill.Arm.Turn
 public import lemmas.Pill.Arm.Weld
+public import lemmas.Pill.Arm.Welp
 public import lemmas.Pill.Arm.Zing
 import all lemmas.Pill.Arm.Add
 import all lemmas.Pill.Arm.Bex
+import all lemmas.Pill.Arm.Biff
 import all lemmas.Pill.Arm.By
 import all lemmas.Pill.Arm.Ca
 import all lemmas.Pill.Arm.Can
@@ -112,11 +117,13 @@ import all lemmas.Pill.Arm.Rear
 import all lemmas.Pill.Arm.Roll
 import all lemmas.Pill.Arm.Rsh
 import all lemmas.Pill.Arm.Scag
+import all lemmas.Pill.Arm.Skid
 import all lemmas.Pill.Arm.Skim
 import all lemmas.Pill.Arm.Skip
 import all lemmas.Pill.Arm.Slag
 import all lemmas.Pill.Arm.Snag
 import all lemmas.Pill.Arm.Snip
+import all lemmas.Pill.Arm.Snoc
 import all lemmas.Pill.Arm.So
 import all lemmas.Pill.Arm.Some
 import all lemmas.Pill.Arm.Sort
@@ -124,6 +131,7 @@ import all lemmas.Pill.Arm.Spin
 import all lemmas.Pill.Arm.Sub
 import all lemmas.Pill.Arm.Turn
 import all lemmas.Pill.Arm.Weld
+import all lemmas.Pill.Arm.Welp
 import all lemmas.Pill.Arm.Zing
 
 /-
@@ -229,6 +237,10 @@ theorem rear.arm_at : slot? rear.axis layer2 = some rear.arm := by kernel_rfl
 theorem snip.arm_at : slot? snip.axis layer2 = some snip.arm := by kernel_rfl
 
 theorem sort.arm_at : slot? sort.axis layer2 = some sort.arm := by kernel_rfl
+
+theorem welp.arm_at : slot? welp.axis layer2 = some welp.arm := by kernel_rfl
+
+theorem skid.arm_at : slot? skid.axis layer2 = some skid.arm := by kernel_rfl
 
 theorem homo.arm_at : slot? homo.axis layer2 = some homo.arm := by kernel_rfl
 
@@ -382,6 +394,16 @@ theorem ja.get.arm_at : ∀ x, slot? ja.get.axis (C ja.battery x) = some ju.get.
 
 theorem ja.add.arm_at : ∀ x, slot? ja.add.axis (C ja.battery x) = some ja.add.arm := by
   intro x; kernel_rfl
+
+theorem by.wyt.arm_at : ∀ x, slot? by.wyt.axis (C by.battery x) = some by.wyt.arm := by
+  intro x; kernel_rfl
+
+theorem in.wyt.arm_at : ∀ x, slot? in.wyt.axis (C in.battery x) = some by.wyt.arm := by
+  intro x; kernel_rfl
+
+theorem snoc.arm_at : slot? snoc.axis layer2 = some snoc.arm := by kernel_rfl
+
+theorem biff.arm_at : slot? biff.axis layer2 = some biff.arm := by kernel_rfl
 
 end Pill
 end Formalization
