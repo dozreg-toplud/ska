@@ -6,6 +6,7 @@ package formalization where
 
 /-- The trusted part: the Nock specification, `cue`, the pill and the
 statements.  It has no proofs and imports nothing from `lemmas`. -/
+@[default_target]
 lean_lib core where
   globs := #[.submodules `core]
 
