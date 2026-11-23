@@ -2,6 +2,7 @@ import lemmas.Compiler.EvalPole
 import lemmas.Pill.Arm.Eval_blob
 import lemmas.Pill.Arm.Eval_top
 import lemmas.Compiler.TreapList
+import lemmas.Compiler.MinkPill
 import lemmas.Ska.Interp
 
 /-!
@@ -958,6 +959,99 @@ theorem eval_blob_le (lib : Lib) (hslam : SlamIsNock lib)
     · simp at h; subst h
       refine ⟨?_, hc⟩
       blob_simp [hrd, read_arm, hrm, e1, resN, Tone.toNoun]
+
+/-! ## `+eval-top` and the induction over the depth of calls -/
+
+theorem isBare_cases (f : Noun) :
+    (∃ rest, f = C (A 11) (C (A Tag.bare) rest)) ∨ isBare f = false := by
+  unfold isBare
+  split
+  · rename_i t rest
+    by_cases ht : t = Tag.bare
+    · subst ht; left; exact ⟨rest, rfl⟩
+    · right; simpa using ht
+  · right; rfl
+
+set_option maxHeartbeats 16000000 in
+/-- What `topBody` returns, the pill's `+eval-top` returns: an atom formula
+crashes, a `%bare` one is run by `+mink`, any other is compiled by a `%full`
+poke and its block `0` run by `+eval-blob`. -/
+theorem eval_top_le (lib : Lib) (hslam : SlamIsNock lib)
+    (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun))
+    (hpk : ∀ cr, CorIn cr → PokeIs pk cr) (O : Oracle Noun) (hO : BlobLe lib O) (k : Nat)
+    (cr : Noun) (hc : CorIn cr) (s f scry : Noun) (r : Tone × Noun)
+    (h : topBody lib pk O k cr s f scry = some r) :
+    nock (topS cr s f scry) eval_top.battery = some (resN r) ∧ CorIn r.2 := by
+  have hl4 : slot? (read.layer2.axis / 4) (icore cr) = some layer4 := hc.2
+  simp only [read.layer2.axis, icore, Nat.reduceDiv, nock_exec] at hl4
+  rcases f with fa | ⟨fh, ft⟩
+  · simp only [topBody, Option.some.injEq] at h; subst h
+    refine ⟨?_, hc⟩
+    nock_open eval_top.battery
+    simp [nock_exec, resN, Tone.toNoun, listNoun]
+  rcases isBare_cases (C fh ft) with ⟨rest, e⟩ | hb
+  · simp only [Noun.cell.injEq] at e
+    obtain ⟨rfl, rfl⟩ := e
+    simp only [topBody, isBare, Tag.bare, beq_self_eq_true, if_true, Option.map_eq_some_iff] at h
+    obtain ⟨t, ht, rfl⟩ := h
+    refine ⟨?_, hc⟩
+    have hm := mink_gate_of_model lib layer4 minkIn_layer4 hslam s _ scry t ⟨k, ht⟩
+    nock_open eval_top.battery
+    simp [nock_exec, resN, hl4, mink.arm_at, mink_arm, hm, Tag.bare]
+  · simp only [topBody, hb, Bool.false_eq_true, if_false, Option.bind_eq_some_iff] at h
+    obtain ⟨⟨p, cr'⟩, e1, h⟩ := h
+    rcases p with _ | ⟨b, c, new⟩ | _
+    · simp at h
+    rotate_left
+    · simp at h
+    obtain ⟨hn, h⟩ : (c.nargs = 1 ∧ c.need = NeedOrd.this) ∧
+        ((HoonMap.get c.blocks 0).bind fun b => if b.par = [] then
+          execBlob lib O c scry cr' (regsOf [s]) [] b [] else none) = some r := by
+      by_cases hn : c.nargs = 1 ∧ c.need = NeedOrd.this
+      · simp only [hn, and_self, if_true] at h; exact ⟨hn, h⟩
+      · simp only [hn, if_false] at h; simp at h
+    obtain ⟨b0, e2, h⟩ := Option.bind_eq_some_iff.1 h
+    obtain ⟨par0, body0, fin0⟩ := b0
+    by_cases hp0 : par0 = []
+    rotate_left
+    · simp [hp0] at h
+    subst hp0
+    simp only [if_true] at h
+    have hc' := (hpk cr hc).2 _ _ e1
+    obtain ⟨hB, hC⟩ := hO cr' hc' _ _ _ _ _ _ _ h
+    refine ⟨?_, hC⟩
+    have hreg : HoonMap.toNoun id (regsOf [s] : TreapMap mugF Noun)
+        = C (C (A 0) s) (C (A 0) (A 0)) := rfl
+    simp only [blobS, icore, Straight.toNoun, argsN, listNoun, hreg, Blob.toNoun, hn.1, hn.2,
+      NeedOrd.toNoun, Tag.this] at hB
+    have hp := (hpk cr hc).1 (Ovum.full s (C fh ft))
+    simp only [pokeN, poke.axis, Ovum.toNoun, Tag.full, e1, Option.map_some] at hp
+    have hl2 : slot? read.layer2.axis (icore cr') = some layer2 := hc'.1
+    simp only [read.layer2.axis, icore, nock_exec] at hl2
+    have hg := getF_hoonMap Blob.toNoun c.blocks 0
+    rw [e2] at hg
+    simp only [unitNoun, Blob.toNoun, listNoun] at hg
+    have hnd : NeedIn layer2 ∧ SomeIn layer2 ∧ GorIn mugF layer2 :=
+      ⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩
+    by_cases h11 : fh = A 11
+    · subst h11
+      rcases ft with t | ⟨th, tt⟩
+      · nock_open eval_top.battery
+        simp [nock_exec, resN, hp, SkaModel.Prod.toNoun, Straight.toNoun, Tag.ir, hn.1, hn.2,
+          NeedOrd.toNoun, Tag.this, hl2, by.arm_at, by_arm, by.got.arm_at, got_arm,
+          got_gate layer2 hnd _ _ _ hg, eval_blob.arm, hB, Tag.full]
+      · have hth : ¬ A Tag.bare = th := by
+          intro e; subst e; simp [isBare] at hb
+        simp only [Tag.bare] at hth
+        nock_open eval_top.battery
+        simp [nock_exec, resN, hp, SkaModel.Prod.toNoun, Straight.toNoun, Tag.ir, hn.1, hn.2,
+          NeedOrd.toNoun, Tag.this, hl2, by.arm_at, by_arm, by.got.arm_at, got_arm,
+          got_gate layer2 hnd _ _ _ hg, eval_blob.arm, hB, Tag.full, hth]
+    · have h11' : ¬ A 11 = fh := fun e => h11 e.symm
+      nock_open eval_top.battery
+      simp [nock_exec, resN, hp, SkaModel.Prod.toNoun, Straight.toNoun, Tag.ir, hn.1, hn.2,
+        NeedOrd.toNoun, Tag.this, hl2, by.arm_at, by_arm, by.got.arm_at, got_arm,
+        got_gate layer2 hnd _ _ _ hg, eval_blob.arm, hB, Tag.full, h11']
 
 end Compiler
 end Formalization
