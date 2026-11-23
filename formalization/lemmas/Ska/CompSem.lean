@@ -508,7 +508,7 @@ theorem runs_imm (n : Noun) (d : Nat) (regs : Map (Option Noun)) :
 
 theorem runs_mov {s d : Nat} {regs : Map (Option Noun)} {v : Noun} (h : SkaModel.read s regs = some v) :
     Runs lib O c gul st t [Pole.mov s d] regs (store d v regs) :=
-  Runs.one (by simp [localPole, move, h]) (by simp) (by simp)
+  Runs.one (by simp [localPole, move_of_read h]) (by simp) (by simp)
 
 theorem runs_con {h tl d : Nat} {regs : Map (Option Noun)} {a b : Noun} (ha : SkaModel.read h regs = some a)
     (hb : SkaModel.read tl regs = some b) :
@@ -545,12 +545,12 @@ theorem runs_equ {l r : Nat} {regs : Map (Option Noun)} {a b : Noun} (ha : SkaMo
     (hb : SkaModel.read r regs = some b) : Runs lib O c gul st t [Pole.equ l r] regs regs :=
   Runs.one (by simp [localPole, ha, hb]) (by simp) (by simp)
 
-theorem read_store_eq (r : Nat) (v : Noun) (regs : Map (Option Noun)) : SkaModel.read r (store r v regs) = some v := by
-  simp [SkaModel.read, store, HoonMap.get_put]
+theorem read_store_eq (r : Nat) (v : Noun) (regs : Map (Option Noun)) : SkaModel.read r (store r v regs) = some v :=
+  read_store_self r v regs
 
 theorem read_store_ne {r r' : Nat} (h : r' ≠ r) (v : Noun) (regs : Map (Option Noun)) :
-    SkaModel.read r' (store r v regs) = SkaModel.read r' regs := by
-  simp [SkaModel.read, store, HoonMap.get_put, h]
+    SkaModel.read r' (store r v regs) = SkaModel.read r' regs :=
+  read_store_other h v regs
 
 end Ops
 

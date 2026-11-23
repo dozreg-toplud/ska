@@ -89,10 +89,10 @@ theorem compRel_done_of_con {lib : Lib} {c : Straight Map} {nm : Nomm} {b : Blob
     obtain ⟨x, y, rfl⟩ := hcell s _ e
     obtain ⟨regs', bk, hbk, hh, _, he⟩ := H
     rw [hk] at hbk; cases hbk
-    simp only [Holds, SkaModel.read] at hh
+    simp only [Holds] at hh
     simp only [GoalRel, toneOf]
     rw [he, execBlob_body]
-    simp [execPole, localPole, hh.1, hh.2, execBlob_don, store, SkaModel.read, HoonMap.get_put]
+    simp [execPole, localPole, hh.1, hh.2, execBlob_don, read_store_self]
 
 /-- **`[4 p]` for `%done`.** -/
 theorem compRel_n4_done {lib : Lib} {c : Straight Map} {p : Nomm} {bp : Blob} {nd : RNeed}
@@ -109,12 +109,12 @@ theorem compRel_n4_done {lib : Lib} {c : Straight Map} {p : Nomm} {bp : Blob} {n
     rw [e] at Hp
     obtain ⟨regs', bk, hbk, hh, _, he⟩ := Hp
     rw [ho] at hbk; cases hbk
-    simp only [Holds, SkaModel.read] at hh
+    simp only [Holds] at hh
     simp only [GoalRel, Option.bind_some]
     rw [he, execBlob_body]
     cases x with
-    | atom a => simp [execPole, localPole, hh, execBlob_don, store, SkaModel.read, HoonMap.get_put, toneOf]
-    | cell a b => simp [execPole, localPole, SkaModel.read, hh, toneOf]
+    | atom a => simp [execPole, localPole, hh, execBlob_don, read_store_self, toneOf]
+    | cell a b => simp [execPole, localPole, hh, toneOf]
 
 /-- **`[3 p]` for `%pick`**: `p` into a register that `[%clq r z o]` tests;
 `[3 p]` is `0` on a cell. -/
@@ -133,15 +133,15 @@ theorem compRel_n3_pick {lib : Lib} {c : Straight Map} {p : Nomm} {bp bz bo : Bl
     rw [e] at Hp
     obtain ⟨regs', bk, hbk, hh, hk, he⟩ := Hp
     rw [ho] at hbk; cases hbk
-    simp only [Holds, SkaModel.read] at hh
+    simp only [Holds] at hh
     simp only [Option.bind_some]
     cases x with
     | atom a =>
       refine ⟨regs', bo, ho', fun x hx => hk x (hK x hx), ?_⟩
-      rw [he, execBlob]; simp [SkaModel.read, hh, ho']
+      rw [he, execBlob]; simp [hh, ho']
     | cell a b =>
       refine ⟨regs', bz, hz, fun x hx => hk x (hK x hx), ?_⟩
-      rw [he, execBlob]; simp [SkaModel.read, hh, hz]
+      rw [he, execBlob]; simp [hh, hz]
 
 /-- **`[5 p q]` for `%pick`**: `p` into `r-p` and on to `q`'s block, `q`
 into `r-q` and on to the block `[%eqq r-p r-q z o]`; `q` keeps `r-p`. -/
@@ -174,18 +174,17 @@ theorem compRel_n5_pick {lib : Lib} {c : Straight Map} {p q : Nomm} {bp bq bz bo
       rw [e2] at Hq
       obtain ⟨regs2, bk2, hbk2, hh2, hk2, he2⟩ := Hq
       rw [ho] at hbk2; cases hbk2
-      simp only [Holds, SkaModel.read] at hh1 hh2
-      have hx : HoonMap.get regs2 rp = some x := by
-        have := hk2 rp hrp; simp only [SkaModel.read] at this; rw [this]; exact hh1
+      simp only [Holds] at hh1 hh2
+      have hx : SkaModel.read rp regs2 = some x := by rw [hk2 rp hrp]; exact hh1
       simp only [Option.bind_some, eqCode]
       by_cases hxy : x = y
       · subst hxy
         simp only [if_true]
         refine ⟨regs2, bz, hz, fun r hr => (hk2 r (hK r hr).2).trans (hk1 r (hK r hr).1), ?_⟩
-        rw [he1, he2, execBlob]; simp [SkaModel.read, hx, hh2, hz]
+        rw [he1, he2, execBlob]; simp [hx, hh2, hz]
       · simp only [if_neg hxy]
         refine ⟨regs2, bo, ho', fun r hr => (hk2 r (hK r hr).2).trans (hk1 r (hK r hr).1), ?_⟩
-        rw [he1, he2, execBlob]; simp [SkaModel.read, hx, hh2, ho', hxy]
+        rw [he1, he2, execBlob]; simp [hx, hh2, ho', hxy]
 
 /-- **`%done` from `%pick`** into the blocks that return `0` and `1`, for a
 nomm whose value is a loobean (`[3 p]`, `[5 p q]`). -/
@@ -207,11 +206,11 @@ theorem compRel_done_of_pick {lib : Lib} {c : Straight Map} {nm : Nomm} {b : Blo
     · obtain ⟨regs', bk, hbk, _, he⟩ := H
       rw [h0] at hbk; cases hbk
       rw [he, execBlob_body]
-      simp [execPole_imm, execBlob_don, store, SkaModel.read, HoonMap.get_put]
+      simp [execPole_imm, execBlob_don, read_store_self]
     · obtain ⟨regs', bk, hbk, _, he⟩ := H
       rw [h1] at hbk; cases hbk
       rw [he, execBlob_body]
-      simp [execPole_imm, execBlob_don, store, SkaModel.read, HoonMap.get_put]
+      simp [execPole_imm, execBlob_don, read_store_self]
 
 /-- **`[3 p]` for `%done`**, as the case `%3` emits it: the two blocks that
 return `0` and `1`, the `%clq` block, and `p` into its register. -/

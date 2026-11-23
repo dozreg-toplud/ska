@@ -30,7 +30,7 @@ theorem execBlob_par1 (regs : Map (Option Noun)) (t : Trace) {a p : Nat} (j : Jm
       goJ lib O c gul st (store p v regs) t j := by
   rw [execBlob]
   have hp : evalPass [some a] [p] regs = some (store p v regs) := by
-    simp [evalPass, evalPassLoop, move, hv, hne]
+    simp [evalPass, evalPassLoop, move_of_read hv, hne]
   simp only [ne_eq, reduceCtorEq, not_false_eq_true, true_or, if_true, hp, Option.bind_eq_bind,
     Option.bind_some]
   exact execBlob_hop _ _ _

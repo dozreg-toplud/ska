@@ -112,7 +112,8 @@ theorem renReg_inj (r0 n : Nat) : Inj (renReg r0 n) := by
   all_goals omega
 
 theorem get_regsFrom : ∀ (vs : List Noun) (k : Nat) (m : Map (Option Noun)) (x : Nat),
-    HoonMap.get (regsFrom k vs m) x = if k ≤ x ∧ x < k + vs.length then vs[x - k]? else HoonMap.get m x
+    HoonMap.get (regsFrom k vs m) x =
+      if k ≤ x ∧ x < k + vs.length then vs[x - k]?.map some else HoonMap.get m x
   | [], k, m, x => by simp only [regsFrom, List.length_nil, Nat.add_zero]; rw [if_neg (by omega)]
   | v :: vs, k, m, x => by
     simp only [regsFrom, get_regsFrom vs (k + 1), HoonMap.get_put, List.length_cons]
@@ -128,7 +129,7 @@ theorem get_regsFrom : ∀ (vs : List Noun) (k : Nat) (m : Map (Option Noun)) (x
 theorem renRel_entry (r0 : Nat) (args : List Noun) :
     RenRel (renReg r0 args.length) (regsFrom r0 args (HoonMap.empty : Map (Option Noun))) (regsOf args) := by
   intro r
-  simp only [SkaModel.read, regsOf, get_regsFrom, HoonMap.get_empty, renReg]
+  simp only [regsOf, get_regsFrom, HoonMap.get_empty, renReg]
   by_cases h1 : r < r0
   · rw [if_pos h1, if_neg (by omega), if_neg (by omega)]
   · rw [if_neg h1]
@@ -220,7 +221,7 @@ theorem toStraight_entryR [HoonMapKeys Map] {ρ : Nat → Nat} {blocks : Map Blo
     rw [hins_def] at hlen
     refine ⟨regsFrom r0 args (HoonMap.empty : Map (Option Noun)), hholds fun i hi => ?_, ?_⟩
     · simp only [SkaModel.read, get_regsFrom, HoonMap.get_empty]
-      rw [if_pos (by omega)]; simp
+      rw [if_pos (by omega), Nat.add_sub_cancel_left]; cases args[i]? <;> rfl
     have hren := renRel_entry (Map := Map) r0 args
     rw [hlen] at hren
     generalize hbs : HoonMap.put (HoonMap.del blocks o) 0 start = bs at hnew
