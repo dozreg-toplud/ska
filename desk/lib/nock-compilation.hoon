@@ -4240,13 +4240,15 @@
         [%10 *]
       =^  next  gen  simple-next
       =^  [don=need-lazy rec=need-lazy o=@uwoo]  gen  (into next p.p.nomm)
-      ::  as the tail of a cons does to the head
+      ::  the edited noun is computed first and the new part second, as in
+      ::  +mink: the new part does to the edited noun as the tail of a cons
+      ::  does to the head
       ::
-      =^  nex-d  gen  (past [%next don ~ o] q.nomm region)
-      =^  nex-rec  gen  $(nomm q.nomm, goal [%next rec then.nex-d])
-      =^  nex-rec  gen  (past nex-rec q.p.nomm region)
-      =^  nex-don  gen  $(nomm q.p.nomm, goal [%next laz.nex-d then.nex-rec])
-      (copy nex-don laz.nex-rec)
+      =^  nex-r  gen  (past [%next rec ~ o] q.p.nomm region)
+      =^  nex-don  gen  $(nomm q.p.nomm, goal [%next don then.nex-r])
+      =^  nex-don  gen  (past nex-don q.nomm region)
+      =^  nex-rec  gen  $(nomm q.nomm, goal [%next laz.nex-r then.nex-don])
+      (copy nex-rec laz.nex-don)
     ::
         [%11 *]
       ?@  p.nomm
@@ -4515,11 +4517,13 @@
         [%10 *]
       ?>  ?=(%next -.simple)
       =/  [don=laze rec=laze]  (laze-into p.p.nomm laz.simple)
-      =^  don  gen  (laze-past don q.nomm)
-      =^  l-rec  gen  $(nomm q.nomm, goal [%next rec])
-      =^  l-rec  gen  (laze-past l-rec q.p.nomm)
+      ::  the edited noun first, the new part second, as in +run
+      ::
+      =^  rec  gen  (laze-past rec q.p.nomm)
       =^  l-don  gen  $(nomm q.p.nomm, goal [%next don])
-      [(laze-copy l-don l-rec) gen]
+      =^  l-don  gen  (laze-past l-don q.nomm)
+      =^  l-rec  gen  $(nomm q.nomm, goal [%next rec])
+      [(laze-copy l-rec l-don) gen]
     ::
         [%11 *]
       ?@  p.nomm
