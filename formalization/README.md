@@ -54,7 +54,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Fuel.lean` | `slot?`, `edit?` and the fuelled `evalFuel`. |
 | `Sound.lean` | `slot?_iff`, `edit?_iff`, and `evalFuel_sound`: a fuelled run is a derivation of `Eval`. |
 | `Run.lean` | `nock`, the evaluator as a partial function, with one rewrite rule per opcode and `nock_eq_some_iff : nock s f = some p ↔ Eval s f p`. |
-| `Exec.lean` | Symbolic execution with `simp only [nock_exec]`, and simprocs that compute `slot?` and `edit?` at a literal axis. |
+| `Exec.lean` | Symbolic execution with `simp only [nock_exec]`, and simprocs that compute `slot?` and `edit?` at a literal axis.  An axis whose path runs through a variable `v` becomes `slot? rest v`, so a hypothesis about `v` applies. |
 | `CueSpec.lean` | `cue` of `core/` checked by the kernel on jams made by `tools/nouns.py`. |
 | `CueWords.lean`, `CueExample.lean` | An earlier `cue` on 32-bit words, built for the kernel, checked on a 150-cell jam. |
 | `Pill/Arm/<Family>.lean` | Generated: the named nouns of one arm family (`dec.arm`, `dec.battery`, `dec.loop`, ..., and the axis constant `dec.axis`), as a Lean module whose nouns are public but whose bodies are not exposed. |
@@ -86,6 +86,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Hoon/Mug.lean` | `mug_spec`: `+mug` computes `mugF` on every noun, which proves `MugSpec mugF`. |
 | `Hoon/Layer1.lean`, `Hoon/Layer2.lean` | The pill's layers satisfy the predicates of their arms, and `+gor`, `+mor` and the map and set theorems hold on `layer2` with no assumption.  The only theorem files that import `Facts.lean` and the bulk. |
 | `Compiler/Ca.lean`, `Compiler/So.lean` | The pill's Nock of the arms `hed`, `tel`, `con`, `all`, `int`, `uni`, `lack`, `app` of `+ca` and `hed`, `tel`, `jibe`, `knit`, `purr` of `+so` computes the models of `Ska/Sock.lean` on every cape and sock.  The arms that read the library core assume only what it gives at the named axes `ca.lib.axis` and `so.lib.axis`.  These are plain files, because the models are. |
+| `Compiler/Axes.lean` | `pat`, `lot` of `+ca` and `pull` of `+so`, which walk an axis with `+cap` and `+mas` of layer 1, read through the library core at `ca.lib.layer1.axis`; B's `cap` and `mas` equal `capF` and `masF`. |
 | `Ska/Types.lean` | Models of the IR types (`Bell`, `Sock`, `Cape`, `Pole`, `Termin`, `Blob`, `Straight`, `Tone`, ...), each with its Hoon noun layout. |
 | `Ska/Mink.lean`, `Ska/MinkTrace.lean` | Models of `+mink`, `+mook` and `+mock`; what Nock computes, `+mink` returns. |
 | `Ska/Interp.lean`, `Ska/Steps.lean` | A model of the Hoon interpreter (`+eval-top`, `+eval-blob`, `+eval-pole`, `+eval-mook`), with the compiler as a parameter that answers pokes. |
@@ -184,7 +185,6 @@ import only its theorems.  So:
    which a model is `none`.
 5. **Not done among the arms of the library:** `+uni`, `+int`, `+dif` of `+by`
    and `+in`.
-6. **Not done among the arms of the compiler's leaf cores:** `pat`, `lot`,
-   `yea`, `dif` of `+ca`, and `pull`, `darn`, `huge` of `+so`.  `dif:ca` and
-   `huge:so` quote data that holds the hoon core, so the generator does not
-   name them.
+6. **Not done among the arms of the compiler's leaf cores:** `yea`, `dif` of
+   `+ca`, and `darn`, `huge` of `+so`.  `dif:ca` and `huge:so` quote data that
+   holds the hoon core, so the generator does not name them.

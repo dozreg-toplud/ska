@@ -11,7 +11,9 @@ Symbolic execution of Nock with `simp`.
 addressing: `slot? axis subject` and `edit? axis replacement subject` with a
 literal axis are computed along the cells of `subject`, with a proof built from
 the spec's own recursion (`slot?_left` and friends), so definitions such as a
-core from the pill are opened only along the path that the axis names.
+core from the pill are opened only along the path that the axis names.  When
+the path runs through a variable `v` below the subject, `slot?` is rewritten to
+`slot? rest v` for the rest of the path, where a hypothesis about `v` applies.
 
 Formulas that are constants stay closed: `nock subject dec.loop` is not
 rewritten until a proof opens `dec.loop` or supplies a lemma about it.  That
@@ -78,6 +80,34 @@ theorem edit?_right {k : Nat} {r s x y : Noun} (h : slot? k s = some (C x y)) :
   have h3 : (2 * k + 1) % 2 = 1 := by omega
   simp [h2, h, graft]
 
+theorem slot?_var_left {k : Nat} {s p : Noun} (h : slot? k s = some p) :
+    slot? (2 * k) s = slot? 2 p := by
+  have := slot?_pos h
+  rw [slot?_step _ (by omega), slot?_step 2 (by omega)]
+  have h2 : 2 * k / 2 = k := by omega
+  simp [h2, h]
+
+theorem slot?_var_right {k : Nat} {s p : Noun} (h : slot? k s = some p) :
+    slot? (2 * k + 1) s = slot? 3 p := by
+  have := slot?_pos h
+  rw [slot?_step _ (by omega), slot?_step 3 (by omega)]
+  have h2 : (2 * k + 1) / 2 = k := by omega
+  simp [h2, h]
+
+theorem slot?_sub_left {k r : Nat} {s v : Noun} (hk : 0 < k) (hr : 0 < r)
+    (h : slot? k s = slot? r v) : slot? (2 * k) s = slot? (2 * r) v := by
+  rw [slot?_step _ (by omega), slot?_step (2 * r) (by omega)]
+  have h2 : 2 * k / 2 = k := by omega
+  have h3 : 2 * r / 2 = r := by omega
+  simp [h2, h3, h]
+
+theorem slot?_sub_right {k r : Nat} {s v : Noun} (hk : 0 < k) (hr : 0 < r)
+    (h : slot? k s = slot? r v) : slot? (2 * k + 1) s = slot? (2 * r + 1) v := by
+  rw [slot?_step _ (by omega), slot?_step (2 * r + 1) (by omega)]
+  have h2 : (2 * k + 1) / 2 = k := by omega
+  have h3 : (2 * r + 1) / 2 = r := by omega
+  simp [h2, h3, h]
+
 /-! ## Simprocs -/
 
 open Lean Meta
@@ -88,7 +118,10 @@ meta inductive Found where
   | noun (noun proof : Expr)
   /-- the path runs into an atom: a proof of `slot? axis subject = none` -/
   | atom (proof : Expr)
-  /-- the path runs into a term that is neither a cell nor an atom -/
+  /-- the path runs through a term `var` that is neither a cell nor an atom,
+  strictly below the subject: a proof of `slot? axis subject = slot? rest var` -/
+  | sub (var : Expr) (rest : Nat) (proof : Expr)
+  /-- the subject itself is neither a cell nor an atom -/
   | stuck
 
 /-- Walk `subject` to `axis` (which is at least 1). -/
@@ -98,6 +131,12 @@ meta partial def findSlot (subject : Expr) (axis : Nat) : MetaM Found := do
   let k := axis / 2
   match ← findSlot subject k with
   | .stuck => return .stuck
+  | .sub var r proof =>
+    let hk ← mkDecideProof (← mkLt (mkNatLit 0) (mkNatLit k))
+    let hr ← mkDecideProof (← mkLt (mkNatLit 0) (mkNatLit r))
+    let lem := if axis % 2 == 0 then ``slot?_sub_left else ``slot?_sub_right
+    return .sub var (2 * r + axis % 2)
+      (mkAppN (mkConst lem) #[mkNatLit k, mkNatLit r, subject, var, hk, hr, proof])
   | .atom proof =>
     -- `proof : slot? k subject = none`, so every axis below `k` is `none` too
     let hk ← mkDecideProof (← mkLt (mkNatLit 0) (mkNatLit k))
@@ -120,8 +159,11 @@ meta partial def findSlot (subject : Expr) (axis : Nat) : MetaM Found := do
         return .atom (mkApp4 (mkConst ``slot?_left_atom) (mkNatLit k) subject a proof)
       else
         return .atom (mkApp4 (mkConst ``slot?_right_atom) (mkNatLit k) subject a proof)
-    else
+    else if k == 1 then
       return .stuck
+    else
+      let lem := if axis % 2 == 0 then ``slot?_var_left else ``slot?_var_right
+      return .sub parent (2 + axis % 2) (mkApp4 (mkConst lem) (mkNatLit k) subject parent proof)
 
 meta def optionNoun : Expr := mkApp (mkConst ``Option [Level.zero]) (mkConst ``Noun)
 
@@ -138,6 +180,10 @@ simproc [nock_exec] slotLit (slot? _ _) := fun e => do
   let subject := e.getArg! 1
   match ← findSlot subject axis with
   | .stuck => return .continue
+  | .sub var rest proof =>
+    let rhs := mkApp2 (mkConst ``slot?) (mkNatLit rest) var
+    let proof ← mkExpectedTypeHint proof (← mkEq e rhs)
+    return .done { expr := rhs, proof? := some proof }
   | .noun noun proof =>
     let rhs := someNoun noun
     let proof ← mkExpectedTypeHint proof (← mkEq e rhs)

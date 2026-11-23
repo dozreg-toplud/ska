@@ -19,6 +19,7 @@ import lemmas.Hoon.ListsMore
 import lemmas.Hoon.ListsSort
 import lemmas.Compiler.Ca
 import lemmas.Compiler.So
+import lemmas.Compiler.Axes
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -151,3 +152,8 @@ open Formalization
 #print axioms Compiler.so_knit_gate
 #print axioms Compiler.so_purr_gate
 #print axioms Compiler.ca_app_gate
+#print axioms Compiler.so_pull_gate
+#print axioms Compiler.ca_pat_gate
+#print axioms Compiler.ca_lot_gate
+#print axioms Compiler.capF_eq_cap
+#print axioms Compiler.masF_eq_mas
