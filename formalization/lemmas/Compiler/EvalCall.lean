@@ -625,5 +625,51 @@ theorem eval_pole_le (cr : Noun) (hc : CorIn cr) (lib : Lib) (hslam : SlamIsNock
     exact loc (eval_pole_local (icore cr) cr hcor hpi lib scry _ (by simp [PlainLocal]) regs trace)
       rfl
 
+/-! ## `+eval-blob` -/
+
+/-- The tags of the ends of a block, for the dispatch of `+eval-blob`. -/
+macro "blob_simp" "[" ts:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(tactic|
+  (nock_open eval_blob.battery
+   simp [nock_exec, Blob.toNoun, Termin.toNoun, Jmp.toNoun, Tag.lti, Tag.clq, Tag.eqq, Tag.brn,
+     Tag.brz, Tag.hop, Tag.jmp, Tag.jmf, Tag.jsp, Tag.jsf, Tag.don, Tag.bom, argsN, listNoun,
+     $ts,*]))
+
+set_option maxHeartbeats 4000000 in
+/-- The loop of `%jmp` that puts the values of the registers `v` in the
+registers `r, r+1, ...` of `out`. -/
+theorem eval_blob_loop (cr : Noun) (hc : CorIn cr) (p an : Noun) (regs : TreapMap mugF Noun)
+    (tn sN scry : Noun) :
+    ∀ (v : List Nat) (r : Nat) (out : TreapMap mugF Noun),
+    nock (C eval_blob.loop (C (A r) (C (HoonMap.toNoun id out) (C p (C eval_blob.battery
+        (C (C (C (HoonMap.toNoun id regs) tn) (C (C (A 0) (C (A 0) (C (A Tag.jmp)
+          (C an (listNoun A v))))) (C sN (C (A 0) scry)))) (icore cr))))))) eval_blob.loop
+      = (v.mapM (SkaModel.read · regs)).map fun vs => HoonMap.toNoun id (regsFrom r vs out) := by
+  have hpi := evalPoleIn_icore hc
+  obtain ⟨_, hrd, _, hrc⟩ := hpi
+  have hrm := read_model (icore cr) hrc
+  have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc
+  simp only [read.layer2.axis, icore, nock_exec] at hl2
+  simp only [read.axis, icore, nock_exec] at hrd
+  obtain ⟨hgor, hmor⟩ := gorIn_morIn_layer2
+  intro v
+  induction v with
+  | nil =>
+    intro r out
+    nock_open eval_blob.loop
+    simp [nock_exec, listNoun, regsFrom]
+  | cons x v ih =>
+    intro r out
+    cases e : SkaModel.read x regs with
+    | none =>
+      nock_open eval_blob.loop
+      simp [nock_exec, listNoun, hrd, read_arm, hrm, e]
+    | some vx =>
+      have hput := putF_hoonMap id out r vx
+      simp only [id_eq] at hput
+      nock_open eval_blob.loop
+      simp [nock_exec, listNoun, hrd, read_arm, hrm, e, hl2, by.arm_at, by_arm, by.put.arm_at,
+        put_arm, put_gate layer2 ⟨hgor, hmor⟩ _ _ _ _ hput, ih, List.mapM_cons]
+      cases List.mapM (fun x => SkaModel.read x regs) v <;> simp [regsFrom]
+
 end Compiler
 end Formalization
