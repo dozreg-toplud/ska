@@ -3,7 +3,6 @@ import lemmas.Ska.CompLazyFinal
 import lemmas.Ska.CompSix
 import lemmas.Ska.CompFinishF
 import lemmas.Ska.CompCopyFresh
-import lemmas.Ska.CompNestFinal
 import lemmas.Ska.CompNestFinalP
 
 /-!
@@ -140,3 +139,4 @@ open Formalization.SkaModel.Comp
 #print axioms finishLF_bellContractP
 #print axioms crash_iffP
 #print axioms finishLF_bellContract6'
+#print axioms runL_n6_next

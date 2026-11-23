@@ -428,7 +428,19 @@ def copyAll (nex : NextL S) : List (Lazy S) → CM Map (NextL S)
 the test and the branches as parameters.  `fuel` bounds the times the case
 runs itself again with another goal (after `+leap`, after `+kerf`): it does
 so at most twice in a row, so `3` is enough (`none` past it, a departure
-from the Hoon only where it would loop). -/
+from the Hoon only where it would loop).
+
+A finding, from runs of `finishLF` and `execEntry` on concrete inputs: when
+a `%6` (the outer one) is compiled for a goal whose lazy need has forks, and
+one of its branches is again such a `%6` (the inner one), `+sect` of the
+inner `%6` reads a proxy made in one inner branch through a new parameter of
+the inner join, to which the other inner branch passes `~` (the parameter
+is deleted); `+sect` of the outer `%6` then threads that parameter through
+the outer join, and the outer branch's end reads it on every path, so on the
+path through the other inner branch the code reads a deleted register
+(`+read` is `got`: a crash of the interpreter), where `+mink` returns a
+value.  Smallest case: `[7 [6 [0 2] [0 2] [6 [0 2] [3 [0 14]] [0 1]]] [6 [1 1]
+[0 0] [0 3]]]` on `[1 5 7 8]`, which `+mink` takes to `[5 7 8]`. -/
 def sixNextL [HoonMapKeys Map] (rp rq rr : CGoalL S → List Nat → CM Map (NextL S)) (p q r : Nomm) :
     Nat → Lazy S → Jmp → List Nat → CM Map (NextL S)
   | 0, _, _, _ => fun _ => Option.none
@@ -620,6 +632,13 @@ def runL [HoonMapKeys Map] : Nomm → CGoalL S → List Nat → CM Map (NextL S)
       let nexRec ← runL q (CGoalL.next nexR.laz nexDon.th) region
       copyL nexRec nexDon.laz
   | _, _, _ => fun _ => Option.none
+
+/-- **The case `%6` of `runL` for a goal `%next`** is `sixNextL` with the
+runs of the test and the branches. -/
+theorem runL_n6_next (p q r : Nomm) (laz : Lazy S) (th : Jmp) (region : List Nat) [HoonMapKeys Map] :
+    (runL (Nomm.n6 p q r) (CGoalL.next laz th) region : CM Map (NextL S)) =
+      sixNextL (runL p) (runL q) (runL r) p q r 3 laz th region := by
+  unfold runL; rfl
 
 end Comp
 end SkaModel

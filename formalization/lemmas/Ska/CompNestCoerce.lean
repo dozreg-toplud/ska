@@ -102,19 +102,23 @@ end
 /-! ## What the ops of one coercion do -/
 
 /-- **What the ops `A` in front of a lazy block do** for the need `L`
-taken there: from registers that hold the subject `s` as the input need
-`ned` asks, they fill `L` and keep the input registers and every register
-below `lo` outside `L`'s, or crash when `s` has not `L`'s shape and looks. -/
+taken there: from registers that hold the subject `s0` as the input need
+`ned` asks, they fill `L` for the noun `s` and keep the input registers and
+every register below `lo` outside `L`'s, or crash when `s` has not `L`'s
+shape and looks.  `s0` is the subject of the whole function and `s` the
+subject of the run that owns the lazy block: the ops of `+coerce-lazy` fill
+for `s0` itself, and in `[7 p q]` the lazy blocks of `q` are filled for the
+product of `p`. -/
 def FillSem (lib : Lib) {σ : Type} (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace)
-    (ned : Need) (lo : Nat) (L : Sure S) (A : List Pole) (s : Noun) : Prop :=
-  ∀ R : Map Noun, HoldsN ned R s →
+    (ned : Need) (lo : Nat) (L : Sure S) (A : List Pole) (s0 s : Noun) : Prop :=
+  ∀ R : Map Noun, HoldsN ned R s0 →
     (FitsS L s → ∃ R', Runs lib O c gul st t A R R' ∧ HoldsS L R' s ∧
       ∀ x, (NMem ned x ∨ x < lo) → ¬ NMem L.ned x → SkaModel.read x R' = SkaModel.read x R) ∧
     (¬ FitsS L s → Crashes lib O c gul st t A R)
 
 theorem FillSem.mono {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ}
-    {t : Trace} {ned : Need} {lo lo' : Nat} {L : Sure S} {A : List Pole} {s : Noun}
-    (h : FillSem lib O c gul st t ned lo L A s) (hl : lo' ≤ lo) : FillSem lib O c gul st t ned lo' L A s :=
+    {t : Trace} {ned : Need} {lo lo' : Nat} {L : Sure S} {A : List Pole} {s0 s : Noun}
+    (h : FillSem lib O c gul st t ned lo L A s0 s) (hl : lo' ≤ lo) : FillSem lib O c gul st t ned lo' L A s0 s :=
   fun R hR => ⟨fun f => by
     obtain ⟨R', r, hh, k⟩ := (h R hR).1 f
     exact ⟨R', r, hh, fun x hx hn => k x (hx.elim Or.inl fun e => Or.inr (Nat.lt_of_lt_of_le e hl)) hn⟩,
@@ -126,7 +130,7 @@ theorem coerceSpecK {ned : Need} {o : Nat} {laz : Sure S} {less : Cape} {g g' : 
     (dl : Distinct laz.ned) (ll : ∀ r, NMem laz.ned r → r < g.re) (ln : ∀ r, NMem ned r → r < g.re)
     (nd : ∀ r, NMem ned r → ¬ NMem laz.ned r) :
     ∃ A, Front o g g' A ∧ ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) gul st t s,
-      CapeAxes less s → FillSem lib O c gul st t ned g.re laz A s := by
+      CapeAxes less s → FillSem lib O c gul st t ned g.re laz A s s := by
   simp only [coerceLazy] at h
   obtain ⟨lok, g1, h1, h⟩ := bind_some h
   obtain ⟨l, hl, e⟩ := Option.map_eq_some_iff.mp h1
@@ -180,7 +184,7 @@ theorem EntryRegs.mono {ned : Need} {a b : Nat} {e : Nat × Lazy S} (h : EntryRe
 def FilledAt (ned : Need) (less : Cape) (lo : Nat) (g g' : Gen Map) (e : Nat × Lazy S) : Prop :=
   ∀ B fin, HoonMap.get g.blocks e.1 = some ⟨[], B, fin⟩ → ∃ A, HoonMap.get g'.blocks e.1 = some ⟨[], A ++ B, fin⟩ ∧
     ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) gul st t s,
-      CapeAxes less s → FillSem lib O c gul st t ned lo e.2.sure A s
+      CapeAxes less s → FillSem lib O c gul st t ned lo e.2.sure A s s
 
 /-- **The coercion of a list of entries with distinct labels.** -/
 theorem coerceList_spec (ned : Need) (less : Cape) : ∀ (es : List (Nat × Lazy S)) (g g' : Gen Map),

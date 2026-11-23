@@ -68,7 +68,7 @@ theorem finishLF_compDoneP (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.do
   have hents : ∀ e ∈ entries nex.laz, ∃ A th, HoonMap.get g4.blocks e.1 = some ⟨[], [], Termin.hop th⟩ ∧
       HoonMap.get g9.blocks e.1 = some ⟨[], A, Termin.hop th⟩ ∧
       ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) gul st t s,
-        CapeAxes less s → FillSem lib O c gul st t nedF k5 e.2.sure A s := by
+        CapeAxes less s → FillSem lib O c gul st t nedF k5 e.2.sure A s s := by
     intro e he
     obtain ⟨_, lt, th, hth⟩ := R.labs e he
     obtain ⟨A, hA, sA⟩ := Fents e he [] (Termin.hop th) hth
@@ -104,7 +104,7 @@ theorem finishLF_compDoneP (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.do
   rw [he]
   have hj : nex.th = jmp0 nex.th.there := by
     rcases hth : nex.th with ⟨args', there⟩; rw [hth] at hargs; simp at hargs; subst hargs; rfl
-  have ag : AgreeP lib O c1 gul st t nedF gen0 g4 nex.laz s := by
+  have ag : AgreeP lib O c1 gul st t nedF gen0 g4 nex.laz s s := by
     refine ⟨fun o _ _ hnl => ?_, fun e he => ?_⟩
     · by_cases e : o = nex.th.there
       · subst e; rw [hc1o, hB]
@@ -120,7 +120,7 @@ theorem finishLF_compDoneP (lib : Lib) {nm : Nomm} (hf : FragP (S := S) CGoal.do
   · obtain ⟨R1, hr1, hh1, kr1⟩ := SoF fo
     rw [hr1]
     have hn1 : HoldsN nedF R1 s := HoldsN.agree nedF (fun x hx => kr1 x (Or.inl hx) (dj x hx)) hR0
-    have := R.sem c1 nedF σ O st t gul s ag (fun r hr => (mem5 r hr).1) R1 hh1 hn1
+    have := R.sem c1 nedF σ O st t gul s s ag (fun r hr => (mem5 r hr).1) R1 hh1 hn1
     simp only [GoalSem] at this
     rw [hj, goJ_jmp0 _ _ _ _ hc1o] at this
     exact this
