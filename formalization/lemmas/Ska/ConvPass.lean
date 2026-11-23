@@ -723,6 +723,67 @@ theorem member_tail2 {memoF : Memo M} {run : RunGo M R} {mem : MemGo M R} (hrun 
             (fun ce => decide (ranOf st2 m ≤ chgOf st2 ce.1.id)) := by funext ce; rw [c3']
         rw [hc3, ← dirty_eq]; exact hdm2
 
+theorem dirty_congr {m : Ident} {st st' : SkaState M R} (h1 : ranOf st' m = ranOf st m)
+    (h2 : calleesOf st' m = calleesOf st m) (h3 : ∀ j, chgOf st' j = chgOf st j) : dirty m st' = dirty m st := by
+  rw [dirty_eq, dirty_eq, h1, h2]
+  have : (fun ce : CalleeEntry × Unit => decide (ranOf st m ≤ chgOf st' ce.1.id)) =
+      (fun ce => decide (ranOf st m ≤ chgOf st ce.1.id)) := by funext ce; rw [h3]
+  rw [this]
+
+/-- **The member loop keeps the convergence invariant.** -/
+theorem memberStep_ok2 {memoF : Memo M} {run : RunGo M R} {mem : MemGo M R} (hrun : RunP2 memoF run)
+    (hmem : MemP2 memoF mem) : MemP2 memoF (memberStep run mem) := by
+  intro index pass ms st r st' F ab0 rest id hc hs hidx hms hrest hcl e
+  cases ms with
+  | nil =>
+    simp only [memberStep, Option.some.injEq, Prod.mk.injEq] at e
+    obtain ⟨rfl, rfl⟩ := e
+    exact ⟨⟨F, fun _ h => h, hc, hrest⟩, GStepsR.refl _, Keep.refl' _ rfl rfl rfl,
+      Frame.refl' rfl rfl rfl rfl rfl rfl hc.s, Nat.le_refl _, hcl,
+      fun _ _ _ => ⟨fun _ => rfl, fun _ => rfl, fun _ _ _ => ⟨rfl, rfl⟩, fun _ h => by simp at h⟩⟩
+  | cons m ms =>
+    have hm := hms m List.mem_cons_self
+    have hms' : ∀ m' ∈ ms, m' ∈ st.stk ∧ m' ∉ rest := fun m' h => hms m' (List.mem_cons_of_mem _ h)
+    simp only [memberStep] at e
+    split at e
+    · rename_i hd
+      obtain ⟨A, B, C, D, E, G, H⟩ := hmem index pass ms st r st' F ab0 rest id hc hs hidx hms' hrest hcl e
+      refine ⟨A, B, C, D, E, G, fun h1 h2 h3 => ?_⟩
+      obtain ⟨o1, o2, o3, o4⟩ := H h1 h2 h3
+      refine ⟨o1, o2, fun j hj hjn => o3 j hj (fun h => hjn (List.mem_cons_of_mem _ h)), fun m' hm' => ?_⟩
+      rcases List.mem_cons.mp hm' with rfl | hm'
+      · by_cases hmm : m' ∈ ms
+        · exact o4 m' hmm
+        · obtain ⟨a1, a2⟩ := o3 m' hm.1 hmm
+          rw [dirty_congr a1 a2 o2]; exact hd
+      · exact o4 m' hm'
+    · have fin : ∀ (st1 : SkaState M R), st1.g = st.g → st1.done = st.done → st1.order = st.order →
+          st1.stk = st.stk → st1.next = st.next → st1.tick = st.tick → st1.ticks = st.ticks →
+          ((Treap.get st.order m).bind fun o => (run m o st1).bind fun q =>
+            if q.1.1 < index then some ((q.1.1, q.1.2.2), q.2) else
+            (mem index pass ms q.2).map fun t => ((min q.1.1 t.1.1, q.1.2.2 || t.1.2), t.2)) = some (r, st') →
+          (∃ F', (∀ e, F e → F' e) ∧ CInv memoF st' F' ∧ ∀ m ∈ rest, MemOK st' F' m index) ∧
+          GStepsR (gCore st.g) (gCore st'.g) ∧ Keep st.stk (· ∈ rest) st st' ∧ Frame (· ∈ rest) st st' ∧
+          r.1 ≤ index ∧ (∀ x o, Treap.get st'.order x = some o → x ∉ rest → 1 ≤ ranOf st' x ∧ LowB st' x r.1) ∧
+          (r.1 = index → r.2 = false → st'.next = st.next →
+            (∀ x, Treap.get st'.order x = Treap.get st.order x) ∧ (∀ j, chgOf st' j = chgOf st j) ∧
+            (∀ j ∈ st.stk, j ∉ m :: ms → ranOf st' j = ranOf st j ∧ calleesOf st' j = calleesOf st j) ∧
+            ∀ m' ∈ m :: ms, dirty m' st' = false) := by
+        intro st1 h1 h2 h3 h4 h5 h6 h7 e
+        obtain ⟨A, B, C, D, E, G, H⟩ := member_tail2 hrun hmem hc hs hidx hm hms' hrest hcl h1 h2 h3 h4 h5 h6 h7 e
+        refine ⟨A, B, C, D, E, G, fun a b c => ?_⟩
+        obtain ⟨o1, o2, o3, o4, o5⟩ := H a b c
+        exact ⟨o1, o2, o3, fun m' hm' => by
+          rcases List.mem_cons.mp hm' with rfl | hm'
+          · exact o4
+          · exact o5 m' hm'⟩
+      by_cases hp : pass > 1
+      · simp only [hp, if_true] at e
+        exact fin { st with stats := { st.stats with lateRuns := st.stats.lateRuns + 1 } }
+          rfl rfl rfl rfl rfl rfl rfl e
+      · simp only [hp, if_false] at e
+        exact fin _ rfl rfl rfl rfl rfl rfl rfl e
+
 end Ana
 end SkaModel
 end Formalization
