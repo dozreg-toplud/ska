@@ -7,6 +7,7 @@ import lemmas.Ska.CompNestFinalP
 import lemmas.Ska.CompSixNext
 import lemmas.Ska.CompSixNextCond
 import lemmas.Ska.CompSixNextOK
+import lemmas.Ska.CompSevenN
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -161,3 +162,16 @@ open Formalization.SkaModel.Comp
 #print axioms lazyBlkN
 #print axioms sixNext_okN
 #print axioms runN_ok
+#print axioms GrowU.trans
+#print axioms Grow.toU
+#print axioms GrowU.up
+#print axioms downRk_of_growU
+#print axioms downRk_gen0
+#print axioms growU_forkSure
+#print axioms finishLF_compDoneR
+#print axioms finishLF_bellContractR
+#print axioms crash_iffR
+#print axioms runOKP_n7
+#print axioms runT_ok
+#print axioms finishLF_bellContractT
+#print axioms crash_iffT
