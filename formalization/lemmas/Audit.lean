@@ -272,3 +272,6 @@ open Formalization
 #print axioms Compiler.eval_blob_jmp_le
 #print axioms Compiler.eval_blob_jsp_le
 #print axioms Compiler.eval_blob_le
+#print axioms Compiler.eval_top_le
+#print axioms Compiler.interp_le
+#print axioms Compiler.eval_top_of_model

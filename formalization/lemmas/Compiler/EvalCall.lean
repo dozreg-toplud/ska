@@ -481,12 +481,6 @@ theorem eval_pole_gate (cr : Noun) (hc : CorIn cr) (lib : Lib) (hslam : SlamIsNo
 
 /-! ## What the model returns, the pill returns -/
 
-/-- The calls of `O` are among those of `callBody` over `Ob`. -/
-def CallLe (lib : Lib) (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun))
-    (Ob : Oracle Noun) (O : Oracle Noun) : Prop :=
-  ∀ cr a mono vs trace scry r, O.call cr a mono vs trace scry = some r →
-    callBody lib pk Ob cr a mono vs trace scry = some r
-
 /-- What `execBlob` with the oracle `O` returns, the pill's `+eval-blob`
 returns, on the cores that keep what the interpreter reads; and it returns such
 cores. -/
@@ -494,6 +488,13 @@ def BlobLe (lib : Lib) (O : Oracle Noun) : Prop :=
   ∀ cr, CorIn cr → ∀ regs trace b s params scry r,
     execBlob lib O s scry cr regs trace b params = some r →
     nock (blobS cr regs trace b s params scry) eval_blob.battery = some (resN r) ∧ CorIn r.2
+
+/-- Every call that `O` answers is one that `callBody` answers the same way,
+over an oracle below the pill's `+eval-blob`. -/
+def CallLe (lib : Lib) (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun))
+    (O : Oracle Noun) : Prop :=
+  ∀ cr a mono vs trace scry r, O.call cr a mono vs trace scry = some r →
+    ∃ Ob, BlobLe lib Ob ∧ callBody lib pk Ob cr a mono vs trace scry = some r
 
 /-- What the oracle's `nok` returns, the pill's `+eval-top` returns. -/
 def TopLe (O : Oracle Noun) : Prop :=
@@ -539,14 +540,14 @@ theorem callBody_some {lib : Lib} {pk : Noun → Ovum → Option (SkaModel.Prod 
 
 theorem eval_pole_cal_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
     (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
-    (Ob : Oracle Noun) (hOb : BlobLe lib Ob) (O : Oracle Noun) (hcall : CallLe lib pk Ob O)
+    (O : Oracle Noun) (hcall : CallLe lib pk O)
     (scry : Noun) (a : Bell) (v : List Nat) (d : Nat) (regs : TreapMap mugF Noun) (trace : Trace) (r)
     (h : execPole lib O scry cr (Pole.cal a v d) regs trace = some r) :
     nock (poleS cr (Pole.cal a v d) regs trace scry) eval_pole.battery = some (poleOutS r) ∧
       CorIn r.2.2.2 := by
   simp only [execPole, Option.bind_eq_some_iff] at h
   obtain ⟨vs, e2, ⟨ton, cr''⟩, e3, h⟩ := h
-  have e3' := hcall _ _ _ _ _ _ _ e3
+  obtain ⟨Ob, hOb, e3'⟩ := hcall _ _ _ _ _ _ _ e3
   obtain ⟨b, c, new, cr', b0, e1, e4, e5⟩ := callBody_some e3'
   obtain ⟨hB, hC⟩ := hOb cr' (hpk.2 _ _ e1) _ _ _ _ _ _ _ e5
   refine ⟨?_, ?_⟩
@@ -564,14 +565,14 @@ theorem eval_pole_cal_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
 
 theorem eval_pole_csl_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
     (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
-    (Ob : Oracle Noun) (hOb : BlobLe lib Ob) (O : Oracle Noun) (hcall : CallLe lib pk Ob O)
+    (O : Oracle Noun) (hcall : CallLe lib pk O)
     (scry : Noun) (a : Bell) (sr : Nat) (d : Nat) (regs : TreapMap mugF Noun) (trace : Trace) (r)
     (h : execPole lib O scry cr (Pole.csl a sr d) regs trace = some r) :
     nock (poleS cr (Pole.csl a sr d) regs trace scry) eval_pole.battery = some (poleOutS r) ∧
       CorIn r.2.2.2 := by
   simp only [execPole, Option.bind_eq_some_iff] at h
   obtain ⟨vs0, e2, ⟨ton, cr''⟩, e3, h⟩ := h
-  have e3' := hcall _ _ _ _ _ _ _ e3
+  obtain ⟨Ob, hOb, e3'⟩ := hcall _ _ _ _ _ _ _ e3
   obtain ⟨b, c, new, cr', b0, e1, e4, e5⟩ := callBody_some e3'
   obtain ⟨hB, hC⟩ := hOb cr' (hpk.2 _ _ e1) _ _ _ _ _ _ _ e5
   refine ⟨?_, ?_⟩
@@ -590,7 +591,7 @@ theorem eval_pole_csl_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
 /-- What `execPole` returns, the pill's `+eval-pole` returns, on every op. -/
 theorem eval_pole_le (cr : Noun) (hc : CorIn cr) (lib : Lib) (hslam : SlamIsNock lib)
     (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
-    (Ob : Oracle Noun) (hOb : BlobLe lib Ob) (O : Oracle Noun) (hcall : CallLe lib pk Ob O)
+    (O : Oracle Noun) (hcall : CallLe lib pk O)
     (hnok : TopLe O) (scry : Noun) (pole : Pole) (regs : TreapMap mugF Noun) (trace : Trace) (r)
     (h : execPole lib O scry cr pole regs trace = some r) :
     nock (poleS cr pole regs trace scry) eval_pole.battery = some (poleOutS r) ∧
@@ -611,16 +612,16 @@ theorem eval_pole_le (cr : Noun) (hc : CorIn cr) (lib : Lib) (hslam : SlamIsNock
     exact ⟨rfl, hc⟩
   cases pole with
   | nok u f d => exact eval_pole_nok_le cr hc lib O hnok scry u f d regs trace r h
-  | cal a v d => exact eval_pole_cal_le cr hc lib pk hpk Ob hOb O hcall scry a v d regs trace r h
+  | cal a v d => exact eval_pole_cal_le cr hc lib pk hpk O hcall scry a v d regs trace r h
   | caf a v d n =>
-    rw [eval_pole_caf]; exact eval_pole_cal_le cr hc lib pk hpk Ob hOb O hcall scry a v d regs trace r h
+    rw [eval_pole_caf]; exact eval_pole_cal_le cr hc lib pk hpk O hcall scry a v d regs trace r h
   | cam a v d k =>
-    rw [eval_pole_cam]; exact eval_pole_cal_le cr hc lib pk hpk Ob hOb O hcall scry a v d regs trace r h
-  | csl a sr d => exact eval_pole_csl_le cr hc lib pk hpk Ob hOb O hcall scry a sr d regs trace r h
+    rw [eval_pole_cam]; exact eval_pole_cal_le cr hc lib pk hpk O hcall scry a v d regs trace r h
+  | csl a sr d => exact eval_pole_csl_le cr hc lib pk hpk O hcall scry a sr d regs trace r h
   | csf a sr d n =>
-    rw [eval_pole_csf]; exact eval_pole_csl_le cr hc lib pk hpk Ob hOb O hcall scry a sr d regs trace r h
+    rw [eval_pole_csf]; exact eval_pole_csl_le cr hc lib pk hpk O hcall scry a sr d regs trace r h
   | csm a sr d k =>
-    rw [eval_pole_csm]; exact eval_pole_csl_le cr hc lib pk hpk Ob hOb O hcall scry a sr d regs trace r h
+    rw [eval_pole_csm]; exact eval_pole_csl_le cr hc lib pk hpk O hcall scry a sr d regs trace r h
   | hmp a v f =>
     exact loc (eval_pole_hmp (icore cr) cr hcor hpi layer2 hl2 turn.arm_at homoIn_layer2 lib scry a v f
       regs trace) rfl
@@ -681,14 +682,15 @@ set_option maxHeartbeats 8000000 in
 `0 ..` and run block `0` of the callee, whose result is the block's. -/
 theorem eval_blob_jmp_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
     (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
-    (Ob : Oracle Noun) (hOb : BlobLe lib Ob) (O : Oracle Noun) (hcall : CallLe lib pk Ob O)
+    (O : Oracle Noun) (hcall : CallLe lib pk O)
     (s : Straight (TreapMap mugF)) (scry : Noun) (a : Bell) (v : List Nat)
     (regs : TreapMap mugF Noun) (trace : Trace) (r : Tone × Noun)
     (h : (v.mapM (SkaModel.read · regs)).bind (fun vs => O.call cr a false vs trace scry) = some r) :
     nock (blobS cr regs trace ⟨[], [], Termin.jmp a v⟩ s [] scry) eval_blob.battery
       = some (resN r) ∧ CorIn r.2 := by
   obtain ⟨vs, e2, e3⟩ := Option.bind_eq_some_iff.1 h
-  obtain ⟨b, c, new, cr', b0, e1, e4, e5⟩ := callBody_some (hcall _ _ _ _ _ _ _ e3)
+  obtain ⟨Ob, hOb, e3'⟩ := hcall _ _ _ _ _ _ _ e3
+  obtain ⟨b, c, new, cr', b0, e1, e4, e5⟩ := callBody_some e3'
   have hc' := hpk.2 _ _ e1
   obtain ⟨hB, hC⟩ := hOb cr' hc' _ _ _ _ _ _ _ e5
   refine ⟨?_, hC⟩
@@ -716,14 +718,15 @@ set_option maxHeartbeats 8000000 in
 whole, in register `0`, and run block `0` of the callee. -/
 theorem eval_blob_jsp_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
     (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
-    (Ob : Oracle Noun) (hOb : BlobLe lib Ob) (O : Oracle Noun) (hcall : CallLe lib pk Ob O)
+    (O : Oracle Noun) (hcall : CallLe lib pk O)
     (s : Straight (TreapMap mugF)) (scry : Noun) (a : Bell) (sr : Nat)
     (regs : TreapMap mugF Noun) (trace : Trace) (r : Tone × Noun)
     (h : (SkaModel.read sr regs).bind (fun vs => O.call cr a true [vs] trace scry) = some r) :
     nock (blobS cr regs trace ⟨[], [], Termin.jsp a sr⟩ s [] scry) eval_blob.battery
       = some (resN r) ∧ CorIn r.2 := by
   obtain ⟨vs, e2, e3⟩ := Option.bind_eq_some_iff.1 h
-  obtain ⟨b, c, new, cr', b0, e1, e4, e5⟩ := callBody_some (hcall _ _ _ _ _ _ _ e3)
+  obtain ⟨Ob, hOb, e3'⟩ := hcall _ _ _ _ _ _ _ e3
+  obtain ⟨b, c, new, cr', b0, e1, e4, e5⟩ := callBody_some e3'
   have hc' := hpk.2 _ _ e1
   obtain ⟨hB, hC⟩ := hOb cr' hc' _ _ _ _ _ _ _ e5
   refine ⟨?_, hC⟩
@@ -764,7 +767,7 @@ induction. -/
 theorem eval_blob_le (lib : Lib) (hslam : SlamIsNock lib)
     (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun))
     (hpk : ∀ cr, CorIn cr → PokeIs pk cr)
-    (Ob : Oracle Noun) (hOb : BlobLe lib Ob) (O : Oracle Noun) (hcall : CallLe lib pk Ob O)
+    (O : Oracle Noun) (hcall : CallLe lib pk O)
     (hnok : TopLe O) : BlobLe lib O := by
   intro cr hc regs trace b s params scry r h
   revert hc
@@ -826,7 +829,7 @@ theorem eval_blob_le (lib : Lib) (hslam : SlamIsNock lib)
     simp only [Option.bind_eq_some_iff] at h
     obtain ⟨⟨ton, regs', trace', st'⟩, e1, h⟩ := h
     obtain ⟨hP, hC'⟩ :=
-      eval_pole_le st hc lib hslam pk (hpk st hc) Ob hOb O hcall hnok scry p regs trace _ e1
+      eval_pole_le st hc lib hslam pk (hpk st hc) O hcall hnok scry p regs trace _ e1
     simp only [poleS, icore, poleOutS] at hP
     simp only [blobS, icore, Blob.toNoun, argsN, listNoun]
     cases ton with
@@ -845,22 +848,22 @@ theorem eval_blob_le (lib : Lib) (hslam : SlamIsNock lib)
       blob_simp [hP, eval_pole.arm, Tone.toNoun, resN]
   | nil =>
   cases bfin with
-  | jmp a v => exact eval_blob_jmp_le st hc lib pk (hpk st hc) Ob hOb O hcall s scry a v regs trace r h
-  | jsp a sr => exact eval_blob_jsp_le st hc lib pk (hpk st hc) Ob hOb O hcall s scry a sr regs trace r h
+  | jmp a v => exact eval_blob_jmp_le st hc lib pk (hpk st hc) O hcall s scry a v regs trace r h
+  | jsp a sr => exact eval_blob_jsp_le st hc lib pk (hpk st hc) O hcall s scry a sr regs trace r h
   | jmf a v n =>
     have e : nock (blobS st regs trace ⟨[], [], Termin.jmf a v n⟩ s [] scry) eval_blob.battery
         = nock (blobS st regs trace ⟨[], [], Termin.jmp a v⟩ s [] scry) eval_blob.battery := by
       simp only [blobS, icore, Blob.toNoun, argsN, listNoun, Termin.toNoun]
       blob_simp []
     rw [e]
-    exact eval_blob_jmp_le st hc lib pk (hpk st hc) Ob hOb O hcall s scry a v regs trace r h
+    exact eval_blob_jmp_le st hc lib pk (hpk st hc) O hcall s scry a v regs trace r h
   | jsf a sr n =>
     have e : nock (blobS st regs trace ⟨[], [], Termin.jsf a sr n⟩ s [] scry) eval_blob.battery
         = nock (blobS st regs trace ⟨[], [], Termin.jsp a sr⟩ s [] scry) eval_blob.battery := by
       simp only [blobS, icore, Blob.toNoun, argsN, listNoun, Termin.toNoun]
       blob_simp []
     rw [e]
-    exact eval_blob_jsp_le st hc lib pk (hpk st hc) Ob hOb O hcall s scry a sr regs trace r h
+    exact eval_blob_jsp_le st hc lib pk (hpk st hc) O hcall s scry a sr regs trace r h
   | hop t =>
     obtain ⟨b', hg, hI, hC⟩ := hop t (Option.bind_eq_some_iff.1 h)
     refine ⟨?_, hC⟩
@@ -1052,6 +1055,37 @@ theorem eval_top_le (lib : Lib) (hslam : SlamIsNock lib)
       simp [nock_exec, resN, hp, SkaModel.Prod.toNoun, Straight.toNoun, Tag.ir, hn.1, hn.2,
         NeedOrd.toNoun, Tag.this, hl2, by.arm_at, by_arm, by.got.arm_at, got_arm,
         got_gate layer2 hnd _ _ _ hg, eval_blob.arm, hB, Tag.full, h11']
+
+/-- At every depth of calls, what the interpreter's model returns, the pill's
+`+eval-blob` and `+eval-top` return. -/
+theorem interp_le (lib : Lib) (hslam : SlamIsNock lib)
+    (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun))
+    (hpk : ∀ cr, CorIn cr → PokeIs pk cr) :
+    ∀ m, BlobLe lib (SkaModel.interp lib pk m) ∧ TopLe (SkaModel.interp lib pk m)
+  | 0 => by
+    have hcall : CallLe lib pk (SkaModel.interp lib pk 0) := fun _ _ _ _ _ _ _ h => by
+      simp [SkaModel.interp] at h
+    have hnok : TopLe (SkaModel.interp lib pk 0) := fun _ _ _ _ _ _ h => by simp [SkaModel.interp] at h
+    exact ⟨eval_blob_le lib hslam pk hpk _ hcall hnok, hnok⟩
+  | m + 1 => by
+    obtain ⟨hB, _⟩ := interp_le lib hslam pk hpk m
+    have hcall : CallLe lib pk (SkaModel.interp lib pk (m + 1)) := fun _ _ _ _ _ _ _ h =>
+      ⟨interp lib pk m, hB, h⟩
+    have hnok : TopLe (SkaModel.interp lib pk (m + 1)) := fun cr hc vu vf scry r h =>
+      eval_top_le lib hslam pk hpk (SkaModel.interp lib pk m) hB m cr hc vu vf scry r h
+    exact ⟨eval_blob_le lib hslam pk hpk _ hcall hnok, hnok⟩
+
+/-- What the model's `EvalTop` relation says the interpreter returns, the
+pill's `+eval-top` returns: slammed on `[[s f] gul]` in the interpreter core
+over a compiler's core `cr` that keeps layers 2 and 4, with a poke that the
+model `pk` computes and that keeps them. -/
+theorem eval_top_of_model (lib : Lib) (hslam : SlamIsNock lib)
+    (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun))
+    (hpk : ∀ cr, CorIn cr → PokeIs pk cr) (cr : Noun) (hc : CorIn cr) (s f gul : Noun)
+    (ton : Tone) (cr' : Noun) (h : EvalTop lib pk cr s f gul ton cr') :
+    nock (topS cr s f gul) eval_top.battery = some (C ton.toNoun cr') ∧ CorIn cr' := by
+  obtain ⟨k, hk⟩ := h
+  exact (interp_le lib hslam pk hpk k).2 cr hc s f gul (ton, cr') hk
 
 end Compiler
 end Formalization
