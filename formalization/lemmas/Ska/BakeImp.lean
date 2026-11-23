@@ -29,6 +29,30 @@ can fail only at a site no subject of the bake reaches, whose sock
 contradicts the callee's code requirement: by the argument in the report of
 this track, only where `dat` gives the product of a never-returning callee
 from another identity of its code bell than the one the analysis used.
+
+Why two identities of one code bell are rare within a poke (an argument
+about the Hoon, not proved here).  A call is resolved by an exact match in
+the graph first, then by `+git:mi` on the finished functions, which hits any
+entry whose code requirement the subject provides, then by
+`+recursive-call`, which sends it to the latest function in progress with
+the same formula whose current code requirement the subject provides (the
+bunt's, `|+~`, during that function's first run, so always then).  Only then
+is a new identity analysed.  So a second identity of a code bell is made
+only when its subject does not provide the code requirement of the first
+when it is called (which, as code requirements only grow, means it never
+does, so the two bells differ), or by the `.indi` test of both arms, or by a
+`%he` generalization.  Within a component, the members run until no entry
+changes, so a caller's final run read its callees' final entries, except that
+`+pop` turns a `%void` product into `|+~`, which knows less.  And
+`+double-int` keeps a part of a product only where both branches agree on
+the sock and on the provenance, so a constant without provenance in a
+product is one of the formula's constants, kept where every branch that
+returns gives it.  What is left for a witness: an identity made by the
+`.indi` test or by `%he` whose product contradicts that of the identity the
+caller's analysis used.  A proof would need a new invariant of the analysis
+relating the socks of the analysis at a call site to those `+know` computes
+under a bake: for example, that the products of two identities of one code
+bell share a noun after `+patch-prod` for any sock.
 -/
 
 namespace Formalization
