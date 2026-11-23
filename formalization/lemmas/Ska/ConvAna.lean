@@ -131,6 +131,53 @@ theorem cullPass_ok2 {memoF : Memo M} {n : Nat} {pass : PassGo M R} (hpass : Pas
   exact ⟨⟨F4, hF4, c4⟩, gStepsR_trans s3 s4, (k3.weaken ⟨[id], rfl⟩ (fun j hj => List.mem_cons_of_mem _ hj)).trans k4,
     (fr3.weaken (fun j hj => List.mem_cons_of_mem _ hj)).trans2 fr4 (fun j hj => hj), hcl4, hid4, hlo4, hlt4⟩
 
+/-- The state after `+analyze` takes a memo hit. -/
+def hitSt (st : SkaState M R) (id : Ident) (d : FDatum M) : SkaState M R :=
+  { st with g := Treap.put st.g id d, done := putMi st.done id d }
+
+/-- **A memo hit of an earlier poke is a new frozen entry.** -/
+theorem hit_cinv {memoF : Memo M} (hmF : MemoWF memoF) {st : SkaState M R} {F : Entry → Prop}
+    (hc : CInv memoF st F) {id : Ident} (hw : WellFormed id.1) (hg : Treap.get st.g id = none)
+    {hit : Ident × FDatum M} (h : gitMi memoF id.2 id.1 = some (some hit)) :
+    CInv memoF (hitSt st id hit.2) (fun e => F e ∨ e = entOf id hit.2) ∧
+    GStepsR (gCore st.g) (gCore (hitSt st id hit.2).g) ∧ Keep st.stk (· ∈ st.stk) st (hitSt st id hit.2) ∧
+    Frame (· ∈ st.stk) st (hitSt st id hit.2) := by
+  have hn : id ∉ st.stk := hc.s.not_mem hg
+  have hno : Treap.get st.order id = none := by
+    cases e : Treap.get st.order id with
+    | none => rfl
+    | some o => exact absurd ((hc.s.ord_stk id).mp ⟨o, e⟩) hn
+  obtain ⟨i1, s1, k1⟩ := hit_ok hmF hc.s hw hg h
+  have hneid : ∀ i, Treap.get st.g i ≠ none → i ≠ id := fun i hi e => hi (e ▸ hg)
+  have hF : ∀ e, F e → F e ∨ e = entOf id hit.2 := fun e h => Or.inl h
+  unfold hitSt
+  refine ⟨⟨i1, fun m => hc.tick m, hc.ord, ⟨fun e he => ?_, fun i d h1 h2 => ?_, fun e he => ?_, fun e he => ?_,
+    fun f ms s ent h1 h2 => ?_⟩, fun m o hmo => ?_, hc.tkeys⟩, s1, k1,
+    ⟨fun i d h1 h2 => ?_, fun _ _ => rfl, Nat.le_refl _, Nat.le_refl _, fun x o hxo hx => absurd hxo hx⟩⟩
+  · rcases he with he | rfl
+    · exact hc.frz.ok.mono hF he
+    · exact Or.inr ⟨hit.1, hit.2, h, rfl⟩
+  · simp only [Treap.get_put] at h1
+    split at h1
+    · rename_i e; cases h1; exact Or.inr (by rw [e])
+    · exact Or.inl (hc.frz.cover i d h1 h2)
+  · rcases he with he | rfl
+    · obtain ⟨⟨d, hd⟩, ho⟩ := hc.frz.sub e he
+      have hi := hneid _ (by rw [hd]; simp)
+      exact ⟨⟨d, by simp only [Treap.get_put, if_neg hi]; exact hd⟩, ho⟩
+    · exact ⟨⟨hit.2, by simp [entOf, Treap.get_put]⟩, hno⟩
+  · rcases he with he | rfl
+    · exact hc.frz.wf e he
+    · exact gitMi_wf hmF hw h
+  · rcases putMi_get h1 h2 with ⟨ms', e1, e2⟩ | ⟨rfl, rfl⟩
+    · obtain ⟨hF', hk, hge⟩ := hc.frz.done f ms' s ent e1 e2
+      have hi := hneid _ (by rw [hge]; simp)
+      exact ⟨Or.inl hF', hk, by simp only [Treap.get_put, if_neg hi]; exact hge⟩
+    · exact ⟨Or.inr rfl, rfl, by simp [Treap.get_put]⟩
+  · exact memOK_frame hc.s ((hc.s.ord_stk m).mp ⟨o, hmo⟩) k1 (fun _ _ => rfl) hF (hc.mem m o hmo)
+  · have hi := hneid i (by rw [h1]; simp)
+    exact ⟨by simp only [Treap.get_put, if_neg hi]; exact h1, h2⟩
+
 end Ana
 end SkaModel
 end Formalization
