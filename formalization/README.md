@@ -73,6 +73,11 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Hoon/Maps.lean` | `+get:by`, `+has:by`, `+got:by`, `+gut:by` on an `IsMap`. |
 | `Hoon/Apt.lean` | `apt_by`: the pill's `+apt:by` says yes exactly on `IsMap` nouns and on the lone nodes `[x ~ ~]` with an atom `x`. |
 | `Hoon/TapBy.lean`, `Hoon/TapIn.lean` | `+tap:by` and `+tap:in` (the same noun): the list of the pairs of a map, of the keys of a set. |
+| `Hoon/DelBy.lean`, `Hoon/GasBy.lean`, `Hoon/JabBy.lean` | `+del:by` (with the merge of two treaps), `+gas:by`, `+jab:by` on maps. |
+| `Hoon/RepBy.lean` | `+rep:by` and `+rep:in` (one noun): a fold over the nodes in pre-order. |
+| `Hoon/MapFolds.lean`, `Hoon/SetFolds.lean` | `+key:by`, `+run:by`, `+any:by`; `+gas:in`, `+any:in`, `+run:in`, `+del:in`. |
+| `Hoon/Ju.lean` | The doors `+ju` (get, put, has, del, gas) and `+ja` (get, add). |
+| `Hoon/ListsMore.lean` | `+skim`, `+skip`, `+murn`, `+rear`, `+snip`. |
 | `Hoon/Axis.lean` | `+cap`, `+mas`, `+peg`, and what they mean for `slot?` (`slot_pegF`, `slot_cap_mas`). |
 | `Hoon/Sets.lean` | `+put:in` and `+has:in`, with a set read as the map of its keys to `~`. |
 | `Hoon/Bits.lean` | `+bex`, `+lsh`, `+rsh`, `+end`, `+met`, `+cut`, `+cat`, `+can`, and `+mix`, `+dis`, `+con` as `^^^`, `&&&`, `|||`. |
@@ -175,6 +180,5 @@ import only its theorems.  So:
    `+dvr`, `+div`, `+mod` by zero and `+snag` past the end crash; nothing is
    proved about gates slammed on nouns of the wrong shape, nor about nouns on
    which a model is `none`.
-5. **Not done among the arms of the library:** `+del:by`, `+gas:by`,
-   `+rep:by`, `+jab:by`, `+uni:by`, the `+ju` and `+ja` doors, and the rest of
-   the usage table in the last report.
+5. **Not done among the arms of the library:** `+uni`, `+int`, `+dif` of `+by`
+   and `+in`, `+wyt`, `+zing`, `+spin`, `+snoc`, `+biff`, `+sort`.

@@ -411,20 +411,27 @@ def main():
     axes.append(('fe', fe_ax, 'slot? fe.axis layer2 = some fe.arm'))
     ax_of = dict((nm, ax) for nm, ax, _ in axes)
 
-    def fe_arms(i, ax):
+    def fe_arms(i, ax, depth=0):
+        """the arms of a battery: the leaves of its tree of cells whose heads
+        are cells, down to a depth that no battery here exceeds"""
         n = NODES[i]
-        if type(NODES[n[0]]) is int:
+        if type(NODES[n[0]]) is int or depth >= 12:
             yield ax, i
             return
-        yield from fe_arms(n[0], 2 * ax)
-        yield from fe_arms(n[1], 2 * ax + 1)
+        yield from fe_arms(n[0], 2 * ax, depth + 1)
+        yield from fe_arms(n[1], 2 * ax + 1, depth + 1)
 
     def pulls(formula):
-        """the [axis ctx] of every [9 axis 0 ctx] in formula, in pre-order"""
+        """the [axis ctx] of every [9 axis 0 ctx] in formula, in pre-order,
+        each subterm visited once"""
         out = []
+        seen = set()
         st = [formula]
         while st:
             i = st.pop()
+            if i in seen:
+                continue
+            seen.add(i)
             n = NODES[i]
             if type(n) is int:
                 continue
@@ -643,6 +650,68 @@ def main():
     door_arm_pulling('ju', 'gas', lambda ps: (ju_put, 15) in ps, 1)
     ja_get = door_arm_pulling('ja', 'get', lambda ps: ps == {(by_ax, 31)}, 0)
     door_arm_pulling('ja', 'add', lambda ps: ps == {(ja_get, 7), (by_ax, 63)}, 0)
+
+    # ---- the compiler's leaf cores +ca and +so: arms of the library core,
+    # [[1 battery] [11 [%fast [1 [label [0 511] 0]]] [0 1]]], whose own arms
+    # carry %fast labels except for a few
+    def core_label_arm(label):
+        clue = cell(atom(cord(label)), cell(cell(atom(0), atom(511)), atom(0)))
+        hint = cell(atom(11), cell(cell(atom(FAST), cell(atom(1), clue)), cell(atom(0), atom(1))))
+        res = [i for i in live if type(NODES[i]) is tuple and tail(i) == hint
+               and type(NODES[head(i)]) is tuple and NODES[head(head(i))] == 1]
+        assert len(res) == 1, (label, res)
+        return res[0], tail(head(res[0]))
+
+    def label_of(a):
+        """the %fast label of a gate arm [7 builder [11 [%fast [1 [label ..]]] 0 1]]"""
+        try:
+            if NODES[head(a)] != 7:
+                return None
+            h = head(tail(tail(a)))
+            if NODES[h] != 11:
+                return None
+            hb = head(tail(tail(tail(a))))
+            if NODES[head(hb)] != FAST:
+                return None
+            q = tail(hb)
+            if NODES[head(q)] != 1:
+                return None
+            return N.tape(head(tail(q)))
+        except (TypeError, IndexError):
+            return None
+
+    # Their batteries are not named: an arm of +ca (+dif, through its crash
+    # message) quotes a noun that holds the whole hoon core.  Each arm is named
+    # on its own, unless it reaches a noun of the bulk; its axis is relative to
+    # its core [battery payload].
+    unlabeled = {'ca': {95: 'lot', 171: 'lack', 87: 'dif'}, 'so': {4: 'jibe'}}
+    bulk_named = set(i for i, nm in names.items() if nm.split('.')[0] in
+                     ('root', 'nok', 'trap', 'core', 'layer0', 'layer1', 'layer2'))
+    skipped = []
+    for clabel in ['ca', 'so']:
+        carm, cbat = core_label_arm(clabel)
+        core_cell = cell(cbat, atom(0))
+        for ax, a in fe_arms(cbat, 2):
+            lab = label_of(a)
+            full_ax = find_axis(core_cell, a)
+            if lab:
+                g = gate_battery(a)
+            elif is_gate_builder(a) and full_ax in unlabeled[clabel]:
+                lab = unlabeled[clabel][full_ax]
+                g = door_gate_battery(a)
+            else:
+                continue
+            full = clabel + '.' + lab
+            if reach([a]) & bulk_named:
+                skipped.append(full)
+                continue
+            name(a, full + '.arm')
+            formulas.add(a)
+            name(g, full + '.battery')
+            formulas.add(g)
+            name_loops(full, g, 'any')
+            axes.append((full, full_ax, None))
+    sys.stderr.write('compiler arms skipped (they reach the bulk): %s\n' % skipped)
 
     # ---- write
     emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, len(data))
@@ -1024,6 +1093,8 @@ def emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, nbyte
         fh.write('/-! Each named arm sits at its axis.  The constants `x.axis` are in the\n'
                  'arm files. -/\n\n')
         for nm, ax, st in axes:
+            if st is None:
+                continue
             if st.startswith('∀'):
                 fh.write('theorem %s.arm_at : %s := by\n  intro x; kernel_rfl\n\n' % (nm, st))
             else:

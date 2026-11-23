@@ -6,6 +6,7 @@ public import lemmas.Pill.Nouns.P014
 public import lemmas.Pill.Arm.Add
 public import lemmas.Pill.Arm.Bex
 public import lemmas.Pill.Arm.By
+public import lemmas.Pill.Arm.Ca
 public import lemmas.Pill.Arm.Can
 public import lemmas.Pill.Arm.Cap
 public import lemmas.Pill.Arm.Cat
@@ -55,6 +56,7 @@ public import lemmas.Pill.Arm.Skip
 public import lemmas.Pill.Arm.Slag
 public import lemmas.Pill.Arm.Snag
 public import lemmas.Pill.Arm.Snip
+public import lemmas.Pill.Arm.So
 public import lemmas.Pill.Arm.Some
 public import lemmas.Pill.Arm.Sort
 public import lemmas.Pill.Arm.Spin
@@ -65,6 +67,7 @@ public import lemmas.Pill.Arm.Zing
 import all lemmas.Pill.Arm.Add
 import all lemmas.Pill.Arm.Bex
 import all lemmas.Pill.Arm.By
+import all lemmas.Pill.Arm.Ca
 import all lemmas.Pill.Arm.Can
 import all lemmas.Pill.Arm.Cap
 import all lemmas.Pill.Arm.Cat
@@ -114,6 +117,7 @@ import all lemmas.Pill.Arm.Skip
 import all lemmas.Pill.Arm.Slag
 import all lemmas.Pill.Arm.Snag
 import all lemmas.Pill.Arm.Snip
+import all lemmas.Pill.Arm.So
 import all lemmas.Pill.Arm.Some
 import all lemmas.Pill.Arm.Sort
 import all lemmas.Pill.Arm.Spin
