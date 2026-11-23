@@ -39,3 +39,5 @@ open Formalization.SkaModel.Comp
 #print axioms coerceSpec
 #print axioms finish_compDone'
 #print axioms finish_bellContract'
+#print axioms flatten_needOrdAllocRegs
+#print axioms isRun_needOrdAllocRegs

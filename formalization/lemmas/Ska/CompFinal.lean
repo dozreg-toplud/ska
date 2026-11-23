@@ -38,6 +38,65 @@ theorem finish_bellContract' [HoonMapKeys Map] {lib : Lib} {code : Bell → Opti
     (N : Needs) : BellContract lib N b false c' :=
   finish_bellContract hok hp hA hf hb hn hbake (runDown nm) coerceSpec h N
 
+
+/-! ## The inputs are a run -/
+
+/-- `+need-ord-alloc-regs` allocates the registers of the need in the order
+`+flatten-need` lists them, one after the other. -/
+theorem flatten_needOrdAllocRegs : ∀ (ord : NeedOrd) (g g' : Gen Map) (ned : Need),
+    needOrdAllocRegs ord g = some (ned, g') → flattenNeed ned = List.range' g.re (g'.re - g.re)
+  | NeedOrd.none, g, g', ned, h => by
+    simp only [needOrdAllocRegs, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    simp [flattenNeed]
+  | NeedOrd.this, g, g', ned, h => by
+    simp only [needOrdAllocRegs, bind_apply, re_apply, pure_apply, Option.bind_some, Option.some.injEq,
+      Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    simp [flattenNeed]
+  | NeedOrd.pair p q, g, g', ned, h => by
+    obtain ⟨hn, ga, h1, h⟩ := bind_some h
+    obtain ⟨tn, gb, h2, h⟩ := bind_some h
+    have la := (needOrdAllocRegs_spec p _ _ _ h1).2.1
+    have lb := (needOrdAllocRegs_spec q _ _ _ h2).2.1
+    have fa := flatten_needOrdAllocRegs p _ _ _ h1
+    have fb := flatten_needOrdAllocRegs q _ _ _ h2
+    split at h
+    · cases h
+    · simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      simp only [flattenNeed, fa, fb]
+      rw [show gb.re - g.re = (ga.re - g.re) + (gb.re - ga.re) by omega, ← List.range'_append_1,
+        show g.re + (ga.re - g.re) = ga.re by omega]
+  | NeedOrd.both p q, g, g', ned, h => by
+    obtain ⟨r0, g0', h0, h⟩ := bind_some h
+    simp only [re_apply, Option.some.injEq, Prod.mk.injEq] at h0
+    obtain ⟨rfl, rfl⟩ := h0
+    obtain ⟨hn, ga, h1, h⟩ := bind_some h
+    obtain ⟨tn, gb, h2, h⟩ := bind_some h
+    have la := (needOrdAllocRegs_spec p _ _ _ h1).2.1
+    have lb := (needOrdAllocRegs_spec q _ _ _ h2).2.1
+    have fa := flatten_needOrdAllocRegs p _ _ _ h1
+    have fb := flatten_needOrdAllocRegs q _ _ _ h2
+    simp only at la fa
+    split at h
+    · cases h
+    · simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      simp only [flattenNeed, fa, fb]
+      rw [show gb.re - g.re = ((ga.re - (g.re + 1)) + (gb.re - ga.re)) + 1 by omega, List.range'_succ,
+        ← List.range'_append_1, show g.re + 1 + (ga.re - (g.re + 1)) = ga.re by omega]
+
+/-- So the input registers that `+to-straight` sees, when nothing is baked,
+are the run `[r0, r0+n)`: it takes its renaming path, never the other. -/
+theorem isRun_needOrdAllocRegs {ord : NeedOrd} {g g' : Gen Map} {ned : Need}
+    (h : needOrdAllocRegs ord g = some (ned, g')) :
+    isRun (flattenNeed ned) ((flattenNeed ned).headD 0) 0 = true := by
+  rw [isRun_iff, flatten_needOrdAllocRegs ord g g' ned h]
+  cases e : g'.re - g.re with
+  | zero => simp
+  | succ n => simp [List.range'_succ]
+
 end Comp
 end SkaModel
 end Formalization
