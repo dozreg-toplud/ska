@@ -104,6 +104,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`. |
 | `Compiler/Regs.lean`, `Compiler/EvalPass.lean` | `+read`, `+store`, `+move` and `+eval-pass` of the interpreter core `interp` against `read`, `store`, `move`, `evalPass` of `Ska/Interp.lean` on maps of `TreapMap mugF` (`read_pill`, `store_pill`, `move_pill`, `eval_pass_pill`), from gate theorems that assume what the arms read through layer 2 (`RegsIn`, `MoveIn`, `EvalPassIn`). |
 | `Compiler/EvalPole.lean` | `+eval-pole` on every op that stays in the function (all but `%nok` and the calls) against `localPole` of `Ska/Interp.lean` (`eval_pole_local`, `eval_pole_hmp`, `eval_pole_spy`), in a context `ctx` whose tail is the compiler's core `cor`; `%spy` assumes `SlamIsNock lib`.  On the pill's `interp` with its own `cor`: `eval_pole_local_pill`. |
+| `Compiler/EvalCall.lean` | The ops of `+eval-pole` that leave the function and the calls at the end of a block of `+eval-blob`, with the compiler's core `cr` as the state (`icore cr` is the interpreter core over it, `CorIn cr` says it keeps layer 2 at `read.layer2.axis`).  The poke is a parameter `pk` that computes the pill's poke on every ovum and keeps `CorIn` (`PokeIs`).  As equations, given the oracles exactly at the inputs used: `eval_pole_nok`, `eval_pole_cal`, `eval_pole_csl`, `%caf`, `%cam`, `%csf`, `%csm` as the plain calls (`eval_pole_caf`, ...), and `eval_pole_gate` on every op.  As what the model returns, the pill returns (`CallLe`, `BlobLe`, `TopLe`): `eval_pole_le` on every op, `eval_blob_jmp_le`, `eval_blob_jsp_le`.  The inline loops that put the arguments of a call in registers: `eval_pole_loop`, `eval_blob_loop`. |
 | `Compiler/Lib.lean` | `dif` of `+ca` and `huge` of `+so`, whose crash messages quote a noun that holds the hoon core, so that the generator names them in the bulk chain (`ca.dif.mean` is the quoted noun).  And the pill's library core `lib` satisfies `CaOf`, `SoOf`, `AxisOf`, `YeaOf`: every gate of `+ca` and `+so` computes its model on the pill's core (`ca_int_pill`, ..., `so_darn_pill`) with no assumption. |
 | `Compiler/Axes.lean` | `pat`, `lot` of `+ca` and `pull` of `+so`, which walk an axis with `+cap` and `+mas` of layer 1, read through the library core at `ca.lib.layer1.axis`; B's `cap` and `mas` equal `capF` and `masF`.  And `yea` of `+ca`, with `+peg` and `+weld`, and `darn` of `+so`. |
 | `Ska/Types.lean` | Models of the IR types (`Bell`, `Sock`, `Cape`, `Pole`, `Termin`, `Blob`, `Straight`, `Tone`, ...), each with its Hoon noun layout. |
@@ -257,10 +258,12 @@ import only its theorems.  So:
    agree with their models on every input.
 9. **The interpreter is done in part.**  `+read`, `+store`, `+move`,
    `+eval-pass` and the ops of `+eval-pole` that stay in the function agree
-   with `Ska/Interp.lean` on maps of `TreapMap mugF`.  Not done: the ops of
-   `+eval-pole` that leave the function (`%nok`, `%cal`, `%caf`, `%cam`,
-   `%csl`, `%csf`, `%csm`), `+eval-blob`, `+eval-top`, `+eval-mook` and
-   `+eval-rend`.  The arms that thread the compiler's core read their context
+   with `Ska/Interp.lean` on maps of `TreapMap mugF`, and so do the ops that
+   leave it (`Compiler/EvalCall.lean`), given the poke and what `+eval-top`
+   and `+eval-blob` compute.  Not done: `+eval-blob` as a whole (the loop over
+   the ops and the jumps within the function, by `execBlob.partial_correctness`),
+   `+eval-top`, the inductions over the depth of calls, the converse direction
+   (what the pill returns, the model returns), `+eval-mook` and `+eval-rend`.  The arms that thread the compiler's core read their context
    through its tail `cor`, so after a poke they read the new `cor`: a theorem
    about them needs the poke to keep layer 2 at `read.layer2.axis`.
 10. **`Treap` of `Ska/Analysis.lean` has no instance from `lemmas/Hoon/`.**  The
