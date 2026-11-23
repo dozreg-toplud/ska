@@ -474,5 +474,156 @@ theorem eval_pole_gate (cr : Noun) (hc : CorIn cr) (lib : Lib) (hslam : SlamIsNo
     rw [eval_pole_local (icore cr) cr hcor hpi lib scry _ (by simp [PlainLocal]) regs trace]
     exact (local_map cr lib scry _ regs trace).symm
 
+/-! ## What the model returns, the pill returns -/
+
+/-- The calls of `O` are among those of `callBody` over `Ob`. -/
+def CallLe (lib : Lib) (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun))
+    (Ob : Oracle Noun) (O : Oracle Noun) : Prop :=
+  ∀ cr a mono vs trace scry r, O.call cr a mono vs trace scry = some r →
+    callBody lib pk Ob cr a mono vs trace scry = some r
+
+/-- What `execBlob` with the oracle `O` returns, the pill's `+eval-blob`
+returns, on the cores that keep what the interpreter reads; and it returns such
+cores. -/
+def BlobLe (lib : Lib) (O : Oracle Noun) : Prop :=
+  ∀ cr, CorIn cr → ∀ regs trace b s params scry r,
+    execBlob lib O s scry cr regs trace b params = some r →
+    nock (blobS cr regs trace b s params scry) eval_blob.battery = some (resN r) ∧ CorIn r.2
+
+/-- What the oracle's `nok` returns, the pill's `+eval-top` returns. -/
+def TopLe (O : Oracle Noun) : Prop :=
+  ∀ cr, CorIn cr → ∀ vu vf scry r, O.nok cr vu vf scry = some r →
+    nock (topS cr vu vf scry) eval_top.battery = some (resN r) ∧ CorIn r.2
+
+theorem eval_pole_nok_le (cr : Noun) (hc : CorIn cr) (lib : Lib) (O : Oracle Noun) (hnok : TopLe O)
+    (scry : Noun) (u f d : Nat) (regs : TreapMap mugF Noun) (trace : Trace) (r)
+    (h : execPole lib O scry cr (Pole.nok u f d) regs trace = some r) :
+    nock (poleS cr (Pole.nok u f d) regs trace scry) eval_pole.battery = some (poleOutS r) ∧
+      CorIn r.2.2.2 := by
+  simp only [execPole, Option.bind_eq_some_iff] at h
+  obtain ⟨vu, e1, vf, e2, ⟨ton, cr'⟩, e3, h⟩ := h
+  obtain ⟨hT, hC⟩ := hnok cr hc vu vf scry _ e3
+  refine ⟨?_, ?_⟩
+  · rw [eval_pole_nok cr hc lib O scry u f d regs trace
+      (fun vu' vf' e1' e2' => by
+        rw [e1, Option.some.injEq] at e1'; rw [e2, Option.some.injEq] at e2'
+        subst e1' e2'; rw [hT, e3]; rfl)
+      (fun vu' vf' r' e1' e2' e3' => by
+        rw [e1, Option.some.injEq] at e1'; rw [e2, Option.some.injEq] at e2'
+        subst e1' e2'; rw [e3, Option.some.injEq] at e3'; subst e3'; exact hC)]
+    simp only [execPole, e1, e2, e3, Option.bind_some]
+    rw [h]; rfl
+  · cases ton <;> simp at h <;> subst h <;> exact hC
+
+/-- From a call that the model makes: the poke, the callee's block `0` and its
+run. -/
+theorem callBody_some {lib : Lib} {pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)}
+    {Ob : Oracle Noun} {cr : Noun} {a : Bell} {mono : Bool} {vs : List Noun} {trace : Trace}
+    {scry : Noun} {r : Tone × Noun} (h : callBody lib pk Ob cr a mono vs trace scry = some r) :
+    ∃ b c new cr' b0, pk cr (Ovum.dire a mono) = some (SkaModel.Prod.ir b c new, cr') ∧
+      HoonMap.get c.blocks 0 = some b0 ∧
+      execBlob lib Ob c scry cr' (regsOf vs) trace b0 [] = some r := by
+  simp only [callBody, Option.bind_eq_some_iff] at h
+  obtain ⟨⟨p, cr'⟩, e1, h⟩ := h
+  rcases p with _ | ⟨b, c, new⟩ | _
+  · simp at h
+  · simp only [execEntry, Option.bind_eq_some_iff] at h
+    obtain ⟨b0, e2, h⟩ := h
+    exact ⟨b, c, new, cr', b0, e1, e2, h⟩
+  · simp at h
+
+theorem eval_pole_cal_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
+    (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
+    (Ob : Oracle Noun) (hOb : BlobLe lib Ob) (O : Oracle Noun) (hcall : CallLe lib pk Ob O)
+    (scry : Noun) (a : Bell) (v : List Nat) (d : Nat) (regs : TreapMap mugF Noun) (trace : Trace) (r)
+    (h : execPole lib O scry cr (Pole.cal a v d) regs trace = some r) :
+    nock (poleS cr (Pole.cal a v d) regs trace scry) eval_pole.battery = some (poleOutS r) ∧
+      CorIn r.2.2.2 := by
+  simp only [execPole, Option.bind_eq_some_iff] at h
+  obtain ⟨vs, e2, ⟨ton, cr''⟩, e3, h⟩ := h
+  have e3' := hcall _ _ _ _ _ _ _ e3
+  obtain ⟨b, c, new, cr', b0, e1, e4, e5⟩ := callBody_some e3'
+  obtain ⟨hB, hC⟩ := hOb cr' (hpk.2 _ _ e1) _ _ _ _ _ _ _ e5
+  refine ⟨?_, ?_⟩
+  · rw [eval_pole_cal cr hc lib pk hpk Ob O.nok scry a v d regs trace
+      (fun b' c' new' cr₁ vs' b0' e1' e2' e4' => by
+        rw [e1, Option.some.injEq, Prod.mk.injEq, SkaModel.Prod.ir.injEq] at e1'
+        obtain ⟨⟨rfl, rfl, rfl⟩, rfl⟩ := e1'
+        rw [e2, Option.some.injEq] at e2'; subst e2'
+        rw [e4, Option.some.injEq] at e4'; subst e4'
+        refine ⟨by rw [hB, e5]; rfl, fun r' e => ?_⟩
+        rw [e5, Option.some.injEq] at e; subst e; exact hC)]
+    simp only [execPole, e2, e3', Option.bind_some]
+    rw [h]; rfl
+  · cases ton <;> simp [afterCall] at h <;> subst h <;> exact hC
+
+theorem eval_pole_csl_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
+    (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
+    (Ob : Oracle Noun) (hOb : BlobLe lib Ob) (O : Oracle Noun) (hcall : CallLe lib pk Ob O)
+    (scry : Noun) (a : Bell) (sr : Nat) (d : Nat) (regs : TreapMap mugF Noun) (trace : Trace) (r)
+    (h : execPole lib O scry cr (Pole.csl a sr d) regs trace = some r) :
+    nock (poleS cr (Pole.csl a sr d) regs trace scry) eval_pole.battery = some (poleOutS r) ∧
+      CorIn r.2.2.2 := by
+  simp only [execPole, Option.bind_eq_some_iff] at h
+  obtain ⟨vs0, e2, ⟨ton, cr''⟩, e3, h⟩ := h
+  have e3' := hcall _ _ _ _ _ _ _ e3
+  obtain ⟨b, c, new, cr', b0, e1, e4, e5⟩ := callBody_some e3'
+  obtain ⟨hB, hC⟩ := hOb cr' (hpk.2 _ _ e1) _ _ _ _ _ _ _ e5
+  refine ⟨?_, ?_⟩
+  · rw [eval_pole_csl cr hc lib pk hpk Ob O.nok scry a sr d regs trace
+      (fun b' c' new' cr₁ vs' b0' e1' e2' e4' => by
+        rw [e1, Option.some.injEq, Prod.mk.injEq, SkaModel.Prod.ir.injEq] at e1'
+        obtain ⟨⟨rfl, rfl, rfl⟩, rfl⟩ := e1'
+        rw [e2, Option.some.injEq] at e2'; subst e2'
+        rw [e4, Option.some.injEq] at e4'; subst e4'
+        refine ⟨by rw [hB, e5]; rfl, fun r' e => ?_⟩
+        rw [e5, Option.some.injEq] at e; subst e; exact hC)]
+    simp only [execPole, e2, e3', Option.bind_some]
+    rw [h]; rfl
+  · cases ton <;> simp [afterCall] at h <;> subst h <;> exact hC
+
+/-- What `execPole` returns, the pill's `+eval-pole` returns, on every op. -/
+theorem eval_pole_le (cr : Noun) (hc : CorIn cr) (lib : Lib) (hslam : SlamIsNock lib)
+    (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
+    (Ob : Oracle Noun) (hOb : BlobLe lib Ob) (O : Oracle Noun) (hcall : CallLe lib pk Ob O)
+    (hnok : TopLe O) (scry : Noun) (pole : Pole) (regs : TreapMap mugF Noun) (trace : Trace) (r)
+    (h : execPole lib O scry cr pole regs trace = some r) :
+    nock (poleS cr pole regs trace scry) eval_pole.battery = some (poleOutS r) ∧
+      CorIn r.2.2.2 := by
+  have hcor : slot? 3 (icore cr) = some cr := by simp [nock_exec]
+  have hpi := evalPoleIn_icore hc
+  have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc
+  have loc : ∀ (e : nock (poleS cr pole regs trace scry) eval_pole.battery
+      = (localPole lib scry pole regs trace).map (poleOut cr)),
+      execPole lib O scry cr pole regs trace = (localPole lib scry pole regs trace).map
+        (fun r => (r.1, r.2.1, r.2.2, cr)) →
+      nock (poleS cr pole regs trace scry) eval_pole.battery = some (poleOutS r) ∧
+        CorIn r.2.2.2 := by
+    intro e hx
+    rw [hx] at h
+    obtain ⟨r', h1, rfl⟩ := Option.map_eq_some_iff.1 h
+    rw [e, h1]
+    exact ⟨rfl, hc⟩
+  cases pole with
+  | nok u f d => exact eval_pole_nok_le cr hc lib O hnok scry u f d regs trace r h
+  | cal a v d => exact eval_pole_cal_le cr hc lib pk hpk Ob hOb O hcall scry a v d regs trace r h
+  | caf a v d n =>
+    rw [eval_pole_caf]; exact eval_pole_cal_le cr hc lib pk hpk Ob hOb O hcall scry a v d regs trace r h
+  | cam a v d k =>
+    rw [eval_pole_cam]; exact eval_pole_cal_le cr hc lib pk hpk Ob hOb O hcall scry a v d regs trace r h
+  | csl a sr d => exact eval_pole_csl_le cr hc lib pk hpk Ob hOb O hcall scry a sr d regs trace r h
+  | csf a sr d n =>
+    rw [eval_pole_csf]; exact eval_pole_csl_le cr hc lib pk hpk Ob hOb O hcall scry a sr d regs trace r h
+  | csm a sr d k =>
+    rw [eval_pole_csm]; exact eval_pole_csl_le cr hc lib pk hpk Ob hOb O hcall scry a sr d regs trace r h
+  | hmp a v f =>
+    exact loc (eval_pole_hmp (icore cr) cr hcor hpi layer2 hl2 turn.arm_at homoIn_layer2 lib scry a v f
+      regs trace) rfl
+  | spy e p d =>
+    exact loc (eval_pole_spy (icore cr) cr hcor hpi lib hslam scry e p d regs trace) rfl
+  | _ =>
+    exact loc (eval_pole_local (icore cr) cr hcor hpi lib scry _ (by simp [PlainLocal]) regs trace)
+      rfl
+
 end Compiler
 end Formalization
