@@ -133,10 +133,6 @@ open Formalization.SkaModel.Comp
 #print axioms lazySizeGo_eq
 #print axioms lazyBig_entries
 #print axioms runL_six_doneL
-#print axioms runD_ok
-#print axioms finishLF_compDoneD
-#print axioms finishLF_bellContractD
-#print axioms crash_iffD
 #print axioms sixBody_apart
 #print axioms copyL_six_apart
 #print axioms runP_ok

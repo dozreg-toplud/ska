@@ -3,10 +3,16 @@ import lemmas.Ska.CompNestPick
 /-!
 # The final pass on `FragP`
 
-`finishLF_compDoneP`, `finishLF_bellContractP`, `crash_iffP`: the theorems
-of `CompNestFinal.lean` on the larger fragment `FragP` for `%done`, where
-`%6` nests in the branches and in the tests to any depth, when the nomm has
-at most 255 `%6`.
+`finishLF_compDoneP`: on a nomm of `FragP` for `%done` with at most 255
+`%6`, the final pass with the whole of `+to-straight` returns code that does
+what `+mink` does, on every subject that has the axes the bell's cape says
+it has.  The run makes no proxy register (`RunOKP.cnd`), so `+to-straight`
+takes its renaming path; `+coerce-lazy` fills the entry block and every lazy
+block of the tree from the input registers (`coerceLazyL_spec`), which is
+what `RunOKP.sem` asks.  `finishLF_bellContractP`: so the final pass meets
+the contract of its bell, and `crash_iffP`: the compiled code crashes
+exactly when the nomm does, so it never crashes on a part of the subject
+that only a branch not taken reads, at any depth of nesting.
 -/
 
 set_option linter.unusedSectionVars false

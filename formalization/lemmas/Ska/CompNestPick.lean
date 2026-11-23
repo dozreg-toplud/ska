@@ -14,10 +14,20 @@ side with the fork of the two branches, since their lazy blocks were
 allocated after those of the branches (`copyL_six_apart`, from
 `copyLazyL_apart`).
 
-`RunOKP` is `RunOKD` of `CompNestRun.lean` for a goal: under `%pick` the
-code keeps the registers allocated before the run and the input registers
-(`GoalSem` with that set), and the ops in front of the lazy blocks keep the
-registers allocated before the end of the run outside their own need's.
+`RunOKP nm goal g0 g1 nex`: the relation for one run of `runL`.  The state
+grew, every lazy block of the need (`entries`) was allocated in the run, is
+the block `⟨[], [], hop th⟩` and lies below the block `nex` enters, their
+labels are distinct, and the registers of every need in the tree were
+allocated in the run.  `sem`: in a program that holds the blocks of `g1`
+outside the lazy blocks and, at each lazy block, ops in front that fill the
+need taken there from the input registers `ned` (`AgreeP`), entering `nex`
+with the sure part held and the input registers holding the subject does
+what `+mink` does, for the goal (`GoalSem`).  Under `%pick` the code keeps
+the registers allocated before the run and the input registers, and the ops
+in front of the lazy blocks keep the registers allocated before the end of
+the run outside their own need's.  `nec`: only the sure part is checked at
+the entry; the needs in the forks are checked in their lazy blocks, that is
+only on the branch taken.
 `runP_ok`: `runL` meets it on `FragP` when the nomm has at most 255 `%6`.
 -/
 
