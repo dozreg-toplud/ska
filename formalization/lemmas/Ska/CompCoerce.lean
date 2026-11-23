@@ -432,6 +432,157 @@ theorem sureLoop_spec {o : Nat} : ∀ (ned tgt : Need) (g g' : Gen Map) (u : Uni
           rw [read_store_ne (fun e => hn (Or.inl e)), ha2 x hx (fun h => hn (Or.inr (Or.inl h)))
             (fun h => hn (Or.inr (Or.inr h)))]
 
+
+/-! ## The looks of `+coerce-lazy` -/
+
+/-- One step of the fold of `coerceLok`. -/
+def coerceStep (less : Cape) (ned : Need) (acc : Option S) (axe : Nat) : Option S :=
+  acc.bind fun s =>
+    (axeInLessCape axe less).bind fun inLess =>
+      if inLess then some s else
+      if axe = 0 then Option.none else
+      if axeInNeedL axe ned then some s else some (HoonSet.put s axe)
+
+theorem coerceLok_eq (lok : S) (less : Cape) (ned : Need) :
+    coerceLok lok less ned = (HoonSet.toList lok).foldl (coerceStep less ned) (some HoonSet.empty) := rfl
+
+theorem coerceFold_none (less : Cape) (ned : Need) : ∀ (xs : List Nat),
+    xs.foldl (coerceStep (S := S) less ned) Option.none = Option.none
+  | [] => rfl
+  | _ :: xs => by simp only [List.foldl_cons, coerceStep, Option.bind_none]; exact coerceFold_none less ned xs
+
+theorem coerceFold_spec (less : Cape) (ned : Need) : ∀ (xs : List Nat) (s0 l : S),
+    xs.foldl (coerceStep less ned) (some s0) = some l →
+    (∀ y ∈ HoonSet.toList l, y ∈ HoonSet.toList s0 ∨ y ∈ xs) ∧
+    (∀ y ∈ xs, y ≠ 0 ∧ (axeInCape y less = true ∨ axeInNeedL y ned = true ∨ y ∈ HoonSet.toList l)) ∧
+    (∀ y ∈ HoonSet.toList s0, y ∈ HoonSet.toList l)
+  | [], s0, l, h => by
+    simp only [List.foldl_nil, Option.some.injEq] at h
+    subst h
+    exact ⟨fun y hy => Or.inl hy, (fun y hy => by cases hy), fun y hy => hy⟩
+  | x :: xs, s0, l, h => by
+    rw [List.foldl_cons] at h
+    have hx0 : x ≠ 0 := by
+      intro e; subst e
+      simp [coerceStep, axeInLessCape, coerceFold_none] at h
+    have step : ∃ s1, coerceStep less ned (some s0) x = some s1 ∧
+        (∀ y ∈ HoonSet.toList s1, y = x ∨ y ∈ HoonSet.toList s0) ∧
+        (∀ y ∈ HoonSet.toList s0, y ∈ HoonSet.toList s1) ∧
+        (axeInCape x less = true ∨ axeInNeedL x ned = true ∨ x ∈ HoonSet.toList s1) := by
+      simp only [coerceStep, axeInLessCape, hx0, if_false, Option.bind_some]
+      by_cases hc : axeInCape x less = true
+      · exact ⟨s0, by simp [hc], fun y hy => Or.inr hy, fun y hy => hy, Or.inl hc⟩
+      · by_cases hn : axeInNeedL x ned = true
+        · exact ⟨s0, by simp [hc, hn], fun y hy => Or.inr hy, fun y hy => hy, Or.inr (Or.inl hn)⟩
+        · refine ⟨HoonSet.put s0 x, by simp [hc, hn, hx0], fun y hy => (HoonSet.mem_put s0 x y).mp hy,
+            fun y hy => (HoonSet.mem_put s0 x y).mpr (Or.inr hy), Or.inr (Or.inr ((HoonSet.mem_put s0 x x).mpr
+              (Or.inl rfl)))⟩
+    obtain ⟨s1, e1, m1, k1, c1⟩ := step
+    rw [e1] at h
+    obtain ⟨I1, I2, I3⟩ := coerceFold_spec less ned xs s1 l h
+    refine ⟨fun y hy => ?_, fun y hy => ?_, fun y hy => I3 y (k1 y hy)⟩
+    · rcases I1 y hy with h1 | h1
+      · rcases m1 y h1 with h2 | h2
+        · exact Or.inr (List.mem_cons.mpr (Or.inl h2))
+        · exact Or.inl h2
+      · exact Or.inr (List.mem_cons_of_mem _ h1)
+    · rcases List.mem_cons.mp hy with e | e
+      · subst e
+        exact ⟨hx0, c1.elim Or.inl (fun c => c.elim (fun c => Or.inr (Or.inl c)) (fun c => Or.inr (Or.inr (I3 _ c))))⟩
+      · exact I2 y e
+
+theorem axeInNeedL_pair {axe : Nat} (h2 : 2 ≤ axe) (p q : Need) :
+    axeInNeedL axe (Need.pair p q) = if cap axe = 2 then axeInNeedL (mas axe) p else axeInNeedL (mas axe) q := by
+  rw [axeInNeedL]; simp [show ¬ axe ≤ 1 by omega]
+
+theorem axeInNeedL_both {axe : Nat} (h2 : 2 ≤ axe) (r : Nat) (p q : Need) :
+    axeInNeedL axe (Need.both r p q) = if cap axe = 2 then axeInNeedL (mas axe) p else axeInNeedL (mas axe) q := by
+  rw [axeInNeedL]; simp [show ¬ axe ≤ 1 by omega]
+
+theorem axeInNeedL_none {axe : Nat} (h2 : 2 ≤ axe) : axeInNeedL axe Need.none = false := by
+  rw [axeInNeedL]; simp [show ¬ axe ≤ 1 by omega]
+  all_goals intros; contradiction
+
+theorem axeInNeedL_this {axe : Nat} (h2 : 2 ≤ axe) (r : Nat) : axeInNeedL axe (Need.this r) = false := by
+  rw [axeInNeedL]; simp [show ¬ axe ≤ 1 by omega]
+  all_goals intros; contradiction
+
+/-- An axis inside a need is in every noun of the need's shape. -/
+theorem slot_of_axeInNeed : ∀ (axe : Nat), 1 ≤ axe → ∀ (ned : Need) (s : Noun), Comp.Fits ned s →
+    axeInNeedL axe ned = true → (slot? axe s).isSome := by
+  intro axe
+  induction axe using Nat.strongRecOn with
+  | ind axe ih =>
+    intro h1 ned s hf ha
+    by_cases e : axe = 1
+    · subst e; simp [slot?_one]
+    have h2 : 2 ≤ axe := by omega
+    cases ned with
+    | none => rw [axeInNeedL_none h2] at ha; cases ha
+    | this _ => rw [axeInNeedL_this h2] at ha; cases ha
+    | pair p q =>
+      rw [axeInNeedL_pair h2] at ha
+      cases s with
+      | atom _ => exact hf.elim
+      | cell a b =>
+        rw [slot?_cap h2]
+        rcases cap_cases _ h2 with hc | hc
+        · simp only [hc, if_true] at ha ⊢
+          exact ih _ (mas_lt axe h2) (mas_pos axe h2) p a hf.1 ha
+        · simp only [hc, show (3 : Nat) ≠ 2 by decide, if_false] at ha ⊢
+          exact ih _ (mas_lt axe h2) (mas_pos axe h2) q b hf.2 ha
+    | both _ p q =>
+      rw [axeInNeedL_both h2] at ha
+      cases s with
+      | atom _ => exact hf.elim
+      | cell a b =>
+        rw [slot?_cap h2]
+        rcases cap_cases _ h2 with hc | hc
+        · simp only [hc, if_true] at ha ⊢
+          exact ih _ (mas_lt axe h2) (mas_pos axe h2) p a hf.1 ha
+        · simp only [hc, show (3 : Nat) ≠ 2 by decide, if_false] at ha ⊢
+          exact ih _ (mas_lt axe h2) (mas_pos axe h2) q b hf.2 ha
+
+/-! ## `+coerce-lazy` -/
+
+/-- **`CoerceSpec` holds.** -/
+theorem coerceSpec : CoerceSpec S Map := by
+  intro ned o laz less g g' h hd dn dl ll ln nd
+  simp only [coerceLazy] at h
+  obtain ⟨lok, g1, h1, h⟩ := bind_some h
+  obtain ⟨l, hl, e⟩ := Option.map_eq_some_iff.mp h1
+  simp only [Prod.mk.injEq] at e
+  obtain ⟨rfl, rfl⟩ := e
+  rw [coerceLok_eq] at hl
+  obtain ⟨C1, C2, _⟩ := coerceFold_spec less ned _ _ _ hl
+  obtain ⟨tgt, g2, h2, h3⟩ := bind_some h
+  have L := sureRequireLook_spec h2
+  obtain ⟨k, rfl⟩ := L.gen
+  obtain ⟨A, F, sem⟩ := sureLoop_spec ned tgt _ g' () h3 hd
+  have F' := (front_reg (o := o) g L.le).trans F
+  simp only [List.append_nil] at F'
+  refine ⟨A, F', ?_⟩
+  have dt : Distinct tgt := L.dist dl ll
+  have lt : ∀ x, NMem tgt x → x < k := fun x hx =>
+    (L.mem x hx).elim (fun h => Nat.lt_of_lt_of_le (ll x h) L.le) (fun h => h.2)
+  have SS := sem dt lt (fun x hx => Nat.lt_of_lt_of_le (ln x hx) L.le)
+    (fun x hx ht => (L.mem x ht).elim (fun h => nd x hx h) (fun h => by have := ln x hx; simp at h; omega))
+  intro lib σ O c gul st t R s hs hca
+  have S1 := SS lib σ O c gul st t R s hs
+  have sub : ∀ y ∈ HoonSet.toList l, y ∈ HoonSet.toList laz.lok := fun y hy =>
+    (C1 y hy).elim (fun h => absurd h (HoonSet.mem_empty y)) id
+  refine ⟨fun hf => ?_, fun hf => S1.2 fun ft => hf ?_⟩
+  · have ft : Comp.Fits tgt s := (L.fits s).mpr ⟨hf.1, fun x hx => hf.2 x (sub x hx)⟩
+    obtain ⟨R', hr, hh, _⟩ := S1.1 ft
+    exact ⟨R', hr, L.holds R' s hh, hf.2⟩
+  · have F2 := (L.fits s).mp ft
+    refine ⟨F2.1, fun y hy => ?_⟩
+    obtain ⟨hy0, hy⟩ := C2 y hy
+    rcases hy with hc | hn | hm
+    · exact hca y (by omega) hc
+    · exact slot_of_axeInNeed y (by omega) ned s (fits_of_holds ned hs) hn
+    · exact F2.2 y hm
+
 end Comp
 end SkaModel
 end Formalization
