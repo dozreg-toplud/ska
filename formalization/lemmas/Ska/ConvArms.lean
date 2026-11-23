@@ -218,7 +218,7 @@ def AnaP2 (memoF : Memo M) (ana : AnaGo M R) : Prop :=
     ana id st = some (low, st') →
     (∃ F', (∀ e, F e → F' e) ∧ CInv memoF st' F') ∧
     GStepsR (gCore st.g) (gCore st'.g) ∧ Keep st.stk (· ∈ st.stk) st st' ∧ Frame (· ∈ st.stk) st st' ∧
-    low ≤ st.next ∧ Pushed st st' low ∧ (∃ d, Treap.get st'.g id = some d) ∧
+    Pushed st st' low ∧ (∃ d, Treap.get st'.g id = some d) ∧
     (∀ o, Treap.get st'.order id = some o → low ≤ o)
 
 /-- What `+run` keeps and gives: the members other than `id` keep their
@@ -728,7 +728,7 @@ theorem resolveStep_ok2 (env : Env R) (memoF : Memo M) {resolve : ResGo M R} {an
       · simp only [Option.map_eq_some_iff] at e
         obtain ⟨⟨low, st'⟩, ha, e⟩ := e
         cases e
-        obtain ⟨⟨F', hFF', hc'⟩, s1, k1, fr1, hlow, hpush, ⟨d, hd⟩, hlo⟩ := hana idT gs.st low st' F hc hw hg ha
+        obtain ⟨⟨F', hFF', hc'⟩, s1, k1, fr1, hpush, ⟨d, hd⟩, hlo⟩ := hana idT gs.st low st' F hc hw hg ha
         have hnot : idT ∉ gs.st.stk := hc.s.not_mem hg
         refine ⟨⟨F', hFF', hc'⟩, s1, k1, fr1, rfl, rfl, Nat.min_le_left _ _, fun x o hxo hx => ?_,
           fun o h => Nat.le_trans (Nat.min_le_right _ _) (hlo o h), fun hb => ⟨hb, fun _ _ => hnot⟩, ?_⟩
