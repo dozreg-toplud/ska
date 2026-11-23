@@ -579,6 +579,55 @@ theorem bridge_step (env : Env R) (hL : LocalStable Inv) (hres : ResOK P Inv res
 
 end Step
 
+/-! ## The run -/
+
+theorem folLoop_zero (env : Env R) (memoF : Memo M) : folLoop env memoF 0 = fun _ _ _ _ _ _ _ => none := by
+  unfold folLoop; rfl
+
+theorem folLoop_succ (env : Env R) (memoF : Memo M) (n : Nat) :
+    folLoop env memoF (n + 1) = folStep env (resolve env memoF n) (folLoop env memoF n) := by
+  conv => lhs; unfold folLoop
+
+theorem resolve_succ (env : Env R) (memoF : Memo M) (n : Nat) :
+    resolve env memoF (n + 1) = resolveStep env (resolve env memoF n) (analyze env memoF n) := by
+  conv => lhs; unfold resolve
+
+theorem analyze_succ (env : Env R) (memoF : Memo M) (n : Nat) :
+    analyze env memoF (n + 1) = analyzeStep memoF (run env memoF n) (passLoop env memoF n) := by
+  conv => lhs; unfold analyze
+
+theorem run_succ (env : Env R) (memoF : Memo M) (n : Nat) :
+    run env memoF (n + 1) = runStep (folLoop env memoF n) := by
+  conv => lhs; unfold run
+
+theorem passLoop_succ (env : Env R) (memoF : Memo M) (n : Nat) :
+    passLoop env memoF (n + 1) = passStep n (memberLoop env memoF n) (passLoop env memoF n) := by
+  conv => lhs; unfold passLoop
+
+theorem memberLoop_succ (env : Env R) (memoF : Memo M) (n : Nat) :
+    memberLoop env memoF (n + 1) = memberStep (run env memoF n) (memberLoop env memoF n) := by
+  conv => lhs; unfold memberLoop
+
+/-- **The state-passing `fol-loop` is in `FolR P`**, for an invariant `Inv`
+that `resolve` keeps with answers in `P` at every fuel. -/
+theorem folLoop_goOK {Inv : GenS M R → Prop} (env : Env R) (memoF : Memo M) (hL : LocalStable Inv)
+    (hres : ∀ k, ResOK P Inv (resolve env memoF k)) : ∀ n, GoOK P Inv n (folLoop env memoF n)
+  | 0 => fun _ _ _ _ _ _ _ _ _ _ h => by rw [folLoop_zero] at h; cases h
+  | n + 1 => fun _ _ _ _ _ _ _ _ _ hi h => by
+    rw [folLoop_succ] at h
+    exact bridge_step env hL (hres n) (folLoop_goOK env memoF hL hres n) hi h
+
+theorem genInit_at (index : Nat) (st : SkaState M R) : (genInit index st).at 0 = Gen.init := rfl
+
+/-- **The run of `+run` on `id` is a run with answers in `P`.** -/
+theorem run_folTopR {Inv : GenS M R → Prop} (env : Env R) (memoF : Memo M) (hL : LocalStable Inv)
+    (hres : ∀ k, ResOK P Inv (resolve env memoF k)) {n index : Nat} {id : Ident} {st : SkaState M R}
+    {out : FolOut} {gs' : GenS M R} (hi : Inv (genInit index st))
+    (h : folLoop env memoF n id.2 ⟨id.1, A 1⟩ none none false false (genInit index st) = some (out, gs')) :
+    Inv gs' ∧ FolTopR P n id.1 id.2 out gs'.gen := by
+  obtain ⟨i', F⟩ := folLoop_goOK env memoF hL hres n _ _ _ _ _ _ _ _ _ hi h
+  exact ⟨i', F 0⟩
+
 end Ana
 end SkaModel
 end Formalization
