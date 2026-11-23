@@ -170,7 +170,7 @@ def BlobIs (lib : Lib) (O : Oracle Noun) : Prop :=
     ∀ r, execBlob lib O s scry cr regs trace b params = some r → CorIn r.2
 
 theorem regsFrom_toNoun_put (r : Nat) (v : Noun) (vs : List Noun) (out : TreapMap mugF (Option Noun)) :
-    regsFrom (r + 1) vs (HoonMap.put out r v) = regsFrom r (v :: vs) out := rfl
+    regsFrom (r + 1) vs (HoonMap.put out r (some v)) = regsFrom r (v :: vs) out := rfl
 
 set_option maxHeartbeats 4000000 in
 /-- The loop of `%cal` that puts the values of the registers `v` in the
@@ -201,8 +201,8 @@ theorem eval_pole_loop (cr : Noun) (hc : CorIn cr) (p an : Noun) (d : Nat) (regs
       nock_open eval_pole.loop
       simp [nock_exec, listNoun, hld, e]
     | some vx =>
-      have hput := putF_hoonMap id out r vx
-      simp only [id_eq] at hput
+      have hput := putF_hoonMap (unitNoun id) out r (some vx)
+      simp only [unitNoun, id_eq] at hput
       nock_open eval_pole.loop
       simp [nock_exec, listNoun, hld, e, hl2, by.arm_at, by_arm, by.put.arm_at, put_arm,
         put_gate layer2 ⟨hgor, hmor⟩ _ _ _ _ hput, ih, List.mapM_cons]
@@ -358,7 +358,7 @@ theorem eval_pole_csl (cr : Noun) (hc : CorIn cr) (lib : Lib)
       callBody, e1, SkaModel.Prod.toNoun, hld, e2, Straight.toNoun]
   | some vs0 =>
   have hreg : HoonMap.toNoun (unitNoun id) (regsOf [vs0] : TreapMap mugF (Option Noun))
-      = C (C (A 0) vs0) (C (A 0) (A 0)) := rfl
+      = C (C (A 0) (C (A 0) vs0)) (C (A 0) (A 0)) := rfl
   have hg := getF_hoonMap Blob.toNoun c.blocks 0
   cases e3 : HoonMap.get c.blocks 0 with
   | none =>
@@ -687,8 +687,8 @@ theorem eval_blob_loop (cr : Noun) (hc : CorIn cr) (p an : Noun) (regs : TreapMa
       nock_open eval_blob.loop
       simp [nock_exec, listNoun, hrd, read_arm, hrm, e]
     | some vx =>
-      have hput := putF_hoonMap id out r vx
-      simp only [id_eq] at hput
+      have hput := putF_hoonMap (unitNoun id) out r (some vx)
+      simp only [unitNoun, id_eq] at hput
       nock_open eval_blob.loop
       simp [nock_exec, listNoun, hrd, read_arm, hrm, e, hl2, by.arm_at, by_arm, by.put.arm_at,
         put_arm, put_gate layer2 ⟨hgor, hmor⟩ _ _ _ _ hput, ih, List.mapM_cons]
@@ -757,7 +757,7 @@ theorem eval_blob_jsp_le (cr : Noun) (hc : CorIn cr) (lib : Lib)
   have hrm := read_model (icore cr') hrc'
   simp only [read.axis, icore, nock_exec] at hrd'
   have hreg : HoonMap.toNoun (unitNoun id) (regsOf [vs] : TreapMap mugF (Option Noun))
-      = C (C (A 0) vs) (C (A 0) (A 0)) := rfl
+      = C (C (A 0) (C (A 0) vs)) (C (A 0) (A 0)) := rfl
   have hg := getF_hoonMap Blob.toNoun c.blocks 0
   rw [e4] at hg
   simp only [blobS, icore, Straight.toNoun, argsN, listNoun, hreg] at hB
@@ -798,7 +798,7 @@ theorem eval_blob_le (lib : Lib) (hslam : SlamIsNock lib)
   have hrm := read_model (icore st) hrc
   have hl1 := slot_tail_of hc.1 layer2_layer1
   have hl2 : slot? read.layer2.axis (icore st) = some layer2 := hc.1
-  have hep := eval_pass_gate (icore st) ⟨hmv, ⟨hrd, ‹_›, hrc⟩, layer2, hc.1, levy.arm_at, lien.arm_at⟩
+  have hep := eval_pass_gate (icore st) ⟨hmv, hrc, layer2, hc.1, levy.arm_at, lien.arm_at⟩
   simp only [read.layer2.axis, icore, Nat.reduceMul, Nat.reduceAdd] at hl1
   simp only [nock_exec] at hl1
   simp only [read.layer2.axis, icore, nock_exec] at hl2
@@ -1041,7 +1041,7 @@ theorem eval_top_le (lib : Lib) (hslam : SlamIsNock lib)
     obtain ⟨hB, hC⟩ := hO cr' hc' _ _ _ _ _ _ _ h
     refine ⟨?_, hC⟩
     have hreg : HoonMap.toNoun (unitNoun id) (regsOf [s] : TreapMap mugF (Option Noun))
-        = C (C (A 0) s) (C (A 0) (A 0)) := rfl
+        = C (C (A 0) (C (A 0) s)) (C (A 0) (A 0)) := rfl
     simp only [blobS, icore, Straight.toNoun, argsN, listNoun, hreg, Blob.toNoun, hn.1, hn.2,
       NeedOrd.toNoun, Tag.this] at hB
     have hp := (hpk cr hc).1 (Ovum.full s (C fh ft)) (nh_full _ _)

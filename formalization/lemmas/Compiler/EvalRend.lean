@@ -141,8 +141,8 @@ theorem eval_rend_loop (cr : Noun) (hc : CorIn cr) (P D : Noun) :
     simp [nock_exec, listNoun, regsFrom]
   | cons v vs ih =>
     intro r out
-    have hput := putF_hoonMap id out r v
-    simp only [id_eq] at hput
+    have hput := putF_hoonMap (unitNoun id) out r (some v)
+    simp only [unitNoun, id_eq] at hput
     nock_open eval_rend.loop
     simp [nock_exec, listNoun, hl2, by.arm_at, by_arm, by.put.arm_at, put_arm,
       put_gate layer2 ⟨hgor, hmor⟩ _ _ _ _ hput, ih, regsFrom]

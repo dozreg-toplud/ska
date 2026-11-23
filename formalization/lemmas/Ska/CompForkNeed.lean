@@ -168,7 +168,7 @@ theorem evalPassLoop_copy : ∀ (ned n : Need), NCopy ned n → ∀ (R : Map (Op
   | Need.this r, Need.this r', _, R, v, hh, _, _ => by
     refine ⟨store r v R, ?_, read_store_eq r v R, fun x hx => read_store_ne hx v R⟩
     simp only [HoldsN] at hh
-    simp [flattenNeed, evalPassLoop, SkaModel.move, hh]
+    simp [flattenNeed, evalPassLoop, move_of_read hh]
   | Need.pair p q, Need.pair p' q', hc, R, Noun.cell a b, hh, hd, hj => by
     obtain ⟨R1, e1, h1, k1⟩ := evalPassLoop_copy p p' hc.1 R a hh.1 hd.1 (fun x hx hn => hj x (Or.inl hx) (Or.inl hn))
     have hq1 : HoldsN q' R1 b := HoldsN.agree q' (fun x hx => k1 x fun hn => hj x (Or.inr hx) (Or.inl hn)) hh.2
@@ -192,9 +192,9 @@ theorem evalPassLoop_copy : ∀ (ned n : Need), NCopy ned n → ∀ (R : Map (Op
     obtain ⟨R2, e2, h2, k2⟩ := evalPassLoop_copy q q' hc.2 R1 b hq1 hd.2.1
       (fun x hx hn => hj x (Or.inr (Or.inr hx)) (Or.inr (Or.inr hn)))
     refine ⟨R2, ?_, ⟨?_, HoldsN.agree p (fun x hx => k2 x (hd.2.2.1 x hx)) h1, h2⟩, fun x hx => ?_⟩
-    · simp only [flattenNeed, List.map_cons, List.map_append, evalPassLoop, SkaModel.move]
-      rw [hh.1]
-      simp only [Option.map_some, Option.bind_some]
+    · simp only [flattenNeed, List.map_cons, List.map_append, evalPassLoop]
+      rw [move_of_read hh.1]
+      simp only [Option.bind_some]
       rw [evalPassLoop_append _ _ _ _ (by simp [hc.1.length]), e1, Option.bind_some, e2]
     · rw [k2 r hd.2.2.2.2, k1 r hd.2.2.2.1]; exact read_store_eq _ _ _
     · simp only [NMem, not_or] at hx
