@@ -313,3 +313,4 @@ open Formalization.SkaModel
 #print axioms Bake.sitesMeet_at_less
 #print axioms Bake.sitesMeet_of_parts
 #print axioms PokeM.pokeSites_of_parts
+#print axioms Bake.knit_mono

@@ -106,6 +106,18 @@ def SitesInhab (E : BEnv M) : Prop :=
   ∀ cur s d out sites, BakeOK cur.less s → E.dat cur = some d →
     know E.fold d.nomm s E.dat idc = some (out, sites) → ∀ c k, (c, k) ∈ sites → ∃ y, Fits k y
 
+/-! ## Toward `KnowMono`: the sock operations of `+know` are monotone -/
+
+omit [Treap M] in
+/-- **`+knit:so` is monotone** in both socks. -/
+theorem knit_mono {a a' b b' : Sock} (ha : Sub a a') (hb : Sub b b') : Sub (So.knit a b) (So.knit a' b') := by
+  intro x hx
+  rcases knit_fits_inv hx with ⟨ba, bb⟩ | ⟨x1, x2, rfl, h1, h2⟩
+  · have ba' : a'.Blank := blank_of_all fun z => ha z (ba.fits z)
+    have bb' : b'.Blank := blank_of_all fun z => hb z (bb.fits z)
+    exact (knit_blank ba' bb').fits x
+  · exact knit_fits (ha x1 h1) (hb x2 h2)
+
 omit [Treap M] in
 /-- `SitesMeet` at the code requirement itself, from `LessProvides` and
 `SitesInhab`. -/
