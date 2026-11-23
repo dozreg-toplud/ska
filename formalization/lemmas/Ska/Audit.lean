@@ -9,6 +9,7 @@ import lemmas.Ska.CallGraph
 import lemmas.Ska.Prov
 import lemmas.Ska.ProvFacts
 import lemmas.Ska.WantMono
+import lemmas.Ska.AppPath
 
 /-! The axioms of the main theorems of `lemmas/Ska`.  `lake build` prints
 them; each should be `propext`, `Classical.choice` and `Quot.sound` at most. -/
@@ -84,3 +85,4 @@ open Formalization.SkaModel
 #print axioms provO_compose
 #print axioms distribute_has
 #print axioms folLoopF_want_mono
+#print axioms fitsOpt_app_part
