@@ -26,7 +26,20 @@ variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys
 
 /-- **The final pass of `member` in `+compile-scc-in`** for a function
 alone in its SCC, as `finishL`, ending with the whole of `+to-straight`
-on the proxy map the run left. -/
+on the proxy map the run left.
+
+The input `nm` is the nomm that `+comp` receives, that is the output of
+`+know` under the bake (the model has no `+know`).  The contract theorems
+(`finishLF_bellContractP`, `crash_iffP`) ask of it only what can be checked
+on that output: `nm.pure`, `Annot lib code (Fits bl.less) bl.fol nm`, a
+shape (`FragP`), at most 255 `%6`, no baked registers and a normal cape.
+`+know` supplies `Annot` of its output from `Annot` of its input when the
+bake implies the code requirement (`know_annot_of_implies`), and the shape is
+a property of the output's syntax.  No property of the folding itself is
+used: a constant test is compiled like any other (`[1 0]` for `%pick` hops
+to the yes block), and a constant part such as `[3 [1 1]]` is a nomm of
+`Frag`.  The inputs that `+know` folds and this model does not were found
+only on goals whose lazy need has forks, which no theorem here covers yet. -/
 def finishLF (nm : Nomm) (ord : NeedOrd) (less : Cape)
     (bake : Need → Need × List (Nat × Noun)) : Option (Straight Map) :=
   (runL nm (CGoalL.done : CGoalL S) [] gen0).bind fun (nex, g1) =>
