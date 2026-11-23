@@ -580,6 +580,141 @@ theorem runStep_ok2 (env : Env R) (memoF : Memo M) {n : Nat}
     rw [hcalid] at hce; rw [eo] at hco
     exact hbk1 hb c hce o hco
 
+/-! ## `resolve` -/
+
+theorem recLoop_cases2 {he : Sock → Sock → Bool} {heOn : Bool} {g : Sock × Noun → Option Datum}
+    {kid : Sock × Noun} : ∀ {stk : List (Sock × Noun)} {b : Bool} {i : Sock × Noun},
+    recLoop he heOn g kid stk = some (some (b, i)) →
+    (b = true ∧ i ∈ stk ∧ i.2 = kid.2 ∧ hitTest ⟨i.1, i.2, SkaModel.gitG g i⟩ kid.1 = some true) ∨
+    (b = false ∧ ∃ j ∈ stk, msgSock kid.1 j.1 = some i.1 ∧ i.2 = kid.2)
+  | [], _, _, h => by simp [recLoop] at h
+  | j :: stk, b, i, h => by
+    unfold recLoop at h
+    split at h
+    · rcases recLoop_cases2 h with ⟨hb, hi, hf, ht⟩ | ⟨hb, j', hj', hm, he'⟩
+      · exact Or.inl ⟨hb, List.mem_cons_of_mem _ hi, hf, ht⟩
+      · exact Or.inr ⟨hb, j', List.mem_cons_of_mem _ hj', hm, he'⟩
+    · rename_i hf
+      split at h
+      · cases h
+      · rename_i ht
+        simp only [Option.some.injEq, Prod.mk.injEq] at h
+        obtain ⟨rfl, rfl⟩ := h
+        exact Or.inl ⟨rfl, List.mem_cons_self, (by simpa using hf : kid.2 = j.2).symm, ht⟩
+      · split at h
+        · simp only [Option.map_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h
+          obtain ⟨m, hm, rfl, rfl⟩ := h
+          exact Or.inr ⟨rfl, j, List.mem_cons_self, hm, rfl⟩
+        · rcases recLoop_cases2 h with ⟨hb, hi, hf, ht⟩ | ⟨hb, j', hj', hm, he'⟩
+          · exact Or.inl ⟨hb, List.mem_cons_of_mem _ hi, hf, ht⟩
+          · exact Or.inr ⟨hb, j', List.mem_cons_of_mem _ hj', hm, he'⟩
+
+theorem gitG_gCore (g : Callgraph M) (i : Ident) : SkaModel.gitG (gCore g) i = (gitG g i).core := by
+  unfold SkaModel.gitG gCore gitG Treap.gut
+  cases Treap.get g i <;> simp [FDatum.bunt_core]
+
+/-- The answer of an entry of the graph, as `AnsW` from `RBat`. -/
+theorem ansW_entry {st : SkaState M R} (hi : SInv st) {i : Ident} {d : FDatum M} (hd : Treap.get st.g i = some d)
+    {c : Ident} (hc : Treap.get st.order i = none ∨ i = c) : AnsW (RBat st c) i.1 i.2 d.core.tab :=
+  AnsW.exact (e := entOf i d) ⟨⟨d, hd, rfl⟩, (hi.wf_get hd).1, (hi.wf_get hd).2, hc⟩
+
+theorem ansW_hit {st : SkaState M R} (hi : SInv st) {i : Ident} {d : FDatum M} (hd : Treap.get st.g i = some d)
+    {c : Ident} (hc : Treap.get st.order i = none ∨ i = c) {s : Sock} (ht : hitTest (entOf i d) s = some true) :
+    AnsW (RBat st c) s i.2 (patchDatum d.core s).tab :=
+  AnsW.hit (e := entOf i d) ⟨⟨d, hd, rfl⟩, (hi.wf_get hd).1, (hi.wf_get hd).2, hc⟩ ht
+
+/-- **`resolve` keeps the convergence invariant**, given that `resolve` and
+`+analyze` do at the fuel below. -/
+theorem resolveStep_ok2 (env : Env R) (memoF : Memo M) {resolve : ResGo M R} {analyze : AnaGo M R}
+    (hres : ResP2 memoF resolve) (hana : AnaP2 memoF analyze) : ResP2 memoF (resolveStep env resolve analyze) := by
+  intro idT gs r gs' F hc hw e
+  have hstay : ∀ low' back', low' ≤ gs.low → (back' = false → gs.back = false) →
+      let gs2 : GenS M R := { gs with low := low', back := back' }
+      (∃ F', (∀ e, F e → F' e) ∧ CInv memoF gs2.st F') ∧ GStepsR (gCore gs.st.g) (gCore gs2.st.g) ∧
+      Keep gs.st.stk (· ∈ gs.st.stk) gs.st gs2.st ∧ Frame (· ∈ gs.st.stk) gs.st gs2.st ∧ gs2.gen = gs.gen ∧
+      gs2.callees = gs.callees ∧ gs2.low ≤ gs.low ∧ Pushed gs.st gs2.st gs2.low := fun low' back' hl _ =>
+    ⟨⟨F, fun _ h => h, hc⟩, GStepsR.refl _, Keep.refl' _ rfl rfl rfl,
+      Frame.refl' rfl rfl rfl rfl rfl rfl hc.s, rfl, rfl, hl,
+      fun x o hxo hx => absurd ((hc.s.ord_stk x).mp ⟨o, hxo⟩) hx⟩
+  unfold resolveStep at e
+  cases hg : Treap.get gs.st.g idT with
+  | some d =>
+    simp only [hg] at e
+    cases ho : Treap.get gs.st.order idT with
+    | none =>
+      simp only [ho, Option.some.injEq, Prod.mk.injEq] at e
+      obtain ⟨rfl, rfl⟩ := e
+      obtain ⟨a1, a2, a3, a4, a5, a6, a7, a8⟩ := hstay gs.low gs.back (Nat.le_refl _) id
+      exact ⟨a1, a2, a3, a4, a5, a6, a7, a8, fun o h => by simp [ho] at h,
+        fun hb => ⟨hb, fun o h => by simp [ho] at h⟩, ansW_entry hc.s hg (Or.inl ho)⟩
+    | some o =>
+      simp only [ho, Option.some.injEq, Prod.mk.injEq] at e
+      obtain ⟨rfl, rfl⟩ := e
+      obtain ⟨a1, a2, a3, a4, a5, a6, a7, a8⟩ := hstay (min gs.low o) true (Nat.min_le_left _ _) (by simp)
+      exact ⟨a1, a2, a3, a4, a5, a6, a7, a8, fun o' h => by rw [ho] at h; cases h; exact Nat.min_le_right _ _,
+        fun hb => by simp at hb, ansW_entry hc.s hg (Or.inr rfl)⟩
+  | none =>
+    rw [hg] at e
+    simp only at e
+    split at e
+    · cases e
+    · rename_i m hm
+      cases e
+      obtain ⟨k, d0, hk, ht, hcore, _⟩ := gitMi_hit hm
+      have hget : Treap.get gs.st.done idT.2 = some (gutMi gs.st.done idT.2) := by
+        unfold gutMi Treap.gut
+        cases e2 : Treap.get gs.st.done idT.2 with
+        | none => simp only [gutMi, Treap.gut, e2, Option.getD_none, Treap.get_empty] at hk; cases hk
+        | some ms => rfl
+      obtain ⟨hF, hkey, hge⟩ := hc.frz.done _ _ _ _ hget hk
+      have hno : Treap.get gs.st.order r.1 = none := (hc.frz.sub _ hF).2
+      obtain ⟨a1, a2, a3, a4, a5, a6, a7, a8⟩ := hstay gs.low gs.back (Nat.le_refl _) id
+      refine ⟨a1, a2, a3, a4, a5, a6, a7, a8, fun o h => by simp [hno] at h,
+        fun hb => ⟨hb, fun o h => by simp [hno] at h⟩, ?_⟩
+      have := ansW_hit (c := r.1) hc.s hge (Or.inl hno) (s := idT.1) ht
+      simp only at hkey
+      rw [hkey, ← hcore] at this
+      exact this
+    · split at e
+      · cases e
+      · rename_i i hrc
+        rcases recLoop_cases2 hrc with ⟨hb, _⟩ | ⟨_, j, hj, hm, hf⟩
+        · cases hb
+        have hwj : WellFormed j.1 := hc.s.wf_stk hj
+        have hwi : WellFormed i.1 := wf_msgSock hw hwj hm
+        obtain ⟨a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11⟩ := hres i gs r gs' F hc hwi e
+        refine ⟨a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, ?_⟩
+        rw [hf] at a11
+        exact AnsW.gen hwj hm a11
+      · rename_i i hrc
+        rcases recLoop_cases2 hrc with ⟨_, hi, hf, ht⟩ | ⟨hb, _⟩
+        · simp only [Option.map_eq_some_iff] at e
+          obtain ⟨o, hoi, e⟩ := e
+          cases e
+          obtain ⟨di, hdi⟩ := hc.s.mem_g hi
+          have hgi : gitG gs.st.g i = di := by simp [gitG, Treap.gut, hdi]
+          obtain ⟨a1, a2, a3, a4, a5, a6, a7, a8⟩ := hstay (min gs.low o) true (Nat.min_le_left _ _) (by simp)
+          refine ⟨a1, a2, a3, a4, a5, a6, a7, a8, fun o' h => by
+            simp only at h; rw [hoi] at h; cases h; exact Nat.min_le_right _ _, fun hb => by simp at hb, ?_⟩
+          rw [gitG_gCore, hgi] at ht
+          have := ansW_hit hc.s hdi (Or.inr rfl) (s := idT.1) ht
+          rw [hf] at this
+          simp only [hgi]
+          exact this
+        · cases hb
+      · simp only [Option.map_eq_some_iff] at e
+        obtain ⟨⟨low, st'⟩, ha, e⟩ := e
+        cases e
+        obtain ⟨⟨F', hFF', hc'⟩, s1, k1, fr1, hlow, hpush, ⟨d, hd⟩, hlo⟩ := hana idT gs.st low st' F hc hw hg ha
+        have hnot : idT ∉ gs.st.stk := hc.s.not_mem hg
+        refine ⟨⟨F', hFF', hc'⟩, s1, k1, fr1, rfl, rfl, Nat.min_le_left _ _, fun x o hxo hx => ?_,
+          fun o h => Nat.le_trans (Nat.min_le_right _ _) (hlo o h), fun hb => ⟨hb, fun _ _ => hnot⟩, ?_⟩
+        · obtain ⟨h1, h2⟩ := hpush x o hxo hx
+          exact ⟨h1, fun c hce oc hco => Nat.le_trans (Nat.min_le_right _ _) (h2 c hce oc hco)⟩
+        · have hgd : gitG st'.g idT = d := by simp [gitG, Treap.gut, hd]
+          simp only [hgd]
+          exact ansW_entry hc'.s hd (Or.inr rfl)
+
 end Ana
 end SkaModel
 end Formalization
