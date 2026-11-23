@@ -861,18 +861,18 @@ theorem run_n10_down {a : Nat} {v q : Nomm} (ihv : DownIH S Map v) (ihq : DownIH
   have I := into_down h3 D0.lo D0.hi (D0.grow.drop.trans hd)
   simp only at I h
   have b2 : 1 ≤ g2.bo := Nat.le_trans h1 D0.grow.bo
-  obtain ⟨nexD, g3', hpd, h⟩ := bind_some h
-  obtain ⟨rfl, rfl⟩ := past_some hpd
-  obtain ⟨nexRec, g4, h4, h⟩ := bind_some h
-  have Dq := ihq (CGoal.next _ _) g3 g4 nexRec ⟨by rw [I.2.1]; exact b2, by simp [jmp0]; omega⟩
-    (Nat.le_trans b2 I.1.bo) (I.1.drop.trans (D0.grow.drop.trans hd)) h4
-  obtain ⟨nexRec', g4', hpr, h⟩ := bind_some h
+  obtain ⟨nexR, g3', hpr, h⟩ := bind_some h
   obtain ⟨rfl, rfl⟩ := past_some hpr
-  obtain ⟨nexDon, g5, h5, h⟩ := bind_some h
-  have G0 := D0.grow.trans (I.1.trans Dq.grow)
-  have Dv := ihv (CGoal.next _ _) g4 g5 nexDon ⟨Dq.lo, Dq.hi⟩ (Nat.le_trans h1 G0.bo) (G0.drop.trans hd) h5
-  have G := G0.trans Dv.grow
-  have Dc := copy_down (goal := goal) h Dv.lo Dv.hi (G.drop.trans hd) (Nat.le_trans h1 G.bo)
+  obtain ⟨nexDon, g4, h4, h⟩ := bind_some h
+  have Dv := ihv (CGoal.next _ _) g3 g4 nexDon ⟨by rw [I.2.1]; exact b2, by simp [jmp0]; omega⟩
+    (Nat.le_trans b2 I.1.bo) (I.1.drop.trans (D0.grow.drop.trans hd)) h4
+  obtain ⟨nexDon', g4', hpd, h⟩ := bind_some h
+  obtain ⟨rfl, rfl⟩ := past_some hpd
+  obtain ⟨nexRec, g5, h5, h⟩ := bind_some h
+  have G0 := D0.grow.trans (I.1.trans Dv.grow)
+  have Dq := ihq (CGoal.next _ _) g4 g5 nexRec ⟨Dv.lo, Dv.hi⟩ (Nat.le_trans h1 G0.bo) (G0.drop.trans hd) h5
+  have G := G0.trans Dq.grow
+  have Dc := copy_down (goal := goal) h Dq.lo Dq.hi (G.drop.trans hd) (Nat.le_trans h1 G.bo)
   exact ⟨G.trans Dc.grow, Dc.lo, Dc.hi, Dc.entry⟩
 
 theorem run_cons_down {p q : Nomm} (ihp : DownIH S Map p) (ihq : DownIH S Map q) :

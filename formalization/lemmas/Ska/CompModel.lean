@@ -629,7 +629,8 @@ def doneBlocks : CM Map (Nat × Nat) := do
 
 /-- `run` of `+comp`, for the cases `[^ *]`, `%0`, `%1`, `%3`, `%4`, `%5`,
 `%7`, `%10` (the parameters `mono`, `region`, `sup` are read by no case of the
-fragment).  `none` on the other cases: they are not modelled. -/
+fragment).  The case `%10` follows f6a76c2: the recipient `q` is computed
+first and the donor `v` second, as in `+mink`.  `none` on the other cases: they are not modelled. -/
 def run : Nomm → CGoal S → CM Map (Next S)
   | Nomm.cons p q, goal => do
       let goal ← (match goal with
@@ -744,11 +745,11 @@ def run : Nomm → CGoal S → CM Map (Next S)
   | Nomm.n10 a v q, goal => do
       let next ← simpleNext goal
       let (don, rec, o) ← into next a
-      let nexD ← past noCode ⟨don, jmp0 o⟩ q
-      let nexRec ← run q (CGoal.next rec nexD.th)
-      let nexRec ← past noCode nexRec v
-      let nexDon ← run v (CGoal.next nexD.laz nexRec.th)
-      copy nexDon nexRec.laz
+      let nexR ← past noCode ⟨rec, jmp0 o⟩ v
+      let nexDon ← run v (CGoal.next don nexR.th)
+      let nexDon ← past noCode nexDon q
+      let nexRec ← run q (CGoal.next nexR.laz nexDon.th)
+      copy nexRec nexDon.laz
   | _, _ => fun _ => Option.none
 
 end Comp
