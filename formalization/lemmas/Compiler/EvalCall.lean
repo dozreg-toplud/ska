@@ -402,5 +402,55 @@ theorem eval_pole_csm (cr : Noun) (a : Bell) (sr d : Nat) (k : Noun)
     Tag.hme, Tag.hcp, Tag.hce, Tag.spy, Tag.cam, Tag.csl, Tag.csf, Tag.csm]
   rfl
 
+/-! ## Every op -/
+
+/-- `+eval-top` is the oracle's `nok` on the cores that keep what the
+interpreter reads, and returns such cores. -/
+def TopIs (O : Oracle Noun) (cr scry : Noun) : Prop :=
+  (∀ vu vf, nock (topS cr vu vf scry) eval_top.battery = (O.nok cr vu vf scry).map resN) ∧
+    ∀ vu vf r, O.nok cr vu vf scry = some r → CorIn r.2
+
+theorem local_map (cr : Noun) (lib : Lib) (scry : Noun) (pole : Pole) (regs : TreapMap mugF Noun)
+    (trace : Trace) :
+    ((localPole lib scry pole regs trace).map fun r => (r.1, r.2.1, r.2.2, cr)).map poleOutS
+      = (localPole lib scry pole regs trace).map (poleOut cr) := by
+  cases localPole lib scry pole regs trace <;> rfl
+
+/-- `+eval-pole` on every op computes `execPole`, with the interpreter's
+calls as the oracle: a call is `callBody` over an oracle that `+eval-blob`
+computes, an indirect call what `+eval-top` computes. -/
+theorem eval_pole_gate (cr : Noun) (hc : CorIn cr) (lib : Lib) (hslam : SlamIsNock lib)
+    (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMap mugF) × Noun)) (hpk : PokeIs pk cr)
+    (Ob : Oracle Noun) (hO : BlobIs lib Ob) (nk : Noun → Noun → Noun → Noun → Option (Tone × Noun))
+    (scry : Noun) (htop : TopIs ⟨callBody lib pk Ob, nk⟩ cr scry) (pole : Pole)
+    (regs : TreapMap mugF Noun) (trace : Trace) :
+    nock (poleS cr pole regs trace scry) eval_pole.battery
+      = (execPole lib ⟨callBody lib pk Ob, nk⟩ scry cr pole regs trace).map poleOutS := by
+  have hcor : slot? 3 (icore cr) = some cr := by simp [nock_exec]
+  have hpi := evalPoleIn_icore hc
+  have hl2 : slot? read.layer2.axis (icore cr) = some layer2 := hc
+  cases pole with
+  | nok u f d => exact eval_pole_nok cr hc lib _ scry u f d regs trace htop.1 htop.2
+  | cal a v d => exact eval_pole_cal cr hc lib pk hpk Ob hO nk scry a v d regs trace
+  | caf a v d n =>
+    rw [eval_pole_caf, eval_pole_cal cr hc lib pk hpk Ob hO nk scry a v d regs trace]; rfl
+  | cam a v d k =>
+    rw [eval_pole_cam, eval_pole_cal cr hc lib pk hpk Ob hO nk scry a v d regs trace]; rfl
+  | csl a sr d => exact eval_pole_csl cr hc lib pk hpk Ob hO nk scry a sr d regs trace
+  | csf a sr d n =>
+    rw [eval_pole_csf, eval_pole_csl cr hc lib pk hpk Ob hO nk scry a sr d regs trace]; rfl
+  | csm a sr d k =>
+    rw [eval_pole_csm, eval_pole_csl cr hc lib pk hpk Ob hO nk scry a sr d regs trace]; rfl
+  | hmp a v f =>
+    rw [eval_pole_hmp (icore cr) cr hcor hpi layer2 hl2 turn.arm_at homoIn_layer2 lib scry a v f
+      regs trace]
+    exact (local_map cr lib scry _ regs trace).symm
+  | spy e p d =>
+    rw [eval_pole_spy (icore cr) cr hcor hpi lib hslam scry e p d regs trace]
+    exact (local_map cr lib scry _ regs trace).symm
+  | _ =>
+    rw [eval_pole_local (icore cr) cr hcor hpi lib scry _ (by simp [PlainLocal]) regs trace]
+    exact (local_map cr lib scry _ regs trace).symm
+
 end Compiler
 end Formalization
