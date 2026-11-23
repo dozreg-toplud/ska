@@ -11,8 +11,11 @@ for a fork-free goal `%next` whose jump has no arguments, which is what
 `runN_ok` asks.  The blocks of `p` may hop up (the fork blocks of its
 `%6`), so the relation grows by `GrowU`.
 
-`FragT`: the nomms of `FragP` for `%done`, and `[7 p q]` with `q` in `Frag`
-and `p` in `FragN`.  `finishLF_bellContractT` and `crash_iffT`: the top
+`runOKP_n4`: `[4 p]` for `%done` with `p` in `FragN`, through `unaryP_ok`,
+which a `[3 p]` for `%done` can use too.
+
+`FragT`: the nomms of `FragP` for `%done`, `[7 p q]` with `q` in `Frag`
+and `p` in `FragN`, and `[4 p]` with `p` in `FragN`.  `finishLF_bellContractT` and `crash_iffT`: the top
 theorems on `FragT`.  For example `[7 [6 [0 2] [6 [0 3] [1 1] [1 2]] [0 3]]
 [4 [0 1]]]`, a test whose yes branch is again a `%6`, under an increment.
 -/
@@ -112,13 +115,95 @@ theorem runOKP_n7 (lib : Lib) {p q : Nomm} (hq : Frag q (CGoal.done : CGoal S)) 
         · rw [e']; exact Sp.2 f
         · exact x.elim
 
+/-! ## `[4 p]` under `%done` -/
+
+/-- **A unary case for `%done`**: the code of `p` for the goal `%next` of the
+register `a`, into a block `o` that does `f` to what `a` holds. -/
+theorem unaryP_ok {lib : Lib} {nm p : Nomm} {g0 g' g1 : Gen Map} {a o : Nat} {nexp : NextL S}
+    {f : Noun → Option Noun} (hev : ∀ s, pureEval nm s = (pureEval p s).bind f) (hpre : Ext g0 g')
+    (hgr : GrowU g0 g') (hcnd : g'.cond = g0.cond) (ha : g0.re ≤ a ∧ a < g'.re) (ho : o < g'.bo)
+    (hfr : Fresh g' (jmp0 o)) (hp : RunOKN (Map := Map) lib p (lazyReg a) (jmp0 o) g' g1 nexp)
+    (hsz : sixCount nm = sixCount p)
+    (hblk : ∀ (c : Straight Map), Agree c g0 g' → ∀ (σ : Type) (O : Oracle σ) st regs t gul x,
+      SkaModel.read a regs = some x → goJ lib O c gul st regs t (jmp0 o) = some (toneOf t (f x), st)) :
+    RunOKP (Map := Map) lib nm CGoal.done g0 g1 nexp := by
+  refine ⟨hpre.trans hp.ext, hgr.trans hp.grow, hp.cnd.trans hcnd, hp.lo, hp.hi, ?_, fun r hr => ?_, hp.dist,
+    fun e he => ?_, fun e he => ?_, hp.nodup, by rw [hsz]; exact hp.size, fun s hs => ?_, ?_⟩
+  · rcases hp.ent with f | e
+    · exact Or.inl f
+    · simp only [GoalJ] at e
+      rw [e]; exact Or.inl (hfr.growU ho hp.grow)
+  · have := hp.ext.1; have := hpre.1
+    rcases hp.regs r hr with h | h
+    · simp only [lazyReg, NMem] at h; subst h; exact ⟨ha.1, by omega⟩
+    · exact ⟨by omega, h.2⟩
+  · exact ⟨(hp.eregs e he).1, fun r hr => by have := (hp.eregs e he).2 r hr; have := hpre.1; omega⟩
+  · obtain ⟨x, y, z⟩ := hp.labs e he
+    exact ⟨by have := hpre.2.1; omega, y, z⟩
+  · rw [hev]
+    rcases hp.nec s hs with h | ⟨x, _, h2⟩
+    · rw [h]; rfl
+    · exact absurd ⟨trivial, looks_empty x⟩ h2
+  · intro c ned σ O st t gul s0 s ag hned regs hh hn
+    have agP : AgreeP lib O c gul st t ned g' g1 nexp.laz s0 s :=
+      ⟨fun o' h0 h1 hnl => ag.1 o' (Nat.le_trans hpre.2.1 h0) h1 hnl, ag.2⟩
+    have Sp := hp.sem c ned σ O st t gul s0 s agP hned regs hh hn
+    have agQ : Agree c g0 g' := fun o' h0 h1 => by
+      rw [ag.1 o' h0 (Nat.lt_of_lt_of_le h1 hp.ext.2.1) (fun hm => ?_)]
+      · exact hp.ext.2.2.2 o' h1
+      · obtain ⟨e, he, rfl⟩ := List.mem_map.mp hm
+        have := (hp.labs e he).1; omega
+    show goJ lib O c gul st regs t nexp.th = some (toneOf t (pureEval nm s), st)
+    rw [hev]
+    cases e : pureEval p s with
+    | none => rw [e] at Sp; exact Sp
+    | some x =>
+      rw [e] at Sp
+      obtain ⟨R, hR, _, he⟩ := Sp.1 ⟨trivial, looks_empty x⟩
+      exact he.trans (hblk c agQ σ O st R t gul x hR)
+
+/-- **`[4 p]` for `%done`**, with `p` in `FragN`. -/
+theorem runOKP_n4 (lib : Lib) {p : Nomm} (hp : FragN (S := S) p) {region : List Nat} {g0 g1 : Gen Map}
+    {nex : NextL S} (hcount : sixCount p ≤ 255) (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0)
+    (h : runL (Nomm.n4 p) (CGoal.toL (CGoal.done : CGoal S)) region g0 = some (nex, g1)) :
+    RunOKP (Map := Map) lib (Nomm.n4 p) CGoal.done g0 g1 nex := by
+  have e4 : (runL (Nomm.n4 p) (CGoal.toL (CGoal.done : CGoal S)) region : CM Map (NextL S)) = (do
+      let pro ← re
+      let arg ← re
+      let o ← emit ⟨[], [Pole.inc arg pro], Termin.don pro⟩
+      runL p (CGoalL.next (ofSure (lazyReg arg)) (jmp0 o)) region) := by
+    conv => lhs; unfold runL
+    rfl
+  rw [e4] at h
+  simp only [bind_apply, re_apply, emit_apply, Option.bind_some] at h
+  have Rp := runN_ok (Map := Map) lib hp ⟨by simp only [jmp0]; omega, by simp only [jmp0, emitted_bo]; omega⟩ rfl
+    (by exact ⟨trivial, fun r hr => by simp [lazyReg, NMem] at hr; subst hr; simp [emitted_re]⟩) (by exact trivial)
+    hcount
+    (by simp only [emitted_bo]; omega) (by simpa [emitted_drop] using d0)
+    (((grow_reg g0 _).trans (grow_emit (jumpsBelow_nil rfl _))).toU hu |>.up hu) h
+  refine unaryP_ok (pureEval_n4 p) ((ext_re _).trans ((ext_re _).trans (ext_emit _ _)))
+    (((grow_reg g0 _).trans (grow_emit (jumpsBelow_nil rfl _))).toU hu) rfl
+    ⟨Nat.le_succ _, by simp [emitted_re]⟩ (by simp [emitted_bo]) (fresh_emitted (by simpa using d0) rfl rfl) Rp rfl ?_
+  intro c hc σ O st regs t gul x hx
+  have hb := emitted_get' (by simpa using d0) (hc _ (by simp) (by simp [emitted_bo]))
+  rw [goJ_jmp0 _ _ _ _ hb]
+  cases x with
+  | atom n =>
+    rw [show [Pole.inc _ _] = [Pole.inc _ _] ++ [] from rfl, runs_inc hx]
+    simp [incF, toneOf, execBlob_don', read_store_eq]
+  | cell u v =>
+    rw [show [Pole.inc _ _] = [Pole.inc _ _] ++ [] from rfl, crashes_inc hx]
+    rfl
+
 /-! ## The fragment of the top theorems -/
 
-/-- **The fragment of the top theorems**: `FragP` for `%done`, and `[7 p q]`
-with `q` in `Frag` for `%done` and `p` in `FragN`. -/
+/-- **The fragment of the top theorems**: `FragP` for `%done`, `[7 p q]`
+with `q` in `Frag` for `%done` and `p` in `FragN`, and `[4 p]` with `p` in
+`FragN`. -/
 inductive FragT : Nomm → Prop
   | nest {nm : Nomm} : FragP (S := S) CGoal.done nm → FragT nm
   | seven {p q : Nomm} : Frag q (CGoal.done : CGoal S) → FragN (S := S) p → FragT (Nomm.n7 p q)
+  | four {p : Nomm} : FragN (S := S) p → FragT (Nomm.n4 p)
 
 /-- **The run for `%done` from `gen0` meets `RunOKP` on `FragT`.** -/
 theorem runT_ok (lib : Lib) {nm : Nomm} (hf : FragT (S := S) nm) (hcount : sixCount nm ≤ 255)
@@ -128,6 +213,8 @@ theorem runT_ok (lib : Lib) {nm : Nomm} (hf : FragT (S := S) nm) (hcount : sixCo
   | nest hf => exact runP_ok lib hf trivial trivial hcount (by simp [gen0]) rfl upBelow_gen0 h
   | seven hq hp =>
     exact runOKP_n7 lib hq hp (by simp only [sixCount] at hcount; omega) (by simp [gen0]) rfl upBelow_gen0 h
+  | four hp =>
+    exact runOKP_n4 lib hp (by simp only [sixCount] at hcount; omega) (by simp [gen0]) rfl upBelow_gen0 h
 
 /-- **The final pass meets the contract on `FragT`**, when the nomm has at
 most 255 `%6`, nothing is baked and the bell's cape has no `[| |]`. -/
