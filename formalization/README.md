@@ -163,7 +163,8 @@ import only its theorems.  So:
 2. A change to a declaration of the chain rebuilds the rest of the chain,
    `Facts.lean` and the layer files, and no gate theorem file.  A comment
    rebuilds the edited file only.
-3. A clean build takes about 50 seconds and peaks at 1.6 GB.
+3. A clean build takes about 55 seconds and peaks at 2.2 GB for the whole
+   build (1.8 GB for the largest process).
 
 ## Gaps
 
