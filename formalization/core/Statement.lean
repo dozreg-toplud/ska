@@ -30,6 +30,7 @@ The statements:
 
 * `Loads`     the pill does hold a core (without it the rest says nothing)
 * `Meek`      if Nock computes `p`, the interpreter returns `[%0 p]`
+              (Nock with atom hint tags, `EvalA`)
 * `Weak`      what `+mock` returns, the interpreter returns, rendered
 * `Converse`  what the interpreter returns, rendered, `+mock` returns
 * `Halts`     the `%full` poke returns on every subject and formula
@@ -148,11 +149,12 @@ def Loads : Prop :=
   ∃ core, IsCore core
 
 /-- If Nock computes `p` from `s` and `f`, so does the interpreter, on any
-core the pill's core can become, whatever the scry gate. -/
+core the pill's core can become, whatever the scry gate.  Nock here is
+`EvalA`: no hint with a cell for a tag is run. -/
 def Meek : Prop :=
   ∀ core₀ core s f p gul,
     IsCore core₀ → Reach core₀ core →
-    Eval s f p →
+    EvalA s f p →
     ∃ core', Top core s f gul (C (A 0) p) core'
 
 /-- What `+mock` returns, the interpreter returns: a product, a block, or a

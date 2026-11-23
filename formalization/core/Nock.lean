@@ -232,5 +232,90 @@ inductive Eval : Noun -> Noun -> Noun -> Prop where
       Eval subject c out ->
       Eval subject (n3 (A 11) (A tag) c) out
 
+-- Nock with atom hint tags: `Eval`, except that `*[a 11 [b c] d]` reduces
+-- only when the tag `b` is an atom.
+--
+-- The specification reduces it for any `b`.  `+mink` of hoon.hoon crashes on
+-- a tag that is a cell, and so does the SKA compiler, which follows `+mink`;
+-- Hoon never writes such a hint.  `Meek` is stated with this relation until
+-- the Hoon follows the specification.
+inductive EvalA : Noun -> Noun -> Noun -> Prop where
+  -- *[a [b c] d] = [*[a b c] *[a d]]
+  | cell {subject b c d left right} :
+      EvalA subject (C b c) left ->
+      EvalA subject d right ->
+      EvalA subject (C (C b c) d) (C left right)
+  -- *[a 0 b] = /[b a]
+  | op0 {subject axis out} :
+      Slot axis subject out ->
+      EvalA subject (slot axis) out
+  -- *[a 1 b] = b
+  | op1 {subject noun} :
+      EvalA subject (quote noun) noun
+  -- *[a 2 b c] = *[*[a b] *[a c]]
+  | op2 {subject b c subject' formula' out} :
+      EvalA subject b subject' ->
+      EvalA subject c formula' ->
+      EvalA subject' formula' out ->
+      EvalA subject (n3 (A 2) b c) out
+  -- *[a 3 b] = ?*[a b]
+  | op3 {subject b noun} :
+      EvalA subject b noun ->
+      EvalA subject (n2 (A 3) b) (wut noun)
+  -- *[a 4 b] = +*[a b]; +a = 1 + a for atoms.
+  -- There is no successful constructor for +[a b] = +[a b].
+  | op4 {subject b atom} :
+      EvalA subject b (A atom) ->
+      EvalA subject (n2 (A 4) b) (A (atom + 1))
+  -- *[a 5 b c] = =[*[a b] *[a c]]
+  | op5 {subject b c left right} :
+      EvalA subject b left ->
+      EvalA subject c right ->
+      EvalA subject (n3 (A 5) b c) (eqCode left right)
+  -- *[a 6 b c d] expands to:
+  -- *[a *[[c d] 0 *[[2 3] 0 *[a 4 4 b]]]]
+  -- The expansion evaluates *[a b], increments twice, slots into [2 3],
+  -- and selects c when the test is 0, or d when the test is 1.
+  | op6_zero {subject b c d out} :
+      EvalA subject b (A 0) ->
+      EvalA subject c out ->
+      EvalA subject (n4 (A 6) b c d) out
+  -- Same spec clause as op6_zero, for the test result 1 branch.
+  | op6_one {subject b c d out} :
+      EvalA subject b (A 1) ->
+      EvalA subject d out ->
+      EvalA subject (n4 (A 6) b c d) out
+  -- *[a 7 b c] = *[*[a b] c]
+  | op7 {subject b c subject' out} :
+      EvalA subject b subject' ->
+      EvalA subject' c out ->
+      EvalA subject (n3 (A 7) b c) out
+  -- *[a 8 b c] = *[[*[a b] a] c]
+  | op8 {subject b c produced out} :
+      EvalA subject b produced ->
+      EvalA (C produced subject) c out ->
+      EvalA subject (n3 (A 8) b c) out
+  -- *[a 9 b c] = *[*[a c] 2 [0 1] 0 b]
+  | op9 {subject axis c core out} :
+      EvalA subject c core ->
+      EvalA core (invoke axis) out ->
+      EvalA subject (n3 (A 9) (A axis) c) out
+  -- *[a 10 [b c] d] = #[b *[a c] *[a d]]
+  | op10 {subject axis c d replacement editedBase out} :
+      EvalA subject c replacement ->
+      EvalA subject d editedBase ->
+      Edit axis replacement editedBase out ->
+      EvalA subject (n3 (A 10) (n2 (A axis) c) d) out
+  -- *[a 11 [b c] d] = *[[*[a c] *[a d]] 0 3], for an atom b only
+  | op11_cell {subject tag c d hint product out} :
+      EvalA subject c hint ->
+      EvalA subject d product ->
+      EvalA (C hint product) (slot 3) out ->
+      EvalA subject (n3 (A 11) (C (A tag) c) d) out
+  -- *[a 11 b c] = *[a c]
+  | op11_atom {subject tag c out} :
+      EvalA subject c out ->
+      EvalA subject (n3 (A 11) (A tag) c) out
+
 end Nock
 end Formalization
