@@ -181,6 +181,29 @@ abbrev con.axis : Nat := 756
 
 theorem con.arm_at : slot? con.axis layer2 = some con.arm := by kernel_rfl
 
+abbrev muk.axis : Nat := 12216
+
+theorem muk.arm_at : slot? muk.axis layer2 = some muk.arm := by kernel_rfl
+
+abbrev fe.axis : Nat := 670
+
+theorem fe.arm_at : slot? fe.axis layer2 = some fe.arm := by kernel_rfl
+
+abbrev fe.sit.axis : Nat := 44
+
+theorem fe.sit.arm_at : ∀ x, slot? fe.sit.axis (C fe.battery x) = some fe.sit.arm := by
+  intro x; kernel_rfl
+
+abbrev fe.sum.axis : Nat := 4
+
+theorem fe.sum.arm_at : ∀ x, slot? fe.sum.axis (C fe.battery x) = some fe.sum.arm := by
+  intro x; kernel_rfl
+
+abbrev fe.rol.axis : Nat := 188
+
+theorem fe.rol.arm_at : ∀ x, slot? fe.rol.axis (C fe.battery x) = some fe.rol.arm := by
+  intro x; kernel_rfl
+
 abbrev by.axis : Nat := 6103
 
 theorem by.arm_at : slot? by.axis layer2 = some by.arm := by kernel_rfl

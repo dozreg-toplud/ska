@@ -328,7 +328,7 @@ def main():
     arm('dor', layer2, 'layer2')
     arm('gor', layer2, 'layer2')
     arm('mor', layer2, 'layer2')
-    arm('mug', layer2, 'layer2', loops=None, full=False)
+    mug = arm('mug', layer2, 'layer2', loops=1)
 
     # lists
     for label in ['lent', 'weld', 'snag', 'scag', 'slag', 'turn', 'roll', 'levy',
@@ -346,6 +346,109 @@ def main():
         arm(label, layer2, 'layer2')
     for label in ['met', 'mix', 'dis', 'con']:
         arm(label, layer2, 'layer2', loops=1)
+
+    # +mug: a |^ core [8 [1 [buc mum]] 9 4 0 1], where buc is the recursive arm $
+    # and mum the gate that hashes an atom; mug.loop is the loop of mum
+    mug_core = tail(head(tail(gate_battery(mug))))
+    assert NODES[head(head(tail(gate_battery(mug))))] == 1
+    name(head(mug_core), 'mug.buc')
+    formulas.add(head(mug_core))
+    mum = tail(mug_core)
+    name(mum, 'mug.mum.arm')
+    formulas.add(mum)
+    def is_gate_builder(a):
+        """a is [8 [1 bunt] [1 battery] 0 1]"""
+        try:
+            return (NODES[head(a)] == 8 and NODES[head(head(tail(a)))] == 1
+                    and NODES[head(head(tail(tail(a))))] == 1
+                    and tail(tail(tail(a))) == cell(atom(0), atom(1)))
+        except (TypeError, IndexError):
+            return False
+
+    def door_gate_battery(a):
+        assert is_gate_builder(a)
+        return tail(head(tail(tail(a))))
+    name(door_gate_battery(mum), 'mug.mum.battery')
+    formulas.add(door_gate_battery(mum))
+
+    # +muk, its loop, and the gate fmix32 of its |^ core
+    muk = arm('muk', layer2, 'layer2', loops=1)
+    kick4 = cell(atom(9), cell(atom(4), cell(atom(0), atom(1))))
+    fmix = []
+    for i in reach([gate_battery(muk)]):
+        n = NODES[i]
+        if type(n) is int or NODES[n[0]] != 8 or type(NODES[n[1]]) is int:
+            continue
+        q, k = NODES[n[1]]
+        if k == kick4 and NODES[head(q)] == 1:
+            fmix.append(tail(tail(q)))
+    (fmix_arm,) = fmix
+    name(door_gate_battery(fmix_arm), 'muk.fmix.battery')
+    formulas.add(door_gate_battery(fmix_arm))
+
+    # the door +fe, which +muk builds with [9 fe 0 7], and the arms sit, sum
+    # and rol of it, told apart by what their gates pull
+    fe_ax = callee(gate_battery(muk), 7)
+    fe_arm = slot(fe_ax, layer2)
+    name(fe_arm, 'fe.arm')
+    formulas.add(fe_arm)
+    fe_door = nock(layer2, fe_arm)
+    assert tail(tail(fe_door)) == layer2
+    name(head(fe_door), 'fe.battery')
+    axes.append(('fe', fe_ax, 'slot? fe.axis layer2 = some fe.arm'))
+    ax_of = dict((nm, ax) for nm, ax, _ in axes)
+
+    def fe_arms(i, ax):
+        n = NODES[i]
+        if type(NODES[n[0]]) is int:
+            yield ax, i
+            return
+        yield from fe_arms(n[0], 2 * ax)
+        yield from fe_arms(n[1], 2 * ax + 1)
+
+    def pulls(formula):
+        """the [axis ctx] of every [9 axis 0 ctx] in formula, in pre-order"""
+        out = []
+        st = [formula]
+        while st:
+            i = st.pop()
+            n = NODES[i]
+            if type(n) is int:
+                continue
+            if NODES[n[0]] == 9 and type(NODES[n[1]]) is tuple:
+                m = NODES[n[1]]
+                if type(NODES[m[0]]) is int and type(NODES[m[1]]) is tuple \
+                        and NODES[head(m[1])] == 0:
+                    out.append((NODES[m[0]], NODES[tail(m[1])]))
+            st.append(n[1])
+            st.append(n[0])
+        return out
+
+    found = {}
+    for ax, a in fe_arms(head(fe_door), 2):
+        if not is_gate_builder(a):
+            continue
+        ps = pulls(door_gate_battery(a))
+        if ps == [(ax_of['end'], 31)]:
+            found['sit'] = (ax, a)
+    for ax, a in fe_arms(head(fe_door), 2):
+        if not is_gate_builder(a):
+            continue
+        ps = pulls(door_gate_battery(a))
+        if sorted(ps) == sorted([(found['sit'][0], 7), (ax_of['add'], 63)]):
+            found['sum'] = (ax, a)
+        shifts = [x for x, _ in ps if x in (ax_of['lsh'], ax_of['rsh'])]
+        if (ax_of['con'], 255) in ps and shifts and shifts[0] == ax_of['lsh']:
+            assert 'rol' not in found
+            found['rol'] = (ax, a)
+    for label in ['sit', 'sum', 'rol']:
+        ax, a = found[label]
+        name(a, 'fe.%s.arm' % label)
+        formulas.add(a)
+        name(door_gate_battery(a), 'fe.%s.battery' % label)
+        formulas.add(door_gate_battery(a))
+        axes.append(('fe.' + label, ax, '∀ x, slot? fe.%s.axis (C fe.battery x) = some fe.%s.arm'
+                     % (label, label)))
 
     # the doors +by and +in, with some of their arms
     def door(label, layer, lname):
