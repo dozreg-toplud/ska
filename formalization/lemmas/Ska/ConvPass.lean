@@ -461,7 +461,7 @@ theorem cull_ok2 {memoF : Memo M} {n : Nat} {id : Ident} {st st' : SkaState M R}
   · -- frame: no new members
     have hxD := hsurv x (by rw [hxo]; simp)
     rw [hDo x hxD] at hxo
-    exact absurd ((hc.s.ord_stk x).mp ⟨o, hxo⟩) hx
+    exact absurd hxo hx
   · have hxD := hsurv x hx
     exact ⟨hDg x hxD, hDt x hxD, hDo x hxD⟩
   · -- reachability
@@ -586,7 +586,8 @@ theorem member_tail2 {memoF : Memo M} {run : RunGo M R} {mem : MemGo M R} (hrun 
   have hordm : Treap.get st2.order m = Treap.get st.order m := by rw [k2.2.1 m (by rw [h4]; exact hm.1), h3]
   have hst2 : ∃ l, st2.stk = l ++ st.stk := by obtain ⟨l, el⟩ := k2.1; exact ⟨l, by rw [el, h4]⟩
   have hnew : ∀ c oc, Treap.get st2.order c = some oc → c ∉ st.stk → st.next ≤ oc := fun c oc hco hcn => by
-    have := fr2.newOrd c oc hco (by rw [h4]; exact hcn); rw [h5] at this; exact this
+    have := fr2.newOrd c oc hco (fun h => hcn ((hc.s.ord_stk c).mp ⟨oc, by rw [← h3]; exact h⟩))
+    rw [h5] at this; exact this
   have hidx0 : index < st.next := hc.ord.1 id index hidx
   have hcalm : ∀ j ∈ st.stk, j ≠ m → calleesOf st2 j = calleesOf st j := fun j hj hjm => by
     simp only [calleesOf, gitG, Treap.gut, (hS1 j hj hjm).1]
@@ -624,7 +625,7 @@ theorem member_tail2 {memoF : Memo M} {run : RunGo M R} {mem : MemGo M R} (hrun 
     · exact fr2.fin i d (by rw [h1]; exact a) (by rw [h3]; exact b)
     · have hjs : j ∈ st.stk := by rw [hs]; simp [hj]
       exact (hS1 j hjs (fun e => hm.2 (e ▸ hj))).2.2
-    · rw [← h5]; exact fr2.newOrd x ox hxo (by rw [h4]; exact hx)
+    · rw [← h5]; exact fr2.newOrd x ox hxo (by rw [h3]; exact hx)
   split at e
   · -- the run reached below the root: the pass stops
     rename_i hlt
@@ -851,7 +852,7 @@ theorem pop_frame {id : Ident} {st st' : SkaState M R} {ab0 rest : List Ident} (
   · rw [a4] at hxo
     split at hxo
     · cases hxo
-    · exact absurd ((hi.ord_stk x).mp ⟨o, hxo⟩) hx
+    · exact absurd hxo hx
 
 /-- What the pass loop at the root `id` keeps and gives. -/
 def PassP2 (memoF : Memo M) (pass : PassGo M R) : Prop :=
@@ -866,6 +867,149 @@ def PassP2 (memoF : Memo M) (pass : PassGo M R) : Prop :=
     GStepsR (gCore st.g) (gCore st'.g) ∧ Keep rest (· ∈ rest) st st' ∧ Frame (· ∈ rest) st st' ∧
     (∀ x o, Treap.get st'.order x = some o → x ∉ rest → 1 ≤ ranOf st' x ∧ LowB st' x low) ∧
     (∃ d, Treap.get st'.g id = some d) ∧ (∀ o, Treap.get st'.order id = some o → low ≤ o)
+
+theorem Frame.trans2 {bt bt' : Ident → Prop} {st1 st2 st3 : SkaState M R} (h1 : Frame bt st1 st2)
+    (h2 : Frame bt' st2 st3) (hb : ∀ j, bt j → bt' j) : Frame bt st1 st3 where
+  fin := fun i d a b => by
+    obtain ⟨a', b'⟩ := h1.fin i d a b
+    exact h2.fin i d a' b'
+  ticks := fun j hj => (h2.ticks j (hb j hj)).trans (h1.ticks j hj)
+  next := Nat.le_trans h1.next h2.next
+  tick := Nat.le_trans h1.tick h2.tick
+  newOrd := fun x o h hx => by
+    by_cases h2o : Treap.get st2.order x = some o
+    · exact h1.newOrd x o h2o hx
+    · exact Nat.le_trans h1.next (h2.newOrd x o h h2o)
+
+theorem Frame.weaken {bt bt' : Ident → Prop} {st st' : SkaState M R} (h : Frame bt st st') (hb : ∀ j, bt' j → bt j) :
+    Frame bt' st st' := ⟨h.fin, fun j hj => h.ticks j (hb j hj), h.next, h.tick, h.newOrd⟩
+
+/-- **The pass loop keeps the convergence invariant.** -/
+theorem passStep_ok2 {memoF : Memo M} {n : Nat} {mem : MemGo M R} {pass : PassGo M R}
+    (hmem : MemP2 memoF mem) (hpass : PassP2 memoF pass) : PassP2 memoF (passStep n mem pass) := by
+  intro id index p st low st' F ab0 rest hc hs hidx hrest hcl hreach e
+  unfold passStep at e
+  simp only [Option.bind_eq_some_iff] at e
+  obtain ⟨ab, hab, members, hsw, e⟩ := e
+  obtain ⟨ab0', rest', rfl, hs', _⟩ := above_eq hab
+  obtain ⟨rfl, rfl⟩ := nodup_split_unique (hs ▸ hc.s.nodup) (hs.symm.trans hs')
+  have hnd2 : ((ab0 ++ [id]) ++ rest).Nodup := by simpa using (hs ▸ hc.s.nodup)
+  have hmembers : ∀ m ∈ members, m ∈ st.stk ∧ m ∉ rest := by
+    intro m hm
+    have hm' : m ∈ ab0 ++ [id] := by
+      rcases sweep_mem hsw m hm with rfl | h
+      · simp
+      · exact (Treap.has_silt _ _).mp h
+    exact ⟨by rw [hs]; exact mem_split_of hm', fun hr => (List.nodup_append.mp hnd2).2.2 m hm' m hr rfl⟩
+  have hall : ∀ x o, Treap.get st.order x = some o → x ∉ rest → x ∈ members := by
+    intro x o hxo hx
+    refine sweep_reach hsw ((hreach x o hxo hx).mono (fun y hy => ?_))
+    obtain ⟨hy1, hy2⟩ := hy
+    obtain ⟨oy, hoy⟩ := Option.ne_none_iff_exists'.mp hy1
+    have hys : y ∈ st.stk := (hc.s.ord_stk y).mp ⟨oy, hoy⟩
+    rw [hs] at hys
+    rw [Treap.has_silt]
+    simp only [List.mem_append, List.mem_cons] at hys
+    rcases hys with h | h | h
+    · simp [h]
+    · simp [h]
+    · exact absurd h hy2
+  obtain ⟨⟨r1, st2⟩, hml, e⟩ := e
+  obtain ⟨⟨F2, hF2, c2, hrest2⟩, s2, k2, fr2, hlow2, hcl2, hstab2⟩ :=
+    hmem index p members ({ st with stats := { st.stats with passes := st.stats.passes + 1 } } : SkaState M R)
+      r1 st2 F ab0 rest id (hc.congr rfl rfl rfl rfl rfl rfl rfl) hs hidx hmembers
+      (fun m hm => memOK_congr rfl rfl rfl (hrest m hm)) hcl hml
+  have fr2' : Frame (· ∈ rest) st st2 := ⟨fr2.fin, fr2.ticks, fr2.next, fr2.tick, fr2.newOrd⟩
+  have k2' : Keep rest (· ∈ rest) st st2 :=
+    (Keep.weaken (bo' := rest) k2 ⟨ab0 ++ [id], by rw [hs]; simp⟩ (fun j hj => hj) : _)
+  have hidx2 : Treap.get st2.order id = some index := by
+    rw [k2.2.1 id (by rw [hs]; simp)]; exact hidx
+  have hst2 : ∃ l, st2.stk = (l ++ ab0) ++ id :: rest := by
+    obtain ⟨l, el⟩ := k2.1; exact ⟨l, by rw [el]; show l ++ st.stk = _; rw [hs]; simp⟩
+  obtain ⟨l2, el2⟩ := hst2
+  simp only at e
+  split at e
+  · -- the pass reached below the root
+    simp only [Option.some.injEq, Prod.mk.injEq] at e
+    obtain ⟨rfl, rfl⟩ := e
+    refine ⟨⟨F2, hF2, c2⟩, s2, k2', fr2', hcl2, ?_, fun o ho => ?_⟩
+    · obtain ⟨d, hd⟩ := c2.s.ord_g id index hidx2; exact ⟨d, hd⟩
+    · rw [hidx2] at ho; cases ho; exact hlow2
+  · rename_i hidxr
+    have hr1 : r1.1 = index := by simpa using hidxr
+    simp only [Option.bind_eq_some_iff] at e
+    obtain ⟨st3, hcu, e⟩ := e
+    obtain ⟨c3, s3, k3, fr3, hsurv3, hreach3⟩ := cull_ok2 c2 el2 hidx2 hrest2 hcu
+    have hrest3 : ∀ m ∈ rest, MemOK st3 F2 m index := fun m hm =>
+      memOK_keepRest c2.ord c2.s el2 hidx2 k3 fr3.ticks (fun _ h => h) hm (hrest2 m hm)
+    obtain ⟨l3, el3⟩ := k3.1
+    have hidx3 : Treap.get st3.order id = some index := by rw [k3.2.1 id List.mem_cons_self]; exact hidx2
+    have hsv : ∀ x, Treap.get st3.order x ≠ none → ranOf st3 x = ranOf st2 x ∧
+        calleesOf st3 x = calleesOf st2 x ∧ chgOf st3 x = chgOf st2 x ∧ Treap.get st3.order x = Treap.get st2.order x :=
+      fun x hx => by
+        obtain ⟨a, b, c⟩ := hsurv3 x hx
+        exact ⟨by simp only [ranOf, Treap.gut, b], by simp only [calleesOf, gitG, Treap.gut, a],
+          by simp only [chgOf, Treap.gut, b], c⟩
+    have hcl3 : ∀ x o, Treap.get st3.order x = some o → x ∉ rest → 1 ≤ ranOf st3 x ∧ LowB st3 x index := by
+      intro x o hxo hx
+      obtain ⟨a, b, _, d⟩ := hsv x (by rw [hxo]; simp)
+      obtain ⟨h1, h2⟩ := hcl2 x o (by rw [← d]; exact hxo) hx
+      refine ⟨by rw [a]; exact h1, fun c hce oc hco => ?_⟩
+      rw [b] at hce
+      obtain ⟨_, _, _, dc⟩ := hsv c (by rw [hco]; simp)
+      rw [hr1] at h2
+      exact h2 c hce oc (by rw [← dc]; exact hco)
+    have hk23 : ∀ j ∈ st2.stk, ∀ o, Treap.get st3.order j = some o → Treap.get st2.order j = some o :=
+      fun j _ o h => by rw [← (hsv j (by rw [h]; simp)).2.2.2]; exact h
+    have k23 : Keep rest (· ∈ rest) st st3 :=
+      k2'.trans (k3.weaken ⟨[id], rfl⟩ (fun j hj => List.mem_cons_of_mem _ hj))
+    have fr23 : Frame (· ∈ rest) st st3 :=
+      fr2'.trans2 (fr3.weaken (fun j hj => List.mem_cons_of_mem _ hj)) (fun j hj => hj)
+    split at e
+    · -- a stable pass: pop
+      rename_i hstable
+      simp only [Option.map_eq_some_iff] at e
+      obtain ⟨st4, hpop, e⟩ := e
+      cases e
+      obtain ⟨_, _, _, _, _, _, _, en3, _⟩ := cull_eff c2.s el2 hcu
+      have hnext : st2.next = st.next := by have := hstable.2; rw [en3] at this; exact this
+      obtain ⟨o2, _, _, hd2⟩ := hstab2 hr1 hstable.1 hnext
+      have hnd3 : ((l3 ++ [id]) ++ rest).Nodup := by
+        have := c3.s.nodup; rw [el3] at this; simpa using this
+      have hready : ∀ x ∈ l3 ++ [id], 1 ≤ ranOf st3 x ∧ ∀ c, InCallees (calleesOf st3 x) c → ∀ o,
+          Treap.get st3.order c = some o → chgOf st3 c < ranOf st3 x ∧ index ≤ o := by
+        intro x hx
+        have hxs : x ∈ st3.stk := by rw [el3]; exact mem_split_of hx
+        have hxr : x ∉ rest := fun hr => (List.nodup_append.mp hnd3).2.2 x hx x hr rfl
+        obtain ⟨ox, hox⟩ := (c3.s.ord_stk x).mpr hxs
+        obtain ⟨h1, h2⟩ := hcl3 x ox hox hxr
+        obtain ⟨a, b, _, d⟩ := hsv x (by rw [hox]; simp)
+        have hox2 : Treap.get st2.order x = some ox := by rw [← d]; exact hox
+        have hox0 : Treap.get st.order x = some ox := by rw [← o2 x]; exact hox2
+        have hnd := not_dirty (hd2 x (hall x ox hox0 hxr))
+        refine ⟨h1, fun c hce o hco => ⟨?_, h2 c hce o hco⟩⟩
+        obtain ⟨_, _, cc, _⟩ := hsv c (by rw [hco]; simp)
+        rw [cc, a]
+        rw [b] at hce
+        exact hnd c hce
+      obtain ⟨F3, hF3, c4⟩ := pop_frozen c3 el3 hidx3 hrest3 hready hpop
+      obtain ⟨a1, _, _, a4, _, a6, _⟩ := popGo_eff l3 st3 _ rest el3 (by rw [← el3]; exact c3.s.nodup)
+        (fun j hj => c3.s.mem_g (by rw [el3]; exact mem_split_of hj)) (by unfold pop at hpop; exact hpop)
+      obtain ⟨_, s4, k4⟩ := pop_ok c3.s hpop el3
+      refine ⟨⟨F3, fun e he => hF3 e (hF2 e he), c4⟩, gStepsR_trans s2 (gStepsR_trans s3 s4), k23.trans k4,
+        fr23.trans2 (pop_frame c3.s el3 hpop) (fun j hj => hj), fun x o hxo hx => ?_, ?_,
+        fun o ho => ?_⟩
+      · exfalso
+        have hxs := (c4.s.ord_stk x).mp ⟨o, hxo⟩
+        rw [a1] at hxs; exact hx hxs
+      · obtain ⟨d, hd⟩ := c3.s.mem_g (by rw [el3]; exact List.mem_append_right _ List.mem_cons_self)
+        rw [a6, if_pos (List.mem_append_right _ (List.mem_singleton.mpr rfl)), hd]; exact ⟨_, rfl⟩
+      · rw [a4, if_pos (List.mem_append_right _ (List.mem_singleton.mpr rfl))] at ho; cases ho
+    · -- not stable: the next pass
+      obtain ⟨⟨F4, hF4, c4⟩, s4, k4, fr4, hcl4, hid4, hlo4⟩ :=
+        hpass id index (p + 1) st3 low st' F2 l3 rest c3 el3 hidx3 hrest3 hcl3 hreach3 e
+      exact ⟨⟨F4, fun e he => hF4 e (hF2 e he), c4⟩, gStepsR_trans s2 (gStepsR_trans s3 s4), k23.trans k4,
+        fr23.trans2 fr4 (fun j hj => hj), hcl4, hid4, hlo4⟩
 
 end Ana
 end SkaModel

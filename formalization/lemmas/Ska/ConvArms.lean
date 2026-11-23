@@ -82,7 +82,7 @@ structure Frame (bt : Ident → Prop) (st st' : SkaState M R) : Prop where
   ticks : ∀ j, bt j → Treap.get st'.ticks j = Treap.get st.ticks j
   next : st.next ≤ st'.next
   tick : st.tick ≤ st'.tick
-  newOrd : ∀ x o, Treap.get st'.order x = some o → x ∉ st.stk → st.next ≤ o
+  newOrd : ∀ x o, Treap.get st'.order x = some o → Treap.get st.order x ≠ some o → st.next ≤ o
 
 theorem Frame.refl' {bt : Ident → Prop} {st st' : SkaState M R} (hg : st'.g = st.g) (ho : st'.order = st.order)
     (hs : st'.stk = st.stk) (hn : st'.next = st.next) (htk : st'.tick = st.tick) (hts : st'.ticks = st.ticks)
@@ -93,7 +93,7 @@ theorem Frame.refl' {bt : Ident → Prop} {st st' : SkaState M R} (hg : st'.g = 
   tick := by omega
   newOrd := fun x o h hx => by
     rw [ho] at h
-    exact absurd ((hi.ord_stk x).mp ⟨o, h⟩) hx
+    exact absurd h hx
 
 theorem Frame.trans {bt bt' : Ident → Prop} {st1 st2 st3 : SkaState M R} (h1 : Frame bt st1 st2)
     (h2 : Frame bt' st2 st3) (hb : ∀ j, bt j → bt' j)
@@ -105,9 +105,9 @@ theorem Frame.trans {bt bt' : Ident → Prop} {st1 st2 st3 : SkaState M R} (h1 :
   next := Nat.le_trans h1.next h2.next
   tick := Nat.le_trans h1.tick h2.tick
   newOrd := fun x o h hx => by
-    by_cases hx2 : x ∈ st2.stk
-    · rw [hk x hx2] at h; exact h1.newOrd x o h hx
-    · exact Nat.le_trans h1.next (h2.newOrd x o h hx2)
+    by_cases h2o : Treap.get st2.order x = some o
+    · exact h1.newOrd x o h2o hx
+    · exact Nat.le_trans h1.next (h2.newOrd x o h h2o)
 
 /-- The members of `x`'s callees on the stack are at or above `low`. -/
 def LowB (st : SkaState M R) (x : Ident) (low : Nat) : Prop :=
@@ -318,7 +318,7 @@ theorem resOKD_of_resP2 {memoF : Memo M} {res : ResGo M R} (h : ResP2 memoF res)
   have hst0 : ∀ j ∈ st0.stk, j ∈ gs.st.stk := fun j hj => by
     obtain ⟨l, el⟩ := k1.1; rw [el]; exact List.mem_append_right _ hj
   have hnew : ∀ c o, Treap.get gs'.st.order c = some o → c ∉ gs.st.stk → gs'.low ≤ o := fun c o hco hcn => by
-    have := fr2.newOrd c o hco hcn
+    have := fr2.newOrd c o hco (fun h => hcn ((hc.s.ord_stk c).mp ⟨o, h⟩))
     have := fr1.next
     omega
   have hold : ∀ c o, Treap.get gs'.st.order c = some o → c ∈ gs.st.stk → Treap.get gs.st.order c = some o :=
