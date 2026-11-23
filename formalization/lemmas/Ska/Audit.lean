@@ -37,6 +37,8 @@ import lemmas.Ska.PokeHalt
 import lemmas.Ska.PokeJets
 import lemmas.Ska.BakeMeasure
 import lemmas.Ska.SitesMeet
+import lemmas.Ska.KnowMonoFalse
+import lemmas.Ska.SitesMeetNF
 
 /-! The axioms of the main theorems of `lemmas/Ska`.  `lake build` prints
 them; each should be `propext`, `Classical.choice` and `Quot.sound` at most. -/
@@ -314,3 +316,10 @@ open Formalization.SkaModel
 #print axioms Bake.sitesMeet_of_parts
 #print axioms PokeM.pokeSites_of_parts
 #print axioms Bake.knit_mono
+#print axioms Bake.knowMono_false
+#print axioms Bake.sitesMeet_of_nf
+#print axioms Bake.meets_knit
+#print axioms Bake.meets_doubleInt
+#print axioms Bake.meets_doubleInt_left
+#print axioms Bake.meets_pull
+#print axioms Bake.meets_of_bakeOK
