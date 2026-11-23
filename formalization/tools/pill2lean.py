@@ -822,10 +822,18 @@ def main():
     name(soft_a, 'soft.arm')
     formulas.add(soft_a)
     axes.append(('soft', soft_ax, 'slot? soft.axis layer4 = some soft.arm'))
+    # +soft is a gate whose product is the gate |=(fud=* ...)
+    soft_bat = door_gate_battery(soft_a)
+    name(soft_bat, 'soft.battery')
+    formulas.add(soft_bat)
+    name(door_gate_battery(soft_bat), 'soft.gate.battery')
     tank_a = slot(tank_ax, layer2)
     name(tank_a, 'tank.arm')
     formulas.add(tank_a)
     axes.append(('tank', tank_ax, 'slot? tank.axis layer2 = some tank.arm'))
+    name(door_gate_battery(tank_a), 'tank.battery')
+    # the layer of +turn, +lent, +weld, +scag, +slag that +mook reads
+    axes.append(('mook.layer2', 7, 'slot? mook.layer2.axis layer4 = some layer2'))
 
     # ---- the compiler's leaf cores +ca and +so: arms of the library core,
     # [[1 battery] [11 [%fast [1 [label [0 511] 0]]] [0 1]]], whose own arms

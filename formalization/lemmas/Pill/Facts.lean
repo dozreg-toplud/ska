@@ -443,6 +443,8 @@ theorem soft.arm_at : slot? soft.axis layer4 = some soft.arm := by kernel_rfl
 
 theorem tank.arm_at : slot? tank.axis layer2 = some tank.arm := by kernel_rfl
 
+theorem mook.layer2.arm_at : slot? mook.layer2.axis layer4 = some layer2 := by kernel_rfl
+
 theorem ca.con.arm_at : ∀ x, slot? ca.con.axis (C ca.battery x) = some ca.con.arm := by
   intro x; kernel_rfl
 

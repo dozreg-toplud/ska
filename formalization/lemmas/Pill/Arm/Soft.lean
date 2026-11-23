@@ -19,7 +19,10 @@ open Nock
 
 public abbrev soft.axis : Nat := 350
 
-public def soft.arm : Noun := C (A 8) (C (C (A 1) (C (C (A 0) (A 15)) (C (A 0) (C (A 0) (A 0))))) (C (C (A 1) (C (A 8) (C (C (A 1) (A 0)) (C (C (A 1) (C (A 8) (C (C (A 9) (C (A 2811) (C (A 0) (A 31)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (C (A 1) (C (A 8) (C (C (A 0) (A 62)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 30))) (C (A 0) (A 2))))))))) (C (A 0) (A 1)))))) (C (A 0) (A 2))))))))) (C (A 0) (A 1)))))) (C (A 0) (A 1))))
+public def soft.h9d5312e12a2d : Noun := C (A 0) (A 2)
+public def soft.gate.battery : Noun := C (A 8) (C (C (A 9) (C (A 2811) (C (A 0) (A 31)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (C (A 1) (C (A 8) (C (C (A 0) (A 62)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 30))) soft.h9d5312e12a2d))))))) (C (A 0) (A 1)))))) soft.h9d5312e12a2d)))))
+public def soft.battery : Noun := C (A 8) (C (C (A 1) (A 0)) (C (C (A 1) soft.gate.battery) (C (A 0) (A 1))))
+public def soft.arm : Noun := C (A 8) (C (C (A 1) (C (C (A 0) (A 15)) (C (A 0) (C (A 0) (A 0))))) (C (C (A 1) soft.battery) (C (A 0) (A 1))))
 
 end Pill
 end Formalization
