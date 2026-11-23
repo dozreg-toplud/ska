@@ -350,6 +350,100 @@ theorem knowGo_lit (fold : Bool) (dat : Bell → Option Datum) (res : Bell → S
     obtain ⟨a, _, v, _, c, _, rfl⟩ := h
     simp [lit] at hx
 
+/-! ## Run B returns -/
+
+/-- No `%10` of the nomm has axis `0`. -/
+def NoAx0 : Nomm → Prop
+  | Nomm.cons p q => NoAx0 p ∧ NoAx0 q
+  | Nomm.n0 _ => True
+  | Nomm.n1 _ => True
+  | Nomm.n2 p q _ => NoAx0 p ∧ NoAx0 q
+  | Nomm.n3 p => NoAx0 p
+  | Nomm.n4 p => NoAx0 p
+  | Nomm.n5 p q => NoAx0 p ∧ NoAx0 q
+  | Nomm.n6 p q r => NoAx0 p ∧ NoAx0 q ∧ NoAx0 r
+  | Nomm.n7 p q => NoAx0 p ∧ NoAx0 q
+  | Nomm.n10 a v q => a ≠ 0 ∧ NoAx0 v ∧ NoAx0 q
+  | Nomm.n11s _ q _ => NoAx0 q
+  | Nomm.n11d _ h q _ => NoAx0 h ∧ NoAx0 q
+  | Nomm.n12 p q => NoAx0 p ∧ NoAx0 q
+  | Nomm.mean p _ q _ _ => NoAx0 p ∧ NoAx0 q
+
+/-- **`+know` without folding and with `idc` never crashes** on a nomm with
+no `%10` at axis `0`: its only crash is `+darn:so` there. -/
+theorem knowGo_nf_some (dat : Bell → Option Datum) :
+    ∀ (nm : Nomm), NoAx0 nm → ∀ (sub : Anno) (st : List Site), ∃ r, knowGo false dat idc nm sub st = some r := by
+  intro nm
+  induction nm with
+  | cons p q ihp ihq =>
+    intro hn sub st
+    obtain ⟨l, hl⟩ := ihp hn.1 sub st
+    obtain ⟨r, hr⟩ := ihq hn.2 sub l.2
+    simp [knowGo, hl, hr]
+  | n0 p =>
+    intro _ sub st
+    by_cases h0 : p = 0
+    · subst h0; simp [knowGo]
+    · by_cases h1 : p = 1
+      · subst h1; simp [knowGo]
+      · obtain ⟨s, src⟩ := sub
+        cases s <;> simp [knowGo, h0, h1, So.pull]
+  | n1 p => intro _ sub st; simp [knowGo]
+  | n2 p q info ihp ihq =>
+    intro hn sub st
+    obtain ⟨s, hs⟩ := ihp hn.1 sub st
+    obtain ⟨f, hf⟩ := ihq hn.2 sub s.2
+    cases info <;> simp [knowGo, hs, hf, idc]
+  | n3 p ih =>
+    intro hn sub st
+    obtain ⟨a, ha⟩ := ih hn sub st
+    simp [knowGo, ha]
+  | n4 p ih =>
+    intro hn sub st
+    obtain ⟨a, ha⟩ := ih hn sub st
+    simp [knowGo, ha]
+  | n5 p q ihp ihq =>
+    intro hn sub st
+    obtain ⟨a, ha⟩ := ihp hn.1 sub st
+    obtain ⟨b, hb⟩ := ihq hn.2 sub a.2
+    simp [knowGo, ha, hb]
+  | n6 p q r0 ihp ihq ihr =>
+    intro hn sub st
+    obtain ⟨a, ha⟩ := ihp hn.1 sub st
+    obtain ⟨b, hb⟩ := ihq hn.2.1 sub a.2
+    obtain ⟨c, hc⟩ := ihr hn.2.2 sub b.2
+    simp [knowGo, ha, hb, hc]
+  | n7 p q ihp ihq =>
+    intro hn sub st
+    obtain ⟨a, ha⟩ := ihp hn.1 sub st
+    obtain ⟨b, hb⟩ := ihq hn.2 a.1.2 a.2
+    simp [knowGo, ha, hb]
+  | n10 ax v q ihv ihq =>
+    intro hn sub st
+    obtain ⟨a, ha⟩ := ihv hn.2.1 sub st
+    obtain ⟨b, hb⟩ := ihq hn.2.2 sub a.2
+    obtain ⟨s, hs⟩ := darn_some b.1.2.sock a.1.2.sock hn.1
+    simp [knowGo, ha, hb, hs]
+  | n11s tag q body ih =>
+    intro hn sub st
+    obtain ⟨a, ha⟩ := ih hn sub st
+    simp [knowGo, ha]
+  | n11d tag hh q body ihh ihq =>
+    intro hn sub st
+    obtain ⟨a, ha⟩ := ihh hn.1 sub st
+    obtain ⟨b, hb⟩ := ihq hn.2 sub a.2
+    simp [knowGo, ha, hb]
+  | n12 p q ihp ihq =>
+    intro hn sub st
+    obtain ⟨a, ha⟩ := ihp hn.1 sub st
+    obtain ⟨b, hb⟩ := ihq hn.2 sub a.2
+    simp [knowGo, ha, hb]
+  | mean p b q body k ihp ihq =>
+    intro hn sub st
+    obtain ⟨a, ha⟩ := ihp hn.1 sub st
+    obtain ⟨c, hc⟩ := ihq hn.2 sub ((b, a.1.2.sock) :: a.2)
+    simp [knowGo, ha, hc, idc]
+
 end Bake
 
 end SkaModel
