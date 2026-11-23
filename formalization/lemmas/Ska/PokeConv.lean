@@ -10,7 +10,8 @@ callees (`FrozenOK`), so the frozen entries of pruned identities answer each
 other: `skaCallgraph_prunedM` is `ConvergedGraphM` for them.
 
 Across pokes, the code table is the one of the earlier pokes with the datums
-of this poke put over it by bell (`extendCode`).  `PokeInv` is what a poke
+of this poke added under the bells it does not have yet (`extendCode`, as
+`new-code` of `+ska-poke` keeps the entry of a variant seen before).  `PokeInv` is what a poke
 keeps of the persistent memo and of that table, and `skaPoke_sound` is the
 analysis part of a poke: from `Ana.skaPoke ... = some ...` and `PokeInv`
 before it, every bell of the poke's datums agrees with `+mink`, and
@@ -208,12 +209,13 @@ theorem skaCallgraph_prunedM {lib : Lib} {code : Bell → Option Nomm} (env : En
 
 /-! ## A poke -/
 
-/-- The code table after a poke: the datums of the poke by bell, over the
-table `code` of the earlier pokes. -/
+/-- The code table after a poke: the table `code` of the earlier pokes, and
+the datums of the poke under the bells it does not have (a bell seen before
+keeps its entry, as in `new-code` of `+ska-poke`). -/
 def extendCode (code : Bell → Option Nomm) (dats : M Bell (FDatum M)) : Bell → Option Nomm := fun bl =>
-  match Treap.get dats bl with
-  | some d => some d.nomm
-  | none => code bl
+  match code bl with
+  | some nb => some nb
+  | none => (Treap.get dats bl).map (·.nomm)
 
 /-- **The invariant across pokes** of the persistent memo `memo` and of the
 code table `code` of the earlier pokes: the memo's entries are stored under
@@ -227,6 +229,13 @@ structure PokeInv (lib : Lib) (memo : Memo M) (code : Bell → Option Nomm) : Pr
 
 theorem PokeInv.wf {lib : Lib} {memo : Memo M} {code : Bell → Option Nomm} (h : PokeInv lib memo code) :
     MemoWF memo := fun f ms s e h1 h2 => (h.ok _ ⟨f, ms, s, e, h1, h2, rfl⟩).wf
+
+/-- **Every bell of a table that satisfies `PokeInv` agrees with `+mink`** on
+every subject that fits it. -/
+theorem PokeInv.agree {lib : Lib} {memo : Memo M} {code : Bell → Option Nomm} (h : PokeInv lib memo code)
+    {bl : Bell} {nb : Nomm} (hb : code bl = some nb) {x : Noun} (hx : Fits bl.less x) (gul : Noun) (t : Trace)
+    (r : Tone) : Mink lib gul t x bl.fol r ↔ ∃ m, nommF lib gul code m t x nb = some r :=
+  nomm_agree lib gul code h.code (h.code bl nb hb) hx t r
 
 /-- Before the first poke: an empty memo and an empty table. -/
 theorem PokeInv.init (lib : Lib) : PokeInv lib (Treap.empty : Memo M) (fun _ => none) where
@@ -246,9 +255,8 @@ theorem extendCode_has {code : Bell → Option Nomm} {dats : M Bell (FDatum M)} 
     ∀ bl nb, code bl = some nb → ∃ nb', extendCode code dats bl = some nb' := by
   intro bl nb h
   unfold extendCode
-  split
-  · exact ⟨_, rfl⟩
-  · exact ⟨nb, h⟩
+  rw [h]
+  exact ⟨nb, rfl⟩
 
 /-- **The analysis part of a poke is sound.**  If `Ana.skaPoke` returns, on
 a root with a well-formed subject sock and from a memo and code table that
@@ -287,7 +295,9 @@ theorem skaPoke_sound {lib : Lib} (env : Env R) {n : Nat} {root : Ident} {memo m
     have := d2 i d hd
     split
     · exact ⟨_, rfl⟩
-    · rename_i hn; rw [hn] at this; cases this
+    · cases hn : Treap.get (pokeMemo pr memo).1 ⟨d.less, i.2⟩ with
+      | none => rw [hn] at this; cases this
+      | some d' => exact ⟨d'.nomm, rfl⟩
   have hhas : CodeHas code' G := by
     intro e he
     obtain ⟨d, hd, hl⟩ := hGp e he
@@ -300,11 +310,12 @@ theorem skaPoke_sound {lib : Lib} (env : Env R) {n : Nat} {root : Ident} {memo m
     rw [← hcd] at hb'
     unfold extendCode at hb'
     split at hb'
-    · rename_i d hd
+    · rename_i nb0 hc0
       cases hb'
+      exact (hinv.code bl _ hc0).mono_code hcc
+    · obtain ⟨d, hd, rfl⟩ := Option.map_eq_some_iff.mp hb'
       obtain ⟨i, hi, rfl⟩ := d1 bl d hd
       exact annot_of_graphM hG hhas hwf1 (hcovP i d hi)
-    · exact (hinv.code bl nb hb').mono_code hcc
   refine ⟨⟨fun f ms s ent h1 h2 => ?_, fun m hm => ?_, fun m hm => ?_, hcode⟩, ?_⟩
   · rcases d3 f ms s ent h1 h2 with ⟨ms', e1, e2⟩ | ⟨i, d, _, rfl, rfl⟩
     · exact hinv.keys f ms' s ent e1 e2
@@ -319,9 +330,8 @@ theorem skaPoke_sound {lib : Lib} (env : Env R) {n : Nat} {root : Ident} {memo m
     · exact hok' _ ⟨f, ms', s, ent, e1, e2, rfl⟩
     · exact memoEntryOK_final hG hhas hwfG (hcovP i d hd) (fun bl nb h => ⟨nb, h⟩)
   · intro bl d hd x hx gul t r
-    have hcb : code' bl = some d.nomm := by
-      rw [← hcd]; unfold extendCode; rw [hd]
-    exact nomm_agree lib gul code' hcode (hcode bl d.nomm hcb) hx t r
+    obtain ⟨i, hi, rfl⟩ := d1 bl d hd
+    exact nomm_agree lib gul code' hcode (annot_of_graphM hG hhas hwf1 (hcovP i d hi)) hx t r
 
 end Ana
 end SkaModel

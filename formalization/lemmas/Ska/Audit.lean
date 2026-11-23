@@ -232,3 +232,4 @@ open Formalization.SkaModel
 #print axioms Ana.pokeMemo_spec
 #print axioms Ana.skaCallgraph_prunedM
 #print axioms Ana.skaPoke_sound
+#print axioms Ana.PokeInv.agree
