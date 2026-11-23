@@ -187,6 +187,251 @@ theorem kernBoth_spec {r d : Nat} {kh kt : Nat → List Pole → CM Map (List Po
   | atom n => exact atomCase n rfl
   | cell a b => exact (cellCase a b rfl).2 (hn a b rfl)
 
+
+/-- **The loop of `+kern-need`.** -/
+theorem kernLoop_spec : ∀ (tgt : Need) (r : Nat) (acc : List Pole) (g g' : Gen Map) (ops : List Pole),
+    kernLoop r tgt acc g = some (ops, g') → ∃ A, ops = A ++ acc ∧ KernOK tgt r g g' A := by
+  intro tgt
+  induction tgt with
+  | none =>
+    intro r acc g g' ops h
+    simp only [kernLoop, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨[], rfl, ⟨⟨g.re, rfl⟩, Nat.le_refl _, fun _ => rfl, fun _ _ lib σ O c gul st t R v _ =>
+      ⟨fun _ => ⟨R, Runs.nil R, trivial, fun _ _ _ => rfl⟩, fun h => absurd trivial h⟩⟩⟩
+  | this d =>
+    intro r acc g g' ops h
+    simp only [kernLoop] at h
+    by_cases e : r = d
+    · rw [if_pos e] at h; cases h
+    rw [if_neg e] at h
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    refine ⟨[Pole.mov r d], rfl, ⟨⟨g.re, rfl⟩, Nat.le_refl _, (fun h => by cases h), fun _ _ lib σ O c gul st t R v hr =>
+      ⟨fun _ => ⟨store d v R, runs_mov hr, read_store_eq _ _ _, fun x _ hx => read_store_ne hx _ _⟩,
+        fun h => absurd trivial h⟩⟩⟩
+  | pair p q ihp ihq =>
+    intro r acc g g' ops h
+    simp only [kernLoop] at h
+    obtain ⟨rn, g1, h1, h⟩ := bind_some h
+    rw [re_apply] at h1
+    simp only [Option.some.injEq, Prod.mk.injEq] at h1
+    obtain ⟨rfl, rfl⟩ := h1
+    obtain ⟨A, hA, ⟨n, rfl⟩, hle, hne, hsem⟩ := kernBoth_spec (fun r' acc g g' ops h => ihp r' acc g g' ops h)
+      (fun r' acc g g' ops h => ihq r' acc g g' ops h) h
+    refine ⟨A, hA, ⟨⟨n, rfl⟩, Nat.le_trans (Nat.le_succ _) hle, fun e => absurd e hne, fun hd hlt => ?_⟩⟩
+    obtain ⟨dp, dq, dpq⟩ := hd
+    have ltp : ∀ x, NMem p x → x < g.re := fun x hx => hlt x (Or.inl hx)
+    have ltq : ∀ x, NMem q x → x < g.re := fun x hx => hlt x (Or.inr hx)
+    intro lib σ O c gul st t R v hr
+    have H := hsem dp dq dpq (fun hx => by have := ltp _ hx; omega) (fun hx => by have := ltq _ hx; omega)
+      (show g.re < g.re + 1 by omega) (fun x hx => by have := ltp x hx; show x < g.re + 1; omega)
+      (fun x hx => by have := ltq x hx; show x < g.re + 1; omega) lib σ O c gul st t R v hr
+    refine ⟨fun hf => ?_, fun hf => H.2 fun a b hv hab => hf (by subst hv; exact hab)⟩
+    cases v with
+    | atom _ => exact hf.elim
+    | cell a b =>
+      obtain ⟨R', hR, _, hp, hq, ha⟩ := H.1 a b rfl hf.1 hf.2
+      exact ⟨R', hR, ⟨hp, hq⟩, fun x hx hn => ha x (by show x < g.re + 1; omega) (by omega)
+        (fun h => hn (Or.inl h)) (fun h => hn (Or.inr h))⟩
+  | both d h t ihh iht =>
+    intro r acc g g' ops hk
+    simp only [kernLoop] at hk
+    obtain ⟨A, hA, gen, hle, hne, hsem⟩ := kernBoth_spec (fun r' acc g g' ops h => ihh r' acc g g' ops h)
+      (fun r' acc g g' ops h => iht r' acc g g' ops h) hk
+    refine ⟨A, hA, ⟨gen, hle, fun e => absurd e hne, fun hd hlt => ?_⟩⟩
+    obtain ⟨dh, dt, dht, ndh, ndt⟩ := hd
+    intro lib σ O c gul st tr R v hr
+    have H := hsem dh dt dht ndh ndt (hlt d (Or.inl rfl)) (fun x hx => hlt x (Or.inr (Or.inl hx)))
+      (fun x hx => hlt x (Or.inr (Or.inr hx))) lib σ O c gul st tr R v hr
+    refine ⟨fun hf => ?_, fun hf => H.2 fun a b hv hab => hf (by subst hv; exact hab)⟩
+    cases v with
+    | atom _ => exact hf.elim
+    | cell a b =>
+      obtain ⟨R', hR, hd', hh, ht, ha⟩ := H.1 a b rfl hf.1 hf.2
+      exact ⟨R', hR, ⟨hd', hh, ht⟩, fun x hx hn => ha x hx (fun e => hn (Or.inl e))
+        (fun e => hn (Or.inr (Or.inl e))) (fun e => hn (Or.inr (Or.inr e)))⟩
+
+/-! ## `sure-loop` -/
+
+/-- What the ops `A` of `sure-loop` from `ned` into `tgt` do. -/
+def SureSem (Map : Type → Type) [HoonMap Map] (ned tgt : Need) (lo : Nat) (A : List Pole) : Prop :=
+  ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace)
+    (R : Map Noun) (s : Noun), HoldsN ned R s →
+    (Comp.Fits tgt s → ∃ R', Runs lib O c gul st t A R R' ∧ HoldsN tgt R' s ∧
+        ∀ x, x < lo → ¬ NMem tgt x → SkaModel.read x R' = SkaModel.read x R) ∧
+    (¬ Comp.Fits tgt s → Crashes lib O c gul st t A R)
+
+theorem front_reg {o : Nat} (g : Gen Map) {n : Nat} (h : g.re ≤ n) : Front o g { g with re := n } [] :=
+  ⟨fun B fin hb => by simpa using hb, fun _ _ => rfl, rfl, rfl, h⟩
+
+theorem Front.refl {o : Nat} (g : Gen Map) : Front o g g [] := front_reg (o := o) g (Nat.le_refl g.re)
+
+/-- Two halves, the tail's ops in front of the head's. -/
+theorem sureSem_halves {p q tp tq : Need} {lo1 lo2 : Nat} {Ap Aq : List Pole} (hlo : lo1 ≤ lo2)
+    (sp : SureSem Map p tp lo1 Ap) (sq : SureSem Map q tq lo2 Aq)
+    (dtq : ∀ x, NMem tp x → ¬ NMem tq x) (ltq : ∀ x, NMem tq x → x < lo1)
+    (lp : ∀ x, NMem p x → x < lo1) (np : ∀ x, NMem p x → ¬ NMem tq x)
+    (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace)
+    (R : Map Noun) (a b : Noun) (ha : HoldsN p R a) (hb : HoldsN q R b) :
+    (Comp.Fits tp a → Comp.Fits tq b → ∃ R', Runs lib O c gul st t (Aq ++ Ap) R R' ∧ HoldsN tp R' a ∧
+        HoldsN tq R' b ∧ ∀ x, x < lo1 → ¬ NMem tp x → ¬ NMem tq x → SkaModel.read x R' = SkaModel.read x R) ∧
+    (¬ (Comp.Fits tp a ∧ Comp.Fits tq b) → Crashes lib O c gul st t (Aq ++ Ap) R) := by
+  have Q := sq lib σ O c gul st t R b hb
+  refine ⟨fun fa fb => ?_, fun hn => ?_⟩
+  · obtain ⟨R1, r1, hq1, a1⟩ := Q.1 fb
+    have ha1 : HoldsN p R1 a := HoldsN.agree p (fun x hx => a1 x (Nat.lt_of_lt_of_le (lp x hx) hlo) (np x hx)) ha
+    obtain ⟨R2, r2, hp2, a2⟩ := (sp lib σ O c gul st t R1 a ha1).1 fa
+    refine ⟨R2, r1.append r2, hp2, HoldsN.agree tq (fun x hx => a2 x (ltq x hx) (fun h => dtq x h hx)) hq1, ?_⟩
+    intro x hx n1 n2
+    rw [a2 x hx n1, a1 x (Nat.lt_of_lt_of_le hx hlo) n2]
+  · by_cases fb : Comp.Fits tq b
+    · have fa : ¬ Comp.Fits tp a := fun fa => hn ⟨fa, fb⟩
+      obtain ⟨R1, r1, _, a1⟩ := Q.1 fb
+      have ha1 : HoldsN p R1 a :=
+        HoldsN.agree p (fun x hx => a1 x (Nat.lt_of_lt_of_le (lp x hx) hlo) (np x hx)) ha
+      exact Crashes.append_right r1 ((sp lib σ O c gul st t R1 a ha1).2 fa)
+    · exact Crashes.append_left (Q.2 fb)
+
+
+theorem sureSem_none (Map : Type → Type) [HoonMap Map] (ned : Need) (lo : Nat) :
+    SureSem Map ned Need.none lo [] := fun _ _ _ _ _ _ _ R _ _ =>
+  ⟨fun _ => ⟨R, Runs.nil R, trivial, fun _ _ _ => rfl⟩, fun h => absurd trivial h⟩
+
+/-- **The loop `sure-loop` of `+coerce-lazy`.** -/
+theorem sureLoop_spec {o : Nat} : ∀ (ned tgt : Need) (g g' : Gen Map) (u : Unit),
+    sureLoop o ned tgt g = some (u, g') → g.drop = false →
+    ∃ A, Front o g g' A ∧ (Distinct tgt → (∀ x, NMem tgt x → x < g.re) → (∀ x, NMem ned x → x < g.re) →
+      (∀ x, NMem ned x → ¬ NMem tgt x) → SureSem Map ned tgt g.re A) := by
+  intro ned
+  induction ned with
+  | none =>
+    intro tgt g g' u h hd
+    simp only [sureLoop] at h
+    by_cases e : tgt = Need.none
+    · rw [if_pos e] at h
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨_, rfl⟩ := h
+      subst e
+      exact ⟨[], Front.refl g, fun _ _ _ _ => sureSem_none Map _ _⟩
+    · rw [if_neg e] at h; cases h
+  | this r =>
+    intro tgt g g' u h hd
+    simp only [sureLoop] at h
+    obtain ⟨ops, g1, h1, h2⟩ := bind_some h
+    obtain ⟨A, rfl, K⟩ := kernLoop_spec tgt r [] g g1 ops h1
+    obtain ⟨n, rfl⟩ := K.gen
+    have F := (front_reg (o := o) g K.le).trans (front_addOps h2 hd)
+    simp only [List.append_nil] at F
+    exact ⟨A, F, fun dt lt _ _ lib σ O c gul st tt R s hs => K.sem dt lt lib σ O c gul st tt R s hs⟩
+  | pair p q ihp ihq =>
+    intro tgt g g' u h hd
+    cases tgt with
+    | none =>
+      simp only [sureLoop, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨_, rfl⟩ := h
+      exact ⟨[], Front.refl g, fun _ _ _ _ => sureSem_none Map _ _⟩
+    | this _ => simp only [sureLoop] at h; cases h
+    | both _ _ _ => simp only [sureLoop] at h; cases h
+    | pair tp tq =>
+      simp only [sureLoop] at h
+      obtain ⟨_, g1, h1, h2⟩ := bind_some h
+      obtain ⟨Ap, Fp, sp⟩ := ihp tp g g1 _ h1 hd
+      obtain ⟨Aq, Fq, sq⟩ := ihq tq g1 g' _ h2 (Fp.drop.trans hd)
+      refine ⟨Aq ++ Ap, Fp.trans Fq, fun dt lt ln nd => ?_⟩
+      obtain ⟨dtp, dtq, dpq⟩ := dt
+      have SP := sp dtp (fun x hx => lt x (Or.inl hx)) (fun x hx => ln x (Or.inl hx))
+        (fun x hx h => nd x (Or.inl hx) (Or.inl h))
+      have SQ := sq dtq (fun x hx => Nat.lt_of_lt_of_le (lt x (Or.inr hx)) Fp.le)
+        (fun x hx => Nat.lt_of_lt_of_le (ln x (Or.inr hx)) Fp.le) (fun x hx h => nd x (Or.inr hx) (Or.inr h))
+      intro lib σ O c gul st t R s hs
+      cases s with
+      | atom _ => exact hs.elim
+      | cell a b =>
+        have H := sureSem_halves Fp.le SP SQ dpq (fun x hx => lt x (Or.inr hx)) (fun x hx => ln x (Or.inl hx))
+          (fun x hx h => nd x (Or.inl hx) (Or.inr h)) lib σ O c gul st t R a b hs.1 hs.2
+        refine ⟨fun hf => ?_, fun hf => H.2 hf⟩
+        obtain ⟨R', hr, h1, h2, ha⟩ := H.1 hf.1 hf.2
+        exact ⟨R', hr, ⟨h1, h2⟩, fun x hx hn => ha x hx (fun h => hn (Or.inl h)) (fun h => hn (Or.inr h))⟩
+  | both r h t ihh iht =>
+    intro tgt g g' u hk hd
+    cases tgt with
+    | none =>
+      simp only [sureLoop, pure_apply, Option.some.injEq, Prod.mk.injEq] at hk
+      obtain ⟨_, rfl⟩ := hk
+      exact ⟨[], Front.refl g, fun _ _ _ _ => sureSem_none Map _ _⟩
+    | this d =>
+      simp only [sureLoop] at hk
+      by_cases e : r = d
+      · rw [if_pos e] at hk; cases hk
+      rw [if_neg e] at hk
+      refine ⟨[Pole.mov r d], front_addOps hk hd, fun _ _ _ _ lib σ O c gul st tt R s hs => ?_⟩
+      cases s with
+      | atom _ => exact hs.elim
+      | cell a b =>
+        exact ⟨fun _ => ⟨store d (C a b) R, runs_mov hs.1, read_store_eq _ _ _, fun x _ hx => read_store_ne hx _ _⟩,
+          fun h => absurd trivial h⟩
+    | pair tp tq =>
+      simp only [sureLoop] at hk
+      obtain ⟨_, g1, h1, h2⟩ := bind_some hk
+      obtain ⟨Ap, Fp, sp⟩ := ihh tp g g1 _ h1 hd
+      obtain ⟨Aq, Fq, sq⟩ := iht tq g1 g' _ h2 (Fp.drop.trans hd)
+      refine ⟨Aq ++ Ap, Fp.trans Fq, fun dt lt ln nd => ?_⟩
+      obtain ⟨dtp, dtq, dpq⟩ := dt
+      have SP := sp dtp (fun x hx => lt x (Or.inl hx)) (fun x hx => ln x (Or.inr (Or.inl hx)))
+        (fun x hx h => nd x (Or.inr (Or.inl hx)) (Or.inl h))
+      have SQ := sq dtq (fun x hx => Nat.lt_of_lt_of_le (lt x (Or.inr hx)) Fp.le)
+        (fun x hx => Nat.lt_of_lt_of_le (ln x (Or.inr (Or.inr hx))) Fp.le)
+        (fun x hx h => nd x (Or.inr (Or.inr hx)) (Or.inr h))
+      intro lib σ O c gul st tt R s hs
+      cases s with
+      | atom _ => exact hs.elim
+      | cell a b =>
+        have H := sureSem_halves Fp.le SP SQ dpq (fun x hx => lt x (Or.inr hx))
+          (fun x hx => ln x (Or.inr (Or.inl hx))) (fun x hx h => nd x (Or.inr (Or.inl hx)) (Or.inr h))
+          lib σ O c gul st tt R a b hs.2.1 hs.2.2
+        refine ⟨fun hf => ?_, fun hf => H.2 hf⟩
+        obtain ⟨R', hr, h1, h2, ha⟩ := H.1 hf.1 hf.2
+        exact ⟨R', hr, ⟨h1, h2⟩, fun x hx hn => ha x hx (fun h => hn (Or.inl h)) (fun h => hn (Or.inr h))⟩
+    | both d th tt =>
+      simp only [sureLoop] at hk
+      by_cases e : r = d
+      · rw [if_pos e] at hk; cases hk
+      rw [if_neg e] at hk
+      obtain ⟨_, g1, h1, hk⟩ := bind_some hk
+      have F0 := front_addOps h1 hd
+      obtain ⟨b0, _, rfl⟩ := addOps_spec h1 hd
+      obtain ⟨_, g2, h2, h3⟩ := bind_some hk
+      obtain ⟨Ah, Fh, sh⟩ := ihh th _ g2 _ h2 (F0.drop.trans hd)
+      obtain ⟨At, Ft, st⟩ := iht tt g2 g' _ h3 (Fh.drop.trans (F0.drop.trans hd))
+      refine ⟨At ++ (Ah ++ [Pole.mov r d]), (F0.trans Fh).trans Ft, fun dt lt ln nd => ?_⟩
+      obtain ⟨dth, dtt, dhtt, ndh, ndt⟩ := dt
+      have SH := sh dth (fun x hx => lt x (Or.inr (Or.inl hx))) (fun x hx => ln x (Or.inr (Or.inl hx)))
+        (fun x hx h => nd x (Or.inr (Or.inl hx)) (Or.inr (Or.inl h)))
+      have ST := st dtt (fun x hx => Nat.lt_of_lt_of_le (lt x (Or.inr (Or.inr hx))) Fh.le)
+        (fun x hx => Nat.lt_of_lt_of_le (ln x (Or.inr (Or.inr hx))) Fh.le)
+        (fun x hx h => nd x (Or.inr (Or.inr hx)) (Or.inr (Or.inr h)))
+      intro lib σ O c gul stt tr R s hs
+      cases s with
+      | atom _ => exact hs.elim
+      | cell a b =>
+        have H := sureSem_halves Fh.le SH ST dhtt (fun x hx => lt x (Or.inr (Or.inr hx)))
+          (fun x hx => ln x (Or.inr (Or.inl hx))) (fun x hx h => nd x (Or.inr (Or.inl hx)) (Or.inr (Or.inr h)))
+          lib σ O c gul stt tr R a b hs.2.1 hs.2.2
+        rw [← List.append_assoc]
+        refine ⟨fun hf => ?_, fun hf => Crashes.append_left (H.2 hf)⟩
+        obtain ⟨R2, hr2, hh2, ht2, ha2⟩ := H.1 hf.1 hf.2
+        have nr := nd r (Or.inl rfl)
+        have rr : SkaModel.read r R2 = some (C a b) := by
+          rw [ha2 r (ln r (Or.inl rfl)) (fun h => nr (Or.inr (Or.inl h))) (fun h => nr (Or.inr (Or.inr h)))]
+          exact hs.1
+        refine ⟨store d (C a b) R2, hr2.append (runs_mov rr), ⟨read_store_eq _ _ _, ?_, ?_⟩, ?_⟩
+        · exact HoldsN.agree th (fun x hx => read_store_ne (fun e => ndh (by rw [← e]; exact hx)) _ _) hh2
+        · exact HoldsN.agree tt (fun x hx => read_store_ne (fun e => ndt (by rw [← e]; exact hx)) _ _) ht2
+        · intro x hx hn
+          rw [read_store_ne (fun e => hn (Or.inl e)), ha2 x hx (fun h => hn (Or.inr (Or.inl h)))
+            (fun h => hn (Or.inr (Or.inr h)))]
+
 end Comp
 end SkaModel
 end Formalization
