@@ -24,7 +24,9 @@ makes a bond and is not modelled.  It returns its `next` unchanged on every
 pure nomm (`past_pure`), and wherever it returns at all (`past_some`).
 
 What `none` means.  A model returns `none` where the Hoon crashes: a failed
-`?>` or `?<`, `!!`, `got` on a missing key.
+`?>` or `?<`, `!!`, `got` on a missing key; and on the cases of `run` and
+the branch of `+past` that are not modelled, so that no theorem about a
+result of the model says anything about them.
 
 Sets.  A `(set @)` is a treap; its noun depends only on its elements, but
 `~(rep in s)` folds in the treap's order, and the registers that
