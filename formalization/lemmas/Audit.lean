@@ -8,6 +8,18 @@ import lemmas.Hoon.Layer2
 import lemmas.Hoon.Axis
 import lemmas.Hoon.Apt
 import lemmas.Hoon.TapIn
+import lemmas.Hoon.DelBy
+import lemmas.Hoon.GasBy
+import lemmas.Hoon.RepBy
+import lemmas.Hoon.JabBy
+import lemmas.Hoon.Ju
+import lemmas.Hoon.MapFolds
+import lemmas.Hoon.SetFolds
+import lemmas.Hoon.ListsMore
+import lemmas.Hoon.ListsSort
+import lemmas.Compiler.Ca
+import lemmas.Compiler.So
+import lemmas.Compiler.Axes
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -91,3 +103,59 @@ open Formalization
 #print axioms Hoon.apt_by
 #print axioms Hoon.tap_by
 #print axioms Hoon.tap_in
+#print axioms Hoon.del_by
+#print axioms Hoon.gas_by
+#print axioms Hoon.rep_tree
+#print axioms Hoon.jab_by
+#print axioms Hoon.ju_get
+#print axioms Hoon.ju_put
+#print axioms Hoon.ju_has_gate
+#print axioms Hoon.ja_add_gate
+#print axioms Hoon.ju_gas_loop
+#print axioms Hoon.key_by
+#print axioms Hoon.run_by
+#print axioms Hoon.any_by_loop
+#print axioms Hoon.anyByF_spec
+#print axioms Hoon.gas_in
+#print axioms Hoon.any_in_loop
+#print axioms Hoon.anyInF_spec
+#print axioms Hoon.run_in_loop
+#print axioms Hoon.runInF_spec
+#print axioms Hoon.del_in
+#print axioms Hoon.ju_del_gate
+#print axioms Hoon.skim_gate
+#print axioms Hoon.skip_gate
+#print axioms Hoon.murn_gate
+#print axioms Hoon.rear_gate
+#print axioms Hoon.snip_gate
+#print axioms Hoon.welp_gate
+#print axioms Hoon.zing_gate
+#print axioms Hoon.snoc_gate
+#print axioms Hoon.skid_gate
+#print axioms Hoon.sort_gate
+#print axioms Hoon.qsort_perm
+#print axioms Hoon.spin_gate
+#print axioms Hoon.biff_gate_nil
+#print axioms Hoon.biff_gate_some
+#print axioms Hoon.wyt_by
+#print axioms Hoon.wyt_in
+#print axioms Compiler.ca_hed_gate
+#print axioms Compiler.ca_tel_gate
+#print axioms Compiler.ca_con_gate
+#print axioms Compiler.ca_all_gate
+#print axioms Compiler.ca_int_gate
+#print axioms Compiler.ca_uni_gate
+#print axioms Compiler.ca_lack_gate
+#print axioms Compiler.so_hed_gate
+#print axioms Compiler.so_tel_gate
+#print axioms Compiler.so_jibe_gate
+#print axioms Compiler.so_knit_gate
+#print axioms Compiler.so_purr_gate
+#print axioms Compiler.ca_app_gate
+#print axioms Compiler.so_pull_gate
+#print axioms Compiler.ca_pat_gate
+#print axioms Compiler.ca_lot_gate
+#print axioms Compiler.ca_yea_gate
+#print axioms Compiler.so_darn_gate
+#print axioms Compiler.capF_eq_cap
+#print axioms Compiler.masF_eq_mas

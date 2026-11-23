@@ -3,12 +3,14 @@ module
 public import lemmas.Hoon.Basic
 public import lemmas.Pill.Arm.Need
 public import lemmas.Pill.Arm.Fall
+public import lemmas.Pill.Arm.Biff
 import all lemmas.Pill.Arm.Need
 import all lemmas.Pill.Arm.Fall
+import all lemmas.Pill.Arm.Biff
 
 /-!
-`+need` and `+fall` of the pill's `hoon.hoon`, on units: `~` is `A 0` and
-`[~ u]` is `C (A 0) u`.
+`+need`, `+fall` and `+biff` of the pill's `hoon.hoon`, on units: `~` is
+`A 0` and `[~ u]` is `C (A 0) u`.
 
 ```hoon
 ++  need                                                ::  demand
@@ -20,10 +22,16 @@ import all lemmas.Pill.Arm.Fall
 ++  fall                                                ::  default
   |*  [a=(unit) b=*]
   ?~(a b u.a)
+::
+++  biff                                                ::  apply
+  |*  [a=(unit) b=$-(* (unit))]
+  ?~  a  ~
+  (b u.a)
 ```
 
-Neither gate reads its context.  `+fall` has no `%fast` label; its gate's
-battery is the literal `fallBattery`.
+No gate reads its context.  `+fall` has no `%fast` label; its gate's
+battery is the literal `fallBattery`.  `+biff` has none either; the generator
+finds it by its battery.
 -/
 
 @[expose] public section
@@ -66,6 +74,21 @@ def fallBattery : Noun :=
 @[nock_exec] theorem fall_gate_some (c h u b : Noun) :
     nock (C fallBattery (C (C (C h u) b) c)) fallBattery = some u := by
   simp [fallBattery, nock_exec]
+
+@[nock_exec] theorem biff_arm (c : Noun) :
+    nock c biff.arm = some (C biff.battery (C (C (A 0) (C (C (A 0) (A 15)) (C (A 0) (C (A 0) (A 0))))) c)) := by
+  nock_open biff.arm; simp only [nock_exec]
+
+/-- `(biff ~ b)` is `~`. -/
+@[nock_exec] theorem biff_gate_nil (c b : Noun) :
+    nock (C biff.battery (C (C (A 0) b) c)) biff.battery = some (A 0) := by
+  nock_open biff.battery; simp [nock_exec]
+
+/-- `(biff [h u] b)` slams the gate `b` on `u`. -/
+@[nock_exec] theorem biff_gate_some (c h u bp bs bc : Noun) :
+    nock (C biff.battery (C (C (C h u) (C bp (C bs bc))) c)) biff.battery
+      = nock (C bp (C u bc)) bp := by
+  nock_open biff.battery; simp [nock_exec]
 
 end Hoon
 end Formalization

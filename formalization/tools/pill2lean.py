@@ -265,10 +265,13 @@ def main():
         names[i] = nm
 
     def name_loops(label, g, loops):
+        """name the loops [8 [1 L] 9 2 0 1] of g: `loops` of them, or all of
+        them if `loops` is 'any', or none if it is None"""
         ls = find_loops(g) if loops is not None else []
-        assert loops is None or len(ls) == loops, (label, len(ls))
+        if loops != 'any':
+            assert loops is None or len(ls) == loops, (label, len(ls))
         for k, l in enumerate(ls):
-            name(l, label + ('.loop' if loops == 1 else '.loop%d' % k))
+            name(l, label + ('.loop' if len(ls) == 1 else '.loop%d' % k))
             formulas.add(l)
 
     def arm(label, layer, lname, loops=0, full=True):
@@ -340,6 +343,9 @@ def main():
                   'lien']:
         arm(label, layer2, 'layer2', loops=1)
     flop = arm('flop', layer2, 'layer2', loops=1)
+    for label in ['skip', 'murn', 'zing', 'spin', 'skim', 'rear', 'snip', 'sort', 'welp',
+                  'skid']:
+        arm(label, layer2, 'layer2', loops='any')
     # +homo has no %fast label: it is the arm that +flop pulls from its context
     homo_ax = callee(gate_battery(flop), 7)
     name(slot(homo_ax, layer2), 'homo.arm')
@@ -406,20 +412,27 @@ def main():
     axes.append(('fe', fe_ax, 'slot? fe.axis layer2 = some fe.arm'))
     ax_of = dict((nm, ax) for nm, ax, _ in axes)
 
-    def fe_arms(i, ax):
+    def fe_arms(i, ax, depth=0, limit=12):
+        """the arms of a battery: the leaves of its tree of cells whose heads
+        are cells, down to a depth `limit` (the battery of layer 2 needs 40)"""
         n = NODES[i]
-        if type(NODES[n[0]]) is int:
+        if type(NODES[n[0]]) is int or depth >= limit:
             yield ax, i
             return
-        yield from fe_arms(n[0], 2 * ax)
-        yield from fe_arms(n[1], 2 * ax + 1)
+        yield from fe_arms(n[0], 2 * ax, depth + 1, limit)
+        yield from fe_arms(n[1], 2 * ax + 1, depth + 1, limit)
 
     def pulls(formula):
-        """the [axis ctx] of every [9 axis 0 ctx] in formula, in pre-order"""
+        """the [axis ctx] of every [9 axis 0 ctx] in formula, in pre-order,
+        each subterm visited once"""
         out = []
+        seen = set()
         st = [formula]
         while st:
             i = st.pop()
+            if i in seen:
+                continue
+            seen.add(i)
             n = NODES[i]
             if type(n) is int:
                 continue
@@ -480,6 +493,11 @@ def main():
         assert len(res) == 1, (dlabel, label, res)
         ax, a = res[0]
         full = dlabel + '.' + label
+        if a in names:
+            # the same noun as an arm of another door: keep its name
+            axes.append((full, ax, '∀ x, slot? %s.axis (C %s.battery x) = some %s'
+                         % (full, dlabel, names[a])))
+            return a
         name(a, full + '.arm')
         formulas.add(a)
         g = gate_battery(a)
@@ -502,7 +520,9 @@ def main():
     formulas.add(slot(some_ax, layer2))
     axes.append(('some', some_ax, 'slot? some.axis layer2 = some some.arm'))
     door_arm('by', by_battery, 'has', 0)
-    door_arm('by', by_battery, 'del', None)
+    door_arm('by', by_battery, 'del', 'any')
+    for label in ['rep', 'jab', 'uni', 'run', 'dif', 'any', 'int']:
+        door_arm('by', by_battery, label, 'any')
     door_arm('by', by_battery, 'gas', 1)
 
     def door_trap(dlabel, battery, label):
@@ -527,6 +547,7 @@ def main():
 
     door_trap('by', by_battery, 'apt')
     door_trap('by', by_battery, 'tap')
+    door_trap('by', by_battery, 'key')
 
     def door_gate_pulling(dlabel, battery, label, want):
         """the unhinted gate arm of a door whose battery pulls exactly `want`"""
@@ -562,12 +583,217 @@ def main():
     door_gate_pulling('by', by_battery, 'gut', [(gut, 31), (ax_of['by.get'], 7)])
     in_battery = door('in', layer2, 'layer2')
     door_arm('in', in_battery, 'put', 1)
+    for label in ['gas', 'del', 'rep', 'run', 'uni', 'int', 'dif', 'any']:
+        door_arm('in', in_battery, label, 'any')
     has_in = door_arm('in', in_battery, 'has', 1)
     # +has:in slams an inner gate [8 [8 [1 0] [1 gate] 0 1] 9 2 10 ...]
     inner = tail(head(tail(tail(head(tail(gate_battery(has_in)))))))
     assert NODES[head(inner)] == 7
     name(inner, 'in.has.gate')
     formulas.add(inner)
+
+    # the doors +ju and +ja have no %fast labels: they are the door arms of
+    # layer 2 whose arms pull +by and +in (+ju), or hold the hinted +zip (+ja)
+    ax_of = dict((nm, ax) for nm, ax, _ in axes)
+    by_ax, in_ax = ax_of['by'], ax_of['in']
+    zip_inner = set(arms_of('zip'))
+    ju_ja = {}
+    for ax, a in fe_arms(head(layer2), 2):
+        if not is_gate_builder(a):
+            continue
+        bat = door_gate_battery(a)
+        sub = list(fe_arms(bat, 2))
+        if len(sub) < 3:
+            continue
+        ps = set()
+        for _, sa in sub:
+            ps.update(pulls(sa))
+        if zip_inner & reach([bat]):
+            ju_ja.setdefault('ja', []).append((ax, a))
+        elif len(sub) == 5 and any(x == by_ax for x, _ in ps) and any(x == in_ax for x, _ in ps):
+            ju_ja.setdefault('ju', []).append((ax, a))
+    for dlabel in ['ju', 'ja']:
+        (ax, a), = ju_ja[dlabel]
+        name(a, dlabel + '.arm')
+        formulas.add(a)
+        name(door_gate_battery(a), dlabel + '.battery')
+        axes.append((dlabel, ax, 'slot? %s.axis layer2 = some %s.arm' % (dlabel, dlabel)))
+
+    def door_arm_pulling(dlabel, label, pred, loops):
+        """the gate arm of a door without %fast labels whose pulls satisfy pred"""
+        battery = [i for i, nm in names.items() if nm == dlabel + '.battery'][0]
+        res = []
+        for ax, a in fe_arms(battery, 2):
+            if is_gate_builder(a) and pred(set(pulls(door_gate_battery(a)))):
+                res.append((find_axis(cell(battery, atom(0)), a), a))
+        assert len(res) == 1, (dlabel, label, res)
+        ax, a = res[0]
+        full = dlabel + '.' + label
+        if a in names:
+            axes.append((full, ax, '∀ x, slot? %s.axis (C %s.battery x) = some %s'
+                         % (full, dlabel, names[a])))
+            return ax
+        name(a, full + '.arm')
+        formulas.add(a)
+        g = door_gate_battery(a)
+        name(g, full + '.battery')
+        formulas.add(g)
+        name_loops(full, g, loops)
+        axes.append((full, ax, '∀ x, slot? %s.axis (C %s.battery x) = some %s.arm'
+                     % (full, dlabel, full)))
+        return ax
+
+    ju_get = door_arm_pulling('ju', 'get', lambda ps: ps == {(by_ax, 31)}, 0)
+    door_arm_pulling('ju', 'has', lambda ps: ps == {(in_ax, 31), (ju_get, 7)}, 0)
+    ju_put = door_arm_pulling('ju', 'put',
+                              lambda ps: ps == {(ju_get, 7), (by_ax, 63), (in_ax, 63)}, 0)
+    door_arm_pulling('ju', 'del', lambda ps: (by_ax, 127) in ps and (ju_get, 7) in ps, 0)
+    door_arm_pulling('ju', 'gas', lambda ps: (ju_put, 15) in ps, 1)
+    ja_get = door_arm_pulling('ja', 'get', lambda ps: ps == {(by_ax, 31)}, 0)
+    door_arm_pulling('ja', 'add', lambda ps: ps == {(ja_get, 7), (by_ax, 63)}, 0)
+
+    # +wyt of +by and +in (one noun): the trap [7 [8 [1 battery] hint] 9 2 0 1]
+    # whose hint has the %fast label wyt
+    wyt_hint = hint_of('wyt')
+    (wyt_core,) = [i for i in live if type(NODES[i]) is tuple and tail(i) == wyt_hint
+                   and type(NODES[head(i)]) is tuple and NODES[head(head(i))] == 1]
+    wyt_arm = cell(atom(7), cell(cell(atom(8), wyt_core),
+                                 cell(atom(9), cell(atom(2), cell(atom(0), atom(1))))))
+    for dlabel, battery in [('by', by_battery), ('in', in_battery)]:
+        ax = find_axis(cell(battery, atom(0)), wyt_arm)
+        full = dlabel + '.wyt'
+        if wyt_arm in names:
+            axes.append((full, ax, '∀ x, slot? %s.axis (C %s.battery x) = some %s'
+                         % (full, dlabel, names[wyt_arm])))
+            continue
+        name(wyt_arm, full + '.arm')
+        formulas.add(wyt_arm)
+        name(tail(head(wyt_core)), full + '.battery')
+        formulas.add(tail(head(wyt_core)))
+        axes.append((full, ax, '∀ x, slot? %s.axis (C %s.battery x) = some %s.arm'
+                     % (full, dlabel, full)))
+
+    # +snoc and +biff have no %fast labels: +snoc is the gate arm of layer 2
+    # whose battery pulls +weld and nothing else, +biff the gate arm whose
+    # battery is ?~(a ~ (b u.a))
+    def layer2_gate(label, pred):
+        res = [(ax, a) for ax, a in fe_arms(head(layer2), 2, limit=40)
+               if is_gate_builder(a) and pred(door_gate_battery(a))]
+        assert len(res) == 1, (label, res)
+        ax, a = res[0]
+        name(a, label + '.arm')
+        formulas.add(a)
+        name(door_gate_battery(a), label + '.battery')
+        formulas.add(door_gate_battery(a))
+        axes.append((label, find_axis(layer2, a), 'slot? %s.axis layer2 = some %s.arm'
+                     % (label, label)))
+    ax_of = dict((nm, ax) for nm, ax, _ in axes)
+    layer2_gate('snoc', lambda g: pulls(g) == [(ax_of['weld'], 7)])
+    def f0(ax): return cell(atom(0), atom(ax))
+    def f1(x): return cell(atom(1), x)
+    slam = cell(atom(9), cell(atom(2), cell(atom(10), cell(cell(atom(6), f0(57)), f0(2)))))
+    biff_battery = cell(atom(6), cell(cell(atom(5), cell(f1(atom(0)), f0(12))),
+                                      cell(f1(atom(0)), cell(atom(8), cell(f0(13), slam)))))
+    layer2_gate('biff', lambda g: g == biff_battery)
+
+    # the gate that +sort hands to +skid: the one core [[1 battery] 0 1] that
+    # its loop builds
+    sort_loop = [i for i, nm in names.items() if nm == 'sort.loop'][0]
+    cmp = set(tail(head(i)) for i in reach([sort_loop])
+              if type(NODES[i]) is tuple and tail(i) == f0(1)
+              and type(NODES[head(i)]) is tuple and NODES[head(head(i))] == 1)
+    (cmp,) = cmp
+    name(cmp, 'sort.cmp')
+    formulas.add(cmp)
+
+    # ---- the compiler's leaf cores +ca and +so: arms of the library core,
+    # [[1 battery] [11 [%fast [1 [label [0 511] 0]]] [0 1]]], whose own arms
+    # carry %fast labels except for a few
+    def core_label_arm(label):
+        clue = cell(atom(cord(label)), cell(cell(atom(0), atom(511)), atom(0)))
+        hint = cell(atom(11), cell(cell(atom(FAST), cell(atom(1), clue)), cell(atom(0), atom(1))))
+        res = [i for i in live if type(NODES[i]) is tuple and tail(i) == hint
+               and type(NODES[head(i)]) is tuple and NODES[head(head(i))] == 1]
+        assert len(res) == 1, (label, res)
+        return res[0], tail(head(res[0]))
+
+    def label_of(a):
+        """the %fast label of a gate arm [7 builder [11 [%fast [1 [label ..]]] 0 1]]"""
+        try:
+            if NODES[head(a)] != 7:
+                return None
+            h = head(tail(tail(a)))
+            if NODES[h] != 11:
+                return None
+            hb = head(tail(tail(tail(a))))
+            if NODES[head(hb)] != FAST:
+                return None
+            q = tail(hb)
+            if NODES[head(q)] != 1:
+                return None
+            return N.tape(head(tail(q)))
+        except (TypeError, IndexError):
+            return None
+
+    # Their batteries are not named: an arm of +ca (+dif, through its crash
+    # message) quotes a noun that holds the whole hoon core.  Each arm is named
+    # on its own, unless it reaches a noun of the bulk; its axis is relative to
+    # its core [battery payload].
+    unlabeled = {'ca': {95: 'lot', 171: 'lack', 87: 'dif'}, 'so': {4: 'jibe'}}
+    bulk_named = set(i for i, nm in names.items() if nm.split('.')[0] in
+                     ('root', 'nok', 'trap', 'core', 'layer0', 'layer1', 'layer2'))
+    skipped = []
+    for clabel in ['ca', 'so']:
+        carm, cbat = core_label_arm(clabel)
+        core_cell = cell(cbat, atom(0))
+        for ax, a in fe_arms(cbat, 2):
+            lab = label_of(a)
+            full_ax = find_axis(core_cell, a)
+            if lab:
+                g = gate_battery(a)
+            elif is_gate_builder(a) and full_ax in unlabeled[clabel]:
+                lab = unlabeled[clabel][full_ax]
+                g = door_gate_battery(a)
+            else:
+                continue
+            full = clabel + '.' + lab
+            if reach([a]) & bulk_named:
+                skipped.append(full)
+                continue
+            name(a, full + '.arm')
+            formulas.add(a)
+            name(g, full + '.battery')
+            formulas.add(g)
+            name_loops(full, g, 'any')
+            axes.append((full, full_ax, None))
+    sys.stderr.write('compiler arms skipped (they reach the bulk): %s\n' % skipped)
+
+    # the library core: the first core on the tail spine of `core` whose
+    # battery holds the arms [8 [1 battery] hint] of +ca and +so.  Its axes of
+    # +ca and +so, and of the layers of hoon.hoon below it, name the context
+    # that the arms of +ca and +so read.
+    ca_arm8 = cell(atom(8), core_label_arm('ca')[0])
+    so_arm8 = cell(atom(8), core_label_arm('so')[0])
+    lib = core
+    while True:
+        if type(NODES[head(lib)]) is tuple:
+            lib_arms = dict((a, ax) for ax, a in fe_arms(head(lib), 2, limit=20))
+            if ca_arm8 in lib_arms and so_arm8 in lib_arms:
+                ca_lib, so_lib = lib_arms[ca_arm8], lib_arms[so_arm8]
+                break
+        lib = tail(lib)
+    def spine_axis(x, target):
+        ax = 1
+        while x != target:
+            x = tail(x)
+            ax = 2 * ax + 1
+        return ax
+    knit_battery = [i for i, nm in names.items() if nm == 'so.knit.battery'][0]
+    assert (ca_lib, 15) in pulls(knit_battery), (ca_lib, so_lib, spine_axis(core, lib), pulls(knit_battery))
+    axes.append(('ca.lib', ca_lib, None))
+    axes.append(('so.lib', so_lib, None))
+    axes.append(('ca.lib.layer2', spine_axis(lib, layer2), None))
+    axes.append(('ca.lib.layer1', spine_axis(lib, layer1), None))
 
     # ---- write
     emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, len(data))
@@ -949,6 +1175,8 @@ def emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, nbyte
         fh.write('/-! Each named arm sits at its axis.  The constants `x.axis` are in the\n'
                  'arm files. -/\n\n')
         for nm, ax, st in axes:
+            if st is None:
+                continue
             if st.startswith('∀'):
                 fh.write('theorem %s.arm_at : %s := by\n  intro x; kernel_rfl\n\n' % (nm, st))
             else:
