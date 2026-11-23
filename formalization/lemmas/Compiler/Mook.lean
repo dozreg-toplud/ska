@@ -1,5 +1,8 @@
 import lemmas.Compiler.Monk
 import lemmas.Hoon.Lists
+import lemmas.Hoon.Rip
+import lemmas.Hoon.MugSpec
+import lemmas.Pill.Arm.Scow
 import lemmas.Pill.Arm.Mook
 import lemmas.Pill.Arm.Mock
 import lemmas.Pill.Arm.Soft
@@ -174,6 +177,180 @@ theorem rend_mean (lib : Lib) (ctx : Noun) (hc : MookIn ctx) (hst : SoftTankIs l
   nock_open mook.rend.mean
   simp [nock_exec, nock_ite, bind_bind_some, hmack, mack_arm, hsoft, hl2, htank, hs, ite_unitN,
     rendProduct, leafHash, leafMookMean, tape, listNoun, Tag.leaf]
+
+/-! ## The branches of `rend` that format with constants, `+rip` and `+scow` -/
+
+/-- `leaf+tape`. -/
+def leafN (bytes : List Nat) : Noun := C (A Tag.leaf) (tape bytes)
+
+/-- `"mook."` -/
+def mookDot : List Nat := [109, 111, 111, 107, 46]
+
+theorem tape_eq (l : List Nat) : tape l = listN (l.map A) := by
+  induction l with
+  | nil => rfl
+  | cons x xs ih => simp [tape, listNoun] at *; exact ih
+
+/-- What the branches of `rend` that this file computes read: `+scow` in the
+context, `+rip` (with `+end` and `+rsh`) and `+mug` in layer 2 `l2`. -/
+abbrev RendIn (mug : Noun → Nat) (ctx l2 : Noun) : Prop :=
+  slot? scow.axis ctx = some scow.arm ∧ slot? rip.axis l2 = some rip.arm ∧ EndIn l2 ∧
+    RshIn l2 ∧ MugIn mug l2
+
+@[nock_exec] theorem scow_arm (c : Noun) :
+    nock c scow.arm = some (C scow.battery (C (C (A 0) (A 0)) c)) := by
+  nock_open scow.arm; simp only [nock_exec]
+
+/-- The loop of a tape interpolation: `?@(a b [i.a $(a t.a)])`. -/
+theorem rend_loop (S b : Noun) : ∀ (l : List Noun),
+    nock (C mook.rend.loop (C (C (listN l) b) S)) mook.rend.loop = some (appendN l b) := by
+  intro l
+  induction l with
+  | nil => nock_open mook.rend.loop; simp [nock_exec]
+  | cons x xs ih => nock_open mook.rend.loop; simp [nock_exec, ih]
+
+/-- The tank that `rend` makes of a frame with a constant or `(rip 3 ...)`:
+`%hunk` of an atom, `%lose`, `%mean` of an atom, and the tags that the `?+`
+does not list; `none` for the other frames. -/
+def rendLeaf (tag : Nat) (dat : Noun) : Option Noun :=
+  if tag = Tag.hunk then
+    (match dat with
+     | Noun.atom _ => some (leafN (mookDot ++ [104, 117, 110, 107]))
+     | Noun.cell _ _ => none)
+  else if tag = Tag.lose then
+    (match dat with
+     | Noun.atom a => some (leafN (ripF 8 a))
+     | Noun.cell _ _ => some (leafN (mookDot ++ [108, 111, 115, 101])))
+  else if tag = Tag.hand then none
+  else if tag = Tag.mean then
+    (match dat with
+     | Noun.atom a => some (leafN (ripF 8 a))
+     | Noun.cell _ _ => none)
+  else if tag = Tag.spot then none
+  else some (leafN (mookDot ++ ripF 8 tag))
+
+theorem rend_leaf (mug : Noun → Nat) (ctx l2 : Noun) (hl2 : slot? mook.layer2.axis ctx = some l2)
+    (hr : RendIn mug ctx l2) (tag : Nat) (dat ton y : Noun) (h : rendLeaf tag dat = some y) :
+    rendSlam (C (A tag) dat) ton ctx = some y := by
+  obtain ⟨_, hrip, hend, hrsh, _⟩ := hr
+  have hg := rip_gate l2 ⟨hend, hrsh⟩ (A 3) 3 1 (BiteIs.atom 3) (by omega)
+  simp only [show 2 ^ 3 * 1 = 8 from rfl] at hg
+  unfold rendSlam
+  unfold rendLeaf at h
+  by_cases h1 : tag = Tag.hunk
+  · subst h1
+    rcases dat with a | ⟨_, _⟩
+    · simp only [if_true] at h; cases h
+      nock_open mook.rend.battery
+      simp only [nock_exec, Tag.hunk, if_true]
+      nock_open mook.rend.hunk
+      simp [nock_exec, leafN, tape, listNoun, mookDot, Tag.leaf]
+    · simp at h
+  by_cases h2 : tag = Tag.lose
+  · subst h2
+    simp only [h1, if_false, if_true] at h
+    rcases dat with a | ⟨_, _⟩
+    · cases h
+      nock_open mook.rend.battery
+      simp only [nock_exec, Tag.lose, Noun.atom.injEq, if_true, if_false,
+        show ¬ (0x6b6e7568 = 0x65736f6c) from by decide]
+      nock_open mook.rend.lose
+      simp [nock_exec, hl2, hrip, rip_arm, hg, leafN, tape_eq, Tag.leaf]
+    · cases h
+      nock_open mook.rend.battery
+      simp only [nock_exec, Tag.lose, Noun.atom.injEq, if_true, if_false,
+        show ¬ (0x6b6e7568 = 0x65736f6c) from by decide]
+      nock_open mook.rend.lose
+      simp [nock_exec, leafN, tape, listNoun, mookDot, Tag.leaf]
+  have h1' : ¬ (0x6b6e7568 = tag) := fun e => h1 (by rw [← e]; rfl)
+  have h2' : ¬ (0x65736f6c = tag) := fun e => h2 (by rw [← e]; rfl)
+  by_cases h3 : tag = Tag.hand
+  · subst h3; simp [Tag.hand, Tag.hunk, Tag.lose] at h
+  have h3' : ¬ (0x646e6168 = tag) := fun e => h3 (by rw [← e]; rfl)
+  by_cases h4 : tag = Tag.mean
+  · subst h4
+    simp only [h1, h2, h3, if_false, if_true] at h
+    rcases dat with a | ⟨_, _⟩
+    · cases h
+      nock_open mook.rend.battery
+      simp only [nock_exec, Noun.atom.injEq, Tag.mean]
+      nock_open mook.rend.mean
+      simp [nock_exec, hl2, hrip, rip_arm, hg, leafN, tape_eq, Tag.leaf]
+    · simp at h
+  have h4' : ¬ (0x6e61656d = tag) := fun e => h4 (by rw [← e]; rfl)
+  by_cases h5 : tag = Tag.spot
+  · subst h5; simp [Tag.spot, Tag.hunk, Tag.lose, Tag.hand, Tag.mean] at h
+  have h5' : ¬ (0x746f7073 = tag) := fun e => h5 (by rw [← e]; rfl)
+  simp only [h1, h2, h3, h4, h5, if_false, Option.some.injEq] at h
+  subst h
+  nock_open mook.rend.battery
+  simp only [nock_exec, Noun.atom.injEq, if_false, h1', h2', h3', h4', h5']
+  nock_open mook.rend.other
+  simp [nock_exec, hl2, hrip, rip_arm, hg, rend_loop, leafN, tape_eq, mookDot, Tag.leaf]
+  rfl
+
+/-- `rend` on a `%hand` frame: `leaf+(scow %p (mug dat))`. -/
+theorem rend_hand (mug : Noun → Nat) (ctx l2 : Noun) (hl2 : slot? mook.layer2.axis ctx = some l2)
+    (hr : RendIn mug ctx l2) (dat ton : Noun) :
+    rendSlam (C (A Tag.hand) dat) ton ctx =
+      (nock (C scow.battery (C (C (A 112) (A (mug dat))) ctx)) scow.battery).map
+        (C (A Tag.leaf)) := by
+  obtain ⟨hscow, _, _, _, hmug, hms⟩ := hr
+  unfold rendSlam
+  nock_open mook.rend.battery
+  simp only [nock_exec, Tag.hand, Noun.atom.injEq, if_true, if_false,
+    show ¬ (0x6b6e7568 = 0x646e6168) from by decide, show ¬ (0x65736f6c = 0x646e6168) from by decide]
+  nock_open mook.rend.hand
+  simp [nock_exec, hl2, hscow, scow_arm, hmug, mug_arm, hms dat, Tag.leaf]
+  cases nock (C scow.battery (C (C (A 112) (A (mug dat))) ctx)) scow.battery <;> rfl
+
+
+/-! ## `RendBaseIs` from the branches -/
+
+/-- The model takes the frames of `rendLeaf` as the pill's `rend` does: a
+condition on `Lib` alone. -/
+def RendLeafIs (lib : Lib) : Prop :=
+  ∀ tag dat y, rendLeaf tag dat = some y → lib.rendBase tag dat = some y
+
+/-- `+scow %p` of the pill on the hash of the datum, put in a leaf, is the
+model's tank of a `%hand` frame. -/
+def HandIs (lib : Lib) (mug : Noun → Nat) (ctx : Noun) : Prop :=
+  ∀ dat, (nock (C scow.battery (C (C (A 112) (A (mug dat))) ctx)) scow.battery).map
+    (C (A Tag.leaf)) = lib.rendBase Tag.hand dat
+
+/-- `rend` on the frames that it formats with `+smyt`: `%hunk` of a cell,
+through `(soft path)`, and `%spot`, through `(soft spot)` and `+scow %ud`. -/
+def RendRestIs (lib : Lib) (ctx : Noun) : Prop :=
+  (∀ h t ton, rendSlam (C (A Tag.hunk) (C h t)) ton ctx = lib.rendBase Tag.hunk (C h t)) ∧
+  (∀ dat ton, rendSlam (C (A Tag.spot) dat) ton ctx = lib.rendBase Tag.spot dat)
+
+theorem rendBaseIs_of (lib : Lib) (mug : Noun → Nat) (ctx : Noun) (hc : MookIn ctx)
+    (hr : ∀ l2, slot? mook.layer2.axis ctx = some l2 → RendIn mug ctx l2)
+    (hleaf : RendLeafIs lib) (hhand : HandIs lib mug ctx) (hrest : RendRestIs lib ctx) :
+    RendBaseIs lib ctx := by
+  obtain ⟨_, _, _, l2, hl2, _⟩ := hc
+  have hr := hr l2 hl2
+  intro tag dat ton hmean
+  cases hv : rendLeaf tag dat with
+  | some y => rw [rend_leaf mug ctx l2 hl2 hr tag dat ton y hv, hleaf tag dat y hv]
+  | none =>
+    unfold rendLeaf at hv
+    by_cases h1 : tag = Tag.hunk
+    · subst h1
+      rcases dat with a | ⟨h, t⟩
+      · simp at hv
+      · exact hrest.1 h t ton
+    by_cases h2 : tag = Tag.lose
+    · subst h2; rcases dat with _ | _ <;> simp [Tag.lose, Tag.hunk] at hv
+    by_cases h3 : tag = Tag.hand
+    · subst h3; rw [rend_hand mug ctx l2 hl2 hr, hhand]
+    by_cases h4 : tag = Tag.mean
+    · subst h4
+      obtain ⟨a, rfl⟩ := hmean rfl
+      simp [Tag.mean, Tag.hunk, Tag.lose, Tag.hand] at hv
+    by_cases h5 : tag = Tag.spot
+    · subst h5; exact hrest.2 dat ton
+    simp [h1, h2, h3, h4, h5] at hv
 
 /-! ## `rend` on any frame -/
 

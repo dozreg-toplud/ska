@@ -359,7 +359,7 @@ def main():
     arm('need', layer2, 'layer2')
 
     # bit arithmetic
-    for label in ['bex', 'rsh', 'lsh', 'end', 'cut', 'cat', 'can']:
+    for label in ['bex', 'rsh', 'lsh', 'end', 'cut', 'cat', 'can', 'rip']:
         arm(label, layer2, 'layer2')
     for label in ['met', 'mix', 'dis', 'con']:
         arm(label, layer2, 'layer2', loops=1)
@@ -805,6 +805,11 @@ def main():
     name(br, 'mook.rend.other')
     formulas.add(br)
     formulas.add(rend_bat)
+    # the loop of a tape interpolation, ?@(a b [i.a $(a t.a)]); the other
+    # [8 [1 L] 9 2 0 1] of rend are traps that build tapes
+    (weld_l,) = [l for l in find_loops(rend_bat) if NODES[head(l)] == 6]
+    name(weld_l, 'mook.rend.loop')
+    formulas.add(weld_l)
     # the %mean branch: [6 atom-test leaf [8 mack-call [6 [5 [1 0] 0 2] hash [8 sof ..]]]]
     mean_b = [i for i, nm in names.items() if nm == 'mook.rend.mean'][0]
     cell_b = tail(tail(tail(mean_b)))
@@ -832,6 +837,8 @@ def main():
     formulas.add(tank_a)
     axes.append(('tank', tank_ax, 'slot? tank.axis layer2 = some tank.arm'))
     name(door_gate_battery(tank_a), 'tank.battery')
+    # +scow, which the %hand branch of rend slams on [%p (mug dat)]
+    arm('scow', layer4, 'layer4')
     # the layer of +turn, +lent, +weld, +scag, +slag that +mook reads
     axes.append(('mook.layer2', 7, 'slot? mook.layer2.axis layer4 = some layer2'))
 

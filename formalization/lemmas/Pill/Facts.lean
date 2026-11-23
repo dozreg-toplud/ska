@@ -2,7 +2,7 @@ module
 
 public import lemmas.Sound
 public import lemmas.KernelRfl
-public import lemmas.Pill.Nouns.P015
+public import lemmas.Pill.Nouns.P014
 public import lemmas.Pill.Arm.Add
 public import lemmas.Pill.Arm.Bex
 public import lemmas.Pill.Arm.Biff
@@ -55,9 +55,11 @@ public import lemmas.Pill.Arm.Need
 public import lemmas.Pill.Arm.Peg
 public import lemmas.Pill.Arm.Pi
 public import lemmas.Pill.Arm.Rear
+public import lemmas.Pill.Arm.Rip
 public import lemmas.Pill.Arm.Roll
 public import lemmas.Pill.Arm.Rsh
 public import lemmas.Pill.Arm.Scag
+public import lemmas.Pill.Arm.Scow
 public import lemmas.Pill.Arm.Skid
 public import lemmas.Pill.Arm.Skim
 public import lemmas.Pill.Arm.Skip
@@ -128,9 +130,11 @@ import all lemmas.Pill.Arm.Need
 import all lemmas.Pill.Arm.Peg
 import all lemmas.Pill.Arm.Pi
 import all lemmas.Pill.Arm.Rear
+import all lemmas.Pill.Arm.Rip
 import all lemmas.Pill.Arm.Roll
 import all lemmas.Pill.Arm.Rsh
 import all lemmas.Pill.Arm.Scag
+import all lemmas.Pill.Arm.Scow
 import all lemmas.Pill.Arm.Skid
 import all lemmas.Pill.Arm.Skim
 import all lemmas.Pill.Arm.Skip
@@ -281,6 +285,8 @@ theorem cut.arm_at : slot? cut.axis layer2 = some cut.arm := by kernel_rfl
 theorem cat.arm_at : slot? cat.axis layer2 = some cat.arm := by kernel_rfl
 
 theorem can.arm_at : slot? can.axis layer2 = some can.arm := by kernel_rfl
+
+theorem rip.arm_at : slot? rip.axis layer2 = some rip.arm := by kernel_rfl
 
 theorem met.arm_at : slot? met.axis layer2 = some met.arm := by kernel_rfl
 
@@ -442,6 +448,8 @@ theorem mook.arm_at : slot? mook.axis layer4 = some mook.arm := by kernel_rfl
 theorem soft.arm_at : slot? soft.axis layer4 = some soft.arm := by kernel_rfl
 
 theorem tank.arm_at : slot? tank.axis layer2 = some tank.arm := by kernel_rfl
+
+theorem scow.arm_at : slot? scow.axis layer4 = some scow.arm := by kernel_rfl
 
 theorem mook.layer2.arm_at : slot? mook.layer2.axis layer4 = some layer2 := by kernel_rfl
 

@@ -17,6 +17,7 @@ import lemmas.Hoon.MapFolds
 import lemmas.Hoon.SetFolds
 import lemmas.Hoon.ListsMore
 import lemmas.Hoon.ListsSort
+import lemmas.Hoon.Rip
 import lemmas.Compiler.Ca
 import lemmas.Compiler.So
 import lemmas.Compiler.Axes
@@ -202,6 +203,11 @@ open Formalization
 #print axioms Compiler.mock_gate_iff
 #print axioms Compiler.mook_pill_iff
 #print axioms Compiler.mock_pill_iff
+#print axioms Hoon.rip_gate
+#print axioms Compiler.rend_leaf
+#print axioms Compiler.rend_hand
+#print axioms Compiler.rendBaseIs_of
+#print axioms Compiler.rendBaseIs_layer4
 #print axioms Compiler.pi_cons_gate
 #print axioms Compiler.pi_hed_gate
 #print axioms Compiler.pi_tel_gate
