@@ -3,22 +3,26 @@ import lemmas.Ska.CompSevenN
 /-!
 # `%3`, `%4`, `%7` and `%6` nested in any order
 
-`FragM`: the nomms built from the nomms of `Frag` by `[6 c a b]` (a test of
-`FragP` for `%pick`), `[4 p]`, `[3 p]` and `[7 p q]` (with `q` in `Frag`),
-in any order.  Every `%next` goal that a `%6` of such a nomm meets is
-fork-free: `[4 p]` and `[3 p]` run `p` for the goal `%next` of one fresh
-register, and `[7 p q]` runs `p` for the need of `q`, which has no forks as
-`q` has no `%6`.
+`FragM`: the nomms built from the nomms of `Frag` by `[6 c a b]`, `[4 p]`,
+`[3 p]` and `[7 p q]` (with `q` in `Frag`), in any order, in the tests of
+`%6` too.  Every `%next` goal that a `%6` of such a nomm meets is fork-free:
+`[4 p]` and `[3 p]` run `p` for the goal `%next` of one fresh register, and
+`[7 p q]` runs `p` for the need of `q`, which has no forks as `q` has no
+`%6`.  Every `%pick` goal has jumps without arguments (`jmp0` of the yes and
+no blocks of a `%6`).
 
-`runM_ok`: on `FragM` every run for `%done` meets `RunOKP` and every run for
-a fork-free goal `%next` whose jump passes no arguments meets `RunOKN`, by
-induction, with the parent cases for `%next` (`runOKN_n4`, `runOKN_n3`,
-`runOKN_n7`, through `unaryN_ok`) and for `%done` (`runOKP_n4`,
-`runOKP_n3`, `runOKP_n7`, `sixP_ok`).  `finishLF_bellContractM` and
-`crash_iffM`: the top theorems on `FragM`.
+`runM_ok`: on `FragM` every run for `%done` and for such a `%pick` meets
+`RunOKP`, and every run for a fork-free goal `%next` whose jump passes no
+arguments meets `RunOKN`, by induction, with the parent cases for `%next`
+(`runOKN_n4`, `runOKN_n3`, `runOKN_n7`, through `unaryN_ok`), for `%done`
+(`runOKP_n4`, `runOKP_n3`, `runOKP_n7`) and for `%pick` (`runOKP_n4p`,
+`runOKP_n3p`, `runOKP_n7g`, through `unaryG_ok`), and `sixP_ok`,
+`sixNext_okN` for `%6`.  `finishLF_bellContractM` and `crash_iffM`: the top
+theorems on `FragM`.
 
-For example `[4 [6 [0 2] [3 [6 [0 6] [1 1] [0 7]]] [4 [0 3]]]]` is in
-`FragM` and not in `FragT`.  `[7 [6 [0 2] [1 1] [1 2]] [6 [0 2] [0 3] [0 1]]]`
+For example `[4 [6 [0 2] [3 [6 [0 6] [1 1] [0 7]]] [4 [0 3]]]]` and
+`[6 [4 [6 [0 2] [1 0] [1 1]]] [0 2] [0 3]]` are in `FragM` and not in
+`FragT`.  `[7 [6 [0 2] [1 1] [1 2]] [6 [0 2] [0 3] [0 1]]]`
 is in neither: the run of `[6 [0 2] [1 1] [1 2]]` is for the need of the
 second `%6`, which has forks.
 -/
@@ -605,51 +609,75 @@ theorem runOKP_n7g (lib : Lib) {p q : Nomm} {goal : CGoal S} (hg : NotNext goal)
 /-! ## The fragment -/
 
 /-- **The fragment with `%3`, `%4`, `%7` and `%6` nested in any order**: the
-nomms of `Frag` (for every goal), `[6 c a b]` with a test of `FragP` for
-`%pick` and branches of `FragM`, `[4 p]` and `[3 p]` with `p` in `FragM`, and
-`[7 p q]` with `q` in `Frag` and `p` in `FragM`. -/
+nomms of `Frag` (for every goal), `[6 c a b]` with a test and branches in
+`FragM`, `[4 p]` and `[3 p]` with `p` in `FragM`, and `[7 p q]` with `q` in
+`Frag` and `p` in `FragM`. -/
 inductive FragM : Nomm → Prop
   | frag {nm : Nomm} : (∀ goal : CGoal S, Frag nm goal) → FragM nm
-  | six {c a b : Nomm} : (∀ z o, FragP (S := S) (CGoal.pick z o) c) → FragM a → FragM b → FragM (Nomm.n6 c a b)
+  | six {c a b : Nomm} : FragM c → FragM a → FragM b → FragM (Nomm.n6 c a b)
   | four {p : Nomm} : FragM p → FragM (Nomm.n4 p)
   | three {p : Nomm} : FragM p → FragM (Nomm.n3 p)
   | seven {p q : Nomm} : (∀ goal : CGoal S, Frag q goal) → FragM p → FragM (Nomm.n7 p q)
 
-/-- **`runL` meets the relations on `FragM`**: `RunOKP` for `%done` and
-`RunOKN` for every fork-free goal `%next` whose jump has no arguments, when
-the nomm has at most 255 `%6`. -/
+theorem fragM_pure {nm : Nomm} (h : FragM (S := S) nm) : nm.pure = true := by
+  induction h with
+  | frag hf => exact (frag_pure_noSix _ _ (hf CGoal.done)).1
+  | six _ _ _ ihc iha ihb => simp only [Nomm.pure, ihc, iha, ihb, Bool.and_self]
+  | four _ ih => simpa only [Nomm.pure] using ih
+  | three _ ih => simpa only [Nomm.pure] using ih
+  | seven hq _ ih => simp only [Nomm.pure, ih, (frag_pure_noSix _ _ (hq CGoal.done)).1, Bool.and_self]
+
+/-- **`runL` meets the relations on `FragM`**: `RunOKP` for `%done`,
+`RunOKN` for every fork-free goal `%next` whose jump has no arguments, and
+`RunOKP` for every `%pick` whose jumps have no arguments, when the nomm has
+at most 255 `%6`. -/
 theorem runM_ok (lib : Lib) {nm : Nomm} (hf : FragM (S := S) nm) :
-    OKP (Map := Map) lib (CGoal.done : CGoal S) nm ∧ NextOK (S := S) (Map := Map) lib nm := by
+    OKP (Map := Map) lib (CGoal.done : CGoal S) nm ∧ NextOK (S := S) (Map := Map) lib nm ∧
+    ∀ z o : Jmp, z.args = [] → o.args = [] → OKP (Map := Map) lib (CGoal.pick z o : CGoal S) nm := by
   induction hf with
   | frag hf =>
     exact ⟨fun hg hj _ b0 d0 hu h => runOKP_frag lib (hf _) hg hj b0 d0 hu h,
-      fun hj _ hok hcl _ b0 d0 hu h => runOKN_frag lib (hf _) hj b0 d0 hu hok hcl h⟩
-  | @six c a b hc _ _ iha ihb =>
-    have hcp := fragP_pure (hc (jmp0 0) (jmp0 0))
-    exact ⟨sixP_ok lib hcp (fun z o _ _ => runP_ok lib (hc z o)) iha.1 ihb.1,
+      fun hj _ hok hcl _ b0 d0 hu h => runOKN_frag lib (hf _) hj b0 d0 hu hok hcl h,
+      fun _ _ _ _ _ _ _ _ hg hj _ b0 d0 hu h => runOKP_frag lib (hf _) hg hj b0 d0 hu h⟩
+  | @six c a b hc _ _ ihc iha ihb =>
+    have hcp := fragM_pure hc
+    exact ⟨sixP_ok lib hcp ihc.2.2 iha.1 ihb.1,
       fun hj hth hok hcl hcount b0 d0 hu h => sixNext_okN lib hcp
-        (fun z o _ _ => runP_ok lib (hc z o) trivial)
-        iha.2 ihb.2 hj hth hok hcl hcount b0 d0 hu h⟩
+        (fun z o hz ho => ihc.2.2 z o hz ho trivial) iha.2.1 ihb.2.1 hj hth hok hcl hcount b0 d0 hu h,
+      fun z o hz ho => sixP_ok lib hcp ihc.2.2 (iha.2.2 z o hz ho) (ihb.2.2 z o hz ho)⟩
   | four _ ih =>
-    exact ⟨fun _ _ hcount b0 d0 hu h => runOKP_n4 lib ih.2 (by simpa only [sixCount] using hcount) b0 d0 hu h,
-      fun hj _ _ _ hcount b0 d0 hu h => runOKN_n4 lib ih.2 hj (by simpa only [sixCount] using hcount) b0 d0 hu h⟩
+    exact ⟨fun _ _ hcount b0 d0 hu h => runOKP_n4 lib ih.2.1 (by simpa only [sixCount] using hcount) b0 d0 hu h,
+      fun hj _ _ _ hcount b0 d0 hu h => runOKN_n4 lib ih.2.1 hj (by simpa only [sixCount] using hcount) b0 d0 hu h,
+      fun _ _ _ _ _ _ _ _ _ hj hcount b0 d0 hu h =>
+        runOKP_n4p lib ih.2.1 hj (by simpa only [sixCount] using hcount) b0 d0 hu h⟩
   | three _ ih =>
-    exact ⟨fun _ _ hcount b0 d0 hu h => runOKP_n3 lib ih.2 (by simpa only [sixCount] using hcount) b0 d0 hu h,
+    exact ⟨fun _ _ hcount b0 d0 hu h => runOKP_n3 lib ih.2.1 (by simpa only [sixCount] using hcount) b0 d0 hu h,
       fun hj hth hok hcl hcount b0 d0 hu h =>
-        runOKN_n3 lib ih.2 hj hth hok hcl (by simpa only [sixCount] using hcount) b0 d0 hu h⟩
+        runOKN_n3 lib ih.2.1 hj hth hok hcl (by simpa only [sixCount] using hcount) b0 d0 hu h,
+      fun _ _ _ _ _ _ _ _ _ hj hcount b0 d0 hu h =>
+        runOKP_n3p lib ih.2.1 hj (by simpa only [sixCount] using hcount) b0 d0 hu h⟩
   | seven hq _ ih =>
-    exact ⟨fun _ _ hcount b0 d0 hu h => runOKP_n7 lib (hq _) ih.2 (by simp only [sixCount] at hcount; omega)
+    exact ⟨fun _ _ hcount b0 d0 hu h => runOKP_n7 lib (hq _) ih.2.1 (by simp only [sixCount] at hcount; omega)
         b0 d0 hu h,
-      fun hj hth hok hcl hcount b0 d0 hu h => runOKN_n7 lib (hq _) ih.2 hj hth hok hcl
+      fun hj hth hok hcl hcount b0 d0 hu h => runOKN_n7 lib (hq _) ih.2.1 hj hth hok hcl
+        (by simp only [sixCount] at hcount; omega) b0 d0 hu h,
+      fun z o hz ho _ _ _ _ hg hj hcount b0 d0 hu h => runOKP_n7g lib hg (hq _) ih.2.1
+        (fun j e => by simp only [GoalJ] at e; rcases e with rfl | rfl <;> assumption) hj
         (by simp only [sixCount] at hcount; omega) b0 d0 hu h⟩
 
 /-- The example of the header: `[4 [6 [0 2] [3 [6 [0 6] [1 1] [0 7]]] [4 [0 3]]]]`
 is in `FragM`. -/
 example : FragM (S := S) (Nomm.n4 (Nomm.n6 (Nomm.n0 2) (Nomm.n3 (Nomm.n6 (Nomm.n0 6) (Nomm.n1 (A 1)) (Nomm.n0 7)))
     (Nomm.n4 (Nomm.n0 3)))) :=
-  FragM.four (FragM.six (fun _ _ => FragP.frag trivial)
-    (FragM.three (FragM.six (fun _ _ => FragP.frag trivial) (FragM.frag fun _ => trivial) (FragM.frag fun _ => trivial)))
+  FragM.four (FragM.six (FragM.frag fun _ => trivial)
+    (FragM.three (FragM.six (FragM.frag fun _ => trivial) (FragM.frag fun _ => trivial) (FragM.frag fun _ => trivial)))
     (FragM.frag fun goal => by cases goal <;> exact fun _ _ => trivial))
+
+/-- A test that is an increment of a `%6`: `[6 [4 [6 [0 2] [1 0] [1 1]]] [0 2] [0 3]]`. -/
+example : FragM (S := S) (Nomm.n6 (Nomm.n4 (Nomm.n6 (Nomm.n0 2) (Nomm.n1 (A 0)) (Nomm.n1 (A 1)))) (Nomm.n0 2)
+    (Nomm.n0 3)) :=
+  FragM.six (FragM.four (FragM.six (FragM.frag fun _ => trivial) (FragM.frag fun _ => trivial)
+    (FragM.frag fun _ => trivial))) (FragM.frag fun _ => trivial) (FragM.frag fun _ => trivial)
 
 /-- **The final pass meets the contract on `FragM`**, when the nomm has at
 most 255 `%6`, nothing is baked and the bell's cape has no `[| |]`. -/

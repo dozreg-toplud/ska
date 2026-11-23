@@ -187,3 +187,8 @@ open Formalization.SkaModel.Comp
 #print axioms runM_ok
 #print axioms finishLF_bellContractM
 #print axioms crash_iffM
+#print axioms unaryG_ok
+#print axioms runOKP_n4p
+#print axioms runOKP_n3p
+#print axioms runOKP_n7g
+#print axioms fragM_pure
