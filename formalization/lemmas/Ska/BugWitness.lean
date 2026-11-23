@@ -1,5 +1,7 @@
 import lemmas.Ska.Contract
 import lemmas.Ska.MinkTrace
+import lemmas.Ska.ContractExamples
+import lemmas.Ska.Theorems
 
 /-!
 # Two places where the analysis and `+mink` part ways
@@ -25,6 +27,13 @@ with the oracle that answers nothing, which satisfies every hypothesis of
    `[5 [11 [%spot 1 0] 0 0] 0]` the analysis's code crashes with an empty trace;
    `+mink` crashes with a `%spot` frame (`default_crash`).  With a loop or a
    blocking scry in place of the hint, `+mink` loops or blocks.
+3. **`%bare` loops in the interpreter.**  `fol-loop` makes `[11 %bare q]` the
+   indirect call `[%2 [%0 1] [%1 [11 %bare q]] ~]`, compiled to a `%nok` of
+   the formula itself on the subject.  Vere gives that formula to its plain
+   interpreter; `+eval-top` runs `%nok` by `+eval-top`, which compiles and
+   runs the same code again.  So `+eval-top` never returns on
+   `[11 %bare 1 42]`, which Nock reduces to `42` (`bare_loops`), and `Meek`
+   fails.  `+mink` itself runs its hint under `~> %bare`.
 -/
 
 namespace Formalization
@@ -107,6 +116,37 @@ theorem default_crash {lib : Lib} {N : Needs} {s gul : Noun} {c : Straight Map}
   rw [mink_fDefault lib gul s n r hn] at hrel
   cases hrel with
   | two hl => cases hl
+
+/-- The code that `fol-loop` and `+comp` make of `[11 %bare q]`: the formula
+in a register, an indirect call of it on the subject, its product returned. -/
+def selfNok (f : Noun) : Straight Map :=
+  oneBlock ⟨[], [Pole.imm f 1, Pole.nok 0 1 2], Termin.don 2⟩
+
+/-- **The third finding.**  A compiler that answers `%full s f` with the
+indirect call of `f` itself, from every state, makes the interpreter never
+return on `[s f]`, at any depth of calls. -/
+theorem bare_loops (lib : Lib) {σ : Type} (poke : σ → Ovum → Option (Prod Map × σ))
+    (s f₁ f₂ gul : Noun)
+    (hp : ∀ st, ∃ b new st', poke st (Ovum.full s (C f₁ f₂)) =
+      some (Prod.ir b (selfNok (Map := Map) (C f₁ f₂)) new, st')) :
+    ∀ k st, (interp lib poke k).nok st s (C f₁ f₂) gul = none := by
+  intro k
+  induction k with
+  | zero => intro st; rfl
+  | succ k ih =>
+    intro st
+    obtain ⟨b, new, st', hpk⟩ := hp st
+    simp only [interp]
+    rw [topBody_cell hpk rfl rfl]
+    rw [selfNok, execEntry_oneBlock, execBlob_body, execPole_imm, Option.bind_some]
+    simp only
+    rw [execBlob_body]
+    simp [execPole, read_store, read_put, ih]
+
+/-- Nock reduces `[11 %bare 1 42]` to `42`: `%bare` is
+`0x65726162`. -/
+theorem eval_bare (s : Noun) : EvalH s (n3 (A 11) (A 0x65726162) (quote (A 42))) (A 42) :=
+  EvalH.op11_atom EvalH.op1
 
 end
 
