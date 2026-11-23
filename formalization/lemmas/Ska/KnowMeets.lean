@@ -215,6 +215,141 @@ theorem darn_some (one two : Sock) {axe : Nat} (h0 : axe ≠ 0) : ∃ s, So.darn
       · exact ⟨_, rfl⟩
       · exact darnDown_some axe one two [] h0
 
+/-! ## A literal of `+know` knows exactly its noun -/
+
+theorem litAnno_only {v x z : Noun} (hx : lit (Nomm.n1 v) = some x) (hz : Fits (litAnno v).sock z) : z = x := by
+  simp only [lit, Option.some.injEq] at hx
+  subst hx
+  exact hz
+
+theorem lit_none_n1 {n : Nomm} {x : Noun} (hx : lit n = some x) (hn : ∀ v, n ≠ Nomm.n1 v) : False :=
+  hn x (lit_eq hx)
+
+/-- **A literal that `+know` returns knows exactly its noun.** -/
+theorem knowGo_lit (fold : Bool) (dat : Bell → Option Datum) (res : Bell → Sock → Option Bell) :
+    ∀ (nm : Nomm) (sub : Anno) (st : List Site) (r : (Nomm × Anno) × List Site),
+      knowGo fold dat res nm sub st = some r → ∀ x, lit r.1.1 = some x → ∀ z, Fits r.1.2.sock z → z = x := by
+  intro nm
+  induction nm with
+  | cons p q _ _ =>
+    intro sub st r h x hx z hz
+    simp only [knowGo, Option.bind_eq_some_iff] at h
+    obtain ⟨l, _, r1, _, h⟩ := h
+    split at h
+    · cases h; exact litAnno_only hx hz
+    · cases h; simp [lit] at hx
+  | n0 p =>
+    intro sub st r h x hx z hz
+    simp only [knowGo] at h
+    split at h
+    · cases h; simp [lit] at hx
+    · simp only [Option.map_eq_some_iff] at h
+      obtain ⟨prod, _, h⟩ := h
+      split at h
+      · rename_i d hk
+        cases h
+        simp only [lit, Option.some.injEq] at hx
+        subst hx
+        exact known_fits hk hz
+      · cases h; simp [lit] at hx
+  | n1 p =>
+    intro sub st r h x hx z hz
+    simp only [knowGo, Option.some.injEq] at h
+    subst h
+    exact litAnno_only hx hz
+  | n2 p q info _ _ =>
+    intro sub st r h x hx z hz
+    simp only [knowGo, Option.bind_eq_some_iff] at h
+    obtain ⟨s, _, f, _, h⟩ := h
+    split at h
+    · cases h; simp [lit] at hx
+    · simp only [Option.map_eq_some_iff] at h
+      obtain ⟨v, _, h⟩ := h
+      cases h; simp [lit] at hx
+  | n3 p _ =>
+    intro sub st r h x hx z hz
+    simp only [knowGo, Option.map_eq_some_iff] at h
+    obtain ⟨a, _, h⟩ := h
+    split at h
+    · cases h; exact litAnno_only hx hz
+    · cases h; simp [lit] at hx
+  | n4 p _ =>
+    intro sub st r h x hx z hz
+    simp only [knowGo, Option.map_eq_some_iff] at h
+    obtain ⟨a, _, h⟩ := h
+    split at h
+    · cases h; exact litAnno_only hx hz
+    · cases h; simp [lit] at hx
+  | n5 p q _ _ =>
+    intro sub st r h x hx z hz
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨a, _, b, _, h⟩ := h
+    split at h
+    · cases h; exact litAnno_only hx hz
+    · cases h; simp [lit] at hx
+  | n6 p q r0 _ ihq ihr =>
+    intro sub st r h x hx z hz
+    simp only [knowGo, Option.bind_eq_some_iff] at h
+    obtain ⟨a, _, h⟩ := h
+    split at h
+    · exact ihq _ _ _ h x hx z hz
+    · exact ihr _ _ _ h x hx z hz
+    · simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+      obtain ⟨b, _, c, _, rfl⟩ := h
+      simp [lit] at hx
+  | n7 p q ihp ihq =>
+    intro sub st r h x hx z hz
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨a, ha, b, hb, h⟩ := h
+    split at h
+    · rename_i hl _
+      cases h
+      rw [hl, Option.some.injEq] at hx
+      subst hx
+      exact hz
+    · cases h; simp [lit] at hx
+  | n10 ax v q _ _ =>
+    intro sub st r h x hx z hz
+    simp only [knowGo, Option.bind_eq_some_iff] at h
+    obtain ⟨a, _, b, _, h⟩ := h
+    split at h
+    · cases h; exact litAnno_only hx hz
+    · simp only [Option.map_eq_some_iff] at h
+      obtain ⟨s, _, h⟩ := h
+      cases h; simp [lit] at hx
+  | n11s tag q body ihq =>
+    intro sub st r h x hx z hz
+    simp only [knowGo, Option.map_eq_some_iff] at h
+    obtain ⟨a, ha, h⟩ := h
+    split at h
+    · rename_i hl
+      cases h
+      rw [hl, Option.some.injEq] at hx
+      subst hx
+      exact hz
+    · cases h; simp [lit] at hx
+  | n11d tag hh q body ihh ihq =>
+    intro sub st r h x hx z hz
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨a, ha, b, hb, h⟩ := h
+    split at h
+    · rename_i hl
+      cases h
+      rw [hl, Option.some.injEq] at hx
+      subst hx
+      exact hz
+    · cases h; simp [lit] at hx
+  | n12 p q _ _ =>
+    intro sub st r h x hx z hz
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨a, _, b, _, rfl⟩ := h
+    simp [lit] at hx
+  | mean p b q body k _ _ =>
+    intro sub st r h x hx z hz
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨a, _, v, _, c, _, rfl⟩ := h
+    simp [lit] at hx
+
 end Bake
 
 end SkaModel
