@@ -855,8 +855,22 @@ theorem passStep_ok {n : Nat} {mem : MemGo M R} {pass : PassGo M R} (hmem : MemP
     · obtain ⟨i4, s4, k4⟩ := hpass id index (p + 1) st3 low st' l3 rest i3 el3 e
       exact ⟨i4, gStepsR_trans s2 (gStepsR_trans s3 s4), (K3.weaken ⟨[id], rfl⟩ (fun _ h => h)).trans k4⟩
 
-theorem analyzeStep_ok {memoF : Memo M} (hmF : MemoWF memoF) {run : RunGo M R} {pass : PassGo M R}
-    (hrun : RunP run) (hpass : PassP pass) : AnaP (analyzeStep memoF run pass) := by
+/-- The cull before the first pass, then the pass loop, keep the invariant. -/
+theorem cullPass_ok {n : Nat} {pass : PassGo M R} (hpass : PassP pass) {id : Ident} {index : Nat}
+    {st st' : SkaState M R} {low : Nat} {ab0 rest : List Ident} (hi : SInv st)
+    (hs : st.stk = ab0 ++ id :: rest) (h : cullPass n pass id index st = some (low, st')) :
+    SInv st' ∧ GStepsR (gCore st.g) (gCore st'.g) ∧ Keep rest (· ∈ rest) st st' := by
+  unfold cullPass at h
+  simp only [Option.bind_eq_some_iff] at h
+  obtain ⟨st1, hc, h⟩ := h
+  obtain ⟨i1, s1, k1⟩ := cull_ok hi hc hs
+  obtain ⟨l1, el1⟩ := k1.1
+  obtain ⟨i2, s2, k2⟩ := hpass id index 1 st1 low st' l1 rest i1 el1 h
+  exact ⟨i2, gStepsR_trans s1 s2,
+    (k1.weaken ⟨[id], rfl⟩ (fun _ h => List.mem_cons_of_mem _ h)).trans k2⟩
+
+theorem analyzeStep_ok {n : Nat} {memoF : Memo M} (hmF : MemoWF memoF) {run : RunGo M R} {pass : PassGo M R}
+    (hrun : RunP run) (hpass : PassP pass) : AnaP (analyzeStep n memoF run pass) := by
   intro id st low st' hi hw hg e
   unfold analyzeStep at e
   split at e
@@ -881,12 +895,12 @@ theorem analyzeStep_ok {memoF : Memo M} (hmF : MemoWF memoF) {run : RunGo M R} {
       obtain ⟨_, rfl⟩ := e
       exact ⟨i2, S2, K2⟩
     · split at e
-      · obtain ⟨i3, s3, k3⟩ := hpass id st.next 1 st2 low st' l2 st.stk i2 el2' e
+      · obtain ⟨i3, s3, k3⟩ := cullPass_ok hpass i2 el2' e
         exact ⟨i3, gStepsR_trans S2 s3, K2.trans k3⟩
       · simp only [Option.bind_eq_some_iff] at e
         obtain ⟨ab, _, e⟩ := e
         split at e
-        · obtain ⟨i3, s3, k3⟩ := hpass id st.next 1 st2 low st' l2 st.stk i2 el2' e
+        · obtain ⟨i3, s3, k3⟩ := cullPass_ok hpass i2 el2' e
           exact ⟨i3, gStepsR_trans S2 s3, K2.trans k3⟩
         · simp only [Option.map_eq_some_iff] at e
           obtain ⟨st3, hp, e⟩ := e
