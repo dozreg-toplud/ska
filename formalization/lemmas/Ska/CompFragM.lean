@@ -374,6 +374,78 @@ theorem runOKN_n7 (lib : Lib) {p q : Nomm} {sur : Sure S} {th : Jmp} (hq : Frag 
         · rw [e']; exact goalSem_none _ (Sp.2 f)
         · rw [e']; exact ⟨fun fw => absurd fw x, fun _ => Sp.2 f⟩
 
+/-! ## The fragment -/
+
+/-- **The fragment with `%3`, `%4`, `%7` and `%6` nested in any order**: the
+nomms of `Frag` (for every goal), `[6 c a b]` with a test of `FragP` for
+`%pick` and branches of `FragM`, `[4 p]` and `[3 p]` with `p` in `FragM`, and
+`[7 p q]` with `q` in `Frag` and `p` in `FragM`. -/
+inductive FragM : Nomm → Prop
+  | frag {nm : Nomm} : (∀ goal : CGoal S, Frag nm goal) → FragM nm
+  | six {c a b : Nomm} : (∀ z o, FragP (S := S) (CGoal.pick z o) c) → FragM a → FragM b → FragM (Nomm.n6 c a b)
+  | four {p : Nomm} : FragM p → FragM (Nomm.n4 p)
+  | three {p : Nomm} : FragM p → FragM (Nomm.n3 p)
+  | seven {p q : Nomm} : (∀ goal : CGoal S, Frag q goal) → FragM p → FragM (Nomm.n7 p q)
+
+/-- **`runL` meets the relations on `FragM`**: `RunOKP` for `%done` and
+`RunOKN` for every fork-free goal `%next` whose jump has no arguments, when
+the nomm has at most 255 `%6`. -/
+theorem runM_ok (lib : Lib) {nm : Nomm} (hf : FragM (S := S) nm) :
+    OKP (Map := Map) lib (CGoal.done : CGoal S) nm ∧ NextOK (S := S) (Map := Map) lib nm := by
+  induction hf with
+  | frag hf =>
+    exact ⟨fun hg hj _ b0 d0 hu h => runOKP_frag lib (hf _) hg hj b0 d0 hu h,
+      fun hj _ hok hcl _ b0 d0 hu h => runOKN_frag lib (hf _) hj b0 d0 hu hok hcl h⟩
+  | @six c a b hc _ _ iha ihb =>
+    have hcp := fragP_pure (hc (jmp0 0) (jmp0 0))
+    exact ⟨sixP_ok lib hcp (fun z o => runP_ok lib (hc z o)) iha.1 ihb.1,
+      fun hj hth hok hcl hcount b0 d0 hu h => sixNext_okN lib hcp
+        (fun z o _ _ _ _ hj' hc' b' d' u' h' => runP_ok lib (hc z o) trivial hj' hc' b' d' u' h')
+        iha.2 ihb.2 hj hth hok hcl hcount b0 d0 hu h⟩
+  | four _ ih =>
+    exact ⟨fun _ _ hcount b0 d0 hu h => runOKP_n4 lib ih.2 (by simpa only [sixCount] using hcount) b0 d0 hu h,
+      fun hj _ _ _ hcount b0 d0 hu h => runOKN_n4 lib ih.2 hj (by simpa only [sixCount] using hcount) b0 d0 hu h⟩
+  | three _ ih =>
+    exact ⟨fun _ _ hcount b0 d0 hu h => runOKP_n3 lib ih.2 (by simpa only [sixCount] using hcount) b0 d0 hu h,
+      fun hj hth hok hcl hcount b0 d0 hu h =>
+        runOKN_n3 lib ih.2 hj hth hok hcl (by simpa only [sixCount] using hcount) b0 d0 hu h⟩
+  | seven hq _ ih =>
+    exact ⟨fun _ _ hcount b0 d0 hu h => runOKP_n7 lib (hq _) ih.2 (by simp only [sixCount] at hcount; omega)
+        b0 d0 hu h,
+      fun hj hth hok hcl hcount b0 d0 hu h => runOKN_n7 lib (hq _) ih.2 hj hth hok hcl
+        (by simp only [sixCount] at hcount; omega) b0 d0 hu h⟩
+
+/-- The example of the header: `[4 [6 [0 2] [3 [6 [0 6] [1 1] [0 7]]] [4 [0 3]]]]`
+is in `FragM`. -/
+example : FragM (S := S) (Nomm.n4 (Nomm.n6 (Nomm.n0 2) (Nomm.n3 (Nomm.n6 (Nomm.n0 6) (Nomm.n1 (A 1)) (Nomm.n0 7)))
+    (Nomm.n4 (Nomm.n0 3)))) :=
+  FragM.four (FragM.six (fun _ _ => FragP.frag trivial)
+    (FragM.three (FragM.six (fun _ _ => FragP.frag trivial) (FragM.frag fun _ => trivial) (FragM.frag fun _ => trivial)))
+    (FragM.frag fun goal => by cases goal <;> exact fun _ _ => trivial))
+
+/-- **The final pass meets the contract on `FragM`**, when the nomm has at
+most 255 `%6`, nothing is baked and the bell's cape has no `[| |]`. -/
+theorem finishLF_bellContractM {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
+    {bl : Bell} {nm : Nomm} (hp : nm.pure = true) (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol nm)
+    (hf : FragM (S := S) nm) (hcount : sixCount nm ≤ 255) {cape : Cape} {data : Noun}
+    (hbl : bl.less = Sock.mk cape data) (hn : CapeNorm cape) {ord : NeedOrd}
+    {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
+    (h : finishLF (S := S) nm ord cape bake = some c') (N : Needs) : BellContract lib N bl false c' :=
+  finishLF_bellContractR hok hp hA
+    (fun h1 => (runM_ok lib hf).1 trivial trivial hcount (by simp [gen0]) rfl upBelow_gen0 h1) hbl hn hbake h N
+
+/-- **The compiled code of a nomm of `FragM` crashes exactly when the nomm
+does**, on every subject that has the axes the cape says it has. -/
+theorem crash_iffM (lib : Lib) {nm : Nomm} (hf : FragM (S := S) nm) (hcount : sixCount nm ≤ 255)
+    {ord : NeedOrd} {less : Cape} {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, []))
+    {c' : Straight Map} (h : finishLF (S := S) nm ord less bake = some c') {σ : Type} (O : Oracle σ) (st : σ)
+    (s : Noun) (args : List Noun) (t : Trace) (gul : Noun) (hP : CapeAxes less s)
+    (hsp : SkaModel.split c'.need s = some args) :
+    (execEntry lib O st c' args t gul = some (Tone.two t, st) ↔ pureEval nm s = none) ∧
+    ∀ v, execEntry lib O st c' args t gul = some (Tone.zero v, st) ↔ pureEval nm s = some v :=
+  crash_iffR lib (fun h1 => (runM_ok lib hf).1 trivial trivial hcount (by simp [gen0]) rfl upBelow_gen0 h1)
+    hbake h O st s args t gul hP hsp
+
 end Comp
 end SkaModel
 end Formalization
