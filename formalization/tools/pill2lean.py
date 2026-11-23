@@ -1137,8 +1137,18 @@ def main():
         formulas.add(g)
         axes.append((lname, int_arms[a], '∀ x, slot? %s.axis (C interp.battery x) = some %s.arm'
                      % (lname, lname)))
+        if lname == 'eval_pole':
+            # the gate of the alias `load`, which runs +read
+            loads = set(door_gate_battery(i) for i in reach([g]) if is_gate_builder(i)
+                        and [x for x, _ in pulls(door_gate_battery(i))] == [int_arms[rd]])
+            (ld,) = loads
+            name(ld, 'eval_pole.load')
+            formulas.add(ld)
     name(head(interp), 'interp.battery')
     IN_BULK.add('interp.battery')
+    # the core of +poke that the interpreter threads, as the pill builds it
+    name(tail(interp), 'cor')
+    facts.append(('interp_cor', 'slot? 3 interp = some cor'))
 
     # ---- write
     emit_all(outdir, names, formulas, axes, facts, root, core, steps, sha, len(data))
@@ -1161,7 +1171,7 @@ def main():
 # change regenerates to the same text.
 
 BULK = {'root', 'nok', 'trap', 'core', 'layer0', 'layer1', 'layer2', 'layer3', 'layer4', 'lib',
-        'ana', 'interp'}
+        'ana', 'interp', 'cor'}
 IN_BULK = set()      # names of other families that belong to the bulk
 
 CHUNK_MIN = 1000     # bulk definitions per chain file, at least

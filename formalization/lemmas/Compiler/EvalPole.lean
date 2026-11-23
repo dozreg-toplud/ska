@@ -1,5 +1,6 @@
 import lemmas.Compiler.EvalPass
 import lemmas.Pill.Arm.Eval_pole
+import lemmas.Compiler.Mink
 
 /-!
 `+eval-pole` of the interpreter core against `localPole` of
@@ -67,7 +68,15 @@ macro "pole_simp" : tactic => `(tactic|
    simp [nock_exec, nock_ite, Pole.toNoun, Tag.imm, Tag.mov, Tag.inc, Tag.con, Tag.hed, Tag.tal,
      Tag.cel, Tag.lob, Tag.equ, Tag.hsp, Tag.hse, Tag.hdp, Tag.hde, Tag.hmp, Tag.hme, Tag.hcp,
      Tag.hce, Tag.meac, store_arm, read_arm, move_arm, localPole, poleOut, Tone.toNoun, listNoun,
-     Frame.toNoun, popTrace, *]))
+     Tag.spy, Tag.hunk, Frame.toNoun, popTrace, scryDecode, *]))
+
+/-- The gate of the alias `load` of `+eval-pole`, which runs `+read` on the
+registers of the gate's sample. -/
+theorem eval_pole_load (ctx : Noun) (hrd : slot? read.axis ctx = some read.arm)
+    (hrc : RegsIn mugF ctx) (regs : TreapMap mugF Noun) (B P T Y : Noun) (r : Nat) :
+    nock (C eval_pole.load (C (A r) (C B (C (C P (C (C (HoonMap.toNoun id regs) T) Y)) ctx))))
+      eval_pole.load = SkaModel.read r regs := by
+  nock_open eval_pole.load; simp [nock_exec, hrd, read_arm, read_model ctx hrc]
 
 set_option maxHeartbeats 2000000 in
 /-- `+eval-pole` on an op that changes only the registers and the trace. -/
@@ -83,6 +92,7 @@ theorem eval_pole_local (ctx cor : Noun) (hcor : slot? 3 ctx = some cor) (hc : E
   have hsm := store_model ctx hrc
   have hrm := read_model ctx hrc
   have hmm := move_model ctx ⟨hrd, hst, hrc⟩
+  have hld := eval_pole_load ctx hrd hrc regs
   cases pole with
   | imm n d => pole_simp
   | mov s d => cases e : SkaModel.move s d regs <;> pole_simp
@@ -128,6 +138,95 @@ theorem eval_pole_local (ctx cor : Noun) (hcor : slot? 3 ctx = some cor) (hc : E
   | hcp n f => pole_simp
   | hce n f => cases trace <;> pole_simp
   | _ => simp [PlainLocal] at hp
+
+theorem mapM_map_A {β : Type} (g : Noun → Option β) (h : Nat → Option β)
+    (hg : ∀ r, g (A r) = h r) : ∀ v : List Nat, (v.map A).mapM g = v.mapM h
+  | [] => rfl
+  | r :: v => by simp [List.mapM_cons, hg, mapM_map_A g h hg v]
+
+set_option maxHeartbeats 2000000 in
+/-- `+eval-pole` on `%hmp`, which pushes a deferred `%mean` with the values of
+its registers, read by `+turn` of layer 2. -/
+theorem eval_pole_hmp (ctx cor : Noun) (hcor : slot? 3 ctx = some cor) (hc : EvalPoleIn ctx)
+    (l2 : Noun) (hl2 : slot? read.layer2.axis ctx = some l2)
+    (hturn : slot? turn.axis l2 = some turn.arm) (hhomo : HomoIn l2)
+    (lib : Lib) (scry : Noun) (a : Bell) (v : List Nat) (f : Noun) (regs : TreapMap mugF Noun)
+    (trace : Trace) :
+    nock (C eval_pole.battery (C (C (Pole.hmp a v f).toNoun
+        (C (C (HoonMap.toNoun id regs) (listNoun Frame.toNoun trace)) scry)) ctx)) eval_pole.battery
+      = (localPole lib scry (Pole.hmp a v f) regs trace).map (poleOut cor) := by
+  obtain ⟨hmv, hmc⟩ := hc
+  have hrc : RegsIn mugF ctx := hmc.2.2
+  obtain ⟨hrd, hst, _⟩ := hmc
+  have hrm := read_model ctx hrc
+  have hld := eval_pole_load ctx hrd hrc regs
+  have ht : ∀ (B P T Y : Noun),
+      nock (C turn.battery (C (C (listN (v.map A)) (C eval_pole.load (C (A 0)
+        (C B (C (C P (C (C (HoonMap.toNoun id regs) T) Y)) ctx))))) l2)) turn.battery
+        = (v.mapM (fun r => SkaModel.read r regs)).map listN := by
+    intro B P T Y
+    rw [turn_gate_mapM l2 hhomo _ _ _
+      (fun x => match x with | Noun.atom r => SkaModel.read r regs | _ => none) _ (by
+        intro x hx; obtain ⟨r, _, rfl⟩ := List.mem_map.1 hx; exact hld B P T Y r)]
+    rw [mapM_map_A _ (fun r => SkaModel.read r regs) (fun r => rfl)]
+  cases e : v.mapM (fun r => SkaModel.read r regs) <;>
+    (nock_open eval_pole.battery
+     simp [nock_exec, Pole.toNoun, Tag.imm, Tag.mov, Tag.inc, Tag.con, Tag.hed, Tag.tal,
+       Tag.cel, Tag.lob, Tag.equ, Tag.hsp, Tag.hse, Tag.hdp, Tag.hde, Tag.hmp, Tag.meaf,
+       localPole, poleOut, Tone.toNoun, listNoun, Frame.toNoun, listNoun_eq_listN, hcor, hl2,
+       hturn, turn_arm, ht, e])
+
+set_option maxHeartbeats 2000000 in
+/-- `+eval-pole` on `%spy`, which slams the scry gate on the values of two
+registers, given that `lib.slam` is Nock's slam. -/
+theorem eval_pole_spy (ctx cor : Noun) (hcor : slot? 3 ctx = some cor) (hc : EvalPoleIn ctx)
+    (lib : Lib) (hslam : SlamIsNock lib) (scry : Noun) (e p d : Nat) (regs : TreapMap mugF Noun)
+    (trace : Trace) :
+    nock (C eval_pole.battery (C (C (Pole.spy e p d).toNoun
+        (C (C (HoonMap.toNoun id regs) (listNoun Frame.toNoun trace)) scry)) ctx)) eval_pole.battery
+      = (localPole lib scry (Pole.spy e p d) regs trace).map (poleOut cor) := by
+  obtain ⟨hmv, hmc⟩ := hc
+  have hrc : RegsIn mugF ctx := hmc.2.2
+  obtain ⟨hrd, hst, _⟩ := hmc
+  have hsm := store_model ctx hrc
+  have hld := eval_pole_load ctx hrd hrc regs
+  by_cases hs0 : scry = A 0
+  · subst hs0; pole_simp
+  have hs0' : ¬ A 0 = scry := Ne.symm hs0
+  cases e1 : SkaModel.read e regs with
+  | none => pole_simp
+  | some ref =>
+  cases e2 : SkaModel.read p regs with
+  | none => pole_simp
+  | some pax =>
+  have hsl := hslam scry (C ref pax)
+  cases hr : slamGate nock scry (C ref pax) with
+  | none => have hr' := hr; unfold slamGate at hr'; pole_simp
+  | some res =>
+    have hr' := hr
+    unfold slamGate at hr'
+    rcases res with a | ⟨h, a | ⟨h2, v⟩⟩
+    · rcases a with _ | a <;> pole_simp
+    · rcases a with _ | a <;> pole_simp
+    · pole_simp
+
+/-! ## On the pill's interpreter core, with its own `cor` -/
+
+theorem evalPoleIn_interp : EvalPoleIn interp := ⟨move.arm_at, moveIn_interp⟩
+
+/-- Every local op of `+eval-pole`, on the pill's interpreter core. -/
+theorem eval_pole_local_pill (lib : Lib) (hslam : SlamIsNock lib) (scry : Noun) (pole : Pole)
+    (hp : PlainLocal pole ∨ (∃ a v f, pole = Pole.hmp a v f) ∨ (∃ e p d, pole = Pole.spy e p d))
+    (regs : TreapMap mugF Noun) (trace : Trace) :
+    nock (C eval_pole.battery (C (C pole.toNoun
+        (C (C (HoonMap.toNoun id regs) (listNoun Frame.toNoun trace)) scry)) interp))
+        eval_pole.battery
+      = (localPole lib scry pole regs trace).map (poleOut cor) := by
+  rcases hp with hp | ⟨a, v, f, rfl⟩ | ⟨e, p, d, rfl⟩
+  · exact eval_pole_local interp cor interp_cor evalPoleIn_interp lib scry pole hp regs trace
+  · exact eval_pole_hmp interp cor interp_cor evalPoleIn_interp layer2 read.layer2.arm_at
+      turn.arm_at homoIn_layer2 lib scry a v f regs trace
+  · exact eval_pole_spy interp cor interp_cor evalPoleIn_interp lib hslam scry e p d regs trace
 
 end Compiler
 end Formalization

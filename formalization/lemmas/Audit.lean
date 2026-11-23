@@ -255,3 +255,4 @@ open Formalization
 #print axioms Compiler.move_pill
 #print axioms Compiler.eval_pass_pill
 #print axioms Compiler.eval_pole_local
+#print axioms Compiler.eval_pole_local_pill

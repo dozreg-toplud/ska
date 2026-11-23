@@ -223,6 +223,8 @@ theorem core_ana : slot? 2047 core = some ana := by kernel_rfl
 
 theorem core_interp : slot? 3 core = some interp := by kernel_rfl
 
+theorem interp_cor : slot? 3 interp = some cor := by kernel_rfl
+
 /-! Each named arm sits at its axis.  The constants `x.axis` are in the
 arm files. -/
 
