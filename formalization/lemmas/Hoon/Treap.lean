@@ -1,5 +1,6 @@
-import lemmas.Hoon.MapModel
+module
 
+public import lemmas.Hoon.MapModel
 /-!
 What the models of `Hoon/MapModel.lean` do to a map.
 
@@ -8,6 +9,8 @@ for any `mug`.  `putF` on a map that satisfies `IsMap` returns a map that
 satisfies `IsMap`, and its pairs are the old ones with the key `k` rebound
 to `v`.
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Hoon
@@ -519,3 +522,5 @@ theorem putF_spec (mug : Noun → Nat) (a k v : Noun) (h : IsMap mug a) :
 
 end Hoon
 end Formalization
+
+end

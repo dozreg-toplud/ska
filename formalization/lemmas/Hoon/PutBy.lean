@@ -1,7 +1,9 @@
-import lemmas.Hoon.Order
-import lemmas.Hoon.Treap
-import lemmas.Pill.Arm.By
+module
 
+public import lemmas.Hoon.Order
+public import lemmas.Hoon.Treap
+public import lemmas.Pill.Arm.By
+import all lemmas.Pill.Arm.By
 /-!
 `+put:by` of the pill's `hoon.hoon` inserts into a map.
 
@@ -38,6 +40,8 @@ gate reads `+gor` and `+mor` from `c` (`GorIn mug c ∧ MorIn mug c`), and
 through them `+mug`: slamming the `+mug` gate of `c` on any noun ends with an
 atom, and `mug` names that atom.  Nothing else about the hash is used.
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Hoon
@@ -96,3 +100,5 @@ theorem put_by {mug : Noun → Nat} (ctx : Noun) (hc : GorIn mug ctx ∧ MorIn m
 
 end Hoon
 end Formalization
+
+end

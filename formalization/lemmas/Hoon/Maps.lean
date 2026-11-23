@@ -1,6 +1,9 @@
-import lemmas.Hoon.PutBy
-import lemmas.Pill.Arm.Some
+module
 
+public import lemmas.Hoon.PutBy
+public import lemmas.Pill.Arm.Some
+import all lemmas.Pill.Arm.Some
+import all lemmas.Pill.Arm.By
 /-!
 `+get:by` and `+has:by` of the pill's `hoon.hoon` look a key up in a map.
 
@@ -28,6 +31,8 @@ As for `+put:by`, `get_loop` shows that the Nock computes the model `getF`,
 and `getF_some`, `getF_none` show what `getF` returns on a map.  The gate of
 `+get:by` reads `+gor` and `+some` from the context of the door.
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Hoon
@@ -159,3 +164,5 @@ theorem has_by {mug : Noun → Nat} (ctx : Noun) (hc : SomeIn ctx ∧ GorIn mug 
 
 end Hoon
 end Formalization
+
+end

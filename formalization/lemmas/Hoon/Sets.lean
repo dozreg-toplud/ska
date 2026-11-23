@@ -1,6 +1,8 @@
-import lemmas.Hoon.Maps
-import lemmas.Pill.Arm.In
+module
 
+public import lemmas.Hoon.Maps
+public import lemmas.Pill.Arm.In
+import all lemmas.Pill.Arm.In
 /-!
 `+put:in` and `+has:in` of the pill's `hoon.hoon`: insertion into and lookup
 in a set.
@@ -49,6 +51,8 @@ same keys and the value `~`: `IsSet` is `IsMap` of that map, and `Has a k` is
 `Get (toMap a) k ~`.  The models `putInF` and `hasInF` agree with `putF` and
 `getF` on that map, which carries the results of `Treap.lean` over.
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Hoon
@@ -347,3 +351,5 @@ theorem has_in {mug : Noun → Nat} (ctx : Noun) (hc : GorIn mug ctx) (a k : Nou
 
 end Hoon
 end Formalization
+
+end

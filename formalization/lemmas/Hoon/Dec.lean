@@ -1,6 +1,8 @@
-import lemmas.Hoon.Basic
-import lemmas.Pill.Arm.Dec
+module
 
+public import lemmas.Hoon.Basic
+public import lemmas.Pill.Arm.Dec
+import all lemmas.Pill.Arm.Dec
 /-!
 `+dec` of the pill's `hoon.hoon`, proved against `Nat` subtraction.
 
@@ -20,6 +22,8 @@ The gate reads nothing from its context, so the theorems hold for every
 context `c`.  The nouns `dec.arm`, `dec.battery` and `dec.loop` are the ones
 in the pill (`Pill/Nouns.lean`).
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Hoon
@@ -86,3 +90,5 @@ theorem dec_gate_zero_eval (c : Noun) (p : Noun) :
 
 end Hoon
 end Formalization
+
+end

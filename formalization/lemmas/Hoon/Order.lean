@@ -1,10 +1,14 @@
-import lemmas.Hoon.Arith
-import lemmas.Hoon.MapModel
-import lemmas.Pill.Arm.Dor
-import lemmas.Pill.Arm.Gor
-import lemmas.Pill.Arm.Mor
-import lemmas.Pill.Arm.Mug
+module
 
+public import lemmas.Hoon.Arith
+public import lemmas.Hoon.MapModel
+public import lemmas.Pill.Arm.Dor
+public import lemmas.Pill.Arm.Gor
+public import lemmas.Pill.Arm.Mor
+public import lemmas.Hoon.MugSpec
+import all lemmas.Pill.Arm.Dor
+import all lemmas.Pill.Arm.Gor
+import all lemmas.Pill.Arm.Mor
 /-!
 The noun orders of the pill's `hoon.hoon` compute their Lean models: `+dor`
 is `dorF`, and, given what `+mug` computes, `+gor` is `gorF` and `+mor` is
@@ -14,20 +18,14 @@ The three arms live in the library's second layer and reach `+lth` in the
 first layer, which is the tail of their context (`Below LthIn c`).
 -/
 
+@[expose] public section
+
 namespace Formalization
 namespace Hoon
 
 open Nock Pill
 
 /-! ## What the gates read from their context -/
-
-/-- What the proofs need from `+mug`: slamming its gate, with context `c`, on
-any noun ends with an atom, and `mug a` is that atom. -/
-abbrev MugSpec (mug : Noun → Nat) (c : Noun) : Prop :=
-  ∀ a : Noun, nock (C Pill.mug.battery (C a c)) Pill.mug.battery = some (A (mug a))
-
-abbrev MugIn (mug : Noun → Nat) (c : Noun) : Prop :=
-  slot? Pill.mug.axis c = some Pill.mug.arm ∧ MugSpec mug c
 
 abbrev DorIn (c : Noun) : Prop := slot? dor.axis c = some dor.arm ∧ Below LthIn c
 
@@ -42,10 +40,6 @@ abbrev MorIn (mug : Noun → Nat) (c : Noun) : Prop :=
 @[nock_exec] theorem dor_arm (c : Noun) :
     nock c dor.arm = some (C dor.battery (C (C (A 0) (A 0)) c)) := by
   nock_open dor.arm; simp only [nock_exec]
-
-@[nock_exec] theorem mug_arm (c : Noun) :
-    nock c Pill.mug.arm = some (C Pill.mug.battery (C (A 0) c)) := by
-  nock_open Pill.mug.arm; simp only [nock_exec]
 
 @[nock_exec] theorem gor_arm (c : Noun) :
     nock c gor.arm = some (C gor.battery (C (C (A 0) (A 0)) c)) := by
@@ -131,3 +125,5 @@ theorem mor_gate {mug : Noun → Nat} (c : Noun) (hc : MugIn mug c ∧ DorIn c) 
 
 end Hoon
 end Formalization
+
+end

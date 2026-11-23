@@ -1,17 +1,30 @@
-import lemmas.Hoon.Dec
-import lemmas.Pill.Arm.Add
-import lemmas.Pill.Arm.Sub
-import lemmas.Pill.Arm.Mul
-import lemmas.Pill.Arm.Lth
-import lemmas.Pill.Arm.Lte
-import lemmas.Pill.Arm.Gte
-import lemmas.Pill.Arm.Gth
-import lemmas.Pill.Arm.Max
-import lemmas.Pill.Arm.Min
-import lemmas.Pill.Arm.Dvr
-import lemmas.Pill.Arm.Div
-import lemmas.Pill.Arm.Mod
+module
 
+public import lemmas.Hoon.Dec
+public import lemmas.Pill.Arm.Add
+public import lemmas.Pill.Arm.Sub
+public import lemmas.Pill.Arm.Mul
+public import lemmas.Pill.Arm.Lth
+public import lemmas.Pill.Arm.Lte
+public import lemmas.Pill.Arm.Gte
+public import lemmas.Pill.Arm.Gth
+public import lemmas.Pill.Arm.Max
+public import lemmas.Pill.Arm.Min
+public import lemmas.Pill.Arm.Dvr
+public import lemmas.Pill.Arm.Div
+public import lemmas.Pill.Arm.Mod
+import all lemmas.Pill.Arm.Add
+import all lemmas.Pill.Arm.Sub
+import all lemmas.Pill.Arm.Mul
+import all lemmas.Pill.Arm.Lth
+import all lemmas.Pill.Arm.Lte
+import all lemmas.Pill.Arm.Gte
+import all lemmas.Pill.Arm.Gth
+import all lemmas.Pill.Arm.Max
+import all lemmas.Pill.Arm.Min
+import all lemmas.Pill.Arm.Dvr
+import all lemmas.Pill.Arm.Div
+import all lemmas.Pill.Arm.Mod
 /-!
 The unsigned arithmetic and comparison arms of the pill's `hoon.hoon`, against
 `Nat`:
@@ -34,6 +47,8 @@ of what the gate reads (`AddIn`, `LthIn`, ...).  All the arms live in the
 library's first layer, and `layer1` satisfies every predicate
 (`arith_layer1` in `Layer1.lean`).
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Hoon
@@ -352,3 +367,5 @@ theorem mod_gate_zero (c : Noun) (hc : DvrIn c) (a : Nat) :
 
 end Hoon
 end Formalization
+
+end

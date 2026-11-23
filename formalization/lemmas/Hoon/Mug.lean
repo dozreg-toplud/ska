@@ -1,7 +1,9 @@
-import lemmas.Hoon.Muk
-import lemmas.Hoon.Order
-import lemmas.Pill.Arm.Mug
+module
 
+public import lemmas.Hoon.Muk
+public import lemmas.Hoon.Order
+public import lemmas.Pill.Arm.Mug
+import all lemmas.Pill.Arm.Mug
 /-!
 `+mug` of the pill's `hoon.hoon` computes the Lean model `mugF`, which
 discharges the assumption `MugSpec` of `+gor`, `+mor`, `+put:by` and the map
@@ -34,6 +36,8 @@ As in `Muk.lean`, the recursions of the models go through generic combinators
 (`retry`, `foldNoun`), so that no equation lemma of a recursive definition
 sees the hash constants.
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Hoon
@@ -174,3 +178,5 @@ theorem mug_spec (c : Noun) (hc : MugNeeds c) : MugSpec mugF c := by
 
 end Hoon
 end Formalization
+
+end

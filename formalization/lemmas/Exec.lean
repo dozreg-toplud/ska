@@ -1,7 +1,8 @@
-import Lean
-import lemmas.Run
-import lemmas.Attr
+module
 
+public import Lean
+public import lemmas.Run
+public import lemmas.Attr
 /-!
 Symbolic execution of Nock with `simp`.
 
@@ -16,6 +17,8 @@ Formulas that are constants stay closed: `nock subject dec.loop` is not
 rewritten until a proof opens `dec.loop` or supplies a lemma about it.  That
 keeps recursion from unfolding forever.
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Nock
@@ -80,7 +83,7 @@ theorem edit?_right {k : Nat} {r s x y : Noun} (h : slot? k s = some (C x y)) :
 open Lean Meta
 
 /-- What sits at an axis of a subject expression. -/
-inductive Found where
+meta inductive Found where
   /-- `noun` with a proof of `slot? axis subject = some noun` -/
   | noun (noun proof : Expr)
   /-- the path runs into an atom; a proof of `slot? axis subject = some (A a)` one level up
@@ -90,7 +93,7 @@ inductive Found where
   | stuck
 
 /-- Walk `subject` to `axis` (which is at least 1). -/
-partial def findSlot (subject : Expr) (axis : Nat) : MetaM Found := do
+meta partial def findSlot (subject : Expr) (axis : Nat) : MetaM Found := do
   if axis == 1 then
     return .noun subject (mkApp (mkConst ``slot?_one) subject)
   let k := axis / 2
@@ -115,12 +118,12 @@ partial def findSlot (subject : Expr) (axis : Nat) : MetaM Found := do
     else
       return .stuck
 
-def optionNoun : Expr := mkApp (mkConst ``Option [Level.zero]) (mkConst ``Noun)
+meta def optionNoun : Expr := mkApp (mkConst ``Option [Level.zero]) (mkConst ``Noun)
 
-def someNoun (noun : Expr) : Expr :=
+meta def someNoun (noun : Expr) : Expr :=
   mkApp2 (mkConst ``Option.some [Level.zero]) (mkConst ``Noun) noun
 
-def noneNoun : Expr := mkApp (mkConst ``Option.none [Level.zero]) (mkConst ``Noun)
+meta def noneNoun : Expr := mkApp (mkConst ``Option.none [Level.zero]) (mkConst ``Noun)
 
 /-- `slot? axis subject` for a literal axis of at least 2. -/
 simproc [nock_exec] slotLit (slot? _ _) := fun e => do
@@ -139,7 +142,7 @@ simproc [nock_exec] slotLit (slot? _ _) := fun e => do
     return .done { expr := noneNoun, proof? := some proof }
 
 /-- `edit? axis replacement subject = some out`, with the proof. -/
-partial def findEdit (replacement subject : Expr) (axis : Nat) :
+meta partial def findEdit (replacement subject : Expr) (axis : Nat) :
     MetaM (Option (Expr × Expr)) := do
   if axis == 1 then
     return some (replacement, mkApp2 (mkConst ``edit?_one) replacement subject)
@@ -202,3 +205,5 @@ macro_rules
 
 end Nock
 end Formalization
+
+end

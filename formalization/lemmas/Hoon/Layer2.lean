@@ -1,13 +1,16 @@
-import lemmas.Hoon.Layer1
-import lemmas.Hoon.Mug
-import lemmas.Hoon.Sets
-import lemmas.Hoon.Lists
+module
 
+public import lemmas.Hoon.Layer1
+public import lemmas.Hoon.Mug
+public import lemmas.Hoon.Sets
+public import lemmas.Hoon.Lists
 /-!
 The pill's second layer satisfies the predicates of its arms, and the
 theorems about the orders, maps and sets hold there with no assumption: the
 hash is `mugF`, which the pill's `+mug` computes (`mug_layer2`).
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Hoon
@@ -104,3 +107,5 @@ theorem has_in_pill (a k : Noun) (h : IsSet mugF a) :
 
 end Hoon
 end Formalization
+
+end

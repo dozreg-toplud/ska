@@ -1,16 +1,28 @@
-import lemmas.Hoon.Arith
-import lemmas.Pill.Arm.Lent
-import lemmas.Pill.Arm.Weld
-import lemmas.Pill.Arm.Flop
-import lemmas.Pill.Arm.Homo
-import lemmas.Pill.Arm.Snag
-import lemmas.Pill.Arm.Scag
-import lemmas.Pill.Arm.Slag
-import lemmas.Pill.Arm.Turn
-import lemmas.Pill.Arm.Roll
-import lemmas.Pill.Arm.Levy
-import lemmas.Pill.Arm.Lien
+module
 
+public import lemmas.Hoon.Arith
+public import lemmas.Pill.Arm.Lent
+public import lemmas.Pill.Arm.Weld
+public import lemmas.Pill.Arm.Flop
+public import lemmas.Pill.Arm.Homo
+public import lemmas.Pill.Arm.Snag
+public import lemmas.Pill.Arm.Scag
+public import lemmas.Pill.Arm.Slag
+public import lemmas.Pill.Arm.Turn
+public import lemmas.Pill.Arm.Roll
+public import lemmas.Pill.Arm.Levy
+public import lemmas.Pill.Arm.Lien
+import all lemmas.Pill.Arm.Lent
+import all lemmas.Pill.Arm.Weld
+import all lemmas.Pill.Arm.Flop
+import all lemmas.Pill.Arm.Homo
+import all lemmas.Pill.Arm.Snag
+import all lemmas.Pill.Arm.Scag
+import all lemmas.Pill.Arm.Slag
+import all lemmas.Pill.Arm.Turn
+import all lemmas.Pill.Arm.Roll
+import all lemmas.Pill.Arm.Levy
+import all lemmas.Pill.Arm.Lien
 /-!
 The list arms of the pill's `hoon.hoon`, against `List Noun`:
 
@@ -35,6 +47,8 @@ theorems assume what slamming `b` does on the elements of the list:
 `nock (C bp (C x bc)) bp = some (f x)`, which is what `+turn` runs when it
 slams `b` on `x`.
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Hoon
@@ -396,3 +410,5 @@ theorem lien_gate (c bp bs bc : Noun) (p : Noun → Bool) (l : List Noun)
 
 end Hoon
 end Formalization
+
+end

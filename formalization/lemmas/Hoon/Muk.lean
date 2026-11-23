@@ -1,7 +1,10 @@
-import lemmas.Hoon.Bits
-import lemmas.Pill.Arm.Fe
-import lemmas.Pill.Arm.Muk
+module
 
+public import lemmas.Hoon.Bits
+public import lemmas.Pill.Arm.Fe
+public import lemmas.Pill.Arm.Muk
+import all lemmas.Pill.Arm.Fe
+import all lemmas.Pill.Arm.Muk
 /-!
 `+muk` of the pill's `hoon.hoon` (murmur3, as `+mug` uses it), and the arms
 `sit`, `sum`, `rol` of the door `+fe` that it builds with `~(. fe 5)`.
@@ -22,6 +25,8 @@ import lemmas.Pill.Arm.Muk
 The models are the Hoon read as Lean functions on `Nat`; nothing here claims
 that they are murmur3.
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Hoon
@@ -290,3 +295,5 @@ theorem muk_gate (c : Noun) (hc : MukNeeds c) (syd len key : Nat) :
 
 end Hoon
 end Formalization
+
+end

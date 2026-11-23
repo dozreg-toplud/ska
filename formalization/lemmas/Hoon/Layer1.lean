@@ -1,12 +1,15 @@
-import lemmas.Hoon.Arith
-import lemmas.Pill.Facts
+module
 
+public import lemmas.Hoon.Arith
+public import lemmas.Pill.Facts
 /-!
 The pill's first layer satisfies the predicates of the arithmetic arms.  This
 file and `Layer2.lean` are the only theorem files that import the pill's bulk
 and `Facts.lean`: a change elsewhere in the pill rebuilds them and leaves the
 gate theorems alone.
 -/
+
+@[expose] public section
 
 namespace Formalization
 namespace Hoon
@@ -35,3 +38,5 @@ theorem arith_layer1 :
 
 end Hoon
 end Formalization
+
+end
