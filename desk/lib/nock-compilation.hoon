@@ -9704,14 +9704,14 @@
   =/  code=straight-out  p.p
   ?>  =(1 n-args.code)
   ?>  =([%this ~] need.code)
-  =/  regs=(map @uvre *)  [[`@`0 s] ~ ~]
+  =/  regs=(map @uvre (unit *))  [[`@`0 `s] ~ ~]
   =/  blob  (~(got by blocks.code) 0w0)
   ?>  =(~ par.blob)
   (eval-blob [regs ~] blob code ~ scry)
 ::
 ++  eval-blob
   =*  cor  ..poke
-  |=  $:  gen=[regs=(map @uvre *) trace=(list [@ta *])]
+  |=  $:  gen=[regs=(map @uvre (unit *)) trace=(list [@ta *])]
           b=blob-out
           s=straight-out
           params=(list (unit @uvre))
@@ -9761,12 +9761,12 @@
       %jmp
     =^  p=prod  cor  (poke %dire a.fin.b |)
     ?>  ?=(%ir -.p)
-    =/  regs-new=(map @uvre *)
-      =|  out=(map @uvre *)
+    =/  regs-new=(map @uvre (unit *))
+      =|  out=(map @uvre (unit *))
       =/  r=@uvre  `@`0
-      |-  ^-  (map @uvre *)
+      |-  ^-  (map @uvre (unit *))
       ?~  v.fin.b  out
-      $(out (~(put by out) r (load i.v.fin.b)), v.fin.b t.v.fin.b, r +(r))
+      $(out (~(put by out) r `(load i.v.fin.b)), v.fin.b t.v.fin.b, r +(r))
     ::
     (eval-blob [regs-new trace.gen] (~(got by blocks.p.p) 0w0) p.p ~ scry)
   ::
@@ -9776,7 +9776,7 @@
       %jsp
     =^  p=prod  cor  (poke %dire a.fin.b &)
     ?>  ?=(%ir -.p)
-    =/  regs-new=(map @uvre *)  [[`@`0 (load s.fin.b)] ~ ~]
+    =/  regs-new=(map @uvre (unit *))  [[`@`0 `(load s.fin.b)] ~ ~]
     (eval-blob [regs-new trace.gen] (~(got by blocks.p.p) 0w0) p.p ~ scry)
   ::
       %jsf
@@ -9793,7 +9793,7 @@
 ++  eval-pole
   =*  cor  ..poke
   |=  $:  =pole
-          [regs=(map @uvre *) trace=(list [@ta *])]
+          [regs=(map @uvre (unit *)) trace=(list [@ta *])]
           scry=$@(~ $-(^ (unit (unit))))
       ==
   ^-  [=tone =_regs =_trace =_cor]
@@ -9905,12 +9905,12 @@
       %cal
     =^  p=prod  cor  (poke %dire a.pole |)
     ?>  ?=(%ir -.p)
-    =/  regs-new=(map @uvre *)
-      =|  out=(map @uvre *)
+    =/  regs-new=(map @uvre (unit *))
+      =|  out=(map @uvre (unit *))
       =/  r=@uvre  `@`0
-      |-  ^-  (map @uvre *)
+      |-  ^-  (map @uvre (unit *))
       ?~  v.pole  out
-      $(out (~(put by out) r (load i.v.pole)), v.pole t.v.pole, r +(r))
+      $(out (~(put by out) r `(load i.v.pole)), v.pole t.v.pole, r +(r))
     ::
     =^  ton=tone  cor
       (eval-blob [regs-new trace] (~(got by blocks.p.p) 0w0) p.p ~ scry)
@@ -9936,7 +9936,7 @@
       %csl
     =^  p=prod  cor  (poke %dire a.pole &)
     ?>  ?=(%ir -.p)
-    =/  regs-new=(map @uvre *)  [[`@`0 (load s.pole)] ~ ~]
+    =/  regs-new=(map @uvre (unit *))  [[`@`0 `(load s.pole)] ~ ~]
     =^  ton=tone  cor
       (eval-blob [regs-new trace] (~(got by blocks.p.p) 0w0) p.p ~ scry)
     ::
@@ -10007,12 +10007,12 @@
     =/  v  ;;((list) +.dat)
     =^  p=prod  cor  (poke %dire -.dat |)
     ?>  ?=(%ir -.p)
-    =/  regs-new=(map @uvre *)
-      =|  out=(map @uvre *)
+    =/  regs-new=(map @uvre (unit *))
+      =|  out=(map @uvre (unit *))
       =/  r=@uvre  `@`0
-      |-  ^-  (map @uvre *)
+      |-  ^-  (map @uvre (unit *))
       ?~  v  out
-      $(out (~(put by out) r i.v), v t.v, r +(r))
+      $(out (~(put by out) r `i.v), v t.v, r +(r))
     ::
     =^  ton=tone  cor
       (eval-blob [regs-new ~] (~(got by blocks.p.p) 0w0) p.p ~ ~)
@@ -10028,31 +10028,33 @@
 ::  time, do not depend on their order
 ::
 ++  eval-pass
-  |=  [args=(list (unit @uvre)) par=(list @uvre) regs=(map @uvre *)]
-  ^-  (map @uvre *)
+  |=  [args=(list (unit @uvre)) par=(list @uvre) regs=(map @uvre (unit *))]
+  ^-  (map @uvre (unit *))
   ?>  %+  levy  args
       |=  a=(unit @uvre)
       |(?=(~ a) !(lien par |=(p=@uvre =(p u.a))))
-  |-  ^-  (map @uvre *)
+  |-  ^-  (map @uvre (unit *))
   ?~  args  ?>(?=(~ par) regs)
   ?>  ?=(^ par)
   =.  regs
-    ?~  i.args  (~(del by regs) i.par)
+    ?~  i.args  (~(put by regs) i.par ~)
     (move u.i.args i.par regs)
   $(args t.args, par t.par)
 ::
 ++  move
-  |=  [s=@uvre d=@uvre regs=(map @uvre *)]
-  (store d (read s regs) regs)
+  |=  [s=@uvre d=@uvre regs=(map @uvre (unit *))]
+  (~(put by regs) d (~(got by regs) s))
 ::
 ++  read
-  |=  [r=@uvre regs=(map @uvre *)]
+  |=  [r=@uvre regs=(map @uvre (unit *))]
   ^-  *
-  (~(got by regs) r)
+  =/  v=(unit *)  (~(got by regs) r)
+  ?>  ?=(^ v)
+  u.v
 ::
 ++  store
-  |=  [r=@uvre v=* regs=(map @uvre *)]
-  (~(put by regs) r v)
+  |=  [r=@uvre v=* regs=(map @uvre (unit *))]
+  (~(put by regs) r `v)
 --
 ::
 ::  Outer SKA core
