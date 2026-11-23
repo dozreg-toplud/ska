@@ -573,8 +573,9 @@ theorem coerceSpec : CoerceSpec S Map := by
     (C1 y hy).elim (fun h => absurd h (HoonSet.mem_empty y)) id
   refine ⟨fun hf => ?_, fun hf => S1.2 fun ft => hf ?_⟩
   · have ft : Comp.Fits tgt s := (L.fits s).mpr ⟨hf.1, fun x hx => hf.2 x (sub x hx)⟩
-    obtain ⟨R', hr, hh, _⟩ := S1.1 ft
-    exact ⟨R', hr, L.holds R' s hh, hf.2⟩
+    obtain ⟨R', hr, hh, fr⟩ := S1.1 ft
+    refine ⟨R', hr, ⟨L.holds R' s hh, hf.2⟩, fun x hx => fr x (Nat.lt_of_lt_of_le (ln x hx) L.le) fun ht => ?_⟩
+    exact (L.mem x ht).elim (fun h => nd x hx h) (fun h => by have := ln x hx; simp at h; omega)
   · have F2 := (L.fits s).mp ft
     refine ⟨F2.1, fun y hy => ?_⟩
     obtain ⟨hy0, hy⟩ := C2 y hy

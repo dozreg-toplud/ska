@@ -98,14 +98,15 @@ def CapeAxes (less : Cape) (s : Noun) : Prop :=
 the subject as the input need asks, the ops it puts in front of block `o`
 reach registers that hold it as the lazy need asks, or crash with the trace
 the block was entered with, and they crash only on a subject that has not
-the lazy need's shape and looks. -/
+the lazy need's shape and looks.  They keep the input registers. -/
 def CoerceSpec (S : Type) [HoonSet S] (Map : Type → Type) [HoonMap Map] : Prop :=
   ∀ (ned : Need) (o : Nat) (laz : Sure S) (less : Cape) (g g' : Gen Map),
     coerceLazy ned o laz less g = some ((), g') → g.drop = false → Distinct ned → Distinct laz.ned →
     (∀ r, NMem laz.ned r → r < g.re) → (∀ r, NMem ned r → r < g.re) → (∀ r, NMem ned r → ¬ NMem laz.ned r) →
     ∃ A, Front o g g' A ∧ ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) gul st t (R : Map Noun) s,
       HoldsN ned R s → CapeAxes less s →
-      (FitsS laz s → ∃ R', Runs lib O c gul st t A R R' ∧ HoldsS laz R' s) ∧
+      (FitsS laz s → ∃ R', Runs lib O c gul st t A R R' ∧ HoldsS laz R' s ∧
+        ∀ x, NMem ned x → SkaModel.read x R' = SkaModel.read x R) ∧
       (¬ FitsS laz s → Crashes lib O c gul st t A R)
 
 /-! ## The final pass -/
@@ -176,7 +177,7 @@ theorem finish_compDone [HoonMapKeys Map] (lib : Lib) {nm : Nomm} (hf : Frag nm 
     rcases hth : nex.th with ⟨args', there⟩; rw [hth] at hargs; simp at hargs; subst hargs; rfl
   obtain ⟨hfit, hcr⟩ := hsem lib σ O c1 gul st t R s hR hP
   by_cases hfs : FitsS nex.laz s
-  · obtain ⟨R', hruns, hhold⟩ := hfit hfs
+  · obtain ⟨R', hruns, hhold, _⟩ := hfit hfs
     rw [hruns]
     have := hr.sem (by rfl) c1 hagree σ O st s R' t gul hhold
     simp only [GoalSem] at this
