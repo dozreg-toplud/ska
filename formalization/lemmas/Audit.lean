@@ -38,6 +38,7 @@ import lemmas.Compiler.EvalRend
 import lemmas.Compiler.Connect
 import lemmas.Compiler.PokeFrame
 import lemmas.Assembly
+import lemmas.Compiler.TreapKey
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -311,3 +312,11 @@ open Formalization
 #print axioms Compiler.pokeFrame_corIn
 #print axioms Compiler.listMoldIs
 #print axioms Compiler.pokeDireBad
+#print axioms Compiler.FinMap.isMap_toNoun
+#print axioms Compiler.FinMap.get_toNoun
+#print axioms Compiler.FinMap.mem_tap
+#print axioms Compiler.FinMap.mem_rap
+#print axioms Compiler.FinMap.putF_toNoun
+#print axioms Compiler.FinMap.delF_toNoun
+#print axioms Compiler.FinMap.getF_toNoun
+#print axioms Compiler.instTreapFinMap
