@@ -54,6 +54,32 @@ caller's analysis used.  A proof would need a new invariant of the analysis
 relating the socks of the analysis at a call site to those `+know` computes
 under a bake: for example, that the products of two identities of one code
 bell share a noun after `+patch-prod` for any sock.
+
+Checked on the real compiler (runhoon.sh, 2026-11-23), with no failure:
+`SitesMeet` itself, on fifteen pokes in sequence on the library core (from
+`(add 2 3)` up to `(ream '(add 1 2)')`, sharing one `long-ska`), for every
+pair of a code bell and a bake of the state after each poke: every variant
+`v` of `vars` under its own bake `less.v`, and every memo entry under its
+own code requirement.  `+know` with the memo as `dat` listed 11,370 sites
+for 3,033 pairs, and each site of a callee that is not a root shares a noun
+with the callee's code requirement (a test on capes and data written for
+the purpose).  Also, every variant's bake is under its code bell's code
+requirement (`huge:so less.c less.v`) in 375 variants after eleven of those
+pokes.  Why a witness looks out of reach (an argument, not proved): two
+datums of one code bell made by the `.indi` test differ only where the
+second subject knows a part the first used for an indirect call; if that
+part is a formula with cape exactly `&`, the call becomes direct and the
+code requirement grows, so the code bells differ; otherwise (an atom, or a
+cell consed as `[& &]`) the call stays indirect in both, its product is
+unknown in both, and the products differ only in parts with provenance,
+which `+patch-prod` overwrites.  A `%he` identity generalizes the subject by
+`+msg-sock`, so it can share a code bell with an identity on the stack only
+when the generalization dropped no part the function uses as code.  What
+remains is the choice that `+resolve` makes between an
+exact match, `+git:mi`, `%rec` and a new identity, which can differ between
+two subjects of one code bell; their products can contradict only where
+the callee never returns on any subject of its code requirement, since both
+products are sound there.
 -/
 
 namespace Formalization
