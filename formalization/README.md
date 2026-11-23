@@ -18,7 +18,7 @@ is not ported to Lean and no port is trusted.
 ```sh
 cd formalization
 tools/capped.sh -m 3G lake build core              # 3 s
-tools/capped.sh -m 3G lake build                   # about 50 s from scratch, 1.6 GB peak
+tools/capped.sh -m 3G lake build                   # about 55 s from scratch, 2.4 GB peak
 tools/capped.sh -m 3G lake env lean lemmas/Audit.lean  # axioms of the main theorems
 ```
 
@@ -143,6 +143,13 @@ definition whose body calls the murmur3 arithmetic, or an `rfl` between two
 such expressions that are not syntactically equal, took the elaborator past
 3 GB.
 
+A function that `simp` runs on the pill's formulas must not be structurally
+recursive.  `nockW` of `Iter.lean` was first defined by structural recursion
+on the formula, and `simp only` with its rules on the loop of `+mink` took
+more than 2 GB after a few hundred steps, where the same rules for `nock` ran
+in half a second.  Defined with `partial_fixpoint`, like `nock`, it runs as
+fast as `nock`.
+
 ## Regenerating from a new pill
 
 ```sh
@@ -175,8 +182,8 @@ import only its theorems.  So:
 2. A change to a declaration of the chain rebuilds the rest of the chain,
    `Facts.lean` and the layer files, and no gate theorem file.  A comment
    rebuilds the edited file only.
-3. A clean build takes about 55 seconds and peaks at 2.2 GB for the whole
-   build (1.8 GB for the largest process).
+3. A clean build takes about 55 seconds and peaks at 2.4 GB for the whole
+   build.
 
 ## Gaps
 
@@ -200,3 +207,8 @@ import only its theorems.  So:
    and `+in`.
 6. **The arms of `+ca` and `+so` are all done.**  No arm of `+ca` or `+so`
    disagrees with B's model.
+7. **Not done among the virtualization arms:** `+mook` and `+mock`.  `+mink`,
+   `+monk` and `+mack` are done (`Compiler/Mink.lean`, `Compiler/Monk.lean`).
+8. **Not done among the compiler's arms:** `edit` and `prune` of `+pi`,
+   `+distribute`, `+double-int`, `+safe-nomm`, `+safe-fol-fol`,
+   `+inlineable`.
