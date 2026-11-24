@@ -1,4 +1,5 @@
 import lemmas.Ska.OptAliasKeepsB
+import lemmas.Ska.OptAliasSSAOnce
 
 /-!
 # The blocks `+alias` returns: their shape, `NoLti`, `ParNodup`, `Acyclic`, `TopoInvR`
@@ -365,6 +366,41 @@ theorem alias_topoInvR {pick : List Nat → Nat} {nargs : Nat} {bl : Map Blob} {
   obtain ⟨_l, _g2, _b0, _st0, _rb, _rf, _e1, _e2, _e3, _e4, _e5, _e6, _e7, hg0⟩ := alias_zero hT.1.1 h
   exact ⟨topoInv_revCfg (topoOK_filter hT.1.1 (alias_targetsSub hT h) (by rw [hg0]; rfl)
     (fun o b' j' hb' hj' => alias_closed hT h hb' hj')), revCfg_sound _ _⟩
+
+/-! ## What is left of the field -/
+
+/-- **What is left of `AliasFieldSSAB`** for the model: the static
+properties of the result that need the walk invariant in a form free of
+executions (the check of `+eval-pass` on the renamed arguments, `DownPar`,
+bracketed hints with the keys renamed, single assignment). -/
+def AliasRestSSAB (Map : Type → Type) [HoonMap Map] [MapKeys Map] (pick : List Nat → Nat) : Prop :=
+  ∀ n (bl : Map Blob) topo rev (g : AGen Map), DInvS bl → TopoInvR bl topo rev →
+    aliasWalk pick n bl topo (aliasInit rev) = some g →
+    PassOK g.new ∧ DownPar g.new ∧ (∃ K, TrimBr g.new K) ∧ AliasSSAB g.new
+
+/-- **`AliasFieldSSAB` from what is left**: `KeepsB`, `ParNodup`, `Acyclic`,
+`NoLti` and `TopoInv` of the filtered `topo` are proved. -/
+theorem aliasFieldSSAB_of {pick : List Nat → Nat} (hpick : ∀ l : List Nat, l ≠ [] → pick l ∈ l)
+    (H : AliasRestSSAB Map pick) : AliasFieldSSAB Map pick := by
+  intro n bl topo rev f bl' hdt hs hnl hti hrs h
+  have hD : DInvS bl := ⟨hdt, hs, hnl⟩
+  have hT : TopoInvR bl topo rev := ⟨hti, hrs⟩
+  have hk := alias_keepsB hpick hD hT h
+  unfold aliasM at h
+  obtain ⟨g, hg, he⟩ := Option.map_eq_some_iff.mp h
+  simp only [Prod.mk.injEq] at he
+  obtain ⟨-, rfl⟩ := he
+  obtain ⟨hpo, hdp, hK, hss⟩ := H n bl topo rev g hD hT hg
+  exact ⟨hk, ⟨⟨⟨alias_parNodup hT hdt.1.1.1 hg, hpo⟩, alias_acyclic hT hdt.1.2.1 hg, hdp⟩, hK⟩, hss,
+    alias_nolti hT hnl hg, (alias_topoInvR hT hg).1⟩
+
+/-- **`+optimize` with the model of `+alias` keeps the code** on blocks with
+`DInvS`, given `hpick` and what is left of the field (`AliasRestSSAB`). -/
+theorem optimize_keeps_alias {fuel sfuel : Nat} {P : Passes Map} {pick : List Nat → Nat}
+    (hpick : ∀ l : List Nat, l ≠ [] → pick l ∈ l) (H : AliasRestSSAB Map pick)
+    (ha : P.alias = aliasM pick) (ht : P.trim = trimTraceHints) (hs : P.switch = switchChains sfuel)
+    {s s' : Straight Map} (hb : DInvS s.blocks) (h : optimizeF fuel P s = some s') : Keeps s s' :=
+  optimize_keeps_ssaD (driverRestSSA_of_aliasM (aliasFieldSSAB_of hpick H) ha ht hs) hb h
 
 end Opt
 end SkaModel

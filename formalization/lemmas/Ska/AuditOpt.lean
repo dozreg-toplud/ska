@@ -368,3 +368,5 @@ open Formalization.SkaModel.Opt
 #print axioms alias_closed
 #print axioms topoOK_filter
 #print axioms alias_topoInvR
+#print axioms aliasFieldSSAB_of
+#print axioms optimize_keeps_alias
