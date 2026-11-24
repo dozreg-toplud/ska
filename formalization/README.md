@@ -1677,6 +1677,112 @@ import only its theorems.  So:
     which read only `nex.laz.sure`), proved now through `crx_run` on
     `indOk` only; `mem_laz_frag` is replaced by `comp_coerce_lazy_all`, and
     `mem_cond_frag` by (1).
+    L, 2026-11-24 (track A, `%6`: the inventory).  The case `[%6 *]` of
+    `+run` (lines 4141 to 4244 of the Hoon; its body `crK6`, door axis
+    `35179473141758`, 1461 atoms) and the model `%6` of `runLC` with
+    `sixNextLC`, `sixNextForkC`, `sixNextSimpleC` (`Ska/CompRunLC.lean`,
+    written from `runL`, `sixNextL`, `sixNextFork`, `sixNextSimple` of
+    `Ska/CompLazyRun.lean`).  The body pushes `lep` (`?.  ?=(%next -.goal)
+    ~`, else `+leap` of `laz.goal q r` turned into `[[%next rest
+    then.goal] bys]`), then `?^  lep` (phase L), else the test
+    `&(?=(%next -.goal) !(none-equivalent laz.goal(sure *sure)))`, on `&`
+    the test of `+kerf` (`|((whole q) & (whole r), (this-only laz.goal),
+    (lazy-big (soft-less laz.goal)), (soft-fork laz.goal q r))`, `?|` and
+    `?&` stop at the first answer) with phase K on `&` and phase F on `|`,
+    and on `|` phase S.  The phases, in the order of the Hoon:
+    (L) `$(goal gol.u.lep)` (the `%6` again on the rest), then `+copy` of
+    each need of `bys` into the result, in list order (`copyAll`);
+    (K) `+kerf` of the goal, then the `%6` again on `[%next [[%this pro] ~]
+    ~ ~] ~ out]`; (F) `+re` (`r-cond`), `+fork` of the goal on `r-cond`,
+    `+id`, `region-branch = [id region]`, `cond-before`, the run of `r`
+    for `goal-1` in `region-branch`, `cond-between`, the run of `q` for
+    `goal-0`, `+sect`, `+past-fork` over `p`, `+emit` of `[%brn r-cond
+    ~^yes ~^nuh]` as `o`, `+lazy-shut` at `o`, the run of `p` for
+    `[%next [[%this r-cond] ~] ~ ~] ~ o]` in `region`, `+copy`; (S) under
+    `%next` two `+oo` (`o-0`, `o-1`), `+fork-sure` of `sure.laz.goal`
+    (the forks and bonds of the goal, which need nothing, are dropped, and
+    so are the jump's arguments) and `+id`; under `%done` and `%pick`
+    the goal itself for both branches and `region` itself; then
+    `cond-before`, `r`, `cond-between`, `q`, then under `%next` `+sect`
+    with the ends `o-0`, `o-1`, under `%done` and `%pick` two `+emit` of
+    `%hop` blocks, two `+set-tag` with `region`, the asserts that both
+    results jump with no argument, and the fork `[*sure [[yes laz.nex-0]
+    [nuh laz.nex-1]]~ ~]`; then `+past-fork` over `p`, the run of `p` for
+    `[%pick ~^yes ~^nuh]` in `region`, and `+copy` when `(lazy-big
+    (soft-less lazy))` is `|`, else `+emit` of `[%hop then.nex-cond]` as
+    `o`, `+lazy-shut` at `o` and `+copy` of `nex-cond(then ~^o)`.  So
+    `%done` and `%pick` reach phase S only, and `%next` reaches all four.
+    The helpers, with their place in the pill (door arm `d`: the arm at
+    battery axis `d` of `comp.door`, called at the core axis with a `0`
+    put after the leading bit; `K` arm: `compK`; `ana` arm), what is
+    linked and the model: `+leap` (door `441179`, 151 atoms, with
+    `+lazy-leap`, `+need-cut`, `+need-from` and, outside the door,
+    `+pass-both`, `+pass`, `+pass-bomb`, `+pass-then`, `+pass-edit`,
+    `+gep`, `+peg`; not linked; `leap`, `lazyLeap`, `needCut`, `needFrom`,
+    `passBoth`, `passN`); `+none-equivalent` (`K` `2811`, linked, `ne_all`);
+    `+whole` (`ana` arm `1372`, 222 atoms, not linked, `whole`);
+    `+this-only` (`K` `178934`, 182 atoms, not linked, `thisOnly`);
+    `+lazy-big` (`K` `11199`, 44 atoms, with `+lazy-size` (`K` `348`) and
+    `lazy-max` (`K` `343`); not linked; `lazyBig`, `lazySize`);
+    `+soft-less` (door `52`, 150 atoms, reads `soft`; not linked;
+    `softLess noSoft`, the identity, `softLess_noSoft`); `+soft-fork`
+    (door `221182`, 209 atoms, reads `soft`; not linked; `softFork noSoft`,
+    false on an empty `soft`, since `?&` stops at `(~(has by soft.gen)
+    o.e)`); `+kerf` (door `27572`, linked, `comp_kerf_all`); `+re`, `+oo`,
+    `+id` (door `27631`), `+emit`, `+set-tag`, `+copy-tag`, `+proxy`,
+    `+insert-hop`, `spin-split` (linked); `+fork` (door `862`, 1079 atoms,
+    with its trap `fork-loop` and the gates of the two `spin-split`; not
+    linked; `forkL`, `forkLoop`, `forkForks`, `forkBonds`); `+fork-sure`
+    (door `884727`, 69 atoms) and `+fork-need` (door `62`; not linked;
+    `forkSure`, `forkNeed`, `forkNeedGo`); `+sect` (door `6906`, 1217
+    atoms, with `+dif:by`, two `+rep:by`, `+got:by`, `+get:by`, `+put:by`,
+    `+jab:by`; not linked; `sect`, `sectThread`, `sectStep`, `difM`,
+    `jabBlock`, `lensHop`); `+past-fork` (door `4061`, 95 atoms, with
+    `+hinted`, linked (`hd_gate`); not linked; `pastFork`); `+lazy-shut`
+    (door `218495`, 97 atoms, calls `+lazy-big`, `+soft-less`, `+kern`
+    (linked, `comp_kern_all`) and `lazy-from-need`; not linked;
+    `lazyShut`); `+copy` (linked on every pair of lazy needs with
+    `CopyH`, `comp_copy_all`).  The Hoon and the model compared per
+    helper, before any proof: the no branch `r` is compiled before the yes
+    branch `q` in both; the state threads through `r`, then `q`, then
+    `+sect` (or the two `%hop` blocks), then `p`, in both; `+fork` takes
+    `o-0`, `o-1` before its `?>` on the jump's arguments, then per fork
+    entry six `+oo` (`o-0-kid-y`, `o-1-kid-y`, `o-0-kid-n`, `o-1-kid-n`,
+    `o-insert2-y`, `o-insert2-n`), two `+copy-tag`, the loop on the yes
+    need then the no need, two `+proxy`, two `%brz` blocks, two
+    `+insert-hop`, then the rest of the forks, then per bond three `+oo`,
+    `+copy-tag`, the loop, `+proxy`, `+emit`, `+insert-hop`, as
+    `forkForks` and `forkBonds` do; `+fork-need` runs its loop first
+    (`=;`: for `%this` two `+re`, for `%both` two `+re` before the head
+    and the tail), then emits the join block with the parameters of the
+    old need and puts the two `%hop` blocks with `+emir`, as `forkNeed`;
+    `+sect` asserts a region, emits the two begin blocks, tags them with
+    the branch region, then (unless dropping) reads the ends' `%hop`
+    targets (equal, else a crash), folds `made-0` (`cond` minus
+    `cond-between`) then `made-1` (`cond-between` minus `cond-before`)
+    with `+rep:by` (the pre-order of the keys, which is the order of
+    `HoonMapKeys.keys` on `TreapMap`), allocating one join parameter per
+    new definition read outside the branch region, then sets the join's
+    `par` and the two ends' arguments with `+jab:by`, and asserts that both
+    branch results jump with no argument, as `sect` and `sectThread`;
+    `+past-fork` binds each fork need in a bond under its own label when
+    the test is hinted, as `pastFork`; `+leap` returns `~` on a need with
+    no fork and no bond and when no part leaps (`bys` empty), the rest
+    keeps the root sure need, as `leap` and `leapLoop`.  A constant test
+    is not folded in the case itself: `p` is compiled for `%pick`, where
+    `[1 0]` and `[1 1]` give the jumps themselves and any other constant
+    `+bomb` (the case `%1`); a branch that always crashes (`[0 0]`) is
+    compiled by `+bomb` with the `there` of its goal under `%next`, and
+    `+pass-bomb` makes `+leap` take the other branch's parts, in both.  No
+    departure found.  The one place where the model may stop where the
+    Hoon goes on: the model runs the case again at most twice
+    (`sixNextLC` with fuel `3`: `+leap` then `+kerf` then phase S or F), and
+    the Hoon has no bound; they agree exactly when `+leap` of the rest
+    that `+leap` returns is `~`, which the link has to prove (or take as a
+    hypothesis) of the model's `leap`.  The model of `%done` and `%pick`
+    has no bound on the number of `%6`: the bound of `255` of
+    `Ska/CompNest.lean` is used only to show that `+lazy-shut` does not
+    fire, and the link covers both branches of `(lazy-big ..)`.
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
