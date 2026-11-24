@@ -534,6 +534,25 @@ import only its theorems.  So:
      with `%2` (`eval_cell_tag`), would have to be reached by the analysis,
      for example in a formula it runs with `.*`; no such run is known in the
      analysis, and nothing proves its absence yet.
+     The probe of 2026-11-24 (branch `dozreg/formalization-ska-a-wip`) made
+     `nock`, `nockW` and `evalFuel` crash on a dynamic hint with a cell tag,
+     so that `nock` is `EvalA` (`nock_eq_some_iff`), with `Eval.deterministic`
+     proved by induction and `eval_of_nock` through `EvalA.toEval`.  Every
+     link proof builds unchanged (449 of 452 jobs), so no linked run of the
+     pill evaluates such a hint, and `ska_poke_iff` (the gate returns `y`
+     exactly when the trap does) holds with no hypothesis there.  The one
+     failure is the statement layer: `pull_slam` of `Connect.lean` turns an
+     `Eval` run of a gate (`Top`, `Mook`, `Mock`, `Poke` of
+     `core/Statement.lean`) into a fact about `nock`, and with a strict `nock`
+     that needs the run to be an `EvalA` run.  It is not, in general: `Top`
+     and `Mock` slam the scry gate `gul`, any noun, by real Nock, and a `gul`
+     whose battery holds `[11 [[1 0] 1 0] 1 0]` makes the `Eval` run return
+     where a strict run crashes.  So a strict executor is right for the
+     analysis and wrong for the outer layer.  The route left to choose: an
+     executor generic in its rule for cell tags (a flag, the strict instance
+     for the trap, the plain one for `Connect.lean` and `Assembly.lean`), or
+     the outer layer (`+mink` with a scry gate, `+eval-top`, `Connect.lean`)
+     proved again over a plain copy of the executor.
    - *The core inside `+comp`* (the door `|_  gen=line-short` at line 3825
      of `nock-compilation.hoon`; map from the arm list and the names of
      `Ska/CompModel.lean`, `Ska/CompLazyRun.lean`, `Ska/CompLeap.lean`,
