@@ -93,6 +93,7 @@ import lemmas.Compiler.CompKerfLink
 import lemmas.Compiler.CompUnaryEnd
 import lemmas.Compiler.CompUnaryTop
 import lemmas.Compiler.CompStraightPre
+import lemmas.Compiler.CompStraightCore
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -693,4 +694,8 @@ open Formalization
 #print axioms Compiler.ts_pre
 #print axioms Compiler.ts_at_of_core
 #print axioms Compiler.cu_finish_core
+#print axioms Compiler.ts_ren
+#print axioms Compiler.ts_rer
+#print axioms Compiler.ts_dol
+#print axioms Compiler.ts_ri_model
 #print axioms Compiler.kn_suf_eq
