@@ -77,6 +77,7 @@ import lemmas.Ska.CompIndirectNext
 import lemmas.Ska.CompIndirectOut
 import lemmas.Ska.CompConsCallTop
 import lemmas.Ska.CompIndirectOutB
+import lemmas.Ska.CompConsCallB
 import lemmas.Ska.CompConsCallTopB
 
 /-!
@@ -743,3 +744,12 @@ open Formalization.SkaModel.Comp
 #print axioms finishLUC_bwdC
 #print axioms indirectTop_bwdC
 #print axioms indirectTop_bwd'
+#print axioms mink_consC_bwd
+#print axioms mink_consC_crash
+#print axioms consNC_bwd
+#print axioms consCH_runNB
+#print axioms consCH_runDB
+#print axioms consCHTop_bwd
+#print axioms consCHTop_contract
+#print axioms consCHTop_contractA
+#print axioms consCH_exampleC
