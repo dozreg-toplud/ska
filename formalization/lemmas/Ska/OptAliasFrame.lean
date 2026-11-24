@@ -150,6 +150,35 @@ theorem awk_walk {pick : List Nat → Nat} {nargs : Nat} {bl : Map Blob} : ∀ (
       obtain ⟨c1, c2, c3⟩ := a2 k hko
       exact ⟨b1.trans c1, b2.trans c2, b3.trans c3⟩
 
+/-- The real reads of an end are among its registers. -/
+theorem awk_finReads_sub {fin : Termin} {x : Nat} (h : x ∈ Path.finReads fin) : x ∈ finRegs fin := by
+  cases fin <;> simp only [Path.finReads, finRegs, List.mem_cons, List.not_mem_nil, or_false] at h ⊢
+  all_goals first | exact h | (rcases h with h | h <;> simp [h]) | (exact Or.inl h) | (cases h)
+
+section
+variable [MapKeys Map]
+
+/-- **The registers an end reads are defined before it** on a path from `0`:
+in `PathDef` or by an op of the block, read somewhere reachable (so in
+`ClR`), with every dead fill in the block itself (from `DefFirst` at the place
+`|body|`), which is what `afn_jump` and `afn_end` need of `Done` at a block's
+end. -/
+theorem awk_fin_ssa {bl : Map Blob} (hS : AliasSSAB bl) {o : Nat} {p : List Nat} {b : Blob}
+    (hπ : BPath bl (o :: p)) (hb : HoonMap.get bl o = some b) {x : Nat} (hx : x ∈ finRegs b.fin) :
+    (PathDef bl p b x ∨ x ∈ b.body.filterMap aliasDst) ∧ ClR bl x ∧ ∀ o' i, DeadFill bl x o' i → o' = o := by
+  have hR : Reach bl o := ssk_bpath_reach hπ o (List.mem_cons_self ..)
+  have hread : ReadAt b b.body.length x := Or.inr ⟨rfl, hx⟩
+  refine ⟨?_, Or.inr ⟨o, b, _, hR, hb, hread⟩, fun o' i ⟨_, _, _, _, _, hreads⟩ =>
+    (hreads o b _ hR hb hread).1.symm⟩
+  by_cases hx' : x ∈ allDefs bl
+  · rcases hS.2 o p b hπ hb b.body.length x (Or.inr ⟨rfl, hx⟩) hx' with h | h | h
+    · exact Or.inl (Or.inr (Or.inl h))
+    · rw [List.take_length] at h; exact Or.inr h
+    · exact Or.inl (Or.inr (Or.inr h))
+  · exact Or.inl (Or.inl hx')
+
+end
+
 end Opt
 end SkaModel
 end Formalization
