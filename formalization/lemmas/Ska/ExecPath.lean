@@ -19,8 +19,8 @@ read for real only on the paths where it holds a value.  This file gives
   tail call, a `%brn` on a non-loobean).
 
 `run_iff_path`: `execBlob` returns `r` exactly when some path of steps from
-the configuration reaches one whose `endOf` is `r`.  Steps are deterministic
-(`step_det`) and keep what the run returns (`step_run`, `steps_run`); a
+the configuration reaches one whose `endOf` is `r`.  Steps and paths are deterministic
+(`step_det`, `steps_det`) and keep what the run returns (`step_run`, `steps_run`); a
 jump through `%hop`, `%brn`, `%brz` is a step (`step_hop`, `step_brn0`,
 `step_brn1`, `step_brz`).
 
@@ -365,6 +365,23 @@ theorem steps_trans {x y z : Cfg σ Map} {es es' : List (Nat × Nat)} (h : Steps
   induction h with
   | refl => exact h'
   | step s _ ih => rw [List.append_assoc]; exact Steps.step s (ih h')
+
+/-- **Paths are deterministic**: of two paths from one configuration, one
+extends the other. -/
+theorem steps_det {x y y' : Cfg σ Map} {es es' : List (Nat × Nat)} (h : Steps lib O c gul x es y)
+    (h' : Steps lib O c gul x es' y') :
+    (∃ es2, Steps lib O c gul y es2 y' ∧ es' = es ++ es2) ∨
+      (∃ es2, Steps lib O c gul y' es2 y ∧ es = es' ++ es2) := by
+  induction h generalizing es' with
+  | refl => exact Or.inl ⟨es', h', rfl⟩
+  | @step x z y e es s _ ih =>
+    cases h' with
+    | refl => exact Or.inr ⟨_, Steps.step s (by assumption), rfl⟩
+    | step s' t' =>
+      obtain ⟨rfl, rfl⟩ := step_det s s'
+      rcases ih t' with ⟨es2, h2, rfl⟩ | ⟨es2, h2, rfl⟩
+      · exact Or.inl ⟨es2, h2, by rw [List.append_assoc]⟩
+      · exact Or.inr ⟨es2, h2, by rw [List.append_assoc]⟩
 
 /-! ## Runs from the entry -/
 

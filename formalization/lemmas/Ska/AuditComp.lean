@@ -244,3 +244,4 @@ open Formalization.SkaModel.Comp
 #print axioms Formalization.SkaModel.Path.run_poison
 #print axioms Formalization.SkaModel.Path.steps_reads
 #print axioms Formalization.SkaModel.Path.guarded_reads
+#print axioms Formalization.SkaModel.Path.steps_det
