@@ -69,6 +69,7 @@ import lemmas.Compiler.RegisterFast
 import lemmas.Compiler.FrameCall
 import lemmas.Compiler.RegisterFastShape
 import lemmas.Compiler.CompGen
+import lemmas.Compiler.CompDoor
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -548,3 +549,16 @@ open Formalization
 #print axioms Compiler.re_noun
 #print axioms Compiler.oo_noun
 #print axioms Compiler.id_noun
+#print axioms Compiler.comp_re
+#print axioms Compiler.comp_oo
+#print axioms Compiler.comp_id
+#print axioms Compiler.comp_dropping
+#print axioms Compiler.comp_emir
+#print axioms Compiler.comp_set_tag
+#print axioms Compiler.comp_add_ops
+#print axioms Compiler.comp_emit
+#print axioms Compiler.comp_bomb
+#print axioms Compiler.comp_must
+#print axioms Compiler.comp_split_need
+#print axioms Compiler.comp_copy_tag
+#print axioms Compiler.comp_drop_at

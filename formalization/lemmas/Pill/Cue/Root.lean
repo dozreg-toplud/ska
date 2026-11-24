@@ -11,6 +11,7 @@ import all lemmas.Pill.Arm.Can
 import all lemmas.Pill.Arm.Cap
 import all lemmas.Pill.Arm.Cape_size
 import all lemmas.Pill.Arm.Cat
+import all lemmas.Pill.Arm.Comp
 import all lemmas.Pill.Arm.ConArm
 import all lemmas.Pill.Arm.Cut
 import all lemmas.Pill.Arm.Dec
@@ -53,6 +54,7 @@ import all lemmas.Pill.Arm.Mack
 import all lemmas.Pill.Arm.Mas
 import all lemmas.Pill.Arm.Max
 import all lemmas.Pill.Arm.Met
+import all lemmas.Pill.Arm.Mfe
 import all lemmas.Pill.Arm.Mi
 import all lemmas.Pill.Arm.Min
 import all lemmas.Pill.Arm.Mink
@@ -74,6 +76,7 @@ import all lemmas.Pill.Arm.Need
 import all lemmas.Pill.Arm.Patch_prod
 import all lemmas.Pill.Arm.Peg
 import all lemmas.Pill.Arm.Pi
+import all lemmas.Pill.Arm.Print_comp
 import all lemmas.Pill.Arm.Print_ska
 import all lemmas.Pill.Arm.Prune_cg
 import all lemmas.Pill.Arm.Read
@@ -89,6 +92,7 @@ import all lemmas.Pill.Arm.Scow
 import all lemmas.Pill.Arm.Silt
 import all lemmas.Pill.Arm.Ska_analyze
 import all lemmas.Pill.Arm.Ska_cg
+import all lemmas.Pill.Arm.Ska_poke
 import all lemmas.Pill.Arm.Ska_run
 import all lemmas.Pill.Arm.Skid
 import all lemmas.Pill.Arm.Skim
