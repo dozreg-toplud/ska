@@ -248,6 +248,127 @@ theorem ast_entry (nargs : Nat) : FactsOK R (entryInfo nargs) := by
   · cases hr; exact info_empty
   · cases hr
 
+/-! ## The parameters (`aliasPars`) -/
+
+theorem ast_join_names {a b : InfoReg} {x : Nat} (h : ANames (joinReg a b) x) : ANames a x ∧ ANames b x := by
+  rcases h with h | h | h | h | h
+  · simp only [joinReg] at h; split at h
+    · rename_i e; exact ⟨Or.inl h, Or.inl (e ▸ h)⟩
+    · cases h
+  · simp only [joinReg] at h; split at h
+    · rename_i e; exact ⟨Or.inr (Or.inl h), Or.inr (Or.inl (e ▸ h))⟩
+    · cases h
+  · simp only [joinReg, List.mem_filter, decide_eq_true_eq] at h
+    exact ⟨Or.inr (Or.inr (Or.inl h.1)), Or.inr (Or.inr (Or.inl h.2))⟩
+  · simp only [joinReg, List.mem_filter, decide_eq_true_eq] at h
+    exact ⟨Or.inr (Or.inr (Or.inr (Or.inl h.1))), Or.inr (Or.inr (Or.inr (Or.inl h.2)))⟩
+  · simp only [joinReg] at h; split at h
+    · rename_i e; exact ⟨Or.inr (Or.inr (Or.inr (Or.inr h))), Or.inr (Or.inr (Or.inr (Or.inr (e ▸ h))))⟩
+    · cases h
+
+theorem ast_fold_names {x : Nat} : ∀ (t : List InfoReg) (acc : InfoReg),
+    ANames (t.foldl (fun b a => joinReg a b) acc) x → ANames acc x ∧ ∀ c ∈ t, ANames c x
+  | [], acc, h => ⟨h, fun _ hc => absurd hc List.not_mem_nil⟩
+  | c :: t, acc, h => by
+    simp only [List.foldl_cons] at h
+    obtain ⟨h1, h2⟩ := ast_fold_names t _ h
+    obtain ⟨hc, hacc⟩ := ast_join_names h1
+    exact ⟨hacc, fun c' hc' => by
+      rcases List.mem_cons.mp hc' with rfl | hc'
+      · exact hc
+      · exact h2 c' hc'⟩
+
+/-- **The names of `param-info`** are names of every edge's facts. -/
+theorem ast_param_names {ins : List (Option InfoReg)} {a : InfoReg} {x : Nat} (ha : some a ∈ ins)
+    (h : ANames (paramInfo ins) x) : ANames a x := by
+  have hm : a ∈ ins.filterMap id := List.mem_filterMap.mpr ⟨some a, ha, rfl⟩
+  unfold paramInfo at h
+  split at h
+  · exact absurd h ab_nm_empty
+  · rename_i hd tl heq
+    rw [heq] at hm
+    dsimp only at h
+    have hj : ANames (tl.foldl (fun b a => joinReg a b) hd) x := by
+      split at h
+      · exact h
+      · rcases h with h | h | h | h | h <;> simp at h
+    obtain ⟨h1, h2⟩ := ast_fold_names tl hd hj
+    rcases List.mem_cons.mp hm with rfl | hm
+    · exact h1
+    · exact h2 a hm
+
+theorem ast_mapM_mem {α β : Type} {f : α → Option β} : ∀ {l : List α} {ins : List β} {e : α},
+    l.mapM f = some ins → e ∈ l → ∃ y, y ∈ ins ∧ f e = some y
+  | [], _, _, _, he => absurd he List.not_mem_nil
+  | a :: l, ins, e, h, he => by
+    simp only [List.mapM_cons] at h
+    obtain ⟨b, hb, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨bs, hbs, h⟩ := Option.bind_eq_some_iff.mp h
+    cases h
+    rcases List.mem_cons.mp he with rfl | he
+    · exact ⟨b, List.mem_cons_self, hb⟩
+    · obtain ⟨y, hy, hfy⟩ := ast_mapM_mem hbs he
+      exact ⟨y, List.mem_cons_of_mem _ hy, hfy⟩
+
+/-- Facts whose names keep their values hold in the new file. -/
+theorem ast_frame_set {R R' : Nat → Option Noun} {i : InfoReg} {v : Noun} (h : InfoHolds R i v)
+    (hn : ∀ x, ANames i x → R' x = R x) : InfoHolds R' i v := by
+  obtain ⟨c, l, im, hh, ht, ho, to, dc⟩ := h
+  refine ⟨c, l, im, fun d hd => ?_, fun d hd => ?_, fun x hx => ?_, fun x hx => ?_, fun d hd => ?_⟩
+  · rw [hn d (Or.inl hd)]; exact hh d hd
+  · rw [hn d (Or.inr (Or.inl hd))]; exact ht d hd
+  · rw [hn x (Or.inr (Or.inr (Or.inl hx)))]; exact ho x hx
+  · rw [hn x (Or.inr (Or.inr (Or.inr (Or.inl hx))))]; exact to x hx
+  · rw [hn d (Or.inr (Or.inr (Or.inr (Or.inr hd))))]; exact dc d hd
+
+/-- **The parameter loop keeps the facts**: along the edge `(q, args)` that
+the execution took, with `R` the file at the end of `q` and `R'` the file
+after the moves of the jump (each parameter gets the value of its argument,
+poison for `~`, every register outside `Ps` keeps its value), the facts
+`aliasPars` gives hold on `R'`, when no fact at the end of `q` names a
+parameter. -/
+theorem ast_pars {g : AGen Map} {R R' : Nat → Option Noun} {q : Nat} {iq : AInfo} {Ps : List Nat}
+    (hiq : g.info q = some iq) (hR : FactsOK R iq) (hnq : ∀ r i x, iq r = some i → ANames i x → x ∉ Ps)
+    (hoff : ∀ x, x ∉ Ps → R' x = R x) :
+    ∀ (ps : List Nat) (edges : List (Nat × List (Option Nat))) (loc loc0 : AInfo) (args : List (Option Nat)),
+      aliasPars g ps edges loc = some loc0 → (q, args) ∈ edges → (∀ x ∈ ps, x ∈ Ps) →
+      (∀ (k : Nat) (x : Nat), ps[k]? = some x → R' x = match args[k]? with | some (some u) => R u | _ => none) →
+      (∀ r i v, loc r = some i → r ∉ ps → R' r = some v → InfoHolds R' i v) → FactsOK R' loc0
+  | [], edges, loc, loc0, args, h, _, _, _, hl => by
+    simp only [aliasPars, Option.some.injEq] at h
+    subst h
+    exact fun r i v hr hv => hl r i v hr List.not_mem_nil hv
+  | x :: ps, edges, loc, loc0, args, h, he, hps, hk, hl => by
+    simp only [aliasPars] at h
+    obtain ⟨ins, hins, h⟩ := Option.bind_eq_some_iff.mp h
+    refine ast_pars hiq hR hnq hoff ps _ _ loc0 args.tail h
+      (List.mem_map.mpr ⟨(q, args), he, rfl⟩) (fun y hy => hps y (List.mem_cons_of_mem _ hy))
+      (fun k y hy => by
+        have := hk (k + 1) y (by simpa using hy)
+        rw [this]; cases args <;> simp) (fun r i v hr hrn hv => ?_)
+    by_cases erx : r = x
+    · subst erx
+      rw [as_upd_self] at hr; cases hr
+      obtain ⟨y, hy, hyq⟩ := ast_mapM_mem hins he
+      have hx := hk 0 r rfl
+      cases args with
+      | nil => simp [aliasIn] at hyq
+      | cons a0 rest =>
+        cases a0 with
+        | none => simp at hx; rw [hx] at hv; cases hv
+        | some u =>
+          simp only [List.getElem?_cons_zero] at hx
+          simp only [aliasIn, hiq, Option.bind_some] at hyq
+          obtain ⟨a, ha, rfl⟩ := Option.map_eq_some_iff.mp hyq
+          rw [hx] at hv
+          refine ast_frame_set (info_param hy (hR u a v ha hv)) fun z hz => hoff z fun hzP => ?_
+          exact hnq u a z ha (ast_param_names hy hz) hzP
+    · rw [as_upd_other _ _ erx] at hr
+      exact hl r i v hr (fun hm => by
+        rcases List.mem_cons.mp hm with e | hm
+        · exact erx e
+        · exact hrn hm) hv
+
 end
 
 end Opt

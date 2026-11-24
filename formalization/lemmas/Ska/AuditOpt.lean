@@ -246,3 +246,5 @@ open Formalization.SkaModel.Opt
 #print axioms ast_start
 #print axioms ast_imms
 #print axioms ast_entry
+#print axioms ast_pars
+#print axioms ast_param_names
