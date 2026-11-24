@@ -234,5 +234,161 @@ theorem ts_rename {ctx : Noun} (hc : CompIn ctx) (h7 : slot? 7 ctx = some compK)
   generalize tsGBody = GB
   simp [nock_exec, hc, h7, h15, hmr, hms, hca, by_arm, by.arm_at, by.rep.arm_at, rep_arm, Option.bind_assoc]
 
+/-! ## The fold: `+rep:by` with a gate that may crash, against `renameBlocks` -/
+
+/-- **The loop of `+rep` with a gate that may crash**, over a tree whose
+nodes in pre-order are the nouns `pn p` of a list `L`: the gate on the node
+`pn p` and an accumulator `toN s` is `gf p s` (a crash when `none`), and the
+loop is `foldlM` of `gf` over `L`. -/
+theorem rep_loop_list {α σ : Type} (pn : α → Noun) (toN : σ → Noun) (gf : α → σ → Option σ)
+    (B ctx bp e bc : Noun) :
+    ∀ (a : Noun), Tree a → ∀ (L : List α), preorder a = L.map pn → ∀ (s : σ),
+    (∀ p ∈ L, ∀ s, nock (C bp (C (C (pn p) (toN s)) bc)) bp = (gf p s).map toN) →
+    nock (C by.rep.loop (C by.rep.battery (C (C bp (C (C e (toN s)) bc)) (C B (C a ctx)))))
+      by.rep.loop = (L.foldlM (fun s p => gf p s) s).map toN := by
+  intro a ha
+  induction ha with
+  | nil =>
+    intro L hL s _
+    have hL0 : L = [] := by
+      cases L with
+      | nil => rfl
+      | cons p L' => simp [preorder] at hL
+    subst hL0
+    nock_open by.rep.loop
+    simp [nock_exec]
+  | @node n l r _ _ ihl ihr =>
+    intro L hL s hf
+    simp only [preorder] at hL
+    obtain ⟨p, L', rfl, hpn, hL'⟩ := List.map_eq_cons_iff.1 hL.symm
+    obtain ⟨L1, L2, rfl, h1, h2⟩ := List.map_eq_append_iff.1 hL'
+    subst hpn
+    have hn := hf p (by simp) s
+    have hl := fun s' => ihl L1 h1.symm s' (fun x hx s => hf x (by simp [hx]) s)
+    have hr := fun s' => ihr L2 h2.symm s' (fun x hx s => hf x (by simp [hx]) s)
+    nock_open by.rep.loop
+    cases e1 : gf p s with
+    | none => simp [nock_exec, hn, e1]
+    | some s1 =>
+      have hl1 := hl s1
+      cases e2 : L1.foldlM (fun s p => gf p s) s1 with
+      | none =>
+        rw [e2] at hl1
+        simp [nock_exec, hn, e1, hl1, List.foldlM_append, e2]
+      | some s2 =>
+        rw [e2] at hl1
+        simp [nock_exec, hn, e1, hl1, hr s2, List.foldlM_append, e2]
+
+/-- The gate of `+rep` on such a tree. -/
+theorem rep_gate_list {α σ : Type} (pn : α → Noun) (toN : σ → Noun) (gf : α → σ → Option σ)
+    (B ctx bp e bc a : Noun) (ha : Tree a) (L : List α) (hL : preorder a = L.map pn) (s : σ)
+    (hf : ∀ p ∈ L, ∀ s, nock (C bp (C (C (pn p) (toN s)) bc)) bp = (gf p s).map toN) :
+    nock (C by.rep.battery (C (C bp (C (C e (toN s)) bc)) (C B (C a ctx)))) by.rep.battery
+      = (L.foldlM (fun s p => gf p s) s).map toN := by
+  nock_open by.rep.battery
+  simp only [nock_exec, rep_loop_list pn toN gf B ctx bp e bc a ha L hL s hf]
+
+/-- One step of the fold of the renaming branch, on a pair `(k, b)` of the
+blocks: `keepBlock`, then the put at `k` when the block is kept. -/
+def renameStep (bs : TreapMap mugF Blob) (ren : Nat → Nat) (new : TreapMap mugF Blob)
+    (p : Nat × Blob) : Option (TreapMap mugF Blob) :=
+  (keepBlock bs ren p.1 p.2).map fun kb => match kb with
+    | Option.none => new
+    | some b1 => HoonMap.put new p.1 b1
+
+theorem ts_fold_keys (bs : TreapMap mugF Blob) (ren : Nat → Nat) :
+    ∀ (L : List (Nat × Blob)), (∀ p ∈ L, HoonMap.get bs p.1 = some p.2) →
+    ∀ (acc : Option (TreapMap mugF Blob)),
+    (L.map Prod.fst).foldl (fun acc k => acc.bind fun new =>
+        (HoonMap.get bs k).bind fun b => (keepBlock bs ren k b).map fun kb =>
+          match kb with
+          | Option.none => new
+          | some b1 => HoonMap.put new k b1) acc
+      = acc.bind fun a => L.foldlM (renameStep bs ren) a
+  | [], _, acc => by cases acc <;> rfl
+  | p :: L, hL, acc => by
+    have hp := hL p (by simp)
+    have ih := ts_fold_keys bs ren L (fun q hq => hL q (by simp [hq]))
+    simp only [List.map_cons, List.foldl_cons]
+    rw [ih]
+    cases acc with
+    | none => rfl
+    | some a =>
+      simp only [Option.bind_some, hp, List.foldlM_cons]
+      unfold renameStep
+      cases keepBlock bs ren p.1 p.2 <;> rfl
+
+/-- **`renameBlocks` on treaps is the fold over `rap`**, the order of
+`+rep:by` (with the instance of `TreapList.lean`). -/
+theorem renameBlocks_rap (bs : TreapMap mugF Blob) (ren : Nat → Nat) :
+    renameBlocks bs ren = (TreapMap.rap bs).foldlM (renameStep bs ren) HoonMap.empty := by
+  unfold renameBlocks
+  rw [treapMap_keys]
+  exact ts_fold_keys bs ren (TreapMap.rap bs) (fun p hp => by
+    rw [hoonMap_get]; exact (TreapMap.mem_rap bs p.1 p.2).1 hp) (some HoonMap.empty)
+
+/-! ## `TsCoreAt` from the link of the gate of the fold -/
+
+/-- **The link of the gate of the `+rep:by` of the renaming branch**,
+stated: on a pair `(k, b)` of the blocks `bs` and the accumulator `new`, the
+gate `tsGBody` (`?:  &(!=(0w0 k) (bypassable & b))  new`, else `(rename
+b(fin [%bom ~]))` with `fin` from `+chase-fin`, put at `k` by `+put:by`) is
+`renameStep`.  Not proved: it needs `+bypassable` (core arm `46`), the gate
+`mrInner` of `+map-regs` on a block with `fin` `[%bom ~]`, `+chase-fin` (core
+arm `382`) and `+put:by` (`put_gate`). -/
+def TsStepAt (ctx : Noun) : Prop :=
+  ∀ (SB Bo BN D G : Noun) (o sub : Nat) (bs new : TreapMap mugF Blob) (p : Nat × Blob),
+    p ∈ TreapMap.rap bs →
+    nock (C tsGBody (C (C (Tr.pairNoun Blob.toNoun p) (HoonMap.toNoun Blob.toNoun new))
+        (tsY SB (HoonMap.toNoun Blob.toNoun bs) Bo BN D G ctx o sub))) tsGBody
+      = (renameStep bs (renReg sub 1) new p).map (HoonMap.toNoun Blob.toNoun)
+
+/-- **`TsCoreAt` from the link of the gate of the fold**: the arm `$`
+(`ts_dol`), the renaming branch (`ts_rename`), the `+rep:by` over the blocks
+in pre-order (`rep_gate_list`, `TreapMap.preorder_toNoun`), and the model's
+`renameBlocks` in the order of `rap` (`renameBlocks_rap`). -/
+theorem ts_core_at {ctx : Noun} (hc : CompIn ctx) (h7 : slot? 7 ctx = some compK)
+    (hst : TsStepAt ctx) : TsCoreAt ctx := by
+  intro g x sub o start _ _
+  generalize HoonMap.put (HoonMap.del g.blocks o) 0 start = bs
+  change nock (tsSt (Blob.toNoun start) (HoonMap.toNoun Blob.toNoun bs)
+      (HoonMap.toNoun Blob.toNoun g.blocks) (HoonMap.toNoun Blob.toNoun g.blocks) comp.door
+      (genNoun g x) ctx o sub) (C (A 9) (C (A 190) (C (A 0) (A 1)))) = _
+  rw [ts_dol hc, ts_rename hc h7]
+  have ha : Tree (HoonMap.toNoun Blob.toNoun bs) := by
+    rw [hoonMap_toNoun]; exact Tree.of_isMap (bs.2 Blob.toNoun)
+  have hL : preorder (HoonMap.toNoun Blob.toNoun bs) = (TreapMap.rap bs).map (Tr.pairNoun Blob.toNoun) := by
+    rw [hoonMap_toNoun]; exact TreapMap.preorder_toNoun Blob.toNoun bs
+  have hrep := rep_gate_list (Tr.pairNoun Blob.toNoun) (HoonMap.toNoun Blob.toNoun)
+    (fun p s => renameStep bs (renReg sub 1) s p) by.battery layer2 tsGBody tsGE
+    (tsY (Blob.toNoun start) (HoonMap.toNoun Blob.toNoun bs) (HoonMap.toNoun Blob.toNoun g.blocks)
+      (HoonMap.toNoun Blob.toNoun g.blocks) comp.door (genNoun g x) ctx o sub)
+    _ ha _ hL HoonMap.empty (fun p hp s => hst _ _ _ _ _ o sub bs s p hp)
+  rw [HoonMap.toNoun_empty] at hrep
+  rw [hrep, renameBlocks_rap]
+  cases (TreapMap.rap bs).foldlM (fun s p => renameStep bs (renReg sub 1) s p) HoonMap.empty <;> rfl
+
+/-- **`TsAt` from the link of the gate of the fold.** -/
+theorem ts_at_of_step {ctx : Noun} (hc : CompIn ctx) (h7 : slot? 7 ctx = some compK)
+    (hst : TsStepAt ctx) : TsAt ctx :=
+  ts_at_of_core hc (ts_core_at hc h7 hst)
+
+/-- **The end of `+compile-unary` from its entry state, given the gate of
+the fold of `+to-straight`**: `cu_finish_core` with `TsCoreAt` from
+`ts_core_at`, so that only `TsStepAt` is assumed. -/
+theorem cu_finish_step {ctx : Noun} (h7 : slot? 7 ctx = some compK) {cod : Noun}
+    (hcode : slot? 52 ctx = some cod)
+    (n : Nomm) (hpu : n.pure = true) (h6 : noSix n = true) (ht : tenOk n = true)
+    (cache mono sup : Noun) (hst : TsStepAt ctx) :
+    ((nock (crSubj mono n.toNoun (CGoal.toL (CGoal.done : CGoal CSet)).toNoun (listNoun A []) sup
+        (compCore genEntry (cuRest cache) ctx)) crDol).bind (fun R =>
+      (slot? 2 R).bind fun N => (slot? 3 R).bind fun G =>
+        nock (C kerfBat (C N (C comp.door (C G ctx)))) kerfBat)).bind (fun K =>
+      (slot? 4 K).bind fun O => (slot? 5 K).bind fun SUB => (slot? 3 K).bind fun G2 =>
+        nock (C tsBat (C (tsSample O SUB) (C comp.door (C G2 ctx)))) tsBat)
+      = (finishLU (S := CSet) (Map := TreapMap mugF) n).map Straight.toNoun :=
+  cu_finish_core h7 hcode n hpu h6 ht cache mono sup
+    (ts_core_at (comp_ctx_pill ctx h7).1 h7 hst)
+
 end Compiler
 end Formalization

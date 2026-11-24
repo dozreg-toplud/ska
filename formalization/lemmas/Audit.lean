@@ -700,4 +700,9 @@ open Formalization
 #print axioms Compiler.ts_ri_model
 #print axioms Compiler.mr_slam
 #print axioms Compiler.ts_rename
+#print axioms Compiler.rep_gate_list
+#print axioms Compiler.renameBlocks_rap
+#print axioms Compiler.ts_core_at
+#print axioms Compiler.ts_at_of_step
+#print axioms Compiler.cu_finish_step
 #print axioms Compiler.kn_suf_eq
