@@ -183,6 +183,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompRunCons.lean` | The cons case of `+run` linked (`comp_run_cons`), for pure `p` and `q` with no `%6`, on a fork-free goal with no look at `0`: the `=>` that turns `%done` into `[%next (lazy-from-reg r) ~ o]` (`crc_done_step`), the branch `%pick` (`crc_pick`: the block `[%bom ~]`, `q` on `[%next *need-lazy ~ o]`, `+past`, `p`, `+copy`), and `+split` (door axis `1748730`, `crc_split_arm`) with its tail for `%next` (`crc_next`); `+split` returns needs with no look at `0` (`crc_split_lok`, no hypothesis).  The case takes `CrInv` of its goal and state, and its recursive calls on goals that meet it; `CrCopyOk` is discharged (`cri_split`, `cri_second`, `cri_copy`).  The model with `+past` dropped: `crc_run_next`, `crc_run_pick`, `crc_run_done`. |
 | `Compiler/CompRunInv.lean` | The invariant `CrInv g gl` of the goals and states that `+run` hands its operands: no look at `0` (`crLokOk`), no drop, the goal's registers below the counter (`GoalIn`), no register twice in its need (`GDist`).  `cnMeet` from apart needs (`cri_meet_apart`), `cnLt` from `NB` (`cri_lt_of_nb`); a run under the invariant (`cri_run`, from `run_keeps` and `run_foot` of the model); the goal of the second run of a copy (`cri_second`) and the copy side condition (`cri_copy`); `+split` (`cri_split`), `+simple-next` (`cri_simple_next`) and `+into` (`cri_into`) under it; `#guard` examples of `cnMeet` at the copy of a cons on the model over `LS` and `FM` (false on the goal that needs `5` twice, true on four goals that meet `CrInv`). |
 | `Compiler/CompRunAll.lean` | The summary of `+run` (`comp_run_all'`): by induction on the nomm, `CompRunAt` for every pure nomm with no `%6` (built from `%0`, `%1`, `%3`, `%4`, `%5`, `%7`, `%10` and cons) whose `%10` axes are not `0` (`tenOk`), on every goal and state that meet `CrInv`, every region, given only `slot? 7 ctx = some compK` and `slot? 52 ctx = some cod`; an `example` on a cons of a `%5` and a `%10` under `%done`; the entry of `+comp` (`comp_run_entry`: the bunt state `genEntry`, mode `%run`, the goal `[%done ~]`, the region `~`, meets `CrInv`, `cri_entry`).  The look side condition is discharged: `+into` (`cra_into_lok`, through `gep`), `+copy` (`cra_copy_lok`) and the run (`cra_run_lok`: from a goal with no look at `0`, every run returns a `next` with none). |
+| `Compiler/CompUnary.lean` | The entry state of `+compile-unary` (arm `2810` of `K`, found by the cord `%compile-unary` of its `%fast` hint, `cu_fast_at`): the `=|  gen=line-short` and `=.  cache.gen  cache` of its trap are `[8 [1 cuBunt] [7 [10 [766 [0 4079]] [0 1]] ..]]` (`cu_eight_at`, `cu_bunt_at`, `cu_seven_at`, `cu_edit_at`, at axis `1508993103871` of `K`); the bunt with `cache` set is `genNoun genEntry (cuRest cache)` (`cu_entry_noun`, `cu_entry_step`), `soft` is empty there (`cu_entry_nosoft`), so `comp_run_entry` gives the run (`cu_entry_run`). |
+| `Compiler/CompKernLink.lean` | `+kern-need` (door arm `3497462`, `comp_kn_at`): its gate `knArm`/`knBat` and loop `knLoop`, the subject `knT` of the loop and the statement `KnAt` of its link (not yet proved); `kernLoop_suf` (the loop puts its ops in front of the accumulator) and `kn_suf_eq` (so the noun test `!=(ops-1 ops)` is the test of the model). |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`. |
@@ -934,6 +936,28 @@ import only its theorems.  So:
      `+kerf` (unary: a `%hop` block to the result's `then`, then `+kern`,
      which reads `soft`) and `+to-straight` (no model), and
      `+collapse-shape` (n-ary, no model).
+    L, 2026-11-24 (track A, the entry of `+compile-unary`),
+    `Compiler/CompUnary.lean`, `Compiler/CompKernLink.lean`:
+    `+compile-unary` is arm `2810` of `K` (found by the cord of its `%fast`
+    hint inside the arm, `cu_fast_at`); its gate slams `road-pure` (the
+    `+mule` of `vi`, line 112) with the trap that runs `+compile-scc-in`,
+    calls `+comp` (arm `5590` of the core at axis `63` of the trap's
+    subject) and then `=|  gen=line-short` and `=.  cache.gen  cache` as
+    `[8 [1 cuBunt] [7 [10 [766 [0 4079]] [0 1]] ..]]`, with `cuBunt` the
+    constant `[0 1 0 %run ~ ~ ~ [~ ~ ~ ~ ~] ~ ~]` (`cu_bunt_at`); with
+    `cache` set it is `genNoun genEntry ⟨cache, ~, ~⟩` (`cu_entry_noun`,
+    `cu_entry_step`), whose `soft` is empty (`cu_entry_nosoft`), so the run
+    that follows is `runL` (`cu_entry_run`).  Door arms of the end of the
+    driver: `+kerf` `27572`, `+kern` `7167`, `+kern-need` `3497462`
+    (`comp_kn_at`, loop `knLoop` with `ops` at `6`, `r` at `60`, `ned` at
+    `61`, `gen` at `126`), `+walk-lazy` `30`, `+proxy` `441178`,
+    `+to-straight` `6892`.  For a `%6`-free pure nomm the run's result has
+    no forks and no bonds (`+past` is the identity there), so `+kerf` walks
+    only its new block, makes no proxy, and `cond` stays empty, which sends
+    `+to-straight` down its pure renaming branch (`run` is `&` for the one
+    input `sub`, `proxies` is `|`).  Not linked yet: the loop of
+    `+kern-need` (`KnAt`; `kernLoop_suf` and `kn_suf_eq` settle its
+    `=?` tests), `+kern`, `+kerf`, `+to-straight`.
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
