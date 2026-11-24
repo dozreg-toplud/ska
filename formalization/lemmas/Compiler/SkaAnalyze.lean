@@ -89,5 +89,125 @@ def aRestF (Y : Noun) : Noun :=
 theorem analyze_battery_eq : ska_analyze.battery =
     C (A 8) (C aHitF (C (A 6) (C aTestF (C (aMissF (aRestF aYes)) aHitB)))) := by kernel_rfl
 
+theorem slot_st_stk (regsNoun : R → Noun) (st : SkaState FinMap R) :
+    slot? 30 (st.toNoun regsNoun) = some (listNoun identNoun st.stk) := by
+  simp [SkaState.toNoun, nock_exec]
+
+theorem slot_st_next (regsNoun : R → Noun) (st : SkaState FinMap R) :
+    slot? 62 (st.toNoun regsNoun) = some (A st.next) := by
+  simp [SkaState.toNoun, nock_exec]
+
+theorem ana_test_miss (c : Noun → Noun → Option Noun) (s X Y : Noun) :
+    nockW c (C (A 0) s) (C (A 6) (C aTestF (C X Y))) = nockW c (C (A 0) s) X := by
+  simp [aTestF, nock_exec]
+
+theorem ana_test_hit (c : Noun → Noun → Option Noun) (e s X Y : Noun) :
+    nockW c (C (C (A 0) e) s) (C (A 6) (C aTestF (C X Y))) = nockW c (C (C (A 0) e) s) Y := by
+  simp [aTestF, nock_exec]
+
+theorem bunt_toNoun : (FDatum.bunt : FDatum FinMap).toNoun
+    = C (A 0) (C (C (A 0) (A 0)) (C (C (A 1) (A 0)) (C (A 1) (C (A 1) (C (C (A 0x64696f76) (A 0)) (A 0)))))) := by
+  simp only [FDatum.toNoun, FDatum.bunt, show Treap.setNoun (Treap.empty : FinMap CalleeEntry Unit) = A 0 from
+    FinMap.setNoun_empty]
+  rfl
+
+/-- The state after the push of a new function. -/
+noncomputable def missSt (id : Ident) (st : SkaState FinMap R) : SkaState FinMap R :=
+  { st with next := st.next + 1, order := Treap.put st.order id st.next, stk := id :: st.stk,
+            g := Treap.put st.g id FDatum.bunt }
+
+section chunks
+variable (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar f → c s f = nock s f)
+  (regsNoun : R → Noun) (K : Noun) (hK : slot? 31 K = some ana) (hKb : slot? 2 K = some ska_cg.k_bat)
+  (id : Ident)
+
+include hcf hK in
+set_option maxHeartbeats 1000000 in
+/-- The lookup in the persistent memo. -/
+theorem ana_hit (memoF : Memo FinMap) (hmemo : slot? 122 K = some (memoNoun memoF)) (st : SkaState FinMap R)
+    (F : Noun) :
+    nockW c (anaSubj regsNoun K id st) (C (A 8) (C aHitF F))
+      = (gitMi memoF id.2 id.1).bind fun h => nockW c (C (unitNoun entryNoun h) (anaSubj regsNoun K id st)) F := by
+  have hg := mi_git_pill memoF id.2 id.1
+  unfold anaSubj aHitF
+  cases e : gitMi memoF id.2 id.1 with
+  | none =>
+    rw [e] at hg
+    simp (disch := ffar_disch) [nock_exec, hcf, hK, hmemo, identNoun, mi.arm_at, mi_arm, mi.git.arm_at,
+      mi_git_arm, hg]
+  | some h =>
+    rw [e] at hg
+    simp (disch := ffar_disch) [nock_exec, hcf, hK, hmemo, identNoun, mi.arm_at, mi_arm, mi.git.arm_at,
+      mi_git_arm, hg]
+
+include hcf hK in
+set_option maxHeartbeats 1000000 in
+/-- A hit: the memoized datum put in `g` and `done`. -/
+theorem ana_hitb (e : Ident × FDatum FinMap) (st : SkaState FinMap R) :
+    nockW c (C (C (A 0) (entryNoun e)) (anaSubj regsNoun K id st)) aHitB
+      = some (anaNoun regsNoun (st.next, { st with g := Treap.put st.g id e.2, done := putMi st.done id e.2 })) := by
+  have hl2 := K_layer2 hK
+  obtain ⟨g, done, order, stk, next, moved, tick, ticks, regs, stats⟩ := st
+  have hpg : nock (C by.put.battery (C (C (identNoun id) e.2.toNoun)
+      (C by.battery (C (Treap.toNoun FDatum.toNoun g) layer2)))) by.put.battery
+      = some (Treap.toNoun FDatum.toNoun (Treap.put g id e.2)) :=
+    put_gate layer2 gorIn_morIn_layer2 _ _ _ _ (FinMap.putF_toNoun FDatum.toNoun g id e.2)
+  have hpm := mi_put_pill done id e.2
+  unfold anaSubj aHitB entryNoun anaNoun
+  simp (disch := ffar_disch) [nock_exec, hcf, hK, hl2, SkaState.toNoun, by_arm, by.arm_at, by.put.arm_at, hpg,
+    mi.arm_at, mi_arm, mi.put.arm_at, mi_put_arm, hpm]
+
+include hcf hK hKb in
+set_option maxHeartbeats 1000000 in
+/-- A miss: the new function numbered and pushed, then `+run` made by `c`. -/
+theorem ana_miss (run : RunGo FinMap R) (hrun : RunIsW c regsNoun K run) (st : SkaState FinMap R) (F : Noun) :
+    nockW c (C (A 0) (anaSubj regsNoun K id st)) (aMissF F)
+      = (run id st.next (missSt id st)).bind fun r =>
+          nockW c (C (runNoun regsNoun r) (C (A st.next) (C (A 0) (anaSubj regsNoun K id (missSt id st))))) F := by
+  have hl2 := K_layer2 hK
+  have h95 := slot_K95 hKb
+  have hr := hrun id st.next (missSt id st)
+  obtain ⟨g, done, order, stk, next, moved, tick, ticks, regs, stats⟩ := st
+  have hpg : nock (C by.put.battery (C (C (identNoun id) (C (A 0) (C (C (A 0) (A 0)) (C (C (A 1) (A 0)) (C (A 1)
+      (C (A 1) (C (C (A 0x64696f76) (A 0)) (A 0))))))))
+      (C by.battery (C (Treap.toNoun FDatum.toNoun g) layer2)))) by.put.battery
+      = some (Treap.toNoun FDatum.toNoun (Treap.put g id FDatum.bunt)) := by
+    rw [← bunt_toNoun]
+    exact put_gate layer2 gorIn_morIn_layer2 _ _ _ _ (FinMap.putF_toNoun FDatum.toNoun g id FDatum.bunt)
+  have hpo : nock (C by.put.battery (C (C (identNoun id) (A next))
+      (C by.battery (C (Treap.toNoun A order) layer2)))) by.put.battery
+      = some (Treap.toNoun A (Treap.put order id next)) :=
+    put_gate layer2 gorIn_morIn_layer2 _ _ _ _ (FinMap.putF_toNoun A order id next)
+  unfold runSubj missSt at hr
+  simp only [SkaState.toNoun, listNoun] at hr
+  unfold anaSubj aMissF aEditF aRunF missSt
+  simp only [SkaState.toNoun]
+  cases e : run id next ⟨Treap.put g id FDatum.bunt, done, Treap.put order id next, id :: stk, next + 1, moved,
+      tick, ticks, regs, stats⟩ with
+  | none =>
+    rw [e] at hr
+    simp (disch := ffar_disch) [nock_exec, hcf, hK, hl2, h95, by_arm, by.arm_at, by.put.arm_at, hpg, hpo, hr,
+      listNoun]
+  | some r =>
+    rw [e] at hr
+    simp (disch := ffar_disch) [nock_exec, hcf, hK, hl2, h95, by_arm, by.arm_at, by.put.arm_at, hpg, hpo, hr,
+      listNoun]
+
+/-- The state of `+run` put back, and the test of the lowlink. -/
+theorem ana_rest (Y : Noun) (r : (Nat × Bool × Bool) × SkaState FinMap R) (index : Nat) (st : SkaState FinMap R) :
+    nockW c (C (runNoun regsNoun r) (C (A index) (C (A 0) (anaSubj regsNoun K id st)))) (aRestF Y)
+      = if r.1.1 = index then
+          nockW c (C (C (A r.1.1) (C (flag r.1.2.1) (flag r.1.2.2)))
+            (C (A index) (C (A 0) (anaSubj regsNoun K id r.2)))) Y
+        else some (anaNoun regsNoun (r.1.1, r.2)) := by
+  obtain ⟨⟨low, back, ch⟩, st2⟩ := r
+  unfold anaSubj runNoun anaNoun aRestF
+  by_cases h : low = index
+  · subst h; simp [nock_exec, eqCode]
+  · have h' : ¬ index = low := fun e => h e.symm
+    simp [nock_exec, eqCode, h, h']
+
+end chunks
+
 end Compiler
 end Formalization
