@@ -447,6 +447,153 @@ theorem keepX_ten {a : Nat} {v q : Nomm} (ihv : KeepX S Map v) (ihq : KeepX S Ma
   have R := keepX_binary ihq ihv ((k1.trans k2).dropF hd) hc' nd nr (jmpIn_jmp0 _ _) h3 h4 hcp
   exact R.pre (k1.trans k2) (by rw [c2, c1]) (by omega)
 
+/-! ## `%6` -/
+
+theorem keeps_emitted {g : Gen Map} {b : Blob} (hd : g.drop = false) (hb : BlobIn (· < g.re) b) :
+    Keeps g (g.emitted b) :=
+  ⟨fun _ hl => belowIn_emitted hl hd hb, Nat.le_refl _, rfl, Nat.le_succ _⟩
+
+theorem keeps_tagged (g : Gen Map) (o : Nat) (region : List Nat) : Keeps g (g.tagged o region) := by
+  refine ⟨fun lo hl => ?_, by simp, by simp, by simp⟩
+  intro o' b l u hb
+  rw [tagged_blocks] at hb
+  rw [tagged_bo] at u
+  rw [tagged_re]
+  exact hl o' b l u hb
+
+theorem keeps_sixGenL {g2 : Gen Map} {t0 t1 : Jmp} {region : List Nat} (hd : g2.drop = false)
+    (h0 : JmpIn (· < g2.re) t0) (h1 : JmpIn (· < g2.re) t1) :
+    Keeps g2 (sixGenL g2 t0 t1 region) ∧ (sixGenL g2 t0 t1 region).cond = g2.cond :=
+  ⟨(keeps_emitted hd (blobIn_fin (f := Termin.hop t0) h0)).trans
+    ((keeps_emitted (g := g2.emitted ⟨[], [], Termin.hop t0⟩) (b := ⟨[], [], Termin.hop t1⟩) hd (blobIn_fin (f := Termin.hop t1) h1)).trans
+      ((keeps_tagged _ _ _).trans (keeps_tagged _ _ _))),
+    by simp [sixGenL, tagged_cond, emitted_cond]⟩
+
+/-- The end of `%6`: the copy of the fork of the branches' needs at the two
+lazy blocks `y` and `n` into the need of the test. -/
+theorem keepX_sixEnd {g0 g1 g2 g3 g4 g5 : Gen Map} {xc x0 x1 nex : NextL S} {y n : Nat} {sc sa sb : Nat}
+    (hd : g0.drop = false) (Rb : KeepR g0 g1 x1 sb) (Ra : KeepR g1 g2 x0 sa) (kG : Keeps g2 g3) (cG : g3.cond = g2.cond)
+    (Rc : KeepR g3 g4 xc sc) (hy : g2.bo ≤ y) (hn : y + 1 = n) (hn3 : n + 1 = g3.bo)
+    (h : copyL xc (mk (Sure.bunt : Sure S) [((y, x0.laz), (n, x1.laz))] []) g4 = some (nex, g5)) :
+    KeepR g0 g5 nex (sc + sa + sb + 1) := by
+  have l3 : g2.re ≤ g4.re := Nat.le_trans kG.le Rc.keeps.le
+  have l1 : g1.re ≤ g4.re := Nat.le_trans Ra.keeps.le l3
+  have b1 := Rb.keeps.bo; have b2 := Ra.keeps.bo; have b3 := kG.bo; have b4 := Rc.keeps.bo
+  have hL : LazyIn g4.re (mk (Sure.bunt : Sure S) [((y, x0.laz), (n, x1.laz))] []) := by
+    refine ⟨nb_none _, fun e he => ?_⟩
+    rw [entries_six] at he
+    rcases List.mem_append.mp he with he | he <;> rcases List.mem_cons.mp he with e' | he
+    · rw [e']; exact Ra.out.1.1.mono l3
+    · exact (Ra.out.1.2 e he).mono l3
+    · rw [e']; exact Rb.out.1.1.mono l1
+    · exact (Rb.out.1.2 e he).mono l1
+  obtain ⟨k, o, c, sz, lb⟩ := keep_copyL (lo := g0.bo) (mid := g3.bo) (Rc.keeps.dropF (kG.dropF
+    (Ra.keeps.dropF (Rb.keeps.dropF hd)))) Rc.out hL (by omega) b4 (fun e he => Rc.labs e he) (fun e he => by
+      rw [entries_six] at he
+      rcases List.mem_append.mp he with he | he <;> rcases List.mem_cons.mp he with e' | he
+      · rw [e']; exact ⟨by omega, by omega⟩
+      · have := Ra.labs e he; exact ⟨by omega, by omega⟩
+      · rw [e']; exact ⟨by omega, by omega⟩
+      · have := Rb.labs e he; exact ⟨by omega, by omega⟩) h
+  refine ⟨Rb.keeps.trans (Ra.keeps.trans (kG.trans (Rc.keeps.trans k))), o,
+    c.trans (Rc.cnd.trans (cG.trans (Ra.cnd.trans Rb.cnd))), ?_, lb⟩
+  rw [sz, entries_six]
+  simp only [List.length_append, List.length_cons]
+  have := Rc.size; have := Ra.size; have := Rb.size; omega
+
+theorem keeps_same {g g' : Gen Map} (h : SameBlocks g g') : Keeps g g' := by
+  obtain ⟨hre, hbo, _, hdr, _, _, hbl⟩ := h
+  refine ⟨fun lo hl o b l u hb => ?_, Nat.le_of_eq hre.symm, hdr, Nat.le_of_eq hbo.symm⟩
+  rw [hbl] at hb; rw [hbo] at u; rw [hre]
+  exact hl o b l u hb
+
+theorem jmpIn_flatten {P : Nat → Prop} {ned : Need} {o : Nat} (h : ∀ x, NMem ned x → P x) :
+    JmpIn P ⟨(flattenNeed ned).map some, o⟩ := fun x hx => by
+  obtain ⟨y, hy, e⟩ := List.mem_map.mp hx
+  have e' : y = x := Option.some.inj e
+  rw [← e']
+  exact h y ((mem_flatten ned y).mp hy)
+
+/-- **`%6` for `%done` or `%pick`.** -/
+theorem keepX_sixP {c a b : Nomm} (hcp : c.pure = true) (ihc : KeepX S Map c) (iha : KeepX S Map a)
+    (ihb : KeepX S Map b) {goal : CGoal S} (hg' : NotNext goal) {region : List Nat} {g0 g4 : Gen Map}
+    {nex : NextL S} (hd : g0.drop = false) (hg : GoalIn g0.re goal)
+    (hc : sixCount c + sixCount a + sixCount b + 1 ≤ 255)
+    (h : runL (Nomm.n6 c a b) (CGoal.toL goal) region g0 = some (nex, g4)) :
+    KeepR g0 g4 nex (sixCount c + sixCount a + sixCount b + 1) := by
+  rw [runL_n6_body _ _ _ hg'] at h
+  obtain ⟨x1, x0, xc, g1, g2, g3, h1, h2, _, _, h3, hrest⟩ := sixBody_apart hcp h
+  have Rb := ihb hd hg (by omega) h1
+  have d1 := Rb.keeps.dropF hd
+  have Ra := iha d1 (hg.mono Rb.keeps.le) (by omega) h2
+  have d2 := Ra.keeps.dropF d1
+  obtain ⟨kG, cG⟩ := keeps_sixGenL (region := region) d2 Ra.out.2
+    (Rb.out.2.mono fun _ e => Nat.lt_of_lt_of_le e Ra.keeps.le)
+  have Rc := ihc (goal := CGoal.pick (jmp0 g2.bo) (jmp0 (g2.bo + 1))) (kG.dropF d2)
+    ⟨jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩ (by omega) h3
+  have hbig : lazyBig (mk (Sure.bunt : Sure S) [((g2.bo, x0.laz), (g2.bo + 1, x1.laz))] []) = false := by
+    apply lazyBig_entries
+    rw [entries_six]; simp only [List.length_append, List.length_cons]
+    have := Ra.size; have := Rb.size; simp only [lazyMax]; omega
+  exact keepX_sixEnd hd Rb Ra kG cG Rc (Nat.le_refl _) rfl (by simp) (hrest hbig)
+
+/-- **`%6` for a fork-free `%next`**: `+fork-sure`, the branches in a new
+region, `+sect` (which changes no block, as the branches keep `cond`), the
+test for `%pick`. -/
+theorem keepX_sixN {c a b : Nomm} (hcp : c.pure = true) (ihc : KeepX S Map c) (iha : KeepX S Map a)
+    (ihb : KeepX S Map b) {sur : Sure S} {th : Jmp} {region : List Nat} {g0 g9 : Gen Map} {nex : NextL S}
+    (hd : g0.drop = false) (hg : GoalIn g0.re (CGoal.next sur th))
+    (hc : sixCount c + sixCount a + sixCount b + 1 ≤ 255)
+    (h : runL (Nomm.n6 c a b) (CGoal.toL (CGoal.next sur th)) region g0 = some (nex, g9)) :
+    KeepR g0 g9 nex (sixCount c + sixCount a + sixCount b + 1) := by
+  simp only [CGoal.toL] at h
+  rw [runL_n6_next, sixNextL_ofSure] at h
+  obtain ⟨s0, s1, x1, x0, xc, lz, yes, nuh, gF, gR, gQ, gS, gC, hF, hR, hQ, hS, hC, hrest⟩ :=
+    sixNextSimple_apart hcp h
+  obtain ⟨_, _, _, _, _, _, _, hreg, hle, hbo, hdrop, hcond, _, hb0, hb1, hb2, hold⟩ := forkSure_spec hF hd
+  have kF : Keeps g0 gF := by
+    refine ⟨fun lo hl o b' l u hb' => ?_, hle, hdrop, by omega⟩
+    by_cases h0 : o < g0.bo
+    · rw [hold o h0] at hb'
+      exact (hl o b' l h0 hb').mono fun _ e => Nat.lt_of_lt_of_le e hle
+    by_cases e0 : o = g0.bo
+    · rw [e0, hb0] at hb'; cases hb'
+      exact blobIn_fin (f := Termin.hop _) (jmpIn_flatten fun x hx => (hreg x (Or.inl hx)).2)
+    by_cases e1 : o = g0.bo + 1
+    · rw [e1, hb1] at hb'; cases hb'
+      exact blobIn_fin (f := Termin.hop _) (jmpIn_flatten fun x hx => (hreg x (Or.inr hx)).2)
+    by_cases e2 : o = g0.bo + 2
+    · rw [e2, hb2] at hb'; cases hb'
+      exact ⟨fun x hx => Nat.lt_of_lt_of_le (hg.1 x ((mem_flatten _ x).mp hx)) hle, RegsIn.nil _, jmpIn_jmp0 _ _⟩
+    · omega
+  have kI : Keeps gF { gF with id := gF.id + 1 } := ⟨fun _ hl => hl, Nat.le_refl _, rfl, Nat.le_refl _⟩
+  have dF := kF.dropF hd
+  have Rb0 := ihb (goal := CGoal.next s1 (jmp0 (g0.bo + 1))) (g0 := { gF with id := gF.id + 1 }) dF
+    ⟨fun x hx => (hreg x (Or.inr hx)).2, jmpIn_jmp0 _ _⟩ (by omega) hR
+  have Rb := Rb0.pre (kF.trans kI) hcond (Nat.le_refl _)
+  have d1 := Rb.keeps.dropF hd
+  have lR : gF.re ≤ gR.re := Rb0.keeps.le
+  have Ra := iha (goal := CGoal.next s0 (jmp0 g0.bo)) d1
+    ⟨fun x hx => Nat.lt_of_lt_of_le (hreg x (Or.inl hx)).2 lR, jmpIn_jmp0 _ _⟩ (by omega) hQ
+  have d2 := Ra.keeps.dropF d1
+  have cR : gR.cond = gF.cond := Rb0.cnd
+  rw [cR] at hS
+  obtain ⟨ey, en, _, _, el, hsb⟩ := sect_spec d2 (Ra.cnd.trans cR) hS
+  obtain ⟨kG, cG⟩ := keeps_sixGenL (region := gF.id :: region) d2 Ra.out.2
+    (Rb.out.2.mono fun _ e => Nat.lt_of_lt_of_le e Ra.keeps.le)
+  have kS := kG.trans (keeps_same hsb)
+  have cS : gS.cond = gQ.cond := hsb.2.2.2.2.2.1.trans cG
+  have bS : gS.bo = gQ.bo + 2 := by rw [hsb.2.1]; simp
+  have Rc := ihc (goal := CGoal.pick (jmp0 yes) (jmp0 nuh)) (kS.dropF d2) ⟨jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩
+    (by omega) hC
+  subst el
+  have hbig : lazyBig (mk (Sure.bunt : Sure S) [((gQ.bo, x0.laz), (gQ.bo + 1, x1.laz))] []) = false := by
+    apply lazyBig_entries
+    rw [entries_six]; simp only [List.length_append, List.length_cons]
+    have := Ra.size; have := Rb.size; simp only [lazyMax]; omega
+  subst ey en
+  exact keepX_sixEnd hd Rb Ra kS cS Rc (by omega) (by omega) (by omega) (hrest hbig)
+
 end Comp
 end SkaModel
 end Formalization
