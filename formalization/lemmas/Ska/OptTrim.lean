@@ -59,7 +59,8 @@ for the old pass, a key may be pushed while it is open: `+alias` can give two
 nested hints one clue register (`tools/hoon/trimbug.hoon`), and the counts
 handle that.  This `TrimBr` held at every call of the pass in
 `trimcheck.hoon` (408 compiles, the witness of `trimbug.hoon` included) and
-on raw code.  `TrimKeepsBr` is the statement under it (not proved).  With
+on raw code.  `TrimKeepsBr` is the statement under it, proved in
+`OptTrimSim.lean` (`trimKeepsBr`).  With
 `TrimBr`, every key has at least as many frames on the stack as its count in
 the walk (`CntLe`, kept along a body: `trimBody_open`), so a key with a frame
 on the stack is open, and an op that may crash makes it unsafe
@@ -222,7 +223,8 @@ def TrimBr (bl : Map Blob) (K : Nat → List (Option TKey)) : Prop :=
     ∃ g, brBody (K o) b.body = some g ∧ ∀ j ∈ getJmps b.fin, K j.there = g
 
 /-- The preservation statement of `+trim-trace-hints` under `TrimBr`
-(open; `TrimKeeps` without a bracketing is false, see the header). -/
+(proved: `trimKeepsBr`, `OptTrimSim.lean`; `TrimKeeps` without a bracketing
+is false, see the header). -/
 def TrimKeepsBr [MapKeys Map] : Prop :=
   ∀ (c : Straight Map) topo bl' K, TopoOK c.blocks topo → TrimBr c.blocks K →
     trimTraceHints c.blocks topo (revCfg c.blocks topo) = some bl' → Keeps c (withBlocks c bl')
