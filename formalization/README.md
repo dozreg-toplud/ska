@@ -696,7 +696,7 @@ import only its theorems.  So:
      `+emit-cold`, `+past-fork`, `+copy-need-make-ops`, `+coerce-ord`,
      `+coerce-soft`, `+need-ord-alloc-regs`, `+coerce-lazy`,
      `+next-lazy-collapse`, `+collapse-shape`, `+to-straight`.  The next
-     links to make: `+copy*`, `+mede`, `+forl`, `+flatten-need` (none of these touches
+     links to make: `+forl` (door axis `442362`; a proof by `comp_emit` with the state left free and one `simp` per value of `drop` ran out of the 3 GB cap, so split it into the three emits with the state generalized between them), `+copy*`, `+mede`, `+flatten-need` (none of these touches
      `cache`, `soft` or `sofs`; `+crash-need` reads `soft`).
    - *Modelled, not linked*:
      `+uni-sock`, `+norm-sock`, `+know`,
