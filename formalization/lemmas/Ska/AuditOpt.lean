@@ -307,3 +307,7 @@ open Formalization.SkaModel.Opt
 #print axioms awa_walk
 #print axioms alias_walk_endOK
 #print axioms alias_walk_inv
+#print axioms awa_start
+#print axioms awa_walk_part
+#print axioms awa_read_done
+#print axioms alias_walk_at
