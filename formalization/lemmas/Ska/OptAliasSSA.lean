@@ -1,4 +1,4 @@
-import lemmas.Ska.OptAliasField
+import lemmas.Ska.OptAliasRev
 
 /-!
 # Single assignment as the compiler has it, carried by the driver
@@ -98,7 +98,7 @@ def AliasSSAB (bl : Map Blob) : Prop := DefOnceB bl ∧ DefFirst bl
 
 /-- **The field `alias` under `AliasSSAB`**, for the model (open). -/
 def AliasFieldSSAB (Map : Type → Type) [HoonMap Map] [MapKeys Map] (pick : List Nat → Nat) : Prop :=
-  ∀ n (bl : Map Blob) topo rev f bl', DInvT bl → AliasSSAB bl → TopoInv bl topo rev →
+  ∀ n (bl : Map Blob) topo rev f bl', DInvT bl → AliasSSAB bl → TopoInv bl topo rev → RevSound bl topo rev →
     aliasM pick n bl rev topo = some (f, bl') →
     KeepsB bl bl' ∧ DInvT bl' ∧ AliasSSAB bl' ∧
       TopoInv bl' (topo.filter fun o => (HoonMap.get bl' o).isSome)
@@ -125,7 +125,8 @@ structure SSAKeep (Map : Type → Type) [HoonMap Map] [MapKeys Map] (fuel : Nat)
 `DInvS`, `TopoInv` of the filtered `topo`; the trim pass is the real one; the
 switch pass is the model. -/
 structure DriverRestSSA (fuel sfuel : Nat) (P : Passes Map) : Prop where
-  alias : ∀ n (bl : Map Blob) topo rev f bl', DInvS bl → TopoInv bl topo rev → P.alias n bl rev topo = some (f, bl') →
+  alias : ∀ n (bl : Map Blob) topo rev f bl', DInvS bl → TopoInv bl topo rev → RevSound bl topo rev →
+    P.alias n bl rev topo = some (f, bl') →
     KeepsB bl bl' ∧ DInvS bl' ∧
       TopoInv bl' (topo.filter fun o => (HoonMap.get bl' o).isSome)
         (revCfg bl' (topo.filter fun o => (HoonMap.get bl' o).isSome))
@@ -136,36 +137,54 @@ structure DriverRestSSA (fuel sfuel : Nat) (P : Passes Map) : Prop where
 theorem driverRestSSA_of_aliasM {fuel sfuel : Nat} {P : Passes Map} {pick : List Nat → Nat}
     (h : AliasFieldSSAB Map pick) (ha : P.alias = aliasM pick) (ht : P.trim = trimTraceHints)
     (hs : P.switch = switchChains sfuel) : DriverRestSSA fuel sfuel P :=
-  ⟨fun n bl topo rev f bl' hb hi hp => by
+  ⟨fun n bl topo rev f bl' hb hi hr hp => by
     rw [ha] at hp
-    obtain ⟨k, d, s, t⟩ := h n bl topo rev f bl' hb.1 hb.2 hi hp
+    obtain ⟨k, d, s, t⟩ := h n bl topo rev f bl' hb.1 hb.2 hi hr hp
     exact ⟨k, ⟨d, s⟩, t⟩, ht, hs⟩
 
+/-- The invariant of `topo` and `rev` the driver carries: `TopoInv` and
+`RevSound`. -/
+abbrev TopoInvR (bl : Map Blob) (topo : List Nat) (rev : Map (List Nat)) : Prop :=
+  TopoInv bl topo rev ∧ RevSound bl topo rev
+
 theorem driverHypS_of {fuel sfuel : Nat} {P : Passes Map} (H : DriverRestSSA fuel sfuel P)
-    (K : SSAKeep Map fuel) : DriverHyp fuel P DInvS TopoInv where
-  topo := fun _ _ hb h => topo_field hb.1.1 h
+    (K : SSAKeep Map fuel) : DriverHyp fuel P DInvS TopoInvR where
+  topo := fun bl topo hb h => ⟨topo_field hb.1.1 h, revCfg_sound bl topo⟩
   hops := fun bl topo rev ch bl' hb hi h => by
-    obtain ⟨k, d, t⟩ := hops_fieldD hb.1.1 hi h
+    obtain ⟨k, d, t⟩ := hops_fieldD hb.1.1 hi.1 h
     obtain ⟨Kt, hK⟩ := hb.1.2
-    exact ⟨k, ⟨⟨d, Kt, hops_trimBr hi.1.1 hi.1.2.1 h hK⟩, K.hops bl topo rev ch bl' hb.1 hi hb.2 h⟩, t⟩
-  rub := fun bl _ _ ch bl' hb h => by
+    refine ⟨k, ⟨⟨d, Kt, hops_trimBr hi.1.1.1 hi.1.1.2.1 h hK⟩, K.hops bl topo rev ch bl' hb.1 hi.1 hb.2 h⟩,
+      fun e => ⟨t e, ?_⟩⟩
+    subst e
+    exact rvs_eq hi.2 (hops_same hi.1.1.1 h).1
+  rub := fun bl topo rev ch bl' hb h => by
     obtain ⟨k, d, t⟩ := rub_fieldD hb.1.1 h
     obtain ⟨Kt, hK⟩ := hb.1.2
-    exact ⟨k, ⟨⟨d, Kt, rub_trimBr h hK⟩, K.rub bl ch bl' hb.1 hb.2 h⟩, t⟩
-  middle := fun bl _ _ ch bl' hb h => by
+    refine ⟨k, ⟨⟨d, Kt, rub_trimBr h hK⟩, K.rub bl ch bl' hb.1 hb.2 h⟩, fun hi e => ⟨t hi.1 e, ?_⟩⟩
+    subst e
+    exact rvs_rub hi.2 h
+  middle := fun bl topo rev ch bl' hb h => by
     obtain ⟨k, d, t⟩ := middle_fieldD hb.1.1 h
     obtain ⟨Kt, hK⟩ := hb.1.2
-    exact ⟨k, ⟨⟨d, Kt, mid_trimBr h hK⟩, K.middle bl ch bl' hb.1 hb.2 h⟩, t⟩
-  alias := H.alias
+    refine ⟨k, ⟨⟨d, Kt, mid_trimBr h hK⟩, K.middle bl ch bl' hb.1 hb.2 h⟩, fun hi e => ⟨t hi.1 e, ?_⟩⟩
+    subst e
+    exact rvs_eq hi.2 fun k _ => mid_same h k
+  alias := fun n bl topo rev f bl' hb hi h => by
+    obtain ⟨k, d, t⟩ := H.alias n bl topo rev f bl' hb hi.1 hi.2 h
+    exact ⟨k, d, t, revCfg_sound _ _⟩
   trim := fun bl topo rev bl' hb hi h => by
     rw [H.trim] at h
-    obtain ⟨k, d, t⟩ := trim_fieldT hb.1 hi h
-    exact ⟨k, ⟨d, K.trim bl topo rev bl' hb.1 hi hb.2 h⟩, t⟩
+    obtain ⟨k, d, t⟩ := trim_fieldT hb.1 hi.1 h
+    have hs := trim_shape h
+    exact ⟨k, ⟨d, K.trim bl topo rev bl' hb.1 hi.1 hb.2 h⟩, t,
+      rvs_shape hi.2 hs.1 fun k hk => by rw [hs.2 k]; exact hi.1.1.2.2.1 k hk⟩
   dead := fun bl topo rev bl' hb hi h => by
     obtain ⟨Kt, hK⟩ := hb.1.2
-    obtain ⟨d, t⟩ := dead_inv hb.1.1 hi h
-    exact ⟨fun c hc => by subst hc; exact dead_keeps c hi.1 h,
-      ⟨⟨d, Kt, dead_trimBr hi.1 h hK⟩, K.dead bl topo rev bl' hb.1 hi hb.2 h⟩, t⟩
+    obtain ⟨d, t⟩ := dead_inv hb.1.1 hi.1 h
+    have hs := dead_shape h
+    exact ⟨fun c hc => by subst hc; exact dead_keeps c hi.1.1 h,
+      ⟨⟨d, Kt, dead_trimBr hi.1.1 h hK⟩, K.dead bl topo rev bl' hb.1 hi.1 hb.2 h⟩, t,
+      rvs_shape hi.2 hs.1 fun k hk => hs.2 k (List.mem_reverse.mpr hk)⟩
   switch := fun bl bl' hb h => by rw [H.switch] at h; exact switch_fieldT _ hb.1 h
 
 /-- **`+optimize` keeps the code** on blocks with `DInvS` (`DInv`, bracketed
