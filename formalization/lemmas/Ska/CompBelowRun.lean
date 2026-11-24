@@ -700,6 +700,354 @@ theorem keeps_collapseLazyAtom {nex : Next S} {g g' : Gen Map} {a : Option (Nat 
     have k5 := keeps_crashNeed n4 (fun p e => by cases e; exact r4) h5
     exact collapse_end (k14.trans k5) (Nat.lt_of_lt_of_le r4 k5.le) h
 
+/-! ## `run` -/
+
+theorem nb_fromSure {n axe : Nat} {sur sur' : Sure S} (h : fromSure axe sur = some sur') (hc : NB n sur.ned) :
+    NB n sur'.ned := by
+  unfold fromSure at h
+  by_cases h0 : axe = 0
+  · simp [h0] at h
+  simp only [h0, if_false] at h
+  by_cases hn : sur.ned = Need.none
+  · simp only [hn, if_true] at h
+    by_cases h1 : axe = 1
+    · simp [h1] at h
+    simp only [h1, if_false, Option.some.injEq] at h
+    subst h; exact nb_none _
+  · simp only [hn, if_false, Option.some.injEq] at h
+    subst h; exact fun r hr => hc r (nmem_fromPath _ _ _ hr)
+
+/-- What `run_keeps` proves of one nomm. -/
+def KeepIH (S : Type) [HoonSet S] (Map : Type → Type) [HoonMap Map] [HoonMapKeys Map] (p : Nomm) : Prop :=
+  ∀ (goal : CGoal S) (g g' : Gen Map) (nex : Next S), g.drop = false → GoalIn g.re goal →
+    run p goal g = some (nex, g') → Keeps g g' ∧ NextIn g'.re nex
+
+/-- The two runs and the copy of a cons, for a goal `%next`. -/
+theorem cons_next_keeps {p q : Nomm} (ihp : KeepIH S Map p) (ihq : KeepIH S Map q)
+    {laz : Sure S} {th : Jmp} {g0 g1 : Gen Map} {nex : Next S} (hd : g0.drop = false) (hg : NB g0.re laz.ned)
+    (hj : JmpIn (· < g0.re) th)
+    (h : (do
+      let (hed, tel, o) ← Comp.split ⟨laz, th⟩
+      let nexh ← past noCode ⟨hed, jmp0 o⟩ q
+      let nex2 ← run q (CGoal.next tel nexh.th)
+      let nex2 ← past noCode nex2 p
+      let nex1 ← run p (CGoal.next nexh.laz nex2.th)
+      copy nex1 nex2.laz : CM Map (Next S)) g0 = some (nex, g1)) : Keeps g0 g1 ∧ NextIn g1.re nex := by
+  obtain ⟨⟨hed, tel, o⟩, g2, h2, h⟩ := bind_some h
+  obtain ⟨k2, nh, nt⟩ := keeps_split hd hg hj h2
+  obtain ⟨nexh, g2', hph, h⟩ := bind_some h
+  obtain ⟨rfl, rfl⟩ := past_some hph
+  obtain ⟨nex2, g3, h3, h⟩ := bind_some h
+  obtain ⟨k3, n3⟩ := ihq (CGoal.next _ _) g2 g3 nex2 (k2.dropF hd) ⟨nt, jmpIn_jmp0 _ _⟩ h3
+  obtain ⟨nex2', g3', hp2, h⟩ := bind_some h
+  obtain ⟨rfl, rfl⟩ := past_some hp2
+  obtain ⟨nex1, g4, h4, h⟩ := bind_some h
+  obtain ⟨k4, n4⟩ := ihp (CGoal.next _ _) g3 g4 nex1 (k3.dropF (k2.dropF hd)) ⟨nh.mono k3.le, n3.2⟩ h4
+  obtain ⟨k5, n5⟩ := keeps_copy (k4.dropF (k3.dropF (k2.dropF hd))) n4 (n3.1.mono k4.le) h
+  exact ⟨k2.trans (k3.trans (k4.trans k5)), n5⟩
+
+/-- The block of a unary op whose register `d` is fresh, then the run of the
+operand for that register. -/
+theorem unary_keeps {p : Nomm} (ihp : KeepIH S Map p) {b : Blob} {arg : Nat} {g g1 g2 : Gen Map} {o : Nat}
+    {nex : Next S} (hd : g.drop = false) (hb : BlobIn (· < g.re) b) (ha : arg < g.re)
+    (h1 : (emit b : CM Map Nat) g = some (o, g1))
+    (h : run p (CGoal.next (lazyReg arg) (jmp0 o)) g1 = some (nex, g2)) : Keeps g g2 ∧ NextIn g2.re nex := by
+  obtain ⟨k1, q1⟩ := keeps_emit hd hb h1
+  obtain ⟨k2, n2⟩ := ihp (CGoal.next _ _) _ _ _ (k1.dropF hd) ⟨nb_this (by rw [q1]; exact ha), jmpIn_jmp0 _ _⟩ h
+  exact ⟨k1.trans k2, n2⟩
+
+theorem blobIn_one {P : Nat → Prop} {p : Pole} {f : Termin} (hp : ∀ x ∈ poleRegs p, P x) (hf : FinIn P f) :
+    BlobIn P ⟨[], [p], f⟩ :=
+  ⟨fun _ hx => absurd hx (List.not_mem_nil), regsIn_one hp, hf⟩
+
+theorem poleRegs_lt {n : Nat} {p : Pole} (h : ∀ x ∈ poleRegs p, x < n) : ∀ x ∈ poleRegs p, x < n := h
+
+/-- **Every run of `run` keeps (i5) and returns a `next` below its end**,
+from a state that does not drop and for a goal whose registers are below
+`re`. -/
+theorem run_keeps : ∀ (nm : Nomm), KeepIH S Map nm := by
+  intro nm
+  induction nm with
+  | n0 ax =>
+    intro goal g g' nex hd hg h
+    simp only [run] at h
+    by_cases h0 : ax = 0
+    · rw [if_pos h0] at h; exact keeps_bomb hd h
+    rw [if_neg h0] at h
+    obtain ⟨nex0, g1, h1, h⟩ := bind_some h
+    obtain ⟨k1, n1⟩ := keeps_simpleNext hd hg h1
+    by_cases ha : ax = 1
+    · rw [if_pos ha] at h
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h; exact ⟨k1, n1⟩
+    rw [if_neg ha] at h
+    cases e : «from» ax nex0.laz with
+    | none => rw [e] at h; cases h
+    | some laz =>
+      rw [e] at h
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact ⟨k1, nb_fromSure e n1.1, n1.2⟩
+  | n1 k =>
+    intro goal g g' nex hd hg h
+    cases goal with
+    | done =>
+      simp only [run] at h
+      obtain ⟨r, g1, h1, h⟩ := bind_some h
+      obtain ⟨e1, q1, k1⟩ := keeps_re h1
+      obtain ⟨o, g2, h2, h⟩ := bind_some h
+      obtain ⟨k2, _⟩ := keeps_emit (k1.dropF hd) (blobIn_one (p := Pole.imm k r) (f := Termin.don r)
+        (fun x hx => by simp only [poleRegs, List.mem_cons, List.mem_nil_iff, or_false] at hx; omega)
+        (show r < g1.re by omega)) h2
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact ⟨k1.trans k2, nb_none _, jmpIn_jmp0 _ _⟩
+    | pick z o =>
+      simp only [run] at h
+      by_cases h0 : k = A 0
+      · rw [if_pos h0] at h
+        simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+        obtain ⟨rfl, rfl⟩ := h
+        exact ⟨Keeps.refl _, nb_none _, hg.1⟩
+      rw [if_neg h0] at h
+      by_cases h1 : k = A 1
+      · rw [if_pos h1] at h
+        simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+        obtain ⟨rfl, rfl⟩ := h
+        exact ⟨Keeps.refl _, nb_none _, hg.2⟩
+      rw [if_neg h1] at h
+      exact keeps_bomb hd h
+    | next laz th =>
+      simp only [run] at h
+      obtain ⟨o, g1, h1, h⟩ := bind_some h
+      have k1 := keeps_mede hd hg.1 hg.2 h1
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact ⟨k1, nb_none _, jmpIn_jmp0 _ _⟩
+  | n7 p q ihp ihq =>
+    intro goal g g' nex hd hg h
+    simp only [run] at h
+    obtain ⟨nexq, g1, h1, h⟩ := bind_some h
+    obtain ⟨k1, n1⟩ := ihq goal g g1 nexq hd hg h1
+    obtain ⟨k2, n2⟩ := ihp nexq.goal _ _ _ (k1.dropF hd) n1 h
+    exact ⟨k1.trans k2, n2⟩
+  | n4 p ih =>
+    intro goal g g' nex hd hg h
+    cases goal with
+    | done =>
+      simp only [run] at h
+      obtain ⟨pro, g1, h1, h⟩ := bind_some h
+      obtain ⟨e1, q1, k1⟩ := keeps_re h1
+      obtain ⟨arg, g2, h2, h⟩ := bind_some h
+      obtain ⟨e2, q2, k2⟩ := keeps_re h2
+      obtain ⟨o, g3, h3, h⟩ := bind_some h
+      obtain ⟨k3, n3⟩ := unary_keeps ih ((k1.trans k2).dropF hd)
+        (blobIn_one (p := Pole.inc arg pro) (f := Termin.don pro)
+          (fun x hx => by simp only [poleRegs, List.mem_cons, List.mem_nil_iff, or_false] at hx; omega)
+          (show pro < g2.re by omega)) (by omega) h3 h
+      exact ⟨k1.trans (k2.trans k3), n3⟩
+    | pick z o =>
+      simp only [run] at h
+      obtain ⟨pro, g1, h1, h⟩ := bind_some h
+      obtain ⟨e1, q1, k1⟩ := keeps_re h1
+      obtain ⟨arg, g2, h2, h⟩ := bind_some h
+      obtain ⟨e2, q2, k2⟩ := keeps_re h2
+      obtain ⟨o', g3, h3, h⟩ := bind_some h
+      have kk : ∀ x, x < g.re → x < g2.re := fun x hx => by omega
+      obtain ⟨k3, n3⟩ := unary_keeps ih ((k1.trans k2).dropF hd)
+        (blobIn_one (p := Pole.inc arg pro) (f := Termin.brn pro z o)
+          (fun x hx => by simp only [poleRegs, List.mem_cons, List.mem_nil_iff, or_false] at hx; omega)
+          ⟨show pro < g2.re by omega, hg.1.mono kk, hg.2.mono kk⟩) (by omega) h3 h
+      exact ⟨k1.trans (k2.trans k3), n3⟩
+    | next laz th =>
+      simp only [run] at h
+      obtain ⟨a, g1, h1, h⟩ := bind_some h
+      obtain ⟨k1, r1⟩ := keeps_collapseLazyAtom (nex := ⟨laz, th⟩) hd hg.1 h1
+      obtain ⟨⟨pro, th'⟩, g2, h2, h⟩ := bind_some h
+      have hp : Keeps g1 g2 ∧ pro < g2.re := by
+        cases a with
+        | some x =>
+          simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+          obtain ⟨rfl, rfl⟩ := h2
+          exact ⟨Keeps.refl _, r1 _ _ rfl⟩
+        | none =>
+          simp only at h2
+          obtain ⟨r, g3, h3, h2⟩ := bind_some h2
+          obtain ⟨e3, q3, k3⟩ := keeps_re h3
+          by_cases ht : th.args = []
+          · rw [if_pos ht] at h2
+            simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+            obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h2
+            exact ⟨k3, by omega⟩
+          · rw [if_neg ht] at h2; cases h2
+      obtain ⟨k2, p2⟩ := hp
+      obtain ⟨arg, g3, h3, h⟩ := bind_some h
+      obtain ⟨e3, q3, k3⟩ := keeps_re h3
+      obtain ⟨o, g4, h4, h⟩ := bind_some h
+      obtain ⟨k4, n4⟩ := unary_keeps ih ((k1.trans (k2.trans k3)).dropF hd)
+        (blobIn_one (p := Pole.inc arg pro) (f := Termin.hop (jmp0 th'))
+          (fun x hx => by simp only [poleRegs, List.mem_cons, List.mem_nil_iff, or_false] at hx; omega)
+          (jmpIn_jmp0 _ _)) (by omega) h4 h
+      exact ⟨k1.trans (k2.trans (k3.trans k4)), n4⟩
+  | n3 p ih =>
+    intro goal g g' nex hd hg h
+    cases goal with
+    | done =>
+      simp only [run] at h
+      obtain ⟨⟨o0, o1⟩, g1, h1, h⟩ := bind_some h
+      have k1 := keeps_doneBlocks hd h1
+      obtain ⟨r, g2, h2, h⟩ := bind_some h
+      obtain ⟨e2, q2, k2⟩ := keeps_re h2
+      obtain ⟨oc, g3, h3, h⟩ := bind_some h
+      obtain ⟨k3, n3⟩ := unary_keeps ih ((k1.trans k2).dropF hd)
+        (blobIn_fin (f := Termin.clq r (jmp0 o0) (jmp0 o1)) ⟨show r < g2.re by omega, jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩)
+        (by omega) h3 h
+      exact ⟨k1.trans (k2.trans k3), n3⟩
+    | pick z o =>
+      simp only [run] at h
+      obtain ⟨r, g2, h2, h⟩ := bind_some h
+      obtain ⟨e2, q2, k2⟩ := keeps_re h2
+      obtain ⟨oc, g3, h3, h⟩ := bind_some h
+      have kk : ∀ x, x < g.re → x < g2.re := fun x hx => by omega
+      obtain ⟨k3, n3⟩ := unary_keeps ih (k2.dropF hd)
+        (blobIn_fin (f := Termin.clq r z o) ⟨show r < g2.re by omega, hg.1.mono kk, hg.2.mono kk⟩) (by omega) h3 h
+      exact ⟨k2.trans k3, n3⟩
+    | next laz th =>
+      simp only [run] at h
+      by_cases en : noneEquivalent laz = true
+      · rw [if_pos en] at h; exact ih _ _ _ _ hd hg h
+      rw [if_neg en] at h
+      obtain ⟨a, g1, h1, h⟩ := bind_some h
+      obtain ⟨k1, r1⟩ := keeps_collapseLazyAtom (nex := ⟨laz, th⟩) hd hg.1 h1
+      cases a with
+      | none => cases h
+      | some x =>
+        obtain ⟨r, o⟩ := x
+        simp only at h
+        obtain ⟨⟨z, o'⟩, g2, h2, h⟩ := bind_some h
+        have k2 := keeps_forl (k1.dropF hd) (r1 r o rfl) h2
+        obtain ⟨r', g3, h3, h⟩ := bind_some h
+        obtain ⟨e3, q3, k3⟩ := keeps_re h3
+        obtain ⟨oc, g4, h4, h⟩ := bind_some h
+        obtain ⟨k4, n4⟩ := unary_keeps ih ((k1.trans (k2.trans k3)).dropF hd)
+          (blobIn_fin (f := Termin.clq r' (jmp0 z) (jmp0 o')) ⟨show r' < g3.re by omega, jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩)
+          (by omega) h4 h
+        exact ⟨k1.trans (k2.trans (k3.trans k4)), n4⟩
+  | n5 p q ihp ihq =>
+    intro goal g g' nex hd hg h
+    simp only [run] at h
+    obtain ⟨rp, g1, h1, h⟩ := bind_some h
+    obtain ⟨e1, q1, k1⟩ := keeps_re h1
+    obtain ⟨rq, g2, h2, h⟩ := bind_some h
+    obtain ⟨e2, q2, k2⟩ := keeps_re h2
+    have d2 := (k1.trans k2).dropF hd
+    have kk : ∀ x, x < g.re → x < g2.re := fun x hx => by omega
+    obtain ⟨o, g3, h3, h⟩ := bind_some h
+    have k3 : Keeps g2 g3 := by
+      cases goal with
+      | pick z o =>
+        exact (keeps_emit d2 (blobIn_fin (f := Termin.eqq rp rq z o)
+          ⟨show rp < g2.re by omega, show rq < g2.re by omega, hg.1.mono kk, hg.2.mono kk⟩) h3).1
+      | done =>
+        obtain ⟨⟨o0, o1⟩, g4, h4, h3⟩ := bind_some h3
+        have k4 := keeps_doneBlocks d2 h4
+        exact k4.trans (keeps_emit (k4.dropF d2) (blobIn_fin (f := Termin.eqq rp rq (jmp0 o0) (jmp0 o1))
+          ⟨show rp < g4.re by have := k4.le; omega, show rq < g4.re by have := k4.le; omega,
+            jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩) h3).1
+      | next laz th =>
+        obtain ⟨a, g4, h4, h3⟩ := bind_some h3
+        obtain ⟨k4, r4⟩ := keeps_collapseLazyAtom (nex := ⟨laz, th⟩) d2 (hg.1.mono (by omega)) h4
+        have l4 := k4.le
+        cases a with
+        | none =>
+          simp only at h3
+          by_cases ht : th.args = []
+          · rw [if_pos ht] at h3
+            exact k4.trans (keeps_emit (k4.dropF d2) (blobIn_one (p := Pole.equ rp rq) (f := Termin.hop (jmp0 th.there))
+              (fun x hx => by simp only [poleRegs, List.mem_cons, List.mem_nil_iff, or_false] at hx; omega)
+              (jmpIn_jmp0 _ _)) h3).1
+          · rw [if_neg ht] at h3; cases h3
+        | some x =>
+          obtain ⟨r, o⟩ := x
+          simp only at h3
+          obtain ⟨⟨z, o'⟩, g5, h5, h3⟩ := bind_some h3
+          have k5 := keeps_forl (k4.dropF d2) (r4 r o rfl) h5
+          have l5 := k5.le
+          exact k4.trans (k5.trans (keeps_emit ((k4.trans k5).dropF d2) (blobIn_fin (f := Termin.eqq rp rq (jmp0 z) (jmp0 o'))
+            ⟨show rp < g5.re by omega, show rq < g5.re by omega, jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩) h3).1)
+    have d3 := k3.dropF d2
+    obtain ⟨nexq, g4, h4, h⟩ := bind_some h
+    obtain ⟨k4, n4⟩ := ihq (CGoal.next _ _) _ _ _ d3 ⟨nb_this (by have := k3.le; omega), jmpIn_jmp0 _ _⟩ h4
+    obtain ⟨nexq', g4', hp, h⟩ := bind_some h
+    obtain ⟨rfl, rfl⟩ := past_some hp
+    obtain ⟨nexp, g5, h5, h⟩ := bind_some h
+    obtain ⟨k5, n5⟩ := ihp (CGoal.next _ _) _ _ _ (k4.dropF d3) ⟨nb_this (by have := k3.le; have := k4.le; omega), n4.2⟩ h5
+    obtain ⟨k6, n6⟩ := keeps_copy (k5.dropF (k4.dropF d3)) n5 (n4.1.mono k5.le) h
+    exact ⟨k1.trans (k2.trans (k3.trans (k4.trans (k5.trans k6)))), n6⟩
+  | cons p q ihp ihq =>
+    intro goal g g' nex hd hg h
+    cases goal with
+    | done =>
+      simp only [run] at h
+      obtain ⟨gl, g1, h1, h⟩ := bind_some h
+      obtain ⟨r, g2, h2, h1⟩ := bind_some h1
+      obtain ⟨e2, q2, k2⟩ := keeps_re h2
+      obtain ⟨o, g3, h3, h1⟩ := bind_some h1
+      obtain ⟨k3, q3⟩ := keeps_emit (k2.dropF hd) (blobIn_fin (f := Termin.don r) (show r < g2.re by omega)) h3
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h1
+      obtain ⟨rfl, rfl⟩ := h1
+      simp only at h
+      obtain ⟨k4, n4⟩ := cons_next_keeps ihp ihq ((k2.trans k3).dropF hd) (nb_this (by omega)) (jmpIn_jmp0 _ _) h
+      exact ⟨k2.trans (k3.trans k4), n4⟩
+    | next laz th =>
+      simp only [run, bind_apply, pure_apply, Option.bind_some] at h
+      exact cons_next_keeps ihp ihq hd hg.1 hg.2 h
+    | pick z o =>
+      simp only [run, bind_apply, pure_apply, Option.bind_some] at h
+      obtain ⟨⟨o', g1⟩, h1, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨k1, _⟩ := keeps_emit hd (blobIn_fin (f := Termin.bom Option.none) trivial) h1
+      have d1 := k1.dropF hd
+      obtain ⟨⟨nex2, g3⟩, h3, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨k3, n3⟩ := ihq (CGoal.next _ _) _ _ _ d1 ⟨nb_none _, jmpIn_jmp0 _ _⟩ h3
+      obtain ⟨⟨nex2', g3'⟩, hp, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨rfl, rfl⟩ := past_some hp
+      obtain ⟨⟨nex1, g4⟩, h4, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨k4, n4⟩ := ihp (CGoal.next _ _) _ _ _ (k3.dropF d1) ⟨nb_none _, n3.2⟩ h4
+      obtain ⟨k5, n5⟩ := keeps_copy (k4.dropF (k3.dropF d1)) n4 (n3.1.mono k4.le) h
+      exact ⟨k1.trans (k3.trans (k4.trans k5)), n5⟩
+  | n2 => intro goal g0 g1 nex _ _ h; simp only [run] at h; cases h
+  | n6 => intro goal g0 g1 nex _ _ h; simp only [run] at h; cases h
+  | n10 a v q ihv ihq =>
+    intro goal g g' nex hd hg h
+    simp only [run] at h
+    obtain ⟨nex0, g2, h2, h⟩ := bind_some h
+    obtain ⟨k2, n2⟩ := keeps_simpleNext hd hg h2
+    have d2 := k2.dropF hd
+    obtain ⟨⟨don, rec, o⟩, g3, h3, h⟩ := bind_some h
+    obtain ⟨k3, nd, nr⟩ := keeps_into d2 n2 h3
+    have d3 := k3.dropF d2
+    simp only at h
+    obtain ⟨nexR, g3', hpr, h⟩ := bind_some h
+    obtain ⟨rfl, rfl⟩ := past_some hpr
+    obtain ⟨nexDon, g4, h4, h⟩ := bind_some h
+    obtain ⟨k4, n4⟩ := ihv (CGoal.next _ _) _ _ _ d3 ⟨nd, jmpIn_jmp0 _ _⟩ h4
+    obtain ⟨nexDon', g4', hpd, h⟩ := bind_some h
+    obtain ⟨rfl, rfl⟩ := past_some hpd
+    obtain ⟨nexRec, g5, h5, h⟩ := bind_some h
+    obtain ⟨k5, n5⟩ := ihq (CGoal.next _ _) _ _ _ (k4.dropF d3) ⟨nr.mono k4.le, n4.2⟩ h5
+    obtain ⟨k6, n6⟩ := keeps_copy (k5.dropF (k4.dropF d3)) n5 (n4.1.mono k5.le) h
+    exact ⟨k2.trans (k3.trans (k4.trans (k5.trans k6))), n6⟩
+  | n11s => intro goal g0 g1 nex _ _ h; simp only [run] at h; cases h
+  | n11d => intro goal g0 g1 nex _ _ h; simp only [run] at h; cases h
+  | n12 => intro goal g0 g1 nex _ _ h; simp only [run] at h; cases h
+  | mean => intro goal g0 g1 nex _ _ h; simp only [run] at h; cases h
+
+/-- **Fact (i5) of every run of `run`** from a state that does not drop, for
+a goal whose registers are below `re`. -/
+theorem run_below {nm : Nomm} {goal : CGoal S} {g0 g1 : Gen Map} {nex : Next S} (hd : g0.drop = false)
+    (hg : GoalIn g0.re goal) (h : run nm goal g0 = some (nex, g1)) : BelowIn g0.bo g1 :=
+  (run_keeps nm goal g0 g1 nex hd hg h).1.bel _ (belowIn_start g0)
+
 end Comp
 end SkaModel
 end Formalization
