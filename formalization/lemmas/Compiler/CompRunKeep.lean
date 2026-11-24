@@ -11,7 +11,8 @@ binds and branches keep it (the tactic `km`, as `kd` of
 `+walk-lazy` (with a gate that meets it), `+kern`, `+kerf`, `+mede`,
 `+collapse-lazy-atom`, `+split`, `+into`, `+copy`, `+past`,
 `+simple-next`, `+bomb`, `+forl`.  `GRes` asks the counters to grow; this
-file gives it for every step between the runs of the parts.
+file gives it for every step between the runs of the parts.  Every block
+with a tag keeps it (`TagsUp`): only `+set-tag` writes `tags`, and it puts.
 -/
 
 set_option linter.unusedSectionVars false
@@ -23,27 +24,42 @@ open Nock Pill Hoon SkaModel SkaModel.Comp Lazy
 
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
 
-/-- `m` does not lower the counters and keeps `drop`. -/
+/-- Every block with a tag in `g` has one in `g'`. -/
+def TagsUp (g g' : Gen Map) : Prop := ∀ o, (HoonMap.get g.tags o).isSome = true → (HoonMap.get g'.tags o).isSome = true
+
+theorem TagsUp.refl (g : Gen Map) : TagsUp g g := fun _ h => h
+
+theorem TagsUp.trans {g0 g1 g2 : Gen Map} (a : TagsUp g0 g1) (b : TagsUp g1 g2) : TagsUp g0 g2 :=
+  fun o h => b o (a o h)
+
+/-- `m` does not lower the counters, keeps `drop`, and keeps every tag. -/
 structure KM {α : Type} (m : CM Map α) : Prop where
   keep : ∀ g x g', m g = some (x, g') → g.re ≤ g'.re ∧ g.bo ≤ g'.bo ∧ g'.drop = g.drop
+  tags : ∀ g x g', m g = some (x, g') → TagsUp g g'
 
 namespace KM
 
 theorem pure' {α : Type} (a : α) : KM (pure a : CM Map α) := by
-  constructor; intro g x g' h; cases h; exact ⟨Nat.le_refl _, Nat.le_refl _, rfl⟩
+  constructor
+  · intro g x g' h; cases h; exact ⟨Nat.le_refl _, Nat.le_refl _, rfl⟩
+  · intro g x g' h; cases h; exact TagsUp.refl _
 
 theorem bind' {α β : Type} {m : CM Map α} {f : α → CM Map β} (hm : KM m) (hf : ∀ a, KM (f a)) :
     KM (m >>= f) := by
   constructor
-  intro g x g' h
-  rw [bind_apply] at h
-  obtain ⟨⟨a, g1⟩, h1, h2⟩ := Option.bind_eq_some_iff.mp h
-  obtain ⟨a1, b1, c1⟩ := hm.keep g a g1 h1
-  obtain ⟨a2, b2, c2⟩ := (hf a).keep g1 x g' h2
-  exact ⟨Nat.le_trans a1 a2, Nat.le_trans b1 b2, c2.trans c1⟩
+  · intro g x g' h
+    rw [bind_apply] at h
+    obtain ⟨⟨a, g1⟩, h1, h2⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨a1, b1, c1⟩ := hm.keep g a g1 h1
+    obtain ⟨a2, b2, c2⟩ := (hf a).keep g1 x g' h2
+    exact ⟨Nat.le_trans a1 a2, Nat.le_trans b1 b2, c2.trans c1⟩
+  · intro g x g' h
+    rw [bind_apply] at h
+    obtain ⟨⟨a, g1⟩, h1, h2⟩ := Option.bind_eq_some_iff.mp h
+    exact (hm.tags g a g1 h1).trans ((hf a).tags g1 x g' h2)
 
 theorem fail {α : Type} : KM (fun _ => Option.none : CM Map α) := by
-  constructor; intro g x g' h; cases h
+  constructor <;> (intro g x g' h; cases h)
 
 theorem ite' {α : Type} (c : Prop) [Decidable c] {a b : CM Map α} (ha : KM a) (hb : KM b) :
     KM (if c then a else b) := by
@@ -51,48 +67,57 @@ theorem ite' {α : Type} (c : Prop) [Decidable c] {a b : CM Map α} (ha : KM a) 
   · exact ha
   · exact hb
 
-theorem re' : KM (re : CM Map Nat) := by
-  constructor; intro g x g' h; cases h; exact ⟨Nat.le_succ _, Nat.le_refl _, rfl⟩
-theorem oo' : KM (oo : CM Map Nat) := by
-  constructor; intro g x g' h; cases h; exact ⟨Nat.le_refl _, Nat.le_succ _, rfl⟩
-theorem freshId' : KM (freshId : CM Map Nat) := by
-  constructor; intro g x g' h; cases h; exact ⟨Nat.le_refl _, Nat.le_refl _, rfl⟩
-theorem idM' : KM (idM : CM Map Nat) := by
-  constructor; intro g x g' h; cases h; exact ⟨Nat.le_refl _, Nat.le_refl _, rfl⟩
-theorem get' : KM (get : CM Map (Gen Map)) := by
-  constructor; intro g x g' h; cases h; exact ⟨Nat.le_refl _, Nat.le_refl _, rfl⟩
+/-- A step that keeps the tags and the mode and moves the counters up. -/
+theorem of_gen {α : Type} {m : CM Map α}
+    (h : ∀ g x g', m g = some (x, g') → g.re ≤ g'.re ∧ g.bo ≤ g'.bo ∧ g'.drop = g.drop ∧ g'.tags = g.tags) :
+    KM m :=
+  ⟨fun g x g' e => let k := h g x g' e; ⟨k.1, k.2.1, k.2.2.1⟩,
+   fun g x g' e o ho => by rw [(h g x g' e).2.2.2]; exact ho⟩
+
+theorem re' : KM (re : CM Map Nat) := of_gen fun g x g' h => by cases h; exact ⟨Nat.le_succ _, Nat.le_refl _, rfl, rfl⟩
+theorem oo' : KM (oo : CM Map Nat) := of_gen fun g x g' h => by cases h; exact ⟨Nat.le_refl _, Nat.le_succ _, rfl, rfl⟩
+theorem freshId' : KM (freshId : CM Map Nat) :=
+  of_gen fun g x g' h => by cases h; exact ⟨Nat.le_refl _, Nat.le_refl _, rfl, rfl⟩
+theorem idM' : KM (idM : CM Map Nat) := of_gen fun g x g' h => by cases h; exact ⟨Nat.le_refl _, Nat.le_refl _, rfl, rfl⟩
+theorem get' : KM (get : CM Map (Gen Map)) :=
+  of_gen fun g x g' h => by cases h; exact ⟨Nat.le_refl _, Nat.le_refl _, rfl, rfl⟩
 
 theorem setTag' (o : Nat) (region : List Nat) : KM (setTag o region : CM Map Unit) := by
-  constructor; intro g x g' h; cases h; split <;> exact ⟨Nat.le_refl _, Nat.le_refl _, rfl⟩
-
-theorem emir' (o : Nat) (b : Blob) : KM (emir o b : CM Map Unit) := by
-  constructor; intro g x g' h; cases h; split <;> exact ⟨Nat.le_refl _, Nat.le_refl _, rfl⟩
-
-theorem emit' (b : Blob) : KM (emit b : CM Map Nat) := by
-  constructor; intro g x g' h; rw [emit_apply] at h; cases h
-  exact ⟨Nat.le_refl _, Nat.le_succ _, rfl⟩
-
-theorem addOps' (o : Nat) (ops : List Pole) : KM (addOps o ops : CM Map Unit) := by
   constructor
-  intro g x g' h
-  unfold addOps at h
-  split at h
-  · cases h; exact ⟨Nat.le_refl _, Nat.le_refl _, rfl⟩
-  · obtain ⟨b, _, e⟩ := Option.map_eq_some_iff.mp h; cases e; exact ⟨Nat.le_refl _, Nat.le_refl _, rfl⟩
+  · intro g x g' h; cases h; split <;> exact ⟨Nat.le_refl _, Nat.le_refl _, rfl⟩
+  · intro g x g' h; cases h
+    split
+    · exact TagsUp.refl _
+    · intro o' h'
+      simp only [HoonMap.get_put]
+      split
+      · rfl
+      · exact h'
 
-theorem liftO' {α : Type} (x : Option α) : KM (liftO x : CM Map α) := by
-  constructor
-  intro g a g' h
-  obtain ⟨b, _, e⟩ := Option.map_eq_some_iff.mp h; cases e; exact ⟨Nat.le_refl _, Nat.le_refl _, rfl⟩
+theorem emir' (o : Nat) (b : Blob) : KM (emir o b : CM Map Unit) :=
+  of_gen fun g x g' h => by cases h; split <;> exact ⟨Nat.le_refl _, Nat.le_refl _, rfl, rfl⟩
 
-theorem proxy' (r o : Nat) : KM (proxy r o : CM Map Nat) := by
-  constructor
-  intro g x g' h
-  unfold proxy at h
-  simp only at h
-  split at h
-  · cases h; exact ⟨Nat.le_succ _, Nat.le_refl _, rfl⟩
-  · obtain ⟨b, _, e⟩ := Option.map_eq_some_iff.mp h; cases e; exact ⟨Nat.le_succ _, Nat.le_refl _, rfl⟩
+theorem emit' (b : Blob) : KM (emit b : CM Map Nat) :=
+  of_gen fun g x g' h => by rw [emit_apply] at h; cases h; exact ⟨Nat.le_refl _, Nat.le_succ _, rfl, rfl⟩
+
+theorem addOps' (o : Nat) (ops : List Pole) : KM (addOps o ops : CM Map Unit) :=
+  of_gen fun g x g' h => by
+    unfold addOps at h
+    split at h
+    · cases h; exact ⟨Nat.le_refl _, Nat.le_refl _, rfl, rfl⟩
+    · obtain ⟨b, _, e⟩ := Option.map_eq_some_iff.mp h; cases e; exact ⟨Nat.le_refl _, Nat.le_refl _, rfl, rfl⟩
+
+theorem liftO' {α : Type} (x : Option α) : KM (liftO x : CM Map α) :=
+  of_gen fun g a g' h => by
+    obtain ⟨b, _, e⟩ := Option.map_eq_some_iff.mp h; cases e; exact ⟨Nat.le_refl _, Nat.le_refl _, rfl, rfl⟩
+
+theorem proxy' (r o : Nat) : KM (proxy r o : CM Map Nat) :=
+  of_gen fun g x g' h => by
+    unfold proxy at h
+    simp only at h
+    split at h
+    · cases h; exact ⟨Nat.le_succ _, Nat.le_refl _, rfl, rfl⟩
+    · obtain ⟨b, _, e⟩ := Option.map_eq_some_iff.mp h; cases e; exact ⟨Nat.le_succ _, Nat.le_refl _, rfl, rfl⟩
 
 theorem foldl' {α β : Type} (f : CM Map α → β → CM Map α) (hf : ∀ acc b, KM acc → KM (f acc b)) :
     ∀ (l : List β) (acc : CM Map α), KM acc → KM (l.foldl f acc)
@@ -125,13 +150,15 @@ theorem km_splitNeed (ned : Need) (o : Nat) : KM (splitNeed ned o : CM Map (Need
 
 theorem km_splitSure (sur : Sure S) (o : Nat) : KM (splitSure sur o : CM Map (Sure S × Sure S)) := by
   constructor
-  intro g x g' h
-  unfold splitSure at h
-  obtain ⟨⟨lh, lt⟩, _, h⟩ := Option.bind_eq_some_iff.mp h
-  obtain ⟨⟨_, g1⟩, h1, e⟩ := Option.map_eq_some_iff.mp h
-  have k := (km_splitNeed _ _).keep g _ g1 h1
-  simp only [Prod.mk.injEq] at e
-  rw [← e.2]; exact k
+  all_goals
+    intro g x g' h
+    unfold splitSure at h
+    obtain ⟨⟨lh, lt⟩, _, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨⟨_, g1⟩, h1, e⟩ := Option.map_eq_some_iff.mp h
+    simp only [Prod.mk.injEq] at e
+    rw [← e.2]
+  · exact (km_splitNeed _ _).keep g _ g1 h1
+  · exact (km_splitNeed _ _).tags g _ g1 h1
 
 theorem km_intoLoop (o : Nat) : ∀ (axe : Nat) (ned : Need) (tack : List (Bool × Need)) (ops : List Pole),
     KM (intoLoop o axe ned tack ops : CM Map (Need × Need)) := by
@@ -155,13 +182,15 @@ theorem km_intoNeed (axe : Nat) (ned : Need) (o : Nat) : KM (intoNeed axe ned o 
 
 theorem km_intoSure (axe : Nat) (sur : Sure S) (o : Nat) : KM (intoSure axe sur o : CM Map (Sure S × Sure S)) := by
   constructor
-  intro g x g' h
-  unfold intoSure at h
-  obtain ⟨⟨ld, lr⟩, _, h⟩ := Option.bind_eq_some_iff.mp h
-  obtain ⟨⟨_, g1⟩, h1, e⟩ := Option.map_eq_some_iff.mp h
-  have k := (km_intoNeed _ _ _).keep g _ g1 h1
-  simp only [Prod.mk.injEq] at e
-  rw [← e.2]; exact k
+  all_goals
+    intro g x g' h
+    unfold intoSure at h
+    obtain ⟨⟨ld, lr⟩, _, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨⟨_, g1⟩, h1, e⟩ := Option.map_eq_some_iff.mp h
+    simp only [Prod.mk.injEq] at e
+    rw [← e.2]
+  · exact (km_intoNeed _ _ _).keep g _ g1 h1
+  · exact (km_intoNeed _ _ _).tags g _ g1 h1
 
 theorem km_copyNeed : ∀ (a b : Need) (ops : List Pole), KM (copyNeed a b ops : CM Map (Need × List Pole))
   | Need.none, _, _ => by rw [copyNeed]; km
