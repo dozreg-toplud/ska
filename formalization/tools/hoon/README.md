@@ -40,9 +40,10 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     is `[3 0]`, its code requirement says `[1 7]`: SitesMeet fails at 1 site per pair (strict
                     and at `less.c`), and `H`'s variant has a bake not under its code requirement (2026-11-24).  On the compiler with the guard
                     of commit 8f2162e SitesMeet still fails at that site, but `[%bakeok 1 variants=7 bad=0]` (2026-11-24)
-* `swaploop.hoon`   the pass loop of `+analyze` does not end (`lemmas/Ska/PassLoop.lean`): one member whose
-                    `less-code` alternates between `[& [& |]]` and `[& [| &]]`; `+poke` gave no answer in 300 s, the same
-                    poke with the sample not swapped answers at once (2026-11-24)
+* `swaploop.hoon`   the pass loop of `+analyze` did not end before 1813f09 (`lemmas/Ska/PassLoop.lean`): one member
+                    whose `less-code` alternated between `[& [& |]]` and `[& [| &]]`; `+poke` gave no answer in 300 s,
+                    the same poke with the sample not swapped answers at once (2026-11-24).  On the compiler of 1813f09,
+                    where `+run` unites `less-code` with the old cape, it prints `[%poke-returned %.y]` (2026-11-24)
 * `collide.hoon`    a miscompile (`lemmas/Ska/VariantCollision.lean`): the poke of `bakedrop.hoon`'s first
                     formula, then `[7 [[1 [[3 0] 5]] (dec 40)] [2 [0 1] [1 H]]]`, whose `H` gets a second code
                     bell with the same bake, so the live call runs the dead variant's code: `+eval-top` gives
