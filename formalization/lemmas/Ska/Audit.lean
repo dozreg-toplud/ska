@@ -45,6 +45,7 @@ import lemmas.Ska.SitesMeet
 import lemmas.Ska.KnowMonoFalse
 import lemmas.Ska.SitesMeetNF
 import lemmas.Ska.AnaFuel
+import lemmas.Ska.AnaEnds
 
 /-! The axioms of the main theorems of `lemmas/Ska`.  `lake build` prints
 them; each should be `propext`, `Classical.choice` and `Quot.sound` at most. -/
@@ -378,3 +379,10 @@ open Formalization.SkaModel
 #print axioms Bake.collide_same_bake
 #print axioms Bake.collide_key_dead
 #print axioms Bake.bakeGuard_fits
+#print axioms Ana.memoNoCallees_skaPoke
+#print axioms Ana.pruneLoop_ends
+#print axioms Ana.pruneCallgraph_ends
+#print axioms PokeM.anaHalts_of
+#print axioms PokeM.anaEndsN_of_halts
+#print axioms PokeM.anaEndsN_mono
+#print axioms PokeM.anaEnds_of_N
