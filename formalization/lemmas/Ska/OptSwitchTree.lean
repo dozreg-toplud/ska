@@ -227,6 +227,123 @@ theorem pickHit_right {L R : List SCase} {mis : Nat} {v : Noun} (h : ∀ x ∈ L
     List.find?_eq_none.mpr fun x hx => by simpa using h x hx
   simp only [pickHit, List.find?_append, this, Option.none_or]
 
+/-- The split of an `%lti` node: on a value it takes to the first target no
+case of the upper half has the value as its constant, on one it takes to the
+second no case of the lower half has. -/
+theorem pick_split {all tl : List SCase} {h0 : SCase} {haf mis : Nat} {v : Noun}
+    (hpw : all.Pairwise (fun a b => a.c < b.c)) (hd : all.drop haf = h0 :: tl) :
+    pickHit all mis v = (if ltOf h0.c v then pickHit (all.take haf) mis v else pickHit (h0 :: tl) mis v) := by
+  have e := List.take_append_drop haf all
+  rw [hd] at e
+  have hpw' : (all.take haf ++ h0 :: tl).Pairwise (fun a b => a.c < b.c) := by rw [e]; exact hpw
+  rw [List.pairwise_append, List.pairwise_cons] at hpw'
+  have hall : pickHit all mis v = pickHit (all.take haf ++ h0 :: tl) mis v := by rw [e]
+  rw [hall]
+  cases hl : ltOf h0.c v
+  · simp only [Bool.false_eq_true, if_false]
+    refine pickHit_right fun x hx he => ?_
+    have := hpw'.2.2 x hx h0 List.mem_cons_self
+    subst he
+    simp [ltOf, this] at hl
+  · simp only [if_true]
+    refine pickHit_left fun x hx he => ?_
+    cases v with
+    | cell _ _ => simp [ltOf] at hl
+    | atom a =>
+      simp only [ltOf, decide_eq_true_eq] at hl
+      simp only [A, Noun.atom.injEq] at he
+      subst he
+      rcases List.mem_cons.mp hx with h | h
+      · subst h; omega
+      · have := hpw'.2.1.1 x h; omega
+
+/-- **(a)** The tree of `stree` on cases sorted strictly by their constants
+takes the hit of the case whose constant is the value and the miss
+otherwise, on every map that holds its nodes at the labels it used; the map
+it returns is the one it was given but at those labels, which are the first
+of `ids`. -/
+theorem stree_go (d mis : Nat) (rs : List Nat) : ∀ (n : Nat) (cas : List SCase) (ids : List Nat)
+    (out : Map Blob) (nb : List Pole) (nf : Termin) (ids' : List Nat) (out' : Map Blob),
+    stree d mis n cas ids out = some (nb, nf, ids', out') →
+    cas.Pairwise (fun a b => a.c < b.c) → (∀ x ∈ cas, x.r ≠ d ∧ x.r ∈ rs) → ids.Nodup →
+    ∃ used, ids = used ++ ids' ∧
+      (∀ k, k ∉ used → HoonMap.get out' k = HoonMap.get out k) ∧
+      ∀ (M : Map Blob), (∀ k ∈ used, HoonMap.get M k = HoonMap.get out' k) →
+        ∀ v, treeGo M d rs v n ⟨[], nb, nf⟩ = some (pickHit cas mis v)
+  | 0, cas, ids, out, nb, nf, ids', out', h, _, _, _ => by simp [stree] at h
+  | n + 1, [], ids, out, nb, nf, ids', out', h, _, _, _ => by simp [stree] at h
+  | n + 1, [x], ids, out, nb, nf, ids', out', h, _, hr, _ => by
+    simp only [stree, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl, rfl, rfl⟩ := h
+    refine ⟨[], by simp, fun _ _ => rfl, fun M _ v => ?_⟩
+    have hx := hr x List.mem_cons_self
+    by_cases hv : v = A x.c
+    · simp [treeGo, pickHit, hx.1, hx.2, hv]
+    · simp [treeGo, pickHit, hx.1, hx.2, hv]
+  | n + 1, x :: y :: t, ids, out, nb, nf, ids', out', h, hpw, hr, hnd => by
+    rw [stree.eq_def] at h
+    simp only at h
+    generalize hall : x :: y :: t = all at h hpw hr ⊢
+    generalize (all.length / 2) = haf at h
+    cases hd : List.drop haf all with
+    | nil => rw [hd] at h; simp at h
+    | cons h0 tl =>
+    rw [hd] at h
+    rcases ids with _ | ⟨lid, _ | ⟨rid, rest⟩⟩
+    · simp at h
+    · simp at h
+    simp only at h
+    cases hL : stree d mis n (all.take haf) rest out with
+    | none => simp [hL] at h
+    | some L =>
+    obtain ⟨lb, lf, lids, lout⟩ := L
+    simp only [hL, Option.bind_some] at h
+    cases hR : stree d mis n (h0 :: tl) lids (HoonMap.put lout lid ⟨[], lb, lf⟩) with
+    | none => simp [hR] at h
+    | some R =>
+    obtain ⟨rb, rf, rids, rout⟩ := R
+    simp only [hR, Option.map_some, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl, rfl, rfl⟩ := h
+    have pwT : (all.take haf).Pairwise (fun a b => a.c < b.c) := hpw.sublist (List.take_sublist _ _)
+    have pwD : (h0 :: tl).Pairwise (fun a b => a.c < b.c) := hd ▸ hpw.sublist (List.drop_sublist _ _)
+    have hrT : ∀ x ∈ all.take haf, x.r ≠ d ∧ x.r ∈ rs := fun x hx => hr x (List.mem_of_mem_take hx)
+    have hrD : ∀ x ∈ h0 :: tl, x.r ≠ d ∧ x.r ∈ rs := fun x hx =>
+      hr x (List.mem_of_mem_drop (hd ▸ hx : x ∈ all.drop haf))
+    have ndRest : rest.Nodup := (List.nodup_cons.mp (List.nodup_cons.mp hnd).2).2
+    obtain ⟨usedL, eL, frL, goL⟩ := stree_go d mis rs n _ rest out lb lf lids lout hL pwT hrT ndRest
+    have ndLids : lids.Nodup := by rw [eL] at ndRest; exact (List.nodup_append.mp ndRest).2.1
+    obtain ⟨usedR, eR, frR, goR⟩ := stree_go d mis rs n _ lids _ rb rf rids rout hR pwD hrD ndLids
+    subst eL; subst eR
+    have nd := hnd
+    simp only [List.nodup_cons, List.mem_cons, List.mem_append, not_or] at nd
+    obtain ⟨⟨hlr, hlL, hlR, -⟩, ⟨hrL, hrR, -⟩, ndA⟩ := nd
+    have hLR : ∀ k ∈ usedL, k ∉ usedR := fun k hk hk' =>
+      (List.nodup_append.mp ndA).2.2 k hk k (List.mem_append_left _ hk') rfl
+    refine ⟨lid :: rid :: (usedL ++ usedR), by simp, fun k hk => ?_, fun M hM v => ?_⟩
+    · simp only [List.mem_cons, List.mem_append, not_or] at hk
+      rw [HoonMap.get_put, if_neg hk.2.1, frR k hk.2.2.2, HoonMap.get_put, if_neg hk.1, frL k hk.2.2.1]
+    · have oL : HoonMap.get (HoonMap.put rout rid (⟨[], rb, rf⟩ : Blob)) lid = some ⟨[], lb, lf⟩ := by
+        rw [HoonMap.get_put, if_neg hlr, frR lid hlR, HoonMap.get_put, if_pos rfl]
+      have oR : HoonMap.get (HoonMap.put rout rid (⟨[], rb, rf⟩ : Blob)) rid = some ⟨[], rb, rf⟩ := by
+        rw [HoonMap.get_put, if_pos rfl]
+      have mL := (hM lid (by simp)).trans oL
+      have mR := (hM rid (by simp)).trans oR
+      have aL : ∀ k ∈ usedL, HoonMap.get M k = HoonMap.get lout k := by
+        intro k hk
+        have hne1 : k ≠ rid := fun h => hrL (h ▸ hk)
+        have hne2 : k ≠ lid := fun h => hlL (h ▸ hk)
+        rw [hM k (by simp [hk]), HoonMap.get_put, if_neg hne1, frR k (hLR k hk), HoonMap.get_put,
+          if_neg hne2]
+      have aR : ∀ k ∈ usedR, HoonMap.get M k = HoonMap.get rout k := by
+        intro k hk
+        have hne1 : k ≠ rid := fun h => hrR (h ▸ hk)
+        rw [hM k (by simp [hk]), HoonMap.get_put, if_neg hne1]
+      rw [pick_split hpw hd]
+      cases hl : ltOf h0.c v
+      · simp [treeGo, hl, mR, goR M aR v]
+      · simp [treeGo, hl, mL, goL M aL v]
+
+
 end Opt
 end SkaModel
 end Formalization
