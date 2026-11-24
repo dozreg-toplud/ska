@@ -10,6 +10,7 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
 * `sect.hoon`       the threading cases of `+sect` through `+eval-top`
 * `sect2.hoon`      the same on the code before `+optimize`
 * `thread-a/b/c`    162 threading cases: before `+optimize`, after it, and with passes left out
+* `proxy-dump.hoon` the raw blocks of two proxy cases for a subject sock that knows nothing (`lemmas/Ska/ExecPath.lean`)
 * `sitesmeet2.hoon` `SitesMeet` on every site after fifteen pokes
 * `sitesmeet3.hoon` the three invariants of `lemmas/Ska/SitesMeet.lean` on the same sites
 * `sitesmeet4.hoon` `LessProvidesNF` and `KnowMeetsNF` of `lemmas/Ska/SitesMeetNF.lean` (a copy of `+know` with `fold` as a sample)

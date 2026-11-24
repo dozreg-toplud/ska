@@ -14,6 +14,7 @@ import lemmas.Ska.CompEntryGoal
 import lemmas.Ska.CompFromRun
 import lemmas.Ska.CompEntryRun
 import lemmas.Ska.CompSevenOne
+import lemmas.Ska.ExecPath
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -236,3 +237,10 @@ open Formalization.SkaModel.Comp
 #print axioms runOKP_seven1
 #print axioms finishLF_bellContract71
 #print axioms crash_iff71
+#print axioms Formalization.SkaModel.Path.step_run
+#print axioms Formalization.SkaModel.Path.run_iff_path
+#print axioms Formalization.SkaModel.Path.step_det
+#print axioms Formalization.SkaModel.Path.execEntry_iff_path
+#print axioms Formalization.SkaModel.Path.run_poison
+#print axioms Formalization.SkaModel.Path.steps_reads
+#print axioms Formalization.SkaModel.Path.guarded_reads
