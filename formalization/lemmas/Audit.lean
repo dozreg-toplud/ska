@@ -645,3 +645,6 @@ open Formalization
 #print axioms Compiler.cr10_eq
 #print axioms Compiler.cr10_tail
 #print axioms Compiler.comp_run_n10
+#print axioms Compiler.crc_eq
+#print axioms Compiler.cr_split_at
+#print axioms Compiler.crc_ntail

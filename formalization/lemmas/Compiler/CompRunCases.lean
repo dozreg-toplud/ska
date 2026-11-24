@@ -855,5 +855,88 @@ theorem comp_run_n10 (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot?
       simp [nock_exec, cr_bat_sn, hsn, bind, StateT.bind, es, hD, cr_int_arm, hin, ei, ht]
 
 
+/-! ## The cons case (in part)
+
+`crKc` is the `=>` that turns a `%done` goal into `[%next (lazy-from-reg r)
+~ o]` (a block `[%don r]`), then the `?-`: `crcPick` for `%pick` (a `%bom`
+block, `q`, `+past`, `p`, `+copy`) and, behind a `%toss` hint, `+split` and
+the tail `crcNTail` for `%next`.  The tail is linked (`crc_ntail`); the
+branch `%pick` and the head are not. -/
+
+def crcNTail : Noun :=
+  (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 0x2bfe) (C (A 0) (A 31)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 7) (C (C (A 0) (A 3)) (C (C (A 1) (A 0x7478656e)) (C (C (A 0) (A 4)) (C (C (A 1) (A 0)) (C (A 0) (A 11))))))) (C (C (A 0) (A 501)) (C (A 0) (A 1006))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 254) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 5) (C (A 10) (C (C (A 118) (C (C (A 1) (A 0x7478656e)) (C (C (A 0) (A 26)) (C (A 0) (A 11))))) (C (A 10) (C (C (A 58) (C (A 0) (A 501))) (C (A 0) (A 7)))))))))) (C (A 7) (C (C (A 10) (C (C (A 510) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 0x2bfe) (C (A 0) (A 127)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 6)) (C (C (A 0) (A 2036)) (C (A 0) (A 4078))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 1022) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 5) (C (A 10) (C (C (A 118) (C (C (A 1) (A 0x7478656e)) (C (C (A 0) (A 58)) (C (A 0) (A 11))))) (C (A 10) (C (C (A 58) (C (A 0) (A 2036))) (C (A 0) (A 31)))))))))) (C (A 7) (C (C (A 10) (C (C (A 2046) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 8) (C (C (A 9) (C (A 0x55dae) (C (A 0) (A 511)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 6)) (C (A 0) (A 58)))) (C (A 0) (A 2))))))))))))))))))))))))))))))))))))))))
+
+def crcPick : Noun :=
+  (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 0xaaaa) (C (A 0) (A 15)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A 0)))) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A 0)))) (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (C (A 0x6d6f62) (A 0)))))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 126) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 5) (C (A 10) (C (C (A 118) (C (C (A 1) (A 0x7478656e)) (C (C (A 1) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))) (C (C (A 1) (A 0)) (C (A 0) (A 2)))))) (C (A 10) (C (C (A 58) (C (A 0) (A 245))) (C (A 0) (A 3)))))))))) (C (A 7) (C (C (A 10) (C (C (A 254) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 0x2bfe) (C (A 0) (A 63)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 6)) (C (C (A 0) (A 1012)) (C (A 0) (A 2030))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 510) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 5) (C (A 10) (C (C (A 118) (C (C (A 1) (A 0x7478656e)) (C (C (A 1) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))) (C (A 0) (A 11))))) (C (A 10) (C (C (A 58) (C (A 0) (A 1012))) (C (A 0) (A 15)))))))))) (C (A 7) (C (C (A 10) (C (C (A 1022) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 8) (C (C (A 9) (C (A 0x55dae) (C (A 0) (A 255)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 6)) (C (A 0) (A 58)))) (C (A 0) (A 2))))))))))))))))))))))))))))))))))))))))
+
+def crcHead : Noun :=
+  (C (A 7) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x656e6f64)) (C (A 0) (A 236)))) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 0x55ffff) (C (A 0) (A 15)))))) (C (A 7) (C (C (A 10) (C (C (A 126) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 0xaaaa) (C (A 0) (A 31)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A 0)))) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A 0)))) (C (A 7) (C (C (A 0) (A 3)) (C (C (A 1) (A 0x6e6f64)) (C (A 0) (A 2)))))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 254) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 10) (C (C (A 118) (C (C (A 1) (A 0x7478656e)) (C (C (A 8) (C (C (A 9) (C (A 92) (C (A 0) (A 2047)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 14))) (C (A 0) (A 2)))))))) (C (C (A 1) (A 0)) (C (A 0) (A 2)))))) (C (A 0) (A 7)))))))))))))))))))) (C (A 0) (A 1))))))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x6b636970)) (C (A 0) (A 236)))) (C crcPick (C (A 11) (C (C (A 0x73736f74) (C (A 5) (C (C (A 1) (A 0x7478656e)) (C (A 0) (A 236))))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 0x2aaefa) (C (A 0) (A 15)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 246))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 126) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) crcNTail)))))))))))))))
+
+theorem crc_eq : crKc = crcHead := by kernel_rfl
+
+theorem cr_split_at : slot? 1748730 comp.door = some comp.split.arm := by kernel_rfl
+
+/-- **The tail of the cons case for a `%next` goal**: `+past` of `[%next hed
+~ o]` with `q` (the identity on a pure `q`), `q` into `tel`, `+past` with
+`p`, `p` into `hed` with the `then` of `q`, `+copy`. -/
+theorem crc_ntail (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (p q : Nomm) (hpp : p.pure = true) (hqp : q.pure = true) (hp6 : noSix p = true)
+    (hq6 : noSix q = true) (region : List Nat) (x : GenRest) (hx : x.NoSoft) (mono goalN sup : Noun)
+    (hed tel : Sure CSet) (o : Nat) (g1 : Gen (TreapMap mugF))
+    (hq : CompRunAt ctx q (CGoal.toL (CGoal.next tel (jmp0 o))) region g1)
+    (hp : ∀ th g2, CompRunAt ctx p (CGoal.toL (CGoal.next hed th)) region g2)
+    (hcp : ∀ nex2 g2 nex1 g3, run q (CGoal.next tel (jmp0 o)) g1 = some (nex2, g2) →
+      run p (CGoal.next hed nex2.th) g2 = some (nex1, g3) → CrCopyOk g3 nex1 nex2.laz) :
+    nock (C (C (lazyNoun hed) (C (lazyNoun tel) (A o))) (crSubj mono (Nomm.cons p q).toNoun goalN
+      (listNoun A region) sup (compCore g1 x ctx))) crcNTail
+      = ((do
+          let nex2 ← run q (CGoal.next tel (jmp0 o))
+          let nex1 ← run p (CGoal.next hed nex2.th)
+          copy nex1 nex2.laz : CM (TreapMap mugF) (Next CSet)) g1).map
+          fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  obtain ⟨hc, hl, -⟩ := comp_ctx_pill ctx h7
+  have hpa1 := cr_past_pure h7 hcode x g1 ⟨hed, jmp0 o⟩ q hqp region
+  simp only [cr_jmp0] at hpa1
+  have hv1 := cr_at_run hqp hq6 hq x mono sup hx
+  rw [cr_goal_sure, cr_jmp0] at hv1
+  simp only [crSubj, compCore] at hv1
+  have hD1 := cr_past_at
+  have hD2 := comp_cp_at
+  simp only [compCore]
+  cases eq : run (S := CSet) (Map := TreapMap mugF) q (CGoal.next tel (jmp0 o)) g1 with
+  | none =>
+    rw [eq] at hv1
+    generalize comp.door = Dr at hv1 hD1 hD2 hpa1 ⊢
+    nock_open crcNTail
+    simp [nock_exec, crSubj, Nomm.toNoun, cr_bat_dol, hv1, bind, StateT.bind, eq, h7, hcode, hD1,
+      cr_past_arm, hpa1]
+  | some r =>
+    obtain ⟨nex2, g2⟩ := r
+    rw [eq] at hv1
+    simp only [Option.map_some, cr_next_noun'] at hv1
+    have hpa2 := cr_past_pure h7 hcode x g2 nex2 p hpp region
+    have hq1 := cr_at_run hpp hp6 (hp nex2.th g2) x mono sup hx
+    rw [cr_goal_sure] at hq1
+    simp only [crSubj, compCore] at hq1
+    cases eq2 : run (S := CSet) (Map := TreapMap mugF) p (CGoal.next hed nex2.th) g2 with
+    | none =>
+      rw [eq2] at hq1
+      generalize comp.door = Dr at hv1 hD1 hD2 hpa1 hpa2 hq1 ⊢
+      nock_open crcNTail
+      simp [nock_exec, crSubj, Nomm.toNoun, cr_bat_dol, hv1, bind, StateT.bind, eq, h7, hcode, hD1,
+        cr_past_arm, hpa1, hpa2, hq1, eq2]
+    | some r' =>
+      obtain ⟨nex1, g3⟩ := r'
+      rw [eq2] at hq1
+      simp only [Option.map_some, cr_next_noun'] at hq1
+      obtain ⟨hlt, hrt, hm⟩ := hcp nex2 g2 nex1 g3 eq eq2
+      have hcpy := comp_copy (x := x) hc hl g3 nex1 nex2.laz hlt hrt hm
+      simp only [compCore, cr_next_noun'] at hcpy
+      generalize comp.door = Dr at hv1 hD1 hD2 hpa1 hpa2 hq1 hcpy ⊢
+      nock_open crcNTail
+      simp [nock_exec, crSubj, Nomm.toNoun, cr_bat_dol, hv1, bind, StateT.bind, eq, h7, hcode, hD1,
+        cr_past_arm, hpa1, hpa2, hq1, eq2, hD2, cr_cp_arm, hcpy, cr_next_noun']
+
+
 end Compiler
 end Formalization
