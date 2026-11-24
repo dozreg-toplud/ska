@@ -215,5 +215,82 @@ theorem wyt_setNoun (m : FinMap Ident Unit) : (preorder (Treap.setNoun m)).lengt
   rw [length_preorder, show Treap.setNoun m = FinMap.setNoun m from rfl, tapList_setNoun, List.length_map]
   rfl
 
+/-! ## The bunt of `identity` -/
+
+/-- The bunt of `identity`, as the mold at arm `186` of the tail of `ana`
+computes it. -/
+def identBunt : Noun := C (C (A 1) (A 0)) (C (A 0) (A 0))
+
+/-- The formula of `+cull` that computes the bunt, kept whole so that `simp`
+does not take it apart. -/
+def buntF : Noun := C (A 7) (C (C (A 9) (C (A 186) (C (A 0) (A 2047)))) (C (A 9) (C (A 2) (C (A 0) (A 1)))))
+
+theorem mold_bunt_ana :
+    nock ana (C (A 7) (C (C (A 9) (C (A 186) (C (A 0) (A 3)))) (C (A 9) (C (A 2) (C (A 0) (A 1))))))
+      = some identBunt :=
+  nock_of_evalFuel (fuel := 300) (by kernel_rfl)
+
+theorem mold_bunt (X : Noun) (h : slot? 2047 X = slot? 3 ana) : nock X buntF = some identBunt := by
+  have e := mold_bunt_ana
+  unfold buntF
+  rw [nock_op7, nock_op9, nock_op0, h]
+  rw [nock_op7, nock_op9, nock_op0] at e
+  exact e
+
+/-! ## The gate of `+rep` -/
+
+/-- What the gate of `+rep` in `+cull` does to the state for one member. -/
+noncomputable def cullDel (st : SkaState FinMap R) (i : Ident) : SkaState FinMap R :=
+  { st with order := Treap.del st.order i, ticks := Treap.del st.ticks i, g := Treap.del st.g i }
+
+/-- The gate of `+rep` in `+cull`: three `+del:by`, on every state, in a
+context `ctx` that holds layer 2 at its axis `0x3fffff`. -/
+theorem cull_rep_gate (regsNoun : R → Noun) (ctx : Noun) (hl2 : slot? 0x3fffff ctx = some layer2)
+    (i : Ident) (st : SkaState FinMap R) :
+    nock (C ska_cg.cull.gate (C (C (identNoun i) (st.toNoun regsNoun)) ctx)) ska_cg.cull.gate
+      = some ((cullDel st i).toNoun regsNoun) := by
+  obtain ⟨g, done, order, stk, next, moved, tick, ticks, regs, stats⟩ := st
+  have hdo : nock (C by.del.battery (C (identNoun i) (C by.battery (C (Treap.toNoun A order) layer2))))
+      by.del.battery = some (Treap.toNoun A (Treap.del order i)) :=
+    del_gate layer2 gorIn_morIn_layer2 _ _ _ (FinMap.delF_toNoun A order i)
+  have hdt : nock (C by.del.battery (C (identNoun i) (C by.battery
+      (C (Treap.toNoun (fun p : Nat × Nat => C (A p.1) (A p.2)) ticks) layer2))))
+      by.del.battery = some (Treap.toNoun (fun p : Nat × Nat => C (A p.1) (A p.2)) (Treap.del ticks i)) :=
+    del_gate layer2 gorIn_morIn_layer2 _ _ _ (FinMap.delF_toNoun _ ticks i)
+  have hdg : nock (C by.del.battery (C (identNoun i) (C by.battery (C (Treap.toNoun FDatum.toNoun g) layer2))))
+      by.del.battery = some (Treap.toNoun FDatum.toNoun (Treap.del g i)) :=
+    del_gate layer2 gorIn_morIn_layer2 _ _ _ (FinMap.delF_toNoun FDatum.toNoun g i)
+  nock_open ska_cg.cull.gate
+  simp [nock_exec, SkaState.toNoun, hl2, by_arm, by.arm_at, by.del.arm_at, hdo, hdt, hdg, cullDel]
+
+/-- The loop of `+rep` with a gate known on the nodes of the tree and on the
+accumulators `toN s`. -/
+theorem rep_loop_on {σ : Type} (toN : σ → Noun) (gf : Noun → σ → σ) (B ctx bp e bc : Noun) :
+    ∀ (a : Noun), Tree a → ∀ (s : σ),
+    (∀ x ∈ preorder a, ∀ s, nock (C bp (C (C x (toN s)) bc)) bp = some (toN (gf x s))) →
+    nock (C by.rep.loop (C by.rep.battery (C (C bp (C (C e (toN s)) bc)) (C B (C a ctx)))))
+      by.rep.loop = some (toN ((preorder a).foldl (fun s x => gf x s) s)) := by
+  intro a ha
+  induction ha with
+  | nil =>
+    intro s _
+    nock_open by.rep.loop
+    simp [nock_exec, preorder]
+  | @node n l r _ _ ihl ihr =>
+    intro s hf
+    have hn := hf n (by simp [preorder]) s
+    have hl := ihl (gf n s) (fun x hx s => hf x (by simp [preorder, hx]) s)
+    have hr := fun s' => ihr s' (fun x hx s => hf x (by simp [preorder, hx]) s)
+    nock_open by.rep.loop
+    simp [nock_exec, preorder, hn, hl, hr, List.foldl_append]
+
+theorem rep_gate_on {σ : Type} (toN : σ → Noun) (gf : Noun → σ → σ) (B ctx bp e bc : Noun)
+    (a : Noun) (ha : Tree a) (s : σ)
+    (hf : ∀ x ∈ preorder a, ∀ s, nock (C bp (C (C x (toN s)) bc)) bp = some (toN (gf x s))) :
+    nock (C by.rep.battery (C (C bp (C (C e (toN s)) bc)) (C B (C a ctx)))) by.rep.battery
+      = some (toN ((preorder a).foldl (fun s x => gf x s) s)) := by
+  nock_open by.rep.battery
+  simp only [nock_exec, rep_loop_on toN gf B ctx bp e bc a ha s hf]
+
 end Compiler
 end Formalization
