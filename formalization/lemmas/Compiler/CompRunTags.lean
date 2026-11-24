@@ -586,5 +586,23 @@ theorem proxy_tagged {g : Gen (TreapMap mugF)} {r o : Nat} (ht : (HoonMap.get g.
     simp only [htag, Option.map_some]
     exact ⟨_, _, rfl⟩
 
+/-! ## Where a run of the plain class makes a proxy
+
+A goal with a bond meets `+collapse-lazy-atom` (`%3`, `%4`, `%5`) or
+`+kern` (the `+kerf` of `%2`), which reads the bond's need through a proxy
+of the bond's block: `cond` gets a key, and the proxy needs the block's tag
+(`tag_all`).  In `[[4 [0 1]] [2 [0 3] [0 2]]]` the head `[4 [0 1]]` runs for
+the bond that `+past` makes over the calling tail; in `[[2 [0 3] [0 2]] [2
+[0 3] [0 2]]]` the head's `+kerf` meets it.  Without a bond in the goal
+nothing is proxied (`[[0 2] [2 [0 3] [0 2]]]`, whose result keeps the bond
+for the top). -/
+
+#guard (runDone (Nomm.cons (Nomm.n4 (Nomm.n0 1)) (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none))).map
+  (fun r => (r.2.cond.ks.length, r.1.laz.bond.length)) == some (1, 0)
+#guard (runDone (Nomm.cons (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none))).map
+  (fun r => (r.2.cond.ks.length, r.1.laz.bond.length)) == some (1, 1)
+#guard (runDone (Nomm.cons (Nomm.n0 2) (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none))).map
+  (fun r => (r.2.cond.ks.length, r.1.laz.bond.length)) == some (0, 1)
+
 end Compiler
 end Formalization

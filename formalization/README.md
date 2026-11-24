@@ -1633,6 +1633,31 @@ import only its theorems.  So:
     from `+sect` and `+fork`: `GInv` already speaks of forks to any depth;
     what is left is that `+fork`, `+sect`, `+past-fork`, `+lazy-shut` keep
     `LInv`), and the top (`cu_gate_scc_one_f_c` on the plain class).
+    The tags (`CompRunTags.lean`): `KM` now also keeps every tag
+    (`TagsUp`), every run of the plain class keeps the counters, the mode
+    and the tags (`km_runLC`), `+past` tags the block it emits
+    (`past_tags`), and `tag_all`: a run from a goal with `GInv` whose
+    labels are tagged returns a tagged need, so the model's `+proxy`
+    succeeds at every block of a result (`proxy_tagged`).  The top:
+    `+coerce-lazy` is linked on every lazy need (`comp_coerce_lazy_all`,
+    `CompCoerceLazyGen.lean`).  What the top (`cu_gate_scc_one_f_c`,
+    `finishLFC`) still needs for the plain class: (1) `+to-straight` with
+    `cond` written (`toStraightF` with `hasProxies cond`, the branch `?:
+    &(run !proxies)` taken the other way): the `+rep:by` over the blocks
+    with a gate that threads `[re-gen m]` through `+rewrite-par`,
+    `+rewrite-body`, `+rewrite-fin` (with `+chase-fin`), each register
+    through `+rer` after `unproxy` (`~(get by cond.gen)`), against the
+    model's `mapBlocks`, `rewriteInput` and `rer` of
+    `Ska/CompStraightMap.lean`; the link `tsn_at` covers only `cond`
+    empty and a run of inputs.  `cond` is written in the plain class
+    whenever a goal has a bond and `+kern` (the `+kerf` of `%2`) or
+    `+collapse-lazy-atom` (`%3`, `%4`, `%5`) meets it, e.g. `[[4 [0 1]]
+    [2 [0 3] [0 2]]]`.  (2) The facts of the final pass for the plain
+    class: `args_frag` (no argument from `%done`), `+sure-of` and
+    `+need-ord-alloc-regs` of the root need (`scc_sur_frag`, `noar_frag`,
+    which read only `nex.laz.sure`), proved now through `crx_run` on
+    `indOk` only; `mem_laz_frag` is replaced by `comp_coerce_lazy_all`, and
+    `mem_cond_frag` by (1).
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
