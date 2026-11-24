@@ -149,6 +149,28 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
 * `aliasssa.hoon`   two blocks with `DInvT` that read register `0v1` by a `%mov` and then write it: `+alias` renames
                     the later read of the moved register to `0v1`, and `+eval-blob` gives `7` before, `5` after;
                     `+alias` needs single assignment (`AliasSSA` of `lemmas/Ska/OptAliasField.lean`)
+* `ssacheck.hoon`   `AliasSSA` of `lemmas/Ska/OptAliasField.lean` on the real compiler: on raw `+comp` output and
+                    after every pass of every round of `+optimize` replayed as `+optimize-once` does (so at every
+                    call of `+alias`), over the cases of `aliascheck2.hoon` (the 143 of `optcheck.hoon`, the 41
+                    formulas of `aliascheck.hoon`), `thread-a.hoon` with the subject known and `thread-b.hoon`,
+                    `thread-c.hoon` with it unknown and known: 553 compiles, 955 calls of `+alias`.  `DefFirst`
+                    (a forward must-analysis over `bb-topo`, the start of a block the intersection of its
+                    predecessors' ends and its parameters, every read of a register that has a definition
+                    checked: 56085 reads on raw code, 72162 at the calls) holds everywhere.  `DefOnce` fails on 32
+                    raw compiles and at 26 calls (24 after `+alias`, none after `+remove-dead-code`), always on
+                    the fill of `+crash-need`: `[%cel a] [%imm 0 x] .. [%bom ~]`, where `x` is `a` itself (a
+                    parameter of the block before, or an `%inc` destination) and is defined twice.  Smallest:
+                    `[10 [6 0 1] 5 [0 6] 0 1]` and `[7 [5 [0 14] 1 5] 10 [2 0 3] 0 1]` (subject unknown), where
+                    `+eval-blob` agrees with `+mock` on every subject tried (both crash).  The weaker `DefOnceB`
+                    holds everywhere (raw, every pass, every call): on the blocks reachable from `0`, a register
+                    has at most one definition that is not a dead fill, a dead fill of `x` being an `%imm` into
+                    `x` in a block ending in `%bom`, followed there by `%imm` ops only, with every read of `x` in
+                    that block before it.  Without reachability it fails (unreachable raw blocks read the
+                    register), and without "followed by `%imm` ops only" it fails after `+remove-hops` merges the
+                    `%inc` into the fill's block.  With the arguments `0 .. n-args - 1` defined at the entry and
+                    every read checked, 10 raw compiles read a register that nothing defines, in blocks reachable
+                    in the graph that the run never enters (a jump argument of a branch the analysis knew dead);
+                    gone after the first `+alias` (2026-11-24)
 * `deadcrash.hoon`  nine formulas whose crashing operand has a dead product (`[7 [0 2] [1 5]]`
                     on an atom and the like): `+eval-top` agrees with `+mock` on all
                     (2026-11-24), so `+remove-dead-code` drops no check there
