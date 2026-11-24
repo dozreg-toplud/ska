@@ -509,6 +509,95 @@ theorem plain_keeps (c : Straight Map) {topo : List Nat} {out' : Map Blob} {fuel
     Keeps c (withBlocks c out') :=
   plain_keeps_of c h (plainHyp_of ht ho hps hpl hnex)
 
+/-! ## The blocks after one plain chain, for the walk -/
+
+/-- The region of a plain chain done: the tests after the head and the
+labels taken from `nex` up to the next `nex`. -/
+def PRg (nex nex' : Nat) (pl : List (Nat × SPlain)) (k : Nat) : Prop := k ∈ pl.map Prod.fst ∨ (nex ≤ k ∧ k < nex')
+
+/-- Where a node of a plain chain's tree may jump: its region, its hits, its
+final miss. -/
+def PJ (nex nex' : Nat) (p0 : Nat × SPlain) (pl : List (Nat × SPlain)) (k : Nat) : Prop :=
+  PRg nex nex' pl k ∨ (∃ t ∈ p0 :: pl, k = t.2.hit) ∨ k = plainMiss p0 pl
+
+/-- What a node of a plain chain's tree may mention: `d` and the test
+registers. -/
+def PS (p0 : Nat × SPlain) (pl : List (Nat × SPlain)) (r : Nat) : Prop := r = p0.2.d ∨ r ∈ plainRegs (p0 :: pl)
+
+/-- **The blocks after one plain chain**: the head as in `plain_tree`, its
+appended root and every block in the region tree nodes (`NodeOK`), no other
+label changed, none from the next `nex` up, given that `out` has none from
+`nex` up. -/
+theorem plain_tree2 {bl out out' : Map Blob} {fuel o nex nex' : Nat} {p0 : Nat × SPlain}
+    {pl : List (Nat × SPlain)} {done done' : List Nat}
+    (h : switchPlain bl out fuel o (p0 :: pl) done nex = some (out', done', nex'))
+    (hold : ∀ k ∈ pl.map Prod.fst, k < nex) (ho : o < nex) (ho' : o ∉ pl.map Prod.fst)
+    (hab : ∀ k, nex ≤ k → HoonMap.get out k = none) :
+    ∃ b nb nf, HoonMap.get bl o = some b ∧
+      HoonMap.get out' o = some ⟨b.par, b.body.filter (plainKeep p0.2.r) ++ nb, nf⟩ ∧
+      NodeOK (PJ nex nex' p0 pl) (PS p0 pl) ⟨[], nb, nf⟩ ∧
+      (∀ k bk, PRg nex nex' pl k → HoonMap.get out' k = some bk → NodeOK (PJ nex nex' p0 pl) (PS p0 pl) bk) ∧
+      (∀ k, k ≠ o → ¬ PRg nex nex' pl k → HoonMap.get out' k = HoonMap.get out k) ∧
+      (∀ k, nex' ≤ k → HoonMap.get out' k = none) ∧ nex ≤ nex' ∧ done' = pl.map Prod.fst ++ done := by
+  unfold switchPlain at h
+  simp only [Option.bind_eq_some_iff] at h
+  obtain ⟨cas, hc, h⟩ := h
+  generalize hf : freshIds (2 * cas.length - 2 + 1) ((pl.map Prod.fst).take (2 * cas.length - 2))
+    (2 * cas.length - 2) nex = fr at h
+  obtain ⟨ids, nex2⟩ := fr
+  simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  obtain ⟨⟨nb, nf, ids2, nout⟩, hs, b, hb, he⟩ := h
+  simp only [Prod.mk.injEq] at he
+  obtain ⟨rfl, rfl, rfl⟩ := he
+  obtain ⟨hle, new, eids, -, hnew⟩ := freshIds_spec _ _ _ _ _ _ hf
+  have hc' : casesOf ((p0 :: pl).map plainCase) = some cas := hc
+  obtain ⟨-, hsp⟩ := cases_spec hc'
+  have hcas : ∀ x ∈ cas, PJ nex nex2 p0 pl x.hit ∧ PS p0 pl x.r := by
+    intro x hx
+    have hf2 := (hsp x.c x).mp ⟨hx, rfl⟩
+    obtain ⟨t, ht, rfl⟩ := List.mem_map.mp (List.mem_of_find?_eq_some hf2)
+    exact ⟨Or.inr (Or.inl ⟨t, ht, rfl⟩), Or.inr (List.mem_map_of_mem ht)⟩
+  have hids : ∀ k ∈ ids, PRg nex nex2 pl k := by
+    intro k hk
+    rw [eids] at hk
+    rcases List.mem_append.mp hk with hk | hk
+    · exact Or.inr (hnew k hk)
+    · exact Or.inl (List.mem_of_mem_take hk)
+  obtain ⟨used, eu, fr, nodes, root⟩ := stree_shape _ _ (PJ nex nex2 p0 pl) (PS p0 pl) (Or.inl rfl)
+    (Or.inr (Or.inr rfl)) fuel cas ids _ nb nf ids2 nout hs (fun k hk => Or.inl (hids k hk)) hcas
+  have hus : ∀ k ∈ used, PRg nex nex2 pl k := fun k hk => hids k (by rw [eu]; exact List.mem_append_left _ hk)
+  have hRo : ∀ k, PRg nex nex2 pl k → k ≠ o := by
+    intro k hk e
+    subst e
+    rcases hk with h1 | h1
+    · exact ho' h1
+    · omega
+  refine ⟨b, nb, nf, hb, ?_, root, fun k bk hk hbk => ?_, fun k hko hkR => ?_, fun k hk => ?_, hle, rfl⟩
+  · rw [HoonMap.get_put, if_pos rfl]
+    refine congrArg some (congrArg (fun B => (⟨b.par, B ++ nb, nf⟩ : Blob)) (List.filter_congr fun op _ => ?_))
+    cases op <;> rfl
+  · rw [HoonMap.get_put, if_neg (hRo k hk)] at hbk
+    by_cases hku : k ∈ used
+    · obtain ⟨b2, hb2, ok⟩ := nodes k hku
+      rw [hb2] at hbk; cases hbk; exact ok
+    · rw [fr k hku, get_foldl_del] at hbk
+      split at hbk
+      · cases hbk
+      · rename_i hkp
+        rcases hk with hk | hk
+        · exact absurd hk hkp
+        · rw [hab k hk.1] at hbk; cases hbk
+  · have hku : k ∉ used := fun h => hkR (hus k h)
+    rw [HoonMap.get_put, if_neg hko, fr k hku, get_foldl_del, if_neg (fun h => hkR (Or.inl h))]
+  · have hko : k ≠ o := fun e => by omega
+    have hkp : k ∉ pl.map Prod.fst := fun h => by have := hold k h; omega
+    have hku : k ∉ used := fun h => by
+      rcases hus k h with h1 | h1
+      · exact hkp h1
+      · omega
+    rw [HoonMap.get_put, if_neg hko, fr k hku, get_foldl_del, if_neg hkp]
+    exact hab k (by omega)
+
 end Opt
 end SkaModel
 end Formalization

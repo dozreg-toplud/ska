@@ -171,3 +171,4 @@ open Formalization.SkaModel.Opt
 #print axioms plabs_hits
 #print axioms plainHyp_of
 #print axioms plain_keeps
+#print axioms plain_tree2
