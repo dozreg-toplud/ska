@@ -115,6 +115,7 @@ import lemmas.Compiler.CompShapeCol
 import lemmas.Hoon.IntIn
 import lemmas.Hoon.UniBy
 import lemmas.Compiler.CompSccOne
+import lemmas.Compiler.CompMemOld
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -891,3 +892,8 @@ open Formalization
 #print axioms Compiler.csi_hit
 #print axioms Compiler.csi_hit_one
 #print axioms Compiler.cu_gate_hit
+#print axioms Compiler.msg_at
+#print axioms Compiler.msg_arm
+#print axioms Compiler.msg_eq
+#print axioms Compiler.mem_prod_old
+#print axioms Compiler.mem_gate_old
