@@ -26,6 +26,15 @@ of a call-free part; `UOKC` is its counterpart for a part that may call
   `run` (`OKC`).
 * `uokc_of_uok`: every nomm with `UOK` whose formula is its pure value meets
   `UOKC` (`goalSemC_of_goalSem`: the oracle's state stays).
+* `uokc_indirect`: the indirect call with parts meeting `UOK` and a formula
+  with `MinkN2` (`indirect_runN/D/P` and their `B` versions, the blocks of
+  `+simple-next` by `runOKGC_of_next`).
+* `UOKC.wrap`: through `WrapRel` (the memo hint, the folded `%6`).
+* `finishLUC_contractG`: the whole-subject code of a nomm with `UOKC` meets
+  both halves of the contract.
+* `UOKC.run` is `OKCN`, the clause for every goal but `%pick`: the leaves
+  meet all of `OKC`, and the first parent (the cons whose head calls,
+  `CompConsGH.lean`) is proved under `%next` and `%done` only.
 -/
 
 set_option linter.unusedSectionVars false
@@ -118,6 +127,25 @@ abbrev OKC (lib : Lib) (env : CallEnv) (P : Noun → Prop) (f : Noun) (nm : Nomm
     (∀ r, GMem goal r → HoonMap.get g0.cond r = Option.none) →
     runLC env sup nm (CGoal.toL goal) region g0 = some (nex, g1) → RunOKGC lib P f goal g0 g1 nex
 
+/-- A goal that is not `%pick`. -/
+def NoPick : CGoal S → Prop
+  | CGoal.pick _ _ => False
+  | _ => True
+
+/-- **`OKC` for the goals other than `%pick`**, which is what `UOKC` asks
+for now: the cons with a head that calls is proved under `%next` and
+`%done` only (README Gaps 12.17). -/
+abbrev OKCN (lib : Lib) (env : CallEnv) (P : Noun → Prop) (f : Noun) (nm : Nomm) : Prop :=
+  ∀ {sup : Option Nomm} {goal : CGoal S} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
+    NoPick goal → GArgs goal → GJ g0.bo goal → GoalOK g0 goal → GClean goal → sixCount nm ≤ 255 → 1 ≤ g0.bo →
+    g0.drop = false → UpBelow g0 → Clear g0 → CondBelow g0 →
+    (∀ r, GMem goal r → HoonMap.get g0.cond r = Option.none) →
+    runLC env sup nm (CGoal.toL goal) region g0 = some (nex, g1) → RunOKGC lib P f goal g0 g1 nex
+
+theorem OKC.toN {lib : Lib} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm}
+    (h : OKC (S := S) (Map := Map) lib env P f nm) : OKCN (S := S) (Map := Map) lib env P f nm :=
+  fun _ ha hj hok hcl hcount b0 d0 hu hcl0 hcb hkg hr => h ha hj hok hcl hcount b0 d0 hu hcl0 hcb hkg hr
+
 /-- `+mink` on `f` is the pure value of `nm` on the subjects of `P`. -/
 def MinkEq (lib : Lib) (P : Noun → Prop) (f : Noun) (nm : Nomm) : Prop :=
   ∀ s, P s → ∀ (gul : Noun) (tm : Trace) (r : Tone), Mink lib gul tm s f r ↔ r = toneOf tm (pureEval nm s)
@@ -127,13 +155,15 @@ formula `f` on the subjects of `P`.  `kind`: the nomm is call-free (then
 its `UOK` and `+mink` on `f` being its pure value are kept, which a parent
 uses for the call-free relations of the part), or it is hinted (`+past`
 parks a need that asks something behind it, `pastL_hinted`).  `clean`:
-`CleanA` for `runLC`.  `run`: `OKC`.  The tag clauses of `UOK` (`TagNV`,
-`TagV`) are read only by `%6` under `%next` and are not restated yet. -/
+`CleanA` for `runLC`.  `run`: `OKCN` (`OKC` but `%pick`, which only a test
+of `%6` or a part under it runs for; the leaves meet the whole `OKC`,
+`okc_of_uok`, `okc_indirect`).  The tag clauses of `UOK` (`TagNV`, `TagV`)
+are read only by `%6` under `%next` and are not restated yet. -/
 structure UOKC (lib : Lib) (env : CallEnv) (P : Noun → Prop) (f : Noun) (nm : Nomm) : Prop where
   kind : (UOK (S := S) (Map := Map) lib nm ∧ MinkEq lib P f nm) ∨ hinted env.cod nm = some true
   clean : ∀ {sup : Option Nomm} {goal : CGoal S} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
     GClean goal → runLC env sup nm (CGoal.toL goal) region g0 = some (nex, g1) → Clean nex.laz.sure.ned
-  run : OKC (S := S) (Map := Map) lib env P f nm
+  run : OKCN (S := S) (Map := Map) lib env P f nm
 
 /-! ## The lift from `UOK` -/
 
@@ -182,18 +212,24 @@ theorem RunOKV.toGC {lib : Lib} {P : Noun → Prop} {f : Noun} {nm : Nomm} (M : 
 the run is `runL`'s (`runLC_eq`), and its relations lift by
 `goalSemC_of_goalSem` (the oracle's state stays), backward with `+mink`'s
 result the pure value. -/
+theorem okc_of_uok (lib : Lib) (env : CallEnv) {P : Noun → Prop} {f : Noun} {nm : Nomm}
+    (u : UOK (S := S) (Map := Map) lib nm) (M : MinkEq lib P f nm) : OKC (S := S) (Map := Map) lib env P f nm := by
+  have nc := Nomm.noCall_of_pure nm u.pure
+  intro sup goal region g0 g1 nex ha hj hok hcl hcount b0 d0 hu hcl0 hcb hkg h
+  rw [runLC_eq env nm nc] at h
+  cases goal with
+  | next sur th => exact RunOKNV.toGC M (u.next hj ha hok hcl hcount b0 d0 hu hcl0 hcb hkg h)
+  | done => exact RunOKV.toGC (goal := CGoal.done) M trivial (u.done trivial hj hcount b0 d0 hu hcl0 hcb h)
+  | pick z o =>
+    exact RunOKV.toGC (goal := CGoal.pick z o) M trivial (u.pick z o ha.1 ha.2 trivial hj hcount b0 d0 hu hcl0 hcb h)
+
+/-- **Every nomm with `UOK` whose formula is its pure value meets `UOKC`**
+(`okc_of_uok`, the run being `runL`'s by `runLC_eq`). -/
 theorem uokc_of_uok (lib : Lib) (env : CallEnv) {P : Noun → Prop} {f : Noun} {nm : Nomm}
     (u : UOK (S := S) (Map := Map) lib nm) (M : MinkEq lib P f nm) : UOKC (S := S) (Map := Map) lib env P f nm := by
-  have nc := Nomm.noCall_of_pure nm u.pure
-  refine ⟨Or.inl ⟨u, M⟩, fun hc h => ?_, ?_⟩
-  · rw [runLC_eq env nm nc] at h
-    exact u.clean hc h
-  · intro sup goal region g0 g1 nex ha hj hok hcl hcount b0 d0 hu hcl0 hcb hkg h
-    rw [runLC_eq env nm nc] at h
-    cases goal with
-    | next sur th => exact RunOKNV.toGC M (u.next hj ha hok hcl hcount b0 d0 hu hcl0 hcb hkg h)
-    | done => exact RunOKV.toGC (goal := CGoal.done) M trivial (u.done trivial hj hcount b0 d0 hu hcl0 hcb h)
-    | pick z o => exact RunOKV.toGC (goal := CGoal.pick z o) M trivial (u.pick z o ha.1 ha.2 trivial hj hcount b0 d0 hu hcl0 hcb h)
+  refine ⟨Or.inl ⟨u, M⟩, fun hc h => ?_, OKC.toN (okc_of_uok lib env u M)⟩
+  rw [runLC_eq env nm (Nomm.noCall_of_pure nm u.pure)] at h
+  exact u.clean hc h
 
 /-! ## Runs that begin with the block of `+simple-next` -/
 
@@ -342,15 +378,14 @@ theorem minkN2_crashes {lib : Lib} {P : Noun → Prop} {f : Noun} {p q : Nomm} (
   · rw [ex, ey] at e; simp at e
   · exact er
 
-/-- **The indirect call `[2 p q]` with `p`, `q` meeting `UOK` meets `UOKC`**
+/-- **The indirect call `[2 p q]` with `p`, `q` meeting `UOK` meets `OKC`**
 for every formula with `MinkN2` (any `Annot` of `[2 p q]` but the bare
 ones): under `%next` `indirect_runN` and `indirect_runNB`, under `%done` and
 `%pick` `indirect_runD`, `indirect_runP` and their backward versions after
 the block of `+simple-next` (`runOKGC_of_next`). -/
-theorem uokc_indirect (lib : Lib) (env : CallEnv) {p q : Nomm} (up : UOK (S := S) (Map := Map) lib p)
+theorem okc_indirect (lib : Lib) (env : CallEnv) {p q : Nomm} (up : UOK (S := S) (Map := Map) lib p)
     (uq : UOK (S := S) (Map := Map) lib q) {P : Noun → Prop} {f : Noun} (M : MinkN2 lib P f p q) :
-    UOKC (S := S) (Map := Map) lib env P f (Nomm.n2 p q Option.none) := by
-  refine ⟨Or.inr rfl, fun _ h => indirect_clean up uq h, ?_⟩
+    OKC (S := S) (Map := Map) lib env P f (Nomm.n2 p q Option.none) := by
   intro sup goal region g0 g1 nex ha hj hok hcl hcount b0 d0 hu hcl0 hcb hkg h
   have hc : sixCount p + sixCount q ≤ 255 := hcount
   cases goal with
@@ -378,6 +413,113 @@ theorem uokc_indirect (lib : Lib) (env : CallEnv) {p q : Nomm} (up : UOK (S := S
           renJmp_nil _ ha.2])
       (fun c σ O gul Inv ν K K' st regs t tm je r hK htr hbc H => goalSemCM_pick_of_next hK htr hbc H)
       (RunOKNC.toGC R B (minkN2_crashes M))
+
+/-- **The indirect call `[2 p q]` with `p`, `q` meeting `UOK` meets `UOKC`**
+(`okc_indirect`, `indirect_clean`). -/
+theorem uokc_indirect (lib : Lib) (env : CallEnv) {p q : Nomm} (up : UOK (S := S) (Map := Map) lib p)
+    (uq : UOK (S := S) (Map := Map) lib q) {P : Noun → Prop} {f : Noun} (M : MinkN2 lib P f p q) :
+    UOKC (S := S) (Map := Map) lib env P f (Nomm.n2 p q Option.none) :=
+  ⟨Or.inr rfl, fun _ h => indirect_clean up uq h, OKC.toN (okc_indirect lib env up uq M)⟩
+
+/-! ## The wrappers and the top -/
+
+/-- **`RunOKGC` goes through a wrapper** (`WrapRel`: `+mink` on `f'` runs
+`f` with no more fuel and returns what it returns). -/
+theorem RunOKGC.wrap {lib : Lib} {P : Noun → Prop} {f f' : Noun} (W : WrapRel lib P f f') {goal : CGoal S}
+    {g0 g1 : Gen Map} {nex : NextL S} (R : RunOKGC lib P f goal g0 g1 nex) : RunOKGC lib P f' goal g0 g1 nex := by
+  refine ⟨R.ext, R.grow, R.cfr, R.lo, R.hi, R.ent, R.regs, R.dist, R.eregs, R.labs, R.nodup,
+    fun s hs hf => ⟨fun gul n tm r hm => ?_, fun gul tm => ?_⟩, R.ncond, R.econd, ?_, ?_⟩
+  · obtain ⟨n', _, hm'⟩ := W.fwd hs hm
+    exact (R.nec s hs hf).1 gul n' tm r hm'
+  · obtain ⟨r, hm, hb⟩ := (R.nec s hs hf).2 gul tm
+    exact ⟨r, W.bwd hs hm, hb⟩
+  · intro cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
+    obtain ⟨n', hle, hm'⟩ := W.fwd hs hm
+    exact R.sem cf hcf c ned σ Inv ν O n' gul hS (oracleFwd_le hF hle) st t tm s0 s r hI htr hs hm' ag hned
+      regs hh hn
+  · intro cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
+    obtain ⟨r, hm, G⟩ := R.semB cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
+    exact ⟨r, W.bwd hs hm, G⟩
+
+/-- **`UOKC` goes through a wrapper**: the memo hint and the folded `%6`
+(`wrapRel_memo`, `wrapRel_six`), which `Annot.memo`, `Annot.six0`,
+`Annot.six1` put around any nomm. -/
+theorem UOKC.wrap {lib : Lib} {env : CallEnv} {P : Noun → Prop} {f f' : Noun} {nm : Nomm} (W : WrapRel lib P f f')
+    (U : UOKC (S := S) (Map := Map) lib env P f nm) : UOKC (S := S) (Map := Map) lib env P f' nm := by
+  refine ⟨?_, U.clean, fun hnp ha hj hok hcl hcount b0 d0 hu hcl0 hcb hkg h =>
+    (U.run hnp ha hj hok hcl hcount b0 d0 hu hcl0 hcb hkg h).wrap W⟩
+  rcases U.kind with ⟨u, M⟩ | k
+  · refine Or.inl ⟨u, fun s hs gul tm r => ⟨fun ⟨n, hm⟩ => ?_, fun e => W.bwd hs ((M s hs gul tm r).mpr e)⟩⟩
+    obtain ⟨n', _, hm'⟩ := W.fwd hs hm
+    exact (M s hs gul tm r).mp ⟨n', hm'⟩
+  · exact Or.inr k
+
+/-- **The whole-subject code of a nomm with `UOKC` meets both halves of the
+contract**: its run for `%done` from `gen0` meets `RunOKGC` (`U.run`), whose
+structural fields give `TopS`, and `finishTop_genA` with `fwdPhi` and
+`bwdPhi` turns the `sem` clauses (`ReturnsC` for `%done`) and `NecC` (a
+crash with the caller's trace) into `ContractFwd` and `ContractBwd`. -/
+theorem finishLUC_contractG (lib : Lib) {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm}
+    (U : UOKC (S := S) (Map := Map) lib env P f nm) (hcount : sixCount nm ≤ 255)
+    {c : Straight Map} (h : finishLUC (S := S) env nm = some c) (N : Needs) :
+    c.need = NeedOrd.this ∧ ∀ s, P s → ContractFwd lib N s f [s] c ∧ ContractBwd lib N s f [s] c := by
+  unfold finishLUC at h
+  obtain ⟨⟨nex, gE⟩, hr, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨⟨⟨o', sub⟩, g8⟩, hk, hts⟩ := Option.bind_eq_some_iff.mp h
+  simp only at hts
+  have R : RunOKGC lib P f (CGoal.done : CGoal S) gen0 gE nex :=
+    U.run (sup := Option.none) (goal := CGoal.done) (region := []) trivial trivial trivial trivial trivial hcount
+      (by simp [gen0]) rfl upBelow_gen0 clear_gen0 condBelow_gen0 (fun r hr => hr.elim) hr
+  have T : TopS gE nex :=
+    { ext := R.ext
+      grow := R.grow
+      cfr := R.cfr
+      lo := R.lo
+      hi := R.hi
+      args := by
+        rcases R.ent with ⟨b, _, _, ha⟩ | e
+        · exact ha
+        · exact e.elim
+      regs := fun r hr => by
+        rcases R.regs r hr with e | e
+        · exact e.elim
+        · exact e
+      dist := R.dist
+      eregs := fun e he => ⟨(R.eregs e he).1, fun r hr => ⟨by
+        rcases ((R.eregs e he).2 r hr).1 with a | a
+        · exact a.elim
+        · exact a, ((R.eregs e he).2 r hr).2⟩⟩
+      labs := R.labs
+      nodup := R.nodup
+      ncond := R.ncond
+      econd := R.econd }
+  have bad : ∀ {tm : Trace} {r : Tone}, BadC (CGoal.done : CGoal S) tm r → r = Tone.two tm := fun hb => by
+    rcases hb with e | ⟨_, _, hp⟩
+    · exact e
+    · exact hp.elim
+  have F := finishTop_genA lib T (fwdPhi lib N P f)
+    (fun cf hcf c ned σ O st t gul s ag hned regs hh hn Inv ν n tm r hs _ hS hF hm hI htr => by
+      obtain ⟨ton, st', -, -, he, hrel⟩ :=
+        R.sem cf hcf c ned σ Inv ν O n gul hS hF st t tm s s r hI htr hs hm ag hned regs hh hn
+      exact ⟨ton, st', he, hrel⟩)
+    (fun σ O st t gul s hfs Inv ν n tm r hs _ _ _ hm _ htr =>
+      ⟨Tone.two t, st, rfl, by rw [bad ((R.nec s hs hfs).1 gul n tm r hm)]; exact ToneRel.two htr⟩) hk hts
+  have B := finishTop_genA lib T (bwdPhi lib N P f)
+    (fun cf hcf c ned σ O st t gul s ag hned regs hh hn Inv ν tm hs _ hS hB hI htr ton st'' hx => by
+      obtain ⟨r, hm, G⟩ := R.semB cf hcf c ned σ Inv ν O gul hS hB st t tm s s hI htr hs ag hned regs hh hn _ hx
+      obtain ⟨ton', st', -, -, he, hrel⟩ := G
+      rw [he] at hx
+      cases hx
+      exact ⟨r, hm, hrel⟩)
+    (fun σ O st t gul s hfs Inv ν tm hs _ _ _ _ htr ton st' hx => by
+      cases hx
+      obtain ⟨r, hm, hb⟩ := (R.nec s hs hfs).2 gul tm
+      rw [bad hb] at hm
+      exact ⟨_, hm, ToneRel.two htr⟩) hk hts
+  refine ⟨F.1, fun s hs => ⟨fun σ Inv ν O n gul ti tm r hN hS hF hm st hI htr => ?_,
+    fun σ Inv ν O gul ti tm hN hS hB st ton st' hI htr hx => ?_⟩⟩
+  · exact F.2 σ O st s ti gul Inv ν n tm r hs hN hS hF hm hI htr
+  · exact B.2 σ O st s ti gul Inv ν tm hs hN hS hB hI htr ton st' hx
 
 end Comp
 end SkaModel
