@@ -157,6 +157,53 @@ theorem run_datum_pm (gen : GenS FinMap R) (dn : FDatum FinMap) (dark less F : N
       FolOut.toNoun, GenS.toNoun, SkaState.toNoun, Anno.toNoun, FDatum.toNoun, mergeProd, in.arm_at, in_arm,
       in.has.arm_at, has_in_arm, msg_anno.arm_at, msg_anno_arm, double_int.arm_at, double_int_arm, loob]
 
+theorem void_noun_ne {s : Sock} (h : s ≠ Sock.void) : ¬ A 0x64696f76 = s.toNoun := by
+  cases s with
+  | void => exact absurd rfl h
+  | mk c n => intro e; cases e
+
+/-- Whether `+run` puts `id` into `moved`: `&(!?=(%void prod.data) !=(pm [prod map]:data))`. -/
+def movedCond (old : Datum) (pm : Anno) : Prop := old.prod ≠ Sock.void ∧ pm ≠ ⟨old.prod, old.map⟩
+
+instance (old : Datum) (pm : Anno) : Decidable (movedCond old pm) :=
+  inferInstanceAs (Decidable (_ ∧ _))
+
+/-- `moved` after the run. -/
+noncomputable def movedSet (old : Datum) (pm : Anno) (id : Ident) (m : FinMap Ident Unit) : FinMap Ident Unit :=
+  if movedCond old pm then Treap.ins m id else m
+
+include hcf hK in
+/-- The product and its map into the new datum, and `moved`. -/
+theorem run_datum_moved (gen : GenS FinMap R) (dn : FDatum FinMap) (pm : Anno) (dark less F : Noun) :
+    nockW c (C pm.toNoun (C dn.toNoun (C dark (C less (dBase regsNoun K sb x id data out gen)))))
+      (C (A 7) (C rdProd (C (A 7) (C rdMap (C (A 7) (C rdMoved F))))))
+    = nockW c (C pm.toNoun (C (FDatum.toNoun { dn with prod := pm.sock, map := pm.src }) (C dark (C less
+        (dBase regsNoun K sb x id data out
+          { gen with st := { gen.st with moved := movedSet data.core pm id gen.st.moved } }))))) F := by
+  have hl2 := K_layer2 hK
+  obtain ⟨want, indi, seek, callees, area, low, back, st⟩ := gen
+  obtain ⟨g, done, order, stk, next, moved, tick, ticks, regs, stats⟩ := st
+  have hput : nock (C in.put.battery (C (identNoun id) (C in.battery (C (Treap.setNoun moved) layer2))))
+      in.put.battery = some (Treap.setNoun (Treap.ins moved id)) := put_in_setNoun moved id
+  have hsv : Sock.void.toNoun = A 0x64696f76 := rfl
+  by_cases hv : data.prod = Sock.void
+  · have hc : ¬ movedCond data.core pm := fun h => h.1 hv
+    simp (disch := ffar_disch) [movedSet, hc, hv, hsv, dBase, rdProd, rdMap, rdMoved, nock_exec, hcf, hl2, folOutNoun,
+      FolOut.toNoun, GenS.toNoun, SkaState.toNoun, Anno.toNoun, FDatum.toNoun]
+  · have hv' := void_noun_ne hv
+    by_cases hp : pm = ⟨data.prod, data.map⟩
+    · have hc : ¬ movedCond data.core pm := fun h => h.2 hp
+      subst hp
+      simp (disch := ffar_disch) [movedSet, hc, hv', dBase, rdProd, rdMap, rdMoved, nock_exec, hcf, hl2, folOutNoun,
+        FolOut.toNoun, GenS.toNoun, SkaState.toNoun, Anno.toNoun, FDatum.toNoun]
+    · have hc : movedCond data.core pm := ⟨hv, hp⟩
+      have hp' : ¬ (pm.sock.toNoun = data.prod.toNoun ∧ pm.src = data.map) := by
+        rintro ⟨e1, e2⟩
+        exact hp (by cases pm; simp only at e1 e2; rw [SkaModel.Ana.Sock.toNoun_inj _ _ e1, e2])
+      simp (disch := ffar_disch) [movedSet, hc, hv', hp', hput, dBase, rdProd, rdMap, rdMoved, nock_exec, hcf, hl2,
+        folOutNoun, FolOut.toNoun, GenS.toNoun, SkaState.toNoun, Anno.toNoun, FDatum.toNoun, in.arm_at, in_arm,
+        in.put.arm_at, put_in_arm]
+
 end datum
 
 end Compiler
