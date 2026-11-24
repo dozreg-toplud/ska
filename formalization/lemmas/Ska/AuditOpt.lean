@@ -151,3 +151,5 @@ open Formalization.SkaModel.Opt
 #print axioms walk_tag_step
 #print axioms switchWalk_tag
 #print axioms switchChains_keeps_tag
+#print axioms nexOf_gt
+#print axioms freshIds_spec

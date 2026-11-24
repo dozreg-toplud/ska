@@ -608,6 +608,48 @@ theorem switchChains_keeps_tag (c : Straight Map) {fuel : Nat} {bl' : Map Blob} 
 
 end
 
+/-! ## Toward the plain chain: the labels it makes are new -/
+
+theorem nexFold_spec : ∀ (l : List Nat) (m : Nat),
+    m ≤ l.foldl (fun m o => if o ≥ m then o + 1 else m) m ∧
+      ∀ o ∈ l, o < l.foldl (fun m o => if o ≥ m then o + 1 else m) m
+  | [], m => ⟨Nat.le_refl _, fun _ h => absurd h List.not_mem_nil⟩
+  | x :: l, m => by
+    simp only [List.foldl_cons]
+    obtain ⟨h1, h2⟩ := nexFold_spec l (if x ≥ m then x + 1 else m)
+    refine ⟨Nat.le_trans (by split <;> omega) h1, fun o ho => ?_⟩
+    rcases List.mem_cons.mp ho with rfl | ho
+    · exact Nat.lt_of_lt_of_le (by split <;> omega) h1
+    · exact h2 o ho
+
+/-- **`nex` is above every label of the blocks.** -/
+theorem nexOf_gt (bl : Map Blob) {k : Nat} (hk : (HoonMap.get bl k).isSome) : k < nexOf bl :=
+  (nexFold_spec _ 0).2 k ((MapKeys.mem_keys bl k).mpr hk)
+
+/-- **The labels `freshIds` adds are distinct and new**: they lie from `nex`
+up to the next `nex`. -/
+theorem freshIds_spec : ∀ (f : Nat) (ids : List Nat) (ned nex : Nat) (ids' : List Nat) (nex' : Nat),
+    freshIds f ids ned nex = (ids', nex') →
+    nex ≤ nex' ∧ ∃ new, ids' = new ++ ids ∧ new.Nodup ∧ ∀ k ∈ new, nex ≤ k ∧ k < nex'
+  | 0, ids, _, nex, ids', nex', h => by
+    simp only [freshIds, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨Nat.le_refl _, [], rfl, List.nodup_nil, fun _ h => absurd h List.not_mem_nil⟩
+  | f + 1, ids, ned, nex, ids', nex', h => by
+    simp only [freshIds] at h
+    split at h
+    · simp only [Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact ⟨Nat.le_refl _, [], rfl, List.nodup_nil, fun _ h => absurd h List.not_mem_nil⟩
+    · obtain ⟨hle, new, e, hnd, hin⟩ := freshIds_spec f _ ned _ ids' nex' h
+      refine ⟨by omega, new ++ [nex], by rw [e]; simp, ?_, fun k hk => ?_⟩
+      · refine List.nodup_append.mpr ⟨hnd, List.nodup_cons.mpr ⟨List.not_mem_nil, List.nodup_nil⟩, fun a ha b hb e => ?_⟩
+        simp only [List.mem_singleton] at hb
+        have := (hin a ha).1; omega
+      · rcases List.mem_append.mp hk with hk | hk
+        · have := hin k hk; omega
+        · simp only [List.mem_singleton] at hk; omega
+
 end Opt
 end SkaModel
 end Formalization
