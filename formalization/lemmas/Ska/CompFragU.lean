@@ -1,7 +1,10 @@
 import lemmas.Ska.CompAboveX
 
 /-!
-# Proxy runs that compose: `RunOKV` and the fragment `FragU`
+# Proxy runs that compose: `RunOKV`
+
+The fragment `FragU`, its joint induction and the top theorem are in
+`CompFragUJ.lean` (since the tenth session, when `FragU` gained cons).
 
 README Gaps 12.2.  `RunOKU` takes `AgreeU` by the run's own final `cond`.
 A parent that runs a part which makes proxies and then runs more parts after
@@ -895,83 +898,10 @@ theorem runOKNV_seven4_le (lib : Lib) {p q : Nomm} (hp : NextOK (S := S) (Map :=
     RunOKNV (Map := Map) lib (Nomm.n7 (Nomm.n4 p) q) sur th g0 g2 nex :=
   runOKNV_seven4 lib hp sp kp ap hq hcount hj hth hok hcl b0 d0 hu hcl0 hcb0 (fun r hr => hkm r (hm.1 r hr)) h
 
-/-! ## The fragment `FragU` and the top theorem -/
-
-/-- **`FragX` with the proxy runs that compose under `%done` and `%pick`**:
-`[7 [4 p] q]` with `p` and `q` in `FragX` (a run that makes proxies when `q`
-has a `%6`), and `%6` whose test and branches are again in `FragU`.
-Later parents are to be added one constructor at a time. -/
-inductive FragU : Nomm → Prop
-  | x {nm : Nomm} : FragX (S := S) nm → FragU nm
-  | seven4 {p q : Nomm} : FragX (S := S) p → FragX (S := S) q → FragU (Nomm.n7 (Nomm.n4 p) q)
-  | six {c a b : Nomm} : FragU c → FragU a → FragU b → FragU (Nomm.n6 c a b)
-
-theorem fragU_pure {nm : Nomm} (h : FragU (S := S) nm) : nm.pure = true := by
-  induction h with
-  | x h => exact fragX_pure h
-  | seven4 hp hq => simp only [Nomm.pure, fragX_pure hp, fragX_pure hq, Bool.and_self]
-  | six _ _ _ ihc iha ihb => simp only [Nomm.pure, ihc, iha, ihb, Bool.and_self]
-
-/-- **Every run of `FragU` for `%done`, and for `%pick` with jumps without
-arguments, meets `RunOKV`.** -/
-theorem runU_ok (lib : Lib) {nm : Nomm} (hf : FragU (S := S) nm) :
-    OKV (Map := Map) lib (CGoal.done : CGoal S) nm ∧
-    ∀ z o : Jmp, z.args = [] → o.args = [] → OKV (Map := Map) lib (CGoal.pick z o : CGoal S) nm := by
-  induction hf with
-  | x h => exact okV_fragX lib h
-  | seven4 hp hq =>
-    exact ⟨fun _ _ hcount b0 d0 hu hcl hcb h => runOKV_seven4 lib (runX_ok lib hp).2.1 (runX_semR lib hp).2.1
-      (runX_keeps hp) (aboveX_of_fragX hp) hq hcount b0 d0 hu hcl hcb h,
-      fun z o hz ho => fun _ hj hcount b0 d0 hu hcl hcb h => runOKV_seven4P lib (runX_ok lib hp).2.1
-        (runX_semR lib hp).2.1 (runX_keeps hp) (aboveX_of_fragX hp) hq hcount hz ho hj b0 d0 hu hcl hcb h⟩
-  | six hc _ _ ihc iha ihb =>
-    exact ⟨sixP_okV lib (fragU_pure hc) ihc.2 iha.1 ihb.1,
-      fun z o hz ho => sixP_okV lib (fragU_pure hc) ihc.2 (iha.2 z o hz ho) (ihb.2 z o hz ho)⟩
+/-! ## The start state -/
 
 theorem condBelow_gen0 : CondBelow (gen0 : Gen Map) := fun k hk => by
   simp [gen0, HoonMap.get_empty] at hk
-
-/-- **The final pass meets the contract on `FragU`**, when the nomm has at
-most 255 `%6`, nothing is baked and the bell's cape has no `[| |]`. -/
-theorem finishLF_bellContractFU {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
-    {bl : Bell} {nm : Nomm} (hp : nm.pure = true) (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol nm)
-    (hf : FragU (S := S) nm) (hcount : sixCount nm ≤ 255) {cape : Cape} {data : Noun}
-    (hbl : bl.less = Sock.mk cape data) (hn : CapeNorm cape) {ord : NeedOrd}
-    {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
-    (h : finishLF (S := S) nm ord cape bake = some c') (N : Needs) : BellContract lib N bl false c' :=
-  finishLF_bellContractU hok hp hA (fun h1 => ((runU_ok lib hf).1 trivial trivial hcount (by simp [gen0]) rfl
-    upBelow_gen0 clear_gen0 condBelow_gen0 h1).toU) hbl hn hbake h N
-
-/-- **A proxy run inside a branch of a `%6`**:
-`[6 [0 1] [7 [4 [0 3]] [6 [0 1] [0 1] [1 0]]] [1 0]]` meets the contract
-with no hypothesis beyond the usual ones.  Its raw blocks (subject unknown):
-the outer test `brn v7` (with `v7` the subject), the yes branch's
-`[0 3]` filled at `0w9`, the increment `inc v6 v4` at `0w8`, the inner test
-`brn v4` at `0w6`, and the lazy block `0w4` of the inner `[0 1]` gets
-`mov v4 v3`, reading the register the increment of the same branch wrote. -/
-theorem finishLF_bellContract_sixProxy {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) {bl : Bell}
-    (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol
-      (Nomm.n6 (Nomm.n0 1) (Nomm.n7 (Nomm.n4 (Nomm.n0 3)) (Nomm.n6 (Nomm.n0 1) (Nomm.n0 1) (Nomm.n1 (A 0))))
-        (Nomm.n1 (A 0))))
-    {cape : Cape} {data : Noun} (hbl : bl.less = Sock.mk cape data) (hn : CapeNorm cape) {ord : NeedOrd}
-    {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
-    (h : finishLF (S := S) (Nomm.n6 (Nomm.n0 1) (Nomm.n7 (Nomm.n4 (Nomm.n0 3))
-      (Nomm.n6 (Nomm.n0 1) (Nomm.n0 1) (Nomm.n1 (A 0)))) (Nomm.n1 (A 0))) ord cape bake = some c')
-    (N : Needs) : BellContract lib N bl false c' :=
-  finishLF_bellContractFU hok rfl hA
-    (FragU.six (FragU.x (FragX.frag fun _ => trivial))
-      (FragU.seven4 (FragX.frag fun _ => trivial)
-        (FragX.six (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial)))
-      (FragU.x (FragX.frag fun _ => trivial)))
-    (by decide) hbl hn hbake h N
-
-/-- **A `[7 [4 p] q]` in the test of a `%6`**, which runs for `%pick`:
-`[6 [7 [4 [0 3]] [6 [0 1] [1 0] [1 1]]] [1 5] [1 6]]` is in `FragU`. -/
-example : FragU (S := S) (Nomm.n6 (Nomm.n7 (Nomm.n4 (Nomm.n0 3))
-    (Nomm.n6 (Nomm.n0 1) (Nomm.n1 (A 0)) (Nomm.n1 (A 1)))) (Nomm.n1 (A 5)) (Nomm.n1 (A 6))) :=
-  FragU.six (FragU.seven4 (FragX.frag fun _ => trivial)
-      (FragX.six (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial)))
-    (FragU.x (FragX.frag fun _ => trivial)) (FragU.x (FragX.frag fun _ => trivial))
 
 end Comp
 end SkaModel
