@@ -93,7 +93,7 @@ import lemmas.Ska.CompRunOKLB
 import lemmas.Ska.CompSimBodyLift
 import lemmas.Ska.CompLBDone
 import lemmas.Ska.CompLBFour
-import lemmas.Ska.CompLBBond
+import lemmas.Ska.CompNCBond
 
 /-!
 # Axioms of the theorems about the model of `+comp`

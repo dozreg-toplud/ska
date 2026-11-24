@@ -116,6 +116,24 @@ theorem three_example {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK li
     exact Annot.n3 (Annot.indirect Annot.n0 Annot.n0)
   exact finishLUC_contractNC hok hA (NC.n3 (NC.ind (t := true) (t' := true) NC.n0 NC.n0 rfl)) (by decide) h N
 
+/-- **`[[4 [2 [0 3] [0 2]]] [2 [0 3] [0 2]]]` end to end** (`%h4c`; its raw
+blocks are the `#guard` `%h4c` of `CompRunOKLC.lean`): the head `[4 p]` with
+a calling `p` at level `1` (`NC.n4b`: `bondOKC_fourA`, `+collapse-lazy-atom`
+under the bond goal behind the tail's call, `CompNCBond.lean`). -/
+theorem h4c_example {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) {bl : Bell}
+    (hfol : bl.fol = C (n2 (A 4) (n3 (A 2) (slot 3) (slot 2))) (n3 (A 2) (slot 3) (slot 2))) {env : CallEnv}
+    {cd : Straight Map}
+    (h : finishLUC (S := S) env (Nomm.cons (Nomm.n4 (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none))
+      (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) = some cd)
+    (N : Needs) : cd.need = NeedOrd.this ∧ BellContract lib N bl true cd := by
+  have hA : Annot lib code (SkaModel.Fits bl.less) bl.fol (Nomm.cons (Nomm.n4 (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2)
+      Option.none)) (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) := by
+    rw [hfol]
+    exact Annot.cons (Annot.n4 (Annot.indirect Annot.n0 Annot.n0)) (Annot.indirect Annot.n0 Annot.n0)
+  exact finishLUC_contractNC hok hA
+    (NC.cons (t := false) (t' := true) (NC.n4b (NC.ind (t := true) (t' := true) NC.n0 NC.n0 rfl))
+      (NC.ind (t := true) (t' := true) NC.n0 NC.n0 rfl) (fun _ => rfl)) (by decide) h N
+
 end Comp
 end SkaModel
 end Formalization

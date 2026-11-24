@@ -1,4 +1,4 @@
-import lemmas.Ska.CompLBFour
+import lemmas.Ska.CompNCThree
 
 /-!
 # `[4 p]` with a calling `p` under a lazy goal whose sure part asks nothing
@@ -11,7 +11,8 @@ part asks nothing), puts `mov` of a proxy of `r` at the bond block, then the
 block of the increment writes `r` and `p` runs under `%next (lazy-from-reg
 arg)` into it: `8: inc v8 v6`, `3: mov v7 v1` with `v7` a proxy of `v6`.
 This is `kerfLC` with `+collapse-lazy-atom` (`CollPre`, `CollP`) in place
-of `+kerf` (`KernPW`).
+of `+kerf` (`KernPW`).  The level `1` of `NC` (`CompNC.lean`) is `BondOKC`,
+and `NC.n4b` puts `[4 p]` there for every `p` of level `0`.
 
 * `collWit r`: the witness of the collapse, `r` holding the product (an
   atom).
@@ -21,8 +22,6 @@ of `+kerf` (`KernPW`).
 * `four_runBond`: `[4 p]` with an operand meeting `UOKC` under such a goal
   (`collapsePre_spec`, the block of the increment, `unaryGC_ok`, `collLC`).
 * `bondOKC_fourC`, `bondOKC_fourA`: `[4 p]` as a head under the bond goal.
-* `h4c_example`: `[[4 [2 [0 3] [0 2]]] [2 [0 3] [0 2]]]`, both halves (its
-  raw blocks are the `#guard` `%h4c` of `CompRunOKLC.lean`).
 -/
 
 set_option linter.unusedSectionVars false
@@ -283,36 +282,6 @@ theorem bondOKC_fourA {lib : Lib} {code : Bell → Option Nomm} (env : CallEnv) 
   | six0 hb' _ ih' => intro e; exact BondOKC.wrap (wrapRel_six hb' (Or.inl ⟨rfl, rfl⟩)) (ih' e)
   | six1 hb' _ ih' => intro e; exact BondOKC.wrap (wrapRel_six hb' (Or.inr ⟨rfl, rfl⟩)) (ih' e)
   | _ => intro e; cases e
-
-/-- **`[[4 [2 [0 3] [0 2]]] [2 [0 3] [0 2]]]` end to end** (`%h4c` of
-`tools/hoon/calldump4.hoon`): the head `[4 p]` with a calling `p` runs under
-the bond goal behind the tail's call (`bondOKC_fourA`), the cons composes
-(`uokc_consEA`), both halves of the contract (`finishLUC_contractG`). -/
-theorem h4c_example {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) {bl : Bell}
-    (hfol : bl.fol = C (n2 (A 4) (n3 (A 2) (slot 3) (slot 2))) (n3 (A 2) (slot 3) (slot 2))) {env : CallEnv}
-    {cd : Straight Map}
-    (h : finishLUC (S := S) env (Nomm.cons (Nomm.n4 (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none))
-      (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) = some cd)
-    (N : Needs) : cd.need = NeedOrd.this ∧ BellContract lib N bl true cd := by
-  have hA : Annot lib code (SkaModel.Fits bl.less) bl.fol (Nomm.cons (Nomm.n4 (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2)
-      Option.none)) (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) := by
-    rw [hfol]
-    exact Annot.cons (Annot.n4 (Annot.indirect Annot.n0 Annot.n0)) (Annot.indirect Annot.n0 Annot.n0)
-  have leaf : ∀ (axe : Nat) {P : Noun → Prop} {f : Noun}, Annot lib code P f (Nomm.n0 axe) →
-      UOKC (S := S) (Map := Map) lib env P f (Nomm.n0 axe) := fun axe {P f} hA' =>
-    uokcU hok env (FragU.x (FragX.frag (nm := Nomm.n0 axe) fun _ => trivial)) hA'
-  have ind : ∀ {P : Noun → Prop} {f : Noun}, Annot lib code P f (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) →
-      UOKC (S := S) (Map := Map) lib env P f (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) ∧
-      EntNew (S := S) (Map := Map) env (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) := fun hA' =>
-    uokc_indDA env (fun h => leaf 3 h) (fun h => leaf 2 h) rfl hA' rfl
-  have U := (uokc_consEA env (fun hA' => uokc_fourA env (fun h => (ind h).1) rfl hA' rfl)
-    (fun hA' _ => bondOKC_fourA env (fun h => (ind h).1) hA' rfl) (fun h => ⟨(ind h).1, fun _ => (ind h).2⟩) rfl
-    hA rfl).1
-  have H := finishLUC_contractG lib U (by decide) h N
-  refine ⟨H.1, fun s hs args hargs => ?_⟩
-  simp only [if_true, Option.some.injEq] at hargs
-  subst hargs
-  exact H.2 s hs
 
 end Comp
 end SkaModel

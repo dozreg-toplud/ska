@@ -1,5 +1,6 @@
 import lemmas.Ska.CompNCJump
 import lemmas.Ska.CompNCThree
+import lemmas.Ska.CompNCBond
 
 /-!
 # The induction over `NC`
@@ -8,10 +9,11 @@ README Gaps 12.22.  `ncOK`: every nomm of `NC lv t` (`CompNC.lean`) meets
 `NCOK lv t`, by structural induction on the derivation.  Each case is a
 composition proved for every goal of its level: `[0 axe]` (`uokcU`,
 `jNew_n0`, `lokc_n0all`), `[1 k]` (`uokcU`, `jNew_n1`), the cons
-(`uokc_consEA` with `LOKCS.toBond` for the head, `entNew_consAny`),
+(`uokc_consEA` with `BondOKC` for the head, `entNew_consAny`),
 `[7 p q]` with `p` at level `2` (`uokc_sevenLA`, `jump_sevenEA`,
 `lokcLv_sevenA`) and with `q`'s result without entries (`uokc_sevenA`,
-`jump_sevenNA`), the indirect call (`uokc_indDA`, `lokc_indAU`), the
+`jump_sevenNA`), the indirect call (`uokc_indDA`, `lokc_indAU`), `[4 p]` at
+level `1` (`lokcs_n4XA`, and `bondOKC_fourA` for `NC.n4b`), the
 call-free `FragU` (`uokcU`), and the weakenings.
 
 * `hinted_nc`, `fragU_of_nc`, `nc_lv2_shape`: what the class says of a
@@ -46,6 +48,7 @@ theorem hinted_nc (cod : Bell → Option Bool) {lv : Nat} {t : Bool} {nm : Nomm}
   | sevenN _ _ _ _ ihq ihp => exact hinted_noDirect_seven ihp ihq
   | ind => rfl
   | four hp => rw [hinted_pure cod _ (fragU_pure (FragU.x (FragX.four hp)))]; simp [fragU_pure (FragU.x (FragX.four hp))]
+  | n4b _ ih => simpa only [hinted, Nomm.pure] using ih
   | n4 _ ih => simpa only [hinted, Nomm.pure] using ih
   | n3 _ ih => simpa only [hinted, Nomm.pure] using ih
   | pure hf => rw [hinted_pure cod _ (fragU_pure hf)]; simp [fragU_pure hf]
@@ -65,6 +68,7 @@ theorem fragU_of_nc {lv : Nat} {t : Bool} {nm : Nomm} (h : NC (S := S) lv t nm) 
   | sevenN _ _ _ hu _ _ => exact hu
   | ind => intro e; simp [Nomm.pure] at e
   | four hp => exact fun _ => FragU.x (FragX.four hp)
+  | n4b _ ih => exact fun e => FragU.four (ih e)
   | n4 _ ih => exact fun e => FragU.four (ih e)
   | n3 _ ih => exact fun e => FragU.three (ih e)
   | pure hf => exact fun _ => hf
@@ -82,6 +86,7 @@ theorem nc_lv2_shape {lv : Nat} {t : Bool} {nm : Nomm} (h : NC (S := S) lv t nm)
   | sevenN => intro l; omega
   | ind => intro _; exact ⟨fun _ _ e => (by cases e), fun _ e => (by cases e)⟩
   | four => intro l; omega
+  | n4b => intro l; omega
   | n4 => intro l; omega
   | n3 => intro l; omega
   | pure => intro l; omega
@@ -103,7 +108,7 @@ theorem ncOK {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) (
   | @n0 lv axe =>
     intro P f hA
     exact ⟨uokcU hok env (FragU.x (FragX.frag (nm := Nomm.n0 axe) fun _ => trivial)) hA,
-      fun _ => ⟨jNew_n0 env _, fun e => by simp [hinted] at e⟩, fun _ => (lokc_n0all hok env hA).toS,
+      fun _ => ⟨jNew_n0 env _, fun e => by simp [hinted] at e⟩, fun _ => (lokc_n0all hok env hA).toS.toBond,
       fun _ => lokc_n0all hok env hA⟩
   | @n1 k =>
     intro P f hA
@@ -122,7 +127,7 @@ theorem ncOK {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) (
     have Bp : ∀ {P : Noun → Prop} {f : Noun}, Annot lib code P f p → hinted env.cod q = some true →
         BondOKC (S := S) (Map := Map) lib env P f p := fun hA' hh => by
       have l : 1 ≤ (if q.pure then 0 else 1) := by rw [qf hh]; simp
-      exact ((ihp hA').2.2.1 l).toBond
+      exact (ihp hA').2.2.1 l
     have ihd : ∀ {P : Noun → Prop} {f : Noun}, Annot lib code P f q →
         UOKC (S := S) (Map := Map) lib env P f q ∧
           (hinted env.cod q = some true → EntNew (S := S) (Map := Map) env q) := fun hA' =>
@@ -141,8 +146,9 @@ theorem ncOK {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) (
     have hh7 := hinted_noDirect_seven hhp hhq
     have Lp : ∀ {P : Noun → Prop} {f : Noun}, Annot lib code P f p → LOKC (S := S) (Map := Map) lib env P f p :=
       fun h => (ihp h).2.2.2 (Nat.le_refl _)
-    refine ⟨?_, fun ht => ?_, (lokcLv_sevenA env Lp (fun h => ⟨(ihq h).2.2.1, (ihq h).2.2.2⟩) hpc hA rfl).1,
-      (lokcLv_sevenA env Lp (fun h => ⟨(ihq h).2.2.1, (ihq h).2.2.2⟩) hpc hA rfl).2⟩
+    refine ⟨?_, fun ht => ?_, fun l => bondOKC_sevenA env Lp (fun h => (ihq h).2.2.1 l) hpc hA rfl,
+      fun l => (lokcLv_sevenA (lv := 2) env Lp (fun h => ⟨fun _ => ((ihq h).2.2.2 l).toS, fun _ => (ihq h).2.2.2 l⟩)
+        hpc hA rfl).2 (Nat.le_refl _)⟩
     · rcases pure_or_hinted hh7 with e | hh
       · exact uokcU hok env (hu e) hA
       · exact (uokc_sevenLA (Xq := True) env Lp (fun h => ⟨(ihq h).1, trivial⟩) hpc hh hA rfl).1
@@ -169,11 +175,19 @@ theorem ncOK {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) (
     intro P f hA
     have R := uokc_indDA env (fun h => (ihp h).1) (fun h => (ihq h).1) hbl hA rfl
     have L := lokc_indAU env (fun h => (ihp h).1) (fun h => (ihq h).1) hbl hA rfl
-    exact ⟨R.1, fun _ => ⟨jNew_of_entNew R.2, fun _ => R.2⟩, fun _ => L.toS, fun _ => L⟩
+    exact ⟨R.1, fun _ => ⟨jNew_of_entNew R.2, fun _ => R.2⟩, fun _ => L.toS.toBond, fun _ => L⟩
   | four hp =>
     intro P f hA
-    exact ⟨uokcU hok env (FragU.x (FragX.four hp)) hA, fun e => (by cases e), fun _ => lokcs_n4XA hok env hp hA,
+    exact ⟨uokcU hok env (FragU.x (FragX.four hp)) hA, fun e => (by cases e),
+      fun _ => (lokcs_n4XA hok env hp hA).toBond, fun l => absurd l (by omega)⟩
+  | @n4b t p hp ihp =>
+    intro P f hA
+    have hh4 := hinted_nc env.cod (NC.n4 hp)
+    refine ⟨?_, fun e => (by cases e), fun _ => bondOKC_fourA env (fun h => (ihp h).1) hA rfl,
       fun l => absurd l (by omega)⟩
+    rcases pure_or_hinted hh4 with e | hh
+    · exact uokcU hok env (fragU_of_nc (NC.n4 hp) e) hA
+    · exact uokc_fourA env (fun h => (ihp h).1) hh hA rfl
   | @n4 t p hp ihp =>
     intro P f hA
     have hh4 := hinted_nc env.cod (NC.n4 hp)
@@ -209,7 +223,7 @@ theorem lokc_of_nc {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib c
 theorem bondOKC_of_nc {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) (env : CallEnv) {t : Bool}
     {nm : Nomm} (h : NC (S := S) 1 t nm) {P : Noun → Prop} {f : Noun} (hA : Annot lib code P f nm) :
     BondOKC (S := S) (Map := Map) lib env P f nm :=
-  ((ncOK hok env h hA).2.2.1 (Nat.le_refl _)).toBond
+  (ncOK hok env h hA).2.2.1 (Nat.le_refl _)
 
 theorem entNew_of_nc {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) (env : CallEnv) {lv : Nat}
     {nm : Nomm} (h : NC (S := S) lv true nm) {P : Noun → Prop} {f : Noun} (hA : Annot lib code P f nm)
