@@ -87,6 +87,8 @@ import lemmas.Ska.CompRunOKLCSeven
 import lemmas.Ska.CompCallC
 import lemmas.Ska.CompHypOfFragD
 import lemmas.Ska.CompHypOfFragF
+import lemmas.Ska.CompNCInd
+import lemmas.Ska.CompNCExamples
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -927,3 +929,67 @@ open Formalization.SkaModel.Comp
 #print axioms consS7_exampleC
 #print axioms consS7_exampleH
 #print axioms gate_example
+#print axioms LOKC.toS
+#print axioms LOKCS.toBond
+#print axioms LOKCS.wrap
+#print axioms NCOK.weak
+#print axioms hinted_noDirect
+#print axioms lokc_seven_core
+#print axioms lokc_sevenC
+#print axioms lokcs_sevenC
+#print axioms lokcLv_sevenA
+#print axioms jNew_sevenC
+#print axioms jNew_sevenL
+#print axioms runOKL_n00
+#print axioms lokc_n00
+#print axioms lokc_n0all
+#print axioms lokc_indAU
+#print axioms entNew_consAny
+#print axioms annot_atomLeaf
+#print axioms annot_slot1Leaf
+#print axioms entNew_consLeaf
+#print axioms jump_sevenNA
+#print axioms jump_sevenEA
+#print axioms hinted_nc
+#print axioms fragU_of_nc
+#print axioms nc_lv2_shape
+#print axioms ncOK
+#print axioms uokc_of_nc
+#print axioms lokc_of_nc
+#print axioms bondOKC_of_nc
+#print axioms entNew_of_nc
+#print axioms finishLUC_contractNC
+#print axioms lokcs_n4X
+#print axioms lokcs_n4XA
+#print axioms pure_false_of_hinted
+#print axioms nc_of_fragB
+#print axioms nc_of_fragC
+#print axioms nc_of_fragD
+#print axioms nc_of_fragE
+#print axioms nc_of_fragI
+#print axioms Formalization.SkaModel.PokeM.rawMono_NCG
+#print axioms Formalization.SkaModel.PokeM.fragUFG_subNC
+#print axioms Formalization.SkaModel.PokeM.compHyp_of_NCG
+#print axioms nc_c8tTail
+#print axioms c8t_example
+#print axioms minkC4_four
+#print axioms goalSemCM_of_returnsC
+#print axioms unaryGC_ok
+#print axioms four_runD
+#print axioms four_runN
+#print axioms runLC_n4_last
+#print axioms okc_fourC
+#print axioms uokc_fourC
+#print axioms uokc_fourA
+#print axioms four_example
+#print axioms minkC3_three
+#print axioms unaryGT_ok
+#print axioms wutTone_keep
+#print axioms three_runD
+#print axioms three_of_none
+#print axioms three_runN
+#print axioms runLC_n3_last
+#print axioms okc_threeC
+#print axioms uokc_threeC
+#print axioms uokc_threeA
+#print axioms three_example
