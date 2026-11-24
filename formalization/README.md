@@ -203,6 +203,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompLift.lean` | `+bind` (arm `5983` of `layer2`, `lf_bind_at`) and `+lift` (arm `372`, `lf_lift_at`, its sample bunt `lfLiftBunt` read from the pill): `(turn v (lift ren))` renames the units of a list of registers (`lf_turn`), so the gate `rj` of `+chase-fin` is `renJmp ren` (`lf_rj`), `TsRjAt` holds (`lf_ts_rj`) and `cu_finish_all` is the end of `+compile-unary` with no hypothesis on `+to-straight`.  The gate `ren-jmp` of `+map-regs` is `renJmp` too (`lf_mr_rj`), so `(map-regs ren)` is linked on every block (`mr_inner`, the terminator by `mrFin`: `renFin` except `%lti`, which the Nock keeps) and is `renBlob` on every block without `%lti` (`mr_inner_ren`). |
 | `Compiler/CompUnaryTrap.lean` | The trap of `+compile-unary` (`cuTrap`, axis `1473626077` of `K`, `cu_trap_at`) and its gate (`cuGB`, axis `179885`, `cu_gb_at`): `+compile-scc-in` (`cuCsi`, a hypothesis), the edit of the gate's `cache`, `+comp` (arm `5590`, `cu_comp_at`, its battery `cgBat` builds `[comp.door [cuBunt ctx]]`), the entry (`cu_trap_entry`), `+got:by` of `code` and `+run` (`cu_trap_run`), `+kerf` (`cu_trap_kerf`), `+to-straight` and the product (`cu_trap_end`).  `cu_trap`: the trap returns `[[s NM] CA]` with `s` the noun of `finishLU n`; `cu_gate`: so does the gate through `road-pure`; `cu_ref_mono` and `cu_gate_some`: the same against `finishLUC env n` for every `env`, the form of `refMono`. |
 | `Compiler/CompSccIn.lean` | The structure of `+compile-scc-in` (its header: the passes, the state they thread, the final pass of `member` for one bell with line numbers, and every difference from `finishLF`), and the arms of the n-ary final pass linked so far: `+soft-done` is the identity on `soft` empty or `mode` `%drop` (`sd_empty`, `sd_drop`), the gate of `+need-to-ordered` is `needToOrd` (`nta_gate`), the gate of `+need-ord-alloc-regs` is `needOrdAllocRegs` (`noar_gate`), and the gate of `+collapse-shape` is the check of `args.then` then `needOrdAllocRegs` of the shape that the gate of `+shape-collapse` returns, a hypothesis (`cs_gate`). |
+| `Compiler/CompStraightN.lean` | `+to-straight` on an n-ary input need (the sample `[%next [[ned ~] ~ ~] ~ o]` of the final pass of `+compile-scc-in`, `tsSampleN`): the pushes with `ins` `flattenNeed ned`, `r0` its head, `n-in` its length and `run` `isRun ins r0 0` (`tsn_pre1`, the trap `run` `tsn_run`, `tsn_pre2`, `tsn_pre3`, `tsn_pre`), `ren` is `renReg r0 n-in` (`tsn_ren`), `rer` (`tsn_rer`), the trap of `+rewrite-input` on any need returns `needToOrd ned` and leaves `gen` (`tsn_ri_trap`, `tsn_ri`), the arm `$` takes the renaming branch (`tsn_dol`), `+count-args` is `countArgs` (`ca_gate`), the renaming branch (`tsn_rename`), the gate of the fold in any `CfCore` core (`tsn_step_gen`, `tsn_st_cf`, `tsn_step`), the core (`tsn_core`), and the gate: on a run of inputs with `cond` empty it returns the noun of `toStraightF` (`tsn_at`). |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`, whose `keys` are those of `rap`, the order of `+rep:by` (`treapMap_keys`). |
@@ -1207,6 +1208,19 @@ import only its theorems.  So:
     `+axe-in-need`, `+sure-require-look` (`srl_gate`), and the loop with
     `+kern-need` (`comp_kern_need`) and `+add-ops`), `+bake-need`, the
     gate `finish`, and `member`.
+    L, 2026-11-24 (track A, `+to-straight` on an n-ary need),
+    `Compiler/CompStraightN.lean`.  The chain of `TsAt` is generalized to
+    any input need: `tsn_at` says that the gate of `+to-straight` on
+    `[%next [[ned ~] ~ ~] ~ o]`, with `cond` empty and the registers of
+    `ned` a run (`isRun (flattenNeed ned) r0 0`, which
+    `isRun_needOrdAllocRegs` gives for the need of `+need-ord-alloc-regs`),
+    returns the noun of `toStraightF cond blocks ned o`.  The trap of
+    `+rewrite-input` (its cases `^` and `%both`, `tsRiRestN`, written out
+    and tied by `tsn_rirest_at`) calls `rer` on the register of every
+    `%this` and `%both` and gives `needToOrd ned` with `gen` unchanged, and
+    `+count-args` (its rest `caRestN`, `ca_rest_at`) is `countArgs`.  The
+    gate of the fold is proved once for any core that meets `CfCore`
+    (`tsn_step_gen`), so the proof of `ts_step` is not repeated.
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
