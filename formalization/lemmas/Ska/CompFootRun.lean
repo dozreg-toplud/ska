@@ -172,6 +172,222 @@ theorem wroteIn_addOps {Q : Nat → Prop} {g g' : Gen Map} {o : Nat} {ops : List
       exact Or.inl ⟨b, ops, hb, rfl, hA⟩
     · rw [if_neg e'] at h'; exact WroteIn.refl Q g o' b' h'
 
+/-! ## The arms, each with its footprint -/
+
+/-- The registers of `ned` and those allocated from `g` to `g'`. -/
+def NewOr (ned : Need) (g g' : Gen Map) (x : Nat) : Prop := NMem ned x ∨ (g.re ≤ x ∧ x < g'.re)
+
+theorem newOr_mono {ned : Need} {g g' g2 : Gen Map} (hl : g'.re ≤ g2.re) {x : Nat} (h : NewOr ned g g' x) :
+    NewOr ned g g2 x := h.imp id fun e => ⟨e.1, Nat.lt_of_lt_of_le e.2 hl⟩
+
+theorem wr_must {ned n : Need} {r : Nat} {g g' : Gen Map} (Q : Nat → Prop) (h : must ned g = some ((r, n), g')) :
+    WroteIn Q g g' := wroteIn_of_gen (must_spec h).1
+
+theorem wr_sureRequireLook {sur : Sure S} {ned : Need} {g g' : Gen Map} (Q : Nat → Prop)
+    (h : sureRequireLook sur g = some (ned, g')) : WroteIn Q g g' := by
+  obtain ⟨k, e⟩ := (sureRequireLook_spec h).gen
+  rw [e]; exact wroteIn_reg Q g k
+
+/-- **`+split-need` writes only registers of the need it splits.** -/
+theorem wr_splitNeed {ned : Need} {o : Nat} {g g' : Gen Map} {x : Need × Need}
+    (h : splitNeed ned o g = some (x, g')) : WroteIn (NMem ned) g g' := by
+  cases ned with
+  | pair p q =>
+    simp only [splitNeed, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h; exact WroteIn.refl _ _
+  | none =>
+    simp only [splitNeed, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h; exact WroteIn.refl _ _
+  | this r =>
+    simp only [splitNeed] at h
+    obtain ⟨hh, g1, h1, h⟩ := bind_some h
+    obtain ⟨t, g2, h2, h⟩ := bind_some h
+    obtain ⟨u, g3, h3, h⟩ := bind_some h
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact (wroteIn_re h1).trans ((wroteIn_re h2).trans (wroteIn_addOps (opsWr_one (p := Pole.con hh t r)
+      (fun x hx => by simp only [poleWr, List.mem_cons, List.mem_nil_iff, or_false] at hx; rw [hx]; rfl)) h3))
+  | both r hd tl =>
+    simp only [splitNeed] at h
+    obtain ⟨⟨r1, n1⟩, g1, h1, h⟩ := bind_some h
+    obtain ⟨⟨r2, n2⟩, g2, h2, h⟩ := bind_some h
+    obtain ⟨u, g3, h3, h⟩ := bind_some h
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact (wr_must _ h1).trans ((wr_must _ h2).trans (wroteIn_addOps (opsWr_one (p := Pole.con r1 r2 r)
+      (fun x hx => by simp only [poleWr, List.mem_cons, List.mem_nil_iff, or_false] at hx; rw [hx]; exact Or.inl rfl)) h3))
+
+/-- **`+crash-need` writes the registers of its need and the register of its
+atom.** -/
+theorem wr_crashNeed {o : Nat} {atom : Sum Nat Nat} {ned : Need} {g g' : Gen Map} {u : Unit}
+    (h : crashNeed o atom ned g = some (u, g')) : WroteIn (NewOr ned g g') g g' := by
+  cases atom with
+  | inr p =>
+    simp only [crashNeed] at h
+    exact wroteIn_addOps (opsWr_cons (p := Pole.cel p) (fun x hx => by simp [poleWr] at hx)
+      (opsWr_fill fun x hx => Or.inl hx)) h
+  | inl n =>
+    simp only [crashNeed, bind_apply, re_apply, Option.bind_some] at h
+    have e := (addOps_re h).1
+    exact (wroteIn_reg _ g _).trans (wroteIn_addOps (opsWr_cons (p := Pole.imm (A n) g.re) (fun x hx => by
+      simp only [poleWr, List.mem_cons, List.mem_nil_iff, or_false] at hx
+      rw [hx]; exact Or.inr ⟨Nat.le_refl _, by rw [e]; exact Nat.lt_succ_self _⟩)
+      (opsWr_cons (p := Pole.cel g.re) (fun x hx => by simp [poleWr] at hx)
+        (opsWr_fill fun x hx => Or.inl hx))) h)
+
+/-- **The loop of `+mede` writes the registers of its need and fresh ones.** -/
+theorem wr_medeLoop {o : Nat} : ∀ (som : Noun) (ned : Need) (g g' : Gen Map) (u : Unit),
+    NB g.re ned → medeLoop o som ned g = some (u, g') → WroteIn (NewOr ned g g') g g'
+  | _, Need.none, g, g', u, _, h => by
+    simp only [medeLoop, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    rw [← h.2]; exact WroteIn.refl _ g
+  | som, Need.this r, g, g', u, hn, h => by
+    simp only [medeLoop] at h
+    exact wroteIn_addOps (opsWr_one (p := Pole.imm som r) (fun x hx => by
+      simp only [poleWr, List.mem_cons, List.mem_nil_iff, or_false] at hx; exact Or.inl hx)) h
+  | Noun.atom n, Need.pair p q, g, g', u, hn, h => by
+    simp only [medeLoop] at h
+    exact wr_crashNeed h
+  | Noun.cell a b, Need.pair p q, g, g', u, hn, h => by
+    simp only [medeLoop] at h
+    obtain ⟨u1, g1, h1, h2⟩ := bind_some h
+    have k1 := keeps_medeLoop a p g g1 u1 (fun y hy => hn y (Or.inl hy)) h1
+    have k2 := keeps_medeLoop b q g1 g' u (NB.mono (n := g.re) (fun y hy => hn y (Or.inr hy)) k1.le) h2
+    exact ((wr_medeLoop a p g g1 u1 (fun y hy => hn y (Or.inl hy)) h1).mono fun x hx =>
+        hx.imp Or.inl fun e => ⟨e.1, Nat.lt_of_lt_of_le e.2 k2.le⟩).trans
+      ((wr_medeLoop b q g1 g' u (NB.mono (n := g.re) (fun y hy => hn y (Or.inr hy)) k1.le) h2).mono fun x hx =>
+        hx.imp Or.inr fun e => ⟨Nat.le_trans k1.le e.1, e.2⟩)
+  | Noun.atom n, Need.both r hh t, g, g', u, hn, h => by
+    simp only [medeLoop] at h
+    exact wr_crashNeed h
+  | Noun.cell a b, Need.both r hh t, g, g', u, hn, h => by
+    simp only [medeLoop] at h
+    obtain ⟨u0, g0, h0, h⟩ := bind_some h
+    obtain ⟨k0, _⟩ := keeps_addOps (regsIn_single (p := Pole.imm (C a b) r) (fun x hx => by
+      simp only [poleRegs, List.mem_cons, List.mem_nil_iff, or_false] at hx
+      rw [hx]; exact hn r (Or.inl rfl)) _ (RegsIn.nil _)) h0
+    obtain ⟨u1, g1, h1, h2⟩ := bind_some h
+    have n1 : NB g0.re hh := NB.mono (n := g.re) (fun y hy => hn y (Or.inr (Or.inl hy))) k0.le
+    have k1 := keeps_medeLoop a hh g0 g1 u1 n1 h1
+    have n2 : NB g1.re t := NB.mono (n := g.re) (fun y hy => hn y (Or.inr (Or.inr hy))) (Nat.le_trans k0.le k1.le)
+    have k2 := keeps_medeLoop b t g1 g' u n2 h2
+    refine (wroteIn_addOps (Q := NewOr (Need.both r hh t) g g') (opsWr_one (p := Pole.imm (C a b) r) (fun x hx => by
+      simp only [poleWr, List.mem_cons, List.mem_nil_iff, or_false] at hx; exact Or.inl (Or.inl hx))) h0).trans
+      (((wr_medeLoop a hh g0 g1 u1 n1 h1).mono fun x hx => ?_).trans
+        ((wr_medeLoop b t g1 g' u n2 h2).mono fun x hx => ?_))
+    · rcases hx with e | e
+      · exact Or.inl (Or.inr (Or.inl e))
+      · exact Or.inr ⟨Nat.le_trans k0.le e.1, Nat.lt_of_lt_of_le e.2 k2.le⟩
+    · rcases hx with e | e
+      · exact Or.inl (Or.inr (Or.inr e))
+      · exact Or.inr ⟨Nat.le_trans (Nat.le_trans k0.le k1.le) e.1, e.2⟩
+
+/-- **`+mede` writes registers of the goal's need and fresh ones.** -/
+theorem wr_mede {th : Jmp} {som : Noun} {laz : Sure S} {g g' : Gen Map} {o : Nat} (hd : g.drop = false)
+    (hn : NB g.re laz.ned) (hj : JmpIn (· < g.re) th) (h : mede th som laz g = some (o, g')) :
+    WroteIn (NewOr laz.ned g g') g g' := by
+  have K := keeps_mede hd hn hj h
+  unfold mede at h
+  obtain ⟨o1, g1, h1, h⟩ := bind_some h
+  obtain ⟨k1, _⟩ := keeps_emit hd (blobIn_fin (f := Termin.hop th) hj) h1
+  obtain ⟨g2, g2', h2, h⟩ := bind_some h
+  rw [get_apply] at h2
+  simp only [Option.some.injEq, Prod.mk.injEq] at h2
+  obtain ⟨rfl, rfl⟩ := h2
+  rw [k1.dropF hd] at h
+  simp only [Bool.false_eq_true, if_false] at h
+  obtain ⟨ned, g3, h3, h⟩ := bind_some h
+  obtain ⟨k3, n3⟩ := keeps_sureRequireLook (hn.mono k1.le) h3
+  have L := sureRequireLook_spec h3
+  obtain ⟨u4, g4, h4, h⟩ := bind_some h
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨_, rfl⟩ := h
+  refine (wroteIn_emit (blobWr_fin _ _) h1).trans ((wr_sureRequireLook _ h3).trans
+    ((wr_medeLoop _ _ _ _ _ n3 h4).mono fun x hx => ?_))
+  rcases hx with e | e
+  · rcases L.mem x e with e' | e'
+    · exact Or.inl e'
+    · exact Or.inr ⟨Nat.le_trans k1.le e'.1, Nat.lt_of_lt_of_le e'.2 (keeps_medeLoop _ _ _ _ _ n3 h4).le⟩
+  · exact Or.inr ⟨Nat.le_trans (Nat.le_trans k1.le k3.le) e.1, e.2⟩
+
+/-- **`+forl` writes its register (the parameter of the join) and two fresh
+ones.** -/
+theorem wr_forl {r o : Nat} {g g' : Gen Map} {x : Nat × Nat} (h : forl r o g = some (x, g')) :
+    WroteIn (NewOr (Need.this r) g g') g g' := by
+  unfold forl at h
+  obtain ⟨r0, g1, h1, h⟩ := bind_some h
+  obtain ⟨e1, q1, _⟩ := keeps_re h1
+  obtain ⟨r1, g2, h2, h⟩ := bind_some h
+  obtain ⟨e2, q2, _⟩ := keeps_re h2
+  obtain ⟨barg, g3, h3, h⟩ := bind_some h
+  have q3 : g3.re = g2.re := by
+    rw [emit_apply] at h3; simp only [Option.some.injEq, Prod.mk.injEq] at h3; rw [← h3.2]; rfl
+  obtain ⟨if0, g4, h4, h⟩ := bind_some h
+  have q4 : g4.re = g3.re := by
+    rw [emit_apply] at h4; simp only [Option.some.injEq, Prod.mk.injEq] at h4; rw [← h4.2]; rfl
+  obtain ⟨if1, g5, h5, h⟩ := bind_some h
+  have q5 : g5.re = g4.re := by
+    rw [emit_apply] at h5; simp only [Option.some.injEq, Prod.mk.injEq] at h5; rw [← h5.2]; rfl
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨_, rfl⟩ := h
+  refine (wroteIn_re h1).trans ((wroteIn_re h2).trans ((wroteIn_emit (b := ⟨[r], [], Termin.hop (jmp0 o)⟩)
+    ⟨fun x hx => by simp only [List.mem_cons, List.mem_nil_iff, or_false] at hx; exact Or.inl hx, opsWr_nil _⟩ h3).trans
+    ((wroteIn_emit (blobWr_one (p := Pole.imm (A 0) r0) _ fun x hx => by
+      simp only [poleWr, List.mem_cons, List.mem_nil_iff, or_false] at hx; rw [hx]; exact Or.inr ⟨by omega, by omega⟩) h4).trans
+    (wroteIn_emit (blobWr_one (p := Pole.imm (A 1) r1) _ fun x hx => by
+      simp only [poleWr, List.mem_cons, List.mem_nil_iff, or_false] at hx; rw [hx]; exact Or.inr ⟨by omega, by omega⟩) h5))))
+
+/-- **The blocks of a `%done` loobean write two fresh registers.** -/
+theorem wr_doneBlocks {g g' : Gen Map} {x : Nat × Nat} (h : (doneBlocks : CM Map (Nat × Nat)) g = some (x, g')) :
+    WroteIn (NewOr Need.none g g') g g' := by
+  unfold doneBlocks at h
+  obtain ⟨r0, g1, h1, h⟩ := bind_some h
+  obtain ⟨e1, q1, _⟩ := keeps_re h1
+  obtain ⟨r1, g2, h2, h⟩ := bind_some h
+  obtain ⟨e2, q2, _⟩ := keeps_re h2
+  obtain ⟨o0, g3, h3, h⟩ := bind_some h
+  have q3 : g3.re = g2.re := by
+    rw [emit_apply] at h3; simp only [Option.some.injEq, Prod.mk.injEq] at h3; rw [← h3.2]; rfl
+  obtain ⟨o1, g4, h4, h⟩ := bind_some h
+  have q4 : g4.re = g3.re := by
+    rw [emit_apply] at h4; simp only [Option.some.injEq, Prod.mk.injEq] at h4; rw [← h4.2]; rfl
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨_, rfl⟩ := h
+  exact (wroteIn_re h1).trans ((wroteIn_re h2).trans ((wroteIn_emit (blobWr_one (p := Pole.imm (A 0) r0) _ fun x hx => by
+      simp only [poleWr, List.mem_cons, List.mem_nil_iff, or_false] at hx; rw [hx]; exact Or.inr ⟨by omega, by omega⟩) h3).trans
+    (wroteIn_emit (blobWr_one (p := Pole.imm (A 1) r1) _ fun x hx => by
+      simp only [poleWr, List.mem_cons, List.mem_nil_iff, or_false] at hx; rw [hx]; exact Or.inr ⟨by omega, by omega⟩) h4)))
+
+/-- **`+simple-next` writes nothing.** -/
+theorem wr_simpleNext {goal : CGoal S} {g g' : Gen Map} {nex : Next S} (Q : Nat → Prop)
+    (h : simpleNext goal g = some (nex, g')) : WroteIn Q g g' := by
+  cases goal with
+  | next laz th =>
+    simp only [simpleNext, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h; exact WroteIn.refl _ _
+  | done =>
+    simp only [simpleNext] at h
+    obtain ⟨r, g1, h1, h⟩ := bind_some h
+    obtain ⟨o, g2, h2, h⟩ := bind_some h
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact (wroteIn_re h1).trans (wroteIn_emit (blobWr_fin _ _) h2)
+  | pick z o =>
+    simp only [simpleNext] at h
+    obtain ⟨r, g1, h1, h⟩ := bind_some h
+    obtain ⟨o', g2, h2, h⟩ := bind_some h
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact (wroteIn_re h1).trans (wroteIn_emit (blobWr_fin _ _) h2)
+
+theorem wr_bomb {miss : Option Nat} {g g' : Gen Map} {nex : Next S} (Q : Nat → Prop)
+    (h : (bomb miss : CM Map (Next S)) g = some (nex, g')) : WroteIn Q g g' := by
+  simp only [bomb] at h
+  obtain ⟨o, g1, h1, h⟩ := bind_some h
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨rfl, rfl⟩ := h
+  exact wroteIn_emit (blobWr_fin _ _) h1
+
 end Comp
 end SkaModel
 end Formalization
