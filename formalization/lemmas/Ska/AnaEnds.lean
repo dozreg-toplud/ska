@@ -119,7 +119,10 @@ one formula were on the stack (the three pokes of `he2.hoon`, exactly
   callees.  Not proved.  True of the Hoon by the argument of `+cull` (a
   popped component calls no frame below it, a culled member is called only
   by culled members), and every poke checked returned through
-  `+prune-callgraph`.
+  `+prune-callgraph`.  On the 26 pokes of `sitesmeet4.hoon`, `he2.hoon`,
+  `voidscc.hoon` and `prodsame.hoon` every callee of the returned graph was
+  an entry (1760 entries, 4052 edges).  The arm pieces are in
+  `GraphClose.lean` (`cull_closed` and the puts).
 * `pruneLoop_ends`, proved: the loop of `+prune-callgraph` ends on a graph
   closed under callees, within one more than the queue's length plus, for
   each entry not visited, one more than its number of callees.

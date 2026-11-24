@@ -51,6 +51,7 @@ import lemmas.Ska.HeTurn
 import lemmas.Ska.HeBound
 import lemmas.Ska.FolWeight
 import lemmas.Ska.DirectCall
+import lemmas.Ska.GraphClose
 
 /-! The axioms of the main theorems of `lemmas/Ska`.  `lake build` prints
 them; each should be `propext`, `Classical.choice` and `Quot.sound` at most. -/
@@ -410,3 +411,7 @@ open Formalization.SkaModel
 #print axioms Ana.folLoopR_stable
 #print axioms Ana.folLoopR_at_weight
 #print axioms Ana.callStep_res_cape
+#print axioms Ana.closed_put_new
+#print axioms Ana.closed_put_callees
+#print axioms Ana.inG_frame
+#print axioms Ana.cull_closed
