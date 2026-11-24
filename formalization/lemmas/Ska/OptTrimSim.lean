@@ -1,6 +1,7 @@
 import lemmas.Ska.OptTrimWalk
 import lemmas.Ska.ExecPath
 import lemmas.Ska.OptRegLe
+import lemmas.Ska.OptHopsBlocks
 
 /-!
 # `+trim-trace-hints` keeps the code, under `TrimBr`
@@ -886,6 +887,146 @@ theorem trim_bwd {x' z' : Cfg σ Map} {es' : List (Nat × Nat)} (hs : Steps lib 
     exact ⟨_, z, steps_trans (steps_trans hs1 hs2) hs3, hr3, hnd3⟩
 
 end Sim
+
+/-- **The code after keeps the code before**, for any blocks after that are
+the blocks before with the hint ops of dropped keys taken out, given
+`TrimBr` and `TrimSafe` of the unsafe keys. -/
+theorem trim_keeps_of (c : Straight Map) {K : Nat → List (Option TKey)} {uns : Uns} {opened : List TKey}
+    {bl' : Map Blob} (TB : TrimBr c.blocks K) (TS : TrimSafe c.blocks K uns) (h0 : (HoonMap.get c.blocks 0).isSome)
+    (hbl : ∀ o, HoonMap.get bl' o = (HoonMap.get c.blocks o).map fun b =>
+      { b with body := b.body.filter (tkeep uns opened) }) : Keeps c (withBlocks c bl') := by
+  obtain ⟨b0, hb0⟩ := Option.isSome_iff_exists.mp h0
+  have hc' : ∀ o, HoonMap.get (withBlocks c bl').blocks o = (HoonMap.get c.blocks o).map fun b =>
+      { b with body := b.body.filter (tkeep uns opened) } := hbl
+  have hb0' : HoonMap.get (withBlocks c bl').blocks 0 = some { b0 with body := b0.body.filter (tkeep uns opened) } := by
+    rw [hc', hb0]; rfl
+  refine ⟨rfl, rfl, ?_, fun lib σ O gul st vals t ⟨hok, hargs, hloc⟩ => ?_⟩
+  · show (HoonMap.get bl' 0).map Blob.par = (HoonMap.get c.blocks 0).map Blob.par
+    rw [hbl, hb0]; rfl
+  let x0 : Path.Cfg σ Map := ⟨0, b0, [], regsOf vals, t, st⟩
+  let x0' : Path.Cfg σ Map := ⟨0, { b0 with body := b0.body.filter (tkeep uns opened) }, [], regsOf vals, t, st⟩
+  have hr0 : TrimI c.blocks K uns opened x0 x0' :=
+    ⟨rfl, rfl, rfl, rfl, Reach.zero, rfl, b0, [], K 0, hb0, rfl, rfl, rfl, by
+      show TrR _ (K 0) t t
+      rw [TB.1]; exact TrR.nil t⟩
+  have hl0 : ∀ es z k, Steps lib O c gul x0 es z → ReadsAt gul z k → ∃ v, read k z.regs = some v :=
+    fun es z k hz hk => hok es z k ⟨b0, hb0, hz⟩ hk
+  have back : ∀ es' y', Path.FromEntry (lib := lib) (O := O) (c := withBlocks c bl') (gul := gul) st vals t es' y' →
+      ∃ es y, Path.Steps lib O c gul x0 es y ∧ TrimI c.blocks K uns opened y y' ∧ ¬ TDropped uns opened y := by
+    rintro es' y' ⟨b0'', hb0'', hs'⟩
+    rw [hb0'] at hb0''; cases hb0''
+    exact trim_bwd TB TS hc' hs' hl0 hr0
+  refine ⟨Option.ext fun r => ⟨fun h' => ?_, fun h' => ?_⟩, fun es' y' k hy' hk => ?_,
+    fun es' y' k hy' hk => ?_, fun es' y' p rest hy' hp hq hb hsa => ?_⟩
+  · obtain ⟨es', y', hy', he'⟩ := (Path.execEntry_iff_path (c := withBlocks c bl') st vals t r).mp h'
+    obtain ⟨es, y, hs, hn, hnd⟩ := back es' y' hy'
+    exact (Path.execEntry_iff_path (c := c) st vals t r).mpr
+      ⟨es, y, ⟨b0, hb0, hs⟩, by rw [← trim_endOf TB TS hn hnd]; exact he'⟩
+  · obtain ⟨es, y, ⟨b0'', hb0'', hs⟩, he⟩ := (Path.execEntry_iff_path (c := c) st vals t r).mp h'
+    rw [hb0] at hb0''; cases hb0''
+    obtain ⟨es', z', hs', he'⟩ := trim_fwd TB TS hc' hs he hr0
+    exact (Path.execEntry_iff_path (c := withBlocks c bl') st vals t r).mpr ⟨es', z', ⟨_, hb0', hs'⟩, he'⟩
+  · obtain ⟨es, y, hs, hn, hnd⟩ := back es' y' hy'
+    obtain ⟨hk', hrg⟩ := trim_reads hn hnd hk
+    obtain ⟨v, hv⟩ := hok es y k ⟨b0, hb0, hs⟩ hk'
+    exact ⟨v, by rw [hrg, hv]⟩
+  · obtain ⟨es, y, hs, hn, -⟩ := back es' y' hy'
+    obtain ⟨-, hpe, hrg, -⟩ := hn
+    have hk0 : some k ∈ y.params := by rw [← hpe]; exact hk
+    rw [hrg]
+    exact hargs es y k ⟨b0, hb0, hs⟩ hk0
+  · obtain ⟨es, y, hs, hn, hnd⟩ := back es' y' hy'
+    have hn0 := hn
+    obtain ⟨-, hpe, hrg, hst, -, hb', -⟩ := hn
+    have hp0 : y.params = [] := by rw [← hpe]; exact hp
+    have hq0 : y.b.par = [] := by rw [hb'] at hq; exact hq
+    rw [hb'] at hb
+    simp only at hb
+    cases hbd : y.b.body with
+    | nil => rw [hbd] at hb; simp at hb
+    | cons q rest0 =>
+      cases hk : trimDrop uns opened q with
+      | true => exact (hnd ⟨hp0, hq0, q, rest0, hbd, hk⟩).elim
+      | false =>
+        rw [hbd] at hb
+        simp only [List.filter_cons, tkeep, hk, Bool.not_false, if_true, List.cons.injEq] at hb
+        obtain ⟨rfl, -⟩ := hb
+        obtain ⟨b1, pre, gm, g1, -, -, -, -, htr, hg1, -, hcr⟩ := trimI_op TB TS hn0 hbd
+        have hkp := kept_pole (lib := lib) (O := O) (gul := gul) (st := y.st) (R := y.regs) htr hg1
+          (trimDrop_false hk) hcr
+        rw [hst, hrg, hkp.isSome]
+        exact hloc es y q rest0 ⟨b0, hb0, hs⟩ hp0 hq0 hbd hsa
+
+section
+variable [MapKeys Map]
+
+theorem trimRun_fold (bl : Map Blob) (f : Blob → Blob) : ∀ (ks : List Nat) (acc : Map Blob),
+    (∀ o, o ∉ ks → HoonMap.get acc o = (HoonMap.get bl o).map f) →
+    (∀ o, HoonMap.get acc o = HoonMap.get bl o ∨ HoonMap.get acc o = (HoonMap.get bl o).map f) →
+    ∀ o, HoonMap.get (ks.foldl (fun acc o =>
+      match HoonMap.get bl o with
+      | some b => HoonMap.put acc o (f b)
+      | none => acc) acc) o = (HoonMap.get bl o).map f
+  | [], acc, h1, _, o => h1 o List.not_mem_nil
+  | k :: ks, acc, h1, h2, o => by
+    simp only [List.foldl_cons]
+    refine trimRun_fold bl f ks _ (fun o' ho' => ?_) (fun o' => ?_) o
+    · by_cases e : o' = k
+      · subst e
+        cases hb : HoonMap.get bl o' with
+        | some b => simp [HoonMap.get_put]
+        | none =>
+          simp only
+          rcases h2 o' with h | h <;> rw [h, hb] <;> rfl
+      · have : HoonMap.get (match HoonMap.get bl k with
+            | some b => HoonMap.put acc k (f b)
+            | none => acc) o' = HoonMap.get acc o' := by
+          cases HoonMap.get bl k <;> simp [HoonMap.get_put, e]
+        rw [this]
+        exact h1 o' (fun h => by rcases List.mem_cons.mp h with h | h; exact e h; exact ho' h)
+    · by_cases e : o' = k
+      · subst e
+        cases hb : HoonMap.get bl o' with
+        | some b => right; simp [HoonMap.get_put, hb]
+        | none => simp only; rw [← hb]; exact h2 o'
+      · have : HoonMap.get (match HoonMap.get bl k with
+            | some b => HoonMap.put acc k (f b)
+            | none => acc) o' = HoonMap.get acc o' := by
+          cases HoonMap.get bl k <;> simp [HoonMap.get_put, e]
+        rw [this]
+        exact h2 o'
+
+/-- **The blocks after `+trim-trace-hints`**: each block with the hint ops of
+dropped keys taken out. -/
+theorem trimRun_get (bl : Map Blob) (uns : Uns) (opened : List TKey) (o : Nat) :
+    HoonMap.get (trimRun bl uns opened) o = (HoonMap.get bl o).map fun b =>
+      { b with body := b.body.filter (tkeep uns opened) } := by
+  unfold trimRun
+  refine trimRun_fold bl _ _ bl (fun o' ho' => ?_) (fun _ => Or.inl rfl) o
+  have : HoonMap.get bl o' = none := by
+    cases e : HoonMap.get bl o' with
+    | none => rfl
+    | some b => exact absurd ((MapKeys.mem_keys bl o').mpr (by simp [e])) ho'
+  rw [this]; rfl
+
+/-- **`+trim-trace-hints` keeps the code**, on a `topo` with `TopoOK`, a
+`rev` that lists every member of `topo` jumping to a block, and bracketed
+hints. -/
+theorem trim_keeps (c : Straight Map) {topo : List Nat} {rev : Map (List Nat)} {bl' : Map Blob}
+    {K : Nat → List (Option TKey)} (ht : TopoOK c.blocks topo)
+    (hrev : ∀ o b j, o ∈ topo → HoonMap.get c.blocks o = some b → j ∈ getJmps b.fin → o ∈ getJa rev j.there)
+    (TB : TrimBr c.blocks K) (h : trimTraceHints c.blocks topo rev = some bl') : Keeps c (withBlocks c bl') := by
+  unfold trimTraceHints at h
+  obtain ⟨uns, hu, rfl⟩ := Option.map_eq_some_iff.mp h
+  have h0 : (HoonMap.get c.blocks 0).isSome := ht.2.2.1 0 (List.mem_of_mem_head? ht.2.1)
+  exact trim_keeps_of c TB (trimWalk_safe TB ht hrev hu) h0 (trimRun_get c.blocks uns (trimOpened c.blocks))
+
+/-- **The preservation statement of `+trim-trace-hints` under `TrimBr`
+holds.** -/
+theorem trimKeepsBr : TrimKeepsBr (Map := Map) :=
+  fun c _ _ _ ht TB h => trim_keeps c ht (fun _ _ _ ho hb hj => revCfg_mem ho hb hj) TB h
+
+end
 
 end Opt
 end SkaModel
