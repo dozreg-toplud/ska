@@ -517,5 +517,330 @@ theorem comp_copy (hc : CompIn ctx) (hl : CompLib ctx) (hu : CsUniIs) (g : Gen (
     simp [nock_exec, Next.goal, CGoal.toNoun, hD2, hD3, comp_emit_arm, he, comp_cl_arm, hcl, copy,
       cf_emit_g, ec, bind, StateT.bind, pure, StateT.pure, Jmp.toNoun, jmp0, listNoun]
 
+/-! ## `+sure-require-look`
+
+`~(rep in lok.sur)` with a gate whose accumulator starts at `[ned.sur gen]`
+(the bunt of `_ned.sur` is `ned.sur`), and in the gate a trap down each
+looked-at axis (`lookPath`).  The rep visits the looks in the pre-order of
+the treap, which is `HoonSet.toList` of `csHoonSet` (`cs_preorder`).
+-/
+
+def srlL0 : Noun :=
+  (C (A 6) (C (C (A 5) (C (C (A 1) (A 1)) (C (A 0) (A 28)))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x656e6f6e)) (C (A 0) (A 116)))) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 0x55ffff) (C (A 0) (A 63)))))) (C (A 7) (C (C (A 10) (C (C (A 510) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (C (C (A 1) (A 0x73696874)) (C (A 0) (A 2))) (C (A 0) (A 510))))))))))) (C (C (A 0) (A 58)) (C (A 0) (A 254)))))) (C (A 8) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x656e6f6e)) (C (A 0) (A 116)))) (C (C (C (A 1) (A 0)) (C (A 7) (C (C (A 1) (C (A 0x656e6f6e) (A 0))) (C (C (A 0) (A 1)) (C (A 0) (A 1)))))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x73696874)) (C (A 0) (A 116)))) (C (C (C (C (A 1) (A 0)) (C (A 0) (A 117))) (C (A 7) (C (C (A 1) (C (A 0x656e6f6e) (A 0))) (C (C (A 0) (A 1)) (C (A 0) (A 1)))))) (C (A 6) (C (C (A 3) (C (A 0) (A 116))) (C (C (C (A 1) (A 0)) (C (A 0) (A 58))) (C (A 11) (C (C (A 0x73736f74) (C (A 5) (C (C (A 1) (A 0x68746f62)) (C (A 0) (A 116))))) (C (C (C (A 1) (A 0)) (C (A 0) (A 234))) (C (A 7) (C (C (A 0) (A 58)) (C (C (A 0) (A 14)) (C (A 0) (A 15))))))))))))))))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 22) (C (A 0) (A 0x7ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 124))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 2)) (C (A 0) (A 2)))) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 58) (C (A 0) (A 10))) (C (A 10) (C (C (A 28) (C (A 8) (C (C (A 9) (C (A 47) (C (A 0) (A 0x7ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 124))) (C (A 0) (A 2))))))))) (C (A 0) (A 3)))))))))) (C (A 7) (C (C (A 10) (C (C (A 1022) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (C (C (A 0) (A 2)) (C (A 0) (A 27))) (C (A 0) (A 1022))))))))))))) (C (A 11) (C (C (A 0x73736f74) (C (A 5) (C (C (A 1) (A 3)) (C (A 0) (A 2))))) (C (A 7) (C (C (A 0) (A 3)) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 58) (C (A 0) (A 11))) (C (A 10) (C (C (A 28) (C (A 8) (C (C (A 9) (C (A 47) (C (A 0) (A 0x7ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 124))) (C (A 0) (A 2))))))))) (C (A 0) (A 3)))))))))) (C (A 7) (C (C (A 10) (C (C (A 1022) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (C (C (A 0) (A 26)) (C (A 0) (A 2))) (C (A 0) (A 1022)))))))))))))))))))))) (C (A 7) (C (C (A 10) (C (C (A 1022) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 350) (C (A 0) (A 4095)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 12)) (C (A 0) (A 13)))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 28)))) (C (C (C (A 0) (A 2)) (C (A 0) (A 2046))) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 4))) (C (C (A 1) (A 1)) (C (A 1) (A 0))))) (C (C (C (C (A 1) (A 0x73696874)) (C (A 0) (A 57))) (C (A 0) (A 2046))) (C (C (C (A 1) (A 0x68746f62)) (C (C (A 0) (A 57)) (C (A 0) (A 2)))) (C (A 0) (A 2046))))))))))))))))))))))))
+
+def srlG : Noun :=
+  (C (A 7) (C (C (A 10) (C (C (A 126) (C (A 0) (A 27))) (C (A 0) (A 1)))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 1)) (C (A 0) (A 12)))) (C (C (C (A 0) (A 26)) (C (A 0) (A 126))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 12)))) (C (C (A 0) (A 0)) (C (A 8) (C (C (A 1) srlL0) (C (A 9) (C (A 2) (C (A 0) (A 1))))))))))))))
+
+def srlBat : Noun :=
+  (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6102) (C (A 0) (A 0x3fffff)))) (C (A 9) (C (A 383) (C (A 10) (C (C (A 6) (C (A 0) (A 29))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (C (A 1) (A 0)) (C (C (A 0) (A 12)) (C (A 0) (A 30)))) (C (C (A 1) srlG) (C (A 0) (A 1)))))))) (C (A 0) (A 2))))))))
+
+def srlArm : Noun :=
+  (C (A 7) (C (C (A 8) (C (C (A 1) (C (C (A 0x656e6f6e) (A 0)) (A 0))) (C (C (A 1) srlBat) (C (A 0) (A 1))))) (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x6b6f6f6c2d657269757165722d657275732d706d6f63) (C (C (A 0) (A 0x7ffff)) (A 0))))) (C (A 0) (A 1))))))
+
+/-- `+sure-require-look` is at door axis `887` (core axis `1399`). -/
+theorem comp_srl_at : slot? 887 comp.door = some srlArm := by kernel_rfl
+
+/-- The subject of the trap of the gate of the `rep`. -/
+def srlT (x : GenRest) (ctx B SUR GI : Noun) (axe : Nat) (ned : Need) (g : Gen (TreapMap mugF)) :
+    Noun :=
+  C srlL0 (C srlG (C (C (A axe) (C ned.toNoun GI)) (C B (C SUR (C comp.door (C (genNoun g x) ctx))))))
+
+theorem srl_wrap_none (n : Need) : wrapN Option.none n = n := rfl
+
+theorem srl_cons_cases (a b : Need) :
+    (a = Need.none ∧ b = Need.none ∧ consNeed a b = Need.none) ∨
+      (¬ (a = Need.none ∧ b = Need.none) ∧ consNeed a b = Need.pair a b) := by
+  by_cases h : a = Need.none ∧ b = Need.none
+  · exact Or.inl ⟨h.1, h.2, by simp [consNeed, h]⟩
+  · exact Or.inr ⟨h, by simp [consNeed, h]⟩
+
+variable {x} in
+/-- The trap of `+sure-require-look` is `lookPath`, on every axis from `1`. -/
+theorem srl_loop (hc : CompIn ctx) (hl : CompLib ctx) (B SUR GI : Noun) :
+    ∀ axe, 1 ≤ axe → ∀ (ned : Need) (g : Gen (TreapMap mugF)),
+    nock (srlT x ctx B SUR GI axe ned g) srlL0
+      = (lookPath ned axe g).map fun p => C p.1.toNoun (genNoun p.2 x) := by
+  obtain ⟨K, hK, _, hcn⟩ := hl
+  have hl1 := cf_layer1 hc
+  have har := cf_arith
+  intro axe
+  induction axe using Nat.strongRecOn with
+  | ind axe ih =>
+    intro ha ned g
+    by_cases a1 : axe = 1
+    · subst a1
+      nock_open srlL0
+      rw [lookPath.eq_def]
+      cases ned with
+      | none => simp [nock_exec, srlT, Need.toNoun, Tag.none, Tag.this, comp_re' ctx x, re, bind,
+          StateT.bind, pure, StateT.pure]
+      | this r => simp [nock_exec, srlT, Need.toNoun, Tag.none, Tag.this, pure, StateT.pure]
+      | both r h t => simp [nock_exec, srlT, Need.toNoun, Tag.none, Tag.both, pure, StateT.pure]
+      | pair p q =>
+        obtain ⟨u, v, hp⟩ := cd_need_cell p
+        simp [nock_exec, srlT, Need.toNoun, hp, eqCode, pure, StateT.pure]
+    · have h2 : 2 ≤ axe := by omega
+      have hcap := cap_gate layer1 har.2.2.2 axe h2
+      have hmas := mas_gate layer1 har axe h2
+      have hm1 : 1 ≤ masF axe := masF_pos axe h2
+      have ihm := ih (masF axe) (by rw [masF_eq_mas]; exact mas_lt axe h2) hm1
+      have hne : ¬ (1 = axe) := by omega
+      have hna : ¬ (axe ≤ 1) := by omega
+      nock_open srlL0
+      rw [lookPath.eq_def]
+      rcases capF_cases axe h2 with hc2 | hc3
+      · cases ned with
+        | none =>
+          have IH := ihm Need.none g
+          simp only [srlT, Need.toNoun, Tag.none] at IH
+          try simp only [hp0] at IH
+          cases e : lookPath (Map := TreapMap mugF) Need.none (masF axe) g with
+          | none =>
+            rw [e] at IH
+            have hcn0 := True.intro
+            have h3 := True.intro
+            simp [nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc2, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode]
+          | some pr =>
+            obtain ⟨x', g'⟩ := pr
+            rw [e] at IH
+            have hcn0 := cn_gate K x' Need.none
+            rcases srl_cons_cases x' Need.none with ⟨h1, h1b, h3⟩ | ⟨h1, h3⟩
+            · rw [h3] at hcn0
+              simp only [h1, h1b, Need.toNoun, Tag.none] at hcn0
+              try simp only [hp0] at hcn0
+              simp [consNeed, nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc2, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode, h1, h1b]
+            · rw [h3] at hcn0
+              simp only [Need.toNoun, Tag.none] at hcn0
+              obtain ⟨u1, v1, hp1⟩ := cd_need_cell x'
+              try simp only [hp0] at hcn0
+              try simp only [hp1] at hcn0
+              simp [nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc2, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode, hp1]
+        | this r =>
+          have IH := ihm Need.none g
+          simp only [srlT, Need.toNoun, Tag.none] at IH
+          try simp only [hp0] at IH
+          cases e : lookPath (Map := TreapMap mugF) Need.none (masF axe) g with
+          | none =>
+            rw [e] at IH
+            have hcn0 := True.intro
+            have h3 := True.intro
+            simp [nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc2, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode]
+          | some pr =>
+            obtain ⟨x', g'⟩ := pr
+            rw [e] at IH
+            have hcn0 := cn_gate K x' Need.none
+            rcases srl_cons_cases x' Need.none with ⟨h1, h1b, h3⟩ | ⟨h1, h3⟩
+            · rw [h3] at hcn0
+              simp only [h1, h1b, Need.toNoun, Tag.none] at hcn0
+              try simp only [hp0] at hcn0
+              simp [consNeed, nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc2, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode, h1, h1b]
+            · rw [h3] at hcn0
+              simp only [Need.toNoun, Tag.none] at hcn0
+              obtain ⟨u1, v1, hp1⟩ := cd_need_cell x'
+              try simp only [hp0] at hcn0
+              try simp only [hp1] at hcn0
+              simp [nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc2, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode, hp1]
+        | pair p q =>
+          obtain ⟨u0, v0, hp0⟩ := cd_need_cell p
+          have IH := ihm p g
+          simp only [srlT, Need.toNoun, Tag.none] at IH
+          try simp only [hp0] at IH
+          cases e : lookPath (Map := TreapMap mugF) p (masF axe) g with
+          | none =>
+            rw [e] at IH
+            have hcn0 := True.intro
+            have h3 := True.intro
+            simp [nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc2, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode, hp0]
+          | some pr =>
+            obtain ⟨x', g'⟩ := pr
+            rw [e] at IH
+            have hcn0 := cn_gate K x' q
+            rcases srl_cons_cases x' q with ⟨h1, h1b, h3⟩ | ⟨h1, h3⟩
+            · rw [h3] at hcn0
+              simp only [h1, h1b, Need.toNoun, Tag.none] at hcn0
+              try simp only [hp0] at hcn0
+              simp [consNeed, nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc2, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode, hp0, h1, h1b]
+            · rw [h3] at hcn0
+              simp only [Need.toNoun, Tag.none] at hcn0
+              obtain ⟨u1, v1, hp1⟩ := cd_need_cell x'
+              try simp only [hp0] at hcn0
+              try simp only [hp1] at hcn0
+              simp [nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc2, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode, hp0, hp1]
+        | both r hh tt =>
+          have IH := ihm hh g
+          simp only [srlT, Need.toNoun, Tag.none] at IH
+          try simp only [hp0] at IH
+          cases e : lookPath (Map := TreapMap mugF) hh (masF axe) g with
+          | none =>
+            rw [e] at IH
+            have hcn0 := True.intro
+            have h3 := True.intro
+            simp [nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc2, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode]
+          | some pr =>
+            obtain ⟨x', g'⟩ := pr
+            rw [e] at IH
+            have hcn0 := cn_gate K x' tt
+            rcases srl_cons_cases x' tt with ⟨h1, h1b, h3⟩ | ⟨h1, h3⟩
+            · rw [h3] at hcn0
+              simp only [h1, h1b, Need.toNoun, Tag.none] at hcn0
+              try simp only [hp0] at hcn0
+              simp [consNeed, nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc2, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode, h1, h1b]
+            · rw [h3] at hcn0
+              simp only [Need.toNoun, Tag.none] at hcn0
+              obtain ⟨u1, v1, hp1⟩ := cd_need_cell x'
+              try simp only [hp0] at hcn0
+              try simp only [hp1] at hcn0
+              simp [nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc2, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode, hp1]
+      · cases ned with
+        | none =>
+          have IH := ihm Need.none g
+          simp only [srlT, Need.toNoun, Tag.none] at IH
+          try simp only [hp0] at IH
+          cases e : lookPath (Map := TreapMap mugF) Need.none (masF axe) g with
+          | none =>
+            rw [e] at IH
+            have hcn0 := True.intro
+            have h3 := True.intro
+            simp [nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc3, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode]
+          | some pr =>
+            obtain ⟨x', g'⟩ := pr
+            rw [e] at IH
+            have hcn0 := cn_gate K Need.none x'
+            rcases srl_cons_cases Need.none x' with ⟨h1, h1b, h3⟩ | ⟨h1, h3⟩
+            · rw [h3] at hcn0
+              simp only [h1, h1b, Need.toNoun, Tag.none] at hcn0
+              try simp only [hp0] at hcn0
+              simp [consNeed, nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc3, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode, h1, h1b]
+            · rw [h3] at hcn0
+              simp only [Need.toNoun, Tag.none] at hcn0
+              obtain ⟨u1, v1, hp1⟩ := cd_need_cell Need.none
+              try simp only [hp0] at hcn0
+              try simp only [hp1] at hcn0
+              simp [nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc3, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode, hp1]
+        | this r =>
+          have IH := ihm Need.none g
+          simp only [srlT, Need.toNoun, Tag.none] at IH
+          try simp only [hp0] at IH
+          cases e : lookPath (Map := TreapMap mugF) Need.none (masF axe) g with
+          | none =>
+            rw [e] at IH
+            have hcn0 := True.intro
+            have h3 := True.intro
+            simp [nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc3, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode]
+          | some pr =>
+            obtain ⟨x', g'⟩ := pr
+            rw [e] at IH
+            have hcn0 := cn_gate K Need.none x'
+            rcases srl_cons_cases Need.none x' with ⟨h1, h1b, h3⟩ | ⟨h1, h3⟩
+            · rw [h3] at hcn0
+              simp only [h1, h1b, Need.toNoun, Tag.none] at hcn0
+              try simp only [hp0] at hcn0
+              simp [consNeed, nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc3, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode, h1, h1b]
+            · rw [h3] at hcn0
+              simp only [Need.toNoun, Tag.none] at hcn0
+              obtain ⟨u1, v1, hp1⟩ := cd_need_cell Need.none
+              try simp only [hp0] at hcn0
+              try simp only [hp1] at hcn0
+              simp [nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc3, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode, hp1]
+        | pair p q =>
+          obtain ⟨u0, v0, hp0⟩ := cd_need_cell p
+          have IH := ihm q g
+          simp only [srlT, Need.toNoun, Tag.none] at IH
+          try simp only [hp0] at IH
+          cases e : lookPath (Map := TreapMap mugF) q (masF axe) g with
+          | none =>
+            rw [e] at IH
+            have hcn0 := True.intro
+            have h3 := True.intro
+            simp [nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc3, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode, hp0]
+          | some pr =>
+            obtain ⟨x', g'⟩ := pr
+            rw [e] at IH
+            have hcn0 := cn_gate K p x'
+            rcases srl_cons_cases p x' with ⟨h1, h1b, h3⟩ | ⟨h1, h3⟩
+            · rw [h3] at hcn0
+              simp only [h1, h1b, Need.toNoun, Tag.none] at hcn0
+              try simp only [hp0] at hcn0
+              simp [consNeed, nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc3, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode, hp0, h1, h1b]
+            · rw [h3] at hcn0
+              simp only [Need.toNoun, Tag.none] at hcn0
+              obtain ⟨u1, v1, hp1⟩ := cd_need_cell p
+              try simp only [hp0] at hcn0
+              try simp only [hp1] at hcn0
+              simp [nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc3, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode, hp0, hp1]
+        | both r hh tt =>
+          have IH := ihm tt g
+          simp only [srlT, Need.toNoun, Tag.none] at IH
+          try simp only [hp0] at IH
+          cases e : lookPath (Map := TreapMap mugF) tt (masF axe) g with
+          | none =>
+            rw [e] at IH
+            have hcn0 := True.intro
+            have h3 := True.intro
+            simp [nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc3, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode]
+          | some pr =>
+            obtain ⟨x', g'⟩ := pr
+            rw [e] at IH
+            have hcn0 := cn_gate K hh x'
+            rcases srl_cons_cases hh x' with ⟨h1, h1b, h3⟩ | ⟨h1, h3⟩
+            · rw [h3] at hcn0
+              simp only [h1, h1b, Need.toNoun, Tag.none] at hcn0
+              try simp only [hp0] at hcn0
+              simp [consNeed, nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc3, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode, h1, h1b]
+            · rw [h3] at hcn0
+              simp only [Need.toNoun, Tag.none] at hcn0
+              obtain ⟨u1, v1, hp1⟩ := cd_need_cell hh
+              try simp only [hp0] at hcn0
+              try simp only [hp1] at hcn0
+              simp [nock_exec, srlT, hl1, hne, hna, cap_arm, cap.arm_at, hcap, hc3, mas_arm, mas.arm_at,
+                hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
+                split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode, hp1]
+
 end Compiler
 end Formalization
