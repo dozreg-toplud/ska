@@ -1822,6 +1822,54 @@ import only its theorems.  So:
    | `+optimize-once` | `optC`, `180` | 553 | `+bb-topo`, `+rev-cfg`, `+sy` (arm `42` of `layer2`, `si_gate`), the three structural passes, `+alias`, `+skim` (`skim_gate`), `+has:by` (`has_gate`), `+trim-trace-hints`, `+remove-dead-code`, `+flop` | `optimizeOnce fuel P` (`Ska/OptDriver.lean`) | fuel bounds the structural loop; `+alias`, `+trim-trace-hints`, `+switch-chains` are the fields of `P`; `(sy topo)` is the list `topo` | where the model returns, given `AliasLink P` and `TrimLink P`: `oo_gate` (`OptLinkOnceGate.lean`), `oo_gate_trim` with `TrimLink` discharged |
    | `+optimize` | `optC`, `2941` | 91 | `+optimize-once`, `+switch-chains` | `optimizeF fuel P` | fuel bounds the loop | where the model returns, given `AliasLink P`, `TrimLink P`, `SwitchLink P`: `opt_gate` (`OptLinkOpt.lean`), `opt_gate_trim` |
 
+   **The inventory of `+switch-chains`** (2026-11-24, before its proof; nouns
+   by `tools/gen/optlink.py switch`, `Compiler/OptLinkSwNouns.lean`).  The
+   gate body (2900 cells) is a chain of `=/` and `=*`; the phases, in the
+   order of the Hoon, with their cells and the model each corresponds to
+   (`Ska/OptSwitch.lean`):
+
+   | Phase | Noun | Cells | Calls | Model |
+   | --- | --- | --- | --- | --- |
+   | `topo` | in `swBodyCut` | 12 | `+bb-topo` (`bb_gate`) | `bbTopo fuel` |
+   | `rev` | in `swBodyCut` | 28 | `+rev-cfg` (`rev_gate`), `+sy` (`si_gate`) | `revCfg bl topo` |
+   | `uses` | `swUses` (gate `put` `swPutB`, `+rep:by` gate `swRepG`, `+roll` gate `swOpG`) | 229 | `+rep:by`, `+roll`, `+get-regs` (`gr_gate_pole`, `gr_gate_fin`), `+put:by`, `+gut:by`, the bunt of `pole` | `usesOf bl` (a count, so the order of `+rep:by` does not matter) |
+   | gate `test-of` | `swTOB` (cut at each test: `swTOClq`, `swTOY`, `swTOYb`, `swTOEqq`, `swTOBod`, `swTOHM`, `swTOH`, `swTOM`, `swTOS`, `swTOC`, `swTOLth`, `swTOEq`, `swTOUses`) | 519 | `+got:by`, `+get:ja`, `+lth`, `+bex`, `+gut:by` | `testOf` |
+   | gate `chain-of` | `swCHB` | 153 | `test-of`, `+got:by`, `+get:ja`, itself | `chainOf` (fuel) |
+   | gate `plain-of` | `swPOB` (`swTOEqq`, the trap `swPOMT` of `m`, `swPOC`) | 276 | `+got:by`, `+lth`, `+bex`, `+gut:by` | `plainOf` (`immInto` for the trap) |
+   | gate `plains-of` | `swPSB` | 148 | `plain-of`, `+got:by`, `+get:ja`, itself | `plainsOf` (fuel) |
+   | gate `cases` | `swCSB`, trap `swCST`, sort gate `swCSSG` | 122 | `+has:in`, `+put:in`, `+sort` (`sort_gate`, `qsort`), `+lth` | `casesAcc`, then `hsort` with fuel the length |
+   | gate `tree` | `swTRB` (`swTRLeaf`, `swTRSplit`, `swTRRec`) | 245 | `+div`, `+lent`, `+slag`, `+scag`, `+put:by`, itself twice | `stree` (fuel) |
+   | `nex` | `swNex`, gate `swNexG` | 71 | `+key:by` (`key_by`), `+tap:in` (`tap_in`), `+roll`, `+gte` | `nexOf` (the fold is `max` of `o + 1`, so the order of `+tap:in` does not matter) |
+   | the walk | `swWalk` (`swWHas`, `swWCs`, `swWGte`) | 1016 | `+has:in`, `chain-of`, `+lent`, `+gte` | `switchWalk` |
+   | a tagged chain | `swWTag` (`swWTIds`, `swWTR`, `swWTDel`, `swWTCas`, `swWTFin`) | 391 | `+rear`, `+snip`, `+turn`, `+weld`, `+gas:in`, `+roll`, `+del:by`, `cases`, `tree`, `+put:by`, `+got:by` | `switchTag` |
+   | a plain chain | `swWPlain` (`swWPB`, `swWPR`, `swWPDel`, `swWPCas`, `swWPNed`, `swWPFin`, the trap `swWPIdT` of `ids`, `swWPNode`, the `+skip` gate `swWPSkG`) | 534 | `plains-of`, `+lth`, `+lent`, `+rear`, `+turn`, `+gas:in`, `+roll`, `+del:by`, `cases`, `+mul`, `+sub`, `+scag`, `+gte`, `tree`, `+got:by`, `+skip`, `+weld`, `+put:by` | `switchPlain` (`freshIds` for the trap) |
+
+   Every library arm it calls has a link (`Hoon/Lists*.lean`, `Hoon/Arith.lean`,
+   `Hoon/Bits.lean`, `Hoon/Maps.lean`, `Hoon/Sets.lean`, `Hoon/DelBy.lean`,
+   `Hoon/MapFolds.lean`, `Hoon/TapIn.lean`), `+sort` against `qsort` of nouns,
+   which `hsort` of the model must be shown to agree with.  The comparison of
+   the Hoon and the model, phase by phase, found no difference on blocks
+   without `%lti` (the input of the pass): chains are found in the order of
+   `topo`, both skipping the labels of `done`; `test-of`, `chain-of`,
+   `plain-of`, `plains-of` make the same tests in the same order (a crash is a
+   `+got:by` of a missing label, `none` in the model); `uses` counts the
+   mentions, so the order of `+rep:by` is immaterial; `cases` keeps the first
+   case of each constant (a set `saw`, the model a list) in reverse order and
+   sorts it by `lth` on the constants with the quicksort of `+sort`, which
+   `hsort` writes out (`partition` is the `+skid`), so ties cannot arise (the
+   constants left are distinct) and stability does not matter; `tree` splits at
+   `(div (lent all) 2)`, takes the labels of `ids` two by two in pre-order (left
+   subtree first), and fails (`?>`) on fewer than two labels, as `stree`; the
+   fuel of the model bounds `+bb-topo`, `chain-of`, `plains-of` and `tree`
+   (`hsort` takes the length of the list, `freshIds` takes `ned + 1`, both
+   enough); `nex` is one more than the largest label of the blocks before the
+   pass (`+roll` over `~(tap in ~(key by blocks))` of `?:((gte o m) +(o) m)`,
+   the model the same fold over the keys of `rap`, equal since the fold is the
+   maximum of `o + 1`), and a plain chain takes its labels from the blocks it
+   drops first (`(scag ned old)`) and then from `nex` upward, each new one put
+   in front (`freshIds`).  The only difference is the known one of
+   `+get-regs` on `%lti`, which the input does not have.
+
    `+get-ipdom` and `+get-idom` (axes `10` and `44` of `optC`) are not run by
    `+optimize`.  The orders: every `+rep:by` of a pass is a fold over
    `MapKeys.keys`, which on the treaps of `TreapMap` must be the keys of
