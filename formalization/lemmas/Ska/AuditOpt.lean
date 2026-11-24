@@ -27,6 +27,7 @@ import lemmas.Ska.OptAliasSSAMid
 import lemmas.Ska.OptAliasSSADead
 import lemmas.Ska.OptAliasSSADriver
 import lemmas.Ska.OptAliasSSAHops
+import lemmas.Ska.OptAliasFacts
 import lemmas.Ska.OptSwitchPlainHyp
 import lemmas.Ska.OptSwitchGen
 import lemmas.Ska.OptSwitchWalkAll
@@ -212,3 +213,6 @@ open Formalization.SkaModel.Opt
 #print axioms ssk_hops_first
 #print axioms hopsSSA_of
 #print axioms optimize_keeps_ssaO
+#print axioms info_joinL
+#print axioms info_joinR
+#print axioms info_param
