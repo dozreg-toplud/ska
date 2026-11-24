@@ -55,6 +55,13 @@ import lemmas.Ska.OptAliasFwd
 import lemmas.Ska.OptAliasBack
 import lemmas.Ska.OptAliasKeepsB
 import lemmas.Ska.OptAliasResult
+import lemmas.Ska.OptAliasStatic
+import lemmas.Ska.OptAliasPass
+import lemmas.Ska.OptAliasTrim
+import lemmas.Ska.OptAliasAvail
+import lemmas.Ska.OptAliasFirst
+import lemmas.Ska.OptAliasOnce
+import lemmas.Ska.OptAliasWitness
 
 /-! Axioms of the theorems about `+optimize`. -/
 
@@ -370,3 +377,39 @@ open Formalization.SkaModel.Opt
 #print axioms alias_topoInvR
 #print axioms aliasFieldSSAB_of
 #print axioms optimize_keeps_alias
+#print axioms afin_regs
+#print axioms afin_rev_tgt
+#print axioms sst_step
+#print axioms sst_at
+#print axioms alias_fin_defW
+#print axioms alias_downPar
+#print axioms alias_passOK
+#print axioms brOp_rename
+#print axioms abr_body
+#print axioms trb_defs
+#print axioms trb_origin
+#print axioms alias_trimBr
+#print axioms tav_op
+#print axioms tav_body
+#print axioms areads_rename
+#print axioms abody_at
+#print axioms tav_pre
+#print axioms tav_step
+#print axioms tav_walk
+#print axioms alias_allDefs
+#print axioms alias_defFirst
+#print axioms alias_fill
+#print axioms alias_live_op
+#print axioms alias_onceB
+#print axioms alias_fillFresh
+#print axioms alias_restB
+#print axioms alias_restSSAB_fresh
+#print axioms aliasRestSSAB_of_once
+#print axioms optimize_keeps_aliasO
+#print axioms optimize_keeps_aliasO_pickR
+#print axioms v_dinvS
+#print axioms v_topo
+#print axioms v_alias
+#print axioms not_aliasOnceB
+#print axioms w_dinvS
+#print axioms w_opt
