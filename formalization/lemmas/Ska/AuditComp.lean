@@ -16,6 +16,7 @@ import lemmas.Ska.CompUnproxyRegs
 import lemmas.Ska.CompUnproxyFill
 import lemmas.Ska.CompUnproxyTop
 import lemmas.Ska.CompUnproxyBelow
+import lemmas.Ska.CompBelowX
 import lemmas.Ska.CompEntryGoal
 import lemmas.Ska.CompFromRun
 import lemmas.Ska.CompEntryRun
@@ -288,3 +289,11 @@ open Formalization.SkaModel.Comp
 #print axioms belowIn_addOps
 #print axioms belowIn_proxy
 #print axioms belowIn_emit
+#print axioms run_keeps
+#print axioms run_below
+#print axioms keepX_sixP
+#print axioms keepX_sixN
+#print axioms keepX_cons
+#print axioms runX_keeps
+#print axioms runX_below
+#print axioms runX_okU
