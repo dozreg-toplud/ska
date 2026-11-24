@@ -156,5 +156,117 @@ theorem fkn_loop : ∀ (ned : Need) (g : Gen (TreapMap mugF)),
 
 end
 
+theorem args_some_noun (l : List Nat) :
+    listN ((l.map A).map (fun y => C (A 0) y)) = listNoun (unitNoun A) (l.map some) := by
+  rw [cd_listNoun_listN]; simp [unitNoun, Function.comp_def]
+
+/-- **`+fork-need`** on every need: `forkNeed`. -/
+theorem comp_fork_need (hc : CompIn ctx) (x : GenRest) (g : Gen (TreapMap mugF)) (ned : Need) (o o0 o1 : Nat) :
+    nock (C fknBat (C (C ned.toNoun (C (A o) (C (A o0) (A o1)))) (compCore g x ctx))) fknBat
+      = (forkNeed ned o o0 o1 g).map fun p => C (C p.1.1.toNoun p.1.2.toNoun) (genNoun p.2 x) := by
+  have hl := fkn_loop hc x (C (A o) (C (A o0) (A o1))) ned g
+  have hfn := comp_flatten_need hc
+  have hD1 := comp_fn_at
+  have hD2 := comp_emit_at
+  have hD3 := comp_emir_at
+  simp only [compCore] at hl ⊢
+  unfold forkNeed
+  simp only [jmp0]
+  cases e1 : forkNeedGo (Map := TreapMap mugF) ned g with
+  | none =>
+    rw [e1] at hl
+    generalize comp.door = Dr at hl hfn hD1 hD2 hD3 ⊢
+    nock_open fknBat
+    simp [nock_exec, hl, bind, StateT.bind, e1]
+  | some r1 =>
+    obtain ⟨⟨n0, n1⟩, g1⟩ := r1
+    rw [e1] at hl
+    have hT0 := turn_gate layer2 homoIn_layer2 (C (C (A 1) (A 0)) (C (A 0) (A 6))) (A 0) layer2
+      (fun y => C (A 0) y) ((flattenNeed n0).map A) (fun y _ => by simp [nock_exec])
+    have hT1 := turn_gate layer2 homoIn_layer2 (C (C (A 1) (A 0)) (C (A 0) (A 6))) (A 0) layer2
+      (fun y => C (A 0) y) ((flattenNeed n1).map A) (fun y _ => by simp [nock_exec])
+    rw [args_some_noun] at hT0 hT1
+    have he := cf_emit (x := x) hc g1 ⟨flattenNeed ned, [], Termin.hop ⟨[], o⟩⟩
+    simp only [Blob.toNoun, listNoun, Termin.toNoun, Tag.hop, Jmp.toNoun] at he
+    generalize hg2 : cfEmitG ⟨flattenNeed ned, [], Termin.hop ⟨[], o⟩⟩ g1 = g2 at he
+    have hm0 := comp_emir x hc g2 o0 ⟨[], [], Termin.hop ⟨(flattenNeed n0).map some, g1.bo⟩⟩
+    simp only [compCore, Blob.toNoun, listNoun, Termin.toNoun, Tag.hop, Jmp.toNoun] at hm0
+    cases em0 : (emir o0 ⟨[], [], Termin.hop ⟨(flattenNeed n0).map some, g1.bo⟩⟩ g2 : Option (Unit × Gen (TreapMap mugF))) with
+    | none => simp [emir] at em0
+    | some r3 =>
+      obtain ⟨u3, g3⟩ := r3
+      rw [em0] at hm0
+      simp only [Option.map_some] at hm0
+      have hm1 := comp_emir x hc g3 o1 ⟨[], [], Termin.hop ⟨(flattenNeed n1).map some, g1.bo⟩⟩
+      simp only [compCore, Blob.toNoun, listNoun, Termin.toNoun, Tag.hop, Jmp.toNoun] at hm1
+      cases em1 : (emir o1 ⟨[], [], Termin.hop ⟨(flattenNeed n1).map some, g1.bo⟩⟩ g3 : Option (Unit × Gen (TreapMap mugF))) with
+      | none => simp [emir] at em1
+      | some r4 =>
+        obtain ⟨u4, g4⟩ := r4
+        rw [em1] at hm1
+        simp only [Option.map_some] at hm1
+        rw [cd_listNoun_listN] at he
+        simp only [cd_listNoun_listN, List.map_map] at hm0 hm1
+        generalize comp.door = Dr at hl hfn hD1 hD2 hD3 he hm0 hm1 ⊢
+        nock_open fknBat
+        simp [nock_exec, hl, bind, StateT.bind, e1, hD1, comp_fn_arm, hfn, hc, turn.arm_at, turn_arm,
+          some.arm_at, some_arm, hT0, hT1, cd_listNoun_listN, hD2, comp_emit_arm, he, cf_emit_g, hg2, hD3,
+          comp_emir_arm, hm0, em0, hm1, em1, pure, StateT.pure, fknTail]
+
+/-- **`+fork-sure`** on every sure need: `forkSure`. -/
+theorem comp_fork_sure (hc : CompIn ctx) (x : GenRest) (g : Gen (TreapMap mugF)) (sur : Sure CSet) (o o0 o1 : Nat) :
+    nock (C fksBat (C (C sur.toNoun (C (A o) (C (A o0) (A o1)))) (compCore g x ctx))) fksBat
+      = (forkSure sur o o0 o1 g).map fun p => C (C p.1.1.toNoun p.1.2.toNoun) (genNoun p.2 x) := by
+  have hf := comp_fork_need hc x g sur.ned o o0 o1
+  have hD := fkn_at
+  simp only [compCore] at hf ⊢
+  unfold forkSure
+  cases e : forkNeed (Map := TreapMap mugF) sur.ned o o0 o1 g with
+  | none =>
+    rw [e] at hf
+    generalize comp.door = Dr at hf hD ⊢
+    nock_open fksBat
+    simp [nock_exec, Sure.toNoun, hD, fkn_arm, hf, bind, StateT.bind, e]
+  | some r =>
+    obtain ⟨⟨n0, n1⟩, g1⟩ := r
+    rw [e] at hf
+    generalize comp.door = Dr at hf hD ⊢
+    nock_open fksBat
+    simp [nock_exec, Sure.toNoun, hD, fkn_arm, hf, bind, StateT.bind, e, pure, StateT.pure]
+
+/-- **What `+fork-sure` makes**: the counter grows, one block label is taken
+(the join), the mode stays; the two new sure needs keep the looks, have no
+register twice, share none, and are made of registers taken from the
+counter. -/
+theorem forkSure_inv {sur s0 s1 : Sure CSet} {o o0 o1 : Nat} {g g' : Gen (TreapMap mugF)}
+    (h : forkSure sur o o0 o1 g = some ((s0, s1), g')) :
+    g.re ≤ g'.re ∧ g'.bo = g.bo + 1 ∧ g'.drop = g.drop ∧ s0.lok = sur.lok ∧ s1.lok = sur.lok ∧
+      Distinct s0.ned ∧ Distinct s1.ned ∧ (∀ y, NMem s0.ned y → ¬ NMem s1.ned y) ∧
+      (∀ y, NMem s0.ned y ∨ NMem s1.ned y → g.re ≤ y ∧ y < g'.re) := by
+  unfold forkSure at h
+  obtain ⟨⟨m0, m1⟩, gf, ef, h⟩ := bind_some h
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h
+  unfold forkNeed at ef
+  obtain ⟨⟨n0, n1⟩, g1, e1, h⟩ := bind_some ef
+  obtain ⟨⟨k, rfl⟩, -, -, D0, D1, ap, fr⟩ := forkNeedGo_spec sur.ned g g1 n0 n1 e1
+  obtain ⟨barg, g2, e2, h⟩ := bind_some h
+  rw [emit_apply] at e2
+  simp only [Option.some.injEq, Prod.mk.injEq] at e2
+  obtain ⟨rfl, rfl⟩ := e2
+  obtain ⟨u3, g3, e3, h⟩ := bind_some h
+  obtain ⟨u4, g4, e4, h⟩ := bind_some h
+  simp only [emir, Option.some.injEq, Prod.mk.injEq] at e3 e4
+  obtain ⟨-, rfl⟩ := e3
+  obtain ⟨-, rfl⟩ := e4
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h
+  refine ⟨?_, ?_, ?_, rfl, rfl, D0, D1, ap, fun y hy => ?_⟩
+  · (repeat' split) <;> simp [emitted_re]
+  · (repeat' split) <;> simp [emitted_bo]
+  · (repeat' split) <;> simp [emitted_drop]
+  · have := fr y hy
+    (repeat' split) <;> simp [emitted_re] <;> omega
+
 end Compiler
 end Formalization
