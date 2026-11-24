@@ -94,18 +94,21 @@ abbrev ska_analyze.bunt : Noun :=
   nock_open ska_analyze.arm; simp only [nock_exec]
 
 /-- One turn of the loop `resolve`: given its call to itself on a `%he`
-step (`rl`, on the same `D`) and `+analyze` (`an`, in the context `K` at axis
-`31` of the rest), the loop computes `resolveStepH` with `orig` the call's
-own site sock and formula. -/
+step (`rl`, on the same `D`, needed only at the identity that
+`+recursive-call` gives) and `+analyze` (`an`, in the context `K` at axis `31`
+of the rest), the loop computes `resolveStepH` with `orig` the call's own site
+sock and formula. -/
 theorem resolve_step (regsNoun : R → Noun) (env : Env R) (hhe : env.he = heSock)
     (hth : env.threshold = 32) (rest K : Noun) (hana : slot? 511 rest = some ana)
     (hK : slot? 31 rest = some K) (hKa : slot? 92 K = some ska_analyze.arm)
     (an : AnaGo FinMap R) (han : AnaIs regsNoun K an)
     (fol : Noun) (sub : Anno) (seat mk : Option Noun) (bc df : Bool) (gen : GenS FinMap R)
     (fa fb : Noun) (f s : FolOut) (rl : ResGo FinMap R)
-    (hrl : ∀ i, nock (resSubj regsNoun rest fol sub seat mk bc df gen fa fb f s i) fol_loop.resolve
-      = (rl i gen).map (resOutNoun regsNoun))
-    (idT : Ident) :
+    (idT : Ident)
+    (hrl : ∀ i, Treap.get gen.st.g idT = none → gitMi gen.st.done (C fa fb) s.prod.sock = some none →
+      recursiveCall heSock 32 idT gen.st.stk (gCore gen.st.g) = some (some (false, i)) →
+      nock (resSubj regsNoun rest fol sub seat mk bc df gen fa fb f s i) fol_loop.resolve
+        = (rl i gen).map (resOutNoun regsNoun)) :
     nock (resSubj regsNoun rest fol sub seat mk bc df gen fa fb f s idT) fol_loop.resolve
       = (resolveStepH env rl an (s.prod.sock, C fa fb) idT gen).map (resOutNoun regsNoun) := by
   have hl1 := rest_layer1 hana
@@ -219,7 +222,7 @@ theorem resolve_step (regsNoun : R → Noun) (env : Env R) (hhe : env.he = heSoc
         simp only [Option.map_some, hus] at hrc
         cases b with
         | false =>
-          have h1 := hrl i
+          have h1 := hrl i eg em er
           simp [nock_exec, hl2, by_arm, by.get.arm_at, hgg, resolveStepH, eg, em, hana, mi.arm_at, mi_arm,
             mi.git.arm_at, mi_git_arm, hgit, recursive_call.arm_at, recursive_call_arm, hrc, hhe, hth, er,
             rcNoun, h1]
@@ -247,6 +250,66 @@ theorem resolve_step (regsNoun : R → Noun) (env : Env R) (hhe : env.he = heSoc
               FDatum.toNoun, by.got.arm_at, hgot, hd, min.arm_at, min_arm, hmin, resOutNoun, entryNoun, eo]
             subst hwant hindi hseek hcal harea hback hnext hmoved htick hticks hregs hstats
             simp [GenS.toNoun, SkaState.toNoun, flag]
+
+/-- The loop `resolve` as the Hoon has it, fuelled, with `+analyze` a fixed
+function `an` (the pill's gate). -/
+def resolveH (env : Env R) (an : AnaGo M R) : Nat → Ident → ResGo M R
+  | 0 => fun _ _ _ => none
+  | n + 1 => fun orig => resolveStepH env (resolveH env an n orig) an orig
+
+/-- What the loop `resolveH` returns at any fuel, the pill's loop returns, on
+every identity, given `+analyze` (`AnaIs`).  With `idT = orig` this is the
+loop as the trap enters it. -/
+theorem resolve_le (regsNoun : R → Noun) (env : Env R) (hhe : env.he = heSock)
+    (hth : env.threshold = 32) (rest K : Noun) (hana : slot? 511 rest = some ana)
+    (hK : slot? 31 rest = some K) (hKa : slot? 92 K = some ska_analyze.arm)
+    (an : AnaGo FinMap R) (han : AnaIs regsNoun K an)
+    (fol : Noun) (sub : Anno) (seat mk : Option Noun) (bc df : Bool) (gen : GenS FinMap R)
+    (fa fb : Noun) (f s : FolOut) :
+    ∀ n idT r, resolveH env an n (s.prod.sock, C fa fb) idT gen = some r →
+      nock (resSubj regsNoun rest fol sub seat mk bc df gen fa fb f s idT) fol_loop.resolve
+        = some (resOutNoun regsNoun r) := by
+  intro n
+  induction n with
+  | zero => intro _ _ h; simp [resolveH] at h
+  | succ n ih =>
+    intro idT r h
+    have hst := resolve_step regsNoun env hhe hth rest K hana hK hKa an han fol sub seat mk bc df gen
+      fa fb f s (resolveH env an n (s.prod.sock, C fa fb)) idT
+    simp only [resolveH] at h
+    by_cases hp : ∃ i, Treap.get gen.st.g idT = none ∧ gitMi gen.st.done (C fa fb) s.prod.sock = some none ∧
+        recursiveCall heSock 32 idT gen.st.stk (gCore gen.st.g) = some (some (false, i))
+    · obtain ⟨i, hg, hm, hi⟩ := hp
+      -- a `%he` turn: the model's result is the loop's result at `i`
+      have hr : resolveH env an n (s.prod.sock, C fa fb) i gen = some r := by
+        unfold resolveStepH at h
+        simp only [hg, hm, hhe, hth, hi] at h
+        exact h
+      rw [hst (fun j _ _ hj => by
+        rw [hi] at hj; cases hj; rw [hr]; exact ih i r hr), h]
+      rfl
+    · rw [hst (fun j hg hm hj => absurd ⟨j, hg, hm, hj⟩ hp), h]
+      rfl
+
+/-- `ResIs` in one direction: what `res` returns, the pill's loop returns. -/
+def ResLe (regsNoun : R → Noun) (rest : Noun) (res : ResGo FinMap R) : Prop :=
+  ∀ (s f : FolOut) (fa fb fol : Noun) (sub : Anno) (seat mk : Option Noun) (bc df : Bool)
+    (gen : GenS FinMap R) r, res (s.prod.sock, C fa fb) gen = some r →
+    nock (C fol_loop.resolve (C (identNoun (s.prod.sock, C fa fb))
+        (dirSubj regsNoun rest fol sub seat mk bc df gen (C fa fb) f.toNoun s.toNoun)))
+        fol_loop.resolve
+      = some (resOutNoun regsNoun r)
+
+/-- The loop begun at the call's own identity, at any fuel, is below the
+pill's loop entered from the trap. -/
+theorem resLe_resolveH (regsNoun : R → Noun) (env : Env R) (hhe : env.he = heSock)
+    (hth : env.threshold = 32) (rest K : Noun) (hana : slot? 511 rest = some ana)
+    (hK : slot? 31 rest = some K) (hKa : slot? 92 K = some ska_analyze.arm)
+    (an : AnaGo FinMap R) (han : AnaIs regsNoun K an) (n : Nat) :
+    ResLe regsNoun rest (fun i gen => resolveH env an n i i gen) :=
+  fun s f fa fb fol sub seat mk bc df gen r h =>
+    resolve_le regsNoun env hhe hth rest K hana hK hKa an han fol sub seat mk bc df gen fa fb f s n
+      (s.prod.sock, C fa fb) r h
 
 end Compiler
 end Formalization

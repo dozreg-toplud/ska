@@ -398,3 +398,5 @@ open Formalization
 #print axioms Compiler.goIs_patch
 #print axioms Compiler.fol_loop_le
 #print axioms Compiler.resolve_step
+#print axioms Compiler.resolve_le
+#print axioms Compiler.resLe_resolveH
