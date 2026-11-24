@@ -1008,3 +1008,4 @@ open Formalization
 #print axioms Compiler.comp_kerf_all
 #print axioms Compiler.levy_gate_map
 #print axioms Compiler.ne_all
+#print axioms Compiler.comp_collapse_lazy_atom_all
