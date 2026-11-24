@@ -26,6 +26,14 @@ tools/capped.sh -m 3G lake env lean lemmas/Audit.lean  # axioms of the main theo
 Use it for anything that makes the kernel evaluate: an uncapped check of `cue`
 on the whole pill took the machine down.
 
+`tools/gen/` holds two helpers for writing links by hand, run under the cap
+like the rest.  `nouns.py` parses the generated nouns of `lemmas/Pill`
+(`slot`, `show`, `lean` for a Lean literal, `arms` of a battery,
+`contains_atom`, `cord`), and `runcases.py 0,1,7` prints the cases of the gate
+`+run` of the door of `+comp` as the definitions `crSn`, `crK0`, ... of
+`Compiler/CompRunLink.lean`, the named cases written out and the others read
+from the pill.
+
 ## core
 
 | File | Content |
