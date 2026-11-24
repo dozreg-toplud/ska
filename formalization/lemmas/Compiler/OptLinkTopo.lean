@@ -33,7 +33,6 @@ kicks the trap again with `o`, `out` and `saw` edited.
 The model `bbTopo fuel` (`Ska/OptTopo.lean`) bounds the depth of the walk by
 the fuel, keeps `saw` as a list, and crashes (`none`) on a missing target.
 
-* `saw_put`: `+put:in` of a label on `saw`.
 * `bb_trap`: by induction on the fuel, wherever `dfs` returns, the trap
   returns `[out saw]` with the model's `out` and a set related to its `saw`
   (`roll_gate_rel` with the relation `BbRel` of the accumulator).
@@ -89,15 +88,6 @@ theorem bb_at : slot? 2942 optC = some bbArm := by kernel_rfl
 
 @[nock_exec] theorem bb_arm (d : Noun) : nock d bbArm = some (C bbBody (C (A 0) d)) := by
   unfold bbArm bbHint; generalize bbBody = B; simp [nock_exec]
-
-/-- `+put:in` of a label on `saw`. -/
-theorem saw_put {S : Noun} {l : List Nat} (h : SawRel S l) (o : Nat) :
-    ∃ S', nock (C in.put.battery (C (A o) (C in.battery (C S layer2)))) in.put.battery = some S' ∧
-      SawRel S' (o :: l) := by
-  obtain ⟨out, hp, hs, hh⟩ := putInF_spec mugF S (A o) h.1
-  refine ⟨out, put_in_gate layer2 gorIn_morIn_layer2 (A o) S out hp, hs, fun k => ?_⟩
-  rw [hh, h.2 k]
-  simp
 
 /-! ## The trap -/
 

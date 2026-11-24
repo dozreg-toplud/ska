@@ -280,10 +280,26 @@ theorem blob_toNoun_inj {a b : Blob} : a.toNoun = b.toNoun ↔ a = b :=
 
 /-! ## Sets of registers or labels -/
 
-/-- The noun `S` is a set whose atoms are the members of `l`. -/
-def SawRel (S : Noun) (l : List Nat) : Prop := IsSet mugF S ∧ ∀ k, Has S (A k) ↔ k ∈ l
+/-- The noun `S` is a set of atoms, the members of `l`. -/
+def SawRel (S : Noun) (l : List Nat) : Prop := IsSet mugF S ∧ ∀ k, Has S k ↔ ∃ n ∈ l, k = A n
+
+theorem SawRel.has_atom {S : Noun} {l : List Nat} (h : SawRel S l) (k : Nat) : Has S (A k) ↔ k ∈ l := by
+  rw [h.2]
+  constructor
+  · rintro ⟨n, hn, e⟩; cases e; exact hn
+  · intro hk; exact ⟨k, hk, rfl⟩
 
 theorem sawRel_nil : SawRel (A 0) [] := ⟨isSet_nil, fun k => by simp [uni_has_nil]⟩
+
+/-- A set of atoms is `~` exactly when it has no member. -/
+theorem SawRel.eq_nil {S : Noun} {l : List Nat} (h : SawRel S l) : S = A 0 ↔ l = [] := by
+  constructor
+  · rintro rfl
+    cases l with
+    | nil => rfl
+    | cons n l => exact absurd ((h.has_atom n).2 (by simp)) not_has_atom
+  · rintro rfl
+    exact isSet_ext h.1 isSet_nil (fun k => by rw [h.2]; simp [uni_has_nil])
 
 /-- `+has:in` of a register on `saw`. -/
 theorem saw_has {S : Noun} {l : List Nat} (h : SawRel S l) (d : Nat) :
@@ -292,7 +308,7 @@ theorem saw_has {S : Noun} {l : List Nat} (h : SawRel S l) (d : Nat) :
   obtain ⟨t, ht, hiff⟩ := hasInF_spec mugF S (A d) h.1
   rw [has_in_gate (mug := mugF) layer2 gorIn_morIn_layer2.1 (A d) S t ht]
   congr 2
-  rw [h.2 d] at hiff
+  rw [h.has_atom d] at hiff
   cases t <;> simp_all
 
 /-- `+gas:in` of a list of registers on `saw`. -/
@@ -302,7 +318,32 @@ theorem saw_gas {S : Noun} {l : List Nat} (h : SawRel S l) (regs : List Nat) :
   obtain ⟨out, ho, hs, hh⟩ := gasInF_spec (mug := mugF) (regs.map A) S h.1
   refine ⟨out, ?_, hs, fun k => ?_⟩
   · rw [listNoun_map_listN]; exact gas_in_gate _ S out ho
-  · rw [hh, h.2 k]; simp
+  · rw [hh, h.2 k]
+    constructor
+    · rintro (hk | ⟨n, hn, rfl⟩)
+      · obtain ⟨n, hn, rfl⟩ := List.mem_map.1 hk
+        exact ⟨n, List.mem_append_left _ hn, rfl⟩
+      · exact ⟨n, List.mem_append_right _ hn, rfl⟩
+    · rintro ⟨n, hn, rfl⟩
+      rcases List.mem_append.1 hn with hn | hn
+      · exact Or.inl (List.mem_map.2 ⟨n, hn, rfl⟩)
+      · exact Or.inr ⟨n, hn, rfl⟩
+
+/-- `+put:in` of a label on `saw`. -/
+theorem saw_put {S : Noun} {l : List Nat} (h : SawRel S l) (o : Nat) :
+    ∃ S', nock (C in.put.battery (C (A o) (C in.battery (C S layer2)))) in.put.battery = some S' ∧
+      SawRel S' (o :: l) := by
+  obtain ⟨out, hp, hs, hh⟩ := putInF_spec mugF S (A o) h.1
+  refine ⟨out, put_in_gate layer2 gorIn_morIn_layer2 (A o) S out hp, hs, fun k => ?_⟩
+  rw [hh, h.2 k]
+  constructor
+  · rintro (rfl | ⟨n, hn, rfl⟩)
+    · exact ⟨o, List.mem_cons_self, rfl⟩
+    · exact ⟨n, List.mem_cons_of_mem _ hn, rfl⟩
+  · rintro ⟨n, hn, rfl⟩
+    rcases List.mem_cons.1 hn with rfl | hn
+    · exact Or.inl rfl
+    · exact Or.inr ⟨n, hn, rfl⟩
 
 /-! ## Folds -/
 
