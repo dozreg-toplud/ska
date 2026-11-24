@@ -499,7 +499,18 @@ import only its theorems.  So:
      (arm `341` of `ana`) against `Ana.skaCallgraph`: the initial state
      `SkaState.init`, the core `K` it builds (with `memo-final` at axis `122`
      of `K`, the sample `[[bus fol] memo-final reg]` being at axis `30`), and
-     the call of `+analyze` on the root, which `analyze_iff` then gives; then
+     the call of `+analyze` on the root, which `analyze_iff` then gives.
+     Probed (2026-11-24): arm `341` of `ana` is `[7 [8 [1 sample] [[1 bat]
+     [0 1]]] [11 [%fast clue] [0 1]]]`, its battery `bat` at axis `109` of
+     the arm is `[8 [1 st-bunt] [7 [10 [1534 [0 59]] [0 1]] [8 [1 K_bat]
+     [8 A T]]]]` (`=|  st`, `=.  regs.st  reg`, the core `K`), with `A` the
+     call `[8 [9 92 [0 1]] [9 2 [10 [6 ..] [0 2]]]]` of `+analyze` and `T`
+     the print: `print-ska` at axis `8190` of `[res K]` (axis `126` of
+     `ana`) slammed with `[0 trap]`, which returns `same` because `ska-verb`
+     is not defined (`!@`), then slammed with `[g.st.res regs.st.res]`
+     (`[0 10]`, `[0 3070]` of `[res K]`).  So the link needs the bunt of
+     `ska-state` with `regs` edited as `(SkaState.init reg).toNoun`, the
+     gate `print-ska` on every sample, and `same`; then
      `+prune-callgraph` with its loop against `pruneLoop` (an `evOne` of its
      loop, as `live_loop_iff`), then `+memo-final-entry` and the analysis part
      of `+ska-poke`.  To restate a lemma that took `AnaIs` or `AnaGe`, use
