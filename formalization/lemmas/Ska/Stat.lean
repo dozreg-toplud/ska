@@ -35,14 +35,10 @@ namespace SkaModel
 
 open Nock
 
-/-! ## Generalization by forgetting -/
+/-! ## Generalization by forgetting
 
-/-- **`S` generalizes `T` by forgetting**: `S` is `T`, or a sock whose cape
-is `|`, or the knit of generalizations of the head and the tail of `T`. -/
-inductive GenLe : Sock → Sock → Prop where
-  | refl (T : Sock) : GenLe T T
-  | no (T : Sock) (d : Noun) : GenLe T (Sock.mk Cape.no d)
-  | knit {T S1 S2 : Sock} : GenLe (So.hed T) S1 → GenLe (So.tel T) S2 → GenLe T (So.knit S1 S2)
+`GenLe` itself is defined in `CallGraph.lean`, where `Answers.hitGen` uses
+it. -/
 
 theorem knit_void_inv {S1 S2 : Sock} (h : So.knit S1 S2 = Sock.void) :
     S1 = Sock.void ∨ S2 = Sock.void := by

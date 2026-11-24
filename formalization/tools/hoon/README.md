@@ -23,4 +23,12 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
 * `prodmaps.hoon`   the maps at the site socks of `prodsites.hoon`: every two identities of one code bell, patched for the site sock, have equal maps (and so equal on the parts the product knows); at each callee identity, the product the analysis used (not patched) against itself and `dat`'s patched for its subject sock (nouns and maps)
 * `voidcall.hoon`   five formulas with a call that never returns in one branch of a `%6`
                     whose product is the subject of a later call: the checks of
-                    `prodsame4.hoon` find no failure (2026-11-24)
+                    `prodsame4.hoon` find no failure (2026-11-24).  None of the five
+                    makes a `%void`: `+pull:so` of a known atom is `|+~`, `[0 0]` is
+                    `|+~`, the branch's call is inlined, the `%6` gives `|+~`, and the
+                    later call's callee then requires `|+~`
+* `voidscc.hoon`    the witness against `LessProvidesNF`: a never-returning member of the
+                    root's SCC, whose pre-pop `%void` product the root's last run used, while
+                    `dat` has the `|+~` of `+pop`.  One site of `+know` without folding fails
+                    (for the pair at `less.c` and for the strict one); `KnowMeetsNF` and
+                    `SitesMeet` hold (2026-11-24)

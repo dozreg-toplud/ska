@@ -365,3 +365,10 @@ open Formalization.SkaModel
 #print axioms Ana.passLoop_fuel_le
 #print axioms Ana.memberLoop_fuel_le
 #print axioms Ana.skaPoke_fuel_le
+#print axioms GenLe.fits_and
+#print axioms HeChain.lift
+#print axioms HeChain.genLe
+#print axioms Ana.ansW_hitGen
+#print axioms answers_less
+#print axioms answers_rel
+#print axioms answers_relN

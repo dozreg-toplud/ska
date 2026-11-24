@@ -32,6 +32,46 @@ of the patched products (`ProdSameM` below, checked on the real compiler by
 `tools/hoon/prodmaps.hoon`) and `want` to cover `distribute lc s.src` at
 every site of A (what `callStep` adds to `want`).  None of the cases is
 proved here.
+
+## Refuted on the real compiler: `SiteCover`, so `Compare` and `LessProvidesNF`
+
+`tools/hoon/voidscc.hoon` (runhoon.sh, 2026-11-24) poke `voidSccWitness`
+below and finds one site of `+know` without folding under `less.cur` that
+does not provide its callee's code requirement, so `LessProvidesNF` (and
+with it `SiteCover`, which implies it) is false for that poke.
+`KnowMeetsNF` and `SitesMeet` hold there.  The core is
+`C = [[armR armF] 0]`; the root kicks `armR`, which is
+`[2 [6 [5 [1 0] [4 [1 0]]] [9 5 0 1] [1 [1 7]]] [1 [2 [0 1] [0 1]]]]`
+(if `0 = 1` then `armF` of `C`, else `[1 7]`, and then `H = [2 [0 1] [0 1]]`
+on the product), and `armF` is `[8 [9 4 0 1] [9 5 0 3]]` (it calls `armR`,
+then itself, so it never returns).  `R` and `F` form one SCC.  `R`'s last
+run reads `F`'s product `%void` (`F` in progress, its fixed point), so
+`+double-int` keeps `[1 7]` and the call to `H` is made at `&+[1 7]`, whose
+code requirement is `&+[1 7]`.  `+pop` then turns `F`'s `%void` into `|+~`,
+so `dat`'s product of `F` is `|+~`, `+double-int` forgets the branch, and
+`+know` without folding sees `|+~` at `H`'s site.  The compiled code is
+right (the branch that would lose `[1 7]` never returns), only the
+invariant is too strong.
+
+Why the five formulas of `voidcall.hoon` do not fail: none makes a `%void`.
+`+pull:so` of a known atom is `|+~` in the Hoon and in `pullLoop`, `[0 0]`
+is `|+~`, so the `%6` gives `|+~` and the later call's callee requires
+`|+~`.  And a `%void` call (`callStep`'s first branch) makes `[%2 p q ~]`,
+a nomm without a site, which `+know` walks as the analysis did except for
+the product (`|+~` against `%void`).  A `%void` at convergence comes only
+from a product of a member in progress: the witness above is the shape of
+every failure of this kind.
+
+So `Compare` as stated is false for the analysis' own table (it is also
+false for an arbitrary table, which may know more than `dat`).  What is
+left true: the analysis' walk under `more` with the products it used, which
+are the final products except that `+pop` has not yet made `%void` into
+`|+~` (`ConvInv.lean`).  A comparison that can hold must walk `+know`
+under `less.cur` with that table (`%void` kept) rather than `dat`, and
+`KnowMeetsNF` must then relate the bake's walk with `dat` to it through
+"the other side is `%void` or the two meet", which `+double-int` keeps since
+`+double-int` of `%void` and `b` is `b`.  Neither is stated here, and
+neither has been checked on the real compiler.
 -/
 
 namespace Formalization
@@ -276,6 +316,16 @@ omit [Treap M] in
 /-- **`LessProvidesNF` from `Replay` and `Compare`.** -/
 theorem lessProvidesNF_of_replay {E : BEnv M} (hr : Replay E) (hc : Compare E) : LessProvidesNF E :=
   lessProvidesNF_of_cover (siteCover_of hr hc)
+
+/-- The root formula of `tools/hoon/voidscc.hoon`, poked on `&+lib`: a
+witness against `LessProvidesNF` and `SiteCover` on the real compiler. -/
+def voidSccWitness : Noun :=
+  let armR : Noun :=
+    C (A 2) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 4) (C (A 1) (A 0)))))
+      (C (C (A 9) (C (A 5) (C (A 0) (A 1)))) (C (A 1) (C (A 1) (A 7))))))
+      (C (A 1) (C (A 2) (C (C (A 0) (A 1)) (C (A 0) (A 1))))))
+  let armF : Noun := C (A 8) (C (C (A 9) (C (A 4) (C (A 0) (A 1)))) (C (A 9) (C (A 5) (C (A 0) (A 3)))))
+  C (A 7) (C (C (A 1) (C (C armR armF) (A 0))) (C (A 9) (C (A 4) (C (A 0) (A 1)))))
 
 /-! ## `ProdSame` with maps
 

@@ -295,6 +295,33 @@ theorem msgSock_fits_left (a b m : Sock) (n : Noun) (hf : Fits a n) (hm : msgSoc
     Fits m n :=
   msgSock_fits_left' _ a b m n (Nat.lt_succ_self _) hf hm
 
+/-! ## Generalization by forgetting -/
+
+/-- **`S` generalizes `T` by forgetting**: `S` is `T`, or a sock whose cape
+is `|`, or the knit of generalizations of the head and the tail of `T`.
+Its facts are in `Stat.lean`; it is defined here for `Answers.hitGen`. -/
+inductive GenLe : Sock → Sock → Prop where
+  | refl (T : Sock) : GenLe T T
+  | no (T : Sock) (d : Noun) : GenLe T (Sock.mk Cape.no d)
+  | knit {T S1 S2 : Sock} : GenLe (So.hed T) S1 → GenLe (So.tel T) S2 → GenLe T (So.knit S1 S2)
+
+/-- A generalization holds of every noun of the sock it generalizes, and is
+blank if that sock is (`GenLe.fitsOpt` of `Stat.lean` in one piece). -/
+theorem GenLe.fits_and {T S : Sock} (h : GenLe T S) : (T.Blank → S.Blank) ∧ ∀ y, Fits T y → Fits S y := by
+  induction h with
+  | refl T => exact ⟨id, fun _ h => h⟩
+  | no T d => exact ⟨fun _ => ⟨Cape.no, d, rfl, rfl⟩, fun y _ => Sock.Blank.fits ⟨Cape.no, d, rfl, rfl⟩ y⟩
+  | @knit T S1 S2 h1 h2 ih1 ih2 =>
+    refine ⟨fun hT => knit_blank (ih1.1 (hed_blank hT)) (ih2.1 (tel_blank hT)), fun y hf => ?_⟩
+    cases y with
+    | cell a b => exact knit_fits (ih1.2 a (hed_fits hf)) (ih2.2 b (tel_fits hf))
+    | atom k =>
+      cases T with
+      | void => exact absurd hf id
+      | mk c d =>
+        obtain ⟨bh, bt⟩ := hed_tel_blank_of_atom (k := k) hf
+        exact Sock.Blank.fits (knit_blank (ih1.1 bh) (ih2.1 bt)) _
+
 /-! ## What the table of a converged run is -/
 
 /-- How the table of the last run of a function answers a call of the
@@ -304,12 +331,18 @@ formula `f` on the subject sock `s`, from the final graph `G`:
   `+analyze`);
 * `hit`: an entry that passes the test of `+git:mi` and `+recursive-call`
   (`%rec`), with its product patched for `s`;
+* `hitGen`: an entry that passes the test at a sock `s` that generalizes
+  `s0`, with its product patched for `s0`.  This is the `%rec` branch after
+  `%he` steps: `+recursive-call` tests the generalized sock, and the Hoon
+  patches with the sock the loop began with (`sock.prod.s`);
 * `gen`: the answer for an identity whose subject sock generalizes `s`
   (`%he`, with the subject `+msg-sock` makes). -/
 inductive Answers (G : Entry → Prop) : Sock → Noun → TabEntry → Prop where
   | exact {e : Entry} : G e → Answers G e.more e.fol e.d.tab
   | hit {e : Entry} {s : Sock} : G e → hitTest e s = some true →
       Answers G s e.fol (patchDatum e.d s).tab
+  | hitGen {e : Entry} {s s0 : Sock} : G e → hitTest e s = some true → GenLe s0 s →
+      Answers G s0 e.fol (patchDatum e.d s0).tab
   | gen {s s' m : Sock} {f : Noun} {a : TabEntry} : msgSock s s' = some m → Answers G m f a →
       Answers G s f a
 
@@ -334,6 +367,13 @@ theorem answers_less {G : Entry → Prop} (hG : LessOK G) {s : Sock} {f : Noun} 
     cases h1 with
     | false => simp at ht
     | true => exact huge_sound hh hy
+  | @hitGen e s s0 _ ht hg =>
+    intro y hy
+    simp only [hitTest, Option.bind_eq_some_iff] at ht
+    obtain ⟨h1, hh, ht⟩ := ht
+    cases h1 with
+    | false => simp at ht
+    | true => exact huge_sound hh (hg.fits_and.2 y hy)
   | gen hm _ ih => exact fun y hy => ih y (msgSock_fits_left _ _ _ _ hy hm)
 
 theorem answers_code {G : Entry → Prop} {code : Bell → Option Nomm} (hc : CodeHas code G)
@@ -341,6 +381,7 @@ theorem answers_code {G : Entry → Prop} {code : Bell → Option Nomm} (hc : Co
   induction h with
   | exact he => exact hc _ he
   | hit he _ => exact hc _ he
+  | hitGen he _ _ => exact hc _ he
   | gen _ _ ih => exact ih
 
 /-- **The table of a converged run is right on code requirements and code.**

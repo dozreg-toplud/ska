@@ -201,9 +201,14 @@ def ResP2 (memoF : Memo M) (res : ResGo M R) : Prop :=
 
 /-- What the `resolve` loop begun with `orig` keeps and gives: `ResP2` for
 the current identity, when it is `orig` or the memo lookup at `orig` misses
-(after a `%he` step the loop asks `+git:mi` at `orig` again). -/
+(after a `%he` step the loop asks `+git:mi` at `orig` again), and the current
+subject sock comes from `orig.1` by `%he` steps (`HeChain`).  The answer is
+an answer at `orig`: the `%rec` branch patches with `orig.1`, as the Hoon
+does (`(patch-prod [prod map]:d sock.prod.s)`), which is an answer at
+`orig.1` and not at the current sock. -/
 def ResP2L (memoF : Memo M) (orig : Ident) (res : ResGo M R) : Prop :=
   ∀ idT gs r gs' (F : Entry → Prop), (idT = orig ∨ gitMi gs.st.done orig.2 orig.1 = some none) →
+    HeChain orig.1 idT.1 → idT.2 = orig.2 → orig.1 ≠ Sock.void →
     CInv memoF gs.st F → WellFormed idT.1 → NormSock idT.1 → idT.1 ≠ Sock.void →
     res idT gs = some (r, gs') →
     (∃ F', (∀ e, F e → F' e) ∧ CInv memoF gs'.st F') ∧
@@ -212,11 +217,12 @@ def ResP2L (memoF : Memo M) (orig : Ident) (res : ResGo M R) : Prop :=
     gs'.low ≤ gs.low ∧ Pushed gs.st gs'.st gs'.low ∧
     (∀ o, Treap.get gs'.st.order r.1 = some o → gs'.low ≤ o) ∧
     (gs'.back = false → gs.back = false ∧ ∀ o, Treap.get gs'.st.order r.1 = some o → r.1 ∉ gs.st.stk) ∧
-    AnsW (RBat gs'.st r.1) idT.1 idT.2 r.2.core.tab
+    AnsW (RBat gs'.st r.1) orig.1 orig.2 r.2.core.tab
 
 theorem resP2_of_loop {memoF : Memo M} {resl : Ident → ResGo M R} (h : ∀ orig, ResP2L memoF orig (resl orig)) :
     ResP2 memoF (fun i => resl i i) :=
-  fun idT gs r gs' F hc hw hn hnv e => h idT idT gs r gs' F (Or.inl rfl) hc hw hn hnv e
+  fun idT gs r gs' F hc hw hn hnv e =>
+    h idT idT gs r gs' F (Or.inl rfl) (HeChain.refl _) rfl hnv hc hw hn hnv e
 
 /-- What `+analyze` keeps and gives. -/
 def AnaP2 (memoF : Memo M) (ana : AnaGo M R) : Prop :=
@@ -694,12 +700,19 @@ theorem ansW_hit {st : SkaState M R} (hi : SInv st) {i : Ident} {d : FDatum M} (
     AnsW (RBat st c) s i.2 (patchDatum d.core s).tab :=
   AnsW.hit (e := entOf i d) ⟨⟨d, hd, rfl⟩, (hi.wf_get hd).1, (hi.wf_get hd).2, hn, hc⟩ ht
 
+theorem ansW_hitGen {st : SkaState M R} (hi : SInv st) {i : Ident} {d : FDatum M} (hd : Treap.get st.g i = some d)
+    (hn : NormSock d.prod) {c : Ident} (hc : i = c) {s s0 : Sock} (ht : hitTest (entOf i d) s = some true)
+    (hg : GenLe s0 s) : AnsW (RBat st c) s0 i.2 (patchDatum d.core s0).tab :=
+  AnsW.hitGen (e := entOf i d) ⟨⟨d, hd, rfl⟩, (hi.wf_get hd).1, (hi.wf_get hd).2, hn, hc⟩ ht hg
+
 /-- **`resolve` keeps the convergence invariant**, given that `resolve` and
 `+analyze` do at the fuel below. -/
 theorem resolveStep_ok2 (env : Env R) (memoF : Memo M) {orig : Ident} {resolve : ResGo M R} {analyze : AnaGo M R}
     (hres : ResP2L memoF orig resolve) (hana : AnaP2 memoF analyze) :
     ResP2L memoF orig (resolveStep env resolve analyze orig) := by
-  intro idT gs r gs' F horig hc hw hn hnv e
+  intro idT gs r gs' F horig hch hf2 hov hc hw hn hnv e
+  have lift : ∀ {G : Entry → Prop} {a : TabEntry}, AnsW G idT.1 idT.2 a → AnsW G orig.1 orig.2 a :=
+    fun h => by rw [← hf2]; exact hch.lift h
   have hstay : ∀ low' back', low' ≤ gs.low → (back' = false → gs.back = false) →
       let gs2 : GenS M R := { gs with low := low', back := back' }
       (∃ F', (∀ e, F e → F' e) ∧ CInv memoF gs2.st F') ∧ GStepsR (gCore gs.st.g) (gCore gs2.st.g) ∧
@@ -718,13 +731,13 @@ theorem resolveStep_ok2 (env : Env R) (memoF : Memo M) {orig : Ident} {resolve :
       obtain ⟨rfl, rfl⟩ := e
       obtain ⟨a1, a2, a3, a4, a5, a6, a7, a8⟩ := hstay gs.low gs.back (Nat.le_refl _) id
       exact ⟨a1, a2, a3, a4, a5, a6, a7, a8, fun o h => by simp [ho] at h,
-        fun hb => ⟨hb, fun o h => by simp [ho] at h⟩, ansW_entry hc.s hg (hc.norm _ _ hg).2.2 rfl⟩
+        fun hb => ⟨hb, fun o h => by simp [ho] at h⟩, lift (ansW_entry hc.s hg (hc.norm _ _ hg).2.2 rfl)⟩
     | some o =>
       simp only [ho, Option.some.injEq, Prod.mk.injEq] at e
       obtain ⟨rfl, rfl⟩ := e
       obtain ⟨a1, a2, a3, a4, a5, a6, a7, a8⟩ := hstay (min gs.low o) true (Nat.min_le_left _ _) (by simp)
       exact ⟨a1, a2, a3, a4, a5, a6, a7, a8, fun o' h => by rw [ho] at h; cases h; exact Nat.min_le_right _ _,
-        fun hb => by simp at hb, ansW_entry hc.s hg (hc.norm _ _ hg).2.2 rfl⟩
+        fun hb => by simp at hb, lift (ansW_entry hc.s hg (hc.norm _ _ hg).2.2 rfl)⟩
   | none =>
     rw [hg] at e
     simp only at e
@@ -763,11 +776,8 @@ theorem resolveStep_ok2 (env : Env R) (memoF : Memo M) {orig : Ident} {resolve :
         have hnj : NormSock j.1 := by
           obtain ⟨dj, hdj⟩ := hc.s.mem_g hj
           exact (hc.norm j dj hdj).1
-        obtain ⟨a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11⟩ :=
-          hres i gs r gs' F (Or.inr hmiss) hc hwi (normSock_msgSock hn hnj hm) (msgSock_nv hnv hm) e
-        refine ⟨a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, ?_⟩
-        rw [hf] at a11
-        exact AnsW.gen hwj hnj hm a11
+        exact hres i gs r gs' F (Or.inr hmiss) (hch.snoc hwj hnj hm) (hf.trans hf2) hov hc hwi
+          (normSock_msgSock hn hnj hm) (msgSock_nv hnv hm) e
       · rename_i i hrc
         rcases recLoop_cases2 hrc with ⟨_, hi, hf, ht⟩ | ⟨hb, _⟩
         · simp only [Option.map_eq_some_iff] at e
@@ -779,8 +789,8 @@ theorem resolveStep_ok2 (env : Env R) (memoF : Memo M) {orig : Ident} {resolve :
           refine ⟨a1, a2, a3, a4, a5, a6, a7, a8, fun o' h => by
             simp only at h; rw [hoi] at h; cases h; exact Nat.min_le_right _ _, fun hb => by simp at hb, ?_⟩
           rw [gitG_gCore, hgi] at ht
-          have := ansW_hit hc.s hdi (hc.norm _ _ hdi).2.2 rfl (s := idT.1) ht
-          rw [hf] at this
+          have := ansW_hitGen hc.s hdi (hc.norm _ _ hdi).2.2 rfl ht (hch.genLe hov)
+          rw [hf, hf2] at this
           simp only [hgi]
           exact this
         · cases hb
@@ -795,7 +805,7 @@ theorem resolveStep_ok2 (env : Env R) (memoF : Memo M) {orig : Ident} {resolve :
           exact ⟨h1, fun c hce oc hco => Nat.le_trans (Nat.min_le_right _ _) (h2 c hce oc hco)⟩
         · have hgd : gitG st'.g idT = d := by simp [gitG, Treap.gut, hd]
           simp only [hgd]
-          exact ansW_entry hc'.s hd (hc'.norm _ _ hd).2.2 rfl
+          exact lift (ansW_entry hc'.s hd (hc'.norm _ _ hd).2.2 rfl)
 
 end Ana
 end SkaModel

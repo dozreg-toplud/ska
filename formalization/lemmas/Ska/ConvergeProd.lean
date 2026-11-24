@@ -195,6 +195,9 @@ theorem answers_lessRel {G : Entry → Prop} (hL : LessRel G) {s : Sock} {f : No
   induction h with
   | exact he => intro _ lc dl hl y hy; exact hL _ lc dl he hl y hy
   | @hit e s he ht => intro hs lc dl hl y hy; exact huge_less hs ht hl hy
+  | @hitGen e s s0 he ht hg =>
+    intro hs0 lc dl hl y hy
+    exact huge_less (fun e' => hs0 (hg.void_inv e')) ht hl (hg.appFits lc (some y) hy)
   | @gen s s' m f a hm _ ih =>
     intro hs lc dl hl y hy
     have hg := msgSock_genLe hs hm
@@ -213,6 +216,10 @@ theorem answers_relN {lib : Lib} {G : Entry → Prop} {K : Nat} (hP : ProdRelN l
     intro hs y gul p hy hm
     obtain ⟨hR, _⟩ := hP _ he y gul p hy hm
     exact ⟨provO_iff.mp (provO_patchProd hs _ _ _ (provO_iff.mpr hR)), statOK_patchProd _ _⟩
+  | @hitGen e s s0 he ht hg =>
+    intro hs0 y gul p hy hm
+    obtain ⟨hR, _⟩ := hP _ he y gul p hy hm
+    exact ⟨provO_iff.mp (provO_patchProd hs0 _ _ _ (provO_iff.mpr hR)), statOK_patchProd _ _⟩
   | @gen s s' m f a hm _ ih =>
     intro hs y gul p hy hmk
     have hg := msgSock_genLe hs hm
