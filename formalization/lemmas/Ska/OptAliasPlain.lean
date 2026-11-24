@@ -25,19 +25,25 @@ reachable from `0`.  The second is chosen, as **`DInvR`** = `DInvT`,
   after maps to one that counts before (a dead fill stays one), a second
   argument per pass;
 * it says nothing about dead fills, so the invariant raw `+comp` output owes
-  is simpler to state and to prove (track C);
+  is simpler to state and to prove (track C); single assignment over all
+  blocks (`DefOnce`: the definitions of the whole map distinct) implies it
+  (`defOnceR_of_defOnce`);
 * it holds on the corpus of `tools/hoon/ssacheck.hoon` at every pass of every
   round once `+crash-need` stops filling the register it tests (the
   candidate change of the Hoon, not applied); without the change it fails
   there, as `FillFresh` does.
 
+The driver theorem is proved under both (`OptAliasPlainDriver.lean`,
+`OptAliasFresh.lean`).
+
 ## It survives the passes that make dead fills
 
 A merge of `+remove-hops` can turn an ordinary `%imm` into a dead fill:
-block `1` = `[%imm 5 x]`, `[%hop [~ 2]]`, block `2` (whose one predecessor is
-`1`) = no op, `[%bom ~]`; after the pass block `1` is `[%imm 5 x]`,
-`[%bom ~]`, and with `x` read nowhere the `%imm` is now a dead fill.  `x` has
-one definition before, `(1, some 0)`, and one after, at the same place: a
+block `0` = `[%imm 5 x]`, `[%hop [~ 1]]`, block `1` (whose one predecessor is
+`0`) = no op, `[%bom ~]`; after the pass block `0` is `[%imm 5 x]`,
+`[%bom ~]` and block `1` is gone (`ex_hops`), and with `x` read nowhere the
+`%imm` is now a dead fill.  `x` has one definition before, `(0, some 0)`, and
+one after, at the same place: a
 merge creates no definition, every place after maps to one before
 (`hops_onceR`).  (Under `FillFresh` the example survives too: `x` had a
 definition that counts and no dead fill before, and after its only definition
@@ -48,7 +54,8 @@ is the dead fill, so it has none that counts.)
 the immediate `5`, which is no loobean, so the end becomes `[%bom ~]`, blocks
 `1` and `2` are no longer reachable, and both `%imm` ops are dead fills.
 `+alias` keeps a subsequence of each body with the destinations unchanged,
-so `x` still has one definition (`alias_onceR`).
+so `x` still has one definition (`alias_onceR`; `ex_alias` with `c`, `x` the
+registers `1`, `2`).
 
 ## The passes
 
@@ -94,6 +101,100 @@ theorem fillFresh_of_R {bl : Map Blob} (h : DefOnceR bl) : FillFresh bl := by
   have e := h r _ _ hs.1 hs.2.1 hR (deadFill_site hdf)
   subst e
   exact hs.2.2 i rfl hdf
+
+theorem pw_rel {α : Type} {R : α → α → Prop} (hs : ∀ {a b}, R a b → R b a) :
+    ∀ {l : List α}, l.Pairwise R → ∀ {a b}, a ∈ l → b ∈ l → a ≠ b → R a b
+  | [], _, _, _, ha, _, _ => absurd ha List.not_mem_nil
+  | x :: l, h, a, b, ha, hb, hne => by
+    rw [List.pairwise_cons] at h
+    rcases List.mem_cons.mp ha with ea | ha <;> rcases List.mem_cons.mp hb with eb | hb
+    · exact absurd (ea.trans eb.symm) hne
+    · rw [ea]; exact h.1 b hb
+    · rw [eb]; exact hs (h.1 a ha)
+    · exact pw_rel hs h.2 ha hb hne
+
+/-- Two ops of a body whose destinations are one register, in a body whose
+destinations are distinct, are one op. -/
+theorem filterMap_nodup_idx {f : Pole → Option Nat} : ∀ (l : List Pole) (i j : Nat) (a b : Pole) (r : Nat),
+    (l.filterMap f).Nodup → l[i]? = some a → l[j]? = some b → f a = some r → f b = some r → i = j
+  | [], _, _, _, _, _, _, h, _, _, _ => by simp at h
+  | x :: l, i, j, a, b, r, hn, ha, hb, hfa, hfb => by
+    have hn' : (l.filterMap f).Nodup := hn.sublist ((List.sublist_cons_self x l).filterMap f)
+    cases i with
+    | zero =>
+      cases j with
+      | zero => rfl
+      | succ j =>
+        simp only [List.getElem?_cons_zero, Option.some.injEq, List.getElem?_cons_succ] at ha hb
+        subst ha
+        rw [List.filterMap_cons, hfa] at hn
+        exact absurd (List.mem_filterMap.mpr ⟨b, List.mem_of_getElem? hb, hfb⟩) (List.nodup_cons.mp hn).1
+    | succ i =>
+      cases j with
+      | zero =>
+        simp only [List.getElem?_cons_zero, Option.some.injEq, List.getElem?_cons_succ] at ha hb
+        subst hb
+        rw [List.filterMap_cons, hfb] at hn
+        exact absurd (List.mem_filterMap.mpr ⟨a, List.mem_of_getElem? ha, hfa⟩) (List.nodup_cons.mp hn).1
+      | succ j =>
+        simp only [List.getElem?_cons_succ] at ha hb
+        rw [filterMap_nodup_idx l i j a b r hn' ha hb hfa hfb]
+
+/-- **Single assignment over all blocks** (`DefOnce`: the definitions of the
+whole map are distinct) gives `DefOnceR`. -/
+theorem defOnceR_of_defOnce {bl : Map Blob} (h : DefOnce bl) : DefOnceR bl := by
+  unfold DefOnce allDefs List.Nodup at h
+  rw [List.pairwise_flatMap] at h
+  obtain ⟨hin, hpw⟩ := h
+  have site : ∀ r (s : Nat × Option Nat), DefSite bl r s → ∃ b, HoonMap.get bl s.1 = some b ∧ r ∈ blockDefs b := by
+    rintro r ⟨o, _ | i⟩ hd
+    · obtain ⟨b, hb, hm⟩ := hd
+      exact ⟨b, hb, List.mem_append_left _ hm⟩
+    · obtain ⟨b, op, hb, hop, hdst⟩ := hd
+      exact ⟨b, hb, List.mem_append_right _ (List.mem_filterMap.mpr ⟨op, List.mem_of_getElem? hop, hdst⟩)⟩
+  intro r s s' _ hd _ hd'
+  obtain ⟨b, hb, hm⟩ := site r s hd
+  obtain ⟨b', hb', hm'⟩ := site r s' hd'
+  have hk : s.1 ∈ MapKeys.keys bl := (MapKeys.mem_keys bl _).mpr (by rw [hb]; rfl)
+  have hk' : s'.1 ∈ MapKeys.keys bl := (MapKeys.mem_keys bl _).mpr (by rw [hb']; rfl)
+  by_cases ho : s.1 = s'.1
+  · obtain ⟨o, opt⟩ := s
+    obtain ⟨o', opt'⟩ := s'
+    simp only at ho hb hb' hk
+    subst ho
+    rw [hb] at hb'; cases hb'
+    have hnd : (blockDefs b).Nodup := by
+      have := hin o hk
+      rw [hb] at this
+      exact this
+    unfold blockDefs at hnd
+    obtain ⟨-, hnd2, hdisj⟩ := List.nodup_append.mp hnd
+    cases opt with
+    | none =>
+      cases opt' with
+      | none => rfl
+      | some j' =>
+        obtain ⟨b2, op, hb2, hop, hdst⟩ := hd'
+        obtain ⟨b3, hb3, hm3⟩ := hd
+        rw [hb] at hb2 hb3; cases hb2; cases hb3
+        exact absurd rfl (hdisj r hm3 r (List.mem_filterMap.mpr ⟨op, List.mem_of_getElem? hop, hdst⟩))
+    | some j =>
+      cases opt' with
+      | none =>
+        obtain ⟨b2, op, hb2, hop, hdst⟩ := hd
+        obtain ⟨b3, hb3, hm3⟩ := hd'
+        rw [hb] at hb2 hb3; cases hb2; cases hb3
+        exact absurd rfl (hdisj r hm3 r (List.mem_filterMap.mpr ⟨op, List.mem_of_getElem? hop, hdst⟩))
+      | some j' =>
+        obtain ⟨b2, op, hb2, hop, hdst⟩ := hd
+        obtain ⟨b3, op', hb3, hop', hdst'⟩ := hd'
+        rw [hb] at hb2 hb3; cases hb2; cases hb3
+        rw [filterMap_nodup_idx b.body j j' op op' r hnd2 hop hop' hdst hdst']
+  · exfalso
+    have := pw_rel (R := fun a₁ a₂ => ∀ x ∈ ((HoonMap.get bl a₁).map blockDefs).getD [],
+        ∀ y ∈ ((HoonMap.get bl a₂).map blockDefs).getD [], x ≠ y)
+      (fun h x hx y hy e => h y hy x hx e.symm) hpw hk hk' ho
+    exact this r (by rw [hb]; exact hm) r (by rw [hb']; exact hm') rfl
 
 theorem dInvR_dInvS {bl : Map Blob} (h : DInvR bl) : DInvS bl :=
   ⟨h.1, ⟨defOnceB_of_R h.2.2.2, h.2.1⟩, h.2.2.1⟩

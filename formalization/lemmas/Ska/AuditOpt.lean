@@ -418,6 +418,9 @@ open Formalization.SkaModel.Opt
 #print axioms w_opt
 #print axioms defOnceB_of_R
 #print axioms fillFresh_of_R
+#print axioms pw_rel
+#print axioms filterMap_nodup_idx
+#print axioms defOnceR_of_defOnce
 #print axioms dInvR_dInvS
 #print axioms dInvR_of
 #print axioms onceR_of_map
