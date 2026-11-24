@@ -45,6 +45,7 @@ import lemmas.Ska.CompCollapseThree
 import lemmas.Ska.CompAboveRun
 import lemmas.Ska.CompAboveX
 import lemmas.Ska.CompSevenSame
+import lemmas.Ska.CompThreeNone
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -489,3 +490,7 @@ open Formalization.SkaModel.Comp
 #print axioms finishLF_bellContract74S
 #print axioms finishLF_bellContract73S
 #print axioms finishLF_bellContract_slotTarget
+#print axioms pureEval_const_of_noneEq
+#print axioms runOKU_seven3F
+#print axioms finishLF_bellContract73F
+#print axioms finishLF_bellContract_threeNone
