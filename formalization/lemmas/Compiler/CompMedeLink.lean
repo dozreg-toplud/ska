@@ -126,10 +126,11 @@ theorem comp_wl_at : slot? 30 comp.door = some wlArm := by kernel_rfl
 /-- `+mede` is at door axis `27307` (core axis `43691`). -/
 theorem comp_md_at : slot? 27307 comp.door = some mdArm := by kernel_rfl
 
-/-- `+walk-lazy` on `[s ~ ~]` is one slam of its gate `[Fb [Fs Fc]]`. -/
-theorem comp_walk_lazy (Fb Fs Fc G : Noun) (o : Nat) (s : Sure CSet) (out : Option Noun)
+/-- `+walk-lazy` on `[s ~ ~]` is one slam of its gate `[Fb [Fs Fc]]` (on
+every door `D`: the arm reads none of it). -/
+theorem comp_walk_lazy (D Fb Fs Fc G : Noun) (o : Nat) (s : Sure CSet) (out : Option Noun)
     (hf : nock (C Fb (C (C (A o) (C s.toNoun G)) Fc)) Fb = out) :
-    nock (C wlBat (C (C (A o) (C (lazyNoun s) (C Fb (C Fs Fc)))) (C comp.door (C G ctx)))) wlBat
+    nock (C wlBat (C (C (A o) (C (lazyNoun s) (C Fb (C Fs Fc)))) (C D (C G ctx)))) wlBat
       = out := by
   unfold wlBat
   cases out with
@@ -243,6 +244,121 @@ theorem md_loop (hc : CompIn ctx) (x : GenRest) (SUR GI B TH LAZ : Noun) (o o' :
           generalize comp.door = Dr at hD2 hD4 hao h1 h2 ⊢
           simp [nock_exec, Need.toNoun, Tag.none, Tag.this, Tag.both, medeLoop, hD2, comp_add_ops_arm,
             hao, e0, h1, e1, h2, bind, StateT.bind]
+
+/-- The arm `sure-require-look` builds its gate. -/
+theorem comp_srl_arm (d : Noun) : nock d srlArm =
+    some (C srlBat (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) d)) := by
+  unfold srlArm; simp only [nock_exec]
+
+/-- The gate of `+mede`: `gen` set to `gen-init`, `+sure-require-look` of
+`sur`, then the loop on its need. -/
+theorem md_gate (hc : CompIn ctx) (hl : CompLib ctx) (x : GenRest) (G0 B TH LAZ : Noun)
+    (o o' : Nat) (som : Noun) (sur : Sure CSet) (g : Gen (TreapMap mugF)) (hs : x.SoftOut o')
+    (h0 : ∀ y ∈ HoonSet.toList sur.lok, y ≠ 0) :
+    nock (C mdGate (C (C (A o') (C sur.toNoun (genNoun g x)))
+      (C (A o) (C B (C (C TH (C som LAZ)) (C comp.door (C G0 ctx))))))) mdGate
+      = ((do let ned ← sureRequireLook sur; medeLoop o' som ned : CM (TreapMap mugF) Unit) g).map
+        fun p => genNoun p.2 x := by
+  have hsrl := comp_sure_require_look (x := x) hc hl g sur h0
+  have hD := comp_srl_at
+  simp only [compCore] at hsrl
+  cases e : sureRequireLook sur g with
+  | none =>
+    rw [e] at hsrl
+    nock_open mdGate
+    generalize comp.door = Dr at hD hsrl ⊢
+    simp [nock_exec, hD, comp_srl_arm, hsrl, e, bind, StateT.bind]
+  | some p =>
+    obtain ⟨ned, g1⟩ := p
+    rw [e] at hsrl
+    have hlp := md_loop hc x sur.toNoun (genNoun g x) B TH LAZ o o' hs ned som g1
+    unfold mdT at hlp
+    nock_open mdGate
+    generalize comp.door = Dr at hD hsrl hlp ⊢
+    simp [nock_exec, hD, comp_srl_arm, hsrl, e, hlp, bind, StateT.bind]
+
+/-! ## `+mede`
+
+The arm `+walk-lazy` and the gate of `+mede` start from bunts that the pill
+computes by running two molds of the core at axis `15` of `ctx` (the types
+of the library): `need-lazy` (arm `191`) and `sure` (arm `4`).  The
+strict executor needs these runs to return (`CompMolds`); their values are
+replaced by the samples before they are read.
+-/
+
+/-- The mold at arm `k` of the core at axis `15` of `ctx` returns its bunt. -/
+def CompMold (ctx : Noun) (k : Nat) : Prop :=
+  ∃ Q a M m v, slot? 15 ctx = some Q ∧ slot? k Q = some a ∧ nock Q a = some M ∧
+    slot? 2 M = some m ∧ nock M m = some v
+
+/-- The molds `need-lazy` and `sure` that `+walk-lazy` and `+mede` bunt. -/
+def CompMolds (ctx : Noun) : Prop := CompMold ctx 191 ∧ CompMold ctx 4
+
+/-- The arm `walk-lazy` builds its gate, given the molds. -/
+theorem comp_wl_arm (hm : CompMolds ctx) (D G : Noun) :
+    ∃ bunt, nock (C D (C G ctx)) wlArm = some (C wlBat (C bunt (C D (C G ctx)))) := by
+  obtain ⟨⟨Q, a1, M1, m1, v1, hQ, ha1, hM1, hm1, hv1⟩, ⟨Q', a2, M2, m2, v2, hQ', ha2, hM2, hm2, hv2⟩⟩ := hm
+  rw [hQ] at hQ'
+  cases hQ'
+  unfold wlArm
+  simp [nock_exec, hQ, ha1, hM1, hm1, hv1, ha2, hM2, hm2, hv2]
+
+/-- `+mede` on a fork-free lazy need, where the new block is not a key of
+`soft` and no looked-at axis is `0`. -/
+theorem comp_mede (hc : CompIn ctx) (hl : CompLib ctx) (hm : CompMolds ctx) (x : GenRest)
+    (g : Gen (TreapMap mugF)) (th : Jmp) (som : Noun) (laz : Sure CSet) (hs : x.SoftOut g.bo)
+    (h0 : ∀ y ∈ HoonSet.toList laz.lok, y ≠ 0) :
+    nock (C mdBat (C (C th.toNoun (C som (lazyNoun laz))) (compCore g x ctx))) mdBat
+      = (mede th som laz g).map fun p => C (A p.1) (genNoun p.2 x) := by
+  have hm' := hm
+  obtain ⟨_, ⟨Q, a2, M2, m2, v2, hQ, ha2, hM2, hm2, hv2⟩⟩ := hm'
+  have he := cf_emit (x := x) hc g ⟨[], [], Termin.hop th⟩
+  simp only [Blob.toNoun, listNoun, Termin.toNoun, Tag.hop] at he
+  have hd : (cfEmitG ⟨[], [], Termin.hop th⟩ g).drop = g.drop := by unfold cfEmitG; split <;> rfl
+  obtain ⟨bunt, hwa⟩ := comp_wl_arm hm comp.door (genNoun (cfEmitG ⟨[], [], Termin.hop th⟩ g) x)
+  have hgate := md_gate hc hl x (genNoun (cfEmitG ⟨[], [], Termin.hop th⟩ g) x) mdBat th.toNoun
+    (lazyNoun laz) g.bo g.bo som laz (cfEmitG ⟨[], [], Termin.hop th⟩ g) hs h0
+  have hD1 := comp_drop_at
+  have hD2 := comp_emit_at
+  have hD3 := comp_wl_at
+  simp only [compCore] at hwa ⊢
+  generalize comp.door = Dr at hD1 hD2 hD3 he hwa hgate ⊢
+  cases hdr : g.drop
+  · have hwl := fun out h => comp_walk_lazy (ctx := ctx) Dr mdGate
+      (C (A 0) (C v2 (genNoun (cfEmitG ⟨[], [], Termin.hop th⟩ g) x)))
+      (C (A g.bo) (C mdBat (C (C th.toNoun (C som (lazyNoun laz)))
+        (C Dr (C (genNoun (cfEmitG ⟨[], [], Termin.hop th⟩ g) x) ctx)))))
+      (genNoun (cfEmitG ⟨[], [], Termin.hop th⟩ g) x) g.bo laz out h
+    cases e1 : sureRequireLook laz (cfEmitG ⟨[], [], Termin.hop th⟩ g) with
+    | none =>
+      simp only [bind, StateT.bind, e1, Option.bind_none, Option.map_none] at hgate
+      have hw := hwl none hgate
+      nock_open mdBat
+      simp [nock_exec, hD1, hD2, hD3, comp_emit_arm, he, hd, hdr, dropArm, cgModeNoun, hwa, hw, hQ,
+        ha2, hM2, hm2, hv2, e1, mede, cf_emit_g, bind, StateT.bind, get, getThe, MonadStateOf.get,
+        StateT.get, pure]
+    | some p =>
+      obtain ⟨ned, g2⟩ := p
+      cases e2 : medeLoop g.bo som ned g2 with
+      | none =>
+        simp only [bind, StateT.bind, e1, e2, Option.bind_some, Option.bind_none,
+          Option.map_none] at hgate
+        have hw := hwl none hgate
+        nock_open mdBat
+        simp [nock_exec, hD1, hD2, hD3, comp_emit_arm, he, hd, hdr, dropArm, cgModeNoun, hwa, hw, hQ,
+          ha2, hM2, hm2, hv2, e1, e2, mede, cf_emit_g, bind, StateT.bind, get, getThe,
+          MonadStateOf.get, StateT.get, pure]
+      | some q =>
+        obtain ⟨u, g3⟩ := q
+        simp only [bind, StateT.bind, e1, e2, Option.bind_some, Option.map_some] at hgate
+        have hw := hwl _ hgate
+        nock_open mdBat
+        simp [nock_exec, hD1, hD2, hD3, comp_emit_arm, he, hd, hdr, dropArm, cgModeNoun, hwa, hw, hQ,
+          ha2, hM2, hm2, hv2, e1, e2, mede, cf_emit_g, bind, StateT.bind, get, getThe,
+          MonadStateOf.get, StateT.get, pure, StateT.pure]
+  · nock_open mdBat
+    simp [nock_exec, hD1, hD2, comp_emit_arm, he, hd, hdr, dropArm, cgModeNoun, mede, cf_emit_g,
+      bind, StateT.bind, get, getThe, MonadStateOf.get, StateT.get, pure, StateT.pure]
 
 end Compiler
 end Formalization
