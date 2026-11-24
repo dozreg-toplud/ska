@@ -180,6 +180,99 @@ theorem finishTop_gen (lib : Lib) {g1 : Gen Map} {nex : NextL S} (R : TopS g1 ne
     simp only [List.append_nil] at e2
     rw [e2]; exact hnec σ O st t gul s fo
 
+/-! ## The blocks before the runs of the indirect call -/
+
+/-- **The blocks of the indirect call before its two runs, from `gen0`**:
+`+simple-next` emits `[%don 0]` at `1`, `+kerf` the hop at `2` to it with
+the move of the product register `1` into `0`, and the `%nok` block at `3`
+reads the subject from `2`, the formula from `3` and puts the product in
+`1`. -/
+theorem indirect_prefix {nex0 : NextL S} {g1 g2 g3 : Gen Map} {out pro o : Nat}
+    (h1 : simpleNextL (CGoalL.done : CGoalL S) (gen0 : Gen Map) = some (nex0, g1))
+    (h2 : kerf nex0 g1 = some ((out, pro), g2))
+    (h3 : emit ⟨[], [Pole.nok g2.re (g2.re + 1) pro], Termin.hop (jmp0 out)⟩
+        { { g2 with re := g2.re + 1 } with re := g2.re + 1 + 1 } = some (o, g3)) :
+    out = 2 ∧ pro = 1 ∧ o = 3 ∧ g2.re = 2 ∧ g3.re = 4 ∧ g3.bo = 4 ∧ g3.drop = false ∧
+    (∀ k, HoonMap.get g3.cond k = Option.none) ∧
+    HoonMap.get g3.blocks 1 = some ⟨[], [], Termin.don 0⟩ ∧
+    HoonMap.get g3.blocks 2 = some ⟨[], [Pole.mov 1 0], Termin.hop (jmp0 1)⟩ ∧
+    HoonMap.get g3.blocks 3 = some ⟨[], [Pole.nok 2 3 1], Termin.hop (jmp0 2)⟩ ∧
+    GrowU gen0 g3 ∧ Clear g3 := by
+  simp only [simpleNextL] at h1
+  obtain ⟨r, ga, ha, h1⟩ := bind_some h1
+  rw [re_apply] at ha
+  simp only [Option.some.injEq, Prod.mk.injEq] at ha
+  obtain ⟨rfl, rfl⟩ := ha
+  obtain ⟨od, gb, hb, h1⟩ := bind_some h1
+  rw [emit_apply] at hb
+  simp only [Option.some.injEq, Prod.mk.injEq] at hb
+  obtain ⟨rfl, rfl⟩ := hb
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h1
+  obtain ⟨rfl, rfl⟩ := h1
+  unfold kerf at h2
+  obtain ⟨o', gc, hc, h2⟩ := bind_some h2
+  rw [emit_apply] at hc
+  simp only [Option.some.injEq, Prod.mk.injEq] at hc
+  obtain ⟨rfl, rfl⟩ := hc
+  obtain ⟨r', gd, hd, h2⟩ := bind_some h2
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+  obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h2
+  simp only [kern] at hd
+  obtain ⟨r1, ge, he, hd⟩ := bind_some hd
+  rw [re_apply] at he
+  simp only [Option.some.injEq, Prod.mk.injEq] at he
+  obtain ⟨rfl, rfl⟩ := he
+  have te : HoonSet.toList (HoonSet.empty : S) = [] := List.eq_nil_iff_forall_not_mem.mpr HoonSet.mem_empty
+  simp [Gen.emitted, gen0, get, getThe, MonadStateOf.get, walkLazy_ofSure] at hd
+  obtain ⟨gx, gy, hx, hd⟩ := bind_some hd
+  simp only [StateT.get, pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at hx
+  obtain ⟨rfl, rfl⟩ := hx
+  simp only [Bool.false_eq_true, ↓reduceIte, sureRequireLook, te, List.foldl_nil] at hd
+  obtain ⟨u, gz, hz, hd⟩ := bind_some hd
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at hz
+  obtain ⟨rfl, rfl⟩ := hz
+  rw [map_apply] at hd
+  simp [noSoft, kernNeed, kernLoop, addOps, HoonMap.get_put, bind_some] at hd
+  obtain ⟨rfl, rfl⟩ := hd
+  rw [emit_apply] at h3
+  simp only [Option.some.injEq, Prod.mk.injEq] at h3
+  obtain ⟨rfl, rfl⟩ := h3
+  have gb : ∀ k, HoonMap.get (HoonMap.put (HoonMap.put (HoonMap.put (HoonMap.put (HoonMap.empty : Map Blob) 1
+      (⟨[], [], Termin.don 0⟩ : Blob)) 2 ⟨[], [], Termin.hop (jmp0 1)⟩) 2 ⟨[], [Pole.mov 1 0], Termin.hop (jmp0 1)⟩) 3
+      ⟨[], [Pole.nok 2 3 1], Termin.hop (jmp0 2)⟩) k =
+      if k = 3 then some ⟨[], [Pole.nok 2 3 1], Termin.hop (jmp0 2)⟩ else
+      if k = 2 then some ⟨[], [Pole.mov 1 0], Termin.hop (jmp0 1)⟩ else
+      if k = 1 then some ⟨[], [], Termin.don 0⟩ else Option.none := fun k => by
+    simp only [HoonMap.get_put, HoonMap.get_empty]
+    by_cases e3 : k = 3 <;> by_cases e2 : k = 2 <;> simp [e3, e2]
+  simp only [Gen.emitted, gen0, Bool.false_eq_true, ↓reduceIte, Nat.reduceAdd, true_and]
+  refine ⟨fun k => HoonMap.get_empty k, by rw [gb]; rfl, by rw [gb]; rfl, by rw [gb]; rfl, ?_,
+    fun k hk => by rw [gb, if_neg (by simp only at hk; omega), if_neg (by simp only at hk; omega),
+      if_neg (by simp only at hk; omega)]⟩
+  refine ⟨by simp, rfl, fun k b _ hk => by simp [HoonMap.get_empty] at hk, fun k b' hb' => Or.inr ?_⟩
+  rw [gb] at hb'
+  simp only
+  by_cases e3 : k = 3
+  · subst e3; simp at hb'; subst hb'
+    refine ⟨by omega, by omega, fun j hj => ?_⟩
+    simp only [finJumps, List.mem_singleton] at hj; subst hj
+    refine ⟨by simp [jmp0], Or.inl ⟨by simp [jmp0], fun t ⟨b, j, hb, hf, ht, hlt⟩ => ?_⟩⟩
+    have hb2 : some b = some ⟨[], [Pole.mov 1 0], Termin.hop (jmp0 1)⟩ := by rw [← hb, gb]; rfl
+    cases hb2
+    simp only [Termin.hop.injEq] at hf; subst hf; simp [jmp0] at ht; omega
+  by_cases e2 : k = 2
+  · subst e2; simp at hb'; subst hb'
+    refine ⟨by omega, by omega, fun j hj => ?_⟩
+    simp only [finJumps, List.mem_singleton] at hj; subst hj
+    refine ⟨by simp [jmp0], Or.inl ⟨by simp [jmp0], fun t ⟨b, j, hb, hf, ht, hlt⟩ => ?_⟩⟩
+    have hb2 : some b = some ⟨[], [], Termin.don 0⟩ := by rw [← hb, gb]; rfl
+    cases hb2
+    simp at hf
+  by_cases e1 : k = 1
+  · subst e1; simp at hb'; subst hb'
+    exact ⟨by omega, by omega, fun j hj => by simp [finJumps] at hj⟩
+  · simp [e3, e2, e1] at hb'
+
 end Comp
 end SkaModel
 end Formalization
