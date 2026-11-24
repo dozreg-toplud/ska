@@ -627,6 +627,61 @@ theorem consN_semR (lib : Lib) {p q : Nomm} (hp : NextOK (S := S) (Map := Map) l
     · exact Or.inr (Or.inl k)
     · exact Or.inr (Or.inr k)
 
+/-- **A unary case for a fork-free `%next` with the relaxed `sem`**, from
+the relaxed `sem` of `p` and a block that keeps the operand register `a`
+besides `Keep`. -/
+theorem unaryN_semR {lib : Lib} {nm p : Nomm} {sur : Sure S} {th : Jmp} {g0 g' g1 : Gen Map} {a o : Nat}
+    {nexp : NextL S} {f : Noun → Option Noun} (hev : ∀ s, pureEval nm s = (pureEval p s).bind f)
+    (hpre : Ext g0 g') (ha : g0.re ≤ a ∧ a < g'.re) (hsur : ∀ r, NMem sur.ned r → r < g0.re)
+    (hp : RunOKN (Map := Map) lib p (lazyReg a) (jmp0 o) g' g1 nexp)
+    (Sp : SemNR (Map := Map) lib p (lazyReg a) (jmp0 o) g' g1 nexp)
+    (hblk : ∀ (c : Straight Map), Agree c g0 g' → ∀ (σ : Type) (O : Oracle σ) st regs t gul x,
+      SkaModel.read a regs = some x →
+      GoalSem lib O c gul st (fun r => Keep g0 g' (CGoal.next sur th) r ∨ r = a) regs t (jmp0 o)
+        (CGoal.next sur th) (f x)) :
+    SemNR (Map := Map) lib nm sur th g0 g1 nexp := by
+  intro c ned σ O st t gul s0 s ag hned regs hh hn
+  have hN : ∀ r, NMem ned r → g1.re ≤ r ∨ (r < g0.re ∧ ¬ NMem sur.ned r) ∨ NMem nexp.laz.sure.ned r := hned
+  have l0 := hpre.1
+  have l1 := hp.ext.1
+  have agP : AgreeP lib O c gul st t ned g' g1 nexp.laz s0 s :=
+    ⟨fun o' h0 h1 hnl => ag.1 o' (Nat.le_trans hpre.2.1 h0) h1 hnl, ag.2⟩
+  have inP : ∀ r, NMem ned r → InR (CGoal.next (lazyReg a : Sure S) (jmp0 o)) g' g1 nexp.laz.sure.ned r := by
+    intro r hr
+    show g1.re ≤ r ∨ (r < g'.re ∧ ¬ NMem (Need.this a) r) ∨ NMem nexp.laz.sure.ned r
+    rcases hN r hr with e | ⟨e, _⟩ | e
+    · exact Or.inl e
+    · exact Or.inr (Or.inl ⟨by omega, fun hm => by simp only [NMem] at hm; omega⟩)
+    · exact Or.inr (Or.inr e)
+  have Hp := Sp c ned σ O st t gul s0 s agP inP regs hh hn
+  have agQ : Agree c g0 g' := fun o' h0 h1 => by
+    rw [ag.1 o' h0 (Nat.lt_of_lt_of_le h1 hp.ext.2.1) (fun hm => ?_)]
+    · exact hp.ext.2.2.2 o' h1
+    · obtain ⟨e, he, rfl⟩ := List.mem_map.mp hm
+      have := (hp.labs e he).1; omega
+  rw [hev]
+  cases e : pureEval p s with
+  | none => rw [e] at Hp; exact goalSem_none _ Hp
+  | some x =>
+    rw [e] at Hp
+    obtain ⟨R, hR, k, he⟩ := Hp.1 ⟨trivial, looks_empty x⟩
+    refine goalSem_pre (fun r hr => k r ?_) he _ _
+      (goalSem_mono (fun r hr => ?_) _ _ (hblk c agQ σ O st R t gul x hR))
+    · show (r < g'.re ∧ ¬ NMem (Need.this a) r) ∨ NMem ned r
+      rcases hr with ⟨h1, _⟩ | h1
+      · exact Or.inl ⟨by omega, fun hm => by simp only [NMem] at hm; omega⟩
+      · exact Or.inr h1
+    · show Keep g0 g' (CGoal.next sur th) r ∨ r = a
+      have ngm : g'.re ≤ r → ¬ NMem sur.ned r := fun h1 h2 => by have := hsur r h2; omega
+      rcases hr with ⟨h1, h2⟩ | h1
+      · exact Or.inl ⟨Or.inl h1, h2⟩
+      · rcases hN r h1 with e | ⟨e, e'⟩ | e
+        · exact Or.inl ⟨Or.inr (by omega), ngm (by omega)⟩
+        · exact Or.inl ⟨Or.inl e, e'⟩
+        · rcases hp.regs r e with b | ⟨b, _⟩
+          · simp only [lazyReg, NMem] at b; exact Or.inr b
+          · exact Or.inl ⟨Or.inr b, ngm b⟩
+
 end Comp
 end SkaModel
 end Formalization
