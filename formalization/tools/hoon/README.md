@@ -23,8 +23,8 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     branches, under a goal with forks, under `%10` and `%5`): 181 cases, 9584 runs, 1582 with a proxy,
                     13844 keys added, no failure (2026-11-24).  The stronger form without the goal's tags ("every key added
                     has a tag with `rb` as a suffix") fails in 758 runs, all under goals whose lazy blocks have tags from
-                    outside the run's region (the forking branch of `%6`, for example
-                    `[7 [6 [0 2] [7 [4 [0 3]] [0 1]] [1 0]] [6 [0 1] [0 1] [1 0]]]`); in every run whose goal's lazy blocks
+                    outside the run's region (the forking branch of `%6`, for example the case `%c` of
+                    `proxy-dump.hoon`, `[7 [6 [0 2] [1 0] [6 [0 6] [0 7] [0 1]]] [6 [0 2] [0 3] [0 1]]]`); in every run whose goal's lazy blocks
                     all have tags with `rb` as a suffix (a fork-free goal among them) every key added has one
 * `sitesmeet2.hoon` `SitesMeet` on every site after fifteen pokes
 * `sitesmeet3.hoon` the three invariants of `lemmas/Ska/SitesMeet.lean` on the same sites
