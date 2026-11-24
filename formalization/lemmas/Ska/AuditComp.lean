@@ -95,6 +95,7 @@ import lemmas.Ska.CompLBDone
 import lemmas.Ska.CompLBFour
 import lemmas.Ska.CompNCBond
 import lemmas.Ska.CompFrontS
+import lemmas.Ska.CompFlatCopy
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -1046,3 +1047,14 @@ open Formalization.SkaModel.Comp
 #print axioms frontS_empty
 #print axioms frontS_pair
 #print axioms FrontsS.toFront
+#print axioms entries_flat
+#print axioms splitSure_ok
+#print axioms splitBonds_flat
+#print axioms SplitBs.spec
+#print axioms splitLoop_flat
+#print axioms get_index_mem
+#print axioms copyLazy_ok
+#print axioms mergeBonds_flat
+#print axioms MergeBs.spec
+#print axioms copyLazyL_flat
+#print axioms copyL_flat
