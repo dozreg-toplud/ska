@@ -19,14 +19,15 @@ length of the chain (the Hoon has none).
 `removeHops`: the `+roll` over `topo` (its order matters: a block merged into
 an earlier one is skipped), with the flag `!=(~ saw)`.
 
-The preservation statement (`HopsKeeps`, not proved yet): with `TopoOK bl topo`
-and `rev = revCfg bl topo`, the parameters of every merged block distinct and
-no hop argument one of them (what `+eval-pass` checks in the code before),
-the result keeps the code (`Keeps`).  The poison case: an argument `~` writes
-`0` where the code before poisons, which `ReadsOK` makes invisible (see
-`Opt.lean`); the simulation relation on registers is then "the code after
-holds a value wherever the code before does, the same value, and is defined
-wherever the code before is".
+The preservation statement `HopsKeeps` (proved: `hopsKeeps`, `hops_keeps` in
+`OptHopsSim.lean`): with `TopoOK bl topo` and `rev = revCfg bl topo`, the
+parameters of every block distinct (`ParNodup`) and no jump argument a
+parameter of its target (`PassOK`, the check of `+eval-pass`, which the code
+before would fail where the moves of the code after go on), the result keeps
+the code (`Keeps`).  The poison case: an argument `~` writes `0` where the
+code before poisons, which `ReadsOK` makes invisible (see `Opt.lean`); the
+simulation relation on registers is `RegLe`: the code after holds the same
+unit, or a value where the code before holds poison.
 -/
 
 namespace Formalization
@@ -64,19 +65,31 @@ def hopChain (bl : Map Blob) (rev : Map (List Nat)) :
           hopChain bl rev n t.there { bnew with fin := b1.fin } (seg :: segs) (t.there :: saw)
     | _ => some (hopDone bnew segs, saw)
 
+/-- The gate of the `+roll` over `topo`. -/
+def hopsStep (fuel : Nat) (bl : Map Blob) (rev : Map (List Nat)) (acc : Map Blob × List Nat) (o : Nat) :
+    Option (Map Blob × List Nat) :=
+  if o ∈ acc.2 then some acc
+  else (HoonMap.get bl o).bind fun b =>
+    (hopChain bl rev fuel o b [] acc.2).map fun r => (HoonMap.put acc.1 o r.1, r.2)
+
 /-- `+remove-hops`. -/
 def removeHops (fuel : Nat) (bl : Map Blob) (rev : Map (List Nat)) (topo : List Nat) :
     Option (Bool × Map Blob) :=
-  (topo.foldlM (fun (acc : Map Blob × List Nat) o =>
-      if o ∈ acc.2 then some acc
-      else (HoonMap.get bl o).bind fun b =>
-        (hopChain bl rev fuel o b [] acc.2).map fun r => (HoonMap.put acc.1 o r.1, r.2))
-    (HoonMap.empty, [])).map fun r => (decide (r.2 ≠ []), r.1)
+  (topo.foldlM (hopsStep fuel bl rev) (HoonMap.empty, [])).map fun r => (decide (r.2 ≠ []), r.1)
 
-/-- **The preservation statement of `+remove-hops`** (open). -/
+/-- The parameters of every block are distinct. -/
+def ParNodup (bl : Map Blob) : Prop := ∀ o b, HoonMap.get bl o = some b → b.par.Nodup
+
+/-- Every jump passes the check of `+eval-pass`: no argument register is a
+parameter of its target. -/
+def PassOK (bl : Map Blob) : Prop :=
+  ∀ o b j b2, HoonMap.get bl o = some b → j ∈ getJmps b.fin → HoonMap.get bl j.there = some b2 →
+    ∀ r, some r ∈ j.args → r ∉ b2.par
+
+/-- **The preservation statement of `+remove-hops`** (proved: `hopsKeeps`
+in `OptHopsSim.lean`). -/
 def HopsKeeps [MapKeys Map] (fuel : Nat) : Prop :=
-  ∀ (c : Straight Map) topo ch bl', TopoOK c.blocks topo →
-    (∀ o b, HoonMap.get c.blocks o = some b → b.par.Nodup) →
+  ∀ (c : Straight Map) topo ch bl', TopoOK c.blocks topo → ParNodup c.blocks → PassOK c.blocks →
     removeHops fuel c.blocks (revCfg c.blocks topo) topo = some (ch, bl') →
     Keeps c (withBlocks c bl')
 

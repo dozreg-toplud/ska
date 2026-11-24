@@ -56,6 +56,11 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     at 3680 culls no callee edge from outside the component points into it (2,195,392 edges) and no
                     callee is missing; at 4472 pops no callee edge of a finalized entry points into `order` (2,354,100
                     edges) and no callee is missing (2026-11-24)
+* `optcheck.hoon`   over the 74 formulas of `thread-a.hoon`, the raw blocks against what the models of
+                    `lemmas/Ska/Opt*.lean` predict: `+remove-useless-branching` as `rubFin`, `+remove-hops` keeps
+                    block `0`, the parameters and only labels of `topo`; on raw code `topo` is ordered and the
+                    parameters are distinct; every jump passes the check of `+eval-pass` (`PassOK`) on raw code
+                    and after `+remove-hops`: no failure (2026-11-24)
 * `deadcrash.hoon`  nine formulas whose crashing operand has a dead product (`[7 [0 2] [1 5]]`
                     on an atom and the like): `+eval-top` agrees with `+mock` on all
                     (2026-11-24), so `+remove-dead-code` drops no check there

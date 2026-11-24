@@ -75,7 +75,7 @@
       [72 %r [0 [[1 2] [[3 4] 5]]] [7 [[6 [[0 2] [[6 [[1 1] [[6 [[0 2] [[1 0] [0 14]]]] [6 [[1 1] [[1 1] [0 7]]]]]]] [6 [[0 2] [[6 [[1 1] [[1 1] [0 7]]]] [6 [[0 2] [[1 0] [0 14]]]]]]]]]] [6 [[0 2] [[3 [0 7]] [3 [1 [0 1]]]]]]]]]
       [73 %r [0 [[1 2] [[3 4] 5]]] [4 [7 [[6 [[6 [[0 2] [[1 1] [1 1]]]] [[0 13] [6 [[3 [0 15]] [[6 [[1 1] [[0 14] [0 6]]]] [6 [[0 2] [[0 3] [1 0]]]]]]]]]] [4 [6 [[7 [[0 6] [1 1]]] [[[0 14] [1 [0 1]]] [6 [[1 1] [[0 13] [1 5]]]]]]]]]]]]
   ==
-=|  cnt=[n=@ud bad=@ud cyc=@ud dup=@ud rubch=@ud hopch=@ud]
+=|  cnt=[n=@ud bad=@ud cyc=@ud dup=@ud rubch=@ud hopch=@ud pas=@ud pas2=@ud]
 |-  ^-  @
 ?~  cases
   ~&  [%summary cnt]
@@ -104,6 +104,22 @@
   %-  ~(all by bl)
   |=  b=blob
   =(~(wyt in (sy par.b)) (lent par.b))
+::  every jump passes the check of +eval-pass: no argument register is a
+::  parameter of its target (PassOK of lemmas/Ska/OptHops.lean)
+=/  passok
+  |=  bl=(map @uwoo blob)
+  ^-  ?
+  %-  ~(all by bl)
+  |=  b=blob
+  %+  levy  (get-jmps fin.b)
+  |=  j=jmp
+  =/  t  (~(get by bl) there.j)
+  ?~  t  &
+  %+  levy  args.j
+  |=  a=(unit @uvre)
+  ?~  a  &
+  !(~(has in (sy par.u.t)) u.a)
+=/  pok=?  (passok bl)
 ::  +remove-useless-branching: same keys, each block as rubFin says
 =/  rub  (remove-useless-branching bl)
 =/  rubok=?
@@ -139,6 +155,7 @@
       %+  levy  ~(tap by +.hop)
       |=([o=@uwoo n=blob] =(par.n par:(~(got by bl) o)))
   ==
+=/  pok2=?  (passok +.hop)
 =/  ok  &(rubok hopok)
 =.  n.cnt  +(n.cnt)
 =?  bad.cnt  !ok  +(bad.cnt)
@@ -146,5 +163,7 @@
 =?  dup.cnt  !nodup  +(dup.cnt)
 =?  rubch.cnt  -.rub  +(rubch.cnt)
 =?  hopch.cnt  -.hop  +(hopch.cnt)
-~&  [nam.i.cases rub=rubok hop=hopok ord=ordered nodup=nodup ch=[-.rub -.hop] blk=[~(wyt by bl) ~(wyt by +.hop) (lent topo)]]
+=?  pas.cnt  !pok  +(pas.cnt)
+=?  pas2.cnt  !pok2  +(pas2.cnt)
+~&  [nam.i.cases rub=rubok hop=hopok ord=ordered nodup=nodup pass=[pok pok2] ch=[-.rub -.hop] blk=[~(wyt by bl) ~(wyt by +.hop) (lent topo)]]
 $(cases t.cases)

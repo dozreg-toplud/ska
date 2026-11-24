@@ -53,12 +53,15 @@ def addJa (acc : Map (List Nat)) (k o : Nat) : Map (List Nat) :=
 /-- `+get:ja`. -/
 def getJa (acc : Map (List Nat)) (k : Nat) : List Nat := (HoonMap.get acc k).getD []
 
+/-- The gate of the `+rep:by` of `+rev-cfg`. -/
+def revStep (bl : Map Blob) (topo : List Nat) (acc : Map (List Nat)) (o : Nat) : Map (List Nat) :=
+  match HoonMap.get bl o with
+  | some v => if o ∈ topo then (getJmps v.fin).foldl (fun acc j => addJa acc j.there o) acc else acc
+  | none => acc
+
 /-- `+rev-cfg`, its `+rep:by` in the order of `MapKeys.keys`. -/
 def revCfg [MapKeys Map] (bl : Map Blob) (topo : List Nat) : Map (List Nat) :=
-  (MapKeys.keys bl).foldl (fun acc o =>
-    match HoonMap.get bl o with
-    | some v => if o ∈ topo then (getJmps v.fin).foldl (fun acc j => addJa acc j.there o) acc else acc
-    | none => acc) HoonMap.empty
+  (MapKeys.keys bl).foldl (revStep bl topo) HoonMap.empty
 
 /-- The blocks reachable from `0`. -/
 inductive Reach (bl : Map Blob) : Nat → Prop
