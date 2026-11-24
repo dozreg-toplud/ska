@@ -259,5 +259,112 @@ theorem pj_trap (K : Noun) (hl2 : slot? 8191 K = some layer2)
   simp only [sub511, nock_exec, Option.bind_some, hl2, by.arm_at, by_arm, by.rep.arm_at, rep_arm, pjSample_run,
     h1, h2, h3, hr]
 
+/-! ## The gate `+ska-poke`: its battery and the trap it hands `road-pure` -/
+
+/-- The bunt of the sample of `+ska-callgraph`, kept whole. -/
+noncomputable def cgBunt : Noun := (slot? 53 ska_cg.arm).getD (A 0)
+
+/-- The clue of the `%fast` hint of `+ska-callgraph`, kept whole. -/
+noncomputable def cgClue : Noun := (slot? 123 ska_cg.arm).getD (A 0)
+
+theorem ska_cg_arm_eq : ska_cg.arm = C (A 7) (C (C (A 8) (C (C (A 1) cgBunt) (C (C (A 1) ska_cg.battery)
+    (C (A 0) (A 1))))) (C (A 11) (C (C (A 0x74736166) (C (A 1) cgClue)) (C (A 0) (A 1))))) := by kernel_rfl
+
+theorem ska_cg_arm_run (K : Noun) : nock K ska_cg.arm = some (C ska_cg.battery (C cgBunt K)) := by
+  rw [ska_cg_arm_eq]; simp only [nock_exec]
+
+/-- The bunt of the sample of `+ska-poke`, kept whole. -/
+noncomputable def spBunt : Noun := (slot? 165 ana).getD (A 0)
+
+/-- The trap `|.` that `+ska-poke` hands `road-pure`: its battery, kept
+whole (`spX_eq` splits it). -/
+noncomputable def spX : Noun := (slot? 683997 ana).getD (A 0)
+
+/-- The baking part of `+ska-poke`: the formula that runs after the
+analysis, on `[dats [root-datum [pruned [[g regs] [root-identity T0']]]]]`. -/
+noncomputable def spRest : Noun := (slot? 44826492927 ana).getD (A 0)
+
+/-- The clue of the `%fast` hint of the trap `%poke-just-code`, kept whole. -/
+noncomputable def spClue : Noun := (slot? 2868895546299 ana).getD (A 0)
+
+/-- The battery of the gate `+ska-poke`: `(road-pure |.(...))`. -/
+noncomputable def spBat : Noun :=
+  C (A 8) (C (C (A 0) (A 254)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3))
+    (C (C (A 1) spX) (C (A 0) (A 1)))))) (C (A 0) (A 2)))))))
+
+theorem sp_at : slot? 20 ana = some (C (A 8) (C (C (A 1) spBunt) (C (C (A 1) spBat) (C (A 0) (A 1))))) := by
+  kernel_rfl
+
+/-- The call of `+ska-callgraph`. -/
+def spCG : Noun :=
+  let regs := C (C (A 0) (A 2)) (C (C (A 0) (A 6)) (C (C (A 0) (A 14)) (C (C (A 0) (A 30)) (C (A 1) (A 0)))))
+  let sam := C (A 7) (C (C (A 0) (A 3)) (C (C (A 0) (A 2)) (C (C (A 0) (A 490)) (C (A 7) (C (C (A 0) (A 244)) regs)))))
+  C (A 8) (C (C (A 9) (C (A 341) (C (A 0) (A 31)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) sam) (C (A 0) (A 2)))))))
+
+/-- The call of `+prune-callgraph`. -/
+def spPR : Noun :=
+  C (A 8) (C (C (A 9) (C (A 22007) (C (A 0) (A 63))))
+    (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 12)) (C (A 0) (A 14)))) (C (A 0) (A 2)))))))
+
+/-- `(~(got by pruned) root-identity)`. -/
+def spGOT : Noun :=
+  let door := C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 524287))))
+    (C (A 9) (C (A 701) (C (A 10) (C (C (A 6) (C (A 0) (A 6))) (C (A 0) (A 2)))))))
+  let sl := C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 30))) (C (A 0) (A 2)))))
+  C (A 8) (C door sl)
+
+/-- The trap `%poke-just-code`, built and kicked. -/
+noncomputable def spTC : Noun :=
+  let h := C (A 11) (C (C (A 0x74736166) (C (A 1) spClue)) (C (A 0) (A 1)))
+  let mk := C (A 8) (C (C (A 1) pjTB) h)
+  C (A 7) (C (C (A 0) (A 1)) (C (A 7) (C mk (C (A 9) (C (A 2) (C (A 0) (A 1)))))))
+
+/-- `=^  dats  memo.lon`: the new memo into `lon`, then `dats` pushed. -/
+noncomputable def spEnd : Noun :=
+  let ed := C (A 10) (C (C (A 8170) (C (A 0) (A 5))) (C (A 0) (A 1)))
+  let sw := C (C (A 0) (A 4)) (C (A 0) (A 3))
+  C (A 7) (C ed (C (A 7) (C sw spRest)))
+
+/-- The split of `spX`. -/
+noncomputable def spXF : Noun :=
+  let t := C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C spTC spEnd)))
+  let t := C (A 8) (C spGOT t)
+  let t := C (A 8) (C spPR t)
+  let t := C (A 8) (C spCG t)
+  C (A 8) (C (C (C (A 0) (A 56)) (C (A 0) (A 57))) t)
+
+theorem spX_eq : spX = spXF := by kernel_rfl
+
+/-- The subject of the trap: `[spX [spBat [[root-identity [lon hot]] K]]]`
+with `lon = [jets [memo lonRest]]` and `jets = [r1 [r2 [r3 [r4 jRest]]]]`. -/
+noncomputable def spT0 (K : Noun) (root : Ident) (r1 r2 r3 r4 jRest memoN lonRest hotN : Noun) : Noun :=
+  C spX (C spBat (C (C (identNoun root) (C (C (C r1 (C r2 (C r3 (C r4 jRest)))) (C memoN lonRest)) hotN)) K))
+
+theorem nock_cons_triv (s : Noun) (a b : Nat) :
+    nock s (C (C (A 0) (A a)) (C (A 0) (A b))) =
+      (slot? a s).bind fun x => (slot? b s).bind fun y => some (C x y) := by
+  simp only [nock_exec]
+
+set_option maxHeartbeats 2000000 in
+/-- **The analysis part of the trap**, with the analysis core `K` a variable:
+the calls of `+ska-callgraph`, `+prune-callgraph`, `+got:by` and the trap
+`%poke-just-code`, then `spEnd`. -/
+theorem sp_chain (K : Noun) (hcg : slot? 341 K = some ska_cg.arm) (hpr : slot? 22007 K = some prune_cg.arm)
+    (hl2 : slot? 8191 K = some layer2) (root : Ident) (r1 r2 r3 r4 jRest memoN lonRest hotN : Noun) :
+    nock (spT0 K root r1 r2 r3 r4 jRest memoN lonRest hotN) spX =
+      (nock (C ska_cg.battery (C (C (identNoun root) (C memoN (C r1 (C r2 (C r3 (C r4 (A 0))))))) K))
+        ska_cg.battery).bind fun cgr =>
+      (slot? 2 cgr).bind fun gN =>
+      (nock (C prune_cg.battery (C (C gN (identNoun root)) K)) prune_cg.battery).bind fun prN =>
+      (nock (C by.got.battery (C (identNoun root) (C by.battery (C prN layer2)))) by.got.battery).bind fun rdN =>
+      let T4 := C rdN (C prN (C cgr (C (identNoun root) (spT0 K root r1 r2 r3 r4 jRest memoN lonRest hotN))))
+      (nock (C pjTB T4) pjTB).bind fun res => nock (C res T4) spEnd := by
+  conv => lhs; arg 2; rw [spX_eq]
+  unfold spXF
+  have hr : C (Sock.toNoun root.1) root.2 = identNoun root := rfl
+  unfold spCG spPR spGOT spTC
+  simp only [spT0, nock_exec, Option.bind_some, hr, hcg, ska_cg_arm_run, hpr, prune_arm_run, hl2, by.arm_at,
+    by_arm, by.got.arm_at, got_arm, Option.bind_assoc]
+
 end Compiler
 end Formalization
