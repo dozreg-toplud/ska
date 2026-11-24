@@ -57,6 +57,7 @@ import lemmas.Ska.CompTagU
 import lemmas.Ska.CompSixNextV
 import lemmas.Ska.CompFragUJGen
 import lemmas.Ska.CompSevenV
+import lemmas.Ska.CompFiveV
 import lemmas.Ska.CompFragUJ
 
 /-!
@@ -574,3 +575,7 @@ open Formalization.SkaModel.Comp
 #print axioms cleanA_seven
 #print axioms uok_seven
 #print axioms finishLF_bellContract_sixNextProxy
+#print axioms runOKGV_n5
+#print axioms five_tagG
+#print axioms cleanA_five
+#print axioms uok_five

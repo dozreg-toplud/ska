@@ -1,5 +1,6 @@
 import lemmas.Ska.CompFragUJGen
 import lemmas.Ska.CompSevenV
+import lemmas.Ska.CompFiveV
 
 /-!
 # The joint induction over `FragU`
@@ -114,6 +115,25 @@ theorem uok_seven (lib : Lib) {p q : Nomm} (up : UOK (S := S) (Map := Map) lib p
       (by simp only [sixCount] at hcount; omega) b0 d0 hu hcl hcb ⟨jmpIn_nil hz, jmpIn_nil ho⟩
       ⟨jmpIn_nil hz, jmpIn_nil ho⟩ h⟩
 
+/-- **`[5 p q]` whose parts meet `UOK` meets `UOK`**: `runOKGV_n5` for
+every fork-free goal from `OKNV` and `CleanN` of the parts, `five_tagG`
+from their `TagNV`, `cleanA_five`. -/
+theorem uok_five (lib : Lib) {p q : Nomm} (up : UOK (S := S) (Map := Map) lib p)
+    (uq : UOK (S := S) (Map := Map) lib q) : UOK (S := S) (Map := Map) lib (Nomm.n5 p q) :=
+  ⟨by simp only [Nomm.pure, up.pure, uq.pure, Bool.and_self], cleanA_five up.pure up.clean uq.clean,
+    fun hg hj hcount b0 d0 hu hcl hcb h => RunOKGV.toV hg (runOKGV_n5 lib up.next uq.next (CleanA.toN up.clean)
+      (CleanA.toN uq.clean) up.pure (goal := CGoal.done) trivial hj hcount b0 d0 hu hcl hcb trivial trivial h),
+    fun z o hz ho => fun hg hj hcount b0 d0 hu hcl hcb h => RunOKGV.toV hg (runOKGV_n5 lib up.next uq.next
+      (CleanA.toN up.clean) (CleanA.toN uq.clean) up.pure (goal := CGoal.pick z o) trivial hj hcount b0 d0 hu hcl
+      hcb ⟨jmpIn_nil hz, jmpIn_nil ho⟩ ⟨jmpIn_nil hz, jmpIn_nil ho⟩ h),
+    fun {sur th} _ _ _ _ hj hth hok _ hcount b0 d0 hu hcl hcb hkg h => RunOKGV.toNV (runOKGV_n5 lib up.next
+      uq.next (CleanA.toN up.clean) (CleanA.toN uq.clean) up.pure (goal := CGoal.next sur th) hok hj hcount b0 d0
+      hu hcl hcb ⟨fun r hr => hok.2 r hr, jmpIn_nil hth⟩ ⟨hkg, jmpIn_nil hth⟩ h),
+    fun {sur th} _ _ _ _ hj _ hok _ hcount b0 d0 hu hcl hcb _ h => five_tagG lib up.next uq.next up.tagN
+      uq.tagN up.pure (goal := CGoal.next sur th) hok hj hcount b0 d0 hu hcl hcb h,
+    fun z o _ _ => fun _ hj hcount b0 d0 hu hcl hcb h => five_tagG lib up.next uq.next up.tagN uq.tagN up.pure
+      (goal := CGoal.pick z o) trivial hj hcount b0 d0 hu hcl hcb h⟩
+
 /-! ## The fragment `FragU` and the top theorem -/
 
 /-- **`FragX` with the proxy runs that compose**: `[7 [4 p] q]` with `p` and
@@ -126,6 +146,7 @@ inductive FragU : Nomm → Prop
   | six {c a b : Nomm} : FragU c → FragU a → FragU b → FragU (Nomm.n6 c a b)
   | cons {p q : Nomm} : FragU p → FragU q → FragU (Nomm.cons p q)
   | seven {p q : Nomm} : FragU p → (∀ goal : CGoal S, Frag q goal) → FragU (Nomm.n7 p q)
+  | five {p q : Nomm} : FragU p → FragU q → FragU (Nomm.n5 p q)
 
 /-- **Every nomm of `FragU` meets `UOK`** (the joint induction). -/
 theorem runU_uok (lib : Lib) {nm : Nomm} (hf : FragU (S := S) nm) : UOK (S := S) (Map := Map) lib nm := by
@@ -135,6 +156,7 @@ theorem runU_uok (lib : Lib) {nm : Nomm} (hf : FragU (S := S) nm) : UOK (S := S)
   | six _ _ _ ihc iha ihb => exact uok_six lib ihc iha ihb
   | cons _ _ ihp ihq => exact uok_cons lib ihp ihq
   | seven _ hq ihp => exact uok_seven lib ihp hq
+  | five _ _ ihp ihq => exact uok_five lib ihp ihq
 
 theorem fragU_pure {nm : Nomm} (h : FragU (S := S) nm) : nm.pure = true := by
   induction h with
@@ -143,6 +165,7 @@ theorem fragU_pure {nm : Nomm} (h : FragU (S := S) nm) : nm.pure = true := by
   | six _ _ _ ihc iha ihb => simp only [Nomm.pure, ihc, iha, ihb, Bool.and_self]
   | cons _ _ ihp ihq => simp only [Nomm.pure, ihp, ihq, Bool.and_self]
   | seven _ hq ih => simp only [Nomm.pure, ih, (frag_pure_noSix _ _ (hq CGoal.done)).1, Bool.and_self]
+  | five _ _ ihp ihq => simp only [Nomm.pure, ihp, ihq, Bool.and_self]
 
 /-- **Every run of `FragU` for `%done`, and for `%pick` with jumps without
 arguments, meets `RunOKV`.** -/
@@ -257,6 +280,14 @@ theorem finishLF_bellContract_sixNextProxy {lib : Lib} {code : Bell → Option N
         (FragU.x (FragX.frag fun _ => trivial)))
       (fun g => by cases g <;> exact fun _ _ => trivial))
     (by decide) hbl hn hbake h N
+
+/-- **A `%5` whose operand makes proxies**:
+`[5 [7 [4 [0 3]] [6 [0 1] [0 1] [1 0]]] [1 1]]` is in `FragU`. -/
+example : FragU (S := S) (Nomm.n5 (Nomm.n7 (Nomm.n4 (Nomm.n0 3)) (Nomm.n6 (Nomm.n0 1) (Nomm.n0 1) (Nomm.n1 (A 0))))
+    (Nomm.n1 (A 1))) :=
+  FragU.five (FragU.seven4 (FragX.frag fun _ => trivial)
+      (FragX.six (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial)))
+    (FragU.x (FragX.frag fun _ => trivial))
 
 end Comp
 end SkaModel
