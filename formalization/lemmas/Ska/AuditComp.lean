@@ -916,3 +916,13 @@ open Formalization.SkaModel.Comp
 #print axioms lokc_n0A
 #print axioms sevenL_exampleF
 #print axioms sevenL_exampleG
+#print axioms runOKLC_sevenM
+#print axioms bondOKC_sevenC
+#print axioms bondOKC_sevenA
+#print axioms lokc_headP
+#print axioms bondOKC_headQ
+#print axioms uokc_headQ
+#print axioms uokc_head7
+#print axioms bondOKC_head7
+#print axioms consS7_exampleC
+#print axioms consS7_exampleH

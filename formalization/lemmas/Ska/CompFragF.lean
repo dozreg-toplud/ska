@@ -1,4 +1,4 @@
-import lemmas.Ska.CompSevenL
+import lemmas.Ska.CompSevenB
 
 /-!
 # The fragment closed under `[7 p q]`: `FragI`
@@ -62,7 +62,10 @@ call-free nomm of `FragU` and `q` is in the fragment (`sevenU`, no `EntNew`).
 When `q`'s result may have entries, `p` must run under them (`LOKC`,
 `CompSevenL.lean`): `[0 axe]` with `1 ≤ axe` and any `q` of the fragment
 (`sevenL0`), the indirect call with call-free parts and any `q` of the
-fragment (`sevenLI`) or call-free `q` (`sevenLIU`).
+fragment (`sevenLI`) or call-free `q` (`sevenLIU`).  A `[7 p q]` is the head of
+a cons whose tail calls (`consS7`, `CompSevenB.lean`) when `p` is `[0 axe]` or
+an indirect call with call-free parts (`HeadP`) and `q` a head of `FragB` or
+such a call (`HeadQ`).
 
 * `FragI`, `fragI_hinted`, `fragI_not_pure`, `bareLitQ_fragI`, `FragUF`,
   `fragUE_fragUF`.
@@ -72,7 +75,7 @@ fragment (`sevenLI`) or call-free `q` (`sevenLIU`).
   `eight_exampleA` (`%e8a`), `eight_exampleB` (`%e8b`), `nine_exampleA`
   (`%e9a`), `nine_exampleB` (`%e9b`), `seven_exampleN` (`%s7n`),
   `seven_exampleT` (`%s7t`), `sevenL_exampleF` (`%s7f`), `sevenL_exampleG`
-  (`%s7g`).
+  (`%s7g`), `consS7_exampleC` (`%s7c`), `consS7_exampleH` (`%h7c`).
 -/
 
 set_option linter.unusedSectionVars false
@@ -198,6 +201,8 @@ inductive FragI : Bool → Nomm → Prop
       FragI t (Nomm.n7 (Nomm.n2 b c Option.none) q)
   | sevenLIU {b c q : Nomm} : FragU (S := S) b → FragU (S := S) c → bareLitQ c = false → FragU (S := S) q →
       FragI false (Nomm.n7 (Nomm.n2 b c Option.none) q)
+  | consS7 {p q d : Nomm} : HeadP (S := S) p → HeadQ (S := S) q →
+      ((Nomm.n7 p q).pure = true → FragU (S := S) (Nomm.n7 p q)) → FragI true d → FragI true (Nomm.cons (Nomm.n7 p q) d)
 
 theorem fragI_hinted (cod : Bell → Option Bool) {t : Bool} {nm : Nomm} (h : FragI (S := S) t nm) :
     hinted cod nm = some true := by
@@ -217,6 +222,13 @@ theorem fragI_hinted (cod : Bell → Option Bool) {t : Bool} {nm : Nomm} (h : Fr
   | sevenL0 _ _ ih => simp only [hinted, ih]; rfl
   | sevenLI _ _ _ _ ih => simp only [hinted]; rfl
   | sevenLIU _ _ _ _ => simp only [hinted]; rfl
+  | consS7 hp hq _ _ ih =>
+    rcases hinted_head7 cod hp hq with hh | hpu
+    · simp only [hinted] at hh ⊢; rw [hh]; rfl
+    · simp only [hinted]
+      have e := hinted_pure cod _ hpu
+      simp only [hinted] at e
+      rw [e, ih]; rfl
 
 theorem fragI_not_pure {t : Bool} {nm : Nomm} (h : FragI (S := S) t nm) : nm.pure = false := by
   cases e : nm.pure with
@@ -326,6 +338,12 @@ theorem uokc_entNew_of_fragI {lib : Lib} {code : Bell → Option Nomm} (hok : Co
       (fun h => ⟨uokcU hok env hq h, trivial⟩) ⟨(fun _ _ e => by cases e), (fun _ e => by cases e)⟩
       (by simp only [hinted]; rfl) hA rfl
     exact ⟨R.1, fun e => by cases e⟩
+  | @consS7 p q d hp hq hu hd ih =>
+    intro P f hA
+    have hh : hinted env.cod (Nomm.cons (Nomm.n7 p q) d) = some true := fragI_hinted env.cod (FragI.consS7 hp hq hu hd)
+    have R := uokc_consEA env (fun h => uokc_head7 hok env hp hq hu h) (fun h _ => bondOKC_head7 hok env hp hq h)
+      (fun h => ⟨(ih h).1, fun _ => (ih h).2 rfl⟩) hh hA rfl
+    exact ⟨R.1, fun _ => R.2⟩
 
 /-- **Every `Annot` of a nomm of `FragUF` meets `UOKC`.** -/
 theorem uokc_of_fragUF {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) (env : CallEnv) {nm : Nomm}
@@ -523,6 +541,46 @@ theorem sevenL_exampleG {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK 
       (Nomm.cons (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) (Nomm.n0 1))) :=
     Or.inr (FragI.weak (FragI.sevenLI (FragU.x (FragX.frag fun _ => trivial)) (FragU.x (FragX.frag fun _ => trivial))
       rfl (FragI.consH fragI_ind00 (FragU.x (FragX.frag fun _ => trivial)))))
+  exact finishLUC_contractUF hok hA hf (by decide) h N
+
+/-- **`[[7 [0 3] [4 [0 1]]] [2 [0 3] [0 2]]]` end to end** (`%s7c` of
+`CompRunOKLC.lean`): a call-free `[7 p q]` as the head under the bond goal
+behind the tail's call, its `[4 [0 1]]` taking the bond entry
+(`bondOKC_sevenC`). -/
+theorem consS7_exampleC {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) {bl : Bell}
+    (hfol : bl.fol = C (n3 (A 7) (slot 3) (n2 (A 4) (slot 1))) (n3 (A 2) (slot 3) (slot 2))) {env : CallEnv}
+    {cd : Straight Map}
+    (h : finishLUC (S := S) env (Nomm.cons (Nomm.n7 (Nomm.n0 3) (Nomm.n4 (Nomm.n0 1)))
+      (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) = some cd)
+    (N : Needs) : cd.need = NeedOrd.this ∧ BellContract lib N bl true cd := by
+  have hA : Annot lib code (SkaModel.Fits bl.less) bl.fol (Nomm.cons (Nomm.n7 (Nomm.n0 3) (Nomm.n4 (Nomm.n0 1)))
+      (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) := by
+    rw [hfol]
+    exact Annot.cons (Annot.n7 Annot.n0 (Annot.n4 Annot.n0)) (Annot.indirect Annot.n0 Annot.n0)
+  have hf : FragUF S (Nomm.cons (Nomm.n7 (Nomm.n0 3) (Nomm.n4 (Nomm.n0 1)))
+      (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) :=
+    Or.inr (FragI.weak (FragI.consS7 (HeadP.n0 (by decide)) (HeadQ.b (FragB.n4 (FragX.frag fun _ => trivial)))
+      (fun _ => FragU.x (FragX.sevenFrom (by decide) (FragX.four (FragX.frag fun _ => trivial)))) fragI_ind00))
+  exact finishLUC_contractUF hok hA hf (by decide) h N
+
+/-- **`[[7 [2 [0 3] [0 2]] [4 [0 1]]] [2 [0 3] [0 2]]]` end to end** (`%h7c`
+of `CompRunOKLC.lean`): a `[7 p q]` that calls as the head under the bond
+goal, `q = [4 [0 1]]` taking the bond entry, `p` the call under its result. -/
+theorem consS7_exampleH {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) {bl : Bell}
+    (hfol : bl.fol = C (n3 (A 7) (n3 (A 2) (slot 3) (slot 2)) (n2 (A 4) (slot 1))) (n3 (A 2) (slot 3) (slot 2)))
+    {env : CallEnv} {cd : Straight Map}
+    (h : finishLUC (S := S) env (Nomm.cons (Nomm.n7 (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) (Nomm.n4 (Nomm.n0 1)))
+      (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) = some cd)
+    (N : Needs) : cd.need = NeedOrd.this ∧ BellContract lib N bl true cd := by
+  have hA : Annot lib code (SkaModel.Fits bl.less) bl.fol (Nomm.cons (Nomm.n7 (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2)
+      Option.none) (Nomm.n4 (Nomm.n0 1))) (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) := by
+    rw [hfol]
+    exact Annot.cons (Annot.n7 (Annot.indirect Annot.n0 Annot.n0) (Annot.n4 Annot.n0)) (Annot.indirect Annot.n0 Annot.n0)
+  have hf : FragUF S (Nomm.cons (Nomm.n7 (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) (Nomm.n4 (Nomm.n0 1)))
+      (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) :=
+    Or.inr (FragI.weak (FragI.consS7 (HeadP.ind (FragU.x (FragX.frag fun _ => trivial))
+      (FragU.x (FragX.frag fun _ => trivial)) rfl) (HeadQ.b (FragB.n4 (FragX.frag fun _ => trivial)))
+      (fun e => by simp [Nomm.pure] at e) fragI_ind00))
   exact finishLUC_contractUF hok hA hf (by decide) h N
 
 end Comp
