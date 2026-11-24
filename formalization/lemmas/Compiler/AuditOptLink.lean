@@ -9,6 +9,11 @@ import lemmas.Compiler.OptLinkMiddleRd
 import lemmas.Compiler.OptLinkNoLti
 import lemmas.Compiler.OptLinkSy
 import lemmas.Compiler.OptLinkOnce
+import lemmas.Compiler.OptLinkOnceGate
+import lemmas.Compiler.OptLinkOpt
+import lemmas.Hoon.UnoBy
+import lemmas.Compiler.OptLinkTrimLink
+import lemmas.Compiler.OptLinkFuel
 
 /-!
 # Axioms of the pill link of the optimizer
@@ -79,3 +84,65 @@ open Formalization Compiler
 #print axioms oo_loop
 #print axioms structLoop_noLti
 #print axioms skim_has
+#print axioms ooAfter_cut
+#print axioms skim_arm
+#print axioms oo_s0
+#print axioms oo_alias
+#print axioms oo_skimrev
+#print axioms oo_trimdead
+#print axioms oo_hops
+#print axioms oo_rub
+#print axioms oo_rem
+#print axioms oo_fin
+#print axioms oo_pre
+#print axioms oo_gate
+#print axioms optimizeOnce_noLti
+#print axioms opt_at
+#print axioms sw_at
+#print axioms opt_loop
+#print axioms opt_gate
+#print axioms Hoon.uno_at
+#print axioms Hoon.uno_loop
+#print axioms Hoon.look_get
+#print axioms Hoon.unoByP_of_maps
+#print axioms Hoon.uno_by
+#print axioms Hoon.run_by_P
+#print axioms tr_at
+#print axioms trimBody_eq
+#print axioms keyN_inj
+#print axioms tr_trace
+#print axioms tr_nct
+#print axioms cnt_gut
+#print axioms cnt_put
+#print axioms cnt_del
+#print axioms cnt_key
+#print axioms uns_add
+#print axioms tr_maxg
+#print axioms cnt_uno
+#print axioms out_gut
+#print axioms out_put
+#print axioms tr_istep
+#print axioms tr_ibody
+#print axioms tr_fint
+#print axioms tr_iend
+#print axioms tr_rgate
+#print axioms tr_oturn
+#print axioms tr_otrap
+#print axioms tr_opg
+#print axioms tr_ogate
+#print axioms tr_opened
+#print axioms tr_sgate
+#print axioms tr_rngate
+#print axioms get_hoonMap
+#print axioms get_trimRun
+#print axioms noLti_trim
+#print axioms tr_gate
+#print axioms trimLink
+#print axioms oo_gate_trim
+#print axioms opt_gate_trim
+#print axioms bbTopo_some
+#print axioms removeHops_some
+#print axioms removeEmptyMiddle_some
+#print axioms bb_gate_total
+#print axioms rh_gate_total
+#print axioms rem_gate_total

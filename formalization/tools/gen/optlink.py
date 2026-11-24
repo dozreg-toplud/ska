@@ -17,6 +17,10 @@ helpers are arms of `compTypes` (axis `3` of `compK`).  An arm of `optC` is
   the inner trap.
 * `rev`: `+rev-cfg` (`732` of `optC`): its body, the gate of the `+rep:by`
   and the gate of the `+roll`.
+* `bb`, `rh`, `rem`: `+bb-topo`, `+remove-hops`, `+remove-empty-middle`.
+* `oo`: `+optimize-once` (`180`): the structural loop and the rest `ooAfter`.
+* `ooa`: `ooAfter` cut at each `=^` and `=.` (`ooR1` to `ooR12`, `ooFin`).
+* `opt`: `+optimize` (`2941`): its trap and the call of `+switch-chains`.
 
 Every part is checked against the pill when the Lean file states the arm as
 a kernel fact; the script asserts the shape it cuts."""
@@ -351,6 +355,245 @@ elif WHICH == 'oo':
              ('ooAfter', after, '`+alias`, `+trim-trace-hints`, `+remove-dead-code` and the three passes once more.'),
              ('ooBody', body, 'The gate body of `+optimize-once`.'),
              ('ooBunt', bunt, 'Its sample bunt.'), ('ooHint', hint, 'Its `%fast` hint.')]
+elif WHICH == 'ooa':
+    # ooAfter cut at each =^ and =. of +optimize-once after the loop
+    bunt, body, hint = opt_arm(180)
+    _, _, b1 = seq(body, 3)
+    _, _, b2 = seq(b1, 3)
+    _, _, b3 = seq(b2, 3)
+    _, _, after = seq(b3, 3)
+    def tail7(n):
+        s, a, b = seq(n, 3)
+        assert s == ('A', 7), s
+        return a, b
+    e251, r = tail7(after)
+    p43, r1 = tail7(r)
+    pieces = [('ooR1', r1)]
+    # R1 = [7 [0 1] [8 CALL R2]]
+    _, r = tail7(r1)
+    _, call, r2 = seq(r, 3)
+    pieces.append(('ooR2', r2))
+    # R2 = [7 E [7 P R3]]
+    _, r = tail7(r2)
+    _, r3 = tail7(r)
+    pieces.append(('ooR3', r3))
+    _, r4 = tail7(r3)
+    pieces.append(('ooR4', r4))
+    _, r5 = tail7(r4)
+    pieces.append(('ooR5', r5))
+    _, r6 = tail7(r5)
+    pieces.append(('ooR6', r6))
+    _, r7 = tail7(r6)
+    pieces.append(('ooR7', r7))
+    _, r = tail7(r7)
+    _, _, r8 = seq(r, 3)
+    pieces.append(('ooR8', r8))
+    _, r = tail7(r8)
+    _, r9 = tail7(r)
+    pieces.append(('ooR9', r9))
+    _, r = tail7(r9)
+    _, _, r10 = seq(r, 3)
+    pieces.append(('ooR10', r10))
+    _, r = tail7(r10)
+    _, r11 = tail7(r)
+    pieces.append(('ooR11', r11))
+    _, r = tail7(r11)
+    _, _, r12 = seq(r, 3)
+    pieces.append(('ooR12', r12))
+    _, r = tail7(r12)
+    _, fin = tail7(r)
+    pieces.append(('ooFin', fin))
+    docs = {'ooR1': '`=^  f-alias=?  blocks.s  (alias n-args.s blocks.s rev topo)` and the rest.',
+            'ooR2': 'The edit of `blocks.s` by the product of `+alias`, then the rest.',
+            'ooR3': '`=.  topo  (skim topo ~(has by blocks.s))` and the rest.',
+            'ooR4': '`=.  rev  (rev-cfg blocks.s (sy topo))` and the rest.',
+            'ooR5': '`=.  blocks.s  (trim-trace-hints blocks.s topo rev)` and the rest.',
+            'ooR6': '`=.  blocks.s  (remove-dead-code blocks.s (flop topo))` and the rest.',
+            'ooR7': '`=^  c-hops=?  blocks.s  (remove-hops blocks.s rev topo)` and the rest.',
+            'ooR8': 'The edit of `blocks.s` by the product of `+remove-hops`, then the rest.',
+            'ooR9': '`=^  c-branch=?  blocks.s  (remove-useless-branching blocks.s)` and the rest.',
+            'ooR10': 'The edit of `blocks.s` by the product of `+remove-useless-branching`, then the rest.',
+            'ooR11': '`=^  c-middle=?  blocks.s  (remove-empty-middle blocks.s)` and the rest.',
+            'ooR12': 'The edit of `blocks.s` by the product of `+remove-empty-middle`, then the rest.',
+            'ooFin': '`[|(f-alias c-hops c-branch c-middle) s]`.'}
+    for nm, n in reversed(pieces):
+        defs.append((nm, n, docs[nm]))
+    defs.append(('ooAfterCut', after, '`ooAfter` with its pieces named.'))
+elif WHICH == 'opt':
+    bunt, body, hint = opt_arm(2941)
+    # body = [7 [10 [6 [8 [1 TRAP] [9 2 [0 1]]]] [0 1]] [10 [7 SW] [0 6]]]
+    _, ed, sw0 = seq(body, 3)
+    _, e6, _ = seq(ed, 3)
+    _, run = seq(e6, 2)
+    _, trapq, _ = seq(run, 3)
+    trap = norm(trapq)[2]
+    _, e7, _ = seq(sw0, 3)
+    _, sw = seq(e7, 2)
+    _, _, swhint = opt_arm(182)
+    defs += [('optSwHint', swhint, 'The `%fast` hint of `+switch-chains`.')]
+    defs += [('optTrap', trap, 'The trap of `+optimize`: `+optimize-once` until no change.'),
+             ('optSw', sw, '`(switch-chains blocks.s)`.'),
+             ('optBody', body, 'The gate body of `+optimize`.'),
+             ('optBunt', bunt, 'Its sample bunt.'), ('optHint', hint, 'Its `%fast` hint.')]
+elif WHICH == 'uno':
+    # +uno:by, arm 2 of by.battery: [8 [0 6] [[1 OUTER] [0 1]]]
+    arm = norm(slot(2, ('R', 'by.battery')))
+    _, s6, mk = seq(arm, 3)
+    assert norm(s6) == ('C', ('A', 0), ('A', 6))
+    o1, _ = seq(mk, 2)
+    outer = norm(o1)[2]
+    # OUTER = [8 [1 MEGBUNT] [[1 MEGGATE] [0 1]]]
+    _, mb, mk2 = seq(outer, 3)
+    megbunt = norm(mb)[2]
+    g1, _ = seq(mk2, 2)
+    meggate = norm(g1)[2]
+    # MEGGATE = [8 [1 TRAP] [9 2 [0 1]]]
+    _, tq, _ = seq(meggate, 3)
+    trap = norm(tq)[2]
+    defs += [('unoTrap', trap, 'The trap of `+uno:by`.'),
+             ('unoMegGate', meggate, 'The body of the gate `|*  meg` that `+uno:by` makes: the trap, kicked.'),
+             ('unoMegBunt', megbunt, 'Its sample bunt.'),
+             ('unoOuter', outer, 'The body of the gate `|*  b=_a`: it makes the gate `|*  meg`.'),
+             ('unoArm', arm, 'The arm `+uno:by` (axis `2` of the battery of `+by`).')]
+elif WHICH == 'trim':
+    bunt, body, hint = opt_arm(23)
+    # BODY = [7 [0 1] [8 TRACE [8 UNSAFE [8 OPENED RUN]]]]
+    _, _, b1 = seq(body, 3)
+    _, trace, b2 = seq(b1, 3)
+    _, unsafe, b3 = seq(b2, 3)
+    _, opened, run = seq(b3, 3)
+    # TRACE = [8 [1 TBUNT] [[1 TRACEB] [0 1]]]
+    _, tb, tmk = seq(trace, 3)
+    tbunt = norm(tb)[2]
+    tg1, _ = seq(tmk, 2)
+    traceb = norm(tg1)[2]
+    # UNSAFE = [8 [1 [0 0]] [8 [1 OTRAP] [9 2 [0 1]]]]
+    _, _, u1 = seq(unsafe, 3)
+    _, otq, _ = seq(u1, 3)
+    otrap = norm(otq)[2]
+    # OTRAP = [6 [5 [1 0] [0 250]] [0 12] [8 OGOT [8 OROLL [8 [0 26] [8 [1 ITRAP] [9 2 [0 1]]]]]]]
+    _, _, _, o1 = seq(otrap, 4)
+    _, ogot, o2 = seq(o1, 3)
+    _, oroll, o3 = seq(o2, 3)
+    _, _, o4 = seq(o3, 3)
+    _, itq, _ = seq(o4, 3)
+    itrap = norm(itq)[2]
+    # OROLL = [8 [9 ROLL L] [9 2 [10 [6 [GETJA [7 [0 3] [8 [1 RB] [[1 RGATE] [0 1]]]]]] [0 2]]]]
+    _, _, rs = seq(oroll, 3)
+    _, _, ed = seq(rs, 3)
+    _, e6, _ = seq(ed, 3)
+    _, smp = seq(e6, 2)
+    getja, mk = seq(smp, 2)
+    _, _, mk2 = seq(mk, 3)
+    _, rb1, rg1, _ = seq(mk2, 4)
+    rgate = norm(rg1)[2]
+    rbunt = norm(rb1)[2]
+    # RGATE = [8 UNOB [9 2 [10 [6 [7 [0 3] [8 [1 MXB] [[1 MXG] [0 1]]]]] [0 2]]]]
+    _, unob, rg2 = seq(rgate, 3)
+    _, _, ed = seq(rg2, 3)
+    _, e6, _ = seq(ed, 3)
+    _, mk = seq(e6, 2)
+    _, _, mk2 = seq(mk, 3)
+    _, mxb1, mxg1, _ = seq(mk2, 4)
+    mxbunt = norm(mxb1)[2]
+    mxg = norm(mxg1)[2]
+    # ITRAP = [6 TEST END STEP]
+    _, itest, iend, istep = seq(itrap, 4)
+    # END = [7 [10 [252 UPD] [0 1]] NEXT]
+    _, eed, enext = seq(iend, 3)
+    _, e252, _ = seq(eed, 3)
+    _, eupd = seq(e252, 2)
+    # EUPD = [6 FINT UNI [0 252]]
+    _, fint, euni, _ = seq(eupd, 4)
+    # STEP = [8 [0 12] [8 HINT [6 TEST NOHINT HINTC]]]
+    _, _, s1 = seq(istep, 3)
+    _, shint, s2 = seq(s1, 3)
+    _, _, snoh, shc = seq(s2, 4)
+    # NOHINT = [6 NCT SKIPK WIDEN]
+    _, nct, skipk, widen = seq(snoh, 4)
+    # HINTC = [8 GUT [6 [0 26] OPENK [6 LTE DELK DECK]]]
+    _, hgut, h1 = seq(shc, 3)
+    _, _, openk, closek = seq(h1, 4)
+    _, lte, delk, deck = seq(closek, 4)
+    # OPENED = [8 REPDOOR [9 2 [10 [6 [7 [0 3] [8 [1 OB] [[1 OG] [0 1]]]]] [0 2]]]]
+    _, _, os1 = seq(opened, 3)
+    _, _, ed = seq(os1, 3)
+    _, e6, _ = seq(ed, 3)
+    _, mk = seq(e6, 2)
+    _, _, mk2 = seq(mk, 3)
+    _, ob1, og1, _ = seq(mk2, 4)
+    obunt = norm(ob1)[2]
+    ogate = norm(og1)[2]
+    # OGATE = [8 ROLLARM [9 2 [10 [6 [[0 230] [7 [0 3] [8 [BUNTF [[1 OPG] [0 1]]]]]]] [0 2]]]]
+    _, _, og2 = seq(ogate, 3)
+    _, _, ed = seq(og2, 3)
+    _, e6, _ = seq(ed, 3)
+    _, smp = seq(e6, 2)
+    _, mk = seq(smp, 2)
+    _, _, mk2 = seq(mk, 3)
+    _, obuntf, opg1, _ = seq(mk2, 4)
+    opg = norm(opg1)[2]
+    # RUN = [8 RUNDOOR [9 2 [10 [6 [7 [0 3] [8 [1 RNB] [[1 RNG] [0 1]]]]] [0 2]]]]
+    _, _, rn1 = seq(run, 3)
+    _, _, ed = seq(rn1, 3)
+    _, e6, _ = seq(ed, 3)
+    _, mk = seq(e6, 2)
+    _, _, mk2 = seq(mk, 3)
+    _, rnb1, rng1, _ = seq(mk2, 4)
+    rnbunt = norm(rnb1)[2]
+    rngate = norm(rng1)[2]
+    # RNGATE = [10 [6 [8 [9 SKIP L] [9 2 [10 [6 [[0 58] [7 [0 3] [8 [1 SB] [[1 SG] [0 1]]]]]] [0 2]]]]] [0 6]]
+    _, r6, _ = seq(rngate, 3)
+    _, sk = seq(r6, 2)
+    _, _, sk1 = seq(sk, 3)
+    _, _, ed = seq(sk1, 3)
+    _, e6, _ = seq(ed, 3)
+    _, smp = seq(e6, 2)
+    _, mk = seq(smp, 2)
+    _, _, mk2 = seq(mk, 3)
+    _, sb1, sg1, _ = seq(mk2, 4)
+    sbunt = norm(sb1)[2]
+    sgate = norm(sg1)[2]
+    defs += [('trTraceB', traceb, 'The body of the gate `trace`: the key of a trace hint op and whether it opens the hint.'),
+             ('trTBunt', tbunt, 'Its sample bunt.'),
+             ('trMaxG', mxg, 'The body of the gate `|=([k=key v=@ud w=@ud] (max v w))`.'),
+             ('trMaxB', mxbunt, 'Its sample bunt.'),
+             ('trUnoB', unob, '`(~(uno by acc) (~(gut by out) p *(map key @ud)))`: the gate `|*  meg` of `+uno:by`.'),
+             ('trRGate', rgate, 'The gate of the `+roll` over the predecessors.'),
+             ('trRBunt', rbunt, 'Its sample bunt.'),
+             ('trGetJa', getja, '`(~(get ja rev) i.topo)`.'),
+             ('trORoll', oroll, '`open`: the `+roll` over the predecessors.'),
+             ('trOGot', ogot, '`(~(got by blocks) i.topo)`.'),
+             ('trFinT', fint, '`!?=(?(%clq %eqq %brz %hop) -.fin.b)`.'),
+             ('trEUni', euni, '`(~(uni in unsafe) ~(key by open))` at the end of a block.'),
+             ('trEUpd', eupd, 'The `=?` of `unsafe` at the end of a block.'),
+             ('trENext', enext, 'The next turn of the outer trap: `topo` and `out` edited.'),
+             ('trIEnd', iend, 'The end of a block in the inner trap.'),
+             ('trIHint', shint, '`(trace op)`.'),
+             ('trNcT', nct, '`?=(pole-not-crashing -.op)`.'),
+             ('trSkipK', skipk, '`$(body t.body)`.'),
+             ('trWiden', widen, '`$(body t.body, unsafe (~(uni in unsafe) ~(key by open)))`.'),
+             ('trINoHint', snoh, 'An op without key: `pole-not-crashing` or the unsafe keys widened.'),
+             ('trHGut', hgut, '`(~(gut by open) key.u.hint 0)`.'),
+             ('trOpenK', openk, '`$(body t.body, open (~(put by open) key.u.hint +(n)))`.'),
+             ('trLte', lte, '`(lte n 1)`.'),
+             ('trDelK', delk, '`$(body t.body, open (~(del by open) key.u.hint))`.'),
+             ('trDecK', deck, '`$(body t.body, open (~(put by open) key.u.hint (dec n)))`.'),
+             ('trIHintC', shc, 'An op with a key: its count opened or closed.'),
+             ('trIStep', istep, 'A turn of the inner trap on an op.'),
+             ('trITest', itest, '`?=(~ body)`.'),
+             ('trITrap', itrap, 'The inner trap over the body of a block.'),
+             ('trOTrap', otrap, 'The outer trap over `topo`.'),
+             ('trOpg', opg, 'The gate of the `+roll` over the body in `opened`.'),
+             ('trOBuntF', obuntf, 'Its sample, the bunt of `pole` made by its mold.'),
+             ('trOGate', ogate, 'The gate of the `+rep:by` of `opened`.'),
+             ('trOBunt', obunt, 'Its sample bunt.'),
+             ('trSGate', sgate, 'The test of the `+skip`: a hint op whose key is not unsafe and is opened.'),
+             ('trSBunt', sbunt, 'Its sample bunt.'),
+             ('trRnGate', rngate, 'The gate of the `+run:by`: the body skipped.'),
+             ('trRnBunt', rnbunt, 'Its sample bunt.'),
+             ('trBody', body, 'The gate body of `+trim-trace-hints`.'),
+             ('trBunt', bunt, 'Its sample bunt.'), ('trHint', hint, 'Its `%fast` hint.')]
 else:
     raise SystemExit('unknown ' + WHICH)
 with open(os.path.join(OUT, WHICH + '.lean'), 'w') as f:

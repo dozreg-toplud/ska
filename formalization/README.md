@@ -216,6 +216,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompShapeCol.lean` | `+shape-collapse` (arm `682` of `K`, the `ord` of `finishLF`) on a fork-free lazy need `[[ned lok] ~ ~]` is `sureOf (needToOrd ned) lok less` (`sc_gate_sure`), so `hsc` of `mem_gate` holds with `ord := sur` (`hsc_of_sure`).  On the way, with the nouns cut by `tools/gen/shapecol.py` and tied by `uno_at`, `l2i_at`, `fr_at`, `oi_at`, `ic_at`, `scBody_eq`: `+uni-need-ord` of `[%none ~]` and `X` is `X` (`uno_none`), `+lazy-to-inter1` on no fork and no bond (`l2i_gate_sure`), one round of `+inter2-fix-round` on `[X ~]` is `[X ~]` (`fr_gate_nofork`, with the bunt of `need-inter2` computed by the kernel, `i2n_bunt`), `+inter2-orig` and `+inter2-collapse` on no fork (`oi_gate_nofork`, `ic_gate_nofork`), `+roll` over `~` (`roll_gate_nil`). |
 | `Hoon/IntIn.lean` | `+int:in` with the door's set empty is `~` whatever its sample (`int_in_nil`); the whole loop against the relation `IntR` (the swap and the two branches through `+uni:in`, `UniR`), on every derivation (`int_loop`, `int_in_gate`), and on two sets a derivation to a set with the members of both (`intP_of_sets`, `int_in`); `+rep` over a treap of one node is the gate on that node and the first accumulator, whatever the gate (`rep_gate_one`). |
 | `Hoon/UniBy.lean` | `+uni:by`: the relation `UniByR` (one constructor per branch of the loop, the pair of `b` kept on equal keys) and the Nock on every derivation (`uni_by_loop`, `uni_by_gate`); on two maps a derivation to a map with the pairs of `b` and those of `a` whose key `b` lacks (`UniSpec`, `uniByP_of_maps` by induction on the number of nodes, as `uniP_of_sets` of `UniIn.lean`; `uni_by`); with a map of one pair it is `putF` (`uni_by_one`, by `isMap_ext`). |
+| `Hoon/UnoBy.lean` | `+uno:by` (axis `2` of the battery of `+by`, `uno_at`), the general union: the relation `UnoByR` (the branches of `+uni:by` with `[p.n.a (meg p.n.a q.n.a q.n.b)]` at equal keys) and its Nock (`uno_loop`, `uno_gate`, `uno_arm`, `uno_outer`); on two maps whose values meet `V` with a gate `meg` that gives `f k va vb` on them, a map whose value at each key (`look`, `look_get`) is `mergeO f k` of those of the two maps (`unoByP_of_maps`, `uno_by`). |
+| `Hoon/RunByP.lean` | `+run:by` with a gate known only on the values of the map (`run_by_P`, `run_loop_P`, the arm `by_run_arm`). |
 | `Compiler/CompSccOne.lean` | `cu_gate_scc_one` with the calls linked: `csi_gate_scc_one_m` (`+compile-scc-in` on `[b ~ ~]`) and `cu_gate_scc_one_m` (`+compile-unary`) state the product as a `bind` over `finishLF nm (sccSur nex cape) cape`, crashing when it is `none` (`csi_final_one_none`, `cu_gate_none`), with `+inlined` (`inl_gate`, under `InlOK`), `+shape-collapse` (`hsc_of_sure`), `kids` for a bell that does not call itself (`NoSelfCall`, `csi_kids_noself` with `int_in`; `NoCalls`, `csi_kids_nocalls`; `ju_has_kids`), `+uni:by` (`uni_by_one`, `IsMap` of `nary`), `+sure-of` succeeding on the fragment (`scc_sur_frag`, by `cra_run_lok` and `sureOf_some`) `args.then` empty on the fragment (`crx_run_args`, `args_frag`) and `was` from the put (`getF_of_putF`).  Left: `hrunL`, `hnoar`, `hb` (the model), `hnary`, `hnmap`, `hcalls` (`NoSelfCall`), `InlOK`, `hput` (the state nouns).  `csi_gate_scc_one_f`, `cu_gate_scc_one_f` fold the run in: a `bind` over `runL` and `finishLF` with `ord := sccSur` of that run, crashing when it is `none` (`mem_gate_none`: the run or `+collapse-shape` crash), under `NoBakeOne` (nothing baked whenever the pass gets to `+bake-need`) and on the state nouns `hnary`, `IsMap` of `nary` and `sure.cache`, `NoSelfCall`, `InlOK`.  The cache hit: when every member of a tree `scc` is in `nary.cache`, `+compile-scc-in` returns the `+gas:by` of the cached straights in the order of `+tap:in` and the cache unchanged (`csi_hit`, `csi_hit_one`, with `+levy`, `+has:by`, `+turn` of `csiHitGate` and `+got:by`), and `+compile-unary` returns `finishLU` with it (`cu_gate_hit`). |
 | `Compiler/CompMemOld.lean` | The branch `memOld` of `member` (`map-local` holds a straight of `b`) on a fixed point reached: `+msg-need-ord` (arm `20` of `K`, nouns by `tools/gen/msgneed.py`, `msg_at`) of two equal shapes is that shape (`msg_eq`), so with the previous shape equal to `need-new` the gate returns `[moved (~(put by map-local) b (finish ~)) cache]` (`mem_prod_old`, `mem_gate_old`: a `bind` over `finishLF`, `map-local` a map).  The pessimized case (`+coerce-soft`) is not linked. |
 | `Compiler/CompNoNN.lean` | `+need-ord-alloc-regs` of `sccSur` succeeds on the fragment (`noar_frag`): the invariant `NN` (no cell and no `%both` of a need with two `%none` halves) holds of the sure need of every run (`nn_run`, through `+simple-next`, `+bomb`, `+from` (`nn_fromPath`), `+split` (`nn_splitNeed`, `nn_must`), `+into` (`nn_intoLoop`, `nn_rollTack`), `+copy` (`nn_copyNeed`)), goes to the shape (`nno_needToOrd`) and through `+sure-of` (`nno_sureLook`, `nno_sureOf`), and `+need-ord-alloc-regs` succeeds on it (`noar_nno`).  A bell whose cape is `|` bakes nothing (`noBake_no`), so for it `cu_gate_scc_one_f` holds with no hypothesis on the model but the fragment (`cu_gate_scc_one_no`). |
@@ -268,6 +270,16 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/OptLinkNoLti.lean` | The passes before `+switch-chains` keep `NoLti` on any map instance: `+remove-useless-branching` (`noLti_rub`), `+remove-empty-middle` (`noLti_mid`), `+remove-hops` (`noLti_hops`), `+remove-dead-code` (`noLti_dead`). |
 | `Compiler/OptLinkSy.lean` | `+sy` (arm `42` of `layer2`, `si:nl`): the arm builds the gate `si` in the core `nl` (`sy_arm`, from the kernel facts `sy_at`, `nl_at`, `nl_si`), and the gate on a list of atoms returns a set of atoms with its members (`si_gate`, `+gas:in` from `~`). |
 | `Compiler/OptLinkOnce.lean` | `+optimize-once` (arm `180` of `optC`, `oo_at`): its structural loop where `structLoop fuel n` returns, on blocks with no `%lti` (`oo_loop`, by induction on `n`, from `rh_gate`, `rub_gate`, `rem_gate`, `bb_gate`, `rev_gate` with `si_gate`), which keeps `NoLti` (`structLoop_noLti`); `AliasLink` and `TrimLink`, the hypotheses on `+alias` and `+trim-trace-hints` (their arms `alias_at`, `trim_at`) that the link of the whole gate is to take; `+skim` with `~(has by blocks)` (`skim_has`). |
+| `Compiler/OptLinkOnceAfter.lean` | `+optimize-once` after its structural loop, cut at each `=^` and `=.` (`ooAfter_cut`, the pieces `ooR1` to `ooR12`, `ooFin`), each step stated as the subject it leaves: the loop's product (`oo_s0`), `+alias` from `AliasLink` (`oo_alias`), `+skim` and `+rev-cfg` (`oo_skimrev`), `+trim-trace-hints` from `TrimLink` and `+remove-dead-code` (`oo_trimdead`), the three passes (`oo_hops`, `oo_rub`, `oo_rem`) and the flag (`oo_fin`). |
+| `Compiler/OptLinkOnceGate.lean` | **`+optimize-once` (arm `180` of `optC`) where `optimizeOnce fuel P` returns, on blocks with no `%lti`, given `AliasLink P` and `TrimLink P`** (`oo_gate`, from `oo_pre`, the body up to `ooAfter`), and the round keeps `NoLti` (`optimizeOnce_noLti`). |
+| `Compiler/OptLinkOpt.lean` | **`+optimize` (arm `2941` of `optC`) where `optimizeF fuel P` returns, on blocks with no `%lti`, given `AliasLink P`, `TrimLink P` and `SwitchLink P`** (`opt_gate`; the trap by induction on the fuel, `opt_loop`); `SwitchLink`, the hypothesis on `+switch-chains` (arm `182`, `sw_at`). |
+| `Compiler/OptLinkTrimNouns.lean` | `+trim-trace-hints` (arm `23` of `optC`, `tr_at`, `trimBody_eq`): its nouns cut by `tools/gen/optlink.py trim`; the noun of a key `keyN` (`[%clue hint reg]`, `[%defer a v f]`, `[%konst n f]`), injective (`keyN_inj`); the gate `trace` is `traceKey` (`tr_trace`); `?=(pole-not-crashing -.op)` is `notCrashing` (`tr_nct`). |
+| `Compiler/OptLinkTrimRel.lean` | The maps of counts against `Cnt` (`CntRel`, by `look` and `cntLook`), the sets of keys against `Uns` (`UnsRel`), `out` against a `TreapMap mugF Cnt` (`OutRel`); `+gut:by`, `+put:by`, `+del:by` at a key (`cnt_gut`, `cnt_put`, `cnt_del`), `~(key by open)` (`cnt_key`), the unsafe keys widened (`uns_add`), `+uno:by` with the gate of `+max` is `Cnt.join` (`tr_maxg`, `cnt_uno`), `+gut:by` and `+put:by` on `out` (`out_gut`, `out_put`). |
+| `Compiler/OptLinkTrimInner.lean` | The inner trap of `+trim-trace-hints` over a body: a turn is `trimStep` (`tr_istep`), the whole body `trimBody` (`tr_ibody`), the end of a block (`tr_fint`, `tr_iend`). |
+| `Compiler/OptLinkTrimOuter.lean` | The outer trap: the gate of the `+roll` over the predecessors (`tr_rgate`), a turn (`tr_oturn`), the whole trap where `trimWalk` returns (`tr_otrap`). |
+| `Compiler/OptLinkTrimGate.lean` | `opened` (`tr_opg`, `tr_ogate`, `tr_opened`, against `trimOpened` by `trimOpened_rap`), the test of the `+skip` is `trimDrop` (`tr_sgate`), the gate of the `+run:by` (`tr_rngate`). |
+| `Compiler/OptLinkTrimLink.lean` | **`+trim-trace-hints` where `trimTraceHints` returns** (`tr_gate`), so `TrimLink P` for every `P` whose `trim` is the model (`trimLink`); the pairs of the noun of a treap (`get_hoonMap`), the model's `+run:by` (`get_trimRun`, `noLti_trim`); `oo_gate_trim` and `opt_gate_trim`, the gates of `+optimize-once` and `+optimize` with only `+alias` (and `+switch-chains`) as hypotheses. |
+| `Compiler/OptLinkFuel.lean` | The fuelled passes return with enough fuel, the measure a rank `ρ` that decreases along every jump (`Acyclic`): `+bb-topo` with fuel above `ρ 0` (`bbTopo_some`, on a `Closed` CFG with a block `0`), `+remove-hops` above the ranks of `topo` (`removeHops_some`, with `TopoInv` and `ArityOK`), `+remove-empty-middle` above the ranks of the blocks (`removeEmptyMiddle_some`, `Closed`, `ArityOK`); so their links hold with no condition on the model (`bb_gate_total`, `rh_gate_total`, `rem_gate_total`). |
 | `Compiler/AuditOptLink.lean` | `#print axioms` of the main theorems of `Compiler/OptLink*.lean`; `OptLinkBase.lean` also has `+rep` forward (`rep_gate_fwd`) and against a relation (`rep_gate_rel`). |
 | `Ska/Types.lean` | Models of the IR types (`Bell`, `Sock`, `Cape`, `Pole`, `Termin`, `Blob`, `Straight`, `Tone`, ...), each with its Hoon noun layout. |
 | `Ska/Mink.lean`, `Ska/MinkTrace.lean` | Models of `+mink`, `+mook` and `+mock`; what Nock computes, `+mink` returns; `EvalH.toEvalA`. |
@@ -1804,11 +1816,11 @@ import only its theorems.  So:
    | `+remove-useless-branching` | `optC`, `363` | 475 | `+rep:by` (`rep_gate_list`, a gate that may crash), `+got:by`, `+put:by`, `+weld` | `removeUselessBranching` (`Ska/OptBranch.lean`) | the Hoon compares two blobs and two terminators as nouns, the model as values (the same by injectivity of `Blob.toNoun` and `Termin.toNoun`) | `rub_gate` (`OptLinkRub.lean`) |
    | `+remove-empty-middle` | `optC`, `2940` | 850 | `+any:by` (`any_by_loop`), `+rep:by`, `+get-regs`, `+roll`, `+put:ju` (`ju_put_gate`), `+get:ju`, `+del:in` (`del_in_gate`), `+levy` (`levy_gate`), `+got:by`, `+gut:by` (`gut_gate`), `+put:by`, `+turn` (`turn_gate`), the bunt of `pole` (arm `2743` of `compTypes`, not linked), the arms `rewrite-jump` and `rewrite-hop` of its `\|^` core | `removeEmptyMiddle fuel` (`Ska/OptMiddle.lean`) | fuel bounds the two rewrite loops; `readers` is `readersOf`, a list per register | where the model returns: `rem_gate` (`OptLinkMiddleRd.lean`) |
    | `+alias` | `optC`, `725` | 6048 | `+got:by`, `+gut:by`, `+jab:by` (`jab_gate`), `+put:by`, `+run:by` (`run_by`), `+uni:by` (the relation `UniByR`, `Hoon/UniBy.lean`), `+int:in` (`IntR`, `Hoon/IntIn.lean`), `+put:in`, `+tap:in` (`tap_in`), `+put:ju`, `+get:ju`, `+del:ju` (`ju_del_gate`), `+murn`, `+turn`, `+roll`, `+flop`, `+zing`, `+lent` (`lent_gate`), `+silt` (`silt_gate`), `+same`, `+gor`, `+mor` (`Hoon/Order.lean`), `+bake` and the bunt of `info-reg` (not linked), the arms `rn`, `join-info`, `join-imms`, `join-reg`, `param-info` of its `\|^` core | `aliasM pick` (`Ska/OptAliasModel.lean`) | the roots `n.res` and `n.intersect` of sets are `pick` of a list; the info maps are functions; `+join-info` and `+join-imms` walk two treaps with the shortcut `=(a b)` | no |
-   | `+trim-trace-hints` | `optC`, `23` | 1135 | `+get:ja`, `+gut:by`, `+uno:by` (arm `4` of `+by`, not named by the generator, not linked), `+max` (`max_gate`), `+got:by`, `+put:by`, `+del:by` (`del_gate`), `+lte`, `+dec`, `+key:by` (`key_by`), `+uni:in` (`uni_in_gate`), `+has:in`, `+rep:by`, `+roll`, `+put:in`, `+run:by`, `+skip` (`skip_gate`), the bunt of `pole` | `trimTraceHints` (`Ska/OptTrim.lean`) | the counts of open hints are a map of keys in the Hoon | no |
+   | `+trim-trace-hints` | `optC`, `23` | 1135 | `+get:ja`, `+gut:by`, `+uno:by` (axis `4` of the door of `+by`, `2` of its battery: `uno_by`, `Hoon/UnoBy.lean`), `+max` (`max_gate`), `+got:by`, `+put:by`, `+del:by` (`del_gate`), `+lte`, `+dec`, `+key:by` (`key_loop`), `+uni:in` (`uni_in`), `+has:in`, `+rep:by`, `+roll`, `+put:in`, `+run:by` (`run_by_P`, `Hoon/RunByP.lean`), `+skip` (`skip_gate`), the bunt of `pole` | `trimTraceHints` (`Ska/OptTrim.lean`) | the counts of open hints are a map of key nouns that never holds `0` (`CntRel`, the model a function `Cnt`), the unsafe and opened keys sets of key nouns (`UnsRel`, `OpRel`), `out` a map of maps (`OutRel`) | where the model returns: `tr_gate` (`OptLinkTrimLink.lean`), so `TrimLink` holds of the model (`trimLink`) |
    | `+remove-dead-code` | `optC`, `724` | 295 | `+got:by`, `+flop`, `+gas:in` (`gas_in_loop`), `+has:in`, `+put:by`, `+get-regs`, `+get-reg-safe-assignment` | `removeDeadCode` (`Ska/OptDead.lean`) | `saw` is a list; it runs `+get-regs` on terminators, so a link takes blocks with no `%lti` | `rdc_gate` (`OptLinkDead.lean`) |
    | `+switch-chains` | `optC`, `182` | 2916 | `+bb-topo`, `+rev-cfg`, `+get-regs`, `+rep:by`, `+got:by`, `+gut:by`, `+put:by`, `+del:by`, `+key:by`, `+gas:in`, `+has:in`, `+put:in`, `+tap:in`, `+get:ja`, `+roll`, `+turn`, `+weld`, `+lent`, `+scag`, `+slag` (`scag_gate`, `slag_gate`), `+rear`, `+snip` (`rear_gate`, `snip_gate`), `+sort` (`sort_gate`, against `qsort`), `+skip`, `+bex` (`bex_gate`), `+lth`, `+gte`, `+div`, `+mul`, `+sub` (`Hoon/Arith.lean`), `+sy` | `switchChains fuel` (`Ska/OptSwitch.lean`) | fuel bounds its loops | no |
-   | `+optimize-once` | `optC`, `180` | 553 | `+bb-topo`, `+rev-cfg`, `+sy` (arm `42` of `layer2`, `si_gate`), the three structural passes, `+alias`, `+skim` (`skim_gate`), `+has:by` (`has_gate`), `+trim-trace-hints`, `+remove-dead-code`, `+flop` | `optimizeOnce fuel P` (`Ska/OptDriver.lean`) | fuel bounds the structural loop; `+alias`, `+trim-trace-hints`, `+switch-chains` are the fields of `P`; `(sy topo)` is the list `topo` | no |
-   | `+optimize` | `optC`, `2941` | 91 | `+optimize-once`, `+switch-chains` | `optimizeF fuel P` | fuel bounds the loop | no |
+   | `+optimize-once` | `optC`, `180` | 553 | `+bb-topo`, `+rev-cfg`, `+sy` (arm `42` of `layer2`, `si_gate`), the three structural passes, `+alias`, `+skim` (`skim_gate`), `+has:by` (`has_gate`), `+trim-trace-hints`, `+remove-dead-code`, `+flop` | `optimizeOnce fuel P` (`Ska/OptDriver.lean`) | fuel bounds the structural loop; `+alias`, `+trim-trace-hints`, `+switch-chains` are the fields of `P`; `(sy topo)` is the list `topo` | where the model returns, given `AliasLink P` and `TrimLink P`: `oo_gate` (`OptLinkOnceGate.lean`), `oo_gate_trim` with `TrimLink` discharged |
+   | `+optimize` | `optC`, `2941` | 91 | `+optimize-once`, `+switch-chains` | `optimizeF fuel P` | fuel bounds the loop | where the model returns, given `AliasLink P`, `TrimLink P`, `SwitchLink P`: `opt_gate` (`OptLinkOpt.lean`), `opt_gate_trim` |
 
    `+get-ipdom` and `+get-idom` (axes `10` and `44` of `optC`) are not run by
    `+optimize`.  The orders: every `+rep:by` of a pass is a fold over
@@ -1818,43 +1830,73 @@ import only its theorems.  So:
    is `foldl`/`foldlM` in list order in the models.  The crashes (`got` of a
    missing block, the `?>` and `!!` of the passes) are the models' `none`.
 
-   What is linked (2026-11-24, this session).  Exact, crashes included:
-   `+remove-useless-branching` on every treap of blocks (`rub_gate`) and
-   `+remove-dead-code` on blocks with no `%lti` (`rdc_gate`); `+rev-cfg`
-   with any set of atoms for `topo-set` (`rev_gate`, the set related to the
-   list by `SawRel`); the four helpers.  Where the fuelled model returns:
-   `+bb-topo` (`bb_gate`), `+remove-hops` (`rh_gate`) and
-   `+remove-empty-middle` (`rem_gate`), each by induction on the fuel.  The
-   converse of the fuelled ones (where the gate returns, some fuel makes the
-   model return) is not proved: it needs a measure of the Hoon's loops (the
-   labels put in `saw` for `+bb-topo`, the labels merged for `+remove-hops`,
-   the chain of empty blocks for the rewrites of `+remove-empty-middle`).
-   Sets of the Hoon are related to the models' lists by `SawRel` (a set of
-   atoms whose members are the list's), and the jug `readers` of
-   `+remove-empty-middle` by `JugRel`; the loops are linked by `roll_gate_rel`
-   and `rep_gate_rel` when the accumulator holds such a set, by
-   `roll_gate_list` and `rep_gate_list` when it is the noun of the model's
-   state, and by `rep_gate_fwd` for a fuelled step.
+   What is linked.  Exact, crashes included: `+remove-useless-branching` on
+   every treap of blocks (`rub_gate`) and `+remove-dead-code` on blocks with
+   no `%lti` (`rdc_gate`); `+rev-cfg` with any set of atoms for `topo-set`
+   (`rev_gate`, the set related to the list by `SawRel`); the four helpers;
+   `+sy` (`si_gate`).  Where the fuelled model returns: `+bb-topo`
+   (`bb_gate`), `+remove-hops` (`rh_gate`) and `+remove-empty-middle`
+   (`rem_gate`), each by induction on the fuel; the structural loop of
+   `+optimize-once` (`oo_loop`); **the whole gate of `+optimize-once`**
+   (`oo_gate`, `OptLinkOnceGate.lean`: on a straight function whose blocks
+   have no `%lti`, where `optimizeOnce fuel P` returns `(again, s')`, the
+   gate returns `[again s']`, given `AliasLink P` and `TrimLink P`; the rest
+   of the body after the loop, `ooAfter`, is cut at each `=^` and `=.` in
+   `OptLinkOnceAfter.lean`, each step stated as the subject it leaves);
+   **`+optimize`** (`opt_gate`, `OptLinkOpt.lean`: where `optimizeF fuel P
+   s` returns `s'`, the gate returns the noun of `s'`, given `AliasLink P`,
+   `TrimLink P` and `SwitchLink P`, the hypothesis on `+switch-chains`; its
+   trap by induction on the fuel against `optLoop`); **`+trim-trace-hints`**
+   (`tr_gate`, `OptLinkTrim*.lean`: where `trimTraceHints` returns, on any
+   treap of blocks, list `topo` and jar `rev`), so `TrimLink` holds of the
+   model (`trimLink`) and `oo_gate_trim`, `opt_gate_trim` leave `+alias`
+   (and `+switch-chains`) as the only hypotheses.  On the way: `+uno:by`
+   (`Hoon/UnoBy.lean`, `uno_by`: the general union, the relation `UnoByR`
+   with the branches of `+uni:by`, on two maps the value at each key the
+   merge of the two) and `+run:by` with a gate known only on the values
+   (`Hoon/RunByP.lean`, `run_by_P`).  The Hoon and the models agree on every
+   arm linked so far; for `+trim-trace-hints` the counts per key (a key at
+   count `1` or less is deleted, so the map never holds `0`, which is the
+   model's function `Cnt` with `0` for an absent key), the order of the walk
+   (`topo` in list order, the predecessors of `rev` in list order, joined by
+   `max`, which commutes) and the test `pole-not-crashing` (the same
+   fourteen tags) were compared first.  Sets of the Hoon are related to the
+   models' lists by `SawRel` (a set of atoms whose members are the list's),
+   the jug `readers` of `+remove-empty-middle` by `JugRel`, the maps of
+   counts by `CntRel`; the loops are linked by `roll_gate_rel` and
+   `rep_gate_rel` when the accumulator holds such a set, by `roll_gate_list`
+   and `rep_gate_list` when it is the noun of the model's state, and by
+   `rep_gate_fwd` for a fuelled step.  A lesson on memory: one `simp` over
+   all of `ooAfter` went past the 3 GB cap, while the same proof cut into
+   eight steps (each `unfold`ing one or two pieces at the formula position,
+   with `optC` and the block nouns generalized) checks in about a second.
 
-   Left, in the order to do it: (1) `+sy` (`si:nl`, arm `10` of the core at
-   arm `175` of `layer2`, `+gas:in` from `~` once its `^+` cast is
-   compiled), to give `rev_gate` its set in `+optimize-once`: done,
-   `si_gate` (`Compiler/OptLinkSy.lean`); (2) `NoLti`
-   kept by the four structural passes and `+remove-dead-code` (model-level
-   lemmas, no Nock: done, `Compiler/OptLinkNoLti.lean`); (3) `+optimize-once` against `optimizeOnce fuel P` (its structural
-   loop is done: `oo_loop`, `Compiler/OptLinkOnce.lean`; left is `ooAfter`,
-   for which every link is there, but one `simp` over it went past the 3 GB
-   cap, so it is to be cut into its steps) with
-   the links of `+alias` and `+trim-trace-hints` as hypotheses on `P`, its
-   structural loop by induction on the fuel, `+skim` (`skim_gate`) with
-   `+has:by`; (4) `+optimize` (91 cells) with `+switch-chains` as a
-   hypothesis; (5) `+trim-trace-hints` (1135 cells: two nested loops with a
-   map of counts, `+uno:by`, which no theorem links yet, and the bunt of
-   `pole` as in `readers`); (6) `+switch-chains` (2916 cells: `bb-topo` and
-   `rev-cfg` linked already, `+sort` against `qsort`, the trees of the
-   binary search); (7) `+alias` (6048 cells, the info maps, `+join-info`
-   and `+join-imms` that walk two treaps at once, `+uni:by` and `+int:in`
-   whose links are relations).  An estimate from this session: a pass of
-   about 500 cells took one to two hours of proof once its nouns were cut by
-   `tools/gen/optlink.py`; the cost grows with the number of loops whose
-   accumulator holds a set or a map that the model keeps in another form.
+   Left, in the order to do it: (1) the converse for the structural loop of
+   `+optimize-once` (`structLoop`); the converse of the three fuelled passes
+   is done (`Compiler/OptLinkFuel.lean`: some fuel makes `bbTopo`,
+   `removeHops`, `removeEmptyMiddle` return on an acyclic CFG that is
+   `Closed`, with `ArityOK` and, for `+remove-hops`, `TopoInv`; the measure of
+   each loop is the rank `ρ` of `Acyclic`, and `bb_gate_total`,
+   `rh_gate_total`, `rem_gate_total` are the links with no condition on the
+   model).  The measure of the structural loop is the triple (number of
+   blocks, number of blocks with a two-way end, sum over the jumps of every
+   block of `ρ` of the target), lexicographic, with the `ρ` that every pass
+   keeps (`hops_acyclic`, `rub_acyclic`, `mid_acyclic`): a merge of
+   `+remove-hops` drops a block, a change of `+remove-useless-branching` turns
+   a two-way end into a hop, a change of `+remove-empty-middle` sends a jump
+   to a target of strictly lower rank; what is missing are the model-level
+   facts that each pass keeps `Closed`, `ArityOK`, the block `0` and the
+   two-way ends without arguments (the `?>` of `+remove-useless-branching`),
+   so that every round's passes return.  The loop of `+optimize` (`OptHalts`)
+   needs, beyond that, a hypothesis on `P.alias` (it reports a change when it
+   folds a branch or drops a block).  (2) `+switch-chains` (2916 cells:
+   `+bb-topo` and `+rev-cfg` linked already, `+sort` against `qsort`, the
+   trees of the binary search), which discharges `SwitchLink`; (3) `+alias`
+   (6048 cells, the info maps, `+join-info` and `+join-imms` that walk two
+   treaps at once, `+uni:by` and `+int:in` whose links are relations), which
+   discharges `AliasLink`.  Estimates: a pass of about 500 cells took one to
+   two hours of proof once its nouns were cut by `tools/gen/optlink.py`;
+   `+trim-trace-hints` (1135 cells, two nested loops, a map of maps, a new
+   library arm) took about four hours; the cost grows with the number of loops
+   whose accumulator holds a set or a map that the model keeps in another
+   form.
