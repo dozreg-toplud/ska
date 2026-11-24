@@ -528,14 +528,13 @@ theorem ska_poke_iff_evalH (sam y : Noun) :
   constructor
   · rintro ⟨⟨p, hp⟩, hy⟩
     have he := evalH_of_mink_nil hp
-    rw [← sp_trap_kick, nock_eq_some_iff] at hy
-    cases Eval.deterministic he.toEval hy
+    cases Eval.deterministic he.toEval (eval_of_nock (by rw [sp_trap_kick]; exact hy))
     exact he
   · intro he
     obtain ⟨n, hn⟩ := mink_of_evalH rpLib (A 0) he
     refine ⟨⟨y, n, hn []⟩, ?_⟩
-    rw [← sp_trap_kick, nock_eq_some_iff]
-    exact he.toEval
+    rw [← sp_trap_kick]
+    exact nock_of_evalA he.toEvalA
 
 end Compiler
 end Formalization

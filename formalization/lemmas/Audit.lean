@@ -83,6 +83,9 @@ open Formalization
 
 #print axioms Nock.evalFuel_sound
 #print axioms Nock.nock_eq_some_iff
+#print axioms Nock.evalFuel_soundA
+#print axioms Nock.EvalA.toEval
+#print axioms Nock.Eval.deterministic
 #print axioms CueExample.cue_words
 #print axioms Pill.core_evalFuel
 #print axioms Pill.core_layer2

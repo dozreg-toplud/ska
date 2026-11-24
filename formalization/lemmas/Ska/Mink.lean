@@ -267,6 +267,26 @@ theorem EvalH.toEval {s f p : Noun} (h : EvalH s f p) : Eval s f p := by
   | op11_cell _ _ ih1 ih2 => exact Eval.op11_cell ih1 ih2 (Eval.op0 (Slot.right Slot.one))
   | op11_atom _ ih => exact Eval.op11_atom ih
 
+/-- `EvalH` is `EvalA` of `core/Nock.lean`, with opcode 9 stated by its arm. -/
+theorem EvalH.toEvalA {s f p : Noun} (h : EvalH s f p) : EvalA s f p := by
+  induction h with
+  | cell _ _ ih1 ih2 => exact EvalA.cell ih1 ih2
+  | op0 hs => exact EvalA.op0 hs
+  | op1 => exact EvalA.op1
+  | op2 _ _ _ ih1 ih2 ih3 => exact EvalA.op2 ih1 ih2 ih3
+  | op3 _ ih => exact EvalA.op3 ih
+  | op4 _ ih => exact EvalA.op4 ih
+  | op5 _ _ ih1 ih2 => exact EvalA.op5 ih1 ih2
+  | op6_zero _ _ ih1 ih2 => exact EvalA.op6_zero ih1 ih2
+  | op6_one _ _ ih1 ih2 => exact EvalA.op6_one ih1 ih2
+  | op7 _ _ ih1 ih2 => exact EvalA.op7 ih1 ih2
+  | op8 _ _ ih1 ih2 => exact EvalA.op8 ih1 ih2
+  | op9 _ hs _ ih1 ih2 =>
+    exact EvalA.op9 ih1 (EvalA.op2 (EvalA.op0 Slot.one) (EvalA.op0 hs) ih2)
+  | op10 _ _ he ih1 ih2 => exact EvalA.op10 ih1 ih2 he
+  | op11_cell _ _ ih1 ih2 => exact EvalA.op11_cell ih1 ih2 (EvalA.op0 (Slot.right Slot.one))
+  | op11_atom _ ih => exact EvalA.op11_atom ih
+
 theorem minkF_succ_eq (lib : Lib) (gul : Noun) (n : Nat) (t : Trace) (s f : Noun) :
     minkF lib gul (n + 1) t s f = minkStep lib gul (minkF lib gul n) t s f := rfl
 

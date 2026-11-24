@@ -117,7 +117,7 @@ def evalFuel (fuel : Nat) (subject formula : Noun) : Option Noun :=
           match evalFuel fuel' subject c, evalFuel fuel' subject d with
           | some replacement, some editedBase => edit? axis replacement editedBase
           | _, _ => none
-      | Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell _ c) d) =>
+      | Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.atom _) c) d) =>
           match evalFuel fuel' subject c, evalFuel fuel' subject d with
           | some hint, some product => evalFuel fuel' (C hint product) (slot 3)
           | _, _ => none

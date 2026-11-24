@@ -94,7 +94,7 @@ theorem rfK_ok (s : Noun) : KOK (C register_fast.battery (C s ana)) rfK := by
 `[miss regs]` with a flag `miss`. -/
 theorem registerFastShape : RegisterFastShape := by
   intro h f r x hx
-  have he := nock_eq_some_iff.1 hx
+  have he := eval_of_nock hx
   obtain ⟨s, hs, gs⟩ := absNockS_sound (rfK_ok (C h.toNoun (C f.toNoun r))) rf_summ_ok he 1000 (.sub [])
     (by simp [Ab.Gam, slotAtPath])
   have hok := List.all_eq_true.1 rf_main_ok s hs
