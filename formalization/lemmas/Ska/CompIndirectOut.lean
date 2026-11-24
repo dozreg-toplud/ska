@@ -467,7 +467,10 @@ def SemNC (lib : Lib) (P : Noun → Prop) (f : Noun) (sur : Sure S) (th : Jmp) (
 
 /-- **`RunOKNV` for a run that calls**: the structural fields of `RunOKNV`
 but `size` (a call under a parent adds a lazy block of `+past` that no `%6`
-accounts for, and no theorem reads the bound), `nec` on the pure part `pq` (where the subject does not fit the need, `pq`
+accounts for, and no theorem reads the bound), with the entries' registers
+allowed in the goal's need too (the block of `+past` behind a call holds the
+tail's need, which `+split` takes from the goal's need when that is a
+pair), `nec` on the pure part `pq` (where the subject does not fit the need, `pq`
 crashes, and so does `+mink` by `MinkN2`), and `SemNC`. -/
 structure RunOKNC (lib : Lib) (P : Noun → Prop) (f : Noun) (pq : Nomm) (sur : Sure S) (th : Jmp)
     (g0 g1 : Gen Map) (nex : NextL S) : Prop where
@@ -479,7 +482,8 @@ structure RunOKNC (lib : Lib) (P : Noun → Prop) (f : Noun) (pq : Nomm) (sur : 
   ent : Entry g1 (CGoal.next sur th) nex.th
   regs : ∀ r, NMem nex.laz.sure.ned r → NMem sur.ned r ∨ (g0.re ≤ r ∧ r < g1.re)
   dist : Distinct nex.laz.sure.ned
-  eregs : ∀ e ∈ entries nex.laz, Distinct e.2.sure.ned ∧ ∀ r, NMem e.2.sure.ned r → g0.re ≤ r ∧ r < g1.re
+  eregs : ∀ e ∈ entries nex.laz, Distinct e.2.sure.ned ∧
+    ∀ r, NMem e.2.sure.ned r → (NMem sur.ned r ∨ g0.re ≤ r) ∧ r < g1.re
   labs : ∀ e ∈ entries nex.laz, g0.bo ≤ e.1 ∧ e.1 < nex.th.there ∧
     ∃ th, HoonMap.get g1.blocks e.1 = some ⟨[], [], Termin.hop th⟩
   nodup : ((entries nex.laz).map Prod.fst).Nodup
@@ -529,7 +533,7 @@ theorem indirect_runS (lib : Lib) {p q : Nomm} (up : UOK (S := S) (Map := Map) l
   have cf3 : ∀ k, k < g3.re → HoonMap.get g'.cond k = HoonMap.get g0.cond k := fun k hk => by
     rw [Rm.cfr.get_lt hk, cn3]
   refine ⟨E3.trans Rm.ext, G3.trans Rm.grow, CF3.trans Rm.cfr, Rm.lo, Rm.hi, ?_, fun r hr => ?_, Rm.dist,
-    fun e he => ⟨(Rm.eregs e he).1, fun r hr => ⟨by have := ((Rm.eregs e he).2 r hr).1; omega,
+    fun e he => ⟨(Rm.eregs e he).1, fun r hr => ⟨Or.inr (by have := ((Rm.eregs e he).2 r hr).1; omega),
       ((Rm.eregs e he).2 r hr).2⟩⟩,
     fun e he => ⟨by have := (Rm.labs e he).1; omega, (Rm.labs e he).2⟩, Rm.nodup, fun s hs => ?_,
     Rm.ncond, Rm.econd, ?_⟩

@@ -45,4 +45,20 @@ rep("""    sem := fun cf hcf c ned σ O st t gul s0 s ag hned regs hh hn => ?_ }
     """    sem := fun cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn => ?_ }""")
 head = open(os.path.join(here, 'conscall_head.lean')).read()
 sem = open(os.path.join(here, 'conscall_sem.lean')).read()
+rep("""  · rcases (memN e).mp he with a | a
+    · exact ⟨(hp.eregs e a).1, fun r hr => by have := (hp.eregs e a).2 r hr; omega⟩
+    · exact ⟨(hq.eregs e a).1, fun r hr => by have := (hq.eregs e a).2 r hr; omega⟩""",
+    """  · rcases (memN e).mp he with a | a
+    · refine ⟨(hp.eregs e a).1, fun r hr => ⟨?_, by have := ((hp.eregs e a).2 r hr).2; omega⟩⟩
+      rcases ((hp.eregs e a).2 r hr).1 with b | b
+      · rcases hlp r b with b' | ⟨b', _⟩
+        · exact Or.inl b'
+        · exact Or.inr b'
+      · exact Or.inr (by omega)
+    · refine ⟨(hq.eregs e a).1, fun r hr => ⟨?_, by have := ((hq.eregs e a).2 r hr).2; omega⟩⟩
+      rcases ((hq.eregs e a).2 r hr).1 with b | b
+      · rcases hlq r b with b' | ⟨b', _⟩
+        · exact Or.inl b'
+        · exact Or.inr b'
+      · exact Or.inr b""")
 print(head + body + '\n' + sem, end='')

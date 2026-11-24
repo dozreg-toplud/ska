@@ -105,7 +105,8 @@ structure TailNV (lib : Lib) (nm : Nomm) (bot : Nat) (sur : Sure S) (th : Jmp) (
   ent : Entry g1 (CGoal.next sur th) nex.th
   regs : ∀ r, NMem nex.laz.sure.ned r → NMem sur.ned r ∨ (g0.re ≤ r ∧ r < g1.re)
   dist : Distinct nex.laz.sure.ned
-  eregs : ∀ e ∈ entries nex.laz, Distinct e.2.sure.ned ∧ ∀ r, NMem e.2.sure.ned r → bot ≤ r ∧ r < g1.re
+  eregs : ∀ e ∈ entries nex.laz, Distinct e.2.sure.ned ∧
+    ∀ r, NMem e.2.sure.ned r → (NMem sur.ned r ∨ bot ≤ r) ∧ r < g1.re
   labs : ∀ e ∈ entries nex.laz, g0.bo ≤ e.1 ∧ e.1 ≤ nex.th.there ∧
     ∃ th, HoonMap.get g1.blocks e.1 = some ⟨[], [], Termin.hop th⟩
   nodup : ((entries nex.laz).map Prod.fst).Nodup
@@ -118,7 +119,7 @@ theorem TailNV.ofRun {lib : Lib} {nm : Nomm} {lo : Nat} {sur : Sure S} {th : Jmp
     {nex : NextL S} (R : RunOKNV (Map := Map) lib nm sur th g0 g1 nex) (hlo : lo ≤ g0.re) :
     TailNV lib nm lo sur th g0 g1 nex :=
   ⟨R.ext, R.grow, R.cfr, R.lo, R.hi, R.ent, R.regs, R.dist,
-    fun e he => ⟨(R.eregs e he).1, fun r hr => ⟨by have := ((R.eregs e he).2 r hr).1; omega,
+    fun e he => ⟨(R.eregs e he).1, fun r hr => ⟨Or.inr (by have := ((R.eregs e he).2 r hr).1; omega),
       ((R.eregs e he).2 r hr).2⟩⟩,
     fun e he => ⟨(R.labs e he).1, Nat.le_of_lt (R.labs e he).2.1, (R.labs e he).2.2⟩,
     R.nodup, R.nec, R.ncond, R.econd, R.sem⟩
@@ -129,7 +130,7 @@ crashes where the subject does not fit it, which the tail's `nec` makes the
 tail's crash or a value that does not fit the goal. -/
 theorem tailNV_past {lib : Lib} {nm : Nomm} {lo : Nat} {sur : Sure S} {o : Nat} {g0 g1 : Gen Map}
     {nex : NextL S} (R : RunOKNV (Map := Map) lib nm sur (jmp0 o) g0 g1 nex) (hlo : lo ≤ g0.re)
-    (hsur : ∀ r, NMem sur.ned r → lo ≤ r ∧ r < g0.re) (d1 : g1.drop = false) (u1 : UpBelow g1)
+    (hsur : ∀ r, NMem sur.ned r → r < g0.re) (d1 : g1.drop = false) (u1 : UpBelow g1)
     (region : List Nat) :
     TailNV lib nm lo sur (jmp0 o) g0 ((g1.emitted ⟨[], [], Termin.hop nex.th⟩).tagged g1.bo region)
       ⟨mk Sure.bunt [] ((g1.bo, mk nex.laz.sure nex.laz.fork []) :: nex.laz.bond), jmp0 g1.bo⟩ := by
@@ -155,11 +156,11 @@ theorem tailNV_past {lib : Lib} {nm : Nomm} {lo : Nat} {sur : Sure S} {o : Nat} 
   · rcases (mem e).mp he with rfl | a
     · refine ⟨R.dist, fun r hr => ?_⟩
       simp only [Gen.emitted, tagged_re]
-      rcases R.regs r hr with b | ⟨_, b⟩
-      · have := hsur r b; omega
-      · omega
+      rcases R.regs r hr with b | ⟨b, b'⟩
+      · exact ⟨Or.inl b, by have := hsur r b; omega⟩
+      · exact ⟨Or.inr (by omega), by omega⟩
     · exact ⟨(R.eregs e a).1, fun r hr => by
-        have := (R.eregs e a).2 r hr; simp only [Gen.emitted, tagged_re]; omega⟩
+        have := (R.eregs e a).2 r hr; simp only [Gen.emitted, tagged_re]; exact ⟨Or.inr (by omega), by omega⟩⟩
   · rcases (mem e).mp he with rfl | a
     · exact ⟨R.ext.2.1, by simp [jmp0], _, by rw [hb, if_pos rfl]⟩
     · obtain ⟨x, -, th', z⟩ := R.labs e a
@@ -442,8 +443,18 @@ theorem consNC_ok {lib : Lib} {P : Noun → Prop} {fh ft : Noun} {pp q : Nomm} {
       · exact Or.inr ⟨by omega, by omega⟩
     · exact Or.inr ⟨by omega, h'⟩
   · rcases (memN e).mp he with a | a
-    · exact ⟨(hp.eregs e a).1, fun r hr => by have := (hp.eregs e a).2 r hr; omega⟩
-    · exact ⟨(hq.eregs e a).1, fun r hr => by have := (hq.eregs e a).2 r hr; omega⟩
+    · refine ⟨(hp.eregs e a).1, fun r hr => ⟨?_, by have := ((hp.eregs e a).2 r hr).2; omega⟩⟩
+      rcases ((hp.eregs e a).2 r hr).1 with b | b
+      · rcases hlp r b with b' | ⟨b', _⟩
+        · exact Or.inl b'
+        · exact Or.inr b'
+      · exact Or.inr (by omega)
+    · refine ⟨(hq.eregs e a).1, fun r hr => ⟨?_, by have := ((hq.eregs e a).2 r hr).2; omega⟩⟩
+      rcases ((hq.eregs e a).2 r hr).1 with b | b
+      · rcases hlq r b with b' | ⟨b', _⟩
+        · exact Or.inl b'
+        · exact Or.inr b'
+      · exact Or.inr b
   · show g0.bo ≤ e.1 ∧ e.1 < n.th.there ∧ _
     rw [eth]
     simp only [jmp0]
