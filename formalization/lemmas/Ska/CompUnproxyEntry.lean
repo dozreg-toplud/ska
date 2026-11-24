@@ -1,4 +1,5 @@
 import lemmas.Ska.CompUnproxy
+import lemmas.Ska.CompNestCoerce
 
 /-!
 # Entering what `+to-straight` makes from blocks with proxies
@@ -129,6 +130,30 @@ theorem toStraightF_entryU [HoonMapKeys Map] {ρ : Nat → Nat} {cond : Map (Nat
     simp only [unproxyBlob, renBlob, finJumps_renFin, List.mem_map] at hj
     obtain ⟨j0, hj0, rfl⟩ := hj
     exact (hdb o start hst).2 j0 hj0
+
+/-! ## Widening the input need by registers of the run -/
+
+/-- **A fill from `ned` is a fill from `pair ned sur`** when the registers of
+`sur` lie below `lo`: the keep clause of `FillSem` already covers every
+register below `lo` outside `L`'s.  So a lazy block of a run `q` whose front,
+put by the run `p` in front of `q`, reads a register of `q`'s sure need (the
+`%mov d r'` that `+collapse-lazy-atom` makes through a proxy, `d` allocated in
+`q`'s run, below its end) can be stated with the input need
+`pair ned sur` holding `[s0 v]`, and the fill ops of the final pass at the
+other lazy blocks still meet it. -/
+theorem FillSem.pair {S : Type} [HoonSet S] {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map}
+    {gul : Noun} {st : σ} {t : Trace} {ned : Need} {lo : Nat} {L : Sure S} {A : List Pole} {s0 s : Noun}
+    (h : FillSem lib O c gul st t ned lo L A s0 s) (sur : Need) (hs : ∀ r, NMem sur r → r < lo) (v : Noun) :
+    FillSem lib O c gul st t (Need.pair ned sur) lo L A (Noun.cell s0 v) s := by
+  intro R hR
+  have hR0 : HoldsN ned R s0 := hR.1
+  refine ⟨fun f => ?_, (h R hR0).2⟩
+  obtain ⟨R', r, hh, k⟩ := (h R hR0).1 f
+  refine ⟨R', r, hh, fun x hx hn => k x ?_ hn⟩
+  rcases hx with (hx | hx) | hx
+  · exact Or.inl hx
+  · exact Or.inr (hs x hx)
+  · exact Or.inr hx
 
 end Comp
 end SkaModel

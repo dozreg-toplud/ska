@@ -259,3 +259,4 @@ open Formalization.SkaModel.Comp
 #print axioms renameBlocks_ren
 #print axioms proxRen_eq
 #print axioms toStraightF_entryU
+#print axioms FillSem.pair
