@@ -71,57 +71,64 @@ parts.  By 1 to 4 the cons and `%10` are at level `0` only, and `%3`, `%4`,
 
 ## The class `NC lv t`
 
-* `[0 axe]`, `[1 k]`: any level, `t`.
-* `[3 p]`: `p` at the level (under a goal that asks nothing `p` runs under
-  it), level at most `1`.
-* `[4 p]`, `[5 p q]`: parts at level `0`, level at most `1`.
-* the cons: tail at level `0`, head at level `1` when the tail calls (the
-  bond goal) and `0` else; level `0`.
+* `[0 axe]`: any level, `t`.
+* `[1 k]`: level `0`, `t`.
+* `[4 p]`: `p` at level `0` (calling or not), level `0` (`n4`); `p` in
+  `FragX`, level `1` (`four`).
+* the cons: tail at level `0` (with `t` when it calls), head at level `1`
+  when the tail calls (the bond goal) and `0` else; level `0`, `t`.
 * `[7 p q]`: `q` at the level, `p` at level `2` (`q`'s result may be any
-  lazy need) (`sevenE`), or, at level `0`, `p` at level `0` when `q`'s run
-  returns no entries (`NoEntF q`, `sevenN`).
-* the indirect call `[2 p q]`: parts at level `0`, any level; `q` not the
-  literal of a `%bare` formula (`bareLitQ`, the one exclusion: its nomm
+  lazy need) (`sevenE`); or, at level `0`, `p` at level `0` when `q`'s run
+  returns no entries (`NoEntF q`, `sevenN`).  A call-free `[7 p q]` must be
+  in `FragU` (the call-free development has no `[7 p q]` whose `q` has a
+  `%6` in general).
+* the indirect call `[2 p q]`: parts at level `0`, any level, `t`; `q` not
+  the literal of a `%bare` formula (`bareLitQ`, the one exclusion: its nomm
   makes one `nok` of the formula itself with all of `+mink`'s fuel,
   `CompIndirectWrap.lean`).
-* `[10 [a v] q]`: call-free parts (`FragU`), level `0`.
-* `pure`: any call-free nomm of `FragU` (`%6` included), level `0`, no `t`.
-* weakening of the level and of `t`.
+* `pure`: any call-free nomm of `FragU` (`%3`, `%5`, `%6`, `%10` among
+  them), level `0`, no `t`.
+* weakening of the level (`down`) and of `t` (`forget`).
 
-## The cases (`ok` proved, `open` with the reason)
+`ncOK` (`CompNCInd.lean`) proves `NCOK lv t` of every `NC lv t`; `NCG`
+(`CompHypOfNC.lean`) is `NC` at level `0` with at most 255 `%6`, and
+`FragUFG ⊆ NCG` (`nc_of_fragI`).
+
+## The cases
 
 Level `0` is `UOKC` (and `t`), levels `1`, `2` are `LOKCS`, `LOKC`.
 
 | case | level | from | status |
 |---|---|---|---|
 | `[0 axe]` | 0 | `uokcU`, `jNew_n0` | ok |
-| `[0 axe]`, `1 ≤ axe` | 2 | `lokc_n0A` | ok |
-| `[0 0]` | 2 | `+bomb` under a lazy goal | work |
+| `[0 axe]`, any `axe` | 2 | `lokc_n0A`, `[0 0]`: `runOKL_n00` (`lokc_n0all`) | ok |
 | `[1 k]` | 0 | `uokcU`, `jNew_n1` | ok |
-| `[1 k]` | 2 | `+mede` under a lazy goal | work |
-| `[3 p]`, `p` pure | 0 | `uokcU` | ok |
-| `[3 p]`, `p` calls | 0 | `+forl`, `clq` after `p`'s call | work |
-| `[3 p]` | 1 | `+collapse-lazy-atom` with a fresh register | work |
-| `[4 p]`, `p` pure | 0 | `uokcU` | ok |
-| `[4 p]`, `p` pure | 1 | `runOKL_n4_none` | ok (assembly) |
-| `[4 p]`, `p` calls | 0 | the `inc` block after `p`'s call | work |
-| `[4 p]`, `p` calls | 1 | `+collapse-lazy-atom`, then the call | work |
-| `[5 p q]`, pure | 0 | `uokcU` | ok |
-| `[5 p q]`, calls | 0, 1 | `pairLC_ok` with `eqq` | work |
-| cons | 0 | `uokc_consEA` (`BondOKC` from `LOKCS`) | ok (assembly) |
-| `[7 p q]`, `sevenN` | 0 | `uokc_sevenA` | ok (assembly) |
-| `[7 p q]`, `sevenE` | 0 | `uokc_sevenLA` (`n7`, `inline`, `n9`) | ok, `n8l` work |
-| `[7 p q]`, `sevenE` | 1, 2 | `runOKLC_sevenM` on every form | work |
+| `[1 k]` | 2 | `+mede` under a lazy goal | open |
+| `[3 p]`, `p` pure | 0 | `uokcU` (`pure`) | ok |
+| `[3 p]`, `p` calls | 0 | `+forl`, `clq` after `p`'s call | open |
+| `[3 p]` | 1 | `+collapse-lazy-atom` with a fresh register | open |
+| `[4 p]` | 0 | `uokcU`; with calls `uokc_fourA` (`unaryGC_ok`) | ok |
+| `[4 p]`, `p` in `FragX` | 1 | `runOKL_n4_none` (`lokcs_n4X`) | ok |
+| `[4 p]`, `p` calls | 1 | `+collapse-lazy-atom`, then the call | open |
+| `[5 p q]`, pure | 0 | `uokcU` (`pure`) | ok |
+| `[5 p q]`, calls | 0, 1 | `pairLC_ok` with `eqq` | open |
+| cons | 0 | `uokc_consEA` (`LOKCS.toBond`), `entNew_consAny` | ok |
+| cons | 1, 2 | | false in `RunOKLC` (1, 2) |
+| `[7 p q]`, `sevenN` | 0 | `uokc_sevenA`, `jump_sevenNA` | ok |
+| `[7 p q]`, `sevenE` | 0 | `uokc_sevenLA`, `jump_sevenEA` | ok |
+| `[7 p q]`, `sevenE` | 1, 2 | `lokcLv_sevenA` (`runOKLC_sevenM`) | ok |
 | `[2 p q]` | 0 | `uokc_indDA` | ok |
-| `[2 p q]` | 2 | `lokc_indirectC` on every form | work |
-| `[10 [a v] q]`, pure | 0 | `uokcU` | ok |
+| `[2 p q]` | 1, 2 | `lokc_indAU` | ok |
+| `[10 [a v] q]`, pure | 0 | `uokcU` (`pure`) | ok |
 | `[10 [a v] q]`, calls | 0 | `+into`, `+past`, `+copy` | open |
-| `JNew` of every constructor | | `+copy`'s block, `p`'s jump | work |
+| `[10 [a v] q]` | 1, 2 | | false in `RunOKLC` (4) |
+| `JNew`, `EntNew` | | `jNew_sevenC`, `jNew_sevenL`, `entNew_consAny`, `entNew_consLeaf` | ok but `[4 p]` (`t` false) |
 
-The work list, cheapest first: `[0 0]` at level `2`; `[2 p q]` at level
-`2`; `JNew`; `[7 p q]` at levels `1`, `2`; `[4 p]` with calls; `[1 k]` at
-level `2`; `[3 p]` with calls and at level `1`; `[5 p q]` with calls and
-at level `1`.
+So `[3 p]`, `[5 p q]`, `[10 [a v] q]` with calls are not in `NC` yet, the
+cons and `%10` are at level `0` only, and `[4 p]` with a calling `p` at
+level `0` only; `%lim` (`[8 [0 3] [[2 [0 2] [0 6]] [0 3]]]`, the cons `[[0 3]
+[0 1]]` under `q`'s result with a bond) is outside `NC`, though its run puts
+no op at the bond block: the hypothesis must take the bodies (a) first.
 -/
 
 set_option linter.unusedSectionVars false
