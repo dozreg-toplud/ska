@@ -46,8 +46,11 @@ register `k` stands for `d` in the blocks of the region `tag`):
    that branch, so on every path that reaches it `k` holds `v`.
 
 The first is a property of the registers at a block, stated below.  The
-second is a property of the paths of the program, which needs a path
-semantics of `execBlob` that the formalization does not have yet.  On the
+second is a property of the executions of the program, stated with the path
+semantics of `ExecPath.lean` (`Guarded`, with `HeldAfter` and
+`guarded_reads`); on the real compiler the guard is a `%brz` on the outer
+test register in front of the lazy block, so it holds of executions and not
+of the graph.  On the
 real compiler it holds on all 162 threading test formulas of
 `tools/hoon/thread-*.hoon`, before and after `+optimize`.
 -/
