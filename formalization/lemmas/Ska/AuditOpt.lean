@@ -23,6 +23,7 @@ import lemmas.Ska.OptAliasField
 import lemmas.Ska.OptAliasSSA
 import lemmas.Ska.OptAliasSSAKeep
 import lemmas.Ska.OptAliasSSARub
+import lemmas.Ska.OptAliasSSAMid
 import lemmas.Ska.OptSwitchPlainHyp
 import lemmas.Ska.OptSwitchGen
 import lemmas.Ska.OptSwitchWalkAll
@@ -201,3 +202,4 @@ open Formalization.SkaModel.Opt
 #print axioms trim_ssa
 #print axioms optimize_keeps_ssaR
 #print axioms ssk_rub
+#print axioms ssk_mid
