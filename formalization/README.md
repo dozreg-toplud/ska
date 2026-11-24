@@ -49,6 +49,9 @@ from the pill.  `split.py OUTDIR` cuts the long bodies `crK5`, `crK10`,
 later part named inside the earlier ones so that `crK5 = cr5Head` is a
 `kernel_rfl` fact; its `after_push` takes apart the Nock of one `=^`,
 `[7 [0 1] [8 A [7 E [7 F REST]]]]`.
+`arms.py door` (any other argument: the core `K`) lists the arms of the door
+of `+comp` (or of `K`) that carry a `%fast` hint, with their battery axes,
+for example `446 comp-need-ord-alloc-regs` and `1014 comp-collapse-shape`.
 
 ## core
 
@@ -199,6 +202,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompStraightStep.lean` | The gate `tsGBody` of the `+rep:by` of `+to-straight` on a pair is `renameStep` (`ts_step`), so `TsStepAt` holds given the stated link `TsRjAt` of the gate `rj` of `+chase-fin` in every core of the renaming branch (`ts_step_at`, with `ts_st_cf`), and `cu_finish_rj` is the end of `+compile-unary` from its entry state assuming only `TsRjAt`. |
 | `Compiler/CompLift.lean` | `+bind` (arm `5983` of `layer2`, `lf_bind_at`) and `+lift` (arm `372`, `lf_lift_at`, its sample bunt `lfLiftBunt` read from the pill): `(turn v (lift ren))` renames the units of a list of registers (`lf_turn`), so the gate `rj` of `+chase-fin` is `renJmp ren` (`lf_rj`), `TsRjAt` holds (`lf_ts_rj`) and `cu_finish_all` is the end of `+compile-unary` with no hypothesis on `+to-straight`.  The gate `ren-jmp` of `+map-regs` is `renJmp` too (`lf_mr_rj`), so `(map-regs ren)` is linked on every block (`mr_inner`, the terminator by `mrFin`: `renFin` except `%lti`, which the Nock keeps) and is `renBlob` on every block without `%lti` (`mr_inner_ren`). |
 | `Compiler/CompUnaryTrap.lean` | The trap of `+compile-unary` (`cuTrap`, axis `1473626077` of `K`, `cu_trap_at`) and its gate (`cuGB`, axis `179885`, `cu_gb_at`): `+compile-scc-in` (`cuCsi`, a hypothesis), the edit of the gate's `cache`, `+comp` (arm `5590`, `cu_comp_at`, its battery `cgBat` builds `[comp.door [cuBunt ctx]]`), the entry (`cu_trap_entry`), `+got:by` of `code` and `+run` (`cu_trap_run`), `+kerf` (`cu_trap_kerf`), `+to-straight` and the product (`cu_trap_end`).  `cu_trap`: the trap returns `[[s NM] CA]` with `s` the noun of `finishLU n`; `cu_gate`: so does the gate through `road-pure`; `cu_ref_mono` and `cu_gate_some`: the same against `finishLUC env n` for every `env`, the form of `refMono`. |
+| `Compiler/CompSccIn.lean` | The structure of `+compile-scc-in` (its header: the passes, the state they thread, the final pass of `member` for one bell with line numbers, and every difference from `finishLF`), and the arms of the n-ary final pass linked so far: `+soft-done` is the identity on `soft` empty or `mode` `%drop` (`sd_empty`, `sd_drop`), the gate of `+need-to-ordered` is `needToOrd` (`nta_gate`), the gate of `+need-ord-alloc-regs` is `needOrdAllocRegs` (`noar_gate`), and the gate of `+collapse-shape` is the check of `args.then` then `needOrdAllocRegs` of the shape that the gate of `+shape-collapse` returns, a hypothesis (`cs_gate`). |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`, whose `keys` are those of `rap`, the order of `+rep:by` (`treapMap_keys`). |
@@ -1167,6 +1171,37 @@ import only its theorems.  So:
     (core `10988`) or, when the shape was pessimized, `+coerce-soft`
     (battery `510`, core `766`, no model) before it.  `finishLF` models
     that pass without `+soft-done` and without the pessimized branch.
+    L, 2026-11-24 (track A, the n-ary final pass), `Compiler/CompSccIn.lean`.
+    The header writes out `+compile-scc-in` and compares its final pass
+    with `finishLF`.  `!@  dedicated-shape-pass` takes its second
+    expression, since the flag is defined (line 2816) and `%zppt` is
+    `?.((feel p.gen) q r)`: before the fixed point `member` runs
+    `+run-shape`, the final pass runs `+run` with `mode` `%run`.  For a
+    bell alone in its SCC that does not call itself, `done` is `&` (line
+    3461) and `+compile-scc-in` is `(final | ~ cache)`: one call of
+    `member` with mode `%done`, no `%may` sweep, no `+run-shape`, no
+    `+coerce-soft` (`map-local` is empty, so `finish ~`).  The cache it
+    returns is `cache.gen` after `+inlined` and the run, with `sure.cache`
+    put at `b` and `nary.cache` united with `[b straight]`; what `finish`
+    does to `gen` is thrown away.  `ord` of `finishLF` is `(shape-collapse
+    laz.nex cape.less.b)` (arm `682` of `K`, no model), and `bake` is
+    `(bake-need ned-final less.b)` (`[ned-final ~]` when the cape of
+    `less.b` has no known leaf under the need).  Linked: `+soft-done` on
+    `soft` empty (`sd_empty`), `+need-to-ordered` (`nta_gate`),
+    `+need-ord-alloc-regs` (`noar_gate`, battery axis `446`),
+    `+collapse-shape` given the gate of `+shape-collapse` (`cs_gate`).
+    `+to-straight` with the n-ary input: `+flatten-need` is preorder (a
+    `%both` register first) as `+need-ord-alloc-regs` allocates, so with
+    nothing baked `ins` is a run and, with `cond` empty, the test of
+    `ts_dol` takes the renaming branch; but `ren` is `renReg r0 n-in` and
+    `+rewrite-input` walks the whole need (`rer` on each register, the
+    result `needToOrd ned`), so `ts_pre`, `ts_ri` and `ts_dol`, stated for
+    `[%this sub]`, must be generalized to a need with `n-in` registers.
+    Not linked yet: `+coerce-lazy` (on `[sure ~ ~]` only its sure part
+    runs: the `+rep:in` over `lok` with `+axe-in-less-cape` and
+    `+axe-in-need`, `+sure-require-look` (`srl_gate`), and the loop with
+    `+kern-need` (`comp_kern_need`) and `+add-ops`), `+bake-need`, the
+    gate `finish`, and `member`.
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,

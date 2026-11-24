@@ -753,5 +753,6 @@ open Formalization
 #print axioms Compiler.sd_drop
 #print axioms Compiler.nta_gate
 #print axioms Compiler.noar_gate
+#print axioms Compiler.cs_gate
 #print axioms Compiler.mr_inner
 #print axioms Compiler.mr_inner_ren
