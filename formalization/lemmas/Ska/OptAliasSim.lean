@@ -24,6 +24,25 @@ proves that `AKept` follows the body walk.
   writes the destination and the code after writes it with the same value if
   the op is kept, and leaves it alone if the op is dropped (the destination
   is fresh, `AFresh`, so it is not covered before).
+* **`akx_exec`**: a kept op after (its reads renamed by `old`) runs as the op
+  before when every register the op reads reads through `old` the value it
+  has before: both crash, or the same tone, trace, state and write (`XRel`).
+* **`akb_op`**: one op, forward, on the values: an op before that goes on is
+  matched by the op kept after, or by nothing when it is dropped, with
+  `AKept` after, given `AOK` and `AKept` before, every register the op reads
+  done, and the destination fresh (what `as_body` has at each op).
+* **`akd_exec`**: a dropped op before goes on, given that its real reads hold
+  values (`ReadsOK`), that a `%mov` finds its source (`LocalOK`) and the facts
+  (`AOK.info`): a dropped `%inc` reads an atom, a dropped `%cel` a cell.
+
+Left for the simulation: the relation on configurations (the body after is
+the kept ops of the rest of the body from the walk state there, `AOK`,
+`AKept` with `Done` the `bodyDone` of `as_body`), its start at a block from
+`aedge_kept` (which needs `AKept` at the end of the predecessor with the
+global `old`, so the in-block `AKept` must be rebased like `awa_end_step`),
+the pass of the arguments after (`+move` tells a missing register from a
+poisoned one, which `AKept` on values does not see), the ends, and the
+backward direction.
 -/
 
 namespace Formalization
@@ -65,7 +84,7 @@ theorem acov_fresh {st : ABody} {Done : Nat → Prop} {e : Nat} (hf : AFresh st 
 def NSub (m m2 : AInfo) (P : Nat → Prop) : Prop :=
   ∀ r i y, m2 r = some i → ANames i y → (∃ r' i', m r' = some i' ∧ ANames i' y) ∨ P y
 
-theorem nsub_refl (m : AInfo) (P : Nat → Prop) : NSub m m P := fun r i x hr hx => Or.inl ⟨r, i, hr, hx⟩
+theorem nsub_refl (m : AInfo) (P : Nat → Prop) : NSub m m P := fun r i _ hr hx => Or.inl ⟨r, i, hr, hx⟩
 
 theorem nsub_trans {m m1 m2 : AInfo} {P : Nat → Prop} (h1 : NSub m m1 P) (h2 : NSub m1 m2 P) : NSub m m2 P := by
   intro r i x hr hx
@@ -437,9 +456,11 @@ def wrX (W : Option (Nat × Noun)) (regs : Map (Option Noun)) : Map (Option Noun
 
 /-- **The results of an op before and of the op kept after**: both crash, or
 the same tone, trace and state, with the same write on each register file. -/
-def XRel (r r' : Option (Tone × Map (Option Noun) × Trace × σ)) (regs regs' : Map (Option Noun)) : Prop :=
+def XRel (r r' : Option (Tone × Map (Option Noun) × Trace × σ)) (regs regs' : Map (Option Noun))
+    (dst : Option Nat) : Prop :=
   (r = none ∧ r' = none) ∨
-    ∃ ton t2 s2 W, r = some (ton, wrX W regs, t2, s2) ∧ r' = some (ton, wrX W regs', t2, s2)
+    ∃ ton t2 s2 W, r = some (ton, wrX W regs, t2, s2) ∧ r' = some (ton, wrX W regs', t2, s2) ∧
+      (∀ p, W = some p → dst = some p.1) ∧ (W = none → ∀ k, ton = Tone.zero k → dst = none)
 
 theorem akx_mapM {old : Nat → Nat} {R R' : Nat → Option Noun} :
     ∀ v : List Nat, (∀ x ∈ v, R' (old x) = R x) → (v.map old).mapM R' = v.mapM R
@@ -463,9 +484,6 @@ theorem akx_reads_none {op : Pole} {x : Nat} (hd : aliasDst op = none) (hx : x �
     x ∈ aliasReads op := by
   unfold aliasReads; rw [hd]; exact hx
 
-theorem xrel_none {r : Option (Tone × Map (Option Noun) × Trace × σ)} {regs regs' : Map (Option Noun)}
-    (h : r = none) : XRel r r regs regs' := Or.inl ⟨h, h⟩
-
 /-- **A kept op after runs as the op before**: when every register the op
 reads reads, through `old`, the value it has before, the op kept by
 `aliasOp` gives the same tone, trace, state and write on the file after. -/
@@ -473,11 +491,11 @@ theorem akx_exec {pick : List Nat → Nat} {st st2 : ABody} {op op' : Pole}
     (h : aliasOp pick st op = some (some op', st2)) (lib : Lib) (O : Oracle σ) (gul : Noun) (s : σ)
     {regs regs' : Map (Option Noun)} (t : Trace)
     (hrd : ∀ x ∈ aliasReads op, read (st.old x) regs' = read x regs) :
-    XRel (execPole lib O gul s op regs t) (execPole lib O gul s op' regs' t) regs regs' := by
+    XRel (execPole lib O gul s op regs t) (execPole lib O gul s op' regs' t) regs regs' (aliasDst op) := by
   have one : ∀ x, x ∈ aliasReads op → read (st.old x) regs' = read x regs := hrd
   have call : ∀ {α : Type} (r : Option α) (f : α → Option (Tone × σ)) (d : Nat),
       XRel (r.bind fun vs => (f vs).bind fun (ton, st') => afterCall st' regs t d ton)
-        (r.bind fun vs => (f vs).bind fun (ton, st') => afterCall st' regs' t d ton) regs regs' := by
+        (r.bind fun vs => (f vs).bind fun (ton, st') => afterCall st' regs' t d ton) regs regs' (some d) := by
     intro α r f d
     rcases r with _ | vs
     · exact Or.inl ⟨rfl, rfl⟩
@@ -486,9 +504,9 @@ theorem akx_exec {pick : List Nat → Nat} {st st2 : ABody} {op op' : Pole}
       · exact Or.inl ⟨rfl, rfl⟩
       · simp only [Option.bind_some]
         cases ton with
-        | zero p => exact Or.inr ⟨_, _, _, some (d, p), rfl, rfl⟩
-        | one b => exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
-        | two tr => exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
+        | zero p => exact Or.inr ⟨_, _, _, some (d, p), rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
+        | one b => exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
+        | two tr => exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
   cases op with
   | imm n d =>
     simp only [aliasOp] at h
@@ -496,7 +514,7 @@ theorem akx_exec {pick : List Nat → Nat} {st st2 : ABody} {op op' : Pole}
     · cases h
     · simp only [Option.some.injEq, Prod.mk.injEq] at h
       obtain ⟨rfl, -⟩ := h
-      exact Or.inr ⟨_, _, _, some (d, n), rfl, rfl⟩
+      exact Or.inr ⟨_, _, _, some (d, n), rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
   | mov s d => simp [aliasOp] at h
   | inc s d =>
     simp only [aliasOp] at h
@@ -510,8 +528,8 @@ theorem akx_exec {pick : List Nat → Nat} {st st2 : ABody} {op op' : Pole}
       simp only [execPole, localPole, e]
       rcases read s regs with _ | (a | ⟨x, y⟩)
       · exact Or.inl ⟨rfl, rfl⟩
-      · exact Or.inr ⟨_, _, _, some (d, _), rfl, rfl⟩
-      · exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
+      · exact Or.inr ⟨_, _, _, some (d, _), rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
+      · exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
   | con h0 t0 d =>
     simp only [aliasOp] at h
     obtain ⟨hi, -, h⟩ := Option.bind_eq_some_iff.mp h
@@ -529,7 +547,7 @@ theorem akx_exec {pick : List Nat → Nat} {st st2 : ABody} {op op' : Pole}
       · exact Or.inl ⟨rfl, rfl⟩
       · rcases read t0 regs with _ | y
         · exact Or.inl ⟨rfl, rfl⟩
-        · exact Or.inr ⟨_, _, _, some (d, _), rfl, rfl⟩
+        · exact Or.inr ⟨_, _, _, some (d, _), rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
   | hed s d =>
     simp only [aliasOp] at h
     obtain ⟨ai, -, h⟩ := Option.bind_eq_some_iff.mp h
@@ -543,7 +561,7 @@ theorem akx_exec {pick : List Nat → Nat} {st st2 : ABody} {op op' : Pole}
       rcases read s regs with _ | (a | ⟨x, y⟩)
       · exact Or.inl ⟨rfl, rfl⟩
       · exact Or.inl ⟨rfl, rfl⟩
-      · exact Or.inr ⟨_, _, _, some (d, _), rfl, rfl⟩
+      · exact Or.inr ⟨_, _, _, some (d, _), rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
   | tal s d =>
     simp only [aliasOp] at h
     obtain ⟨ai, -, h⟩ := Option.bind_eq_some_iff.mp h
@@ -557,7 +575,7 @@ theorem akx_exec {pick : List Nat → Nat} {st st2 : ABody} {op op' : Pole}
       rcases read s regs with _ | (a | ⟨x, y⟩)
       · exact Or.inl ⟨rfl, rfl⟩
       · exact Or.inl ⟨rfl, rfl⟩
-      · exact Or.inr ⟨_, _, _, some (d, _), rfl, rfl⟩
+      · exact Or.inr ⟨_, _, _, some (d, _), rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
   | cel p =>
     simp only [aliasOp] at h
     obtain ⟨ai, -, h⟩ := Option.bind_eq_some_iff.mp h
@@ -570,8 +588,8 @@ theorem akx_exec {pick : List Nat → Nat} {st st2 : ABody} {op op' : Pole}
       simp only [execPole, localPole, e]
       rcases read p regs with _ | (a | ⟨x, y⟩)
       · exact Or.inl ⟨rfl, rfl⟩
-      · exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
-      · exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
+      · exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
+      · exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
   | lob p =>
     simp only [aliasOp] at h
     obtain ⟨ai, -, h⟩ := Option.bind_eq_some_iff.mp h
@@ -586,8 +604,8 @@ theorem akx_exec {pick : List Nat → Nat} {st st2 : ABody} {op op' : Pole}
       · exact Or.inl ⟨rfl, rfl⟩
       · simp only [Option.bind_some]
         split
-        · exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
-        · exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
+        · exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
+        · exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
   | equ l r =>
     simp only [aliasOp] at h
     split at h
@@ -601,26 +619,26 @@ theorem akx_exec {pick : List Nat → Nat} {st st2 : ABody} {op op' : Pole}
       · exact Or.inl ⟨rfl, rfl⟩
       · rcases read r regs with _ | y
         · exact Or.inl ⟨rfl, rfl⟩
-        · exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
+        · exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
   | hsp n f =>
     simp only [aliasOp, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, -⟩ := h
-    exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
+    exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
   | hse n f =>
     simp only [aliasOp, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, -⟩ := h
-    exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
+    exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
   | hcp n f =>
     simp only [aliasOp, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, -⟩ := h
-    exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
+    exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
   | hce n f =>
     simp only [aliasOp, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, -⟩ := h
     simp only [execPole, localPole]
     rcases popTrace t with _ | t1
     · exact Or.inl ⟨rfl, rfl⟩
-    · exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
+    · exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
   | hdp n p f =>
     simp only [aliasOp, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, -⟩ := h
@@ -629,8 +647,8 @@ theorem akx_exec {pick : List Nat → Nat} {st st2 : ABody} {op op' : Pole}
     split
     · rcases read p regs with _ | v
       · exact Or.inl ⟨rfl, rfl⟩
-      · exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
-    · exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
+      · exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
+    · exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
   | hde n p f =>
     simp only [aliasOp, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, -⟩ := h
@@ -638,8 +656,8 @@ theorem akx_exec {pick : List Nat → Nat} {st st2 : ABody} {op op' : Pole}
     split
     · rcases popTrace t with _ | t1
       · exact Or.inl ⟨rfl, rfl⟩
-      · exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
-    · exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
+      · exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
+    · exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
   | hmp a v f =>
     simp only [aliasOp, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, -⟩ := h
@@ -648,14 +666,14 @@ theorem akx_exec {pick : List Nat → Nat} {st st2 : ABody} {op op' : Pole}
     simp only [execPole, localPole, e]
     rcases v.mapM (fun x => read x regs) with _ | vs
     · exact Or.inl ⟨rfl, rfl⟩
-    · exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
+    · exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
   | hme a v f =>
     simp only [aliasOp, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, -⟩ := h
     simp only [execPole, localPole]
     rcases popTrace t with _ | t1
     · exact Or.inl ⟨rfl, rfl⟩
-    · exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
+    · exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
   | spy e0 p d =>
     simp only [aliasOp, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, -⟩ := h
@@ -663,7 +681,7 @@ theorem akx_exec {pick : List Nat → Nat} {st st2 : ABody} {op op' : Pole}
     have e2 := one p (akx_reads_dst (l := [e0, p]) rfl rfl (by simp))
     simp only [execPole, localPole, e1, e2]
     split
-    · exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
+    · exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
     · rcases read e0 regs with _ | x
       · exact Or.inl ⟨rfl, rfl⟩
       · rcases read p regs with _ | y
@@ -676,9 +694,9 @@ theorem akx_exec {pick : List Nat → Nat} {st st2 : ABody} {op op' : Pole}
             · exact Or.inl ⟨rfl, rfl⟩
             · simp only [Option.bind_some]
               cases dr with
-              | block => exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
-              | hunk => exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
-              | val w => exact Or.inr ⟨_, _, _, some (d, w), rfl, rfl⟩
+              | block => exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
+              | hunk => exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
+              | val w => exact Or.inr ⟨_, _, _, some (d, w), rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
   | nok u f d =>
     simp only [aliasOp, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, -⟩ := h
@@ -694,9 +712,9 @@ theorem akx_exec {pick : List Nat → Nat} {st st2 : ABody} {op op' : Pole}
         · exact Or.inl ⟨rfl, rfl⟩
         · simp only [Option.bind_some]
           cases ton with
-          | zero q => exact Or.inr ⟨_, _, _, some (d, q), rfl, rfl⟩
-          | one b => exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
-          | two tr => exact Or.inr ⟨_, _, _, none, rfl, rfl⟩
+          | zero q => exact Or.inr ⟨_, _, _, some (d, q), rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
+          | one b => exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
+          | two tr => exact Or.inr ⟨_, _, _, none, rfl, rfl, fun p hp => by cases hp <;> rfl, fun hW k hk => by first | rfl | (cases hW; done) | (cases hk; done)⟩
   | cal a v d =>
     simp only [aliasOp, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, -⟩ := h
@@ -730,6 +748,74 @@ theorem akx_exec {pick : List Nat → Nat} {st st2 : ABody} {op op' : Pole}
     obtain ⟨rfl, -⟩ := h
     simp only [execPole, one s0 (akx_reads_dst (l := [s0]) rfl rfl List.mem_cons_self)]
     exact call _ _ d
+
+end
+
+/-- `OpSem` changes only the destination. -/
+theorem opsem_frame {op : Pole} {R R2 : Nat → Option Noun} (hs : OpSem op R R2) :
+    ∀ x, aliasDst op ≠ some x → R2 x = R x := by
+  intro x hx
+  cases op <;> simp only [OpSem] at hs
+  all_goals first
+    | (subst hs; rfl)
+    | (subst hs; exact as_upd_other _ _ (fun e => hx (by rw [e]; rfl)))
+    | (obtain ⟨_, rfl⟩ := hs; exact as_upd_other _ _ (fun e => hx (by rw [e]; rfl)))
+    | (obtain ⟨_, _, rfl⟩ := hs; exact as_upd_other _ _ (fun e => hx (by rw [e]; rfl)))
+    | (obtain ⟨_, _, _, rfl⟩ := hs; exact as_upd_other _ _ (fun e => hx (by rw [e]; rfl)))
+    | (obtain ⟨_, _, _, _, rfl⟩ := hs; exact as_upd_other _ _ (fun e => hx (by rw [e]; rfl)))
+    | (obtain ⟨_, rfl⟩ := hs; rfl)
+
+section
+variable {Map : Type → Type} [HoonMap Map] {σ : Type}
+
+/-- **One op, forward, on the values**: an op before that goes on (`%0`)
+is matched by the op kept after, which goes on with the same tone, trace and
+state, or by nothing when the op is dropped; `AKept` holds after the step. -/
+theorem akb_op {pick : List Nat → Nat} (hpick : ∀ l : List Nat, l ≠ [] → pick l ∈ l)
+    {st st2 : ABody} {op : Pole} {res : Option Pole} {Done : Nat → Prop}
+    (h : aliasOp pick st op = some (res, st2)) (lib : Lib) (O : Oracle σ) (gul : Noun) (s : σ)
+    {regs regs' : Map (Option Noun)} (t : Trace)
+    (hok : AOK st (fun x => read x regs) Done) (hk : AKept st (fun x => read x regs) (fun x => read x regs') Done)
+    (hD : ∀ x ∈ aliasReads op, Done x) (hsrc : ∀ x ∈ asSrc op, Done x)
+    (hf : ∀ e, aliasDst op = some e → AFresh st Done e)
+    {n : Noun} {R2 : Map (Option Noun)} {t2 : Trace} {s2 : σ}
+    (hx : execPole lib O gul s op regs t = some (Tone.zero n, R2, t2, s2)) :
+    (∀ op', res = some op' → ∃ R2', execPole lib O gul s op' regs' t = some (Tone.zero n, R2', t2, s2) ∧
+      AKept st2 (fun x => read x R2) (fun x => read x R2') (fun x => Done x ∨ (aliasDst op = some x ∧ st.old x = x))) ∧
+    (res = none → AKept st2 (fun x => read x R2) (fun x => read x regs')
+      (fun x => Done x ∨ (aliasDst op = some x ∧ st.old x = x))) := by
+  have hsem := as_sem hx
+  refine ⟨fun op' hr => ?_, fun hr => ?_⟩
+  · subst hr
+    have hrd : ∀ x ∈ aliasReads op, read (st.old x) regs' = read x regs := fun x hx' => by
+      exact (hk.old x (hD x hx')).trans (hok.old x (hD x hx'))
+    rcases akx_exec h lib O gul s t hrd with ⟨e, -⟩ | ⟨ton, t3, s3, W, e1, e2, hW1, hW2⟩
+    · rw [e] at hx; cases hx
+    · rw [hx] at e1
+      simp only [Option.some.injEq, Prod.mk.injEq] at e1
+      obtain ⟨rfl, rfl, rfl, rfl⟩ := e1
+      refine ⟨wrX W regs', e2, akept_op hpick h hsrc hf hk ?_ ?_ ?_⟩
+      · intro x hne
+        rcases W with _ | ⟨d, v⟩
+        · rfl
+        · have hd := hW1 _ rfl
+          exact read_store_other (fun e => hne (by rw [hd, e])) v regs
+      · intro x hne
+        rcases hne with hne | hne
+        · rcases W with _ | ⟨d, v⟩
+          · rfl
+          · have hd := hW1 _ rfl
+            exact read_store_other (fun e => hne (by rw [hd, e])) v regs'
+        · cases hne
+      · intro e he _
+        rcases W with _ | ⟨d, v⟩
+        · rw [hW2 rfl n rfl] at he; cases he
+        · have hd := hW1 _ rfl
+          rw [hd] at he; cases he
+          show read d (store d v regs') = read d (store d v regs)
+          rw [read_store_self, read_store_self]
+  · subst hr
+    exact akept_op hpick h hsrc hf hk (opsem_frame hsem) (fun _ _ => rfl) (fun _ _ h => by cases h)
 
 end
 
