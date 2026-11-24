@@ -11,6 +11,7 @@ import lemmas.Ska.CompSevenN
 import lemmas.Ska.CompFragM
 import lemmas.Ska.CompFragX
 import lemmas.Ska.CompUnproxy
+import lemmas.Ska.CompUnproxyEntry
 import lemmas.Ska.CompEntryGoal
 import lemmas.Ska.CompFromRun
 import lemmas.Ska.CompEntryRun
@@ -256,3 +257,6 @@ open Formalization.SkaModel.Comp
 #print axioms chaseFin_ren
 #print axioms keepBlock_ren
 #print axioms renameBlocks_ren
+#print axioms proxRen_eq
+#print axioms toStraightF_entryU
+#print axioms FillSem.pair
