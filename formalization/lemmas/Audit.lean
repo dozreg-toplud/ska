@@ -881,3 +881,8 @@ open Formalization
 #print axioms Compiler.scc_sur_frag
 #print axioms Compiler.csi_gate_scc_one_m
 #print axioms Compiler.cu_gate_scc_one_m
+#print axioms Compiler.mem_final_run_none
+#print axioms Compiler.mem_final_cs_none
+#print axioms Compiler.mem_gate_none
+#print axioms Compiler.csi_gate_scc_one_f
+#print axioms Compiler.cu_gate_scc_one_f

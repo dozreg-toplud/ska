@@ -282,5 +282,186 @@ theorem cu_gate_scc_one_m (cape : Cape) (DATA FOL CODE JETS CALLS JH NARY MONO S
     simp only [Option.bind_some, hp, Option.map_some] at hcsi ⊢
     exact cu_gate FUNC _ CODE (C JETS CALLS) JH _ _ _ V n hpu' h6' ht' hcsi hgot hv
 
+/-! ## The crashes of the final pass of `member` -/
+
+/-- The final pass crashes when the run does. -/
+theorem mem_final_run_none (GN NM DCTX S0 : Noun) (hmode : edit? 46 (A 0x6e7572) (C GN (memS3 NM DCTX S0))
+      = some (C GN (memS3 NM DCTX S0)))
+    (hrun : nock (crSubj (A 1) NM (C (A 0x656e6f64) (A 0)) (A 0) (A 0) (C comp.door (C GN DCTX))) crDol = none) :
+    nock (C GN (memS3 NM DCTX S0)) memFinal = none := by
+  conv => { lhs; arg 2; unfold memFinal }
+  simp [nock_exec, hmode, mem_run_call, hrun]
+
+/-- The final pass crashes when `+collapse-shape` does. -/
+theorem mem_final_cs_none (GN NM DCTX CAPE DATA FOL KEEP ML TOP CA CTX NEXN G1N : Noun)
+    (hmode : edit? 46 (A 0x6e7572) (C GN (memS3 NM DCTX (memS0 (C (C CAPE DATA) FOL) KEEP ML TOP CA CTX)))
+      = some (C GN (memS3 NM DCTX (memS0 (C (C CAPE DATA) FOL) KEEP ML TOP CA CTX))))
+    (hrun : nock (crSubj (A 1) NM (C (A 0x656e6f64) (A 0)) (A 0) (A 0) (C comp.door (C GN DCTX))) crDol
+      = some (C NEXN G1N))
+    (hcs : nock (C csBody (C (C NEXN CAPE) (C comp.door (C G1N DCTX)))) csBody = none) :
+    nock (C GN (memS3 NM DCTX (memS0 (C (C CAPE DATA) FOL) KEEP ML TOP CA CTX))) memFinal = none := by
+  conv => { lhs; arg 2; unfold memFinal }
+  simp [nock_exec, memF2, hmode, mem_run_call, hrun, mem_cs_call, hcs]
+
+/-- **`member` on its final pass crashes when the run does**, or when
+`+collapse-shape` does: `args.then` not `~`, or `+need-ord-alloc-regs` of
+`sccSur` crashing. -/
+theorem mem_gate_none (cape : Cape) (DATA FOL : Noun) (keep : Bool)
+    (ML TOP CACHE DN KIDS ML0 CB SCC CODE LSR JH CACHE0 : Noun) (nm : Nomm) (CA : Noun)
+    (hinl : nock (C inlBody (C (C (C (C cape.toNoun DATA) FOL) (C (C CODE LSR) (C JH CACHE))) compK)) inlBody
+      = some (C nm.toNoun CA))
+    (hpu : nm.pure = true) (h6 : noSix nm = true) (ht : tenOk nm = true)
+    (hcrash : runL nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF)) = none ∨
+      ∃ nex g1, runL nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF)) = some (nex, g1) ∧
+        (nex.th.args ≠ [] ∨ needOrdAllocRegs (sccSur nex cape) g1 = none)) :
+    nock (C memBody (C (memSam (C (C cape.toNoun DATA) FOL) (A 0x656e6f64) (loob keep) ML TOP CACHE)
+        (memCtx DN KIDS ML0 CB SCC (C CODE LSR) JH CACHE0))) memBody = none := by
+  have h7 : slot? 7 (memDCtx SCC (C CODE LSR) JH ML TOP (C (C cape.toNoun DATA) FOL)) = some compK := rfl
+  have hcode : slot? 52 (memDCtx SCC (C CODE LSR) JH ML TOP (C (C cape.toNoun DATA) FOL)) = some CODE := by
+    simp [memDCtx, nock_exec]
+  rw [mem_entry _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ ⟨_, _, _, rfl⟩ hinl, mem_r3, mem_res]
+  have hrunN := comp_run_entry h7 hcode nm hpu h6 ht (cuRest CA) (A 1) (A 0) (cu_entry_nosoft _)
+  rcases hcrash with hr | ⟨nex, g1, hr, hc⟩
+  · have hr' : runL nm (CGoal.toL (CGoal.done : CGoal CSet)) [] (gen0 : Gen (TreapMap mugF)) = none := hr
+    rw [← gen0_eq, hr', cu_done_noun] at hrunN
+    simp only [listNoun, Option.map_none, compCore] at hrunN
+    rw [mem_final_run_none (hmode := mem_mode_noop _ _) (hrun := hrunN)]
+    rfl
+  · have hr' : runL nm (CGoal.toL (CGoal.done : CGoal CSet)) [] (gen0 : Gen (TreapMap mugF)) = some (nex, g1) := hr
+    rw [← gen0_eq, hr', cu_done_noun] at hrunN
+    simp only [listNoun, Option.map_some, compCore] at hrunN
+    obtain ⟨hlz, hsur⟩ := scc_sur_frag nm hpu h6 nex g1 hr cape
+    have hsc := hsc_of_sure nex nex.laz.sure hlz cape (sccSur nex cape) hsur
+    have hcsN := cs_gate _ h7 (cuRest CA) g1 nex cape.toNoun (sccSur nex cape) hsc
+    have hnone : (if nex.th.args ≠ [] then Option.none else
+        (needOrdAllocRegs (sccSur nex cape) g1).map fun p =>
+          C (C p.1.toNoun (C nex.laz.toNoun (A nex.th.there))) (genNoun p.2 (cuRest CA))) = Option.none := by
+      rcases hc with ha | hn
+      · simp [ha]
+      · simp [hn]
+    rw [hnone] at hcsN
+    simp only [compCore] at hcsN
+    rw [mem_final_cs_none (hmode := mem_mode_noop _ _) (hrun := hrunN) (hcs := hcsN)]
+    rfl
+
+/-! ## The gate with the model hypotheses folded in -/
+
+/-- **The final pass of `member` for an SCC of one bell**, as a model: the
+run of `nm` for `[%done ~]`, then `finishLF` with `ord` the shape `sccSur`
+of that run. -/
+noncomputable def finishSccOne (nm : Nomm) (cape : Cape) : Option (Straight (TreapMap mugF)) :=
+  (runL nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF))).bind fun p =>
+    finishLF (S := CSet) (Map := TreapMap mugF) nm (sccSur p.1 cape) cape (fun n => (n, []))
+
+/-- Nothing is baked whenever the final pass gets to `+bake-need`. -/
+def NoBakeOne (nm : Nomm) (cape : Cape) (DATA : Noun) : Prop :=
+  ∀ nex g1 nedF g2, runL nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF)) = some (nex, g1) →
+    nex.th.args = [] → needOrdAllocRegs (sccSur nex cape) g1 = some (nedF, g2) → NoBake nedF (Sock.mk cape DATA)
+
+/-- **`+compile-scc-in` on an SCC of one bell, with the model hypotheses
+folded in**: on the fragment (`nm` pure, `%6`-free, `tenOk`) and when
+nothing is baked (`NoBakeOne`), the gate returns the noun of the model:
+`[[[b st] ~ ~] cache']` with `st` from the run of `nm` and `finishLF` with
+`ord := sccSur`, `nary` with `st` put at `b`, `inl` as `InlOK` says and
+`sure` with `sccSur` put at `b`; it crashes when the model is `none`.  The
+other hypotheses speak of the state nouns only. -/
+theorem csi_gate_scc_one_f (cape : Cape) (DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE : Noun)
+    (hnary : getF mugF (C (C cape.toNoun DATA) FOL) NARY = some (A 0)) (hnmap : IsMap mugF NARY)
+    (hsmap : IsMap mugF SURE) (hcalls : NoCalls (C (C cape.toNoun DATA) FOL) CALLS)
+    (nm : Nomm) (INL' : Noun) (hinl : InlOK (C (C cape.toNoun DATA) FOL) CODE INL nm INL')
+    (hpu : nm.pure = true) (h6 : noSix nm = true) (ht : tenOk nm = true)
+    (hbake : NoBakeOne nm cape DATA) :
+    nock (C csiBody (C (csiSam (setOne (C (C cape.toNoun DATA) FOL)) (C CODE (C JETS CALLS)) JH
+        (cacheN NARY MONO SCCS INL SURE)) compK)) csiBody
+      = (runL nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF))).bind fun p =>
+          (finishLF (S := CSet) (Map := TreapMap mugF) nm (sccSur p.1 cape) cape (fun n => (n, []))).bind fun st =>
+            (putF mugF (C (C cape.toNoun DATA) FOL) st.toNoun NARY).bind fun NARYU =>
+              (putF mugF (C (C cape.toNoun DATA) FOL) (sccSur p.1 cape).toNoun SURE).map fun SURE' =>
+                C (C (C (C (C cape.toNoun DATA) FOL) st.toNoun) (C (A 0) (A 0))) (cacheN NARYU MONO SCCS INL' SURE') := by
+  have hi := inl_gate (C (C cape.toNoun DATA) FOL) CODE (C JETS CALLS) JH NARY MONO SCCS INL SURE INL' nm hpu hinl
+  have hcrash : (runL nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF)) = none ∨
+      ∃ nex g1, runL nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF)) = some (nex, g1) ∧
+        (nex.th.args ≠ [] ∨ needOrdAllocRegs (sccSur nex cape) g1 = none)) →
+      nock (C csiBody (C (csiSam (setOne (C (C cape.toNoun DATA) FOL)) (C CODE (C JETS CALLS)) JH
+        (cacheN NARY MONO SCCS INL SURE)) compK)) csiBody = none := by
+    intro hc
+    have hcache : cacheN NARY MONO SCCS INL SURE = C NARY (C MONO (C SCCS (C INL SURE))) := rfl
+    rw [hcache, csi_to_final _ _ _ _ _ _ hnary (csi_kids_nocalls _ CODE JETS CALLS JH _ hcalls) (ju_has_kids _)]
+    exact csi_final_one_none _ _ _ _ _ _ _ _ (mem_gate_none cape DATA FOL false (A 0) (A 0)
+      (C NARY (C MONO (C SCCS (C INL SURE)))) (A 0) (kidsOne _) (A 0) csiBody _ CODE (C JETS CALLS) JH
+      (C NARY (C MONO (C SCCS (C INL SURE)))) nm _ hi hpu h6 ht hc)
+  cases hr : runL nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF)) with
+  | none => exact hcrash (Or.inl hr)
+  | some p =>
+    obtain ⟨nex, g1⟩ := p
+    simp only [Option.bind_some]
+    by_cases ha : nex.th.args = []
+    · cases hn : needOrdAllocRegs (sccSur nex cape) g1 with
+      | none =>
+        have hf : finishLF (S := CSet) (Map := TreapMap mugF) nm (sccSur nex cape) cape (fun n => (n, []))
+            = Option.none := by
+          unfold finishLF; simp [hr, ha, hn]
+        rw [hf, hcrash (Or.inr ⟨nex, g1, hr, Or.inr hn⟩)]
+        rfl
+      | some q =>
+        obtain ⟨nedF, g2⟩ := q
+        obtain ⟨SURE', hp, -, -⟩ := putF_spec mugF SURE (C (C cape.toNoun DATA) FOL) (sccSur nex cape).toNoun hsmap
+        rw [csi_gate_scc_one_m cape DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE hnary hnmap hcalls nm INL'
+          hinl hpu h6 ht nex g1 hr ha nedF g2 hn (hbake nex g1 nedF g2 hr ha hn) SURE' hp]
+        cases finishLF (S := CSet) (Map := TreapMap mugF) nm (sccSur nex cape) cape (fun n => (n, [])) with
+        | none => rfl
+        | some st =>
+          obtain ⟨NARYU, hq, -, -⟩ := putF_spec mugF NARY (C (C cape.toNoun DATA) FOL) st.toNoun hnmap
+          simp [hq, hp]
+    · have hf : finishLF (S := CSet) (Map := TreapMap mugF) nm (sccSur nex cape) cape (fun n => (n, []))
+          = Option.none := by
+        unfold finishLF; simp [hr, ha]
+      rw [hf, hcrash (Or.inr ⟨nex, g1, hr, Or.inl ha⟩)]
+      rfl
+
+/-- **The gate of `+compile-unary` on `[func [b ~ ~] long-ska jets-hot
+cache]` with the model hypotheses folded in**: under the hypotheses of
+`csi_gate_scc_one_f`, and for the nomm `n` of `func` (pure, `%6`-free,
+`tenOk`), it returns `finishLU n` with the n-ary map and the cache of the
+model, and crashes when the model of the SCC is `none`. -/
+theorem cu_gate_scc_one_f (cape : Cape) (DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE : Noun)
+    (hnary : getF mugF (C (C cape.toNoun DATA) FOL) NARY = some (A 0)) (hnmap : IsMap mugF NARY)
+    (hsmap : IsMap mugF SURE) (hcalls : NoCalls (C (C cape.toNoun DATA) FOL) CALLS)
+    (nm : Nomm) (INL' : Noun) (hinl : InlOK (C (C cape.toNoun DATA) FOL) CODE INL nm INL')
+    (hpu : nm.pure = true) (h6 : noSix nm = true) (ht : tenOk nm = true)
+    (hbake : NoBakeOne nm cape DATA)
+    (FUNC V : Noun) (n : Nomm) (hpu' : n.pure = true) (h6' : noSix n = true) (ht' : tenOk n = true)
+    (hgot : getF mugF FUNC CODE = some (C (A 0) V)) (hv : slot? 2 V = some n.toNoun) :
+    nock (C cuGB (C (cuSam FUNC (setOne (C (C cape.toNoun DATA) FOL)) CODE (C JETS CALLS) JH
+        (cacheN NARY MONO SCCS INL SURE)) compK)) cuGB
+      = (runL nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF))).bind fun p =>
+          (finishLF (S := CSet) (Map := TreapMap mugF) nm (sccSur p.1 cape) cape (fun n => (n, []))).bind fun st =>
+            (putF mugF (C (C cape.toNoun DATA) FOL) st.toNoun NARY).bind fun NARYU =>
+              (putF mugF (C (C cape.toNoun DATA) FOL) (sccSur p.1 cape).toNoun SURE).bind fun SURE' =>
+                (finishLU (S := CSet) (Map := TreapMap mugF) n).map fun st' =>
+                  C (C st'.toNoun (C (C (C (C cape.toNoun DATA) FOL) st.toNoun) (C (A 0) (A 0))))
+                    (cacheN NARYU MONO SCCS INL' SURE') := by
+  have hcsi := csi_gate_scc_one_f cape DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE hnary hnmap hsmap hcalls
+    nm INL' hinl hpu h6 ht hbake
+  rw [← cu_csi_eq FUNC] at hcsi
+  cases hr : runL nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF)) with
+  | none =>
+    rw [hr] at hcsi
+    exact cu_gate_none _ hcsi
+  | some p =>
+    obtain ⟨nex, g1⟩ := p
+    rw [hr] at hcsi
+    simp only [Option.bind_some] at hcsi ⊢
+    cases e : finishLF (S := CSet) (Map := TreapMap mugF) nm (sccSur nex cape) cape (fun n => (n, [])) with
+    | none =>
+      rw [e] at hcsi
+      exact cu_gate_none _ hcsi
+    | some st =>
+      obtain ⟨NARYU, hq, -, -⟩ := putF_spec mugF NARY (C (C cape.toNoun DATA) FOL) st.toNoun hnmap
+      obtain ⟨SURE', hp, -, -⟩ := putF_spec mugF SURE (C (C cape.toNoun DATA) FOL) (sccSur nex cape).toNoun hsmap
+      rw [e] at hcsi
+      simp only [Option.bind_some, hq, hp, Option.map_some] at hcsi ⊢
+      exact cu_gate FUNC _ CODE (C JETS CALLS) JH _ _ _ V n hpu' h6' ht' hcsi hgot hv
+
 end Compiler
 end Formalization
