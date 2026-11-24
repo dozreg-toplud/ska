@@ -469,26 +469,25 @@ theorem hop_bwd {x0 : Cfg σ Map}
 
 end Sim
 
-/-- **`+remove-hops` keeps the code**, on a `topo` with `TopoOK`, its
-`+rev-cfg`, distinct parameters and jumps that pass the check of
-`+eval-pass`. -/
-theorem hops_keeps [MapKeys Map] {fuel : Nat} (c : Straight Map) {topo : List Nat} {ch : Bool} {bl' : Map Blob}
-    (ht : TopoOK c.blocks topo) (hnd : ParNodup c.blocks) (hpc : PassOK c.blocks)
-    (h : removeHops fuel c.blocks (revCfg c.blocks topo) topo = some (ch, bl')) : Keeps c (withBlocks c bl') := by
-  have HH : HopsHyp c.blocks (revCfg c.blocks topo) topo :=
-    ⟨ht.2.2.2.1, fun o b j ho hb hj => revCfg_mem ho hb hj, hnd, hpc⟩
-  have H : HopsBlocks c.blocks (revCfg c.blocks topo) topo (withBlocks c bl').blocks := hops_blocks ht.1 ht.2.1 h
+/-- **`+remove-hops` keeps the code**, given what the simulation needs of
+`rev` and `topo` (`HopsHyp`: every reachable block in `topo`, every member of
+`topo` in the list of each target it jumps to, distinct parameters, jumps that
+pass the check of `+eval-pass`), `topo` without duplicates and `0` first. -/
+theorem hops_keeps_of {fuel : Nat} (c : Straight Map) {rev : Map (List Nat)} {topo : List Nat} {ch : Bool}
+    {bl' : Map Blob} (HH : HopsHyp c.blocks rev topo) (hn : topo.Nodup) (h0 : topo.head? = some 0)
+    (h : removeHops fuel c.blocks rev topo = some (ch, bl')) : Keeps c (withBlocks c bl') := by
+  have H : HopsBlocks c.blocks rev topo (withBlocks c bl').blocks := hops_blocks hn h0 h
   obtain ⟨m0, hm0, b0, T, F, hb0, hmt, rfl⟩ := H.zero
   refine ⟨rfl, rfl, by rw [hm0, hb0]; rfl, ?_⟩
   intro lib σ O gul st vals t hok
   let x0 : Path.Cfg σ Map := ⟨0, b0, [], regsOf vals, t, st⟩
   let x0' : Path.Cfg σ Map := ⟨0, merge b0 T F, [], regsOf vals, t, st⟩
-  have hr0 : HopRel c.blocks (revCfg c.blocks topo) x0 x0' :=
+  have hr0 : HopRel c.blocks rev x0 x0' :=
     Or.inl ⟨b0, T, F, rfl, rfl, Reach.zero, hb0, hmt, rfl, RegLe.refl _, rfl, rfl⟩
   have hok' : ∀ es y k, Steps lib O c gul x0 es y → ReadsAt gul y k → ∃ v, read k y.regs = some v :=
     fun es y k hs hk => hok es y k ⟨b0, hb0, hs⟩ hk
   have back : ∀ es' y', Path.FromEntry (lib := lib) (O := O) (c := withBlocks c bl') (gul := gul) st vals t es' y' →
-      ∃ es y, Steps lib O c gul x0 es y ∧ HopN c.blocks (revCfg c.blocks topo) y y' := by
+      ∃ es y, Steps lib O c gul x0 es y ∧ HopN c.blocks rev y y' := by
     rintro es' y' ⟨b0'', hb0'', hs'⟩
     rw [hm0] at hb0''; cases hb0''
     exact hop_bwd (c' := withBlocks c bl') HH H hok' hs' (Steps.refl x0) hr0
@@ -506,6 +505,14 @@ theorem hops_keeps [MapKeys Map] {fuel : Nat} (c : Straight Map) {topo : List Na
     obtain ⟨hk', hle⟩ := hop_bwd_reads (c' := withBlocks c bl') HH H hn hk
     obtain ⟨v, hv⟩ := hok' es y k hs hk'
     exact ⟨v, hle.rd hv⟩
+
+/-- **`+remove-hops` keeps the code**, on a `topo` with `TopoOK`, its
+`+rev-cfg`, distinct parameters and jumps that pass the check of
+`+eval-pass`. -/
+theorem hops_keeps [MapKeys Map] {fuel : Nat} (c : Straight Map) {topo : List Nat} {ch : Bool} {bl' : Map Blob}
+    (ht : TopoOK c.blocks topo) (hnd : ParNodup c.blocks) (hpc : PassOK c.blocks)
+    (h : removeHops fuel c.blocks (revCfg c.blocks topo) topo = some (ch, bl')) : Keeps c (withBlocks c bl') :=
+  hops_keeps_of c ⟨ht.2.2.2.1, fun _ _ _ ho hb hj => revCfg_mem ho hb hj, hnd, hpc⟩ ht.1 ht.2.1 h
 
 /-- **The preservation statement of `+remove-hops` holds.** -/
 theorem hopsKeeps [MapKeys Map] (fuel : Nat) : HopsKeeps (Map := Map) fuel :=
