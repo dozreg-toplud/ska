@@ -75,6 +75,7 @@ import lemmas.Ska.CompIndirectWrapTop
 import lemmas.Ska.CompHypOfCall
 import lemmas.Ska.CompIndirectNext
 import lemmas.Ska.CompIndirectOut
+import lemmas.Ska.CompConsCallTop
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -719,3 +720,16 @@ open Formalization.SkaModel.Comp
 #print axioms indirect_runS
 #print axioms indirect_runD
 #print axioms indirect_runP
+#print axioms pastL_hinted
+#print axioms tailNV_past
+#print axioms minkF_consC
+#print axioms consNC_ok
+#print axioms indirect_clean
+#print axioms consCH_runN
+#print axioms finishTop_genA
+#print axioms returnsC_done
+#print axioms finishLUC_fwdC
+#print axioms consCH_runD
+#print axioms consCHTop_fwd
+#print axioms consCHTop_fwdA
+#print axioms consCH_example

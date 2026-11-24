@@ -17,7 +17,8 @@ subject whole.
   `%next (lazy-from-reg 0)` into it, and whose formula crashes where the
   run's pure part does.
 * `runLC_cons_done`, `consCH_runD`: the cons under `%done`.
-* `consCHTop_fwd`: the forward contract of `[[2 b c] d]`.
+* `consCHTop_fwd`, `consCHTop_fwdA`: the forward contract of `[[2 b c] d]`,
+  and `consCH_example` for `[[2 [0 3] [0 2]] [0 1]]`.
 -/
 
 set_option linter.unusedSectionVars false
@@ -326,6 +327,32 @@ theorem consCHTop_fwd {lib : Lib} {bl : Bell} {b c d : Nomm} {fh ft : Noun} (hfo
   · rcases hr with ⟨_, rfl⟩ | ⟨x, ex, _⟩
     · exact er
     · rw [er] at ex; cases ex
+
+/-- **The forward contract of `[[2 b c] d]` on `Annot`**: the formula
+`[[2 fb fc] fd]` with `b`, `c`, `d` in `FragU` standing for `fb`, `fc`, `fd`
+on the subjects that fit the bell. -/
+theorem consCHTop_fwdA {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) {bl : Bell}
+    {b c d : Nomm} {fb fc fd : Noun} (hfol : bl.fol = C (n3 (A 2) fb fc) fd)
+    (hAb : Annot lib code (SkaModel.Fits bl.less) fb b) (hAc : Annot lib code (SkaModel.Fits bl.less) fc c)
+    (hAd : Annot lib code (SkaModel.Fits bl.less) fd d)
+    (hb : FragU (S := S) b) (hc : FragU (S := S) c) (hd : FragU (S := S) d)
+    (hcount : sixCount b + sixCount c + sixCount d ≤ 255) {env : CallEnv} {cd : Straight Map}
+    (h : finishLUC (S := S) env (Nomm.cons (Nomm.n2 b c Option.none) d) = some cd) (N : Needs) :
+    cd.need = NeedOrd.this ∧ ∀ s, SkaModel.Fits bl.less s → ContractFwd lib N s bl.fol [s] cd :=
+  consCHTop_fwd hfol (runU_uok lib hb) (runU_uok lib hc) (runU_uok lib hd)
+    (minkN2_indirect hok (fragU_pure hb) (fragU_pure hc) hAb hAc) ⟨_, _, rfl⟩
+    (fun {s gul n tm r} hs hm => (mink_pure hok (fragU_pure hd) hAd hs gul tm r).mp ⟨n, hm⟩) hcount h N
+
+/-- **`[[2 [0 3] [0 2]] [0 1]]` end to end, forward**: its whole-subject
+code (the raw blocks of `CompCallParent.lean`) has the need `this` and meets
+`ContractFwd` on every subject that fits the bell. -/
+theorem consCH_example {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) {bl : Bell}
+    (hfol : bl.fol = C (n3 (A 2) (slot 3) (slot 2)) (slot 1)) {env : CallEnv} {cd : Straight Map}
+    (h : finishLUC (S := S) env (Nomm.cons (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) (Nomm.n0 1)) = some cd)
+    (N : Needs) :
+    cd.need = NeedOrd.this ∧ ∀ s, SkaModel.Fits bl.less s → ContractFwd lib N s bl.fol [s] cd :=
+  consCHTop_fwdA hok hfol Annot.n0 Annot.n0 Annot.n0 (FragU.x (FragX.frag fun _ => trivial))
+    (FragU.x (FragX.frag fun _ => trivial)) (FragU.x (FragX.frag fun _ => trivial)) (by simp [sixCount]) h N
 
 end Comp
 end SkaModel
