@@ -647,6 +647,54 @@ theorem indirect_runD (lib : Lib) {p q : Nomm} (up : UOK (S := S) (Map := Map) l
   rw [R.ext.2.2.2 _ (by simp only [Gen.emitted]; omega)]
   simp only [Gen.emitted, d0, Bool.false_eq_true, ↓reduceIte, HoonMap.get_put]
 
+/-- **The indirect call `[2 p q]` under `%pick z o`, from any state**:
+`+simple-next` makes the block `[brn re z o]` at `bo` (kept to the end), and the
+rest of the run is the one under the fork-free `%next (lazy-from-reg re)`
+into it, from the state after that block, which meets `RunOKNC`
+(`indirect_runS`); `outGoal_pick` turns its goal into `%pick`. -/
+theorem indirect_runP (lib : Lib) {p q : Nomm} (up : UOK (S := S) (Map := Map) lib p)
+    (uq : UOK (S := S) (Map := Map) lib q) {P : Noun → Prop} {f : Noun} (M : MinkN2 lib P f p q)
+    (hcount : sixCount p + sixCount q ≤ 255) {env : CallEnv} {sup : Option Nomm}
+    {region : List Nat} {g0 g' : Gen Map} {nex : NextL S} {z o' : Jmp}
+    (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0) (hcl : Clear g0) (hcb : CondBelow g0)
+    (hjp : GJ g0.bo (CGoal.pick z o' : CGoal S))
+    (h : runLC env sup (Nomm.n2 p q Option.none) (CGoalL.pick z o') region g0 = some (nex, g')) :
+    HoonMap.get g'.blocks g0.bo = some ⟨[], [], Termin.brn g0.re z o'⟩ ∧
+    RunOKNC lib P f (Nomm.cons p q) (lazyReg g0.re) (jmp0 g0.bo)
+      ({ g0 with re := g0.re + 1 }.emitted ⟨[], [], Termin.brn g0.re z o'⟩) g' nex := by
+  obtain ⟨nex0, g1, out, pro, g2, o, g3, nexF, g4, nexF', g5, nexS, g6, h1, h2, h3, h4, h5, h6, h7⟩ :=
+    runLC_n2_none h
+  simp only [simpleNextL] at h1
+  obtain ⟨r, ga, ha, h1⟩ := bind_some h1
+  rw [re_apply] at ha
+  simp only [Option.some.injEq, Prod.mk.injEq] at ha
+  obtain ⟨rfl, rfl⟩ := ha
+  obtain ⟨od, gb, hb, h1⟩ := bind_some h1
+  rw [emit_apply] at hb
+  simp only [Option.some.injEq, Prod.mk.injEq] at hb
+  obtain ⟨rfl, rfl⟩ := hb
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h1
+  obtain ⟨rfl, rfl⟩ := h1
+  have G1 : GrowU ({ g0 with re := g0.re + 1 } : Gen Map) ({ g0 with re := g0.re + 1 }.emitted ⟨[], [], Termin.brn g0.re z o'⟩) :=
+    growU_emit (g := { g0 with re := g0.re + 1 }) (b := ⟨[], [], Termin.brn g0.re z o'⟩)
+      (fun j hj => by
+        simp only [finJumps, List.mem_cons, List.mem_nil_iff, or_false] at hj
+        rcases hj with rfl | rfl
+        · exact hjp.1
+        · exact hjp.2) hu
+  have R := indirect_runS (sur := lazyReg g0.re) (th := jmp0 g0.bo) lib up uq M hcount
+    ⟨b0, by simp only [jmp0, Gen.emitted]; omega⟩ rfl
+    ⟨trivial, fun x hx => by simp only [lazyReg, NMem] at hx; subst hx; simp only [Gen.emitted]; omega⟩
+    (by simp only [Gen.emitted]; omega) (by simp only [Gen.emitted]; exact d0) (G1.up hu)
+    (Clear.growU (g := ({ g0 with re := g0.re + 1 } : Gen Map)) hcl G1)
+    (fun k hk => by have := hcb k hk; simp only [Gen.emitted] at this ⊢; omega)
+    (fun x hx => by
+      simp only [lazyReg, NMem] at hx; subst hx
+      exact condBelow_none hcb (Nat.le_refl _)) h2 h3 h4 h5 h6 h7
+  refine ⟨?_, R⟩
+  rw [R.ext.2.2.2 _ (by simp only [Gen.emitted]; omega)]
+  simp only [Gen.emitted, d0, Bool.false_eq_true, ↓reduceIte, HoonMap.get_put]
+
 /-! ## `OutGoal` for `%done` and `%pick` -/
 
 /-- **`OutGoal` for `%done`** from `OutGoal` for `%next (lazy-from-reg r)`

@@ -718,3 +718,4 @@ open Formalization.SkaModel.Comp
 #print axioms outGoal_pick
 #print axioms indirect_runS
 #print axioms indirect_runD
+#print axioms indirect_runP
