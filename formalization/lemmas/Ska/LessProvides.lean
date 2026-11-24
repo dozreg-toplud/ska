@@ -44,6 +44,18 @@ with it:
    requirement reads (`distribute lc s.prod.src` in `callStep`), so that
    masking `more` by `want` changes nothing that a site's callee needs.
 
+Checked on the real compiler (runhoon.sh, 2026-11-24) where a `%he`
+generalization ends a chain of identities of one code bell:
+`tools/hoon/he2.hoon` (a gate `|=([n=@ a=*] ?:(=(0 n) .*(a a) $(n (dec n),
+a [a 5]))))` and two variants, each grows `a`, a part used as a formula, so
+the `.indi` test misses at every level) gives in each pruned graph one group
+of 32 or 33 identities of one code bell, 992 or 1,056 ordered pairs, with no
+failure of `ProdMeet` and no pair whose patched products under `less.c`
+differ; with `he-threshold` raised the first poke did not end in 90 s, so
+the `%he` step is what ends the chain.  `tools/hoon/he24.hoon` found after
+the last poke 20 pairs of a code bell and a bake (7 strict) and 38 sites,
+with no failure of `LessProvidesNF`, `KnowMeetsNF` or `SitesMeet`.
+
 Inlining needs no case: an inlined call is the `%7` of the nomm that
 `callStep` makes, and `+know` walks it as a `%7`, with the product of the
 formula's subject as the inlined body's subject, as the analysis did.
