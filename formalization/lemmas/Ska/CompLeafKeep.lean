@@ -158,13 +158,21 @@ def WrIn (Q L : Nat → Prop) (c : Straight Map) : Prop :=
 /-- **The frame lemma up to the first exit**: along a path from `x`, whose
 block writes only `Q`, through blocks at labels of `L` that write only `Q`,
 either every label entered is in `L` and the registers outside `Q` keep their
-values to the end, or the path enters a first label outside `L`, at a
-configuration whose registers outside `Q` are those of `x`. -/
+values to the end, or the path reaches, through labels of `L` only, a
+configuration `y1` at its terminator that takes a jump `j` to a first label
+outside `L`, and the registers of `y1` outside `Q` are those of `x`.  The
+configuration is the one before the jump, whose block is still one of `L`,
+so that a second program with the same blocks in `L` and another block at
+`j.there` has the same prefix (`steps_transfer`). -/
 theorem steps_exit {c : Straight Map} {Q L : Nat → Prop} (hc : WrIn Q L c) {x y : Cfg σ Map}
     {es : List (Nat × Nat)} (h : Steps lib O c gul x es y) (hx : BlobWr Q x.b) :
     ((∀ a ∈ es, L a.2) ∧ ∀ r, ¬ Q r → HoonMap.get y.regs r = HoonMap.get x.regs r) ∨
-    ∃ es1 es2 y1, es = es1 ++ es2 ∧ Steps lib O c gul x es1 y1 ∧ Steps lib O c gul y1 es2 y ∧ ¬ L y1.lab ∧
-      (∀ a ∈ es1, L a.2 ∨ a.2 = y1.lab) ∧ ∀ r, ¬ Q r → HoonMap.get y1.regs r = HoonMap.get x.regs r := by
+    ∃ (es1 es2 : List (Nat × Nat)) (y1 : Cfg σ Map) (j : Jmp) (b' : Blob),
+      es = es1 ++ [(y1.lab, j.there)] ++ es2 ∧ Steps lib O c gul x es1 y1 ∧
+      y1.params = [] ∧ y1.b.par = [] ∧ y1.b.body = [] ∧ taken y1.regs y1.b.fin = some j ∧
+      HoonMap.get c.blocks j.there = some b' ∧
+      Steps lib O c gul ⟨j.there, b', j.args, y1.regs, y1.t, y1.st⟩ es2 y ∧ ¬ L j.there ∧
+      (∀ a ∈ es1, L a.2) ∧ ∀ r, ¬ Q r → HoonMap.get y1.regs r = HoonMap.get x.regs r := by
   induction h with
   | refl => exact Or.inl ⟨fun a ha => absurd ha List.not_mem_nil, fun _ _ => rfl⟩
   | @step x z y e es s rest ih =>
@@ -173,13 +181,17 @@ theorem steps_exit {c : Straight Map} {Q L : Nat → Prop} (hc : WrIn Q L c) {x 
     -- the steps inside a block
     have inner : e = [] → BlobWr Q z.b → ((∀ a ∈ e ++ es, L a.2) ∧
         ∀ r, ¬ Q r → HoonMap.get y.regs r = HoonMap.get x.regs r) ∨
-        ∃ es1 es2 y1, e ++ es = es1 ++ es2 ∧ Steps lib O c gul x es1 y1 ∧ Steps lib O c gul y1 es2 y ∧
-          ¬ L y1.lab ∧ (∀ a ∈ es1, L a.2 ∨ a.2 = y1.lab) ∧
-          ∀ r, ¬ Q r → HoonMap.get y1.regs r = HoonMap.get x.regs r := fun he hz => by
+        ∃ (es1 es2 : List (Nat × Nat)) (y1 : Cfg σ Map) (j : Jmp) (b' : Blob),
+          e ++ es = es1 ++ [(y1.lab, j.there)] ++ es2 ∧ Steps lib O c gul x es1 y1 ∧
+          y1.params = [] ∧ y1.b.par = [] ∧ y1.b.body = [] ∧ taken y1.regs y1.b.fin = some j ∧
+          HoonMap.get c.blocks j.there = some b' ∧
+          Steps lib O c gul ⟨j.there, b', j.args, y1.regs, y1.t, y1.st⟩ es2 y ∧ ¬ L j.there ∧
+          (∀ a ∈ es1, L a.2) ∧ ∀ r, ¬ Q r → HoonMap.get y1.regs r = HoonMap.get x.regs r := fun he hz => by
       subst he
-      rcases ih hz with ⟨l, f⟩ | ⟨es1, es2, y1, e1, s1, s2, n1, l1, f1⟩
+      rcases ih hz with ⟨l, f⟩ | ⟨es1, es2, y1, j, b', e1, s1, p1, q1, d1, t1, hb1, s2, n1, l1, f1⟩
       · exact Or.inl ⟨l, fun r hr => (f r hr).trans (fz r hr)⟩
-      · refine Or.inr ⟨es1, es2, y1, e1, ?_, s2, n1, l1, fun r hr => (f1 r hr).trans (fz r hr)⟩
+      · refine Or.inr ⟨es1, es2, y1, j, b', e1, ?_, p1, q1, d1, t1, hb1, s2, n1, l1,
+          fun r hr => (f1 r hr).trans (fz r hr)⟩
         have := Steps.step s s1
         rwa [List.nil_append] at this
     cases s with
@@ -188,21 +200,19 @@ theorem steps_exit {c : Straight Map} {Q L : Nat → Prop} (hc : WrIn Q L c) {x 
       exact inner rfl ⟨fun r hr => hx.1 r hr, fun p hp' => hx.2 p (by rw [h3]; exact List.mem_cons_of_mem _ hp')⟩
     | @jump j b' h1 h2 h3 h4 h5 =>
       by_cases hl : L j.there
-      · rcases ih (hc _ _ hl h5) with ⟨l, f⟩ | ⟨es1, es2, y1, e1, s1, s2, n1, l1, f1⟩
+      · rcases ih (hc _ _ hl h5) with ⟨l, f⟩ | ⟨es1, es2, y1, jj, bb, e1, s1, p1, q1, d1, t1, hb1, s2, n1, l1, f1⟩
         · refine Or.inl ⟨fun a ha => ?_, fun r hr => (f r hr).trans (fz r hr)⟩
           rcases List.mem_append.mp ha with ha | ha
           · rw [List.mem_singleton] at ha; rw [ha]; exact hl
           · exact l a ha
-        · refine Or.inr ⟨[(x.lab, j.there)] ++ es1, es2, y1, by rw [e1, List.append_assoc],
-            Steps.step (Step.jump h1 h2 h3 h4 h5) s1, s2, n1, fun a ha => ?_, fun r hr => (f1 r hr).trans (fz r hr)⟩
+        · refine Or.inr ⟨[(x.lab, j.there)] ++ es1, es2, y1, jj, bb, by rw [e1]; simp only [List.append_assoc],
+            Steps.step (Step.jump h1 h2 h3 h4 h5) s1, p1, q1, d1, t1, hb1, s2, n1, fun a ha => ?_,
+            fun r hr => (f1 r hr).trans (fz r hr)⟩
           rcases List.mem_append.mp ha with ha | ha
-          · rw [List.mem_singleton] at ha; rw [ha]; exact Or.inl hl
+          · rw [List.mem_singleton] at ha; rw [ha]; exact hl
           · exact l1 a ha
-      · refine Or.inr ⟨[(x.lab, j.there)], es, ⟨j.there, b', j.args, x.regs, x.t, x.st⟩, rfl, ?_, rest, hl,
-          fun a ha => ?_, fun _ _ => rfl⟩
-        · have := Steps.step (Step.jump (c := c) (lib := lib) (O := O) (gul := gul) h1 h2 h3 h4 h5) (Steps.refl _)
-          rwa [List.append_nil] at this
-        · rw [List.mem_singleton] at ha; rw [ha]; exact Or.inr rfl
+      · exact Or.inr ⟨[], es, x, j, b', rfl, Steps.refl _, h1, h2, h3, h4, h5, rest, hl,
+          fun a ha => absurd ha List.not_mem_nil, fun _ _ => rfl⟩
 
 /-- **A configuration at a jump runs as the jump**: what is left of its block
 is the terminator, which takes `j`, so it runs as `goJ` of `j`. -/
