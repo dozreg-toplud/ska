@@ -197,11 +197,38 @@ theorem agreeU_empty {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} 
 
 /-! ## `+chase` and the renaming path on the unproxied blocks -/
 
+/-- The jumps of every block go down in the rank `ρ` (`DownRk` without the
+bound on the labels, so that it holds of the blocks of `+to-straight` with the
+start block at label `0`, `rankDown_start`). -/
+def RankDown (ρ : Nat → Nat) (bs : Map Blob) : Prop :=
+  ∀ k b, HoonMap.get bs k = some b → ∀ j ∈ finJumps b.fin, ρ j.there < ρ k
+
+theorem DownRk.rankDown {ρ : Nat → Nat} {bs : Map Blob} (h : DownRk ρ bs) : RankDown ρ bs :=
+  fun k b hb j hj => ((h k b hb).2 j hj).2
+
+/-- **The blocks of `+to-straight`, with the start block at `0`, go down** in
+the rank that gives `0` the rank of the start block's old label. -/
+theorem rankDown_start {ρ : Nat → Nat} {blocks : Map Blob} (hd : DownRk ρ blocks) {o : Nat} {start : Blob}
+    (hst : HoonMap.get blocks o = some start) :
+    RankDown (fun k => if k = 0 then ρ o else ρ k) (HoonMap.put (HoonMap.del blocks o) 0 start) := by
+  intro k b hb j hj
+  simp only [HoonMap.get_put, HoonMap.get_del] at hb
+  by_cases k0 : k = 0
+  · rw [if_pos k0] at hb; cases hb
+    have := (hd o start hst).2 j hj
+    simp only [k0, if_true, show j.there ≠ 0 by omega, if_false]; exact this.2
+  · rw [if_neg k0] at hb
+    by_cases ko : k = o
+    · rw [if_pos ko] at hb; cases hb
+    · rw [if_neg ko] at hb
+      have := (hd k b hb).2 j hj
+      simp only [k0, show j.there ≠ 0 by omega, if_false]; exact this.2
+
 section Chase
 variable {ρ : Nat → Nat} {bs bs' : Map Blob} {u : Nat → Nat}
 
 /-- **`+chase` on the renamed blocks is `+chase` followed by the renaming.** -/
-theorem chase_ren (hd : DownRk ρ bs) (hb : ∀ k, HoonMap.get bs' k = (HoonMap.get bs k).map (renBlob u)) :
+theorem chase_ren (hd : RankDown ρ bs) (hb : ∀ k, HoonMap.get bs' k = (HoonMap.get bs k).map (renBlob u)) :
     ∀ n (j : Jmp) (br : Bool), ρ j.there < n → chase bs' br (renJmp u j) = (chase bs br j).map (renJmp u)
   | 0, _, _, hn => absurd hn (Nat.not_lt_zero _)
   | n + 1, j, br, hn => by
@@ -221,14 +248,14 @@ theorem chase_ren (hd : DownRk ρ bs) (hb : ∀ k, HoonMap.get bs' k = (HoonMap.
           by_cases ha : j.args = []
           · have ha' := (renJmp_args_nil u j).mpr ha
             simp only [ha, ha', if_true]
-            have := (hd _ _ hbj).2 t (by simp [finJumps])
+            have := hd _ _ hbj t (by simp [finJumps])
             exact chase_ren hd hb n t br (by omega)
           · have ha' : ¬ (renJmp u j).args = [] := fun e => ha ((renJmp_args_nil u j).mp e)
             simp only [ha, ha', if_false]; rfl
         · simp only [hy, Bool.false_eq_true, if_false]; rfl
       | _ => rfl
 
-theorem chaseFin_ren (hd : DownRk ρ bs) (hb : ∀ k, HoonMap.get bs' k = (HoonMap.get bs k).map (renBlob u))
+theorem chaseFin_ren (hd : RankDown ρ bs) (hb : ∀ k, HoonMap.get bs' k = (HoonMap.get bs k).map (renBlob u))
     (f : Nat → Nat) (fin : Termin) : chaseFin bs' f (renFin u fin) = chaseFin bs (f ∘ u) fin := by
   have cr : ∀ (j : Jmp) br, chase bs' br (renJmp u j) = (chase bs br j).map (renJmp u) :=
     fun j br => chase_ren hd hb (ρ j.there + 1) j br (Nat.lt_succ_self _)
@@ -252,7 +279,7 @@ theorem chaseFin_ren (hd : DownRk ρ bs) (hb : ∀ k, HoonMap.get bs' k = (HoonM
 
 /-- **One block of the renaming path by `f ∘ u` is the block of the renaming
 path by `f` on the renamed blocks.** -/
-theorem keepBlock_ren (hd : DownRk ρ bs) (hb : ∀ k, HoonMap.get bs' k = (HoonMap.get bs k).map (renBlob u))
+theorem keepBlock_ren (hd : RankDown ρ bs) (hb : ∀ k, HoonMap.get bs' k = (HoonMap.get bs k).map (renBlob u))
     (f : Nat → Nat) (k : Nat) (b : Blob) : keepBlock bs' f k (renBlob u b) = keepBlock bs (f ∘ u) k b := by
   unfold keepBlock
   rw [bypassable_ren]
@@ -262,6 +289,19 @@ theorem keepBlock_ren (hd : DownRk ρ bs) (hb : ∀ k, HoonMap.get bs' k = (Hoon
     cases chaseFin bs (f ∘ u) b.fin with
     | none => rfl
     | some fin => simp [renBlob, List.map_map, renPole_comp, Function.comp_def]
+
+/-- **The renaming path by `f ∘ u` holds, at each label, the block of the
+renaming path by `f` of the renamed blocks**, which is what `Sim.kept` asks
+with the program of the unproxied blocks. -/
+theorem renameBlocks_ren [HoonMapKeys Map] (hd : RankDown ρ bs)
+    (hb : ∀ k, HoonMap.get bs' k = (HoonMap.get bs k).map (renBlob u)) {f : Nat → Nat} {new : Map Blob}
+    (h : renameBlocks bs (f ∘ u) = some new) :
+    ∀ k b', HoonMap.get bs' k = some b' → ∃ kb, keepBlock bs' f k b' = some kb ∧ HoonMap.get new k = kb := by
+  intro k b' hk
+  rw [hb] at hk
+  obtain ⟨b, hb0, rfl⟩ := Option.map_eq_some_iff.mp hk
+  rw [keepBlock_ren hd hb]
+  exact renameBlocks_spec h k b hb0
 
 end Chase
 
