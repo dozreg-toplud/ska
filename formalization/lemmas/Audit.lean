@@ -120,6 +120,7 @@ import lemmas.Compiler.CompNoNN
 import lemmas.Compiler.CompRunCall
 import lemmas.Compiler.CompSccCall
 import lemmas.Compiler.CompSccCallGate
+import lemmas.Compiler.CompPruneLink
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -984,3 +985,6 @@ open Formalization
 #print axioms Compiler.csi_gate_scc_one_f_c
 #print axioms Compiler.cu_gate_scc_one_f_c
 #print axioms Compiler.noBakeOneC_no
+#print axioms Compiler.comp_walk_lazy_all
+#print axioms Compiler.le_gate
+#print axioms Compiler.comp_lazy_prune
