@@ -46,6 +46,8 @@ import lemmas.Ska.KnowMonoFalse
 import lemmas.Ska.SitesMeetNF
 import lemmas.Ska.AnaFuel
 import lemmas.Ska.AnaEnds
+import lemmas.Ska.PassLoop
+import lemmas.Ska.HeTurn
 
 /-! The axioms of the main theorems of `lemmas/Ska`.  `lake build` prints
 them; each should be `propext`, `Classical.choice` and `Quot.sound` at most. -/
@@ -386,3 +388,8 @@ open Formalization.SkaModel
 #print axioms PokeM.anaEndsN_of_halts
 #print axioms PokeM.anaEndsN_mono
 #print axioms PokeM.anaEnds_of_N
+#print axioms mergeProd_fits_old
+#print axioms runDatum_prod_old
+#print axioms runDatum_changed_of_less
+#print axioms knit_eq_cell
+#print axioms heSock_size
