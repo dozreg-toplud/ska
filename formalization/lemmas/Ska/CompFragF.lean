@@ -48,6 +48,16 @@ tal -> v5` (`q`'s head call's parts); `5: nok v5 v6 -> v4`; `4: mov v4 v2`;
 `3: mov v7 v3` (the bond block, `p`'s `+kern` from its product); `2: con`;
 `1`.
 
+The gate call `[8 [9 2 [0 2]] [9 2 [10 [6 [0 7]] [0 2]]]]` (`%gat`, subject
+`[[[0 1] 5 0] 7]`, product `[[0 1] 7 0]`, the nomm `[7 [[7 [0 2] [2 [0 1] [0
+2]]] [0 1]] [7 [10 [6 [0 7]] [0 2]] [2 [0 1] [0 2]]]]`): `0: v0 -> vk, cel,
+hed -> vj, cel, hed -> vi, hop b` (the first gate and its battery); `b: mov vj
+vh`; `a: nok vh vi -> v9` (the first call); `9: v9 -> cel, hed -> v4, tal ->
+cel, hed -> va, tal -> v8` (the battery and the context of its product, kept
+for the edit); `8: v0 -> cel, tal -> v7` (the new sample `[0 7]`); `5: con v7
+v8 -> v6, con v4 v6 -> v5` (the edited core); `4: mov v5 v3`; `3: nok v3 v4
+-> v2` (the arm's call); `2`; `1`.
+
 An inlined `[2 [0 1] [1 [2 [0 3] [0 2]]]]` (`%inl`) is compiled as a direct
 call of the bell `[[%.n 0] [2 [0 3] [0 2]]]` (out of scope), not as `[7 p q]`.
 
@@ -75,7 +85,9 @@ such a call (`HeadQ`).
   `eight_exampleA` (`%e8a`), `eight_exampleB` (`%e8b`), `nine_exampleA`
   (`%e9a`), `nine_exampleB` (`%e9b`), `seven_exampleN` (`%s7n`),
   `seven_exampleT` (`%s7t`), `sevenL_exampleF` (`%s7f`), `sevenL_exampleG`
-  (`%s7g`), `consS7_exampleC` (`%s7c`), `consS7_exampleH` (`%h7c`).
+  (`%s7g`), `consS7_exampleC` (`%s7c`), `consS7_exampleH` (`%h7c`),
+  `gate_example` (`%gat`, the gate call `[8 [9 2 [0 2]] [9 2 [10 [6 [0 7]]
+  [0 2]]]]`).
 -/
 
 set_option linter.unusedSectionVars false
@@ -174,6 +186,25 @@ open Nock Lazy
     (8, bk [Pole.mov 7 8, Pole.cel 8, Pole.hed 8 10, Pole.mov 10 6, Pole.tal 8 9, Pole.mov 9 5] (hp 5)),
     (9, bk [Pole.nok 12 13 7] (hp 8)),
     (10, none)])
+
+-- `%gat`
+#guard monoOutC envR (Nomm.n7 (Nomm.cons (Nomm.n7 (Nomm.n0 2) (Nomm.n2 (Nomm.n0 1) (Nomm.n0 2) Option.none)) (Nomm.n0 1))
+    (Nomm.n7 (Nomm.n10 6 (Nomm.n0 7) (Nomm.n0 2)) (Nomm.n2 (Nomm.n0 1) (Nomm.n0 2) Option.none))) 13 ==
+  some (NeedOrd.this, 1, [(0, bk [Pole.mov 0 20, Pole.cel 20, Pole.hed 20 22, Pole.mov 22 19, Pole.cel 19,
+      Pole.hed 19 24, Pole.mov 24 18] (hp 11)),
+    (1, bk [] (Termin.don 1)),
+    (2, bk [Pole.mov 2 1] (hp 1)),
+    (3, bk [Pole.nok 3 4 2] (hp 2)),
+    (4, bk [Pole.mov 5 3] (hp 3)),
+    (5, bk [Pole.con 7 8 6, Pole.con 4 6 5] (hp 4)),
+    (6, none),
+    (7, none),
+    (8, bk [Pole.mov 0 26, Pole.cel 26, Pole.tal 26 27, Pole.mov 27 7] (hp 5)),
+    (9, bk [Pole.mov 9 11, Pole.cel 11, Pole.hed 11 16, Pole.mov 16 4, Pole.tal 11 12, Pole.mov 12 13, Pole.cel 13,
+      Pole.hed 13 15, Pole.mov 15 10, Pole.tal 13 14, Pole.mov 14 8] (hp 8)),
+    (10, bk [Pole.nok 17 18 9] (hp 9)),
+    (11, bk [Pole.mov 19 17] (hp 10)),
+    (12, none)])
 
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
 
@@ -581,6 +612,32 @@ theorem consS7_exampleH {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK 
     Or.inr (FragI.weak (FragI.consS7 (HeadP.ind (FragU.x (FragX.frag fun _ => trivial))
       (FragU.x (FragX.frag fun _ => trivial)) rfl) (HeadQ.b (FragB.n4 (FragX.frag fun _ => trivial)))
       (fun e => by simp [Nomm.pure] at e) fragI_ind00))
+  exact finishLUC_contractUF hok hA hf (by decide) h N
+
+/-- **The gate call `[8 [9 2 [0 2]] [9 2 [10 [6 [0 7]] [0 2]]]]` end to end**
+(`%gat`): the `n8` form with `[9 2 [0 2]]` (an `n9` with the arm's call) in
+the pushed pair and `[9 2 [10 [6 [0 7]] [0 2]]]` (the sample edited, then the
+arm's call) as the body. -/
+theorem gate_example {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) {bl : Bell}
+    (hfol : bl.fol = n3 (A 8) (n3 (A 9) (A 2) (slot 2)) (n3 (A 9) (A 2) (n3 (A 10) (n2 (A 6) (slot 7)) (slot 2))))
+    {env : CallEnv} {cd : Straight Map}
+    (h : finishLUC (S := S) env (Nomm.n7 (Nomm.cons (Nomm.n7 (Nomm.n0 2) (Nomm.n2 (Nomm.n0 1) (Nomm.n0 2) Option.none))
+      (Nomm.n0 1)) (Nomm.n7 (Nomm.n10 6 (Nomm.n0 7) (Nomm.n0 2)) (Nomm.n2 (Nomm.n0 1) (Nomm.n0 2) Option.none))) =
+      some cd)
+    (N : Needs) : cd.need = NeedOrd.this ∧ BellContract lib N bl true cd := by
+  have hA : Annot lib code (SkaModel.Fits bl.less) bl.fol (Nomm.n7 (Nomm.cons (Nomm.n7 (Nomm.n0 2)
+      (Nomm.n2 (Nomm.n0 1) (Nomm.n0 2) Option.none)) (Nomm.n0 1))
+      (Nomm.n7 (Nomm.n10 6 (Nomm.n0 7) (Nomm.n0 2)) (Nomm.n2 (Nomm.n0 1) (Nomm.n0 2) Option.none))) := by
+    rw [hfol]
+    exact Annot.n8 (Annot.n9 Annot.n0 (Annot.indirect Annot.n0 Annot.n0))
+      (Annot.n9 (Annot.n10 (by decide) Annot.n0 Annot.n0) (Annot.indirect Annot.n0 Annot.n0))
+  have hf : FragUF S (Nomm.n7 (Nomm.cons (Nomm.n7 (Nomm.n0 2) (Nomm.n2 (Nomm.n0 1) (Nomm.n0 2) Option.none))
+      (Nomm.n0 1)) (Nomm.n7 (Nomm.n10 6 (Nomm.n0 7) (Nomm.n0 2)) (Nomm.n2 (Nomm.n0 1) (Nomm.n0 2) Option.none))) :=
+    Or.inr (FragI.weak (FragI.sevenPF
+      (FragI.consH (FragI.sevenJ JNewQ.n0 fragI_ind00 noEntF_ind00) (FragU.x (FragX.frag fun _ => trivial)))
+      (FragI.sevenU (FragU.ten (FragU.x (FragX.frag fun _ => trivial)) (FragU.x (FragX.frag fun _ => trivial)))
+        (fragI_ind00 (S := S)) noEntF_ind00)
+      (NoEntF.seven (NoEntF.pure rfl rfl) noEntF_ind00)))
   exact finishLUC_contractUF hok hA hf (by decide) h N
 
 end Comp

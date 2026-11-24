@@ -926,3 +926,4 @@ open Formalization.SkaModel.Comp
 #print axioms bondOKC_head7
 #print axioms consS7_exampleC
 #print axioms consS7_exampleH
+#print axioms gate_example
