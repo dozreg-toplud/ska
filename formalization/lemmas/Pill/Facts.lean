@@ -12,6 +12,7 @@ public import lemmas.Pill.Arm.Can
 public import lemmas.Pill.Arm.Cap
 public import lemmas.Pill.Arm.Cape_size
 public import lemmas.Pill.Arm.Cat
+public import lemmas.Pill.Arm.Comp
 public import lemmas.Pill.Arm.ConArm
 public import lemmas.Pill.Arm.Cut
 public import lemmas.Pill.Arm.Dec
@@ -54,6 +55,7 @@ public import lemmas.Pill.Arm.Mack
 public import lemmas.Pill.Arm.Mas
 public import lemmas.Pill.Arm.Max
 public import lemmas.Pill.Arm.Met
+public import lemmas.Pill.Arm.Mfe
 public import lemmas.Pill.Arm.Mi
 public import lemmas.Pill.Arm.Min
 public import lemmas.Pill.Arm.Mink
@@ -75,6 +77,7 @@ public import lemmas.Pill.Arm.Need
 public import lemmas.Pill.Arm.Patch_prod
 public import lemmas.Pill.Arm.Peg
 public import lemmas.Pill.Arm.Pi
+public import lemmas.Pill.Arm.Print_comp
 public import lemmas.Pill.Arm.Print_ska
 public import lemmas.Pill.Arm.Prune_cg
 public import lemmas.Pill.Arm.Read
@@ -90,6 +93,7 @@ public import lemmas.Pill.Arm.Scow
 public import lemmas.Pill.Arm.Silt
 public import lemmas.Pill.Arm.Ska_analyze
 public import lemmas.Pill.Arm.Ska_cg
+public import lemmas.Pill.Arm.Ska_poke
 public import lemmas.Pill.Arm.Ska_run
 public import lemmas.Pill.Arm.Skid
 public import lemmas.Pill.Arm.Skim
@@ -120,6 +124,7 @@ import all lemmas.Pill.Arm.Can
 import all lemmas.Pill.Arm.Cap
 import all lemmas.Pill.Arm.Cape_size
 import all lemmas.Pill.Arm.Cat
+import all lemmas.Pill.Arm.Comp
 import all lemmas.Pill.Arm.ConArm
 import all lemmas.Pill.Arm.Cut
 import all lemmas.Pill.Arm.Dec
@@ -162,6 +167,7 @@ import all lemmas.Pill.Arm.Mack
 import all lemmas.Pill.Arm.Mas
 import all lemmas.Pill.Arm.Max
 import all lemmas.Pill.Arm.Met
+import all lemmas.Pill.Arm.Mfe
 import all lemmas.Pill.Arm.Mi
 import all lemmas.Pill.Arm.Min
 import all lemmas.Pill.Arm.Mink
@@ -183,6 +189,7 @@ import all lemmas.Pill.Arm.Need
 import all lemmas.Pill.Arm.Patch_prod
 import all lemmas.Pill.Arm.Peg
 import all lemmas.Pill.Arm.Pi
+import all lemmas.Pill.Arm.Print_comp
 import all lemmas.Pill.Arm.Print_ska
 import all lemmas.Pill.Arm.Prune_cg
 import all lemmas.Pill.Arm.Read
@@ -198,6 +205,7 @@ import all lemmas.Pill.Arm.Scow
 import all lemmas.Pill.Arm.Silt
 import all lemmas.Pill.Arm.Ska_analyze
 import all lemmas.Pill.Arm.Ska_cg
+import all lemmas.Pill.Arm.Ska_poke
 import all lemmas.Pill.Arm.Ska_run
 import all lemmas.Pill.Arm.Skid
 import all lemmas.Pill.Arm.Skim
@@ -675,6 +683,57 @@ theorem msg_ca.arm_at : slot? msg_ca.axis ana = some msg_ca.arm := by kernel_rfl
 theorem silt.arm_at : slot? silt.axis layer2 = some silt.arm := by kernel_rfl
 
 theorem in.bif.arm_at : ∀ x, slot? in.bif.axis (C in.battery x) = some in.bif.arm := by
+  intro x; kernel_rfl
+
+theorem prune_cg.arm_at : slot? prune_cg.axis ana = some prune_cg.arm := by kernel_rfl
+
+theorem mfe.arm_at : slot? mfe.axis ana = some mfe.arm := by kernel_rfl
+
+theorem ska_poke.arm_at : slot? ska_poke.axis ana = some ska_poke.arm := by kernel_rfl
+
+theorem comp.emit.arm_at : ∀ x, slot? comp.emit.axis (C comp.door x) = some comp.emit.arm := by
+  intro x; kernel_rfl
+
+theorem comp.emir.arm_at : ∀ x, slot? comp.emir.axis (C comp.door x) = some comp.emir.arm := by
+  intro x; kernel_rfl
+
+theorem comp.add_ops.arm_at : ∀ x, slot? comp.add_ops.axis (C comp.door x) = some comp.add_ops.arm := by
+  intro x; kernel_rfl
+
+theorem comp.bomb.arm_at : ∀ x, slot? comp.bomb.axis (C comp.door x) = some comp.bomb.arm := by
+  intro x; kernel_rfl
+
+theorem comp.from.arm_at : ∀ x, slot? comp.from.axis (C comp.door x) = some comp.from.arm := by
+  intro x; kernel_rfl
+
+theorem comp.from_sure.arm_at : ∀ x, slot? comp.from_sure.axis (C comp.door x) = some comp.from_sure.arm := by
+  intro x; kernel_rfl
+
+theorem comp.split.arm_at : ∀ x, slot? comp.split.axis (C comp.door x) = some comp.split.arm := by
+  intro x; kernel_rfl
+
+theorem comp.split_sure.arm_at : ∀ x, slot? comp.split_sure.axis (C comp.door x) = some comp.split_sure.arm := by
+  intro x; kernel_rfl
+
+theorem comp.split_need.arm_at : ∀ x, slot? comp.split_need.axis (C comp.door x) = some comp.split_need.arm := by
+  intro x; kernel_rfl
+
+theorem comp.must.arm_at : ∀ x, slot? comp.must.axis (C comp.door x) = some comp.must.arm := by
+  intro x; kernel_rfl
+
+theorem comp.re.arm_at : ∀ x, slot? comp.re.axis (C comp.door x) = some comp.re.arm := by
+  intro x; kernel_rfl
+
+theorem comp.oo.arm_at : ∀ x, slot? comp.oo.axis (C comp.door x) = some comp.oo.arm := by
+  intro x; kernel_rfl
+
+theorem comp.id.arm_at : ∀ x, slot? comp.id.axis (C comp.door x) = some comp.id.arm := by
+  intro x; kernel_rfl
+
+theorem comp.set_tag.arm_at : ∀ x, slot? comp.set_tag.axis (C comp.door x) = some comp.set_tag.arm := by
+  intro x; kernel_rfl
+
+theorem comp.copy_tag.arm_at : ∀ x, slot? comp.copy_tag.axis (C comp.door x) = some comp.copy_tag.arm := by
   intro x; kernel_rfl
 
 theorem read.layer2.arm_at : slot? read.layer2.axis interp = some layer2 := by kernel_rfl

@@ -17,7 +17,7 @@ namespace Pill
 
 open Nock
 
-public def print_ska.battery : Noun := C (A 9) (C (A 0x17dae) (C (A 0) (A 511)))
+public def print_ska.battery : Noun := C (A 9) (C (A 0x17dae) (C (A 0) (A 255)))
 
 end Pill
 end Formalization

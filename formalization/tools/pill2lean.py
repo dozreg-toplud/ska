@@ -1207,12 +1207,12 @@ def main():
     # its axis in `ana`, and the axis of K_bat in `ana`
     axes.append(('ska_cg', ana_arms[cg_arm], 'slot? ska_cg.axis ana = some ska_cg.arm'))
     facts.append(('ana_k_bat', 'slot? %d ana = some ska_cg.k_bat' % find_axis(ana, k_bat)))
-    # `print-ska`, the gate that `=/` puts at axis 126 of `ana` (it holds the
-    # library, so only its battery is named), and the arm `same` that its
-    # battery pulls when `ska-verb` is not defined
-    ps_gate = slot(126, ana)
-    name(head(ps_gate), 'print_ska.battery')
-    formulas.add(head(ps_gate))
+    # `print-comp` and `print-ska`, the gates that `=/` puts at axes 126 and
+    # 254 of `ana` (they hold the library, so only their batteries are named;
+    # until 2026-11-24 the battery at 126 was named `print_ska.battery`)
+    for ax_, lname in ((126, 'print_comp'), (254, 'print_ska')):
+        name(head(slot(ax_, ana)), lname + '.battery')
+        formulas.add(head(slot(ax_, ana)))
     # the tail of `ana`, which holds the mold of `identity` at arm 186
     ana_tail = tail(ana)
     name(ana_tail, 'ana_tail')
@@ -1252,6 +1252,67 @@ def main():
     name(gate_battery(pc_arm), 'prune_cg.battery')
     formulas.add(gate_battery(pc_arm))
     name_loops('prune_cg', gate_battery(pc_arm), 1)
+    axes.append(('prune_cg', ana_arms[pc_arm], 'slot? prune_cg.axis ana = some prune_cg.arm'))
+    # +memo-final-entry (arm 340 of `ana`) and +ska-poke (arm 20), gates
+    # without %fast labels
+    ana_arm(slot(340, ana), 'mfe', False)
+    ana_arm(slot(20, ana), 'ska_poke', False)
+
+    # the door `|_  gen=line-short` of +comp: its battery `comp.door` is the
+    # battery of the gate builder [8 [1 bunt] [1 door] 0 1] (the body of the
+    # gate +comp) at whose axis 43690 the arm of label comp-emit sits; its
+    # arms are `comp.<arm>`, each with its axis in the core [comp.door x].
+    # +dropping, [5 [1 %drop] 0 110], is shared with another core: unnamed.
+    (emit_arm,) = arms_of('comp-emit')
+    doors = []
+    for i in live:
+        if is_gate_builder(i):
+            try:
+                if slot(43690, cell(door_gate_battery(i), atom(0))) == emit_arm:
+                    doors.append(door_gate_battery(i))
+            except Exception:
+                pass
+    (comp_door,) = set(doors)
+    name(comp_door, 'comp.door')
+    comp_cell = cell(comp_door, atom(0))
+    def comp_axis(lname, ax_):
+        axes.append(('comp.' + lname, ax_, '∀ x, slot? comp.%s.axis (C comp.door x) = some comp.%s.arm'
+                     % (lname, lname)))
+    for label in ('emit', 'emir', 'add-ops', 'bomb', 'from', 'from-sure', 'split', 'split-sure',
+                  'split-need', 'must'):
+        (a,) = arms_of('comp-' + label)
+        lname = label.replace('-', '_')
+        name(a, 'comp.%s.arm' % lname)
+        formulas.add(a)
+        g = gate_battery(a)
+        name(g, 'comp.%s.battery' % lname)
+        formulas.add(g)
+        name_loops('comp.' + lname, g, 'any')
+        comp_axis(lname, find_axis(comp_cell, a))
+    # +re, +oo, +id: [[0 a] 10 [f 4 0 a] 0 6] for the fields re-gen, bo-gen,
+    # id-gen of `gen` (axis 6 of the door)
+    for lname, ax_, fa, fe_ in (('re', 5636095, 12, 2), ('oo', 5460, 26, 6), ('id', 44015, 54, 14)):
+        a = slot(ax_, comp_cell)
+        want = cell(cell(atom(0), atom(fa)), cell(atom(10), cell(
+            cell(atom(fe_), cell(atom(4), cell(atom(0), atom(fa)))), cell(atom(0), atom(6)))))
+        assert a == want, lname
+        name(a, 'comp.%s.arm' % lname)
+        formulas.add(a)
+        comp_axis(lname, ax_)
+    # +set-tag and +copy-tag: the gates that test +dropping (arm 1398) and
+    # edit `tags` (axis 126 of `gen`) with put:by, and with got:by and gas:by
+    drop_t = cell(atom(9), cell(atom(1398), cell(atom(0), atom(7))))
+    assert slot(1398, comp_cell) == cell(atom(5), cell(cell(atom(1), atom(cord('drop'))),
+                                                     cell(atom(0), atom(110))))
+    for lname, ax_ in (('set_tag', 349662), ('copy_tag', 2818044)):
+        a = slot(ax_, comp_cell)
+        g = door_gate_battery(a)
+        assert head(g) == atom(6) and head(tail(g)) == drop_t, lname
+        name(a, 'comp.%s.arm' % lname)
+        formulas.add(a)
+        name(g, 'comp.%s.battery' % lname)
+        formulas.add(g)
+        comp_axis(lname, ax_)
 
     # the interpreter core `interp` ("Formal definition of the interpreter"),
     # the tail of `core`.  Its arms have no %fast labels: +read and +store are
