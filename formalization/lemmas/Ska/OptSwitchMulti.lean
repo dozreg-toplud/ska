@@ -329,6 +329,159 @@ theorem chain_disj (ht : TopoOK bl topo) {n1 n2 o1 o2 : Nat} {t0 u0 : STest} {tl
 
 end
 
+/-! ## The invariant of the walk -/
+
+/-- A tagged chain the walk replaced: its head and its tests. -/
+structure TCh where
+  o : Nat
+  t0 : STest
+  tl : List STest
+
+/-- **The invariant of the walk** after the tagged chains `A`: each is the
+chain of `bl` at its head, a member of `topo`; their `tagIds` are in `done`;
+outside their regions and heads the blocks are those of `bl`; a head is its
+block of `bl` with the `%clq` to the root and the final miss; a block in a
+region is a tree node. -/
+structure WInv (bl : Map Blob) (topo : List Nat) (fuel : Nat) (A : List TCh) (out : Map Blob)
+    (done : List Nat) : Prop where
+  ch : ∀ a ∈ A, chainOf bl (revCfg bl topo) fuel a.o = some (a.t0 :: a.tl) ∧ a.o ∈ topo
+  dn : ∀ a ∈ A, ∀ k ∈ tagIds (a.t0 :: a.tl), k ∈ done
+  same : ∀ k, (∀ a ∈ A, k ≠ a.o ∧ ¬ TagIn a.t0 a.tl k) → HoonMap.get out k = HoonMap.get bl k
+  head : ∀ a ∈ A, ∃ b, HoonMap.get bl a.o = some b ∧
+    HoonMap.get out a.o = some { b with fin := Termin.clq a.t0.s ⟨[], a.t0.y⟩ ⟨[], tagMiss a.t0 a.tl⟩ }
+  node : ∀ a ∈ A, ∀ k b, TagIn a.t0 a.tl k → HoonMap.get out k = some b →
+    NodeOK (TagJ a.t0 a.tl) (TagS a.t0 a.tl) b
+
+theorem winv_nil (bl : Map Blob) (topo : List Nat) (fuel : Nat) (done : List Nat) :
+    WInv bl topo fuel [] bl done :=
+  ⟨fun _ h => absurd h List.not_mem_nil, fun _ h => absurd h List.not_mem_nil, fun _ _ => rfl,
+    fun _ h => absurd h List.not_mem_nil, fun _ h => absurd h List.not_mem_nil⟩
+
+theorem tagBlocks_congr {M M' : Map Blob} {s mis : Nat} : ∀ (cs : List STest), TagBlocks M s mis cs →
+    (∀ t ∈ cs, HoonMap.get M' t.y = HoonMap.get M t.y) →
+    (∀ t ∈ cs.dropLast, HoonMap.get M' t.miss = HoonMap.get M t.miss) → TagBlocks M' s mis cs
+  | [], h, _, _ => h
+  | t :: rest, ⟨a1, a2, a3, a4, ⟨l, r, body, hyb, hlr, hb⟩, hnext, hrest⟩, hY, hM => by
+    refine ⟨a1, a2, a3, a4, ⟨l, r, body, by rw [hY t List.mem_cons_self]; exact hyb, hlr, hb⟩, ?_, fun hne => ?_⟩
+    · cases rest with
+      | nil => exact hnext
+      | cons t2 r2 =>
+        simp only at hnext ⊢
+        rw [hM t (by simp [List.dropLast_cons_cons])]; exact hnext
+    · cases rest with
+      | nil => exact absurd rfl hne
+      | cons t2 r2 =>
+        exact tagBlocks_congr _ (hrest hne) (fun u hu => hY u (List.mem_cons_of_mem _ hu))
+          (fun u hu => hM u (by rw [List.dropLast_cons_cons]; exact List.mem_cons_of_mem _ hu))
+
+section
+variable {bl : Map Blob} {topo : List Nat} {fuel : Nat}
+
+/-- The places a tree node of a chain may jump to are members of `topo`. -/
+theorem tagJ_topo (ht : TopoOK bl topo) {n o : Nat} {t0 : STest} {tl : List STest}
+    (h : chainOf bl (revCfg bl topo) n o = some (t0 :: tl)) (ho : o ∈ topo) :
+    ∀ k, TagJ t0 tl k → k ∈ topo := by
+  have hc := chainOf_rev n o _ h
+  have hT := (labs_sorted ht o _ hc ho).2
+  intro k hk
+  rcases hk with hk | ⟨t, ht', rfl⟩ | rfl
+  · exact hT k (List.mem_append_left _ (List.mem_of_mem_tail ((tagIn_iff o t0 tl k).mp hk)))
+  · obtain ⟨q, hq⟩ := chainR_test hc t ht'
+    obtain ⟨_, yb, _, _, -, -, -, hyb, -, hyf, -⟩ := testOf_spec hq
+    have hyT : t.y ∈ topo := hT _ (List.mem_append_left _ (List.mem_of_mem_tail (y_mem_tail o _ t ht')))
+    exact (topo_jump ht hyT hyb (j := ⟨[], t.hit⟩) (by rw [hyf]; simp [getJmps])).1
+  · exact hT _ (by rw [show tagMiss t0 tl = lastMiss o (t0 :: tl) from (lastMiss_tag t0 tl).symm]; simp)
+
+/-- A block reachable in the blocks so far is a member of `topo`. -/
+theorem winv_reach {A : List TCh} {out : Map Blob} {done : List Nat} (W : WInv bl topo fuel A out done)
+    (ht : TopoOK bl topo) : ∀ k, Reach out k → k ∈ topo := by
+  intro k hk
+  induction hk with
+  | zero => obtain ⟨-, h0, -⟩ := ht; cases topo with
+    | nil => simp at h0
+    | cons a t => simp at h0; subst h0; exact List.mem_cons_self
+  | @jump o' b j _ hb hj ih =>
+    by_cases hA : ∃ a ∈ A, o' = a.o ∨ TagIn a.t0 a.tl o'
+    · obtain ⟨a, ha, e | e⟩ := hA
+      · subst e
+        obtain ⟨b0, -, hb0⟩ := W.head a ha
+        rw [hb0] at hb; cases hb
+        simp only [getJmps, List.mem_cons, List.not_mem_nil, or_false] at hj
+        rcases hj with rfl | rfl
+        · exact tagJ_topo ht (W.ch a ha).1 (W.ch a ha).2 _ (Or.inl (Or.inl rfl))
+        · exact tagJ_topo ht (W.ch a ha).1 (W.ch a ha).2 _ (Or.inr (Or.inr rfl))
+      · exact tagJ_topo ht (W.ch a ha).1 (W.ch a ha).2 _ ((W.node a ha o' b e hb).2.1 j hj).2
+    · have hs : HoonMap.get out o' = HoonMap.get bl o' :=
+        W.same o' fun a ha => ⟨fun e => hA ⟨a, ha, Or.inl e⟩, fun e => hA ⟨a, ha, Or.inr e⟩⟩
+      rw [hs] at hb
+      exact (topo_jump ht ih hb hj).1
+
+/-- **`TagHyp` carried from `bl` to the blocks so far**, for a chain of `bl`
+at a head later in `topo` than the chains done and not in `done`. -/
+theorem tagHyp_out {A : List TCh} {out : Map Blob} {done : List Nat} (W : WInv bl topo fuel A out done)
+    (ht : TopoOK bl topo) {o : Nat} {u0 : STest} {ul : List STest}
+    (h : chainOf bl (revCfg bl topo) fuel o = some (u0 :: ul)) (ho : o ∈ topo)
+    (hrk : ∀ a ∈ A, rk topo a.o < rk topo o) (hod : o ∉ done) : TagHyp out o u0 ul := by
+  have Hb := tagHyp_of ht ho h
+  have hc := chainOf_rev fuel o _ h
+  have D := fun a (ha : a ∈ A) =>
+    chain_disj ht (W.ch a ha).1 (W.ch a ha).2 h ho (hrk a ha) (fun hm => hod (W.dn a ha _ hm))
+  have sameI : ∀ k, TagIn u0 ul k → HoonMap.get out k = HoonMap.get bl k := fun k hk =>
+    W.same k fun a ha => (D a ha).2.1 k hk
+  have hob : HoonMap.get out o = HoonMap.get bl o := W.same o fun a ha => (D a ha).1
+  have isS : ∀ k, (∀ a ∈ A, ¬ TagIn a.t0 a.tl k) → (HoonMap.get bl k).isSome → (HoonMap.get out k).isSome := by
+    intro k hk hb
+    by_cases hA : ∃ a ∈ A, k = a.o
+    · obtain ⟨a, ha, rfl⟩ := hA
+      obtain ⟨b0, -, hb0⟩ := W.head a ha
+      rw [hb0]; rfl
+    · rw [W.same k fun a ha => ⟨fun e => hA ⟨a, ha, e⟩, hk a ha⟩]; exact hb
+  refine ⟨Hb.nd, Hb.hy, Hb.ho, Hb.hoy, Hb.hr, ?_, by rw [hob]; exact Hb.headFin, fun t ht' => ?_, ?_, ?_, ?_, Hb.zero⟩
+  · refine tagBlocks_congr _ Hb.blocks (fun t ht' => sameI _ ((tagIn_iff o u0 ul _).mpr (y_mem_tail o _ t ht')))
+      (fun t ht' => sameI _ (Or.inr (List.mem_append_right _ (List.mem_map_of_mem ht'))))
+  · exact ⟨isS _ (fun a ha => (D a ha).2.2.1 t ht') (Hb.hits t ht').1, (Hb.hits t ht').2⟩
+  · exact ⟨isS _ (fun a ha => (D a ha).2.2.2.1) Hb.miss.1, Hb.miss.2⟩
+  · intro k b j hk hkI hko hb hj hjI
+    by_cases hA : ∃ a ∈ A, k = a.o ∨ TagIn a.t0 a.tl k
+    · obtain ⟨a, ha, e | e⟩ := hA
+      · subst e
+        obtain ⟨b0, -, hb0⟩ := W.head a ha
+        rw [hb0] at hb; cases hb
+        simp only [getJmps, List.mem_cons, List.not_mem_nil, or_false] at hj
+        rcases hj with rfl | rfl
+        · exact (D a ha).2.2.2.2.1 _ (Or.inl (Or.inl rfl)) hjI
+        · exact (D a ha).2.2.2.2.1 _ (Or.inr (Or.inr rfl)) hjI
+      · exact (D a ha).2.2.2.2.1 _ ((W.node a ha k b e hb).2.1 j hj).2 hjI
+    · have hs : HoonMap.get out k = HoonMap.get bl k :=
+        W.same k fun a ha => ⟨fun e => hA ⟨a, ha, Or.inl e⟩, fun e => hA ⟨a, ha, Or.inr e⟩⟩
+      rw [hs] at hb
+      have hkT := winv_reach W ht k hk
+      rcases mem_ilabs (labs_into rfl o _ hc k b j hkT hb hj ((tagIn_iff o u0 ul _).mp hjI)) with e | e
+      · exact hko e
+      · exact hkI ((tagIn_iff o u0 ul _).mpr e)
+  · intro k b _ hkI hb r hr
+    by_cases hA : ∃ a ∈ A, k = a.o ∨ TagIn a.t0 a.tl k
+    · obtain ⟨a, ha, e | e⟩ := hA
+      · subst e
+        obtain ⟨b0, hbl, hb0⟩ := W.head a ha
+        rw [hb0] at hb; cases hb
+        obtain ⟨b1, -, -, -, hb1, hf1, -⟩ := testOf_spec (chainOf_rev fuel a.o _ (W.ch a ha).1).1
+        rw [hbl] at hb1; cases hb1
+        refine tag_ment_bl hc a.o b0 hkI hbl r ?_
+        simp only [blobMentions, List.mem_append] at hr ⊢
+        rw [hf1]
+        rcases hr with (h1 | h1) | h1
+        · exact Or.inl (Or.inl h1)
+        · exact Or.inl (Or.inr (by simpa [finRegs, jmpRegs] using h1))
+        · exact Or.inr h1
+      · exact (D a ha).2.2.2.2.2 r ((W.node a ha k b e hb).2.2 r hr)
+    · have hs : HoonMap.get out k = HoonMap.get bl k :=
+        W.same k fun a ha => ⟨fun e => hA ⟨a, ha, Or.inl e⟩, fun e => hA ⟨a, ha, Or.inr e⟩⟩
+      rw [hs] at hb
+      exact tag_ment_bl hc k b hkI hb r hr
+
+end
+
 end Opt
 end SkaModel
 end Formalization
