@@ -75,13 +75,66 @@
       [72 %r [0 [[1 2] [[3 4] 5]]] [7 [[6 [[0 2] [[6 [[1 1] [[6 [[0 2] [[1 0] [0 14]]]] [6 [[1 1] [[1 1] [0 7]]]]]]] [6 [[0 2] [[6 [[1 1] [[1 1] [0 7]]]] [6 [[0 2] [[1 0] [0 14]]]]]]]]]] [6 [[0 2] [[3 [0 7]] [3 [1 [0 1]]]]]]]]]
       [73 %r [0 [[1 2] [[3 4] 5]]] [4 [7 [[6 [[6 [[0 2] [[1 1] [1 1]]]] [[0 13] [6 [[3 [0 15]] [[6 [[1 1] [[0 14] [0 6]]]] [6 [[0 2] [[0 3] [1 0]]]]]]]]]] [4 [6 [[7 [[0 6] [1 1]]] [[[0 14] [1 [0 1]]] [6 [[1 1] [[0 13] [1 5]]]]]]]]]]]]
   ==
+::  the other formulas of this directory: fix.hoon (17 raw, 5 of hoon.hoon),
+::  deadcrash.hoon (9), proxy-dump.hoon (2); %u with the subject unknown, %k
+::  with it known
+=/  more=(list [nam=@ud kind=@tas sub=* fol=*])
+  =/  spot  [11 [%spot 1 0] 0 0]
+  =/  raw=(list [sub=* fol=*])
+    :~  [0 [11 [[1 0] 1 0] 1 42]]
+        [42 [2 [0 1] 7 [0 0] 1 0 1]]
+        [42 [2 [0 1] 7 [0 1] 1 0 1]]
+        [0 [5 spot 0]]
+        [0 [2 spot 0]]
+        [0 [7 spot 0]]
+        [0 [6 [1 1] 0 [1 42]]]
+        [0 [6 [1 0] 0 [1 42]]]
+        [0 [6 spot 0 0]]
+        [0 [10 [2 0] [1 1 2]]]
+        [0 [11 [%spot 1 0] 0]]
+        [0 [12 [1 0] 0]]
+        [0 [[1 1] 0]]
+        [0 [8 [1 1] 0]]
+        [0 [11 %bare 1 42]]
+        [0 [11 %bare 11 [%spot 1 0] 0 0]]
+        [7 [7 [0 1] 11 %bare 4 0 1]]
+        [0 [7 [0 2] [1 5]]]
+        [0 [7 [[0 2] [0 3]] [1 5]]]
+        [[1 2] [7 [4 [0 1]] [1 5]]]
+        [[1 2] [7 [0 6] [1 5]]]
+        [[1 2] [8 [4 [0 1]] [1 5]]]
+        [0 [6 [1 0] [7 [0 3] [1 5]] [1 6]]]
+        [0 [7 [10 [2 [1 1]] [0 1]] [1 5]]]
+        [0 [7 [5 [0 2] [0 3]] [1 5]]]
+        [0 [7 [0 2] [7 [4 [1 1]] [1 5]]]]
+        [[1 0 0 5] [7 [6 [0 2] [1 0] [6 [0 6] [0 7] [0 1]]] [6 [0 2] [0 3] [0 1]]]]
+        [[0 5] [7 [4 [0 3]] [6 [5 [0 1] [1 6]] [0 1] [1 5]]]]
+    ==
+  =/  hon=(list *)
+    =>  ..ska-poke
+    :~  !=((add 2 3))
+        !=((dec 0))
+        !=((roll (gulf 1 6) add))
+        !:(!=(~|([%a (add 1 2)] (dec 0))))
+        !=((sort ~[3 1 2] lth))
+    ==
+  =|  i=@ud
+  =|  out=(list [nam=@ud kind=@tas sub=* fol=*])
+  |-  ^+  out
+  ?^  raw
+    $(raw t.raw, i +(i), out [[(add 100 i) %k i.raw] [(add 100 i) %u i.raw] out])
+  ?~  hon  (flop out)
+  $(hon t.hon, i +(i), out [[(add 100 i) %u ..ska-poke i.hon] out])
+=.  cases  (weld cases more)
 =|  cnt=[n=@ud bad=@ud cyc=@ud dup=@ud rubch=@ud hopch=@ud pas=@ud pas2=@ud]
+=|  rnd=[mid=@ud chk=@ud pas=@ud dup=@ud fin=@ud same=@ud rounds=@ud midch=@ud sub=@ud]
 |-  ^-  @
 ?~  cases
   ~&  [%summary cnt]
+  ~&  [%rounds rnd]
   0
 =^  [func=bell new=(list [pax=path tem=sock clue=*])]  long-ska.state
-  (ska-poke [[| ~] ?>(?=(^ fol.i.cases) fol.i.cases)] long-ska.state ~(key by jets-hot.state))
+  (ska-poke [?:(?=(%k kind.i.cases) [& sub.i.cases] [| ~]) ?>(?=(^ fol.i.cases) fol.i.cases)] long-ska.state ~(key by jets-hot.state))
 =^  scc=(set bell)  sccs.cache.state
   (scc-of func calls.long-ska.state sccs.cache.state)
 =^  raw=straight  cache.state  (compiled-mono func scc)
@@ -106,12 +159,23 @@
   =(~(wyt in (sy par.b)) (lent par.b))
 ::  every jump passes the check of +eval-pass: no argument register is a
 ::  parameter of its target (PassOK of lemmas/Ska/OptHops.lean)
-=/  passok
-  |=  bl=(map @uwoo blob)
+=/  jout
+  |=  f=termin-out
+  ^-  (list jmp)
+  ?:  ?=(%lti -.f)  ~[z.f o.f]
+  (get-jmps f)
+=/  nodupm
+  |=  bl=(map @uwoo blob-out)
   ^-  ?
   %-  ~(all by bl)
-  |=  b=blob
-  %+  levy  (get-jmps fin.b)
+  |=  b=blob-out
+  =(~(wyt in (sy par.b)) (lent par.b))
+=/  passok
+  |=  bl=(map @uwoo blob-out)
+  ^-  ?
+  %-  ~(all by bl)
+  |=  b=blob-out
+  %+  levy  (jout fin.b)
   |=  j=jmp
   =/  t  (~(get by bl) there.j)
   ?~  t  &
@@ -156,6 +220,84 @@
       |=([o=@uwoo n=blob] =(par.n par:(~(got by bl) o)))
   ==
 =/  pok2=?  (passok +.hop)
+::  +remove-empty-middle alone on raw code, then the rounds of +optimize
+::  replayed pass by pass, PassOK and ParNodup after every pass
+=/  mid  (remove-empty-middle bl)
+=/  midok=?  &((passok +.mid) (nodupm +.mid))
+::  the %hops with arguments a +remove-empty-middle redirected (tag %sub)
+=/  hopsub
+  |=  [tr=(list [@tas @ud ? ?]) a=(map @uwoo blob) b=(map @uwoo blob)]
+  ^+  tr
+  %+  roll  ~(tap by a)
+  |=  [[o=@uwoo x=blob] =_tr]
+  =/  y  (~(got by b) o)
+  ?.  &(?=(%hop -.fin.x) ?=(%hop -.fin.y) ?=(^ args.t.fin.x))  tr
+  ?:  =(there.t.fin.x there.t.fin.y)  tr
+  [[%sub 0 & &] tr]
+=/  note
+  |=  [tr=(list [@tas @ud ? ?]) tag=@tas r=@ud bl=(map @uwoo blob-out)]
+  ^+  tr
+  [[tag r (passok bl) (nodupm bl)] tr]
+=/  once
+  |=  [s=straight tr=(list [@tas @ud ? ?]) r=@ud]
+  ^-  [? straight (list [@tas @ud ? ?])]
+  =/  topo  (bb-topo blocks.s)
+  =/  rev  (rev-cfg blocks.s (sy topo))
+  =^  [topo=(list @uwoo) rev=(jar @uwoo @uwoo) tr=(list [@tas @ud ? ?])]  blocks.s
+    |-  ^-  [[(list @uwoo) (jar @uwoo @uwoo) (list [@tas @ud ? ?])] (map @uwoo blob)]
+    =^  c-hops=?  blocks.s  (remove-hops blocks.s rev topo)
+    =.  tr  (note tr %hops r blocks.s)
+    =^  c-branch=?  blocks.s  (remove-useless-branching blocks.s)
+    =.  tr  (note tr %rub r blocks.s)
+    =/  pre  blocks.s
+    =^  c-middle=?  blocks.s  (remove-empty-middle blocks.s)
+    =.  tr  (hopsub tr pre blocks.s)
+    =.  tr  (note tr %mid r blocks.s)
+    ?.  |(c-hops c-branch c-middle)  [[topo rev tr] blocks.s]
+    =.  topo  (bb-topo blocks.s)
+    =.  rev  (rev-cfg blocks.s (sy topo))
+    $
+  =^  f-alias=?  blocks.s  (alias n-args.s blocks.s rev topo)
+  =.  tr  (note tr %alias r blocks.s)
+  =.  topo  (skim topo ~(has by blocks.s))
+  =.  rev  (rev-cfg blocks.s (sy topo))
+  =.  blocks.s  (trim-trace-hints blocks.s topo rev)
+  =.  tr  (note tr %trim r blocks.s)
+  =.  blocks.s  (remove-dead-code blocks.s (flop topo))
+  =.  tr  (note tr %dead r blocks.s)
+  =^  c-hops=?  blocks.s  (remove-hops blocks.s rev topo)
+  =.  tr  (note tr %hops2 r blocks.s)
+  =^  c-branch=?  blocks.s  (remove-useless-branching blocks.s)
+  =.  tr  (note tr %rub2 r blocks.s)
+  =/  pre  blocks.s
+  =^  c-middle=?  blocks.s  (remove-empty-middle blocks.s)
+  =.  tr  (hopsub tr pre blocks.s)
+  =.  tr  (note tr %mid2 r blocks.s)
+  [|(f-alias c-hops c-branch c-middle) s tr]
+=/  res=[s=straight tr=(list [@tas @ud ? ?]) r=@ud]
+  =|  tr=(list [@tas @ud ? ?])
+  =/  s=straight  raw
+  =/  r=@ud  0
+  |-  ^-  [straight (list [@tas @ud ? ?]) @ud]
+  =/  o  (once s tr r)
+  ?.  -.o  [+<.o +>.o +(r)]
+  $(s +<.o, tr +>.o, r +(r))
+=/  out=straight-out  s.res(blocks (switch-chains blocks.s.res))
+=/  same=?  =(out (optimize raw))
+=/  finok=?  &((passok blocks.out) (nodupm blocks.out))
+=/  badp  (skim tr.res |=([* * p=? *] !p))
+=/  badn  (skim tr.res |=([* * * n=?] !n))
+=.  mid.rnd  ?:(midok mid.rnd +(mid.rnd))
+=.  midch.rnd  ?:(-.mid +(midch.rnd) midch.rnd)
+=/  nsub  (lent (skim tr.res |=([t=@tas *] =(%sub t))))
+=.  sub.rnd  (add sub.rnd nsub)
+=.  chk.rnd  (add chk.rnd (sub (lent tr.res) nsub))
+=.  pas.rnd  (add pas.rnd (lent badp))
+=.  dup.rnd  (add dup.rnd (lent badn))
+=.  fin.rnd  ?:(finok fin.rnd +(fin.rnd))
+=.  same.rnd  ?:(same +(same.rnd) same.rnd)
+=.  rounds.rnd  (add rounds.rnd r.res)
+~?  !&(midok finok =(~ badp) =(~ badn))  [%fail nam.i.cases kind.i.cases mid=midok fin=finok badp=badp badn=badn]
 =/  ok  &(rubok hopok)
 =.  n.cnt  +(n.cnt)
 =?  bad.cnt  !ok  +(bad.cnt)
