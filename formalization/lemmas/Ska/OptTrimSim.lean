@@ -675,6 +675,216 @@ theorem trim_fwd_step {x y x' : Cfg σ Map} {es : List (Nat × Nat)} (hs : Step 
     refine ⟨_, _, Steps.step (Step.jump (x := ⟨lab, { b with body := b.body.filter (tkeep uns opened) }, [], regs, t', st⟩)
       rfl hq (by simp [hbd]) htk hb2') (Steps.refl _), hr2⟩
 
+/-- **Backward**: out of the normal form, a step after is matched by one step
+before. -/
+theorem trim_bwd_step {x x' y' : Cfg σ Map} {es' : List (Nat × Nat)} (hs : Step lib O c' gul x' es' y')
+    (hr : TrimI c.blocks K uns opened x x') (hnd : ¬ TDropped uns opened x) :
+    ∃ es y, Steps lib O c gul x es y ∧ TrimI c.blocks K uns opened y y' := by
+  obtain ⟨lab, b, params, regs, t, st⟩ := x
+  obtain ⟨lab', b', params', regs', t', st'⟩ := x'
+  have hr0 := hr
+  obtain ⟨hl, hpe, hrg, hst, hreach, hb', hrest⟩ := hr
+  simp only at hl hpe hrg hst hreach hb' hrest
+  subst lab' params' regs' st' b'
+  cases hs with
+  | @pass R1 hne hR =>
+    simp only at hne hR
+    refine ⟨_, _, Steps.step (Step.pass (x := ⟨lab, b, params, regs, t, st⟩) hne hR) (Steps.refl _),
+      rfl, rfl, rfl, rfl, hreach, rfl, ?_⟩
+    obtain ⟨b0, pre, gm, h1, h2, h3, h4, h5⟩ := hrest
+    exact ⟨b0, pre, gm, h1, h2, h3, h4, h5⟩
+  | @op p rest' n R2 t2' st2 hp hq hbd hpole =>
+    simp only at hp hq hbd hpole
+    subst hp
+    cases hb : b.body with
+    | nil => rw [hb] at hbd; simp at hbd
+    | cons q rest =>
+      rw [hb] at hbd
+      cases hk : trimDrop uns opened q with
+      | true => exact (hnd ⟨rfl, hq, q, rest, hb, hk⟩).elim
+      | false =>
+        simp only [List.filter_cons, tkeep, hk, Bool.not_false, if_true, List.cons.injEq] at hbd
+        obtain ⟨rfl, rfl⟩ := hbd
+        obtain ⟨b0, pre, gm, g1, hb0, hfin, hpre, hgm, htr, hg1, hpre1, hcr⟩ := trimI_op TB TS hr0 hb
+        simp only at hb0 hfin hgm htr hpre1 hcr
+        have hkp := kept_pole (lib := lib) (O := O) (gul := gul) (st := st) (R := regs) htr hg1
+          (trimDrop_false hk) hcr
+        obtain ⟨t2, h2, htr2⟩ := hkp.bwd hpole
+        exact ⟨_, _, Steps.step (Step.op (x := ⟨lab, b, [], regs, t, st⟩) (rest := rest) rfl hq hb h2) (Steps.refl _),
+          rfl, rfl, rfl, rfl, hreach, rfl, b0, pre ++ [q], g1, hb0, hfin, by rw [hpre]; simp, hpre1, htr2 n rfl⟩
+  | @jump j b2' hp hq hbd htk' hb2' =>
+    simp only at hp hq hbd htk' hb2'
+    subst hp
+    have hb : b.body = [] := by
+      cases hb : b.body with
+      | nil => rfl
+      | cons q rest =>
+        rw [hb] at hbd
+        cases hk : trimDrop uns opened q with
+        | true => exact (hnd ⟨rfl, hq, q, rest, hb, hk⟩).elim
+        | false => simp [List.filter_cons, tkeep, hk] at hbd
+    rw [hc'] at hb2'
+    obtain ⟨b2, hb2, rfl⟩ := Option.map_eq_some_iff.mp hb2'
+    obtain ⟨-, hr2⟩ := trim_jump TB TS hc' hr0 hb htk' hb2
+    exact ⟨_, _, Steps.step (Step.jump (x := ⟨lab, b, [], regs, t, st⟩) rfl hq hb htk' hb2) (Steps.refl _), hr2⟩
+
+omit hc' in
+/-- **The normal form**: the code before runs the dropped ops at its head,
+which do not crash (their reads hold values by `ReadsOK`, a pop finds the
+frame of its key). -/
+theorem trim_norm (l : List Pole) : ∀ {x x' : Cfg σ Map}, x.b.body = l → TrimI c.blocks K uns opened x x' →
+    (∀ es z k, Steps lib O c gul x es z → ReadsAt gul z k → ∃ v, read k z.regs = some v) →
+    ∃ es z, Steps lib O c gul x es z ∧ TrimI c.blocks K uns opened z x' ∧ ¬ TDropped uns opened z := by
+  induction l with
+  | nil =>
+    intro x x' hl0 hr _
+    refine ⟨[], x, Steps.refl _, hr, ?_⟩
+    rintro ⟨-, -, p, rest, hbd, -⟩
+    rw [hl0] at hbd; cases hbd
+  | cons q l ih =>
+    intro x x' hl0 hr hl
+    by_cases hd : TDropped uns opened x
+    · obtain ⟨hp, hq, p, rest, hbd, hdr⟩ := hd
+      have hbd' := hbd
+      rw [hl0] at hbd
+      simp only [List.cons.injEq] at hbd
+      obtain ⟨rfl, rfl⟩ := hbd
+      obtain ⟨bk, k, he, hdk⟩ := trimDrop_true hdr
+      obtain ⟨b0, pre, gm, g1, hb0, hfin, hpre, hgm, htr, hg1, hpre1, -⟩ := trimI_op TB TS hr hbd'
+      have hsome := drop_isSome (lib := lib) (O := O) (gul := gul) (st := x.st) (R := x.regs) htr hg1 he hdk
+        (fun r hr' => hl [] x r (Steps.refl _) ⟨hp, hq, Or.inl ⟨q, l, hbd', hr'⟩⟩)
+      obtain ⟨res, hres⟩ := Option.isSome_iff_exists.mp hsome
+      obtain ⟨ton, R2, t2, st2⟩ := res
+      obtain ⟨rfl, rfl, rfl, htr2⟩ := drop_pole htr hg1 he hdk hres
+      have hs : Step lib O c gul x [] ⟨x.lab, { x.b with body := l }, x.params, x.regs, t2, x.st⟩ :=
+        Step.op hp hq hbd' hres
+      obtain ⟨hl', hpe, hrg, hst, hreach, hb', -⟩ := hr
+      have hr2 : TrimI c.blocks K uns opened ⟨x.lab, { x.b with body := l }, x.params, x.regs, t2, x.st⟩ x' := by
+        refine ⟨hl', hpe, hrg, hst, hreach, ?_, b0, pre ++ [q], g1, hb0, hfin, by rw [hpre]; simp, hpre1, htr2⟩
+        rw [hb', hbd']
+        simp [List.filter_cons, tkeep, hdr]
+      obtain ⟨es, z, hz, hrz, hnd⟩ := ih rfl hr2 (fun es z k hs' => hl _ z k (Steps.step hs hs'))
+      exact ⟨[] ++ es, z, Steps.step hs hz, hrz, hnd⟩
+    · exact ⟨[], x, Steps.refl _, hr, hd⟩
+
+omit hc' in
+/-- **An end out of the normal form is the same end.** -/
+theorem trim_endOf {x x' : Cfg σ Map} (hr : TrimI c.blocks K uns opened x x') (hnd : ¬ TDropped uns opened x) :
+    endOf lib O gul x' = endOf lib O gul x := by
+  have hr0 := hr
+  obtain ⟨hl, hpe, hrg, hst, hreach, hb', -⟩ := hr
+  by_cases hne : x.params ≠ [] ∨ x.b.par ≠ []
+  · have hne' : x'.params ≠ [] ∨ x'.b.par ≠ [] := by rw [hpe, hb']; exact hne
+    unfold endOf; rw [if_pos hne, if_pos hne']
+  · have hne' : ¬ (x'.params ≠ [] ∨ x'.b.par ≠ []) := by rw [hpe, hb']; exact hne
+    simp only [not_or, ne_eq, Decidable.not_not] at hne
+    obtain ⟨hp, hq⟩ := hne
+    cases hbd : x.b.body with
+    | nil =>
+      obtain ⟨b0, hb0, hfin, -, hloud⟩ := trimI_fin TB TS hr0 hbd
+      cases hq' : finQuiet x.b.fin with
+      | false =>
+        have ht := hloud hq'
+        have hx : x' = x := by
+          obtain ⟨lab, ⟨par, body, fin⟩, params, regs, t, st⟩ := x
+          obtain ⟨lab', b', params', regs', t', st'⟩ := x'
+          simp only at hl hpe hrg hst hb' ht hbd ⊢
+          subst hbd
+          subst hl hpe hrg hst hb' ht
+          rfl
+        rw [hx]
+      | true =>
+        have hb'' : x'.b.body = [] := by rw [hb']; simp [hbd]
+        have hf : x'.b.fin = x.b.fin := by rw [hb']
+        unfold endOf
+        rw [if_neg hne', if_neg (by simp [hp, hq]), hb'', hbd, hf]
+        cases e : x.b.fin <;> simp [finQuiet, e] at hq' ⊢
+    | cons p rest =>
+      cases hk : trimDrop uns opened p with
+      | true => exact (hnd ⟨hp, hq, p, rest, hbd, hk⟩).elim
+      | false =>
+        obtain ⟨b0, pre, gm, g1, -, -, -, -, htr, hg1, -, hcr⟩ := trimI_op TB TS hr0 hbd
+        have hkp := kept_pole (lib := lib) (O := O) (gul := gul) (st := x.st) (R := x.regs) htr hg1
+          (trimDrop_false hk) hcr
+        have hb'' : x'.b.body = p :: rest.filter (tkeep uns opened) := by
+          rw [hb']; simp [hbd, List.filter_cons, tkeep, hk]
+        unfold endOf
+        rw [if_neg hne', if_neg (by simp [hp, hq]), hb'', hbd]
+        simp only
+        rw [hst, hrg]
+        revert hkp
+        generalize execPole lib O gul x.st p x.regs x.t = r
+        generalize execPole lib O gul x.st p x.regs x'.t = r'
+        intro hkp
+        rcases r with _ | ⟨ton, R, t, s⟩ <;> rcases r' with _ | ⟨ton', R', t', s'⟩
+        · rfl
+        · exact hkp.elim
+        · exact hkp.elim
+        · obtain ⟨rfl, rfl, rfl, -⟩ := hkp; cases ton <;> rfl
+
+omit TB TS hc' in
+/-- A real read after, out of the normal form, is a real read before, of the
+same register file. -/
+theorem trim_reads {x x' : Cfg σ Map} {k : Nat} (hr : TrimI c.blocks K uns opened x x')
+    (hnd : ¬ TDropped uns opened x) (hk : ReadsAt gul x' k) : ReadsAt gul x k ∧ x'.regs = x.regs := by
+  obtain ⟨hl, hpe, hrg, hst, hreach, hb', -⟩ := hr
+  refine ⟨?_, hrg⟩
+  obtain ⟨hp, hq, hk⟩ := hk
+  have hp0 : x.params = [] := by rw [← hpe]; exact hp
+  have hq0 : x.b.par = [] := by rw [hb'] at hq; exact hq
+  refine ⟨hp0, hq0, ?_⟩
+  rw [hb'] at hk
+  simp only at hk
+  cases hbd : x.b.body with
+  | nil =>
+    rw [hbd] at hk
+    rcases hk with ⟨p, rest, h, -⟩ | ⟨-, hk⟩
+    · simp at h
+    · exact Or.inr ⟨rfl, hk⟩
+  | cons p rest =>
+    cases hkd : trimDrop uns opened p with
+    | true => exact (hnd ⟨hp0, hq0, p, rest, hbd, hkd⟩).elim
+    | false =>
+      rw [hbd] at hk
+      simp only [List.filter_cons, tkeep, hkd, Bool.not_false, if_true] at hk
+      rcases hk with ⟨p', rest', h, hk⟩ | ⟨h, -⟩
+      · simp only [List.cons.injEq] at h
+        obtain ⟨rfl, -⟩ := h
+        exact Or.inl ⟨_, rest, rfl, hk⟩
+      · cases h
+
+/-- **Forward, on paths.** -/
+theorem trim_fwd {x z : Cfg σ Map} {es : List (Nat × Nat)} (hs : Steps lib O c gul x es z) {r : Tone × σ}
+    (he : endOf lib O gul z = some r) : ∀ {x' : Cfg σ Map}, TrimI c.blocks K uns opened x x' →
+      ∃ es' z', Steps lib O c' gul x' es' z' ∧ endOf lib O gul z' = some r := by
+  induction hs with
+  | refl y =>
+    intro x' hr
+    refine ⟨[], x', Steps.refl _, ?_⟩
+    by_cases hd : TDropped uns opened y
+    · rw [tdropped_endOf hd] at he; cases he
+    · rw [trim_endOf TB TS hr hd]; exact he
+  | step s _ ih =>
+    intro x' hr
+    obtain ⟨es1, y', hs1, hr1⟩ := trim_fwd_step TB TS hc' s hr
+    obtain ⟨es2, z', hs2, he'⟩ := ih he hr1
+    exact ⟨_, z', steps_trans hs1 hs2, he'⟩
+
+/-- **Backward, on paths**, to the normal form. -/
+theorem trim_bwd {x' z' : Cfg σ Map} {es' : List (Nat × Nat)} (hs : Steps lib O c' gul x' es' z') :
+    ∀ {x : Cfg σ Map}, (∀ es z k, Steps lib O c gul x es z → ReadsAt gul z k → ∃ v, read k z.regs = some v) →
+    TrimI c.blocks K uns opened x x' →
+    ∃ es z, Steps lib O c gul x es z ∧ TrimI c.blocks K uns opened z z' ∧ ¬ TDropped uns opened z := by
+  induction hs with
+  | refl => intro x hl hr; exact trim_norm TB TS _ rfl hr hl
+  | step s _ ih =>
+    intro x hl hr
+    obtain ⟨es1, x1, hs1, hr1, hnd1⟩ := trim_norm TB TS _ rfl hr hl
+    obtain ⟨es2, y, hs2, hr2⟩ := trim_bwd_step TB TS hc' s hr1 hnd1
+    obtain ⟨es3, z, hs3, hr3, hnd3⟩ :=
+      ih (fun es z k hz => hl _ z k (steps_trans (steps_trans hs1 hs2) hz)) hr2
+    exact ⟨_, z, steps_trans (steps_trans hs1 hs2) hs3, hr3, hnd3⟩
+
 end Sim
 
 end Opt
