@@ -1,4 +1,5 @@
 import lemmas.Ska.CompCollapseGate
+import lemmas.Ska.CompBelowRun
 
 /-!
 # The first half of `+collapse-lazy-atom` in `[4 p]`, for every shape of the need
@@ -201,6 +202,127 @@ theorem walkThis {s : Sure S} {fk : List (ForkE S)} {bd : List (Nat × Lazy S)} 
       simp only [List.nil_append, List.mem_append]
       exact Or.comm
 
+/-! ## Fact (i5) of the walk -/
+
+section Keys
+variable [HoonMapKeys Map]
+
+/-- **The gate of `+collapse-lazy-atom` keeps (i5)** when `r` and the
+block's need are below `re`: its ops mention `r` or a proxy, and the
+registers of the need `+sure-require-look` gives. -/
+theorem keeps_collapseGate {r o oL : Nat} {sur : Sure S} {g g' : Gen Map} (hd : g.drop = false) (hr : r < g.re)
+    (hn : NB g.re sur.ned) (h : collapseGate (S := S) (Map := Map) r o oL sur g = some ((), g')) : Keeps g g' := by
+  unfold collapseGate at h
+  obtain ⟨ned, g1, h1, h2⟩ := bind_some h
+  obtain ⟨k1, n1⟩ := keeps_sureRequireLook hn h1
+  have r1 : r < g1.re := Nat.lt_of_lt_of_le hr k1.le
+  have d1 := k1.dropF hd
+  have srcK : ∀ (src : Nat) (g2 : Gen Map), (if oL = o then pure r else proxy r oL : CM Map Nat) g1 = some (src, g2) →
+      Keeps g1 g2 ∧ src < g2.re := by
+    intro src g2 hs
+    obtain ⟨-, hb2, hd2, hbo2, hre2, hsrc⟩ := collSrc_spec hs d1
+    have sl : src < g2.re := by
+      rcases hsrc with e | ⟨lt, _⟩
+      · rw [e]; omega
+      · exact lt
+    by_cases e : oL = o
+    · rw [if_pos e] at hs
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at hs
+      obtain ⟨-, rfl⟩ := hs
+      exact ⟨Keeps.refl _, sl⟩
+    · rw [if_neg e] at hs
+      exact ⟨⟨fun lo hl => belowIn_proxy hl hs, hre2, hd2, by omega⟩, sl⟩
+  rcases ned with ⟨p, q⟩ | ⟨x, p, q⟩ | r' | _
+  · obtain ⟨src, g2, hs, ha⟩ := bind_some h2
+    obtain ⟨k2, s2⟩ := srcK src g2 hs
+    exact k1.trans (k2.trans (keeps_crashNeed (n1.mono k2.le) (fun p e => by cases e; exact s2) ha))
+  · obtain ⟨src, g2, hs, ha⟩ := bind_some h2
+    obtain ⟨k2, s2⟩ := srcK src g2 hs
+    exact k1.trans (k2.trans (keeps_crashNeed (n1.mono k2.le) (fun p e => by cases e; exact s2) ha))
+  · simp only at h2
+    by_cases e : r = r'
+    · rw [if_pos e] at h2
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+      obtain ⟨-, rfl⟩ := h2
+      exact k1
+    · rw [if_neg e] at h2
+      obtain ⟨src, g2, hs, ha⟩ := bind_some h2
+      obtain ⟨k2, s2⟩ := srcK src g2 hs
+      exact k1.trans (k2.trans (keeps_addOps (regsIn_mov s2 (Nat.lt_of_lt_of_le (n1 r' rfl) k2.le)
+        (RegsIn.nil _)) ha).1)
+  · simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+    obtain ⟨-, rfl⟩ := h2
+    exact k1
+
+mutual
+/-- **The walk of `+collapse-lazy-atom` keeps (i5)**, when `r` and the
+needs of every block it visits are below `re`. -/
+theorem keeps_walkColl {r o : Nat} : ∀ (oL : Nat) (l : Lazy S) (g g' : Gen Map),
+    walkLazy (collapseGate (S := S) (Map := Map) r o) oL l g = some ((), g') → g.drop = false → r < g.re →
+    (∀ e ∈ (oL, l) :: entries l, NB g.re e.2.sure.ned) → Keeps g g'
+  | oL, mk s fk bd, g, g', h, hd, hr, hn => by
+    unfold walkLazy at h
+    obtain ⟨u, g1, h1, hr'⟩ := bind_some h
+    cases u
+    have k1 := keeps_collapseGate hd hr (hn _ (List.mem_cons_self ..)) h1
+    have hn' : ∀ e ∈ entries (mk s fk bd), NB g1.re e.2.sure.ned :=
+      fun e he => (hn e (List.mem_cons_of_mem _ he)).mono k1.le
+    simp only [entries, List.mem_append] at hn'
+    split at hr'
+    · have h' : some ((), _) = some ((), g') := hr'
+      cases h'
+      exact k1
+    · obtain ⟨u2, g2, h2, h3⟩ := bind_some hr'
+      cases u2
+      have k2 := keeps_walkForksColl fk g1 g2 h2 (k1.dropF hd) (Nat.lt_of_lt_of_le hr k1.le)
+        (fun e he => hn' e (Or.inr he))
+      have k3 := keeps_walkBondsColl bd g2 g' h3 (k2.dropF (k1.dropF hd)) (Nat.lt_of_lt_of_le hr (k1.trans k2).le)
+        (fun e he => (hn' e (Or.inl he)).mono k2.le)
+      exact k1.trans (k2.trans k3)
+
+theorem keeps_walkForksColl {r o : Nat} : ∀ (fk : List (ForkE S)) (g g' : Gen Map),
+    walkForks (collapseGate (S := S) (Map := Map) r o) fk g = some ((), g') → g.drop = false → r < g.re →
+    (∀ e ∈ forkEntries fk, NB g.re e.2.sure.ned) → Keeps g g'
+  | [], g, g', h, _, _, _ => by
+    simp only [walkForks, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨-, rfl⟩ := h
+    exact Keeps.refl _
+  | ((oy, y), (on, n)) :: rest, g, g', h, hd, hr, hn => by
+    unfold walkForks at h
+    obtain ⟨u1, g1, h1, h⟩ := bind_some h
+    obtain ⟨u2, g2, h2, h3⟩ := bind_some h
+    cases u1; cases u2
+    simp only [forkEntries, List.mem_append, List.mem_cons] at hn
+    have k1 := keeps_walkColl oy y g g1 h1 hd hr (fun e he => by
+      rcases List.mem_cons.mp he with rfl | he
+      · exact hn _ (Or.inl (Or.inl (Or.inl rfl)))
+      · exact hn _ (Or.inl (Or.inl (Or.inr he))))
+    have k2 := keeps_walkColl on n g1 g2 h2 (k1.dropF hd) (Nat.lt_of_lt_of_le hr k1.le) (fun e he => by
+      rcases List.mem_cons.mp he with rfl | he
+      · exact (hn _ (Or.inl (Or.inr (Or.inl rfl)))).mono k1.le
+      · exact (hn _ (Or.inl (Or.inr (Or.inr he)))).mono k1.le)
+    have k3 := keeps_walkForksColl rest g2 g' h3 (k2.dropF (k1.dropF hd)) (Nat.lt_of_lt_of_le hr (k1.trans k2).le)
+      (fun e he => (hn e (Or.inr he)).mono (k1.trans k2).le)
+    exact k1.trans (k2.trans k3)
+
+theorem keeps_walkBondsColl {r o : Nat} : ∀ (bd : List (Nat × Lazy S)) (g g' : Gen Map),
+    walkBonds (collapseGate (S := S) (Map := Map) r o) bd g = some ((), g') → g.drop = false → r < g.re →
+    (∀ e ∈ bondEntries bd, NB g.re e.2.sure.ned) → Keeps g g'
+  | [], g, g', h, _, _, _ => by
+    simp only [walkBonds, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨-, rfl⟩ := h
+    exact Keeps.refl _
+  | (ob, l) :: rest, g, g', h, hd, hr, hn => by
+    unfold walkBonds at h
+    obtain ⟨u1, g1, h1, h2⟩ := bind_some h
+    cases u1
+    simp only [bondEntries, List.mem_append] at hn
+    have k1 := keeps_walkColl ob l g g1 h1 hd hr (fun e he => hn e (Or.inl he))
+    have k2 := keeps_walkBondsColl rest g1 g' h2 (k1.dropF hd) (Nat.lt_of_lt_of_le hr k1.le)
+      (fun e he => (hn e (Or.inr he)).mono k1.le)
+    exact k1.trans k2
+end
+
 /-! ## The first half of the `%4` case -/
 
 /-- The choice of the register and the label after `+collapse-lazy-atom` in
@@ -223,6 +345,7 @@ structure CollPre (laz : Lazy S) (th : Jmp) (g0 g2 : Gen Map) (r there : Nat) : 
   le : g0.re ≤ g2.re
   bo1 : g0.bo ≤ g2.bo
   grow : Grow g0 g2
+  keeps : Keeps g0 g2
   pfor : ProxyFor r g0 g2
   rlt : r < g2.re
   rkey : HoonMap.get g2.cond r = Option.none
@@ -244,16 +367,21 @@ theorem collPre_fit {laz : Lazy S} {th : Jmp} {g0 gW : Gen Map} {r k : Nat}
     (hfit : ∀ (R : Map (Option Noun)) v, SkaModel.read r R = some (A v) → HoldsN laz.sure.ned R (A v))
     (hn : (th.there :: (entries laz).map Prod.fst).Nodup)
     (hlab : ∀ e ∈ entries laz, ∃ B fin, HoonMap.get g0.blocks e.1 = some ⟨[], B, fin⟩)
+    (hen : ∀ e ∈ entries laz, NB g0.re e.2.sure.ned)
     (hW : walkLazy (collapseGate r th.there) th.there (mk ⟨Need.this r, laz.sure.lok⟩ laz.fork laz.bond)
       { g0 with re := k } = some ((), gW)) :
     CollPre laz th g0 gW r th.there := by
   rcases laz with ⟨s, fk, bd⟩
   simp only [sure_mk, fork_mk, bond_mk] at hW hl hfits hfit hrr ⊢
+  have KW := keeps_walkColl _ _ _ _ hW d0 hr (fun e he => by
+    rcases List.mem_cons.mp he with rfl | he
+    · exact nb_this hr
+    · exact (hen e he).mono hk)
   have W := walkThis hW hl d0 hn
   have hc : ∀ x, x < k → HoonMap.get gW.cond x = HoonMap.get g0.cond x := fun x hx => ProxyFor.get_lt W.cnd hx
   have Wle : k ≤ gW.re := W.le
   have Wbo : gW.bo = g0.bo := W.bo
-  refine ⟨ea, W.drop, by omega, by omega, (grow_reg g0 k).trans (W.grow hlab),
+  refine ⟨ea, W.drop, by omega, by omega, (grow_reg g0 k).trans (W.grow hlab), (keeps_reg g0 k hk).trans KW,
     (ProxyFor.of_eq (r := r) (g := g0) (g' := { g0 with re := k }) hk rfl).trans W.cnd,
     by omega, by rw [hc r hr]; exact hrk, hrr, fun o _ hn' => W.other o hn', fun e he => ?_,
     Or.inl ⟨rfl, Wbo, fun v => ⟨hfits v, looks_one hl _⟩, fun R v hR => ⟨hfit R v hR, looks_one hl _⟩⟩⟩
@@ -267,6 +395,7 @@ theorem collPre_bom {laz : Lazy S} {th : Jmp} {g0 gW : Gen Map} {r k : Nat}
     (hnf : ∀ v, ¬ FitsS laz.sure (A v))
     (hn : ((entries laz).map Prod.fst).Nodup)
     (hlab : ∀ e ∈ entries laz, e.1 < g0.bo ∧ ∃ B fin, HoonMap.get g0.blocks e.1 = some ⟨[], B, fin⟩)
+    (hen : ∀ e ∈ entries laz, NB g0.re e.2.sure.ned)
     (hW : walkLazy (collapseGate r g0.bo) g0.bo (mk ⟨Need.this r, laz.sure.lok⟩ laz.fork laz.bond)
       (({ g0 with re := k } : Gen Map).emitted ⟨[], [], Termin.bom Option.none⟩) = some ((), gW)) :
     CollPre laz th g0 gW r g0.bo := by
@@ -289,6 +418,14 @@ theorem collPre_bom {laz : Lazy S} {th : Jmp} {g0 gW : Gen Map} {r k : Nat}
     rw [ee]
     simp only [List.map_cons, List.nodup_cons]
     exact ⟨fun hm => by obtain ⟨e, he, e1⟩ := List.mem_map.mp hm; have := (hlab e he).1; omega, hn⟩
+  have KW := keeps_walkColl _ _ _ _ hW dM (by omega) (fun e he => by
+    rcases List.mem_cons.mp he with rfl | he
+    · exact nb_this (by omega)
+    · rw [ee] at he; exact (hen e he).mono (by omega))
+  have KM : Keeps g0 gM := by
+    rw [hgM]
+    exact (keeps_reg g0 k hk).trans (keeps_emit (g := ({ g0 with re := k } : Gen Map)) d0
+      (blobIn_fin (f := Termin.bom Option.none) trivial) (emit_apply _ _)).1
   have W := walkLazy_okColl (r := r) (o := g0.bo) g0.bo _ gM gW hW dM hn'
   rw [ee] at W
   have hc : ∀ x, x < k → HoonMap.get gW.cond x = HoonMap.get g0.cond x := fun x hx => by
@@ -302,7 +439,7 @@ theorem collPre_bom {laz : Lazy S} {th : Jmp} {g0 gW : Gen Map} {r k : Nat}
     · exact ⟨[], _, bM⟩
     · obtain ⟨l, B, fin, hB⟩ := hlab e he
       exact ⟨B, fin, by rw [oM _ (by omega)]; exact hB⟩)
-  refine ⟨ea, W.drop.trans (dM.trans d0.symm), by omega, by omega, GM.trans GW,
+  refine ⟨ea, W.drop.trans (dM.trans d0.symm), by omega, by omega, GM.trans GW, KM.trans KW,
     (ProxyFor.of_eq (r := r) (g := g0) (g' := gM) (by omega) cnM).trans W.cnd, by omega, by rw [hc r hr]; exact hrk, hrr, fun o ho hn2 => ?_,
     fun e he => ?_, Or.inr ⟨rfl, by omega, hnf, ?_⟩⟩
   · rw [W.other o (by
@@ -325,7 +462,8 @@ theorem collapsePre_spec {laz : Lazy S} {th : Jmp} {g0 gA g2 : Gen Map} {a : Opt
     (hnr : ∀ x, NMem laz.sure.ned x → x < g0.re)
     (hnc : ∀ x, NMem laz.sure.ned x → HoonMap.get g0.cond x = Option.none)
     (hn : (th.there :: (entries laz).map Prod.fst).Nodup)
-    (hlab : ∀ e ∈ entries laz, e.1 < g0.bo ∧ ∃ B fin, HoonMap.get g0.blocks e.1 = some ⟨[], B, fin⟩) :
+    (hlab : ∀ e ∈ entries laz, e.1 < g0.bo ∧ ∃ B fin, HoonMap.get g0.blocks e.1 = some ⟨[], B, fin⟩)
+    (hen : ∀ e ∈ entries laz, NB g0.re e.2.sure.ned) :
     CollPre laz th g0 g2 r there := by
   have fresh : ∀ x, g0.re ≤ x → HoonMap.get g0.cond x = Option.none := fun x hx => by
     cases e : HoonMap.get g0.cond x with
@@ -347,7 +485,7 @@ theorem collapsePre_spec {laz : Lazy S} {th : Jmp} {g0 gA g2 : Gen Map} {a : Opt
       Prod.mk.injEq] at hm
     obtain ⟨⟨rfl, rfl⟩, rfl⟩ := hm
     obtain ⟨hs, hl⟩ := noneEq_sure ne
-    refine ⟨ea', rfl, Nat.le_succ _, Nat.le_refl _, grow_re g0, ProxyFor.of_eq (Nat.le_succ _) rfl,
+    refine ⟨ea', rfl, Nat.le_succ _, Nat.le_refl _, grow_re g0, keeps_reg g0 _ (Nat.le_succ _), ProxyFor.of_eq (Nat.le_succ _) rfl,
       Nat.lt_succ_self _, fresh _ (Nat.le_refl _), Or.inr (Nat.le_refl _), fun _ _ _ => rfl,
       fun e he => ⟨[], fun B fin hb => by simpa using hb, collP_noneEq (noneEq_entries laz ne e he)⟩,
       Or.inl ⟨rfl, rfl, fun v => ⟨by rw [hs]; trivial, looks_one hl _⟩,
@@ -369,7 +507,7 @@ theorem collapsePre_spec {laz : Lazy S} {th : Jmp} {g0 gA g2 : Gen Map} {a : Opt
     obtain ⟨⟨rfl, rfl⟩, rfl⟩ := hm
     cases u
     exact collPre_bom (k := k1 + 1) ea' d0 (by omega) (Nat.lt_succ_self _) (fresh _ L1) (Or.inr L1)
-      (sureOK_noFit L fun v f => f) (List.nodup_cons.mp hn).2 hlab (by simpa only [d0] using hW)
+      (sureOK_noFit L fun v f => f) (List.nodup_cons.mp hn).2 hlab hen (by simpa only [d0] using hW)
   · -- `both x`: `x` and a new block `[%bom ~]`
     simp only [bind_apply, pure_apply, Option.bind_some, re_apply, emit_apply, get_apply, d0,
       Bool.false_eq_true, if_false] at hc
@@ -384,7 +522,7 @@ theorem collapsePre_spec {laz : Lazy S} {th : Jmp} {g0 gA g2 : Gen Map} {a : Opt
       (hx.elim (fun hx => by have := hnr x hx; omega) (fun hx => hx.2))
       (hx.elim (fun hx => hnc x hx) (fun hx => fresh x hx.1))
       (hx.elim (fun hx => Or.inl hx) (fun hx => Or.inr hx.1))
-      (sureOK_noFit L fun v f => f) (List.nodup_cons.mp hn).2 hlab (by simpa only [d0] using hW)
+      (sureOK_noFit L fun v f => f) (List.nodup_cons.mp hn).2 hlab hen (by simpa only [d0] using hW)
   · -- `this r'`: the need was `this r'` with looks at axis `1` only
     have hl := sureOK_small L trivial
     have hs : Need.this r' = laz.sure.ned := L.same hl
@@ -397,7 +535,7 @@ theorem collapsePre_spec {laz : Lazy S} {th : Jmp} {g0 gA g2 : Gen Map} {a : Opt
     have hm' : NMem laz.sure.ned r' := by rw [← hs]; rfl
     cases u
     exact collPre_fit (k := k1) ea' d0 L1 (by have := hnr r' hm'; omega) (hnc r' hm') (Or.inl hm') hl
-      (fun v => by rw [← hs]; trivial) (fun R v hR => by rw [← hs]; exact hR) hn hlab' (by simpa only [d0] using hW)
+      (fun v => by rw [← hs]; trivial) (fun R v hR => by rw [← hs]; exact hR) hn hlab' hen (by simpa only [d0] using hW)
   · -- `none`: the need was `none` with looks at axis `1` only, and a fresh register
     have hl := sureOK_small L trivial
     have hs : Need.none = laz.sure.ned := L.same hl
@@ -410,7 +548,9 @@ theorem collapsePre_spec {laz : Lazy S} {th : Jmp} {g0 gA g2 : Gen Map} {a : Opt
     obtain ⟨⟨rfl, rfl⟩, rfl⟩ := hm
     cases u
     exact collPre_fit (k := k1 + 1) ea' d0 (by omega) (Nat.lt_succ_self _) (fresh _ L1) (Or.inr L1) hl
-      (fun v => by rw [← hs]; trivial) (fun R v _ => by rw [← hs]; trivial) hn hlab' (by simpa only [d0] using hW)
+      (fun v => by rw [← hs]; trivial) (fun R v _ => by rw [← hs]; trivial) hn hlab' hen (by simpa only [d0] using hW)
+
+end Keys
 
 end Comp
 end SkaModel
