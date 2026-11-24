@@ -370,6 +370,69 @@ theorem awi_end_later {pick : List Nat → Nat} {nargs : Nat} {bl : Map Blob} (h
 
 end
 
+/-! ## The side conditions of the edge taken -/
+
+section
+variable [MapKeys Map]
+
+/-- **`Done` at the start of a block** `b` reached along `p`, at the point
+`pre` of the walk (`o` itself not yet walked). -/
+def DoneS (bl : Map Blob) (pre p : List Nat) (b : Blob) (x : Nat) : Prop :=
+  PathDef bl p b x ∧ ClR bl x ∧ ∀ o' i, DeadFill bl x o' i → o' ∉ pre
+
+/-- `DoneS` meets the hypothesis of `bodyOK_ssa` and `awi_bodyOK`. -/
+theorem awi_doneS_body {bl : Map Blob} {pre p : List Nat} {o : Nat} {b : Blob} (hpre : o ∉ pre) :
+    ∀ x, PathDef bl p b x → ClR bl x → (∀ o' i, DeadFill bl x o' i → o' = o) → DoneS bl pre p b x :=
+  fun _ h1 h2 h3 => ⟨h1, h2, fun o' i hd ho' => hpre (h3 o' i hd ▸ ho')⟩
+
+/-- **A register the end of a jumping block reads is in `DoneE`** at every
+point of the walk (`awk_fin_ssa`; a jumping block holds no dead fill). -/
+theorem awi_fin_done {bl : Map Blob} (hS : AliasSSAB bl) {q : Nat} {p pre : List Nat} {b : Blob} {j : Jmp}
+    (hπ : BPath bl (q :: p)) (hb : HoonMap.get bl q = some b) (hj : j ∈ getJmps b.fin) {x : Nat}
+    (hx : x ∈ finRegs b.fin) : DoneE bl pre p b x := by
+  obtain ⟨h1, h2, h3⟩ := awk_fin_ssa hS hπ hb hx
+  refine ⟨h1, h2, fun o' i hd => ?_⟩
+  have e := h3 o' i hd
+  subst e
+  obtain ⟨b3, hb3, ⟨u, hu⟩, -⟩ := hd
+  rw [hb] at hb3; cases hb3; rw [hu] at hj; simp [getJmps] at hj
+
+/-- **The side conditions of `aedge_aok` and `aedge_abinv`** at the edge from
+the end of `q` (with the walk invariant at the point `pre`) to the start of a
+reachable block `o` not yet walked: no fact or immediate at `q`'s end names a
+parameter of `o`, a register of `DoneS` at `o` is in `DoneE` at `q`'s end
+with its `old` outside the parameters, or a parameter keeping its name, and a
+register of `ClR` outside `DefW` and the parameters keeps its name. -/
+theorem awi_edge_side {bl : Map Blob} (hS : AliasSSAB bl) {pre l : List Nat} (ht : TopoOK bl (pre ++ l))
+    {g : AGen Map} (hw : OldW bl pre g) {o q : Nat} {p : List Nat} {bo bq : Blob} {lq : AInfo} {mq : AImms}
+    (hRo : Reach bl o) (hbo : HoonMap.get bl o = some bo) (hopre : o ∉ pre) (hbq : HoonMap.get bl q = some bq)
+    (hab : ABInv ⟨g.old, lq, mq⟩ (DefW bl pre) (DoneE bl pre p bq) (ClR bl)) :
+    (∀ r i x, lq r = some i → ANames i x → x ∉ bo.par) ∧ (∀ n r, r ∈ mq n → r ∉ bo.par) ∧
+    (∀ x, DoneS bl pre (q :: p) bo x →
+      (DoneE bl pre p bq x ∧ g.old x = g.old x ∧ x ∉ bo.par ∧ g.old x ∉ bo.par) ∨ (x ∈ bo.par ∧ g.old x = x)) ∧
+    (∀ d, ¬ (DefW bl pre d ∨ d ∈ bo.par) → ClR bl d → g.old d = d) := by
+  have np : ∀ x, DefW bl pre x → x ∉ bo.par := fun x hx hp => awi_par_notDefW hS.1 hRo hbo hp hopre hx
+  refine ⟨fun r i x hr hx => np x (hab.loc.1 r i x hr hx), fun n r hr => np r (hab.imm n r hr),
+    fun x hx => ?_, fun d hn hc => awi_self hS ht hw hc (fun h => hn (Or.inl h))⟩
+  by_cases hp : x ∈ bo.par
+  · exact Or.inr ⟨hp, awi_self hS ht hw hx.2.1 (fun h => np x h hp)⟩
+  · left
+    have hE : DoneE bl pre p bq x := by
+      refine ⟨?_, hx.2.1, hx.2.2⟩
+      rcases hx.1 with h | h | ⟨o', ho', b', hb', h⟩
+      · exact Or.inl (Or.inl h)
+      · exact absurd h hp
+      · rcases List.mem_cons.mp ho' with e | ho'
+        · subst e
+          rw [hbq] at hb'; cases hb'
+          rcases List.mem_append.mp h with h | h
+          · exact Or.inl (Or.inr (Or.inl h))
+          · exact Or.inr h
+        · exact Or.inl (Or.inr (Or.inr ⟨o', ho', b', hb', h⟩))
+    exact ⟨hE, rfl, hp, np _ (hab.old x hE)⟩
+
+end
+
 /-! ## Where an execution is -/
 
 section

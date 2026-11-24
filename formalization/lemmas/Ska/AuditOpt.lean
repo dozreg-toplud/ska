@@ -290,3 +290,5 @@ open Formalization.SkaModel.Opt
 #print axioms awi_frame_walk
 #print axioms awi_done_stable
 #print axioms awi_end_later
+#print axioms awi_fin_done
+#print axioms awi_edge_side
