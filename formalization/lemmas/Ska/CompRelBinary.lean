@@ -771,6 +771,102 @@ theorem runOKN_n7_semR (lib : Lib) {p q : Nomm} {sur : Sure S} {th : Jmp} (hq : 
       · rw [e']; exact goalSem_none _ (Sp.2 f)
       · rw [e']; exact ⟨fun fw => absurd fw x, fun _ => Sp.2 f⟩
 
+/-- **`[7 p q]` with `q` a leaf, for `%done` or `%pick`, with the relaxed
+`sem`.** -/
+theorem runOKP_n7g_semR (lib : Lib) {p q : Nomm} {goal : CGoal S} (hg : NotNext goal) (hq : Frag q goal)
+    (hp : NextOK (S := S) (Map := Map) lib p) (sp : OKNR (S := S) (Map := Map) lib p) (hargs : ∀ j, GoalJ goal j → j.args = []) {region : List Nat}
+    {g0 g2 : Gen Map} {nex : NextL S} (hj : GJ g0.bo goal) (hl : LeafJ g0.bo goal) (hcount : sixCount p ≤ 255) (b0 : 1 ≤ g0.bo)
+    (d0 : g0.drop = false) (hu : UpBelow g0) (hcl0 : Clear g0)
+    (h : runL (Nomm.n7 p q) (CGoal.toL goal) region g0 = some (nex, g2)) :
+    SemPR (Map := Map) lib (Nomm.n7 p q) goal g0 g2 nex := by
+  rw [runL_n7] at h
+  obtain ⟨nx, g, h1, h2⟩ := bind_some h
+  rw [runL_frag hq] at h1
+  obtain ⟨⟨n, g'⟩, hr, e⟩ := Option.map_eq_some_iff.mp h1
+  simp only [Prod.mk.injEq] at e
+  obtain ⟨rfl, rfl⟩ := e
+  have hok : GoalOK g0 goal := by cases goal with | next => exact hg.elim | _ => trivial
+  have hcl : GClean goal := by cases goal with | next => exact hg.elim | _ => trivial
+  have Rq := run_ok lib q goal g0 g' n hq hok hcl hr
+  have Dq := run_down (S := S) (Map := Map) q goal g0 g' n hj b0 d0 hr
+  have dg : g'.drop = false := Rq.ext.2.2.1.trans d0
+  have fa : n.th.args = [] := by
+    rcases Dq.entry with ⟨_, _, _, fa⟩ | e
+    · exact fa
+    · exact hargs _ e
+  have hcl' : Clean n.laz.ned := run_clean q goal g0 g' n hcl hr
+  have hok' : GoalOK g' (CGoal.next n.laz n.th) := ⟨Rq.dist, fun r hr => by
+    rcases Rq.regs r hr with h' | h'
+    · exact (notNext_gmem hg r h').elim
+    · exact h'.2⟩
+  have GQ : GrowU g0 g' := Dq.grow.toU hu
+  have Rp := hp (sur := n.laz) (th := n.th) (region := region) (g0 := g') (g1 := g2) (nex := nex)
+    ⟨Dq.lo, Dq.hi⟩ fa hok' hcl' hcount (Nat.le_trans b0 Dq.grow.bo) dg (GQ.up hu) h2
+  have l1 := Rq.ext.1
+  have l2 := Rp.ext.1
+  have Sp' := sp (sur := n.laz) (th := n.th) (region := region) (g0 := g') (g1 := g2) (nex := nex)
+    ⟨Dq.lo, Dq.hi⟩ fa hok' hcl' hcount (Nat.le_trans b0 Dq.grow.bo) dg (GQ.up hu) (hcl0.growU GQ) h2
+  have hin : GoalIn g0.re goal := by
+    cases goal with
+    | next => exact hg.elim
+    | pick z o => exact ⟨jmpIn_nil hl.1.1, jmpIn_nil hl.2.1⟩
+    | done => trivial
+  have hD : GDist goal := by cases goal with | next => exact hg.elim | _ => trivial
+  have Fq := run_foot (S := S) (Map := Map) q goal g0 g' n d0 hin hD hr
+  have l1 := Rq.ext.1
+  have l2 := Rp.ext.1
+  intro c ned σ O st t gul s0 s ag hned regs hh hn
+  have hN : ∀ r, NMem ned r → g2.re ≤ r ∨ (r < g0.re ∧ ¬ GMem goal r) ∨ NMem nex.laz.sure.ned r := hned
+  have nq : ∀ r, r < g0.re → ¬ NMem n.laz.ned r := fun r h1 hm => by
+    rcases Rq.regs r hm with h' | h'
+    · exact notNext_gmem hg r h'
+    · omega
+  have agP : AgreeP lib O c gul st t ned g' g2 nex.laz s0 s :=
+    ⟨fun o h0 h1 hnl => ag.1 o (Nat.le_trans Rq.ext.2.1 h0) h1 hnl, ag.2⟩
+  have inP : ∀ r, NMem ned r → InR (CGoal.next n.laz n.th) g' g2 nex.laz.sure.ned r := by
+    intro r hr
+    show g2.re ≤ r ∨ (r < g'.re ∧ ¬ NMem n.laz.ned r) ∨ NMem nex.laz.sure.ned r
+    rcases hN r hr with e | ⟨e, _⟩ | e
+    · exact Or.inl e
+    · exact Or.inr (Or.inl ⟨by omega, nq r e⟩)
+    · exact Or.inr (Or.inr e)
+  have Sp := Sp' c ned σ O st t gul s0 s agP inP regs hh hn
+  have agQ : Agree c g0 g' := fun o h0 h1 => by
+    rw [ag.1 o h0 (Nat.lt_of_lt_of_le h1 Rp.ext.2.1) (fun hm => ?_)]
+    · exact Rp.ext.2.2.2 o h1
+    · obtain ⟨e, he, rfl⟩ := List.mem_map.mp hm
+      have := (Rp.labs e he).1; omega
+  show GoalSem lib O c gul st _ regs t nex.th goal (pureEval (Nomm.n7 p q) s)
+  cases ev : pureEval p s with
+  | none =>
+    rw [ev] at Sp
+    have e7 : pureEval (Nomm.n7 p q) s = none := by simp [pureEval, ev]
+    rw [e7]; exact goalSem_none _ Sp
+  | some v =>
+    rw [ev] at Sp
+    have e7 : pureEval (Nomm.n7 p q) s = pureEval q v := by simp [pureEval, ev]
+    rw [e7]
+    by_cases f : FitsS n.laz v
+    · obtain ⟨R, hR, kR, e⟩ := Sp.1 f
+      have Sq := leaf_keepK (O := O) (gul := gul) Rq Dq.grow Fq hcl0 d0 hl
+        (K := fun r => r < g0.re ∨ NMem ned r) (fun r hr => by
+          rcases hr with e1 | e1
+          · exact Or.inl ⟨e1, notNext_gmem hg r⟩
+          · rcases hN r e1 with e | ⟨e, e'⟩ | e
+            · exact Or.inr (Or.inl (by omega))
+            · exact Or.inl ⟨e, e'⟩
+            · rcases Rp.regs r e with b | ⟨b, _⟩
+              · exact Or.inr (Or.inr b)
+              · exact Or.inr (Or.inl b)) c agQ st v R t ⟨hR, f.2⟩
+      refine goalSem_pre (fun r hr => kR r ?_) e _ _ Sq
+      show (r < g'.re ∧ ¬ NMem n.laz.ned r) ∨ NMem ned r
+      rcases hr with e1 | e1
+      · exact Or.inl ⟨by omega, nq r e1⟩
+      · exact Or.inr e1
+    · rcases Rq.nec v f with e' | ⟨w, _, x⟩
+      · rw [e']; exact goalSem_none _ (Sp.2 f)
+      · exact (notNext_gnot hg w x).elim
+
 end Comp
 end SkaModel
 end Formalization
