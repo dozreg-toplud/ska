@@ -605,5 +605,135 @@ theorem cl_fpart (hc : CompIn ctx) (h15 : slot? 15 ctx = some compTypes) (x : Ge
       hsp, hSpin, h15, ct_lf_at, ct_lf_gate, ct_lf_bat, ct_lf_bunt, eS, buntGate, hTk, hsl, cm_silt_arm, hSilt,
       hsk, lp_skip_arm, hSkip, hwl, weld_arm, hW, seen_iff, pure, StateT.pure]
 
+
+/-! ## The bond part -/
+
+/-- The bonds of the result of `+copy-lazy`, in the model (the expression of
+`copyLazyL`). -/
+noncomputable def bondPart (bf bs : List (Nat × Lazy CSet)) : CM (TreapMap mugF) (List (Nat × Lazy CSet)) :=
+  if bs.isEmpty then pure bf else if bf.isEmpty then pure bs else do
+    let merged ← Lazy.mergeBonds (Lazy.index (Map := TreapMap mugF) (fun e : Nat × Lazy CSet => e.1) bs) bf
+    pure (merged ++ bs.filter fun e => !(Lazy.seen (S := CSet) (fun e : Nat × Lazy CSet => e.1) bf e.1))
+
+/-- The pair `[key e]` of a bond's noun. -/
+def pairOfB : Noun → Noun
+  | Noun.cell a b => C a (C a b)
+  | _ => A 0
+
+/-- The key of a bond's noun. -/
+def keyOfB : Noun → Noun
+  | Noun.cell a _ => a
+  | _ => A 0
+
+theorem turn_pairsB (bs bc : Noun) (bd : List (Nat × Lazy CSet)) :
+    nock (C turn.battery (C (C (listN (bd.map bondE)) (C (C (C (A 0) (A 12)) (C (A 0) (A 6))) (C bs bc))) layer2))
+      turn.battery = some (listN ((bd.map fun e => (A e.1, bondE e)).map pairNoun)) := by
+  rw [turn_gate layer2 homoIn_layer2 _ bs bc pairOfB (bd.map bondE) (fun y hy => by
+    obtain ⟨e, -, rfl⟩ := List.mem_map.1 hy
+    simp [nock_exec, bondE, pairOfB])]
+  simp [List.map_map, Function.comp_def, bondE, pairOfB, pairNoun]
+
+theorem turn_keysB (bs bc : Noun) (bd : List (Nat × Lazy CSet)) :
+    nock (C turn.battery (C (C (listN (bd.map bondE)) (C (C (A 0) (A 12)) (C bs bc))) layer2))
+      turn.battery = some (listN ((bd.map fun e => e.1).map A)) := by
+  rw [turn_gate layer2 homoIn_layer2 _ bs bc keyOfB (bd.map bondE) (fun y hy => by
+    obtain ⟨e, -, rfl⟩ := List.mem_map.1 hy
+    simp [nock_exec, bondE, keyOfB])]
+  simp [List.map_map, Function.comp_def, bondE, keyOfB]
+
+/-- **The bond part of `+copy-lazy`** (`clBX`, on the subject `[fork [[ned
+ops] core]]`): `bondPart`, given the spin gate at every bond of `first` and
+every later state. -/
+theorem cl_bpart (hc : CompIn ctx) (h15 : slot? 15 ctx = some compTypes) (x : GenRest) (FN NO : Noun) (o : Nat)
+    (sf ss : Sure CSet) (ff fs : List (Lazy.ForkE CSet)) (bf bs : List (Nat × Lazy CSet))
+    (g : Gen (TreapMap mugF))
+    (hgate : ∀ e ∈ bf, ∀ g' : Gen (TreapMap mugF), g.re ≤ g'.re → ∀ (NO' SAMPLE G' : Noun),
+      ∀ FN' : Noun,
+      nock (C clSGB (C (C (bondE e) (genNoun g' x))
+        (C (HoonMap.toNoun bondE (Lazy.index (Map := TreapMap mugF) (fun e : Nat × Lazy CSet => e.1) bs))
+          (C FN' (C NO' (C clBat (C SAMPLE (C comp.door (C G' ctx))))))))) clSGB
+      = (mgB (Lazy.index (Map := TreapMap mugF) (fun e : Nat × Lazy CSet => e.1) bs) e g').map
+          fun r => C (bondE r.1) (genNoun r.2 x)) :
+    nock (C FN (C NO (C clBat (C (C (A o) (C (C sf.toNoun (C (listN (ff.map forkE)) (listN (bf.map bondE))))
+      (C ss.toNoun (C (listN (fs.map forkE)) (listN (bs.map bondE)))))) (C comp.door (C (genNoun g x) ctx))))))
+      clBX = (bondPart bf bs g).map fun r => C (listN (r.1.map bondE)) (genNoun r.2 x) := by
+  have tF := lz_test bondE bf
+  have tS := lz_test bondE bs
+  have hL := comp_le_at
+  generalize hSAM : C (A o) (C (C sf.toNoun (C (listN (ff.map forkE)) (listN (bf.map bondE))))
+      (C ss.toNoun (C (listN (fs.map forkE)) (listN (bs.map bondE))))) = SAM
+  unfold clBX
+  rcases tS with ⟨s1, s2, s3⟩ | ⟨s1, s2, s3⟩
+  · subst s1
+    subst hSAM
+    simp [nock_exec, s2, s3, bondPart, pure, StateT.pure]
+  rcases tF with ⟨f1, f2, f3⟩ | ⟨f1, f2, f3⟩
+  · subst f1
+    subst hSAM
+    simp [nock_exec, s2, s3, f2, f3, bondPart, pure, StateT.pure, s1]
+  subst hSAM
+  -- the merge
+  have hT0 := turn_pairsB (C (A 0) lzBunt)
+    (C FN (C NO (C clBat (C (C (A o) (C (C sf.toNoun (C (listN (ff.map forkE)) (listN (bf.map bondE))))
+      (C ss.toNoun (C (listN (fs.map forkE)) (listN (bs.map bondE)))))) (C comp.door (C (genNoun g x) ctx)))))) bs
+  have hIdx := malt_gate _ _ (malt_index bondE (fun e : Nat × Lazy CSet => e.1) bs)
+  unfold lzBunt at hT0
+  simp only [bondPart, s1, f1, List.isEmpty_iff, if_false, bind, StateT.bind]
+  generalize hidx : Lazy.index (Map := TreapMap mugF) (fun e : Nat × Lazy CSet => e.1) bs = idx at hIdx hgate ⊢
+  have hSpin := spin_gate_TI bondE bondE (fun g => genNoun g x) layer2 spinIn_layer2 clSGB
+    (C ctLbBunt (genNoun g x))
+    (C (HoonMap.toNoun bondE idx) (C FN (C NO (C clBat (C (C (A o) (C (C sf.toNoun (C (listN (ff.map forkE))
+      (listN (bf.map bondE)))) (C ss.toNoun (C (listN (fs.map forkE)) (listN (bs.map bondE))))))
+      (C comp.door (C (genNoun g x) ctx)))))))
+    (fun e g => mgB idx e g) (fun g' => g.re ≤ g'.re) bf g
+    (fun e he g' hle => hgate e he g' hle _ _ _ _) (fun e he g' r hle hr => Nat.le_trans hle (mgB_le hr))
+    (Nat.le_refl _)
+  rw [← mergeBonds_spinM] at hSpin
+  have hsp := spin_arm_l2
+  rw [spin_gate_eq] at hsp
+  simp only [List.map_map] at hT0 hIdx
+  have hm1 := malt_at
+  have ht1 := turn.arm_at
+  have hs1 := spin.arm_at
+  have hc' : slot? 262143 ctx = some layer2 := hc
+  cases eS : Lazy.mergeBonds idx bf g with
+  | none =>
+    rw [eS] at hSpin
+    generalize layer2 = L2 at hc' hm1 ht1 hs1 hT0 hIdx hSpin hsp ⊢
+    simp [nock_exec, s2, s3, f2, f3, hc', ht1, turn_arm, hT0, hm1, maltArm, hIdx, hs1,
+      hsp, hSpin, h15, ct_lb_at, ct_lb_gate, ct_lb_bat, ct_lb_bunt, eS, buntGate]
+  | some r =>
+    obtain ⟨merged, g2⟩ := r
+    rw [eS] at hSpin
+    have hTk := turn_keysB (C (A 0) lzBunt)
+      (C (listN (merged.map bondE)) (C (HoonMap.toNoun bondE idx) (C FN (C NO (C clBat (C (C (A o)
+        (C (C sf.toNoun (C (listN (ff.map forkE)) (listN (bf.map bondE))))
+          (C ss.toNoun (C (listN (fs.map forkE)) (listN (bs.map bondE))))))
+        (C comp.door (C (genNoun g2 x) ctx)))))))) bf
+    unfold lzBunt at hTk
+    simp only [List.map_map] at hTk
+    obtain ⟨S0, hS0, hhas⟩ := seen_set (bf.map fun e => e.1)
+    have hSilt := cm_silt_gate _ S0 hS0
+    simp only [List.map_map] at hSilt
+    have hSkip := skip_gate_map bondE layer2 clG5 (C (A 0) lzBunt)
+      (C S0 (C (listN (merged.map bondE)) (C (HoonMap.toNoun bondE idx) (C FN (C NO (C clBat (C (C (A o)
+        (C (C sf.toNoun (C (listN (ff.map forkE)) (listN (bf.map bondE))))
+          (C ss.toNoun (C (listN (fs.map forkE)) (listN (bs.map bondE))))))
+        (C comp.door (C (genNoun g2 x) ctx)))))))))
+      (fun e => decide (e.1 ∈ bf.map fun e => e.1)) bs (fun e _ => by
+        have := hhas e.1
+        unfold clG5
+        simp [nock_exec, hc, in_arm, in.arm_at, in.has.arm_at, has_in_arm, this, bondE])
+    unfold lzBunt clG5 at hSkip
+    have hW := weld_gate_list layer2 (merged.map bondE)
+      ((bs.filter fun a => !decide (a.1 ∈ bf.map fun e => e.1)).map bondE)
+    have hsl := silt.arm_at
+    have hsk := skip.arm_at
+    have hwl := weld.arm_at
+    generalize layer2 = L2 at hc' hm1 ht1 hs1 hT0 hIdx hSpin hsp hTk hSilt hSkip hW hsl hsk hwl ⊢
+    simp [nock_exec, s2, s3, f2, f3, hc', ht1, turn_arm, hT0, hm1, maltArm, hIdx, hs1,
+      hsp, hSpin, h15, ct_lb_at, ct_lb_gate, ct_lb_bat, ct_lb_bunt, eS, buntGate, hTk, hsl, cm_silt_arm, hSilt,
+      hsk, lp_skip_arm, hSkip, hwl, weld_arm, hW, seen_iff, pure, StateT.pure]
+
 end Compiler
 end Formalization
