@@ -1,5 +1,6 @@
 import lemmas.Ska.Statements
 import lemmas.Ska.KnowMeets
+import lemmas.Ska.LessProvides
 import lemmas.Ska.AnaInv
 import lemmas.Ska.StaleWitness
 import lemmas.Ska.CapeFacts
@@ -344,3 +345,8 @@ open Formalization.SkaModel
 #print axioms PokeM.poke_datFacts
 #print axioms PokeM.pokeNF_of_lessNF
 #print axioms PokeM.pokeSites_of_lessNF
+#print axioms Bake.sub_app_cape
+#print axioms Bake.sub_of_cover
+#print axioms Bake.lessProvidesNF_of_cover
+#print axioms PokeM.pokeLessNF_of_cover
+#print axioms PokeM.pokeSites_of_cover

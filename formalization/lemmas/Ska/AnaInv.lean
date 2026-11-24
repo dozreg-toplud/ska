@@ -649,6 +649,19 @@ def ResP (res : ResGo M R) : Prop :=
     SInv gs'.st ∧ GStepsR (gCore gs.st.g) (gCore gs'.st.g) ∧ Keep gs.st.stk (· ∈ gs.st.stk) gs.st gs'.st ∧
       gs'.gen = gs.gen ∧ WellFormed r.2.prod
 
+/-- What the `resolve` loop begun with `orig` keeps: `ResP` for the current
+identity, when it is `orig` or the memo lookup at `orig` misses (after a
+`%he` step the loop asks `+git:mi` at `orig` again, on the same `done`). -/
+def ResPL (orig : Ident) (res : ResGo M R) : Prop :=
+  ∀ idT gs r gs', (idT = orig ∨ gitMi gs.st.done orig.2 orig.1 = some none) →
+    SInv gs.st → WellFormed idT.1 → res idT gs = some (r, gs') →
+    SInv gs'.st ∧ GStepsR (gCore gs.st.g) (gCore gs'.st.g) ∧ Keep gs.st.stk (· ∈ gs.st.stk) gs.st gs'.st ∧
+      gs'.gen = gs.gen ∧ WellFormed r.2.prod
+
+theorem resP_of_loop {resl : Ident → ResGo M R} (h : ∀ orig, ResPL orig (resl orig)) :
+    ResP (fun i => resl i i) :=
+  fun idT gs r gs' hi hw e => h idT idT gs r gs' (Or.inl rfl) hi hw e
+
 /-- What `+analyze` keeps. -/
 def AnaP (ana : AnaGo M R) : Prop :=
   ∀ id st low st', SInv st → WellFormed id.1 → Treap.get st.g id = none → ana id st = some (low, st') →
@@ -690,9 +703,9 @@ theorem resOK_of_resP {res : ResGo M R} (h : ResP res) (st0 : SkaState M R) : Re
   obtain ⟨l, el⟩ := k1.1
   rw [el]; exact List.mem_append_right _ hj
 
-theorem resolveStep_ok (env : Env R) {resolve : ResGo M R} {analyze : AnaGo M R}
-    (hres : ResP resolve) (hana : AnaP analyze) : ResP (resolveStep env resolve analyze) := by
-  intro idT gs r gs' hi hw e
+theorem resolveStep_ok (env : Env R) {orig : Ident} {resolve : ResGo M R} {analyze : AnaGo M R}
+    (hres : ResPL orig resolve) (hana : AnaP analyze) : ResPL orig (resolveStep env resolve analyze orig) := by
+  intro idT gs r gs' horig hi hw e
   unfold resolveStep at e
   cases hg : Treap.get gs.st.g idT with
   | some d =>
@@ -714,15 +727,20 @@ theorem resolveStep_ok (env : Env R) {resolve : ResGo M R} {analyze : AnaGo M R}
     · cases e
     · rename_i m hm
       cases e
-      exact ⟨hi, GStepsR.refl _, Keep.refl' _ rfl rfl rfl, rfl, gitMi_wf hi.done_wf hw hm⟩
-    · split at e
+      have hw' : WellFormed orig.1 := by
+        rcases horig with rfl | hmiss
+        · exact hw
+        · rw [hmiss] at hm; cases hm
+      exact ⟨hi, GStepsR.refl _, Keep.refl' _ rfl rfl rfl, rfl, gitMi_wf hi.done_wf hw' hm⟩
+    · rename_i hmiss
+      split at e
       · cases e
       · rename_i i hrc
         have hwi : WellFormed i.1 := by
           rcases recursiveCall_cases hrc with ⟨hb, _⟩ | ⟨_, j, hj, hm, _⟩
           · cases hb
           · exact wf_msgSock hw (hi.wf_stk hj) hm
-        exact hres i gs r gs' hi hwi e
+        exact hres i gs r gs' (Or.inr hmiss) hi hwi e
       · rename_i i hrc
         simp only [Option.map_eq_some_iff] at e
         obtain ⟨o, _, e⟩ := e
@@ -736,7 +754,7 @@ theorem resolveStep_ok (env : Env R) {resolve : ResGo M R} {analyze : AnaGo M R}
         exact ⟨i', s', k', rfl, i'.wf_gitG idT⟩
 
 theorem runStep_ok (env : Env R) (memoF : Memo M) {n : Nat}
-    (hres : ∀ k, k < n → ResP (resolve env memoF k)) : RunP (runStep (folLoop env memoF n)) := by
+    (hres : ∀ k, k < n → ResP (resolveR env memoF k)) : RunP (runStep (folLoop env memoF n)) := by
   intro id index st r st' hi hid e
   unfold runStep at e
   simp only [Option.map_eq_some_iff] at e
@@ -910,7 +928,7 @@ theorem analyzeStep_ok {n : Nat} {memoF : Memo M} (hmF : MemoWF memoF) {run : Ru
 
 /-! ## The induction -/
 
-theorem resolve_zero (env : Env R) (memoF : Memo M) : resolve env memoF 0 = fun _ _ => none := by
+theorem resolve_zero (env : Env R) (memoF : Memo M) : resolve env memoF 0 = fun _ _ _ => none := by
   unfold resolve; rfl
 theorem analyze_zero (env : Env R) (memoF : Memo M) : analyze env memoF 0 = fun _ _ => none := by
   unfold analyze; rfl
@@ -923,11 +941,11 @@ theorem memberLoop_zero (env : Env R) (memoF : Memo M) : memberLoop env memoF 0 
 
 /-- The arms at the fuel `n` keep the invariant. -/
 def AllP (env : Env R) (memoF : Memo M) (n : Nat) : Prop :=
-  ResP (resolve env memoF n) ∧ AnaP (analyze env memoF n) ∧ RunP (run env memoF n) ∧
+  (∀ orig, ResPL orig (resolve env memoF n orig)) ∧ AnaP (analyze env memoF n) ∧ RunP (run env memoF n) ∧
     PassP (passLoop env memoF n) ∧ MemP (memberLoop env memoF n)
 
 theorem allP_zero (env : Env R) (memoF : Memo M) : AllP env memoF 0 := by
-  refine ⟨fun _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ h => ?_,
+  refine ⟨fun _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ h => ?_,
     fun _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ _ _ _ h => ?_⟩
   · rw [resolve_zero] at h; cases h
   · rw [analyze_zero] at h; cases h
@@ -946,10 +964,10 @@ theorem allP (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) : ∀ n, ∀ k,
       subst e
       obtain ⟨r, a, u, p, m⟩ := allP env memoF hmF n n (Nat.le_refl n)
       refine ⟨?_, ?_, ?_, ?_, ?_⟩
-      · rw [resolve_succ]; exact resolveStep_ok env r a
+      · intro orig; rw [resolve_succ]; exact resolveStep_ok env (r orig) a
       · rw [analyze_succ]; exact analyzeStep_ok hmF u p
       · rw [run_succ]
-        exact runStep_ok env memoF (fun k hk => (allP env memoF hmF n k (Nat.le_of_lt hk)).1)
+        exact runStep_ok env memoF (fun k hk => resP_of_loop (resl := resolve env memoF k) (allP env memoF hmF n k (Nat.le_of_lt hk)).1)
       · rw [passLoop_succ]; exact passStep_ok m p
       · rw [memberLoop_succ]; exact memberStep_ok u m
 
