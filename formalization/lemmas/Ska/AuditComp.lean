@@ -89,6 +89,11 @@ import lemmas.Ska.CompHypOfFragD
 import lemmas.Ska.CompHypOfFragF
 import lemmas.Ska.CompNCInd
 import lemmas.Ska.CompNCExamples
+import lemmas.Ska.CompRunOKLB
+import lemmas.Ska.CompSimBodyLift
+import lemmas.Ska.CompLBDone
+import lemmas.Ska.CompLBFour
+import lemmas.Ska.CompNCBond
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -993,3 +998,45 @@ open Formalization.SkaModel.Comp
 #print axioms uokc_threeC
 #print axioms uokc_threeA
 #print axioms three_example
+#print axioms AgreeLB.toL
+#print axioms AgreeL.toB
+#print axioms frontLB_of_frontLC
+#print axioms FrontLB.up
+#print axioms FrontLB.toLC
+#print axioms RunOKLC.toB
+#print axioms RunOKLB.up
+#print axioms RunOKLB.toLC
+#print axioms RunOKLB.wrap
+#print axioms SimM.getDrop
+#print axioms simM_splitLoop
+#print axioms simM_intoLoopL
+#print axioms simM_copyLazyL
+#print axioms simM_collapseLazyAtomL
+#print axioms simM_kern
+#print axioms simM_medeL
+#print axioms simM_callL
+#print axioms simM_runLC
+#print axioms SimB.growU
+#print axioms RunOKLB.ofSim
+#print axioms get_stripBl
+#print axioms simB_strip
+#print axioms LOKC.toB
+#print axioms LOKB.up
+#print axioms LOKB.wrap
+#print axioms FillSem.conv
+#print axioms frontLB_seven
+#print axioms frontLB_seven_bunt
+#print axioms runOKLB_seven
+#print axioms AgreeUB.toU
+#print axioms RunOKGC.toB
+#print axioms runOKGB_sevenL
+#print axioms finishTop_genB
+#print axioms finishLUC_contractGB
+#print axioms holdsN_atom_mem
+#print axioms runOKLB_n4
+#print axioms lokb_n4X
+#print axioms collLC
+#print axioms four_runBond
+#print axioms bondOKC_fourC
+#print axioms bondOKC_fourA
+#print axioms h4c_example

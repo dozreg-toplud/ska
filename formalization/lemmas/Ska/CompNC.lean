@@ -54,16 +54,21 @@ the next session makes: (a) a result entry's block may have a body `B`
 (`labs`: `⟨[], B, hop th⟩`; `AgreeL`: the program's block is `A ++ B`
 unproxied with `A` filling the entry), as 1, 2 and 4 show; (b) the input
 need may contain the run's own result registers, kept (the relaxed `InR`,
-`KeepI` of `CollRunU`), as 3 shows.  Since every proof of the call
+`KeepI` of `CollRunU`), as 3 shows.  (README Gaps 12.23, `CompRunOKLB.lean`:
+(a) is `RunOKLB`; (b) is a strengthening of `sem` that does not lift from
+`RunOKLC`, so `RunOKLB` takes in its place (b'), fronts that may read the
+goal's sure registers, which covers 3's `p` but leaves its `[7 p q]` open.)
+Since every proof of the call
 fragment uses the strict relations, this session states the hypothesis in
 them, with three levels of goals:
 
 * level `0` (`U`): `%done` and every fork-free `%next` (`UOKC`);
-* level `1` (`B`): also every `%next L th` whose sure part asks nothing,
-  any entries (`LOKCS`): the bond goal of a cons head behind a calling tail;
+* level `1` (`B`): also the bond goal of a cons head behind a calling tail
+  (`BondOKC`; `LOKCS`, every `%next L th` whose sure part asks nothing,
+  until README Gaps 12.23);
 * level `2` (`L`): every `%next L th` (`LOKC`).
 
-`NCOK lv t`: on every `Annot`, `UOKC`, `LOKCS` from level `1`, `LOKC` at
+`NCOK lv t`: on every `Annot`, `UOKC`, `BondOKC` from level `1`, `LOKC` at
 level `2`, and with `t` the jump facts `JNew` and `EntNew` (a hinted nomm's
 code begins at a new block), which the cons and `[7 p q]` read of their
 parts.  By 1 to 4 the cons and `%10` are at level `0` only, and `%3`, `%4`,
@@ -74,7 +79,8 @@ parts.  By 1 to 4 the cons and `%10` are at level `0` only, and `%3`, `%4`,
 * `[0 axe]`: any level, `t`.
 * `[1 k]`: level `0`, `t`.
 * `[3 p]`, `[4 p]`: `p` at level `0` (calling or not), level `0` (`n3`,
-  `n4`); for `[4 p]` also `p` in `FragX`, level `1` (`four`).
+  `n4`); for `[4 p]` also level `1`, `p` in `FragX` (`four`) or any `p` of
+  level `0` (`n4b`, README Gaps 12.23, `CompNCBond.lean`).
 * the cons: tail at level `0` (with `t` when it calls), head at level `1`
   when the tail calls (the bond goal) and `0` else; level `0`, `t`.
 * `[7 p q]`: `q` at the level, `p` at level `2` (`q`'s result may be any
@@ -96,7 +102,7 @@ parts.  By 1 to 4 the cons and `%10` are at level `0` only, and `%3`, `%4`,
 
 ## The cases
 
-Level `0` is `UOKC` (and `t`), levels `1`, `2` are `LOKCS`, `LOKC`.
+Level `0` is `UOKC` (and `t`), levels `1`, `2` are `BondOKC`, `LOKC`.
 
 | case | level | from | status |
 |---|---|---|---|
@@ -106,10 +112,10 @@ Level `0` is `UOKC` (and `t`), levels `1`, `2` are `LOKCS`, `LOKC`.
 | `[1 k]` | 2 | `+mede` under a lazy goal | open |
 | `[3 p]`, `p` pure | 0 | `uokcU` (`pure`) | ok |
 | `[3 p]`, `p` calls | 0 | `uokc_threeA` (`unaryGT_ok`, `three_of_none`) | ok |
-| `[3 p]` | 1 | `+collapse-lazy-atom` with a fresh register | open |
+| `[3 p]` | 1 | `+collapse-lazy-atom` with a fresh register (as `collLC`, `CompNCBond.lean`) | open |
 | `[4 p]` | 0 | `uokcU`; with calls `uokc_fourA` (`unaryGC_ok`) | ok |
 | `[4 p]`, `p` in `FragX` | 1 | `runOKL_n4_none` (`lokcs_n4X`) | ok |
-| `[4 p]`, `p` calls | 1 | `+collapse-lazy-atom`, then the call | open |
+| `[4 p]`, `p` calls | 1 | `bondOKC_fourA` (`collLC`, `four_runBond`, 12.23) | ok |
 | `[5 p q]`, pure | 0 | `uokcU` (`pure`) | ok |
 | `[5 p q]`, calls | 0, 1 | `pairLC_ok` with `eqq` | open |
 | cons | 0 | `uokc_consEA` (`LOKCS.toBond`), `entNew_consAny` | ok |
@@ -192,13 +198,14 @@ theorem LOKCS.wrap {lib : Lib} {env : CallEnv} {P : Noun → Prop} {f f' : Noun}
 
 /-- **The induction hypothesis** at level `lv` with the jump facts when
 `t`: on every `Annot` of `nm`, `UOKC`; with `t`, `JNew` and, for a hinted
-nomm, `EntNew`; from level `1`, `LOKCS`; at level `2`, `LOKC`. -/
+nomm, `EntNew`; from level `1`, `BondOKC` (the bond goal of a cons head;
+`LOKCS` before README Gaps 12.23); at level `2`, `LOKC`. -/
 def NCOK (lib : Lib) (code : Bell → Option Nomm) (env : CallEnv) (lv : Nat) (t : Bool) (nm : Nomm) : Prop :=
   ∀ {P : Noun → Prop} {f : Noun}, Annot lib code P f nm →
     UOKC (S := S) (Map := Map) lib env P f nm ∧
     (t = true → JNew (S := S) (Map := Map) env nm ∧
       (hinted env.cod nm = some true → EntNew (S := S) (Map := Map) env nm)) ∧
-    (1 ≤ lv → LOKCS (S := S) (Map := Map) lib env P f nm) ∧
+    (1 ≤ lv → BondOKC (S := S) (Map := Map) lib env P f nm) ∧
     (2 ≤ lv → LOKC (S := S) (Map := Map) lib env P f nm)
 
 theorem NCOK.weak {lib : Lib} {code : Bell → Option Nomm} {env : CallEnv} {lv lv' : Nat} {t t' : Bool}
@@ -224,6 +231,7 @@ inductive NC : Nat → Bool → Nomm → Prop
   | ind {lv : Nat} {t t' : Bool} {p q : Nomm} : NC 0 t p → NC 0 t' q → bareLitQ q = false →
       NC lv true (Nomm.n2 p q Option.none)
   | four {p : Nomm} : FragX (S := S) p → NC 1 false (Nomm.n4 p)
+  | n4b {t : Bool} {p : Nomm} : NC 0 t p → NC 1 false (Nomm.n4 p)
   | n4 {t : Bool} {p : Nomm} : NC 0 t p → NC 0 false (Nomm.n4 p)
   | n3 {t : Bool} {p : Nomm} : NC 0 t p → NC 0 false (Nomm.n3 p)
   | pure {nm : Nomm} : FragU (S := S) nm → NC 0 false nm
