@@ -135,7 +135,7 @@
 ::  TrimBr of lemmas/Ska/OptTrim.lean (brOp, brBody): a stack of open frames
 ::  at the start of every block reached from 0, empty at 0, that the body pops
 ::  only on top with the key it pushed (a frame without key for a %hde of
-::  %hunk %hand %lose), never pushes a key that is open, and hands alike to
+::  %hunk %hand %lose), and hands alike to
 ::  every jump target
 ::
 =/  br-key
@@ -154,9 +154,7 @@
   ^-  (unit (list (unit *)))
   =/  h  (br-key op)
   ?^  h
-    ?:  o.u.h
-      ?^  (find ~[`k.u.h] g)  ~
-      `[`k.u.h g]
+    ?:  o.u.h  `[`k.u.h g]
     ?.  ?=([[~ *] *] g)  ~
     ?.  =(u.i.g k.u.h)  ~
     `t.g

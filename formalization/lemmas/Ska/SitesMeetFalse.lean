@@ -3,6 +3,13 @@ import lemmas.Ska.SiteCover
 /-!
 # `SitesMeet` is false on the real compiler, and so is `BakesImply`
 
+**Of the Hoon before commit 8f2162e.**  The guard of that commit makes every
+bake lie under its code requirement (`bakes_ok`, `bakesImply`), so
+`BakesImply` is proved and nothing needs `SitesMeet` now.  On the changed
+compiler `bakedrop.hoon` still finds the site that fails `SitesMeet`, and
+`H`'s variant is its code requirement itself (`bad=0` of 7 variants,
+2026-11-24).
+
 `tools/hoon/bakedrop.hoon` (runhoon.sh, 2026-11-24) pokes `bakeDropWitness`
 below on `&+lib` and finds a site of `+know` under a bake (with the default
 `fold`, for the strict bake and for the pair at `less.c`) whose sock shares

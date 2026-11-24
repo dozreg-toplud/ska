@@ -26,12 +26,18 @@ code bell's formula and an entry in the table (`VarsOK`).  So every bell of
 the real table agrees with `+mink` on every subject that fits it
 (`InvB.agree`).
 
-The one assumption is `BakesImply` of each poke's `+bake-graph` (the question
-called HImp): every bake the worklist ends with implies its code bell's code
-requirement.  `BakeImp.lean` reduces it to the sites; it holds trivially of
-the root, of jetted callees and in frozen mode, and a guard in `+bake-graph`
-that falls back to `less.c` when `huge:so less.c bake` fails would make it
-hold always.
+What this needs of `+bake-graph` is `BakesImply` (the question called
+HImp): every bake the worklist ends with implies its code bell's code
+requirement.  The guard of commit 8f2162e (`+bake-graph` falls back to
+`less.c` when `huge:so less.c both` fails) makes it hold always
+(`bakesImply`, from `bakes_ok` of `BakeImp.lean`), so `skaPokeB_sound` has no
+hypothesis about the bakes.  That also settles the variant key `[bake fol]`:
+`CodeOK` asks of a variant bell `v` only that its nomm agree with `+mink` for
+`v.fol` on the subjects of `v.less`, which does not name a code bell, and a
+variant made for any code bell `c` meets it because its bake is under
+`less.c` (`variant_annot` with `bakesImply`).  So two code bells of one
+formula that bake to one sock share a correct entry, whichever was written
+first (`newCode` keeps the older).
 -/
 
 namespace Formalization
@@ -112,6 +118,9 @@ structure InvB (lib : Lib) (L : LongB M) : Prop where
   /-- Every bell of the table has a normal cape, as the compilation of a bell
   assumes. -/
   bellNorm : ∀ bl nb, realOf L.code bl = some nb → NormSock bl.less
+  /-- Every variant `vars` lists for a code bell has a bake under that code
+  bell's code requirement (the guard of commit 8f2162e). -/
+  varsSub : ∀ c v, Treap.has (Treap.gut L.vars c Treap.empty) v = true → Sub v.less c.less
 
 theorem InvB.init (lib : Lib) : InvB lib (⟨Treap.empty, Treap.empty, Treap.empty⟩ : LongB M) where
   ghost := ⟨_, PokeInv.init lib⟩
@@ -119,6 +128,7 @@ theorem InvB.init (lib : Lib) : InvB lib (⟨Treap.empty, Treap.empty, Treap.emp
   codeOK := fun _ _ h => by simp [realOf, Treap.get_empty] at h
   vars := fun c v h => by simp [Treap.has, Treap.gut, Treap.get_empty] at h
   bellNorm := fun _ _ h => by simp [realOf, Treap.get_empty] at h
+  varsSub := fun c v h => by simp [Treap.has, Treap.gut, Treap.get_empty] at h
 
 /-- **Every bell of the real table agrees with `+mink`** on every subject
 that fits it. -/
@@ -432,7 +442,11 @@ theorem bakes_norm {E : BEnv M} {n : Nat} {st : BSt M}
         · cases hb; exact Or.inl rfl
         · split at hb
           · cases hb; exact Or.inl rfl
-          · exact Or.inr (normSockH_norm hb)
+          · simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at hb
+            obtain ⟨both, hb', hv, _, rfl⟩ := hb
+            split
+            · exact Or.inr (normSockH_norm hb')
+            · exact Or.inl rfl
       unfold rebakeG at hre
       split at hre
       · cases hre; exact hq
@@ -444,9 +458,15 @@ theorem bakes_norm {E : BEnv M} {n : Nat} {st : BSt M}
           obtain ⟨s', hs', rfl, -⟩ := hre
           exact Or.inr (normSockH_norm hs')) h
 
-/-- **HImp from the sites** (`BakeImp.lean`). -/
-theorem bakesImply_of_meet {E : BEnv M} (hm : SitesMeet E) : BakesImply E :=
-  fun _ _ h c s hs => (bakes_ok_of_meet hm h c s hs).sub
+/-- **HImp of every `+bake-graph`**, by the guard of commit 8f2162e
+(`bakes_ok`). -/
+theorem bakesImply (E : BEnv M) : BakesImply E :=
+  fun _ _ h c s hs => (bakes_ok E h c s hs).sub
+
+/-- **HImp from the sites** (`BakeImp.lean`), now a corollary of
+`bakesImply`. -/
+theorem bakesImply_of_meet {E : BEnv M} (_hm : SitesMeet E) : BakesImply E :=
+  bakesImply E
 
 /-- The code bells `dat` has a datum for have normal capes. -/
 theorem pokeDat_norm {lib : Lib} {code : Bell → Option Nomm} {dats : M Bell (FDatum M)} {memo : Memo M}
@@ -475,13 +495,12 @@ theorem pokeDat_norm {lib : Lib} {code : Bell → Option Nomm} {dats : M Bell (F
 
 /-- **`+ska-poke` keeps the invariant**, and the root bell it returns has an
 entry in the table.  It assumes, of the poke, what `skaPoke_sound` assumes
-(a root sock that is well formed, normal and not `%void`) and HImp for this
-poke's `+bake-graph` (`himp`). -/
+(a root sock that is well formed, normal and not `%void`).  HImp of the
+poke's `+bake-graph` holds by the guard (`bakesImply`); before the guard it
+was the hypothesis `himp`, false of the old Hoon (`SitesMeetFalse.lean`). -/
 theorem skaPokeB_sound {lib : Lib} (env : Env R) {jet : (Bell → Option Datum) → R → Bell → Bool}
     {fold frozen : Bool} {n : Nat} {bf : BEnv M → Nat} {root : Ident} {L L' : LongB M} {reg reg' : R} {rb : Bell}
     (hinv : InvB lib L) (hw : WellFormed root.1) (hnr : NormSock root.1) (hnvr : root.1 ≠ Sock.void)
-    (himp : ∀ pr dats memo' rd reg'', skaPoke env n root L.memo reg = some (pr, dats, memo', rd, reg'') →
-      BakesImply (pokeEnv (jet (pokeDat dats memo') reg'') fold frozen L.vars root dats memo' rd))
     (h : skaPokeB env jet fold frozen n bf root L reg = some (rb, L', reg')) :
     InvB lib L' ∧ ∃ nb, realOf L'.code rb = some nb := by
   obtain ⟨code, hpi⟩ := hinv.ghost
@@ -491,8 +510,8 @@ theorem skaPokeB_sound {lib : Lib} (env : Env R) {jet : (Bell → Option Datum) 
   simp only [Prod.mk.injEq] at he
   obtain ⟨rfl, rfl, rfl⟩ := he
   dsimp only at hbg ⊢
-  have himpE := himp pr dats memo' rd reg'' hsk
-  generalize hE : pokeEnv (jet (pokeDat dats memo') reg'') fold frozen L.vars root dats memo' rd = E at hbg himpE
+  generalize hE : pokeEnv (jet (pokeDat dats memo') reg'') fold frozen L.vars root dats memo' rd = E at hbg
+  have himpE := bakesImply E
   -- the analysis
   obtain ⟨hpi', -⟩ := skaPoke_sound env hpi hw hnr hnvr hsk
   have hds := skaPoke_dats env hpi hw hnr hnvr hsk
@@ -549,7 +568,7 @@ theorem skaPokeB_sound {lib : Lib} (env : Env R) {jet : (Bell → Option Datum) 
           hvars hbake hd hs (hA e.1 d hd) hk
         exact hva.mono fun x hx => ⟨himpE _ st hloop e.1 e.2 hs x hx, hx⟩
   have hnorm := bakes_norm hloop
-  refine ⟨⟨⟨_, hpi'⟩, hlk', ?_, ?_, ?_⟩, ?_⟩
+  refine ⟨⟨⟨_, hpi'⟩, hlk', ?_, ?_, ?_, ?_⟩, ?_⟩
   · show CodeOK lib (realOf (addCode L.code (newCode L.code baked)))
     rw [hc']; exact hcodeOK
   · show VarsOK vars' (realOf (addCode L.code (newCode L.code baked)))
@@ -575,7 +594,43 @@ theorem skaPokeB_sound {lib : Lib} (env : Env R) {jet : (Bell → Option Datum) 
           rw [hEdat] at hd
           exact pokeDat_norm hpi' hlk' hd
         · exact he
+  · intro c v hv
+    rcases f4 c v hv with h0 | ⟨e, hel, rfl, rfl⟩
+    · rw [hEvars] at h0
+      exact hinv.varsSub c v h0
+    · exact (bakes_ok E hloop e.1 e.2 ((Treap.mem_rap _ _ _).mp hel)).sub
   · exact hbake E.root E.root.less hI.root
+
+/-! ## The variant key -/
+
+/-- **A variant is right for every code bell that lists it**: a variant `v`
+that `vars` lists under a code bell `c` has `c`'s formula and an entry in the
+table, and on every subject of its bake, which fits `less.c`, the entry
+agrees with `+mink` on `c`'s formula.  The contract of the entry names only
+`v` (`CodeOK`), so it does not matter for which code bell the variant was
+made. -/
+theorem InvB.variant_agree {lib : Lib} {L : LongB M} (h : InvB lib L) {c v : Bell}
+    (hv : Treap.has (Treap.gut L.vars c Treap.empty) v = true) :
+    v.fol = c.fol ∧ (∀ x, Fits v.less x → Fits c.less x) ∧ ∃ nb, realOf L.code v = some nb ∧
+      ∀ x, Fits v.less x → ∀ gul t r, Mink lib gul t x c.fol r ↔ ∃ m, nommF lib gul (realOf L.code) m t x nb = some r := by
+  obtain ⟨hf, nb, hnb⟩ := h.vars c v hv
+  refine ⟨hf, h.varsSub c v hv, nb, hnb, fun x hx gul t r => ?_⟩
+  rw [← hf]
+  exact h.agree hnb hx gul t r
+
+/-- **Two code bells that list one variant share its entry, and it is right
+for both** (the collision of `VariantCollision.lean`, now harmless): on every
+subject of the common bake, which fits both code requirements, the one entry
+agrees with `+mink` on the one formula. -/
+theorem InvB.collide {lib : Lib} {L : LongB M} (h : InvB lib L) {c1 c2 v : Bell}
+    (h1 : Treap.has (Treap.gut L.vars c1 Treap.empty) v = true)
+    (h2 : Treap.has (Treap.gut L.vars c2 Treap.empty) v = true) :
+    c1.fol = c2.fol ∧ ∃ nb, realOf L.code v = some nb ∧ ∀ x, Fits v.less x →
+      Fits c1.less x ∧ Fits c2.less x ∧
+      ∀ gul t r, Mink lib gul t x c1.fol r ↔ ∃ m, nommF lib gul (realOf L.code) m t x nb = some r := by
+  obtain ⟨f1, s1, nb, hnb, a1⟩ := h.variant_agree h1
+  obtain ⟨f2, s2, -⟩ := h.variant_agree h2
+  exact ⟨f1.symm.trans f2, nb, hnb, fun x hx => ⟨s1 x hx, s2 x hx, a1 x hx⟩⟩
 
 end Bake
 

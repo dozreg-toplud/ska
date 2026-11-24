@@ -238,12 +238,15 @@ theorem meet_fits : ∀ (ks : List Sock) (k : Sock) (x : Noun), (Fits k x ∨ �
 
 /-- The bake of a callee from what its sites know (`ks`, what the callers
 evaluated last say), or its code requirement `lessc` when fixed or when no
-site informs it.  `none` is a crash. -/
+site informs it.  `none` is a crash.  With the guard of the Hoon (commit
+8f2162e): `both` is `norm-sock (uni-sock less.c meet)`, and when
+`(huge:so less.c both)` says no, the bake is `less.c` alone. -/
 def bakeOf (fixed : Bool) (lessc : Sock) (ks : List Sock) : Option Sock :=
   if fixed then some lessc else
   match ks with
   | [] => some lessc
-  | k :: ks => normSockH (uniSock lessc (meet k ks))
+  | k :: ks => (normSockH (uniSock lessc (meet k ks))).bind fun both =>
+      (So.huge lessc both).map fun h => if h then both else lessc
 
 /-- A new bake against the old one: kept if it is a loss (`huge:so bake
 old`), intersected with the old one otherwise. -/
@@ -262,10 +265,14 @@ theorem bakeOf_fits {fixed : Bool} {lessc s k : Sock} {ks : List Sock} {x : Noun
   · split at h
     · cases h; exact hl
     · rename_i k0 ks0
-      refine normSockH_fits (uniSock_fits _ _ _ (Nat.lt_succ_self _) x hl (meet_fits ks0 k0 x ?_)) h
-      rcases List.mem_cons.mp hm with rfl | hm
-      · exact Or.inl hk
-      · exact Or.inr ⟨k, hm, hk⟩
+      simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+      obtain ⟨both, hb, hv, _, rfl⟩ := h
+      split
+      · refine normSockH_fits (uniSock_fits _ _ _ (Nat.lt_succ_self _) x hl (meet_fits ks0 k0 x ?_)) hb
+        rcases List.mem_cons.mp hm with rfl | hm
+        · exact Or.inl hk
+        · exact Or.inr ⟨k, hm, hk⟩
+      · exact hl
 
 theorem rebake_fits {bake s : Sock} {old : Option Sock} {x : Noun} (hb : Fits bake x)
     (h : rebake bake old = some s) : Fits s x := by

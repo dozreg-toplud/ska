@@ -19,8 +19,9 @@ loop, each stated on the fuel the model gives that loop:
   root is not a jetted arm with a hot driver (then `CompHyp.answers` makes
   `+compiled-mono` return);
 
-besides the soundness hypotheses (`CompHyp`, `PokeSites`), which give the
-invariant of the state the compile step starts from.
+besides the soundness hypothesis `CompHyp`, which gives the invariant of the
+state the compile step starts from (`PokeSites` was needed too before the
+guard of `+bake-graph`, commit 8f2162e).
 
 `FinalEnds` always holds (`finalEnds_always`, from `finalPass_some` of
 `BakeFinal.lean`), so `fullAnswers_of_loops` needs only `AnaEnds`,
@@ -209,14 +210,13 @@ theorem fullAnswers_of (A : Arms M Map J H CR) {lib : Lib} {ref : Ref M Map J H}
     {fuel : Noun → Noun → LongB M → J → Nat} {bf : BEnv M → Nat} {regOf : J → R} {jetsOf : J → R → J}
     {newOf : R → Noun}
     (hC : CompHyp A lib ref) (hA : A.skaPoke = anaArm env jet fold frozen fuel bf regOf jetsOf newOf)
-    (hs : PokeSites lib env jet fold frozen fuel regOf)
     (ha : AnaEnds lib env fuel regOf) (hb : BakeEnds lib env jet fold frozen fuel bf regOf)
     (hf : FinalEnds lib env jet fold frozen fuel regOf) (hr : RootAnswers lib A ref) :
     FullAnswers (pokeS A) (InvS lib ref) := by
   intro st s f1 f2 hI
   obtain ⟨r, hk⟩ := anaArm_some jetsOf newOf ha hb hf st.hot hI.1 (s := s) (f := C f1 f2) (j := st.jets)
   rw [← hA] at hk
-  have hAna := anaHyp_of_meet A hA hs
+  have hAna := anaHyp_of_arm A (lib := lib) hA
   obtain ⟨hB, -, -⟩ := hAna.ana s (C f1 f2) st.long st.jets st.hot r hk hI.1
   have hok1 : CacheOK ref r.2.1 r.2.2.1 st.hot st.cache :=
     ⟨fun b x hx => hC.stable s (C f1 f2) _ _ _ r b true x hk hI.1 (hI.2.1 b x hx),
@@ -244,11 +244,10 @@ theorem fullAnswers_of_loops (A : Arms M Map J H CR) {lib : Lib} {ref : Ref M Ma
     {fuel : Noun → Noun → LongB M → J → Nat} {bf : BEnv M → Nat} {regOf : J → R} {jetsOf : J → R → J}
     {newOf : R → Noun}
     (hC : CompHyp A lib ref) (hA : A.skaPoke = anaArm env jet fold frozen fuel bf regOf jetsOf newOf)
-    (hs : PokeSites lib env jet fold frozen fuel regOf)
     (ha : AnaEnds lib env fuel regOf) (hb : BakeEnds lib env jet fold frozen fuel bf regOf)
     (hr : RootAnswers lib A ref) :
     FullAnswers (pokeS A) (InvS lib ref) :=
-  fullAnswers_of A hC hA hs ha hb (finalEnds_always lib env jet fold frozen fuel regOf) hr
+  fullAnswers_of A hC hA ha hb (finalEnds_always lib env jet fold frozen fuel regOf) hr
 
 end PokeM
 

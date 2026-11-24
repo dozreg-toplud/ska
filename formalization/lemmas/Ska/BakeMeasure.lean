@@ -321,7 +321,11 @@ theorem bakeOf_canon {fixed : Bool} {lessc s : Sock} {ks : List Sock} (h : bakeO
   · cases h; exact Or.inl rfl
   · split at h
     · cases h; exact Or.inl rfl
-    · exact Or.inr (normSockH_canon h)
+    · simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+      obtain ⟨both, hb, hv, _, rfl⟩ := h
+      split
+      · exact Or.inr (normSockH_canon hb)
+      · exact Or.inl rfl
 
 theorem rebakeG_canon {lessc bake s : Sock} {old : Option Sock} {g g' : Nat} (hb : bake = lessc ∨ Canon bake)
     (h : rebakeG bake old g = some (s, g')) : s = lessc ∨ Canon s := by

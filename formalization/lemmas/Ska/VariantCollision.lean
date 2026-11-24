@@ -3,6 +3,13 @@ import lemmas.Ska.SitesMeetFalse
 /-!
 # A miscompile: two code bells share a variant key
 
+**Fixed by commit 8f2162e** (the first fix below).  On the changed compiler
+`collide.hoon` prints `[%after-witness %same]`, and `InvB.collide`
+(`PokeBake.lean`) proves that two code bells listing one variant share an
+entry that is right for both, from `InvB.varsSub` (every variant's bake is
+under the code requirement of every code bell that lists it).  What follows
+is the record of the bug.
+
 `tools/hoon/collide.hoon` (runhoon.sh, 2026-11-24) runs two pokes on `&+lib`
 and compares `+eval-top` with `+mock` on the second formula.
 

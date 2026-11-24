@@ -1,7 +1,9 @@
 ::  +trim-trace-hints on formulas where it drops hints.  For every case: the
 ::  rounds of +optimize replayed pass by pass; at each call of
 ::  +trim-trace-hints its result against the model of lemmas/Ska/OptTrim.lean
-::  written again here with lists (m-body, m-walk, m-opened, m-run), and the
+::  written again here (m-body, m-walk, m-opened, m-run: the open keys
+::  counted in a map, a key of count 0 absent, the join over predecessors a
+::  pointwise max folded by hand, the unsafe keys a list), and the
 ::  ops it drops; then the optimized code of the subject unknown run by
 ::  +eval-blob, and +eval-top (subject known), both through +eval-mook,
 ::  against +mook of +mink on every subject of .subs
@@ -87,33 +89,58 @@
 =/  m-quiet
   |=  op=pole
   ?=(?(%imm %mov %con %hed %tal %hsp %hse %hdp %hde %hmp %hme %hcp %hce %equ) -.op)
+::  the count of a key (Cnt of the model: absent is 0), its update (Cnt.set:
+::  0 deletes), the keys of positive count (Uns.add)
+::
+=/  m-cnt
+  |=  [m=(map * @ud) k=*]
+  ^-  @ud
+  (fall (~(get by m) k) 0)
+=/  m-set
+  |=  [m=(map * @ud) k=* n=@ud]
+  ^-  (map * @ud)
+  ?:  =(0 n)  (~(del by m) k)
+  (~(put by m) k n)
+=/  m-pos
+  |=  m=(map * @ud)
+  ^-  (list *)
+  (murn ~(tap by m) |=([k=* n=@ud] ?:(=(0 n) ~ `k)))
 =/  m-body
-  |=  [body=(list pole) opn=(list *) uns=(list *)]
-  ^-  [(list *) (list *)]
+  |=  [body=(list pole) opn=(map * @ud) uns=(list *)]
+  ^-  [(map * @ud) (list *)]
   |-
   ?~  body  [opn uns]
   =/  h  (m-key i.body)
   ?^  h
-    ?:  o.u.h  $(body t.body, opn [k.u.h opn])
-    $(body t.body, opn (skip opn |=(k=* =(k k.u.h))))
+    =/  n  (m-cnt opn k.u.h)
+    ?:  o.u.h  $(body t.body, opn (m-set opn k.u.h +(n)))
+    $(body t.body, opn (m-set opn k.u.h ?:((lte n 1) 0 (dec n))))
   ?:  (m-quiet i.body)  $(body t.body)
-  $(body t.body, uns (weld opn uns))
+  $(body t.body, uns (weld (m-pos opn) uns))
+::  Cnt.join: a pointwise max, folded over the entries of the second map
+::
+=/  m-join
+  |=  [a=(map * @ud) b=(map * @ud)]
+  ^-  (map * @ud)
+  %+  roll  ~(tap by b)
+  |=  [[k=* n=@ud] acc=_a]
+  (m-set acc k (max n (m-cnt acc k)))
 =/  m-walk
   |=  [bl=(map @uwoo blob) rev=(jar @uwoo @uwoo) topo=(list @uwoo)]
-  =|  out=(map @uwoo (list *))
+  =|  out=(map @uwoo (map * @ud))
   =|  uns=(list *)
   |-  ^-  (list *)
   ?~  topo  uns
   =/  b  (~(got by bl) i.topo)
-  =/  opn=(list *)
+  =/  opn=(map * @ud)
     %+  roll  (~(get ja rev) i.topo)
-    |=  [p=@uwoo acc=(list *)]
-    (weld acc (fall (~(get by out) p) ~))
+    |=  [p=@uwoo acc=(map * @ud)]
+    (m-join acc (fall (~(get by out) p) ~))
   =/  r  (m-body body.b opn uns)
   %=  $
     topo  t.topo
     out   (~(put by out) i.topo -.r)
-    uns   ?:(?=(?(%clq %eqq %brz %hop) -.fin.b) +.r (weld -.r +.r))
+    uns   ?:(?=(?(%clq %eqq %brz %hop) -.fin.b) +.r (weld (m-pos -.r) +.r))
   ==
 =/  m-opened
   |=  bl=(map @uwoo blob)
@@ -153,8 +180,8 @@
 ::  TrimBr of lemmas/Ska/OptTrim.lean (brOp, brBody): a stack of open frames
 ::  at the start of every block reached from 0, empty at 0, that the body pops
 ::  only on top with the key it pushed (a frame without key for a %hde of
-::  %hunk %hand %lose), never pushes a key that is open, and hands alike to
-::  every jump target
+::  %hunk %hand %lose), and hands alike to every jump target.  A key may be
+::  pushed while it is open (the counted pass allows it)
 ::
 =/  br-key
   |=  op=pole
@@ -172,9 +199,7 @@
   ^-  (unit (list (unit *)))
   =/  h  (br-key op)
   ?^  h
-    ?:  o.u.h
-      ?^  (find ~[`k.u.h] g)  ~
-      `[`k.u.h g]
+    ?:  o.u.h  `[`k.u.h g]
     ?.  ?=([[~ *] *] g)  ~
     ?.  =(u.i.g k.u.h)  ~
     `t.g
