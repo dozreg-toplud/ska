@@ -376,3 +376,6 @@ open Formalization.SkaModel.Comp
 #print axioms leaf_keep
 #print axioms runOKP_frag_semR
 #print axioms runOKN_frag_semR
+#print axioms leaf_keepK
+#print axioms SemPR.strict
+#print axioms SemGR.strict
