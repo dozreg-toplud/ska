@@ -19,14 +19,15 @@ length of the chain (the Hoon has none).
 `removeHops`: the `+roll` over `topo` (its order matters: a block merged into
 an earlier one is skipped), with the flag `!=(~ saw)`.
 
-The preservation statement (`HopsKeeps`, not proved yet): with `TopoOK bl topo`
-and `rev = revCfg bl topo`, the parameters of every merged block distinct and
-no hop argument one of them (what `+eval-pass` checks in the code before),
-the result keeps the code (`Keeps`).  The poison case: an argument `~` writes
-`0` where the code before poisons, which `ReadsOK` makes invisible (see
-`Opt.lean`); the simulation relation on registers is then "the code after
-holds a value wherever the code before does, the same value, and is defined
-wherever the code before is".
+The preservation statement `HopsKeeps` (proved: `hopsKeeps`, `hops_keeps` in
+`OptHopsSim.lean`): with `TopoOK bl topo` and `rev = revCfg bl topo`, the
+parameters of every block distinct (`ParNodup`) and no jump argument a
+parameter of its target (`PassOK`, the check of `+eval-pass`, which the code
+before would fail where the moves of the code after go on), the result keeps
+the code (`Keeps`).  The poison case: an argument `~` writes `0` where the
+code before poisons, which `ReadsOK` makes invisible (see `Opt.lean`); the
+simulation relation on registers is `RegLe`: the code after holds the same
+unit, or a value where the code before holds poison.
 -/
 
 namespace Formalization

@@ -284,7 +284,232 @@ theorem hop_norm : ∀ (lab : Nat) (b0 : Blob) (T : List Pole) (F : Termin), MTa
         exact ⟨_, y, Steps.step hstep hs, hn⟩
       · exact ⟨_, _, Steps.step hstep (Steps.refl _), Or.inl hII⟩
 
+/-- Bring a related configuration to the normal form. -/
+theorem hop_toN {x0 x x' : Cfg σ Map} {es : List (Nat × Nat)} (h : Steps lib O c gul x0 es x)
+    (hr : HopRel c.blocks rev x x') : ∃ es2 z, Steps lib O c gul x0 es2 z ∧ HopN c.blocks rev z x' := by
+  rcases hr with ⟨b0, T, F, hI⟩ | hII
+  · obtain ⟨es1, z, hz, hn⟩ := hop_norm HH H x.lab b0 T F hI.2.2.2.2.1 x x' rfl hI
+    exact ⟨_, z, steps_trans h hz, hn⟩
+  · exact ⟨es, x, h, Or.inl hII⟩
+
+/-- **Backward**: from the normal form, a step of the code after is matched by
+at most one step before. -/
+theorem hop_bwd_step {x x' y' : Cfg σ Map} {es' : List (Nat × Nat)} (hs : Step lib O c' gul x' es' y')
+    (hn : HopN c.blocks rev x x') (hok : ∀ k, ReadsAt gul x k → ∃ v, read k x.regs = some v) :
+    ∃ es y, Steps lib O c gul x es y ∧ HopRel c.blocks rev y y' := by
+  obtain ⟨lab, b, params, regs, t, st⟩ := x
+  rcases hn with ⟨ht', hst', hreach, b0, T, F, ops, hb0, hm, hpne, hxb, hp', hne, hmov, hb', hpr⟩ | ⟨b0, T, F, hI, hnf⟩
+  · obtain ⟨lab', b', params', regs', t', st'⟩ := x'
+    simp only at ht' hst' hreach hb0 hm hpne hxb hp' hb' hpr
+    subst t' st' params' b' b
+    obtain ⟨q, ops', rfl⟩ : ∃ q ops', ops = q :: ops' := by
+      cases ops with
+      | nil => exact absurd rfl hne
+      | cons q ops' => exact ⟨q, ops', rfl⟩
+    have hq : (∃ n d, q = Pole.imm n d) ∨ (∃ s d, q = Pole.mov s d) := hmov q List.mem_cons_self
+    cases hs with
+    | pass hne' => simp at hne'
+    | @op p rest n R3 t3 st3 hp hq' hbd hpole =>
+      simp only [List.cons_append, List.cons.injEq] at hbd
+      obtain ⟨rfl, rfl⟩ := hbd
+      obtain ⟨-, rfl, rfl, hrun⟩ := movop_step hq hpole
+      by_cases hops' : ops' = []
+      · subst hops'
+        obtain ⟨Rb, hRb, hle⟩ := hpr.2 R3 (by rw [hrun]; rfl)
+        exact ⟨[], ⟨lab, ⟨[], b0.body, b0.fin⟩, [], Rb, t3, st3⟩,
+          Steps.step (Step.pass (x := ⟨lab, b0, params, regs, t3, st3⟩) (Or.inl hpne) hRb) (Steps.refl _),
+          Or.inl ⟨b0, T, F, rfl, rfl, hreach, hb0, hm, rfl, hle, rfl, rfl⟩⟩
+      · refine ⟨[], ⟨lab, b0, params, regs, t3, st3⟩, Steps.refl _, Or.inr ⟨rfl, rfl, hreach, b0, T, F, ops', hb0, hm,
+          hpne, rfl, rfl, hops', fun q' h => hmov q' (List.mem_cons_of_mem _ h), rfl, ?_⟩⟩
+        exact ⟨fun Rb h => by rw [← hrun ops']; exact hpr.1 Rb h,
+          fun Ra h => hpr.2 Ra (by rw [hrun ops']; exact h)⟩
+    | jump hp hq' hbd => simp at hbd
+  · obtain ⟨ht', hst', hreach, hb0, hm, hp', hR, hfin, hb'⟩ := hI
+    obtain ⟨lab', b', params', regs', t', st'⟩ := x'
+    simp only at ht' hst' hreach hb0 hm hp' hR hfin hb' hnf hok
+    subst t' st' params' b'
+    cases hs with
+    | @pass R' hne hR' =>
+      obtain ⟨R1, hR1, hle⟩ := (evalPass_le params b.par hR).bwd hR'
+      exact ⟨[], ⟨lab, ⟨[], b.body, b.fin⟩, [], R1, t, st⟩,
+        Steps.step (Step.pass (x := ⟨lab, b, params, regs, t, st⟩) hne hR1) (Steps.refl _),
+        Or.inl ⟨b0, T, F, rfl, rfl, hreach, hb0, hm, rfl, hle, hfin, rfl⟩⟩
+    | @op p rest n R' t2 st2 hp hq hbd hpole =>
+      simp only at hp hq hbd
+      cases hbb : b.body with
+      | nil =>
+        rcases hnf with h | h | h | ⟨rfl, -⟩
+        · exact absurd hp h
+        · exact absurd hq h
+        · exact absurd hbb h
+        · rw [hbb] at hbd; cases hbd
+      | cons p0 rest0 =>
+        rw [hbb] at hbd
+        simp only [List.cons_append, List.cons.injEq] at hbd
+        obtain ⟨rfl, rfl⟩ := hbd
+        have hrd : ∀ k ∈ poleReads gul p0, ∃ v, read k regs = some v :=
+          fun k hk => hok k ⟨hp, hq, Or.inl ⟨p0, rest0, hbb, hk⟩⟩
+        obtain ⟨R1, hR1, hle⟩ := (execPole_le lib O gul _ _ _ hR hrd).bwd hpole
+        exact ⟨[], ⟨lab, ⟨b.par, rest0, b.fin⟩, params, R1, t2, st2⟩,
+          Steps.step (Step.op (x := ⟨lab, b, params, regs, t, st⟩) hp hq hbb hR1) (Steps.refl _),
+          Or.inl ⟨b0, T, F, rfl, rfl, hreach, hb0, hm, rfl, hle, hfin, rfl⟩⟩
+    | @jump j m hp hq hbd ht hm' =>
+      simp only at hp hq hbd ht hm'
+      have hb1 : b.body = [] := (List.append_eq_nil_iff.mp hbd).1
+      have hT : T = [] ∧ F = b.fin := by
+        rcases hnf with h | h | h | h
+        · exact absurd hp h
+        · exact absurd hq h
+        · exact absurd hb1 h
+        · exact h
+      obtain ⟨rfl, rfl⟩ := hT
+      have hrd : ∀ k ∈ finReads b.fin, ∃ v, read k regs = some v := fun k hk => hok k ⟨hp, hq, Or.inr ⟨hb1, hk⟩⟩
+      rw [taken_le hR _ hrd] at ht
+      obtain ⟨b2, T2, F2, hb2, hmt, rfl⟩ := H.back _ _ hm'
+      have hreach2 : Reach c.blocks j.there := Reach.jump hreach hb0 (hfin ▸ taken_mem ht)
+      exact ⟨_, ⟨j.there, b2, j.args, regs, t, st⟩,
+        Steps.step (Step.jump (x := ⟨lab, b, params, regs, t, st⟩) hp hq hb1 ht hb2) (Steps.refl _),
+        Or.inl ⟨b2, T2, F2, rfl, rfl, hreach2, hb2, hmt, rfl, hR, rfl, rfl⟩⟩
+
+/-- **Backward, at an end.** -/
+theorem hop_bwd_end {x x' : Cfg σ Map} {r : Tone × σ} (he : endOf lib O gul x' = some r)
+    (hn : HopN c.blocks rev x x') (hok : ∀ k, ReadsAt gul x k → ∃ v, read k x.regs = some v) :
+    endOf lib O gul x = some r := by
+  rcases hn with ⟨-, -, -, b0, T, F, ops, -, -, -, -, -, hne, hmov, hb', -⟩ | ⟨b0, T, F, hI, hnf⟩
+  · exfalso
+    obtain ⟨q, ops', rfl⟩ : ∃ q ops', ops = q :: ops' := by
+      cases ops with
+      | nil => exact absurd rfl hne
+      | cons q ops' => exact ⟨q, ops', rfl⟩
+    rw [movop_endOf (hmov q List.mem_cons_self) (by rw [hb']; rfl)] at he; cases he
+  · obtain ⟨ht', hst', -, -, -, hp', hR, -, hb'⟩ := hI
+    by_cases hpq : x.params ≠ [] ∨ x.b.par ≠ []
+    · exfalso
+      have : x'.params ≠ [] ∨ x'.b.par ≠ [] := by rw [hp', hb']; exact hpq
+      simp [endOf, this] at he
+    · simp only [not_or, ne_eq, Decidable.not_not] at hpq
+      rw [← endOf_le hR hok hp' (by rw [hb']) ht' hst' ?_]
+      · exact he
+      cases hbd : x.b.body with
+      | cons p rest => exact Or.inr ⟨p, rest, rest ++ T, rfl, by rw [hb']; simp [hbd]⟩
+      | nil =>
+        rcases hnf with h | h | h | ⟨rfl, rfl⟩
+        · exact absurd hpq.1 h
+        · exact absurd hpq.2 h
+        · exact absurd hbd h
+        · exact Or.inl ⟨rfl, by rw [hb']; simp [hbd], by rw [hb']⟩
+
+/-- A real read after is a real read before, of registers below. -/
+theorem hop_bwd_reads {x x' : Cfg σ Map} {k : Nat} (hn : HopN c.blocks rev x x') (hk : ReadsAt gul x' k) :
+    ReadsAt gul x k ∧ RegLe x.regs x'.regs := by
+  rcases hn with ⟨-, -, -, b0, T, F, ops, -, -, -, -, -, hne, hmov, hb', -⟩ | ⟨b0, T, F, hI, hnf⟩
+  · exfalso
+    obtain ⟨q, ops', rfl⟩ : ∃ q ops', ops = q :: ops' := by
+      cases ops with
+      | nil => exact absurd rfl hne
+      | cons q ops' => exact ⟨q, ops', rfl⟩
+    obtain ⟨-, -, hk⟩ := hk
+    rw [hb'] at hk
+    rcases hk with ⟨p, rest, hb, hk⟩ | ⟨hb, -⟩
+    · simp only [List.cons_append, List.cons.injEq] at hb
+      obtain ⟨rfl, -⟩ := hb
+      rw [movop_reads (hmov _ List.mem_cons_self)] at hk; exact absurd hk List.not_mem_nil
+    · simp at hb
+  · obtain ⟨-, -, -, -, -, hp', hR, -, hb'⟩ := hI
+    refine ⟨?_, hR⟩
+    obtain ⟨hp, hq, hk⟩ := hk
+    rw [hp'] at hp
+    rw [hb'] at hq hk
+    simp only at hq hk
+    refine ⟨hp, hq, ?_⟩
+    cases hbd : x.b.body with
+    | cons p0 rest0 =>
+      rw [hbd] at hk
+      rcases hk with ⟨p, rest, hb, hk⟩ | ⟨hb, -⟩
+      · simp only [List.cons_append, List.cons.injEq] at hb
+        obtain ⟨rfl, -⟩ := hb
+        exact Or.inl ⟨p0, rest0, rfl, hk⟩
+      · simp at hb
+    | nil =>
+      rcases hnf with h | h | h | ⟨rfl, rfl⟩
+      · exact absurd hp h
+      · exact absurd hq h
+      · exact absurd hbd h
+      · rw [hbd] at hk
+        rcases hk with ⟨p, rest, hb, -⟩ | ⟨-, hk⟩
+        · simp at hb
+        · exact Or.inr ⟨rfl, hk⟩
+
+/-- **Forward, on paths.** -/
+theorem hop_fwd {x y : Cfg σ Map} {es : List (Nat × Nat)} (hs : Steps lib O c gul x es y) {r : Tone × σ}
+    (he : endOf lib O gul y = some r) :
+    ∀ {x' : Cfg σ Map}, HopRel c.blocks rev x x' →
+      ∃ es' y', Steps lib O c' gul x' es' y' ∧ endOf lib O gul y' = some r := by
+  induction hs with
+  | refl => intro x' hr; exact hop_fwd_end HH H he hr
+  | step s _ ih =>
+    intro x' hr
+    obtain ⟨es1, y1, hs1, hr1⟩ := hop_fwd_step HH H s hr
+    obtain ⟨es2, y2, hs2, he2⟩ := ih he hr1
+    exact ⟨_, y2, steps_trans hs1 hs2, he2⟩
+
+/-- **Backward, on paths**, to the normal form. -/
+theorem hop_bwd {x0 : Cfg σ Map}
+    (hok : ∀ es y k, Steps lib O c gul x0 es y → ReadsAt gul y k → ∃ v, read k y.regs = some v)
+    {x' y' : Cfg σ Map} {es' : List (Nat × Nat)} (hs : Steps lib O c' gul x' es' y') :
+    ∀ {x : Cfg σ Map} {es : List (Nat × Nat)}, Steps lib O c gul x0 es x → HopRel c.blocks rev x x' →
+      ∃ es2 y, Steps lib O c gul x0 es2 y ∧ HopN c.blocks rev y y' := by
+  induction hs with
+  | refl => intro x es h hr; exact hop_toN HH H h hr
+  | step s _ ih =>
+    intro x es h hr
+    obtain ⟨es1, z, hz, hn⟩ := hop_toN HH H h hr
+    obtain ⟨es2, y1, hs1, hr1⟩ := hop_bwd_step HH H s hn (fun k hk => hok _ z k hz hk)
+    exact ih (steps_trans hz hs1) hr1
+
 end Sim
+
+/-- **`+remove-hops` keeps the code**, on a `topo` with `TopoOK`, its
+`+rev-cfg`, distinct parameters and jumps that pass the check of
+`+eval-pass`. -/
+theorem hops_keeps [MapKeys Map] {fuel : Nat} (c : Straight Map) {topo : List Nat} {ch : Bool} {bl' : Map Blob}
+    (ht : TopoOK c.blocks topo) (hnd : ParNodup c.blocks) (hpc : PassOK c.blocks)
+    (h : removeHops fuel c.blocks (revCfg c.blocks topo) topo = some (ch, bl')) : Keeps c (withBlocks c bl') := by
+  have HH : HopsHyp c.blocks (revCfg c.blocks topo) topo :=
+    ⟨ht.2.2.2.1, fun o b j ho hb hj => revCfg_mem ho hb hj, hnd, hpc⟩
+  have H : HopsBlocks c.blocks (revCfg c.blocks topo) topo (withBlocks c bl').blocks := hops_blocks ht.1 ht.2.1 h
+  obtain ⟨m0, hm0, b0, T, F, hb0, hmt, rfl⟩ := H.zero
+  refine ⟨rfl, rfl, by rw [hm0, hb0]; rfl, ?_⟩
+  intro lib σ O gul st vals t hok
+  let x0 : Path.Cfg σ Map := ⟨0, b0, [], regsOf vals, t, st⟩
+  let x0' : Path.Cfg σ Map := ⟨0, merge b0 T F, [], regsOf vals, t, st⟩
+  have hr0 : HopRel c.blocks (revCfg c.blocks topo) x0 x0' :=
+    Or.inl ⟨b0, T, F, rfl, rfl, Reach.zero, hb0, hmt, rfl, RegLe.refl _, rfl, rfl⟩
+  have hok' : ∀ es y k, Steps lib O c gul x0 es y → ReadsAt gul y k → ∃ v, read k y.regs = some v :=
+    fun es y k hs hk => hok es y k ⟨b0, hb0, hs⟩ hk
+  have back : ∀ es' y', Path.FromEntry (lib := lib) (O := O) (c := withBlocks c bl') (gul := gul) st vals t es' y' →
+      ∃ es y, Steps lib O c gul x0 es y ∧ HopN c.blocks (revCfg c.blocks topo) y y' := by
+    rintro es' y' ⟨b0'', hb0'', hs'⟩
+    rw [hm0] at hb0''; cases hb0''
+    exact hop_bwd (c' := withBlocks c bl') HH H hok' hs' (Steps.refl x0) hr0
+  refine ⟨Option.ext fun r => ⟨fun h' => ?_, fun h' => ?_⟩, ?_⟩
+  · obtain ⟨es', y', hy', he'⟩ := (execEntry_iff_path (c := withBlocks c bl') st vals t r).mp h'
+    obtain ⟨es, y, hs, hn⟩ := back es' y' hy'
+    exact (execEntry_iff_path (c := c) st vals t r).mpr
+      ⟨es, y, ⟨b0, hb0, hs⟩, hop_bwd_end (c' := withBlocks c bl') HH H he' hn (fun k hk => hok' es y k hs hk)⟩
+  · obtain ⟨es, y, ⟨b0'', hb0'', hs⟩, he⟩ := (execEntry_iff_path (c := c) st vals t r).mp h'
+    rw [hb0] at hb0''; cases hb0''
+    obtain ⟨es', y', hs', he'⟩ := hop_fwd (c' := withBlocks c bl') HH H hs he hr0
+    exact (execEntry_iff_path (c := withBlocks c bl') st vals t r).mpr ⟨es', y', ⟨_, hm0, hs'⟩, he'⟩
+  · intro es' y' k hy' hk
+    obtain ⟨es, y, hs, hn⟩ := back es' y' hy'
+    obtain ⟨hk', hle⟩ := hop_bwd_reads (c' := withBlocks c bl') HH H hn hk
+    obtain ⟨v, hv⟩ := hok' es y k hs hk'
+    exact ⟨v, hle.rd hv⟩
+
+/-- **The preservation statement of `+remove-hops` holds.** -/
+theorem hopsKeeps [MapKeys Map] (fuel : Nat) : HopsKeeps (Map := Map) fuel :=
+  fun c _ _ _ ht hnd hpc h => hops_keeps c ht hnd hpc h
 
 end Opt
 end SkaModel
