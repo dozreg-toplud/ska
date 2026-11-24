@@ -1,17 +1,24 @@
-import lemmas.Ska.CompConsN
+import lemmas.Ska.CompN5N
+import lemmas.Ska.CompN10N
 
 /-!
-# `FragX`: `FragM` with cons
+# `FragX`: `FragM` with cons, `%5` and `%10`
 
-`FragX`: the nomms of `FragM` and cons `[p q]` of two nomms of `FragX`,
-nested in any order with `%3`, `%4`, `[7 p q]` (`q` in `Frag`) and `%6`,
-in the tests of `%6` too.  For example `[[6 [0 2] [0 3] [0 1]] [0 1]]`
-and `[6 [[0 2] [6 [0 2] [1 0] [1 1]]] [0 2] [0 3]]` (a cons as a test,
-which crashes) are in `FragX`.
+`FragX`: the nomms of `FragM`, and cons `[p q]`, `[5 p q]` and
+`[10 [a v] q]` of nomms of `FragX`, nested in any order with `%3`, `%4`,
+`[7 p q]` (`q` in `Frag`) and `%6`, in the tests of `%6` too.  For example
+`[[6 [0 2] [0 3] [0 1]] [0 1]]`, `[5 [6 [0 2] [1 0] [1 1]] [0 3]]` and
+`[6 [[0 2] [6 [0 2] [1 0] [1 1]]] [0 2] [0 3]]` (a cons as a test, which
+crashes) are in `FragX`.  Every `%next` goal that a `%6` of such a nomm
+meets is fork-free: each operand of cons, `%5` and `%10` runs for a goal
+`%next` whose need is a part of a fork-free need (`+split`, `+into`) or one
+fresh register.
 
 `runX_clean`: on `FragX` the sure need of every run for a goal whose need
 is clean is clean (`CleanA`), which `binaryN_ok` needs of the operands of a
-cons.  `runX_ok`: the run relations on `FragX`, and the top theorems
+cons, a `%5` and a `%10`.  `runX_ok`: the run relations on `FragX` (the
+cases `%5` and `%10` are `runOKG_n5` of `CompN5N.lean` and `runOKN_n10`,
+`runOKP_n10D`, `runOKP_n10P` of `CompN10N.lean`), and the top theorems
 `finishLF_bellContractX` and `crash_iffX`.
 -/
 
@@ -163,6 +170,8 @@ inductive FragX : Nomm → Prop
   | three {p : Nomm} : FragX p → FragX (Nomm.n3 p)
   | seven {p q : Nomm} : (∀ goal : CGoal S, Frag q goal) → FragX p → FragX (Nomm.n7 p q)
   | cons {p q : Nomm} : FragX p → FragX q → FragX (Nomm.cons p q)
+  | five {p q : Nomm} : FragX p → FragX q → FragX (Nomm.n5 p q)
+  | ten {a : Nat} {v q : Nomm} : FragX v → FragX q → FragX (Nomm.n10 a v q)
 
 theorem fragX_pure {nm : Nomm} (h : FragX (S := S) nm) : nm.pure = true := by
   induction h with
@@ -172,6 +181,8 @@ theorem fragX_pure {nm : Nomm} (h : FragX (S := S) nm) : nm.pure = true := by
   | three _ ih => simpa only [Nomm.pure] using ih
   | seven hq _ ih => simp only [Nomm.pure, ih, (frag_pure_noSix _ _ (hq CGoal.done)).1, Bool.and_self]
   | cons _ _ ihp ihq => simp only [Nomm.pure, ihp, ihq, Bool.and_self]
+  | five _ _ ihp ihq => simp only [Nomm.pure, ihp, ihq, Bool.and_self]
+  | ten _ _ ihv ihq => simp only [Nomm.pure, ihv, ihq, Bool.and_self]
 
 theorem fragX_of_fragM {nm : Nomm} (h : FragM (S := S) nm) : FragX (S := S) nm := by
   induction h with
@@ -210,6 +221,31 @@ theorem clean_consBody {p q : Nomm} (cp : CleanA S Map p) (cq : CleanA S Map q) 
   obtain ⟨rfl, rfl⟩ := hp2
   obtain ⟨nex1, g4, h4, hcp⟩ := bind_some h
   exact clean_copyL hcp (cp (goal := CGoal.next hed _) CS.1 h4) (cq (goal := CGoal.next tel _) CS.2 h3)
+
+/-- The body of `%10` after `+simple-next` keeps clean needs. -/
+theorem clean_n10Body {a : Nat} {v q : Nomm} (cv : CleanA S Map v) (cq : CleanA S Map q) (hvp : v.pure = true)
+    (hqp : q.pure = true) {sur : Sure S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S}
+    (hcl : Clean sur.ned) (h : n10Body a v q ⟨ofSure sur, th⟩ region g0 = some (nex, g1)) :
+    Clean nex.laz.sure.ned := by
+  unfold n10Body at h
+  obtain ⟨⟨don', rec', o⟩, g2x, h2, h⟩ := bind_some h
+  rw [intoL_mk, map_apply] at h2
+  obtain ⟨⟨⟨don, rec, o'⟩, g2⟩, hs2, e2⟩ := Option.map_eq_some_iff.mp h2
+  simp only [Prod.mk.injEq] at e2
+  obtain ⟨⟨rfl, rfl, rfl⟩, rfl⟩ := e2
+  have CI := clean_into hs2 hcl
+  simp only at h CI
+  obtain ⟨nexR, g2', hpr, h⟩ := bind_some h
+  rw [pastL_mk _ _ _ hvp, pure_apply] at hpr
+  simp only [Option.some.injEq, Prod.mk.injEq] at hpr
+  obtain ⟨rfl, rfl⟩ := hpr
+  obtain ⟨nexDon, g3, h3, h⟩ := bind_some h
+  obtain ⟨nexDon', g3', hpd, h⟩ := bind_some h
+  rw [pastL_pure _ _ hqp, pure_apply] at hpd
+  simp only [Option.some.injEq, Prod.mk.injEq] at hpd
+  obtain ⟨rfl, rfl⟩ := hpd
+  obtain ⟨nexRec, g4, h4, hcp⟩ := bind_some h
+  exact clean_copyL hcp (cq (goal := CGoal.next rec _) CI.2 h4) (cv (goal := CGoal.next don _) CI.1 h3)
 
 /-- **On `FragX` every run for a goal with a clean need returns a clean
 sure need.** -/
@@ -339,6 +375,42 @@ theorem runX_clean {nm : Nomm} (hf : FragX (S := S) nm) : CleanA S Map nm := by
       obtain ⟨nex1, _, h4, h⟩ := bind_some h
       exact clean_copyL h (ihp (goal := CGoal.next Sure.bunt _) trivial h4)
         (ihq (goal := CGoal.next Sure.bunt _) trivial h3)
+  | @five p q hp' _ ihp ihq =>
+    have hpp := fragX_pure hp'
+    intro goal region g0 g1 nex _ h
+    rw [runL_n5_toL] at h
+    obtain ⟨_, _, _, h⟩ := bind_some h
+    obtain ⟨_, _, _, h⟩ := bind_some h
+    obtain ⟨_, _, _, h⟩ := bind_some h
+    obtain ⟨nexq, _, h3, h⟩ := bind_some h
+    obtain ⟨nexq', _, hp2, h⟩ := bind_some h
+    rw [pastL_pure _ _ hpp, pure_apply] at hp2
+    simp only [Option.some.injEq, Prod.mk.injEq] at hp2
+    obtain ⟨rfl, rfl⟩ := hp2
+    obtain ⟨nexp, _, h4, h⟩ := bind_some h
+    exact clean_copyL h (ihp (goal := CGoal.next (lazyReg _) _) trivial h4)
+      (ihq (goal := CGoal.next (lazyReg _) _) trivial h3)
+  | @ten a v q hv' hq' ihv ihq =>
+    have hvp := fragX_pure hv'
+    have hqp := fragX_pure hq'
+    intro goal region g0 g1 nex hc h
+    rw [runL_n10_body] at h
+    obtain ⟨next, gs, hs, h⟩ := bind_some h
+    have hn : ∃ (sur : Sure S) (th : Jmp), next = ⟨ofSure sur, th⟩ ∧ Clean sur.ned := by
+      cases goal with
+      | next sur th =>
+        simp only [CGoal.toL, simpleNextL, pure_apply, Option.some.injEq, Prod.mk.injEq] at hs
+        exact ⟨sur, th, hs.1.symm, hc⟩
+      | done =>
+        simp only [CGoal.toL, simpleNextL, bind_apply, re_apply, emit_apply, Option.bind_some, pure_apply,
+          Option.some.injEq, Prod.mk.injEq] at hs
+        exact ⟨lazyReg _, _, hs.1.symm, trivial⟩
+      | pick z o =>
+        simp only [CGoal.toL, simpleNextL, bind_apply, re_apply, emit_apply, Option.bind_some, pure_apply,
+          Option.some.injEq, Prod.mk.injEq] at hs
+        exact ⟨lazyReg _, _, hs.1.symm, trivial⟩
+    obtain ⟨sur, th, rfl, hcl⟩ := hn
+    exact clean_n10Body ihv ihq hvp hqp hcl h
 
 /-! ## The run relations and the top theorems on `FragX` -/
 
@@ -382,10 +454,36 @@ theorem runX_ok (lib : Lib) {nm : Nomm} (hf : FragX (S := S) nm) :
     exact ⟨runOKP_consD lib ihp.2.1 ihq.2.1 cp cq (fragX_pure hp) (fragX_pure hq),
       runOKN_cons lib ihp.2.1 ihq.2.1 cp cq (fragX_pure hp) (fragX_pure hq),
       fun z o _ _ => runOKP_consP lib ihp.2.1 ihq.2.1 cp cq (fragX_pure hp) (fragX_pure hq) z o⟩
+  | @five p q hp hq ihp ihq =>
+    have cp : CleanN S Map p := CleanA.toN (runX_clean hp)
+    have cq : CleanN S Map q := CleanA.toN (runX_clean hq)
+    have hpp := fragX_pure hp
+    exact ⟨fun hg hj hcount b0 d0 hu h =>
+        (runOKG_n5 lib ihp.2.1 ihq.2.1 cp cq hpp (goal := CGoal.done) trivial hj hcount b0 d0 hu h).toP hg,
+      fun hj _ hok _ hcount b0 d0 hu h =>
+        (runOKG_n5 lib ihp.2.1 ihq.2.1 cp cq hpp (goal := CGoal.next _ _) hok hj hcount b0 d0 hu h).toN,
+      fun _ _ _ _ _ _ _ _ hg hj hcount b0 d0 hu h =>
+        (runOKG_n5 lib ihp.2.1 ihq.2.1 cp cq hpp (goal := CGoal.pick _ _) trivial hj hcount b0 d0 hu h).toP hg⟩
+  | @ten a v q hv hq ihv ihq =>
+    have cv : CleanN S Map v := CleanA.toN (runX_clean hv)
+    have cq : CleanN S Map q := CleanA.toN (runX_clean hq)
+    exact ⟨runOKP_n10D lib ihv.2.1 ihq.2.1 cv cq (fragX_pure hv) (fragX_pure hq),
+      runOKN_n10 lib ihv.2.1 ihq.2.1 cv cq (fragX_pure hv) (fragX_pure hq),
+      fun z o _ _ => runOKP_n10P lib ihv.2.1 ihq.2.1 cv cq (fragX_pure hv) (fragX_pure hq) z o⟩
 
 /-- A cons whose head is a `%6`: `[[6 [0 2] [0 3] [0 1]] [0 1]]`. -/
 example : FragX (S := S) (Nomm.cons (Nomm.n6 (Nomm.n0 2) (Nomm.n0 3) (Nomm.n0 1)) (Nomm.n0 1)) :=
   FragX.cons (FragX.six (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial))
+    (FragX.frag fun _ => trivial)
+
+/-- A `%5` over a `%6`: `[5 [6 [0 2] [1 0] [1 1]] [0 3]]`. -/
+example : FragX (S := S) (Nomm.n5 (Nomm.n6 (Nomm.n0 2) (Nomm.n1 (A 0)) (Nomm.n1 (A 1))) (Nomm.n0 3)) :=
+  FragX.five (FragX.six (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial))
+    (FragX.frag fun _ => trivial)
+
+/-- A `%10` whose donor is a `%6`: `[10 [2 [6 [0 6] [0 7] [1 0]]] [0 1]]`. -/
+example : FragX (S := S) (Nomm.n10 2 (Nomm.n6 (Nomm.n0 6) (Nomm.n0 7) (Nomm.n1 (A 0))) (Nomm.n0 1)) :=
+  FragX.ten (FragX.six (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial))
     (FragX.frag fun _ => trivial)
 
 /-- **The final pass meets the contract on `FragX`**, when the nomm has at
