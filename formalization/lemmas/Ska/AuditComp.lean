@@ -785,6 +785,7 @@ open Formalization.SkaModel.Comp
 #print axioms RunOKL.toNV
 #print axioms RunOKNV.toL
 #print axioms runOKL_n0
+#print axioms runOKL_n0_run
 #print axioms runOKL_n4
 #print axioms runOKL_n4_none
 #print axioms runOKL_seven

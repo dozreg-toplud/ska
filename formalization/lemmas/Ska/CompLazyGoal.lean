@@ -87,7 +87,8 @@ input registers).
   `RunOKL`.
 * `RunOKL.toNV`, `RunOKNV.toL`: for a goal with no entries, `RunOKL` with
   `D = none` is `RunOKNV`.
-* `runOKL_n0`: `[0 axe]` (`+from`, every entry kept at its label).
+* `runOKL_n0`, `runOKL_n0_run`: `[0 axe]` (`+from`, every entry kept at its
+  label).
 * `runOKL_n4`: `[4 p]` (`+collapse-lazy-atom`, every entry consumed, with
   `D s = this d`), from `CollRunU`; `runOKL_n4_none` from the run of
   `collRun_n4` under a goal whose sure part asks nothing (a bond goal).
@@ -344,6 +345,24 @@ theorem runOKL_n0 (lib : Lib) {axe : Nat} {L L' : Lazy S} {th : Jmp} {g : Gen Ma
     show GoalSemD lib O c gul st _ regs t th L.sure th Need.none (W s) (pureEval (Nomm.n0 axe) s)
     simp only [pureEval, hs1]
     exact ⟨fun _ => ⟨regs, hh'.1, trivial, fun _ _ => rfl, rfl⟩, fun nf => absurd (fitsS_of_holdsS hh') nf⟩
+
+/-- **`[0 axe]` from its run** (`2 ≤ axe`, `runL_n0_next`). -/
+theorem runOKL_n0_run (lib : Lib) {axe : Nat} (ha : 2 ≤ axe) {L : Lazy S} {th : Jmp} {region : List Nat}
+    {g0 g1 : Gen Map} {nex : NextL S} (h : runL (Nomm.n0 axe) (CGoalL.next L th) region g0 = some (nex, g1))
+    (h1 : 1 ≤ th.there) (h2 : th.there < g0.bo) (hd : Distinct L.sure.ned)
+    (hed : ∀ e ∈ entries L, Distinct e.2.sure.ned) (hnd : ((entries L).map Prod.fst).Nodup)
+    (hemp : ∀ e ∈ entries L, ∃ th', HoonMap.get g0.blocks e.1 = some ⟨[], [], Termin.hop th'⟩)
+    (hnc : ∀ r, NMem L.sure.ned r → HoonMap.get g0.cond r = Option.none)
+    (hec : ∀ e ∈ entries L, ∀ r, NMem e.2.sure.ned r → HoonMap.get g0.cond r = Option.none) (W : Noun → Noun) :
+    RunOKL (Map := Map) lib (Nomm.n0 axe) L th (fun _ => Need.none) W g0 g1 nex := by
+  rw [runL_n0_next ha] at h
+  cases hf : fromL axe L with
+  | none => rw [hf] at h; cases h
+  | some L' =>
+    rw [hf] at h
+    simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact runOKL_n0 lib hf h1 h2 hd hed hnd hemp hnc hec W
 
 /-! ## `[4 p]` -/
 
