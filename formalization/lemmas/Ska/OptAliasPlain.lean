@@ -66,6 +66,16 @@ on the ops after, and whose reachable blocks were reachable, keeps
 that writes no register), **`mid_onceR`** (`+remove-empty-middle`: ends
 only), **`trim_onceR`** (`+trim-trace-hints`, through **`filt_onceR`**) and
 **`dead_onceR`** (`+remove-dead-code`, on `TopoOK`).
+
+**`hops_onceR`** (`+remove-hops`): a place of a merged body goes to an op of
+a member of the chain merged, or, for the move of an argument into a
+parameter of the next member (a `[%mov a p]`, or the `[%imm 0 p]` of a `~`
+argument), to that parameter, `(x, none)`; the map is injective for a fixed
+register (`HkSites.inj`), and the chains of two blocks reachable after are
+disjoint (`hk_disj`), so two definitions after of one register go to two
+definitions before.  **`alias_onceR`** (`+alias`): an op kept is the op
+before with its reads renamed and its destination unchanged, at a place the
+walk of the body gives, and a parameter after is one before.
 -/
 
 namespace Formalization
