@@ -51,7 +51,8 @@ def emit(f, defs):
             if doc:
                 f.write('/-- %s -/\n' % doc)
             f.write('def %s : Noun :=\n  %s\n\n' % (name, lean(n, subs)))
-        subs.insert(0, (name, n))
+        if norm(n)[0] == 'C':
+            subs.insert(0, (name, n))
 
 
 def ct_arm(ax):
@@ -165,6 +166,37 @@ elif WHICH == 'rev':
              ('revGate', gate, 'The gate of the `+rep:by` of `+rev-cfg`.'),
              ('revBody', body, 'The gate body of `+rev-cfg`.'),
              ('revBunt', bunt, 'Its sample bunt.'), ('revHint', hint, 'Its `%fast` hint.')]
+elif WHICH == 'bb':
+    bunt, body, hint = opt_arm(2942)
+    # body = [8 [1 0] [8 [1 0] [8 [1 0] [7 [8 [1 TRAP] [9 2 [0 1]]] [0 2]]]]]
+    _, _, b1 = seq(body, 3)
+    _, _, b2 = seq(b1, 3)
+    _, _, b3 = seq(b2, 3)
+    _, run, _ = seq(b3, 3)
+    _, trapq, _ = seq(run, 3)
+    trap = norm(trapq)[2]
+    # TRAP = [7 [0 1] [7 [10 [30 PUT] [0 1]] [7 [[0 6] ROLL] [[[0 2] [0 6]] [0 7]]]]]
+    _, _, t1 = seq(trap, 3)
+    _, edput, t2 = seq(t1, 3)
+    _, a30, _ = seq(edput, 3)
+    put = norm(a30)[2]
+    _, pr, _ = seq(t2, 3)
+    _, roll = seq(pr, 2)
+    # ROLL = [8 ROLLARM [9 2 [10 [6 [JMPS MK]] [0 2]]]]
+    _, rolld, rs = seq(roll, 3)
+    _, _, ed2 = seq(rs, 3)
+    _, e62, _ = seq(ed2, 3)
+    _, smp = seq(e62, 2)
+    jmps, mkr = seq(smp, 2)
+    _, _, mkr2 = seq(mkr, 3)
+    _, rb, rg1, _ = seq(mkr2, 4)
+    rgate = norm(rg1)[2]
+    defs += [('bbRGate', rgate, 'The gate of the `+roll` over the jumps: skip a label in `saw`, else `dfs-buc`.'),
+             ('bbJmps', jmps, '`(get-jmps fin:(~(got by blocks) o))`.'),
+             ('bbPut', put, '`(~(put in saw) o)`.'),
+             ('bbTrap', trap, 'The trap `dfs-buc` of `+bb-topo`.'),
+             ('bbBody', body, 'The gate body of `+bb-topo`.'),
+             ('bbBunt', bunt, 'Its sample bunt.'), ('bbHint', hint, 'Its `%fast` hint.')]
 else:
     raise SystemExit('unknown ' + WHICH)
 with open(os.path.join(OUT, WHICH + '.lean'), 'w') as f:

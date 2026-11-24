@@ -353,6 +353,52 @@ theorem roll_gate_list {α σ : Type} (pn : α → Noun) (toN : σ → Noun) (gf
   nock_open roll.battery
   simp only [nock_exec, roll_loop_list pn toN gf c bp e bc L s hf]
 
+/-- **`+roll` with a gate that may crash, against a relation**: the noun
+of the accumulator is related to the model's state by `R`, and the gate on
+`pn p` and a related noun returns a noun related to `gf p s`.  For loops
+whose accumulator holds a set, whose noun the model does not fix. -/
+theorem roll_loop_rel {α σ : Type} (pn : α → Noun) (R : Noun → σ → Prop) (gf : α → σ → Option σ)
+    (c bp e bc : Noun) : ∀ (L : List α) (s : σ) (N : Noun) (r : σ),
+    (∀ p ∈ L, ∀ s N s', R N s → gf p s = some s' →
+      ∃ N', nock (C bp (C (C (pn p) N) bc)) bp = some N' ∧ R N' s') →
+    R N s → L.foldlM (fun s p => gf p s) s = some r →
+    ∃ N', nock (C roll.loop (C roll.battery (C (C (listN (L.map pn)) (C bp (C (C e N) bc))) c))) roll.loop
+      = some N' ∧ R N' r := by
+  intro L
+  induction L with
+  | nil =>
+    intro s N r _ hR hr
+    simp only [List.foldlM_nil, Option.pure_def, Option.some.injEq] at hr
+    subst hr
+    refine ⟨N, ?_, hR⟩
+    nock_open roll.loop
+    simp [nock_exec]
+  | cons p L ih =>
+    intro s N r hf hR hr
+    simp only [List.foldlM_cons] at hr
+    cases e1 : gf p s with
+    | none => rw [e1] at hr; cases hr
+    | some s1 =>
+      rw [e1] at hr
+      change L.foldlM (fun s p => gf p s) s1 = some r at hr
+      obtain ⟨N1, h1, hR1⟩ := hf p (by simp) s N s1 hR e1
+      obtain ⟨N2, h2, hR2⟩ := ih s1 N1 r (fun q hq => hf q (by simp [hq])) hR1 hr
+      refine ⟨N2, ?_, hR2⟩
+      nock_open roll.loop
+      simp [nock_exec, h1, h2]
+
+theorem roll_gate_rel {α σ : Type} (pn : α → Noun) (R : Noun → σ → Prop) (gf : α → σ → Option σ)
+    (c bp e bc : Noun) (L : List α) (s : σ) (N : Noun) (r : σ)
+    (hf : ∀ p ∈ L, ∀ s N s', R N s → gf p s = some s' →
+      ∃ N', nock (C bp (C (C (pn p) N) bc)) bp = some N' ∧ R N' s')
+    (hR : R N s) (hr : L.foldlM (fun s p => gf p s) s = some r) :
+    ∃ N', nock (C roll.battery (C (C (listN (L.map pn)) (C bp (C (C e N) bc))) c)) roll.battery
+      = some N' ∧ R N' r := by
+  obtain ⟨N', h, hR'⟩ := roll_loop_rel pn R gf c bp e bc L s N r hf hR hr
+  refine ⟨N', ?_, hR'⟩
+  nock_open roll.battery
+  simp only [nock_exec, h]
+
 /-! ## Jars -/
 
 theorem juIn_layer2' : JuIn mugF layer2 :=
