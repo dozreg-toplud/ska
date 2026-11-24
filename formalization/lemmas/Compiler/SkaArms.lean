@@ -182,5 +182,97 @@ theorem dirty_gate (regsNoun : R → Noun) (K : Noun) (hK : slot? 31 K = some an
     git_g.arm_at, git_g_arm, hgg, FDatum.toNoun, in_arm, in.arm_at, in.any.arm_at, any_in_arm, Ana.dirty, hd]
   exact hany
 
+/-! ## Lists and sets as nouns -/
+
+theorem listNoun_map_listN {α : Type} (f : α → Noun) : ∀ l : List α, listNoun f l = listN (l.map f)
+  | [] => rfl
+  | x :: l => by
+    show C (f x) (listNoun f l) = appendN (f x :: l.map f) (A 0)
+    rw [listNoun_map_listN f l]; rfl
+
+theorem map_cell_inj (z : Noun) : ∀ l1 l2 : List Noun,
+    l1.map (fun n => C n z) = l2.map (fun n => C n z) → l1 = l2
+  | [], [], _ => rfl
+  | [], _ :: _, h => by simp at h
+  | _ :: _, [], h => by simp at h
+  | a :: l1, b :: l2, h => by
+    simp only [List.map_cons, List.cons.injEq, Noun.cell.injEq, and_true] at h
+    rw [h.1, map_cell_inj z l1 l2 h.2]
+
+/-- `~(tap in ...)` of the noun of a set lists `Treap.tap` of the set. -/
+theorem tapList_setNoun {κ : Type} [DecidableEq κ] [TKey κ] (m : FinMap κ Unit) :
+    tapList (FinMap.setNoun m) = (Treap.tap m).map fun e => TKey.enc e.1 := by
+  apply map_cell_inj (A 0)
+  rw [← tapList_toMap, FinMap.toMap_setNoun, FinMap.tapList_toNoun, List.map_map]
+  rfl
+
+theorem tap_in_setNoun {κ : Type} [DecidableEq κ] [TKey κ] (m : FinMap κ Unit) :
+    nock (C in.battery (C (Treap.setNoun m) layer2)) by.tap.arm
+      = some (listN ((Treap.tap m).map fun e => TKey.enc e.1)) := by
+  show nock (C in.battery (C (FinMap.setNoun m) layer2)) by.tap.arm = _
+  rw [← tapList_setNoun, tap_arm, tap_loop, show A 0 = listN [] from rfl,
+    tapF_list (Tree.of_isSet (FinMap.isSet_setNoun m)), List.append_nil]
+
+theorem has_in_setNoun {κ : Type} [DecidableEq κ] [TKey κ] (m : FinMap κ Unit) (k : κ) :
+    nock (C in.has.battery (C (TKey.enc k) (C in.battery (C (Treap.setNoun m) layer2)))) in.has.battery
+      = some (loob (Treap.has m k)) := by
+  obtain ⟨t, ht, hiff⟩ := hasInF_spec mugF (FinMap.setNoun m) (TKey.enc k) (FinMap.isSet_setNoun m)
+  show nock (C in.has.battery (C (TKey.enc k) (C in.battery (C (FinMap.setNoun m) layer2)))) in.has.battery = _
+  rw [has_in_gate layer2 gorIn_morIn_layer2.1 _ _ t ht]
+  congr 2
+  apply Bool.eq_iff_iff.2
+  rw [hiff, FinMap.has_setNoun]
+  constructor
+  · rintro ⟨k', h1, h2⟩
+    rw [TKey.enc_inj _ _ h2.symm] at h1
+    show (m.1 k).isSome = true
+    rw [h1]; rfl
+  · intro h
+    refine ⟨k, ?_, rfl⟩
+    show m.1 k = some ()
+    revert h
+    show (m.1 k).isSome = true → m.1 k = some ()
+    cases m.1 k <;> simp
+
+theorem put_in_setNoun {κ : Type} [DecidableEq κ] [TKey κ] (m : FinMap κ Unit) (k : κ) :
+    nock (C in.put.battery (C (TKey.enc k) (C in.battery (C (Treap.setNoun m) layer2)))) in.put.battery
+      = some (Treap.setNoun (Treap.ins m k)) :=
+  put_in_gate layer2 gorIn_morIn_layer2 _ _ _ (FinMap.putInF_setNoun m k)
+
+/-! ## `+sweep` -/
+
+/-- The gate `kids` of `+sweep`: the identities of the callees of `i`, in the
+order of `~(tap in ...)`, as `Ana.kids`.  Its context is the subject of
+`+sweep`, `[sweep-battery [[id [was st]] K]]`. -/
+theorem kids_gate (regsNoun : R → Noun) (K : Noun) (hK : slot? 31 K = some ana) (sbat idN wasN : Noun)
+    (st : SkaState FinMap R) (i : Ident) :
+    nock (C ska_cg.sweep.gate (C (identNoun i) (C sbat (C (C idN (C wasN (st.toNoun regsNoun))) K))))
+      ska_cg.sweep.gate = some (listNoun identNoun (Ana.kids st i)) := by
+  obtain ⟨g, done, order, stk, next, moved, tick, ticks, regs, stats⟩ := st
+  have hl2 := K_layer2 hK
+  have hgg := git_g_pill g i
+  generalize hd : Ana.gitG g i = d at hgg
+  obtain ⟨dc, dn, dl, di, ds, dp, dm, da⟩ := d
+  have htap := tap_in_setNoun dc
+  have hturn := turn_gate layer2 homoIn_layer2 (C (A 0) (A 13))
+    (C (A 0) (C (C (A 1) (A 0)) (C (A 0) (A 0))))
+    (C ska_cg.sweep.gate (C (identNoun i) (C sbat (C (C idN (C wasN
+      (SkaState.toNoun regsNoun ⟨g, done, order, stk, next, moved, tick, ticks, regs, stats⟩))) K))))
+    (fun x => match x with | Noun.cell _ b => b | _ => A 0)
+    ((Treap.tap dc).map fun e => TKey.enc e.1) (by
+      intro x hx
+      obtain ⟨e, -, rfl⟩ := List.mem_map.1 hx
+      simp [nock_exec, TKey.enc, CalleeEntry.toNoun])
+  rw [List.map_map] at hturn
+  have hk : Ana.kids ⟨g, done, order, stk, next, moved, tick, ticks, regs, stats⟩ i
+      = (Treap.tap dc).map fun e => e.1.id := by
+    simp only [Ana.kids, hd]
+  rw [hk, listNoun_map_listN, List.map_map]
+  nock_open ska_cg.sweep.gate
+  simp [nock_exec, SkaState.toNoun, hl2, hK, git_g.arm_at, git_g_arm, hgg, FDatum.toNoun, in_arm,
+    in.arm_at, in.tap.arm_at, htap, turn.arm_at, turn_arm] at hturn ⊢
+  rw [hturn]
+  rfl
+
 end Compiler
 end Formalization
