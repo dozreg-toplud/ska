@@ -291,5 +291,61 @@ theorem noar_gate (ctx : Noun) (x : GenRest) : ∀ (ord : NeedOrd) (g : Gen (Tre
           genNoun] <;>
         first | exact k1 a1 | exact k2 a2 | skip
 
+/-! ## `+collapse-shape` -/
+
+/-- The gate body of `+collapse-shape` (battery axis `1014` of the door). -/
+def csBody : Noun :=
+  (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 102)))) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 702) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 682) (C (A 0) (A 127)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 114)) (C (A 0) (A 29)))) (C (A 0) (A 2))))))))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 62) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (C (C (A 0) (A 2)) (C (C (A 0) (A 114)) (C (A 0) (A 231)))) (C (A 0) (A 62))))))))))) (C (A 0) (A 0)))))
+
+def csHint : Noun :=
+  (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x65706168732d657370616c6c6f632d706d6f63) (C (C (A 0) (A 0x7ffff)) (A 0))))) (C (A 0) (A 1))))
+
+/-- `+collapse-shape` in the door. -/
+theorem cs_at : slot? 1014 comp.door = some (C (A 7) (C (C (A 8) (C (C (A 1) (C (C (A 0x7478656e)
+    (C (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0))) (C (A 0) (A 0)))) (A 1)))
+    (C (C (A 1) csBody) (C (A 0) (A 1))))) csHint)) := by kernel_rfl
+
+/-- The arm `+shape-collapse` of `K` (arm `682`), no model. -/
+noncomputable def scArm : Noun := (slot? 682 compK).getD (A 0)
+/-- Its gate body. -/
+noncomputable def scBody : Noun := (slot? 109 scArm).getD (A 0)
+
+theorem sc_at : slot? 682 compK = some (C (A 7) (C (C (A 8) (C (C (A 1) (C (C (C (C (A 0x656e6f6e) (A 0)) (A 0))
+    (C (A 0) (A 0))) (A 1))) (C (C (A 1) scBody) (C (A 0) (A 1))))) (C (A 11) (C (C (A 0x74736166) (C (A 1)
+    (C (A 0x657370616c6c6f632d6570616873) (C (C (A 0) (A 0x7fff)) (A 0))))) (C (A 0) (A 1)))))) := by
+  kernel_rfl
+
+/-- **The gate of `+collapse-shape`** on `[nex less]`: given that the gate
+of `+shape-collapse` returns the shape `ord` on `[laz.nex less]`, it crashes
+when `args.then.nex` is not `~`, and otherwise allocates the registers of
+`ord` (`needOrdAllocRegs`) and returns `[[ned-final laz.nex there.then.nex]
+gen]`. -/
+theorem cs_gate (ctx : Noun) (h7 : slot? 7 ctx = some compK) (x : GenRest) (g : Gen (TreapMap mugF))
+    (nex : NextL CSet) (LESS : Noun) (ord : NeedOrd)
+    (hsc : nock (C scBody (C (C nex.laz.toNoun LESS) compK)) scBody = some ord.toNoun) :
+    nock (C csBody (C (C nex.goal.toNoun LESS) (compCore g x ctx))) csBody
+      = if nex.th.args ≠ [] then Option.none else
+        (needOrdAllocRegs ord g).map fun p =>
+          C (C p.1.toNoun (C nex.laz.toNoun (A nex.th.there))) (genNoun p.2 x) := by
+  have hn := noar_gate ctx x ord g
+  have hna := noar_at
+  have hsa := sc_at
+  simp only [compCore] at hn ⊢
+  obtain ⟨laz, ⟨args, there⟩⟩ := nex
+  conv => { lhs; arg 2; unfold csBody }
+  generalize comp.door = Dr at hn hna ⊢
+  generalize compK = Kc at hsa hsc h7
+  cases args with
+  | nil =>
+    cases e : needOrdAllocRegs ord g with
+    | none =>
+      rw [e] at hn
+      simp [nock_exec, NextL.goal, CGoalL.toNoun, Jmp.toNoun, listNoun, h7, hsa, hsc, hna, hn, noarHint]
+    | some p =>
+      rw [e] at hn
+      simp [nock_exec, NextL.goal, CGoalL.toNoun, Jmp.toNoun, listNoun, h7, hsa, hsc, hna, hn, noarHint]
+  | cons a l =>
+    simp [nock_exec, NextL.goal, CGoalL.toNoun, Jmp.toNoun, listNoun]
+
 end Compiler
 end Formalization
