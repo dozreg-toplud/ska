@@ -225,3 +225,4 @@ open Formalization.SkaModel.Opt
 #print axioms optimize_keeps_ssaD
 #print axioms as_op
 #print axioms as_frame
+#print axioms as_sem

@@ -13,7 +13,10 @@ facts of `loc r` hold of the value of `r` (`InfoHolds`), and `old d` holds the
 value of `d` once `d` is done.
 
 `OpSem op R R2`: the op ran without a crash and its destination got the value
-the op computes (`updA R d w`); ops without a destination keep `R`.
+the op computes (`updA R d w`); ops without a destination keep `R`.  The
+interpreter meets it: an op of `execPole` that returns `%0` gives `OpSem` on
+the values `read x regs` before and after (`as_sem`, through `as_sem_local`
+for the local ops and `as_after` for the calls).
 
 **`as_op`**: one step of `aliasOp` keeps `AOK`, with the destination of the
 op added to `Done`, given that the op's sources are read through `old`
@@ -490,6 +493,211 @@ theorem as_op {pick : List Nat → Nat} (hpick : ∀ l : List Nat, l ≠ [] → 
   | csm _ _ d _ =>
     simp only [aliasOp, Option.some.injEq, Prod.mk.injEq] at h
     exact blank d rfl (hfr d rfl) hs h.2.symm
+
+/-! ## The ops of the interpreter meet `OpSem` -/
+
+section
+variable {Map : Type → Type} [HoonMap Map] {σ : Type}
+
+theorem as_store (d : Nat) (v : Noun) (regs : Map (Option Noun)) :
+    (fun x => read x (store d v regs)) = updA (fun x => read x regs) d (some v) := by
+  funext x; by_cases h : x = d
+  · subst h; rw [read_store_self, as_upd_self]
+  · rw [read_store_other h, as_upd_other _ _ h]
+
+/-- **A local op that goes on (`%0`) meets `OpSem`** on the values `read`. -/
+theorem as_sem_local {lib : Lib} {scry : Noun} {op : Pole} {regs regs' : Map (Option Noun)}
+    {trace trace' : Trace} {p : Noun} (h : localPole lib scry op regs trace = some (Tone.zero p, regs', trace')) :
+    OpSem op (fun x => read x regs) (fun x => read x regs') := by
+  cases op <;> simp only [localPole, OpSem] at h ⊢
+  case imm n d =>
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨-, rfl, -⟩ := h
+    exact as_store d n regs
+  case mov s d =>
+    obtain ⟨r, hr, h⟩ := Option.bind_eq_some_iff.mp h
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨-, rfl, -⟩ := h
+    funext x
+    rw [read_move hr x]
+    by_cases e : x = d
+    · subst e; rw [as_upd_self, if_pos rfl]
+    · rw [as_upd_other _ _ e, if_neg e]
+  case inc s d =>
+    obtain ⟨v, hv, h⟩ := Option.bind_eq_some_iff.mp h
+    cases v with
+    | cell => simp at h
+    | atom a =>
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨-, rfl, -⟩ := h
+      exact ⟨a, hv, as_store _ _ _⟩
+  case con h0 t0 d =>
+    obtain ⟨x, hx, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨y, hy, h⟩ := Option.bind_eq_some_iff.mp h
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨-, rfl, -⟩ := h
+    exact ⟨x, y, hx, hy, as_store _ _ _⟩
+  case hed s d =>
+    obtain ⟨v, hv, h⟩ := Option.bind_eq_some_iff.mp h
+    cases v with
+    | atom => simp at h
+    | cell x y =>
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨-, rfl, -⟩ := h
+      exact ⟨x, y, hv, as_store _ _ _⟩
+  case tal s d =>
+    obtain ⟨v, hv, h⟩ := Option.bind_eq_some_iff.mp h
+    cases v with
+    | atom => simp at h
+    | cell x y =>
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨-, rfl, -⟩ := h
+      exact ⟨x, y, hv, as_store _ _ _⟩
+  case cel q =>
+    obtain ⟨v, hv, h⟩ := Option.bind_eq_some_iff.mp h
+    cases v with
+    | atom => simp at h
+    | cell x y =>
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨-, rfl, -⟩ := h
+      exact ⟨⟨x, y, hv⟩, rfl⟩
+  case lob q =>
+    obtain ⟨v, hv, h⟩ := Option.bind_eq_some_iff.mp h
+    split at h
+    · rename_i hc
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨-, rfl, -⟩ := h
+      rcases hc with e | e <;> subst e
+      · exact ⟨Or.inl hv, rfl⟩
+      · exact ⟨Or.inr hv, rfl⟩
+    · simp at h
+  case equ l r =>
+    obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨-, rfl, -⟩ := h; rfl
+  case hsp =>
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨-, rfl, -⟩ := h; rfl
+  case hse =>
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨-, rfl, -⟩ := h; rfl
+  case hcp =>
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨-, rfl, -⟩ := h; rfl
+  case hmp =>
+    obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨-, rfl, -⟩ := h; rfl
+  case hme =>
+    obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨-, rfl, -⟩ := h; rfl
+  case hce =>
+    obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨-, rfl, -⟩ := h; rfl
+  case hdp =>
+    split at h
+    · obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨-, rfl, -⟩ := h; rfl
+    · simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨-, rfl, -⟩ := h; rfl
+  case hde =>
+    split at h
+    · obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨-, rfl, -⟩ := h; rfl
+    · simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨-, rfl, -⟩ := h; rfl
+  case spy e q d =>
+    split at h
+    · simp at h
+    · obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨dr, _, h⟩ := Option.bind_eq_some_iff.mp h
+      cases dr with
+      | block => simp at h
+      | hunk => simp at h
+      | val v =>
+        simp only [Option.some.injEq, Prod.mk.injEq] at h
+        obtain ⟨-, rfl, -⟩ := h
+        exact ⟨some v, as_store _ _ _⟩
+  all_goals simp at h
+
+
+theorem as_after {st st' : σ} {regs regs' : Map (Option Noun)} {trace trace' : Trace} {d : Nat} {ton : Tone}
+    {p : Noun} (h : afterCall st regs trace d ton = some (Tone.zero p, regs', trace', st')) :
+    ∃ w, (fun x => read x regs') = updA (fun x => read x regs) d w := by
+  cases ton with
+  | zero q =>
+    simp only [afterCall, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨-, rfl, -⟩ := h
+    exact ⟨some q, as_store _ _ _⟩
+  | one => simp [afterCall] at h
+  | two => simp [afterCall] at h
+
+/-- **An op of `+eval-pole` that goes on (`%0`) meets `OpSem`** on the values
+`read`. -/
+theorem as_sem {lib : Lib} {O : Oracle σ} {scry : Noun} {st st' : σ} {op : Pole}
+    {regs regs' : Map (Option Noun)} {trace trace' : Trace} {p : Noun}
+    (h : execPole lib O scry st op regs trace = some (Tone.zero p, regs', trace', st')) :
+    OpSem op (fun x => read x regs) (fun x => read x regs') := by
+  have loc : (localPole lib scry op regs trace).map (fun (ton, regs', trace') => (ton, regs', trace', st)) =
+      some (Tone.zero p, regs', trace', st') → OpSem op (fun x => read x regs) (fun x => read x regs') := by
+    intro h
+    obtain ⟨⟨t, r2, t2⟩, hl, he⟩ := Option.map_eq_some_iff.mp h
+    simp only [Prod.mk.injEq] at he
+    obtain ⟨rfl, rfl, rfl, -⟩ := he
+    exact as_sem_local hl
+  cases op
+  case nok u f d =>
+    simp only [execPole] at h
+    obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨⟨ton, s2⟩, _, h⟩ := Option.bind_eq_some_iff.mp h
+    cases ton with
+    | zero q =>
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨-, rfl, -⟩ := h
+      exact ⟨some q, as_store _ _ _⟩
+    | one => simp at h
+    | two => simp at h
+  case cal a v d =>
+    simp only [execPole] at h
+    obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨⟨ton, s2⟩, _, h⟩ := Option.bind_eq_some_iff.mp h
+    exact as_after h
+  case caf a v d n =>
+    simp only [execPole] at h
+    obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨⟨ton, s2⟩, _, h⟩ := Option.bind_eq_some_iff.mp h
+    exact as_after h
+  case cam a v d k =>
+    simp only [execPole] at h
+    obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨⟨ton, s2⟩, _, h⟩ := Option.bind_eq_some_iff.mp h
+    exact as_after h
+  case csl a s0 d =>
+    simp only [execPole] at h
+    obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨⟨ton, s2⟩, _, h⟩ := Option.bind_eq_some_iff.mp h
+    exact as_after h
+  case csf a s0 d n =>
+    simp only [execPole] at h
+    obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨⟨ton, s2⟩, _, h⟩ := Option.bind_eq_some_iff.mp h
+    exact as_after h
+  case csm a s0 d k =>
+    simp only [execPole] at h
+    obtain ⟨_, _, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨⟨ton, s2⟩, _, h⟩ := Option.bind_eq_some_iff.mp h
+    exact as_after h
+  all_goals exact loc h
+
+end
 
 end Opt
 end SkaModel
