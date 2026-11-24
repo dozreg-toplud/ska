@@ -105,6 +105,15 @@ theorem copyLazy_ok {o : Nat} {s1 s2 s' : Sure S} {g g' : Gen Map} (h : copyLazy
     fun Pr ha hb hm => (keepsA_copyNeed h1 hm ha hb).2.2,
     fun ha hb => by rw [← e2]; exact copyNeed_regs _ _ _ _ _ _ h1 ha hb (RegsIn.nil _)⟩
 
+theorem clean_copyLazy {o : Nat} {s1 s2 s' : Sure S} {g g' : Gen Map} (h : copyLazy o s1 s2 g = some (s', g'))
+    (h1 : Clean s1.ned) (h2 : Clean s2.ned) : Clean s'.ned := by
+  simp only [copyLazy] at h
+  obtain ⟨⟨ned, ops⟩, g1, hc, h⟩ := bind_some h
+  obtain ⟨_, g2, _, h⟩ := bind_some h
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨rfl, rfl⟩ := h
+  exact clean_copyNeed _ _ _ _ _ _ hc h1 h2
+
 /-! ## The merge of the bonds -/
 
 /-- **The loop of the merge over flat bonds**: a bond whose label the index

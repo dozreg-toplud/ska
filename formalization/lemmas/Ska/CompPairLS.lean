@@ -195,7 +195,9 @@ theorem pairLS_ok {lib : Lib} {P : Noun → Prop} {f fh ft : Noun} {L : Lazy S} 
         ∃ r, FinB gul tm x y r ∧
           GoalSemCM lib O c gul Inv ν (Keep g0 g' (CGoal.next L.sure th)) st regs t tm (jmp0 o) (CGoal.next L.sure th) r) :
     RunOKLS (Map := Map) lib P f L th (pairWit C Qh Qt) false g0 g3 (pairRes n r nexq.laz.bond nexp.laz.bond) ∧
-      g0.bo ≤ n.th.there := by
+      g0.bo ≤ n.th.there ∧ n.th = jmp0 g2.bo ∧ Flat (pairRes n r nexq.laz.bond nexp.laz.bond).laz ∧
+      (∀ e ∈ entries (pairRes n r nexq.laz.bond nexp.laz.bond).laz, Clean e.2.sure.ned) ∧
+      (∀ e ∈ entries (pairRes n r nexq.laz.bond nexp.laz.bond).laz, e.1 < g2.bo) := by
   -- flat entries
   have eL : entries L = L.bond := entries_flat hLf
   have eH : entries hed = hed.bond := entries_flat hhf
@@ -1235,7 +1237,7 @@ theorem pairLS_ok {lib : Lib} {P : Noun → Prop} {f fh ft : Noun} {L : Lazy S} 
     front := FS.toFront (by omega) (fun x hx => gm x hx) (fun _ _ x hx => hx.elim) dregR
     sem := SEM
     semB := SEMB
-    fs := FS }, by rw [eth]; simp only [jmp0]; omega⟩
+    fs := FS }, by rw [eth]; simp only [jmp0]; omega, eth, fR, fun e he => ?_, fun e he => ?_⟩
   · -- keep
     have hk' : k ∉ (entries Lh).map Prod.fst := fun hm => by
       rcases labLh k hm with a | ⟨a, _⟩
@@ -1362,6 +1364,31 @@ theorem pairLS_ok {lib : Lib} {P : Noun → Prop} {f fh ft : Noun} {L : Lazy S} 
       · rw [hp.cfr.get_lt (L2 x a).1]
         exact hq.econd e2 (by rw [eQ]; exact he2) x (by rw [es2]; exact a)
       · exact condBelow_none cb2 (by omega)
+  · -- the result's entries are clean
+    rw [eR] at he
+    rcases resE e he with ⟨h, _⟩ | ⟨h, _⟩ | ⟨e1, he1, e2, he2, s1, s2, s', ga, gc, ee1, ee2, ee, es1, es2, -, -, -, -, cpy, -⟩
+    · exact hpc e (by rw [eP]; exact h)
+    · exact hqc e (by rw [eQ]; exact h)
+    · rw [ee]
+      have c1 := hpc e1 (by rw [eP]; exact he1)
+      have c2 := hqc e2 (by rw [eQ]; exact he2)
+      rw [es1] at c1; rw [es2] at c2
+      exact clean_copyLazy cpy c1 c2
+  · -- the result's labels lie below the copy block
+    rw [eR] at he
+    rcases resE e he with ⟨h, _⟩ | ⟨h, _⟩ | ⟨e1, he1, e2, he2, s1, s2, s', ga, gc, ee1, ee2, ee, -⟩
+    · rcases lp' e h with a | ⟨a, a'⟩ | a
+      · have := labL _ a; omega
+      · omega
+      · omega
+    · rcases lq' e h with a | a
+      · have := labL _ a; omega
+      · omega
+    · rw [← ee1]
+      rcases lp' e1 he1 with a | ⟨a, a'⟩ | a
+      · have := labL _ a; omega
+      · omega
+      · omega
 
 end Comp
 end SkaModel

@@ -157,16 +157,16 @@ theorem Pref.entry {g g' : Gen Map} {P : Nat → List Pole} (h : Pref g g' P) {g
 theorem splitNeed_pref {ned : Need} {o : Nat} {g g' : Gen Map} {x : Need × Need}
     (h : splitNeed ned o g = some (x, g')) (hd : g.drop = false) :
     ∃ A, Pref g g' (fun k => if k = o then A else []) ∧
-      ∀ (Pr : Nat → Prop), NA Pr ned → Ple Pr g.re → RegsIn Pr A := by
+      (∀ (Pr : Nat → Prop), NA Pr ned → Ple Pr g.re → RegsIn Pr A) ∧ (NB g.re ned → RegsIn (· < g'.re) A) := by
   cases ned with
   | pair p q =>
     simp only [splitNeed, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, rfl⟩ := h
-    exact ⟨[], (Pref.refl g).congr (fun k => by split <;> rfl), fun _ _ _ => RegsIn.nil _⟩
+    exact ⟨[], (Pref.refl g).congr (fun k => by split <;> rfl), fun _ _ _ => RegsIn.nil _, fun _ => RegsIn.nil _⟩
   | none =>
     simp only [splitNeed, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, rfl⟩ := h
-    exact ⟨[], (Pref.refl g).congr (fun k => by split <;> rfl), fun _ _ _ => RegsIn.nil _⟩
+    exact ⟨[], (Pref.refl g).congr (fun k => by split <;> rfl), fun _ _ _ => RegsIn.nil _, fun _ => RegsIn.nil _⟩
   | this r =>
     simp only [splitNeed, bind_apply, re_apply, Option.bind_some] at h
     obtain ⟨⟨_, g1⟩, h1, h⟩ := Option.bind_eq_some_iff.mp h
@@ -174,8 +174,11 @@ theorem splitNeed_pref {ned : Need} {o : Nat} {g g' : Gen Map} {x : Need × Need
     obtain ⟨rfl, rfl⟩ := h
     have P0 : Pref g { { g with re := g.re + 1 } with re := g.re + 1 + 1 } (fun _ => []) :=
       pref_re rfl (by simp only; omega)
+    have e1 : g1.re = g.re + 1 + 1 := by obtain ⟨b, _, he⟩ := addOps_spec h1 hd; rw [he]
     exact ⟨[Pole.con g.re (g.re + 1) r], (P0.trans (pref_addOps h1 hd)).congr (fun k => by simp),
-      fun Pr hn hm => regsIn_con (hm _ (Nat.le_refl _)) (hm _ (Nat.le_succ _)) (hn r rfl) (RegsIn.nil _)⟩
+      fun Pr hn hm => regsIn_con (hm _ (Nat.le_refl _)) (hm _ (Nat.le_succ _)) (hn r rfl) (RegsIn.nil _),
+      fun hb => regsIn_con (show g.re < g1.re by omega) (show g.re + 1 < g1.re by omega)
+        (show r < g1.re by have := hb r rfl; omega) (RegsIn.nil _)⟩
   | both r hh t =>
     simp only [splitNeed] at h
     obtain ⟨⟨r1, n1⟩, g1, h1, h⟩ := bind_some h
@@ -186,11 +189,22 @@ theorem splitNeed_pref {ned : Need} {o : Nat} {g g' : Gen Map} {x : Need × Need
     obtain ⟨G1, L1, -⟩ := must_spec h1
     obtain ⟨G2, L2, -⟩ := must_spec h2
     have d2 : g2.drop = false := by rw [G2, G1]; exact hd
+    have e3 : g3.re = g2.re := by obtain ⟨b, _, he⟩ := addOps_spec h3 d2; rw [he]
     refine ⟨[Pole.con r1 r2 r], (((pref_re G1 L1).trans (pref_re G2 L2)).trans (pref_addOps h3 d2)).congr
-      (fun k => by simp), fun Pr hn hm => ?_⟩
-    obtain ⟨-, -, p1⟩ := keepsA_must (fun y hy => hn y (Or.inr (Or.inl hy))) hm h1
-    obtain ⟨-, -, p2⟩ := keepsA_must (fun y hy => hn y (Or.inr (Or.inr hy))) (ple_trans hm L1) h2
-    exact regsIn_con p1 p2 (hn r (Or.inl rfl)) (RegsIn.nil _)
+      (fun k => by simp), fun Pr hn hm => ?_, fun hb => ?_⟩
+    · obtain ⟨-, -, p1⟩ := keepsA_must (fun y hy => hn y (Or.inr (Or.inl hy))) hm h1
+      obtain ⟨-, -, p2⟩ := keepsA_must (fun y hy => hn y (Or.inr (Or.inr hy))) (ple_trans hm L1) h2
+      exact regsIn_con p1 p2 (hn r (Or.inl rfl)) (RegsIn.nil _)
+    · obtain ⟨-, -, -, m1, -⟩ := must_spec h1
+      obtain ⟨-, -, -, m2, -⟩ := must_spec h2
+      refine regsIn_con (show r1 < g3.re from ?_) (show r2 < g3.re from ?_) (show r < g3.re from ?_) (RegsIn.nil _)
+      · rcases m1 with a | a
+        · have := hb r1 (Or.inr (Or.inl a)); omega
+        · omega
+      · rcases m2 with a | a
+        · have := hb r2 (Or.inr (Or.inr a)); omega
+        · omega
+      · have := hb r (Or.inl rfl); omega
 
 /-- **`+split-sure`**: the ops `A` it puts at its block `o`, the halves'
 registers, their cleanliness, and, for a distinct need allocated before,
@@ -202,7 +216,7 @@ theorem splitSure_ok {s : Sure S} {o : Nat} {g g' : Gen Map} {sh st : Sure S}
       (∀ y, NMem sh.ned y → NMem s.ned y ∨ (g.re ≤ y ∧ y < g'.re)) ∧
       (∀ y, NMem st.ned y → NMem s.ned y ∨ (g.re ≤ y ∧ y < g'.re)) ∧
       (Clean s.ned → Clean sh.ned ∧ Clean st.ned) ∧
-      (∀ (Pr : Nat → Prop), NA Pr s.ned → Ple Pr g.re → RegsIn Pr A) ∧
+      (∀ (Pr : Nat → Prop), NA Pr s.ned → Ple Pr g.re → RegsIn Pr A) ∧ (NB g.re s.ned → RegsIn (· < g'.re) A) ∧
       (Distinct s.ned → (∀ y, NMem s.ned y → y < g.re) →
         Distinct sh.ned ∧ Distinct st.ned ∧ (∀ y, NMem sh.ned y → ¬ NMem st.ned y) ∧
         (∀ a b, FitsS s (C a b) ↔ FitsS sh a ∧ FitsS st b) ∧
@@ -217,7 +231,7 @@ theorem splitSure_ok {s : Sure S} {o : Nat} {g g' : Gen Map} {sh st : Sure S}
   simp only [Option.some.injEq, Prod.mk.injEq] at h4
   obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h4
   obtain ⟨eb, ed, er, eo, M1, M2, D, SB⟩ := splitNeed_spec h3
-  obtain ⟨A', P', RA⟩ := splitNeed_pref h3 hd
+  obtain ⟨A', P', RA, RB⟩ := splitNeed_pref h3 hd
   obtain ⟨A, Fr, Sm⟩ := SB hd
   have eA : A' = A := by
     have h1 := P'.blk hb
@@ -227,7 +241,7 @@ theorem splitSure_ok {s : Sure S} {o : Nat} {g g' : Gen Map} {sh st : Sure S}
     simp only [Option.some.injEq, Blob.mk.injEq, true_and] at h2
     exact List.append_cancel_right h2.1
   subst eA
-  refine ⟨A', P', M1, M2, fun hcl => clean_splitNeed h3 hcl, RA, fun d lo => ?_⟩
+  refine ⟨A', P', M1, M2, fun hcl => clean_splitNeed h3 hcl, RA, RB, fun d lo => ?_⟩
   obtain ⟨Dh, Dt, Dht, F⟩ := D d lo
   refine ⟨Dh, Dt, Dht, fun a b => ?_, fun lib σ O c gul st' t R a b ha hb' => Sm d lo lib σ O c gul st' t R a b ha hb'⟩
   simp only [FitsS, F a b, splitLok_looks hl a b]
