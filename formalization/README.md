@@ -126,6 +126,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/SkaAnalyze.lean` | The gate `+analyze` (arm `92` of `K`) against `analyzeStepH`, over an evaluator `nockW c` with `c` equal to `nock` off `FFar` (`analyze_stepW`), with `+run` (`RunIsW c`), `+cull` (`hcu`) and the pass loop at pass `1` (`hpl`, on `passSubj` with `hit = ~` and any `lbc`) made by `c`, in every context `K` with `ana` at axis `31`, `K_bat` at axis `2` and `memo-final` at axis `122` (`hmemo`).  `analyzeStepH` is `Ana.analyzeStep` with `+cull` given (`analyzeStepH_eq`).  The battery is split by the kernel (`analyze_battery_eq`) into `aHitF` (`+git:mi` of `memo-final`, `ana_hit`), `aTestF`, `aHitB` (`+put:by` of `g`, `+put:mi` of `done`, `ana_hitb`), `aMissF` (`index`, the push `aEditF` with `*datum` as `bunt_toNoun`, `+run` by `aRunF`, `ana_miss` on `missSt`), `aRestF` (`ana_rest`) and `aYes` (`aTestY`, `aCullP`, `aPopB`, `ana_yes`).  Also the batteries of `+sweep` and `+cull` over an evaluator with their loops made by `c` (`sweep_batteryW`; `cull_runW`, which takes the bunt of `identity` under `c` as `hbunt`). |
 | `Compiler/SkaJoint.lean` | The joint induction on the depth of calls.  `E j` runs every formula that `FFar` excludes with `nockW (E (j - 1))` (none at `j = 0`) and every other formula with `nock`: `E_far`, `E_le_nock`, `E_complete`.  The models at level `j` (`lv`, a structure `Lv` of seven arms: the trap, the direct call `rt`, `resolve` for each `orig`, `+analyze`, `+run`, the member loop, the pass loop), each the model's step with level `j - 1` for its calls and `+sweep`, `+cull` at fuel `j - 1` (`swAt`, `cuAt`).  `lvIs`: under `E j` every arm that `FFar` excludes computes its level-`j` model exactly, given only `ana` at axis `31` of `K`, `K_bat` at `2`, `memo-final` at `122`, `env.he = heSock`, `env.threshold = 32`, `env.softSpot = softSpotF` and `RegisterFastIs` (for the trap and `resolve` also `ana` at `511` and `K` at `31` of the rest).  Also the bunt of `identity` over an evaluator (`bunt_W`, the `hbunt` of `cull_runW`), with the mold `identMoldArm` at arm `186` of `anaTail` and its battery `identMoldBat` tied to the pill (`mold_arm_at`, by the kernel; `mold_bat_bunt`, by `evalFuel`), `cull_run_noneW` and `cull_E` (the gate `+cull` under `E (j + 1)` is `Ana.cull j`). |
 | `Compiler/SkaJointConv.lean` | The levels against the model: `lv_below` (level `j` below fuel `m ≥ j`) and `lv_above` (fuel `m` below level `J ≥ 2 m`, the `2` because the trap reads `resolve` two levels down), by the monotonicity of each step (`analyzeStepH_le`, `passStepH_le` here, the others from `AnaFuel.lean`) and the fuel monotonicity of the model.  With `lvIs` (`nock_iff_levels`): `analyze_iff`, `ska_run_iff`, `pass_loop_iff`, `member_loop_iff`, `fol_loop_iff_full`, `resolve_iff_full` (on every `idT`), each "the pill's arm returns `x` exactly when the model returns it at some fuel", with no hypothesis on `+analyze`. |
+| `Compiler/SkaCallgraph.lean` | The gate `+ska-callgraph` (arm `341` of `ana`, `ska_cg.arm`) against `Ana.skaCallgraph`, both ways at some fuel (`ska_callgraph_iff`): on the sample `[[bus fol] memo-final reg]` (`cgSam`) in its context `ana` it returns exactly `[g regs]` of what the model returns.  The battery is split by the kernel (`cg_battery_eq`) into the bunt of `ska-state` (`cgStBunt`, with `regs` edited it is `(SkaState.init reg).toNoun`, `init_toNoun`), the core `K` it builds (`cgK`, where `slot? 31`, `slot? 2` and `slot? 122` hold by computation, `cgK_31`, `cgK_2`, `cgK_122`), the call of `+analyze` (`cgA`, `cg_run`, then `analyze_iff`) and the print (`cgTF` of the trap `cgTrap`, kept whole because it quotes the type of the result).  The print reads the gate `print-ska` at axis `254` of `ana` (`cg_ps_at`, not `126`, which holds `print-comp`), whose battery `[9 97710 [0 255]]` pulls the arm `same` of layer 2 (`same_at`, `sameArm`, `|*(* +<)`) without running the trap, so the result is `[g.st.res regs.st.res]` (`cg_print`, `cg_print_ana`).  Hypotheses: `env.he = heSock`, `env.threshold = 32`, `env.softSpot = softSpotF`, `RegisterFastIs`. |
 | `Compiler/RegisterFast.lean` | `+register-fast` for registrations kept as nouns: `registerFastP`, the pill's run of the gate decoded into `[miss regs]`, satisfies `RegisterFastIs` for every `Env Noun` that uses it, given `RegisterFastShape` (every return of the gate is a cell with a flag at its head; `registerFastIs_of`).  The shape fact is open: `absNock` of `Compiler/Frame.lean` on the gate's battery (fuel 1000) gives 103 shapes, of which 10 are `[%.n *]` and 93 unknown, because those branches end in calls, which `absNock` does not follow. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
@@ -481,8 +482,12 @@ import only its theorems.  So:
      `122`), `env.he = heSock`, `env.threshold = 32`,
      `env.softSpot = softSpotF` and `RegisterFastIs`; the older
      `fol_loop_iff` and `resolve_iff` with `AnaIs` and `AnaGe` remain.
+     `+ska-callgraph` (`ska_callgraph_iff`, `Compiler/SkaCallgraph.lean`,
+     both directions against `Ana.skaCallgraph` at some fuel, with the same
+     hypotheses on `env` and no layout hypothesis: the core `K` is built by
+     the gate, so its layout holds by computation).
    - *Modelled, not linked*:
-     `+ska-callgraph`, `+prune-callgraph`,
+     `+prune-callgraph`,
      `+memo-final-entry`, the analysis part of `+ska-poke`;
      `+uni-sock`, `+norm-sock`, `+know`,
      `+bake-graph`; `+reverse-bell-graph`, `+hot-stale`, `+del-bells`;
@@ -501,44 +506,41 @@ import only its theorems.  So:
      `known-sock`, `bake-need-ord`, `need-normalize`, `mono-try-call`); the
      families `soft-*`, `laze-*`, `inter1`, `inter2`; the optimizer;
      `+hot-diff`, `+load`, `+peek`, `+wish`.
-   - *Next, in this order* (the nouns are `ska_cg.*` of
-     `Pill/Arm/Ska_cg.lean`, `ska_analyze.*`, `ska_run.*`): `+ska-callgraph`
-     (arm `341` of `ana`) against `Ana.skaCallgraph`: the initial state
-     `SkaState.init`, the core `K` it builds (with `memo-final` at axis `122`
-     of `K`, the sample `[[bus fol] memo-final reg]` being at axis `30`), and
-     the call of `+analyze` on the root, which `analyze_iff` then gives.
-     Probed (2026-11-24): arm `341` of `ana` is `[7 [8 [1 sample] [[1 bat]
-     [0 1]]] [11 [%fast clue] [0 1]]]`, its battery `bat` at axis `109` of
-     the arm is `[8 [1 st-bunt] [7 [10 [1534 [0 59]] [0 1]] [8 [1 K_bat]
-     [8 A T]]]]` (`=|  st`, `=.  regs.st  reg`, the core `K`), with `A` the
-     call `[8 [9 92 [0 1]] [9 2 [10 [6 ..] [0 2]]]]` of `+analyze` and `T`
-     the print: `print-ska` at axis `8190` of `[res K]` (axis `126` of
-     `ana`) slammed with `[0 trap]`, which returns `same` because `ska-verb`
-     is not defined (`!@`), then slammed with `[g.st.res regs.st.res]`
-     (`[0 10]`, `[0 3070]` of `[res K]`).  So the link needs the bunt of
-     `ska-state` with `regs` edited as `(SkaState.init reg).toNoun`, the
-     gate `print-ska` on every sample, and `same`; then
-     `+prune-callgraph` with its loop against `pruneLoop` (an `evOne` of its
-     loop, as `live_loop_iff`), then `+memo-final-entry` and the analysis part
-     of `+ska-poke`.  To restate a lemma that took `AnaIs` or `AnaGe`, use
-     `lvIs` at the level `2 m` and `lv_above`, `lv_below` as in
-     `nock_iff_levels`.  The member loop's core is `[loop0 [next-before
+   - *Next, in this order*: `+prune-callgraph` with its loop against
+     `pruneLoop` (`prune_cg.arm`, `prune_cg.battery`, `prune_cg.loop` of
+     `Pill/Arm/Prune_cg.lean`, named without an axis), an `evOne` of
+     `prune_cg.loop` as `live_loop_iff` does.  The battery is `[8 [1 0] [8
+     [[0 29] [1 0]] [8 [1 loop] [9 2 0 1]]]]`, so the loop's subject is
+     `[loop [q [out [bat [[g root] ctx]]]]]`: `q` at `6`, `out` at `14`, `g`
+     at `124`, `root` at `125`, the context at `63`.  The loop tests `?~ q`
+     (`[6 [5 [1 0] [0 6]] [0 14] ..]`), runs `+has:by` of `out` with `i.q`
+     (the door at `[9 6103 [0 262143]]`, arm `3061`), on a miss `+got:by` of
+     `g` (arm `701`) under the `%mean` `%ska-prune-missing-callee`, then
+     `+weld` of `t.q` with the `+turn` of `+tap:in` of `callees.d` by the
+     shared gate `[0 13]` (arms `0xbef7f4`, `0xbef7e`, `186` of the layers at
+     `[0 524287]`) and `+put:by` of `out` (arm `340`).  Then
+     `+memo-final-entry` and the analysis part of `+ska-poke` (`pokeMemo`, a
+     `+rep:by` over `pruned` inside the trap `%poke-just-code`), for which
+     no noun is named yet.  The member loop's core is `[loop0 [next-before
      [members [loop1 [pass [[low back changed] [index [hit gate]]]]]]]]`,
      with `gate` the gate of `+analyze` `[bat [[id st] K]]`: `members` at
      `14`, `pass` at `62`, `index` at `254`, `id` at `4092`, `st` at `4093`,
      `K` at `2047`.  The pass loop's core is its tail `[loop1 [pass [lbc
      [index [hit gate]]]]]` (`passSubj`): `pass` at `6`, `index` at `30`,
-     `id` at `508`, `st` at `509`, `K` at `255`; `+analyze` starts it at pass
-     `1` with `hit = ~` and `gb = ska_analyze.battery`, and reads
-     `memo-final` as `[0 1018]` under one push.  Names wanted at the next
-     regeneration: `silt.*` (arm `767` of layer 2, now `siltArm`),
-     `in.bif.*` (axis `86` of the door `+in`, now `bifArm`), the tail of
-     `ana` (now `anaTail`), and `msg_ca.*` (arm `187` of `ana`, now
-     `msgCaArm`, with its battery `msgCaBat` at axis `3005` and its body
-     `msgCaBody` at axis `12023`), the samples of the arms `+sweep`, `+cull`
-     and `+pop` of `K` (now `armBunt` of the arm), and the mold at arm `186`
-     of the tail of `ana` (now `identMoldArm`, `mold_arm_at`) with the battery
-     of the core it makes (now `identMoldBat`).
+     `id` at `508`, `st` at `509`, `K` at `255`.  The regeneration of
+     2026-11-24 named `silt.*`, `in.bif.*`, `ana_tail` (with the fact
+     `ana_tail_eq`), `ident_mold.*` (arm `186` of `ana_tail`), `msg_ca.*`
+     (with `msg_ca.body`), `prune_cg.*`, `ska_cg.axis` (`341`) and the fact
+     `ana_k_bat` (`slot? 2799357 ana = some ska_cg.k_bat`); the hand-defined
+     `siltArm`, `bifArm`, `anaTail`, `msgCaArm`, `identMoldArm` and
+     `kc_bat_at` stay, each tied to the pill by its own kernel fact.  It
+     also named `print_ska.battery`, but from axis `126` of `ana`, which is
+     the gate `print-comp` (battery `[9 97710 [0 511]]`): `print-ska` is at
+     axis `254` (battery `[9 97710 [0 255]]`), so that name is the battery of
+     `print-comp`, and the next regeneration should rename it.  Names wanted
+     then: `print-ska` at axis `254`, the samples of `+sweep`, `+cull`, `+pop`
+     (now `armBunt`, not named because their bunts are shared nouns),
+     `+memo-final-entry`, the trap `%poke-just-code` and its `+rep` gate.
 10. **`Treap` of `Ska/Analysis.lean` has an instance** (`Compiler/TreapKey.lean`):
    finite maps, with the treap noun made when the key encoding is given.  Its
    `ext` is function extensionality (on nouns, `isMap_ext`).  `+tap:by` and
