@@ -91,7 +91,7 @@ theorem runOKLB_seven {lib : Lib} {P : Noun → Prop} {fb fc : Noun} {L : Lazy S
     {g0 g1 g2 : Gen Map} {nx nex : NextL S}
     (Rq : RunOKLB (Map := Map) lib (Img lib P fb) fc L th Qq x g0 g1 nx)
     (Rp : RunOKLB (Map := Map) lib P fb nx.laz nx.th Qp false g1 g2 nex)
-    (hle : nx.th.there ≤ nex.th.there) (hL : ∀ r, NMem L.sure.ned r → r < g0.re)
+    (hL : ∀ r, NMem L.sure.ned r → r < g0.re)
     (hlab : ∀ e ∈ entries L, e.1 < g0.bo) :
     RunOKLB lib P (n3 (A 7) fb fc) L th (sevenWit Qp Qq) x g0 g2 nex := by
   have q1 := Rq.re
@@ -104,7 +104,7 @@ theorem runOKLB_seven {lib : Lib} {P : Noun → Prop} {fb fc : Noun} {L : Lazy S
       obtain ⟨e, he, rfl⟩ := List.mem_map.mp ho
       rcases (Rq.labs e he).1 with h | h
       · exact Or.inl h
-      · exact Or.inr ⟨h.1, by omega⟩
+      · exact Or.inr h
   have plab : ∀ o, o ∈ (entries nex.laz).map Prod.fst → o ∈ (entries nx.laz).map Prod.fst ∨ g1.bo ≤ o :=
     fun o ho => by
       obtain ⟨e, he, rfl⟩ := List.mem_map.mp ho

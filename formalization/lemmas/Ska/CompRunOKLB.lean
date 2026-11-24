@@ -10,7 +10,9 @@ kinds of runs that real code produces (`tools/hoon/calldump4.hoon`, header of
 own sure register in the lazy blocks.  `RunOKLB` is `RunOKLC` with
 
 * (a) **bodies at the result entries**: `labs` asks a result entry's block
-  to be `⟨[], B, hop th⟩` for some `B` (not `B = []`), and the `sem`
+  to be `⟨[], B, hop th⟩` for some `B` (not `B = []`), a new entry's label
+  below the end `g1.bo` (not below the jump: the jump's place is a fact of
+  `LOKB`, `CompSimBodyLift.lean`), and the `sem`
   clauses assume `AgreeLB` in place of `AgreeL`: at a result entry the run
   made, the program's block is `A ++ B` unproxied, `A` filling the entry's
   need, `B` the block's body in the run's final state;
@@ -202,7 +204,7 @@ structure RunOKLB (lib : Lib) (P : Noun → Prop) (f : Noun) (L : Lazy S) (th : 
   dist : Distinct nex.laz.sure.ned
   eregs : ∀ e ∈ entries nex.laz, Distinct e.2.sure.ned ∧ ∀ r, NMem e.2.sure.ned r →
     (∃ e0 ∈ entries L, NMem e0.2.sure.ned r) ∨ NMem L.sure.ned r ∨ (g0.re ≤ r ∧ r < g1.re)
-  labs : ∀ e ∈ entries nex.laz, (e.1 ∈ (entries L).map Prod.fst ∨ (g0.bo ≤ e.1 ∧ e.1 < nex.th.there)) ∧
+  labs : ∀ e ∈ entries nex.laz, (e.1 ∈ (entries L).map Prod.fst ∨ (g0.bo ≤ e.1 ∧ e.1 < g1.bo)) ∧
     ∃ B th, HoonMap.get g1.blocks e.1 = some ⟨[], B, Termin.hop th⟩
   nodup : ((entries nex.laz).map Prod.fst).Nodup
   dreg : ∀ s v d w r, Q s v d w → NMem d r → g0.re ≤ r ∧ r < g1.re
@@ -303,7 +305,8 @@ theorem RunOKLC.toB {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th 
   have hl : ∀ e ∈ entries nex.laz, g0.bo ≤ e.1 → ∃ th, HoonMap.get g1.blocks e.1 = some ⟨[], [], Termin.hop th⟩ :=
     fun e he _ => (R.labs e he).2
   refine ⟨R.re, R.bo, R.drop, R.keep, R.grow, R.cfr, R.lo, R.hi, R.ent, R.regs, R.dist, R.eregs,
-    fun e he => ⟨(R.labs e he).1, [], (R.labs e he).2⟩, R.nodup, R.dreg, R.nec, R.ncond, R.econd,
+    fun e he => ⟨(R.labs e he).1.imp_right (fun h => ⟨h.1, by have := R.hi; omega⟩), [], (R.labs e he).2⟩, R.nodup,
+    R.dreg, R.nec, R.ncond, R.econd,
     fun e he => ?_, ?_, ?_⟩
   · obtain ⟨F, hb, hf⟩ := R.front e he
     exact ⟨F, hb, fun cf hcf => (hf cf hcf).imp
@@ -330,10 +333,13 @@ theorem RunOKLB.up {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th :
 /-- **`RunOKLB` with `x = false` and empty bodies is `RunOKLC`.** -/
 theorem RunOKLB.toLC {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp} {Q : Wit} {g0 g1 : Gen Map}
     {nex : NextL S} (R : RunOKLB (Map := Map) lib P f L th Q false g0 g1 nex)
-    (he : ∀ e ∈ entries nex.laz, ∃ th, HoonMap.get g1.blocks e.1 = some ⟨[], [], Termin.hop th⟩) :
+    (he : ∀ e ∈ entries nex.laz, (e.1 ∈ (entries L).map Prod.fst ∨ (g0.bo ≤ e.1 ∧ e.1 < nex.th.there)) ∧
+      ∃ th, HoonMap.get g1.blocks e.1 = some ⟨[], [], Termin.hop th⟩) :
     RunOKLC (Map := Map) lib P f L th Q g0 g1 nex := by
+  have hl : ∀ e ∈ entries nex.laz, g0.bo ≤ e.1 → ∃ th, HoonMap.get g1.blocks e.1 = some ⟨[], [], Termin.hop th⟩ :=
+    fun e h _ => (he e h).2
   refine ⟨R.re, R.bo, R.drop, R.keep, R.grow, R.cfr, R.lo, R.hi, R.ent, R.regs, R.dist, R.eregs,
-    fun e h => ⟨(R.labs e h).1, he e h⟩, R.nodup, R.dreg, R.nec, R.ncond, R.econd, fun e h => ?_, ?_, ?_⟩
+    he, R.nodup, R.dreg, R.nec, R.ncond, R.econd, fun e h => ?_, ?_, ?_⟩
   · obtain ⟨F, hb, hf⟩ := R.front e h
     exact ⟨F, hb, fun cf hcf => (hf cf hcf).imp
       (fun ⟨L', hm, fl⟩ => ⟨L', hm, FrontLB.toLC fl⟩) (fun ⟨hn, fl⟩ => ⟨hn, FrontLB.toLC fl⟩)⟩

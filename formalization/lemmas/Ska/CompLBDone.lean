@@ -94,7 +94,7 @@ structure RunOKGB (lib : Lib) (P : Noun → Prop) (f : Noun) (goal : CGoal S) (g
   dist : Distinct nex.laz.sure.ned
   eregs : ∀ e ∈ entries nex.laz, Distinct e.2.sure.ned ∧
     ∀ r, NMem e.2.sure.ned r → (GMem goal r ∨ g0.re ≤ r) ∧ r < g1.re
-  labs : ∀ e ∈ entries nex.laz, g0.bo ≤ e.1 ∧ e.1 < nex.th.there ∧
+  labs : ∀ e ∈ entries nex.laz, g0.bo ≤ e.1 ∧ e.1 < g1.bo ∧
     ∃ B th, HoonMap.get g1.blocks e.1 = some ⟨[], B, Termin.hop th⟩
   nodup : ((entries nex.laz).map Prod.fst).Nodup
   nec : ∀ s, P s → ¬ FitsS nex.laz.sure s → NecC lib f goal s
@@ -109,7 +109,8 @@ theorem RunOKGC.toB {lib : Lib} {P : Noun → Prop} {f : Noun} {goal : CGoal S} 
   have hl : ∀ e ∈ entries nex.laz, ∃ th, HoonMap.get g1.blocks e.1 = some ⟨[], [], Termin.hop th⟩ :=
     fun e he => (R.labs e he).2.2
   refine ⟨R.ext, R.grow, R.cfr, R.lo, R.hi, R.ent, R.regs, R.dist, R.eregs,
-    fun e he => ⟨(R.labs e he).1, (R.labs e he).2.1, [], (R.labs e he).2.2⟩, R.nodup, R.nec, R.ncond, R.econd,
+    fun e he => ⟨(R.labs e he).1, by have := (R.labs e he).2.1; have := R.hi; omega, [], (R.labs e he).2.2⟩,
+    R.nodup, R.nec, R.ncond, R.econd,
     ?_, ?_⟩
   · intro cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
     exact R.sem cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm (fun st' => (ag st').toU hl) hned
@@ -126,7 +127,7 @@ theorem runOKGB_sevenL {lib : Lib} {P : Noun → Prop} {f fb fc : Noun} (M : Min
     {goal : CGoal S} {Qp : Wit} {g0 g1 g2 : Gen Map} {nx nex : NextL S}
     (Rq : RunOKGB (Map := Map) lib (Img lib P fb) fc goal g0 g1 nx)
     (Rp : RunOKLB (Map := Map) lib P fb nx.laz nx.th Qp false g1 g2 nex)
-    (hle : nx.th.there ≤ nex.th.there) (hg : ∀ r, GMem goal r → r < g0.re) :
+    (hg : ∀ r, GMem goal r → r < g0.re) :
     RunOKGB lib P f goal g0 g2 nex := by
   have q1 := Rq.ext.1
   have q2 := Rq.ext.2.1
@@ -321,7 +322,7 @@ structure TopSB (g1 : Gen Map) (nex : NextL S) : Prop where
   dist : Distinct nex.laz.sure.ned
   eregs : ∀ e ∈ entries nex.laz, Distinct e.2.sure.ned ∧
     ∀ r, NMem e.2.sure.ned r → (gen0 : Gen Map).re ≤ r ∧ r < g1.re
-  labs : ∀ e ∈ entries nex.laz, (gen0 : Gen Map).bo ≤ e.1 ∧ e.1 < nex.th.there ∧
+  labs : ∀ e ∈ entries nex.laz, (gen0 : Gen Map).bo ≤ e.1 ∧ e.1 < g1.bo ∧
     ∃ B th, HoonMap.get g1.blocks e.1 = some ⟨[], B, Termin.hop th⟩
   nodup : ((entries nex.laz).map Prod.fst).Nodup
   ncond : ∀ r, NMem nex.laz.sure.ned r → HoonMap.get g1.cond r = Option.none
@@ -355,7 +356,7 @@ theorem finishTop_genB (lib : Lib) {g1 : Gen Map} {nex : NextL S} (R : TopSB g1 
   simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h4
   obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h4
   have lt0 : nex.th.there < g1.bo := R.hi
-  have hlab : ∀ e ∈ entries nex.laz, e.1 < g1.bo := fun e he => Nat.lt_trans (R.labs e he).2.1 lt0
+  have hlab : ∀ e ∈ entries nex.laz, e.1 < g1.bo := fun e he => (R.labs e he).2.1
   have hn : (((g1.bo, nex.laz) :: entries nex.laz).map Prod.fst).Nodup := by
     simp only [List.map_cons, List.nodup_cons]
     exact ⟨fun hm => by obtain ⟨e, he, e1⟩ := List.mem_map.mp hm; have := hlab e he; omega, R.nodup⟩
