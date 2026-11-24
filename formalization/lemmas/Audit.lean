@@ -705,4 +705,5 @@ open Formalization
 #print axioms Compiler.ts_core_at
 #print axioms Compiler.ts_at_of_step
 #print axioms Compiler.cu_finish_step
+#print axioms Compiler.ts_byp
 #print axioms Compiler.kn_suf_eq

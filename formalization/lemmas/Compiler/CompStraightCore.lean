@@ -390,5 +390,32 @@ theorem cu_finish_step {ctx : Noun} (h7 : slot? 7 ctx = some compK) {cod : Noun}
   cu_finish_core h7 hcode n hpu h6 ht cache mono sup
     (ts_core_at (comp_ctx_pill ctx h7).1 h7 hst)
 
+/-! ## `+bypassable` -/
+
+/-- The body of the gate `+bypassable` (core arm `46`, battery axis `30`). -/
+def tsBypBody : Noun :=
+  C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 26)))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 54)))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x706f68)) (C (A 0) (A 110)))) (C (C (A 6) (C (C (A 6) (C (C (A 6) (C (C (A 0) (A 12)) (C (C (A 1) (A 1)) (C (A 1) (A 0))))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 222)))) (C (C (A 1) (A 0)) (C (A 1) (A 1)))))))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (A 1) (A 1))))
+
+theorem ts_byp_at : slot? 30 tsCoreBat = some (C (A 8) (C (C (A 1) tsGE) (C (C (A 1) tsBypBody) (C (A 0) (A 1))))) := by
+  kernel_rfl
+
+/-- **`+bypassable`** on `[& b]`: `bypassable true b`. -/
+theorem ts_byp (S : Noun) (b : Blob) :
+    nock (C tsBypBody (C (C (A 0) (Blob.toNoun b)) S)) tsBypBody = some (loob (bypassable true b)) := by
+  obtain ⟨par, body, fin⟩ := b
+  cases par with
+  | cons r rs => simp [nock_exec, tsBypBody, Blob.toNoun, listNoun, bypassable, loob]
+  | nil =>
+    cases body with
+    | cons op ops => simp [nock_exec, tsBypBody, Blob.toNoun, listNoun, bypassable, loob]
+    | nil =>
+      cases fin with
+      | hop t =>
+        obtain ⟨args, there⟩ := t
+        cases args <;> simp [nock_exec, tsBypBody, Blob.toNoun, listNoun, bypassable, loob,
+          Termin.toNoun, Jmp.toNoun, Tag.hop]
+      | _ => simp [nock_exec, tsBypBody, Blob.toNoun, listNoun, bypassable, loob, Termin.toNoun, Tag.hop,
+          Tag.clq, Tag.eqq, Tag.brn, Tag.brz, Tag.jmp, Tag.jmf, Tag.jsp, Tag.jsf, Tag.don, Tag.bom, Tag.lti]
+
 end Compiler
 end Formalization
