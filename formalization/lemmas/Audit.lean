@@ -84,6 +84,7 @@ import lemmas.Compiler.CompRunLink
 import lemmas.Compiler.CompPastLink
 import lemmas.Compiler.CompRunCases
 import lemmas.Compiler.CompRunCons
+import lemmas.Compiler.CompRunAll
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -654,3 +655,6 @@ open Formalization
 #print axioms Compiler.crc_done_step
 #print axioms Compiler.crc_split_lok
 #print axioms Compiler.comp_run_cons
+#print axioms Compiler.cra_copy_lok
+#print axioms Compiler.cra_into_lok
+#print axioms Compiler.cra_run_lok
