@@ -18,6 +18,7 @@ import lemmas.Ska.CompUnproxyTop
 import lemmas.Ska.CompUnproxyBelow
 import lemmas.Ska.CompBelowX
 import lemmas.Ska.CompEntryGoal
+import lemmas.Ska.CompLazyGoal
 import lemmas.Ska.CompFromRun
 import lemmas.Ska.CompEntryRun
 import lemmas.Ska.CompSevenOne
@@ -781,3 +782,9 @@ open Formalization.SkaModel.Comp
 #print axioms Formalization.SkaModel.PokeM.rawMono_fragUCG
 #print axioms Formalization.SkaModel.PokeM.fragUCCM_sub
 #print axioms Formalization.SkaModel.PokeM.compHyp_of_fragUCG
+#print axioms RunOKL.toNV
+#print axioms RunOKNV.toL
+#print axioms runOKL_n0
+#print axioms runOKL_n4
+#print axioms runOKL_n4_none
+#print axioms runOKL_seven

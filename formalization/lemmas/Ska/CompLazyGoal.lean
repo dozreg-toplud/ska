@@ -82,14 +82,35 @@ keeps `D s` until the lazy block by passing `pair ned (D s)` as the input
 need of the code that runs between (the `sem` of each relation keeps its
 input registers).
 
-* `FrontL`, `GoalSemD`, `SemL`, `RunOKL`.
+* `FrontL`, `GoalSemD`, `AgreeL` (`AgreeU` at the result entries the run
+  made: those it kept from its goal lie in the parent's blocks), `SemL`,
+  `RunOKL`.
 * `RunOKL.toNV`, `RunOKNV.toL`: for a goal with no entries, `RunOKL` with
   `D = none` is `RunOKNV`.
 * `runOKL_n0`: `[0 axe]` (`+from`, every entry kept at its label).
 * `runOKL_n4`: `[4 p]` (`+collapse-lazy-atom`, every entry consumed, with
-  `D s = this d`), from `CollRunU`.
-* `fillSem_bunt_append`: a fill of the bunt followed by ops that fill from
-  `pair ned D`.
+  `D s = this d`), from `CollRunU`; `runOKL_n4_none` from the run of
+  `collRun_n4` under a goal whose sure part asks nothing (a bond goal).
+* `runOKL_seven`: `[7 p q]` composes (`sevenD`, `sevenW`, `frontL_seven`).
+* `fillSem_bunt_append`, `FillSem.assoc`, `FillSem.bunt_subj`.
+
+Where it stops.  (1) `labs` asks every result entry's block to be empty,
+which `+split` breaks: a cons at a goal entry whose need is `this r` or
+`both r ..` puts `con h t r` at the entry's block and keeps both halves at
+that label, so the block of a result entry holds the `con` (and the ops of
+the other half).  The weakest change: `AgreeL` with a body, `g1` holding
+`⟨[], B, hop th⟩` at the entry and the program `A ++ B` unproxied, `A`
+filling the entry, and `front` about the prefix the run put before the
+parent's body, as now.  (2) The `sem` is strict (input registers from the
+run's end on), as `SemNV` is, so `D s` must be allocated in the run: when
+the goal's sure part is one register `d` that `+collapse-lazy-atom` reads in
+the lazy blocks (`[7 [4 [0 3]] [6 [5 [0 1] [1 6]] [0 1] [1 5]]]`, `%h` of
+`proxy-dump.hoon`), the later code must keep its own result register `d`,
+which only the relaxed form (`InR`, `KeepI`, as in `CollRunU`) says.
+(3) Under `+fork` (`sixNextFork`) a branch's ops in a kid of a lazy block
+read that branch's registers only on its path.  `D` is a function of the
+subject so that the `%6` can take the `D s` of the branch its test takes;
+that case is not proved.
 -/
 
 set_option linter.unusedSectionVars false
@@ -400,6 +421,28 @@ theorem runOKL_n4 {lib : Lib} {p : Nomm} {L : Lazy S} {th : Jmp} {d : Nat} {g0 g
       obtain ⟨R, hR, kR, eR⟩ := T.1 ⟨trivial, looks_empty _⟩
       have hR' : SkaModel.read d R = some (A m) := hR
       exact ⟨R, (CR.dhold hfa R m hR').1, hR', fun r hr => kR r (kk r hr), eR⟩
+
+/-- **`[4 p]` from its run under a goal whose sure part asks nothing** (a
+bond goal behind a call: `mk bunt [] [(o, ..)]`): the register the increment
+writes is fresh, so `runOKL_n4` applies to the run of `collRun_n4`.  For
+example the head `[4 [0 3]]` of `[[4 [0 3]] [2 [0 3] [0 2]]]`, whose bond
+block reads `v7` (see the header). -/
+theorem runOKL_n4_none (lib : Lib) {p : Nomm} (hp : NextOK (S := S) (Map := Map) lib p)
+    (sp : OKNR (S := S) (Map := Map) lib p) (kp : KeepX S Map p) (ap : AboveX S Map p)
+    {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S}
+    (h : runL (Nomm.n4 p) (CGoalL.next L th) region g0 = some (nex, g1))
+    (hcount : sixCount p ≤ 255) (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0) (hcl0 : Clear g0)
+    (h1 : 1 ≤ th.there) (h2 : th.there < g0.bo) (hsn : L.sure.ned = Need.none)
+    (hcb : CondBelow g0) (hnd : (th.there :: (entries L).map Prod.fst).Nodup)
+    (hlab : ∀ e ∈ entries L, e.1 < g0.bo ∧ ∃ B fin, HoonMap.get g0.blocks e.1 = some ⟨[], B, fin⟩)
+    (hen : ∀ e ∈ entries L, ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none) :
+    ∃ d, RunOKL lib (Nomm.n4 p) L th (fun _ => Need.this d) (fun s => (pureEval (Nomm.n4 p) s).getD (A 0)) g0 g1
+      nex := by
+  have nn : ∀ x, ¬ NMem L.sure.ned x := fun x hx => by rw [hsn] at hx; exact hx
+  obtain ⟨d, CR⟩ := collRun_n4 lib hp sp kp ap h hcount b0 d0 hu hcl0 h1 h2 (fun x hx => absurd hx (nn x))
+    (fun x hx => absurd hx (nn x)) hcb hnd hlab (fun e he x hx => (hen e he x hx).1)
+  have hdf : g0.re ≤ d := CR.dreg.elim (fun hx => absurd hx (nn d)) id
+  exact ⟨d, runOKL_n4 CR hdf (fun e he => (hlab e he).1) hen⟩
 
 /-! ## `[7 p q]`: the relation composes -/
 
