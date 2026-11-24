@@ -359,6 +359,215 @@ theorem rub_fwd_end {x x' : Cfg σ Map} {r : Tone × σ} (he : endOf lib O gul x
               simp [endOf, rubBlob, execPole, localPole, hv, hl]
   · rw [endOf_taken (x := ⟨lab, ⟨par, body, fin⟩, params, regs, t, st⟩) hp hq hb ht] at he; cases he
 
+
+/-- **Backward**: a step of the code after is matched by steps before, given
+that the real reads of the configuration before read values. -/
+theorem rub_bwd_step (hbl : RubBlocks c.blocks c'.blocks) {x x' y' : Cfg σ Map} {es' : List (Nat × Nat)}
+    (hs : Step lib O c' gul x' es' y') (hr : RubRel c.blocks x x')
+    (hok : ∀ k, ReadsAt gul x k → ∃ v, read k x.regs = some v) :
+    ∃ es y, Steps lib O c gul x es y ∧ RubRel c.blocks y y' := by
+  obtain ⟨hp', hr', ht', hst', e, he, hblk⟩ := hr
+  obtain ⟨lab', b', params', regs', t', st'⟩ := x'
+  obtain ⟨lab, ⟨par, body, fin⟩, params, regs, t, st⟩ := x
+  simp only at hp' hr' ht' hst' hblk he hok
+  subst params' regs' t' st'
+  cases hs with
+  | pass hne hR =>
+    rcases hblk with rfl | ⟨hp, hq, -, -, rfl⟩
+    · exact ⟨_, _, Steps.step (Step.pass (x := ⟨lab, ⟨par, body, fin⟩, _, _, _, _⟩) hne hR) (Steps.refl _),
+        rfl, rfl, rfl, rfl, e, he, Or.inl rfl⟩
+    · simp only [hp, hq] at hne; simp at hne
+  | @op p rest' n R t2 st2 hp hq hb hpole =>
+    rcases hblk with rfl | ⟨-, -, hb0, -, rfl⟩
+    · simp only [rubBlob] at hb hq hp
+      cases body with
+      | cons p0 rest0 =>
+        simp only [List.cons_append, List.cons.injEq] at hb
+        obtain ⟨rfl, rfl⟩ := hb
+        exact ⟨_, ⟨lab, ⟨par, rest0, fin⟩, params, R, t2, st2⟩,
+          Steps.step (Step.op (x := ⟨lab, ⟨par, p0 :: rest0, fin⟩, params, regs, t, st⟩) hp hq rfl hpole)
+          (Steps.refl _), rfl, rfl, rfl, rfl, e, he, Or.inl rfl⟩
+      | nil =>
+        simp only [List.nil_append] at hb
+        rcases rubFin_cases he with rfl | ⟨z, o, nz, -, -, -, -, h2, hf⟩
+        · simp at hb
+        · obtain ⟨e1, e2⟩ := e
+          simp only at h2 hf hb; subst h2
+          rcases hf with ⟨s, rfl, rfl⟩ | ⟨s, rfl, rfl⟩ | ⟨l, r0, rfl, rfl⟩ | ⟨s, rfl, rfl⟩
+          · simp at hb
+          · simp at hb
+          · simp only [List.cons.injEq] at hb; obtain ⟨rfl, rfl⟩ := hb
+            cases hl : read l regs with
+            | none => simp [execPole, localPole, hl] at hpole
+            | some vl =>
+              cases hr : read r0 regs with
+              | none => simp [execPole, localPole, hl, hr] at hpole
+              | some vr =>
+                simp [execPole, localPole, hl, hr] at hpole
+                obtain ⟨rfl, rfl, rfl, rfl⟩ := hpole
+                refine ⟨[], ⟨lab, ⟨par, [], _⟩, params, regs, t, st⟩, Steps.refl _, rfl, rfl, rfl, rfl, _, he,
+                  Or.inr ⟨hp, hq, rfl, ?_, rfl⟩⟩
+                simp [taken, hl, hr]
+          · simp only [List.cons.injEq] at hb; obtain ⟨rfl, rfl⟩ := hb
+            cases hv : read s regs with
+            | none => simp [execPole, localPole, hv] at hpole
+            | some v =>
+              by_cases hl : v = A 0 ∨ v = A 1
+              · simp [execPole, localPole, hv, hl] at hpole
+                obtain ⟨rfl, rfl, rfl, rfl⟩ := hpole
+                refine ⟨[], ⟨lab, ⟨par, [], _⟩, params, regs, t, st⟩, Steps.refl _, rfl, rfl, rfl, rfl, _, he,
+                  Or.inr ⟨hp, hq, rfl, ?_, rfl⟩⟩
+                rcases hl with rfl | rfl <;> simp [taken, hv]
+              · simp [execPole, localPole, hv, hl] at hpole
+    · simp only at hb; rw [hb0] at hb; cases hb
+  | @jump j' b2' hp hq hb ht' hb2' =>
+    simp only at hp hq hb
+    subst hp
+    have hq0 : par = [] := by
+      rcases hblk with h | ⟨-, -, -, -, h⟩ <;> (rw [h] at hq; simpa [rubBlob] using hq)
+    have hb0 : body = [] := by
+      rcases hblk with h | ⟨-, -, hb0, -, -⟩
+      · rw [h] at hb; simp only [rubBlob, List.append_eq_nil_iff] at hb; exact hb.1
+      · exact hb0
+    subst hq0 hb0
+    have hb1 : b' = ⟨[], [], e.2⟩ := by
+      rcases hblk with h | ⟨-, -, -, -, h⟩
+      · rw [h] at hb ⊢; simp only [rubBlob, List.nil_append] at hb; simp [rubBlob, hb]
+      · rw [h]
+    subst hb1
+    simp only at ht'
+    -- the jump the code before takes
+    obtain ⟨j, hj⟩ : ∃ j, taken regs fin = some j := by
+      rcases hblk with h | ⟨-, -, -, ht, -⟩
+      · rcases rubFin_cases he with rfl | ⟨z, o, nz, -, -, -, -, h2, hf⟩
+        · exact ⟨j', by simpa using ht'⟩
+        · obtain ⟨e1, e2⟩ := e
+          simp only at h2 hf; subst h2
+          rcases hf with ⟨s, rfl, -⟩ | ⟨s, rfl, -⟩ | ⟨l, r0, rfl, rfl⟩ | ⟨s, rfl, rfl⟩
+          · obtain ⟨v, hv⟩ := hok s ⟨rfl, rfl, Or.inr ⟨rfl, by simp [finReads]⟩⟩
+            cases v with
+            | atom a => exact ⟨o, by simp [taken, hv]⟩
+            | cell a b => exact ⟨z, by simp [taken, hv]⟩
+          · obtain ⟨v, hv⟩ := hok s ⟨rfl, rfl, Or.inr ⟨rfl, by simp [finReads]⟩⟩
+            exact ⟨if v = A 0 then z else o, by simp [taken, hv]⟩
+          · simp [rubBlob] at h
+          · simp [rubBlob] at h
+      · exact Option.isSome_iff_exists.mp ht
+    -- its target is a block
+    obtain ⟨b2, hb2⟩ : ∃ b2, HoonMap.get c.blocks j.there = some b2 := by
+      rcases rubFin_cases he with rfl | ⟨z, o, nz, -, -, hgz, hgo, h2, hf⟩
+      · have ht2 : taken regs fin = some j' := by simpa using ht'
+        rw [hj] at ht2; cases ht2
+        obtain ⟨b2, -, hb2, -, -⟩ := hbl.back hb2'
+        exact ⟨b2, hb2⟩
+      · have hf' : (∃ s, fin = Termin.clq s z o) ∨ (∃ s, fin = Termin.brz s z o) ∨
+            (∃ l r, fin = Termin.eqq l r z o) ∨ (∃ s, fin = Termin.brn s z o) := by
+          rcases hf with ⟨s, h, -⟩ | ⟨s, h, -⟩ | ⟨l, r, h, -⟩ | ⟨s, h, -⟩
+          · exact Or.inl ⟨s, h⟩
+          · exact Or.inr (Or.inl ⟨s, h⟩)
+          · exact Or.inr (Or.inr (Or.inl ⟨l, r, h⟩))
+          · exact Or.inr (Or.inr (Or.inr ⟨s, h⟩))
+        rcases taken_two hf' hj with rfl | rfl
+        · exact ⟨nz, hgz⟩
+        · exact ⟨nz, hgo⟩
+    obtain ⟨es2, y2, hs2, hr2⟩ := rub_jump (lib := lib) (O := O) (gul := gul)
+      (x := ⟨lab, ⟨[], [], fin⟩, [], regs, t, st⟩) hbl he rfl rfl hj hb2 lab'
+    have hstep := Step.jump (lib := lib) (O := O) (c := c') (gul := gul)
+      (x := ⟨lab', ⟨[], [], e.2⟩, [], regs, t, st⟩) rfl rfl rfl ht' hb2'
+    obtain ⟨-, rfl⟩ := step_det hs2 hstep
+    exact ⟨_, ⟨j.there, b2, j.args, regs, t, st⟩,
+      Steps.step (Step.jump (x := ⟨lab, ⟨[], [], fin⟩, [], regs, t, st⟩) rfl rfl rfl hj hb2) (Steps.refl _), hr2⟩
+
+/-- **Backward, at an end**: the code before ends where the code after does. -/
+theorem rub_bwd_end {x x' : Cfg σ Map} {r : Tone × σ} (he : endOf lib O gul x' = some r)
+    (hr : RubRel c.blocks x x') : endOf lib O gul x = some r := by
+  obtain ⟨hp', hr', ht', hst', e, hef, hblk⟩ := hr
+  obtain ⟨lab', b', params', regs', t', st'⟩ := x'
+  obtain ⟨lab, ⟨par, body, fin⟩, params, regs, t, st⟩ := x
+  simp only at hp' hr' ht' hst' hblk hef
+  subst params' regs' t' st'
+  rcases hblk with rfl | ⟨hp, hq, hb, ht, rfl⟩
+  · by_cases hpq : params ≠ [] ∨ par ≠ []
+    · simp [endOf, rubBlob, hpq] at he
+    · cases body with
+      | cons p rest => rw [← he]; rfl
+      | nil =>
+        rcases rubFin_cases hef with rfl | ⟨z, o, nz, -, -, -, -, h2, hf⟩
+        · rw [← he]; rfl
+        · obtain ⟨e1, e2⟩ := e
+          simp only at h2 hf; subst h2
+          simp only [not_or, ne_eq, Decidable.not_not] at hpq
+          obtain ⟨rfl, rfl⟩ := hpq
+          rcases hf with ⟨s, rfl, rfl⟩ | ⟨s, rfl, rfl⟩ | ⟨l, r0, rfl, rfl⟩ | ⟨s, rfl, rfl⟩
+          · simp [endOf, rubBlob] at he
+          · simp [endOf, rubBlob] at he
+          · simp only [endOf, rubBlob, ne_eq, not_true_eq_false, or_self, if_false, List.nil_append] at he
+            simp only [execPole, localPole] at he
+            cases hl : read l regs <;> cases hr : read r0 regs <;> simp [hl, hr] at he
+          · simp only [endOf, rubBlob, ne_eq, not_true_eq_false, or_self, if_false, List.nil_append] at he
+            simp only [execPole, localPole] at he
+            cases hv : read s regs with
+            | none => simp [hv] at he
+            | some v =>
+              simp only [hv, Option.bind_some] at he
+              by_cases hl : v = A 0 ∨ v = A 1
+              · simp [hl] at he
+              · simp only [hl, if_false] at he
+                simp only [Option.map_some, Option.some.injEq] at he
+                subst he
+                simp only [not_or] at hl
+                simp [endOf, hv, hl.1, hl.2]
+  · rcases rubFin_cases hef with rfl | ⟨z, o, nz, -, -, -, -, h2, -⟩
+    · rw [← he]; rfl
+    · subst hp hq hb; simp [endOf, h2] at he
+
+/-- A real read after is a real read before. -/
+theorem rub_reads {x x' : Cfg σ Map} {k : Nat} (hr : RubRel c.blocks x x') (hk : ReadsAt gul x' k) :
+    ReadsAt gul x k := by
+  obtain ⟨hp', hr', ht', hst', e, hef, hblk⟩ := hr
+  obtain ⟨lab', b', params', regs', t', st'⟩ := x'
+  obtain ⟨lab, ⟨par, body, fin⟩, params, regs, t, st⟩ := x
+  simp only at hp' hr' ht' hst' hblk hef
+  subst params' regs' t' st'
+  obtain ⟨hp, hq, hk⟩ := hk
+  simp only at hp hq hk
+  have hq0 : par = [] := by rcases hblk with rfl | ⟨-, -, -, -, rfl⟩ <;> simpa [rubBlob] using hq
+  refine ⟨hp, hq0, ?_⟩
+  simp only
+  rcases hblk with rfl | ⟨-, -, rfl, -, rfl⟩
+  · cases body with
+    | cons p0 rest0 =>
+      rcases hk with ⟨p, rest, hb, hk⟩ | ⟨hb, -⟩
+      · simp only [rubBlob, List.cons_append, List.cons.injEq] at hb
+        obtain ⟨rfl, -⟩ := hb
+        exact Or.inl ⟨p0, rest0, rfl, hk⟩
+      · simp [rubBlob] at hb
+    | nil =>
+      refine Or.inr ⟨rfl, ?_⟩
+      rcases rubFin_cases hef with rfl | ⟨z, o, nz, -, -, -, -, h2, hf⟩
+      · rcases hk with ⟨p, rest, hb, -⟩ | ⟨-, hk⟩
+        · simp [rubBlob] at hb
+        · exact hk
+      · obtain ⟨e1, e2⟩ := e
+        simp only at h2 hf; subst h2
+        rcases hk with ⟨p, rest, hb, hk⟩ | ⟨-, hk⟩
+        · rcases hf with ⟨s, rfl, rfl⟩ | ⟨s, rfl, rfl⟩ | ⟨l, r0, rfl, rfl⟩ | ⟨s, rfl, rfl⟩
+          · simp [rubBlob] at hb
+          · simp [rubBlob] at hb
+          · simp only [rubBlob, List.nil_append, List.cons.injEq] at hb
+            obtain ⟨rfl, -⟩ := hb
+            simpa [poleReads, finReads] using hk
+          · simp only [rubBlob, List.nil_append, List.cons.injEq] at hb
+            obtain ⟨rfl, -⟩ := hb
+            simpa [poleReads, finReads] using hk
+        · simp [rubBlob, finReads] at hk
+  · rcases hk with ⟨p, rest, hb, -⟩ | ⟨-, hk⟩
+    · simp at hb
+    · refine Or.inr ⟨rfl, ?_⟩
+      rcases rubFin_cases hef with rfl | ⟨z, o, nz, -, -, -, -, h2, -⟩
+      · exact hk
+      · simp [h2, finReads] at hk
+
 end Sim
 
 end Opt
