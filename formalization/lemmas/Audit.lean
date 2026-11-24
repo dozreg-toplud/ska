@@ -698,4 +698,6 @@ open Formalization
 #print axioms Compiler.ts_rer
 #print axioms Compiler.ts_dol
 #print axioms Compiler.ts_ri_model
+#print axioms Compiler.mr_slam
+#print axioms Compiler.ts_rename
 #print axioms Compiler.kn_suf_eq

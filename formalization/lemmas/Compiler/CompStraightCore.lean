@@ -145,5 +145,94 @@ theorem ts_ri_model {Map : Type → Type} [HoonMap Map] (cond : Map (Nat × List
       = some (NeedOrd.this, ((0, HoonMap.empty) : Nat × Map Nat)) := by
   simp [rewriteInput, rewriteInputGo, rer, bind, StateT.bind, pure, StateT.pure]
 
+/-! ## The renaming branch: `(map-regs ren)`, `+count-args`, the `+rep:by` -/
+
+/-- The body of the gate of the `+rep:by` of the renaming branch,
+`|=  [[k=@uwoo b=blob] new=(map @uwoo blob)]`. -/
+def tsGBody : Noun := (C (A 6) (C (C (A 6) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 24)))) (C (C (A 1) (A 1)) (C (A 1) (A 0))))) (C (C (A 6) (C (C (A 8) (C (C (A 9) (C (A 46) (C (A 0) (A 31)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A 0)))) (C (A 0) (A 57)))) (C (A 0) (A 2)))))))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (C (A 0) (A 13)) (C (A 8) (C (C (A 8) (C (C (A 0) (A 14)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 10) (C (C (A 7) (C (A 1) (C (A 0x6d6f62) (A 0)))) (C (A 0) (A 25))))))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x3fffffffff)))) (C (A 9) (C (A 340) (C (A 10) (C (C (A 6) (C (A 0) (A 61))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 120)) (C (A 7) (C (C (A 0) (A 3)) (C (A 10) (C (C (A 7) (C (A 8) (C (C (A 9) (C (A 382) (C (A 0) (A 63)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 487))) (C (A 0) (A 2))))))))) (C (A 0) (A 2)))))))) (C (A 0) (A 2)))))))))))))
+
+/-- The bunt of the head of the sample of that gate: `[0 *blob]`. -/
+def tsGE : Noun := C (A 0) (C (A 0) (C (A 0) (C (A 0x6d6f62) (A 0))))
+
+/-- **The renaming branch**: `(map-regs ren)`, then `[input (count-args
+input) (~(rep by blocks) gate)]`. -/
+theorem ts_rb_at : slot? 4094 tsDolArm = some (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 762) (C (A 0) (A 0xfffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 126))) (C (A 0) (A 2)))))))) (C (C (A 0) (A 6)) (C (C (A 8) (C (C (A 9) (C (A 0xbbbe) (C (A 0) (A 0xfffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 14))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x7ffffffff)))) (C (A 9) (C (A 767) (C (A 10) (C (C (A 6) (C (A 0) (A 0x7ffe))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C tsGE (A 0))) (C (C (A 1) tsGBody) (C (A 0) (A 1)))))))) (C (A 0) (A 2)))))))))))) := by
+  kernel_rfl
+
+theorem ts_rb_eq : tsRenameBr = C (A 8) (C (C (A 8) (C (C (A 9) (C (A 762) (C (A 0) (A 0xfffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 126))) (C (A 0) (A 2)))))))) (C (C (A 0) (A 6)) (C (C (A 8) (C (C (A 9) (C (A 0xbbbe) (C (A 0) (A 0xfffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 14))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x7ffffffff)))) (C (A 9) (C (A 767) (C (A 10) (C (C (A 6) (C (A 0) (A 0x7ffe))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C tsGE (A 0))) (C (C (A 1) tsGBody) (C (A 0) (A 1)))))))) (C (A 0) (A 2))))))))))) := by
+  unfold tsRenameBr; rw [ts_rb_at]; rfl
+
+/-- The arm `+map-regs` of the types core `compTypes` (arm `762`). -/
+noncomputable def mrArm : Noun := (slot? 762 compTypes).getD (A 0)
+/-- The gate `|=  b=blob` that `(map-regs ren)` returns. -/
+noncomputable def mrInner : Noun := (slot? 1901 mrArm).getD (A 0)
+
+/-- The body of the gate `+map-regs`: build the gate `mrInner`, then the
+`%fast` hint `%map-regs`. -/
+noncomputable def mrBody : Noun :=
+  C (A 7) (C (C (A 8) (C (C (A 1) (C (A 0) (C (A 0) (C (A 0x6d6f62) (A 0))))) (C (C (A 1) mrInner) (C (A 0) (A 1))))) (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x736765722d70616d) (C (C (A 0) (A 0xffff)) (A 0))))) (C (A 0) (A 1)))))
+
+theorem mr_at : slot? 762 compTypes = some (C (A 8) (C (C (A 1) (C (C (A 0) (A 15)) (C (A 0) (C (A 0) (A 0))))) (C (C (A 1) mrBody) (C (A 0) (A 1))))) := by
+  kernel_rfl
+
+/-- The gate `rename = (map-regs ren)`. -/
+noncomputable def tsRenameG (REN : Noun) : Noun :=
+  C mrInner (C (C (A 0) (C (A 0) (C (A 0x6d6f62) (A 0)))) (C mrBody (C REN compTypes)))
+
+/-- **`(map-regs ren)`**: the gate `mrInner` with `ren` in its context. -/
+theorem mr_slam (REN : Noun) :
+    nock (C mrBody (C REN compTypes)) mrBody = some (tsRenameG REN) := by
+  unfold tsRenameG mrBody
+  generalize mrInner = I
+  simp [nock_exec]
+
+/-- The arm `+count-args` of `K` (arm `0xbbbe`). -/
+noncomputable def caArm : Noun := (slot? 0xbbbe compK).getD (A 0)
+/-- The cases `^` and `%both` of `+count-args`. -/
+noncomputable def caRest : Noun := (slot? 1919 caArm).getD (A 0)
+
+noncomputable def caBody : Noun :=
+  C (A 6) (C (C (A 5) (C (C (A 1) (A 0x656e6f6e)) (C (A 0) (A 12)))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x73696874)) (C (A 0) (A 12)))) (C (C (A 1) (A 1)) caRest)))))
+
+theorem ca_at : slot? 0xbbbe compK = some (C (A 8) (C (C (A 1) (C (A 0x656e6f6e) (A 0))) (C (C (A 1) caBody) (C (A 0) (A 1))))) := by
+  kernel_rfl
+
+/-- The types core sits at axis `15` of the context. -/
+theorem ts_types {ctx : Noun} (h7 : slot? 7 ctx = some compK) : slot? 15 ctx = some compTypes := by
+  have h1 : slot? 7 ctx = slot? 1 compK := h7
+  have := slot_spine (by omega) (by omega) h1 1
+  simp only [show 2 ^ 1 * (7 + 1) - 1 = 15 from rfl,
+    show 2 ^ 1 * (1 + 1) - 1 = 3 from rfl] at this
+  rw [this]; rfl
+
+/-- The subject of the `+rep:by` gate: `rename`, then `[input core]`. -/
+noncomputable def tsY (SB B Bo BN D G ctx : Noun) (o sub : Nat) : Noun :=
+  C (tsRenameG (tsRenG BN D G ctx o sub)) (C (C (A 0x73696874) (A 0)) (tsSt SB B Bo BN D G ctx o sub))
+
+/-- **The renaming branch** on `[[%this ~] core]`: `[[%this ~] 1 r]` with
+`r` the `+rep:by` of the gate `tsGBody` over the blocks `B` from `~`. -/
+theorem ts_rename {ctx : Noun} (hc : CompIn ctx) (h7 : slot? 7 ctx = some compK)
+    (SB B Bo BN D G : Noun) (o sub : Nat) :
+    nock (C (C (A 0x73696874) (A 0)) (tsSt SB B Bo BN D G ctx o sub)) tsRenameBr
+      = (nock (C by.rep.battery (C (C tsGBody (C (C tsGE (A 0)) (tsY SB B Bo BN D G ctx o sub)))
+            (C by.battery (C B layer2)))) by.rep.battery).bind
+          fun r => some (C (C (A 0x73696874) (A 0)) (C (A 1) r)) := by
+  have h15 := ts_types h7
+  have hmr := mr_at
+  have hca := ca_at
+  rw [ts_rb_eq]
+  unfold tsY tsRenameG tsSt
+  have hms := mr_slam (tsRenG BN D G ctx o sub)
+  unfold tsRenameG at hms
+  generalize tsRenG BN D G ctx o sub = RG at hms ⊢
+  simp only [tsCoreSt, tsS7, tsS5, tsS0, tsSample]
+  generalize tsBat = T
+  generalize tsCoreBat = K
+  unfold caBody at hca
+  generalize caRest = CR at hca
+  generalize mrBody = MB at hmr hms ⊢
+  generalize tsGBody = GB
+  simp [nock_exec, hc, h7, h15, hmr, hms, hca, by_arm, by.arm_at, by.rep.arm_at, rep_arm, Option.bind_assoc]
+
 end Compiler
 end Formalization
