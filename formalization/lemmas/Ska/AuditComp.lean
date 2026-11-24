@@ -91,6 +91,7 @@ import lemmas.Ska.CompNCInd
 import lemmas.Ska.CompNCExamples
 import lemmas.Ska.CompRunOKLB
 import lemmas.Ska.CompSimBodyLift
+import lemmas.Ska.CompLBDone
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -1020,3 +1021,12 @@ open Formalization.SkaModel.Comp
 #print axioms LOKC.toB
 #print axioms LOKB.up
 #print axioms LOKB.wrap
+#print axioms FillSem.conv
+#print axioms frontLB_seven
+#print axioms frontLB_seven_bunt
+#print axioms runOKLB_seven
+#print axioms AgreeUB.toU
+#print axioms RunOKGC.toB
+#print axioms runOKGB_sevenL
+#print axioms finishTop_genB
+#print axioms finishLUC_contractGB
