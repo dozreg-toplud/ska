@@ -13,6 +13,7 @@ import lemmas.Ska.CompFragX
 import lemmas.Ska.CompUnproxy
 import lemmas.Ska.CompUnproxyEntry
 import lemmas.Ska.CompUnproxyRegs
+import lemmas.Ska.CompUnproxyFill
 import lemmas.Ska.CompEntryGoal
 import lemmas.Ska.CompFromRun
 import lemmas.Ska.CompEntryRun
@@ -265,3 +266,8 @@ open Formalization.SkaModel.Comp
 #print axioms unproxy_ops
 #print axioms kernBoth_regs
 #print axioms kernLoop_regs
+#print axioms sureLoop_regs
+#print axioms Front.uniq
+#print axioms coerceLazy_regs
+#print axioms coerceList_regs
+#print axioms coerceLazyL_regs
