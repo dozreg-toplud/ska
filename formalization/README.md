@@ -190,9 +190,10 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompUnaryEnd.lean` | The end of `+compile-unary` up to `+to-straight`: `cu_run_kerf` (from the entry state, the pill's `+run` on a pure nomm with no `%6` and `tenOk`, then the pill's `+kerf` on the `next` it returns in the door with the state it returns, is `runL` then `kerf`, the first two steps of `finishLU`; hypotheses `slot? 7 ctx = some compK` and `slot? 52 ctx = some cod` only); `cu_rp_at` (the `road-pure` that `+compile-unary` slams, axis `254` of `compTypes`, is the noun of `+ska-poke`'s) and `cu_rp_iff` (the gate returns `y` exactly when its trap does, for every trap). |
 | `Compiler/CompUnaryTop.lean` | `+compile-unary` from its entry state to `+to-straight`: `tsArm` and `tsBat` read from the pill (`comp_ts_at`, `ts_arm_eq`, `comp_ts_arm`), the stated link `TsAt` of `+to-straight` on the branch of the fragment (`cond` empty: on `tsSample` it returns `Straight.toNoun` of `toStraightF`), not proved; `cu_kern_cond` and `cu_cond_empty` (`cond` is empty after `+run` and `+kerf`, from `kc_run`); `cu_finish` (`+run`, `+kerf` on its product, `+to-straight` on the product of `+kerf` is `finishLU` mapped by `Straight.toNoun`, given `TsAt`). |
 | `Compiler/CompStraightPre.lean` | The pushes of `+to-straight` before its `|^` core: `tsBat` cut into the rests `tsR2` ... `tsR13` (`ts_bat_eq`, a kernel fact), the gates `tsUnBat`, `tsRunTrap`, `tsRenBat` written out and the core battery `tsCoreBat` read from the pill (`slot? 268435453 tsBat`); `ts_pre1` (pushes 1 to 5: `blocks`, `unproxy`, `proxies` is `|`, `ins` is `[sub ~]`, `r0` is `sub`), `ts_pre2` (6 to 8: `n-in` is `1` by `lent_gate`, the trap `run` is `&` by `add_gate`, `ren` built), `ts_pre3` and `ts_pre3_nil` (9 to 13: `+got:by`, `+del:by`, `+put:by`, the bunt, the core), `ts_pre` (the gate on the fragment's sample with `cond` empty is the call of arm `190` of the core on `tsCoreSt`, with the blocks `put (del blocks o) 0 start`, or a crash when `o` is not a block); the stated link `TsCoreAt` of the core (not proved), `ts_at_of_core` (`TsAt` from it) and `cu_finish_core` (`cu_finish` assuming only `TsCoreAt`). |
+| `Compiler/CompStraightCore.lean` | The `|^` core of `+to-straight` on the renaming branch: the gate `ren` is `renReg sub 1` (`ts_ren`), `rer` with `proxies` `|` and `run` `&` is `[(ren r) gen]` (`ts_rer`), the arm `$` is the renaming branch on `[[%this ~] core]` (`ts_dol`: `rewrite-input` on `[%this sub]` gives `[[%this ~] [0 0]]`, the model's `rewriteInput` likewise, `ts_ri_model`), the branch is `(map-regs ren)` (arm `762` of `compTypes`, `mr_slam`), `+count-args` (arm `0xbbbe` of `K`) and the `+rep:by` of the gate `tsGBody` (`ts_rename`); `+rep:by` with a gate that may crash (`rep_loop_list`, `rep_gate_list`), `renameBlocks` as a fold over `rap` (`renameBlocks_rap`), and `TsCoreAt`, `TsAt`, `cu_finish` from the stated link `TsStepAt` of the gate of the fold (`ts_core_at`, `ts_at_of_step`, `cu_finish_step`); `+bypassable` on `[& b]` is `bypassable true b` (`ts_byp_at`, `ts_byp`). |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
-| `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`. |
+| `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`, whose `keys` are those of `rap`, the order of `+rep:by` (`treapMap_keys`). |
 | `Compiler/TreapKey.lean` | The instance of `Treap` (`Ska/Analysis.lean`) for the analysis model: `FinMap κ ν`, finite maps as lookups, whose noun `toNoun f m` is made with `+put:by` on the encoded keys when the encoding is given; it is an `IsMap mugF` with exactly the pairs of `m` (`isMap_toNoun`, `get_toNoun`), so by `isMap_ext` the pill's `+put:by`, `+del:by`, `+get:by` on it give the nouns of `put`, `del`, `get` (`putF_toNoun`, `delF_toNoun`, `getF_toNoun`).  `tap` and `rap` read the keys off `~(tap by ...)` and the pre-order of `+rep`, and are those listings on every layout (`tapList_toNoun`, `preorder_toNoun`).  `M κ ν` comes before the encoding in the class, so it cannot hold a treap ordered by it. |
 | `Compiler/Regs.lean`, `Compiler/EvalPass.lean` | `+read`, `+store`, `+move` and `+eval-pass` of the interpreter core `interp` against `read`, `store`, `move`, `evalPass` of `Ska/Interp.lean` on maps of `TreapMap mugF (Option Noun)`, whose noun `HoonMap.toNoun (unitNoun id)` is the Hoon's `(map @uvre (unit *))`: `+read` crashes on a missing or poisoned register, `+move` copies the unit, an argument `~` poisons its parameter (`read_pill`, `store_pill`, `move_pill`, `eval_pass_pill`), from gate theorems that assume what the arms read through layer 2 (`RegsIn`, `MoveIn`, `EvalPassIn`). |
 | `Compiler/EvalPole.lean` | `+eval-pole` on every op that stays in the function (all but `%nok` and the calls) against `localPole` of `Ska/Interp.lean` (`eval_pole_local`, `eval_pole_hmp`, `eval_pole_spy`), in a context `ctx` whose tail is the compiler's core `cor`; `%spy` assumes `SlamIsNock lib`.  On the pill's `interp` with its own `cor`: `eval_pole_local_pill`. |
@@ -1053,6 +1054,33 @@ import only its theorems.  So:
     path (`mapBlocks`) the order numbers the registers, so there the model
     differs from the Hoon whenever two blocks are visited in a different
     order: a report for the model of `+to-straight`.
+    L, 2026-11-24 (track A, the core of `+to-straight`),
+    `Compiler/TreapList.lean`, `Compiler/CompStraightCore.lean`.  The fold
+    order is settled: every use of `HoonMapKeys.keys` in the models whose
+    order matters stands for a `+rep:by` (`renameBlocks`, `mapBlocks` of
+    `Ska/CompStraightMap.lean`, the two folds of `sectThread` in
+    `Ska/CompLazyRun.lean` over `made-0` and `made-1`), and the others are
+    order-free (`hasProxies` is `?=(~ cond)`, `difM` is `+dif:by`, `mapVals`
+    is a device of the proofs, and the proofs use only `mem_keys`), so the
+    instance of `TreapMap` now lists the keys in pre-order (`rap`, node,
+    left, right), and `mapBlocks` on treaps numbers the registers as the
+    Hoon does.  The instance `FM` of `Ska/CompCall.lean` lists the keys in
+    the order of the puts, with repeats, and has no noun: it stands for no
+    traversal.  On the renaming branch, `TsCoreAt` is proved from `TsStepAt`
+    (`ts_core_at`), so `cu_finish_step` assumes only that.  `TsStepAt` is the
+    gate `tsGBody` of the `+rep:by` on a pair `[k b]` and an accumulator
+    `new` with the subject `tsY` (`rename`, `[[%this ~] core]`) against
+    `renameStep`: its test `&(!=(0w0 k) (bypassable & b))` (`+bypassable`,
+    core arm `46`, battery axis `30`), the slam of `rename` (the gate
+    `mrInner` of `+map-regs`, 3561 characters of Nock, whose body is `+turn`
+    over `par` with `ren`, `+turn` over `body` with the 25-way `?-` of the
+    ops, and the 11-way `?-` of `fin`, here `[%bom ~]`), `+chase-fin` (core
+    arm `382`, battery axis `254`) on `fin.b`, and `+put:by` (arm `340`) at
+    `k`.
+    `+bypassable` is linked (`ts_byp`); the next helpers, in order, are the
+    gate `mrInner` on a block with `fin` `[%bom ~]` (one lemma per op tag),
+    `+chase` and `+chase-fin` against `chase` and `chaseFin`, then
+    `TsStepAt` from them with `put_gate`.
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,

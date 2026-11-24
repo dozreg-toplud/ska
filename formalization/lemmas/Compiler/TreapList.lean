@@ -19,7 +19,10 @@ asks of a map beyond `get_put` and `get_del`, on the treaps of
   `mem_rap`).  `tap` is strictly decreasing in `+gor` of the key nouns
   (`tap_pairwise`), which determines it.
 * The instance of `HoonMapKeys` (`lemmas/Ska/CompTop.lean`), whose keys are
-  those of `tap`.
+  those of `rap`: the order in which `~(rep by ...)` visits them, as the
+  class asks.  Every order-sensitive use of `keys` in the models stands for a
+  `+rep:by` (`renameBlocks`, `mapBlocks`, the folds of `sectThread`), the
+  others are order-free (`hasProxies`, `difM`, `mapVals`).
 -/
 
 namespace Formalization
@@ -206,19 +209,25 @@ theorem tap_pairwise (m : TreapMap mug ν) :
 
 end TreapMap
 
-/-- The keys of a treap, in the order of `~(tap by ...)`. -/
+/-- The keys of a treap, in the order in which `~(rep by ...)` visits them
+(`+rep:by`, `$(a r.a, +<+.b $(a l.a, +<+.b (b n.a +<+.b)))`: the node, then
+the left subtree, then the right). -/
 instance : Comp.HoonMapKeys (TreapMap mugF) where
-  keys m := (TreapMap.tap m).map Prod.fst
+  keys m := (TreapMap.rap m).map Prod.fst
   mem_keys m k := by
     constructor
     · intro hk
       obtain ⟨⟨k', v⟩, hm, rfl⟩ := List.mem_map.1 hk
       show (TreapMap.get m k').isSome = true
-      rw [(TreapMap.mem_tap m k' v).1 hm]
+      rw [(TreapMap.mem_rap m k' v).1 hm]
       rfl
     · intro hk
       obtain ⟨v, hv⟩ := Option.isSome_iff_exists.1 hk
-      exact List.mem_map.2 ⟨(k, v), (TreapMap.mem_tap m k v).2 hv, rfl⟩
+      exact List.mem_map.2 ⟨(k, v), (TreapMap.mem_rap m k v).2 hv, rfl⟩
+
+/-- The keys of the instance are those of `rap`. -/
+theorem treapMap_keys {ν : Type} (m : TreapMap mugF ν) :
+    Comp.HoonMapKeys.keys m = (TreapMap.rap m).map Prod.fst := rfl
 
 end Compiler
 end Formalization
