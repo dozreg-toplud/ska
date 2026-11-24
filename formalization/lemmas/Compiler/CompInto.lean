@@ -383,5 +383,139 @@ theorem is_gate {ctx : Noun} (hc : CompIn ctx) (hl : CompLib ctx) (B R G : Noun)
         simp [nock_exec, ha', hK, hgep, gepArm, hgg, unitNoun, isStep, e, ssN, hc, in_arm, in.arm_at,
           put_in_arm, hpd, eqCode_atom, r1, r1']
 
+
+/-- The arm `into-need` builds its gate. -/
+theorem comp_inn_arm (d : Noun) : nock d innArm =
+    some (C innBat (C (C (A 0) (C (C (A 0x656e6f6e) (A 0)) (A 0))) d)) := by
+  unfold innArm; simp only [nock_exec]
+
+variable {x} in
+/-- `+into-sure`: the looks split by `+rep:in` with `+gep`, `axe` put in the
+recipient's looks unless it is `1`, then `+into-need`; with `axe` not `0` and
+no look at axis `0`. -/
+theorem comp_into_sure (hc : CompIn ctx) (hl : CompLib ctx) (g : Gen (TreapMap mugF)) (axe : Nat)
+    (sur : Sure CSet) (o : Nat) (ha : axe ≠ 0) (h0 : ∀ y ∈ HoonSet.toList sur.lok, y ≠ 0) :
+    nock (C isBat (C (C (A axe) (C sur.toNoun (A o))) (compCore g x ctx))) isBat
+      = (intoSure axe sur o g).map fun p => C (C p.1.1.toNoun p.1.2.toNoun) (genNoun p.2 x) := by
+  obtain ⟨ned, lok⟩ := sur
+  simp only at h0
+  have hrep := rep_gate_on ssN (fun n s => match n with | Noun.atom y => isStep axe y s | _ => s)
+    in.battery layer2 isG0 (A 0)
+    (C isBat (C (C (A axe) (C (C ned.toNoun (HoonSet.toNoun lok)) (A o)))
+      (C comp.door (C (genNoun g x) ctx))))
+    (HoonSet.toNoun lok) (cs_tree lok) (HoonSet.empty, HoonSet.empty) (by
+      intro n hn s
+      rw [cs_preorder] at hn
+      obtain ⟨y, hy, rfl⟩ := List.mem_map.1 hn
+      exact is_gate hc hl _ _ _ axe y ha (h0 y hy) s)
+  rw [cs_preorder, List.foldl_map] at hrep
+  have hil := is_intoLok (axe := axe) lok ha h0
+  generalize (HoonSet.toList lok).foldl (fun s y => isStep axe y s) (HoonSet.empty, HoonSet.empty) = F
+    at hrep hil
+  obtain ⟨ld, lr⟩ := F
+  simp only [ssN, HoonSet.toNoun_empty] at hrep
+  have hin := comp_into_need (x := x) hc hl g axe ned o
+  have hpt := put_in_gate layer2 gorIn_morIn_layer2 _ _ _ (cs_putInF lr axe)
+  simp only [Sure.toNoun]
+  nock_open isBat
+  have hD := comp_inn_at
+  simp only [compCore] at hin ⊢
+  generalize comp.door = D at hD hrep hin ⊢
+  by_cases a1 : axe = 1
+  · subst a1
+    cases e : intoNeed 1 ned o g with
+    | none =>
+      rw [e] at hin
+      simp [nock_exec, intoSure, hil, e, hc, in_arm, in.arm_at, in.rep.arm_at, rep_arm, hrep,
+        hD, comp_inn_arm, hin]
+    | some p =>
+      obtain ⟨⟨nd, nr⟩, g'⟩ := p
+      rw [e] at hin
+      simp [nock_exec, intoSure, hil, e, hc, in_arm, in.arm_at, in.rep.arm_at, rep_arm, hrep,
+        hD, comp_inn_arm, hin, Sure.toNoun]
+  · have a1' : ¬ (1 = axe) := fun h => a1 h.symm
+    cases e : intoNeed axe ned o g with
+    | none =>
+      rw [e] at hin
+      simp [nock_exec, intoSure, hil, e, hc, in_arm, in.arm_at, in.rep.arm_at, rep_arm, hrep,
+        hD, comp_inn_arm, hin, a1, a1', put_in_arm, hpt]
+    | some p =>
+      obtain ⟨⟨nd, nr⟩, g'⟩ := p
+      rw [e] at hin
+      simp [nock_exec, intoSure, hil, e, hc, in_arm, in.arm_at, in.rep.arm_at, rep_arm, hrep,
+        hD, comp_inn_arm, hin, Sure.toNoun, a1, a1', put_in_arm, hpt]
+
+
+/-! ## `+into` -/
+
+def intL0 : Noun :=
+  (C (A 7) (C (C (A 0) (A 1)) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 0x2afffe) (C (A 0) (A 63)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 253)) (C (C (A 0) (A 28)) (C (A 0) (A 30))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 510) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 6) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 58)))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 59)))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (C (C (C (C (A 0) (A 4)) (C (A 1) (C (A 0) (A 0)))) (C (C (A 0) (A 5)) (C (A 1) (C (A 0) (A 0))))) (C (A 0) (A 510))) (C (A 7) (C (C (A 0) (A 1)) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 372) (C (A 0) (A 2047)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 122)) (C (C (A 0) (A 1022)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (C (C (C (A 1) (A 0)) (C (A 7) (C (C (A 9) (C (A 191) (C (A 0) (A 4095)))) (C (A 9) (C (A 2) (C (A 0) (A 1))))))) (C (C (A 1) (A 0)) (C (A 7) (C (C (A 9) (C (A 191) (C (A 0) (A 4095)))) (C (A 9) (C (A 2) (C (A 0) (A 1)))))))) (C (A 0) (A 510))) (C (C (A 1) (C (A 7) (C (C (A 0) (A 1)) (C (A 7) (C (C (A 10) (C (C (A 2046) (C (A 0) (A 13))) (C (A 0) (A 1)))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 14) (C (A 0) (A 48))) (C (A 10) (C (C (A 6) (C (A 0) (A 49))) (C (A 0) (A 15)))))))))) (C (A 7) (C (C (A 10) (C (C (A 4094) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 14) (C (A 0) (A 114))) (C (A 10) (C (C (A 6) (C (A 0) (A 115))) (C (A 0) (A 31)))))))))) (C (A 7) (C (C (A 10) (C (C (A 8190) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (C (C (C (C (A 0) (A 240)) (C (A 0) (A 12))) (C (C (A 0) (A 242)) (C (A 0) (A 4)))) (C (C (C (A 0) (A 240)) (C (A 0) (A 13))) (C (C (A 0) (A 242)) (C (A 0) (A 5))))) (C (A 0) (A 8190)))))))))))))))))))))))) (C (A 0) (A 1)))))))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 1022) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 0) (A 1)) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 372) (C (A 0) (A 4095)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 251)) (C (C (A 0) (A 2046)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (C (C (A 1) (A 0)) (C (A 7) (C (C (A 9) (C (A 191) (C (A 0) (A 8191)))) (C (A 9) (C (A 2) (C (A 0) (A 1))))))) (C (A 0) (A 1022))) (C (C (A 1) (C (A 7) (C (C (A 10) (C (C (A 4094) (C (A 0) (A 13))) (C (A 0) (A 1)))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 14) (C (A 0) (A 24))) (C (A 10) (C (C (A 6) (C (A 0) (A 25))) (C (A 0) (A 31)))))))))) (C (A 7) (C (C (A 10) (C (C (A 8190) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (C (C (C (A 0) (A 56)) (C (A 0) (A 4))) (C (C (A 0) (A 56)) (C (A 0) (A 5)))) (C (A 0) (A 8190)))))))))))))) (C (A 0) (A 1)))))))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 2046) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (C (C (A 8) (C (C (A 9) (C (A 0x15577c) (C (A 0) (A 511)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 60)) (C (C (A 0) (A 28)) (C (A 0) (A 12))))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 9) (C (A 0x15577c) (C (A 0) (A 511)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 61)) (C (C (A 0) (A 29)) (C (A 0) (A 13))))) (C (A 0) (A 2))))))))) (C (A 0) (A 2046))))))))))))))))))))))))))))))))))))
+
+def intBat : Noun :=
+  (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 43690) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A 0)))) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A 0)))) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A 0x706f68)))) (C (A 0) (A 115)))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 62) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 8) (C (C (A 8) (C (C (A 0) (A 114)) (C (A 8) (C (C (A 1) intL0) (C (A 9) (C (A 2) (C (A 0) (A 1)))))))) (C (C (C (A 0) (A 8)) (C (C (A 0) (A 9)) (C (A 0) (A 6)))) (C (A 0) (A 5)))))))))))))
+
+def intArm : Noun :=
+  (C (A 7) (C (C (A 8) (C (C (A 1) (C (C (A 0x7478656e) (C (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0))) (C (A 0) (A 0)))) (A 0))) (C (C (A 1) intBat) (C (A 0) (A 1))))) (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x6f746e692d706d6f63) (C (C (A 0) (A 0x7ffff)) (A 0))))) (C (A 0) (A 1))))))
+
+-- door axis 860, core axis 1372
+theorem comp_int_at : slot? 860 comp.door = some intArm := by kernel_rfl
+
+-- intL0 at 65501 of intBat
+
+/-- The arm `into-sure` builds its gate. -/
+theorem comp_is_arm (d : Noun) : nock d isArm =
+    some (C isBat (C (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (A 0))) d)) := by
+  unfold isArm; simp only [nock_exec]
+
+variable {x} in
+/-- The loop `split-loop` of `+into` on a fork-free lazy need `[sure ~ ~]`:
+`+into-sure`, then the test `&(?=(~ fork.laz) ?=(~ bond.laz))`, which holds. -/
+theorem cit_loop (hc : CompIn ctx) (hl : CompLib ctx) (g : Gen (TreapMap mugF)) (sur : Sure CSet)
+    (o : Nat) (L B N : Noun) (axe : Nat) (ha : axe ≠ 0) (h0 : ∀ y ∈ HoonSet.toList sur.lok, y ≠ 0) :
+    nock (C L (C (lazyNoun sur) (C (A o) (C B (C (C N (A axe)) (compCore g x ctx)))))) intL0
+      = (intoSure axe sur o g).map fun p => C (C (lazyNoun p.1.1) (lazyNoun p.1.2)) (genNoun p.2 x) := by
+  have his := comp_into_sure (x := x) hc hl g axe sur o ha h0
+  unfold intL0
+  have hD := comp_is_at
+  simp only [compCore] at his ⊢
+  generalize comp.door = D at hD his ⊢
+  cases e : intoSure axe sur o g with
+  | none =>
+    rw [e] at his
+    simp [nock_exec, lazyNoun, hD, comp_is_arm, his]
+  | some p =>
+    obtain ⟨⟨sd, sr⟩, g'⟩ := p
+    rw [e] at his
+    simp [nock_exec, lazyNoun, hD, comp_is_arm, his]
+
+variable {x} in
+/-- `+into` on a `next` whose lazy need is fork-free: `+emit` of `[~ ~ %hop
+then.nex]`, then the loop, with `axe` not `0` and no look at axis `0`.  It
+returns `[[don ~ ~] [rec ~ ~] o]`. -/
+theorem comp_into (hc : CompIn ctx) (hl : CompLib ctx) (g : Gen (TreapMap mugF)) (nex : Next CSet)
+    (axe : Nat) (ha : axe ≠ 0) (h0 : ∀ y ∈ HoonSet.toList nex.laz.lok, y ≠ 0) :
+    nock (C intBat (C (C nex.goal.toNoun (A axe)) (compCore g x ctx))) intBat
+      = (into nex axe g).map fun p =>
+          C (C (lazyNoun p.1.1) (C (lazyNoun p.1.2.1) (A p.1.2.2))) (genNoun p.2 x) := by
+  obtain ⟨laz, th⟩ := nex
+  have he := comp_emit x hc g ⟨[], [], Termin.hop th⟩
+  simp only [Blob.toNoun, listNoun, Termin.toNoun, Tag.hop] at he
+  rw [cd_emit_eq] at he
+  generalize hg1 : (if g.drop = true then { g with bo := g.bo + 1 }
+      else { g with bo := g.bo + 1, blocks := HoonMap.put g.blocks g.bo ⟨[], [], Termin.hop th⟩ })
+      = g1 at he
+  have hlp := fun L B N => cit_loop (x := x) hc hl g1 laz g.bo L B N axe ha h0
+  simp only [Next.goal, CGoal.toNoun]
+  unfold intBat
+  cases e : intoSure axe laz g.bo g1 with
+  | none =>
+    rw [e] at hlp
+    simp [nock_exec, comp_emit_arm, he, hlp, into, cd_emit_eq, hg1, bind, StateT.bind, e]
+  | some p =>
+    obtain ⟨⟨sd, sr⟩, g2⟩ := p
+    rw [e] at hlp
+    simp [nock_exec, comp_emit_arm, he, hlp, into, cd_emit_eq, hg1, bind, StateT.bind, e, pure,
+      StateT.pure]
+
 end Compiler
 end Formalization
