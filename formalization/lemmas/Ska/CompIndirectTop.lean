@@ -197,7 +197,7 @@ theorem indirect_prefix {nex0 : NextL S} {g1 g2 g3 : Gen Map} {out pro o : Nat}
     HoonMap.get g3.blocks 1 = some ⟨[], [], Termin.don 0⟩ ∧
     HoonMap.get g3.blocks 2 = some ⟨[], [Pole.mov 1 0], Termin.hop (jmp0 1)⟩ ∧
     HoonMap.get g3.blocks 3 = some ⟨[], [Pole.nok 2 3 1], Termin.hop (jmp0 2)⟩ ∧
-    GrowU gen0 g3 ∧ Clear g3 := by
+    GrowU gen0 g3 ∧ Clear g3 ∧ HoonMap.get g3.blocks 0 = Option.none := by
   simp only [simpleNextL] at h1
   obtain ⟨r, ga, ha, h1⟩ := bind_some h1
   rw [re_apply] at ha
@@ -248,7 +248,7 @@ theorem indirect_prefix {nex0 : NextL S} {g1 g2 g3 : Gen Map} {out pro o : Nat}
   simp only [Gen.emitted, gen0, Bool.false_eq_true, ↓reduceIte, Nat.reduceAdd, true_and]
   refine ⟨fun k => HoonMap.get_empty k, by rw [gb]; rfl, by rw [gb]; rfl, by rw [gb]; rfl, ?_,
     fun k hk => by rw [gb, if_neg (by simp only at hk; omega), if_neg (by simp only at hk; omega),
-      if_neg (by simp only at hk; omega)]⟩
+      if_neg (by simp only at hk; omega)], by rw [gb]; rfl⟩
   refine ⟨by simp, rfl, fun k b _ hk => by simp [HoonMap.get_empty] at hk, fun k b' hb' => Or.inr ?_⟩
   rw [gb] at hb'
   simp only
