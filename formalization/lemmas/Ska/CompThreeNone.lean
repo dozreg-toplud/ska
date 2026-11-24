@@ -14,8 +14,9 @@ entry's need is equivalent to `none`, `noneEq_entries`).  So
 `pureEval q (wut x) = pureEval q x`, and `RunOKU` of `[7 p q]` carries over
 (`runOKU_seven3F`).
 
-`finishLF_bellContract73F` replaces `hq3` by the alternative `hq3` or
-`FragX [7 p q]`.  The second holds for `p = [0 axe]` with `2 ≤ axe`
+`finishLF_bellContract73F` replaces `hq3` by the alternative `hq3`, or
+`FragX [7 p q]`, or `p = [4 p']` (whose `[7 p q]` is `runOKU_seven4`).
+`FragX [7 p q]` holds for `p = [0 axe]` with `2 ≤ axe`
 (`FragX.sevenFrom`), so every `[7 [3 [0 axe]] q]` with `q` in `FragX` is
 covered with no hypothesis on the run, for example
 `[7 [3 [0 3]] [6 [1 0] [1 5] [1 6]]]` (`finishLF_bellContract_threeNone`), whose
@@ -103,13 +104,14 @@ theorem runOKU_seven3F (lib : Lib) {p q : Nomm} (hp : NextOK (S := S) (Map := Ma
 
 /-- **The final pass meets the contract on `[7 [3 p] q]`** with `p` and `q`
 in `FragX`, at most 255 `%6`, nothing baked and a cape with no `[| |]`, when
-`[7 p q]` is in `FragX` or the run of `q` returns a lazy need not equivalent
-to `none` (`hq3`).  The first holds for every `p = [0 axe]` with `2 ≤ axe`. -/
+`[7 p q]` is in `FragX`, or `p` is `[4 p']` (then `[7 p q]` is covered by
+`runOKU_seven4`), or the run of `q` returns a lazy need not equivalent to
+`none` (`hq3`).  The first holds for every `p = [0 axe]` with `2 ≤ axe`. -/
 theorem finishLF_bellContract73F {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
     {bl : Bell} {p q : Nomm} (hp : (Nomm.n7 (Nomm.n3 p) q).pure = true)
     (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol (Nomm.n7 (Nomm.n3 p) q))
     (hfp : FragX (S := S) p) (hfq : FragX (S := S) q)
-    (hor : FragX (S := S) (Nomm.n7 p q) ∨
+    (hor : FragX (S := S) (Nomm.n7 p q) ∨ (∃ p', p = Nomm.n4 p' ∧ FragX (S := S) p') ∨
       ∀ {nx : NextL S} {g1 : Gen Map}, runL q (CGoalL.done : CGoalL S) [] (gen0 : Gen Map) = some (nx, g1) →
         noneEquivalentL nx.laz = false)
     (hcount : sixCount (Nomm.n7 (Nomm.n3 p) q) ≤ 255)
@@ -120,9 +122,11 @@ theorem finishLF_bellContract73F {lib : Lib} {code : Bell → Option Nomm} (hok 
   refine finishLF_bellContractU hok hp hA (fun h1 => runOKU_seven3F lib (runX_ok lib hfp).2.1
     (runX_semR lib hfp).2.1 (runX_keeps hfp) (aboveX_of_fragX hfp) hfq hcount ?_ h1) hbl hn hbake h N
   intro nx g1 hq1 hne nex g2 h7
-  rcases hor with hf7 | hq3
+  rcases hor with hf7 | ⟨p', rfl, hfp'⟩ | hq3
   · exact ((runX_ok (Map := Map) lib hf7).1 trivial trivial (by simp only [sixCount] at hcount ⊢; omega)
       (by simp [gen0]) rfl upBelow_gen0 h7).toU gen0_cond_none
+  · exact runOKU_seven4 lib (runX_ok lib hfp').2.1 (runX_semR lib hfp').2.1 (runX_keeps hfp') (aboveX_of_fragX hfp')
+      hfq (by simp only [sixCount] at hcount ⊢; omega) h7
   · rw [hq3 hq1] at hne; cases hne
 
 /-- **`[7 [3 [0 3]] [6 [1 0] [1 5] [1 6]]]` meets the contract**, not covered
@@ -142,6 +146,17 @@ theorem finishLF_bellContract_threeNone {lib : Lib} {code : Bell → Option Nomm
     FragX.six (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial)
   finishLF_bellContract73F hok rfl hA (FragX.frag fun _ => trivial) hq (Or.inl (FragX.sevenFrom (by decide) hq))
     (by decide) hbl hn hbake h N
+
+/-- `[7 [3 [4 [0 3]]] [6 [1 0] [1 5] [1 6]]]`, not covered before (its `q`
+fails `hq3`), meets the hypotheses of `finishLF_bellContract73F` on the
+formula through the alternative `p = [4 p']`. -/
+example : FragX (S := S) (Nomm.n4 (Nomm.n0 3)) ∧
+    FragX (S := S) (Nomm.n6 (Nomm.n1 (A 0)) (Nomm.n1 (A 5)) (Nomm.n1 (A 6))) ∧
+    (∃ p', Nomm.n4 (Nomm.n0 3) = Nomm.n4 p' ∧ FragX (S := S) p') ∧
+    sixCount (Nomm.n7 (Nomm.n3 (Nomm.n4 (Nomm.n0 3))) (Nomm.n6 (Nomm.n1 (A 0)) (Nomm.n1 (A 5)) (Nomm.n1 (A 6)))) ≤ 255 :=
+  ⟨FragX.four (FragX.frag fun _ => trivial),
+    FragX.six (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial),
+    ⟨_, rfl, FragX.frag fun _ => trivial⟩, by decide⟩
 
 end Comp
 end SkaModel
