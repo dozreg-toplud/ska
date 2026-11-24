@@ -86,6 +86,7 @@ import lemmas.Ska.CompHypOfUOKC
 import lemmas.Ska.CompRunOKLCSeven
 import lemmas.Ska.CompCallC
 import lemmas.Ska.CompHypOfFragD
+import lemmas.Ska.CompHypOfFragF
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -865,3 +866,41 @@ open Formalization.SkaModel.Comp
 #print axioms Formalization.SkaModel.PokeM.rawMono_fragUEG
 #print axioms Formalization.SkaModel.PokeM.fragUDG_subE
 #print axioms Formalization.SkaModel.PokeM.compHyp_of_fragUEG
+#print axioms minkC7_seven
+#print axioms runOKGC_sevenG
+#print axioms noEnt_pure
+#print axioms noEnt_sevenC
+#print axioms okc_sevenC
+#print axioms uokc_sevenC
+#print axioms jNew_n0
+#print axioms jNew_n1
+#print axioms entNew_sevenC
+#print axioms minkC7_inline
+#print axioms minkC7_eight
+#print axioms minkC7_eightAtom
+#print axioms minkC7_eightL
+#print axioms minkC7_nine
+#print axioms UOKC.mono
+#print axioms annot_atom
+#print axioms annot_slot1_pure
+#print axioms uokc_atomPair
+#print axioms uokc_sevenM
+#print axioms uokc_sevenA
+#print axioms entries_copyL
+#print axioms noEnt_ind
+#print axioms noEnt_of_noEntF
+#print axioms jNew_of_jNewQ
+#print axioms fragI_hinted
+#print axioms uokc_entNew_of_fragI
+#print axioms finishLUC_contractUF
+#print axioms seven_exampleA
+#print axioms seven_exampleB
+#print axioms eight_exampleA
+#print axioms eight_exampleB
+#print axioms nine_exampleA
+#print axioms nine_exampleB
+#print axioms seven_exampleN
+#print axioms seven_exampleT
+#print axioms Formalization.SkaModel.PokeM.rawMono_fragUFG
+#print axioms Formalization.SkaModel.PokeM.fragUEG_subF
+#print axioms Formalization.SkaModel.PokeM.compHyp_of_fragUFG
