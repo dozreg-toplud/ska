@@ -198,5 +198,86 @@ theorem comp_bomb {S : Type} [HoonSet S] (hc : CompIn ctx) (g : Gen (TreapMap mu
     CGoal.toNoun, lazyNoun, Sure.toNoun, Sure.bunt, Need.toNoun, HoonSet.toNoun_empty, Jmp.toNoun,
     jmp0, listNoun, Tag.none]
 
+/-! ## `+must` and `+split-need` -/
+
+theorem cd_need_cell : ∀ n : Need, ∃ a b, n.toNoun = C a b
+  | Need.pair _ _ => ⟨_, _, rfl⟩
+  | Need.both _ _ _ => ⟨_, _, rfl⟩
+  | Need.this _ => ⟨_, _, rfl⟩
+  | Need.none => ⟨_, _, rfl⟩
+
+/-- The arm `re` on the door, in the form the simprocs leave. -/
+theorem comp_re' (g : Gen (TreapMap mugF)) :
+    nock (C comp.door (C (genNoun g x) ctx)) comp.re.arm
+      = some (C (A g.re) (genNoun { g with re := g.re + 1 } x)) := by
+  rw [comp_re]; rfl
+
+/-- `+must`: the register of a need that has one, or a fresh one. -/
+theorem comp_must (g : Gen (TreapMap mugF)) (ned : Need) :
+    nock (C comp.must.battery (C ned.toNoun (compCore g x ctx))) comp.must.battery
+      = (must ned g).map fun p => C (C (A p.1.1) p.1.2.toNoun) (genNoun p.2 x) := by
+  nock_open comp.must.battery
+  cases ned with
+  | pair p q =>
+    obtain ⟨a, b, hp⟩ := cd_need_cell p
+    simp [nock_exec, Need.toNoun, hp, eqCode, comp_re' ctx x, must, bind, StateT.bind, re, pure,
+      StateT.pure, Tag.both]
+  | both r h t => simp [nock_exec, Need.toNoun, eqCode, must, pure, StateT.pure, Tag.both]
+  | this r => simp [nock_exec, Need.toNoun, eqCode, must, pure, StateT.pure, Tag.this]
+  | none =>
+    simp [nock_exec, Need.toNoun, eqCode, comp_re' ctx x, must, bind, StateT.bind, re, pure,
+      StateT.pure, Tag.this, Tag.none]
+
+theorem cd_must_some (ned : Need) (g : Gen (TreapMap mugF)) : ∃ p, must ned g = some p := by
+  cases ned <;> simp [must, bind, StateT.bind, re, pure, StateT.pure]
+
+/-- The arm `must` builds its gate. -/
+theorem comp_must_arm (d : Noun) : nock d comp.must.arm =
+    some (C comp.must.battery (C (C (A 0x656e6f6e) (A 0)) d)) := by
+  nock_open comp.must.arm; simp only [nock_exec]
+
+/-- The arm `add-ops` builds its gate. -/
+theorem comp_add_ops_arm (d : Noun) : nock d comp.add_ops.arm =
+    some (C comp.add_ops.battery (C (C (A 0) (A 0)) d)) := by
+  nock_open comp.add_ops.arm; simp only [nock_exec]
+
+/-- `+add-ops` of one `%con`, in the form the simprocs leave. -/
+theorem comp_add_con (hc : CompIn ctx) (g : Gen (TreapMap mugF)) (o h t r : Nat) :
+    nock (C comp.add_ops.battery (C (C (A o) (C (C (A 0x6e6f63) (C (A h) (C (A t) (A r)))) (A 0)))
+      (C comp.door (C (genNoun g x) ctx)))) comp.add_ops.battery
+      = (addOps o [Pole.con h t r] g).map fun p => genNoun p.2 x :=
+  comp_add_ops x hc g o [Pole.con h t r]
+
+/-- `+must` in the form the simprocs leave. -/
+theorem comp_must' (g : Gen (TreapMap mugF)) (ned : Need) :
+    nock (C comp.must.battery (C ned.toNoun (C comp.door (C (genNoun g x) ctx)))) comp.must.battery
+      = (must ned g).map fun p => C (C (A p.1.1) p.1.2.toNoun) (genNoun p.2 x) :=
+  comp_must ctx x g ned
+
+variable {ctx} in
+/-- `+split-need`: the needs of the head and the tail, with a `%con` added in
+front of block `o` where the need has a register. -/
+theorem comp_split_need (hc : CompIn ctx) (g : Gen (TreapMap mugF)) (ned : Need) (o : Nat) :
+    nock (C comp.split_need.battery (C (C ned.toNoun (A o)) (compCore g x ctx)))
+      comp.split_need.battery
+      = (splitNeed ned o g).map fun p => C (C p.1.1.toNoun p.1.2.toNoun) (genNoun p.2 x) := by
+  nock_open comp.split_need.battery
+  cases ned with
+  | pair p q =>
+    obtain ⟨a, b, hp⟩ := cd_need_cell p
+    simp [nock_exec, Need.toNoun, hp, splitNeed, pure, StateT.pure]
+  | none => simp [nock_exec, Need.toNoun, eqCode, splitNeed, pure, StateT.pure, Tag.none]
+  | this r =>
+    simp [nock_exec, Need.toNoun, eqCode, Tag.this, comp_re' ctx x, comp_add_ops_arm,
+      comp_add_con ctx x hc, splitNeed, bind, StateT.bind, re, pure, StateT.pure]
+    cases addOps (Map := TreapMap mugF) o [Pole.con g.re (g.re + 1) r]
+      { g with re := g.re + 1 + 1 } <;> simp [nock_exec, Need.toNoun, Tag.this]
+  | both r h t =>
+    obtain ⟨⟨⟨r1, n1⟩, g1⟩, e1⟩ := cd_must_some h g
+    obtain ⟨⟨⟨r2, n2⟩, g2⟩, e2⟩ := cd_must_some t g1
+    simp [nock_exec, Need.toNoun, eqCode, Tag.both, comp_must_arm, comp_must' ctx x, e1, e2,
+      comp_add_ops_arm, comp_add_con ctx x hc, splitNeed, bind, StateT.bind, pure, StateT.pure]
+    cases addOps (Map := TreapMap mugF) o [Pole.con r1 r2 r] g2 <;> simp [nock_exec]
+
 end Compiler
 end Formalization
