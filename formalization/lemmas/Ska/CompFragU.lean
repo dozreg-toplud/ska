@@ -84,7 +84,7 @@ theorem condBelow_none {g : Gen Map} (h : CondBelow g) {x : Nat} (hx : g.re ≤ 
 only registers allocated in it (`AboveIn` from its start's `re`, `BelowIn`)
 and the keys of `cond` lie below its start's `re`. -/
 theorem RunOKP.toV {lib : Lib} {nm : Nomm} {goal : CGoal S} {g0 g1 : Gen Map} {nex : NextL S}
-    (R : RunOKP lib nm goal g0 g1 nex) (hb : BelowIn g0.bo g1) (ha : AboveIn g0.re g0.bo g1)
+    (R : RunOKP lib nm goal g0 g1 nex) (hb : BelowIn g0.bo g1) (ha : AboveIn (g0.re ≤ ·) g0.bo g1)
     (hcb : CondBelow g0) : RunOKV lib nm goal g0 g1 nex := by
   have nk : ∀ x, g0.re ≤ x → HoonMap.get g1.cond x = Option.none := fun x hx => by
     rw [R.cnd]; exact condBelow_none hcb hx
@@ -121,11 +121,11 @@ theorem okV_fragX (lib : Lib) {nm : Nomm} (hf : FragX (S := S) nm) :
     ∀ z o : Jmp, z.args = [] → o.args = [] → OKV (Map := Map) lib (CGoal.pick z o : CGoal S) nm :=
   ⟨fun hg hj hc b0 d0 hu _ hcb h => ((runX_ok lib hf).1 hg hj hc b0 d0 hu h).toV
       (runX_below (goal := CGoal.done) hf d0 trivial hc h)
-      (runX_above (goal := CGoal.done) hf d0 trivial trivial (Nat.le_refl _) hc h) hcb,
+      (runX_above (goal := CGoal.done) hf d0 trivial trivial (ple_le (Nat.le_refl _)) hc h) hcb,
     fun z o hz ho => fun hg hj hc b0 d0 hu _ hcb h => ((runX_ok lib hf).2.2 z o hz ho hg hj hc b0 d0 hu h).toV
       (runX_below (goal := CGoal.pick z o) hf d0 ⟨jmpIn_nil hz, jmpIn_nil ho⟩ hc h)
       (runX_above (goal := CGoal.pick z o) hf d0 ⟨jmpIn_nil hz, jmpIn_nil ho⟩ ⟨jmpIn_nil hz, jmpIn_nil ho⟩
-        (Nat.le_refl _) hc h) hcb⟩
+        (ple_le (Nat.le_refl _)) hc h) hcb⟩
 
 /-! ## `[7 [4 p] q]` from any state -/
 
@@ -149,7 +149,8 @@ theorem runOKV_seven4 (lib : Lib) {p q : Nomm} (hp : NextOK (S := S) (Map := Map
   have Rq := (runX_ok (Map := Map) lib hq).1 trivial trivial hc.2 b0 d0 hu h1
   have Sq := SemPR.toG ((runX_semR (Map := Map) lib hq).1 trivial trivial trivial hc.2 b0 d0 hu hcl0 h1)
   have Bq : BelowIn g0.bo g1 := runX_below (goal := CGoal.done) hq d0 trivial hc.2 h1
-  have Aq : AboveIn g0.re g0.bo g1 := runX_above (goal := CGoal.done) hq d0 trivial trivial (Nat.le_refl _) hc.2 h1
+  have Aq : AboveIn (g0.re ≤ ·) g0.bo g1 :=
+    runX_above (goal := CGoal.done) hq d0 trivial trivial (ple_le (Nat.le_refl _)) hc.2 h1
   obtain ⟨q1, q2, q3, q4⟩ := Rq.ext
   have nk1 : ∀ x, g0.re ≤ x → HoonMap.get g1.cond x = Option.none := fun x hx => by
     rw [Rq.cnd]; exact condBelow_none hcb0 hx
@@ -276,8 +277,8 @@ theorem runOKV_seven4P (lib : Lib) {p q : Nomm} (hp : NextOK (S := S) (Map := Ma
     b0 d0 hu hcl0 h1)
   have gin : GoalIn g0.re (CGoal.pick z o : CGoal S) := ⟨jmpIn_nil hz, jmpIn_nil ho⟩
   have Bq : BelowIn g0.bo g1 := runX_below (goal := CGoal.pick z o) hq d0 gin hc.2 h1
-  have Aq : AboveIn g0.re g0.bo g1 :=
-    runX_above (goal := CGoal.pick z o) hq d0 gin ⟨jmpIn_nil hz, jmpIn_nil ho⟩ (Nat.le_refl _) hc.2 h1
+  have Aq : AboveIn (g0.re ≤ ·) g0.bo g1 :=
+    runX_above (goal := CGoal.pick z o) hq d0 gin ⟨jmpIn_nil hz, jmpIn_nil ho⟩ (ple_le (Nat.le_refl _)) hc.2 h1
   obtain ⟨q1, q2, q3, q4⟩ := Rq.ext
   have nk1 : ∀ x, g0.re ≤ x → HoonMap.get g1.cond x = Option.none := fun x hx => by
     rw [Rq.cnd]; exact condBelow_none hcb0 hx
@@ -737,22 +738,25 @@ structure RunOKNV (lib : Lib) (nm : Nomm) (sur : Sure S) (th : Jmp) (g0 g1 : Gen
 
 /-- **`[7 [4 p] q]` under a fork-free `%next sur th` meets `RunOKNV`**, for
 `q` in `FragX`, from a state with `Clear` and `CondBelow` in which no
-register from `m` on is a key of `cond`, `m` a lower bound of the goal's
-registers (`GoalA m`).  The bound is what lets the blocks of `q`, which
-mention the goal's registers (below the start) and its own (`runX_above` at
-`m`), be left alone by unproxying.  A parent meets it when the goal's
-registers were allocated after every proxy of the start's `cond`, as the
-head and tail registers of a cons are when the part run before it makes no
-proxy. -/
+register of the goal's need is a key of `cond` (`hkg`).  The blocks of `q`
+mention the goal's registers and registers allocated in `q`'s run
+(`runX_above` with the predicate "no key of the start's `cond`"), so
+unproxying leaves them alone.  A parent meets `hkg` when the goal's
+registers were allocated fresh after every key of `cond` it had then, and
+the parts run since made proxies only from their own starts on
+(`CondFresh`), as the head register of a cons is, whatever its tail makes. -/
 theorem runOKNV_seven4 (lib : Lib) {p q : Nomm} (hp : NextOK (S := S) (Map := Map) lib p)
     (sp : OKNR (S := S) (Map := Map) lib p) (kp : KeepX S Map p) (ap : AboveX S Map p)
     (hq : FragX (S := S) q) (hcount : sixCount (Nomm.n7 (Nomm.n4 p) q) ≤ 255) {sur : Sure S} {th : Jmp}
     {region : List Nat} {g0 g2 : Gen Map} {nex : NextL S} (hj : GJ g0.bo (CGoal.next sur th)) (hth : th.args = [])
     (hok : GoalOK g0 (CGoal.next sur th)) (hcl : Clean sur.ned) (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false)
-    (hu : UpBelow g0) (hcl0 : Clear g0) (hcb0 : CondBelow g0) {m : Nat} (hm : GoalA m (CGoal.next sur th))
-    (hmr : m ≤ g0.re) (hkm : ∀ k, m ≤ k → HoonMap.get g0.cond k = Option.none)
+    (hu : UpBelow g0) (hcl0 : Clear g0) (hcb0 : CondBelow g0)
+    (hkg : ∀ r, NMem sur.ned r → HoonMap.get g0.cond r = Option.none)
     (h : runL (Nomm.n7 (Nomm.n4 p) q) (CGoalL.next (ofSure sur) th) region g0 = some (nex, g2)) :
     RunOKNV (Map := Map) lib (Nomm.n7 (Nomm.n4 p) q) sur th g0 g2 nex := by
+  let P : Nat → Prop := fun r => HoonMap.get g0.cond r = Option.none
+  have hm : GoalA P (CGoal.next sur th) := ⟨hkg, jmpIn_nil hth⟩
+  have hmr : Ple P g0.re := fun r hr => condBelow_none hcb0 hr
   have hc : sixCount p ≤ 255 ∧ sixCount q ≤ 255 := by simp only [sixCount] at hcount; omega
   have p7 : ∀ s, pureEval (Nomm.n7 (Nomm.n4 p) q) s = (pureEval (Nomm.n4 p) s).bind (pureEval q) := fun _ => rfl
   rw [runL_n7] at h
@@ -761,17 +765,17 @@ theorem runOKNV_seven4 (lib : Lib) {p q : Nomm} (hp : NextOK (S := S) (Map := Ma
   have Sq := (runX_semR (Map := Map) lib hq).2.1 hj hth hok hcl hc.2 b0 d0 hu hcl0 h1
   have gin : GoalIn g0.re (CGoal.next sur th) := ⟨fun r hr => hok.2 r hr, jmpIn_nil hth⟩
   have Bq : BelowIn g0.bo g1 := runX_below (goal := CGoal.next sur th) hq d0 gin hc.2 h1
-  have Aq : AboveIn m g0.bo g1 := runX_above (goal := CGoal.next sur th) hq d0 gin hm hmr hc.2 h1
+  have Aq : AboveIn P g0.bo g1 := runX_above (goal := CGoal.next sur th) hq d0 gin hm hmr hc.2 h1
   obtain ⟨q1, q2, q3, q4⟩ := Rq.ext
-  have nk1 : ∀ x, m ≤ x → HoonMap.get g1.cond x = Option.none := fun x hx => by
-    rw [Rq.cnd]; exact hkm x hx
+  have nk1 : ∀ x, P x → HoonMap.get g1.cond x = Option.none := fun x hx => by
+    rw [Rq.cnd]; exact hx
   have hcb1 : CondBelow g1 := (condFresh_of_eq q1 Rq.cnd).below hcb0
   have qlo := Rq.lo
   have qhi := Rq.hi
-  have hqr : ∀ x, NMem nx.laz.sure.ned x → m ≤ x ∧ x < g1.re := fun x hx => by
+  have hqr : ∀ x, NMem nx.laz.sure.ned x → P x ∧ x < g1.re := fun x hx => by
     rcases Rq.regs x hx with e | e
     · exact ⟨hm.1 x e, by have := hok.2 x e; omega⟩
-    · exact ⟨by omega, e.2⟩
+    · exact ⟨hmr x e.1, e.2⟩
   obtain ⟨d, CR⟩ := collRun_n4 lib hp sp kp ap h2 hc.1 (by omega) (q3.trans d0) (Rq.grow.up hu)
     (hcl0.growU Rq.grow) Rq.lo Rq.hi (fun x hx => (hqr x hx).2) (fun x hx => nk1 x (hqr x hx).1)
     hcb1
@@ -800,7 +804,7 @@ theorem runOKNV_seven4 (lib : Lib) {p q : Nomm} (hp : NextOK (S := S) (Map := Ma
   have hcf1 : ∀ k, k < g1.re → HoonMap.get cf k = HoonMap.get g1.cond k := fun k hk =>
     (hcf k (by omega)).trans (ProxyFor.get_lt CR.pfor hk)
   have u0 : ∀ x, x < g1.re → unproxy cf x = unproxy g1.cond x := unproxy_agree hcf1
-  have u1 : ∀ x, m ≤ x → unproxy g1.cond x = id x := fun x hx => unproxy_none (nk1 x hx)
+  have u1 : ∀ x, P x → unproxy g1.cond x = id x := fun x hx => unproxy_none (nk1 x hx)
   cases ev : pureEval (Nomm.n4 p) s with
   | none =>
     rw [ev] at Sp
@@ -851,7 +855,7 @@ theorem runOKNV_seven4 (lib : Lib) {p q : Nomm} (hp : NextOK (S := S) (Map := Ma
           · exact collP_fillSem hP ((hcf d Cdl).trans CR.dkey)
               (fun x hx => by
                 have hx1 := ((Rq.eregs e he).2 x hx)
-                rw [hcf x (by omega), ProxyFor.get_lt CR.pfor hx1.2]; exact nk1 x (by omega))
+                rw [hcf x (by omega), ProxyFor.get_lt CR.pfor hx1.2]; exact nk1 x (hmr x hx1.1))
               (fun k hk => hcf k hk) lib O c gul st t ned g1.re s0 m'
       have inQ : ∀ r, NMem (Need.pair ned (Need.this d)) r →
           InR (CGoal.next sur th) g0 g1 nx.laz.sure.ned r := by
@@ -877,6 +881,19 @@ theorem runOKNV_seven4 (lib : Lib) {p q : Nomm} (hp : NextOK (S := S) (Map := Ma
         · exact Or.inl ⟨hr, hs⟩
         · exact Or.inr (Or.inl hr)
     · exact goalSem_crash_or (Rq.nec (A m') fit) (Sp.2 fit)
+
+/-- **The first version of `runOKNV_seven4`**: a lower bound `m` of the
+goal's registers with no key of `cond` from `m` on. -/
+theorem runOKNV_seven4_le (lib : Lib) {p q : Nomm} (hp : NextOK (S := S) (Map := Map) lib p)
+    (sp : OKNR (S := S) (Map := Map) lib p) (kp : KeepX S Map p) (ap : AboveX S Map p)
+    (hq : FragX (S := S) q) (hcount : sixCount (Nomm.n7 (Nomm.n4 p) q) ≤ 255) {sur : Sure S} {th : Jmp}
+    {region : List Nat} {g0 g2 : Gen Map} {nex : NextL S} (hj : GJ g0.bo (CGoal.next sur th)) (hth : th.args = [])
+    (hok : GoalOK g0 (CGoal.next sur th)) (hcl : Clean sur.ned) (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false)
+    (hu : UpBelow g0) (hcl0 : Clear g0) (hcb0 : CondBelow g0) {m : Nat} (hm : GoalA (m ≤ ·) (CGoal.next sur th))
+    (hkm : ∀ k, m ≤ k → HoonMap.get g0.cond k = Option.none)
+    (h : runL (Nomm.n7 (Nomm.n4 p) q) (CGoalL.next (ofSure sur) th) region g0 = some (nex, g2)) :
+    RunOKNV (Map := Map) lib (Nomm.n7 (Nomm.n4 p) q) sur th g0 g2 nex :=
+  runOKNV_seven4 lib hp sp kp ap hq hcount hj hth hok hcl b0 d0 hu hcl0 hcb0 (fun r hr => hkm r (hm.1 r hr)) h
 
 /-! ## The fragment `FragU` and the top theorem -/
 
