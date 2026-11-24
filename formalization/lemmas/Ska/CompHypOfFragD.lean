@@ -1,5 +1,5 @@
 import lemmas.Ska.CompHypOfUOKC
-import lemmas.Ska.CompFragD
+import lemmas.Ska.CompBondCall
 
 /-!
 # `RawMono` on the fragment with calls in the parts of calls `FragUD`
@@ -56,6 +56,32 @@ example : FragUDG S (Nomm.n2 (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) (Nomm
     ⟨Or.inr (Comp.FragD.indF (Comp.FragU.x (Comp.FragX.frag fun _ => trivial))
       (Comp.FragD.ind (Comp.FragU.x (Comp.FragX.frag fun _ => trivial))
         (Comp.FragU.x (Comp.FragX.frag fun _ => trivial)) rfl)), by decide⟩⟩
+
+/-- The class with calls in both halves of a cons (`FragE`, README Gaps 12.20). -/
+def FragUEG (S : Type) [Comp.HoonSet S] (nm : Nomm) : Prop := Comp.FragUE S nm ∧ Comp.sixCount nm ≤ 255
+
+/-- **(b) for the whole-subject version on `FragUEG`** (`finishLUC_contractUE`). -/
+theorem rawMono_fragUEG (lib : Lib) : RawMono S Map lib (FragUEG S) := by
+  intro code bl nm env cd N hok hA hf _ h
+  exact (Comp.finishLUC_contractUE hok hA hf.1 hf.2 h N).2
+
+/-- **`FragUDG` is inside `FragUEG`**, so `FragUCG` is too. -/
+theorem fragUDG_subE {nm : Nomm} (h : FragUDG S nm) : FragUEG S nm :=
+  ⟨h.1.elim Or.inl (fun h' => Or.inr (Comp.FragE.d h')), h.2⟩
+
+/-- **`CompHyp` when every nomm the whole-subject version compiles is in
+`FragUEG`** (and the n-ary version's in `FragUN`). -/
+theorem compHyp_of_fragUEG {lib : Lib} {ref : Ref M Map J H} {D : CompData M Map J H}
+    (P : CompRest S A lib ref D (FragUEG S) (FragUN S)) : CompHyp A lib ref :=
+  compHyp_of_pieces (S := S) A ⟨P, rawMono_fragUEG lib, rawNary_fragU lib⟩
+
+/-- `[[2 [0 3] [0 2]] [2 [0 3] [0 2]]]` (calls in both halves) is in `FragUEG`. -/
+example : FragUEG S (Nomm.cons (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)
+    (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) :=
+  ⟨Or.inr (Comp.FragE.consI (Comp.FragU.x (Comp.FragX.frag fun _ => trivial))
+    (Comp.FragU.x (Comp.FragX.frag fun _ => trivial)) rfl (Comp.FragE.d (Comp.FragD.ind
+      (Comp.FragU.x (Comp.FragX.frag fun _ => trivial)) (Comp.FragU.x (Comp.FragX.frag fun _ => trivial)) rfl))),
+    by decide⟩
 
 end PokeM
 end SkaModel
