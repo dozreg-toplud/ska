@@ -72,9 +72,20 @@ def aEditF : Noun :=
 def aRunF : Noun :=
   C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 95) (C (A 0) (A 31)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 124)) (C (C (A 0) (A 6)) (C (A 0) (A 125))))) (C (A 0) (A 2)))))))))
 
+/-- The root's branch that runs `+cull` and starts the pass loop. -/
+def aCullP : Noun :=
+  C (A 7) (C (C (A 10) (C (C (A 125) (C (A 8) (C (C (A 9) (C (A 10) (C (A 0) (A 63)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 252)) (C (A 0) (A 253)))) (C (A 0) (A 2))))))))) (C (A 0) (A 1)))) (C (A 8) (C (C (A 1) (A 1)) (C (A 8) (C (C (A 1) ska_analyze.loop1) (C (A 9) (C (A 2) (C (A 0) (A 1)))))))))
+
+/-- `|(back !?=([* ~] (above id stk.st)))`. -/
+def aTestY : Noun :=
+  C (A 6) (C (C (A 0) (A 10)) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 6) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 22) (C (A 0) (A 63)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 252)) (C (A 0) (A 4062)))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 3) (C (A 0) (A 2))) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 5)))) (C (A 1) (A 1))))))) (C (C (A 1) (A 1)) (C (A 1) (A 0))))) (C (C (A 1) (A 0)) (C (A 1) (A 1)))))))
+
+/-- `[next.st (pop id st)]`. -/
+def aPopB : Noun :=
+  C (C (A 0) (A 4030)) (C (A 8) (C (C (A 9) (C (A 4) (C (A 0) (A 63)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 252)) (C (A 0) (A 253)))) (C (A 0) (A 2))))))))
+
 /-- The root of a component: the pass loop after `+cull`, or `+pop`. -/
-def aYes : Noun :=
-  C (A 6) (C (C (A 6) (C (C (A 0) (A 10)) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 6) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 22) (C (A 0) (A 63)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 252)) (C (A 0) (A 4062)))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 3) (C (A 0) (A 2))) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 5)))) (C (A 1) (A 1))))))) (C (C (A 1) (A 1)) (C (A 1) (A 0))))) (C (C (A 1) (A 0)) (C (A 1) (A 1)))))))) (C (C (A 7) (C (C (A 10) (C (C (A 125) (C (A 8) (C (C (A 9) (C (A 10) (C (A 0) (A 63)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 252)) (C (A 0) (A 253)))) (C (A 0) (A 2))))))))) (C (A 0) (A 1)))) (C (A 8) (C (C (A 1) (A 1)) (C (A 8) (C (C (A 1) ska_analyze.loop1) (C (A 9) (C (A 2) (C (A 0) (A 1)))))))))) (C (C (A 0) (A 4030)) (C (A 8) (C (C (A 9) (C (A 4) (C (A 0) (A 63)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 252)) (C (A 0) (A 253)))) (C (A 0) (A 2)))))))))))
+def aYes : Noun := C (A 6) (C aTestY (C aCullP aPopB))
 
 /-- The miss: `index`, the push, `+run`, then `F`. -/
 def aMissF (F : Noun) : Noun :=
@@ -206,6 +217,104 @@ theorem ana_rest (Y : Noun) (r : (Nat × Bool × Bool) × SkaState FinMap R) (in
   · subst h; simp [nock_exec, eqCode]
   · have h' : ¬ index = low := fun e => h e.symm
     simp [nock_exec, eqCode, h, h']
+
+include hcf hK hKb in
+set_option maxHeartbeats 2000000 in
+/-- The root of a component: the pass loop made by `c` after `+cull` made by
+`c`, or `+pop` of a trivial component. -/
+theorem ana_yes (cu : Ident → SkaState FinMap R → Option (SkaState FinMap R))
+    (hcu : ∀ st, c (cullS0 regsNoun K id st) ska_cg.cull.battery = (cu id st).map (SkaState.toNoun regsNoun))
+    (pl : PassGo FinMap R) (index : Nat)
+    (hpl : ∀ lbc st, c (passSubj regsNoun K lbc (A 0) ska_analyze.battery id index 1 st) ska_analyze.loop1
+      = (pl id index 1 st).map (anaNoun regsNoun))
+    (low : Nat) (back ch : Bool) (st : SkaState FinMap R) :
+    nockW c (C (C (A low) (C (flag back) (flag ch))) (C (A index) (C (A 0) (anaSubj regsNoun K id st)))) aYes
+      = (if back = true then (cu id st).bind fun st => pl id index 1 st else
+         (Ana.above id st.stk).bind fun ab =>
+         if ab.length ≠ 1 then (cu id st).bind fun st => pl id index 1 st else
+         (Ana.pop id st).map fun st' => (st.next, st')).map (anaNoun regsNoun) := by
+  have h10 := slot_K10 hKb
+  have h4 := slot_K4 hKb
+  have h22 := slot_K22 hKb
+  have habv := above_gate K id st.stk
+  have hc := hcu st
+  have hp := pop_gate' regsNoun K hK id st
+  unfold cullS0 at hc
+  have hq : ∀ lbc st3, c (C ska_analyze.loop1 (C (A 1) (C lbc (C (A index) (C (A 0) (C ska_analyze.battery
+      (C (C (identNoun id) (SkaState.toNoun regsNoun st3)) K))))))) ska_analyze.loop1
+      = (pl id index 1 st3).map (anaNoun regsNoun) := fun lbc st3 => hpl lbc st3
+  have hcull : ∀ lbc : Noun, nockW c (C lbc (C (A index) (C (A 0) (anaSubj regsNoun K id st)))) aCullP
+      = ((cu id st).bind fun st => pl id index 1 st).map (anaNoun regsNoun) := by
+    intro lbc
+    unfold anaSubj aCullP
+    cases hr : cu id st with
+    | none =>
+      rw [hr] at hc
+      simp (disch := ffar_disch) [nock_exec, hcf, h10, hc]
+    | some st3 =>
+      rw [hr] at hc
+      simp (disch := ffar_disch) [nock_exec, hcf, h10, hc, hq]
+  unfold aYes aTestY aPopB
+  cases back with
+  | true =>
+    have e := hcull (C (A low) (C (flag true) (flag ch)))
+    simp only [flag, if_true] at e ⊢
+    simp (disch := ffar_disch) [nock_exec, e]
+  | false =>
+    have e := hcull (C (A low) (C (flag false) (flag ch)))
+    simp only [flag, Bool.false_eq_true, if_false] at e ⊢
+    cases hab : Ana.above id st.stk with
+    | none =>
+      rw [hab] at habv
+      unfold anaSubj
+      simp (disch := ffar_disch) [nock_exec, hcf, h22, habv, slot_st_stk]
+    | some ab =>
+      rw [hab] at habv
+      rcases ab with _ | ⟨a, _ | ⟨b, rest⟩⟩
+      · unfold anaSubj at e ⊢
+        simp (disch := ffar_disch) [nock_exec, hcf, h22, habv, slot_st_stk, listNoun] at e ⊢
+        exact e
+      · unfold anaSubj
+        simp (disch := ffar_disch) [nock_exec, hcf, h22, h4, habv, slot_st_stk, slot_st_next, listNoun, hp]
+        cases Ana.pop id st <;> rfl
+      · unfold anaSubj at e ⊢
+        simp (disch := ffar_disch) [nock_exec, hcf, h22, habv, slot_st_stk, listNoun] at e ⊢
+        exact e
+
+include hcf hK hKb in
+/-- **`+analyze`** over an evaluator `c` that is `nock` off `FFar`:
+`analyzeStepH` with `+run` (`run`), `+cull` (`cu`) and the pass loop (`pl`)
+made by `c`, with `memo-final` at axis `122` of `K`. -/
+theorem analyze_stepW (memoF : Memo FinMap) (hmemo : slot? 122 K = some (memoNoun memoF))
+    (run : RunGo FinMap R) (hrun : RunIsW c regsNoun K run)
+    (cu : Ident → SkaState FinMap R → Option (SkaState FinMap R))
+    (hcu : ∀ st, c (cullS0 regsNoun K id st) ska_cg.cull.battery = (cu id st).map (SkaState.toNoun regsNoun))
+    (pl : PassGo FinMap R)
+    (hpl : ∀ lbc index st, c (passSubj regsNoun K lbc (A 0) ska_analyze.battery id index 1 st) ska_analyze.loop1
+      = (pl id index 1 st).map (anaNoun regsNoun))
+    (st : SkaState FinMap R) :
+    nockW c (anaSubj regsNoun K id st) ska_analyze.battery
+      = (analyzeStepH cu memoF run pl id st).map (anaNoun regsNoun) := by
+  conv => lhs; arg 3; rw [analyze_battery_eq]
+  rw [ana_hit c hcf regsNoun K hK id memoF hmemo st]
+  unfold analyzeStepH
+  rcases gitMi memoF id.2 id.1 with _ | _ | hit
+  · rfl
+  · simp only [Option.bind_some, unitNoun]
+    rw [ana_test_miss, ana_miss c hcf regsNoun K hK hKb id run hrun st]
+    simp only [ana_rest c regsNoun K id, ana_yes c hcf regsNoun K hK hKb id cu hcu pl _ (hpl · st.next ·)]
+    unfold missSt
+    cases run id st.next _ with
+    | none => rfl
+    | some r =>
+      simp only [Option.bind_some]
+      by_cases hl : r.1.1 = st.next
+      · simp only [hl, if_true, ne_eq, not_true_eq_false, if_false]
+      · simp only [hl, if_false, ne_eq, not_false_eq_true, if_true]
+        rfl
+  · simp only [Option.bind_some, unitNoun]
+    rw [ana_test_hit, ana_hitb c hcf regsNoun K hK id hit st]
+    rfl
 
 end chunks
 

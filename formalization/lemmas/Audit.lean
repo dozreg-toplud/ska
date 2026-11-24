@@ -59,6 +59,7 @@ import lemmas.Compiler.MsgCa
 import lemmas.Compiler.SkaRun
 import lemmas.Compiler.SkaPass
 import lemmas.Compiler.SkaPassLoop
+import lemmas.Compiler.SkaAnalyze
 import lemmas.Compiler.RegisterFast
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
@@ -483,4 +484,6 @@ open Formalization
 #print axioms Compiler.member_stepW
 #print axioms Compiler.pass_stepW
 #print axioms Compiler.passStepH_eq
+#print axioms Compiler.analyze_stepW
+#print axioms Compiler.analyzeStepH_eq
 #print axioms Compiler.kc_dirty_at
