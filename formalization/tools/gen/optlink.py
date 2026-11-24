@@ -333,6 +333,20 @@ elif WHICH == 'rem':
              ('remBat', bat, 'The battery of the `|^` core: `rewrite-hop`, `$`, `rewrite-jump`.'),
              ('remBody', body, 'The gate body of `+remove-empty-middle`.'),
              ('remBunt', bunt, 'Its sample bunt.'), ('remHint', hint, 'Its `%fast` hint.')]
+elif WHICH == 'oo':
+    bunt, body, hint = opt_arm(180)
+    # body = [8 TOPO [8 REV [7 [0 1] [8 [7 [0 1] [8 [1 LOOP] [9 2 [0 1]]]] AFTER]]]]
+    _, topo, b1 = seq(body, 3)
+    _, rev, b2 = seq(b1, 3)
+    _, _, b3 = seq(b2, 3)
+    _, run, after = seq(b3, 3)
+    _, _, r1 = seq(run, 3)
+    _, loopq, _ = seq(r1, 3)
+    loop = norm(loopq)[2]
+    defs += [('ooLoop', loop, 'The structural loop of `+optimize-once`: the three passes, and `+bb-topo` and `+rev-cfg` again after a change.'),
+             ('ooAfter', after, '`+alias`, `+trim-trace-hints`, `+remove-dead-code` and the three passes once more.'),
+             ('ooBody', body, 'The gate body of `+optimize-once`.'),
+             ('ooBunt', bunt, 'Its sample bunt.'), ('ooHint', hint, 'Its `%fast` hint.')]
 else:
     raise SystemExit('unknown ' + WHICH)
 with open(os.path.join(OUT, WHICH + '.lean'), 'w') as f:
