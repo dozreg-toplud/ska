@@ -523,6 +523,115 @@ theorem consGH_runN (lib : Lib) {p d : Nomm} {env : CallEnv} {P : Noun → Prop}
       (fun s => fitsS_bunt s) trivial cp hcp hu d0 hnot hfix hblk
     exact RunOKNC.toGCN F B (fun s hs hf => necC_consH hfh Mq MqB hnot1 hs (Rp.nec s hs (fit s hf)))
 
+/-- **The sure need of the cons's run under `%next` is clean** (`+copy` of
+the head's, clean by `U.clean`, and the tail's or the bunt of `+past`). -/
+theorem consGH_cleanN {lib : Lib} {p d : Nomm} {env : CallEnv} {P : Noun → Prop} {fh : Noun}
+    (Up : UOKC (S := S) (Map := Map) lib env P fh p) (hh : hinted env.cod p = some true)
+    (ud : UOK (S := S) (Map := Map) lib d) {sup : Option Nomm}
+    {sur : Sure S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S} (hcl : Clean sur.ned)
+    (h : runLC env sup (Nomm.cons p d) (CGoalL.next (ofSure sur) th) region g0 = some (nex, g1)) :
+    Clean nex.laz.sure.ned := by
+  have e : (runLC env sup (Nomm.cons p d) (CGoalL.next (ofSure sur) th) region :
+      CM Map (NextL S)) = (do
+        let (hed, tel, o) ← splitL ⟨ofSure sur, th⟩
+        let nexh ← pastL env.cod ⟨hed, jmp0 o⟩ d region
+        let nex2 ← runLC env sup d (CGoalL.next tel nexh.th) region
+        let nex2 ← pastL env.cod nex2 p region
+        let nex1 ← runLC env sup p (CGoalL.next nexh.laz nex2.th) region
+        copyL nex1 nex2.laz) := rfl
+  rw [e] at h
+  obtain ⟨⟨hed', tel', o⟩, g2x, h2, h⟩ := bind_some h
+  rw [splitL_mk, map_apply] at h2
+  obtain ⟨⟨⟨hed, tel, o'⟩, g2⟩, hs2, e2⟩ := Option.map_eq_some_iff.mp h2
+  simp only [Prod.mk.injEq] at e2
+  obtain ⟨⟨rfl, rfl, rfl⟩, rfl⟩ := e2
+  clear h2
+  simp only at h
+  obtain ⟨nexh, g2', hph, h⟩ := bind_some h
+  rw [pastL_mk _ _ _ ud.pure, pure_apply] at hph
+  simp only [Option.some.injEq, Prod.mk.injEq] at hph
+  obtain ⟨rfl, rfl⟩ := hph
+  obtain ⟨nex2, g3, h3, h⟩ := bind_some h
+  rw [runLC_eq env d (Nomm.noCall_of_pure d ud.pure)] at h3
+  obtain ⟨nex2', g3', hp2, h⟩ := bind_some h
+  obtain ⟨nex1, g4, h4, hcp⟩ := bind_some h
+  have CS := clean_split hs2 hcl
+  simp only at CS
+  rcases pastL_hinted hh hp2 with ⟨x1, x2, en, es, _⟩ | ⟨x1, x2⟩
+  · subst nex2' g3'
+    exact clean_copyL hcp (Up.clean (goal := CGoal.next hed nex2.th) trivial CS.1 h4) (by rw [en]; trivial)
+  · subst nex2' g3'
+    exact clean_copyL hcp (Up.clean (goal := CGoal.next hed (jmp0 g3.bo)) trivial CS.1 h4) trivial
+
+/-- **The cons `[p d]` under `%done`, from any state**: the block `[don re]`
+of the cons's `%done` case, then the run under `%next (lazy-from-reg re)`
+into it (`consGH_runN`), turned into `%done` by `runOKGC_of_next`. -/
+theorem consGH_runD (lib : Lib) {p d : Nomm} {env : CallEnv} {P : Noun → Prop} {fh ft : Noun}
+    (Up : UOKC (S := S) (Map := Map) lib env P fh p) (hh : hinted env.cod p = some true)
+    (ud : UOK (S := S) (Map := Map) lib d) (hfh : ∃ x y, fh = C x y)
+    (Mq : ∀ {s gul : Noun} {n : Nat} {tm : Trace} {r : Tone}, P s → minkF lib gul n tm s ft = some r →
+      r = toneOf tm (pureEval d s))
+    (MqB : ∀ {s gul : Noun} {tm : Trace}, P s → Mink lib gul tm s ft (toneOf tm (pureEval d s)))
+    (hcount : sixCount p + sixCount d ≤ 255) {sup : Option Nomm} {region : List Nat} {g0 g' : Gen Map}
+    {nex : NextL S} (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0) (hcl : Clear g0)
+    (hcb : CondBelow g0) (h : runLC env sup (Nomm.cons p d) CGoalL.done region g0 = some (nex, g')) :
+    RunOKGC lib P (C fh ft) (CGoal.done : CGoal S) g0 g' nex := by
+  rw [runLC_cons_done] at h
+  obtain ⟨r, ga, ha, h⟩ := bind_some h
+  rw [re_apply] at ha
+  simp only [Option.some.injEq, Prod.mk.injEq] at ha
+  obtain ⟨rfl, rfl⟩ := ha
+  obtain ⟨od, gb, hb, h⟩ := bind_some h
+  rw [emit_apply] at hb
+  simp only [Option.some.injEq, Prod.mk.injEq] at hb
+  obtain ⟨rfl, rfl⟩ := hb
+  have G1 : GrowU ({ g0 with re := g0.re + 1 } : Gen Map) ({ g0 with re := g0.re + 1 }.emitted ⟨[], [], Termin.don g0.re⟩) :=
+    growU_emit (g := { g0 with re := g0.re + 1 }) (b := ⟨[], [], Termin.don g0.re⟩)
+      (fun j hj => by simp [finJumps] at hj) hu
+  have R := consGH_runN (sur := lazyReg g0.re) (th := jmp0 g0.bo) lib Up hh ud hfh Mq MqB hcount
+    ⟨b0, by simp only [jmp0, Gen.emitted]; omega⟩ rfl
+    ⟨trivial, fun x hx => by simp only [lazyReg, NMem] at hx; subst hx; simp only [Gen.emitted]; omega⟩ trivial
+    (by simp only [Gen.emitted]; omega) (by simp only [Gen.emitted]; exact d0) (G1.up hu)
+    (Clear.growU (g := ({ g0 with re := g0.re + 1 } : Gen Map)) hcl G1)
+    (fun k hk => by have := hcb k hk; simp only [Gen.emitted] at this ⊢; omega)
+    (fun x hx => by
+      simp only [lazyReg, NMem] at hx; subst hx
+      exact condBelow_none hcb (Nat.le_refl _)) h
+  have hb : HoonMap.get g'.blocks g0.bo = some ⟨[], [], Termin.don g0.re⟩ := by
+    rw [R.ext.2.2.2 _ (by simp only [Gen.emitted]; omega)]
+    simp only [Gen.emitted, d0, Bool.false_eq_true, ↓reduceIte, HoonMap.get_put]
+  exact runOKGC_of_next (goal := CGoal.done) trivial hu hcb (fun j hj => by simp [finJumps] at hj) rfl hb
+    (fun cf c0 => by simp only [unproxyBlob, renBlob, List.map_nil, renFin, unproxy_none c0])
+    (fun c σ O gul Inv ν K K' st regs t tm je r _ _ hbc H => goalSemCM_done_of_next hbc H) R
+
+/-- **The cons whose head has `UOKC` and is hinted, with a call-free tail
+whose formula's `+mink` is its pure value, meets `UOKC`** for the formula
+`[fh ft]` with `fh` a cell (`consGH_runN`, `consGH_runD`,
+`consGH_cleanN`). -/
+theorem uokc_consH (lib : Lib) (env : CallEnv) {p d : Nomm} {P : Noun → Prop} {fh ft : Noun}
+    (Up : UOKC (S := S) (Map := Map) lib env P fh p) (hh : hinted env.cod p = some true)
+    (ud : UOK (S := S) (Map := Map) lib d) (Md : MinkEq lib P ft d) (hfh : ∃ x y, fh = C x y) :
+    UOKC (S := S) (Map := Map) lib env P (C fh ft) (Nomm.cons p d) := by
+  have Mq : ∀ {s gul : Noun} {n : Nat} {tm : Trace} {r : Tone}, P s → minkF lib gul n tm s ft = some r →
+      r = toneOf tm (pureEval d s) := fun hs hm => (Md _ hs _ _ _).mp ⟨_, hm⟩
+  have MqB : ∀ {s gul : Noun} {tm : Trace}, P s → Mink lib gul tm s ft (toneOf tm (pureEval d s)) :=
+    fun hs => (Md _ hs _ _ _).mpr rfl
+  refine ⟨Or.inr (by simp only [hinted, hh]; rfl), fun {sup goal region g0 g1 nex} hnp hc h => ?_,
+    fun {sup goal region g0 g1 nex} hnp ha hj hok hcl hcount b0 d0 hu hcl0 hcb hkg h => ?_⟩
+  · cases goal with
+    | next sur th => exact consGH_cleanN Up hh ud hc h
+    | done =>
+      simp only [CGoal.toL] at h
+      rw [runLC_cons_done] at h
+      obtain ⟨r, ga, ha, h⟩ := bind_some h
+      obtain ⟨od, gb, hb, h⟩ := bind_some h
+      exact consGH_cleanN Up hh ud (show Clean (lazyReg (S := S) r).ned from trivial) h
+    | pick z o => exact hnp.elim
+  · cases goal with
+    | next sur th => exact consGH_runN lib Up hh ud hfh Mq MqB hcount hj ha hok hcl b0 d0 hu hcl0 hcb hkg h
+    | done => exact consGH_runD lib Up hh ud hfh Mq MqB hcount b0 d0 hu hcl0 hcb h
+    | pick z o => exact hnp.elim
+
 end Comp
 end SkaModel
 end Formalization
