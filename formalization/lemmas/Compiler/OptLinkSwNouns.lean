@@ -192,9 +192,13 @@ def swWGte : Noun :=
 def swWTIds : Noun :=
   (C (A 8) (C (C (A 9) (C (A 0xbef7f4) (C (A 0) (A 0x1fffffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 0xbef7e) (C (A 0) (A 0x1fffffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 253)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C (A 0) (C (A 0) swTRBunt))) (C (C (A 1) (C (A 0) (A 222))) (C (A 0) (A 1))))))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 0xbef7e) (C (A 0) (A 0x1fffffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 0x17defff) (C (A 0) (A 0x1fffffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 126))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C (A 0) (C (A 0) swTRBunt))) (C (C (A 1) (C (A 0) (A 110))) (C (A 0) (A 1))))))))) (C (A 0) (A 2)))))))))))) (C (A 0) (A 2))))))))
 
+/-- The gate of the `+roll` that deletes `ids` from `out` (a tagged chain). -/
+def swWTDelG : Noun :=
+  (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0xffffffffff)))) (C (A 9) (C (A 190) (C (A 10) (C (C (A 6) (C (A 0) (A 29))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 28))) (C (A 0) (A 2))))))))
+
 /-- `(roll ids |=([o=@uwoo acc=_out] (~(del by acc) o)))` of a tagged chain. -/
 def swWTDel : Noun :=
-  (C (A 8) (C (C (A 9) (C (A 0x2fbdfc) (C (A 0) (A 0x3fffffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 6)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (C (A 1) (A 0)) (C (A 0) (A 2046))) (C (C (A 1) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0xffffffffff)))) (C (A 9) (C (A 190) (C (A 10) (C (C (A 6) (C (A 0) (A 29))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 28))) (C (A 0) (A 2))))))))) (C (A 0) (A 1))))))))) (C (A 0) (A 2))))))))
+  (C (A 8) (C (C (A 9) (C (A 0x2fbdfc) (C (A 0) (A 0x3fffffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 6)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (C (A 1) (A 0)) (C (A 0) (A 2046))) (C (C (A 1) swWTDelG) (C (A 0) (A 1))))))))) (C (A 0) (A 2))))))))
 
 /-- `cas` of a tagged chain. -/
 def swWTCas : Noun :=
@@ -212,9 +216,13 @@ def swWTR : Noun :=
 def swWTag : Noun :=
   (C (A 8) (C (C (A 0) (A 8)) (C (A 8) (C (C (A 0) (A 830)) (C (A 8) (C (C (A 0) (A 926)) (C (A 8) (C (C (A 7) (C (C (A 8) (C (C (A 9) (C (A 0xbef7c) (C (A 0) (A 0xfffffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 62))) (C (A 0) (A 2)))))))) (C (A 0) (A 30)))) (C (A 8) (C swWTIds swWTR))))))))))
 
+/-- The gate of the `+roll` that deletes `old` from `out` (a plain chain). -/
+def swWPDelG : Noun :=
+  (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x7fffffffff)))) (C (A 9) (C (A 190) (C (A 10) (C (C (A 6) (C (A 0) (A 29))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 28))) (C (A 0) (A 2))))))))
+
 /-- `(roll old |=([o=@uwoo acc=_out] (~(del by acc) o)))` of a plain chain. -/
 def swWPDel : Noun :=
-  (C (A 8) (C (C (A 9) (C (A 0x2fbdfc) (C (A 0) (A 0x1fffffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 6)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (C (A 1) (A 0)) (C (A 0) (A 1022))) (C (C (A 1) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x7fffffffff)))) (C (A 9) (C (A 190) (C (A 10) (C (C (A 6) (C (A 0) (A 29))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 28))) (C (A 0) (A 2))))))))) (C (A 0) (A 1))))))))) (C (A 0) (A 2))))))))
+  (C (A 8) (C (C (A 9) (C (A 0x2fbdfc) (C (A 0) (A 0x1fffffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 6)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (C (A 1) (A 0)) (C (A 0) (A 1022))) (C (C (A 1) swWPDelG) (C (A 0) (A 1))))))))) (C (A 0) (A 2))))))))
 
 /-- `cas` of a plain chain. -/
 def swWPCas : Noun :=
