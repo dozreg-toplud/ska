@@ -112,7 +112,7 @@ Level `0` is `UOKC` (and `t`), levels `1`, `2` are `BondOKC`, `LOKC`.
 | `[1 k]` | 2 | `+mede` under a lazy goal | open |
 | `[3 p]`, `p` pure | 0 | `uokcU` (`pure`) | ok |
 | `[3 p]`, `p` calls | 0 | `uokc_threeA` (`unaryGT_ok`, `three_of_none`) | ok |
-| `[3 p]` | 1 | `+collapse-lazy-atom` with a fresh register | open |
+| `[3 p]` | 1 | `+collapse-lazy-atom` with a fresh register (as `collLC`, `CompNCBond.lean`) | open |
 | `[4 p]` | 0 | `uokcU`; with calls `uokc_fourA` (`unaryGC_ok`) | ok |
 | `[4 p]`, `p` in `FragX` | 1 | `runOKL_n4_none` (`lokcs_n4X`) | ok |
 | `[4 p]`, `p` calls | 1 | `bondOKC_fourA` (`collLC`, `four_runBond`, 12.23) | ok |
