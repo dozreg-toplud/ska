@@ -223,6 +223,17 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompRunCall.lean` | `+run` on the fragment with indirect calls (`indOk`: pure with no `%6` and `tenOk`, closed under `[2 p q ~]` and `[5 p q]` with `p` pure and `q` in it, under `%3`, `%4`, and `%7` of two of it), against `runLC`: `comp_run_n4C`, `comp_run_n3C` (the proofs of `comp_run_n4`, `comp_run_n3` with `runLC`), `comp_run_n7C` (`q` with `sup` set to `p`), `comp_run_n5C`; the invariant `crf_run` (every run of the fragment from a goal with `CrInv` meets `CrRes`); `comp_run_all_c` (**`CompRunAtC` on every nomm of `indOk`**, every goal and state with `CrInv`, every region and `env`, given only `slot? 7 ctx = some compK` and `slot? 52 ctx = some cod`), `comp_run_entry_c`, and an `example` on `[7 [2 [0 1] [2 [0 3] [0 2] ~] ~] [0 2]]`. |
 | `Compiler/CompSccCall.lean` | The facts of the final pass on the fragment with indirect calls, for `runLC env ~`: `crx_run` (a run of `indOk` keeps `cond`, jumps with no argument from a goal that passes none, keeps `NN` of `CompNoNN.lean`), `cfr_run`, `mem_cond_frag_c`, `mem_laz_frag_c`, `args_frag_c`, `scc_sur_frag_c`, `noar_frag_c`; `+inlined` on a nomm whose calls are indirect (`indPure`, `indPure_of_indOk`): the walk is the identity (`inl_trap_ind`, the case `[%2 p q ~]` rebuilds the call), `inl_gate_ind`; `+compile-unary` against `finishLUC env` (`cu_trap_c`, `cu_gate_c`). |
 | `Compiler/CompSccCallGate.lean` | The chain of `CompSccOne.lean` for `indOk` against the models with calls (`finishLFC env`, `finishLUC env`, for every `env`): `finishLFC_tail`, `fin_gate_finishLF_c`, `mem_to_finish_c`, `mem_gate_c`, `csi_gate_one_c`, `csi_gate_scc_one_m_c`, `mem_gate_none_c`, `csi_gate_scc_one_f_c` and `cu_gate_scc_one_f_c` (the gate of `+compile-unary` on an SCC of one bell, under `hnary`, `hnmap`, `hsmap`, `NoSelfCall`, `InlOK` as before, `indOk` of both nomms, and `NoBakeOneC env`, which holds with the cape `|`, `noBakeOneC_no`). |
+| `Compiler/CompWalkGen.lean` | `+walk-lazy` on every lazy need (forks and bonds to any depth): its Nock with the two roll gates named (`wlFG`, `wlBG`, `wlBat_eq`), the step (`wl_step`: the gate on `[o sure gen]`, then the `+roll` of layer 2 over the forks and the bonds, `roll_gate_N`), and **`comp_walk_lazy_all`**: for any gate `[Fb [Fs Fc]]` that is the model's `f` on the state noun at every visited pair of a block and a sure need meeting `P`, the walk is `walkLazy f o laz` wherever every visited pair meets `P` (`WalkP`, `WalkPF`, `WalkPB`). |
+| `Compiler/CompPruneLink.lean` | `+lazy-empty` (door arm `54`, `le_gate`: `Lazy.lazyEmpty` on every lazy need) and `+lazy-prune` (door arm `874364`, `comp_lazy_prune`: `Lazy.lazyPrune` on every lazy need), with `+skip` over encoded entries (`skip_gate_map`).  Both arms written here, tied to the pill by `comp_le_at`, `comp_lp_at`. |
+| `Compiler/CompCopyGen.lean` | `+copy-lazy` and `+copy` on lazy needs with forks and bonds to any depth that need no merge (`NoMerge`: the forks of one need are `~` and the bonds of one need are `~`): `comp_copy_lazy_nm`, `comp_copy_nm`.  The merge branch (`malt`, `spin` with the recursive copy, `silt`, `skip`, `weld`) is not linked. |
+| `Compiler/CompSpinSplit.lean` | `+spin-split` (arm `372` of `K`, written here, `compK_ss`; the arm evaluated on `K` by the kernel, `ss_arm`, `ss_gate_eq`): `spsp_gate`, the fold `ssM` in `Option` of a gate over an encoded list, heads and tails in order (`+flop` of layer 2). |
+| `Compiler/CompSplitGen.lean` | `+split` on every lazy need: the loop (`comp.split.loop` with its spin gates named, `sp_loop_eq`), the gates (`sp_fgate`, `sp_bgate`), **`csp_all`** (the loop against `splitLoop`, by a mutual induction with `csp_forks`, `csp_bonds`) and **`comp_split_all`** (`+split` against `splitL`), for every lazy need whose sure needs look at no axis `0` (`WalkP lok0`); `lz_test`, `lp_mk`, `comp_ss_at`. |
+| `Compiler/CompIntoGen.lean` | `+into` on every lazy need, for an axis not `0`: `cit_all` (the loop `intL0` against `intoLoopL axe`), `comp_into_all` (against `intoL`), the same shape as `CompSplitGen.lean` (`it_fgate`, `it_bgate`, `intoForks_ssM`, `intoBonds_ssM`). |
+| `Compiler/CompFromGen.lean` | `+from` on every lazy need (`cfr_all`, against `fromL axe`, on every state noun), with `+turn` over encoded entries and a gate that may crash (`turn_gate_mapT`), the turn gates `frGF`, `frGB` (`fr_bat_eq`). |
+| `Compiler/CompMedeGen.lean` | `+mede` on every lazy need whose every visited block is not a key of `soft` and whose looks have no axis `0` (`mdP`, `comp_mede_all`), from `comp_walk_lazy_all` and `md_gate`. |
+| `Compiler/CompKernGen.lean` | `+kern` with `+proxy` at the blocks other than `o`: the gate at every visited block (`kern_gate_all`, against `kernG`, the gate of the model's `kern`), `kern_eq`, `comp_kern_all` and `comp_kerf_all` on every lazy need with `WalkP mdP`. |
+| `Compiler/CompClaGen.lean` | `+none-equivalent` on every lazy need (`ne_all`, through `+levy` over encoded entries, `levy_gate_map`; `noneForks_all`, `noneBonds_all`) and `+collapse-lazy-atom` on every lazy need (`comp_collapse_lazy_atom_all`: the walk from `there` with `cla_gate`, under `lok0` of the root, `WalkPF`/`WalkPB` of `mdP` for the forks and bonds, and the walk's first block not a key of `soft`). |
+| `Compiler/CompRunInvL.lean` | `CrInvL`, the invariant of lazy goals with forks and bonds (every sure need with no look at `0` and its registers below the counter, `LAll LNB`; the mode; the jump; the root need distinct); `crInvL_of_crInv` (from `CrInv` on fork-free goals); the hypotheses of the links from it (`crInvL_lok`, `crInvL_mdP`, `walk_mdP` with an empty `soft`); kept by `+lazy-prune` (`walkP_prune`), `+split` (`split_lnb`, `crInvL_split`), `+into` (`into_lnb`, `crInvL_into`), `+from` (`from_lnb`, `crInvL_from`) and `+past` (`past_lnb`), each on every lazy need. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`, whose `keys` are those of `rap`, the order of `+rep:by` (`treapMap_keys`). |
@@ -667,9 +678,10 @@ import only its theorems.  So:
    `+dvr`, `+div`, `+mod` by zero and `+snag` past the end crash; nothing is
    proved about gates slammed on nouns of the wrong shape, nor about nouns on
    which a model is `none`.
-5. **Not done among the arms of the library:** `+int` of `+by` and
-   `+in`, and `+dif` of `+by` (`+dif:in` is done, `Hoon/DifIn.lean`,
-   `+uni:in`, `Hoon/UniIn.lean`, and `+uni:by`, `Hoon/UniBy.lean`).
+5. **Not done among the arms of the library:** `+int` of `+by`, and
+   `+dif` of `+by` (`+int:in` is done, `Hoon/IntIn.lean`, `+dif:in`,
+   `Hoon/DifIn.lean`, `+uni:in`, `Hoon/UniIn.lean`, and `+uni:by`,
+   `Hoon/UniBy.lean`).
 6. **The arms of `+ca` and `+so` are all done.**  No arm of `+ca` or `+so`
    disagrees with B's model.
 7. **The virtualization arms are done** up to formatting: `+mink`, `+monk`,
@@ -1493,6 +1505,50 @@ import only its theorems.  So:
     `args_frag` (the `+copy` of the call jumps with no argument),
     `scc_sur_frag`, `noar_frag` (`nn_copy` on the two runs of the call), and
     `inl_gate`; `cu_gate` becomes `cu_gate_c`.
+    L, 2026-11-24 (track A, the helpers of `+run` on lazy needs with forks
+    and bonds), `Compiler/CompWalkGen.lean`, `Compiler/CompPruneLink.lean`,
+    `Compiler/CompCopyGen.lean`, `Compiler/CompSpinSplit.lean`,
+    `Compiler/CompSplitGen.lean`, `Compiler/CompIntoGen.lean`,
+    `Compiler/CompFromGen.lean`, `Compiler/CompMedeGen.lean`,
+    `Compiler/CompKernGen.lean`, `Compiler/CompClaGen.lean`,
+    `Compiler/CompRunInvL.lean`.  Linked on every lazy need (forks and bonds
+    to any depth), each against the model on `Lazy` of
+    `Ska/CompLazyArms.lean` and `Ska/CompLazyRun.lean`, with no departure
+    found (the order of the `+roll`, `+turn`, `+spin-split` over forks and
+    bonds, the yes need before the no need, the forks before the bonds, the
+    state threading and the pruning agree): `+walk-lazy`
+    (`comp_walk_lazy_all`, for any gate linked at the visited pairs),
+    `+lazy-empty` and `+lazy-prune` (`le_gate`, `comp_lazy_prune`),
+    `+spin-split` of `K` (`spsp_gate`), `+split` (`csp_all`,
+    `comp_split_all`), `+into` (`cit_all`, `comp_into_all`), `+from`
+    (`cfr_all`), `+mede` (`comp_mede_all`), `+kern` with `+proxy`
+    (`kern_gate_all`, `comp_kern_all`), `+kerf` (`comp_kerf_all`),
+    `+none-equivalent` (`ne_all`) and `+collapse-lazy-atom`
+    (`comp_collapse_lazy_atom_all`).  Their hypotheses are no look at axis
+    `0` anywhere (`WalkP lok0`) and, for the walks, every visited block not
+    a key of `soft` (`WalkP mdP`, which an empty `soft` gives,
+    `walk_mdP`).  `+copy-lazy` and `+copy` are linked on every pair of lazy
+    needs that need no merge (`NoMerge`: the forks of one of them are `~`
+    and the bonds of one of them are `~`; `comp_copy_lazy_nm`,
+    `comp_copy_nm`); the merge branch (`malt` through `+molt` and
+    `+gas:by`, `+spin` of layer 2 with the recursive `copy-lazy` and the
+    `?>` on the no blocks, `silt`, `+has:in`, `skip`, `weld`, and the bunts
+    of the molds `lazy-fork` and `lazy-bond`) is not.  The invariant
+    `CrInvL` (`CrInv` for lazy goals: every sure need with no look at `0`
+    and its registers below the counter, the mode, the jump, the root need
+    distinct; `crInvL_of_crInv`) gives the hypotheses of the links
+    (`crInvL_lok`, `crInvL_mdP`) and is kept by `+lazy-prune`, `+split`,
+    `+into`, `+from` and `+past` on every lazy need (`split_lnb`,
+    `into_lnb`, `from_lnb`, `past_lnb`, `crInvL_split`, `crInvL_into`,
+    `crInvL_from`).  Not in it: the tags of the fork and bond blocks (only
+    the model's `+proxy` reads them, so the links hold without them; the
+    success of `kern` and `collapseLazyAtomL` at a proxy needs them), and
+    the apartness of registers across blocks (the merge of `+copy-lazy`
+    would need it).  Next: the merge branch of `+copy-lazy`; `CrInvL` kept
+    by `+copy` (the union of the looks and `copyNeed_spec` at the root);
+    then the cons case of `+run` with a calling head through `CompRunAtC`,
+    whose result (a bond from `+past` over the calling head) needs `CrRes`
+    generalized to lazy results.
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
