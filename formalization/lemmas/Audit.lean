@@ -50,6 +50,7 @@ import lemmas.Compiler.SoftSpot
 import lemmas.Compiler.FolLoopStep
 import lemmas.Compiler.FolLoopMono
 import lemmas.Compiler.ResolveLoop
+import lemmas.Compiler.FolLoopConv
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -400,3 +401,23 @@ open Formalization
 #print axioms Compiler.resolve_step
 #print axioms Compiler.resolve_le
 #print axioms Compiler.resLe_resolveH
+#print axioms Compiler.fol_loop_step_allW'
+#print axioms Compiler.dirIsW_of
+#print axioms Compiler.resolve_stepW
+#print axioms Compiler.iterN_le_ev
+#print axioms Compiler.ev_complete
+#print axioms Compiler.resolveStepH_mono
+#print axioms Compiler.anaE_is
+#print axioms Compiler.resE_is
+#print axioms Compiler.folE_is
+#print axioms Compiler.resE_le
+#print axioms Compiler.folE_le
+#print axioms Compiler.resolve_ge
+#print axioms Compiler.fol_loop_ge
+#print axioms Compiler.folDecodes
+#print axioms Compiler.resolve_below_H
+#print axioms Compiler.resInf_below
+#print axioms Compiler.resIs_inf
+#print axioms Compiler.resolve_iff
+#print axioms Compiler.fol_loop_le'
+#print axioms Compiler.fol_loop_iff
