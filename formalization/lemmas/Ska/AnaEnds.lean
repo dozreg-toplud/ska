@@ -142,12 +142,6 @@ variable {M : Type → Type → Type} [Treap M] {R : Type}
 
 /-! ## The memo's entries have no callees -/
 
-/-- Every entry of the memo has no callees, as `+memo-final-entry` makes
-them. -/
-def MemoNoCallees (m : Memo M) : Prop :=
-  ∀ f ms s (e : Ident × FDatum M) c, Treap.get m f = some ms → Treap.get ms s = some e →
-    Treap.get e.2.callees c = none
-
 theorem memoNoCallees_empty : MemoNoCallees (Treap.empty : Memo M) := by
   intro f ms s e c h
   simp [Treap.get_empty] at h

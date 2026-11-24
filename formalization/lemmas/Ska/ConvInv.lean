@@ -267,6 +267,48 @@ def OrdInv (st : SkaState M R) : Prop :=
   (∀ i o, Treap.get st.order i = some o → o < st.next) ∧
     st.stk.Pairwise (fun a b => ∀ oa ob, Treap.get st.order a = some oa → Treap.get st.order b = some ob → ob < oa)
 
+/-- Every entry of the memo has no callees, as `+memo-final-entry` makes
+them. -/
+def MemoNoCallees (m : Memo M) : Prop :=
+  ∀ f ms s (e : Ident × FDatum M) c, Treap.get m f = some ms → Treap.get ms s = some e →
+    Treap.get e.2.callees c = none
+
+/-- **The graph is closed under callees.** -/
+def Closed (st : SkaState M R) : Prop :=
+  ∀ i d, Treap.get st.g i = some d → ∀ c, InCallees d.callees c → Treap.get st.g c ≠ none
+
+/-- **A finalized entry calls only finalized identities.** -/
+def FinCalls (st : SkaState M R) : Prop :=
+  ∀ i d, Treap.get st.g i = some d → Treap.get st.order i = none →
+    ∀ c, InCallees d.callees c → Treap.get st.order c = none
+
+/-- Putting an entry with no callees keeps `Closed`. -/
+theorem closed_put_new {st st' : SkaState M R} {i : Ident} {d : FDatum M} (hc : Closed st)
+    (hg : st'.g = Treap.put st.g i d) (hd : ∀ c, ¬ InCallees d.callees c) : Closed st' := by
+  intro j e hj c hce
+  rw [hg, Treap.get_put] at hj ⊢
+  split at hj
+  · cases hj; exact absurd hce (hd c)
+  · split
+    · simp
+    · exact hc j e hj c hce
+
+/-- Putting an entry whose callees are entries keeps `Closed`. -/
+theorem closed_put_callees {st st' : SkaState M R} {i : Ident} {d : FDatum M} (hc : Closed st)
+    (hg : st'.g = Treap.put st.g i d)
+    (hd : ∀ c, InCallees d.callees c → Treap.get st.g c ≠ none) : Closed st' := by
+  have keep : ∀ c, Treap.get st.g c ≠ none → Treap.get st'.g c ≠ none := by
+    intro c h
+    rw [hg, Treap.get_put]
+    split
+    · simp
+    · exact h
+  intro j e hj c hce
+  rw [hg, Treap.get_put] at hj
+  split at hj
+  · cases hj; exact keep c (hd c hce)
+  · exact keep c (hc j e hj c hce)
+
 /-- **The convergence invariant**, with the frozen entries `F`. -/
 structure CInv (memoF : Memo M) (st : SkaState M R) (F : Entry → Prop) : Prop where
   s : SInv st
@@ -285,6 +327,13 @@ structure CInv (memoF : Memo M) (st : SkaState M R) (F : Entry → Prop) : Prop 
   product is not `%void` once `order` does not hold it (`DatFacts.lean`). -/
   dat : ∀ i d, Treap.get st.g i = some d → (MemoHitE memoF (entOf i d) ∧ Treap.get st.order i = none) ∨
     (Bake.NoAx0 d.nomm ∧ (∃ y, Fits d.less y) ∧ (Treap.get st.order i = none → d.prod ≠ Sock.void))
+  /-- When the memo's entries have no callees: the graph is closed under
+  callees, and a finalized entry calls only finalized identities
+  (`GraphClose.lean`). -/
+  clo : MemoNoCallees memoF → Closed st ∧ FinCalls st
+
+theorem FDatum.postPop_callees (d : FDatum M) : (postPop d).callees = d.callees := by
+  unfold postPop; split <;> rfl
 
 /-! ## `+pop`, entry by entry -/
 
@@ -481,7 +530,8 @@ theorem pop_frozen {memoF : Memo M} {id : Ident} {st st' : SkaState M R} {F : En
     unfold Treap.gut; rw [a5, if_neg hx]
   have hpopNot : ∀ x o, Treap.get st.order x = some o → o < index → x ∉ ab0 ++ [id] := fun x o hxo hlt hx =>
     absurd (hup x hx o hxo) (by omega)
-  refine ⟨F', hFF', ⟨pop_ok hc.s h hs |>.1, fun m => ?_, ⟨fun i o hio => ?_, ?_⟩, ⟨hok, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_⟩⟩
+  refine ⟨F', hFF', ⟨pop_ok hc.s h hs |>.1, fun m => ?_, ⟨fun i o hio => ?_, ?_⟩, ⟨hok, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_,
+    fun hm => ?_⟩⟩
   · -- ticks
     by_cases hm : m ∈ ab0 ++ [id]
     · simp only [ranOf, chgOf, Treap.gut, a5, if_pos hm, Option.getD_none]; omega
@@ -616,6 +666,40 @@ theorem pop_frozen {memoF : Memo M} {id : Ident} {st st' : SkaState M R} {F : En
           · exact Sock.noConfusion
           · assumption
     · rw [hgN i hi] at hd; rw [hoN i hi]; exact hc.dat i d hd
+  · -- closure, and the finalized entries call finalized identities
+    obtain ⟨hcl, hfc⟩ := hc.clo hm
+    have hkeep : ∀ c, Treap.get st.g c ≠ none → Treap.get st'.g c ≠ none := by
+      intro c hc'
+      by_cases hcP : c ∈ ab0 ++ [id]
+      · rw [hgP c hcP]; obtain ⟨d, hd⟩ := Option.ne_none_iff_exists'.mp hc'; rw [hd]; simp
+      · rw [hgN c hcP]; exact hc'
+    have hoNone : ∀ c, Treap.get st.order c = none → Treap.get st'.order c = none := by
+      intro c hco
+      have hcP : c ∉ ab0 ++ [id] := fun hP => by
+        obtain ⟨o, ho⟩ := hmemP c hP; rw [hco] at ho; cases ho
+      rw [hoN c hcP]; exact hco
+    refine ⟨fun j e hj c hce => ?_, fun j e hj hjo c hce => ?_⟩
+    · by_cases hjP : j ∈ ab0 ++ [id]
+      · rw [hgP j hjP] at hj
+        obtain ⟨d0, hd0, rfl⟩ := Option.map_eq_some_iff.mp hj
+        rw [FDatum.postPop_callees] at hce
+        exact hkeep c (hcl j d0 hd0 c hce)
+      · rw [hgN j hjP] at hj; exact hkeep c (hcl j e hj c hce)
+    · by_cases hjP : j ∈ ab0 ++ [id]
+      · rw [hgP j hjP] at hj
+        obtain ⟨d0, hd0, rfl⟩ := Option.map_eq_some_iff.mp hj
+        rw [FDatum.postPop_callees] at hce
+        by_cases hcP : c ∈ ab0 ++ [id]
+        · exact hoP c hcP
+        · apply hoNone
+          cases hco : Treap.get st.order c with
+          | none => rfl
+          | some o =>
+            have hce' : InCallees (calleesOf st j) c := by
+              simpa only [calleesOf, gitG, Treap.gut, hd0, Option.getD_some] using hce
+            exact absurd (hinP c o hco ((hready j hjP).2 c hce' o hco).2) hcP
+      · rw [hgN j hjP] at hj; rw [hoN j hjP] at hjo
+        exact hoNone c (hfc j e hj hjo c hce)
 
 end Ana
 end SkaModel
