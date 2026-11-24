@@ -596,12 +596,14 @@ variable {σ : Type} {lib : Lib} {O : Oracle σ} {c : Straight Map} {gul : Noun}
 configuration `x` of an execution from the entry that stands at the end of
 the body of a jumping block `q` (walked from `g1q` to `g2q`, its end state
 `st'`), with `AKept` and presence at `st'` on `bodyDone` of the whole body,
-when the end before takes the jump `j` to `o` and the pass before goes on
-(`Rp`): the end after (the block stored for `q` in the final state) takes a
-jump `j'` to `o` with the arguments renamed, the block after at `o` has the
-parameters of `o`, the pass after goes on (`Rp'`), and at the start of `o`
-(the walk up to `o`, its start state `st0`) `AKept` and presence hold on
-`DoneS` along `q :: epath es`. -/
+when the end before takes the jump `j` to `o`: the end after (the block
+stored for `q` in the final state) takes a jump `j'` to `o` with the
+arguments renamed by the `old` of the walk up to `o`, an argument present
+before has its renaming present after, the walk of `o` (not dropped, its
+start state `st0`, its body and end) gives the block after at `o`, and
+whenever the pass before goes on (`Rp`) the pass after goes on (`Rp'`) and
+at the start of `o` `AKept` and presence hold on `DoneS` along
+`q :: epath es`. -/
 theorem akj_jump {pick : List Nat → Nat} (hpick : ∀ l : List Nat, l ≠ [] → pick l ∈ l) {nargs : Nat}
     (hD : DInvS c.blocks) {topo : List Nat} {rev : Map (List Nat)} (hT : TopoInvR c.blocks topo rev)
     {g : AGen Map} (h : aliasWalk pick nargs c.blocks topo (aliasInit rev) = some g)
@@ -619,17 +621,19 @@ theorem akj_jump {pick : List Nat → Nat} (hpick : ∀ l : List Nat, l ≠ [] �
     (hk : AKept st' (fun x' => read x' x.regs) (fun x' => read x' regs')
       (bodyDone (ClR c.blocks) bq.body (DoneS c.blocks preq (epath es) bq)))
     (hP : APres st'.old x.regs regs' (bodyDone (ClR c.blocks) bq.body (DoneS c.blocks preq (epath es) bq)))
-    {j : Jmp} {bo : Blob} (htk : Path.taken x.regs x.b.fin = some j) (hbo : HoonMap.get c.blocks j.there = some bo)
-    {Rp : Map (Option Noun)} (hpass : evalPass j.args bo.par x.regs = some Rp) :
-    ∃ j' preo lo g1o g2o st0 Rp' pbo, HoonMap.get g.new q = some { par := bq.par, body := out, fin := rf.1 } ∧
+    {j : Jmp} {bo : Blob} (htk : Path.taken x.regs x.b.fin = some j) (hbo : HoonMap.get c.blocks j.there = some bo) :
+    ∃ j' preo lo g1o g2o st0 outb st'o rfo, HoonMap.get g.new q = some { par := bq.par, body := out, fin := rf.1 } ∧
       Path.taken regs' rf.1 = some j' ∧
       j'.there = j.there ∧ j'.args = j.args.map (Option.map g1o.old) ∧
-      HoonMap.get g.new j.there = some pbo ∧ pbo.par = bo.par ∧
-      evalPass j'.args bo.par regs' = some Rp' ∧
+      (∀ u, some u ∈ j.args → (HoonMap.get x.regs u).isSome → (HoonMap.get regs' (g1o.old u)).isSome) ∧
       topo = preo ++ j.there :: lo ∧ aliasWalk pick nargs c.blocks preo (aliasInit rev) = some g1o ∧
-      aliasBlock pick nargs c.blocks g1o j.there = some g2o ∧ aStart nargs g1o j.there bo = some st0 ∧
-      AKept st0 (fun x' => read x' Rp) (fun x' => read x' Rp') (DoneS c.blocks preo (q :: epath es) bo) ∧
-      APres st0.old Rp Rp' (DoneS c.blocks preo (q :: epath es) bo) := by
+      aliasBlock pick nargs c.blocks g1o j.there = some g2o ∧ ¬ (g1o.rev j.there = [] ∧ j.there ≠ 0) ∧
+      aStart nargs g1o j.there bo = some st0 ∧ aliasBody pick bo.body st0 = some (outb, st'o) ∧
+      aliasFin st'o.old st'o.loc g1o.rev g1o.folded j.there bo.fin = some rfo ∧
+      HoonMap.get g.new j.there = some { par := bo.par, body := outb, fin := rfo.1 } ∧
+      ∀ Rp, evalPass j.args bo.par x.regs = some Rp → ∃ Rp', evalPass j'.args bo.par regs' = some Rp' ∧
+        AKept st0 (fun x' => read x' Rp) (fun x' => read x' Rp') (DoneS c.blocks preo (q :: epath es) bo) ∧
+        APres st0.old Rp Rp' (DoneS c.blocks preo (q :: epath es) bo) := by
   have hS : AliasSSAB c.blocks := hD.2.1
   have hpn : ParNodup c.blocks := hD.1.1.1.1
   have hTo := hT.1.1
@@ -697,16 +701,21 @@ theorem akj_jump {pick : List Nat → Nat} (hpick : ∀ l : List Nat, l ≠ [] �
   obtain ⟨hqrev, j', hj'R, hj'o, hj'args, -⟩ := htake j htkR
   -- the parts of the walk of `o`
   have hne : g1o.rev j.there ≠ [] := List.ne_nil_of_mem hqrev
-  obtain ⟨info, imms, b1, edges, loc0, rb, rfo, f1, f2, f3, f4, f5, -, -, f8⟩ := awa_block_parts h2o (fun e => hne e.1)
+  obtain ⟨info, imms, b1, edges, loc0, rb, rfo, f1, f2, f3, f4, f5, f6, f7, f8⟩ :=
+    awa_block_parts h2o (fun e => hne e.1)
   rw [hbo] at f3; cases f3
   have hA0 := aStart_of_parts f1 f2 f4 f5
   rw [if_neg hne] at f1
   have hau : ∀ u, some u ∈ j.args → DoneE c.blocks (A ++ q :: mid) (epath es) bq u := fun u hu =>
     awi_fin_done hS hπ hbq hj (jmp_finRegs hj hu)
   have htT : TopoOK c.blocks ((A ++ q :: mid) ++ j.there :: lo) := htopo ▸ hTo
-  obtain ⟨Rp', hpass', hk2, hP2⟩ := akp_edge hS hpn htT hI.oldw hRo hbo hopre hbq (hframe.1.trans hg2.2.1)
-    (hframe.2.1.trans hg2.2.2) (hframe.2.2.trans hpbq) hok hab hk1 hP1
-    hqrev (aedge_taken_mem hj'R) hj'o hj'args hau hpass f1 f2 f4 f5
+  have hpassC : ∀ Rp, evalPass j.args bo.par x.regs = some Rp → ∃ Rp', evalPass j'.args bo.par regs' = some Rp' ∧
+      AKept ⟨g1o.old, loc0, imms⟩ (fun x' => read x' Rp) (fun x' => read x' Rp')
+        (DoneS c.blocks (A ++ q :: mid) (q :: epath es) bo) ∧
+      APres g1o.old Rp Rp' (DoneS c.blocks (A ++ q :: mid) (q :: epath es) bo) := fun Rp hpass =>
+    akp_edge hS hpn htT hI.oldw hRo hbo hopre hbq (hframe.1.trans hg2.2.1)
+      (hframe.2.1.trans hg2.2.2) (hframe.2.2.trans hpbq) hok hab hk1 hP1
+      hqrev (aedge_taken_mem hj'R) hj'o hj'args hau hpass f1 f2 f4 f5
   -- the end after on the file after
   have hrd : ∀ x' ∈ Path.finReads rf.1, read x' regs' = read x' x.regs := by
     intro x' hx'
@@ -723,9 +732,9 @@ theorem akj_jump {pick : List Nat → Nat} (hpick : ∀ l : List Nat, l ≠ [] �
     have := (List.nodup_append.mp htT.1).2.2 q hqpre q (List.mem_cons_of_mem _ hm)
     exact this rfl
   have hfl := (awk_walk lo g2o g h3o).2
-  refine ⟨j', A ++ q :: mid, lo, g1o, g2o, _, Rp', { par := bo.par, body := rb.1, fin := rfo.1 }, ?_, htk', hj'o,
-    hj'args, ?_, rfl, hpass', htopo, h1o, h2o,
-    hA0, hk2, hP2⟩
+  refine ⟨j', A ++ q :: mid, lo, g1o, g2o, _, rb.1, rb.2, rfo, ?_, htk', hj'o,
+    hj'args, fun u hu hs => hP1 u (hau u hu) hs, htopo, h1o, h2o, fun e => hne e.1,
+    hA0, f6, f7, ?_, hpassC⟩
   · rw [(hfl q hql).2.2, ((awk_block h2o).2 q hqo).2.2]
     exact hframe.2.2.trans hpbq
   · rw [(hfl _ hol).2.2, f8]
