@@ -594,6 +594,156 @@ theorem consNC_ok {lib : Lib} {P : Noun → Prop} {fh ft : Noun} {pp q : Nomm} {
       · exact ⟨fun hf => absurd hf (hnot x y (Or.inl fx)), fun _ => Rc⟩
 -- END consNC_ok
 
+/-! ## The cons with the call in its head, from the run -/
+
+/-- The sure need of the indirect call's run is clean (`+copy` of two clean
+needs). -/
+theorem indirect_clean {lib : Lib} {p q : Nomm} (up : UOK (S := S) (Map := Map) lib p)
+    (uq : UOK (S := S) (Map := Map) lib q) {env : CallEnv} {sup : Option Nomm} {goal : CGoalL S}
+    {region : List Nat} {g0 g' : Gen Map} {nex : NextL S}
+    (h : runLC env sup (Nomm.n2 p q Option.none) goal region g0 = some (nex, g')) : Clean nex.laz.sure.ned := by
+  obtain ⟨nex0, g1, out, pro, g2, o, g3, nexF, g4, nexF', g5, nexS, g6, h1, h2, h3, h4, h5, h6, h7⟩ :=
+    runLC_n2_none h
+  rw [runLC_eq env q (Nomm.noCall_of_pure q uq.pure)] at h4
+  rw [pastL_pure _ _ up.pure, pure_apply] at h5
+  simp only [Option.some.injEq, Prod.mk.injEq] at h5
+  obtain ⟨rfl, rfl⟩ := h5
+  rw [runLC_eq env p (Nomm.noCall_of_pure p up.pure)] at h6
+  exact clean_copyL h7 (up.clean (goal := CGoal.next (lazyReg g2.re) _) trivial h6)
+    (uq.clean (goal := CGoal.next (lazyReg (g2.re + 1)) _) trivial h4)
+
+/-- **The cons `[[2 b c] d]` under a fork-free `%next sur th` meets
+`RunOKNC`** for the cell formula `[fh ft]`, with `b`, `c`, `d` meeting `UOK`,
+`fh` a formula with `MinkN2` (so any `Annot` of `[2 b c]` but the bare ones)
+and `ft` one whose `+mink` is `d`'s value (`Mq`), from any state with the
+hypotheses of `OKNV`.  The run (`consNV_body`'s steps) is `+split`, the tail
+`d`, `+past` behind the call (`pastL_hinted`: nothing, or the block of
+`tailNV_past`), the call (`indirect_runN`), `+copy`; `consNC_ok` composes. -/
+theorem consCH_runN (lib : Lib) {b c d : Nomm} (ub : UOK (S := S) (Map := Map) lib b)
+    (uc : UOK (S := S) (Map := Map) lib c) (ud : UOK (S := S) (Map := Map) lib d)
+    {P : Noun → Prop} {fh ft : Noun} (M : MinkN2 lib P fh b c) (hfh : ∃ x y, fh = C x y)
+    (Mq : ∀ {s gul : Noun} {n : Nat} {tm : Trace} {r : Tone}, P s → minkF lib gul n tm s ft = some r →
+      r = toneOf tm (pureEval d s))
+    (hcount : sixCount b + sixCount c + sixCount d ≤ 255) {env : CallEnv} {sup : Option Nomm}
+    {sur : Sure S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S}
+    (hj : GJ g0.bo (CGoal.next sur th)) (hth : th.args = []) (hok : GoalOK g0 (CGoal.next sur th))
+    (hcl : Clean sur.ned) (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false)
+    (hu : UpBelow g0) (hcl0 : Clear g0) (hcb : CondBelow g0)
+    (hkg : ∀ r, NMem sur.ned r → HoonMap.get g0.cond r = Option.none)
+    (h : runLC env sup (Nomm.cons (Nomm.n2 b c Option.none) d) (CGoalL.next (ofSure sur) th) region g0 =
+      some (nex, g1)) :
+    RunOKNC lib P (C fh ft) (Nomm.cons (Nomm.cons b c) d) sur th g0 g1 nex := by
+  have e : (runLC env sup (Nomm.cons (Nomm.n2 b c Option.none) d) (CGoalL.next (ofSure sur) th) region :
+      CM Map (NextL S)) = (do
+        let (hed, tel, o) ← splitL ⟨ofSure sur, th⟩
+        let nexh ← pastL env.cod ⟨hed, jmp0 o⟩ d region
+        let nex2 ← runLC env sup d (CGoalL.next tel nexh.th) region
+        let nex2 ← pastL env.cod nex2 (Nomm.n2 b c Option.none) region
+        let nex1 ← runLC env sup (Nomm.n2 b c Option.none) (CGoalL.next nexh.laz nex2.th) region
+        copyL nex1 nex2.laz) := rfl
+  rw [e] at h
+  obtain ⟨⟨hed', tel', o⟩, g2x, h2, h⟩ := bind_some h
+  rw [splitL_mk, map_apply] at h2
+  obtain ⟨⟨⟨hed, tel, o'⟩, g2⟩, hs2, e2⟩ := Option.map_eq_some_iff.mp h2
+  simp only [Prod.mk.injEq] at e2
+  obtain ⟨⟨rfl, rfl, rfl⟩, rfl⟩ := e2
+  clear h2
+  simp only at h
+  obtain ⟨nexh, g2', hph, h⟩ := bind_some h
+  rw [pastL_mk _ _ _ ud.pure, pure_apply] at hph
+  simp only [Option.some.injEq, Prod.mk.injEq] at hph
+  obtain ⟨rfl, rfl⟩ := hph
+  obtain ⟨nex2, g3, h3, h⟩ := bind_some h
+  rw [runLC_eq env d (Nomm.noCall_of_pure d ud.pure)] at h3
+  obtain ⟨nex2', g3', hp2, h⟩ := bind_some h
+  obtain ⟨nex1, g4, h4, hcp⟩ := bind_some h
+  obtain ⟨eo, E2, _, Mh, Mt, SP⟩ := split_ok hs2
+  obtain ⟨Dh, Dt, Dht, F, B⟩ := SP hok.1 hok.2
+  obtain ⟨G2, eo', lt2, _⟩ := split_down hs2 hj.1 hj.2 d0
+  simp only at eo'
+  subst eo
+  have CS := clean_split hs2 hcl
+  simp only at CS
+  have c2 : g2.cond = g0.cond := (kc_split _).keep _ _ _ hs2
+  have d2 : g2.drop = false := E2.2.2.1.trans d0
+  have u2 : UpBelow g2 := (G2.toU hu).up hu
+  have lt2' : ∀ (n : Need), (∀ y, NMem n y → NMem sur.ned y ∨ (g0.re ≤ y ∧ y < g2.re)) →
+      ∀ y, NMem n y → y < g2.re := fun n M y hy => by
+    rcases M y hy with a | ⟨_, a⟩
+    · exact Nat.lt_of_lt_of_le (hok.2 y a) E2.1
+    · exact a
+  have G2U : GrowU g0 g2 := G2.toU hu
+  have cl2 : Clear g2 := hcl0.growU G2U
+  have cf2 : CondFresh g0 g2 := condFresh_of_eq E2.1 c2
+  have cb2 : CondBelow g2 := cf2.below hcb
+  have nk2 : ∀ (n : Need), (∀ y, NMem n y → NMem sur.ned y ∨ (g0.re ≤ y ∧ y < g2.re)) →
+      ∀ y, NMem n y → HoonMap.get g2.cond y = Option.none := fun n M y hy => by
+    rw [c2]
+    rcases M y hy with a | ⟨a, _⟩
+    · exact hkg y a
+    · exact condBelow_none hcb a
+  have Rq := ud.next (sur := tel) (th := jmp0 g0.bo) ⟨b0, by simp only [jmp0]; omega⟩ rfl ⟨Dt, lt2' _ Mt⟩ CS.2
+    (by omega) (by omega) d2 u2 cl2 cb2 (nk2 _ Mt) h3
+  have d3 : g3.drop = false := Rq.ext.2.2.1.trans d2
+  have u3 : UpBelow g3 := Rq.grow.up u2
+  have AS : AboveIn (fun r => HoonMap.get g0.cond r = Option.none) g0.bo g2 :=
+    (keepsA_split (P := fun r => HoonMap.get g0.cond r = Option.none) d0 hkg (jmpIn_nil hth)
+      (fun r hr => condBelow_none hcb hr) hs2).1.ab _ (aboveIn_start _ g0)
+  have BS : BelowIn g0.bo g2 :=
+    (keeps_split d0 (fun r hr => hok.2 r hr) (jmpIn_nil hth) hs2).1.bel _ (belowIn_start g0)
+  have hfix : ∀ (cf : Map (Nat × List Nat)), (∀ k, k < g2.re → HoonMap.get cf k = HoonMap.get g0.cond k) →
+      ∀ k, g0.bo ≤ k → k < g2.bo → (HoonMap.get g2.blocks k).map (unproxyBlob cf) = HoonMap.get g2.blocks k := by
+    intro cf hcf k h0 h1
+    have u0 : ∀ x, x < g2.re → unproxy cf x = unproxy g0.cond x := unproxy_agree (fun k hk => hcf k hk)
+    have u1 : ∀ x, HoonMap.get g0.cond x = Option.none → unproxy g0.cond x = id x := fun x hx => unproxy_none hx
+    cases hg : HoonMap.get g2.blocks k with
+    | none => rfl
+    | some b =>
+      simp only [Option.map_some]
+      rw [unproxyBlob, renBlob_congr u0 (BS k b h0 h1 hg), renBlob_congr u1 (AS k b h0 h1 hg), renBlob_id]
+  have hblk : ∀ (c : Straight Map), Agree c g0 g2 →
+      ∀ (σ : Type) (O : Oracle σ) st regs t gul x y, FitsS hed x → FitsS tel y → HoldsN hed.ned regs x →
+        HoldsN tel.ned regs y →
+          GoalSem lib O c gul st (Keep g0 g2 (CGoal.next sur th)) regs t (jmp0 g0.bo) (CGoal.next sur th)
+            (some (C x y)) := by
+    intro c hc σ O st regs t gul x y fx fy hx hy
+    refine ⟨fun _ => ?_, fun hn => absurd ((F x y).mpr ⟨fx, fy⟩) hn⟩
+    obtain ⟨R', hl, u, e⟩ := B d0 c hc lib σ O st t regs x y gul hx hy
+    exact ⟨R', hl, fun r ⟨_, k⟩ => u r k, e⟩
+  have hnot : ∀ x y, ¬ FitsS hed x ∨ ¬ FitsS tel y → ¬ FitsS sur (C x y) := fun x y hn hf => by
+    rcases hn with a | a
+    · exact a ((F x y).mp hf).1
+    · exact a ((F x y).mp hf).2
+  have hkp : ∀ y, NMem hed.ned y → HoonMap.get g3.cond y = Option.none := fun y hy => by
+    rw [Rq.cfr.get_lt (lt2' _ Mh y hy)]; exact nk2 _ Mh y hy
+  rcases pastL_hinted (show hinted env.cod (Nomm.n2 b c Option.none) = some true from rfl) hp2 with
+    ⟨x1, x2, en, es, _⟩ | ⟨x1, x2⟩
+  · -- the tail's need asks nothing: no block of `+past`
+    subst nex2' g3'
+    have Rp := indirect_runN lib ub uc M (by omega) (sur := hed) (th := nex2.th) ⟨Rq.lo, Rq.hi⟩
+      (nextArgs_nil Rq.ent rfl) ⟨Dh, fun y hy => Nat.lt_of_lt_of_le (lt2' _ Mh y hy) Rq.ext.1⟩
+      (by have := Rq.lo; have := Rq.hi; omega) d3 u3 (cl2.growU Rq.grow) (Rq.cfr.below cb2) hkp h4
+    exact consNC_ok hfh Mq hok E2 G2U c2 hcb Mh Mt Dht (TailNV.ofRun Rq E2.1) Rp
+      (fun s => fitsS_trivial en es s) (by rw [en]; trivial) (indirect_clean ub uc h4) hcp hu d0 hnot hfix hblk
+  · -- the tail's need parked behind the block of `+past`
+    subst nex2' g3'
+    have T := tailNV_past Rq E2.1 (lt2' _ Mt) d3 u3 region
+    have G3 : GrowU g3 ((g3.emitted ⟨[], [], Termin.hop nex2.th⟩).tagged g3.bo region) :=
+      (growU_emit (b := ⟨[], [], Termin.hop nex2.th⟩) (fun j hj => by
+        simp only [finJumps, List.mem_singleton] at hj; subst hj; exact ⟨Rq.lo, Rq.hi⟩) u3).trans
+        (growU_tagged _ _ _)
+    have Rp := indirect_runN lib ub uc M (by omega) (sur := hed) (th := jmp0 g3.bo)
+      ⟨by have := Rq.lo; have := Rq.hi; simp only [jmp0]; omega, by simp [jmp0, Gen.emitted]⟩ rfl
+      ⟨Dh, fun y hy => by have := lt2' _ Mh y hy; have := Rq.ext.1; simp [Gen.emitted]; omega⟩
+      (by simp [Gen.emitted]) (by simp [Gen.emitted, d3]) (G3.up u3) ((cl2.growU Rq.grow).growU G3)
+      (fun k hk => by
+        rw [tagged_cond] at hk
+        have := (Rq.cfr.below cb2) k hk
+        simp [Gen.emitted]; omega)
+      (fun y hy => by rw [tagged_cond]; exact hkp y hy) h4
+    exact consNC_ok hfh Mq hok E2 G2U c2 hcb Mh Mt Dht T Rp (fun s => fitsS_bunt s) trivial
+      (indirect_clean ub uc h4) hcp hu d0 hnot hfix hblk
+
 end Comp
 end SkaModel
 end Formalization
