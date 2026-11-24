@@ -152,6 +152,10 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
 * `aliasssa.hoon`   two blocks with `DInvT` that read register `0v1` by a `%mov` and then write it: `+alias` renames
                     the later read of the moved register to `0v1`, and `+eval-blob` gives `7` before, `5` after;
                     `+alias` needs single assignment (`AliasSSA` of `lemmas/Ska/OptAliasField.lean`)
+* `aliasrev.hoon`   `+alias` with a `rev` that lists a predecessor no jump has (`rev-cfg` plus `0w0` for the
+                    unreachable `0w1`, `TopoInv` holds): the walked `0w1` renames `0v2` to `0v5` in `old`, the end of
+                    `0w2` becomes `[%don 0v5]`, and `+eval-blob` gives `5` before, `7` after; with `rev-cfg` alone
+                    `0w1` is dropped and the code kept (`RevSound` of `lemmas/Ska/OptAliasRev.lean`, 2026-11-24)
 * `ssacheck.hoon`   `AliasSSA` of `lemmas/Ska/OptAliasField.lean` on the real compiler: on raw `+comp` output and
                     after every pass of every round of `+optimize` replayed as `+optimize-once` does (so at every
                     call of `+alias`), over the cases of `aliascheck2.hoon` (the 143 of `optcheck.hoon`, the 41
