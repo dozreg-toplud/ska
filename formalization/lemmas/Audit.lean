@@ -51,6 +51,7 @@ import lemmas.Compiler.FolLoopStep
 import lemmas.Compiler.FolLoopMono
 import lemmas.Compiler.ResolveLoop
 import lemmas.Compiler.FolLoopConv
+import lemmas.Compiler.RegisterFast
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -424,3 +425,4 @@ open Formalization
 #print axioms Compiler.runRest_ana
 #print axioms Compiler.runRest_K
 #print axioms Compiler.runRest_Ka
+#print axioms Compiler.registerFastIs_of
