@@ -64,6 +64,7 @@ import lemmas.Ska.OptAliasOnce
 import lemmas.Ska.OptAliasWitness
 import lemmas.Ska.OptAliasPlain
 import lemmas.Ska.OptAliasPlainDriver
+import lemmas.Ska.OptAliasFresh
 
 /-! Axioms of the theorems about `+optimize`. -/
 
@@ -445,3 +446,24 @@ open Formalization.SkaModel.Opt
 #print axioms not_dInvR_v
 #print axioms ex_hops
 #print axioms ex_alias
+#print axioms dInvF_of_R
+#print axioms fillFresh_of_map
+#print axioms rub_fresh
+#print axioms mid_fresh
+#print axioms sub_reach
+#print axioms sub_site
+#print axioms sub_inj
+#print axioms sub_live
+#print axioms sub_fresh
+#print axioms filt_sub
+#print axioms trim_fresh
+#print axioms dead_sub
+#print axioms dead_fresh
+#print axioms hk_fresh
+#print axioms hops_fresh
+#print axioms alias_fieldF
+#print axioms driverHypF_of
+#print axioms optimize_keeps_fresh
+#print axioms optimize_keeps_fresh_pickR
+#print axioms not_dInvF_w
+#print axioms not_dInvF_v
