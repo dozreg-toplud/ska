@@ -2,7 +2,7 @@
 :: knows nothing, of %7 with indirect calls in its parts in the forms that the analysis
 :: gives %7 (README Gaps 12.21, lemmas/Ska/CompSevenF.lean): %7 itself, %8 (the pushed pair a
 :: cons whose head calls, or a call in the body), %9 (the arm's call, with a calling core
-:: formula), an inlined %2.
+:: formula), an inlined %2, and %7 whose q's need has a bond (%s7f, %s7g).
 =/  cases=(list [nam=@tas sub=* fol=*])
   :~  [%s7a [[4 0 1] 5] [7 [2 [0 3] [0 2]] [4 [0 1]]]]
       [%s7b [0 1] [7 [[0 1] [0 1]] [2 [0 3] [0 2]]]]
@@ -13,6 +13,8 @@
       [%inl [[4 0 1] 5] [2 [0 1] [1 [2 [0 3] [0 2]]]]]
       [%s7n [[4 0 1] 5] [7 [7 [0 1] [2 [0 3] [0 2]]] [4 [0 1]]]]
       [%s7t [[4 0 1] 5] [[0 1] [7 [0 1] [2 [0 3] [0 2]]]]]
+      [%s7f [0 [[4 0 1] 5]] [7 [0 3] [[2 [0 3] [0 2]] [0 1]]]]
+      [%s7g [[1 [[4 0 1] 5]] 0] [7 [2 [0 3] [0 2]] [[2 [0 3] [0 2]] [0 1]]]]
   ==
 |-  ^-  @
 ?~  cases  0

@@ -1,4 +1,4 @@
-import lemmas.Ska.CompSevenA
+import lemmas.Ska.CompSevenL
 
 /-!
 # The fragment closed under `[7 p q]`: `FragI`
@@ -36,6 +36,18 @@ blocks of `[7 [2 [0 3] [0 2]] [4 [0 1]]]`.  `[[0 1] [7 [0 1] [2 [0 3] [0
 v6 -> v4`; `4: mov v4 v3`; `3: mov v0 v2` (the head's bond, behind the
 tail's call); `2: con v2 v3 -> v1`; `1: don v1`.
 
+`[7 [0 3] [[2 [0 3] [0 2]] [0 1]]]` (`%s7f`, subject `[0 [[4 0 1] 5]]`,
+product `[6 [4 0 1] 5]`): `q`'s result has the bond of `+past` behind its
+head's call; `0: v0 -> cel, tal -> v8, mov v8 v9, cel v9, hed -> v6, tal ->
+v5, hop 5` (`[0 3]` then the head call's parts); `5: nok v5 v6 -> v4`; `4: mov
+v4 v2`; `3: v0 -> ve, cel, tal -> vf, mov vf v3, hop 2` (the bond block,
+filled by `[0 3]`'s front ops from the subject); `2: con v2 v3 -> v1`; `1`.
+`[7 [2 [0 3] [0 2]] [[2 [0 3] [0 2]] [0 1]]]` (`%s7g`, subject `[[1 [[4 0 1]
+5]] 0]`): `9: nok vc vd -> v7` (`p`'s call); `8: v7 -> v8, cel, hed -> v6,
+tal -> v5` (`q`'s head call's parts); `5: nok v5 v6 -> v4`; `4: mov v4 v2`;
+`3: mov v7 v3` (the bond block, `p`'s `+kern` from its product); `2: con`;
+`1`.
+
 An inlined `[2 [0 1] [1 [2 [0 3] [0 2]]]]` (`%inl`) is compiled as a direct
 call of the bell `[[%.n 0] [2 [0 3] [0 2]]]` (out of scope), not as `[7 p q]`.
 
@@ -47,6 +59,10 @@ run returns a need without entries) and is in the fragment when `p` is
 (`sevenPU`, `sevenPF`, `EntNew` when `p` has it), when `p` is `[0 axe]` or
 `[1 k]` and `q` is (`sevenJ`, `EntNew` from `q`'s), or when `p` is any
 call-free nomm of `FragU` and `q` is in the fragment (`sevenU`, no `EntNew`).
+When `q`'s result may have entries, `p` must run under them (`LOKC`,
+`CompSevenL.lean`): `[0 axe]` with `1 ≤ axe` and any `q` of the fragment
+(`sevenL0`), the indirect call with call-free parts and any `q` of the
+fragment (`sevenLI`) or call-free `q` (`sevenLIU`).
 
 * `FragI`, `fragI_hinted`, `fragI_not_pure`, `bareLitQ_fragI`, `FragUF`,
   `fragUE_fragUF`.
@@ -55,7 +71,8 @@ call-free nomm of `FragU` and `q` is in the fragment (`sevenU`, no `EntNew`).
   1]]]`), `seven_exampleB` (`[7 [[0 1] [0 1]] [2 [0 3] [0 2]]]`),
   `eight_exampleA` (`%e8a`), `eight_exampleB` (`%e8b`), `nine_exampleA`
   (`%e9a`), `nine_exampleB` (`%e9b`), `seven_exampleN` (`%s7n`),
-  `seven_exampleT` (`%s7t`).
+  `seven_exampleT` (`%s7t`), `sevenL_exampleF` (`%s7f`), `sevenL_exampleG`
+  (`%s7g`).
 -/
 
 set_option linter.unusedSectionVars false
@@ -128,6 +145,33 @@ open Nock Lazy
     (5, bk [Pole.nok 5 6 4] (hp 4)),
     (6, none)])
 
+-- `%s7f`
+#guard monoOutC envR (Nomm.n7 (Nomm.n0 3) (Nomm.cons (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) (Nomm.n0 1))) 7 ==
+  some (NeedOrd.this, 1, [(0, bk [Pole.mov 0 7, Pole.cel 7, Pole.tal 7 8, Pole.mov 8 9, Pole.cel 9, Pole.hed 9 11,
+      Pole.mov 11 6, Pole.tal 9 10, Pole.mov 10 5] (hp 5)),
+    (1, bk [] (Termin.don 1)),
+    (2, bk [Pole.con 2 3 1] (hp 1)),
+    (3, bk [Pole.mov 0 14, Pole.cel 14, Pole.tal 14 15, Pole.mov 15 3] (hp 2)),
+    (4, bk [Pole.mov 4 2] (hp 3)),
+    (5, bk [Pole.nok 5 6 4] (hp 4)),
+    (6, none)])
+
+-- `%s7g`
+#guard monoOutC envR (Nomm.n7 (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)
+    (Nomm.cons (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) (Nomm.n0 1))) 11 ==
+  some (NeedOrd.this, 1, [(0, bk [Pole.mov 0 14, Pole.cel 14, Pole.hed 14 16, Pole.mov 16 13, Pole.tal 14 15,
+      Pole.mov 15 12] (hp 9)),
+    (1, bk [] (Termin.don 1)),
+    (2, bk [Pole.con 2 3 1] (hp 1)),
+    (3, bk [Pole.mov 7 3] (hp 2)),
+    (4, bk [Pole.mov 4 2] (hp 3)),
+    (5, bk [Pole.nok 5 6 4] (hp 4)),
+    (6, none),
+    (7, none),
+    (8, bk [Pole.mov 7 8, Pole.cel 8, Pole.hed 8 10, Pole.mov 10 6, Pole.tal 8 9, Pole.mov 9 5] (hp 5)),
+    (9, bk [Pole.nok 12 13 7] (hp 8)),
+    (10, none)])
+
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
 
 /-! ## The fragment -/
@@ -149,6 +193,11 @@ inductive FragI : Bool → Nomm → Prop
   | sevenPF {t t' : Bool} {p q : Nomm} : FragI t p → FragI t' q → NoEntF q → FragI t (Nomm.n7 p q)
   | sevenJ {p q : Nomm} : JNewQ p → FragI true q → NoEntF q → FragI true (Nomm.n7 p q)
   | sevenU {t : Bool} {p q : Nomm} : FragU (S := S) p → FragI t q → NoEntF q → FragI false (Nomm.n7 p q)
+  | sevenL0 {t : Bool} {axe : Nat} {q : Nomm} : 1 ≤ axe → FragI t q → FragI t (Nomm.n7 (Nomm.n0 axe) q)
+  | sevenLI {t : Bool} {b c q : Nomm} : FragU (S := S) b → FragU (S := S) c → bareLitQ c = false → FragI t q →
+      FragI t (Nomm.n7 (Nomm.n2 b c Option.none) q)
+  | sevenLIU {b c q : Nomm} : FragU (S := S) b → FragU (S := S) c → bareLitQ c = false → FragU (S := S) q →
+      FragI false (Nomm.n7 (Nomm.n2 b c Option.none) q)
 
 theorem fragI_hinted (cod : Bell → Option Bool) {t : Bool} {nm : Nomm} (h : FragI (S := S) t nm) :
     hinted cod nm = some true := by
@@ -165,6 +214,9 @@ theorem fragI_hinted (cod : Bell → Option Bool) {t : Bool} {nm : Nomm} (h : Fr
   | sevenPF _ _ _ ih _ => simp only [hinted, ih]; rfl
   | sevenJ hp _ _ ih => simp only [hinted, hinted_pure cod _ (fragU_pure (fragU_of_jNewQ (S := S) hp)), ih]; rfl
   | sevenU hp _ _ ih => simp only [hinted, hinted_pure cod _ (fragU_pure hp), ih]; rfl
+  | sevenL0 _ _ ih => simp only [hinted, ih]; rfl
+  | sevenLI _ _ _ _ ih => simp only [hinted]; rfl
+  | sevenLIU _ _ _ _ => simp only [hinted]; rfl
 
 theorem fragI_not_pure {t : Bool} {nm : Nomm} (h : FragI (S := S) t nm) : nm.pure = false := by
   cases e : nm.pure with
@@ -257,6 +309,22 @@ theorem uokc_entNew_of_fragI {lib : Lib} {code : Bell → Option Nomm} (hok : Co
     have R := uokc_sevenA (Xp := True) hok env (fun h => ⟨uokcU hok env hp h, trivial⟩) (fun h => ih h)
       (fun _ => ⟨runU_uok lib hp, trivial⟩) (noEnt_of_noEntF env hn)
       (by simp only [hinted, hinted_pure env.cod _ (fragU_pure hp), fragI_hinted env.cod hq]; rfl) hA rfl
+    exact ⟨R.1, fun e => by cases e⟩
+  | @sevenL0 t axe q ha hq ih =>
+    intro P f hA
+    have R := uokc_sevenLA env (fun h => lokc_n0A hok env ha h) (fun h => ih h)
+      ⟨(fun _ _ e => by cases e), (fun _ e => by cases e)⟩ (by simp only [hinted, fragI_hinted env.cod hq]; rfl) hA rfl
+    exact ⟨R.1, fun ht => R.2 (fun xq => xq ht)⟩
+  | @sevenLI t b c q hb hc hbl hq ih =>
+    intro P f hA
+    have R := uokc_sevenLA env (fun h => lokc_indA hok env hb hc hbl h rfl) (fun h => ih h)
+      ⟨(fun _ _ e => by cases e), (fun _ e => by cases e)⟩ (by simp only [hinted]; rfl) hA rfl
+    exact ⟨R.1, fun ht => R.2 (fun xq => xq ht)⟩
+  | @sevenLIU b c q hb hc hbl hq =>
+    intro P f hA
+    have R := uokc_sevenLA (S := S) (Map := Map) (Xq := True) env (fun h => lokc_indA hok env hb hc hbl h rfl)
+      (fun h => ⟨uokcU hok env hq h, trivial⟩) ⟨(fun _ _ e => by cases e), (fun _ e => by cases e)⟩
+      (by simp only [hinted]; rfl) hA rfl
     exact ⟨R.1, fun e => by cases e⟩
 
 /-- **Every `Annot` of a nomm of `FragUF` meets `UOKC`.** -/
@@ -418,6 +486,43 @@ theorem seven_exampleT {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK l
     exact Annot.cons Annot.n0 (Annot.n7 Annot.n0 (Annot.indirect Annot.n0 Annot.n0))
   have hf : FragUF S (Nomm.cons (Nomm.n0 1) (Nomm.n7 (Nomm.n0 1) (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none))) :=
     Or.inr (FragI.weak (FragI.consT (FragB.n0 (by decide)) (FragI.sevenJ JNewQ.n0 fragI_ind00 noEntF_ind00)))
+  exact finishLUC_contractUF hok hA hf (by decide) h N
+
+/-- **`[7 [0 3] [[2 [0 3] [0 2]] [0 1]]]` end to end** (`%s7f`): `q`'s
+result has the bond of `+past` behind its head's call, and `[0 3]` runs under
+it, filling the bond block from the subject (`runOKGC_sevenL`, `lokc_n0`). -/
+theorem sevenL_exampleF {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) {bl : Bell}
+    (hfol : bl.fol = n3 (A 7) (slot 3) (C (n3 (A 2) (slot 3) (slot 2)) (slot 1))) {env : CallEnv}
+    {cd : Straight Map}
+    (h : finishLUC (S := S) env (Nomm.n7 (Nomm.n0 3)
+      (Nomm.cons (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) (Nomm.n0 1))) = some cd)
+    (N : Needs) : cd.need = NeedOrd.this ∧ BellContract lib N bl true cd := by
+  have hA : Annot lib code (SkaModel.Fits bl.less) bl.fol
+      (Nomm.n7 (Nomm.n0 3) (Nomm.cons (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) (Nomm.n0 1))) := by
+    rw [hfol]
+    exact Annot.n7 Annot.n0 (Annot.cons (Annot.indirect Annot.n0 Annot.n0) Annot.n0)
+  have hf : FragUF S (Nomm.n7 (Nomm.n0 3) (Nomm.cons (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) (Nomm.n0 1))) :=
+    Or.inr (FragI.weak (FragI.sevenL0 (by decide) (FragI.consH fragI_ind00 (FragU.x (FragX.frag fun _ => trivial)))))
+  exact finishLUC_contractUF hok hA hf (by decide) h N
+
+/-- **`[7 [2 [0 3] [0 2]] [[2 [0 3] [0 2]] [0 1]]]` end to end** (`%s7g`):
+both parts call, `q`'s result has a bond, and `p`'s call runs under it, its
+`+kern` filling the bond block from its product (`mov v7 v3`, `lokc_indirectC`). -/
+theorem sevenL_exampleG {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) {bl : Bell}
+    (hfol : bl.fol = n3 (A 7) (n3 (A 2) (slot 3) (slot 2)) (C (n3 (A 2) (slot 3) (slot 2)) (slot 1)))
+    {env : CallEnv} {cd : Straight Map}
+    (h : finishLUC (S := S) env (Nomm.n7 (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)
+      (Nomm.cons (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) (Nomm.n0 1))) = some cd)
+    (N : Needs) : cd.need = NeedOrd.this ∧ BellContract lib N bl true cd := by
+  have hA : Annot lib code (SkaModel.Fits bl.less) bl.fol
+      (Nomm.n7 (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)
+        (Nomm.cons (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) (Nomm.n0 1))) := by
+    rw [hfol]
+    exact Annot.n7 (Annot.indirect Annot.n0 Annot.n0) (Annot.cons (Annot.indirect Annot.n0 Annot.n0) Annot.n0)
+  have hf : FragUF S (Nomm.n7 (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)
+      (Nomm.cons (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) (Nomm.n0 1))) :=
+    Or.inr (FragI.weak (FragI.sevenLI (FragU.x (FragX.frag fun _ => trivial)) (FragU.x (FragX.frag fun _ => trivial))
+      rfl (FragI.consH fragI_ind00 (FragU.x (FragX.frag fun _ => trivial)))))
   exact finishLUC_contractUF hok hA hf (by decide) h N
 
 end Comp

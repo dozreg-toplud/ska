@@ -904,3 +904,15 @@ open Formalization.SkaModel.Comp
 #print axioms Formalization.SkaModel.PokeM.rawMono_fragUFG
 #print axioms Formalization.SkaModel.PokeM.fragUEG_subF
 #print axioms Formalization.SkaModel.PokeM.compHyp_of_fragUFG
+#print axioms runOKGC_sevenL
+#print axioms lokc_n0
+#print axioms lokc_indirectC
+#print axioms LOKC.wrap
+#print axioms lokc_indA
+#print axioms okc_sevenL
+#print axioms uokc_sevenL
+#print axioms entNew_sevenL
+#print axioms uokc_sevenLA
+#print axioms lokc_n0A
+#print axioms sevenL_exampleF
+#print axioms sevenL_exampleG
