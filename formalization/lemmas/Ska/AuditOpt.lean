@@ -38,6 +38,7 @@ import lemmas.Ska.OptAliasSSAOnce
 import lemmas.Ska.OptAliasSound
 import lemmas.Ska.OptAliasBody
 import lemmas.Ska.OptAliasBodySSA
+import lemmas.Ska.OptAliasRev
 
 /-! Axioms of the theorems about `+optimize`. -/
 
@@ -235,3 +236,6 @@ open Formalization.SkaModel.Opt
 #print axioms bodyOK_ssa
 #print axioms bodyOK_of
 #print axioms bdef_nodup
+#print axioms revCfg_sound
+#print axioms rvs_rub
+#print axioms rvs_shape
