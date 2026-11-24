@@ -359,6 +359,81 @@ theorem outGoal_kerf {sur : Sure S} {th : Jmp} {g g' : Gen Map} {out pro : Nat}
       · exact hn e
       · omega
 
+/-! ## The blocks before the runs, from any state -/
+
+/-- **The blocks of the indirect call before its two runs, under a
+fork-free `%next sur th`, from any state** (`indirect_prefix` from `gen0`
+for `%done`): `+simple-next` is the identity, `+kerf` makes the block
+`out = bo` and takes `pro = re`, and the `%nok` block at `bo + 1` reads the
+subject and the formula from two fresh registers above `+kerf`'s and hops to
+`out`.  The state after them grows from the start (`GrowU`) and keeps its
+`cond`. -/
+theorem indirect_prefixN {sur : Sure S} {th : Jmp} {g0 g1 g2 g3 : Gen Map} {nex0 : NextL S}
+    {out pro o : Nat}
+    (h1 : simpleNextL (CGoalL.next (ofSure sur) th) g0 = some (nex0, g1))
+    (h2 : kerf nex0 g1 = some ((out, pro), g2))
+    (h3 : emit ⟨[], [Pole.nok g2.re (g2.re + 1) pro], Termin.hop (jmp0 out)⟩
+        { { g2 with re := g2.re + 1 } with re := g2.re + 1 + 1 } = some (o, g3))
+    (hd : g0.drop = false) (hu : UpBelow g0) (hcb : CondBelow g0) (b0 : 1 ≤ g0.bo)
+    (hj : GJ g0.bo (CGoal.next sur th)) :
+    g1 = g0 ∧ nex0 = ⟨ofSure sur, th⟩ ∧ out = g0.bo ∧ pro = g0.re ∧ o = g0.bo + 1 ∧ g0.re + 1 ≤ g2.re ∧
+    g3.re = g2.re + 2 ∧ g3.bo = g0.bo + 2 ∧ g3.drop = false ∧ g3.cond = g0.cond ∧
+    HoonMap.get g3.blocks (g0.bo + 1) = some ⟨[], [Pole.nok g2.re (g2.re + 1) g0.re], Termin.hop (jmp0 g0.bo)⟩ ∧
+    HoonMap.get g3.blocks g0.bo = HoonMap.get g2.blocks g0.bo ∧ (∀ k, k < g0.bo →
+      HoonMap.get g3.blocks k = HoonMap.get g0.blocks k) ∧
+    kerf (⟨ofSure sur, th⟩ : NextL S) g0 = some ((out, pro), g2) ∧
+    GrowU g0 g3 ∧ UpBelow g3 ∧ CondBelow g3 := by
+  simp only [simpleNextL, pure_apply, Option.some.injEq, Prod.mk.injEq] at h1
+  obtain ⟨rfl, rfl⟩ := h1
+  have K := kerf_ofSure h2 hd
+  obtain ⟨rfl, rfl, bo2, dr2, cd2, -, l2, Ak, hblk, -, -, -⟩ := K
+  rw [emit_apply] at h3
+  simp only [Option.some.injEq, Prod.mk.injEq] at h3
+  obtain ⟨rfl, rfl⟩ := h3
+  have d2 : g2.drop = false := dr2.trans hd
+  have eb3 : ∀ k, HoonMap.get ({ { g2 with re := g2.re + 1 } with re := g2.re + 1 + 1 }.emitted
+      ⟨[], [Pole.nok g2.re (g2.re + 1) g0.re], Termin.hop (jmp0 g0.bo)⟩).blocks k =
+      if k = g0.bo + 1 then some ⟨[], [Pole.nok g2.re (g2.re + 1) g0.re], Termin.hop (jmp0 g0.bo)⟩ else
+      if k = g0.bo then some ⟨[], Ak, Termin.hop th⟩ else HoonMap.get g0.blocks k := fun k => by
+    simp only [Gen.emitted, d2, Bool.false_eq_true, ↓reduceIte, HoonMap.get_put, bo2, hblk]
+  have thl : th.there < g0.bo := hj.2
+  have up0 : ∀ t, ¬ UpAt ({ { g2 with re := g2.re + 1 } with re := g2.re + 1 + 1 }.emitted
+      ⟨[], [Pole.nok g2.re (g2.re + 1) g0.re], Termin.hop (jmp0 g0.bo)⟩).blocks g0.bo t := by
+    rintro t ⟨b, j, hb, hf, ht, hlt⟩
+    rw [eb3, if_neg (by omega), if_pos rfl] at hb
+    cases hb; simp only [Termin.hop.injEq] at hf; subst hf; omega
+  have G : GrowU g0 ({ { g2 with re := g2.re + 1 } with re := g2.re + 1 + 1 }.emitted
+      ⟨[], [Pole.nok g2.re (g2.re + 1) g0.re], Termin.hop (jmp0 g0.bo)⟩) := by
+    refine ⟨by simp only [Gen.emitted]; omega, by simp only [Gen.emitted]; exact dr2, fun k b hk hb => ?_,
+      fun k b' hb' => ?_⟩
+    · exact ⟨b, by rw [eb3, if_neg (by omega), if_neg (by omega)]; exact hb, rfl, rfl⟩
+    · rw [eb3] at hb'
+      by_cases e1 : k = g0.bo + 1
+      · rw [if_pos e1] at hb'; cases hb'
+        refine Or.inr ⟨by omega, by simp only [Gen.emitted]; omega, fun j hj' => ?_⟩
+        simp only [finJumps, List.mem_singleton] at hj'; subst hj'
+        exact ⟨by simp [jmp0]; omega, Or.inl ⟨by simp [jmp0]; omega, fun t ht => absurd ht (up0 t)⟩⟩
+      rw [if_neg e1] at hb'
+      by_cases e0 : k = g0.bo
+      · rw [if_pos e0] at hb'; cases hb'
+        refine Or.inr ⟨by omega, by simp only [Gen.emitted]; omega, fun j hj' => ?_⟩
+        simp only [finJumps, List.mem_singleton] at hj'; subst hj'
+        refine ⟨hj.1, Or.inl ⟨by omega, fun t ht => ?_⟩⟩
+        have ht' : UpAt g0.blocks j.there t := by
+          obtain ⟨b, j', hb, hf, ht, hlt⟩ := ht
+          rw [eb3, if_neg (by omega), if_neg (by omega)] at hb
+          exact ⟨b, j', hb, hf, ht, hlt⟩
+        have := hu _ _ ht'; omega
+      · rw [if_neg e0] at hb'
+        exact Or.inl ⟨b', hb', rfl, rfl⟩
+  refine ⟨rfl, rfl, rfl, rfl, by omega, l2, rfl, by simp only [Gen.emitted]; omega, by simp only [Gen.emitted]; exact d2,
+    by simp only [Gen.emitted]; exact cd2, by rw [eb3, if_pos rfl], ?_, fun k hk => ?_, h2, G, G.up hu, ?_⟩
+  · rw [eb3, if_neg (by omega), if_pos rfl, hblk, if_pos rfl]
+  · rw [eb3, if_neg (by omega), if_neg (by omega)]
+  · intro k hk
+    simp only [Gen.emitted, cd2] at hk ⊢
+    have := hcb k hk; omega
+
 end Comp
 end SkaModel
 end Formalization
