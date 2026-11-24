@@ -60,6 +60,7 @@ import lemmas.Compiler.SkaRun
 import lemmas.Compiler.SkaPass
 import lemmas.Compiler.SkaPassLoop
 import lemmas.Compiler.SkaAnalyze
+import lemmas.Compiler.SkaJointConv
 import lemmas.Compiler.RegisterFast
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
@@ -489,3 +490,23 @@ open Formalization
 #print axioms Compiler.sweep_batteryW
 #print axioms Compiler.cull_runW
 #print axioms Compiler.kc_dirty_at
+#print axioms Compiler.mold_arm_at
+#print axioms Compiler.mold_bat_bunt
+#print axioms Compiler.bunt_W
+#print axioms Compiler.E_far
+#print axioms Compiler.E_le_nock
+#print axioms Compiler.E_complete
+#print axioms Compiler.cull_run_noneW
+#print axioms Compiler.cull_E
+#print axioms Compiler.lvIs
+#print axioms Compiler.analyzeStepH_le
+#print axioms Compiler.passStepH_le
+#print axioms Compiler.lv_below
+#print axioms Compiler.lv_above
+#print axioms Compiler.nock_iff_levels
+#print axioms Compiler.analyze_iff
+#print axioms Compiler.ska_run_iff
+#print axioms Compiler.pass_loop_iff
+#print axioms Compiler.member_loop_iff
+#print axioms Compiler.fol_loop_iff_full
+#print axioms Compiler.resolve_iff_full
