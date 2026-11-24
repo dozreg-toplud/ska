@@ -50,6 +50,11 @@ theorem cri_reg {r : Nat} (o : Nat) {g : Gen (TreapMap mugF)} (hr : r < g.re) (h
   ⟨fun y hy => absurd hy (HoonSet.mem_empty y), hd, ⟨nb_this hr, jmpIn_jmp0 _ _⟩, by
     simp [GDist, lazyReg, Distinct]⟩
 
+/-- The same goal at the state after a block is emitted at a raised counter. -/
+theorem cri_reg_emit (b : Blob) (g : Gen (TreapMap mugF)) (k r o : Nat) (hr : r < k) (hd : g.drop = false) :
+    CrInv (cfEmitG b { g with re := k }) (CGoal.next (lazyReg r) (jmp0 o)) :=
+  cri_reg o (by rw [cf_emitG_re]; exact hr) (by rw [cf_emitG_drop]; exact hd)
+
 /-- `+collapse-lazy-atom` keeps the mode and does not lower the counter. -/
 theorem cri_cla {laz : Sure CSet} {th : Jmp} {g g1 : Gen (TreapMap mugF)} {a : Option (Nat × Nat)}
     (hd : g.drop = false) (h : collapseLazyAtomL (⟨Lazy.ofSure laz, th⟩ : NextL CSet) g = some (a, g1)) :

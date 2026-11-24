@@ -82,6 +82,7 @@ import lemmas.Compiler.CompCtx
 import lemmas.Compiler.CompClaLink
 import lemmas.Compiler.CompRunLink
 import lemmas.Compiler.CompPastLink
+import lemmas.Compiler.CompRunInv
 import lemmas.Compiler.CompRunCases
 import lemmas.Compiler.CompRunCons
 import lemmas.Compiler.CompRunAll
@@ -658,4 +659,8 @@ open Formalization
 #print axioms Compiler.cra_copy_lok
 #print axioms Compiler.cra_into_lok
 #print axioms Compiler.cra_run_lok
-#print axioms Compiler.comp_run_all
+#print axioms Compiler.comp_run_all'
+#print axioms Compiler.cri_copy
+#print axioms Compiler.cri_split
+#print axioms Compiler.cri_into
+#print axioms Compiler.cr5_br_keeps
