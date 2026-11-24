@@ -50,6 +50,11 @@ import lemmas.Ska.OptAliasAll
 import lemmas.Ska.OptAliasSim
 import lemmas.Ska.OptAliasKeeps
 import lemmas.Ska.OptAliasPick
+import lemmas.Ska.OptAliasRel
+import lemmas.Ska.OptAliasFwd
+import lemmas.Ska.OptAliasBack
+import lemmas.Ska.OptAliasKeepsB
+import lemmas.Ska.OptAliasResult
 
 /-! Axioms of the theorems about `+optimize`. -/
 
@@ -329,3 +334,39 @@ open Formalization.SkaModel.Opt
 #print axioms akb_live
 #print axioms akj_jump
 #print axioms Formalization.SkaModel.Ana.pickR_mem
+#print axioms asplit_g2
+#print axioms alive_at
+#print axioms alive_op
+#print axioms alive_dead
+#print axioms alive_next
+#print axioms alive_end
+#print axioms alive_jump
+#print axioms alias_fwd_step
+#print axioms alias_fwd_end
+#print axioms alias_fwd
+#print axioms aop_rename
+#print axioms afn_jump_back
+#print axioms apass_some
+#print axioms alias_norm
+#print axioms alias_bwd_step
+#print axioms alias_bwd
+#print axioms alias_bwd_end
+#print axioms alias_reads
+#print axioms alias_local
+#print axioms alias_args
+#print axioms alias_entry
+#print axioms alias_keeps_of
+#print axioms alias_keepsB
+#print axioms alias_keepsB_pickR
+#print axioms aw_new
+#print axioms afin_nolti
+#print axioms afin_jmps
+#print axioms alias_nolti
+#print axioms alias_parNodup
+#print axioms alias_targetsSub
+#print axioms alias_acyclic
+#print axioms alias_closed
+#print axioms topoOK_filter
+#print axioms alias_topoInvR
+#print axioms aliasFieldSSAB_of
+#print axioms optimize_keeps_alias
