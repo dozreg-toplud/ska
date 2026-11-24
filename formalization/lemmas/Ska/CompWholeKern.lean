@@ -295,6 +295,132 @@ theorem kernP_mono (r : Nat) : PMonoD (KernP (S := S) (Map := Map) r) := by
   · intro a b d u ur us uu
     exact hsem a b d u ur us fun x hx => (uu x hx).trans (uc x hx)
 
+/-- A gate that needs the invariant `I` of the state it starts from. -/
+def GateOKDI (C : Gen Map → Gen Map → Prop) (I : Gen Map → Prop)
+    (P : Map (Nat × List Nat) → Nat → Nat → Nat → Sure S → List Pole → Prop)
+    (f : Nat → Sure S → CM Map Unit) : Prop :=
+  ∀ (o : Nat) (l : Lazy S) (g g' : Gen Map), f o l.sure g = some ((), g') → g.drop = false → I g →
+    WalkOKD C P g g' [(o, l)]
+
+/-- **The gate of `+kern`**: from a state whose keys of `cond` lie below
+`re`, it puts the ops of `KernP r` at the one block it is given and makes
+proxies for `r` only. -/
+theorem kernGate_ok (r o : Nat) :
+    GateOKDI (ProxyFor r) CondBelow (KernP (S := S) (Map := Map) r) (kernGate (S := S) (Map := Map) r o) := by
+  intro oL l g g' h hd hI
+  unfold kernGate at h
+  obtain ⟨ned, g1, h1, h2⟩ := bind_some h
+  have L := sureRequireLook_spec h1
+  obtain ⟨kk, e1⟩ := L.gen
+  subst e1
+  have pf1 : ProxyFor r g { g with re := kk } := ProxyFor.of_eq L.le rfl
+  have nk : ∀ x, g.re ≤ x → HoonMap.get g.cond x = Option.none := fun x hx => by
+    cases e : HoonMap.get g.cond x with
+    | none => rfl
+    | some _ => have := hI x (by simp [e]); omega
+  have lk : g.re ≤ kk := L.le
+  by_cases en : ned = Need.none
+  · rw [if_pos en] at h2
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+    obtain ⟨-, rfl⟩ := h2
+    subst en
+    refine ⟨rfl, rfl, L.le, pf1, fun _ _ => rfl, fun e he => ?_⟩
+    simp only [List.mem_singleton] at he
+    subst he
+    refine ⟨[], fun B fin hb => by simpa using hb, g.re, kk, Nat.le_refl _, Nat.le_refl _, r, Or.inl rfl,
+      fun x hx _ _ => nk x hx, ?_⟩
+    intro _ _ _ u _ _ _ lib σ O c gul st t R v _
+    exact ⟨fun _ => ⟨R, Runs.nil R, holdsS_of_sure L trivial, fun _ _ _ => rfl⟩,
+      fun nf => absurd ((fits_sure L v).mp trivial) nf⟩
+  rw [if_neg en] at h2
+  obtain ⟨src, g2, hs, h3⟩ := bind_some h2
+  -- the source: `r` at the block `o`, a fresh proxy elsewhere
+  have SRC : g2.blocks = g.blocks ∧ g2.drop = g.drop ∧ g2.bo = g.bo ∧ ProxyFor r { g with re := kk } g2 ∧
+      kk ≤ g2.re ∧ g2.re ≤ kk + 1 ∧ (src = r ∨ (src = kk ∧ g2.re = kk + 1 ∧ unproxy g2.cond src = r)) ∧
+      (∀ x, g.re ≤ x → x ≠ src → HoonMap.get g2.cond x = Option.none) := by
+    obtain ⟨PF, hb2, hd2, hbo2, _, _⟩ := collSrc_spec hs hd
+    by_cases e : oL = o
+    · rw [if_pos e] at hs
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at hs
+      obtain ⟨rfl, rfl⟩ := hs
+      exact ⟨rfl, rfl, rfl, PF, Nat.le_refl _, Nat.le_succ _, Or.inl rfl, fun x hx _ => nk x hx⟩
+    · rw [if_neg e] at hs
+      obtain ⟨ep, er, -, -, CF, hu⟩ := proxy_condFresh hs
+      obtain ⟨tag, -, hu'⟩ := hu hd
+      simp only at ep er
+      refine ⟨hb2, hd2, hbo2, PF, by omega, by omega, Or.inr ⟨ep, er, hu'⟩, fun x hx hne => ?_⟩
+      rcases CF.2 x with e' | ⟨a, b⟩
+      · rw [e']; exact nk x hx
+      · simp only at a b; exact absurd (by omega) hne
+  obtain ⟨hb2, hd2, hbo2, PF, l2, u2, hsrc, kf2⟩ := SRC
+  rw [show noSoft oL = false from rfl] at h3
+  simp only [Bool.false_eq_true, ↓reduceIte] at h3
+  obtain ⟨ops, g3, h4, h5⟩ := bind_some h3
+  obtain ⟨A, hA, K⟩ := kernLoop_spec ned src [] g2 g3 ops h4
+  simp only [List.append_nil] at hA
+  subst hA
+  obtain ⟨n, rfl⟩ := K.gen
+  have l3 : g2.re ≤ n := K.le
+  obtain ⟨b, hb, rfl⟩ := addOps_spec h5 (hd2.trans hd)
+  refine ⟨hbo2, hd2, by simp only; omega,
+    pf1.trans (PF.trans (ProxyFor.of_eq (g := g2) (by simp only; omega) rfl)), fun o' ho' => ?_, fun e he => ?_⟩
+  · simp only [List.map_cons, List.map_nil, List.mem_singleton] at ho'
+    simp only [HoonMap.get_put, if_neg ho']
+    exact congrArg (fun m => HoonMap.get m o') hb2
+  simp only [List.mem_singleton] at he
+  subst he
+  rw [hb2] at hb
+  refine ⟨ops, fun B fin hb' => ?_, g.re, n, Nat.le_refl _, Nat.le_refl _, src, ?_, ?_, ?_⟩
+  · rw [hb] at hb'
+    cases hb'
+    simp [HoonMap.get_put]
+  · rcases hsrc with e | ⟨e, e', hu⟩
+    · exact Or.inl e
+    · exact Or.inr ⟨by omega, by omega, hu⟩
+  · intro x a _ c
+    exact kf2 x a c
+  intro hrlo dist hlt u ur uS uc
+  have kf : ∀ x, g.re ≤ x → x < n → x ≠ src → u x = x := fun x a b c => by
+    rw [uc x b]; exact unproxy_none (kf2 x a c)
+  have us : u src = r := by
+    rcases hsrc with e | ⟨e, e', hu⟩
+    · rw [e]; exact ur
+    · rw [uc src (by omega)]; exact hu
+  have srcl : src < g2.re := by
+    rcases hsrc with e | ⟨e, e', _⟩
+    · omega
+    · omega
+  have ut : ∀ x, NMem ned x → u x = x := fun x hx => by
+    rcases L.mem x hx with h' | ⟨a, b⟩
+    · exact uS x h'
+    · simp only at b
+      refine kf x a (by omega) fun e => ?_
+      rcases hsrc with e' | ⟨e', _, _⟩
+      · omega
+      · omega
+  have hnr : ¬ NMem ned r := fun hx => by
+    rcases L.mem r hx with h' | ⟨a, _⟩
+    · have := hlt r h'; omega
+    · omega
+  have e2 := kernLoop_ren h4 hnr (by omega) us ur ut (fun x a b => kf x (by omega) b (by omega))
+  obtain ⟨A', hA', K'⟩ := kernLoop_spec ned r [] g2 _ _ e2
+  simp only [List.append_nil] at hA'
+  have dn : Distinct ned := L.dist dist (fun x hx => by have := hlt x hx; omega)
+  have lt2 : ∀ x, NMem ned x → x < g2.re := fun x hx => by
+    rcases L.mem x hx with h' | ⟨_, b⟩
+    · have := hlt x h'; omega
+    · simp only at b; omega
+  have KS := K'.sem dn lt2
+  intro lib σ O c gul st t R v hR
+  obtain ⟨S1, S2⟩ := KS lib σ O c gul st t R v hR
+  rw [hA']
+  refine ⟨fun f => ?_, fun nf => S2 fun f => nf ((fits_sure L v).mp f)⟩
+  obtain ⟨R', hr', hh, hk⟩ := S1 ((fits_sure L v).mpr f)
+  exact ⟨R', hr', holdsS_of_sure L hh, fun x hx hn => hk x (by omega) fun hm => by
+    rcases L.mem x hm with h' | ⟨a, _⟩
+    · exact hn h'
+    · omega⟩
+
 end Comp
 end SkaModel
 end Formalization
