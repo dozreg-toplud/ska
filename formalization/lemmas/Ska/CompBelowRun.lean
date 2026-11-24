@@ -616,6 +616,90 @@ theorem keeps_into {nex : Next S} {axe : Nat} {g g' : Gen Map} {x : Sure S × Su
   obtain ⟨k3, n1, n2⟩ := keeps_intoLoop _ _ _ _ _ _ _ h3 (hn.1.mono k0.le) (fun e he => by simp at he) (RegsIn.nil _)
   exact ⟨k0.trans k3, n1, n2⟩
 
+/-! ## `+collapse-lazy-atom` -/
+
+theorem collapse_end {g g5 g' : Gen Map} {r there : Nat} {a : Option (Nat × Nat)} (k : Keeps g g5) (r5 : r < g5.re)
+    (h : (pure (some (r, there)) : CM Map (Option (Nat × Nat))) g5 = some (a, g')) :
+    Keeps g g' ∧ ∀ r' o', a = some (r', o') → r' < g'.re := by
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨rfl, rfl⟩ := h
+  exact ⟨k, fun r' o' e => by simp only [Option.some.injEq, Prod.mk.injEq] at e; rw [← e.1]; exact r5⟩
+
+theorem keeps_collapseLazyAtom {nex : Next S} {g g' : Gen Map} {a : Option (Nat × Nat)} (hd : g.drop = false)
+    (hn : NB g.re nex.laz.ned) (h : collapseLazyAtom nex g = some (a, g')) :
+    Keeps g g' ∧ ∀ r o, a = some (r, o) → r < g'.re := by
+  unfold collapseLazyAtom at h
+  by_cases ha : nex.th.args ≠ []
+  · rw [if_pos ha] at h; cases h
+  rw [if_neg ha] at h
+  by_cases hne : noneEquivalent nex.laz = true
+  · rw [if_pos hne] at h
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨Keeps.refl _, fun _ _ e => by cases e⟩
+  rw [if_neg hne] at h
+  obtain ⟨ns, g1, h1, h⟩ := bind_some h
+  obtain ⟨k1, n1⟩ := keeps_sureRequireLook hn h1
+  obtain ⟨⟨r, there⟩, g2, h2, h⟩ := bind_some h
+  have hr : Keeps g1 g2 ∧ r < g2.re := by
+    cases ns with
+    | this r0 =>
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+      obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h2
+      exact ⟨Keeps.refl _, n1 _ rfl⟩
+    | none =>
+      obtain ⟨r0, g3, h3, h2⟩ := bind_some h2
+      obtain ⟨e3, q3, k3⟩ := keeps_re h3
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+      obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h2
+      exact ⟨k3, by omega⟩
+    | pair p q =>
+      obtain ⟨r0, g3, h3, h2⟩ := bind_some h2
+      obtain ⟨e3, q3, k3⟩ := keeps_re h3
+      obtain ⟨o, g4, h4, h2⟩ := bind_some h2
+      obtain ⟨k4, q4⟩ := keeps_emit ((k1.trans k3).dropF hd) (blobIn_fin (f := Termin.bom Option.none) trivial) h4
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+      obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h2
+      exact ⟨k3.trans k4, by omega⟩
+    | both r0 p q =>
+      obtain ⟨o, g4, h4, h2⟩ := bind_some h2
+      obtain ⟨k4, q4⟩ := keeps_emit (k1.dropF hd) (blobIn_fin (f := Termin.bom Option.none) trivial) h4
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+      obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h2
+      exact ⟨k4, by rw [q4]; exact n1 _ (Or.inl rfl)⟩
+  obtain ⟨k2, r2⟩ := hr
+  have d2 := (k1.trans k2).dropF hd
+  obtain ⟨g3, g3', h3, h⟩ := bind_some h
+  rw [get_apply] at h3
+  simp only [Option.some.injEq, Prod.mk.injEq] at h3
+  obtain ⟨rfl, rfl⟩ := h3
+  rw [d2] at h
+  simp only [Bool.false_eq_true, if_false] at h
+  obtain ⟨ned', g4, h4, h⟩ := bind_some h
+  obtain ⟨k4, n4⟩ := keeps_sureRequireLook (sur := ⟨Need.this r, nex.laz.lok⟩) (nb_this r2) h4
+  have r4 : r < g4.re := Nat.lt_of_lt_of_le r2 k4.le
+  have k14 := k1.trans (k2.trans k4)
+  cases ned' with
+  | none => exact collapse_end k14 r4 h
+  | this r' =>
+    simp only at h
+    by_cases e : r = r'
+    · rw [if_pos e] at h; exact collapse_end k14 r4 h
+    · rw [if_neg e] at h
+      obtain ⟨u, g5, h5, h⟩ := bind_some h
+      obtain ⟨k5, _⟩ := keeps_addOps (regsIn_mov r4 (n4 r' rfl) (RegsIn.nil _)) h5
+      exact collapse_end (k14.trans k5) (Nat.lt_of_lt_of_le r4 k5.le) h
+  | pair p q =>
+    simp only at h
+    obtain ⟨u, g5, h5, h⟩ := bind_some h
+    have k5 := keeps_crashNeed n4 (fun p e => by cases e; exact r4) h5
+    exact collapse_end (k14.trans k5) (Nat.lt_of_lt_of_le r4 k5.le) h
+  | both r0 p q =>
+    simp only at h
+    obtain ⟨u, g5, h5, h⟩ := bind_some h
+    have k5 := keeps_crashNeed n4 (fun p e => by cases e; exact r4) h5
+    exact collapse_end (k14.trans k5) (Nat.lt_of_lt_of_le r4 k5.le) h
+
 end Comp
 end SkaModel
 end Formalization
