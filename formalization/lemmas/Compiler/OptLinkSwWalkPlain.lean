@@ -253,10 +253,10 @@ theorem sw_skip_gate_map {α : Type} (E : α → Noun) (c bp bs bc : Noun) (p : 
   simp [hp a ha]
 
 /-- The test of the `+skip`: an `%imm` into the register of the first test. -/
-theorem wp_skg (r : Nat) (op : Pole) (BS X : Noun) (hX : slot? 0x7f9f X = some (A r)) :
-    nock (C swWPSkG (C op.toNoun (C BS X))) swWPSkG = some (loob (immTo r op)) := by
+theorem wp_skg (r : Nat) (op : Pole) (X : Noun) (hX : slot? 0xff9f X = some (A r)) :
+    nock (C swWPSkG (C op.toNoun X)) swWPSkG = some (loob (immTo r op)) := by
   unfold swWPSkG
-  have h2 : slot? 0x3ff9f (C swWPSkG (C op.toNoun (C BS X))) = some (A r) := by
+  have h2 : slot? 0x3ff9f (C swWPSkG (C op.toNoun X)) = some (A r) := by
     simp [nock_exec, hX]
   cases op with
   | imm n dd =>
@@ -266,6 +266,118 @@ theorem wp_skg (r : Nat) (op : Pole) (BS X : Noun) (hX : slot? 0x7f9f X = some (
   | _ => simp [nock_exec, Pole.toNoun, immTo, loob, eqCode, Tag.imm, Tag.mov, Tag.inc, Tag.con, Tag.hed, Tag.tal, Tag.cel, Tag.lob, Tag.equ, Tag.hsp, Tag.hse,
       Tag.hdp, Tag.hde, Tag.hmp, Tag.hme, Tag.hcp, Tag.hce, Tag.spy, Tag.nok, Tag.cal, Tag.caf, Tag.cam, Tag.csl,
       Tag.csf, Tag.csm]
+
+theorem filter_immTo (r : Nat) (body : List Pole) :
+    body.filter (fun op => match op with | Pole.imm _ dd => !(dd = r) | _ => true)
+      = body.filter (fun op => !immTo r op) := by
+  apply List.filter_congr
+  intro op _
+  cases op <;> simp [immTo]
+
+theorem wp_node (bl : TreapMap mugF Blob) (T0 REV USES : Noun) (o : Nat) (rest : List Nat)
+    (p0 : Nat × Opt.SPlain) (pl : List (Nat × Opt.SPlain)) (CS : Noun) (cas : List Opt.SCase) (ned : Nat)
+    (ids : List Nat) (out1 : TreapMap mugF Blob) (DONE : Noun) (nex fuel : Nat) (nb : List Pole) (nf : Termin)
+    (ids' : List Nat) (nout : TreapMap mugF Blob)
+    (ht : Opt.stree p0.2.d (plMis p0 pl) fuel cas ids out1 = some (nb, nf, ids', nout))
+    (b : Blob) (hb : HoonMap.get bl o = some b) (q : Pole → Bool) (hq : ∀ op, q op = !immTo p0.2.r op) :
+    nock (C (listNoun A ids) (C (A ned) (C (listNoun scaseN cas) (wpS1 p0 pl CS
+      (swWk (HoonMap.toNoun Blob.toNoun bl) T0 (listNoun A (o :: rest)) REV USES (HoonMap.toNoun Blob.toNoun out1)
+        DONE (A nex)))))) swWPNode
+      = nock (swWk (HoonMap.toNoun Blob.toNoun bl) T0 (listNoun A rest) REV USES
+          (HoonMap.toNoun Blob.toNoun (HoonMap.put nout o ⟨b.par, b.body.filter q ++ nb, nf⟩))
+          DONE (A nex)) swWalk := by
+  have hfq : b.body.filter q = b.body.filter (fun op => !immTo p0.2.r op) :=
+    List.filter_congr (fun op _ => hq op)
+  rw [hfq]
+  have htr := sw_tree (HoonMap.toNoun Blob.toNoun bl) T0 REV USES p0.2.d (plMis p0 pl) fuel cas ids out1 _ ht
+  have hg := blocks_got bl o
+  rw [hb] at hg
+  have hp := blocks_put nout o ⟨b.par, b.body.filter (fun op => !immTo p0.2.r op) ++ nb, nf⟩
+  have hskip : ∀ (BS X : Noun), slot? 0xff9f X = some (A p0.2.r) →
+      nock (C skip.battery (C (C (listNoun Pole.toNoun b.body) (C swWPSkG (C BS X))) layer2)) skip.battery
+        = some (listNoun Pole.toNoun (b.body.filter (fun op => !immTo p0.2.r op))) := by
+    intro BS X hX
+    rw [listNoun_map_listN, listNoun_map_listN]
+    exact sw_skip_gate_map Pole.toNoun layer2 swWPSkG BS X (immTo p0.2.r) b.body
+      (fun op _ => wp_skg p0.2.r op X hX)
+  have hweld := weld_gate_list layer2 ((b.body.filter (fun op => !immTo p0.2.r op)).map Pole.toNoun)
+    (nb.map Pole.toNoun)
+  rw [← List.map_append] at hweld
+  simp only [← listNoun_map_listN] at hweld
+  have hL := optC_layer2
+  obtain ⟨par, body, fin⟩ := b
+  simp only [Blob.toNoun, Option.map_some] at hp hg
+  unfold swTrG swTrN at htr
+  unfold wpS1 swWk swSp swK9 swK8 swK7 swK6 swK5 swK4 swS8 swS7 swS6 swS5 swS4 swS3 swG at *
+  generalize optC = OC at hL htr
+  generalize HoonMap.toNoun Blob.toNoun bl = BL at hg htr ⊢
+  conv => lhs; arg 2; unfold swWPNode
+  simp [nock_exec, htr, hL, by.arm_at, by_arm, by.got.arm_at, got_arm, hg, skip.arm_at, skip_arm, hskip,
+    weld.arm_at, weld_arm, hweld, by.put.arm_at, put_arm, hp, listNoun, spN, splainN]
+
+/-! ## The branch -/
+
+theorem casesAcc_length : ∀ (ces : List Opt.SCase) (saw : List Nat) (acc : List Opt.SCase),
+    acc.length ≤ (Opt.casesAcc ces saw acc).length
+  | [], _, _ => Nat.le_refl _
+  | x :: t, saw, acc => by
+    simp only [Opt.casesAcc]
+    split
+    · exact casesAcc_length t saw acc
+    · exact Nat.le_trans (Nat.le_succ _) (casesAcc_length t (x.c :: saw) (x :: acc))
+
+theorem casesOf_ne_nil (x : Opt.SCase) (t : List Opt.SCase) (cas : List Opt.SCase)
+    (h : Opt.casesOf (x :: t) = some cas) : cas ≠ [] := by
+  obtain ⟨L, e, m⟩ := hsort_qsort scaseN (fun a b => decide (a.c < b.c)) csP csP_scase
+    (Opt.casesAcc (x :: t) [] []).length (Opt.casesAcc (x :: t) [] []) (Nat.le_refl _)
+  unfold Opt.casesOf at h
+  rw [e] at h
+  cases h
+  intro hn
+  subst hn
+  have hl := (qsort_perm csP ((Opt.casesAcc (x :: t) [] []).map scaseN)).length_eq
+  rw [← m] at hl
+  simp only [List.map_nil, List.length_nil, List.length_map] at hl
+  have := casesAcc_length t [x.c] [x]
+  simp only [Opt.casesAcc, List.not_mem_nil, if_false] at hl
+  simp at this
+  omega
+
+/-- **A plain chain in the walk**: where `switchPlain` returns `(out', done',
+nex')`, the branch on `[ps [cs walk]]` is the next turn of the walk on the rest
+of `topo`, `out'`, a set related to `done'` and `nex'`. -/
+theorem sw_wplain (bl : TreapMap mugF Blob) (rev : TreapMap mugF (List Nat)) (T0 USES : Noun)
+    (fuel o : Nat) (rest : List Nat) (out : TreapMap mugF Blob) (done : List Nat) (DONE CS : Noun) (nex : Nat)
+    (hD : SawRel DONE done) (ps : List (Nat × Opt.SPlain)) (out' : TreapMap mugF Blob) (done' : List Nat)
+    (nex' : Nat) (h : Opt.switchPlain bl out fuel o ps done nex = some (out', done', nex')) :
+    ∃ DONE', SawRel DONE' done' ∧
+      nock (C (listNoun spN ps) (C CS (swWk (HoonMap.toNoun Blob.toNoun bl) T0 (listNoun A (o :: rest)) (jarN rev)
+        USES (HoonMap.toNoun Blob.toNoun out) DONE (A nex)))) swWPB
+        = nock (swWk (HoonMap.toNoun Blob.toNoun bl) T0 (listNoun A rest) (jarN rev) USES
+            (HoonMap.toNoun Blob.toNoun out') DONE' (A nex')) swWalk := by
+  match ps with
+  | [] => simp [Opt.switchPlain] at h
+  | p0 :: pl =>
+    simp only [Opt.switchPlain] at h
+    obtain ⟨cas, hc, h⟩ := Option.bind_eq_some_iff.mp h
+    have hc' : Opt.casesOf ((p0 :: pl).map toCaseP) = some cas := hc
+    have hne : cas ≠ [] := by
+      simp only [List.map_cons] at hc'
+      exact casesOf_ne_nil _ _ cas hc'
+    generalize hfi : Opt.freshIds (2 * cas.length - 2 + 1) ((pl.map Prod.fst).take (2 * cas.length - 2))
+      (2 * cas.length - 2) nex = FI at h
+    obtain ⟨ids, nexI⟩ := FI
+    simp only at h
+    obtain ⟨⟨nb, nf, ids', nout⟩, ht, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨b, hb, h⟩ := Option.map_eq_some_iff.mp h
+    simp only [Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl, rfl⟩ := h
+    obtain ⟨D', hD', hr⟩ := wp_r (HoonMap.toNoun Blob.toNoun bl) T0 (listNoun A (o :: rest)) (jarN rev) USES out
+      DONE (A nex) CS done hD p0 pl cas hc' hne
+    refine ⟨D', hD', ?_⟩
+    rw [wp_old, hr, wp_ids, hfi]
+    exact wp_node bl T0 (jarN rev) USES o rest p0 pl CS cas (2 * cas.length - 2) ids _ D' nexI fuel nb nf ids' nout
+      ht b hb _ (fun op => by cases op <;> rfl)
 
 end Compiler
 end Formalization
