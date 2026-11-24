@@ -404,5 +404,65 @@ theorem run_datum (gen : GenS FinMap R) :
 
 end datum
 
+/-! ## The battery of `+run` -/
+
+/-- The state as `+run` counts the run. -/
+def runSt0 (st : SkaState FinMap R) : SkaState FinMap R :=
+  { st with stats := { st.stats with runs := st.stats.runs + 1 } }
+
+/-- The rest of the trap's subject in `+run` on `[id index st]` in the
+context `K`: `[bus [data gate]]`, with the old datum `data` and the gate of
+`+run` on the counted state. -/
+noncomputable def runTrapRest (regsNoun : R → Noun) (K : Noun) (id : Ident) (index : Nat)
+    (st : SkaState FinMap R) : Noun :=
+  C id.1.toNoun (C (Ana.gitG (runSt0 st).g id).toNoun
+    (C ska_run.battery (C (C (identNoun id) (C (A index) ((runSt0 st).toNoun regsNoun))) K)))
+
+/-- The subject of the battery of `+run`. -/
+noncomputable def runSubj (regsNoun : R → Noun) (K : Noun) (id : Ident) (index : Nat)
+    (st : SkaState FinMap R) : Noun :=
+  C ska_run.battery (C (C (identNoun id) (C (A index) (st.toNoun regsNoun))) K)
+
+set_option maxHeartbeats 1000000 in
+/-- **One run of `+run`** over an evaluator `c` that is `nock` off `FFar`:
+`Ana.runStep` with the calls of `fol-loop` made by `c` as `go`. -/
+theorem run_stepW (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar f → c s f = nock s f)
+    (regsNoun : R → Noun) (K : Noun) (hK : slot? 31 K = some ana) (id : Ident) (index : Nat)
+    (st : SkaState FinMap R) (go : FolGoS FinMap R)
+    (hgo : GoIsW c regsNoun (runTrapRest regsNoun K id index st) go) :
+    nockW c (runSubj regsNoun K id index st) ska_run.battery
+      = (Ana.runStep go id index st).map (runNoun regsNoun) := by
+  have h := hgo id.2 ⟨id.1, A 1⟩ none none false false (genInit index (runSt0 st))
+  have hgg := git_g_pill (runSt0 st).g id
+  unfold runSubj
+  conv => lhs; arg 3; rw [ska_run_battery_eq]
+  cases hg : go id.2 ⟨id.1, A 1⟩ none none false false (genInit index (runSt0 st)) with
+  | none =>
+    rw [hg] at h
+    unfold folSubj runTrapRest at h
+    simp only [genInit, GenS.toNoun, Cape.toNoun, unitNoun, flag, Anno.toNoun,
+      Bool.false_eq_true, if_false, Option.map_none, Option.map_some] at h
+    rw [show Treap.setNoun (Treap.empty : FinMap CalleeEntry Unit) = A 0 from FinMap.setNoun_empty] at h
+    obtain ⟨g, done, order, stk, next, moved, tick, ticks, regs, stats⟩ := st
+    obtain ⟨runs, passes, lateRuns, misses, culled⟩ := stats
+    simp only [runSt0, SkaState.toNoun, Stats.toNoun] at h hgg hg
+    simp (disch := ffar_disch) [nock_exec, hcf, hK, h, hgg, runFolF, git_g.arm_at, git_g_arm,
+      SkaState.toNoun, Stats.toNoun, Ana.runStep, runSt0, hg]
+  | some r =>
+    obtain ⟨out, gen⟩ := r
+    rw [hg] at h
+    unfold folSubj runTrapRest at h
+    simp only [genInit, GenS.toNoun, Cape.toNoun, unitNoun, flag, Anno.toNoun,
+      Bool.false_eq_true, if_false, Option.map_none, Option.map_some] at h
+    rw [show Treap.setNoun (Treap.empty : FinMap CalleeEntry Unit) = A 0 from FinMap.setNoun_empty] at h
+    have hd := run_datum c hcf regsNoun K hK ska_run.battery (C (A index) ((runSt0 st).toNoun regsNoun)) id
+      (Ana.gitG (runSt0 st).g id) out gen
+    unfold dBase at hd
+    obtain ⟨g, done, order, stk, next, moved, tick, ticks, regs, stats⟩ := st
+    obtain ⟨runs, passes, lateRuns, misses, culled⟩ := stats
+    simp only [runSt0, SkaState.toNoun, Stats.toNoun, Anno.toNoun] at h hgg hd hg
+    simp (disch := ffar_disch) [nock_exec, hcf, hK, h, hgg, hd, runFolF, git_g.arm_at, git_g_arm,
+      SkaState.toNoun, Stats.toNoun, Ana.runStep, runSt0, hg]
+
 end Compiler
 end Formalization
