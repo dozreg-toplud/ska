@@ -62,7 +62,11 @@ theorem runLC_n2_none {env : CallEnv} {sup : Option Nomm} {p q : Nomm} {goal : C
 /-- **The first call theorem, stated** (not proved): the whole-subject code of
 the indirect call `[2 p q]` with `p` and `q` in `FragU` meets the forward
 half of the contract on the subject whole, against any needs.  With it,
-`RawMono` holds on the class `FragUM` extended by such calls. -/
+`RawMono` holds on the class `FragUM` extended by such calls.  False as
+stated (fifteenth session): `Annot.bare` gives the nomm `[2 [0 1] [1 f]]`
+for `f = [11 %bare g]`, whose `nok` of `f` itself `+mink` runs with all of
+its fuel, outside `OracleFwd`'s bound.  `indirectTop_fwd`
+(`CompIndirectFwd.lean`) proves it for the formula `[2 b c]`. -/
 def IndirectTopFwd (lib : Lib) : Prop :=
   ∀ (code : Bell → Option Nomm) (bl : Bell) (p q : Nomm) (env : CallEnv) (c : Straight Map) (N : Needs),
     CodeOK lib code → Annot lib code (SkaModel.Fits bl.less) bl.fol (Nomm.n2 p q Option.none) →
