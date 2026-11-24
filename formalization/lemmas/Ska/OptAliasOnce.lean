@@ -61,8 +61,8 @@ model of `+optimize` returns `0` where the code before returns `s + 1`
   Both are done since: every pass keeps plain single assignment
   (`OptAliasPlain.lean`, driver `optimize_keeps_plain_pickR` in
   `OptAliasPlainDriver.lean`) and `FillFresh` (`OptAliasFresh.lean`,
-  `optimize_keeps_fresh_pickR`), and both hold on raw `+comp` output once
-  `+crash-need` stops filling the register it tests.
+  `optimize_keeps_fresh_pickR`), and both hold on raw `+comp` output since
+  `+crash-need` stopped filling the register it tests (commit `af5cc39`).
 -/
 
 namespace Formalization

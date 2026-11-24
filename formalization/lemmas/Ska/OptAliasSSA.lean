@@ -22,7 +22,8 @@ calls of `+alias`.
   parameter `9`, then `3` = `[%cel 9] [%imm 0 9] [%imm 0 10]`, `[%bom ~]`) and
   `[7 [5 [0 14] 1 5] 10 [2 0 3] 0 1]`; `+eval-blob` of the optimized code
   agrees with `+mock` on them (both crash), and the thread cases agree too, so
-  no miscompile comes of it.
+  no miscompile comes of it.  This was measured before commit `af5cc39`, which
+  applied the change: `+crash-need` no longer fills the register it tests.
 
 The property that holds everywhere (raw, every pass, every call of `+alias`)
 is `DefOnceB`: on the blocks reachable from `0`, a register has at most one
