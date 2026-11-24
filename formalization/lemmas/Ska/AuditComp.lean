@@ -59,6 +59,7 @@ import lemmas.Ska.CompFragUJGen
 import lemmas.Ska.CompSevenV
 import lemmas.Ska.CompFiveV
 import lemmas.Ska.CompFourV
+import lemmas.Ska.CompTenV
 import lemmas.Ska.CompFragUJ
 
 /-!
@@ -600,3 +601,14 @@ open Formalization.SkaModel.Comp
 #print axioms runU_uok
 #print axioms finishLF_bellContractFU
 #print axioms finishLF_bellContract_fourProxy
+#print axioms n10NV_body
+#print axioms n10NV_tagBody
+#print axioms runOKNV_n10
+#print axioms ten_tagNV
+#print axioms runOKV_n10D
+#print axioms ten_tagD
+#print axioms runOKV_n10P
+#print axioms ten_tagP
+#print axioms cleanA_ten
+#print axioms uok_ten
+#print axioms finishLF_bellContract_tenProxy
