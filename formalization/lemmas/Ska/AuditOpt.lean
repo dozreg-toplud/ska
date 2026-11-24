@@ -46,6 +46,7 @@ import lemmas.Ska.OptAliasEdge
 import lemmas.Ska.OptAliasFrame
 import lemmas.Ska.OptAliasLti
 import lemmas.Ska.OptAliasInv
+import lemmas.Ska.OptAliasAll
 
 /-! Axioms of the theorems about `+optimize`. -/
 
@@ -292,3 +293,23 @@ open Formalization.SkaModel.Opt
 #print axioms awi_end_later
 #print axioms awi_fin_done
 #print axioms awi_edge_side
+#print axioms awa_rev_keep
+#print axioms awa_fin_reads
+#print axioms awa_steps_last
+#print axioms awa_inblock_passed
+#print axioms awa_start_entry
+#print axioms awa_start_jump
+#print axioms awa_end
+#print axioms awa_end_step
+#print axioms awa_rebase
+#print axioms awa_new
+#print axioms awa_step
+#print axioms awa_walk
+#print axioms alias_walk_endOK
+#print axioms alias_walk_inv
+#print axioms awa_start
+#print axioms awa_walk_part
+#print axioms awa_read_done
+#print axioms alias_walk_at
+#print axioms alias_walk_end
+#print axioms aedge_kept
