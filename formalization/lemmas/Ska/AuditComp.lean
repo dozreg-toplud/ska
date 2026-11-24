@@ -64,6 +64,7 @@ import lemmas.Ska.CompFragUJ
 import lemmas.Ska.CompRunLCEq
 import lemmas.Ska.CompCallSem
 import lemmas.Ska.CompCallStep
+import lemmas.Ska.CompWholeTop
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -632,3 +633,18 @@ open Formalization.SkaModel.Comp
 #print axioms tailStep_fwd
 #print axioms toneRel_toneOf
 #print axioms goalSemC_of_goalSem
+#print axioms finishLUC_eq
+#print axioms kernLoop_head
+#print axioms kernLoop_lt
+#print axioms kernLoop_ren
+#print axioms kernP_mono
+#print axioms kernGate_ok
+#print axioms walkLazy_okDI
+#print axioms kern_spec
+#print axioms upBelow_of_growU
+#print axioms finishLU_compDone
+#print axioms toStraightF_nargs
+#print axioms finishLU_nargs
+#print axioms finishLU_bellContractV
+#print axioms finishLU_bellContractFU
+#print axioms finishLU_fullCode
