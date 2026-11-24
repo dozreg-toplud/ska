@@ -22,6 +22,7 @@ import lemmas.Ska.CompFromRun
 import lemmas.Ska.CompEntryRun
 import lemmas.Ska.CompSevenOne
 import lemmas.Ska.ExecPath
+import lemmas.Ska.CompFootRun
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -297,3 +298,17 @@ open Formalization.SkaModel.Comp
 #print axioms runX_keeps
 #print axioms runX_below
 #print axioms runX_okU
+#print axioms WroteIn.trans
+#print axioms wr_splitNeed
+#print axioms wr_medeLoop
+#print axioms wr_mede
+#print axioms wr_forl
+#print axioms wr_copyNeed
+#print axioms wr_collapseLazyAtom
+#print axioms foot_tail
+#print axioms foot_n0
+#print axioms foot_n1
+#print axioms foot_n7
+#print axioms foot_n4
+#print axioms foot_n3
+#print axioms run_foot_of
