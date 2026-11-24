@@ -682,4 +682,16 @@ theorem finishLF_bellContract_target {lib : Lib} {code : Bell → Option Nomm} (
     (FragX.six (FragX.five (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial)) (FragX.frag fun _ => trivial)
       (FragX.frag fun _ => trivial)) (by decide) hbl hn hbake h N
 
+/-- A second covered formula, `[7 [4 [4 [0 6]]] [6 [0 1] [0 1] [1 0]]]`: its
+`p` is a chain of two `%4` over `[0 6]` (`aboveX_n4`). -/
+example (lib : Lib) : FragX (S := S) (Nomm.n4 (Nomm.n4 (Nomm.n0 6))) ∧ AboveX S Map (Nomm.n4 (Nomm.n4 (Nomm.n0 6))) ∧
+    FragX (S := S) (Nomm.n6 (Nomm.n0 1) (Nomm.n0 1) (Nomm.n1 (A 0))) ∧
+    sixCount (Nomm.n7 (Nomm.n4 (Nomm.n4 (Nomm.n0 6))) (Nomm.n6 (Nomm.n0 1) (Nomm.n0 1) (Nomm.n1 (A 0)))) ≤ 255 :=
+  ⟨FragX.four (FragX.four (FragX.frag fun _ => trivial)),
+    aboveX_n4 (runX_ok (Map := Map) lib (FragX.four (S := S) (FragX.frag (S := S) (nm := Nomm.n0 6) fun _ => trivial))).2.1
+      (aboveX_n4 (runX_ok (Map := Map) lib (FragX.frag (S := S) (nm := Nomm.n0 6) fun _ => trivial)).2.1
+        (aboveX_n0 (by decide))),
+    FragX.six (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial),
+    by decide⟩
+
 end Run
