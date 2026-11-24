@@ -12,6 +12,7 @@ import lemmas.Ska.CompFragM
 import lemmas.Ska.CompFragX
 import lemmas.Ska.CompUnproxy
 import lemmas.Ska.CompUnproxyEntry
+import lemmas.Ska.CompUnproxyRegs
 import lemmas.Ska.CompEntryGoal
 import lemmas.Ska.CompFromRun
 import lemmas.Ska.CompEntryRun
@@ -260,3 +261,7 @@ open Formalization.SkaModel.Comp
 #print axioms proxRen_eq
 #print axioms toStraightF_entryU
 #print axioms FillSem.pair
+#print axioms renPole_fix
+#print axioms unproxy_ops
+#print axioms kernBoth_regs
+#print axioms kernLoop_regs
