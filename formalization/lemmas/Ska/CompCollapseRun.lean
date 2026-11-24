@@ -100,10 +100,15 @@ variable [HoonMapKeys Map]
 
 /-- **The blocks a run of `p` for the goal `this a` emits mention only `a`
 and registers from the run's start on.**  A hypothesis of `collRun_n4`: the
-blocks of `p` must not mention the proxies the walk made below `a`. -/
+blocks of `p` must not mention the proxies the walk made below `a`.  The run
+is one that `collRun_n4` makes: its jump has no arguments and goes below the
+start, the state is not dropping, `UpBelow` and `CondBelow` hold, `a` is no
+key of `cond`, and `p` has at most 255 `%6`. -/
 def AboveX (S : Type) [HoonSet S] (Map : Type → Type) [HoonMap Map] [HoonMapKeys Map] (p : Nomm) : Prop :=
   ∀ {a : Nat} {th : Jmp} {region : List Nat} {g g' : Gen Map} {nex : NextL S},
     runL p (CGoalL.next (ofSure (lazyReg a)) th) region g = some (nex, g') → a < g.re →
+    th.args = [] → 1 ≤ th.there → th.there < g.bo → g.drop = false → UpBelow g → CondBelow g →
+    HoonMap.get g.cond a = Option.none → sixCount p ≤ 255 →
     ∀ o b, g.bo ≤ o → o < g'.bo → HoonMap.get g'.blocks o = some b → BlobIn (a ≤ ·) b
 
 /-- **What one run of `[4 p]` for a goal `%next laz th` with entries does**
@@ -242,7 +247,14 @@ theorem collRun_n4 (lib : Lib) {p : Nomm} (hp : NextOK (S := S) (Map := Map) lib
     · simp only [FinIn, JmpIn, jmp0]; intro x hx; simp at hx
   have Kp : KeepR g3 g1 nex (sixCount p) := keepX_tail (arg := g2.re) kp hdr3 hbIn
     (o := g2.bo) (by omega) hcount (by rw [emit_apply, hbo3, ← hgE]) h
-  have Ap := ap h (show g2.re < gE.re by omega)
+  have cb2 : CondBelow g2 := P.pfor.1.below hcb
+  have Ap := ap h (show g2.re < gE.re by omega) rfl (by simp only [jmp0]; omega) (by simp only [jmp0]; omega) hdE
+    (GU.up hu) (fun x hx => by rw [hcnE] at hx; have := cb2 x hx; omega)
+    (by
+      rw [hcnE]
+      cases e' : HoonMap.get g2.cond g2.re with
+      | none => rfl
+      | some _ => have := cb2 g2.re (by simp [e']); omega) hcount
   obtain ⟨Rre, Rbo, Rdr, Rold⟩ := Rp.ext
   have hcn1 : g1.cond = g2.cond := Rp.cnd.trans hcnE
   -- the final `cond` has no key from the end of the collapse on
@@ -543,12 +555,89 @@ theorem runOKU_seven4 (lib : Lib) {p q : Nomm} (hp : NextOK (S := S) (Map := Map
 /-- **`[0 axe]` meets `AboveX`** for `axe` at least `2`: for a goal `%next`
 it emits no block. -/
 theorem aboveX_n0 {axe : Nat} (ha : 2 ≤ axe) : AboveX S Map (Nomm.n0 axe) := by
-  intro a th region g g' nex h _ o b l u hb
+  intro a th region g g' nex h _ _ _ _ _ _ _ _ _ o b l u hb
   rw [runL_n0_next ha] at h
   obtain ⟨_, _, e⟩ := Option.map_eq_some_iff.mp h
   simp only [Prod.mk.injEq] at e
   obtain ⟨-, rfl⟩ := e
   omega
+
+/-- **`[4 p]` meets `AboveX` when `p` does**: the collapse of the goal
+`this a` emits no block (every atom fits `this a`), the increment block
+mentions the register `+collapse-lazy-atom` returns (`a` itself, or one
+allocated in the run) and a fresh register, and the blocks of `p` lie above
+that fresh register. -/
+theorem aboveX_n4 {lib : Lib} {p : Nomm} (hp : NextOK (S := S) (Map := Map) lib p) (ap : AboveX S Map p) :
+    AboveX S Map (Nomm.n4 p) := by
+  intro a th region g g' nex h ha ea h1 h2 d0 hu hcb hka hcount o b l u hb
+  have e4 : (runL (Nomm.n4 p) (CGoalL.next (ofSure (lazyReg a)) th) region : CM Map (NextL S)) = (do
+      let x ← collapseLazyAtomL ⟨ofSure (lazyReg a : Sure S), th⟩
+      let (pro, th') ← collPick th x
+      let arg ← re
+      let o ← emit ⟨[], [Pole.inc arg pro], Termin.hop (jmp0 th')⟩
+      runL p (CGoalL.next (ofSure (lazyReg arg)) (jmp0 o)) region) := by
+    conv => lhs; unfold runL
+    rfl
+  rw [e4] at h
+  obtain ⟨x, gA, hc2, h⟩ := bind_some h
+  obtain ⟨⟨d, th'⟩, g2, hm, h⟩ := bind_some h
+  have hne : ∀ y, NMem (ofSure (lazyReg a) : Lazy S).sure.ned y → y = a := fun y hy => hy
+  have P := collapsePre_spec hc2 hm d0 hcb (fun y hy => by rw [hne y hy]; exact ha)
+    (fun y hy => by rw [hne y hy]; exact hka) (by simp [entries_ofSure]) (by simp [entries_ofSure])
+    (by simp [entries_ofSure])
+  obtain ⟨eth, ebo⟩ : th' = th.there ∧ g2.bo = g.bo := by
+    rcases P.shape with ⟨e1, e2, -⟩ | ⟨-, -, hnf, -⟩
+    · exact ⟨e1, e2⟩
+    · exact absurd ⟨trivial, looks_empty _⟩ (hnf 0)
+  have hda : a ≤ d := by
+    rcases P.rreg with e | e
+    · exact Nat.le_of_eq (hne d e).symm
+    · omega
+  simp only [bind_apply, pure_apply, Option.bind_some, re_apply, emit_apply] at h
+  obtain ⟨g3, hg3⟩ : ∃ g3 : Gen Map, g3 = { g2 with re := g2.re + 1 } := ⟨_, rfl⟩
+  obtain ⟨blk, hblk⟩ : ∃ blk : Blob, blk = ⟨[], [Pole.inc g2.re d], Termin.hop (jmp0 th')⟩ := ⟨_, rfl⟩
+  obtain ⟨gE, hgE⟩ : ∃ gE : Gen Map, gE = g3.emitted blk := ⟨_, rfl⟩
+  have hbo3 : g3.bo = g2.bo := by rw [hg3]
+  have hre3 : g3.re = g2.re + 1 := by rw [hg3]
+  have hcn3 : g3.cond = g2.cond := by rw [hg3]
+  have hdr3 : g3.drop = false := by rw [hg3]; exact P.drop.trans d0
+  rw [← hg3, ← hblk, ← hgE] at h
+  have hboE : gE.bo = g2.bo + 1 := by rw [hgE, emitted_bo, hbo3]
+  have hreE : gE.re = g2.re + 1 := by rw [hgE, emitted_re, hre3]
+  have hcnE : gE.cond = g2.cond := by rw [hgE, ← hcn3]; rfl
+  have hdE : gE.drop = false := by rw [hgE, emitted_drop]; exact hdr3
+  have hbE : HoonMap.get gE.blocks g2.bo = some blk := by rw [hgE, ← hbo3]; exact emitted_get g3 blk hdr3
+  have Ple := P.le
+  have G : Grow g gE := by
+    have g23 : Grow g2 g3 := by rw [hg3]; exact grow_re g2
+    have g3E : Grow g3 gE := by
+      rw [hgE]; refine grow_emit ?_
+      rw [hblk, eth]; exact jumpsBelow_hop (j := jmp0 th.there) h1 (by simp only [jmp0]; omega)
+    exact P.grow.trans (g23.trans g3E)
+  have GU : GrowU g gE := G.toU hu
+  have Rp := hp (sur := lazyReg g2.re) (th := jmp0 g2.bo) ⟨by simp only [jmp0]; omega, by simp only [jmp0]; omega⟩ rfl
+    (by exact ⟨trivial, fun r hr => by simp [lazyReg, NMem] at hr; subst hr; omega⟩) (by exact trivial)
+    (by simpa only [sixCount] using hcount) (by omega) hdE (GU.up hu) h
+  obtain ⟨Rre, Rbo, Rdr, Rold⟩ := Rp.ext
+  have cb2 : CondBelow g2 := P.pfor.1.below hcb
+  have Ap := ap h (show g2.re < gE.re by omega) rfl (by simp only [jmp0]; omega) (by simp only [jmp0]; omega) hdE
+    (GU.up hu) (fun x hx => by rw [hcnE] at hx; have := cb2 x hx; omega)
+    (by
+      rw [hcnE]
+      cases e' : HoonMap.get g2.cond g2.re with
+      | none => rfl
+      | some _ => have := cb2 g2.re (by simp [e']); omega) (by simpa only [sixCount] using hcount)
+  by_cases hlo : o < gE.bo
+  · have eo : o = g2.bo := by omega
+    rw [eo, Rold _ (by omega), hbE] at hb
+    cases hb
+    rw [hblk, eth]
+    refine blobIn_one (p := Pole.inc g2.re d) (f := Termin.hop (jmp0 th.there)) ?_ ?_
+    · intro y hy
+      simp only [poleRegs, List.mem_cons, List.mem_nil_iff, or_false] at hy
+      omega
+    · simp only [FinIn, JmpIn, jmp0]; intro y hy; simp at hy
+  · exact (Ap o b (by omega) u hb).mono fun y hy => by omega
 
 /-- **The final pass meets the contract on `[7 [4 p] q]`**, with `p` and `q`
 in `FragX`, `p` meeting `AboveX` (every `[0 axe]` with `2 ≤ axe` does,
@@ -577,5 +666,20 @@ example : FragX (S := S) (Nomm.n0 3) ∧ AboveX S Map (Nomm.n0 3) ∧
     FragX.six (FragX.five (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial)) (FragX.frag fun _ => trivial)
       (FragX.frag fun _ => trivial),
     by decide⟩
+
+/-- **The target `[7 [4 [0 3]] [6 [5 [0 1] [1 6]] [0 1] [1 5]]]` meets the
+contract** with no hypothesis beyond the usual ones (the code table, the
+annotation, nothing baked, a cape with no `[| |]`). -/
+theorem finishLF_bellContract_target {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) {bl : Bell}
+    (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol
+      (Nomm.n7 (Nomm.n4 (Nomm.n0 3)) (Nomm.n6 (Nomm.n5 (Nomm.n0 1) (Nomm.n1 (A 6))) (Nomm.n0 1) (Nomm.n1 (A 5)))))
+    {cape : Cape} {data : Noun} (hbl : bl.less = Sock.mk cape data) (hn : CapeNorm cape) {ord : NeedOrd}
+    {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
+    (h : finishLF (S := S) (Nomm.n7 (Nomm.n4 (Nomm.n0 3))
+      (Nomm.n6 (Nomm.n5 (Nomm.n0 1) (Nomm.n1 (A 6))) (Nomm.n0 1) (Nomm.n1 (A 5)))) ord cape bake = some c')
+    (N : Needs) : BellContract lib N bl false c' :=
+  finishLF_bellContract74U hok rfl hA (FragX.frag fun _ => trivial) (aboveX_n0 (by decide))
+    (FragX.six (FragX.five (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial)) (FragX.frag fun _ => trivial)
+      (FragX.frag fun _ => trivial)) (by decide) hbl hn hbake h N
 
 end Run

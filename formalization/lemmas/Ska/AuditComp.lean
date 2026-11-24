@@ -451,3 +451,5 @@ open Formalization.SkaModel.Comp
 #print axioms runOKU_seven4
 #print axioms aboveX_n0
 #print axioms finishLF_bellContract74U
+#print axioms aboveX_n4
+#print axioms finishLF_bellContract_target
