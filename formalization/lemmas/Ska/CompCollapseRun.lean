@@ -496,4 +496,46 @@ theorem runOKU_seven4 (lib : Lib) {p q : Nomm} (hp : NextOK (S := S) (Map := Map
     have Sq' := Sq c _ σ O st t gul _ _ agQ inQ R ⟨hR, fit.2⟩ hnR
     exact eR.trans Sq'
 
+/-- **`[0 axe]` meets `AboveX`** for `axe` at least `2`: for a goal `%next`
+it emits no block. -/
+theorem aboveX_n0 {axe : Nat} (ha : 2 ≤ axe) : AboveX S Map (Nomm.n0 axe) := by
+  intro a th region g g' nex h _ o b l u hb
+  rw [runL_n0_next ha] at h
+  obtain ⟨_, _, e⟩ := Option.map_eq_some_iff.mp h
+  simp only [Prod.mk.injEq] at e
+  obtain ⟨-, rfl⟩ := e
+  omega
+
+/-- **The final pass meets the contract on `[7 [4 p] q]`**, with `p` and `q`
+in `FragX`, `p` meeting `AboveX` (every `[0 axe]` with `2 ≤ axe` does, `aboveX_n0`), at most
+255 `%6`, when the run of `q` for `%done` from `gen0` returns a sure need
+`this d` with looks at axis `1` only, nothing is baked and the bell's cape has
+no `[| |]`.  The first theorem of the top whose runs make proxies. -/
+theorem finishLF_bellContract74U {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
+    {bl : Bell} {p q : Nomm} (hp : (Nomm.n7 (Nomm.n4 p) q).pure = true)
+    (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol (Nomm.n7 (Nomm.n4 p) q))
+    (hfp : FragX (S := S) p) (ap : AboveX S Map p) (hfq : FragX (S := S) q)
+    (hcount : sixCount (Nomm.n7 (Nomm.n4 p) q) ≤ 255)
+    (hsq : ∀ {nx : NextL S} {g1 : Gen Map}, runL q (CGoalL.done : CGoalL S) [] (gen0 : Gen Map) = some (nx, g1) →
+      ∃ d, nx.laz.sure.ned = Need.this d ∧ ∀ x ∈ HoonSet.toList nx.laz.sure.lok, x = 1)
+    {cape : Cape} {data : Noun} (hbl : bl.less = Sock.mk cape data) (hn : CapeNorm cape) {ord : NeedOrd}
+    {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
+    (h : finishLF (S := S) (Nomm.n7 (Nomm.n4 p) q) ord cape bake = some c') (N : Needs) :
+    BellContract lib N bl false c' :=
+  finishLF_bellContractU hok hp hA (fun h1 => runOKU_seven4 lib (runX_ok lib hfp).2.1 (runX_semR lib hfp).2.1
+    (runX_keeps hfp) ap hfq hcount h1 hsq) hbl hn hbake h N
+
+/-- The target `[7 [4 [0 3]] [6 [5 [0 1] [1 6]] [0 1] [1 5]]]` meets every
+hypothesis of `finishLF_bellContract74U` on the formula: `[0 3]` and the
+`%6` are in `FragX`, `[0 3]` meets `AboveX`, one `%6`.  What is left is
+`hsq`, a fact of the run of `q`. -/
+example : FragX (S := S) (Nomm.n0 3) ∧ AboveX S Map (Nomm.n0 3) ∧
+    FragX (S := S) (Nomm.n6 (Nomm.n5 (Nomm.n0 1) (Nomm.n1 (A 6))) (Nomm.n0 1) (Nomm.n1 (A 5))) ∧
+    sixCount (Nomm.n7 (Nomm.n4 (Nomm.n0 3)) (Nomm.n6 (Nomm.n5 (Nomm.n0 1) (Nomm.n1 (A 6))) (Nomm.n0 1)
+      (Nomm.n1 (A 5)))) ≤ 255 :=
+  ⟨FragX.frag fun _ => trivial, aboveX_n0 (by decide),
+    FragX.six (FragX.five (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial)) (FragX.frag fun _ => trivial)
+      (FragX.frag fun _ => trivial),
+    by decide⟩
+
 end Run
