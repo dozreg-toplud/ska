@@ -1,4 +1,4 @@
-import lemmas.Ska.CompCollapseGate
+import lemmas.Ska.CompCollapsePre
 import lemmas.Ska.CompBelowX
 import lemmas.Ska.CompRelX
 import lemmas.Ska.CompEntryRel
@@ -27,26 +27,6 @@ namespace Comp
 open Nock Lazy
 
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
-
-/-- A step that only allocates registers is a walk over no block. -/
-theorem WalkOKD.of_re {P : Map (Nat × List Nat) → Nat → Nat → Nat → Sure S → List Pole → Prop} {r : Nat}
-    (g : Gen Map) (k : Nat) (hk : g.re ≤ k) : WalkOKD (ProxyFor r) P g { g with re := k } [] :=
-  ⟨rfl, rfl, hk, ProxyFor.of_eq hk rfl, fun _ _ => rfl, fun _ h => absurd h List.not_mem_nil⟩
-
-/-- The gate at the goal's own block, for the need `this d`: nothing. -/
-theorem collapseGate_self {d o : Nat} {lok : S} {g g' : Gen Map}
-    (hl : ∀ x ∈ HoonSet.toList lok, x = 1)
-    (h : collapseGate (S := S) (Map := Map) d o o ⟨Need.this d, lok⟩ g = some ((), g')) :
-    ∃ k, g.re ≤ k ∧ g' = { g with re := k } := by
-  unfold collapseGate at h
-  obtain ⟨ned, g1, h1, h2⟩ := bind_some h
-  have L := sureRequireLook_spec h1
-  have e : ned = Need.this d := L.same hl
-  subst e
-  obtain ⟨kk, rfl⟩ := L.gen
-  simp only [if_true, pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
-  obtain ⟨-, rfl⟩ := h2
-  exact ⟨kk, L.le, rfl⟩
 
 /-- **`+collapse-lazy-atom` when the sure need is `this d`**: it returns
 `(d, th.there)`, keeps every block outside the goal's entries (`th.there`
