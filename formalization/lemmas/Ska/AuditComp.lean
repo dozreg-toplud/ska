@@ -50,6 +50,11 @@ import lemmas.Ska.CompFragU
 import lemmas.Ska.CompConsNV
 import lemmas.Ska.CompConsV
 import lemmas.Ska.CompSectSkip
+import lemmas.Ska.CompTagKeep
+import lemmas.Ska.CompDropKeep
+import lemmas.Ska.CompTagX
+import lemmas.Ska.CompTagU
+import lemmas.Ska.CompSixNextV
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -531,3 +536,18 @@ open Formalization.SkaModel.Comp
 #print axioms foldlM_sectStep_skip
 #print axioms sectThread_skip
 #print axioms sect_specV
+#print axioms kt_run
+#print axioms kt_copyL
+#print axioms kd_run
+#print axioms runX_tags
+#print axioms tag_copyL
+#print axioms tagX_sixN
+#print axioms tagX_sixP
+#print axioms collapseL_tag
+#print axioms condTag_fragX
+#print axioms condTag_seven4
+#print axioms sect_h0
+#print axioms sect_h1
+#print axioms unproxyBlob_fix
+#print axioms lazyBlkNV
+#print axioms sixNext_okNV

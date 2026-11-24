@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # usage: tagkeep.py OUTDIR [a|b|c|x|all]
-# The tag invariant of lemmas/Ska/CompTagRun.lean on the real compiler.  Writes into OUTDIR an
+# The tag invariant of lemmas/Ska/CompTagX.lean and CompTagU.lean on the real compiler.  Writes into OUTDIR an
 # instrumented copy of desk/lib/nock-compilation.hoon (lib.hoon) and a driver (ck.hoon) over the
 # formulas of thread-a.hoon, thread-b.hoon, thread-c.hoon (162, numbered 0.., 1000.., 2000..), the
 # two cases of proxy-dump.hoon and the nestings below (3000..), or only one group of them
