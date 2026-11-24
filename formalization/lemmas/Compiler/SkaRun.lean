@@ -24,6 +24,8 @@ open Nock Pill SkaModel Hoon SkaModel.Ana
 
 variable {R : Type}
 
+set_option linter.unusedSimpArgs false
+
 /-! ## The formulas -/
 
 def rdLess : Noun :=
@@ -79,6 +81,83 @@ def runFolF : Noun :=
 /-- The battery of `+run`, split at the trap and the datum construction. -/
 theorem ska_run_battery_eq : ska_run.battery =
     (C (A 7) (C (C (A 10) (C (C (A 28670) (C (A 4) (C (A 0) (A 28670)))) (C (A 0) (A 1)))) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 4) (C (A 0) (A 127)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 118)) (C (A 0) (A 28)))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 0) (A 56)) (C (A 8) (C (C (A 0) (A 121)) (C (A 8) (C (C (C (A 0) (A 6)) (C (A 1) (A 1))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C runFolF runDatumF)))))))))))))) := by kernel_rfl
+
+/-! ## The context -/
+
+theorem K_lib {K : Noun} (h : slot? 31 K = some ana) : slot? 127 K = some lib := by
+  have h' : slot? 31 K = slot? 1 ana := by rw [h]; rfl
+  have := slot_spine (by omega) (by omega) h' 2
+  simp only [show 2 ^ 2 * (31 + 1) - 1 = 127 from rfl, show 2 ^ 2 * (1 + 1) - 1 = 7 from rfl] at this
+  rw [this, show (7 : Nat) = knit_anno.lib.axis from rfl, knit_anno.lib.arm_at]
+
+/-! ## The datum construction, piece by piece -/
+
+section datum
+variable (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar f → c s f = nock s f)
+  (regsNoun : R → Noun) (K : Noun) (hK : slot? 31 K = some ana) (sb x : Noun) (id : Ident)
+  (data : FDatum FinMap) (out : FolOut)
+
+/-- The subject of `runDatumF` below its pushes: the result of `fol-loop`,
+`sub`, `fol`, `bus`, the old datum and the gate of `+run`. -/
+noncomputable def dBase (gen : GenS FinMap R) : Noun :=
+  C (folOutNoun regsNoun (out, gen)) (C (Anno.toNoun ⟨id.1, A 1⟩) (C id.2 (C id.1.toNoun
+    (C data.toNoun (C sb (C (C (identNoun id) x) K))))))
+
+include hcf hK in
+/-- `less-code`, `dark`, `indi` and the new datum. -/
+theorem run_datum_new (gen : GenS FinMap R) (F : Noun) :
+    nockW c (dBase regsNoun K sb x id data out gen)
+      (C (A 8) (C rdLess (C (A 8) (C rdDark (C (A 7) (C rdIndi (C (A 8) (C rdNew F))))))))
+    = nockW c (C (FDatum.toNoun ⟨gen.callees, out.nomm, Ca.app gen.want id.1,
+          Ca.lack gen.indi (darkOf id.1), gen.seek, out.prod.sock, out.prod.src, gen.area⟩)
+        (C (darkOf id.1).toNoun (C (Ca.app gen.want id.1).toNoun
+          (dBase regsNoun K sb x id data out { gen with indi := Ca.lack gen.indi (darkOf id.1) })))) F := by
+  have hlib := K_lib hK
+  have hsv : Sock.void.toNoun = A 0x64696f76 := rfl
+  have hsm : ∀ c n, (Sock.mk c n).toNoun = C c.toNoun n := fun _ _ => rfl
+  obtain ⟨want, indi, seek, callees, area, low, back, st⟩ := gen
+  obtain ⟨bus, fol⟩ := id
+  cases bus with
+  | void =>
+    have hca := ca_app_pill want Sock.void
+    have hla := ca_lack_pill indi (darkOf Sock.void)
+    simp only [hsv, darkOf, Cape.toNoun] at hca hla
+    simp (disch := ffar_disch) [hca, hla, dBase, rdLess, rdDark, rdIndi, rdNew, nock_exec, hcf, hlib, folOutNoun,
+      FolOut.toNoun, GenS.toNoun, Anno.toNoun, FDatum.toNoun, darkOf, hsv, hsm, Cape.toNoun, ca.lib.arm_at, ca_lib_arm,
+      ca.app.arm_at, ca_app_arm, ca_app_pill, ca.lack.arm_at, ca_lack_arm, ca_lack_pill]
+  | mk cp dt =>
+    have hca := ca_app_pill want (Sock.mk cp dt)
+    have hla := ca_lack_pill indi (darkOf (Sock.mk cp dt))
+    simp only [hsm, darkOf] at hca hla
+    simp (disch := ffar_disch) [hca, hla, dBase, rdLess, rdDark, rdIndi, rdNew, nock_exec, hcf, hlib, folOutNoun,
+      FolOut.toNoun, GenS.toNoun, Anno.toNoun, FDatum.toNoun, darkOf, hsv, hsm, Cape.toNoun, ca.lib.arm_at, ca_lib_arm,
+      ca.app.arm_at, ca_app_arm, ca_app_pill, ca.lack.arm_at, ca_lack_arm, ca_lack_pill]
+
+include hcf hK in
+/-- `pm`: the merge of the products, `+msg-anno` when `id` is in `moved`,
+else `+double-int`. -/
+theorem run_datum_pm (gen : GenS FinMap R) (dn : FDatum FinMap) (dark less F : Noun) :
+    nockW c (C dn.toNoun (C dark (C less (dBase regsNoun K sb x id data out gen)))) (C (A 8) (C rdPm F))
+    = nockW c (C (mergeProd (Treap.has gen.st.moved id) ⟨dn.prod, dn.map⟩ ⟨data.prod, data.map⟩).toNoun
+        (C dn.toNoun (C dark (C less (dBase regsNoun K sb x id data out gen))))) F := by
+  have hl2 := K_layer2 hK
+  have hlib := K_lib hK
+  obtain ⟨want, indi, seek, callees, area, low, back, st⟩ := gen
+  obtain ⟨g, done, order, stk, next, moved, tick, ticks, regs, stats⟩ := st
+  have hhas : nock (C in.has.battery (C (identNoun id) (C in.battery (C (Treap.setNoun moved) layer2))))
+      in.has.battery = some (loob (Treap.has moved id)) := has_in_setNoun moved id
+  have hma := msg_anno_pill ⟨dn.prod, dn.map⟩ ⟨data.prod, data.map⟩
+  have hdi := double_int_pill ⟨dn.prod, dn.map⟩ ⟨data.prod, data.map⟩
+  simp only [Anno.toNoun] at hma hdi
+  cases hm : Treap.has moved id
+  · simp (disch := ffar_disch) [hm, hhas, hma, hdi, dBase, rdPm, nock_exec, hcf, hl2, hK, hlib, folOutNoun,
+      FolOut.toNoun, GenS.toNoun, SkaState.toNoun, Anno.toNoun, FDatum.toNoun, mergeProd, in.arm_at, in_arm,
+      in.has.arm_at, has_in_arm, msg_anno.arm_at, msg_anno_arm, double_int.arm_at, double_int_arm, loob]
+  · simp (disch := ffar_disch) [hm, hhas, hma, hdi, dBase, rdPm, nock_exec, hcf, hl2, hK, hlib, folOutNoun,
+      FolOut.toNoun, GenS.toNoun, SkaState.toNoun, Anno.toNoun, FDatum.toNoun, mergeProd, in.arm_at, in_arm,
+      in.has.arm_at, has_in_arm, msg_anno.arm_at, msg_anno_arm, double_int.arm_at, double_int_arm, loob]
+
+end datum
 
 end Compiler
 end Formalization
