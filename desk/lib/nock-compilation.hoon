@@ -2579,7 +2579,7 @@
           gen(low (min low.gen u.ord), back &)
         ::  finalized memo hit
         ::
-        ?^  m=(git:mi done.st.gen fol-new sock.prod.s)
+        ?^  m=(git:mi done.st.gen fol-new more.id-there)
           [u.m gen]
         ::  a recursive call to a function in progress with a different
         ::  subject: its code requirement is satisfied, and its product is
