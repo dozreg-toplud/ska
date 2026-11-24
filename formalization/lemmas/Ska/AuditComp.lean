@@ -415,3 +415,4 @@ open Formalization.SkaModel.Comp
 #print axioms runOKP_consP_semR
 #print axioms semGR_from
 #print axioms semPR_from
+#print axioms into_okK
