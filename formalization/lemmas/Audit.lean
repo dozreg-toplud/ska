@@ -102,6 +102,7 @@ import lemmas.Compiler.CompLift
 import lemmas.Compiler.CompUnaryTrap
 import lemmas.Compiler.CompSccIn
 import lemmas.Compiler.CompStraightN
+import lemmas.Compiler.CompCoerceLazy
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -766,3 +767,11 @@ open Formalization
 #print axioms Compiler.tsn_step_gen
 #print axioms Compiler.tsn_core
 #print axioms Compiler.tsn_at
+#print axioms Compiler.aic_gate
+#print axioms Compiler.ain_gate
+#print axioms Compiler.cz_gate_step
+#print axioms Compiler.cz_lok
+#print axioms Compiler.cz_srl
+#print axioms Compiler.cz_loop
+#print axioms Compiler.cz_gate
+#print axioms Compiler.cz_gate_L
