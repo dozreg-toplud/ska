@@ -112,5 +112,87 @@ theorem pj_gate {bc ctx : Noun} (h : PjCtx bc ctx) (k : Ident) (v : FDatum FinMa
   simp only [nock_exec, Option.bind_some, h.hctx, h.l2, h.mfe, h.mi, by.arm_at, by_arm, by.put.arm_at, put_arm,
     identNoun, FDatum.toNoun, hp, mi_arm, mi.put.arm_at, mi_put_arm, hm, hpm]
 
+/-- The gate of the `+rep` as a function of the node noun, through the map. -/
+noncomputable def pjF (pruned : Callgraph FinMap) (x : Noun)
+    (s : FinMap Bell (FDatum FinMap) × Memo FinMap) : FinMap Bell (FDatum FinMap) × Memo FinMap :=
+  match FinMap.entry pruned x with
+  | some e => pjStep s e
+  | none => s
+
+theorem pj_foldl (pruned : Callgraph FinMap) :
+    ∀ (L : List (Ident × FDatum FinMap)), (∀ e ∈ L, pruned.1 e.1 = some e.2) → ∀ s,
+    (L.map fun e => C (TKey.enc e.1) (FDatum.toNoun e.2)).foldl (fun s x => pjF pruned x s) s
+      = L.foldl pjStep s
+  | [], _, _ => rfl
+  | e :: L, h, s => by
+    have he := h e List.mem_cons_self
+    simp only [List.map_cons, List.foldl_cons]
+    have : pjF pruned (C (TKey.enc e.1) (FDatum.toNoun e.2)) s = pjStep s e := by
+      simp [pjF, FinMap.entry, FinMap.decode?_enc, he]
+    rw [this]
+    exact pj_foldl pruned L (fun e' he' => h e' (List.mem_cons_of_mem _ he')) _
+
+/-- **The `~(rep by pruned)`** with the gate `pjGate` from the accumulator
+`[~ memo]` computes `pokeMemo`. -/
+theorem pj_rep {bc ctx : Noun} (h : PjCtx bc ctx) (e : Noun) (pruned : Callgraph FinMap) (memo : Memo FinMap) :
+    nock (C by.rep.battery (C (C pjGate (C (C e (pjAcc (Treap.empty, memo))) bc))
+      (C by.battery (C (Treap.toNoun FDatum.toNoun pruned) layer2)))) by.rep.battery
+      = some (pjAcc (pokeMemo pruned memo)) := by
+  show nock (C by.rep.battery (C (C pjGate (C (C e (pjAcc (Treap.empty, memo))) bc))
+    (C by.battery (C (FinMap.toNoun FDatum.toNoun pruned) layer2)))) by.rep.battery = _
+  rw [rep_gate_on pjAcc (pjF pruned) by.battery layer2 pjGate e bc _
+    (Tree.of_isMap (FinMap.isMap_toNoun FDatum.toNoun pruned)) _ ?hf]
+  · show some (pjAcc ((preorder (FinMap.toNoun FDatum.toNoun pruned)).foldl _ _)) = _
+    rw [FinMap.preorder_toNoun, pj_foldl pruned _ (fun e he => (FinMap.mem_rap pruned e.1 e.2).1 he)]
+    rfl
+  · intro x hx s
+    have hx' : x ∈ (FinMap.rap pruned).map fun e => C (TKey.enc e.1) (FDatum.toNoun e.2) := by
+      have := FinMap.preorder_toNoun FDatum.toNoun pruned
+      rw [← this]; exact hx
+    obtain ⟨⟨k, v⟩, hm, rfl⟩ := List.mem_map.1 hx'
+    have hkv := (FinMap.mem_rap pruned k v).1 hm
+    have : pjF pruned (C (TKey.enc k) (FDatum.toNoun v)) s = pjStep s (k, v) := by
+      simp [pjF, FinMap.entry, FinMap.decode?_enc, hkv]
+    rw [this]
+    exact pj_gate h k v s
+
+/-! ## The bunts of the sample of the gate of the `+rep` -/
+
+/-- `*identity`. -/
+def pjIdB : Noun := C (A 7) (C (C (A 9) (C (A 186) (C (A 0) (A 1023)))) (C (A 9) (C (A 2) (C (A 0) (A 1)))))
+
+/-- `*datum`. -/
+def pjDatB : Noun := C (A 7) (C (C (A 9) (C (A 375) (C (A 0) (A 1023)))) (C (A 9) (C (A 2) (C (A 0) (A 1)))))
+
+/-- `*(map bell datum)`. -/
+def pjMapB : Noun :=
+  let m1 := C (A 7) (C (C (A 0) (A 3)) (C (A 9) (C (A 382) (C (A 0) (A 1023)))))
+  let m2 := C (A 7) (C (C (A 0) (A 3)) (C (A 9) (C (A 375) (C (A 0) (A 1023)))))
+  let mk := C (A 8) (C (C (A 9) (C (A 12198) (C (A 0) (A 2097151))))
+    (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C m1 m2)) (C (A 0) (A 2)))))))
+  C (A 7) (C mk (C (A 9) (C (A 2) (C (A 0) (A 1)))))
+
+/-- The sample `[[*identity *datum] *(map bell datum) memo.lon]`. -/
+def pjSample : Noun := C (C pjIdB pjDatB) (C pjMapB (C (A 0) (A 8170)))
+
+/-- A subject with `ana` at `511`. -/
+def ana511 (a0 a1 a2 a3 a4 a5 a6 a7 : Noun) : Noun :=
+  C a0 (C a1 (C a2 (C a3 (C a4 (C a5 (C a6 (C a7 ana)))))))
+
+/-- The value of `*datum`, kept whole. -/
+noncomputable def pjDatV : Noun := (evalFuel 2000 (ana511 (A 0) (A 0) (A 0) (A 0) (A 0) (A 0) (A 0) (A 0)) pjDatB).getD (A 0)
+
+theorem pj_idb (a0 a1 a2 a3 a4 a5 a6 a7 : Noun) :
+    nock (ana511 a0 a1 a2 a3 a4 a5 a6 a7) pjIdB = some identBunt :=
+  nock_of_evalFuel (fuel := 300) (by kernel_rfl)
+
+theorem pj_datb (a0 a1 a2 a3 a4 a5 a6 a7 : Noun) :
+    nock (ana511 a0 a1 a2 a3 a4 a5 a6 a7) pjDatB = some pjDatV :=
+  nock_of_evalFuel (fuel := 2000) (by kernel_rfl)
+
+theorem pj_mapb (a0 a1 a2 a3 a4 a5 a6 a7 : Noun) :
+    nock (ana511 a0 a1 a2 a3 a4 a5 a6 a7) pjMapB = some (A 0) :=
+  nock_of_evalFuel (fuel := 2000) (by kernel_rfl)
+
 end Compiler
 end Formalization
