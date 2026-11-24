@@ -44,7 +44,7 @@ structure LOKS (x : Bool) (lib : Lib) (env : CallEnv) (P : Noun → Prop) (f : N
     ((entries L).map Prod.fst).Nodup →
     (∀ e ∈ entries L, Distinct e.2.sure.ned ∧
       ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none) →
-    Flat L → (∀ e ∈ entries L, Clean e.2.sure.ned) →
+    Flat L → Clean L.sure.ned → (∀ e ∈ entries L, Clean e.2.sure.ned) →
     runLC env sup nm (CGoalL.next L th) region g0 = some (nex, g1) →
     (∃ Q, RunOKLS (Map := Map) lib P f L th Q x g0 g1 nex) ∧ nex.th.there ∉ (entries nex.laz).map Prod.fst ∧
       (nex.th = th ∨ g0.bo ≤ nex.th.there) ∧ Flat nex.laz ∧ (∀ e ∈ entries nex.laz, Clean e.2.sure.ned)
@@ -108,7 +108,7 @@ witness relation of the call-free run, no op at any goal entry. -/
 theorem lokS_n0 (lib : Lib) (env : CallEnv) {P : Noun → Prop} {f : Noun} {axe : Nat} (ha : 1 ≤ axe)
     (M : MinkEq lib P f (Nomm.n0 axe)) : LOKS (S := S) (Map := Map) false lib env P f (Nomm.n0 axe) := by
   refine ⟨(lokc_n0 (S := S) (Map := Map) lib env ha M).clean, fun {sup L th region g0 g1 nex} _ b0 d0 hu hcl hcb
-    h1 h2 hta ht hsd hsl hlab hnd hed hfl hce hr => ?_⟩
+    h1 h2 hta ht hsd hsl hlab hnd hed hfl _ hce hr => ?_⟩
   rw [runLC_eq env _ rfl] at hr
   have eL : entries L = L.bond := entries_flat hfl
   -- the result
