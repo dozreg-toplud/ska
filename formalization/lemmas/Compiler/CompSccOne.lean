@@ -33,8 +33,9 @@ arms that were not linked.  Here they are discharged:
   (`crx_run_args`, `args_frag`).
 
 What stays on the model side in `csi_gate_scc_one_m`: the run succeeds
-(`hrunL`), `+need-ord-alloc-regs` of `sccSur` succeeds (`hnoar`), and
-nothing is baked (`hb`); `csi_gate_scc_one_f` folds the first two into a
+(`hrunL`), `+need-ord-alloc-regs` of `sccSur` succeeds (`hnoar`, which
+holds on the fragment: `noar_frag` of `CompNoNN.lean`), and nothing is baked
+(`hb`); `csi_gate_scc_one_f` folds the first two into a
 `bind` (the gate crashes where the model is `none`) and keeps `NoBakeOne`.  On the state nouns: `b` is not in `nary.cache`
 (`hnary`) which is a map (`hnmap`), `b` is not among its own callees in
 `calls.long-ska` (`hcalls`), `InlOK` for `inl.cache`, and the put of `sur` into

@@ -116,6 +116,7 @@ import lemmas.Hoon.IntIn
 import lemmas.Hoon.UniBy
 import lemmas.Compiler.CompSccOne
 import lemmas.Compiler.CompMemOld
+import lemmas.Compiler.CompNoNN
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -913,3 +914,26 @@ open Formalization
 #print axioms Compiler.crx_sn_args
 #print axioms Compiler.crx_run_args
 #print axioms Compiler.args_frag
+#print axioms Compiler.nn_consNeed
+#print axioms Compiler.needToOrd_none
+#print axioms Compiler.nno_needToOrd
+#print axioms Compiler.nno_consOrd
+#print axioms Compiler.nno_halves
+#print axioms Compiler.nno_rebuild
+#print axioms Compiler.nno_sureLook
+#print axioms Compiler.nno_sureOf
+#print axioms Compiler.noar_nno
+#print axioms Compiler.nn_fromPath
+#print axioms Compiler.nn_must
+#print axioms Compiler.nn_splitNeed
+#print axioms Compiler.nn_copyNeed
+#print axioms Compiler.nn_rollTack
+#print axioms Compiler.nn_intoLoop
+#print axioms Compiler.nn_into
+#print axioms Compiler.nn_split
+#print axioms Compiler.nn_copy
+#print axioms Compiler.nn_bomb
+#print axioms Compiler.nn_sn
+#print axioms Compiler.nn_from
+#print axioms Compiler.nn_run
+#print axioms Compiler.noar_frag
