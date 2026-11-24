@@ -203,6 +203,10 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompLift.lean` | `+bind` (arm `5983` of `layer2`, `lf_bind_at`) and `+lift` (arm `372`, `lf_lift_at`, its sample bunt `lfLiftBunt` read from the pill): `(turn v (lift ren))` renames the units of a list of registers (`lf_turn`), so the gate `rj` of `+chase-fin` is `renJmp ren` (`lf_rj`), `TsRjAt` holds (`lf_ts_rj`) and `cu_finish_all` is the end of `+compile-unary` with no hypothesis on `+to-straight`.  The gate `ren-jmp` of `+map-regs` is `renJmp` too (`lf_mr_rj`), so `(map-regs ren)` is linked on every block (`mr_inner`, the terminator by `mrFin`: `renFin` except `%lti`, which the Nock keeps) and is `renBlob` on every block without `%lti` (`mr_inner_ren`). |
 | `Compiler/CompUnaryTrap.lean` | The trap of `+compile-unary` (`cuTrap`, axis `1473626077` of `K`, `cu_trap_at`) and its gate (`cuGB`, axis `179885`, `cu_gb_at`): `+compile-scc-in` (`cuCsi`, a hypothesis), the edit of the gate's `cache`, `+comp` (arm `5590`, `cu_comp_at`, its battery `cgBat` builds `[comp.door [cuBunt ctx]]`), the entry (`cu_trap_entry`), `+got:by` of `code` and `+run` (`cu_trap_run`), `+kerf` (`cu_trap_kerf`), `+to-straight` and the product (`cu_trap_end`).  `cu_trap`: the trap returns `[[s NM] CA]` with `s` the noun of `finishLU n`; `cu_gate`: so does the gate through `road-pure`; `cu_ref_mono` and `cu_gate_some`: the same against `finishLUC env n` for every `env`, the form of `refMono`. |
 | `Compiler/CompSccIn.lean` | The structure of `+compile-scc-in` (its header: the passes, the state they thread, the final pass of `member` for one bell with line numbers, and every difference from `finishLF`), and the arms of the n-ary final pass linked so far: `+soft-done` is the identity on `soft` empty or `mode` `%drop` (`sd_empty`, `sd_drop`), the gate of `+need-to-ordered` is `needToOrd` (`nta_gate`), the gate of `+need-ord-alloc-regs` is `needOrdAllocRegs` (`noar_gate`), and the gate of `+collapse-shape` is the check of `args.then` then `needOrdAllocRegs` of the shape that the gate of `+shape-collapse` returns, a hypothesis (`cs_gate`). |
+| `Compiler/CompStraightN.lean` | `+to-straight` on an n-ary input need (the sample `[%next [[ned ~] ~ ~] ~ o]` of the final pass of `+compile-scc-in`, `tsSampleN`): the pushes with `ins` `flattenNeed ned`, `r0` its head, `n-in` its length and `run` `isRun ins r0 0` (`tsn_pre1`, the trap `run` `tsn_run`, `tsn_pre2`, `tsn_pre3`, `tsn_pre`), `ren` is `renReg r0 n-in` (`tsn_ren`), `rer` (`tsn_rer`), the trap of `+rewrite-input` on any need returns `needToOrd ned` and leaves `gen` (`tsn_ri_trap`, `tsn_ri`), the arm `$` takes the renaming branch (`tsn_dol`), `+count-args` is `countArgs` (`ca_gate`), the renaming branch (`tsn_rename`), the gate of the fold in any `CfCore` core (`tsn_step_gen`, `tsn_st_cf`, `tsn_step`), the core (`tsn_core`), and the gate: on a run of inputs with `cond` empty it returns the noun of `toStraightF` (`tsn_at`). |
+| `Compiler/CompCoerceLazy.lean` | `+coerce-lazy` (door battery axis `3580`, `comp_cz_at`, its gate body `czBody` cut into `czX`, `czSrl`, `czLok`, `czTail`) on a fork-free `[sure ~ ~]`: `+axe-in-less-cape` (arm `95` of `K`) is `axeInLessCape` (`aic_loop`, `aic_gate`), `+axe-in-need` (arm `0x5dd4`) is `axeInNeedL` (`ain_loop`, `ain_gate`), the gate of the `+rep:in` over `lok` is `czStep` (`cz_gate_step`) and the fold is `coerceLok` (`coerceLok_eq`, `cz_lok`, with no `0` in its product, `coerceLok_ne0`), `+sure-require-look` of the new sure (`cz_srl`), the trap `sure-loop` is `sureLoop` with `o` not in `soft` (`cz_loop_none`, `cz_loop_this`, `cz_loop_pair`, `cz_loop_both_this`, `cz_loop_both_pair`, `cz_loop_both_both`, `cz_loop`), and the gate is `coerceLazy` (`cz_gate`) or `coerceLazyL` on `ofSure` (`cz_gate_L`). |
+| `Compiler/CompBakeNeed.lean` | `+bake-need` (arm `384468` of `K`, `bn_at`, its gate body `bnBody` and trap `bnLoop` cut into `bnTest`, `bnYes` with the baking trap `bnAll`, and `bnRec`) when nothing is baked: on a need with no cell of two `%none` and no `%both` with two `%none` halves (`NeedNorm`, true of every need of `+need-ord-alloc-regs`, `needNorm_noar`) and a sock that is `%void` or not wholly known (`all:ca` false) at every node of the need, with `hed:so` and `tel:so` down the walk (`NoBake`), the test of each node is false before `+need-fits` (`bn_test`), `+cons-need` rebuilds each cell (`cn_gate`), and the gate returns `[ned ~]` (`bn_loop`, `bn_gate`). |
+| `Compiler/CompFinish.lean` | The gate `finish` of `+compile-scc-in` (`%compile-scc-finish`, axis `0x2ab2dffd6fbffffffffe` of `K`, `fin_at`, its body `finBody`) on `~` in the subject of `member` (`finCtx`: `gen` at `62`, the tuple `[need-new laz ned-final bak o sur]` at `30`, the door `comp`, `done`, `cape.less.b` and `layer2` in the rest at `6`, `14`, `496`, `0x3ffffff`): `+coerce-lazy`, `+soft-done`, `+add-ops` of the `%imm` ops of `imm.bak = ~` (`fin_turn_nil`) and `+to-straight` of `[%next [[ned.bak ~] ~ ~] ~ o]` give the noun of `finTail`, the tail of `finishLF` (`finishLF_tail`, `fin_gate`); against `finishLF nm ord less (fun n => (n, []))` given the run and `+need-ord-alloc-regs` of `ord` (`fin_gate_finishLF`), from the product of `+collapse-shape` under the hypothesis `hsc` on `+shape-collapse` (`fin_after_cs`), with `bak = [ned-final ~]` from `+bake-need` under `NoBake` (`fin_bak`). |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`, whose `keys` are those of `rap`, the order of `+rep:by` (`treapMap_keys`). |
@@ -1211,6 +1215,83 @@ import only its theorems.  So:
     `+axe-in-need`, `+sure-require-look` (`srl_gate`), and the loop with
     `+kern-need` (`comp_kern_need`) and `+add-ops`), `+bake-need`, the
     gate `finish`, and `member`.
+    L, 2026-11-24 (track A, `+to-straight` on an n-ary need),
+    `Compiler/CompStraightN.lean`.  The chain of `TsAt` is generalized to
+    any input need: `tsn_at` says that the gate of `+to-straight` on
+    `[%next [[ned ~] ~ ~] ~ o]`, with `cond` empty and the registers of
+    `ned` a run (`isRun (flattenNeed ned) r0 0`, which
+    `isRun_needOrdAllocRegs` gives for the need of `+need-ord-alloc-regs`),
+    returns the noun of `toStraightF cond blocks ned o`.  The trap of
+    `+rewrite-input` (its cases `^` and `%both`, `tsRiRestN`, written out
+    and tied by `tsn_rirest_at`) calls `rer` on the register of every
+    `%this` and `%both` and gives `needToOrd ned` with `gen` unchanged, and
+    `+count-args` (its rest `caRestN`, `ca_rest_at`) is `countArgs`.  The
+    gate of the fold is proved once for any core that meets `CfCore`
+    (`tsn_step_gen`), so the proof of `ts_step` is not repeated.
+    L, 2026-11-24 (track A, `+coerce-lazy`),
+    `Compiler/CompCoerceLazy.lean`.  The gate of `+coerce-lazy` on `[ned o
+    [sure ~ ~] less]` returns the noun of the state of `coerceLazy ned o
+    sure less` (`cz_gate`), given only `x.SoftOut o`: the model has no
+    test `(~(has by soft.gen) o)` in its `%this` case, which on a `soft`
+    with `o` calls `+soft-ask`.  The other parts agree with the Hoon on
+    every input, crashes included: `+axe-in-less-cape` and `+axe-in-need`
+    crash on axis `0` as `axeInLessCape` and the fold `coerceLok` do (for
+    example the look `0` makes both `none`), the `%none` case of
+    `sure-loop` crashes on a target that is not `%none` (`?>`), and the
+    cell case crashes on a `%this` or `%both` target (`?@ -.ned-target
+    !!`), as `sureLoop` does.  With no fork and no bond the rolls of the
+    tail are not run (`czTail` returns `gen`).
+    L, 2026-11-24 (track A, `+bake-need`), `Compiler/CompBakeNeed.lean`.
+    The arm is not what the header of `CompSccIn.lean` read (lines 3729
+    to 3751 there): `+bake-need` now walks the need with the sock `k` of
+    the part it is the need of (`hed:so`, `tel:so`, line 3727 on), bakes a
+    whole part when `k` is a cell, `(all:ca cape.k)` holds and `+need-fits`
+    (arm `4` of `K`) says the data has the structure the need asks, and
+    otherwise rebuilds cells with `+cons-need` and turns a `%both` whose
+    halves were both baked into `[%this r]`.  `bn_gate` proves `[ned ~]`
+    under `NeedNorm ned` and `NoBake ned less.b`: the sock at every node
+    is `%void` or not wholly known.  For example under `less.b = [[& |]
+    data]` a need `[[%this 3] [%this 4]]` is baked at its head, since
+    `hed:so` gives `[& -.data]`, so `NoBake` fails there, as it should.
+    `NoBake` is sufficient, not necessary: a wholly known atom under a
+    cell of the need is not baked (`+need-fits` is false there) but fails
+    `NoBake`.  `+need-fits` is the next helper if the exact condition is
+    wanted.
+    L, 2026-11-24 (track A, the gate `finish`), `Compiler/CompFinish.lean`.
+    The gate `finish` is linked on its `done` branch with `pessimized = ~`
+    (`fin_gate`): on the subject of `member`, with a fork-free `laz`,
+    `soft` and `cond` empty, `bak = [ned-final ~]` and the registers of
+    `ned-final` a run, it returns the noun of `finTail ned-final less o
+    laz (fun n => (n, [])) g2`, the part of `finishLF` after
+    `+need-ord-alloc-regs` (`finishLF_tail`, by `rfl`).  `fin_after_cs`
+    puts it after `+collapse-shape`: with `hsc` (the gate of
+    `+shape-collapse` returns `ord`, as `cs_gate` assumes), the run `runL
+    nm done [] gen0 = some (nex, g1)` with `laz.nex = ofSure s` and `cond`
+    of `g1` empty, if the gate of `+collapse-shape` returns `[[NF LZ O]
+    G2]` then these are the nouns of `+need-ord-alloc-regs ord g1` and
+    `finish` on the subject that holds them returns the noun of `finishLF
+    nm ord cape (fun n => (n, []))`.  The subject of `member` is not built
+    from its gate yet (`finCtx` and the four slots of its rest are
+    hypotheses), and the `?.  done` branch (`[need-new 0 ~]`) and the
+    `+coerce-soft` branch are not linked.
+    The gate `member` (`%compile-scc-fn`, axis `358182910` of `K`, body
+    1051 cells, sample bunt `[[[1 0] 0 0] %done 0 0 0 0 0 0 0 0]`), mapped
+    for the next step: `done` is pushed as `=(%done mode)` (mode at `26`),
+    `?>  ?=(^ less.b)` reads `56`; the door `comp` is arm `5590` of `K`
+    (at `511`) on `[scc long-ska jets-hot map-local top b]`; `+inlined` is
+    arm `0x5dde` of `K` (at `1023`) on `[b long-ska jets-hot cache]`, its
+    cache put at `2015`; `gen` is the bunt of `line-short` (its `mode` is
+    already `%run`) with `cache` at `766`; the final pass is the `&` branch
+    of `[6 [0 30] ..]`: `mode.gen` set at `46`, `+run` (door arm `3071`,
+    battery `2047`) on `[| nomm [%done ~] ~ ~]`, `+collapse-shape` (door
+    arm `1526`) on `[nex cape.less.b]`, `+bake-need` (`0x5ddd4` of `K` at
+    `0x3fff`), `+sure-of` (`0x2bae` of `K`, not linked) of
+    `[(need-to-ordered ned.sure.laz) lok.sure.laz]` (`+need-to-ordered` is
+    `0xaebc`, `nta_gate`); then `cache` at `8159` from `1790`, `was` by
+    `+get:by` (arm `764`) on `sure.cache`, `sur`, `+put:by` (arm `340`) at
+    `0x7fdff`, `moved` with `+fall` (`3007` of `layer2`), the push of
+    `finish` (`finArm`), `+get:by` of `map-local` at `b`, and on `~` the
+    product `[chg (put:by map-local b (finish ~)) cache]`.
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,

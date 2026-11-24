@@ -101,6 +101,10 @@ import lemmas.Compiler.CompStraightStep
 import lemmas.Compiler.CompLift
 import lemmas.Compiler.CompUnaryTrap
 import lemmas.Compiler.CompSccIn
+import lemmas.Compiler.CompStraightN
+import lemmas.Compiler.CompCoerceLazy
+import lemmas.Compiler.CompBakeNeed
+import lemmas.Compiler.CompFinish
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -756,3 +760,29 @@ open Formalization
 #print axioms Compiler.cs_gate
 #print axioms Compiler.mr_inner
 #print axioms Compiler.mr_inner_ren
+#print axioms Compiler.tsn_run
+#print axioms Compiler.tsn_pre
+#print axioms Compiler.tsn_ren
+#print axioms Compiler.tsn_ri_trap
+#print axioms Compiler.tsn_dol
+#print axioms Compiler.ca_gate
+#print axioms Compiler.tsn_step_gen
+#print axioms Compiler.tsn_core
+#print axioms Compiler.tsn_at
+#print axioms Compiler.aic_gate
+#print axioms Compiler.ain_gate
+#print axioms Compiler.cz_gate_step
+#print axioms Compiler.cz_lok
+#print axioms Compiler.cz_srl
+#print axioms Compiler.cz_loop
+#print axioms Compiler.cz_gate
+#print axioms Compiler.cz_gate_L
+#print axioms Compiler.needNorm_noar
+#print axioms Compiler.bn_test
+#print axioms Compiler.bn_loop
+#print axioms Compiler.bn_gate
+#print axioms Compiler.finishLF_tail
+#print axioms Compiler.fin_gate
+#print axioms Compiler.fin_gate_finishLF
+#print axioms Compiler.fin_bak
+#print axioms Compiler.fin_after_cs
