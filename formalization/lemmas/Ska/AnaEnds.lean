@@ -75,6 +75,9 @@ taken, and the recursion of the analysis is finite.
    functions found by a pass can be culled by a later one and found again.
    No measure for the pass loop is known.  On the real compiler the largest
    number of passes of one loop was 6 (section 2).
+   There is none: the loop does not end on the poke of
+   `tools/hoon/swaploop.hoon`, where `less-code` cycles through a swap of the
+   sample (`PassLoop.lean`), so `CgHalts` below is false of the Hoon.
 6. The inner loops `+sweep`, `+cull` (its loop over the queue) and
    `+prune-callgraph` end on a finite graph.  Proved here for
    `+prune-callgraph` (`pruneLoop_ends`), given that the graph is closed under
