@@ -169,8 +169,9 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     register), and without "followed by `%imm` ops only" it fails after `+remove-hops` merges the
                     `%inc` into the fill's block.  With the arguments `0 .. n-args - 1` defined at the entry and
                     every read checked, 10 raw compiles read a register that nothing defines, in blocks reachable
-                    in the graph that the run never enters (a jump argument of a branch the analysis knew dead);
-                    gone after the first `+alias` (2026-11-24)
+                    in the graph (in thread-a case 48 a jump argument on the nonzero side of a `%brz`: a run
+                    taking that edge would crash in `+move`, which the runs of `thread-a.hoon` do not show, but
+                    it is not shown for every subject); none after any `+alias` (2026-11-24)
 * `deadcrash.hoon`  nine formulas whose crashing operand has a dead product (`[7 [0 2] [1 5]]`
                     on an atom and the like): `+eval-top` agrees with `+mock` on all
                     (2026-11-24), so `+remove-dead-code` drops no check there
