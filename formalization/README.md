@@ -1757,43 +1757,57 @@ import only its theorems.  So:
    is `foldl`/`foldlM` in list order in the models.  The crashes (`got` of a
    missing block, the `?>` and `!!` of the passes) are the models' `none`.
 
-   What is linked (2026-11-24, this session).  Exact, crashes included:
-   `+remove-useless-branching` on every treap of blocks (`rub_gate`) and
-   `+remove-dead-code` on blocks with no `%lti` (`rdc_gate`); `+rev-cfg`
-   with any set of atoms for `topo-set` (`rev_gate`, the set related to the
-   list by `SawRel`); the four helpers.  Where the fuelled model returns:
-   `+bb-topo` (`bb_gate`), `+remove-hops` (`rh_gate`) and
-   `+remove-empty-middle` (`rem_gate`), each by induction on the fuel.  The
-   converse of the fuelled ones (where the gate returns, some fuel makes the
-   model return) is not proved: it needs a measure of the Hoon's loops (the
-   labels put in `saw` for `+bb-topo`, the labels merged for `+remove-hops`,
-   the chain of empty blocks for the rewrites of `+remove-empty-middle`).
-   Sets of the Hoon are related to the models' lists by `SawRel` (a set of
-   atoms whose members are the list's), and the jug `readers` of
-   `+remove-empty-middle` by `JugRel`; the loops are linked by `roll_gate_rel`
-   and `rep_gate_rel` when the accumulator holds such a set, by
-   `roll_gate_list` and `rep_gate_list` when it is the noun of the model's
-   state, and by `rep_gate_fwd` for a fuelled step.
+   What is linked.  Exact, crashes included: `+remove-useless-branching` on
+   every treap of blocks (`rub_gate`) and `+remove-dead-code` on blocks with
+   no `%lti` (`rdc_gate`); `+rev-cfg` with any set of atoms for `topo-set`
+   (`rev_gate`, the set related to the list by `SawRel`); the four helpers;
+   `+sy` (`si_gate`).  Where the fuelled model returns: `+bb-topo`
+   (`bb_gate`), `+remove-hops` (`rh_gate`) and `+remove-empty-middle`
+   (`rem_gate`), each by induction on the fuel; the structural loop of
+   `+optimize-once` (`oo_loop`); **the whole gate of `+optimize-once`**
+   (`oo_gate`, `OptLinkOnceGate.lean`: on a straight function whose blocks
+   have no `%lti`, where `optimizeOnce fuel P` returns `(again, s')`, the
+   gate returns `[again s']`, given `AliasLink P` and `TrimLink P`; the rest
+   of the body after the loop, `ooAfter`, is cut at each `=^` and `=.` in
+   `OptLinkOnceAfter.lean`, each step stated as the subject it leaves);
+   **`+optimize`** (`opt_gate`, `OptLinkOpt.lean`: where `optimizeF fuel P
+   s` returns `s'`, the gate returns the noun of `s'`, given `AliasLink P`,
+   `TrimLink P` and `SwitchLink P`, the hypothesis on `+switch-chains`; its
+   trap by induction on the fuel against `optLoop`); **`+trim-trace-hints`**
+   (`tr_gate`, `OptLinkTrim*.lean`: where `trimTraceHints` returns, on any
+   treap of blocks, list `topo` and jar `rev`), so `TrimLink` holds of the
+   model (`trimLink`) and `oo_gate_trim`, `opt_gate_trim` leave `+alias`
+   (and `+switch-chains`) as the only hypotheses.  On the way: `+uno:by`
+   (`Hoon/UnoBy.lean`, `uno_by`: the general union, the relation `UnoByR`
+   with the branches of `+uni:by`, on two maps the value at each key the
+   merge of the two) and `+run:by` with a gate known only on the values
+   (`Hoon/RunByP.lean`, `run_by_P`).  The Hoon and the models agree on every
+   arm linked so far; for `+trim-trace-hints` the counts per key (a key at
+   count `1` or less is deleted, so the map never holds `0`, which is the
+   model's function `Cnt` with `0` for an absent key), the order of the walk
+   (`topo` in list order, the predecessors of `rev` in list order, joined by
+   `max`, which commutes) and the test `pole-not-crashing` (the same
+   fourteen tags) were compared first.  Sets of the Hoon are related to the
+   models' lists by `SawRel` (a set of atoms whose members are the list's),
+   the jug `readers` of `+remove-empty-middle` by `JugRel`, the maps of
+   counts by `CntRel`; the loops are linked by `roll_gate_rel` and
+   `rep_gate_rel` when the accumulator holds such a set, by `roll_gate_list`
+   and `rep_gate_list` when it is the noun of the model's state, and by
+   `rep_gate_fwd` for a fuelled step.  A lesson on memory: one `simp` over
+   all of `ooAfter` went past the 3 GB cap, while the same proof cut into
+   eight steps (each `unfold`ing one or two pieces at the formula position,
+   with `optC` and the block nouns generalized) checks in about a second.
 
-   Left, in the order to do it: (1) `+sy` (`si:nl`, arm `10` of the core at
-   arm `175` of `layer2`, `+gas:in` from `~` once its `^+` cast is
-   compiled), to give `rev_gate` its set in `+optimize-once`: done,
-   `si_gate` (`Compiler/OptLinkSy.lean`); (2) `NoLti`
-   kept by the four structural passes and `+remove-dead-code` (model-level
-   lemmas, no Nock: done, `Compiler/OptLinkNoLti.lean`); (3) `+optimize-once` against `optimizeOnce fuel P` (its structural
-   loop is done: `oo_loop`, `Compiler/OptLinkOnce.lean`; left is `ooAfter`,
-   for which every link is there, but one `simp` over it went past the 3 GB
-   cap, so it is to be cut into its steps) with
-   the links of `+alias` and `+trim-trace-hints` as hypotheses on `P`, its
-   structural loop by induction on the fuel, `+skim` (`skim_gate`) with
-   `+has:by`; (4) `+optimize` (91 cells) with `+switch-chains` as a
-   hypothesis; (5) `+trim-trace-hints` (1135 cells: two nested loops with a
-   map of counts, `+uno:by`, which no theorem links yet, and the bunt of
-   `pole` as in `readers`); (6) `+switch-chains` (2916 cells: `bb-topo` and
-   `rev-cfg` linked already, `+sort` against `qsort`, the trees of the
-   binary search); (7) `+alias` (6048 cells, the info maps, `+join-info`
-   and `+join-imms` that walk two treaps at once, `+uni:by` and `+int:in`
-   whose links are relations).  An estimate from this session: a pass of
-   about 500 cells took one to two hours of proof once its nouns were cut by
-   `tools/gen/optlink.py`; the cost grows with the number of loops whose
-   accumulator holds a set or a map that the model keeps in another form.
+   Left, in the order to do it: (1) the converse of the fuelled passes
+   (where the gate returns, some fuel makes the model return), on blocks
+   with the invariants of the model side; (2) `+switch-chains` (2916 cells:
+   `+bb-topo` and `+rev-cfg` linked already, `+sort` against `qsort`, the
+   trees of the binary search), which discharges `SwitchLink`; (3) `+alias`
+   (6048 cells, the info maps, `+join-info` and `+join-imms` that walk two
+   treaps at once, `+uni:by` and `+int:in` whose links are relations),
+   which discharges `AliasLink`.  Estimates: a pass of about 500 cells took
+   one to two hours of proof once its nouns were cut by
+   `tools/gen/optlink.py`; `+trim-trace-hints` (1135 cells, two nested loops,
+   a map of maps, a new library arm) took about four hours; the cost grows
+   with the number of loops whose accumulator holds a set or a map that the
+   model keeps in another form.
