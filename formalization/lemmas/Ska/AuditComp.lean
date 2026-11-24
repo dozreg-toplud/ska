@@ -97,6 +97,7 @@ import lemmas.Ska.CompNCBond
 import lemmas.Ska.CompFrontS
 import lemmas.Ska.CompFlatCopy
 import lemmas.Ska.CompPairLS
+import lemmas.Ska.CompConsLS
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -1064,3 +1065,7 @@ open Formalization.SkaModel.Comp
 #print axioms goalSemCMD_of_CM
 #print axioms goalSemCMD_bad
 #print axioms pairLS_ok
+#print axioms clean_copyLazy
+#print axioms fromBonds_flat
+#print axioms fromL_flat
+#print axioms lokS_n0
