@@ -290,6 +290,182 @@ theorem footX_three {p : Nomm} (ih : FootX S Map p) (kp : KeepX S Map p) : FootX
       (by omega) (by omega) hcp (((w1.mono bnd).trans ((wr_forl h2).mono bnd2)).trans (wroteIn_re h3))
       (blobWr_fin _ _) h4 h
 
+/-! ## `+copy` and the binary cases -/
+
+/-- **The `+copy` of two distinct sure needs apart and below `re`** writes
+registers of the two needs and none of the copy, which is distinct and made
+of their registers and fresh ones. -/
+theorem foot_copy {a b : Sure S} {th : Jmp} {g g' : Gen Map} {n : Next S} (hd : g.drop = false)
+    (hj : JmpIn (· < g.re) th) (da : Distinct a.ned) (db : Distinct b.ned) (ab : ∀ y, NMem a.ned y → ¬ NMem b.ned y)
+    (na : NB g.re a.ned) (nb : NB g.re b.ned) (h : copy ⟨a, th⟩ b g = some (n, g')) :
+    WroteIn (fun y => y < g.re ∧ (NMem a.ned y ∨ NMem b.ned y) ∧ ¬ NMem n.laz.ned y) g g' ∧
+    (∀ y, NMem n.laz.ned y → NMem a.ned y ∨ NMem b.ned y ∨ g.re ≤ y) ∧ Distinct n.laz.ned ∧ g.re ≤ g'.re := by
+  simp only [copy] at h
+  obtain ⟨o, g5, h50, h5⟩ := bind_some h
+  obtain ⟨k5, q5⟩ := keeps_emit hd (blobIn_fin (f := Termin.hop th) hj) h50
+  obtain ⟨laz, g6, h6, h5⟩ := bind_some h5
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h5
+  obtain ⟨rfl, rfl⟩ := h5
+  simp only [copyLazy] at h6
+  obtain ⟨⟨n1, o1⟩, g7, h7, h6⟩ := bind_some h6
+  obtain ⟨u, g8, h8, h6⟩ := bind_some h6
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h6
+  obtain ⟨rfl, rfl⟩ := h6
+  have dpair : Distinct (Need.pair a.ned b.ned) := ⟨da, db, ab⟩
+  have nb1 : NB g5.re a.ned := by rw [q5]; exact na
+  have nb2 : NB g5.re b.ned := by rw [q5]; exact nb
+  obtain ⟨A, eA, wA⟩ := wr_copyNeed _ _ _ _ _ _ h7 dpair nb1 nb2
+  have dres := copyNeed_dist _ _ _ _ _ _ h7 dpair nb1 nb2
+  obtain ⟨_, _, c7⟩ := copyNeed_spec _ _ _ _ _ _ h7
+  have m7 := c7.mem
+  have l7 := c7.le
+  have q8 := (addOps_re h8).1
+  simp only at eA wA dres m7
+  have wC : OpsWr (fun y => y < g.re ∧ (NMem a.ned y ∨ NMem b.ned y) ∧ ¬ NMem n1 y) o1 := by
+    rw [eA, List.append_nil]
+    refine wA.mono fun y hy => ⟨?_, hy.1, hy.2⟩
+    rcases hy.1 with e | e
+    · exact na y e
+    · exact nb y e
+  refine ⟨(wroteIn_emit (blobWr_fin _ _) h50).trans ((wroteIn_of_gen c7.gen).trans (wroteIn_addOps wC h8)),
+    fun y hy => ?_, dres, by omega⟩
+  rcases m7 y hy with (e | e) | e
+  · exact Or.inl e
+  · exact Or.inr (Or.inl e)
+  · exact Or.inr (Or.inr (by omega))
+
+/-- **The two runs and the `+copy` of cons, `%5` and `%10`**, from the
+footprints of the two runs: `q` first for `nq`, `p` second for `np`, the
+two needs distinct and apart.  The footprint is stated for the goal whose
+need is the pair of the two. -/
+theorem footX_binary {p q : Nomm} (ihp : FootX S Map p) (ihq : FootX S Map q) (kp : KeepX S Map p)
+    (kq : KeepX S Map q) {region : List Nat} {g0 g1 g2 g3 : Gen Map} {nq np : Sure S} {th : Jmp}
+    {nex2 nex1 nex : NextL S} (hd : g0.drop = false) (hc : sixCount p + sixCount q ≤ 255) (hnq : NB g0.re nq.ned)
+    (hnp : NB g0.re np.ned) (dq : Distinct nq.ned) (dp : Distinct np.ned) (ap : ∀ x, NMem np.ned x → ¬ NMem nq.ned x)
+    (hj : JmpIn (· < g0.re) th)
+    (h2 : runL q (CGoalL.next (ofSure nq) th) region g0 = some (nex2, g1))
+    (h3 : runL p (CGoalL.next (ofSure np) nex2.th) region g1 = some (nex1, g2))
+    (h4 : copyL nex1 nex2.laz g2 = some (nex, g3)) :
+    FootR g0 g3 (CGoal.next ⟨Need.pair np.ned nq.ned, HoonSet.empty⟩ th) nex := by
+  have Rq := kq (goal := CGoal.next nq th) hd ⟨hnq, hj⟩ (by omega) h2
+  have Fq := ihq (goal := CGoal.next nq th) hd ⟨hnq, hj⟩ dq (by omega) h2
+  have d1 := Rq.keeps.dropF hd
+  have gp : GoalIn g1.re (CGoal.next np nex2.th) := ⟨hnp.mono Rq.keeps.le, Rq.out.2⟩
+  have Rp := kp (goal := CGoal.next np nex2.th) d1 gp (by omega) h3
+  have Fp := ihp (goal := CGoal.next np nex2.th) d1 gp dp (by omega) h3
+  have d2 := Rp.keeps.dropF d1
+  have l1 := Rq.keeps.le
+  have l2 := Rp.keeps.le
+  obtain ⟨n, hcp, rfl⟩ := copyL_apart_some
+    (fun e he e' he' => by
+      have a := (Rp.labs _ (fork_in_entries he)).1
+      have b := (Rq.labs _ (fork_in_entries he')).2
+      omega)
+    (fun e he e' he' => by
+      have a := (Rp.labs _ (bond_in_entries he)).1
+      have b := (Rq.labs _ (bond_in_entries he')).2
+      omega) h4
+  have me : ∀ e ∈ entries (mk n.laz (nex1.laz.fork ++ nex2.laz.fork) (nex1.laz.bond ++ nex2.laz.bond)),
+      e ∈ entries nex1.laz ∨ e ∈ entries nex2.laz := fun e he =>
+    List.mem_append.mp ((entries_side_perm _ _ _).mem_iff.mp he)
+  -- where the registers lie
+  have s2 : ∀ y, NMem nex2.laz.sure.ned y → g0.re ≤ y ∨ NMem nq.ned y := Fq.sure
+  have s1 : ∀ y, NMem nex1.laz.sure.ned y → g1.re ≤ y ∨ NMem np.ned y := Fp.sure
+  have e2 : ∀ e ∈ entries nex2.laz, ∀ y, NMem e.2.sure.ned y → g0.re ≤ y ∨ NMem nq.ned y := Fq.esure
+  have e1 : ∀ e ∈ entries nex1.laz, ∀ y, NMem e.2.sure.ned y → g1.re ≤ y ∨ NMem np.ned y := Fp.esure
+  have b2 : ∀ y, NMem nex2.laz.sure.ned y → y < g1.re := Rq.out.1.1
+  have b1 : ∀ y, NMem nex1.laz.sure.ned y → y < g2.re := Rp.out.1.1
+  have be2 : ∀ e ∈ entries nex2.laz, ∀ y, NMem e.2.sure.ned y → y < g1.re := Rq.out.1.2
+  have be1 : ∀ e ∈ entries nex1.laz, ∀ y, NMem e.2.sure.ned y → y < g2.re := Rp.out.1.2
+  -- a register of `q`'s side below `g1.re` is no register of `p`'s side
+  have qp : ∀ y, y < g1.re → (g0.re ≤ y ∨ NMem nq.ned y) → ¬ (g1.re ≤ y ∨ NMem np.ned y) := fun y hy hq hp => by
+    rcases hp with e | e
+    · omega
+    · rcases hq with e' | e'
+      · have := hnp y e; omega
+      · exact ap y e e'
+  have A12 : ∀ y, NMem nex1.laz.sure.ned y → ¬ NMem nex2.laz.sure.ned y := fun y a b => qp y (b2 y b) (s2 y b) (s1 y a)
+  have X12 : ∀ y, NMem nex1.laz.sure.ned y → ∀ e ∈ entries nex2.laz, ¬ NMem e.2.sure.ned y := fun y a e he b =>
+    qp y (be2 e he y b) (e2 e he y b) (s1 y a)
+  have X21 : ∀ y, NMem nex2.laz.sure.ned y → ∀ e ∈ entries nex1.laz, ¬ NMem e.2.sure.ned y := fun y a e he b =>
+    qp y (b2 y a) (s2 y a) (e1 e he y b)
+  have nb1 : NB g2.re nex1.laz.sure.ned := b1
+  have nb2 : NB g2.re nex2.laz.sure.ned := fun y hy => by have := b2 y hy; omega
+  obtain ⟨WC, sC, dC, lC⟩ := foot_copy d2 Rp.out.2 Fp.dist Fq.dist A12 nb1 nb2 hcp
+  -- the result's needs
+  have rs : ∀ y, NMem n.laz.ned y → NMem nex1.laz.sure.ned y ∨ NMem nex2.laz.sure.ned y ∨ g2.re ≤ y := sC
+  have G : ∀ y, (g0.re ≤ y ∨ NMem np.ned y ∨ NMem nq.ned y) →
+      g0.re ≤ y ∨ GMem (CGoal.next (⟨Need.pair np.ned nq.ned, HoonSet.empty⟩ : Sure S) th) y := fun y hy => hy
+  -- `q`'s writes
+  have Wq : ∀ y, (y < g1.re ∧ (g0.re ≤ y ∨ NMem nq.ned y) ∧ ¬ NMem nex2.laz.sure.ned y ∧
+      ∀ e ∈ entries nex2.laz, ¬ NMem e.2.sure.ned y) →
+      ¬ NMem n.laz.ned y ∧ ∀ e ∈ entries (mk n.laz (nex1.laz.fork ++ nex2.laz.fork) (nex1.laz.bond ++ nex2.laz.bond)),
+        ¬ NMem e.2.sure.ned y := fun y hy => by
+    refine ⟨fun e => ?_, fun e he h => ?_⟩
+    · rcases rs y e with e' | e' | e'
+      · exact qp y hy.1 hy.2.1 (s1 y e')
+      · exact hy.2.2.1 e'
+      · omega
+    · rcases me e he with e' | e'
+      · exact qp y hy.1 hy.2.1 (e1 e e' y h)
+      · exact hy.2.2.2 e e' h
+  -- `p`'s writes
+  have Wp : ∀ y, (y < g2.re ∧ (g1.re ≤ y ∨ NMem np.ned y) ∧ ¬ NMem nex1.laz.sure.ned y ∧
+      ∀ e ∈ entries nex1.laz, ¬ NMem e.2.sure.ned y) →
+      ¬ NMem n.laz.ned y ∧ ∀ e ∈ entries (mk n.laz (nex1.laz.fork ++ nex2.laz.fork) (nex1.laz.bond ++ nex2.laz.bond)),
+        ¬ NMem e.2.sure.ned y := fun y hy => by
+    refine ⟨fun e => ?_, fun e he h => ?_⟩
+    · rcases rs y e with e' | e' | e'
+      · exact hy.2.2.1 e'
+      · exact qp y (b2 y e') (s2 y e') hy.2.1
+      · omega
+    · rcases me e he with e' | e'
+      · exact hy.2.2.2 e e' h
+      · exact qp y (be2 e e' y h) (e2 e e' y h) hy.2.1
+  -- the copy's writes
+  have Wc : ∀ y, (y < g2.re ∧ (NMem nex1.laz.sure.ned y ∨ NMem nex2.laz.sure.ned y) ∧ ¬ NMem n.laz.ned y) →
+      ∀ e ∈ entries (mk n.laz (nex1.laz.fork ++ nex2.laz.fork) (nex1.laz.bond ++ nex2.laz.bond)),
+        ¬ NMem e.2.sure.ned y := fun y hy e he h => by
+    rcases me e he with e' | e' <;> rcases hy.2.1 with a | a
+    · exact Fp.apart e e' y a h
+    · exact X21 y a e e' h
+    · exact X12 y a e e' h
+    · exact Fq.apart e e' y a h
+  have pa : ∀ y, (NMem nex1.laz.sure.ned y ∨ NMem nex2.laz.sure.ned y) → g0.re ≤ y ∨ NMem np.ned y ∨ NMem nq.ned y :=
+    fun y hy => by
+      rcases hy with a | a
+      · rcases s1 y a with e | e
+        · exact Or.inl (by omega)
+        · exact Or.inr (Or.inl e)
+      · exact (s2 y a).imp id Or.inr
+  refine ⟨(Fq.wr.mono fun y hy => ⟨by omega, G y (hy.2.1.imp id Or.inr), (Wq y hy).1, (Wq y hy).2⟩).trans
+    ((Fp.wr.mono fun y hy => ⟨by omega, G y (hy.2.1.elim (fun e => Or.inl (by omega)) (fun e => Or.inr (Or.inl e))),
+      (Wp y hy).1, (Wp y hy).2⟩).trans
+    (WC.mono fun y hy => ⟨by omega, G y (pa y hy.2.1), hy.2.2, Wc y hy⟩)), fun y hy => ?_, dC, fun e he y hy => ?_,
+    fun e he => ?_, fun e he y hy h => ?_⟩
+  · rcases rs y hy with e | e | e
+    · exact G y (pa y (Or.inl e))
+    · exact G y (pa y (Or.inr e))
+    · exact Or.inl (by omega)
+  · rcases me e he with e' | e'
+    · rcases e1 e e' y hy with a | a
+      · exact Or.inl (by omega)
+      · exact Or.inr (Or.inl a)
+    · exact G y ((e2 e e' y hy).imp id Or.inr)
+  · rcases me e he with e' | e'
+    · exact Fp.edist e e'
+    · exact Fq.edist e e'
+  · rcases rs y hy with a | a | a
+    · rcases me e he with e' | e'
+      · exact Fp.apart e e' y a h
+      · exact X12 y a e e' h
+    · rcases me e he with e' | e'
+      · exact X21 y a e e' h
+      · exact Fq.apart e e' y a h
+    · rcases me e he with e' | e'
+      · have := be1 e e' y h; omega
+      · have := be2 e e' y h; omega
+
 end Comp
 end SkaModel
 end Formalization
