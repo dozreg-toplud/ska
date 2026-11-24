@@ -16,6 +16,7 @@ import lemmas.Ska.OptTrimWalk
 import lemmas.Ska.OptTrimSim
 import lemmas.Ska.OptTrimBr
 import lemmas.Ska.OptSwitchWalk
+import lemmas.Ska.OptSwitchMulti
 import lemmas.Ska.OptAlias
 
 /-! Axioms of the theorems about `+optimize`. -/
@@ -143,3 +144,10 @@ open Formalization.SkaModel.Opt
 #print axioms optimize_keeps_restT
 #print axioms switchTag_out
 #print axioms switchPlain_out
+#print axioms stree_shape
+#print axioms tag_nodes
+#print axioms chain_disj
+#print axioms tagHyp_out
+#print axioms walk_tag_step
+#print axioms switchWalk_tag
+#print axioms switchChains_keeps_tag

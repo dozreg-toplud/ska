@@ -482,6 +482,132 @@ theorem tagHyp_out {A : List TCh} {out : Map Blob} {done : List Nat} (W : WInv b
 
 end
 
+/-! ## The walk over tagged chains -/
+
+theorem idxOf_cons_ne' {p o : Nat} (l : List Nat) (h : p ≠ o) : (p :: l).idxOf o = l.idxOf o + 1 := by
+  rw [List.idxOf_cons]
+  have : (p == o) = false := by simp [h]
+  rw [this]; rfl
+
+theorem rk_pre {x o : Nat} {rest : List Nat} : ∀ (pre : List Nat), x ∈ pre → o ∉ pre →
+    rk (pre ++ o :: rest) x < rk (pre ++ o :: rest) o
+  | [], h, _ => absurd h List.not_mem_nil
+  | p :: pre, hx, ho => by
+    have hpo : p ≠ o := fun e => ho (by rw [e]; exact List.mem_cons_self)
+    have e1 : (p :: pre ++ o :: rest).idxOf o = (pre ++ o :: rest).idxOf o + 1 := by
+      rw [List.cons_append]; exact idxOf_cons_ne' _ hpo
+    unfold rk; rw [e1]
+    by_cases hpx : p = x
+    · subst hpx; rw [List.cons_append, List.idxOf_cons_self]; omega
+    · have e2 : (p :: pre ++ o :: rest).idxOf x = (pre ++ o :: rest).idxOf x + 1 := by
+        rw [List.cons_append]; exact idxOf_cons_ne' _ hpx
+      rw [e2]
+      have := rk_pre (rest := rest) pre (by rcases List.mem_cons.mp hx with e | e; exact absurd e.symm hpx; exact e)
+        (fun h => ho (List.mem_cons_of_mem _ h))
+      unfold rk at this
+      omega
+
+section
+variable {bl : Map Blob} {topo : List Nat} {fuel : Nat}
+
+/-- **One tagged chain of the walk**: the invariant and `Keeps` go on. -/
+theorem walk_tag_step (c : Straight Map) {A : List TCh} {out : Map Blob} {done : List Nat}
+    (W : WInv bl topo fuel A out done) (K : Keeps c (withBlocks c out)) (ht : TopoOK bl topo) {o : Nat}
+    {u0 : STest} {ul : List STest} (h : chainOf bl (revCfg bl topo) fuel o = some (u0 :: ul)) (ho : o ∈ topo)
+    (hrk : ∀ a ∈ A, rk topo a.o < rk topo o) (hod : o ∉ done) {out' : Map Blob} {done' : List Nat}
+    (hs : switchTag bl out fuel o (u0 :: ul) done = some (out', done')) :
+    WInv bl topo fuel (A ++ [⟨o, u0, ul⟩]) out' done' ∧ Keeps c (withBlocks c out') := by
+  have H := tagHyp_out W ht h ho hrk hod
+  have D := fun a (ha : a ∈ A) =>
+    chain_disj ht (W.ch a ha).1 (W.ch a ha).2 h ho (hrk a ha) (fun hm => hod (W.dn a ha _ hm))
+  have hob : HoonMap.get bl o = HoonMap.get out o := (W.same o fun a ha => (D a ha).1).symm
+  have hs' : switchTag out out fuel o (u0 :: ul) done = some (out', done') := by
+    rw [← switchTag_out hob]; exact hs
+  obtain ⟨b, nb, nf, hb, hbo, -, -, hfr, hdone⟩ := tag_tree hs' H.nd H.hy H.ho H.hoy H.hr
+  have nodes := tag_nodes hs' H.ho H.hoy
+  have K' : Keeps (withBlocks c out) (withBlocks (withBlocks c out) out') := tag_keeps_of (withBlocks c out) hs' H
+  have frO : ∀ k, k ≠ o → ¬ TagIn u0 ul k → HoonMap.get out' k = HoonMap.get out k :=
+    fun k h1 h2 => hfr k h1 (fun e => h2 (Or.inl e)) (fun e => h2 (Or.inr e))
+  have hnew : ∀ a, a ∈ A ++ [(⟨o, u0, ul⟩ : TCh)] → a ∈ A ∨ a = ⟨o, u0, ul⟩ := by
+    intro a ha; simpa using ha
+  refine ⟨⟨fun a ha => ?_, fun a ha k hk => ?_, fun k hk => ?_, fun a ha => ?_, fun a ha k b' hkI hb' => ?_⟩,
+    keeps_trans K K'⟩
+  · rcases hnew a ha with ha | rfl
+    · exact W.ch a ha
+    · exact ⟨h, ho⟩
+  · rw [hdone]
+    rcases hnew a ha with ha | rfl
+    · exact List.mem_append_right _ (W.dn a ha k hk)
+    · exact List.mem_append_left _ hk
+  · have h1 := hk ⟨o, u0, ul⟩ (List.mem_append_right _ (List.mem_singleton_self _))
+    rw [frO k h1.1 h1.2]
+    exact W.same k fun a ha => hk a (List.mem_append_left _ ha)
+  · rcases hnew a ha with ha | rfl
+    · rw [frO a.o (D a ha).1.1.symm (fun hI => ((D a ha).2.1 a.o hI).1 rfl)]
+      exact W.head a ha
+    · exact ⟨b, by rw [hob]; exact hb, hbo⟩
+  · rcases hnew a ha with ha | rfl
+    · rw [frO k (fun e => (D a ha).1.2 (e ▸ hkI)) (fun hI => ((D a ha).2.1 k hI).2 hkI)] at hb'
+      exact W.node a ha k b' hkI hb'
+    · exact nodes k b' hkI hb'
+
+/-- **The walk keeps the code over tagged chains**: from any point of `topo`,
+with the invariant and `Keeps` so far, when no plain chain of four tests or
+more is met. -/
+theorem switchWalk_tag (c : Straight Map) (ht : TopoOK bl topo)
+    (hnp : ∀ o ∈ topo, ∀ ps, plainsOf bl (revCfg bl topo) fuel o = some ps → ps.length < 4) :
+    ∀ (rest pre : List Nat) (A : List TCh) (out : Map Blob) (done : List Nat) (nex : Nat) (outF : Map Blob),
+      topo = pre ++ rest → (∀ a ∈ A, a.o ∈ pre) → WInv bl topo fuel A out done → Keeps c (withBlocks c out) →
+      switchWalk bl (revCfg bl topo) fuel rest out done nex = some outF → Keeps c (withBlocks c outF)
+  | [], _, _, out, _, _, outF, _, _, _, K, h => by
+    simp only [switchWalk, Option.some.injEq] at h; subst h; exact K
+  | o :: rest, pre, A, out, done, nex, outF, htp, hpre, W, K, h => by
+    have hoT : o ∈ topo := by rw [htp]; simp
+    have htp' : topo = (pre ++ [o]) ++ rest := by rw [htp]; simp
+    have hpre' : ∀ a ∈ A, a.o ∈ pre ++ [o] := fun a ha => List.mem_append_left _ (hpre a ha)
+    unfold switchWalk at h
+    split at h
+    · exact switchWalk_tag c ht hnp rest (pre ++ [o]) A out done nex outF htp' hpre' W K h
+    rename_i hod
+    obtain ⟨cs, hcs, h⟩ := Option.bind_eq_some_iff.mp h
+    split at h
+    · rename_i hlen
+      cases cs with
+      | nil => simp at hlen
+      | cons u0 ul =>
+      cases hst : switchTag bl out fuel o (u0 :: ul) done with
+      | none => simp [hst] at h
+      | some r =>
+      obtain ⟨out', done'⟩ := r
+      simp only [hst, Option.bind_some] at h
+      have hnd : (pre ++ o :: rest).Nodup := by rw [← htp]; exact ht.1
+      have hop : o ∉ pre := fun hm => (List.nodup_append.mp hnd).2.2 o hm o List.mem_cons_self rfl
+      have hrk : ∀ a ∈ A, rk topo a.o < rk topo o := fun a ha => by
+        rw [htp]; exact rk_pre pre (hpre a ha) hop
+      obtain ⟨W', K'⟩ := walk_tag_step c W K ht hcs hoT hrk hod hst
+      refine switchWalk_tag c ht hnp rest (pre ++ [o]) _ out' done' nex outF htp' (fun a ha => ?_) W' K' h
+      rcases List.mem_append.mp ha with ha | ha
+      · exact hpre' a ha
+      · simp only [List.mem_singleton] at ha; subst ha; simp
+    · obtain ⟨ps, hps, h⟩ := Option.bind_eq_some_iff.mp h
+      split at h
+      · exact switchWalk_tag c ht hnp rest (pre ++ [o]) A out done nex outF htp' hpre' W K h
+      · rename_i hl; exact absurd (hnp o hoT ps hps) hl
+
+/-- **`+switch-chains` keeps the code** on blocks with `DInv`, when no plain
+chain of four tests or more is met. -/
+theorem switchChains_keeps_tag (c : Straight Map) {fuel : Nat} {bl' : Map Blob} (hb : DInv c.blocks)
+    (hnp : ∀ topo, bbTopo fuel c.blocks = some topo → ∀ o ∈ topo, ∀ ps,
+      plainsOf c.blocks (revCfg c.blocks topo) fuel o = some ps → ps.length < 4)
+    (h : switchChains fuel c.blocks = some bl') : Keeps c (withBlocks c bl') := by
+  obtain ⟨topo, htopo, h⟩ := Option.bind_eq_some_iff.mp h
+  have ht := bbTopo_ok hb.2.1 htopo
+  have K0 : Keeps c (withBlocks c c.blocks) := keeps_refl c
+  exact switchWalk_tag c ht (hnp topo htopo) topo [] [] c.blocks [] _ bl' rfl (fun a ha => absurd ha List.not_mem_nil)
+    (winv_nil _ _ _ _) K0 h
+
+end
+
 end Opt
 end SkaModel
 end Formalization
