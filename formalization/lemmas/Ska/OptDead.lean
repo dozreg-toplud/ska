@@ -3,15 +3,16 @@ import lemmas.Ska.OptTopo
 /-!
 # `+remove-dead-code`
 
-`safeAssign`: `+get-reg-safe-assignment`, the register an op of `%imm`,
-`%mov`, `%con`, `%hed`, `%tal` writes.  `deadBody`: the inner `|-` over the
-reversed body, with the set `saw` (a list here; only membership is used).
-`removeDeadCode`: the walk over `rev-topo`, one `saw` for the whole walk,
-whose order matters (`+optimize-once` passes `(flop topo)`).
+`safeAssign` (`+get-reg-safe-assignment`, in `Opt.lean`) names the register
+an op of `%imm`, `%mov`, `%con`, `%hed`, `%tal` writes.  `deadBody`: the inner
+`|-` over the reversed body, with the set `saw` (a list here; only membership
+is used).  `removeDeadCode`: the walk over `rev-topo`, one `saw` for the whole
+walk, whose order matters (`+optimize-once` passes `(flop topo)`).
 
-The preservation statement (`DeadKeeps`, not proved yet) needs `TopoOK`
-(every successor of a block is walked before it, so `saw` holds every
-register read later on any path) and `LocalOK`: no dropped op crashes on an
+The preservation statement (`DeadKeeps`, proved as `deadKeeps` in
+`OptDeadSim.lean`) needs `TopoOK` (every successor of a block is walked
+before it, so `saw` holds every register read later on any path) and
+`LocalOK` of the entry (part of `EntryOK`): no dropped op crashes on an
 execution.  The ops `+get-reg-safe-assignment` names can crash in the
 interpreter: `%hed`/`%tal` of an atom, `%con` of a missing or poisoned
 register, `%mov` of a missing one.  For example the block
@@ -19,7 +20,7 @@ register, `%mov` of a missing one.  For example the block
 when that argument is an atom, where the interpreter crashes before.  So
 the pass is sound only on code whose ops of these kinds never crash, which
 `+comp` must guarantee (it emits `%hed` and `%tal` where the subject is known
-to be a cell, or after a `%cel`).
+to be a cell, or after a `%cel`, its own op, which booms on an atom).
 -/
 
 namespace Formalization

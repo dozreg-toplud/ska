@@ -357,6 +357,95 @@ theorem taken_agr {S : Nat → Prop} {R R' : Map (Option Noun)} (hag : Agr S R R
     | (rw [hag.rd (hS _ (by simp [finRegs])), hag.rd (hS _ (by simp [finRegs]))]; done)
     | (rw [hag.rd (hS _ (by simp [finRegs]))]; done)
 
+/-- An end is the same end on files that agree on what the next action
+reads. -/
+theorem endOf_agr {S : Nat → Prop} {x x' : Cfg σ Map} (hp : x'.params = x.params) (hq : x'.b.par = x.b.par)
+    (hf : x'.b.fin = x.b.fin) (ht : x'.t = x.t) (hst : x'.st = x.st) (hag : Agr S x.regs x'.regs)
+    (hb : x.params = [] → x.b.par = [] →
+      (x.b.body = [] ∧ x'.b.body = [] ∧ ∀ k ∈ finRegs x.b.fin, S k) ∨
+      ∃ p rest rest', x.b.body = p :: rest ∧ x'.b.body = p :: rest' ∧ ∀ k ∈ poleRegs p, S k) :
+    endOf lib O gul x' = endOf lib O gul x := by
+  obtain ⟨lab, ⟨par, body, fin⟩, params, regs, t, st⟩ := x
+  obtain ⟨lab', ⟨par', body', fin'⟩, params', regs', t', st'⟩ := x'
+  simp only at hp hq hf ht hst hag hb
+  subst params' par' fin' t' st'
+  unfold endOf
+  simp only
+  by_cases hne : params ≠ [] ∨ par ≠ []
+  · rw [if_pos hne, if_pos hne]
+  · rw [if_neg hne, if_neg hne]
+    simp only [not_or, ne_eq, Decidable.not_not] at hne
+    obtain ⟨rfl, rfl⟩ := hne
+    rcases hb rfl rfl with ⟨rfl, rfl, hL⟩ | ⟨p, rest, rest', rfl, rfl, hS⟩
+    · cases fin with
+      | brn s z o => simp only [hag.rd (hL s (by simp [finRegs]))]
+      | jmp a v => simp only [hag.mapM v (fun k hk => hL k (by simpa [finRegs] using hk))]
+      | jmf a v n => simp only [hag.mapM v (fun k hk => hL k (by simpa [finRegs] using hk))]
+      | jsp a s => simp only [hag.rd (hL s (by simp [finRegs]))]
+      | jsf a s n => simp only [hag.rd (hL s (by simp [finRegs]))]
+      | don s => simp only [hag.rd (hL s (by simp [finRegs]))]
+      | _ => rfl
+    · have hp' := execPole_agr lib O gul st p t hag hS
+      simp only
+      revert hp'
+      cases execPole lib O gul st p regs t <;> cases execPole lib O gul st p regs' t
+      · simp
+      · simp [PAg]
+      · simp [PAg]
+      · rename_i a b
+        obtain ⟨ta, Ra, tra, sa⟩ := a
+        obtain ⟨tb, Rb, trb, sb⟩ := b
+        simp only [PAg]
+        rintro ⟨rfl, rfl, rfl, -⟩
+        cases ta <;> rfl
+
+/-- At a dropped op the code before steps or crashes: no end. -/
+theorem dropped_endOf {x : Cfg σ Map} (hd : Dropped Sf x) : endOf lib O gul x = none := by
+  obtain ⟨hp, hq, p, rest, d, hbd, hsd, -⟩ := hd
+  unfold endOf
+  split
+  · rfl
+  rw [hbd]
+  simp only
+  cases e : execPole lib O gul x.st p x.regs x.t with
+  | none => rfl
+  | some r =>
+    obtain ⟨ton, R2, t2, st2⟩ := r
+    obtain ⟨rfl, -⟩ := safe_frame hsd e
+    rfl
+
+/-- **The normal form**: the code before runs the dropped ops at its head,
+which do not crash (`LocalOK` from `x`). -/
+theorem dead_norm (l : List Pole) : ∀ {x x' : Cfg σ Map}, x.b.body = l → DeadI c.blocks Sf x x' →
+    (∀ es z p rest, Steps lib O c gul x es z → z.params = [] → z.b.par = [] → z.b.body = p :: rest →
+      (safeAssign p).isSome → (execPole lib O gul z.st p z.regs z.t).isSome) →
+    ∃ es z, Steps lib O c gul x es z ∧ DeadI c.blocks Sf z x' ∧ ¬ Dropped Sf z := by
+  induction l with
+  | nil =>
+    intro x x' hl0 hr _
+    refine ⟨[], x, Steps.refl _, hr, ?_⟩
+    rintro ⟨-, -, p, rest, d, hbd, -⟩
+    rw [hl0] at hbd; cases hbd
+  | cons q l ih =>
+    intro x x' hl0 hr hl
+    by_cases hd : Dropped Sf x
+    · obtain ⟨hp, hq, p, rest, d, hbd, hsd, hdn⟩ := hd
+      have hbd' := hbd
+      rw [hl0] at hbd
+      simp only [List.cons.injEq] at hbd
+      obtain ⟨rfl, rfl⟩ := hbd
+      obtain ⟨res, hres⟩ := Option.isSome_iff_exists.mp
+        (hl [] x q l (Steps.refl _) hp hq hbd' (by rw [hsd]; rfl))
+      obtain ⟨ton, R2, t2, st2⟩ := res
+      obtain ⟨hz, hr2⟩ := deadI_drop (lib := lib) (O := O) (gul := gul) hr hp hq hbd' hsd hdn hres
+      subst hz
+      have hs : Step lib O c gul x [] ⟨x.lab, { x.b with body := l }, x.params, R2, t2, st2⟩ :=
+        Step.op hp hq hbd' hres
+      obtain ⟨es, z, hz, hrz, hnd⟩ := ih (x := ⟨x.lab, { x.b with body := l }, x.params, R2, t2, st2⟩) rfl hr2
+        (fun es z p rest hs' => hl _ z p rest (Steps.step hs hs'))
+      exact ⟨[] ++ es, z, Steps.step hs hz, hrz, hnd⟩
+    · exact ⟨[], x, Steps.refl _, hr, hd⟩
+
 variable (DW : DeadW c.blocks c'.blocks topo Sf)
 include DW
 
@@ -432,7 +521,218 @@ theorem dead_fwd_step {x y x' : Cfg σ Map} {es : List (Nat × Nat)} (hs : Step 
     refine ⟨_, _, Steps.step (Step.jump (x := ⟨lab, { b with body := (deadF b.body (Sf lab)).1 }, [], regs', t, st⟩)
       rfl hq (by simp only [hbd, deadF]) htk' hb2') (Steps.refl _), hr2⟩
 
+
+/-- Out of the normal form the next action is the same on both sides. -/
+theorem dead_nf {x x' : Cfg σ Map} (hr : DeadI c.blocks Sf x x') (hnd : ¬ Dropped Sf x) (hp : x.params = [])
+    (hq : x.b.par = []) :
+    (x.b.body = [] ∧ x'.b.body = [] ∧ ∀ k ∈ finRegs x.b.fin, DLive Sf x k) ∨
+      ∃ p rest rest', x.b.body = p :: rest ∧ x'.b.body = p :: rest' ∧ ∀ k ∈ poleRegs p, DLive Sf x k := by
+  obtain ⟨-, -, -, -, hreach, ⟨b0, hb0, hfin⟩, hb', -⟩ := hr
+  cases hbd : x.b.body with
+  | nil =>
+    refine Or.inl ⟨rfl, by simp [hb', hbd, deadF], fun k hk => Or.inl ⟨?_, by simp [hq]⟩⟩
+    rw [hbd]
+    obtain ⟨b0', hb0', -, hf⟩ := DW.blk x.lab (DW.ok.2.2.2.1 _ hreach)
+    rw [hb0] at hb0'; cases hb0'
+    exact hf k (by rw [← hfin]; exact hk)
+  | cons p rest =>
+    rcases deadF_cons p rest (Sf x.lab) with hk | ⟨d, hd, hdn, -⟩
+    · refine Or.inr ⟨p, rest, (deadF rest (Sf x.lab)).1, rfl, by rw [hb']; simp only [hbd, hk],
+        fun k hk' => Or.inl ⟨?_, by simp [hq]⟩⟩
+      rw [hbd, hk]; exact List.mem_append_left _ hk'
+    · exact (hnd ⟨hp, hq, p, rest, d, hbd, hd, hdn⟩).elim
+
+/-- **An end out of the normal form is the same end.** -/
+theorem dead_endOf {x x' : Cfg σ Map} (hr : DeadI c.blocks Sf x x') (hnd : ¬ Dropped Sf x) :
+    endOf lib O gul x' = endOf lib O gul x := by
+  have hr0 := hr
+  obtain ⟨-, hpe, ht, hst, -, -, hb', hag⟩ := hr
+  exact endOf_agr hpe (by rw [hb']) (by rw [hb']) ht hst hag (fun hp hq => dead_nf DW hr0 hnd hp hq)
+
+/-- **Forward, at an end.** -/
+theorem dead_fwd_end {x x' : Cfg σ Map} {r : Tone × σ} (hr : DeadI c.blocks Sf x x')
+    (he : endOf lib O gul x = some r) : endOf lib O gul x' = some r := by
+  by_cases hd : Dropped Sf x
+  · rw [dropped_endOf (lib := lib) (O := O) (gul := gul) hd] at he; cases he
+  · rw [dead_endOf DW hr hd]; exact he
+
+/-- A real read after, out of the normal form, is a real read before, of the
+same value. -/
+theorem dead_reads {x x' : Cfg σ Map} {k : Nat} (hr : DeadI c.blocks Sf x x') (hnd : ¬ Dropped Sf x)
+    (hk : ReadsAt gul x' k) : ReadsAt gul x k ∧ read k x'.regs = read k x.regs := by
+  have hr0 := hr
+  obtain ⟨-, hpe, -, -, -, -, hb', hag⟩ := hr
+  obtain ⟨hp, hq, hk⟩ := hk
+  have hp0 : x.params = [] := by rw [← hpe]; exact hp
+  have hq0 : x.b.par = [] := by rw [hb'] at hq; exact hq
+  rcases dead_nf DW hr0 hnd hp0 hq0 with ⟨h1, h2, hL⟩ | ⟨p, rest, rest', h1, h2, hS⟩
+  · rcases hk with ⟨p, rest, hb, -⟩ | ⟨-, hk⟩
+    · rw [h2] at hb; cases hb
+    · have hf : x'.b.fin = x.b.fin := by rw [hb']
+      rw [hf] at hk
+      exact ⟨⟨hp0, hq0, Or.inr ⟨h1, hk⟩⟩, hag.rd (hL k (finReads_sub hk))⟩
+  · rcases hk with ⟨p', rest'', hb, hk⟩ | ⟨hb, -⟩
+    · rw [h2] at hb
+      simp only [List.cons.injEq] at hb
+      obtain ⟨rfl, -⟩ := hb
+      exact ⟨⟨hp0, hq0, Or.inl ⟨p, rest, h1, hk⟩⟩, hag.rd (hS k (poleReads_sub hk))⟩
+    · rw [h2] at hb; cases hb
+
+/-- **Backward**: out of the normal form, a step after is matched by one step
+before. -/
+theorem dead_bwd_step {x x' y' : Cfg σ Map} {es' : List (Nat × Nat)} (hs : Step lib O c' gul x' es' y')
+    (hr : DeadI c.blocks Sf x x') (hnd : ¬ Dropped Sf x) :
+    ∃ es y, Steps lib O c gul x es y ∧ DeadI c.blocks Sf y y' := by
+  obtain ⟨lab, b, params, regs, t, st⟩ := x
+  obtain ⟨lab', b', params', regs', t', st'⟩ := x'
+  obtain ⟨hl, hpe, ht, hst, hreach, hb0, hb', hag⟩ := hr
+  simp only at hl hpe ht hst hreach hb0 hb' hag
+  subst lab' params' t' st' b'
+  cases hs with
+  | @pass R1' hne hR' =>
+    simp only at hne hR'
+    obtain ⟨hck, hR'⟩ := evalPass_check hR'
+    have hm : params.map (argU regs) = params.map (argU regs') := List.map_congr_left (fun a ha => by
+      cases a with
+      | none => rfl
+      | some k => exact hag k (Or.inr ha))
+    obtain ⟨R1, hR1, hpar⟩ := OAg.bwd (passLoop_agr params params b.par regs regs' hck hck hm) hR'
+    exact ⟨_, _, Steps.step (Step.pass (x := ⟨lab, b, params, regs, t, st⟩) hne
+      (by rw [evalPass_ok hck]; exact hR1)) (Steps.refl _), deadI_pass hreach hb0 hag hR1 hR' hpar⟩
+  | @op p rest' n R2' t2 st2 hp hq hbd hpole =>
+    simp only at hp hq hbd hpole
+    subst hp
+    cases hb : b.body with
+    | nil => rw [hb] at hbd; simp [deadF] at hbd
+    | cons q rest =>
+      rw [hb] at hbd
+      rcases deadF_cons q rest (Sf lab) with hk | ⟨d, hd, hdn, -⟩
+      · rw [hk] at hbd
+        simp only [List.cons.injEq] at hbd
+        obtain ⟨rfl, rfl⟩ := hbd
+        have hag' : Agr (fun k => k ∈ poleRegs q ++ (deadF rest (Sf lab)).2) regs regs' :=
+          fun k hk' => hag k (Or.inl ⟨by simp only; rw [hb, hk]; exact hk', by simp [hq]⟩)
+        obtain ⟨R2, hR2, hag2⟩ := PAg.bwd (execPole_agr lib O gul st q t hag'
+          (fun k hk' => List.mem_append_left _ hk')) hpole
+        exact ⟨_, _, Steps.step (Step.op (x := ⟨lab, b, [], regs, t, st⟩) (rest := rest) rfl hq hb hR2)
+          (Steps.refl _), deadI_keep hreach hb0 hq hag2 rfl⟩
+      · exact (hnd ⟨rfl, hq, q, rest, d, hb, hd, hdn⟩).elim
+  | @jump j b2' hp hq hbd htk' hb2' =>
+    simp only at hp hq hbd htk' hb2'
+    subst hp
+    have hb : b.body = [] := by
+      cases hb : b.body with
+      | nil => rfl
+      | cons q rest =>
+        rw [hb] at hbd
+        rcases deadF_cons q rest (Sf lab) with hk | ⟨d, hd, hdn, -⟩
+        · rw [hk] at hbd; cases hbd
+        · exact (hnd ⟨rfl, hq, q, rest, d, hb, hd, hdn⟩).elim
+    obtain ⟨b0, hb0', hfin⟩ := hb0
+    have hSf : Agr (fun k => k ∈ Sf lab) regs regs' := fun k hk => hag k (Or.inl ⟨by simp only [hb, deadF]; exact hk,
+      by simp [hq]⟩)
+    have ho : lab ∈ topo := DW.ok.2.2.2.1 lab hreach
+    have hF : ∀ k ∈ finRegs b.fin, k ∈ Sf lab := by
+      obtain ⟨b0', hb0'', -, hf⟩ := DW.blk lab ho
+      rw [hb0'] at hb0''; cases hb0''
+      rw [hfin]; exact hf
+    have htk : taken regs b.fin = some j := by rw [← taken_agr hSf hF]; exact htk'
+    rw [hfin] at htk
+    have hreach2 := Reach.jump hreach hb0' (taken_mem htk)
+    obtain ⟨b2, hb2, -, -⟩ := DW.blk j.there (DW.ok.2.2.2.1 _ hreach2)
+    obtain ⟨hb2'', hr2⟩ := dead_jump DW (t := t) (st := st) hreach hb0' (taken_mem htk) hb2 hSf
+    rw [hb2'] at hb2''; cases hb2''
+    exact ⟨_, _, Steps.step (Step.jump (x := ⟨lab, b, [], regs, t, st⟩) rfl hq hb (by rw [hfin]; exact htk) hb2)
+      (Steps.refl _), hr2⟩
+
+/-- **Forward, on paths.** -/
+theorem dead_fwd {x z : Cfg σ Map} {es : List (Nat × Nat)} (hs : Steps lib O c gul x es z) {r : Tone × σ}
+    (he : endOf lib O gul z = some r) : ∀ {x' : Cfg σ Map}, DeadI c.blocks Sf x x' →
+      ∃ es' z', Steps lib O c' gul x' es' z' ∧ endOf lib O gul z' = some r := by
+  induction hs with
+  | refl => intro x' hr; exact ⟨[], x', Steps.refl _, dead_fwd_end DW hr he⟩
+  | step s _ ih =>
+    intro x' hr
+    obtain ⟨es1, y', hs1, hr1⟩ := dead_fwd_step DW s hr
+    obtain ⟨es2, z', hs2, he'⟩ := ih he hr1
+    exact ⟨_, z', steps_trans hs1 hs2, he'⟩
+
+/-- **Backward, on paths**, to the normal form. -/
+theorem dead_bwd {x' z' : Cfg σ Map} {es' : List (Nat × Nat)} (hs : Steps lib O c' gul x' es' z') :
+    ∀ {x : Cfg σ Map}, (∀ es z p rest, Steps lib O c gul x es z → z.params = [] → z.b.par = [] →
+      z.b.body = p :: rest → (safeAssign p).isSome → (execPole lib O gul z.st p z.regs z.t).isSome) →
+    DeadI c.blocks Sf x x' → ∃ es z, Steps lib O c gul x es z ∧ DeadI c.blocks Sf z z' ∧ ¬ Dropped Sf z := by
+  induction hs with
+  | refl => intro x hl hr; exact dead_norm _ rfl hr hl
+  | step s _ ih =>
+    intro x hl hr
+    obtain ⟨es1, x1, hs1, hr1, hnd1⟩ := dead_norm _ rfl hr hl
+    obtain ⟨es2, y, hs2, hr2⟩ := dead_bwd_step DW s hr1 hnd1
+    obtain ⟨es3, z, hs3, hr3, hnd3⟩ :=
+      ih (fun es z p rest hz => hl _ z p rest (steps_trans (steps_trans hs1 hs2) hz)) hr2
+    exact ⟨_, z, steps_trans (steps_trans hs1 hs2) hs3, hr3, hnd3⟩
+
 end Sim
+
+/-- **`+remove-dead-code` keeps the code**, on a `topo` with `TopoOK`. -/
+theorem dead_keeps (c : Straight Map) {topo : List Nat} {bl' : Map Blob} (ht : TopoOK c.blocks topo)
+    (h : removeDeadCode c.blocks topo.reverse = some bl') : Keeps c (withBlocks c bl') := by
+  obtain ⟨Sf, DW⟩ := dead_walk ht h
+  have DW' : DeadW c.blocks (withBlocks c bl').blocks topo Sf := DW
+  obtain ⟨b0, hb0, hb0', -⟩ := DW.blk 0 (List.mem_of_mem_head? ht.2.1)
+  refine ⟨rfl, rfl, ?_, fun lib σ O gul st vals t ⟨hok, hargs, hloc⟩ => ?_⟩
+  · show (HoonMap.get bl' 0).map Blob.par = (HoonMap.get c.blocks 0).map Blob.par
+    rw [hb0', hb0]; rfl
+  let x0 : Path.Cfg σ Map := ⟨0, b0, [], regsOf vals, t, st⟩
+  let x0' : Path.Cfg σ Map := ⟨0, { b0 with body := (deadF b0.body (Sf 0)).1 }, [], regsOf vals, t, st⟩
+  have hr0 : DeadI c.blocks Sf x0 x0' := ⟨rfl, rfl, rfl, rfl, Reach.zero, ⟨b0, hb0, rfl⟩, rfl, fun k _ => rfl⟩
+  have hl0 : ∀ es z p rest, Steps lib O c gul x0 es z → z.params = [] → z.b.par = [] → z.b.body = p :: rest →
+      (safeAssign p).isSome → (execPole lib O gul z.st p z.regs z.t).isSome :=
+    fun es z p rest hz => hloc es z p rest ⟨b0, hb0, hz⟩
+  have back : ∀ es' y', Path.FromEntry (lib := lib) (O := O) (c := withBlocks c bl') (gul := gul) st vals t es' y' →
+      ∃ es y, Path.Steps lib O c gul x0 es y ∧ DeadI c.blocks Sf y y' ∧ ¬ Dropped Sf y := by
+    rintro es' y' ⟨b0'', hb0'', hs'⟩
+    have e : HoonMap.get (withBlocks c bl').blocks 0 = some { b0 with body := (deadF b0.body (Sf 0)).1 } := hb0'
+    rw [e] at hb0''; cases hb0''
+    exact dead_bwd DW' hs' hl0 hr0
+  refine ⟨Option.ext fun r => ⟨fun h' => ?_, fun h' => ?_⟩, fun es' y' k hy' hk => ?_,
+    fun es' y' k hy' hk => ?_, fun es' y' p rest hy' hp hq hb hsa => ?_⟩
+  · obtain ⟨es', y', hy', he'⟩ := (Path.execEntry_iff_path (c := withBlocks c bl') st vals t r).mp h'
+    obtain ⟨es, y, hs, hn, hnd⟩ := back es' y' hy'
+    exact (Path.execEntry_iff_path (c := c) st vals t r).mpr
+      ⟨es, y, ⟨b0, hb0, hs⟩, by rw [← dead_endOf DW' hn hnd]; exact he'⟩
+  · obtain ⟨es, y, ⟨b0'', hb0'', hs⟩, he⟩ := (Path.execEntry_iff_path (c := c) st vals t r).mp h'
+    rw [hb0] at hb0''; cases hb0''
+    obtain ⟨es', z', hs', he'⟩ := dead_fwd DW' hs he hr0
+    exact (Path.execEntry_iff_path (c := withBlocks c bl') st vals t r).mpr ⟨es', z', ⟨_, hb0', hs'⟩, he'⟩
+  · obtain ⟨es, y, hs, hn, hnd⟩ := back es' y' hy'
+    obtain ⟨hk', hrd⟩ := dead_reads DW' hn hnd hk
+    obtain ⟨v, hv⟩ := hok es y k ⟨b0, hb0, hs⟩ hk'
+    exact ⟨v, by rw [hrd, hv]⟩
+  · obtain ⟨es, y, hs, hn, -⟩ := back es' y' hy'
+    obtain ⟨-, hpe, -, -, -, -, -, hag⟩ := hn
+    have hk0 : some k ∈ y.params := by rw [← hpe]; exact hk
+    rw [← hag k (Or.inr hk0)]
+    exact hargs es y k ⟨b0, hb0, hs⟩ hk0
+  · obtain ⟨es, y, hs, hn, hnd⟩ := back es' y' hy'
+    have hn0 := hn
+    obtain ⟨-, hpe, ht', hst', -, -, hb', hag⟩ := hn
+    have hp0 : y.params = [] := by rw [← hpe]; exact hp
+    have hq0 : y.b.par = [] := by rw [hb'] at hq; exact hq
+    rcases dead_nf DW' hn0 hnd hp0 hq0 with ⟨-, h2, -⟩ | ⟨p', rest0, rest', h1, h2, hS⟩
+    · rw [h2] at hb; cases hb
+    · rw [h2] at hb
+      simp only [List.cons.injEq] at hb
+      obtain ⟨rfl, -⟩ := hb
+      have h1' := hloc es y p' rest0 ⟨b0, hb0, hs⟩ hp0 hq0 h1 hsa
+      obtain ⟨r1, hr1⟩ := Option.isSome_iff_exists.mp h1'
+      obtain ⟨ton, R1, t1, s1⟩ := r1
+      obtain ⟨R1', hR1', -⟩ := (execPole_agr lib O gul y.st p' y.t hag hS).fwd hr1
+      rw [ht', hst', hR1']; rfl
+
+/-- **The preservation statement of `+remove-dead-code` holds.** -/
+theorem deadKeeps : DeadKeeps (Map := Map) :=
+  fun c _ _ ht h => dead_keeps c ht h
 
 end Opt
 end SkaModel
