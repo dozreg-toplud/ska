@@ -13,9 +13,9 @@ moved need for the subject, which is its own need for the noun at `axe`
 (`fillSem_from`).
 
 This is the case of goals with entries in which the run of `p` puts no op in
-the goal's lazy blocks.  It needs no relation for goals with entries
-(`RunOKE` of `CompEntryGoal.lean`, which assumes that the entries of the
-result are new blocks and so does not fit `%0`).
+the goal's lazy blocks, proved here without a relation for goals with
+entries.  `runOKG_from'` (`CompEntryRun.lean`) derives it again from
+`RunOKE` of `CompEntryGoal.lean`, which pairs the entries by label.
 -/
 
 set_option linter.unusedSectionVars false
