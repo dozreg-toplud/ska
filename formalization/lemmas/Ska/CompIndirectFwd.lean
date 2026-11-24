@@ -132,6 +132,74 @@ theorem indirect_sem {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib
   · rw [en] at G
     exact ⟨Tone.two t, st, G, by rw [er]; exact ToneRel.two htr⟩
 
+/-- **The first call theorem** (forward): the whole-subject code of the
+nomm `[2 p q]` of the formula `[2 b c]`, with `p` and `q` in `FragU` and at
+most 255 `%6` in all, has the input need `this` and meets the forward half
+of the contract on the subject whole, on every subject that fits the bell,
+against any needs. -/
+theorem indirectTop_fwd {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) {bl : Bell}
+    {fb fc : Noun} {p q : Nomm} (hfol : bl.fol = n3 (A 2) fb fc)
+    (hAp : Annot lib code (SkaModel.Fits bl.less) fb p) (hAq : Annot lib code (SkaModel.Fits bl.less) fc q)
+    (hp : FragU (S := S) p) (hq : FragU (S := S) q) (hcount : sixCount p + sixCount q ≤ 255)
+    {env : CallEnv} {c : Straight Map} (h : finishLUC (S := S) env (Nomm.n2 p q Option.none) = some c)
+    (N : Needs) : c.need = NeedOrd.this ∧ ∀ s, SkaModel.Fits bl.less s → ContractFwd lib N s bl.fol [s] c := by
+  unfold finishLUC at h
+  obtain ⟨⟨nex, gE⟩, hrun, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨⟨⟨o', sub⟩, g8⟩, hk, hts⟩ := Option.bind_eq_some_iff.mp h
+  simp only at hts
+  obtain ⟨nex0, g1, out, pro, g2, o, g3, nexF, g4, nexF', g5, nexS, g6, h1, h2, h3, h4, h5, h6, h7⟩ :=
+    runLC_n2_none hrun
+  obtain ⟨rfl, rfl, rfl, e2, r3, b3, d3, cn3, k1, k2, k3, G3, cl3, k0⟩ := indirect_prefix h1 h2 h3
+  have pp := fragU_pure hp
+  have qp := fragU_pure hq
+  rw [runLC_eq env q (Nomm.noCall_of_pure q qp), e2] at h4
+  rw [pastL_pure _ _ pp, pure_apply] at h5
+  simp only [Option.some.injEq, Prod.mk.injEq] at h5
+  obtain ⟨rfl, rfl⟩ := h5
+  rw [runLC_eq env p (Nomm.noCall_of_pure p pp), e2] at h6
+  have u3 : UpBelow g3 := G3.up upBelow_gen0
+  have cb3 : CondBelow g3 := fun k hk => by rw [cn3 k] at hk; simp at hk
+  have Rm := indirect_mid (a := 2) (b := 3) (o := 3) lib (runU_uok lib hp) (runU_uok lib hq) (by decide)
+    (by omega) (by omega) (by decide) (by omega) hcount d3 u3 cl3 cb3 (cn3 2) (cn3 3) h4 h6 h7
+  have T : TopS gE nex :=
+    { ext := Ext.trans ⟨Nat.zero_le _, by show 1 ≤ g3.bo; omega, by rw [d3]; rfl, fun o ho => by
+        have : o = 0 := by show o = 0; simp [gen0] at ho; omega
+        subst this; rw [k0]; exact (HoonMap.get_empty 0).symm⟩ Rm.ext
+      grow := G3.trans Rm.grow
+      cfr := CondFresh.trans ⟨Nat.zero_le _, fun k => Or.inl (by rw [cn3 k]; exact (HoonMap.get_empty k).symm)⟩
+        Rm.cfr
+      lo := Rm.lo
+      hi := Rm.hi
+      args := nextArgs_nil Rm.ent rfl
+      regs := fun r hr => ⟨Nat.zero_le _, by
+        rcases Rm.regs r hr with e | ⟨_, e⟩
+        · simp only [pairSure, NMem] at e; have := Rm.ext.1; omega
+        · exact e⟩
+      dist := Rm.dist
+      eregs := fun e he => ⟨(Rm.eregs e he).1, fun r hr => ⟨Nat.zero_le _, ((Rm.eregs e he).2 r hr).2⟩⟩
+      labs := fun e he => ⟨by have := (Rm.labs e he).1; show 1 ≤ e.1; omega, (Rm.labs e he).2⟩
+      nodup := Rm.nodup
+      ncond := Rm.ncond
+      econd := Rm.econd }
+  have F := finishTop_gen lib T (fwdPhi lib N (SkaModel.Fits bl.less) (n3 (A 2) fb fc))
+    (indirect_sem hok pp qp hAp hAq N Rm r3 b3 cn3 k1 k2 k3)
+    (fun σ O st t gul s hfs Inv ν n tm r hs _ _ _ hm _ htr => by
+      rcases Rm.nec s hfs with e | ⟨v, ev, hv⟩
+      · rcases minkF_n2_pure hok pp qp hAp hAq hs hm with ⟨n', x, y, rfl, ex, ey, _⟩ | ⟨_, er⟩
+        · rw [pureEval_cons, ex, ey] at e; simp at e
+        · exact ⟨Tone.two t, st, rfl, by rw [er]; exact ToneRel.two htr⟩
+      · exfalso
+        apply hv
+        rw [pureEval_cons] at ev
+        obtain ⟨x, -, ev⟩ := Option.bind_eq_some_iff.mp ev
+        obtain ⟨y, -, ev⟩ := Option.bind_eq_some_iff.mp ev
+        cases ev
+        exact ⟨⟨trivial, trivial⟩, looks_empty _⟩)
+    hk hts
+  refine ⟨F.1, fun s hs σ Inv ν O n gul ti tm r hN hS hF hm st hI htr => ?_⟩
+  rw [hfol] at hm
+  exact F.2 σ O st s ti gul Inv ν n tm r hs hN hS hF hm hI htr
+
 end Comp
 end SkaModel
 end Formalization

@@ -67,6 +67,7 @@ import lemmas.Ska.CompCallStep
 import lemmas.Ska.CompWholeTop
 import lemmas.Ska.CompHypOf
 import lemmas.Ska.CompIndirect
+import lemmas.Ska.CompIndirectFwd
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -660,3 +661,9 @@ open Formalization.SkaModel.Comp
 #print axioms Formalization.SkaModel.PokeM.rawNary_fragU
 #print axioms Formalization.SkaModel.PokeM.compHyp_of_frag
 #print axioms runLC_n2_none
+#print axioms indirect_mid
+#print axioms finishTop_gen
+#print axioms indirect_prefix
+#print axioms minkF_n2_pure
+#print axioms indirect_sem
+#print axioms indirectTop_fwd
