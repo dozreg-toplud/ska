@@ -464,5 +464,28 @@ theorem run_stepW (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar f →
     simp (disch := ffar_disch) [nock_exec, hcf, hK, h, hgg, hd, runFolF, git_g.arm_at, git_g_arm,
       SkaState.toNoun, Stats.toNoun, Ana.runStep, runSt0, hg]
 
+/-- `run_stepW` for `nock`: the gate's battery with `fol-loop` given by `GoIs`. -/
+theorem run_step (regsNoun : R → Noun) (K : Noun) (hK : slot? 31 K = some ana) (id : Ident) (index : Nat)
+    (st : SkaState FinMap R) (go : FolGoS FinMap R)
+    (hgo : GoIs regsNoun (runTrapRest regsNoun K id index st) go) :
+    nock (runSubj regsNoun K id index st) ska_run.battery
+      = (Ana.runStep go id index st).map (runNoun regsNoun) := by
+  rw [nock_eq_nockW]
+  exact run_stepW nock (fun _ _ _ => rfl) regsNoun K hK id index st go hgo
+
+/-- The layout facts of `FolLoopConv.lean` for the rest of the trap's
+subject that the battery of `+run` builds. -/
+theorem runTrapRest_ana (regsNoun : R → Noun) (K : Noun) (hK : slot? 31 K = some ana) (id : Ident)
+    (index : Nat) (st : SkaState FinMap R) :
+    slot? 511 (runTrapRest regsNoun K id index st) = some ana ∧
+      slot? 31 (runTrapRest regsNoun K id index st) = some K := by
+  unfold runTrapRest
+  constructor
+  · have e : slot? 511 (C id.1.toNoun (C (Ana.gitG (runSt0 st).g id).toNoun (C ska_run.battery
+        (C (C (identNoun id) (C (A index) ((runSt0 st).toNoun regsNoun))) K)))) = slot? 31 K := by
+      simp [nock_exec]
+    rw [e, hK]
+  · simp [nock_exec]
+
 end Compiler
 end Formalization

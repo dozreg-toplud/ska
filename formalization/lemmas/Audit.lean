@@ -476,3 +476,5 @@ open Formalization
 #print axioms Compiler.runEnd_eq
 #print axioms Compiler.run_datum
 #print axioms Compiler.run_stepW
+#print axioms Compiler.run_step
+#print axioms Compiler.runTrapRest_ana
