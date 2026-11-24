@@ -138,18 +138,21 @@ track C), field by field; `optIn_iff`: it is `DInvR`. -/
 structure OptIn (bl : Map Blob) : Prop where
   /-- The parameters of each block are distinct. -/
   parNodup : ParNodup bl
-  /-- Every jump passes the check of `+eval-pass`: as many arguments as
-  parameters, each argument register a register the block may read. -/
+  /-- Every jump passes the check of `+eval-pass`: no argument register is a
+  parameter of its target. -/
   passOK : PassOK bl
   /-- No cycle: a rank that falls along every jump. -/
   acyclic : Acyclic bl
-  /-- The parameters of a block are written by no op of a block below it. -/
+  /-- No argument register of a jump is a parameter of a block reachable from
+  its target. -/
   downPar : DownPar bl
-  /-- Trace hints are bracketed: every block opens and closes the hints that a
-  key list says (`TrimBr`). -/
+  /-- Trace hints are bracketed: a stack of open frames at the start of every
+  reachable block, empty at block `0`, that the body takes to the stack of
+  every jump target. -/
   trimBr : ∃ K, TrimBr bl K
-  /-- Every read of a register with a definition is preceded, along every path
-  of blocks from `0`, by a definition of it. -/
+  /-- On every path of blocks from `0`, a register with a definition is read
+  only after a definition: a parameter of the block, an earlier op of it, or
+  an earlier block of the path. -/
   defFirst : DefFirst bl
   /-- No end is `%lti` (only `+switch-chains`, after the loop, makes one). -/
   noLti : NoLti bl
