@@ -616,6 +616,111 @@ theorem wr_copyNeed : ∀ (a b : Need) (ops : List Pole) (g g' : Gen Map) (x : N
         exact ⟨fun e => e.elim (fun e => ab y (Or.inr (Or.inl e)) (Or.inl rfl)) nh,
           fun e => e.elim (fun e => ab y (Or.inr (Or.inr e)) (Or.inl rfl)) nt⟩
 
+/-! ## `+collapse-lazy-atom` -/
+
+/-- **`+collapse-lazy-atom` writes registers of the goal's need and fresh
+ones, and returns such a register.** -/
+theorem wr_collapseLazyAtom {nex : Next S} {g g' : Gen Map} {a : Option (Nat × Nat)} (hd : g.drop = false)
+    (hn : NB g.re nex.laz.ned) (h : collapseLazyAtom nex g = some (a, g')) :
+    WroteIn (NewOr nex.laz.ned g g') g g' ∧ ∀ r o, a = some (r, o) → NewOr nex.laz.ned g g' r := by
+  have K := (keeps_collapseLazyAtom hd hn h).1
+  unfold collapseLazyAtom at h
+  by_cases ha : nex.th.args ≠ []
+  · rw [if_pos ha] at h; cases h
+  rw [if_neg ha] at h
+  by_cases hne : noneEquivalent nex.laz = true
+  · rw [if_pos hne] at h
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨WroteIn.refl _ _, fun _ _ e => by cases e⟩
+  rw [if_neg hne] at h
+  obtain ⟨ns, g1, h1, h⟩ := bind_some h
+  obtain ⟨k1, n1⟩ := keeps_sureRequireLook hn h1
+  have L1 := sureRequireLook_spec h1
+  obtain ⟨⟨r, there⟩, g2, h2, h⟩ := bind_some h
+  have hr : Keeps g1 g2 ∧ WroteIn (fun _ => False) g1 g2 ∧ (NMem ns r ∨ (g1.re ≤ r ∧ r < g2.re)) := by
+    cases ns with
+    | this r0 =>
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+      obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h2
+      exact ⟨Keeps.refl _, WroteIn.refl _ _, Or.inl rfl⟩
+    | none =>
+      obtain ⟨r0, g3, h3, h2⟩ := bind_some h2
+      obtain ⟨e3, q3, k3⟩ := keeps_re h3
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+      obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h2
+      exact ⟨k3, wroteIn_re h3, Or.inr ⟨by omega, by omega⟩⟩
+    | pair p q =>
+      obtain ⟨r0, g3, h3, h2⟩ := bind_some h2
+      obtain ⟨e3, q3, k3⟩ := keeps_re h3
+      obtain ⟨o, g4, h4, h2⟩ := bind_some h2
+      obtain ⟨k4, q4⟩ := keeps_emit ((k1.trans k3).dropF hd) (blobIn_fin (f := Termin.bom Option.none) trivial) h4
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+      obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h2
+      exact ⟨k3.trans k4, (wroteIn_re h3).trans (wroteIn_emit (blobWr_fin _ _) h4), Or.inr ⟨by omega, by omega⟩⟩
+    | both r0 p q =>
+      obtain ⟨o, g4, h4, h2⟩ := bind_some h2
+      obtain ⟨k4, q4⟩ := keeps_emit (k1.dropF hd) (blobIn_fin (f := Termin.bom Option.none) trivial) h4
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+      obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h2
+      exact ⟨k4, wroteIn_emit (blobWr_fin _ _) h4, Or.inl (Or.inl rfl)⟩
+  obtain ⟨k2, w2, r2⟩ := hr
+  have d2 := (k1.trans k2).dropF hd
+  have rlt : r < g2.re := by
+    rcases r2 with e | e
+    · exact Nat.lt_of_lt_of_le (n1 r e) k2.le
+    · exact e.2
+  obtain ⟨g3, g3', h3, h⟩ := bind_some h
+  rw [get_apply] at h3
+  simp only [Option.some.injEq, Prod.mk.injEq] at h3
+  obtain ⟨rfl, rfl⟩ := h3
+  rw [d2] at h
+  simp only [Bool.false_eq_true, if_false] at h
+  obtain ⟨ned', g4, h4, h⟩ := bind_some h
+  obtain ⟨k4, n4⟩ := keeps_sureRequireLook (sur := ⟨Need.this r, nex.laz.lok⟩) (nb_this rlt) h4
+  have L4 := sureRequireLook_spec h4
+  have close : ∀ g5 : Gen Map, g4.re ≤ g5.re → WroteIn (NewOr ned' g4 g5) g4 g5 →
+      (pure (some (r, there)) : CM Map (Option (Nat × Nat))) g5 = some (a, g') →
+      WroteIn (NewOr nex.laz.ned g g') g g' ∧ ∀ r o, a = some (r, o) → NewOr nex.laz.ned g g' r := by
+    intro g5 l5 w5 e5
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at e5
+    obtain ⟨rfl, rfl⟩ := e5
+    have hR : NewOr nex.laz.ned g g5 r := by
+      rcases r2 with e | e
+      · rcases L1.mem r e with e' | e'
+        · exact Or.inl e'
+        · exact Or.inr ⟨e'.1, by have := k2.le; have := k4.le; omega⟩
+      · exact Or.inr ⟨Nat.le_trans k1.le e.1, by have := k4.le; omega⟩
+    refine ⟨(wr_sureRequireLook _ h1).trans ((w2.mono fun _ e => e.elim).trans ((wr_sureRequireLook _ h4).trans
+      (w5.mono fun x hx => ?_))), fun r' o' e => ?_⟩
+    · rcases hx with e | e
+      · rcases L4.mem x e with e' | e'
+        · simp only [NMem] at e'; rw [e']; exact hR
+        · exact Or.inr ⟨Nat.le_trans (Nat.le_trans k1.le k2.le) e'.1, by omega⟩
+      · exact Or.inr ⟨Nat.le_trans (Nat.le_trans k1.le (Nat.le_trans k2.le k4.le)) e.1, e.2⟩
+    · simp only [Option.some.injEq, Prod.mk.injEq] at e
+      rw [← e.1]; exact hR
+  cases ned' with
+  | none => exact close g4 (Nat.le_refl _) (WroteIn.refl _ _) h
+  | this r' =>
+    simp only at h
+    by_cases e : r = r'
+    · rw [if_pos e] at h; exact close g4 (Nat.le_refl _) (WroteIn.refl _ _) h
+    · rw [if_neg e] at h
+      obtain ⟨u, g5, h5, h⟩ := bind_some h
+      have q5 := (addOps_re h5).1
+      exact close g5 (Nat.le_of_eq q5.symm) (wroteIn_addOps (opsWr_mov (s := r) (Or.inl rfl)) h5) h
+  | pair p q =>
+    simp only at h
+    obtain ⟨u, g5, h5, h⟩ := bind_some h
+    have k5 := keeps_crashNeed n4 (fun p e => by cases e; exact Nat.lt_of_lt_of_le rlt k4.le) h5
+    exact close g5 k5.le (wr_crashNeed h5) h
+  | both r0 p q =>
+    simp only at h
+    obtain ⟨u, g5, h5, h⟩ := bind_some h
+    have k5 := keeps_crashNeed n4 (fun p e => by cases e; exact Nat.lt_of_lt_of_le rlt k4.le) h5
+    exact close g5 k5.le (wr_crashNeed h5) h
+
 end Comp
 end SkaModel
 end Formalization
