@@ -466,6 +466,312 @@ theorem footX_binary {p q : Nomm} (ihp : FootX S Map p) (ihq : FootX S Map q) (k
       · have := be1 e e' y h; omega
       · have := be2 e e' y h; omega
 
+theorem footX_consBody {p q : Nomm} (ihp : FootX S Map p) (ihq : FootX S Map q) (kp : KeepX S Map p)
+    (kq : KeepX S Map q) (hpp : p.pure = true) (hqp : q.pure = true) {sur : Sure S} {th : Jmp} {region : List Nat}
+    {g0 g1 : Gen Map} {nex : NextL S} (hd : g0.drop = false) (hg : GoalIn g0.re (CGoal.next sur th))
+    (hD : Distinct sur.ned) (hc : sixCount p + sixCount q ≤ 255)
+    (h : (do
+      let (hed, tel, o) ← splitL ⟨ofSure sur, th⟩
+      let nexh ← pastL noCode ⟨hed, jmp0 o⟩ q region
+      let nex2 ← runL q (CGoalL.next tel nexh.th) region
+      let nex2 ← pastL noCode nex2 p region
+      let nex1 ← runL p (CGoalL.next nexh.laz nex2.th) region
+      copyL nex1 nex2.laz : CM Map (NextL S)) g0 = some (nex, g1)) : FootR g0 g1 (CGoal.next sur th) nex := by
+  obtain ⟨⟨hed', tel', o⟩, g2x, h2, h⟩ := bind_some h
+  rw [splitL_mk, map_apply] at h2
+  obtain ⟨⟨⟨hed, tel, o'⟩, g2⟩, hs2, e2⟩ := Option.map_eq_some_iff.mp h2
+  simp only [Prod.mk.injEq] at e2
+  obtain ⟨⟨rfl, rfl, rfl⟩, rfl⟩ := e2
+  obtain ⟨k2, nh, nt⟩ := keeps_split hd hg.1 hg.2 hs2
+  obtain ⟨W2, dh, dt, ap, mh, mt⟩ := split_foot hd hD hg.1 hg.2 hs2
+  simp only at W2 dh dt ap mh mt nh nt
+  obtain ⟨nexh, g2', hph, h⟩ := bind_some h
+  rw [pastL_mk _ _ _ hqp, pure_apply] at hph
+  simp only [Option.some.injEq, Prod.mk.injEq] at hph
+  obtain ⟨rfl, rfl⟩ := hph
+  obtain ⟨nex2, g3, h3, h⟩ := bind_some h
+  obtain ⟨nex2', g3', hp2, h⟩ := bind_some h
+  rw [pastL_pure _ _ hpp, pure_apply] at hp2
+  simp only [Option.some.injEq, Prod.mk.injEq] at hp2
+  obtain ⟨rfl, rfl⟩ := hp2
+  obtain ⟨nex1, g4, h4, hcp⟩ := bind_some h
+  have F := footX_binary ihp ihq kp kq (k2.dropF hd) hc nt nh dt dh ap (jmpIn_jmp0 _ _) h3 h4 hcp
+  have lF := (keepX_binary kp kq (k2.dropF hd) hc nt nh (jmpIn_jmp0 _ _) h3 h4 hcp).keeps.le
+  have l2 := k2.le
+  refine F.pre (W2.mono fun y hy => ⟨?hlt, Or.inr hy.1, ?hng⟩) fun y hy => ?hA
+  case hlt => have := hg.1 y hy.1; omega
+  case hng =>
+    rintro (e | e | e)
+    · have := hg.1 y hy.1; omega
+    · exact hy.2.1 e
+    · exact hy.2.2 e
+  case hA =>
+    rcases hy with e | e | e
+    · exact Or.inl (by omega)
+    · exact (mh y e).symm
+    · exact (mt y e).symm
+
+theorem footX_cons {p q : Nomm} (ihp : FootX S Map p) (ihq : FootX S Map q) (kp : KeepX S Map p)
+    (kq : KeepX S Map q) (hpp : p.pure = true) (hqp : q.pure = true) : FootX S Map (Nomm.cons p q) := by
+  intro goal region g0 g1 nex hd hg hD hc h
+  have hc' : sixCount p + sixCount q ≤ 255 := by simpa only [sixCount] using hc
+  cases goal with
+  | next sur th =>
+    simp only [CGoal.toL] at h
+    rw [runL_cons_next] at h
+    exact footX_consBody ihp ihq kp kq hpp hqp hd hg hD hc' h
+  | done =>
+    simp only [CGoal.toL] at h
+    rw [runL_cons_done] at h
+    obtain ⟨r, ga, h1, h⟩ := bind_some h
+    obtain ⟨e1, q1, k1⟩ := keeps_re h1
+    obtain ⟨o, gb, h2, h⟩ := bind_some h
+    obtain ⟨k2, q2⟩ := keeps_emit (k1.dropF hd) (blobIn_fin (f := Termin.don r) (show r < ga.re by omega)) h2
+    rw [runL_cons_next] at h
+    have F := footX_consBody (sur := lazyReg r) ihp ihq kp kq hpp hqp ((k1.trans k2).dropF hd)
+      ⟨nb_this (by omega), jmpIn_jmp0 _ _⟩ trivial hc' h
+    refine F.pre ((wroteIn_re h1).trans (wroteIn_emit (blobWr_fin _ _) h2)) fun y hy => ?_
+    rcases hy with e | e
+    · exact Or.inl (by omega)
+    · have : y = r := e
+      exact Or.inl (by omega)
+  | pick z o =>
+    simp only [CGoal.toL] at h
+    rw [runL_cons_pick] at h
+    obtain ⟨o', ga, h1, h⟩ := bind_some h
+    obtain ⟨k1, q1⟩ := keeps_emit hd (blobIn_fin (f := Termin.bom Option.none) trivial) h1
+    obtain ⟨nex2, gb, h3, h⟩ := bind_some h
+    obtain ⟨nex2', gb', hp2, h⟩ := bind_some h
+    rw [pastL_pure _ _ hpp, pure_apply] at hp2
+    simp only [Option.some.injEq, Prod.mk.injEq] at hp2
+    obtain ⟨rfl, rfl⟩ := hp2
+    obtain ⟨nex1, gc, h4, h⟩ := bind_some h
+    have F := footX_binary (nq := Sure.bunt) (np := Sure.bunt) ihp ihq kp kq (k1.dropF hd) hc' (nb_none _)
+      (nb_none _) trivial trivial (fun _ e => e.elim) (jmpIn_jmp0 _ _) h3 h4 h
+    refine F.pre (wroteIn_emit (blobWr_fin _ _) h1) fun y hy => ?_
+    rcases hy with e | e | e
+    · exact Or.inl (by omega)
+    · exact e.elim
+    · exact e.elim
+
+theorem footX_five {p q : Nomm} (ihp : FootX S Map p) (ihq : FootX S Map q) (kp : KeepX S Map p)
+    (kq : KeepX S Map q) (hpp : p.pure = true) : FootX S Map (Nomm.n5 p q) := by
+  intro goal region g g' nex hd hg hD hc h
+  have hc' : sixCount p + sixCount q ≤ 255 := by simpa only [sixCount] using hc
+  rw [runL_n5_toL] at h
+  obtain ⟨rp, g1, h1, h⟩ := bind_some h
+  obtain ⟨e1, q1, k1⟩ := keeps_re h1
+  obtain ⟨rq, g2, h2, h⟩ := bind_some h
+  obtain ⟨e2, q2, k2⟩ := keeps_re h2
+  have d2 := (k1.trans k2).dropF hd
+  have kk : ∀ x, x < g.re → x < g2.re := fun x hx => by omega
+  obtain ⟨o, g3, h3, h⟩ := bind_some h
+  have k3 := keeps_n5Pre d2 (hg.mono (by omega)) (by omega) (by omega) h3
+  have W3 : WroteIn (fun x => x < g3.re ∧ (g2.re ≤ x ∨ GMem goal x)) g2 g3 := by
+    cases goal with
+    | pick z o =>
+      exact wroteIn_emit (blobWr_fin _ _) h3
+    | done =>
+      simp only [n5Pre] at h3
+      obtain ⟨⟨o0, o1⟩, g4, h4, h3⟩ := bind_some h3
+      have k4 := keeps_doneBlocks d2 h4
+      have k5 := (keeps_emit (k4.dropF d2) (blobIn_fin (f := Termin.eqq rp rq (jmp0 o0) (jmp0 o1))
+          ⟨show rp < g4.re by have := k4.le; omega, show rq < g4.re by have := k4.le; omega,
+            jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩) h3).1
+      have l5 := k5.le
+      exact ((wr_doneBlocks h4).mono fun x hx => by
+        rcases hx with e | e
+        · exact e.elim
+        · exact ⟨by omega, Or.inl e.1⟩).trans (wroteIn_emit (blobWr_fin _ _) h3)
+    | next laz th =>
+      simp only [n5Pre] at h3
+      obtain ⟨a, g4, h4, h3⟩ := bind_some h3
+      obtain ⟨k4, r4⟩ := keeps_collapseLazyAtom (nex := ⟨laz, th⟩) d2 (hg.1.mono (by omega)) h4
+      obtain ⟨w4, rr4⟩ := wr_collapseLazyAtom (nex := ⟨laz, th⟩) d2 (hg.1.mono (by omega)) h4
+      have l4 := k4.le
+      cases a with
+      | none =>
+        simp only at h3
+        by_cases ht : th.args = []
+        · rw [if_pos ht] at h3
+          have k5 := (keeps_emit (k4.dropF d2) (blobIn_one (p := Pole.equ rp rq) (f := Termin.hop (jmp0 th.there))
+            (fun x hx => by simp only [poleRegs, List.mem_cons, List.mem_nil_iff, or_false] at hx; omega)
+            (jmpIn_jmp0 _ _)) h3).1
+          have l5 := k5.le
+          exact (w4.mono fun x hx => by
+            rcases hx with e | e
+            · exact ⟨by have := hg.1 x e; omega, Or.inr e⟩
+            · exact ⟨by omega, Or.inl e.1⟩).trans (wroteIn_emit (blobWr_one (p := Pole.equ rp rq) _
+              (fun x hx => by simp [poleWr] at hx)) h3)
+        · rw [if_neg ht] at h3; cases h3
+      | some x =>
+        obtain ⟨r, o⟩ := x
+        simp only at h3
+        obtain ⟨⟨z, o'⟩, g5, h5, h3⟩ := bind_some h3
+        have k5 := keeps_forl (k4.dropF d2) (r4 r o rfl) h5
+        have l5 := k5.le
+        have k6 := (keeps_emit ((k4.trans k5).dropF d2) (blobIn_fin (f := Termin.eqq rp rq (jmp0 z) (jmp0 o'))
+          ⟨show rp < g5.re by omega, show rq < g5.re by omega, jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩) h3).1
+        have l6 := k6.le
+        have bnd : ∀ x, NewOr laz.ned g2 g4 x → x < g3.re ∧ (g2.re ≤ x ∨ GMem (CGoal.next laz th) x) :=
+          fun x hx => by
+            rcases hx with e | e
+            · exact ⟨by have := hg.1 x e; omega, Or.inr e⟩
+            · exact ⟨by omega, Or.inl e.1⟩
+        refine ((w4.mono bnd).trans ((wr_forl h5).mono fun x hx => ?_)).trans (wroteIn_emit (blobWr_fin _ _) h3)
+        rcases hx with e | e
+        · simp only [NMem] at e; rw [e]; exact bnd r (rr4 r o rfl)
+        · exact ⟨by omega, Or.inl (by omega)⟩
+  have l3 := k3.le
+  have d3 := k3.dropF d2
+  obtain ⟨nexq, g4, h4, h⟩ := bind_some h
+  obtain ⟨nexq', g4', hp, h⟩ := bind_some h
+  rw [pastL_pure _ _ hpp, pure_apply] at hp
+  simp only [Option.some.injEq, Prod.mk.injEq] at hp
+  obtain ⟨rfl, rfl⟩ := hp
+  obtain ⟨nexp, g5, h5, h⟩ := bind_some h
+  have F := footX_binary (nq := lazyReg rq) (np := lazyReg rp) ihp ihq kp kq d3 hc' (nb_this (by omega))
+    (nb_this (by omega)) trivial trivial (fun x e e' => by simp only [lazyReg, NMem] at e e'; omega) (jmpIn_jmp0 _ _)
+    h4 h5 h
+  have lF := (keepX_binary (nq := lazyReg rq) (np := lazyReg rp) kp kq d3 hc' (nb_this (by omega))
+    (nb_this (by omega)) (jmpIn_jmp0 _ _) h4 h5 h).keeps.le
+  have gl : ∀ x, GMem goal x → x < g.re := fun x hx => by
+    cases goal with
+    | next laz th => exact hg.1 x hx
+    | pick => exact hx.elim
+    | done => exact hx.elim
+  have a : ∀ x, (g3.re ≤ x ∨ GMem (CGoal.next (⟨Need.pair (Need.this rp) (Need.this rq), HoonSet.empty⟩ : Sure S)
+      (jmp0 o)) x) → g.re ≤ x := fun x hx => by
+    rcases hx with e | e | e
+    · omega
+    · have : x = rp := e
+      omega
+    · have : x = rq := e
+      omega
+  refine F.pre (((wroteIn_re h1).trans (wroteIn_re h2)).trans (W3.mono fun x hx => ⟨by omega, ?hw, ?hn⟩))
+    fun x hx => Or.inl (a x hx)
+  case hw =>
+    rcases hx.2 with e | e
+    · exact Or.inl (by omega)
+    · exact Or.inr e
+  case hn =>
+    intro e
+    have := a x e
+    rcases hx.2 with e' | e'
+    · rcases e with e | e | e
+      · omega
+      · have : x = rp := e
+        omega
+      · have : x = rq := e
+        omega
+    · have := gl x e'; omega
+
+theorem footX_ten {a : Nat} {v q : Nomm} (ihv : FootX S Map v) (ihq : FootX S Map q) (kv : KeepX S Map v)
+    (kq : KeepX S Map q) (hvp : v.pure = true) (hqp : q.pure = true) : FootX S Map (Nomm.n10 a v q) := by
+  intro goal region g g' nex hd hg hD hc h
+  have hc' : sixCount q + sixCount v ≤ 255 := by simp only [sixCount] at hc; omega
+  rw [runL_n10_body] at h
+  obtain ⟨next, gs, hs, h⟩ := bind_some h
+  rw [simpleNextL_toL, map_apply] at hs
+  obtain ⟨⟨n, gs'⟩, hs', e⟩ := Option.map_eq_some_iff.mp hs
+  simp only [Prod.mk.injEq] at e
+  obtain ⟨rfl, rfl⟩ := e
+  obtain ⟨k1, n1⟩ := keeps_simpleNext hd hg hs'
+  have F0 : (∀ x, NMem n.laz.ned x → g.re ≤ x ∨ GMem goal x) ∧ Distinct n.laz.ned := by
+    cases goal with
+    | next laz th =>
+      simp only [simpleNext, pure_apply, Option.some.injEq, Prod.mk.injEq] at hs'
+      obtain ⟨rfl, rfl⟩ := hs'
+      exact ⟨fun x hx => Or.inr hx, hD⟩
+    | done =>
+      simp only [simpleNext] at hs'
+      obtain ⟨r, g5, h5, hs'⟩ := bind_some hs'
+      obtain ⟨e5, _, _⟩ := keeps_re h5
+      obtain ⟨o, g6, h6, hs'⟩ := bind_some hs'
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at hs'
+      obtain ⟨rfl, rfl⟩ := hs'
+      exact ⟨fun x hx => Or.inl (by simp only [lazyReg, NMem] at hx; omega), trivial⟩
+    | pick z o =>
+      simp only [simpleNext] at hs'
+      obtain ⟨r, g5, h5, hs'⟩ := bind_some hs'
+      obtain ⟨e5, _, _⟩ := keeps_re h5
+      obtain ⟨o', g6, h6, hs'⟩ := bind_some hs'
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at hs'
+      obtain ⟨rfl, rfl⟩ := hs'
+      exact ⟨fun x hx => Or.inl (by simp only [lazyReg, NMem] at hx; omega), trivial⟩
+  unfold n10Body at h
+  obtain ⟨⟨don', rec', o⟩, g2x, h2, h⟩ := bind_some h
+  rw [show (Next.toL n : NextL S) = ⟨ofSure n.laz, n.th⟩ from rfl, intoL_mk, map_apply] at h2
+  obtain ⟨⟨⟨don, rec, o'⟩, g2⟩, hs2, e2⟩ := Option.map_eq_some_iff.mp h2
+  simp only [Prod.mk.injEq] at e2
+  obtain ⟨⟨rfl, rfl, rfl⟩, rfl⟩ := e2
+  obtain ⟨k2, nd, nr⟩ := keeps_into (k1.dropF hd) n1 hs2
+  have W2 := into_wr F0.2 n1.1 hs2
+  obtain ⟨_, _, _, _, md, mr, _, Sm⟩ := into_ok hs2
+  obtain ⟨Dd, Dr, Ddr, _, _⟩ := Sm F0.2 n1.1
+  obtain ⟨nexR, g2', hpr, h⟩ := bind_some h
+  rw [pastL_mk _ _ _ hvp, pure_apply] at hpr
+  simp only [Option.some.injEq, Prod.mk.injEq] at hpr
+  obtain ⟨rfl, rfl⟩ := hpr
+  obtain ⟨nexDon, g3, h3, h⟩ := bind_some h
+  obtain ⟨nexDon', g3', hpd, h⟩ := bind_some h
+  rw [pastL_pure _ _ hqp, pure_apply] at hpd
+  simp only [Option.some.injEq, Prod.mk.injEq] at hpd
+  obtain ⟨rfl, rfl⟩ := hpd
+  obtain ⟨nexRec, g4, h4, hcp⟩ := bind_some h
+  have d2 := (k1.trans k2).dropF hd
+  have F := footX_binary ihq ihv kq kv d2 hc' nd nr Dd Dr (fun x e e' => Ddr x e' e) (jmpIn_jmp0 _ _) h3 h4 hcp
+  have lF := (keepX_binary kq kv d2 hc' nd nr (jmpIn_jmp0 _ _) h3 h4 hcp).keeps.le
+  have l1 := k1.le
+  have l2 := k2.le
+  have A : ∀ x, (g2.re ≤ x ∨ GMem (CGoal.next (⟨Need.pair rec.ned don.ned, HoonSet.empty⟩ : Sure S) (jmp0 o')) x) →
+      g.re ≤ x ∨ GMem goal x := fun x hx => by
+    rcases hx with e | e | e
+    · exact Or.inl (by omega)
+    · rcases mr x e with e' | e'
+      · exact F0.1 x e'
+      · exact Or.inl (by omega)
+    · rcases md x e with e' | e'
+      · exact F0.1 x e'
+      · exact Or.inl (by omega)
+  refine F.pre ((wr_simpleNext _ hs').trans (W2.mono fun x hx => ⟨?hlt, ?hg2, ?hn⟩)) A
+  case hlt =>
+    rcases hx.1 with e | e
+    · have := n1.1 x e; omega
+    · omega
+  case hg2 =>
+    rcases hx.1 with e | e
+    · exact F0.1 x e
+    · exact Or.inl (by omega)
+  case hn =>
+    rintro (e | e | e)
+    · rcases hx.1 with e' | e'
+      · have := n1.1 x e'; omega
+      · omega
+    · exact hx.2.2 e
+    · exact hx.2.1 e
+
+/-! ## The induction -/
+
+/-- **Fact (i) on `FragX`, given the case `%6`**: every run of a nomm of
+`FragX` with at most 255 `%6` for a fork-free goal whose registers are below
+`re` and whose need is distinct, from a state that does not drop, meets
+`FootR`, when every `%6` of `FragX` whose parts meet it does. -/
+theorem runX_foot_of
+    (h6 : ∀ {c a b : Nomm}, FragX (S := S) c → FragX (S := S) a → FragX (S := S) b →
+      FootX S Map c → FootX S Map a → FootX S Map b → FootX S Map (Nomm.n6 c a b))
+    {nm : Nomm} (hf : FragX (S := S) nm) : FootX S Map nm := by
+  induction hf with
+  | frag hf => exact footX_frag hf
+  | six hc ha hb ihc iha ihb => exact h6 hc ha hb ihc iha ihb
+  | four hp ih => exact footX_four ih (runX_keeps hp)
+  | three hp ih => exact footX_three ih (runX_keeps hp)
+  | seven hq hp ih => exact footX_seven hq ih (runX_keeps hp)
+  | cons hp hq ihp ihq => exact footX_cons ihp ihq (runX_keeps hp) (runX_keeps hq) (fragX_pure hp) (fragX_pure hq)
+  | five hp hq ihp ihq => exact footX_five ihp ihq (runX_keeps hp) (runX_keeps hq) (fragX_pure hp)
+  | ten hv hq ihv ihq => exact footX_ten ihv ihq (runX_keeps hv) (runX_keeps hq) (fragX_pure hv) (fragX_pure hq)
+  | sevenFrom ha _ ihq => exact footX_sevenFrom ha ihq
+
 end Comp
 end SkaModel
 end Formalization
