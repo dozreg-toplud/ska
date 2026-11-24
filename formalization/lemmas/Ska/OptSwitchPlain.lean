@@ -320,6 +320,110 @@ theorem plain_region (H : PlainHyp M o nex p0 pl) (hb : HoonMap.get M o = some b
 
 end
 
+/-- **The macro step at the head of a plain chain.** -/
+theorem plain_head {σ : Type} (lib : Lib) (O : Oracle σ) (gul : Noun) (c : Straight Map) {out' : Map Blob}
+    {o nex fuel : Nat} {p0 : Nat × SPlain} {pl : List (Nat × SPlain)} {b : Blob} {nb : List Pole} {nf : Termin}
+    (H : PlainHyp c.blocks o nex p0 pl) (hb : HoonMap.get c.blocks o = some b)
+    (hbo : HoonMap.get out' o = some ⟨b.par, b.body.filter (plainKeep p0.2.r) ++ nb, nf⟩)
+    (hgo : ∀ v, treeGo out' p0.2.d (plainRegs (p0 :: pl)) v fuel ⟨[], nb, nf⟩ =
+        some (plainTarget (p0 :: pl) (plainMiss p0 pl) v))
+    (hfr : ∀ k, k ≠ o → k ∉ pl.map Prod.fst → k < nex → HoonMap.get out' k = HoonMap.get c.blocks k) :
+    HeadStepG lib O gul c (withBlocks c out') (PlainIn nex pl) (· = o) (fun k => k ∈ plainRegs (p0 :: pl))
+      (plainD o p0.2.r) (plainE o nb) := by
+  obtain ⟨b1, l, r, hb1, hfin, hlr, himm0, -, -, -⟩ := H.headB
+  rw [hb] at hb1; cases hb1
+  intro x x' hA hh hp hq hbd hrd
+  obtain ⟨⟨hl, hpe, ht, hst, hreach, hI, ⟨b0, b0', hb0, hb0', hf, -, ⟨pre, hpre, himm⟩, hb'⟩, hz, hag⟩, -⟩ := hA
+  have hh' : x.lab = o := hh
+  rw [hh'] at hb0 hb0' himm
+  rw [hb] at hb0; cases hb0
+  have hb0'' : HoonMap.get out' o = some b0' := hb0'
+  rw [hbo] at hb0''; cases hb0''
+  have hpre' : pre = b.body := by rw [hbd, List.append_nil] at hpre; exact hpre.symm
+  have hc0 : read p0.2.r x.regs = some (A p0.2.c) :=
+    himm _ _ (by rw [hpre']; exact himm0) (by simp [plainD, plainKeep])
+  have hfx : x.b.fin = Termin.eqq l r ⟨[], p0.2.hit⟩ ⟨[], p0.2.miss⟩ := by rw [hf, hfin]
+  obtain ⟨v, hv⟩ : ∃ v, read p0.2.d x.regs = some v := by
+    refine hrd p0.2.d ⟨hp, hq, Or.inr ⟨hbd, ?_⟩⟩
+    rw [hfx]; simp only [finReads]
+    rcases hlr with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;> simp
+  have hdZ : p0.2.d ∉ plainRegs (p0 :: pl) := by
+    intro h
+    obtain ⟨t, ht, e⟩ := List.mem_map.mp h
+    exact H.hr t ht e
+  have hv' : read p0.2.d x'.regs = some v := by rw [hag.rd hdZ]; exact hv
+  have htk := taken_eqq_plain (hit := p0.2.hit) (mis := p0.2.miss) hlr hv hc0
+  rw [← hfx] at htk
+  have hTI : ¬ PlainIn nex pl (plainTarget (p0 :: pl) (plainMiss p0 pl) v) ∧
+      plainTarget (p0 :: pl) (plainMiss p0 pl) v ≠ o := by
+    rcases plainTarget_mem (p0 :: pl) (plainMiss p0 pl) v with e | ⟨t, ht, e⟩
+    · rw [e]; exact H.miss.2
+    · rw [e]; exact (H.hits t ht).2
+  have before : ∃ es R' bT, HoonMap.get c.blocks (plainTarget (p0 :: pl) (plainMiss p0 pl) v) = some bT ∧
+      Steps lib O c gul x es ⟨plainTarget (p0 :: pl) (plainMiss p0 pl) v, bT, [], R', x.t, x.st⟩ ∧
+      Reach c.blocks (plainTarget (p0 :: pl) (plainMiss p0 pl) v) ∧
+      ∀ k, k ∉ plainRegs (p0 :: pl) → HoonMap.get R' k = HoonMap.get x.regs k := by
+    have hbx : HoonMap.get c.blocks x.lab = some b := by rw [hh']; exact hb
+    by_cases e : v = A p0.2.c
+    · rw [if_pos e] at htk
+      obtain ⟨bh, hbh⟩ := Option.isSome_iff_exists.mp (H.hits p0 List.mem_cons_self).1
+      rw [plainTarget_cons, if_pos e]
+      exact ⟨_, x.regs, bh, hbh, Steps.step (Step.jump hp hq hbd htk hbh) (Steps.refl _),
+        Reach.jump (j := ⟨[], p0.2.hit⟩) hreach hbx (by rw [hfin]; simp [getJmps]), fun _ _ => rfl⟩
+    · rw [if_neg e] at htk
+      rw [plainTarget_cons, if_neg e]
+      obtain ⟨t1, rest, hpl, hm0⟩ := H.miss0
+      have hblk := H.blocks
+      rw [hpl] at hblk
+      obtain ⟨-, ⟨l1, r1, hby1, -⟩, -, -⟩ := hblk
+      have hby1' : HoonMap.get c.blocks p0.2.miss = some ⟨[], [Pole.imm (A t1.2.c) t1.2.r],
+          Termin.eqq l1 r1 ⟨[], t1.2.hit⟩ ⟨[], t1.2.miss⟩⟩ := by rw [hm0]; exact hby1
+      have hrm : Reach c.blocks p0.2.miss :=
+        Reach.jump (j := ⟨[], p0.2.miss⟩) hreach hbx (by rw [hfin]; simp [getJmps])
+      obtain ⟨es, R', bT, hbT, hsT, hrT, hfr2⟩ := plain_walk lib O c gul p0.2.d (plainMiss p0 pl) H.miss.1 pl
+        p0.2.miss _ x.regs x.t x.st v H.blocks (fun u hu => (H.hits u (List.mem_cons_of_mem _ hu)).1)
+        (by rw [hpl, hm0]; rfl) hby1' hrm hv
+      refine ⟨_, R', bT, hbT, Steps.step (Step.jump hp hq hbd htk hby1') hsT, hrT, fun k hk => hfr2 k ?_⟩
+      intro h; apply hk; simp only [plainRegs, List.map_cons, List.mem_cons]; exact Or.inr h
+  obtain ⟨es, R', bT, hbT, hsT, hrT, hfrT⟩ := before
+  generalize hT : plainTarget (p0 :: pl) (plainMiss p0 pl) v = T at hbT hsT hrT hTI
+  have hbT' : HoonMap.get (withBlocks c out').blocks T = some bT := by
+    show HoonMap.get out' T = some bT
+    rw [hfr T hTI.2 (fun h => hTI.1 (Or.inl h)) (Nat.lt_of_not_le fun h => hTI.1 (Or.inr h))]; exact hbT
+  have hxb' : x'.b = ⟨[], nb, nf⟩ := by
+    rw [hb', hq, hbd, hh', gBody_plain]; rfl
+  have hp' : x'.params = [] := by rw [hpe, hp]
+  have hx' : (⟨x'.lab, x'.b, [], x'.regs, x'.t, x'.st⟩ : Cfg σ Map) = x' := by rw [← hp']
+  have hgo' : treeGo (withBlocks c out').blocks p0.2.d (plainRegs (p0 :: pl)) v fuel x'.b = some T := by
+    rw [hxb', ← hT]; exact hgo v
+  obtain ⟨r2, hr2, w, hg⟩ := treeGo_good lib O (withBlocks c out') gul fuel x'.lab x'.b x'.regs x'.t x'.st T bT
+    hv' hgo' hbT'
+  rw [hx'] at hg
+  refine ⟨_, _, es, hsT, hg, ⟨⟨rfl, rfl, ht, hst, hrT, hTI.1, ⟨bT, bT, hbT, hbT', rfl, Or.inl rfl,
+    ⟨[], rfl, fun _ _ h => absurd h List.not_mem_nil⟩, ?_⟩, fun k hk => by simp at hk, fun k hk => ?_⟩,
+    fun _ _ p rest _ => plainD_off hTI.2 p⟩, ?_, ?_⟩
+  · show bT = ⟨bT.par, gBody (plainD o p0.2.r) (plainE o nb) T bT.body, bT.fin⟩
+    rw [gBody_off (fun p => plainD_off hTI.2 p) (by simp [plainE, hTI.2])]
+  · have hk2 : k ≠ r2 := fun e => hk (by rw [e]; exact hr2)
+    show HoonMap.get R' k = HoonMap.get (store r2 w x'.regs) k
+    rw [get_store_ne hk2, hfrT k hk]
+    exact hag k hk
+  · show T ≠ x.lab
+    rw [hh']; exact hTI.2
+  · show T ≠ x'.lab
+    rw [hl, hh']; exact hTI.2
+
+/-- **One application of `switchPlain` keeps the code**, given `PlainHyp`
+(with the blocks before as both `bl` and `out`, and any `nex` above the head
+and the labels of the tests after it). -/
+theorem plain_keeps_of (c : Straight Map) {out' : Map Blob} {fuel o nex nex' : Nat} {p0 : Nat × SPlain}
+    {pl : List (Nat × SPlain)} {done done' : List Nat}
+    (h : switchPlain c.blocks c.blocks fuel o (p0 :: pl) done nex = some (out', done', nex'))
+    (H : PlainHyp c.blocks o nex p0 pl) : Keeps c (withBlocks c out') := by
+  obtain ⟨b, nb, nf, hb, hbo, hgo, hfr, -, -⟩ := plain_tree h H.nd H.old H.ho H.ho' H.hr
+  exact region_keepsG c out' (plain_region H hb hbo hfr)
+    (fun lib _ O gul => plain_head lib O gul c H hb hbo hgo hfr)
+
 end Opt
 end SkaModel
 end Formalization
