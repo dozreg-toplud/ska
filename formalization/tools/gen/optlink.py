@@ -343,6 +343,10 @@ elif WHICH == 'oo':
     _, _, r1 = seq(run, 3)
     _, loopq, _ = seq(r1, 3)
     loop = norm(loopq)[2]
+    _, _, ahint = opt_arm(725)
+    _, _, thint = opt_arm(23)
+    defs += [('ooAliasHint', ahint, 'The `%fast` hint of `+alias`.'),
+             ('ooTrimHint', thint, 'The `%fast` hint of `+trim-trace-hints`.')]
     defs += [('ooLoop', loop, 'The structural loop of `+optimize-once`: the three passes, and `+bb-topo` and `+rev-cfg` again after a change.'),
              ('ooAfter', after, '`+alias`, `+trim-trace-hints`, `+remove-dead-code` and the three passes once more.'),
              ('ooBody', body, 'The gate body of `+optimize-once`.'),

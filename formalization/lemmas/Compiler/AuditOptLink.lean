@@ -77,3 +77,5 @@ open Formalization Compiler
 #print axioms sy_arm
 #print axioms si_gate
 #print axioms oo_loop
+#print axioms structLoop_noLti
+#print axioms skim_has

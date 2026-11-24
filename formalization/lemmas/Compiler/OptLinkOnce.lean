@@ -34,8 +34,20 @@ structural loop `ooLoop` and then `ooAfter` (`+alias`, `+trim-trace-hints`,
   induction on `n`, from `rh_gate`, `rub_gate`, `rem_gate`, `bb_gate`,
   `rev_gate` with the set of `si_gate`, and `NoLti` kept by the passes.
 
-What is left of `+optimize-once` is `ooAfter`, with the links of `+alias`
-and `+trim-trace-hints` as hypotheses on the fields of `Passes`.
+* `structLoop_noLti`: the loop keeps `NoLti`.
+* `AliasLink P`, `TrimLink P`: what the link of the whole gate is to assume
+  of `+alias` (arm `725`, `alias_at`) and `+trim-trace-hints` (arm `23`,
+  `trim_at`), their bodies read from the pill: where the field of `P`
+  returns on blocks with no `%lti`, the gate returns the noun of the result,
+  which has no `%lti`.
+* `skim_has`: `(skim topo ~(has by blocks))` is the model's `filter`.
+
+What is left of `+optimize-once` is `ooAfter`.  Every link it needs is here
+(`bb_gate`, `si_gate`, `rev_gate`, `oo_loop`, `AliasLink`, `skim_has`,
+`TrimLink`, `flop_gate`, `rdc_gate`, `rh_gate`, `rub_gate`, `rem_gate`), but
+one `simp` over `ooBody` with `ooAfter` unfolded and all of them went past
+the 3 GB cap: `ooAfter` is a chain of `=^` and `=.` (`[7 [10 [a F] [0 1]]
+...]`), to be cut into its steps, each stated as the subject it leaves.
 -/
 
 namespace Formalization
@@ -47,6 +59,14 @@ set_option linter.unusedSimpArgs false
 set_option linter.unusedVariables false
 
 /-! ## The nouns -/
+
+/-- The `%fast` hint of `+alias`. -/
+def ooAliasHint : Noun :=
+  (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x7361696c61) (C (C (A 0) (A 0xffff)) (A 0))))) (C (A 0) (A 1))))
+
+/-- The `%fast` hint of `+trim-trace-hints`. -/
+def ooTrimHint : Noun :=
+  (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x73746e69682d65636172742d6d697274) (C (C (A 0) (A 0xffff)) (A 0))))) (C (A 0) (A 1))))
 
 /-- The structural loop of `+optimize-once`: the three passes, and `+bb-topo` and `+rev-cfg` again after a change. -/
 def ooLoop : Noun :=
@@ -146,6 +166,74 @@ theorem oo_loop (fuel : Nat) (NEED : Noun) (nargs : Nat) :
       simp only at hc hrh hrub hrem
       cases c1 <;> cases c2 <;> cases c3 <;> simp at hc <;>
         simp [nock_exec, hL, h1a, rh_arm, hrh, h2a, rub_arm, hrub, rubN, h3a, rem_arm, hrem, remN, flag]
+
+theorem structLoop_noLti (fuel : Nat) : ∀ (n : Nat) (bl : TreapMap mugF Blob) (topo : List Nat)
+    (rev : TreapMap mugF (List Nat)) (r : List Nat × TreapMap mugF (List Nat) × TreapMap mugF Blob),
+    NoLti bl → Opt.structLoop fuel n bl topo rev = some r → NoLti r.2.2 := by
+  intro n
+  induction n with
+  | zero => intro bl topo rev r hl h; simp [Opt.structLoop] at h
+  | succ n ih =>
+    intro bl topo rev r hl h
+    simp only [Opt.structLoop] at h
+    obtain ⟨r1, hr1, h1⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨r2, hr2, h2⟩ := Option.bind_eq_some_iff.mp h1
+    obtain ⟨r3, hr3, h3⟩ := Option.bind_eq_some_iff.mp h2
+    have hl3 : NoLti r3.2 := noLti_mid (bl' := r3.2) (ch := r3.1) hr3
+      (noLti_rub (bl' := r2.2) (ch := r2.1) hr2 (noLti_hops (bl' := r1.2) (ch := r1.1) hr1 hl))
+    split at h3
+    · simp only [Option.some.injEq] at h3; subst h3; exact hl3
+    · obtain ⟨topo', -, h4⟩ := Option.bind_eq_some_iff.mp h3
+      exact ih _ _ _ _ hl3 h4
+
+/-! ## `+alias` and `+trim-trace-hints`, as hypotheses -/
+
+/-- The arm `+alias` (axis `725` of `optC`), its body and bunt read from the
+pill. -/
+noncomputable def aliasArm : Noun := (slot? 725 optC).getD (A 0)
+noncomputable def aliasBody : Noun := (slot? 109 aliasArm).getD (A 0)
+noncomputable def aliasBunt : Noun := (slot? 53 aliasArm).getD (A 0)
+theorem alias_at : slot? 725 optC
+    = some (C (A 7) (C (C (A 8) (C (C (A 1) aliasBunt) (C (C (A 1) aliasBody) (C (A 0) (A 1))))) ooAliasHint)) := by
+  kernel_rfl
+
+/-- The arm `+trim-trace-hints` (axis `23` of `optC`). -/
+noncomputable def trimArm : Noun := (slot? 23 optC).getD (A 0)
+noncomputable def trimBody : Noun := (slot? 109 trimArm).getD (A 0)
+noncomputable def trimBunt : Noun := (slot? 53 trimArm).getD (A 0)
+theorem trim_at : slot? 23 optC
+    = some (C (A 7) (C (C (A 8) (C (C (A 1) trimBunt) (C (C (A 1) trimBody) (C (A 0) (A 1))))) ooTrimHint)) := by
+  kernel_rfl
+
+/-- **What the link of `+optimize-once` assumes of `+alias`**: where
+`P.alias` returns on blocks with no `%lti`, the gate on the nouns of its
+arguments returns the noun of the result, which has no `%lti`. -/
+def AliasLink (P : Opt.Passes (TreapMap mugF)) : Prop :=
+  ∀ (nargs : Nat) (bl : TreapMap mugF Blob) (rev : TreapMap mugF (List Nat)) (topo : List Nat)
+    (ra : Bool × TreapMap mugF Blob), NoLti bl → P.alias nargs bl rev topo = some ra →
+    NoLti ra.2 ∧ nock (C aliasBody (C (C (A nargs) (C (HoonMap.toNoun Blob.toNoun bl) (C (jarN rev)
+      (listNoun A topo)))) optC)) aliasBody = some (C (flag ra.1) (HoonMap.toNoun Blob.toNoun ra.2))
+
+/-- **What the link of `+optimize-once` assumes of `+trim-trace-hints`**. -/
+def TrimLink (P : Opt.Passes (TreapMap mugF)) : Prop :=
+  ∀ (bl : TreapMap mugF Blob) (topo : List Nat) (rev : TreapMap mugF (List Nat)) (bt : TreapMap mugF Blob),
+    NoLti bl → P.trim bl topo rev = some bt →
+    NoLti bt ∧ nock (C trimBody (C (C (HoonMap.toNoun Blob.toNoun bl) (C (listNoun A topo) (jarN rev))) optC))
+      trimBody = some (HoonMap.toNoun Blob.toNoun bt)
+
+/-- `~(has by blocks)` as the gate of `+skim`. -/
+theorem skim_has (bl : TreapMap mugF Blob) (topo : List Nat) :
+    nock (C skim.battery (C (C (listNoun A topo) (C by.has.battery (C (A 0) (C by.battery
+      (C (HoonMap.toNoun Blob.toNoun bl) layer2))))) layer2)) skim.battery
+      = some (listNoun A (topo.filter fun o => (HoonMap.get bl o).isSome)) := by
+  have h := skim_gate layer2 by.has.battery (A 0) (C by.battery (C (HoonMap.toNoun Blob.toNoun bl) layer2))
+    (fun x => (HoonMap.get bl (OptDec.atomOf x)).isSome) (topo.map A) (fun x hx => by
+      obtain ⟨o, -, rfl⟩ := List.mem_map.1 hx
+      rw [has_gate (mug := mugF) layer2 ⟨someIn_layer2, gorIn_morIn_layer2.1⟩ (A o) _ _
+        (getF_hoonMap Blob.toNoun bl o)]
+      cases e : HoonMap.get bl o <;> simp [unitNoun, OptDec.atomOf, e, loob])
+  rw [listNoun_map_listN, listNoun_map_listN, h, List.filter_map]
+  rfl
 
 end Compiler
 end Formalization
