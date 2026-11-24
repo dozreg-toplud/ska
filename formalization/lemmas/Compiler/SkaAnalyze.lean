@@ -318,5 +318,103 @@ theorem analyze_stepW (memoF : Memo FinMap) (hmemo : slot? 122 K = some (memoNou
 
 end chunks
 
+/-! ## The gates `+sweep` and `+cull` over an evaluator -/
+
+/-- The battery of `+sweep` over an evaluator: the loop's first call, made by
+`c`. -/
+theorem sweep_batteryW (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar f → c s f = nock s f)
+    (regsNoun : R → Noun) (K : Noun) (hK : slot? 31 K = some ana) (id : Ident)
+    (was : FinMap Ident Unit) (st : SkaState FinMap R) :
+    nockW c (sweepS0 regsNoun K id was st) ska_cg.sweep.battery
+      = c (sweepSubj regsNoun K id was st (Treap.ins Treap.empty id) [(id, kids st id)] []) ska_cg.sweep.loop := by
+  have hkids := kids_gate regsNoun K hK ska_cg.sweep.battery (identNoun id) (Treap.setNoun was) st
+  simp only [sweepSubj, stackNoun, listNoun, setNoun_single]
+  unfold sweepS0
+  nockW_open ska_cg.sweep.battery
+  simp (disch := ffar_disch) [nock_exec, hcf, hkids]
+
+set_option maxHeartbeats 4000000 in
+theorem nockW_buntF_cons (c : Noun → Noun → Option Noun) (s d : Noun) :
+    nockW c s (C buntF d) = (nockW c s buntF).bind fun x => (nockW c s d).bind fun y => some (C x y) := by
+  unfold buntF; rw [nockW_cell]
+
+/-- `cull_run` over an evaluator `c` that is `nock` off `FFar`, with the loop
+`live` made by `c`, and the bunt of `identity` under `c` as a hypothesis
+(`hbunt`; `mold_bunt'` gives it for `nock`). -/
+theorem cull_runW (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar f → c s f = nock s f)
+    (regsNoun : R → Noun) (K : Noun) (hK : slot? 31 K = some ana)
+    (hKb : slot? 2 K = some ska_cg.k_bat) (id : Ident) (st : SkaState FinMap R) (ab : List Ident)
+    (hab : Ana.above id st.stk = some ab) (o : Option (FinMap Ident Unit))
+    (hbunt : ∀ X, slot? 2047 X = some anaTail → nockW c X buntF = some identBunt)
+    (hl : c (liveSubj regsNoun K id st (Treap.silt ab) [id] Treap.empty) ska_cg.cull.loop
+      = o.map Treap.setNoun) :
+    nockW c (cullS0 regsNoun K id st) ska_cg.cull.battery
+      = (o.map (cullEnd st (Treap.silt ab))).map (SkaState.toNoun regsNoun) := by
+  have hl1 := K_layer1 hK
+  have hl2 := K_layer2 hK
+  have hK22 := slot_K22 hKb
+  have hK63 : slot? 63 K = some anaTail := by rw [K_tail63 hK, ana_tail]
+  obtain ⟨g, done, order, stk, next, moved, tick, ticks, regs, stats⟩ := st
+  obtain ⟨runs, passes, lateRuns, misses, culled⟩ := stats
+  simp only at hab
+  have habv := above_gate K id stk
+  rw [hab] at habv
+  have hsilt : nock (C siltBattery (C (listNoun identNoun ab) layer2)) siltBattery
+      = some (Treap.setNoun (Treap.silt ab : FinMap Ident Unit)) := by
+    rw [listNoun_map_listN]; exact silt_gate _ _ (silt_setNoun ab)
+  simp only [liveSubj, listNoun] at hl
+  rw [show Treap.setNoun (Treap.empty : FinMap Ident Unit) = A 0 from FinMap.setNoun_empty] at hl
+  simp only [SkaState.toNoun, Stats.toNoun, Option.map_some] at hl habv
+  generalize hM : (Treap.silt ab : FinMap Ident Unit) = members at hsilt hl
+  cases o with
+  | none =>
+    simp only [Option.map_none] at hl ⊢
+    unfold cullS0
+    nockW_open ska_cg.cull.battery
+    simp (disch := ffar_disch) [nock_exec, hcf, SkaState.toNoun, Stats.toNoun, hK22, habv, hl2, silt_arm_at, hsilt, hl]
+  | some live =>
+    have hdead := dif_in_gate layer2 gorIn_morIn_layer2 _ _ _ (dif_setNoun members live)
+    simp only [Option.map_some, cullEnd]
+    generalize hD : Treap.dif members live = dead at hdead
+    by_cases hd : Treap.tap dead = []
+    · have h0 := (setNoun_nil_iff dead).2 hd
+      rw [h0] at hdead
+      simp only [hd, if_true]
+      unfold cullS0
+      nockW_open ska_cg.cull.battery
+      simp (disch := ffar_disch) [nock_exec, hcf, SkaState.toNoun, Stats.toNoun, hK22, habv, hl2, silt_arm_at, hsilt, hl, in_arm,
+        in.arm_at, in.dif.arm_at, dif_in_arm, hdead]
+    · have h0 : ¬ Treap.setNoun dead = A 0 := fun e => hd ((setNoun_nil_iff dead).1 e)
+      have h0' : ¬ A 0 = Treap.setNoun dead := fun e => h0 e.symm
+      simp only [hd, if_false]
+      have hwyt := wyt_loop layer2 (arith_layer1.1 : Below AddIn layer2) in.battery (Treap.setNoun dead)
+        (Tree.of_isSet (FinMap.isSet_setNoun dead))
+      rw [wyt_setNoun] at hwyt
+      have hadd := add_gate layer1 arith_layer1.1.2 culled (Treap.wyt dead)
+      have hskip := cull_skip dead stk
+      have hmov := dif_in_gate layer2 gorIn_morIn_layer2 _ _ _ (dif_setNoun moved dead)
+      have hrep := cull_rep regsNoun dead
+        { g := g, done := done, order := order, stk := stk.filter (fun i => !Treap.has dead i), next := next,
+          moved := Treap.dif moved dead, tick := tick, ticks := ticks, regs := regs,
+          stats := { runs := runs, passes := passes, lateRuns := lateRuns, misses := misses,
+                     culled := culled + Treap.wyt dead } }
+        (C (Treap.setNoun dead) (C (Treap.setNoun live) (C (Treap.setNoun members) (C ska_cg.cull.battery
+          (C (C (identNoun id) (SkaState.toNoun regsNoun
+            { g := g, done := done, order := order, stk := stk.filter (fun i => !Treap.has dead i), next := next,
+              moved := Treap.dif moved dead, tick := tick, ticks := ticks, regs := regs,
+              stats := { runs := runs, passes := passes, lateRuns := lateRuns, misses := misses,
+                         culled := culled + Treap.wyt dead } })) K)))))
+        (by simp [nock_exec, hl2])
+      simp only [SkaState.toNoun, Stats.toNoun] at hrep
+      unfold cullS0
+      nockW_open ska_cg.cull.battery
+      rw [show (C (A 7) (C (C (A 9) (C (A 186) (C (A 0) (A 2047)))) (C (A 9) (C (A 2) (C (A 0) (A 1))))))
+        = buntF from rfl]
+      simp (disch := first | ffar_disch | simp [nock_exec, hK63, ana_tail]) [nock_exec, hcf, SkaState.toNoun, Stats.toNoun, hK22, habv, hl2, hl1, silt_arm_at, hsilt, hl, in_arm,
+        in.arm_at, in.dif.arm_at, dif_in_arm, hdead, h0', in.wyt.arm_at, wyt_arm, hwyt, add.arm_at,
+        add_arm, hadd, skip.arm_at, skip_arm, hskip, has_in_arm, in.has.arm_at, hmov, in.rep.arm_at, rep_arm,
+        nockW_buntF_cons c, hbunt, ana_tail, hK63, hrep]
+
+
 end Compiler
 end Formalization

@@ -486,4 +486,6 @@ open Formalization
 #print axioms Compiler.passStepH_eq
 #print axioms Compiler.analyze_stepW
 #print axioms Compiler.analyzeStepH_eq
+#print axioms Compiler.sweep_batteryW
+#print axioms Compiler.cull_runW
 #print axioms Compiler.kc_dirty_at
