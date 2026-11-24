@@ -237,6 +237,17 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompKernGen.lean` | `+kern` with `+proxy` at the blocks other than `o`: the gate at every visited block (`kern_gate_all`, against `kernG`, the gate of the model's `kern`), `kern_eq`, `comp_kern_all` and `comp_kerf_all` on every lazy need with `WalkP mdP`. |
 | `Compiler/CompClaGen.lean` | `+none-equivalent` on every lazy need (`ne_all`, through `+levy` over encoded entries, `levy_gate_map`; `noneForks_all`, `noneBonds_all`) and `+collapse-lazy-atom` on every lazy need (`comp_collapse_lazy_atom_all`: the walk from `there` with `cla_gate`, under `lok0` of the root, `WalkPF`/`WalkPB` of `mdP` for the forks and bonds, and the walk's first block not a key of `soft`). |
 | `Compiler/CompRunInvL.lean` | `CrInvL`, the invariant of lazy goals with forks and bonds (every sure need with no look at `0` and its registers below the counter, `LAll LNB`; the mode; the jump; the root need distinct); `crInvL_of_crInv` (from `CrInv` on fork-free goals); the hypotheses of the links from it (`crInvL_lok`, `crInvL_mdP`, `walk_mdP` with an empty `soft`); kept by `+lazy-prune` (`walkP_prune`), `+split` (`split_lnb`, `crInvL_split`), `+into` (`into_lnb`, `crInvL_into`), `+from` (`from_lnb`, `crInvL_from`) and `+past` (`past_lnb`), each on every lazy need. |
+| `Compiler/CompRunGoalL.lean` | **The statement of the run link on lazy goals** (`RunLinkL`, `RunResL`): the plain class `PlainOk` (`%0`, `%1`, `%3`, `%4`, `%5`, `%7`, cons, `%10` with an axis not `0`, `[2 p q ~]`, nested in any way); the registers, keys and labels of a lazy need (`lregs`, `LKeys`, `llabs`); the invariant `GInv` (looks and registers below the counter, no register twice, no key twice at a level, labels below `bo`, the mode, the jumps) with `LInv`; the result `GRes`; `copyH_of_regs` (`CopyH` from the registers), `crInvL_of_gInv`; checks (`#guard`) of `GRes` and `CopyH` on the runs of `[[2 [0 3] [0 2]] [0 1]]`, `[8 [9 2 [0 1]] [0 2]]` and two runs for goals with a bond. |
+| `Compiler/CompRunRegs.lean` | The registers counted (`Sub`: each register of the output at most as often as in the input, plus once if fresh; `sub_app`, `nodup_of_sub`, `mem_of_sub`); `+lazy-prune`, `+from` (`from_regs`), `+past` (`past_regs`: the new bond's label is a new key), `+split` and `+into` (`split_halves`, `into_halves`: the two halves made of the need's registers and fresh ones, each once, keys and labels kept) on every lazy need. |
+| `Compiler/CompRunCopyRegs.lean` | `+copy-lazy` with the merge keeps no register twice, the keys and the labels (`copy_regs`, mutual with `mforks_regs`, `mbonds_regs`): the index of the merge finds the one entry of the second need under a key (`index_get_key`, `index_get_none`, `filter_key_single`), the merged and the appended entries cut the second need's list in two. |
+| `Compiler/CompRunKeep.lean` | `KM`: the counters `re`, `bo` grow and `drop` stays, through the primitives (tactic `km`) and every helper of `+run` on lazy needs (`km_walkLazy`, `km_kern`, `km_kerf`, `km_medeL`, `km_collapseLazyAtomL`, `km_splitL`, `km_intoL`, `km_copyL`, `km_pastL`, ...). |
+| `Compiler/CompRunRes.lean` | The invariant through the helpers on lazy goals (`splitL_inv`, `intoL_inv`, `fromL_inv`, `pastL_inv`, `copyL_inv`) and the tail of two runs (`q`, `+past` over `p`, `p`, `+copy`): `p`'s goal meets `GInv` (`tail_pgoal`), the `+copy` meets `CopyH` (`tail_copyH`), its result meets `GInv` (`tail_res`). |
+| `Compiler/CompRunResAll.lean` | **`RunResL`** (`res_all`, `runResL`): every run of the plain class from a goal with `GInv` returns a result with `GRes`, case by case (`res_n0`, `res_n1`, `res_n3`, `res_n4`, `res_n5`, `res_n7`, `res_cons`, `res_n10`, `res_n2`, through `tail_all`). |
+| `Compiler/CompRunLeafL.lean` | `%0`, `%1`, `%3`, `%4` of `+run` on every goal with `GInv` (`comp_run_n0L`, `comp_run_n1L`, `comp_run_n3L`, `comp_run_n4L`): on a lazy `%next` goal through `cfr_all`, `comp_mede_all`, `ne_all`, `comp_collapse_lazy_atom_all`; on `%done`, `%pick` the old theorems (`gInv_crInv`, `crInv_gInv`). |
+| `Compiler/CompRunConsL.lean` | **The cons of `+run` on every goal with `GInv`, with lazy results** (`comp_run_consL`): `+split` of a lazy need, `+past` with its bond branch (`comp_past`), the runs of the parts on lazy goals (`PartL`), `+copy` of two lazy needs with `CopyH` from the runs (`crc_ntailL`, `crc_nextL`, `crc_pickL`); `hinted_plain` (no code table read on the plain class). |
+| `Compiler/CompRunFiveL.lean` | `%5` and the indirect call `%2` on every goal with `GInv`, with lazy results (`comp_run_n5L`, `comp_run_n2L`): the branch of `%5` over a lazy goal (`cr5BrML`, `cr5_brL`), `+kerf` of a lazy `next` (`cr2_kfL`, through `comp_kerf_all`), the tails (`cr5_tailL`, `cr2_tailL`). |
+| `Compiler/CompRunTenL.lean` | `%10` on every goal with `GInv`, with lazy results (`comp_run_n10L`): `+into` of a lazy need (`comp_into_all`) and the tail (`cr10_tailL`). |
+| `Compiler/CompRunAllL.lean` | **`comp_run_all_l`, `runLinkL`: the run link on every goal with `GInv` for every nomm of the plain class**, every region, `env` and `msup`, given only `slot? 7 ctx = some compK` and `slot? 52 ctx = some cod`; `comp_run_entry_l`; `plainOk_of_indOk` (the fragment `indOk` is in the class); `example`s: `[8 [9 2 [0 1]] c]` for every `c` of the class on every goal with `GInv`, and with `c` a cons whose head calls. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`, whose `keys` are those of `rap`, the order of `+rep:by` (`treapMap_keys`). |
@@ -1578,6 +1589,48 @@ import only its theorems.  So:
     then the cons case of `+run` with a calling head through `CompRunAtC`,
     whose result (a bond from `+past` over the calling head) needs `CrRes`
     generalized to lazy results.
+    L, 2026-11-24 (track A, `+run` on lazy goals with lazy results),
+    `Compiler/CompRunGoalL.lean` ... `Compiler/CompRunAllL.lean`.  **The
+    run link holds on every goal with the invariant `GInv` for every nomm
+    of the plain class** (`comp_run_all_l`, `runLinkL`): `%0`, `%1`, `%3`,
+    `%4`, `%5`, `%7`, cons, `%10` with an axis not `0` and the indirect call
+    `[2 p q ~]`, nested in any way, no `%6`; every region, `env`, `msup`;
+    given only `slot? 7 ctx = some compK` and `slot? 52 ctx = some cod`.  So
+    `[8 [9 2 [0 1]] c]` is linked for every `c` of the class on every goal
+    with `GInv` (the `example` of `CompRunAllL.lean`), and `indOk` is a
+    part of the class (`plainOk_of_indOk`).  The invariant `GInv g goal`:
+    the mode `%run`, the jumps' arguments below the counter, and for a
+    `%next` goal `LInv g.re g.bo laz`: every sure need of the lazy need
+    (forks and bonds to any depth) looks at no axis `0` and has its
+    registers below `re` (`LAll (LNB ..)`, read by every helper link); no
+    register occurs twice in the whole lazy need (`(lregs laz).Nodup`, so
+    the halves of `+split` and `+into` are apart, which is what `CopyH`
+    of the final `+copy` needs); at every level the forks' yes labels and
+    the bonds' labels have no duplicate (`LKeys`, needed because
+    `+copy-lazy` merges each entry of the second need into the entry of the
+    first with its label, so a label twice in the first would copy the
+    second's registers twice); every label below `bo` (so the block of
+    `+past` is a new key).  `soft` is empty (`CompRunAtR`); `cond` and the
+    tags carry no condition: only `+proxy` reads `tags`, with `got`, which
+    crashes where the model's `proxy` is `none`, so the link holds with or
+    without them (they matter only for the model to succeed).  What a run
+    returns (`GRes`, `RunResL`, `res_all`): the counters grow, `GInv` of the
+    result's goal, every register fresh or the goal's.  The registers are
+    counted (`Sub`, `CompRunRegs.lean`), which makes the merge of
+    `+copy-lazy` (`copy_regs`) and the two halves of `+split`, `+into`
+    (`split_halves`, `into_halves`) composable.  The cases on lazy goals:
+    `comp_run_n0L`, `comp_run_n1L`, `comp_run_n3L`, `comp_run_n4L` (the
+    helper links on lazy needs, `cfr_all`, `comp_mede_all`, `ne_all`,
+    `comp_collapse_lazy_atom_all`), `comp_run_consL`, `comp_run_n5L`,
+    `comp_run_n2L`, `comp_run_n10L` (`comp_split_all`, `comp_into_all`,
+    `comp_kerf_all`, `comp_past` with its bond branch, `comp_copy_all` with
+    `CopyH` from `tail_copyH`), `%7` by `comp_run_n7C` as it was.  The Hoon
+    and the models were compared on every branch again: no departure.  The
+    old theorems on `CGoal.toL` are untouched; `%done` and `%pick` of the
+    leaves, `%3`, `%4`, `%5` reuse them (`gInv_crInv`).  Next: `%6` (forks
+    from `+sect` and `+fork`: `GInv` already speaks of forks to any depth;
+    what is left is that `+fork`, `+sect`, `+past-fork`, `+lazy-shut` keep
+    `LInv`), and the top (`cu_gate_scc_one_f_c` on the plain class).
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,

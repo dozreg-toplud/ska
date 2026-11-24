@@ -128,6 +128,7 @@ import lemmas.Compiler.CompFromGen
 import lemmas.Compiler.CompClaGen
 import lemmas.Compiler.CompRunInvL
 import lemmas.Compiler.CompCopyAll
+import lemmas.Compiler.CompRunAllL
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -1037,3 +1038,28 @@ open Formalization
 #print axioms Compiler.comp_copy_all
 #print axioms Compiler.copy_lnb
 #print axioms Compiler.crInvL_copy
+#print axioms Compiler.copy_regs
+#print axioms Compiler.split_halves
+#print axioms Compiler.into_halves
+#print axioms Compiler.from_regs
+#print axioms Compiler.past_regs
+#print axioms Compiler.copyH_of_regs
+#print axioms Compiler.splitL_inv
+#print axioms Compiler.intoL_inv
+#print axioms Compiler.copyL_inv
+#print axioms Compiler.tail_copyH
+#print axioms Compiler.tail_res
+#print axioms Compiler.res_all
+#print axioms Compiler.runResL
+#print axioms Compiler.comp_run_n0L
+#print axioms Compiler.comp_run_n1L
+#print axioms Compiler.comp_run_n3L
+#print axioms Compiler.comp_run_n4L
+#print axioms Compiler.comp_run_consL
+#print axioms Compiler.comp_run_n5L
+#print axioms Compiler.comp_run_n2L
+#print axioms Compiler.comp_run_n10L
+#print axioms Compiler.comp_run_all_l
+#print axioms Compiler.runLinkL
+#print axioms Compiler.comp_run_entry_l
+#print axioms Compiler.plainOk_of_indOk
