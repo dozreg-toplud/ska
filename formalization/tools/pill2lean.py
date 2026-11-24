@@ -540,6 +540,11 @@ def main():
         assert len(res) == 1, (dlabel, label, res)
         ax, a, inner = res[0]
         full = dlabel + '.' + label
+        if a in names:
+            # the same noun as an arm of another door: keep its name
+            axes.append((full, ax, '∀ x, slot? %s.axis (C %s.battery x) = some %s'
+                         % (full, dlabel, names[a])))
+            return
         name(a, full + '.arm')
         formulas.add(a)
         g = gate_battery(inner)
@@ -589,6 +594,7 @@ def main():
     for label in ['gas', 'del', 'rep', 'run', 'uni', 'int', 'dif', 'any']:
         door_arm('in', in_battery, label, 'any')
     has_in = door_arm('in', in_battery, 'has', 1)
+    door_trap('in', in_battery, 'tap')
     # +has:in slams an inner gate [8 [8 [1 0] [1 gate] 0 1] 9 2 10 ...]
     inner = tail(head(tail(tail(head(tail(gate_battery(has_in)))))))
     assert NODES[head(inner)] == 7
@@ -1144,6 +1150,60 @@ def main():
         name(g, lname + '.battery')
         formulas.add(g)
         name_loops(lname, g, 'any')
+    # the |% core of +ska-callgraph: its battery `ska_cg.k_bat` (K_bat) is the
+    # node whose slot 60 is +analyze and slot 63 is +run, and its other arms,
+    # told apart by their shapes: +above (slot 14) pulls nothing, +pop (2)
+    # pulls +put:mi and has no loop, +cull (6) has one loop and one gate (the
+    # gate of `~(rep in dead)`), +sweep (61) one loop and two gates (`kids` and
+    # the gate of its `+turn`), +dirty (62) no loop and one gate (the gate of
+    # `~(any in ...)`).  The gate +ska-callgraph (label ska-callgraph) builds it.
+    aa_ = [i for i, nm in names.items() if nm == 'ska_analyze.arm'][0]
+    ra_ = [i for i, nm in names.items() if nm == 'ska_run.arm'][0]
+    kbs = []
+    for i in live:
+        try:
+            if slot(60, i) == aa_ and slot(63, i) == ra_:
+                kbs.append(i)
+        except Exception:
+            pass
+    (k_bat,) = kbs
+    name(k_bat, 'ska_cg.k_bat')
+    def builds_gate(a):
+        """a is [8 sample [1 battery] 0 1], the sample maybe not a constant"""
+        try:
+            return (NODES[head(a)] == 8 and NODES[head(head(tail(tail(a))))] == 1
+                    and tail(tail(tail(a))) == cell(atom(0), atom(1)))
+        except (TypeError, IndexError):
+            return False
+    # the gate `|=(callee-entry id)` of the +turn in +sweep and +cull is the
+    # formula [0 13], shared all over the pill, so it stays unnamed; the other
+    # gates are `ska_cg.<arm>.gate`
+    for kax, lname, nloops, ngates in ((14, 'above', 0, 0), (2, 'pop', 0, 0), (6, 'cull', 1, 2),
+                                       (61, 'sweep', 1, 2), (62, 'dirty', 0, 1)):
+        a = slot(kax, k_bat)
+        g = door_gate_battery(a)
+        gates = sorted(j for j in reach([g]) if builds_gate(j))
+        assert len(gates) == ngates, (lname, len(gates))
+        name(a, 'ska_cg.%s.arm' % lname)
+        formulas.add(a)
+        name(g, 'ska_cg.%s.battery' % lname)
+        formulas.add(g)
+        name_loops('ska_cg.' + lname, g, nloops)
+        for j in gates:
+            gb = tail(head(tail(tail(j))))
+            if gb in names:
+                continue
+            # the id gate is the formula [0 13], left unnamed
+            if NODES[head(gb)] == 0:
+                continue
+            name(gb, 'ska_cg.%s.gate' % lname)
+            formulas.add(gb)
+    # the gate +ska-callgraph quotes the type of its result for +print-ska
+    # (195,000 cells shared), so it is named in the bulk, not written out
+    (cg_arm,) = arms_of('ska-callgraph')
+    IN_BULK.update(['ska_cg.arm', 'ska_cg.battery'])
+    name(cg_arm, 'ska_cg.arm')
+    name(gate_battery(cg_arm), 'ska_cg.battery')
 
     # the interpreter core `interp` ("Formal definition of the interpreter"),
     # the tail of `core`.  Its arms have no %fast labels: +read and +store are

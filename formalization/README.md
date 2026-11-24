@@ -115,6 +115,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/FolLoopMono.lean` | `folStep_mono`: `Ana.folStep` is monotone (`Below?`) in `go` and `res` (`callStep_mono`, `meanArm_mono`).  `goPatch`: `go` where it returns, else the decoded run of the pill; `goIs_patch`: it satisfies `GoIs` when the pill returns what `go` returns and every return of the trap decodes (`FolDecodes`).  `fol_loop_le`: what `Ana.folLoop env memoF n` returns, the pill's trap returns, by induction on `n`, given `FolDecodes`, at every fuel a `resP` with `ResIs` above `Ana.resolve env memoF n`, `RegisterFastIs`, `softSpotF` and `ana` at `511`.  No second version of the case theorems is needed for the order. |
 | `Compiler/ResolveLoop.lean` | The loop `resolve` of the trap `nock-2-direct-non-inlined` (`fol_loop.resolve`, subject `resSubj`: `[fol_loop.resolve [id-there dirSubj]]`).  `resolve_stepW` is the turn over `nockW c` (with `AnaIsW c` and the self-call made by `c`), and `resolve_step` its case `c := nock`.  `resolve_step`: one turn of the pill's loop is `resolveStepH` on every identity, given `+analyze` as a parameter `an` (`AnaIs`: the gate of arm `92` of the core `K` at axis `31` of the rest, `ska_analyze_arm`), `env.he = heSock`, `env.threshold = 32`, `ana` at `511`, and the loop's call to itself on a `%he` step (needed only on that path).  It runs `+get:by` of `g` and `order`, `+git:mi`, `+recursive-call`, `+git-g`, `+patch-prod`, `+min` (layer 1 at `4194303` of the rest, `rest_layer1`) and `+got:by`, crashes included.  `resolveStepH` is `Ana.resolveStep` except that the `%rec` branch patches the product with `orig.1`, as the Hoon does (`(patch-prod [prod map]:d sock.prod.s)`); the two agree when the current identity is `orig` (`resolveStepH_self`).  `resolveH`: the loop fuelled with `an` fixed; `resolve_le`: what it returns, the pill's loop returns, on every identity; `ResLe` (`ResIs` in that direction) of the loop begun at the call's own identity (`resLe_resolveH`).  The loop reads of the trap's subject only `fol-new`, `sock.prod.s`, `gen` and the rest. |
 | `Compiler/FolLoopConv.lean` | Both directions for the trap `fol-loop` and the loop `resolve`, with `+analyze` a parameter.  The converse runs by induction on `ev j`, which runs the trap's battery, `fol_loop.direct` and `fol_loop.resolve` with `ev (j - 1)`, the gate `+analyze` with `iterN j`, and every other formula with `nock` (`ev_far`); every run of `nock` is a run of some `ev j` (`ev_complete`).  Under `ev j` the case theorems over an evaluator describe the trap exactly as `folE j` and the loop as `resE j` (`folE_is`, `resE_is`), with `+analyze` the decoded run at depth `j` (`anaE`, `anaE_is`), and these lie below `Ana.folLoop` and `Ana.resolve` at a fuel that depends on `j` only (`folE_le`, `resE_le`, by `folStep_mono`, `resolveStepH_mono` and `AnaFuel.lean`).  So what the pill returns the model returns (`fol_loop_ge`, `resolve_ge`, `folDecodes`), the pill's loop computes the limit `resInf` of the model's `resolve` (`resIs_inf`), and `fol_loop_le'`, `fol_loop_iff`, `resolve_iff` hold with no hypothesis on the pill's runs.  `StepBridge env` (`resolveStepH = Ana.resolveStep`) is `stepBridge`, by `resolveStepH_eq`.  Assumed: `AnaIs` of a function `an`, every fuel of `Ana.analyze` below `an`, `AnaGe` (what `iterN j` of `+analyze` returns decodes and `Ana.analyze` returns at a fuel that depends on `j` only), the layout `hana`, `hK`, `hKa`, `env.he = heSock`, `env.threshold = 32`, `softSpotF` and `RegisterFastIs`.  `runRest`: the rest of the trap's subject as `+run` builds it, where `hana` and `hK` hold by computation (`runRest_ana`, `runRest_K`) and `hKa` from axis `60` of the battery of the core `K` (`runRest_Ka`). |
+| `Compiler/SkaCore.lean` | The `|%` core `K` of `+ska-callgraph`: its battery `kc.k_bat` (K_bat: `+pop` at slot `2`, `+cull` `6`, `+above` `14`, `+analyze` `60`, `+sweep` `61`, `+dirty` `62`, `+run` `63`) and the arms' nouns `kc.*`, printed by `pill2lean.py` and tied to the pill by `kc_bat_at` (`slot? 2799357 ana = some kc.k_bat`, by the kernel), kept here until the next regeneration names them `ska_cg.*` in `Pill/Arm/Ska_cg.lean`.  `kc_analyze_at`, `kc_run_at`; `runRest_kc`: `hana`, `hK`, `hKa` of `FolLoopConv.lean` for the subject that `+run` builds.  `above_gate`: `+above` computes `Ana.above` on every stack, in every context.  `pop_gate`, `pop_gate'`: `+pop` computes `Ana.popGo` and `Ana.pop` on every state, in every context `K` with `ana` at axis `31` (`K_layer2`). |
 | `Compiler/RegisterFast.lean` | `+register-fast` for registrations kept as nouns: `registerFastP`, the pill's run of the gate decoded into `[miss regs]`, satisfies `RegisterFastIs` for every `Env Noun` that uses it, given `RegisterFastShape` (every return of the gate is a cell with a flag at its head; `registerFastIs_of`).  The shape fact is open: `absNock` of `Compiler/Frame.lean` on the gate's battery (fuel 1000) gives 103 shapes, of which 10 are `[%.n *]` and 93 unknown, because those branches end in calls, which `absNock` does not follow. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
@@ -401,10 +402,14 @@ import only its theorems.  So:
      `+msg-anno`, `+safe-nomm`, `+safe-fol-fol`, `+inlineable`; the
      validators; the interpreter (`+eval-top`, `+eval-blob`, `+eval-pole`,
      `+eval-pass`, `+move`, `+read`, `+store`, `+eval-mook`, `+eval-rend`);
-     of `+poke` its frame, that it validates first, and the outer `+poke`.
+     of `+poke` its frame, that it validates first, and the outer `+poke`;
+     `+above` and `+pop` of the core of `+ska-callgraph` (`above_gate`,
+     `pop_gate'`, `Compiler/SkaCore.lean`, against `Ana.above` and `Ana.pop`
+     with no hypothesis but `ana` at axis `31` of the core), and the layout
+     of the subject that `+run` builds (`runRest_kc`: `hana`, `hK`, `hKa`).
    - *Modelled, not linked*:
      `+analyze`, `+run`, the pass and member loops, `+dirty`, `+sweep`,
-     `+above`, `+cull`, `+pop`, `+ska-callgraph`, `+prune-callgraph`,
+     `+cull`, `+ska-callgraph`, `+prune-callgraph`,
      `+memo-final-entry`, the analysis part of `+ska-poke`;
      `+uni-sock`, `+norm-sock`, `+know`,
      `+bake-graph`; `+reverse-bell-graph`, `+hot-stale`, `+del-bells`;
@@ -423,6 +428,20 @@ import only its theorems.  So:
      `known-sock`, `bake-need-ord`, `need-normalize`, `mono-try-call`); the
      families `soft-*`, `laze-*`, `inter1`, `inter2`; the optimizer;
      `+hot-diff`, `+load`, `+peek`, `+wish`.
+   - *Next, in this order* (the nouns are in `SkaCore.lean`): `+dirty`
+     (`+gut:by` of `ticks` with the default `[0 0]`, `+any:in` through
+     `any_in_loop` with the gate `kc.dirty.gate`, which slams `+gte` of
+     layer 1, and `anyInF_spec` with `preorder_toNoun` to reach the
+     `List.any` over `Treap.tap` of the model), `+sweep` (`sweepLoop`, the
+     gate `kc.sweep.gate` is `kids`), `+cull` (`liveLoop`, `+gas:in` for
+     `+silt`, `+dif:in`, `+wyt:in`, `+skip`, the `+rep:in` gate whose sample
+     is not a constant), then `+run` against `Ana.runStep` with `fol-loop` a
+     parameter (it needs `+msg-ca`, which has no model), then the loops of
+     `+analyze` (`ska_analyze.loop1` is the pass loop, `loop0` the member
+     loop).  The generator names these nouns `ska_cg.*` at the next
+     regeneration (dry run checked: only `Arm/In.lean`, which gains
+     `in.tap.axis`, `Facts.lean` and the bulk change, and `Arm/Ska_cg.lean`
+     is new); the copies `kc.*` then become the generated ones.
 10. **`Treap` of `Ska/Analysis.lean` has an instance** (`Compiler/TreapKey.lean`):
    finite maps, with the treap noun made when the key encoding is given.  Its
    `ext` is function extensionality (on nouns, `isMap_ext`).  `+tap:by` and
