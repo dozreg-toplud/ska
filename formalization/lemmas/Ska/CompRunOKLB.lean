@@ -38,12 +38,14 @@ argument), a new induction over every composition.
 (b') puts the reading of the goal's register on the producer's side, where
 it costs nothing: `RunOKLC` lifts with `x = false`, the leaves
 `+collapse-lazy-atom` (`[3 p]`, `[4 p]`, `[5 p q]`) meet it with `x = true`
-under every lazy goal, and the cons and `%10` absorb a part's `x`: `+split`
-and `+into` allocate the halves' registers in the parent's run, the tail's
-code keeps the head's goal registers (they are below the tail's start and
-not its goal's), so the parent's witness contains them.  Only `[7 p q]`
-with `x = true` for `p` and entries in `q`'s result needs more: `q` must keep
-its own sure registers until its result entries' blocks, which is (b).
+under every lazy goal (`runOKLB_n4`), and the cons and `%10` can absorb a
+part's `x` when `+split` and `+into` allocate the halves' registers in the
+parent's run (the tail's code keeps the head's goal registers, below the
+tail's start and not its goal's, so the parent's witness contains them);
+when the goal's sure need is a `pair` the halves are the goal's own
+registers and the cons keeps `x`.  `[7 p q]` with `x = true` for `p` and
+entries in `q`'s result needs more: `q` must keep its own sure registers
+until its result entries' blocks, which is (b).
 
 ## The checks against the raw blocks
 
