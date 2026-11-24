@@ -208,5 +208,57 @@ theorem ts_pre {ctx : Noun} (hc : CompIn ctx) (g : Gen (TreapMap mugF)) (x : Gen
     exact ts_pre3 hc _ _ _ _ _ _ _ o sub hget (delF_hoonMap Blob.toNoun g.blocks o)
       (putF_hoonMap Blob.toNoun (HoonMap.del g.blocks o) 0 start)
 
+/-- **The link of the `|^` core of `+to-straight`**, stated: from the state
+that `ts_pre` reaches, the call of arm `190` (`rewrite-input`, the test
+`&(run !proxies)`, then `:+  input  (count-args input)` and the `+rep:by`
+with `+bypassable`, `+map-regs` and `+chase-fin`) is the renaming path of
+the model on the blocks `HoonMap.put (HoonMap.del g.blocks o) 0 start`,
+with the renaming `renReg sub 1`.  Not proved. -/
+def TsCoreAt (ctx : Noun) : Prop :=
+  ∀ (g : Gen (TreapMap mugF)) (x : GenRest) (sub o : Nat) (start : Blob),
+    (∀ k, HoonMap.get g.cond k = Option.none) → HoonMap.get g.blocks o = some start →
+    nock (tsCoreSt (Blob.toNoun start)
+        (C tsRenBat (C (A 0) (tsS7 (HoonMap.toNoun Blob.toNoun g.blocks)
+          (HoonMap.toNoun Blob.toNoun g.blocks) (tsS0 comp.door (genNoun g x) ctx o sub) sub)))
+        (HoonMap.toNoun Blob.toNoun (HoonMap.put (HoonMap.del g.blocks o) 0 start))
+        (HoonMap.toNoun Blob.toNoun g.blocks) (tsS0 comp.door (genNoun g x) ctx o sub) sub)
+        (C (A 9) (C (A 190) (C (A 0) (A 1))))
+      = (renameBlocks (HoonMap.put (HoonMap.del g.blocks o) 0 start) (renReg sub 1)).map
+          fun new => Straight.toNoun (⟨NeedOrd.this, 1, new⟩ : Straight (TreapMap mugF))
+
+/-- **`TsAt` from the link of the core**: the pushes are `ts_pre`, and on
+the fragment's sample the model `toStraightF` is its renaming path
+(`toStraightF_eq`: `cond` is empty and `[sub]` is a run). -/
+theorem ts_at_of_core {ctx : Noun} (hc : CompIn ctx) (h : TsCoreAt ctx) : TsAt ctx := by
+  intro g x sub o hcond
+  have hrun : isRun (flattenNeed (Need.this sub)) ((flattenNeed (Need.this sub)).headD 0) 0 = true := by
+    simp [flattenNeed, isRun]
+  rw [ts_pre hc g x o sub hcond, toStraightF_eq hcond hrun]
+  unfold toStraight
+  simp only [hrun, Bool.true_eq_false, if_false]
+  cases e : HoonMap.get g.blocks o with
+  | none => rfl
+  | some start =>
+    simp only [Option.bind_some]
+    rw [h g x sub o start hcond e]
+    simp [flattenNeed, needToOrd, countArgs, Option.map_map]
+    rfl
+
+/-- **The end of `+compile-unary` from its entry state, given the core of
+`+to-straight`**: `cu_finish` with `TsAt` from `ts_at_of_core` (`CompIn`
+from `comp_ctx_pill`), so that only `TsCoreAt` is assumed. -/
+theorem cu_finish_core {ctx : Noun} (h7 : slot? 7 ctx = some compK) {cod : Noun}
+    (hcode : slot? 52 ctx = some cod)
+    (n : Nomm) (hpu : n.pure = true) (h6 : noSix n = true) (ht : tenOk n = true)
+    (cache mono sup : Noun) (hts : TsCoreAt ctx) :
+    ((nock (crSubj mono n.toNoun (CGoal.toL (CGoal.done : CGoal CSet)).toNoun (listNoun A []) sup
+        (compCore genEntry (cuRest cache) ctx)) crDol).bind (fun R =>
+      (slot? 2 R).bind fun N => (slot? 3 R).bind fun G =>
+        nock (C kerfBat (C N (C comp.door (C G ctx)))) kerfBat)).bind (fun K =>
+      (slot? 4 K).bind fun O => (slot? 5 K).bind fun SUB => (slot? 3 K).bind fun G2 =>
+        nock (C tsBat (C (tsSample O SUB) (C comp.door (C G2 ctx)))) tsBat)
+      = (finishLU (S := CSet) (Map := TreapMap mugF) n).map Straight.toNoun :=
+  cu_finish h7 hcode n hpu h6 ht cache mono sup (ts_at_of_core (comp_ctx_pill ctx h7).1 hts)
+
 end Compiler
 end Formalization

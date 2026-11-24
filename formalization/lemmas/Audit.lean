@@ -691,4 +691,6 @@ open Formalization
 #print axioms Compiler.cu_cond_empty
 #print axioms Compiler.cu_finish
 #print axioms Compiler.ts_pre
+#print axioms Compiler.ts_at_of_core
+#print axioms Compiler.cu_finish_core
 #print axioms Compiler.kn_suf_eq
