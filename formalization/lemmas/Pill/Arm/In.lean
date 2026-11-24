@@ -28,6 +28,7 @@ public abbrev in.int.axis : Nat := 85
 public abbrev in.put.axis : Nat := 84
 public abbrev in.rep.axis : Nat := 383
 public abbrev in.run.axis : Nat := 382
+public abbrev in.tap.axis : Nat := 186
 public abbrev in.uni.axis : Nat := 174
 public abbrev in.wyt.axis : Nat := 92
 

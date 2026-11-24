@@ -84,6 +84,7 @@ public import lemmas.Pill.Arm.Safe_nomm
 public import lemmas.Pill.Arm.Scag
 public import lemmas.Pill.Arm.Scow
 public import lemmas.Pill.Arm.Ska_analyze
+public import lemmas.Pill.Arm.Ska_cg
 public import lemmas.Pill.Arm.Ska_run
 public import lemmas.Pill.Arm.Skid
 public import lemmas.Pill.Arm.Skim
@@ -186,6 +187,7 @@ import all lemmas.Pill.Arm.Safe_nomm
 import all lemmas.Pill.Arm.Scag
 import all lemmas.Pill.Arm.Scow
 import all lemmas.Pill.Arm.Ska_analyze
+import all lemmas.Pill.Arm.Ska_cg
 import all lemmas.Pill.Arm.Ska_run
 import all lemmas.Pill.Arm.Skid
 import all lemmas.Pill.Arm.Skim
@@ -458,6 +460,9 @@ theorem in.any.arm_at : ∀ x, slot? in.any.axis (C in.battery x) = some in.any.
   intro x; kernel_rfl
 
 theorem in.has.arm_at : ∀ x, slot? in.has.axis (C in.battery x) = some in.has.arm := by
+  intro x; kernel_rfl
+
+theorem in.tap.arm_at : ∀ x, slot? in.tap.axis (C in.battery x) = some by.tap.arm := by
   intro x; kernel_rfl
 
 theorem ju.arm_at : slot? ju.axis layer2 = some ju.arm := by kernel_rfl
