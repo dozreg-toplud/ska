@@ -117,7 +117,29 @@ elif WHICH == 'rub':
     ]
 elif WHICH == 'rdc':
     bunt, body, hint = opt_arm(724)
-    defs += [('rdcBody', body, 'The gate body of `+remove-dead-code`.'),
+    # body = [8 [1 0] [8 [1 0] [8 [1 TRAP] [9 2 [0 1]]]]]
+    _, _, b1 = seq(body, 3)
+    _, _, b2 = seq(b1, 3)
+    _, trapq, kick = seq(b2, 3)
+    trap = norm(trapq)[2]
+    # TRAP = [6 TEST [0 14] [8 GOT [8 R CONT]]]
+    _, test, done, t1 = seq(trap, 4)
+    _, got, t2 = seq(t1, 3)
+    _, r, cont = seq(t2, 3)
+    # R = [8 FLOP [7 [10 [30 GASFIN] [0 1]] [8 [1 0] [8 [1 INNER] [9 2 [0 1]]]]]]
+    _, flop, r1 = seq(r, 3)
+    _, ed, r2 = seq(r1, 3)
+    _, ax30, _ = seq(ed, 3)
+    gasfin = norm(ax30)[2]
+    _, _, r3 = seq(r2, 3)
+    _, innerq, _ = seq(r3, 3)
+    inner = norm(innerq)[2]
+    defs += [('rdcInner', inner, 'The inner trap of `+remove-dead-code`, over the reversed body.'),
+             ('rdcGasFin', gasfin, '`(~(gas in saw) (get-regs fin.b))`.'),
+             ('rdcCont', cont, 'The put of the new block and the next turn of the outer trap.'),
+             ('rdcGot', got, '`(~(got by blocks) i.rev-topo)`.'),
+             ('rdcTrap', trap, 'The outer trap of `+remove-dead-code`, over `rev-topo`.'),
+             ('rdcBody', body, 'The gate body of `+remove-dead-code`.'),
              ('rdcBunt', bunt, 'Its sample bunt.'), ('rdcHint', hint, 'Its `%fast` hint.')]
 elif WHICH == 'rev':
     bunt, body, hint = opt_arm(732)

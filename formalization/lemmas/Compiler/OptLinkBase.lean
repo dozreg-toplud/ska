@@ -276,6 +276,22 @@ theorem termin_toNoun_inj {a b : Termin} : a.toNoun = b.toNoun ↔ a = b :=
 theorem blob_toNoun_inj {a b : Blob} : a.toNoun = b.toNoun ↔ a = b :=
   ⟨fun h => by rw [← blobDec_toNoun a, h, blobDec_toNoun], fun h => h ▸ rfl⟩
 
+/-! ## `+got:by` on blocks -/
+
+/-- `+got:by` on the noun of a treap of blocks: the noun of the block, and a
+crash where there is none. -/
+theorem blocks_got (bl : TreapMap mugF Blob) (k : Nat) :
+    nock (C by.got.battery (C (A k) (C by.battery (C (HoonMap.toNoun Blob.toNoun bl) layer2)))) by.got.battery
+      = (HoonMap.get bl k).map Blob.toNoun := by
+  have hg := getF_hoonMap Blob.toNoun bl k
+  cases e : HoonMap.get bl k with
+  | none =>
+    rw [e] at hg
+    exact got_gate_nil (mug := mugF) layer2 ⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩ _ _ hg
+  | some v =>
+    rw [e] at hg
+    exact got_gate (mug := mugF) layer2 ⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩ _ _ _ hg
+
 /-! ## No `%lti` -/
 
 /-- A terminator other than `%lti`, the terminators of `termin`. -/

@@ -99,19 +99,6 @@ def rubSubj (BL : Noun) (o : Nat) (b : Blob) (ACC : Noun) : Noun :=
 
 /-! ## The `?+` over the terminator -/
 
-/-- `+got:by` of the blocks, through the noun of a treap. -/
-theorem rub_got (bl : TreapMap mugF Blob) (k : Nat) :
-    nock (C by.got.battery (C (A k) (C by.battery (C (HoonMap.toNoun Blob.toNoun bl) layer2)))) by.got.battery
-      = (HoonMap.get bl k).map Blob.toNoun := by
-  have hg := getF_hoonMap Blob.toNoun bl k
-  cases e : HoonMap.get bl k with
-  | none =>
-    rw [e] at hg
-    exact got_gate_nil (mug := mugF) layer2 ⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩ _ _ hg
-  | some v =>
-    rw [e] at hg
-    exact got_gate (mug := mugF) layer2 ⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩ _ _ _ hg
-
 /-- The shared part of the four cases, on the noun: `?>` both sides pass
 nothing, `got` of both targets, the test. -/
 theorem rub_two (bl : TreapMap mugF Blob) (fin : Termin) (z o : Jmp) (epi : List Pole) :
@@ -133,7 +120,7 @@ theorem rub_sw (bl : TreapMap mugF Blob) (o : Nat) (b : Blob) (ACC : Noun) :
     nock (rubSubj (HoonMap.toNoun Blob.toNoun bl) o b ACC) rubSw
       = (Opt.rubFin bl b.fin).map fun e => C (listNoun Pole.toNoun e.1) e.2.toNoun := by
   have hL := optC_layer2
-  have hg := rub_got bl
+  have hg := blocks_got bl
   obtain ⟨par, body, fin⟩ := b
   unfold rubSubj
   generalize optC = OC at hL
