@@ -404,5 +404,33 @@ example (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = som
       (CGoal.toL CGoal.done) region g :=
   comp_run_all' h7 hcode _ rfl rfl rfl CGoal.done region g ⟨trivial, hd, trivial, trivial⟩
 
+/-! ## The entry of `+comp`
+
+Both callers of `+run` in the driver start from the bunt of `line-short`
+(`=|  gen=line-short`, then `cache.gen` set): `re-gen` `0`, `bo-gen` `1`,
+`id-gen` `0`, `mode` `%run` (the bunt of `?(%drop %run)` is `%run`, checked
+with `runhoon.sh` on 2026-11-24), no blocks, tags, `cond`, `soft` or
+`sofs`, and call `(~(run comp gen) mono nomm [%done ~] ~ ~)`: `mono` is `&`
+in `+compile-unary`'s whole-subject function (line 3414) and `|` in the final
+pass of `+compile-scc-in` (line 3525, where `mode.gen` is set to `%run`
+again), the goal `[%done ~]`, the region `~` and `sup` `~`.  With the flag
+`dedicated-shape-pass` on (line 2816) the passes before the fixed point run
+`+run-shape`, not `+run` in `%drop` mode, so every call of `+run` in the
+driver meets `CrInv`. -/
+
+/-- The model state of the bunt of `line-short`. -/
+def genEntry : Gen (TreapMap mugF) := ⟨0, 1, 0, false, HoonMap.empty, HoonMap.empty, HoonMap.empty⟩
+
+theorem cri_entry : CrInv genEntry CGoal.done := ⟨trivial, rfl, trivial, trivial⟩
+
+/-- **`+run` at the entry of `+comp`**: on every pure nomm with no `%6` whose
+`%10` axes are not `0`, from the bunt state with the goal `[%done ~]` and the
+region `~`, the `$` arm of `+run` is `runL` (for every `mono`, `sup` and
+rest of the state with an empty `soft`, the cache included). -/
+theorem comp_run_entry (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (n : Nomm) (hpu : n.pure = true) (h6 : noSix n = true) (ht : tenOk n = true) :
+    CompRunAt ctx n (CGoal.toL CGoal.done) [] genEntry :=
+  comp_run_all' h7 hcode n hpu h6 ht CGoal.done [] genEntry cri_entry
+
 end Compiler
 end Formalization
