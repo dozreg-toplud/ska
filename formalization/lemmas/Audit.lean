@@ -937,3 +937,5 @@ open Formalization
 #print axioms Compiler.nn_from
 #print axioms Compiler.nn_run
 #print axioms Compiler.noar_frag
+#print axioms Compiler.noBake_no
+#print axioms Compiler.cu_gate_scc_one_no

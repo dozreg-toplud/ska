@@ -570,5 +570,39 @@ theorem noar_frag (nm : Nomm) (hpu : nm.pure = true) (h6 : noSix nm = true) (nex
   obtain ⟨n, g2, e, -⟩ := noar_nno (sccSur nex cape) g1 hno
   exact ⟨n, g2, e⟩
 
+/-! ## A bell that knows nothing of its subject bakes nothing -/
+
+/-- With the cape `|` nothing is known at any node, so nothing is baked. -/
+theorem noBake_no : ∀ (n : Need) (DATA : Noun), NoBake n (Sock.mk Cape.no DATA)
+  | Need.none, _ => by simp [NoBake, bnQuiet, Ca.all]
+  | Need.this _, _ => by simp [NoBake, bnQuiet, Ca.all]
+  | Need.pair p q, DATA => ⟨by simp [bnQuiet, Ca.all], by simpa [So.hed, Sock.dunno] using noBake_no p (A 0),
+      by simpa [So.tel, Sock.dunno] using noBake_no q (A 0)⟩
+  | Need.both _ h t, DATA => ⟨by simp [bnQuiet, Ca.all], by simpa [So.hed, Sock.dunno] using noBake_no h (A 0),
+      by simpa [So.tel, Sock.dunno] using noBake_no t (A 0)⟩
+
+/-- **`cu_gate_scc_one_f` for a bell whose cape is `|`**: no hypothesis on
+the model but the fragment of the two nomms; the others speak of the state
+nouns. -/
+theorem cu_gate_scc_one_no (DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE : Noun)
+    (hnary : getF mugF (C (C Cape.no.toNoun DATA) FOL) NARY = some (A 0)) (hnmap : IsMap mugF NARY)
+    (hsmap : IsMap mugF SURE) (hcalls : NoSelfCall (C (C Cape.no.toNoun DATA) FOL) CALLS)
+    (nm : Nomm) (INL' : Noun) (hinl : InlOK (C (C Cape.no.toNoun DATA) FOL) CODE INL nm INL')
+    (hpu : nm.pure = true) (h6 : noSix nm = true) (ht : tenOk nm = true)
+    (FUNC V : Noun) (n : Nomm) (hpu' : n.pure = true) (h6' : noSix n = true) (ht' : tenOk n = true)
+    (hgot : getF mugF FUNC CODE = some (C (A 0) V)) (hv : slot? 2 V = some n.toNoun) :
+    nock (C cuGB (C (cuSam FUNC (setOne (C (C Cape.no.toNoun DATA) FOL)) CODE (C JETS CALLS) JH
+        (cacheN NARY MONO SCCS INL SURE)) compK)) cuGB
+      = (runL nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF))).bind fun p =>
+          (finishLF (S := CSet) (Map := TreapMap mugF) nm (sccSur p.1 Cape.no) Cape.no
+              (fun n => (n, []))).bind fun st =>
+            (putF mugF (C (C Cape.no.toNoun DATA) FOL) st.toNoun NARY).bind fun NARYU =>
+              (putF mugF (C (C Cape.no.toNoun DATA) FOL) (sccSur p.1 Cape.no).toNoun SURE).bind fun SURE' =>
+                (finishLU (S := CSet) (Map := TreapMap mugF) n).map fun st' =>
+                  C (C st'.toNoun (C (C (C (C Cape.no.toNoun DATA) FOL) st.toNoun) (C (A 0) (A 0))))
+                    (cacheN NARYU MONO SCCS INL' SURE') :=
+  cu_gate_scc_one_f Cape.no DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE hnary hnmap hsmap hcalls nm INL'
+    hinl hpu h6 ht (fun _ _ nedF _ _ _ => noBake_no nedF DATA) FUNC V n hpu' h6' ht' hgot hv
+
 end Compiler
 end Formalization
