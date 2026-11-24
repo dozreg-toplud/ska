@@ -6,6 +6,7 @@ import lemmas.Ska.OptArgs
 import lemmas.Ska.OptDriverTopo
 import lemmas.Ska.OptDeadSim
 import lemmas.Ska.OptSwitch
+import lemmas.Ska.OptSwitchTree
 import lemmas.Ska.OptTrim
 import lemmas.Ska.OptAlias
 
@@ -91,3 +92,10 @@ open Formalization.SkaModel.Opt
 #print axioms trimBody_open
 #print axioms trimBody_append
 #print axioms trimBody_crash
+#print axioms casesAcc_spec
+#print axioms hsort_sorted
+#print axioms cases_spec
+#print axioms stree_go
+#print axioms treeGo_exec
+#print axioms pickHit_cases
+#print axioms tag_tree
