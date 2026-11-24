@@ -622,8 +622,8 @@ python3 tools/pill2cue.py pill/steel.pill lemmas/Pill/Cue   # after pill2lean
 terms: the windows and the nouns are defined by the commands of
 `CueTac.lean` from the bits of `pill`, and the theorems are one line each.
 
-`pill/steel.pill` is the steel pill of this branch (sha256 `76ea362e...`,
-793,137 bytes, built from the Hoon at 1813f09): its
+`pill/steel.pill` is the steel pill of this branch (sha256 `b041a7ca...`,
+793,205 bytes, built from the Hoon at af5cc39): its
 `desk/sys/hoon.hoon` built from nothing and `desk/lib/nock-compilation.hoon`
 on it, by the vere test harness without a ship (`U3NC_STEEL_GEN=out.pill`,
 `U3NC_STEEL_SYS`, `U3NC_STEEL_LIB`).  `pill2lean.py` finds the arms by their
@@ -688,9 +688,9 @@ import only its theorems.  So:
    `cue_pill` of `lemmas/Pill/Cue/Root.lean`).  The kernel cannot evaluate
    `cue` on 793 KB in one piece, so `CueRel.lean` proves once that `cue`
    returns what the relation `Dec` accepts, and 381 generated theorems check
-   the 546,193 tokens of the jam in pieces of at most 2000, reading the bits
+   the 546,237 tokens of the jam in pieces of at most 2000, reading the bits
    through windows of two chunks.  The table of back-references is a fixed
-   list of 23,358 entries, numbered in the order in which their decoding ends;
+   list of 23,361 entries, numbered in the order in which their decoding ends;
    a derivation counts the entries decoded so far, so nothing is checked about
    the bits that no reference points to.  The noun of the derivation is
    compared with `root` by the kernel (`s0_eq`), in under a second.
