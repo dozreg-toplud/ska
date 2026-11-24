@@ -14,9 +14,11 @@ arms that were not linked.  Here they are discharged:
   statement on `inl.cache` and `code.long-ska`;
 * `hsc` (`+shape-collapse`): `hsc_of_sure` of `CompShapeCol.lean`, with the
   shape `ord` equal to `sur`, the product of `+sure-of`;
-* `hkids`, `hju`: for a bell with no callee in `calls.long-ska` (`NoCalls`),
-  `kids` is `[[b ~] ~ ~]` (`csi_kids_nocalls`: the `+rep:in` over `[b ~ ~]`
-  with `+gut:by` and `+int:in` of `~`) and `~(has ju kids) b b` is `|`
+* `hkids`, `hju`: for a bell that does not call itself (`NoSelfCall`: no
+  entry at `b` in `calls.long-ska`, or a set of callees without `b`),
+  `kids` is `[[b ~] ~ ~]` (`csi_kids_noself`: the `+rep:in` over `[b ~ ~]`
+  with `+gut:by` and `+int:in`, `int_in` of `Hoon/IntIn.lean`; with no
+  callee at all, `csi_kids_nocalls`) and `~(has ju kids) b b` is `|`
   (`ju_has_kids`);
 * `huni` (`+uni:by` of `nary` and `[[b st] ~ ~]`): on a map `nary` it is
   `putF` (`uni_by_one`);
@@ -30,8 +32,8 @@ arms that were not linked.  Here they are discharged:
 What stays on the model side: the run succeeds (`hrunL`), with `args.then`
 empty (`hargs`), `+need-ord-alloc-regs` of `sccSur` succeeds (`hnoar`), and
 nothing is baked (`hb`).  On the state nouns: `b` is not in `nary.cache`
-(`hnary`) which is a map (`hnmap`), `calls.long-ska` has no callee of `b`
-(`hcalls`), `InlOK` for `inl.cache`, and the put of `sur` into
+(`hnary`) which is a map (`hnmap`), `b` is not among its own callees in
+`calls.long-ska` (`hcalls`), `InlOK` for `inl.cache`, and the put of `sur` into
 `sure.cache` succeeds (`hput`).
 -/
 
@@ -73,6 +75,52 @@ theorem csi_kids_nocalls (B CODE JETS CALLS JH CACHE : Noun) (hc : NoCalls B CAL
   generalize compK = KC at hL
   simp [nock_exec, hL, in.arm_at, in_arm, in.rep.arm_at, rep_arm, rep_gate_one, by.arm_at, by_arm,
     by.put.arm_at, put_arm, hput, in.int.arm_at, int_in_arm, int_in_nil, by.gut.arm_at, gut_arm, hgut]
+
+/-- `b` does not call itself: `calls.long-ska` has no entry at `b`, or a
+set of callees that does not hold `b`. -/
+def NoSelfCall (B CALLS : Noun) : Prop :=
+  getF mugF B CALLS = some (A 0) ∨ ∃ CB, getF mugF B CALLS = some (C (A 0) CB) ∧ IsSet mugF CB ∧ ¬ Has CB B
+
+theorem noSelfCall_of_noCalls {B CALLS : Noun} (h : NoCalls B CALLS) : NoSelfCall B CALLS := by
+  rcases h with h | h
+  · exact Or.inl h
+  · exact Or.inr ⟨A 0, h, isSet_nil, not_has_atom⟩
+
+theorem isSet_setOne (B : Noun) : IsSet mugF (setOne B) :=
+  isSet_node_iff.2 ⟨isSet_nil, isSet_nil, fun _ h => absurd h not_has_atom, fun _ h => absurd h not_has_atom⟩
+
+/-- **`kids` of `[b ~ ~]` when `b` does not call itself**: the `+int:in` of
+the callees of `b` and `[b ~ ~]` is `~` (`int_in`, `isSet_ext`), so `kids`
+is `[[b ~] ~ ~]`. -/
+theorem csi_kids_noself (B CODE JETS CALLS JH CACHE : Noun) (hc : NoSelfCall B CALLS) :
+    nock (C (A 0) (C csiBody (C (csiSam (setOne B) (C CODE (C JETS CALLS)) JH CACHE) compK))) csiKids
+      = some (kidsOne B) := by
+  have hL := compK_layer2
+  obtain ⟨CB, hgut, hcb, hnb⟩ : ∃ CB, nock (C by.gut.battery (C (C B (A 0)) (C by.battery (C CALLS layer2))))
+      by.gut.battery = some CB ∧ IsSet mugF CB ∧ ¬ Has CB B := by
+    rcases hc with h | ⟨CB, h, hs, hn⟩
+    · have := gut_gate (mug := mugF) layer2 ⟨fall.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩ B (A 0) CALLS
+        (A 0) h (Or.inl rfl)
+      exact ⟨A 0, by simpa using this, isSet_nil, not_has_atom⟩
+    · have := gut_gate (mug := mugF) layer2 ⟨fall.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩ B (A 0) CALLS
+        (C (A 0) CB) h (Or.inr ⟨_, rfl⟩)
+      exact ⟨CB, by simpa using this, hs, hn⟩
+  obtain ⟨X, hint, hxs, hxk⟩ := int_in (mug := mugF) layer2 gorIn_morIn_layer2 CB (setOne B) hcb (isSet_setOne B)
+  have hx0 : X = A 0 := isSet_ext hxs isSet_nil fun k => by
+    rw [hxk k]
+    constructor
+    · rintro ⟨h1, h2⟩
+      rcases has_node.1 h2 with rfl | h | h
+      · exact absurd h1 hnb
+      · exact absurd h not_has_atom
+      · exact absurd h not_has_atom
+    · intro h; exact absurd h not_has_atom
+  subst hx0
+  have hput := put_gate (mug := mugF) layer2 gorIn_morIn_layer2 B (A 0) (A 0) (kidsOne B) rfl
+  unfold csiKids csiSam setOne at *
+  generalize compK = KC at hL
+  simp [nock_exec, hL, in.arm_at, in_arm, in.rep.arm_at, rep_arm, rep_gate_one, by.arm_at, by_arm,
+    by.put.arm_at, put_arm, hput, in.int.arm_at, int_in_arm, hint, by.gut.arm_at, gut_arm, hgut]
 
 /-- `~(has ju kids) b b` is `|` on `kidsOne b`. -/
 theorem ju_has_kids (B : Noun) : juHasF mugF B B (kidsOne B) = some false := by
@@ -206,7 +254,7 @@ hypotheses on the model: the run succeeds with no argument in `args.then`,
 `+need-ord-alloc-regs` of `sur` succeeds, nothing is baked. -/
 theorem csi_gate_scc_one_m (cape : Cape) (DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE : Noun)
     (hnary : getF mugF (C (C cape.toNoun DATA) FOL) NARY = some (A 0)) (hnmap : IsMap mugF NARY)
-    (hcalls : NoCalls (C (C cape.toNoun DATA) FOL) CALLS)
+    (hcalls : NoSelfCall (C (C cape.toNoun DATA) FOL) CALLS)
     (nm : Nomm) (INL' : Noun) (hinl : InlOK (C (C cape.toNoun DATA) FOL) CODE INL nm INL')
     (hpu : nm.pure = true) (h6 : noSix nm = true) (ht : tenOk nm = true)
     (nex : NextL CSet) (g1 : Gen (TreapMap mugF))
@@ -221,7 +269,7 @@ theorem csi_gate_scc_one_m (cape : Cape) (DATA FOL CODE JETS CALLS JH NARY MONO 
           (putF mugF (C (C cape.toNoun DATA) FOL) st.toNoun NARY).map fun NARYU =>
             C (C (C (C (C cape.toNoun DATA) FOL) st.toNoun) (C (A 0) (A 0))) (cacheN NARYU MONO SCCS INL' SURE') := by
   have hcache : cacheN NARY MONO SCCS INL SURE = C NARY (C MONO (C SCCS (C INL SURE))) := rfl
-  rw [hcache, csi_to_final _ _ _ _ _ _ hnary (csi_kids_nocalls _ CODE JETS CALLS JH _ hcalls) (ju_has_kids _)]
+  rw [hcache, csi_to_final _ _ _ _ _ _ hnary (csi_kids_noself _ CODE JETS CALLS JH _ hcalls) (ju_has_kids _)]
   obtain ⟨hlz, hsur⟩ := scc_sur_frag nm hpu h6 nex g1 hrunL cape
   have hsc := hsc_of_sure nex nex.laz.sure hlz cape (sccSur nex cape) hsur
   have hi := inl_gate (C (C cape.toNoun DATA) FOL) CODE (C JETS CALLS) JH NARY MONO SCCS INL SURE INL' nm hpu hinl
@@ -251,7 +299,7 @@ hypotheses of `csi_gate_scc_one_m`, returns `finishLU` of the nomm `n` of
 `csi_gate_scc_one_m`, and crashes when `finishLF` is `none`. -/
 theorem cu_gate_scc_one_m (cape : Cape) (DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE : Noun)
     (hnary : getF mugF (C (C cape.toNoun DATA) FOL) NARY = some (A 0)) (hnmap : IsMap mugF NARY)
-    (hcalls : NoCalls (C (C cape.toNoun DATA) FOL) CALLS)
+    (hcalls : NoSelfCall (C (C cape.toNoun DATA) FOL) CALLS)
     (nm : Nomm) (INL' : Noun) (hinl : InlOK (C (C cape.toNoun DATA) FOL) CODE INL nm INL')
     (hpu : nm.pure = true) (h6 : noSix nm = true) (ht : tenOk nm = true)
     (nex : NextL CSet) (g1 : Gen (TreapMap mugF))
@@ -367,7 +415,7 @@ nothing is baked (`NoBakeOne`), the gate returns the noun of the model:
 other hypotheses speak of the state nouns only. -/
 theorem csi_gate_scc_one_f (cape : Cape) (DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE : Noun)
     (hnary : getF mugF (C (C cape.toNoun DATA) FOL) NARY = some (A 0)) (hnmap : IsMap mugF NARY)
-    (hsmap : IsMap mugF SURE) (hcalls : NoCalls (C (C cape.toNoun DATA) FOL) CALLS)
+    (hsmap : IsMap mugF SURE) (hcalls : NoSelfCall (C (C cape.toNoun DATA) FOL) CALLS)
     (nm : Nomm) (INL' : Noun) (hinl : InlOK (C (C cape.toNoun DATA) FOL) CODE INL nm INL')
     (hpu : nm.pure = true) (h6 : noSix nm = true) (ht : tenOk nm = true)
     (hbake : NoBakeOne nm cape DATA) :
@@ -386,7 +434,7 @@ theorem csi_gate_scc_one_f (cape : Cape) (DATA FOL CODE JETS CALLS JH NARY MONO 
         (cacheN NARY MONO SCCS INL SURE)) compK)) csiBody = none := by
     intro hc
     have hcache : cacheN NARY MONO SCCS INL SURE = C NARY (C MONO (C SCCS (C INL SURE))) := rfl
-    rw [hcache, csi_to_final _ _ _ _ _ _ hnary (csi_kids_nocalls _ CODE JETS CALLS JH _ hcalls) (ju_has_kids _)]
+    rw [hcache, csi_to_final _ _ _ _ _ _ hnary (csi_kids_noself _ CODE JETS CALLS JH _ hcalls) (ju_has_kids _)]
     exact csi_final_one_none _ _ _ _ _ _ _ _ (mem_gate_none cape DATA FOL false (A 0) (A 0)
       (C NARY (C MONO (C SCCS (C INL SURE)))) (A 0) (kidsOne _) (A 0) csiBody _ CODE (C JETS CALLS) JH
       (C NARY (C MONO (C SCCS (C INL SURE)))) nm _ hi hpu h6 ht hc)
@@ -426,7 +474,7 @@ cache]` with the model hypotheses folded in**: under the hypotheses of
 model, and crashes when the model of the SCC is `none`. -/
 theorem cu_gate_scc_one_f (cape : Cape) (DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE : Noun)
     (hnary : getF mugF (C (C cape.toNoun DATA) FOL) NARY = some (A 0)) (hnmap : IsMap mugF NARY)
-    (hsmap : IsMap mugF SURE) (hcalls : NoCalls (C (C cape.toNoun DATA) FOL) CALLS)
+    (hsmap : IsMap mugF SURE) (hcalls : NoSelfCall (C (C cape.toNoun DATA) FOL) CALLS)
     (nm : Nomm) (INL' : Noun) (hinl : InlOK (C (C cape.toNoun DATA) FOL) CODE INL nm INL')
     (hpu : nm.pure = true) (h6 : noSix nm = true) (ht : tenOk nm = true)
     (hbake : NoBakeOne nm cape DATA)

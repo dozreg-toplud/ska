@@ -897,3 +897,14 @@ open Formalization
 #print axioms Compiler.msg_eq
 #print axioms Compiler.mem_prod_old
 #print axioms Compiler.mem_gate_old
+#print axioms Hoon.uni_in_arm
+#print axioms Hoon.int_loop
+#print axioms Hoon.int_in_gate
+#print axioms Hoon.int_uni
+#print axioms Hoon.intP_mor
+#print axioms Hoon.intP_step
+#print axioms Hoon.intP_of_sets
+#print axioms Hoon.int_in
+#print axioms Compiler.noSelfCall_of_noCalls
+#print axioms Compiler.isSet_setOne
+#print axioms Compiler.csi_kids_noself
