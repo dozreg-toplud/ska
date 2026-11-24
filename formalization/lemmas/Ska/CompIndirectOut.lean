@@ -582,6 +582,42 @@ theorem indirect_runN (lib : Lib) {p q : Nomm} (up : UOK (S := S) (Map := Map) l
       · omega
       · have := hned _ e; have := Rm.ext.1; omega⟩) Hout hI htr hs hm G
 
+/-! ## `OutGoal` for `%done` and `%pick` -/
+
+/-- **`OutGoal` for `%done`** from `OutGoal` for `%next (lazy-from-reg r)`
+into a block `[don r]`, which `+simple-next` makes for `%done`. -/
+theorem outGoal_done {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun}
+    {Inv : σ → Prop} {ν : σ → Needs} {K : Nat → Prop} {pro out r b : Nat}
+    (hb : HoonMap.get c.blocks b = some ⟨[], [], Termin.don r⟩)
+    (H : OutGoal lib O c gul Inv ν K pro out (CGoal.next (lazyReg r : Sure S) (jmp0 b))) :
+    OutGoal lib O c gul Inv ν K pro out (CGoal.done : CGoal S) := by
+  intro st regs ti tm p hI htr hp
+  obtain ⟨st', regs', hI', hle, hh, -, e⟩ := (H st regs ti tm p hI htr hp).1 (fitsS_lazyReg r p)
+  refine ⟨Tone.zero p, st', hI', hle, ?_, ToneRel.zero p⟩
+  rw [e, goJ_jmp0 _ _ _ _ hb, execBlob_don']
+  have hr : SkaModel.read r regs' = some p := hh
+  rw [hr]; rfl
+
+/-- **`OutGoal` for `%pick z o`** from `OutGoal` for `%next (lazy-from-reg
+r)` into a block `[brn r z o]`, which `+simple-next` makes for `%pick`. -/
+theorem outGoal_pick {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun}
+    {Inv : σ → Prop} {ν : σ → Needs} {K : Nat → Prop} {pro out r b : Nat} {z o : Jmp}
+    (hb : HoonMap.get c.blocks b = some ⟨[], [], Termin.brn r z o⟩)
+    (H : OutGoal lib O c gul Inv ν K pro out (CGoal.next (lazyReg r : Sure S) (jmp0 b))) :
+    OutGoal lib O c gul Inv ν K pro out (CGoal.pick z o : CGoal S) := by
+  intro st regs ti tm p hI htr hp
+  obtain ⟨st', regs', hI', hle, hh, hk, e⟩ := (H st regs ti tm p hI htr hp).1 (fitsS_lazyReg r p)
+  have hr : SkaModel.read r regs' = some p := hh
+  have E : goJ lib O c gul st regs ti (jmp0 out) =
+      if p = A 0 then goJ lib O c gul st' regs' ti z
+      else if p = A 1 then goJ lib O c gul st' regs' ti o else some (Tone.two ti, st') := by
+    rw [e, goJ_jmp0 _ _ _ _ hb, execBlob_brn, hr]; rfl
+  refine ⟨fun e0 => ⟨st', regs', hI', hle, trivial, hk, by rw [E, if_pos e0]⟩,
+    fun e1 => ⟨st', regs', hI', hle, trivial, hk, by
+      rw [E, if_neg (by rw [e1]; exact fun h => by cases h), if_pos e1]⟩,
+    fun e0 e1 => ⟨Tone.two ti, st', hI', hle, by rw [E, if_neg e0, if_neg e1],
+      ToneRel.two (frames_mono hle htr)⟩⟩
+
 end Comp
 end SkaModel
 end Formalization
