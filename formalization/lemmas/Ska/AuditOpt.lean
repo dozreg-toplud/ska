@@ -158,3 +158,4 @@ open Formalization.SkaModel.Opt
 #print axioms region_keepsG
 #print axioms swB_norm
 #print axioms plain_walk
+#print axioms plain_tree
