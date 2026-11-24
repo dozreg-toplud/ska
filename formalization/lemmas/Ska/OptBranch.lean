@@ -238,6 +238,127 @@ theorem rub_epi {x : Cfg σ Map} {e : List Pole × Termin} (he : rubFin c.blocks
         rfl rfl rfl (by simp [execPole, localPole, hv, hl])) (Steps.refl _)
       simpa [rubBlob] using this
 
+
+/-- A branch that takes a jump does not end the function. -/
+theorem endOf_taken {x : Cfg σ Map} (hp : x.params = []) (hq : x.b.par = []) (hb : x.b.body = [])
+    (ht : (taken x.regs x.b.fin).isSome) : endOf lib O gul x = none := by
+  obtain ⟨lab, ⟨par, body, fin⟩, params, regs, t, st⟩ := x
+  simp only at hp hq hb ht ⊢
+  subst hp hq hb
+  unfold endOf
+  cases fin <;> simp only [taken, Option.isSome_iff_exists] at ht ⊢ <;> try rfl
+  all_goals first
+    | (obtain ⟨_, h⟩ := ht; simp at h; done)
+    | skip
+  rename_i r z o
+  obtain ⟨j, hj⟩ := ht
+  simp only [ne_eq, not_true_eq_false, or_self, if_false]
+  simp only [Option.bind_eq_some_iff] at hj
+  obtain ⟨v, hv, hj⟩ := hj
+  simp only [hv, Option.bind_some]
+  by_cases h0 : v = A 0
+  · simp [h0]
+  · by_cases h1 : v = A 1
+    · simp [h1]
+    · simp [h0, h1] at hj
+
+/-- At the end of a block whose epilogue has run, a jump of the code before
+is matched by one jump of the code after. -/
+theorem rub_jump (hbl : RubBlocks c.blocks c'.blocks) {x : Cfg σ Map} {e : List Pole × Termin} {j : Jmp}
+    {b2 : Blob} (he : rubFin c.blocks x.b.fin = some e) (hq : x.b.par = []) (hb : x.b.body = [])
+    (ht : taken x.regs x.b.fin = some j) (hb2 : HoonMap.get c.blocks j.there = some b2) (lab' : Nat) :
+    ∃ es y', Step lib O c' gul ⟨lab', { x.b with fin := e.2 }, [], x.regs, x.t, x.st⟩ es y' ∧
+      RubRel c.blocks ⟨j.there, b2, j.args, x.regs, x.t, x.st⟩ y' := by
+  obtain ⟨lab, ⟨par, body, fin⟩, params, regs, t, st⟩ := x
+  simp only at he hq hb ht hb2 ⊢
+  subst hq hb
+  rcases rubFin_cases he with rfl | ⟨z, o, nz, hz, ho, hgz, hgo, h2, hf⟩
+  · obtain ⟨e2, he2, hg'⟩ := (hbl j.there).2 b2 hb2
+    exact ⟨_, _, Step.jump rfl rfl rfl ht hg', rfl, rfl, rfl, rfl, e2, he2, Or.inl rfl⟩
+  · have hf' : (∃ s, fin = Termin.clq s z o) ∨ (∃ s, fin = Termin.brz s z o) ∨
+        (∃ l r, fin = Termin.eqq l r z o) ∨ (∃ s, fin = Termin.brn s z o) := by
+      rcases hf with ⟨s, h, -⟩ | ⟨s, h, -⟩ | ⟨l, r, h, -⟩ | ⟨s, h, -⟩
+      · exact Or.inl ⟨s, h⟩
+      · exact Or.inr (Or.inl ⟨s, h⟩)
+      · exact Or.inr (Or.inr (Or.inl ⟨l, r, h⟩))
+      · exact Or.inr (Or.inr (Or.inr ⟨s, h⟩))
+    have hjz : j.args = [] ∧ b2 = nz := by
+      rcases taken_two hf' ht with rfl | rfl
+      · rw [hgz] at hb2; exact ⟨hz, (Option.some.inj hb2).symm⟩
+      · rw [hgo] at hb2; exact ⟨ho, (Option.some.inj hb2).symm⟩
+    obtain ⟨hja, rfl⟩ := hjz
+    obtain ⟨e2, he2, hg'⟩ := (hbl z.there).2 b2 hgz
+    refine ⟨_, _, Step.jump (j := ⟨[], z.there⟩) rfl rfl rfl (by simp [taken, h2]) hg', ?_⟩
+    exact ⟨hja.symm, rfl, rfl, rfl, e2, he2, Or.inl rfl⟩
+
+theorem rubBlob_nil (b : Blob) : rubBlob b ([], b.fin) = b := by
+  obtain ⟨par, body, fin⟩ := b; simp [rubBlob]
+
+/-- **Forward**: a step of the code before is matched by steps after. -/
+theorem rub_fwd_step (hbl : RubBlocks c.blocks c'.blocks) {x y x' : Cfg σ Map} {es : List (Nat × Nat)}
+    (hs : Step lib O c gul x es y) (hr : RubRel c.blocks x x') :
+    ∃ es' y', Steps lib O c' gul x' es' y' ∧ RubRel c.blocks y y' := by
+  obtain ⟨hp', hr', ht', hst', e, he, hblk⟩ := hr
+  obtain ⟨lab', b', params', regs', t', st'⟩ := x'
+  simp only at hp' hr' ht' hst' hblk
+  subst hp' hr' ht' hst'
+  cases hs with
+  | pass hne hR =>
+    rcases hblk with rfl | ⟨hp, hq, -⟩
+    · exact ⟨_, _, Steps.step (Step.pass (x := ⟨lab', rubBlob _ e, _, _, _, _⟩) hne hR) (Steps.refl _),
+        rfl, rfl, rfl, rfl, e, he, Or.inl rfl⟩
+    · exact absurd (Or.elim hne (fun h => h hp) (fun h => h hq)) not_false
+  | @op p rest n R t2 st2 hp hq hb hpole =>
+    rcases hblk with rfl | ⟨-, -, hb', -⟩
+    · refine ⟨_, _, Steps.step (Step.op (x := ⟨lab', rubBlob _ e, _, _, _, _⟩) (rest := rest ++ e.1) hp hq
+        (by simp [rubBlob, hb]) hpole) (Steps.refl _), rfl, rfl, rfl, rfl, e, he, Or.inl ?_⟩
+      simp [rubBlob]
+    · rw [hb] at hb'; cases hb'
+  | jump hp hq hb ht hb2 =>
+    rcases hblk with rfl | ⟨-, -, -, -, rfl⟩
+    · obtain ⟨es2, y', hs2, hr2⟩ := rub_jump (lib := lib) (O := O) (gul := gul) hbl he hq hb ht hb2 lab'
+      have h1 := rub_epi (lib := lib) (O := O) (c' := c') (gul := gul) he hp hq hb (by simp [ht]) lab'
+      rw [hp]
+      exact ⟨_, y', steps_trans h1 (Steps.step hs2 (Steps.refl _)), hr2⟩
+    · obtain ⟨es2, y', hs2, hr2⟩ := rub_jump (lib := lib) (O := O) (gul := gul) hbl he hq hb ht hb2 lab'
+      rw [hp]
+      exact ⟨_, y', Steps.step hs2 (Steps.refl _), hr2⟩
+
+/-- **Forward, at an end.** -/
+theorem rub_fwd_end {x x' : Cfg σ Map} {r : Tone × σ} (he : endOf lib O gul x = some r)
+    (hr : RubRel c.blocks x x') : ∃ es' y', Steps lib O c' gul x' es' y' ∧ endOf lib O gul y' = some r := by
+  obtain ⟨hp', hr', ht', hst', e, hef, hblk⟩ := hr
+  obtain ⟨lab', b', params', regs', t', st'⟩ := x'
+  obtain ⟨lab, ⟨par, body, fin⟩, params, regs, t, st⟩ := x
+  simp only at hp' hr' ht' hst' hblk hef
+  subst params' regs' t' st'
+  refine ⟨[], _, Steps.refl _, ?_⟩
+  rcases hblk with rfl | ⟨hp, hq, hb, ht, rfl⟩
+  · by_cases hpq : params ≠ [] ∨ par ≠ []
+    · simp [endOf, hpq] at he
+    · cases body with
+      | cons p rest =>
+        rw [← he]; rfl
+      | nil =>
+        rcases rubFin_cases hef with rfl | ⟨z, o, nz, -, -, -, -, h2, hf⟩
+        · rw [← he]; rfl
+        · obtain ⟨e1, e2⟩ := e
+          simp only at h2 hf; subst h2
+          simp only [not_or, ne_eq, Decidable.not_not] at hpq
+          obtain ⟨rfl, rfl⟩ := hpq
+          rcases hf with ⟨s, rfl, rfl⟩ | ⟨s, rfl, rfl⟩ | ⟨l, r0, rfl, rfl⟩ | ⟨s, rfl, rfl⟩
+          · simp [endOf] at he
+          · simp [endOf] at he
+          · simp [endOf] at he
+          · simp only [endOf, ne_eq, not_true_eq_false, or_self, if_false, Option.bind_eq_some_iff] at he
+            obtain ⟨v, hv, he⟩ := he
+            split at he
+            · cases he
+            · rename_i hl
+              cases he
+              simp [endOf, rubBlob, execPole, localPole, hv, hl]
+  · rw [endOf_taken (x := ⟨lab, ⟨par, body, fin⟩, params, regs, t, st⟩) hp hq hb ht] at he; cases he
+
 end Sim
 
 end Opt
