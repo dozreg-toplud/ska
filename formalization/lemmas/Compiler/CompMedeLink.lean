@@ -417,5 +417,41 @@ theorem comp_proxy (hc : CompIn ctx) (x : GenRest) (g : Gen (TreapMap mugF)) (r 
   · simp only [h, cgModeNoun, Bool.false_eq_true, ↓reduceIte] at hre
     simp [nock_exec, genNoun, cgModeNoun, h, hD, hD1, hre, dropArm, comp_h110, eqCode_atom, proxy]
 
+/-- `+set-tag` at its door axis. -/
+theorem comp_set_tag_at : slot? 218590 comp.door = some comp.set_tag.arm := by kernel_rfl
+
+/-- The arm `set-tag` builds its gate. -/
+theorem comp_set_tag_arm (d : Noun) : nock d comp.set_tag.arm =
+    some (C comp.set_tag.battery (C (C (A 0) (A 0)) d)) := by
+  nock_open comp.set_tag.arm; simp only [nock_exec]
+
+/-- `+lazy-bound`: `+emit` of a `%hop` to `then.nex`, `+set-tag` of the new
+block, and the next whose lazy need is a bond of the new block to
+`laz.nex`; the `?>` crashes when `then.nex` has arguments, where the model
+is `none`. -/
+theorem comp_lazy_bound (hc : CompIn ctx) (x : GenRest) (g : Gen (TreapMap mugF))
+    (nex : NextL CSet) (region : List Nat) :
+    nock (C lbBat (C (C nex.goal.toNoun (listNoun A region)) (compCore g x ctx))) lbBat
+      = (lazyBound nex region g).map fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  obtain ⟨laz, ⟨args, there⟩⟩ := nex
+  have he := cf_emit (x := x) hc g ⟨[], [], Termin.hop ⟨args, there⟩⟩
+  simp only [Blob.toNoun, listNoun, Termin.toNoun, Tag.hop, Jmp.toNoun] at he
+  have hst := comp_set_tag x hc (cfEmitG ⟨[], [], Termin.hop ⟨args, there⟩⟩ g) g.bo region
+  have hD2 := comp_emit_at
+  have hD3 := comp_set_tag_at
+  simp only [compCore] at hst ⊢
+  generalize comp.door = Dr at hD2 hD3 he hst ⊢
+  nock_open lbBat
+  cases args with
+  | nil =>
+    simp only [listNoun] at he
+    simp [nock_exec, NextL.goal, CGoalL.toNoun, Jmp.toNoun, listNoun, hD2, hD3, comp_emit_arm, he,
+      comp_set_tag_arm, hst, lazyBound, cf_emit_g, setTag, bind, StateT.bind, pure, StateT.pure,
+      Lazy.toNoun, Lazy.forksNoun, Lazy.bondsNoun, Sure.toNoun, Sure.bunt, Need.toNoun, Tag.none,
+      HoonSet.toNoun_empty, jmp0]
+  | cons a rest =>
+    simp only [listNoun] at he
+    simp [nock_exec, NextL.goal, CGoalL.toNoun, Jmp.toNoun, listNoun, hD2, hD3, comp_emit_arm, he,
+      comp_set_tag_arm, hst, lazyBound, cf_emit_g, setTag, bind, StateT.bind]
 end Compiler
 end Formalization
