@@ -2411,7 +2411,12 @@
     =;  ,fol-result
       ::  construct datum
       ::
-      =/  less-code  (app:ca want bus)
+      ::  the code requirement only grows across the passes of a loop: a
+      ::  requirement recomputed alone can circulate forever
+      ::
+      =/  less-code
+        =/  old=cape  ?@(less-code.data | cape.less-code.data)
+        (app:ca (uni:ca want old) bus)
       ::  indi is intersected with the inverse of subject knowledge to track
       ::  only the parts that we actually do not know, not the parts where there
       ::  is an atom where formula look up expected a cell or a denormalized
