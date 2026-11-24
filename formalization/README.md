@@ -177,6 +177,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompRunLink.lean` | The arm `+run` of the door (door axis `2047`) tied to the pill by one kernel fact (`comp_run_at`): the gate's battery `crB` = `[8 [1 crBat] 9 5 0 1]` pushes the battery `crBat` = `[simple-next $]` of the `\|^` core, whose `$` arm `crDol` is the `?-` over the nomm (twelve tests and the last case `%12`; the bodies of `%0`, `%1`, `%7` and of `+simple-next` are written out, the others are read from the pill by `slot?`).  `$` runs on `crSubj` = `[crBat [crB [[mono nomm goal region sup] [comp.door [gen ctx]]]]]` (`nomm` at `58`, `goal` at `118`, `gen` at `62`), and a recursive `$(..)` is `9 5` on that core.  `CompRunAt ctx n goal region g`: `$` on the noun of `n` (`Nomm.toNoun` of `Ska/NommSem.lean`) and of `goal` (`CGoalL.toNoun`) from `genNoun g x` equals `runL n goal region g`, for every `mono`, `sup` and every `x` with `soft` empty (`GenRest.NoSoft`), `x` kept.  Linked: `+simple-next` (`comp_simple_next`, against `simpleNextL`, every goal, `CompIn` only); the case `%0` (`comp_run_n0`, on a fork-free goal `CGoal.toL gl` with no look at `0`, `crLokOk`: `+bomb`, `+simple-next`, `+from`); `%1` (`comp_run_n1`, the same side condition: `%done` emits `[%imm k r]`, `%pick` the branch of `0` or `1` or `(bomb ~)`, `%next` is `+mede`); `%7` (`comp_run_n7`, every goal, given `CompRunAt` of `q` and of `p` on the goal that `q` returns).  The context is fixed by `slot? 7 ctx = some compK`. |
 | `Compiler/CompPastLink.lean` | `+hinted` (arm `96116` of `K`, `hdBat`, `compK_hd`) against `hinted noCode` on every nomm where the model returns (`hd_gate`, by induction on the nomm; the `~+` is `[11 [%memo 1 0] body]`, run through), and `+past` (door axis `7166`, `paBat` = `[6 paTest [[0 12] 0 30] paHi]`, `comp_past_at`) against `pastL noCode`, both branches, over `Lazy.toNoun` (`comp_past`, with the code table at axis `52` of `ctx` and `hinted noCode nom ≠ none`). |
 | `Compiler/CompRunCases.lean` | Cases of `+run` past `%0`, `%1`, `%7`: `%4` (`comp_run_n4`, every goal branch, with `+collapse-lazy-atom` and `lazy-from-reg`, arm `92` of the types core, `ct_lfr_gate`); `%3` (`comp_run_n3`, with `+none-equivalent`, `+forl` and `lazy-from-need`, arm `94` of the types core, `ct_lfn_gate`); `%5` (`comp_run_n5`, the branch `cr5_br` and the tail `cr5_tail`) and `%10` (`comp_run_n10`, `+simple-next`, `+into`, the tail `cr10_tail`), both for pure operands with no `%6` and with the copy side condition `CrCopyOk` on the model's states; the cons case cut into parts (`crc_eq`) and its tail for a `%next` goal (`crc_ntail`); `CompRunAt` to and from `run` on pure nomms with no `%6` (`cr_at_run`, `cr_at_of_run`). |
+| `Compiler/CompRunCons.lean` | The cons case of `+run` linked (`comp_run_cons`), for pure `p` and `q` with no `%6`, on a fork-free goal with no look at `0`: the `=>` that turns `%done` into `[%next (lazy-from-reg r) ~ o]` (`crc_done_step`), the branch `%pick` (`crc_pick`: the block `[%bom ~]`, `q` on `[%next *need-lazy ~ o]`, `+past`, `p`, `+copy`), and `+split` (door axis `1748730`, `crc_split_arm`) with its tail for `%next` (`crc_next`); `+split` returns needs with no look at `0` (`crc_split_lok`, no hypothesis).  The side condition left is `CrcCopy p q gl g`: `CrCopyOk` at the `+copy` of the states the model reaches.  The model with `+past` dropped: `crc_run_next`, `crc_run_pick`, `crc_run_done`. |
+| `Compiler/CompRunAll.lean` | The summary of `+run` (`comp_run_all`): by induction on the nomm, `CompRunAt` for every pure nomm with no `%6` (built from `%0`, `%1`, `%3`, `%4`, `%5`, `%7`, `%10` and cons) on every fork-free goal with no look at `0`, every region and every state, given `slot? 7 ctx = some compK`, `slot? 52 ctx = some cod` and `CrSide n` (the axis of every `%10` is not `0`, and `CrCopyOk` at every `+copy` of `%5`, `%10` and cons, for every fork-free goal with no look at `0` and every state).  The look side condition is discharged: `+into` (`cra_into_lok`, through `gep`), `+copy` (`cra_copy_lok`) and the run (`cra_run_lok`: from a goal with no look at `0`, every run returns a `next` with none). |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`. |
@@ -874,8 +876,44 @@ import only its theorems.  So:
      case: `crKc` is `crcHead` (`crc_eq`), the `=>` that turns `%done` into
      a `%next` goal, the branch `crcPick`, and `+split` (door axis
      `1748730`, `cr_split_at`) followed by `crcNTail`, which is linked
-     (`crc_ntail`); the branch `%pick` and the head are left.  Cases of
-     `+run` linked: `%0`, `%1`, `%3`, `%4`, `%5`, `%7`, `%10`.
+     (`crc_ntail`).
+     L, 2026-11-24 (track A, cons and summary), `Compiler/CompRunCons.lean`,
+     `Compiler/CompRunAll.lean`: the cons case (`comp_run_cons`, pure `p`
+     and `q` with no `%6`, a fork-free goal with no look at `0`): the `=>`
+     for `%done` (`crc_done_step`), the branch `%pick` (`crc_pick`) and
+     `+split` with `crcNTail` (`crc_next`); `+split` returns no look at `0`
+     with no hypothesis (`crc_split_lok`).  Cases of `+run` linked: `%0`,
+     `%1`, `%3`, `%4`, `%5`, `%7`, `%10` and cons; not linked: `%6`, and
+     `%2`, `%11`, `%mean`, `%12` (no model in `runL`).  The summary
+     `comp_run_all`: for every pure nomm with no `%6`, every fork-free goal
+     with no look at `0`, every region and every state, `CompRunAt`, given
+     `CrSide n`.  Side conditions discharged: no look at `0` in what
+     `+split` and `+into` return (`crc_split_lok`, `cra_into_lok`) and in
+     the goal `%7` hands `p` (`cra_run_lok`, the invariant of the model's
+     run).  Left in `CrSide n`: the axis of every `%10` is not `0` (a
+     property of the nomm), and `CrCopyOk` (`cnLt` of both needs at the
+     counter and `cnMeet`) at every `+copy` of `%5`, `%10` and cons.
+     `CrSide` quantifies the copy condition over every fork-free goal with
+     no look at `0` and every state, because the cases' theorems take their
+     recursive calls on every goal of the shape they use (`comp_run_n4`:
+     every `[%next (lazy-from-reg r) ~ o]` and state, `comp_run_n10` and
+     `comp_run_cons`: every fork-free `%next` goal).  So stated it is false
+     for nomms whose copy sees registers of the goal: `cnMeet` fails for the
+     cons `[[0 1] [0 1]]` under `[%next [%both 5 [%this 5] [%this 5]] ~ 0]`
+     (`+split` gives `[%this 5]` twice, `+copy` joins `5` to itself), and
+     `cnLt` fails for `[10 [1 [0 1]] [0 1]]` under `[%next [%this r] ~ o]`
+     with `r` at or above the counter.  The compiler never builds such
+     goals: `tools/hoon/copymeet.sh` finds no `%copy-` print of
+     `+copy-need-make-ops` over the 162 formulas of `thread-a/b/c.hoon` and
+     the 2 of `proxy-dump.hoon` (2026-11-24).  To discharge `CrCopyOk` the
+     theorems of the cases have to take their recursive calls only on goals
+     whose registers are below the counter (`GoalIn` of
+     `Ska/CompBelowRun.lean`) and whose need has no register twice, with a
+     bound on `re` through a run that holds in `%drop` mode too
+     (`run_keeps` assumes `drop = false`): then `cnLt` follows from the
+     bound and `cnMeet` from the disjointness of the needs that the two
+     runs of a `+copy` start from (fresh `rp` and `rq` in `%5`, `hed` and
+     `tel` of `+split`, the donor and recipient of `+into`).
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
@@ -920,9 +958,9 @@ import only its theorems.  So:
      `+emit-cold`, `+past-fork`, `+coerce-ord`,
      `+coerce-soft`, `+need-ord-alloc-regs`, `+coerce-lazy`,
      `+next-lazy-collapse`, `+collapse-shape`, `+to-straight`.  The next
-     links to make: the cons case of `+run` (`crcPick` and `crcHead`, the
-     tail is `crc_ntail`), then the summary over the nomms without `%6`
-     (`Compiler/CompRunCases.lean`); `forkNeedGo`, `+fork-need`,
+     links to make: the restriction of the cases of `+run` to goals below
+     the counter with no register twice, which discharges `CrSide` (see
+     the cons and summary paragraph above); `forkNeedGo`, `+fork-need`,
      `+fork-sure`, `+fork` on `[sure ~ ~]`; then `+walk-lazy` and
      `+copy-lazy` over `Lazy.toNoun` with forks, and `+sect`; then the fork arms
      (`+copy-need-make-ops` has no model of its own: `copyNeed` is its
