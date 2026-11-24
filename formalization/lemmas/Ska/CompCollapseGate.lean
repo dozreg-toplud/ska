@@ -357,6 +357,26 @@ theorem walkLazy_okColl {r o : Nat} (oL : Nat) (l : Lazy S) (g g' : Gen Map)
   walkLazy_okD (ProxyFor.refl r) (fun _ _ _ a b => ProxyFor.trans a b) (fun _ _ h _ hk => ProxyFor.get_lt h hk)
     (collP_mono r) (collapseGate_ok r o) oL l g g' h hd hn
 
+/-- **The ops of the gate, unproxied by the final `cond`, fill the block's
+need from the widened input need** `pair ned (this r)` holding `[s0 v]`:
+the consumer's form of `CollP`, for a final `cond` `cf` that agrees with the
+walk's below its end and has no entry at `r` nor at the registers of the
+block's need. -/
+theorem collP_fillSem {r : Nat} {cond cf : Map (Nat × List Nat)} {lo hi o : Nat} {sur : Sure S}
+    {ops : List Pole} (h : CollP (Map := Map) r cond lo hi o sur ops) (hr : HoonMap.get cf r = Option.none)
+    (hs : ∀ x, NMem sur.ned x → HoonMap.get cf x = Option.none)
+    (hc : ∀ k, k < hi → HoonMap.get cf k = HoonMap.get cond k)
+    (lib : Lib) {σ : Type} (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace)
+    (ned : Need) (lo' : Nat) (s0 : Noun) (v : Nat) :
+    FillSem lib O c gul st t (Need.pair ned (Need.this r)) lo' sur (ops.map (renPole (unproxy cf))) (C s0 (A v))
+      (A v) := by
+  intro R hR
+  obtain ⟨S1, S2⟩ := h (unproxy cf) (by simp [unproxy, hr]) (fun x hx => by simp [unproxy, hs x hx])
+    (fun x hx => by simp only [unproxy, hc x hx]) lib σ O c gul st t R v hR.2
+  exact ⟨fun f => by
+    obtain ⟨R', a, b, k⟩ := S1 f
+    exact ⟨R', a, b, fun x _ hn => k x hn⟩, S2⟩
+
 end Comp
 end SkaModel
 end Formalization

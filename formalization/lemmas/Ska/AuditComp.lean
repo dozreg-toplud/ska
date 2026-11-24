@@ -441,3 +441,4 @@ open Formalization.SkaModel.Comp
 #print axioms walkLazy_okD
 #print axioms collapseGate_ok
 #print axioms walkLazy_okColl
+#print axioms collP_fillSem
