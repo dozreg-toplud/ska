@@ -421,3 +421,6 @@ open Formalization
 #print axioms Compiler.resolve_iff
 #print axioms Compiler.fol_loop_le'
 #print axioms Compiler.fol_loop_iff
+#print axioms Compiler.runRest_ana
+#print axioms Compiler.runRest_K
+#print axioms Compiler.runRest_Ka

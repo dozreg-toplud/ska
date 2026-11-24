@@ -439,5 +439,29 @@ theorem fol_loop_iff (fol : Noun) (sub : Anno) (seat mk : Option Noun) (bc df : 
 
 end
 
+/-! ## The layout of the rest of `+run`'s subject -/
+
+/-- The rest of the trap's subject as `+run` builds it: `[bus [data G_run]]`
+with `G_run = [run_bat [[id index st] K]]` and
+`K = [K_bat [st' [cg_bat [cg_sample ana]]]]`, the core of `+ska-callgraph`
+(`K_bat` its battery, `cg_bat` and `cg_sample` its gate). -/
+def runRest (bus data runBat idn kBat stK cgBat cgS : Noun) : Noun :=
+  C bus (C data (C runBat (C idn (C kBat (C stK (C cgBat (C cgS ana)))))))
+
+theorem runRest_ana (bus data runBat idn kBat stK cgBat cgS : Noun) :
+    slot? 511 (runRest bus data runBat idn kBat stK cgBat cgS) = some ana := by
+  simp [runRest, nock_exec]
+
+theorem runRest_K (bus data runBat idn kBat stK cgBat cgS : Noun) :
+    slot? 31 (runRest bus data runBat idn kBat stK cgBat cgS)
+      = some (C kBat (C stK (C cgBat (C cgS ana)))) := by
+  simp [runRest, nock_exec]
+
+/-- `+analyze` at arm `92` of `K` is the arm at axis `60` of its battery. -/
+theorem runRest_Ka {kBat : Noun} (h : slot? 60 kBat = some ska_analyze.arm) (x : Noun) :
+    slot? 92 (C kBat x) = some ska_analyze.arm := by
+  have e : slot? 92 (C kBat x) = slot? 60 kBat := by simp [nock_exec]
+  rw [e, h]
+
 end Compiler
 end Formalization
