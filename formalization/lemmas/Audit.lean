@@ -88,6 +88,10 @@ import lemmas.Compiler.CompRunCons
 import lemmas.Compiler.CompRunAll
 import lemmas.Compiler.CompUnary
 import lemmas.Compiler.CompKernLink
+import lemmas.Compiler.CompKernNeed
+import lemmas.Compiler.CompKerfLink
+import lemmas.Compiler.CompUnaryEnd
+import lemmas.Compiler.CompUnaryTop
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -673,4 +677,16 @@ open Formalization
 #print axioms Compiler.cu_bunt_at
 #print axioms Compiler.comp_kn_at
 #print axioms Compiler.kernLoop_suf
+#print axioms Compiler.kn_at
+#print axioms Compiler.kn_both
+#print axioms Compiler.comp_kern_need
+#print axioms Compiler.kern_gate
+#print axioms Compiler.comp_kern
+#print axioms Compiler.comp_kerf
+#print axioms Compiler.cu_rp_iff
+#print axioms Compiler.cu_run_kerf
+#print axioms Compiler.comp_ts_at
+#print axioms Compiler.cu_kern_cond
+#print axioms Compiler.cu_cond_empty
+#print axioms Compiler.cu_finish
 #print axioms Compiler.kn_suf_eq
