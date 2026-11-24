@@ -442,6 +442,10 @@ theorem roll_gate_rel {α σ : Type} (pn : α → Noun) (R : Noun → σ → Pro
 
 /-! ## Jars -/
 
+/-- The noun of a jar of labels. -/
+abbrev jarN (m : TreapMap mugF (List Nat)) : Noun := HoonMap.toNoun (listNoun A) m
+
+
 theorem juIn_layer2' : JuIn mugF layer2 :=
   ⟨by.arm_at, in.arm_at, someIn_layer2, gorIn_morIn_layer2.1, gorIn_morIn_layer2.2⟩
 

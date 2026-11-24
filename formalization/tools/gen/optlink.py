@@ -197,6 +197,57 @@ elif WHICH == 'bb':
              ('bbTrap', trap, 'The trap `dfs-buc` of `+bb-topo`.'),
              ('bbBody', body, 'The gate body of `+bb-topo`.'),
              ('bbBunt', bunt, 'Its sample bunt.'), ('bbHint', hint, 'Its `%fast` hint.')]
+elif WHICH == 'rh':
+    bunt, body, hint = opt_arm(4)
+    # body = [7 [0 1] [8 ROLLCALL FLAG]]
+    _, _, b1 = seq(body, 3)
+    _, rollcall, flag = seq(b1, 3)
+    # ROLLCALL = [8 ROLLARM [9 2 [10 [6 [[0 59] [7 [0 3] [8 [1 BUNT] [[1 GATE] [0 1]]]]]] [0 2]]]]
+    _, rolld, rs = seq(rollcall, 3)
+    _, _, ed = seq(rs, 3)
+    _, e6, _ = seq(ed, 3)
+    _, smp = seq(e6, 2)
+    lst, mk = seq(smp, 2)
+    _, _, mk2 = seq(mk, 3)
+    _, gb1, g1, _ = seq(mk2, 4)
+    gate = norm(g1)[2]
+    # GATE = [6 HAS [0 13] [8 [0 12] [8 GOT [8 [1 0] [8 [1 TRAP] [9 2 [0 1]]]]]]]
+    _, has, keep, rest = seq(gate, 4)
+    _, _, r1 = seq(rest, 3)
+    _, got, r2 = seq(r1, 3)
+    _, _, r3 = seq(r2, 3)
+    _, trapq, _ = seq(r3, 3)
+    trap = norm(trapq)[2]
+    # TRAP = [7 [0 1] [6 TESTHOP HOPBR DONE]]
+    _, _, t1 = seq(trap, 3)
+    _, testhop, hopbr, done = seq(t1, 4)
+    # HOPBR = [8 [0 239] [8 GETJA [6 [5 [1 0] [0 2]] [0 0] [6 TEST1 MERGE DONE2]]]]
+    _, _, h1 = seq(hopbr, 3)
+    _, getja, h2 = seq(h1, 3)
+    _, _, _, h3 = seq(h2, 4)
+    _, test1, merge, done2 = seq(h3, 4)
+    # MERGE = [7 [10 [2043 PUTSAW] [0 1]] [8 GOT1 [8 SEG KICK]]]
+    _, edsaw, m1 = seq(merge, 3)
+    _, m2, m3 = seq(m1, 3)
+    got1 = m2
+    _, seg, kick = seq(m3, 3)
+    # SEG = [8 [0 2030] [8 [0 12] [8 [0 58] [8 [1 SEGT] [9 2 [0 1]]]]]]
+    _, _, s1 = seq(seg, 3)
+    _, _, s2 = seq(s1, 3)
+    _, _, s3 = seq(s2, 3)
+    _, segtq, _ = seq(s3, 3)
+    segt = norm(segtq)[2]
+    defs += [('rhSegT', segt, 'The trap of the segment: the moves of the hop\'s arguments in front of the body.'),
+             ('rhSeg', seg, 'The segment of the merged block `b1`.'),
+             ('rhDone', done, '`done`: the put of the block built so far at `o-new`.'),
+             ('rhDone2', done2, '`done` under the pushes of `o1` and `pre-o1`.'),
+             ('rhMerge', merge, 'The merge of `o1`: `saw`, `b1`, the segment and the next turn.'),
+             ('rhGetJa', getja, '`(~(get ja rev) o1)`.'),
+             ('rhTrap', trap, 'The trap of `+remove-hops` that follows the hops from `o-new`.'),
+             ('rhGot', got, '`(~(got by blocks) o)`.'),
+             ('rhGate', gate, 'The gate of the `+roll` over `topo`.'),
+             ('rhBody', body, 'The gate body of `+remove-hops`.'),
+             ('rhBunt', bunt, 'Its sample bunt.'), ('rhHint', hint, 'Its `%fast` hint.')]
 else:
     raise SystemExit('unknown ' + WHICH)
 with open(os.path.join(OUT, WHICH + '.lean'), 'w') as f:

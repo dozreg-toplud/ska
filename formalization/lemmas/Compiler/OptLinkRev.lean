@@ -70,9 +70,6 @@ theorem rev_at : slot? 732 optC = some revArm := by kernel_rfl
 @[nock_exec] theorem rev_arm (d : Noun) : nock d revArm = some (C revBody (C revBunt d)) := by
   unfold revArm revHint; generalize revBody = B; generalize revBunt = U; simp [nock_exec]
 
-/-- The noun of a jar of labels. -/
-abbrev jarN (m : TreapMap mugF (List Nat)) : Noun := HoonMap.toNoun (listNoun A) m
-
 /-- The subject of the gate of the `+rep:by`. -/
 def revG (o : Nat) (v : Blob) (ACC BL TS : Noun) : Noun :=
   C revGate (C (C (C (A o) v.toNoun) ACC) (C revBody (C (C BL TS) optC)))
