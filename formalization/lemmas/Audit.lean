@@ -45,6 +45,8 @@ import lemmas.Compiler.GitMi
 import lemmas.Compiler.HeSock
 import lemmas.Compiler.RecCall
 import lemmas.Compiler.FolLoopLink
+import lemmas.Compiler.FolLoopCall
+import lemmas.Compiler.SoftSpot
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -379,3 +381,10 @@ open Formalization
 #print axioms Compiler.fol_loop_op11d_mean
 #print axioms Compiler.fol_loop_op11d
 #print axioms Compiler.fol_loop_step
+#print axioms Compiler.fol_loop_direct
+#print axioms Compiler.fol_loop_op2
+#print axioms Compiler.fol_loop_step_all
+#print axioms Pill.inlineable.arm_at_ana
+#print axioms Compiler.soft_spot_loop
+#print axioms Compiler.soft_spot_gate
+#print axioms Compiler.softSpotIs_of
