@@ -112,6 +112,8 @@ import lemmas.Compiler.CompSccGate
 import lemmas.Hoon.RollUni
 import lemmas.Compiler.CompInlined
 import lemmas.Compiler.CompShapeCol
+import lemmas.Hoon.IntIn
+import lemmas.Hoon.UniBy
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -854,3 +856,18 @@ open Formalization
 #print axioms Compiler.ic_gate_nofork
 #print axioms Compiler.sc_gate_sure
 #print axioms Compiler.hsc_of_sure
+#print axioms Hoon.int_in_arm
+#print axioms Hoon.int_loop_nil
+#print axioms Hoon.int_in_nil
+#print axioms Hoon.rep_loop_nil
+#print axioms Hoon.rep_gate_one
+#print axioms Hoon.uni_by_loop
+#print axioms Hoon.uni_by_gate
+#print axioms Hoon.uniSpec_kin
+#print axioms Hoon.uniBy_same
+#print axioms Hoon.uniBy_domA
+#print axioms Hoon.uniBy_domB
+#print axioms Hoon.uniBy_step
+#print axioms Hoon.uniByP_of_maps
+#print axioms Hoon.uni_by
+#print axioms Hoon.uni_by_one
