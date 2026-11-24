@@ -138,7 +138,7 @@ computes (`ResIs`), `+register-fast` as `env` says, `+soft-spot` the model
 theorem fol_loop_le (regsNoun : R → Noun) (env : Env R) (hsoft : env.softSpot = softSpotF)
     (memoF : Memo FinMap) (rest : Noun) (hana : slot? 511 rest = some ana)
     (hreg : RegisterFastIs regsNoun env) (hdec : FolDecodes regsNoun rest)
-    (hres : ∀ n, ∃ resP, ResIs regsNoun rest resP ∧ ResBelow (Ana.resolve env memoF n) resP) :
+    (hres : ∀ n, ∃ resP, ResIs regsNoun rest resP ∧ ResBelow (Ana.resolveR env memoF n) resP) :
     ∀ n fol sub seat mk bc df gen r, Ana.folLoop env memoF n fol sub seat mk bc df gen = some r →
       nock (folSubj regsNoun rest fol sub seat mk bc df gen) fol_loop.battery
         = some (folOutNoun regsNoun r) := by
@@ -150,7 +150,7 @@ theorem fol_loop_le (regsNoun : R → Noun) (env : Env R) (hsoft : env.softSpot 
     obtain ⟨resP, hrP, hrB⟩ := hres n
     have hgo := goIs_patch regsNoun rest (Ana.folLoop env memoF n) hdec ih
     have hm := folStep_mono env hrB (goPatch_below regsNoun rest (Ana.folLoop env memoF n))
-      fol sub seat mk bc df gen r (by simpa [Ana.folLoop] using h)
+      fol sub seat mk bc df gen r (by unfold Ana.folLoop at h; exact h)
     rw [fol_loop_step_all' regsNoun env hsoft resP _ rest hgo hana hreg hrP, hm]
     rfl
 
