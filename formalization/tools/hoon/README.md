@@ -60,7 +60,13 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     `lemmas/Ska/Opt*.lean` predict: `+remove-useless-branching` as `rubFin`, `+remove-hops` keeps
                     block `0`, the parameters and only labels of `topo`; on raw code `topo` is ordered and the
                     parameters are distinct; every jump passes the check of `+eval-pass` (`PassOK`) on raw code
-                    and after `+remove-hops`: no failure (2026-11-24)
+                    and after `+remove-hops`: no failure (2026-11-24).  Also over the other formulas here
+                    (`fix.hoon`'s 22, `deadcrash.hoon`'s 9, `proxy-dump.hoon`'s 2; the 28 small ones with
+                    the subject unknown and known, 135 cases in all): `PassOK` and `ParNodup` after
+                    `+remove-empty-middle` alone on raw code (5 cases changed) and after every pass of every
+                    round of `+optimize` replayed pass by pass (194 rounds, 2229 checks, 507 hops with
+                    arguments redirected by `rewrite-hop`), and on the output after `+switch-chains`, which
+                    equals that of `+optimize` on all 135: no failure (2026-11-24)
 * `deadcrash.hoon`  nine formulas whose crashing operand has a dead product (`[7 [0 2] [1 5]]`
                     on an atom and the like): `+eval-top` agrees with `+mock` on all
                     (2026-11-24), so `+remove-dead-code` drops no check there

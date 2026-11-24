@@ -20,9 +20,10 @@ loops have no fuel: the fuel here is the Hoon when it suffices, and `none`
 otherwise (or on a crash).
 
 `optimize_keeps`: if every pass keeps the code at the arguments the driver
-gives it (`DriverHyp`, stated over an invariant `Inv` of the blocks, `topo`
-and `rev` that the caller chooses, meant as `TopoOK` with `rev` the reverse
-CFG), then `optimizeF` keeps the code.  `rub_keeps` discharges the semantic
+gives it (`DriverHyp`, stated over a block invariant `BInv` that every pass
+keeps, meant as `ParNodup` and `PassOK`, and an invariant `TInv` of the
+blocks, `topo` and `rev`, meant as `TopoOK` with `rev` listing the
+predecessors), then `optimizeF` keeps the code on blocks with `BInv`.  `rub_keeps` discharges the semantic
 half of the field `rub`.  Termination of `+optimize` is the named hypothesis
 `OptHalts`: some fuel is enough.  A measure that would prove it: every
 structural pass that reports a change removes a block (`+remove-hops`), turns
@@ -94,24 +95,29 @@ def OptHalts (P : Passes Map) (s : Straight Map) : Prop := ∃ fuel, (optimizeF 
 def KeepsB (bl bl' : Map Blob) : Prop := ∀ c : Straight Map, c.blocks = bl → Keeps c (withBlocks c bl')
 
 /-- **What the driver assumes of the passes**, at the arguments it gives
-them, over an invariant `Inv` of the blocks, `topo` and `rev`. -/
-structure DriverHyp (fuel : Nat) (P : Passes Map) (Inv : Map Blob → List Nat → Map (List Nat) → Prop) :
-    Prop where
-  topo : ∀ bl topo, bbTopo fuel bl = some topo → Inv bl topo (revCfg bl topo)
-  hops : ∀ bl topo rev ch bl', Inv bl topo rev → removeHops fuel bl rev topo = some (ch, bl') →
-    KeepsB bl bl' ∧ (ch = false → Inv bl' topo rev)
-  rub : ∀ bl topo rev ch bl', removeUselessBranching bl = some (ch, bl') →
-    KeepsB bl bl' ∧ (Inv bl topo rev → ch = false → Inv bl' topo rev)
-  middle : ∀ bl topo rev ch bl', removeEmptyMiddle fuel bl = some (ch, bl') →
-    KeepsB bl bl' ∧ (Inv bl topo rev → ch = false → Inv bl' topo rev)
-  alias : ∀ n bl topo rev f bl', Inv bl topo rev → P.alias n bl rev topo = some (f, bl') →
-    KeepsB bl bl' ∧
-      Inv bl' (topo.filter fun o => (HoonMap.get bl' o).isSome)
+them, over two invariants: `BInv` of the blocks alone, which every pass keeps
+whatever its change flag, and `TInv` of the blocks, `topo` and `rev`, which
+`+bb-topo` with `+rev-cfg` makes and which a structural pass needs to keep
+only when it reports no change (the driver then keeps the old `topo` and
+`rev`). -/
+structure DriverHyp (fuel : Nat) (P : Passes Map) (BInv : Map Blob → Prop)
+    (TInv : Map Blob → List Nat → Map (List Nat) → Prop) : Prop where
+  topo : ∀ bl topo, BInv bl → bbTopo fuel bl = some topo → TInv bl topo (revCfg bl topo)
+  hops : ∀ bl topo rev ch bl', BInv bl → TInv bl topo rev → removeHops fuel bl rev topo = some (ch, bl') →
+    KeepsB bl bl' ∧ BInv bl' ∧ (ch = false → TInv bl' topo rev)
+  rub : ∀ bl topo rev ch bl', BInv bl → removeUselessBranching bl = some (ch, bl') →
+    KeepsB bl bl' ∧ BInv bl' ∧ (TInv bl topo rev → ch = false → TInv bl' topo rev)
+  middle : ∀ bl topo rev ch bl', BInv bl → removeEmptyMiddle fuel bl = some (ch, bl') →
+    KeepsB bl bl' ∧ BInv bl' ∧ (TInv bl topo rev → ch = false → TInv bl' topo rev)
+  alias : ∀ n bl topo rev f bl', BInv bl → TInv bl topo rev → P.alias n bl rev topo = some (f, bl') →
+    KeepsB bl bl' ∧ BInv bl' ∧
+      TInv bl' (topo.filter fun o => (HoonMap.get bl' o).isSome)
         (revCfg bl' (topo.filter fun o => (HoonMap.get bl' o).isSome))
-  trim : ∀ bl topo rev bl', Inv bl topo rev → P.trim bl topo rev = some bl' → KeepsB bl bl' ∧ Inv bl' topo rev
-  dead : ∀ bl topo rev bl', Inv bl topo rev → removeDeadCode bl topo.reverse = some bl' →
-    KeepsB bl bl' ∧ Inv bl' topo rev
-  switch : ∀ bl bl', P.switch bl = some bl' → KeepsB bl bl'
+  trim : ∀ bl topo rev bl', BInv bl → TInv bl topo rev → P.trim bl topo rev = some bl' →
+    KeepsB bl bl' ∧ BInv bl' ∧ TInv bl' topo rev
+  dead : ∀ bl topo rev bl', BInv bl → TInv bl topo rev → removeDeadCode bl topo.reverse = some bl' →
+    KeepsB bl bl' ∧ BInv bl' ∧ TInv bl' topo rev
+  switch : ∀ bl bl', BInv bl → P.switch bl = some bl' → KeepsB bl bl'
 
 /-- The semantic half of the field `rub` holds. -/
 theorem rub_keepsB {bl bl' : Map Blob} {ch : Bool} (h : removeUselessBranching bl = some (ch, bl')) :
@@ -124,64 +130,69 @@ theorem KeepsB.trans {bl bl1 bl2 : Map Blob} (h1 : KeepsB bl bl1) (h2 : KeepsB b
 theorem KeepsB.refl (bl : Map Blob) : KeepsB bl bl := by
   intro c hc; subst hc; exact keeps_refl c
 
-variable {fuel : Nat} {P : Passes Map} {Inv : Map Blob → List Nat → Map (List Nat) → Prop}
+variable {fuel : Nat} {P : Passes Map} {BInv : Map Blob → Prop}
+  {TInv : Map Blob → List Nat → Map (List Nat) → Prop}
 
-theorem structLoop_keeps (H : DriverHyp fuel P Inv) : ∀ (n : Nat) (bl : Map Blob) topo rev r,
-    Inv bl topo rev → structLoop fuel n bl topo rev = some r → KeepsB bl r.2.2 ∧ Inv r.2.2 r.1 r.2.1
-  | 0, _, _, _, _, _, h => by cases h
-  | n + 1, bl, topo, rev, r, hi, h => by
+theorem structLoop_keeps (H : DriverHyp fuel P BInv TInv) : ∀ (n : Nat) (bl : Map Blob) topo rev r,
+    BInv bl → TInv bl topo rev → structLoop fuel n bl topo rev = some r →
+      KeepsB bl r.2.2 ∧ BInv r.2.2 ∧ TInv r.2.2 r.1 r.2.1
+  | 0, _, _, _, _, _, _, h => by cases h
+  | n + 1, bl, topo, rev, r, hb, hi, h => by
     simp only [structLoop, Option.bind_eq_some_iff] at h
     obtain ⟨⟨c1, b1⟩, h1, ⟨c2, b2⟩, h2, ⟨c3, b3⟩, h3, h⟩ := h
-    obtain ⟨k1, i1⟩ := H.hops _ _ _ _ _ hi h1
-    obtain ⟨k2, i2⟩ := H.rub b1 topo rev _ _ h2
-    obtain ⟨k3, i3⟩ := H.middle b2 topo rev _ _ h3
+    obtain ⟨k1, j1, i1⟩ := H.hops _ _ _ _ _ hb hi h1
+    obtain ⟨k2, j2, i2⟩ := H.rub b1 topo rev _ _ j1 h2
+    obtain ⟨k3, j3, i3⟩ := H.middle b2 topo rev _ _ j2 h3
     simp only at h
     by_cases hc : (c1 || c2 || c3) = false
     · simp only [hc, Bool.not_false, if_true, Option.some.injEq] at h
       subst h
       simp only [Bool.or_eq_false_iff] at hc
-      exact ⟨k1.trans (k2.trans k3), i3 (i2 (i1 hc.1.1) hc.1.2) hc.2⟩
+      exact ⟨k1.trans (k2.trans k3), j3, i3 (i2 (i1 hc.1.1) hc.1.2) hc.2⟩
     · simp only [Bool.not_eq_false] at hc
       simp only [hc, Bool.not_true, if_false, Bool.false_eq_true] at h
       obtain ⟨topo', ht, h⟩ := Option.bind_eq_some_iff.mp h
-      obtain ⟨k4, i4⟩ := structLoop_keeps H n b3 topo' _ r (H.topo _ _ ht) h
-      exact ⟨k1.trans (k2.trans (k3.trans k4)), i4⟩
+      obtain ⟨k4, j4, i4⟩ := structLoop_keeps H n b3 topo' _ r j3 (H.topo _ _ j3 ht) h
+      exact ⟨k1.trans (k2.trans (k3.trans k4)), j4, i4⟩
 
-theorem optimizeOnce_keeps (H : DriverHyp fuel P Inv) {s : Straight Map} {ch : Bool} {s' : Straight Map}
-    (h : optimizeOnce fuel P s = some (ch, s')) : Keeps s s' := by
+theorem optimizeOnce_keeps (H : DriverHyp fuel P BInv TInv) {s : Straight Map} {ch : Bool} {s' : Straight Map}
+    (hb : BInv s.blocks) (h : optimizeOnce fuel P s = some (ch, s')) : Keeps s s' ∧ BInv s'.blocks := by
   simp only [optimizeOnce, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
   obtain ⟨topo0, ht0, ⟨tp, rv, bs⟩, hs, ⟨fa, ba⟩, ha, bt, htr, bd, hd, ⟨c1, b1⟩, h1, ⟨c2, b2⟩, h2,
     ⟨c3, b3⟩, h3, h⟩ := h
   simp only [Prod.mk.injEq] at h
   obtain ⟨-, rfl⟩ := h
-  obtain ⟨k0, i0⟩ := structLoop_keeps H fuel s.blocks topo0 _ _ (H.topo _ _ ht0) hs
-  obtain ⟨ka, ia⟩ := H.alias _ _ _ _ _ _ i0 ha
-  obtain ⟨kt, it⟩ := H.trim _ _ _ _ ia htr
-  obtain ⟨kd, idd⟩ := H.dead _ _ _ _ it hd
-  obtain ⟨k1, -⟩ := H.hops _ _ _ _ _ idd h1
-  obtain ⟨k2, -⟩ := H.rub b1 [] HoonMap.empty _ _ h2
-  obtain ⟨k3, -⟩ := H.middle b2 [] HoonMap.empty _ _ h3
-  exact (k0.trans (ka.trans (kt.trans (kd.trans (k1.trans (k2.trans k3)))))) s rfl
+  obtain ⟨k0, j0, i0⟩ := structLoop_keeps H fuel s.blocks topo0 _ _ hb (H.topo _ _ hb ht0) hs
+  obtain ⟨ka, ja, ia⟩ := H.alias _ _ _ _ _ _ j0 i0 ha
+  obtain ⟨kt, jt, it⟩ := H.trim _ _ _ _ ja ia htr
+  obtain ⟨kd, jd, idd⟩ := H.dead _ _ _ _ jt it hd
+  obtain ⟨k1, j1, -⟩ := H.hops _ _ _ _ _ jd idd h1
+  obtain ⟨k2, j2, -⟩ := H.rub b1 [] HoonMap.empty _ _ j1 h2
+  obtain ⟨k3, j3, -⟩ := H.middle b2 [] HoonMap.empty _ _ j2 h3
+  exact ⟨(k0.trans (ka.trans (kt.trans (kd.trans (k1.trans (k2.trans k3)))))) s rfl, j3⟩
 
-theorem optLoop_keeps (H : DriverHyp fuel P Inv) : ∀ (n : Nat) (s s' : Straight Map),
-    optLoop fuel P n s = some s' → Keeps s s'
-  | 0, _, _, h => by cases h
-  | n + 1, s, s', h => by
+theorem optLoop_keeps (H : DriverHyp fuel P BInv TInv) : ∀ (n : Nat) (s s' : Straight Map),
+    BInv s.blocks → optLoop fuel P n s = some s' → Keeps s s' ∧ BInv s'.blocks
+  | 0, _, _, _, h => by cases h
+  | n + 1, s, s', hb, h => by
     simp only [optLoop, Option.bind_eq_some_iff] at h
     obtain ⟨⟨ch, s1⟩, h1, h⟩ := h
-    have k1 := optimizeOnce_keeps H h1
+    obtain ⟨k1, j1⟩ := optimizeOnce_keeps H hb h1
     cases ch
     · simp only [Bool.false_eq_true, if_false, Option.some.injEq] at h
-      subst h; exact k1
+      subst h; exact ⟨k1, j1⟩
     · simp only [if_true] at h
-      exact keeps_trans k1 (optLoop_keeps H n s1 s' h)
+      obtain ⟨k2, j2⟩ := optLoop_keeps H n s1 s' j1 h
+      exact ⟨keeps_trans k1 k2, j2⟩
 
-/-- **`+optimize` keeps the code**, given that its passes do. -/
-theorem optimize_keeps (H : DriverHyp fuel P Inv) {s s' : Straight Map} (h : optimizeF fuel P s = some s') :
-    Keeps s s' := by
+/-- **`+optimize` keeps the code**, given that its passes do, on blocks with
+the block invariant. -/
+theorem optimize_keeps (H : DriverHyp fuel P BInv TInv) {s s' : Straight Map} (hb : BInv s.blocks)
+    (h : optimizeF fuel P s = some s') : Keeps s s' := by
   simp only [optimizeF, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
   obtain ⟨s1, h1, bl, hsw, rfl⟩ := h
-  exact keeps_trans (optLoop_keeps H fuel s s1 h1) (H.switch _ _ hsw s1 rfl)
+  obtain ⟨k1, j1⟩ := optLoop_keeps H fuel s s1 hb h1
+  exact keeps_trans k1 (H.switch _ _ j1 hsw s1 rfl)
 
 end
 
