@@ -321,7 +321,7 @@ def switchChains [MapKeys Map] (fuel : Nat) (bl : Map Blob) : Option (Map Blob) 
   (bbTopo fuel bl).bind fun topo =>
   switchWalk bl (revCfg bl topo) fuel topo bl [] (nexOf bl)
 
-/-- **The preservation statement of `+switch-chains`** (open), for the pass
+/-- **The preservation statement of `+switch-chains`**, for the pass
 as a function on blocks: `Keeps` on blocks with `DInv`.  It is the field
 `switch` of `DriverRest`. -/
 def SwitchKeeps (switch : Map Blob → Option (Map Blob)) : Prop :=
@@ -332,7 +332,8 @@ theorem switch_field {switch : Map Blob → Option (Map Blob)} (h : SwitchKeeps 
     ∀ (bl : Map Blob) bl', DInv bl → switch bl = some bl' → KeepsB bl bl' :=
   fun bl bl' hb hs c hc => by subst hc; exact h c bl' hb hs
 
-/-- The statement for the model. -/
+/-- The statement for the model (proved: `switchKeepsM` in
+`OptSwitchWalkAll.lean`). -/
 def SwitchKeepsM [MapKeys Map] (fuel : Nat) : Prop := SwitchKeeps (Map := Map) (switchChains fuel)
 
 end Opt

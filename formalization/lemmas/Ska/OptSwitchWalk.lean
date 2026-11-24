@@ -10,14 +10,8 @@ head `o` (`HoonMap.get bl o`), so where the head's block in `out` is still
 the one of `bl` the step is the same as on `out` alone (`switchTag_out`,
 `switchPlain_out`), which is the form `tag_keeps_of` takes.
 
-Left for the walk (`switchWalk_keeps`, not proved): that the head of a later
-chain still has its block of `bl` in `out` (it is not in `done`, and the
-tree nodes of earlier regions are labels of those regions or fresh labels,
-neither of which is a member of `topo` after it), and `TagHyp` carried from
-`bl` to `out` (the earlier regions are disjoint from the later chain by
-`labs_into`, so the blocks the later chain reads are unchanged, and the
-fields over `Reach out k` need the tree nodes of earlier regions to mention
-only their regions' registers and to jump only to their hits and miss).
+The walk over tagged chains is `switchWalk_tag` (`OptSwitchMulti.lean`), the
+walk over chains of both kinds `switchWalk_all` (`OptSwitchWalkAll.lean`).
 -/
 
 set_option linter.unusedSectionVars false
