@@ -458,3 +458,4 @@ open Formalization.SkaModel.Comp
 #print axioms forl_above
 #print axioms aboveX_n01
 #print axioms aboveX_n3
+#print axioms collRun_n3
