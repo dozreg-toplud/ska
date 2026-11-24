@@ -132,7 +132,67 @@
   ?~  hon  (flop out)
   $(hon t.hon, i +(i), out [[(add 100 i) %u ..ska-poke i.hon] out])
 =.  cases  (weld cases more)
-=|  cnt=[n=@ud bad=@ud cyc=@ud dup=@ud rubch=@ud hopch=@ud pas=@ud pas2=@ud]
+::  TrimBr of lemmas/Ska/OptTrim.lean (brOp, brBody): a stack of open frames
+::  at the start of every block reached from 0, empty at 0, that the body pops
+::  only on top with the key it pushed (a frame without key for a %hde of
+::  %hunk %hand %lose), never pushes a key that is open, and hands alike to
+::  every jump target
+::
+=/  br-key
+  |=  op=pole
+  ^-  (unit [o=? k=*])
+  ?+  op  ~
+    [%hdp ?(%spot %mean) *]  `[& %clue n.op p.op]
+    [%hde ?(%spot %mean) *]  `[| %clue n.op p.op]
+    [%hmp *]                 `[& %defer a.op v.op f.op]
+    [%hme *]                 `[| %defer a.op v.op f.op]
+    [%hcp *]                 `[& %konst n.op f.op]
+    [%hce *]                 `[| %konst n.op f.op]
+  ==
+=/  br-op
+  |=  [g=(list (unit *)) op=pole]
+  ^-  (unit (list (unit *)))
+  =/  h  (br-key op)
+  ?^  h
+    ?:  o.u.h
+      ?^  (find ~[`k.u.h] g)  ~
+      `[`k.u.h g]
+    ?.  ?=([[~ *] *] g)  ~
+    ?.  =(u.i.g k.u.h)  ~
+    `t.g
+  ?+  op  `g
+    [%hdp ?(%hunk %hand %lose) *]  `[~ g]
+    [%hde ?(%hunk %hand %lose) *]
+      ?.  ?=([~ *] g)  ~
+      `t.g
+  ==
+=/  br-body
+  |=  [g=(list (unit *)) l=(list pole)]
+  ^-  (unit (list (unit *)))
+  ?~  l  `g
+  =/  n  (br-op g i.l)
+  ?~  n  ~
+  $(g u.n, l t.l)
+=/  brok
+  |=  bl=(map @uwoo blob)
+  ^-  ?
+  =/  topo  (bb-topo bl)
+  =/  k=(map @uwoo (list (unit *)))  (my [`@uwoo`0 ~]~)
+  |-  ^-  ?
+  ?~  topo  &
+  =/  b  (~(got by bl) i.topo)
+  =/  g0  (~(get by k) i.topo)
+  ?~  g0  |
+  =/  g  (br-body u.g0 body.b)
+  ?~  g  |
+  =/  js  (get-jmps fin.b)
+  |-  ^-  ?
+  ?~  js  ^$(topo t.topo)
+  =/  e  (~(get by k) there.i.js)
+  ?~  e  $(js t.js, k (~(put by k) there.i.js u.g))
+  ?.  =(u.e u.g)  |
+  $(js t.js)
+=|  cnt=[n=@ud bad=@ud cyc=@ud dup=@ud rubch=@ud hopch=@ud pas=@ud pas2=@ud br=@ud]
 =|  rnd=[mid=@ud chk=@ud pas=@ud dup=@ud fin=@ud same=@ud rounds=@ud midch=@ud sub=@ud]
 |-  ^-  @
 ?~  cases
@@ -190,6 +250,8 @@
   ?~  a  &
   !(~(has in (sy par.u.t)) u.a)
 =/  pok=?  (passok bl)
+=/  brraw=?  (brok bl)
+~?  !brraw  [%br-raw-fail nam.i.cases kind.i.cases]
 ::  DownPar of lemmas/Ska/OptDriverTopo.lean: no argument register of a jump
 ::  is a parameter of a block reachable from its target (PassOK is the case
 ::  of the target itself)
@@ -336,6 +398,7 @@
   =.  topo  (skim topo ~(has by blocks.s))
   =.  rev  (rev-cfg blocks.s (sy topo))
   =/  pre-trim  blocks.s
+  ~?  !(brok pre-trim)  [%br-trim-fail nam.i.cases kind.i.cases r]
   =.  blocks.s  (trim-trace-hints blocks.s topo rev)
   ~?  !(trim-shape pre-trim blocks.s)  [%trim-shape-fail nam.i.cases kind.i.cases r]
   ~?  (gth (trim-dropped pre-trim blocks.s) 0)
@@ -386,5 +449,6 @@
 =?  hopch.cnt  -.hop  +(hopch.cnt)
 =?  pas.cnt  !pok  +(pas.cnt)
 =?  pas2.cnt  !pok2  +(pas2.cnt)
+=?  br.cnt  !brraw  +(br.cnt)
 ~&  [nam.i.cases rub=rubok hop=hopok ord=ordered nodup=nodup pass=[pok pok2] ch=[-.rub -.hop] blk=[~(wyt by bl) ~(wyt by +.hop) (lent topo)]]
 $(cases t.cases)

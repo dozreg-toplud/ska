@@ -86,3 +86,8 @@ open Formalization.SkaModel.Opt
 #print axioms dead_keeps
 #print axioms deadKeeps
 #print axioms switch_field
+#print axioms trimBody_uns_mono
+#print axioms brOp_none
+#print axioms trimBody_open
+#print axioms trimBody_append
+#print axioms trimBody_crash
