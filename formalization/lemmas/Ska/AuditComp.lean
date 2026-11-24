@@ -87,6 +87,7 @@ import lemmas.Ska.CompRunOKLCSeven
 import lemmas.Ska.CompCallC
 import lemmas.Ska.CompHypOfFragD
 import lemmas.Ska.CompHypOfFragF
+import lemmas.Ska.CompNCInd
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -927,3 +928,33 @@ open Formalization.SkaModel.Comp
 #print axioms consS7_exampleC
 #print axioms consS7_exampleH
 #print axioms gate_example
+#print axioms LOKC.toS
+#print axioms LOKCS.toBond
+#print axioms LOKCS.wrap
+#print axioms NCOK.weak
+#print axioms hinted_noDirect
+#print axioms lokc_seven_core
+#print axioms lokc_sevenC
+#print axioms lokcs_sevenC
+#print axioms lokcLv_sevenA
+#print axioms jNew_sevenC
+#print axioms jNew_sevenL
+#print axioms runOKL_n00
+#print axioms lokc_n00
+#print axioms lokc_n0all
+#print axioms lokc_indAU
+#print axioms entNew_consAny
+#print axioms annot_atomLeaf
+#print axioms annot_slot1Leaf
+#print axioms entNew_consLeaf
+#print axioms jump_sevenNA
+#print axioms jump_sevenEA
+#print axioms hinted_nc
+#print axioms fragU_of_nc
+#print axioms nc_lv2_shape
+#print axioms ncOK
+#print axioms uokc_of_nc
+#print axioms lokc_of_nc
+#print axioms bondOKC_of_nc
+#print axioms entNew_of_nc
+#print axioms finishLUC_contractNC

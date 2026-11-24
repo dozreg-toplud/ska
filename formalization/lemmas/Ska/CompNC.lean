@@ -205,17 +205,16 @@ t` by the cases of the header.  No shape condition but `bareLitQ` of the
 indirect call's formula part (the `%bare` literal). -/
 inductive NC : Nat → Bool → Nomm → Prop
   | n0 {lv : Nat} {axe : Nat} : NC lv true (Nomm.n0 axe)
-  | n1 {lv : Nat} {k : Noun} : NC lv true (Nomm.n1 k)
-  | n3 {lv : Nat} {t : Bool} {p : Nomm} : lv ≤ 1 → NC lv t p → NC lv t (Nomm.n3 p)
-  | n4 {lv : Nat} {t : Bool} {p : Nomm} : lv ≤ 1 → NC 0 t p → NC lv t (Nomm.n4 p)
-  | n5 {lv : Nat} {t t' : Bool} {p q : Nomm} : lv ≤ 1 → NC 0 t p → NC 0 t' q → NC lv (t && t') (Nomm.n5 p q)
+  | n1 {k : Noun} : NC 0 true (Nomm.n1 k)
   | cons {t t' : Bool} {p q : Nomm} : NC (if q.pure then 0 else 1) t p → NC 0 t' q →
-      (q.pure = false → t' = true) → NC 0 t (Nomm.cons p q)
-  | sevenE {lv : Nat} {t t' : Bool} {p q : Nomm} : NC lv t q → NC 2 t' p → NC lv (t && t') (Nomm.n7 p q)
-  | sevenN {t t' : Bool} {p q : Nomm} : NC 0 t q → NoEntF q → NC 0 t' p → NC 0 (t && t') (Nomm.n7 p q)
+      (q.pure = false → t' = true) → NC 0 true (Nomm.cons p q)
+  | sevenE {lv : Nat} {t t' : Bool} {p q : Nomm} : NC lv t q → NC 2 t' p →
+      ((Nomm.n7 p q).pure = true → FragU (S := S) (Nomm.n7 p q)) →
+      NC lv (t && t' && (!q.pure || noSix q)) (Nomm.n7 p q)
+  | sevenN {t t' : Bool} {p q : Nomm} : NC 0 t q → NoEntF q → NC 0 t' p →
+      ((Nomm.n7 p q).pure = true → FragU (S := S) (Nomm.n7 p q)) → NC 0 (t' && (t || !p.pure)) (Nomm.n7 p q)
   | ind {lv : Nat} {t t' : Bool} {p q : Nomm} : NC 0 t p → NC 0 t' q → bareLitQ q = false →
       NC lv true (Nomm.n2 p q Option.none)
-  | ten {a : Nat} {v q : Nomm} : FragU (S := S) v → FragU (S := S) q → NC 0 true (Nomm.n10 a v q)
   | pure {nm : Nomm} : FragU (S := S) nm → NC 0 false nm
   | down {lv lv' : Nat} {t : Bool} {nm : Nomm} : NC lv t nm → lv' ≤ lv → NC lv' t nm
   | forget {lv : Nat} {nm : Nomm} : NC lv true nm → NC lv false nm
