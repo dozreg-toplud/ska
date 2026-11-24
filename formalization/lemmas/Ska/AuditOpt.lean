@@ -18,6 +18,10 @@ import lemmas.Ska.OptTrimBr
 import lemmas.Ska.OptSwitchWalk
 import lemmas.Ska.OptSwitchMulti
 import lemmas.Ska.OptAlias
+import lemmas.Ska.OptSwitchPlainHyp
+import lemmas.Ska.OptSwitchGen
+import lemmas.Ska.OptSwitchWalkAll
+import lemmas.Ska.OptDriverSwitch
 import lemmas.Ska.OptSwitchSimG
 import lemmas.Ska.OptSwitchPlain
 
@@ -162,3 +166,25 @@ open Formalization.SkaModel.Opt
 #print axioms plain_region
 #print axioms plain_head
 #print axioms plain_keeps_of
+#print axioms plainsOf_rev
+#print axioms plain_head_count
+#print axioms plain_blocks
+#print axioms plabs_sorted
+#print axioms plabs_into
+#print axioms plabs_hits
+#print axioms plainHyp_of
+#print axioms plain_keeps
+#print axioms plain_tree2
+#print axioms gc_disj
+#print axioms tagGC_ok
+#print axioms plainGC_ok
+#print axioms tagHyp_outG
+#print axioms plainHyp_outG
+#print axioms swi_tag_step
+#print axioms swi_plain_step
+#print axioms switchWalk_all
+#print axioms switchChains_keeps
+#print axioms switchKeepsM
+#print axioms switch_fieldT
+#print axioms driverRestT_of
+#print axioms optimize_keeps_restS
