@@ -160,4 +160,51 @@ with open(os.path.join(OUT, 'inlined.lean'), 'w') as f:
         ('inlBunt', norm(ibunt)[2], 'The sample bunt of `+inlined`.'),
         ('inlHint', ihint, 'Its `%fast` hint.'),
     ])
+# +compile-scc-in (arm 2732 of K)
+carm = slot(2732, K)
+_, ccore, chint = seq(carm, 3)
+_, cbunt, cb = seq(ccore, 3)
+cbody = norm(norm(cb[1])[2])
+_, csiLevy, csiHit, csiMiss = seq(cbody, 4)
+_, _, m1 = seq(csiMiss, 3)          # [8 [1 0] M1]
+_, csiKids, m2 = seq(m1, 3)
+_, csiDone, m3 = seq(m2, 3)
+_, memA, m4 = seq(m3, 3)
+_, csiFinalA, m5 = seq(m4, 3)
+_, _, csiDoneCall, csiFix = seq(m5, 4)
+_, fbunt, fb = seq(csiFinalA, 3)
+fbody = norm(norm(fb[1])[2])
+_, fRoll, fRest = seq(fbody, 3)       # [8 ROLL [[0 4] [10 [2 UNI] [0 5]]]]
+fUni = norm(norm(norm(norm(fRest[2])[2])[1])[2])
+# the gate of the roll: [8 PUSH [9 2 [10 [6 [TAP [7 [0 3] [8 BUNT [[1 GATE] [0 1]]]]]] [0 2]]]]
+_, _, rslam = seq(fRoll, 3)
+_, _, r10 = seq(rslam, 3)
+_, r6, _ = seq(r10, 3)
+rsam = norm(norm(r6)[2])
+fTap = norm(rsam[1])
+_, _, rmk = seq(norm(rsam[2]), 3)
+_, fRBunt, rpair = seq(rmk, 3)
+fGate = norm(norm(norm(rpair[1])[2]))
+with open(os.path.join(OUT, 'csi.lean'), 'w') as f:
+    emit(f, [
+        ('memArm', memA, False),
+        ('memBody', mbody, False),
+        ('csiFix', csiFix, 'The fixed point of the shapes (`?.  done`), not run for a lone bell.'),
+        ('csiHit', csiHit, 'The cache hit: the straights from `nary.cache`.'),
+        ('csiLevy', csiLevy, '`(levy ~(tap in scc) ~(has by nary.cache))`.'),
+        ('csiKids', csiKids, '`kids`: the `+rep:in` over `scc` of the callees in `scc`.'),
+        ('csiDone', csiDone, '`done`: `&(?=([* ~ ~] scc) !(~(has ju kids) n.scc n.scc))`.'),
+        ('fGate', fGate, 'The gate of the `+roll` of `final`: `member` on `%done`, then `[+<.r +>.r]`.'),
+        ('fTap', fTap, '`~(tap in scc)` in `final`.'),
+        ('fRBunt', fRBunt, 'The sample bunt of that gate.'),
+        ('fRoll', fRoll, 'The `+roll` of `member` over `~(tap in scc)`.'),
+        ('fUni', fUni, '`(~(uni by nary.c) m)`.'),
+        ('fBody', fbody, 'The body of the gate `final`.'),
+        ('fBunt', norm(fbunt)[2], 'Its sample bunt.'),
+        ('csiFinalA', csiFinalA, 'The formula that builds `final`.'),
+        ('csiDoneCall', csiDoneCall, '`(final | map-local cache)`.'),
+        ('csiBody', cbody, 'The gate body of `+compile-scc-in`.'),
+        ('csiBunt', norm(cbunt)[2], 'Its sample bunt.'),
+        ('csiHint', chint, 'Its `%fast` hint.'),
+    ])
 print('ok')
