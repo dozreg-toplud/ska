@@ -151,4 +151,13 @@ with open(os.path.join(OUT, 'member.lean'), 'w') as f:
         ('memBunt', norm(mbunt)[2], 'Its sample bunt.'),
         ('memHint', mhint, 'Its `%fast` hint.'),
     ])
+# +inlined: the bunt and the hint of its arm (the body stays a slot of the pill)
+iarm = slot(0x5dde, K)
+_, icore, ihint = seq(iarm, 3)
+_, ibunt, _ = seq(icore, 3)
+with open(os.path.join(OUT, 'inlined.lean'), 'w') as f:
+    emit(f, [
+        ('inlBunt', norm(ibunt)[2], 'The sample bunt of `+inlined`.'),
+        ('inlHint', ihint, 'Its `%fast` hint.'),
+    ])
 print('ok')
