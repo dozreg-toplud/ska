@@ -32,7 +32,8 @@ returns, and the two are one SCC.
    side, so `H`'s variant has the bake `[[& |] [[[3 0] 5] 0]]`
    (`bakeok.hoon`'s check: 1 bad pair).
 
-The compiled code is not wrong here: the site lies after a call that never
+Within this poke the compiled code is not wrong (a later poke makes it
+wrong, `VariantCollision.lean`): the site lies after a call that never
 returns, and a live site naming `H`'s code bell knows axis `4` is `[1 7]`, so
 it never provides that bake and `+pick` never sends it to the variant.  What
 fails is the invariant: a variant's code is right on the subjects that fit

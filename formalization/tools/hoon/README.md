@@ -38,3 +38,9 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     the analysis saw as `%void`.  Under the bake (default `fold`) `H`'s site knows axis `4`
                     is `[3 0]`, its code requirement says `[1 7]`: SitesMeet fails at 1 site per pair (strict
                     and at `less.c`), and `H`'s variant has a bake not under its code requirement (2026-11-24)
+* `collide.hoon`    a miscompile (`lemmas/Ska/VariantCollision.lean`): the poke of `bakedrop.hoon`'s first
+                    formula, then `[7 [[1 [[3 0] 5]] (dec 40)] [2 [0 1] [1 H]]]`, whose `H` gets a second code
+                    bell with the same bake, so the live call runs the dead variant's code: `+eval-top` gives
+                    `[%0 7]`, `+mock` `[%2 ~]` (2026-11-24).  `collide0.hoon`: the second formula alone agrees.
+                    `collide-vars.hoon`: after each poke, `H`'s code bells, their variants' bakes and nomms
+                    (two code bells list the one variant, whose nomm is `[7 [0 1] [1 7]]`)
