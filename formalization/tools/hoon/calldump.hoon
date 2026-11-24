@@ -4,7 +4,9 @@
 :: R = [6 [3 [0 3]] [9 2 [10 [3 [0 7]] [0 1]]] [0 3]] recurs on the tail of its sample, so
 :: +inlined keeps the calls of it (a callee that calls itself is never inlined).  The top
 :: function's blocks are those of its whole-subject version (compiled-mono); the callees
-:: listed are the n-ary versions, the top function's among them.
+:: listed are the n-ary versions, the top function's among them, each with its nomm.
+:: %dseq and %dtwo (2026-11-24, twelfth session): two calls in sequence, and two calls in a
+:: cons, the second under an increment.
 =/  r=*  [6 [3 [0 3]] [9 2 [10 [3 [0 7]] [0 1]]] [0 3]]
 =/  cases=(list [nam=@tas sub=* fol=*])
   :~  [%ind [[4 0 1] 5] [2 [0 3] [0 2]]]
@@ -14,6 +16,8 @@
       [%dsix [1 2 3] [6 [3 [0 1]] [8 [1 r] [9 2 [0 1]]] [1 0]]]
       [%dpick [1 2 0] [6 [8 [1 r] [9 2 [0 1]]] [1 0] [1 1]]]
       [%drop [1 2 3] [7 [8 [1 r] [9 2 [0 1]]] [1 5]]]
+      [%dseq [1 2 3] [7 [8 [1 r] [9 2 [0 1]]] [8 [1 r] [9 2 [0 1]]]]]
+      [%dtwo [1 2 3] [[8 [1 r] [9 2 [0 1]]] [4 [8 [1 r] [9 2 [0 1]]]]]]
   ==
 |-  ^-  @
 ?~  cases  0
@@ -40,7 +44,8 @@
 =/  dum
   %+  turn  cal
   |=  [b=bell s=straight]
-  ~&  [%callee fol=fol.b need=need.s]
+  =/  cn  (~(get by code.long-ska.state) b)
+  ~&  [%callee fol=fol.b need=need.s nomm=?~(cn ~ `nomm.u.cn)]
   =/  cb  (sort ~(tap by blocks.s) |=([a=[k=@ *] b=[k=@ *]] (lth k.a k.b)))
   %+  turn  cb
   |=  x=[@ blob]
