@@ -1,5 +1,6 @@
 import lemmas.Ska.CompN5N
 import lemmas.Ska.CompN10N
+import lemmas.Ska.CompFromRun
 
 /-!
 # `FragX`: `FragM` with cons, `%5` and `%10`
@@ -172,6 +173,7 @@ inductive FragX : Nomm → Prop
   | cons {p q : Nomm} : FragX p → FragX q → FragX (Nomm.cons p q)
   | five {p q : Nomm} : FragX p → FragX q → FragX (Nomm.n5 p q)
   | ten {a : Nat} {v q : Nomm} : FragX v → FragX q → FragX (Nomm.n10 a v q)
+  | sevenFrom {axe : Nat} {q : Nomm} : 2 ≤ axe → FragX q → FragX (Nomm.n7 (Nomm.n0 axe) q)
 
 theorem fragX_pure {nm : Nomm} (h : FragX (S := S) nm) : nm.pure = true := by
   induction h with
@@ -183,6 +185,7 @@ theorem fragX_pure {nm : Nomm} (h : FragX (S := S) nm) : nm.pure = true := by
   | cons _ _ ihp ihq => simp only [Nomm.pure, ihp, ihq, Bool.and_self]
   | five _ _ ihp ihq => simp only [Nomm.pure, ihp, ihq, Bool.and_self]
   | ten _ _ ihv ihq => simp only [Nomm.pure, ihv, ihq, Bool.and_self]
+  | sevenFrom _ _ ih => simp only [Nomm.pure, ih, Bool.and_self]
 
 theorem fragX_of_fragM {nm : Nomm} (h : FragM (S := S) nm) : FragX (S := S) nm := by
   induction h with
@@ -411,6 +414,10 @@ theorem runX_clean {nm : Nomm} (hf : FragX (S := S) nm) : CleanA S Map nm := by
         exact ⟨lazyReg _, _, hs.1.symm, trivial⟩
     obtain ⟨sur, th, rfl, hcl⟩ := hn
     exact clean_n10Body ihv ihq hvp hqp hcl h
+  | @sevenFrom axe q ha _ ihq =>
+    intro goal region g0 g1 nex hc h
+    obtain ⟨nx, laz', h1, hl, rfl⟩ := runL_seven_from ha h
+    exact clean_fromSure (fromL_sure hl) (ihq hc h1)
 
 /-! ## The run relations and the top theorems on `FragX` -/
 
@@ -470,6 +477,18 @@ theorem runX_ok (lib : Lib) {nm : Nomm} (hf : FragX (S := S) nm) :
     exact ⟨runOKP_n10D lib ihv.2.1 ihq.2.1 cv cq (fragX_pure hv) (fragX_pure hq),
       runOKN_n10 lib ihv.2.1 ihq.2.1 cv cq (fragX_pure hv) (fragX_pure hq),
       fun z o _ _ => runOKP_n10P lib ihv.2.1 ihq.2.1 cv cq (fragX_pure hv) (fragX_pure hq) z o⟩
+  | @sevenFrom axe q ha _ ihq =>
+    exact ⟨fun hg hj hcount b0 d0 hu h => by
+        obtain ⟨nx, laz', h1, hl, rfl⟩ := runL_seven_from ha h
+        exact (runOKG_from (ihq.1 hg hj (by simp only [sixCount] at hcount; omega) b0 d0 hu h1).toG hl).toP hg,
+      fun hj hth hok hcl hcount b0 d0 hu h => by
+        obtain ⟨nx, laz', h1, hl, rfl⟩ := runL_seven_from ha h
+        exact (runOKG_from (ihq.2.1 hj hth hok hcl (by simp only [sixCount] at hcount; omega) b0 d0 hu h1).toG
+          hl).toN,
+      fun z o hz ho _ _ _ _ hg hj hcount b0 d0 hu h => by
+        obtain ⟨nx, laz', h1, hl, rfl⟩ := runL_seven_from ha h
+        exact (runOKG_from (ihq.2.2 z o hz ho hg hj (by simp only [sixCount] at hcount; omega) b0 d0 hu h1).toG
+          hl).toP hg⟩
 
 /-- A cons whose head is a `%6`: `[[6 [0 2] [0 3] [0 1]] [0 1]]`. -/
 example : FragX (S := S) (Nomm.cons (Nomm.n6 (Nomm.n0 2) (Nomm.n0 3) (Nomm.n0 1)) (Nomm.n0 1)) :=
@@ -485,6 +504,12 @@ example : FragX (S := S) (Nomm.n5 (Nomm.n6 (Nomm.n0 2) (Nomm.n1 (A 0)) (Nomm.n1 
 example : FragX (S := S) (Nomm.n10 2 (Nomm.n6 (Nomm.n0 6) (Nomm.n0 7) (Nomm.n1 (A 0))) (Nomm.n0 1)) :=
   FragX.ten (FragX.six (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial))
     (FragX.frag fun _ => trivial)
+
+/-- A `%6` under a `%0` of `%7`, whose `%0` runs for a need with forks:
+`[7 [0 6] [6 [0 2] [0 3] [0 1]]]`. -/
+example : FragX (S := S) (Nomm.n7 (Nomm.n0 6) (Nomm.n6 (Nomm.n0 2) (Nomm.n0 3) (Nomm.n0 1))) :=
+  FragX.sevenFrom (by decide)
+    (FragX.six (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial))
 
 /-- **The final pass meets the contract on `FragX`**, when the nomm has at
 most 255 `%6`, nothing is baked and the bell's cape has no `[| |]`. -/
