@@ -81,6 +81,7 @@ import lemmas.Ska.CompConsCallB
 import lemmas.Ska.CompConsCallWrap
 import lemmas.Ska.CompHypOfCons
 import lemmas.Ska.CompConsCallTopB
+import lemmas.Ska.CompHypOfUOKC
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -763,3 +764,20 @@ open Formalization.SkaModel.Comp
 #print axioms Formalization.SkaModel.PokeM.rawMono_consU
 #print axioms Formalization.SkaModel.PokeM.rawMono_fragUCC
 #print axioms Formalization.SkaModel.PokeM.compHyp_of_fragCC
+#print axioms uokc_of_uok
+#print axioms okc_indirect
+#print axioms uokc_indirect
+#print axioms UOKC.wrap
+#print axioms finishLUC_contractG
+#print axioms consNC_okF
+#print axioms necC_consH
+#print axioms consGH_runN
+#print axioms consGH_runD
+#print axioms uokc_consH
+#print axioms uokc_of_fragC
+#print axioms uokc_of_fragUC
+#print axioms finishLUC_contractUC
+#print axioms uokc_example2
+#print axioms Formalization.SkaModel.PokeM.rawMono_fragUCG
+#print axioms Formalization.SkaModel.PokeM.fragUCCM_sub
+#print axioms Formalization.SkaModel.PokeM.compHyp_of_fragUCG
