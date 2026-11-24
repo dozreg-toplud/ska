@@ -14,7 +14,11 @@ The body after of a head `k` is `gBody D E k`: the ops of the body before
 that `D k` keeps, then `E k`.  A dropped op is an `%imm` into a register of
 `Z` (`RegionHypG.drop`), so the code before runs it alone, and the relation
 lets it run ahead: `SwG` holds only where the next op of the code before (if
-it has no parameters to pass) is one the code after keeps.  The head's end
+it has no parameters to pass) is one the code after keeps, and it records
+that a dropped `%imm n r` already run left `n` in `r` (the kept ops do not
+mention `Z`, and two dropped ops into one register of a head put the same
+constant, `RegionHypG.dropU`), so the macro step knows the constant the head's
+end compares with.  The head's end
 before, and the appended ops and end after, are the business of the macro
 step (`HeadStepG`), which starts at the end of the head's body before, as
 `HeadStep` does, and is given that the reads of the code before there read
@@ -55,6 +59,10 @@ theorem gBody_off {D : Nat → Pole → Bool} {E : Nat → List Pole} {k : Nat} 
   | [] => by simp [gBody, hE]
   | p :: rest => by rw [gBody_keep (hD p), gBody_off hD hE rest]
 
+/-- An op writes only registers it mentions. -/
+theorem poleWr_regs {p : Pole} {r : Nat} (h : r ∈ Comp.poleWr p) : r ∈ poleRegs p := by
+  cases p <;> simp_all [Comp.poleWr, poleRegs]
+
 /-- **What the replacement of a region must meet**, heads with a new body. -/
 structure RegionHypG (M M' : Map Blob) (I H Z : Nat → Prop) (D : Nat → Pole → Bool) (E : Nat → List Pole) :
     Prop where
@@ -63,6 +71,8 @@ structure RegionHypG (M M' : Map Blob) (I H Z : Nat → Prop) (D : Nat → Pole 
     b'.par = b.par ∧ b'.body = gBody D E k b.body
   off : ∀ k, ¬ H k → (∀ p, D k p = false) ∧ E k = []
   drop : ∀ k p, D k p = true → ∃ n r, p = Pole.imm n r ∧ Z r
+  dropU : ∀ k b, H k → HoonMap.get M k = some b → ∀ n r n', Pole.imm n r ∈ b.body → Pole.imm n' r ∈ b.body →
+    D k (Pole.imm n r) = true → D k (Pole.imm n' r) = true → n = n'
   noI : ∀ k b j, Reach M k → ¬ I k → ¬ H k → HoonMap.get M k = some b → j ∈ getJmps b.fin → ¬ I j.there
   ment : ∀ k b, Reach M k → ¬ I k → ¬ H k → HoonMap.get M k = some b → ∀ r ∈ blobMentions b, ¬ Z r
   mentH : ∀ k b, Reach M k → H k → HoonMap.get M k = some b →
@@ -81,7 +91,9 @@ def SwB (M M' : Map Blob) (I Z : Nat → Prop) (D : Nat → Pole → Bool) (E : 
     (x x' : Cfg σ Map) : Prop :=
   x'.lab = x.lab ∧ x'.params = x.params ∧ x'.t = x.t ∧ x'.st = x.st ∧ Reach M x.lab ∧ ¬ I x.lab ∧
   (∃ b0 b0', HoonMap.get M x.lab = some b0 ∧ HoonMap.get M' x.lab = some b0' ∧ x.b.fin = b0.fin ∧
-    (x.b.par = b0.par ∨ x.b.par = []) ∧ (∃ pre, b0.body = pre ++ x.b.body) ∧
+    (x.b.par = b0.par ∨ x.b.par = []) ∧
+    (∃ pre, b0.body = pre ++ x.b.body ∧
+      ∀ n r, Pole.imm n r ∈ pre → D x.lab (Pole.imm n r) = true → read r x.regs = some n) ∧
     x'.b = ⟨x.b.par, gBody D E x.lab x.b.body, b0'.fin⟩) ∧
   (∀ k, some k ∈ x.params → ¬ Z k) ∧ Agr (fun k => ¬ Z k) x.regs x'.regs
 
@@ -154,7 +166,7 @@ head's end, are off `Z`. -/
 theorem swB_ment {x x' : Cfg σ Map} (hA : SwB c.blocks c'.blocks I Z D E x x') :
     (∀ r ∈ x.b.par, ¬ Z r) ∧ (∀ p ∈ x.b.body, D x.lab p = false → ∀ r ∈ poleRegs p, ¬ Z r) ∧
       (¬ H x.lab → ∀ r ∈ finRegs x.b.fin, ¬ Z r) := by
-  obtain ⟨-, -, -, -, hreach, hI, ⟨b0, b0', hb0, -, hf, hpar, ⟨pre, hpre⟩, -⟩, -, -⟩ := hA
+  obtain ⟨-, -, -, -, hreach, hI, ⟨b0, b0', hb0, -, hf, hpar, ⟨pre, hpre, -⟩, -⟩, -, -⟩ := hA
   have hsub : ∀ p ∈ x.b.body, p ∈ b0.body := fun p hp => by rw [hpre]; exact List.mem_append_right _ hp
   have hpar' : ∀ r ∈ x.b.par, r ∈ b0.par := by
     rcases hpar with e | e <;> rw [e]
@@ -179,7 +191,7 @@ theorem swB_jump {lab : Nat} {b0 b2 : Blob} {j : Jmp} {R R' : Map (Option Noun)}
     (hag : Agr (fun k => ¬ Z k) R R') :
     SwB c.blocks c'.blocks I Z D E (⟨j.there, b2, j.args, R, t, st⟩ : Cfg σ Map) ⟨j.there, b2', j.args, R', t, st⟩ :=
   ⟨rfl, rfl, rfl, rfl, Reach.jump hreach hb0 hj, hI2,
-    ⟨b2, b2', hb2, hb2', rfl, Or.inl rfl, ⟨[], rfl⟩, he⟩,
+    ⟨b2, b2', hb2, hb2', rfl, Or.inl rfl, ⟨[], rfl, fun _ _ h => absurd h List.not_mem_nil⟩, he⟩,
     fun k hk => hR.ment lab b0 hreach hI hh hb0 k (mentions_fin b0 k (jmp_finRegs hj hk)), hag⟩
 
 /-- After a pass. -/
@@ -188,9 +200,16 @@ theorem swB_pass {x x' : Cfg σ Map} (hA : SwB c.blocks c'.blocks I Z D E x x') 
     (hpar : ∀ k ∈ x.b.par, HoonMap.get R k = HoonMap.get R' k) :
     SwB c.blocks c'.blocks I Z D E { x with b := { x.b with par := [] }, params := [], regs := R }
       { x' with b := { x'.b with par := [] }, params := [], regs := R' } := by
-  obtain ⟨hl, hpe, ht, hst, hreach, hI, ⟨b0, b0', hb0, hb0', hf, -, hpre, hb'⟩, hz, hag⟩ := hA
-  refine ⟨hl, rfl, ht, hst, hreach, hI, ⟨b0, b0', hb0, hb0', hf, Or.inr rfl, hpre, by rw [hb']⟩,
-    fun k hk => by simp at hk, fun k hk => ?_⟩
+  have hM1 := (swB_ment hR hA).1
+  obtain ⟨hl, hpe, ht, hst, hreach, hI, ⟨b0, b0', hb0, hb0', hf, -, ⟨pre, hpre, himm⟩, hb'⟩, hz, hag⟩ := hA
+  refine ⟨hl, rfl, ht, hst, hreach, hI, ⟨b0, b0', hb0, hb0', hf, Or.inr rfl, ⟨pre, hpre, fun n r hn hd => ?_⟩,
+    by rw [hb']⟩, fun k hk => by simp at hk, fun k hk => ?_⟩
+  · obtain ⟨_, _, e, hzr⟩ := hR.drop _ _ hd
+    simp only [Pole.imm.injEq] at e
+    obtain ⟨-, rfl⟩ := e
+    have hrp : r ∉ x.b.par := fun h => hM1 r h hzr
+    show read r R = some n
+    unfold read; rw [Comp.evalPassLoop_frame _ _ _ _ hR1 r hrp]; exact himm n r hn hd
   by_cases hkp : k ∈ x.b.par
   · exact hpar k hkp
   · rw [Comp.evalPassLoop_frame _ _ _ _ hR1 k hkp, Comp.evalPassLoop_frame _ _ _ _ hR1' k hkp]
@@ -199,12 +218,21 @@ theorem swB_pass {x x' : Cfg σ Map} (hA : SwB c.blocks c'.blocks I Z D E x x') 
 /-- After a kept op on both sides. -/
 theorem swB_op {x x' : Cfg σ Map} (hA : SwB c.blocks c'.blocks I Z D E x x') {p : Pole} {rest : List Pole}
     (hb : x.b.body = p :: rest) (_hd : D x.lab p = false) {R R' : Map (Option Noun)} {t2 : Trace} {st2 : σ}
-    (hag2 : Agr (fun k => ¬ Z k) R R') :
+    (hag2 : Agr (fun k => ¬ Z k) R R') (hfr : ∀ k, Z k → HoonMap.get R k = HoonMap.get x.regs k) :
     SwB c.blocks c'.blocks I Z D E { x with b := { x.b with body := rest }, regs := R, t := t2, st := st2 }
       { x' with b := { x'.b with body := gBody D E x.lab rest }, regs := R', t := t2, st := st2 } := by
-  obtain ⟨hl, hpe, ht, hst, hreach, hI, ⟨b0, b0', hb0, hb0', hf, hpar, ⟨pre, hpre⟩, hb'⟩, hz, hag⟩ := hA
-  refine ⟨hl, hpe, rfl, rfl, hreach, hI, ⟨b0, b0', hb0, hb0', hf, hpar, ⟨pre ++ [p], ?_⟩, by rw [hb']⟩, hz, hag2⟩
-  rw [hpre, hb]; simp
+  obtain ⟨hl, hpe, ht, hst, hreach, hI, ⟨b0, b0', hb0, hb0', hf, hpar, ⟨pre, hpre, himm⟩, hb'⟩, hz, hag⟩ := hA
+  refine ⟨hl, hpe, rfl, rfl, hreach, hI, ⟨b0, b0', hb0, hb0', hf, hpar, ⟨pre ++ [p], ?_, fun n r hn hd => ?_⟩,
+    by rw [hb']⟩, hz, hag2⟩
+  · rw [hpre, hb]; simp
+  · obtain ⟨_, _, e, hzr⟩ := hR.drop _ _ hd
+    simp only [Pole.imm.injEq] at e
+    obtain ⟨-, rfl⟩ := e
+    show read r R = some n
+    unfold read; rw [hfr r hzr]
+    rcases List.mem_append.mp hn with hn | hn
+    · exact himm n r hn hd
+    · simp only [List.mem_singleton] at hn; subst hn; rw [_hd] at hd; cases hd
 
 /-- The body after of a remaining block. -/
 theorem swB_body {x x' : Cfg σ Map} (hA : SwB c.blocks c'.blocks I Z D E x x') :
@@ -227,12 +255,25 @@ theorem swB_norm : ∀ (n : Nat) (x x' : Cfg σ Map), x.b.body.length = n → Sw
           obtain ⟨nn, r, rfl, hzr⟩ := hR.drop _ _ hd
           have s1 := Step.op (lib := lib) (O := O) (c := c) (gul := gul) (x := x) hp hq hbd
             (execPole_imm lib O gul x.st nn r x.regs x.t)
-          obtain ⟨hl, hpe, ht, hst, hreach, hI, ⟨b0, b0', hb0, hb0', hf, hpar, ⟨pre, hpre⟩, hb'⟩, hz, hag⟩ := hA
+          have hhd : H x.lab := Classical.byContradiction fun hh => by rw [(hR.off _ hh).1] at hd; cases hd
+          obtain ⟨hl, hpe, ht, hst, hreach, hI, ⟨b0, b0', hb0, hb0', hf, hpar, ⟨pre, hpre, himm⟩, hb'⟩, hz, hag⟩ := hA
           have hA2 : SwB c.blocks c'.blocks I Z D E
               { x with b := { x.b with body := rest }, regs := store r nn x.regs, t := x.t, st := x.st } x' := by
-            refine ⟨hl, hpe, ht, hst, hreach, hI, ⟨b0, b0', hb0, hb0', hf, hpar, ⟨pre ++ [Pole.imm nn r], ?_⟩, ?_⟩,
-              hz, fun k hk => ?_⟩
+            refine ⟨hl, hpe, ht, hst, hreach, hI, ⟨b0, b0', hb0, hb0', hf, hpar, ⟨pre ++ [Pole.imm nn r], ?_,
+              fun n' r' hn hd' => ?_⟩, ?_⟩, hz, fun k hk => ?_⟩
             · rw [hpre, hbd]; simp
+            · show read r' (store r nn x.regs) = some n'
+              have hin : ∀ q, q ∈ pre ++ [Pole.imm nn r] → q ∈ b0.body := fun q hq => by
+                rw [hpre, hbd]; rcases List.mem_append.mp hq with h | h
+                · exact List.mem_append_left _ h
+                · simp only [List.mem_singleton] at h; subst h; simp
+              by_cases hr' : r' = r
+              · subst hr'
+                rw [read_store_self, hR.dropU _ b0 hhd hb0 nn r' n' (hin _ (by simp)) (hin _ hn) hd hd']
+              · rw [read_store_other hr']
+                rcases List.mem_append.mp hn with hn | hn
+                · exact himm n' r' hn hd'
+                · simp only [List.mem_singleton, Pole.imm.injEq] at hn; exact absurd hn.2 hr'
             · rw [hb', hbd, gBody_drop hd]
             · have hkr : k ≠ r := fun e => hk (e ▸ hzr)
               rw [get_store_ne hkr]; exact hag k hk
@@ -400,7 +441,8 @@ theorem swG_fwd {x y x' : Cfg σ Map} {e : List (Nat × Nat)} (hs : Step lib O c
     have hbd' : x'.b.body = p :: gBody D E x.lab rest := by rw [hbody, hbd, gBody_keep hd]
     refine ⟨_, _, Steps.step (Step.op (by rw [hpe]; exact hp) (by rw [hparx]; exact hq) hbd'
       (by rw [hst, ht]; exact hR2')) (Steps.refl _), swB_rg hR ?_⟩
-    exact swB_op hR hB0 hbd hd hag2
+    exact swB_op hR hB0 hbd hd hag2 (fun k hk => Comp.execPole_frame lib O gul hpole k
+      (fun hw => hM2 p (by rw [hbd]; exact List.mem_cons_self) hd k (poleWr_regs hw) hk))
   | @jump j b2 hp hq hbd htk hb2 =>
     by_cases hh : H x.lab
     · obtain ⟨xT, x'T, es, hT, hg, hAT, hlT, -⟩ := HS x x' ⟨hB0, hN⟩ hh hp hq hbd hok.here
@@ -468,6 +510,8 @@ theorem swG_bwd {x x' y' : Cfg σ Map} {e : List (Nat × Nat)} (hs : Step lib O 
       obtain ⟨R2, hR2, hag2⟩ := PAg.bwd (execPole_agr lib O gul x.st p x.t hag
         (fun k hk => hM2 p (by rw [hxb]; exact List.mem_cons_self) hd k hk)) hpole
       obtain ⟨es2, y, hs2, hG2⟩ := swB_toG (lib := lib) (O := O) (gul := gul) hR (swB_op hR hB0 hxb hd hag2
+        (fun k hk => Comp.execPole_frame lib O gul hR2 k
+          (fun hw => hM2 p (by rw [hxb]; exact List.mem_cons_self) hd k (poleWr_regs hw) hk))
         (t2 := t2) (st2 := st2))
       refine ⟨_, _, Steps.step (Step.op hp0 hq0 hxb hR2) hs2, _, _, _, Steps.refl _, GoodTo.here _, ?_⟩
       have e1 : ({ x' with b := { x'.b with body := gBody D E x.lab rest }, regs := R2', t := t2, st := st2 } :
@@ -599,7 +643,8 @@ theorem region_keepsG (c : Straight Map) (M' : Map Blob) {I H Z : Nat → Prop} 
       SwRG lib O gul c (withBlocks c M') I Z D E (⟨0, b0, [], regsOf vals, t, st⟩ : Cfg σ Map)
         ⟨0, b0', [], regsOf vals, t, st⟩ := by
     intro b0 b0' hb0 hb0' he
-    exact swB_rg hR' ⟨rfl, rfl, rfl, rfl, Reach.zero, hR.zero, ⟨b0, b0', hb0, hb0', rfl, Or.inl rfl, ⟨[], rfl⟩, he⟩,
+    exact swB_rg hR' ⟨rfl, rfl, rfl, rfl, Reach.zero, hR.zero, ⟨b0, b0', hb0, hb0', rfl, Or.inl rfl,
+      ⟨[], rfl, fun _ _ h => absurd h List.not_mem_nil⟩, he⟩,
       fun k hk => by simp at hk, fun _ _ => rfl⟩
   have back : ∀ es' y', Path.FromEntry (lib := lib) (O := O) (c := withBlocks c M') (gul := gul) st vals t es' y' →
       ∃ b0 es y, HoonMap.get c.blocks 0 = some b0 ∧ Path.Steps lib O c gul ⟨0, b0, [], regsOf vals, t, st⟩ es y ∧
