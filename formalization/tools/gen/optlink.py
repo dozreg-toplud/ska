@@ -143,7 +143,27 @@ elif WHICH == 'rdc':
              ('rdcBunt', bunt, 'Its sample bunt.'), ('rdcHint', hint, 'Its `%fast` hint.')]
 elif WHICH == 'rev':
     bunt, body, hint = opt_arm(732)
-    defs += [('revBody', body, 'The gate body of `+rev-cfg`.'),
+    # body = [8 REPDOOR [9 2 [10 [6 [7 [0 3] [8 [1 GB] [[1 GATE] [0 1]]]]] [0 2]]]]
+    _, repdoor, slam = seq(body, 3)
+    _, two, ed = seq(slam, 3)
+    _, e6, z2 = seq(ed, 3)
+    six, mk = seq(e6, 2)
+    _, z3, mk2 = seq(mk, 3)
+    _, gb1, gate1, z1 = seq(mk2, 4)
+    gate = norm(gate1)[2]
+    # GATE = [6 HAS [8 ROLL [9 2 [10 [6 [JMPS [7 [0 3] [8 [[1 0 0] [0 13]] [[1 RG] [0 1]]]]]] [0 2]]]] [0 13]]
+    _, has, yes, no = seq(gate, 4)
+    _, rolld, rs = seq(yes, 3)
+    _, two2, ed2 = seq(rs, 3)
+    _, e62, z22 = seq(ed2, 3)
+    _, smp = seq(e62, 2)
+    jmps, mkr = seq(smp, 2)
+    _, z4, mkr2 = seq(mkr, 3)
+    _, rb, rg1, z5 = seq(mkr2, 4)
+    rgate = norm(rg1)[2]
+    defs += [('revRGate', rgate, 'The gate of the `+roll` over the jumps: `(~(add ja acc) o1 o)`.'),
+             ('revGate', gate, 'The gate of the `+rep:by` of `+rev-cfg`.'),
+             ('revBody', body, 'The gate body of `+rev-cfg`.'),
              ('revBunt', bunt, 'Its sample bunt.'), ('revHint', hint, 'Its `%fast` hint.')]
 else:
     raise SystemExit('unknown ' + WHICH)

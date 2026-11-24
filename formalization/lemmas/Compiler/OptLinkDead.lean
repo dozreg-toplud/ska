@@ -1,5 +1,4 @@
 import lemmas.Compiler.OptLinkHelpers
-import lemmas.Compiler.SkaCull
 
 /-!
 # `+remove-dead-code` linked
@@ -103,32 +102,6 @@ theorem rdc_at : slot? 724 optC = some rdcArm := by kernel_rfl
 
 @[nock_exec] theorem rdc_arm (d : Noun) : nock d rdcArm = some (C rdcBody (C rdcBunt d)) := by
   unfold rdcArm rdcHint; generalize rdcBody = B; generalize rdcBunt = U; simp [nock_exec]
-
-/-! ## `saw` -/
-
-/-- The noun `S` is a set whose atoms are the members of `l`. -/
-def SawRel (S : Noun) (l : List Nat) : Prop := IsSet mugF S ∧ ∀ k, Has S (A k) ↔ k ∈ l
-
-theorem sawRel_nil : SawRel (A 0) [] := ⟨isSet_nil, fun k => by simp [uni_has_nil]⟩
-
-/-- `+has:in` of a register on `saw`. -/
-theorem saw_has {S : Noun} {l : List Nat} (h : SawRel S l) (d : Nat) :
-    nock (C in.has.battery (C (A d) (C in.battery (C S layer2)))) in.has.battery
-      = some (loob (decide (d ∈ l))) := by
-  obtain ⟨t, ht, hiff⟩ := hasInF_spec mugF S (A d) h.1
-  rw [has_in_gate (mug := mugF) layer2 gorIn_morIn_layer2.1 (A d) S t ht]
-  congr 2
-  rw [h.2 d] at hiff
-  cases t <;> simp_all
-
-/-- `+gas:in` of a list of registers on `saw`. -/
-theorem saw_gas {S : Noun} {l : List Nat} (h : SawRel S l) (regs : List Nat) :
-    ∃ S', nock (C in.gas.battery (C (listNoun A regs) (C in.battery (C S layer2)))) in.gas.battery = some S' ∧
-      SawRel S' (regs ++ l) := by
-  obtain ⟨out, ho, hs, hh⟩ := gasInF_spec (mug := mugF) (regs.map A) S h.1
-  refine ⟨out, ?_, hs, fun k => ?_⟩
-  · rw [listNoun_map_listN]; exact gas_in_gate _ S out ho
-  · rw [hh, h.2 k]; simp
 
 /-! ## The inner trap -/
 

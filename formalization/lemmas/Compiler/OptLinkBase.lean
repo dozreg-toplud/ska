@@ -1,4 +1,6 @@
 import lemmas.Compiler.CompMapRegs
+import lemmas.Compiler.SkaCull
+import lemmas.Hoon.Ju
 import lemmas.Ska.OptDriver
 
 /-!
@@ -275,6 +277,108 @@ theorem termin_toNoun_inj {a b : Termin} : a.toNoun = b.toNoun ↔ a = b :=
 
 theorem blob_toNoun_inj {a b : Blob} : a.toNoun = b.toNoun ↔ a = b :=
   ⟨fun h => by rw [← blobDec_toNoun a, h, blobDec_toNoun], fun h => h ▸ rfl⟩
+
+/-! ## Sets of registers or labels -/
+
+/-- The noun `S` is a set whose atoms are the members of `l`. -/
+def SawRel (S : Noun) (l : List Nat) : Prop := IsSet mugF S ∧ ∀ k, Has S (A k) ↔ k ∈ l
+
+theorem sawRel_nil : SawRel (A 0) [] := ⟨isSet_nil, fun k => by simp [uni_has_nil]⟩
+
+/-- `+has:in` of a register on `saw`. -/
+theorem saw_has {S : Noun} {l : List Nat} (h : SawRel S l) (d : Nat) :
+    nock (C in.has.battery (C (A d) (C in.battery (C S layer2)))) in.has.battery
+      = some (loob (decide (d ∈ l))) := by
+  obtain ⟨t, ht, hiff⟩ := hasInF_spec mugF S (A d) h.1
+  rw [has_in_gate (mug := mugF) layer2 gorIn_morIn_layer2.1 (A d) S t ht]
+  congr 2
+  rw [h.2 d] at hiff
+  cases t <;> simp_all
+
+/-- `+gas:in` of a list of registers on `saw`. -/
+theorem saw_gas {S : Noun} {l : List Nat} (h : SawRel S l) (regs : List Nat) :
+    ∃ S', nock (C in.gas.battery (C (listNoun A regs) (C in.battery (C S layer2)))) in.gas.battery = some S' ∧
+      SawRel S' (regs ++ l) := by
+  obtain ⟨out, ho, hs, hh⟩ := gasInF_spec (mug := mugF) (regs.map A) S h.1
+  refine ⟨out, ?_, hs, fun k => ?_⟩
+  · rw [listNoun_map_listN]; exact gas_in_gate _ S out ho
+  · rw [hh, h.2 k]; simp
+
+/-! ## Folds -/
+
+/-- A fold over the keys of a treap, each looked up, is a fold over `rap`. -/
+theorem foldl_keys_rap' {ν σ : Type} (st : σ → Nat → σ) (g : σ → Nat → ν → σ) :
+    ∀ (L : List (Nat × ν)), (∀ p ∈ L, ∀ acc, st acc p.1 = g acc p.1 p.2) → ∀ acc : σ,
+    (L.map Prod.fst).foldl st acc = L.foldl (fun acc p => g acc p.1 p.2) acc
+  | [], _, _ => rfl
+  | p :: L, h, acc => by
+    simp only [List.map_cons, List.foldl_cons]
+    rw [h p (by simp) acc]
+    exact foldl_keys_rap' st g L (fun q hq => h q (by simp [hq])) _
+
+theorem foldlM_some {α σ : Type} (f : σ → α → σ) : ∀ (L : List α) (s : σ),
+    L.foldlM (fun s p => some (f s p)) s = some (L.foldl f s)
+  | [], _ => rfl
+  | p :: L, s => by simp only [List.foldlM_cons, List.foldl_cons, Option.bind_some]; exact foldlM_some f L _
+
+/-- **`+roll` with a gate that may crash, over a list of values**: the loop
+on `listN (L.map pn)` from the accumulator `toN s`, where the gate on `pn p`
+and `toN s` is `(gf p s).map toN`, is `foldlM` of `gf`. -/
+theorem roll_loop_list {α σ : Type} (pn : α → Noun) (toN : σ → Noun) (gf : α → σ → Option σ)
+    (c bp e bc : Noun) : ∀ (L : List α) (s : σ),
+    (∀ p ∈ L, ∀ s, nock (C bp (C (C (pn p) (toN s)) bc)) bp = (gf p s).map toN) →
+    nock (C roll.loop (C roll.battery (C (C (listN (L.map pn)) (C bp (C (C e (toN s)) bc))) c))) roll.loop
+      = (L.foldlM (fun s p => gf p s) s).map toN := by
+  intro L
+  induction L with
+  | nil =>
+    intro s _
+    nock_open roll.loop
+    simp [nock_exec]
+  | cons p L ih =>
+    intro s hf
+    have hp := hf p (by simp) s
+    nock_open roll.loop
+    cases e1 : gf p s with
+    | none => simp [nock_exec, hp, e1]
+    | some s' =>
+      have hl := ih s' (fun q hq => hf q (by simp [hq]))
+      simp [nock_exec, hp, e1, hl]
+
+theorem roll_gate_list {α σ : Type} (pn : α → Noun) (toN : σ → Noun) (gf : α → σ → Option σ)
+    (c bp e bc : Noun) (L : List α) (s : σ)
+    (hf : ∀ p ∈ L, ∀ s, nock (C bp (C (C (pn p) (toN s)) bc)) bp = (gf p s).map toN) :
+    nock (C roll.battery (C (C (listN (L.map pn)) (C bp (C (C e (toN s)) bc))) c)) roll.battery
+      = (L.foldlM (fun s p => gf p s) s).map toN := by
+  nock_open roll.battery
+  simp only [nock_exec, roll_loop_list pn toN gf c bp e bc L s hf]
+
+/-! ## Jars -/
+
+theorem juIn_layer2' : JuIn mugF layer2 :=
+  ⟨by.arm_at, in.arm_at, someIn_layer2, gorIn_morIn_layer2.1, gorIn_morIn_layer2.2⟩
+
+/-- `+add:ja` on the noun of a jar of labels: `addJa`. -/
+theorem jar_add (m : TreapMap mugF (List Nat)) (k o : Nat) :
+    nock (C ja.add.battery (C (C (A k) (A o)) (C ja.battery (C (HoonMap.toNoun (listNoun A) m) layer2))))
+      ja.add.battery = some (HoonMap.toNoun (listNoun A) (Opt.addJa m k o)) := by
+  apply ja_add_gate layer2 juIn_layer2'
+  have hg := getF_hoonMap (listNoun A) m k
+  have hp := putF_hoonMap (listNoun A) m k (o :: (HoonMap.get m k).getD [])
+  unfold jaAddF juGetF Opt.addJa
+  rw [hg]
+  cases e : HoonMap.get m k with
+  | none => rw [e] at hp; simpa [unitNoun, unUnit, listNoun] using hp
+  | some l => rw [e] at hp; simpa [unitNoun, unUnit, listNoun] using hp
+
+/-- `+get:ja` on the noun of a jar of labels: `getJa`. -/
+theorem jar_get (m : TreapMap mugF (List Nat)) (k : Nat) :
+    nock (C ju.get.battery (C (A k) (C ja.battery (C (HoonMap.toNoun (listNoun A) m) layer2))))
+      ju.get.battery = some (listNoun A (Opt.getJa m k)) := by
+  have hg := getF_hoonMap (listNoun A) m k
+  rw [ju_get_gate layer2 juIn_layer2' ja.battery (A k) _ _ hg]
+  unfold Opt.getJa
+  cases HoonMap.get m k <;> rfl
 
 /-! ## `+got:by` on blocks -/
 
