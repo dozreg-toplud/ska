@@ -9,6 +9,8 @@ import lemmas.Compiler.OptLinkMiddleRd
 import lemmas.Compiler.OptLinkNoLti
 import lemmas.Compiler.OptLinkSy
 import lemmas.Compiler.OptLinkOnce
+import lemmas.Compiler.OptLinkOnceGate
+import lemmas.Compiler.OptLinkOpt
 
 /-!
 # Axioms of the pill link of the optimizer
@@ -79,3 +81,20 @@ open Formalization Compiler
 #print axioms oo_loop
 #print axioms structLoop_noLti
 #print axioms skim_has
+#print axioms ooAfter_cut
+#print axioms skim_arm
+#print axioms oo_s0
+#print axioms oo_alias
+#print axioms oo_skimrev
+#print axioms oo_trimdead
+#print axioms oo_hops
+#print axioms oo_rub
+#print axioms oo_rem
+#print axioms oo_fin
+#print axioms oo_pre
+#print axioms oo_gate
+#print axioms optimizeOnce_noLti
+#print axioms opt_at
+#print axioms sw_at
+#print axioms opt_loop
+#print axioms opt_gate

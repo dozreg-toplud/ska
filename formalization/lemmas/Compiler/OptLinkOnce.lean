@@ -42,12 +42,9 @@ structural loop `ooLoop` and then `ooAfter` (`+alias`, `+trim-trace-hints`,
   which has no `%lti`.
 * `skim_has`: `(skim topo ~(has by blocks))` is the model's `filter`.
 
-What is left of `+optimize-once` is `ooAfter`.  Every link it needs is here
-(`bb_gate`, `si_gate`, `rev_gate`, `oo_loop`, `AliasLink`, `skim_has`,
-`TrimLink`, `flop_gate`, `rdc_gate`, `rh_gate`, `rub_gate`, `rem_gate`), but
-one `simp` over `ooBody` with `ooAfter` unfolded and all of them went past
-the 3 GB cap: `ooAfter` is a chain of `=^` and `=.` (`[7 [10 [a F] [0 1]]
-...]`), to be cut into its steps, each stated as the subject it leaves.
+`ooAfter` is linked step by step in `OptLinkOnceAfter.lean` (one `simp`
+over all of it went past the 3 GB cap) and the whole gate in
+`OptLinkOnceGate.lean` (`oo_gate`).
 -/
 
 namespace Formalization

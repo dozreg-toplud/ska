@@ -17,6 +17,10 @@ helpers are arms of `compTypes` (axis `3` of `compK`).  An arm of `optC` is
   the inner trap.
 * `rev`: `+rev-cfg` (`732` of `optC`): its body, the gate of the `+rep:by`
   and the gate of the `+roll`.
+* `bb`, `rh`, `rem`: `+bb-topo`, `+remove-hops`, `+remove-empty-middle`.
+* `oo`: `+optimize-once` (`180`): the structural loop and the rest `ooAfter`.
+* `ooa`: `ooAfter` cut at each `=^` and `=.` (`ooR1` to `ooR12`, `ooFin`).
+* `opt`: `+optimize` (`2941`): its trap and the call of `+switch-chains`.
 
 Every part is checked against the pill when the Lean file states the arm as
 a kernel fact; the script asserts the shape it cuts."""
@@ -351,6 +355,86 @@ elif WHICH == 'oo':
              ('ooAfter', after, '`+alias`, `+trim-trace-hints`, `+remove-dead-code` and the three passes once more.'),
              ('ooBody', body, 'The gate body of `+optimize-once`.'),
              ('ooBunt', bunt, 'Its sample bunt.'), ('ooHint', hint, 'Its `%fast` hint.')]
+elif WHICH == 'ooa':
+    # ooAfter cut at each =^ and =. of +optimize-once after the loop
+    bunt, body, hint = opt_arm(180)
+    _, _, b1 = seq(body, 3)
+    _, _, b2 = seq(b1, 3)
+    _, _, b3 = seq(b2, 3)
+    _, _, after = seq(b3, 3)
+    def tail7(n):
+        s, a, b = seq(n, 3)
+        assert s == ('A', 7), s
+        return a, b
+    e251, r = tail7(after)
+    p43, r1 = tail7(r)
+    pieces = [('ooR1', r1)]
+    # R1 = [7 [0 1] [8 CALL R2]]
+    _, r = tail7(r1)
+    _, call, r2 = seq(r, 3)
+    pieces.append(('ooR2', r2))
+    # R2 = [7 E [7 P R3]]
+    _, r = tail7(r2)
+    _, r3 = tail7(r)
+    pieces.append(('ooR3', r3))
+    _, r4 = tail7(r3)
+    pieces.append(('ooR4', r4))
+    _, r5 = tail7(r4)
+    pieces.append(('ooR5', r5))
+    _, r6 = tail7(r5)
+    pieces.append(('ooR6', r6))
+    _, r7 = tail7(r6)
+    pieces.append(('ooR7', r7))
+    _, r = tail7(r7)
+    _, _, r8 = seq(r, 3)
+    pieces.append(('ooR8', r8))
+    _, r = tail7(r8)
+    _, r9 = tail7(r)
+    pieces.append(('ooR9', r9))
+    _, r = tail7(r9)
+    _, _, r10 = seq(r, 3)
+    pieces.append(('ooR10', r10))
+    _, r = tail7(r10)
+    _, r11 = tail7(r)
+    pieces.append(('ooR11', r11))
+    _, r = tail7(r11)
+    _, _, r12 = seq(r, 3)
+    pieces.append(('ooR12', r12))
+    _, r = tail7(r12)
+    _, fin = tail7(r)
+    pieces.append(('ooFin', fin))
+    docs = {'ooR1': '`=^  f-alias=?  blocks.s  (alias n-args.s blocks.s rev topo)` and the rest.',
+            'ooR2': 'The edit of `blocks.s` by the product of `+alias`, then the rest.',
+            'ooR3': '`=.  topo  (skim topo ~(has by blocks.s))` and the rest.',
+            'ooR4': '`=.  rev  (rev-cfg blocks.s (sy topo))` and the rest.',
+            'ooR5': '`=.  blocks.s  (trim-trace-hints blocks.s topo rev)` and the rest.',
+            'ooR6': '`=.  blocks.s  (remove-dead-code blocks.s (flop topo))` and the rest.',
+            'ooR7': '`=^  c-hops=?  blocks.s  (remove-hops blocks.s rev topo)` and the rest.',
+            'ooR8': 'The edit of `blocks.s` by the product of `+remove-hops`, then the rest.',
+            'ooR9': '`=^  c-branch=?  blocks.s  (remove-useless-branching blocks.s)` and the rest.',
+            'ooR10': 'The edit of `blocks.s` by the product of `+remove-useless-branching`, then the rest.',
+            'ooR11': '`=^  c-middle=?  blocks.s  (remove-empty-middle blocks.s)` and the rest.',
+            'ooR12': 'The edit of `blocks.s` by the product of `+remove-empty-middle`, then the rest.',
+            'ooFin': '`[|(f-alias c-hops c-branch c-middle) s]`.'}
+    for nm, n in reversed(pieces):
+        defs.append((nm, n, docs[nm]))
+    defs.append(('ooAfterCut', after, '`ooAfter` with its pieces named.'))
+elif WHICH == 'opt':
+    bunt, body, hint = opt_arm(2941)
+    # body = [7 [10 [6 [8 [1 TRAP] [9 2 [0 1]]]] [0 1]] [10 [7 SW] [0 6]]]
+    _, ed, sw0 = seq(body, 3)
+    _, e6, _ = seq(ed, 3)
+    _, run = seq(e6, 2)
+    _, trapq, _ = seq(run, 3)
+    trap = norm(trapq)[2]
+    _, e7, _ = seq(sw0, 3)
+    _, sw = seq(e7, 2)
+    _, _, swhint = opt_arm(182)
+    defs += [('optSwHint', swhint, 'The `%fast` hint of `+switch-chains`.')]
+    defs += [('optTrap', trap, 'The trap of `+optimize`: `+optimize-once` until no change.'),
+             ('optSw', sw, '`(switch-chains blocks.s)`.'),
+             ('optBody', body, 'The gate body of `+optimize`.'),
+             ('optBunt', bunt, 'Its sample bunt.'), ('optHint', hint, 'Its `%fast` hint.')]
 else:
     raise SystemExit('unknown ' + WHICH)
 with open(os.path.join(OUT, WHICH + '.lean'), 'w') as f:
