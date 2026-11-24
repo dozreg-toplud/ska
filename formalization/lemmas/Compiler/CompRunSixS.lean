@@ -405,5 +405,64 @@ theorem cr6s_lyn_dp (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 
     simp [nock_exec, htag, htag', hD1, comp_emit_arm, he1, he2, hD2, comp_set_tag_arm, hst1, hst2, listNoun,
       Nomm.toNoun]
 
+/-! ## The two runs of the branches -/
+
+/-- The noun of `cond`. -/
+noncomputable def condN (g : Gen (TreapMap mugF)) : Noun := HoonMap.toNoun condValNoun g.cond
+
+/-- **The two runs of the branches** (`cr6S2` to `cr6S5`): `cond-before`,
+the run of `r` for `goal-1` in `region-branch`, `cond-between`, the run of
+`q` for `goal-0`, then a continuation `K` from `cr6S6` on, given the links
+of the two runs. -/
+theorem cr6s_mid (env : CallEnv) (msup : Option Nomm) (p q r : Nomm) (rb : List Nat)
+    (goal0 goal1 : CGoalL CSet) (x : GenRest) (hx : x.NoSoft) (g : Gen (TreapMap mugF))
+    (mono goalN regionN sup LEP : Noun)
+    (K : TreapMap mugF (Nat × List Nat) → TreapMap mugF (Nat × List Nat) → NextL CSet → NextL CSet →
+      CM (TreapMap mugF) (NextL CSet))
+    (hr : CompRunAtR (runLC env msup) ctx r goal1 rb g)
+    (hq : ∀ nex1 g1, runLC env msup r goal1 rb g = some (nex1, g1) → CompRunAtR (runLC env msup) ctx q goal0 rb g1)
+    (hK : ∀ nex1 g1 nex0 g2, runLC env msup r goal1 rb g = some (nex1, g1) →
+      runLC env msup q goal0 rb g1 = some (nex0, g2) →
+      nock (C nex0.goal.toNoun (C (condN g1) (C nex1.goal.toNoun (C (condN g) (C (listNoun A rb)
+        (C (C goal0.toNoun goal1.toNoun) (C LEP
+          (crSubj mono (Nomm.n6 p q r).toNoun goalN regionN sup (compCore g2 x ctx))))))))) cr6S6
+        = (K g.cond g1.cond nex0 nex1 g2).map fun p => C p.1.goal.toNoun (genNoun p.2 x)) :
+    nock (C (listNoun A rb) (C (C goal0.toNoun goal1.toNoun) (C LEP
+      (crSubj mono (Nomm.n6 p q r).toNoun goalN regionN sup (compCore g x ctx))))) cr6S2
+      = ((do
+          let cb ← getCond
+          let nex1 ← runLC env msup r goal1 rb
+          let cbw ← getCond
+          let nex0 ← runLC env msup q goal0 rb
+          K cb cbw nex0 nex1 : CM (TreapMap mugF) (NextL CSet)) g).map
+          fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  have hr1 := hr x mono sup hx
+  simp only [crSubj, compCore, genNoun] at hr1
+  simp only [bind_apply, getCond, Option.bind_some]
+  cases e1 : runLC (S := CSet) (Map := TreapMap mugF) env msup r goal1 rb g with
+  | none =>
+    rw [e1] at hr1
+    unfold cr6S2 cr6S3
+    simp [nock_exec, crSubj, compCore, Nomm.toNoun, cr_bat_dol, hr1, genNoun]
+  | some rr =>
+    obtain ⟨nex1, g1⟩ := rr
+    rw [e1] at hr1
+    simp only [Option.map_some] at hr1
+    have hq1 := hq nex1 g1 e1 x mono sup hx
+    simp only [crSubj, compCore, genNoun] at hq1
+    cases e2 : runLC (S := CSet) (Map := TreapMap mugF) env msup q goal0 rb g1 with
+    | none =>
+      rw [e2] at hq1
+      unfold cr6S2 cr6S3 cr6S4 cr6S5
+      simp [nock_exec, crSubj, compCore, Nomm.toNoun, cr_bat_dol, hr1, hq1, genNoun, e2]
+    | some rr =>
+      obtain ⟨nex0, g2⟩ := rr
+      rw [e2] at hq1
+      simp only [Option.map_some] at hq1
+      have hk := hK nex1 g1 nex0 g2 e1 e2
+      simp only [crSubj, compCore, condN, genNoun, Nomm.toNoun] at hk
+      unfold cr6S2 cr6S3 cr6S4 cr6S5
+      simp [nock_exec, crSubj, compCore, Nomm.toNoun, cr_bat_dol, hr1, hq1, hk, genNoun, e2]
+
 end Compiler
 end Formalization
