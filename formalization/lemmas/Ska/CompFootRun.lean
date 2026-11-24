@@ -388,6 +388,234 @@ theorem wr_bomb {miss : Option Nat} {g g' : Gen Map} {nex : Next S} (Q : Nat →
   obtain ⟨rfl, rfl⟩ := h
   exact wroteIn_emit (blobWr_fin _ _) h1
 
+/-! ## `+copy-need-make-ops` -/
+
+/-- The writes of two sub-copies and of the move in front of them avoid the
+copy `R` made of their results. -/
+theorem wr_two {a b a1 b1 a2 b2 res1 res2 R : Need} {A1 A2 M : List Pole} {lo : Nat} {Top : Nat → Prop}
+    (sa : ∀ y, NMem a1 y ∨ NMem a2 y → NMem a y) (sb : ∀ y, NMem b1 y ∨ NMem b2 y → NMem b y)
+    (d12 : ∀ y, (NMem a1 y ∨ NMem b1 y) → ¬ (NMem a2 y ∨ NMem b2 y)) (hlo : ∀ y, NMem a y ∨ NMem b y → y < lo)
+    (m1 : ∀ y, NMem res1 y → (NMem a1 y ∨ NMem b1 y) ∨ lo ≤ y) (m2 : ∀ y, NMem res2 y → (NMem a2 y ∨ NMem b2 y) ∨ lo ≤ y)
+    (w1 : OpsWr (fun y => (NMem a1 y ∨ NMem b1 y) ∧ ¬ NMem res1 y) A1)
+    (w2 : OpsWr (fun y => (NMem a2 y ∨ NMem b2 y) ∧ ¬ NMem res2 y) A2)
+    (ht : ∀ y, Top y → ¬ (NMem a1 y ∨ NMem b1 y) ∧ ¬ (NMem a2 y ∨ NMem b2 y))
+    (hR : ∀ y, NMem R y → Top y ∨ NMem res1 y ∨ NMem res2 y)
+    (wM : OpsWr (fun y => (NMem a y ∨ NMem b y) ∧ ¬ Top y ∧ ¬ (NMem a1 y ∨ NMem b1 y) ∧ ¬ (NMem a2 y ∨ NMem b2 y)) M) :
+    OpsWr (fun y => (NMem a y ∨ NMem b y) ∧ ¬ NMem R y) (A2 ++ A1 ++ M) := by
+  have in1 : ∀ y, (NMem a1 y ∨ NMem b1 y) → NMem a y ∨ NMem b y := fun y h =>
+    h.elim (fun e => Or.inl (sa y (Or.inl e))) (fun e => Or.inr (sb y (Or.inl e)))
+  have in2 : ∀ y, (NMem a2 y ∨ NMem b2 y) → NMem a y ∨ NMem b y := fun y h =>
+    h.elim (fun e => Or.inl (sa y (Or.inr e))) (fun e => Or.inr (sb y (Or.inr e)))
+  refine OpsWr.append (OpsWr.append ?_ ?_) ?_
+  · refine w2.mono fun y ⟨hy, hn⟩ => ⟨in2 y hy, fun hr => ?_⟩
+    rcases hR y hr with e | e | e
+    · exact (ht y e).2 hy
+    · rcases m1 y e with e' | e'
+      · exact d12 y e' hy
+      · have := hlo y (in2 y hy); omega
+    · exact hn e
+  · refine w1.mono fun y ⟨hy, hn⟩ => ⟨in1 y hy, fun hr => ?_⟩
+    rcases hR y hr with e | e | e
+    · exact (ht y e).1 hy
+    · exact hn e
+    · rcases m2 y e with e' | e'
+      · exact d12 y hy e'
+      · have := hlo y (in1 y hy); omega
+  · refine wM.mono fun y ⟨hy, h1, h2, h3⟩ => ⟨hy, fun hr => ?_⟩
+    rcases hR y hr with e | e | e
+    · exact h1 e
+    · rcases m1 y e with e' | e'
+      · exact h2 e'
+      · have := hlo y hy; omega
+    · rcases m2 y e with e' | e'
+      · exact h3 e'
+      · have := hlo y hy; omega
+
+theorem copyNeed_mem {l r : Need} {ops : List Pole} {g g' : Gen Map} {x : Need × List Pole}
+    (h : copyNeed l r ops g = some (x, g')) {lo : Nat} (hl : lo ≤ g.re) :
+    g.re ≤ g'.re ∧ ∀ y, NMem x.1 y → (NMem l y ∨ NMem r y) ∨ lo ≤ y := by
+  obtain ⟨_, _, c⟩ := copyNeed_spec _ _ _ _ _ _ h
+  exact ⟨c.le, fun y hy => (c.mem y hy).imp id fun e => Nat.le_trans hl e.1⟩
+
+theorem opsWr_mov {Q : Nat → Prop} {s d : Nat} (h : Q d) : OpsWr Q [Pole.mov s d] :=
+  opsWr_one fun x hx => by simp only [poleWr, List.mem_cons, List.mem_nil_iff, or_false] at hx; rw [hx]; exact h
+
+/-- **The ops of `+copy-need-make-ops` write registers of the two needs
+copied, and none of the copy**, when the two needs are distinct and apart and
+below `re`. -/
+theorem wr_copyNeed : ∀ (a b : Need) (ops : List Pole) (g g' : Gen Map) (x : Need × List Pole),
+    copyNeed a b ops g = some (x, g') → Distinct (Need.pair a b) → NB g.re a → NB g.re b →
+    ∃ A, x.2 = A ++ ops ∧ OpsWr (fun y => (NMem a y ∨ NMem b y) ∧ ¬ NMem x.1 y) A := by
+  intro a
+  induction a with
+  | none =>
+    intro b ops g g' x h _ _ _
+    simp only [copyNeed, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h; exact ⟨[], rfl, opsWr_nil _⟩
+  | this rl =>
+    intro b ops g g' x h dab ha hb
+    have hl : rl < g.re := ha rl rfl
+    have ap : ∀ y, y = rl → ¬ NMem b y := fun y e => dab.2.2 y e
+    cases b with
+    | none =>
+      simp only [copyNeed, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h; exact ⟨[], rfl, opsWr_nil _⟩
+    | this rr =>
+      simp only [copyNeed, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact ⟨[Pole.mov rl rr], rfl, opsWr_mov ⟨Or.inr rfl, fun e => ap rl rfl (show rl = rr from e.symm ▸ rfl) ⟩⟩
+    | both xr hr tr =>
+      simp only [copyNeed, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact ⟨[Pole.mov xr rl], rfl, opsWr_mov ⟨Or.inl rfl, ap rl rfl⟩⟩
+    | pair p q =>
+      simp only [copyNeed, bind_apply, re_apply, Option.bind_some, pure_apply, Option.some.injEq,
+        Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      refine ⟨[Pole.mov g.re rl], rfl, opsWr_mov ⟨Or.inl rfl, fun e => ?_⟩⟩
+      rcases e with e | e
+      · omega
+      · exact ap rl rfl e
+  | pair pl ql ihp ihq =>
+    intro b ops g g' x h dab ha hb
+    obtain ⟨⟨dpl, dql, apq⟩, db, ab⟩ := dab
+    cases b with
+    | none =>
+      simp only [copyNeed, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h; exact ⟨[], rfl, opsWr_nil _⟩
+    | this rr =>
+      simp only [copyNeed, bind_apply, re_apply, Option.bind_some, pure_apply, Option.some.injEq,
+        Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      have hr : rr < g.re := hb rr rfl
+      refine ⟨[Pole.mov g.re rr], rfl, opsWr_mov ⟨Or.inr rfl, fun e => ?_⟩⟩
+      rcases e with e | e | e
+      · omega
+      · exact ab rr (Or.inl e) rfl
+      · exact ab rr (Or.inr e) rfl
+    | pair pr qr =>
+      obtain ⟨dpr, dqr, apr⟩ := db
+      simp only [copyNeed] at h
+      obtain ⟨⟨a1, o1⟩, g1, h1, h⟩ := bind_some h
+      obtain ⟨⟨a2, o2⟩, g2, h2, h⟩ := bind_some h
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      obtain ⟨l1, m1⟩ := copyNeed_mem h1 (Nat.le_refl _)
+      obtain ⟨_, m2⟩ := copyNeed_mem h2 l1
+      obtain ⟨A1, e1, w1⟩ := ihp _ _ _ _ _ h1 ⟨dpl, dpr, fun y hy => ab y (Or.inl hy) ∘ Or.inl⟩
+        (fun y hy => ha y (Or.inl hy)) (fun y hy => hb y (Or.inl hy))
+      obtain ⟨A2, e2, w2⟩ := ihq _ _ _ _ _ h2 ⟨dql, dqr, fun y hy => ab y (Or.inr hy) ∘ Or.inr⟩
+        (fun y hy => Nat.lt_of_lt_of_le (ha y (Or.inr hy)) l1) (fun y hy => Nat.lt_of_lt_of_le (hb y (Or.inr hy)) l1)
+      simp only at e1 e2 w1 w2 m1 m2
+      refine ⟨A2 ++ A1 ++ [], by rw [e2, e1]; simp, wr_two (Top := fun _ => False) (lo := g.re)
+        (fun y hy => hy) (fun y hy => hy) ?_ (fun y hy => hy.elim (ha y) (hb y)) m1 m2 w1 w2
+        (fun _ e => e.elim) (fun y hy => Or.inr (nmem_consNeed hy)) (opsWr_nil _)⟩
+      rintro y (e | e) (e' | e')
+      · exact apq y e e'
+      · exact ab y (Or.inl e) (Or.inr e')
+      · exact ab y (Or.inr e') (Or.inl e)
+      · exact apr y e e'
+    | both xr hr tr =>
+      obtain ⟨dhr, dtr, aht, nh, nt⟩ := db
+      simp only [copyNeed] at h
+      obtain ⟨⟨a1, o1⟩, g1, h1, h⟩ := bind_some h
+      obtain ⟨⟨a2, o2⟩, g2, h2, h⟩ := bind_some h
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      obtain ⟨l1, m1⟩ := copyNeed_mem h1 (Nat.le_refl _)
+      obtain ⟨_, m2⟩ := copyNeed_mem h2 l1
+      obtain ⟨A1, e1, w1⟩ := ihp _ _ _ _ _ h1 ⟨dpl, dhr, fun y hy => ab y (Or.inl hy) ∘ Or.inr ∘ Or.inl⟩
+        (fun y hy => ha y (Or.inl hy)) (fun y hy => hb y (Or.inr (Or.inl hy)))
+      obtain ⟨A2, e2, w2⟩ := ihq _ _ _ _ _ h2 ⟨dql, dtr, fun y hy => ab y (Or.inr hy) ∘ Or.inr ∘ Or.inr⟩
+        (fun y hy => Nat.lt_of_lt_of_le (ha y (Or.inr hy)) l1)
+        (fun y hy => Nat.lt_of_lt_of_le (hb y (Or.inr (Or.inr hy))) l1)
+      simp only at e1 e2 w1 w2 m1 m2
+      refine ⟨A2 ++ A1 ++ [], by rw [e2, e1]; simp, wr_two (Top := fun y => y = xr) (lo := g.re)
+        (fun y hy => hy) (fun y hy => hy.elim (Or.inr ∘ Or.inl) (Or.inr ∘ Or.inr)) ?_
+        (fun y hy => hy.elim (ha y) (hb y)) m1 m2 w1 w2 ?_ (fun y hy => hy) (opsWr_nil _)⟩
+      · rintro y (e | e) (e' | e')
+        · exact apq y e e'
+        · exact ab y (Or.inl e) (Or.inr (Or.inr e'))
+        · exact ab y (Or.inr e') (Or.inr (Or.inl e))
+        · exact aht y e e'
+      · rintro y rfl
+        exact ⟨fun e => e.elim (fun e => ab y (Or.inl e) (Or.inl rfl)) nh,
+          fun e => e.elim (fun e => ab y (Or.inr e) (Or.inl rfl)) nt⟩
+  | both rl hl tl ihh iht =>
+    intro b ops g g' x h dab ha hb
+    obtain ⟨⟨dhl, dtl, ahl, nhl, ntl⟩, db, ab⟩ := dab
+    have hrl : rl < g.re := ha rl (Or.inl rfl)
+    cases b with
+    | none =>
+      simp only [copyNeed, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h; exact ⟨[], rfl, opsWr_nil _⟩
+    | this rr =>
+      simp only [copyNeed, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact ⟨[Pole.mov rl rr], rfl, opsWr_mov ⟨Or.inr rfl, fun e => ab rr e rfl⟩⟩
+    | pair pr qr =>
+      obtain ⟨dpr, dqr, apr⟩ := db
+      simp only [copyNeed] at h
+      obtain ⟨xr, g0', h0, h⟩ := bind_some h
+      simp only [re_apply, Option.some.injEq, Prod.mk.injEq] at h0
+      obtain ⟨rfl, rfl⟩ := h0
+      obtain ⟨⟨a1, o1⟩, g1, h1, h⟩ := bind_some h
+      obtain ⟨⟨a2, o2⟩, g2, h2, h⟩ := bind_some h
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      have s : ∀ y, y < g.re → y < g.re + 1 := fun _ e => Nat.lt_succ_of_lt e
+      obtain ⟨l1, m1⟩ := copyNeed_mem h1 (lo := g.re) (Nat.le_succ _)
+      obtain ⟨_, m2⟩ := copyNeed_mem h2 (lo := g.re) (Nat.le_trans (Nat.le_succ _) l1)
+      obtain ⟨A1, e1, w1⟩ := ihh _ _ _ _ _ h1 ⟨dhl, dpr, fun y hy => ab y (Or.inr (Or.inl hy)) ∘ Or.inl⟩
+        (fun y hy => s _ (ha y (Or.inr (Or.inl hy)))) (fun y hy => s _ (hb y (Or.inl hy)))
+      obtain ⟨A2, e2, w2⟩ := iht _ _ _ _ _ h2 ⟨dtl, dqr, fun y hy => ab y (Or.inr (Or.inr hy)) ∘ Or.inr⟩
+        (fun y hy => Nat.lt_of_lt_of_le (s _ (ha y (Or.inr (Or.inr hy)))) l1)
+        (fun y hy => Nat.lt_of_lt_of_le (s _ (hb y (Or.inr hy))) l1)
+      simp only at e1 e2 w1 w2 m1 m2
+      refine ⟨A2 ++ A1 ++ [Pole.mov g.re rl], by rw [e2, e1]; simp, wr_two (Top := fun y => y = g.re) (lo := g.re)
+        (fun y hy => hy.elim (Or.inr ∘ Or.inl) (Or.inr ∘ Or.inr)) (fun y hy => hy) ?_
+        (fun y hy => hy.elim (ha y) (hb y)) m1 m2 w1 w2 ?_ (fun y hy => hy) (opsWr_mov ⟨Or.inl (Or.inl rfl), by omega,
+          fun e => e.elim nhl (fun e => ab rl (Or.inl rfl) (Or.inl e)),
+          fun e => e.elim ntl (fun e => ab rl (Or.inl rfl) (Or.inr e))⟩)⟩
+      · rintro y (e | e) (e' | e')
+        · exact ahl y e e'
+        · exact ab y (Or.inr (Or.inl e)) (Or.inr e')
+        · exact ab y (Or.inr (Or.inr e')) (Or.inl e)
+        · exact apr y e e'
+      · rintro y rfl
+        refine ⟨fun e => ?_, fun e => ?_⟩
+        · have := e.elim (fun e => ha _ (Or.inr (Or.inl e))) (fun e => hb _ (Or.inl e)); omega
+        · have := e.elim (fun e => ha _ (Or.inr (Or.inr e))) (fun e => hb _ (Or.inr e)); omega
+    | both xr hr tr =>
+      obtain ⟨dhr, dtr, aht, nh, nt⟩ := db
+      simp only [copyNeed] at h
+      obtain ⟨⟨a1, o1⟩, g1, h1, h⟩ := bind_some h
+      obtain ⟨⟨a2, o2⟩, g2, h2, h⟩ := bind_some h
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      obtain ⟨l1, m1⟩ := copyNeed_mem h1 (Nat.le_refl _)
+      obtain ⟨_, m2⟩ := copyNeed_mem h2 l1
+      obtain ⟨A1, e1, w1⟩ := ihh _ _ _ _ _ h1 ⟨dhl, dhr, fun y hy => ab y (Or.inr (Or.inl hy)) ∘ Or.inr ∘ Or.inl⟩
+        (fun y hy => ha y (Or.inr (Or.inl hy))) (fun y hy => hb y (Or.inr (Or.inl hy)))
+      obtain ⟨A2, e2, w2⟩ := iht _ _ _ _ _ h2 ⟨dtl, dtr, fun y hy => ab y (Or.inr (Or.inr hy)) ∘ Or.inr ∘ Or.inr⟩
+        (fun y hy => Nat.lt_of_lt_of_le (ha y (Or.inr (Or.inr hy))) l1)
+        (fun y hy => Nat.lt_of_lt_of_le (hb y (Or.inr (Or.inr hy))) l1)
+      simp only at e1 e2 w1 w2 m1 m2
+      refine ⟨A2 ++ A1 ++ [Pole.mov xr rl], by rw [e2, e1]; simp, wr_two (Top := fun y => y = xr) (lo := g.re)
+        (fun y hy => hy.elim (Or.inr ∘ Or.inl) (Or.inr ∘ Or.inr)) (fun y hy => hy.elim (Or.inr ∘ Or.inl) (Or.inr ∘ Or.inr)) ?_
+        (fun y hy => hy.elim (ha y) (hb y)) m1 m2 w1 w2 ?_ (fun y hy => hy) (opsWr_mov ⟨Or.inl (Or.inl rfl),
+          fun e => ab rl (Or.inl rfl) (Or.inl e),
+          fun e => e.elim nhl (fun e => ab rl (Or.inl rfl) (Or.inr (Or.inl e))),
+          fun e => e.elim ntl (fun e => ab rl (Or.inl rfl) (Or.inr (Or.inr e)))⟩)⟩
+      · rintro y (e | e) (e' | e')
+        · exact ahl y e e'
+        · exact ab y (Or.inr (Or.inl e)) (Or.inr (Or.inr e'))
+        · exact ab y (Or.inr (Or.inr e')) (Or.inr (Or.inl e))
+        · exact aht y e e'
+      · rintro y rfl
+        exact ⟨fun e => e.elim (fun e => ab y (Or.inr (Or.inl e)) (Or.inl rfl)) nh,
+          fun e => e.elim (fun e => ab y (Or.inr (Or.inr e)) (Or.inl rfl)) nt⟩
+
 end Comp
 end SkaModel
 end Formalization
