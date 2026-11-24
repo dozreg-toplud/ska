@@ -360,5 +360,62 @@ theorem comp_mede (hc : CompIn ctx) (hl : CompLib ctx) (hm : CompMolds ctx) (x :
     simp [nock_exec, hD1, hD2, comp_emit_arm, he, hd, hdr, dropArm, cgModeNoun, mede, cf_emit_g,
       bind, StateT.bind, get, getThe, MonadStateOf.get, StateT.get, pure, StateT.pure]
 
+/-! ## `+proxy` and `+lazy-bound` -/
+
+def pxBat : Noun :=
+  (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 0x55ffff) (C (A 0) (A 7)))))) (C (A 7) (C (C (A 10) (C (C (A 62) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 6) (C (C (A 9) (C (A 1398) (C (A 0) (A 15)))) (C (C (C (A 0) (A 2)) (C (A 0) (A 62))) (C (C (A 0) (A 2)) (C (A 10) (C (C (A 254) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x7fffff)))) (C (A 9) (C (A 340) (C (A 10) (C (C (A 6) (C (A 0) (A 0x3f7e))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 6)) (C (A 7) (C (C (A 0) (A 3)) (C (C (A 0) (A 28)) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x7fffff)))) (C (A 9) (C (A 701) (C (A 10) (C (C (A 6) (C (A 0) (A 8126))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 61))) (C (A 0) (A 2))))))))))))) (C (A 0) (A 2))))))))) (C (A 0) (A 62))))))))))))))))
+
+def pxArm : Noun :=
+  (C (A 7) (C (C (A 8) (C (C (A 1) (C (A 0) (A 0))) (C (C (A 1) pxBat) (C (A 0) (A 1))))) (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x79786f72702d706d6f63) (C (C (A 0) (A 0x7ffff)) (A 0))))) (C (A 0) (A 1))))))
+
+def lbBat : Noun :=
+  (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 0xaaaa) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A 0)))) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A 0)))) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A 0x706f68)))) (C (A 0) (A 115)))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 62) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 10) (C (C (A 62) (C (A 8) (C (C (A 9) (C (A 0x555de) (C (A 0) (A 15)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 6)) (C (A 0) (A 61)))) (C (A 0) (A 2))))))))) (C (A 0) (A 1)))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 230)))) (C (C (C (A 1) (A 0x7478656e)) (C (C (C (A 1) (C (C (A 0x656e6f6e) (A 0)) (A 0))) (C (C (A 1) (A 0)) (C (C (C (A 0) (A 2)) (C (A 0) (A 114))) (C (A 1) (A 0))))) (C (C (A 1) (A 0)) (C (A 0) (A 2))))) (C (A 0) (A 0))))) (C (A 0) (A 62)))))))))))))
+
+def lbArm : Noun :=
+  (C (A 7) (C (C (A 8) (C (C (A 1) (C (C (A 0x7478656e) (C (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0))) (C (A 0) (A 0)))) (A 0))) (C (C (A 1) lbBat) (C (A 0) (A 1))))) (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x646e756f622d797a616c2d706d6f63) (C (C (A 0) (A 0x7ffff)) (A 0))))) (C (A 0) (A 1))))))
+
+
+
+/-- `+proxy` is at door axis `441178`. -/
+theorem comp_px_at : slot? 441178 comp.door = some pxArm := by kernel_rfl
+
+/-- `+lazy-bound` is at door axis `884726`. -/
+theorem comp_lb_at : slot? 884726 comp.door = some lbArm := by kernel_rfl
+
+/-- `+proxy`: a fresh register, and unless dropping, `cond` takes it to `r`
+and the region of block `o` (`got`: a crash where `o` has no tag, where the
+model is `none`). -/
+theorem comp_proxy (hc : CompIn ctx) (x : GenRest) (g : Gen (TreapMap mugF)) (r o : Nat) :
+    nock (C pxBat (C (C (A r) (A o)) (compCore g x ctx))) pxBat
+      = (proxy r o g).map fun p => C (A p.1) (genNoun p.2 x) := by
+  have hget := getF_hoonMap (listNoun A) g.tags o
+  have hgc : NeedIn layer2 ∧ SomeIn layer2 ∧ GorIn mugF layer2 :=
+    ⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩
+  have hD := comp_re_at
+  have hD1 := comp_drop_at
+  have hre := comp_re' ctx x g
+  simp only [genNoun] at hre
+  simp only [compCore]
+  generalize comp.door = Dr at hD hD1 hre ⊢
+  nock_open pxBat
+  cases h : g.drop
+  · simp only [h, cgModeNoun, Bool.false_eq_true, ↓reduceIte] at hre
+    cases e : HoonMap.get g.tags o with
+    | none =>
+      rw [e] at hget
+      have hgot := got_gate_nil layer2 hgc (A o) _ hget
+      simp [nock_exec, genNoun, cgModeNoun, h, hD, hD1, hre, dropArm, comp_h110, eqCode_atom, hc, by_arm, by.arm_at,
+        by.got.arm_at, got_arm, hgot, proxy, e]
+    | some tag =>
+      rw [e] at hget
+      have hgot := got_gate layer2 hgc (A o) _ _ hget
+      have hput := put_gate layer2 gorIn_morIn_layer2 (A g.re) (condValNoun (r, tag)) _ _
+        (putF_hoonMap condValNoun g.cond g.re (r, tag))
+      simp only [condValNoun] at hput
+      simp [nock_exec, genNoun, cgModeNoun, h, hD, hD1, hre, dropArm, comp_h110, eqCode_atom, hc, by_arm, by.arm_at,
+        by.got.arm_at, got_arm, hgot, by.put.arm_at, put_arm, hput, proxy, e]
+  · simp only [h, cgModeNoun, Bool.false_eq_true, ↓reduceIte] at hre
+    simp [nock_exec, genNoun, cgModeNoun, h, hD, hD1, hre, dropArm, comp_h110, eqCode_atom, proxy]
+
 end Compiler
 end Formalization
