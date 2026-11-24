@@ -30,6 +30,8 @@ writes `CompFourV.lean`, `tenv.py` writes `CompTenV.lean`, `runlc.py` writes
 `CompWholeKern.lean` (from `CompUnproxyRegs.lean`), `walkdi.py` prints
 `walkLazy_okDI` of `CompWholeKern.lean` (from `CompCollapseGate.lean`); run each from
 `formalization/`, every extraction and replacement asserts its match count).
+`mrops.py` writes the 25 lemmas `mr_op_<tag>` and `mr_op` of
+`CompMapRegs.lean` between the lines `-- BEGIN mrops` and `-- END mrops`.
 
 `tools/capped.sh` runs a command under a memory cap (8 GB unless `-m SIZE`).
 Use it for anything that makes the kernel evaluate: an uncapped check of `cue`
@@ -191,6 +193,10 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompUnaryTop.lean` | `+compile-unary` from its entry state to `+to-straight`: `tsArm` and `tsBat` read from the pill (`comp_ts_at`, `ts_arm_eq`, `comp_ts_arm`), the stated link `TsAt` of `+to-straight` on the branch of the fragment (`cond` empty: on `tsSample` it returns `Straight.toNoun` of `toStraightF`), not proved; `cu_kern_cond` and `cu_cond_empty` (`cond` is empty after `+run` and `+kerf`, from `kc_run`); `cu_finish` (`+run`, `+kerf` on its product, `+to-straight` on the product of `+kerf` is `finishLU` mapped by `Straight.toNoun`, given `TsAt`). |
 | `Compiler/CompStraightPre.lean` | The pushes of `+to-straight` before its `|^` core: `tsBat` cut into the rests `tsR2` ... `tsR13` (`ts_bat_eq`, a kernel fact), the gates `tsUnBat`, `tsRunTrap`, `tsRenBat` written out and the core battery `tsCoreBat` read from the pill (`slot? 268435453 tsBat`); `ts_pre1` (pushes 1 to 5: `blocks`, `unproxy`, `proxies` is `|`, `ins` is `[sub ~]`, `r0` is `sub`), `ts_pre2` (6 to 8: `n-in` is `1` by `lent_gate`, the trap `run` is `&` by `add_gate`, `ren` built), `ts_pre3` and `ts_pre3_nil` (9 to 13: `+got:by`, `+del:by`, `+put:by`, the bunt, the core), `ts_pre` (the gate on the fragment's sample with `cond` empty is the call of arm `190` of the core on `tsCoreSt`, with the blocks `put (del blocks o) 0 start`, or a crash when `o` is not a block); the stated link `TsCoreAt` of the core (not proved), `ts_at_of_core` (`TsAt` from it) and `cu_finish_core` (`cu_finish` assuming only `TsCoreAt`). |
 | `Compiler/CompStraightCore.lean` | The `|^` core of `+to-straight` on the renaming branch: the gate `ren` is `renReg sub 1` (`ts_ren`), `rer` with `proxies` `|` and `run` `&` is `[(ren r) gen]` (`ts_rer`), the arm `$` is the renaming branch on `[[%this ~] core]` (`ts_dol`: `rewrite-input` on `[%this sub]` gives `[[%this ~] [0 0]]`, the model's `rewriteInput` likewise, `ts_ri_model`), the branch is `(map-regs ren)` (arm `762` of `compTypes`, `mr_slam`), `+count-args` (arm `0xbbbe` of `K`) and the `+rep:by` of the gate `tsGBody` (`ts_rename`); `+rep:by` with a gate that may crash (`rep_loop_list`, `rep_gate_list`), `renameBlocks` as a fold over `rap` (`renameBlocks_rap`), and `TsCoreAt`, `TsAt`, `cu_finish` from the stated link `TsStepAt` of the gate of the fold (`ts_core_at`, `ts_at_of_step`, `cu_finish_step`); `+bypassable` on `[& b]` is `bypassable true b` (`ts_byp_at`, `ts_byp`). |
+| `Compiler/CompMapRegs.lean` | The gate `mrInner` of `(map-regs ren)` cut into `mrRjBody` (the gate `ren-jmp`), `mrOpBody` (the 25-way `?-` on the op tags) and `mrFinSw` (the 11-way `?-` on `fin`) by the kernel fact `mr_inner_eq`; `+turn` with a gate `ren` over registers (`mr_turn_ren`); the op gate on each op tag (`mr_op_imm` .. `mr_op_csm`, written by `tools/gen/mrops.py` from one template) and on any op (`mr_op`); `+turn` with it over a body (`mr_turn_ops`); the gate on a block with `fin` `[%bom ~]` (`mr_inner_bom`), for any gate `ren` whose slam on `r` is `ren r` and any types core with `layer2` at `32767` (`mr_types_layer2`). |
+| `Compiler/CompChase.lean` | `+chase` (core arm `21` of the `|^` core of `+to-straight`, trap `tsChaseBody`, `ts_chase_at`) against the model `chase`, a `partial_fixpoint`: one step under any oracle that is `nock` off the trap (`ch_stepW`), what `chase` returns the loop returns (`ch_loop_of_chase`, by `chase.partial_correctness`), what the loop returns `chase` returns (`ch_chase_of_loop`, by induction on `iterN` with the oracle `if f = tsChaseBody then iterN k s f else nock s f`), so `ch_nock`: the loop is `(chase bs br j).map Jmp.toNoun`, a cycle of bypassable hops being `none` on both sides; `+bypassable` on any branch (`ts_byp_gen`). |
+| `Compiler/CompChaseFin.lean` | `+chase-fin` (core arm `382`, `ts_cf_at`: the gate `rj`, `cfRjBody`, and the switch `cfSw`) on every terminator: one lemma per end tag (`cf_clq` .. `cf_bom_some`, `cf_lti`) and `cf_gate`, for a core meeting `CfCore` (blocks at `4094`, `layer2` at `0x1ffffffff`, `+bypassable` at `46`, `+chase` at `21`, `ren` at `30`, and the stated link `CfRjAt` of `rj`); the gate `+chase` (`ch_gate`); `%lti` falls into the `%bom` case and crashes, as `+got:by` of a cell key gives `~` (`cf_getF_cell`, `cf_chase_cell`). |
+| `Compiler/CompStraightStep.lean` | The gate `tsGBody` of the `+rep:by` of `+to-straight` on a pair is `renameStep` (`ts_step`), so `TsStepAt` holds given the stated link `TsRjAt` of the gate `rj` of `+chase-fin` in every core of the renaming branch (`ts_step_at`, with `ts_st_cf`), and `cu_finish_rj` is the end of `+compile-unary` from its entry state assuming only `TsRjAt`. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`, whose `keys` are those of `rap`, the order of `+rep:by` (`treapMap_keys`). |
@@ -1081,6 +1087,27 @@ import only its theorems.  So:
     gate `mrInner` on a block with `fin` `[%bom ~]` (one lemma per op tag),
     `+chase` and `+chase-fin` against `chase` and `chaseFin`, then
     `TsStepAt` from them with `put_gate`.
+    L, 2026-11-24 (track A, `TsStepAt`), `Compiler/CompMapRegs.lean`,
+    `Compiler/CompChase.lean`, `Compiler/CompChaseFin.lean`,
+    `Compiler/CompStraightStep.lean`: the gate `mrInner` of `+map-regs` on a
+    block with `fin` `[%bom ~]` is linked (`mr_inner_bom`, one lemma per op
+    tag), `+chase` is linked in both directions although its loop may not
+    return (`ch_nock`, through `iterN`), `+chase-fin` is linked on every end
+    tag (`cf_gate`), and with them the gate of the `+rep:by` is `renameStep`
+    (`ts_step`).  So `TsStepAt` holds given one stated link, `TsRjAt`: the
+    gate `rj` of `+chase-fin` (`cfRjBody`, `j(args (turn args.j (lift
+    ren)))`) on a jump `j` gives `renJmp ren j`, and `cu_finish_rj` assumes
+    only that.  `rj` pulls `+turn` (arm `0xbef7e`) and `+lift` (arm `372`, a
+    wet gate whose sample bunt is a mold core) from `layer2` at axis
+    `0x1fffffffff` of its subject `[cfRjBody [j [X [fin core]]]]`, reads
+    `ren` at `1022` after pushing `+lift`, and `+lift`'s inner gate calls
+    `+bind` (arm `5983`); these two gates are the next helpers.  The
+    general `fin` cases of `mrInner` (its own gate `ren-jmp`, `mrRjBody`,
+    the same shape at axes `0x1fffff` and `254`) are not done; the map
+    path and the n-ary version will need them.  The model agrees with the
+    Hoon on every tag, `%lti` included: in the Hoon `%lti` falls into the
+    `%bom` case under `%toss`, takes `u.o.fin` as the cell `[s z o]`, and
+    `+got:by` of a cell crashes, as `chaseFin` gives `none`.
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
