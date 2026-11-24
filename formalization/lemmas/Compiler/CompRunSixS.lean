@@ -288,5 +288,122 @@ theorem cr6s_p (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ct
       unfold cr6S7 cr6S8
       simp [nock_exec, crSubj, Nomm.toNoun, hD1, pf_arm, hpf, liftO, bind, StateT.bind, hq1, e2, cr_bat_dol, ht]
 
+/-! ## The pair of `%hop` blocks under `%done` and `%pick` -/
+
+/-- The state after `+set-tag`. -/
+def stG (o : Nat) (region : List Nat) (g : Gen (TreapMap mugF)) : Gen (TreapMap mugF) :=
+  if g.drop then g else { g with tags := HoonMap.put g.tags o region }
+
+theorem st_apply (o : Nat) (region : List Nat) (g : Gen (TreapMap mugF)) :
+    (setTag o region g : Option (Unit × Gen (TreapMap mugF))) = some ((), stG o region g) := rfl
+
+theorem stG_re (o : Nat) (region : List Nat) (g : Gen (TreapMap mugF)) : (stG o region g).re = g.re := by
+  unfold stG; split <;> rfl
+
+theorem stG_bo (o : Nat) (region : List Nat) (g : Gen (TreapMap mugF)) : (stG o region g).bo = g.bo := by
+  unfold stG; split <;> rfl
+
+theorem stG_drop (o : Nat) (region : List Nat) (g : Gen (TreapMap mugF)) : (stG o region g).drop = g.drop := by
+  unfold stG; split <;> rfl
+
+/-- Phase S under `%done` and `%pick` from the two runs on: the two `%hop`
+blocks, their tags, the asserts, and the rest from `+past-fork` on. -/
+noncomputable def sixLynDP (env : CallEnv) (msup : Option Nomm) (p : Nomm) (region : List Nat)
+    (nex0 nex1 : NextL CSet) : CM (TreapMap mugF) (NextL CSet) := do
+  let yes ← emit ⟨[], [], Termin.hop nex0.th⟩
+  let nuh ← emit ⟨[], [], Termin.hop nex1.th⟩
+  setTag yes region
+  setTag nuh region
+  if nex0.th.args ≠ [] then fun _ => Option.none else
+  if nex1.th.args ≠ [] then fun _ => Option.none else
+  sixPM env msup p region (Lazy.mk Sure.bunt [((yes, nex0.laz), (nuh, nex1.laz))] []) yes nuh
+
+theorem cgl_next_noun6 (laz : Lazy CSet) (args : List (Option Nat)) (there : Nat) :
+    (CGoalL.next laz ⟨args, there⟩ : CGoalL CSet).toNoun
+      = C (A 0x7478656e) (C laz.toNoun (C (listNoun (unitNoun A) args) (A there))) := rfl
+
+theorem lyn_lazy_noun (yes nuh : Nat) (l0 l1 : Lazy CSet) :
+    (Lazy.mk Sure.bunt [((yes, l0), (nuh, l1))] [] : Lazy CSet).toNoun
+      = C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (C (C (C (A yes) l0.toNoun) (C (A nuh) l1.toNoun)) (A 0)) (A 0)) := by
+  rw [lazy_toNoun_mk]
+  simp [forkE, Sure.toNoun, Sure.bunt, Need.toNoun, Tag.none, HoonSet.toNoun_empty, listN]
+
+/-- **The pair of `%hop` blocks under `%done` and `%pick`** (`cr6S6`, its
+non-`%next` branch, then `cr6S7`). -/
+theorem cr6s_lyn_dp (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q r : Nomm) (region : List Nat)
+    (hpc : hinted env.cod p = hinted noCode p) (hpn : hinted noCode p ≠ Option.none)
+    (hP : ∀ (yes nuh : Nat) (g' : Gen (TreapMap mugF)), g'.drop = false →
+      CompRunAtR (runLC env msup) ctx p (CGoalL.pick (jmp0 yes) (jmp0 nuh)) region g')
+    (hR : ResFor env msup p region)
+    (x : GenRest) (hx : x.NoSoft) (g : Gen (TreapMap mugF)) (hd : g.drop = false)
+    (nex0 nex1 : NextL CSet) (h0 : LAll (LNB g.re) nex0.laz) (h1 : LAll (LNB g.re) nex1.laz)
+    (mono grest sup cbw cb RB GG LEP : Noun) (tag : Nat) (htag : tag ≠ 0x7478656e) :
+    nock (C nex0.goal.toNoun (C cbw (C nex1.goal.toNoun (C cb (C RB (C GG (C LEP
+      (crSubj mono (Nomm.n6 p q r).toNoun (C (A tag) grest) (listNoun A region) sup (compCore g x ctx))))))))) cr6S6
+      = (sixLynDP env msup p region nex0 nex1 g).map fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
+  have htag' : ¬ ((0x7478656e : Nat) = tag) := fun h => htag h.symm
+  obtain ⟨l0, ⟨a0, t0⟩⟩ := nex0
+  obtain ⟨l1, ⟨a1, t1⟩⟩ := nex1
+  simp only [NextL.goal, cgl_next_noun6]
+  have he1 := cf_emit (x := x) hc g ⟨[], [], Termin.hop ⟨a0, t0⟩⟩
+  generalize hg1 : cfEmitG ⟨[], [], Termin.hop ⟨a0, t0⟩⟩ g = g1 at he1
+  have he2 := cf_emit (x := x) hc g1 ⟨[], [], Termin.hop ⟨a1, t1⟩⟩
+  generalize hg2 : cfEmitG ⟨[], [], Termin.hop ⟨a1, t1⟩⟩ g1 = g2 at he2
+  have hst1 := comp_set_tag x hc g2 g.bo region
+  have hst2 := comp_set_tag x hc (stG g.bo region g2) g1.bo region
+  have r1 : g1.re = g.re := by rw [← hg1, cf_emitG_re]
+  have r2 : g2.re = g.re := by rw [← hg2, cf_emitG_re, r1]
+  have d1 : g1.drop = false := by rw [← hg1, cf_emitG_drop]; exact hd
+  have d2 : g2.drop = false := by rw [← hg2, cf_emitG_drop]; exact d1
+  simp only [Blob.toNoun, listNoun, Termin.toNoun, Tag.hop, Jmp.toNoun] at he1 he2
+  simp only [st_apply, Option.map_some] at hst1 hst2
+  have hD1 := comp_emit_at
+  have hD2 := comp_set_tag_at
+  unfold sixLynDP
+  simp only [bind_apply, cf_emit_g, hg1, hg2, Option.bind_some, st_apply]
+  generalize hg4 : stG g1.bo region (stG g.bo region g2) = g4 at hst2 ⊢
+  have d4 : g4.drop = false := by rw [← hg4, stG_drop, stG_drop]; exact d2
+  have r4 : g4.re = g.re := by rw [← hg4, stG_re, stG_re]; exact r2
+  rcases a0 with _ | ⟨a0h, a0t⟩
+  · rcases a1 with _ | ⟨a1h, a1t⟩
+    · simp only [listNoun] at he1 he2
+      have hlz : ∀ y ∈ lregs (Lazy.mk Sure.bunt [((g.bo, l0), (g1.bo, l1))] [] : Lazy CSet), y < g4.re := by
+        intro y hy
+        simp only [lregs, fregs, bregs, flattenNeed, Sure.bunt, List.nil_append, List.append_nil,
+          List.mem_append] at hy
+        rw [r4]
+        rcases hy with hy | hy
+        · exact lnb_regs h0 y hy
+        · exact lnb_regs h1 y hy
+      have hlok : LAll CrLok (Lazy.mk Sure.bunt [((g.bo, l0), (g1.bo, l1))] [] : Lazy CSet) :=
+        ⟨fun y hy => by simp [Sure.bunt] at hy; exact absurd hy (HoonSet.mem_empty y),
+          ⟨by rw [walkP_irrel]; exact lall_mono (fun _ h => h.1) h0,
+           by rw [walkP_irrel]; exact lall_mono (fun _ h => h.1) h1, trivial⟩, trivial⟩
+      have hpm := cr6s_p h7 hcode env msup p q r region hpc hpn g.bo g1.bo (hP g.bo g1.bo) hR x hx g4 d4
+        _ hlz hlok mono (C (A tag) grest) sup
+        (C (A 0x7478656e) (C l0.toNoun (C (A 0) (A t0)))) cbw
+        (C (A 0x7478656e) (C l1.toNoun (C (A 0) (A t1)))) cb RB GG LEP
+      rw [lyn_lazy_noun] at hpm
+      simp only [crSubj, compCore] at hpm hst1 hst2 ⊢
+      generalize comp.door = Dr at he1 he2 hst1 hst2 hD1 hD2 hpm ⊢
+      unfold cr6S6 cr6SA6
+      simp only [Nomm.toNoun, NextL.goal] at hpm
+      simp [nock_exec, htag, htag', hD1, comp_emit_arm, he1, he2, hD2, comp_set_tag_arm, hst1, hst2, hpm,
+        listNoun, Nomm.toNoun, NextL.goal]
+    · simp only [listNoun] at he1 he2
+      simp only [crSubj, compCore] at hst1 hst2 ⊢
+      generalize comp.door = Dr at he1 he2 hst1 hst2 hD1 hD2 ⊢
+      unfold cr6S6 cr6SA6
+      simp [nock_exec, htag, htag', hD1, comp_emit_arm, he1, he2, hD2, comp_set_tag_arm, hst1, hst2, listNoun,
+        Nomm.toNoun]
+  · simp only [listNoun] at he1 he2
+    simp only [crSubj, compCore] at hst1 hst2 ⊢
+    generalize comp.door = Dr at he1 he2 hst1 hst2 hD1 hD2 ⊢
+    unfold cr6S6 cr6SA6
+    simp [nock_exec, htag, htag', hD1, comp_emit_arm, he1, he2, hD2, comp_set_tag_arm, hst1, hst2, listNoun,
+      Nomm.toNoun]
+
 end Compiler
 end Formalization
