@@ -748,3 +748,5 @@ open Formalization
 #print axioms Compiler.cu_gate
 #print axioms Compiler.cu_ref_mono
 #print axioms Compiler.cu_gate_some
+#print axioms Compiler.mr_inner
+#print axioms Compiler.mr_inner_ren

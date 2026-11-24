@@ -157,5 +157,43 @@ theorem cu_finish_all {ctx : Noun} (h7 : slot? 7 ctx = some compK) {cod : Noun}
       = (finishLU (S := CSet) (Map := TreapMap mugF) n).map Straight.toNoun :=
   cu_finish_rj h7 hcode n hpu h6 ht cache mono sup (lf_ts_rj (comp_ctx_pill ctx h7).1)
 
+/-! ## `(map-regs ren)` on every block -/
+
+/-- The terminator after `(map-regs ren)`: `renFin`, except that `%lti`
+(not in the type `fin` of the input IR) falls into the last case `%bom` and
+is kept. -/
+def mrFin (ren : Nat → Nat) : Termin → Termin
+  | Termin.lti n s z o => Termin.lti n s z o
+  | f => renFin ren f
+
+/-- **`(map-regs ren)` on any block** (`mrInner`, the gate `ren-jmp` by
+`lf_mr_rj`): the parameters, the body and the terminator renamed, by
+`mrFin`. -/
+theorem mr_inner (X MB RB RS RC T : Noun) (ren : Nat → Nat)
+    (hren : ∀ r, nock (C RB (C (A r) RC)) RB = some (A (ren r)))
+    (hT : slot? 32767 T = some layer2) (par : List Nat) (body : List Pole) (fin : Termin) :
+    nock (C X (C (Blob.toNoun ⟨par, body, fin⟩) (C MB (C (C RB (C RS RC)) T)))) mrInner
+      = some (Blob.toNoun ⟨par.map ren, body.map (renPole ren), mrFin ren fin⟩) := by
+  have hp := mr_turn_ren RB RS RC ren hren par
+  have hb := fun RJ bN => mr_turn_ops RJ X bN MB RB RS RC T ren hren hT body
+  have hrj := fun B j => lf_mr_rj X B MB RB RS RC T ren hren hT j
+  have hv := fun v => mr_turn_ren RB RS RC ren hren v
+  have hren' : ∀ r, nock (Noun.cell RB (Noun.cell (A r) RC)) RB = some (A (ren r)) := hren
+  rw [mr_inner_eq]
+  cases fin <;>
+    simp [nock_exec, Blob.toNoun, Termin.toNoun, unitNoun, Tag.clq, Tag.eqq, Tag.brn, Tag.brz, Tag.hop,
+      Tag.jmp, Tag.jmf, Tag.jsp, Tag.jsf, Tag.don, Tag.bom, Tag.lti, hT, turn.arm_at, hp, hb, hrj, hv, hren, hren',
+      mrFinSw, mrFin, renFin]
+
+/-- On a block whose terminator is not `%lti`, `(map-regs ren)` is
+`renBlob ren`. -/
+theorem mr_inner_ren (X MB RB RS RC T : Noun) (ren : Nat → Nat)
+    (hren : ∀ r, nock (C RB (C (A r) RC)) RB = some (A (ren r)))
+    (hT : slot? 32767 T = some layer2) (b : Blob) (hl : ∀ n s z o, b.fin ≠ Termin.lti n s z o) :
+    nock (C X (C (Blob.toNoun b) (C MB (C (C RB (C RS RC)) T)))) mrInner = some (Blob.toNoun (renBlob ren b)) := by
+  obtain ⟨par, body, fin⟩ := b
+  rw [mr_inner X MB RB RS RC T ren hren hT par body fin]
+  cases fin <;> first | rfl | exact absurd rfl (hl _ _ _ _)
+
 end Compiler
 end Formalization
