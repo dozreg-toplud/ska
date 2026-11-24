@@ -1,5 +1,6 @@
 import lemmas.Ska.OptTrimWalk
 import lemmas.Ska.ExecPath
+import lemmas.Ska.OptRegLe
 
 /-!
 # `+trim-trace-hints` keeps the code, under `TrimBr`
@@ -502,6 +503,179 @@ theorem kept_pole {lib : Lib} {O : Oracle σ} {gul : Noun} {st : σ} {op : Pole}
   | csm => exact crash rfl rfl (by simp [brOp, traceKey])
 
 end
+
+/-! ## The simulation -/
+
+/-- The dropped keys: not unsafe, and opened. -/
+def TDrop (uns : Uns) (opened : List TKey) (k : TKey) : Prop := uns k = false ∧ k ∈ opened
+
+/-- The test of the `+skip`, negated: the ops the code after keeps. -/
+def tkeep (uns : Uns) (opened : List TKey) (op : Pole) : Bool := !trimDrop uns opened op
+
+theorem trimDrop_true {uns : Uns} {opened : List TKey} {op : Pole} (h : trimDrop uns opened op = true) :
+    ∃ b k, traceKey op = some (b, k) ∧ TDrop uns opened k := by
+  unfold trimDrop at h
+  split at h
+  · rename_i b k he
+    simp only [Bool.and_eq_true, Bool.not_eq_true', decide_eq_true_eq] at h
+    exact ⟨b, k, he, h⟩
+  · cases h
+
+theorem trimDrop_false {uns : Uns} {opened : List TKey} {op : Pole} (h : trimDrop uns opened op = false) :
+    ∀ b k, traceKey op = some (b, k) → ¬ TDrop uns opened k := by
+  intro b k he hd
+  simp only [trimDrop, he, hd.1, hd.2, Bool.not_false, decide_true, Bool.and_self, Bool.true_eq_false] at h
+
+theorem brBody_append : ∀ (g : List (Option TKey)) (l1 l2 : List Pole),
+    brBody g (l1 ++ l2) = (brBody g l1).bind fun g' => brBody g' l2
+  | g, [], l2 => by simp [brBody]
+  | g, op :: l1, l2 => by
+    simp only [List.cons_append, brBody]
+    cases brOp g op with
+    | none => rfl
+    | some g' => exact brBody_append g' l1 l2
+
+/-- The stack after the next op of a bracketed body. -/
+theorem br_next {g gm gend : List (Option TKey)} {pre rest : List Pole} {p : Pole}
+    (h : brBody g (pre ++ p :: rest) = some gend) (hm : brBody g pre = some gm) :
+    ∃ g1, brOp gm p = some g1 ∧ brBody g (pre ++ [p]) = some g1 := by
+  rw [brBody_append, hm, Option.bind_some] at h
+  simp only [brBody, Option.bind_eq_some_iff] at h
+  obtain ⟨g1, h1, -⟩ := h
+  refine ⟨g1, h1, ?_⟩
+  rw [brBody_append, hm, Option.bind_some]
+  simp [brBody, h1]
+
+section Sim
+variable {σ : Type} {lib : Lib} {O : Oracle σ} {gul : Noun} {c c' : Straight Map}
+  {K : Nat → List (Option TKey)} {uns : Uns} {opened : List TKey}
+
+/-- **The relation**: the same label, parameters, registers and state; the
+body after is the body before filtered; the body before is a suffix of its
+block's body whose prefix has the bracketed stack `gm`, and the traces are in
+`TrR` of `gm`. -/
+def TrimI (bl : Map Blob) (K : Nat → List (Option TKey)) (uns : Uns) (opened : List TKey) (x x' : Cfg σ Map) : Prop :=
+  x'.lab = x.lab ∧ x'.params = x.params ∧ x'.regs = x.regs ∧ x'.st = x.st ∧ Reach bl x.lab ∧
+  x'.b = { x.b with body := x.b.body.filter (tkeep uns opened) } ∧
+  ∃ b0 pre gm, HoonMap.get bl x.lab = some b0 ∧ x.b.fin = b0.fin ∧ b0.body = pre ++ x.b.body ∧
+    brBody (K x.lab) pre = some gm ∧ TrR (TDrop uns opened) gm x.t x'.t
+
+/-- The head of the body before is a dropped op. -/
+def TDropped (uns : Uns) (opened : List TKey) (x : Cfg σ Map) : Prop :=
+  x.params = [] ∧ x.b.par = [] ∧ ∃ p rest, x.b.body = p :: rest ∧ trimDrop uns opened p = true
+
+/-- At a dropped op the code before steps or crashes: no end. -/
+theorem tdropped_endOf {x : Cfg σ Map} (hd : TDropped uns opened x) : endOf lib O gul x = none := by
+  obtain ⟨hp, hq, p, rest, hbd, hdr⟩ := hd
+  obtain ⟨b, k, he, -⟩ := trimDrop_true hdr
+  unfold endOf
+  split
+  · rfl
+  rw [hbd]
+  simp only
+  cases e : execPole lib O gul x.st p x.regs x.t with
+  | none => rfl
+  | some r =>
+    obtain ⟨ton, R2, t2, st2⟩ := r
+    cases b with
+    | true => obtain ⟨rfl, -⟩ := push_exec he e; rfl
+    | false => obtain ⟨rfl, -⟩ := pop_exec he e; rfl
+
+variable (TB : TrimBr c.blocks K) (TS : TrimSafe c.blocks K uns)
+  (hc' : ∀ o, HoonMap.get c'.blocks o = (HoonMap.get c.blocks o).map fun b =>
+    { b with body := b.body.filter (tkeep uns opened) })
+include TB TS
+
+/-- The facts at the next op of the body before. -/
+theorem trimI_op {x x' : Cfg σ Map} {p : Pole} {rest : List Pole} (hr : TrimI c.blocks K uns opened x x')
+    (hbd : x.b.body = p :: rest) :
+    ∃ b0 pre gm g1, HoonMap.get c.blocks x.lab = some b0 ∧ x.b.fin = b0.fin ∧ b0.body = pre ++ p :: rest ∧
+      brBody (K x.lab) pre = some gm ∧ TrR (TDrop uns opened) gm x.t x'.t ∧ brOp gm p = some g1 ∧
+      brBody (K x.lab) (pre ++ [p]) = some g1 ∧
+      (traceKey p = none → notCrashing p = false → x.t = x'.t) := by
+  obtain ⟨-, -, -, -, hreach, -, b0, pre, gm, hb0, hfin, hpre, hgm, htr⟩ := hr
+  rw [hbd] at hpre
+  obtain ⟨gend, hgend, -⟩ := TB.2 x.lab b0 hreach hb0
+  rw [hpre] at hgend
+  obtain ⟨g1, h1, h2⟩ := br_next hgend hgm
+  refine ⟨b0, pre, gm, g1, hb0, hfin, hpre, hgm, htr, h1, h2, fun he hn => htr.eq fun k hk hd => ?_⟩
+  have := (TS x.lab b0 hreach hb0).1 pre p rest gm hpre hgm he hn k hk
+  rw [hd.1] at this; cases this
+
+/-- At the end of the body before, the stack is the one every jump target
+starts with, and a loud end sees equal traces. -/
+theorem trimI_fin {x x' : Cfg σ Map} (hr : TrimI c.blocks K uns opened x x') (hbd : x.b.body = []) :
+    ∃ b0, HoonMap.get c.blocks x.lab = some b0 ∧ x.b.fin = b0.fin ∧
+      (∀ j ∈ getJmps b0.fin, TrR (TDrop uns opened) (K j.there) x.t x'.t) ∧
+      (finQuiet x.b.fin = false → x.t = x'.t) := by
+  obtain ⟨-, -, -, -, hreach, -, b0, pre, gm, hb0, hfin, hpre, hgm, htr⟩ := hr
+  rw [hbd, List.append_nil] at hpre
+  obtain ⟨gend, hgend, hK⟩ := TB.2 x.lab b0 hreach hb0
+  rw [hpre, hgm] at hgend
+  cases hgend
+  refine ⟨b0, hb0, hfin, fun j hj => by rw [hK j hj]; exact htr, fun hq => htr.eq fun k hk hd => ?_⟩
+  rw [hfin] at hq
+  have := (TS x.lab b0 hreach hb0).2 hq gm (by rw [hpre]; exact hgm) k hk
+  rw [hd.1] at this; cases this
+
+include hc'
+
+/-- The jump after from the jump before. -/
+theorem trim_jump {x x' : Cfg σ Map} {j : Jmp} {b2 : Blob} (hr : TrimI c.blocks K uns opened x x')
+    (hbd : x.b.body = []) (htk : taken x.regs x.b.fin = some j) (hb2 : HoonMap.get c.blocks j.there = some b2) :
+    HoonMap.get c'.blocks j.there = some { b2 with body := b2.body.filter (tkeep uns opened) } ∧
+    TrimI c.blocks K uns opened (⟨j.there, b2, j.args, x.regs, x.t, x.st⟩ : Cfg σ Map)
+      ⟨j.there, { b2 with body := b2.body.filter (tkeep uns opened) }, j.args, x'.regs, x'.t, x'.st⟩ := by
+  obtain ⟨b0, hb0, hfin, hK, -⟩ := trimI_fin TB TS hr hbd
+  have hreach := hr.2.2.2.2.1
+  rw [hfin] at htk
+  refine ⟨by rw [hc', hb2]; rfl, rfl, rfl, hr.2.2.1, hr.2.2.2.1, Reach.jump hreach hb0 (taken_mem htk), rfl,
+    b2, [], K j.there, hb2, rfl, rfl, rfl, hK j (taken_mem htk)⟩
+
+/-- **Forward**: a step of the code before is a step after or none. -/
+theorem trim_fwd_step {x y x' : Cfg σ Map} {es : List (Nat × Nat)} (hs : Step lib O c gul x es y)
+    (hr : TrimI c.blocks K uns opened x x') :
+    ∃ es' y', Steps lib O c' gul x' es' y' ∧ TrimI c.blocks K uns opened y y' := by
+  obtain ⟨lab, b, params, regs, t, st⟩ := x
+  obtain ⟨lab', b', params', regs', t', st'⟩ := x'
+  have hr0 := hr
+  obtain ⟨hl, hpe, hrg, hst, hreach, hb', hrest⟩ := hr
+  simp only at hl hpe hrg hst hreach hb' hrest
+  subst lab' params' regs' st' b'
+  cases hs with
+  | pass hne hR =>
+    refine ⟨_, _, Steps.step (Step.pass (x := ⟨lab, { b with body := b.body.filter (tkeep uns opened) }, params, regs, t', st⟩)
+      hne hR) (Steps.refl _), rfl, rfl, rfl, rfl, hreach, rfl, ?_⟩
+    obtain ⟨b0, pre, gm, h1, h2, h3, h4, h5⟩ := hrest
+    exact ⟨b0, pre, gm, h1, h2, h3, h4, h5⟩
+  | @op p rest n R2 t2 st2 hp hq hbd hpole =>
+    simp only at hp hq hbd hpole
+    subst hp
+    obtain ⟨b0, pre, gm, g1, hb0, hfin, hpre, hgm, htr, hg1, hpre1, hcr⟩ := trimI_op TB TS hr0 hbd
+    simp only at hb0 hfin hgm htr hpre1 hcr
+    cases hk : trimDrop uns opened p with
+    | true =>
+      obtain ⟨bk, k, he, hd⟩ := trimDrop_true hk
+      obtain ⟨-, rfl, rfl, htr2⟩ := drop_pole htr hg1 he hd hpole
+      refine ⟨[], _, Steps.refl _, rfl, rfl, rfl, rfl, hreach, ?_, b0, pre ++ [p], g1, hb0, hfin,
+        by rw [hpre]; simp, hpre1, htr2⟩
+      simp only [hbd, List.filter_cons, tkeep, hk, Bool.not_true, Bool.false_eq_true, if_false]
+    | false =>
+      have hkp := kept_pole (lib := lib) (O := O) (gul := gul) (st := st) (R := regs) htr hg1
+        (trimDrop_false hk) hcr
+      obtain ⟨t2', h2', htr2⟩ := hkp.fwd hpole
+      refine ⟨_, _, Steps.step (Step.op (x := ⟨lab, { b with body := b.body.filter (tkeep uns opened) }, [], regs, t', st⟩)
+        (rest := rest.filter (tkeep uns opened)) rfl hq
+        (by simp only [hbd, List.filter_cons, tkeep, hk, Bool.not_false, if_true]) h2') (Steps.refl _),
+        rfl, rfl, rfl, rfl, hreach, rfl, b0, pre ++ [p], g1, hb0, hfin, by rw [hpre]; simp, hpre1, htr2 n rfl⟩
+  | @jump j b2 hp hq hbd htk hb2 =>
+    simp only at hp hq hbd htk hb2
+    subst hp
+    obtain ⟨hb2', hr2⟩ := trim_jump TB TS hc' hr0 hbd htk hb2
+    refine ⟨_, _, Steps.step (Step.jump (x := ⟨lab, { b with body := b.body.filter (tkeep uns opened) }, [], regs, t', st⟩)
+      rfl hq (by simp [hbd]) htk hb2') (Steps.refl _), hr2⟩
+
+end Sim
 
 end Opt
 end SkaModel
