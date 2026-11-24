@@ -86,7 +86,9 @@ then its ops in front of the block. -/
 theorem copyLazy_ok {o : Nat} {s1 s2 s' : Sure S} {g g' : Gen Map} (h : copyLazy o s1 s2 g = some (s', g'))
     (hd : g.drop = false) :
     ∃ (A : List Pole) (g1 : Gen Map), Pref g g' (fun k => if k = o then A else []) ∧
-      CopyOK s1.ned s2.ned g g1 s'.ned A ∧ g1.re = g'.re ∧ s'.lok = HoonSet.uni s1.lok s2.lok := by
+      CopyOK s1.ned s2.ned g g1 s'.ned A ∧ g1.re = g'.re ∧ s'.lok = HoonSet.uni s1.lok s2.lok ∧
+      (∀ (Pr : Nat → Prop), NA Pr s1.ned → NA Pr s2.ned → Ple Pr g.re → RegsIn Pr A) ∧
+      (NB g.re s1.ned → NB g.re s2.ned → RegsIn (· < g'.re) A) := by
   simp only [copyLazy] at h
   obtain ⟨⟨ned, ops⟩, g1, h1, h⟩ := bind_some h
   obtain ⟨_, g2, h2, h⟩ := bind_some h
@@ -99,7 +101,9 @@ theorem copyLazy_ok {o : Nat} {s1 s2 s' : Sure S} {g g' : Gen Map} (h : copyLazy
   have P1 : Pref g g1 (fun _ => []) := pref_re O.gen O.le
   have P2 := pref_addOps h2 d1
   have e2 : g1.re = g2.re := by obtain ⟨b, hb, he⟩ := addOps_spec h2 d1; rw [he]
-  exact ⟨ops, g1, (P1.trans P2).congr (fun k => by simp), O, e2, rfl⟩
+  exact ⟨ops, g1, (P1.trans P2).congr (fun k => by simp), O, e2, rfl,
+    fun Pr ha hb hm => (keepsA_copyNeed h1 hm ha hb).2.2,
+    fun ha hb => by rw [← e2]; exact copyNeed_regs _ _ _ _ _ _ h1 ha hb (RegsIn.nil _)⟩
 
 /-! ## The merge of the bonds -/
 
@@ -188,7 +192,7 @@ theorem MergeBs.spec {idx : Map (Nat × Lazy S)} {b r : List (Nat × Lazy S)} {g
     have hn' : (rest.map Prod.fst).Nodup := (List.nodup_cons.mp hn).2
     have ho : ob ∉ rest.map Prod.fst := (List.nodup_cons.mp hn).1
     obtain ⟨B0, fin0, hb0⟩ := hb (ob, ofSure s1) List.mem_cons_self (by simp [hk])
-    obtain ⟨A, -, P1, -⟩ := copyLazy_ok hc hd
+    obtain ⟨A, -, P1, -, -, -, -⟩ := copyLazy_ok hc hd
     have d1 : g1.drop = false := P1.drop.trans hd
     obtain ⟨er, P, PP, Pout, Pin⟩ := ih d1 hn' (fun e he hs => by
       obtain ⟨B, fin, hbe⟩ := hb e (List.mem_cons_of_mem _ he) hs
