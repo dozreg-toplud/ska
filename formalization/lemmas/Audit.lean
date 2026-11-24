@@ -132,6 +132,7 @@ import lemmas.Compiler.CompRunAllL
 import lemmas.Compiler.CompRunTags
 import lemmas.Compiler.CompCoerceLazyGen
 import lemmas.Compiler.CompSixHelp
+import lemmas.Compiler.CompRunSixS
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -1082,3 +1083,9 @@ open Formalization
 #print axioms Compiler.lsz_gate
 #print axioms Compiler.lg_gate
 #print axioms Compiler.comp_lazy_shut
+#print axioms Compiler.cr6s_tail
+#print axioms Compiler.cr6s_p
+#print axioms Compiler.cr6s_lyn_dp
+#print axioms Compiler.cr6s_mid
+#print axioms Compiler.comp_run_n6_dp
+#print axioms Compiler.linv_pastFork

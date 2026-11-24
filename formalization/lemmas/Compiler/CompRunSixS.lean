@@ -464,5 +464,77 @@ theorem cr6s_mid (env : CallEnv) (msup : Option Nomm) (p q r : Nomm) (rb : List 
       unfold cr6S2 cr6S3 cr6S4 cr6S5
       simp [nock_exec, crSubj, compCore, Nomm.toNoun, cr_bat_dol, hr1, hq1, hk, genNoun, e2]
 
+/-! ## The case under `%done` and `%pick` -/
+
+theorem cr_disp_n6 (t mono goal region sup D : Noun) :
+    nock (crSubj mono (C (A 6) t) goal region sup D) crDol
+      = nock (crSubj mono (C (A 6) t) goal region sup D) crK6 := by
+  nock_open crDol
+  simp [nock_exec, crSubj, crTc, crT]
+
+/-- The model of `%6` under `%done` and `%pick`, with the reads of `cond`
+that phase S makes for `+sect` (they change nothing here). -/
+theorem runLC_n6_dp (env : CallEnv) (msup : Option Nomm) (p q r : Nomm) (goal : CGoalL CSet)
+    (hg : ∀ laz th, goal ≠ CGoalL.next laz th) (region : List Nat) :
+    (runLC env msup (Nomm.n6 p q r) goal region : CM (TreapMap mugF) (NextL CSet)) = (do
+      let _ ← getCond
+      let nex1 ← runLC env msup r goal region
+      let _ ← getCond
+      let nex0 ← runLC env msup q goal region
+      sixLynDP env msup p region nex0 nex1) := by
+  funext g0
+  cases goal with
+  | next laz th => exact absurd rfl (hg laz th)
+  | done => rfl
+  | pick z o => rfl
+
+/-- The parts of `%6` as the case takes them: the link and the results of
+each part on every goal with the invariant, and `+hinted` of the test. -/
+structure SixParts (env : CallEnv) (msup : Option Nomm) (ctx : Noun) (n : Nomm) (region : List Nat) : Prop where
+  link : ∀ (goal : CGoalL CSet) (g : Gen (TreapMap mugF)), GInv g goal → CompRunAtR (runLC env msup) ctx n goal region g
+  res : ResFor env msup n region
+  cod : hinted env.cod n = hinted noCode n
+  hin : hinted noCode n ≠ Option.none
+
+/-- **The case `%6` of `+run` under `%done` and `%pick`**, on every state with
+the invariant, given the links and results of the parts (`SixParts`) in the
+region of the case (under `%done` and `%pick` the branches are compiled in
+the case's own region). -/
+theorem comp_run_n6_dp (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q r : Nomm) (region : List Nat)
+    (P : SixParts env msup ctx p region) (Q : SixParts env msup ctx q region) (R : SixParts env msup ctx r region)
+    (goal : CGoalL CSet) (hg : ∀ laz th, goal ≠ CGoalL.next laz th) (g : Gen (TreapMap mugF)) (hinv : GInv g goal) :
+    CompRunAtR (runLC env msup) ctx (Nomm.n6 p q r) goal region g := by
+  intro x mono sup hx
+  have hd : g.drop = false := ginv_drop hinv
+  obtain ⟨tag, grest, hgn, htag⟩ : ∃ (tag : Nat) (grest : Noun), goal.toNoun = C (A tag) grest ∧ tag ≠ 0x7478656e := by
+    cases goal with
+    | next laz th => exact absurd rfl (hg laz th)
+    | done => exact ⟨_, _, rfl, by decide⟩
+    | pick z o => exact ⟨_, _, rfl, by decide⟩
+  have htag' : ¬ ((0x7478656e : Nat) = tag) := fun h => htag h.symm
+  rw [runLC_n6_dp env msup p q r goal hg region]
+  have hm := cr6s_mid (ctx := ctx) env msup p q r region goal goal x hx g mono goal.toNoun (listNoun A region) sup
+    (A 0) (fun _ _ nex0 nex1 => sixLynDP env msup p region nex0 nex1) (R.link goal g hinv)
+    (fun nex1 g1 e1 => Q.link goal g1 (by
+      obtain ⟨l1, b1, gi1, -⟩ := R.res goal g g1 nex1 hinv e1
+      exact ginv_mono hinv l1 b1 ((ginv_drop gi1).trans hd.symm)))
+    (fun nex1 g1 nex0 g2 e1 e2 => by
+      obtain ⟨l1, b1, gi1, -⟩ := R.res goal g g1 nex1 hinv e1
+      have hi1 : GInv g1 goal := ginv_mono hinv l1 b1 ((ginv_drop gi1).trans hd.symm)
+      obtain ⟨l2, b2, gi2, -⟩ := Q.res goal g1 g2 nex0 hi1 e2
+      have d2 : g2.drop = false := ginv_drop gi2
+      rw [hgn]
+      exact cr6s_lyn_dp h7 hcode env msup p q r region P.cod P.hin
+        (fun yes nuh g' hd' => P.link _ g' ⟨hd', jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩) P.res x hx g2 d2 nex0 nex1
+        gi2.1.1 (lnb_mono l2 0 gi1.1.1) mono grest sup (condN g1) (condN g) (listNoun A region)
+        (C (C (A tag) grest) (C (A tag) grest)) (A 0) tag htag)
+  rw [hgn] at hm
+  rw [Nomm.toNoun, cr_disp_n6, cr6_eq, hgn]
+  simp only [crSubj, compCore, Nomm.toNoun] at hm ⊢
+  generalize comp.door = Dr at hm ⊢
+  unfold cr6Head cr6NoLep cr6S0 cr6S1 cr6Lep cr6T2 cr6SA0 cr6SA1
+  simp [nock_exec, htag', hm]
+
 end Compiler
 end Formalization
