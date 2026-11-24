@@ -465,8 +465,9 @@ def SemNC (lib : Lib) (P : Noun → Prop) (f : Noun) (sur : Sure S) (th : Jmp) (
     GoalSemCM lib O c gul Inv ν (fun x => (x < g0.re ∨ NMem ned x) ∧ ¬ NMem sur.ned x) st regs t tm nex.th
       (CGoal.next sur th) r
 
-/-- **`RunOKNV` for a run that calls**: the structural fields of `RunOKNV`,
-`nec` on the pure part `pq` (where the subject does not fit the need, `pq`
+/-- **`RunOKNV` for a run that calls**: the structural fields of `RunOKNV`
+but `size` (a call under a parent adds a lazy block of `+past` that no `%6`
+accounts for, and no theorem reads the bound), `nec` on the pure part `pq` (where the subject does not fit the need, `pq`
 crashes, and so does `+mink` by `MinkN2`), and `SemNC`. -/
 structure RunOKNC (lib : Lib) (P : Noun → Prop) (f : Noun) (pq : Nomm) (sur : Sure S) (th : Jmp)
     (g0 g1 : Gen Map) (nex : NextL S) : Prop where
@@ -482,7 +483,6 @@ structure RunOKNC (lib : Lib) (P : Noun → Prop) (f : Noun) (pq : Nomm) (sur : 
   labs : ∀ e ∈ entries nex.laz, g0.bo ≤ e.1 ∧ e.1 < nex.th.there ∧
     ∃ th, HoonMap.get g1.blocks e.1 = some ⟨[], [], Termin.hop th⟩
   nodup : ((entries nex.laz).map Prod.fst).Nodup
-  size : (entries nex.laz).length ≤ 2 * sixCount pq
   nec : ∀ s, ¬ FitsS nex.laz.sure s → pureEval pq s = none
   ncond : ∀ r, NMem nex.laz.sure.ned r → HoonMap.get g1.cond r = Option.none
   econd : ∀ e ∈ entries nex.laz, ∀ r, NMem e.2.sure.ned r → HoonMap.get g1.cond r = Option.none
@@ -531,7 +531,7 @@ theorem indirect_runS (lib : Lib) {p q : Nomm} (up : UOK (S := S) (Map := Map) l
   refine ⟨E3.trans Rm.ext, G3.trans Rm.grow, CF3.trans Rm.cfr, Rm.lo, Rm.hi, ?_, fun r hr => ?_, Rm.dist,
     fun e he => ⟨(Rm.eregs e he).1, fun r hr => ⟨by have := ((Rm.eregs e he).2 r hr).1; omega,
       ((Rm.eregs e he).2 r hr).2⟩⟩,
-    fun e he => ⟨by have := (Rm.labs e he).1; omega, (Rm.labs e he).2⟩, Rm.nodup, Rm.size, fun s hs => ?_,
+    fun e he => ⟨by have := (Rm.labs e he).1; omega, (Rm.labs e he).2⟩, Rm.nodup, fun s hs => ?_,
     Rm.ncond, Rm.econd, ?_⟩
   · rcases Rm.ent with fr | e
     · exact Or.inl fr
