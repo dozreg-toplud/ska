@@ -1,4 +1,4 @@
-import lemmas.Ska.OptTopo
+import lemmas.Ska.OptHops
 
 /-!
 # `+remove-empty-middle`
@@ -20,10 +20,10 @@ gives (a unit), or kept.
 `removeEmptyMiddle`: the `+rep:by` over the blocks, each new value depending
 only on the old map and `readers`, so its order does not matter.
 
-The preservation statement (`MiddleKeeps`, not proved yet) needs, beyond
-`ReadsOK`, that no rewritten hop passes a register that is a parameter of
-its new target (the check of `+eval-pass`, which the code before passes at
-each of the two hops separately).
+The preservation statement (`MiddleKeeps`, proved in `OptMiddleSim.lean`)
+needs the check of `+eval-pass` before and after the pass (`PassOK` of the
+input and of the result) and, on the entry, `ArgsOK` in place of `ReadsOK`
+(see `MiddleKeeps`).
 -/
 
 namespace Formalization
@@ -98,13 +98,23 @@ def removeEmptyMiddle [MapKeys Map] (fuel : Nat) (bl : Map Blob) : Option (Bool 
         (ch || decide (f' ≠ b.fin), HoonMap.put nw o { b with fin := f' }))
     (some (false, HoonMap.empty))
 
-/-- **The preservation statement of `+remove-empty-middle`** (open). -/
+/-- **The preservation statement of `+remove-empty-middle`** (proved:
+`middleKeeps`, `OptMiddleSim.lean`).  It is not `Keeps`: the code before
+moves the arguments of a bypassed hop into parameters nothing reads, and
+crashes there when an argument register is not in the file, where the code
+after goes on; so the entry must also satisfy `ArgsOK`, which the pass keeps.
+It needs the check of `+eval-pass` before (`PassOK` of the input, the check at
+each bypassed block) and after (`PassOK` of the result, the check of the
+substituted arguments at the new target). -/
 def MiddleKeeps [MapKeys Map] (fuel : Nat) : Prop :=
   ∀ (c : Straight Map) ch bl', removeEmptyMiddle fuel c.blocks = some (ch, bl') →
-    -- no rewritten jump passes a register that is a parameter of its target
-    (∀ o b' j b2, HoonMap.get bl' o = some b' → j ∈ getJmps b'.fin → HoonMap.get bl' j.there = some b2 →
-      ∀ r, some r ∈ j.args → r ∉ b2.par) →
-    Keeps c (withBlocks c bl')
+    PassOK c.blocks → PassOK bl' →
+    (HoonMap.get bl' 0).map Blob.par = (HoonMap.get c.blocks 0).map Blob.par ∧
+    ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (gul : Noun) (st : σ) (vals : List Noun) (t : Trace),
+      ArgsOK lib O c gul st vals t →
+        execEntry lib O st (withBlocks c bl') vals t gul = execEntry lib O st c vals t gul ∧
+        (ReadsOK lib O c gul st vals t → ReadsOK lib O (withBlocks c bl') gul st vals t) ∧
+        ArgsOK lib O (withBlocks c bl') gul st vals t
 
 end Opt
 end SkaModel

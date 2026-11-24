@@ -524,6 +524,10 @@ theorem middle_keeps_of {fuel : Nat} (c : Straight Map) {ch : Bool} {bl' : Map B
       obtain ⟨es, y, hs, hn⟩ := back es' y' hy'
       exact argU_isSome _ _ _ _ hn.2.2.2.1 (fun k hk => hargs es y k ⟨b0, e, hs⟩ hk) k hk
 
+/-- **The preservation statement of `+remove-empty-middle` holds.** -/
+theorem middleKeeps (fuel : Nat) : MiddleKeeps (Map := Map) fuel :=
+  fun c _ _ h hpc hpc' => middle_keeps_of c h hpc hpc'
+
 end Opt
 end SkaModel
 end Formalization
