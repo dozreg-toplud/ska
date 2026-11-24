@@ -47,6 +47,7 @@ import lemmas.Ska.CompAboveX
 import lemmas.Ska.CompSevenSame
 import lemmas.Ska.CompThreeNone
 import lemmas.Ska.CompFragU
+import lemmas.Ska.CompConsNV
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -472,8 +473,10 @@ open Formalization.SkaModel.Comp
 #print axioms splitLok_ne0
 #print axioms run_keepsA
 #print axioms run_above
+#print axioms run_above_le
 #print axioms runX_keepsA
 #print axioms runX_above
+#print axioms runX_above_le
 #print axioms aboveX_of_fragX
 #print axioms finishLF_bellContract74X
 #print axioms finishLF_bellContract73X
@@ -504,5 +507,13 @@ open Formalization.SkaModel.Comp
 #print axioms finishLF_bellContractFU
 #print axioms finishLF_bellContract_sixProxy
 #print axioms runOKNV_seven4
+#print axioms runOKNV_seven4_le
+#print axioms RunOKN.toNV
+#print axioms okNV_fragX
+#print axioms okNV_seven4
+#print axioms AgreeU.part
+#print axioms binaryNV_ok
+#print axioms consNV_body
+#print axioms okNV_cons
 #print axioms runOKV_seven4P
 #print axioms fragU_pure
