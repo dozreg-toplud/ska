@@ -470,5 +470,52 @@ theorem comp_copy_lazy (hc : CompIn ctx) (hl : CompLib ctx) (hu : CsUniIs) (g : 
       copyLazy, e, ea, bind, StateT.bind, hc, in_arm, in.arm_at, in.uni.arm_at, cl_uni_arm, huni,
       pure, StateT.pure]
 
+/-! ## `+copy` -/
+
+def cpBat : Noun :=
+  (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 43690) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A 0)))) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A 0)))) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A 0x706f68)))) (C (A 0) (A 115)))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 62) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 1534) (C (A 0) (A 15)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 6)) (C (C (A 0) (A 242)) (C (A 0) (A 61))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 126) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (C (C (A 1) (A 0x7478656e)) (C (C (A 0) (A 2)) (C (C (A 1) (A 0)) (C (A 0) (A 6))))) (C (A 0) (A 126)))))))))))))))))))
+
+def cpArm : Noun :=
+  (C (A 7) (C (C (A 8) (C (C (A 1) (C (C (A 0x7478656e) (C (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0))) (C (A 0) (A 0)))) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0))))) (C (C (A 1) cpBat) (C (A 0) (A 1))))) (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x79706f632d706d6f63) (C (C (A 0) (A 0x7ffff)) (A 0))))) (C (A 0) (A 1))))))
+
+
+/-- `+copy` is at door axis `220590` (core axis `351662`). -/
+theorem comp_cp_at : slot? 220590 comp.door = some cpArm := by kernel_rfl
+
+/-- `+emit` at its door axis. -/
+theorem comp_emit_at : slot? 27306 comp.door = some comp.emit.arm := by kernel_rfl
+
+variable {x} in
+/-- `+copy`: `+emit` of `[~ ~ %hop then.first]`, then `+copy-lazy` into the
+new block, on fork-free lazy needs, given `+uni:in`, with the side
+conditions of `comp_copy_need` on the sure needs. -/
+theorem comp_copy (hc : CompIn ctx) (hl : CompLib ctx) (hu : CsUniIs) (g : Gen (TreapMap mugF))
+    (first : Next CSet) (second : Sure CSet) (hlt : cnLt g.re first.laz.ned)
+    (hrt : cnLt g.re second.ned) (hm : cnMeet first.laz.ned second.ned) :
+    nock (C cpBat (C (C first.goal.toNoun (lazyNoun second)) (compCore g x ctx))) cpBat
+      = (copy first second g).map fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  obtain ⟨laz, th⟩ := first
+  have he := cf_emit (x := x) hc g ⟨[], [], Termin.hop th⟩
+  simp only [Blob.toNoun, listNoun, Termin.toNoun, Tag.hop, Jmp.toNoun] at he
+  have hre := cf_emitG_re ⟨[], [], Termin.hop th⟩ g
+  have hcl := comp_copy_lazy (x := x) hc hl hu (cfEmitG ⟨[], [], Termin.hop th⟩ g) g.bo laz second
+    (by rw [hre]; exact hlt) (by rw [hre]; exact hrt) hm
+  have hD1 := comp_cp_at
+  have hD2 := comp_emit_at
+  have hD3 := comp_cl_at
+  simp only [compCore] at hcl ⊢
+  unfold cpBat
+  generalize comp.door = Dr at hD1 hD2 hD3 he hcl ⊢
+  cases ec : copyLazy (Map := TreapMap mugF) g.bo laz second (cfEmitG ⟨[], [], Termin.hop th⟩ g) with
+  | none =>
+    rw [ec] at hcl
+    simp [nock_exec, Next.goal, CGoal.toNoun, hD2, hD3, comp_emit_arm, he, comp_cl_arm, hcl, copy,
+      cf_emit_g, ec, bind, StateT.bind, Jmp.toNoun]
+  | some p =>
+    obtain ⟨l2, g2⟩ := p
+    rw [ec] at hcl
+    simp [nock_exec, Next.goal, CGoal.toNoun, hD2, hD3, comp_emit_arm, he, comp_cl_arm, hcl, copy,
+      cf_emit_g, ec, bind, StateT.bind, pure, StateT.pure, Jmp.toNoun, jmp0, listNoun]
+
 end Compiler
 end Formalization
