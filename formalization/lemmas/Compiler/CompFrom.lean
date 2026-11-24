@@ -149,5 +149,29 @@ theorem comp_from_sure (hc : CompIn ctx) (G : Noun) (axe : Nat) (sur : Sure CSet
     simp [nock_exec, fromSure, Need.toNoun, Tag.this, Tag.none, ha0, a0, hc, in_arm, in.arm_at,
       in.run.arm_at, cs_run_in_arm, hr, hl', Sure.toNoun]
 
+theorem comp_from_sure_at : slot? 7163 comp.door = some comp.from_sure.arm := by kernel_rfl
+
+/-- The arm `from-sure` builds its gate. -/
+theorem comp_from_sure_arm (d : Noun) : nock d comp.from_sure.arm =
+    some (C comp.from_sure.battery (C (C (A 0) (C (C (A 0x656e6f6e) (A 0)) (A 0))) d)) := by
+  nock_open comp.from_sure.arm; simp only [nock_exec]
+
+/-- `+from` on a fork-free lazy need `[sure ~ ~]` (the model's `lazyNoun`):
+the test `&(?=(~ fork.laz) ?=(~ bond.laz))` holds, and the arm is
+`[(from-sure axe sure.laz) ~ ~]`. -/
+theorem comp_from (hc : CompIn ctx) (G : Noun) (axe : Nat) (laz : Sure CSet)
+    (h0 : ∀ y ∈ HoonSet.toList laz.lok, y ≠ 0) :
+    nock (C comp.from.battery (C (C (A axe) (lazyNoun laz)) (C comp.door (C G ctx))))
+      comp.from.battery = («from» axe laz).map lazyNoun := by
+  have hf := comp_from_sure hc G axe laz h0
+  nock_open comp.from.battery
+  cases e : fromSure axe laz with
+  | none =>
+    rw [e] at hf
+    simp [nock_exec, lazyNoun, comp_from_sure_at, comp_from_sure_arm, hf, «from», e]
+  | some s =>
+    rw [e] at hf
+    simp [nock_exec, lazyNoun, comp_from_sure_at, comp_from_sure_arm, hf, «from», e]
+
 end Compiler
 end Formalization
