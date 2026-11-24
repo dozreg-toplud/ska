@@ -64,6 +64,7 @@ import lemmas.Compiler.SkaJointConv
 import lemmas.Compiler.SkaCallgraph
 import lemmas.Compiler.SkaPrune
 import lemmas.Compiler.SkaPoke
+import lemmas.Compiler.RoadPure
 import lemmas.Compiler.RegisterFast
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
@@ -526,3 +527,12 @@ open Formalization
 #print axioms Compiler.sp_chain
 #print axioms Compiler.ska_poke_ana_iff
 #print axioms Compiler.sp_bat_run
+#print axioms Compiler.rp_mean_none
+#print axioms Compiler.rp_mock_cases
+#print axioms Compiler.rp_mute_cases
+#print axioms Compiler.rp_mule_cases
+#print axioms Compiler.rp_run_iff
+#print axioms Compiler.ska_poke_gate_iff
+#print axioms Compiler.ska_poke_iff_trap
+#print axioms Compiler.evalH_of_minkF_nil
+#print axioms Compiler.ska_poke_iff_evalH
