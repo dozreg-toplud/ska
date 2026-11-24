@@ -36,6 +36,7 @@ import lemmas.Ska.OptSwitchSimG
 import lemmas.Ska.OptSwitchPlain
 import lemmas.Ska.OptAliasSSAOnce
 import lemmas.Ska.OptAliasSound
+import lemmas.Ska.OptAliasBody
 
 /-! Axioms of the theorems about `+optimize`. -/
 
@@ -226,3 +227,7 @@ open Formalization.SkaModel.Opt
 #print axioms as_op
 #print axioms as_frame
 #print axioms as_sem
+#print axioms ab_op
+#print axioms as_body
+#print axioms as_body_at
+#print axioms aliasBody_append

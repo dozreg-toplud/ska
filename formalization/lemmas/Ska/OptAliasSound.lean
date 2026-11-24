@@ -22,8 +22,10 @@ for the local ops and `as_after` for the calls).
 op added to `Done`, given that the op's sources are read through `old`
 correctly (`R (old x) = R x`, and `old x` is not the destination) and that the
 destination is fresh (`AFresh`: no immediate, no fact names it, its own
-facts are empty, it is not done, no done register is renamed to it, and it is
-not renamed itself).  These are what single assignment gives along a path:
+facts are empty, it is not done, no done register is renamed to it).  The
+destination becomes done when the op is dropped or keeps its own name in
+`old` (a dead fill walked earlier may have renamed a register that is never
+read, `OptAliasBody.lean`).  These are what single assignment gives along a path:
 the destination is written once, after every fact about the registers before
 it.  Every dropped op is justified by a fact: a dropped `%imm` by a register
 of `imml n`, a dropped `%inc` by `decOf`, `%con` by `hedOf ∩ telOf`, `%hed`
@@ -53,7 +55,6 @@ structure AFresh (st : ABody) (Done : Nat → Prop) (e : Nat) : Prop where
   loc : st.loc e = none ∨ st.loc e = some {}
   done : ¬ Done e
   old : ∀ d, Done d → st.old d ≠ e
-  self : st.old e = e
 
 /-- What an op that does not crash does to the values. -/
 def OpSem : Pole → (Nat → Option Noun) → (Nat → Option Noun) → Prop
@@ -133,20 +134,20 @@ theorem as_info_keep (hok : AOK st R Done) (hf : AFresh st Done e) {r : Nat} {i 
   · rw [as_upd_other _ _ hre] at hv
     exact as_frame (hok.info r i v hr hv) (hf.names r i hr)
 
-/-- `old` of the done registers survives a write of a fresh register that
-keeps its own name. -/
+/-- `old` of the done registers survives a write of a fresh register, and
+the register itself is done when it keeps its own name. -/
 theorem as_old_keep (hok : AOK st R Done) (hf : AFresh st Done e) :
-    ∀ x, (Done x ∨ some e = some x) → updA R e w (st.old x) = updA R e w x := by
-  rintro x (hx | hx)
+    ∀ x, (Done x ∨ (some e = some x ∧ st.old x = x)) → updA R e w (st.old x) = updA R e w x := by
+  rintro x (hx | ⟨hx, hs⟩)
   · have hxe : x ≠ e := fun h => hf.done (h ▸ hx)
     rw [as_upd_other _ _ (hf.old x hx), as_upd_other _ _ hxe]; exact hok.old x hx
-  · cases hx; rw [hf.self]
+  · rw [hs]
 
 /-- `old` after a dropped write renamed to `y`, which holds the value. -/
 theorem as_old_drop (hok : AOK st R Done) (hf : AFresh st Done e) {y : Nat}
     (hy : updA R e w y = w) :
-    ∀ x, (Done x ∨ some e = some x) → updA R e w (updA st.old e y x) = updA R e w x := by
-  rintro x (hx | hx)
+    ∀ x, (Done x ∨ (some e = some x ∧ st.old x = x)) → updA R e w (updA st.old e y x) = updA R e w x := by
+  rintro x (hx | ⟨hx, -⟩)
   · have hxe : x ≠ e := fun h => hf.done (h ▸ hx)
     rw [as_upd_other _ _ hxe, as_upd_other _ _ (hf.old x hx), as_upd_other _ _ hxe]; exact hok.old x hx
   · cases hx; rw [as_upd_self, hy, as_upd_self]
@@ -223,15 +224,17 @@ theorem as_op {pick : List Nat → Nat} (hpick : ∀ l : List Nat, l ≠ [] → 
     (h : aliasOp pick st op = some (res, st2)) (hok : AOK st R Done)
     (hrd : ∀ x ∈ asSrc op, R (st.old x) = R x ∧ ∀ e, aliasDst op = some e → st.old x ≠ e)
     (hfr : ∀ e, aliasDst op = some e → AFresh st Done e) (hs : OpSem op R R2) :
-    AOK st2 R2 (fun x => Done x ∨ aliasDst op = some x) := by
+    AOK st2 R2 (fun x => Done x ∨ (aliasDst op = some x ∧ st.old x = x)) := by
   -- an op without destination that keeps the state
-  have same : st2 = st → R2 = R → (∀ e, aliasDst op ≠ some e) → AOK st2 R2 (fun x => Done x ∨ aliasDst op = some x) :=
+  have same : st2 = st → R2 = R → (∀ e, aliasDst op ≠ some e) →
+      AOK st2 R2 (fun x => Done x ∨ (aliasDst op = some x ∧ st.old x = x)) :=
     fun e1 e2 hn => by
       subst e1 e2
-      exact ⟨hok.imm, hok.info, fun d hd => hd.elim (hok.old d) (fun h => absurd h (hn d))⟩
+      exact ⟨hok.imm, hok.info, fun d hd => hd.elim (hok.old d) (fun h => absurd h.1 (hn d))⟩
   -- an op writing `d` whose state gets the empty facts at `d`
   have blank : ∀ d, aliasDst op = some d → AFresh st Done d → (∃ w, R2 = updA R d w) →
-      st2 = { st with loc := updA st.loc d (some {}) } → AOK st2 R2 (fun x => Done x ∨ aliasDst op = some x) :=
+      st2 = { st with loc := updA st.loc d (some {}) } →
+      AOK st2 R2 (fun x => Done x ∨ (aliasDst op = some x ∧ st.old x = x)) :=
     fun d hd hf ⟨w, hw⟩ e => by
       subst e hw
       rw [hd]
@@ -434,7 +437,7 @@ theorem as_op {pick : List Nat → Nat} (hpick : ∀ l : List Nat, l ≠ [] → 
       obtain ⟨-, rfl⟩ := h
       obtain ⟨i0, hi0, rfl⟩ := as_jab hj
       rw [hai] at hi0; cases hi0
-      refine ⟨hok.imm, as_info_upd hok.info (fun v hv => ?_), fun d hd => hd.elim (hok.old d) (fun e => by cases e)⟩
+      refine ⟨hok.imm, as_info_upd hok.info (fun v hv => ?_), fun d hd => hd.elim (hok.old d) (fun e => by cases e.1)⟩
       rw [hs1, hxy] at hv; cases hv
       exact as_with_cell (hok.info _ _ _ hai (by rw [hs1, hxy])) ⟨x, y, rfl⟩
   | lob p =>
@@ -451,7 +454,7 @@ theorem as_op {pick : List Nat → Nat} (hpick : ∀ l : List Nat, l ≠ [] → 
       obtain ⟨-, rfl⟩ := h
       obtain ⟨i0, hi0, rfl⟩ := as_jab hj
       rw [hai] at hi0; cases hi0
-      refine ⟨hok.imm, as_info_upd hok.info (fun v hv => ?_), fun d hd => hd.elim (hok.old d) (fun e => by cases e)⟩
+      refine ⟨hok.imm, as_info_upd hok.info (fun v hv => ?_), fun d hd => hd.elim (hok.old d) (fun e => by cases e.1)⟩
       rw [hs1] at hv
       exact as_with_loob (hok.info _ _ _ hai (by rw [hs1]; exact hv)) (by
         rcases hl with e | e <;> rw [e] at hv <;> cases hv
