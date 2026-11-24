@@ -97,6 +97,134 @@ theorem keepX_sevenFrom {axe : Nat} {q : Nomm} (ha : 2 ≤ axe) (ihq : KeepX S M
   · obtain ⟨l, _, he'⟩ := E.mem_right he
     exact R.labs (e.1, l) he'
 
+/-- The tail of `%3` and `%4`: a block whose terminator reads the fresh
+register `arg`, then the run of the operand for it. -/
+theorem keepX_tail {p : Nomm} (ih : KeepX S Map p) {b : Blob} {arg : Nat} {region : List Nat} {g g1 g2 : Gen Map}
+    {o : Nat} {nex : NextL S} (hd : g.drop = false) (hb : BlobIn (· < g.re) b) (ha : arg < g.re)
+    (hc : sixCount p ≤ 255) (h1 : (emit b : CM Map Nat) g = some (o, g1))
+    (h : runL p (CGoalL.next (ofSure (lazyReg arg)) (jmp0 o)) region g1 = some (nex, g2)) :
+    KeepR g g2 nex (sixCount p) := by
+  obtain ⟨k1, q1⟩ := keeps_emit hd hb h1
+  exact (ih (goal := CGoal.next (lazyReg arg) (jmp0 o)) (k1.dropF hd) ⟨nb_this (by omega), jmpIn_jmp0 _ _⟩ hc h).pre
+    k1 ((KC.emit' _).keep _ _ _ h1) (Nat.le_refl _)
+
+theorem keepX_four {p : Nomm} (ih : KeepX S Map p) : KeepX S Map (Nomm.n4 p) := by
+  intro goal region g0 g1 nex hd hg hc h
+  have hcp : sixCount p ≤ 255 := by simpa only [sixCount] using hc
+  show KeepR g0 g1 nex (sixCount p)
+  cases goal with
+  | done =>
+    simp only [CGoal.toL] at h
+    unfold runL at h
+    obtain ⟨pro, ga, h1, h⟩ := bind_some h
+    obtain ⟨e1, q1, k1⟩ := keeps_re h1
+    obtain ⟨arg, gb, h2, h⟩ := bind_some h
+    obtain ⟨e2, q2, k2⟩ := keeps_re h2
+    obtain ⟨o, gc, h3, h⟩ := bind_some h
+    have R := keepX_tail ih ((k1.trans k2).dropF hd) (blobIn_one (p := Pole.inc arg pro) (f := Termin.don pro)
+      (fun x hx => by simp only [poleRegs, List.mem_cons, List.mem_nil_iff, or_false] at hx; omega)
+      (show pro < gb.re by omega)) (by omega) hcp h3 h
+    exact R.pre (k1.trans k2) (by rw [(KC.re').keep _ _ _ h2, (KC.re').keep _ _ _ h1]) (Nat.le_refl _)
+  | pick z o =>
+    simp only [CGoal.toL] at h
+    unfold runL at h
+    obtain ⟨pro, ga, h1, h⟩ := bind_some h
+    obtain ⟨e1, q1, k1⟩ := keeps_re h1
+    obtain ⟨arg, gb, h2, h⟩ := bind_some h
+    obtain ⟨e2, q2, k2⟩ := keeps_re h2
+    obtain ⟨o', gc, h3, h⟩ := bind_some h
+    have kk : ∀ x, x < g0.re → x < gb.re := fun x hx => by omega
+    have R := keepX_tail ih ((k1.trans k2).dropF hd) (blobIn_one (p := Pole.inc arg pro) (f := Termin.brn pro z o)
+      (fun x hx => by simp only [poleRegs, List.mem_cons, List.mem_nil_iff, or_false] at hx; omega)
+      ⟨show pro < gb.re by omega, hg.1.mono kk, hg.2.mono kk⟩) (by omega) hcp h3 h
+    exact R.pre (k1.trans k2) (by rw [(KC.re').keep _ _ _ h2, (KC.re').keep _ _ _ h1]) (Nat.le_refl _)
+  | next sur th =>
+    simp only [CGoal.toL] at h
+    unfold runL at h
+    obtain ⟨a, ga, h1, h⟩ := bind_some h
+    rw [collapseLazyAtomL_mk] at h1
+    obtain ⟨k1, r1⟩ := keeps_collapseLazyAtom (nex := ⟨sur, th⟩) hd hg.1 h1
+    have c1 := (kc_collapseLazyAtom _).keep _ _ _ h1
+    obtain ⟨⟨pro, th'⟩, gb, h2, h⟩ := bind_some h
+    have hp : Keeps ga gb ∧ pro < gb.re ∧ gb.cond = ga.cond := by
+      cases a with
+      | some x =>
+        simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+        obtain ⟨rfl, rfl⟩ := h2
+        exact ⟨Keeps.refl _, r1 _ _ rfl, rfl⟩
+      | none =>
+        simp only at h2
+        obtain ⟨r, g3, h3, h2⟩ := bind_some h2
+        obtain ⟨e3, q3, k3⟩ := keeps_re h3
+        have c3 := (KC.re').keep _ _ _ h3
+        by_cases ht : th.args = []
+        · rw [if_pos ht] at h2
+          simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+          obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h2
+          exact ⟨k3, by omega, c3⟩
+        · rw [if_neg ht] at h2; cases h2
+    obtain ⟨k2, p2, c2⟩ := hp
+    obtain ⟨arg, gc, h3, h⟩ := bind_some h
+    obtain ⟨e3, q3, k3⟩ := keeps_re h3
+    obtain ⟨o, gd, h4, h⟩ := bind_some h
+    have R := keepX_tail ih ((k1.trans (k2.trans k3)).dropF hd)
+      (blobIn_one (p := Pole.inc arg pro) (f := Termin.hop (jmp0 th'))
+        (fun x hx => by simp only [poleRegs, List.mem_cons, List.mem_nil_iff, or_false] at hx; omega)
+        (jmpIn_jmp0 _ _)) (by omega) hcp h4 h
+    exact R.pre (k1.trans (k2.trans k3)) (by rw [(KC.re').keep _ _ _ h3, c2, c1]) (Nat.le_refl _)
+
+theorem keepX_three {p : Nomm} (ih : KeepX S Map p) : KeepX S Map (Nomm.n3 p) := by
+  intro goal region g0 g1 nex hd hg hc h
+  have hcp : sixCount p ≤ 255 := by simpa only [sixCount] using hc
+  show KeepR g0 g1 nex (sixCount p)
+  cases goal with
+  | done =>
+    simp only [CGoal.toL] at h
+    unfold runL at h
+    obtain ⟨⟨o0, o1⟩, ga, h1, h⟩ := bind_some h
+    have k1 := keeps_doneBlocks hd h1
+    obtain ⟨r, gb, h2, h⟩ := bind_some h
+    obtain ⟨e2, q2, k2⟩ := keeps_re h2
+    obtain ⟨oc, gc, h3, h⟩ := bind_some h
+    have R := keepX_tail ih ((k1.trans k2).dropF hd)
+      (blobIn_fin (f := Termin.clq r (jmp0 o0) (jmp0 o1)) ⟨show r < gb.re by omega, jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩)
+      (by omega) hcp h3 h
+    exact R.pre (k1.trans k2) (by rw [(KC.re').keep _ _ _ h2, kc_doneBlocks.keep _ _ _ h1]) (Nat.le_refl _)
+  | pick z o =>
+    simp only [CGoal.toL] at h
+    unfold runL at h
+    obtain ⟨r, gb, h2, h⟩ := bind_some h
+    obtain ⟨e2, q2, k2⟩ := keeps_re h2
+    obtain ⟨oc, gc, h3, h⟩ := bind_some h
+    have kk : ∀ x, x < g0.re → x < gb.re := fun x hx => by omega
+    have R := keepX_tail ih (k2.dropF hd)
+      (blobIn_fin (f := Termin.clq r z o) ⟨show r < gb.re by omega, hg.1.mono kk, hg.2.mono kk⟩) (by omega) hcp h3 h
+    exact R.pre k2 ((KC.re').keep _ _ _ h2) (Nat.le_refl _)
+  | next sur th =>
+    simp only [CGoal.toL] at h
+    unfold runL at h
+    dsimp only at h
+    revert h; split
+    · exact fun h => ih (goal := CGoal.next sur th) hd hg hcp h
+    intro h
+    obtain ⟨a, ga, h1, h⟩ := bind_some h
+    rw [collapseLazyAtomL_mk] at h1
+    obtain ⟨k1, r1⟩ := keeps_collapseLazyAtom (nex := ⟨sur, th⟩) hd hg.1 h1
+    have c1 := (kc_collapseLazyAtom _).keep _ _ _ h1
+    rcases a with _ | ⟨r, o⟩
+    · cases h
+    simp only at h
+    obtain ⟨⟨z, o'⟩, gb, h2, h⟩ := bind_some h
+    have k2 := keeps_forl (k1.dropF hd) (r1 r o rfl) h2
+    have c2 := (kc_forl _ _).keep _ _ _ h2
+    obtain ⟨r', gc, h3, h⟩ := bind_some h
+    obtain ⟨e3, q3, k3⟩ := keeps_re h3
+    obtain ⟨oc, gd, h4, h⟩ := bind_some h
+    have R := keepX_tail ih ((k1.trans (k2.trans k3)).dropF hd)
+      (blobIn_fin (f := Termin.clq r' (jmp0 z) (jmp0 o')) ⟨show r' < gc.re by omega, jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩)
+      (by omega) hcp h4 h
+    exact R.pre (k1.trans (k2.trans k3)) (by rw [(KC.re').keep _ _ _ h3, c2, c1]) (Nat.le_refl _)
+
 end Comp
 end SkaModel
 end Formalization
