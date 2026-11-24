@@ -59,7 +59,7 @@ def ev : Nat → Noun → Noun → Option Noun
     if FolRt f then nockW (ev j) s f else if f = ska_analyze.battery then iterN (j + 1) s f else nock s f
 
 theorem FFar.out {f : Noun} (h : FFar f) : ¬ FolRt f ∧ ¬ f = ska_analyze.battery := by
-  obtain ⟨h1, h2, h3, h4⟩ := h
+  obtain ⟨h1, h2, h3, h4, -⟩ := h
   refine ⟨?_, fun e => h4 (e ▸ rfl)⟩
   rintro (e | e | e) <;> subst e <;> simp_all
 

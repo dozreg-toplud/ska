@@ -1,6 +1,7 @@
 import lemmas.Compiler.RecCall
 import lemmas.Pill.Arm.Fol_loop
 import lemmas.Pill.Arm.Ska_analyze
+import lemmas.Pill.Arm.Ska_cg
 import lemmas.Iter
 
 /-!
@@ -34,13 +35,18 @@ def ftrunc : Nat → Noun → Noun
   | _ + 1, Noun.atom a => A a
   | n + 1, Noun.cell x y => C (ftrunc n x) (ftrunc n y)
 
-/-- A formula that is none of the four whose calls the induction on the depth
+/-- A formula that is none of those whose calls the induction on the depth
 of calls follows: the trap's battery, the traps `nock-2-direct-non-inlined`
-and `resolve`, and the gate `+analyze`.  The case theorems are stated for
-`nockW c` with `c` equal to `nock` on every such formula. -/
+and `resolve`, the gate `+analyze`, and (for the induction that will
+discharge `AnaIs`) the gate `+run`, the pass and member loops of `+analyze`,
+the loop of `+sweep` and the loop `live` of `+cull`.  The case theorems are
+stated for `nockW c` with `c` equal to `nock` on every such formula. -/
 def FFar (f : Noun) : Prop :=
   ftrunc 8 f ≠ ftrunc 8 fol_loop.battery ∧ ftrunc 8 f ≠ ftrunc 8 fol_loop.resolve ∧
-    ftrunc 8 f ≠ ftrunc 8 fol_loop.direct ∧ ftrunc 8 f ≠ ftrunc 8 ska_analyze.battery
+    ftrunc 8 f ≠ ftrunc 8 fol_loop.direct ∧ ftrunc 8 f ≠ ftrunc 8 ska_analyze.battery ∧
+    ftrunc 8 f ≠ ftrunc 8 ska_run.battery ∧ ftrunc 8 f ≠ ftrunc 8 ska_analyze.loop0 ∧
+    ftrunc 8 f ≠ ftrunc 8 ska_analyze.loop1 ∧ ftrunc 8 f ≠ ftrunc 8 ska_cg.sweep.loop ∧
+    ftrunc 8 f ≠ ftrunc 8 ska_cg.cull.loop
 
 instance : DecidablePred FFar := fun _ => inferInstanceAs (Decidable (_ ∧ _))
 
