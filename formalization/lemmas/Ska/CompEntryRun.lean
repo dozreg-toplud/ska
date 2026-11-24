@@ -65,6 +65,20 @@ theorem runOKE_n0 (lib : Lib) {axe : Nat} {laz laz' : Lazy S} {th : Jmp} {g : Ge
     simp only [pureEval, hs1]
     exact ⟨fun _ => ⟨regs, hh'.1, fun _ _ => rfl, rfl⟩, fun nf => absurd (fitsS_of_holdsS hh') nf⟩
 
+/-- **The front of `[0 axe]` under any hypothesis on the input registers**:
+`F = []`, and the moved need filled is the goal entry's need filled
+(`fillSem_from`), which uses no hypothesis. -/
+theorem frontK_n0 {K : Nat → Prop} {axe : Nat} {laz laz' : Lazy S} {th : Jmp} {g : Gen Map}
+    (hf : fromL axe laz = some laz') : FrontK (Map := Map) K (Nomm.n0 axe) laz g g ⟨laz', th⟩ := by
+  have E := fromL_ent axe _ _ hf
+  intro e he
+  obtain ⟨l', hl', hm'⟩ := E.mem_left he
+  refine ⟨[], fun B fin hb => by simpa using hb, Or.inl ⟨l', hm', ?_⟩⟩
+  intro lib σ O c gul st t ned A s0 s v _ hev hfill
+  simp only [pureEval] at hev
+  rw [List.append_nil]
+  exact fillSem_from (fromL_sure hl') hev hfill
+
 /-- The empty fill of the bunt. -/
 theorem fillSem_bunt_nil {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ}
     {t : Trace} {ned : Need} {lo : Nat} {s0 s : Noun} :

@@ -77,6 +77,26 @@ def FrontSem (lo0 lo : Nat) (nm : Nomm) (L' : Sure S) (F : List Pole) (L : Sure 
     (A : List Pole) (s0 s v : Noun), (∀ r, NMem ned r → lo ≤ r) → pureEval nm s = some v →
     FillSem (Map := Map) lib O c gul st t ned lo L' A s0 s → FillSem lib O c gul st t ned lo0 L (A ++ F) s0 v
 
+/-- **`FrontSem` with any hypothesis `K` on the input registers.**  The
+strict `FrontSem` is the case `K r := lo ≤ r` (`FrontSemR.strict`); the
+relaxed one takes `InR` of the run (`FrontER`, `CompEntryRel.lean`). -/
+def FrontSemR (K : Nat → Prop) (lo0 lo : Nat) (nm : Nomm) (L' : Sure S) (F : List Pole) (L : Sure S) : Prop :=
+  ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace) (ned : Need)
+    (A : List Pole) (s0 s v : Noun), (∀ r, NMem ned r → K r) → pureEval nm s = some v →
+    FillSem (Map := Map) lib O c gul st t ned lo L' A s0 s → FillSem lib O c gul st t ned lo0 L (A ++ F) s0 v
+
+theorem FrontSemR.strict {lo0 lo : Nat} {nm : Nomm} {L' : Sure S} {F : List Pole} {L : Sure S}
+    (h : FrontSemR (Map := Map) (fun r => lo ≤ r) lo0 lo nm L' F L) : FrontSem (Map := Map) lo0 lo nm L' F L := h
+
+/-- **The front clause of `RunOKE` with the hypothesis `K`**: each goal
+entry gets ops `F` in front of its body, which with the result's entry at
+the same label (or alone, when the run consumed the entry) fill its need. -/
+def FrontK (K : Nat → Prop) (nm : Nomm) (laz : Lazy S) (g0 g1 : Gen Map) (nex : NextL S) : Prop :=
+  ∀ e ∈ entries laz, ∃ F : List Pole,
+    (∀ B fin, HoonMap.get g0.blocks e.1 = some ⟨[], B, fin⟩ → HoonMap.get g1.blocks e.1 = some ⟨[], F ++ B, fin⟩) ∧
+    ((∃ L', (e.1, L') ∈ entries nex.laz ∧ FrontSemR (Map := Map) K g0.re g1.re nm L'.sure F e.2.sure) ∨
+     (e.1 ∉ (entries nex.laz).map Prod.fst ∧ FrontSemR (Map := Map) K g0.re g1.re nm Sure.bunt F e.2.sure))
+
 /-- **The relation for one run of `runL` for a goal `%next laz th` whose
 need may have entries.**  It replaces the earlier statement, which put every
 entry of the result at a new label.  The entries of the goal keep their
