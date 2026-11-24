@@ -483,14 +483,23 @@ def sureRequireLook (sur : Sure S) : CM Map Need :=
     if axe = 0 then fun _ => Option.none else
     lookPath ned axe) (pure sur.ned)
 
-/-- `+crash-need` with an immediate atom (`%&`) or a register (`%|`). -/
+/-- `+crash-need` with an immediate atom (`%&`) or a register (`%|`).  The
+fill puts a zero into each register of the need, except the register that
+holds the atom, which is defined already (the `+murn` of af5cc39:
+`?:  &(?=(%| -.atom) =(x p.atom))  ~`). -/
 def crashNeed (o : Nat) (atom : Sum Nat Nat) (ned : Need) : CM Map Unit :=
-  let fill := (flattenNeed ned).map fun x => Pole.imm (A 0) x
   match atom with
-  | Sum.inr p => addOps o (Pole.cel p :: fill)
+  | Sum.inr p => addOps o (Pole.cel p :: ((flattenNeed ned).filter (· != p)).map fun x => Pole.imm (A 0) x)
   | Sum.inl n => do
       let r ← re
-      addOps o (Pole.imm (A n) r :: Pole.cel r :: fill)
+      addOps o (Pole.imm (A n) r :: Pole.cel r :: (flattenNeed ned).map fun x => Pole.imm (A 0) x)
+
+/-- The fill of `+crash-need` on a register is part of the fill of every
+register of the need. -/
+theorem crashFill_sub (p : Nat) (ned : Need) :
+    ((flattenNeed ned).filter (· != p)).map (fun x => Pole.imm (A 0) x)
+      ⊆ (flattenNeed ned).map fun x => Pole.imm (A 0) x :=
+  List.map_subset _ fun _ hx => (List.mem_filter.mp hx).1
 
 /-- The loop of `+mede`: the constant `som` into the registers of `ned`. -/
 def medeLoop (o : Nat) : Noun → Need → CM Map Unit

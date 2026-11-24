@@ -225,7 +225,7 @@ theorem wr_crashNeed {o : Nat} {atom : Sum Nat Nat} {ned : Need} {g g' : Gen Map
   | inr p =>
     simp only [crashNeed] at h
     exact wroteIn_addOps (opsWr_cons (p := Pole.cel p) (fun x hx => by simp [poleWr] at hx)
-      (opsWr_fill fun x hx => Or.inl hx)) h
+      (fun q hq => opsWr_fill (fun x hx => Or.inl hx) q (crashFill_sub p ned hq))) h
   | inl n =>
     simp only [crashNeed, bind_apply, re_apply, Option.bind_some] at h
     have e := (addOps_re h).1

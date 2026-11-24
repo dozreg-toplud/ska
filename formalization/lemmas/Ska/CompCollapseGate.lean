@@ -270,7 +270,8 @@ theorem collapseGate_crash {r o oL : Nat} {l : Lazy S} {g g' : Gen Map} {kk : Na
     rw [HoonMap.get_put, if_neg ho', hb2]
   · simp only [List.mem_singleton] at he
     subst he
-    refine ⟨Pole.cel src :: (flattenNeed ned).map (fun x => Pole.imm (A 0) x), fun B fin hb' => ?_, ?_⟩
+    refine ⟨Pole.cel src :: ((flattenNeed ned).filter (· != src)).map (fun x => Pole.imm (A 0) x),
+      fun B fin hb' => ?_, ?_⟩
     · rw [hb2] at hb
       rw [hb] at hb'
       simp only [Option.some.injEq] at hb'

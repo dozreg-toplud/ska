@@ -337,7 +337,7 @@ theorem keeps_crashNeed {o : Nat} {atom : Sum Nat Nat} {ned : Need} {g g' : Gen 
     simp only [crashNeed] at h
     exact (keeps_addOps (regsIn_single (p := Pole.cel p) (fun x hx => by
       simp only [poleRegs, List.mem_cons, List.mem_nil_iff, or_false] at hx
-      rw [hx]; exact ha p rfl) _ (fill_regs hn)) h).1
+      rw [hx]; exact ha p rfl) _ (fun q hq => fill_regs hn q (crashFill_sub p ned hq))) h).1
   | inl n =>
     simp only [crashNeed, bind_apply, re_apply, Option.bind_some] at h
     have s : g.re < g.re + 1 := Nat.lt_succ_self _

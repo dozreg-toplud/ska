@@ -7,7 +7,7 @@ import lemmas.Ska.OptDriver
 # The pill link of the optimizer: the core, the keys, the nouns
 
 The optimizer's arms are those of the `|%` core `optC` at axis `31` of `cor`
-(`optC_at`): its battery `nh58984ad6cdbd` on the payload `compK`, the core
+(`optC_at`): its battery `nh6e49f3724ff1` on the payload `compK`, the core
 of the compiler.  The small helpers (`+get-jmps`, `+get-regs`, ...) are arms
 of `compTypes`, at axis `7` of `optC` (`optC_types`).  `layer2`, the library
 core with `+by`, `+in`, `+roll`, ..., is at axis `0x1ffff` of `optC`
@@ -40,7 +40,7 @@ set_option linter.unusedVariables false
 /-! ## The core -/
 
 /-- The optimizer's core: its battery on `compK`. -/
-def optC : Noun := C nh58984ad6cdbd compK
+def optC : Noun := C nh6e49f3724ff1 compK
 
 /-- `optC` is at axis `31` of `cor`. -/
 theorem optC_at : slot? 31 cor = some optC := by kernel_rfl

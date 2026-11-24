@@ -15,7 +15,7 @@ namespace Cue
 open Nock CueRel
 
 /-- The table of the nouns of the pill that a reference points to, in the
-order in which their decoding ends (23358 entries): the bit where each starts
+order in which their decoding ends (23361 entries): the bit where each starts
 and the noun. -/
 noncomputable def KV (j : Nat) : Nat × Noun :=
   bif Nat.ble 11493 j then

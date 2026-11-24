@@ -1,11 +1,13 @@
 import lemmas.Compiler.CompCopyLink
+import lemmas.Hoon.ListsMore
 
 /-!
 # `+crash-need`, `+mede`, `+lazy-bound` and `+proxy` of the door of `+comp`
 
 `+crash-need` (door axis `27310`, core axis `43694`, no hint) adds to block
 `o` a `%cel` of the atom (an immediate put in a fresh register, or a
-register) and a zero into each register of the need: the fetch crashes
+register) and a zero into each register of the need but the register that
+holds the atom (a `+murn` over `+flatten-need`, af5cc39): the fetch crashes
 there.  It tests `(~(has by soft.gen) o)` in both branches: the link takes
 the branch where `o` is not a key of `soft` (`GenRest.SoftOut`), where the
 pill runs `+add-ops` as the model does, and otherwise the pill runs
@@ -22,10 +24,10 @@ variable {ctx : Noun}
 /-! ## `+crash-need` -/
 
 def crnG : Noun :=
-  (C (C (A 1) (A 0x6d6d69)) (C (C (A 1) (A 0)) (C (A 0) (A 6))))
+  (C (A 6) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 1)) (C (A 0) (A 244)))) (C (C (A 6) (C (C (A 5) (C (C (A 0) (A 6)) (C (A 0) (A 245)))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (C (A 1) (A 0)) (C (C (A 1) (A 0)) (C (C (A 1) (A 0x6d6d69)) (C (C (A 1) (A 0)) (C (A 0) (A 6))))))))
 
 def crnBat : Noun :=
-  (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 0xbef7e) (C (A 0) (A 0x3fffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 348) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 59))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (A 0)) (C (C (A 1) crnG) (C (A 0) (A 1))))))))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 1)) (C (A 0) (A 116)))) (C (C (A 6) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x7fffff)))) (C (A 9) (C (A 3061) (C (A 10) (C (C (A 6) (C (A 0) (A 0xfdfe))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 60))) (C (A 0) (A 2)))))))) (C (C (A 8) (C (C (A 9) (C (A 0x2aabe) (C (A 0) (A 15)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 60)) (C (C (A 0) (A 245)) (C (A 0) (A 123))))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 9) (C (A 0x2aee) (C (A 0) (A 15)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 60)) (C (A 7) (C (C (A 0) (A 3)) (C (C (C (A 1) (A 0x6c6563)) (C (A 0) (A 117))) (C (A 0) (A 2))))))) (C (A 0) (A 2))))))))))) (C (A 11) (C (C (A 0x73736f74) (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 116))))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 0x55ffff) (C (A 0) (A 15)))))) (C (A 7) (C (C (A 10) (C (C (A 126) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 6) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0xffffff)))) (C (A 9) (C (A 3061) (C (A 10) (C (C (A 6) (C (A 0) (A 0x1fdfe))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 124))) (C (A 0) (A 2)))))))) (C (C (A 8) (C (C (A 9) (C (A 0x2aabe) (C (A 10) (C (C (A 6) (C (A 8) (C (C (A 9) (C (A 0x2aee) (C (A 0) (A 31)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 124)) (C (A 7) (C (C (A 0) (A 3)) (C (C (C (A 1) (A 0x6d6d69)) (C (C (A 0) (A 491)) (C (A 0) (A 2)))) (C (A 1) (A 0))))))) (C (A 0) (A 2))))))))) (C (A 0) (A 31)))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 124)) (C (C (A 0) (A 6)) (C (A 0) (A 251))))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 9) (C (A 0x2aee) (C (A 0) (A 31)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 124)) (C (A 7) (C (C (A 0) (A 3)) (C (C (C (A 1) (A 0x6d6d69)) (C (C (A 0) (A 491)) (C (A 0) (A 2)))) (C (C (C (A 1) (A 0x6c6563)) (C (A 0) (A 2))) (C (A 0) (A 6)))))))) (C (A 0) (A 2))))))))))))))))))))))))))
+  (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 0x17defea) (C (A 0) (A 0x3fffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 348) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 59))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (A 0)) (C (C (A 1) crnG) (C (A 0) (A 1))))))))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 1)) (C (A 0) (A 116)))) (C (C (A 6) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x7fffff)))) (C (A 9) (C (A 3061) (C (A 10) (C (C (A 6) (C (A 0) (A 0xfdfe))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 60))) (C (A 0) (A 2)))))))) (C (C (A 8) (C (C (A 9) (C (A 0x2aabe) (C (A 0) (A 15)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 60)) (C (C (A 0) (A 245)) (C (A 0) (A 123))))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 9) (C (A 0x2aee) (C (A 0) (A 15)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 60)) (C (A 7) (C (C (A 0) (A 3)) (C (C (C (A 1) (A 0x6c6563)) (C (A 0) (A 117))) (C (A 0) (A 2))))))) (C (A 0) (A 2))))))))))) (C (A 11) (C (C (A 0x73736f74) (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 116))))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 0x55ffff) (C (A 0) (A 15)))))) (C (A 7) (C (C (A 10) (C (C (A 126) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 6) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0xffffff)))) (C (A 9) (C (A 3061) (C (A 10) (C (C (A 6) (C (A 0) (A 0x1fdfe))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 124))) (C (A 0) (A 2)))))))) (C (C (A 8) (C (C (A 9) (C (A 0x2aabe) (C (A 10) (C (C (A 6) (C (A 8) (C (C (A 9) (C (A 0x2aee) (C (A 0) (A 31)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 124)) (C (A 7) (C (C (A 0) (A 3)) (C (C (C (A 1) (A 0x6d6d69)) (C (C (A 0) (A 491)) (C (A 0) (A 2)))) (C (A 1) (A 0))))))) (C (A 0) (A 2))))))))) (C (A 0) (A 31)))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 124)) (C (C (A 0) (A 6)) (C (A 0) (A 251))))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 9) (C (A 0x2aee) (C (A 0) (A 31)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 124)) (C (A 7) (C (C (A 0) (A 3)) (C (C (C (A 1) (A 0x6d6d69)) (C (C (A 0) (A 491)) (C (A 0) (A 2)))) (C (C (C (A 1) (A 0x6c6563)) (C (A 0) (A 2))) (C (A 0) (A 6)))))))) (C (A 0) (A 2))))))))))))))))))))))))))
 
 def crnArm : Noun :=
   (C (A 8) (C (C (A 1) (C (A 0) (C (C (A 0) (C (A 0x6d6d69) (A 0))) (C (A 0x656e6f6e) (A 0))))) (C (C (A 1) crnBat) (C (A 0) (A 1)))))
@@ -44,14 +46,55 @@ def crnAtomNoun : Sum Nat Nat → Noun
   | Sum.inl n => C (A 0) (C (A 0x6d6d69) (A n))
   | Sum.inr r => C (A 1) (A r)
 
-/-- The `+turn` of `+crash-need`: a zero into each register. -/
-theorem crn_fill (ned : Need) (bc : Noun) :
-    nock (C turn.battery (C (C (listNoun A (flattenNeed ned)) (C crnG (C (A 0) bc))) layer2))
-      turn.battery = some (listNoun Pole.toNoun ((flattenNeed ned).map fun y => Pole.imm (A 0) y)) := by
+/-- The fill of `+crash-need` as the model writes it: a zero into each
+register of the need, but the register that holds the atom. -/
+def crnFill : Sum Nat Nat → Need → List Pole
+  | Sum.inr p, ned => ((flattenNeed ned).filter (· != p)).map fun y => Pole.imm (A 0) y
+  | Sum.inl _, ned => (flattenNeed ned).map fun y => Pole.imm (A 0) y
+
+/-- What the gate `crnG` of the `+murn` gives at an element `x`. -/
+def crnF : Sum Nat Nat → Noun → Noun
+  | Sum.inr p, x => if x = A p then A 0 else C (A 0) (C (A 0x6d6d69) (C (A 0) x))
+  | Sum.inl _, x => C (A 0) (C (A 0x6d6d69) (C (A 0) x))
+
+theorem crn_filterMap (atom : Sum Nat Nat) : ∀ l : List Nat,
+    (l.map A).filterMap (fun x => unitVal (crnF atom x))
+      = ((match atom with
+          | Sum.inr p => l.filter (· != p)
+          | Sum.inl _ => l).map fun y => Pole.imm (A 0) y).map Pole.toNoun
+  | [] => by cases atom <;> rfl
+  | y :: l => by
+    have ih := crn_filterMap atom l
+    cases atom with
+    | inr p =>
+      by_cases e : y = p
+      · subst e; simpa [crnF, unitVal] using ih
+      · simpa [crnF, unitVal, e, Pole.toNoun, Tag.imm] using ih
+    | inl n => simpa [crnF, unitVal, Pole.toNoun, Tag.imm] using ih
+
+/-- The arm `+murn` builds its gate. -/
+theorem crn_murn_arm (c : Noun) :
+    nock c murn.arm = some (C murn.battery (C (C (A 0) buntGate) c)) := by
+  nock_open murn.arm; simp only [nock_exec]; rfl
+
+/-- The `+murn` of `+crash-need`: a zero into each register but the atom's,
+on every context of the gate whose sample is `[o atom ned]`. -/
+theorem crn_fill (atom : Sum Nat Nat) (ned : Need) (B o rest : Noun) :
+    nock (C murn.battery (C (C (listNoun A (flattenNeed ned))
+        (C crnG (C (A 0) (C B (C (C o (C (crnAtomNoun atom) ned.toNoun)) rest))))) layer2))
+      murn.battery = some (listNoun Pole.toNoun (crnFill atom ned)) := by
   rw [cd_listNoun_listN, cd_listNoun_listN,
-    turn_gate layer2 homoIn_layer2 crnG (A 0) bc (fun y => C (A 0x6d6d69) (C (A 0) y)) _
-      (fun y _ => by unfold crnG; simp [nock_exec])]
-  simp [List.map_map, Function.comp_def, Pole.toNoun, Tag.imm]
+    murn_gate layer2 homoIn_layer2 crnG (A 0) _ (crnF atom) _ (fun x hx => by
+      obtain ⟨y, -, rfl⟩ := List.mem_map.1 hx
+      cases atom with
+      | inr p =>
+        by_cases e : y = p
+        · subst e; simp [nock_exec, crnG, crnF, crnAtomNoun]
+        · have e' : A y ≠ A p := fun h => e (by cases h; rfl)
+          simp [nock_exec, crnG, crnF, crnAtomNoun, e']
+      | inl n => simp [nock_exec, crnG, crnF, crnAtomNoun]),
+    crn_filterMap]
+  cases atom <;> rfl
 
 /-- `+has:by` on `soft` at a key it lacks. -/
 theorem crn_has (x : GenRest) (o : Nat) (hs : x.SoftOut o) :
@@ -70,18 +113,23 @@ theorem comp_crash_need (hc : CompIn ctx) (x : GenRest) (g : Gen (TreapMap mugF)
   have hD1 := comp_fn_at
   have hD2 := comp_add_ops_at
   have hD3 := comp_re_at
-  have hfill := crn_fill ned
   have hhas := crn_has x o hs
   cases atom with
   | inr r =>
-    have hao := comp_add_ops x hc g o (Pole.cel r :: (flattenNeed ned).map fun y => Pole.imm (A 0) y)
+    have hfill := crn_fill (Sum.inr r) ned
+    simp only [crnAtomNoun] at hfill
+    have hao := comp_add_ops x hc g o (Pole.cel r :: crnFill (Sum.inr r) ned)
     simp only [listNoun, Pole.toNoun, Tag.cel] at hao
+    have hcn : crashNeed (Map := TreapMap mugF) o (Sum.inr r) ned
+        = addOps o (Pole.cel r :: crnFill (Sum.inr r) ned) := rfl
     simp only [compCore] at hfn hao ⊢
     unfold crnBat
     generalize comp.door = Dr at hD1 hD2 hD3 hfn hao ⊢
-    simp [nock_exec, crnAtomNoun, hD1, comp_fn_arm, hfn, hc, turn_arm, turn.arm_at, hfill, by_arm,
-      by.arm_at, by.has.arm_at, has_arm, hhas, hD2, comp_add_ops_arm, hao, crashNeed]
+    simp [nock_exec, crnAtomNoun, hD1, comp_fn_arm, hfn, hc, crn_murn_arm, murn.arm_at, hfill, by_arm,
+      by.arm_at, by.has.arm_at, has_arm, hhas, hD2, comp_add_ops_arm, hao, hcn]
   | inl n =>
+    have hfill := crn_fill (Sum.inl n) ned
+    simp only [crnAtomNoun, crnFill] at hfill
     have hre := comp_re' ctx x g
     have hao := comp_add_ops x hc { g with re := g.re + 1 } o
       (Pole.imm (A n) g.re :: Pole.cel g.re :: (flattenNeed ned).map fun y => Pole.imm (A 0) y)
@@ -89,7 +137,7 @@ theorem comp_crash_need (hc : CompIn ctx) (x : GenRest) (g : Gen (TreapMap mugF)
     simp only [compCore] at hfn hao ⊢
     unfold crnBat
     generalize comp.door = Dr at hD1 hD2 hD3 hfn hao hre ⊢
-    simp [nock_exec, crnAtomNoun, hD1, comp_fn_arm, hfn, hc, turn_arm, turn.arm_at, hfill, by_arm,
+    simp [nock_exec, crnAtomNoun, hD1, comp_fn_arm, hfn, hc, crn_murn_arm, murn.arm_at, hfill, by_arm,
       by.arm_at, by.has.arm_at, has_arm, hhas, hD2, comp_add_ops_arm, hao, crashNeed, listNoun, Pole.toNoun, hD3, hre, re, bind, StateT.bind]
 
 /-! ## `+walk-lazy` on `[sure ~ ~]`
