@@ -3,6 +3,7 @@ import lemmas.Compiler.OptLinkDead
 import lemmas.Compiler.OptLinkRev
 import lemmas.Compiler.OptLinkTopo
 import lemmas.Compiler.OptLinkHops
+import lemmas.Compiler.OptLinkMiddle
 
 /-!
 # Axioms of the pill link of the optimizer
@@ -45,3 +46,10 @@ open Formalization Compiler
 #print axioms rh_trap
 #print axioms rh_step
 #print axioms rh_gate
+#print axioms pole_bunt
+#print axioms rj_gate
+#print axioms saw_del
+#print axioms rem_subt
+#print axioms rem_pass
+#print axioms rem_levyg
+#print axioms rhop_gate

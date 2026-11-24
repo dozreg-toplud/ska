@@ -331,5 +331,157 @@ theorem rem_pass (T : Noun) (hT : slot? 0xffffff T = some layer2) (m : TreapMap 
       simp [nock_exec, remPassB, unitNoun, Opt.passArg, e, hT, by.arm_at, by_arm, by.gut.arm_at, gut_arm, hgut]
 
 
+/-! ## `rewrite-hop` -/
+
+/-- What `rewrite-hop` needs of `readers`: at every parameter of an empty
+block that ends in a hop, the set of the labels whose blocks mention it. -/
+def RdOK (bl : TreapMap mugF Blob) (RD : Noun) : Prop :=
+  ∀ o nex t p, HoonMap.get bl o = some nex → nex.body = [] → nex.fin = Termin.hop t → p ∈ nex.par →
+    ∃ out, getF mugF (A p) RD = some out ∧ SawRel (unUnit out) (Opt.readersOf bl p)
+
+theorem filter_ne_nil_iff (l : List Nat) (t : Nat) :
+    (l.filter fun x => x ≠ t) = [] ↔ (l.all fun x => x = t) = true := by
+  rw [List.filter_eq_nil_iff, List.all_eq_true]
+  simp
+
+/-- **The gate of the `+levy`** on a parameter `p` of an empty block `nex`
+that ends in a hop: whether every reader of `p` is `there`. -/
+theorem rem_levyg (bl : TreapMap mugF Blob) (RD : Noun) (hR : RdOK bl RD) (o : Nat) (nex : Blob) (t : Jmp)
+    (hnex : HoonMap.get bl o = some nex) (hb : nex.body = []) (hf : nex.fin = Termin.hop t)
+    (p : Nat) (hp : p ∈ nex.par) (args : List (Option Nat)) (NX : Noun) :
+    nock (C remLevyG (C (A p) (C NX (C remHopBody (C (Jmp.toNoun ⟨args, o⟩) (remCore RD
+      (HoonMap.toNoun Blob.toNoun bl))))))) remLevyG
+      = some (loob ((Opt.readersOf bl p).all fun x => x = o)) := by
+  obtain ⟨out, hg, hS⟩ := hR o nex t p hnex hb hf hp
+  obtain ⟨S', hd, hS'⟩ := saw_del hS o
+  have hju := ju_get_gate layer2 juIn_layer2' ju.battery (A p) RD out hg
+  have hL := optC_layer2
+  have he := hS'.eq_nil
+  rw [filter_ne_nil_iff] at he
+  unfold remCore
+  generalize optC = OC at hL
+  by_cases ha : ((Opt.readersOf bl p).all fun x => x = o) = true
+  · have h0 : S' = A 0 := he.2 ha
+    subst h0
+    simp [nock_exec, remLevyG, Jmp.toNoun, hL, in_arm, in.arm_at, in.del.arm_at, ju.arm_at, ju.get.arm_at,
+      ju_get_arm, hju, hd, ha, loob, eqCode_self]
+  · have h0 : S' ≠ A 0 := fun e => ha (he.1 e)
+    simp [nock_exec, remLevyG, Jmp.toNoun, hL, in_arm, in.arm_at, in.del.arm_at, ju.arm_at, ju.get.arm_at,
+      ju_get_arm, hju, hd, ha, loob, eqCode, Ne.symm h0]
+
+/-- `layer2` in the subject `[nex Y]` of `rewrite-hop`. -/
+theorem rem_hT (NX JN RD BL : Noun) :
+    slot? 0xffffff (C NX (C remHopBody (C JN (remCore RD BL)))) = some layer2 := by
+  have h : slot? 255 (C NX (C remHopBody (C JN (remCore RD BL)))) = slot? 1 optC := rfl
+  have := slot_spine (by omega) (by omega) h 16
+  simp only [show 2 ^ 16 * (255 + 1) - 1 = 0xffffff from rfl,
+    show 2 ^ 16 * (1 + 1) - 1 = 0x1ffff from rfl] at this
+  rw [this]
+  exact optC_layer2
+
+/-- **`rewrite-hop`**: where `rewriteHop` with the readers of the blocks
+returns, the gate returns the same jump, given `RdOK`. -/
+theorem rhop_gate (bl : TreapMap mugF Blob) (RD : Noun) (hR : RdOK bl RD) :
+    ∀ (n : Nat) (j j' : Jmp), Opt.rewriteHop bl (Opt.readersOf bl) n j = some j' →
+    nock (C remHopBody (C j.toNoun (remCore RD (HoonMap.toNoun Blob.toNoun bl)))) remHopBody
+      = some j'.toNoun := by
+  have hL := optC_layer2
+  intro n
+  induction n with
+  | zero => intro j j' h; simp [Opt.rewriteHop] at h
+  | succ n ih =>
+    intro j j' h
+    obtain ⟨args, there⟩ := j
+    have hg := blocks_got bl there
+    simp only [Opt.rewriteHop] at h
+    obtain ⟨nex, hnex, h2⟩ := Option.bind_eq_some_iff.mp h
+    rw [hnex] at hg
+    obtain ⟨par, body, fin⟩ := nex
+    simp only [Option.map_some] at hg
+    cases body with
+    | cons op ops =>
+      simp at h2
+      subst h2
+      simp only [Blob.toNoun] at hg
+      unfold remCore
+      conv => lhs; arg 2; unfold remHopBody
+      generalize optC = OC at hL
+      generalize HoonMap.toNoun Blob.toNoun bl = BL at hg
+      simp [nock_exec, Jmp.toNoun, listNoun, hL, by.arm_at, by_arm, by.got.arm_at, got_arm, hg]
+    | nil =>
+      cases fin with
+      | hop t =>
+        obtain ⟨targs, tthere⟩ := t
+        have hlevy := levy_gate layer2 remLevyG (A 0)
+          (C (Blob.toNoun ⟨par, [], Termin.hop ⟨targs, tthere⟩⟩) (C remHopBody (C (Jmp.toNoun ⟨args, there⟩)
+            (remCore RD (HoonMap.toNoun Blob.toNoun bl)))))
+          (fun x => (Opt.readersOf bl (OptDec.atomOf x)).all fun y => y = there) (par.map A)
+          (fun x hx => by
+            obtain ⟨q, hq, rfl⟩ := List.mem_map.1 hx
+            exact rem_levyg bl RD hR there _ ⟨targs, tthere⟩ hnex rfl rfl q hq args _)
+        rw [List.all_map] at hlevy
+        have hT := rem_hT (Blob.toNoun ⟨par, [], Termin.hop ⟨targs, tthere⟩⟩) (Jmp.toNoun ⟨args, there⟩) RD
+          (HoonMap.toNoun Blob.toNoun bl)
+        by_cases hall : (par.all fun p => (Opt.readersOf bl p).all fun y => y = there) = true
+        · have hall' : ∀ x ∈ par, ∀ y ∈ Opt.readersOf bl x, y = there := by
+            simpa [List.all_eq_true] using hall
+          simp only [hall, Bool.not_true, Bool.false_eq_true, if_false] at h2
+          obtain ⟨sub, hsub, h3⟩ := Option.bind_eq_some_iff.mp h2
+          have hsm := subMap_mkSub par args HoonMap.empty (fun _ => none) (funext fun q => HoonMap.get_empty q)
+          rw [hsub] at hsm
+          obtain ⟨m, hm, hgm⟩ := Option.map_eq_some_iff.mp hsm
+          have hst := rem_subt _ hT par args HoonMap.empty
+          rw [hm, HoonMap.toNoun_empty] at hst
+          have hpass := fun a => rem_pass _ hT m a
+          have hturn := turn_gate layer2 homoIn_layer2 remPassB (A 0)
+            (C (HoonMap.toNoun (unitNoun A) m) (C (Blob.toNoun ⟨par, [], Termin.hop ⟨targs, tthere⟩⟩)
+              (C remHopBody (C (Jmp.toNoun ⟨args, there⟩) (remCore RD (HoonMap.toNoun Blob.toNoun bl))))))
+            (fun x => unitNoun A (Opt.passArg (HoonMap.get m) (OptDec.unitDec OptDec.atomOf x)))
+            (targs.map (unitNoun A)) (fun x hx => by
+              obtain ⟨a, -, rfl⟩ := List.mem_map.1 hx
+              rw [OptDec.unitDec_unitNoun OptDec.atomOf A (fun _ => rfl)]
+              exact hpass a)
+          have hl : listN ((targs.map (unitNoun A)).map
+              (fun x => unitNoun A (Opt.passArg (HoonMap.get m) (OptDec.unitDec OptDec.atomOf x))))
+              = listNoun (unitNoun A) (targs.map (Opt.passArg sub)) := by
+            rw [listNoun_map_listN, List.map_map, List.map_map, ← hgm]
+            congr 1
+            apply List.map_congr_left
+            intro a _
+            simp [OptDec.unitDec_unitNoun OptDec.atomOf A (fun _ => rfl)]
+          rw [hl, ← listNoun_map_listN (unitNoun A) targs] at hturn
+          have hn := ih ⟨targs.map (Opt.passArg sub), tthere⟩ j' h3
+          rw [← listNoun_map_listN] at hlevy
+          simp only [Blob.toNoun, Termin.toNoun, Jmp.toNoun, listNoun, Tag.hop] at hg hlevy hst hturn hn hpass ⊢
+          unfold remCore at hlevy hst hturn hn hpass ⊢
+          conv => lhs; arg 2; unfold remHopBody
+          generalize optC = OC at hL hlevy hst hturn hn hpass ⊢
+          generalize HoonMap.toNoun Blob.toNoun bl = BL at hg hlevy hst hturn hn hpass ⊢
+          simp [nock_exec, hL, by.arm_at, by_arm, by.got.arm_at, got_arm, hg, levy.arm_at, levy_arm, hlevy,
+            eq_true hall', loob, Tag.hop, hst, turn.arm_at, turn_arm, hturn, hn, OptDec.atomOf]
+        · have hall' : ¬ ∀ x ∈ par, ∀ y ∈ Opt.readersOf bl x, y = there := by
+            simpa [List.all_eq_true] using hall
+          simp only [hall, Bool.not_false, if_true, ne_eq, not_true_eq_false, if_false, Option.some.injEq] at h2
+          subst h2
+          rw [← listNoun_map_listN] at hlevy
+          simp only [Blob.toNoun, Termin.toNoun, Jmp.toNoun, listNoun, Tag.hop] at hg hlevy ⊢
+          unfold remCore at hlevy ⊢
+          conv => lhs; arg 2; unfold remHopBody
+          generalize optC = OC at hL hlevy ⊢
+          generalize HoonMap.toNoun Blob.toNoun bl = BL at hg hlevy ⊢
+          simp [nock_exec, hL, by.arm_at, by_arm, by.got.arm_at, got_arm, hg, levy.arm_at, levy_arm, hlevy,
+            eq_false hall', loob, Tag.hop, OptDec.atomOf]
+      | _ =>
+        simp only [ne_eq, not_true_eq_false, if_false, Option.some.injEq] at h2
+        subst h2
+        simp only [Blob.toNoun] at hg
+        unfold remCore
+        conv => lhs; arg 2; unfold remHopBody
+        generalize optC = OC at hL
+        generalize HoonMap.toNoun Blob.toNoun bl = BL at hg
+        simp [nock_exec, Jmp.toNoun, listNoun, Termin.toNoun, Tag.hop, Tag.clq, Tag.eqq, Tag.brn, Tag.brz,
+          Tag.jmp, Tag.jmf, Tag.jsp, Tag.jsf, Tag.don, Tag.bom, Tag.lti, hL, by.arm_at, by_arm, by.got.arm_at,
+          got_arm, hg]
+
 end Compiler
 end Formalization
