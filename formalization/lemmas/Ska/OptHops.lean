@@ -76,10 +76,19 @@ def removeHops (fuel : Nat) (bl : Map Blob) (rev : Map (List Nat)) (topo : List 
     Option (Bool × Map Blob) :=
   (topo.foldlM (hopsStep fuel bl rev) (HoonMap.empty, [])).map fun r => (decide (r.2 ≠ []), r.1)
 
-/-- **The preservation statement of `+remove-hops`** (open). -/
+/-- The parameters of every block are distinct. -/
+def ParNodup (bl : Map Blob) : Prop := ∀ o b, HoonMap.get bl o = some b → b.par.Nodup
+
+/-- Every jump passes the check of `+eval-pass`: no argument register is a
+parameter of its target. -/
+def PassOK (bl : Map Blob) : Prop :=
+  ∀ o b j b2, HoonMap.get bl o = some b → j ∈ getJmps b.fin → HoonMap.get bl j.there = some b2 →
+    ∀ r, some r ∈ j.args → r ∉ b2.par
+
+/-- **The preservation statement of `+remove-hops`** (proved: `hopsKeeps`
+in `OptHopsSim.lean`). -/
 def HopsKeeps [MapKeys Map] (fuel : Nat) : Prop :=
-  ∀ (c : Straight Map) topo ch bl', TopoOK c.blocks topo →
-    (∀ o b, HoonMap.get c.blocks o = some b → b.par.Nodup) →
+  ∀ (c : Straight Map) topo ch bl', TopoOK c.blocks topo → ParNodup c.blocks → PassOK c.blocks →
     removeHops fuel c.blocks (revCfg c.blocks topo) topo = some (ch, bl') →
     Keeps c (withBlocks c bl')
 
