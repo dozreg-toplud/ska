@@ -63,6 +63,7 @@ import lemmas.Ska.CompTenV
 import lemmas.Ska.CompFragUJ
 import lemmas.Ska.CompRunLCEq
 import lemmas.Ska.CompCallSem
+import lemmas.Ska.CompCallStep
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -624,3 +625,8 @@ open Formalization.SkaModel.Comp
 #print axioms goJ_nok
 #print axioms allocSplit
 #print axioms argsFor_of_alloc
+#print axioms holds_mapM
+#print axioms frames_mono
+#print axioms oracle_call_alloc
+#print axioms callStep_fwd
+#print axioms tailStep_fwd
