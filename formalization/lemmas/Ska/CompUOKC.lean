@@ -155,14 +155,14 @@ formula `f` on the subjects of `P`.  `kind`: the nomm is call-free (then
 its `UOK` and `+mink` on `f` being its pure value are kept, which a parent
 uses for the call-free relations of the part), or it is hinted (`+past`
 parks a need that asks something behind it, `pastL_hinted`).  `clean`:
-`CleanA` for `runLC`.  `run`: `OKCN` (`OKC` but `%pick`, which only a test
+`CleanA` for `runLC` but `%pick`.  `run`: `OKCN` (`OKC` but `%pick`, which only a test
 of `%6` or a part under it runs for; the leaves meet the whole `OKC`,
 `okc_of_uok`, `okc_indirect`).  The tag clauses of `UOK` (`TagNV`, `TagV`)
 are read only by `%6` under `%next` and are not restated yet. -/
 structure UOKC (lib : Lib) (env : CallEnv) (P : Noun → Prop) (f : Noun) (nm : Nomm) : Prop where
   kind : (UOK (S := S) (Map := Map) lib nm ∧ MinkEq lib P f nm) ∨ hinted env.cod nm = some true
   clean : ∀ {sup : Option Nomm} {goal : CGoal S} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
-    GClean goal → runLC env sup nm (CGoal.toL goal) region g0 = some (nex, g1) → Clean nex.laz.sure.ned
+    NoPick goal → GClean goal → runLC env sup nm (CGoal.toL goal) region g0 = some (nex, g1) → Clean nex.laz.sure.ned
   run : OKCN (S := S) (Map := Map) lib env P f nm
 
 /-! ## The lift from `UOK` -/
@@ -227,7 +227,7 @@ theorem okc_of_uok (lib : Lib) (env : CallEnv) {P : Noun → Prop} {f : Noun} {n
 (`okc_of_uok`, the run being `runL`'s by `runLC_eq`). -/
 theorem uokc_of_uok (lib : Lib) (env : CallEnv) {P : Noun → Prop} {f : Noun} {nm : Nomm}
     (u : UOK (S := S) (Map := Map) lib nm) (M : MinkEq lib P f nm) : UOKC (S := S) (Map := Map) lib env P f nm := by
-  refine ⟨Or.inl ⟨u, M⟩, fun hc h => ?_, OKC.toN (okc_of_uok lib env u M)⟩
+  refine ⟨Or.inl ⟨u, M⟩, fun _ hc h => ?_, OKC.toN (okc_of_uok lib env u M)⟩
   rw [runLC_eq env nm (Nomm.noCall_of_pure nm u.pure)] at h
   exact u.clean hc h
 
@@ -419,7 +419,7 @@ theorem okc_indirect (lib : Lib) (env : CallEnv) {p q : Nomm} (up : UOK (S := S)
 theorem uokc_indirect (lib : Lib) (env : CallEnv) {p q : Nomm} (up : UOK (S := S) (Map := Map) lib p)
     (uq : UOK (S := S) (Map := Map) lib q) {P : Noun → Prop} {f : Noun} (M : MinkN2 lib P f p q) :
     UOKC (S := S) (Map := Map) lib env P f (Nomm.n2 p q Option.none) :=
-  ⟨Or.inr rfl, fun _ h => indirect_clean up uq h, OKC.toN (okc_indirect lib env up uq M)⟩
+  ⟨Or.inr rfl, fun _ _ h => indirect_clean up uq h, OKC.toN (okc_indirect lib env up uq M)⟩
 
 /-! ## The wrappers and the top -/
 
