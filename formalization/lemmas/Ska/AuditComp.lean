@@ -504,3 +504,5 @@ open Formalization.SkaModel.Comp
 #print axioms finishLF_bellContractFU
 #print axioms finishLF_bellContract_sixProxy
 #print axioms runOKNV_seven4
+#print axioms runOKV_seven4P
+#print axioms fragU_pure
