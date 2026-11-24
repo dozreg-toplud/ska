@@ -55,6 +55,9 @@ import lemmas.Compiler.FolLoopConv
 import lemmas.Compiler.SkaCore
 import lemmas.Compiler.SkaArms
 import lemmas.Compiler.SkaCull
+import lemmas.Compiler.MsgCa
+import lemmas.Compiler.SkaRun
+import lemmas.Compiler.SkaPass
 import lemmas.Compiler.RegisterFast
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
@@ -467,3 +470,14 @@ open Formalization
 #print axioms Compiler.cull_run
 #print axioms Compiler.cull_run_none
 #print axioms Compiler.cull_gate
+#print axioms Compiler.msg_ca_body_at
+#print axioms Compiler.msg_ca_arm_at
+#print axioms Compiler.msg_ca_gate
+#print axioms Compiler.ska_run_battery_eq
+#print axioms Compiler.runEnd_eq
+#print axioms Compiler.run_datum
+#print axioms Compiler.run_stepW
+#print axioms Compiler.run_step
+#print axioms Compiler.runTrapRest_ana
+#print axioms Compiler.member_stepW
+#print axioms Compiler.kc_dirty_at
