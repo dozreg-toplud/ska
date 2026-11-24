@@ -13,6 +13,7 @@ import lemmas.Compiler.OptLinkOnceGate
 import lemmas.Compiler.OptLinkOpt
 import lemmas.Hoon.UnoBy
 import lemmas.Compiler.OptLinkTrimLink
+import lemmas.Compiler.OptLinkFuel
 
 /-!
 # Axioms of the pill link of the optimizer
@@ -139,3 +140,9 @@ open Formalization Compiler
 #print axioms trimLink
 #print axioms oo_gate_trim
 #print axioms opt_gate_trim
+#print axioms bbTopo_some
+#print axioms removeHops_some
+#print axioms removeEmptyMiddle_some
+#print axioms bb_gate_total
+#print axioms rh_gate_total
+#print axioms rem_gate_total
