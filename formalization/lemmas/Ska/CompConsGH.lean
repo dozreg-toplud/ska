@@ -383,6 +383,19 @@ theorem necC_consH {lib : Lib} {P : Noun → Prop} {q : Nomm} {fh ft : Noun} (hf
     obtain ⟨r, hm, hr⟩ := mink_consC_bwd (q := q) hfh hmh (MqB hs)
     exact ⟨r, hm, step hb hr⟩
 
+/-- **`+copy` jumps to the block it emits** at the state's `bo`. -/
+theorem copyL_th {first : NextL S} {second : Lazy S} {g g' : Gen Map} {nex : NextL S}
+    (h : copyL first second g = some (nex, g')) : nex.th = jmp0 g.bo := by
+  unfold copyL at h
+  obtain ⟨o, g0, h0, h⟩ := bind_some h
+  rw [emit_apply] at h0
+  simp only [Option.some.injEq, Prod.mk.injEq] at h0
+  obtain ⟨rfl, rfl⟩ := h0
+  obtain ⟨laz, g1, h1, h⟩ := bind_some h
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨rfl, rfl⟩ := h
+  rfl
+
 /-- **The cons `[p d]` under a fork-free `%next sur th` meets `RunOKGC`**,
 for a head `p` with `UOKC` that is hinted and a call-free tail `d`, for the
 formula `[fh ft]` with `fh` a cell and `ft` whose `+mink` is `d`'s value
@@ -402,7 +415,7 @@ theorem consGH_runN (lib : Lib) {p d : Nomm} {env : CallEnv} {P : Noun → Prop}
     (hu : UpBelow g0) (hcl0 : Clear g0) (hcb : CondBelow g0)
     (hkg : ∀ r, NMem sur.ned r → HoonMap.get g0.cond r = Option.none)
     (h : runLC env sup (Nomm.cons p d) (CGoalL.next (ofSure sur) th) region g0 = some (nex, g1)) :
-    RunOKGC lib P (C fh ft) (CGoal.next sur th) g0 g1 nex := by
+    RunOKGC lib P (C fh ft) (CGoal.next sur th) g0 g1 nex ∧ g0.bo ≤ nex.th.there := by
   have e : (runLC env sup (Nomm.cons p d) (CGoalL.next (ofSure sur) th) region :
       CM Map (NextL S)) = (do
         let (hed, tel, o) ← splitL ⟨ofSure sur, th⟩
@@ -499,7 +512,10 @@ theorem consGH_runN (lib : Lib) {p d : Nomm} {env : CallEnv} {P : Noun → Prop}
       (fun s => fitsS_trivial en es s) (by rw [en]; trivial) cp hcp hu d0 hnot hfix hblk
     have B := consNC_bwd hfh Mq MqB hok E2 G2U c2 hcb Mh Mt Dht (TailNV.ofRun Rq E2.1) (RunOKGC.toNC0 Rp)
       Rp.semB (fun s => fitsS_trivial en es s) (by rw [en]; trivial) cp hcp hu d0 hnot hfix hblk
-    exact RunOKNC.toGCN F B (fun s hs hf => necC_consH hfh Mq MqB hnot1 hs (Rp.nec s hs (fit s hf)))
+    refine ⟨RunOKNC.toGCN F B (fun s hs hf => necC_consH hfh Mq MqB hnot1 hs (Rp.nec s hs (fit s hf))), ?_⟩
+    rw [copyL_th hcp]
+    have := Rp.ext.2.1; have := Rq.ext.2.1; have := E2.2.1
+    simp only [jmp0]; omega
   · -- the tail's need parked behind the block of `+past`
     subst nex2' g3'
     have T := tailNV_past Rq E2.1 (lt2' _ Mt) d3 u3 region
@@ -521,7 +537,11 @@ theorem consGH_runN (lib : Lib) {p d : Nomm} {env : CallEnv} {P : Noun → Prop}
       trivial cp hcp hu d0 hnot hfix hblk
     have B := consNC_bwd hfh Mq MqB hok E2 G2U c2 hcb Mh Mt Dht T (RunOKGC.toNC0 Rp) Rp.semB
       (fun s => fitsS_bunt s) trivial cp hcp hu d0 hnot hfix hblk
-    exact RunOKNC.toGCN F B (fun s hs hf => necC_consH hfh Mq MqB hnot1 hs (Rp.nec s hs (fit s hf)))
+    refine ⟨RunOKNC.toGCN F B (fun s hs hf => necC_consH hfh Mq MqB hnot1 hs (Rp.nec s hs (fit s hf))), ?_⟩
+    rw [copyL_th hcp]
+    have : g3.bo + 1 ≤ g4.bo := by simpa [Gen.emitted] using Rp.ext.2.1
+    have := Rq.ext.2.1; have := E2.2.1
+    simp only [jmp0]; omega
 
 /-- **The sure need of the cons's run under `%next` is clean** (`+copy` of
 the head's, clean by `U.clean`, and the tail's or the bunt of `+past`). -/
@@ -588,7 +608,7 @@ theorem consGH_runD (lib : Lib) {p d : Nomm} {env : CallEnv} {P : Noun → Prop}
   have G1 : GrowU ({ g0 with re := g0.re + 1 } : Gen Map) ({ g0 with re := g0.re + 1 }.emitted ⟨[], [], Termin.don g0.re⟩) :=
     growU_emit (g := { g0 with re := g0.re + 1 }) (b := ⟨[], [], Termin.don g0.re⟩)
       (fun j hj => by simp [finJumps] at hj) hu
-  have R := consGH_runN (sur := lazyReg g0.re) (th := jmp0 g0.bo) lib Up hh ud hfh Mq MqB hcount
+  have R := (consGH_runN (sur := lazyReg g0.re) (th := jmp0 g0.bo) lib Up hh ud hfh Mq MqB hcount
     ⟨b0, by simp only [jmp0, Gen.emitted]; omega⟩ rfl
     ⟨trivial, fun x hx => by simp only [lazyReg, NMem] at hx; subst hx; simp only [Gen.emitted]; omega⟩ trivial
     (by simp only [Gen.emitted]; omega) (by simp only [Gen.emitted]; exact d0) (G1.up hu)
@@ -596,7 +616,7 @@ theorem consGH_runD (lib : Lib) {p d : Nomm} {env : CallEnv} {P : Noun → Prop}
     (fun k hk => by have := hcb k hk; simp only [Gen.emitted] at this ⊢; omega)
     (fun x hx => by
       simp only [lazyReg, NMem] at hx; subst hx
-      exact condBelow_none hcb (Nat.le_refl _)) h
+      exact condBelow_none hcb (Nat.le_refl _)) h).1
   have hb : HoonMap.get g'.blocks g0.bo = some ⟨[], [], Termin.don g0.re⟩ := by
     rw [R.ext.2.2.2 _ (by simp only [Gen.emitted]; omega)]
     simp only [Gen.emitted, d0, Bool.false_eq_true, ↓reduceIte, HoonMap.get_put]
@@ -628,7 +648,7 @@ theorem uokc_consH (lib : Lib) (env : CallEnv) {p d : Nomm} {P : Noun → Prop} 
       exact consGH_cleanN Up hh ud (show Clean (lazyReg (S := S) r).ned from trivial) h
     | pick z o => exact hnp.elim
   · cases goal with
-    | next sur th => exact consGH_runN lib Up hh ud hfh Mq MqB hcount hj ha hok hcl b0 d0 hu hcl0 hcb hkg h
+    | next sur th => exact (consGH_runN lib Up hh ud hfh Mq MqB hcount hj ha hok hcl b0 d0 hu hcl0 hcb hkg h).1
     | done => exact consGH_runD lib Up hh ud hfh Mq MqB hcount b0 d0 hu hcl0 hcb h
     | pick z o => exact hnp.elim
 

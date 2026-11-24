@@ -83,6 +83,9 @@ import lemmas.Ska.CompConsCallWrap
 import lemmas.Ska.CompHypOfCons
 import lemmas.Ska.CompConsCallTopB
 import lemmas.Ska.CompHypOfUOKC
+import lemmas.Ska.CompRunOKLCSeven
+import lemmas.Ska.CompCallC
+import lemmas.Ska.CompHypOfFragD
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -803,3 +806,62 @@ open Formalization.SkaModel.Comp
 #print axioms uokc_consTA
 #print axioms consT_example1
 #print axioms consT_example4
+#print axioms copyL_th
+#print axioms entNew_consH
+#print axioms entNew_consT
+#print axioms uokc_entNew_of_fragC
+#print axioms consT_example5
+#print axioms RunOKL.toLC
+#print axioms RunOKGC.toLC
+#print axioms RunOKLC.toGC
+#print axioms minkF_sevenC
+#print axioms mink_sevenC_bwd
+#print axioms frontLC_seven
+#print axioms runOKLC_seven
+#print axioms TailGC.ofRun
+#print axioms tailGC_past
+#print axioms totalC_of_minkEq
+#print axioms pairLC_ok
+#print axioms minkC2_indirect
+#print axioms nokStep_fwd
+#print axioms nokStep_bwd
+#print axioms indirectC_runS
+#print axioms indirectC_runN
+#print axioms indirectC_runB
+#print axioms okc_indirectC
+#print axioms uokc_indirectC
+#print axioms entNew_indirectC
+#print axioms bondOKC_of_bondOK
+#print axioms minkF_consG
+#print axioms mink_consG_bwd
+#print axioms consLC_runN
+#print axioms consLC_cleanN
+#print axioms consLC_runD
+#print axioms uokc_consLC
+#print axioms entNew_consLC
+#print axioms fragC_fragD
+#print axioms uokc_indDA
+#print axioms uokc_consDA
+#print axioms uokc_entNew_of_fragD
+#print axioms finishLUC_contractUD
+#print axioms indC_example1
+#print axioms indC_example2
+#print axioms indC_example3
+#print axioms Formalization.SkaModel.PokeM.rawMono_fragUDG
+#print axioms Formalization.SkaModel.PokeM.fragUCG_sub
+#print axioms Formalization.SkaModel.PokeM.compHyp_of_fragUDG
+#print axioms kern_specW
+#print axioms kernPW_fill
+#print axioms indirectC_inner
+#print axioms kerf_specL
+#print axioms kerfLC
+#print axioms RunOKLC.wrap
+#print axioms bondOKC_indirectC
+#print axioms bondOKC_indA
+#print axioms uokc_consEA
+#print axioms uokc_entNew_of_fragE
+#print axioms finishLUC_contractUE
+#print axioms consCC_example
+#print axioms Formalization.SkaModel.PokeM.rawMono_fragUEG
+#print axioms Formalization.SkaModel.PokeM.fragUDG_subE
+#print axioms Formalization.SkaModel.PokeM.compHyp_of_fragUEG

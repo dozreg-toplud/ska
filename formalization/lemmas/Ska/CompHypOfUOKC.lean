@@ -55,10 +55,11 @@ theorem compHyp_of_fragUCG {lib : Lib} {ref : Ref M Map J H} {D : CompData M Map
 tail of a cons, README Gaps 12.19) are in `FragUCG`. -/
 example : FragUCG S (Nomm.cons (Nomm.n0 1) (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) ∧
     FragUCG S (Nomm.cons (Nomm.n4 (Nomm.n0 3)) (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) :=
-  ⟨⟨Or.inr (Comp.FragC.consT (Comp.FragB.n0 (Nat.le_refl 1)) (Comp.FragU.x (Comp.FragX.frag fun _ => trivial))
-      (Comp.FragU.x (Comp.FragX.frag fun _ => trivial)) rfl), by decide⟩,
-    ⟨Or.inr (Comp.FragC.consT (Comp.FragB.n4 (Comp.FragX.frag fun _ => trivial))
-      (Comp.FragU.x (Comp.FragX.frag fun _ => trivial)) (Comp.FragU.x (Comp.FragX.frag fun _ => trivial)) rfl),
+  ⟨⟨Or.inr (Comp.FragC.consT (Comp.FragB.n0 (Nat.le_refl 1)) (Comp.FragC.ind
+      (Comp.FragU.x (Comp.FragX.frag fun _ => trivial)) (Comp.FragU.x (Comp.FragX.frag fun _ => trivial)) rfl)),
+      by decide⟩,
+    ⟨Or.inr (Comp.FragC.consT (Comp.FragB.n4 (Comp.FragX.frag fun _ => trivial)) (Comp.FragC.ind
+      (Comp.FragU.x (Comp.FragX.frag fun _ => trivial)) (Comp.FragU.x (Comp.FragX.frag fun _ => trivial)) rfl)),
       by decide⟩⟩
 
 /-- `[[[2 [0 3] [0 2]] [0 1]] [0 1]]` is in `FragUCG` and not in `FragUCCM`'s
