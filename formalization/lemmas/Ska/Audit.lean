@@ -41,6 +41,7 @@ import lemmas.Ska.BakeMeasure
 import lemmas.Ska.SitesMeet
 import lemmas.Ska.KnowMonoFalse
 import lemmas.Ska.SitesMeetNF
+import lemmas.Ska.AnaFuel
 
 /-! The axioms of the main theorems of `lemmas/Ska`.  `lake build` prints
 them; each should be `propext`, `Classical.choice` and `Quot.sound` at most. -/
@@ -350,3 +351,11 @@ open Formalization.SkaModel
 #print axioms Bake.lessProvidesNF_of_cover
 #print axioms PokeM.pokeLessNF_of_cover
 #print axioms PokeM.pokeSites_of_cover
+#print axioms Ana.fuelStep
+#print axioms Ana.folLoop_fuel_le
+#print axioms Ana.resolve_fuel_le
+#print axioms Ana.analyze_fuel_le
+#print axioms Ana.run_fuel_le
+#print axioms Ana.passLoop_fuel_le
+#print axioms Ana.memberLoop_fuel_le
+#print axioms Ana.skaPoke_fuel_le
