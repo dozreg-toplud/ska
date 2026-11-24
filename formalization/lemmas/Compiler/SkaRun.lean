@@ -204,6 +204,131 @@ theorem run_datum_moved (gen : GenS FinMap R) (dn : FDatum FinMap) (pm : Anno) (
         folOutNoun, FolOut.toNoun, GenS.toNoun, SkaState.toNoun, Anno.toNoun, FDatum.toNoun, in.arm_at, in_arm,
         in.put.arm_at, put_in_arm]
 
+theorem sock_toNoun_iff (a b : Sock) : a.toNoun = b.toNoun ↔ a = b :=
+  ⟨SkaModel.Ana.Sock.toNoun_inj a b, fun h => h ▸ rfl⟩
+
+theorem cape_toNoun_iff (a b : Cape) : a.toNoun = b.toNoun ↔ a = b :=
+  ⟨SkaModel.Ana.Cape.toNoun_inj a b, fun h => h ▸ rfl⟩
+
+/-- `indi` of the new datum after the `=?` of `+run`. -/
+def indiSet (dn : FDatum FinMap) (old : Datum) (dark : Cape) : Cape :=
+  if (dn.less, dn.prod, dn.map) = (old.less, old.prod, old.map) ∧ dn.indi ≠ old.indi then
+    Ca.lack (msgCa dn.indi old.indi) dark
+  else dn.indi
+
+/-- `seek` of the new datum after the `=?` of `+run`. -/
+def seekSet (dn : FDatum FinMap) (old : Datum) : Cape :=
+  if (dn.less, dn.prod, dn.map, dn.indi) = (old.less, old.prod, old.map, old.indi) ∧ dn.seek ≠ old.seek then
+    msgCa dn.seek old.seek
+  else dn.seek
+
+include hcf hK in
+/-- The `=?` on `indi`, through `+msg-ca` and `+lack:ca`. -/
+theorem run_datum_indi (gen : GenS FinMap R) (dn : FDatum FinMap) (pm : Noun) (dark : Cape) (less F : Noun) :
+    nockW c (C pm (C dn.toNoun (C dark.toNoun (C less (dBase regsNoun K sb x id data out gen)))))
+      (C (A 7) (C rdIndi2 F))
+    = nockW c (C pm (C (FDatum.toNoun { dn with indi := indiSet dn data.core dark }) (C dark.toNoun (C less
+        (dBase regsNoun K sb x id data out gen))))) F := by
+  have hlib := K_lib hK
+  have hla := ca_lack_pill (msgCa dn.indi data.indi) dark
+  have hmc := msg_ca_gate ana dn.indi data.indi
+  by_cases h1 : dn.less = data.less ∧ dn.prod = data.prod ∧ dn.map = data.map
+  · by_cases h2 : dn.indi = data.indi
+    · simp (disch := ffar_disch) [indiSet, FDatum.core, h1, h2, dBase, rdIndi2, nock_exec, hcf, hlib, hK,
+        sock_toNoun_iff, cape_toNoun_iff, FDatum.toNoun]
+    · simp (disch := ffar_disch) [indiSet, FDatum.core, h1, h2, hla, hmc, dBase, rdIndi2, nock_exec, hcf, hlib,
+        hK, sock_toNoun_iff, cape_toNoun_iff, FDatum.toNoun, ca.lib.arm_at, ca_lib_arm, ca.lack.arm_at,
+        ca_lack_arm, msg_ca_arm_at, msg_ca_arm]
+  · have h1' : ¬ (dn.less = data.less ∧ dn.prod = data.prod ∧ dn.map = data.map) := h1
+    simp (disch := ffar_disch) [indiSet, FDatum.core, h1', dBase, rdIndi2, nock_exec, hcf, hlib, hK,
+      sock_toNoun_iff, cape_toNoun_iff, FDatum.toNoun]
+
+include hcf hK in
+/-- The `=?` on `seek`, through `+msg-ca`. -/
+theorem run_datum_seek (gen : GenS FinMap R) (dn : FDatum FinMap) (pm dark less F : Noun) :
+    nockW c (C pm (C dn.toNoun (C dark (C less (dBase regsNoun K sb x id data out gen)))))
+      (C (A 7) (C rdSeek F))
+    = nockW c (C pm (C (FDatum.toNoun { dn with seek := seekSet dn data.core }) (C dark (C less
+        (dBase regsNoun K sb x id data out gen))))) F := by
+  have hmc := msg_ca_gate ana dn.seek data.seek
+  by_cases h1 : dn.less = data.less ∧ dn.prod = data.prod ∧ dn.map = data.map ∧ dn.indi = data.indi
+  · by_cases h2 : dn.seek = data.seek
+    · simp (disch := ffar_disch) [seekSet, FDatum.core, h1, h2, dBase, rdSeek, nock_exec, hcf, hK,
+        sock_toNoun_iff, cape_toNoun_iff, FDatum.toNoun]
+    · simp (disch := ffar_disch) [seekSet, FDatum.core, h1, h2, hmc, dBase, rdSeek, nock_exec, hcf,
+        hK, sock_toNoun_iff, cape_toNoun_iff, FDatum.toNoun, msg_ca_arm_at, msg_ca_arm]
+  · have h1' : ¬ (dn.less = data.less ∧ dn.prod = data.prod ∧ dn.map = data.map ∧ dn.indi = data.indi) := h1
+    simp (disch := ffar_disch) [seekSet, FDatum.core, h1', dBase, rdSeek, nock_exec, hcf, hK,
+      sock_toNoun_iff, cape_toNoun_iff, FDatum.toNoun]
+
+/-- Whether the entry changed for its callers: `less-code`, `prod`, `map`,
+`indi` or `seek`. -/
+def chgOf (dn : FDatum FinMap) (old : Datum) : Bool :=
+  decide ((dn.less, dn.prod, dn.map, dn.indi, dn.seek) ≠ (old.less, old.prod, old.map, old.indi, old.seek))
+
+/-- The state that `+run` returns, from the state of `fol-loop`'s `gen` with
+`moved` set, and the new datum. -/
+noncomputable def runSt (id : Ident) (st : SkaState FinMap R) (dn : FDatum FinMap) (chg : Bool) :
+    SkaState FinMap R :=
+  let tk := st.tick + 1
+  { st with tick := tk,
+            ticks := Treap.put st.ticks id (tk, if chg then tk else (Treap.gut st.ticks id (0, 0)).2),
+            g := Treap.put st.g id dn }
+
+/-- The noun of a result of `+run`: `[[low back changed] st]`. -/
+noncomputable def runNoun (regsNoun : R → Noun) (r : (Nat × Bool × Bool) × SkaState FinMap R) : Noun :=
+  C (C (A r.1.1) (C (flag r.1.2.1) (flag r.1.2.2))) (r.2.toNoun regsNoun)
+
+include hcf hK in
+/-- `changed`, the tick, `ticks` and the write of the datum into `g`. -/
+theorem run_datum_end (gen : GenS FinMap R) (dn : FDatum FinMap) (pm dark less : Noun) :
+    nockW c (C pm (C dn.toNoun (C dark (C less (dBase regsNoun K sb x id data out gen)))))
+      (C (A 8) (C rdChanged (C (A 7) (C rdTick (C (A 7) (C rdTicks rdFin))))))
+    = some (runNoun regsNoun ((gen.low, gen.back, chgOf dn data.core),
+        runSt id gen.st dn (chgOf dn data.core))) := by
+  have hl2 := K_layer2 hK
+  obtain ⟨want, indi, seek, callees, area, low, back, st⟩ := gen
+  obtain ⟨g, done, order, stk, next, moved, tick, ticks, regs, stats⟩ := st
+  have hgu : nock (C by.gut.battery (C (C (identNoun id) (C (A 0) (A 0)))
+      (C by.battery (C (Treap.toNoun (fun p : Nat × Nat => C (A p.1) (A p.2)) ticks) layer2)))) by.gut.battery
+      = some (C (A ((Treap.get ticks id).getD (0, 0)).1) (A ((Treap.get ticks id).getD (0, 0)).2)) :=
+    gut_finMap layer2 ⟨fall.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩
+      (fun p : Nat × Nat => C (A p.1) (A p.2)) ticks id (0, 0)
+  have hpt : ∀ v : Nat × Nat, nock (C by.put.battery (C (C (identNoun id) (C (A v.1) (A v.2)))
+      (C by.battery (C (Treap.toNoun (fun p : Nat × Nat => C (A p.1) (A p.2)) ticks) layer2)))) by.put.battery
+      = some (Treap.toNoun (fun p : Nat × Nat => C (A p.1) (A p.2)) (Treap.put ticks id v)) := fun v =>
+    put_gate layer2 gorIn_morIn_layer2 _ _ _ _ (FinMap.putF_toNoun (fun p : Nat × Nat => C (A p.1) (A p.2)) ticks id v)
+  have hpg : nock (C by.put.battery (C (C (identNoun id) dn.toNoun)
+      (C by.battery (C (Treap.toNoun FDatum.toNoun g) layer2)))) by.put.battery
+      = some (Treap.toNoun FDatum.toNoun (Treap.put g id dn)) :=
+    put_gate layer2 gorIn_morIn_layer2 _ _ _ _ (FinMap.putF_toNoun FDatum.toNoun g id dn)
+  conv at hpg => lhs; simp only [FDatum.toNoun]
+  by_cases h1 : dn.less = data.less ∧ dn.prod = data.prod ∧ dn.map = data.map ∧ dn.indi = data.indi ∧
+      dn.seek = data.seek
+  · have hc : chgOf dn data.core = false := by
+      simp [chgOf, FDatum.core, h1]
+    have hp1 := hpt (tick + 1, ((Treap.get ticks id).getD (0, 0)).2)
+    simp only at hp1
+    rw [hc]
+    obtain ⟨dc, dno, dl, di, ds, dp, dm, da⟩ := data
+    obtain ⟨e1, e2, e3, e4, e5⟩ := h1
+    simp only at e1 e2 e3 e4 e5
+    subst e1 e2 e3 e4 e5
+    simp (disch := ffar_disch) [hp1, hpg, hgu, dBase, rdChanged, rdTick, rdTicks, rdFin, nock_exec, hcf,
+      hl2, sock_toNoun_iff, cape_toNoun_iff, FDatum.toNoun, runNoun, runSt, SkaState.toNoun, folOutNoun,
+      FolOut.toNoun, GenS.toNoun, flag, by.arm_at, by_arm, by.put.arm_at, put_arm, by.gut.arm_at, gut_arm,
+      Treap.gut]
+  · have hc : chgOf dn data.core = true := by
+      simp only [chgOf, FDatum.core, decide_eq_true_eq, ne_eq, Prod.mk.injEq]; exact h1
+    have h1' : ¬ (dn.less = data.less ∧ dn.prod = data.prod ∧ dn.map = data.map ∧ dn.indi = data.indi ∧
+      dn.seek = data.seek) := h1
+    have hp1 := hpt (tick + 1, tick + 1)
+    simp only at hp1
+    rw [hc]
+    simp (disch := ffar_disch) [h1', hp1, hpg, hgu, dBase, rdChanged, rdTick, rdTicks, rdFin, nock_exec, hcf,
+      hl2, sock_toNoun_iff, cape_toNoun_iff, FDatum.toNoun, runNoun, runSt, SkaState.toNoun, folOutNoun,
+      FolOut.toNoun, GenS.toNoun, flag, by.arm_at, by_arm, by.put.arm_at, put_arm, by.gut.arm_at, gut_arm]
+
 end datum
 
 end Compiler
