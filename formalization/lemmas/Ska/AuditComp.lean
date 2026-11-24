@@ -39,6 +39,7 @@ import lemmas.Ska.CompRelX
 import lemmas.Ska.CompEntryRel
 import lemmas.Ska.CompWalkU
 import lemmas.Ska.CompCollapseGate
+import lemmas.Ska.CompCollapseRun
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -442,3 +443,8 @@ open Formalization.SkaModel.Comp
 #print axioms collapseGate_ok
 #print axioms walkLazy_okColl
 #print axioms collP_fillSem
+#print axioms collapseL_this
+#print axioms collRun_n4
+#print axioms runOKU_seven4
+#print axioms aboveX_n0
+#print axioms finishLF_bellContract74U
