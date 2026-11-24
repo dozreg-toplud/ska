@@ -139,6 +139,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompFrom.lean` | `+from-sure` against `fromSure` (`comp_from_sure`) and `+from` against `«from»` on a fork-free lazy need `[sure ~ ~]` (`comp_from`), exact over the nouns, crashes included, under `CompIn ctx` and on every noun of the state (neither arm reads `gen`), with the side condition that no looked-at axis is `0`.  The loop (`cf_loop`) runs `+cap` and `+mas` of layer 1 (axis `524287` of `ctx`, `cf_layer1`); the gate of the `+run:in` (`cfPegBat`, written here) runs `+peg` of layer 1 (`cf_peg_gate`).  `comp_from_sure_at`: the arm at `7163` of `comp.door`, by the kernel. |
 | `Compiler/CompSplit.lean` | `+split-sure` against `splitSure` (`comp_split_sure`), exact over `genNoun`, crashes of `+split-need` included, under `CompIn ctx` and with no look at axis `0`.  The `+rep:in` is `rep_gate_on` of `Compiler/SkaCull.lean` with the state a pair of `CSet` (`ssN`); its gate `ssRepBat` (axis `57213` of the battery, `ss_rep_bat_at` by the kernel) is `ssStep` on every look but `0` (`ss_gate`: `+cap`, `+mas` of layer 1, `+put:in` of layer 2), and `splitLok` is the fold of `ssStep` (`ss_splitLok`).  `comp_split_need_at`: `+split-need` at `55294` of `comp.door`.  `+split` against `split` on a `next` whose lazy need is `[sure ~ ~]` (`comp_split`): `+emit` of the `%hop` (`comp_emit`, `cd_emit_eq`), then its loop `comp.split.loop` (`csp_loop`), which runs `+split-sure` and takes the branch of the test `&(?=(~ fork.laz) ?=(~ bond.laz))` that returns `[[sure-h ~ ~] [sure-t ~ ~]]`, so no `spin-split` and no `+lazy-prune` run; same side condition. |
 | `Compiler/CompInto.lean` | `+into-need`, `+into-sure` and `+into` against `intoNeed`, `intoSure`, `into` (`comp_into_need`, `comp_into_sure`, `comp_into`, the last on `[sure ~ ~]`), exact over `genNoun`, crashes of `+add-ops` and `+must` included, under `CompIn ctx` and `CompLib ctx` (the core `K` at axis `7` of `ctx` holds `+gep` at `5597` and `+cons-need` at `350`); `+into-sure` and `+into` also need `axe` not `0` and no look at axis `0` (`+into-need` is exact on every axis).  `+gep` against `gep` on every two atoms, crashes included (`gep_gate`, in any core with layer 2 at `65535`: `+lth`, `+sub`, `+met`, `+rsh`, `+bex`, `+dec`, `+dis`, `+con`, with `ci_metF_mono` for the `+sub`), `+cons-need` against `consNeed` (`cn_gate`).  The loop of `+into-need` (`inn_loop`, by strong induction on the axis, every case of the need and both values of `+cap`), its `roll` (`inn_roll`, through `ci_roll_gate`, `+roll` with a gate known on the nouns of a type), the gate of the `+rep:in` of `+into-sure` (`is_gate`, `isStep`, `is_intoLok`), the loop of `+into` (`cit_loop`).  The nouns are written here and tied by the kernel: `gepBat`/`gepArm` (`gep_arm_at`, axis `259549` of `cor`), `cnBat`/`cnArm` (`cn_arm_at`, `16222` of `cor`), `innBat`, `innL0`, `innG0`, `innArm` (`comp_inn_at`, door axis `214`), `isBat`, `isG0`, `isArm` (`comp_is_at`, `1769470`), `intBat`, `intL0`, `intArm` (`comp_int_at`, `860`).  The simprocs unfold `comp.door` down to an unnamed arm in hash-named pieces, so a proof that calls an unnamed arm first generalizes `comp.door` to a variable `D` with the arm's `slot?` fact (`comp_into_sure`, `cit_loop`). |
+| `Compiler/CompForlLink.lean` | `+forl` (door axis `442362`, `flBat` written here, `comp_fl_at`) against `forl` (`comp_forl`), exact over `genNoun`, under `CompIn ctx` only.  The state after each `+emit` is kept folded as `cfEmitG b g` (`cf_emit_g`, `cf_emit`), one lemma per emit (`fl_e1`, `fl_e2`, `fl_e3`) and the model with its states folded (`fl_forl_eq`); the whole proof is one `simp only` that never unfolds `genNoun` (12 s).  No field of `cache`, `soft`, `sofs` is read or written. |
+| `Compiler/CompCopyLink.lean` | `+flatten-need` (door axis `220`, `comp_flatten_need`, on every state noun, by induction on the need, with `+weld`), `+copy-need-make-ops` (`3452`, `comp_copy_need`), `+copy-lazy` (`1022`, `comp_copy_lazy`), `+copy` (`220590`, `comp_copy`) `+sure-require-look` (`887`, `comp_sure_require_look`) and `+insert-hop` (`2`, `comp_insert_hop`, against `insertHop` of `Ska/CompLazyRun.lean`, exact, crashes of `got` and of its two `?>` included, under `CompIn ctx` only), each battery written here and tied to the pill by a kernel fact on `comp.door`.  The loop of `+copy-need-make-ops` is a work list (`CnE`, subject `cnT`); one lemma per kind of step (`cnm_st_*`) and `cnm_seg`, by induction on the first need, show that it pops `|+[l r]` and pushes what `copyNeed` returns.  Its four `~?` prints are passed on the branch where their tests are false: no `%mov` joins a register to itself (`cnMeet`) and the registers of both needs are below `re-gen` (`cnLt`), so that a fresh register differs from them.  `+copy-lazy` and `+copy` on `[sure ~ ~]` (the fork and bond lists stay `~`), given `CsUniIs` (`+uni:in` of layer 2 computes the union of `csHoonSet`, not linked).  `+sure-require-look`: the trap is `lookPath` (`srl_loop`, strong induction on the axis), the gate of the `rep` is `srlStep` (`srl_gate`), and `+rep:in` folds in the order `HoonSet.toList` (`rep_gate_on`, `cs_preorder`, `srl_fold`), with no look at `0`.  `CompLib ctx` for `+cons-need`.  None of these arms reads or writes `cache`, `soft`, `sofs`. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`. |
@@ -651,7 +653,28 @@ import only its theorems.  So:
      layer 2, two arms of the core `K` of `+comp` at axis `7` of `ctx`
      (`CompLib ctx`): `+gep` at `5597` (linked, `gep_gate`) and
      `+cons-need` at `350` (linked, `cn_gate`).  None touches `cache`,
-     `soft`, `sofs`.  The door axes found by the hint cords
+     `soft`, `sofs`.
+     L, 2026-11-24 (track A, later): `+forl` (`comp_forl`,
+     `Compiler/CompForlLink.lean`, with `CompIn ctx` only, exact),
+     `+flatten-need` (`comp_flatten_need`, every need, every state noun),
+     `+copy-need-make-ops` (`comp_copy_need`, side conditions `cnLt g.re`
+     on both needs and `cnMeet`: the pill evaluates a `~?` print whose clue
+     runs the library's printer when a `%mov` joins a register to itself,
+     which the link does not cover), `+copy-lazy` and `+copy`
+     (`comp_copy_lazy`, `comp_copy`, on `[sure ~ ~]`, the same side
+     conditions, and `CsUniIs`: `+uni:in` of layer 2 is not linked), and
+     `+sure-require-look` (`comp_sure_require_look`, no look at `0`, the
+     order of `+rep:in` being `HoonSet.toList` of `csHoonSet`), and
+     `+insert-hop` (`comp_insert_hop`, `CompIn ctx` only, exact), all in
+     `Compiler/CompCopyLink.lean`.  `CompLib ctx` is needed by
+     `+copy-need-make-ops` (and so `+copy-lazy`, `+copy`) and
+     `+sure-require-look` for `+cons-need`.  None of these touches
+     `cache`, `soft`, `sofs`.  Not linked yet: `+mede` (door axis `27307`;
+     it calls `+walk-lazy`, which has no model, and `+crash-need`, which
+     tests `(~(has by soft.gen) o)`, so a link needs `o` not a key of
+     `soft`), `+lazy-bound` (`884726`), `+proxy`
+     (`441178`), `+crash-need` (no hint; reads `soft`).
+     The door axes found by the hint cords
      (`~%  %comp-<name>`): `+into-sure` `1769470`, `+into-need` `214`,
      `+into` `860`, `+flatten-need` `220`, `+insert-hop` `2`, `+copy`
      `220590`, `+copy-lazy` `1022`, `+copy-need-make-ops` `3452`, `+mede`
@@ -659,12 +682,12 @@ import only its theorems.  So:
      `441178`, `+sure-require-look` `887`, `+emit` `27306` (the core axis
      is the door axis with a `0` put after its leading bit, e.g. `+emit`
      `43690`); `+crash-need` and `+re` carry no hint.
-     M: `+copy`, `+copy-lazy`, `+crash-need` (s),
-     `+flatten-need`, `+mede`, `+collapse-lazy-atom`, `+forl`, `+past`,
+     M: `+crash-need` (s),
+     `+mede`, `+collapse-lazy-atom`, `+past`,
      `+run` (s), and in the lazy files `+lazy-bound`, `+proxy`, `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
-     `+laze-this-only`, `+soft-fork` (s).
+     `+laze-this-only`, `+soft-fork` (s) (`+insert-hop` is now linked).
      N: `+run-shape` (f, written), `+callee-sure` (c), `+callee-need`,
      `+callee-compiled` (c), `+laze-big` (f), `+laze-soft-fork` (f),
      `+coerce-lazy` (s), `+soft-new`, `+soft-bond`, `+soft-ask`,
@@ -701,11 +724,14 @@ import only its theorems.  So:
      `+lazy-prune`, the other `laze-*` arms, `+need-ord-cut`,
      `+need-ord-from`, `+walk-lazy`, `+kern-r-need`, `+kern-need`,
      `+past-if`, `+sound`, `+made`, the other `soft-*` arms,
-     `+emit-cold`, `+past-fork`, `+copy-need-make-ops`, `+coerce-ord`,
+     `+emit-cold`, `+past-fork`, `+coerce-ord`,
      `+coerce-soft`, `+need-ord-alloc-regs`, `+coerce-lazy`,
      `+next-lazy-collapse`, `+collapse-shape`, `+to-straight`.  The next
-     links to make: `+forl` (door axis `442362`; a proof by `comp_emit` with the state left free and one `simp` per value of `drop` ran out of the 3 GB cap, so split it into the three emits with the state generalized between them), `+copy*`, `+mede`, `+flatten-need` (none of these touches
-     `cache`, `soft` or `sofs`; `+crash-need` reads `soft`).
+     links to make: `+uni:in` of layer 2 (to discharge `CsUniIs`),
+     `+walk-lazy` on `[sure ~ ~]` (a model first) and `+crash-need` with
+     `o` not in `soft`, then `+mede`; `+lazy-bound`,
+     `+proxy` (`+copy-need-make-ops` has no model of its own: `copyNeed` is
+     its model, now linked).
    - *Modelled, not linked*:
      `+uni-sock`, `+norm-sock`, `+know`,
      `+bake-graph`; `+reverse-bell-graph`, `+hot-stale`, `+del-bells`;
