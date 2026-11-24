@@ -63,3 +63,9 @@ open Formalization.SkaModel.Opt
 #print axioms middle_fieldD
 #print axioms driverHyp_of
 #print axioms optimize_keeps_rest
+#print axioms downPar_passOK
+#print axioms rub_downPar
+#print axioms hops_downPar
+#print axioms mid_downPar
+#print axioms mid_passOK_of
+#print axioms rewriteHop_safe

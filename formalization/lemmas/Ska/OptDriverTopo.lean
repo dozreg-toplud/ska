@@ -1,6 +1,7 @@
 import lemmas.Ska.OptTopoOK
 import lemmas.Ska.OptDriverFields
 import lemmas.Ska.OptDead
+import lemmas.Ska.OptDownPar
 
 /-!
 # `topo` and `rev` through the structural passes
@@ -24,11 +25,12 @@ it was (`mid_same`).
 keeps, and keeps every block of `rev-topo` (`dead_shape`), so it keeps
 `DInv` and `TopoInv` (`dead_inv`); its semantic half is `DeadKeeps`.
 
-With `DInv` (`BlkInv` and `Acyclic`) as the block invariant and `TopoInv` as
-the invariant of `topo` and `rev`, the fields `topo`, `hops`, `rub` of
-`DriverHyp` hold, `middle` holds given `PassOK` of the result of the pass,
-and `dead` given its semantic half (`DriverRest`: what is still assumed;
-`driverHyp_of`, `optimize_keeps_rest`).
+With `DInv` (`BlkInv`, `Acyclic` and `DownPar` of `OptDownPar.lean`) as the
+block invariant and `TopoInv` as the invariant of `topo` and `rev`, the
+fields `topo`, `hops`, `rub` and `middle` of `DriverHyp` hold (`PassOK` of
+the result of `+remove-empty-middle` comes from `DownPar` of its input,
+`mid_passOK_of`), and `dead` given its semantic half (`DriverRest`: what is
+still assumed; `driverHyp_of`, `optimize_keeps_rest`).
 -/
 
 set_option linter.unusedSectionVars false
@@ -393,13 +395,13 @@ theorem dead_shape {bl bl' : Map Blob} {revTopo : List Nat} (h : removeDeadCode 
     simp only [HoonMap.get_empty] at hb'; cases hb')
   exact ⟨i1, i3⟩
 
-/-- The block invariant of the driver: `BlkInv` and `Acyclic`. -/
-def DInv (bl : Map Blob) : Prop := BlkInv bl ∧ Acyclic bl
+/-- The block invariant of the driver: `BlkInv`, `Acyclic` and `DownPar`. -/
+def DInv (bl : Map Blob) : Prop := BlkInv bl ∧ Acyclic bl ∧ DownPar bl
 
 theorem sameShape_inv {bl bl' : Map Blob} (hs : SameShape bl bl') (hb : DInv bl) : DInv bl' := by
-  obtain ⟨⟨hn, hp⟩, ha⟩ := hb
+  obtain ⟨⟨hn, hp⟩, ha, hd⟩ := hb
   refine ⟨⟨fun o b' hb' => ?_, fun o b' j b2' hb' hj hb2' => ?_⟩,
-    acyclic_sub ha fun k b' hb' => ?_⟩
+    acyclic_sub ha fun k b' hb' => ?_, downPar_of (bl := bl) (fun z bz' hz => ?_) (fun y b' j' hb' hj' => ?_)⟩
   · obtain ⟨b, hb, hpar, -⟩ := hs o b' hb'
     rw [hpar]; exact hn o b hb
   · obtain ⟨b, hb, -, hfin⟩ := hs o b' hb'
@@ -408,6 +410,11 @@ theorem sameShape_inv {bl bl' : Map Blob} (hs : SameShape bl bl') (hb : DInv bl)
     exact hp o b j b2 hb (by rw [← hfin]; exact hj) hb2
   · obtain ⟨b, hb, -, hfin⟩ := hs k b' hb'
     exact ⟨b, hb, fun j' hj' => ⟨j', by rw [← hfin]; exact hj', rfl⟩⟩
+  · obtain ⟨bz, hbz, hpar, -⟩ := hs z bz' hz
+    exact ⟨bz, hbz, hpar⟩
+  · obtain ⟨b, hb, -, hfin⟩ := hs y b' hb'
+    rw [hfin] at hj'
+    exact ⟨RFrom.one hb hj', hd y b j' hb hj'⟩
 
 /-- **`+remove-dead-code` keeps `DInv` and `TopoInv`.** -/
 theorem dead_inv {bl bl' : Map Blob} {topo : List Nat} {rev : Map (List Nat)} (hb : DInv bl)
@@ -425,14 +432,14 @@ variable [MapKeys Map]
 /-- **The field `topo`.** -/
 theorem topo_field {fuel : Nat} {bl : Map Blob} {topo : List Nat} (hb : DInv bl) (h : bbTopo fuel bl = some topo) :
     TopoInv bl topo (revCfg bl topo) :=
-  topoInv_revCfg (bbTopo_ok hb.2 h)
+  topoInv_revCfg (bbTopo_ok hb.2.1 h)
 
 /-- **The field `hops`.** -/
 theorem hops_fieldD {fuel : Nat} {bl : Map Blob} {topo : List Nat} {rev : Map (List Nat)} {ch : Bool}
     {bl' : Map Blob} (hb : DInv bl) (hi : TopoInv bl topo rev) (h : removeHops fuel bl rev topo = some (ch, bl')) :
     KeepsB bl bl' ∧ DInv bl' ∧ (ch = false → TopoInv bl' topo rev) := by
   obtain ⟨k, j⟩ := hops_field hb.1 hi h
-  refine ⟨k, ⟨j, hops_acyclic hi.1.1 hi.1.2.1 h hb.2⟩, fun hc => ?_⟩
+  refine ⟨k, ⟨j, hops_acyclic hi.1.1 hi.1.2.1 h hb.2.1, hops_downPar hi.1.1 hi.1.2.1 h hb.2.2⟩, fun hc => ?_⟩
   subst hc
   exact hops_topoInv hi h
 
@@ -441,22 +448,21 @@ theorem rub_fieldD {bl : Map Blob} {topo : List Nat} {rev : Map (List Nat)} {ch 
     (hb : DInv bl) (h : removeUselessBranching bl = some (ch, bl')) :
     KeepsB bl bl' ∧ DInv bl' ∧ (TopoInv bl topo rev → ch = false → TopoInv bl' topo rev) := by
   obtain ⟨k, j⟩ := rub_field hb.1 h
-  exact ⟨k, ⟨j, rub_acyclic h hb.2⟩, fun hi _ => rub_topoInv h hi⟩
+  exact ⟨k, ⟨j, rub_acyclic h hb.2.1, rub_downPar h hb.2.2⟩, fun hi _ => rub_topoInv h hi⟩
 
-/-- **The field `middle`**, given `PassOK` of the result. -/
+/-- **The field `middle`.** -/
 theorem middle_fieldD {fuel : Nat} {bl : Map Blob} {topo : List Nat} {rev : Map (List Nat)} {ch : Bool}
-    {bl' : Map Blob} (hb : DInv bl) (h : removeEmptyMiddle fuel bl = some (ch, bl')) (hyp : PassOK bl') :
+    {bl' : Map Blob} (hb : DInv bl) (h : removeEmptyMiddle fuel bl = some (ch, bl')) :
     KeepsB bl bl' ∧ DInv bl' ∧ (TopoInv bl topo rev → ch = false → TopoInv bl' topo rev) := by
-  obtain ⟨k, j⟩ := middle_field hb.1 h hyp
-  refine ⟨k, ⟨j, mid_acyclic h hb.2⟩, fun hi hc => ?_⟩
+  obtain ⟨k, j⟩ := middle_field hb.1 h (mid_passOK_of h hb.2.2)
+  refine ⟨k, ⟨j, mid_acyclic h hb.2.1, mid_downPar h hb.2.2⟩, fun hi hc => ?_⟩
   subst hc
   exact mid_topoInv h hi
 
-/-- **What the driver still assumes**, at `DInv` and `TopoInv`: `PassOK` of
-the result of `+remove-empty-middle`, the semantic half of
-`+remove-dead-code`, and the three passes that are parameters. -/
+/-- **What the driver still assumes**, at `DInv` and `TopoInv`: the
+semantic half of `+remove-dead-code`, and the three passes that are
+parameters. -/
 structure DriverRest (fuel : Nat) (P : Passes Map) : Prop where
-  midPass : ∀ (bl : Map Blob) ch bl', DInv bl → removeEmptyMiddle fuel bl = some (ch, bl') → PassOK bl'
   dead : ∀ (bl : Map Blob) topo rev bl', DInv bl → TopoInv bl topo rev → removeDeadCode bl topo.reverse = some bl' →
     KeepsB bl bl'
   alias : ∀ n (bl : Map Blob) topo rev f bl', DInv bl → TopoInv bl topo rev → P.alias n bl rev topo = some (f, bl') →
@@ -471,15 +477,16 @@ theorem driverHyp_of {fuel : Nat} {P : Passes Map} (H : DriverRest fuel P) : Dri
   topo := fun _ _ hb h => topo_field hb h
   hops := fun _ _ _ _ _ hb hi h => hops_fieldD hb hi h
   rub := fun _ _ _ _ _ hb h => rub_fieldD hb h
-  middle := fun bl _ _ ch bl' hb h => middle_fieldD hb h (H.midPass bl ch bl' hb h)
+  middle := fun _ _ _ _ _ hb h => middle_fieldD hb h
   alias := H.alias
   trim := H.trim
   dead := fun bl topo rev bl' hb hi h => ⟨H.dead bl topo rev bl' hb hi h, dead_inv hb hi h⟩
   switch := H.switch
 
 /-- **`+optimize` keeps the code** on blocks with `DInv` (distinct
-parameters, the check of `+eval-pass`, an acyclic CFG), given what is still
-assumed (`DriverRest`). -/
+parameters, the check of `+eval-pass`, an acyclic CFG, no jump passing a
+parameter of a block below its target), given what is still assumed
+(`DriverRest`). -/
 theorem optimize_keeps_rest {fuel : Nat} {P : Passes Map} (H : DriverRest fuel P) {s s' : Straight Map}
     (hb : DInv s.blocks) (h : optimizeF fuel P s = some s') : Keeps s s' :=
   optimize_keeps (driverHyp_of H) hb h

@@ -184,6 +184,37 @@
   ?~  a  &
   !(~(has in (sy par.u.t)) u.a)
 =/  pok=?  (passok bl)
+::  DownPar of lemmas/Ska/OptDriverTopo.lean: no argument register of a jump
+::  is a parameter of a block reachable from its target (PassOK is the case
+::  of the target itself)
+=/  downpar
+  |=  bl=(map @uwoo blob-out)
+  ^-  ?
+  =/  reach
+    |=  o=@uwoo
+    ^-  (set @uvre)
+    =|  [seen=(set @uwoo) ps=(set @uvre)]
+    =/  todo=(list @uwoo)  ~[o]
+    |-  ^-  (set @uvre)
+    ?~  todo  ps
+    ?:  (~(has in seen) i.todo)  $(todo t.todo)
+    =/  b  (~(get by bl) i.todo)
+    ?~  b  $(todo t.todo, seen (~(put in seen) i.todo))
+    %=  $
+      todo  (weld (turn (jout fin.u.b) |=(j=jmp there.j)) t.todo)
+      seen  (~(put in seen) i.todo)
+      ps    (~(uni in ps) (sy par.u.b))
+    ==
+  %-  ~(all by bl)
+  |=  b=blob-out
+  %+  levy  (jout fin.b)
+  |=  j=jmp
+  =/  ps  (reach there.j)
+  %+  levy  args.j
+  |=  a=(unit @uvre)
+  ?~  a  &
+  !(~(has in ps) u.a)
+~?  !(downpar bl)  [%downpar-raw nam.i.cases kind.i.cases]
 ::  +remove-useless-branching: same keys, each block as rubFin says
 =/  rub  (remove-useless-branching bl)
 =/  rubok=?
@@ -237,6 +268,7 @@
 =/  note
   |=  [tr=(list [@tas @ud ? ?]) tag=@tas r=@ud bl=(map @uwoo blob-out)]
   ^+  tr
+  ~?  !(downpar bl)  [%downpar-fail nam.i.cases kind.i.cases tag r]
   [[tag r (passok bl) (nodupm bl)] tr]
 =/  once
   |=  [s=straight tr=(list [@tas @ud ? ?]) r=@ud]
@@ -285,6 +317,7 @@
 =/  out=straight-out  s.res(blocks (switch-chains blocks.s.res))
 =/  same=?  =(out (optimize raw))
 =/  finok=?  &((passok blocks.out) (nodupm blocks.out))
+~?  !(downpar blocks.out)  [%downpar-out nam.i.cases kind.i.cases]
 =/  badp  (skim tr.res |=([* * p=? *] !p))
 =/  badn  (skim tr.res |=([* * * n=?] !n))
 =.  mid.rnd  ?:(midok mid.rnd +(mid.rnd))
