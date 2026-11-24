@@ -44,6 +44,8 @@ import lemmas.Ska.OptAliasStart
 import lemmas.Ska.OptAliasFin
 import lemmas.Ska.OptAliasEdge
 import lemmas.Ska.OptAliasFrame
+import lemmas.Ska.OptAliasLti
+import lemmas.Ska.OptAliasInv
 
 /-! Axioms of the theorems about `+optimize`. -/
 
@@ -270,3 +272,23 @@ open Formalization.SkaModel.Opt
 #print axioms awk_walk
 #print axioms awk_fin_ssa
 #print axioms awk_finReads_sub
+#print axioms nolti_shape
+#print axioms nolti_rub
+#print axioms nolti_mid
+#print axioms nolti_hops
+#print axioms driverHypS_of
+#print axioms awi_bodyOK_mono
+#print axioms awi_par_notDefW
+#print axioms awi_dst_notDefW
+#print axioms awi_bodyOK
+#print axioms awi_step_at
+#print axioms awi_entry_at
+#print axioms awi_path_pre
+#print axioms awi_old_step
+#print axioms awi_old_walk
+#print axioms awi_self
+#print axioms awi_frame_walk
+#print axioms awi_done_stable
+#print axioms awi_end_later
+#print axioms awi_fin_done
+#print axioms awi_edge_side
