@@ -88,6 +88,23 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
 * `trimbug.hoon`    the witness: `[11 [%spot 0 1] [11 [%spot 0 1] 1 5] 0 0]` on `0`, `+mock` `[%2 ~[leaf+"mook.spot"]]`,
                     `+eval-top` `[%2 ~]`; the same with `%mean` twice, with an axis of a known cell, with an
                     increment; agreement when the hints differ in tag or the clue is a constant (2026-11-24)
+* `switchcheck.hoon` 26 formulas made to have chains of tests of one register (tagged tests `?=([%c *] x)` and
+                    plain ones `=(c x)`, both operand orders, four to nine tests, duplicated constants, a constant of
+                    `2^31`, hits that read the head, chains mixed with other tests, a chain in a hit of another), compiled
+                    with the subject unknown and known on each subject (208 compiles): `+switch-chains` fired on 153 and
+                    made 572 `%lti`, its output equals the model of `lemmas/Ska/OptSwitch.lean` written again in Hoon on
+                    every compile, and 364 runs (`+eval-blob` and `+eval-top` through `+eval-mook`) agree with `+mock`
+                    (2026-11-24).  It does not fire with three tests, a constant of `2^31` cutting the chain, a hit
+                    that reads the head register (`uses` is then 3), or another test in the chain
+* `switchcheck2.hoon` the same model against `+switch-chains` on the 143 cases of `optcheck.hoon`, after the rounds
+                    of `+optimize`: the pass fires on none of them and the model agrees on all (2026-11-24)
+* `aliascheck.hoon` 28 formulas made to have `+alias` act (moves, a test of a register against itself, a cell test
+                    twice, a loobean test inside a branch of the same test, a pushed loobean, joins, heads twice, trace
+                    hints around folded branches), 101 compiles, 164 calls of `+alias`, 116 of which changed
+                    something: 315 `%mov` eliminated, 77 other ops dropped, 44 two-way ends folded to a `%hop`, 19
+                    `%brn` made `%brz`, 44 blocks dropped, no `%brn` made `[%bom ~]`; 146 runs agree with `+mock`,
+                    traces included (2026-11-24).  The library's list types do not fuse with a test's own in a `?=`
+                    (`fuse-loop`): the check and the model of `switchcheck.hoon` clam the blocks to nouns first
 * `deadcrash.hoon`  nine formulas whose crashing operand has a dead product (`[7 [0 2] [1 5]]`
                     on an atom and the like): `+eval-top` agrees with `+mock` on all
                     (2026-11-24), so `+remove-dead-code` drops no check there
