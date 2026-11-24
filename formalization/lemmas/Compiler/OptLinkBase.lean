@@ -490,6 +490,63 @@ theorem rep_gate_fwd {α σ : Type} (pn : α → Noun) (toN : σ → Noun) (gf :
   nock_open by.rep.battery
   simp only [nock_exec, rep_loop_fwd pn toN gf B ctx bp e bc a ha L hL s r hr hf]
 
+/-- **`+rep` against a relation**: the noun of the accumulator is related to
+the model's state by `R`, and the gate on a node `pn p` and a related noun
+returns a noun related to `gf p s`. -/
+theorem rep_loop_rel {α σ : Type} (pn : α → Noun) (R : Noun → σ → Prop) (gf : α → σ → Option σ)
+    (B ctx bp e bc : Noun) :
+    ∀ (a : Noun), Tree a → ∀ (L : List α), preorder a = L.map pn → ∀ (s r : σ) (N : Noun),
+    L.foldlM (fun s p => gf p s) s = some r → R N s →
+    (∀ p ∈ L, ∀ s N s', R N s → gf p s = some s' →
+      ∃ N', nock (C bp (C (C (pn p) N) bc)) bp = some N' ∧ R N' s') →
+    ∃ N', nock (C by.rep.loop (C by.rep.battery (C (C bp (C (C e N) bc)) (C B (C a ctx)))))
+      by.rep.loop = some N' ∧ R N' r := by
+  intro a ha
+  induction ha with
+  | nil =>
+    intro L hL s r N hr hR _
+    have hL0 : L = [] := by
+      cases L with
+      | nil => rfl
+      | cons p L' => simp [preorder] at hL
+    subst hL0
+    simp only [List.foldlM_nil, Option.pure_def, Option.some.injEq] at hr
+    subst hr
+    refine ⟨N, ?_, hR⟩
+    nock_open by.rep.loop
+    simp [nock_exec]
+  | @node n l r _ _ ihl ihr =>
+    intro L hL s res N hres hR hf
+    simp only [preorder] at hL
+    obtain ⟨p, L', rfl, hpn, hL'⟩ := List.map_eq_cons_iff.1 hL.symm
+    obtain ⟨L1, L2, rfl, h1, h2⟩ := List.map_eq_append_iff.1 hL'
+    subst hpn
+    simp only [List.foldlM_cons, List.foldlM_append] at hres
+    cases e1 : gf p s with
+    | none => rw [e1] at hres; cases hres
+    | some s1 =>
+      rw [e1] at hres
+      change (L1.foldlM (fun s p => gf p s) s1).bind (fun s2 => L2.foldlM (fun s p => gf p s) s2) = some res at hres
+      obtain ⟨s2, hs2, hres2⟩ := Option.bind_eq_some_iff.mp hres
+      obtain ⟨N1, hn, hR1⟩ := hf p (by simp) s N s1 hR e1
+      obtain ⟨N2, hl, hR2⟩ := ihl L1 h1.symm s1 s2 N1 hs2 hR1 (fun x hx s N s' h h' => hf x (by simp [hx]) s N s' h h')
+      obtain ⟨N3, hr, hR3⟩ := ihr L2 h2.symm s2 res N2 hres2 hR2 (fun x hx s N s' h h' => hf x (by simp [hx]) s N s' h h')
+      refine ⟨N3, ?_, hR3⟩
+      nock_open by.rep.loop
+      simp [nock_exec, hn, hl, hr]
+
+theorem rep_gate_rel {α σ : Type} (pn : α → Noun) (R : Noun → σ → Prop) (gf : α → σ → Option σ)
+    (B ctx bp e bc a : Noun) (ha : Tree a) (L : List α) (hL : preorder a = L.map pn) (s r : σ) (N : Noun)
+    (hr : L.foldlM (fun s p => gf p s) s = some r) (hR : R N s)
+    (hf : ∀ p ∈ L, ∀ s N s', R N s → gf p s = some s' →
+      ∃ N', nock (C bp (C (C (pn p) N) bc)) bp = some N' ∧ R N' s') :
+    ∃ N', nock (C by.rep.battery (C (C bp (C (C e N) bc)) (C B (C a ctx)))) by.rep.battery = some N' ∧
+      R N' r := by
+  obtain ⟨N', h, hR'⟩ := rep_loop_rel pn R gf B ctx bp e bc a ha L hL s r N hr hR hf
+  refine ⟨N', ?_, hR'⟩
+  nock_open by.rep.battery
+  simp only [nock_exec, h]
+
 /-! ## Jars -/
 
 /-- The noun of a jar of labels. -/

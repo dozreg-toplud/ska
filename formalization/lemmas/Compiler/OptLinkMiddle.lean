@@ -161,6 +161,11 @@ theorem pole_gate : nock compTypes poleMold = some poleGate :=
 def poleBunt : Noun := C (A 0x6d7363) (C (C (C (A 1) (A 0)) (C (A 0) (A 0))) (C (A 0) (C (A 0) (A 0))))
 theorem pole_bunt : nock poleGate (C (A 9) (C (A 2) (C (A 0) (A 1)))) = some poleBunt :=
   nock_of_evalFuel (fuel := 2000) (by kernel_rfl)
+/-- The battery of the gate the mold builds. -/
+noncomputable def poleGateBat : Noun := (slot? 2 poleGate).getD (A 0)
+theorem pole_gate_bat : slot? 2 poleGate = some poleGateBat := by kernel_rfl
+theorem pole_bunt' : nock poleGate poleGateBat = some poleBunt :=
+  nock_of_evalFuel (fuel := 2000) (by kernel_rfl)
 
 /-! ## `rewrite-jump` -/
 
