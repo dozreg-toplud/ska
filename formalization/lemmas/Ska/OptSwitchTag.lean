@@ -259,7 +259,158 @@ theorem treeGo_good (lib : Lib) (O : Oracle σ) (c : Straight Map) (gul : Noun) 
       · simp [hc] at h
     · simp at h
 
+theorem tagTarget_mem (cs : List STest) (mis : Nat) (vs : Noun) :
+    tagTarget cs mis vs = mis ∨ ∃ t ∈ cs, tagTarget cs mis vs = t.hit := by
+  cases vs with
+  | atom _ => exact Or.inl rfl
+  | cell h _ =>
+    simp only [tagTarget, chainPick]
+    cases e : cs.find? (fun t => decide (h = A t.c)) with
+    | none => exact Or.inl rfl
+    | some t => exact Or.inr ⟨t, List.mem_of_find?_eq_some e, rfl⟩
+
 end
+
+/-- The labels inside a tagged chain's region: the yes side of the first
+test and `tagIds`. -/
+def TagIn (t0 : STest) (tl : List STest) (k : Nat) : Prop := k = t0.y ∨ k ∈ tagIds (t0 :: tl)
+
+/-- **What one application of `switchTag` at `o` needs of the chain**, all
+of it about the blocks before. -/
+structure TagHyp (M : Map Blob) (o : Nat) (t0 : STest) (tl : List STest) : Prop where
+  nd : (tagIds (t0 :: tl)).Nodup
+  hy : t0.y ∉ tagIds (t0 :: tl)
+  ho : o ∉ tagIds (t0 :: tl)
+  hoy : o ≠ t0.y
+  hr : ∀ t ∈ t0 :: tl, t.r ≠ t0.d
+  blocks : TagBlocks M t0.s (tagMiss t0 tl) (t0 :: tl)
+  headFin : ∃ b, HoonMap.get M o = some b ∧ b.fin = Termin.clq t0.s ⟨[], t0.y⟩ ⟨[], t0.miss⟩
+  hits : ∀ t ∈ t0 :: tl, (HoonMap.get M t.hit).isSome ∧ ¬ TagIn t0 tl t.hit ∧ t.hit ≠ o
+  miss : (HoonMap.get M (tagMiss t0 tl)).isSome ∧ ¬ TagIn t0 tl (tagMiss t0 tl) ∧ tagMiss t0 tl ≠ o
+  noI : ∀ k b j, Reach M k → ¬ TagIn t0 tl k → k ≠ o → HoonMap.get M k = some b → j ∈ getJmps b.fin →
+    ¬ TagIn t0 tl j.there
+  ment : ∀ k b, Reach M k → ¬ TagIn t0 tl k → HoonMap.get M k = some b → ∀ r ∈ blobMentions b,
+    r ∉ tagRegs (t0 :: tl)
+  zero : ¬ TagIn t0 tl 0
+
+section
+variable {M out' : Map Blob} {fuel o : Nat} {t0 : STest} {tl : List STest} {done done' : List Nat}
+
+/-- The region of one tagged chain. -/
+theorem tag_region (h : switchTag M M fuel o (t0 :: tl) done = some (out', done')) (H : TagHyp M o t0 tl) :
+    RegionHyp M out' (TagIn t0 tl) (· = o) (fun k => k ∈ tagRegs (t0 :: tl)) := by
+  obtain ⟨b, nb, nf, hb, hbo, -, -, hfr, -⟩ := tag_tree h H.nd H.hy H.ho H.hoy H.hr
+  obtain ⟨b1, hb1, hf1⟩ := H.headFin
+  rw [hb] at hb1; cases hb1
+  refine ⟨fun k hk hh => ?_, fun k hk => ?_, fun k b j hr hk hh hb hj => H.noI k b j hr hk hh hb hj,
+    fun k b hr hk hb r hm => H.ment k b hr hk hb r hm, H.zero⟩
+  · exact hfr k hh (fun e => hk (Or.inl e)) (fun e => hk (Or.inr e))
+  · subst hk
+    refine ⟨fun e => e.elim H.hoy H.ho, b, t0.s, _, _, _, _, hb, hf1, hbo⟩
+
+/-- **The macro step at the head of a tagged chain.** -/
+theorem tag_head {σ : Type} (lib : Lib) (O : Oracle σ) (gul : Noun) (c : Straight Map) (hc : c.blocks = M)
+    (h : switchTag M M fuel o (t0 :: tl) done = some (out', done')) (H : TagHyp M o t0 tl) :
+    HeadStep lib O gul c (withBlocks c out') (TagIn t0 tl) (· = o) (fun k => k ∈ tagRegs (t0 :: tl)) := by
+  subst hc
+  obtain ⟨b, nb, nf, hb, hbo, hby, hgo, hfr, -⟩ := tag_tree h H.nd H.hy H.ho H.hoy H.hr
+  obtain ⟨b1, hb1, hf1⟩ := H.headFin
+  rw [hb] at hb1; cases hb1
+  have hR := tag_region h H
+  intro x x' hA hh hp hq hbd htk
+  have hA0 := hA
+  obtain ⟨hl, hpe, ht, hst, hreach, hI, ⟨b0, b0', hb0, hb0', hf, hb', hm⟩, hz, hag⟩ := hA
+  rw [hh] at hb0 hb0'
+  rw [hb] at hb0; cases hb0
+  have hb0'' : HoonMap.get out' o = some b0' := hb0'
+  rw [hbo] at hb0''; cases hb0''
+  have hs_ment : t0.s ∉ tagRegs (t0 :: tl) :=
+    H.ment o b (hh ▸ hreach) (hh ▸ hI) hb t0.s (mentions_fin b t0.s (by rw [hf1]; simp [finRegs, jmpRegs]))
+  have hfx : x.b.fin = Termin.clq t0.s ⟨[], t0.y⟩ ⟨[], t0.miss⟩ := by rw [hf, hf1]
+  have hfx' : x'.b.fin = Termin.clq t0.s ⟨[], t0.y⟩ ⟨[], tagMiss t0 tl⟩ := by rw [hb']
+  have hrd : read t0.s x'.regs = read t0.s x.regs := hag.rd hs_ment
+  obtain ⟨vs, hvs⟩ : ∃ vs, read t0.s x.regs = some vs := by
+    rcases htk with h1 | h1
+    · rw [hfx] at h1; simp only [taken, Option.isSome_map] at h1
+      exact Option.isSome_iff_exists.mp h1
+    · rw [hfx'] at h1; simp only [taken, Option.isSome_map, hrd] at h1
+      exact Option.isSome_iff_exists.mp h1
+  have hvs' : read t0.s x'.regs = some vs := by rw [hrd]; exact hvs
+  obtain ⟨es, R', bT, hbT, hsT, hrT, hfrT⟩ := tag_walk lib O c gul t0.s (tagMiss t0 tl) H.miss.1 (t0 :: tl) x vs
+    H.blocks (fun t ht => (H.hits t ht).1) ⟨t0, rfl, hfx⟩ hp hq hbd hvs hreach ⟨b, hh ▸ hb, by rw [hfx, hf1]⟩
+  have hTI : ¬ TagIn t0 tl (tagTarget (t0 :: tl) (tagMiss t0 tl) vs) ∧
+      tagTarget (t0 :: tl) (tagMiss t0 tl) vs ≠ o := by
+    rcases tagTarget_mem (t0 :: tl) (tagMiss t0 tl) vs with e | ⟨t, ht, e⟩
+    · rw [e]; exact H.miss.2
+    · rw [e]; exact (H.hits t ht).2
+  generalize hT : tagTarget (t0 :: tl) (tagMiss t0 tl) vs = T at hbT hsT hrT hTI
+  have hbT' : HoonMap.get (withBlocks c out').blocks T = some bT := by
+    show HoonMap.get out' T = some bT
+    rw [hR.same T hTI.1 hTI.2]; exact hbT
+  -- the relation at the target, for any registers after that agree off the chain
+  have atT : ∀ R'' : Map (Option Noun), (∀ k, k ∉ tagRegs (t0 :: tl) → HoonMap.get R'' k = HoonMap.get x'.regs k) →
+      SwA c.blocks (withBlocks c out').blocks (TagIn t0 tl) (fun k => k ∈ tagRegs (t0 :: tl))
+        (⟨T, bT, [], R', x.t, x.st⟩ : Cfg σ Map) ⟨T, bT, [], R'', x'.t, x'.st⟩ := by
+    intro R'' hR''
+    refine ⟨rfl, rfl, ht, hst, hrT, hTI.1, ⟨bT, bT, hbT, hbT', rfl, rfl, fun _ h => h⟩, fun k hk => by simp at hk,
+      fun k hk => ?_⟩
+    rw [hfrT k hk, hR'' k hk]
+    exact hag k hk
+  have good0 : GoodAt lib O gul x' := by
+    refine ⟨fun k hk => ?_, fun k hk => by rw [hpe, hp] at hk; simp at hk, fun p rest _ _ hb2 => ?_⟩
+    · obtain ⟨-, -, hk⟩ := hk
+      rcases hk with ⟨p, rest, hb2, -⟩ | ⟨-, hk⟩
+      · rw [hb'] at hb2; rw [hbd] at hb2; cases hb2
+      · rw [hfx'] at hk; simp only [finReads, List.mem_singleton] at hk; subst hk; exact ⟨vs, hvs'⟩
+    · rw [hb'] at hb2; rw [hbd] at hb2; cases hb2
+  have hp' : x'.params = [] := by rw [hpe, hp]
+  have hq' : x'.b.par = [] := by rw [hb']; exact hq
+  have hbd' : x'.b.body = [] := by rw [hb']; exact hbd
+  have hne : T ≠ x.lab := by rw [hh]; exact hTI.2
+  cases vs with
+  | atom a =>
+    obtain rfl : tagMiss t0 tl = T := hT
+    have htk' : taken x'.regs x'.b.fin = some ⟨[], tagMiss t0 tl⟩ := by rw [hfx']; simp [taken, hvs']
+    refine ⟨_, ⟨tagMiss t0 tl, bT, [], x'.regs, x'.t, x'.st⟩, es, hsT,
+      GoodTo.step good0 (Step.jump hp' hq' hbd' htk' hbT') (GoodTo.here _), atT x'.regs (fun _ _ => rfl), hne,
+      by rw [hl]; exact hne⟩
+  | cell hh0 tl0 =>
+    have htk' : taken x'.regs x'.b.fin = some ⟨[], t0.y⟩ := by rw [hfx']; simp [taken, hvs']
+    have hby' : HoonMap.get (withBlocks c out').blocks t0.y = some ⟨[], Pole.hed t0.s t0.d :: nb, nf⟩ := hby
+    have s1 := Step.jump (lib := lib) (O := O) (gul := gul) hp' hq' hbd' htk' hby'
+    have hhed := execPole_hed lib O gul x'.st (d := t0.d) hvs' x'.t
+    have s2 := Step.op (lib := lib) (O := O) (c := withBlocks c out') (gul := gul)
+      (x := ⟨t0.y, ⟨[], Pole.hed t0.s t0.d :: nb, nf⟩, [], x'.regs, x'.t, x'.st⟩) rfl rfl rfl hhed
+    have good1 : GoodAt lib O gul (⟨t0.y, ⟨[], Pole.hed t0.s t0.d :: nb, nf⟩, [], x'.regs, x'.t, x'.st⟩ : Cfg σ Map) := by
+      refine ⟨fun k hk => ?_, fun k hk => by simp at hk, fun p rest _ _ hb2 _ => ?_⟩
+      · obtain ⟨-, -, hk⟩ := hk
+        rcases hk with ⟨p, rest, hb2, hk⟩ | ⟨hb2, -⟩
+        · simp only [List.cons.injEq] at hb2; obtain ⟨rfl, -⟩ := hb2
+          simp only [poleReads, List.mem_singleton] at hk; subst hk; exact ⟨_, hvs'⟩
+        · cases hb2
+      · simp only [List.cons.injEq] at hb2; obtain ⟨rfl, -⟩ := hb2
+        rw [hhed]; rfl
+    have hrd0 : read t0.d (store t0.d hh0 x'.regs) = some hh0 := read_store_self _ _ _
+    obtain ⟨r, hr, w, hg⟩ := treeGo_good lib O (withBlocks c out') gul fuel t0.y ⟨[], nb, nf⟩
+      (store t0.d hh0 x'.regs) x'.t x'.st T bT hrd0 (by rw [← hT]; exact hgo hh0) hbT'
+    have hrZ : r ∈ tagRegs (t0 :: tl) := by
+      obtain ⟨t, ht, rfl⟩ := List.mem_map.mp hr
+      simp only [tagRegs, List.mem_flatMap]
+      exact ⟨t, ht, by simp⟩
+    have hdZ : t0.d ∈ tagRegs (t0 :: tl) := by simp [tagRegs]
+    refine ⟨_, ⟨T, bT, [], store r w (store t0.d hh0 x'.regs), x'.t, x'.st⟩, es, hsT,
+      GoodTo.step good0 s1 (GoodTo.step good1 s2 hg), atT _ (fun k hk => ?_), hne, by rw [hl]; exact hne⟩
+    have h1 : k ≠ r := fun e => hk (by rw [e]; exact hrZ)
+    have h2 : k ≠ t0.d := fun e => hk (by rw [e]; exact hdZ)
+    rw [get_store_ne h1, get_store_ne h2]
+
+end
+
+/-- **One application of `switchTag` keeps the code**, given `TagHyp`. -/
+theorem tag_keeps_of (c : Straight Map) {out' : Map Blob} {fuel o : Nat} {t0 : STest} {tl : List STest}
+    {done done' : List Nat} (h : switchTag c.blocks c.blocks fuel o (t0 :: tl) done = some (out', done'))
+    (H : TagHyp c.blocks o t0 tl) : Keeps c (withBlocks c out') :=
+  region_keeps c out' (tag_region h H) (fun lib _ O gul => tag_head lib O gul c rfl h H)
 
 end Opt
 end SkaModel
