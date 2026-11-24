@@ -255,6 +255,376 @@ theorem runOKV_seven4 (lib : Lib) {p q : Nomm} (hp : NextOK (S := S) (Map := Map
       rw [Rq.nec (A m) fit]
       exact goalSem_crash _ cr
 
+/-! ## `%6` for `%done` and `%pick` -/
+
+/-- A jump without arguments is not renamed. -/
+theorem renJmp_nil (u : Nat → Nat) {j : Jmp} (h : j.args = []) : renJmp u j = j := by
+  rcases j with ⟨args, there⟩
+  simp only at h
+  subst h
+  rfl
+
+/-- **`[6 c a b]` for `%done` or `%pick` with parts that make proxies**,
+from `RunOKV` of the test for `%pick` and of the branches for the goal
+(`sixP_ok` with `cond` growing by fresh proxies).  Each part's `sem` is
+taken at the `cond` of the whole run's end through `CondFresh.get_lt`, and
+the hops of the yes and no blocks and of the test's end pass no argument, so
+unproxying leaves them alone. -/
+theorem sixP_okV (lib : Lib) {goal : CGoal S} {c a b : Nomm} (hcp : c.pure = true)
+    (ihc : ∀ z o : Jmp, z.args = [] → o.args = [] → OKV (Map := Map) lib (CGoal.pick z o : CGoal S) c)
+    (iha : OKV (Map := Map) lib goal a) (ihb : OKV (Map := Map) lib goal b) :
+    OKV (Map := Map) lib goal (Nomm.n6 c a b) := by
+  intro region g0 g4 nex hg hj hcount b0 d0 hu hcl0 hcb0 h
+  rw [runL_n6_body c a b hg] at h
+  obtain ⟨x1, x0, xc, g1, g2, g3, h1, h2, hx0a, hx1a, h3, hrest⟩ := sixBody_apart hcp h
+  simp only [sixCount] at hcount
+  have Rb := ihb hg hj (by omega) b0 d0 hu hcl0 hcb0 h1
+  have u1 : UpBelow g1 := Rb.grow.up hu
+  have d1 : g1.drop = false := Rb.ext.2.2.1.trans d0
+  have b01 : g0.bo ≤ g1.bo := Rb.ext.2.1
+  have b1 : 1 ≤ g1.bo := Nat.le_trans b0 b01
+  have cl1 : Clear g1 := hcl0.growU Rb.grow
+  have cb1 : CondBelow g1 := Rb.cfr.below hcb0
+  have Ra := iha hg (hj.mono b01) (by omega) b1 d1 u1 cl1 cb1 h2
+  have cl2 : Clear g2 := cl1.growU Ra.grow
+  have cb2 : CondBelow g2 := Ra.cfr.below cb1
+  have u2 : UpBelow g2 := Ra.grow.up u1
+  have d2 : g2.drop = false := Ra.ext.2.2.1.trans d1
+  have b12 : g1.bo ≤ g2.bo := Ra.ext.2.1
+  have GU : GrowU g2 (sixGenL g2 x0.th x1.th region) := (grow_sixGenL region (jumpsBelow_hop Ra.lo Ra.hi)
+    (jumpsBelow_hop Rb.lo (by have := Rb.hi; omega))).toU u2
+  have uG : UpBelow (sixGenL g2 x0.th x1.th region) := GU.up u2
+  have hbig : lazyBig (mk (Sure.bunt : Sure S) [((g2.bo, x0.laz), (g2.bo + 1, x1.laz))] []) = false := by
+    apply lazyBig_entries
+    rw [entries_six]; simp only [List.length_append, List.length_cons]
+    have := Ra.size; have := Rb.size; simp only [lazyMax]; omega
+  -- the test
+  have dG : (sixGenL g2 x0.th x1.th region).drop = false := by simp [d2]
+  have Rc := ihc (jmp0 g2.bo) (jmp0 (g2.bo + 1)) rfl rfl trivial
+    ⟨⟨by simp only [jmp0]; omega, by simp only [jmp0, sixGenL_bo]; omega⟩,
+      by simp only [jmp0]; omega, by simp only [jmp0, sixGenL_bo]; omega⟩ (by omega)
+    (by simp only [sixGenL_bo]; omega) dG uG (cl2.growU GU)
+    (fun k hk => by simp only [sixGenL_cond, sixGenL_re] at hk ⊢; exact cb2 k hk) h3
+  have u3 : UpBelow g3 := Rc.grow.up uG
+  have d3 : g3.drop = false := Rc.ext.2.2.1.trans dG
+  have bG3 : g2.bo + 2 ≤ g3.bo := by have := Rc.ext.2.1; simpa using this
+  have hap : ∀ e ∈ xc.laz.fork, e.1.1 ≠ g2.bo := fun e he => by
+    have hm : e.1 ∈ entries xc.laz := by rw [entries_eq]; exact List.mem_append_right _ (fork_mem_entries he)
+    have := (Rc.labs _ hm).1; simp only [sixGenL_bo] at this; omega
+  have hcp := hrest hbig
+  rw [copyL_six_apart xc x0.laz x1.laz g2.bo (g2.bo + 1) g3 hap] at hcp
+  obtain ⟨⟨u, g4'⟩, hadd, e4⟩ := Option.map_eq_some_iff.mp hcp
+  simp only [Prod.mk.injEq] at e4
+  obtain ⟨rfl, rfl⟩ := e4
+  obtain ⟨A4, r4, bo4, _⟩ := addOps_nil hadd
+  simp only [emitted_re, emitted_bo] at r4 bo4
+  -- the states
+  have E2 : Ext g2 (sixGenL g2 x0.th x1.th region) := ext_sixGenL _ _ _ _
+  have E4 : Ext g3 g4' := (ext_emit g3 _).trans (ext_addOps_nil hadd)
+  have E24 : Ext g2 g4' := E2.trans (Rc.ext.trans E4)
+  have E14 : Ext g1 g4' := Ra.ext.trans E24
+  have E04 : Ext g0 g4' := Rb.ext.trans E14
+  have re01 := Rb.ext.1
+  have re12 := Ra.ext.1
+  have re2G : g2.re ≤ g3.re := by have := Rc.ext.1; simpa using this
+  have h4k : ∀ k, k ≠ g3.bo → HoonMap.get g4'.blocks k = HoonMap.get g3.blocks k := fun k hk =>
+    (A4 k).trans (get_emitted_ne hk)
+  have h4o : HoonMap.get g4'.blocks g3.bo = some ⟨[], [], Termin.hop xc.th⟩ :=
+    (A4 g3.bo).trans (emitted_get g3 _ d3)
+  have hG3 : ∀ k, k < g2.bo + 2 → HoonMap.get g3.blocks k =
+      HoonMap.get (sixGenL g2 x0.th x1.th region).blocks k := fun k hk => Rc.ext.2.2.2 k (by simpa using hk)
+  have h4y : HoonMap.get g4'.blocks g2.bo = some ⟨[], [], Termin.hop x0.th⟩ := by
+    rw [h4k _ (by omega), hG3 _ (by omega)]; exact sixGenL_get_y _ _ _ d2
+  have h4n : HoonMap.get g4'.blocks (g2.bo + 1) = some ⟨[], [], Termin.hop x1.th⟩ := by
+    rw [h4k _ (by omega), hG3 _ (by omega)]; exact sixGenL_get_n _ _ _ d2
+  have h42 : ∀ k, k < g2.bo → HoonMap.get g4'.blocks k = HoonMap.get g2.blocks k := E24.2.2.2
+  have h41 : ∀ k, k < g1.bo → HoonMap.get g4'.blocks k = HoonMap.get g1.blocks k := E14.2.2.2
+  -- the labels
+  have lc : ∀ e ∈ entries xc.laz, g2.bo + 2 ≤ e.1 ∧ e.1 < g3.bo := fun e he => by
+    have := Rc.labs e he; have := Rc.hi; simp only [sixGenL_bo] at *; omega
+  have la : ∀ e ∈ entries x0.laz, g1.bo ≤ e.1 ∧ e.1 < g2.bo := fun e he =>
+    ⟨(Ra.labs e he).1, Nat.lt_trans (Ra.labs e he).2.1 Ra.hi⟩
+  have lb : ∀ e ∈ entries x1.laz, g0.bo ≤ e.1 ∧ e.1 < g1.bo := fun e he =>
+    ⟨(Rb.labs e he).1, Nat.lt_trans (Rb.labs e he).2.1 Rb.hi⟩
+  have lc' := labels_bound (P := fun o => g2.bo + 2 ≤ o ∧ o < g3.bo) lc
+  have la' := labels_bound (P := fun o => g1.bo ≤ o ∧ o < g2.bo) la
+  have lb' := labels_bound (P := fun o => g0.bo ≤ o ∧ o < g1.bo) lb
+  have en := entries_copy_six xc.laz (⟨xc.laz.sure.ned, HoonSet.uni xc.laz.sure.lok HoonSet.empty⟩ : Sure S)
+    g2.bo (g2.bo + 1) x0.laz x1.laz
+  have memE : ∀ e, e ∈ entries (mk (⟨xc.laz.sure.ned, HoonSet.uni xc.laz.sure.lok HoonSet.empty⟩ : Sure S)
+      (xc.laz.fork ++ [((g2.bo, x0.laz), (g2.bo + 1, x1.laz))]) xc.laz.bond) ↔
+      e ∈ entries xc.laz ∨ e = (g2.bo, x0.laz) ∨ e ∈ entries x0.laz ∨ e = (g2.bo + 1, x1.laz) ∨
+        e ∈ entries x1.laz := by
+    intro e; rw [en]; simp only [List.mem_append, List.mem_cons]
+    constructor
+    · rintro (h | (h | h) | (h | h))
+      · exact Or.inl h
+      · exact Or.inr (Or.inl h)
+      · exact Or.inr (Or.inr (Or.inl h))
+      · exact Or.inr (Or.inr (Or.inr (Or.inl h)))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr h)))
+    · rintro (h | h | h | h | h)
+      · exact Or.inl h
+      · exact Or.inr (Or.inl (Or.inl h))
+      · exact Or.inr (Or.inl (Or.inr h))
+      · exact Or.inr (Or.inr (Or.inl h))
+      · exact Or.inr (Or.inr (Or.inr h))
+  have labAll : ∀ e ∈ entries (mk (⟨xc.laz.sure.ned, HoonSet.uni xc.laz.sure.lok HoonSet.empty⟩ : Sure S)
+      (xc.laz.fork ++ [((g2.bo, x0.laz), (g2.bo + 1, x1.laz))]) xc.laz.bond),
+      (g2.bo + 2 ≤ e.1 ∧ e.1 < g3.bo ∧ e ∈ entries xc.laz) ∨ e.1 = g2.bo ∨
+      (g1.bo ≤ e.1 ∧ e.1 < g2.bo ∧ e ∈ entries x0.laz) ∨ e.1 = g2.bo + 1 ∨
+      (g0.bo ≤ e.1 ∧ e.1 < g1.bo ∧ e ∈ entries x1.laz) := by
+    intro e he
+    rcases (memE e).mp he with h | h | h | h | h
+    · exact Or.inl ⟨(lc e h).1, (lc e h).2, h⟩
+    · exact Or.inr (Or.inl (by rw [h]))
+    · exact Or.inr (Or.inr (Or.inl ⟨(la e h).1, (la e h).2, h⟩))
+    · exact Or.inr (Or.inr (Or.inr (Or.inl (by rw [h]))))
+    · exact Or.inr (Or.inr (Or.inr (Or.inr ⟨(lb e h).1, (lb e h).2, h⟩)))
+  have reC : ∀ r, g2.re ≤ r → r < g3.re → g0.re ≤ r ∧ r < g4'.re := fun r h1 h2 => ⟨by omega, by omega⟩
+  have reB : ∀ r, g1.re ≤ r → r < g2.re → g0.re ≤ r ∧ r < g4'.re := fun r h1 h2 => ⟨by omega, by omega⟩
+  have reA : ∀ r, g0.re ≤ r → r < g1.re → g0.re ≤ r ∧ r < g4'.re := fun r h1 h2 => ⟨h1, by omega⟩
+  have hc43 : g4'.cond = g3.cond := by rw [(KC.addOps' _ _).keep _ _ _ hadd, emitted_cond]
+  have cf34 : CondFresh g3 g4' := condFresh_of_eq E4.1 hc43
+  have cfG : CondFresh g2 (sixGenL g2 x0.th x1.th region) :=
+    condFresh_of_eq (by simp only [sixGenL_re]; omega) (by rw [sixGenL_cond])
+  have cf24 : CondFresh g2 g4' := cfG.trans (Rc.cfr.trans cf34)
+  have cf14 : CondFresh g1 g4' := Ra.cfr.trans cf24
+  refine ⟨E04, ?_, Rb.cfr.trans cf14, by simp only [jmp0]; omega, by simp only [jmp0]; omega,
+    Or.inl ⟨⟨[], [], Termin.hop xc.th⟩, h4o, rfl, rfl⟩, fun r hr => ?_, Rc.dist, ?_, ?_, ?_, ?_, fun s hs => ?_,
+    fun r hr => by rw [hc43]; exact Rc.ncond r hr, ?_, ?_⟩
+  · -- grow
+    have GE := growU_emit (b := ⟨[], [], Termin.hop xc.th⟩) (jumpsBelow_hop Rc.lo Rc.hi) u3
+    exact Rb.grow.trans (Ra.grow.trans (GU.trans
+      (Rc.grow.trans (GE.trans (growU_addOps hadd (GE.up u3))))))
+  · -- regs
+    have := Rc.regs r hr; simp only [sixGenL_re] at this; exact reC r this.1 this.2
+  · -- eregs
+    intro e he
+    rcases (memE e).mp he with h | rfl | h | rfl | h
+    · exact ⟨(Rc.eregs e h).1, fun r hr => by
+        have := (Rc.eregs e h).2 r hr; simp only [sixGenL_re] at this; exact reC r this.1 this.2⟩
+    · exact ⟨Ra.dist, fun r hr => reB r (Ra.regs r hr).1 (Ra.regs r hr).2⟩
+    · exact ⟨(Ra.eregs e h).1, fun r hr => reB r ((Ra.eregs e h).2 r hr).1 ((Ra.eregs e h).2 r hr).2⟩
+    · exact ⟨Rb.dist, fun r hr => reA r (Rb.regs r hr).1 (Rb.regs r hr).2⟩
+    · exact ⟨(Rb.eregs e h).1, fun r hr => reA r ((Rb.eregs e h).2 r hr).1 ((Rb.eregs e h).2 r hr).2⟩
+  · -- labs
+    intro e he
+    simp only [jmp0]
+    rcases (memE e).mp he with h | rfl | h | rfl | h
+    · obtain ⟨_, _, th, hth⟩ := Rc.labs e h
+      have := lc e h
+      exact ⟨by omega, by omega, th, (h4k _ (by omega)).trans hth⟩
+    · exact ⟨by omega, by omega, x0.th, h4y⟩
+    · obtain ⟨_, _, th, hth⟩ := Ra.labs e h
+      have := la e h
+      exact ⟨by omega, by omega, th, (h42 _ this.2).trans hth⟩
+    · exact ⟨by omega, by omega, x1.th, h4n⟩
+    · obtain ⟨l1, _, th, hth⟩ := Rb.labs e h
+      have := lb e h
+      exact ⟨l1, by omega, th, (h41 _ this.2).trans hth⟩
+  · -- nodup
+    rw [en, List.map_append, List.nodup_append, List.map_append, List.nodup_append]
+    simp only [List.map_cons, List.nodup_cons, List.mem_cons, List.mem_append]
+    refine ⟨Rc.nodup, ⟨⟨fun hm => by have := la' _ hm; omega, Ra.nodup⟩,
+      ⟨fun hm => by have := lb' _ hm; omega, Rb.nodup⟩, fun x hx y hy => ?_⟩, fun x hx y hy => ?_⟩
+    · have hx' : g1.bo ≤ x ∧ x ≤ g2.bo := by
+        rcases hx with e | e
+        · omega
+        · have := la' x e; omega
+      rcases hy with e | e
+      · omega
+      · have := lb' y e; omega
+    · have := lc' x hx
+      rcases hy with (e | e) | (e | e)
+      · omega
+      · have := la' y e; omega
+      · omega
+      · have := lb' y e; omega
+  · -- size
+    rw [en]; simp only [List.length_append, List.length_cons, sixCount]
+    have := Ra.size; have := Rb.size; have := Rc.size; omega
+  · -- nec
+    have fo' : ¬ FitsS xc.laz.sure s := fun f => hs ⟨f.1, (looks_uni_empty _ _).mpr f.2⟩
+    rw [pureEval_n6, Rc.nec s fo']; rfl
+  · -- econd
+    intro e he r hr
+    rcases (memE e).mp he with h | rfl | h | rfl | h
+    · rw [hc43]; exact Rc.econd e h r hr
+    · rw [cf24.get_lt (Ra.regs r hr).2]; exact Ra.ncond r hr
+    · rw [cf24.get_lt ((Ra.eregs e h).2 r hr).2]; exact Ra.econd e h r hr
+    · rw [cf14.get_lt (Rb.regs r hr).2]; exact Rb.ncond r hr
+    · rw [cf14.get_lt ((Rb.eregs e h).2 r hr).2]; exact Rb.econd e h r hr
+  · -- sem
+    intro cf hcf cc ned σ O st t gul s0 s ag hned regs hh hn
+    have hcf3 : ∀ k, k < g3.re → HoonMap.get cf k = HoonMap.get g3.cond k := fun k hk =>
+      (hcf k (by omega)).trans (by rw [hc43])
+    have hcfB : ∀ (gB : Gen Map), CondFresh gB g4' → ∀ k, k < gB.re → HoonMap.get cf k = HoonMap.get gB.cond k :=
+      fun gB cfB k hk => (hcf k (Nat.lt_of_lt_of_le hk cfB.1)).trans (cfB.get_lt hk)
+    have notLab : ∀ o, g0.bo ≤ o → o < g4'.bo → (g3.bo ≤ o ∨
+        (g2.bo + 2 ≤ o ∧ o < g3.bo ∧ o ∉ (entries xc.laz).map Prod.fst) ∨
+        (g1.bo ≤ o ∧ o < g2.bo ∧ o ∉ (entries x0.laz).map Prod.fst) ∨
+        (o < g1.bo ∧ o ∉ (entries x1.laz).map Prod.fst)) →
+        HoonMap.get cc.blocks o = (HoonMap.get g4'.blocks o).map (unproxyBlob cf) := by
+      intro o h0 h1 hc'
+      refine ag.1 o h0 h1 fun hm => ?_
+      obtain ⟨e, he, rfl⟩ := List.mem_map.mp hm
+      rcases labAll e he with ⟨x1', x2', x3'⟩ | x | ⟨x1', x2', x3'⟩ | x | ⟨x1', x2', x3'⟩
+      · rcases hc' with y | ⟨_, _, y⟩ | y | y
+        · omega
+        · exact y (List.mem_map_of_mem x3')
+        · omega
+        · omega
+      · rcases hc' with y | y | y | y <;> omega
+      · rcases hc' with y | y | ⟨_, _, y⟩ | y
+        · omega
+        · omega
+        · exact y (List.mem_map_of_mem x3')
+        · omega
+      · rcases hc' with y | y | y | y <;> omega
+      · rcases hc' with y | y | y | ⟨_, y⟩
+        · omega
+        · omega
+        · omega
+        · exact y (List.mem_map_of_mem x3')
+    have hxca : xc.th.args = [] := by
+      rcases Rc.ent with ⟨_, _, _, e⟩ | e
+      · exact e
+      · simp only [GoalJ] at e; rcases e with e | e <;> rw [e] <;> rfl
+    have hc3 : HoonMap.get cc.blocks g3.bo = some ⟨[], [], Termin.hop xc.th⟩ := by
+      rw [notLab g3.bo (by omega) (by omega) (Or.inl (Nat.le_refl _)), h4o]
+      simp only [Option.map_some, unproxyBlob, renBlob, List.map_nil, renFin, renJmp_nil _ hxca]
+    have hre4 : ∀ r, NMem ned r → g4'.re ≤ r := hned
+    have agC : AgreeU lib O cc gul st t cf ned (sixGenL g2 x0.th x1.th region) g3 xc.laz s0 s := by
+      refine ⟨fun o h0 h1 hnl => ?_, fun e he => ?_⟩
+      · simp only [sixGenL_bo] at h0
+        rw [notLab o (by omega) (by omega) (Or.inr (Or.inl ⟨h0, h1, hnl⟩)), h4k o (by omega)]
+      · obtain ⟨A, th, hg, hcb, hF⟩ := ag.2 e ((memE e).mpr (Or.inl he))
+        exact ⟨A, th, (h4k _ (by have := lc e he; omega)).symm.trans hg, hcb, hF.mono (by omega)⟩
+    have agA : AgreeU lib O cc gul st t cf ned g1 g2 x0.laz s0 s := by
+      refine ⟨fun o h0 h1 hnl => ?_, fun e he => ?_⟩
+      · rw [notLab o (by omega) (by omega) (Or.inr (Or.inr (Or.inl ⟨h0, h1, hnl⟩))), h42 o h1]
+      · obtain ⟨A, th, hg, hcb, hF⟩ := ag.2 e ((memE e).mpr (Or.inr (Or.inr (Or.inl he))))
+        exact ⟨A, th, (h42 _ (la e he).2).symm.trans hg, hcb, hF.mono (by omega)⟩
+    have agB : AgreeU lib O cc gul st t cf ned g0 g1 x1.laz s0 s := by
+      refine ⟨fun o h0 h1 hnl => ?_, fun e he => ?_⟩
+      · rw [notLab o (by omega) (by omega) (Or.inr (Or.inr (Or.inr ⟨h1, hnl⟩))), h41 o h1]
+      · obtain ⟨A, th, hg, hcb, hF⟩ := ag.2 e ((memE e).mpr (Or.inr (Or.inr (Or.inr (Or.inr he)))))
+        exact ⟨A, th, (h41 _ (lb e he).2).symm.trans hg, hcb, hF.mono (by omega)⟩
+    -- a lazy block
+    have lazyBlk : ∀ (o : Nat) (x : NextL S) (nm' : Nomm) (gA gB : Gen Map),
+        (o, x.laz) ∈ entries (mk (⟨xc.laz.sure.ned, HoonSet.uni xc.laz.sure.lok HoonSet.empty⟩ : Sure S)
+          (xc.laz.fork ++ [((g2.bo, x0.laz), (g2.bo + 1, x1.laz))]) xc.laz.bond) →
+        HoonMap.get g4'.blocks o = some ⟨[], [], Termin.hop x.th⟩ → x.th.args = [] →
+        RunOKV (Map := Map) lib nm' goal gA gB x → CondFresh gB g4' →
+        AgreeU lib O cc gul st t cf ned gA gB x.laz s0 s → gB.re ≤ g4'.re → g0.re ≤ gA.re →
+        ∀ R2, HoldsN ned R2 s0 →
+          GoalSem lib O cc gul st (fun r => r < g0.re ∨ NMem ned r) R2 t (jmp0 o) goal (pureEval nm' s) := by
+      intro o x nm' gA gB hm hb hxa R cfB agX hre hlo R2 hR2
+      obtain ⟨A, th, hg, hcb, hF⟩ := ag.2 _ hm
+      rw [hb] at hg
+      simp only [Option.some.injEq, Blob.mk.injEq, Termin.hop.injEq, true_and] at hg
+      subst hg
+      rw [renJmp_nil _ hxa] at hcb
+      have dj : ∀ y, NMem ned y → ¬ NMem x.laz.sure.ned y := fun y hy hy' => by
+        have := hned y hy; have := (R.regs y hy').2; omega
+      have e0 : goJ lib O cc gul st R2 t (jmp0 o) =
+          execBlob lib O cc gul st R2 t ⟨[], A, Termin.hop x.th⟩ [] := goJ_jmp0 _ _ _ _ hcb
+      by_cases f : FitsS x.laz.sure s
+      · obtain ⟨R3, hh3, k3, e3⟩ := (fillSem_runK hF hR2 x.th).1 f
+        have hn3 : HoldsN ned R3 s0 := HoldsN.agree ned (fun y hy => k3 y (Or.inl hy) (dj y hy)) hR2
+        have S3 := R.sem cf (hcfB gB cfB) cc ned σ O st t gul s0 s agX (fun r hr => Nat.le_trans hre (hned r hr)) R3 hh3 hn3
+        refine goalSem_pre (fun r hr => ?_) (e0.trans e3) goal _
+          (goalSem_mono (fun r hr => hr.elim (fun h => Or.inl (by omega)) Or.inr) goal _ S3)
+        rcases hr with hr | hr
+        · exact k3 r (Or.inr (by omega)) (fun h => by have := (R.regs r h).1; omega)
+        · exact k3 r (Or.inl hr) (dj r hr)
+      · rw [R.nec s f]
+        exact goalSem_none goal (e0.trans ((fillSem_runK hF hR2 x.th).2 f))
+    have Hc := Rc.sem cf hcf3 cc ned σ O st t gul s0 s agC (fun r hr => by have := hned r hr; omega) regs
+      ⟨hh.1, (looks_uni_empty _ _).mp hh.2⟩ hn
+    have e0 : goJ lib O cc gul st regs t (jmp0 g3.bo) = goJ lib O cc gul st regs t xc.th := by
+      rw [goJ_jmp0 _ _ _ _ hc3, execBlob_hop]
+    have kk : ∀ R2 : Map (Option Noun), (∀ r, (r < (sixGenL g2 x0.th x1.th region).re ∨ NMem ned r) →
+        SkaModel.read r R2 = SkaModel.read r regs) →
+        ∀ r, (r < g0.re ∨ NMem ned r) → SkaModel.read r R2 = SkaModel.read r regs :=
+      fun R2 k2 r hr => k2 r (hr.elim (fun h => Or.inl (by simp only [sixGenL_re]; omega)) Or.inr)
+    show GoalSem lib O cc gul st (fun r => r < g0.re ∨ NMem ned r) regs t (jmp0 g3.bo) goal
+      (pureEval (Nomm.n6 c a b) s)
+    rw [pureEval_n6]
+    cases ec : pureEval c s with
+    | none => rw [ec] at Hc; exact goalSem_none goal (e0.trans Hc)
+    | some v =>
+      rw [ec] at Hc
+      rcases v with ⟨_ | _ | k⟩ | ⟨x, y⟩
+      · obtain ⟨R2, k2, e2⟩ := Hc
+        exact goalSem_pre (kk R2 k2) (e0.trans e2) goal _
+          (lazyBlk g2.bo x0 a g1 g2 ((memE _).mpr (Or.inr (Or.inl rfl))) h4y hx0a Ra cf24 agA (by omega) (by omega) R2
+            (HoldsN.agree ned (fun x hx => k2 x (Or.inr hx)) hn))
+      · obtain ⟨R2, k2, e2⟩ := Hc
+        exact goalSem_pre (kk R2 k2) (e0.trans e2) goal _
+          (lazyBlk (g2.bo + 1) x1 b g0 g1 ((memE _).mpr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))) h4n hx1a Rb cf14 agB
+            (by omega) (Nat.le_refl _) R2 (HoldsN.agree ned (fun x hx => k2 x (Or.inr hx)) hn))
+      · exact goalSem_none goal (e0.trans Hc)
+      · exact goalSem_none goal (e0.trans Hc)
+
+/-! ## The fragment `FragU` and the top theorem -/
+
+/-- **`FragX` with the proxy runs that compose under `%done`**: `[7 [4 p] q]`
+with `p` and `q` in `FragX` (a run that makes proxies when `q` has a `%6`),
+and `%6` whose test is in `FragX` and whose branches are again in `FragU`.
+Later parents are to be added one constructor at a time. -/
+inductive FragU : Nomm → Prop
+  | x {nm : Nomm} : FragX (S := S) nm → FragU nm
+  | seven4 {p q : Nomm} : FragX (S := S) p → FragX (S := S) q → FragU (Nomm.n7 (Nomm.n4 p) q)
+  | six {c a b : Nomm} : FragX (S := S) c → FragU a → FragU b → FragU (Nomm.n6 c a b)
+
+/-- **Every run of `FragU` for `%done` meets `RunOKV`.** -/
+theorem runU_ok (lib : Lib) {nm : Nomm} (hf : FragU (S := S) nm) : OKV (Map := Map) lib (CGoal.done : CGoal S) nm := by
+  induction hf with
+  | x h => exact (okV_fragX lib h).1
+  | seven4 hp hq =>
+    exact fun _ _ hcount b0 d0 hu hcl hcb h => runOKV_seven4 lib (runX_ok lib hp).2.1 (runX_semR lib hp).2.1
+      (runX_keeps hp) (aboveX_of_fragX hp) hq hcount b0 d0 hu hcl hcb h
+  | six hc _ _ iha ihb => exact sixP_okV lib (fragX_pure hc) (okV_fragX lib hc).2 iha ihb
+
+theorem condBelow_gen0 : CondBelow (gen0 : Gen Map) := fun k hk => by
+  simp [gen0, HoonMap.get_empty] at hk
+
+/-- **The final pass meets the contract on `FragU`**, when the nomm has at
+most 255 `%6`, nothing is baked and the bell's cape has no `[| |]`. -/
+theorem finishLF_bellContractFU {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
+    {bl : Bell} {nm : Nomm} (hp : nm.pure = true) (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol nm)
+    (hf : FragU (S := S) nm) (hcount : sixCount nm ≤ 255) {cape : Cape} {data : Noun}
+    (hbl : bl.less = Sock.mk cape data) (hn : CapeNorm cape) {ord : NeedOrd}
+    {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
+    (h : finishLF (S := S) nm ord cape bake = some c') (N : Needs) : BellContract lib N bl false c' :=
+  finishLF_bellContractU hok hp hA (fun h1 => (runU_ok lib hf trivial trivial hcount (by simp [gen0]) rfl
+    upBelow_gen0 clear_gen0 condBelow_gen0 h1).toU) hbl hn hbake h N
+
+/-- **A proxy run inside a branch of a `%6`**:
+`[6 [0 1] [7 [4 [0 3]] [6 [0 1] [0 1] [1 0]]] [1 0]]` meets the contract
+with no hypothesis beyond the usual ones.  Its raw blocks (subject unknown):
+the outer test `brn v7` (with `v7` the subject), the yes branch's
+`[0 3]` filled at `0w9`, the increment `inc v6 v4` at `0w8`, the inner test
+`brn v4` at `0w6`, and the lazy block `0w4` of the inner `[0 1]` gets
+`mov v4 v3`, reading the register the increment of the same branch wrote. -/
+theorem finishLF_bellContract_sixProxy {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) {bl : Bell}
+    (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol
+      (Nomm.n6 (Nomm.n0 1) (Nomm.n7 (Nomm.n4 (Nomm.n0 3)) (Nomm.n6 (Nomm.n0 1) (Nomm.n0 1) (Nomm.n1 (A 0))))
+        (Nomm.n1 (A 0))))
+    {cape : Cape} {data : Noun} (hbl : bl.less = Sock.mk cape data) (hn : CapeNorm cape) {ord : NeedOrd}
+    {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
+    (h : finishLF (S := S) (Nomm.n6 (Nomm.n0 1) (Nomm.n7 (Nomm.n4 (Nomm.n0 3))
+      (Nomm.n6 (Nomm.n0 1) (Nomm.n0 1) (Nomm.n1 (A 0)))) (Nomm.n1 (A 0))) ord cape bake = some c')
+    (N : Needs) : BellContract lib N bl false c' :=
+  finishLF_bellContractFU hok rfl hA
+    (FragU.six (FragX.frag fun _ => trivial)
+      (FragU.seven4 (FragX.frag fun _ => trivial)
+        (FragX.six (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial)))
+      (FragU.x (FragX.frag fun _ => trivial)))
+    (by decide) hbl hn hbake h N
+
 end Comp
 end SkaModel
 end Formalization

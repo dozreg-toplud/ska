@@ -499,3 +499,7 @@ open Formalization.SkaModel.Comp
 #print axioms RunOKP.toV
 #print axioms okV_fragX
 #print axioms runOKV_seven4
+#print axioms sixP_okV
+#print axioms runU_ok
+#print axioms finishLF_bellContractFU
+#print axioms finishLF_bellContract_sixProxy
