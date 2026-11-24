@@ -596,3 +596,4 @@ open Formalization
 #print axioms Compiler.srl_loop
 #print axioms Compiler.srl_gate
 #print axioms Compiler.comp_sure_require_look
+#print axioms Compiler.comp_insert_hop

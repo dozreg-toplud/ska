@@ -936,5 +936,72 @@ theorem comp_sure_require_look (hc : CompIn ctx) (hl : CompLib ctx) (g : Gen (Tr
   nock_open srlBat
   simp [nock_exec, hc, in_arm, in.arm_at, in.rep.arm_at, rep_arm, hrep, srlN]
 
+/-! ## `+insert-hop`
+
+`?:  dropping  gen`, else `got` of block `a`, the tests that its end is a
+`%hop` and that it has no parameters, `+emir` of `[~ body fin]` under `o2`,
+and block `a` put back with no body and a `%hop` to `o1`.  It reads and
+writes `blocks` only.
+-/
+
+def ihBat : Noun :=
+  (C (A 6) (C (C (A 9) (C (A 1398) (C (A 0) (A 7)))) (C (C (A 0) (A 30)) (C (A 8) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x3fffff)))) (C (A 9) (C (A 701) (C (A 10) (C (C (A 6) (C (A 0) (A 2014))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 28))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x706f68)) (C (A 0) (A 22)))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 4)))) (C (C (A 8) (C (C (A 0) (A 23)) (C (A 7) (C (C (A 10) (C (C (A 126) (C (A 8) (C (C (A 9) (C (A 350) (C (A 0) (A 31)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 251)) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A 0)))) (C (C (A 0) (A 58)) (C (A 0) (A 59)))))) (C (A 0) (A 2))))))))) (C (A 0) (A 1)))) (C (A 10) (C (C (A 62) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0xffffff)))) (C (A 9) (C (A 340) (C (A 10) (C (C (A 6) (C (A 0) (A 8158))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 124)) (C (A 7) (C (C (A 0) (A 3)) (C (A 10) (C (C (A 15) (C (C (A 1) (A 0)) (C (A 0) (A 122)))) (C (A 10) (C (C (A 6) (C (A 1) (A 0))) (C (A 0) (A 6)))))))))) (C (A 0) (A 2))))))))) (C (A 0) (A 126)))))))) (C (A 0) (A 0))))) (C (A 0) (A 0))))))))))
+
+def ihArm : Noun :=
+  (C (A 7) (C (C (A 8) (C (C (A 1) (C (A 0) (C (A 0) (A 0)))) (C (C (A 1) ihBat) (C (A 0) (A 1))))) (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x706f682d747265736e692d706d6f63) (C (C (A 0) (A 0x7ffff)) (A 0))))) (C (A 0) (A 1))))))
+
+
+/-- `+insert-hop` is at door axis `2` (core axis `4`). -/
+theorem comp_ih_at : slot? 2 comp.door = some ihArm := by kernel_rfl
+
+variable {x} in
+/-- `+insert-hop` against `insertHop`, exact over `genNoun`, crashes
+included, under `CompIn ctx` only. -/
+theorem comp_insert_hop (hc : CompIn ctx) (g : Gen (TreapMap mugF)) (a o1 o2 : Nat) :
+    nock (C ihBat (C (C (A a) (C (A o1) (A o2))) (compCore g x ctx))) ihBat
+      = (insertHop a o1 o2 g).map fun p => genNoun p.2 x := by
+  have hget := getF_hoonMap Blob.toNoun g.blocks a
+  have hgc : NeedIn layer2 ∧ SomeIn layer2 ∧ GorIn mugF layer2 :=
+    ⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩
+  nock_open ihBat
+  cases hd : g.drop
+  · cases e : HoonMap.get g.blocks a with
+    | none =>
+      rw [e] at hget
+      have hgot := got_gate_nil layer2 hgc (A a) _ hget
+      simp [nock_exec, compCore, comp_drop_at', dropArm, genNoun, cgModeNoun, hd, comp_h110,
+        eqCode_atom, hc, by_arm, by.arm_at, by.got.arm_at, got_arm, hgot, insertHop, e]
+    | some b =>
+      rw [e] at hget
+      have hgot := got_gate layer2 hgc (A a) _ _ hget
+      obtain ⟨par, body, fin⟩ := b
+      cases fin with
+      | hop t =>
+        cases par with
+        | nil =>
+          have hem := comp_emir x hc g o2 ⟨[], body, Termin.hop t⟩
+          simp only [Blob.toNoun, listNoun, Termin.toNoun, Jmp.toNoun, emir, hd, Bool.false_eq_true,
+            ite_false, Option.map_some, compCore, genNoun, cgModeNoun, Tag.hop] at hem
+          have hput := put_gate layer2 gorIn_morIn_layer2 (A a)
+            (Blob.toNoun ⟨[], [], Termin.hop ⟨[], o1⟩⟩) _ _
+            (putF_hoonMap Blob.toNoun (HoonMap.put g.blocks o2 ⟨[], body, Termin.hop t⟩) a
+              ⟨[], [], Termin.hop ⟨[], o1⟩⟩)
+          simp only [Blob.toNoun, listNoun, Termin.toNoun, Jmp.toNoun, Tag.hop] at hput
+          simp [nock_exec, compCore, comp_drop_at', dropArm, genNoun, cgModeNoun, hd, comp_h110,
+            eqCode_atom, hc, by_arm, by.arm_at, by.got.arm_at, got_arm, hgot, insertHop, e,
+            Blob.toNoun, Termin.toNoun, listNoun, Tag.hop, comp_emir_arm, hem, by.put.arm_at,
+            put_arm, hput, Jmp.toNoun]
+        | cons y ys =>
+          simp [nock_exec, compCore, comp_drop_at', dropArm, genNoun, cgModeNoun, hd, comp_h110,
+            eqCode_atom, hc, by_arm, by.arm_at, by.got.arm_at, got_arm, hgot, insertHop, e,
+            Blob.toNoun, Termin.toNoun, listNoun, Tag.hop, eqCode]
+      | _ =>
+        simp [nock_exec, compCore, comp_drop_at', dropArm, genNoun, cgModeNoun, hd, comp_h110,
+          eqCode_atom, hc, by_arm, by.arm_at, by.got.arm_at, got_arm, hgot, insertHop, e,
+          Blob.toNoun, Termin.toNoun, Tag.hop, Tag.clq, Tag.eqq, Tag.brn, Tag.brz, Tag.jmp, Tag.jmf,
+          Tag.jsp, Tag.jsf, Tag.don, Tag.bom, Tag.lti]
+  · simp [nock_exec, compCore, comp_drop_at', dropArm, genNoun, cgModeNoun, hd, comp_h110,
+      eqCode_atom, insertHop]
+
 end Compiler
 end Formalization
