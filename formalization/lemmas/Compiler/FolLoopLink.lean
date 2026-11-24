@@ -39,14 +39,17 @@ def ftrunc : Nat → Noun → Noun
 of calls follows: the trap's battery, the traps `nock-2-direct-non-inlined`
 and `resolve`, the gate `+analyze`, and (for the induction that will
 discharge `AnaIs`) the gate `+run`, the pass and member loops of `+analyze`,
-the loop of `+sweep` and the loop `live` of `+cull`.  The case theorems are
-stated for `nockW c` with `c` equal to `nock` on every such formula. -/
+the loop of `+sweep` and the loop `live` of `+cull`, and the batteries of the
+gates `+sweep` and `+cull`, so that the induction can run those loops at a
+depth it bounds.  The case theorems are stated for `nockW c` with `c` equal
+to `nock` on every such formula. -/
 def FFar (f : Noun) : Prop :=
   ftrunc 8 f ≠ ftrunc 8 fol_loop.battery ∧ ftrunc 8 f ≠ ftrunc 8 fol_loop.resolve ∧
     ftrunc 8 f ≠ ftrunc 8 fol_loop.direct ∧ ftrunc 8 f ≠ ftrunc 8 ska_analyze.battery ∧
     ftrunc 8 f ≠ ftrunc 8 ska_run.battery ∧ ftrunc 8 f ≠ ftrunc 8 ska_analyze.loop0 ∧
     ftrunc 8 f ≠ ftrunc 8 ska_analyze.loop1 ∧ ftrunc 8 f ≠ ftrunc 8 ska_cg.sweep.loop ∧
-    ftrunc 8 f ≠ ftrunc 8 ska_cg.cull.loop
+    ftrunc 8 f ≠ ftrunc 8 ska_cg.cull.loop ∧ ftrunc 8 f ≠ ftrunc 8 ska_cg.sweep.battery ∧
+    ftrunc 8 f ≠ ftrunc 8 ska_cg.cull.battery
 
 instance : DecidablePred FFar := fun _ => inferInstanceAs (Decidable (_ ∧ _))
 
