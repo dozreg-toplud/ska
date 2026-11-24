@@ -38,7 +38,12 @@ like the rest.  `nouns.py` parses the generated nouns of `lemmas/Pill`
 `contains_atom`, `cord`), and `runcases.py 0,1,7` prints the cases of the gate
 `+run` of the door of `+comp` as the definitions `crSn`, `crK0`, ... of
 `Compiler/CompRunLink.lean`, the named cases written out and the others read
-from the pill.
+from the pill.  `split.py OUTDIR` cuts the long bodies `crK5`, `crK10`,
+`crKc` of `CompRunLink.lean` into the named parts of
+`Compiler/CompRunCases.lean` (`cr5Head`, `cr10Tail`, `crcPick`, ...), each
+later part named inside the earlier ones so that `crK5 = cr5Head` is a
+`kernel_rfl` fact; its `after_push` takes apart the Nock of one `=^`,
+`[7 [0 1] [8 A [7 E [7 F REST]]]]`.
 
 ## core
 
