@@ -306,16 +306,17 @@ theorem apres_op {pick : List Nat → Nat} {st st2 : ABody} {op : Pole} {res : O
     (hp : APres st.old regs regs' Done) (hsrc : ∀ x ∈ asSrc op, Done x)
     (hnd : ∀ e, aliasDst op = some e → ¬ Done e)
     (hR2' : ∀ x, (HoonMap.get regs' x).isSome → (HoonMap.get R2' x).isSome)
-    (hk2 : AKept st2 (fun x => read x R2) (fun x => read x R2') (fun x => Done x ∨ (aliasDst op = some x ∧ st.old x = x)))
-    (hok2 : AOK st2 (fun x => read x R2) (fun x => Done x ∨ (aliasDst op = some x ∧ st.old x = x)))
+    {D2 : Nat → Prop} (hD2 : ∀ x, D2 x → Done x ∨ aliasDst op = some x)
+    (hk2 : AKept st2 (fun x => read x R2) (fun x => read x R2') D2) (hok2 : AOK st2 (fun x => read x R2) D2)
     (hwr : ∀ e, aliasDst op = some e → (∃ v, read e R2 = some v) ∨ ∃ a, op = Pole.mov a e) :
-    APres st2.old R2 R2' (fun x => Done x ∨ (aliasDst op = some x ∧ st.old x = x)) := by
-  intro d hd hs
+    APres st2.old R2 R2' D2 := by
+  intro d hd0 hs
+  have hd := hD2 d hd0
   by_cases hdst : aliasDst op = some d
   · -- the new destination
     rcases hwr d hdst with ⟨v, hv⟩ | ⟨a, rfl⟩
-    · have e1 : read (st2.old d) R2 = read d R2 := hok2.old d hd
-      have e2 : read (st2.old d) R2' = read (st2.old d) R2 := hk2.old d hd
+    · have e1 : read (st2.old d) R2 = read d R2 := hok2.old d hd0
+      have e2 : read (st2.old d) R2' = read (st2.old d) R2 := hk2.old d hd0
       exact get_isSome_of_read (e2.trans (e1.trans hv))
     · simp only [aliasOp, Option.some.injEq, Prod.mk.injEq] at h
       obtain ⟨-, rfl⟩ := h
@@ -326,7 +327,7 @@ theorem apres_op {pick : List Nat → Nat} {st st2 : ABody} {op : Pole} {res : O
         show (HoonMap.get R2' (updA st.old d (st.old a) d)).isSome = true
         rw [as_upd_self]
         exact hR2' _ (hp a (hsrc a (by simp [asSrc])) (by rw [hga]; rfl))
-  · rcases hd with hd | ⟨hd, -⟩
+  · rcases hd with hd | hd
     · rw [awk_op_old h d hdst]
       apply hR2'
       apply hp d hd
@@ -491,6 +492,84 @@ theorem akp_edge {bl : Map Blob} (hS : AliasSSAB bl) (hpn : ParNodup bl) {pre l 
     exact hP d h1 hs
   · rw [h2]
     exact apass_par _ _ _ _ hloop2 d h1
+
+/-! ## (d) One op of a live body, forward -/
+
+theorem akept_mono {st : ABody} {R R' : Nat → Option Noun} {D D' : Nat → Prop} (hk : AKept st R R' D)
+    (hD : ∀ d, D' d → D d) : AKept st R R' D' :=
+  ⟨hk.imm, hk.names, fun d hd => hk.old d (hD d hd)⟩
+
+theorem wrX_isSome {W : Option (Nat × Noun)} {R : Map (Option Noun)} {x : Nat} (h : (HoonMap.get R x).isSome) :
+    (HoonMap.get (wrX W R) x).isSome := by
+  rcases W with _ | ⟨d, v⟩
+  · exact h
+  · exact get_put_isSome h
+
+section
+variable {σ : Type}
+
+/-- **One op of a live body, forward, with presence**: at a walk state `st`
+where `AOK`, `ABInv`, `AKept` and presence hold, the next op meets `BodyOK`
+and its reads are done, an op before that goes on is matched by the op kept
+after (same tone, trace, state) or by nothing when dropped, and `AOK`,
+`ABInv`, `AKept` and presence hold after the op with `Done` the `bodyDone` of
+the op. -/
+theorem akb_live {pick : List Nat → Nat} (hpick : ∀ l : List Nat, l ≠ [] → pick l ∈ l)
+    {st st2 : ABody} {op : Pole} {res : Option Pole} {Def Done Cl : Nat → Prop}
+    (h : aliasOp pick st op = some (res, st2)) (lib : Lib) (O : Oracle σ) (gul : Noun) (s : σ)
+    {regs regs' : Map (Option Noun)} (t : Trace)
+    (hok : AOK st (fun x => read x regs) Done) (hab : ABInv st Def Done Cl) (hBO : BodyOK Cl [op] Def Done)
+    (hrd : ∀ x ∈ aliasReads op, Done x)
+    (hk : AKept st (fun x => read x regs) (fun x => read x regs') Done) (hP : APres st.old regs regs' Done)
+    {n : Noun} {R2 : Map (Option Noun)} {t2 : Trace} {s2 : σ}
+    (hx : execPole lib O gul s op regs t = some (Tone.zero n, R2, t2, s2)) :
+    AOK st2 (fun x => read x R2) (bodyDone Cl [op] Done) ∧ ABInv st2 (bodyDef [op] Def) (bodyDone Cl [op] Done) Cl ∧
+    (∀ op', res = some op' → ∃ R2', execPole lib O gul s op' regs' t = some (Tone.zero n, R2', t2, s2) ∧
+      AKept st2 (fun x => read x R2) (fun x => read x R2') (bodyDone Cl [op] Done) ∧
+      APres st2.old R2 R2' (bodyDone Cl [op] Done)) ∧
+    (res = none → AKept st2 (fun x => read x R2) (fun x => read x regs') (bodyDone Cl [op] Done) ∧
+      APres st2.old R2 regs' (bodyDone Cl [op] Done)) := by
+  obtain ⟨hsrc, hdst, -⟩ := hBO
+  have hf : ∀ e, aliasDst op = some e → AFresh st Done e := fun e he => ab_fresh hab (hdst e he)
+  have haB : aliasBody pick [op] st = some (res.toList, st2) := by
+    simp only [aliasBody, h, Option.bind_some, Option.map_some, List.append_nil]
+  obtain ⟨hok2, hab2⟩ := as_body hpick [op] st _ Def Done _ st2 _ haB hok hab ⟨hsrc, hdst, trivial⟩
+    (OpsRun.cons (as_sem hx) (OpsRun.nil _))
+  have hsub : ∀ x, bodyDone Cl [op] Done x → Done x ∨ (aliasDst op = some x ∧ st.old x = x) := by
+    rintro x (hx' | ⟨he, hc⟩)
+    · exact Or.inl hx'
+    · exact Or.inr ⟨he, hab.self x (hdst x he) hc⟩
+  have hD2 : ∀ x, bodyDone Cl [op] Done x → Done x ∨ aliasDst op = some x := fun x hx' =>
+    (hsub x hx').imp_right fun h => h.1
+  have hnd : ∀ e, aliasDst op = some e → ¬ Done e := fun e he => (hf e he).done
+  obtain ⟨hkept, hdrop⟩ := akb_op hpick h lib O gul s t hok hk hrd hsrc hf hx
+  refine ⟨hok2, hab2, fun op' hr => ?_, fun hr => ?_⟩
+  · obtain ⟨R2', e2, hk2⟩ := hkept op' hr
+    subst hr
+    have hrd' : ∀ x ∈ aliasReads op, read (st.old x) regs' = read x regs := fun x hx' =>
+      (hk.old x (hrd x hx')).trans (hok.old x (hrd x hx'))
+    rcases akx_exec h lib O gul s t hrd' with ⟨e, -⟩ | ⟨ton, t3, s3, W, e1, e3, hW1, hW2⟩
+    · rw [e] at hx; cases hx
+    · rw [hx] at e1
+      simp only [Option.some.injEq, Prod.mk.injEq] at e1
+      obtain ⟨rfl, rfl, rfl, rfl⟩ := e1
+      rw [e2] at e3
+      simp only [Option.some.injEq, Prod.mk.injEq] at e3
+      obtain ⟨-, rfl, -, -⟩ := e3
+      have hk2' := akept_mono hk2 hsub
+      refine ⟨_, e2, hk2', apres_op h hx hP hsrc hnd (fun x hs => wrX_isSome hs) hD2 hk2' hok2 ?_⟩
+      intro e he
+      left
+      rcases W with _ | ⟨d, v⟩
+      · rw [hW2 rfl n rfl] at he; cases he
+      · have hd := hW1 _ rfl
+        rw [hd] at he; cases he
+        exact ⟨v, read_store_self d v regs⟩
+  · subst hr
+    have hk2' := akept_mono (hdrop rfl) hsub
+    exact ⟨hk2', apres_op h hx hP hsrc hnd (fun x hs => hs) hD2 hk2' hok2 (dropped_dst_val h hx)⟩
+
+end
 
 end Opt
 end SkaModel
