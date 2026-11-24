@@ -84,7 +84,7 @@ import lemmas.Ska.CompHypOfCons
 import lemmas.Ska.CompConsCallTopB
 import lemmas.Ska.CompHypOfUOKC
 import lemmas.Ska.CompRunOKLCSeven
-import lemmas.Ska.CompPairLC
+import lemmas.Ska.CompCallC
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -821,3 +821,12 @@ open Formalization.SkaModel.Comp
 #print axioms tailGC_past
 #print axioms totalC_of_minkEq
 #print axioms pairLC_ok
+#print axioms minkC2_indirect
+#print axioms nokStep_fwd
+#print axioms nokStep_bwd
+#print axioms indirectC_runS
+#print axioms indirectC_runN
+#print axioms indirectC_runB
+#print axioms okc_indirectC
+#print axioms uokc_indirectC
+#print axioms entNew_indirectC
