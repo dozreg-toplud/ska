@@ -52,6 +52,7 @@ import lemmas.Compiler.FolLoopMono
 import lemmas.Compiler.ResolveLoop
 import lemmas.Compiler.FolLoopConv
 import lemmas.Compiler.SkaCore
+import lemmas.Compiler.SkaArms
 import lemmas.Compiler.RegisterFast
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
@@ -434,5 +435,12 @@ open Formalization
 #print axioms Compiler.above_gate
 #print axioms Compiler.pop_gate
 #print axioms Compiler.pop_gate'
+#print axioms Compiler.dirty_gate
+#print axioms Compiler.kids_gate
+#print axioms Compiler.sweep_stepW
+#print axioms Compiler.sweep_loop_iff
+#print axioms Compiler.sweep_gate
+#print axioms Compiler.live_stepW
+#print axioms Compiler.live_loop_iff
 #print axioms Compiler.registerFastIs_of
 #print axioms Compiler.resolveStepH_eq
