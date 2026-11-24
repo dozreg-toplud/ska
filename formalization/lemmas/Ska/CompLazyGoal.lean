@@ -146,13 +146,36 @@ theorem goalSem_toGoalSemD {K : Nat → Prop} {regs : Map (Option Noun)} {t : Tr
 
 end Exec
 
-/-- **The `sem` of `RunOKL`**: `SemNV` with the goal's sure part and `D s`
-holding `W s` at `th`. -/
+/-- **`AgreeU` for the result entries the run made** (labels from `g0.bo`
+on): the result entries that the run kept from its goal lie in the parent's
+blocks, which the run's code does not reach, and the parent may have put ops
+there (`+split`'s `con`, the ops of a later part). -/
+def AgreeL (lib : Lib) {σ : Type} (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace)
+    (cond : Map (Nat × List Nat)) (ned : Need) (g0 g1 : Gen Map) (laz : Lazy S) (s0 s : Noun) : Prop :=
+  (∀ o, g0.bo ≤ o → o < g1.bo → o ∉ (entries laz).map Prod.fst →
+    HoonMap.get c.blocks o = (HoonMap.get g1.blocks o).map (unproxyBlob cond)) ∧
+  ∀ e ∈ entries laz, g0.bo ≤ e.1 → ∃ A th, HoonMap.get g1.blocks e.1 = some ⟨[], [], Termin.hop th⟩ ∧
+    HoonMap.get c.blocks e.1 = some ⟨[], A, Termin.hop (renJmp (unproxy cond) th)⟩ ∧
+    FillSem lib O c gul st t ned g1.re e.2.sure A s0 s
+
+theorem AgreeU.toL {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ} {t : Trace}
+    {cond : Map (Nat × List Nat)} {ned : Need} {g0 g1 : Gen Map} {laz : Lazy S} {s0 s : Noun}
+    (h : AgreeU lib O c gul st t cond ned g0 g1 laz s0 s) : AgreeL lib O c gul st t cond ned g0 g1 laz s0 s :=
+  ⟨h.1, fun e he _ => h.2 e he⟩
+
+theorem AgreeL.toU {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ} {t : Trace}
+    {cond : Map (Nat × List Nat)} {ned : Need} {g0 g1 : Gen Map} {laz : Lazy S} {s0 s : Noun}
+    (h : AgreeL lib O c gul st t cond ned g0 g1 laz s0 s) (hl : ∀ e ∈ entries laz, g0.bo ≤ e.1) :
+    AgreeU lib O c gul st t cond ned g0 g1 laz s0 s :=
+  ⟨h.1, fun e he => h.2 e he (hl e he)⟩
+
+/-- **The `sem` of `RunOKL`**: `SemNV` with `AgreeL`, the goal's sure part
+and `D s` holding `W s` at `th`. -/
 def SemL (lib : Lib) (nm : Nomm) (L : Lazy S) (th : Jmp) (D : Noun → Need) (W : Noun → Noun) (g0 g1 : Gen Map)
     (nex : NextL S) : Prop :=
   ∀ (cf : Map (Nat × List Nat)), (∀ k, k < g1.re → HoonMap.get cf k = HoonMap.get g1.cond k) →
     ∀ (c : Straight Map) (ned : Need) (σ : Type) (O : Oracle σ) (st : σ) (t : Trace) (gul : Noun) (s0 s : Noun),
-    AgreeU lib O c gul st t cf ned g0 g1 nex.laz s0 s → (∀ r, NMem ned r → g1.re ≤ r) →
+    AgreeL lib O c gul st t cf ned g0 g1 nex.laz s0 s → (∀ r, NMem ned r → g1.re ≤ r) →
     ∀ regs, HoldsS nex.laz.sure regs s → HoldsN ned regs s0 →
     GoalSemD lib O c gul st (fun r => (r < g0.re ∨ NMem ned r) ∧ ¬ NMem L.sure.ned r) regs t nex.th L.sure th
       (D s) (W s) (pureEval nm s)
@@ -214,7 +237,7 @@ theorem RunOKL.toNV {lib : Lib} {nm : Nomm} {sur : Sure S} {th : Jmp} {D : Noun 
     · exact ⟨h1.1, h1.2, th', hb⟩
   · have := R.size; rw [e0] at this; simpa using this
   · intro cf hcf c ned σ O st t gul s0 s ag hn regs hh h0
-    exact goalSemD_toGoalSem lib O c gul st (R.sem cf hcf c ned σ O st t gul s0 s ag hn regs hh h0)
+    exact goalSemD_toGoalSem lib O c gul st (R.sem cf hcf c ned σ O st t gul s0 s ag.toL hn regs hh h0)
 
 /-- **`RunOKNV` is `RunOKL` under a goal without entries, with `D = none`.** -/
 theorem RunOKNV.toL {lib : Lib} {nm : Nomm} {sur : Sure S} {th : Jmp} {g0 g1 : Gen Map} {nex : NextL S}
@@ -227,7 +250,8 @@ theorem RunOKNV.toL {lib : Lib} {nm : Nomm} {sur : Sure S} {th : Jmp} {g0 g1 : G
     by rw [e0]; simpa using R.size, fun _ _ hr => hr.elim, R.nec, R.ncond, R.econd,
     fun e he => (by rw [e0] at he; cases he), ?_⟩
   intro cf hcf c ned σ O st t gul s0 s ag hn regs hh h0
-  exact goalSem_toGoalSemD lib O c gul st (R.sem cf hcf c ned σ O st t gul s0 s ag hn regs hh h0)
+  exact goalSem_toGoalSemD lib O c gul st
+    (R.sem cf hcf c ned σ O st t gul s0 s (ag.toU fun e he => (R.labs e he).1) hn regs hh h0)
 
 /-! ## Fills -/
 
@@ -347,7 +371,8 @@ theorem runOKL_n4 {lib : Lib} {p : Nomm} {L : Lazy S} {th : Jmp} {d : Nat} {g0 g
   · intro cf hcf c ned σ O st t gul s0 s ag hned regs hh hn
     have inR : ∀ r, NMem ned r → InR (CGoal.next L.sure th) g0 g1 nex.laz.sure.ned r := fun r hr =>
       Or.inl (hned r hr)
-    have Sp := CR.sem cf hcf c ned σ O st t gul s0 s ag inR regs hh hn
+    have ag' := ag.toU fun e he => (CR.labs e he).1
+    have Sp := CR.sem cf hcf c ned σ O st t gul s0 s ag' inR regs hh hn
     have kk : ∀ r, ((r < g0.re ∨ NMem ned r) ∧ ¬ NMem L.sure.ned r) → KeepI (CGoal.next L.sure th) g0 ned r := by
       rintro r ⟨h | h, hn'⟩
       · exact Or.inl ⟨h, hn'⟩
@@ -370,11 +395,291 @@ theorem runOKL_n4 {lib : Lib} {p : Nomm} {L : Lazy S} {th : Jmp} {d : Nat} {g0 g
       simp only [Option.getD_some]
       refine ⟨fun fit => ?_, fun nf => Sp.2 nf⟩
       have hfa : ∀ v, FitsS L.sure (A v) := CR.dich.elim id (fun hn' => absurd fit (hn' m))
-      have T := CR.semT hfa cf hcf c ned σ O st t gul s0 s ag inR regs hh hn
+      have T := CR.semT hfa cf hcf c ned σ O st t gul s0 s ag' inR regs hh hn
       rw [ev] at T
       obtain ⟨R, hR, kR, eR⟩ := T.1 ⟨trivial, looks_empty _⟩
       have hR' : SkaModel.read d R = some (A m) := hR
       exact ⟨R, (CR.dhold hfa R m hR').1, hR', fun r hr => kR r (kk r hr), eR⟩
+
+/-! ## `[7 p q]`: the relation composes -/
+
+/-- Two members of a list with distinct keys and the same key are equal. -/
+theorem mem_key_eq {α β : Type} {l : List (α × β)} (h : (l.map Prod.fst).Nodup) {a b : α × β} (ha : a ∈ l)
+    (hb : b ∈ l) (e : a.1 = b.1) : a = b := by
+  induction l with
+  | nil => cases ha
+  | cons x xs ih =>
+    rw [List.map_cons, List.nodup_cons] at h
+    rcases List.mem_cons.mp ha with rfl | ha'
+    · rcases List.mem_cons.mp hb with rfl | hb'
+      · rfl
+      · exact absurd (List.mem_map.mpr ⟨b, hb', e.symm⟩) h.1
+    · rcases List.mem_cons.mp hb with rfl | hb'
+      · exact absurd (List.mem_map.mpr ⟨a, ha', e⟩) h.1
+      · exact ih h.2 ha' hb'
+
+/-- Reassociate the input need of a fill. -/
+theorem FillSem.assoc {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ}
+    {t : Trace} {ned D1 D2 : Need} {lo : Nat} {M : Sure S} {A0 : List Pole} {s0 w1 w2 v : Noun}
+    (h : FillSem (Map := Map) lib O c gul st t (Need.pair (Need.pair ned D1) D2) lo M A0 (C (C s0 w1) w2) v) :
+    FillSem lib O c gul st t (Need.pair ned (Need.pair D1 D2)) lo M A0 (C s0 (C w1 w2)) v := by
+  intro R hR
+  have hR' : HoldsN ned R s0 ∧ HoldsN D1 R w1 ∧ HoldsN D2 R w2 := hR
+  obtain ⟨F1, F2⟩ := h R ⟨⟨hR'.1, hR'.2.1⟩, hR'.2.2⟩
+  refine ⟨fun f => ?_, F2⟩
+  obtain ⟨R', r, hh, k⟩ := F1 f
+  refine ⟨R', r, hh, fun x hx hn => k x ?_ hn⟩
+  rcases hx with (hx | hx | hx) | hx
+  · exact Or.inl (Or.inl (Or.inl hx))
+  · exact Or.inl (Or.inl (Or.inr hx))
+  · exact Or.inl (Or.inr hx)
+  · exact Or.inr hx
+
+/-- A fill of the bunt does not look at the subject. -/
+theorem FillSem.bunt_subj {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ}
+    {t : Trace} {ned : Need} {lo : Nat} {A0 : List Pole} {s0 s s' : Noun}
+    (h : FillSem (Map := Map) lib O c gul st t ned lo (Sure.bunt : Sure S) A0 s0 s) :
+    FillSem lib O c gul st t ned lo (Sure.bunt : Sure S) A0 s0 s' := fun R hR =>
+  ⟨fun _ => by
+    obtain ⟨R', r, _, k⟩ := (h R hR).1 (fitsS_bunt s)
+    exact ⟨R', r, holdsS_bunt R' s', k⟩, fun nf => absurd (fitsS_bunt s') nf⟩
+
+/-- The `D` and `W` of `[7 p q]`: `p`'s, and `q`'s at `p`'s product. -/
+def sevenD (p : Nomm) (Dp Dq : Noun → Need) (s : Noun) : Need :=
+  Need.pair (Dp s) (Dq ((pureEval p s).getD (A 0)))
+
+def sevenW (p : Nomm) (Wp Wq : Noun → Noun) (s : Noun) : Noun :=
+  C (Wp s) (Wq ((pureEval p s).getD (A 0)))
+
+/-- **The fronts compose**: `p`'s ops in front of `q`'s at an entry that `q`
+kept for `p`. -/
+theorem frontL_seven {p q : Nomm} {Dp Dq : Noun → Need} {Wp Wq : Noun → Noun} {lo0 lo1 lo2 : Nat}
+    {Lp Lq M : Sure S} {Fp Fq : List Pole} (hdp : ∀ s r, NMem (Dp s) r → lo1 ≤ r) (h12 : lo1 ≤ lo2)
+    (FP : FrontL (Map := Map) Dp Wp lo1 lo2 p Lp Fp Lq) (FQ : FrontL (Map := Map) Dq Wq lo0 lo1 q Lq Fq M) :
+    FrontL (Map := Map) (sevenD p Dp Dq) (sevenW p Wp Wq) lo0 lo2 (Nomm.n7 p q) Lp (Fp ++ Fq) M := by
+  intro lib σ O c gul st t ned A0 s0 s v hned hev hfill
+  have p7 : pureEval (Nomm.n7 p q) s = (pureEval p s).bind (pureEval q) := rfl
+  rw [p7] at hev
+  cases ev : pureEval p s with
+  | none => rw [ev] at hev; cases hev
+  | some vp =>
+    rw [ev] at hev
+    have h1 := FP lib σ O c gul st t ned A0 s0 s vp hned ev hfill
+    have h2 := FQ lib σ O c gul st t (Need.pair ned (Dp s)) (A0 ++ Fp) (C s0 (Wp s)) vp v
+      (fun r hr => hr.elim (fun h => Nat.le_trans h12 (hned r h)) (fun h => hdp s r h)) hev h1
+    simp only [sevenD, sevenW, ev, Option.getD_some, ← List.append_assoc]
+    exact h2.assoc
+
+/-- **A front of `q` at an entry that `p` does not see.** -/
+theorem frontL_seven_bunt {p q : Nomm} {Dp Dq : Noun → Need} {Wp Wq : Noun → Noun} {lo0 lo1 lo2 : Nat}
+    {M : Sure S} {Fq : List Pole} (hdp : ∀ s r, NMem (Dp s) r → lo1 ≤ r ∧ r < lo2) (h12 : lo1 ≤ lo2)
+    (FQ : FrontL (Map := Map) Dq Wq lo0 lo1 q Sure.bunt Fq M) :
+    FrontL (Map := Map) (sevenD p Dp Dq) (sevenW p Wp Wq) lo0 lo2 (Nomm.n7 p q) Sure.bunt Fq M := by
+  intro lib σ O c gul st t ned A0 s0 s v hned hev hfill
+  have p7 : pureEval (Nomm.n7 p q) s = (pureEval p s).bind (pureEval q) := rfl
+  rw [p7] at hev
+  cases ev : pureEval p s with
+  | none => rw [ev] at hev; cases hev
+  | some vp =>
+    rw [ev] at hev
+    have h1 : FillSem lib O c gul st t (Need.pair ned (Dp s)) lo1 (Sure.bunt : Sure S) A0 (C s0 (Wp s)) vp :=
+      ((hfill.pair (Dp s) (fun r hr => (hdp s r hr).2) (Wp s)).mono h12).bunt_subj
+    have h2 := FQ lib σ O c gul st t (Need.pair ned (Dp s)) A0 (C s0 (Wp s)) vp v
+      (fun r hr => hr.elim (fun h => Nat.le_trans h12 (hned r h)) (fun h => (hdp s r h).1)) hev h1
+    simp only [sevenD, sevenW, ev, Option.getD_some]
+    exact h2.assoc
+
+/-- **`[7 p q]` under `%next L th`**: `RunOKL` of `q` under the goal and of
+`p` under the goal `q`'s run returns give `RunOKL` of the whole, with `p`'s
+`D` and `q`'s at `p`'s product.  At run time `p`'s code runs, then `q`'s with
+the input need `pair ned (Dp s)`, which keeps `Dp s` for the lazy blocks
+that `p` put ops at.  `hle`: `p`'s jump is at or after `q`'s; the goal's
+sure part and entries were allocated before the run. -/
+theorem runOKL_seven {lib : Lib} {p q : Nomm} {L : Lazy S} {th : Jmp} {Dp Dq : Noun → Need}
+    {Wp Wq : Noun → Noun} {g0 g1 g2 : Gen Map} {nx nex : NextL S}
+    (Rq : RunOKL (Map := Map) lib q L th Dq Wq g0 g1 nx) (Rp : RunOKL (Map := Map) lib p nx.laz nx.th Dp Wp g1 g2 nex)
+    (hle : nx.th.there ≤ nex.th.there) (hL : ∀ r, NMem L.sure.ned r → r < g0.re)
+    (hlab : ∀ e ∈ entries L, e.1 < g0.bo) :
+    RunOKL lib (Nomm.n7 p q) L th (sevenD p Dp Dq) (sevenW p Wp Wq) g0 g2 nex := by
+  have q1 := Rq.re
+  have q2 := Rq.bo
+  have p1 := Rp.re
+  have p2 := Rp.bo
+  have qhi := Rq.hi
+  have p7 : ∀ s, pureEval (Nomm.n7 p q) s = (pureEval p s).bind (pureEval q) := fun _ => rfl
+  -- the labels of `q`'s result
+  have qlab : ∀ o, o ∈ (entries nx.laz).map Prod.fst → o ∈ (entries L).map Prod.fst ∨ (g0.bo ≤ o ∧ o < g1.bo) :=
+    fun o ho => by
+      obtain ⟨e, he, rfl⟩ := List.mem_map.mp ho
+      rcases (Rq.labs e he).1 with h | h
+      · exact Or.inl h
+      · exact Or.inr ⟨h.1, by omega⟩
+  have plab : ∀ o, o ∈ (entries nex.laz).map Prod.fst → o ∈ (entries nx.laz).map Prod.fst ∨ g1.bo ≤ o :=
+    fun o ho => by
+      obtain ⟨e, he, rfl⟩ := List.mem_map.mp ho
+      rcases (Rp.labs e he).1 with h | h
+      · exact Or.inl h
+      · exact Or.inr h.1
+  have nxL : ∀ r, NMem nx.laz.sure.ned r → r < g1.re := fun r hr => by
+    rcases Rq.regs r hr with h | h
+    · have := hL r h; omega
+    · exact h.2
+  refine ⟨by omega, by omega, Rp.drop.trans Rq.drop, fun o ho hn => ?_, Rq.grow.trans Rp.grow, Rq.cfr.trans Rp.cfr,
+    Rp.lo, Rp.hi, ?_, fun r hr => ?_, Rp.dist, fun e he => ⟨(Rp.eregs e he).1, fun r hr => ?_⟩, fun e he => ?_,
+    Rp.nodup, ?_, fun s r hr => ?_, fun s hs => ?_, Rp.ncond, Rp.econd, fun e he => ?_, ?_⟩
+  · -- keep
+    have hn' : o ∉ (entries nx.laz).map Prod.fst := fun hm => by
+      rcases qlab o hm with h | h
+      · exact hn h
+      · omega
+    exact (Rp.keep o (by omega) hn').trans (Rq.keep o ho hn)
+  · -- ent
+    rcases Rp.ent with f | e
+    · exact Or.inl f
+    · have e' : nex.th = nx.th := e
+      rw [e']
+      rcases Rq.ent with f | e2
+      · exact Or.inl (f.growU Rq.hi Rp.grow)
+      · exact Or.inr e2
+  · -- regs
+    rcases Rp.regs r hr with h | h
+    · rcases Rq.regs r h with h' | h'
+      · exact Or.inl h'
+      · exact Or.inr ⟨h'.1, by omega⟩
+    · exact Or.inr ⟨by omega, h.2⟩
+  · -- eregs
+    rcases (Rp.eregs e he).2 r hr with ⟨e0, he0, h0⟩ | h
+    · rcases (Rq.eregs e0 he0).2 r h0 with h' | h'
+      · exact Or.inl h'
+      · exact Or.inr ⟨h'.1, by omega⟩
+    · exact Or.inr ⟨by omega, h.2⟩
+  · -- labs
+    obtain ⟨h, blk⟩ := Rp.labs e he
+    refine ⟨?_, blk⟩
+    rcases h with h | h
+    · rcases qlab e.1 h with h' | h'
+      · exact Or.inl h'
+      · obtain ⟨e0, he0, e1⟩ := List.mem_map.mp h
+        have := (Rq.labs e0 he0).1
+        rcases this with h'' | h''
+        · exact Or.inl (by rw [← e1]; exact h'')
+        · exact Or.inr ⟨h'.1, by rw [← e1]; omega⟩
+    · exact Or.inr ⟨by omega, h.2⟩
+  · -- size
+    have := Rp.size
+    have := Rq.size
+    simp only [sixCount]
+    omega
+  · -- dreg
+    rcases hr with h | h
+    · have := Rp.dreg s r h; exact ⟨by omega, this.2⟩
+    · have := Rq.dreg _ r h; exact ⟨this.1, by omega⟩
+  · -- nec
+    rcases Rp.nec s hs with h | ⟨vp, hv, nf⟩
+    · exact Or.inl (by rw [p7, h]; rfl)
+    · rcases Rq.nec vp nf with h' | ⟨w, hw, nf'⟩
+      · exact Or.inl (by rw [p7, hv]; exact h')
+      · exact Or.inr ⟨w, by rw [p7, hv]; exact hw, nf'⟩
+  · -- front
+    obtain ⟨Fq, hFq, Sq⟩ := Rq.front e he
+    have hdp : ∀ s r, NMem (Dp s) r → g1.re ≤ r ∧ r < g2.re := Rp.dreg
+    by_cases hk : e.1 ∈ (entries nx.laz).map Prod.fst
+    · obtain ⟨e', he', he1⟩ := List.mem_map.mp hk
+      obtain ⟨Fp, hFp, Sp⟩ := Rp.front e' he'
+      refine ⟨Fp ++ Fq, fun B fin hb => ?_, fun cf hcf => ?_⟩
+      · have h1 := hFq B fin hb
+        rw [← he1] at h1
+        have h2 := hFp _ fin h1
+        rw [he1, ← List.append_assoc] at h2
+        exact h2
+      · have hcf1 : ∀ k, k < g1.re → HoonMap.get cf k = HoonMap.get g1.cond k := fun k hk' =>
+          (hcf k (by omega)).trans (Rp.cfr.get_lt hk')
+        obtain ⟨Lq, hLq, FQ⟩ : ∃ L', (e.1, L') ∈ entries nx.laz ∧
+            FrontL (Map := Map) Dq Wq g0.re g1.re q L'.sure (Fq.map (renPole (unproxy cf))) e.2.sure :=
+          (Sq cf hcf1).elim id (fun h => absurd hk h.1)
+        have ee : e' = (e.1, Lq) := mem_key_eq Rq.nodup he' hLq he1
+        subst ee
+        simp only [List.map_append]
+        rcases Sp cf hcf with ⟨L', hL', FP⟩ | ⟨hn2, FP⟩
+        · exact Or.inl ⟨L', hL', frontL_seven (fun s r hr => (hdp s r hr).1) p1 FP FQ⟩
+        · exact Or.inr ⟨hn2, frontL_seven (fun s r hr => (hdp s r hr).1) p1 FP FQ⟩
+    · refine ⟨Fq, fun B fin hb => ?_, fun cf hcf => ?_⟩
+      · rw [Rp.keep e.1 (by have := hlab e he; omega) hk]; exact hFq B fin hb
+      · have hcf1 : ∀ k, k < g1.re → HoonMap.get cf k = HoonMap.get g1.cond k := fun k hk' =>
+          (hcf k (by omega)).trans (Rp.cfr.get_lt hk')
+        rcases Sq cf hcf1 with ⟨L', hL', _⟩ | ⟨_, FQ⟩
+        · exact absurd (List.mem_map.mpr ⟨_, hL', rfl⟩) hk
+        · refine Or.inr ⟨fun hm => ?_, frontL_seven_bunt hdp p1 FQ⟩
+          rcases plab e.1 hm with h | h
+          · exact hk h
+          · have := hlab e he; omega
+  · -- sem
+    intro cf hcf c ned σ O st t gul s0 s ag hned regs hh hn
+    have hcf1 : ∀ k, k < g1.re → HoonMap.get cf k = HoonMap.get g1.cond k := fun k hk' =>
+      (hcf k (by omega)).trans (Rp.cfr.get_lt hk')
+    have agP : AgreeL lib O c gul st t cf ned g1 g2 nex.laz s0 s :=
+      ⟨fun o l u hnl => ag.1 o (by omega) u hnl, fun e he l => ag.2 e he (by omega)⟩
+    have Sp := Rp.sem cf hcf c ned σ O st t gul s0 s agP hned regs hh hn
+    show GoalSemD lib O c gul st _ regs t nex.th L.sure th (sevenD p Dp Dq s) (sevenW p Wp Wq s)
+      (pureEval (Nomm.n7 p q) s)
+    rw [p7]
+    simp only [sevenD, sevenW]
+    cases ev : pureEval p s with
+    | none => rw [ev] at Sp; exact Sp
+    | some vp =>
+      rw [ev] at Sp
+      simp only [Option.bind_some, Option.getD_some]
+      by_cases fit : FitsS nx.laz.sure vp
+      · obtain ⟨R1, h1, hD1, k1, e1⟩ := Sp.1 fit
+        have hn1 : HoldsN ned R1 s0 := HoldsN.agree ned (fun x hx => k1 x ⟨Or.inr hx, fun hm => by
+          have := nxL x hm; have := hned x hx; omega⟩) hn
+        have agQ : AgreeL lib O c gul st t cf (Need.pair ned (Dp s)) g0 g1 nx.laz (C s0 (Wp s)) vp := by
+          refine ⟨fun o l u hnl => ?_, fun e he l => ?_⟩
+          · have hn2 : o ∉ (entries nex.laz).map Prod.fst := fun hm => by
+              rcases plab o hm with h | h
+              · exact hnl h
+              · omega
+            rw [ag.1 o l (by omega) hn2, Rp.keep o u hnl]
+          · obtain ⟨_, th', hb1⟩ := Rq.labs e he
+            have hlt : e.1 < g1.bo := by
+              rcases (Rq.labs e he).1 with h | h
+              · obtain ⟨e0, he0, e1⟩ := List.mem_map.mp h; have := hlab e0 he0; omega
+              · omega
+            obtain ⟨Fp, hFp, Sp'⟩ := Rp.front e he
+            have hb2 := hFp [] (Termin.hop th') hb1
+            rw [List.append_nil] at hb2
+            rcases Sp' cf hcf with ⟨L', hL', FP⟩ | ⟨hn2, FP⟩
+            · obtain ⟨A0, th'', hb3, hc3, hf3⟩ := ag.2 (e.1, L') hL' l
+              rw [hb2] at hb3
+              simp only [Option.some.injEq, Blob.mk.injEq, Termin.hop.injEq, true_and] at hb3
+              obtain ⟨rfl, rfl⟩ := hb3
+              refine ⟨A0 ++ ([] : List Pole).map (renPole (unproxy cf)), th', hb1, by simpa using hc3, ?_⟩
+              exact (FP lib σ O c gul st t ned A0 s0 s vp hned ev hf3).mono (Nat.le_refl _)
+            · refine ⟨[] ++ Fp.map (renPole (unproxy cf)), th', hb1, ?_, ?_⟩
+              · rw [ag.1 e.1 l (by omega) hn2, hb2]
+                simp only [Option.map_some, unproxyBlob, renBlob, List.map_nil, renFin, List.nil_append]
+              · exact FP lib σ O c gul st t ned [] s0 s vp hned ev fillSem_bunt_nil
+        have Sq := Rq.sem cf hcf1 c (Need.pair ned (Dp s)) σ O st t gul (C s0 (Wp s)) vp agQ
+          (fun r hr => hr.elim (fun h => by have := hned r h; omega) (fun h => (Rp.dreg s r h).1)) R1
+          ⟨h1, fit.2⟩ ⟨hn1, hD1⟩
+        cases eq : pureEval q vp with
+        | none => rw [eq] at Sq; exact e1.trans Sq
+        | some v =>
+          rw [eq] at Sq
+          refine ⟨fun f => ?_, fun nf => e1.trans (Sq.2 nf)⟩
+          obtain ⟨R2, h2, hD2, k2, e2⟩ := Sq.1 f
+          refine ⟨R2, h2, ⟨HoldsN.agree (Dp s) (fun x hx => k2 x ⟨Or.inr (Or.inr hx), fun hm => by
+            have := hL x hm; have := (Rp.dreg s x hx).1; omega⟩) hD1, hD2⟩, fun r hr => ?_, e1.trans e2⟩
+          rw [k2 r ⟨hr.1.elim Or.inl (fun h => Or.inr (Or.inl h)), hr.2⟩]
+          refine k1 r ⟨hr.1.elim (fun h => Or.inl (by omega)) Or.inr, fun hm => ?_⟩
+          rcases Rq.regs r hm with h | h
+          · exact hr.2 h
+          · rcases hr.1 with h' | h'
+            · omega
+            · have := hned r h'; omega
+      · rcases Rq.nec vp fit with h | ⟨w, hw, nf⟩
+        · rw [h]; exact Sp.2 fit
+        · rw [hw]; exact ⟨fun f => absurd f nf, fun _ => Sp.2 fit⟩
 
 end Comp
 end SkaModel
