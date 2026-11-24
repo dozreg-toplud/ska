@@ -4,8 +4,17 @@ import lemmas.Ska.CompConsN
 /-!
 # Two operands and cons with proxy runs under a fork-free `%next`
 
-README Gaps 12.2 (seventh session).  `binaryNV_ok`: `binaryN_ok` with
-`RunOKNV` parts and `AgreeU`.
+README Gaps 12.2 (seventh session).
+
+* `AgreeU.part`: `AgreeP.part` with the blocks unproxied.
+* `binaryNV_ok`: `binaryN_ok` with `RunOKNV` parts and `AgreeU`, for a
+  fork-free `%next`.  The copy block mentions only the two sure needs'
+  registers (no keys of `cond`, `ncond`) and fresh ones, so unproxying
+  leaves it alone (`keepsA_copy` with the predicate "no key of `cond`",
+  `keeps_copy`); the blocks before the two runs by hypothesis (`hfix`).
+* `consNV_body`, `okNV_cons`: cons under a fork-free `%next` with parts
+  that meet `OKNV` (`consN_body` with `OKNV` parts).  The `%con` block of
+  `+split` meets `hfix` (`keepsA_split`, `keeps_split`).
 -/
 
 set_option linter.unusedSectionVars false
@@ -346,6 +355,119 @@ theorem binaryNV_ok {lib : Lib} {nm p q : Nomm} {sur : Sure S} {th : Jmp} {g0 g'
         | some y =>
           simp only [Option.bind_some]
           exact goalSem_crash_or (hnot x y (Or.inl fx)) (by rw [eth] at e1 ⊢; exact e1.trans hc2)
+
+/-- **Cons for a fork-free `%next` with parts that may make proxies**, the
+body after the goal is `%next` (`consN_body` with `OKNV` parts).  The tail
+runs for the tail register(s) of `+split` and the head after it for the head
+register(s): both are registers of the goal's need (no keys by `hkg`) or
+fresh at the split, and the tail's proxies are fresh from its own start on,
+so neither part's need has a key of `cond` when it runs.  The `%con` block
+of `+split` mentions the goal's need and fresh registers, so unproxying by
+any later `cond` leaves it alone (`hfix` of `binaryNV_ok`). -/
+theorem consNV_body (lib : Lib) {p q : Nomm} (hp : OKNV (S := S) (Map := Map) lib p)
+    (hq : OKNV (S := S) (Map := Map) lib q) (cp : CleanN S Map p) (cq : CleanN S Map q)
+    (hpp : p.pure = true) (hqp : q.pure = true) {sur : Sure S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map}
+    {nex : NextL S} (hj : GJ g0.bo (CGoal.next sur th)) (hth : th.args = []) (hok : GoalOK g0 (CGoal.next sur th))
+    (hcl : Clean sur.ned) (hcount : sixCount (Nomm.cons p q) ≤ 255) (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false)
+    (hu : UpBelow g0) (hcl0 : Clear g0) (hcb : CondBelow g0) (hkg : ∀ r, NMem sur.ned r → HoonMap.get g0.cond r = Option.none)
+    (h : (do
+      let (hed, tel, o) ← splitL ⟨ofSure sur, th⟩
+      let nexh ← pastL noCode ⟨hed, jmp0 o⟩ q region
+      let nex2 ← runL q (CGoalL.next tel nexh.th) region
+      let nex2 ← pastL noCode nex2 p region
+      let nex1 ← runL p (CGoalL.next nexh.laz nex2.th) region
+      copyL nex1 nex2.laz : CM Map (NextL S)) g0 = some (nex, g1)) :
+    RunOKNV (Map := Map) lib (Nomm.cons p q) sur th g0 g1 nex := by
+  obtain ⟨⟨hed', tel', o⟩, g2x, h2, h⟩ := bind_some h
+  rw [splitL_mk, map_apply] at h2
+  obtain ⟨⟨⟨hed, tel, o'⟩, g2⟩, hs2, e2⟩ := Option.map_eq_some_iff.mp h2
+  simp only [Prod.mk.injEq] at e2
+  obtain ⟨⟨rfl, rfl, rfl⟩, rfl⟩ := e2
+  clear h2
+  simp only at h
+  obtain ⟨nexh, g2', hph, h⟩ := bind_some h
+  rw [pastL_mk _ _ _ hqp, pure_apply] at hph
+  simp only [Option.some.injEq, Prod.mk.injEq] at hph
+  obtain ⟨rfl, rfl⟩ := hph
+  obtain ⟨nex2, g3, h3, h⟩ := bind_some h
+  obtain ⟨nex2', g3', hp2, h⟩ := bind_some h
+  rw [pastL_pure _ _ hpp, pure_apply] at hp2
+  simp only [Option.some.injEq, Prod.mk.injEq] at hp2
+  obtain ⟨rfl, rfl⟩ := hp2
+  obtain ⟨nex1, g4, h4, hcp⟩ := bind_some h
+  obtain ⟨eo, E2, _, Mh, Mt, SP⟩ := split_ok hs2
+  obtain ⟨Dh, Dt, Dht, F, B⟩ := SP hok.1 hok.2
+  obtain ⟨G2, eo', lt2, _⟩ := split_down hs2 hj.1 hj.2 d0
+  simp only at eo'
+  subst eo
+  have CS := clean_split hs2 hcl
+  simp only at CS
+  have c2 : g2.cond = g0.cond := (kc_split _).keep _ _ _ hs2
+  have d2 : g2.drop = false := E2.2.2.1.trans d0
+  have u2 : UpBelow g2 := (G2.toU hu).up hu
+  have lt2' : ∀ (n : Need), (∀ y, NMem n y → NMem sur.ned y ∨ (g0.re ≤ y ∧ y < g2.re)) →
+      ∀ y, NMem n y → y < g2.re := fun n M y hy => by
+    rcases M y hy with a | ⟨_, a⟩
+    · exact Nat.lt_of_lt_of_le (hok.2 y a) E2.1
+    · exact a
+  simp only [sixCount] at hcount
+  have G2U : GrowU g0 g2 := G2.toU hu
+  have cl2 : Clear g2 := hcl0.growU G2U
+  have cf2 : CondFresh g0 g2 := condFresh_of_eq E2.1 c2
+  have cb2 : CondBelow g2 := cf2.below hcb
+  have nk2 : ∀ (n : Need), (∀ y, NMem n y → NMem sur.ned y ∨ (g0.re ≤ y ∧ y < g2.re)) →
+      ∀ y, NMem n y → HoonMap.get g2.cond y = Option.none := fun n M y hy => by
+    rw [c2]
+    rcases M y hy with a | ⟨a, _⟩
+    · exact hkg y a
+    · exact condBelow_none hcb a
+  have Rq := hq (sur := tel) (th := jmp0 g0.bo) ⟨b0, by simp only [jmp0]; omega⟩ rfl ⟨Dt, lt2' _ Mt⟩ CS.2
+    (by omega) (by omega) d2 u2 cl2 cb2 (nk2 _ Mt) h3
+  have d3 : g3.drop = false := Rq.ext.2.2.1.trans d2
+  have u3 : UpBelow g3 := Rq.grow.up u2
+  have Rp := hp (sur := hed) (th := nex2.th) ⟨Rq.lo, Rq.hi⟩ (nextArgs_nil Rq.ent rfl)
+    ⟨Dh, fun y hy => Nat.lt_of_lt_of_le (lt2' _ Mh y hy) Rq.ext.1⟩ CS.1 (by omega)
+    (by have := Rq.lo; have := Rq.hi; omega) d3 u3 (cl2.growU Rq.grow) (Rq.cfr.below cb2)
+    (fun y hy => by rw [Rq.cfr.get_lt (lt2' _ Mh y hy)]; exact nk2 _ Mh y hy) h4
+  have AS : AboveIn (fun r => HoonMap.get g0.cond r = Option.none) g0.bo g2 :=
+    (keepsA_split (P := fun r => HoonMap.get g0.cond r = Option.none) d0 hkg (jmpIn_nil hth)
+      (fun r hr => condBelow_none hcb hr) hs2).1.ab _ (aboveIn_start _ g0)
+  have BS : BelowIn g0.bo g2 :=
+    (keeps_split d0 (fun r hr => hok.2 r hr) (jmpIn_nil hth) hs2).1.bel _ (belowIn_start g0)
+  refine binaryNV_ok (pureEval_cons p q) hok E2 (G2.toU hu) c2 hcb Mh Mt Dht Rq Rp (cq CS.2 h3) (cp CS.1 h4) hcp hu d0
+    (by simp only [sixCount]; omega) (fun x y hn => Or.inr ⟨C x y, rfl, fun hf => ?_⟩) ?_
+    (fun c hc σ O st regs t gul x y fx fy hx hy => ?_)
+  · rcases hn with a | a
+    · exact a ((F x y).mp hf).1
+    · exact a ((F x y).mp hf).2
+  · intro cf hcf k h0 h1
+    have u0 : ∀ x, x < g2.re → unproxy cf x = unproxy g0.cond x := unproxy_agree (fun k hk => hcf k hk)
+    have u1 : ∀ x, HoonMap.get g0.cond x = Option.none → unproxy g0.cond x = id x := fun x hx => unproxy_none hx
+    cases hg : HoonMap.get g2.blocks k with
+    | none => rfl
+    | some b =>
+      simp only [Option.map_some]
+      rw [unproxyBlob, renBlob_congr u0 (BS k b h0 h1 hg), renBlob_congr u1 (AS k b h0 h1 hg), renBlob_id]
+  · refine ⟨fun _ => ?_, fun hn => absurd ((F x y).mpr ⟨fx, fy⟩) hn⟩
+    obtain ⟨R', hl, u, e⟩ := B d0 c hc lib σ O st t regs x y gul hx hy
+    exact ⟨R', hl, fun r ⟨_, k⟩ => u r k, e⟩
+
+/-- **Cons with parts that meet `OKNV` meets `OKNV`.** -/
+theorem okNV_cons (lib : Lib) {p q : Nomm} (hp : OKNV (S := S) (Map := Map) lib p)
+    (hq : OKNV (S := S) (Map := Map) lib q) (cp : CleanN S Map p) (cq : CleanN S Map q)
+    (hpp : p.pure = true) (hqp : q.pure = true) : OKNV (S := S) (Map := Map) lib (Nomm.cons p q) :=
+  fun hj hth hok hcl hcount b0 d0 hu hcl0 hcb hkg h => by
+    rw [runL_cons_next] at h
+    exact consNV_body lib hp hq cp cq hpp hqp hj hth hok hcl hcount b0 d0 hu hcl0 hcb hkg h
+
+/-- **A cons whose head and tail are in `FragX` or are `[7 [4 p] q]` with
+`p`, `q` in `FragX`** meets `OKNV`, given that the sure needs of the parts'
+runs are clean. -/
+example (lib : Lib) {p q : Nomm} (hp : FragX (S := S) p) (hq : FragX (S := S) q) {q' : Nomm}
+    (hq' : FragX (S := S) q') (cq : CleanN S Map (Nomm.n7 (Nomm.n4 p) q)) :
+    OKNV (S := S) (Map := Map) lib (Nomm.cons (Nomm.n7 (Nomm.n4 p) q) q') :=
+  okNV_cons lib (okNV_seven4 lib hp hq) (okNV_fragX lib hq') cq (CleanA.toN (runX_clean hq'))
+    (by simp only [Nomm.pure, fragX_pure hp, fragX_pure hq, Bool.and_self]) (fragX_pure hq')
 
 end Comp
 end SkaModel

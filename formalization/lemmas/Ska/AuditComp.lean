@@ -513,5 +513,7 @@ open Formalization.SkaModel.Comp
 #print axioms okNV_seven4
 #print axioms AgreeU.part
 #print axioms binaryNV_ok
+#print axioms consNV_body
+#print axioms okNV_cons
 #print axioms runOKV_seven4P
 #print axioms fragU_pure
