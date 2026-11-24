@@ -29,9 +29,13 @@ arms that were not linked.  Here they are discharged:
   `cu_gate_none`);
 * `hwas`, `hw`: they follow from `hput` (`getF_of_putF`).
 
-What stays on the model side: the run succeeds (`hrunL`), with `args.then`
-empty (`hargs`), `+need-ord-alloc-regs` of `sccSur` succeeds (`hnoar`), and
-nothing is baked (`hb`).  On the state nouns: `b` is not in `nary.cache`
+* `hargs`: on the fragment the run for `[%done ~]` jumps with no argument
+  (`crx_run_args`, `args_frag`).
+
+What stays on the model side in `csi_gate_scc_one_m`: the run succeeds
+(`hrunL`), `+need-ord-alloc-regs` of `sccSur` succeeds (`hnoar`), and
+nothing is baked (`hb`); `csi_gate_scc_one_f` folds the first two into a
+`bind` (the gate crashes where the model is `none`) and keeps `NoBakeOne`.  On the state nouns: `b` is not in `nary.cache`
 (`hnary`) which is a map (`hnmap`), `b` is not among its own callees in
 `calls.long-ska` (`hcalls`), `InlOK` for `inl.cache`, and the put of `sur` into
 `sure.cache` succeeds (`hput`).
@@ -242,6 +246,184 @@ theorem scc_sur_frag (nm : Nomm) (hpu : nm.pure = true) (h6 : noSix nm = true) (
     rw [hr]
     rfl
 
+/-! ## `args.then` of the run is `~` -/
+
+/-- The goal passes no argument: `args` of the jump of a `%next` goal and
+of the two jumps of a `%pick` goal is `~`. -/
+def ArgsNil : CGoal CSet → Prop
+  | CGoal.next _ th => th.args = []
+  | CGoal.pick z o => z.args = [] ∧ o.args = []
+  | CGoal.done => True
+
+theorem crx_copy_args {f : Next CSet} {s : Sure CSet} {g g' : Gen (TreapMap mugF)} {nex : Next CSet}
+    (h : copy f s g = some (nex, g')) : nex.th.args = [] := by
+  simp only [copy, copyLazy, cra_bind, cf_emit_g] at h
+  obtain ⟨o, g1, e1, a, g2, e2, e3⟩ := h
+  simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at e3
+  obtain ⟨rfl, rfl⟩ := e3
+  rfl
+
+theorem crx_bomb_args {miss : Option Nat} {g g' : Gen (TreapMap mugF)} {nex : Next CSet}
+    (h : bomb miss g = some (nex, g')) : nex.th.args = [] := by
+  simp only [bomb, cra_bind, cf_emit_g, pure, StateT.pure] at h
+  obtain ⟨o, g1, -, h⟩ := h
+  simp only [Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨rfl, -⟩ := h
+  rfl
+
+theorem crx_sn_args (gl : CGoal CSet) (ha : ArgsNil gl) (g : Gen (TreapMap mugF)) (nex : Next CSet)
+    (g1 : Gen (TreapMap mugF)) (e : simpleNext gl g = some (nex, g1)) : nex.th.args = [] := by
+  cases gl with
+  | next laz th =>
+    simp [simpleNext, pure, StateT.pure] at e
+    rw [← e.1]; exact ha
+  | done =>
+    simp [simpleNext, re, bind, StateT.bind, pure, StateT.pure, cd_emit_eq] at e
+    rcases e with ⟨rfl, -⟩
+    rfl
+  | pick z o =>
+    simp [simpleNext, re, bind, StateT.bind, pure, StateT.pure, cd_emit_eq] at e
+    rcases e with ⟨rfl, -⟩
+    rfl
+
+/-- **A run of the model from a goal with no argument returns a `next`
+with none**, for every pure nomm with no `%6`: the `next` comes from
+`+copy`, `+bomb` or `+simple-next`, which jump with no argument, or from a
+run on such a goal. -/
+theorem crx_run_args : ∀ (n : Nomm), n.pure = true → noSix n = true → ∀ (gl : CGoal CSet)
+    (g g' : Gen (TreapMap mugF)) (nex : Next CSet), run n gl g = some (nex, g') → ArgsNil gl → nex.th.args = []
+  | Nomm.cons p q, hpu, h6, gl, g, g', nex, h, ha => by
+    simp only [Nomm.pure, Bool.and_eq_true] at hpu
+    have hnext : ∀ s th g, run (Nomm.cons p q) (CGoal.next s th) g = some (nex, g') → nex.th.args = [] := by
+      intro s th g h
+      rw [crc_run_next p q hpu.1 hpu.2] at h
+      simp only [cra_bind] at h
+      obtain ⟨⟨hed, tel, o⟩, g1, e1, nex2, g2, e2, nex1, g3, e3, e4⟩ := h
+      exact crx_copy_args e4
+    cases gl with
+    | next s th => exact hnext s th g h
+    | done => rw [crc_run_done] at h; exact hnext _ _ _ h
+    | pick z o =>
+      rw [crc_run_pick p q hpu.1] at h
+      simp only [cra_bind] at h
+      obtain ⟨nex2, g2, e2, nex1, g3, e3, e4⟩ := h
+      exact crx_copy_args e4
+  | Nomm.n0 ax, _, _, gl, g, g', nex, h, ha => by
+    simp only [run] at h
+    split at h
+    · exact crx_bomb_args h
+    · rw [cra_bind] at h
+      obtain ⟨nex0, g1, e1, h⟩ := h
+      have h0 := crx_sn_args gl ha g nex0 g1 e1
+      split at h
+      · simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at h
+        obtain ⟨rfl, -⟩ := h; exact h0
+      · cases ef : «from» ax nex0.laz with
+        | none => simp [ef] at h
+        | some laz =>
+          simp [ef, pure, StateT.pure] at h
+          obtain ⟨rfl, -⟩ := h
+          exact h0
+  | Nomm.n1 k, _, _, gl, g, g', nex, h, ha => by
+    cases gl with
+    | done =>
+      simp only [run, cra_bind, pure, StateT.pure] at h
+      obtain ⟨r, g1, -, o, g2, -, h⟩ := h
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, -⟩ := h; rfl
+    | pick z o =>
+      simp only [run] at h
+      split at h
+      · simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at h
+        obtain ⟨rfl, -⟩ := h; exact ha.1
+      · split at h
+        · simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at h
+          obtain ⟨rfl, -⟩ := h; exact ha.2
+        · exact crx_bomb_args h
+    | next laz th =>
+      simp only [run, cra_bind, pure, StateT.pure] at h
+      obtain ⟨o, g1, -, h⟩ := h
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, -⟩ := h; rfl
+  | Nomm.n3 p, hpu, h6, gl, g, g', nex, h, ha => by
+    have ih := crx_run_args p hpu h6
+    cases gl with
+    | next laz th =>
+      simp only [run] at h
+      split at h
+      · exact ih _ _ _ _ h ha
+      · rw [cra_bind] at h
+        obtain ⟨a, g1, -, h⟩ := h
+        rcases a with _ | ⟨r, o⟩
+        · cases h
+        · simp only [cra_bind] at h
+          obtain ⟨⟨z, o'⟩, g2, -, r', g3, -, oc, g4, -, h⟩ := h
+          exact ih _ _ _ _ h rfl
+    | pick z o =>
+      simp only [run, cra_bind] at h
+      obtain ⟨r, g1, -, oc, g2, -, h⟩ := h
+      exact ih _ _ _ _ h rfl
+    | done =>
+      simp only [run, cra_bind] at h
+      obtain ⟨⟨o0, o1⟩, g1, -, r, g2, -, oc, g3, -, h⟩ := h
+      exact ih _ _ _ _ h rfl
+  | Nomm.n4 p, hpu, h6, gl, g, g', nex, h, ha => by
+    have ih := crx_run_args p hpu h6
+    cases gl with
+    | done =>
+      simp only [run, cra_bind] at h
+      obtain ⟨pro, g1, -, arg, g2, -, o, g3, -, h⟩ := h
+      exact ih _ _ _ _ h rfl
+    | pick z o =>
+      simp only [run, cra_bind] at h
+      obtain ⟨pro, g1, -, arg, g2, -, o', g3, -, h⟩ := h
+      exact ih _ _ _ _ h rfl
+    | next laz th =>
+      simp only [run, cra_bind] at h
+      obtain ⟨a, g1, -, ⟨pro, th'⟩, g2, -, arg, g3, -, o, g4, -, h⟩ := h
+      exact ih _ _ _ _ h rfl
+  | Nomm.n5 p q, hpu, h6, gl, g, g', nex, h, ha => by
+    simp only [Nomm.pure, Bool.and_eq_true] at hpu
+    rw [cr_run_n5_eq p q hpu.1] at h
+    simp only [cra_bind] at h
+    obtain ⟨o, g1, -, nexq, g2, e2, nexp, g3, e3, e4⟩ := h
+    exact crx_copy_args e4
+  | Nomm.n7 p q, hpu, h6, gl, g, g', nex, h, ha => by
+    simp only [Nomm.pure, Bool.and_eq_true] at hpu
+    simp only [noSix, Bool.and_eq_true] at h6
+    have ihp := crx_run_args p hpu.1 h6.1
+    have ihq := crx_run_args q hpu.2 h6.2
+    simp only [run, cra_bind] at h
+    obtain ⟨nex1, g1, e1, h⟩ := h
+    exact ihp _ _ _ _ h (ihq _ _ _ _ e1 ha)
+  | Nomm.n10 a v q, hpu, h6, gl, g, g', nex, h, ha => by
+    simp only [Nomm.pure, Bool.and_eq_true] at hpu
+    rw [cr_run_n10_eq a v q hpu.1 hpu.2] at h
+    simp only [cra_bind] at h
+    obtain ⟨nex0, g1, -, ⟨don, rec, o⟩, g2, e2, nexD, g3, e3, nexR, g4, e4, e5⟩ := h
+    exact crx_copy_args e5
+  | Nomm.n2 _ _ _, hpu, _, _, _, _, _, _, _ => by simp [Nomm.pure] at hpu
+  | Nomm.n6 _ _ _, _, h6, _, _, _, _, _, _ => by simp [noSix] at h6
+  | Nomm.n11s _ _ _, hpu, _, _, _, _, _, _, _ => by simp [Nomm.pure] at hpu
+  | Nomm.n11d _ _ _ _, hpu, _, _, _, _, _, _, _ => by simp [Nomm.pure] at hpu
+  | Nomm.n12 _ _, hpu, _, _, _, _, _, _, _ => by simp [Nomm.pure] at hpu
+  | Nomm.mean _ _ _ _ _, hpu, _, _, _, _, _, _, _ => by simp [Nomm.pure] at hpu
+
+/-- **`hargs` from the run**: on the fragment, the run for `[%done ~]`
+returns a `next` whose `args.then` is `~`. -/
+theorem args_frag (nm : Nomm) (hpu : nm.pure = true) (h6 : noSix nm = true) (nex : NextL CSet)
+    (g1 : Gen (TreapMap mugF))
+    (hrunL : runL nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF)) = some (nex, g1)) :
+    nex.th.args = [] := by
+  rw [show (CGoalL.done : CGoalL CSet) = CGoal.toL CGoal.done from rfl, runL_toL nm hpu h6] at hrunL
+  cases e : run (S := CSet) (Map := TreapMap mugF) nm CGoal.done gen0 with
+  | none => simp [e, Functor.map, StateT.map] at hrunL
+  | some q =>
+    obtain ⟨nex0, g0⟩ := q
+    simp [e, Functor.map, StateT.map] at hrunL
+    obtain ⟨rfl, rfl⟩ := hrunL
+    exact crx_run_args nm hpu h6 CGoal.done gen0 g0 nex0 e trivial
+
 /-! ## The gate on an SCC of one bell -/
 
 /-- **`+compile-scc-in` on an SCC of one bell `b` with no callee, not in
@@ -250,8 +432,8 @@ returns `[[[b st] ~ ~] cache']` with `st` the straight of `finishLF nm sur
 cape` (`sur` the shape `sccSur` of the run) and crashes when that is
 `none`; `cache'` has `nary` with `st` put at `b` (`putF`, the `+uni:by`),
 `inl` as `InlOK` says, and `sure` with `sur` put at `b` (`SURE'`).  The
-hypotheses on the model: the run succeeds with no argument in `args.then`,
-`+need-ord-alloc-regs` of `sur` succeeds, nothing is baked. -/
+hypotheses on the model: the run succeeds, `+need-ord-alloc-regs` of `sur`
+succeeds, nothing is baked. -/
 theorem csi_gate_scc_one_m (cape : Cape) (DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE : Noun)
     (hnary : getF mugF (C (C cape.toNoun DATA) FOL) NARY = some (A 0)) (hnmap : IsMap mugF NARY)
     (hcalls : NoSelfCall (C (C cape.toNoun DATA) FOL) CALLS)
@@ -259,7 +441,7 @@ theorem csi_gate_scc_one_m (cape : Cape) (DATA FOL CODE JETS CALLS JH NARY MONO 
     (hpu : nm.pure = true) (h6 : noSix nm = true) (ht : tenOk nm = true)
     (nex : NextL CSet) (g1 : Gen (TreapMap mugF))
     (hrunL : runL nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF)) = some (nex, g1))
-    (hargs : nex.th.args = []) (nedF : Need) (g2 : Gen (TreapMap mugF))
+    (nedF : Need) (g2 : Gen (TreapMap mugF))
     (hnoar : needOrdAllocRegs (sccSur nex cape) g1 = some (nedF, g2))
     (hb : NoBake nedF (Sock.mk cape DATA))
     (SURE' : Noun) (hput : putF mugF (C (C cape.toNoun DATA) FOL) (sccSur nex cape).toNoun SURE = some SURE') :
@@ -271,6 +453,7 @@ theorem csi_gate_scc_one_m (cape : Cape) (DATA FOL CODE JETS CALLS JH NARY MONO 
   have hcache : cacheN NARY MONO SCCS INL SURE = C NARY (C MONO (C SCCS (C INL SURE))) := rfl
   rw [hcache, csi_to_final _ _ _ _ _ _ hnary (csi_kids_noself _ CODE JETS CALLS JH _ hcalls) (ju_has_kids _)]
   obtain ⟨hlz, hsur⟩ := scc_sur_frag nm hpu h6 nex g1 hrunL cape
+  have hargs := args_frag nm hpu h6 nex g1 hrunL
   have hsc := hsc_of_sure nex nex.laz.sure hlz cape (sccSur nex cape) hsur
   have hi := inl_gate (C (C cape.toNoun DATA) FOL) CODE (C JETS CALLS) JH NARY MONO SCCS INL SURE INL' nm hpu hinl
   obtain ⟨WAS, hwas, hw⟩ := getF_of_putF _ _ SURE hput
@@ -304,7 +487,7 @@ theorem cu_gate_scc_one_m (cape : Cape) (DATA FOL CODE JETS CALLS JH NARY MONO S
     (hpu : nm.pure = true) (h6 : noSix nm = true) (ht : tenOk nm = true)
     (nex : NextL CSet) (g1 : Gen (TreapMap mugF))
     (hrunL : runL nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF)) = some (nex, g1))
-    (hargs : nex.th.args = []) (nedF : Need) (g2 : Gen (TreapMap mugF))
+    (nedF : Need) (g2 : Gen (TreapMap mugF))
     (hnoar : needOrdAllocRegs (sccSur nex cape) g1 = some (nedF, g2))
     (hb : NoBake nedF (Sock.mk cape DATA))
     (SURE' : Noun) (hput : putF mugF (C (C cape.toNoun DATA) FOL) (sccSur nex cape).toNoun SURE = some SURE')
@@ -318,7 +501,7 @@ theorem cu_gate_scc_one_m (cape : Cape) (DATA FOL CODE JETS CALLS JH NARY MONO S
               C (C st'.toNoun (C (C (C (C cape.toNoun DATA) FOL) st.toNoun) (C (A 0) (A 0))))
                 (cacheN NARYU MONO SCCS INL' SURE') := by
   have hcsi := csi_gate_scc_one_m cape DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE hnary hnmap hcalls nm INL'
-    hinl hpu h6 ht nex g1 hrunL hargs nedF g2 hnoar hb SURE' hput
+    hinl hpu h6 ht nex g1 hrunL nedF g2 hnoar hb SURE' hput
   rw [← cu_csi_eq FUNC] at hcsi
   cases e : finishLF (S := CSet) (Map := TreapMap mugF) nm (sccSur nex cape) cape (fun n => (n, [])) with
   | none =>
@@ -404,7 +587,7 @@ noncomputable def finishSccOne (nm : Nomm) (cape : Cape) : Option (Straight (Tre
 /-- Nothing is baked whenever the final pass gets to `+bake-need`. -/
 def NoBakeOne (nm : Nomm) (cape : Cape) (DATA : Noun) : Prop :=
   ∀ nex g1 nedF g2, runL nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF)) = some (nex, g1) →
-    nex.th.args = [] → needOrdAllocRegs (sccSur nex cape) g1 = some (nedF, g2) → NoBake nedF (Sock.mk cape DATA)
+    needOrdAllocRegs (sccSur nex cape) g1 = some (nedF, g2) → NoBake nedF (Sock.mk cape DATA)
 
 /-- **`+compile-scc-in` on an SCC of one bell, with the model hypotheses
 folded in**: on the fragment (`nm` pure, `%6`-free, `tenOk`) and when
@@ -455,7 +638,7 @@ theorem csi_gate_scc_one_f (cape : Cape) (DATA FOL CODE JETS CALLS JH NARY MONO 
         obtain ⟨nedF, g2⟩ := q
         obtain ⟨SURE', hp, -, -⟩ := putF_spec mugF SURE (C (C cape.toNoun DATA) FOL) (sccSur nex cape).toNoun hsmap
         rw [csi_gate_scc_one_m cape DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE hnary hnmap hcalls nm INL'
-          hinl hpu h6 ht nex g1 hr ha nedF g2 hn (hbake nex g1 nedF g2 hr ha hn) SURE' hp]
+          hinl hpu h6 ht nex g1 hr nedF g2 hn (hbake nex g1 nedF g2 hr hn) SURE' hp]
         cases finishLF (S := CSet) (Map := TreapMap mugF) nm (sccSur nex cape) cape (fun n => (n, [])) with
         | none => rfl
         | some st =>

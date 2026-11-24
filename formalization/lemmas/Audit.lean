@@ -908,3 +908,8 @@ open Formalization
 #print axioms Compiler.noSelfCall_of_noCalls
 #print axioms Compiler.isSet_setOne
 #print axioms Compiler.csi_kids_noself
+#print axioms Compiler.crx_copy_args
+#print axioms Compiler.crx_bomb_args
+#print axioms Compiler.crx_sn_args
+#print axioms Compiler.crx_run_args
+#print axioms Compiler.args_frag
