@@ -8937,25 +8937,33 @@
   ::  drop since the stack trace would change.
   ::
   =/  unsafe=(set key)
-    =|  [unsafe=(set key) out=(map @uwoo (set key))]
+    ::  the open hints are counted: two nested hints can have one key (the
+    ::  same clue register after +alias), and the epilogue of the inner one
+    ::  must not close the outer one
+    ::
+    =|  [unsafe=(set key) out=(map @uwoo (map key @ud))]
     |-  ^-  (set key)
     ?~  topo  unsafe
     =/  b  (~(got by blocks) i.topo)
-    =/  open=(set key)
+    =/  open=(map key @ud)
       %+  roll  (~(get ja rev) i.topo)
-      |=  [p=@uwoo acc=(set key)]
-      (~(uni in acc) (~(get ju out) p))
+      |=  [p=@uwoo acc=(map key @ud)]
+      %-  (~(uno by acc) (~(gut by out) p *(map key @ud)))
+      |=([k=key v=@ud w=@ud] (max v w))
     ::
     =/  body  body.b
     |-  ^-  (set key)
     ?^  body
       =/  op  i.body
       ?^  hint=(trace op)
-        ?:  open.u.hint  $(body t.body, open (~(put in open) key.u.hint))
-        $(body t.body, open (~(del in open) key.u.hint))
+        =/  n=@ud  (~(gut by open) key.u.hint 0)
+        ?:  open.u.hint  $(body t.body, open (~(put by open) key.u.hint +(n)))
+        ?:  (lte n 1)  $(body t.body, open (~(del by open) key.u.hint))
+        $(body t.body, open (~(put by open) key.u.hint (dec n)))
       ?:  ?=(pole-not-crashing -.op)  $(body t.body)
-      $(body t.body, unsafe (~(uni in unsafe) open))
-    =?  unsafe  !?=(?(%clq %eqq %brz %hop) -.fin.b)  (~(uni in unsafe) open)
+      $(body t.body, unsafe (~(uni in unsafe) ~(key by open)))
+    =?  unsafe  !?=(?(%clq %eqq %brz %hop) -.fin.b)
+      (~(uni in unsafe) ~(key by open))
     ^$(topo t.topo, out (~(put by out) i.topo open))
   ::
   ::  An epilogue that no prologue has the key of stays: that of a trap
