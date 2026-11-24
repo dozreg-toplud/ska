@@ -468,5 +468,6 @@ open Formalization
 #print axioms Compiler.cull_run
 #print axioms Compiler.cull_run_none
 #print axioms Compiler.cull_gate
-#print axioms Compiler.msg_ca_bat_at
+#print axioms Compiler.msg_ca_body_at
+#print axioms Compiler.msg_ca_arm_at
 #print axioms Compiler.msg_ca_gate

@@ -19,9 +19,12 @@ context: the gate reads nothing from its context.  Because of `=*  msg  .`
 each recursion pushes the gate itself (`[8 [0 1] ...]`) and slams it with the
 sample edited, so the recursion runs the same battery on the same context.
 
-The generator names no noun of `+msg-ca`, so its battery is defined here
-(`msgCaBat`, the noun at axis `12023` of `ana`, `msg_ca_bat_at`, checked by
-the kernel); it is wanted as `msg_ca.*` at the next regeneration.
+The generator names no noun of `+msg-ca`, so its nouns are defined here and
+tied to the pill by the kernel: the arm `msgCaArm` is arm `187` of `ana`
+(`msg_ca_arm_at`), its battery `msgCaBat` is `[7 [0 1] msgCaBody]` (at axis
+`3005` of `ana`), and the body `msgCaBody` is at axis `12023`
+(`msg_ca_body_at`).  They are wanted as `msg_ca.*` at the next
+regeneration.
 -/
 
 namespace Formalization
@@ -41,14 +44,28 @@ def msgCaRec (x y : Nat) : Noun :=
   C (A 8) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10)
     (C (C (A 6) (C (C (A 0) (A x)) (C (A 0) (A y)))) (C (A 0) (A 2)))))))
 
-/-- The battery of the gate `+msg-ca`. -/
-def msgCaBat : Noun :=
+/-- The body of the battery of the gate `+msg-ca`, after `=*  msg  .`. -/
+def msgCaBody : Noun :=
   C (A 6) (C (C (A 5) (C (C (A 0) (A 12)) (C (A 0) (A 13))))
     (C (C (A 0) (A 12))
       (C (A 6) (C msgCaTest (C (C (A 1) (A 0)) (C (msgCaRec 56 58) (msgCaRec 57 59)))))))
 
-/-- The battery is the pill's: the noun at axis `12023` of `ana`. -/
-theorem msg_ca_bat_at : slot? 12023 ana = some msgCaBat := by kernel_rfl
+/-- The battery of the gate `+msg-ca`: `[7 [0 1] body]`. -/
+def msgCaBat : Noun := C (A 7) (C (C (A 0) (A 1)) msgCaBody)
+
+/-- The arm `+msg-ca` of `ana`: the gate with the sample `[| |]`. -/
+def msgCaArm : Noun := C (A 8) (C (C (A 1) (C (A 1) (A 1))) (C (C (A 1) msgCaBat) (C (A 0) (A 1))))
+
+/-- The body is the pill's: the noun at axis `12023` of `ana`. -/
+theorem msg_ca_body_at : slot? 12023 ana = some msgCaBody := by kernel_rfl
+
+/-- The arm is the pill's: arm `187` of `ana`, whose battery is at axis
+`3005` of `ana`. -/
+theorem msg_ca_arm_at : slot? 187 ana = some msgCaArm := by kernel_rfl
+
+@[nock_exec] theorem msg_ca_arm (c : Noun) :
+    nock c msgCaArm = some (C msgCaBat (C (C (A 1) (A 1)) c)) := by
+  unfold msgCaArm; simp only [nock_exec]
 
 theorem cape_toNoun_ne {a b : Cape} (h : a ≠ b) : a.toNoun ≠ b.toNoun :=
   fun e => h (SkaModel.Ana.Cape.toNoun_inj a b e)
@@ -60,31 +77,31 @@ theorem msg_ca_gate (ctx : Noun) (a : Cape) : ∀ b : Cape,
   induction a with
   | yes =>
     intro b
-    nock_open msgCaBat
+    nock_open msgCaBat; simp only [nock_exec]; nock_open msgCaBody
     cases b <;> simp [nock_exec, msgCaTest, msgCaAtom, msgCa, Cape.toNoun, eqCode]
   | no =>
     intro b
-    nock_open msgCaBat
+    nock_open msgCaBat; simp only [nock_exec]; nock_open msgCaBody
     cases b <;> simp [nock_exec, msgCaTest, msgCaAtom, msgCa, Cape.toNoun, eqCode]
   | cell ah aT ihh iht =>
     intro b
     cases b with
     | yes =>
-      nock_open msgCaBat
+      nock_open msgCaBat; simp only [nock_exec]; nock_open msgCaBody
       simp [nock_exec, msgCaTest, msgCaAtom, msgCa, Cape.toNoun, eqCode]
     | no =>
-      nock_open msgCaBat
+      nock_open msgCaBat; simp only [nock_exec]; nock_open msgCaBody
       simp [nock_exec, msgCaTest, msgCaAtom, msgCa, Cape.toNoun, eqCode]
     | cell bh bT =>
       have h1 := ihh bh
       have h2 := iht bT
       by_cases e : Cape.cell ah aT = Cape.cell bh bT
       · cases e
-        nock_open msgCaBat
+        nock_open msgCaBat; simp only [nock_exec]; nock_open msgCaBody
         simp [nock_exec, msgCa, eqCode]
       · have e' := cape_toNoun_ne e
         simp only [Cape.toNoun] at e'
-        nock_open msgCaBat
+        nock_open msgCaBat; simp only [nock_exec]; nock_open msgCaBody
         rw [msgCa, if_neg e]
         simp [nock_exec, msgCaTest, msgCaAtom, msgCaRec, eqCode, Cape.toNoun, e', h1, h2]
 
