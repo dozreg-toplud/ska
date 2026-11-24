@@ -368,3 +368,8 @@ open Formalization.SkaModel.Comp
 #print axioms regionProg_z
 #print axioms regionProg_out
 #print axioms run_jump
+#print axioms execBlob_args
+#print axioms leaf_exit
+#print axioms holdsN_pointwise
+#print axioms leaf_sem
+#print axioms leaf_keep
