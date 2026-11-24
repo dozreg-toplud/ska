@@ -733,6 +733,117 @@ theorem akx_exec {pick : List Nat → Nat} {st st2 : ABody} {op op' : Pole}
 
 end
 
+/-! ## A dropped op before goes on -/
+
+section
+variable {Map : Type → Type} [HoonMap Map] {σ : Type}
+
+/-- **A dropped op before goes on** (`%0`, the trace and state unchanged):
+its real reads hold values (`ReadsOK`), a `%mov` finds its source
+(`LocalOK`), and the fact that justified the drop holds (`AOK.info`): a
+dropped `%inc` reads an atom, a dropped `%hed`, `%tal` or `%cel` a cell, a
+dropped `%lob` a loobean. -/
+theorem akd_exec {pick : List Nat → Nat} {st st2 : ABody} {op : Pole}
+    (h : aliasOp pick st op = some (none, st2)) (lib : Lib) (O : Oracle σ) (gul : Noun) (s : σ)
+    {regs : Map (Option Noun)} (t : Trace)
+    (hinfo : ∀ r i v, st.loc r = some i → read r regs = some v → InfoHolds (fun x => read x regs) i v)
+    (hold : ∀ x ∈ aliasReads op, read (st.old x) regs = read x regs)
+    (hval : ∀ x ∈ Path.poleReads gul op, ∃ v, read x regs = some v)
+    (hmov : ∀ a d, op = Pole.mov a d → (move a d regs).isSome) :
+    ∃ R2, execPole lib O gul s op regs t = some (Tone.zero (A 0), R2, t, s) := by
+  cases op with
+  | imm n d => exact ⟨_, rfl⟩
+  | mov a d =>
+    obtain ⟨R2, hR2⟩ := Option.isSome_iff_exists.mp (hmov a d rfl)
+    exact ⟨R2, by simp [execPole, localPole, hR2]⟩
+  | inc a d =>
+    simp only [aliasOp] at h
+    obtain ⟨ai, hai, h⟩ := Option.bind_eq_some_iff.mp h
+    split at h
+    · rename_i x hx
+      obtain ⟨v, hv⟩ := hval a (by simp [Path.poleReads])
+      have e := hold a (akx_reads_dst (l := [a]) rfl rfl List.mem_cons_self)
+      obtain ⟨n, rfl, -⟩ := (hinfo _ ai v hai (by rw [e, hv])).2.2.2.2.2.2.2 x hx
+      exact ⟨store d (A (n + 1)) regs, by simp [execPole, localPole, hv]⟩
+    · obtain ⟨_, _, h⟩ := Option.map_eq_some_iff.mp h; cases h
+  | con h0 t0 d =>
+    obtain ⟨x, hx⟩ := hval h0 (by simp [Path.poleReads])
+    obtain ⟨y, hy⟩ := hval t0 (by simp [Path.poleReads])
+    exact ⟨store d (C x y) regs, by simp [execPole, localPole, hx, hy]⟩
+  | hed a d =>
+    simp only [aliasOp] at h
+    obtain ⟨ai, hai, h⟩ := Option.bind_eq_some_iff.mp h
+    split at h
+    · rename_i x hx
+      obtain ⟨v, hv⟩ := hval a (by simp [Path.poleReads])
+      have e := hold a (akx_reads_dst (l := [a]) rfl rfl List.mem_cons_self)
+      obtain ⟨p, q, rfl, -⟩ := (hinfo _ ai v hai (by rw [e, hv])).2.2.2.1 x hx
+      exact ⟨store d p regs, by simp [execPole, localPole, hv]⟩
+    · obtain ⟨_, _, h⟩ := Option.map_eq_some_iff.mp h; cases h
+  | tal a d =>
+    simp only [aliasOp] at h
+    obtain ⟨ai, hai, h⟩ := Option.bind_eq_some_iff.mp h
+    split at h
+    · rename_i x hx
+      obtain ⟨v, hv⟩ := hval a (by simp [Path.poleReads])
+      have e := hold a (akx_reads_dst (l := [a]) rfl rfl List.mem_cons_self)
+      obtain ⟨p, q, rfl, -⟩ := (hinfo _ ai v hai (by rw [e, hv])).2.2.2.2.1 x hx
+      exact ⟨store d q regs, by simp [execPole, localPole, hv]⟩
+    · obtain ⟨_, _, h⟩ := Option.map_eq_some_iff.mp h; cases h
+  | cel a =>
+    simp only [aliasOp] at h
+    obtain ⟨ai, hai, h⟩ := Option.bind_eq_some_iff.mp h
+    split at h
+    · rename_i hc
+      obtain ⟨v, hv⟩ := hval a (by simp [Path.poleReads])
+      have e := hold a (akx_reads_none rfl List.mem_cons_self)
+      obtain ⟨p, q, rfl⟩ := (hinfo _ ai v hai (by rw [e, hv])).1 hc
+      exact ⟨regs, by simp [execPole, localPole, hv]⟩
+    · obtain ⟨_, _, h⟩ := Option.map_eq_some_iff.mp h; cases h
+  | lob a =>
+    simp only [aliasOp] at h
+    obtain ⟨ai, hai, h⟩ := Option.bind_eq_some_iff.mp h
+    split at h
+    · rename_i hc
+      obtain ⟨v, hv⟩ := hval a (by simp [Path.poleReads])
+      have e := hold a (akx_reads_none rfl List.mem_cons_self)
+      have hI := hinfo _ ai v hai (by rw [e, hv])
+      have hl : v = Noun.atom 0 ∨ v = Noun.atom 1 := by
+        rcases Bool.or_eq_true_iff.mp hc with hc | hc
+        · exact hI.2.1 hc
+        · unfold InfoReg.loobImm at hc
+          split at hc
+          · exact Or.inl (hI.2.2.1 _ (by assumption))
+          · exact Or.inr (hI.2.2.1 _ (by assumption))
+          · cases hc
+      refine ⟨regs, ?_⟩
+      simp only [execPole, localPole, hv, Option.bind_some]
+      rw [if_pos (by rcases hl with rfl | rfl <;> simp [A])]
+      rfl
+    · obtain ⟨_, _, h⟩ := Option.map_eq_some_iff.mp h; cases h
+  | equ l r =>
+    obtain ⟨x, hx⟩ := hval l (by simp [Path.poleReads])
+    obtain ⟨y, hy⟩ := hval r (by simp [Path.poleReads])
+    exact ⟨regs, by simp [execPole, localPole, hx, hy]⟩
+  | hsp => simp [aliasOp] at h
+  | hse => simp [aliasOp] at h
+  | hdp => simp [aliasOp] at h
+  | hde => simp [aliasOp] at h
+  | hmp => simp [aliasOp] at h
+  | hme => simp [aliasOp] at h
+  | hcp => simp [aliasOp] at h
+  | hce => simp [aliasOp] at h
+  | spy => simp [aliasOp] at h
+  | nok => simp [aliasOp] at h
+  | cal => simp [aliasOp] at h
+  | caf => simp [aliasOp] at h
+  | cam => simp [aliasOp] at h
+  | csl => simp [aliasOp] at h
+  | csf => simp [aliasOp] at h
+  | csm => simp [aliasOp] at h
+
+end
+
 end Opt
 end SkaModel
 end Formalization
