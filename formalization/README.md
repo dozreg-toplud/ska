@@ -248,6 +248,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/OptLinkHops.lean` | `+remove-hops` (arm `4` of `optC`): where `removeHops fuel` returns, the gate returns the same flag and blocks (`rh_gate`; `rh_segt` the segment, `rh_trap` the chain, by induction on the fuel). |
 | `Compiler/OptLinkMiddle.lean`, `Compiler/OptLinkMiddleGate.lean`, `Compiler/OptLinkMiddleRd.lean` | `+remove-empty-middle` (arm `2940` of `optC`): `rewrite-jump` and `rewrite-hop` of its `\|^` core where `rewriteJump` and `rewriteHop` return (`rj_gate`, `rhop_gate`, the latter given `RdOK` of `readers`: at each parameter of an empty block that ends in a hop, a set of atoms with the members of `readersOf`), the trap of `sub` against `subMap` (`rem_subt`), the gate `pass` (`rem_pass`), the bunt of `pole` made by its mold (`pole_bunt'`, a kernel fact); the gate of the `+rep:by` of `$` (`rem_step`); `readers` (`rd_readers`: `+any:by` over the treap, `any_gate_tr`, then the `+rep:by` of `+put:ju`, `rd_rep`, against `JugRel`); the whole pass where `removeEmptyMiddle fuel` returns, on blocks with no `%lti` (`rem_gate`). |
 | `Compiler/OptLinkNoLti.lean` | The passes before `+switch-chains` keep `NoLti` on any map instance: `+remove-useless-branching` (`noLti_rub`), `+remove-empty-middle` (`noLti_mid`), `+remove-hops` (`noLti_hops`), `+remove-dead-code` (`noLti_dead`). |
+| `Compiler/OptLinkSy.lean` | `+sy` (arm `42` of `layer2`, `si:nl`): the arm builds the gate `si` in the core `nl` (`sy_arm`, from the kernel facts `sy_at`, `nl_at`, `nl_si`), and the gate on a list of atoms returns a set of atoms with its members (`si_gate`, `+gas:in` from `~`). |
 | `Compiler/AuditOptLink.lean` | `#print axioms` of the main theorems of `Compiler/OptLink*.lean`; `OptLinkBase.lean` also has `+rep` forward (`rep_gate_fwd`) and against a relation (`rep_gate_rel`). |
 | `Ska/Types.lean` | Models of the IR types (`Bell`, `Sock`, `Cape`, `Pole`, `Termin`, `Blob`, `Straight`, `Tone`, ...), each with its Hoon noun layout. |
 | `Ska/Mink.lean`, `Ska/MinkTrace.lean` | Models of `+mink`, `+mook` and `+mock`; what Nock computes, `+mink` returns; `EvalH.toEvalA`. |
@@ -1660,7 +1661,7 @@ import only its theorems.  So:
    | `+trim-trace-hints` | `optC`, `23` | 1135 | `+get:ja`, `+gut:by`, `+uno:by` (arm `4` of `+by`, not named by the generator, not linked), `+max` (`max_gate`), `+got:by`, `+put:by`, `+del:by` (`del_gate`), `+lte`, `+dec`, `+key:by` (`key_by`), `+uni:in` (`uni_in_gate`), `+has:in`, `+rep:by`, `+roll`, `+put:in`, `+run:by`, `+skip` (`skip_gate`), the bunt of `pole` | `trimTraceHints` (`Ska/OptTrim.lean`) | the counts of open hints are a map of keys in the Hoon | no |
    | `+remove-dead-code` | `optC`, `724` | 295 | `+got:by`, `+flop`, `+gas:in` (`gas_in_loop`), `+has:in`, `+put:by`, `+get-regs`, `+get-reg-safe-assignment` | `removeDeadCode` (`Ska/OptDead.lean`) | `saw` is a list; it runs `+get-regs` on terminators, so a link takes blocks with no `%lti` | `rdc_gate` (`OptLinkDead.lean`) |
    | `+switch-chains` | `optC`, `182` | 2916 | `+bb-topo`, `+rev-cfg`, `+get-regs`, `+rep:by`, `+got:by`, `+gut:by`, `+put:by`, `+del:by`, `+key:by`, `+gas:in`, `+has:in`, `+put:in`, `+tap:in`, `+get:ja`, `+roll`, `+turn`, `+weld`, `+lent`, `+scag`, `+slag` (`scag_gate`, `slag_gate`), `+rear`, `+snip` (`rear_gate`, `snip_gate`), `+sort` (`sort_gate`, against `qsort`), `+skip`, `+bex` (`bex_gate`), `+lth`, `+gte`, `+div`, `+mul`, `+sub` (`Hoon/Arith.lean`), `+sy` | `switchChains fuel` (`Ska/OptSwitch.lean`) | fuel bounds its loops | no |
-   | `+optimize-once` | `optC`, `180` | 553 | `+bb-topo`, `+rev-cfg`, `+sy` (arm `42` of `layer2`, not linked), the three structural passes, `+alias`, `+skim` (`skim_gate`), `+has:by` (`has_gate`), `+trim-trace-hints`, `+remove-dead-code`, `+flop` | `optimizeOnce fuel P` (`Ska/OptDriver.lean`) | fuel bounds the structural loop; `+alias`, `+trim-trace-hints`, `+switch-chains` are the fields of `P`; `(sy topo)` is the list `topo` | no |
+   | `+optimize-once` | `optC`, `180` | 553 | `+bb-topo`, `+rev-cfg`, `+sy` (arm `42` of `layer2`, `si_gate`), the three structural passes, `+alias`, `+skim` (`skim_gate`), `+has:by` (`has_gate`), `+trim-trace-hints`, `+remove-dead-code`, `+flop` | `optimizeOnce fuel P` (`Ska/OptDriver.lean`) | fuel bounds the structural loop; `+alias`, `+trim-trace-hints`, `+switch-chains` are the fields of `P`; `(sy topo)` is the list `topo` | no |
    | `+optimize` | `optC`, `2941` | 91 | `+optimize-once`, `+switch-chains` | `optimizeF fuel P` | fuel bounds the loop | no |
 
    `+get-ipdom` and `+get-idom` (axes `10` and `44` of `optC`) are not run by
@@ -1691,7 +1692,8 @@ import only its theorems.  So:
 
    Left, in the order to do it: (1) `+sy` (`si:nl`, arm `10` of the core at
    arm `175` of `layer2`, `+gas:in` from `~` once its `^+` cast is
-   compiled), to give `rev_gate` its set in `+optimize-once`; (2) `NoLti`
+   compiled), to give `rev_gate` its set in `+optimize-once`: done,
+   `si_gate` (`Compiler/OptLinkSy.lean`); (2) `NoLti`
    kept by the four structural passes and `+remove-dead-code` (model-level
    lemmas, no Nock: done, `Compiler/OptLinkNoLti.lean`); (3) `+optimize-once` against `optimizeOnce fuel P` with
    the links of `+alias` and `+trim-trace-hints` as hypotheses on `P`, its
