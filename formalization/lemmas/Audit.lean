@@ -119,6 +119,7 @@ import lemmas.Compiler.CompMemOld
 import lemmas.Compiler.CompNoNN
 import lemmas.Compiler.CompRunCall
 import lemmas.Compiler.CompSccCall
+import lemmas.Compiler.CompSccCallGate
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -971,3 +972,15 @@ open Formalization
 #print axioms Compiler.inl_trap_ind
 #print axioms Compiler.inl_gate_miss_ind
 #print axioms Compiler.inl_gate_ind
+#print axioms Compiler.cu_trap_c
+#print axioms Compiler.cu_gate_c
+#print axioms Compiler.finishLFC_tail
+#print axioms Compiler.fin_gate_finishLF_c
+#print axioms Compiler.mem_to_finish_c
+#print axioms Compiler.mem_gate_c
+#print axioms Compiler.csi_gate_one_c
+#print axioms Compiler.csi_gate_scc_one_m_c
+#print axioms Compiler.mem_gate_none_c
+#print axioms Compiler.csi_gate_scc_one_f_c
+#print axioms Compiler.cu_gate_scc_one_f_c
+#print axioms Compiler.noBakeOneC_no
