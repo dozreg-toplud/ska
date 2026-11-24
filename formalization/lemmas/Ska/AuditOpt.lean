@@ -41,6 +41,7 @@ import lemmas.Ska.OptAliasBodySSA
 import lemmas.Ska.OptAliasRev
 import lemmas.Ska.OptAliasWalk
 import lemmas.Ska.OptAliasStart
+import lemmas.Ska.OptAliasFin
 
 /-! Axioms of the theorems about `+optimize`. -/
 
@@ -248,3 +249,8 @@ open Formalization.SkaModel.Opt
 #print axioms ast_entry
 #print axioms ast_pars
 #print axioms ast_param_names
+#print axioms afn_jump
+#print axioms afn_goesTo
+#print axioms afn_end
+#print axioms afn_endOf
+#print axioms afn_taken
