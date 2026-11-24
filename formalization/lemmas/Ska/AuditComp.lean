@@ -28,6 +28,7 @@ import lemmas.Ska.CompFootCons
 import lemmas.Ska.CompFootTen
 import lemmas.Ska.CompFootX
 import lemmas.Ska.CompLeafKeep
+import lemmas.Ska.CompLeafRel
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -368,3 +369,10 @@ open Formalization.SkaModel.Comp
 #print axioms regionProg_z
 #print axioms regionProg_out
 #print axioms run_jump
+#print axioms execBlob_args
+#print axioms leaf_exit
+#print axioms holdsN_pointwise
+#print axioms leaf_sem
+#print axioms leaf_keep
+#print axioms runOKP_frag_semR
+#print axioms runOKN_frag_semR
