@@ -73,6 +73,7 @@ import lemmas.Compiler.CompDoor
 import lemmas.Compiler.CompSet
 import lemmas.Compiler.CompFrom
 import lemmas.Compiler.CompSplit
+import lemmas.Compiler.CompInto
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -574,3 +575,13 @@ open Formalization
 #print axioms Compiler.ss_gate
 #print axioms Compiler.ss_splitLok
 #print axioms Compiler.comp_split_sure
+#print axioms Compiler.csp_loop
+#print axioms Compiler.comp_split
+#print axioms Compiler.gep_gate
+#print axioms Compiler.cn_gate
+#print axioms Compiler.inn_loop
+#print axioms Compiler.comp_into_need
+#print axioms Compiler.is_gate
+#print axioms Compiler.comp_into_sure
+#print axioms Compiler.cit_loop
+#print axioms Compiler.comp_into

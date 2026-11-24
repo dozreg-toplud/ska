@@ -135,3 +135,59 @@ theorem comp_split_sure (hc : CompIn ctx) (g : Gen (TreapMap mugF)) (sur : Sure 
     rw [e] at hsn
     simp [nock_exec, splitSure, hsl, e, hc, in_arm, in.arm_at, in.rep.arm_at, rep_arm, hrep,
       comp_split_need_at, comp_split_need_arm, hsn, Sure.toNoun]
+
+/-! ## `+split` -/
+
+/-- The arm `split-sure` builds its gate. -/
+theorem comp_split_sure_arm (d : Noun) : nock d comp.split_sure.arm =
+    some (C comp.split_sure.battery (C (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (A 0)) d)) := by
+  nock_open comp.split_sure.arm; simp only [nock_exec]
+
+variable {x} in
+/-- The loop `split-loop` of `+split` on a fork-free lazy need `[sure ~ ~]`:
+`+split-sure`, then the test `&(?=(~ fork.laz) ?=(~ bond.laz))`, which holds,
+so the loop returns `[[sure-h ~ ~] [sure-t ~ ~]]` (no `spin-split`, no
+`+lazy-prune`).  The loop reads the door at axis `63` of its subject. -/
+theorem csp_loop (hc : CompIn ctx) (g : Gen (TreapMap mugF)) (sur : Sure CSet) (o : Nat)
+    (L B N : Noun) (h0 : ∀ y ∈ HoonSet.toList sur.lok, y ≠ 0) :
+    nock (C L (C (lazyNoun sur) (C (A o) (C B (C N (compCore g x ctx)))))) comp.split.loop
+      = (splitSure sur o g).map fun p => C (C (lazyNoun p.1.1) (lazyNoun p.1.2)) (genNoun p.2 x) := by
+  have hss := comp_split_sure (x := x) hc g sur o h0
+  nock_open comp.split.loop
+  cases e : splitSure sur o g with
+  | none =>
+    rw [e] at hss
+    simp [nock_exec, lazyNoun, comp_split_sure_arm, hss]
+  | some p =>
+    obtain ⟨⟨sh, st⟩, g'⟩ := p
+    rw [e] at hss
+    simp [nock_exec, lazyNoun, comp_split_sure_arm, hss]
+
+variable {x} in
+/-- `+split` on a `next` whose lazy need is fork-free (`[sure ~ ~]`, the noun
+of `Next.goal`): `+emit` of `[~ ~ %hop then.nex]`, then the loop on the new
+state, with no look at axis `0`.  It returns `[[sure-h ~ ~] [sure-t ~ ~] o]`. -/
+theorem comp_split (hc : CompIn ctx) (g : Gen (TreapMap mugF)) (nex : Next CSet)
+    (h0 : ∀ y ∈ HoonSet.toList nex.laz.lok, y ≠ 0) :
+    nock (C comp.split.battery (C nex.goal.toNoun (compCore g x ctx))) comp.split.battery
+      = (split nex g).map fun p =>
+          C (C (lazyNoun p.1.1) (C (lazyNoun p.1.2.1) (A p.1.2.2))) (genNoun p.2 x) := by
+  obtain ⟨laz, th⟩ := nex
+  have he := comp_emit x hc g ⟨[], [], Termin.hop th⟩
+  simp only [Blob.toNoun, listNoun, Termin.toNoun, Tag.hop] at he
+  rw [cd_emit_eq] at he
+  generalize hg1 : (if g.drop = true then { g with bo := g.bo + 1 }
+      else { g with bo := g.bo + 1, blocks := HoonMap.put g.blocks g.bo ⟨[], [], Termin.hop th⟩ })
+      = g1 at he
+  have hl := fun L B N => csp_loop (x := x) hc g1 laz g.bo L B N h0
+  simp only [Next.goal, CGoal.toNoun]
+  nock_open comp.split.battery
+  cases e : splitSure laz g.bo g1 with
+  | none =>
+    rw [e] at hl
+    simp [nock_exec, comp_emit_arm, he, hl, Comp.split, cd_emit_eq, hg1, bind, StateT.bind, e]
+  | some p =>
+    obtain ⟨⟨sh, st⟩, g2⟩ := p
+    rw [e] at hl
+    simp [nock_exec, comp_emit_arm, he, hl, Comp.split, cd_emit_eq, hg1, bind, StateT.bind, e, pure,
+      StateT.pure]
