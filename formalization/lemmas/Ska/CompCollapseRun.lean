@@ -562,6 +562,64 @@ theorem aboveX_n0 {axe : Nat} (ha : 2 ≤ axe) : AboveX S Map (Nomm.n0 axe) := b
   obtain ⟨-, rfl⟩ := e
   omega
 
+/-- **`[1 k]` meets `AboveX`**: `+mede` emits one block, `[imm k a]` with a
+hop to the goal's jump, which has no arguments. -/
+theorem aboveX_n1 {k : Noun} : AboveX S Map (Nomm.n1 k) := by
+  intro a th region g g' nex h _ ea _ _ d0 _ _ _ _ o b l u hb
+  have e1 : (runL (Nomm.n1 k) (CGoalL.next (ofSure (lazyReg a : Sure S)) th) region : CM Map (NextL S)) = (do
+      let o ← medeL th k (ofSure (lazyReg a : Sure S))
+      pure ⟨ofSure Sure.bunt, jmp0 o⟩) := by
+    conv => lhs; unfold runL
+  rw [e1] at h
+  obtain ⟨o', g1, h1, h2⟩ := bind_some h
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+  obtain ⟨-, rfl⟩ := h2
+  unfold medeL at h1
+  obtain ⟨o1, gE, hE, h1⟩ := bind_some h1
+  rw [emit_apply] at hE
+  simp only [Option.some.injEq, Prod.mk.injEq] at hE
+  obtain ⟨rfl, rfl⟩ := hE
+  have dE : (g.emitted ⟨[], [], Termin.hop th⟩).drop = false := d0
+  simp only [bind_apply, get_apply, Option.bind_some, dE, Bool.false_eq_true, if_false] at h1
+  obtain ⟨⟨u1, gW⟩, hW, h3⟩ := Option.bind_eq_some_iff.mp h1
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h3
+  obtain ⟨-, rfl⟩ := h3
+  unfold walkLazy at hW
+  obtain ⟨u2, gA, hA, hr⟩ := bind_some hW
+  have hr' : some ((), gA) = some (u1, gW) := hr
+  simp only [Option.some.injEq, Prod.mk.injEq] at hr'
+  obtain ⟨-, rfl⟩ := hr'
+  obtain ⟨ned, gB, hB, hC⟩ := bind_some hA
+  have L := sureRequireLook_spec hB
+  have en : ned = Need.this a := L.same (fun x hx => absurd hx (HoonSet.mem_empty x))
+  subst en
+  obtain ⟨kk, hkk⟩ := L.gen
+  have dB : gB.drop = false := by rw [hkk]; exact d0
+  have hC' : addOps g.bo [Pole.imm k a] gB = some (u2, gA) := by unfold medeLoop at hC; exact hC
+  obtain ⟨b0, hb0, rfl⟩ := addOps_spec hC' dB
+  have hb0' : b0 = ⟨[], [], Termin.hop th⟩ := by
+    rw [hkk] at hb0
+    have := emitted_get g ⟨[], [], Termin.hop th⟩ d0
+    rw [this] at hb0
+    exact (Option.some.inj hb0).symm
+  subst hb0'
+  have hbo : gB.bo = g.bo + 1 := by rw [hkk]; rfl
+  have eo : o = g.bo := by
+    have u' : o < gB.bo := u
+    omega
+  subst eo
+  simp only [HoonMap.get_put, if_true, Option.some.injEq] at hb
+  subst hb
+  refine ⟨fun x hx => absurd hx (List.not_mem_nil), ?_, ?_⟩
+  · intro q hq x hx
+    simp only [List.cons_append, List.nil_append, List.mem_cons, List.mem_nil_iff, or_false] at hq
+    subst hq
+    simp only [poleRegs, List.mem_cons, List.mem_nil_iff, or_false] at hx
+    omega
+  · intro x hx
+    rw [ea] at hx
+    exact absurd hx (List.not_mem_nil)
+
 /-- **`[4 p]` meets `AboveX` when `p` does**: the collapse of the goal
 `this a` emits no block (every atom fits `this a`), the increment block
 mentions the register `+collapse-lazy-atom` returns (`a` itself, or one
