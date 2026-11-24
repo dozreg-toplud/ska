@@ -59,6 +59,40 @@ with no failure of `LessProvidesNF`, `KnowMeetsNF` or `SitesMeet`.
 Inlining needs no case: an inlined call is the `%7` of the nomm that
 `callStep` makes, and `+know` walks it as a `%7`, with the product of the
 formula's subject as the inlined body's subject, as the analysis did.
+
+`ProdSame` at the site socks that occur, not only at `less.c`, was checked
+on the real compiler (`tools/hoon/prodsites.hoon`, runhoon.sh, 2026-11-24)
+on the seven pokes of `prodsame.hoon` and the three of `he2.hoon`.  For every
+entry of each pruned graph, the site socks are the sites of `+know` without
+folding under the entry's code requirement and the subject socks of its
+callee identities (the analysis' site socks of the calls that made a new
+identity).  At each, every identity of the callee's code bell in the pruned
+graph has its product, patched for the site sock, with the same nouns as
+`dat`'s (`+huge:so` both ways).  490 site socks (240 of them of a code bell
+with two or more identities), 6,848 comparisons, no failure.
+
+## A plan for `SiteCover`
+
+1. `knowT`: `knowGo` without folding and with `idc`, whose call product is
+   read from a table indexed by the site's position (the list of sites
+   before it), the callee and the site sock.  `know false` with `dat` is the
+   table `fun _ b k => (dat b).map (patchProd ·.prod ·.map k)`; the
+   analysis' walk of an identity `[more fol]` is the table of the products
+   of the identities it resolved, under the subject sock `more`.
+2. `Replay`: the walk of `fol-loop` that made a datum's nomm is a `knowT`
+   walk, its sites are the analysis' site socks, and each provides its
+   callee's code requirement (`+huge:so` on a hit, `+app:ca` on a new
+   identity, the frozen entry on `%rec`), from `CInv` of `ConvInv.lean`.
+3. `Compare`, the crux, by induction on the nomm as `knowGo_meets`: under
+   equal provenance, a walk B under `less.cur = app want more` against walk
+   A under `more` keeps "B knows, on every cape whose provenance lies in
+   `want`, what A knows there".  It needs `want ⊇ distribute lc s.prod.src`
+   at every site of A (a field of the last run, `callStep`), monotone forms
+   of `+pull:so`, `+patch-prod` and `+double-int` under equal provenance
+   (`sub_knit` is the first), and `ProdSame` at B's site socks for the call
+   products (checked above).  The provenance of a call product is
+   `compose map src` on both sides, so it is equal when the two maps are,
+   which `ProdSame` must then also say of the maps.
 -/
 
 namespace Formalization
