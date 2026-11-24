@@ -46,15 +46,21 @@ noncomputable def dirSubj (regsNoun : R → Noun) (rest fol : Noun) (sub : Anno)
     (bc df : Bool) (gen : GenS FinMap R) (fn fN sN : Noun) : Noun :=
   C fol_loop.direct (C fn (C fN (C sN (folSubj regsNoun rest fol sub seat mk bc df gen))))
 
-/-- The loop `resolve`, entered from the trap with `id-there` `[sock.prod.s fol-new]`,
-computes `res`. -/
-def ResIs (regsNoun : R → Noun) (rest : Noun) (res : ResGo FinMap R) : Prop :=
+/-- The loop `resolve`, entered from the trap with `id-there` `[sock.prod.s fol-new]`
+and run by `c`, computes `res`. -/
+def ResIsW (c : Noun → Noun → Option Noun) (regsNoun : R → Noun) (rest : Noun) (res : ResGo FinMap R) :
+    Prop :=
   ∀ (s f : FolOut) (fa fb fol : Noun) (sub : Anno) (seat mk : Option Noun) (bc df : Bool)
     (gen : GenS FinMap R),
-    nock (C fol_loop.resolve (C (identNoun (s.prod.sock, C fa fb))
+    c (C fol_loop.resolve (C (identNoun (s.prod.sock, C fa fb))
         (dirSubj regsNoun rest fol sub seat mk bc df gen (C fa fb) f.toNoun s.toNoun)))
         fol_loop.resolve
       = (res (s.prod.sock, C fa fb) gen).map (resOutNoun regsNoun)
+
+/-- The loop `resolve`, entered from the trap with `id-there` `[sock.prod.s fol-new]`,
+computes `res`. -/
+abbrev ResIs (regsNoun : R → Noun) (rest : Noun) (res : ResGo FinMap R) : Prop :=
+  ResIsW nock regsNoun rest res
 
 /-- `+put:in` on the noun of a set of callee entries. -/
 def CalleePutIs : Prop :=
@@ -72,11 +78,12 @@ theorem rest_layer2 {rest : Noun} (h : slot? 511 rest = some ana) :
 set_option maxHeartbeats 1000000 in
 /-- The trap `nock-2-direct-non-inlined`: `resolve`, the `?>` that the code
 requirement is a cell, and the widening of `gen`. -/
-theorem fol_loop_direct (regsNoun : R → Noun) (res : ResGo FinMap R) (rest : Noun)
-    (hana : slot? 511 rest = some ana) (hres : ResIs regsNoun rest res) (hput : CalleePutIs)
+theorem fol_loop_direct (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar f → c s f = nock s f)
+    (regsNoun : R → Noun) (res : ResGo FinMap R) (rest : Noun)
+    (hana : slot? 511 rest = some ana) (hres : ResIsW c regsNoun rest res) (hput : CalleePutIs)
     (s f : FolOut) (fa fb fol : Noun) (sub : Anno) (seat mk : Option Noun) (bc df : Bool)
     (gen : GenS FinMap R) :
-    nock (dirSubj regsNoun rest fol sub seat mk bc df gen (C fa fb) f.toNoun s.toNoun) fol_loop.direct
+    nockW c (dirSubj regsNoun rest fol sub seat mk bc df gen (C fa fb) f.toNoun s.toNoun) fol_loop.direct
       = ((res (s.prod.sock, C fa fb) gen).bind fun r =>
           match r.1.2.less with
           | Sock.void => none
@@ -109,11 +116,11 @@ theorem fol_loop_direct (regsNoun : R → Noun) (res : ResGo FinMap R) (rest : N
   generalize hmf : mf.toNoun = nmf at hr ⊢
   generalize flag fs = nfs at hr ⊢
   generalize flag ff = nff at hr ⊢
-  nock_open fol_loop.direct
+  nockW_open fol_loop.direct
   cases e : res (ss, C fa fb) gen with
   | none =>
     rw [e] at hr
-    simp [nock_exec, hr]
+    simp (disch := ffar_disch) [nock_exec, hcf, hr]
   | some r =>
     rw [e] at hr
     obtain ⟨⟨i, d⟩, g⟩ := r
@@ -133,7 +140,7 @@ theorem fol_loop_direct (regsNoun : R → Noun) (res : ResGo FinMap R) (rest : N
     generalize unitNoun (fun x => x) da = nda at hr ⊢
     cases less with
     | void =>
-      simp [nock_exec, hr, sock_void_toNoun]
+      simp (disch := ffar_disch) [nock_exec, hcf, hr, sock_void_toNoun]
     | mk lc ld =>
       have hu1 := distribute_pill Cape.yes srcf
       rw [cape_yes_toNoun] at hu1
@@ -145,12 +152,42 @@ theorem fol_loop_direct (regsNoun : R → Noun) (res : ResGo FinMap R) (rest : N
       have hc3 := ca_uni_pill g.indi (distribute di srcs)
       have hc4 := ca_uni_pill g.seek (distribute dk srcs)
       have hcp := pi_compose_pill dm srcs
-      simp [nock_exec, hr, sock_mk_toNoun, hl2, hlib, hpg, hu1, hu2, hu3, hu4, hc1, hc2, hc3, hc4, hcp,
+      simp (disch := ffar_disch) [nock_exec, hcf, hr, sock_mk_toNoun, hl2, hlib, hpg, hu1, hu2, hu3, hu4, hc1, hc2, hc3, hc4, hcp,
         in.arm_at, in_arm, in.put.arm_at, put_in_arm, ca.lib.arm_at, ca_lib_arm, ca.uni.arm_at,
         ca_uni_arm, distribute.arm_at, distribute_arm, pi.lib.arm_at, pi_lib_arm, pi.compose.arm_at,
         pi_compose_arm, folOutNoun, FolOut.toNoun, Anno.toNoun, Nomm.toNoun, GenS.toNoun, hgs, flag]
       subst hms hmf hn3 hdp hga hgb
       simp [unitNoun, flag, Bell.toNoun, sock_mk_toNoun]
+
+/-- The trap `nock-2-direct-non-inlined`, kicked by `c`, computes what
+`fol_loop_direct` says of `res`. -/
+def DirIsW (c : Noun → Noun → Option Noun) (regsNoun : R → Noun) (rest : Noun) (res : ResGo FinMap R) :
+    Prop :=
+  ∀ (s f : FolOut) (fa fb fol : Noun) (sub : Anno) (seat mk : Option Noun) (bc df : Bool)
+    (gen : GenS FinMap R),
+    c (dirSubj regsNoun rest fol sub seat mk bc df gen (C fa fb) f.toNoun s.toNoun) fol_loop.direct
+      = ((res (s.prod.sock, C fa fb) gen).bind fun r =>
+          match r.1.2.less with
+          | Sock.void => none
+          | Sock.mk lc _ =>
+            some (⟨Nomm.n2 s.nomm f.nomm (some (⟨r.1.2.less, C fa fb⟩, mk)),
+                ⟨r.1.2.prod, Pi.compose r.1.2.map s.prod.src⟩, false⟩,
+              { r.2 with
+                want := Ca.uni r.2.want (Ca.uni (distribute Cape.yes f.prod.src)
+                  (distribute lc s.prod.src)),
+                indi := Ca.uni r.2.indi (distribute r.1.2.indi s.prod.src),
+                seek := Ca.uni r.2.seek (distribute r.1.2.seek s.prod.src),
+                callees := Treap.ins r.2.callees ⟨seat, r.1.1⟩ })).map (folOutNoun regsNoun)
+
+/-- `DirIsW` of a `c` that runs the trap inline with `c0`, from `ResIsW c0`. -/
+theorem dirIsW_of (c c0 : Noun → Noun → Option Noun)
+    (hd : ∀ s, c s fol_loop.direct = nockW c0 s fol_loop.direct)
+    (hcf0 : ∀ s f, FFar f → c0 s f = nock s f) (regsNoun : R → Noun) (res : ResGo FinMap R)
+    (rest : Noun) (hana : slot? 511 rest = some ana) (hres : ResIsW c0 regsNoun rest res)
+    (hput : CalleePutIs) : DirIsW c regsNoun rest res :=
+  fun s f fa fb fol sub seat mk bc df gen =>
+    (hd _).trans (fol_loop_direct c0 hcf0 regsNoun res rest hana hres hput s f fa fb fol sub seat mk bc
+      df gen)
 
 theorem rest_1023 {rest : Noun} (h : slot? 511 rest = some ana) :
     ∃ x, slot? 262143 rest = some x := by
@@ -168,11 +205,12 @@ set_option maxHeartbeats 4000000 in
 set_option linter.unusedSimpArgs false in
 /-- `[%2 p=^ q=*]`: a call, through the inline branch, the trap
 `nock-2-direct-non-inlined` (given `ResIs`), or an indirect call. -/
-theorem fol_loop_op2 (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap R)
-    (go : FolGoS FinMap R) (rest : Noun) (hgo : GoIs regsNoun rest go)
-    (hana : slot? 511 rest = some ana) (hres : ResIs regsNoun rest res) (hput : CalleePutIs)
+theorem fol_loop_op2 (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar f → c s f = nock s f)
+    (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap R)
+    (go : FolGoS FinMap R) (rest : Noun) (hgo : GoIsW c regsNoun rest go)
+    (hana : slot? 511 rest = some ana) (hdir : DirIsW c regsNoun rest res)
     (a b q : Noun) (sub : Anno) (seat mk : Option Noun) (bc df : Bool) (gen : GenS FinMap R) :
-    nock (folSubj regsNoun rest (C (A 2) (C (C a b) q)) sub seat mk bc df gen) fol_loop.battery
+    nockW c (folSubj regsNoun rest (C (A 2) (C (C a b) q)) sub seat mk bc df gen) fol_loop.battery
       = (Ana.folStep env res go (C (A 2) (C (C a b) q)) sub seat mk bc df gen).map
           (folOutNoun regsNoun) := by
   have h := hgo (C a b) sub seat mk bc df gen
@@ -180,11 +218,11 @@ theorem fol_loop_op2 (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap R
   have hl2 := rest_layer2 hana
   obtain ⟨x1023, hx⟩ := rest_1023 hana
   unfold folSubj at h ⊢
-  nock_open fol_loop.battery
+  nockW_open fol_loop.battery
   cases e : go (C a b) sub seat mk bc df gen with
   | none =>
     rw [e] at h
-    simp [nock_exec, Ana.folStep, shape, e, h]
+    simp (disch := ffar_disch) [nock_exec, hcf, Ana.folStep, shape, e, h]
   | some r =>
     rw [e] at h
     obtain ⟨o, g⟩ := r
@@ -200,7 +238,7 @@ theorem fol_loop_op2 (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap R
     cases e2 : go q sub seat mk bc df g with
     | none =>
       rw [e2] at h2
-      simp [nock_exec, Ana.folStep, shape, e, h, e2, h2]
+      simp (disch := ffar_disch) [nock_exec, hcf, Ana.folStep, shape, e, h, e2, h2]
     | some r2 =>
       rw [e2] at h2
       obtain ⟨o2, g2⟩ := r2
@@ -215,11 +253,11 @@ theorem fol_loop_op2 (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap R
       generalize GenS.toNoun regsNoun g = n7 at h h2 ⊢
       rcases s1 with _ | ⟨c1, d1⟩
       · simp only [sock_void_toNoun] at h
-        simp [nock_exec, Ana.folStep, shape, Ana.callStep, e, h, e2, h2, Tag.void, folOutNoun, FolOut.toNoun,
+        simp (disch := ffar_disch) [nock_exec, hcf, Ana.folStep, shape, Ana.callStep, e, h, e2, h2, Tag.void, folOutNoun, FolOut.toNoun,
           Nomm.toNoun, Anno.toNoun, sock_void_toNoun, hm1, hm2, flag, unitNoun]
       rcases s2 with _ | ⟨c2, d2⟩
       · simp only [sock_void_toNoun, sock_mk_toNoun] at h h2
-        simp [nock_exec, Ana.folStep, shape, Ana.callStep, e, h, e2, h2, Tag.void, folOutNoun, FolOut.toNoun,
+        simp (disch := ffar_disch) [nock_exec, hcf, Ana.folStep, shape, Ana.callStep, e, h, e2, h2, Tag.void, folOutNoun, FolOut.toNoun,
           Nomm.toNoun, Anno.toNoun, sock_void_toNoun, hm1, hm2, flag, unitNoun]
       simp only [sock_mk_toNoun] at h h2
       simp only [GenS.toNoun] at h2
@@ -235,7 +273,7 @@ theorem fol_loop_op2 (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap R
       rcases c2 with _ | _ | ⟨p2, q2⟩ <;> rcases d2 with x2 | ⟨fa, fb⟩ <;> cases bc <;>
         simp [flag] at hn2 <;> subst hn2
       all_goals first
-        | (simp [nock_exec, Ana.folStep, shape, Ana.callStep, e, h, e2, h2, Tag.void, hlib,
+        | (simp (disch := ffar_disch) [nock_exec, hcf, Ana.folStep, shape, Ana.callStep, e, h, e2, h2, Tag.void, hlib,
             ca.lib.arm_at, ca_lib_arm, ca.uni.arm_at, ca_uni_arm, distribute.arm_at, distribute_arm,
             hu, hci, hcs, folOutNoun, FolOut.toNoun, Nomm.toNoun, Anno.toNoun, Anno.dunno, Sock.dunno,
             Sock.toNoun, Cape.toNoun, GenS.toNoun, hm1, hm2, hcal, hare, hbk, hst, flag, unitNoun] <;>
@@ -249,7 +287,7 @@ theorem fol_loop_op2 (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap R
       have hf1' : flag true = A 0 := rfl
       have hu0 : unitNoun id (none : Option Noun) = A 0 := rfl
       have hus : ∀ x : Noun, unitNoun id (some x) = C (A 0) x := fun _ => rfl
-      have hd := fol_loop_direct regsNoun res rest hana hres hput ⟨m1, ⟨Sock.mk c1 d1, src1⟩, f1⟩
+      have hd := hdir ⟨m1, ⟨Sock.mk c1 d1, src1⟩, f1⟩
         ⟨m2, ⟨Sock.mk Cape.yes (C fa fb), src2⟩, f2⟩ fa fb (C (A 2) (C (C a b) q)) sub seat mk false df g2
       unfold dirSubj folSubj at hd
       rw [hn6] at hd
@@ -259,7 +297,7 @@ theorem fol_loop_op2 (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap R
         | (simp only [FolOut.toNoun, Anno.toNoun, sock_mk_toNoun, GenS.toNoun, hcal, hare, hbk, hst, hm1,
              hm2, hf1, hf2, hn4, cape_yes_toNoun, hf0, hf1', hu0, hus] at hd
            simp only [hf0, hf1', hu0, hus] at h h2
-           simp [nock_exec, Ana.folStep, shape, Ana.callStep, e, h, e2, h2, Tag.void, hlib,
+           simp (disch := ffar_disch) [nock_exec, hcf, Ana.folStep, shape, Ana.callStep, e, h, e2, h2, Tag.void, hlib,
             hana, hx, hd, hi, hsf, ei, es, inlineable.arm_at_ana, inlineable_arm, safe_fol_fol.arm_at,
             safe_fol_fol_arm, flag, unitNoun, Hoon.loob, cape_yes_toNoun]
            try rfl
@@ -275,7 +313,7 @@ theorem fol_loop_op2 (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap R
             { g2 with want := Ca.uni g2.want (distribute Cape.yes src2) } with
         | none =>
           rw [e3] at h3
-          simp [nock_exec, Ana.folStep, shape, Ana.callStep, e, h, e2, h2, h3, e3, Tag.void, hlib,
+          simp (disch := ffar_disch) [nock_exec, hcf, Ana.folStep, shape, Ana.callStep, e, h, e2, h2, h3, e3, Tag.void, hlib,
             hana, hi, hsf, ei, es, inlineable.arm_at_ana, inlineable_arm, safe_fol_fol.arm_at,
             safe_fol_fol_arm, flag, unitNoun, Hoon.loob, cape_yes_toNoun, ca.lib.arm_at, ca_lib_arm,
             ca.uni.arm_at, ca_uni_arm, distribute.arm_at, distribute_arm, hu, hcw]
@@ -287,7 +325,7 @@ theorem fol_loop_op2 (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap R
           generalize hp3 : p3.toNoun = np3 at h3
           generalize hfl3 : flag f3 = nf3 at h3
           generalize hm3 : m3.toNoun = nm3 at h3
-          simp [nock_exec, Ana.folStep, shape, Ana.callStep, e, h, e2, h2, h3, e3, Tag.void, hlib,
+          simp (disch := ffar_disch) [nock_exec, hcf, Ana.folStep, shape, Ana.callStep, e, h, e2, h2, h3, e3, Tag.void, hlib,
             hana, hi, hsf, ei, es, inlineable.arm_at_ana, inlineable_arm, safe_fol_fol.arm_at,
             safe_fol_fol_arm, flag, unitNoun, Hoon.loob, cape_yes_toNoun, ca.lib.arm_at, ca_lib_arm,
             ca.uni.arm_at, ca_uni_arm, distribute.arm_at, distribute_arm, hu, hcw, folOutNoun,
@@ -297,23 +335,24 @@ theorem fol_loop_op2 (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap R
 to itself (`GoIs`), the loop `resolve` (`ResIs`), `+put:in` on callee sets
 (`CalleePutIs`), `ana` at axis `511` of the rest of `+run`'s subject, and
 `+soft-spot` and `+register-fast` as `env` says. -/
-theorem fol_loop_step_all (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap R)
-    (go : FolGoS FinMap R) (rest : Noun) (hgo : GoIs regsNoun rest go)
+theorem fol_loop_step_all (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar f → c s f = nock s f)
+    (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap R)
+    (go : FolGoS FinMap R) (rest : Noun) (hgo : GoIsW c regsNoun rest go)
     (hana : slot? 511 rest = some ana) (hsoft : SoftSpotIs env) (hreg : RegisterFastIs regsNoun env)
-    (hres : ResIs regsNoun rest res) (hput : CalleePutIs)
+    (hdir : DirIsW c regsNoun rest res)
     (fol : Noun) (sub : Anno) (seat mk : Option Noun) (bc df : Bool) (gen : GenS FinMap R) :
-    nock (folSubj regsNoun rest fol sub seat mk bc df gen) fol_loop.battery
+    nockW c (folSubj regsNoun rest fol sub seat mk bc df gen) fol_loop.battery
       = (Ana.folStep env res go fol sub seat mk bc df gen).map (folOutNoun regsNoun) := by
   rcases shape_fol fol with hs | hs
-  · exact fol_loop_step regsNoun env res go rest hgo hana hsoft hreg fol
+  · exact fol_loop_step c hcf regsNoun env res go rest hgo hana hsoft hreg fol
       (fun a b q h => by rw [hs] at h; cases h) sub seat mk bc df gen
   · generalize hsh : shape fol = sh at hs
     subst hs
     by_cases h2 : ∃ a b q, sh = Shape.op2 a b q
     · obtain ⟨a, b, q, rfl⟩ := h2
-      exact fol_loop_op2 regsNoun env res go rest hgo hana hres hput a b q sub seat mk bc df gen
+      exact fol_loop_op2 c hcf regsNoun env res go rest hgo hana hdir a b q sub seat mk bc df gen
     · have hn : ∀ a b q, shape sh.fol ≠ Shape.op2 a b q := fun a b q h => h2 ⟨a, b, q, hsh ▸ h⟩
-      exact fol_loop_step regsNoun env res go rest hgo hana hsoft hreg _ hn sub seat mk bc df gen
+      exact fol_loop_step c hcf regsNoun env res go rest hgo hana hsoft hreg _ hn sub seat mk bc df gen
 
 end Compiler
 end Formalization

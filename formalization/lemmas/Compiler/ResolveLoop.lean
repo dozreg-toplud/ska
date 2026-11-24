@@ -72,10 +72,16 @@ noncomputable def resSubj (regsNoun : R → Noun) (rest fol : Noun) (sub : Anno)
   C fol_loop.resolve (C (identNoun idT)
     (dirSubj regsNoun rest fol sub seat mk bc df gen (C fa fb) f.toNoun s.toNoun))
 
-/-- The gate `+analyze` in the context `K` computes `an`, as `[low st]`. -/
-def AnaIs (regsNoun : R → Noun) (K : Noun) (an : AnaGo FinMap R) : Prop :=
-  ∀ id st, nock (C ska_analyze.battery (C (C (identNoun id) (st.toNoun regsNoun)) K)) ska_analyze.battery
+/-- The gate `+analyze` in the context `K`, slammed by `c`, computes `an`, as
+`[low st]`. -/
+def AnaIsW (c : Noun → Noun → Option Noun) (regsNoun : R → Noun) (K : Noun) (an : AnaGo FinMap R) :
+    Prop :=
+  ∀ id st, c (C ska_analyze.battery (C (C (identNoun id) (st.toNoun regsNoun)) K)) ska_analyze.battery
     = (an id st).map fun r => C (A r.1) (r.2.toNoun regsNoun)
+
+/-- The gate `+analyze` in the context `K` computes `an`, as `[low st]`. -/
+abbrev AnaIs (regsNoun : R → Noun) (K : Noun) (an : AnaGo FinMap R) : Prop :=
+  AnaIsW nock regsNoun K an
 
 theorem rest_layer1 {rest : Noun} (h : slot? 511 rest = some ana) :
     slot? 4194303 rest = some layer1 := by
@@ -98,18 +104,19 @@ step (`rl`, on the same `D`, needed only at the identity that
 `+recursive-call` gives) and `+analyze` (`an`, in the context `K` at axis `31`
 of the rest), the loop computes `resolveStepH` with `orig` the call's own site
 sock and formula. -/
-theorem resolve_step (regsNoun : R → Noun) (env : Env R) (hhe : env.he = heSock)
+theorem resolve_stepW (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar f → c s f = nock s f)
+    (regsNoun : R → Noun) (env : Env R) (hhe : env.he = heSock)
     (hth : env.threshold = 32) (rest K : Noun) (hana : slot? 511 rest = some ana)
     (hK : slot? 31 rest = some K) (hKa : slot? 92 K = some ska_analyze.arm)
-    (an : AnaGo FinMap R) (han : AnaIs regsNoun K an)
+    (an : AnaGo FinMap R) (han : AnaIsW c regsNoun K an)
     (fol : Noun) (sub : Anno) (seat mk : Option Noun) (bc df : Bool) (gen : GenS FinMap R)
     (fa fb : Noun) (f s : FolOut) (rl : ResGo FinMap R)
     (idT : Ident)
     (hrl : ∀ i, Treap.get gen.st.g idT = none → gitMi gen.st.done (C fa fb) s.prod.sock = some none →
       recursiveCall heSock 32 idT gen.st.stk (gCore gen.st.g) = some (some (false, i)) →
-      nock (resSubj regsNoun rest fol sub seat mk bc df gen fa fb f s i) fol_loop.resolve
+      c (resSubj regsNoun rest fol sub seat mk bc df gen fa fb f s i) fol_loop.resolve
         = (rl i gen).map (resOutNoun regsNoun)) :
-    nock (resSubj regsNoun rest fol sub seat mk bc df gen fa fb f s idT) fol_loop.resolve
+    nockW c (resSubj regsNoun rest fol sub seat mk bc df gen fa fb f s idT) fol_loop.resolve
       = (resolveStepH env rl an (s.prod.sock, C fa fb) idT gen).map (resOutNoun regsNoun) := by
   have hl1 := rest_layer1 hana
   have hl2 := rest_layer2 hana
@@ -153,19 +160,19 @@ theorem resolve_step (regsNoun : R → Noun) (env : Env R) (hhe : env.he = heSoc
   have hrc := recursive_call_pill idT stk g
   have hu0 : ∀ {α : Type} (e : α → Noun), unitNoun e none = A 0 := fun _ => rfl
   have hus : ∀ {α : Type} (e : α → Noun) (x : α), unitNoun e (some x) = C (A 0) (e x) := fun _ _ => rfl
-  nock_open fol_loop.resolve
+  nockW_open fol_loop.resolve
   cases eg : Treap.get g idT with
   | some d =>
     rw [eg, hus] at hgg
     cases eo : Treap.get order idT with
     | none =>
       rw [eo, hu0] at hog
-      simp [nock_exec, hl2, by_arm, by.get.arm_at, hgg, hog, resolveStepH, eg, eo, resOutNoun, entryNoun]
+      simp (disch := ffar_disch) [nock_exec, hcf, hl2, by_arm, by.get.arm_at, hgg, hog, resolveStepH, eg, eo, resOutNoun, entryNoun]
       subst hwant hindi hseek hcal harea hback hnext hmoved htick hticks hregs hstats
       simp [GenS.toNoun, SkaState.toNoun]
     | some o =>
       rw [eo, hus] at hog
-      simp [nock_exec, hl1, hl2, by_arm, by.get.arm_at, hgg, hog, resolveStepH, eg, eo, resOutNoun,
+      simp (disch := ffar_disch) [nock_exec, hcf, hl1, hl2, by_arm, by.get.arm_at, hgg, hog, resolveStepH, eg, eo, resOutNoun,
         entryNoun, min.arm_at, min_arm, hmin]
       subst hwant hindi hseek hcal harea hback hnext hmoved htick hticks hregs hstats
       simp [GenS.toNoun, SkaState.toNoun, flag]
@@ -174,13 +181,13 @@ theorem resolve_step (regsNoun : R → Noun) (env : Env R) (hhe : env.he = heSoc
     cases em : gitMi done (C fa fb) ss with
     | none =>
       rw [em] at hgit
-      simp [nock_exec, hl2, by_arm, by.get.arm_at, hgg, resolveStepH, eg, em, hana, mi.arm_at, mi_arm,
+      simp (disch := ffar_disch) [nock_exec, hcf, hl2, by_arm, by.get.arm_at, hgg, resolveStepH, eg, em, hana, mi.arm_at, mi_arm,
         mi.git.arm_at, mi_git_arm, hgit]
     | some mm =>
     cases mm with
     | some m =>
       rw [em] at hgit
-      simp [nock_exec, hl2, by_arm, by.get.arm_at, hgg, resolveStepH, eg, em, hana, mi.arm_at, mi_arm,
+      simp (disch := ffar_disch) [nock_exec, hcf, hl2, by_arm, by.get.arm_at, hgg, resolveStepH, eg, em, hana, mi.arm_at, mi_arm,
         mi.git.arm_at, mi_git_arm, hgit, resOutNoun, hus]
       subst hwant hindi hseek hcal harea hback hnext hmoved htick hticks hregs hstats
       simp [GenS.toNoun, SkaState.toNoun]
@@ -190,7 +197,7 @@ theorem resolve_step (regsNoun : R → Noun) (env : Env R) (hhe : env.he = heSoc
       cases er : recursiveCall heSock 32 idT stk (gCore g) with
       | none =>
         rw [er] at hrc
-        simp [nock_exec, hl2, by_arm, by.get.arm_at, hgg, resolveStepH, eg, em, hana, mi.arm_at, mi_arm,
+        simp (disch := ffar_disch) [nock_exec, hcf, hl2, by_arm, by.get.arm_at, hgg, resolveStepH, eg, em, hana, mi.arm_at, mi_arm,
           mi.git.arm_at, mi_git_arm, hgit, recursive_call.arm_at, recursive_call_arm, hrc, hhe, hth, er]
       | some rr =>
       cases rr with
@@ -203,14 +210,14 @@ theorem resolve_step (regsNoun : R → Noun) (env : Env R) (hhe : env.he = heSoc
         cases ea : an idT ⟨g, done, order, stk, next, moved, tick, ticks, regs, stats⟩ with
         | none =>
           rw [ea] at ha
-          simp [nock_exec, hl2, by_arm, by.get.arm_at, hgg, resolveStepH, eg, em, hana, mi.arm_at, mi_arm,
+          simp (disch := ffar_disch) [nock_exec, hcf, hl2, by_arm, by.get.arm_at, hgg, resolveStepH, eg, em, hana, mi.arm_at, mi_arm,
             mi.git.arm_at, mi_git_arm, hgit, recursive_call.arm_at, recursive_call_arm, hrc, hhe, hth, er,
             hK, hKa, ska_analyze_arm, ha, ea]
         | some r =>
           rw [ea] at ha
           obtain ⟨lowT, st'⟩ := r
           have hgg' := git_g_pill st'.g idT
-          simp [nock_exec, hl1, hl2, by_arm, by.get.arm_at, hgg, resolveStepH, eg, em, hana, mi.arm_at,
+          simp (disch := ffar_disch) [nock_exec, hcf, hl1, hl2, by_arm, by.get.arm_at, hgg, resolveStepH, eg, em, hana, mi.arm_at,
             mi_arm, mi.git.arm_at, mi_git_arm, hgit, recursive_call.arm_at, recursive_call_arm, hrc, hhe,
             hth, er, hK, hKa, ska_analyze_arm, ha, ea, SkaState.toNoun, git_g.arm_at, git_g_arm, hgg',
             min.arm_at, min_arm, hmin, resOutNoun, entryNoun]
@@ -223,7 +230,7 @@ theorem resolve_step (regsNoun : R → Noun) (env : Env R) (hhe : env.he = heSoc
         cases b with
         | false =>
           have h1 := hrl i eg em er
-          simp [nock_exec, hl2, by_arm, by.get.arm_at, hgg, resolveStepH, eg, em, hana, mi.arm_at, mi_arm,
+          simp (disch := ffar_disch) [nock_exec, hcf, hl2, by_arm, by.get.arm_at, hgg, resolveStepH, eg, em, hana, mi.arm_at, mi_arm,
             mi.git.arm_at, mi_git_arm, hgit, recursive_call.arm_at, recursive_call_arm, hrc, hhe, hth, er,
             rcNoun, h1]
         | true =>
@@ -237,19 +244,37 @@ theorem resolve_step (regsNoun : R → Noun) (env : Env R) (hhe : env.he = heSoc
           | none =>
             rw [eo, hu0] at hoi
             have hgot := got_gate_nil layer2 hnd (identNoun i) (Treap.toNoun A order) hoi
-            simp [nock_exec, hl1, hl2, by_arm, by.get.arm_at, hgg, resolveStepH, eg, em, hana, mi.arm_at,
+            simp (disch := ffar_disch) [nock_exec, hcf, hl1, hl2, by_arm, by.get.arm_at, hgg, resolveStepH, eg, em, hana, mi.arm_at,
               mi_arm, mi.git.arm_at, mi_git_arm, hgit, recursive_call.arm_at, recursive_call_arm, hrc, hhe,
               hth, er, rcNoun, git_g.arm_at, git_g_arm, hgi, patch_prod.arm_at, patch_prod_arm, hpp,
               FDatum.toNoun, by.got.arm_at, hgot, hd, eo]
           | some o =>
             rw [eo, hus] at hoi
             have hgot := got_gate layer2 hnd (identNoun i) (Treap.toNoun A order) (A o) hoi
-            simp [nock_exec, hl1, hl2, by_arm, by.get.arm_at, hgg, resolveStepH, eg, em, hana, mi.arm_at,
+            simp (disch := ffar_disch) [nock_exec, hcf, hl1, hl2, by_arm, by.get.arm_at, hgg, resolveStepH, eg, em, hana, mi.arm_at,
               mi_arm, mi.git.arm_at, mi_git_arm, hgit, recursive_call.arm_at, recursive_call_arm, hrc, hhe,
               hth, er, rcNoun, git_g.arm_at, git_g_arm, hgi, patch_prod.arm_at, patch_prod_arm, hpp,
               FDatum.toNoun, by.got.arm_at, hgot, hd, min.arm_at, min_arm, hmin, resOutNoun, entryNoun, eo]
             subst hwant hindi hseek hcal harea hback hnext hmoved htick hticks hregs hstats
             simp [GenS.toNoun, SkaState.toNoun, flag]
+
+/-- One turn of the loop `resolve` under `nock` (`resolve_stepW` with `c := nock`). -/
+theorem resolve_step (regsNoun : R → Noun) (env : Env R) (hhe : env.he = heSock)
+    (hth : env.threshold = 32) (rest K : Noun) (hana : slot? 511 rest = some ana)
+    (hK : slot? 31 rest = some K) (hKa : slot? 92 K = some ska_analyze.arm)
+    (an : AnaGo FinMap R) (han : AnaIs regsNoun K an)
+    (fol : Noun) (sub : Anno) (seat mk : Option Noun) (bc df : Bool) (gen : GenS FinMap R)
+    (fa fb : Noun) (f s : FolOut) (rl : ResGo FinMap R)
+    (idT : Ident)
+    (hrl : ∀ i, Treap.get gen.st.g idT = none → gitMi gen.st.done (C fa fb) s.prod.sock = some none →
+      recursiveCall heSock 32 idT gen.st.stk (gCore gen.st.g) = some (some (false, i)) →
+      nock (resSubj regsNoun rest fol sub seat mk bc df gen fa fb f s i) fol_loop.resolve
+        = (rl i gen).map (resOutNoun regsNoun)) :
+    nock (resSubj regsNoun rest fol sub seat mk bc df gen fa fb f s idT) fol_loop.resolve
+      = (resolveStepH env rl an (s.prod.sock, C fa fb) idT gen).map (resOutNoun regsNoun) := by
+  rw [nock_eq_nockW]
+  exact resolve_stepW nock (fun _ _ _ => rfl) regsNoun env hhe hth rest K hana hK hKa an han fol sub seat
+    mk bc df gen fa fb f s rl idT hrl
 
 /-- The loop `resolve` as the Hoon has it, fuelled, with `+analyze` a fixed
 function `an` (the pill's gate). -/
