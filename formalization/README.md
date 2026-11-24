@@ -133,7 +133,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/RegisterFast.lean` | `+register-fast` for registrations kept as nouns: `registerFastP`, the pill's run of the gate decoded into `[miss regs]`, satisfies `RegisterFastIs` for every `Env Noun` that uses it, given `RegisterFastShape` (every return of the gate is a cell with a flag at its head; `registerFastIs_of`).  The shape fact is proved in `Compiler/RegisterFastShape.lean`. |
 | `Compiler/FrameCall.lean` | `absNockS`: `absNock` of `Compiler/Frame.lean` with calls (Nock `2`, and `9` through `[2 [0 1] 0 b]`) either summarized or followed.  A summary entry `⟨pre, fs, post⟩` answers a call whose core is below `pre` and whose formula is below `fs` (`le`, a decidable test of inclusion of shapes, `le_sound`) with the shapes `post`; a call whose formula is known (a literal, or a path that a resolver `K` maps to a noun of the base, `KOK`) and accepted by `fol` runs that formula on the core's shape; every other call is `unk`.  `absNockS_sound`: what Nock computes, a shape of `absNockS` describes, given only that every summary passes `summOK` (the interpreter run on its `pre`, with the same summaries, returns shapes below `post`).  The induction on `Eval` meets a loop's call to itself at a smaller derivation, so the check is not circular (`second_of_first`, `call_sound`). |
 | `Compiler/RegisterFastShape.lean` | `registerFastShape`: every return of the pill's `+register-fast` is `[flag b, r']`, by two kernel checks of `absNockS` on the gate's battery from the base `[battery [[clue prod reg] ana]]`: the resolver `rfK` knows the battery and `ana`; the followed formulas (`rfFol`) are the battery of `print-ska` (`[9 97710 0 255]`), the arm `same` of layer 2 (`[8 [1 0] [1 0 6] 0 1]`) and the battery `[0 6]` of the gate `same` builds, so `%-  (print-ska n |.(...))  gen` returns the shape of `gen` and the trap is never run; the summaries are the two loops `past-loop` (`rfL1`, at axis `1123630016355293` of the battery) and `sock-loop` (`rfL2`, at `4602388546991284221`) on the cores the gate builds for them (`rfPre1`, `rfPre2`, with `gen` as `[1 reg]`), each returning `[0 *]` or `[1 *]` (`rf_summ_ok`); the gate's run gives 287 shapes, each `[0 *]` or `[1 *]` (`rf_main_ok`).  The checks take about a second.  `registerFastIs_pill`: `RegisterFastIs` for every `Env Noun` with `registerFast = registerFastP`; `ska_poke_ana_iff_pill`: `ska_poke_ana_iff` for that `env`, with no hypothesis on `+register-fast`. |
-| `Compiler/CompGen.lean` | The noun of the state of `+comp` (`line-short`, `[re-gen bo-gen id-gen mode blocks tags cond cache soft sofs]`): `genNoun g x`, a `Gen` of `Ska/CompModel.lean` with the three fields it leaves out carried as opaque nouns (`GenRest`: `cache` at axis `510`, `soft` at `1022`, `sofs` at `1023`), in the shared encodings of `Ska/Types.lean` (`Blob.toNoun`, `listNoun A` for a region, `HoonMap.toNoun`, `condValNoun` for `[def tag]`, `cgModeNoun` for `%drop` and `%run`).  The slots of the fields (`genNoun_re`, ..., `genNoun_tags`), and `+re`, `+oo`, `+id` on the noun (`re_noun`, `oo_noun`, `id_noun`: the edit at axis `2`, `6`, `14` the Hoon makes is the model's result, encoded).  No arm of the pill's door is linked yet. |
+| `Compiler/CompGen.lean` | The noun of the state of `+comp` (`line-short`, `[re-gen bo-gen id-gen mode blocks tags cond cache soft sofs]`): `genNoun g x`, a `Gen` of `Ska/CompModel.lean` with the three fields it leaves out carried as opaque nouns (`GenRest`: `cache` at axis `510`, `soft` at `1022`, `sofs` at `1023`), in the shared encodings of `Ska/Types.lean` (`Blob.toNoun`, `listNoun A` for a region, `HoonMap.toNoun`, `condValNoun` for `[def tag]`, `cgModeNoun` for `%drop` and `%run`).  The slots of the fields (`genNoun_re`, ..., `genNoun_tags`), and `+re`, `+oo`, `+id` on the noun (`re_noun`, `oo_noun`, `id_noun`: the edit at axis `2`, `6`, `14` the Hoon makes is the model's result, encoded).  The links of the pill's arms of the door are in `Compiler/CompDoor.lean`. |
+| `Compiler/CompDoor.lean` | The arms of the door of `+comp` (`comp.door`, generated) against `Ska/CompModel.lean` and `copyTag` of `Ska/CompLazyRun.lean`, as exact equalities over `genNoun`, crashes included, on maps of `TreapMap mugF`, in every context `ctx` of the door with layer 2 at axis `262143` (`CompIn`): `comp_re`, `comp_oo`, `comp_id` (the arm on `[comp.door [gen ctx]]` returns `[x gen']` as `re`, `oo`, `freshId` say), `comp_dropping` (the unnamed shared arm `dropArm`, at axis `1398` of the door by `comp_drop_at`), and the gates `comp_emir`, `comp_set_tag` (`+put:by` unless dropping), `comp_add_ops`, `comp_copy_tag` (`got:by`, a crash where the model is `none`, then `+weld`, or `+turn` and `+gas:by`), `comp_emit` (`+oo` and `+emir`), `comp_bomb` (every `HoonSet`), `comp_must`, `comp_split_need` (every need, through `+re`, `+must` and `+add-ops`).  The simprocs unfold `comp.door` down to `+dropping` and leave its axis as the content-named noun `comp.h50f637450e98` (`comp_h110`). |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`. |
@@ -572,7 +573,7 @@ import only its theorems.  So:
    - *The core inside `+comp`* (the door `|_  gen=line-short` at line 3825
      of `nock-compilation.hoon`; map from the arm list and the names of
      `Ska/CompModel.lean`, `Ska/CompLazyRun.lean`, `Ska/CompLeap.lean`,
-     2026-11-24, not yet checked arm by arm; no arm linked).  The noun of
+     2026-11-24; the linked arms are in `Compiler/CompDoor.lean`).  The noun of
      the state is `genNoun` (`Compiler/CompGen.lean`), with `cache`, `soft`,
      `sofs` as opaque nouns at axes `510`, `1022`, `1023`.  Read in the Hoon,
      2026-11-24: `+re`, `+oo`, `+id`, `+dropping`, `+set-tag`, `+copy-tag`,
@@ -588,9 +589,60 @@ import only its theorems.  So:
      Of these `+run`, `+kern`, `+crash-need` and `+soft-fork` have models
      that take `soft` to be empty (the doc of `Ska/CompModel.lean`), which
      holds for nomm without calls only: those are the places where the
-     model departs from the Hoon.  The pill's nouns of the door are not generated: the
-     next regeneration should name its battery and the arms `re`, `oo`,
-     `emit`, `emir`, `add-ops`, `set-tag`, `from`, `split`.  The Hoon's
+     model departs from the Hoon.  The regeneration of 2026-11-24 named the
+     battery of the door (`comp.door`, the battery of the gate builder
+     `[8 [1 bunt] [1 comp.door] 0 1]` that is the body of the gate `+comp`)
+     and the arms `comp.re`, `comp.oo`, `comp.id`, `comp.set_tag`,
+     `comp.copy_tag`, `comp.emir`, `comp.emit`, `comp.add_ops`,
+     `comp.bomb`, `comp.from`, `comp.from_sure`, `comp.split`,
+     `comp.split_sure`, `comp.split_need`, `comp.must`, each with its axis
+     in the core `[comp.door x]` (`emit` `43690`, `emir` `350`, `add-ops`
+     `10990`, `bomb` `1364`, `from` `5630`, `from-sure` `11259`, `split`
+     `2797306`, `split-sure` `10927`, `split-need` `88062`, `must`
+     `87390`, `re` `5636095`, `oo` `5460`, `id` `44015`, `set-tag`
+     `349662`, `copy-tag` `2818044`).  `+dropping` (`[5 [1 %drop] 0 110]`,
+     arm `1398`) is shared with another core and stays unnamed (`dropArm`,
+     `comp_drop_at`).  An arm runs on `[comp.door [gen ctx]]`, `ctx` the
+     core of the gate `+comp` (its sample `[scc long-ska jets-hot map-local
+     top b]` and the library); a gate arm's battery runs on `[battery
+     [sample [comp.door [gen ctx]]]]`, with `gen` at `30` and `ctx` at `31`.
+     The context predicate of the linked arms is `CompIn ctx`: layer 2 at
+     axis `262143` of `ctx` (`+by`, `+weld`, `+turn`, and layer 1 behind
+     it).  The map of the door, 2026-11-24 (L linked, M modelled and not
+     linked, N no model; `c`, `s`, `f` for an arm that touches `cache`,
+     `soft`, `sofs`):
+     L, exact over `genNoun` with only `CompIn ctx` (crashes included,
+     `TreapMap mugF` maps): `+re`, `+oo`, `+id`, `+dropping`, `+emir`,
+     `+set-tag`, `+add-ops` (`got` crashes where the model is `none`),
+     `+copy-tag` (likewise), `+emit`, `+bomb` (for every `HoonSet`, the
+     next being the bunt of `need-lazy`), `+must`, `+split-need`.
+     M: `+from-sure`, `+from`, `+split-sure`, `+split` (they need a
+     `HoonSet` instance tied to the pill's `(set @)`: no instance exists,
+     and the class has no law that fixes `toNoun` by the elements, so
+     `setRun` and `splitLok` can only be linked for an instance whose
+     noun is the canonical treap, `+run:in` and `+rep:in` of
+     `Hoon/SetFolds.lean` and `Hoon/RepBy.lean`), `+into-sure`,
+     `+into-need`, `+into`, `+copy`, `+copy-lazy`, `+crash-need` (s),
+     `+flatten-need`, `+mede`, `+collapse-lazy-atom`, `+forl`, `+past`,
+     `+run` (s), and in the lazy files `+lazy-bound`, `+proxy`, `+kern`
+     (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
+     `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
+     `+laze-this-only`, `+soft-fork` (s).
+     N: `+run-shape` (f, written), `+callee-sure` (c), `+callee-need`,
+     `+callee-compiled` (c), `+laze-big` (f), `+laze-soft-fork` (f),
+     `+coerce-lazy` (s), `+soft-new`, `+soft-bond`, `+soft-ask`,
+     `+soft-less`, `+soft-done` (s), and the rest listed below as without
+     a model.  The models of `+run`, `+kern`, `+crash-need`, `+soft-fork`
+     take `soft` to be empty, which is wrong once a direct call has a
+     `soft-call`: a report for track C.
+     The model's `need-lazy` is its `sure` alone (`lazyNoun s` is
+     `[s ~ ~]`): the forks and bonds of the Hoon's `need-lazy` are left
+     out, so `+from` and `+split` are modelled only on `fork = ~` and
+     `bond = ~` (the Hoon then runs `+turn`, `spin-split` and
+     `+lazy-prune`).  `Need.toNoun`, `Sure.toNoun`, `CGoal.toNoun` agree
+     with the Hoon types `need`, `sure`, `goal` (checked against the
+     Nock: `%both` `0x68746f62`, `%this` `0x73696874`, `%none`
+     `0x656e6f6e`, `%next` `0x7478656e`).  The Hoon's
      state is the 10-tuple `[re-gen bo-gen id-gen mode blocks tags cond
      cache soft sofs]`; the model's `Gen` keeps `re`, `bo`, `id`, `drop`
      (for `mode`, `%drop` or `%run`), `blocks`, `tags`, `cond`, and lacks
@@ -614,9 +666,10 @@ import only its theorems.  So:
      `+past-if`, `+sound`, `+made`, the other `soft-*` arms,
      `+emit-cold`, `+past-fork`, `+copy-need-make-ops`, `+coerce-ord`,
      `+coerce-soft`, `+need-ord-alloc-regs`, `+coerce-lazy`,
-     `+next-lazy-collapse`, `+collapse-shape`, `+to-straight`.  The first
-     links to make, as exact equalities over the noun of `Gen`: `+re`,
-     `+oo`, `+emit`, `+add-ops`, `+set-tag`, then `+from`, `+split`.
+     `+next-lazy-collapse`, `+collapse-shape`, `+to-straight`.  The next
+     links to make: a `HoonSet` instance on the pill's sets of atoms, then
+     `+from-sure`, `+from`, `+split-sure`, `+split` (fork-free), then
+     `+into-*`, `+copy*`, `+mede`, `+forl`.
    - *Modelled, not linked*:
      `+uni-sock`, `+norm-sock`, `+know`,
      `+bake-graph`; `+reverse-bell-graph`, `+hot-stale`, `+del-bells`;
@@ -660,16 +713,18 @@ import only its theorems.  So:
      (with `msg_ca.body`), `prune_cg.*`, `ska_cg.axis` (`341`) and the fact
      `ana_k_bat` (`slot? 2799357 ana = some ska_cg.k_bat`); the hand-defined
      `siltArm`, `bifArm`, `anaTail`, `msgCaArm`, `identMoldArm` and
-     `kc_bat_at` stay, each tied to the pill by its own kernel fact.  It
-     also named `print_ska.battery`, but from axis `126` of `ana`, which is
-     the gate `print-comp` (battery `[9 97710 [0 511]]`): `print-ska` is at
-     axis `254` (battery `[9 97710 [0 255]]`), so that name is the battery of
-     `print-comp`, and the next regeneration should rename it.  Names wanted
-     then: `print-ska` at axis `254`, the samples of `+sweep`, `+cull`, `+pop`
-     (now `armBunt`, not named because their bunts are shared nouns),
-     `+memo-final-entry` (arm `340` of `ana`), `+ska-poke` (arm `20`), the
-     trap `%poke-just-code` and its `+rep` gate (hand-defined now as
-     `mfeBat`, `spBat`, `pjTB`, `pjGate`), and `prune_cg.axis` (`22007`).
+     `kc_bat_at` stay, each tied to the pill by its own kernel fact.  The
+     second regeneration of 2026-11-24 renamed the battery at axis `126` of
+     `ana` to `print_comp.battery` (the gate `print-comp`, battery `[9 97710
+     [0 511]]`) and named `print_ska.battery` at axis `254` (`[9 97710 [0
+     255]]`), `mfe.*` (`+memo-final-entry`, arm `340` of `ana`),
+     `ska_poke.*` (`+ska-poke`, arm `20`), `prune_cg.axis` (`22007`) and the
+     door of `+comp` (`comp.*`, item 9 above); `mfeBat` and `spBat` of
+     `Compiler/SkaPoke.lean` stay hand-defined and could now be replaced by
+     `mfe.battery` and `ska_poke.battery`.  Names still wanted: the trap
+     `%poke-just-code` and its `+rep` gate (`pjTB`, `pjGate`).  The samples
+     of `+sweep`, `+cull`, `+pop` (`armBunt`) are shared nouns and must not
+     be named.
 10. **`Treap` of `Ska/Analysis.lean` has an instance** (`Compiler/TreapKey.lean`):
    finite maps, with the treap noun made when the key encoding is given.  Its
    `ext` is function extensionality (on nouns, `isMap_ext`).  `+tap:by` and
