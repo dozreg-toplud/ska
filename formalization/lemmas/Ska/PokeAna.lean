@@ -97,7 +97,9 @@ def PokeBakes (lib : Lib) (env : Env R) (jet : H → J → (Bell → Option Datu
     BakesImply (anaEnv jet fold frozen s f L j hot dats memo' rd reg')
 
 /-- **`SitesMeet` of every poke** from a state that satisfies `InvB`
-(`BakeImp.lean`). -/
+(`BakeImp.lean`).  **False on the real compiler** for the poke of
+`bakeDropWitness` (`SitesMeetFalse.lean`), and so is `PokeBakes`; the
+theorems that assume either cannot be used. -/
 def PokeSites (lib : Lib) (env : Env R) (jet : H → J → (Bell → Option Datum) → R → Bell → Bool)
     (fold frozen : Bool) (fuel : Noun → Noun → LongB M → J → Nat) (regOf : J → R) : Prop :=
   ∀ s f (L : LongB M) j hot pr dats memo' rd reg', InvB lib L →

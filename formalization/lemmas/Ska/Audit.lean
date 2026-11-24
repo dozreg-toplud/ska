@@ -2,6 +2,7 @@ import lemmas.Ska.Statements
 import lemmas.Ska.KnowMeets
 import lemmas.Ska.LessProvides
 import lemmas.Ska.SiteCover
+import lemmas.Ska.SitesMeetFalse
 import lemmas.Ska.AnaInv
 import lemmas.Ska.StaleWitness
 import lemmas.Ska.CapeFacts
@@ -353,6 +354,7 @@ open Formalization.SkaModel
 #print axioms PokeM.pokeLessNF_of_cover
 #print axioms PokeM.pokeSites_of_cover
 #print axioms Bake.knowT_datTab
+#print axioms Bake.witness_no_meet
 #print axioms Bake.know_sites_knowT
 #print axioms Bake.siteCover_of
 #print axioms Bake.lessProvidesNF_of_replay
