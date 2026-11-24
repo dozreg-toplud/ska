@@ -212,6 +212,13 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompMember.lean` | The gate `member` of `+compile-scc-in` (`%compile-scc-fn`, axis `358182910` of `K`, `mem_at`), its body `memBody` cut by `tools/gen/member.py` into `memComp`, `memInl`, `memR2`, `memRes` (with `memFinal`: `memRun`, `memCs`, `memBak`, `memSur`, `memTuple`), `memAfter` (`memWas`, `memSurK`, `memPut`, `memMoved`, the push of `finArm`) and `memProd` (`memSprev`, `memNew`, `memOld`); `+inlined` (arm `0x5dde`, `inl_at`, its body `inlBody` a slot of the pill, not linked).  The subjects `memSam`, `memCtx` (`done`, `kids`, `map-local` on the core of `+compile-scc-in`), `memDCtx`, `memS0`, `memS3`.  Plumbing with the calls' products as nouns: `mem_entry` (to the final pass, `+inlined` as `hinl`), `mem_r3`, `mem_res`, the calls (`mem_run_call`, `mem_cs_call`, `mem_bak_call`, `mem_sur_call`, `mem_tuple_call`), `mem_final` (the pass returns `[[need-new laz ned-final bak o sur] gen]`), `mem_after` (`=.  cache  cache.gen`, `was` by `getF`, `sur` (`memSurKN`), the put by `putF`, `moved` (`memMovedN`), the push of `finish` on `finCtx`), `mem_prod_new` (with `map-local` and `top` empty: `[chg (put:by ~ b (finish ~)) cache]`, `chg` as `memChgN`). |
 | `Compiler/CompMemberGate.lean` | `member` against the model: `mem_to_finish` (from the sample `[b %done keep map-local top cache]` to the push of `finish` on `memFC`, with the links of `+run`, `+collapse-shape`, `+bake-need`, `+need-to-ordered`, `+sure-of`), `mem_rest_slots` (the slots `6`, `14`, `496`, `0x3ffffff` that `finish` reads), `mem_cond_frag`, `mem_laz_frag` (on the fragment the run leaves `cond` empty and `laz` fork-free), `mem_gate` (with `map-local` and `top` empty the gate returns `[chg [[b s] ~ ~] cache]` with `s` the noun of `finishLF nm ord cape (fun n => (n, []))`, and crashes when it is `none`; hypotheses: `hinl`, `hsc`, the run, `+need-ord-alloc-regs` and `+sure-of` succeed, `NoBake`, `getF`/`putF` on `sure.cache`). |
 | `Compiler/CompSccGate.lean` | `+compile-scc-in` (arm `2732` of `K`, `csi_at`, its body `csiBody` cut by `tools/gen/member.py` into `csiLevy`, `csiHit`, `csiKids`, `csiDone`, the push of `member` and of `final` (`fBody`: `fRoll` with the gate `fGate`, `fUni`), `csiDoneCall`, `csiFix`) on an SCC of one bell `b` (`setOne b`): `csi_to_final` (the cache test `+levy` with `+has:by` fails, `kids` is given by a hypothesis on the product of `csiKids` (`+int:in` not linked), `~(has ju kids) b b` is `|`, so `done` and `(final | ~ cache)`), `csi_final_one` (the `+roll` of `member` over `[b ~]`, with the bunt of `bell` (`bell_bunt`, a kernel fact), and `+uni:by` of `nary` as a hypothesis `huni`), `csi_gate_one` (with `mem_gate`: the gate returns `[[[b st] ~ ~] cache']` with `st` the straight of `finishLF`), `cu_csi_eq` and `cu_gate_scc_one` (the gate of `+compile-unary` with `hcsi` discharged by `csi_gate_one`). |
+| `Compiler/CompInlined.lean` | `+inlined` (arm `0x5dde` of `K`, its body cut by `tools/gen/inlined.py`, `inl_body_at`, `inlBody_eq`; `inline-off` is arm `84`, the constant `|`, `inline_off_at`) on a pure nomm: the trap over the nomm is the identity and keeps the cache (`inl_trap_pure`); on a miss in `inl.cache` the gate returns the nomm of `code.long-ska` at `b` and puts it into `inl.cache` (`inl_gate_miss`), on a hit the memoized nomm and the cache unchanged (`inl_gate_hit`); `InlOK` (a statement on the map nouns) names the two cases, `inl_gate`. |
+| `Compiler/CompShapeCol.lean` | `+shape-collapse` (arm `682` of `K`, the `ord` of `finishLF`) on a fork-free lazy need `[[ned lok] ~ ~]` is `sureOf (needToOrd ned) lok less` (`sc_gate_sure`), so `hsc` of `mem_gate` holds with `ord := sur` (`hsc_of_sure`).  On the way, with the nouns cut by `tools/gen/shapecol.py` and tied by `uno_at`, `l2i_at`, `fr_at`, `oi_at`, `ic_at`, `scBody_eq`: `+uni-need-ord` of `[%none ~]` and `X` is `X` (`uno_none`), `+lazy-to-inter1` on no fork and no bond (`l2i_gate_sure`), one round of `+inter2-fix-round` on `[X ~]` is `[X ~]` (`fr_gate_nofork`, with the bunt of `need-inter2` computed by the kernel, `i2n_bunt`), `+inter2-orig` and `+inter2-collapse` on no fork (`oi_gate_nofork`, `ic_gate_nofork`), `+roll` over `~` (`roll_gate_nil`). |
+| `Hoon/IntIn.lean` | `+int:in` with the door's set empty is `~` whatever its sample (`int_in_nil`); the whole loop against the relation `IntR` (the swap and the two branches through `+uni:in`, `UniR`), on every derivation (`int_loop`, `int_in_gate`), and on two sets a derivation to a set with the members of both (`intP_of_sets`, `int_in`); `+rep` over a treap of one node is the gate on that node and the first accumulator, whatever the gate (`rep_gate_one`). |
+| `Hoon/UniBy.lean` | `+uni:by`: the relation `UniByR` (one constructor per branch of the loop, the pair of `b` kept on equal keys) and the Nock on every derivation (`uni_by_loop`, `uni_by_gate`); on two maps a derivation to a map with the pairs of `b` and those of `a` whose key `b` lacks (`UniSpec`, `uniByP_of_maps` by induction on the number of nodes, as `uniP_of_sets` of `UniIn.lean`; `uni_by`); with a map of one pair it is `putF` (`uni_by_one`, by `isMap_ext`). |
+| `Compiler/CompSccOne.lean` | `cu_gate_scc_one` with the calls linked: `csi_gate_scc_one_m` (`+compile-scc-in` on `[b ~ ~]`) and `cu_gate_scc_one_m` (`+compile-unary`) state the product as a `bind` over `finishLF nm (sccSur nex cape) cape`, crashing when it is `none` (`csi_final_one_none`, `cu_gate_none`), with `+inlined` (`inl_gate`, under `InlOK`), `+shape-collapse` (`hsc_of_sure`), `kids` for a bell that does not call itself (`NoSelfCall`, `csi_kids_noself` with `int_in`; `NoCalls`, `csi_kids_nocalls`; `ju_has_kids`), `+uni:by` (`uni_by_one`, `IsMap` of `nary`), `+sure-of` succeeding on the fragment (`scc_sur_frag`, by `cra_run_lok` and `sureOf_some`) `args.then` empty on the fragment (`crx_run_args`, `args_frag`) and `was` from the put (`getF_of_putF`).  Left: `hrunL`, `hnoar`, `hb` (the model), `hnary`, `hnmap`, `hcalls` (`NoSelfCall`), `InlOK`, `hput` (the state nouns).  `csi_gate_scc_one_f`, `cu_gate_scc_one_f` fold the run in: a `bind` over `runL` and `finishLF` with `ord := sccSur` of that run, crashing when it is `none` (`mem_gate_none`: the run or `+collapse-shape` crash), under `NoBakeOne` (nothing baked whenever the pass gets to `+bake-need`) and on the state nouns `hnary`, `IsMap` of `nary` and `sure.cache`, `NoSelfCall`, `InlOK`.  The cache hit: when every member of a tree `scc` is in `nary.cache`, `+compile-scc-in` returns the `+gas:by` of the cached straights in the order of `+tap:in` and the cache unchanged (`csi_hit`, `csi_hit_one`, with `+levy`, `+has:by`, `+turn` of `csiHitGate` and `+got:by`), and `+compile-unary` returns `finishLU` with it (`cu_gate_hit`). |
+| `Compiler/CompMemOld.lean` | The branch `memOld` of `member` (`map-local` holds a straight of `b`) on a fixed point reached: `+msg-need-ord` (arm `20` of `K`, nouns by `tools/gen/msgneed.py`, `msg_at`) of two equal shapes is that shape (`msg_eq`), so with the previous shape equal to `need-new` the gate returns `[moved (~(put by map-local) b (finish ~)) cache]` (`mem_prod_old`, `mem_gate_old`: a `bind` over `finishLF`, `map-local` a map).  The pessimized case (`+coerce-soft`) is not linked. |
+| `Compiler/CompNoNN.lean` | `+need-ord-alloc-regs` of `sccSur` succeeds on the fragment (`noar_frag`): the invariant `NN` (no cell and no `%both` of a need with two `%none` halves) holds of the sure need of every run (`nn_run`, through `+simple-next`, `+bomb`, `+from` (`nn_fromPath`), `+split` (`nn_splitNeed`, `nn_must`), `+into` (`nn_intoLoop`, `nn_rollTack`), `+copy` (`nn_copyNeed`)), goes to the shape (`nno_needToOrd`) and through `+sure-of` (`nno_sureLook`, `nno_sureOf`), and `+need-ord-alloc-regs` succeeds on it (`noar_nno`).  A bell whose cape is `|` bakes nothing (`noBake_no`), so for it `cu_gate_scc_one_f` holds with no hypothesis on the model but the fragment (`cu_gate_scc_one_no`). |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`, whose `keys` are those of `rap`, the order of `+rep:by` (`treapMap_keys`). |
@@ -1362,6 +1369,50 @@ import only its theorems.  So:
     on a map of one pair, the cache hit `csiHit` (`+gas:by`, `+turn`,
     `+got:by`), then the crash cases of `member` and the cases where
     `finishLF` is `none` (the gate crashes, so `hcsi` fails, as it should).
+    L, 2026-11-24 (track A, the calls of `+compile-scc-in` on one bell),
+    `Compiler/CompInlined.lean`, `Compiler/CompShapeCol.lean`,
+    `Compiler/CompSccOne.lean`, `Compiler/CompMemOld.lean`,
+    `Hoon/UniBy.lean`, `Hoon/IntIn.lean`.  The Nock hypotheses of
+    `cu_gate_scc_one` are discharged.  `+inlined` replaces in the nomm of
+    `b` every direct call that can be inlined (no memo key,
+    `+safe-fol-fol`, not a hot jet, a callee alone in its SCC that does not
+    call itself, at most `48` nodes) by `[%7 p m]` with the callee's inlined
+    nomm `m`, and memoizes the result in `inl.cache`; on a pure nomm the walk
+    is the identity and keeps the cache (`inl_trap_pure`), so the gate is
+    the nomm of `code.long-ska` put into `inl.cache`, or the memoized one
+    (`inl_gate` under `InlOK`).  `+shape-collapse` (arm `682`, the `ord` of
+    `finishLF`) is, on a fork-free `laz`, `+sure-of` of its sure part
+    (`sc_gate_sure`): `+inter2-collapse` stops after one round of
+    `+inter2-fix-round` and `+inter2-orig` returns the sure shape, so `ord`
+    is `sur` (`hsc_of_sure`).  `+uni:by` (`uni_by`, against `UniByR`) of a
+    map and a map of one pair is `putF` (`uni_by_one`); `+int:in` is linked
+    on every pair of sets (`int_in`, against `IntR`), so `kids` of `[b ~ ~]`
+    is `[[b ~] ~ ~]` when `b` is not among its own callees (`NoSelfCall`,
+    `csi_kids_noself`).  On the fragment the run looks at no axis `0`
+    (`cra_run_lok`), so `+sure-of` succeeds (`scc_sur_frag`, `sccSur`), and
+    it jumps with no argument (`crx_run_args`, `args_frag`).  The restated
+    theorems: `csi_gate_scc_one_m`, `cu_gate_scc_one_m` (a `bind` over
+    `finishLF nm (sccSur nex cape) cape`, given the run, the allocation and
+    `NoBake`), and `csi_gate_scc_one_f`, `cu_gate_scc_one_f` (a `bind`
+    over `runL` and `finishLF`, the gate crashing where the model is
+    `none`, `mem_gate_none`, `csi_final_one_none`, `cu_gate_none`), whose
+    only hypotheses are the fragment, `NoBakeOne`, and statements on the
+    state nouns: `b` not in `nary.cache`, `nary.cache` and `sure.cache`
+    maps, `NoSelfCall`, `InlOK`.  Also linked: the cache hit
+    (`csi_hit` on any tree `scc`, `cu_gate_hit`) and the branch `memOld`
+    of `member` on a fixed point reached (`+msg-need-ord` of equal shapes,
+    `mem_gate_old`).  With the cape `|` nothing is baked, so
+    `cu_gate_scc_one_no` has no hypothesis on the model but the fragment.
+    `+need-ord-alloc-regs` of `sccSur` succeeds on the
+    fragment (`noar_frag`, `Compiler/CompNoNN.lean`: the run's sure need
+    has no cell or `%both` of two `%none` halves, `nn_run`, and `+sure-of`
+    keeps that).  Not derived: that `finishLF` succeeds (`+coerce-lazy`
+    and `+to-straight` may crash in the model); it is folded into the
+    `bind`.  Next: the fixed
+    point `csiFix` and the `?.  done` branch of `member` (`+run-shape`,
+    `+laze-collapse`, `+laze-may`, `+bake-need-ord`), the pessimized
+    `finish` (`+coerce-soft`), a nomm with calls in `+inlined` (`+scc-of`,
+    the recursion through `inlined-loop`).
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,

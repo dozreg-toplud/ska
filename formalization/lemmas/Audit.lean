@@ -110,6 +110,13 @@ import lemmas.Compiler.CompMember
 import lemmas.Compiler.CompMemberGate
 import lemmas.Compiler.CompSccGate
 import lemmas.Hoon.RollUni
+import lemmas.Compiler.CompInlined
+import lemmas.Compiler.CompShapeCol
+import lemmas.Hoon.IntIn
+import lemmas.Hoon.UniBy
+import lemmas.Compiler.CompSccOne
+import lemmas.Compiler.CompMemOld
+import lemmas.Compiler.CompNoNN
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -828,3 +835,107 @@ open Formalization
 #print axioms Compiler.csi_arm
 #print axioms Compiler.cu_csi_eq
 #print axioms Compiler.cu_gate_scc_one
+#print axioms Compiler.inl_body_at
+#print axioms Compiler.inlBody_eq
+#print axioms Compiler.inline_off_at
+#print axioms Compiler.inl_trap_pure
+#print axioms Compiler.inl_gate_miss
+#print axioms Compiler.inl_gate_hit
+#print axioms Compiler.inl_gate
+#print axioms Compiler.uno_at
+#print axioms Compiler.l2i_at
+#print axioms Compiler.fr_at
+#print axioms Compiler.oi_at
+#print axioms Compiler.ic_at
+#print axioms Compiler.scBody_eq
+#print axioms Compiler.i2n_bunt
+#print axioms Compiler.fr_bunt_at
+#print axioms Compiler.fr_bunt2_at
+#print axioms Compiler.uno_none
+#print axioms Compiler.l2i_gate_sure
+#print axioms Compiler.roll_gate_nil
+#print axioms Compiler.fr_gate_nofork
+#print axioms Compiler.oi_gate_nofork
+#print axioms Compiler.ic_gate_nofork
+#print axioms Compiler.sc_gate_sure
+#print axioms Compiler.hsc_of_sure
+#print axioms Hoon.int_in_arm
+#print axioms Hoon.int_loop_nil
+#print axioms Hoon.int_in_nil
+#print axioms Hoon.rep_loop_nil
+#print axioms Hoon.rep_gate_one
+#print axioms Hoon.uni_by_loop
+#print axioms Hoon.uni_by_gate
+#print axioms Hoon.uniSpec_kin
+#print axioms Hoon.uniBy_same
+#print axioms Hoon.uniBy_domA
+#print axioms Hoon.uniBy_domB
+#print axioms Hoon.uniBy_step
+#print axioms Hoon.uniByP_of_maps
+#print axioms Hoon.uni_by
+#print axioms Hoon.uni_by_one
+#print axioms Compiler.csi_kids_nocalls
+#print axioms Compiler.ju_has_kids
+#print axioms Compiler.csi_final_one_none
+#print axioms Compiler.cu_gate_none
+#print axioms Compiler.getF_of_putF
+#print axioms Compiler.sureOf_some
+#print axioms Compiler.scc_sur_frag
+#print axioms Compiler.csi_gate_scc_one_m
+#print axioms Compiler.cu_gate_scc_one_m
+#print axioms Compiler.mem_final_run_none
+#print axioms Compiler.mem_final_cs_none
+#print axioms Compiler.mem_gate_none
+#print axioms Compiler.csi_gate_scc_one_f
+#print axioms Compiler.cu_gate_scc_one_f
+#print axioms Compiler.csiHit_gate
+#print axioms Compiler.csi_hit_gate
+#print axioms Compiler.csi_hit
+#print axioms Compiler.csi_hit_one
+#print axioms Compiler.cu_gate_hit
+#print axioms Compiler.msg_at
+#print axioms Compiler.msg_arm
+#print axioms Compiler.msg_eq
+#print axioms Compiler.mem_prod_old
+#print axioms Compiler.mem_gate_old
+#print axioms Hoon.uni_in_arm
+#print axioms Hoon.int_loop
+#print axioms Hoon.int_in_gate
+#print axioms Hoon.int_uni
+#print axioms Hoon.intP_mor
+#print axioms Hoon.intP_step
+#print axioms Hoon.intP_of_sets
+#print axioms Hoon.int_in
+#print axioms Compiler.noSelfCall_of_noCalls
+#print axioms Compiler.isSet_setOne
+#print axioms Compiler.csi_kids_noself
+#print axioms Compiler.crx_copy_args
+#print axioms Compiler.crx_bomb_args
+#print axioms Compiler.crx_sn_args
+#print axioms Compiler.crx_run_args
+#print axioms Compiler.args_frag
+#print axioms Compiler.nn_consNeed
+#print axioms Compiler.needToOrd_none
+#print axioms Compiler.nno_needToOrd
+#print axioms Compiler.nno_consOrd
+#print axioms Compiler.nno_halves
+#print axioms Compiler.nno_rebuild
+#print axioms Compiler.nno_sureLook
+#print axioms Compiler.nno_sureOf
+#print axioms Compiler.noar_nno
+#print axioms Compiler.nn_fromPath
+#print axioms Compiler.nn_must
+#print axioms Compiler.nn_splitNeed
+#print axioms Compiler.nn_copyNeed
+#print axioms Compiler.nn_rollTack
+#print axioms Compiler.nn_intoLoop
+#print axioms Compiler.nn_into
+#print axioms Compiler.nn_split
+#print axioms Compiler.nn_copy
+#print axioms Compiler.nn_bomb
+#print axioms Compiler.nn_sn
+#print axioms Compiler.nn_from
+#print axioms Compiler.nn_run
+#print axioms Compiler.noar_frag
+#print axioms Compiler.noBake_no
+#print axioms Compiler.cu_gate_scc_one_no
