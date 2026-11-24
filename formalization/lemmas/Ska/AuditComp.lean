@@ -85,6 +85,7 @@ import lemmas.Ska.CompConsCallTopB
 import lemmas.Ska.CompHypOfUOKC
 import lemmas.Ska.CompRunOKLCSeven
 import lemmas.Ska.CompCallC
+import lemmas.Ska.CompHypOfFragD
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -830,3 +831,22 @@ open Formalization.SkaModel.Comp
 #print axioms okc_indirectC
 #print axioms uokc_indirectC
 #print axioms entNew_indirectC
+#print axioms bondOKC_of_bondOK
+#print axioms minkF_consG
+#print axioms mink_consG_bwd
+#print axioms consLC_runN
+#print axioms consLC_cleanN
+#print axioms consLC_runD
+#print axioms uokc_consLC
+#print axioms entNew_consLC
+#print axioms fragC_fragD
+#print axioms uokc_indDA
+#print axioms uokc_consDA
+#print axioms uokc_entNew_of_fragD
+#print axioms finishLUC_contractUD
+#print axioms indC_example1
+#print axioms indC_example2
+#print axioms indC_example3
+#print axioms Formalization.SkaModel.PokeM.rawMono_fragUDG
+#print axioms Formalization.SkaModel.PokeM.fragUCG_sub
+#print axioms Formalization.SkaModel.PokeM.compHyp_of_fragUDG
