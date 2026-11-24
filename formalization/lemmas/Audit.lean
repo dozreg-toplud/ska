@@ -126,6 +126,7 @@ import lemmas.Compiler.CompSplitGen
 import lemmas.Compiler.CompIntoGen
 import lemmas.Compiler.CompFromGen
 import lemmas.Compiler.CompClaGen
+import lemmas.Compiler.CompRunInvL
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -1009,3 +1010,14 @@ open Formalization
 #print axioms Compiler.levy_gate_map
 #print axioms Compiler.ne_all
 #print axioms Compiler.comp_collapse_lazy_atom_all
+#print axioms Compiler.walk_mdP
+#print axioms Compiler.split_lnb
+#print axioms Compiler.into_lnb
+#print axioms Compiler.from_lnb
+#print axioms Compiler.past_lnb
+#print axioms Compiler.crInvL_of_crInv
+#print axioms Compiler.crInvL_lok
+#print axioms Compiler.crInvL_mdP
+#print axioms Compiler.crInvL_split
+#print axioms Compiler.crInvL_into
+#print axioms Compiler.crInvL_from
