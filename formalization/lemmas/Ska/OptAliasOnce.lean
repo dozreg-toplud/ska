@@ -30,8 +30,12 @@ block `2` becomes `[%don 2]`.  In the result `(1, 1)` is no dead fill (block
 The same happens with `%imm 5` in place of the `%inc` ops.  `+remove-dead-code`
 does not restore it: its `saw` is one set for the whole walk over the
 reversed `topo`, so the `%imm 0 2` of block `1` is kept once block `2` has put
-`2` in it.  The code after is still right; the next call of `+alias` could
-drop the fill and rename the read of block `2`.
+`2` in it.  The code after is still right, but a later call of `+alias` that
+knows an immediate `0` at the fill drops it and renames the read of block `2`:
+`OptAliasWitness.lean` checks the witness in Lean (`not_aliasOnceB`, on the
+order `[0 2 1]` of `+bb-topo`) and gives blocks with `DInvS` on which the
+model of `+optimize` returns `0` where the code before returns `s + 1`
+(`w_dinvS`, `w_opt`).
 
 ## What holds
 
@@ -46,8 +50,11 @@ drop the fill and rename the read of block `2`.
 * **`AliasOnceB`**: `DefOnceB` of the result on every input with `DInvS`,
   the one conjunct left; **`aliasRestSSAB_of_once`** and the driver theorem
   **`optimize_keeps_aliasO`** with `hpick` and `AliasOnceB`.  `AliasOnceB` is
-  false (the witness above), so the driver needs another single assignment
-  invariant (see the README, Gaps 12.8).
+  false (`not_aliasOnceB`), and the conclusion of the driver theorem itself
+  fails on blocks with `DInvS` (`w_opt`), so no field closes it: the driver
+  needs a stronger invariant of the raw blocks, such as `FillFresh` kept by
+  every pass (false on raw `+comp` output, whose fills write a register that
+  has a definition), or a change of the Hoon (see the README, Gaps 12.8).
 -/
 
 namespace Formalization
