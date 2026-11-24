@@ -1,0 +1,575 @@
+import lemmas.Ska.OptAliasInv
+import lemmas.Ska.OptMiddleWalk
+
+/-!
+# The walk invariant of `+alias` over executions
+
+The induction over `topo` that assembles the pieces of `OptAliasInv.lean`
+along executions of the code before.  **`WInv`** is the invariant at the
+point `pre` of the walk with state `g`: `ARev`, `OldW`, every edge of a block
+not walked yet still listed in `rev` (`pend`), and at the end of every walked
+jumping block `q` that an execution from the entry reaches, **`EndOK`**: the
+facts, immediates and block after of `q` are stored, the registers the end
+after reads are in `DefW bl pre`, `AOK` and `ABInv` hold with the global `old`
+of `g` and `Done` = `DoneE bl pre p bq` for the path `p` the execution took
+(`epath`), and the jump the end before takes is listed in `rev` and is taken
+by the end after, to the same block, with arguments of the same values.
+
+* **`awa_steps_last`**, **`awa_inblock_passed`**: an execution from the entry
+  either stays in block `0`, or ends with a jump into the block it stands in
+  and then runs its pass and a prefix of its ops (`OpsRun`, through `as_sem`).
+* **`awa_start_entry`**, **`awa_start_jump`**: `AOK` and `ABInv` at the start
+  of the block, from `entryInfo` or from `EndOK` at the predecessor taken
+  (`aedge_aok`, `aedge_abinv`, `awi_edge_side`, `aedge_pass`).
+* **`awa_end`**: `EndOK` at the end of the block just walked (`awi_bodyOK`,
+  `as_body`, `afn_jump`).
+* **`awa_rebase`**: `EndOK` at a block walked before survives one more block
+  of the walk (`awi_frame_step`, `awi_old_step`, `awi_self`).
+* **`awa_step`**, **`awa_walk`**, **`alias_walk_inv`**: the induction.
+-/
+
+namespace Formalization
+namespace SkaModel
+namespace Opt
+open Nock
+variable {Map : Type → Type} [HoonMap Map]
+
+set_option linter.unusedSectionVars false
+
+/-! ## Small facts on bodies, `rev` and ends -/
+
+theorem awa_bodyDone_base {Cl : Nat → Prop} : ∀ (l : List Pole) (D : Nat → Prop) (x : Nat), D x → bodyDone Cl l D x
+  | [], _, _, h => h
+  | _ :: l, _, x, h => awa_bodyDone_base l _ x (Or.inl h)
+
+theorem awa_bodyDone_dst {Cl : Nat → Prop} : ∀ (l : List Pole) (D : Nat → Prop) (x : Nat),
+    x ∈ l.filterMap aliasDst → Cl x → bodyDone Cl l D x
+  | [], _, _, h, _ => absurd h List.not_mem_nil
+  | op :: l, D, x, h, hc => by
+    simp only [bodyDone]
+    rw [List.filterMap_cons] at h
+    split at h
+    · exact awa_bodyDone_dst l _ x h hc
+    · rename_i e heq
+      rcases List.mem_cons.mp h with rfl | h
+      · exact awa_bodyDone_base l _ _ (Or.inr ⟨heq, hc⟩)
+      · exact awa_bodyDone_dst l _ x h hc
+
+theorem awa_bodyDef_cases : ∀ (l : List Pole) (D : Nat → Prop) (x : Nat), bodyDef l D x →
+    D x ∨ x ∈ l.filterMap aliasDst
+  | [], _, _, h => Or.inl h
+  | op :: l, D, x, h => by
+    rcases awa_bodyDef_cases l _ x h with (h | h) | h
+    · exact Or.inl h
+    · right; rw [List.filterMap_cons, h]; exact List.mem_cons_self
+    · right; rw [List.filterMap_cons]; split
+      · exact h
+      · exact List.mem_cons_of_mem _ h
+
+theorem awa_abinv_mono {st : ABody} {Def Def' Done Done' Cl : Nat → Prop} (hi : ABInv st Def Done Cl)
+    (hD : ∀ x, Def x → Def' x) (hDo : ∀ x, Done' x → Done x) : ABInv st Def' Done' Cl :=
+  ⟨fun n r hr => hD r (hi.imm n r hr), ab_loc_mono hi.loc hD, fun d hd => hD _ (hi.old d (hDo d hd)),
+    fun d hd => hD d (hi.done d (hDo d hd)), fun d hn hc => hi.self d (fun h => hn (hD d h)) hc⟩
+
+theorem awa_del_keep {rev : Nat → List Nat} {k o x p : Nat} (hp : p ∈ rev x) (hne : p ≠ o) :
+    p ∈ delJu rev k o x := by
+  unfold delJu updA
+  split
+  · rename_i e; subst e; exact (List.mem_erase_of_ne hne).mpr hp
+  · exact hp
+
+theorem awa_drop_keep {o p x : Nat} (hne : p ≠ o) : ∀ (js : List Jmp) (rev : Nat → List Nat), p ∈ rev x →
+    p ∈ (js.foldl (fun acc j => delJu acc j.there o) rev) x
+  | [], _, hp => hp
+  | _ :: js, _, hp => awa_drop_keep hne js _ (awa_del_keep hp hne)
+
+/-- `aliasFin` deletes from `rev` only the block it ends. -/
+theorem awa_fin_keep {old : Nat → Nat} {loc : AInfo} {rev : Nat → List Nat} {f : Bool} {o : Nat} {fin : Termin}
+    {r : Termin × (Nat → List Nat) × Bool} (h : aliasFin old loc rev f o fin = some r) {x p : Nat}
+    (hp : p ∈ rev x) (hne : p ≠ o) : p ∈ r.2.1 x := by
+  have fold : ∀ go cut, p ∈ (aliasFold rev o go cut).2.1 x := by
+    intro go cut; unfold aliasFold; split
+    · exact hp
+    · exact awa_del_keep hp hne
+  cases fin with
+  | clq s z o' =>
+    simp only [aliasFin] at h
+    split at h
+    · cases h
+    · obtain ⟨ic, -, e⟩ := Option.map_eq_some_iff.mp h
+      try dsimp only at e
+      split at e
+      · subst e; exact fold _ _
+      · split at e
+        · subst e; exact fold _ _
+        · subst e; exact hp
+  | eqq l r' z o' =>
+    simp only [aliasFin] at h
+    split at h
+    · cases h
+    · split at h
+      · cases h; exact hp
+      · cases h; exact fold _ _
+  | brn s z o' =>
+    simp only [aliasFin] at h
+    split at h
+    · cases h
+    · obtain ⟨ic, -, e⟩ := Option.map_eq_some_iff.mp h
+      try dsimp only at e
+      split at e
+      · split at e
+        · subst e; exact hp
+        · subst e; exact hp
+      · subst e; exact fold _ _
+      · subst e; exact fold _ _
+      · subst e; exact awa_del_keep (awa_del_keep hp hne) hne
+  | brz s z o' =>
+    simp only [aliasFin] at h
+    split at h
+    · cases h
+    · obtain ⟨ic, -, e⟩ := Option.map_eq_some_iff.mp h
+      try dsimp only at e
+      split at e
+      · subst e; exact hp
+      · subst e; exact fold _ _
+      · subst e; exact fold _ _
+  | hop t => simp only [aliasFin, Option.some.injEq] at h; subst h; exact hp
+  | jmp => simp only [aliasFin, Option.some.injEq] at h; subst h; exact hp
+  | jmf => simp only [aliasFin, Option.some.injEq] at h; subst h; exact hp
+  | jsp => simp only [aliasFin, Option.some.injEq] at h; subst h; exact hp
+  | jsf => simp only [aliasFin, Option.some.injEq] at h; subst h; exact hp
+  | don => simp only [aliasFin, Option.some.injEq] at h; subst h; exact hp
+  | bom => simp only [aliasFin, Option.some.injEq] at h; subst h; exact hp
+  | lti => simp only [aliasFin, Option.some.injEq] at h; subst h; exact hp
+
+/-- **A block of the walk deletes from `rev` only itself.** -/
+theorem awa_rev_keep {pick : List Nat → Nat} {nargs : Nat} {bl : Map Blob} {g g' : AGen Map} {o : Nat}
+    (h : aliasBlock pick nargs bl g o = some g') {x p : Nat} (hp : p ∈ g.rev x) (hne : p ≠ o) : p ∈ g'.rev x := by
+  unfold aliasBlock at h
+  dsimp only at h
+  split at h
+  · obtain ⟨b, -, rfl⟩ := Option.map_eq_some_iff.mp h
+    exact awa_drop_keep hne _ _ hp
+  · obtain ⟨info, -, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨imms, -, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨b, -, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨edges, -, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨loc0, -, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨rb, -, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨rf, hf, rfl⟩ := Option.map_eq_some_iff.mp h
+    exact awa_fin_keep hf hp hne
+
+/-- **The registers the end after reads are `old` of those the end before
+reads.** -/
+theorem awa_fin_reads {old : Nat → Nat} {loc : AInfo} {rev : Nat → List Nat} {f : Bool} {o : Nat} {fin : Termin}
+    {r : Termin × (Nat → List Nat) × Bool} (h : aliasFin old loc rev f o fin = some r)
+    (hnl : ∀ n s z o', fin ≠ Termin.lti n s z o') : ∀ x ∈ Path.finReads r.1, ∃ y ∈ Path.finReads fin, x = old y := by
+  have fold : ∀ go cut, ∀ x ∈ Path.finReads (aliasFold rev o go cut).1, ∃ y ∈ Path.finReads fin, x = old y := by
+    intro go cut x hx; simp [aliasFold, Path.finReads] at hx
+  have one : ∀ s, s ∈ Path.finReads fin → ∀ x ∈ [old s], ∃ y ∈ Path.finReads fin, x = old y := by
+    intro s hs x hx; exact ⟨s, hs, List.mem_singleton.mp hx⟩
+  cases fin with
+  | clq s z o' =>
+    simp only [aliasFin] at h
+    split at h
+    · cases h
+    · obtain ⟨ic, -, e⟩ := Option.map_eq_some_iff.mp h
+      try dsimp only at e
+      split at e
+      · subst e; exact fold _ _
+      · split at e
+        · subst e; exact fold _ _
+        · subst e; exact one s (by simp [Path.finReads])
+  | eqq l r' z o' =>
+    simp only [aliasFin] at h
+    split at h
+    · cases h
+    · split at h
+      · cases h
+        intro x hx
+        simp only [Path.finReads, List.mem_cons, List.not_mem_nil, or_false] at hx
+        rcases hx with rfl | rfl
+        · exact ⟨l, by simp [Path.finReads], rfl⟩
+        · exact ⟨r', by simp [Path.finReads], rfl⟩
+      · cases h; exact fold _ _
+  | brn s z o' =>
+    simp only [aliasFin] at h
+    split at h
+    · cases h
+    · obtain ⟨ic, -, e⟩ := Option.map_eq_some_iff.mp h
+      try dsimp only at e
+      split at e
+      · split at e
+        · subst e; exact one s (by simp [Path.finReads])
+        · subst e; exact one s (by simp [Path.finReads])
+      · subst e; exact fold _ _
+      · subst e; exact fold _ _
+      · subst e; intro x hx; simp [Path.finReads] at hx
+  | brz s z o' =>
+    simp only [aliasFin] at h
+    split at h
+    · cases h
+    · obtain ⟨ic, -, e⟩ := Option.map_eq_some_iff.mp h
+      try dsimp only at e
+      split at e
+      · subst e; exact one s (by simp [Path.finReads])
+      · subst e; exact fold _ _
+      · subst e; exact fold _ _
+  | hop t =>
+    simp only [aliasFin, Option.some.injEq] at h; subst h; intro x hx; simp [Path.finReads] at hx
+  | jmp a v =>
+    simp only [aliasFin, Option.some.injEq] at h; subst h
+    intro x hx
+    simp only [Path.finReads, List.mem_map] at hx
+    obtain ⟨y, hy, rfl⟩ := hx
+    exact ⟨y, hy, rfl⟩
+  | jmf a v n =>
+    simp only [aliasFin, Option.some.injEq] at h; subst h
+    intro x hx
+    simp only [Path.finReads, List.mem_map] at hx
+    obtain ⟨y, hy, rfl⟩ := hx
+    exact ⟨y, hy, rfl⟩
+  | jsp a s => simp only [aliasFin, Option.some.injEq] at h; subst h; exact one s (by simp [Path.finReads])
+  | jsf a s n => simp only [aliasFin, Option.some.injEq] at h; subst h; exact one s (by simp [Path.finReads])
+  | don s => simp only [aliasFin, Option.some.injEq] at h; subst h; exact one s (by simp [Path.finReads])
+  | bom u => simp only [aliasFin, Option.some.injEq] at h; subst h; intro x hx; simp [Path.finReads] at hx
+  | lti n s z o' => exact absurd rfl (hnl n s z o')
+
+/-- The value an argument passes (`~` and a missing argument pass none). -/
+def argV (R : Nat → Option Noun) (a : Option (Option Nat)) : Option Noun := a.bind fun a => a.bind R
+
+theorem awa_argV (R : Nat → Option Noun) (a : Option (Option Nat)) :
+    (match a with | some (some u) => R u | _ => none) = argV R a := by
+  rcases a with _ | _ | u <;> rfl
+
+theorem awa_pass_nil {par : List Nat} {regs R : Map (Option Noun)} (h : evalPass [] par regs = some R) :
+    par = [] ∧ R = regs := by
+  unfold evalPass at h
+  split at h
+  · simp only [evalPassLoop] at h
+    split at h
+    · rename_i e; exact ⟨e, (Option.some.inj h).symm⟩
+    · cases h
+  · cases h
+
+theorem awa_pass_empty (regs : Map (Option Noun)) : evalPass [] [] regs = some regs := by
+  simp [evalPass, evalPassLoop]
+
+/-! ## Executions: the path taken, the last jump, the steps inside a block -/
+
+section
+variable {σ : Type} {lib : Lib} {O : Oracle σ} {c : Straight Map} {gul : Noun}
+
+/-- The path of blocks an execution with edges `es` took, the last block
+left first. -/
+def epath (es : List (Nat × Nat)) : List Nat := (es.map Prod.fst).reverse
+
+theorem awa_epath_snoc (es : List (Nat × Nat)) (a b : Nat) : epath (es ++ [(a, b)]) = a :: epath es := by
+  simp [epath]
+
+theorem awa_steps_at {x y : Path.Cfg σ Map} {es : List (Nat × Nat)} (h : Path.Steps lib O c gul x es y) :
+    ∀ {p : List Nat}, ACfgAt c.blocks x p → ACfgAt c.blocks y (epath es ++ p) := by
+  induction h with
+  | refl => intro p hx; simpa [epath] using hx
+  | step s _ ih =>
+    intro p hx
+    rcases awi_step_at s hx with ⟨rfl, -, hy⟩ | ⟨rfl, hy, -⟩
+    · simpa [epath] using ih hy
+    · simpa [epath] using ih hy
+
+/-- **The path of an execution from the entry** is `epath` of its edges. -/
+theorem awa_entry_at {st : σ} {vals : List Noun} {t : Trace} {es : List (Nat × Nat)} {y : Path.Cfg σ Map}
+    (h : Path.FromEntry (lib := lib) (O := O) (c := c) (gul := gul) st vals t es y) :
+    ACfgAt c.blocks y (epath es) := by
+  obtain ⟨b0, hb0, hs⟩ := h
+  simpa using awa_steps_at hs ⟨BPath.start, b0, 0, hb0, rfl, (List.drop_zero).symm, Or.inl rfl⟩
+
+/-- **The last jump of an execution**: none, or a jump from a configuration
+at the end of a block, followed by steps inside the block jumped to. -/
+theorem awa_steps_last {x y : Path.Cfg σ Map} {es : List (Nat × Nat)} (h : Path.Steps lib O c gul x es y) :
+    es = [] ∨ ∃ (es1 : List (Nat × Nat)) (x' : Path.Cfg σ Map) (j : Jmp) (b' : Blob),
+      es = es1 ++ [(x'.lab, j.there)] ∧ Path.Steps lib O c gul x es1 x' ∧ x'.params = [] ∧ x'.b.par = [] ∧
+      x'.b.body = [] ∧ Path.taken x'.regs x'.b.fin = some j ∧ HoonMap.get c.blocks j.there = some b' ∧
+      Path.Steps lib O c gul ⟨j.there, b', j.args, x'.regs, x'.t, x'.st⟩ [] y := by
+  induction h with
+  | refl => exact Or.inl rfl
+  | step s rest ih =>
+    rcases ih with e | ⟨es1, x', j, b', e, h1, h2⟩
+    · subst e
+      cases s with
+      | pass _ _ => exact Or.inl rfl
+      | op _ _ _ _ => exact Or.inl rfl
+      | @jump j b' hp hq hb ht hb' =>
+        exact Or.inr ⟨[], _, j, b', rfl, Path.Steps.refl _, hp, hq, hb, ht, hb', rest⟩
+    · subst e
+      exact Or.inr ⟨_ ++ es1, x', j, b', by rw [List.append_assoc], Path.Steps.step s h1, h2⟩
+
+/-- **The steps inside a block**: none yet, or the pass and a prefix of the
+ops, whose values meet `OpsRun`. -/
+theorem awa_inblock {z y : Path.Cfg σ Map} {es : List (Nat × Nat)} (h : Path.Steps lib O c gul z es y)
+    (he : es = []) :
+    y.lab = z.lab ∧ y.b.fin = z.b.fin ∧
+      ((y.params = z.params ∧ y.b.par = z.b.par ∧ y.b.body = z.b.body ∧ y.regs = z.regs) ∨
+       (y.params = [] ∧ y.b.par = [] ∧ ∃ k R', evalPass z.params z.b.par z.regs = some R' ∧
+          y.b.body = z.b.body.drop k ∧
+          OpsRun (z.b.body.take k) (fun x => read x R') (fun x => read x y.regs))) := by
+  induction h with
+  | refl => exact ⟨rfl, rfl, Or.inl ⟨rfl, rfl, rfl, rfl⟩⟩
+  | @step x w y e es s rest ih =>
+    obtain ⟨he1, he2⟩ := List.append_eq_nil_iff.mp he
+    obtain ⟨i1, i2, i3⟩ := ih he2
+    cases s with
+    | @pass R hne hR =>
+      refine ⟨i1, i2, Or.inr ?_⟩
+      rcases i3 with ⟨a1, a2, a3, a4⟩ | ⟨a1, a2, k, R', a3, a4, a5⟩
+      · refine ⟨a1, a2, 0, R, hR, by simpa using a3, ?_⟩
+        rw [List.take_zero, a4]; exact OpsRun.nil _
+      · rw [awa_pass_empty] at a3
+        cases a3
+        exact ⟨a1, a2, k, _, hR, a4, a5⟩
+    | @op p rest' n R t' st' hp hq hb hpole =>
+      refine ⟨i1, i2, Or.inr ?_⟩
+      have hsem := as_sem hpole
+      rcases i3 with ⟨a1, a2, a3, a4⟩ | ⟨a1, a2, k, R', a3, a4, a5⟩
+      · refine ⟨a1.trans hp, a2.trans hq, 1, x.regs, by rw [hp, hq]; exact awa_pass_empty _, ?_, ?_⟩
+        · rw [hb, a3]; rfl
+        · rw [hb, a4]; exact OpsRun.cons hsem (OpsRun.nil _)
+      · simp only [hp, hq] at a3
+        rw [awa_pass_empty] at a3
+        cases a3
+        refine ⟨a1, a2, k + 1, x.regs, by rw [hp, hq]; exact awa_pass_empty _, ?_, ?_⟩
+        · rw [hb, a4]; rfl
+        · rw [hb]; exact OpsRun.cons hsem a5
+    | jump _ _ _ _ _ => simp at he1
+
+/-- The steps inside a block up to a configuration that passed. -/
+theorem awa_inblock_passed {z y : Path.Cfg σ Map} (h : Path.Steps lib O c gul z [] y) (hp : y.params = [])
+    (hq : y.b.par = []) :
+    y.lab = z.lab ∧ y.b.fin = z.b.fin ∧ ∃ k R', evalPass z.params z.b.par z.regs = some R' ∧
+      y.b.body = z.b.body.drop k ∧ OpsRun (z.b.body.take k) (fun x => read x R') (fun x => read x y.regs) := by
+  obtain ⟨i1, i2, i3⟩ := awa_inblock h rfl
+  refine ⟨i1, i2, ?_⟩
+  rcases i3 with ⟨a1, a2, a3, a4⟩ | ⟨-, -, r⟩
+  · refine ⟨0, z.regs, by rw [← a1, ← a2, hp, hq]; exact awa_pass_empty _, by rw [a3]; rfl, ?_⟩
+    rw [List.take_zero, a4]; exact OpsRun.nil _
+  · exact r
+
+end
+
+/-! ## The invariant at the end of a walked block -/
+
+section
+variable [MapKeys Map]
+
+/-- **The walk invariant at the end of a walked jumping block** `q` (block
+`bq` before), reached along the path `p` with the values `R`, at the point
+`pre` of the walk with state `g`. -/
+def EndOK (bl : Map Blob) (pre : List Nat) (g : AGen Map) (q : Nat) (p : List Nat) (bq : Blob)
+    (R : Nat → Option Noun) : Prop :=
+  ∃ lq mq pb, g.info q = some lq ∧ g.imms q = some mq ∧ HoonMap.get g.new q = some pb ∧
+    (∀ x ∈ Path.finReads pb.fin, DefW bl pre x) ∧
+    AOK ⟨g.old, lq, mq⟩ R (DoneE bl pre p bq) ∧
+    ABInv ⟨g.old, lq, mq⟩ (DefW bl pre) (DoneE bl pre p bq) (ClR bl) ∧
+    ∀ j, takenR R bq.fin = some j → q ∈ g.rev j.there ∧
+      ∃ j', takenR R pb.fin = some j' ∧ j'.there = j.there ∧ ∀ k : Nat, argV R j'.args[k]? = argV R j.args[k]?
+
+/-- **`AOK` and `ABInv` at the start of block `0`** at the entry. -/
+theorem awa_start_entry {bl : Map Blob} (hS : AliasSSAB bl) {pre l : List Nat} (ht : TopoOK bl (pre ++ l))
+    {g : AGen Map} (hw : OldW bl pre g) (nargs : Nat) {b0 : Blob} (hpar : b0.par = []) (R : Nat → Option Noun) :
+    AOK ⟨g.old, entryInfo nargs, fun _ => []⟩ R (DoneS bl pre [] b0) ∧
+      ABInv ⟨g.old, entryInfo nargs, fun _ => []⟩ (fun x => DefW bl pre x ∨ x ∈ b0.par) (DoneS bl pre [] b0)
+        (ClR bl) := by
+  have hfix : ∀ d, d ∉ allDefs bl → g.old d = d := fun d hd => Classical.byContradiction fun hne => by
+    obtain ⟨o, -, -, b, hb, hm⟩ := hw d hne
+    exact hd (bdef_allDefs hb (List.mem_append_right _ hm))
+  have hD : ∀ d, DoneS bl pre [] b0 d → d ∉ allDefs bl := fun d hd => by
+    rcases hd.1 with h | h | ⟨o', ho', -⟩
+    · exact h
+    · rw [hpar] at h; cases h
+    · cases ho'
+  refine ⟨⟨fun n r hr => absurd hr List.not_mem_nil, ast_entry nargs, fun d hd => ?_⟩,
+    ⟨fun n r hr => absurd hr List.not_mem_nil, ⟨fun r i x hr hx => ?_, fun r i hr => ?_⟩,
+      fun d hd => ?_, fun d hd => Or.inl (Or.inl (hD d hd)),
+      fun d hn hc => awi_self hS ht hw hc (fun h => hn (Or.inl h))⟩⟩
+  · show R (g.old d) = R d
+    rw [hfix d (hD d hd)]
+  · simp only [entryInfo] at hr
+    split at hr
+    · cases hr; exact absurd hx ab_nm_empty
+    · cases hr
+  · simp only [entryInfo] at hr
+    split at hr
+    · cases hr; exact Or.inl rfl
+    · cases hr
+  · show DefW bl pre (g.old d) ∨ g.old d ∈ b0.par
+    rw [hfix d (hD d hd)]; exact Or.inl (Or.inl (hD d hd))
+
+/-- **`AOK` and `ABInv` at the start of a block entered by a jump**, from
+`EndOK` at the end of the block left. -/
+theorem awa_start_jump {bl : Map Blob} (hS : AliasSSAB bl) (hpn : ParNodup bl) {pre l : List Nat}
+    (ht : TopoOK bl (pre ++ l)) {g : AGen Map} (hw : OldW bl pre g) {o q : Nat} {p : List Nat} {bo bq : Blob}
+    (hRo : Reach bl o) (hbo : HoonMap.get bl o = some bo) (hopre : o ∉ pre) (hbq : HoonMap.get bl q = some bq)
+    {regs Rp : Map (Option Noun)} {lq : AInfo} {mq : AImms} {pb : Blob}
+    (hlq : g.info q = some lq) (hmq : g.imms q = some mq) (hpb : HoonMap.get g.new q = some pb)
+    (hfr : ∀ x ∈ Path.finReads pb.fin, DefW bl pre x)
+    (hok : AOK ⟨g.old, lq, mq⟩ (fun x => read x regs) (DoneE bl pre p bq))
+    (hab : ABInv ⟨g.old, lq, mq⟩ (DefW bl pre) (DoneE bl pre p bq) (ClR bl))
+    (hq : q ∈ g.rev o) {j j' : Jmp} (hj' : takenR (fun x => read x regs) pb.fin = some j') (hjo : j'.there = o)
+    (hargs : ∀ k : Nat, argV (fun x => read x regs) j'.args[k]? = argV (fun x => read x regs) j.args[k]?)
+    (hpass : evalPass j.args bo.par regs = some Rp)
+    {info : AInfo} {imms : AImms} {edges : List (Nat × List (Option Nat))} {loc0 : AInfo}
+    (hst : aliasStart g o (g.rev o) = some info) (him : aliasStartImms g (g.rev o) = some imms)
+    (hed : aliasEdges g o (g.rev o) = some edges) (hpa : aliasPars g bo.par edges info = some loc0) :
+    AOK ⟨g.old, loc0, imms⟩ (fun x => read x Rp) (DoneS bl pre (q :: p) bo) ∧
+      ABInv ⟨g.old, loc0, imms⟩ (fun x => DefW bl pre x ∨ x ∈ bo.par) (DoneS bl pre (q :: p) bo) (ClR bl) := by
+  obtain ⟨hno, hloop⟩ := evalPass_check hpass
+  obtain ⟨hnm, hnmi, hDo, hself⟩ := awi_edge_side hS ht hw hRo hbo hopre hbq hab
+  have hpar : ∀ (k x : Nat), bo.par[k]? = some x → (fun x => read x Rp) x =
+      match j'.args[k]? with | some (some u) => (fun x => read x regs) u | _ => none := by
+    intro k x hk
+    rw [awa_argV, hargs k, ← awa_argV]
+    exact aedge_pass j.args bo.par regs Rp (fun u hu => hno _ hu u rfl) (hpn o bo hbo) hloop k x hk
+  have hoff : ∀ x, x ∉ bo.par → (fun x => read x Rp) x = (fun x => read x regs) x := by
+    intro x hx
+    simp only [read]
+    rw [Comp.evalPass_frame hpass x hx]
+  exact ⟨aedge_aok hst him hed hpa hq hlq hmq hpb hok hj' hjo hpar hoff hnm hnmi hDo,
+    aedge_abinv hst him hed hpa hq hlq hmq hpb hab (aedge_taken_mem hj') hjo (fun x h => Or.inl h)
+      (fun x h => Or.inr h) hfr (fun x hx => (hDo x hx).imp (fun h => ⟨h.1, h.2.1⟩) id) hself⟩
+
+/-- **`EndOK` at the end of the block just walked**, from `AOK` and `ABInv` at
+its start and the run of its ops. -/
+theorem awa_end {pick : List Nat → Nat} (hpick : ∀ l : List Nat, l ≠ [] → pick l ∈ l) {bl : Map Blob}
+    (hS : AliasSSAB bl) (hA : Acyclic bl) (hnl : NoLti bl) {pre : List Nat} {g : AGen Map} {o : Nat}
+    {p : List Nat} {bo : Blob} (hπ : BPath bl (o :: p)) (hbo : HoonMap.get bl o = some bo) {j0 : Jmp}
+    (hj0 : j0 ∈ getJmps bo.fin) (hopre : o ∉ pre) (hpend : ∀ j ∈ getJmps bo.fin, o ∈ g.rev j.there)
+    {loc0 : AInfo} {imms : AImms} {R Ry : Nat → Option Noun}
+    (hok : AOK ⟨g.old, loc0, imms⟩ R (DoneS bl pre p bo))
+    (hab : ABInv ⟨g.old, loc0, imms⟩ (fun x => DefW bl pre x ∨ x ∈ bo.par) (DoneS bl pre p bo) (ClR bl))
+    {rb : List Pole × ABody} (hbody : aliasBody pick bo.body ⟨g.old, loc0, imms⟩ = some rb)
+    {rf : Termin × (Nat → List Nat) × Bool} (hfin : aliasFin rb.2.old rb.2.loc g.rev g.folded o bo.fin = some rf)
+    (hrun : OpsRun bo.body R Ry) :
+    EndOK bl (pre ++ [o])
+      { new := HoonMap.put g.new o { par := bo.par, body := rb.1, fin := rf.1 }, old := rb.2.old,
+        info := updA g.info o (some rb.2.loc), imms := updA g.imms o (some rb.2.imml), rev := rf.2.1,
+        folded := rf.2.2 } o p bo Ry := by
+  have hR : Reach bl o := ssk_bpath_reach hπ o List.mem_cons_self
+  have hnodf : ∀ k r, k < bo.body.length → ¬ DeadFill bl r o k := fun k r _ hdf => by
+    obtain ⟨b3, hb3, ⟨u, hu⟩, -⟩ := hdf
+    rw [hbo] at hb3; cases hb3; rw [hu] at hj0; simp [getJmps] at hj0
+  have hBO := awi_bodyOK hS hA hπ hbo hnodf hopre (awi_doneS_body hopre)
+  rw [List.take_length] at hBO
+  obtain ⟨hok1, hab1⟩ := as_body hpick bo.body _ R _ _ rb.1 rb.2 Ry hbody hok hab hBO hrun
+  have hoo : o ∈ pre ++ [o] := List.mem_append_right _ (List.mem_singleton.mpr rfl)
+  have hsubD : ∀ x, DoneE bl (pre ++ [o]) p bo x → bodyDone (ClR bl) bo.body (DoneS bl pre p bo) x := by
+    rintro x ⟨h1, h2, h3⟩
+    rcases h1 with h1 | h1
+    · exact awa_bodyDone_base _ _ _ ⟨h1, h2, fun o' i hd ho' => h3 o' i hd (List.mem_append_left _ ho')⟩
+    · exact awa_bodyDone_dst _ _ _ h1 h2
+  have hsubF : ∀ x, bodyDef bo.body (fun x => DefW bl pre x ∨ x ∈ bo.par) x → DefW bl (pre ++ [o]) x := by
+    intro x hx
+    rcases awa_bodyDef_cases _ _ x hx with (h | h) | h
+    · exact DefW.mono (fun a ha => List.mem_append_left _ ha) h
+    · exact Or.inr ⟨(o, none), awi_par_live hR hbo h, hoo⟩
+    · obtain ⟨i, op, hi, he⟩ := bdef_idx h
+      exact Or.inr ⟨(o, some i), awi_jump_live hR hbo hj0 hi he, hoo⟩
+  have hok2 : AOK rb.2 Ry (DoneE bl (pre ++ [o]) p bo) := aok_mono hok1 hsubD
+  have hab2 : ABInv rb.2 (DefW bl (pre ++ [o])) (DoneE bl (pre ++ [o]) p bo) (ClR bl) :=
+    awa_abinv_mono hab1 hsubF hsubD
+  have hfd : ∀ x, x ∈ finRegs bo.fin → DoneE bl (pre ++ [o]) p bo x := fun x hx => awi_fin_done hS hπ hbo hj0 hx
+  refine ⟨rb.2.loc, rb.2.imml, { par := bo.par, body := rb.1, fin := rf.1 }, as_upd_self _ _ _, as_upd_self _ _ _,
+    by simp only [HoonMap.get_put, if_true],
+    ?_, hok2, hab2, ?_⟩
+  · intro x hx
+    obtain ⟨y, hy, rfl⟩ := awa_fin_reads hfin (hnl o bo hbo) x hx
+    exact hab2.old y (hfd y (awk_finReads_sub hy))
+  · intro j hj
+    obtain ⟨j', h1, h2, h3, h4⟩ := afn_jump hfin hok2.info (fun x hx => hok2.old x (hfd x (awk_finReads_sub hx)))
+      (hnl o bo hbo) hj
+    refine ⟨h4 (hpend j (aedge_taken_mem hj)), j', h1, h2, fun k => ?_⟩
+    rw [h3, List.getElem?_map]
+    cases hk : j.args[k]? with
+    | none => rfl
+    | some a =>
+      cases a with
+      | none => rfl
+      | some u =>
+        simp only [Option.map_some, argV, Option.bind_some]
+        exact hok2.old u (hfd u (jmp_finRegs (aedge_taken_mem hj) (List.mem_of_getElem? hk)))
+
+/-- `Done` at the end of a block walked before is safe from the next block. -/
+theorem awa_stable1 {bl : Map Blob} (hS : AliasSSAB bl) {pre l : List Nat} {o : Nat}
+    (ht : TopoOK bl (pre ++ o :: l)) {q : Nat} {p : List Nat} {b : Blob} {j : Jmp} (hπ : BPath bl (q :: p))
+    (hb : HoonMap.get bl q = some b) (hj : j ∈ getJmps b.fin) (hq : q ∈ pre) {x : Nat}
+    (hx : DoneE bl (pre ++ [o]) p b x) :
+    Reach bl o → ∀ b', HoonMap.get bl o = some b' → x ∉ b'.body.filterMap aliasDst := by
+  intro hR b' hb' hm
+  have hdisj : ∀ a ∈ pre, a ≠ o := fun a ha e => (List.nodup_append.mp ht.1).2.2 a ha o List.mem_cons_self e
+  have hoo : o ∈ pre ++ [o] := List.mem_append_right _ (List.mem_singleton.mpr rfl)
+  have hRq : Reach bl q := ssk_bpath_reach hπ q List.mem_cons_self
+  obtain ⟨k, op, hk, he⟩ := bdef_idx hm
+  have hlive : LiveDef bl x (o, some k) := ⟨hR, ⟨b', op, hb', hk, he⟩, fun i hi hdf => by
+    cases hi; exact hx.2.2 o k hdf hoo⟩
+  rcases hx.1 with (hd | hd | ⟨o', ho', b2, hb2, hd⟩) | hd
+  · exact hd (bdef_allDefs hb' (List.mem_append_right _ hm))
+  · have e := hS.1 x _ _ hlive (awi_par_live hRq hb hd); simp at e
+  · have hR' := ssk_bpath_reach hπ o' (List.mem_cons_of_mem _ ho')
+    have ho'pre := awi_path_pre ht hπ hq o' ho'
+    obtain ⟨b3, j3, hb3, hj3⟩ := bdef_jumps hπ rfl o' ho'
+    rw [hb2] at hb3; cases hb3
+    rcases List.mem_append.mp hd with hd | hd
+    · have e := hS.1 x _ _ hlive (awi_par_live hR' hb2 hd); simp at e
+    · obtain ⟨i, op', hi, he'⟩ := bdef_idx hd
+      have e := hS.1 x _ _ hlive (awi_jump_live hR' hb2 hj3 hi he')
+      simp only [Prod.mk.injEq] at e
+      exact hdisj o' ho'pre e.1.symm
+  · obtain ⟨i, op', hi, he'⟩ := bdef_idx hd
+    have e := hS.1 x _ _ hlive (awi_jump_live hRq hb hj hi he')
+    simp only [Prod.mk.injEq] at e
+    exact hdisj q hq e.1.symm
+
+/-- **`awi_end_later` for one block** of a walk over the whole `topo`. -/
+theorem awa_end_step {pick : List Nat → Nat} {nargs : Nat} {bl : Map Blob} (hS : AliasSSAB bl) {pre l : List Nat}
+    {o : Nat} {g g' : AGen Map} (ht : TopoOK bl (pre ++ o :: l)) (hi : ARev bl (pre ++ o :: l) pre g)
+    (hw : OldW bl pre g) (h : aliasBlock pick nargs bl g o = some g') {q : Nat} {p : List Nat} {b : Blob}
+    {j : Jmp} (hπ : BPath bl (q :: p)) (hb : HoonMap.get bl q = some b) (hj : j ∈ getJmps b.fin) (hq : q ∈ pre)
+    {lq : AInfo} {mq : AImms} {R : Nat → Option Noun}
+    (hok : AOK ⟨g.old, lq, mq⟩ R (DoneE bl pre p b))
+    (hab : ABInv ⟨g.old, lq, mq⟩ (DefW bl pre) (DoneE bl pre p b) (ClR bl)) :
+    AOK ⟨g'.old, lq, mq⟩ R (DoneE bl (pre ++ [o]) p b) ∧
+      ABInv ⟨g'.old, lq, mq⟩ (DefW bl (pre ++ [o])) (DoneE bl (pre ++ [o]) p b) (ClR bl) := by
+  have hsub : ∀ x, DoneE bl (pre ++ [o]) p b x → DoneE bl pre p b x :=
+    fun x hx => ⟨hx.1, hx.2.1, fun o' i hd ho' => hx.2.2 o' i hd (List.mem_append_left _ ho')⟩
+  have hold : ∀ x, DoneE bl (pre ++ [o]) p b x → g'.old x = g.old x :=
+    fun x hx => awi_frame_step ht hi h (awa_stable1 hS ht hπ hb hj hq hx)
+  have hmono : ∀ x, DefW bl pre x → DefW bl (pre ++ [o]) x :=
+    fun x => DefW.mono fun o h => List.mem_append_left _ h
+  have hw' := awi_old_step ht hi hw h
+  have ht' : TopoOK bl ((pre ++ [o]) ++ l) := by rw [List.append_assoc]; exact ht
+  refine ⟨⟨hok.imm, hok.info, fun d hd => ?_⟩, ⟨fun n r hr => hmono r (hab.imm n r hr),
+    ⟨fun r i x hr hx => hmono x (hab.loc.1 r i x hr hx), fun r i hr => (hab.loc.2 r i hr).imp_right (hmono r)⟩,
+    fun d hd => ?_, fun d hd => hmono d (hab.done d (hsub d hd)), fun d hn hc => awi_self hS ht' hw' hc hn⟩⟩
+  · show R (g'.old d) = R d
+    rw [hold d hd]; exact hok.old d (hsub d hd)
+  · show DefW bl (pre ++ [o]) (g'.old d)
+    rw [hold d hd]; exact hmono _ (hab.old d (hsub d hd))
+
+/-- **`EndOK` at a block walked before survives the next block.** -/
+theorem awa_rebase {pick : List Nat → Nat} {nargs : Nat} {bl : Map Blob} (hS : AliasSSAB bl) {pre l : List Nat}
+    {o : Nat} {g g' : AGen Map} (ht : TopoOK bl (pre ++ o :: l)) (hi : ARev bl (pre ++ o :: l) pre g)
+    (hw : OldW bl pre g) (h : aliasBlock pick nargs bl g o = some g') {q : Nat} {p : List Nat} {b : Blob}
+    {j : Jmp} (hπ : BPath bl (q :: p)) (hb : HoonMap.get bl q = some b) (hj : j ∈ getJmps b.fin) (hq : q ∈ pre)
+    (hqo : q ≠ o) {R : Nat → Option Noun} (hE : EndOK bl pre g q p b R) : EndOK bl (pre ++ [o]) g' q p b R := by
+  obtain ⟨lq, mq, pb, hlq, hmq, hpb, hfr, hok, hab, htk⟩ := hE
+  obtain ⟨e1, e2, e3⟩ := (awk_block h).2 q hqo
+  obtain ⟨hok', hab'⟩ := awa_end_step hS ht hi hw h hπ hb hj hq hok hab
+  refine ⟨lq, mq, pb, e1.trans hlq, e2.trans hmq, e3.trans hpb,
+    fun x hx => DefW.mono (fun a ha => List.mem_append_left _ ha) (hfr x hx), hok', hab', fun j' hj' => ?_⟩
+  obtain ⟨h1, h2⟩ := htk j' hj'
+  exact ⟨awa_rev_keep h h1 hqo, h2⟩
+
+end
+
+end Opt
+end SkaModel
+end Formalization
