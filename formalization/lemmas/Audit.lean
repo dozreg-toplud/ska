@@ -110,6 +110,7 @@ import lemmas.Compiler.CompMember
 import lemmas.Compiler.CompMemberGate
 import lemmas.Compiler.CompSccGate
 import lemmas.Hoon.RollUni
+import lemmas.Compiler.CompInlined
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -828,3 +829,10 @@ open Formalization
 #print axioms Compiler.csi_arm
 #print axioms Compiler.cu_csi_eq
 #print axioms Compiler.cu_gate_scc_one
+#print axioms Compiler.inl_body_at
+#print axioms Compiler.inlBody_eq
+#print axioms Compiler.inline_off_at
+#print axioms Compiler.inl_trap_pure
+#print axioms Compiler.inl_gate_miss
+#print axioms Compiler.inl_gate_hit
+#print axioms Compiler.inl_gate
