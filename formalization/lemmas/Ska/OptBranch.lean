@@ -568,7 +568,82 @@ theorem rub_reads {x x' : Cfg σ Map} {k : Nat} (hr : RubRel c.blocks x x') (hk 
       · exact hk
       · simp [h2, finReads] at hk
 
+
+/-- **Forward, on paths.** -/
+theorem rub_fwd (hbl : RubBlocks c.blocks c'.blocks) {x y : Cfg σ Map} {es : List (Nat × Nat)}
+    (hs : Steps lib O c gul x es y) {r : Tone × σ} (he : endOf lib O gul y = some r) :
+    ∀ {x' : Cfg σ Map}, RubRel c.blocks x x' →
+      ∃ es' y', Steps lib O c' gul x' es' y' ∧ endOf lib O gul y' = some r := by
+  induction hs with
+  | refl => intro x' hr; exact rub_fwd_end he hr
+  | step s _ ih =>
+    intro x' hr
+    obtain ⟨es1, y1, hs1, hr1⟩ := rub_fwd_step (lib := lib) (O := O) (gul := gul) hbl s hr
+    obtain ⟨es2, y2, hs2, he2⟩ := ih he hr1
+    exact ⟨_, y2, steps_trans hs1 hs2, he2⟩
+
+/-- **Backward, on paths**, from a configuration that a path of the code
+before reaches, given that every real read on such paths reads a value. -/
+theorem rub_bwd (hbl : RubBlocks c.blocks c'.blocks) {x0 : Cfg σ Map}
+    (hok : ∀ es y k, Steps lib O c gul x0 es y → ReadsAt gul y k → ∃ v, read k y.regs = some v)
+    {x' y' : Cfg σ Map} {es' : List (Nat × Nat)} (hs : Steps lib O c' gul x' es' y') :
+    ∀ {x : Cfg σ Map} {es : List (Nat × Nat)}, Steps lib O c gul x0 es x → RubRel c.blocks x x' →
+      ∃ es2 y, Steps lib O c gul x0 es2 y ∧ RubRel c.blocks y y' := by
+  induction hs with
+  | refl => intro x es h hr; exact ⟨es, x, h, hr⟩
+  | step s _ ih =>
+    intro x es h hr
+    obtain ⟨es1, y1, hs1, hr1⟩ := rub_bwd_step (lib := lib) (O := O) (gul := gul) hbl s hr
+      (fun k hk => hok es x k h hk)
+    exact ih (steps_trans h hs1) hr1
+
 end Sim
+
+/-- **`+remove-useless-branching` keeps the code.** -/
+theorem rub_keeps [MapKeys Map] (c : Straight Map) {ch : Bool} {bl' : Map Blob}
+    (h : removeUselessBranching c.blocks = some (ch, bl')) : Keeps c (withBlocks c bl') := by
+  have hbl : RubBlocks c.blocks bl' := rub_blocks h
+  refine ⟨rfl, rfl, ?_, ?_⟩
+  · simp only [withBlocks]
+    cases hb : HoonMap.get c.blocks 0 with
+    | none => rw [(hbl 0).1 hb]
+    | some b =>
+      obtain ⟨e, -, hb'⟩ := (hbl 0).2 b hb
+      rw [hb']; rfl
+  intro lib σ O gul st vals t hok
+  have hbl' : RubBlocks c.blocks (withBlocks c bl').blocks := hbl
+  cases hb0 : HoonMap.get c.blocks 0 with
+  | none =>
+    have hn' : HoonMap.get (withBlocks c bl').blocks 0 = none := (hbl 0).1 hb0
+    refine ⟨by simp [execEntry, hn', hb0], ?_⟩
+    rintro es y k ⟨b0, hb0', -⟩ -
+    rw [hn'] at hb0'; cases hb0'
+  | some b0 =>
+    obtain ⟨e0, he0, hb0'⟩ := (hbl 0).2 b0 hb0
+    change HoonMap.get (withBlocks c bl').blocks 0 = some (rubBlob b0 e0) at hb0'
+    let x0 : Path.Cfg σ Map := ⟨0, b0, [], regsOf vals, t, st⟩
+    let x0' : Path.Cfg σ Map := ⟨0, rubBlob b0 e0, [], regsOf vals, t, st⟩
+    have hr0 : RubRel c.blocks x0 x0' := ⟨rfl, rfl, rfl, rfl, e0, he0, Or.inl rfl⟩
+    have hok' : ∀ es y k, Steps lib O c gul x0 es y → ReadsAt gul y k → ∃ v, read k y.regs = some v :=
+      fun es y k hs hk => hok es y k ⟨b0, hb0, hs⟩ hk
+    -- a path of the code after from its entry is related to a path before
+    have back : ∀ es' y', Path.FromEntry (lib := lib) (O := O) (c := withBlocks c bl') (gul := gul) st vals t es' y' →
+        ∃ es y, Steps lib O c gul x0 es y ∧ RubRel c.blocks y y' := by
+      rintro es' y' ⟨b0'', hb0'', hs'⟩
+      rw [hb0'] at hb0''; cases hb0''
+      exact rub_bwd (c' := withBlocks c bl') hbl' hok' hs' (Steps.refl x0) hr0
+    refine ⟨Option.ext fun r => ⟨fun h' => ?_, fun h' => ?_⟩, ?_⟩
+    · obtain ⟨es', y', hy', he'⟩ := (execEntry_iff_path (c := withBlocks c bl') st vals t r).mp h'
+      obtain ⟨es, y, hs, hr⟩ := back es' y' hy'
+      exact (execEntry_iff_path (c := c) st vals t r).mpr ⟨es, y, ⟨b0, hb0, hs⟩, rub_bwd_end he' hr⟩
+    · obtain ⟨es, y, ⟨b0'', hb0'', hs⟩, he⟩ := (execEntry_iff_path (c := c) st vals t r).mp h'
+      rw [hb0] at hb0''; cases hb0''
+      obtain ⟨es', y', hs', he'⟩ := rub_fwd (c' := withBlocks c bl') hbl' hs he hr0
+      exact (execEntry_iff_path (c := withBlocks c bl') st vals t r).mpr ⟨es', y', ⟨_, hb0', hs'⟩, he'⟩
+    · intro es' y' k hy' hk
+      obtain ⟨es, y, hs, hr⟩ := back es' y' hy'
+      obtain ⟨v, hv⟩ := hok' es y k hs (rub_reads hr hk)
+      exact ⟨v, by rw [hr.2.1]; exact hv⟩
 
 end Opt
 end SkaModel
