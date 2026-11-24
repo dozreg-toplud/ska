@@ -44,6 +44,7 @@ theorem hinted_nc (cod : Bell → Option Bool) {lv : Nat} {t : Bool} {nm : Nomm}
   | sevenE _ _ _ ihq ihp => exact hinted_noDirect_seven ihp ihq
   | sevenN _ _ _ _ ihq ihp => exact hinted_noDirect_seven ihp ihq
   | ind => rfl
+  | four hp => rw [hinted_pure cod _ (fragU_pure (FragU.x (FragX.four hp)))]; simp [fragU_pure (FragU.x (FragX.four hp))]
   | pure hf => rw [hinted_pure cod _ (fragU_pure hf)]; simp [fragU_pure hf]
   | down _ _ ih => exact ih
   | forget _ ih => exact ih
@@ -60,6 +61,7 @@ theorem fragU_of_nc {lv : Nat} {t : Bool} {nm : Nomm} (h : NC (S := S) lv t nm) 
   | sevenE _ _ hu _ _ => exact hu
   | sevenN _ _ _ hu _ _ => exact hu
   | ind => intro e; simp [Nomm.pure] at e
+  | four hp => exact fun _ => FragU.x (FragX.four hp)
   | pure hf => exact fun _ => hf
   | down _ _ ih => exact ih
   | forget _ ih => exact ih
@@ -74,6 +76,7 @@ theorem nc_lv2_shape {lv : Nat} {t : Bool} {nm : Nomm} (h : NC (S := S) lv t nm)
   | sevenE => intro _; exact ⟨fun _ _ e => (by cases e), fun _ e => (by cases e)⟩
   | sevenN => intro l; omega
   | ind => intro _; exact ⟨fun _ _ e => (by cases e), fun _ e => (by cases e)⟩
+  | four => intro l; omega
   | pure => intro l; omega
   | down _ hl ih => intro l; exact ih (by omega)
   | forget _ ih => exact ih
@@ -160,6 +163,10 @@ theorem ncOK {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) (
     have R := uokc_indDA env (fun h => (ihp h).1) (fun h => (ihq h).1) hbl hA rfl
     have L := lokc_indAU env (fun h => (ihp h).1) (fun h => (ihq h).1) hbl hA rfl
     exact ⟨R.1, fun _ => ⟨jNew_of_entNew R.2, fun _ => R.2⟩, fun _ => L.toS, fun _ => L⟩
+  | four hp =>
+    intro P f hA
+    exact ⟨uokcU hok env (FragU.x (FragX.four hp)) hA, fun e => (by cases e), fun _ => lokcs_n4XA hok env hp hA,
+      fun l => absurd l (by omega)⟩
   | pure hf =>
     intro P f hA
     exact ⟨uokcU hok env hf hA, fun e => (by cases e), fun l => absurd l (by omega), fun l => absurd l (by omega)⟩

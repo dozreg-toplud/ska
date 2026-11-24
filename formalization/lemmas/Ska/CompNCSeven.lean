@@ -45,9 +45,9 @@ theorem lokc_seven_core {lib : Lib} {env : CallEnv} {p : Nomm} {P : Noun → Pro
     (hed : ∀ e ∈ entries L, Distinct e.2.sure.ned ∧
       ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none)
     {Qq : Wit} (Rq : RunOKLC (Map := Map) lib (Img lib P fb) fc L th Qq g0 g1 nx)
-    (jq : nx.th = th ∨ g0.bo ≤ nx.th.there)
     (hp : runLC env sup p nx.goal region g1 = some (nex, g2)) :
-    (∃ Q, RunOKLC (Map := Map) lib P f L th Q g0 g2 nex) ∧ (nex.th = th ∨ g0.bo ≤ nex.th.there) := by
+    (∃ Q, RunOKLC (Map := Map) lib P f L th Q g0 g2 nex) ∧
+      ((nx.th = th ∨ g0.bo ≤ nx.th.there) → (nex.th = th ∨ g0.bo ≤ nex.th.there)) := by
   have r1 := Rq.re
   have o1 := Rq.bo
   have hi1 := Rq.hi
@@ -71,7 +71,8 @@ theorem lokc_seven_core {lib : Lib} {env : CallEnv} {p : Nomm} {P : Noun → Pro
   · rcases hj with e | e
     · rw [e]; exact Nat.le_refl _
     · omega
-  · rcases hj with e | e
+  · intro jq
+    rcases hj with e | e
     · rw [e]; exact jq
     · right; omega
 
@@ -88,23 +89,24 @@ theorem lokc_sevenC (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Prop}
   obtain ⟨nx, g1, hq, hp⟩ := bind_some h
   have hcnt : sixCount p ≤ 255 ∧ sixCount q ≤ 255 := by simp only [sixCount] at hc; omega
   obtain ⟨⟨Qq, Rq⟩, jq⟩ := Lq.run hcnt.2 b0 d0 hu hcl hcb h1 h2 ha hsd hsl hlab hnd hed hq
-  exact lokc_seven_core Lp M hcnt.1 b0 d0 hu hcl hcb ha hsl hlab hed Rq jq hp
+  have C := lokc_seven_core Lp M hcnt.1 b0 d0 hu hcl hcb ha hsl hlab hed Rq hp
+  exact ⟨C.1, C.2 jq⟩
 
 /-- **`[7 p q]` with `p` meeting `LOKC` and `q` meeting `LOKCS` meets
 `LOKCS`**: `q` runs under the goal, whose sure part asks nothing. -/
 theorem lokcs_sevenC (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {f fb fc : Noun}
     (Lp : LOKC (S := S) (Map := Map) lib env P fb p) (Lq : LOKCS (S := S) (Map := Map) lib env (Img lib P fb) fc q)
     (M : MinkC7 lib P f fb fc) : LOKCS (S := S) (Map := Map) lib env P f (Nomm.n7 p q) := by
-  refine ⟨fun {sup L th region g0 g1 nex} hc h => ?_, fun {sup L th region g0 g2 nex} hs hc b0 d0 hu hcl hcb h1 h2 ha
-    hsd hsl hlab hnd hed h => ?_⟩
+  refine ⟨fun {sup L th region g0 g1 nex} hc h => ?_, fun {sup L th region g0 g2 nex} hs ht hc b0 d0 hu hcl hcb h1 h2
+    ha hsd hsl hlab hnd hed h => ?_⟩
   · rw [runLC_n7] at h
     obtain ⟨nx, g1', hq, hp⟩ := bind_some h
     exact Lp.clean (Lq.clean hc hq) hp
   rw [runLC_n7] at h
   obtain ⟨nx, g1, hq, hp⟩ := bind_some h
   have hcnt : sixCount p ≤ 255 ∧ sixCount q ≤ 255 := by simp only [sixCount] at hc; omega
-  obtain ⟨⟨Qq, Rq⟩, jq⟩ := Lq.run hs hcnt.2 b0 d0 hu hcl hcb h1 h2 ha hsd hsl hlab hnd hed hq
-  exact lokc_seven_core Lp M hcnt.1 b0 d0 hu hcl hcb ha hsl hlab hed Rq jq hp
+  obtain ⟨Qq, Rq⟩ := Lq.run hs ht hcnt.2 b0 d0 hu hcl hcb h1 h2 ha hsd hsl hlab hnd hed hq
+  exact (lokc_seven_core Lp M hcnt.1 b0 d0 hu hcl hcb ha hsl hlab hed Rq hp).1
 
 /-- **`[7 p q]` at levels `1` and `2` on every `Annot`**: the forms `n7`,
 `inline`, `n9` and the wrappers; `hpc` excludes the forms of `[8 b c]`

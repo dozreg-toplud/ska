@@ -138,13 +138,13 @@ variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys
 /-! ## The levels -/
 
 /-- **Level `1`: runs under a lazy goal whose sure part asks nothing**
-(`LOKC` with `L.sure.ned = none`), any entries: the bond goal of `+past`
-among them. -/
+(`LOKC` with `L.sure.ned = none` and the goal's jump at no entry's label,
+without the jump fact), any entries: the bond goal of `+past` among them. -/
 structure LOKCS (lib : Lib) (env : CallEnv) (P : Noun → Prop) (f : Noun) (nm : Nomm) : Prop where
   clean : ∀ {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
     Clean L.sure.ned → runLC env sup nm (CGoalL.next L th) region g0 = some (nex, g1) → Clean nex.laz.sure.ned
   run : ∀ {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
-    L.sure.ned = Need.none →
+    L.sure.ned = Need.none → th.there ∉ (entries L).map Prod.fst →
     sixCount nm ≤ 255 → 1 ≤ g0.bo → g0.drop = false → UpBelow g0 → Clear g0 → CondBelow g0 →
     1 ≤ th.there → th.there < g0.bo → th.args = [] → Distinct L.sure.ned →
     (∀ x, NMem L.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none) →
@@ -153,12 +153,12 @@ structure LOKCS (lib : Lib) (env : CallEnv) (P : Noun → Prop) (f : Noun) (nm :
     (∀ e ∈ entries L, Distinct e.2.sure.ned ∧
       ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none) →
     runLC env sup nm (CGoalL.next L th) region g0 = some (nex, g1) →
-    (∃ Q, RunOKLC (Map := Map) lib P f L th Q g0 g1 nex) ∧ (nex.th = th ∨ g0.bo ≤ nex.th.there)
+    ∃ Q, RunOKLC (Map := Map) lib P f L th Q g0 g1 nex
 
 theorem LOKC.toS {lib : Lib} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm}
     (h : LOKC (S := S) (Map := Map) lib env P f nm) : LOKCS (S := S) (Map := Map) lib env P f nm :=
-  ⟨h.clean, fun _ hc b0 d0 hu hcl hcb h1 h2 ha hsd hsl hlab hnd hed hr =>
-    h.run hc b0 d0 hu hcl hcb h1 h2 ha hsd hsl hlab hnd hed hr⟩
+  ⟨h.clean, fun _ _ hc b0 d0 hu hcl hcb h1 h2 ha hsd hsl hlab hnd hed hr =>
+    (h.run hc b0 d0 hu hcl hcb h1 h2 ha hsd hsl hlab hnd hed hr).1⟩
 
 /-- **The bond goal is a goal of level `1`**: `LOKCS` gives `BondOKC`. -/
 theorem LOKCS.toBond {lib : Lib} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm}
@@ -166,19 +166,20 @@ theorem LOKCS.toBond {lib : Lib} {env : CallEnv} {P : Noun → Prop} {f : Noun} 
   refine ⟨fun {sup region g0 g1 nex hed b th} hr => h.clean (by simp [Sure.bunt, Clean]) hr,
     fun {sup region g0 g1 nex hed b th jb} hc b0 d0 hu hcl hcb h1 h2 ha hne hb hbb hd hen hr => ?_⟩
   have e1 : entries (Lazy.mk (Sure.bunt : Sure S) [] [(b, ofSure hed)]) = [(b, ofSure hed)] := entries_bond1 b hed
-  exact (h.run (by simp [Sure.bunt]) hc b0 d0 hu hcl hcb h1 h2 ha (by simp [Sure.bunt, Distinct])
+  exact h.run (by simp [Sure.bunt]) (by rw [e1]; simpa using fun e => hne e.symm) hc b0 d0 hu hcl hcb h1 h2 ha
+    (by simp [Sure.bunt, Distinct])
     (fun x hx => by simp [Sure.bunt, NMem] at hx)
     (fun e he => by rw [e1] at he; simp only [List.mem_singleton] at he; subst he; exact ⟨hb, _, hbb⟩)
     (by rw [e1]; simp) (fun e he => by
       rw [e1] at he; simp only [List.mem_singleton] at he; subst he
-      exact ⟨hd, fun x hx => hen x hx⟩) hr).1
+      exact ⟨hd, fun x hx => hen x hx⟩) hr
 
 theorem LOKCS.wrap {lib : Lib} {env : CallEnv} {P : Noun → Prop} {f f' : Noun} {nm : Nomm}
     (W : WrapRel lib P f f') (B : LOKCS (S := S) (Map := Map) lib env P f nm) :
     LOKCS (S := S) (Map := Map) lib env P f' nm :=
-  ⟨B.clean, fun hs hc b0 d0 hu hcl hcb h1 h2 ha hsd hsl hlab hnd hed h => by
-    obtain ⟨⟨Q, R⟩, j⟩ := B.run hs hc b0 d0 hu hcl hcb h1 h2 ha hsd hsl hlab hnd hed h
-    exact ⟨⟨Q, R.wrap W⟩, j⟩⟩
+  ⟨B.clean, fun hs ht hc b0 d0 hu hcl hcb h1 h2 ha hsd hsl hlab hnd hed h => by
+    obtain ⟨Q, R⟩ := B.run hs ht hc b0 d0 hu hcl hcb h1 h2 ha hsd hsl hlab hnd hed h
+    exact ⟨Q, R.wrap W⟩⟩
 
 /-! ## The hypothesis -/
 
@@ -215,6 +216,7 @@ inductive NC : Nat → Bool → Nomm → Prop
       ((Nomm.n7 p q).pure = true → FragU (S := S) (Nomm.n7 p q)) → NC 0 (t' && (t || !p.pure)) (Nomm.n7 p q)
   | ind {lv : Nat} {t t' : Bool} {p q : Nomm} : NC 0 t p → NC 0 t' q → bareLitQ q = false →
       NC lv true (Nomm.n2 p q Option.none)
+  | four {p : Nomm} : FragX (S := S) p → NC 1 false (Nomm.n4 p)
   | pure {nm : Nomm} : FragU (S := S) nm → NC 0 false nm
   | down {lv lv' : Nat} {t : Bool} {nm : Nomm} : NC lv t nm → lv' ≤ lv → NC lv' t nm
   | forget {lv : Nat} {nm : Nomm} : NC lv true nm → NC lv false nm

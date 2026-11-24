@@ -88,6 +88,7 @@ import lemmas.Ska.CompCallC
 import lemmas.Ska.CompHypOfFragD
 import lemmas.Ska.CompHypOfFragF
 import lemmas.Ska.CompNCInd
+import lemmas.Ska.CompNCExamples
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -958,3 +959,16 @@ open Formalization.SkaModel.Comp
 #print axioms bondOKC_of_nc
 #print axioms entNew_of_nc
 #print axioms finishLUC_contractNC
+#print axioms lokcs_n4X
+#print axioms lokcs_n4XA
+#print axioms pure_false_of_hinted
+#print axioms nc_of_fragB
+#print axioms nc_of_fragC
+#print axioms nc_of_fragD
+#print axioms nc_of_fragE
+#print axioms nc_of_fragI
+#print axioms Formalization.SkaModel.PokeM.rawMono_NCG
+#print axioms Formalization.SkaModel.PokeM.fragUFG_subNC
+#print axioms Formalization.SkaModel.PokeM.compHyp_of_NCG
+#print axioms nc_c8tTail
+#print axioms c8t_example

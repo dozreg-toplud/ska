@@ -132,6 +132,31 @@ theorem lokc_indAU {lib : Lib} {code : Bell → Option Nomm} (env : CallEnv) {p 
   | n8g => intro e; cases e
   | n8l => intro e; cases e
 
+/-! ## `[4 p]` with a call-free `p` at level `1` -/
+
+/-- **`[4 p]` with `p` in `FragX` meets `LOKCS`**: under a goal whose sure
+part asks nothing the increment writes a fresh register, which
+`+collapse-lazy-atom` reads at every entry (`runOKL_n4_none`). -/
+theorem lokcs_n4X (lib : Lib) (env : CallEnv) {p : Nomm} (hp : FragX (S := S) p) {P : Noun → Prop} {f : Noun}
+    (M : MinkEq lib P f (Nomm.n4 p)) : LOKCS (S := S) (Map := Map) lib env P f (Nomm.n4 p) := by
+  have pp : (Nomm.n4 p).pure = true := by simpa [Nomm.pure] using fragX_pure hp
+  refine ⟨fun {sup L th region g0 g1 nex} hc h => ?_, fun {sup L th region g0 g1 nex} hs ht hc b0 d0 hu hcl hcb h1 h2
+    ha hsd hsl hlab hnd hed h => ?_⟩
+  · rw [runLC_eq env _ (Nomm.noCall_of_pure _ pp)] at h
+    exact clean_n4L (runX_clean hp) h
+  · rw [runLC_eq env _ (Nomm.noCall_of_pure _ pp)] at h
+    obtain ⟨d, R⟩ := runOKL_n4_none lib (runX_ok lib hp).2.1 (runX_semR lib hp).2.1 (runX_keeps hp)
+      (aboveX_of_fragX hp) h hc b0 d0 hu hcl h1 h2 hs hcb (List.nodup_cons.mpr ⟨ht, hnd⟩)
+      (fun e he => ⟨(hlab e he).1, by obtain ⟨th', hb⟩ := (hlab e he).2; exact ⟨[], _, hb⟩⟩)
+      (fun e he x hx => (hed e he).2 x hx)
+    exact ⟨_, R.toLC M⟩
+
+/-- **`[4 p]` with `p` in `FragX` meets `LOKCS` on every `Annot`.** -/
+theorem lokcs_n4XA {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) (env : CallEnv) {p : Nomm}
+    (hp : FragX (S := S) p) {P : Noun → Prop} {f : Noun} (hA : Annot lib code P f (Nomm.n4 p)) :
+    LOKCS (S := S) (Map := Map) lib env P f (Nomm.n4 p) :=
+  lokcs_n4X lib env hp (fun s hs gul tm r => mink_pure hok (by simpa [Nomm.pure] using fragX_pure hp) hA hs gul tm r)
+
 end Comp
 end SkaModel
 end Formalization
