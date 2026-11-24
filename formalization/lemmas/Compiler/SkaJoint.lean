@@ -13,8 +13,8 @@ So `E j` is `nock` on every formula with `FFar` (`E_far`), every run of
 
 This file also gives the bunt of `identity` that `+cull` computes, over every
 evaluator that is `nock` off `FFar` (`bunt_W`): arm `186` of the tail of `ana`
-is the mold `moldArm`, which makes the core `[moldBat [identBunt anaTail]]`,
-and both the arm and the battery `moldBat` are `FFar`.  `moldBat` has no name
+is the mold `identMoldArm`, which makes the core `[identMoldBat [identBunt anaTail]]`,
+and both the arm and the battery `identMoldBat` are `FFar`.  `identMoldBat` has no name
 in the generated nouns; `mold_arm_at` ties it to the pill.
 -/
 
@@ -30,27 +30,27 @@ set_option linter.unusedSimpArgs false
 /-! ## The bunt of `identity` over an evaluator -/
 
 /-- The battery of the mold core made by arm `186` of the tail of `ana`. -/
-def moldBat : Noun :=
+def identMoldBat : Noun :=
   (C (A 8) (C (C (C (A 8) (C (C (A 7) (C (C (A 0) (A 7)) (C (A 9) (C (A 11) (C (A 0) (A 7)))))) (C (A 9) (C (A 2)
     (C (A 10) (C (C (A 6) (C (A 0) (A 28))) (C (A 0) (A 2)))))))) (C (C (A 0) (A 26)) (C (A 0) (A 27)))) (C (A 8)
     (C (C (A 5) (C (C (A 0) (A 14)) (C (A 0) (A 2)))) (C (A 0) (A 6))))))
 
 /-- Arm `186` of the tail of `ana`, the mold `identity`:
-`[8 [1 identBunt] [[1 moldBat] [0 1]]]`. -/
-def moldArm : Noun := C (A 8) (C (C (A 1) identBunt) (C (C (A 1) moldBat) (C (A 0) (A 1))))
+`[8 [1 identBunt] [[1 identMoldBat] [0 1]]]`. -/
+def identMoldArm : Noun := C (A 8) (C (C (A 1) identBunt) (C (C (A 1) identMoldBat) (C (A 0) (A 1))))
 
-theorem mold_arm_at : slot? 186 anaTail = some moldArm := by kernel_rfl
+theorem mold_arm_at : slot? 186 anaTail = some identMoldArm := by kernel_rfl
 
-theorem moldArm_far : FFar moldArm := by ffar_disch
+theorem identMoldArm_far : FFar identMoldArm := by ffar_disch
 
-theorem moldBat_far : FFar moldBat := by ffar_disch
+theorem identMoldBat_far : FFar identMoldBat := by ffar_disch
 
 /-- The mold kicked with its default sample returns the bunt. -/
-theorem mold_bat_bunt : nock (C moldBat (C identBunt anaTail)) moldBat = some identBunt :=
+theorem mold_bat_bunt : nock (C identMoldBat (C identBunt anaTail)) identMoldBat = some identBunt :=
   nock_of_evalFuel (fuel := 300) (by kernel_rfl)
 
-theorem mold_arm_run : nock anaTail moldArm = some (C moldBat (C identBunt anaTail)) := by
-  unfold moldArm
+theorem mold_arm_run : nock anaTail identMoldArm = some (C identMoldBat (C identBunt anaTail)) := by
+  unfold identMoldArm
   simp [nock_exec]
 
 /-- **The bunt of `identity`** in `+cull`, over an evaluator `c` that is
@@ -59,11 +59,11 @@ theorem bunt_W (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar f → c 
     (h : slot? 2047 X = some anaTail) : nockW c X buntF = some identBunt := by
   unfold buntF
   rw [nockW_op7, nockW_op9, nockW_op0, h]
-  simp only [Option.bind_some, mold_arm_at, hcf _ _ moldArm_far, mold_arm_run]
+  simp only [Option.bind_some, mold_arm_at, hcf _ _ identMoldArm_far, mold_arm_run]
   rw [nockW_op9, nockW_op0]
   simp only [slot?_one, Option.bind_some]
-  rw [show slot? 2 (C moldBat (C identBunt anaTail)) = some moldBat from rfl]
-  simp only [Option.bind_some, hcf _ _ moldBat_far, mold_bat_bunt]
+  rw [show slot? 2 (C identMoldBat (C identBunt anaTail)) = some identMoldBat from rfl]
+  simp only [Option.bind_some, hcf _ _ identMoldBat_far, mold_bat_bunt]
 
 /-! ## The call function -/
 
