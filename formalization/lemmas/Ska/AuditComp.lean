@@ -326,3 +326,4 @@ open Formalization.SkaModel.Comp
 #print axioms wr_splitNeedS
 #print axioms foot_copyTail
 #print axioms foot_cons
+#print axioms foot_n5

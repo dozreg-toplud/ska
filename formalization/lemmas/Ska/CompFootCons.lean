@@ -471,6 +471,113 @@ theorem foot_cons {p q : Nomm} (ihp : FootIH S Map p) (ihq : FootIH S Map q) : F
     exact ⟨(wroteIn_emit (blobWr_fin _ _) h1).trans (WT.mono fun x hx => ⟨hx.1, a x hx.2.1, hx.2.2⟩),
       fun x hx => a x (sT x hx), dT⟩
 
+/-- **Fact (i) of `[5 p q]`**, for every goal: the block that compares the
+two fresh registers writes fresh registers and the goal's need (through
+`+collapse-lazy-atom` and `+forl` under `%next`), then the two runs and the
+copy as for cons. -/
+theorem foot_n5 {p q : Nomm} (ihp : FootIH S Map p) (ihq : FootIH S Map q) : FootIH S Map (Nomm.n5 p q) := by
+  intro goal g g' nex hd hg hD h
+  simp only [run] at h
+  obtain ⟨rp, g1, h1, h⟩ := bind_some h
+  obtain ⟨e1, q1, k1⟩ := keeps_re h1
+  obtain ⟨rq, g2, h2, h⟩ := bind_some h
+  obtain ⟨e2, q2, k2⟩ := keeps_re h2
+  have d2 := (k1.trans k2).dropF hd
+  have kk : ∀ x, x < g.re → x < g2.re := fun x hx => by omega
+  obtain ⟨o, g3, h3, h⟩ := bind_some h
+  have P : Keeps g2 g3 ∧ WroteIn (fun x => x < g3.re ∧ (g2.re ≤ x ∨ GMem goal x)) g2 g3 := by
+    cases goal with
+    | pick z o =>
+      exact ⟨(keeps_emit d2 (blobIn_fin (f := Termin.eqq rp rq z o)
+        ⟨show rp < g2.re by omega, show rq < g2.re by omega, hg.1.mono kk, hg.2.mono kk⟩) h3).1,
+        wroteIn_emit (blobWr_fin _ _) h3⟩
+    | done =>
+      obtain ⟨⟨o0, o1⟩, g4, h4, h3⟩ := bind_some h3
+      have k4 := keeps_doneBlocks d2 h4
+      have k5 := (keeps_emit (k4.dropF d2) (blobIn_fin (f := Termin.eqq rp rq (jmp0 o0) (jmp0 o1))
+          ⟨show rp < g4.re by have := k4.le; omega, show rq < g4.re by have := k4.le; omega,
+            jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩) h3).1
+      have l5 := k5.le
+      exact ⟨k4.trans k5, ((wr_doneBlocks h4).mono fun x hx => by
+        rcases hx with e | e
+        · exact e.elim
+        · exact ⟨by omega, Or.inl e.1⟩).trans (wroteIn_emit (blobWr_fin _ _) h3)⟩
+    | next laz th =>
+      obtain ⟨a, g4, h4, h3⟩ := bind_some h3
+      obtain ⟨k4, r4⟩ := keeps_collapseLazyAtom (nex := ⟨laz, th⟩) d2 (hg.1.mono (by omega)) h4
+      obtain ⟨w4, rr4⟩ := wr_collapseLazyAtom (nex := ⟨laz, th⟩) d2 (hg.1.mono (by omega)) h4
+      have l4 := k4.le
+      cases a with
+      | none =>
+        simp only at h3
+        by_cases ht : th.args = []
+        · rw [if_pos ht] at h3
+          have k5 := (keeps_emit (k4.dropF d2) (blobIn_one (p := Pole.equ rp rq) (f := Termin.hop (jmp0 th.there))
+            (fun x hx => by simp only [poleRegs, List.mem_cons, List.mem_nil_iff, or_false] at hx; omega)
+            (jmpIn_jmp0 _ _)) h3).1
+          have l5 := k5.le
+          exact ⟨k4.trans k5, (w4.mono fun x hx => by
+            rcases hx with e | e
+            · exact ⟨by have := hg.1 x e; omega, Or.inr e⟩
+            · exact ⟨by omega, Or.inl e.1⟩).trans (wroteIn_emit (blobWr_one (p := Pole.equ rp rq) _
+              (fun x hx => by simp [poleWr] at hx)) h3)⟩
+        · rw [if_neg ht] at h3; cases h3
+      | some x =>
+        obtain ⟨r, o⟩ := x
+        simp only at h3
+        obtain ⟨⟨z, o'⟩, g5, h5, h3⟩ := bind_some h3
+        have k5 := keeps_forl (k4.dropF d2) (r4 r o rfl) h5
+        have l5 := k5.le
+        have k6 := (keeps_emit ((k4.trans k5).dropF d2) (blobIn_fin (f := Termin.eqq rp rq (jmp0 z) (jmp0 o'))
+          ⟨show rp < g5.re by omega, show rq < g5.re by omega, jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩) h3).1
+        have l6 := k6.le
+        have bnd : ∀ x, NewOr laz.ned g2 g4 x → x < g3.re ∧ (g2.re ≤ x ∨ GMem (CGoal.next laz th) x) :=
+          fun x hx => by
+            rcases hx with e | e
+            · exact ⟨by have := hg.1 x e; omega, Or.inr e⟩
+            · exact ⟨by omega, Or.inl e.1⟩
+        refine ⟨k4.trans (k5.trans k6), ((w4.mono bnd).trans ((wr_forl h5).mono fun x hx => ?_)).trans
+          (wroteIn_emit (blobWr_fin _ _) h3)⟩
+        rcases hx with e | e
+        · simp only [NMem] at e; rw [e]; exact bnd r (rr4 r o rfl)
+        · exact ⟨by omega, Or.inl (by omega)⟩
+  obtain ⟨k3, W3⟩ := P
+  have l3 := k3.le
+  have d3 := k3.dropF d2
+  obtain ⟨nexq, g4, h4, h⟩ := bind_some h
+  obtain ⟨nexq', g4', hp, h⟩ := bind_some h
+  obtain ⟨rfl, rfl⟩ := past_some hp
+  obtain ⟨nexp, g5, h5, h⟩ := bind_some h
+  obtain ⟨WT, sT, dT, lT, _⟩ := foot_copyTail (hs := lazyReg rp) (ts := lazyReg rq) ihp ihq d3
+    (nb_this (by omega)) (nb_this (by omega)) trivial trivial
+    (fun x e e' => by simp only [lazyReg, NMem] at e e'; omega) (jmpIn_jmp0 _ _) h4 h5 h
+  have gl : ∀ x, GMem goal x → x < g.re := fun x hx => by
+    cases goal with
+    | next laz th => exact hg.1 x hx
+    | pick => exact hx.elim
+    | done => exact hx.elim
+  have a : ∀ x, (g3.re ≤ x ∨ NMem (lazyReg rp : Sure S).ned x ∨ NMem (lazyReg rq : Sure S).ned x) → g.re ≤ x :=
+    fun x hx => by
+      rcases hx with e | e | e
+      · omega
+      · simp only [lazyReg, NMem] at e; omega
+      · simp only [lazyReg, NMem] at e; omega
+  refine ⟨((wroteIn_re h1).trans (wroteIn_re h2)).trans ((W3.mono fun x hx => ⟨by omega, ?_, fun e => ?_⟩).trans
+    (WT.mono fun x hx => ⟨hx.1, Or.inl (a x hx.2.1), hx.2.2⟩)), fun x hx => Or.inl (a x (sT x hx)), dT⟩
+  · rcases hx.2 with e | e
+    · exact Or.inl (by omega)
+    · exact Or.inr e
+  · rcases sT x e with e' | e' | e'
+    · omega
+    · simp only [lazyReg, NMem] at e'
+      rcases hx.2 with e'' | e''
+      · omega
+      · have := gl x e''; omega
+    · simp only [lazyReg, NMem] at e'
+      rcases hx.2 with e'' | e''
+      · omega
+      · have := gl x e''; omega
+
 end Comp
 end SkaModel
 end Formalization
