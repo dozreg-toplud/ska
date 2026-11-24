@@ -117,6 +117,7 @@ import lemmas.Hoon.UniBy
 import lemmas.Compiler.CompSccOne
 import lemmas.Compiler.CompMemOld
 import lemmas.Compiler.CompNoNN
+import lemmas.Compiler.CompRunCall
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -939,3 +940,19 @@ open Formalization
 #print axioms Compiler.noar_frag
 #print axioms Compiler.noBake_no
 #print axioms Compiler.cu_gate_scc_one_no
+#print axioms Compiler.crc_of_pure
+#print axioms Compiler.crr_pure
+#print axioms Compiler.crf_copy_ok
+#print axioms Compiler.crf_copy_out
+#print axioms Compiler.cr2_eq
+#print axioms Compiler.cr2_ind
+#print axioms Compiler.cr2_tail
+#print axioms Compiler.cr2_kf
+#print axioms Compiler.comp_run_n2
+#print axioms Compiler.comp_run_n4C
+#print axioms Compiler.comp_run_n3C
+#print axioms Compiler.comp_run_n7C
+#print axioms Compiler.indOk_of_pure
+#print axioms Compiler.crf_run
+#print axioms Compiler.comp_run_all_c
+#print axioms Compiler.comp_run_entry_c
