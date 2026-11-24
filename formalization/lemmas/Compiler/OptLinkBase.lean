@@ -440,6 +440,56 @@ theorem roll_gate_rel {α σ : Type} (pn : α → Noun) (R : Noun → σ → Pro
   nock_open roll.battery
   simp only [nock_exec, h]
 
+/-- **`+rep` forward**: where the fold of a gate that may crash returns, the
+loop returns the same, given only that each step the model takes is the
+gate's. -/
+theorem rep_loop_fwd {α σ : Type} (pn : α → Noun) (toN : σ → Noun) (gf : α → σ → Option σ)
+    (B ctx bp e bc : Noun) :
+    ∀ (a : Noun), Tree a → ∀ (L : List α), preorder a = L.map pn → ∀ (s r : σ),
+    L.foldlM (fun s p => gf p s) s = some r →
+    (∀ p ∈ L, ∀ s s', gf p s = some s' → nock (C bp (C (C (pn p) (toN s)) bc)) bp = some (toN s')) →
+    nock (C by.rep.loop (C by.rep.battery (C (C bp (C (C e (toN s)) bc)) (C B (C a ctx)))))
+      by.rep.loop = some (toN r) := by
+  intro a ha
+  induction ha with
+  | nil =>
+    intro L hL s r hr _
+    have hL0 : L = [] := by
+      cases L with
+      | nil => rfl
+      | cons p L' => simp [preorder] at hL
+    subst hL0
+    simp only [List.foldlM_nil, Option.pure_def, Option.some.injEq] at hr
+    subst hr
+    nock_open by.rep.loop
+    simp [nock_exec]
+  | @node n l r _ _ ihl ihr =>
+    intro L hL s res hres hf
+    simp only [preorder] at hL
+    obtain ⟨p, L', rfl, hpn, hL'⟩ := List.map_eq_cons_iff.1 hL.symm
+    obtain ⟨L1, L2, rfl, h1, h2⟩ := List.map_eq_append_iff.1 hL'
+    subst hpn
+    simp only [List.foldlM_cons, List.foldlM_append] at hres
+    cases e1 : gf p s with
+    | none => rw [e1] at hres; cases hres
+    | some s1 =>
+      rw [e1] at hres
+      change (L1.foldlM (fun s p => gf p s) s1).bind (fun s2 => L2.foldlM (fun s p => gf p s) s2) = some res at hres
+      obtain ⟨s2, hs2, hres2⟩ := Option.bind_eq_some_iff.mp hres
+      have hn := hf p (by simp) s s1 e1
+      have hl := ihl L1 h1.symm s1 s2 hs2 (fun x hx s s' h => hf x (by simp [hx]) s s' h)
+      have hr := ihr L2 h2.symm s2 res hres2 (fun x hx s s' h => hf x (by simp [hx]) s s' h)
+      nock_open by.rep.loop
+      simp [nock_exec, hn, hl, hr]
+
+theorem rep_gate_fwd {α σ : Type} (pn : α → Noun) (toN : σ → Noun) (gf : α → σ → Option σ)
+    (B ctx bp e bc a : Noun) (ha : Tree a) (L : List α) (hL : preorder a = L.map pn) (s r : σ)
+    (hr : L.foldlM (fun s p => gf p s) s = some r)
+    (hf : ∀ p ∈ L, ∀ s s', gf p s = some s' → nock (C bp (C (C (pn p) (toN s)) bc)) bp = some (toN s')) :
+    nock (C by.rep.battery (C (C bp (C (C e (toN s)) bc)) (C B (C a ctx)))) by.rep.battery = some (toN r) := by
+  nock_open by.rep.battery
+  simp only [nock_exec, rep_loop_fwd pn toN gf B ctx bp e bc a ha L hL s r hr hf]
+
 /-! ## Jars -/
 
 /-- The noun of a jar of labels. -/

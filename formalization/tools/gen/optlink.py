@@ -312,6 +312,7 @@ elif WHICH == 'rem':
     _, _, p1 = seq(passg, 3)
     ob, _ = seq(p1, 2)
     passb = norm(ob)[2]
+    _, msw, mrest = seq(maing, 3)
     defs += [('remPutG', putg, 'The gate `put` of `readers`: `(~(put ju acc) r o)`.'),
              ('remOpG', opg, 'The gate of the `+roll` over `body.b` in `readers`.'),
              ('remBuntF', buntf, 'The sample of that gate, `[*pole acc]`, its bunt made by the mold `pole` (arm `2743` of `compTypes`).'),
@@ -325,6 +326,8 @@ elif WHICH == 'rem':
              ('remPassB', passb, 'The body of the gate `pass`.'),
              ('remHopBody', hbody, 'The gate body of `rewrite-hop` (arm `4` of the `|^` core).'),
              ('remJumpBody', jbody, 'The gate body of `rewrite-jump` (arm `11` of the `|^` core).'),
+             ('remSw', msw, 'The `?+` over the terminator in the gate of `$`: the new terminator.'),
+             ('remRest', mrest, 'The new flag and the `+put:by` of the block with its new terminator.'),
              ('remMainG', maing, 'The gate of the `+rep:by` of `$` (arm `10` of the `|^` core).'),
              ('remMainB', mainb, 'Its sample bunt.'),
              ('remBat', bat, 'The battery of the `|^` core: `rewrite-hop`, `$`, `rewrite-jump`.'),
