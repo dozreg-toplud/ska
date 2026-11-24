@@ -15,6 +15,7 @@ import lemmas.Ska.CompUnproxyEntry
 import lemmas.Ska.CompUnproxyRegs
 import lemmas.Ska.CompUnproxyFill
 import lemmas.Ska.CompUnproxyTop
+import lemmas.Ska.CompUnproxyBelow
 import lemmas.Ska.CompEntryGoal
 import lemmas.Ska.CompFromRun
 import lemmas.Ska.CompEntryRun
@@ -279,3 +280,11 @@ open Formalization.SkaModel.Comp
 #print axioms finishLF_bellContractR_U
 #print axioms finishLF_bellContractXU
 #print axioms finishLF_bellContract71U
+#print axioms agreeU_transfer
+#print axioms RunOKU.semW
+#print axioms RunOKU.semF
+#print axioms BelowIn.ext
+#print axioms BelowIn.front
+#print axioms belowIn_addOps
+#print axioms belowIn_proxy
+#print axioms belowIn_emit
