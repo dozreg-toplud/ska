@@ -233,6 +233,314 @@ theorem plainHyp_outG (W : SWI bl topo G out done nex) (ht : TopoOK bl topo) {o 
 
 end
 
+/-! ## One chain of the walk -/
+
+section
+variable {bl : Map Blob} {topo : List Nat} {fuel : Nat} {G : List GC} {out : Map Blob} {done : List Nat}
+  {nex : Nat}
+
+theorem yshape_y0 {rev : Map (List Nat)} {n o : Nat} {u0 : STest} {ul : List STest}
+    (h : chainOf bl rev n o = some (u0 :: ul)) (hul : ul ≠ []) : YShape bl u0.y := by
+  obtain ⟨hTB, -⟩ := tagHyp_shape h
+  obtain ⟨-, -, -, -, ⟨l, r, body, hyb, -, -⟩, hnext, -⟩ := hTB
+  cases ul with
+  | nil => exact absurd rfl hul
+  | cons u1 ul' =>
+    simp only at hnext
+    exact ⟨_, l, r, u0.hit, u0.miss, _, hyb, rfl, hnext, rfl⟩
+
+theorem yshape_not_tag {rev : Map (List Nat)} {n o : Nat} {u0 : STest} {ul : List STest} (hy : YShape bl o)
+    (h : chainOf bl rev n o = some (u0 :: ul)) : False := by
+  obtain ⟨⟨b, hb, hf⟩, -⟩ := chainOf_spec n o u0 ul h
+  obtain ⟨b', l, r, h', m, mb, hb', hf', -⟩ := hy
+  rw [hb] at hb'; cases hb'
+  rw [hf] at hf'; cases hf'
+
+theorem yshape_not_plain {rev : Map (List Nat)} {n o : Nat} {p0 : Nat × SPlain} {pl : List (Nat × SPlain)}
+    (hy : YShape bl o) (h : plainsOf bl rev n o = some (p0 :: pl)) (hpl : pl ≠ []) : False := by
+  have hc := plainsOf_rev n o _ h
+  obtain ⟨b, l, r, hb, hfin, -⟩ := plainOf_spec hc.2.1
+  obtain ⟨-, nb, n', x, hnb, -, hbody⟩ := hc.2.2.1 hpl
+  obtain ⟨b', l', r', h', m, mb, hb', hf', hmb, hmbody⟩ := hy
+  rw [hb] at hb'; cases hb'
+  rw [hfin] at hf'
+  simp only [Termin.eqq.injEq, Jmp.mk.injEq, true_and] at hf'
+  obtain ⟨-, -, -, e⟩ := hf'
+  rw [← e, hnb] at hmb
+  cases hmb
+  rw [hbody] at hmbody
+  cases hmbody
+
+/-- **One tagged chain of the walk**: the invariant and `Keeps` go on. -/
+theorem swi_tag_step (c : Straight Map) (W : SWI bl topo G out done nex) (K : Keeps c (withBlocks c out))
+    (ht : TopoOK bl topo) {o : Nat} {u0 : STest} {ul : List STest}
+    (h : chainOf bl (revCfg bl topo) fuel o = some (u0 :: ul)) (hul : ul ≠ []) (ho : o ∈ topo)
+    (hrk : ∀ g ∈ G, rk topo g.o < rk topo o) (hoR : ∀ g ∈ G, o ∉ g.R) {out' : Map Blob} {done' : List Nat}
+    (hs : switchTag bl out fuel o (u0 :: ul) done = some (out', done')) :
+    SWI bl topo (G ++ [tagGC bl o u0 ul]) out' done' nex ∧ Keeps c (withBlocks c out') := by
+  have H := tagHyp_outG W ht h ho hrk hoR
+  have HY := tagGC_ok ht ho h
+  have D := fun g (hg : g ∈ G) => gc_disj ht (W.ok g hg) HY (hrk g hg) (hoR g hg)
+  have hob : HoonMap.get bl o = HoonMap.get out o :=
+    (swi_out ht W HY hrk hoR o (Or.inl List.mem_cons_self)).symm
+  have hs' : switchTag out out fuel o (u0 :: ul) done = some (out', done') := by
+    rw [← switchTag_out hob]; exact hs
+  obtain ⟨b, nb, nf, hb, hbo, -, -, hfr, hdone⟩ := tag_tree hs' H.nd H.hy H.ho H.hoy H.hr
+  have hbl : HoonMap.get bl o = some b := by rw [hob]; exact hb
+  have nodes := tag_nodes hs' H.ho H.hoy
+  have K' := tag_keeps_of (withBlocks c out) hs' H
+  have frO : ∀ k, k ≠ o → k ∉ (tagGC bl o u0 ul).R → HoonMap.get out' k = HoonMap.get out k :=
+    fun k h1 h2 => hfr k h1 (fun e => h2 ((tagIn_iff o u0 ul k).mp (Or.inl e)))
+      (fun e => h2 ((tagIn_iff o u0 ul k).mp (Or.inr e)))
+  have hoT := topo_lt ht ho
+  have hnb := W.nb
+  have hnew : ∀ g, g ∈ G ++ [tagGC bl o u0 ul] → g ∈ G ∨ g = tagGC bl o u0 ul := by
+    intro g hg; simpa using hg
+  have oldIn : ∀ g ∈ G, ∀ k, (k = g.o ∨ g.In k) → k ≠ o ∧ k ∉ (tagGC bl o u0 ul).R := by
+    intro g hg k hk
+    rcases hk with e | hk
+    · rw [e]
+      exact ⟨fun e2 => by have := hrk g hg; rw [e2] at this; omega,
+        fun hR => (D g hg).2.2.2 (List.mem_cons_of_mem _ hR)⟩
+    · refine ⟨fun e => ?_, (D g hg).2.1 k (Or.inl hk)⟩
+      rw [e] at hk
+      rcases hk with hk | hk
+      · exact hoR g hg hk
+      · have := (W.ok g hg).fresh; omega
+  refine ⟨⟨fun g hg => ?_, fun g hg k hk => ?_, fun k hk => ?_, fun g hg => ?_, fun g hg k b' hkI hb' => ?_,
+    fun k hk => ?_, fun g hg => ?_, W.nb⟩, keeps_trans K K'⟩
+  · rcases hnew g hg with hg | e
+    · exact W.ok g hg
+    · rw [e]; exact HY
+  · rw [hdone]
+    rcases hnew g hg with hg | e
+    · rcases W.dn g hg k hk with h1 | h1
+      · exact Or.inl (List.mem_append_right _ h1)
+      · exact Or.inr h1
+    · rw [e] at hk
+      change k ∈ u0.y :: ilabs u0.miss ul at hk
+      rcases List.mem_cons.mp hk with e2 | e2
+      · rw [e2]; exact Or.inr (yshape_y0 h hul)
+      · exact Or.inl (List.mem_append_left _ ((ilabs_perm u0 ul).mem_iff.mp e2))
+  · have h1 := hk _ (List.mem_append_right _ (List.mem_singleton_self _))
+    rw [frO k h1.1 (fun hR => h1.2 (Or.inl hR))]
+    exact W.same k fun g hg => hk g (List.mem_append_left _ hg)
+  · rcases hnew g hg with hg | e
+    · obtain ⟨e1, e2⟩ := oldIn g hg g.o (Or.inl rfl)
+      rw [frO g.o e1 e2]
+      exact W.head g hg
+    · rw [e]
+      refine ⟨b, _, hbl, hbo, rfl, fun j hj => ?_, fun r hr => ?_⟩
+      · simp only [getJmps, List.mem_cons, List.not_mem_nil, or_false] at hj
+        rcases hj with e3 | e3 <;> rw [e3]
+        · exact ⟨rfl, Or.inl (Or.inl List.mem_cons_self)⟩
+        · exact ⟨rfl, Or.inr (List.mem_append_right _ (List.mem_singleton_self _))⟩
+      · simp only [blobMentions, List.mem_append] at hr
+        rcases hr with (h1 | h1) | h1
+        · exact Or.inl (by simp only [blobMentions, List.mem_append]; exact Or.inl (Or.inl h1))
+        · simp [finRegs, jmpRegs] at h1
+          rw [h1]; exact Or.inr List.mem_cons_self
+        · exact Or.inl (by simp only [blobMentions, List.mem_append]; exact Or.inr h1)
+  · rcases hnew g hg with hg | e
+    · obtain ⟨e1, e2⟩ := oldIn g hg k (Or.inr hkI)
+      rw [frO k e1 e2] at hb'
+      exact W.node g hg k b' hkI hb'
+    · rw [e] at hkI ⊢
+      have hk' : k ∈ (tagGC bl o u0 ul).R := by
+        rcases hkI with h1 | h1
+        · exact h1
+        · simp only [tagGC] at h1; omega
+      refine nodeOK_mono (nodes k b' ((tagIn_iff o u0 ul k).mpr hk') hb') (fun x hx => ?_) (fun r hr => ?_)
+      · rcases hx with hx | ⟨t, ht', e3⟩ | e3
+        · exact Or.inl (Or.inl ((tagIn_iff o u0 ul x).mp hx))
+        · rw [e3]; exact Or.inr (List.mem_append_left _ (List.mem_map_of_mem ht'))
+        · rw [e3]; exact Or.inr (List.mem_append_right _ (List.mem_singleton_self _))
+      · rcases hr with e3 | hr
+        · rw [e3]; exact List.mem_cons_self
+        · exact List.mem_cons_of_mem _ hr
+  · have hko : k ≠ o := fun e => by omega
+    have hkR : k ∉ (tagGC bl o u0 ul).R := fun hR => by
+      have := topo_lt ht ((gok_topo ht HY).1 k (List.mem_cons_of_mem _ hR)); omega
+    rw [frO k hko hkR]; exact W.above k hk
+  · rcases hnew g hg with hg | e
+    · exact W.fr g hg
+    · rw [e]; exact W.nb
+
+/-- **One plain chain of the walk**: the invariant and `Keeps` go on. -/
+theorem swi_plain_step (c : Straight Map) (W : SWI bl topo G out done nex) (K : Keeps c (withBlocks c out))
+    (ht : TopoOK bl topo) {o : Nat} {p0 : Nat × SPlain} {pl : List (Nat × SPlain)}
+    (h : plainsOf bl (revCfg bl topo) fuel o = some (p0 :: pl)) (hpl : pl ≠ []) (ho : o ∈ topo)
+    (hrk : ∀ g ∈ G, rk topo g.o < rk topo o) (hoR : ∀ g ∈ G, o ∉ g.R) {out' : Map Blob} {done' : List Nat}
+    {nex' : Nat} (hs : switchPlain bl out fuel o (p0 :: pl) done nex = some (out', done', nex')) :
+    SWI bl topo (G ++ [plainGC o nex nex' p0 pl]) out' done' nex' ∧ Keeps c (withBlocks c out') := by
+  have H := plainHyp_outG W ht h ho hpl hrk hoR
+  have HY := plainGC_ok ht ho h W.nb (nex' := nex')
+  have D := fun g (hg : g ∈ G) => gc_disj ht (W.ok g hg) HY (hrk g hg) (hoR g hg)
+  have hob : HoonMap.get bl o = HoonMap.get out o :=
+    (swi_out ht W HY hrk hoR o (Or.inl List.mem_cons_self)).symm
+  have hs' : switchPlain out out fuel o (p0 :: pl) done nex = some (out', done', nex') := by
+    rw [← switchPlain_out hob]; exact hs
+  obtain ⟨b, nb, nf, hb, hbo, hroot, hnodes, hfr, habove, hle, hdone⟩ :=
+    plain_tree2 hs' H.old H.ho H.ho' W.above
+  have hbl : HoonMap.get bl o = some b := by rw [hob]; exact hb
+  have K' := plain_keeps_of (withBlocks c out) hs' H
+  have hoT := topo_lt ht ho
+  have hnb := W.nb
+  have hnew : ∀ g, g ∈ G ++ [plainGC o nex nex' p0 pl] → g ∈ G ∨ g = plainGC o nex nex' p0 pl := by
+    intro g hg; simpa using hg
+  have oldIn : ∀ g ∈ G, ∀ k, (k = g.o ∨ g.In k) → k ≠ o ∧ ¬ PRg nex nex' pl k := by
+    intro g hg k hk
+    have hlt : k < nex := by
+      rcases hk with e | hk
+      · rw [e]; have := topo_lt ht (W.ok g hg).ho; omega
+      · exact gJ_lt ht W hg (Or.inl hk)
+    have hkR : k ∉ pl.map Prod.fst := by
+      rcases hk with e | hk
+      · rw [e]; exact fun hR => (D g hg).2.2.2 (List.mem_cons_of_mem _ hR)
+      · exact (D g hg).2.1 k (Or.inl hk)
+    refine ⟨fun e => ?_, fun hP => ?_⟩
+    · rcases hk with e2 | hk
+      · have := hrk g hg; rw [← e2, e] at this; omega
+      · rw [e] at hk
+        rcases hk with hk | hk
+        · exact hoR g hg hk
+        · have := (W.ok g hg).fresh; omega
+    · rcases hP with hP | hP
+      · exact hkR hP
+      · omega
+  have pj : ∀ x, PJ nex nex' p0 pl x → (plainGC o nex nex' p0 pl).J x := by
+    intro x hx
+    rcases hx with hx | ⟨t, ht', e3⟩ | e3
+    · exact Or.inl hx
+    · rw [e3]; exact Or.inr (List.mem_append_left _ (List.mem_map_of_mem (f := fun t => t.2.hit) ht'))
+    · rw [e3]; exact Or.inr (List.mem_append_right _ (List.mem_singleton_self _))
+  have ps : ∀ r, PS p0 pl r → r ∈ (plainGC o nex nex' p0 pl).S := by
+    intro r hr
+    rcases hr with e3 | hr
+    · rw [e3]; exact List.mem_cons_self
+    · exact List.mem_cons_of_mem _ hr
+  refine ⟨⟨fun g hg => ?_, fun g hg k hk => ?_, fun k hk => ?_, fun g hg => ?_, fun g hg k b' hkI hb' => ?_,
+    habove, fun g hg => ?_, Nat.le_trans W.nb hle⟩, keeps_trans K K'⟩
+  · rcases hnew g hg with hg | e
+    · exact W.ok g hg
+    · rw [e]; exact HY
+  · rw [hdone]
+    rcases hnew g hg with hg | e
+    · rcases W.dn g hg k hk with h1 | h1
+      · exact Or.inl (List.mem_append_right _ h1)
+      · exact Or.inr h1
+    · rw [e] at hk
+      exact Or.inl (List.mem_append_left _ hk)
+  · have h1 := hk _ (List.mem_append_right _ (List.mem_singleton_self _))
+    rw [hfr k h1.1 h1.2]
+    exact W.same k fun g hg => hk g (List.mem_append_left _ hg)
+  · rcases hnew g hg with hg | e
+    · obtain ⟨e1, e2⟩ := oldIn g hg g.o (Or.inl rfl)
+      rw [hfr g.o e1 e2]
+      exact W.head g hg
+    · rw [e]
+      refine ⟨b, _, hbl, hbo, rfl, fun j hj => ⟨(hroot.2.1 j hj).1, pj _ (hroot.2.1 j hj).2⟩, fun r hr => ?_⟩
+      simp only [blobMentions, List.mem_append, List.flatMap_append] at hr
+      rcases hr with (h1 | h1) | (h1 | h1)
+      · exact Or.inl (by simp only [blobMentions, List.mem_append]; exact Or.inl (Or.inl h1))
+      · exact Or.inr (ps r (hroot.2.2 r (by simp only [blobMentions, List.mem_append]; exact Or.inl (Or.inr h1))))
+      · obtain ⟨p, hp, hrp⟩ := List.mem_flatMap.mp h1
+        exact Or.inl (by
+          simp only [blobMentions, List.mem_append]
+          exact Or.inr (List.mem_flatMap.mpr ⟨p, (List.mem_filter.mp hp).1, hrp⟩))
+      · exact Or.inr (ps r (hroot.2.2 r (by simp only [blobMentions, List.mem_append]; exact Or.inr h1)))
+  · rcases hnew g hg with hg | e
+    · obtain ⟨e1, e2⟩ := oldIn g hg k (Or.inr hkI)
+      rw [hfr k e1 e2] at hb'
+      exact W.node g hg k b' hkI hb'
+    · rw [e] at hkI ⊢
+      exact nodeOK_mono (hnodes k b' hkI hb') pj ps
+  · rcases hnew g hg with hg | e
+    · exact Nat.le_trans (W.fr g hg) hle
+    · rw [e]; exact Nat.le_refl _
+
+end
+
+/-! ## The walk -/
+
+section
+variable {bl : Map Blob} {topo : List Nat} {fuel : Nat}
+
+/-- **The walk keeps the code**: from any point of `topo`, with the invariant
+and `Keeps` so far. -/
+theorem switchWalk_all (c : Straight Map) (ht : TopoOK bl topo) :
+    ∀ (rest pre : List Nat) (G : List GC) (out : Map Blob) (done : List Nat) (nex : Nat) (outF : Map Blob),
+      topo = pre ++ rest → (∀ g ∈ G, g.o ∈ pre) → SWI bl topo G out done nex → Keeps c (withBlocks c out) →
+      switchWalk bl (revCfg bl topo) fuel rest out done nex = some outF → Keeps c (withBlocks c outF)
+  | [], _, _, out, _, _, outF, _, _, _, K, h => by
+    simp only [switchWalk, Option.some.injEq] at h; subst h; exact K
+  | o :: rest, pre, G, out, done, nex, outF, htp, hpre, W, K, h => by
+    have hoT : o ∈ topo := by rw [htp]; simp
+    have htp' : topo = (pre ++ [o]) ++ rest := by rw [htp]; simp
+    have hpre' : ∀ g ∈ G, g.o ∈ pre ++ [o] := fun g hg => List.mem_append_left _ (hpre g hg)
+    have hnd : (pre ++ o :: rest).Nodup := by rw [← htp]; exact ht.1
+    have hop : o ∉ pre := fun hm => (List.nodup_append.mp hnd).2.2 o hm o List.mem_cons_self rfl
+    have hrk : ∀ g ∈ G, rk topo g.o < rk topo o := fun g hg => by
+      rw [htp]; exact rk_pre pre (hpre g hg) hop
+    unfold switchWalk at h
+    split at h
+    · exact switchWalk_all c ht rest (pre ++ [o]) G out done nex outF htp' hpre' W K h
+    rename_i hod
+    have hY : ∀ g ∈ G, o ∈ g.R → YShape bl o := fun g hg hR => (W.dn g hg o hR).resolve_left hod
+    obtain ⟨cs, hcs, h⟩ := Option.bind_eq_some_iff.mp h
+    split at h
+    · rename_i hlen
+      cases cs with
+      | nil => simp at hlen
+      | cons u0 ul =>
+      have hul : ul ≠ [] := by rintro rfl; simp at hlen
+      cases hst : switchTag bl out fuel o (u0 :: ul) done with
+      | none => simp [hst] at h
+      | some r =>
+      obtain ⟨out', done'⟩ := r
+      simp only [hst, Option.bind_some] at h
+      have hoR : ∀ g ∈ G, o ∉ g.R := fun g hg hR => yshape_not_tag (hY g hg hR) hcs
+      obtain ⟨W', K'⟩ := swi_tag_step c W K ht hcs hul hoT hrk hoR hst
+      refine switchWalk_all c ht rest (pre ++ [o]) _ out' done' nex outF htp' (fun g hg => ?_) W' K' h
+      rcases List.mem_append.mp hg with hg | hg
+      · exact hpre' g hg
+      · simp only [List.mem_singleton] at hg; rw [hg]; simp [tagGC]
+    · obtain ⟨ps, hps, h⟩ := Option.bind_eq_some_iff.mp h
+      split at h
+      · exact switchWalk_all c ht rest (pre ++ [o]) G out done nex outF htp' hpre' W K h
+      · rename_i hl
+        cases ps with
+        | nil => simp at hl
+        | cons p0 pl =>
+        have hpl : pl ≠ [] := by rintro rfl; simp at hl
+        cases hsp : switchPlain bl out fuel o (p0 :: pl) done nex with
+        | none => simp [hsp] at h
+        | some r =>
+        obtain ⟨out', done', nex'⟩ := r
+        simp only [hsp, Option.bind_some] at h
+        have hoR : ∀ g ∈ G, o ∉ g.R := fun g hg hR => yshape_not_plain (hY g hg hR) hps hpl
+        obtain ⟨W', K'⟩ := swi_plain_step c W K ht hps hpl hoT hrk hoR hsp
+        refine switchWalk_all c ht rest (pre ++ [o]) _ out' done' nex' outF htp' (fun g hg => ?_) W' K' h
+        rcases List.mem_append.mp hg with hg | hg
+        · exact hpre' g hg
+        · simp only [List.mem_singleton] at hg; rw [hg]; simp [plainGC]
+
+/-- **`+switch-chains` keeps the code** on blocks with `DInv`. -/
+theorem switchChains_keeps (c : Straight Map) {fuel : Nat} {bl' : Map Blob} (hb : DInv c.blocks)
+    (h : switchChains fuel c.blocks = some bl') : Keeps c (withBlocks c bl') := by
+  obtain ⟨topo, htopo, h⟩ := Option.bind_eq_some_iff.mp h
+  have ht := bbTopo_ok hb.2.1 htopo
+  have K0 : Keeps c (withBlocks c c.blocks) := keeps_refl c
+  exact switchWalk_all c ht topo [] [] c.blocks [] _ bl' rfl (fun g hg => absurd hg List.not_mem_nil)
+    (swi_nil _ _) K0 h
+
+/-- **`SwitchKeepsM`**: the model of `+switch-chains` keeps the code on blocks
+with `DInv`. -/
+theorem switchKeepsM (fuel : Nat) : SwitchKeepsM (Map := Map) fuel :=
+  fun c _ hb h => switchChains_keeps c hb h
+
+end
+
 end Opt
 end SkaModel
 end Formalization

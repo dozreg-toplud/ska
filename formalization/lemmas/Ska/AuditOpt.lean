@@ -20,6 +20,7 @@ import lemmas.Ska.OptSwitchMulti
 import lemmas.Ska.OptAlias
 import lemmas.Ska.OptSwitchPlainHyp
 import lemmas.Ska.OptSwitchGen
+import lemmas.Ska.OptSwitchWalkAll
 import lemmas.Ska.OptSwitchSimG
 import lemmas.Ska.OptSwitchPlain
 
@@ -176,3 +177,10 @@ open Formalization.SkaModel.Opt
 #print axioms gc_disj
 #print axioms tagGC_ok
 #print axioms plainGC_ok
+#print axioms tagHyp_outG
+#print axioms plainHyp_outG
+#print axioms swi_tag_step
+#print axioms swi_plain_step
+#print axioms switchWalk_all
+#print axioms switchChains_keeps
+#print axioms switchKeepsM
