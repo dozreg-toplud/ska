@@ -37,6 +37,7 @@ import lemmas.Ska.CompRelCons
 import lemmas.Ska.CompRelTen
 import lemmas.Ska.CompRelX
 import lemmas.Ska.CompEntryRel
+import lemmas.Ska.CompWalkU
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -433,3 +434,6 @@ open Formalization.SkaModel.Comp
 #print axioms runOKE_n1R
 #print axioms semGR_sevenE
 #print axioms semPR_seven1
+#print axioms walkLazy_okC
+#print axioms proxy_proxyFor
+#print axioms walkLazy_okP
