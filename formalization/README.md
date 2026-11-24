@@ -1858,3 +1858,88 @@ import only its theorems.  So:
    about 500 cells took one to two hours of proof once its nouns were cut by
    `tools/gen/optlink.py`; the cost grows with the number of loops whose
    accumulator holds a set or a map that the model keeps in another form.
+14. **Raw `+comp` output meets the optimizer's invariant** (track D,
+   2026-11-24, `Ska/RawInv*.lean`, `Ska/AuditRaw.lean`).  The driver theorem
+   `optimize_keeps_optIn` of 12.8 asks `OptIn` of the raw blocks (the field
+   `rawDInv` of `CompHypOf.lean`, stated there with the weaker `DInvS`, which
+   `dInvR_dInvS` gives).  The inventory, field by field, before any proof.
+   "The first fragment" is the call-free, `%6`-free fragment, the nomms on
+   which `run` of `CompModel.lean` returns (`Frag` of `CompFrag.lean`: `%0`,
+   `%1`, `%3`, `%4`, `%5`, cons, `%7`, `%10`); `FragX` of `CompFragX.lean`
+   adds `%6`.  The final pass is `toStraightF`: on the fragments it takes its
+   renaming path (`kc_run`, `toStraightF_eq`), which renames registers by the
+   bijection `renReg r0 n`, moves the entry block to `0`, drops the
+   bypassable blocks (no parameter, no body, a hop) and chases the jumps past
+   them (`chase`); before it, `+coerce-lazy` (n-ary, `finishLF`) or `+kerf`
+   (whole subject, `finishLU`) puts the prologue ops in front of the entry.
+   A check of all eight fields by executable checkers (`RawInvCheck.lean`)
+   on 5,200 enumerated nomms of `FragX` (both versions) and 360 with
+   indirect calls (`finishLUC`): no field fails.
+
+   * `parNodup`.  Parameters appear only on join blocks.  Even without `%6`
+     there is one: `+forl` (cases `%3` and `%5` under a `%next` goal that is
+     not none-equivalent, after `+collapse-lazy-atom`) emits `barg` with the
+     one parameter `[r]`, and `if0`, `if1` hop to it with `[r0]`, `[r1]`
+     (`[4 [3 [0 1]]]`: `0w2 [v2] hop 1`).  So "no `%6`, no parameters" is
+     not so, but on the first fragment every block has at most one
+     parameter and the field is trivial.  With `%6`: `+fork-need`'s join has
+     the registers of the goal's sure need (`flattenNeed`, distinct by
+     `Foot.dist`/`FootR.dist` of track C), `+sect` prepends fresh registers
+     `tn`.  The final pass renames injectively (`renReg_inj`).
+   * `passOK`.  The jumps with arguments: `if0`, `if1` pass `r0`, `r1`,
+     allocated after the collapse register `r`, the parameter of `barg`;
+     the fork blocks of `+fork-need` pass the fresh registers of
+     `forkNeedGo` to the goal's registers; `+sect` (`lensHop`) passes the
+     proxies' definitions `df` to fresh `tn`.  Mechanism: arguments are
+     allocated after the target's parameters.  The final pass: `chase`
+     returns a jump with arguments unchanged (one to a bypassable block
+     fails the pass), renaming is injective.
+   * `acyclic`.  Code is built backwards from the continuation: a block is
+     emitted after the blocks it jumps to, so on the first fragment every
+     jump goes to a lower label (`run_down`, `Down`, `CompDown.lean`).  With
+     `%6` under `%next` the fork blocks `o0`, `o1` hop up to the join, which
+     is allocated after them (`GrowU`, `upRk`, `downRk_of_growU`,
+     `CompGrowU.lean`).  The final pass: `chase` follows hops downwards in
+     the rank, the entry moves to `0` with the rank of its old label, and no
+     kept jump can go to the old entry label (`chase` fails on it).
+   * `downPar`.  No argument of a jump is a parameter of a block reachable
+     from its target: `r0`, `r1` are allocated after every block reachable
+     from `barg` exists, and those blocks' parameters were allocated before
+     (`BelowIn`, `run_keeps`, `CompBelowRun.lean`); no block's parameters or
+     end change after it is emitted on the first fragment (`Grow.keep`).  The
+     final pass: a path of the output is a path of the raw blocks through
+     the bypassed hops.  With `%6`, `+sect` changes the join's parameters
+     after the fact (`jabBlock`), the place to look.
+   * `trimBr`.  No trace hint op (`%hdp`/`%hde` of `%spot` or `%mean`,
+     `%hmp`, `%hme`, `%hcp`, `%hce`) is emitted without `%11`, which `runL`
+     and `runLC` do not compile, so `K` is empty everywhere and the field is
+     trivial for every nomm the models compile (`brOp` keeps the empty
+     stack on every other op).  Renaming keeps the op kinds.
+   * `defFirst`.  The run for a goal `%next laz th` makes code whose paths
+     from its entry to `th` define every register of `laz` that it does not
+     hand up in its result's need, and which reads only registers it defined
+     before or registers of its result's need; the prologue of the final
+     pass defines the result's need at the entry from the input registers,
+     which nothing defines.  Stated through liveness: `Live bl k r`, a path
+     from `k` that reads `r` before any definition of it; `DefFirst` holds
+     when no register with a definition is live at `0`.  Track C has the
+     footprint of the writes (`Foot.wr`, `FootR.wr`) but no fact on paths.
+   * `noLti`.  Syntactic: `+comp` never emits `%lti`, and `chaseFin` is
+     `none` on it, so the output of the renaming path never has one,
+     whatever the raw blocks.
+   * `defOnce`.  Registers come from the counter `re`: each one is written
+     by the arm that allocated it, or by the run whose goal names it, and a
+     run writes no register of its result's need (`Foot.wr`), which the code
+     before it writes (`+copy`'s moves, `+split`'s `con`, the prologue).
+     The fills of `+crash-need` write fresh registers or the goal's, never
+     the register they test since af5cc39 (the model has the `+murn`).
+     Track C gives the set of written registers (`WroteIn`), not that each
+     is written once.  The final pass: `+kern-need` and `+sure-loop` write
+     the need's registers once each and fresh ones; bypassed blocks define
+     nothing; renaming is injective.  `DefOnceR` follows from `DefOnce` over
+     all blocks (`defOnceR_of_defOnce`), and the proof aims at that.
+
+   What the final pass can break: nothing of the eight, given what the
+   raw blocks of the run have; the facts to carry through it are the
+   injectivity of `renReg`, that `chase` only skips empty hops, and that the
+   prologue writes only the result need's registers and fresh ones.
