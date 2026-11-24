@@ -37,6 +37,7 @@ import all lemmas.Pill.Arm.Gte
 import all lemmas.Pill.Arm.Gth
 import all lemmas.Pill.Arm.He_sock
 import all lemmas.Pill.Arm.Homo
+import all lemmas.Pill.Arm.Ident_mold
 import all lemmas.Pill.Arm.In
 import all lemmas.Pill.Arm.Inlineable
 import all lemmas.Pill.Arm.Ja
@@ -63,6 +64,7 @@ import all lemmas.Pill.Arm.Mook
 import all lemmas.Pill.Arm.Mor
 import all lemmas.Pill.Arm.Move
 import all lemmas.Pill.Arm.Msg_anno
+import all lemmas.Pill.Arm.Msg_ca
 import all lemmas.Pill.Arm.Msg_sock
 import all lemmas.Pill.Arm.Mug
 import all lemmas.Pill.Arm.Muk
@@ -72,6 +74,8 @@ import all lemmas.Pill.Arm.Need
 import all lemmas.Pill.Arm.Patch_prod
 import all lemmas.Pill.Arm.Peg
 import all lemmas.Pill.Arm.Pi
+import all lemmas.Pill.Arm.Print_ska
+import all lemmas.Pill.Arm.Prune_cg
 import all lemmas.Pill.Arm.Read
 import all lemmas.Pill.Arm.Rear
 import all lemmas.Pill.Arm.Recursive_call
@@ -82,6 +86,7 @@ import all lemmas.Pill.Arm.Safe_fol_fol
 import all lemmas.Pill.Arm.Safe_nomm
 import all lemmas.Pill.Arm.Scag
 import all lemmas.Pill.Arm.Scow
+import all lemmas.Pill.Arm.Silt
 import all lemmas.Pill.Arm.Ska_analyze
 import all lemmas.Pill.Arm.Ska_cg
 import all lemmas.Pill.Arm.Ska_run

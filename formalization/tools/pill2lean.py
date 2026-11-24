@@ -1204,6 +1204,54 @@ def main():
     IN_BULK.update(['ska_cg.arm', 'ska_cg.battery'])
     name(cg_arm, 'ska_cg.arm')
     name(gate_battery(cg_arm), 'ska_cg.battery')
+    # its axis in `ana`, and the axis of K_bat in `ana`
+    axes.append(('ska_cg', ana_arms[cg_arm], 'slot? ska_cg.axis ana = some ska_cg.arm'))
+    facts.append(('ana_k_bat', 'slot? %d ana = some ska_cg.k_bat' % find_axis(ana, k_bat)))
+    # `print-ska`, the gate that `=/` puts at axis 126 of `ana` (it holds the
+    # library, so only its battery is named), and the arm `same` that its
+    # battery pulls when `ska-verb` is not defined
+    ps_gate = slot(126, ana)
+    name(head(ps_gate), 'print_ska.battery')
+    formulas.add(head(ps_gate))
+    # the tail of `ana`, which holds the mold of `identity` at arm 186
+    ana_tail = tail(ana)
+    name(ana_tail, 'ana_tail')
+    IN_BULK.add('ana_tail')
+    facts.append(('ana_tail_eq', 'slot? 3 ana = some ana_tail'))
+    im_arm = slot(186, ana_tail)
+    name(im_arm, 'ident_mold.arm')
+    formulas.add(im_arm)
+    name(door_gate_battery(im_arm), 'ident_mold.battery')
+    formulas.add(door_gate_battery(im_arm))
+    axes.append(('ident_mold', 186, 'slot? ident_mold.axis ana_tail = some ident_mold.arm'))
+    # +msg-ca (arm 187 of `ana`), its battery [7 [0 1] body] and the body
+    mc_arm = slot(187, ana)
+    mc_bat = ana_arm(mc_arm, 'msg_ca', False)
+    assert head(mc_bat) == atom(7) and head(tail(mc_bat)) == cell(atom(0), atom(1))
+    name(tail(tail(mc_bat)), 'msg_ca.body')
+    formulas.add(tail(tail(mc_bat)))
+    # +silt (arm 767 of layer 2) and +bif:in (axis 86 of the door +in)
+    silt_a = slot(767, layer2)
+    name(silt_a, 'silt.arm')
+    formulas.add(silt_a)
+    name(door_gate_battery(silt_a), 'silt.battery')
+    formulas.add(door_gate_battery(silt_a))
+    axes.append(('silt', 767, 'slot? silt.axis layer2 = some silt.arm'))
+    in_bat = [i for i, nm in names.items() if nm == 'in.battery'][0]
+    bif_a = slot(86, cell(in_bat, atom(0)))
+    name(bif_a, 'in.bif.arm')
+    formulas.add(bif_a)
+    name(gate_battery(bif_a), 'in.bif.battery')
+    formulas.add(gate_battery(bif_a))
+    axes.append(('in.bif', 86, '∀ x, slot? in.bif.axis (C in.battery x) = some in.bif.arm'))
+    # +prune-callgraph (label prune-callgraph), its battery and its loop,
+    # named without an axis
+    (pc_arm,) = arms_of('prune-callgraph')
+    name(pc_arm, 'prune_cg.arm')
+    formulas.add(pc_arm)
+    name(gate_battery(pc_arm), 'prune_cg.battery')
+    formulas.add(gate_battery(pc_arm))
+    name_loops('prune_cg', gate_battery(pc_arm), 1)
 
     # the interpreter core `interp` ("Formal definition of the interpreter"),
     # the tail of `core`.  Its arms have no %fast labels: +read and +store are
