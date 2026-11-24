@@ -162,6 +162,28 @@ ops from a proxy, unproxied to `v0`. -/
   some (NeedOrd.pair (NeedOrd.pair NeedOrd.none NeedOrd.this) NeedOrd.none, 1,
     [(0, bk [Pole.mov 0 2, Pole.inc 2 1] (Termin.don 1)), (1, none)])
 
+/-- The whole-subject code with `runLC` in the environment `env`. -/
+def monoOutC (env : CallEnv) (nm : Nomm) (n : Nat) : Option (NeedOrd × Nat × List (Nat × Option Blob)) :=
+  (finishLUC (S := LS) (Map := FM) env nm).map fun c =>
+    (c.need, c.nargs, (List.range n).map fun k => (k, c.blocks.f k))
+
+/- The indirect call `[2 [0 3] [0 2]]` (`tools/hoon/wholedump.hoon`, case
+`%ind`), whole subject: `0w0 mov v0 v5, cel v5, hed v5 v7, mov v7 v4, tal v5
+v6, mov v6 v3, hop 3`; `0w1 don v1`; `0w2 mov v2 v1, hop 1`; `0w3 nok v3 v4
+v2, hop 2`. -/
+#guard monoOutC envR (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) 5 ==
+  some (NeedOrd.this, 1, [(0, bk [Pole.mov 0 5, Pole.cel 5, Pole.hed 5 7, Pole.mov 7 4, Pole.tal 5 6,
+      Pole.mov 6 3] (hp 3)),
+    (1, bk [] (Termin.don 1)), (2, bk [Pole.mov 2 1] (hp 1)), (3, bk [Pole.nok 3 4 2] (hp 2)), (4, none)])
+
+/- The same, n-ary (`need [this this]`): `0w0 mov v1 v4, mov v0 v5, hop 3`;
+`0w1 don v2`; `0w2 mov v3 v2, hop 1`; `0w3 nok v4 v5 v3, hop 2`. -/
+#guard (finishLFC (S := LS) (Map := FM) envR (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)
+    (NeedOrd.pair NeedOrd.this NeedOrd.this) Cape.no (fun ned => (ned, []))).map
+    (fun c => (c.need, c.nargs, (List.range 5).map fun k => (k, c.blocks.f k))) ==
+  some (NeedOrd.pair NeedOrd.this NeedOrd.this, 2, [(0, bk [Pole.mov 1 4, Pole.mov 0 5] (hp 3)),
+    (1, bk [] (Termin.don 2)), (2, bk [Pole.mov 3 2] (hp 1)), (3, bk [Pole.nok 4 5 3] (hp 2)), (4, none)])
+
 end Comp
 end SkaModel
 end Formalization

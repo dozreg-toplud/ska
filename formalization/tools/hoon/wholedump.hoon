@@ -6,6 +6,7 @@
       [%six [1 2] [6 [3 0 1] [0 2] [1 0]]]
       [%con [1 2] [[0 2] [0 3]]]
       [%sev [[1 2] 3] [7 [0 2] [4 [0 3]]]]
+      [%ind [[4 0 1] 5] [2 [0 3] [0 2]]]
   ==
 |-  ^-  @
 ?~  cases  0
@@ -28,7 +29,7 @@
 ~&  [%mono need=need.raw n-args=n-args.raw]
 =/  bl  (sort ~(tap by blocks.raw) |=([a=[k=@ *] b=[k=@ *]] (lth k.a k.b)))
 =/  dum  (turn bl |=(x=[@ blob] ~&([%m x] ~)))
-=/  nar=straight  (~(got by nary.cache.state) func)
+=/  nar=straight  (~(gut by nary.cache.state) func *straight)
 ~&  [%nary need=need.nar n-args=n-args.nar]
 =/  nb  (sort ~(tap by blocks.nar) |=([a=[k=@ *] b=[k=@ *]] (lth k.a k.b)))
 =/  dun  (turn nb |=(x=[@ blob] ~&([%n x] ~)))
