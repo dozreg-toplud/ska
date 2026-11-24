@@ -1951,3 +1951,67 @@ import only its theorems.  So:
    raw blocks of the run have; the facts to carry through it are the
    injectivity of `renReg`, that `chase` only skips empty hops, and that the
    prologue writes only the result need's registers and fresh ones.
+
+   **Done (2026-11-24, track D, `Ska/RawInv*.lean`).**  On the first
+   fragment (`Frag nm CGoal.done`: `%0`, `%1`, `%3`, `%4`, `%5`, cons, `%7`,
+   `%10`; no call, no `%6`, no hint), with nothing baked, the raw blocks
+   meet all eight fields: **`optIn_finishLF`** (n-ary, any input shape `ord`
+   and cape), **`optIn_finishLU`** (whole subject), so `rawDInv_finishLF`,
+   `rawDInv_finishLU` (`DInvS`, the form of `rawDInv` in `CompHypOf.lean`)
+   and `optimize_keeps_finishLF`, `optimize_keeps_finishLU` (`+optimize`
+   with the passes of the Hoon keeps that code).  No field is false; the
+   checkers of `RawInvCheck.lean` agree on enumerated nomms of `FragX` and
+   with indirect calls.  The proof in three layers:
+   (1) the run-level invariant **`run_raw`** (`RawIH`): from a state with
+   `SI` (labels below `bo`, blocks that jump down, registers below `re`, one
+   definition per register over all blocks, no trace hint op, at most one
+   parameter, jump arguments above the parameters at or below their
+   target) whose definitions avoid the goal's registers, a run keeps `SI`
+   and leaves live at its entry only registers of its result's need or
+   registers live at the goal's continuation that the goal does not name;
+   the arms each say what they define once, read first and leave live
+   (`raw_split`, `copyNeed_raw`, `raw_copy`, `raw_collapse`, `raw_forl`,
+   `raw_mede`, `raw_into`, ...), the facts of track C about the sub-runs
+   (`run_keeps`, `run_foot`, `run_down`) are used as they are;
+   (2) the prologue (`raw_sureLoop`, `kernLoop_raw`): it defines the run's
+   need from the input registers and reads first only those;
+   (3) `+to-straight` (**`optIn_toStraight`**): liveness, definitions,
+   reachability and ranks pass through the bijective renaming and the
+   chase of the bypassed hops.  `DefFirst` is stated through liveness
+   (`defFirst_of_live`: no register with a definition live at `0`).
+
+   **Left, in this order.**  (a) `%6` (`FragX`).  Two obstacles, both met
+   on the way here.  First, the liveness spec of a run is about the state
+   at its end; with `%6` the final pass (and `+split`, `+copy` of the
+   parents) put ops in front of lazy blocks inside a run's code after the
+   run (the `yes`/`nuh` blocks of `%6`, every fork entry), so the spec must
+   be robust: for every map that agrees with the run's blocks on its labels
+   `[g0.bo, g1.bo)`, a register live at the entry is in the result's need
+   or live at a goal target (or at a lazy entry).  It follows from the
+   present spec with two facts more: the run's blocks jump only to its own
+   labels or to its goal's targets (an induction like `run_down`), and they
+   mention only fresh registers and the goal's (`run_keepsA` of track C);
+   then a cut lemma (a path either stays in the run's labels or reaches a
+   target) gives the robust form.  With it, `Frag6` (a `%6` at the top,
+   under `%done`) is near: `runL_six_done` of track C splits the run, and
+   the final pass's `+coerce-lazy` puts one `+sure-loop` at the entry and
+   one at each branch block.  Second, under `%next` a `%6` returns a lazy
+   need with forks, so every arm above it runs on `Lazy` (`splitLoop`,
+   `copyLazyL`, `fromL`, `walkLazy` in `+mede`, `+collapse-lazy-atom` and
+   `+kern` with proxies, `+fork`/`+sect` with `insertHop` and the threaded
+   parameters, `lazyShut`), each needing its own `raw_` lemma over the lazy
+   entries, and `toStraightF` takes the map path when proxies exist (the
+   renaming `ren ∘ unproxy` is not injective, but proxies are never
+   defined, only read, so `DefUniq` should still pass).  `+fork-need`'s join
+   is where `ParNodup`, `PassOK`, `DownPar` and `Acyclic` (with `upRk`) get
+   content: its parameters are the goal's need (distinct), the fork blocks
+   pass fresh registers and hop up.  `Par1` and `ArgsAbove` must be replaced
+   there (several parameters; arguments allocated after the join's
+   parameters, ranked by `upRk`).  (b) Indirect calls: the arm of `%2`
+   (`runLC_n2_none`: `+simple-next`, `+kerf` with `+kern` into the goal's
+   need from a fresh `pro`, the `%nok` block, then the two runs and the copy
+   as in `raw_binTail`) fits the present spec; nested calls need the
+   induction on `runLC`, most simply by making the case lemmas take the
+   runner as a parameter with its unfolding equations.  Estimate: `Frag6`
+   with the robust spec, about 1000 lines; `FragX`, as much again as what
+   is done here (about 5000 lines), most of it the lazy arms.
