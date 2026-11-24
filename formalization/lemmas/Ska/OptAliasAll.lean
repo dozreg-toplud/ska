@@ -13,7 +13,8 @@ facts, immediates and block after of `q` are stored, the registers the end
 after reads are in `DefW bl pre`, `AOK` and `ABInv` hold with the global `old`
 of `g` and `Done` = `DoneE bl pre p bq` for the path `p` the execution took
 (`epath`), and the jump the end before takes is listed in `rev` and is taken
-by the end after, to the same block, with arguments of the same values.
+by the end after, to the same block, with its arguments renamed by the
+global `old` (so of the same values, `argV`).
 
 * **`awa_steps_last`**, **`awa_inblock_passed`**: an execution from the entry
   either stays in block `0`, or ends with a jump into the block it stands in
@@ -371,7 +372,8 @@ def EndOK (bl : Map Blob) (pre : List Nat) (g : AGen Map) (q : Nat) (p : List Na
     AOK ⟨g.old, lq, mq⟩ R (DoneE bl pre p bq) ∧
     ABInv ⟨g.old, lq, mq⟩ (DefW bl pre) (DoneE bl pre p bq) (ClR bl) ∧
     ∀ j, takenR R bq.fin = some j → q ∈ g.rev j.there ∧
-      ∃ j', takenR R pb.fin = some j' ∧ j'.there = j.there ∧ ∀ k : Nat, argV R j'.args[k]? = argV R j.args[k]?
+      ∃ j', takenR R pb.fin = some j' ∧ j'.there = j.there ∧ j'.args = j.args.map (Option.map g.old) ∧
+        ∀ k : Nat, argV R j'.args[k]? = argV R j.args[k]?
 
 /-- **`AOK` and `ABInv` at the start of block `0`** at the entry. -/
 theorem awa_start_entry {bl : Map Blob} (hS : AliasSSAB bl) {pre l : List Nat} (ht : TopoOK bl (pre ++ l))
@@ -486,7 +488,7 @@ theorem awa_end {pick : List Nat → Nat} (hpick : ∀ l : List Nat, l ≠ [] �
   · intro j hj
     obtain ⟨j', h1, h2, h3, h4⟩ := afn_jump hfin hok2.info (fun x hx => hok2.old x (hfd x (awk_finReads_sub hx)))
       (hnl o bo hbo) hj
-    refine ⟨h4 (hpend j (aedge_taken_mem hj)), j', h1, h2, fun k => ?_⟩
+    refine ⟨h4 (hpend j (aedge_taken_mem hj)), j', h1, h2, h3, fun k => ?_⟩
     rw [h3, List.getElem?_map]
     cases hk : j.args[k]? with
     | none => rfl
@@ -565,8 +567,18 @@ theorem awa_rebase {pick : List Nat → Nat} {nargs : Nat} {bl : Map Blob} (hS :
   obtain ⟨hok', hab'⟩ := awa_end_step hS ht hi hw h hπ hb hj hq hok hab
   refine ⟨lq, mq, pb, e1.trans hlq, e2.trans hmq, e3.trans hpb,
     fun x hx => DefW.mono (fun a ha => List.mem_append_left _ ha) (hfr x hx), hok', hab', fun j' hj' => ?_⟩
-  obtain ⟨h1, h2⟩ := htk j' hj'
-  exact ⟨awa_rev_keep h h1 hqo, h2⟩
+  obtain ⟨h1, j2, h2, h3, h4, h5⟩ := htk j' hj'
+  refine ⟨awa_rev_keep h h1 hqo, j2, h2, h3, ?_, h5⟩
+  rw [h4]
+  apply List.map_congr_left
+  intro a ha
+  cases a with
+  | none => rfl
+  | some u =>
+    simp only [Option.map_some]
+    congr 1
+    exact (awi_frame_step ht hi h (awa_stable1 hS ht hπ hb hj hq
+      (awi_fin_done hS hπ hb hj (jmp_finRegs (aedge_taken_mem hj') ha)))).symm
 
 end
 
@@ -697,7 +709,7 @@ theorem awa_start {pick : List Nat → Nat} {nargs : Nat}
     have htk : takenR (fun x => read x x'.regs) B.fin = some j0 := by rw [← afn_taken, ← hfB]; exact ht0
     obtain ⟨lq, mq, pb, hlq, hmq, hpb, hfr, hok, hab, htake⟩ :=
       hI.ends st vals t es1 x' B j0 hfe1 hp' hq' hbody' hqpre hB hj0B
-    obtain ⟨hqrev, j', hj', hj'o, hargs⟩ := htake j0 htk
+    obtain ⟨hqrev, j', hj', hj'o, -, hargs⟩ := htake j0 htk
     rw [hjo] at hqrev
     have hne : g.rev o ≠ [] := List.ne_nil_of_mem hqrev
     obtain ⟨info, imms, b1, edges, loc0, rb, rf, e1, e2, e3, e4, e5, e6, e7, e8⟩ :=
