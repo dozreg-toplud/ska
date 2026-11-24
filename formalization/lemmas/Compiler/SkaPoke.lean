@@ -366,5 +366,115 @@ theorem sp_chain (K : Noun) (hcg : slot? 341 K = some ska_cg.arm) (hpr : slot? 2
   simp only [spT0, nock_exec, Option.bind_some, hr, hcg, ska_cg_arm_run, hpr, prune_arm_run, hl2, by.arm_at,
     by_arm, by.got.arm_at, got_arm, Option.bind_assoc]
 
+/-- `spEnd`: the new memo into `lon`, `dats` pushed, then the baking part. -/
+theorem sp_end (K : Noun) (root : Ident) (r1 r2 r3 r4 jRest memoN lonRest hotN datsN memoN' rdN prN cgr : Noun) :
+    nock (C (C datsN memoN') (C rdN (C prN (C cgr (C (identNoun root)
+        (spT0 K root r1 r2 r3 r4 jRest memoN lonRest hotN)))))) spEnd
+      = nock (C datsN (C rdN (C prN (C cgr (C (identNoun root)
+        (spT0 K root r1 r2 r3 r4 jRest memoN' lonRest hotN)))))) spRest := by
+  unfold spEnd spT0
+  simp only [nock_exec, Option.bind_some]
+
+/-- The subject on which the baking part `spRest` runs, from the graph `gr`
+of `+ska-callgraph` and what `Ana.skaPoke` returns. -/
+noncomputable def spAfter {R : Type} (regsNoun : R → Noun) (root : Ident) (r1 r2 r3 r4 jRest lonRest hotN : Noun)
+    (gr : Callgraph FinMap × R)
+    (r : Callgraph FinMap × FinMap Bell (FDatum FinMap) × Memo FinMap × FDatum FinMap × R) : Noun :=
+  C (Treap.toNoun FDatum.toNoun r.2.1) (C r.2.2.2.1.toNoun (C (Treap.toNoun FDatum.toNoun r.1)
+    (C (C (Treap.toNoun FDatum.toNoun gr.1) (regsNoun gr.2)) (C (identNoun root)
+      (spT0 ana root r1 r2 r3 r4 jRest (memoNoun r.2.2.1) lonRest hotN)))))
+
+theorem pj_trap_ana (pruned : Callgraph FinMap) (memo : Memo FinMap) (rdN cgN ridN a5 a6 ridN' jetsN lonRest hotN : Noun) :
+    nock (sub511 ana pjTB rdN (Treap.toNoun FDatum.toNoun pruned) cgN ridN a5 a6
+        (C ridN' (C (C jetsN (C (memoNoun memo) lonRest)) hotN))) pjTB
+      = some (pjAcc (pokeMemo pruned memo)) :=
+  pj_trap ana ana_l2 mfe_at ana_lib7 mi.arm_at miIn_ana pj_idb pj_datb pj_mapb pruned memo _ _ _ _ _ _ _ _ _
+
+section
+variable {R : Type} (regsNoun : R → Noun) (env : Env R)
+  (hhe : env.he = heSock) (hth : env.threshold = 32) (hsoft : env.softSpot = softSpotF)
+  (hreg : RegisterFastIs regsNoun env)
+include hhe hth hsoft hreg
+
+/-- **The analysis part of `+ska-poke`**: the trap that `+ska-poke` hands
+`road-pure`, on the core of the gate `+ska-poke` with the sample
+`[root-identity [lon hot]]` (`lon = [jets [memo lonRest]]`, the
+registrations `[root core batt arms ~]:jets` being `regsNoun reg`), returns
+`y` exactly when, at some fuel, `+ska-callgraph` returns a graph `gr`,
+`Ana.skaPoke` returns `r`, and the baking part `spRest` returns `y` on the
+subject `spAfter` built from them. -/
+theorem ska_poke_ana_iff (root : Ident) (memo : Memo FinMap) (reg : R) (r1 r2 r3 r4 jRest lonRest hotN : Noun)
+    (hregs : regsNoun reg = C r1 (C r2 (C r3 (C r4 (A 0))))) (y : Noun) :
+    nock (spT0 ana root r1 r2 r3 r4 jRest (memoNoun memo) lonRest hotN) spX = some y ↔
+      ∃ n gr r, Ana.skaCallgraph env n root memo reg = some gr ∧ Ana.skaPoke env n root memo reg = some r ∧
+        nock (spAfter regsNoun root r1 r2 r3 r4 jRest lonRest hotN gr r) spRest = some y := by
+  rw [sp_chain ana ska_cg.arm_at prune_cg_at ana_l2, ← hregs]
+  have hcg := ska_callgraph_iff regsNoun env hhe hth hsoft hreg root memo reg
+  simp only [cgSam] at hcg
+  constructor
+  · intro h
+    obtain ⟨cgr, hc, h⟩ := Option.bind_eq_some_iff.1 h
+    obtain ⟨gr, m, hgr, rfl⟩ := (hcg cgr).1 hc
+    rw [show slot? 2 (C (Treap.toNoun FDatum.toNoun gr.1) (regsNoun gr.2))
+      = some (Treap.toNoun FDatum.toNoun gr.1) by simp only [nock_exec], Option.bind_some] at h
+    obtain ⟨prN, hpr, h⟩ := Option.bind_eq_some_iff.1 h
+    obtain ⟨n2, p, hp, rfl⟩ := (prune_gate_iff ana ana_l2 gr.1 root prN).1 hpr
+    obtain ⟨rdN, hrd, h⟩ := Option.bind_eq_some_iff.1 h
+    cases e : Treap.get p root with
+    | none => rw [pr_got_none p root e] at hrd; cases hrd
+    | some d =>
+      rw [pr_got p root d e] at hrd
+      cases hrd
+      have ht := pj_trap_ana p memo d.toNoun (C (Treap.toNoun FDatum.toNoun gr.1) (regsNoun gr.2))
+        (identNoun root) spX spBat (identNoun root) (C r1 (C r2 (C r3 (C r4 jRest)))) lonRest hotN
+      simp only [sub511] at ht
+      unfold spT0 at h
+      dsimp only at h
+      rw [ht, Option.bind_some] at h
+      unfold pjAcc at h
+      rw [show (C spX (C spBat (C (C (identNoun root) (C (C (C r1 (C r2 (C r3 (C r4 jRest)))) (C (memoNoun memo)
+          lonRest)) hotN)) ana))) = spT0 ana root r1 r2 r3 r4 jRest (memoNoun memo) lonRest hotN from rfl,
+        sp_end] at h
+      refine ⟨max m n2, gr, (p, (pokeMemo p memo).1, (pokeMemo p memo).2, d, gr.2),
+        skaCallgraph_fuel_le env (Nat.le_max_left _ _) _ _ _ _ hgr, ?_, h⟩
+      unfold Ana.skaPoke
+      rw [skaCallgraph_fuel_le env (Nat.le_max_left _ _) _ _ _ _ hgr, Option.bind_some,
+        pruneCallgraph_fuel_le (Nat.le_max_right _ _) _ _ _ hp, Option.bind_some, e]
+      rfl
+  · rintro ⟨n, gr, r, hgr, hr, hy⟩
+    have hr' := hr
+    unfold Ana.skaPoke at hr'
+    rw [hgr, Option.bind_some] at hr'
+    obtain ⟨p, hp, hr'⟩ := Option.bind_eq_some_iff.1 hr'
+    obtain ⟨d, e, rfl⟩ := Option.map_eq_some_iff.1 hr'
+    rw [(hcg _).2 ⟨gr, n, hgr, rfl⟩, Option.bind_some,
+      show slot? 2 (C (Treap.toNoun FDatum.toNoun gr.1) (regsNoun gr.2))
+        = some (Treap.toNoun FDatum.toNoun gr.1) by simp only [nock_exec], Option.bind_some,
+      (prune_gate_iff ana ana_l2 gr.1 root _).2 ⟨n, p, hp, rfl⟩, Option.bind_some, pr_got p root d e,
+      Option.bind_some]
+    have ht := pj_trap_ana p memo d.toNoun (C (Treap.toNoun FDatum.toNoun gr.1) (regsNoun gr.2))
+      (identNoun root) spX spBat (identNoun root) (C r1 (C r2 (C r3 (C r4 jRest)))) lonRest hotN
+    simp only [sub511] at ht
+    unfold spT0
+    dsimp only
+    rw [ht, Option.bind_some]
+    unfold pjAcc
+    rw [show (C spX (C spBat (C (C (identNoun root) (C (C (C r1 (C r2 (C r3 (C r4 jRest)))) (C (memoNoun memo)
+        lonRest)) hotN)) ana))) = spT0 ana root r1 r2 r3 r4 jRest (memoNoun memo) lonRest hotN from rfl,
+      sp_end]
+    exact hy
+
+end
+
+/-- The battery of the gate `+ska-poke` slams `road-pure` (the gate at axis
+`62` of the analysis core `K`) with the trap `[spX [spBat [sam K]]]`, whose
+run `ska_poke_ana_iff` describes. -/
+theorem sp_bat_run (K sam : Noun) :
+    nock (C spBat (C sam K)) spBat =
+      (slot? 62 K).bind fun rp => (edit? 6 (C spX (C spBat (C sam K))) rp).bind fun core =>
+        (slot? 2 core).bind fun f => nock core f := by
+  conv => lhs; arg 2; unfold spBat
+  simp only [nock_exec, Option.bind_some]
+
 end Compiler
 end Formalization
