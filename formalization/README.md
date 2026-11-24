@@ -130,7 +130,10 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/SkaPrune.lean` | The gate `+prune-callgraph` (arm `22007` of `ana`, `prune_cg_at`) against `Ana.pruneLoop` and `Ana.pruneCallgraph`, both ways at some fuel, in every context with layer 2 at axis `8191` (`prune_loop_iff`, `prune_gate_iff`).  The battery pushes `out=~` and `q=~[root]` (`prune_battery_run`), the arm builds the gate with the sample `[~ *identity]` (`prune_arm_run`).  One turn of the loop over an evaluator `c` that is `nock` off the loop (`PFar`, the cut of the formula) is `prune_stepW`, against `pruneStepH`, which is `pruneLoop` one fuel up (`pruneLoop_succ`); under `evOne prune_cg.loop j` the loop computes `pruneLoop` at fuel `j` exactly (`pruneE_is`).  `+has:by`, `+got:by` (with its crash on a missing callee) and `+put:by` on the noun of a graph: `pr_has`, `pr_got`, `pr_got_none`, `pr_put`; the `+turn` by the shared gate `[0 13]` and the `+weld`: `pr_turn`, `pr_weld`. |
 | `Compiler/SkaPoke.lean` | `+memo-final-entry` (arm `340` of `ana`, `mfe_at`, battery `mfeBat` written out, sample bunt `mfeBunt` kept whole) against `Ana.memoFinalEntry` in every context with `lib` at `7` (`mfe_gate`).  The analysis part of `+ska-poke` (arm `20` of `ana`, `sp_at`): its battery `spBat` slams `road-pure` (axis `62` of `ana`) with the trap `[spX [spBat [sam ana]]]` (`sp_bat_run`), and the battery `spX` of that trap is split by the kernel (`spX_eq`, `spXF`) into the push of `[bus fol]`, the calls of `+ska-callgraph` (`spCG`), `+prune-callgraph` (`spPR`), `+got:by` (`spGOT`), the trap `%poke-just-code` (`spTC`, battery `pjTB`, tied by `spX_eq`), and `spEnd`, which writes the new memo into `lon`, pushes `dats` and runs the baking part `spRest` (axis `44826492927` of `ana`, kept whole).  `sp_chain` runs those calls over a variable core `K`; `pj_gate` is the gate of the `+rep` (`pjGate`) on one entry against `pjStep`, `pj_rep` the `+rep` over the pruned graph against `pokeMemo` (through `FinMap.entry`, so no injectivity of `FDatum.toNoun` is needed), and `pj_trap` the trap, with the bunts of the gate's sample (`pjIdB`, `pjDatB`, `pjMapB`, the last `~`) evaluated by the kernel (`pj_idb`, `pj_datb`, `pj_mapb`).  `ska_poke_ana_iff`: the trap returns `y` exactly when at some fuel `Ana.skaCallgraph` returns `gr`, `Ana.skaPoke` returns `r` and `spRest` returns `y` on `spAfter gr r`.  Hypotheses: those of `ska_callgraph_iff` and `regsNoun reg = [root core batt arms ~]` of `jets.lon`. |
 | `Compiler/RoadPure.lean` | `road-pure` (the gate at axis `62` of `ana`, battery `rpBat` written out, `rp_at`), `+mule:vi` and `+mute` (arms `6` and `15` of the battery of the door `+vi` at arm `22526` of `layer4`, `rp_mule_at`, `rp_mute_at`; batteries `rpMuleBat`, `rpMuteBat` written out, the `%1` branch of `+mute` kept as `[8 sof [1 1] rest]`) and `+mean` (arm `2558` of the fifth layer at axis `31` of the gate's context, `rp_mean_at`), each tied by the kernel.  `+mean` never returns (`rp_mean_none`, by induction on `iterN`); the pill's `+mock` on `[[s f] ~]` returns `[%0 p]` when `+mink` ends in `%0` and otherwise a cell whose head is not `0` (`rp_mock_cases`, `rp_mock_zero`, through `mink_pill_iff` with `rpLib`, so no formatting field of `Lib` is assumed: `+mook` on `%1` and `%2` is read only for its head); `+mute` and `+mule` likewise (`rp_mute_cases`, `rp_mule_cases`).  `rp_run_iff`: `road-pure` on a trap `T` returns `y` exactly when `+mink` of `[T [9 2 0 1]]` with `gul = ~` ends in `%0` and the direct run returns `y`.  `ska_poke_gate_iff`: the same for the gate `+ska-poke` (`sp_bat_run`) on any sample.  `evalH_of_minkF_nil`: with `gul = ~`, `+mink` ends in `[%0 p]` only on an `EvalH` run to `p` (Nock in which every dynamic hint the run evaluates has an atom tag), the converse of `mink_of_evalH`.  So `ska_poke_iff_evalH`: the gate returns `y` exactly when its trap's run is an `EvalH` run to `y`, with no hypothesis; and `ska_poke_iff_trap`: given that every return of the trap is an `EvalH` run, the gate returns `y` exactly when the trap does. |
-| `Compiler/RegisterFast.lean` | `+register-fast` for registrations kept as nouns: `registerFastP`, the pill's run of the gate decoded into `[miss regs]`, satisfies `RegisterFastIs` for every `Env Noun` that uses it, given `RegisterFastShape` (every return of the gate is a cell with a flag at its head; `registerFastIs_of`).  The shape fact is open: `absNock` of `Compiler/Frame.lean` on the gate's battery (fuel 1000) gives 103 shapes, of which 10 are `[%.n *]` and 93 unknown, because those branches end in calls, which `absNock` does not follow. |
+| `Compiler/RegisterFast.lean` | `+register-fast` for registrations kept as nouns: `registerFastP`, the pill's run of the gate decoded into `[miss regs]`, satisfies `RegisterFastIs` for every `Env Noun` that uses it, given `RegisterFastShape` (every return of the gate is a cell with a flag at its head; `registerFastIs_of`).  The shape fact is proved in `Compiler/RegisterFastShape.lean`. |
+| `Compiler/FrameCall.lean` | `absNockS`: `absNock` of `Compiler/Frame.lean` with calls (Nock `2`, and `9` through `[2 [0 1] 0 b]`) either summarized or followed.  A summary entry `⟨pre, fs, post⟩` answers a call whose core is below `pre` and whose formula is below `fs` (`le`, a decidable test of inclusion of shapes, `le_sound`) with the shapes `post`; a call whose formula is known (a literal, or a path that a resolver `K` maps to a noun of the base, `KOK`) and accepted by `fol` runs that formula on the core's shape; every other call is `unk`.  `absNockS_sound`: what Nock computes, a shape of `absNockS` describes, given only that every summary passes `summOK` (the interpreter run on its `pre`, with the same summaries, returns shapes below `post`).  The induction on `Eval` meets a loop's call to itself at a smaller derivation, so the check is not circular (`second_of_first`, `call_sound`). |
+| `Compiler/RegisterFastShape.lean` | `registerFastShape`: every return of the pill's `+register-fast` is `[flag b, r']`, by two kernel checks of `absNockS` on the gate's battery from the base `[battery [[clue prod reg] ana]]`: the resolver `rfK` knows the battery and `ana`; the followed formulas (`rfFol`) are the battery of `print-ska` (`[9 97710 0 255]`), the arm `same` of layer 2 (`[8 [1 0] [1 0 6] 0 1]`) and the battery `[0 6]` of the gate `same` builds, so `%-  (print-ska n |.(...))  gen` returns the shape of `gen` and the trap is never run; the summaries are the two loops `past-loop` (`rfL1`, at axis `1123630016355293` of the battery) and `sock-loop` (`rfL2`, at `4602388546991284221`) on the cores the gate builds for them (`rfPre1`, `rfPre2`, with `gen` as `[1 reg]`), each returning `[0 *]` or `[1 *]` (`rf_summ_ok`); the gate's run gives 287 shapes, each `[0 *]` or `[1 *]` (`rf_main_ok`).  The checks take about a second.  `registerFastIs_pill`: `RegisterFastIs` for every `Env Noun` with `registerFast = registerFastP`; `ska_poke_ana_iff_pill`: `ska_poke_ana_iff` for that `env`, with no hypothesis on `+register-fast`. |
+| `Compiler/CompGen.lean` | The noun of the state of `+comp` (`line-short`, `[re-gen bo-gen id-gen mode blocks tags cond cache soft sofs]`): `genNoun g x`, a `Gen` of `Ska/CompModel.lean` with the three fields it leaves out carried as opaque nouns (`GenRest`: `cache` at axis `510`, `soft` at `1022`, `sofs` at `1023`), in the shared encodings of `Ska/Types.lean` (`Blob.toNoun`, `listNoun A` for a region, `HoonMap.toNoun`, `condValNoun` for `[def tag]`, `cgModeNoun` for `%drop` and `%run`).  The slots of the fields (`genNoun_re`, ..., `genNoun_tags`), and `+re`, `+oo`, `+id` on the noun (`re_noun`, `oo_noun`, `id_noun`: the edit at axis `2`, `6`, `14` the Hoon makes is the model's result, encoded).  No arm of the pill's door is linked yet. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`. |
@@ -569,7 +572,25 @@ import only its theorems.  So:
    - *The core inside `+comp`* (the door `|_  gen=line-short` at line 3825
      of `nock-compilation.hoon`; map from the arm list and the names of
      `Ska/CompModel.lean`, `Ska/CompLazyRun.lean`, `Ska/CompLeap.lean`,
-     2026-11-24, not yet checked arm by arm; no arm linked).  The Hoon's
+     2026-11-24, not yet checked arm by arm; no arm linked).  The noun of
+     the state is `genNoun` (`Compiler/CompGen.lean`), with `cache`, `soft`,
+     `sofs` as opaque nouns at axes `510`, `1022`, `1023`.  Read in the Hoon,
+     2026-11-24: `+re`, `+oo`, `+id`, `+dropping`, `+set-tag`, `+copy-tag`,
+     `+emir`, `+emit`, `+add-ops`, `+bomb` touch none of the three.  The
+     arms of the door that do (a search of the lines that name
+     `cache.gen`, `soft.gen` or `sofs.gen`): `cache` in `+callee-sure`
+     (read) and `+callee-compiled` (read and written); `soft` in `+run`
+     (the test `(~(has by soft.gen) call-block)`, line 4030), `+kern`
+     (5068), `+crash-need` (5933, 5938), `+soft-fork` (5227),
+     `+coerce-lazy` (6808), `+soft-new`, `+soft-bond`, `+soft-ask`,
+     `+soft-less`, `+soft-done`; `sofs` in `+run-shape` (written, 4456,
+     4562), `+laze-big` (4696) and `+laze-soft-fork` (5245), both read.
+     Of these `+run`, `+kern`, `+crash-need` and `+soft-fork` have models
+     that take `soft` to be empty (the doc of `Ska/CompModel.lean`), which
+     holds for nomm without calls only: those are the places where the
+     model departs from the Hoon.  The pill's nouns of the door are not generated: the
+     next regeneration should name its battery and the arms `re`, `oo`,
+     `emit`, `emir`, `add-ops`, `set-tag`, `from`, `split`.  The Hoon's
      state is the 10-tuple `[re-gen bo-gen id-gen mode blocks tags cond
      cache soft sofs]`; the model's `Gen` keeps `re`, `bo`, `id`, `drop`
      (for `mode`, `%drop` or `%run`), `blocks`, `tags`, `cond`, and lacks
@@ -602,8 +623,12 @@ import only its theorems.  So:
      `+compiled-mono`, `+compiled-nary`, the `%full` and `%dire` branches of
      `+poke`; `run` of `+comp` and its helpers (`Comp*.lean`).
    - *Parameters with no model*: `+register-fast`
-     (`Env.registerFast`, tied by `RegisterFastIs`; for `R := Noun` it can be
-     the pill's run of the gate), `+shape-collapse`, `+bake-need`.
+     (`Env.registerFast`, tied by `RegisterFastIs`; for `R := Noun` it is
+     the pill's decoded run `registerFastP`, and `RegisterFastIs` holds with
+     no hypothesis, `registerFastIs_pill`; `ska_poke_ana_iff_pill` is the
+     analysis part of `+ska-poke` with only `env.he`, `env.threshold`,
+     `env.softSpot` and `env.registerFast` fixed), `+shape-collapse`,
+     `+bake-need`.
    - *No model*: `+register-template`, `+index-arms`,
      `+fast-parent`, the `*-ju` arms, the cole arms, `+eval-finalized`,
      `+have`, `+simple-bell-graph-and-reversed`, `+tarjan`, `+scc-of`;
@@ -614,14 +639,8 @@ import only its theorems.  So:
      `known-sock`, `bake-need-ord`, `need-normalize`, `mono-try-call`); the
      families `soft-*`, `laze-*`, `inter1`, `inter2`; the optimizer;
      `+hot-diff`, `+load`, `+peek`, `+wish`.
-   - *Next, in this order*: `RegisterFastShape` (the last semantic
-     hypothesis of the analysis links; every branch of the Hoon returns
-     `gen`, `gen(miss &)` or `[miss.gen (register-template ...)]`, most of
-     them through `%-  (print-ska n |.(...))  gen`, whose gate is the arm
-     `same` of layer 2, and the two loops `past-loop` and `sock-loop` read
-     `gen` without changing it, so `absNock` needs an oracle that answers a
-     slam of `same` with its sample and an invariant of the two loops: every
-     return is `[| reg]`, `[& reg]` or `[| _]`); then the property
+   - *Next, in this order*: (`RegisterFastShape` is done, 2026-11-24:
+     `registerFastShape`, `Compiler/RegisterFastShape.lean`); the property
      `EvalH` of the trap's run for `ska_poke_iff_trap`; then the baking
      part (`spRest`) once `+bake-graph` is settled; then the core inside
      `+comp` against `Ska/CompModel.lean`.  The nouns of
@@ -701,10 +720,10 @@ import only its theorems.  So:
    `folOutNoun`).  The converse gives `FolDecodes`
    (`folDecodes`), and with `resIs_inf` it discharges the hypotheses of
    `fol_loop_le` (`fol_loop_le'`, `Compiler/FolLoopConv.lean`).  (d)
-   `RegisterFastIs`: reduced to `RegisterFastShape` for `R := Noun`
-   (`registerFastIs_of`, `Compiler/RegisterFast.lean`).  The shape fact needs
-   an abstract interpreter that follows the gate's calls, as 93 of the 103
-   shapes that `absNock` gives end in a call.  The trap is the
+   `RegisterFastIs`: proved for `R := Noun` with `env.registerFast =
+   registerFastP` (`registerFastIs_pill`, `Compiler/RegisterFastShape.lean`,
+   from `registerFastShape` by the abstract interpreter with calls of
+   `Compiler/FrameCall.lean`).  The trap is the
    formula `[8 [1 bat] [11 [%fast fol-loop-clue] [0 1]]]`, kicked by
    `[9 2 0 1]`.  The generator names its battery `fol_loop.battery` (5569
    cells as a tree), the traps it kicks in place `fol_loop.direct`
