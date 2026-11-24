@@ -555,7 +555,7 @@ theorem live_stepW (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar f �
         turn_arm, hturn, weld.arm_at, weld_arm, hweld]
 
 theorem FFar.ne_live {f : Noun} (h : FFar f) : f ≠ ska_cg.cull.loop :=
-  fun e => h.2.2.2.2.2.2.2.2 (e ▸ rfl)
+  fun e => h.2.2.2.2.2.2.2.2.1 (e ▸ rfl)
 
 /-- Under `evOne` of the loop `live`, `j` deep, the loop computes `liveLoop`
 at fuel `j`, exactly. -/
