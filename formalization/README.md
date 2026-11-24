@@ -113,6 +113,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/TreapSet.lean` | Sets of the `FinMap` instance: `toMap` undoes `unMap` on a map whose values are `~` (`toMap_unMap`), so `FinMap.setNoun m` is an `IsSet mugF` whose members are the encoded keys of `m` (`isSet_setNoun`, `has_setNoun`), and `+put:in`'s model on it gives the noun of `FinMap.put m k ()` (`putInF_setNoun`, by `putInF_spec` and `isSet_ext`). |
 | `Compiler/FolLoopStep.lean` | `calleePutIs`: the former hypothesis `CalleePutIs`.  `fol_loop_step_all'`: one level of `fol-loop` is `Ana.folStep` given only `GoIs`, `ResIs`, `RegisterFastIs`, `ana` at `511` of the rest, and `env.softSpot = softSpotF`. |
 | `Compiler/FolLoopMono.lean` | `folStep_mono`: `Ana.folStep` is monotone (`Below?`) in `go` and `res` (`callStep_mono`, `meanArm_mono`).  `goPatch`: `go` where it returns, else the decoded run of the pill; `goIs_patch`: it satisfies `GoIs` when the pill returns what `go` returns and every return of the trap decodes (`FolDecodes`).  `fol_loop_le`: what `Ana.folLoop env memoF n` returns, the pill's trap returns, by induction on `n`, given `FolDecodes`, at every fuel a `resP` with `ResIs` above `Ana.resolve env memoF n`, `RegisterFastIs`, `softSpotF` and `ana` at `511`.  No second version of the case theorems is needed for the order. |
+| `Compiler/ResolveLoop.lean` | The loop `resolve` of the trap `nock-2-direct-non-inlined` (`fol_loop.resolve`, subject `resSubj`: `[fol_loop.resolve [id-there dirSubj]]`).  `resolve_step`: one turn of the pill's loop is `resolveStepH` on every identity, given `+analyze` as a parameter `an` (`AnaIs`: the gate of arm `92` of the core `K` at axis `31` of the rest, `ska_analyze_arm`), `env.he = heSock`, `env.threshold = 32`, `ana` at `511`, and the loop's call to itself on a `%he` step (needed only on that path).  It runs `+get:by` of `g` and `order`, `+git:mi`, `+recursive-call`, `+git-g`, `+patch-prod`, `+min` (layer 1 at `4194303` of the rest, `rest_layer1`) and `+got:by`, crashes included.  `resolveStepH` is `Ana.resolveStep` except that the `%rec` branch patches the product with `orig.1`, as the Hoon does (`(patch-prod [prod map]:d sock.prod.s)`); the two agree when the current identity is `orig` (`resolveStepH_self`).  `resolveH`: the loop fuelled with `an` fixed; `resolve_le`: what it returns, the pill's loop returns, on every identity; `ResLe` (`ResIs` in that direction) of the loop begun at the call's own identity (`resLe_resolveH`).  The loop reads of the trap's subject only `fol-new`, `sock.prod.s`, `gen` and the rest. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`. |
@@ -373,6 +374,9 @@ import only its theorems.  So:
      whole trap by induction on the fuel (`fol_loop_le`,
      `Compiler/FolLoopMono.lean`), given `FolDecodes` and `resolve` below a
      `ResIs` model at every fuel;
+     one turn of the loop `resolve` (`resolve_step`, `Compiler/ResolveLoop.lean`)
+     against `resolveStepH`, given `+analyze` (`AnaIs`) and its `%he` call to
+     itself, and the fuelled loop below the pill's (`resolve_le`);
      `+soft-spot` (against `softSpotF`, `Compiler/SoftSpot.lean`); all of
      `+ca` and `+so`;
      `cons`, `hed`, `tel`, `prune`, `slot`, `compose`, `edit` of `+pi`,
@@ -381,8 +385,11 @@ import only its theorems.  So:
      validators; the interpreter (`+eval-top`, `+eval-blob`, `+eval-pole`,
      `+eval-pass`, `+move`, `+read`, `+store`, `+eval-mook`, `+eval-rend`);
      of `+poke` its frame, that it validates first, and the outer `+poke`.
-   - *Modelled, not linked*: the loop `resolve` (`fol_loop.resolve`, whose
-     memo lookup differs from `Ana.resolveStep` after a `%he`); the direction
+   - *Modelled, not linked*: the loop `resolve` in the direction "the pill
+     returns, the model returns" (it needs the same induction on `iterN` as
+     `fol-loop`), and against `Ana.resolveStep` itself, which departs from the
+     Hoon in the `%rec` branch after a `%he` step (it patches with the
+     generalized sock, the Hoon with `sock.prod.s`; see item 11); the direction
      "the pill returns, the model returns" of `fol-loop` (it gives
      `FolDecodes`), which needs the case theorems under `nockW (hyb k)`;
      `+analyze`, `+run`, the pass and member loops, `+dirty`, `+sweep`,
@@ -419,7 +426,20 @@ import only its theorems.  So:
    at axis `511` of the rest of `+run`'s subject) and `RegisterFastIs`;
    `SoftSpotIs` is discharged by `softSpotIs_of` and `CalleePutIs` by
    `calleePutIs` (`fol_loop_step_all'`).  Left:
-   (a) the loop `resolve` against a model.  It reads `+get:by` of `g` and
+   (a) the loop `resolve` against a model.  Done one turn deep
+   (`resolve_step`) and in the direction "the model returns, the pill
+   returns" (`resolve_le`), against `resolveStepH` of
+   `Compiler/ResolveLoop.lean`.  The model's `Ana.resolveStep` still departs
+   from the Hoon in one place: in the `%rec` branch the Hoon patches the
+   product with `sock.prod.s`, the sample `[... 0 32756]` of `+patch-prod`
+   (`[8 [9 22 0 0x7ffffff] [9 2 10 [6 [7 [0 3] 7 [0 2] [0 252] 0 253] 0 32756] 0 2]]`,
+   `32756` being `sock.prod.s` under the five pushes of that branch), which
+   is `orig.1`, while `resolveStep` patches with `idT.1`.  After a `%he` step
+   the two differ, so `ResBelow (Ana.resolveR env memoF n) resP` of
+   `fol_loop_le` cannot hold for the pill's loop until the model patches with
+   `orig.1` (then `resolveStepH` is `resolveStep` by `rfl`).  What `resolve_le`
+   does not give: exactness (`ResIs`), which needs the converse, and
+   `Ana.analyze` in place of the fixed `an`.  It reads `+get:by` of `g` and
    `order`, `+git:mi` at `[9 84 0 0xffffff]`, `+recursive-call` at
    `[9 342 0 0x1ffffff]`, `+git-g`, `+patch-prod`, `+min` and `+got:by` of
    `order`, all through `ana`, and `+analyze` at arm `92` of the core at axis
