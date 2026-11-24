@@ -1,4 +1,4 @@
-import lemmas.Ska.OptAliasRev
+import lemmas.Ska.OptAliasLti
 
 /-!
 # Single assignment as the compiler has it, carried by the driver
@@ -46,7 +46,8 @@ and has no successor.  `AliasFieldSSAB` is `AliasFieldSSA` with `AliasSSAB`
 
 ## The driver
 
-`DInvS` is `DInvT` and `AliasSSAB`.  `SSAKeep fuel` lists, one field per pass,
+`DInvS` is `DInvT`, `AliasSSAB` and `NoLti` (no end is `%lti`, which
+`aliasFin` does not rename; `OptAliasLti.lean`).  `SSAKeep fuel` lists, one field per pass,
 that `+remove-hops`, `+remove-useless-branching`, `+remove-empty-middle`,
 `+trim-trace-hints` and `+remove-dead-code` keep `AliasSSAB` (the field
 `alias` of `DriverRestSSA` gives it back for `+alias`).  **`optimize_keeps_ssa`**:
@@ -98,14 +99,15 @@ def AliasSSAB (bl : Map Blob) : Prop := DefOnceB bl ∧ DefFirst bl
 
 /-- **The field `alias` under `AliasSSAB`**, for the model (open). -/
 def AliasFieldSSAB (Map : Type → Type) [HoonMap Map] [MapKeys Map] (pick : List Nat → Nat) : Prop :=
-  ∀ n (bl : Map Blob) topo rev f bl', DInvT bl → AliasSSAB bl → TopoInv bl topo rev → RevSound bl topo rev →
-    aliasM pick n bl rev topo = some (f, bl') →
-    KeepsB bl bl' ∧ DInvT bl' ∧ AliasSSAB bl' ∧
+  ∀ n (bl : Map Blob) topo rev f bl', DInvT bl → AliasSSAB bl → NoLti bl → TopoInv bl topo rev →
+    RevSound bl topo rev → aliasM pick n bl rev topo = some (f, bl') →
+    KeepsB bl bl' ∧ DInvT bl' ∧ AliasSSAB bl' ∧ NoLti bl' ∧
       TopoInv bl' (topo.filter fun o => (HoonMap.get bl' o).isSome)
         (revCfg bl' (topo.filter fun o => (HoonMap.get bl' o).isSome))
 
-/-- The block invariant the driver carries: `DInvT` and single assignment. -/
-def DInvS (bl : Map Blob) : Prop := DInvT bl ∧ AliasSSAB bl
+/-- The block invariant the driver carries: `DInvT`, single assignment, and
+no `%lti` end (`OptAliasLti.lean`). -/
+def DInvS (bl : Map Blob) : Prop := DInvT bl ∧ AliasSSAB bl ∧ NoLti bl
 
 /-- **Each pass of the loop keeps single assignment** (one field per pass;
 `+alias` is the field `alias` of `DriverRestSSA`). -/
@@ -139,8 +141,8 @@ theorem driverRestSSA_of_aliasM {fuel sfuel : Nat} {P : Passes Map} {pick : List
     (hs : P.switch = switchChains sfuel) : DriverRestSSA fuel sfuel P :=
   ⟨fun n bl topo rev f bl' hb hi hr hp => by
     rw [ha] at hp
-    obtain ⟨k, d, s, t⟩ := h n bl topo rev f bl' hb.1 hb.2 hi hr hp
-    exact ⟨k, ⟨d, s⟩, t⟩, ht, hs⟩
+    obtain ⟨k, d, s, l, t⟩ := h n bl topo rev f bl' hb.1 hb.2.1 hb.2.2 hi hr hp
+    exact ⟨k, ⟨d, s, l⟩, t⟩, ht, hs⟩
 
 /-- The invariant of `topo` and `rev` the driver carries: `TopoInv` and
 `RevSound`. -/
@@ -153,20 +155,22 @@ theorem driverHypS_of {fuel sfuel : Nat} {P : Passes Map} (H : DriverRestSSA fue
   hops := fun bl topo rev ch bl' hb hi h => by
     obtain ⟨k, d, t⟩ := hops_fieldD hb.1.1 hi.1 h
     obtain ⟨Kt, hK⟩ := hb.1.2
-    refine ⟨k, ⟨⟨d, Kt, hops_trimBr hi.1.1.1 hi.1.1.2.1 h hK⟩, K.hops bl topo rev ch bl' hb.1 hi.1 hb.2 h⟩,
-      fun e => ⟨t e, ?_⟩⟩
+    refine ⟨k, ⟨⟨d, Kt, hops_trimBr hi.1.1.1 hi.1.1.2.1 h hK⟩, K.hops bl topo rev ch bl' hb.1 hi.1 hb.2.1 h,
+      nolti_hops hb.2.2 hi.1.1.1 hi.1.1.2.1 h⟩, fun e => ⟨t e, ?_⟩⟩
     subst e
     exact rvs_eq hi.2 (hops_same hi.1.1.1 h).1
   rub := fun bl topo rev ch bl' hb h => by
     obtain ⟨k, d, t⟩ := rub_fieldD hb.1.1 h
     obtain ⟨Kt, hK⟩ := hb.1.2
-    refine ⟨k, ⟨⟨d, Kt, rub_trimBr h hK⟩, K.rub bl ch bl' hb.1 hb.2 h⟩, fun hi e => ⟨t hi.1 e, ?_⟩⟩
+    refine ⟨k, ⟨⟨d, Kt, rub_trimBr h hK⟩, K.rub bl ch bl' hb.1 hb.2.1 h, nolti_rub hb.2.2 h⟩,
+      fun hi e => ⟨t hi.1 e, ?_⟩⟩
     subst e
     exact rvs_rub hi.2 h
   middle := fun bl topo rev ch bl' hb h => by
     obtain ⟨k, d, t⟩ := middle_fieldD hb.1.1 h
     obtain ⟨Kt, hK⟩ := hb.1.2
-    refine ⟨k, ⟨⟨d, Kt, mid_trimBr h hK⟩, K.middle bl ch bl' hb.1 hb.2 h⟩, fun hi e => ⟨t hi.1 e, ?_⟩⟩
+    refine ⟨k, ⟨⟨d, Kt, mid_trimBr h hK⟩, K.middle bl ch bl' hb.1 hb.2.1 h, nolti_mid hb.2.2 h⟩,
+      fun hi e => ⟨t hi.1 e, ?_⟩⟩
     subst e
     exact rvs_eq hi.2 fun k _ => mid_same h k
   alias := fun n bl topo rev f bl' hb hi h => by
@@ -176,14 +180,14 @@ theorem driverHypS_of {fuel sfuel : Nat} {P : Passes Map} (H : DriverRestSSA fue
     rw [H.trim] at h
     obtain ⟨k, d, t⟩ := trim_fieldT hb.1 hi.1 h
     have hs := trim_shape h
-    exact ⟨k, ⟨d, K.trim bl topo rev bl' hb.1 hi.1 hb.2 h⟩, t,
+    exact ⟨k, ⟨d, K.trim bl topo rev bl' hb.1 hi.1 hb.2.1 h, nolti_shape hb.2.2 hs.1⟩, t,
       rvs_shape hi.2 hs.1 fun k hk => by rw [hs.2 k]; exact hi.1.1.2.2.1 k hk⟩
   dead := fun bl topo rev bl' hb hi h => by
     obtain ⟨Kt, hK⟩ := hb.1.2
     obtain ⟨d, t⟩ := dead_inv hb.1.1 hi.1 h
     have hs := dead_shape h
     exact ⟨fun c hc => by subst hc; exact dead_keeps c hi.1.1 h,
-      ⟨⟨d, Kt, dead_trimBr hi.1.1 h hK⟩, K.dead bl topo rev bl' hb.1 hi.1 hb.2 h⟩, t,
+      ⟨⟨d, Kt, dead_trimBr hi.1.1 h hK⟩, K.dead bl topo rev bl' hb.1 hi.1 hb.2.1 h, nolti_shape hb.2.2 hs.1⟩, t,
       rvs_shape hi.2 hs.1 fun k hk => hs.2 k (List.mem_reverse.mpr hk)⟩
   switch := fun bl bl' hb h => by rw [H.switch] at h; exact switch_fieldT _ hb.1 h
 
