@@ -235,6 +235,91 @@ theorem plain_tree {bl out out' : Map Blob} {fuel o nex nex' : Nat} {p0 : Nat ×
     rw [HoonMap.get_put, if_neg k1, fr k k4, get_foldl_del]
     simp only [k2, if_false]
 
+/-- The labels inside a plain chain's region: the tests after the head, and
+every label from `nex` up. -/
+def PlainIn (nex : Nat) (pl : List (Nat × SPlain)) (k : Nat) : Prop := k ∈ pl.map Prod.fst ∨ nex ≤ k
+
+/-- The ops the pass drops at the head `o`, and the ops it appends there. -/
+def plainD (o r : Nat) (k : Nat) (p : Pole) : Bool := decide (k = o) && !plainKeep r p
+def plainE (o : Nat) (nb : List Pole) (k : Nat) : List Pole := if k = o then nb else []
+
+/-- **What one application of `switchPlain` at `o` needs of the chain**, all
+of it about the blocks before. -/
+structure PlainHyp (M : Map Blob) (o nex : Nat) (p0 : Nat × SPlain) (pl : List (Nat × SPlain)) : Prop where
+  nd : (pl.map Prod.fst).Nodup
+  old : ∀ k ∈ pl.map Prod.fst, k < nex
+  ho : o < nex
+  ho' : o ∉ pl.map Prod.fst
+  hr : ∀ t ∈ p0 :: pl, t.2.r ≠ p0.2.d
+  blocks : PlainBlocks M p0.2.d (plainMiss p0 pl) pl
+  miss0 : ∃ t1 rest, pl = t1 :: rest ∧ p0.2.miss = t1.1
+  headB : ∃ b l r, HoonMap.get M o = some b ∧ b.fin = Termin.eqq l r ⟨[], p0.2.hit⟩ ⟨[], p0.2.miss⟩ ∧
+    ((l = p0.2.d ∧ r = p0.2.r) ∨ (l = p0.2.r ∧ r = p0.2.d)) ∧ Pole.imm (A p0.2.c) p0.2.r ∈ b.body ∧
+    (∀ n n', Pole.imm n p0.2.r ∈ b.body → Pole.imm n' p0.2.r ∈ b.body → n = n') ∧
+    (∀ r ∈ b.par, r ∉ plainRegs (p0 :: pl)) ∧
+    (∀ p ∈ b.body, plainKeep p0.2.r p = true → ∀ r ∈ poleRegs p, r ∉ plainRegs (p0 :: pl))
+  hits : ∀ t ∈ p0 :: pl, (HoonMap.get M t.2.hit).isSome ∧ ¬ PlainIn nex pl t.2.hit ∧ t.2.hit ≠ o
+  miss : (HoonMap.get M (plainMiss p0 pl)).isSome ∧ ¬ PlainIn nex pl (plainMiss p0 pl) ∧ plainMiss p0 pl ≠ o
+  noI : ∀ k b j, Reach M k → ¬ PlainIn nex pl k → k ≠ o → HoonMap.get M k = some b → j ∈ getJmps b.fin →
+    ¬ PlainIn nex pl j.there
+  ment : ∀ k b, Reach M k → ¬ PlainIn nex pl k → k ≠ o → HoonMap.get M k = some b → ∀ r ∈ blobMentions b,
+    r ∉ plainRegs (p0 :: pl)
+  zero : ¬ PlainIn nex pl 0
+
+theorem plainD_off {o r k : Nat} (h : k ≠ o) (p : Pole) : plainD o r k p = false := by simp [plainD, h]
+
+theorem gBody_plain (o r : Nat) (nb B : List Pole) :
+    gBody (plainD o r) (plainE o nb) o B = B.filter (plainKeep r) ++ nb := by
+  simp only [gBody, plainE, if_pos rfl]
+  congr 1
+  exact List.filter_congr fun p _ => by simp [plainD]
+
+theorem plainRegs_head (p0 : Nat × SPlain) (pl : List (Nat × SPlain)) : p0.2.r ∈ plainRegs (p0 :: pl) := by
+  simp [plainRegs]
+
+section
+variable {M out' : Map Blob} {o nex : Nat} {p0 : Nat × SPlain} {pl : List (Nat × SPlain)} {b : Blob}
+  {nb : List Pole} {nf : Termin}
+
+/-- The region of one plain chain. -/
+theorem plain_region (H : PlainHyp M o nex p0 pl) (hb : HoonMap.get M o = some b)
+    (hbo : HoonMap.get out' o = some ⟨b.par, b.body.filter (plainKeep p0.2.r) ++ nb, nf⟩)
+    (hfr : ∀ k, k ≠ o → k ∉ pl.map Prod.fst → k < nex → HoonMap.get out' k = HoonMap.get M k) :
+    RegionHypG M out' (PlainIn nex pl) (· = o) (fun k => k ∈ plainRegs (p0 :: pl)) (plainD o p0.2.r)
+      (plainE o nb) := by
+  obtain ⟨b1, l, r, hb1, -, -, -, hU, hpar, hkept⟩ := H.headB
+  rw [hb] at hb1; cases hb1
+  have hnI : ∀ k, ¬ PlainIn nex pl k → k ∉ pl.map Prod.fst ∧ k < nex := fun k hk =>
+    ⟨fun h => hk (Or.inl h), Nat.lt_of_not_le fun h => hk (Or.inr h)⟩
+  refine ⟨fun k hk hh => ?_, fun k hk => ?_, fun k hk => ⟨plainD_off hk, by simp [plainE, hk]⟩,
+    fun k p hd => ?_, fun k b2 hh hb2 n r2 n' h1 h2 hd1 hd2 => ?_,
+    fun k b2 j hr hk hh hb2 hj => H.noI k b2 j hr hk hh hb2 hj,
+    fun k b2 hr hk hh hb2 r2 hm => H.ment k b2 hr hk hh hb2 r2 hm,
+    fun k b2 hr hh hb2 => ?_, H.zero⟩
+  · exact hfr k hh (hnI k hk).1 (hnI k hk).2
+  · subst hk
+    refine ⟨fun h => h.elim H.ho' (fun h' => Nat.lt_irrefl _ (Nat.lt_of_lt_of_le H.ho h')), b, _, hb, hbo, rfl, ?_⟩
+    rw [gBody_plain]
+  · simp only [plainD, Bool.and_eq_true, decide_eq_true_eq, Bool.not_eq_true'] at hd
+    obtain ⟨-, hk⟩ := hd
+    cases p with
+    | imm n dd =>
+      simp only [plainKeep, Bool.not_eq_false', decide_eq_true_eq] at hk
+      exact ⟨n, dd, rfl, by rw [hk]; exact plainRegs_head p0 pl⟩
+    | _ => simp [plainKeep] at hk
+  · subst hh
+    rw [hb] at hb2; cases hb2
+    simp only [plainD, decide_true, Bool.true_and, plainKeep, Bool.not_not, decide_eq_true_eq] at hd1 hd2
+    subst hd1
+    exact hU n n' h1 h2
+  · subst hh
+    rw [hb] at hb2; cases hb2
+    refine ⟨hpar, fun p hp hd r2 hr2 => hkept p hp ?_ r2 hr2⟩
+    simp only [plainD, decide_true, Bool.true_and, Bool.not_eq_false'] at hd
+    exact hd
+
+end
+
 end Opt
 end SkaModel
 end Formalization
