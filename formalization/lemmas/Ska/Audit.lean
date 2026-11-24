@@ -406,6 +406,8 @@ open Formalization.SkaModel
 #print axioms mergeProd_fits_old
 #print axioms runDatum_prod_old
 #print axioms runDatum_changed_of_less
+#print axioms runDatum_less_mask
+#print axioms fits_app_uni
 #print axioms knit_eq_cell
 #print axioms heSock_size
 #print axioms msgSock_cases

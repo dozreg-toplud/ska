@@ -395,7 +395,7 @@ def AllP2 (env : Env R) (memoF : Memo M) (n : Nat) : Prop :=
     PassP2 memoF (passLoop env memoF n) ∧ MemP2 memoF (memberLoop env memoF n)
 
 theorem allP2_zero (env : Env R) (memoF : Memo M) : AllP2 env memoF 0 := by
-  refine ⟨fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ h => ?_,
+  refine ⟨fun _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ h => ?_,
     fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_⟩
   · rw [resolve_zero] at h; cases h
   · rw [analyze_zero] at h; cases h

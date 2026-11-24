@@ -15,6 +15,8 @@ namespace Pill
 
 open Nock
 
+def nh5004a56742f3 : Noun := C (A 9) (C (A 1494) nh6dc3efe67260)
+def nh2dceddbf2e92 : Noun := C (A 7) (C nhdcffa01abc8b nh5004a56742f3)
 def nh60a074c90b4a : Noun := C (A 7) (C nhf7afae22fb17 nh03c883616fb3)
 def nh6fb728d69b07 : Noun := C (A 7) (C nhdcffa01abc8b nhca331e45ee1c)
 def nh0d2a7cd19256 : Noun := C (A 9) (C (A 2) (C (A 10) (C (C (A 6) nh6fb728d69b07) nh9d5312e12a2d)))

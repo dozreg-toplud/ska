@@ -445,24 +445,20 @@ def WantSound (lib : Lib) (code : Bell → Option Nomm) (tab : Tab) : Prop :=
   ∀ n bus fol out gen', folLoopTop tab n bus fol = some (out, gen') →
     Annot lib code (Fits (Ca.app gen'.want bus)) fol out.nomm
 
-/-- An entry made by a converged run: its nomm and code requirement are those
-of the last run of `fol-loop` on its identity, with the table `tab`. -/
+/-- An entry made by a converged run: its nomm is that of the last run of
+`fol-loop` on its identity, with the table `tab`, and its code requirement
+is the run's `want` united with some cape `w` (the cape of the entry's
+previous code requirement, `+run` since 1813f09), applied to the subject
+sock.  `entry_ok_of_run` is in `Converge.lean`, which has the monotonicity
+of `+app:ca` in the cape (`fits_app_uni`). -/
 def RunEntry (tab : Tab) (e : Entry) : Prop :=
   ∃ n out gen', folLoopTop tab n e.more e.fol = some (out, gen') ∧
-    e.d.nomm = out.nomm ∧ e.d.less = Ca.app gen'.want e.more
-
-/-- With `WantSound`, an entry made by a run satisfies `EntriesOK`. -/
-theorem entry_ok_of_run {lib : Lib} {code : Bell → Option Nomm} {tab : Tab} {e : Entry}
-    (hw : WantSound lib code tab) (hr : RunEntry tab e) :
-    Annot lib code (Fits e.d.less) e.fol e.d.nomm := by
-  obtain ⟨n, out, gen', h, hn, hl⟩ := hr
-  rw [hn, hl]
-  exact hw n e.more e.fol out gen' h
+    e.d.nomm = out.nomm ∧ (∃ w, e.d.less = Ca.app (Ca.uni gen'.want w) e.more)
 
 /-- An entry made by a run fits `LessOK`. -/
 theorem lessOK_of_run {tab : Tab} {e : Entry} (hr : RunEntry tab e) :
     ∀ y, Fits e.more y → Fits e.d.less y := by
-  obtain ⟨_, _, _, _, _, hl⟩ := hr
+  obtain ⟨_, _, _, _, _, _, hl⟩ := hr
   intro y hy
   rw [hl]
   exact app_fits _ _ _ hy

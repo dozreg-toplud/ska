@@ -138,7 +138,7 @@ is `%void` merges to `old` whatever `old` is.  It is weaker than
 `RunEntryP`, which asks that the stored product be the run's. -/
 def RunEntryM (tab : Tab) (e : Entry) : Prop :=
   ∃ n out gen' moved old, folLoopTop tab n e.more e.fol = some (out, gen') ∧
-    e.d.nomm = out.nomm ∧ e.d.less = Ca.app gen'.want e.more ∧
+    e.d.nomm = out.nomm ∧ (∃ w, e.d.less = Ca.app (Ca.uni gen'.want w) e.more) ∧
     (⟨e.d.prod, e.d.map⟩ : Anno) = mergeProd moved out.prod old
 
 /-- **The merges have no common fixed point**, which is why `RunEntryM` asks
@@ -245,10 +245,10 @@ theorem prodRelN_of_converged {lib : Lib} {tab : Tab} {G : Entry → Prop}
   | zero => intro e _ y gul p _ hm; simp [minkF] at hm
   | succ K ih =>
     intro e he y gul p hy hm
-    obtain ⟨n, out, gen', moved, old, h, _, hl, hpm⟩ := hr e he
+    obtain ⟨n, out, gen', moved, old, h, _, ⟨w, hl⟩, hpm⟩ := hr e he
     rw [hl] at hy
     have R := mergeProd_rel moved out.prod old
-      (folLoop_relProdN hL (rtabP_of_answers ih hans) (hwf e he) h hy hm)
+      (folLoop_relProdN hL (rtabP_of_answers ih hans) (hwf e he) h (fits_app_uni (hwf e he) hy) hm)
     rw [← hpm] at R
     exact R
 

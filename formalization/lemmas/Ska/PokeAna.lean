@@ -54,7 +54,7 @@ theorem skaPoke_root_fits {lib : Lib} (env : Env R) {n : Nat} {root : Ident} {me
   have he := hcovP root rd' hrd
   intro x hx
   show Fits (entOf root rd').d.less x
-  rcases hG _ he with ⟨_, _, _, _, gen', _, _, _, _, hle, _⟩ | ⟨m, _, _, _, ht, _, hd⟩
+  rcases hG _ he with ⟨_, _, _, _, gen', _, _, _, _, ⟨w, hle⟩, _⟩ | ⟨m, _, _, _, ht, _, hd⟩
   · rw [hle]
     exact app_fits _ _ _ hx
   · simp only [hitTest, Option.bind_eq_some_iff] at ht

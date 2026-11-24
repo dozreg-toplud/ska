@@ -22,7 +22,7 @@ answers in `P`: its nomm and code requirement are the run's, and its product
 is the merge of the run's with some older one. -/
 def RunEntryR (P : Sock → Noun → TabEntry → Prop) (e : Entry) : Prop :=
   ∃ n out gen' moved old, FolTopR P n e.more e.fol out gen' ∧
-    e.d.nomm = out.nomm ∧ e.d.less = Ca.app gen'.want e.more ∧
+    e.d.nomm = out.nomm ∧ (∃ w, e.d.less = Ca.app (Ca.uni gen'.want w) e.more) ∧
     (⟨e.d.prod, e.d.map⟩ : Anno) = mergeProd moved out.prod old
 
 /-- **What the final graph gives**, with runs whose answers change: every
@@ -47,9 +47,9 @@ theorem ConvergedGraph.toR {G : Entry → Prop} (h : ConvergedGraph G) : Converg
 
 theorem lessRel_of_graphR {G : Entry → Prop} (hG : ConvergedGraphR G) : LessRel G := by
   intro e lc dl he hl y hy
-  obtain ⟨_, _, _, _, gen', _, _, _, _, hle, _⟩ := hG e he
+  obtain ⟨_, _, _, _, gen', _, _, _, _, ⟨w, hle⟩, _⟩ := hG e he
   rw [hle] at hl ⊢
-  exact app_cape_fits gen'.want e.more lc dl (some y) hl hy
+  exact app_cape_fits (Ca.uni gen'.want w) e.more lc dl (some y) hl hy
 
 theorem prodRelN_of_graphR {lib : Lib} {G : Entry → Prop} (hG : ConvergedGraphR G)
     (hwf : ∀ e, G e → WellFormed e.more) : ∀ K, ProdRelN lib G K := by
@@ -59,11 +59,12 @@ theorem prodRelN_of_graphR {lib : Lib} {G : Entry → Prop} (hG : ConvergedGraph
   | zero => intro e _ y gul p _ hm; simp [minkF] at hm
   | succ K ih =>
     intro e he y gul p hy hm
-    obtain ⟨P, hPA, n, out, gen', moved, old, h, _, hl, hpm⟩ := hG e he
+    obtain ⟨P, hPA, n, out, gen', moved, old, h, _, ⟨w, hl⟩, hpm⟩ := hG e he
     rw [hl] at hy
     have R := mergeProd_rel moved out.prod old
       (folTopR_relProdN (fun tab ht => rtabL_of_answers hL (fun s f a h => hPA _ _ _ (ht s f a h)))
-        (fun tab ht => rtabP_of_answers ih (fun s f a h => hPA _ _ _ (ht s f a h))) (hwf e he) h hy hm)
+        (fun tab ht => rtabP_of_answers ih (fun s f a h => hPA _ _ _ (ht s f a h))) (hwf e he) h
+        (fits_app_uni (hwf e he) hy) hm)
     rw [← hpm] at R
     exact R
 
@@ -79,10 +80,10 @@ theorem codeOK_of_graphR {lib : Lib} {code : Bell → Option Nomm} {G : Entry �
   have hL := lessRel_of_graphR hG
   have hP := prodRel_of_graphR (lib := lib) hG hwf
   refine codeOK_of_entries hc fun e he => ?_
-  obtain ⟨P, hPA, n, out, gen', _, _, h, hn, hl, _⟩ := hG e he
+  obtain ⟨P, hPA, n, out, gen', _, _, h, hn, ⟨w, hl⟩, _⟩ := hG e he
   rw [hn, hl]
-  exact folTopR_wantSound (fun tab ht => rtab_of_answers hL hP hhas (fun s f a h => hPA _ _ _ (ht s f a h)))
-    (hwf e he) h
+  exact (folTopR_wantSound (fun tab ht => rtab_of_answers hL hP hhas (fun s f a h => hPA _ _ _ (ht s f a h)))
+    (hwf e he) h).mono (fun x hx => fits_app_uni (hwf e he) hx)
 
 /-- **Agreement from the final graph, with runs whose answers change.** -/
 theorem agree_converged_graphR {lib : Lib} {code : Bell → Option Nomm} {G : Entry → Prop}
@@ -91,14 +92,14 @@ theorem agree_converged_graphR {lib : Lib} {code : Bell → Option Nomm} {G : En
     (gul : Noun) (t : Trace) (r : Tone) :
     Mink lib gul t x e.fol r ↔ ∃ m, nommF lib gul code m t x e.d.nomm = some r := by
   have hok := codeOK_of_graphR (lib := lib) hG hc hhas hwf
-  obtain ⟨P, hPA, n, out, gen', _, _, h, hn, hl, _⟩ := hG e he
+  obtain ⟨P, hPA, n, out, gen', _, _, h, hn, ⟨w, hl⟩, _⟩ := hG e he
   have hL := lessRel_of_graphR hG
   have hP := prodRel_of_graphR (lib := lib) hG hwf
   rw [hl] at hx
   rw [hn]
   exact nomm_agree lib gul code hok
     (folTopR_wantSound (fun tab ht => rtab_of_answers hL hP hhas (fun s f a h => hPA _ _ _ (ht s f a h)))
-      (hwf e he) h) hx t r
+      (hwf e he) h) (fits_app_uni (hwf e he) hx) t r
 
 /-! ## The writes, with runs whose answers change -/
 

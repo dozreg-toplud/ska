@@ -465,12 +465,13 @@ its product patched) or a generalized identity (`%he`, resolved again), or a
 new function, analysed now.
 
 `orig` is the identity the loop began with, the site sock and formula of the
-call (`[sock.prod.s fol-new]` of the trap around the loop): the Hoon asks
-`+git:mi` with these, not with `id-there`, so after a `%he` step the lookup
-is the one that just missed, on the same `done`; and the `%rec` branch
-patches the product with `orig.1` (`(patch-prod [prod map]:d sock.prod.s)`),
-not with the current, maybe generalized, `idT.1`.  The loop `resolve` passed
-in is the loop for the same `orig`. -/
+call (`[sock.prod.s fol-new]` of the trap around the loop).  The Hoon asks
+`+git:mi` with the formula `orig.2` and the current subject sock `idT.1`
+(`(git:mi done.st.gen fol-new more.id-there)`), so after a `%he` step the
+lookup is at the generalized sock; and the `%rec` branch patches the product
+with `orig.1` (`(patch-prod [prod map]:d sock.prod.s)`), not with the
+current, maybe generalized, `idT.1`.  The loop `resolve` passed in is the
+loop for the same `orig`. -/
 def resolveStep (env : Env R) (resolve : ResGo M R) (analyze : AnaGo M R) (orig idT : Ident)
     (gen : GenS M R) : Option ((Ident × FDatum M) × GenS M R) :=
   match Treap.get gen.st.g idT with
@@ -479,7 +480,7 @@ def resolveStep (env : Env R) (resolve : ResGo M R) (analyze : AnaGo M R) (orig 
     | none => some ((idT, d), gen)
     | some o => some ((idT, d), { gen with low := min gen.low o, back := true })
   | none =>
-  match gitMi gen.st.done orig.2 orig.1 with
+  match gitMi gen.st.done orig.2 idT.1 with
   | none => none
   | some (some m) => some (m, gen)
   | some none =>

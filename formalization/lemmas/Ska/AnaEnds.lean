@@ -68,20 +68,27 @@ taken, and the recursion of the analysis is finite.
    component).  Structural.
 5. The pass loop at the root of a component.  It goes on while a pass found
    a new function (`next` moved) or changed an entry
-   (`[less-code prod map indi seek]`).  What decreases is not settled.  The
-   product and its map only lose knowledge across runs (`+double-int` with the
-   old entry, then `+msg-anno` once `moved`), and `kap` of
-   `BakeMeasure.lean` drops on a strict loss of nouns of a normal sock.
-   `indi` and `seek` are merged by `+msg-ca` only when the rest is equal, and
-   then only grow.  `less-code` is `(app:ca want bus)` of the last run and is
-   not merged: it shrinks when a callee's product loses the formula of a
-   call, but nothing in the Hoon forbids it from growing back, and the
-   functions found by a pass can be culled by a later one and found again.
-   No measure for the pass loop is known.  On the real compiler the largest
-   number of passes of one loop was 6 (section 2).
-   There is none: the loop does not end on the poke of
-   `tools/hoon/swaploop.hoon`, where `less-code` cycles through a swap of the
-   sample (`PassLoop.lean`), so `CgHalts` below is false of the Hoon.
+   (`[less-code prod map indi seek]`).  The product and its map only lose
+   knowledge across runs (`+double-int` with the old entry, then
+   `+msg-anno` once `moved`), and `kap` of `BakeMeasure.lean` drops on a
+   strict loss of nouns of a normal sock.  `indi` and `seek` are merged by
+   `+msg-ca` only when the rest is equal, and then only grow.  Up to
+   1813f09 `less-code` was `(app:ca want bus)` of the last run, not merged,
+   and the loop did not end on the poke of `tools/hoon/swaploop.hoon`, where
+   `less-code` cycled through a swap of the sample (`PassLoop.lean`), so
+   `CgHalts` below was false of that compiler.  Since 1813f09 `+run` unites
+   `want` with the old entry's cape (`(app:ca (uni:ca want old) bus)`,
+   `runDatum_less`), so the mask of `less-code` only grows
+   (`runDatum_less_mask`) inside the fixed cape of `bus`, and that poke
+   returns on the compiler of this pill.  The measure a proof of `CgHalts`
+   would now use, per entry, is lexicographic: the cape size of `less-code`
+   (growing, bounded by `cape-size` of `bus`), the knowledge of the product
+   (shrinking), then `indi` and `seek` (growing, bounded by the cape of
+   `bus`), summed over the finitely many identities of item 3.  Two points
+   are open: the provenance `map` can change while the product sock does
+   not, and a member culled by `+cull` and found again starts from the bunt
+   entry.  Not proved.  On the real compiler the largest number of passes of
+   one loop was 6 (section 2).
 6. The inner loops `+sweep`, `+cull` (its loop over the queue) and
    `+prune-callgraph` end on a finite graph.  Proved here for
    `+prune-callgraph` (`pruneLoop_ends`), given that the graph is closed under

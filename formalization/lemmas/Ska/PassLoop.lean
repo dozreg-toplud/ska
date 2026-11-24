@@ -1,15 +1,15 @@
 import lemmas.Ska.RunStep
 
 /-!
-# The pass loop of `+analyze`: a poke on which it does not end, and what is monotone
+# The pass loop of `+analyze`: a poke on which it did not end, and what is monotone
 
-## 1. The witness
+## 1. The witness, and the fix of 1813f09
 
 The pass loop of `+analyze` goes on while a pass changed an entry
-(`[less-code prod map indi seek]`) or found a new function.  `less-code` is
-`(app:ca want bus)` of the last run and is not merged with the old entry
-(`runDatum_less`), and a change of it alone keeps the loop going
-(`runDatum_changed_of_less`).  On the real compiler this loop does not end on
+(`[less-code prod map indi seek]`) or found a new function.  Up to 1813f09
+`less-code` was `(app:ca want bus)` of the last run, not merged with the old
+entry, and a change of it alone kept the loop going.  On that compiler this
+loop did not end on
 
 ```
 F = [6 [3 0 6] [0 6] [2 [1 0] [2 [[0 2] [0 7] [0 6]] [0 2]]]]
@@ -25,21 +25,23 @@ In the next run that product, patched for the swapped subject, is `[1 0]` with
 provenance axis `7`: a direct call, so `want` requires axis `7` and the
 product becomes `|+~` (the join of `[1 0]` and `0`).  From then on the call is
 indirect and requires nothing, and the recursive call contributes the entry's
-`less-code` pulled back through the swap.  So `less-code` alternates between
+`less-code` pulled back through the swap.  So `less-code` alternated between
 `[& [| &]]` and `[& [& |]]` (the battery and one half of the sample), every
-pass changes the entry, and the loop never exits.  The instrumented library
-counted 53,345 passes of this one loop in 60 s, each with `less-code`
-incomparable to the one before (`[& [& |]]` against `[& [| &]]`), the product
-`|+~` throughout.  The unmodified compiler's `+poke` had not answered after
-300 s.  The same poke with the sample not swapped (`[[0 2] [0 6] [0 7]]`)
-answers at once.
+pass changed the entry, and the loop never exited: the instrumented library
+counted 53,345 passes in 60 s, and the unmodified `+poke` had not answered
+after 300 s.  `CgHalts` of `AnaEnds.lean`, `AnaEnds` of `PokeHalt.lean` and
+the hypothesis `Halting` of `Assembly.lean` were false of that pill.
 
-So `CgHalts` of `AnaEnds.lean` is false of the Hoon, and with it `AnaEnds`
-of `PokeHalt.lean` and the hypothesis `Halting` of `Assembly.lean`: the
-`%full` poke above does not answer, so `Halts` of `core/Statement.lean` fails
-on the pill whose library this is.  This is a bug of the Hoon (a pass loop
-whose exit test compares a field that is recomputed rather than merged), not
-of the model, which follows the Hoon arm by arm.
+Since 1813f09 `+run` unites `want` with the cape of the old entry's
+`less-code` before the mask, `(app:ca (uni:ca want old) bus)` with
+`old=?@(less-code.data | cape.less-code.data)`, and the model follows it
+(`runDatum_less`: the code requirement is `app:ca` of `uni:ca want
+(darkOf old.less)` and `bus`).  The mask only grows (`runDatum_less_mask`),
+so on the witness `less-code` goes from `[& [| &]]` to `[& [& &]]` and stays.
+On the compiler of 1813f09 (the pill of this branch) the poke above returns
+(`runhoon.sh swaploop.hoon`, 2026-11-24: `[%poke-returned %.y]`).  A change
+of `less-code` still sets `changed` (`runDatum_changed_of_less`), but it can
+now happen only finitely often per identity (section 3).
 
 ## 2. The data
 
@@ -54,13 +56,25 @@ the member set changed after the first pass only by new members (51 in four
 passes, none removed).  The largest pass count stayed 6.  The witness above
 is the first poke where `less-code` changes in a way other than growth.
 
-## 3. What is monotone
+## 3. What is monotone, and the measure a proof of `CgHalts` would use
 
 The product an entry keeps only loses knowledge across runs: every noun the
 old product holds of, the new one holds of (`runDatum_prod_old`, from
-`mergeProd_fits_old`, for both `+double-int` and `+msg-anno`).  So a measure
-of the pass loop would have to come from `less-code`, `indi` and `seek`,
-which the witness shows can cycle.
+`mergeProd_fits_old`, for both `+double-int` and `+msg-anno`).  The mask of
+`less-code` only grows: every axis of the old entry's cape is in the new
+mask (`runDatum_less_mask`), and the subject sock `bus` of an identity is
+fixed, so the cape of `less-code` grows inside the cape of `bus`.  `indi`
+and `seek` are merged by `+msg-ca` (which only adds `&`) when the fields
+before them did not change, and are recomputed otherwise.
+
+So a proof of `CgHalts` (not attempted) would now use, per identity, the
+lexicographic measure of the cape size of `less-code` (growing, at most
+`cape-size` of `bus`), the `heMeasure` of the product (shrinking, by
+`runDatum_prod_old`), then `indi` and `seek` (growing under `+msg-ca`, at
+most the cape of `bus`), summed over the identities of the graph, which are
+finitely many by the argument of `AnaEnds.lean` (callable formulas and
+`+he-sock`).  The provenance `map` is the point this sketch leaves open: it
+is compared by `changed` and can change while the product sock does not.
 -/
 
 namespace Formalization
@@ -160,15 +174,22 @@ theorem runDatum_prod_old (moved : Bool) (bus : Sock) (out : FolOut) (gen' : Gen
     {n : Noun} (h : Fits old.prod n) : Fits (runDatum moved bus out gen' old).1.prod n :=
   mergeProd_fits_old moved out.prod ⟨old.prod, old.map⟩ h
 
-/-- **`less-code` is the run's own**, `(app:ca want bus)`, not merged with
-the old entry's. -/
+/-- **`less-code` is the run's `want` united with the old entry's cape**,
+then masked on `bus`: `(app:ca (uni:ca want old) bus)` (1813f09). -/
 theorem runDatum_less (moved : Bool) (bus : Sock) (out : FolOut) (gen' : Gen) (old : Datum) :
-    (runDatum moved bus out gen' old).1.less = Ca.app gen'.want bus := rfl
+    (runDatum moved bus out gen' old).1.less = Ca.app (Ca.uni gen'.want (darkOf old.less)) bus := rfl
+
+/-- **The mask of `less-code` only grows**: every axis of the old entry's
+cape is in the mask of the new one, and so is every axis of `want`. -/
+theorem runDatum_less_mask (gen' : Gen) (old : Datum) (r : List Bool) :
+    ((darkOf old.less).Has r ∨ gen'.want.Has r) → (Ca.uni gen'.want (darkOf old.less)).Has r :=
+  fun h => (uni_has _ _ r).mpr (h.elim Or.inr Or.inl)
 
 /-- **A change of `less-code` alone sets `changed`**, which keeps the pass
 loop going. -/
 theorem runDatum_changed_of_less (moved : Bool) (bus : Sock) (out : FolOut) (gen' : Gen) (old : Datum)
-    (h : Ca.app gen'.want bus ≠ old.less) : (runDatum moved bus out gen' old).2.2 = true := by
+    (h : Ca.app (Ca.uni gen'.want (darkOf old.less)) bus ≠ old.less) :
+    (runDatum moved bus out gen' old).2.2 = true := by
   simp only [runDatum, decide_eq_true_eq, ne_eq, Prod.mk.injEq, not_and]
   intro e
   exact absurd e h

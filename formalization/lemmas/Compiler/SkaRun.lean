@@ -28,8 +28,11 @@ set_option linter.unusedSimpArgs false
 
 /-! ## The formulas -/
 
+/-- `less-code` (1813f09): `old`, the cape of the old datum's `less-code`
+(axis `502`, `|` for an atom), then `+app:ca` of `+uni:ca` of `want` (axis
+`58` below the two pushes) and `old` (`6`), and `bus` (`126`). -/
 def rdLess : Noun :=
-  (C (A 8) (C (C (A 7) (C (C (A 9) (C (A 20) (C (A 0) (A 16383)))) (C (A 9) (C (A 341) (C (A 0) (A 1)))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 26)) (C (A 0) (A 62)))) (C (A 0) (A 2))))))))
+  (C (A 8) (C (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 502))) (C (C (A 1) (A 1)) (C (A 1) (A 0))))) (C (C (A 1) (A 1)) (C (A 0) (A 1004))))) (C (A 8) (C (C (A 7) (C (C (A 9) (C (A 20) (C (A 0) (A 32767)))) (C (A 9) (C (A 341) (C (A 0) (A 1)))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 7) (C (C (A 9) (C (A 20) (C (A 0) (A 32767)))) (C (A 9) (C (A 84) (C (A 0) (A 1)))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 58)) (C (A 0) (A 6)))) (C (A 0) (A 2)))))))))) (C (A 0) (A 126)))) (C (A 0) (A 2))))))))))
 
 def rdDark : Noun :=
   (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 62))) (C (C (A 1) (A 1)) (C (A 1) (A 0))))) (C (C (A 1) (A 1)) (C (A 0) (A 124)))))
@@ -108,30 +111,57 @@ include hcf hK in
 theorem run_datum_new (gen : GenS FinMap R) (F : Noun) :
     nockW c (dBase regsNoun K sb x id data out gen)
       (C (A 8) (C rdLess (C (A 8) (C rdDark (C (A 7) (C rdIndi (C (A 8) (C rdNew F))))))))
-    = nockW c (C (FDatum.toNoun ⟨gen.callees, out.nomm, Ca.app gen.want id.1,
+    = nockW c (C (FDatum.toNoun ⟨gen.callees, out.nomm, Ca.app (Ca.uni gen.want (darkOf data.less)) id.1,
           Ca.lack gen.indi (darkOf id.1), gen.seek, out.prod.sock, out.prod.src, gen.area⟩)
-        (C (darkOf id.1).toNoun (C (Ca.app gen.want id.1).toNoun
+        (C (darkOf id.1).toNoun (C (Ca.app (Ca.uni gen.want (darkOf data.less)) id.1).toNoun
           (dBase regsNoun K sb x id data out { gen with indi := Ca.lack gen.indi (darkOf id.1) })))) F := by
   have hlib := K_lib hK
   have hsv : Sock.void.toNoun = A 0x64696f76 := rfl
   have hsm : ∀ c n, (Sock.mk c n).toNoun = C c.toNoun n := fun _ _ => rfl
   obtain ⟨want, indi, seek, callees, area, low, back, st⟩ := gen
   obtain ⟨bus, fol⟩ := id
-  cases bus with
+  obtain ⟨dcal, dnomm, dless, dindi, dseek, dprod, dmap, darea⟩ := data
+  -- `old`: the cape of the old `less-code`, `|` for the atom `%void`
+  have hua := ca_uni_pill want (darkOf dless)
+  cases dless with
   | void =>
-    have hca := ca_app_pill want Sock.void
-    have hla := ca_lack_pill indi (darkOf Sock.void)
-    simp only [hsv, darkOf, Cape.toNoun] at hca hla
-    simp (disch := ffar_disch) [hca, hla, dBase, rdLess, rdDark, rdIndi, rdNew, nock_exec, hcf, hlib, folOutNoun,
-      FolOut.toNoun, GenS.toNoun, Anno.toNoun, FDatum.toNoun, darkOf, hsv, hsm, Cape.toNoun, ca.lib.arm_at, ca_lib_arm,
-      ca.app.arm_at, ca_app_arm, ca_app_pill, ca.lack.arm_at, ca_lack_arm, ca_lack_pill]
-  | mk cp dt =>
-    have hca := ca_app_pill want (Sock.mk cp dt)
-    have hla := ca_lack_pill indi (darkOf (Sock.mk cp dt))
-    simp only [hsm, darkOf] at hca hla
-    simp (disch := ffar_disch) [hca, hla, dBase, rdLess, rdDark, rdIndi, rdNew, nock_exec, hcf, hlib, folOutNoun,
-      FolOut.toNoun, GenS.toNoun, Anno.toNoun, FDatum.toNoun, darkOf, hsv, hsm, Cape.toNoun, ca.lib.arm_at, ca_lib_arm,
-      ca.app.arm_at, ca_app_arm, ca_app_pill, ca.lack.arm_at, ca_lack_arm, ca_lack_pill]
+    simp only [darkOf] at hua
+    cases bus with
+    | void =>
+      have hca := ca_app_pill (Ca.uni want Cape.no) Sock.void
+      have hla := ca_lack_pill indi (darkOf Sock.void)
+      simp only [hsv, darkOf, Cape.toNoun] at hca hla hua
+      simp (disch := ffar_disch) [hca, hla, hua, dBase, rdLess, rdDark, rdIndi, rdNew, nock_exec, hcf, hlib,
+        folOutNoun, FolOut.toNoun, GenS.toNoun, Anno.toNoun, FDatum.toNoun, darkOf, hsv, hsm, Cape.toNoun,
+        ca.lib.arm_at, ca_lib_arm, ca.app.arm_at, ca_app_arm, ca_app_pill, ca.lack.arm_at, ca_lack_arm, ca_lack_pill,
+        ca.uni.arm_at, ca_uni_arm]
+    | mk cp dt =>
+      have hca := ca_app_pill (Ca.uni want Cape.no) (Sock.mk cp dt)
+      have hla := ca_lack_pill indi (darkOf (Sock.mk cp dt))
+      simp only [hsm, darkOf, Cape.toNoun] at hca hla hua
+      simp (disch := ffar_disch) [hca, hla, hua, dBase, rdLess, rdDark, rdIndi, rdNew, nock_exec, hcf, hlib,
+        folOutNoun, FolOut.toNoun, GenS.toNoun, Anno.toNoun, FDatum.toNoun, darkOf, hsv, hsm, Cape.toNoun,
+        ca.lib.arm_at, ca_lib_arm, ca.app.arm_at, ca_app_arm, ca_app_pill, ca.lack.arm_at, ca_lack_arm, ca_lack_pill,
+        ca.uni.arm_at, ca_uni_arm]
+  | mk lc ld =>
+    simp only [darkOf] at hua
+    cases bus with
+    | void =>
+      have hca := ca_app_pill (Ca.uni want lc) Sock.void
+      have hla := ca_lack_pill indi (darkOf Sock.void)
+      simp only [hsv, darkOf, Cape.toNoun] at hca hla
+      simp (disch := ffar_disch) [hca, hla, hua, dBase, rdLess, rdDark, rdIndi, rdNew, nock_exec, hcf, hlib,
+        folOutNoun, FolOut.toNoun, GenS.toNoun, Anno.toNoun, FDatum.toNoun, darkOf, hsv, hsm, Cape.toNoun,
+        ca.lib.arm_at, ca_lib_arm, ca.app.arm_at, ca_app_arm, ca_app_pill, ca.lack.arm_at, ca_lack_arm, ca_lack_pill,
+        ca.uni.arm_at, ca_uni_arm]
+    | mk cp dt =>
+      have hca := ca_app_pill (Ca.uni want lc) (Sock.mk cp dt)
+      have hla := ca_lack_pill indi (darkOf (Sock.mk cp dt))
+      simp only [hsm, darkOf] at hca hla
+      simp (disch := ffar_disch) [hca, hla, hua, dBase, rdLess, rdDark, rdIndi, rdNew, nock_exec, hcf, hlib,
+        folOutNoun, FolOut.toNoun, GenS.toNoun, Anno.toNoun, FDatum.toNoun, darkOf, hsv, hsm, Cape.toNoun,
+        ca.lib.arm_at, ca_lib_arm, ca.app.arm_at, ca_app_arm, ca_app_pill, ca.lack.arm_at, ca_lack_arm, ca_lack_pill,
+        ca.uni.arm_at, ca_uni_arm]
 
 include hcf hK in
 /-- `pm`: the merge of the products, `+msg-anno` when `id` is in `moved`,
@@ -347,7 +377,8 @@ theorem ins_of_has {m : FinMap Ident Unit} {k : Ident} (h : Treap.has m k = true
 /-- The new datum of `+run`, piece by piece as the Hoon builds it. -/
 noncomputable def runDn (id : Ident) (data : FDatum FinMap) (out : FolOut) (gen : GenS FinMap R) :
     FDatum FinMap :=
-  let dn1 : FDatum FinMap := ⟨gen.callees, out.nomm, Ca.app gen.want id.1, Ca.lack gen.indi (darkOf id.1),
+  let dn1 : FDatum FinMap := ⟨gen.callees, out.nomm, Ca.app (Ca.uni gen.want (darkOf data.less)) id.1,
+    Ca.lack gen.indi (darkOf id.1),
     gen.seek, out.prod.sock, out.prod.src, gen.area⟩
   let pm := mergeProd (Treap.has gen.st.moved id) ⟨dn1.prod, dn1.map⟩ ⟨data.prod, data.map⟩
   let dn2 := { dn1 with prod := pm.sock, map := pm.src }
