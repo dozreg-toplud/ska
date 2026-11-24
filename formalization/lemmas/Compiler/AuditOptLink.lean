@@ -1,4 +1,4 @@
-import lemmas.Compiler.OptLinkHelpers
+import lemmas.Compiler.OptLinkRub
 
 /-!
 # Axioms of the pill link of the optimizer
@@ -19,3 +19,6 @@ open Formalization Compiler
 #print axioms gr_gate_fin
 #print axioms gr_gate_lti
 #print axioms gs_gate
+#print axioms rub_sw
+#print axioms rub_step
+#print axioms rub_gate
