@@ -114,6 +114,7 @@ import lemmas.Compiler.CompInlined
 import lemmas.Compiler.CompShapeCol
 import lemmas.Hoon.IntIn
 import lemmas.Hoon.UniBy
+import lemmas.Compiler.CompSccOne
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -871,3 +872,12 @@ open Formalization
 #print axioms Hoon.uniByP_of_maps
 #print axioms Hoon.uni_by
 #print axioms Hoon.uni_by_one
+#print axioms Compiler.csi_kids_nocalls
+#print axioms Compiler.ju_has_kids
+#print axioms Compiler.csi_final_one_none
+#print axioms Compiler.cu_gate_none
+#print axioms Compiler.getF_of_putF
+#print axioms Compiler.sureOf_some
+#print axioms Compiler.scc_sur_frag
+#print axioms Compiler.csi_gate_scc_one_m
+#print axioms Compiler.cu_gate_scc_one_m
