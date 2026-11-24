@@ -127,7 +127,28 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     something: 315 `%mov` eliminated, 77 other ops dropped, 44 two-way ends folded to a `%hop`, 19
                     `%brn` made `%brz`, 44 blocks dropped, no `%brn` made `[%bom ~]`; 146 runs agree with `+mock`,
                     traces included (2026-11-24).  The library's list types do not fuse with a test's own in a `?=`
-                    (`fuse-loop`): the check and the model of `switchcheck.hoon` clam the blocks to nouns first
+                    (`fuse-loop`): the check and the model of `switchcheck.hoon` clam the blocks to nouns first.
+                    Extended (2026-11-24) with 13 formulas: facts reaching a join block from two predecessors that
+                    agree (a cell test, a loobean, a head, an immediate, before the split), that disagree (`&` on
+                    one side, `|` on the other: joined to `is-loob`, so the next `%brn` becomes `%brz`), from one
+                    side only (dropped, no fold), parameters joined, and three aimed at `[%bom ~]`.  The counter
+                    `jfold` counts the ends folded (to `%hop`, `%brz` or `[%bom ~]`) in a block with two distinct
+                    predecessors or more whose test register no op of the block defines, so a fact from the
+                    block's start.  Totals: 160 compiles, 270 calls, 202 changed, 761 moves, 303 other ops, 69
+                    folds, 28 `%brz`, 3 `[%bom ~]`, 75 blocks dropped, `jfold=52` (the new `j-agree-cell`,
+                    `-cell3`, `-loob`, `j-two-cell`, `j-disagree-loob`, `j-par-loob` among them; `j-one-cell` and
+                    `j-par-agree` do not fold), 238 runs, `bad=0`.  `[%bom ~]` fires on `bom-c`,
+                    `[8 [6 [3 0 1] [1 7] [0 0]] [6 [0 2] [1 4] [1 5]]]`: the no side crashes, so the join block
+                    has one predecessor and its parameter gets `has-imm 7` from `param-info` where the analysis
+                    did not fold the `%6`; `+mock` agrees on subjects `0` and `[1 2]`
+* `aliascheck2.hoon` the model of `+alias` (`lemmas/Ska/OptAliasModel.lean`, `aliasM`) written again on nouns, against
+                    the pass at every call over the 143 cases of `optcheck.hoon` (with the 74 of `thread-a.hoon`)
+                    and the 41 formulas of `aliascheck.hoon` (subject unknown, and known for each subject): 303
+                    compiles, 472 calls, 336 of which changed something, `mis=0` (2026-11-24).  A mutation of the
+                    model (a `%cel` on a known cell kept) is caught
+* `aliasssa.hoon`   two blocks with `DInvT` that read register `0v1` by a `%mov` and then write it: `+alias` renames
+                    the later read of the moved register to `0v1`, and `+eval-blob` gives `7` before, `5` after;
+                    `+alias` needs single assignment (`AliasSSA` of `lemmas/Ska/OptAliasField.lean`)
 * `deadcrash.hoon`  nine formulas whose crashing operand has a dead product (`[7 [0 2] [1 5]]`
                     on an atom and the like): `+eval-top` agrees with `+mock` on all
                     (2026-11-24), so `+remove-dead-code` drops no check there

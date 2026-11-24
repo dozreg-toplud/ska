@@ -18,6 +18,8 @@ import lemmas.Ska.OptTrimBr
 import lemmas.Ska.OptSwitchWalk
 import lemmas.Ska.OptSwitchMulti
 import lemmas.Ska.OptAlias
+import lemmas.Ska.OptAliasModel
+import lemmas.Ska.OptAliasField
 import lemmas.Ska.OptSwitchPlainHyp
 import lemmas.Ska.OptSwitchGen
 import lemmas.Ska.OptSwitchWalkAll
@@ -188,3 +190,4 @@ open Formalization.SkaModel.Opt
 #print axioms switch_fieldT
 #print axioms driverRestT_of
 #print axioms optimize_keeps_restS
+#print axioms driverRestS_of_aliasM
