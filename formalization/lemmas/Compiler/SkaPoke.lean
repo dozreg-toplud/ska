@@ -175,9 +175,12 @@ def pjMapB : Noun :=
 /-- The sample `[[*identity *datum] *(map bell datum) memo.lon]`. -/
 def pjSample : Noun := C (C pjIdB pjDatB) (C pjMapB (C (A 0) (A 8170)))
 
+/-- A subject with `K` at `511`. -/
+def sub511 (K a0 a1 a2 a3 a4 a5 a6 a7 : Noun) : Noun :=
+  C a0 (C a1 (C a2 (C a3 (C a4 (C a5 (C a6 (C a7 K)))))))
+
 /-- A subject with `ana` at `511`. -/
-def ana511 (a0 a1 a2 a3 a4 a5 a6 a7 : Noun) : Noun :=
-  C a0 (C a1 (C a2 (C a3 (C a4 (C a5 (C a6 (C a7 ana)))))))
+def ana511 (a0 a1 a2 a3 a4 a5 a6 a7 : Noun) : Noun := sub511 ana a0 a1 a2 a3 a4 a5 a6 a7
 
 /-- The value of `*datum`, kept whole. -/
 noncomputable def pjDatV : Noun := (evalFuel 2000 (ana511 (A 0) (A 0) (A 0) (A 0) (A 0) (A 0) (A 0) (A 0)) pjDatB).getD (A 0)
@@ -193,6 +196,68 @@ theorem pj_datb (a0 a1 a2 a3 a4 a5 a6 a7 : Noun) :
 theorem pj_mapb (a0 a1 a2 a3 a4 a5 a6 a7 : Noun) :
     nock (ana511 a0 a1 a2 a3 a4 a5 a6 a7) pjMapB = some (A 0) :=
   nock_of_evalFuel (fuel := 2000) (by kernel_rfl)
+
+/-! ## The trap `%poke-just-code` -/
+
+/-- The door `~(rep by pruned)`. -/
+def pjDoor : Noun :=
+  C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 2097151))))
+    (C (A 9) (C (A 767) (C (A 10) (C (C (A 6) (C (A 0) (A 30))) (C (A 0) (A 2)))))))
+
+/-- The battery of the trap `%poke-just-code`. -/
+def pjTB : Noun :=
+  let g := C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C pjSample (C (C (A 1) pjGate) (C (A 0) (A 1))))))
+  C (A 8) (C pjDoor (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) g) (C (A 0) (A 2)))))))
+
+theorem pjAcc_init (memo : Memo FinMap) : pjAcc (Treap.empty, memo) = C (A 0) (memoNoun memo) := by
+  unfold pjAcc
+  show C (FinMap.toNoun FDatum.toNoun (FinMap.empty : FinMap Bell (FDatum FinMap))) _ = _
+  rw [FinMap.toNoun_empty]
+
+/-- An autocons whose head is a cell formula given by name. -/
+theorem nock_pair_of (s f g : Noun) (hf : ∃ x y, f = C x y) :
+    nock s (C f g) = (nock s f).bind fun a => (nock s g).bind fun b => some (C a b) := by
+  obtain ⟨x, y, rfl⟩ := hf
+  exact nock_cell s x y g
+
+theorem pjSample_run (s : Noun) :
+    nock s pjSample = (((nock s pjIdB).bind fun a => (nock s pjDatB).bind fun b => some (C a b)).bind
+      fun l => ((nock s pjMapB).bind fun m => (slot? 8170 s).bind fun c => some (C m c)).bind
+        fun r => some (C l r)) := by
+  unfold pjSample
+  rw [nock_cell, nock_pair_of s pjIdB pjDatB ⟨_, _, rfl⟩, nock_pair_of s pjMapB _ ⟨_, _, rfl⟩]
+  simp only [nock_exec]
+
+set_option maxHeartbeats 1000000 in
+/-- **The trap `%poke-just-code`**, kicked on its core, computes
+`pokeMemo pruned memo`, given the layout of `K` (the analysis core) at axis
+`511` of the core and the bunts of its gate's sample. -/
+theorem pj_trap (K : Noun) (hl2 : slot? 8191 K = some layer2)
+    (hmfe : slot? 340 K = some (C (A 8) (C (C (A 1) mfeBunt) (C (C (A 1) mfeBat) (C (A 0) (A 1))))))
+    (hlib : slot? 7 K = some lib) (hmi : slot? 84 K = some mi.arm) (hmiIn : MiIn K)
+    (hidb : ∀ a0 a1 a2 a3 a4 a5 a6 a7, nock (sub511 K a0 a1 a2 a3 a4 a5 a6 a7) pjIdB = some identBunt)
+    (hdatb : ∀ a0 a1 a2 a3 a4 a5 a6 a7, nock (sub511 K a0 a1 a2 a3 a4 a5 a6 a7) pjDatB = some pjDatV)
+    (hmapb : ∀ a0 a1 a2 a3 a4 a5 a6 a7, nock (sub511 K a0 a1 a2 a3 a4 a5 a6 a7) pjMapB = some (A 0))
+    (pruned : Callgraph FinMap) (memo : Memo FinMap) (rdN cgN ridN a5 a6 ridN' jetsN lonRest hotN : Noun) :
+    nock (sub511 K pjTB rdN (Treap.toNoun FDatum.toNoun pruned) cgN ridN a5 a6
+        (C ridN' (C (C jetsN (C (memoNoun memo) lonRest)) hotN))) pjTB
+      = some (pjAcc (pokeMemo pruned memo)) := by
+  have h1 := hidb pjTB rdN (Treap.toNoun FDatum.toNoun pruned) cgN ridN a5 a6
+    (C ridN' (C (C jetsN (C (memoNoun memo) lonRest)) hotN))
+  have h2 := hdatb pjTB rdN (Treap.toNoun FDatum.toNoun pruned) cgN ridN a5 a6
+    (C ridN' (C (C jetsN (C (memoNoun memo) lonRest)) hotN))
+  have h3 := hmapb pjTB rdN (Treap.toNoun FDatum.toNoun pruned) cgN ridN a5 a6
+    (C ridN' (C (C jetsN (C (memoNoun memo) lonRest)) hotN))
+  have hP : PjCtx (sub511 K pjTB rdN (Treap.toNoun FDatum.toNoun pruned) cgN ridN a5 a6
+      (C ridN' (C (C jetsN (C (memoNoun memo) lonRest)) hotN))) K :=
+    ⟨by simp [sub511, nock_exec], by simp [sub511, nock_exec, hl2], hmfe, hlib, hmi, hmiIn⟩
+  have hr := pj_rep hP (C identBunt pjDatV) pruned memo
+  rw [pjAcc_init] at hr
+  simp only [sub511] at h1 h2 h3 hr
+  conv => lhs; arg 2; unfold pjTB
+  unfold pjDoor
+  simp only [sub511, nock_exec, Option.bind_some, hl2, by.arm_at, by_arm, by.rep.arm_at, rep_arm, pjSample_run,
+    h1, h2, h3, hr]
 
 end Compiler
 end Formalization
