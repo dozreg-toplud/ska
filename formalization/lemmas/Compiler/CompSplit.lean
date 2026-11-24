@@ -82,3 +82,56 @@ theorem ss_gate (hc : CompIn ctx) (B P G : Noun) (y : Nat) (hy : y ≠ 0) (s : C
 
 end Compiler
 end Formalization
+
+namespace Formalization
+namespace Compiler
+
+open Nock Pill Hoon SkaModel SkaModel.Comp SkaModel.Ana
+
+variable {ctx : Noun} (x : GenRest)
+
+theorem comp_split_need_at : slot? 55294 comp.door = some comp.split_need.arm := by kernel_rfl
+
+/-- The arm `split-need` builds its gate. -/
+theorem comp_split_need_arm (d : Noun) : nock d comp.split_need.arm =
+    some (C comp.split_need.battery (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) d)) := by
+  nock_open comp.split_need.arm; simp only [nock_exec]
+
+variable {x} in
+/-- `+split-sure`: the looks split by `+rep:in`, then `+split-need`, with no
+look at axis `0`. -/
+theorem comp_split_sure (hc : CompIn ctx) (g : Gen (TreapMap mugF)) (sur : Sure CSet) (o : Nat)
+    (h0 : ∀ y ∈ HoonSet.toList sur.lok, y ≠ 0) :
+    nock (C comp.split_sure.battery (C (C sur.toNoun (A o)) (compCore g x ctx)))
+      comp.split_sure.battery
+      = (splitSure sur o g).map fun p => C (C p.1.1.toNoun p.1.2.toNoun) (genNoun p.2 x) := by
+  obtain ⟨ned, lok⟩ := sur
+  simp only at h0
+  have hrep := rep_gate_on ssN (fun n s => match n with | Noun.atom y => ssStep y s | _ => s)
+    in.battery layer2 ssRepBat (A 0)
+    (C comp.split_sure.battery (C (C (C ned.toNoun (HoonSet.toNoun lok)) (A o))
+      (C comp.door (C (genNoun g x) ctx))))
+    (HoonSet.toNoun lok) (cs_tree lok) (HoonSet.empty, HoonSet.empty) (by
+      intro n hn s
+      rw [cs_preorder] at hn
+      obtain ⟨y, hy, rfl⟩ := List.mem_map.1 hn
+      exact ss_gate hc _ _ _ y (h0 y hy) s)
+  rw [cs_preorder, List.foldl_map] at hrep
+  have hsl := ss_splitLok lok h0
+  generalize (HoonSet.toList lok).foldl (fun s y => ssStep y s) (HoonSet.empty, HoonSet.empty) = F
+    at hrep hsl
+  obtain ⟨lh, lt⟩ := F
+  simp only [ssN, HoonSet.toNoun_empty, ssRepBat] at hrep
+  have hsn := comp_split_need x hc g ned o
+  simp only [Sure.toNoun]
+  nock_open comp.split_sure.battery
+  cases e : splitNeed ned o g with
+  | none =>
+    rw [e] at hsn
+    simp [nock_exec, splitSure, hsl, e, hc, in_arm, in.arm_at, in.rep.arm_at, rep_arm, hrep,
+      comp_split_need_at, comp_split_need_arm, hsn]
+  | some p =>
+    obtain ⟨⟨nh, nt⟩, g'⟩ := p
+    rw [e] at hsn
+    simp [nock_exec, splitSure, hsl, e, hc, in_arm, in.arm_at, in.rep.arm_at, rep_arm, hrep,
+      comp_split_need_at, comp_split_need_arm, hsn, Sure.toNoun]

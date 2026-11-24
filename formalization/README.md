@@ -137,6 +137,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompDoor.lean` | The arms of the door of `+comp` (`comp.door`, generated) against `Ska/CompModel.lean` and `copyTag` of `Ska/CompLazyRun.lean`, as exact equalities over `genNoun`, crashes included, on maps of `TreapMap mugF`, in every context `ctx` of the door with layer 2 at axis `262143` (`CompIn`): `comp_re`, `comp_oo`, `comp_id` (the arm on `[comp.door [gen ctx]]` returns `[x gen']` as `re`, `oo`, `freshId` say), `comp_dropping` (the unnamed shared arm `dropArm`, at axis `1398` of the door by `comp_drop_at`), and the gates `comp_emir`, `comp_set_tag` (`+put:by` unless dropping), `comp_add_ops`, `comp_copy_tag` (`got:by`, a crash where the model is `none`, then `+weld`, or `+turn` and `+gas:by`), `comp_emit` (`+oo` and `+emir`), `comp_bomb` (every `HoonSet`), `comp_must`, `comp_split_need` (every need, through `+re`, `+must` and `+add-ops`).  The simprocs unfold `comp.door` down to `+dropping` and leave its axis as the content-named noun `comp.h50f637450e98` (`comp_h110`). |
 | `Compiler/CompSet.lean` | The `HoonSet` instance of `Ska/CompModel.lean` on the canonical treap (`csHoonSet`): a set is a `FinMap Nat Unit` (`CSet`), its noun `FinMap.setNoun` with the key `k` encoded as the atom `k` (`csTKeyNat`), and `toList` the pre-order of that noun, the order of `+rep:in` and `+run:in` (`cs_preorder`).  `cs_put_in`: `+put:in` gives the noun of `HoonSet.put`; `cs_runInF`: `+run:in`'s model from `~` gives the noun of `setRun`; `cs_run_in_loop_on`, `cs_run_in_gate_on`: the pill's `+run:in` with a gate known only on the members; `cs_mem_setRun`, `cs_ext`: `setRun` is the set of the images in every order of the fold.  Of the model's uses only `sureRequireLook` depends on the order (it allocates registers in the fold's order), and that order is the pre-order. |
 | `Compiler/CompFrom.lean` | `+from-sure` against `fromSure` (`comp_from_sure`) and `+from` against `«from»` on a fork-free lazy need `[sure ~ ~]` (`comp_from`), exact over the nouns, crashes included, under `CompIn ctx` and on every noun of the state (neither arm reads `gen`), with the side condition that no looked-at axis is `0`.  The loop (`cf_loop`) runs `+cap` and `+mas` of layer 1 (axis `524287` of `ctx`, `cf_layer1`); the gate of the `+run:in` (`cfPegBat`, written here) runs `+peg` of layer 1 (`cf_peg_gate`).  `comp_from_sure_at`: the arm at `7163` of `comp.door`, by the kernel. |
+| `Compiler/CompSplit.lean` | `+split-sure` against `splitSure` (`comp_split_sure`), exact over `genNoun`, crashes of `+split-need` included, under `CompIn ctx` and with no look at axis `0`.  The `+rep:in` is `rep_gate_on` of `Compiler/SkaCull.lean` with the state a pair of `CSet` (`ssN`); its gate `ssRepBat` (axis `57213` of the battery, `ss_rep_bat_at` by the kernel) is `ssStep` on every look but `0` (`ss_gate`: `+cap`, `+mas` of layer 1, `+put:in` of layer 2), and `splitLok` is the fold of `ssStep` (`ss_splitLok`).  `comp_split_need_at`: `+split-need` at `55294` of `comp.door`. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`. |
@@ -627,11 +628,14 @@ import only its theorems.  So:
      state, with the side condition that no looked-at axis is `0`: on a
      look `0` the pill's `(peg axe 0)` recurs forever (its last case
      calls itself on `(div 0 2)`), while the model's `setRun (pegF axe)`
-     returns.  Neither touches `cache`, `soft`, `sofs`.
-     M: `+split-sure`, `+split` (the `+rep:in` of `+split-sure` is
-     `rep_gate_on` of `Compiler/SkaCull.lean` with the state a pair of
-     `CSet`, its gate at axis `383` of the door `+in`, the call of
-     `+split-need` at arm `88062` of the door), `+into-sure`,
+     returns.  `+split-sure` (`comp_split_sure`,
+     `Compiler/CompSplit.lean`), exact over `genNoun` with the same side
+     condition (on a look `0` its gate's `?<` crashes and `splitLok` is
+     `none`, a crash not linked here).  None of the three touches
+     `cache`, `soft`, `sofs`.
+     M: `+split` (the `+emit` of the `%hop`, then `+split-sure` and the
+     test of `fork` and `bond`; for `[sure ~ ~]` it returns
+     `[[sure-h ~ ~] [sure-t ~ ~] o]`), `+into-sure`,
      `+into-need`, `+into`, `+copy`, `+copy-lazy`, `+crash-need` (s),
      `+flatten-need`, `+mede`, `+collapse-lazy-atom`, `+forl`, `+past`,
      `+run` (s), and in the lazy files `+lazy-bound`, `+proxy`, `+kern`
@@ -677,7 +681,7 @@ import only its theorems.  So:
      `+emit-cold`, `+past-fork`, `+copy-need-make-ops`, `+coerce-ord`,
      `+coerce-soft`, `+need-ord-alloc-regs`, `+coerce-lazy`,
      `+next-lazy-collapse`, `+collapse-shape`, `+to-straight`.  The next
-     links to make: `+split-sure`, `+split` (fork-free), then
+     links to make: `+split` (fork-free), then
      `+into-*`, `+copy*`, `+mede`, `+forl` (none of these touches
      `cache`, `soft` or `sofs`; `+crash-need` reads `soft`).
    - *Modelled, not linked*:
