@@ -225,14 +225,15 @@ def ResP2 (memoF : Memo M) (res : ResGo M R) : Prop :=
     AnsW (RBat gs'.st r.1) idT.1 idT.2 r.2.core.tab
 
 /-- What the `resolve` loop begun with `orig` keeps and gives: `ResP2` for
-the current identity, when it is `orig` or the memo lookup at `orig` misses
-(after a `%he` step the loop asks `+git:mi` at `orig` again), and the current
-subject sock comes from `orig.1` by `%he` steps (`HeChain`).  The answer is
+the current identity, when its subject sock comes from `orig.1` by `%he`
+steps (`HeChain`) and its formula is `orig.2`.  The memo lookup is at
+`orig.2` and the current sock, so a hit is an answer at the current
+identity, lifted to `orig` along the chain.  The answer is
 an answer at `orig`: the `%rec` branch patches with `orig.1`, as the Hoon
 does (`(patch-prod [prod map]:d sock.prod.s)`), which is an answer at
 `orig.1` and not at the current sock. -/
 def ResP2L (memoF : Memo M) (orig : Ident) (res : ResGo M R) : Prop :=
-  ∀ idT gs r gs' (F : Entry → Prop), (idT = orig ∨ gitMi gs.st.done orig.2 orig.1 = some none) →
+  ∀ idT gs r gs' (F : Entry → Prop),
     HeChain orig.1 idT.1 → idT.2 = orig.2 → orig.1 ≠ Sock.void →
     CInv memoF gs.st F → WellFormed idT.1 → NormSock idT.1 → idT.1 ≠ Sock.void →
     res idT gs = some (r, gs') →
@@ -247,7 +248,7 @@ def ResP2L (memoF : Memo M) (orig : Ident) (res : ResGo M R) : Prop :=
 theorem resP2_of_loop {memoF : Memo M} {resl : Ident → ResGo M R} (h : ∀ orig, ResP2L memoF orig (resl orig)) :
     ResP2 memoF (fun i => resl i i) :=
   fun idT gs r gs' F hc hw hn hnv e =>
-    h idT idT gs r gs' F (Or.inl rfl) (HeChain.refl _) rfl hnv hc hw hn hnv e
+    h idT idT gs r gs' F (HeChain.refl _) rfl hnv hc hw hn hnv e
 
 /-- What `+analyze` keeps and gives. -/
 def AnaP2 (memoF : Memo M) (ana : AnaGo M R) : Prop :=
@@ -755,7 +756,7 @@ theorem ansW_hitGen {st : SkaState M R} (hi : SInv st) {i : Ident} {d : FDatum M
 theorem resolveStep_ok2 (env : Env R) (memoF : Memo M) {orig : Ident} {resolve : ResGo M R} {analyze : AnaGo M R}
     (hres : ResP2L memoF orig resolve) (hana : AnaP2 memoF analyze) :
     ResP2L memoF orig (resolveStep env resolve analyze orig) := by
-  intro idT gs r gs' F horig hch hf2 hov hc hw hn hnv e
+  intro idT gs r gs' F hch hf2 hov hc hw hn hnv e
   have lift : ∀ {G : Entry → Prop} {a : TabEntry}, AnsW G idT.1 idT.2 a → AnsW G orig.1 orig.2 a :=
     fun h => by rw [← hf2]; exact hch.lift h
   have hstay : ∀ low' back', low' ≤ gs.low → (back' = false → gs.back = false) →
@@ -790,11 +791,9 @@ theorem resolveStep_ok2 (env : Env R) (memoF : Memo M) {orig : Ident} {resolve :
     · cases e
     · rename_i m hm
       cases e
-      -- the lookup is at `orig`; it hits only when `orig` is the identity
-      obtain rfl : idT = orig := by
-        rcases horig with h | hmiss
-        · exact h
-        · rw [hmiss] at hm; cases hm
+      -- the lookup is at the formula `orig.2` and the current sock `idT.1`:
+      -- a hit is an answer at `idT`, lifted to `orig` by `lift`
+      rw [← hf2] at hm
       obtain ⟨k, d0, hk, ht, hcore, _⟩ := gitMi_hit hm
       have hget : Treap.get gs.st.done idT.2 = some (gutMi gs.st.done idT.2) := by
         unfold gutMi Treap.gut
@@ -809,9 +808,8 @@ theorem resolveStep_ok2 (env : Env R) (memoF : Memo M) {orig : Ident} {resolve :
       have := ansW_hit (c := r.1) hc.s hge (hc.norm _ _ hge).2.2 rfl (s := idT.1) ht
       simp only at hkey
       rw [hkey, ← hcore] at this
-      exact this
-    · rename_i hmiss
-      split at e
+      exact lift this
+    · split at e
       · cases e
       · rename_i i hrc
         rcases recLoop_cases2 hrc with ⟨hb, _⟩ | ⟨_, j, hj, hm, hf⟩
@@ -821,7 +819,7 @@ theorem resolveStep_ok2 (env : Env R) (memoF : Memo M) {orig : Ident} {resolve :
         have hnj : NormSock j.1 := by
           obtain ⟨dj, hdj⟩ := hc.s.mem_g hj
           exact (hc.norm j dj hdj).1
-        exact hres i gs r gs' F (Or.inr hmiss) (hch.snoc hwj hnj hm) (hf.trans hf2) hov hc hwi
+        exact hres i gs r gs' F (hch.snoc hwj hnj hm) (hf.trans hf2) hov hc hwi
           (normSock_msgSock hn hnj hm) (msgSock_nv hnv hm) e
       · rename_i i hrc
         rcases recLoop_cases2 hrc with ⟨_, hi, hf, ht⟩ | ⟨hb, _⟩

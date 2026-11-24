@@ -47,7 +47,7 @@ def resolveStepH (env : Env R) (resolve : ResGo M R) (analyze : AnaGo M R) (orig
     | none => some ((idT, d), gen)
     | some o => some ((idT, d), { gen with low := min gen.low o, back := true })
   | none =>
-  match gitMi gen.st.done orig.2 orig.1 with
+  match gitMi gen.st.done orig.2 idT.1 with
   | none => none
   | some (some m) => some (m, gen)
   | some none =>
@@ -118,7 +118,7 @@ theorem resolve_stepW (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar f
     (fol : Noun) (sub : Anno) (seat mk : Option Noun) (bc df : Bool) (gen : GenS FinMap R)
     (fa fb : Noun) (f s : FolOut) (rl : ResGo FinMap R)
     (idT : Ident)
-    (hrl : ∀ i, Treap.get gen.st.g idT = none → gitMi gen.st.done (C fa fb) s.prod.sock = some none →
+    (hrl : ∀ i, Treap.get gen.st.g idT = none → gitMi gen.st.done (C fa fb) idT.1 = some none →
       recursiveCall heSock 32 idT gen.st.stk (gCore gen.st.g) = some (some (false, i)) →
       c (resSubj regsNoun rest fol sub seat mk bc df gen fa fb f s i) fol_loop.resolve
         = (rl i gen).map (resOutNoun regsNoun)) :
@@ -162,7 +162,7 @@ theorem resolve_stepW (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar f
   have hog : nock (C by.get.battery (C (identNoun idT) (C by.battery (C (Treap.toNoun A order)
       layer2)))) by.get.battery = some (unitNoun A (Treap.get order idT)) :=
     get_gate layer2 hsg _ _ _ ho
-  have hgit := mi_git_pill done (C fa fb) ss
+  have hgit := mi_git_pill done (C fa fb) idT.1
   have hrc := recursive_call_pill idT stk g
   have hu0 : ∀ {α : Type} (e : α → Noun), unitNoun e none = A 0 := fun _ => rfl
   have hus : ∀ {α : Type} (e : α → Noun) (x : α), unitNoun e (some x) = C (A 0) (e x) := fun _ _ => rfl
@@ -184,7 +184,7 @@ theorem resolve_stepW (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar f
       simp [GenS.toNoun, SkaState.toNoun, flag]
   | none =>
     rw [eg, hu0] at hgg
-    cases em : gitMi done (C fa fb) ss with
+    cases em : gitMi done (C fa fb) idT.1 with
     | none =>
       rw [em] at hgit
       simp (disch := ffar_disch) [nock_exec, hcf, hl2, by_arm, by.get.arm_at, hgg, resolveStepH, eg, em, hana, mi.arm_at, mi_arm,
@@ -272,7 +272,7 @@ theorem resolve_step (regsNoun : R → Noun) (env : Env R) (hhe : env.he = heSoc
     (fol : Noun) (sub : Anno) (seat mk : Option Noun) (bc df : Bool) (gen : GenS FinMap R)
     (fa fb : Noun) (f s : FolOut) (rl : ResGo FinMap R)
     (idT : Ident)
-    (hrl : ∀ i, Treap.get gen.st.g idT = none → gitMi gen.st.done (C fa fb) s.prod.sock = some none →
+    (hrl : ∀ i, Treap.get gen.st.g idT = none → gitMi gen.st.done (C fa fb) idT.1 = some none →
       recursiveCall heSock 32 idT gen.st.stk (gCore gen.st.g) = some (some (false, i)) →
       nock (resSubj regsNoun rest fol sub seat mk bc df gen fa fb f s i) fol_loop.resolve
         = (rl i gen).map (resOutNoun regsNoun)) :
@@ -308,7 +308,7 @@ theorem resolve_le (regsNoun : R → Noun) (env : Env R) (hhe : env.he = heSock)
     have hst := resolve_step regsNoun env hhe hth rest K hana hK hKa an han fol sub seat mk bc df gen
       fa fb f s (resolveH env an n (s.prod.sock, C fa fb)) idT
     simp only [resolveH] at h
-    by_cases hp : ∃ i, Treap.get gen.st.g idT = none ∧ gitMi gen.st.done (C fa fb) s.prod.sock = some none ∧
+    by_cases hp : ∃ i, Treap.get gen.st.g idT = none ∧ gitMi gen.st.done (C fa fb) idT.1 = some none ∧
         recursiveCall heSock 32 idT gen.st.stk (gCore gen.st.g) = some (some (false, i))
     · obtain ⟨i, hg, hm, hi⟩ := hp
       -- a `%he` turn: the model's result is the loop's result at `i`

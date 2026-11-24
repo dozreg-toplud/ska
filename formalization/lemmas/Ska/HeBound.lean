@@ -62,9 +62,11 @@ theorem recursiveCall_he_lt {th : Nat} {kid : Ident} {stk : List Ident} {g : Ide
   exact ⟨msgSock_he_lt hhe hne hm, hi⟩
 
 /-- A `%he` turn of the `resolve` loop begun with `orig`, in the run state
-`gen`, from `i` to `j`. -/
+`gen`, from `i` to `j`: `i` is not in the graph, the memo lookup at the
+formula `orig.2` and the current sock `i.1` misses, and `+recursive-call`
+generalizes `i` to `j`. -/
 def HeTurn (env : Env R) (orig : Ident) (gen : GenS M R) (i j : Ident) : Prop :=
-  Treap.get gen.st.g i = none ∧ gitMi gen.st.done orig.2 orig.1 = some none ∧
+  Treap.get gen.st.g i = none ∧ gitMi gen.st.done orig.2 i.1 = some none ∧
     recursiveCall env.he env.threshold i gen.st.stk (gCore gen.st.g) = some (some (false, j))
 
 /-- A `%he` turn is one unit of the loop's fuel, in the same state. -/
