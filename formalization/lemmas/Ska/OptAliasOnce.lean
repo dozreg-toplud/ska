@@ -58,6 +58,11 @@ model of `+optimize` returns `0` where the code before returns `s + 1`
   needs a stronger invariant of the raw blocks, such as `FillFresh` kept by
   every pass (false on raw `+comp` output, whose fills write a register that
   has a definition), or a change of the Hoon (see the README, Gaps 12.8).
+  Both are done since: every pass keeps plain single assignment
+  (`OptAliasPlain.lean`, driver `optimize_keeps_plain_pickR` in
+  `OptAliasPlainDriver.lean`) and `FillFresh` (`OptAliasFresh.lean`,
+  `optimize_keeps_fresh_pickR`), and both hold on raw `+comp` output once
+  `+crash-need` stops filling the register it tests.
 -/
 
 namespace Formalization

@@ -62,6 +62,9 @@ import lemmas.Ska.OptAliasAvail
 import lemmas.Ska.OptAliasFirst
 import lemmas.Ska.OptAliasOnce
 import lemmas.Ska.OptAliasWitness
+import lemmas.Ska.OptAliasPlain
+import lemmas.Ska.OptAliasPlainDriver
+import lemmas.Ska.OptAliasFresh
 
 /-! Axioms of the theorems about `+optimize`. -/
 
@@ -413,3 +416,57 @@ open Formalization.SkaModel.Opt
 #print axioms not_aliasOnceB
 #print axioms w_dinvS
 #print axioms w_opt
+#print axioms defOnceB_of_R
+#print axioms fillFresh_of_R
+#print axioms pw_rel
+#print axioms filterMap_nodup_idx
+#print axioms defOnceR_of_defOnce
+#print axioms dInvR_dInvS
+#print axioms dInvR_of
+#print axioms onceR_of_map
+#print axioms onceR_of_sub
+#print axioms rub_onceR
+#print axioms mid_onceR
+#print axioms filt_onceR
+#print axioms trim_onceR
+#print axioms dead_onceR
+#print axioms hk_site
+#print axioms hk_onceR
+#print axioms hops_onceR
+#print axioms alias_site_op
+#print axioms alias_onceR
+#print axioms alias_fieldR
+#print axioms driverHypR_of
+#print axioms optimize_keeps_plain
+#print axioms optimize_keeps_plain_pickR
+#print axioms optIn_iff
+#print axioms optimize_keeps_optIn
+#print axioms not_defOnceR_v
+#print axioms not_fillFresh_v
+#print axioms not_defOnceR_w
+#print axioms not_fillFresh_w
+#print axioms not_dInvR_w
+#print axioms not_dInvR_v
+#print axioms ex_hops
+#print axioms ex_alias
+#print axioms dInvF_of_R
+#print axioms fillFresh_of_map
+#print axioms rub_fresh
+#print axioms mid_fresh
+#print axioms sub_reach
+#print axioms sub_site
+#print axioms sub_inj
+#print axioms sub_live
+#print axioms sub_fresh
+#print axioms filt_sub
+#print axioms trim_fresh
+#print axioms dead_sub
+#print axioms dead_fresh
+#print axioms hk_fresh
+#print axioms hops_fresh
+#print axioms alias_fieldF
+#print axioms driverHypF_of
+#print axioms optimize_keeps_fresh
+#print axioms optimize_keeps_fresh_pickR
+#print axioms not_dInvF_w
+#print axioms not_dInvF_v
