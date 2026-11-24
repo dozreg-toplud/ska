@@ -1,7 +1,7 @@
 import lemmas.Ska.KnowMeets
 
 /-!
-# `LessProvidesNF` split into named pieces
+# `LessProvidesNF` from a cover of its sites
 
 `LessProvidesNF` (`SitesMeetNF.lean`): under `less.cur` and without folding,
 every site `[c k]` of `+know` provides its callee's code requirement
@@ -15,31 +15,38 @@ walk of the same nomm, site by site:
    knows there (`Sub k (Ca.app cl ka)`).
 
 The two give `Sub k c.less` by `sub_app_cape`: a sock with a noun under
-`L = [cl dl]`, masked by `cl`, is still under `L`.  For example
-`ka = &+[5 7]` under `L = [[& |] [5 0]]` masks to `[[& |] [5 7]]`, which is
-under `L`.
+`L = [cl dl]`, masked by `cl`, is still under `L` (`sub_of_cover`).  For
+example `ka = &+[5 7]` under `L = [[& |] [5 0]]` masks to `[[& |] [5 7]]`,
+which is under `L`.  `SiteCover` states that such a `ka` exists for every
+site, and `lessProvidesNF_of_cover` gives `LessProvidesNF` from it;
+`pokeSites_of_cover` gives `PokeSites` from `SiteCover` of every poke.
 
-The pieces, each a `def … : Prop`:
+## What is left: `SiteCover`, and why it is not split further here
 
-1. `SiteCover`: every site of `+know` without folding has such a `ka`.
-   `lessProvidesNF_of_cover` gives `LessProvidesNF` from it.
-2. `AnaReplay`: the analysis' walk of the nomm is a walk of `+know` without
-   folding under the identity's subject sock `more` (under `less.cur`), with
-   the products of the identities that the analysis resolved (`datA`), and
-   every one of its sites provides its callee's code requirement.  A call that
-   the analysis inlined is a `%7` of the nomm (`callStep`), which `+know`
-   walks as a `%7`, so inlining needs no case of its own.
-3. `WalkAgree`: the two walks of one nomm, under `less.cur` with `dat` and
-   under `more` with `datA`, list the same callees in the same order, and the
-   first walk's site knows on the callee's cape what the second's knows.
-   This is where provenance (`ProvO`, `StatOK`) and the residue `ProdSame`
-   enter: a part of a site that `c.less` knows comes from the subject through
-   provenance (then `less.cur` knows it, since the analysis put it into
-   `want`), from a constant, or from a callee's product, where `dat` and
-   `datA` must agree.
+A first split, tried and dropped, replayed the analysis' walk as a walk of
+`+know` without folding under the identity's subject sock `more` with a
+table `datA` of the products of the identities the analysis resolved, and
+compared it with the walk under `less.cur` with `dat`.  Two things are wrong
+with it:
 
-`siteCover_of_parts`: `SiteCover` from `AnaReplay` and `WalkAgree`.
-Neither is proved.
+1. `datA` cannot be a function of the bell.  One nomm can call two
+   identities of one code bell at two sites, with different products: that
+   is the `.indi` miss of `tools/hoon/prodsame.hoon`, where
+   `[(f (add 2 3)) (f 5)]` calls two identities of the code bell of `f`.  A
+   replay needs `+know` with a table indexed by the site (bell and site
+   sock), that is a second model of the walk.
+2. The comparison of the two walks is false for an arbitrary `datA`: a
+   table whose products know more than `dat`'s makes the analysis' sites
+   know more than `+know`'s.  It needs, as hypotheses, the residue
+   (`ProdSame` between the identity used and `dat`'s, for every site sock
+   that occurs, not only `less.c`) and the provenance fact that the analysis
+   put into `want` every part of the subject that a callee's code
+   requirement reads (`distribute lc s.prod.src` in `callStep`), so that
+   masking `more` by `want` changes nothing that a site's callee needs.
+
+Inlining needs no case: an inlined call is the `%7` of the nomm that
+`callStep` makes, and `+know` walks it as a `%7`, with the product of the
+formula's subject as the inlined body's subject, as the analysis did.
 -/
 
 namespace Formalization
@@ -170,45 +177,6 @@ theorem lessProvidesNF_of_cover {E : BEnv M} (h : SiteCover E) : LessProvidesNF 
   obtain ⟨ka, hy, hs, hcov⟩ := h cur d out sites hd hk c k hck hc
   exact sub_of_cover hy hs hcov
 
-/-- **The analysis' walk as a walk of `+know`**: for every datum of `dat`
-there are the identity's subject sock `more` (with a noun, under
-`less.cur`) and the products `datA` of the identities the analysis
-resolved, such that `+know` without folding under `more` with `datA` returns
-on the nomm, and every one of its sites (but the root's) has a noun and
-provides its callee's code requirement. -/
-def AnaReplay (E : BEnv M) : Prop :=
-  ∀ cur d, E.dat cur = some d →
-    ∃ (more : Sock) (datA : Bell → Option Datum) (outA : Nomm) (sitesA : List Site),
-      (∃ y, Fits more y) ∧ Sub more cur.less ∧
-      know false d.nomm more datA idc = some (outA, sitesA) ∧
-      ∀ c ka, (c, ka) ∈ sitesA → c ≠ E.root → (∃ y, Fits ka y) ∧ Sub ka c.less
-
-/-- **The two walks of one nomm agree on the callees' capes**: under
-`less.cur` with `dat` and under the analysis' `more` with its `datA`, every
-site of the first (but the root's) has a site of the same callee in the
-second that knows, on the callee's cape, no more than it. -/
-def WalkAgree (E : BEnv M) : Prop :=
-  ∀ cur d more datA outA sitesA out sites, E.dat cur = some d →
-    (∃ y, Fits more y) → Sub more cur.less →
-    know false d.nomm more datA idc = some (outA, sitesA) →
-    know false d.nomm cur.less E.dat idc = some (out, sites) →
-    ∀ c k, (c, k) ∈ sites → c ≠ E.root →
-      ∃ ka, (c, ka) ∈ sitesA ∧ ∀ cl dl, c.less = Sock.mk cl dl → Sub k (Ca.app cl ka)
-
-omit [Treap M] in
-/-- **`SiteCover` from `AnaReplay` and `WalkAgree`.** -/
-theorem siteCover_of_parts {E : BEnv M} (ha : AnaReplay E) (hw : WalkAgree E) : SiteCover E := by
-  intro cur d out sites hd hk c k hck hc
-  obtain ⟨more, datA, outA, sitesA, hmy, hms, hka, hok⟩ := ha cur d hd
-  obtain ⟨ka, hkam, hcov⟩ := hw cur d more datA outA sitesA out sites hd hmy hms hka hk c k hck hc
-  obtain ⟨hy, hs⟩ := hok c ka hkam hc
-  exact ⟨ka, hy, hs, hcov⟩
-
-omit [Treap M] in
-/-- **`LessProvidesNF` from `AnaReplay` and `WalkAgree`.** -/
-theorem lessProvidesNF_of_parts {E : BEnv M} (ha : AnaReplay E) (hw : WalkAgree E) : LessProvidesNF E :=
-  lessProvidesNF_of_cover (siteCover_of_parts ha hw)
-
 end Bake
 
 namespace PokeM
@@ -217,28 +185,24 @@ open Bake
 
 variable {M : Type → Type → Type} [Treap M] {J H R : Type}
 
-/-- **`AnaReplay` and `WalkAgree` of every poke** from a state that
-satisfies `InvB`. -/
-def PokeLessParts (lib : Lib) (env : Env R) (jet : H → J → (Bell → Option Datum) → R → Bell → Bool)
+/-- **`SiteCover` of every poke** from a state that satisfies `InvB`. -/
+def PokeSiteCover (lib : Lib) (env : Env R) (jet : H → J → (Bell → Option Datum) → R → Bell → Bool)
     (fold frozen : Bool) (fuel : Noun → Noun → LongB M → J → Nat) (regOf : J → R) : Prop :=
   ∀ s f (L : LongB M) j hot pr dats memo' rd reg', InvB lib L →
     skaPoke env (fuel s f L j) (Sock.mk Cape.yes s, f) L.memo (regOf j) = some (pr, dats, memo', rd, reg') →
-    let E := anaEnv jet fold frozen s f L j hot dats memo' rd reg'
-    AnaReplay E ∧ WalkAgree E
+    SiteCover (anaEnv jet fold frozen s f L j hot dats memo' rd reg')
 
-/-- **`PokeLessNF` from the two pieces.** -/
-theorem pokeLessNF_of_parts {lib : Lib} {env : Env R} {jet : H → J → (Bell → Option Datum) → R → Bell → Bool}
+/-- **`PokeLessNF` from `SiteCover` of every poke.** -/
+theorem pokeLessNF_of_cover {lib : Lib} {env : Env R} {jet : H → J → (Bell → Option Datum) → R → Bell → Bool}
     {fold frozen : Bool} {fuel : Noun → Noun → LongB M → J → Nat} {regOf : J → R}
-    (h : PokeLessParts lib env jet fold frozen fuel regOf) : PokeLessNF lib env jet fold frozen fuel regOf :=
-  fun s f L j hot pr dats memo' rd reg' hI hs =>
-    let ⟨ha, hw⟩ := h s f L j hot pr dats memo' rd reg' hI hs
-    lessProvidesNF_of_parts ha hw
+    (h : PokeSiteCover lib env jet fold frozen fuel regOf) : PokeLessNF lib env jet fold frozen fuel regOf :=
+  fun s f L j hot pr dats memo' rd reg' hI hs => lessProvidesNF_of_cover (h s f L j hot pr dats memo' rd reg' hI hs)
 
-/-- **`PokeSites` from the two pieces.** -/
-theorem pokeSites_of_lessParts {lib : Lib} {env : Env R} {jet : H → J → (Bell → Option Datum) → R → Bell → Bool}
+/-- **`PokeSites` from `SiteCover` of every poke.** -/
+theorem pokeSites_of_cover {lib : Lib} {env : Env R} {jet : H → J → (Bell → Option Datum) → R → Bell → Bool}
     {fold frozen : Bool} {fuel : Noun → Noun → LongB M → J → Nat} {regOf : J → R}
-    (h : PokeLessParts lib env jet fold frozen fuel regOf) : PokeSites lib env jet fold frozen fuel regOf :=
-  pokeSites_of_lessNF (pokeLessNF_of_parts h)
+    (h : PokeSiteCover lib env jet fold frozen fuel regOf) : PokeSites lib env jet fold frozen fuel regOf :=
+  pokeSites_of_lessNF (pokeLessNF_of_cover h)
 
 end PokeM
 

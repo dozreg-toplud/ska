@@ -348,7 +348,5 @@ open Formalization.SkaModel
 #print axioms Bake.sub_app_cape
 #print axioms Bake.sub_of_cover
 #print axioms Bake.lessProvidesNF_of_cover
-#print axioms Bake.siteCover_of_parts
-#print axioms Bake.lessProvidesNF_of_parts
-#print axioms PokeM.pokeLessNF_of_parts
-#print axioms PokeM.pokeSites_of_lessParts
+#print axioms PokeM.pokeLessNF_of_cover
+#print axioms PokeM.pokeSites_of_cover
