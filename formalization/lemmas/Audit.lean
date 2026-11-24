@@ -625,3 +625,5 @@ open Formalization
 #print axioms Compiler.comp_run_at
 #print axioms Compiler.run_simple_next
 #print axioms Compiler.run_n0
+#print axioms Compiler.run_n7
+#print axioms Compiler.run_n1

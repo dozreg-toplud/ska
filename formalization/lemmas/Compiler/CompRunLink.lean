@@ -301,5 +301,128 @@ theorem run_n0 (h7 : slot? 7 ctx = some compK) (ax : Nat) (gl : CGoal CSet) (reg
             Lazy.fromL_ofSure, ef]
           simp [NextL.goal, CGoalL.toNoun, Lazy.toNoun_ofSure]
 
+/-! ## The case `%7` -/
+
+theorem run_disp_n7 (t mono goal region sup D : Noun) :
+    nock (runSubj mono (C (A 7) t) goal region sup D) runDol
+      = nock (runSubj mono (C (A 7) t) goal region sup D) runK7 := by
+  nock_open runDol
+  simp [nock_exec, runSubj, runTc, runT]
+
+/-- **The case `%7` of `+run`**: `q` with the goal, then `p` with the goal
+that `q` returns, given both recursive calls (the first with `sup` set to
+`` `p ``, which the model does not read). -/
+theorem run_n7 (p q : Nomm) (goal : CGoalL CSet) (region : List Nat) (g : Gen (TreapMap mugF))
+    (hq : RunAt ctx q goal region g)
+    (hp : ∀ nex g1, runL q goal region g = some (nex, g1) → RunAt ctx p nex.goal region g1) :
+    RunAt ctx (Nomm.n7 p q) goal region g := by
+  intro x mono sup hx
+  have h1 := hq x mono (C (A 0) p.toNoun) hx
+  simp only [runSubj, compCore] at h1
+  simp only [Nomm.toNoun]
+  rw [run_disp_n7]
+  cases e : runL q goal region g with
+  | none =>
+    rw [e] at h1
+    simp only [compCore]
+    generalize comp.door = Dr at h1 ⊢
+    nock_open runK7
+    simp [nock_exec, runSubj, run_bat_dol, h1, runL, e, bind, StateT.bind]
+  | some r =>
+    obtain ⟨nex, g1⟩ := r
+    rw [e] at h1
+    have h2 := hp nex g1 e x mono sup hx
+    simp only [runSubj, compCore] at h2 h1
+    simp only [compCore]
+    generalize comp.door = Dr at h1 h2 ⊢
+    nock_open runK7
+    simp [nock_exec, runSubj, run_bat_dol, h1, h2, runL, e, bind, StateT.bind]
+
+/-! ## The case `%1` -/
+
+theorem run_disp_n1 (t mono goal region sup D : Noun) :
+    nock (runSubj mono (C (A 1) t) goal region sup D) runDol
+      = nock (runSubj mono (C (A 1) t) goal region sup D) runK1 := by
+  nock_open runDol
+  simp [nock_exec, runSubj, runTc, runT]
+
+/-- The noun of `*need-lazy`. -/
+theorem run_bunt_noun : (Lazy.ofSure (Sure.bunt : Sure CSet)).toNoun
+    = C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)) := by
+  simp [Lazy.toNoun_ofSure, lazyNoun, Sure.toNoun, Sure.bunt, Need.toNoun, HoonSet.toNoun_empty, Tag.none]
+
+theorem run_bunt_lazy : lazyNoun (Sure.bunt : Sure CSet)
+    = C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)) := by
+  simp [lazyNoun, Sure.toNoun, Sure.bunt, Need.toNoun, HoonSet.toNoun_empty, Tag.none]
+
+/-- The arm `mede` builds its gate. -/
+theorem comp_md_arm (d : Noun) : nock d mdArm =
+    some (C mdBat (C (C (C (A 0) (A 0)) (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0))))) d)) := by
+  unfold mdArm; simp only [nock_exec]
+
+/-- **The case `%1` of `+run`** on a fork-free goal with no look at `0`:
+`%done` emits a block that makes the constant and returns it, `%pick` takes
+the branch of `0` or `1` (or `(bomb ~)`), `%next` is `+mede`. -/
+theorem run_n1 (h7 : slot? 7 ctx = some compK) (k : Noun) (gl : CGoal CSet) (region : List Nat)
+    (g : Gen (TreapMap mugF)) (hlok : runLokOk gl) :
+    RunAt ctx (Nomm.n1 k) (CGoal.toL gl) region g := by
+  obtain ⟨hc, hl, hm⟩ := comp_ctx_pill ctx h7
+  intro x mono sup hx
+  simp only [Nomm.toNoun]
+  rw [run_disp_n1]
+  cases gl with
+  | next laz th =>
+    have hmd := comp_mede hc hl hm x g th k laz (hx g.bo) hlok
+    have hD := comp_md_at
+    simp only [compCore, Jmp.toNoun] at hmd ⊢
+    generalize comp.door = Dr at hmd hD ⊢
+    nock_open runK1
+    cases e : mede th k laz g with
+    | none =>
+      rw [e] at hmd
+      simp [nock_exec, runSubj, hD, comp_md_arm, CGoal.toL, CGoalL.toNoun, Jmp.toNoun, hmd, runL,
+        medeL_toL, Lazy.toNoun_ofSure, e, bind, StateT.bind]
+    | some r =>
+      rw [e] at hmd
+      simp [nock_exec, runSubj, hD, comp_md_arm, CGoal.toL, CGoalL.toNoun, Jmp.toNoun, hmd, runL,
+        medeL_toL, e, bind, StateT.bind, pure, StateT.pure, NextL.goal, Lazy.toNoun_ofSure, run_bunt_noun,
+        run_bunt_lazy, jmp0, listNoun]
+  | done =>
+    have hre := comp_re' ctx x g
+    have he := comp_emit x hc { g with re := g.re + 1 } ⟨[], [Pole.imm k g.re], Termin.don g.re⟩
+    simp only [compCore, Blob.toNoun, listNoun, Termin.toNoun, Pole.toNoun, Tag.don, Tag.imm] at he
+    rw [cd_emit_eq] at he
+    have hD1 := comp_re_at
+    have hD2 := comp_emit_at
+    simp only [compCore] at hre ⊢
+    generalize comp.door = Dr at hD1 hD2 he hre ⊢
+    nock_open runK1
+    simp [nock_exec, runSubj, CGoal.toL, CGoalL.toNoun, hre, hD1, hD2, comp_emit_arm, he, cd_emit_eq,
+      runL, re, bind, StateT.bind, pure, StateT.pure, NextL.goal, Lazy.toNoun_ofSure, lazyNoun,
+      Sure.toNoun, Sure.bunt, Need.toNoun, HoonSet.toNoun_empty, Tag.none, jmp0, listNoun, Jmp.toNoun]
+  | pick z o =>
+    nock_open runK1
+    by_cases h0 : k = A 0
+    · subst h0
+      simp [nock_exec, runSubj, CGoal.toL, CGoalL.toNoun, eqCode, runL, pure, StateT.pure, NextL.goal,
+        Lazy.toNoun_ofSure, lazyNoun, Sure.toNoun, Sure.bunt, Need.toNoun, HoonSet.toNoun_empty, Tag.none]
+    · by_cases h1 : k = A 1
+      · subst h1
+        simp [nock_exec, runSubj, CGoal.toL, CGoalL.toNoun, eqCode, runL, pure, StateT.pure, NextL.goal,
+          Lazy.toNoun_ofSure, lazyNoun, Sure.toNoun, Sure.bunt, Need.toNoun, HoonSet.toNoun_empty, Tag.none]
+      · have h0' : ¬ (A 0 = k) := fun h => h0 h.symm
+        have h1' : ¬ (A 1 = k) := fun h => h1 h.symm
+        have hb := comp_bomb (S := CSet) x hc g Option.none
+        simp [compCore, bomb, cd_emit_eq, bind, StateT.bind, pure, StateT.pure, unitNoun, Next.goal,
+          CGoal.toNoun, Jmp.toNoun, jmp0, lazyNoun, Sure.toNoun, Sure.bunt, Need.toNoun,
+          HoonSet.toNoun_empty, Tag.none, listNoun] at hb
+        have hD := comp_bomb_at
+        simp only [compCore]
+        generalize comp.door = Dr at hb hD ⊢
+        simp [nock_exec, runSubj, hD, comp_bomb_arm, CGoal.toL, CGoalL.toNoun, eqCode, h0, h1, h0', h1',
+          unitNoun, hb, runL, bombL, cd_emit_eq, NextL.goal, Lazy.toNoun_ofSure, Functor.map,
+          StateT.map, jmp0, lazyNoun, Sure.toNoun, Sure.bunt, Need.toNoun, HoonSet.toNoun_empty, Tag.none,
+          listNoun, Jmp.toNoun, bind, StateT.bind, pure, StateT.pure]
+
 end Compiler
 end Formalization
