@@ -122,6 +122,7 @@ import lemmas.Compiler.CompSccCall
 import lemmas.Compiler.CompSccCallGate
 import lemmas.Compiler.CompPruneLink
 import lemmas.Compiler.CompCopyGen
+import lemmas.Compiler.CompSplitGen
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -991,3 +992,6 @@ open Formalization
 #print axioms Compiler.comp_lazy_prune
 #print axioms Compiler.comp_copy_lazy_nm
 #print axioms Compiler.comp_copy_nm
+#print axioms Compiler.spsp_gate
+#print axioms Compiler.csp_all
+#print axioms Compiler.comp_split_all
