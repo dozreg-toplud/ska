@@ -931,6 +931,44 @@ theorem alias_walk_at {pick : List Nat → Nat} (hpick : ∀ l : List Nat, l ≠
 
 end
 
+/-! ## Ends that leave the function, over executions -/
+
+section
+variable [MapKeys Map] {σ : Type} {lib : Lib} {O : Oracle σ} {c : Straight Map} {gul : Noun}
+
+/-- **An end that leaves the function returns the same after**, at every
+configuration of an execution from the entry that stands at the end of a
+block with its parameters passed, on the values of the code before (given
+that the test of a `%brn` holds a value). -/
+theorem alias_walk_end {pick : List Nat → Nat} (hpick : ∀ l : List Nat, l ≠ [] → pick l ∈ l) {nargs : Nat}
+    (hD : DInvS c.blocks) {topo : List Nat} {rev : Map (List Nat)} (hT : TopoInvR c.blocks topo rev)
+    {g : AGen Map} (h : aliasWalk pick nargs c.blocks topo (aliasInit rev) = some g)
+    {st : σ} {vals : List Noun} {t : Trace} {es : List (Nat × Nat)} {y : Path.Cfg σ Map} {b : Blob}
+    (hfe : Path.FromEntry (lib := lib) (O := O) (c := c) (gul := gul) st vals t es y)
+    (hp : y.params = []) (hq : y.b.par = []) (hbody : y.b.body = []) (hb : HoonMap.get c.blocks y.lab = some b)
+    (hval : ∀ s z o', b.fin = Termin.brn s z o' → (read s y.regs).isSome) :
+    ∃ pb, HoonMap.get g.new y.lab = some pb ∧ pb.par = b.par ∧
+      endR O gul (fun x => read x y.regs) y.st y.t pb.fin = endR O gul (fun x => read x y.regs) y.st y.t b.fin := by
+  obtain ⟨k, st0, sta, st', outa, outb, rf, rv, f, hdrop, hnew, -, -, -, hb2, e7, hfacts⟩ :=
+    alias_walk_at hpick hD hT h hfe hp hq hb
+  refine ⟨_, hnew, rfl, ?_⟩
+  have hk : b.body.length ≤ k := List.drop_eq_nil_iff.mp (hdrop.symm.trans hbody)
+  rw [List.drop_eq_nil_iff.mpr hk] at hb2
+  simp only [aliasBody, Option.some.injEq, Prod.mk.injEq] at hb2
+  obtain ⟨-, rfl⟩ := hb2
+  by_cases hbom : ∃ u, b.fin = Termin.bom u
+  · obtain ⟨u, hu⟩ := hbom
+    rw [hu] at e7 ⊢
+    simp only [aliasFin, Option.some.injEq] at e7
+    subst e7; rfl
+  · have hnd : ∀ i r, i < k → ¬ DeadFill c.blocks r y.lab i := fun i r _ hdf => by
+      obtain ⟨b3, hb3, hu, -⟩ := hdf
+      rw [hb] at hb3; cases hb3; exact hbom hu
+    obtain ⟨hf, -, -, hend⟩ := hfacts hnd
+    exact afn_end O gul y.st y.t e7 hf (fun x hx => hend hk x (awk_finReads_sub hx)) (hD.2.2 _ b hb) hval
+
+end
+
 end Opt
 end SkaModel
 end Formalization
