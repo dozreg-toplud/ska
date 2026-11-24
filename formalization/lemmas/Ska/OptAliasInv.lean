@@ -261,6 +261,115 @@ theorem awi_self {bl : Map Blob} (hS : AliasSSAB bl) {pre l : List Nat} (ht : To
 
 end
 
+/-! ## `Done` at the end of a walked block, through the rest of the walk -/
+
+section
+variable [MapKeys Map]
+
+/-- **`Done` at the end of a walked block** `b` reached along the path `p`,
+at the point `pre` of the walk: defined on the path or by an op of the block,
+in `ClR`, with no dead fill in a block of `pre`. -/
+def DoneE (bl : Map Blob) (pre p : List Nat) (b : Blob) (x : Nat) : Prop :=
+  (PathDef bl p b x ∨ x ∈ b.body.filterMap aliasDst) ∧ ClR bl x ∧ ∀ o' i, DeadFill bl x o' i → o' ∉ pre
+
+/-- An op of a reachable block that jumps is a definition that counts. -/
+theorem awi_jump_live {bl : Map Blob} {o i x : Nat} {b : Blob} {op : Pole} {j : Jmp} (hR : Reach bl o)
+    (hb : HoonMap.get bl o = some b) (hj : j ∈ getJmps b.fin) (hk : b.body[i]? = some op)
+    (he : aliasDst op = some x) : LiveDef bl x (o, some i) :=
+  ⟨hR, ⟨b, op, hb, hk, he⟩, fun i' _ hdf => by
+    obtain ⟨b3, hb3, ⟨u, hu⟩, -⟩ := hdf
+    rw [hb] at hb3; cases hb3; rw [hu] at hj; simp [getJmps] at hj⟩
+
+/-- A block of the walk changes `old` only at destinations of its ops, and
+only if it is walked (reachable). -/
+theorem awi_frame_step {pick : List Nat → Nat} {nargs : Nat} {bl : Map Blob} {pre l : List Nat} {o : Nat}
+    {g g' : AGen Map} (ht : TopoOK bl (pre ++ o :: l)) (hi : ARev bl (pre ++ o :: l) pre g)
+    (h : aliasBlock pick nargs bl g o = some g') {x : Nat}
+    (hx : Reach bl o → ∀ b, HoonMap.get bl o = some b → x ∉ b.body.filterMap aliasDst) : g'.old x = g.old x := by
+  rcases (arev_step ht hi h).2 with ⟨h0, ho, -⟩ | ⟨hR, -⟩
+  · rw [awi_block_drop h h0 ho]
+  · exact (awk_block h).1 x (hx hR)
+
+/-- **A part of `topo` walked changes `old` only at destinations of ops of
+its reachable blocks.** -/
+theorem awi_frame_walk {pick : List Nat → Nat} {nargs : Nat} {bl : Map Blob} :
+    ∀ (l pre : List Nat) (g g' : AGen Map), TopoOK bl (pre ++ l) → ARev bl (pre ++ l) pre g →
+      aliasWalk pick nargs bl l g = some g' →
+      ∀ x, (∀ o ∈ l, Reach bl o → ∀ b, HoonMap.get bl o = some b → x ∉ b.body.filterMap aliasDst) →
+        g'.old x = g.old x
+  | [], pre, g, g', _, _, h => by
+    simp only [aliasWalk, Option.some.injEq] at h; subst h
+    exact fun _ _ => rfl
+  | o :: l, pre, g, g', ht, hi, h => by
+    simp only [aliasWalk] at h
+    obtain ⟨g1, h1, h⟩ := Option.bind_eq_some_iff.mp h
+    have hi1 := (arev_step ht hi h1).1
+    have ht' : TopoOK bl ((pre ++ [o]) ++ l) := by rw [List.append_assoc]; exact ht
+    have hi1' : ARev bl ((pre ++ [o]) ++ l) (pre ++ [o]) g1 := by rw [List.append_assoc]; exact hi1
+    intro x hx
+    rw [awi_frame_walk l (pre ++ [o]) g1 g' ht' hi1' h x (fun o' ho' => hx o' (List.mem_cons_of_mem _ ho')),
+      awi_frame_step ht hi h1 (hx o List.mem_cons_self)]
+
+/-- **`Done` at the end of a walked jumping block is safe from the rest of
+the walk**: no reachable block walked later writes a register of it (a
+definition that counts there would be a second one, by `DefOnceB`, and a dead
+fill there is excluded by `DoneE`). -/
+theorem awi_done_stable {bl : Map Blob} (hS : AliasSSAB bl) {pre l : List Nat} (ht : TopoOK bl (pre ++ l))
+    {q : Nat} {p : List Nat} {b : Blob} {j : Jmp} (hπ : BPath bl (q :: p)) (hb : HoonMap.get bl q = some b)
+    (hj : j ∈ getJmps b.fin) (hq : q ∈ pre) {x : Nat} (hx : DoneE bl (pre ++ l) p b x) :
+    ∀ o ∈ l, Reach bl o → ∀ b', HoonMap.get bl o = some b' → x ∉ b'.body.filterMap aliasDst := by
+  intro o ho hR b' hb' hm
+  have hdisj : ∀ a ∈ pre, a ≠ o := fun a ha e => (List.nodup_append.mp ht.1).2.2 a ha o ho e
+  have hRq : Reach bl q := ssk_bpath_reach hπ q List.mem_cons_self
+  obtain ⟨k, op, hk, he⟩ := bdef_idx hm
+  have hlive : LiveDef bl x (o, some k) := ⟨hR, ⟨b', op, hb', hk, he⟩, fun i hi hdf => by
+    cases hi; exact hx.2.2 o k hdf (List.mem_append_right _ ho)⟩
+  rcases hx.1 with (hd | hd | ⟨o', ho', b2, hb2, hd⟩) | hd
+  · exact hd (bdef_allDefs hb' (List.mem_append_right _ hm))
+  · have e := hS.1 x _ _ hlive (awi_par_live hRq hb hd); simp at e
+  · have hR' := ssk_bpath_reach hπ o' (List.mem_cons_of_mem _ ho')
+    have ho'pre := awi_path_pre ht hπ hq o' ho'
+    obtain ⟨b3, j3, hb3, hj3⟩ := bdef_jumps hπ rfl o' ho'
+    rw [hb2] at hb3; cases hb3
+    rcases List.mem_append.mp hd with hd | hd
+    · have e := hS.1 x _ _ hlive (awi_par_live hR' hb2 hd); simp at e
+    · obtain ⟨i, op', hi, he'⟩ := bdef_idx hd
+      have e := hS.1 x _ _ hlive (awi_jump_live hR' hb2 hj3 hi he')
+      simp only [Prod.mk.injEq] at e
+      exact hdisj o' ho'pre e.1.symm
+  · obtain ⟨i, op', hi, he'⟩ := bdef_idx hd
+    have e := hS.1 x _ _ hlive (awi_jump_live hRq hb hj hi he')
+    simp only [Prod.mk.injEq] at e
+    exact hdisj q hq e.1.symm
+
+/-- **The invariant at a block's end survives the rest of the walk**: `AOK`
+and `ABInv` with `DefW` and `DoneE` at the point `pre` give them at
+`pre ++ l` with the `old` of the later state. -/
+theorem awi_end_later {pick : List Nat → Nat} {nargs : Nat} {bl : Map Blob} (hS : AliasSSAB bl)
+    {pre l : List Nat} {g g' : AGen Map} (ht : TopoOK bl (pre ++ l)) (hi : ARev bl (pre ++ l) pre g)
+    (hw : OldW bl pre g) (h : aliasWalk pick nargs bl l g = some g')
+    {q : Nat} {p : List Nat} {b : Blob} {j : Jmp} (hπ : BPath bl (q :: p)) (hb : HoonMap.get bl q = some b)
+    (hj : j ∈ getJmps b.fin) (hq : q ∈ pre) {lq : AInfo} {mq : AImms} {R : Nat → Option Noun}
+    (hok : AOK ⟨g.old, lq, mq⟩ R (DoneE bl pre p b))
+    (hab : ABInv ⟨g.old, lq, mq⟩ (DefW bl pre) (DoneE bl pre p b) (ClR bl)) :
+    AOK ⟨g'.old, lq, mq⟩ R (DoneE bl (pre ++ l) p b) ∧
+      ABInv ⟨g'.old, lq, mq⟩ (DefW bl (pre ++ l)) (DoneE bl (pre ++ l) p b) (ClR bl) := by
+  have hsub : ∀ x, DoneE bl (pre ++ l) p b x → DoneE bl pre p b x :=
+    fun x hx => ⟨hx.1, hx.2.1, fun o' i hd ho' => hx.2.2 o' i hd (List.mem_append_left _ ho')⟩
+  have hold : ∀ x, DoneE bl (pre ++ l) p b x → g'.old x = g.old x :=
+    fun x hx => awi_frame_walk l pre g g' ht hi h x (awi_done_stable hS ht hπ hb hj hq hx)
+  have hmono : ∀ x, DefW bl pre x → DefW bl (pre ++ l) x := fun x => DefW.mono fun o h => List.mem_append_left _ h
+  have hw' := awi_old_walk l pre g g' ht hi hw h
+  refine ⟨⟨hok.imm, hok.info, fun d hd => ?_⟩, ⟨fun n r hr => hmono r (hab.imm n r hr),
+    ⟨fun r i x hr hx => hmono x (hab.loc.1 r i x hr hx), fun r i hr => (hab.loc.2 r i hr).imp_right (hmono r)⟩,
+    fun d hd => ?_, fun d hd => hmono d (hab.done d (hsub d hd)), fun d hn hc => awi_self hS (l := []) (by simpa using ht) hw' hc hn⟩⟩
+  · show R (g'.old d) = R d
+    rw [hold d hd]; exact hok.old d (hsub d hd)
+  · show DefW bl (pre ++ l) (g'.old d)
+    rw [hold d hd]; exact hmono _ (hab.old d (hsub d hd))
+
+end
+
 /-! ## Where an execution is -/
 
 section
