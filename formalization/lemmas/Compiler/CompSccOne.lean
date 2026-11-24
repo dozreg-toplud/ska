@@ -463,5 +463,85 @@ theorem cu_gate_scc_one_f (cape : Cape) (DATA FOL CODE JETS CALLS JH NARY MONO S
       simp only [Option.bind_some, hq, hp, Option.map_some] at hcsi ⊢
       exact cu_gate FUNC _ CODE (C JETS CALLS) JH _ _ _ V n hpu' h6' ht' hcsi hgot hv
 
+/-! ## The cache hit -/
+
+/-- The gate of the `+turn` of the cache hit: `|=(b=bell [b (~(got by
+nary.cache) b)])`, as it stands in `csiHit`. -/
+def csiHitGate : Noun :=
+  (C (C (A 0) (A 6)) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0xfffff)))) (C (A 9) (C (A 701)
+    (C (A 10) (C (C (A 6) (C (A 0) (A 1006))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6)
+    (C (A 0) (A 14))) (C (A 0) (A 2)))))))))
+
+/-- `csiHit` holds `csiHitGate`, a fact about the definitions. -/
+theorem csiHit_gate : csiHit = (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x3ffff)))) (C (A 9)
+    (C (A 378) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A 0))))) (C (A 0) (A 2)))))))) (C (A 9)
+    (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 0xbef7e) (C (A 0)
+    (A 0x3ffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9)
+    (C (A 6102) (C (A 0) (A 0x3ffff)))) (C (A 9) (C (A 186) (C (A 10) (C (C (A 6) (C (A 0) (A 28))) (C (A 0)
+    (A 2)))))))))) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C (C (A 1) (A 0)) (C (A 0) (A 0))))
+    (C (C (A 1) csiHitGate) (C (A 0) (A 1))))))))) (C (A 0) (A 2))))))))))) (C (A 0) (A 2)))))))) (C (A 0) (A 55))) :=
+  rfl
+
+/-- The gate of the `+turn` on a bell `b` that `nary.cache` holds. -/
+theorem csi_hit_gate (x SCC LONG JH NARY CR V : Noun) (hv : getF mugF x NARY = some (C (A 0) V)) :
+    nock (C csiHitGate (C x (C csiBody (C (csiSam SCC LONG JH (C NARY CR)) compK)))) csiHitGate = some (C x V) := by
+  have hL := compK_layer2
+  have hg := got_gate (mug := mugF) layer2 ⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩ x NARY V hv
+  unfold csiHitGate csiSam
+  generalize compK = KC at hL
+  generalize csiBody = CB
+  simp [nock_exec, hL, by.arm_at, by_arm, by.got.arm_at, got_arm, hg]
+
+/-- **The cache hit of `+compile-scc-in`**: when every member `b` of `scc`
+(a tree) is in `nary.cache` with the straight `vals b`, the gate returns the
+map that `+gas:by` builds from `~` and the pairs `[b (vals b)]` in the order
+of `+tap:in`, and the cache unchanged. -/
+theorem csi_hit (SCC LONG JH NARY CR OUT : Noun) (hs : Tree SCC) (vals : Noun → Noun)
+    (hv : ∀ b ∈ tapList SCC, getF mugF b NARY = some (C (A 0) (vals b)))
+    (hg : gasF mugF (A 0) ((tapList SCC).map fun b => (b, vals b)) = some OUT) :
+    nock (C csiBody (C (csiSam SCC LONG JH (C NARY CR)) compK)) csiBody = some (C OUT (C NARY CR)) := by
+  have hL := compK_layer2
+  have htap : tapF SCC (A 0) = some (listN (tapList SCC)) := by simpa [listN] using tapF_list hs []
+  have hlevy := levy_gate layer2 by.has.battery (A 0) (C by.battery (C NARY layer2)) (fun _ => true) (tapList SCC)
+    (fun x hx => by
+      rw [has_gate (mug := mugF) layer2 ⟨someIn_layer2, gorIn_morIn_layer2.1⟩ x NARY _ (hv x hx)]
+      simp)
+  rw [show (tapList SCC).all (fun _ => true) = true by simp] at hlevy
+  have hturn := turn_gate layer2 homoIn_layer2 csiHitGate (C (C (A 1) (A 0)) (C (A 0) (A 0)))
+    (C csiBody (C (csiSam SCC LONG JH (C NARY CR)) compK)) (fun b => C b (vals b)) (tapList SCC)
+    (fun x hx => csi_hit_gate x SCC LONG JH NARY CR (vals x) (hv x hx))
+  have hgas : nock (C by.gas.battery (C (listN ((tapList SCC).map fun b => C b (vals b)))
+      (C by.battery (C (A 0) layer2)))) by.gas.battery = some OUT := by
+    have := gas_gate (mug := mugF) layer2 gorIn_morIn_layer2 _ (A 0) OUT hg
+    simpa [List.map_map, pairNoun, Function.comp_def] using this
+  conv => { lhs; arg 2; unfold csiBody }
+  rw [csiHit_gate]
+  unfold csiSam at hturn ⊢
+  generalize csiBody = CB at hturn ⊢
+  generalize compK = KC at hL hturn ⊢
+  simp [nock_exec, hL, csiLevy, levy.arm_at, levy_arm, in.arm_at, in_arm, in.tap.arm_at, tap_arm, tap_loop, htap,
+    by.arm_at, by_arm, by.has.arm_at, has_arm, hlevy, by.gas.arm_at, gas_arm, hgas, turn.arm_at, turn_arm, hturn]
+
+/-- **The cache hit on an SCC of one bell**: `[[[b st] ~ ~] cache]`. -/
+theorem csi_hit_one (B LONG JH NARY CR ST : Noun) (hv : getF mugF B NARY = some (C (A 0) ST)) :
+    nock (C csiBody (C (csiSam (setOne B) LONG JH (C NARY CR)) compK)) csiBody
+      = some (C (C (C B ST) (C (A 0) (A 0))) (C NARY CR)) :=
+  csi_hit (setOne B) LONG JH NARY CR _ (Tree.node Tree.nil Tree.nil) (fun _ => ST)
+    (fun b hb => by simp [setOne, tapList] at hb; subst hb; exact hv) (by simp [setOne, tapList, gasF, putF])
+
+/-- **`+compile-unary` on a cache hit**: when every member of `scc` is in
+`nary.cache`, the gate returns `finishLU` of the nomm of `func` with the
+n-ary map of `csi_hit` and the cache unchanged. -/
+theorem cu_gate_hit (FUNC SCC CODE LSR JH NARY CR OUT V : Noun) (hs : Tree SCC) (vals : Noun → Noun)
+    (hv : ∀ b ∈ tapList SCC, getF mugF b NARY = some (C (A 0) (vals b)))
+    (hg : gasF mugF (A 0) ((tapList SCC).map fun b => (b, vals b)) = some OUT)
+    (n : Nomm) (hpu : n.pure = true) (h6 : noSix n = true) (ht : tenOk n = true)
+    (hgot : getF mugF FUNC CODE = some (C (A 0) V)) (hvn : slot? 2 V = some n.toNoun) :
+    nock (C cuGB (C (cuSam FUNC SCC CODE LSR JH (C NARY CR)) compK)) cuGB
+      = (finishLU (S := CSet) (Map := TreapMap mugF) n).map fun st => C (C st.toNoun OUT) (C NARY CR) := by
+  have hcsi := csi_hit SCC (C CODE LSR) JH NARY CR OUT hs vals hv hg
+  rw [← cu_csi_eq FUNC] at hcsi
+  exact cu_gate FUNC SCC CODE LSR JH _ _ _ V n hpu h6 ht hcsi hgot hvn
+
 end Compiler
 end Formalization
