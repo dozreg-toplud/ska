@@ -432,5 +432,7 @@ open Formalization
 #print axioms Compiler.kc_run_at
 #print axioms Compiler.runRest_kc
 #print axioms Compiler.above_gate
+#print axioms Compiler.pop_gate
+#print axioms Compiler.pop_gate'
 #print axioms Compiler.registerFastIs_of
 #print axioms Compiler.resolveStepH_eq
