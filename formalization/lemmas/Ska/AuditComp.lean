@@ -10,6 +10,7 @@ import lemmas.Ska.CompSixNextOK
 import lemmas.Ska.CompSevenN
 import lemmas.Ska.CompFragM
 import lemmas.Ska.CompFragX
+import lemmas.Ska.CompEntryGoal
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -207,3 +208,4 @@ open Formalization.SkaModel.Comp
 #print axioms fragX_of_fragM
 #print axioms finishLF_bellContractX
 #print axioms crash_iffX
+#print axioms entryFill_ofSure
