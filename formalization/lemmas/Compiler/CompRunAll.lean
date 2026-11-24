@@ -6,17 +6,17 @@ import lemmas.Compiler.CompRunCons
 The summary of the cases of `+run` linked so far (`%0`, `%1`, `%3`, `%4`,
 `%5`, `%7`, `%10` and the cons): by induction on the nomm, `CompRunAt` holds
 for every pure nomm with no `%6` (`Nomm.pure` is `false` on `%2`, `%6`,
-`%11`, `%12` and `%mean`, `noSix` rules out `%6`), on every fork-free goal
-with no look at `0` and every state, given `CrSide n`.
+`%11`, `%12` and `%mean`, `noSix` rules out `%6`) whose `%10` axes are not
+`0`, on every goal and state that meet `CrInv` (`comp_run_all'`).
 
 The side condition (b) of the cases, no look at `0` in the needs that `+split`
 and `+into` return and in the goal that `%7` hands `p`, is discharged here:
 `crc_split_lok`, `cra_into_lok` and the invariant `cra_run_lok` (a run of the
-model from a goal with no look at `0` returns a `next` with none).  What is
-left is `CrSide n`: the axis of every `%10` is not `0`, and the side
-condition of `+copy` (`CrCopyOk`) holds at every `+copy` of `%5`, `%10` and
-the cons, for every fork-free goal with no look at `0` and every state from
-which the case runs.
+model from a goal with no look at `0` returns a `next` with none).  The side
+condition of `+copy` follows from the invariant `CrInv` of the goals and
+states (`CompRunInv.lean`), which the cases take as a hypothesis and hand
+their recursive calls.  What is left is a property of the nomm: the axis of
+every `%10` is not `0` (`tenOk`).
 -/
 
 namespace Formalization
@@ -314,67 +314,60 @@ theorem cra_run_lok : ∀ (n : Nomm), n.pure = true → noSix n = true → ∀ (
 
 /-! ## The summary -/
 
-/-- **What is left of the side conditions of the cases of `+run`**, by
-recursion on the nomm: the axis of a `%10` is not `0`, and the `+copy` of
-`%5`, `%10` and the cons meets `CrCopyOk` (`cnLt` of both needs at the
-counter and `cnMeet`) at every state the model reaches from a fork-free goal
-with no look at `0` and any state.  The nomms outside the fragment carry
-`True` (the theorem rules them out by `Nomm.pure` and `noSix`). -/
-def CrSide : Nomm → Prop
-  | Nomm.cons p q => CrSide p ∧ CrSide q ∧ ∀ gl g, crLokOk gl → CrcCopy p q gl g
-  | Nomm.n3 p => CrSide p
-  | Nomm.n4 p => CrSide p
-  | Nomm.n5 p q => CrSide p ∧ CrSide q ∧ ∀ (gl : CGoal CSet) (g : Gen (TreapMap mugF)), crLokOk gl →
-      ∀ o g1 nexq g2 nexp g3, cr5BrM g.re (g.re + 1) gl { g with re := g.re + 1 + 1 } = some (o, g1) →
-      run q (CGoal.next (lazyReg (g.re + 1)) (jmp0 o)) g1 = some (nexq, g2) →
-      run p (CGoal.next (lazyReg g.re) nexq.th) g2 = some (nexp, g3) → CrCopyOk g3 nexp nexq.laz
-  | Nomm.n7 p q => CrSide p ∧ CrSide q
-  | Nomm.n10 a v q => a ≠ 0 ∧ CrSide v ∧ CrSide q ∧ ∀ (gl : CGoal CSet) (g : Gen (TreapMap mugF)),
-      crLokOk gl → ∀ nex g1 don rec o g2 nexD g3 nexR g4, simpleNext gl g = some (nex, g1) →
-      into nex a g1 = some ((don, rec, o), g2) → run v (CGoal.next don (jmp0 o)) g2 = some (nexD, g3) →
-      run q (CGoal.next rec nexD.th) g3 = some (nexR, g4) → CrCopyOk g4 nexR nexD.laz
-  | _ => True
+/-- The axis of every `%10` of a nomm is not `0` (`+into` crashes on axis
+`0`, where the link of `%10` does not go). -/
+def tenOk : Nomm → Bool
+  | Nomm.cons p q => tenOk p && tenOk q
+  | Nomm.n3 p => tenOk p
+  | Nomm.n4 p => tenOk p
+  | Nomm.n5 p q => tenOk p && tenOk q
+  | Nomm.n7 p q => tenOk p && tenOk q
+  | Nomm.n10 a v q => a != 0 && tenOk v && tenOk q
+  | _ => true
 
 /-- **`+run` on every nomm of the fragment**: for every pure nomm with no
-`%6` (built from `%0`, `%1`, `%3`, `%4`, `%5`, `%7`, `%10` and cons) with
-`CrSide n`, on every fork-free goal with no look at `0`, in every region
-and from every state, the `$` arm of `+run` is `runL` (for every `mono`,
-`sup` and rest of the state with an empty `soft`). -/
-theorem comp_run_all (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod) :
-    ∀ (n : Nomm), n.pure = true → noSix n = true → CrSide n → ∀ (gl : CGoal CSet) (region : List Nat)
-      (g : Gen (TreapMap mugF)), crLokOk gl → CompRunAt ctx n (CGoal.toL gl) region g
-  | Nomm.cons p q, hpu, h6, hs, gl, region, g, hlok => by
+`%6` (built from `%0`, `%1`, `%3`, `%4`, `%5`, `%7`, `%10` and cons) whose
+`%10` axes are not `0`, on every goal and state that meet `CrInv` (no look
+at `0`, no drop, the goal's registers below the counter, no register twice
+in its need), in every region, the `$` arm of `+run` is `runL` (for every
+`mono`, `sup` and rest of the state with an empty `soft`).  No hypothesis
+about the copies is left: `CrInv` gives the side condition of every `+copy`
+(`cri_copy`) and is kept by every recursive call. -/
+theorem comp_run_all' (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod) :
+    ∀ (n : Nomm), n.pure = true → noSix n = true → tenOk n = true → ∀ (gl : CGoal CSet) (region : List Nat)
+      (g : Gen (TreapMap mugF)), CrInv g gl → CompRunAt ctx n (CGoal.toL gl) region g
+  | Nomm.cons p q, hpu, h6, ht, gl, region, g, hinv => by
     simp only [Nomm.pure, Bool.and_eq_true] at hpu
     simp only [noSix, Bool.and_eq_true] at h6
-    have ihp := comp_run_all h7 hcode p hpu.1 h6.1 hs.1
-    have ihq := comp_run_all h7 hcode q hpu.2 h6.2 hs.2.1
-    exact comp_run_cons h7 hcode p q hpu.1 hpu.2 h6.1 h6.2 gl region g hlok
-      (fun s th g1 hl => ihp (CGoal.next s th) region g1 hl)
-      (fun s th g1 hl => ihq (CGoal.next s th) region g1 hl) (hs.2.2 gl g hlok)
-  | Nomm.n0 ax, _, _, _, gl, region, g, hlok => comp_run_n0 h7 ax gl region g hlok
-  | Nomm.n1 k, _, _, _, gl, region, g, hlok => comp_run_n1 h7 k gl region g hlok
-  | Nomm.n3 p, hpu, h6, hs, gl, region, g, hlok => by
-    have ih := comp_run_all h7 hcode p hpu h6 hs
-    exact comp_run_n3 h7 p gl region g hlok (ih gl region g hlok)
-      (fun r o g1 => ih (CGoal.next (lazyReg r) (jmp0 o)) region g1 (cra_lok_reg r))
-  | Nomm.n4 p, hpu, h6, hs, gl, region, g, hlok => by
-    have ih := comp_run_all h7 hcode p hpu h6 hs
-    exact comp_run_n4 h7 p gl region g hlok
-      (fun r o g1 => ih (CGoal.next (lazyReg r) (jmp0 o)) region g1 (cra_lok_reg r))
-  | Nomm.n5 p q, hpu, h6, hs, gl, region, g, hlok => by
+    simp only [tenOk, Bool.and_eq_true] at ht
+    have ihp := comp_run_all' h7 hcode p hpu.1 h6.1 ht.1
+    have ihq := comp_run_all' h7 hcode q hpu.2 h6.2 ht.2
+    exact comp_run_cons h7 hcode p q hpu.1 hpu.2 h6.1 h6.2 gl region g hinv
+      (fun s th g1 hi => ihp (CGoal.next s th) region g1 hi) (fun s th g1 hi => ihq (CGoal.next s th) region g1 hi)
+  | Nomm.n0 ax, _, _, _, gl, region, g, hinv => comp_run_n0 h7 ax gl region g hinv.1
+  | Nomm.n1 k, _, _, _, gl, region, g, hinv => comp_run_n1 h7 k gl region g hinv.1
+  | Nomm.n3 p, hpu, h6, ht, gl, region, g, hinv => by
+    have ih := comp_run_all' h7 hcode p hpu h6 ht
+    exact comp_run_n3 h7 p gl region g hinv (ih gl region g hinv)
+      (fun s th g1 hi => ih (CGoal.next s th) region g1 hi)
+  | Nomm.n4 p, hpu, h6, ht, gl, region, g, hinv => by
+    have ih := comp_run_all' h7 hcode p hpu h6 ht
+    exact comp_run_n4 h7 p gl region g hinv (fun s th g1 hi => ih (CGoal.next s th) region g1 hi)
+  | Nomm.n5 p q, hpu, h6, ht, gl, region, g, hinv => by
     simp only [Nomm.pure, Bool.and_eq_true] at hpu
     simp only [noSix, Bool.and_eq_true] at h6
-    have ihp := comp_run_all h7 hcode p hpu.1 h6.1 hs.1
-    have ihq := comp_run_all h7 hcode q hpu.2 h6.2 hs.2.1
-    exact comp_run_n5 h7 hcode p q hpu.1 hpu.2 h6.1 h6.2 gl region g hlok
-      (fun r o g1 => ihq (CGoal.next (lazyReg r) (jmp0 o)) region g1 (cra_lok_reg r))
-      (fun r th g1 => ihp (CGoal.next (lazyReg r) th) region g1 (cra_lok_reg r)) (hs.2.2 gl g hlok)
-  | Nomm.n7 p q, hpu, h6, hs, gl, region, g, hlok => by
+    simp only [tenOk, Bool.and_eq_true] at ht
+    have ihp := comp_run_all' h7 hcode p hpu.1 h6.1 ht.1
+    have ihq := comp_run_all' h7 hcode q hpu.2 h6.2 ht.2
+    exact comp_run_n5 h7 hcode p q hpu.1 hpu.2 h6.1 h6.2 gl region g hinv
+      (fun s th g1 hi => ihq (CGoal.next s th) region g1 hi) (fun s th g1 hi => ihp (CGoal.next s th) region g1 hi)
+  | Nomm.n7 p q, hpu, h6, ht, gl, region, g, hinv => by
     simp only [Nomm.pure, Bool.and_eq_true] at hpu
     simp only [noSix, Bool.and_eq_true] at h6
-    have ihp := comp_run_all h7 hcode p hpu.1 h6.1 hs.1
-    have ihq := comp_run_all h7 hcode q hpu.2 h6.2 hs.2
-    refine comp_run_n7 p q (CGoal.toL gl) region g (ihq gl region g hlok) (fun nex g1 e => ?_)
+    simp only [tenOk, Bool.and_eq_true] at ht
+    have ihp := comp_run_all' h7 hcode p hpu.1 h6.1 ht.1
+    have ihq := comp_run_all' h7 hcode q hpu.2 h6.2 ht.2
+    refine comp_run_n7 p q (CGoal.toL gl) region g (ihq gl region g hinv) (fun nex g1 e => ?_)
     rw [runL_toL q hpu.2 h6.2, map_apply] at e
     cases eq : run (S := CSet) (Map := TreapMap mugF) q gl g with
     | none => rw [eq] at e; cases e
@@ -383,22 +376,61 @@ theorem comp_run_all (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot?
       rw [eq] at e
       simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at e
       obtain ⟨rfl, rfl⟩ := e
-      exact ihp (Next.goal nex') region g1' (cra_run_lok q hpu.2 h6.2 gl g g1' nex' eq hlok)
-  | Nomm.n10 a v q, hpu, h6, hs, gl, region, g, hlok => by
+      obtain ⟨-, d1, n1, -, dist⟩ := cri_run hinv eq
+      exact ihp (Next.goal nex') region g1' ⟨cra_run_lok q hpu.2 h6.2 gl g g1' nex' eq hinv.1, d1, n1, dist⟩
+  | Nomm.n10 a v q, hpu, h6, ht, gl, region, g, hinv => by
     simp only [Nomm.pure, Bool.and_eq_true] at hpu
     simp only [noSix, Bool.and_eq_true] at h6
-    have ihv := comp_run_all h7 hcode v hpu.1 h6.1 hs.2.1
-    have ihq := comp_run_all h7 hcode q hpu.2 h6.2 hs.2.2.1
-    exact comp_run_n10 h7 hcode a hs.1 v q hpu.1 hpu.2 h6.1 h6.2 gl region g hlok
-      (fun s th g1 hl => ihv (CGoal.next s th) region g1 hl)
-      (fun s th g1 hl => ihq (CGoal.next s th) region g1 hl)
-      (fun _ _ _ _ _ _ _ ei => cra_into_lok ei) (hs.2.2.2 gl g hlok)
+    simp only [tenOk, Bool.and_eq_true, bne_iff_ne, ne_eq] at ht
+    have ihv := comp_run_all' h7 hcode v hpu.1 h6.1 ht.1.2
+    have ihq := comp_run_all' h7 hcode q hpu.2 h6.2 ht.2
+    exact comp_run_n10 h7 hcode a ht.1.1 v q hpu.1 hpu.2 h6.1 h6.2 gl region g hinv
+      (fun s th g1 hi => ihv (CGoal.next s th) region g1 hi)
+      (fun s th g1 hi => ihq (CGoal.next s th) region g1 hi)
+      (fun _ _ _ _ _ _ _ ei => cra_into_lok ei)
   | Nomm.n2 _ _ _, hpu, _, _, _, _, _, _ => by simp [Nomm.pure] at hpu
   | Nomm.n6 _ _ _, _, h6, _, _, _, _, _ => by simp [noSix] at h6
   | Nomm.n11s _ _ _, hpu, _, _, _, _, _, _ => by simp [Nomm.pure] at hpu
   | Nomm.n11d _ _ _ _, hpu, _, _, _, _, _, _ => by simp [Nomm.pure] at hpu
   | Nomm.n12 _ _, hpu, _, _, _, _, _, _ => by simp [Nomm.pure] at hpu
   | Nomm.mean _ _ _ _ _, hpu, _, _, _, _, _, _ => by simp [Nomm.pure] at hpu
+
+/-- **An example**: the nomm `[[5 [0 2] [0 3]] [10 [2 [1 0]] [0 1]]]` (a
+cons of a `%5` and a `%10`) under `%done`, from every state that does not
+drop: `CompRunAt` with no hypothesis but the context. -/
+example (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod) (region : List Nat)
+    (g : Gen (TreapMap mugF)) (hd : g.drop = false) :
+    CompRunAt ctx (Nomm.cons (Nomm.n5 (Nomm.n0 2) (Nomm.n0 3)) (Nomm.n10 2 (Nomm.n1 (A 0)) (Nomm.n0 1)))
+      (CGoal.toL CGoal.done) region g :=
+  comp_run_all' h7 hcode _ rfl rfl rfl CGoal.done region g ⟨trivial, hd, trivial, trivial⟩
+
+/-! ## The entry of `+comp`
+
+Both callers of `+run` in the driver start from the bunt of `line-short`
+(`=|  gen=line-short`, then `cache.gen` set): `re-gen` `0`, `bo-gen` `1`,
+`id-gen` `0`, `mode` `%run` (the bunt of `?(%drop %run)` is `%run`, checked
+with `runhoon.sh` on 2026-11-24), no blocks, tags, `cond`, `soft` or
+`sofs`, and call `(~(run comp gen) mono nomm [%done ~] ~ ~)`: `mono` is `&`
+in `+compile-unary`'s whole-subject function (line 3414) and `|` in the final
+pass of `+compile-scc-in` (line 3525, where `mode.gen` is set to `%run`
+again), the goal `[%done ~]`, the region `~` and `sup` `~`.  With the flag
+`dedicated-shape-pass` on (line 2816) the passes before the fixed point run
+`+run-shape`, not `+run` in `%drop` mode, so every call of `+run` in the
+driver meets `CrInv`. -/
+
+/-- The model state of the bunt of `line-short`. -/
+def genEntry : Gen (TreapMap mugF) := ⟨0, 1, 0, false, HoonMap.empty, HoonMap.empty, HoonMap.empty⟩
+
+theorem cri_entry : CrInv genEntry CGoal.done := ⟨trivial, rfl, trivial, trivial⟩
+
+/-- **`+run` at the entry of `+comp`**: on every pure nomm with no `%6` whose
+`%10` axes are not `0`, from the bunt state with the goal `[%done ~]` and the
+region `~`, the `$` arm of `+run` is `runL` (for every `mono`, `sup` and
+rest of the state with an empty `soft`, the cache included). -/
+theorem comp_run_entry (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (n : Nomm) (hpu : n.pure = true) (h6 : noSix n = true) (ht : tenOk n = true) :
+    CompRunAt ctx n (CGoal.toL CGoal.done) [] genEntry :=
+  comp_run_all' h7 hcode n hpu h6 ht CGoal.done [] genEntry cri_entry
 
 end Compiler
 end Formalization

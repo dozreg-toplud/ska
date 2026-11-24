@@ -47,7 +47,9 @@ theorem crc_pick (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 
     (hq6 : noSix q = true) (region : List Nat) (x : GenRest) (hx : x.NoSoft) (mono goalN sup : Noun)
     (g : Gen (TreapMap mugF))
     (hq : CompRunAt ctx q (CGoal.toL (CGoal.next Sure.bunt (jmp0 g.bo))) region (cfEmitG ⟨[], [], Termin.bom Option.none⟩ g))
-    (hp : ∀ th g2, CompRunAt ctx p (CGoal.toL (CGoal.next Sure.bunt th)) region g2)
+    (hp : ∀ (nex2 : Next CSet) g2, run q (CGoal.next Sure.bunt (jmp0 g.bo))
+      (cfEmitG ⟨[], [], Termin.bom Option.none⟩ g) = some (nex2, g2) →
+      CompRunAt ctx p (CGoal.toL (CGoal.next Sure.bunt nex2.th)) region g2)
     (hcp : ∀ nex2 g2 nex1 g3, run q (CGoal.next Sure.bunt (jmp0 g.bo)) (cfEmitG ⟨[], [], Termin.bom Option.none⟩ g) = some (nex2, g2) →
       run p (CGoal.next Sure.bunt nex2.th) g2 = some (nex1, g3) → CrCopyOk g3 nex1 nex2.laz) :
     nock (crSubj mono (Nomm.cons p q).toNoun goalN (listNoun A region) sup (compCore g x ctx)) crcPick
@@ -77,7 +79,7 @@ theorem crc_pick (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 
     rw [eq] at hv1
     simp only [Option.map_some, cr_next_noun'] at hv1
     have hpa2 := cr_past_pure h7 hcode x g2 nex2 p hpp region
-    have hq1 := cr_at_run hpp hp6 (hp nex2.th g2) x mono sup hx
+    have hq1 := cr_at_run hpp hp6 (hp nex2 g2 eq) x mono sup hx
     rw [crc_goal_bunt] at hq1
     simp only [crSubj, compCore] at hq1
     cases eq2 : run (S := CSet) (Map := TreapMap mugF) p (CGoal.next Sure.bunt nex2.th) g2 with
@@ -162,17 +164,14 @@ goal), then `crcNTail`. -/
 theorem crc_next (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
     (p q : Nomm) (hpp : p.pure = true) (hqp : q.pure = true) (hp6 : noSix p = true)
     (hq6 : noSix q = true) (region : List Nat) (x : GenRest) (hx : x.NoSoft) (mono sup : Noun)
-    (s : Sure CSet) (th : Jmp) (hlok : ∀ y ∈ HoonSet.toList s.lok, y ≠ 0) (g : Gen (TreapMap mugF))
-    (hp : ∀ s th g1, (∀ y ∈ HoonSet.toList s.lok, y ≠ 0) → CompRunAt ctx p (CGoal.toL (CGoal.next s th)) region g1)
-    (hq : ∀ s th g1, (∀ y ∈ HoonSet.toList s.lok, y ≠ 0) → CompRunAt ctx q (CGoal.toL (CGoal.next s th)) region g1)
-    (hcp : ∀ hed tel o g1 nex2 g2 nex1 g3, split ⟨s, th⟩ g = some ((hed, tel, o), g1) →
-      run q (CGoal.next tel (jmp0 o)) g1 = some (nex2, g2) →
-      run p (CGoal.next hed nex2.th) g2 = some (nex1, g3) → CrCopyOk g3 nex1 nex2.laz) :
+    (s : Sure CSet) (th : Jmp) (g : Gen (TreapMap mugF)) (hinv : CrInv g (CGoal.next s th))
+    (hp : ∀ s th g1, CrInv g1 (CGoal.next s th) → CompRunAt ctx p (CGoal.toL (CGoal.next s th)) region g1)
+    (hq : ∀ s th g1, CrInv g1 (CGoal.next s th) → CompRunAt ctx q (CGoal.toL (CGoal.next s th)) region g1) :
     nock (crSubj mono (Nomm.cons p q).toNoun (CGoal.toL (CGoal.next s th)).toNoun (listNoun A region) sup
       (compCore g x ctx)) crKc
       = (run (Nomm.cons p q) (CGoal.next s th) g).map fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
   obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
-  have hsp := comp_split (x := x) hc g ⟨s, th⟩ hlok
+  have hsp := comp_split (x := x) hc g ⟨s, th⟩ hinv.1
   simp only [Next.goal, CGoal.toNoun, compCore] at hsp
   have hDs := cr_split_at
   rw [crc_run_next p q hpp hqp, crc_eq, cr_goal_sure]
@@ -187,10 +186,11 @@ theorem crc_next (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 
     obtain ⟨⟨hed, tel, o⟩, g1⟩ := r
     rw [es] at hsp
     obtain ⟨hh0, ht0⟩ := crc_split_lok _ g g1 hed tel o es
+    obtain ⟨it, nh, dh, ap⟩ := cri_split hinv ht0 es
     have ht := crc_ntail h7 hcode p q hpp hqp hp6 hq6 region x hx mono
-      (C (A 0x7478656e) (C (lazyNoun s) th.toNoun)) sup hed tel o g1 (hq tel (jmp0 o) g1 ht0)
-      (fun th2 g2 => hp hed th2 g2 hh0)
-      (fun nex2 g2 nex1 g3 e1 e2 => hcp hed tel o g1 nex2 g2 nex1 g3 es e1 e2)
+      (C (A 0x7478656e) (C (lazyNoun s) th.toNoun)) sup hed tel o g1 (hq tel (jmp0 o) g1 it)
+      (fun nex2 g2 e1 => hp hed nex2.th g2 (cri_second it nh dh hh0 e1))
+      (fun nex2 g2 nex1 g3 e1 e2 => cri_copy it nh dh hh0 ap e1 e2)
     simp only [crSubj, compCore, Option.map_some] at hsp ht ⊢
     generalize (Nomm.cons p q).toNoun = NN at ht ⊢
     generalize comp.door = Dr at hDs hsp ht ⊢
@@ -227,36 +227,18 @@ theorem crc_done_step (h7 : slot? 7 ctx = some compK) (x : GenRest) (g : Gen (Tr
   simp [nock_exec, crSubj, CGoal.toL, CGoalL.toNoun, hre, hD1, hD2, comp_emit_arm, he, h15, ct_lfr_at,
     ct_lfr_arm, ct_lfr_gate, hDs, crc_split_arm]
 
-/-- The side condition of `+copy` in the cons case on a `%next` goal, at
-the states the model reaches. -/
-def CrcNextCopy (p q : Nomm) (s : Sure CSet) (th : Jmp) (g : Gen (TreapMap mugF)) : Prop :=
-  ∀ hed tel o g1 nex2 g2 nex1 g3, split ⟨s, th⟩ g = some ((hed, tel, o), g1) →
-    run q (CGoal.next tel (jmp0 o)) g1 = some (nex2, g2) →
-    run p (CGoal.next hed nex2.th) g2 = some (nex1, g3) → CrCopyOk g3 nex1 nex2.laz
-
-/-- The side condition of `+copy` in the cons case, at the states the model
-reaches from the goal `gl` and the state `g`. -/
-def CrcCopy (p q : Nomm) (gl : CGoal CSet) (g : Gen (TreapMap mugF)) : Prop :=
-  match gl with
-  | CGoal.next s th => CrcNextCopy p q s th g
-  | CGoal.done => CrcNextCopy p q (lazyReg g.re) (jmp0 g.bo)
-      (cfEmitG ⟨[], [], Termin.don g.re⟩ { g with re := g.re + 1 })
-  | CGoal.pick _ _ => ∀ nex2 g2 nex1 g3,
-      run q (CGoal.next Sure.bunt (jmp0 g.bo)) (cfEmitG ⟨[], [], Termin.bom Option.none⟩ g) = some (nex2, g2) →
-      run p (CGoal.next Sure.bunt nex2.th) g2 = some (nex1, g3) → CrCopyOk g3 nex1 nex2.laz
-
 /-- **The cons case of `+run`** on a fork-free goal with no look at `0`, for
 pure `p` and `q` with no `%6`: the `=>` for `%done`, then `crcPick` for
 `%pick` and `+split` with `crcNTail` for `%next`.  The needs that `+split`
 returns have no look at `0` (`crc_split_lok`, no hypothesis); the `+copy`
-meets `CrCopyOk` at the states the model reaches (`CrcCopy`). -/
+meets `CrCopyOk` because the goal and the state meet `CrInv` (`cri_copy`),
+and the recursive calls are taken on goals that meet it. -/
 theorem comp_run_cons (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
     (p q : Nomm) (hpp : p.pure = true) (hqp : q.pure = true) (hp6 : noSix p = true)
     (hq6 : noSix q = true) (gl : CGoal CSet) (region : List Nat) (g : Gen (TreapMap mugF))
-    (hlok : crLokOk gl)
-    (hp : ∀ s th g1, (∀ y ∈ HoonSet.toList s.lok, y ≠ 0) → CompRunAt ctx p (CGoal.toL (CGoal.next s th)) region g1)
-    (hq : ∀ s th g1, (∀ y ∈ HoonSet.toList s.lok, y ≠ 0) → CompRunAt ctx q (CGoal.toL (CGoal.next s th)) region g1)
-    (hcp : CrcCopy p q gl g) :
+    (hinv : CrInv g gl)
+    (hp : ∀ s th g1, CrInv g1 (CGoal.next s th) → CompRunAt ctx p (CGoal.toL (CGoal.next s th)) region g1)
+    (hq : ∀ s th g1, CrInv g1 (CGoal.next s th) → CompRunAt ctx q (CGoal.toL (CGoal.next s th)) region g1) :
     CompRunAt ctx (Nomm.cons p q) (CGoal.toL gl) region g := by
   apply cr_at_of_run (by simp [Nomm.pure, hpp, hqp]) (by simp [noSix, hp6, hq6])
   intro x mono sup hx
@@ -268,15 +250,17 @@ theorem comp_run_cons (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot
     fun y hy => absurd hy (HoonSet.mem_empty y)
   cases gl with
   | next s th =>
-    exact crc_next h7 hcode p q hpp hqp hp6 hq6 region x hx mono sup s th hlok g hp hq hcp
+    exact crc_next h7 hcode p q hpp hqp hp6 hq6 region x hx mono sup s th g hinv hp hq
   | done =>
-    have hreg : ∀ y ∈ HoonSet.toList (lazyReg (S := CSet) g.re).lok, y ≠ 0 :=
-      fun y hy => absurd hy (HoonSet.mem_empty y)
     rw [crc_eq, crc_done_step h7, ← crc_eq, crc_run_done]
-    exact crc_next h7 hcode p q hpp hqp hp6 hq6 region x hx mono sup _ _ hreg _ hp hq hcp
+    exact crc_next h7 hcode p q hpp hqp hp6 hq6 region x hx mono sup _ _ _
+      (cri_reg_emit _ _ _ _ _ (by omega) hinv.2.1) hp hq
   | pick z o =>
+    have iq : CrInv (cfEmitG ⟨[], [], Termin.bom Option.none⟩ g) (CGoal.next Sure.bunt (jmp0 g.bo)) :=
+      ⟨hbunt, by rw [cf_emitG_drop]; exact hinv.2.1, ⟨nb_none _, jmpIn_jmp0 _ _⟩, trivial⟩
     have hpk := crc_pick h7 hcode p q hpp hqp hp6 hq6 region x hx mono (CGoal.toL (CGoal.pick (S := CSet) z o)).toNoun sup g
-      (hq _ _ _ hbunt) (fun th g2 => hp _ th g2 hbunt) hcp
+      (hq _ _ _ iq) (fun nex2 g2 e1 => hp _ _ g2 (cri_second (hs := Sure.bunt) iq (nb_none _) trivial hbunt e1))
+      (fun nex2 g2 nex1 g3 e1 e2 => cri_copy (hs := Sure.bunt) iq (nb_none _) trivial hbunt (fun _ e => e.elim) e1 e2)
     rw [crc_run_pick p q hpp, crc_eq]
     simp only [crSubj, compCore, CGoal.toL, CGoalL.toNoun] at hpk ⊢
     generalize (Nomm.cons p q).toNoun = NN at hpk ⊢

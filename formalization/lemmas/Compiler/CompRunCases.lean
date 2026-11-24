@@ -1,4 +1,4 @@
-import lemmas.Compiler.CompPastLink
+import lemmas.Compiler.CompRunInv
 
 /-!
 # More cases of `+run`: `%4`, ...
@@ -73,9 +73,11 @@ theorem cr_disp_n4 (t mono goal region sup D : Noun) :
 where the `?>` on the arguments of `then` crashes as the model does), then the
 increment with a `%hop`; then `p` into the argument register. -/
 theorem comp_run_n4 (h7 : slot? 7 ctx = some compK) (p : Nomm) (gl : CGoal CSet) (region : List Nat)
-    (g : Gen (TreapMap mugF)) (hlok : crLokOk gl)
-    (hp : ∀ r o g1, CompRunAt ctx p (CGoal.toL (CGoal.next (lazyReg r) (jmp0 o))) region g1) :
+    (g : Gen (TreapMap mugF)) (hinv : CrInv g gl)
+    (hp : ∀ s th g1, CrInv g1 (CGoal.next s th) → CompRunAt ctx p (CGoal.toL (CGoal.next s th)) region g1) :
     CompRunAt ctx (Nomm.n4 p) (CGoal.toL gl) region g := by
+  have hlok := hinv.1
+  have hd := hinv.2.1
   obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
   have h15 := cr_ctx15 h7
   intro x mono sup hx
@@ -88,8 +90,8 @@ theorem comp_run_n4 (h7 : slot? 7 ctx = some compK) (p : Nomm) (gl : CGoal CSet)
     have he := cf_emit (x := x) hc { g with re := g.re + 1 + 1 }
       ⟨[], [Pole.inc (g.re + 1) g.re], Termin.don g.re⟩
     simp only [Blob.toNoun, listNoun, Termin.toNoun, Pole.toNoun, Tag.don, Tag.inc] at he
-    have hr := hp (g.re + 1) g.bo (cfEmitG ⟨[], [Pole.inc (g.re + 1) g.re], Termin.don g.re⟩
-      { g with re := g.re + 1 + 1 }) x mono sup hx
+    have hr := hp (lazyReg (g.re + 1)) (jmp0 g.bo) (cfEmitG ⟨[], [Pole.inc (g.re + 1) g.re], Termin.don g.re⟩
+      { g with re := g.re + 1 + 1 }) (cri_reg_emit _ _ _ _ _ (by omega) hd) x mono sup hx
     rw [cr_goal_reg] at hr
     simp only [crSubj, compCore] at hr
     have hD1 := comp_re_at
@@ -105,8 +107,8 @@ theorem comp_run_n4 (h7 : slot? 7 ctx = some compK) (p : Nomm) (gl : CGoal CSet)
     have he := cf_emit (x := x) hc { g with re := g.re + 1 + 1 }
       ⟨[], [Pole.inc (g.re + 1) g.re], Termin.brn g.re z o⟩
     simp only [Blob.toNoun, listNoun, Termin.toNoun, Pole.toNoun, Tag.brn, Tag.inc] at he
-    have hr := hp (g.re + 1) g.bo (cfEmitG ⟨[], [Pole.inc (g.re + 1) g.re], Termin.brn g.re z o⟩
-      { g with re := g.re + 1 + 1 }) x mono sup hx
+    have hr := hp (lazyReg (g.re + 1)) (jmp0 g.bo) (cfEmitG ⟨[], [Pole.inc (g.re + 1) g.re], Termin.brn g.re z o⟩
+      { g with re := g.re + 1 + 1 }) (cri_reg_emit _ _ _ _ _ (by omega) hd) x mono sup hx
     rw [cr_goal_reg] at hr
     simp only [crSubj, compCore] at hr
     have hD1 := comp_re_at
@@ -146,8 +148,8 @@ theorem comp_run_n4 (h7 : slot? 7 ctx = some compK) (p : Nomm) (gl : CGoal CSet)
           have he := cf_emit (x := x) hc { g1 with re := g1.re + 1 + 1 }
             ⟨[], [Pole.inc (g1.re + 1) g1.re], Termin.hop (jmp0 there)⟩
           rw [cr_blob_inc_hop] at he
-          have hr := hp (g1.re + 1) g1.bo (cfEmitG ⟨[], [Pole.inc (g1.re + 1) g1.re], Termin.hop (jmp0 there)⟩
-            { g1 with re := g1.re + 1 + 1 }) x mono sup hx
+          have hr := hp (lazyReg (g1.re + 1)) (jmp0 g1.bo) (cfEmitG ⟨[], [Pole.inc (g1.re + 1) g1.re], Termin.hop (jmp0 there)⟩
+            { g1 with re := g1.re + 1 + 1 }) (cri_reg_emit _ _ _ _ _ (by omega) (cri_cla hd ecl).2) x mono sup hx
           rw [cr_goal_reg] at hr
           simp only [crSubj, compCore] at hr hre hre2
           generalize comp.door = Dr at hDc hD1 hD2 hcl hre hre2 he hr ⊢
@@ -160,8 +162,8 @@ theorem comp_run_n4 (h7 : slot? 7 ctx = some compK) (p : Nomm) (gl : CGoal CSet)
         have he := cf_emit (x := x) hc { g1 with re := g1.re + 1 }
           ⟨[], [Pole.inc g1.re pro], Termin.hop (jmp0 th')⟩
         rw [cr_blob_inc_hop] at he
-        have hr := hp g1.re g1.bo (cfEmitG ⟨[], [Pole.inc g1.re pro], Termin.hop (jmp0 th')⟩
-          { g1 with re := g1.re + 1 }) x mono sup hx
+        have hr := hp (lazyReg g1.re) (jmp0 g1.bo) (cfEmitG ⟨[], [Pole.inc g1.re pro], Termin.hop (jmp0 th')⟩
+          { g1 with re := g1.re + 1 }) (cri_reg_emit _ _ _ _ _ (by omega) (cri_cla hd ecl).2) x mono sup hx
         rw [cr_goal_reg] at hr
         simp only [crSubj, compCore] at hr hre
         generalize comp.door = Dr at hDc hD1 hD2 hcl hre he hr ⊢
@@ -215,10 +217,12 @@ otherwise `%done` makes the two blocks of `0` and `1`, `%next` runs
 `+collapse-lazy-atom` (a crash on `~`) and `+forl`, and a `%clq` block on a
 fresh register is the goal of `p` (`lazy-from-need`). -/
 theorem comp_run_n3 (h7 : slot? 7 ctx = some compK) (p : Nomm) (gl : CGoal CSet) (region : List Nat)
-    (g : Gen (TreapMap mugF)) (hlok : crLokOk gl)
+    (g : Gen (TreapMap mugF)) (hinv : CrInv g gl)
     (hg : CompRunAt ctx p (CGoal.toL gl) region g)
-    (hp : ∀ r o g1, CompRunAt ctx p (CGoal.toL (CGoal.next (lazyReg r) (jmp0 o))) region g1) :
+    (hp : ∀ s th g1, CrInv g1 (CGoal.next s th) → CompRunAt ctx p (CGoal.toL (CGoal.next s th)) region g1) :
     CompRunAt ctx (Nomm.n3 p) (CGoal.toL gl) region g := by
+  have hlok := hinv.1
+  have hd := hinv.2.1
   obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
   have h15 := cr_ctx15 h7
   intro x mono sup hx
@@ -229,7 +233,8 @@ theorem comp_run_n3 (h7 : slot? 7 ctx = some compK) (p : Nomm) (gl : CGoal CSet)
     have hre := comp_re' ctx x g
     have he := cf_emit (x := x) hc { g with re := g.re + 1 } ⟨[], [], Termin.clq g.re z o⟩
     rw [cr_blob_clq] at he
-    have hr := hp g.re g.bo (cfEmitG ⟨[], [], Termin.clq g.re z o⟩ { g with re := g.re + 1 }) x mono sup hx
+    have hr := hp (lazyReg g.re) (jmp0 g.bo) (cfEmitG ⟨[], [], Termin.clq g.re z o⟩ { g with re := g.re + 1 })
+      (cri_reg_emit _ _ _ _ _ (by omega) hd) x mono sup hx
     rw [cr_goal_reg] at hr
     simp only [crSubj, compCore] at hr
     have hD1 := comp_re_at
@@ -253,8 +258,9 @@ theorem comp_run_n3 (h7 : slot? 7 ctx = some compK) (p : Nomm) (gl : CGoal CSet)
     have he2 := cf_emit (x := x) hc { gC with re := gC.re + 1 }
       ⟨[], [], Termin.clq gC.re (jmp0 g.bo) (jmp0 (g.bo + 1))⟩
     rw [cr_blob_clq0] at he2
-    have hr := hp gC.re gC.bo (cfEmitG ⟨[], [], Termin.clq gC.re (jmp0 g.bo) (jmp0 (g.bo + 1))⟩
-      { gC with re := gC.re + 1 }) x mono sup hx
+    have hr := hp (lazyReg gC.re) (jmp0 gC.bo) (cfEmitG ⟨[], [], Termin.clq gC.re (jmp0 g.bo) (jmp0 (g.bo + 1))⟩
+      { gC with re := gC.re + 1 }) (cri_reg_emit _ _ _ _ _ (by omega)
+        (by rw [← hgC, cf_emitG_drop, cf_emitG_drop]; exact hd)) x mono sup hx
     rw [cr_goal_reg] at hr
     simp only [crSubj, compCore] at hr
     have hD1 := comp_re_at
@@ -312,8 +318,9 @@ theorem comp_run_n3 (h7 : slot? 7 ctx = some compK) (p : Nomm) (gl : CGoal CSet)
           have he := cf_emit (x := x) hc { g2 with re := g2.re + 1 }
             ⟨[], [], Termin.clq g2.re (jmp0 (g1.bo + 1)) (jmp0 (g1.bo + 1 + 1))⟩
           rw [cr_blob_clq0] at he
-          have hr := hp g2.re g2.bo (cfEmitG ⟨[], [], Termin.clq g2.re (jmp0 (g1.bo + 1)) (jmp0 (g1.bo + 1 + 1))⟩
-            { g2 with re := g2.re + 1 }) x mono sup hx
+          have hr := hp (lazyReg g2.re) (jmp0 g2.bo) (cfEmitG ⟨[], [], Termin.clq g2.re (jmp0 (g1.bo + 1)) (jmp0 (g1.bo + 1 + 1))⟩
+            { g2 with re := g2.re + 1 }) (cri_reg_emit _ _ _ _ _ (by omega)
+              (by rw [← hg2, cf_emitG_drop, cf_emitG_drop, cf_emitG_drop]; exact (cri_cla hd ecl).2)) x mono sup hx
           rw [cr_goal_reg] at hr
           simp only [crSubj, compCore, cf_emitG_bo, Option.map_some] at hr hre hfl
           have hm : runL (S := CSet) (Map := TreapMap mugF) (Nomm.n3 p) (CGoal.toL (CGoal.next laz ⟨args, there⟩))
@@ -422,7 +429,8 @@ theorem cr5_tail (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 
     (region : List Nat) (x : GenRest) (hx : x.NoSoft) (mono goalN sup : Noun) (rp rq o : Nat)
     (g1 : Gen (TreapMap mugF))
     (hq : CompRunAt ctx q (CGoal.toL (CGoal.next (lazyReg rq) (jmp0 o))) region g1)
-    (hp : ∀ th g2, CompRunAt ctx p (CGoal.toL (CGoal.next (lazyReg rp) th)) region g2)
+    (hp : ∀ (nexq : Next CSet) g2, run q (CGoal.next (lazyReg rq) (jmp0 o)) g1 = some (nexq, g2) →
+      CompRunAt ctx p (CGoal.toL (CGoal.next (lazyReg rp) nexq.th)) region g2)
     (hcp : ∀ nexq g2 nexp g3, run q (CGoal.next (lazyReg rq) (jmp0 o)) g1 = some (nexq, g2) →
       run p (CGoal.next (lazyReg rp) nexq.th) g2 = some (nexp, g3) → CrCopyOk g3 nexp nexq.laz) :
     nock (C (A o) (C (A rq) (C (A rp) (crSubj mono (Nomm.n5 p q).toNoun goalN (listNoun A region) sup
@@ -452,7 +460,7 @@ theorem cr5_tail (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 
     rw [eq] at hq1
     simp only [Option.map_some, cr_next_noun'] at hq1
     have hpa := cr_past_pure h7 hcode x g2 nexq p hpp region
-    have hp1 := cr_at_run hpp hp6 (hp nexq.th g2) x mono sup hx
+    have hp1 := cr_at_run hpp hp6 (hp nexq g2 eq) x mono sup hx
     rw [cr_goal_reg'] at hp1
     simp only [crSubj, compCore] at hp1
     cases eq2 : run (S := CSet) (Map := TreapMap mugF) p (CGoal.next (lazyReg rp) nexq.th) g2 with
@@ -491,6 +499,40 @@ noncomputable def cr5BrM (rp rq : Nat) : CGoal CSet → CM (TreapMap mugF) Nat
       | some (r, o) => do
           let (z, o') ← forl r o
           emit ⟨[], [], Termin.eqq rp rq (jmp0 z) (jmp0 o')⟩
+
+/-- The branch of `%5` keeps the mode and does not lower the counter. -/
+theorem cr5_br_keeps {rp rq : Nat} {gl : CGoal CSet} {g g1 : Gen (TreapMap mugF)} {o : Nat}
+    (hd : g.drop = false) (h : cr5BrM rp rq gl g = some (o, g1)) : g.re ≤ g1.re ∧ g1.drop = false := by
+  cases gl with
+  | pick z o' =>
+    obtain ⟨a, b⟩ := cri_emit h
+    exact ⟨by omega, b.trans hd⟩
+  | done =>
+    simp only [cr5BrM] at h
+    obtain ⟨⟨o0, o1⟩, g2, h2, h⟩ := bind_some h
+    have k := keepsA_doneBlocks (P := fun _ => True) hd (fun _ _ => trivial) h2
+    obtain ⟨a, b⟩ := cri_emit h
+    exact ⟨by have := k.le; omega, b.trans (k.dropF hd)⟩
+  | next laz th =>
+    simp only [cr5BrM] at h
+    obtain ⟨a, g2, h2, h⟩ := bind_some h
+    have k := (keepsA_collapseLazyAtom (P := fun _ => True) hd (fun _ _ => trivial) (fun _ _ => trivial) h2).1
+    have l2 := k.le
+    cases a with
+    | none =>
+      simp only at h
+      split at h
+      · obtain ⟨a, b⟩ := cri_emit h
+        exact ⟨by omega, b.trans (k.dropF hd)⟩
+      · cases h
+    | some ro =>
+      obtain ⟨r, o'⟩ := ro
+      simp only at h
+      obtain ⟨⟨z, o''⟩, g3, h3, h⟩ := bind_some h
+      have k3 := keepsA_forl (P := fun _ => True) (k.dropF hd) trivial (fun _ _ => trivial) h3
+      have l3 := k3.le
+      obtain ⟨a, b⟩ := cri_emit h
+      exact ⟨by omega, b.trans (k3.dropF (k.dropF hd))⟩
 
 theorem cr_blob_eqq (l r : Nat) (z o : Jmp) : Blob.toNoun ⟨[], [], Termin.eqq l r z o⟩
     = C (A 0) (C (A 0) (C (A 0x717165) (C (A l) (C (A r) (C z.toNoun o.toNoun))))) := by
@@ -626,13 +668,11 @@ whose side condition `CrCopyOk` is a hypothesis on the states the model
 reaches. -/
 theorem comp_run_n5 (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
     (p q : Nomm) (hpp : p.pure = true) (hqp : q.pure = true) (hp6 : noSix p = true) (hq6 : noSix q = true)
-    (gl : CGoal CSet) (region : List Nat) (g : Gen (TreapMap mugF)) (hlok : crLokOk gl)
-    (hq : ∀ r o g1, CompRunAt ctx q (CGoal.toL (CGoal.next (lazyReg r) (jmp0 o))) region g1)
-    (hp : ∀ r th g1, CompRunAt ctx p (CGoal.toL (CGoal.next (lazyReg r) th)) region g1)
-    (hcp : ∀ o g1 nexq g2 nexp g3, cr5BrM g.re (g.re + 1) gl { g with re := g.re + 1 + 1 } = some (o, g1) →
-      run q (CGoal.next (lazyReg (g.re + 1)) (jmp0 o)) g1 = some (nexq, g2) →
-      run p (CGoal.next (lazyReg g.re) nexq.th) g2 = some (nexp, g3) → CrCopyOk g3 nexp nexq.laz) :
+    (gl : CGoal CSet) (region : List Nat) (g : Gen (TreapMap mugF)) (hinv : CrInv g gl)
+    (hq : ∀ s th g1, CrInv g1 (CGoal.next s th) → CompRunAt ctx q (CGoal.toL (CGoal.next s th)) region g1)
+    (hp : ∀ s th g1, CrInv g1 (CGoal.next s th) → CompRunAt ctx p (CGoal.toL (CGoal.next s th)) region g1) :
     CompRunAt ctx (Nomm.n5 p q) (CGoal.toL gl) region g := by
+  have hlok := hinv.1
   apply cr_at_of_run (by simp [Nomm.pure, hpp, hqp]) (by simp [noSix, hp6, hq6])
   intro x mono sup hx
   have hre0 := comp_re' ctx x g
@@ -655,8 +695,18 @@ theorem comp_run_n5 (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 
   | some r =>
     obtain ⟨o, g1⟩ := r
     rw [eb] at hbr
+    obtain ⟨l1, d1⟩ := cr5_br_keeps (g := { g with re := g.re + 1 + 1 }) hinv.2.1 eb
+    have l1' : g.re + 1 + 1 ≤ g1.re := l1
+    have iq : CrInv g1 (CGoal.next (lazyReg (g.re + 1)) (jmp0 o)) := cri_reg o (by omega) d1
+    have nh : NB g1.re (lazyReg (S := CSet) g.re).ned := nb_this (by omega)
+    have dh : Distinct (lazyReg (S := CSet) g.re).ned := by simp [lazyReg, Distinct]
+    have lh : ∀ y ∈ HoonSet.toList (lazyReg (S := CSet) g.re).lok, y ≠ 0 :=
+      fun y hy => absurd hy (HoonSet.mem_empty y)
+    have ap : ∀ y, NMem (lazyReg (S := CSet) g.re).ned y → ¬ NMem (lazyReg (S := CSet) (g.re + 1)).ned y := by
+      intro y e1 e2; simp only [lazyReg, NMem] at e1 e2; omega
     have ht := cr5_tail h7 hcode p q hpp hqp hp6 hq6 region x hx mono (CGoal.toL gl).toNoun sup g.re (g.re + 1)
-      o g1 (hq _ _ _) (fun th g2 => hp _ th g2) (fun nexq g2 nexp g3 e1 e2 => hcp o g1 nexq g2 nexp g3 eb e1 e2)
+      o g1 (hq _ _ _ iq) (fun nexq g2 e1 => hp _ _ g2 (cri_second iq nh dh lh e1))
+      (fun nexq g2 nexp g3 e1 e2 => cri_copy iq nh dh lh ap e1 e2)
     rw [hnn] at ht
     simp only [crSubj, compCore, Option.map_some] at hbr hre0 hre1 ht ⊢
     generalize (CGoal.toL gl).toNoun = GN at hbr ht ⊢
@@ -706,7 +756,8 @@ theorem cr10_tail (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52
     (hq6 : noSix q = true) (region : List Nat) (x : GenRest) (hx : x.NoSoft) (mono goalN sup nextN : Noun)
     (don rec : Sure CSet) (o : Nat) (g1 : Gen (TreapMap mugF))
     (hv : CompRunAt ctx v (CGoal.toL (CGoal.next don (jmp0 o))) region g1)
-    (hq : ∀ th g2, CompRunAt ctx q (CGoal.toL (CGoal.next rec th)) region g2)
+    (hq : ∀ (nexD : Next CSet) g2, run v (CGoal.next don (jmp0 o)) g1 = some (nexD, g2) →
+      CompRunAt ctx q (CGoal.toL (CGoal.next rec nexD.th)) region g2)
     (hcp : ∀ nexD g2 nexR g3, run v (CGoal.next don (jmp0 o)) g1 = some (nexD, g2) →
       run q (CGoal.next rec nexD.th) g2 = some (nexR, g3) → CrCopyOk g3 nexR nexD.laz) :
     nock (C (C (lazyNoun don) (C (lazyNoun rec) (A o))) (C nextN (crSubj mono (Nomm.n10 a v q).toNoun goalN
@@ -737,7 +788,7 @@ theorem cr10_tail (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52
     rw [eq] at hv1
     simp only [Option.map_some, cr_next_noun'] at hv1
     have hpa2 := cr_past_pure h7 hcode x g2 nexD q hqp region
-    have hq1 := cr_at_run hqp hq6 (hq nexD.th g2) x mono sup hx
+    have hq1 := cr_at_run hqp hq6 (hq nexD g2 eq) x mono sup hx
     rw [cr_goal_sure] at hq1
     simp only [crSubj, compCore] at hq1
     cases eq2 : run (S := CSet) (Map := TreapMap mugF) q (CGoal.next rec nexD.th) g2 with
@@ -795,17 +846,13 @@ have no look at `0` (`hil`) and the copy meets `CrCopyOk` (`hcp`), both on
 the states the model reaches. -/
 theorem comp_run_n10 (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
     (a : Nat) (ha : a ≠ 0) (v q : Nomm) (hvp : v.pure = true) (hqp : q.pure = true) (hv6 : noSix v = true)
-    (hq6 : noSix q = true) (gl : CGoal CSet) (region : List Nat) (g : Gen (TreapMap mugF)) (hlok : crLokOk gl)
-    (hv : ∀ s th g1, (∀ y ∈ HoonSet.toList s.lok, y ≠ 0) →
-      CompRunAt ctx v (CGoal.toL (CGoal.next s th)) region g1)
-    (hq : ∀ s th g1, (∀ y ∈ HoonSet.toList s.lok, y ≠ 0) →
-      CompRunAt ctx q (CGoal.toL (CGoal.next s th)) region g1)
+    (hq6 : noSix q = true) (gl : CGoal CSet) (region : List Nat) (g : Gen (TreapMap mugF)) (hinv : CrInv g gl)
+    (hv : ∀ s th g1, CrInv g1 (CGoal.next s th) → CompRunAt ctx v (CGoal.toL (CGoal.next s th)) region g1)
+    (hq : ∀ s th g1, CrInv g1 (CGoal.next s th) → CompRunAt ctx q (CGoal.toL (CGoal.next s th)) region g1)
     (hil : ∀ nex g1 don rec o g2, simpleNext gl g = some (nex, g1) → into nex a g1 = some ((don, rec, o), g2) →
-      (∀ y ∈ HoonSet.toList don.lok, y ≠ 0) ∧ (∀ y ∈ HoonSet.toList rec.lok, y ≠ 0))
-    (hcp : ∀ nex g1 don rec o g2 nexD g3 nexR g4, simpleNext gl g = some (nex, g1) →
-      into nex a g1 = some ((don, rec, o), g2) → run v (CGoal.next don (jmp0 o)) g2 = some (nexD, g3) →
-      run q (CGoal.next rec nexD.th) g3 = some (nexR, g4) → CrCopyOk g4 nexR nexD.laz) :
+      (∀ y ∈ HoonSet.toList don.lok, y ≠ 0) ∧ (∀ y ∈ HoonSet.toList rec.lok, y ≠ 0)) :
     CompRunAt ctx (Nomm.n10 a v q) (CGoal.toL gl) region g := by
+  have hlok := hinv.1
   apply cr_at_of_run (by simp [Nomm.pure, hvp, hqp]) (by simp [noSix, hv6, hq6])
   intro x mono sup hx
   obtain ⟨hc, hl, -⟩ := comp_ctx_pill ctx h7
@@ -843,10 +890,12 @@ theorem comp_run_n10 (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot?
       rw [ei] at hin
       simp only [Option.map_some] at hin
       obtain ⟨hd0, hr0⟩ := hil nex g1 don rec o g2 es ei
+      obtain ⟨sd, sn, sdist⟩ := cri_simple_next hinv es
+      obtain ⟨iv, nr, dr, ap⟩ := cri_into sd sn sdist hd0 ei
       have ht := cr10_tail h7 hcode a v q hvp hqp hv6 hq6 region x hx mono (CGoal.toL gl).toNoun sup
-        (C (A 0x7478656e) (C (lazyNoun nex.laz) nex.th.toNoun)) don rec o g2 (hv don (jmp0 o) g2 hd0)
-        (fun th g3 => hq rec th g3 hr0)
-        (fun nexD g3 nexR g4 e1 e2 => hcp nex g1 don rec o g2 nexD g3 nexR g4 es ei e1 e2)
+        (C (A 0x7478656e) (C (lazyNoun nex.laz) nex.th.toNoun)) don rec o g2 (hv don (jmp0 o) g2 iv)
+        (fun nexD g3 e1 => hq rec nexD.th g3 (cri_second iv nr dr hr0 e1))
+        (fun nexD g3 nexR g4 e1 e2 => cri_copy iv nr dr hr0 ap e1 e2)
       rw [hnn] at ht
       simp only [crSubj, compCore] at ht ⊢
       generalize (CGoal.toL gl).toNoun = GN at hsn ht ⊢
@@ -884,7 +933,8 @@ theorem crc_ntail (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52
     (hq6 : noSix q = true) (region : List Nat) (x : GenRest) (hx : x.NoSoft) (mono goalN sup : Noun)
     (hed tel : Sure CSet) (o : Nat) (g1 : Gen (TreapMap mugF))
     (hq : CompRunAt ctx q (CGoal.toL (CGoal.next tel (jmp0 o))) region g1)
-    (hp : ∀ th g2, CompRunAt ctx p (CGoal.toL (CGoal.next hed th)) region g2)
+    (hp : ∀ (nex2 : Next CSet) g2, run q (CGoal.next tel (jmp0 o)) g1 = some (nex2, g2) →
+      CompRunAt ctx p (CGoal.toL (CGoal.next hed nex2.th)) region g2)
     (hcp : ∀ nex2 g2 nex1 g3, run q (CGoal.next tel (jmp0 o)) g1 = some (nex2, g2) →
       run p (CGoal.next hed nex2.th) g2 = some (nex1, g3) → CrCopyOk g3 nex1 nex2.laz) :
     nock (C (C (lazyNoun hed) (C (lazyNoun tel) (A o))) (crSubj mono (Nomm.cons p q).toNoun goalN
@@ -915,7 +965,7 @@ theorem crc_ntail (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52
     rw [eq] at hv1
     simp only [Option.map_some, cr_next_noun'] at hv1
     have hpa2 := cr_past_pure h7 hcode x g2 nex2 p hpp region
-    have hq1 := cr_at_run hpp hp6 (hp nex2.th g2) x mono sup hx
+    have hq1 := cr_at_run hpp hp6 (hp nex2 g2 eq) x mono sup hx
     rw [cr_goal_sure] at hq1
     simp only [crSubj, compCore] at hq1
     cases eq2 : run (S := CSet) (Map := TreapMap mugF) p (CGoal.next hed nex2.th) g2 with
