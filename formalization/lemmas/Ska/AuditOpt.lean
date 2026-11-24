@@ -7,6 +7,9 @@ import lemmas.Ska.OptDriverTopo
 import lemmas.Ska.OptDeadSim
 import lemmas.Ska.OptSwitch
 import lemmas.Ska.OptSwitchTree
+import lemmas.Ska.OptSwitchSim
+import lemmas.Ska.OptSwitchTag
+import lemmas.Ska.OptSwitchShape
 import lemmas.Ska.OptTrim
 import lemmas.Ska.OptAlias
 
@@ -99,3 +102,12 @@ open Formalization.SkaModel.Opt
 #print axioms treeGo_exec
 #print axioms pickHit_cases
 #print axioms tag_tree
+#print axioms region_keeps
+#print axioms tag_walk
+#print axioms treeGo_good
+#print axioms tag_head
+#print axioms tag_keeps_of
+#print axioms testOf_spec
+#print axioms test_regs
+#print axioms chainOf_spec
+#print axioms tagHyp_shape
