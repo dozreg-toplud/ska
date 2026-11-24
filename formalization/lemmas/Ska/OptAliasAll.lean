@@ -981,6 +981,64 @@ theorem alias_walk_end {pick : List Nat → Nat} (hpick : ∀ l : List Nat, l �
 
 end
 
+/-! ## Toward the simulation: what the code after agrees on -/
+
+/-- **What the code after agrees on** with the code before at a walk state:
+the values `R'` of the code after equal the values `R` of the code before at
+every register of an immediate, every register a fact names, and the `old` of
+every done register (with `AOK`, the code after then reads through `old` the
+values the code before reads). -/
+structure AKept (st : ABody) (R R' : Nat → Option Noun) (Done : Nat → Prop) : Prop where
+  imm : ∀ n r, r ∈ st.imml n → R' r = R r
+  names : ∀ r i x, st.loc r = some i → ANames i x → R' x = R x
+  old : ∀ d, Done d → R' (st.old d) = R (st.old d)
+
+/-- **`AKept` at the start of a block from `AKept` at the end of the
+predecessor taken**, the jump after passing the arguments before renamed by
+the global `old` (`EndOK`). -/
+theorem aedge_kept {g : AGen Map} {o q : Nat} {b : Blob} {info : AInfo} {imms : AImms}
+    {edges : List (Nat × List (Option Nat))} {loc0 : AInfo}
+    (hst : aliasStart g o (g.rev o) = some info) (him : aliasStartImms g (g.rev o) = some imms)
+    (hed : aliasEdges g o (g.rev o) = some edges) (hpa : aliasPars g b.par edges info = some loc0)
+    (hq : q ∈ g.rev o) {lq : AInfo} {mq : AImms} (hlq : g.info q = some lq) (hmq : g.imms q = some mq)
+    {pb : Blob} (hpb : HoonMap.get g.new q = some pb)
+    {R R' Rp Rp' : Nat → Option Noun} {Dq Do : Nat → Prop}
+    (hok : AOK ⟨g.old, lq, mq⟩ R Dq) (hk : AKept ⟨g.old, lq, mq⟩ R R' Dq)
+    {j j' : Jmp} (hj' : j' ∈ getJmps pb.fin) (hjo : j'.there = o)
+    (hargs : j'.args = j.args.map (Option.map g.old)) (hau : ∀ u, some u ∈ j.args → Dq u)
+    (hpar : ∀ (k x : Nat), b.par[k]? = some x → Rp x = argV R j.args[k]?)
+    (hpar' : ∀ (k x : Nat), b.par[k]? = some x → Rp' x = argV R' j'.args[k]?)
+    (hoff : ∀ x, x ∉ b.par → Rp x = R x) (hoff' : ∀ x, x ∉ b.par → Rp' x = R' x)
+    (hnm : ∀ r i x, lq r = some i → ANames i x → x ∉ b.par) (hnmi : ∀ n r, r ∈ mq n → r ∉ b.par)
+    (hDo : ∀ x, Do x → (Dq x ∧ g.old x ∉ b.par) ∨ (x ∈ b.par ∧ g.old x = x)) :
+    AKept ⟨g.old, loc0, imms⟩ Rp Rp' Do := by
+  have he : (q, j'.args) ∈ edges := aedge_mem hed hq hpb hj' hjo
+  have hN := ast_start_names hst hq hlq
+  have hparv : ∀ x, x ∈ b.par → Rp' x = Rp x := by
+    intro x hx
+    obtain ⟨k, hkx⟩ := List.mem_iff_getElem?.mp hx
+    rw [hpar k x hkx, hpar' k x hkx, hargs, List.getElem?_map]
+    cases hk' : j.args[k]? with
+    | none => rfl
+    | some a =>
+      cases a with
+      | none => rfl
+      | some u =>
+        have hu := hau u (List.mem_of_getElem? hk')
+        simp only [Option.map_some, argV, Option.bind_some]
+        rw [hk.old u hu]; exact hok.old u hu
+  have h1 : ∀ r i y, lq r = some i → ANames i y → Rp' y = Rp y := fun r i y hr hy => by
+    rw [hoff' y (hnm r i y hr hy), hoff y (hnm r i y hr hy)]; exact hk.names r i y hr hy
+  obtain ⟨n1, -⟩ := ast_pars_names (D := fun y => Rp' y = Rp y) hlq h1 b.par edges info loc0 j'.args hpa he
+    (fun r i y hr hy => by obtain ⟨i', hi', hy'⟩ := hN r i y hr hy; exact h1 r i' y hi' hy')
+  refine ⟨fun n r hr => ?_, n1, fun d hd => ?_⟩
+  · have hr' := ast_imms_sub him hq hmq n r hr
+    rw [hoff' r (hnmi n r hr'), hoff r (hnmi n r hr')]; exact hk.imm n r hr'
+  · show Rp' (g.old d) = Rp (g.old d)
+    rcases hDo d hd with ⟨hdq, hop⟩ | ⟨hp, ho⟩
+    · rw [hoff' _ hop, hoff _ hop]; exact hk.old d hdq
+    · rw [ho]; exact hparv d hp
+
 end Opt
 end SkaModel
 end Formalization
