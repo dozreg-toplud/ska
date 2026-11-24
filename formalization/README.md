@@ -470,8 +470,8 @@ import only its theorems.  So:
      `evOne ska_cg.cull.loop j` only the loop's equation changes
      (`liveE_is`).  Names wanted at the next regeneration: `silt.*` (arm
      `767` of layer 2, now `siltArm`), `in.bif.*` (axis `86` of the door
-     `+in`, now `bifArm`), the tail of `ana` (now `anaTail`), and the arm of
-     `+msg-ca`.
+     `+in`, now `bifArm`), the tail of `ana` (now `anaTail`), and the battery
+     of `+msg-ca` (axis `12023` of `ana`).
 10. **`Treap` of `Ska/Analysis.lean` has an instance** (`Compiler/TreapKey.lean`):
    finite maps, with the treap noun made when the key encoding is given.  Its
    `ext` is function extensionality (on nouns, `isMap_ext`).  `+tap:by` and
