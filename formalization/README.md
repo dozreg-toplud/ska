@@ -108,7 +108,9 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/GitMi.lean` | `+git:mi` against `Ana.gitMi`, crashes included (`mi_git_gate`, `mi_git_pill`): `gut`, then `+tap:by` of the library's second layer gives `Treap.tap` of the inner map (`tap_inner`), and the loop is `Ana.gitLoop` with `hitTest` (`mi_git_loop`), through `+huge:so`, `+app:ca` of the pill's library core at axis `7` of the context and `+patch-prod` at axis `22` (`MiGitIn`). |
 | `Compiler/HeSock.lean` | `+he-sock` against `heSock`, written there after the Hoon, line by line (`he_sock_gate`, `he_sock_pill`): the gate never crashes on two socks, so the model is a `Bool`, and `Env.he` of `Ska/Analysis.lean` is instantiated with it (`heEnv`, with `he-threshold` `32`).  It reads `+lth` and `+add` of the library's first layer at axis `16383` of its context, `+cape-size` at `22495`, and `+hed:so`, `+tel:so` through the pill's library core at `7` (`HeSockIn`); the proof is by induction on the size of the two capes. |
 | `Compiler/RecCall.lean` | `+recursive-call` against `recursiveCall heSock` of `Ska/CallGraph.lean` on call graphs of `FinMap` read through `gCore` (`recursive_call_gate`, and `recursive_call_pill` with the threshold `32` read at axis `510` of `ana`, `ana_threshold`), crashes of `+huge:so` and `+msg-sock` included.  The count is the `+roll` of layer 2 with the gate `recursive_call.cnt` (`rc_count`), and the loop is `recLoop` (`rc_loop`), through `+git-g`, `+he-sock` and `+msg-sock` of the context (`RcIn`). |
-| `Compiler/FolLoopLink.lean` | The trap `fol-loop` against `Ana.folStep`, case by case, with the calls of the trap to itself as the parameter `go` (`GoIs`: every run of the trap's battery on `folSubj` returns `go` as `folOutNoun`).  `folSubj` is the trap's subject: `defer` at `6`, `bare-call` at `14`, `memo-key` at `30`, `seat` at `62`, `gen` at `126`, `sub` at `254`, `fol` at `510`, and the rest of the subject of `+run` at `511`, which holds `ana` at its axis `511` (`[bus [data run-gate]]`, the gate's context the core of `+ska-callgraph`, whose context is its gate in `ana`), so `lib` at `2047` (`rest_lib`).  Done, crashes of the calls included: every case but `%2` (`fol_loop_step`), from `fol_loop_cons`, `fol_loop_op0`, ..., `fol_loop_op12`, `fol_loop_other` (every formula that `shape` sends to the default) and `fol_loop_op11d` (the dynamic hint, every tag: `%spot` through the trap `nock-11-soft`, `fol_loop_soft`, `%memo`, `%mean` with its deferred call and the check of its nomm, `%fast`).  Cons, `%0`, `%6`, `%10` and `%mean` read `+so`, `+pi`, `+double-int` and `+all:ca` of the pill's `lib`; `%spot` assumes `SoftSpotIs env` (`+soft-spot` of `ana` computes `env.softSpot` as a unit) and `%fast` assumes `RegisterFastIs regsNoun env` (the gate of `+register-fast` of `ana` returns `[miss regs]` as `env.registerFast` says). |
+| `Compiler/FolLoopLink.lean` | The trap `fol-loop` against `Ana.folStep`, case by case, with the calls of the trap to itself as the parameter `go` (`GoIs`: every run of the trap's battery on `folSubj` returns `go` as `folOutNoun`).  `folSubj` is the trap's subject: `defer` at `6`, `bare-call` at `14`, `memo-key` at `30`, `seat` at `62`, `gen` at `126`, `sub` at `254`, `fol` at `510`, and the rest of the subject of `+run` at `511`, which holds `ana` at its axis `511` (`[bus [data run-gate]]`, the gate's context the core of `+ska-callgraph`, whose context is its gate in `ana`), so `lib` at `2047` (`rest_lib`).  Done, crashes of the calls included: every case but `%2` (`fol_loop_step`; `%2` is in `Compiler/FolLoopCall.lean`), from `fol_loop_cons`, `fol_loop_op0`, ..., `fol_loop_op12`, `fol_loop_other` (every formula that `shape` sends to the default) and `fol_loop_op11d` (the dynamic hint, every tag: `%spot` through the trap `nock-11-soft`, `fol_loop_soft`, `%memo`, `%mean` with its deferred call and the check of its nomm, `%fast`).  Cons, `%0`, `%6`, `%10` and `%mean` read `+so`, `+pi`, `+double-int` and `+all:ca` of the pill's `lib`; `%spot` assumes `SoftSpotIs env` (`+soft-spot` of `ana` computes `env.softSpot` as a unit, discharged by `softSpotIs_of` of `Compiler/SoftSpot.lean`) and `%fast` assumes `RegisterFastIs regsNoun env` (the gate of `+register-fast` of `ana` returns `[miss regs]` as `env.registerFast` says). |
+| `Compiler/FolLoopCall.lean`, `Compiler/FolLoopFacts.lean` | The case `%2` of `fol-loop` against `Ana.callStep` (`fol_loop_op2`): the void branch, the indirect branch, the inline branch (a call of the trap to itself through `GoIs`, `+inlineable` at axis `763` of `ana`, `inlineable.arm_at_ana`, and `+safe-fol-fol`), and the trap `nock-2-direct-non-inlined` on `[fol-new [f [s subject]]]` (`dirSubj`, `fol_loop_direct`: the loop `resolve`, the `?>` on the code requirement, the widening of `want`, `indi`, `seek` and the `+put:in` of `[seat id-there]`).  With it one level of the trap is `Ana.folStep` on every formula (`fol_loop_step_all`).  Assumed: `ResIs` (the loop `resolve`, entered from the trap with `id-there` `[sock.prod.s fol-new]`, returns `res` of that identity) and `CalleePutIs` (`+put:in`'s model `putInF` on the noun of a set of callee entries gives the noun of `Treap.ins`; nouns only, no Nock).  The loop asks `+git:mi` with `fol-new` and `sock.prod.s` of the trap, not with the current `id-there`: after a `%he` generalization `Ana.resolveStep` asks with the generalized sock and the Hoon with the original one (see Gaps, item 11). |
+| `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`. |
 | `Compiler/TreapKey.lean` | The instance of `Treap` (`Ska/Analysis.lean`) for the analysis model: `FinMap κ ν`, finite maps as lookups, whose noun `toNoun f m` is made with `+put:by` on the encoded keys when the encoding is given; it is an `IsMap mugF` with exactly the pairs of `m` (`isMap_toNoun`, `get_toNoun`), so by `isMap_ext` the pill's `+put:by`, `+del:by`, `+get:by` on it give the nouns of `put`, `del`, `get` (`putF_toNoun`, `delF_toNoun`, `getF_toNoun`).  `tap` and `rap` read the keys off `~(tap by ...)` and the pre-order of `+rep`, and are those listings on every layout (`tapList_toNoun`, `preorder_toNoun`).  `M κ ν` comes before the encoding in the class, so it cannot hold a treap ordered by it. |
@@ -353,18 +355,20 @@ import only its theorems.  So:
    - *Linked* (the pill's Nock computes a model): `+cape-size`, `+git-g`,
      `gut`, `put` and `git` of `+mi`, `+he-sock` (against `heSock`, which
      instantiates `Env.he`), `+recursive-call` (with `he-threshold` `32`);
-     the cases `%1`, `%3`, `%4`, `%5`, `%7`, `%8`, `%9`, `%12` of `fol-loop`,
-     given its calls to itself (`Compiler/FolLoopLink.lean`); all of `+ca` and
-     `+so`;
+     every case of `fol-loop`, given its calls to itself (`GoIs`), the loop
+     `resolve` (`ResIs`), `+register-fast` (`RegisterFastIs`) and
+     `CalleePutIs` (`fol_loop_step_all`, `Compiler/FolLoopCall.lean`);
+     `+soft-spot` (against `softSpotF`, `Compiler/SoftSpot.lean`); all of
+     `+ca` and `+so`;
      `cons`, `hed`, `tel`, `prune`, `slot`, `compose`, `edit` of `+pi`,
      `+distribute`, `+double-int`; `+msg-sock`, `+patch-prod`, `+knit-anno`,
      `+msg-anno`, `+safe-nomm`, `+safe-fol-fol`, `+inlineable`; the
      validators; the interpreter (`+eval-top`, `+eval-blob`, `+eval-pole`,
      `+eval-pass`, `+move`, `+read`, `+store`, `+eval-mook`, `+eval-rend`);
      of `+poke` its frame, that it validates first, and the outer `+poke`.
-   - *Modelled, not linked*: the case `%2` of `fol-loop` (`callStep`, with
-     the traps `fol_loop.direct` and `fol_loop.resolve`), and the induction
-     on `iterN` that turns `GoIs` into a theorem; `resolve`,
+   - *Modelled, not linked*: the loop `resolve` (`fol_loop.resolve`, whose
+     memo lookup differs from `Ana.resolveStep` after a `%he`), and the
+     induction on `iterN` that turns `GoIs` and `ResIs` into theorems;
      `+analyze`, `+run`, the pass and member loops, `+dirty`, `+sweep`,
      `+above`, `+cull`, `+pop`, `+ska-callgraph`, `+prune-callgraph`,
      `+memo-final-entry`, the analysis part of `+ska-poke`;
@@ -372,9 +376,7 @@ import only its theorems.  So:
      `+bake-graph`; `+reverse-bell-graph`, `+hot-stale`, `+del-bells`;
      `+compiled-mono`, `+compiled-nary`, the `%full` and `%dire` branches of
      `+poke`; `run` of `+comp` and its helpers (`Comp*.lean`).
-   - *Parameters with no model*: `+soft-spot` (`Env.softSpot`, tied to the
-     pill by the hypothesis `SoftSpotIs`; the Hoon never crashes, so a Lean
-     model `softSpotF` would discharge it), `+register-fast`
+   - *Parameters with no model*: `+register-fast`
      (`Env.registerFast`, tied by `RegisterFastIs`; for `R := Noun` it can be
      the pill's run of the gate), `+shape-collapse`, `+bake-need`.
    - *No model*: `+msg-ca`, `+register-template`, `+index-arms`,
@@ -393,19 +395,33 @@ import only its theorems.  So:
    the pre-order of `+rep` on the noun of `m`, under every layout of the
    values, list `tap m` and `rap m` (`tapList_toNoun`, `preorder_toNoun`): the
    shape of the treap does not depend on its values (`toNoun_relabel`).
-11. **`fol-loop` against `Ana.folStep` is done but for `%2` and the
-   induction** (`Compiler/FolLoopLink.lean`): `fol_loop_step` gives one level
-   of the trap on every formula but a `%2`, from `GoIs` (the calls of the trap
-   to itself compute `go`).  The battery reads the library core at
-   `[9 11 0 0x7ffff]`, `[9 11 0 0xfffff]`, `[9 11 0 0x1fffff]` (with `0`, `1`,
-   `2` values pushed), and `ana` at `[9 94 0 0xfffff]` (`+register-fast`) and
-   through the soft trap at `0x3ffff`: all of it is `ana` at axis `511` of the
-   rest of the subject of `+run` (`hana`).  Left: `%2`, which needs `res`
-   through `fol_loop.direct` and `fol_loop.resolve`, with `mi_git_gate`,
-   `recursive_call_gate`, `git_g_gate` and `ska_analyze` as a parameter; then
-   the induction on `iterN` (as `interp_le` and `interp_ge` of
-   `Compiler/EvalCall.lean`, `EvalConv.lean`) that turns `GoIs` into a
-   theorem.  The trap is the
+11. **`fol-loop` against `Ana.folStep` is done one level deep**
+   (`Compiler/FolLoopLink.lean`, `Compiler/FolLoopCall.lean`):
+   `fol_loop_step_all` gives one level of the trap on every formula, from
+   `GoIs` (the calls of the trap to itself compute `go`), `ResIs` (the loop
+   `resolve` computes `res` on the identity the trap gives it), `hana` (`ana`
+   at axis `511` of the rest of `+run`'s subject), `RegisterFastIs` and
+   `CalleePutIs`; `SoftSpotIs` is discharged by `softSpotIs_of`.  Left:
+   (a) the loop `resolve` against a model.  It reads `+get:by` of `g` and
+   `order`, `+git:mi` at `[9 84 0 0xffffff]`, `+recursive-call` at
+   `[9 342 0 0x1ffffff]`, `+git-g`, `+patch-prod`, `+min` and `+got:by` of
+   `order`, all through `ana`, and `+analyze` at arm `92` of the core at axis
+   `31` of the rest (the `|%` of `+ska-callgraph`), which would be a
+   parameter as `go` is; its `%he` branch kicks the loop again with
+   `id-there` edited (`[9 2 10 [6 0 11] 0 15]`).  The Hoon asks `+git:mi`
+   with `fol-new` and `sock.prod.s` of the trap, not with `id-there`, so
+   after a `%he` it looks up the original subject sock while
+   `Ana.resolveStep` looks up the generalized one: either the model takes
+   the original sock as a parameter of the loop, or the Hoon asks with
+   `more.id-there`.  Both are sound (a hit for the original sock is a hit
+   that fits the call).  (b) The induction on `iterN` (as `interp_le` and
+   `interp_ge` of `Compiler/EvalCall.lean`, `EvalConv.lean`): the case
+   theorems are stated for `nock`, so the direction "the pill returns, the
+   model returns" needs them under `nockW (hyb k)` with the trap's battery,
+   `fol_loop.resolve` and the battery of `+analyze` routed to `iterN k`.
+   (c) `CalleePutIs`, from `putInF_spec`, `isSet_ext` and the fact that
+   `toMap` undoes `FinMap.unMap` on a map whose values are `~`.  (d)
+   `RegisterFastIs`.  The trap is the
    formula `[8 [1 bat] [11 [%fast fol-loop-clue] [0 1]]]`, kicked by
    `[9 2 0 1]`.  The generator names its battery `fol_loop.battery` (5569
    cells as a tree), the traps it kicks in place `fol_loop.direct`
@@ -415,6 +431,5 @@ import only its theorems.  So:
    `+roll` runs), `git_g`, `mi` (`mi.git`, `mi.put`, `mi.gut`), `soft_spot`,
    and `register_fast`, which quotes the hoon core and so lives in the bulk
    with its axis `fol_loop.register_fast.axis`; also `ska_analyze` and
-   `ska_run` (`+analyze`, `+run`).  A proof needs the nouns of `GenS`,
-   `Anno` and `FolOut`, and `go` (the calls of the trap to itself) as a
-   parameter, as `+eval-blob` has in `Compiler/EvalCall.lean`.
+   `ska_run` (`+analyze`, `+run`).  `+inlineable` at axis `763` of `ana` is
+   in `Compiler/FolLoopFacts.lean`.
