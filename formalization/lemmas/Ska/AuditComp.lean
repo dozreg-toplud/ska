@@ -62,6 +62,7 @@ import lemmas.Ska.CompFourV
 import lemmas.Ska.CompTenV
 import lemmas.Ska.CompFragUJ
 import lemmas.Ska.CompRunLCEq
+import lemmas.Ska.CompCallSem
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -617,3 +618,9 @@ open Formalization.SkaModel.Comp
 #print axioms sixNextLC_eq
 #print axioms runLC_eq
 #print axioms finishLFC_eq
+#print axioms goJ_cal
+#print axioms callBlockSem
+#print axioms goJ_jmp
+#print axioms goJ_nok
+#print axioms allocSplit
+#print axioms argsFor_of_alloc
