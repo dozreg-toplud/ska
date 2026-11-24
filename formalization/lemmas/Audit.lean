@@ -623,7 +623,7 @@ open Formalization
 #print axioms Compiler.cla_gate
 #print axioms Compiler.comp_collapse_lazy_atom
 #print axioms Compiler.comp_run_at
-#print axioms Compiler.run_simple_next
-#print axioms Compiler.run_n0
-#print axioms Compiler.run_n7
-#print axioms Compiler.run_n1
+#print axioms Compiler.comp_simple_next
+#print axioms Compiler.comp_run_n0
+#print axioms Compiler.comp_run_n7
+#print axioms Compiler.comp_run_n1

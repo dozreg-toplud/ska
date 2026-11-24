@@ -155,6 +155,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompMedeLink.lean` | `+crash-need` (door axis `27310`, no hint, `comp_crash_need`, against `crashNeed`, crashes of `got` included, where the block is not a key of `soft`: `GenRest.SoftOut`; otherwise the pill runs `+soft-ask`, which has no model), `+walk-lazy` (`30`, `comp_walk_lazy`: on `[s ~ ~]` one slam of its gate, on every door), `+mede` (`27307`, `comp_mede`, against `mede` on `[sure ~ ~]`: its loop is `medeLoop`, `md_loop`, and its gate `md_gate`), `+proxy` (`441178`, `comp_proxy`, exact) and `+lazy-bound` (`884726`, `comp_lazy_bound`, on every `NextL`, its `?>` included), each arm written here and tied by a kernel fact on `comp.door`.  `+mede` needs `CompMolds ctx`: the arm `+walk-lazy` and the gate of `+mede` start from bunts that the pill computes by running the molds `need-lazy` (arm `191`) and `sure` (arm `4`) of the core at axis `15` of `ctx`, and the strict executor needs these runs to return. |
 | `Compiler/CompCtx.lean` | The pill's context of the door of `+comp`: `compK` (the core `K` at axis `63` of `cor`, `[nh3d89e8d5f4f5 compTypes]`, `compK_at`) and its payload `compTypes` (the core of the library's types on `[0 ana]`).  `comp_ctx_pill`: every `ctx` with `compK` at axis `7` (every core of the gate `+comp`, whatever its sample) meets `CompIn`, `CompLib` and `CompMolds` (`comp_ctx_cor` states it through `cor`).  The two mold runs are evaluated by the kernel (`nock_of_evalFuel`, fuel `2000`), with their values kept as `getD` of the run (`ctNlBunt`, `ctSuBunt`), and checked to be the bunts `[[[%none ~] ~] ~ ~]` and `[[%none ~] ~]` (`ct_nl_bunt_eq`, `ct_su_bunt_eq`). |
 | `Compiler/CompClaLink.lean` | `+collapse-lazy-atom` (door axis `13822`, `comp_collapse_lazy_atom`, against `collapseLazyAtomL` on `[sure ~ ~]`, every shape of the need of `+sure-require-look` and the none-equivalent case, its `?>` included), with `+none-equivalent` (arm `2811` of `K`, `ne_gate`, against `noneEquivalent` on `[s ~ ~]`, through `+levy` of layer 2 on `~`, `ne_levy_nil`) and the gate of its walk (`cla_gate`, against `collapseGate`, every block, the `+proxy` branch included).  `cs_small_cases`: the noun of a `csHoonSet` set is `~` or `[1 ~ ~]` exactly when the set is `small` (from `cs_preorder` and the distinct keys of `IsSet`).  The context is fixed by `slot? 7 ctx = some compK`.  Side conditions: no look at `0`, and the block where the walk starts (`there`, or the crash block emitted after `+sure-require-look`) is not a key of `soft`. |
+| `Compiler/CompRunLink.lean` | The arm `+run` of the door (door axis `2047`) tied to the pill by one kernel fact (`comp_run_at`): the gate's battery `crB` = `[8 [1 crBat] 9 5 0 1]` pushes the battery `crBat` = `[simple-next $]` of the `\|^` core, whose `$` arm `crDol` is the `?-` over the nomm (twelve tests and the last case `%12`; the bodies of `%0`, `%1`, `%7` and of `+simple-next` are written out, the others are read from the pill by `slot?`).  `$` runs on `crSubj` = `[crBat [crB [[mono nomm goal region sup] [comp.door [gen ctx]]]]]` (`nomm` at `58`, `goal` at `118`, `gen` at `62`), and a recursive `$(..)` is `9 5` on that core.  `CompRunAt ctx n goal region g`: `$` on the noun of `n` (`Nomm.toNoun` of `Ska/NommSem.lean`) and of `goal` (`CGoalL.toNoun`) from `genNoun g x` equals `runL n goal region g`, for every `mono`, `sup` and every `x` with `soft` empty (`GenRest.NoSoft`), `x` kept.  Linked: `+simple-next` (`comp_simple_next`, against `simpleNextL`, every goal, `CompIn` only); the case `%0` (`comp_run_n0`, on a fork-free goal `CGoal.toL gl` with no look at `0`, `crLokOk`: `+bomb`, `+simple-next`, `+from`); `%1` (`comp_run_n1`, the same side condition: `%done` emits `[%imm k r]`, `%pick` the branch of `0` or `1` or `(bomb ~)`, `%next` is `+mede`); `%7` (`comp_run_n7`, every goal, given `CompRunAt` of `q` and of `p` on the goal that `q` returns).  The context is fixed by `slot? 7 ctx = some compK`. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`. |
@@ -769,6 +770,28 @@ import only its theorems.  So:
      `[sure ~ ~]` restriction of the links stops.  The model is not the
      limit: `CompLazyRun.lean` represents forks and bonds (`Lazy.mk sure
      fork bond`).
+     L, 2026-11-24 (track A, `+run`), `Compiler/CompRunLink.lean`: the
+     arm `+run` (`2047`) is tied to the pill (`comp_run_at`), with its
+     frame: the gate's sample `[mono nomm goal region sup]` and the `|^`
+     core `[[simple-next $] gate]`, `$` the `?-` over the nomm.  The
+     predicate `CompRunAt ctx n goal region g` (the `$` arm equals `runL`,
+     for every `mono` and `sup`, `soft` empty) is proved per case, the
+     recursive calls taken as hypotheses of the same form: `+simple-next`
+     (`comp_simple_next`), `%0` (`comp_run_n0`), `%1` (`comp_run_n1`),
+     both on a fork-free goal with no look at `0`, and `%7`
+     (`comp_run_n7`).  How the model treats `mono` and `sup`: `runL` has
+     neither as a parameter; the Hoon reads `mono` only in `%2` (lines
+     3998, 4010, the call in `+mono-try-call`) and `%mean` (4306), and
+     `sup` only in `%2` (`(made p.nomm sup)`, 3965) and writes it in `%7`
+     (4247); the recursive calls keep both otherwise.  `runL` is `none`
+     on `%2` and `%11`, so on the cases it models the Hoon's result does
+     not depend on them, and the link quantifies over both.  `runL` hands
+     `+past` the table `noCode`, where the Hoon reads `code.long-ska` of
+     the context: it differs only at a `%2` with a callee, where `runL`
+     is `none` anyway.  Cases of `+run` not linked: the cons, `%3`,
+     `%4`, `%5`, `%10` (callees `+past`, `+copy`, `+split`, `+into`,
+     `+collapse-lazy-atom`, `+forl`; `+past` needs `+hinted`), `%6`,
+     and `%2`, `%11`, `%mean`, `%12` (no model).
      M: `+past`,
      `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
