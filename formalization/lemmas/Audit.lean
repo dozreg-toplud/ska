@@ -81,6 +81,8 @@ import lemmas.Compiler.CompMedeLink
 import lemmas.Compiler.CompCtx
 import lemmas.Compiler.CompClaLink
 import lemmas.Compiler.CompRunLink
+import lemmas.Compiler.CompPastLink
+import lemmas.Compiler.CompRunCases
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -627,3 +629,10 @@ open Formalization
 #print axioms Compiler.comp_run_n0
 #print axioms Compiler.comp_run_n7
 #print axioms Compiler.comp_run_n1
+#print axioms Compiler.hd_gate
+#print axioms Compiler.compK_hd
+#print axioms Compiler.comp_past_at
+#print axioms Compiler.pa_test
+#print axioms Compiler.comp_past
+#print axioms Compiler.ct_lfr_gate
+#print axioms Compiler.comp_run_n4
