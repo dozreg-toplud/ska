@@ -176,6 +176,16 @@ def ReadsOK (lib : Lib) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ
   ∀ es y k, Path.FromEntry (lib := lib) (O := O) (c := c) (gul := gul) st vals t es y →
     Path.ReadsAt gul y k → ∃ v, read k y.regs = some v
 
+/-- Every register a pending pass on a path from the entry moves is there
+(`+move` crashes on a register that is not, poison included only when it is
+there).  `+remove-empty-middle` needs it: the code before moves the arguments
+of a bypassed hop into parameters that nothing reads, and would crash where
+the code after, which skips that pass, goes on. -/
+def ArgsOK (lib : Lib) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (vals : List Noun)
+    (t : Trace) : Prop :=
+  ∀ es y k, Path.FromEntry (lib := lib) (O := O) (c := c) (gul := gul) st vals t es y → some k ∈ y.params →
+    (HoonMap.get y.regs k).isSome
+
 end
 
 /-- **A pass from `c` to `c'` keeps `c`.** -/
