@@ -415,3 +415,10 @@ open Formalization.SkaModel
 #print axioms Ana.closed_put_callees
 #print axioms Ana.inG_frame
 #print axioms Ana.cull_closed
+#print axioms Ana.AnsW.exists_entry
+#print axioms Ana.restBelow_keep
+#print axioms Ana.up_of_split
+#print axioms Ana.gitMi_noCallees
+#print axioms Ana.skaCallgraph_closed
+#print axioms PokeM.graphClosed
+#print axioms PokeM.anaHalts_of_cgHalts

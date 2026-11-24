@@ -61,7 +61,7 @@ theorem push_cinv {memoF : Memo M} {st : SkaState M R} {F : Entry → Prop} (hc 
   refine ⟨⟨i1, fun m => hc.tick m, ⟨fun i o hio => ?_, ?_⟩, ⟨fun e he => hc.frz.ok.mono (fun _ h => h) hcalF he,
     fun i d h1 h2 => ?_, fun e he => ?_,
     hc.frz.wf, fun f ms s ent h1 h2 => ?_⟩, fun m o hmo => ?_, fun j hj => ?_, fun i d hd => ?_,
-    fun i d hd => ?_, fun i d hd => ?_⟩, s1, k1,
+    fun i d hd => ?_, fun i d hd => ?_, fun hm => ?_⟩, s1, k1,
     ⟨fun i d h1 h2 => ?_, fun _ _ => rfl, Nat.le_succ _, Nat.le_refl _, fun x o hxo hx => ?_⟩, hmem⟩
   · simp only [Treap.get_put] at hio
     split at hio
@@ -117,6 +117,13 @@ theorem push_cinv {memoF : Memo M} {st : SkaState M R} {F : Entry → Prop} (hc 
     · rename_i e
       have := hc.dat i d hd
       simpa only [Treap.get_put, if_neg e] using this
+  · obtain ⟨hcl, hfc⟩ := hc.clo hm
+    refine ⟨closed_put_new (st := st) hcl rfl (fun c => not_inCallees_empty c), fun i d h1 h2 c hce => ?_⟩
+    have hi : i ≠ id := by intro e; subst e; simp [Treap.get_put] at h2
+    simp only [Treap.get_put, if_neg hi] at h1 h2
+    have hc0 := hfc i d h1 h2 c hce
+    have hci : c ≠ id := fun e => hcl i d h1 c hce (by rw [e]; exact hg)
+    simp only [Treap.get_put, if_neg hci]; exact hc0
   · have hi : i ≠ id := hneid i (by rw [h1]; simp)
     exact ⟨by simp only [Treap.get_put, if_neg hi]; exact h1, by simp only [Treap.get_put, if_neg hi]; exact h2⟩
   · simp only [Treap.get_put] at hxo
@@ -129,7 +136,7 @@ invariant.** -/
 theorem cullPass_ok2 {memoF : Memo M} {n : Nat} {pass : PassGo M R} (hpass : PassP2 memoF pass) {id : Ident}
     {index : Nat} {st st' : SkaState M R} {low : Nat} {F : Entry → Prop} {l rest : List Ident}
     (hc : CInv memoF st F) (hs : st.stk = l ++ id :: rest) (hidx : Treap.get st.order id = some index)
-    (hrest : ∀ m ∈ rest, MemOK st F m index)
+    (hrest : ∀ m ∈ rest, MemOK st F m index) (hrb : MemoNoCallees memoF → RestBelow st rest index)
     (hcl : ∀ x o, Treap.get st.order x = some o → x ∉ rest → 1 ≤ ranOf st x ∧ LowB st x index)
     (h : cullPass n pass id index st = some (low, st')) :
     (∃ F', (∀ e, F e → F' e) ∧ CInv memoF st' F') ∧
@@ -140,7 +147,7 @@ theorem cullPass_ok2 {memoF : Memo M} {n : Nat} {pass : PassGo M R} (hpass : Pas
   unfold cullPass at h
   simp only [Option.bind_eq_some_iff] at h
   obtain ⟨st3, hcu, e⟩ := h
-  obtain ⟨c3, s3, k3, fr3, hsurv3, hreach3⟩ := cull_ok2 hc hs hidx hrest hcu
+  obtain ⟨c3, s3, k3, fr3, hsurv3, hreach3⟩ := cull_ok2 hc hs hidx hrest hrb hcu
   have hrest3 : ∀ m ∈ rest, MemOK st3 F m index := fun m hm =>
     memOK_keepRest hc.ord hc.s hs hidx k3 fr3.ticks (fun _ h => h) hm (hrest m hm)
   obtain ⟨l3, el3⟩ := k3.1
@@ -154,7 +161,9 @@ theorem cullPass_ok2 {memoF : Memo M} {n : Nat} {pass : PassGo M R} (hpass : Pas
     obtain ⟨_, _, dc⟩ := hsurv3 c (by rw [hco]; simp)
     exact h2 c hce' oc (by rw [← dc]; exact hco)
   obtain ⟨⟨F4, hF4, c4⟩, s4, k4, fr4, hcl4, hid4, hlo4, hlt4⟩ := hpass id index 1 st3 low st' F l3 rest c3 el3 hidx3
-    hrest3 hcl3 hreach3 e
+    hrest3 (fun hm => restBelow_keep hc.s (hc.clo hm).1 (hrb hm) (fun m hm' => by rw [hs]; simp [hm'])
+      (fun m hm' => k3.2.2 m (List.mem_cons_of_mem _ hm')) (fun c hc' => k3.2.1 c (List.mem_cons_of_mem _ hc'))
+      fr3 (up_of_split hc.ord hs hidx)) hcl3 hreach3 e
   exact ⟨⟨F4, hF4, c4⟩, gStepsR_trans s3 s4, (k3.weaken ⟨[id], rfl⟩ (fun j hj => List.mem_cons_of_mem _ hj)).trans k4,
     (fr3.weaken (fun j hj => List.mem_cons_of_mem _ hj)).trans2 fr4 (fun j hj => hj), hcl4, hid4, hlo4, hlt4⟩
 
@@ -169,6 +178,20 @@ theorem gitMi_norm {m : Memo M} (hm : MemoNorm m) {f : Noun} {s : Sock} {i : Ide
   rcases hg' with hg' | hg'
   · obtain ⟨n1, n2⟩ := hm f _ k _ hg' hg
     exact ⟨by rw [hl]; exact n1, by rw [hp]; exact normSock_patchDatum n2 hs⟩
+  · rw [hg', Treap.get_empty] at hg; cases hg
+
+/-- A memo hit of a memo with no callees has no callees. -/
+theorem gitMi_noCallees {m : Memo M} (hm : MemoNoCallees m) {f : Noun} {s : Sock} {i : Ident} {d : FDatum M}
+    (h : gitMi m f s = some (some (i, d))) : ∀ c, ¬ InCallees d.callees c := by
+  obtain ⟨k, d0, hmem, _, rfl⟩ := gitLoop_hit h
+  have hg := (Treap.mem_tap _ _ _).mp hmem
+  rintro c ⟨seat, hs⟩
+  have hg' : Treap.get m f = some (gutMi m f) ∨ gutMi m f = Treap.empty := by
+    unfold gutMi Treap.gut
+    cases e : Treap.get m f <;> simp
+  rcases hg' with hg' | hg'
+  · have := hm f _ k (i, d0) ⟨seat, c⟩ hg' hg
+    simp [Treap.has, this] at hs
   · rw [hg', Treap.get_empty] at hg; cases hg
 
 def hitSt (st : SkaState M R) (id : Ident) (d : FDatum M) : SkaState M R :=
@@ -193,7 +216,7 @@ theorem hit_cinv {memoF : Memo M} (hmF : MemoWF memoF) (hmN : MemoNorm memoF) {s
   unfold hitSt
   refine ⟨⟨i1, fun m => hc.tick m, hc.ord, ⟨fun e he => ?_, fun i d h1 h2 => ?_, fun e he => ?_, fun e he => ?_,
     fun f ms s ent h1 h2 => ?_⟩, fun m o hmo => ?_, hc.tkeys, fun i d hd => ?_,
-    fun i d hd => ?_, fun i d hd => ?_⟩, s1, k1,
+    fun i d hd => ?_, fun i d hd => ?_, fun hm => ?_⟩, s1, k1,
     ⟨fun i d h1 h2 => ?_, fun _ _ => rfl, Nat.le_refl _, Nat.le_refl _, fun x o hxo hx => absurd hxo hx⟩⟩
   · rcases he with he | rfl
     · refine hc.frz.ok.mono hF (fun e he => ?_) he
@@ -232,6 +255,13 @@ theorem hit_cinv {memoF : Memo M} (hmF : MemoWF memoF) (hmN : MemoNorm memoF) {s
     · rename_i e; cases hd; rw [e]
       exact Or.inl ⟨⟨hit.1, hit.2, h, rfl⟩, hno⟩
     · exact hc.dat i d hd
+  · obtain ⟨hcl, hfc⟩ := hc.clo hm
+    have hnc := gitMi_noCallees (i := hit.1) (d := hit.2) hm h
+    refine ⟨closed_put_new (st := st) hcl rfl hnc, fun i d h1 h2 c hce => ?_⟩
+    simp only [Treap.get_put] at h1
+    split at h1
+    · cases h1; exact absurd hce (hnc c)
+    · exact hfc i d h1 h2 c hce
   · have hi := hneid i (by rw [h1]; simp)
     exact ⟨by simp only [Treap.get_put, if_neg hi]; exact h1, h2⟩
 
@@ -286,7 +316,10 @@ theorem analyzeStep_ok2 {memoF : Memo M} (hmF : MemoWF memoF) (hmN : MemoNorm me
         (∀ o, Treap.get st'.order id = some o → low ≤ o) ∧
         (∀ x o, Treap.get st'.order x = some o → x ∉ st.stk → low < st.next) := by
       intro low st' hcpe hr1
-      obtain ⟨⟨F4, hF4, c4⟩, s4, k4, fr4, hcl4, hid4, hlo4, hlt4⟩ := cullPass_ok2 hpass c2 hst2 hidx2 hrest2
+      have hrb2 : MemoNoCallees memoF → RestBelow st2 st.stk st.next := fun hm =>
+        restBelow_keep (st := st) hc.s (hc.clo hm).1 (fun _ _ c _ o ho => hc.ord.1 c o ho) (fun _ h => h)
+          (fun m hm' => keep2.2.2 m hm') (fun c hc' => keep2.2.1 c hc') frame2 (fun _ h hn => absurd h hn)
+      obtain ⟨⟨F4, hF4, c4⟩, s4, k4, fr4, hcl4, hid4, hlo4, hlt4⟩ := cullPass_ok2 hpass c2 hst2 hidx2 hrest2 hrb2
         (fun x o hxo hx => by rw [← hr1]; exact hcl2 x o hxo hx) hcpe
       exact ⟨⟨F4, fun e he => hF4 e (hF2 e he), c4⟩, gStepsR_trans steps2 s4, keep2.trans k4,
         frame2.trans2 fr4 (fun j hj => hj), hcl4, hid4, hlo4, hlt4⟩
@@ -363,7 +396,7 @@ def AllP2 (env : Env R) (memoF : Memo M) (n : Nat) : Prop :=
 
 theorem allP2_zero (env : Env R) (memoF : Memo M) : AllP2 env memoF 0 := by
   refine ⟨fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ h => ?_,
-    fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_⟩
+    fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_⟩
   · rw [resolve_zero] at h; cases h
   · rw [analyze_zero] at h; cases h
   · rw [run_zero] at h; cases h
@@ -403,6 +436,8 @@ theorem CInv.init (memoF : Memo M) (reg : R) : CInv memoF (SkaState.init reg : S
   nv := fun i d h => by simp [SkaState.init, Treap.get_empty] at h
   norm := fun i d h => by simp [SkaState.init, Treap.get_empty] at h
   dat := fun i d h => by simp [SkaState.init, Treap.get_empty] at h
+  clo := fun _ => ⟨fun i d h => by simp [SkaState.init, Treap.get_empty] at h,
+    fun i d h => by simp [SkaState.init, Treap.get_empty] at h⟩
 
 /-- **The final graph of `+ska-callgraph` is frozen**: every entry is a memo
 hit of an earlier poke, or was written by its last run with answers that are

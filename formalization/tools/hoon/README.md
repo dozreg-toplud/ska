@@ -51,3 +51,8 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
 * `closed.hoon`     `GraphClosed` of `lemmas/Ska/AnaEnds.lean` on the graph `+ska-callgraph` returns, over the 26 pokes of
                     `sitesmeet4.hoon`, `he2.hoon`, `voidscc.hoon`, `prodsame.hoon` with the memo threaded: 1760 entries,
                     4052 callee edges, no callee missing, every root an entry (2026-11-24)
+* `closedsteps.py OUTDIR` writes an instrumented copy of the library whose `+cull` and `+pop` check the two clauses of
+                    `CInv.clo` (`lemmas/Ska/GraphClose.lean`) at every state they see, and `closed.hoon` as the driver:
+                    at 3680 culls no callee edge from outside the component points into it (2,195,392 edges) and no
+                    callee is missing; at 4472 pops no callee edge of a finalized entry points into `order` (2,354,100
+                    edges) and no callee is missing (2026-11-24)

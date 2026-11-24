@@ -327,13 +327,86 @@ theorem reach_cases {st : SkaState M R} {W : Ident → Prop} {a b : Ident} (h : 
   | refl => exact Or.inl rfl
   | step _ _ hw => exact Or.inr hw
 
+/-- **`+cull` keeps the graph closed**: a culled member is called only by
+culled members, given that no entry outside the component of `id` calls a
+member of it. -/
+theorem cull_closed {n : Nat} {id : Ident} {st st' : SkaState M R} {ab0 rest : List Ident} (hi : SInv st)
+    (hs : st.stk = ab0 ++ id :: rest) (h : cull n id st = some st') (hc : Closed st)
+    (hout : ∀ x d, Treap.get st.g x = some d → x ∉ ab0 ++ [id] → ∀ c, InCallees d.callees c → c ∉ ab0 ++ [id]) :
+    Closed st' := by
+  obtain ⟨live, hlive, -, hg, -⟩ := cull_eff hi hs h
+  have hcl := liveLoop_closed n [id] Treap.empty live hlive (fun x hx => by simp [Treap.has, Treap.get_empty] at hx)
+  intro x d hx c hce
+  rw [hg] at hx ⊢
+  by_cases hdx : x ∈ ab0 ++ [id] ∧ Treap.has live x = false
+  · rw [if_pos hdx] at hx; cases hx
+  rw [if_neg hdx] at hx
+  have hcg := hc x d hx c hce
+  by_cases hdc : c ∈ ab0 ++ [id] ∧ Treap.has live c = false
+  · exfalso
+    by_cases hxm : x ∈ ab0 ++ [id]
+    · have hxl : Treap.has live x = true := by
+        cases e : Treap.has live x
+        · exact absurd ⟨hxm, e⟩ hdx
+        · rfl
+      have hk : c ∈ kids st x := kids_of_inCallees (by simpa only [calleesOf, gitG, Treap.gut, hx, Option.getD_some] using hce)
+      have := hcl x hxl c hk ((Treap.has_silt _ _).mpr hdc.1)
+      rw [hdc.2] at this; cases this
+    · exact hout x d hx hxm c hce hdc.1
+  · rw [if_neg hdc]; exact hcg
+
+/-- **The members below the root call nothing above it**: every callee on
+the stack of a member of `rest` has a DFS number below `index`. -/
+def RestBelow (st : SkaState M R) (rest : List Ident) (index : Nat) : Prop :=
+  ∀ m ∈ rest, ∀ c, InCallees (calleesOf st m) c → ∀ o, Treap.get st.order c = some o → o < index
+
+/-- The identities on the stack and not in `rest` are numbered from the root's
+number on. -/
+theorem up_of_split {st : SkaState M R} (ho : OrdInv st) {ab0 rest : List Ident} {id : Ident} {index : Nat}
+    (hs : st.stk = ab0 ++ id :: rest) (hidx : Treap.get st.order id = some index) :
+    ∀ c ∈ st.stk, c ∉ rest → ∀ o, Treap.get st.order c = some o → index ≤ o := by
+  intro c hc hcr o hco
+  refine (ordInv_split ho hs hidx).1 c ?_ o hco
+  rw [hs] at hc
+  simp only [List.mem_append, List.mem_cons] at hc
+  rcases hc with h | h | h
+  · simp [h]
+  · simp [h]
+  · exact absurd h hcr
+
+/-- **`RestBelow` is kept** by an arm that keeps the entries and numbers of
+`rest` and the finalized entries, in a closed graph. -/
+theorem restBelow_keep {st st' : SkaState M R} {bt : Ident → Prop} {rest : List Ident} {index : Nat}
+    (hi : SInv st) (hcl : Closed st) (hr : RestBelow st rest index) (hsub : ∀ m ∈ rest, m ∈ st.stk)
+    (hg : ∀ m ∈ rest, Treap.get st'.g m = Treap.get st.g m)
+    (ho : ∀ c ∈ rest, Treap.get st'.order c = Treap.get st.order c) (hf : Frame bt st st')
+    (hup : ∀ c ∈ st.stk, c ∉ rest → ∀ o, Treap.get st.order c = some o → index ≤ o) :
+    RestBelow st' rest index := by
+  intro m hm c hce o hco
+  obtain ⟨dm, hdm⟩ := hi.mem_g (hsub m hm)
+  have hce' : InCallees dm.callees c := by
+    simpa only [calleesOf, gitG, Treap.gut, hg m hm, hdm, Option.getD_some] using hce
+  have hce0 : InCallees (calleesOf st m) c := by
+    simpa only [calleesOf, gitG, Treap.gut, hdm, Option.getD_some] using hce'
+  by_cases hcr : c ∈ rest
+  · rw [ho c hcr] at hco; exact hr m hm c hce0 o hco
+  · cases e : Treap.get st.order c with
+    | none =>
+      obtain ⟨dc, hdc⟩ := Option.ne_none_iff_exists'.mp (hcl m dm hdm c hce')
+      rw [(hf.fin c dc hdc e).2] at hco; cases hco
+    | some o' =>
+      have h1 := hup c ((hi.ord_stk c).mp ⟨o', e⟩) hcr o' e
+      have h2 := hr m hm c hce0 o' e
+      omega
+
 /-- **`+cull` keeps the convergence invariant**, with the same frozen
 entries, given that the members below the root read only below it; it
 leaves every member above the root reachable from the root. -/
 theorem cull_ok2 {memoF : Memo M} {n : Nat} {id : Ident} {st st' : SkaState M R} {F : Entry → Prop}
     {ab0 rest : List Ident} {index : Nat} (hc : CInv memoF st F) (hs : st.stk = ab0 ++ id :: rest)
     (hidx : Treap.get st.order id = some index)
-    (hrest : ∀ m ∈ rest, MemOK st F m index) (h : cull n id st = some st') :
+    (hrest : ∀ m ∈ rest, MemOK st F m index) (hrb : MemoNoCallees memoF → RestBelow st rest index)
+    (h : cull n id st = some st') :
     CInv memoF st' F ∧ GStepsR (gCore st.g) (gCore st'.g) ∧ Keep (id :: rest) (· ∈ id :: rest) st st' ∧
     Frame (· ∈ id :: rest) st st' ∧
     (∀ x, Treap.get st'.order x ≠ none → Treap.get st'.g x = Treap.get st.g x ∧
@@ -396,7 +469,7 @@ theorem cull_ok2 {memoF : Memo M} {n : Nat} {id : Ident} {st st' : SkaState M R}
   refine ⟨⟨si, fun m => ?_, ⟨fun i o hio => ?_, ?_⟩, ⟨fun e he => hc.frz.ok.mono (fun _ h => h) hcalF he,
     fun i d h1 h2 => ?_, fun e he => ?_, hc.frz.wf,
     fun f ms s ent h1 h2 => ?_⟩, fun m o hmo => ?_, fun j hj => ?_, fun i d hd => ?_,
-    fun i d hd => ?_, fun i d hd => ?_⟩, sg, sk, ⟨fun i d h1 h2 => ?_, fun j hj => ?_,
+    fun i d hd => ?_, fun i d hd => ?_, fun hm => ?_⟩, sg, sk, ⟨fun i d h1 h2 => ?_, fun j hj => ?_,
     by rw [en]; exact Nat.le_refl _, by rw [etk]; exact Nat.le_refl _, fun x o hxo hx => ?_⟩, fun x hx => ?_,
     fun x o hxo hx => ?_⟩
   · -- ticks
@@ -467,6 +540,33 @@ theorem cull_ok2 {memoF : Memo M} {n : Nat} {id : Ident} {st st' : SkaState M R}
     by_cases hiD : D i
     · rw [hDg' i hiD] at hd; cases hd
     · rw [hDg i hiD] at hd; rw [hDo i hiD]; exact hc.dat i d hd
+  · -- closure: nothing outside the component calls into it
+    obtain ⟨hcl, hfc⟩ := hc.clo hm
+    refine ⟨cull_closed hc.s hs h hcl (fun x d hx hxn c hce hcm => ?_), fun i d h1 h2 c hce => ?_⟩
+    · obtain ⟨oc, hoc⟩ := (hc.s.ord_stk c).mpr (hPstk c hcm)
+      have hle := hup c hcm oc hoc
+      cases hxo : Treap.get st.order x with
+      | none => rw [hfc x d hx hxo c hce] at hoc; cases hoc
+      | some ox =>
+        have hxs : x ∈ st.stk := (hc.s.ord_stk x).mp ⟨ox, hxo⟩
+        have hxr : x ∈ rest := by
+          rw [hs] at hxs
+          simp only [List.mem_append, List.mem_cons] at hxs
+          rcases hxs with h1 | h1 | h1
+          · exact absurd (by simp [h1]) hxn
+          · exact absurd (by simp [h1]) hxn
+          · exact h1
+        have hce' : InCallees (calleesOf st x) c := by
+          simpa only [calleesOf, gitG, Treap.gut, hx, Option.getD_some] using hce
+        have := hrb hm x hxr c hce' oc hoc
+        omega
+    · by_cases hiD : D i
+      · rw [hDg' i hiD] at h1; cases h1
+      · rw [hDg i hiD] at h1; rw [hDo i hiD] at h2
+        have hc0 := hfc i d h1 h2 c hce
+        by_cases hcD : D c
+        · exact hDo' c hcD
+        · rw [hDo c hcD]; exact hc0
   · -- frame: finalized
     have hn := hfinD i h2
     exact ⟨by rw [hDg i hn]; exact h1, by rw [hDo i hn]; exact h2⟩
@@ -874,7 +974,7 @@ theorem pop_frame {id : Ident} {st st' : SkaState M R} {ab0 rest : List Ident} (
 def PassP2 (memoF : Memo M) (pass : PassGo M R) : Prop :=
   ∀ id index p st low st' (F : Entry → Prop) (ab0 rest : List Ident),
     CInv memoF st F → st.stk = ab0 ++ id :: rest → Treap.get st.order id = some index →
-    (∀ m ∈ rest, MemOK st F m index) →
+    (∀ m ∈ rest, MemOK st F m index) → (MemoNoCallees memoF → RestBelow st rest index) →
     (∀ x o, Treap.get st.order x = some o → x ∉ rest → 1 ≤ ranOf st x ∧ LowB st x index) →
     (∀ x o, Treap.get st.order x = some o → x ∉ rest →
       Reach st (fun y => Treap.get st.order y ≠ none ∧ y ∉ rest) id x) →
@@ -904,7 +1004,7 @@ theorem Frame.weaken {bt bt' : Ident → Prop} {st st' : SkaState M R} (h : Fram
 /-- **The pass loop keeps the convergence invariant.** -/
 theorem passStep_ok2 {memoF : Memo M} {n : Nat} {mem : MemGo M R} {pass : PassGo M R}
     (hmem : MemP2 memoF mem) (hpass : PassP2 memoF pass) : PassP2 memoF (passStep n mem pass) := by
-  intro id index p st low st' F ab0 rest hc hs hidx hrest hcl hreach e
+  intro id index p st low st' F ab0 rest hc hs hidx hrest hrb hcl hreach e
   unfold passStep at e
   simp only [Option.bind_eq_some_iff] at e
   obtain ⟨ab, hab, members, hsw, e⟩ := e
@@ -959,7 +1059,11 @@ theorem passStep_ok2 {memoF : Memo M} {n : Nat} {mem : MemGo M R} {pass : PassGo
     have hr1 : r1.1 = index := by simpa using hidxr
     simp only [Option.bind_eq_some_iff] at e
     obtain ⟨st3, hcu, e⟩ := e
-    obtain ⟨c3, s3, k3, fr3, hsurv3, hreach3⟩ := cull_ok2 c2 el2 hidx2 hrest2 hcu
+    have hsub : ∀ m ∈ rest, m ∈ st.stk := fun m hm => by rw [hs]; simp [hm]
+    have hrb2 : MemoNoCallees memoF → RestBelow st2 rest index := fun hm =>
+      restBelow_keep hc.s (hc.clo hm).1 (hrb hm) hsub (fun m hm' => k2.2.2 m hm')
+        (fun c hc' => k2.2.1 c (hsub c hc')) fr2' (up_of_split hc.ord hs hidx)
+    obtain ⟨c3, s3, k3, fr3, hsurv3, hreach3⟩ := cull_ok2 c2 el2 hidx2 hrest2 hrb2 hcu
     have hrest3 : ∀ m ∈ rest, MemOK st3 F2 m index := fun m hm =>
       memOK_keepRest c2.ord c2.s el2 hidx2 k3 fr3.ticks (fun _ h => h) hm (hrest2 m hm)
     obtain ⟨l3, el3⟩ := k3.1
@@ -1030,7 +1134,11 @@ theorem passStep_ok2 {memoF : Memo M} {n : Nat} {mem : MemGo M R} {pass : PassGo
         rw [a1] at hxs; exact hx hxs
     · -- not stable: the next pass
       obtain ⟨⟨F4, hF4, c4⟩, s4, k4, fr4, hcl4, hid4, hlo4, hlt4⟩ :=
-        hpass id index (p + 1) st3 low st' F2 l3 rest c3 el3 hidx3 hrest3 hcl3 hreach3 e
+        hpass id index (p + 1) st3 low st' F2 l3 rest c3 el3 hidx3 hrest3
+          (fun hm => restBelow_keep c2.s (c2.clo hm).1 (hrb2 hm) (fun m hm' => by rw [el2]; simp [hm'])
+            (fun m hm' => k3.2.2 m (List.mem_cons_of_mem _ hm')) (fun c hc' => k3.2.1 c (List.mem_cons_of_mem _ hc'))
+            fr3 (up_of_split c2.ord el2 hidx2))
+          hcl3 hreach3 e
       exact ⟨⟨F4, fun e he => hF4 e (hF2 e he), c4⟩, gStepsR_trans s2 (gStepsR_trans s3 s4), k23.trans k4,
         fr23.trans2 fr4 (fun j hj => hj), hcl4, hid4, hlo4, hlt4⟩
 

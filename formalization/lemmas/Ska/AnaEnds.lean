@@ -1,5 +1,6 @@
 import lemmas.Ska.PokeHalt
 import lemmas.Ska.AnaFuel
+import lemmas.Ska.GraphClose
 
 /-!
 # The analysis ends: the argument of the Hoon, the pieces, what is proved
@@ -116,18 +117,18 @@ one formula were on the stack (the three pokes of `he2.hoon`, exactly
 * `CgHalts`: `+ska-callgraph` returns at some fuel.  Not proved.  It holds
   when items 1, 2, 3 and 5 of section 1 hold and nothing crashes.
 * `GraphClosed`: the graph it returns holds the root and is closed under
-  callees.  Not proved.  True of the Hoon by the argument of `+cull` (a
-  popped component calls no frame below it, a culled member is called only
-  by culled members), and every poke checked returned through
-  `+prune-callgraph`.  On the 26 pokes of `sitesmeet4.hoon`, `he2.hoon`,
+  callees.  Proved (`graphClosed`), by the argument of `+cull` (a popped
+  component calls no frame below it, a culled member is called only by
+  culled members) carried by the convergence invariant (`GraphClose.lean`,
+  `skaCallgraph_closed`).  On the 26 pokes of `sitesmeet4.hoon`, `he2.hoon`,
   `voidscc.hoon` and `prodsame.hoon` every callee of the returned graph was
-  an entry (1760 entries, 4052 edges).  The arm pieces are in
-  `GraphClose.lean` (`cull_closed` and the puts).
+  an entry (1760 entries, 4052 edges).
 * `pruneLoop_ends`, proved: the loop of `+prune-callgraph` ends on a graph
   closed under callees, within one more than the queue's length plus, for
   each entry not visited, one more than its number of callees.
 * `anaHalts_of`: `CgHalts` and `GraphClosed` give `AnaHalts`, the analysis
-  part of `+ska-poke` returns at some fuel.  `anaEndsN_of_halts`: it returns
+  part of `+ska-poke` returns at some fuel; `anaHalts_of_cgHalts`: from
+  `CgHalts` alone.  `anaEndsN_of_halts`: it returns
   at the fuel `anaFuel`, and `anaEndsN_mono` at every larger fuel.
 -/
 
@@ -141,12 +142,6 @@ namespace Ana
 variable {M : Type → Type → Type} [Treap M] {R : Type}
 
 /-! ## The memo's entries have no callees -/
-
-/-- Every entry of the memo has no callees, as `+memo-final-entry` makes
-them. -/
-def MemoNoCallees (m : Memo M) : Prop :=
-  ∀ f ms s (e : Ident × FDatum M) c, Treap.get m f = some ms → Treap.get ms s = some e →
-    Treap.get e.2.callees c = none
 
 theorem memoNoCallees_empty : MemoNoCallees (Treap.empty : Memo M) := by
   intro f ms s e c h
@@ -296,8 +291,8 @@ def CgHalts (lib : Lib) (env : Env R) (regOf : J → R) : Prop :=
   ∀ s f (L : LongB M) j, InvB lib L → MemoNoCallees L.memo →
     ∃ n g reg', skaCallgraph env n (Sock.mk Cape.yes s, f) L.memo (regOf j) = some (g, reg')
 
-/-- **The final graph holds the root and is closed under callees.**  Not
-proved. -/
+/-- **The final graph holds the root and is closed under callees.**  Proved:
+`graphClosed`. -/
 def GraphClosed (lib : Lib) (env : Env R) (regOf : J → R) : Prop :=
   ∀ s f (L : LongB M) j n g reg', InvB lib L → MemoNoCallees L.memo →
     skaCallgraph env n (Sock.mk Cape.yes s, f) L.memo (regOf j) = some (g, reg') →
@@ -313,6 +308,23 @@ def AnaHalts (lib : Lib) (env : Env R) (regOf : J → R) : Prop :=
 def AnaEndsN (lib : Lib) (env : Env R) (fuel : Noun → Noun → LongB M → J → Nat) (regOf : J → R) : Prop :=
   ∀ s f (L : LongB M) j, InvB lib L → MemoNoCallees L.memo →
     ∃ r, skaPoke env (fuel s f L j) (Sock.mk Cape.yes s, f) L.memo (regOf j) = some r
+
+theorem inCallees_of_calleeIds {d : FDatum M} {c : Ident} (h : c ∈ calleeIds d) : InCallees d.callees c := by
+  unfold calleeIds at h
+  obtain ⟨⟨ce, v⟩, hm, rfl⟩ := List.mem_map.mp h
+  refine ⟨ce.seat, ?_⟩
+  show Treap.has d.callees ce = true
+  simp [Treap.has, (Treap.mem_tap _ _ _).mp hm]
+
+/-- **`GraphClosed` holds**: under `InvB` (for the memo's well-formed and
+normal products) and `MemoNoCallees`, the final graph holds the root and is
+closed under callees (`skaCallgraph_closed`, `GraphClose.lean`). -/
+theorem graphClosed (lib : Lib) (env : Env R) (regOf : J → R) : GraphClosed (M := M) lib env regOf := by
+  intro s f L j n g reg' hI hm h
+  obtain ⟨code, hp⟩ := hI.ghost
+  obtain ⟨hr, hc⟩ := skaCallgraph_closed env L.memo hp.wf hp.memoNorm hm (wf_root s) (normSock_yes s)
+    (fun e => Sock.noConfusion e) h
+  exact ⟨hr, fun i d hd c hcm => hc i d hd c (inCallees_of_calleeIds hcm)⟩
 
 /-- **`AnaHalts` from the two pieces.** -/
 theorem anaHalts_of {lib : Lib} {env : Env R} {regOf : J → R}
@@ -330,6 +342,11 @@ theorem anaHalts_of {lib : Lib} {env : Env R} {regOf : J → R}
   have h2' := pruneCallgraph_fuel_le (Nat.le_max_right n (2 + pruneLeft g Treap.empty)) _ _ _ h2
   refine ⟨max n (2 + pruneLeft g Treap.empty), (pruned, (pokeMemo pruned L.memo).1, (pokeMemo pruned L.memo).2, rd, reg'), ?_⟩
   simp only [skaPoke, h1', h2', hrd, Option.bind_some, Option.map_some]
+
+/-- **`AnaHalts` from `CgHalts` alone.** -/
+theorem anaHalts_of_cgHalts {lib : Lib} {env : Env R} {regOf : J → R}
+    (hc : CgHalts (M := M) lib env regOf) : AnaHalts (M := M) lib env regOf :=
+  anaHalts_of hc (graphClosed lib env regOf)
 
 /-- A fuel at which the analysis returns, when there is one. -/
 noncomputable def anaFuel (env : Env R) (regOf : J → R) (s f : Noun) (L : LongB M) (j : J) : Nat := by

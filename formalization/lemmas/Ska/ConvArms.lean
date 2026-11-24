@@ -93,6 +93,28 @@ theorem Frame.trans {bt bt' : Ident → Prop} {st1 st2 st3 : SkaState M R} (h1 :
     · exact h1.newOrd x o h2o hx
     · exact Nat.le_trans h1.next (h2.newOrd x o h h2o)
 
+/-- **An entry stays an entry** across an arm that keeps the entries of the
+stack and the finalized entries. -/
+theorem inG_frame {st st' : SkaState M R} {bt : Ident → Prop} (hi : SInv st)
+    (hk : Keep st.stk (· ∈ st.stk) st st') (hf : Frame bt st st') {c : Ident}
+    (h : Treap.get st.g c ≠ none) : Treap.get st'.g c ≠ none := by
+  cases ho : Treap.get st.order c with
+  | some o =>
+    have hcs : c ∈ st.stk := (hi.ord_stk c).mp ⟨o, ho⟩
+    rw [hk.2.2 c hcs]; exact h
+  | none =>
+    obtain ⟨d, hd⟩ := Option.ne_none_iff_exists'.mp h
+    rw [(hf.fin c d hd ho).1]; simp
+
+/-- Every answer rests on an entry of its family. -/
+theorem AnsW.exists_entry {G : Entry → Prop} {s : Sock} {f : Noun} {a : TabEntry} (h : AnsW G s f a) :
+    ∃ e, G e := by
+  induction h with
+  | exact he => exact ⟨_, he⟩
+  | hit he _ => exact ⟨_, he⟩
+  | hitGen he _ _ => exact ⟨_, he⟩
+  | gen _ _ _ _ ih => exact ih
+
 /-- The members of `x`'s callees on the stack are at or above `low`. -/
 def LowB (st : SkaState M R) (x : Ident) (low : Nat) : Prop :=
   ∀ c, InCallees (calleesOf st x) c → ∀ o, Treap.get st.order c = some o → low ≤ o
@@ -123,10 +145,10 @@ theorem memOK_congr {st st' : SkaState M R} {F : Entry → Prop} {m : Ident} {Lm
 theorem CInv.congr {memoF : Memo M} {st st' : SkaState M R} {F : Entry → Prop} (h : CInv memoF st F)
     (hg : st'.g = st.g) (hd : st'.done = st.done) (ho : st'.order = st.order) (hs : st'.stk = st.stk)
     (hn : st'.next = st.next) (htk : st'.tick = st.tick) (hts : st'.ticks = st.ticks) : CInv memoF st' F := by
-  obtain ⟨a, b, c, d, e, f, g, k, l⟩ := h
+  obtain ⟨a, b, c, d, e, f, g, k, l, m⟩ := h
   refine ⟨a.congr hg hd ho hs, ?_, ?_, ?_, ?_, fun j hj => by rw [ho]; rw [hts] at hj; exact f j hj,
     fun i d hd => g i d (by rw [← hg]; exact hd), fun i d hd => k i d (by rw [← hg]; exact hd),
-    fun i d hd => by rw [ho]; exact l i d (by rw [← hg]; exact hd)⟩
+    fun i d hd => by rw [ho]; exact l i d (by rw [← hg]; exact hd), fun hm => ?_⟩
   · intro m; simp only [ranOf, chgOf, hts, htk]; exact b m
   · simp only [OrdInv, ho, hs, hn]; exact c
   · obtain ⟨d1, d2, d3, d4, d5⟩ := d
@@ -134,6 +156,9 @@ theorem CInv.congr {memoF : Memo M} {st st' : SkaState M R} {F : Entry → Prop}
   · intro m o hmo
     rw [hn]
     exact memOK_congr hg ho hts (e m o (by rw [← ho]; exact hmo))
+  · obtain ⟨m1, m2⟩ := m hm
+    exact ⟨fun i d hi c hc => by rw [hg] at hi ⊢; exact m1 i d hi c hc,
+      fun i d hi hio c hc => by rw [ho]; rw [hg] at hi; rw [ho] at hio; exact m2 i d hi hio c hc⟩
 
 theorem Pushed.congr {st0 st st' : SkaState M R} {low : Nat} (h : Pushed st0 st low) (hg : st'.g = st.g)
     (ho : st'.order = st.order) (hts : st'.ticks = st.ticks) : Pushed st0 st' low := by
@@ -263,18 +288,20 @@ def RunInv (memoF : Memo M) (st0 : SkaState M R) (F0 : Entry → Prop) (index : 
     GStepsR (gCore st0.g) (gCore gs.st.g) ∧ Keep st0.stk (· ∈ st0.stk) st0 gs.st ∧
     Frame (· ∈ st0.stk) st0 gs.st ∧ gs.low ≤ index ∧ Pushed st0 gs.st gs.low ∧
     (∀ c, InCallees gs.callees c → ∀ o, Treap.get gs.st.order c = some o → gs.low ≤ o) ∧
-    (gs.back = false → ∀ c, InCallees gs.callees c → ∀ o, Treap.get gs.st.order c = some o → c ∉ st0.stk)
+    (gs.back = false → ∀ c, InCallees gs.callees c → ∀ o, Treap.get gs.st.order c = some o → c ∉ st0.stk) ∧
+    (∀ c, InCallees gs.callees c → Treap.get gs.st.g c ≠ none)
 
 theorem runInv_stable (memoF : Memo M) (st0 : SkaState M R) (F0 : Entry → Prop) (index : Nat) :
     LocalStableC (RunInv memoF st0 F0 index) := by
   intro gs gs' h hlf hc
   obtain ⟨e1, e2, e3, e4, e5, e6, e7, e8, e9, e10⟩ := hlf
-  obtain ⟨F, hF, a, b, c, d, e, f, g, i⟩ := h
+  obtain ⟨F, hF, a, b, c, d, e, f, g, i, j⟩ := h
   refine ⟨F, hF, a.congr e3 e4 e5 e6 e7 e9 e10, by rw [e3]; exact b, c.congr2 e3 e5 e6,
     d.congr2 e3 e5 e7 e9 e10, by rw [e1]; exact e, by rw [e1]; exact f.congr e3 e5 e10,
-    fun c' hc' o ho => ?_, fun hb c' hc' o ho => ?_⟩
+    fun c' hc' o ho => ?_, fun hb c' hc' o ho => ?_, fun c' hc' => ?_⟩
   · rw [hc] at hc'; rw [e5] at ho; rw [e1]; exact g c' hc' o ho
   · rw [hc] at hc'; rw [e5] at ho; rw [e2] at hb; exact i hb c' hc' o ho
+  · rw [hc] at hc'; rw [e3]; exact j c' hc'
 
 theorem runEnd_eff (id : Ident) (data : FDatum M) (out : FolOut) (gs : GenS M R) :
     (runEnd id data out gs).1 =
@@ -327,7 +354,7 @@ theorem resOKD_of_resP2 {memoF : Memo M} {res : ResGo M R} (h : ResP2 memoF res)
     (F0 : Entry → Prop) (index : Nat) (hidx : index < st0.next) :
     ResOKD PfR (RunInv memoF st0 F0 index) res := by
   intro idT gs r gs' hi hw hnv e
-  obtain ⟨F, hF0, hc, s1, k1, fr1, hlow, hpush, hcl, hbk⟩ := hi
+  obtain ⟨F, hF0, hc, s1, k1, fr1, hlow, hpush, hcl, hbk, hing⟩ := hi
   obtain ⟨⟨F', hFF', hc'⟩, s2, k2, fr2, hgen, hcal, hle, hpush2, hr1, hback, hans⟩ := h idT gs r gs' F hc hw.1 hw.2 hnv e
   have hst0 : ∀ j ∈ st0.stk, j ∈ gs.st.stk := fun j hj => by
     obtain ⟨l, el⟩ := k1.1; rw [el]; exact List.mem_append_right _ hj
@@ -350,7 +377,8 @@ theorem resOKD_of_resP2 {memoF : Memo M} {res : ResGo M R} (h : ResP2 memoF res)
   obtain ⟨e1, e2, e3, e4, e5, e6, e7, e8, e9, e10⟩ := hlf
   refine ⟨⟨F', fun x hx => hFF' x (hF0 x hx), hc'.congr e3 e4 e5 e6 e7 e9 e10, by rw [e3]; exact gStepsR_trans s1 s2,
     (k1.trans (k2.weaken k1.1 (fun j hj => hst0 j hj))).congr2 e3 e5 e6,
-    (fr1.trans fr2 hst0 k2.2.1 hc.s).congr2 e3 e5 e7 e9 e10, by rw [e1]; exact Nat.le_trans hle hlow, ?_, ?_, ?_⟩, ?_⟩
+    (fr1.trans fr2 hst0 k2.2.1 hc.s).congr2 e3 e5 e7 e9 e10, by rw [e1]; exact Nat.le_trans hle hlow, ?_, ?_, ?_,
+    ?_⟩, ?_⟩
   · -- the members left on the stack
     refine Pushed.congr (fun x o hxo hx0 => ?_) e3 e5 e10
     rw [e1]
@@ -386,6 +414,15 @@ theorem resOKD_of_resP2 {memoF : Memo M} {res : ResGo M R} (h : ResP2 memoF res)
       by_cases hcs' : c ∈ gs.st.stk
       · exact hbk hb0 c hc0 o (hold c o ho hcs')
       · exact fun h0 => hcs' (hst0 _ h0)
+  · -- the callees are entries
+    intro c hc0
+    rw [e3]
+    rw [hcs] at hc0
+    rcases inCallees_ins hc0 with rfl | hc0
+    · obtain ⟨e, ⟨d, hd, _⟩, _, _, _, he⟩ := AnsW.exists_entry hans
+      rw [← he, hd]; simp
+    · rw [hcal] at hc0
+      exact inG_frame hc.s k2 fr2 (hing c hc0)
   · -- the answer
     refine hans.mono (fun e he => ?_)
     obtain ⟨⟨d, hd, ht⟩, w1, w2, nn, ho⟩ := he
@@ -451,15 +488,16 @@ theorem runStep_ok2 (env : Env R) (memoF : Memo M) {n : Nat}
   have hidx0 : index < st0.next := hc.ord.1 id index hidx
   have r0 : RunInv memoF st0 F index (genInit index st0) := by
     refine ⟨F, fun _ h => h, c0, GStepsR.refl _, Keep.refl' _ rfl rfl rfl,
-      Frame.refl' rfl rfl rfl rfl rfl rfl c0.s, Nat.le_refl _, ?_, ?_, ?_⟩
+      Frame.refl' rfl rfl rfl rfl rfl rfl c0.s, Nat.le_refl _, ?_, ?_, ?_, ?_⟩
     · intro x o hxo hx; exact absurd ((c0.s.ord_stk x).mp ⟨o, hxo⟩) hx
     · intro c hc'; exact absurd hc' (not_inCallees_empty c)
     · intro _ c hc'; exact absurd hc' (not_inCallees_empty c)
+    · intro c hc'; exact absurd hc' (not_inCallees_empty c)
   have hnid : NormSock id.1 := by
     obtain ⟨d0, hd0⟩ := hc.s.mem_g hid; exact (hc.norm id d0 hd0).1
   obtain ⟨i1, _, hF⟩ := run_folTopRD env memoF pfR_wf (runInv_stable memoF st0 F index) pfR_stable
     (fun k hk => resOKD_of_resP2 (hres k hk) st0 F index hidx0) r0 ⟨hc.s.wf_stk hid, hnid⟩ hf
-  obtain ⟨F1, hF01, c1, s1, k1, fr1, hlow1, hpush1, hcl1, hbk1⟩ := i1
+  obtain ⟨F1, hF01, c1, s1, k1, fr1, hlow1, hpush1, hcl1, hbk1, hing1⟩ := i1
   obtain ⟨er, eg, eo, es, ed, en, etk, ets⟩ := runEnd_eff id data out gs
   generalize hrd : runDatum (Treap.has gs.st.moved id) id.1 out gs.gen data.core = rd at er eg ets
   generalize hdn : (⟨gs.callees, rd.1.nomm, rd.1.less, rd.1.indi, rd.1.seek, rd.1.prod, rd.1.map, gs.area⟩ :
@@ -505,7 +543,7 @@ theorem runStep_ok2 (env : Env R) (memoF : Memo M) {n : Nat}
           intro h; obtain ⟨o, ho'⟩ := hidO; rw [← h, (c1.frz.sub e he).2] at ho'; cases ho'
         unfold calleesOf; rw [hgx _ hi]
     refine ⟨iS, fun m => ?_, ?_, ⟨fun e he => c1.frz.ok.mono (fun _ h => h) hcalF he, fun i d h1 h2 => ?_,
-      fun e he => ?_, c1.frz.wf, ?_⟩, ?_, ?_, ?_, ?_, ?_⟩
+      fun e he => ?_, c1.frz.wf, ?_⟩, ?_, ?_, ?_, ?_, ?_, fun hm => ?_⟩
     · by_cases hm : m = id
       · subst hm
         rw [hranid, hchgid, etk]
@@ -609,6 +647,13 @@ theorem runStep_ok2 (env : Env R) (memoF : Memo M) {n : Nat}
           exact ⟨y, app_fits gs.gen.want id.1 y hy⟩
         · rw [eo] at ho; obtain ⟨o, ho'⟩ := hidO; rw [ho'] at ho; cases ho
       · rw [eo]; exact c1.dat i d hd
+    · obtain ⟨hcl, hfc⟩ := c1.clo hm
+      refine ⟨closed_put_callees (st := gs.st) hcl eg (fun c hce => ?_), fun i d h1 h2 c hce => ?_⟩
+      · rw [← hdn] at hce; exact hing1 c hce
+      · rw [eo] at h2 ⊢
+        have hi : i ≠ id := by rintro rfl; obtain ⟨o, ho⟩ := hidO; rw [h2] at ho; cases ho
+        rw [hgj, if_neg hi] at h1
+        exact hfc i d h1 h2 c hce
   refine ⟨⟨F1, hF01, cS, fun m Lmax hm hmi h => hmem m Lmax hmi
     (memOK_frame c0.s hm k1 (fun j hj => fr1.ticks j hj) hF01 (memOK_congr rfl rfl rfl h))⟩,
     ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
