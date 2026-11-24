@@ -401,6 +401,7 @@ open Formalization.SkaModel.Opt
 #print axioms alias_fill
 #print axioms alias_live_op
 #print axioms alias_onceB
+#print axioms alias_fillFresh
 #print axioms alias_restB
 #print axioms alias_restSSAB_fresh
 #print axioms aliasRestSSAB_of_once

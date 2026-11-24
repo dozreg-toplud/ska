@@ -47,6 +47,9 @@ model of `+optimize` returns `0` where the code before returns `s + 1`
   (`alias_fill`, through `DefFirst` of the result: a read after would need a
   definition after before it, which is a definition that counts before, or a
   dead fill before followed by `%imm` ops only).
+* **`alias_fillFresh`**: `+alias` keeps `FillFresh` (the op before of a dead
+  fill after is a definition that counts, so a definition that counts after
+  would be that op).
 * **`AliasOnceB`**: `DefOnceB` of the result on every input with `DInvS`,
   the one conjunct left; **`aliasRestSSAB_of_once`** and the driver theorem
   **`optimize_keeps_aliasO`** with `hpick` and `AliasOnceB`.  `AliasOnceB` is
@@ -263,6 +266,57 @@ theorem alias_onceB (hpick : ∀ l : List Nat, l ≠ [] → pick l ∈ l) (hD : 
     rw [hba1] at hba2
     simp only [Option.some.injEq, Prod.mk.injEq] at hba2
     rw [← hl1, ← hl2, hba2.1]
+
+/-- **`+alias` keeps `FillFresh`**: the op before of a dead fill after is a
+definition that counts (were it a dead fill, the register would have none
+before, yet a definition that counts after is one before), so a definition
+that counts after is that same op, which is a dead fill after. -/
+theorem alias_fillFresh (hpick : ∀ l : List Nat, l ≠ [] → pick l ∈ l) (hD : DInvS bl)
+    (hT : TopoInvR bl topo rev) (h : aliasWalk pick nargs bl topo (aliasInit rev) = some gF) (hF : FillFresh bl) :
+    FillFresh gF.new := by
+  have hS : AliasSSAB bl := hD.2.1
+  have hGs := alias_targetsSub hT h
+  intro r o i hdf s hs
+  obtain ⟨b', hb', -, ⟨n, hn⟩, -, -⟩ := id hdf
+  obtain ⟨b, st0, rb, rf, hb, hrb, hbe, hrf, -⟩ := alias_blk hT h hb'
+  have hR : Reach bl o := aliasWalk_reach hT.1.1 hT.2 h o (by rw [hb']; rfl)
+  have hn' : rb.1[i]? = some (Pole.imm n r) := by rw [hbe] at hn; exact hn
+  obtain ⟨k, op, sta, outa, outb, st1, st', hk, hba, hl, hop, -, -⟩ := abody_split hrb hn'
+  have hd : aliasDst op = some r := by rw [← aliasDst_rename sta.old op, ← aop_rename hop]; rfl
+  -- the parameter case and the op case of `s`, as a definition that counts before
+  have hpar : ∀ o', LiveDef gF.new r (o', none) → LiveDef bl r (o', none) := by
+    intro o' hl
+    obtain ⟨hR', ⟨b2, hb2, hm⟩, -⟩ := hl
+    obtain ⟨b3, st3, rb3, rf3, hb3, -, hbe3, -, -⟩ := alias_blk hT h hb2
+    rw [hbe3] at hm
+    exact awi_par_live (reach_sub hGs hR') hb3 hm
+  have hop' : ∀ o' i', LiveDef gF.new r (o', some i') → ∃ k', LiveDef bl r (o', some k') := by
+    intro o' i' hl
+    obtain ⟨-, ⟨b2, -, hb2, -, -⟩, -⟩ := id hl
+    obtain ⟨b3, st3, rb3, rf3, hb3, hrb3, hbe3, hrf3, -⟩ := alias_blk hT h hb2
+    obtain ⟨k', -, -, -, -, hk'⟩ := alias_live_op hpick hD hT h hF hb2 hb3 hrb3 hbe3 hrf3 hl
+    exact ⟨k', hk'⟩
+  by_cases hdf0 : DeadFill bl r o k
+  · obtain ⟨o', _ | i'⟩ := s
+    · exact hF r o k hdf0 _ (hpar o' hs)
+    · obtain ⟨k', hk'⟩ := hop' o' i' hs
+      exact hF r o k hdf0 _ hk'
+  · have hl0 : LiveDef bl r (o, some k) := ⟨hR, ⟨b, op, hb, hk, hd⟩, fun i0 hi0 => by cases hi0; exact hdf0⟩
+    obtain ⟨o', _ | i'⟩ := s
+    · have := hS.1 r _ _ hl0 (hpar o' hs)
+      simp at this
+    · obtain ⟨k', hk'⟩ := hop' o' i' hs
+      have e := hS.1 r _ _ hl0 hk'
+      simp only [Prod.mk.injEq] at e
+      rw [← e.1] at hs
+      obtain ⟨k2, outa2, sta2, hba2, hl2, hk2⟩ := alias_live_op hpick hD hT h hF hb' hb hrb hbe hrf hs
+      have e2 := hS.1 r _ _ hl0 hk2
+      simp only [Prod.mk.injEq, Option.some.injEq, true_and] at e2
+      rw [← e2, hba] at hba2
+      simp only [Option.some.injEq, Prod.mk.injEq] at hba2
+      have hii : i' = i := by rw [← hl2, ← hl, hba2.1]
+      rw [hii] at hs
+      exact hs.2.2 i rfl hdf
 
 /-! ## What is left of the field -/
 
