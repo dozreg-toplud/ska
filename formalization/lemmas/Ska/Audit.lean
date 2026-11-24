@@ -292,6 +292,12 @@ open Formalization.SkaModel
 #print axioms Bake.bakes_ok_of_meet
 #print axioms Bake.bakes_norm
 #print axioms Bake.bakesImply_of_meet
+#print axioms Bake.uniSock_void
+#print axioms Bake.normCD_inhab
+#print axioms Bake.bakes_ok
+#print axioms Bake.bakesImply
+#print axioms Bake.InvB.variant_agree
+#print axioms Bake.InvB.collide
 #print axioms PokeM.compileStep_spec
 #print axioms PokeM.needOf_eq
 #print axioms PokeM.pokeS_sound
@@ -305,6 +311,11 @@ open Formalization.SkaModel
 #print axioms PokeM.pokeS_sound_of_meet
 #print axioms PokeM.pokeS_invKept_of_meet
 #print axioms PokeM.gap_of_meet
+#print axioms PokeM.pokeBakes
+#print axioms PokeM.anaHyp_of_arm
+#print axioms PokeM.pokeS_sound_of_comp
+#print axioms PokeM.pokeS_invKept_of_comp
+#print axioms PokeM.gap_of_comp
 #print axioms Bake.bakeLoop_mono
 #print axioms Bake.rebakeG_grows
 #print axioms Bake.bakeLoop_grows

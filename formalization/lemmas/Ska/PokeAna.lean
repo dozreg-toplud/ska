@@ -13,7 +13,10 @@ as a parameter.
 
 `anaHyp_of_bakes` proves `AnaHyp` for it from `PokeBakes`, HImp of every
 poke from a state that satisfies `InvB`; `anaHyp_of_meet` from `PokeSites`,
-the same with `SitesMeet` (`BakeImp.lean`) in place of HImp.  What it needs
+the same with `SitesMeet` (`BakeImp.lean`) in place of HImp.  Since the guard
+of commit 8f2162e, `PokeBakes` always holds (`pokeBakes`), so `anaHyp_of_arm`,
+`pokeS_sound_of_comp`, `pokeS_invKept_of_comp` and `gap_of_comp` need no
+hypothesis about the bakes.  What it needs
 besides `skaPokeB_sound`: the root sock `&+sub` is well formed, normal and
 not `%void`, the root bell has the poke's formula by construction, and the
 root datum's code requirement holds of `sub` (`skaPoke_root_fits`: a run's
@@ -128,8 +131,7 @@ theorem anaHyp_of_bakes (A : Arms M Map J H CR) {lib : Lib} {env : Env R}
     simp only [anaArm, Option.map_eq_some_iff] at h
     obtain ⟨⟨rb, L', reg'⟩, hk, rfl⟩ := h
     have hroot : (Sock.mk Cape.yes s, f).1 ≠ Sock.void := Sock.noConfusion
-    have h1 := skaPokeB_sound env hinv (wf_root s) (normSock_yes s) hroot
-      (fun pr dats memo' rd reg'' hs => hb s f long jets hot pr dats memo' rd reg'' hinv hs) hk
+    have h1 := skaPokeB_sound env hinv (wf_root s) (normSock_yes s) hroot hk
     refine ⟨h1.1, ?_⟩
     obtain ⟨code, hpi⟩ := hinv.ghost
     unfold skaPokeB at hk
@@ -183,6 +185,59 @@ theorem gap_of_meet (A : Arms M Map J H CR) {lib : Lib} {ref : Ref M Map J H} {e
     ∀ jets hot rest, liftInv enc (InvS lib ref)
       (enc ⟨⟨Treap.empty, Treap.empty, Treap.empty⟩, jets, hot, ⟨Treap.empty, Treap.empty, Treap.empty, rest⟩⟩) :=
   gap_of A hC (anaHyp_of_meet A hA hs) enc henc
+
+/-! ## With the guard of `+bake-graph`
+
+Commit 8f2162e makes every bake lie under its code bell's code requirement
+(`bakesImply`), so `PokeBakes` holds of every poke and the theorems above
+need neither it nor `PokeSites`. -/
+
+/-- **HImp of every poke** holds, by the guard. -/
+theorem pokeBakes (lib : Lib) (env : Env R) (jet : H → J → (Bell → Option Datum) → R → Bell → Bool)
+    (fold frozen : Bool) (fuel : Noun → Noun → LongB M → J → Nat) (regOf : J → R) :
+    PokeBakes lib env jet fold frozen fuel regOf :=
+  fun _ _ _ _ _ _ _ _ _ _ _ _ => bakesImply _
+
+/-- **`AnaHyp` of the model of `+ska-poke`**, with no hypothesis. -/
+theorem anaHyp_of_arm (A : Arms M Map J H CR) {lib : Lib} {env : Env R}
+    {jet : H → J → (Bell → Option Datum) → R → Bell → Bool} {fold frozen : Bool}
+    {fuel : Noun → Noun → LongB M → J → Nat} {bf : BEnv M → Nat} {regOf : J → R} {jetsOf : J → R → J}
+    {newOf : R → Noun}
+    (hA : A.skaPoke = anaArm env jet fold frozen fuel bf regOf jetsOf newOf) : AnaHyp A lib :=
+  anaHyp_of_bakes A hA (pokeBakes lib env jet fold frozen fuel regOf)
+
+/-- **`Sound` of the model of `+poke`** from `CompHyp` alone. -/
+theorem pokeS_sound_of_comp (A : Arms M Map J H CR) {lib : Lib} {ref : Ref M Map J H} {env : Env R}
+    {jet : H → J → (Bell → Option Datum) → R → Bell → Bool} {fold frozen : Bool}
+    {fuel : Noun → Noun → LongB M → J → Nat} {bf : BEnv M → Nat} {regOf : J → R} {jetsOf : J → R → J}
+    {newOf : R → Noun}
+    (hC : CompHyp A lib ref) (hA : A.skaPoke = anaArm env jet fold frozen fuel bf regOf jetsOf newOf) :
+    Sound lib (pokeS A) (InvS lib ref) :=
+  pokeS_sound A hC (anaHyp_of_arm A hA)
+
+/-- **The model of `+poke` keeps its invariant** from `CompHyp` alone. -/
+theorem pokeS_invKept_of_comp (A : Arms M Map J H CR) {lib : Lib} {ref : Ref M Map J H} {env : Env R}
+    {jet : H → J → (Bell → Option Datum) → R → Bell → Bool} {fold frozen : Bool}
+    {fuel : Noun → Noun → LongB M → J → Nat} {bf : BEnv M → Nat} {regOf : J → R} {jetsOf : J → R → J}
+    {newOf : R → Noun}
+    (hC : CompHyp A lib ref) (hA : A.skaPoke = anaArm env jet fold frozen fuel bf regOf jetsOf newOf) :
+    ∀ st ov p st', InvS lib ref st → ¬ HotOvum ov → pokeS A st ov = some (p, st') → InvS lib ref st' :=
+  pokeS_invKept A hC (anaHyp_of_arm A hA)
+
+/-- **The shapes of `Gap.contract`, `Gap.invKept` and `Gap.invStart`** from
+`CompHyp` alone. -/
+theorem gap_of_comp (A : Arms M Map J H CR) {lib : Lib} {ref : Ref M Map J H} {env : Env R}
+    {jet : H → J → (Bell → Option Datum) → R → Bell → Bool} {fold frozen : Bool}
+    {fuel : Noun → Noun → LongB M → J → Nat} {bf : BEnv M → Nat} {regOf : J → R} {jetsOf : J → R → J}
+    {newOf : R → Noun}
+    (hC : CompHyp A lib ref) (hA : A.skaPoke = anaArm env jet fold frozen fuel bf regOf jetsOf newOf)
+    (enc : CSt M Map J H CR → Noun) (henc : ∀ a b, enc a = enc b → a = b) :
+    Sound lib (liftPoke enc (pokeS A)) (liftInv enc (InvS lib ref)) ∧
+    (∀ t ov p t', liftInv enc (InvS lib ref) t → ¬ HotOvum ov → liftPoke enc (pokeS A) t ov = some (p, t') →
+      liftInv enc (InvS lib ref) t') ∧
+    ∀ jets hot rest, liftInv enc (InvS lib ref)
+      (enc ⟨⟨Treap.empty, Treap.empty, Treap.empty⟩, jets, hot, ⟨Treap.empty, Treap.empty, Treap.empty, rest⟩⟩) :=
+  gap_of A hC (anaHyp_of_arm A hA) enc henc
 
 end PokeM
 

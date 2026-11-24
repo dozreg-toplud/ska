@@ -483,26 +483,128 @@ theorem BakeOK.sub {lessc s : Sock} (h : BakeOK lessc s) : Sub s lessc := by
   · exact Sub.refl _
   · exact h
 
-/-- **A bake made from sites one of which shares a noun with `less.c`** is
-under `less.c` and has a noun; a fixed bake, or one no site informs, is
-`less.c`. -/
-theorem bakeOf_ok {fixed : Bool} {lessc s : Sock} {ks : List Sock} (h : bakeOf fixed lessc ks = some s)
-    (hmeet : fixed = false → ks ≠ [] → ∃ k ∈ ks, ∃ y, Fits lessc y ∧ Fits k y) : BakeOK lessc s := by
+/-- `+knit:so` of two socks that are not `%void` is not `%void`. -/
+theorem knit_ne_void {u v : Sock} (hu : u ≠ Sock.void) (hv : v ≠ Sock.void) : So.knit u v ≠ Sock.void := by
+  cases u with
+  | void => exact absurd rfl hu
+  | mk l d1 =>
+  cases v with
+  | void => exact absurd rfl hv
+  | mk r d2 =>
+  unfold So.knit
+  dsimp only
+  split <;> simp [Sock.dunno]
+
+theorem hed_mk_ne_void (c : Cape) (d : Noun) : So.hed (Sock.mk c d) ≠ Sock.void := by
+  cases c <;> cases d <;> simp [So.hed, Sock.dunno]
+
+theorem tel_mk_ne_void (c : Cape) (d : Noun) : So.tel (Sock.mk c d) ≠ Sock.void := by
+  cases c <;> cases d <;> simp [So.tel, Sock.dunno]
+
+/-- **`+uni-sock` is `%void` only of two `%void`s.** -/
+theorem uniSock_void : ∀ (k : Nat) (a b : Sock), So.depth a + So.depth b < k → uniSock a b = Sock.void →
+    a = Sock.void ∧ b = Sock.void := by
+  intro k
+  induction k with
+  | zero => intro _ _ h; omega
+  | succ k ih =>
+  intro a b hk hu
+  rw [uniSock.eq_def] at hu
+  by_cases hab : a = b
+  · rw [if_pos hab] at hu; subst hu; exact ⟨rfl, hab.symm⟩
+  rw [if_neg hab] at hu
+  cases a with
+  | void => exact ⟨rfl, hu⟩
+  | mk ca da =>
+  exfalso
+  cases b with
+  | void => cases hu
+  | mk cb db =>
+  dsimp only at hu
+  by_cases e1 : Ca.all ca = true
+  · rw [if_pos e1] at hu; cases hu
+  rw [if_neg e1] at hu
+  by_cases e2 : Ca.all cb = true
+  · rw [if_pos e2] at hu; cases hu
+  rw [if_neg e2] at hu
+  by_cases e3 : ca = Cape.no
+  · rw [if_pos e3] at hu; cases hu
+  rw [if_neg e3] at hu
+  by_cases e4 : cb = Cape.no
+  · rw [if_pos e4] at hu; cases hu
+  rw [if_neg e4] at hu
+  cases ca with
+  | yes => cases hu
+  | no => exact absurd rfl e3
+  | cell ah aT =>
+  cases cb with
+  | yes => cases hu
+  | no => exact absurd rfl e4
+  | cell bh bT =>
+  dsimp only at hu
+  have d1 := So.depth_hed_lt (ch := ah) (ct := aT) (d := da)
+  have d2 := So.depth_hed_lt (ch := bh) (ct := bT) (d := db)
+  have d3 := So.depth_tel_lt (ch := ah) (ct := aT) (d := da)
+  have d4 := So.depth_tel_lt (ch := bh) (ct := bT) (d := db)
+  refine knit_ne_void (fun h => ?_) (fun h => ?_) hu
+  · exact hed_mk_ne_void _ _ (ih _ _ (by omega) h).1
+  · exact tel_mk_ne_void _ _ (ih _ _ (by omega) h).1
+
+/-- **`+norm-sock` gives a sock with a noun**: its own data. -/
+theorem normCD_inhab : ∀ {c : Cape} {d : Noun} {p : Cape × Noun}, normCD c d = some p → FitsCape p.1 p.2 p.2
+  | Cape.no, _, _, h => by simp only [normCD, Option.some.injEq] at h; rw [← h]; trivial
+  | Cape.yes, _, _, h => by simp only [normCD, Option.some.injEq] at h; rw [← h]; rfl
+  | Cape.cell _ _, Noun.atom _, _, h => by simp [normCD] at h
+  | Cape.cell h t, Noun.cell dh dt, p, e => by
+    simp only [normCD, Option.bind_eq_some_iff, Option.map_eq_some_iff] at e
+    obtain ⟨l, hl, r, hr, rfl⟩ := e
+    have fl := normCD_inhab hl
+    have fr := normCD_inhab hr
+    split
+    · trivial
+    · rename_i hnn
+      dsimp only
+      split
+      · rename_i hy
+        obtain ⟨hy1 | hy1, hy2⟩ := hy
+        · rw [hy1]; rfl
+        · exact absurd ⟨hy1, hy2 ▸ hy1⟩ hnn
+      · simp only [FitsCape]
+        exact Or.inr ⟨l.2, r.2, l.2, r.2, rfl, rfl, fl, fr⟩
+
+/-- **A guarded bake is under `less.c`** (the guard of commit 8f2162e): a
+fixed bake, or one no site informs, is `less.c`; otherwise `both` is the bake
+only when `+huge:so less.c both` says yes, so every noun of it fits `less.c`,
+and `both` has a noun unless it is `%void`, which `+uni-sock` gives only when
+`less.c` is `%void` too, and then `both` is `less.c`. -/
+theorem bakeOf_ok {fixed : Bool} {lessc s : Sock} {ks : List Sock} (h : bakeOf fixed lessc ks = some s) :
+    BakeOK lessc s := by
   unfold bakeOf at h
   split at h
   · cases h; exact Or.inl rfl
-  · rename_i hf
-    split at h
+  · split at h
     · cases h; exact Or.inl rfl
     · rename_i k0 ks0
-      obtain ⟨k, hk, y, hy, hky⟩ := hmeet (by simpa using hf) (List.cons_ne_nil _ _)
-      have hm : Fits (meet k0 ks0) y := by
-        refine meet_fits ks0 k0 y ?_
-        rcases List.mem_cons.mp hk with rfl | hk
-        · exact Or.inl hky
-        · exact Or.inr ⟨k, hk, hky⟩
-      refine Or.inr ⟨(normSockH_rev h).trans (uniSock_left _ _ _ (Nat.lt_succ_self _) y hy hm), y, ?_⟩
-      exact normSockH_fits (uniSock_fits _ _ _ (Nat.lt_succ_self _) y hy hm) h
+      simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+      obtain ⟨both, hb, hv, hh, rfl⟩ := h
+      cases hv with
+      | false => exact Or.inl rfl
+      | true =>
+      rw [if_pos rfl]
+      by_cases e : both = lessc
+      · exact Or.inl e
+      refine Or.inr ⟨fun y hy => huge_sound hh hy, ?_⟩
+      generalize hu : uniSock lessc (meet k0 ks0) = u at hb
+      cases u with
+      | void =>
+        simp only [normSockH, Option.some.injEq] at hb
+        subst hb
+        obtain ⟨hl, hm⟩ := uniSock_void _ _ _ (Nat.lt_succ_self _) hu
+        exact absurd hl.symm e
+      | mk c d =>
+        simp only [normSockH, Option.map_eq_some_iff] at hb
+        obtain ⟨p, hp, rfl⟩ := hb
+        exact ⟨p.2, normCD_inhab hp⟩
 
 theorem hugeMk_self (c : Cape) (d : Noun) : So.hugeMk c d c d = some true := by
   unfold So.hugeMk; simp
@@ -728,19 +830,23 @@ def SitesMeet (E : BEnv M) : Prop :=
     know E.fold d.nomm s E.dat idc = some (out, sites) → ∀ c k, (c, k) ∈ sites → c ≠ E.root →
       ∃ y, Fits c.less y ∧ Fits k y
 
-/-- **HImp from the sites**: if the sites meet their callees' code
-requirements, every bake at the end of the worklist is under its code
-bell's code requirement. -/
-theorem bakes_ok_of_meet {E : BEnv M} (hm : SitesMeet E) {n : Nat} {st : BSt M}
+/-- **Every bake at the end of the worklist is under its code bell's code
+requirement** (`BakeOK`, the conclusion `SitesMeet` was to give), with no
+hypothesis: the guard of `+bake-graph` makes every new bake `BakeOK`
+(`bakeOf_ok`) and a rebake keeps it (`rebakeG_ok`). -/
+theorem bakes_ok (E : BEnv M) {n : Nat} {st : BSt M}
     (h : bakeLoop E n [E.root] (Treap.put Treap.empty E.root ()) (bakeInit E) = some st) :
     ∀ c s, Treap.get st.bak c = some s → BakeOK c.less s :=
-  bakeLoop_pred E (I := fun c k => c ≠ E.root → ∃ y, Fits c.less y ∧ Fits k y) (Or.inl rfl)
-    (fun cur s d out sites hq hd hk c k hck hc => hm cur s d out sites hq hd hk c k hck hc)
-    (fun c fixed ks bake old g bake' g' hc hks hb ho hre => by
-      refine rebakeG_ok (bakeOf_ok hb fun _ hne => ?_) ho hre
-      obtain ⟨k, ks', rfl⟩ := List.exists_cons_of_ne_nil hne
-      obtain ⟨y, hy⟩ := hks k List.mem_cons_self hc
-      exact ⟨k, List.mem_cons_self, y, hy⟩) h
+  bakeLoop_pred E (I := fun _ _ => True) (Or.inl rfl)
+    (fun _ _ _ _ _ _ _ _ _ _ _ => trivial)
+    (fun _ _ _ _ _ _ _ _ _ _ hb ho hre => rebakeG_ok (bakeOf_ok hb) ho hre) h
+
+/-- **HImp from the sites**, now a corollary of `bakes_ok` (the hypothesis
+`SitesMeet` is not used). -/
+theorem bakes_ok_of_meet {E : BEnv M} (_hm : SitesMeet E) {n : Nat} {st : BSt M}
+    (h : bakeLoop E n [E.root] (Treap.put Treap.empty E.root ()) (bakeInit E) = some st) :
+    ∀ c s, Treap.get st.bak c = some s → BakeOK c.less s :=
+  bakes_ok E h
 
 end Loop
 
