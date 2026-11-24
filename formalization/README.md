@@ -121,6 +121,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/SkaCull.lean` | `+cull` of `K` against `Ana.cull`, both ways at some fuel (`cull_gate`), in every context `K` with `ana` at axis `31` and `K_bat` at axis `2`.  `+silt` (arm `767` of layer 2, named there: `siltArm`, `silt_arm_at` by the kernel) is `+gas:in` from `~` and gives the noun of `Treap.silt` (`silt_gate`, `silt_setNoun`); `+dif:in`, `=(~ dead)`, `+wyt:in` and the pre-order of `+rep` on set nouns of identities give `Treap.dif`, `Treap.tap = []`, `Treap.wyt` and `Treap.rap` (`dif_setNoun`, `setNoun_nil_iff`, `wyt_setNoun`, `preorder_setNoun`); `+skip` with `~(has in dead)` (`cull_skip`); the bunt of `identity` that the sample of the gate of `+rep` starts with, computed by the mold at arm `186` of the tail of `ana` (`identBunt`, `mold_bunt`, by the kernel through `evalFuel`); the gate of `+rep` (three `+del:by`, `cull_rep_gate`) folded over the pre-order with a gate known only on the members and on state nouns (`rep_loop_on`, `cull_rep`).  `cull_run`: the battery after `+above` as a function of what the loop `live` returns; `cull_run_none`: it crashes when `id` is not on the stack. |
 | `Compiler/MsgCa.lean` | `+msg-ca` against `msgCa` of `Ska/RunStep.lean` on every two capes, in every context (`msg_ca_gate`, by induction on the first cape): it reads nothing from its context, and `=*  msg  .` makes each recursion push the gate and slam it, so it reruns the same battery.  The generator names no noun of it, so they are defined there and tied to the pill by the kernel: the arm `msgCaArm` is arm `187` of `ana` (`msg_ca_arm_at`, the gate with the sample `[| |]`), its battery `msgCaBat` is `[7 [0 1] msgCaBody]` at axis `3005` of `ana`, and the body `msgCaBody` (the formula quoted in the earlier notes) is at axis `12023` (`msg_ca_body_at`). |
 | `Compiler/SkaRun.lean` | `+run` (arm `95` of `K`) against `Ana.runStep`, over an evaluator `nockW c` with `c` equal to `nock` off `FFar`, with `fol-loop` a parameter `go` given by `GoIsW c` on the rest of the trap's subject `runTrapRest` (`run_stepW`; `run_step` for `nock`), in every context `K` with `ana` at axis `31`; `runTrapRest_ana` gives `hana` and `hK` of `FolLoopConv.lean` for that rest.  The battery is split by the kernel (`ska_run_battery_eq`) into its prefix (the count of the run, `+git-g`, the pushes of `bus`, `fol` and `sub`), `runFolF` (`gen` and the trap's subject, the kick) and `runDatumF`, the datum construction, itself cut into the named pieces `rdLess`, ..., `rdFin`.  The datum construction is its own lemma (`run_datum`: the noun of `runEnd` from any result of `fol-loop`), proved piece by piece (`run_datum_new`: `+app:ca`, `dark`, `+lack:ca`; `run_datum_pm`: `+has:in` of `moved`, `+msg-anno` or `+double-int`; `run_datum_moved`: the product and map, the `+put:in` of `moved` under `movedCond`; `run_datum_indi`, `run_datum_seek`: the two `=?` through `+msg-ca` and `+lack:ca`; `run_datum_end`: `changed`, `tick`, `ticks` by `+gut:by` and `+put:by`, and the `+put:by` of the datum into `g`), and the model's `runEnd` is that construction (`runEnd_eq`, with `runDn`, `runMoved`, `runSt`, `chgOf`).  A change to `less-code` in the Hoon changes `rdLess` and `run_datum_new`, the first component of `runDn`, and `runDatum` of `Ska/RunStep.lean`. |
+| `Compiler/SkaPass.lean` | The member loop of `+analyze` (`ska_analyze.loop0`) against `Ana.memberStep`: one turn over an evaluator `nockW c` with `c` equal to `nock` off `FFar` (`member_stepW`), with the loop's calls to itself (`hml`, on the core `memSubj` with `members` edited) and the calls of the gate `+run` (`RunIsW c`: every `c` run of `ska_run.battery` on `runSubj` gives `run` as `runNoun`) as parameters, in every context `K` with `ana` at axis `31` and `K_bat` at axis `2`.  The core is `memSubj`: `[loop0 [next-before [members [loop1 [pass [lbc [index [hit gate]]]]]]]]`, `gate` the gate of `+analyze` on `[id st]`; the turn runs `+dirty` (arm `94` of `K`, `kc_dirty_at`, `ska_dirty_arm`), the late-run count under `+gth`, `+got:by` of `order` (crash included), `+run` (arm `95`, `slot_K95`, `ska_run_arm`), `+lth`, and after its call to itself `+min` and the `|` of the two flags. |
 | `Compiler/RegisterFast.lean` | `+register-fast` for registrations kept as nouns: `registerFastP`, the pill's run of the gate decoded into `[miss regs]`, satisfies `RegisterFastIs` for every `Env Noun` that uses it, given `RegisterFastShape` (every return of the gate is a cell with a flag at its head; `registerFastIs_of`).  The shape fact is open: `absNock` of `Compiler/Frame.lean` on the gate's battery (fuel 1000) gives 103 shapes, of which 10 are `[%.n *]` and 93 unknown, because those branches end in calls, which `absNock` does not follow. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
@@ -437,9 +438,12 @@ import only its theorems.  So:
      (`run_stepW`, `Compiler/SkaRun.lean`, against `Ana.runStep` over an
      evaluator, with `fol-loop` as a `GoIsW` parameter and only `ana` at axis
      `31` of `K`), with its datum construction as the separate lemma
-     `run_datum` (against `runEnd`, `runEnd_eq`).
+     `run_datum` (against `runEnd`, `runEnd_eq`); one turn of the member
+     loop of `+analyze` (`member_stepW`, `Compiler/SkaPass.lean`, against
+     `Ana.memberStep` over an evaluator, with its self-call and `+run` as
+     parameters, `RunIsW`).
    - *Modelled, not linked*:
-     `+analyze`, the pass and member loops,
+     `+analyze`, the pass loop (the member loop is linked one turn deep),
      `+ska-callgraph`, `+prune-callgraph`,
      `+memo-final-entry`, the analysis part of `+ska-poke`;
      `+uni-sock`, `+norm-sock`, `+know`,
@@ -460,10 +464,13 @@ import only its theorems.  So:
      families `soft-*`, `laze-*`, `inter1`, `inter2`; the optimizer;
      `+hot-diff`, `+load`, `+peek`, `+wish`.
    - *Next, in this order* (the nouns are `ska_cg.*` of
-     `Pill/Arm/Ska_cg.lean`, `ska_analyze.*`, `ska_run.*`): the loops of
-     `+analyze` (`ska_analyze.loop0` the member loop, `loop1` the pass loop)
-     against `memberStep`, `passStep`, each as a step theorem over `nockW c`
-     with its self-call as a parameter, as `run_stepW` is; then `+analyze`
+     `Pill/Arm/Ska_cg.lean`, `ska_analyze.*`, `ska_run.*`): the pass loop
+     of `+analyze` (`ska_analyze.loop1`) against `passStep`, as a step
+     theorem over `nockW c` with its self-call and the member loop as
+     parameters, as `member_stepW` is (the member loop's self-call goes
+     through `c`, since `loop0` is excluded by `FFar`); then the exactness
+     lemma of the member loop under an `evOne`-style call function, with
+     `+run` given by `run_stepW` and `folE`; then `+analyze`
      (`ska_analyze.battery`) against `analyzeStep` (`+cull` before the first
      pass by `cull_run`, `+dirty`, `+sweep`, `+above`, `+pop` and `+run` are
      linked); then one joint induction on an `ev j` that runs every formula
