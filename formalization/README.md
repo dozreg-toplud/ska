@@ -205,6 +205,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompSccIn.lean` | The structure of `+compile-scc-in` (its header: the passes, the state they thread, the final pass of `member` for one bell with line numbers, and every difference from `finishLF`), and the arms of the n-ary final pass linked so far: `+soft-done` is the identity on `soft` empty or `mode` `%drop` (`sd_empty`, `sd_drop`), the gate of `+need-to-ordered` is `needToOrd` (`nta_gate`), the gate of `+need-ord-alloc-regs` is `needOrdAllocRegs` (`noar_gate`), and the gate of `+collapse-shape` is the check of `args.then` then `needOrdAllocRegs` of the shape that the gate of `+shape-collapse` returns, a hypothesis (`cs_gate`). |
 | `Compiler/CompStraightN.lean` | `+to-straight` on an n-ary input need (the sample `[%next [[ned ~] ~ ~] ~ o]` of the final pass of `+compile-scc-in`, `tsSampleN`): the pushes with `ins` `flattenNeed ned`, `r0` its head, `n-in` its length and `run` `isRun ins r0 0` (`tsn_pre1`, the trap `run` `tsn_run`, `tsn_pre2`, `tsn_pre3`, `tsn_pre`), `ren` is `renReg r0 n-in` (`tsn_ren`), `rer` (`tsn_rer`), the trap of `+rewrite-input` on any need returns `needToOrd ned` and leaves `gen` (`tsn_ri_trap`, `tsn_ri`), the arm `$` takes the renaming branch (`tsn_dol`), `+count-args` is `countArgs` (`ca_gate`), the renaming branch (`tsn_rename`), the gate of the fold in any `CfCore` core (`tsn_step_gen`, `tsn_st_cf`, `tsn_step`), the core (`tsn_core`), and the gate: on a run of inputs with `cond` empty it returns the noun of `toStraightF` (`tsn_at`). |
 | `Compiler/CompCoerceLazy.lean` | `+coerce-lazy` (door battery axis `3580`, `comp_cz_at`, its gate body `czBody` cut into `czX`, `czSrl`, `czLok`, `czTail`) on a fork-free `[sure ~ ~]`: `+axe-in-less-cape` (arm `95` of `K`) is `axeInLessCape` (`aic_loop`, `aic_gate`), `+axe-in-need` (arm `0x5dd4`) is `axeInNeedL` (`ain_loop`, `ain_gate`), the gate of the `+rep:in` over `lok` is `czStep` (`cz_gate_step`) and the fold is `coerceLok` (`coerceLok_eq`, `cz_lok`, with no `0` in its product, `coerceLok_ne0`), `+sure-require-look` of the new sure (`cz_srl`), the trap `sure-loop` is `sureLoop` with `o` not in `soft` (`cz_loop_none`, `cz_loop_this`, `cz_loop_pair`, `cz_loop_both_this`, `cz_loop_both_pair`, `cz_loop_both_both`, `cz_loop`), and the gate is `coerceLazy` (`cz_gate`) or `coerceLazyL` on `ofSure` (`cz_gate_L`). |
+| `Compiler/CompBakeNeed.lean` | `+bake-need` (arm `384468` of `K`, `bn_at`, its gate body `bnBody` and trap `bnLoop` cut into `bnTest`, `bnYes` with the baking trap `bnAll`, and `bnRec`) when nothing is baked: on a need with no cell of two `%none` and no `%both` with two `%none` halves (`NeedNorm`, true of every need of `+need-ord-alloc-regs`, `needNorm_noar`) and a sock that is `%void` or not wholly known (`all:ca` false) at every node of the need, with `hed:so` and `tel:so` down the walk (`NoBake`), the test of each node is false before `+need-fits` (`bn_test`), `+cons-need` rebuilds each cell (`cn_gate`), and the gate returns `[ned ~]` (`bn_loop`, `bn_gate`). |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`, whose `keys` are those of `rap`, the order of `+rep:by` (`treapMap_keys`). |
@@ -1235,6 +1236,22 @@ import only its theorems.  So:
     cell case crashes on a `%this` or `%both` target (`?@ -.ned-target
     !!`), as `sureLoop` does.  With no fork and no bond the rolls of the
     tail are not run (`czTail` returns `gen`).
+    L, 2026-11-24 (track A, `+bake-need`), `Compiler/CompBakeNeed.lean`.
+    The arm is not what the header of `CompSccIn.lean` read (lines 3729
+    to 3751 there): `+bake-need` now walks the need with the sock `k` of
+    the part it is the need of (`hed:so`, `tel:so`, line 3727 on), bakes a
+    whole part when `k` is a cell, `(all:ca cape.k)` holds and `+need-fits`
+    (arm `4` of `K`) says the data has the structure the need asks, and
+    otherwise rebuilds cells with `+cons-need` and turns a `%both` whose
+    halves were both baked into `[%this r]`.  `bn_gate` proves `[ned ~]`
+    under `NeedNorm ned` and `NoBake ned less.b`: the sock at every node
+    is `%void` or not wholly known.  For example under `less.b = [[& |]
+    data]` a need `[[%this 3] [%this 4]]` is baked at its head, since
+    `hed:so` gives `[& -.data]`, so `NoBake` fails there, as it should.
+    `NoBake` is sufficient, not necessary: a wholly known atom under a
+    cell of the need is not baked (`+need-fits` is false there) but fails
+    `NoBake`.  `+need-fits` is the next helper if the exact condition is
+    wanted.
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
