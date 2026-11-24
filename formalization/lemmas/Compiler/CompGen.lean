@@ -24,7 +24,7 @@ The arms `+re`, `+oo`, `+id`, `+dropping`, `+set-tag`, `+emir`, `+emit` and
 `+add-ops` read and write only the first seven fields.  `re_noun`, `oo_noun`,
 `id_noun` are what their Hoon builds on the noun (`[re-gen.gen gen(re-gen
 +(re-gen.gen))]`, an edit at axis `2`, `6`, `14`): the model's result,
-encoded.  The pill's arms of the door are not linked yet.
+encoded.  The pill's arms of the door are linked in `CompDoor.lean`.
 -/
 
 namespace Formalization
