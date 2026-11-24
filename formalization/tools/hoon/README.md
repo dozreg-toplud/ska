@@ -12,6 +12,20 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
 * `thread-a/b/c`    162 threading cases: before `+optimize`, after it, and with passes left out
 * `proxy-dump.hoon` the raw blocks of two proxy cases for a subject sock that knows nothing (`lemmas/Ska/ExecPath.lean`)
 * `selfkeep.py OUTDIR` writes an instrumented copy of the library and a driver for the register facts of `lemmas/Ska/CompUnproxyRegs.lean`: over the 74 formulas of `thread-a.hoon` and the two of `proxy-dump.hoon`, 2930 runs of `run` in `%run` mode (352 make a proxy), no failure (2026-11-24); with check i5 (every register a new or changed block of a run mentions is below the run's end) the output has 5860 lines (each case's sequence twice), 704 with a proxy, no failure (2026-11-24)
+* `tagkeep.py OUTDIR [a|b|c|x|all]` writes an instrumented copy of the library and a driver for the tag invariant of
+                    `lemmas/Ska/CompTagRun.lean`: at the end of every run of `run` in `%run` mode, with region `rb` and goal `gol`,
+                    with G(t) = "`rb` is a suffix of `t`, or `t` is the tag (at the start) of a lazy block of `gol`", every key
+                    the run added to `cond` has a tag satisfying G, every entry of `tags` it set satisfies G, every lazy block of
+                    the returned `next` has a tag satisfying G, and every old key of `cond` keeps its tag.  Run it as
+                    `RUNHOON_LIB=OUTDIR/lib.hoon runhoon.sh OUTDIR/ck.hoon 1500 > out.txt`, then `tagkeep.py --sum out.txt`.
+                    Over the 162 formulas of `thread-a/b/c`, the two of `proxy-dump.hoon` and 17 nestings of
+                    `[7 [4 [0 3]] [6 [0 1] [0 1] [1 0]]]` (inside two `%6`, inside a cons inside a `%6`, in a test, in both
+                    branches, under a goal with forks, under `%10` and `%5`): 181 cases, 9584 runs, 1582 with a proxy,
+                    13844 keys added, no failure (2026-11-24).  The stronger form without the goal's tags ("every key added
+                    has a tag with `rb` as a suffix") fails in 758 runs, all under goals whose lazy blocks have tags from
+                    outside the run's region (the forking branch of `%6`, for example
+                    `[7 [6 [0 2] [7 [4 [0 3]] [0 1]] [1 0]] [6 [0 1] [0 1] [1 0]]]`); in every run whose goal's lazy blocks
+                    all have tags with `rb` as a suffix (a fork-free goal among them) every key added has one
 * `sitesmeet2.hoon` `SitesMeet` on every site after fifteen pokes
 * `sitesmeet3.hoon` the three invariants of `lemmas/Ska/SitesMeet.lean` on the same sites
 * `sitesmeet4.hoon` `LessProvidesNF` and `KnowMeetsNF` of `lemmas/Ska/SitesMeetNF.lean` (a copy of `+know` with `fold` as a sample)
