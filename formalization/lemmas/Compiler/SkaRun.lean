@@ -329,6 +329,79 @@ theorem run_datum_end (gen : GenS FinMap R) (dn : FDatum FinMap) (pm dark less :
       hl2, sock_toNoun_iff, cape_toNoun_iff, FDatum.toNoun, runNoun, runSt, SkaState.toNoun, folOutNoun,
       FolOut.toNoun, GenS.toNoun, flag, by.arm_at, by_arm, by.put.arm_at, put_arm, by.gut.arm_at, gut_arm]
 
+/-! ## The datum construction, whole -/
+
+theorem ins_of_has {m : FinMap Ident Unit} {k : Ident} (h : Treap.has m k = true) : Treap.ins m k = m := by
+  apply Treap.ext
+  intro j
+  show Treap.get (Treap.put m k ()) j = _
+  rw [Treap.get_put]
+  by_cases e : j = k
+  · subst e
+    simp only [if_true]
+    simp only [Treap.has, Option.isSome_iff_exists] at h
+    obtain ⟨u, hu⟩ := h
+    rw [hu]
+  · simp [e]
+
+/-- The new datum of `+run`, piece by piece as the Hoon builds it. -/
+noncomputable def runDn (id : Ident) (data : FDatum FinMap) (out : FolOut) (gen : GenS FinMap R) :
+    FDatum FinMap :=
+  let dn1 : FDatum FinMap := ⟨gen.callees, out.nomm, Ca.app gen.want id.1, Ca.lack gen.indi (darkOf id.1),
+    gen.seek, out.prod.sock, out.prod.src, gen.area⟩
+  let pm := mergeProd (Treap.has gen.st.moved id) ⟨dn1.prod, dn1.map⟩ ⟨data.prod, data.map⟩
+  let dn2 := { dn1 with prod := pm.sock, map := pm.src }
+  let dn3 := { dn2 with indi := indiSet dn2 data.core (darkOf id.1) }
+  { dn3 with seek := seekSet dn3 data.core }
+
+/-- `moved` after the run. -/
+noncomputable def runMoved (id : Ident) (data : FDatum FinMap) (out : FolOut) (gen : GenS FinMap R) :
+    FinMap Ident Unit :=
+  movedSet data.core (mergeProd (Treap.has gen.st.moved id) out.prod ⟨data.prod, data.map⟩) id gen.st.moved
+
+theorem runMoved_eq (id : Ident) (data : FDatum FinMap) (out : FolOut) (gen : GenS FinMap R) :
+    runMoved id data out gen = if (runDatum (Treap.has gen.st.moved id) id.1 out gen.gen data.core).2.1
+      then Treap.ins gen.st.moved id else gen.st.moved := by
+  unfold runMoved movedSet
+  cases hm : Treap.has gen.st.moved id
+  · by_cases hc : movedCond data.core (mergeProd false out.prod ⟨data.prod, data.map⟩)
+    · rw [if_pos hc, if_pos]
+      simp only [runDatum, FDatum.core, Bool.false_or, Bool.and_eq_true]
+      exact ⟨decide_eq_true hc.1, decide_eq_true hc.2⟩
+    · rw [if_neg hc, if_neg]
+      simp only [runDatum, FDatum.core, Bool.false_or, Bool.and_eq_true]
+      rintro ⟨h1, h2⟩
+      exact hc ⟨of_decide_eq_true h1, of_decide_eq_true h2⟩
+  · rw [ins_of_has hm]
+    split <;> split <;> rfl
+
+theorem ite_moved (c : Prop) [Decidable c] (st : SkaState FinMap R) (m : FinMap Ident Unit) :
+    (if c then { st with moved := m } else st) = { st with moved := if c then m else st.moved } := by
+  split <;> rfl
+
+/-- **The model's datum construction is the Hoon's, piece by piece.** -/
+theorem runEnd_eq (id : Ident) (data : FDatum FinMap) (out : FolOut) (gen : GenS FinMap R) :
+    runEnd id data out gen = ((gen.low, gen.back, chgOf (runDn id data out gen) data.core),
+      runSt id { gen.st with moved := runMoved id data out gen } (runDn id data out gen)
+        (chgOf (runDn id data out gen) data.core)) := by
+  rw [runMoved_eq]
+  cases hb : (runDatum (Treap.has gen.st.moved id) id.1 out gen.gen data.core).2.1
+  · simp only [runEnd, hb, if_false, Bool.false_eq_true]; rfl
+  · simp only [runEnd, hb, if_true]; rfl
+
+include hcf hK in
+/-- **The datum construction of `+run`** (`runDatumF`) on the result of
+`fol-loop`: the noun of `runEnd`. -/
+theorem run_datum (gen : GenS FinMap R) :
+    nockW c (dBase regsNoun K sb x id data out gen) runDatumF
+      = some (runNoun regsNoun (runEnd id data out gen)) := by
+  rw [runEnd_eq]
+  unfold runDatumF
+  rw [run_datum_new c hcf regsNoun K hK sb x id data out, run_datum_pm c hcf regsNoun K hK sb x id data out,
+    run_datum_moved c hcf regsNoun K hK sb x id data out, run_datum_indi c hcf regsNoun K hK sb x id data out,
+    run_datum_seek c hcf regsNoun K hK sb x id data out, run_datum_end c hcf regsNoun K hK sb x id data out]
+  rfl
+
 end datum
 
 end Compiler
