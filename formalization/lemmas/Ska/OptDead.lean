@@ -30,15 +30,6 @@ open Nock
 
 variable {Map : Type → Type} [HoonMap Map]
 
-/-- `+get-reg-safe-assignment`. -/
-def safeAssign : Pole → Option Nat
-  | Pole.imm _ d => some d
-  | Pole.mov _ d => some d
-  | Pole.con _ _ d => some d
-  | Pole.hed _ d => some d
-  | Pole.tal _ d => some d
-  | _ => none
-
 /-- The inner loop over the reversed body. -/
 def deadBody : List Pole → List Pole → List Nat → List Pole × List Nat
   | [], nb, saw => (nb, saw)
@@ -55,27 +46,11 @@ def removeDeadCode (bl : Map Blob) (revTopo : List Nat) : Option (Map Blob) :=
         (HoonMap.put acc.1 o { b with body := r.1 }, r.2))
     (HoonMap.empty, [])).map Prod.fst
 
-section
-variable {σ : Type}
-
-/-- No op that `+get-reg-safe-assignment` names crashes on a path from the
-entry. -/
-def LocalOK (lib : Lib) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (vals : List Noun)
-    (t : Trace) : Prop :=
-  ∀ es y p rest, Path.FromEntry (lib := lib) (O := O) (c := c) (gul := gul) st vals t es y →
-    y.params = [] → y.b.par = [] → y.b.body = p :: rest → (safeAssign p).isSome →
-    (execPole lib O gul y.st p y.regs y.t).isSome
-
-end
-
-/-- **The preservation statement of `+remove-dead-code`** (open): `Keeps`
-on the entries where `LocalOK` holds as well. -/
+/-- **The preservation statement of `+remove-dead-code`** (proved:
+`deadKeeps` in `OptDeadSim.lean`): `Keeps`, on a `topo` with `TopoOK`. -/
 def DeadKeeps : Prop :=
   ∀ (c : Straight Map) topo bl', TopoOK c.blocks topo →
-    removeDeadCode c.blocks topo.reverse = some bl' →
-    ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (gul : Noun) (st : σ) (vals : List Noun) (t : Trace),
-      ReadsOK lib O c gul st vals t → LocalOK lib O c gul st vals t →
-        execEntry lib O st (withBlocks c bl') vals t gul = execEntry lib O st c vals t gul
+    removeDeadCode c.blocks topo.reverse = some bl' → Keeps c (withBlocks c bl')
 
 end Opt
 end SkaModel
