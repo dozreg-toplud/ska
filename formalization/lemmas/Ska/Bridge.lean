@@ -591,11 +591,12 @@ theorem folLoop_zero (env : Env R) (memoF : Memo M) : folLoop env memoF 0 = fun 
   unfold folLoop; rfl
 
 theorem folLoop_succ (env : Env R) (memoF : Memo M) (n : Nat) :
-    folLoop env memoF (n + 1) = folStep env (resolve env memoF n) (folLoop env memoF n) := by
+    folLoop env memoF (n + 1) = folStep env (resolveR env memoF n) (folLoop env memoF n) := by
   conv => lhs; unfold folLoop
+  rfl
 
-theorem resolve_succ (env : Env R) (memoF : Memo M) (n : Nat) :
-    resolve env memoF (n + 1) = resolveStep env (resolve env memoF n) (analyze env memoF n) := by
+theorem resolve_succ (env : Env R) (memoF : Memo M) (n : Nat) (orig : Ident) :
+    resolve env memoF (n + 1) orig = resolveStep env (resolve env memoF n orig) (analyze env memoF n) orig := by
   conv => lhs; unfold resolve
 
 theorem analyze_succ (env : Env R) (memoF : Memo M) (n : Nat) :
@@ -618,7 +619,7 @@ theorem memberLoop_succ (env : Env R) (memoF : Memo M) (n : Nat) :
 that `resolve` keeps with answers in `P` at every fuel below `n`. -/
 theorem folLoop_goOK {Inv : GenS M R → Prop} (env : Env R) (memoF : Memo M)
     (hP : ∀ tab, TabIn P tab → TabWF tab) (hL : LocalStable Inv) :
-    ∀ n, (∀ k, k < n → ResOK P Inv (resolve env memoF k)) → GoOK P Inv n (folLoop env memoF n)
+    ∀ n, (∀ k, k < n → ResOK P Inv (resolveR env memoF k)) → GoOK P Inv n (folLoop env memoF n)
   | 0 => fun _ _ _ _ _ _ _ _ _ _ _ _ h => by rw [folLoop_zero] at h; cases h
   | n + 1 => fun hres _ _ _ _ _ _ _ _ _ hi hs h => by
     rw [folLoop_succ] at h
@@ -630,7 +631,7 @@ theorem genInit_at (index : Nat) (st : SkaState M R) : (genInit index st).at 0 =
 /-- **The run of `+run` on `id` is a run with answers in `P`.** -/
 theorem run_folTopR {Inv : GenS M R → Prop} (env : Env R) (memoF : Memo M)
     (hP : ∀ tab, TabIn P tab → TabWF tab) (hL : LocalStable Inv) {n index : Nat}
-    (hres : ∀ k, k < n → ResOK P Inv (resolve env memoF k)) {id : Ident} {st : SkaState M R}
+    (hres : ∀ k, k < n → ResOK P Inv (resolveR env memoF k)) {id : Ident} {st : SkaState M R}
     {out : FolOut} {gs' : GenS M R} (hi : Inv (genInit index st)) (hw : WellFormed id.1)
     (h : folLoop env memoF n id.2 ⟨id.1, A 1⟩ none none false false (genInit index st) = some (out, gs')) :
     Inv gs' ∧ FolTopR P n id.1 id.2 out gs'.gen := by

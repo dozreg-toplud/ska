@@ -358,11 +358,11 @@ theorem analyzeStep_ok2 {memoF : Memo M} (hmF : MemoWF memoF) (hmN : MemoNorm me
 
 /-- The arms at the fuel `n` keep the convergence invariant. -/
 def AllP2 (env : Env R) (memoF : Memo M) (n : Nat) : Prop :=
-  ResP2 memoF (resolve env memoF n) ∧ AnaP2 memoF (analyze env memoF n) ∧ RunP2 memoF (run env memoF n) ∧
+  (∀ orig, ResP2L memoF orig (resolve env memoF n orig)) ∧ AnaP2 memoF (analyze env memoF n) ∧ RunP2 memoF (run env memoF n) ∧
     PassP2 memoF (passLoop env memoF n) ∧ MemP2 memoF (memberLoop env memoF n)
 
 theorem allP2_zero (env : Env R) (memoF : Memo M) : AllP2 env memoF 0 := by
-  refine ⟨fun _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ h => ?_,
+  refine ⟨fun _ _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ h => ?_,
     fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_⟩
   · rw [resolve_zero] at h; cases h
   · rw [analyze_zero] at h; cases h
@@ -382,10 +382,11 @@ theorem allP2 (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmN : MemoNor
       subst e
       obtain ⟨r, a, u, p, m⟩ := allP2 env memoF hmF hmN n n (Nat.le_refl n)
       refine ⟨?_, ?_, ?_, ?_, ?_⟩
-      · rw [resolve_succ]; exact resolveStep_ok2 env memoF r a
+      · intro orig; rw [resolve_succ]; exact resolveStep_ok2 env memoF (r orig) a
       · rw [analyze_succ]; exact analyzeStep_ok2 hmF hmN u p
       · rw [run_succ]
-        exact runStep_ok2 env memoF (fun k hk => (allP2 env memoF hmF hmN n k (Nat.le_of_lt hk)).1)
+        exact runStep_ok2 env memoF (fun k hk =>
+          resP2_of_loop (resl := resolve env memoF k) (allP2 env memoF hmF hmN n k (Nat.le_of_lt hk)).1)
       · rw [passLoop_succ]; exact passStep_ok2 m p
       · rw [memberLoop_succ]; exact memberStep_ok2 u m
 

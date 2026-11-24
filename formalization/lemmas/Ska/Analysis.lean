@@ -462,8 +462,14 @@ abbrev AnaGo (M : Type → Type → Type) (R : Type) := Ident → SkaState M R �
 identity in the graph (a recursive call if in `order`), a finished function
 of this poke (`done`), a recursive call to a function in progress (`%rec`,
 its product patched) or a generalized identity (`%he`, resolved again), or a
-new function, analysed now. -/
-def resolveStep (env : Env R) (resolve : ResGo M R) (analyze : AnaGo M R) (idT : Ident)
+new function, analysed now.
+
+`orig` is the identity the loop began with, the site sock and formula of the
+call (`[sock.prod.s fol-new]` of the trap around the loop): the Hoon asks
+`+git:mi` with these, not with `id-there`, so after a `%he` step the lookup
+is the one that just missed, on the same `done`.  The loop `resolve` passed
+in is the loop for the same `orig`. -/
+def resolveStep (env : Env R) (resolve : ResGo M R) (analyze : AnaGo M R) (orig idT : Ident)
     (gen : GenS M R) : Option ((Ident × FDatum M) × GenS M R) :=
   match Treap.get gen.st.g idT with
   | some d =>
@@ -471,7 +477,7 @@ def resolveStep (env : Env R) (resolve : ResGo M R) (analyze : AnaGo M R) (idT :
     | none => some ((idT, d), gen)
     | some o => some ((idT, d), { gen with low := min gen.low o, back := true })
   | none =>
-  match gitMi gen.st.done idT.2 idT.1 with
+  match gitMi gen.st.done orig.2 orig.1 with
   | none => none
   | some (some m) => some (m, gen)
   | some none =>
@@ -658,15 +664,16 @@ def analyzeStep (n : Nat) (memoF : Memo M) (run : RunGo M R) (passLoop : PassGo 
 
 mutual
 
-/-- `fol-loop`, with fuel. -/
+/-- `fol-loop`, with fuel.  A direct call starts the `resolve` loop with
+its own identity as `orig`. -/
 def folLoop (env : Env R) (memoF : Memo M) : Nat → FolGoS M R
   | 0 => fun _ _ _ _ _ _ _ => none
-  | n + 1 => folStep env (resolve env memoF n) (folLoop env memoF n)
+  | n + 1 => folStep env (fun i => resolve env memoF n i i) (folLoop env memoF n)
 
-/-- The `resolve` loop, with fuel. -/
-def resolve (env : Env R) (memoF : Memo M) : Nat → ResGo M R
-  | 0 => fun _ _ => none
-  | n + 1 => resolveStep env (resolve env memoF n) (analyze env memoF n)
+/-- The `resolve` loop, with fuel, for the identity `orig` it began with. -/
+def resolve (env : Env R) (memoF : Memo M) : Nat → Ident → ResGo M R
+  | 0 => fun _ _ _ => none
+  | n + 1 => fun orig => resolveStep env (resolve env memoF n orig) (analyze env memoF n) orig
 
 /-- `+analyze`, with fuel. -/
 def analyze (env : Env R) (memoF : Memo M) : Nat → AnaGo M R
@@ -689,6 +696,10 @@ def memberLoop (env : Env R) (memoF : Memo M) : Nat → MemGo M R
   | n + 1 => memberStep (run env memoF n) (memberLoop env memoF n)
 
 end
+
+/-- The `resolve` of a direct call: the loop begun with the call's own
+identity. -/
+def resolveR (env : Env R) (memoF : Memo M) (n : Nat) : ResGo M R := fun i => resolve env memoF n i i
 
 /-! ## `+ska-callgraph`, `+prune-callgraph`, `+ska-poke` -/
 

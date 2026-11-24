@@ -451,7 +451,7 @@ end Step
 of each call.** -/
 theorem folLoop_goOKD {Pf : PFam M R} {Inv : GenS M R → Prop} (env : Env R) (memoF : Memo M)
     (hP : ∀ g tab, TabIn (Pf g) tab → TabWF tab ∧ TabNorm tab) (hL : LocalStableC Inv) (hS : PStable Pf) :
-    ∀ n, (∀ k, k < n → ResOKD Pf Inv (resolve env memoF k)) → GoOKD Pf Inv n (folLoop env memoF n)
+    ∀ n, (∀ k, k < n → ResOKD Pf Inv (resolveR env memoF k)) → GoOKD Pf Inv n (folLoop env memoF n)
   | 0 => fun _ _ _ _ _ _ _ _ _ _ _ _ h => by rw [folLoop_zero] at h; cases h
   | n + 1 => fun hres _ _ _ _ _ _ _ _ _ hi hs h => by
     rw [folLoop_succ] at h
@@ -461,7 +461,7 @@ theorem folLoop_goOKD {Pf : PFam M R} {Inv : GenS M R → Prop} (env : Env R) (m
 /-- **The run of `+run` on `id` is a run with the answers of its last `gen`.** -/
 theorem run_folTopRD {Pf : PFam M R} {Inv : GenS M R → Prop} (env : Env R) (memoF : Memo M)
     (hP : ∀ g tab, TabIn (Pf g) tab → TabWF tab ∧ TabNorm tab) (hL : LocalStableC Inv) (hS : PStable Pf) {n index : Nat}
-    (hres : ∀ k, k < n → ResOKD Pf Inv (resolve env memoF k)) {id : Ident} {st : SkaState M R}
+    (hres : ∀ k, k < n → ResOKD Pf Inv (resolveR env memoF k)) {id : Ident} {st : SkaState M R}
     {out : FolOut} {gs' : GenS M R} (hi : Inv (genInit index st)) (hw : SubOK id.1)
     (h : folLoop env memoF n id.2 ⟨id.1, A 1⟩ none none false false (genInit index st) = some (out, gs')) :
     Inv gs' ∧ PLe Pf (genInit index st) gs' ∧ FolTopR (Pf gs') n id.1 id.2 out gs'.gen := by
