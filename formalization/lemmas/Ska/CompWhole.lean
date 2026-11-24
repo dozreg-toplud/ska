@@ -162,6 +162,32 @@ ops from a proxy, unproxied to `v0`. -/
   some (NeedOrd.pair (NeedOrd.pair NeedOrd.none NeedOrd.this) NeedOrd.none, 1,
     [(0, bk [Pole.mov 0 2, Pole.inc 2 1] (Termin.don 1)), (1, none)])
 
+/- `[10 [6 0 1] 5 [0 6] 0 1]` (`tools/hoon/crashdump.hoon`, af5cc39), whole
+subject: the edit of the loobean atom in `v9` crashes in `0w3`, where
+`+crash-need` fills the need's other register only (`cel v9, imm 0 va`; the
+compiler before af5cc39 also wrote `imm 0 v9`). -/
+#guard monoOut (Nomm.n10 6 (Nomm.n0 1) (Nomm.n5 (Nomm.n0 6) (Nomm.n0 1))) 10 ==
+  some (NeedOrd.this, 1, [(0, bk [Pole.mov 0 13, Pole.cel 13, Pole.tal 13 14, Pole.mov 14 15,
+      Pole.cel 15, Pole.hed 15 17, Pole.mov 17 6] (hp 9)),
+    (1, bk [] (Termin.don 1)), (2, bk [Pole.con 4 5 3, Pole.con 2 3 1] (hp 1)),
+    (3, bk [Pole.cel 9, Pole.imm (A 0) 10] (Termin.bom Option.none)), (4, some ⟨[9], [], hp 3⟩),
+    (5, bk [Pole.imm (A 0) 11] (Termin.hop ⟨[some 11], 4⟩)),
+    (6, bk [Pole.imm (A 1) 12] (Termin.hop ⟨[some 12], 4⟩)),
+    (7, bk [] (Termin.eqq 6 7 (jmp0 5) (jmp0 6))), (8, bk [Pole.mov 13 7] (hp 7)),
+    (9, bk [Pole.mov 13 4] (hp 8))])
+
+/- `[10 [6 0 1] 5 [0 6] 0 1]`, n-ary (`need [%both ~ [this ~]]`, 2 args):
+`0w3 cel va, imm 0 vb`. -/
+#guard naryOut (Nomm.n10 6 (Nomm.n0 1) (Nomm.n5 (Nomm.n0 6) (Nomm.n0 1)))
+    (NeedOrd.both NeedOrd.none (NeedOrd.pair NeedOrd.this NeedOrd.none)) 10 ==
+  some (NeedOrd.both NeedOrd.none (NeedOrd.pair NeedOrd.this NeedOrd.none), 2,
+    [(0, bk [Pole.mov 1 7, Pole.mov 0 14, Pole.mov 14 5] (hp 8)),
+    (1, bk [] (Termin.don 2)), (2, bk [Pole.con 5 6 4, Pole.con 3 4 2] (hp 1)),
+    (3, bk [Pole.cel 10, Pole.imm (A 0) 11] (Termin.bom Option.none)), (4, some ⟨[10], [], hp 3⟩),
+    (5, bk [Pole.imm (A 0) 12] (Termin.hop ⟨[some 12], 4⟩)),
+    (6, bk [Pole.imm (A 1) 13] (Termin.hop ⟨[some 13], 4⟩)),
+    (7, bk [] (Termin.eqq 7 8 (jmp0 5) (jmp0 6))), (8, bk [Pole.mov 14 8] (hp 7)), (9, none)])
+
 /-- The whole-subject code with `runLC` in the environment `env`. -/
 def monoOutC (env : CallEnv) (nm : Nomm) (n : Nat) : Option (NeedOrd × Nat × List (Nat × Option Blob)) :=
   (finishLUC (S := LS) (Map := FM) env nm).map fun c =>
