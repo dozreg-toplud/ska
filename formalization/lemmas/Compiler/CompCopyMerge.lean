@@ -1,5 +1,6 @@
 import lemmas.Compiler.CompCopyLib
 import lemmas.Compiler.CompRunInvL
+import lemmas.Hoon.DifIn
 
 /-!
 # The merge branch of `+copy-lazy`
@@ -286,12 +287,14 @@ the no blocks, then `+copy-lazy` of the yes needs and of the no needs, in
 the copy-lazy core whatever its sample and state. -/
 theorem cl_fgate (idx : TreapMap mugF (Lazy.ForkE CSet)) (NO SAMPLE G' : Noun) (e : Lazy.ForkE CSet)
     (g : Gen (TreapMap mugF))
-    (ihy : ∀ (m : Lazy CSet) (g : Gen (TreapMap mugF)), (∃ v, HoonMap.get idx e.1.1 = some v ∧ m = v.1.2) →
-      nock (C clBat (C (C (A e.1.1) (C e.1.2.toNoun m.toNoun)) (compCore g x ctx))) clBat
-        = (Lazy.copyLazyL e.1.1 e.1.2 m g).map (clEnc x))
-    (ihn : ∀ (m : Lazy CSet) (g : Gen (TreapMap mugF)), (∃ v, HoonMap.get idx e.1.1 = some v ∧ m = v.2.2) →
-      nock (C clBat (C (C (A e.2.1) (C e.2.2.toNoun m.toNoun)) (compCore g x ctx))) clBat
-        = (Lazy.copyLazyL e.2.1 e.2.2 m g).map (clEnc x)) :
+    (ihy : ∀ (m : Lazy CSet) (g' : Gen (TreapMap mugF)), g.re ≤ g'.re →
+      (∃ v, HoonMap.get idx e.1.1 = some v ∧ m = v.1.2) →
+      nock (C clBat (C (C (A e.1.1) (C e.1.2.toNoun m.toNoun)) (compCore g' x ctx))) clBat
+        = (Lazy.copyLazyL e.1.1 e.1.2 m g').map (clEnc x))
+    (ihn : ∀ (m : Lazy CSet) (g' : Gen (TreapMap mugF)), g.re ≤ g'.re →
+      (∃ v, HoonMap.get idx e.1.1 = some v ∧ m = v.2.2) →
+      nock (C clBat (C (C (A e.2.1) (C e.2.2.toNoun m.toNoun)) (compCore g' x ctx))) clBat
+        = (Lazy.copyLazyL e.2.1 e.2.2 m g').map (clEnc x)) :
     nock (C clSGF (C (C (forkE e) (genNoun g x)) (C (HoonMap.toNoun forkE idx)
       (C NO (C clBat (C SAMPLE (C comp.door (C G' ctx)))))))) clSGF
       = (mgF idx e g).map fun r => C (forkE r.1) (genNoun r.2 x) := by
@@ -310,7 +313,7 @@ theorem cl_fgate (idx : TreapMap mugF (Lazy.ForkE CSet)) (NO SAMPLE G' : Noun) (
     rw [ev] at hgg
     by_cases hon : on = mon
     · subst hon
-      have hy := ihy my g ⟨_, ev, rfl⟩
+      have hy := ihy my g (Nat.le_refl _) ⟨_, ev, rfl⟩
       simp only [compCore] at hy
       cases e1 : Lazy.copyLazyL oy y my g with
       | none =>
@@ -320,7 +323,7 @@ theorem cl_fgate (idx : TreapMap mugF (Lazy.ForkE CSet)) (NO SAMPLE G' : Noun) (
       | some p =>
         obtain ⟨y', g1⟩ := p
         rw [e1] at hy
-        have hn := ihn mn g1 ⟨_, ev, rfl⟩
+        have hn := ihn mn g1 (copyLazyL_le _ _ _ _ _ _ e1) ⟨_, ev, rfl⟩
         simp only [compCore] at hn
         cases e2 : Lazy.copyLazyL on n mn g1 with
         | none =>
@@ -339,9 +342,9 @@ theorem cl_fgate (idx : TreapMap mugF (Lazy.ForkE CSet)) (NO SAMPLE G' : Noun) (
 entry, else `+copy-lazy` of the two needs of the block. -/
 theorem cl_bgate (idx : TreapMap mugF (Nat × Lazy CSet)) (FK NO SAMPLE G' : Noun) (e : Nat × Lazy CSet)
     (g : Gen (TreapMap mugF))
-    (ih : ∀ (m : Lazy CSet) (g : Gen (TreapMap mugF)), (∃ v, HoonMap.get idx e.1 = some v ∧ m = v.2) →
-      nock (C clBat (C (C (A e.1) (C e.2.toNoun m.toNoun)) (compCore g x ctx))) clBat
-        = (Lazy.copyLazyL e.1 e.2 m g).map (clEnc x)) :
+    (ih : ∀ (m : Lazy CSet) (g' : Gen (TreapMap mugF)), g.re ≤ g'.re → (∃ v, HoonMap.get idx e.1 = some v ∧ m = v.2) →
+      nock (C clBat (C (C (A e.1) (C e.2.toNoun m.toNoun)) (compCore g' x ctx))) clBat
+        = (Lazy.copyLazyL e.1 e.2 m g').map (clEnc x)) :
     nock (C clSGB (C (C (bondE e) (genNoun g x)) (C (HoonMap.toNoun bondE idx)
       (C FK (C NO (C clBat (C SAMPLE (C comp.door (C G' ctx))))))))) clSGB
       = (mgB idx e g).map fun r => C (bondE r.1) (genNoun r.2 x) := by
@@ -358,7 +361,7 @@ theorem cl_bgate (idx : TreapMap mugF (Nat × Lazy CSet)) (FK NO SAMPLE G' : Nou
   | some v =>
     obtain ⟨ob', m⟩ := v
     rw [ev] at hgg
-    have hl := ih m g ⟨_, ev, rfl⟩
+    have hl := ih m g (Nat.le_refl _) ⟨_, ev, rfl⟩
     simp only [compCore] at hl
     cases e1 : Lazy.copyLazyL ob l m g with
     | none =>
@@ -372,6 +375,235 @@ theorem cl_bgate (idx : TreapMap mugF (Nat × Lazy CSet)) (FK NO SAMPLE G' : Nou
         hl, e1, bind, StateT.bind, clEnc, pure, StateT.pure]
 
 end
+
+/-! ## The fork and bond parts of the battery -/
+
+def clFX : Noun :=
+  (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 238)))) (C (C (C (A 0) (A 234)) (C (A 0) (A 62))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 234)))) (C (C (C (A 0) (A 238)) (C (A 0) (A 62))) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 382) (C (A 0) (A 0x7fffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 0xbef7e) (C (A 0) (A 0x7fffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 494)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))) (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))))) (C (C (A 1) (C (C (A 0) (A 24)) (C (A 0) (A 6)))) (C (A 0) (A 1))))))))) (C (A 0) (A 2))))))))))) (C (A 0) (A 2)))))))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 0x5f7bffb) (C (A 0) (A 0xffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 1002)) (C (C (A 0) (A 254)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (C (A 7) (C (C (A 9) (C (A 2989) (C (A 0) (A 1023)))) (C (A 9) (C (A 2) (C (A 0) (A 1)))))) (C (A 0) (A 126))) (C (C (A 1) clSGF) (C (A 0) (A 1)))))))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 254) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 767) (C (A 0) (A 0x1ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 0xbef7e) (C (A 0) (A 0x1ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 2026)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))) (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))))) (C (C (A 1) (C (A 0) (A 24))) (C (A 0) (A 1))))))))) (C (A 0) (A 2))))))))))) (C (A 0) (A 2)))))))) (C (C (A 8) (C (C (A 9) (C (A 0xbef7f4) (C (A 0) (A 0x3ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 14)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 0xbef7f5f) (C (A 0) (A 0x3ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 4078)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))) (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))))) (C (C (A 1) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6102) (C (A 0) (A 0xfffffff)))) (C (A 9) (C (A 381) (C (A 10) (C (C (A 6) (C (A 0) (A 30))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 56))) (C (A 0) (A 2))))))))) (C (A 0) (A 1))))))))) (C (A 0) (A 2)))))))))))) (C (A 0) (A 2)))))))) (C (A 0) (A 510)))))))))))))))))))))
+
+def clBX : Noun :=
+  (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 495)))) (C (C (C (A 0) (A 491)) (C (A 0) (A 126))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 491)))) (C (C (C (A 0) (A 495)) (C (A 0) (A 126))) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 382) (C (A 0) (A 0xffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 0xbef7e) (C (A 0) (A 0xffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 1007)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0))))) (C (C (A 1) (C (C (A 0) (A 12)) (C (A 0) (A 6)))) (C (A 0) (A 1))))))))) (C (A 0) (A 2))))))))))) (C (A 0) (A 2)))))))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 0x5f7bffb) (C (A 0) (A 0x1ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 2027)) (C (C (A 0) (A 510)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (C (A 7) (C (C (A 9) (C (A 2742) (C (A 0) (A 2047)))) (C (A 9) (C (A 2) (C (A 0) (A 1)))))) (C (A 0) (A 254))) (C (C (A 1) clSGB) (C (A 0) (A 1)))))))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 510) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 767) (C (A 0) (A 0x3ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 0xbef7e) (C (A 0) (A 0x3ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 4075)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0))))) (C (C (A 1) (C (A 0) (A 12))) (C (A 0) (A 1))))))))) (C (A 0) (A 2))))))))))) (C (A 0) (A 2)))))))) (C (C (A 8) (C (C (A 9) (C (A 0xbef7f4) (C (A 0) (A 0x7ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 14)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 0xbef7f5f) (C (A 0) (A 0x7ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 8175)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0))))) (C (C (A 1) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6102) (C (A 0) (A 0x1fffffff)))) (C (A 9) (C (A 381) (C (A 10) (C (C (A 6) (C (A 0) (A 30))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 28))) (C (A 0) (A 2))))))))) (C (A 0) (A 1))))))))) (C (A 0) (A 2)))))))))))) (C (A 0) (A 2)))))))) (C (A 0) (A 1022)))))))))))))))))))))
+
+def clBatS2 : Noun :=
+  (C (A 7) (C (C (A 0) (A 1)) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 5500) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 232)) (C (A 0) (A 236)))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 62) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 10) (C (C (A 62) (C (A 8) (C (C (A 9) (C (A 0x2aee) (C (A 0) (A 15)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 60)) (C (A 0) (A 13)))) (C (A 0) (A 2))))))))) (C (A 0) (A 1)))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) clFX)) (C (A 7) (C (C (A 10) (C (C (A 126) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) clBX)) (C (A 7) (C (C (A 10) (C (C (A 254) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (C (C (C (A 0) (A 28)) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6102) (C (A 0) (A 0x1ffffff)))) (C (A 9) (C (A 174) (C (A 10) (C (C (A 6) (C (A 0) (A 2025))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 2029))) (C (A 0) (A 2))))))))) (C (C (A 0) (A 6)) (C (A 0) (A 2)))) (C (A 0) (A 254)))))))))))))))))))))))))))))))
+
+theorem cl_bat_eq2 : clBat = clBatS2 := by kernel_rfl
+
+/-! ## The molds `lazy-fork` and `lazy-bond` -/
+
+noncomputable def ctLfArm : Noun := (slot? 2989 compTypes).getD (A 0)
+theorem ct_lf_at : slot? 2989 compTypes = some ctLfArm := by kernel_rfl
+noncomputable def ctLfGate : Noun := (evalFuel 2000 compTypes ctLfArm).getD (A 0)
+theorem ct_lf_gate : nock compTypes ctLfArm = some ctLfGate := nock_of_evalFuel (fuel := 2000) (by kernel_rfl)
+noncomputable def ctLfBat : Noun := (slot? 2 ctLfGate).getD (A 0)
+theorem ct_lf_bat : slot? 2 ctLfGate = some ctLfBat := by kernel_rfl
+noncomputable def ctLfBunt : Noun := (evalFuel 2000 ctLfGate ctLfBat).getD (A 0)
+theorem ct_lf_bunt : nock ctLfGate ctLfBat = some ctLfBunt := nock_of_evalFuel (fuel := 2000) (by kernel_rfl)
+
+noncomputable def ctLbArm : Noun := (slot? 2742 compTypes).getD (A 0)
+theorem ct_lb_at : slot? 2742 compTypes = some ctLbArm := by kernel_rfl
+noncomputable def ctLbGate : Noun := (evalFuel 2000 compTypes ctLbArm).getD (A 0)
+theorem ct_lb_gate : nock compTypes ctLbArm = some ctLbGate := nock_of_evalFuel (fuel := 2000) (by kernel_rfl)
+noncomputable def ctLbBat : Noun := (slot? 2 ctLbGate).getD (A 0)
+theorem ct_lb_bat : slot? 2 ctLbGate = some ctLbBat := by kernel_rfl
+noncomputable def ctLbBunt : Noun := (evalFuel 2000 ctLbGate ctLbBat).getD (A 0)
+theorem ct_lb_bunt : nock ctLbGate ctLbBat = some ctLbBunt := nock_of_evalFuel (fuel := 2000) (by kernel_rfl)
+
+/-! ## `+silt` and `+has:in` of the seen set -/
+
+@[nock_exec] theorem cm_silt_arm (d : Noun) : nock d silt.arm = some (C silt.battery (C (A 0) d)) := by
+  nock_open silt.arm; simp only [nock_exec]
+
+theorem cm_silt_gate (l : List Noun) (out : Noun) (h : gasInF mugF (A 0) l = some out) :
+    nock (C silt.battery (C (listN l) layer2)) silt.battery = some out := by
+  have hg : nock (C in.gas.battery (C (listN l) (C in.battery (C (A 0) layer2)))) in.gas.battery = some out := by
+    nock_open in.gas.battery
+    simp only [nock_exec, gas_in_loop layer2 gorIn_morIn_layer2 l (A 0) out h]
+  nock_open silt.battery
+  simp [nock_exec, in_arm, in.arm_at, in.gas.arm_at, gas_in_arm, hg]
+
+/-- The seen set: the `+silt` of the keys, and `+has:in` on it is membership. -/
+theorem seen_set (l : List Nat) : ∃ S0, gasInF mugF (A 0) (l.map A) = some S0 ∧
+    ∀ k, nock (C in.has.battery (C (A k) (C in.battery (C S0 layer2)))) in.has.battery
+      = some (loob (decide (k ∈ l))) := by
+  obtain ⟨S0, h1, hs, hh⟩ := gasInF_spec (mug := mugF) (l.map A) (A 0) isSet_nil
+  refine ⟨S0, h1, fun k => ?_⟩
+  obtain ⟨t, ht, hti⟩ := hasInF_spec mugF S0 (A k) hs
+  rw [has_in_gate layer2 gorIn_morIn_layer2.1 (A k) S0 t ht]
+  congr 2
+  have : (A k ∈ l.map A ∨ Has (A 0) (A k)) ↔ k ∈ l := by
+    constructor
+    · rintro (h | h)
+      · obtain ⟨y, hy, e⟩ := List.mem_map.1 h
+        cases e; exact hy
+      · exact absurd h not_has_atom
+    · intro h; exact Or.inl (List.mem_map_of_mem h)
+  have key : t = true ↔ k ∈ l := by rw [hti, hh, this]
+  cases t with
+  | true => simp [key.1 rfl]
+  | false =>
+    have : ¬ k ∈ l := fun h => by simpa using key.2 h
+    simp [this]
+
+/-- The gates of the spins keep the counter from below. -/
+theorem mgF_le {idx : TreapMap mugF (Lazy.ForkE CSet)} {e : Lazy.ForkE CSet} {g : Gen (TreapMap mugF)}
+    {r : Lazy.ForkE CSet × Gen (TreapMap mugF)} (h : mgF idx e g = some r) : g.re ≤ r.2.re := by
+  unfold mgF at h
+  cases ev : (HoonMap.get idx e.1.1 : Option (Lazy.ForkE CSet)) with
+  | none =>
+    simp only [ev, pure, StateT.pure, Option.some.injEq] at h; rw [← h]; exact Nat.le_refl _
+  | some v =>
+    obtain ⟨⟨_, my⟩, ⟨mon, mn⟩⟩ := v
+    simp only [ev] at h
+    split at h
+    · obtain ⟨y', g1, e1, h⟩ := bind_some h
+      obtain ⟨n', g2, e2, h⟩ := bind_some h
+      simp only [pure, StateT.pure, Option.some.injEq] at h
+      rw [← h]
+      exact Nat.le_trans (copyLazyL_le _ _ _ _ _ _ e1) (copyLazyL_le _ _ _ _ _ _ e2)
+    · cases h
+
+theorem mgB_le {idx : TreapMap mugF (Nat × Lazy CSet)} {e : Nat × Lazy CSet} {g : Gen (TreapMap mugF)}
+    {r : (Nat × Lazy CSet) × Gen (TreapMap mugF)} (h : mgB idx e g = some r) : g.re ≤ r.2.re := by
+  unfold mgB at h
+  cases ev : (HoonMap.get idx e.1 : Option (Nat × Lazy CSet)) with
+  | none =>
+    simp only [ev, pure, StateT.pure, Option.some.injEq] at h; rw [← h]; exact Nat.le_refl _
+  | some v =>
+    obtain ⟨_, m⟩ := v
+    simp only [ev] at h
+    obtain ⟨l', g1, e1, h⟩ := bind_some h
+    simp only [pure, StateT.pure, Option.some.injEq] at h
+    rw [← h]
+    exact copyLazyL_le _ _ _ _ _ _ e1
+
+/-! ## The fork part -/
+
+/-- The forks of the result of `+copy-lazy`, in the model (the expression of
+`copyLazyL`). -/
+noncomputable def forkPart (ff fs : List (Lazy.ForkE CSet)) : CM (TreapMap mugF) (List (Lazy.ForkE CSet)) :=
+  if fs.isEmpty then pure ff else if ff.isEmpty then pure fs else do
+    let merged ← Lazy.mergeForks (Lazy.index (Map := TreapMap mugF) (fun e : Lazy.ForkE CSet => e.1.1) fs) ff
+    pure (merged ++ fs.filter fun e => !(Lazy.seen (S := CSet) (fun e : Lazy.ForkE CSet => e.1.1) ff e.1.1))
+
+/-- The pair `[key e]` of an entry's noun. -/
+def pairOf : Noun → Noun
+  | Noun.cell (Noun.cell a b) c => C a (C (C a b) c)
+  | _ => A 0
+
+/-- The key of an entry's noun. -/
+def keyOf : Noun → Noun
+  | Noun.cell (Noun.cell a _) _ => a
+  | _ => A 0
+
+theorem turn_pairs (bs bc : Noun) (fk : List (Lazy.ForkE CSet)) :
+    nock (C turn.battery (C (C (listN (fk.map forkE)) (C (C (C (A 0) (A 24)) (C (A 0) (A 6))) (C bs bc))) layer2))
+      turn.battery = some (listN ((fk.map fun e => (A e.1.1, forkE e)).map pairNoun)) := by
+  rw [turn_gate layer2 homoIn_layer2 _ bs bc pairOf (fk.map forkE) (fun y hy => by
+    obtain ⟨e, -, rfl⟩ := List.mem_map.1 hy
+    simp [nock_exec, forkE, pairOf])]
+  simp [List.map_map, Function.comp_def, forkE, pairOf, pairNoun]
+
+theorem turn_keys (bs bc : Noun) (fk : List (Lazy.ForkE CSet)) :
+    nock (C turn.battery (C (C (listN (fk.map forkE)) (C (C (A 0) (A 24)) (C bs bc))) layer2))
+      turn.battery = some (listN ((fk.map fun e => e.1.1).map A)) := by
+  rw [turn_gate layer2 homoIn_layer2 _ bs bc keyOf (fk.map forkE) (fun y hy => by
+    obtain ⟨e, -, rfl⟩ := List.mem_map.1 hy
+    simp [nock_exec, forkE, keyOf])]
+  simp [List.map_map, Function.comp_def, forkE, keyOf]
+
+/-- **The fork part of `+copy-lazy`** (`clFX`, on the subject `[[ned ops]
+core]` after `+add-ops`): `forkPart`, given the spin gate at every fork of
+`first` and every later state. -/
+theorem cl_fpart (hc : CompIn ctx) (h15 : slot? 15 ctx = some compTypes) (x : GenRest) (NO : Noun) (o : Nat)
+    (sf ss : Sure CSet) (ff fs : List (Lazy.ForkE CSet)) (bf bs : List (Nat × Lazy CSet))
+    (g : Gen (TreapMap mugF))
+    (hgate : ∀ e ∈ ff, ∀ g' : Gen (TreapMap mugF), g.re ≤ g'.re → ∀ (NO' SAMPLE G' : Noun),
+      nock (C clSGF (C (C (forkE e) (genNoun g' x))
+        (C (HoonMap.toNoun forkE (Lazy.index (Map := TreapMap mugF) (fun e : Lazy.ForkE CSet => e.1.1) fs))
+          (C NO' (C clBat (C SAMPLE (C comp.door (C G' ctx)))))))) clSGF
+      = (mgF (Lazy.index (Map := TreapMap mugF) (fun e : Lazy.ForkE CSet => e.1.1) fs) e g').map
+          fun r => C (forkE r.1) (genNoun r.2 x)) :
+    nock (C NO (C clBat (C (C (A o) (C (C sf.toNoun (C (listN (ff.map forkE)) (listN (bf.map bondE))))
+      (C ss.toNoun (C (listN (fs.map forkE)) (listN (bs.map bondE)))))) (C comp.door (C (genNoun g x) ctx)))))
+      clFX = (forkPart ff fs g).map fun r => C (listN (r.1.map forkE)) (genNoun r.2 x) := by
+  have tF := lz_test forkE ff
+  have tS := lz_test forkE fs
+  have hL := comp_le_at
+  generalize hSAM : C (A o) (C (C sf.toNoun (C (listN (ff.map forkE)) (listN (bf.map bondE))))
+      (C ss.toNoun (C (listN (fs.map forkE)) (listN (bs.map bondE))))) = SAM
+  unfold clFX
+  rcases tS with ⟨s1, s2, s3⟩ | ⟨s1, s2, s3⟩
+  · subst s1
+    subst hSAM
+    simp [nock_exec, s2, s3, forkPart, pure, StateT.pure]
+  rcases tF with ⟨f1, f2, f3⟩ | ⟨f1, f2, f3⟩
+  · subst f1
+    subst hSAM
+    simp [nock_exec, s2, s3, f2, f3, forkPart, pure, StateT.pure, s1]
+  subst hSAM
+  -- the merge
+  have hT0 := turn_pairs (C (C (A 0) lzBunt) (C (A 0) lzBunt))
+    (C NO (C clBat (C (C (A o) (C (C sf.toNoun (C (listN (ff.map forkE)) (listN (bf.map bondE))))
+      (C ss.toNoun (C (listN (fs.map forkE)) (listN (bs.map bondE)))))) (C comp.door (C (genNoun g x) ctx))))) fs
+  have hIdx := malt_gate _ _ (malt_index forkE (fun e : Lazy.ForkE CSet => e.1.1) fs)
+  unfold lzBunt at hT0
+  simp only [forkPart, s1, f1, List.isEmpty_iff, if_false, bind, StateT.bind]
+  generalize hidx : Lazy.index (Map := TreapMap mugF) (fun e : Lazy.ForkE CSet => e.1.1) fs = idx at hIdx hgate ⊢
+  have hSpin := spin_gate_TI forkE forkE (fun g => genNoun g x) layer2 spinIn_layer2 clSGF
+    (C ctLfBunt (genNoun g x))
+    (C (HoonMap.toNoun forkE idx) (C NO (C clBat (C (C (A o) (C (C sf.toNoun (C (listN (ff.map forkE))
+      (listN (bf.map bondE)))) (C ss.toNoun (C (listN (fs.map forkE)) (listN (bs.map bondE))))))
+      (C comp.door (C (genNoun g x) ctx))))))
+    (fun e g => mgF idx e g) (fun g' => g.re ≤ g'.re) ff g
+    (fun e he g' hle => hgate e he g' hle _ _ _) (fun e he g' r hle hr => Nat.le_trans hle (mgF_le hr))
+    (Nat.le_refl _)
+  rw [← mergeForks_spinM] at hSpin
+  have hsp := spin_arm_l2
+  rw [spin_gate_eq] at hsp
+  simp only [List.map_map] at hT0 hIdx
+  have hm1 := malt_at
+  have ht1 := turn.arm_at
+  have hs1 := spin.arm_at
+  have hc' : slot? 262143 ctx = some layer2 := hc
+  cases eS : Lazy.mergeForks idx ff g with
+  | none =>
+    rw [eS] at hSpin
+    generalize layer2 = L2 at hc' hm1 ht1 hs1 hT0 hIdx hSpin hsp ⊢
+    simp [nock_exec, s2, s3, f2, f3, hc', ht1, turn_arm, hT0, hm1, maltArm, hIdx, hs1,
+      hsp, hSpin, h15, ct_lf_at, ct_lf_gate, ct_lf_bat, ct_lf_bunt, eS, buntGate]
+  | some r =>
+    obtain ⟨merged, g2⟩ := r
+    rw [eS] at hSpin
+    have hTk := turn_keys (C (C (A 0) lzBunt) (C (A 0) lzBunt))
+      (C (listN (merged.map forkE)) (C (HoonMap.toNoun forkE idx) (C NO (C clBat (C (C (A o)
+        (C (C sf.toNoun (C (listN (ff.map forkE)) (listN (bf.map bondE))))
+          (C ss.toNoun (C (listN (fs.map forkE)) (listN (bs.map bondE))))))
+        (C comp.door (C (genNoun g2 x) ctx))))))) ff
+    unfold lzBunt at hTk
+    simp only [List.map_map] at hTk
+    obtain ⟨S0, hS0, hhas⟩ := seen_set (ff.map fun e => e.1.1)
+    have hSilt := cm_silt_gate _ S0 hS0
+    simp only [List.map_map] at hSilt
+    have hSkip := skip_gate_map forkE layer2 clG2 (C (C (A 0) lzBunt) (C (A 0) lzBunt))
+      (C S0 (C (listN (merged.map forkE)) (C (HoonMap.toNoun forkE idx) (C NO (C clBat (C (C (A o)
+        (C (C sf.toNoun (C (listN (ff.map forkE)) (listN (bf.map bondE))))
+          (C ss.toNoun (C (listN (fs.map forkE)) (listN (bs.map bondE))))))
+        (C comp.door (C (genNoun g2 x) ctx))))))))
+      (fun e => decide (e.1.1 ∈ ff.map fun e => e.1.1)) fs (fun e _ => by
+        have := hhas e.1.1
+        unfold clG2
+        simp [nock_exec, hc, in_arm, in.arm_at, in.has.arm_at, has_in_arm, this, forkE])
+    unfold lzBunt clG2 at hSkip
+    have hW := weld_gate_list layer2 (merged.map forkE)
+      ((fs.filter fun a => !decide (a.1.1 ∈ ff.map fun e => e.1.1)).map forkE)
+    have hsl := silt.arm_at
+    have hsk := skip.arm_at
+    have hwl := weld.arm_at
+    generalize layer2 = L2 at hc' hm1 ht1 hs1 hT0 hIdx hSpin hsp hTk hSilt hSkip hW hsl hsk hwl ⊢
+    simp [nock_exec, s2, s3, f2, f3, hc', ht1, turn_arm, hT0, hm1, maltArm, hIdx, hs1,
+      hsp, hSpin, h15, ct_lf_at, ct_lf_gate, ct_lf_bat, ct_lf_bunt, eS, buntGate, hTk, hsl, cm_silt_arm, hSilt,
+      hsk, lp_skip_arm, hSkip, hwl, weld_arm, hW, seen_iff, pure, StateT.pure]
 
 end Compiler
 end Formalization

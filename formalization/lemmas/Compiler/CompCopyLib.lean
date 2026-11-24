@@ -175,5 +175,52 @@ theorem seen_iff {α : Type} (key : α → Nat) (l : List α) (k : Nat) :
   rw [mem_foldl_put]
   simp [HoonSet.mem_empty]
 
+/-- `+spin` with an invariant of the states that the gate keeps: the gate need
+only be `G` on states with the invariant. -/
+theorem spin_loop_TI {α σ β : Type} (E : α → Noun) (F : β → Noun) (Sn : σ → Noun) (ctx : Noun)
+    (hc : SpinIn ctx) (cp cs cc : Noun) (G : α → σ → Option (β × σ)) (I : σ → Prop) : ∀ (l : List α),
+    (∀ a ∈ l, ∀ s, I s → nock (C cp (C (C (E a) (Sn s)) cc)) cp = (G a s).map fun r => C (F r.1) (Sn r.2)) →
+    (∀ a ∈ l, ∀ s r, I s → G a s = some r → I r.2) →
+    ∀ (acc : List Noun) (s : σ), I s →
+    nock (C spin.loop (C (listN acc) (C spin.battery
+        (C (C (listN (l.map E)) (C (Sn s) (C cp (C cs cc)))) ctx)))) spin.loop
+      = (spinM G l s).map fun r => C (listN (acc.reverse ++ r.1.map F)) (Sn r.2) := by
+  obtain ⟨hflop, hhomo⟩ := hc
+  intro l
+  induction l with
+  | nil =>
+    intro _ _ acc s _
+    nock_open spin.loop
+    simp [nock_exec, hflop, flop_gate ctx hhomo, spinM]
+  | cons a xs ih =>
+    intro hf hI acc s hs
+    have ha := hf a (by simp) s hs
+    cases e : G a s with
+    | none =>
+      rw [e] at ha
+      nock_open spin.loop
+      simp [nock_exec, ha, spinM, e]
+    | some r =>
+      obtain ⟨b, s'⟩ := r
+      rw [e, Option.map_some] at ha
+      have hs' := hI a (by simp) s _ hs e
+      have ihs := ih (fun y hy => hf y (by simp [hy])) (fun y hy => hI y (by simp [hy])) (F b :: acc) s' hs'
+      simp only [listN_cons] at ihs
+      nock_open spin.loop
+      simp [nock_exec, ha, ihs, spinM, e, Function.comp_def]
+
+theorem spin_gate_TI {α σ β : Type} (E : α → Noun) (F : β → Noun) (Sn : σ → Noun) (ctx : Noun)
+    (hc : SpinIn ctx) (cp cs cc : Noun) (G : α → σ → Option (β × σ)) (I : σ → Prop) (l : List α) (s : σ)
+    (hf : ∀ a ∈ l, ∀ s, I s → nock (C cp (C (C (E a) (Sn s)) cc)) cp = (G a s).map fun r => C (F r.1) (Sn r.2))
+    (hI : ∀ a ∈ l, ∀ s r, I s → G a s = some r → I r.2) (hs : I s) :
+    nock (C spin.battery (C (C (listN (l.map E)) (C (Sn s) (C cp (C cs cc)))) ctx)) spin.battery
+      = (spinM G l s).map fun r => C (listN (r.1.map F)) (Sn r.2) := by
+  have h := spin_loop_TI E F Sn ctx hc cp cs cc G I l hf hI [] s hs
+  simp only [List.reverse_nil, List.nil_append] at h
+  have h0 : listN [] = A 0 := rfl
+  rw [h0] at h
+  nock_open spin.battery
+  simp [nock_exec, h]
+
 end Compiler
 end Formalization
