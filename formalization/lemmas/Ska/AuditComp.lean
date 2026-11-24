@@ -48,6 +48,8 @@ import lemmas.Ska.CompSevenSame
 import lemmas.Ska.CompThreeNone
 import lemmas.Ska.CompFragU
 import lemmas.Ska.CompConsNV
+import lemmas.Ska.CompConsV
+import lemmas.Ska.CompSectSkip
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -517,3 +519,15 @@ open Formalization.SkaModel.Comp
 #print axioms okNV_cons
 #print axioms runOKV_seven4P
 #print axioms fragU_pure
+#print axioms clean_n4L
+#print axioms cleanA_seven4
+#print axioms unaryGV_ok
+#print axioms runOKV_consD
+#print axioms RunOKGV.toNV
+#print axioms RunOKGV.toV
+#print axioms binaryGV_ok
+#print axioms runOKV_consP
+#print axioms sectStep_skip
+#print axioms foldlM_sectStep_skip
+#print axioms sectThread_skip
+#print axioms sect_specV
