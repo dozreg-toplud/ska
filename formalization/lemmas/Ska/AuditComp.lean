@@ -11,6 +11,7 @@ import lemmas.Ska.CompSevenN
 import lemmas.Ska.CompFragM
 import lemmas.Ska.CompFragX
 import lemmas.Ska.CompEntryGoal
+import lemmas.Ska.CompFromRun
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -209,3 +210,19 @@ open Formalization.SkaModel.Comp
 #print axioms finishLF_bellContractX
 #print axioms crash_iffX
 #print axioms entryFill_ofSure
+#print axioms runL_n5_toL
+#print axioms n5Pre_ok
+#print axioms runOKG_n5
+#print axioms runL_n10_body
+#print axioms n10N_body
+#print axioms runOKN_n10
+#print axioms runOKP_n10D
+#print axioms runOKP_n10P
+#print axioms clean_n10Body
+#print axioms fromSure_fits
+#print axioms fillSem_from
+#print axioms fromL_ent
+#print axioms RunOKP.toG
+#print axioms RunOKN.toG
+#print axioms runOKG_from
+#print axioms runL_seven_from
