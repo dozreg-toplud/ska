@@ -326,6 +326,39 @@ theorem outGoal_next_of_fill {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straig
     simp only [List.append_nil] at e2
     exact ⟨Tone.two ti, st, hI, Needs.le_refl _, by rw [goJ_jmp0 _ _ _ _ hb, e2], ToneRel.two htr⟩
 
+/-- **`OutGoal` of the block of `+kerf` under a fork-free `%next sur th`**,
+in every program whose block at `out` is the one `+kerf` made, unproxied by
+a `cond` that has none of the block's registers as keys.  The registers
+kept (`K`) are below the product register or from the end of `+kerf` on,
+and not in `sur`: the ops keep the first by `KernSemS` and the second
+because they do not write them (`runs_keep`). -/
+theorem outGoal_kerf {sur : Sure S} {th : Jmp} {g g' : Gen Map} {out pro : Nat}
+    (h : kerf (⟨ofSure sur, th⟩ : NextL S) g = some ((out, pro), g')) (hd : g.drop = false)
+    (hth : th.args = []) (hdist : Distinct sur.ned) (hlt : ∀ x, NMem sur.ned x → x < g.re)
+    {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {Inv : σ → Prop} {ν : σ → Needs}
+    {cf : Map (Nat × List Nat)}
+    (hc : HoonMap.get c.blocks out = (HoonMap.get g'.blocks out).map (unproxyBlob cf))
+    (hcf : ∀ x, (x = g.re ∨ NMem sur.ned x ∨ (g.re + 1 ≤ x ∧ x < g'.re)) → HoonMap.get cf x = Option.none)
+    {K : Nat → Prop} (hK : ∀ x, K x → ¬ NMem sur.ned x ∧ (x < g.re ∨ g'.re ≤ x)) :
+    OutGoal lib O c gul Inv ν K pro out (CGoal.next sur th) := by
+  obtain ⟨rfl, rfl, -, -, -, -, l1, Ak, hblk, kop, RI, KS⟩ := kerf_ofSure h hd
+  have hb : HoonMap.get c.blocks g.bo = some ⟨[], Ak, Termin.hop th⟩ := by
+    rw [hc, hblk, if_pos rfl]
+    simp only [Option.map_some, unproxyBlob, renBlob, List.map_nil, renFin, renJmp_nil _ hth,
+      renOps_fix (fun x hx => unproxy_none (hcf x hx)) RI]
+  refine outGoal_next_of_fill hb fun st t R v hR => ?_
+  obtain ⟨S1, S2⟩ := KS hdist hlt lib σ O c gul st t R v hR
+  refine ⟨fun f => ?_, S2⟩
+  obtain ⟨R', hr, hh, hk⟩ := S1 f
+  refine ⟨R', hr, hh, fun x hx => ?_⟩
+  obtain ⟨hn, hx | hx⟩ := hK x hx
+  · exact hk x (by omega) hn
+  · exact runs_keep Ak R R' kop hr x fun p hp hw => by
+      rcases RI p hp x (poleWr_sub hw) with e | e | ⟨_, e⟩
+      · omega
+      · exact hn e
+      · omega
+
 end Comp
 end SkaModel
 end Formalization
