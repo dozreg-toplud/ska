@@ -16,6 +16,7 @@ import lemmas.Hoon.Ju
 import lemmas.Hoon.MapFolds
 import lemmas.Hoon.SetFolds
 import lemmas.Hoon.DifIn
+import lemmas.Hoon.UniIn
 import lemmas.Hoon.ListsMore
 import lemmas.Hoon.ListsSort
 import lemmas.Hoon.Rip
@@ -475,6 +476,8 @@ open Formalization
 #print axioms Hoon.bifInF_spec
 #print axioms Hoon.difInF_spec
 #print axioms Hoon.dif_in
+#print axioms Hoon.uni_in_gate
+#print axioms Hoon.uni_in
 #print axioms Compiler.silt_arm_at
 #print axioms Compiler.silt_gate
 #print axioms Compiler.silt_setNoun
@@ -595,6 +598,7 @@ open Formalization
 #print axioms Compiler.comp_flatten_need
 #print axioms Compiler.cnm_seg
 #print axioms Compiler.comp_copy_need
+#print axioms Compiler.cs_uni_is
 #print axioms Compiler.comp_copy_lazy
 #print axioms Compiler.comp_copy
 #print axioms Compiler.srl_loop
