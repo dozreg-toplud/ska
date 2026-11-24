@@ -98,6 +98,8 @@ open Formalization.SkaModel.Opt
 #print axioms trimBody_crash
 #print axioms frameCount_pos
 #print axioms CntLe.pos
+#print axioms trimOpen_cntLe
+#print axioms cntLe_nil
 #print axioms casesAcc_spec
 #print axioms hsort_sorted
 #print axioms cases_spec

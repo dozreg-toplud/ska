@@ -365,6 +365,42 @@ theorem trimBody_crash (pre : List Pole) (op : Pole) (post : List Pole) {g gm : 
   simp only [trimBody, e, hc]
   exact trimBody_uns_mono post _ _ k (by simp [Uns.add, hpos])
 
+/-! ## The join at a block's start -/
+
+theorem trimOpen_fold_ge (out : Map Cnt) : ∀ (l : List Nat) (acc : Cnt) (k : TKey),
+    acc k ≤ (l.foldl (fun acc p => acc.join ((HoonMap.get out p).getD Cnt.empty)) acc) k
+  | [], _, _ => Nat.le_refl _
+  | q :: l, acc, k => by
+    simp only [List.foldl_cons]
+    refine Nat.le_trans ?_ (trimOpen_fold_ge out l _ k)
+    exact Nat.le_max_left (acc k) _
+
+theorem trimOpen_fold_mem (out : Map Cnt) {p : Nat} {c : Cnt} (hc : HoonMap.get out p = some c) :
+    ∀ (l : List Nat) (acc : Cnt), p ∈ l → ∀ k,
+      c k ≤ (l.foldl (fun acc p => acc.join ((HoonMap.get out p).getD Cnt.empty)) acc) k
+  | [], _, h, _ => absurd h List.not_mem_nil
+  | q :: l, acc, h, k => by
+    rcases List.mem_cons.mp h with rfl | h
+    · simp only [List.foldl_cons]
+      refine Nat.le_trans ?_ (trimOpen_fold_ge out l _ k)
+      simp only [Cnt.join, hc, Option.getD_some]
+      exact Nat.le_max_right _ _
+    · exact trimOpen_fold_mem out hc l _ h k
+
+theorem CntLe.mono {g : List (Option TKey)} {a b : Cnt} (h : CntLe g a) (hab : ∀ k, a k ≤ b k) : CntLe g b :=
+  fun k => Nat.le_trans (h k) (hab k)
+
+/-- **The counts at a block's start cover the stack of each walked
+predecessor**: if a predecessor `p` in `rev` has counts `c` in `out` at
+least its frames on a stack `g`, so do the counts the walk starts `o` with
+(the `max` join of `+uno:by`). -/
+theorem trimOpen_cntLe {rev : Map (List Nat)} {out : Map Cnt} {o p : Nat} {c : Cnt} {g : List (Option TKey)}
+    (hp : p ∈ getJa rev o) (hc : HoonMap.get out p = some c) (hg : CntLe g c) : CntLe g (trimOpen rev out o) :=
+  hg.mono (trimOpen_fold_mem out hc _ _ hp)
+
+/-- The stack at block `0` is empty, so any counts cover it. -/
+theorem cntLe_nil (opn : Cnt) : CntLe [] opn := fun _ => Nat.zero_le _
+
 end Opt
 end SkaModel
 end Formalization
