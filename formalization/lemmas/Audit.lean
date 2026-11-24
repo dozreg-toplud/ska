@@ -956,3 +956,6 @@ open Formalization
 #print axioms Compiler.crf_run
 #print axioms Compiler.comp_run_all_c
 #print axioms Compiler.comp_run_entry_c
+#print axioms Compiler.cr5_tailC
+#print axioms Compiler.cr5_modelC
+#print axioms Compiler.comp_run_n5C

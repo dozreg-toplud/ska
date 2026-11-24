@@ -7,18 +7,19 @@ The cases of `+run` against `runLC env msup` (`CompRunAtR`, `CompRunAtC` of
 `CompRunTwo.lean`): `%3` and `%4` (`comp_run_n3C`, `comp_run_n4C`, the
 proofs of `comp_run_n3` and `comp_run_n4` with `runLC` for `runL`: the
 bodies of the two models are the same), `%7` (`comp_run_n7C`: the model
-compiles `q` with `sup` set to `p`, as the Hoon does), and `%2` for an
-indirect call (`comp_run_n2`).
+compiles `q` with `sup` set to `p`, as the Hoon does), `%5` with a `q` that
+may call (`comp_run_n5C`, through `cr5_tailC` of `CompRunTwo.lean`), and
+`%2` for an indirect call (`comp_run_n2`).
 
 ## The fragment
 
 `indOk` is the fragment where no bond arises (the header of
 `CompRunTwo.lean`): the pure nomms with no `%6` whose `%10` axes are not
-`0` (`tenOk`), closed under the indirect call `[2 p q ~]` with `p` pure (no
-`%6`, `tenOk`) and `q` in the fragment, under `%3`, `%4`, and under `%7`
-with both parts in it.  In Nock order `p` runs before `q`, so its run comes
-after `q`'s in the compilation, and `+past` over `p` is the identity
-exactly because `p` is pure; `q` may call.  So `[7 c [2 [0 1] [0 b]]]` (a
+`0` (`tenOk`), closed under the indirect call `[2 p q ~]` and the test
+`[5 p q]` with `p` pure (no `%6`, `tenOk`) and `q` in the fragment, under
+`%3`, `%4`, and under `%7` with both parts in it.  In Nock order `p` runs
+before `q`, so its run comes after `q`'s in the compilation, and `+past`
+over `p` is the identity exactly because `p` is pure; `q` may call.  So `[7 c [2 [0 1] [0 b]]]` (a
 Nock `9`) is in it for every `c` in it, and so are calls in sequence
 (`[7 [2 a b] [2 c d]]`) and a call whose formula is the product of a call
 (`[2 [0 1] [2 [0 3] [0 2]]]`).  A cons, `%5` or `%10` whose part that runs
@@ -313,15 +314,85 @@ theorem comp_run_n7C (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (goal : C
     nock_open crK7
     simp [nock_exec, crSubj, cr_bat_dol, h1, h2, runLC, e, bind, StateT.bind]
 
+/-! ## `%5` against `runLC`, with `q` that may call -/
+
+/-- The model of `%5` against `runLC` on a fork-free goal: two registers,
+the branch `cr5BrM`, then the tail. -/
+theorem cr5_modelC (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (gl : CGoal CSet) (region : List Nat)
+    (g : Gen (TreapMap mugF)) :
+    (runLC env msup (Nomm.n5 p q) (CGoal.toL gl) region : CM (TreapMap mugF) (NextL CSet)) g = (do
+      let o ← cr5BrM g.re (g.re + 1) gl
+      let nexF ← runLC env msup q (CGoal.toL (CGoal.next (lazyReg (g.re + 1)) (jmp0 o))) region
+      let nexF ← pastL env.cod nexF p region
+      let nexS ← runLC env msup p (CGoal.toL (CGoal.next (lazyReg g.re) nexF.th)) region
+      copyL nexS nexF.laz : CM (TreapMap mugF) (NextL CSet)) { g with re := g.re + 1 + 1 } := by
+  cases gl <;> simp [runLC, CGoal.toL, cr5BrM, collapseLazyAtomL_mk, re, bind, StateT.bind, pure, StateT.pure] <;> rfl
+
+/-- **The case `%5` of `+run` against `runLC`**, on a fork-free goal with
+the invariant, for `p` pure with no `%6` and `q` given as for `%2`
+(`Cr2Parts`): `q` may call. -/
+theorem comp_run_n5C (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (hpp : p.pure = true) (hp6 : noSix p = true)
+    (gl : CGoal CSet) (region : List Nat) (g : Gen (TreapMap mugF)) (hinv : CrInv g gl)
+    (P : Cr2Parts env msup ctx p q region) :
+    CompRunAtR (runLC env msup) ctx (Nomm.n5 p q) (CGoal.toL gl) region g := by
+  have hlok := hinv.1
+  intro x mono sup hx
+  have hre0 := comp_re' ctx x g
+  have hre1 := comp_re' ctx x { g with re := g.re + 1 }
+  have hbr := cr5_br h7 x hx gl hlok mono (Nomm.n5 p q).toNoun (listNoun A region) sup g.re (g.re + 1)
+    { g with re := g.re + 1 + 1 }
+  have hD1 := comp_re_at
+  have hnn : (Nomm.n5 p q).toNoun = C (A 5) (C p.toNoun q.toNoun) := rfl
+  rw [cr5_modelC, hnn, cr_disp_n5, cr5_eq]
+  rw [hnn] at hbr
+  cases eb : cr5BrM g.re (g.re + 1) gl { g with re := g.re + 1 + 1 } with
+  | none =>
+    rw [eb] at hbr
+    simp only [crSubj, compCore, Option.map_none] at hbr hre0 hre1 ⊢
+    generalize (CGoal.toL gl).toNoun = GN at hbr ⊢
+    generalize C (A 5) (C p.toNoun q.toNoun) = NN at hbr ⊢
+    generalize comp.door = Dr at hD1 hre0 hre1 hbr ⊢
+    nock_open cr5Head
+    simp [nock_exec, hre0, hre1, hD1, hbr, bind, StateT.bind, eb]
+  | some r =>
+    obtain ⟨o, g1⟩ := r
+    rw [eb] at hbr
+    obtain ⟨l1, d1⟩ := cr5_br_keeps (g := { g with re := g.re + 1 + 1 }) hinv.2.1 eb
+    have l1' : g.re + 1 + 1 ≤ g1.re := l1
+    have iq : CrInv g1 (CGoal.next (lazyReg (g.re + 1)) (jmp0 o)) := cri_reg o (by omega) d1
+    have hip : ∀ (nexF : Next CSet) g6,
+        runLC env msup q (CGoal.toL (CGoal.next (lazyReg (g.re + 1)) (jmp0 o))) region g1 = some (Next.toL nexF, g6) →
+        CrOut g1 (CGoal.next (lazyReg (g.re + 1)) (jmp0 o)) g6 nexF ∧
+          CrInv g6 (CGoal.next (lazyReg g.re) nexF.th) := by
+      intro nexF g6 e
+      have O := crr_out (P.resQ _ _ _ _ _ iq e)
+      exact ⟨O, cra_lok_reg _, O.2.1, ⟨nb_this (by have := O.1; omega), O.2.2.1.2⟩, by simp [GDist, lazyReg, Distinct]⟩
+    have ht := cr5_tailC h7 hcode env msup p q hpp hp6 region x hx mono (CGoal.toL gl).toNoun sup g.re (g.re + 1)
+      o g1 (P.runQ _ _ _ iq)
+      (fun nex g6 e => let ⟨n, e', _⟩ := P.resQ _ _ _ _ _ iq e; ⟨n, e'⟩)
+      (fun nexF g6 e => P.runP _ _ _ (hip nexF g6 e).2)
+      (fun nexF g6 nexS g7 e e2 => crf_copy_ok (nb_this (by omega))
+        (fun y e1 e2' => by simp only [lazyReg, NMem] at e1 e2'; omega) (hip nexF g6 e).1
+        (cro_run hpp hp6 (hip nexF g6 e).2 e2))
+    rw [hnn] at ht
+    simp only [crSubj, compCore, Option.map_some] at hbr hre0 hre1 ht ⊢
+    generalize (CGoal.toL gl).toNoun = GN at hbr ht ⊢
+    generalize C (A 5) (C p.toNoun q.toNoun) = NN at hbr ht ⊢
+    generalize comp.door = Dr at hD1 hre0 hre1 hbr ht ⊢
+    nock_open cr5Head
+    simp [nock_exec, hre0, hre1, hD1, hbr, ht, bind, StateT.bind, eb]
+
 /-! ## The fragment -/
 
 /-- **The fragment with indirect calls**: pure with no `%6` and `tenOk`,
-or an indirect call `[2 p q ~]` with `p` so and `q` in the fragment, or
-`%3`, `%4` of it, or `%7` of two of it. -/
+or an indirect call `[2 p q ~]` or a `[5 p q]` with `p` so and `q` in the
+fragment, or `%3`, `%4` of it, or `%7` of two of it. -/
 def indOk : Nomm → Bool
   | Nomm.n2 p q Option.none => (p.pure && noSix p && tenOk p) && indOk q
   | Nomm.n3 p => indOk p
   | Nomm.n4 p => indOk p
+  | Nomm.n5 p q => (p.pure && noSix p && tenOk p) && indOk q
   | Nomm.n7 p q => indOk p && indOk q
   | n => n.pure && noSix n && tenOk n
 
@@ -342,7 +413,11 @@ theorem indOk_of_pure : ∀ (n : Nomm), n.pure = true → noSix n = true → ten
   | Nomm.cons _ _, h1, h2, h3 => by simp only [indOk, h1, h2, h3, Bool.and_self]
   | Nomm.n0 _, h1, h2, h3 => by simp only [indOk, h1, h2, h3, Bool.and_self]
   | Nomm.n1 _, h1, h2, h3 => by simp only [indOk, h1, h2, h3, Bool.and_self]
-  | Nomm.n5 _ _, h1, h2, h3 => by simp only [indOk, h1, h2, h3, Bool.and_self]
+  | Nomm.n5 p q, h1, h2, h3 => by
+    simp only [Nomm.pure, Bool.and_eq_true] at h1; simp only [noSix, Bool.and_eq_true] at h2
+    simp only [tenOk, Bool.and_eq_true] at h3
+    simp only [indOk, Bool.and_eq_true]
+    exact ⟨⟨⟨h1.1, h2.1⟩, h3.1⟩, indOk_of_pure q h1.2 h2.2 h3.2⟩
   | Nomm.n6 _ _ _, h1, h2, h3 => by simp only [indOk, h1, h2, h3, Bool.and_self]
   | Nomm.n10 _ _ _, h1, h2, h3 => by simp only [indOk, h1, h2, h3, Bool.and_self]
   | Nomm.n11s _ _ _, h1, h2, h3 => by simp only [indOk, h1, h2, h3, Bool.and_self]
@@ -561,6 +636,36 @@ theorem crf_run (env : CallEnv) : ∀ (n : Nomm), indOk n = true → ∀ (msup :
       obtain ⟨r4, d4⟩ := crf_emit h4 k2.2
       simp only at r4
       exact crf_tail ih (by omega) (by omega) d4 h
+  | Nomm.n5 p q, hok, msup, region, gl, g, g', nex, hi, h => by
+    simp only [indOk, Bool.and_eq_true] at hok
+    obtain ⟨⟨⟨hpp, hp6⟩, _⟩, hq⟩ := hok
+    have ihq := crf_run env q hq msup region
+    rw [cr5_modelC] at h
+    obtain ⟨o, g1, h1, h⟩ := bind_some h
+    obtain ⟨l1, d1⟩ := cr5_br_keeps (g := { g with re := g.re + 1 + 1 }) hi.2.1 h1
+    have l1' : g.re + 1 + 1 ≤ g1.re := l1
+    obtain ⟨nexF, g4, h4, h⟩ := bind_some h
+    obtain ⟨nF, rfl, OF⟩ := ihq (CGoal.next (lazyReg (g.re + 1)) (jmp0 o)) g1 g4 nexF (cri_reg o (by omega) d1) h4
+    obtain ⟨nexF', g5, h5, h⟩ := bind_some h
+    rw [pastL_pure env.cod _ hpp region, pure_apply] at h5
+    simp only [Option.some.injEq, Prod.mk.injEq] at h5
+    obtain ⟨rfl, rfl⟩ := h5
+    obtain ⟨nexS, g6, h6, h7⟩ := bind_some h
+    rw [cr2_run_pure env msup hpp hp6, map_apply] at h6
+    obtain ⟨nS, e6, rfl⟩ := crf_map_some h6
+    have l4 := OF.1
+    have ip : CrInv g4 (CGoal.next (lazyReg g.re) nF.th) := cri_reg_j (by omega) OF.2.2.1.2 OF.2.1
+    have OS := cro_run hpp hp6 ip e6
+    have h7' : copyL (Next.toL nS) (Lazy.ofSure nF.laz) g6 = some (nex, g') := h7
+    rw [copyL_toL, map_apply] at h7'
+    obtain ⟨n', e7, rfl⟩ := crf_map_some h7'
+    obtain ⟨l7, d7, ni7, s7, D7, L7⟩ := crf_copy_out (nb_this (show g.re < g1.re by omega))
+      (fun y e1 e2 => by simp only [lazyReg, NMem] at e1 e2; omega) OF OS e7
+    refine ⟨n', rfl, by omega, d7, ni7, fun y hy => ?_, D7, L7⟩
+    rcases s7 y hy with e | e | e
+    · exact Or.inl (by omega)
+    · simp only [lazyReg, NMem] at e; exact Or.inl (by omega)
+    · simp only [lazyReg, NMem] at e; exact Or.inl (by omega)
   | Nomm.n7 p q, hok, msup, region, gl, g, g', nex, hi, h => by
     simp only [indOk, Bool.and_eq_true] at hok
     simp only [runLC] at h
@@ -573,7 +678,6 @@ theorem crf_run (env : CallEnv) : ∀ (n : Nomm), indOk n = true → ∀ (msup :
   | Nomm.cons _ _, hok, _, _, _, _, _, _, hi, h => crf_pure hok hi h
   | Nomm.n0 _, hok, _, _, _, _, _, _, hi, h => crf_pure hok hi h
   | Nomm.n1 _, hok, _, _, _, _, _, _, hi, h => crf_pure hok hi h
-  | Nomm.n5 _ _, hok, _, _, _, _, _, _, hi, h => crf_pure hok hi h
   | Nomm.n6 _ _ _, hok, _, _, _, _, _, _, hi, h => crf_pure hok hi h
   | Nomm.n10 _ _ _, hok, _, _, _, _, _, _, hi, h => crf_pure hok hi h
   | Nomm.n11s _ _ _, hok, _, _, _, _, _, _, hi, h => crf_pure hok hi h
@@ -633,9 +737,16 @@ theorem comp_run_all_c (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slo
   | Nomm.n1 _, hok, gl, region, g, hinv => by
     simp only [indOk, Bool.and_eq_true] at hok
     exact crc_of_pure env hok.1.1 (comp_run_all' h7 hcode _ hok.1.1 hok.1.2 hok.2 gl region g hinv)
-  | Nomm.n5 _ _, hok, gl, region, g, hinv => by
-    simp only [indOk, Bool.and_eq_true] at hok
-    exact crc_of_pure env hok.1.1 (comp_run_all' h7 hcode _ hok.1.1 hok.1.2 hok.2 gl region g hinv)
+  | Nomm.n5 p q, hok, gl, region, g, hinv => by
+    have hok' := hok
+    simp only [indOk, Bool.and_eq_true] at hok'
+    obtain ⟨⟨⟨hpp, hp6⟩, htp⟩, hq⟩ := hok'
+    have ihq := comp_run_all_c h7 hcode env q hq
+    intro msup
+    exact comp_run_n5C h7 hcode env msup p q hpp hp6 gl region g hinv
+      ⟨fun s th g1 hi => ihq (CGoal.next s th) region g1 hi msup,
+       fun s th g1 nex g2 hi e => crf_run env q hq msup region (CGoal.next s th) g1 g2 nex hi e,
+       fun s th g1 hi => comp_run_all' h7 hcode p hpp hp6 htp (CGoal.next s th) region g1 hi⟩
   | Nomm.n6 _ _ _, hok, _, _, _, _ => by simp [indOk, noSix] at hok
   | Nomm.n10 _ _ _, hok, gl, region, g, hinv => by
     simp only [indOk, Bool.and_eq_true] at hok

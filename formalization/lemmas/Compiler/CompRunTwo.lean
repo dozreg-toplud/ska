@@ -366,6 +366,81 @@ theorem cr2_tail (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 
         StateT.bind, h7, hcode, hD1, cr_past_arm, hpa, hp1, eq2, hD2, cr_cp_arm, hcpy, eq, cr_next_noun', hps,
         hpm, pure, StateT.pure, hcm, cr_next_noun, map_apply, Function.comp_def]
 
+/-- **The tail of `%5` against `runLC`**: the run of `q` into the comparison
+block `o`, `+past` (the identity on a pure `p`), the run of `p` with the `then`
+of `q`, and `+copy`, given the link of `q` for its goal and the shape of its
+result, the link of `p`, and the side condition of `+copy` on the states the
+model reaches. -/
+theorem cr5_tailC (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (hpp : p.pure = true) (hp6 : noSix p = true)
+    (region : List Nat) (x : GenRest) (hx : x.NoSoft) (mono goalN sup : Noun) (rSub rFol o : Nat)
+    (g1 : Gen (TreapMap mugF))
+    (hq : CompRunAtR (runLC env msup) ctx q (CGoal.toL (CGoal.next (lazyReg rFol) (jmp0 o))) region g1)
+    (hqF : ∀ nex g2, runLC env msup q (CGoal.toL (CGoal.next (lazyReg rFol) (jmp0 o))) region g1 = some (nex, g2) →
+      ∃ n : Next CSet, nex = Next.toL n)
+    (hp : ∀ (nexF : Next CSet) g2,
+      runLC env msup q (CGoal.toL (CGoal.next (lazyReg rFol) (jmp0 o))) region g1 = some (Next.toL nexF, g2) →
+      CompRunAt ctx p (CGoal.toL (CGoal.next (lazyReg rSub) nexF.th)) region g2)
+    (hcp : ∀ (nexF : Next CSet) g2 nexS g3,
+      runLC env msup q (CGoal.toL (CGoal.next (lazyReg rFol) (jmp0 o))) region g1 = some (Next.toL nexF, g2) →
+      run p (CGoal.next (lazyReg rSub) nexF.th) g2 = some (nexS, g3) → CrCopyOk g3 nexS nexF.laz) :
+    nock (C (A o) (C (A rFol) (C (A rSub)
+      (crSubj mono (Nomm.n5 p q).toNoun goalN (listNoun A region) sup (compCore g1 x ctx))))) cr5Tail
+      = ((do
+          let nexF ← runLC env msup q (CGoal.toL (CGoal.next (lazyReg rFol) (jmp0 o))) region
+          let nexF ← pastL env.cod nexF p region
+          let nexS ← runLC env msup p (CGoal.toL (CGoal.next (lazyReg rSub) nexF.th)) region
+          copyL nexS nexF.laz : CM (TreapMap mugF) (NextL CSet)) g1).map
+          fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  obtain ⟨hc, hl, -⟩ := comp_ctx_pill ctx h7
+  have h15 := cr_ctx15 h7
+  have hq1 := hq x mono sup hx
+  rw [cr_goal_reg] at hq1
+  simp only [crSubj, compCore] at hq1
+  have hD1 := cr_past_at
+  have hD2 := comp_cp_at
+  simp only [compCore]
+  cases eq : runLC (S := CSet) (Map := TreapMap mugF) env msup q (CGoal.toL (CGoal.next (lazyReg rFol) (jmp0 o)))
+      region g1 with
+  | none =>
+    rw [eq] at hq1
+    generalize comp.door = Dr at hq1 hD1 hD2 ⊢
+    nock_open cr5Tail
+    simp [nock_exec, crSubj, Nomm.toNoun, h15, ct_lfn_at, ct_lfn_arm, ct_lfn_gate, cr_bat_dol, hq1, bind,
+      StateT.bind, eq]
+  | some r =>
+    obtain ⟨nexL, g2⟩ := r
+    obtain ⟨nexF, rfl⟩ := hqF _ _ eq
+    rw [eq] at hq1
+    simp only [Option.map_some, cr_next_noun] at hq1
+    have hpa := cr_past_pure h7 hcode x g2 nexF p hpp region
+    have hp1 := cr_at_run hpp hp6 (hp nexF g2 eq) x mono sup hx
+    rw [cr_goal_reg'] at hp1
+    simp only [crSubj, compCore] at hp1
+    have hpm := cr2_run_pure env msup hpp hp6 (CGoal.next (lazyReg rSub) nexF.th) region
+    have hps : (pastL env.cod (Next.toL nexF) p region : CM (TreapMap mugF) (NextL CSet)) = pure (Next.toL nexF) :=
+      pastL_pure env.cod _ hpp region
+    cases eq2 : run (S := CSet) (Map := TreapMap mugF) p (CGoal.next (lazyReg rSub) nexF.th) g2 with
+    | none =>
+      rw [eq2] at hp1
+      generalize comp.door = Dr at hq1 hD1 hD2 hpa hp1 ⊢
+      unfold cr5Tail cr5T2 cr5T3
+      simp [nock_exec, crSubj, Nomm.toNoun, h15, ct_lfn_at, ct_lfn_arm, ct_lfn_gate, cr_bat_dol, hq1, bind,
+        StateT.bind, h7, hcode, hD1, cr_past_arm, hpa, hp1, eq2, eq, hps, hpm, pure, StateT.pure, map_apply]
+    | some r' =>
+      obtain ⟨nexS, g3⟩ := r'
+      rw [eq2] at hp1
+      simp only [Option.map_some, cr_next_noun'] at hp1
+      obtain ⟨hlt, hrt, hm⟩ := hcp nexF g2 nexS g3 eq eq2
+      have hcpy := comp_copy (x := x) hc hl g3 nexS nexF.laz hlt hrt hm
+      simp only [compCore, cr_next_noun'] at hcpy
+      have hcm := copyL_toL (Map := TreapMap mugF) nexS nexF.laz
+      generalize comp.door = Dr at hq1 hD1 hD2 hpa hp1 hcpy ⊢
+      unfold cr5Tail cr5T2 cr5T3
+      simp [nock_exec, crSubj, Nomm.toNoun, h15, ct_lfn_at, ct_lfn_arm, ct_lfn_gate, cr_bat_dol, hq1, bind,
+        StateT.bind, h7, hcode, hD1, cr_past_arm, hpa, hp1, eq2, hD2, cr_cp_arm, hcpy, eq, cr_next_noun', hps,
+        hpm, pure, StateT.pure, hcm, cr_next_noun, map_apply, Function.comp_def]
+
 /-! ## From `+kerf` on, and the whole case -/
 
 theorem next_toL_inj {a b : Next CSet} (h : Next.toL a = Next.toL b) : a = b := by
