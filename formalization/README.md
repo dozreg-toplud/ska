@@ -129,6 +129,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/SkaCallgraph.lean` | The gate `+ska-callgraph` (arm `341` of `ana`, `ska_cg.arm`) against `Ana.skaCallgraph`, both ways at some fuel (`ska_callgraph_iff`): on the sample `[[bus fol] memo-final reg]` (`cgSam`) in its context `ana` it returns exactly `[g regs]` of what the model returns.  The battery is split by the kernel (`cg_battery_eq`) into the bunt of `ska-state` (`cgStBunt`, with `regs` edited it is `(SkaState.init reg).toNoun`, `init_toNoun`), the core `K` it builds (`cgK`, where `slot? 31`, `slot? 2` and `slot? 122` hold by computation, `cgK_31`, `cgK_2`, `cgK_122`), the call of `+analyze` (`cgA`, `cg_run`, then `analyze_iff`) and the print (`cgTF` of the trap `cgTrap`, kept whole because it quotes the type of the result).  The print reads the gate `print-ska` at axis `254` of `ana` (`cg_ps_at`, not `126`, which holds `print-comp`), whose battery `[9 97710 [0 255]]` pulls the arm `same` of layer 2 (`same_at`, `sameArm`, `|*(* +<)`) without running the trap, so the result is `[g.st.res regs.st.res]` (`cg_print`, `cg_print_ana`).  Hypotheses: `env.he = heSock`, `env.threshold = 32`, `env.softSpot = softSpotF`, `RegisterFastIs`. |
 | `Compiler/SkaPrune.lean` | The gate `+prune-callgraph` (arm `22007` of `ana`, `prune_cg_at`) against `Ana.pruneLoop` and `Ana.pruneCallgraph`, both ways at some fuel, in every context with layer 2 at axis `8191` (`prune_loop_iff`, `prune_gate_iff`).  The battery pushes `out=~` and `q=~[root]` (`prune_battery_run`), the arm builds the gate with the sample `[~ *identity]` (`prune_arm_run`).  One turn of the loop over an evaluator `c` that is `nock` off the loop (`PFar`, the cut of the formula) is `prune_stepW`, against `pruneStepH`, which is `pruneLoop` one fuel up (`pruneLoop_succ`); under `evOne prune_cg.loop j` the loop computes `pruneLoop` at fuel `j` exactly (`pruneE_is`).  `+has:by`, `+got:by` (with its crash on a missing callee) and `+put:by` on the noun of a graph: `pr_has`, `pr_got`, `pr_got_none`, `pr_put`; the `+turn` by the shared gate `[0 13]` and the `+weld`: `pr_turn`, `pr_weld`. |
 | `Compiler/SkaPoke.lean` | `+memo-final-entry` (arm `340` of `ana`, `mfe_at`, battery `mfeBat` written out, sample bunt `mfeBunt` kept whole) against `Ana.memoFinalEntry` in every context with `lib` at `7` (`mfe_gate`).  The analysis part of `+ska-poke` (arm `20` of `ana`, `sp_at`): its battery `spBat` slams `road-pure` (axis `62` of `ana`) with the trap `[spX [spBat [sam ana]]]` (`sp_bat_run`), and the battery `spX` of that trap is split by the kernel (`spX_eq`, `spXF`) into the push of `[bus fol]`, the calls of `+ska-callgraph` (`spCG`), `+prune-callgraph` (`spPR`), `+got:by` (`spGOT`), the trap `%poke-just-code` (`spTC`, battery `pjTB`, tied by `spX_eq`), and `spEnd`, which writes the new memo into `lon`, pushes `dats` and runs the baking part `spRest` (axis `44826492927` of `ana`, kept whole).  `sp_chain` runs those calls over a variable core `K`; `pj_gate` is the gate of the `+rep` (`pjGate`) on one entry against `pjStep`, `pj_rep` the `+rep` over the pruned graph against `pokeMemo` (through `FinMap.entry`, so no injectivity of `FDatum.toNoun` is needed), and `pj_trap` the trap, with the bunts of the gate's sample (`pjIdB`, `pjDatB`, `pjMapB`, the last `~`) evaluated by the kernel (`pj_idb`, `pj_datb`, `pj_mapb`).  `ska_poke_ana_iff`: the trap returns `y` exactly when at some fuel `Ana.skaCallgraph` returns `gr`, `Ana.skaPoke` returns `r` and `spRest` returns `y` on `spAfter gr r`.  Hypotheses: those of `ska_callgraph_iff` and `regsNoun reg = [root core batt arms ~]` of `jets.lon`. |
+| `Compiler/RoadPure.lean` | `road-pure` (the gate at axis `62` of `ana`, battery `rpBat` written out, `rp_at`), `+mule:vi` and `+mute` (arms `6` and `15` of the battery of the door `+vi` at arm `22526` of `layer4`, `rp_mule_at`, `rp_mute_at`; batteries `rpMuleBat`, `rpMuteBat` written out, the `%1` branch of `+mute` kept as `[8 sof [1 1] rest]`) and `+mean` (arm `2558` of the fifth layer at axis `31` of the gate's context, `rp_mean_at`), each tied by the kernel.  `+mean` never returns (`rp_mean_none`, by induction on `iterN`); the pill's `+mock` on `[[s f] ~]` returns `[%0 p]` when `+mink` ends in `%0` and otherwise a cell whose head is not `0` (`rp_mock_cases`, `rp_mock_zero`, through `mink_pill_iff` with `rpLib`, so no formatting field of `Lib` is assumed: `+mook` on `%1` and `%2` is read only for its head); `+mute` and `+mule` likewise (`rp_mute_cases`, `rp_mule_cases`).  `rp_run_iff`: `road-pure` on a trap `T` returns `y` exactly when `+mink` of `[T [9 2 0 1]]` with `gul = ~` ends in `%0` and the direct run returns `y`.  `ska_poke_gate_iff`: the same for the gate `+ska-poke` (`sp_bat_run`) on any sample.  `evalH_of_minkF_nil`: with `gul = ~`, `+mink` ends in `[%0 p]` only on an `EvalH` run to `p` (Nock in which every dynamic hint the run evaluates has an atom tag), the converse of `mink_of_evalH`.  So `ska_poke_iff_evalH`: the gate returns `y` exactly when its trap's run is an `EvalH` run to `y`, with no hypothesis; and `ska_poke_iff_trap`: given that every return of the trap is an `EvalH` run, the gate returns `y` exactly when the trap does. |
 | `Compiler/RegisterFast.lean` | `+register-fast` for registrations kept as nouns: `registerFastP`, the pill's run of the gate decoded into `[miss regs]`, satisfies `RegisterFastIs` for every `Env Noun` that uses it, given `RegisterFastShape` (every return of the gate is a cell with a flag at its head; `registerFastIs_of`).  The shape fact is open: `absNock` of `Compiler/Frame.lean` on the gate's battery (fuel 1000) gives 103 shapes, of which 10 are `[%.n *]` and 93 unknown, because those branches end in calls, which `absNock` does not follow. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
@@ -512,11 +513,20 @@ import only its theorems.  So:
      `spAfter gr r` = `[dats [root-datum [pruned [[g regs] [root-identity
      T0']]]]]`, `T0'` the trap's core with the new memo.  The eventual
      `ska_poke_iff` takes what `spRest` returns on `spAfter` as its
-     hypothesis, and `road-pure` as a second one: `+mule:vi` runs the trap
-     under `+mock` and, on `%&`, runs it again directly (`[%& p=$:tap]`),
-     and `road-pure` crashes on `%|`, so `road-pure` returns `y` exactly
-     when the direct run returns `y` and `+mock` of it ends with `%0`
-     (`mock_pill_iff`, not applied here).
+     hypothesis.  `road-pure` is linked (`Compiler/RoadPure.lean`):
+     `+mule:vi` runs the trap under `+mock` and, on `%&`, runs it again
+     directly (`[%& p=$:tap]`), and `road-pure` crashes on `%|` through
+     `+mean`, which never returns, so the gate `+ska-poke` returns `y`
+     exactly when `+mink` of its trap with `gul = ~` ends in `%0` and the
+     direct run returns `y` (`ska_poke_gate_iff`), that is, exactly when the
+     trap's run is an `EvalH` run to `y` (`ska_poke_iff_evalH`, no
+     hypothesis), and exactly when the trap returns `y` given that every
+     return of the trap is an `EvalH` run (`ska_poke_iff_trap`).  The
+     property is about the run, not about the battery: a dynamic hint with
+     a cell tag, `[11 [[b c] d] e]`, which Nock reduces and `+mink` answers
+     with `%2` (`eval_cell_tag`), would have to be reached by the analysis,
+     for example in a formula it runs with `.*`; no such run is known in the
+     analysis, and nothing proves its absence yet.
    - *Modelled, not linked*:
      `+uni-sock`, `+norm-sock`, `+know`,
      `+bake-graph`; `+reverse-bell-graph`, `+hot-stale`, `+del-bells`;
@@ -536,9 +546,16 @@ import only its theorems.  So:
      families `soft-*`, `laze-*`, `inter1`, `inter2`; the optimizer;
      `+hot-diff`, `+load`, `+peek`, `+wish`.
    - *Next, in this order*: `RegisterFastShape` (the last semantic
-     hypothesis of the analysis links), then `road-pure` on the trap of
-     `+ska-poke` through `+mule:vi` and `mock_pill_iff`, then the baking
-     part (`spRest`) once `+bake-graph` is settled.  The nouns of
+     hypothesis of the analysis links; every branch of the Hoon returns
+     `gen`, `gen(miss &)` or `[miss.gen (register-template ...)]`, most of
+     them through `%-  (print-ska n |.(...))  gen`, whose gate is the arm
+     `same` of layer 2, and the two loops `past-loop` and `sock-loop` read
+     `gen` without changing it, so `absNock` needs an oracle that answers a
+     slam of `same` with its sample and an invariant of the two loops: every
+     return is `[| reg]`, `[& reg]` or `[| _]`); then the property
+     `EvalH` of the trap's run for `ska_poke_iff_trap`; then the baking
+     part (`spRest`) once `+bake-graph` is settled; then the core inside
+     `+comp` against `Ska/CompModel.lean`.  The nouns of
      `+ska-poke` are not generated: `Compiler/SkaPoke.lean` defines them
      from axes of `ana` (`spBunt` `165`, `spX` `683997`, `spRest`
      `44826492927`, `spClue` `2868895546299`, `mfeBunt` `2725`) and writes
