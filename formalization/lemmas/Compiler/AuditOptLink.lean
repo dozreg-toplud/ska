@@ -12,6 +12,7 @@ import lemmas.Compiler.OptLinkOnce
 import lemmas.Compiler.OptLinkOnceGate
 import lemmas.Compiler.OptLinkOpt
 import lemmas.Hoon.UnoBy
+import lemmas.Compiler.OptLinkTrimLink
 
 /-!
 # Axioms of the pill link of the optimizer
@@ -104,3 +105,37 @@ open Formalization Compiler
 #print axioms Hoon.look_get
 #print axioms Hoon.unoByP_of_maps
 #print axioms Hoon.uno_by
+#print axioms Hoon.run_by_P
+#print axioms tr_at
+#print axioms trimBody_eq
+#print axioms keyN_inj
+#print axioms tr_trace
+#print axioms tr_nct
+#print axioms cnt_gut
+#print axioms cnt_put
+#print axioms cnt_del
+#print axioms cnt_key
+#print axioms uns_add
+#print axioms tr_maxg
+#print axioms cnt_uno
+#print axioms out_gut
+#print axioms out_put
+#print axioms tr_istep
+#print axioms tr_ibody
+#print axioms tr_fint
+#print axioms tr_iend
+#print axioms tr_rgate
+#print axioms tr_oturn
+#print axioms tr_otrap
+#print axioms tr_opg
+#print axioms tr_ogate
+#print axioms tr_opened
+#print axioms tr_sgate
+#print axioms tr_rngate
+#print axioms get_hoonMap
+#print axioms get_trimRun
+#print axioms noLti_trim
+#print axioms tr_gate
+#print axioms trimLink
+#print axioms oo_gate_trim
+#print axioms opt_gate_trim

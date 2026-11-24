@@ -503,10 +503,18 @@ elif WHICH == 'trim':
     _, eed, enext = seq(iend, 3)
     _, e252, _ = seq(eed, 3)
     _, eupd = seq(e252, 2)
+    # EUPD = [6 FINT UNI [0 252]]
+    _, fint, euni, _ = seq(eupd, 4)
     # STEP = [8 [0 12] [8 HINT [6 TEST NOHINT HINTC]]]
     _, _, s1 = seq(istep, 3)
     _, shint, s2 = seq(s1, 3)
     _, _, snoh, shc = seq(s2, 4)
+    # NOHINT = [6 NCT SKIPK WIDEN]
+    _, nct, skipk, widen = seq(snoh, 4)
+    # HINTC = [8 GUT [6 [0 26] OPENK [6 LTE DELK DECK]]]
+    _, hgut, h1 = seq(shc, 3)
+    _, _, openk, closek = seq(h1, 4)
+    _, lte, delk, deck = seq(closek, 4)
     # OPENED = [8 REPDOOR [9 2 [10 [6 [7 [0 3] [8 [1 OB] [[1 OG] [0 1]]]]] [0 2]]]]
     _, _, os1 = seq(opened, 3)
     _, _, ed = seq(os1, 3)
@@ -556,11 +564,21 @@ elif WHICH == 'trim':
              ('trGetJa', getja, '`(~(get ja rev) i.topo)`.'),
              ('trORoll', oroll, '`open`: the `+roll` over the predecessors.'),
              ('trOGot', ogot, '`(~(got by blocks) i.topo)`.'),
+             ('trFinT', fint, '`!?=(?(%clq %eqq %brz %hop) -.fin.b)`.'),
+             ('trEUni', euni, '`(~(uni in unsafe) ~(key by open))` at the end of a block.'),
              ('trEUpd', eupd, 'The `=?` of `unsafe` at the end of a block.'),
              ('trENext', enext, 'The next turn of the outer trap: `topo` and `out` edited.'),
              ('trIEnd', iend, 'The end of a block in the inner trap.'),
              ('trIHint', shint, '`(trace op)`.'),
+             ('trNcT', nct, '`?=(pole-not-crashing -.op)`.'),
+             ('trSkipK', skipk, '`$(body t.body)`.'),
+             ('trWiden', widen, '`$(body t.body, unsafe (~(uni in unsafe) ~(key by open)))`.'),
              ('trINoHint', snoh, 'An op without key: `pole-not-crashing` or the unsafe keys widened.'),
+             ('trHGut', hgut, '`(~(gut by open) key.u.hint 0)`.'),
+             ('trOpenK', openk, '`$(body t.body, open (~(put by open) key.u.hint +(n)))`.'),
+             ('trLte', lte, '`(lte n 1)`.'),
+             ('trDelK', delk, '`$(body t.body, open (~(del by open) key.u.hint))`.'),
+             ('trDecK', deck, '`$(body t.body, open (~(put by open) key.u.hint (dec n)))`.'),
              ('trIHintC', shc, 'An op with a key: its count opened or closed.'),
              ('trIStep', istep, 'A turn of the inner trap on an op.'),
              ('trITest', itest, '`?=(~ body)`.'),
