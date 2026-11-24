@@ -1,6 +1,8 @@
 import lemmas.Ska.CompFragUJGen
 import lemmas.Ska.CompSevenV
 import lemmas.Ska.CompFiveV
+import lemmas.Ska.CompFourV
+import lemmas.Ska.CompTenV
 
 /-!
 # The joint induction over `FragU`
@@ -18,6 +20,10 @@ induction over `FragU` proves it.
 * `FragU`: `x` (`FragX`), `seven4` (`[7 [4 p] q]` with `p`, `q` in `FragX`),
   `six` and `cons` with parts in `FragU`.  `runU_uok`, `runU_ok` (the old
   statement), `finishLF_bellContractFU` (the contract on `FragU`).
+* `uok_four`, `uok_three` (eleventh session, `CompFourV.lean`): `[4 p]` and
+  `[3 p]` with an operand in `FragU`; `finishLF_bellContract_fourProxy`;
+  `uok_ten` (`CompTenV.lean`): `[10 [a v] q]` with parts in `FragU`,
+  `finishLF_bellContract_tenProxy`.
 * `finishLF_bellContract_consProxy`: the cons
   `[[7 [4 [0 3]] [6 [0 1] [0 1] [1 0]]] [0 1]]`, not covered before.
 -/
@@ -134,6 +140,37 @@ theorem uok_five (lib : Lib) {p q : Nomm} (up : UOK (S := S) (Map := Map) lib p)
     fun z o _ _ => fun _ hj hcount b0 d0 hu hcl hcb h => five_tagG lib up.next uq.next up.tagN uq.tagN up.pure
       (goal := CGoal.pick z o) trivial hj hcount b0 d0 hu hcl hcb h⟩
 
+/-- **`[4 p]` whose operand meets `UOK` meets `UOK`**: `runOKV_n4D`,
+`runOKV_n4P`, `runOKNV_n4` from `OKNV` of the operand, the tag clauses
+`four_tagNV`, `four_tagP` from its `TagNV`, `cleanA_four`. -/
+theorem uok_four (lib : Lib) {p : Nomm} (up : UOK (S := S) (Map := Map) lib p) :
+    UOK (S := S) (Map := Map) lib (Nomm.n4 p) :=
+  ⟨by simpa only [Nomm.pure] using up.pure, cleanA_four up.clean, runOKV_n4D lib up.next,
+    fun z o hz ho => runOKV_n4P lib up.next z o hz ho, runOKNV_n4 lib up.next, four_tagNV lib up.tagN,
+    fun z o _ _ => four_tagP lib up.tagN z o⟩
+
+/-- **`[3 p]` whose operand meets `UOK` meets `UOK`**: `runOKV_n3D`,
+`runOKV_n3P`, `runOKNV_n3`, `three_tagNV`, `three_tagP`, `cleanA_three`. -/
+theorem uok_three (lib : Lib) {p : Nomm} (up : UOK (S := S) (Map := Map) lib p) :
+    UOK (S := S) (Map := Map) lib (Nomm.n3 p) :=
+  ⟨by simpa only [Nomm.pure] using up.pure, cleanA_three up.clean, runOKV_n3D lib up.next,
+    fun z o hz ho => runOKV_n3P lib up.next z o hz ho, runOKNV_n3 lib up.next, three_tagNV lib up.tagN,
+    fun z o _ _ => three_tagP lib up.tagN z o⟩
+
+/-- **`[10 [a v] q]` whose parts meet `UOK` meets `UOK`**: `runOKV_n10D`,
+`runOKV_n10P`, `runOKNV_n10` from `OKNV` and `CleanN` of the parts, the tag
+clauses `ten_tagNV`, `ten_tagP` from their `TagNV`, `cleanA_ten`. -/
+theorem uok_ten (lib : Lib) {a : Nat} {v q : Nomm} (uv : UOK (S := S) (Map := Map) lib v)
+    (uq : UOK (S := S) (Map := Map) lib q) : UOK (S := S) (Map := Map) lib (Nomm.n10 a v q) :=
+  ⟨by simp only [Nomm.pure, uv.pure, uq.pure, Bool.and_self], cleanA_ten uv.clean uq.clean uv.pure uq.pure,
+    runOKV_n10D lib uv.next uq.next (CleanA.toN uv.clean) (CleanA.toN uq.clean) uv.pure uq.pure,
+    fun z o hz ho => runOKV_n10P lib uv.next uq.next (CleanA.toN uv.clean) (CleanA.toN uq.clean) uv.pure uq.pure
+      z o hz ho,
+    runOKNV_n10 lib uv.next uq.next (CleanA.toN uv.clean) (CleanA.toN uq.clean) uv.pure uq.pure,
+    ten_tagNV lib uv.next uq.next uv.tagN uq.tagN (CleanA.toN uv.clean) uv.pure uq.pure,
+    fun z o _ _ => ten_tagP lib uv.next uq.next uv.tagN uq.tagN (CleanA.toN uv.clean) (CleanA.toN uq.clean)
+      uv.pure uq.pure z o⟩
+
 /-! ## The fragment `FragU` and the top theorem -/
 
 /-- **`FragX` with the proxy runs that compose**: `[7 [4 p] q]` with `p` and
@@ -147,6 +184,9 @@ inductive FragU : Nomm → Prop
   | cons {p q : Nomm} : FragU p → FragU q → FragU (Nomm.cons p q)
   | seven {p q : Nomm} : FragU p → (∀ goal : CGoal S, Frag q goal) → FragU (Nomm.n7 p q)
   | five {p q : Nomm} : FragU p → FragU q → FragU (Nomm.n5 p q)
+  | four {p : Nomm} : FragU p → FragU (Nomm.n4 p)
+  | three {p : Nomm} : FragU p → FragU (Nomm.n3 p)
+  | ten {a : Nat} {v q : Nomm} : FragU v → FragU q → FragU (Nomm.n10 a v q)
 
 /-- **Every nomm of `FragU` meets `UOK`** (the joint induction). -/
 theorem runU_uok (lib : Lib) {nm : Nomm} (hf : FragU (S := S) nm) : UOK (S := S) (Map := Map) lib nm := by
@@ -157,6 +197,9 @@ theorem runU_uok (lib : Lib) {nm : Nomm} (hf : FragU (S := S) nm) : UOK (S := S)
   | cons _ _ ihp ihq => exact uok_cons lib ihp ihq
   | seven _ hq ihp => exact uok_seven lib ihp hq
   | five _ _ ihp ihq => exact uok_five lib ihp ihq
+  | four _ ih => exact uok_four lib ih
+  | three _ ih => exact uok_three lib ih
+  | ten _ _ ihv ihq => exact uok_ten lib ihv ihq
 
 theorem fragU_pure {nm : Nomm} (h : FragU (S := S) nm) : nm.pure = true := by
   induction h with
@@ -166,6 +209,9 @@ theorem fragU_pure {nm : Nomm} (h : FragU (S := S) nm) : nm.pure = true := by
   | cons _ _ ihp ihq => simp only [Nomm.pure, ihp, ihq, Bool.and_self]
   | seven _ hq ih => simp only [Nomm.pure, ih, (frag_pure_noSix _ _ (hq CGoal.done)).1, Bool.and_self]
   | five _ _ ihp ihq => simp only [Nomm.pure, ihp, ihq, Bool.and_self]
+  | four _ ih => simpa only [Nomm.pure] using ih
+  | three _ ih => simpa only [Nomm.pure] using ih
+  | ten _ _ ihv ihq => simp only [Nomm.pure, ihv, ihq, Bool.and_self]
 
 /-- **Every run of `FragU` for `%done`, and for `%pick` with jumps without
 arguments, meets `RunOKV`.** -/
@@ -288,6 +334,51 @@ example : FragU (S := S) (Nomm.n5 (Nomm.n7 (Nomm.n4 (Nomm.n0 3)) (Nomm.n6 (Nomm.
   FragU.five (FragU.seven4 (FragX.frag fun _ => trivial)
       (FragX.six (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial)))
     (FragU.x (FragX.frag fun _ => trivial))
+
+/-- **An increment of a run that makes proxies**:
+`[4 [7 [4 [0 3]] [6 [0 1] [0 1] [1 0]]]]` meets the contract with no
+hypothesis beyond the usual ones (not covered before `FragU.four`). -/
+theorem finishLF_bellContract_fourProxy {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
+    {bl : Bell}
+    (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol
+      (Nomm.n4 (Nomm.n7 (Nomm.n4 (Nomm.n0 3)) (Nomm.n6 (Nomm.n0 1) (Nomm.n0 1) (Nomm.n1 (A 0))))))
+    {cape : Cape} {data : Noun} (hbl : bl.less = Sock.mk cape data) (hn : CapeNorm cape) {ord : NeedOrd}
+    {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
+    (h : finishLF (S := S) (Nomm.n4 (Nomm.n7 (Nomm.n4 (Nomm.n0 3))
+      (Nomm.n6 (Nomm.n0 1) (Nomm.n0 1) (Nomm.n1 (A 0))))) ord cape bake = some c')
+    (N : Needs) : BellContract lib N bl false c' :=
+  finishLF_bellContractFU hok rfl hA
+    (FragU.four (FragU.seven4 (FragX.frag fun _ => trivial)
+      (FragX.six (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial))))
+    (by decide) hbl hn hbake h N
+
+/-- **A cell test of a `%5` whose operand makes proxies, in the test of a
+`%6`**: `[6 [3 [5 [7 [4 [0 3]] [6 [0 1] [0 1] [1 0]]] [1 1]]] [0 2] [0 3]]` is
+in `FragU`. -/
+example : FragU (S := S) (Nomm.n6 (Nomm.n3 (Nomm.n5 (Nomm.n7 (Nomm.n4 (Nomm.n0 3))
+    (Nomm.n6 (Nomm.n0 1) (Nomm.n0 1) (Nomm.n1 (A 0)))) (Nomm.n1 (A 1)))) (Nomm.n0 2) (Nomm.n0 3)) :=
+  FragU.six (FragU.three (FragU.five (FragU.seven4 (FragX.frag fun _ => trivial)
+      (FragX.six (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial)))
+      (FragU.x (FragX.frag fun _ => trivial))))
+    (FragU.x (FragX.frag fun _ => trivial)) (FragU.x (FragX.frag fun _ => trivial))
+
+/-- **An edit whose donor makes proxies**:
+`[10 [2 [7 [4 [0 3]] [6 [0 1] [0 1] [1 0]]]] [0 1]]` meets the contract with
+no hypothesis beyond the usual ones (not covered before `FragU.ten`). -/
+theorem finishLF_bellContract_tenProxy {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
+    {bl : Bell}
+    (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol
+      (Nomm.n10 2 (Nomm.n7 (Nomm.n4 (Nomm.n0 3)) (Nomm.n6 (Nomm.n0 1) (Nomm.n0 1) (Nomm.n1 (A 0)))) (Nomm.n0 1)))
+    {cape : Cape} {data : Noun} (hbl : bl.less = Sock.mk cape data) (hn : CapeNorm cape) {ord : NeedOrd}
+    {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
+    (h : finishLF (S := S) (Nomm.n10 2 (Nomm.n7 (Nomm.n4 (Nomm.n0 3))
+      (Nomm.n6 (Nomm.n0 1) (Nomm.n0 1) (Nomm.n1 (A 0)))) (Nomm.n0 1)) ord cape bake = some c')
+    (N : Needs) : BellContract lib N bl false c' :=
+  finishLF_bellContractFU hok rfl hA
+    (FragU.ten (FragU.seven4 (FragX.frag fun _ => trivial)
+      (FragX.six (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial)))
+      (FragU.x (FragX.frag fun _ => trivial)))
+    (by decide) hbl hn hbake h N
 
 end Comp
 end SkaModel

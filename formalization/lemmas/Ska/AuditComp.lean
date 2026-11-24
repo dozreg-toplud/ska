@@ -58,6 +58,8 @@ import lemmas.Ska.CompSixNextV
 import lemmas.Ska.CompFragUJGen
 import lemmas.Ska.CompSevenV
 import lemmas.Ska.CompFiveV
+import lemmas.Ska.CompFourV
+import lemmas.Ska.CompTenV
 import lemmas.Ska.CompFragUJ
 
 /-!
@@ -579,3 +581,34 @@ open Formalization.SkaModel.Comp
 #print axioms five_tagG
 #print axioms cleanA_five
 #print axioms uok_five
+#print axioms fix_of_keeps
+#print axioms unaryNV_ok
+#print axioms runOKV_n4D
+#print axioms runOKV_n4P
+#print axioms runOKNV_n4
+#print axioms four_tagNV
+#print axioms four_tagP
+#print axioms cleanA_four
+#print axioms runOKV_n3D
+#print axioms runOKV_n3P
+#print axioms runOKNV_n3_of_none
+#print axioms runOKNV_n3
+#print axioms three_tagNV
+#print axioms three_tagP
+#print axioms cleanA_three
+#print axioms uok_four
+#print axioms uok_three
+#print axioms runU_uok
+#print axioms finishLF_bellContractFU
+#print axioms finishLF_bellContract_fourProxy
+#print axioms n10NV_body
+#print axioms n10NV_tagBody
+#print axioms runOKNV_n10
+#print axioms ten_tagNV
+#print axioms runOKV_n10D
+#print axioms ten_tagD
+#print axioms runOKV_n10P
+#print axioms ten_tagP
+#print axioms cleanA_ten
+#print axioms uok_ten
+#print axioms finishLF_bellContract_tenProxy
