@@ -304,5 +304,34 @@ theorem cu_gate (FUNC SCC CODE LSR JH CACHE NM CA V : Noun) (n : Nomm)
     simp [rpK, nock_exec]
   rw [hk]
 
+/-- **`refMono` on the fragment, at the level of nouns**: whatever the
+environment of the calls, the gate of `+compile-unary` returns
+`[[s NM] CA]` with `s` the noun of `finishLUC env n`, `n` the nomm that
+`code` holds at `func` (the noun form of `realOf long.code b = some n`).
+The fragment's nomms make no call, so `finishLUC env n` is `finishLU n`
+(`finishLUC_eq`, `Nomm.noCall_of_pure`). -/
+theorem cu_ref_mono (FUNC SCC CODE LSR JH CACHE NM CA V : Noun) (n : Nomm)
+    (hpu : n.pure = true) (h6 : noSix n = true) (ht : tenOk n = true)
+    (hcsi : nock (cuTC (cuSam FUNC SCC CODE LSR JH CACHE)) cuCsi = some (C NM CA))
+    (hgot : getF mugF FUNC CODE = some (C (A 0) V)) (hv : slot? 2 V = some n.toNoun)
+    (env : CallEnv) (y : Noun)
+    (hy : nock (C cuGB (C (cuSam FUNC SCC CODE LSR JH CACHE) compK)) cuGB = some y) :
+    ∃ s, finishLUC (S := CSet) (Map := TreapMap mugF) env n = some s ∧ y = C (C s.toNoun NM) CA := by
+  rw [cu_gate FUNC SCC CODE LSR JH CACHE NM CA V n hpu h6 ht hcsi hgot hv] at hy
+  obtain ⟨s, hs, rfl⟩ := Option.map_eq_some_iff.mp hy
+  exact ⟨s, by rw [finishLUC_eq env (Nomm.noCall_of_pure n hpu)]; exact hs, rfl⟩
+
+/-- The converse: when the model compiles, the gate returns its noun. -/
+theorem cu_gate_some (FUNC SCC CODE LSR JH CACHE NM CA V : Noun) (n : Nomm)
+    (hpu : n.pure = true) (h6 : noSix n = true) (ht : tenOk n = true)
+    (hcsi : nock (cuTC (cuSam FUNC SCC CODE LSR JH CACHE)) cuCsi = some (C NM CA))
+    (hgot : getF mugF FUNC CODE = some (C (A 0) V)) (hv : slot? 2 V = some n.toNoun)
+    (env : CallEnv) (s : Straight (TreapMap mugF))
+    (hs : finishLUC (S := CSet) (Map := TreapMap mugF) env n = some s) :
+    nock (C cuGB (C (cuSam FUNC SCC CODE LSR JH CACHE) compK)) cuGB = some (C (C s.toNoun NM) CA) := by
+  rw [cu_gate FUNC SCC CODE LSR JH CACHE NM CA V n hpu h6 ht hcsi hgot hv,
+    ← finishLUC_eq env (Nomm.noCall_of_pure n hpu), hs]
+  rfl
+
 end Compiler
 end Formalization
