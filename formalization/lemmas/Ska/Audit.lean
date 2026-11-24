@@ -3,6 +3,7 @@ import lemmas.Ska.KnowMeets
 import lemmas.Ska.LessProvides
 import lemmas.Ska.SiteCover
 import lemmas.Ska.SitesMeetFalse
+import lemmas.Ska.VariantCollision
 import lemmas.Ska.AnaInv
 import lemmas.Ska.StaleWitness
 import lemmas.Ska.CapeFacts
@@ -374,3 +375,6 @@ open Formalization.SkaModel
 #print axioms answers_less
 #print axioms answers_rel
 #print axioms answers_relN
+#print axioms Bake.collide_same_bake
+#print axioms Bake.collide_key_dead
+#print axioms Bake.bakeGuard_fits

@@ -3,6 +3,12 @@ import lemmas.Ska.SitesMeet
 /-!
 # `SitesMeet` against `+know` without folding
 
+**A dead route.**  The theorems of this file are true, but they lead
+nowhere: `SitesMeet` and `BakesImply` are false on the real compiler
+(`SitesMeetFalse.lean`), and the baking they were to justify miscompiles
+across pokes (`VariantCollision.lean`).  The file is kept as a record; do
+not build on it.
+
 `knowMono_false` (`KnowMonoFalse.lean`) shows that `KnowMono` cannot come
 from the sock operations alone: under a bake, a fold can make `+double-int`
 forget a part that it keeps under `less.cur`.  A second effect of the same

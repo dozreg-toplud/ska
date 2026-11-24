@@ -3,6 +3,12 @@ import lemmas.Ska.KnowMeets
 /-!
 # `LessProvidesNF` from a cover of its sites
 
+**A dead route.**  The theorems of this file are true, but they lead
+nowhere: `SitesMeet` and `BakesImply` are false on the real compiler
+(`SitesMeetFalse.lean`), and the baking they were to justify miscompiles
+across pokes (`VariantCollision.lean`).  The file is kept as a record; do
+not build on it.
+
 `LessProvidesNF` (`SitesMeetNF.lean`): under `less.cur` and without folding,
 every site `[c k]` of `+know` provides its callee's code requirement
 (`Sub k c.less`).  The argument compares `+know`'s walk with the analysis'

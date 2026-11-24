@@ -3,6 +3,12 @@ import lemmas.Ska.PokeAna
 /-!
 # `SitesMeet` from three invariants
 
+**A dead route.**  The theorems of this file are true, but they lead
+nowhere: `SitesMeet` and `BakesImply` are false on the real compiler
+(`SitesMeetFalse.lean`), and the baking they were to justify miscompiles
+across pokes (`VariantCollision.lean`).  The file is kept as a record; do
+not build on it.
+
 `SitesMeet` (`BakeImp.lean`) asks, of every code bell `cur` that `dat`
 has a datum for and of every bake `s` under `less.cur`, that every site
 `[c k]` that `+know` lists under `s`, of a callee that is not the root,
