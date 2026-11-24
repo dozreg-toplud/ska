@@ -436,5 +436,9 @@ open Formalization
 #print axioms Compiler.pop_gate
 #print axioms Compiler.pop_gate'
 #print axioms Compiler.dirty_gate
+#print axioms Compiler.kids_gate
+#print axioms Compiler.sweep_stepW
+#print axioms Compiler.sweep_loop_iff
+#print axioms Compiler.sweep_gate
 #print axioms Compiler.registerFastIs_of
 #print axioms Compiler.resolveStepH_eq
