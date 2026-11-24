@@ -61,6 +61,7 @@ import lemmas.Ska.CompFiveV
 import lemmas.Ska.CompFourV
 import lemmas.Ska.CompTenV
 import lemmas.Ska.CompFragUJ
+import lemmas.Ska.CompRunLCEq
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -612,3 +613,7 @@ open Formalization.SkaModel.Comp
 #print axioms cleanA_ten
 #print axioms uok_ten
 #print axioms finishLF_bellContract_tenProxy
+#print axioms hinted_noCall
+#print axioms sixNextLC_eq
+#print axioms runLC_eq
+#print axioms finishLFC_eq
