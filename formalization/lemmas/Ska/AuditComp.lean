@@ -982,3 +982,14 @@ open Formalization.SkaModel.Comp
 #print axioms uokc_fourC
 #print axioms uokc_fourA
 #print axioms four_example
+#print axioms minkC3_three
+#print axioms unaryGT_ok
+#print axioms wutTone_keep
+#print axioms three_runD
+#print axioms three_of_none
+#print axioms three_runN
+#print axioms runLC_n3_last
+#print axioms okc_threeC
+#print axioms uokc_threeC
+#print axioms uokc_threeA
+#print axioms three_example

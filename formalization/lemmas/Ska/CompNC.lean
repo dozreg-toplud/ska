@@ -73,8 +73,8 @@ parts.  By 1 to 4 the cons and `%10` are at level `0` only, and `%3`, `%4`,
 
 * `[0 axe]`: any level, `t`.
 * `[1 k]`: level `0`, `t`.
-* `[4 p]`: `p` at level `0` (calling or not), level `0` (`n4`); `p` in
-  `FragX`, level `1` (`four`).
+* `[3 p]`, `[4 p]`: `p` at level `0` (calling or not), level `0` (`n3`,
+  `n4`); for `[4 p]` also `p` in `FragX`, level `1` (`four`).
 * the cons: tail at level `0` (with `t` when it calls), head at level `1`
   when the tail calls (the bond goal) and `0` else; level `0`, `t`.
 * `[7 p q]`: `q` at the level, `p` at level `2` (`q`'s result may be any
@@ -86,8 +86,8 @@ parts.  By 1 to 4 the cons and `%10` are at level `0` only, and `%3`, `%4`,
   the literal of a `%bare` formula (`bareLitQ`, the one exclusion: its nomm
   makes one `nok` of the formula itself with all of `+mink`'s fuel,
   `CompIndirectWrap.lean`).
-* `pure`: any call-free nomm of `FragU` (`%3`, `%5`, `%6`, `%10` among
-  them), level `0`, no `t`.
+* `pure`: any call-free nomm of `FragU` (`%5`, `%6`, `%10` among them),
+  level `0`, no `t`.
 * weakening of the level (`down`) and of `t` (`forget`).
 
 `ncOK` (`CompNCInd.lean`) proves `NCOK lv t` of every `NC lv t`; `NCG`
@@ -105,7 +105,7 @@ Level `0` is `UOKC` (and `t`), levels `1`, `2` are `LOKCS`, `LOKC`.
 | `[1 k]` | 0 | `uokcU`, `jNew_n1` | ok |
 | `[1 k]` | 2 | `+mede` under a lazy goal | open |
 | `[3 p]`, `p` pure | 0 | `uokcU` (`pure`) | ok |
-| `[3 p]`, `p` calls | 0 | `+forl`, `clq` after `p`'s call | open |
+| `[3 p]`, `p` calls | 0 | `uokc_threeA` (`unaryGT_ok`, `three_of_none`) | ok |
 | `[3 p]` | 1 | `+collapse-lazy-atom` with a fresh register | open |
 | `[4 p]` | 0 | `uokcU`; with calls `uokc_fourA` (`unaryGC_ok`) | ok |
 | `[4 p]`, `p` in `FragX` | 1 | `runOKL_n4_none` (`lokcs_n4X`) | ok |
@@ -122,10 +122,10 @@ Level `0` is `UOKC` (and `t`), levels `1`, `2` are `LOKCS`, `LOKC`.
 | `[10 [a v] q]`, pure | 0 | `uokcU` (`pure`) | ok |
 | `[10 [a v] q]`, calls | 0 | `+into`, `+past`, `+copy` | open |
 | `[10 [a v] q]` | 1, 2 | | false in `RunOKLC` (4) |
-| `JNew`, `EntNew` | | `jNew_sevenC`, `jNew_sevenL`, `entNew_consAny`, `entNew_consLeaf` | ok but `[4 p]` (`t` false) |
+| `JNew`, `EntNew` | | `jNew_sevenC`, `jNew_sevenL`, `entNew_consAny`, `entNew_consLeaf` | ok but `[3 p]`, `[4 p]` (`t` false) |
 
-So `[3 p]`, `[5 p q]`, `[10 [a v] q]` with calls are not in `NC` yet, the
-cons and `%10` are at level `0` only, and `[4 p]` with a calling `p` at
+So `[5 p q]` and `[10 [a v] q]` with calls are not in `NC` yet, the cons
+and `%10` are at level `0` only, and `[3 p]`, `[4 p]` with a calling `p` at
 level `0` only; `%lim` (`[8 [0 3] [[2 [0 2] [0 6]] [0 3]]]`, the cons `[[0 3]
 [0 1]]` under `q`'s result with a bond) is outside `NC`, though its run puts
 no op at the bond block: the hypothesis must take the bodies (a) first.
@@ -225,6 +225,7 @@ inductive NC : Nat → Bool → Nomm → Prop
       NC lv true (Nomm.n2 p q Option.none)
   | four {p : Nomm} : FragX (S := S) p → NC 1 false (Nomm.n4 p)
   | n4 {t : Bool} {p : Nomm} : NC 0 t p → NC 0 false (Nomm.n4 p)
+  | n3 {t : Bool} {p : Nomm} : NC 0 t p → NC 0 false (Nomm.n3 p)
   | pure {nm : Nomm} : FragU (S := S) nm → NC 0 false nm
   | down {lv lv' : Nat} {t : Bool} {nm : Nomm} : NC lv t nm → lv' ≤ lv → NC lv' t nm
   | forget {lv : Nat} {nm : Nomm} : NC lv true nm → NC lv false nm
