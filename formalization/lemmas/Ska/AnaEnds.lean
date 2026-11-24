@@ -117,18 +117,18 @@ one formula were on the stack (the three pokes of `he2.hoon`, exactly
 * `CgHalts`: `+ska-callgraph` returns at some fuel.  Not proved.  It holds
   when items 1, 2, 3 and 5 of section 1 hold and nothing crashes.
 * `GraphClosed`: the graph it returns holds the root and is closed under
-  callees.  Not proved.  True of the Hoon by the argument of `+cull` (a
-  popped component calls no frame below it, a culled member is called only
-  by culled members), and every poke checked returned through
-  `+prune-callgraph`.  On the 26 pokes of `sitesmeet4.hoon`, `he2.hoon`,
+  callees.  Proved (`graphClosed`), by the argument of `+cull` (a popped
+  component calls no frame below it, a culled member is called only by
+  culled members) carried by the convergence invariant (`GraphClose.lean`,
+  `skaCallgraph_closed`).  On the 26 pokes of `sitesmeet4.hoon`, `he2.hoon`,
   `voidscc.hoon` and `prodsame.hoon` every callee of the returned graph was
-  an entry (1760 entries, 4052 edges).  The arm pieces are in
-  `GraphClose.lean` (`cull_closed` and the puts).
+  an entry (1760 entries, 4052 edges).
 * `pruneLoop_ends`, proved: the loop of `+prune-callgraph` ends on a graph
   closed under callees, within one more than the queue's length plus, for
   each entry not visited, one more than its number of callees.
 * `anaHalts_of`: `CgHalts` and `GraphClosed` give `AnaHalts`, the analysis
-  part of `+ska-poke` returns at some fuel.  `anaEndsN_of_halts`: it returns
+  part of `+ska-poke` returns at some fuel; `anaHalts_of_cgHalts`: from
+  `CgHalts` alone.  `anaEndsN_of_halts`: it returns
   at the fuel `anaFuel`, and `anaEndsN_mono` at every larger fuel.
 -/
 
