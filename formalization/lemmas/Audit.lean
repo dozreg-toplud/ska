@@ -636,3 +636,5 @@ open Formalization
 #print axioms Compiler.comp_past
 #print axioms Compiler.ct_lfr_gate
 #print axioms Compiler.comp_run_n4
+#print axioms Compiler.ct_lfn_gate
+#print axioms Compiler.comp_run_n3
