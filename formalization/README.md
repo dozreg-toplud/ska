@@ -81,6 +81,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Hoon/RepBy.lean` | `+rep:by` and `+rep:in` (one noun): a fold over the nodes in pre-order. |
 | `Hoon/MapFolds.lean`, `Hoon/SetFolds.lean` | `+key:by`, `+run:by`, `+any:by`, `+wyt` of `+by` and `+in` (one noun); `+gas:in`, `+any:in`, `+run:in`, `+del:in`. |
 | `Hoon/Canon.lean` | Pure Lean: treaps are canonical.  Two `IsMap` nouns with the same pairs are equal (`isMap_ext`), and two `IsSet` nouns with the same keys (`isSet_ext`, through `toMap_inj`).  `+tap:by` lists the pairs in strictly decreasing `+gor` order of the keys (`tapList_pairwise`), which determines the list (`tapList_unique`); the order of `+rep` is the pre-order of the canonical treap (`preorder_ext`, `mem_preorder`). |
+| `Hoon/DifIn.lean` | `+bif:in` and `+dif:in` against `bifInF` and `difInF` (`bif_gate`, `dif_in_gate`); on sets, `+bif` returns a node with root `b` whose subtrees are sets of the keys before and after `b` in `+gor` order (`bifInF_spec`), and `+dif` returns a set of the keys of `a` that `b` does not hold (`difInF_spec`, `dif_in`).  The merge of `+dif` is `mergeInF` of `+del:in`.  The generator names no noun of `+bif`, so its arm is defined there (`bifArm`, `bif_arm_at` by the kernel). |
 | `Hoon/Ju.lean` | The doors `+ju` (get, put, has, del, gas) and `+ja` (get, add). |
 | `Hoon/ListsMore.lean` | `+skim`, `+skip`, `+murn`, `+rear`, `+snip`. |
 | `Hoon/ListsSort.lean` | `+welp`, `+zing`, `+snoc`, `+skid`, `+spin`, and `+sort` against the quicksort `qsort`, which permutes its list. |
@@ -117,6 +118,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/FolLoopConv.lean` | Both directions for the trap `fol-loop` and the loop `resolve`, with `+analyze` a parameter.  The converse runs by induction on `ev j`, which runs the trap's battery, `fol_loop.direct` and `fol_loop.resolve` with `ev (j - 1)`, the gate `+analyze` with `iterN j`, and every other formula with `nock` (`ev_far`); every run of `nock` is a run of some `ev j` (`ev_complete`).  Under `ev j` the case theorems over an evaluator describe the trap exactly as `folE j` and the loop as `resE j` (`folE_is`, `resE_is`), with `+analyze` the decoded run at depth `j` (`anaE`, `anaE_is`), and these lie below `Ana.folLoop` and `Ana.resolve` at a fuel that depends on `j` only (`folE_le`, `resE_le`, by `folStep_mono`, `resolveStepH_mono` and `AnaFuel.lean`).  So what the pill returns the model returns (`fol_loop_ge`, `resolve_ge`, `folDecodes`), the pill's loop computes the limit `resInf` of the model's `resolve` (`resIs_inf`), and `fol_loop_le'`, `fol_loop_iff`, `resolve_iff` hold with no hypothesis on the pill's runs.  `StepBridge env` (`resolveStepH = Ana.resolveStep`) is `stepBridge`, by `resolveStepH_eq`.  Assumed: `AnaIs` of a function `an`, every fuel of `Ana.analyze` below `an`, `AnaGe` (what `iterN j` of `+analyze` returns decodes and `Ana.analyze` returns at a fuel that depends on `j` only), the layout `hana`, `hK`, `hKa`, `env.he = heSock`, `env.threshold = 32`, `softSpotF` and `RegisterFastIs`.  `runRest`: the rest of the trap's subject as `+run` builds it, where `hana` and `hK` hold by computation (`runRest_ana`, `runRest_K`) and `hKa` from axis `60` of the battery of the core `K` (`runRest_Ka`). |
 | `Compiler/SkaCore.lean` | The `|%` core `K` of `+ska-callgraph`: its battery `ska_cg.k_bat` (K_bat: `+pop` at slot `2`, `+cull` `6`, `+above` `14`, `+analyze` `60`, `+sweep` `61`, `+dirty` `62`, `+run` `63`), with the generated nouns `ska_cg.*` of `Pill/Arm/Ska_cg.lean`, tied to the pill by `kc_bat_at` (`slot? 2799357 ana = some ska_cg.k_bat`, by the kernel), since the generated facts do not place `K_bat`.  `kc_analyze_at`, `kc_run_at`; `runRest_kc`: `hana`, `hK`, `hKa` of `FolLoopConv.lean` for the subject that `+run` builds.  `above_gate`: `+above` computes `Ana.above` on every stack, in every context.  `pop_gate`, `pop_gate'`: `+pop` computes `Ana.popGo` and `Ana.pop` on every state, in every context `K` with `ana` at axis `31` (`K_layer2`). |
 | `Compiler/SkaArms.lean` | `+dirty` and `+sweep` of `K`, in every context `K` with `ana` at axis `31` (`K_layer1`, `K_layer2`).  `dirty_gate`: `+dirty` computes `Ana.dirty` on every state; its gate crashes on a noun that is no callee entry, so `+any:in` is taken with a test known only on the members (`any_in_loop_on`, `any_in_gate_on`), and the members of a set's noun are its encoded keys (`mem_preorder_setNoun`, `any_preorder_setNoun`).  On set nouns of `FinMap`: `tapList_setNoun`, `tap_in_setNoun`, `has_in_setNoun`, `put_in_setNoun`, and `gut_finMap` for `+gut:by`.  `kids_gate`: the gate `kids` of `+sweep` is `Ana.kids`.  `sweep_stepW`: one turn of the loop of `+sweep` over an evaluator `c` that is `nock` off `FFar`, given the loop's calls to itself, is `sweepStepH` (`sweepLoop (n + 1) = sweepStepH (sweepLoop n)`, `sweepLoop_succ`); under `evS j` (the loop `j` deep, every other formula by `nock`) the loop is `sweepLoop` at fuel `j` exactly (`sweepE_is`), so `sweep_loop_iff` and `sweep_gate`: the pill's `+sweep` returns exactly what `Ana.sweep` returns at some fuel.  The loop `live` of `+cull` likewise (`live_stepW` against `liveStepH`, `liveLoop_succ`, `liveE_is` under `evOne ska_cg.cull.loop j`, the generic form of `evS`, and `live_loop_iff`). |
+| `Compiler/SkaCull.lean` | `+cull` of `K` against `Ana.cull`, both ways at some fuel (`cull_gate`), in every context `K` with `ana` at axis `31` and `K_bat` at axis `2`.  `+silt` (arm `767` of layer 2, named there: `siltArm`, `silt_arm_at` by the kernel) is `+gas:in` from `~` and gives the noun of `Treap.silt` (`silt_gate`, `silt_setNoun`); `+dif:in`, `=(~ dead)`, `+wyt:in` and the pre-order of `+rep` on set nouns of identities give `Treap.dif`, `Treap.tap = []`, `Treap.wyt` and `Treap.rap` (`dif_setNoun`, `setNoun_nil_iff`, `wyt_setNoun`, `preorder_setNoun`); `+skip` with `~(has in dead)` (`cull_skip`); the bunt of `identity` that the sample of the gate of `+rep` starts with, computed by the mold at arm `186` of the tail of `ana` (`identBunt`, `mold_bunt`, by the kernel through `evalFuel`); the gate of `+rep` (three `+del:by`, `cull_rep_gate`) folded over the pre-order with a gate known only on the members and on state nouns (`rep_loop_on`, `cull_rep`).  `cull_run`: the battery after `+above` as a function of what the loop `live` returns; `cull_run_none`: it crashes when `id` is not on the stack. |
 | `Compiler/RegisterFast.lean` | `+register-fast` for registrations kept as nouns: `registerFastP`, the pill's run of the gate decoded into `[miss regs]`, satisfies `RegisterFastIs` for every `Env Noun` that uses it, given `RegisterFastShape` (every return of the gate is a cell with a flag at its head; `registerFastIs_of`).  The shape fact is open: `absNock` of `Compiler/Frame.lean` on the gate's battery (fuel 1000) gives 103 shapes, of which 10 are `[%.n *]` and 93 unknown, because those branches end in calls, which `absNock` does not follow. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
@@ -360,8 +362,8 @@ import only its theorems.  So:
    `+dvr`, `+div`, `+mod` by zero and `+snag` past the end crash; nothing is
    proved about gates slammed on nouns of the wrong shape, nor about nouns on
    which a model is `none`.
-5. **Not done among the arms of the library:** `+uni`, `+int`, `+dif` of `+by`
-   and `+in`.
+5. **Not done among the arms of the library:** `+uni`, `+int` of `+by` and
+   `+in`, and `+dif` of `+by` (`+dif:in` is done, `Hoon/DifIn.lean`).
 6. **The arms of `+ca` and `+so` are all done.**  No arm of `+ca` or `+so`
    disagrees with B's model.
 7. **The virtualization arms are done** up to formatting: `+mink`, `+monk`,
@@ -420,10 +422,13 @@ import only its theorems.  So:
      over an evaluator `sweep_stepW`), and the loop `live` of `+cull`
      (`live_loop_iff`, both directions against `liveLoop`, step
      `live_stepW`), `Compiler/SkaArms.lean`, with the same single
-     hypothesis.
+     hypothesis; `+cull` (`cull_gate`, both directions against `Ana.cull` at
+     some fuel, `Compiler/SkaCull.lean`), with `slot? 2 K = some K_bat` as a
+     second hypothesis (it calls `+above` at axis `22` of `K`), and with it
+     `+silt` and `+dif:in` (`Hoon/DifIn.lean`).
    - *Modelled, not linked*:
      `+analyze`, `+run`, the pass and member loops,
-     `+cull`, `+ska-callgraph`, `+prune-callgraph`,
+     `+ska-callgraph`, `+prune-callgraph`,
      `+memo-final-entry`, the analysis part of `+ska-poke`;
      `+uni-sock`, `+norm-sock`, `+know`,
      `+bake-graph`; `+reverse-bell-graph`, `+hot-stale`, `+del-bells`;
@@ -432,7 +437,15 @@ import only its theorems.  So:
    - *Parameters with no model*: `+register-fast`
      (`Env.registerFast`, tied by `RegisterFastIs`; for `R := Noun` it can be
      the pill's run of the gate), `+shape-collapse`, `+bake-need`.
-   - *No model*: `+msg-ca`, `+register-template`, `+index-arms`,
+   - *Modelled, not linked*, too: `+msg-ca` (`msgCa` of `Ska/RunStep.lean`,
+     which follows the Hoon line by line).  Its gate's battery is the noun at
+     axis `12023` of `ana` (found by a structural search of the pill in
+     Python): `[6 [5 [0 12] [0 13]] [0 12] [6 T [1 0] [[8 [0 1] [9 2 [10 [6
+     [[0 56] [0 58]]] [0 2]]]] [8 [0 1] [9 2 [10 [6 [[0 57] [0 59]]] [0
+     2]]]]]]]`, with `T` the test `|(?=(@ a) ?=(@ b))`; `=*  msg  .` makes
+     each recursion push the gate (`[8 [0 1] ...]`) and slam it.  It reads
+     nothing from its context, and wants a name at the next regeneration.
+   - *No model*: `+register-template`, `+index-arms`,
      `+fast-parent`, the `*-ju` arms, the cole arms, `+eval-finalized`,
      `+have`, `+simple-bell-graph-and-reversed`, `+tarjan`, `+scc-of`;
      register allocation (`lazy-from-need`, `lazy-from-reg`,
@@ -443,27 +456,26 @@ import only its theorems.  So:
      families `soft-*`, `laze-*`, `inter1`, `inter2`; the optimizer;
      `+hot-diff`, `+load`, `+peek`, `+wish`.
    - *Next, in this order* (the nouns are `ska_cg.*` of
-     `Pill/Arm/Ska_cg.lean`, `ska_analyze.*`, `ska_run.*`): `+cull` (arm
-     `10`, `ska_cg.cull.battery`), whose loop `live` is done
-     (`live_loop_iff`): the rest of the battery, `+silt` (arm `767` of layer
-     2; no generated name, wanted as `silt.*` at the next regeneration) as
-     `+gas:in` from the empty set (`gasInF_spec`, against `Treap.silt`),
-     `+dif:in` (no gate theorem yet, `in.dif.arm_at` is generated; it needs a
-     model and `isSet_ext` against `Treap.dif`), the test `=(~ dead)`, `+wyt:in`, `+skip` with `~(has in
-     dead)`, and `+rep:in` with `ska_cg.cull.gate` (three `+del:by`, the
-     sample is the state, not a constant: `rep_tree` of `Hoon/RepBy.lean`
-     with `preorder_toNoun`-style `tapList`/`preorder` of the set noun against
-     `Treap.rap`).  Then `+msg-ca` (no model yet: write it after the Hoon in a
-     new file), then `+run` (`ska_run.battery`) against `Ana.runStep` over an
-     evaluator with `fol-loop` as a `GoIsW`-style parameter and `runDatum`;
-     then the loops of `+analyze` (`ska_analyze.loop1` the pass loop,
-     `loop0` the member loop) against `passStep`, `memberStep`, with
-     `+analyze` against `analyzeStep`; then one joint induction on an `ev j`
-     that runs every formula `FFar` excludes one level down, extending
-     `folE_is`, `resE_is` with the analysis, run, pass, member, sweep and live
-     levels, to discharge `AnaIs` and `AnaGe` (`analyze_iff`).  The loops of
-     `+sweep` and `+cull` need their own levels in that `ev j`: the model gives
-     them the fuel of the pass, so the depth `j` must bound their turns.
+     `Pill/Arm/Ska_cg.lean`, `ska_analyze.*`, `ska_run.*`): `+msg-ca` (its
+     battery at axis `12023` of `ana`, by induction on the capes, against
+     `msgCa`),
+     then `+run` (`ska_run.battery`) against `Ana.runStep` over an evaluator
+     with `fol-loop` as a `GoIsW`-style parameter and `runDatum`; then the
+     loops of `+analyze` (`ska_analyze.loop1` the pass loop, `loop0` the
+     member loop) against `passStep`, `memberStep`, with `+analyze` against
+     `analyzeStep`; then one joint induction on an `ev j` that runs every
+     formula `FFar` excludes one level down, extending `folE_is`, `resE_is`
+     with the analysis, run, pass, member, sweep and live levels, to
+     discharge `AnaIs` and `AnaGe` (`analyze_iff`).  The loops of `+sweep`
+     and `+cull` need their own levels in that `ev j`: the model gives them
+     the fuel of the pass, so the depth `j` must bound their turns.  For
+     `+cull` the step is already over the result of the loop (`cull_run`
+     takes any `o` with the loop returning `o.map Treap.setNoun`), so under
+     `evOne ska_cg.cull.loop j` only the loop's equation changes
+     (`liveE_is`).  Names wanted at the next regeneration: `silt.*` (arm
+     `767` of layer 2, now `siltArm`), `in.bif.*` (axis `86` of the door
+     `+in`, now `bifArm`), the tail of `ana` (now `anaTail`), and the battery
+     of `+msg-ca` (axis `12023` of `ana`).
 10. **`Treap` of `Ska/Analysis.lean` has an instance** (`Compiler/TreapKey.lean`):
    finite maps, with the treap noun made when the key encoding is given.  Its
    `ext` is function extensionality (on nouns, `isMap_ext`).  `+tap:by` and

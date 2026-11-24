@@ -15,6 +15,7 @@ import lemmas.Hoon.JabBy
 import lemmas.Hoon.Ju
 import lemmas.Hoon.MapFolds
 import lemmas.Hoon.SetFolds
+import lemmas.Hoon.DifIn
 import lemmas.Hoon.ListsMore
 import lemmas.Hoon.ListsSort
 import lemmas.Hoon.Rip
@@ -53,6 +54,7 @@ import lemmas.Compiler.ResolveLoop
 import lemmas.Compiler.FolLoopConv
 import lemmas.Compiler.SkaCore
 import lemmas.Compiler.SkaArms
+import lemmas.Compiler.SkaCull
 import lemmas.Compiler.RegisterFast
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
@@ -444,3 +446,24 @@ open Formalization
 #print axioms Compiler.live_loop_iff
 #print axioms Compiler.registerFastIs_of
 #print axioms Compiler.resolveStepH_eq
+#print axioms Hoon.bif_arm_at
+#print axioms Hoon.bif_gate
+#print axioms Hoon.dif_in_gate
+#print axioms Hoon.bifInF_spec
+#print axioms Hoon.difInF_spec
+#print axioms Hoon.dif_in
+#print axioms Compiler.silt_arm_at
+#print axioms Compiler.silt_gate
+#print axioms Compiler.silt_setNoun
+#print axioms Compiler.dif_setNoun
+#print axioms Compiler.setNoun_nil_iff
+#print axioms Compiler.preorder_setNoun
+#print axioms Compiler.wyt_setNoun
+#print axioms Compiler.mold_bunt
+#print axioms Compiler.ana_tail
+#print axioms Compiler.cull_rep_gate
+#print axioms Compiler.cull_rep
+#print axioms Compiler.cull_skip
+#print axioms Compiler.cull_run
+#print axioms Compiler.cull_run_none
+#print axioms Compiler.cull_gate
