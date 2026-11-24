@@ -32,6 +32,7 @@ import lemmas.Ska.CompLeafRel
 import lemmas.Ska.CompRelSix
 import lemmas.Ska.CompRelCopy
 import lemmas.Ska.CompRelBinary
+import lemmas.Ska.CompRelUnary
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -400,3 +401,11 @@ open Formalization.SkaModel.Comp
 #print axioms unaryN_semR
 #print axioms runOKN_n7_semR
 #print axioms runOKP_n7g_semR
+#print axioms unaryG_semR
+#print axioms runOKN_n4_semR
+#print axioms semN_n3_of_none
+#print axioms runOKN_n3_semR
+#print axioms runOKP_n4_semR
+#print axioms runOKP_n3_semR
+#print axioms runOKP_n4p_semR
+#print axioms runOKP_n3p_semR
