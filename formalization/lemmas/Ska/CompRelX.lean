@@ -127,6 +127,23 @@ theorem runX_semR_gen0 (lib : Lib) {nm : Nomm} (hf : FragX (S := S) nm) (hcount 
     SemPR (Map := Map) lib nm CGoal.done gen0 g1 nex :=
   (runX_semR lib hf).1 trivial trivial trivial hcount (by simp [gen0]) rfl upBelow_gen0 clear_gen0 h
 
+/-! ## Goals with entries -/
+
+/-- **`[0 axe]` for a goal with entries, with the relaxed `sem`.**  The
+relaxed `sem` of `RunOKE` is `SemNR` at the goal's sure need: `SemGR` already
+takes `AgreeP` over the result's entries and keeps `KeepI`.  `+from` puts no
+op, so the registers are those of the start. -/
+theorem semE_n0 (lib : Lib) {axe : Nat} {laz laz' : Lazy S} {th : Jmp} {g : Gen Map}
+    (hf : fromL axe laz = some laz') :
+    SemNR (Map := Map) lib (Nomm.n0 axe) laz.sure th g g ⟨laz', th⟩ := by
+  have hs := fromL_sure hf
+  obtain ⟨_, hhold, _, _⟩ := fromSure_spec (Map := Map) hs
+  intro c ned σ O st t gul s0 s _ _ regs hh _
+  obtain ⟨s', hs1, hh'⟩ := hhold regs s hh
+  show GoalSem lib O c gul st _ regs t th (CGoal.next laz.sure th) (pureEval (Nomm.n0 axe) s)
+  simp only [pureEval, hs1]
+  exact ⟨fun _ => ⟨regs, hh'.1, fun _ _ => rfl, rfl⟩, fun nf => absurd (fitsS_of_holdsS hh') nf⟩
+
 end Comp
 end SkaModel
 end Formalization

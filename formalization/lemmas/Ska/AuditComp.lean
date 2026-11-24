@@ -424,3 +424,4 @@ open Formalization.SkaModel.Comp
 #print axioms runOKP_n10P_semR
 #print axioms runX_semR
 #print axioms runX_semR_gen0
+#print axioms semE_n0
