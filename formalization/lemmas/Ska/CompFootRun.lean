@@ -905,6 +905,102 @@ theorem foot_n7 {p q : Nomm} (ihp : FootIH S Map p) (ihq : FootIH S Map q) : Foo
   exact ⟨(Fq.wr.mono fun x hx => ⟨by omega, hx.2.1, a1 x hx.1 hx.2.2⟩).trans
     (Fp.wr.mono fun x hx => ⟨hx.1, a2 x hx.2.1, hx.2.2⟩), fun x hx => a2 x (sp x hx), Fp.dist⟩
 
+theorem blobWr_inc {Q : Nat → Prop} {s d : Nat} (f : Termin) (h : Q d) : BlobWr Q ⟨[], [Pole.inc s d], f⟩ :=
+  blobWr_one f fun x hx => by simp only [poleWr, List.mem_cons, List.mem_nil_iff, or_false] at hx; rw [hx]; exact h
+
+theorem foot_n4 {p : Nomm} (ih : FootIH S Map p) : FootIH S Map (Nomm.n4 p) := by
+  intro goal g g' nex hd hg hD h
+  cases goal with
+  | done =>
+    simp only [run] at h
+    obtain ⟨pro, g1, h1, h⟩ := bind_some h
+    obtain ⟨e1, q1, k1⟩ := keeps_re h1
+    obtain ⟨arg, g2, h2, h⟩ := bind_some h
+    obtain ⟨e2, q2, k2⟩ := keeps_re h2
+    obtain ⟨o, g3, h3, h⟩ := bind_some h
+    exact foot_tail ih ((k1.trans k2).dropF hd) (blobIn_one (p := Pole.inc arg pro) (f := Termin.don pro)
+      (fun x hx => by simp only [poleRegs, List.mem_cons, List.mem_nil_iff, or_false] at hx; omega)
+      (show pro < g2.re by omega)) (by omega) (by omega) ((wroteIn_re h1).trans (wroteIn_re h2))
+      (blobWr_inc _ ⟨by omega, Or.inl (by omega)⟩) h3 h
+  | pick z o =>
+    simp only [run] at h
+    obtain ⟨pro, g1, h1, h⟩ := bind_some h
+    obtain ⟨e1, q1, k1⟩ := keeps_re h1
+    obtain ⟨arg, g2, h2, h⟩ := bind_some h
+    obtain ⟨e2, q2, k2⟩ := keeps_re h2
+    obtain ⟨o', g3, h3, h⟩ := bind_some h
+    have kk : ∀ x, x < g.re → x < g2.re := fun x hx => by omega
+    exact foot_tail ih ((k1.trans k2).dropF hd) (blobIn_one (p := Pole.inc arg pro) (f := Termin.brn pro z o)
+      (fun x hx => by simp only [poleRegs, List.mem_cons, List.mem_nil_iff, or_false] at hx; omega)
+      ⟨show pro < g2.re by omega, hg.1.mono kk, hg.2.mono kk⟩) (by omega) (by omega)
+      ((wroteIn_re h1).trans (wroteIn_re h2)) (blobWr_inc _ ⟨by omega, Or.inl (by omega)⟩) h3 h
+  | next laz th =>
+    simp only [run] at h
+    obtain ⟨a, g1, h1, h⟩ := bind_some h
+    obtain ⟨k1, r1⟩ := keeps_collapseLazyAtom (nex := ⟨laz, th⟩) hd hg.1 h1
+    obtain ⟨w1, rr1⟩ := wr_collapseLazyAtom (nex := ⟨laz, th⟩) hd hg.1 h1
+    obtain ⟨⟨pro, th'⟩, g2, h2, h⟩ := bind_some h
+    have hp : Keeps g1 g2 ∧ pro < g2.re ∧ WroteIn (fun _ => False) g1 g2 ∧ (NewOr laz.ned g g1 pro ∨ g1.re ≤ pro) := by
+      cases a with
+      | some x =>
+        simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+        obtain ⟨rfl, rfl⟩ := h2
+        exact ⟨Keeps.refl _, r1 _ _ rfl, WroteIn.refl _ _, Or.inl (rr1 _ _ rfl)⟩
+      | none =>
+        simp only at h2
+        obtain ⟨r, g3, h3, h2⟩ := bind_some h2
+        obtain ⟨e3, q3, k3⟩ := keeps_re h3
+        by_cases ht : th.args = []
+        · rw [if_pos ht] at h2
+          simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+          obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h2
+          exact ⟨k3, by omega, wroteIn_re h3, Or.inr (by omega)⟩
+        · rw [if_neg ht] at h2; cases h2
+    obtain ⟨k2, p2, w2, pp⟩ := hp
+    obtain ⟨arg, g3, h3, h⟩ := bind_some h
+    obtain ⟨e3, q3, k3⟩ := keeps_re h3
+    obtain ⟨o, g4, h4, h⟩ := bind_some h
+    have l1 := k1.le
+    have l2 := k2.le
+    have bnd : ∀ x, NewOr laz.ned g g1 x → x < arg ∧ (g.re ≤ x ∨ GMem (CGoal.next laz th) x) := fun x hx => by
+      rcases hx with e | e
+      · exact ⟨by have := hg.1 x e; omega, Or.inr e⟩
+      · exact ⟨by omega, Or.inl e.1⟩
+    exact foot_tail ih ((k1.trans (k2.trans k3)).dropF hd)
+      (blobIn_one (p := Pole.inc arg pro) (f := Termin.hop (jmp0 th'))
+        (fun x hx => by simp only [poleRegs, List.mem_cons, List.mem_nil_iff, or_false] at hx; omega)
+        (jmpIn_jmp0 _ _)) (by omega) (by omega)
+      (((w1.mono bnd).trans (w2.mono fun _ e => e.elim)).trans (wroteIn_re h3))
+      (blobWr_inc _ (by
+        rcases pp with e | e
+        · exact bnd pro e
+        · exact ⟨by omega, Or.inl (by omega)⟩)) h4 h
+
+/-- **The induction over `run`**, given the cases that are still open (`%3`,
+cons, `%5`, `%10`) as hypotheses. -/
+theorem run_foot_of
+    (h3 : ∀ p, FootIH S Map p → FootIH S Map (Nomm.n3 p))
+    (hc : ∀ p q, FootIH S Map p → FootIH S Map q → FootIH S Map (Nomm.cons p q))
+    (h5 : ∀ p q, FootIH S Map p → FootIH S Map q → FootIH S Map (Nomm.n5 p q))
+    (h10 : ∀ a v q, FootIH S Map v → FootIH S Map q → FootIH S Map (Nomm.n10 a v q)) :
+    ∀ nm : Nomm, FootIH S Map nm := by
+  intro nm
+  induction nm with
+  | n0 ax => exact foot_n0 ax
+  | n1 k => exact foot_n1 k
+  | n7 p q ihp ihq => exact foot_n7 ihp ihq
+  | n4 p ih => exact foot_n4 ih
+  | n3 p ih => exact h3 p ih
+  | n5 p q ihp ihq => exact h5 p q ihp ihq
+  | cons p q ihp ihq => exact hc p q ihp ihq
+  | n10 a v q ihv ihq => exact h10 a v q ihv ihq
+  | n2 => intro goal g0 g1 nex _ _ _ h; simp only [run] at h; cases h
+  | n6 => intro goal g0 g1 nex _ _ _ h; simp only [run] at h; cases h
+  | n11s => intro goal g0 g1 nex _ _ _ h; simp only [run] at h; cases h
+  | n11d => intro goal g0 g1 nex _ _ _ h; simp only [run] at h; cases h
+  | n12 => intro goal g0 g1 nex _ _ _ h; simp only [run] at h; cases h
+  | mean => intro goal g0 g1 nex _ _ _ h; simp only [run] at h; cases h
+
 end Comp
 end SkaModel
 end Formalization
