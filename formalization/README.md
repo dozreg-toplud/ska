@@ -247,6 +247,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/OptLinkTopo.lean` | `+bb-topo` (arm `2942` of `optC`): where `bbTopo fuel` returns, the gate returns the same list (`bb_gate`, from `bb_trap` by induction on the fuel). |
 | `Compiler/OptLinkHops.lean` | `+remove-hops` (arm `4` of `optC`): where `removeHops fuel` returns, the gate returns the same flag and blocks (`rh_gate`; `rh_segt` the segment, `rh_trap` the chain, by induction on the fuel). |
 | `Compiler/OptLinkMiddle.lean`, `Compiler/OptLinkMiddleGate.lean`, `Compiler/OptLinkMiddleRd.lean` | `+remove-empty-middle` (arm `2940` of `optC`): `rewrite-jump` and `rewrite-hop` of its `\|^` core where `rewriteJump` and `rewriteHop` return (`rj_gate`, `rhop_gate`, the latter given `RdOK` of `readers`: at each parameter of an empty block that ends in a hop, a set of atoms with the members of `readersOf`), the trap of `sub` against `subMap` (`rem_subt`), the gate `pass` (`rem_pass`), the bunt of `pole` made by its mold (`pole_bunt'`, a kernel fact); the gate of the `+rep:by` of `$` (`rem_step`); `readers` (`rd_readers`: `+any:by` over the treap, `any_gate_tr`, then the `+rep:by` of `+put:ju`, `rd_rep`, against `JugRel`); the whole pass where `removeEmptyMiddle fuel` returns, on blocks with no `%lti` (`rem_gate`). |
+| `Compiler/OptLinkNoLti.lean` | The passes before `+switch-chains` keep `NoLti` on any map instance: `+remove-useless-branching` (`noLti_rub`), `+remove-empty-middle` (`noLti_mid`), `+remove-hops` (`noLti_hops`), `+remove-dead-code` (`noLti_dead`). |
 | `Compiler/AuditOptLink.lean` | `#print axioms` of the main theorems of `Compiler/OptLink*.lean`; `OptLinkBase.lean` also has `+rep` forward (`rep_gate_fwd`) and against a relation (`rep_gate_rel`). |
 | `Ska/Types.lean` | Models of the IR types (`Bell`, `Sock`, `Cape`, `Pole`, `Termin`, `Blob`, `Straight`, `Tone`, ...), each with its Hoon noun layout. |
 | `Ska/Mink.lean`, `Ska/MinkTrace.lean` | Models of `+mink`, `+mook` and `+mock`; what Nock computes, `+mink` returns; `EvalH.toEvalA`. |
@@ -1692,7 +1693,7 @@ import only its theorems.  So:
    arm `175` of `layer2`, `+gas:in` from `~` once its `^+` cast is
    compiled), to give `rev_gate` its set in `+optimize-once`; (2) `NoLti`
    kept by the four structural passes and `+remove-dead-code` (model-level
-   lemmas, no Nock); (3) `+optimize-once` against `optimizeOnce fuel P` with
+   lemmas, no Nock: done, `Compiler/OptLinkNoLti.lean`); (3) `+optimize-once` against `optimizeOnce fuel P` with
    the links of `+alias` and `+trim-trace-hints` as hypotheses on `P`, its
    structural loop by induction on the fuel, `+skim` (`skim_gate`) with
    `+has:by`; (4) `+optimize` (91 cells) with `+switch-chains` as a
