@@ -133,6 +133,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/RegisterFast.lean` | `+register-fast` for registrations kept as nouns: `registerFastP`, the pill's run of the gate decoded into `[miss regs]`, satisfies `RegisterFastIs` for every `Env Noun` that uses it, given `RegisterFastShape` (every return of the gate is a cell with a flag at its head; `registerFastIs_of`).  The shape fact is proved in `Compiler/RegisterFastShape.lean`. |
 | `Compiler/FrameCall.lean` | `absNockS`: `absNock` of `Compiler/Frame.lean` with calls (Nock `2`, and `9` through `[2 [0 1] 0 b]`) either summarized or followed.  A summary entry `⟨pre, fs, post⟩` answers a call whose core is below `pre` and whose formula is below `fs` (`le`, a decidable test of inclusion of shapes, `le_sound`) with the shapes `post`; a call whose formula is known (a literal, or a path that a resolver `K` maps to a noun of the base, `KOK`) and accepted by `fol` runs that formula on the core's shape; every other call is `unk`.  `absNockS_sound`: what Nock computes, a shape of `absNockS` describes, given only that every summary passes `summOK` (the interpreter run on its `pre`, with the same summaries, returns shapes below `post`).  The induction on `Eval` meets a loop's call to itself at a smaller derivation, so the check is not circular (`second_of_first`, `call_sound`). |
 | `Compiler/RegisterFastShape.lean` | `registerFastShape`: every return of the pill's `+register-fast` is `[flag b, r']`, by two kernel checks of `absNockS` on the gate's battery from the base `[battery [[clue prod reg] ana]]`: the resolver `rfK` knows the battery and `ana`; the followed formulas (`rfFol`) are the battery of `print-ska` (`[9 97710 0 255]`), the arm `same` of layer 2 (`[8 [1 0] [1 0 6] 0 1]`) and the battery `[0 6]` of the gate `same` builds, so `%-  (print-ska n |.(...))  gen` returns the shape of `gen` and the trap is never run; the summaries are the two loops `past-loop` (`rfL1`, at axis `1123630016355293` of the battery) and `sock-loop` (`rfL2`, at `4602388546991284221`) on the cores the gate builds for them (`rfPre1`, `rfPre2`, with `gen` as `[1 reg]`), each returning `[0 *]` or `[1 *]` (`rf_summ_ok`); the gate's run gives 287 shapes, each `[0 *]` or `[1 *]` (`rf_main_ok`).  The checks take about a second.  `registerFastIs_pill`: `RegisterFastIs` for every `Env Noun` with `registerFast = registerFastP`; `ska_poke_ana_iff_pill`: `ska_poke_ana_iff` for that `env`, with no hypothesis on `+register-fast`. |
+| `Compiler/CompGen.lean` | The noun of the state of `+comp` (`line-short`, `[re-gen bo-gen id-gen mode blocks tags cond cache soft sofs]`): `genNoun g x`, a `Gen` of `Ska/CompModel.lean` with the three fields it leaves out carried as opaque nouns (`GenRest`: `cache` at axis `510`, `soft` at `1022`, `sofs` at `1023`), in the shared encodings of `Ska/Types.lean` (`Blob.toNoun`, `listNoun A` for a region, `HoonMap.toNoun`, `condValNoun` for `[def tag]`, `cgModeNoun` for `%drop` and `%run`).  The slots of the fields (`genNoun_re`, ..., `genNoun_tags`), and `+re`, `+oo`, `+id` on the noun (`re_noun`, `oo_noun`, `id_noun`: the edit at axis `2`, `6`, `14` the Hoon makes is the model's result, encoded).  No arm of the pill's door is linked yet. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`. |
@@ -565,7 +566,25 @@ import only its theorems.  So:
    - *The core inside `+comp`* (the door `|_  gen=line-short` at line 3825
      of `nock-compilation.hoon`; map from the arm list and the names of
      `Ska/CompModel.lean`, `Ska/CompLazyRun.lean`, `Ska/CompLeap.lean`,
-     2026-11-24, not yet checked arm by arm; no arm linked).  The Hoon's
+     2026-11-24, not yet checked arm by arm; no arm linked).  The noun of
+     the state is `genNoun` (`Compiler/CompGen.lean`), with `cache`, `soft`,
+     `sofs` as opaque nouns at axes `510`, `1022`, `1023`.  Read in the Hoon,
+     2026-11-24: `+re`, `+oo`, `+id`, `+dropping`, `+set-tag`, `+copy-tag`,
+     `+emir`, `+emit`, `+add-ops`, `+bomb` touch none of the three.  The
+     arms of the door that do (a search of the lines that name
+     `cache.gen`, `soft.gen` or `sofs.gen`): `cache` in `+callee-sure`
+     (read) and `+callee-compiled` (read and written); `soft` in `+run`
+     (the test `(~(has by soft.gen) call-block)`, line 4030), `+kern`
+     (5068), `+crash-need` (5933, 5938), `+soft-fork` (5227),
+     `+coerce-lazy` (6808), `+soft-new`, `+soft-bond`, `+soft-ask`,
+     `+soft-less`, `+soft-done`; `sofs` in `+run-shape` (written, 4456,
+     4562), `+laze-big` (4696) and `+laze-soft-fork` (5245), both read.
+     Of these `+run`, `+kern`, `+crash-need` and `+soft-fork` have models
+     that take `soft` to be empty (the doc of `Ska/CompModel.lean`), which
+     holds for nomm without calls only: those are the places where the
+     model departs from the Hoon.  The pill's nouns of the door are not generated: the
+     next regeneration should name its battery and the arms `re`, `oo`,
+     `emit`, `emir`, `add-ops`, `set-tag`, `from`, `split`.  The Hoon's
      state is the 10-tuple `[re-gen bo-gen id-gen mode blocks tags cond
      cache soft sofs]`; the model's `Gen` keeps `re`, `bo`, `id`, `drop`
      (for `mode`, `%drop` or `%run`), `blocks`, `tags`, `cond`, and lacks

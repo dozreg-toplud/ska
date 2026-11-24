@@ -68,6 +68,7 @@ import lemmas.Compiler.RoadPure
 import lemmas.Compiler.RegisterFast
 import lemmas.Compiler.FrameCall
 import lemmas.Compiler.RegisterFastShape
+import lemmas.Compiler.CompGen
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -544,3 +545,6 @@ open Formalization
 #print axioms Compiler.registerFastShape
 #print axioms Compiler.registerFastIs_pill
 #print axioms Compiler.ska_poke_ana_iff_pill
+#print axioms Compiler.re_noun
+#print axioms Compiler.oo_noun
+#print axioms Compiler.id_noun
