@@ -178,3 +178,6 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
 * `deadcrash.hoon`  nine formulas whose crashing operand has a dead product (`[7 [0 2] [1 5]]`
                     on an atom and the like): `+eval-top` agrees with `+mock` on all
                     (2026-11-24), so `+remove-dead-code` drops no check there
+* `undefarg.hoon`   the raw blocks of `[7 [6 [0 1] [0 0] [1 0]] [6 [0 1] [0 2] [1 0]]]`: block `0wa` hops passing `0v7`, which nothing
+                    defines (a kid register of `+fork-need` whose branch went to `+bomb`); the edge is dead, the first
+                    `+alias` removes it, and raw and optimized code agree with `+mock` (2026-11-24)
