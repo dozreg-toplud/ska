@@ -546,7 +546,8 @@ open Formalization
 #print axioms Compiler.rp_mule_cases
 #print axioms Compiler.rp_run_iff
 #print axioms Compiler.ska_poke_gate_iff
-#print axioms Compiler.ska_poke_iff_trap
+#print axioms Compiler.sp_trap_evalH
+#print axioms Compiler.ska_poke_iff
 #print axioms Compiler.evalH_of_minkF_nil
 #print axioms Compiler.ska_poke_iff_evalH
 #print axioms FrameCall.absNockS_sound

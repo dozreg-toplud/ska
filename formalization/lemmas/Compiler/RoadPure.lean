@@ -41,8 +41,10 @@ ends in `%0` and the direct run returns `y` (`rp_run_iff`), and the gate
 `[%0 p]` exactly when `EvalH` (Nock in which every dynamic hint that the run
 evaluates has an atom tag) gives `p` (`evalH_of_mink_nil`, with
 `mink_of_evalH`), so the gate returns `y` exactly when the trap's run is an
-`EvalH` run to `y` (`ska_poke_iff_evalH`), and exactly when the trap returns
-`y`, given that property of the trap's run (`ska_poke_iff_trap`).
+`EvalH` run to `y` (`ska_poke_iff_evalH`).  `nock` is `EvalA`, Nock with atom
+hint tags, so every return of the trap is such a run (`sp_trap_evalH`), and
+the gate returns `y` exactly when the trap does, with no hypothesis
+(`ska_poke_iff`).
 -/
 
 namespace Formalization
@@ -415,19 +417,6 @@ theorem ska_poke_gate_iff (sam y : Noun) :
     show slot? 2 (C rpBat (C (spTrap sam) rpCtx)) = some rpBat from rfl, Option.bind_some,
     rp_run_iff (spTrap sam) rpCtx rpL5 y rp_l4 rp_l5 rp_mean_at, sp_trap_kick]
 
-/-- **`ska_poke_iff_trap`**: given that the run of the trap, when it
-returns, is an `EvalH` run (every dynamic hint it evaluates has an atom
-tag), the gate `+ska-poke` returns `y` exactly when the trap does. -/
-theorem ska_poke_iff_trap (sam : Noun)
-    (hat : ∀ y, nock (spTrap sam) spX = some y → EvalH (spTrap sam) rpK y) (y : Noun) :
-    nock (C spBat (C sam ana)) spBat = some y ↔ nock (spTrap sam) spX = some y := by
-  rw [ska_poke_gate_iff]
-  constructor
-  · exact fun h => h.2
-  · intro h
-    obtain ⟨n, hn⟩ := mink_of_evalH rpLib (A 0) (hat y h)
-    exact ⟨⟨y, n, hn []⟩, h⟩
-
 /-! ## `+mink` with no scry gate is `EvalH` -/
 
 theorem rp_tz {x : Option Tone} {k : Noun → Option Tone} {p : Noun}
@@ -535,6 +524,24 @@ theorem ska_poke_iff_evalH (sam y : Noun) :
     refine ⟨⟨y, n, hn []⟩, ?_⟩
     rw [← sp_trap_kick]
     exact nock_of_evalA he.toEvalA
+
+/-- `nock` is `EvalA` (a dynamic hint with a cell tag crashes, as in
+`+mink`), so every return of the trap is an `EvalH` run. -/
+theorem sp_trap_evalH (sam y : Noun) (h : nock (spTrap sam) spX = some y) : EvalH (spTrap sam) rpK y := by
+  rw [← sp_trap_kick] at h
+  exact SkaModel.EvalA.toEvalH (evalA_of_nock h)
+
+/-- **The gate `+ska-poke`** returns `y` exactly when its trap does.  No
+hypothesis: `nock` is Nock with atom hint tags, as `+mink` is, so the run
+under `+mink` that `road-pure` makes first returns whenever the trap does. -/
+theorem ska_poke_iff (sam y : Noun) :
+    nock (C spBat (C sam ana)) spBat = some y ↔ nock (spTrap sam) spX = some y := by
+  rw [ska_poke_gate_iff]
+  constructor
+  · exact fun h => h.2
+  · intro h
+    obtain ⟨n, hn⟩ := mink_of_evalH rpLib (A 0) (sp_trap_evalH sam y h)
+    exact ⟨⟨y, n, hn []⟩, h⟩
 
 end Compiler
 end Formalization
