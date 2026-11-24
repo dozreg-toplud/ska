@@ -54,7 +54,11 @@ the next session makes: (a) a result entry's block may have a body `B`
 (`labs`: `⟨[], B, hop th⟩`; `AgreeL`: the program's block is `A ++ B`
 unproxied with `A` filling the entry), as 1, 2 and 4 show; (b) the input
 need may contain the run's own result registers, kept (the relaxed `InR`,
-`KeepI` of `CollRunU`), as 3 shows.  Since every proof of the call
+`KeepI` of `CollRunU`), as 3 shows.  (README Gaps 12.23, `CompRunOKLB.lean`:
+(a) is `RunOKLB`; (b) is a strengthening of `sem` that does not lift from
+`RunOKLC`, so `RunOKLB` takes in its place (b'), fronts that may read the
+goal's sure registers, which covers 3's `p` but leaves its `[7 p q]` open.)
+Since every proof of the call
 fragment uses the strict relations, this session states the hypothesis in
 them, with three levels of goals:
 
