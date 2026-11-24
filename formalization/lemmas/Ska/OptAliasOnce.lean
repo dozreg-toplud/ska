@@ -42,8 +42,8 @@ model of `+optimize` returns `0` where the code before returns `s + 1`
 * **`alias_restB`**: `PassOK`, `DownPar`, some `TrimBr` and `DefFirst` of the
   result, under `DInvS`, `TopoInvR` and `hpick` alone.
 * **`alias_onceB`**: `DefOnceB` of the result when no register with a dead
-  fill has a definition that counts (`FillFresh`): a definition after maps to
-  one before (`alias_site`), and a dead fill before stays one after
+  fill in a reachable block has a definition that counts (`FillFresh`): a
+  definition after maps to one before (`alias_live_op`), and a dead fill before stays one after
   (`alias_fill`, through `DefFirst` of the result: a read after would need a
   definition after before it, which is a definition that counts before, or a
   dead fill before followed by `%imm` ops only).
@@ -68,8 +68,9 @@ variable {Map : Type → Type} [HoonMap Map] [MapKeys Map]
 
 set_option linter.unusedSectionVars false
 
-/-- No register with a dead fill has a definition that counts. -/
-def FillFresh (bl : Map Blob) : Prop := ∀ r o i, DeadFill bl r o i → ∀ s, ¬ LiveDef bl r s
+/-- No register with a dead fill in a reachable block has a definition that
+counts. -/
+def FillFresh (bl : Map Blob) : Prop := ∀ r o i, Reach bl o → DeadFill bl r o i → ∀ s, ¬ LiveDef bl r s
 
 /-- The ops kept of a prefix of a body are a prefix of the ops kept of a
 longer prefix. -/
@@ -135,6 +136,7 @@ theorem alias_fill (hpick : ∀ l : List Nat, l ≠ [] → pick l ∈ l) (hD : D
     (hi : rb.1[i]? = some op') (hdf : DeadFill bl r o k) : DeadFill gF.new r o i := by
   have hfirst := alias_defFirst hpick hD hT h
   have hGs := alias_targetsSub hT h
+  have hRo : Reach bl o := aliasWalk_reach hT.1.1 hT.2 h o (by rw [hb']; rfl)
   have hdf0 := hdf
   obtain ⟨b5, hb5, ⟨u, hu⟩, ⟨n, hn⟩, himm, -⟩ := hdf
   rw [hb] at hb5; cases hb5
@@ -157,7 +159,7 @@ theorem alias_fill (hpick : ∀ l : List Nat, l ≠ [] → pick l ∈ l) (hD : D
     obtain ⟨b3b, st3, rb3, rf3, hb3b, hrb3, hbe3, hrf3, -⟩ := alias_blk hT h hb3
     rcases hfirst o3 p b3 hπ hb3 j r hread hrG with hm | hm | ⟨o', ho', b'', hb'', hm⟩
     · rw [hbe3] at hm
-      exact hF r o k hdf0 (o3, none) (awi_par_live hR3b hb3b hm)
+      exact hF r o k hRo hdf0 (o3, none) (awi_par_live hR3b hb3b hm)
     · rw [hbe3] at hm
       obtain ⟨op2, hop2, hd2⟩ := List.mem_filterMap.mp hm
       obtain ⟨j2, hj2⟩ := List.mem_iff_getElem?.mp hop2
@@ -191,7 +193,7 @@ theorem alias_fill (hpick : ∀ l : List Nat, l ≠ [] → pick l ∈ l) (hD : D
         · simp only at hfr
           rw [hrf3 u3 hu3] at hfr
           simp [finRegs] at hfr
-      · exact hF r o k hdf0 (o3, some k2) ⟨hR3b, ⟨b3b, op3, hb3b, hk2, hd3⟩, fun i0 hi0 hd => by
+      · exact hF r o k hRo hdf0 (o3, some k2) ⟨hR3b, ⟨b3b, op3, hb3b, hk2, hd3⟩, fun i0 hi0 hd => by
           cases hi0; exact hdf3 hd⟩
     · have hRo' : Reach gF.new o' := ssk_bpath_reach hπ o' (List.mem_cons_of_mem _ ho')
       have hRo'b : Reach bl o' := reach_sub hGs hRo'
@@ -201,9 +203,9 @@ theorem alias_fill (hpick : ∀ l : List Nat, l ≠ [] → pick l ∈ l) (hD : D
       rw [hbeo] at hj8 hm
       obtain ⟨j9, hj9, -⟩ := hjmo j8 hj8
       rcases List.mem_append.mp hm with hm | hm
-      · exact hF r o k hdf0 (o', none) (awi_par_live hRo'b hbo hm)
+      · exact hF r o k hRo hdf0 (o', none) (awi_par_live hRo'b hbo hm)
       · obtain ⟨i9, op9, hi9, he9⟩ := bdef_idx (abody_dsts hrbo hm)
-        exact hF r o k hdf0 (o', some i9) (awi_jump_live hRo'b hbo hj9 hi9 he9)
+        exact hF r o k hRo hdf0 (o', some i9) (awi_jump_live hRo'b hbo hj9 hi9 he9)
 
 /-- **A definition that counts after at an op** is one before, at the op it
 was kept from. -/
@@ -276,7 +278,7 @@ theorem alias_fillFresh (hpick : ∀ l : List Nat, l ≠ [] → pick l ∈ l) (h
     FillFresh gF.new := by
   have hS : AliasSSAB bl := hD.2.1
   have hGs := alias_targetsSub hT h
-  intro r o i hdf s hs
+  intro r o i _ hdf s hs
   obtain ⟨b', hb', -, ⟨n, hn⟩, -, -⟩ := id hdf
   obtain ⟨b, st0, rb, rf, hb, hrb, hbe, hrf, -⟩ := alias_blk hT h hb'
   have hR : Reach bl o := aliasWalk_reach hT.1.1 hT.2 h o (by rw [hb']; rfl)
@@ -298,9 +300,9 @@ theorem alias_fillFresh (hpick : ∀ l : List Nat, l ≠ [] → pick l ∈ l) (h
     exact ⟨k', hk'⟩
   by_cases hdf0 : DeadFill bl r o k
   · obtain ⟨o', _ | i'⟩ := s
-    · exact hF r o k hdf0 _ (hpar o' hs)
+    · exact hF r o k hR hdf0 _ (hpar o' hs)
     · obtain ⟨k', hk'⟩ := hop' o' i' hs
-      exact hF r o k hdf0 _ hk'
+      exact hF r o k hR hdf0 _ hk'
   · have hl0 : LiveDef bl r (o, some k) := ⟨hR, ⟨b, op, hb, hk, hd⟩, fun i0 hi0 => by cases hi0; exact hdf0⟩
     obtain ⟨o', _ | i'⟩ := s
     · have := hS.1 r _ _ hl0 (hpar o' hs)
@@ -328,7 +330,7 @@ theorem alias_restB (hpick : ∀ l : List Nat, l ≠ [] → pick l ∈ l) (hD : 
   ⟨alias_passOK hpick hD hT h, alias_downPar hpick hD hT h, alias_trimBr hpick hD hT h, alias_defFirst hpick hD hT h⟩
 
 /-- **The conclusion of `AliasRestSSAB`** on inputs where no register with a
-dead fill has a definition that counts. -/
+dead fill in a reachable block has a definition that counts. -/
 theorem alias_restSSAB_fresh (hpick : ∀ l : List Nat, l ≠ [] → pick l ∈ l) (hD : DInvS bl)
     (hT : TopoInvR bl topo rev) (h : aliasWalk pick nargs bl topo (aliasInit rev) = some gF) (hF : FillFresh bl) :
     PassOK gF.new ∧ DownPar gF.new ∧ (∃ K, TrimBr gF.new K) ∧ AliasSSAB gF.new :=
