@@ -75,15 +75,24 @@ theorem medeL_eq (th : Jmp) (som : Noun) (laz : Lazy S) :
         walkLazy (medeGate som) o laz
         pure o) := rfl
 
-/-- **`[1 k]` for a goal with entries.** -/
-theorem runOKE_n1 (lib : Lib) {k : Noun} {laz : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map}
+/-- **`[1 k]` for a goal with entries**, with the front and the `sem` under
+any hypothesis `K` on the input registers that keeps them out of the
+registers the walk allocates (`[g0.re, g1.re)`), and any keep set `K'` outside
+the goal's sure need and those registers.  `runOKE_n1` is the strict case. -/
+theorem runOKE_n1K (lib : Lib) {k : Noun} {laz : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map}
     {nex : NextL S} (h : runL (Nomm.n1 k) (CGoalL.next laz th) region g0 = some (nex, g1))
     (d0 : g0.drop = false) (hu : UpBelow g0) (h1 : 1 ≤ th.there) (h2 : th.there < g0.bo)
     (hd : Distinct laz.sure.ned) (hreg : ∀ r, NMem laz.sure.ned r → r < g0.re)
     (hed : ∀ e ∈ entries laz, Distinct e.2.sure.ned ∧ ∀ r, NMem e.2.sure.ned r → r < g0.re)
     (hnd : ((entries laz).map Prod.fst).Nodup)
     (hlab : ∀ e ∈ entries laz, e.1 < g0.bo ∧ ∃ B fin, HoonMap.get g0.blocks e.1 = some ⟨[], B, fin⟩) :
-    RunOKE (Map := Map) lib (Nomm.n1 k) laz th g0 g1 nex := by
+    RunOKE (Map := Map) lib (Nomm.n1 k) laz th g0 g1 nex ∧
+    (∀ K : Nat → Prop, (∀ x, K x → ¬ (g0.re ≤ x ∧ x < g1.re)) → FrontK (Map := Map) K (Nomm.n1 k) laz g0 g1 nex) ∧
+    (∀ K' : Nat → Prop, (∀ r, K' r → ¬ NMem laz.sure.ned r ∧ ¬ (g0.re ≤ r ∧ r < g1.re)) →
+      ∀ (c : Straight Map) (ned : Need) (σ : Type) (O : Oracle σ) (st : σ) (t : Trace) (gul : Noun) (s0 s : Noun),
+      AgreeP lib O c gul st t ned g0 g1 nex.laz s0 s → ∀ regs,
+      GoalSem lib O c gul st K' regs t nex.th (CGoal.next laz.sure th) (pureEval (Nomm.n1 k) s)) ∧
+    nex.laz = ofSure Sure.bunt := by
   simp only [runL, medeL_eq, bind_apply, emit_apply, Option.bind_some, get_apply] at h
   simp only [emitted_drop, d0, Bool.false_eq_true, if_false] at h
   obtain ⟨⟨o', gW⟩, hX, hP⟩ := Option.bind_eq_some_iff.mp h
@@ -139,12 +148,10 @@ theorem runOKE_n1 (lib : Lib) {k : Noun} {laz : Lazy S} {th : Jmp} {region : Lis
         · rw [other3 kk e0 hm] at hb'
           exact Or.inl ⟨b', hb', rfl, rfl⟩
   have kE : gE.cond = g0.cond := by rw [hgE]; rfl
-  refine ⟨reE ▸ W.le, by omega, W.drop.trans (dE.trans d0.symm), fun o ho hn => other3 o (by omega) hn, hgrow.toU hu,
-    W.cnd.trans kE, by simp [jmp0]; omega, by simp [jmp0]; omega, by simp [jmp0]; omega,
-    Or.inl ⟨_, bo3, rfl, rfl⟩, fun r hr => by simp [ofSure, Sure.bunt, NMem] at hr, trivial,
-    fun e he => by simp [entries_ofSure] at he, fun e he => by simp [entries_ofSure] at he,
-    by simp [entries_ofSure], by simp [entries_ofSure], fun e he => ?_, fun s hs => absurd (fitsS_bunt s) hs, ?_⟩
-  · obtain ⟨A, hA, hPA⟩ := ent3 e he
+  have FK : ∀ K : Nat → Prop, (∀ x, K x → ¬ (g0.re ≤ x ∧ x < g3.re)) →
+      FrontK (Map := Map) K (Nomm.n1 k) laz g0 g3 (⟨ofSure Sure.bunt, jmp0 g0.bo⟩ : NextL S) := by
+    intro K hK e he
+    obtain ⟨A, hA, hPA⟩ := ent3 e he
     refine ⟨A, hA, Or.inr ⟨by simp [entries_ofSure], ?_⟩⟩
     intro lib σ O c gul st t ned A0 s0 s v hned hev hfill R hR
     simp only [pureEval, Option.some.injEq] at hev; subst hev
@@ -153,24 +160,50 @@ theorem runOKE_n1 (lib : Lib) {k : Noun} {laz : Lazy S} {th : Jmp} {region : Lis
     refine ⟨fun f => ?_, fun nf => Crashes.append_right r1 (S2 nf)⟩
     obtain ⟨R2, r2, hh2, k2⟩ := S1 f
     refine ⟨R2, Runs.append r1 r2, hh2, fun x hx hn => (k2 x hn ?_).trans (k1 x ?_ (by simp [Sure.bunt, NMem]))⟩
-    · rintro ⟨a, _⟩
+    · rintro ⟨a, b⟩
       rcases hx with hx | hx
-      · have := hned x hx; omega
+      · exact hK x (hned x hx) ⟨a, b⟩
       · omega
     · rcases hx with hx | hx
       · exact Or.inl hx
       · exact Or.inr (by have := W.le; omega)
-  · intro c ned σ O st t gul s0 s ag hned regs _ _
+  have SK : ∀ K' : Nat → Prop, (∀ r, K' r → ¬ NMem laz.sure.ned r ∧ ¬ (g0.re ≤ r ∧ r < g3.re)) →
+      ∀ (c : Straight Map) (ned : Need) (σ : Type) (O : Oracle σ) (st : σ) (t : Trace) (gul : Noun) (s0 s : Noun),
+      AgreeP lib O c gul st t ned g0 g3 (ofSure Sure.bunt : Lazy S) s0 s → ∀ regs,
+      GoalSem lib O c gul st K' regs t (jmp0 g0.bo) (CGoal.next laz.sure th) (pureEval (Nomm.n1 k) s) := by
+    intro K' hK' c ned σ O st t gul s0 s ag regs
     have hc : HoonMap.get c.blocks g0.bo = some ⟨[], Ao ++ [], Termin.hop th⟩ := by
       rw [ag.1 g0.bo (Nat.le_refl _) (by omega) (by simp [entries_ofSure]), bo3]
-    show GoalSem lib O c gul st _ regs t (jmp0 g0.bo) (CGoal.next laz.sure th) (pureEval (Nomm.n1 k) s)
     simp only [pureEval, GoalSem]
     obtain ⟨S1, S2⟩ := PAo lib σ O c gul st t regs hd (fun r hr => reE ▸ hreg r hr)
     rw [goJ_jmp0 _ _ _ _ hc]
     refine ⟨fun f => ?_, fun nf => S2 nf [] _⟩
     obtain ⟨R2, r2, hh2, k2⟩ := S1 f
-    refine ⟨R2, hh2.1, fun r hr => k2 r hr.2 ?_, by rw [r2 [] _, execBlob_hop]⟩
-    rintro ⟨a, _⟩
-    rcases hr.1 with x | x
-    · omega
-    · have := hned r x; omega
+    exact ⟨R2, hh2.1, fun r hr => k2 r (hK' r hr).1 (reE ▸ (hK' r hr).2), by rw [r2 [] _, execBlob_hop]⟩
+  refine ⟨⟨reE ▸ W.le, by omega, W.drop.trans (dE.trans d0.symm), fun o ho hn => other3 o (by omega) hn,
+    hgrow.toU hu, W.cnd.trans kE, by simp [jmp0]; omega, by simp [jmp0]; omega, by simp [jmp0]; omega,
+    Or.inl ⟨_, bo3, rfl, rfl⟩, fun r hr => by simp [ofSure, Sure.bunt, NMem] at hr, trivial,
+    fun e he => by simp [entries_ofSure] at he, fun e he => by simp [entries_ofSure] at he,
+    by simp [entries_ofSure], by simp [entries_ofSure],
+    fun e he => FK (fun r => g3.re ≤ r) (fun x hx hr => by omega) e he,
+    fun s hs => absurd (fitsS_bunt s) hs, ?_⟩, FK, SK, rfl⟩
+  intro c ned σ O st t gul s0 s ag hned regs _ _
+  refine SK _ (fun r hr => ⟨hr.2, fun ⟨a, b⟩ => ?_⟩) c ned σ O st t gul s0 s ag regs
+  rcases hr.1 with x | x
+  · omega
+  · have := hned r x; omega
+
+/-- **`[1 k]` for a goal with entries.** -/
+theorem runOKE_n1 (lib : Lib) {k : Noun} {laz : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map}
+    {nex : NextL S} (h : runL (Nomm.n1 k) (CGoalL.next laz th) region g0 = some (nex, g1))
+    (d0 : g0.drop = false) (hu : UpBelow g0) (h1 : 1 ≤ th.there) (h2 : th.there < g0.bo)
+    (hd : Distinct laz.sure.ned) (hreg : ∀ r, NMem laz.sure.ned r → r < g0.re)
+    (hed : ∀ e ∈ entries laz, Distinct e.2.sure.ned ∧ ∀ r, NMem e.2.sure.ned r → r < g0.re)
+    (hnd : ((entries laz).map Prod.fst).Nodup)
+    (hlab : ∀ e ∈ entries laz, e.1 < g0.bo ∧ ∃ B fin, HoonMap.get g0.blocks e.1 = some ⟨[], B, fin⟩) :
+    RunOKE (Map := Map) lib (Nomm.n1 k) laz th g0 g1 nex :=
+  (runOKE_n1K lib h d0 hu h1 h2 hd hreg hed hnd hlab).1
+
+end Comp
+end SkaModel
+end Formalization
