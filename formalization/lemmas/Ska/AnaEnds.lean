@@ -21,7 +21,9 @@ taken, and the recursion of the analysis is finite.
    `defer` is set), and an inlined call analyses a formula that
    `+inlineable` accepts, which has no `%2` and no `%9`, so an inlined
    formula inlines nothing.  Every other exit of `fol-loop` is a direct call
-   through `resolve`.
+   through `resolve`.  Proved for the formulas that do not inline, with the direct calls
+   fixed: `folLoopR_stable` of `FolWeight.lean` (the result is the same at
+   every fuel from `folW fol` on).
 2. The `resolve` loop.  Its only turn that loops is `%he`: the identity
    `[a f]` becomes `[(msg-sock a b) f]` for the subject sock `b` of a frame of
    `f` on the stack with `(he-sock a b)`.  When `a = b` the identity is that
