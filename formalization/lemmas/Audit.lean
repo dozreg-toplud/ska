@@ -440,5 +440,7 @@ open Formalization
 #print axioms Compiler.sweep_stepW
 #print axioms Compiler.sweep_loop_iff
 #print axioms Compiler.sweep_gate
+#print axioms Compiler.live_stepW
+#print axioms Compiler.live_loop_iff
 #print axioms Compiler.registerFastIs_of
 #print axioms Compiler.resolveStepH_eq

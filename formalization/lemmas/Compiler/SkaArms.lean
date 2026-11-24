@@ -445,5 +445,150 @@ theorem sweep_gate (regsNoun : R → Noun) (K : Noun) (hK : slot? 31 K = some an
   rw [hrun]
   exact sweep_loop_iff regsNoun K hK id was st _ _ _ x
 
+/-! ## The loop `live` of `+cull` -/
+
+/-- A loop formula `lf` nested at most `j` deep, every other formula by
+`nock`; `evS` is the instance for the loop of `+sweep`. -/
+def evOne (lf : Noun) : Nat → Noun → Noun → Option Noun
+  | 0 => fun s f => if f = lf then none else nock s f
+  | j + 1 => fun s f => if f = lf then nockW (evOne lf j) s f else nock s f
+
+theorem evOne_far (lf : Noun) (hlf : ∀ f, FFar f → f ≠ lf) (j : Nat) {s f : Noun} (h : FFar f) :
+    evOne lf j s f = nock s f := by
+  cases j <;> simp only [evOne, if_neg (hlf f h)]
+
+theorem evOne_le_nock (lf : Noun) : ∀ (j : Nat) (s f : Noun), Below? (evOne lf j s f) (nock s f)
+  | 0, s, f => by
+    by_cases h : f = lf
+    · intro a ha; simp [evOne, h] at ha
+    · simp only [evOne, if_neg h]; exact Below?.refl _
+  | j + 1, s, f => by
+    by_cases h : f = lf
+    · simp only [evOne, if_pos h]
+      rw [nock_eq_nockW]
+      exact nockW_mono (evOne_le_nock lf j) s f
+    · simp only [evOne, if_neg h]; exact Below?.refl _
+
+theorem iterN_le_evOne (lf : Noun) : ∀ (j : Nat) (s f : Noun), Below? (iterN j s f) (evOne lf j s f)
+  | 0, _, _ => fun _ h => by simp [iterN] at h
+  | j + 1, s, f => by
+    by_cases h : f = lf
+    · simp only [evOne, if_pos h, iterN_succ]
+      exact nockW_mono (iterN_le_evOne lf j) s f
+    · simp only [evOne, if_neg h]; exact iterN_sound _ s f
+
+/-- The subject of the loop `live` of `+cull`: `[loop [live [q [members c0]]]]`
+with `c0 = [cull-battery [[id st] K]]`, the subject of `+cull`. -/
+noncomputable def liveSubj (regsNoun : R → Noun) (K : Noun) (id : Ident) (st : SkaState FinMap R)
+    (members : FinMap Ident Unit) (q : List Ident) (live : FinMap Ident Unit) : Noun :=
+  C ska_cg.cull.loop (C (Treap.setNoun live) (C (listNoun identNoun q) (C (Treap.setNoun members)
+    (C ska_cg.cull.battery (C (C (identNoun id) (st.toNoun regsNoun)) K)))))
+
+/-- One turn of the loop `live`, with its calls to itself as `go`. -/
+noncomputable def liveStepH (st : SkaState FinMap R) (members : FinMap Ident Unit)
+    (go : List Ident → FinMap Ident Unit → Option (FinMap Ident Unit)) :
+    List Ident → FinMap Ident Unit → Option (FinMap Ident Unit)
+  | [], live => some live
+  | i :: q, live =>
+    if Treap.has live i = true ∨ Treap.has members i = false then go q live
+    else go (q ++ kids st i) (Treap.ins live i)
+
+theorem liveLoop_succ (st : SkaState FinMap R) (members : FinMap Ident Unit) (n : Nat) :
+    liveLoop st members (n + 1) = liveStepH st members (liveLoop st members n) := by
+  funext q live
+  match q with
+  | [] => rfl
+  | i :: q => rfl
+
+theorem slot_st_g (regsNoun : R → Noun) (st : SkaState FinMap R) :
+    slot? 2 (st.toNoun regsNoun) = some (Treap.toNoun FDatum.toNoun st.g) := by
+  simp [SkaState.toNoun, nock_exec]
+
+set_option maxHeartbeats 1000000 in
+/-- One turn of the loop `live` of `+cull` over an evaluator `c` that is
+`nock` off `FFar`, given what `c` returns on the loop's calls to itself. -/
+theorem live_stepW (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar f → c s f = nock s f)
+    (regsNoun : R → Noun) (K : Noun) (hK : slot? 31 K = some ana) (id : Ident)
+    (st : SkaState FinMap R) (members : FinMap Ident Unit)
+    (go : List Ident → FinMap Ident Unit → Option (FinMap Ident Unit))
+    (hgo : ∀ q live, c (liveSubj regsNoun K id st members q live) ska_cg.cull.loop
+      = (go q live).map Treap.setNoun)
+    (q : List Ident) (live : FinMap Ident Unit) :
+    nockW c (liveSubj regsNoun K id st members q live) ska_cg.cull.loop
+      = (liveStepH st members go q live).map Treap.setNoun := by
+  have hl2 := K_layer2 hK
+  match q with
+  | [] =>
+    nockW_open ska_cg.cull.loop
+    simp (disch := ffar_disch) [nock_exec, hcf, liveSubj, listNoun, liveStepH]
+  | i :: q =>
+    have h1 := hgo q live
+    have h2 := hgo (q ++ kids st i) (Treap.ins live i)
+    simp only [liveSubj] at h1 h2
+    have hs := has_in_setNoun live i
+    have hm := has_in_setNoun members i
+    have hp := put_in_setNoun live i
+    simp only [TKey.enc] at hs hm hp
+    have hgg := git_g_pill st.g i
+    have htap := tap_in_setNoun (Ana.gitG st.g i).callees
+    have hturn : nock (C turn.battery (C (C (listN ((Treap.tap (Ana.gitG st.g i).callees).map
+        fun e => TKey.enc e.1)) (C (C (A 0) (A 13)) (C (C (A 0) (C (C (A 1) (A 0)) (C (A 0) (A 0))))
+          (liveSubj regsNoun K id st members (i :: q) live)))) layer2)) turn.battery
+        = some (listNoun identNoun (kids st i)) := by
+      rw [turn_gate layer2 homoIn_layer2 _ _ _ (fun x => match x with | Noun.cell _ b => b | _ => A 0) _
+        (by
+          intro x hx
+          obtain ⟨e, -, rfl⟩ := List.mem_map.1 hx
+          simp [nock_exec, TKey.enc, CalleeEntry.toNoun]),
+        List.map_map, Ana.kids, listNoun_map_listN, List.map_map]
+      rfl
+    simp only [liveSubj, listNoun] at hturn
+    have hweld : nock (C weld.battery (C (C (listNoun identNoun q) (listNoun identNoun (kids st i)))
+        layer2)) weld.battery = some (listNoun identNoun (q ++ kids st i)) := by
+      rw [listNoun_map_listN, listNoun_map_listN, listNoun_map_listN, List.map_append]
+      exact weld_gate_list layer2 _ _
+    nockW_open ska_cg.cull.loop
+    cases e1 : Treap.has live i <;> cases e2 : Treap.has members i <;>
+      simp (disch := ffar_disch) [nock_exec, hcf, liveSubj, listNoun, liveStepH, hl2, hK, in_arm,
+        in.arm_at, in.has.arm_at, has_in_arm, hs, hm, in.put.arm_at, put_in_arm, hp, e1, e2, h1, h2,
+        slot_st_g, git_g.arm_at, git_g_arm, hgg, FDatum.toNoun, in.tap.arm_at, htap, turn.arm_at,
+        turn_arm, hturn, weld.arm_at, weld_arm, hweld]
+
+theorem FFar.ne_live {f : Noun} (h : FFar f) : f ≠ ska_cg.cull.loop :=
+  fun e => h.2.2.2.2.2.2.2.2 (e ▸ rfl)
+
+/-- Under `evOne` of the loop `live`, `j` deep, the loop computes `liveLoop`
+at fuel `j`, exactly. -/
+theorem liveE_is (regsNoun : R → Noun) (K : Noun) (hK : slot? 31 K = some ana) (id : Ident)
+    (st : SkaState FinMap R) (members : FinMap Ident Unit) :
+    ∀ (j : Nat) (q : List Ident) (live : FinMap Ident Unit),
+    evOne ska_cg.cull.loop j (liveSubj regsNoun K id st members q live) ska_cg.cull.loop
+      = (liveLoop st members j q live).map Treap.setNoun
+  | 0, _, _ => by simp [evOne, liveLoop]
+  | j + 1, q, live => by
+    simp only [evOne, if_true]
+    rw [live_stepW (evOne ska_cg.cull.loop j)
+      (fun _ _ h => evOne_far _ (fun _ h' => h'.ne_live) j h) regsNoun K hK id st members
+      (liveLoop st members j) (liveE_is regsNoun K hK id st members j) q live, liveLoop_succ]
+
+/-- The loop `live` of `+cull` returns exactly what `liveLoop` returns at
+some fuel. -/
+theorem live_loop_iff (regsNoun : R → Noun) (K : Noun) (hK : slot? 31 K = some ana) (id : Ident)
+    (st : SkaState FinMap R) (members : FinMap Ident Unit) (q : List Ident) (live : FinMap Ident Unit)
+    (x : Noun) :
+    nock (liveSubj regsNoun K id st members q live) ska_cg.cull.loop = some x ↔
+      ∃ n r, liveLoop st members n q live = some r ∧ x = Treap.setNoun r := by
+  constructor
+  · intro h
+    obtain ⟨j, hj⟩ := iterN_complete h
+    have he := iterN_le_evOne ska_cg.cull.loop j _ _ x hj
+    rw [liveE_is regsNoun K hK id st members j] at he
+    obtain ⟨r, hr, rfl⟩ := Option.map_eq_some_iff.1 he
+    exact ⟨j, r, hr, rfl⟩
+  · rintro ⟨n, r, hr, rfl⟩
+    have he := liveE_is regsNoun K hK id st members n q live
+    rw [hr] at he
+    exact evOne_le_nock _ n _ _ _ he
+
 end Compiler
 end Formalization
