@@ -349,3 +349,5 @@ open Formalization.SkaModel.Comp
 #print axioms footX_five
 #print axioms footX_ten
 #print axioms runX_foot_of
+#print axioms wroteIn_sixGenL
+#print axioms footX_sixP
