@@ -59,7 +59,8 @@ def HopI (bl : Map Blob) (rev : Map (List Nat)) (x x' : Cfg σ Map) (b0 : Blob) 
 def HopII (bl : Map Blob) (rev : Map (List Nat)) (x x' : Cfg σ Map) : Prop :=
   x'.t = x.t ∧ x'.st = x.st ∧ Reach bl x.lab ∧ ∃ b0 T F ops, HoonMap.get bl x.lab = some b0 ∧
   MTail bl rev x.lab b0 T F ∧ x.params ≠ [] ∧ x.b = b0 ∧ x'.params = [] ∧ ops ≠ [] ∧ MovOps ops ∧
-  x'.b = ⟨[], ops ++ (b0.body ++ T), F⟩ ∧ PassRel x.params b0.par x.regs ops x'.regs
+  x'.b = ⟨[], ops ++ (b0.body ++ T), F⟩ ∧ x.params.length = b0.par.length ∧
+  (∀ r, some r ∈ x.params → r ∉ b0.par) ∧ PassRel x.params b0.par x.regs ops x'.regs
 
 def HopRel (bl : Map Blob) (rev : Map (List Nat)) (x x' : Cfg σ Map) : Prop :=
   (∃ b0 T F, HopI bl rev x x' b0 T F) ∨ HopII bl rev x x'
@@ -155,7 +156,8 @@ theorem link_rel (HH : HopsHyp c.blocks rev topo) {lab : Nat} {b : Blob} {params
     simp only at hpar ⊢
     subst hpar
     simp [hq, hb]
-  · refine Or.inr ⟨ht', hst', hreach1, b1, T1, F1, ops, hb1, hm1, ha, rfl, by rw [hp', hp], ?_, hmov, ?_, hpr⟩
+  · refine Or.inr ⟨ht', hst', hreach1, b1, T1, F1, ops, hb1, hm1, ha, rfl, by rw [hp', hp], ?_, hmov, ?_, hlen,
+      hpass, hpr⟩
     · intro e; exact ha (hnil.mp e)
     · rw [hb']; simp [hq, hb]
 
@@ -215,7 +217,7 @@ theorem hop_fwd_step {x y x' : Cfg σ Map} {es : List (Nat × Nat)} (hs : Step l
         rcases link_rel HH hI0 hf hb1 hseg hm1 hp hq hbd with h | h
         · exact Or.inl ⟨_, _, _, h⟩
         · exact Or.inr h
-  · obtain ⟨ht', hst', hreach, b0, T, F, ops, hb0, hm, hpne, hxb, hp', hne, hmov, hb', hpr⟩ := hII
+  · obtain ⟨ht', hst', hreach, b0, T, F, ops, hb0, hm, hpne, hxb, hp', hne, hmov, hb', hlen, hck, hpr⟩ := hII
     obtain ⟨lab', b', params', regs', t', st'⟩ := x'
     simp only at ht' hst' hreach hb0 hm hpne hxb hp' hb' hpr
     subst t' st' params' b' b
@@ -298,7 +300,7 @@ theorem hop_bwd_step {x x' y' : Cfg σ Map} {es' : List (Nat × Nat)} (hs : Step
     (hn : HopN c.blocks rev x x') (hok : ∀ k, ReadsAt gul x k → ∃ v, read k x.regs = some v) :
     ∃ es y, Steps lib O c gul x es y ∧ HopRel c.blocks rev y y' := by
   obtain ⟨lab, b, params, regs, t, st⟩ := x
-  rcases hn with ⟨ht', hst', hreach, b0, T, F, ops, hb0, hm, hpne, hxb, hp', hne, hmov, hb', hpr⟩ | ⟨b0, T, F, hI, hnf⟩
+  rcases hn with ⟨ht', hst', hreach, b0, T, F, ops, hb0, hm, hpne, hxb, hp', hne, hmov, hb', hlen, hck, hpr⟩ | ⟨b0, T, F, hI, hnf⟩
   · obtain ⟨lab', b', params', regs', t', st'⟩ := x'
     simp only at ht' hst' hreach hb0 hm hpne hxb hp' hb' hpr
     subst t' st' params' b' b
@@ -320,7 +322,7 @@ theorem hop_bwd_step {x x' y' : Cfg σ Map} {es' : List (Nat × Nat)} (hs : Step
           Steps.step (Step.pass (x := ⟨lab, b0, params, regs, t3, st3⟩) (Or.inl hpne) hRb) (Steps.refl _),
           Or.inl ⟨b0, T, F, rfl, rfl, hreach, hb0, hm, rfl, hle, rfl, rfl⟩⟩
       · refine ⟨[], ⟨lab, b0, params, regs, t3, st3⟩, Steps.refl _, Or.inr ⟨rfl, rfl, hreach, b0, T, F, ops', hb0, hm,
-          hpne, rfl, rfl, hops', fun q' h => hmov q' (List.mem_cons_of_mem _ h), rfl, ?_⟩⟩
+          hpne, rfl, rfl, hops', fun q' h => hmov q' (List.mem_cons_of_mem _ h), rfl, hlen, hck, ?_⟩⟩
         exact ⟨fun Rb h => by rw [← hrun ops']; exact hpr.1 Rb h,
           fun Ra h => hpr.2 Ra (by rw [hrun ops']; exact h)⟩
     | jump hp hq' hbd => simp at hbd

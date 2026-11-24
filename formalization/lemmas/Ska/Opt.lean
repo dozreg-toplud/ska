@@ -74,7 +74,7 @@ body from its end, dropping an op whose `+get-reg-safe-assignment` (`%imm`,
 its successors (an acyclic CFG).  The ops it may drop can crash in the
 interpreter (`%hed`/`%tal` of an atom, `%con` of a poisoned register, `%mov` of
 a missing one), so its preservation needs, beyond `ReadsOK`, that no dropped
-op crashes on an execution (`LocalOK` in `OptDead.lean`).
+op crashes on an execution (`LocalOK`, part of `EntryOK`).
 
 `+alias`, `+trim-trace-hints` and `+switch-chains` are parameters of the
 driver (`OptDriver.lean`), assumed to keep the semantics.
@@ -85,16 +85,19 @@ For an entry `(st, vals, t, gul)`, `ReadsOK c` says that every real read on
 every path of `c` from the entry reads a value.  A pass from `c` to `c'`
 **keeps** `c` (`Keeps c c'`) when `c'` has the need and the argument count of
 `c`, its block `0` has the parameters of that of `c` (which `topBody`
-checks), and for every entry with `ReadsOK c` and `ArgsOK c` (`EntryOK`):
+checks), and for every entry with `ReadsOK c`, `ArgsOK c` and `LocalOK c`
+(`EntryOK`):
 `execEntry` of `c'` returns exactly what `execEntry` of `c` returns (the same
 product, the same crash with the same trace, the same block on a scry, and
 `none` together), and `EntryOK c'` holds.  `ArgsOK` (every register a pending
 pass moves is in the file) is there for `+remove-empty-middle`, which drops
-such moves (`OptMiddleSim.lean`).  `Keeps` is reflexive and transitive
+such moves (`OptMiddleSim.lean`), and `LocalOK` (no op that
+`+get-reg-safe-assignment` names crashes) for `+remove-dead-code`, which drops
+such ops (`OptDeadSim.lean`).  `Keeps` is reflexive and transitive
 (`keeps_refl`, `keeps_trans`), so the driver composes the passes.  `KeepsR`
 is the form with `ReadsOK` alone, in which the simulations of
 `+remove-useless-branching` and `+remove-hops` are proved; `keeps_of_R`
-adds `ArgsOK` kept.
+adds `ArgsOK` and `LocalOK` kept.
 -/
 
 set_option linter.unusedSectionVars false
@@ -191,15 +194,38 @@ def ArgsOK (lib : Lib) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ)
   ∀ es y k, Path.FromEntry (lib := lib) (O := O) (c := c) (gul := gul) st vals t es y → some k ∈ y.params →
     (HoonMap.get y.regs k).isSome
 
+/-- `+get-reg-safe-assignment`: the register an op of `%imm`, `%mov`, `%con`,
+`%hed`, `%tal` writes, the ops `+remove-dead-code` may drop. -/
+def safeAssign : Pole → Option Nat
+  | Pole.imm _ d => some d
+  | Pole.mov _ d => some d
+  | Pole.con _ _ d => some d
+  | Pole.hed _ d => some d
+  | Pole.tal _ d => some d
+  | _ => none
+
+/-- No op that `+get-reg-safe-assignment` names crashes on a path from the
+entry: a `%hed` or `%tal` finds a cell, a `%con` finds two values, a `%mov`
+finds its register in the file (`%imm` never crashes).  On raw `+comp`
+output a `%hed` or `%tal` of a register not known to be a cell comes after
+the `%cel` op that `+comp` emits as its own op, which booms on an atom, so
+on every path that reaches the `%hed` the register holds a cell. -/
+def LocalOK (lib : Lib) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (vals : List Noun)
+    (t : Trace) : Prop :=
+  ∀ es y p rest, Path.FromEntry (lib := lib) (O := O) (c := c) (gul := gul) st vals t es y →
+    y.params = [] → y.b.par = [] → y.b.body = p :: rest → (safeAssign p).isSome →
+    (execPole lib O gul y.st p y.regs y.t).isSome
+
 end
 
 section
 variable {σ : Type}
 
-/-- What `Keeps` assumes of an entry and keeps: `ReadsOK` and `ArgsOK`. -/
+/-- What `Keeps` assumes of an entry and keeps: `ReadsOK`, `ArgsOK` and
+`LocalOK`. -/
 def EntryOK (lib : Lib) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (vals : List Noun)
     (t : Trace) : Prop :=
-  ReadsOK lib O c gul st vals t ∧ ArgsOK lib O c gul st vals t
+  ReadsOK lib O c gul st vals t ∧ ArgsOK lib O c gul st vals t ∧ LocalOK lib O c gul st vals t
 
 end
 
@@ -222,15 +248,15 @@ def KeepsR (c c' : Straight Map) : Prop :=
     ReadsOK lib O c gul st vals t →
       execEntry lib O st c' vals t gul = execEntry lib O st c vals t gul ∧ ReadsOK lib O c' gul st vals t
 
-/-- `KeepsR` with `ArgsOK` kept gives `Keeps`. -/
+/-- `KeepsR` with `ArgsOK` and `LocalOK` kept gives `Keeps`. -/
 theorem keeps_of_R {c c' : Straight Map} (h : KeepsR c c')
     (ha : ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (gul : Noun) (st : σ) (vals : List Noun) (t : Trace),
-      ReadsOK lib O c gul st vals t → ArgsOK lib O c gul st vals t → ArgsOK lib O c' gul st vals t) :
+      EntryOK lib O c gul st vals t → ArgsOK lib O c' gul st vals t ∧ LocalOK lib O c' gul st vals t) :
     Keeps c c' := by
   obtain ⟨n, a, p, s⟩ := h
-  refine ⟨n, a, p, fun lib σ O gul st vals t ⟨hr, har⟩ => ?_⟩
-  obtain ⟨e, r⟩ := s lib σ O gul st vals t hr
-  exact ⟨e, r, ha lib σ O gul st vals t hr har⟩
+  refine ⟨n, a, p, fun lib σ O gul st vals t hE => ?_⟩
+  obtain ⟨e, r⟩ := s lib σ O gul st vals t hE.1
+  exact ⟨e, r, ha lib σ O gul st vals t hE⟩
 
 theorem keeps_refl (c : Straight Map) : Keeps c c :=
   ⟨rfl, rfl, rfl, fun _ _ _ _ _ _ _ h => ⟨rfl, h⟩⟩

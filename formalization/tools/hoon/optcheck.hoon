@@ -109,6 +109,12 @@
         [0 [7 [0 2] [7 [4 [1 1]] [1 5]]]]
         [[1 0 0 5] [7 [6 [0 2] [1 0] [6 [0 6] [0 7] [0 1]]] [6 [0 2] [0 3] [0 1]]]]
         [[0 5] [7 [4 [0 3]] [6 [5 [0 1] [1 6]] [0 1] [1 5]]]]
+        ::  trace hints (%spot, %mean) around formulas that cannot crash;
+        ::  on these +trim-trace-hints dropped nothing (2026-11-24)
+        [[1 2] [11 [1.953.460.339 1 0] 0 2]]
+        [[1 2] [11 [1.851.876.717 1 0] 0 3]]
+        [0 [11 [1.953.460.339 1 0] 1 5]]
+        [[1 2] [11 [1.953.460.339 1 0] 11 [1.851.876.717 1 7] [0 3] [0 2]]]
     ==
   =/  hon=(list *)
     =>  ..ska-poke
@@ -265,6 +271,42 @@
   ?.  &(?=(%hop -.fin.x) ?=(%hop -.fin.y) ?=(^ args.t.fin.x))  tr
   ?:  =(there.t.fin.x there.t.fin.y)  tr
   [[%sub 0 & &] tr]
+::  +trim-trace-hints (lemmas/Ska/OptTrim.lean, trimRun): the same labels,
+::  parameters and ends, and each body the body before with only trace hint
+::  ops dropped (traceKey: %hdp/%hde of %spot or %mean, %hmp %hme %hcp %hce)
+=/  hint-key
+  |=  op=pole
+  ^-  ?
+  ?+  op  |
+    [%hdp ?(%spot %mean) *]  &
+    [%hde ?(%spot %mean) *]  &
+    [%hmp *]  &
+    [%hme *]  &
+    [%hcp *]  &
+    [%hce *]  &
+  ==
+=/  hint-sub
+  |=  [x=(list pole) y=(list pole)]
+  ^-  ?
+  |-
+  ?~  x  =(~ y)
+  ?:  &(?=(^ y) =(i.x i.y))  $(x t.x, y t.y)
+  ?.  (hint-key i.x)  |
+  $(x t.x)
+=/  trim-shape
+  |=  [a=(map @uwoo blob) b=(map @uwoo blob)]
+  ^-  ?
+  ?.  =(~(key by a) ~(key by b))  |
+  %+  levy  ~(tap by a)
+  |=  [o=@uwoo x=blob]
+  =/  y  (~(got by b) o)
+  &(=(par.x par.y) =(fin.x fin.y) (hint-sub body.x body.y))
+=/  trim-dropped
+  |=  [a=(map @uwoo blob) b=(map @uwoo blob)]
+  ^-  @ud
+  %+  roll  ~(tap by a)
+  |=  [[o=@uwoo x=blob] n=@ud]
+  (add n (sub (lent body.x) (lent body:(~(got by b) o))))
 =/  note
   |=  [tr=(list [@tas @ud ? ?]) tag=@tas r=@ud bl=(map @uwoo blob-out)]
   ^+  tr
@@ -293,7 +335,11 @@
   =.  tr  (note tr %alias r blocks.s)
   =.  topo  (skim topo ~(has by blocks.s))
   =.  rev  (rev-cfg blocks.s (sy topo))
+  =/  pre-trim  blocks.s
   =.  blocks.s  (trim-trace-hints blocks.s topo rev)
+  ~?  !(trim-shape pre-trim blocks.s)  [%trim-shape-fail nam.i.cases kind.i.cases r]
+  ~?  (gth (trim-dropped pre-trim blocks.s) 0)
+    [%trim-drop nam.i.cases kind.i.cases r (trim-dropped pre-trim blocks.s)]
   =.  tr  (note tr %trim r blocks.s)
   =.  blocks.s  (remove-dead-code blocks.s (flop topo))
   =.  tr  (note tr %dead r blocks.s)

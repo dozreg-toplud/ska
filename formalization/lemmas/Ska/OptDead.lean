@@ -3,15 +3,16 @@ import lemmas.Ska.OptTopo
 /-!
 # `+remove-dead-code`
 
-`safeAssign`: `+get-reg-safe-assignment`, the register an op of `%imm`,
-`%mov`, `%con`, `%hed`, `%tal` writes.  `deadBody`: the inner `|-` over the
-reversed body, with the set `saw` (a list here; only membership is used).
-`removeDeadCode`: the walk over `rev-topo`, one `saw` for the whole walk,
-whose order matters (`+optimize-once` passes `(flop topo)`).
+`safeAssign` (`+get-reg-safe-assignment`, in `Opt.lean`) names the register
+an op of `%imm`, `%mov`, `%con`, `%hed`, `%tal` writes.  `deadBody`: the inner
+`|-` over the reversed body, with the set `saw` (a list here; only membership
+is used).  `removeDeadCode`: the walk over `rev-topo`, one `saw` for the whole
+walk, whose order matters (`+optimize-once` passes `(flop topo)`).
 
-The preservation statement (`DeadKeeps`, not proved yet) needs `TopoOK`
-(every successor of a block is walked before it, so `saw` holds every
-register read later on any path) and `LocalOK`: no dropped op crashes on an
+The preservation statement (`DeadKeeps`, proved as `deadKeeps` in
+`OptDeadSim.lean`) needs `TopoOK` (every successor of a block is walked
+before it, so `saw` holds every register read later on any path) and
+`LocalOK` of the entry (part of `EntryOK`): no dropped op crashes on an
 execution.  The ops `+get-reg-safe-assignment` names can crash in the
 interpreter: `%hed`/`%tal` of an atom, `%con` of a missing or poisoned
 register, `%mov` of a missing one.  For example the block
@@ -19,7 +20,7 @@ register, `%mov` of a missing one.  For example the block
 when that argument is an atom, where the interpreter crashes before.  So
 the pass is sound only on code whose ops of these kinds never crash, which
 `+comp` must guarantee (it emits `%hed` and `%tal` where the subject is known
-to be a cell, or after a `%cel`).
+to be a cell, or after a `%cel`, its own op, which booms on an atom).
 -/
 
 namespace Formalization
@@ -29,15 +30,6 @@ namespace Opt
 open Nock
 
 variable {Map : Type → Type} [HoonMap Map]
-
-/-- `+get-reg-safe-assignment`. -/
-def safeAssign : Pole → Option Nat
-  | Pole.imm _ d => some d
-  | Pole.mov _ d => some d
-  | Pole.con _ _ d => some d
-  | Pole.hed _ d => some d
-  | Pole.tal _ d => some d
-  | _ => none
 
 /-- The inner loop over the reversed body. -/
 def deadBody : List Pole → List Pole → List Nat → List Pole × List Nat
@@ -55,27 +47,11 @@ def removeDeadCode (bl : Map Blob) (revTopo : List Nat) : Option (Map Blob) :=
         (HoonMap.put acc.1 o { b with body := r.1 }, r.2))
     (HoonMap.empty, [])).map Prod.fst
 
-section
-variable {σ : Type}
-
-/-- No op that `+get-reg-safe-assignment` names crashes on a path from the
-entry. -/
-def LocalOK (lib : Lib) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (vals : List Noun)
-    (t : Trace) : Prop :=
-  ∀ es y p rest, Path.FromEntry (lib := lib) (O := O) (c := c) (gul := gul) st vals t es y →
-    y.params = [] → y.b.par = [] → y.b.body = p :: rest → (safeAssign p).isSome →
-    (execPole lib O gul y.st p y.regs y.t).isSome
-
-end
-
-/-- **The preservation statement of `+remove-dead-code`** (open): `Keeps`
-on the entries where `LocalOK` holds as well. -/
+/-- **The preservation statement of `+remove-dead-code`** (proved:
+`deadKeeps` in `OptDeadSim.lean`): `Keeps`, on a `topo` with `TopoOK`. -/
 def DeadKeeps : Prop :=
   ∀ (c : Straight Map) topo bl', TopoOK c.blocks topo →
-    removeDeadCode c.blocks topo.reverse = some bl' →
-    ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (gul : Noun) (st : σ) (vals : List Noun) (t : Trace),
-      ReadsOK lib O c gul st vals t → LocalOK lib O c gul st vals t →
-        execEntry lib O st (withBlocks c bl') vals t gul = execEntry lib O st c vals t gul
+    removeDeadCode c.blocks topo.reverse = some bl' → Keeps c (withBlocks c bl')
 
 end Opt
 end SkaModel

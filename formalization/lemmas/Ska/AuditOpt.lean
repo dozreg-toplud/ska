@@ -4,6 +4,10 @@ import lemmas.Ska.OptDriverFields
 import lemmas.Ska.OptMiddleSim
 import lemmas.Ska.OptArgs
 import lemmas.Ska.OptDriverTopo
+import lemmas.Ska.OptDeadSim
+import lemmas.Ska.OptSwitch
+import lemmas.Ska.OptTrim
+import lemmas.Ska.OptAlias
 
 /-! Axioms of the theorems about `+optimize`. -/
 
@@ -69,3 +73,16 @@ open Formalization.SkaModel.Opt
 #print axioms mid_downPar
 #print axioms mid_passOK_of
 #print axioms rewriteHop_safe
+#print axioms rub_localOK
+#print axioms hops_localOK_of
+#print axioms middle_localOK
+#print axioms deadBody_rev
+#print axioms dead_walk
+#print axioms safe_frame
+#print axioms dead_fwd_step
+#print axioms dead_bwd_step
+#print axioms dead_norm
+#print axioms dead_endOf
+#print axioms dead_keeps
+#print axioms deadKeeps
+#print axioms switch_field

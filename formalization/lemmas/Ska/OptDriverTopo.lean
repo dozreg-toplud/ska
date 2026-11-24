@@ -2,6 +2,7 @@ import lemmas.Ska.OptTopoOK
 import lemmas.Ska.OptDriverFields
 import lemmas.Ska.OptDead
 import lemmas.Ska.OptDownPar
+import lemmas.Ska.OptDeadSim
 
 /-!
 # `topo` and `rev` through the structural passes
@@ -23,14 +24,16 @@ it was (`mid_same`).
 
 `+remove-dead-code` keeps the parameters and the end of every block it
 keeps, and keeps every block of `rev-topo` (`dead_shape`), so it keeps
-`DInv` and `TopoInv` (`dead_inv`); its semantic half is `DeadKeeps`.
+`DInv` and `TopoInv` (`dead_inv`); its semantic half is `dead_keeps`
+(`OptDeadSim.lean`).
 
 With `DInv` (`BlkInv`, `Acyclic` and `DownPar` of `OptDownPar.lean`) as the
 block invariant and `TopoInv` as the invariant of `topo` and `rev`, the
 fields `topo`, `hops`, `rub` and `middle` of `DriverHyp` hold (`PassOK` of
 the result of `+remove-empty-middle` comes from `DownPar` of its input,
-`mid_passOK_of`), and `dead` given its semantic half (`DriverRest`: what is
-still assumed; `driverHyp_of`, `optimize_keeps_rest`).
+`mid_passOK_of`), and `dead` (`dead_keeps`, `dead_inv`).  `DriverRest` is
+what is still assumed, the three passes that are parameters of the driver
+(`driverHyp_of`, `optimize_keeps_rest`).
 -/
 
 set_option linter.unusedSectionVars false
@@ -459,12 +462,10 @@ theorem middle_fieldD {fuel : Nat} {bl : Map Blob} {topo : List Nat} {rev : Map 
   subst hc
   exact mid_topoInv h hi
 
-/-- **What the driver still assumes**, at `DInv` and `TopoInv`: the
-semantic half of `+remove-dead-code`, and the three passes that are
-parameters. -/
+/-- **What the driver still assumes**, at `DInv` and `TopoInv`: the three
+passes that are parameters (`+alias`, `+trim-trace-hints`,
+`+switch-chains`). -/
 structure DriverRest (fuel : Nat) (P : Passes Map) : Prop where
-  dead : ∀ (bl : Map Blob) topo rev bl', DInv bl → TopoInv bl topo rev → removeDeadCode bl topo.reverse = some bl' →
-    KeepsB bl bl'
   alias : ∀ n (bl : Map Blob) topo rev f bl', DInv bl → TopoInv bl topo rev → P.alias n bl rev topo = some (f, bl') →
     KeepsB bl bl' ∧ DInv bl' ∧
       TopoInv bl' (topo.filter fun o => (HoonMap.get bl' o).isSome)
@@ -480,7 +481,8 @@ theorem driverHyp_of {fuel : Nat} {P : Passes Map} (H : DriverRest fuel P) : Dri
   middle := fun _ _ _ _ _ hb h => middle_fieldD hb h
   alias := H.alias
   trim := H.trim
-  dead := fun bl topo rev bl' hb hi h => ⟨H.dead bl topo rev bl' hb hi h, dead_inv hb hi h⟩
+  dead := fun bl topo rev bl' hb hi h =>
+    ⟨fun c hc => by subst hc; exact dead_keeps c hi.1 h, dead_inv hb hi h⟩
   switch := H.switch
 
 /-- **`+optimize` keeps the code** on blocks with `DInv` (distinct

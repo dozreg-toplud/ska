@@ -70,7 +70,12 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     `lemmas/Ska/OptDownPar.lean` (no argument register of a jump is a parameter of a
                     block reachable from its target) on the raw code, after every pass of every round
                     and on the output, on the same 135 cases: no failure, printed as `%downpar-raw`,
-                    `%downpar-fail`, `%downpar-out` when it fails (2026-11-24)
+                    `%downpar-fail`, `%downpar-out` when it fails (2026-11-24).  The shape of `trimRun` (`lemmas/Ska/OptTrim.lean`) at every call of `+trim-trace-hints`:
+                    the same labels, parameters and ends, each body the one before with only trace hint ops
+                    dropped (`%trim-shape-fail`), over 143 cases (the 135 and 8 with `%spot`/`%mean` hints
+                    around formulas that cannot crash, subject known and unknown): no failure
+                    (2026-11-24), but the pass dropped no op on any of them (`%trim-drop` never printed), so
+                    which hints it drops is not yet tested.
 * `deadcrash.hoon`  nine formulas whose crashing operand has a dead product (`[7 [0 2] [1 5]]`
                     on an atom and the like): `+eval-top` agrees with `+mock` on all
                     (2026-11-24), so `+remove-dead-code` drops no check there
