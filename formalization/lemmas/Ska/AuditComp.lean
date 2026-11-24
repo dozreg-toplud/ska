@@ -78,6 +78,8 @@ import lemmas.Ska.CompIndirectOut
 import lemmas.Ska.CompConsCallTop
 import lemmas.Ska.CompIndirectOutB
 import lemmas.Ska.CompConsCallB
+import lemmas.Ska.CompConsCallWrap
+import lemmas.Ska.CompHypOfCons
 import lemmas.Ska.CompConsCallTopB
 
 /-!
@@ -753,3 +755,11 @@ open Formalization.SkaModel.Comp
 #print axioms consCHTop_contract
 #print axioms consCHTop_contractA
 #print axioms consCH_exampleC
+#print axioms wrapRel_six
+#print axioms wrapRel_memo
+#print axioms contract_wrap
+#print axioms consCH_contractP
+#print axioms consCH_contract_of_annot
+#print axioms Formalization.SkaModel.PokeM.rawMono_consU
+#print axioms Formalization.SkaModel.PokeM.rawMono_fragUCC
+#print axioms Formalization.SkaModel.PokeM.compHyp_of_fragCC
