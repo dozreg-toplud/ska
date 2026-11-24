@@ -150,6 +150,66 @@
   =/  y  body:(~(got by b) o)
   %+  skip  body.x
   |=(op=pole !=(~ (find ~[op] y)))
+::  TrimBr of lemmas/Ska/OptTrim.lean (brOp, brBody): a stack of open frames
+::  at the start of every block reached from 0, empty at 0, that the body pops
+::  only on top with the key it pushed (a frame without key for a %hde of
+::  %hunk %hand %lose), never pushes a key that is open, and hands alike to
+::  every jump target
+::
+=/  br-key
+  |=  op=pole
+  ^-  (unit [o=? k=*])
+  ?+  op  ~
+    [%hdp ?(%spot %mean) *]  `[& %clue n.op p.op]
+    [%hde ?(%spot %mean) *]  `[| %clue n.op p.op]
+    [%hmp *]                 `[& %defer a.op v.op f.op]
+    [%hme *]                 `[| %defer a.op v.op f.op]
+    [%hcp *]                 `[& %konst n.op f.op]
+    [%hce *]                 `[| %konst n.op f.op]
+  ==
+=/  br-op
+  |=  [g=(list (unit *)) op=pole]
+  ^-  (unit (list (unit *)))
+  =/  h  (br-key op)
+  ?^  h
+    ?:  o.u.h
+      ?^  (find ~[`k.u.h] g)  ~
+      `[`k.u.h g]
+    ?.  ?=([[~ *] *] g)  ~
+    ?.  =(u.i.g k.u.h)  ~
+    `t.g
+  ?+  op  `g
+    [%hdp ?(%hunk %hand %lose) *]  `[~ g]
+    [%hde ?(%hunk %hand %lose) *]
+      ?.  ?=([~ *] g)  ~
+      `t.g
+  ==
+=/  br-body
+  |=  [g=(list (unit *)) l=(list pole)]
+  ^-  (unit (list (unit *)))
+  ?~  l  `g
+  =/  n  (br-op g i.l)
+  ?~  n  ~
+  $(g u.n, l t.l)
+=/  brok
+  |=  bl=(map @uwoo blob)
+  ^-  ?
+  =/  topo  (bb-topo bl)
+  =/  k=(map @uwoo (list (unit *)))  (my [`@uwoo`0 ~]~)
+  |-  ^-  ?
+  ?~  topo  &
+  =/  b  (~(got by bl) i.topo)
+  =/  g0  (~(get by k) i.topo)
+  ?~  g0  |
+  =/  g  (br-body u.g0 body.b)
+  ?~  g  |
+  =/  js  (get-jmps fin.b)
+  |-  ^-  ?
+  ?~  js  ^$(topo t.topo)
+  =/  e  (~(get by k) there.i.js)
+  ?~  e  $(js t.js, k (~(put by k) there.i.js u.g))
+  ?.  =(u.e u.g)  |
+  $(js t.js)
 ::  one round of +optimize-once, checking every call of +trim-trace-hints
 ::
 =/  once
@@ -170,6 +230,7 @@
   =.  topo  (skim topo ~(has by blocks.s))
   =.  rev  (rev-cfg blocks.s (sy topo))
   =/  pre  blocks.s
+  ~?  !(brok pre)  %br-trim-fail-next
   =.  blocks.s  (trim-trace-hints blocks.s topo rev)
   =/  mod  (m-trim pre topo rev)
   =?  mis  !=(mod blocks.s)  +(mis)
@@ -194,6 +255,7 @@
   =^  scc=(set bell)  sccs.cache.state
     (scc-of func calls.long-ska.state sccs.cache.state)
   =^  raw=straight  cache.state  (compiled-mono func scc)
+  ~?  !(brok blocks.raw)  [%br-raw-fail fol.i.cases]
   =/  res=[s=straight nd=(list pole) mis=@ud]
     =/  s=straight  raw
     =|  nd=(list pole)

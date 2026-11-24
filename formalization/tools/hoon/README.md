@@ -75,7 +75,19 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     dropped (`%trim-shape-fail`), over 143 cases (the 135 and 8 with `%spot`/`%mean` hints
                     around formulas that cannot crash, subject known and unknown): no failure
                     (2026-11-24), but the pass dropped no op on any of them (`%trim-drop` never printed), so
-                    which hints it drops is not yet tested.
+                    which hints it drops is not yet tested.  `TrimBr` of `lemmas/Ska/OptTrim.lean` on the raw code
+                    and at every call of `+trim-trace-hints`, on the 143 cases: no failure (`br=0`, 202 rounds, 2026-11-24).
+* `trimcheck.hoon`  51 formulas where `+trim-trace-hints` drops hints (constants, conses, known-cell slots, nested
+                    hints, hints in branches and across joins, `%lose`/`%hunk`/`%hand`, constant and deferred `%mean`),
+                    subject unknown and known (7 subjects): at every call the pass against the model of
+                    `lemmas/Ska/OptTrim.lean` written again with lists, `TrimBr` on the raw code and at the input
+                    of the pass, and 714 runs of the optimized code (`+eval-blob` subject unknown, `+eval-top`
+                    subject known, both through `+eval-mook`) against `+mook` of `+mink`: 408 compiles, 168 with
+                    drops, 416 ops dropped, model equal to the pass everywhere; 4 runs differ, all `%same-clue-subj`,
+                    whose trim input breaks `TrimBr` (2026-11-24)
+* `trimbug.hoon`    the witness: `[11 [%spot 0 1] [11 [%spot 0 1] 1 5] 0 0]` on `0`, `+mock` `[%2 ~[leaf+"mook.spot"]]`,
+                    `+eval-top` `[%2 ~]`; the same with `%mean` twice, with an axis of a known cell, with an
+                    increment; agreement when the hints differ in tag or the clue is a constant (2026-11-24)
 * `deadcrash.hoon`  nine formulas whose crashing operand has a dead product (`[7 [0 2] [1 5]]`
                     on an atom and the like): `+eval-top` agrees with `+mock` on all
                     (2026-11-24), so `+remove-dead-code` drops no check there
