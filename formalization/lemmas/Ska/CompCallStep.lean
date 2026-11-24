@@ -24,6 +24,12 @@ in the registers of its need.
   or a block, passed up unchanged: `+mink` of `[2 b c]` returns the callee's
   tone as it is).
 * `tailStep_fwd`: **the tail call under `%done`** meets `ReturnsC`.
+* `GoalSemCM`: `GoalSemC` with `+mink`'s trace for the crash cases (see its
+  doc: `GoalSemC`'s crash reference is the interpreter's own trace, which
+  `ToneRel` does not relate to itself when it holds a `%meaf` frame).
+* `goalSemC_of_goalSem`: **pure parts keep the oracle's state**: the
+  `GoalSem` that the fragment's relations give at the value `v` is
+  `GoalSemCM` at `toneOf tm v`, at the same state.
 
 The fuel.  `OracleFwd lib Inv ν O n` asks for `+mink`'s fuel on the
 callee's formula, below `n`.  `SemC` of `CompCall.lean` couples that bound
@@ -129,6 +135,79 @@ theorem tailStep_fwd (hS : OracleSteps Inv ν O) (hF : OracleFwd lib Inv ν O n)
 
 end
 
+/-! ## The goal with `+mink`'s trace -/
+
+section
+variable {S : Type} [HoonSet S] {σ : Type}
+
+/-- **`GoalSemC` with `+mink`'s trace**: as `GoalSemC`, but a product that
+does not fit the goal's need, or a test that is no loobean, is a crash that
+stands for `+mink`'s crash with its trace `tm`.  `GoalSemC` compares it with
+`Tone.two t` of the interpreter's own trace, and `ToneRel` of that tone with
+itself needs `FrameRel` of each frame with itself, which fails for a
+`%meaf` frame (`FrameRel.meaf` relates it to a `%mean` frame only), so
+`GoalSemC` is not what a crash inside a hinted call can meet. -/
+def GoalSemCM (lib : Lib) (O : Oracle σ) (c : Straight Map) (gul : Noun) (Inv : σ → Prop)
+    (ν : σ → Needs) (K : Nat → Prop) (st : σ) (regs : Map (Option Noun)) (t tm : Trace) (je : Jmp) :
+    CGoal S → Tone → Prop
+  | CGoal.done, r => ReturnsC lib O c gul Inv ν st regs t je r
+  | CGoal.next laz th, Tone.zero p =>
+      (FitsS laz p → GoesC lib O c gul Inv ν K st regs t je th (fun regs' => HoldsN laz.ned regs' p)) ∧
+      (¬ FitsS laz p → ReturnsC lib O c gul Inv ν st regs t je (Tone.two tm))
+  | CGoal.pick z o, Tone.zero p =>
+      (p = A 0 → GoesC lib O c gul Inv ν K st regs t je z (fun _ => True)) ∧
+      (p = A 1 → GoesC lib O c gul Inv ν K st regs t je o (fun _ => True)) ∧
+      (p ≠ A 0 → p ≠ A 1 → ReturnsC lib O c gul Inv ν st regs t je (Tone.two tm))
+  | _, r => ReturnsC lib O c gul Inv ν st regs t je r
+
+end
+
+/-! ## Pure parts keep the oracle's state -/
+
+section
+variable {S : Type} [HoonSet S] {lib : Lib} {σ : Type} {Inv : σ → Prop} {ν : σ → Needs} {O : Oracle σ}
+  {c : Straight Map} {gul : Noun}
+
+theorem toneRel_toneOf {N : Needs} {ti tm : Trace} (htr : Forall2 (FrameRel lib N) ti tm) :
+    ∀ v : Option Noun, ToneRel lib N (toneOf ti v) (toneOf tm v)
+  | some p => ToneRel.zero p
+  | none => ToneRel.two htr
+
+/-- **The relations of pure parts lift to `GoalSemCM`**: `GoalSem` at the
+value `v` (what the fragment's relations give, the oracle untouched) is
+`GoalSemCM` at `+mink`'s tone `toneOf tm v`, at the same state. -/
+theorem goalSemC_of_goalSem {K : Nat → Prop} {st : σ} (hI : Inv st) {regs : Map (Option Noun)}
+    {ti tm : Trace} (htr : Forall2 (FrameRel lib (ν st)) ti tm) {je : Jmp} :
+    ∀ (goal : CGoal S) (v : Option Noun), GoalSem lib O c gul st K regs ti je goal v →
+      GoalSemCM lib O c gul Inv ν K st regs ti tm je goal (toneOf tm v)
+  | CGoal.done, v, h => ⟨toneOf ti v, st, hI, Needs.le_refl _, h, toneRel_toneOf htr v⟩
+  | CGoal.next laz th, some p, h =>
+      ⟨fun hf => by
+        obtain ⟨regs', hh, hk, he⟩ := h.1 hf
+        exact ⟨st, regs', hI, Needs.le_refl _, hh, hk, he⟩,
+       fun hf => ⟨Tone.two ti, st, hI, Needs.le_refl _, h.2 hf, ToneRel.two htr⟩⟩
+  | CGoal.next laz th, none, h => ⟨Tone.two ti, st, hI, Needs.le_refl _, h, ToneRel.two htr⟩
+  | CGoal.pick z o, none, h => ⟨Tone.two ti, st, hI, Needs.le_refl _, h, ToneRel.two htr⟩
+  | CGoal.pick z o, some p, h => by
+      refine ⟨fun e => ?_, fun e => ?_, fun e0 e1 => ?_⟩
+      · subst e
+        obtain ⟨regs', hk, he⟩ := h
+        exact ⟨st, regs', hI, Needs.le_refl _, trivial, hk, he⟩
+      · subst e
+        obtain ⟨regs', hk, he⟩ := h
+        exact ⟨st, regs', hI, Needs.le_refl _, trivial, hk, he⟩
+      · have h2 : goJ lib O c gul st regs ti je = some (Tone.two ti, st) := by
+          cases p with
+          | cell _ _ => exact h
+          | atom a =>
+            match a, e0, e1, h with
+            | 0, e0, _, _ => exact absurd rfl e0
+            | 1, _, e1, _ => exact absurd rfl e1
+            | _ + 2, _, _, h => exact h
+        exact ⟨Tone.two ti, st, hI, Needs.le_refl _, h2, ToneRel.two htr⟩
+
+end
+
 /-! ## The forward relation indexed by `+mink`'s fuel -/
 
 section
@@ -150,7 +229,7 @@ def SemCM (lib : Lib) (env : CallEnv) (N : Needs) (code : Bell → Option Nomm) 
     (∀ st, AgreeU lib O c gul st ti cf ned g0 g1 nex.laz s0 s) → (∀ x, NMem ned x → g1.re ≤ x) →
     ∀ st, Inv st → Forall2 (FrameRel lib (ν st)) ti tm →
     ∀ regs, HoldsS nex.laz.sure regs s → HoldsN ned regs s0 →
-    GoalSemC lib O c gul Inv ν (fun x => x < g0.re ∨ NMem ned x) st regs ti nex.th goal r
+    GoalSemCM lib O c gul Inv ν (fun x => x < g0.re ∨ NMem ned x) st regs ti tm nex.th goal r
 
 end
 

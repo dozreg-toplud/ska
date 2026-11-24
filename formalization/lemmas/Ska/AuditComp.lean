@@ -630,3 +630,5 @@ open Formalization.SkaModel.Comp
 #print axioms oracle_call_alloc
 #print axioms callStep_fwd
 #print axioms tailStep_fwd
+#print axioms toneRel_toneOf
+#print axioms goalSemC_of_goalSem
