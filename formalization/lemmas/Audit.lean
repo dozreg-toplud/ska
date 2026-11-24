@@ -120,6 +120,14 @@ import lemmas.Compiler.CompNoNN
 import lemmas.Compiler.CompRunCall
 import lemmas.Compiler.CompSccCall
 import lemmas.Compiler.CompSccCallGate
+import lemmas.Compiler.CompPruneLink
+import lemmas.Compiler.CompCopyGen
+import lemmas.Compiler.CompSplitGen
+import lemmas.Compiler.CompIntoGen
+import lemmas.Compiler.CompFromGen
+import lemmas.Compiler.CompClaGen
+import lemmas.Compiler.CompRunInvL
+import lemmas.Compiler.CompCopyAll
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -984,3 +992,48 @@ open Formalization
 #print axioms Compiler.csi_gate_scc_one_f_c
 #print axioms Compiler.cu_gate_scc_one_f_c
 #print axioms Compiler.noBakeOneC_no
+#print axioms Compiler.comp_walk_lazy_all
+#print axioms Compiler.le_gate
+#print axioms Compiler.comp_lazy_prune
+#print axioms Compiler.comp_copy_lazy_nm
+#print axioms Compiler.comp_copy_nm
+#print axioms Compiler.spsp_gate
+#print axioms Compiler.csp_all
+#print axioms Compiler.comp_split_all
+#print axioms Compiler.cit_all
+#print axioms Compiler.comp_into_all
+#print axioms Compiler.turn_gate_mapT
+#print axioms Compiler.cfr_all
+#print axioms Compiler.comp_mede_all
+#print axioms Compiler.kern_gate_all
+#print axioms Compiler.comp_kern_all
+#print axioms Compiler.comp_kerf_all
+#print axioms Compiler.levy_gate_map
+#print axioms Compiler.ne_all
+#print axioms Compiler.comp_collapse_lazy_atom_all
+#print axioms Compiler.walk_mdP
+#print axioms Compiler.split_lnb
+#print axioms Compiler.into_lnb
+#print axioms Compiler.from_lnb
+#print axioms Compiler.past_lnb
+#print axioms Compiler.crInvL_of_crInv
+#print axioms Compiler.crInvL_lok
+#print axioms Compiler.crInvL_mdP
+#print axioms Compiler.crInvL_split
+#print axioms Compiler.crInvL_into
+#print axioms Compiler.crInvL_from
+#print axioms Compiler.malt_gate
+#print axioms Compiler.spin_gate_T
+#print axioms Compiler.spin_gate_TI
+#print axioms Compiler.malt_index
+#print axioms Compiler.seen_set
+#print axioms Compiler.copyLazyL_le
+#print axioms Compiler.cl_fgate
+#print axioms Compiler.cl_bgate
+#print axioms Compiler.cl_fpart
+#print axioms Compiler.cl_bpart
+#print axioms Compiler.copy_all
+#print axioms Compiler.comp_copy_lazy_all
+#print axioms Compiler.comp_copy_all
+#print axioms Compiler.copy_lnb
+#print axioms Compiler.crInvL_copy
