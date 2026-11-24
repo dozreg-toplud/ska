@@ -39,3 +39,8 @@ open Formalization.SkaModel.Opt
 #print axioms middleKeeps
 #print axioms rub_argsOK
 #print axioms hops_argsOK_of
+#print axioms keeps_of_R
+#print axioms rub_keepsR
+#print axioms hops_keepsR_of
+#print axioms middle_keeps
+#print axioms middle_field

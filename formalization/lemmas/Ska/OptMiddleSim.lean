@@ -26,9 +26,8 @@ What the pass needs, beyond the shape of its result (`mid_blocks`):
   `1` hops `[]` to block `2`, which returns argument `0v0`.  The code before
   crashes at the pass into `1` (register `0v5` is not there), the code after
   hops from `0` straight to `2` and returns.  `ArgsOK` is kept by the pass
-  (`middle_keeps_of`), but it is not part of `Keeps`, whose only hypothesis is
-  `ReadsOK`, so the field `middle` of `DriverHyp` waits for `Keeps` to be
-  widened.
+  (`middle_keeps_of`), and `Keeps` carries it (`EntryOK`), so
+  `middle_keeps` (`OptArgs.lean`) gives `Keeps` of the pass.
 
 `ReadsOK` is not needed: the registers the code after reads are equal to
 those before, not only above them.

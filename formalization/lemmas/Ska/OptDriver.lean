@@ -23,8 +23,9 @@ otherwise (or on a crash).
 gives it (`DriverHyp`, stated over a block invariant `BInv` that every pass
 keeps, meant as `ParNodup` and `PassOK`, and an invariant `TInv` of the
 blocks, `topo` and `rev`, meant as `TopoOK` with `rev` listing the
-predecessors), then `optimizeF` keeps the code on blocks with `BInv`.  `rub_keeps` discharges the semantic
-half of the field `rub`.  Termination of `+optimize` is the named hypothesis
+predecessors), then `optimizeF` keeps the code on blocks with `BInv`
+(`Keeps`: on entries with `ReadsOK` and `ArgsOK`, the same `execEntry`, and
+both kept).  The fields proved so far are in `OptDriverFields.lean`.  Termination of `+optimize` is the named hypothesis
 `OptHalts`: some fuel is enough.  A measure that would prove it: every
 structural pass that reports a change removes a block (`+remove-hops`), turns
 a two-way end into a hop (`+remove-useless-branching`) or makes a jump skip a
@@ -118,11 +119,6 @@ structure DriverHyp (fuel : Nat) (P : Passes Map) (BInv : Map Blob → Prop)
   dead : ∀ bl topo rev bl', BInv bl → TInv bl topo rev → removeDeadCode bl topo.reverse = some bl' →
     KeepsB bl bl' ∧ BInv bl' ∧ TInv bl' topo rev
   switch : ∀ bl bl', BInv bl → P.switch bl = some bl' → KeepsB bl bl'
-
-/-- The semantic half of the field `rub` holds. -/
-theorem rub_keepsB {bl bl' : Map Blob} {ch : Bool} (h : removeUselessBranching bl = some (ch, bl')) :
-    KeepsB bl bl' := by
-  intro c hc; subst hc; exact rub_keeps c h
 
 theorem KeepsB.trans {bl bl1 bl2 : Map Blob} (h1 : KeepsB bl bl1) (h2 : KeepsB bl1 bl2) : KeepsB bl bl2 :=
   fun c hc => keeps_trans (h1 c hc) (h2 (withBlocks c bl1) rfl)

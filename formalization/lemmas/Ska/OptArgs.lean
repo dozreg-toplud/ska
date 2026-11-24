@@ -1,17 +1,23 @@
 import lemmas.Ska.OptHopsSim
 import lemmas.Ska.OptBranch
+import lemmas.Ska.OptMiddleSim
 
 /-!
-# `ArgsOK` through the proved passes
+# `ArgsOK` through the proved passes, and `Keeps` of the three
 
 `+remove-empty-middle` keeps the code only on entries with `ArgsOK`
-(`OptMiddleSim.lean`), so `Keeps` must carry `ArgsOK` beside `ReadsOK` before
-the driver can use it.  The two other proved passes keep `ArgsOK` (given
-`ReadsOK`, which their backward simulations use): `+remove-useless-branching`
-because its relation has the same arguments and registers (`rub_argsOK`),
+(`OptMiddleSim.lean`), so `Keeps` carries `ArgsOK` beside `ReadsOK`
+(`EntryOK`).  The two other proved passes keep `ArgsOK` (given `ReadsOK`,
+which their backward simulations use): `+remove-useless-branching` because
+its relation has the same arguments and registers (`rub_argsOK`),
 `+remove-hops` because `HopI` has the same arguments with registers in
 `RegLe`, which are there together (`RegLe.get_none`), and `HopII` has none
 pending after (`hops_argsOK_of`).
+
+With them, `Keeps` of each proved pass: `rub_keeps` (no hypothesis),
+`hops_keeps_of` and `hops_keeps` (the hypotheses of `hops_keepsR_of`),
+`hopsKeeps` (the statement `HopsKeeps`), and `middle_keeps` (`PassOK` of the
+input and of the result, from `middle_keeps_of`).
 -/
 
 set_option linter.unusedSectionVars false
@@ -69,6 +75,41 @@ theorem hops_argsOK_of {fuel : Nat} (c : Straight Map) {rev : Map (List Nat)} {t
     cases e : HoonMap.get y'.regs k with
     | none => rw [(hR.get_none k).mp e] at hy; simp at hy
     | some _ => rfl
+
+/-- **`+remove-useless-branching` keeps the code.** -/
+theorem rub_keeps (c : Straight Map) {ch : Bool} {bl' : Map Blob}
+    (h : removeUselessBranching c.blocks = some (ch, bl')) : Keeps c (withBlocks c bl') :=
+  keeps_of_R (rub_keepsR c h) fun lib σ O gul st vals t hok ha => rub_argsOK c h lib σ O gul st vals t hok ha
+
+/-- **`+remove-hops` keeps the code**, given what the simulation needs of
+`rev` and `topo` (`HopsHyp`), `topo` without duplicates and `0` first. -/
+theorem hops_keeps_of {fuel : Nat} (c : Straight Map) {rev : Map (List Nat)} {topo : List Nat} {ch : Bool}
+    {bl' : Map Blob} (HH : HopsHyp c.blocks rev topo) (hn : topo.Nodup) (h0 : topo.head? = some 0)
+    (h : removeHops fuel c.blocks rev topo = some (ch, bl')) : Keeps c (withBlocks c bl') :=
+  keeps_of_R (hops_keepsR_of c HH hn h0 h) fun lib σ O gul st vals t hok ha =>
+    hops_argsOK_of c HH hn h0 h lib σ O gul st vals t hok ha
+
+/-- **`+remove-hops` keeps the code**, on a `topo` with `TopoOK`, its
+`+rev-cfg`, distinct parameters and jumps that pass the check of
+`+eval-pass`. -/
+theorem hops_keeps {fuel : Nat} (c : Straight Map) {topo : List Nat} {ch : Bool} {bl' : Map Blob}
+    (ht : TopoOK c.blocks topo) (hnd : ParNodup c.blocks) (hpc : PassOK c.blocks)
+    (h : removeHops fuel c.blocks (revCfg c.blocks topo) topo = some (ch, bl')) : Keeps c (withBlocks c bl') :=
+  hops_keeps_of c ⟨ht.2.2.2.1, fun _ _ _ ho hb hj => revCfg_mem ho hb hj, hnd, hpc⟩ ht.1 ht.2.1 h
+
+/-- **The preservation statement of `+remove-hops` holds.** -/
+theorem hopsKeeps (fuel : Nat) : HopsKeeps (Map := Map) fuel :=
+  fun c _ _ _ ht hnd hpc h => hops_keeps c ht hnd hpc h
+
+/-- **`+remove-empty-middle` keeps the code**, given `PassOK` of its input
+and of its result. -/
+theorem middle_keeps {fuel : Nat} (c : Straight Map) {ch : Bool} {bl' : Map Blob}
+    (h : removeEmptyMiddle fuel c.blocks = some (ch, bl')) (hpc : PassOK c.blocks) (hpc' : PassOK bl') :
+    Keeps c (withBlocks c bl') := by
+  obtain ⟨hp, hs⟩ := middle_keeps_of c h hpc hpc'
+  refine ⟨rfl, rfl, hp, fun lib σ O gul st vals t ⟨hr, ha⟩ => ?_⟩
+  obtain ⟨e, r, a⟩ := hs lib σ O gul st vals t ha
+  exact ⟨e, r hr, a⟩
 
 end Opt
 end SkaModel

@@ -11,8 +11,8 @@ of the `+rep:by`, and `removeUselessBranching` the fold over the keys in the
 order of `MapKeys.keys`.  The order does not matter: each key's new value
 depends only on the old map, and the flag is an `|` (`rubFold_get`).
 
-`rub_keeps`: the pass keeps the code (`Keeps` of `Opt.lean`), with no
-hypothesis on the CFG.  The proof is a simulation on paths (`RubRel`): the
+`rub_keepsR`: the pass keeps the code (`KeepsR` of `Opt.lean`), with no
+hypothesis on the CFG (`rub_keeps` in `OptArgs.lean` adds `ArgsOK`).  The proof is a simulation on paths (`RubRel`): the
 two runs hold the same registers, trace and state, the block of the code
 after is that of the code before with the epilogue appended and the new
 terminator, or the epilogue has run.  Forward (`rub_fwd`), each step of the
@@ -599,9 +599,9 @@ theorem rub_bwd (hbl : RubBlocks c.blocks c'.blocks) {x0 : Cfg σ Map}
 
 end Sim
 
-/-- **`+remove-useless-branching` keeps the code.** -/
-theorem rub_keeps [MapKeys Map] (c : Straight Map) {ch : Bool} {bl' : Map Blob}
-    (h : removeUselessBranching c.blocks = some (ch, bl')) : Keeps c (withBlocks c bl') := by
+/-- **`+remove-useless-branching` keeps the code** (`ReadsOK` alone). -/
+theorem rub_keepsR [MapKeys Map] (c : Straight Map) {ch : Bool} {bl' : Map Blob}
+    (h : removeUselessBranching c.blocks = some (ch, bl')) : KeepsR c (withBlocks c bl') := by
   have hbl : RubBlocks c.blocks bl' := rub_blocks h
   refine ⟨rfl, rfl, ?_, ?_⟩
   · simp only [withBlocks]
