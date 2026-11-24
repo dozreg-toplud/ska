@@ -344,6 +344,62 @@ theorem stree_go (d mis : Nat) (rs : List Nat) : ∀ (n : Nat) (cas : List SCase
       · simp [treeGo, hl, mL, goL M aL v]
 
 
+section
+variable {σ : Type}
+
+/-- **`treeGo` in the interpreter**: running the root of a tree on registers
+where `d` holds `v` runs the target block that `treeGo` names, on the
+registers with one leaf register of `rs` set. -/
+theorem treeGo_exec (lib : Lib) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ)
+    (trace : Trace) {d : Nat} {rs : List Nat} {v : Noun} :
+    ∀ (n : Nat) (b : Blob) (regs : Map (Option Noun)) (k : Nat), read d regs = some v →
+      treeGo c.blocks d rs v n b = some k →
+      ∃ r ∈ rs, ∃ w, execBlob lib O c gul st regs trace b [] =
+        (HoonMap.get c.blocks k).bind fun b' => execBlob lib O c gul st (store r w regs) trace b' []
+  | 0, b, regs, k, _, h => by simp [treeGo] at h
+  | n + 1, b, regs, k, hv, h => by
+    rw [treeGo.eq_def] at h
+    split at h
+    · simp at h
+    · rename_i n' c0 d' l r heq
+      obtain rfl : n = n' := Nat.succ.inj heq
+      by_cases hd' : d' = d
+      · subst hd'
+        simp only [if_true] at h
+        cases hg : HoonMap.get c.blocks (if ltOf c0 v then l else r) with
+        | none => simp [hg] at h
+        | some b'' =>
+        simp only [hg, Option.bind_some] at h
+        obtain ⟨r', hr', w, e⟩ := treeGo_exec lib O c gul st trace n b'' regs k hv h
+        refine ⟨r', hr', w, ?_⟩
+        rw [execBlob]
+        simp only [ne_eq, not_true_eq_false, or_self, if_false, hv, Option.bind_eq_bind,
+          Option.bind_some]
+        cases v with
+        | cell _ _ => simp only [ltOf, Bool.false_eq_true, if_false] at hg; simp [hg, e]
+        | atom a =>
+          by_cases ha : a < c0
+          · simp only [ltOf, ha, decide_true, if_true] at hg; simp [ha, hg, e]
+          · simp only [ltOf, ha, decide_false, Bool.false_eq_true, if_false] at hg; simp [ha, hg, e]
+      · simp [hd'] at h
+    · rename_i n' c0 r0 d' r' hit mis heq
+      by_cases hc : d' = d ∧ r' = r0 ∧ r0 ≠ d ∧ r0 ∈ rs
+      · obtain ⟨rfl, rfl, hne, hin⟩ := hc
+        simp only [hne, hin, ne_eq, not_false_eq_true, and_self, if_true, Option.some.injEq] at h
+        refine ⟨r', hin, A c0, ?_⟩
+        rw [execBlob]
+        simp only [ne_eq, not_true_eq_false, or_self, if_false]
+        simp only [execPole, localPole, Option.map_some, Option.bind_eq_bind, Option.bind_some]
+        rw [execBlob]
+        simp only [ne_eq, not_true_eq_false, or_self, if_false]
+        rw [read_store_other (Ne.symm hne), hv, read_store_self]
+        subst h
+        by_cases hvc : v = A c0 <;> simp [hvc]
+      · simp [hc] at h
+    · simp at h
+
+end
+
 end Opt
 end SkaModel
 end Formalization
