@@ -197,6 +197,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompChase.lean` | `+chase` (core arm `21` of the `|^` core of `+to-straight`, trap `tsChaseBody`, `ts_chase_at`) against the model `chase`, a `partial_fixpoint`: one step under any oracle that is `nock` off the trap (`ch_stepW`), what `chase` returns the loop returns (`ch_loop_of_chase`, by `chase.partial_correctness`), what the loop returns `chase` returns (`ch_chase_of_loop`, by induction on `iterN` with the oracle `if f = tsChaseBody then iterN k s f else nock s f`), so `ch_nock`: the loop is `(chase bs br j).map Jmp.toNoun`, a cycle of bypassable hops being `none` on both sides; `+bypassable` on any branch (`ts_byp_gen`). |
 | `Compiler/CompChaseFin.lean` | `+chase-fin` (core arm `382`, `ts_cf_at`: the gate `rj`, `cfRjBody`, and the switch `cfSw`) on every terminator: one lemma per end tag (`cf_clq` .. `cf_bom_some`, `cf_lti`) and `cf_gate`, for a core meeting `CfCore` (blocks at `4094`, `layer2` at `0x1ffffffff`, `+bypassable` at `46`, `+chase` at `21`, `ren` at `30`, and the stated link `CfRjAt` of `rj`); the gate `+chase` (`ch_gate`); `%lti` falls into the `%bom` case and crashes, as `+got:by` of a cell key gives `~` (`cf_getF_cell`, `cf_chase_cell`). |
 | `Compiler/CompStraightStep.lean` | The gate `tsGBody` of the `+rep:by` of `+to-straight` on a pair is `renameStep` (`ts_step`), so `TsStepAt` holds given the stated link `TsRjAt` of the gate `rj` of `+chase-fin` in every core of the renaming branch (`ts_step_at`, with `ts_st_cf`), and `cu_finish_rj` is the end of `+compile-unary` from its entry state assuming only `TsRjAt`. |
+| `Compiler/CompLift.lean` | `+bind` (arm `5983` of `layer2`, `lf_bind_at`) and `+lift` (arm `372`, `lf_lift_at`, its sample bunt `lfLiftBunt` read from the pill): `(turn v (lift ren))` renames the units of a list of registers (`lf_turn`), so the gate `rj` of `+chase-fin` is `renJmp ren` (`lf_rj`), `TsRjAt` holds (`lf_ts_rj`) and `cu_finish_all` is the end of `+compile-unary` with no hypothesis on `+to-straight`.  The gate `ren-jmp` of `+map-regs` is `renJmp` too (`lf_mr_rj`), so `(map-regs ren)` is linked on every block (`mr_inner`, the terminator by `mrFin`: `renFin` except `%lti`, which the Nock keeps) and is `renBlob` on every block without `%lti` (`mr_inner_ren`). |
+| `Compiler/CompUnaryTrap.lean` | The trap of `+compile-unary` (`cuTrap`, axis `1473626077` of `K`, `cu_trap_at`) and its gate (`cuGB`, axis `179885`, `cu_gb_at`): `+compile-scc-in` (`cuCsi`, a hypothesis), the edit of the gate's `cache`, `+comp` (arm `5590`, `cu_comp_at`, its battery `cgBat` builds `[comp.door [cuBunt ctx]]`), the entry (`cu_trap_entry`), `+got:by` of `code` and `+run` (`cu_trap_run`), `+kerf` (`cu_trap_kerf`), `+to-straight` and the product (`cu_trap_end`).  `cu_trap`: the trap returns `[[s NM] CA]` with `s` the noun of `finishLU n`; `cu_gate`: so does the gate through `road-pure`; `cu_ref_mono` and `cu_gate_some`: the same against `finishLUC env n` for every `env`, the form of `refMono`. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`, whose `keys` are those of `rap`, the order of `+rep:by` (`treapMap_keys`). |
@@ -1120,6 +1122,51 @@ import only its theorems.  So:
     Hoon on every tag, `%lti` included: in the Hoon `%lti` falls into the
     `%bom` case under `%toss`, takes `u.o.fin` as the cell `[s z o]`, and
     `+got:by` of a cell crashes, as `chaseFin` gives `none`.
+    L, 2026-11-24 (track A, `+lift` and the trap of `+compile-unary`),
+    `Compiler/CompLift.lean`, `Compiler/CompUnaryTrap.lean`.  `+bind` and
+    `+lift` are linked on units of registers, so `TsRjAt` is proved
+    (`lf_ts_rj`) and `cu_finish_all` has no hypothesis on `+to-straight`;
+    `(map-regs ren)` is linked on every block (`mr_inner`).  The Nock of
+    `+map-regs` keeps a `%lti` terminator unchanged (it falls into the
+    last case `[11 [%toss [5 [1 %bom] [0 4]]] [0 2]]`), while `renFin`
+    renames it: `%lti` is not in the type of the input, so `mrFin` states
+    what the Nock does.  The trap of `+compile-unary` is linked from its
+    core to its product (`cu_trap`), and its gate through `road-pure`
+    (`cu_gate`): if `+compile-scc-in` returns `[NM CA]` on the trap core
+    (`hcsi`), `code` holds `V` at `func` (`getF mugF FUNC CODE = some [~
+    V]`) with the nomm `n` at its head, and `n` is pure, `%6`-free and
+    `tenOk`, the gate returns `[[s NM] CA]` with `s` the noun of `finishLU
+    n`, and crashes when `finishLU n` is `none`.  The cache it returns is
+    `CA`: `+run`, `+kerf` and `+to-straight` keep `cache.gen`.  Every face
+    the trap reads is the gate's sample, not the copy `args`, so the edit
+    of `cache` (axis `1007`) reaches the door (`+comp`'s sample is `[scc
+    long-ska jets-hot n-ary-map ~ func]`) and the state.  Against
+    `refMono` of `Ska/CompHypOf.lean` (`cu_ref_mono`): its conclusion
+    `finishLUC env nm = some s` holds for every `env` on the fragment
+    (`finishLUC_eq`, `Nomm.noCall_of_pure`), with `s` the straight whose
+    noun is the first component of the gate's product.  Left: the decoding
+    of `A.compileUnary` from the gate (the noun of `LongB` and `realOf`
+    against `getF` of `code`, the cache's noun, and injectivity of
+    `Straight.toNoun` or a decoding of the product), the return of
+    `+compile-scc-in` (`hcsi`, which `scc` and the cache part of `unary`
+    need too), and the fragment condition (`n` pure, `%6`-free, `tenOk`,
+    so `refMono` is discharged only on `inFragM` nomms of that class).
+    The n-ary final pass, mapped: `member` of `+compile-scc-in` (`K` core
+    arm `2732`; `%compile-scc-fn`), on `mode` `%done`, runs `(~(run comp
+    gen) | nomm [%done ~] ~ ~)` (door battery axis `2047`) on the nomm of
+    `+inlined` (`K` core arm `24030`), `+collapse-shape` (battery `1014`,
+    model `needOrdAllocRegs` with the shape `ord` and the check of
+    `args.then`), `+bake-need` (`K` core `384468`, not modelled),
+    `+sure-of`, then the gate `finish` (`%compile-scc-finish`):
+    `+coerce-lazy` (battery `3580`, core `5628`, sample `[ned-final o laz
+    cape]` at `2038`, `8158`, `1018`, `0x1fff0` of its subject, model
+    `coerceLazyL`), `+soft-done` (battery `54644`, core `87412`, an arm,
+    no model: the identity on an empty `soft`), `+add-ops` (core `10990`)
+    of the baked `%imm` ops (`+turn` with the gate `[[1 %imm] [0 13] [0
+    12]]`), the sample `[%next [[ned.bak ~] ~ ~] ~ o]`, then `+to-straight`
+    (core `10988`) or, when the shape was pessimized, `+coerce-soft`
+    (battery `510`, core `766`, no model) before it.  `finishLF` models
+    that pass without `+soft-done` and without the pessimized branch.
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
