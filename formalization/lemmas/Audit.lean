@@ -591,3 +591,4 @@ open Formalization
 #print axioms Compiler.comp_flatten_need
 #print axioms Compiler.cnm_seg
 #print axioms Compiler.comp_copy_need
+#print axioms Compiler.comp_copy_lazy

@@ -383,5 +383,92 @@ theorem comp_copy_need (hl : CompLib ctx) (g : Gen (TreapMap mugF)) (l r : Need)
   nock_open cnmBat
   simp [nock_exec, compCore, q]
 
+/-! ## `+copy-lazy`
+
+On fork-free lazy needs `[sure ~ ~]` the tests `=(~ fork.second)` and
+`=(~ bond.second)` hold, so the fork and bond lists stay `~` and the merge
+branches (the gates `clG0`, ..., `clG5`) are not reached.  The union of the
+looks is `+uni:in` of layer 2, which is not linked: `CsUniIs` assumes it
+computes `HoonSet.uni` of `csHoonSet`.
+-/
+
+def clG5 : Noun :=
+  (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6102) (C (A 0) (A 0x1fffffff)))) (C (A 9) (C (A 381) (C (A 10) (C (C (A 6) (C (A 0) (A 30))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 28))) (C (A 0) (A 2))))))))
+
+def clG4 : Noun :=
+  (C (A 0) (A 12))
+
+def clG2 : Noun :=
+  (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6102) (C (A 0) (A 0xfffffff)))) (C (A 9) (C (A 381) (C (A 10) (C (C (A 6) (C (A 0) (A 30))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 56))) (C (A 0) (A 2))))))))
+
+def clG1 : Noun :=
+  (C (A 0) (A 24))
+
+def clG3 : Noun :=
+  (C clG4 (C (A 0) (A 6)))
+
+def clG0 : Noun :=
+  (C clG1 (C (A 0) (A 6)))
+
+def clBat : Noun :=
+  (C (A 7) (C (C (A 0) (A 1)) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 5500) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 232)) (C (A 0) (A 236)))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 62) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 10) (C (C (A 62) (C (A 8) (C (C (A 9) (C (A 10990) (C (A 0) (A 15)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 60)) (C (A 0) (A 13)))) (C (A 0) (A 2))))))))) (C (A 0) (A 1)))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 238)))) (C (C (C (A 0) (A 234)) (C (A 0) (A 62))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 234)))) (C (C (C (A 0) (A 238)) (C (A 0) (A 62))) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 382) (C (A 0) (A 0x7fffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 0xbef7e) (C (A 0) (A 0x7fffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 494)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))) (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))))) (C (C (A 1) clG0) (C (A 0) (A 1))))))))) (C (A 0) (A 2))))))))))) (C (A 0) (A 2)))))))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 0x5f7bffb) (C (A 0) (A 0xffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 1002)) (C (C (A 0) (A 254)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (C (A 7) (C (C (A 9) (C (A 2989) (C (A 0) (A 1023)))) (C (A 9) (C (A 2) (C (A 0) (A 1)))))) (C (A 0) (A 126))) (C (C (A 1) (C (A 7) (C (C (A 10) (C (C (A 510) (C (A 0) (A 13))) (C (A 0) (A 1)))) (C (A 8) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x3ffffff)))) (C (A 9) (C (A 764) (C (A 10) (C (C (A 6) (C (A 0) (A 30))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 112))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 2)))) (C (C (C (A 0) (A 28)) (C (A 0) (A 1022))) (C (A 6) (C (C (A 5) (C (C (A 0) (A 114)) (C (A 0) (A 22)))) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 112)) (C (C (A 0) (A 113)) (C (A 0) (A 21))))) (C (A 0) (A 63)))))))) (C (A 7) (C (C (A 10) (C (C (A 2046) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 242)) (C (C (A 0) (A 243)) (C (A 0) (A 55))))) (C (A 0) (A 127)))))))) (C (A 7) (C (C (A 10) (C (C (A 4094) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (C (C (C (A 0) (A 496)) (C (A 0) (A 6))) (C (C (A 0) (A 498)) (C (A 0) (A 2)))) (C (A 0) (A 4094))))))))))))))))))) (C (A 0) (A 0))))))))))))) (C (A 0) (A 1)))))))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 254) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 767) (C (A 0) (A 0x1ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 0xbef7e) (C (A 0) (A 0x1ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 2026)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))) (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))))) (C (C (A 1) clG1) (C (A 0) (A 1))))))))) (C (A 0) (A 2))))))))))) (C (A 0) (A 2)))))))) (C (C (A 8) (C (C (A 9) (C (A 0xbef7f4) (C (A 0) (A 0x3ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 14)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 0xbef7f5f) (C (A 0) (A 0x3ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 4078)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))) (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))))) (C (C (A 1) clG2) (C (A 0) (A 1))))))))) (C (A 0) (A 2)))))))))))) (C (A 0) (A 2)))))))) (C (A 0) (A 510))))))))))))))))))))))) (C (A 7) (C (C (A 10) (C (C (A 126) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 495)))) (C (C (C (A 0) (A 491)) (C (A 0) (A 126))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 491)))) (C (C (C (A 0) (A 495)) (C (A 0) (A 126))) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 382) (C (A 0) (A 0xffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 0xbef7e) (C (A 0) (A 0xffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 1007)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0))))) (C (C (A 1) clG3) (C (A 0) (A 1))))))))) (C (A 0) (A 2))))))))))) (C (A 0) (A 2)))))))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 0x5f7bffb) (C (A 0) (A 0x1ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 2027)) (C (C (A 0) (A 510)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (C (A 7) (C (C (A 9) (C (A 2742) (C (A 0) (A 2047)))) (C (A 9) (C (A 2) (C (A 0) (A 1)))))) (C (A 0) (A 254))) (C (C (A 1) (C (A 7) (C (C (A 10) (C (C (A 1022) (C (A 0) (A 13))) (C (A 0) (A 1)))) (C (A 8) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x7ffffff)))) (C (A 9) (C (A 764) (C (A 10) (C (C (A 6) (C (A 0) (A 30))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 56))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 2)))) (C (C (C (A 0) (A 28)) (C (A 0) (A 2046))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 56)) (C (C (A 0) (A 57)) (C (A 0) (A 11))))) (C (A 0) (A 127)))))))) (C (A 7) (C (C (A 10) (C (C (A 4094) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (C (C (A 0) (A 120)) (C (A 0) (A 2))) (C (A 0) (A 4094))))))))))))))))))) (C (A 0) (A 1)))))))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 510) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 767) (C (A 0) (A 0x3ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 0xbef7e) (C (A 0) (A 0x3ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 4075)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0))))) (C (C (A 1) clG4) (C (A 0) (A 1))))))))) (C (A 0) (A 2))))))))))) (C (A 0) (A 2)))))))) (C (C (A 8) (C (C (A 9) (C (A 0xbef7f4) (C (A 0) (A 0x7ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 14)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 0xbef7f5f) (C (A 0) (A 0x7ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 8175)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0))))) (C (C (A 1) clG5) (C (A 0) (A 1))))))))) (C (A 0) (A 2)))))))))))) (C (A 0) (A 2)))))))) (C (A 0) (A 1022))))))))))))))))))))))) (C (A 7) (C (C (A 10) (C (C (A 254) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (C (C (C (A 0) (A 28)) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6102) (C (A 0) (A 0x1ffffff)))) (C (A 9) (C (A 174) (C (A 10) (C (C (A 6) (C (A 0) (A 2025))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 2029))) (C (A 0) (A 2))))))))) (C (C (A 0) (A 6)) (C (A 0) (A 2)))) (C (A 0) (A 254)))))))))))))))))))))))))))))))
+
+def clArm : Noun :=
+  (C (A 7) (C (C (A 8) (C (C (A 1) (C (A 0) (C (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0))) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))))) (C (C (A 1) clBat) (C (A 0) (A 1))))) (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x797a616c2d79706f632d706d6f63) (C (C (A 0) (A 0x7ffff)) (A 0))))) (C (A 0) (A 1))))))
+
+
+/-- `+copy-lazy` is at door axis `1022` (core axis `1534`). -/
+theorem comp_cl_at : slot? 1022 comp.door = some clArm := by kernel_rfl
+
+/-- `+add-ops` at its door axis. -/
+theorem comp_add_ops_at : slot? 6894 comp.door = some comp.add_ops.arm := by kernel_rfl
+
+/-- The arm `copy-lazy` builds its gate. -/
+theorem comp_cl_arm (d : Noun) : nock d clArm =
+    some (C clBat (C (C (A 0) (C (lazyNoun (Sure.bunt : Sure CSet)) (lazyNoun (Sure.bunt : Sure CSet)))) d)) := by
+  unfold clArm; simp [nock_exec, lazyNoun, Sure.toNoun, Sure.bunt, Need.toNoun, Tag.none, HoonSet.toNoun_empty]
+
+/-- The arm `uni` of `+in` builds its gate, with the door's set as the bunt. -/
+theorem cl_uni_arm (d : Noun) : nock d in.uni.arm =
+    (slot? 6 d).map fun b => C in.uni.battery (C b d) := by
+  unfold in.uni.arm; simp [nock_exec]; cases slot? 6 d <;> rfl
+
+/-- What `+copy-lazy` assumes of `+uni:in` of layer 2: on the set nouns of
+`csHoonSet` it computes the union. -/
+def CsUniIs : Prop := ∀ a b : CSet,
+  nock (C in.uni.battery (C (HoonSet.toNoun b) (C in.battery (C (HoonSet.toNoun a) layer2))))
+    in.uni.battery = some (HoonSet.toNoun (HoonSet.uni a b))
+
+variable {x} in
+/-- `+copy-lazy` on fork-free lazy needs, given `+uni:in`, under the side
+conditions of `comp_copy_need`. -/
+theorem comp_copy_lazy (hc : CompIn ctx) (hl : CompLib ctx) (hu : CsUniIs) (g : Gen (TreapMap mugF))
+    (o : Nat) (f s : Sure CSet) (hlt : cnLt g.re f.ned) (hrt : cnLt g.re s.ned)
+    (hm : cnMeet f.ned s.ned) :
+    nock (C clBat (C (C (A o) (C (lazyNoun f) (lazyNoun s))) (compCore g x ctx))) clBat
+      = (copyLazy o f s g).map fun p => C (lazyNoun p.1) (genNoun p.2 x) := by
+  obtain ⟨n, ops, g1, e, _, _⟩ := cnm_seg (x := x) (B := cnmBat) (S := C (A 0) (A 0)) hl f.ned s.ned
+    [] [] [] g hlt hrt hm
+  have hcn := comp_copy_need (x := x) hl g f.ned s.ned hlt hrt hm
+  rw [e] at hcn
+  have hao := comp_add_ops x hc g1 o ops
+  have huni := hu f.lok s.lok
+  have hD1 := comp_cnm_at
+  have hD2 := comp_add_ops_at
+  simp only [compCore] at hcn hao ⊢
+  unfold clBat
+  generalize comp.door = Dr at hD1 hD2 hcn hao ⊢
+  cases ea : addOps (Map := TreapMap mugF) o ops g1 with
+  | none =>
+    rw [ea] at hao
+    simp [nock_exec, lazyNoun, Sure.toNoun, hD1, hD2, comp_cnm_arm, comp_add_ops_arm, hcn, hao,
+      copyLazy, e, ea, bind, StateT.bind]
+  | some p =>
+    obtain ⟨u, g2⟩ := p
+    rw [ea] at hao
+    simp [nock_exec, lazyNoun, Sure.toNoun, hD1, hD2, comp_cnm_arm, comp_add_ops_arm, hcn, hao,
+      copyLazy, e, ea, bind, StateT.bind, hc, in_arm, in.arm_at, in.uni.arm_at, cl_uni_arm, huni,
+      pure, StateT.pure]
+
 end Compiler
 end Formalization
