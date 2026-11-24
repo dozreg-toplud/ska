@@ -719,7 +719,10 @@ theorem bakeLoop_pred (E : BEnv M) {Q I : Bell → Sock → Prop} (hroot : Q E.r
 /-- **What is left of HImp**: under every bake that is under its function's
 code requirement (or is it), every site `+know` lists, of a callee that is
 not the root, has a sock that shares a noun with the callee's code
-requirement. -/
+requirement.  **False on the real compiler** (`SitesMeetFalse.lean`,
+`bakeDropWitness`): a site after a call that never returns, in a branch that
+`+know` folds to and the analysis did not keep, and with it the conclusion
+of `bakes_ok_of_meet`.  Do not build on it. -/
 def SitesMeet (E : BEnv M) : Prop :=
   ∀ cur s d out sites, BakeOK cur.less s → E.dat cur = some d →
     know E.fold d.nomm s E.dat idc = some (out, sites) → ∀ c k, (c, k) ∈ sites → c ≠ E.root →

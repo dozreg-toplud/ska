@@ -33,3 +33,8 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     `dat` has the `|+~` of `+pop`.  One site of `+know` without folding fails
                     (for the pair at `less.c` and for the strict one); `KnowMeetsNF` and
                     `SitesMeet` hold (2026-11-24)
+* `bakedrop.hoon`   the witness against `SitesMeet` and `BakesImply` (`lemmas/Ska/SitesMeetFalse.lean`): the
+                    test of `voidscc.hoon` made to fold to the branch with the never-returning call, which
+                    the analysis saw as `%void`.  Under the bake (default `fold`) `H`'s site knows axis `4`
+                    is `[3 0]`, its code requirement says `[1 7]`: SitesMeet fails at 1 site per pair (strict
+                    and at `less.c`), and `H`'s variant has a bake not under its code requirement (2026-11-24)
