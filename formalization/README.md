@@ -121,6 +121,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Hoon/DifIn.lean` | `+bif:in` and `+dif:in` against `bifInF` and `difInF` (`bif_gate`, `dif_in_gate`); on sets, `+bif` returns a node with root `b` whose subtrees are sets of the keys before and after `b` in `+gor` order (`bifInF_spec`), and `+dif` returns a set of the keys of `a` that `b` does not hold (`difInF_spec`, `dif_in`).  The merge of `+dif` is `mergeInF` of `+del:in`.  The generator names no noun of `+bif`, so its arm is defined there (`bifArm`, `bif_arm_at` by the kernel). |
 | `Hoon/UniIn.lean` | `+uni:in` (`in.uni.*`): its loop is not structurally recursive (an outer call takes the product of an inner one as a set), so its model is a relation `UniR`, one constructor per branch, and `uni_loop`, `uni_in_gate` run the Nock on every derivation.  On two sets a derivation exists and ends in a set with the members of both and at most as many nodes (`uniP_of_sets`, by induction on the nodes: while the root of `a` comes first in `+mor` order the loop walks down `b` with it at the root, `uni_domA`, and symmetrically `uni_domB`), so the gate returns such a set (`uni_in`). |
 | `Hoon/Ju.lean` | The doors `+ju` (get, put, has, del, gas) and `+ja` (get, add). |
+| `Hoon/RollUni.lean` | `+roll` with a gate that may crash (`roll_loop_M`, `roll_gate_M`: the fold stops at the first crash); with the gate itself as the model, `+roll` over a list of one element is the gate on that element and the first accumulator (`roll_gate_one`); the arm `uni` of a door `+by` builds its gate (`uni_by_arm`).  `+uni:by` itself is not linked. |
 | `Hoon/ListsMore.lean` | `+skim`, `+skip`, `+murn`, `+rear`, `+snip`. |
 | `Hoon/ListsSort.lean` | `+welp`, `+zing`, `+snoc`, `+skid`, `+spin`, and `+sort` against the quicksort `qsort`, which permutes its list. |
 | `Hoon/Axis.lean` | `+cap`, `+mas`, `+peg`, and what they mean for `slot?` (`slot_pegF`, `slot_cap_mas`). |
@@ -207,6 +208,10 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompCoerceLazy.lean` | `+coerce-lazy` (door battery axis `3580`, `comp_cz_at`, its gate body `czBody` cut into `czX`, `czSrl`, `czLok`, `czTail`) on a fork-free `[sure ~ ~]`: `+axe-in-less-cape` (arm `95` of `K`) is `axeInLessCape` (`aic_loop`, `aic_gate`), `+axe-in-need` (arm `0x5dd4`) is `axeInNeedL` (`ain_loop`, `ain_gate`), the gate of the `+rep:in` over `lok` is `czStep` (`cz_gate_step`) and the fold is `coerceLok` (`coerceLok_eq`, `cz_lok`, with no `0` in its product, `coerceLok_ne0`), `+sure-require-look` of the new sure (`cz_srl`), the trap `sure-loop` is `sureLoop` with `o` not in `soft` (`cz_loop_none`, `cz_loop_this`, `cz_loop_pair`, `cz_loop_both_this`, `cz_loop_both_pair`, `cz_loop_both_both`, `cz_loop`), and the gate is `coerceLazy` (`cz_gate`) or `coerceLazyL` on `ofSure` (`cz_gate_L`). |
 | `Compiler/CompBakeNeed.lean` | `+bake-need` (arm `384468` of `K`, `bn_at`, its gate body `bnBody` and trap `bnLoop` cut into `bnTest`, `bnYes` with the baking trap `bnAll`, and `bnRec`) when nothing is baked: on a need with no cell of two `%none` and no `%both` with two `%none` halves (`NeedNorm`, true of every need of `+need-ord-alloc-regs`, `needNorm_noar`) and a sock that is `%void` or not wholly known (`all:ca` false) at every node of the need, with `hed:so` and `tel:so` down the walk (`NoBake`), the test of each node is false before `+need-fits` (`bn_test`), `+cons-need` rebuilds each cell (`cn_gate`), and the gate returns `[ned ~]` (`bn_loop`, `bn_gate`). |
 | `Compiler/CompFinish.lean` | The gate `finish` of `+compile-scc-in` (`%compile-scc-finish`, axis `0x2ab2dffd6fbffffffffe` of `K`, `fin_at`, its body `finBody`) on `~` in the subject of `member` (`finCtx`: `gen` at `62`, the tuple `[need-new laz ned-final bak o sur]` at `30`, the door `comp`, `done`, `cape.less.b` and `layer2` in the rest at `6`, `14`, `496`, `0x3ffffff`): `+coerce-lazy`, `+soft-done`, `+add-ops` of the `%imm` ops of `imm.bak = ~` (`fin_turn_nil`) and `+to-straight` of `[%next [[ned.bak ~] ~ ~] ~ o]` give the noun of `finTail`, the tail of `finishLF` (`finishLF_tail`, `fin_gate`); against `finishLF nm ord less (fun n => (n, []))` given the run and `+need-ord-alloc-regs` of `ord` (`fin_gate_finishLF`), from the product of `+collapse-shape` under the hypothesis `hsc` on `+shape-collapse` (`fin_after_cs`), with `bak = [ned-final ~]` from `+bake-need` under `NoBake` (`fin_bak`). |
+| `Compiler/CompSureOf.lean` | `+sure-of` (arm `0x2bae` of `K`, `so_at`, its body `soBody`) and `+inter1-to-inter2` (arm `0xbbbb`, `i2_at`, its body `i2Body` cut into the `+rep:in` `i2Rep` with its gate `i2Gate` and trap `i2Trap`, and the `+turn` `i2Turn`) on a fork-free input, against a model written here, since `lemmas/Ska` had none: `sureLook` (the trap: the walk down to an axis, `%this` where the shape has `%none`, the cells rebuilt with `+cons-need`, a former `%this` or `%both` as a `%both`), `sureOfStep` (the gate: `new` at axis `1` and inside the known part of `less`, a crash at `0`), `sureOf` (the fold over `lok` in the order of `+rep:in`).  `cn_gate_ord` (`+cons-need` on shapes, `consOrd`), `i2_trap`, `i2_gate_step`, `i2_rep`, `i2_gate` (`[sure ~]` on `[[[ned lok] ~] less]`, the `+turn` over `~` giving `~`), `so_gate` (`+sure-of` of `[[ned lok] less]` is `sureOf ned lok less`).  The nouns come from `tools/gen/member.py`. |
+| `Compiler/CompMember.lean` | The gate `member` of `+compile-scc-in` (`%compile-scc-fn`, axis `358182910` of `K`, `mem_at`), its body `memBody` cut by `tools/gen/member.py` into `memComp`, `memInl`, `memR2`, `memRes` (with `memFinal`: `memRun`, `memCs`, `memBak`, `memSur`, `memTuple`), `memAfter` (`memWas`, `memSurK`, `memPut`, `memMoved`, the push of `finArm`) and `memProd` (`memSprev`, `memNew`, `memOld`); `+inlined` (arm `0x5dde`, `inl_at`, its body `inlBody` a slot of the pill, not linked).  The subjects `memSam`, `memCtx` (`done`, `kids`, `map-local` on the core of `+compile-scc-in`), `memDCtx`, `memS0`, `memS3`.  Plumbing with the calls' products as nouns: `mem_entry` (to the final pass, `+inlined` as `hinl`), `mem_r3`, `mem_res`, the calls (`mem_run_call`, `mem_cs_call`, `mem_bak_call`, `mem_sur_call`, `mem_tuple_call`), `mem_final` (the pass returns `[[need-new laz ned-final bak o sur] gen]`), `mem_after` (`=.  cache  cache.gen`, `was` by `getF`, `sur` (`memSurKN`), the put by `putF`, `moved` (`memMovedN`), the push of `finish` on `finCtx`), `mem_prod_new` (with `map-local` and `top` empty: `[chg (put:by ~ b (finish ~)) cache]`, `chg` as `memChgN`). |
+| `Compiler/CompMemberGate.lean` | `member` against the model: `mem_to_finish` (from the sample `[b %done keep map-local top cache]` to the push of `finish` on `memFC`, with the links of `+run`, `+collapse-shape`, `+bake-need`, `+need-to-ordered`, `+sure-of`), `mem_rest_slots` (the slots `6`, `14`, `496`, `0x3ffffff` that `finish` reads), `mem_cond_frag`, `mem_laz_frag` (on the fragment the run leaves `cond` empty and `laz` fork-free), `mem_gate` (with `map-local` and `top` empty the gate returns `[chg [[b s] ~ ~] cache]` with `s` the noun of `finishLF nm ord cape (fun n => (n, []))`, and crashes when it is `none`; hypotheses: `hinl`, `hsc`, the run, `+need-ord-alloc-regs` and `+sure-of` succeed, `NoBake`, `getF`/`putF` on `sure.cache`). |
+| `Compiler/CompSccGate.lean` | `+compile-scc-in` (arm `2732` of `K`, `csi_at`, its body `csiBody` cut by `tools/gen/member.py` into `csiLevy`, `csiHit`, `csiKids`, `csiDone`, the push of `member` and of `final` (`fBody`: `fRoll` with the gate `fGate`, `fUni`), `csiDoneCall`, `csiFix`) on an SCC of one bell `b` (`setOne b`): `csi_to_final` (the cache test `+levy` with `+has:by` fails, `kids` is given by a hypothesis on the product of `csiKids` (`+int:in` not linked), `~(has ju kids) b b` is `|`, so `done` and `(final | ~ cache)`), `csi_final_one` (the `+roll` of `member` over `[b ~]`, with the bunt of `bell` (`bell_bunt`, a kernel fact), and `+uni:by` of `nary` as a hypothesis `huni`), `csi_gate_one` (with `mem_gate`: the gate returns `[[[b st] ~ ~] cache']` with `st` the straight of `finishLF`), `cu_csi_eq` and `cu_gate_scc_one` (the gate of `+compile-unary` with `hcsi` discharged by `csi_gate_one`). |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`, whose `keys` are those of `rap`, the order of `+rep:by` (`treapMap_keys`). |
@@ -1291,13 +1296,61 @@ import only its theorems.  So:
     of `[6 [0 30] ..]`: `mode.gen` set at `46`, `+run` (door arm `3071`,
     battery `2047`) on `[| nomm [%done ~] ~ ~]`, `+collapse-shape` (door
     arm `1526`) on `[nex cape.less.b]`, `+bake-need` (`0x5ddd4` of `K` at
-    `0x3fff`), `+sure-of` (`0x2bae` of `K`, not linked) of
+    `0x3fff`), `+sure-of` (`0x2bae` of `K`, linked later: `so_gate`) of
     `[(need-to-ordered ned.sure.laz) lok.sure.laz]` (`+need-to-ordered` is
     `0xaebc`, `nta_gate`); then `cache` at `8159` from `1790`, `was` by
     `+get:by` (arm `764`) on `sure.cache`, `sur`, `+put:by` (arm `340`) at
     `0x7fdff`, `moved` with `+fall` (`3007` of `layer2`), the push of
     `finish` (`finArm`), `+get:by` of `map-local` at `b`, and on `~` the
     product `[chg (put:by map-local b (finish ~)) cache]`.
+    L, 2026-11-24 (track A, `+sure-of` and `member`),
+    `Compiler/CompSureOf.lean`, `Compiler/CompMember.lean`,
+    `Compiler/CompMemberGate.lean`.  `+sure-of` had no model: `sureOf`
+    (written in `CompSureOf.lean`) folds the gate of the `+rep:in` of
+    `+inter1-to-inter2` over `lok`, and `so_gate` links it on every input
+    (it is `none` exactly on an axis `0` in `lok`).  The body of `member` is
+    cut into named parts (`tools/gen/member.py`, `mem_at`), and on the
+    final pass with `map-local` and `top` empty the gate returns the noun of
+    `finishLF nm ord cape (fun n => (n, []))` as the value of `b` in the
+    new `map-local`, with `chg` (`memChgN`) and the cache of `+inlined`
+    whose `sure.cache` has `sur` put at `b` (`mem_gate`).  On the way,
+    `mem_to_finish` shows that the subject at the push of `finish` is
+    `finCtx` (`memFC`) with the four slots of its rest (`mem_rest_slots`),
+    so `fin_gate_finishLF` applies.  The hypotheses that stay are nouns:
+    `+inlined` returns `[nm cache]` (`hinl`), `+shape-collapse` returns
+    `ord` (`hsc`), `+get:by` and `+put:by` of `sure.cache` (`hwas`,
+    `hput`, through `getF` and `putF`); and the success of the run, of
+    `+need-ord-alloc-regs` and of `+sure-of` (`hrunL`, `hnoar`, `hsur`),
+    `NoBake` for `+bake-need`, and the fragment (`nm` pure, no `%6`,
+    `tenOk`).  `cond` empty and the fork-free `laz` follow from the fragment
+    (`mem_cond_frag`, `mem_laz_frag`).  Not linked: the cases where the run,
+    `+collapse-shape` or `+sure-of` crash (the gate crashes, as `finishLF`
+    does for the first two), the branch where `map-local` holds `b`
+    (`memOld`, `+msg-need-ord`, `+coerce-soft`), and `+compile-scc-in`
+    around `member` (the cache test, `kids`, `done`, the `+roll` of `final`
+    and the `+uni:by` into `nary.cache`).
+    L, 2026-11-24 (track A, `+compile-scc-in` on one bell),
+    `Compiler/CompSccGate.lean`, `Hoon/RollUni.lean`.  `hcsi` of `cu_gate`
+    is discharged for an SCC of one bell `b` (`[b ~ ~]`) not in
+    `nary.cache` that does not call itself: `cu_gate_scc_one` is `cu_gate`
+    without `hcsi`, with `NM = [[b st] ~ ~]` and `CA` the cache of
+    `+inlined` with `nary` united (`NARYU`) and `sure.cache` updated
+    (`SURE'`), where `st` is the straight of `finishLF nm ord cape (fun n =>
+    (n, []))` for the nomm `nm` that `+inlined` returns.  On the way:
+    `csi_to_final` (the `+levy` test with `+has:by`, the pushes of
+    `map-local`, `kids`, `done`, `member`, `final`, the `?:  done`),
+    `csi_final_one` (the `+roll` over `[b ~]` with `roll_gate_one`, the bunt
+    of `bell` computed by the kernel, `bell_bunt`), `csi_gate_one`.  The
+    hypotheses on nouns added here: `hkids` (the product of `csiKids`, the
+    `+rep:in` over `scc` with `+put:by`, `+int:in` and `+gut:by` of
+    `calls.long-ska`; `+int:in` is not linked), `hju` (`juHasF` of `kids`
+    at `b` and `b` is `false`: `b` does not call itself), `hnary` (`b` not
+    in `nary.cache`), `huni` (`+uni:by` of `nary` and `[[b st] ~ ~]`, not
+    linked).  The next helpers, in order: `+int:in` and the `+rep:in` of
+    `kids` (then `hkids` and `hju` follow from `calls.long-ska`), `+uni:by`
+    on a map of one pair, the cache hit `csiHit` (`+gas:by`, `+turn`,
+    `+got:by`), then the crash cases of `member` and the cases where
+    `finishLF` is `none` (the gate crashes, so `hcsi` fails, as it should).
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,

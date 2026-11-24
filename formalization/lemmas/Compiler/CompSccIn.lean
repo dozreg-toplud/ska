@@ -64,11 +64,15 @@ jets-hot cache]` and returns `[(map bell straight) cache]`.
 * `needOrdAllocRegs ord g1` is `+need-ord-alloc-regs` of `+collapse-shape`,
   so `ord` must be `(shape-collapse laz.nex cape.less.b)`, a value the run
   determines: `+shape-collapse` (arm `682` of `compTypes`) has no model.
-* `bake nedFinal` is `(bake-need ned-final less.b)`; with a `less.b` whose
-  cape has no known leaf inside the need, it is `[ned-final ~]` (lines 3729
-  to 3751: `(all:ca cape.k)` is false at every node, `+cons-need` keeps the
-  pairs, and a `%both` keeps its register since its halves are not both
-  `%none`).
+* `bake nedFinal` is `(bake-need ned-final less.b)` (line 3718).  The arm
+  walks the need with the sock `k` of the part it is the need of, taken
+  down with `hed:so` and `tel:so` (from line 3727); where `k` is a cell,
+  `(all:ca cape.k)` holds and `+need-fits` says the data has the structure
+  the need asks, it bakes that part whole (`[%none ~]`, with the `%imm`
+  loads of its registers); otherwise it rebuilds cells with `+cons-need`
+  and turns a `%both` whose halves were both baked into `[%this r]`.  When
+  no node is baked (`NoBake` of `CompBakeNeed.lean`, the sock at every node
+  `%void` or not wholly known) it is `[ned-final ~]` (`bn_gate`).
 * `coerceLazyL nedFinal less nex.th.there nex.laz` is `+coerce-lazy` with
   `soft` empty (the model's `%this` case has no `(~(has by soft.gen) o)`
   test, which on a `soft` with `o` calls `+soft-ask` instead).
