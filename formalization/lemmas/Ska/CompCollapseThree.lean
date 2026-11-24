@@ -716,6 +716,17 @@ theorem finishLF_bellContract_three {lib : Lib} {code : Bell → Option Nomm} (h
   finishLF_bellContract73U hok rfl hA (FragX.frag fun _ => trivial) (aboveX_n0 (by decide))
     (FragX.frag fun _ => trivial) (fun h1 => runL_n01_done_ne h1) (by decide) hbl hn hbake h N
 
+/-- A covered formula of `finishLF_bellContract74U` with `%3` in `p`:
+`[7 [4 [3 [4 [0 6]]]] [6 [0 1] [0 1] [1 0]]]` (`aboveX_n3`, `aboveX_n4`). -/
+example (lib : Lib) : FragX (S := S) (Nomm.n3 (Nomm.n4 (Nomm.n0 6))) ∧
+    AboveX S Map (Nomm.n3 (Nomm.n4 (Nomm.n0 6))) ∧
+    sixCount (Nomm.n7 (Nomm.n4 (Nomm.n3 (Nomm.n4 (Nomm.n0 6)))) (Nomm.n6 (Nomm.n0 1) (Nomm.n0 1) (Nomm.n1 (A 0)))) ≤ 255 :=
+  ⟨FragX.three (FragX.four (FragX.frag fun _ => trivial)),
+    aboveX_n3 (runX_ok (Map := Map) lib (FragX.four (S := S) (FragX.frag (S := S) (nm := Nomm.n0 6) fun _ => trivial))).2.1
+      (aboveX_n4 (runX_ok (Map := Map) lib (FragX.frag (S := S) (nm := Nomm.n0 6) fun _ => trivial)).2.1
+        (aboveX_n0 (by decide))),
+    by decide⟩
+
 end Run
 
 end Comp
