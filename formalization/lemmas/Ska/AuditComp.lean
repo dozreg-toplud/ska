@@ -459,3 +459,7 @@ open Formalization.SkaModel.Comp
 #print axioms aboveX_n01
 #print axioms aboveX_n3
 #print axioms collRun_n3
+#print axioms runOKU_seven3
+#print axioms finishLF_bellContract73U
+#print axioms runL_n01_done_ne
+#print axioms finishLF_bellContract_three

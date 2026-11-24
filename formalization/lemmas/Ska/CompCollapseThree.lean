@@ -480,6 +480,161 @@ theorem collRun_n3 (lib : Lib) {p : Nomm} (hp : NextOK (S := S) (Map := Map) lib
     · exact hfit R v hR
     · exact absurd (hf v) (hnf v)
 
+/-- **`[7 [3 p] q]` for `%done` from `gen0` meets `RunOKU`**, for every `q`
+in `FragX` whose run for `%done` returns a lazy need not equivalent to `none`
+(`hq3`), by the proof of `runOKU_seven4` with `collRun_n3`: the product of
+`[3 p]` is the atom `0` or `1`. -/
+theorem runOKU_seven3 (lib : Lib) {p q : Nomm} (hp : NextOK (S := S) (Map := Map) lib p)
+    (sp : OKNR (S := S) (Map := Map) lib p) (kp : KeepX S Map p) (ap : AboveX S Map p)
+    (hq : FragX (S := S) q) (hcount : sixCount (Nomm.n7 (Nomm.n3 p) q) ≤ 255) {region : List Nat}
+    {g2 : Gen Map} {nex : NextL S}
+    (hq3 : ∀ {nx : NextL S} {g1 : Gen Map}, runL q (CGoalL.done : CGoalL S) region (gen0 : Gen Map) = some (nx, g1) →
+      noneEquivalentL nx.laz = false)
+    (h : runL (Nomm.n7 (Nomm.n3 p) q) (CGoalL.done : CGoalL S) region (gen0 : Gen Map) = some (nex, g2)) :
+    RunOKU (Map := Map) lib (Nomm.n7 (Nomm.n3 p) q) CGoal.done gen0 g2 nex := by
+  have hc : sixCount p ≤ 255 ∧ sixCount q ≤ 255 := by simp only [sixCount] at hcount; omega
+  have p7 : ∀ s, pureEval (Nomm.n7 (Nomm.n3 p) q) s = (pureEval (Nomm.n3 p) s).bind (pureEval q) := fun _ => rfl
+  rw [runL_n7] at h
+  obtain ⟨nx, g1, h1, h2⟩ := bind_some h
+  have Rq := (runX_ok (Map := Map) lib hq).1 trivial trivial hc.2 (by simp [gen0]) rfl upBelow_gen0 h1
+  have Sq := SemPR.toG ((runX_semR (Map := Map) lib hq).1 trivial trivial trivial hc.2 (by simp [gen0]) rfl
+    upBelow_gen0 clear_gen0 h1)
+  have Bq : BelowIn (gen0 : Gen Map).bo g1 := runX_below (goal := CGoal.done) hq rfl trivial hc.2 h1
+  have cq : ∀ k, HoonMap.get g1.cond k = Option.none := fun k => by rw [Rq.cnd]; exact gen0_cond_none k
+  obtain ⟨q1, q2, q3, q4⟩ := Rq.ext
+  have qlo := Rq.lo
+  have qhi := Rq.hi
+  obtain ⟨d, CR⟩ := collRun_n3 lib hp sp kp ap h2 (hq3 h1) hc.1 (by omega) (q3.trans rfl) (Rq.grow.up upBelow_gen0)
+    (clear_gen0.growU Rq.grow) Rq.lo Rq.hi (fun x hx => (Rq.regs x hx).2) (fun x _ => cq x)
+    (fun k hk => by simp [cq k] at hk)
+    (List.nodup_cons.mpr ⟨fun hm => by
+      obtain ⟨e, he, e1⟩ := List.mem_map.mp hm
+      have := (Rq.labs e he).2.1; omega, Rq.nodup⟩)
+    (fun e he => by obtain ⟨a, b, th, hb⟩ := Rq.labs e he; exact ⟨by omega, [], _, hb⟩)
+    (fun e he x hx => ((Rq.eregs e he).2 x hx).2)
+  have Cre := CR.re
+  have Cbo := CR.bo
+  refine ⟨⟨by omega, by omega, CR.drop.trans q3, fun o ho => (CR.keep o (by omega) (fun hm => ?_)).trans (q4 o ho)⟩,
+    Rq.grow.trans CR.grow, (condFresh_of_eq q1 Rq.cnd).trans CR.pfor.1, CR.lo, CR.hi, Or.inl CR.ent,
+    fun r hr => ⟨by have := (CR.regs r hr).1; omega, (CR.regs r hr).2⟩, CR.dist,
+    fun e he => ⟨(CR.eregs e he).1, fun r hr => ⟨by have := ((CR.eregs e he).2 r hr).1; omega,
+      ((CR.eregs e he).2 r hr).2⟩⟩,
+    fun e he => ⟨by have := (CR.labs e he).1; omega, (CR.labs e he).2⟩, CR.nodup,
+    by have := CR.size; simp only [sixCount] at this ⊢; omega,
+    fun s hs' => by rw [p7, CR.nec s hs']; rfl, CR.ncond, CR.econd, ?_⟩
+  · obtain ⟨e, he, e1⟩ := List.mem_map.mp hm
+    have := (Rq.labs e he).1; omega
+  intro c ned σ O st t gul s0 s ag hned regs hh hn
+  have agC : AgreeU lib O c gul st t g2.cond ned g1 g2 nex.laz s0 s :=
+    ⟨fun o l u hnl => ag.1 o (by omega) u hnl, ag.2⟩
+  have Sp := CR.sem g2.cond (fun _ _ => rfl) c ned σ O st t gul s0 s agC (fun r hr => Or.inl (hned r hr)) regs hh hn
+  have u1 : ∀ x, x < g1.re → unproxy g2.cond x = id x := fun x hx =>
+    unproxy_none (by rw [ProxyFor.get_lt CR.pfor hx]; exact cq x)
+  show GoalSem lib O c gul st _ regs t nex.th CGoal.done (pureEval (Nomm.n7 (Nomm.n3 p) q) s)
+  cases ev : pureEval (Nomm.n3 p) s with
+  | none =>
+    rw [ev] at Sp
+    have e7 : pureEval (Nomm.n7 (Nomm.n3 p) q) s = none := by rw [p7, ev]; rfl
+    rw [e7]; exact goalSem_none _ Sp
+  | some v =>
+    rw [ev] at Sp
+    have e7 : pureEval (Nomm.n7 (Nomm.n3 p) q) s = pureEval q v := by rw [p7, ev]; rfl
+    rw [e7]
+    obtain ⟨m, rfl⟩ : ∃ m, v = A m := by
+      rw [pureEval_n3] at ev
+      cases ep : pureEval p s with
+      | none => rw [ep] at ev; cases ev
+      | some x =>
+        rw [ep] at ev
+        cases x with
+        | atom n => simp [wut] at ev; exact ⟨1, ev.symm⟩
+        | cell _ _ => simp [wut] at ev; exact ⟨0, ev.symm⟩
+    by_cases fit : FitsS nx.laz.sure (A m)
+    · have hfa : ∀ v, FitsS nx.laz.sure (A v) := CR.dich.elim id (fun hn' => absurd fit (hn' m))
+      have SpT := CR.semT hfa g2.cond (fun _ _ => rfl) c ned σ O st t gul s0 s agC
+        (fun r hr => Or.inl (hned r hr)) regs hh hn
+      rw [ev] at SpT
+      obtain ⟨R, hR, kR, eR⟩ := SpT.1 ⟨trivial, looks_empty _⟩
+      have hR' : SkaModel.read d R = some (A m) := hR
+      have agQ : AgreeP lib O c gul st t (Need.pair ned (Need.this d)) gen0 g1 nx.laz (C s0 (A m)) (A m) := by
+        refine ⟨fun o l u hnl => ?_, fun e he => ?_⟩
+        · have hn2 : o ∉ (entries nex.laz).map Prod.fst := fun hm => by
+            obtain ⟨e', he', e1⟩ := List.mem_map.mp hm; have := (CR.labs e' he').1; omega
+          rw [ag.1 o l (by omega) hn2, CR.keep o u hnl]
+          cases hg : HoonMap.get g1.blocks o with
+          | none => rfl
+          | some b => simp only [Option.map_some, unproxyBlob, renBlob_congr u1 (Bq o b l u hg), renBlob_id]
+        · obtain ⟨l, lt, th, hb⟩ := Rq.labs e he
+          obtain ⟨F, hF, hP⟩ := CR.front e he
+          have hb2 := hF [] (Termin.hop th) hb
+          rw [List.append_nil] at hb2
+          have hn2 : e.1 ∉ (entries nex.laz).map Prod.fst := fun hm => by
+            obtain ⟨e', he', e1⟩ := List.mem_map.mp hm; have := (CR.labs e' he').1; omega
+          refine ⟨F.map (renPole (unproxy g2.cond)), th, hb, ?_, ?_⟩
+          · rw [ag.1 e.1 l (by omega) hn2, hb2]
+            have hj := (Bq e.1 _ l (by omega) hb).2.2
+            simp only [Option.map_some, unproxyBlob, renBlob, List.map_nil, renFin, renJmp_congr u1 hj, renJmp_id]
+          · exact collP_fillSem hP CR.dkey
+              (fun x hx => by rw [ProxyFor.get_lt CR.pfor ((Rq.eregs e he).2 x hx).2]; exact cq x)
+              (fun k hk => rfl) lib O c gul st t ned g1.re s0 m
+      have inQ : ∀ r, NMem (Need.pair ned (Need.this d)) r → InR (CGoal.done : CGoal S) gen0 g1 nx.laz.sure.ned r := by
+        intro r hr
+        rcases hr with hr | hr
+        · exact Or.inl (by have := hned r hr; omega)
+        · have hr' : r = d := hr
+          rw [hr']
+          rcases CR.dreg with e | e
+          · exact Or.inr (Or.inr e)
+          · exact Or.inl e
+      have hnR : HoldsN (Need.pair ned (Need.this d)) R (C s0 (A m)) :=
+        ⟨HoldsN.agree ned (fun r hr => kR r (Or.inr hr)) hn, hR'⟩
+      have Sq' := Sq c _ σ O st t gul _ _ agQ inQ R (CR.dhold hfa R m hR') hnR
+      exact eR.trans Sq'
+    · have cr := Sp.2 fit
+      rw [Rq.nec (A m) fit]
+      exact goalSem_crash _ cr
+
+/-- **The final pass meets the contract on `[7 [3 p] q]`**, with `p` and `q`
+in `FragX`, `p` meeting `AboveX`, the run of `q` for `%done` returning a lazy
+need not equivalent to `none` (`hq3`), at most 255 `%6`, when nothing is baked
+and the bell's cape has no `[| |]`. -/
+theorem finishLF_bellContract73U {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code)
+    {bl : Bell} {p q : Nomm} (hp : (Nomm.n7 (Nomm.n3 p) q).pure = true)
+    (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol (Nomm.n7 (Nomm.n3 p) q))
+    (hfp : FragX (S := S) p) (ap : AboveX S Map p) (hfq : FragX (S := S) q)
+    (hq3 : ∀ {nx : NextL S} {g1 : Gen Map}, runL q (CGoalL.done : CGoalL S) [] (gen0 : Gen Map) = some (nx, g1) →
+      noneEquivalentL nx.laz = false)
+    (hcount : sixCount (Nomm.n7 (Nomm.n3 p) q) ≤ 255)
+    {cape : Cape} {data : Noun} (hbl : bl.less = Sock.mk cape data) (hn : CapeNorm cape) {ord : NeedOrd}
+    {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
+    (h : finishLF (S := S) (Nomm.n7 (Nomm.n3 p) q) ord cape bake = some c') (N : Needs) :
+    BellContract lib N bl false c' :=
+  finishLF_bellContractU hok hp hA (fun h1 => runOKU_seven3 lib (runX_ok lib hfp).2.1 (runX_semR lib hfp).2.1
+    (runX_keeps hfp) ap hfq hcount hq3 h1) hbl hn hbake h N
+
+/-- The run of `[0 1]` for `%done` returns the sure need `this r` with `r` the
+start's `re`, no entries: so it meets `hq3`. -/
+theorem runL_n01_done_ne {region : List Nat} {g g' : Gen Map} {nx : NextL S}
+    (h : runL (Nomm.n0 1) (CGoalL.done : CGoalL S) region g = some (nx, g')) : noneEquivalentL nx.laz = false := by
+  have e : (runL (Nomm.n0 1) (CGoalL.done : CGoalL S) region : CM Map (NextL S)) = simpleNextL CGoalL.done := by
+    unfold runL; simp
+  rw [e] at h
+  simp only [simpleNextL, bind_apply, re_apply, emit_apply, Option.bind_some, pure_apply, Option.some.injEq,
+    Prod.mk.injEq] at h
+  obtain ⟨rfl, -⟩ := h
+  rw [noneEquivalentL_ofSure]; simp [noneEquivalent]
+
+/-- **`[7 [3 [0 3]] [0 1]]` meets the contract** with no hypothesis beyond
+the usual ones. -/
+theorem finishLF_bellContract_three {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) {bl : Bell}
+    (hA : Annot lib code (SkaModel.Fits bl.less) bl.fol (Nomm.n7 (Nomm.n3 (Nomm.n0 3)) (Nomm.n0 1)))
+    {cape : Cape} {data : Noun} (hbl : bl.less = Sock.mk cape data) (hn : CapeNorm cape) {ord : NeedOrd}
+    {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
+    (h : finishLF (S := S) (Nomm.n7 (Nomm.n3 (Nomm.n0 3)) (Nomm.n0 1)) ord cape bake = some c')
+    (N : Needs) : BellContract lib N bl false c' :=
+  finishLF_bellContract73U hok rfl hA (FragX.frag fun _ => trivial) (aboveX_n0 (by decide))
+    (FragX.frag fun _ => trivial) (fun h1 => runL_n01_done_ne h1) (by decide) hbl hn hbake h N
+
 end Run
 
 end Comp
