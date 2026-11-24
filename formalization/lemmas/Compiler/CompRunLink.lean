@@ -1,5 +1,6 @@
 import lemmas.Compiler.CompClaLink
 import lemmas.Compiler.TreapList
+import lemmas.Ska.CompLazyAgree
 
 /-!
 # `+run` of the door of `+comp`: its frame, `+simple-next`, and the case `%0`
@@ -166,6 +167,139 @@ theorem run_simple_next (hc : CompIn ctx) (x : GenRest) (g : Gen (TreapMap mugF)
     simp [nock_exec, runSubj, CGoalL.toNoun, simpleNextL, NextL.goal, hre, hD1, hD2, comp_emit_arm, he,
       cd_emit_eq, re, bind, StateT.bind, pure, StateT.pure, Lazy.toNoun_ofSure, lazyNoun, Sure.toNoun,
       Need.toNoun, HoonSet.toNoun_empty, Jmp.toNoun, jmp0, listNoun, Tag.this]
+
+/-! ## The case `%0` -/
+
+/-- No looked-at axis of a fork-free `%next` goal is `0` (the side condition
+of `+from`); the goals `%done` and `%pick` look at nothing. -/
+def runLokOk : CGoal CSet → Prop
+  | CGoal.next laz _ => ∀ y ∈ HoonSet.toList laz.lok, y ≠ 0
+  | _ => True
+
+theorem comp_bomb_at : slot? 852 comp.door = some comp.bomb.arm := by kernel_rfl
+
+/-- The arm `bomb` builds its gate. -/
+theorem comp_bomb_arm (d : Noun) : nock d comp.bomb.arm = some (C comp.bomb.battery (C (A 0) d)) := by
+  nock_open comp.bomb.arm; simp only [nock_exec]
+
+theorem comp_from_at : slot? 3582 comp.door = some comp.from.arm := by kernel_rfl
+
+/-- The arm `from` builds its gate. -/
+theorem comp_from_arm (d : Noun) : nock d comp.from.arm =
+    some (C comp.from.battery (C (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))) d)) := by
+  nock_open comp.from.arm; simp only [nock_exec]
+
+theorem run_bat_sn : slot? 2 runBat = some runSn := rfl
+theorem run_bat_dol : slot? 3 runBat = some runDol := rfl
+
+/-- The `?-` sends `[%0 ax]` to the body of `%0`. -/
+theorem run_disp_n0 (ax : Nat) (mono goal region sup D : Noun) :
+    nock (runSubj mono (C (A 0) (A ax)) goal region sup D) runDol
+      = nock (runSubj mono (C (A 0) (A ax)) goal region sup D) runK0 := by
+  nock_open runDol
+  simp [nock_exec, runSubj, runTc, runT]
+
+/-- What `+simple-next` returns on a fork-free goal: a fork-free need with no
+look at `0`. -/
+theorem run_sn_shape (gl : CGoal CSet) (hlok : runLokOk gl) (g : Gen (TreapMap mugF))
+    (nex : NextL CSet) (g1 : Gen (TreapMap mugF)) (e : simpleNextL (CGoal.toL gl) g = some (nex, g1)) :
+    ∃ s : Sure CSet, nex.laz = Lazy.ofSure s ∧ ∀ y ∈ HoonSet.toList s.lok, y ≠ 0 := by
+  cases gl with
+  | next laz th =>
+    simp [CGoal.toL, simpleNextL, pure, StateT.pure] at e
+    exact ⟨laz, by rw [← e.1], hlok⟩
+  | done =>
+    simp [CGoal.toL, simpleNextL, re, bind, StateT.bind, pure, StateT.pure, cd_emit_eq] at e
+    rcases e with ⟨rfl, -⟩
+    exact ⟨_, rfl, fun y hy => absurd hy (HoonSet.mem_empty y)⟩
+  | pick z o =>
+    simp [CGoal.toL, simpleNextL, re, bind, StateT.bind, pure, StateT.pure, cd_emit_eq] at e
+    rcases e with ⟨rfl, -⟩
+    exact ⟨_, rfl, fun y hy => absurd hy (HoonSet.mem_empty y)⟩
+
+/-- **The case `%0` of `+run`** on a fork-free goal with no look at `0`:
+`(bomb ..)` on axis `0`, otherwise `+simple-next`, then `+from` unless the
+axis is `1`. -/
+theorem run_n0 (h7 : slot? 7 ctx = some compK) (ax : Nat) (gl : CGoal CSet) (region : List Nat)
+    (g : Gen (TreapMap mugF)) (hlok : runLokOk gl) :
+    RunAt ctx (Nomm.n0 ax) (CGoal.toL gl) region g := by
+  obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
+  intro x mono sup _
+  simp only [Nomm.toNoun]
+  rw [run_disp_n0]
+  by_cases h0 : ax = 0
+  · subst h0
+    have hD := comp_bomb_at
+    simp only [compCore]
+    cases gl with
+    | next laz th =>
+      have hb := comp_bomb (S := CSet) x hc g (some th.there)
+      simp [compCore, bomb, cd_emit_eq, bind, StateT.bind, pure, StateT.pure, unitNoun, Next.goal,
+        CGoal.toNoun, Jmp.toNoun, jmp0, lazyNoun, Sure.toNoun, Sure.bunt, Need.toNoun, HoonSet.toNoun_empty,
+        listNoun] at hb
+      generalize comp.door = Dr at hb hD ⊢
+      nock_open runK0
+      simp [nock_exec, runSubj, hD, comp_bomb_arm, CGoal.toL, CGoalL.toNoun, Jmp.toNoun, unitNoun, hb,
+        runL, bombL, cd_emit_eq, NextL.goal, Next.goal, CGoal.toNoun, Lazy.toNoun_ofSure, Functor.map,
+        StateT.map, jmp0, lazyNoun, Sure.toNoun, Sure.bunt, Need.toNoun, HoonSet.toNoun_empty, listNoun]
+    | done =>
+      have hb := comp_bomb (S := CSet) x hc g Option.none
+      simp [compCore, bomb, cd_emit_eq, bind, StateT.bind, pure, StateT.pure, unitNoun, Next.goal,
+        CGoal.toNoun, Jmp.toNoun, jmp0, lazyNoun, Sure.toNoun, Sure.bunt, Need.toNoun, HoonSet.toNoun_empty,
+        listNoun] at hb
+      generalize comp.door = Dr at hb hD ⊢
+      nock_open runK0
+      simp [nock_exec, runSubj, hD, comp_bomb_arm, CGoal.toL, CGoalL.toNoun, Jmp.toNoun, unitNoun, hb,
+        runL, bombL, cd_emit_eq, NextL.goal, Next.goal, CGoal.toNoun, Lazy.toNoun_ofSure, Functor.map,
+        StateT.map, jmp0, lazyNoun, Sure.toNoun, Sure.bunt, Need.toNoun, HoonSet.toNoun_empty, listNoun]
+    | pick z o =>
+      have hb := comp_bomb (S := CSet) x hc g Option.none
+      simp [compCore, bomb, cd_emit_eq, bind, StateT.bind, pure, StateT.pure, unitNoun, Next.goal,
+        CGoal.toNoun, Jmp.toNoun, jmp0, lazyNoun, Sure.toNoun, Sure.bunt, Need.toNoun, HoonSet.toNoun_empty,
+        listNoun] at hb
+      generalize comp.door = Dr at hb hD ⊢
+      nock_open runK0
+      simp [nock_exec, runSubj, hD, comp_bomb_arm, CGoal.toL, CGoalL.toNoun, Jmp.toNoun, unitNoun, hb,
+        runL, bombL, cd_emit_eq, NextL.goal, Next.goal, CGoal.toNoun, Lazy.toNoun_ofSure, Functor.map,
+        StateT.map, jmp0, lazyNoun, Sure.toNoun, Sure.bunt, Need.toNoun, HoonSet.toNoun_empty, listNoun]
+  · have h0' : ¬ (0 = ax) := fun h => h0 h.symm
+    have hD2 := comp_from_at
+    have hsn := run_simple_next hc x g (CGoal.toL gl) mono (C (A 0) (A ax)) (listNoun A region) sup
+    rcases e : simpleNextL (CGoal.toL gl) g with _ | ⟨nex, g1⟩
+    · rw [e] at hsn
+      simp only [runSubj, compCore, Option.map_none] at hsn
+      simp only [compCore]
+      generalize comp.door = Dr at hsn hD2 ⊢
+      nock_open runK0
+      simp [nock_exec, runSubj, h0, h0', hsn, run_bat_sn, runL, e, bind, StateT.bind]
+    · obtain ⟨s, hs, hs0⟩ := run_sn_shape gl hlok g nex g1 e
+      obtain ⟨laz, th⟩ := nex
+      simp only at hs
+      subst hs
+      rw [e] at hsn
+      simp only [runSubj, compCore, Option.map_some] at hsn
+      have hng : (NextL.goal ⟨Lazy.ofSure s, th⟩ : CGoalL CSet).toNoun
+          = C (A 0x7478656e) (C (lazyNoun s) th.toNoun) := by
+        simp [NextL.goal, CGoalL.toNoun, Lazy.toNoun_ofSure]
+      rw [hng] at hsn
+      have hf := comp_from hc (genNoun g1 x) ax s hs0
+      simp only [compCore]
+      generalize comp.door = Dr at hsn hD2 hf ⊢
+      nock_open runK0
+      by_cases h1 : ax = 1
+      · subst h1
+        simp [nock_exec, runSubj, hsn, run_bat_sn, runL, e, hng, pure, StateT.pure, bind, StateT.bind]
+      · have h1' : ¬ (1 = ax) := fun h => h1 h.symm
+        cases ef : «from» ax s with
+        | none =>
+          rw [ef] at hf
+          simp [nock_exec, runSubj, h0, h0', h1, h1', hsn, run_bat_sn, runL, e, hng, pure, StateT.pure, bind, StateT.bind, hD2, comp_from_arm, hf,
+            Lazy.fromL_ofSure, ef]
+        | some s' =>
+          rw [ef] at hf
+          simp [nock_exec, runSubj, h0, h0', h1, h1', hsn, run_bat_sn, runL, e, hng, pure, StateT.pure, bind, StateT.bind, hD2, comp_from_arm, hf,
+            Lazy.fromL_ofSure, ef]
+          simp [NextL.goal, CGoalL.toNoun, Lazy.toNoun_ofSure]
 
 end Compiler
 end Formalization
