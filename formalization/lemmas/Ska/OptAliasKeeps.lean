@@ -407,6 +407,91 @@ theorem apass_loop (f : Nat → Nat) : ∀ (args : List (Option Nat)) (par : Lis
       exact ⟨R2', by simp only [List.map_cons, Option.map_some, evalPassLoop, move, hgu', Option.map_some,
         Option.bind_some]; exact e⟩
 
+/-- The check of `+eval-pass` of renamed arguments. -/
+theorem apass_check {f : Nat → Nat} {args : List (Option Nat)} {par : List Nat} (R : Map (Option Noun))
+    (h : ∀ u, some u ∈ args → f u ∉ par) :
+    evalPass (args.map (Option.map f)) par R = evalPassLoop (args.map (Option.map f)) par R := by
+  unfold evalPass
+  rw [if_pos]
+  rw [List.all_eq_true]
+  intro a ha
+  obtain ⟨a0, ha0, rfl⟩ := List.mem_map.mp ha
+  cases a0 with
+  | none => rfl
+  | some u => simpa using h u ha0
+
+/-! ### Along the edge taken -/
+
+/-- **The agreement along the edge taken**: at the end of a walked jumping
+block `q` (the facts and immediates `lq`, `mq`, the block after `pb`, `AOK`
+and `ABInv` with the `old` of the walk state `g` just before `o` is walked,
+`DoneE` there), with `AKept` and presence on the files before and after, the
+pass after of the arguments renamed by `old` goes on whenever the pass before
+does, and `AKept` and presence hold at the start of `o` (the start state of
+`aStart`, `DoneS` along `q :: p`). -/
+theorem akp_edge {bl : Map Blob} (hS : AliasSSAB bl) (hpn : ParNodup bl) {pre l : List Nat}
+    (ht : TopoOK bl (pre ++ l)) {g : AGen Map} (hw : OldW bl pre g) {o q : Nat} {p : List Nat} {bo bq : Blob}
+    (hRo : Reach bl o) (hbo : HoonMap.get bl o = some bo) (hopre : o ∉ pre) (hbq : HoonMap.get bl q = some bq)
+    {lq : AInfo} {mq : AImms} {pb : Blob}
+    (hlq : g.info q = some lq) (hmq : g.imms q = some mq) (hpb : HoonMap.get g.new q = some pb)
+    {regs regs' Rp : Map (Option Noun)}
+    (hok : AOK ⟨g.old, lq, mq⟩ (fun x => read x regs) (DoneE bl pre p bq))
+    (hab : ABInv ⟨g.old, lq, mq⟩ (DefW bl pre) (DoneE bl pre p bq) (ClR bl))
+    (hk : AKept ⟨g.old, lq, mq⟩ (fun x => read x regs) (fun x => read x regs') (DoneE bl pre p bq))
+    (hP : APres g.old regs regs' (DoneE bl pre p bq))
+    (hq : q ∈ g.rev o) {j j' : Jmp} (hj' : j' ∈ getJmps pb.fin) (hjo : j'.there = o)
+    (hargs : j'.args = j.args.map (Option.map g.old)) (hau : ∀ u, some u ∈ j.args → DoneE bl pre p bq u)
+    (hpass : evalPass j.args bo.par regs = some Rp)
+    {info : AInfo} {imms : AImms} {edges : List (Nat × List (Option Nat))} {loc0 : AInfo}
+    (hst : aliasStart g o (g.rev o) = some info) (him : aliasStartImms g (g.rev o) = some imms)
+    (hed : aliasEdges g o (g.rev o) = some edges) (hpa : aliasPars g bo.par edges info = some loc0) :
+    ∃ Rp', evalPass j'.args bo.par regs' = some Rp' ∧
+      AKept ⟨g.old, loc0, imms⟩ (fun x => read x Rp) (fun x => read x Rp') (DoneS bl pre (q :: p) bo) ∧
+      APres g.old Rp Rp' (DoneS bl pre (q :: p) bo) := by
+  obtain ⟨hno, hloop⟩ := evalPass_check hpass
+  obtain ⟨hnm, hnmi, hDo, -⟩ := awi_edge_side hS ht hw hRo hbo hopre hbq hab
+  have hu : ∀ u, some u ∈ j.args → u ∉ bo.par := fun u hu => hno _ hu u rfl
+  have hfu : ∀ u, some u ∈ j.args → g.old u ∉ bo.par := fun u hu hp =>
+    awi_par_notDefW hS.1 hRo hbo hp hopre (hab.old u (hau u hu))
+  obtain ⟨Rp', hloop'⟩ := apass_loop g.old j.args bo.par regs regs' Rp hu hfu
+    (fun u hu' hs => hP u (hau u hu') hs) hloop
+  have hpass' : evalPass j'.args bo.par regs' = some Rp' := by
+    rw [hargs, apass_check regs' hfu]
+    exact hloop'
+  have hu' : ∀ u, some u ∈ j'.args → u ∉ bo.par := by
+    intro u hm
+    rw [hargs] at hm
+    obtain ⟨a0, ha0, e⟩ := List.mem_map.mp hm
+    cases a0 with
+    | none => cases e
+    | some u0 =>
+      simp only [Option.map_some, Option.some.injEq] at e
+      subst e
+      exact hfu u0 ha0
+  have hloop2 : evalPassLoop j'.args bo.par regs' = some Rp' := by rw [hargs]; exact hloop'
+  have hpar : ∀ (k x : Nat), bo.par[k]? = some x → (fun x => read x Rp) x = argV (fun x => read x regs) j.args[k]? := by
+    intro k x hk
+    rw [← awa_argV]
+    exact aedge_pass j.args bo.par regs Rp hu (hpn o bo hbo) hloop k x hk
+  have hpar' : ∀ (k x : Nat), bo.par[k]? = some x →
+      (fun x => read x Rp') x = argV (fun x => read x regs') j'.args[k]? := by
+    intro k x hk
+    rw [← awa_argV]
+    exact aedge_pass j'.args bo.par regs' Rp' hu' (hpn o bo hbo) hloop2 k x hk
+  have hoff : ∀ x, x ∉ bo.par → (fun x => read x Rp) x = (fun x => read x regs) x := by
+    intro x hx; simp only [read]; rw [Comp.evalPass_frame hpass x hx]
+  have hoff' : ∀ x, x ∉ bo.par → (fun x => read x Rp') x = (fun x => read x regs') x := by
+    intro x hx; simp only [read]; rw [Comp.evalPass_frame hpass' x hx]
+  refine ⟨Rp', hpass', aedge_kept hst him hed hpa hq hlq hmq hpb hok hk hj' hjo hargs hau hpar hpar' hoff hoff'
+    hnm hnmi (fun x hx => (hDo x hx).imp (fun h => ⟨h.1, h.2.2.2⟩) id), ?_⟩
+  intro d hd hs
+  rcases hDo d hd with ⟨h1, -, h3, h4⟩ | ⟨h1, h2⟩
+  · rw [Comp.evalPass_frame hpass d h3] at hs
+    rw [Comp.evalPass_frame hpass' _ h4]
+    exact hP d h1 hs
+  · rw [h2]
+    exact apass_par _ _ _ _ hloop2 d h1
+
 end Opt
 end SkaModel
 end Formalization
