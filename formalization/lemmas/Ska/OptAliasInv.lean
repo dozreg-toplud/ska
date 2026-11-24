@@ -113,6 +113,154 @@ theorem awi_bodyOK {bl : Map Blob} (hS : AliasSSAB bl) (hA : Acyclic bl) {o : Na
 
 end
 
+/-! ## The global `old` of the walk -/
+
+section
+variable [MapKeys Map]
+
+theorem awi_reach_bpath {bl : Map Blob} {o : Nat} (h : Reach bl o) : ∃ p, BPath bl (o :: p) := by
+  induction h with
+  | zero => exact ⟨[], BPath.start⟩
+  | jump _ hb hj ih => obtain ⟨p, hp⟩ := ih; exact ⟨_, BPath.step hp hb hj⟩
+
+/-- A jump of a member of `topo` goes to a later member. -/
+theorem awi_fwd {bl : Map Blob} {T : List Nat} (ht : TopoOK bl T) {p : Nat} (hp : p ∈ T) {b : Blob} {j : Jmp}
+    (hb : HoonMap.get bl p = some b) (hj : j ∈ getJmps b.fin) : j.there ∈ T ∧ T.idxOf p < T.idxOf j.there := by
+  obtain ⟨hnd, -, -, -, hf⟩ := ht
+  have hl : T.idxOf p < T.length := List.idxOf_lt_length_of_mem hp
+  have hx : T[T.idxOf p]? = some p := by rw [List.getElem?_eq_getElem hl, List.getElem_idxOf hl]
+  obtain ⟨k, hk, hk'⟩ := hf _ p b j hx hb hj
+  obtain ⟨hkl, hkv⟩ := List.getElem?_eq_some_iff.mp hk'
+  have hko : T.idxOf j.there = k := by rw [← hkv, hnd.idxOf_getElem k hkl]
+  refine ⟨?_, by omega⟩
+  rw [← hkv]; exact List.getElem_mem hkl
+
+/-- The blocks of a path from `0` are members of `topo`, each before the last. -/
+theorem awi_bpath_idx {bl : Map Blob} {T : List Nat} (ht : TopoOK bl T) : ∀ {L : List Nat}, BPath bl L →
+    ∀ {o p}, L = o :: p → o ∈ T ∧ ∀ o' ∈ p, T.idxOf o' < T.idxOf o
+  | _, BPath.start, o, p, e => by
+    cases e
+    refine ⟨?_, fun o' h => absurd h List.not_mem_nil⟩
+    obtain ⟨-, h0, -⟩ := ht
+    exact List.mem_of_mem_head? h0
+  | _, BPath.step hp hb hj, o, p, e => by
+    cases e
+    obtain ⟨hoT, ih⟩ := awi_bpath_idx ht hp rfl
+    obtain ⟨hjT, hlt⟩ := awi_fwd ht hoT hb hj
+    refine ⟨hjT, fun o' h => ?_⟩
+    rcases List.mem_cons.mp h with rfl | h
+    · exact hlt
+    · exact Nat.lt_trans (ih o' h) hlt
+
+/-- **A path to a walked block runs through walked blocks.** -/
+theorem awi_path_pre {bl : Map Blob} {pre l : List Nat} (ht : TopoOK bl (pre ++ l)) {o : Nat} {p : List Nat}
+    (hπ : BPath bl (o :: p)) (ho : o ∈ pre) : ∀ o' ∈ p, o' ∈ pre := by
+  intro o' h
+  have hlt := (awi_bpath_idx ht hπ rfl).2 o' h
+  apply mem_pre_of_idx (l := l)
+  have hnd := ht.1
+  have hi : pre.idxOf o < pre.length := List.idxOf_lt_length_of_mem ho
+  have hg : (pre ++ l)[pre.idxOf o]'(by rw [List.length_append]; omega) = o := by
+    rw [List.getElem_append_left hi, List.getElem_idxOf hi]
+  have : (pre ++ l).idxOf o = pre.idxOf o := by
+    conv => lhs; rw [← hg]
+    exact hnd.idxOf_getElem _ _
+  omega
+
+/-- **`old` renames only destinations of ops of walked blocks** of `pre`. -/
+def OldW (bl : Map Blob) (pre : List Nat) (g : AGen Map) : Prop :=
+  ∀ d, g.old d ≠ d → ∃ o ∈ pre, Reach bl o ∧ ∃ b, HoonMap.get bl o = some b ∧ d ∈ b.body.filterMap aliasDst
+
+theorem awi_block_drop {pick : List Nat → Nat} {nargs : Nat} {bl : Map Blob} {g g' : AGen Map} {o : Nat}
+    (h : aliasBlock pick nargs bl g o = some g') (h0 : g.rev o = []) (ho : o ≠ 0) : g'.old = g.old := by
+  unfold aliasBlock at h
+  dsimp only at h
+  rw [if_pos ⟨h0, ho⟩] at h
+  obtain ⟨b, -, rfl⟩ := Option.map_eq_some_iff.mp h
+  rfl
+
+theorem awi_old_step {pick : List Nat → Nat} {nargs : Nat} {bl : Map Blob} {pre l : List Nat} {o : Nat}
+    {g g' : AGen Map} (ht : TopoOK bl (pre ++ o :: l)) (hi : ARev bl (pre ++ o :: l) pre g) (hw : OldW bl pre g)
+    (h : aliasBlock pick nargs bl g o = some g') : OldW bl (pre ++ [o]) g' := by
+  intro d hd
+  have back : g.old d ≠ d → ∃ o' ∈ pre ++ [o], Reach bl o' ∧ ∃ b, HoonMap.get bl o' = some b ∧
+      d ∈ b.body.filterMap aliasDst := fun hd => by
+    obtain ⟨o', ho', r⟩ := hw d hd
+    exact ⟨o', List.mem_append_left _ ho', r⟩
+  rcases (arev_step ht hi h).2 with ⟨h0, ho, -⟩ | ⟨hR, -⟩
+  · rw [awi_block_drop h h0 ho] at hd; exact back hd
+  · cases hb : HoonMap.get bl o with
+    | none =>
+      rw [(awk_block h).1 d (fun b e => by rw [hb] at e; cases e)] at hd; exact back hd
+    | some b =>
+      by_cases hm : d ∈ b.body.filterMap aliasDst
+      · exact ⟨o, List.mem_append_right _ (List.mem_singleton.mpr rfl), hR, b, hb, hm⟩
+      · rw [(awk_block h).1 d (fun b' e => by rw [hb] at e; cases e; exact hm)] at hd; exact back hd
+
+/-- **`OldW` along the walk.** -/
+theorem awi_old_walk {pick : List Nat → Nat} {nargs : Nat} {bl : Map Blob} :
+    ∀ (l pre : List Nat) (g g' : AGen Map), TopoOK bl (pre ++ l) → ARev bl (pre ++ l) pre g → OldW bl pre g →
+      aliasWalk pick nargs bl l g = some g' → OldW bl (pre ++ l) g'
+  | [], pre, g, g', _, _, hw, h => by
+    simp only [aliasWalk, Option.some.injEq] at h; subst h
+    simpa using hw
+  | o :: l, pre, g, g', ht, hi, hw, h => by
+    simp only [aliasWalk] at h
+    obtain ⟨g1, h1, h⟩ := Option.bind_eq_some_iff.mp h
+    have hw1 := awi_old_step ht hi hw h1
+    have hi1 := (arev_step ht hi h1).1
+    have ht' : TopoOK bl ((pre ++ [o]) ++ l) := by rw [List.append_assoc]; exact ht
+    have hi1' : ARev bl ((pre ++ [o]) ++ l) (pre ++ [o]) g1 := by rw [List.append_assoc]; exact hi1
+    have := awi_old_walk l (pre ++ [o]) g1 g' ht' hi1' hw1 h
+    rwa [List.append_assoc] at this
+
+/-- **The `self` clause for the global `old`**: at any point of the walk, a
+register of `ClR` outside `DefW bl pre` keeps its own name.  A walked op that
+renamed it is a definition that counts (so the register is in `DefW`), or a
+dead fill; then `ClR` gives a reachable read before the fill in its block, and
+`DefFirst` a definition before that read, a parameter, an earlier op that is
+no dead fill, or a definition in a block of the path, which jumps and is
+walked. -/
+theorem awi_self {bl : Map Blob} (hS : AliasSSAB bl) {pre l : List Nat} (ht : TopoOK bl (pre ++ l))
+    {g : AGen Map} (hw : OldW bl pre g) {d : Nat} (hc : ClR bl d) (hn : ¬ DefW bl pre d) : g.old d = d := by
+  apply Classical.byContradiction; intro hd
+  obtain ⟨o, ho, hR, b, hb, hm⟩ := hw d hd
+  obtain ⟨k, op, hk, he⟩ := bdef_idx hm
+  by_cases hf : DeadFill bl d o k
+  · rcases hc with hc | ⟨o2, b2, j, hR2, hb2, hrd⟩
+    · exact hc o k hf
+    · obtain ⟨-, -, -, -, -, hreads⟩ := hf
+      obtain ⟨e2, -⟩ := hreads o2 b2 j hR2 hb2 hrd
+      subst e2
+      rw [hb] at hb2; cases hb2
+      obtain ⟨p, hπ⟩ := awi_reach_bpath hR
+      have hall : d ∈ allDefs bl := bdef_allDefs hb (List.mem_append_right _ hm)
+      rcases hS.2 o2 p b hπ hb j d hrd hall with h | h | ⟨o', ho', b', hb', h⟩
+      · exact hn (Or.inr ⟨(o2, none), awi_par_live hR hb h, ho⟩)
+      · obtain ⟨i, op', hi, he'⟩ := bdef_idx h
+        rw [List.getElem?_take] at hi
+        split at hi
+        · rename_i hij
+          refine hn (Or.inr ⟨(o2, some i), ⟨hR, ⟨b, op', hb, hi, he'⟩, fun i' hi' hdf => ?_⟩, ho⟩)
+          cases hi'
+          obtain ⟨-, -, -, -, -, hr2⟩ := hdf
+          have := (hr2 o2 b j hR hb hrd).2
+          omega
+        · cases hi
+      · have ho'pre := awi_path_pre ht hπ ho o' ho'
+        have hR' := ssk_bpath_reach hπ o' (List.mem_cons_of_mem _ ho')
+        obtain ⟨b'', j', hb'', hj'⟩ := bdef_jumps hπ rfl o' ho'
+        rw [hb'] at hb''; cases hb''
+        rcases List.mem_append.mp h with h | h
+        · exact hn (Or.inr ⟨(o', none), awi_par_live hR' hb' h, ho'pre⟩)
+        · obtain ⟨i, op', hi, he'⟩ := bdef_idx h
+          refine hn (Or.inr ⟨(o', some i), ⟨hR', ⟨b', op', hb', hi, he'⟩, fun i' _ hdf => ?_⟩, ho'pre⟩)
+          obtain ⟨b3, hb3, ⟨u, hu⟩, -⟩ := hdf
+          rw [hb'] at hb3; cases hb3; rw [hu] at hj'; simp [getJmps] at hj'
+  · exact hn (Or.inr ⟨(o, some k), ⟨hR, ⟨b, op, hb, hk, he⟩, fun i hi => by cases hi; exact hf⟩, ho⟩)
+
+end
+
 /-! ## Where an execution is -/
 
 section

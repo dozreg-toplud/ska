@@ -283,3 +283,7 @@ open Formalization.SkaModel.Opt
 #print axioms awi_bodyOK
 #print axioms awi_step_at
 #print axioms awi_entry_at
+#print axioms awi_path_pre
+#print axioms awi_old_step
+#print axioms awi_old_walk
+#print axioms awi_self
