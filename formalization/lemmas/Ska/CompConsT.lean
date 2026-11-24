@@ -594,15 +594,17 @@ head under the goal that `+past` makes behind the call (`mk bunt [] [(b,
 hed)]`, the bond block `b` a `[hop jb]`), from a state with the hypotheses
 of `OKNV` and the entry's registers allocated and no keys of `cond`, returns
 a clean sure need and meets `RunOKL` for some `D` and `W`. -/
-def BondOK (lib : Lib) (nm : Nomm) : Prop :=
-  ∀ {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S} {hed : Sure S} {b : Nat} {th jb : Jmp},
+structure BondOK (lib : Lib) (nm : Nomm) : Prop where
+  clean : ∀ {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S} {hed : Sure S} {b : Nat} {th : Jmp},
+    runL nm (CGoalL.next (mk Sure.bunt [] [(b, ofSure hed)]) th) region g0 = some (nex, g1) →
+    Clean nex.laz.sure.ned
+  run : ∀ {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S} {hed : Sure S} {b : Nat} {th jb : Jmp},
     sixCount nm ≤ 255 → 1 ≤ g0.bo → g0.drop = false → UpBelow g0 → Clear g0 → CondBelow g0 →
     1 ≤ th.there → th.there < g0.bo → b ≠ th.there → b < g0.bo →
     HoonMap.get g0.blocks b = some ⟨[], [], Termin.hop jb⟩ → Distinct hed.ned →
     (∀ x, NMem hed.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none) →
     runL nm (CGoalL.next (mk Sure.bunt [] [(b, ofSure hed)]) th) region g0 = some (nex, g1) →
-    Clean nex.laz.sure.ned ∧
-      ∃ D W, RunOKL (Map := Map) lib nm (mk Sure.bunt [] [(b, ofSure hed)]) th D W g0 g1 nex
+    ∃ D W, RunOKL (Map := Map) lib nm (mk Sure.bunt [] [(b, ofSure hed)]) th D W g0 g1 nex
 
 /-- **What the cons whose tail calls asks of its tail**: the code of every
 run under a fork-free `%next` begins at a block the run made, so the head's
@@ -653,7 +655,28 @@ theorem runOKL_n01 (lib : Lib) {L : Lazy S} {th : Jmp} {g : Gen Map}
 
 /-- **`[0 axe]` with `1 ≤ axe` meets `BondOK`** (`runOKL_n01`, `runOKL_n0_run`). -/
 theorem bondOK_n0 (lib : Lib) {axe : Nat} (ha : 1 ≤ axe) : BondOK (S := S) (Map := Map) lib (Nomm.n0 axe) := by
-  intro region g0 g1 nex hed b th jb _ b0 d0 hu hcl hcb h1 h2 hne hb hbb hdh hen h
+  refine ⟨fun {region g0 g1 nex hed b th} h => ?_, fun {region g0 g1 nex hed b th jb} _ b0 d0 hu hcl hcb h1 h2 hne hb
+    hbb hdh hen h => ?_⟩
+  · rcases Nat.lt_or_ge axe 2 with lt | ge
+    · obtain rfl : axe = 1 := by omega
+      rw [runL_n01_next] at h
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      trivial
+    · rw [runL_n0_next ge] at h
+      cases hf : fromL axe (mk (Sure.bunt : Sure S) [] [(b, ofSure hed)]) with
+      | none => rw [hf] at h; cases h
+      | some L' =>
+        rw [hf] at h
+        simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at h
+        obtain ⟨rfl, rfl⟩ := h
+        have hs := fromL_sure hf
+        simp only [fromSure, show axe ≠ 0 by omega, show axe ≠ 1 by omega, if_false] at hs
+        have hn : (mk (Sure.bunt : Sure S) [] [(b, ofSure hed)]).sure.ned = Need.none := rfl
+        rw [if_pos hn] at hs
+        simp only [Option.some.injEq] at hs
+        show Clean L'.sure.ned
+        rw [← hs]; trivial
   have E := entries_bond1 b hed
   have hed' : ∀ e ∈ entries (mk (Sure.bunt : Sure S) [] [(b, ofSure hed)]), Distinct e.2.sure.ned := by
     rw [E]; intro e he; simp only [List.mem_singleton] at he; subst he; exact hdh
@@ -670,30 +693,16 @@ theorem bondOK_n0 (lib : Lib) {axe : Nat} (ha : 1 ≤ axe) : BondOK (S := S) (Ma
     rw [runL_n01_next] at h
     simp only [Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, rfl⟩ := h
-    exact ⟨trivial, _, _, runOKL_n01 (L := mk (Sure.bunt : Sure S) [] [(b, ofSure hed)]) lib h1 h2 trivial hed' hnd
+    exact ⟨_, _, runOKL_n01 (L := mk (Sure.bunt : Sure S) [] [(b, ofSure hed)]) lib h1 h2 trivial hed' hnd
       hemp (fun r hr => hr.elim) hec (fun _ => A 0)⟩
-  · have R := runOKL_n0_run (Map := Map) lib ge h h1 h2 trivial hed' hnd hemp (fun r hr => hr.elim) hec (fun _ => A 0)
-    refine ⟨?_, _, _, R⟩
-    rw [runL_n0_next ge] at h
-    cases hf : fromL axe (mk (Sure.bunt : Sure S) [] [(b, ofSure hed)]) with
-    | none => rw [hf] at h; cases h
-    | some L' =>
-      rw [hf] at h
-      simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at h
-      obtain ⟨rfl, rfl⟩ := h
-      have hs := fromL_sure hf
-      simp only [fromSure, show axe ≠ 0 by omega, show axe ≠ 1 by omega, if_false] at hs
-      have hn : (mk (Sure.bunt : Sure S) [] [(b, ofSure hed)]).sure.ned = Need.none := rfl
-      rw [if_pos hn] at hs
-      simp only [Option.some.injEq] at hs
-      show Clean L'.sure.ned
-      rw [← hs]; trivial
+  · exact ⟨_, _, runOKL_n0_run (Map := Map) lib ge h h1 h2 trivial hed' hnd hemp (fun r hr => hr.elim) hec
+      (fun _ => A 0)⟩
 
 /-- **`[4 p]` with `p` in `FragX` meets `BondOK`** (`runOKL_n4_none`, `clean_n4L`). -/
 theorem bondOK_n4 (lib : Lib) {p : Nomm} (hp : FragX (S := S) p) : BondOK (S := S) (Map := Map) lib (Nomm.n4 p) := by
-  intro region g0 g1 nex hed b th jb hcount b0 d0 hu hcl hcb h1 h2 hne hb hbb hdh hen h
+  refine ⟨fun h => clean_n4L (runX_clean hp) h, fun {region g0 g1 nex hed b th jb} hcount b0 d0 hu hcl hcb h1 h2
+    hne hb hbb hdh hen h => ?_⟩
   have E := entries_bond1 b hed
-  refine ⟨clean_n4L (runX_clean hp) h, ?_⟩
   obtain ⟨d, R⟩ := runOKL_n4_none lib (runX_ok lib hp).2.1 (runX_semR lib hp).2.1 (runX_keeps hp)
     (aboveX_of_fragX hp) h hcount b0 d0 hu hcl h1 h2 rfl hcb
     (by rw [E]; simp only [List.map_cons, List.map_nil, List.nodup_cons, List.mem_singleton, List.not_mem_nil,
@@ -907,7 +916,8 @@ theorem consT_runN (lib : Lib) {p d : Nomm} {env : CallEnv} {P : Noun → Prop} 
     have u3 : UpBelow g3 := Rq.grow.up (Gb.up u2)
     have bo3 : g2.bo + 1 ≤ g3.bo := by simpa [Gen.emitted] using Rq.ext.2.1
     have re3 : g2.re ≤ g3.re := by simpa [Gen.emitted] using Rq.ext.1
-    obtain ⟨cp, D, W, RL⟩ := Bp (region := region) (jb := jmp0 g0.bo) (by omega) (by omega) d3 u3
+    have cp := Bp.clean h4
+    obtain ⟨D, W, RL⟩ := Bp.run (region := region) (jb := jmp0 g0.bo) (by omega) (by omega) d3 u3
       ((cl2.growU Gb).growU Rq.grow) (Rq.cfr.below (by
         intro k hk
         rw [tagged_cond] at hk
@@ -922,6 +932,114 @@ theorem consT_runN (lib : Lib) {p d : Nomm} {env : CallEnv} {P : Noun → Prop} 
       (by simp [Gen.emitted]) rfl (fun v => fitsS_bunt v)
       (Or.inr ⟨rfl, entries_bond1 g2.bo hed, by simp [Gen.emitted], by rw [hbk, if_pos rfl]⟩)
       Rq RL cq cp hcp hu d0 hnot hfix hblk
+
+/-- **The sure need of the cons's run under `%next` is clean** (`+copy` of
+the head's, clean by `UOK.clean` or `BondOK.clean`, and the tail's, clean by
+`UOKC.clean`). -/
+theorem consT_cleanN {lib : Lib} {p d : Nomm} {env : CallEnv} {P : Noun → Prop} {ft : Noun}
+    (up : UOK (S := S) (Map := Map) lib p) (Bp : BondOK (S := S) (Map := Map) lib p)
+    (Ud : UOKC (S := S) (Map := Map) lib env P ft d) (hd : hinted env.cod d = some true) {sup : Option Nomm}
+    {sur : Sure S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S} (hcl : Clean sur.ned)
+    (h : runLC env sup (Nomm.cons p d) (CGoalL.next (ofSure sur) th) region g0 = some (nex, g1)) :
+    Clean nex.laz.sure.ned := by
+  have e : (runLC env sup (Nomm.cons p d) (CGoalL.next (ofSure sur) th) region :
+      CM Map (NextL S)) = (do
+        let (hed, tel, o) ← splitL ⟨ofSure sur, th⟩
+        let nexh ← pastL env.cod ⟨hed, jmp0 o⟩ d region
+        let nex2 ← runLC env sup d (CGoalL.next tel nexh.th) region
+        let nex2 ← pastL env.cod nex2 p region
+        let nex1 ← runLC env sup p (CGoalL.next nexh.laz nex2.th) region
+        copyL nex1 nex2.laz) := rfl
+  rw [e] at h
+  obtain ⟨⟨hed', tel', o⟩, g2x, h2, h⟩ := bind_some h
+  rw [splitL_mk, map_apply] at h2
+  obtain ⟨⟨⟨hed, tel, o'⟩, g2⟩, hs2, e2⟩ := Option.map_eq_some_iff.mp h2
+  simp only [Prod.mk.injEq] at e2
+  obtain ⟨⟨rfl, rfl, rfl⟩, rfl⟩ := e2
+  clear h2
+  simp only at h
+  obtain ⟨nexh, g2', hph, h⟩ := bind_some h
+  obtain ⟨nex2, g3, h3, h⟩ := bind_some h
+  obtain ⟨nex2', g3', hp2, h⟩ := bind_some h
+  rw [pastL_pure _ _ up.pure, pure_apply] at hp2
+  simp only [Option.some.injEq, Prod.mk.injEq] at hp2
+  obtain ⟨rfl, rfl⟩ := hp2
+  obtain ⟨nex1, g4, h4, hcp⟩ := bind_some h
+  rw [runLC_eq env p (Nomm.noCall_of_pure p up.pure)] at h4
+  have CS := clean_split hs2 hcl
+  simp only at CS
+  have cq := Ud.clean (goal := CGoal.next tel nexh.th) trivial CS.2 h3
+  rcases pastL_hinted hd hph with ⟨x1, x2, en, es, _⟩ | ⟨x1, x2⟩
+  · subst nexh g2'
+    exact clean_copyL hcp (up.clean (goal := CGoal.next hed nex2.th) CS.1 h4) cq
+  · subst nexh g2'
+    exact clean_copyL hcp (Bp.clean h4) cq
+
+/-- **The cons whose tail calls under `%done`, from any state**: the block
+`[don re]` of the cons's `%done` case, then the run under `%next
+(lazy-from-reg re)` into it (`consT_runN`), turned into `%done` by
+`runOKGC_of_next`. -/
+theorem consT_runD (lib : Lib) {p d : Nomm} {env : CallEnv} {P : Noun → Prop} {fh ft : Noun}
+    (up : UOK (S := S) (Map := Map) lib p) (Mp : MinkEq lib P fh p) (Bp : BondOK (S := S) (Map := Map) lib p)
+    (hfh : ∃ x y, fh = C x y) (Ud : UOKC (S := S) (Map := Map) lib env P ft d) (hd : hinted env.cod d = some true)
+    (Ed : EntNew (S := S) (Map := Map) env d)
+    (hcount : sixCount p + sixCount d ≤ 255) {sup : Option Nomm} {region : List Nat} {g0 g' : Gen Map}
+    {nex : NextL S} (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0) (hcl : Clear g0)
+    (hcb : CondBelow g0) (h : runLC env sup (Nomm.cons p d) CGoalL.done region g0 = some (nex, g')) :
+    RunOKGC lib P (C fh ft) (CGoal.done : CGoal S) g0 g' nex := by
+  rw [runLC_cons_done] at h
+  obtain ⟨r, ga, ha, h⟩ := bind_some h
+  rw [re_apply] at ha
+  simp only [Option.some.injEq, Prod.mk.injEq] at ha
+  obtain ⟨rfl, rfl⟩ := ha
+  obtain ⟨od, gb, hb, h⟩ := bind_some h
+  rw [emit_apply] at hb
+  simp only [Option.some.injEq, Prod.mk.injEq] at hb
+  obtain ⟨rfl, rfl⟩ := hb
+  have G1 : GrowU ({ g0 with re := g0.re + 1 } : Gen Map) ({ g0 with re := g0.re + 1 }.emitted ⟨[], [], Termin.don g0.re⟩) :=
+    growU_emit (g := { g0 with re := g0.re + 1 }) (b := ⟨[], [], Termin.don g0.re⟩)
+      (fun j hj => by simp [finJumps] at hj) hu
+  have R := consT_runN (sur := lazyReg g0.re) (th := jmp0 g0.bo) lib up Mp Bp hfh Ud hd Ed hcount
+    ⟨b0, by simp only [jmp0, Gen.emitted]; omega⟩ rfl
+    ⟨trivial, fun x hx => by simp only [lazyReg, NMem] at hx; subst hx; simp only [Gen.emitted]; omega⟩ trivial
+    (by simp only [Gen.emitted]; omega) (by simp only [Gen.emitted]; exact d0) (G1.up hu)
+    (Clear.growU (g := ({ g0 with re := g0.re + 1 } : Gen Map)) hcl G1)
+    (fun k hk => by have := hcb k hk; simp only [Gen.emitted] at this ⊢; omega)
+    (fun x hx => by
+      simp only [lazyReg, NMem] at hx; subst hx
+      exact condBelow_none hcb (Nat.le_refl _)) h
+  have hb : HoonMap.get g'.blocks g0.bo = some ⟨[], [], Termin.don g0.re⟩ := by
+    rw [R.ext.2.2.2 _ (by simp only [Gen.emitted]; omega)]
+    simp only [Gen.emitted, d0, Bool.false_eq_true, ↓reduceIte, HoonMap.get_put]
+  exact runOKGC_of_next (goal := CGoal.done) trivial hu hcb (fun j hj => by simp [finJumps] at hj) rfl hb
+    (fun cf c0 => by simp only [unproxyBlob, renBlob, List.map_nil, renFin, unproxy_none c0])
+    (fun c σ O gul Inv ν K K' st regs t tm je r _ _ hbc H => goalSemCM_done_of_next hbc H) R
+
+/-- **The cons whose tail calls meets `UOKC`**: a call-free head with `UOK`,
+`+mink` on `fh` its value and `BondOK`, a hinted tail with `UOKC` and
+`EntNew`, for the formula `[fh ft]` with `fh` a cell (`consT_runN`,
+`consT_runD`, `consT_cleanN`). -/
+theorem uokc_consT (lib : Lib) (env : CallEnv) {p d : Nomm} {P : Noun → Prop} {fh ft : Noun}
+    (up : UOK (S := S) (Map := Map) lib p) (Mp : MinkEq lib P fh p) (Bp : BondOK (S := S) (Map := Map) lib p)
+    (hfh : ∃ x y, fh = C x y) (Ud : UOKC (S := S) (Map := Map) lib env P ft d) (hd : hinted env.cod d = some true)
+    (Ed : EntNew (S := S) (Map := Map) env d) :
+    UOKC (S := S) (Map := Map) lib env P (C fh ft) (Nomm.cons p d) := by
+  refine ⟨Or.inr (by simp only [hinted, hinted_pure env.cod p up.pure, hd]; rfl),
+    fun {sup goal region g0 g1 nex} hnp hc h => ?_,
+    fun {sup goal region g0 g1 nex} hnp ha hj hok hcl hcount b0 d0 hu hcl0 hcb hkg h => ?_⟩
+  · cases goal with
+    | next sur th => exact consT_cleanN up Bp Ud hd hc h
+    | done =>
+      simp only [CGoal.toL] at h
+      rw [runLC_cons_done] at h
+      obtain ⟨r, ga, ha, h⟩ := bind_some h
+      obtain ⟨od, gb, hb, h⟩ := bind_some h
+      exact consT_cleanN up Bp Ud hd (show Clean (lazyReg (S := S) r).ned from trivial) h
+    | pick z o => exact hnp.elim
+  · cases goal with
+    | next sur th => exact consT_runN lib up Mp Bp hfh Ud hd Ed hcount hj ha hok hcl b0 d0 hu hcl0 hcb hkg h
+    | done => exact consT_runD lib up Mp Bp hfh Ud hd Ed hcount b0 d0 hu hcl0 hcb h
+    | pick z o => exact hnp.elim
 
 end Comp
 end SkaModel
