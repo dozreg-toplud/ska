@@ -15,6 +15,7 @@ import lemmas.Hoon.JabBy
 import lemmas.Hoon.Ju
 import lemmas.Hoon.MapFolds
 import lemmas.Hoon.SetFolds
+import lemmas.Hoon.DifIn
 import lemmas.Hoon.ListsMore
 import lemmas.Hoon.ListsSort
 import lemmas.Hoon.Rip
@@ -444,3 +445,9 @@ open Formalization
 #print axioms Compiler.live_loop_iff
 #print axioms Compiler.registerFastIs_of
 #print axioms Compiler.resolveStepH_eq
+#print axioms Hoon.bif_arm_at
+#print axioms Hoon.bif_gate
+#print axioms Hoon.dif_in_gate
+#print axioms Hoon.bifInF_spec
+#print axioms Hoon.difInF_spec
+#print axioms Hoon.dif_in
