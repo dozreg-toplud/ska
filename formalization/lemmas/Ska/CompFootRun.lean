@@ -976,10 +976,69 @@ theorem foot_n4 {p : Nomm} (ih : FootIH S Map p) : FootIH S Map (Nomm.n4 p) := b
         · exact bnd pro e
         · exact ⟨by omega, Or.inl (by omega)⟩)) h4 h
 
-/-- **The induction over `run`**, given the cases that are still open (`%3`,
-cons, `%5`, `%10`) as hypotheses. -/
+theorem foot_n3 {p : Nomm} (ih : FootIH S Map p) : FootIH S Map (Nomm.n3 p) := by
+  intro goal g g' nex hd hg hD h
+  cases goal with
+  | done =>
+    simp only [run] at h
+    obtain ⟨⟨o0, o1⟩, g1, h1, h⟩ := bind_some h
+    have k1 := keeps_doneBlocks hd h1
+    obtain ⟨r, g2, h2, h⟩ := bind_some h
+    obtain ⟨e2, q2, k2⟩ := keeps_re h2
+    obtain ⟨oc, g3, h3, h⟩ := bind_some h
+    have l1 := k1.le
+    exact foot_tail ih ((k1.trans k2).dropF hd)
+      (blobIn_fin (f := Termin.clq r (jmp0 o0) (jmp0 o1)) ⟨show r < g2.re by omega, jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩)
+      (by omega) (by omega) (((wr_doneBlocks h1).mono fun x hx => by
+        rcases hx with e | e
+        · exact e.elim
+        · exact ⟨by omega, Or.inl e.1⟩).trans (wroteIn_re h2)) (blobWr_fin _ _) h3 h
+  | pick z o =>
+    simp only [run] at h
+    obtain ⟨r, g2, h2, h⟩ := bind_some h
+    obtain ⟨e2, q2, k2⟩ := keeps_re h2
+    obtain ⟨oc, g3, h3, h⟩ := bind_some h
+    have kk : ∀ x, x < g.re → x < g2.re := fun x hx => by omega
+    exact foot_tail ih (k2.dropF hd)
+      (blobIn_fin (f := Termin.clq r z o) ⟨show r < g2.re by omega, hg.1.mono kk, hg.2.mono kk⟩) (by omega) (by omega)
+      (wroteIn_re h2) (blobWr_fin _ _) h3 h
+  | next laz th =>
+    simp only [run] at h
+    by_cases en : noneEquivalent laz = true
+    · rw [if_pos en] at h; exact ih _ _ _ _ hd hg hD h
+    rw [if_neg en] at h
+    obtain ⟨a, g1, h1, h⟩ := bind_some h
+    obtain ⟨k1, r1⟩ := keeps_collapseLazyAtom (nex := ⟨laz, th⟩) hd hg.1 h1
+    obtain ⟨w1, rr1⟩ := wr_collapseLazyAtom (nex := ⟨laz, th⟩) hd hg.1 h1
+    cases a with
+    | none => cases h
+    | some x =>
+      obtain ⟨r, o⟩ := x
+      simp only at h
+      obtain ⟨⟨z, o'⟩, g2, h2, h⟩ := bind_some h
+      have k2 := keeps_forl (k1.dropF hd) (r1 r o rfl) h2
+      obtain ⟨r', g3, h3, h⟩ := bind_some h
+      obtain ⟨e3, q3, k3⟩ := keeps_re h3
+      obtain ⟨oc, g4, h4, h⟩ := bind_some h
+      have l1 := k1.le
+      have l2 := k2.le
+      have bnd : ∀ x, NewOr laz.ned g g1 x → x < r' ∧ (g.re ≤ x ∨ GMem (CGoal.next laz th) x) := fun x hx => by
+        rcases hx with e | e
+        · exact ⟨by have := hg.1 x e; omega, Or.inr e⟩
+        · exact ⟨by omega, Or.inl e.1⟩
+      have bnd2 : ∀ x, NewOr (Need.this r) g1 g2 x → x < r' ∧ (g.re ≤ x ∨ GMem (CGoal.next laz th) x) :=
+        fun x hx => by
+          rcases hx with e | e
+          · simp only [NMem] at e; rw [e]; exact bnd r (rr1 r o rfl)
+          · exact ⟨by omega, Or.inl (by omega)⟩
+      exact foot_tail ih ((k1.trans (k2.trans k3)).dropF hd)
+        (blobIn_fin (f := Termin.clq r' (jmp0 z) (jmp0 o')) ⟨show r' < g3.re by omega, jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩)
+        (by omega) (by omega) (((w1.mono bnd).trans ((wr_forl h2).mono bnd2)).trans (wroteIn_re h3))
+        (blobWr_fin _ _) h4 h
+
+/-- **The induction over `run`**, given the cases that are still open (cons,
+`%5`, `%10`) as hypotheses. -/
 theorem run_foot_of
-    (h3 : ∀ p, FootIH S Map p → FootIH S Map (Nomm.n3 p))
     (hc : ∀ p q, FootIH S Map p → FootIH S Map q → FootIH S Map (Nomm.cons p q))
     (h5 : ∀ p q, FootIH S Map p → FootIH S Map q → FootIH S Map (Nomm.n5 p q))
     (h10 : ∀ a v q, FootIH S Map v → FootIH S Map q → FootIH S Map (Nomm.n10 a v q)) :
@@ -990,7 +1049,7 @@ theorem run_foot_of
   | n1 k => exact foot_n1 k
   | n7 p q ihp ihq => exact foot_n7 ihp ihq
   | n4 p ih => exact foot_n4 ih
-  | n3 p ih => exact h3 p ih
+  | n3 p ih => exact foot_n3 ih
   | n5 p q ihp ihq => exact h5 p q ihp ihq
   | cons p q ihp ihq => exact hc p q ihp ihq
   | n10 a v q ihv ihq => exact h10 a v q ihv ihq
