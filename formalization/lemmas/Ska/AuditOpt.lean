@@ -2,6 +2,7 @@ import lemmas.Ska.OptDriver
 import lemmas.Ska.OptHopsSim
 import lemmas.Ska.OptDriverFields
 import lemmas.Ska.OptMiddleSim
+import lemmas.Ska.OptArgs
 
 /-! Axioms of the theorems about `+optimize`. -/
 
@@ -36,3 +37,5 @@ open Formalization.SkaModel.Opt
 #print axioms mid_endOf
 #print axioms middle_keeps_of
 #print axioms middleKeeps
+#print axioms rub_argsOK
+#print axioms hops_argsOK_of
