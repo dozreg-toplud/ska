@@ -200,7 +200,7 @@ theorem cu_trap_run (FUNC SCC CODE LSR JH CACHE NM CA V : Noun) (n : Nomm)
     crArm, crB, crBat, crSubj, listNoun]
 
 /-- **The `=^` of the run and the call of `+kerf`.** -/
-theorem cu_trap_kerf (NEXN G1N GN D0 S4 CTX : Noun) :
+theorem cu_trap_kerf (NEXN G1N GN S4 CTX : Noun) :
     nock (C (C NEXN G1N) (C GN (C (C comp.door (C cuBunt CTX)) S4))) cuAfterRun
       = (nock (C kerfBat (C NEXN (C comp.door (C G1N CTX)))) kerfBat).bind fun K =>
           nock (C K (C NEXN (C G1N (C (C comp.door (C cuBunt CTX)) S4)))) cuEnd := by
@@ -219,6 +219,90 @@ theorem cu_trap_end (o sub : Nat) (G2N NEXN G1N NM S4R CTX : Noun) :
   conv => { lhs; arg 2; unfold cuEnd }
   generalize comp.door = Dr at hts ⊢
   simp [nock_exec, cuTsCall, cuTsSam, hts, comp_ts_arm, tsSample, Option.bind_assoc]
+
+/-- `cache` of the state is axis `510` of its noun. -/
+theorem cu_gen_cache (g : Gen (TreapMap mugF)) (x : GenRest) : slot? 510 (genNoun g x) = some x.cache := by
+  simp only [genNoun, nock_exec]
+
+/-- **The trap of `+compile-unary`** on a pure nomm with no `%6` and no
+`%10` at axis `0`: if `+compile-scc-in` returns `[NM CA]` and `code` holds
+`V` at `func` with the nomm `n` at its head, the trap returns
+`[[straight NM] CA]` with `straight` the noun of `finishLU n`, and crashes
+when `finishLU n` is `none`.  The cache it returns is `CA`, the one that
+`+compile-scc-in` returned: `+run`, `+kerf` and `+to-straight` keep it. -/
+theorem cu_trap (FUNC SCC CODE LSR JH CACHE NM CA V : Noun) (n : Nomm)
+    (hpu : n.pure = true) (h6 : noSix n = true) (ht : tenOk n = true)
+    (hcsi : nock (cuTC (cuSam FUNC SCC CODE LSR JH CACHE)) cuCsi = some (C NM CA))
+    (hgot : getF mugF FUNC CODE = some (C (A 0) V)) (hv : slot? 2 V = some n.toNoun) :
+    nock (cuTC (cuSam FUNC SCC CODE LSR JH CACHE)) cuTrap
+      = (finishLU (S := CSet) (Map := TreapMap mugF) n).map fun st => C (C st.toNoun NM) CA := by
+  have h7 : slot? 7 (cuCtx FUNC SCC CODE LSR JH NM) = some compK := rfl
+  have hcode : slot? 52 (cuCtx FUNC SCC CODE LSR JH NM) = some CODE := by simp [cuCtx, nock_exec]
+  obtain ⟨hc, hl, hm⟩ := comp_ctx_pill _ h7
+  have hts : TsAt (cuCtx FUNC SCC CODE LSR JH NM) :=
+    ts_at_of_step hc h7 (ts_step_at hc (lf_ts_rj hc))
+  rw [cu_trap_entry FUNC SCC CODE LSR JH CACHE NM CA hcsi,
+    cu_trap_run FUNC SCC CODE LSR JH CACHE NM CA V n hgot hv,
+    cu_entry_run h7 hcode n hpu h6 ht CA (A 0) (A 0)]
+  have hf : finishLU (S := CSet) (Map := TreapMap mugF) n
+      = ((runL n (CGoal.toL (CGoal.done : CGoal CSet)) [] genEntry).bind fun p => kerf p.1 p.2).bind
+          fun q => toStraightF q.2.cond q.2.blocks (Need.this q.1.2) q.1.1 := by
+    rw [Option.bind_assoc]; rfl
+  rw [hf]
+  have hce := cu_cond_empty n hpu h6
+  rw [runL_toL n hpu h6] at hce ⊢
+  cases e : run (S := CSet) (Map := TreapMap mugF) n CGoal.done genEntry with
+  | none => simp [e, Functor.map, StateT.map]
+  | some p =>
+    obtain ⟨nex, g1⟩ := p
+    have hk := comp_kerf hc hl hm (cuRest CA) g1 nex (cu_entry_nosoft CA g1.bo)
+      (cra_run_lok n hpu h6 CGoal.done genEntry g1 nex e trivial)
+    simp only [compCore] at hk
+    simp only [e, Functor.map, StateT.map, bind, pure, Option.bind_some, Option.map_some,
+      cr_next_noun] at hce ⊢
+    rw [cu_trap_kerf, hk]
+    cases e2 : kerf (Next.toL nex) g1 with
+    | none => simp
+    | some q =>
+      obtain ⟨⟨o, sub⟩, g2⟩ := q
+      have h := hts g2 (cuRest CA) sub o (hce o sub g2 e2)
+      simp only [compCore] at h
+      simp only [Option.map_some, Option.bind_some]
+      unfold cuS4
+      rw [cu_trap_end, h, cu_gen_cache]
+      cases toStraightF g2.cond g2.blocks (Need.this sub) o <;> rfl
+
+/-- `road-pure` in `K` (axis `254` of `compTypes`), a kernel fact. -/
+theorem cu_rp_in_K : slot? 510 compK = some (C rpBat (C rpSam rpCtx)) := by kernel_rfl
+
+/-- The gate of `+compile-unary` pushes `args` and `road-pure` and slams
+`road-pure` on the trap core. -/
+theorem cu_gate_rp (SAM : Noun) :
+    nock (C cuGB (C SAM compK)) cuGB = nock (C rpBat (C (cuTC SAM) rpCtx)) rpBat := by
+  have hrp := cu_rp_in_K
+  conv => { lhs; arg 2; unfold cuGB }
+  unfold cuTC
+  generalize compK = Kc at hrp ⊢
+  simp [nock_exec, hrp]
+
+/-- **The gate of `+compile-unary`** on its sample `[func scc long-ska
+jets-hot cache]`, with `long-ska` as `[code rest]`: the trap's product
+(`cu_trap`) through `road-pure` (`cu_rp_iff`), with the same hypotheses. -/
+theorem cu_gate (FUNC SCC CODE LSR JH CACHE NM CA V : Noun) (n : Nomm)
+    (hpu : n.pure = true) (h6 : noSix n = true) (ht : tenOk n = true)
+    (hcsi : nock (cuTC (cuSam FUNC SCC CODE LSR JH CACHE)) cuCsi = some (C NM CA))
+    (hgot : getF mugF FUNC CODE = some (C (A 0) V)) (hv : slot? 2 V = some n.toNoun) :
+    nock (C cuGB (C (cuSam FUNC SCC CODE LSR JH CACHE) compK)) cuGB
+      = (finishLU (S := CSet) (Map := TreapMap mugF) n).map fun st => C (C st.toNoun NM) CA := by
+  rw [cu_gate_rp, ← cu_trap FUNC SCC CODE LSR JH CACHE NM CA V n hpu h6 ht hcsi hgot hv]
+  apply Option.ext
+  intro y
+  rw [cu_rp_iff]
+  have hk : nock (cuTC (cuSam FUNC SCC CODE LSR JH CACHE)) rpK
+      = nock (cuTC (cuSam FUNC SCC CODE LSR JH CACHE)) cuTrap := by
+    unfold cuTC
+    simp [rpK, nock_exec]
+  rw [hk]
 
 end Compiler
 end Formalization
