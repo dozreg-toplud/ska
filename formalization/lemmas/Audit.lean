@@ -593,3 +593,6 @@ open Formalization
 #print axioms Compiler.comp_copy_need
 #print axioms Compiler.comp_copy_lazy
 #print axioms Compiler.comp_copy
+#print axioms Compiler.srl_loop
+#print axioms Compiler.srl_gate
+#print axioms Compiler.comp_sure_require_look

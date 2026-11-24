@@ -842,5 +842,99 @@ theorem srl_loop (hc : CompIn ctx) (hl : CompLib ctx) (B SUR GI : Noun) :
                 hmas, ← capF_eq_cap, ← masF_eq_mas, Need.toNoun, Tag.none, Tag.this, Tag.both, IH, e,
                 split3, bind, StateT.bind, hK, hcn, cnArm, hcn0, h3, wrapN, pure, StateT.pure, eqCode, hp1]
 
+theorem srl_lookPath_some : ∀ (axe : Nat) (ned : Need) (g : Gen (TreapMap mugF)),
+    ∃ p, lookPath ned axe g = some p := by
+  intro axe
+  induction axe using Nat.strongRecOn with
+  | ind axe ih =>
+    intro ned g
+    rw [lookPath.eq_def]
+    by_cases ha : axe ≤ 1
+    · simp only [ha, dite_true]
+      cases ned <;> simp [re, bind, StateT.bind, pure, StateT.pure]
+    · have hm := mas_lt axe (by omega)
+      simp only [ha, dite_false]
+      split
+      · obtain ⟨p, hp⟩ := ih (mas axe) hm (split3 ned).2.1 g
+        simp [bind, StateT.bind, hp, pure, StateT.pure]
+      · obtain ⟨p, hp⟩ := ih (mas axe) hm (split3 ned).2.2 g
+        simp [bind, StateT.bind, hp, pure, StateT.pure]
+
+/-- One step of the `rep` of `+sure-require-look` on a look `y`. -/
+noncomputable def srlStep (y : Nat) (s : Need × Gen (TreapMap mugF)) : Need × Gen (TreapMap mugF) :=
+  if y = 1 then s else (lookPath s.1 y s.2).getD s
+
+/-- The state noun of that `rep`, `[ned gen]`. -/
+def srlN (x : GenRest) (s : Need × Gen (TreapMap mugF)) : Noun := C s.1.toNoun (genNoun s.2 x)
+
+variable {x} in
+/-- One slam of the gate of the `rep`, on a look that is not `0`. -/
+theorem srl_gate (hc : CompIn ctx) (hl : CompLib ctx) (SUR G0 : Noun) (y : Nat) (hy : y ≠ 0)
+    (s : Need × Gen (TreapMap mugF)) :
+    nock (C srlG (C (C (A y) (srlN x s)) (C srlBat (C SUR (C comp.door (C G0 ctx)))))) srlG
+      = some (srlN x (srlStep y s)) := by
+  obtain ⟨n, g⟩ := s
+  by_cases y1 : y = 1
+  · subst y1
+    nock_open srlG
+    simp [nock_exec, srlN, srlStep]
+  · have hlp := srl_loop (x := x) hc hl srlBat SUR (genNoun g x) y (by omega) n g
+    obtain ⟨p, hp⟩ := srl_lookPath_some y n g
+    rw [hp] at hlp
+    simp only [srlT] at hlp
+    have y1' : ¬ (1 = y) := fun h => y1 h.symm
+    have hy' : ¬ (0 = y) := fun h => hy h.symm
+    nock_open srlG
+    simp [nock_exec, srlN, srlStep, y1, y1', hy', hlp, hp]
+
+theorem srl_fold (l : List Nat) (h0 : ∀ y ∈ l, y ≠ 0) :
+    ∀ (m : CM (TreapMap mugF) Need) (g : Gen (TreapMap mugF)) (s : Need × Gen (TreapMap mugF)),
+    m g = some s →
+    (l.foldl (fun acc axe => do
+      let ned ← acc
+      if axe = 1 then pure ned else
+      if axe = 0 then fun _ => Option.none else
+      lookPath ned axe) m) g = some (l.foldl (fun s y => srlStep y s) s) := by
+  induction l with
+  | nil => intro m g s h; simpa using h
+  | cons y l ih =>
+    intro m g s h
+    simp only [List.foldl_cons]
+    apply ih (fun z hz => h0 z (List.mem_cons_of_mem _ hz))
+    have hy := h0 y List.mem_cons_self
+    obtain ⟨n, g'⟩ := s
+    by_cases y1 : y = 1
+    · simp [bind, StateT.bind, h, y1, srlStep, pure, StateT.pure]
+    · obtain ⟨p, hp⟩ := srl_lookPath_some y n g'
+      simp [bind, StateT.bind, h, y1, hy, srlStep, hp]
+
+variable {x} in
+/-- `+sure-require-look`: `lookPath` down each looked-at axis, in the order
+of `+rep:in` (the pre-order of the treap, `HoonSet.toList`), from the need of
+the sure; with no look at axis `0`. -/
+theorem comp_sure_require_look (hc : CompIn ctx) (hl : CompLib ctx) (g : Gen (TreapMap mugF))
+    (sur : Sure CSet) (h0 : ∀ y ∈ HoonSet.toList sur.lok, y ≠ 0) :
+    nock (C srlBat (C sur.toNoun (compCore g x ctx))) srlBat
+      = (sureRequireLook sur g).map fun p => C p.1.toNoun (genNoun p.2 x) := by
+  obtain ⟨ned, lok⟩ := sur
+  simp only at h0
+  have hrep := rep_gate_on (srlN x) (fun n s => match n with | Noun.atom y => srlStep y s | _ => s)
+    in.battery layer2 srlG (A 0)
+    (C srlBat (C (C ned.toNoun (HoonSet.toNoun lok)) (C comp.door (C (genNoun g x) ctx))))
+    (HoonSet.toNoun lok) (cs_tree lok) (ned, g) (by
+      intro n hn s
+      rw [cs_preorder] at hn
+      obtain ⟨y, hy, rfl⟩ := List.mem_map.1 hn
+      exact srl_gate hc hl _ _ y (h0 y hy) s)
+  rw [cs_preorder, List.foldl_map] at hrep
+  have hf := srl_fold (HoonSet.toList lok) h0 (pure ned) g (ned, g) rfl
+  unfold sureRequireLook
+  simp only at hf ⊢
+  rw [hf]
+  simp only [srlN] at hrep
+  simp only [Sure.toNoun, compCore]
+  nock_open srlBat
+  simp [nock_exec, hc, in_arm, in.arm_at, in.rep.arm_at, rep_arm, hrep, srlN]
+
 end Compiler
 end Formalization
