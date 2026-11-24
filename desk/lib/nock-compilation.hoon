@@ -5936,8 +5936,14 @@
   ++  crash-need
     |=  [o=@uwoo atom=(each [%imm n=@] @uvre) ned=need]
     ^+  gen
+    ::  the register that holds the atom is defined already: it is not filled
+    ::
     =/  fill=(list pole)
-      (turn (flatten-need ned) |=(x=@uvre `pole`[%imm 0 x]))
+      %+  murn  (flatten-need ned)
+      |=  x=@uvre
+      ^-  (unit pole)
+      ?:  &(?=(%| -.atom) =(x p.atom))  ~
+      `[%imm 0 x]
     ?-    -.atom
         %|
       ?:  (~(has by soft.gen) o)  (soft-ask o p.atom ned)
