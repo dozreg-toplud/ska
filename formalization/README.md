@@ -527,6 +527,36 @@ import only its theorems.  So:
      with `%2` (`eval_cell_tag`), would have to be reached by the analysis,
      for example in a formula it runs with `.*`; no such run is known in the
      analysis, and nothing proves its absence yet.
+   - *The core inside `+comp`* (the door `|_  gen=line-short` at line 3825
+     of `nock-compilation.hoon`; map from the arm list and the names of
+     `Ska/CompModel.lean`, `Ska/CompLazyRun.lean`, `Ska/CompLeap.lean`,
+     2026-11-24, not yet checked arm by arm; no arm linked).  The Hoon's
+     state is the 10-tuple `[re-gen bo-gen id-gen mode blocks tags cond
+     cache soft sofs]`; the model's `Gen` keeps `re`, `bo`, `id`, `drop`
+     (for `mode`, `%drop` or `%run`), `blocks`, `tags`, `cond`, and lacks
+     `cache` (the compiled callees and their SCCs, read by `+callee-*` and
+     `+mono-try-call`), `soft` (the map of blocks to `soft-call`, written by
+     the `soft-*` arms) and `sofs` (a set of `@uxid`): each is a place where
+     the model departs from the Hoon, and a link needs the noun of `Gen`
+     extended with them as parameters.  Arms with a model: `+re`, `+oo`,
+     `+id` (`freshId`), `+dropping` (`drop`), `+set-tag`, `+copy-tag`,
+     `+emir`, `+emit`, `+add-ops`, `+bomb`, `+from-sure`, `+from`, `+must`,
+     `+split-sure`, `+split-need`, `+split`, `+into-sure`, `+into-need`,
+     `+into`, `+copy`, `+copy-lazy`, `+crash-need`, `+flatten-need`,
+     `+mede`, `+collapse-lazy-atom`, `+forl`, `+past`, `+run` (and in the
+     lazy files `+lazy-bound`, `+proxy`, `+kern`, `+lazy-shut`, `+kerf`,
+     `+insert-hop`, `+fork-sure`, `+fork-need`, `+fork`, `+sect`,
+     `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`, `+laze-this-only`,
+     `+soft-fork`).  Without a model: `+run-shape`, `+callee-sure`,
+     `+callee-need`, `+callee-compiled`, `+mean-konst`, `+lazy-empty`,
+     `+lazy-prune`, the other `laze-*` arms, `+need-ord-cut`,
+     `+need-ord-from`, `+walk-lazy`, `+kern-r-need`, `+kern-need`,
+     `+past-if`, `+sound`, `+made`, the other `soft-*` arms,
+     `+emit-cold`, `+past-fork`, `+copy-need-make-ops`, `+coerce-ord`,
+     `+coerce-soft`, `+need-ord-alloc-regs`, `+coerce-lazy`,
+     `+next-lazy-collapse`, `+collapse-shape`, `+to-straight`.  The first
+     links to make, as exact equalities over the noun of `Gen`: `+re`,
+     `+oo`, `+emit`, `+add-ops`, `+set-tag`, then `+from`, `+split`.
    - *Modelled, not linked*:
      `+uni-sock`, `+norm-sock`, `+know`,
      `+bake-graph`; `+reverse-bell-graph`, `+hot-stale`, `+del-bells`;
