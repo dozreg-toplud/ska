@@ -108,5 +108,72 @@ theorem spin_gate_eq : spinGateL2 = C spin.battery (C spinBuntL2 layer2) := by k
 
 theorem spinIn_layer2 : SpinIn layer2 := ⟨flop.arm_at, homoIn_layer2⟩
 
+/-! ## The index and the seen set of the merge -/
+
+/-- `+gas:by` of the pairs `[key e]` of a list onto the noun of a map is the
+noun of the map with the entries put in order. -/
+theorem gas_index {α : Type} (E : α → Noun) (key : α → Nat) :
+    ∀ (l : List α) (m : TreapMap mugF α),
+    gasF mugF (HoonMap.toNoun E m) (l.map fun e => (A (key e), E e))
+      = some (HoonMap.toNoun E (l.foldl (fun m e => HoonMap.put m (key e) e) m))
+  | [], m => rfl
+  | e :: rest, m => by
+    simp only [List.map_cons, gasF, putF_hoonMap, List.foldl_cons]
+    exact gas_index E key rest _
+
+/-- The index of the merge (`malt` of the pairs) is the noun of the model's
+`index`. -/
+theorem malt_index {α : Type} (E : α → Noun) (key : α → Nat) (l : List α) :
+    gasF mugF (A 0) (l.map fun e => (A (key e), E e))
+      = some (HoonMap.toNoun E (Lazy.index (Map := TreapMap mugF) key l)) := by
+  have := gas_index E key l HoonMap.empty
+  rw [HoonMap.toNoun_empty] at this
+  exact this
+
+/-- An entry of the index is an entry of the list. -/
+theorem index_mem {α : Type} (key : α → Nat) :
+    ∀ (l : List α) (m : TreapMap mugF α) (k : Nat) (v : α),
+    HoonMap.get (l.foldl (fun m e => HoonMap.put m (key e) e) m) k = some v → v ∈ l ∨ HoonMap.get m k = some v
+  | [], m, k, v, h => Or.inr h
+  | e :: rest, m, k, v, h => by
+    rw [List.foldl_cons] at h
+    rcases index_mem key rest _ k v h with h1 | h1
+    · exact Or.inl (List.mem_cons_of_mem _ h1)
+    · rw [HoonMap.get_put] at h1
+      split at h1
+      · simp only [Option.some.injEq] at h1; subst h1; exact Or.inl List.mem_cons_self
+      · exact Or.inr h1
+
+theorem index_mem' {α : Type} (key : α → Nat) (l : List α) (k : Nat) (v : α)
+    (h : HoonMap.get (Lazy.index (Map := TreapMap mugF) key l) k = some v) : v ∈ l := by
+  rcases index_mem key l HoonMap.empty k v h with h1 | h1
+  · exact h1
+  · rw [HoonMap.get_empty] at h1; cases h1
+
+theorem mem_foldl_put (k : Nat) : ∀ (l : List Nat) (s : CSet),
+    k ∈ HoonSet.toList (l.foldl HoonSet.put s) ↔ k ∈ l ∨ k ∈ HoonSet.toList s
+  | [], s => by simp
+  | x :: l, s => by
+    rw [List.foldl_cons, mem_foldl_put k l, HoonSet.mem_put]
+    simp only [List.mem_cons]
+    constructor
+    · rintro (h | h | h)
+      · exact Or.inl (Or.inr h)
+      · exact Or.inl (Or.inl h)
+      · exact Or.inr h
+    · rintro ((h | h) | h)
+      · exact Or.inr (Or.inl h)
+      · exact Or.inl h
+      · exact Or.inr (Or.inr h)
+
+/-- The model's `seen` is membership in the keys. -/
+theorem seen_iff {α : Type} (key : α → Nat) (l : List α) (k : Nat) :
+    Lazy.seen (S := CSet) key l k = decide (k ∈ l.map key) := by
+  unfold Lazy.seen
+  congr 1
+  apply propext
+  rw [mem_foldl_put]
+  simp [HoonSet.mem_empty]
+
 end Compiler
 end Formalization
