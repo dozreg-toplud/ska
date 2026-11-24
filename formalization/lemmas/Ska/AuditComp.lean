@@ -65,6 +65,7 @@ import lemmas.Ska.CompRunLCEq
 import lemmas.Ska.CompCallSem
 import lemmas.Ska.CompCallStep
 import lemmas.Ska.CompWholeTop
+import lemmas.Ska.CompHypOf
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -648,3 +649,12 @@ open Formalization.SkaModel.Comp
 #print axioms finishLU_bellContractV
 #print axioms finishLU_bellContractFU
 #print axioms finishLU_fullCode
+#print axioms Formalization.SkaModel.PokeM.toStraightF_this
+#print axioms Formalization.SkaModel.PokeM.finishLUC_this
+#print axioms Formalization.SkaModel.PokeM.bellContract_of_keeps
+#print axioms Formalization.SkaModel.PokeM.CompRest.keeps
+#print axioms Formalization.SkaModel.PokeM.contract_of_pieces
+#print axioms Formalization.SkaModel.PokeM.compHyp_of_pieces
+#print axioms Formalization.SkaModel.PokeM.rawMono_fragU
+#print axioms Formalization.SkaModel.PokeM.rawNary_fragU
+#print axioms Formalization.SkaModel.PokeM.compHyp_of_frag
