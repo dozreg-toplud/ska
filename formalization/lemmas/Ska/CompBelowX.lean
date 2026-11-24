@@ -11,9 +11,16 @@ below `re`, from a state that does not drop, when `nm` has at most 255 `%6`,
 keeps every `BelowIn lo`, returns a `next` whose registers (its sure need, the
 needs of its lazy entries, its jump's arguments) are below the new `re`,
 keeps `cond`, has at most `2 * sixCount nm` lazy entries, at labels allocated
-in the run (`KeepR`).  The case lemmas (`keepX_frag`, `keepX_seven`,
-`keepX_sevenFrom`, `keepX_four`, `keepX_three`) each take `KeepX` of the
-parts; the induction itself waits for the cases `six`, `cons`, `five`, `ten`.
+in the run (`KeepR`).  The case lemmas (`keepX_frag`, `keepX_sixP`,
+`keepX_sixN`, `keepX_four`, `keepX_three`, `keepX_seven`, `keepX_cons`,
+`keepX_five`, `keepX_ten`, `keepX_sevenFrom`) each take `KeepX` of the parts,
+and `runX_keeps` is the induction.  `runX_below`: fact (i5) on `FragX`;
+`runX_okU`: the run of the top meets `RunOKU` and (i5).
+
+The induction assumes that the run does not drop (`g0.drop = false`, kept by
+every step: `Keeps.drop`), as the top run from `gen0` does, and at most 255
+`%6`, so that no fork is big and `+lazy-shut` makes no proxy; then `cond` is
+kept and `+sect` changes no block (`sect_spec`).
 -/
 
 set_option linter.unusedSectionVars false
@@ -593,6 +600,47 @@ theorem keepX_sixN {c a b : Nomm} (hcp : c.pure = true) (ihc : KeepX S Map c) (i
     have := Ra.size; have := Rb.size; simp only [lazyMax]; omega
   subst ey en
   exact keepX_sixEnd hd Rb Ra kS cS Rc (by omega) (by omega) (by omega) (hrest hbig)
+
+/-! ## The induction -/
+
+/-- **On `FragX` every run for a fork-free goal whose registers are below
+`re`, from a state that does not drop, keeps (i5)** (with the bounds of
+`KeepR`), when the nomm has at most 255 `%6`. -/
+theorem runX_keeps {nm : Nomm} (hf : FragX (S := S) nm) : KeepX S Map nm := by
+  induction hf with
+  | frag hf => exact keepX_frag hf
+  | @six c a b hc' _ _ ihc iha ihb =>
+    have hcp := fragX_pure hc'
+    intro goal region g0 g1 nex hd hg hc h
+    show KeepR g0 g1 nex (sixCount c + sixCount a + sixCount b + 1)
+    have hc'' : sixCount c + sixCount a + sixCount b + 1 ≤ 255 := by simpa only [sixCount] using hc
+    cases goal with
+    | next sur th => exact keepX_sixN hcp ihc iha ihb hd hg hc'' h
+    | done => exact keepX_sixP (goal := CGoal.done) hcp ihc iha ihb trivial hd hg hc'' h
+    | pick z o => exact keepX_sixP (goal := CGoal.pick z o) hcp ihc iha ihb trivial hd hg hc'' h
+  | four _ ih => exact keepX_four ih
+  | three _ ih => exact keepX_three ih
+  | seven hq _ ih => exact keepX_seven hq ih
+  | cons hp hq ihp ihq => exact keepX_cons ihp ihq (fragX_pure hp) (fragX_pure hq)
+  | five hp _ ihp ihq => exact keepX_five ihp ihq (fragX_pure hp)
+  | ten hv hq ihv ihq => exact keepX_ten ihv ihq (fragX_pure hv) (fragX_pure hq)
+  | sevenFrom ha _ ihq => exact keepX_sevenFrom ha ihq
+
+/-- **Fact (i5) on `FragX`**: every run of a nomm of `FragX` with at most 255
+`%6` for a fork-free goal whose registers are below `re`, from a state that
+does not drop, meets `BelowIn g0.bo g1`. -/
+theorem runX_below {nm : Nomm} (hf : FragX (S := S) nm) {goal : CGoal S} {region : List Nat} {g0 g1 : Gen Map}
+    {nex : NextL S} (hd : g0.drop = false) (hg : GoalIn g0.re goal) (hc : sixCount nm ≤ 255)
+    (h : runL nm (CGoal.toL goal) region g0 = some (nex, g1)) : BelowIn g0.bo g1 :=
+  (runX_keeps hf hd hg hc h).keeps.bel _ (belowIn_start g0)
+
+/-- **The run of the top for `%done` from `gen0` on `FragX` meets `RunOKU`
+and fact (i5)**, so `RunOKU.semW` and `RunOKU.semF` apply to it. -/
+theorem runX_okU (lib : Lib) {nm : Nomm} (hf : FragX (S := S) nm) (hcount : sixCount nm ≤ 255) {region : List Nat}
+    {g1 : Gen Map} {nex : NextL S} (h : runL nm (CGoal.toL (CGoal.done : CGoal S)) region (gen0 : Gen Map) = some (nex, g1)) :
+    RunOKU lib nm CGoal.done gen0 g1 nex ∧ BelowIn (gen0 : Gen Map).bo g1 :=
+  ⟨((runX_ok lib hf).1 trivial trivial hcount (by simp [gen0]) rfl upBelow_gen0 h).toU gen0_cond_none,
+    runX_below (goal := CGoal.done) hf rfl trivial hcount h⟩
 
 end Comp
 end SkaModel
