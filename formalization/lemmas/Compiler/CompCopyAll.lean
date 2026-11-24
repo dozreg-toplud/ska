@@ -216,5 +216,179 @@ theorem comp_copy_all (h7 : slot? 7 ctx = some compK) (x : GenRest) (g : Gen (Tr
     simp [nock_exec, NextL.goal, CGoalL.toNoun, hD2, hD3, comp_emit_arm, he, comp_cl_arm, hcl, copyL,
       cf_emit_g, ec, bind, StateT.bind, pure, StateT.pure, Jmp.toNoun, jmp0, listNoun]
 
+/-! ## The invariant through `+copy-lazy` -/
+
+theorem lnb_root_copy {sf ss : Sure CSet} {ned : Need} {ops : List Pole} {g g1 : Gen (TreapMap mugF)}
+    (hf : LNB g.re sf) (hs : LNB g.re ss) (e : copyNeed sf.ned ss.ned [] g = some ((ned, ops), g1)) :
+    g.re ≤ g1.re ∧ LNB g1.re ⟨ned, HoonSet.uni sf.lok ss.lok⟩ := by
+  obtain ⟨A0, -, c1⟩ := copyNeed_spec (Map := TreapMap mugF) _ _ _ _ _ _ e
+  refine ⟨c1.le, fun y hy => ?_, fun r hr => ?_⟩
+  · rcases (HoonSet.mem_uni sf.lok ss.lok y).1 hy with h | h
+    · exact hf.1 y h
+    · exact hs.1 y h
+  · rcases c1.mem r hr with (h | h) | h
+    · have := hf.2 r h; have := c1.le; omega
+    · have := hs.2 r h; have := c1.le; omega
+    · exact h.2
+
+theorem walkPF_append {P : Nat → Sure CSet → Prop} : ∀ (a b : List (Lazy.ForkE CSet)),
+    WalkPF P a → WalkPF P b → WalkPF P (a ++ b)
+  | [], b, _, hb => hb
+  | ((oy, y), (on, n)) :: rest, b, ⟨hy, hn, hr⟩, hb => ⟨hy, hn, walkPF_append rest b hr hb⟩
+
+theorem walkPB_append {P : Nat → Sure CSet → Prop} : ∀ (a b : List (Nat × Lazy CSet)),
+    WalkPB P a → WalkPB P b → WalkPB P (a ++ b)
+  | [], b, _, hb => hb
+  | (ob, l) :: rest, b, ⟨hl, hr⟩, hb => ⟨hl, walkPB_append rest b hr hb⟩
+
+theorem lall_of_walkP {Q : Sure CSet → Prop} {o : Nat} {l : Lazy CSet} (h : WalkP (fun _ s => Q s) o l) :
+    LAll Q l := Eq.mp (walkP_irrel Q o 0 l) h
+
+theorem walkP_of_lall {Q : Sure CSet → Prop} (o : Nat) {l : Lazy CSet} (h : LAll Q l) :
+    WalkP (fun _ s => Q s) o l := Eq.mpr (walkP_irrel Q o 0 l) h
+
+mutual
+/-- **`+copy-lazy` keeps the looks and the registers below the counter** on
+every pair of lazy needs (the merge included). -/
+theorem copy_lnb : ∀ (f : Lazy CSet) (o : Nat) (s : Lazy CSet) (g g' : Gen (TreapMap mugF)) (r : Lazy CSet),
+    LAll (LNB g.re) f → LAll (LNB g.re) s → Lazy.copyLazyL o f s g = some (r, g') → LAll (LNB g'.re) r
+  | Lazy.mk sf ff bf, o, Lazy.mk ss fs bs, g, g', r, ⟨hsf, hff, hbf⟩, ⟨hss, hfs, hbs⟩, h => by
+    rw [copyLazyL_eq] at h
+    obtain ⟨⟨ned, ops⟩, g1, e1, h⟩ := bind_some h
+    obtain ⟨l1, hroot⟩ := lnb_root_copy hsf hss e1
+    obtain ⟨u, g2, e2, h⟩ := bind_some h
+    have r2 := addOps_re e2
+    obtain ⟨fk, g3, e3, h⟩ := bind_some h
+    obtain ⟨bd, g4, e4, h⟩ := bind_some h
+    simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    have l3 := forkPart_le e3
+    -- the forks
+    have hfk : WalkPF (fun _ s => LNB g3.re s) fk := by
+      unfold forkPart at e3
+      split at e3
+      · simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at e3
+        obtain ⟨rfl, rfl⟩ := e3; exact walkPF_lnb_mono (by omega) hff
+      · split at e3
+        · simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at e3
+          obtain ⟨rfl, rfl⟩ := e3; exact walkPF_lnb_mono (by omega) hfs
+        · obtain ⟨m, g5, e5, e3⟩ := bind_some e3
+          simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at e3
+          obtain ⟨rfl, rfl⟩ := e3
+          have l5 := mergeForks_le _ _ _ _ _ e5
+          have hm := mforks_lnb ff fs g.re g2 g5 m (by omega) (fun v hv => walkPF_mem fs hfs v hv)
+            (walkPF_lnb_mono (by omega) hff) e5
+          exact walkPF_append _ _ hm (walkPF_filter _ fs (walkPF_lnb_mono (by omega) hfs))
+    -- the bonds
+    have l4 : g3.re ≤ g4.re ∧ WalkPB (fun _ s => LNB g4.re s) bd := by
+      unfold bondPart at e4
+      split at e4
+      · simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at e4
+        obtain ⟨rfl, rfl⟩ := e4; exact ⟨Nat.le_refl _, walkPB_lnb_mono (by omega) hbf⟩
+      · split at e4
+        · simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at e4
+          obtain ⟨rfl, rfl⟩ := e4; exact ⟨Nat.le_refl _, walkPB_lnb_mono (by omega) hbs⟩
+        · obtain ⟨m, g5, e5, e4⟩ := bind_some e4
+          simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at e4
+          obtain ⟨rfl, rfl⟩ := e4
+          have l5 := mergeBonds_le _ _ _ _ _ e5
+          have hm := mbonds_lnb bf bs g.re g3 g5 m (by omega) (fun v hv => walkPB_mem bs hbs v hv)
+            (walkPB_lnb_mono (by omega) hbf) e5
+          exact ⟨l5, walkPB_append _ _ hm (walkPB_filter _ bs (walkPB_lnb_mono (by omega) hbs))⟩
+    exact ⟨⟨hroot.1, hroot.2.mono (by omega)⟩, walkPF_lnb_mono l4.1 hfk, l4.2⟩
+
+theorem mforks_lnb : ∀ (ff fs : List (Lazy.ForkE CSet)) (k : Nat) (g g' : Gen (TreapMap mugF))
+    (r : List (Lazy.ForkE CSet)), k ≤ g.re →
+    (∀ v ∈ fs, LAll (LNB k) v.1.2 ∧ LAll (LNB k) v.2.2) → WalkPF (fun _ s => LNB g.re s) ff →
+    Lazy.mergeForks (Lazy.index (Map := TreapMap mugF) (fun e : Lazy.ForkE CSet => e.1.1) fs) ff g
+      = some (r, g') → WalkPF (fun _ s => LNB g'.re s) r
+  | [], fs, k, g, g', r, _, _, _, h => by
+    simp only [Lazy.mergeForks, pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h; trivial
+  | ((oy, y), (on, n)) :: rest, fs, k, g, g', r, hk, hfs, ⟨hy, hn, hr⟩, h => by
+    simp only [Lazy.mergeForks] at h
+    obtain ⟨e', g1, e1, h⟩ := bind_some h
+    obtain ⟨r', g2, e2, h⟩ := bind_some h
+    simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    have l2 := mergeForks_le _ _ _ _ _ e2
+    cases hg : (HoonMap.get (Lazy.index (Map := TreapMap mugF) (fun e : Lazy.ForkE CSet => e.1.1) fs) oy
+        : Option (Lazy.ForkE CSet)) with
+    | none =>
+      simp only [hg, pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at e1
+      obtain ⟨rfl, rfl⟩ := e1
+      exact ⟨lnb_mono l2 oy hy, lnb_mono l2 on hn, mforks_lnb rest fs k g g2 r' hk hfs hr e2⟩
+    | some v =>
+      obtain ⟨⟨oy', my⟩, ⟨mon, mn⟩⟩ := v
+      have hv := hfs _ (index_mem' _ _ _ _ hg)
+      simp only [hg] at e1
+      split at e1
+      · obtain ⟨y', g3, e3, e1⟩ := bind_some e1
+        obtain ⟨n', g4, e4, e1⟩ := bind_some e1
+        simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at e1
+        obtain ⟨rfl, rfl⟩ := e1
+        have l3 := copyLazyL_le _ _ _ _ _ _ e3
+        have hy' := copy_lnb y oy my g g3 y' (lall_of_walkP hy) (lall_mono (fun _ h => ⟨h.1, h.2.mono hk⟩) hv.1) e3
+        have hn' := copy_lnb n on mn g3 g4 n' (lall_of_walkP (lnb_mono l3 on hn))
+          (lall_mono (fun _ h => ⟨h.1, h.2.mono (by omega)⟩) hv.2) e4
+        have l4 := copyLazyL_le _ _ _ _ _ _ e4
+        exact ⟨lnb_mono (by omega) oy (walkP_of_lall oy hy'), lnb_mono l2 on (walkP_of_lall on hn'),
+          mforks_lnb rest fs k g4 g2 r' (by omega) hfs (walkPF_lnb_mono (by omega) hr) e2⟩
+      · cases e1
+
+theorem mbonds_lnb : ∀ (bf bs : List (Nat × Lazy CSet)) (k : Nat) (g g' : Gen (TreapMap mugF))
+    (r : List (Nat × Lazy CSet)), k ≤ g.re →
+    (∀ v ∈ bs, LAll (LNB k) v.2) → WalkPB (fun _ s => LNB g.re s) bf →
+    Lazy.mergeBonds (Lazy.index (Map := TreapMap mugF) (fun e : Nat × Lazy CSet => e.1) bs) bf g
+      = some (r, g') → WalkPB (fun _ s => LNB g'.re s) r
+  | [], bs, k, g, g', r, _, _, _, h => by
+    simp only [Lazy.mergeBonds, pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h; trivial
+  | (ob, l) :: rest, bs, k, g, g', r, hk, hbs, ⟨hl, hr⟩, h => by
+    simp only [Lazy.mergeBonds] at h
+    obtain ⟨e', g1, e1, h⟩ := bind_some h
+    obtain ⟨r', g2, e2, h⟩ := bind_some h
+    simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    have l2 := mergeBonds_le _ _ _ _ _ e2
+    cases hg : (HoonMap.get (Lazy.index (Map := TreapMap mugF) (fun e : Nat × Lazy CSet => e.1) bs) ob
+        : Option (Nat × Lazy CSet)) with
+    | none =>
+      simp only [hg, pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at e1
+      obtain ⟨rfl, rfl⟩ := e1
+      exact ⟨lnb_mono l2 ob hl, mbonds_lnb rest bs k g g2 r' hk hbs hr e2⟩
+    | some v =>
+      obtain ⟨ob', m⟩ := v
+      have hv := hbs _ (index_mem' _ _ _ _ hg)
+      simp only [hg] at e1
+      obtain ⟨l', g3, e3, e1⟩ := bind_some e1
+      simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at e1
+      obtain ⟨rfl, rfl⟩ := e1
+      have l3 := copyLazyL_le _ _ _ _ _ _ e3
+      have hl' := copy_lnb l ob m g g3 l' (lall_of_walkP hl) (lall_mono (fun _ h => ⟨h.1, h.2.mono hk⟩) hv) e3
+      exact ⟨lnb_mono l2 ob (walkP_of_lall ob hl'),
+        mbonds_lnb rest bs k g3 g2 r' (by omega) hbs (walkPB_lnb_mono l3 hr) e2⟩
+end
+
+/-- **`+copy` keeps the invariant's lazy part**: the result of `+copy` of a
+goal's need and a lazy need, both with their looks and registers below the
+counter, has its looks and registers below the counter it returns. -/
+theorem crInvL_copy {g g' : Gen (TreapMap mugF)} {first : NextL CSet} {second : Lazy CSet} {nex : NextL CSet}
+    (hf : LAll (LNB g.re) first.laz) (hs : LAll (LNB g.re) second) (h : copyL first second g = some (nex, g')) :
+    g.re ≤ g'.re ∧ LAll (LNB g'.re) nex.laz := by
+  simp only [copyL] at h
+  obtain ⟨o, g1, e1, h⟩ := bind_some h
+  rw [cf_emit_g] at e1
+  simp only [Option.some.injEq, Prod.mk.injEq] at e1
+  obtain ⟨rfl, rfl⟩ := e1
+  obtain ⟨laz, g2, e2, h⟩ := bind_some h
+  simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨rfl, rfl⟩ := h
+  have hre := cf_emitG_re ⟨[], [], Termin.hop first.th⟩ g
+  have l2 := copyLazyL_le _ _ _ _ _ _ e2
+  refine ⟨by omega, copy_lnb first.laz g.bo second _ _ laz ?_ ?_ e2⟩
+  · rw [hre]; exact hf
+  · rw [hre]; exact hs
+
 end Compiler
 end Formalization

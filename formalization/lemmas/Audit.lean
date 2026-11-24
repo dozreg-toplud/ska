@@ -1035,3 +1035,5 @@ open Formalization
 #print axioms Compiler.copy_all
 #print axioms Compiler.comp_copy_lazy_all
 #print axioms Compiler.comp_copy_all
+#print axioms Compiler.copy_lnb
+#print axioms Compiler.crInvL_copy

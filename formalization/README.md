@@ -228,7 +228,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompCopyGen.lean` | `+copy-lazy` and `+copy` on lazy needs with forks and bonds to any depth that need no merge (`NoMerge`: the forks of one need are `~` and the bonds of one need are `~`): `comp_copy_lazy_nm`, `comp_copy_nm`, with the side conditions of `+copy-need-make-ops` on the roots only.  The general case is `CompCopyAll.lean`. |
 | `Compiler/CompCopyLib.lean` | The library arms of the merge of `+copy-lazy`: `+malt` and `+molt` of layer 2 (written here, `malt_at`, `molt_at`; `malt_gate`: `gasF` from `~`), `+spin` with a gate that may crash (`spinM`, `spin_gate_T`, and with a state invariant, `spin_gate_TI`; the arm built on layer 2 by the kernel, `spin_arm_l2`), the index and the seen set against the model (`malt_index`, `index_mem'`, `seen_iff`). |
 | `Compiler/CompCopyMerge.lean` | The merge of `+copy-lazy`: the model's merges as `spinM` of the gates `mgF`, `mgB` (`mergeForks_spinM`, `mergeBonds_spinM`), the counter only grows (`copyLazyL_le`), the hypotheses `CopyH` (registers of both needs below the counter, `LApart`), the spin gates (`cl_fgate`, `cl_bgate`, with the `?>` on the no blocks), the battery cut into its fork and bond parts (`clFX`, `clBX`, `cl_bat_eq2`), the molds `lazy-fork` (arm `2989`) and `lazy-bond` (arm `2742`) of the types core evaluated by the kernel, `+silt` and `+has:in` of the seen set (`seen_set`), and the two parts against the model (`cl_fpart`, `cl_bpart`: `forkPart`, `bondPart`). |
-| `Compiler/CompCopyAll.lean` | **`comp_copy_lazy_all`** and **`comp_copy_all`**: `+copy-lazy` and `+copy` on every pair of lazy needs (forks and bonds to any depth, merged under the same block) with `CopyH`, by a mutual induction over `first` (`copy_all`, `copy_fgates`, `copy_bgates`); `copyLazyL_eq`, `forkPart_le`. |
+| `Compiler/CompCopyAll.lean` | **`comp_copy_lazy_all`** and **`comp_copy_all`**: `+copy-lazy` and `+copy` on every pair of lazy needs (forks and bonds to any depth, merged under the same block) with `CopyH`, by a mutual induction over `first` (`copy_all`, `copy_fgates`, `copy_bgates`); `copyLazyL_eq`, `forkPart_le`; the invariant through it: `copy_lnb` (the looks and registers below the counter, with `mforks_lnb`, `mbonds_lnb`), `crInvL_copy`. |
 | `Compiler/CompSpinSplit.lean` | `+spin-split` (arm `372` of `K`, written here, `compK_ss`; the arm evaluated on `K` by the kernel, `ss_arm`, `ss_gate_eq`): `spsp_gate`, the fold `ssM` in `Option` of a gate over an encoded list, heads and tails in order (`+flop` of layer 2). |
 | `Compiler/CompSplitGen.lean` | `+split` on every lazy need: the loop (`comp.split.loop` with its spin gates named, `sp_loop_eq`), the gates (`sp_fgate`, `sp_bgate`), **`csp_all`** (the loop against `splitLoop`, by a mutual induction with `csp_forks`, `csp_bonds`) and **`comp_split_all`** (`+split` against `splitL`), for every lazy need whose sure needs look at no axis `0` (`WalkP lok0`); `lz_test`, `lp_mk`, `comp_ss_at`. |
 | `Compiler/CompIntoGen.lean` | `+into` on every lazy need, for an axis not `0`: `cit_all` (the loop `intL0` against `intoLoopL axe`), `comp_into_all` (against `intoL`), the same shape as `CompSplitGen.lean` (`it_fgate`, `it_bgate`, `intoForks_ssM`, `intoBonds_ssM`). |
@@ -1550,9 +1550,10 @@ import only its theorems.  So:
     the model's `+proxy` reads them, so the links hold without them; the
     success of `kern` and `collapseLazyAtomL` at a proxy needs them), and
     the apartness of the registers of two needs across their blocks
-    (`CopyH`, which `comp_copy_all` needs).  Next: `CrInvL` and `CopyH`
-    kept by the runs (the union of the looks and `copyNeed_spec` at the
-    root of `+copy`);
+    (`CopyH`, which `comp_copy_all` needs).  `+copy` keeps the looks and
+    the registers below the counter on every pair of lazy needs, the merge
+    included (`copy_lnb`, `crInvL_copy`).  Next: `CopyH` from the runs (the
+    two needs a `+copy` joins are apart);
     then the cons case of `+run` with a calling head through `CompRunAtC`,
     whose result (a bond from `+past` over the calling head) needs `CrRes`
     generalized to lazy results.
