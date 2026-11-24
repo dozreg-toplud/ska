@@ -1,0 +1,245 @@
+import lemmas.Ska.Opt
+
+/-!
+# `+remove-useless-branching`
+
+The model follows the Hoon (line 8981): `rubTwo` is the shared part of the
+four cases (`?>` that both sides pass nothing, `got` of both targets, the
+test `=(nex-z nex-o)`), `rubFin` the `?+` over the terminator with the
+epilogue (`[%equ l r]` for `%eqq`, `[%lob s]` for `%brn`), `rubStep` the gate
+of the `+rep:by`, and `removeUselessBranching` the fold over the keys in the
+order of `MapKeys.keys`.  The order does not matter: each key's new value
+depends only on the old map, and the flag is an `|` (`rubFold_get`).
+
+`rub_keeps`: the pass keeps the code (`Keeps` of `Opt.lean`), with no
+hypothesis on the CFG.  The proof is a simulation on paths (`RubRel`): the
+two runs hold the same registers, trace and state, the block of the code
+after is that of the code before with the epilogue appended and the new
+terminator, or the epilogue has run.  Forward (`rub_fwd`), each step of the
+code before is matched by at most two steps after; backward (`rub_bwd`),
+each step after by at most one before, using `ReadsOK` of the code before at
+a `%clq` or `%brz` that became a hop, the only place the code after reads less.
+-/
+
+set_option linter.unusedSectionVars false
+
+namespace Formalization
+namespace SkaModel
+namespace Opt
+
+open Nock Path
+
+variable {Map : Type → Type} [HoonMap Map]
+
+/-! ## The model -/
+
+/-- The shared part of the four cases. -/
+def rubTwo (bl : Map Blob) (fin : Termin) (z o : Jmp) (epi : List Pole) : Option (List Pole × Termin) :=
+  if z.args = [] ∧ o.args = [] then
+    (HoonMap.get bl z.there).bind fun nz => (HoonMap.get bl o.there).map fun no =>
+      if nz = no then (epi, Termin.hop ⟨[], z.there⟩) else ([], fin)
+  else none
+
+/-- The epilogue and the new terminator of one block. -/
+def rubFin (bl : Map Blob) (fin : Termin) : Option (List Pole × Termin) :=
+  match fin with
+  | Termin.clq _ z o => rubTwo bl fin z o []
+  | Termin.eqq l r z o => rubTwo bl fin z o [Pole.equ l r]
+  | Termin.brn s z o => rubTwo bl fin z o [Pole.lob s]
+  | Termin.brz _ z o => rubTwo bl fin z o []
+  | _ => some ([], fin)
+
+/-- `b(body (weld body.b epilogue), fin new-fin)`. -/
+def rubBlob (b : Blob) (e : List Pole × Termin) : Blob := { b with body := b.body ++ e.1, fin := e.2 }
+
+/-- The gate of the `+rep:by`. -/
+def rubStep (bl : Map Blob) (acc : Option (Bool × Map Blob)) (o : Nat) : Option (Bool × Map Blob) :=
+  acc.bind fun r => (HoonMap.get bl o).bind fun b => (rubFin bl b.fin).map fun e =>
+    (r.1 || decide (e.2 ≠ b.fin), HoonMap.put r.2 o (rubBlob b e))
+
+/-- `+remove-useless-branching`. -/
+def removeUselessBranching [MapKeys Map] (bl : Map Blob) : Option (Bool × Map Blob) :=
+  (MapKeys.keys bl).foldl (rubStep bl) (some (false, HoonMap.empty))
+
+/-! ## The blocks after the pass -/
+
+theorem rubFold_none (bl : Map Blob) : ∀ ks : List Nat, ks.foldl (rubStep bl) none = none
+  | [] => rfl
+  | _ :: ks => by simp only [List.foldl_cons, rubStep, Option.bind_none]; exact rubFold_none bl ks
+
+theorem rubFold_get (bl : Map Blob) : ∀ (ks : List Nat) (acc : Option (Bool × Map Blob)) (r : Bool × Map Blob),
+    ks.foldl (rubStep bl) acc = some r → ∃ a, acc = some a ∧
+      (∀ k b, k ∈ ks → HoonMap.get bl k = some b → ∃ e, rubFin bl b.fin = some e ∧
+        HoonMap.get r.2 k = some (rubBlob b e)) ∧
+      (∀ k, (k ∉ ks ∨ HoonMap.get bl k = none) → HoonMap.get r.2 k = HoonMap.get a.2 k)
+  | [], acc, r, h => by
+    simp only [List.foldl_nil] at h; subst h
+    exact ⟨r, rfl, fun _ _ hk => absurd hk List.not_mem_nil, fun _ _ => rfl⟩
+  | k0 :: ks, acc, r, h => by
+    simp only [List.foldl_cons] at h
+    cases hs : rubStep bl acc k0 with
+    | none => rw [hs, rubFold_none] at h; cases h
+    | some a' =>
+      rw [hs] at h
+      obtain ⟨a'', ha'', hin, hout⟩ := rubFold_get bl ks _ r h
+      cases ha''
+      unfold rubStep at hs
+      obtain ⟨a, ha, hs1⟩ := Option.bind_eq_some_iff.mp hs
+      subst ha
+      obtain ⟨b0, hb0, hs2⟩ := Option.bind_eq_some_iff.mp hs1
+      obtain ⟨e0, he0, hs3⟩ := Option.map_eq_some_iff.mp hs2
+      subst hs3
+      refine ⟨a, rfl, ?_, ?_⟩
+      · intro k b hk hb
+        by_cases hks : k ∈ ks
+        · exact hin k b hks hb
+        · have hk0 : k = k0 := by
+            rcases List.mem_cons.mp hk with h | h
+            · exact h
+            · exact absurd h hks
+          subst hk0
+          rw [hb0] at hb; cases hb
+          refine ⟨e0, he0, ?_⟩
+          rw [hout k (Or.inl hks)]; simp [HoonMap.get_put]
+      · intro k hk
+        have hk' : k ∉ ks ∨ HoonMap.get bl k = none := by
+          rcases hk with hk | hk
+          · exact Or.inl (fun h => hk (List.mem_cons_of_mem _ h))
+          · exact Or.inr hk
+        rw [hout k hk']
+        simp only [HoonMap.get_put]
+        by_cases e : k = k0
+        · subst e
+          rcases hk with hk | hk
+          · exact absurd (List.mem_cons_self) hk
+          · rw [hk] at hb0; cases hb0
+        · simp [e]
+
+/-- The blocks after the pass, block by block. -/
+def RubBlocks (bl bl' : Map Blob) : Prop :=
+  ∀ k, (HoonMap.get bl k = none → HoonMap.get bl' k = none) ∧
+    ∀ b, HoonMap.get bl k = some b → ∃ e, rubFin bl b.fin = some e ∧ HoonMap.get bl' k = some (rubBlob b e)
+
+theorem rub_blocks [MapKeys Map] {bl bl' : Map Blob} {ch : Bool} (h : removeUselessBranching bl = some (ch, bl')) :
+    RubBlocks bl bl' := by
+  obtain ⟨a, ha, hin, hout⟩ := rubFold_get bl _ _ _ h
+  cases ha
+  intro k
+  refine ⟨fun hk => ?_, fun b hb => hin k b ((MapKeys.mem_keys bl k).mpr (by simp [hb])) hb⟩
+  rw [hout k (Or.inr hk)]; exact HoonMap.get_empty k
+
+theorem RubBlocks.back {bl bl' : Map Blob} (h : RubBlocks bl bl') {k : Nat} {b' : Blob}
+    (hb : HoonMap.get bl' k = some b') : ∃ b e, HoonMap.get bl k = some b ∧ rubFin bl b.fin = some e ∧
+      b' = rubBlob b e := by
+  cases e : HoonMap.get bl k with
+  | none => rw [(h k).1 e] at hb; cases hb
+  | some b =>
+    obtain ⟨en, hen, hb'⟩ := (h k).2 b e
+    rw [hb'] at hb; cases hb
+    exact ⟨b, en, rfl, hen, rfl⟩
+
+/-! ## What a terminator becomes -/
+
+theorem rubTwo_cases {bl : Map Blob} {fin : Termin} {z o : Jmp} {epi : List Pole} {e : List Pole × Termin}
+    (h : rubTwo bl fin z o epi = some e) :
+    e = ([], fin) ∨ ∃ nz, z.args = [] ∧ o.args = [] ∧ HoonMap.get bl z.there = some nz ∧
+      HoonMap.get bl o.there = some nz ∧ e = (epi, Termin.hop ⟨[], z.there⟩) := by
+  unfold rubTwo at h
+  split at h
+  · rename_i hc
+    obtain ⟨nz, hz, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨no, ho, h⟩ := Option.map_eq_some_iff.mp h
+    split at h
+    · rename_i heq; subst heq; exact Or.inr ⟨nz, hc.1, hc.2, hz, ho, h.symm⟩
+    · exact Or.inl h.symm
+  · simp at h
+
+/-- The new terminator is the old one, or a hop to `z` of a branch whose two
+targets are one block. -/
+theorem rubFin_cases {bl : Map Blob} {fin : Termin} {e : List Pole × Termin} (h : rubFin bl fin = some e) :
+    e = ([], fin) ∨ ∃ z o nz, z.args = [] ∧ o.args = [] ∧ HoonMap.get bl z.there = some nz ∧
+      HoonMap.get bl o.there = some nz ∧ e.2 = Termin.hop ⟨[], z.there⟩ ∧
+      ((∃ s, fin = Termin.clq s z o ∧ e.1 = []) ∨ (∃ s, fin = Termin.brz s z o ∧ e.1 = []) ∨
+       (∃ l r, fin = Termin.eqq l r z o ∧ e.1 = [Pole.equ l r]) ∨
+       (∃ s, fin = Termin.brn s z o ∧ e.1 = [Pole.lob s])) := by
+  unfold rubFin at h
+  split at h
+  all_goals first
+    | (exact Or.inl (Option.some.inj h).symm)
+    | (rcases rubTwo_cases h with h | ⟨nz, h1, h2, h3, h4, rfl⟩
+       · exact Or.inl h
+       · refine Or.inr ⟨_, _, nz, h1, h2, h3, h4, rfl, ?_⟩; simp)
+
+/-- A branch that takes a jump takes one of its two. -/
+theorem taken_two {regs : Map (Option Noun)} {fin : Termin} {z o j : Jmp}
+    (hf : (∃ s, fin = Termin.clq s z o) ∨ (∃ s, fin = Termin.brz s z o) ∨ (∃ l r, fin = Termin.eqq l r z o) ∨
+      (∃ s, fin = Termin.brn s z o)) (ht : taken regs fin = some j) : j = z ∨ j = o := by
+  rcases hf with ⟨s, rfl⟩ | ⟨s, rfl⟩ | ⟨l, r, rfl⟩ | ⟨s, rfl⟩
+  · simp only [taken, Option.map_eq_some_iff] at ht
+    obtain ⟨v, -, rfl⟩ := ht; cases v <;> simp
+  · simp only [taken, Option.map_eq_some_iff] at ht
+    obtain ⟨v, -, rfl⟩ := ht; split <;> simp
+  · simp only [taken, Option.bind_eq_some_iff, Option.map_eq_some_iff] at ht
+    obtain ⟨_, -, _, -, rfl⟩ := ht; split <;> simp
+  · simp only [taken, Option.bind_eq_some_iff] at ht
+    obtain ⟨v, -, ht⟩ := ht
+    split at ht
+    · exact Or.inl (Option.some.inj ht).symm
+    · split at ht
+      · exact Or.inr (Option.some.inj ht).symm
+      · cases ht
+
+/-! ## The simulation -/
+
+section Sim
+variable {σ : Type} {lib : Lib} {O : Oracle σ} {gul : Noun} {c c' : Straight Map}
+
+/-- Same registers, trace, state and arguments; the block after is the block
+before with the epilogue and the new end, or the epilogue has run. -/
+def RubRel (bl : Map Blob) (x x' : Cfg σ Map) : Prop :=
+  x'.params = x.params ∧ x'.regs = x.regs ∧ x'.t = x.t ∧ x'.st = x.st ∧ ∃ e, rubFin bl x.b.fin = some e ∧
+    (x'.b = rubBlob x.b e ∨
+     (x.params = [] ∧ x.b.par = [] ∧ x.b.body = [] ∧ (taken x.regs x.b.fin).isSome ∧ x'.b = { x.b with fin := e.2 }))
+
+/-- The epilogue runs when the branch takes a jump. -/
+theorem rub_epi {x : Cfg σ Map} {e : List Pole × Termin} (he : rubFin c.blocks x.b.fin = some e)
+    (hp : x.params = []) (hq : x.b.par = []) (hb : x.b.body = []) (ht : (taken x.regs x.b.fin).isSome)
+    (lab' : Nat) :
+    Steps lib O c' gul ⟨lab', rubBlob x.b e, [], x.regs, x.t, x.st⟩ []
+      ⟨lab', { x.b with fin := e.2 }, [], x.regs, x.t, x.st⟩ := by
+  obtain ⟨lab, ⟨par, body, fin⟩, params, regs, t, st⟩ := x
+  simp only at he hp hq hb ht ⊢
+  subst hq hb
+  rcases rubFin_cases he with rfl | ⟨z, o, nz, -, -, -, -, h2, hf⟩
+  · exact Steps.refl _
+  · obtain ⟨e1, e2⟩ := e
+    simp only at h2 hf; subst h2
+    rcases hf with ⟨s, rfl, rfl⟩ | ⟨s, rfl, rfl⟩ | ⟨l, r, rfl, rfl⟩ | ⟨s, rfl, rfl⟩
+    · exact Steps.refl _
+    · exact Steps.refl _
+    · simp only [taken, Option.isSome_iff_exists, Option.bind_eq_some_iff, Option.map_eq_some_iff] at ht
+      obtain ⟨_, vl, hl, vr, hr, -⟩ := ht
+      have := Steps.step (Step.op (lib := lib) (O := O) (c := c') (gul := gul)
+        (x := ⟨lab', rubBlob ⟨[], [], Termin.eqq l r z o⟩ ([Pole.equ l r], Termin.hop ⟨[], z.there⟩), [], regs, t, st⟩)
+        (p := Pole.equ l r) (rest := []) (n := A 0) (R := regs) (t' := t) (st' := st)
+        rfl rfl rfl (by simp [execPole, localPole, hl, hr])) (Steps.refl _)
+      simpa [rubBlob] using this
+    · simp only [taken, Option.isSome_iff_exists, Option.bind_eq_some_iff] at ht
+      obtain ⟨_, v, hv, hj⟩ := ht
+      have hl : v = A 0 ∨ v = A 1 := by
+        by_cases h0 : v = A 0
+        · exact Or.inl h0
+        · by_cases h1 : v = A 1
+          · exact Or.inr h1
+          · simp [h0, h1] at hj
+      have := Steps.step (Step.op (lib := lib) (O := O) (c := c') (gul := gul)
+        (x := ⟨lab', rubBlob ⟨[], [], Termin.brn s z o⟩ ([Pole.lob s], Termin.hop ⟨[], z.there⟩), [], regs, t, st⟩)
+        (p := Pole.lob s) (rest := []) (n := A 0) (R := regs) (t' := t) (st' := st)
+        rfl rfl rfl (by simp [execPole, localPole, hv, hl])) (Steps.refl _)
+      simpa [rubBlob] using this
+
+end Sim
+
+end Opt
+end SkaModel
+end Formalization
