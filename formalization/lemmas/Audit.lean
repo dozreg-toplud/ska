@@ -98,6 +98,7 @@ import lemmas.Compiler.CompMapRegs
 import lemmas.Compiler.CompChase
 import lemmas.Compiler.CompChaseFin
 import lemmas.Compiler.CompStraightStep
+import lemmas.Compiler.CompLift
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -730,3 +731,10 @@ open Formalization
 #print axioms Compiler.ts_step
 #print axioms Compiler.ts_step_at
 #print axioms Compiler.cu_finish_rj
+#print axioms Compiler.lf_bind
+#print axioms Compiler.lf_inner
+#print axioms Compiler.lf_turn
+#print axioms Compiler.lf_rj
+#print axioms Compiler.lf_mr_rj
+#print axioms Compiler.lf_ts_rj
+#print axioms Compiler.cu_finish_all
