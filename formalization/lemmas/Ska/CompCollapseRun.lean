@@ -1,6 +1,7 @@
 import lemmas.Ska.CompCollapseGate
 import lemmas.Ska.CompBelowX
 import lemmas.Ska.CompRelX
+import lemmas.Ska.CompEntryRel
 
 /-!
 # The run of `+collapse-lazy-atom` when the sure need is one register
@@ -389,3 +390,110 @@ theorem collRun_n4 (lib : Lib) {p : Nomm} (hp : NextOK (S := S) (Map := Map) lib
         simp only [Option.bind_some, incF]
         apply goalSem_crash
         rw [he, hj', show [Pole.inc g2.re d] = [Pole.inc g2.re d] ++ [] from rfl, crashes_inc hR]
+
+/-- **`[7 [4 p] q]` for `%done` from `gen0` meets `RunOKU`**, when every run
+of `q` for `%done` from `gen0` returns a sure need `this d` with looks at
+axis `1` only.  `q`'s relaxed `sem` is taken at the widened input need
+`pair ned (this d)` holding `[s0 v]`, which `InR` admits since `this d` is the
+sure need of `q`'s result, and the lazy blocks of `q` are filled by the ops
+of the walk unproxied by the final `cond` (`collP_fillSem`). -/
+theorem runOKU_seven4 (lib : Lib) {p q : Nomm} (hp : NextOK (S := S) (Map := Map) lib p)
+    (sp : OKNR (S := S) (Map := Map) lib p) (kp : KeepX S Map p) (ap : AboveX S Map p)
+    (hq : FragX (S := S) q) (hcount : sixCount (Nomm.n7 (Nomm.n4 p) q) ≤ 255) {region : List Nat}
+    {g2 : Gen Map} {nex : NextL S}
+    (h : runL (Nomm.n7 (Nomm.n4 p) q) (CGoalL.done : CGoalL S) region (gen0 : Gen Map) = some (nex, g2))
+    (hsq : ∀ {nx : NextL S} {g1 : Gen Map}, runL q (CGoalL.done : CGoalL S) region (gen0 : Gen Map) = some (nx, g1) →
+      ∃ d, nx.laz.sure.ned = Need.this d ∧ ∀ x ∈ HoonSet.toList nx.laz.sure.lok, x = 1) :
+    RunOKU (Map := Map) lib (Nomm.n7 (Nomm.n4 p) q) CGoal.done gen0 g2 nex := by
+  have hc : sixCount p ≤ 255 ∧ sixCount q ≤ 255 := by simp only [sixCount] at hcount; omega
+  have p7 : ∀ s, pureEval (Nomm.n7 (Nomm.n4 p) q) s = (pureEval (Nomm.n4 p) s).bind (pureEval q) := fun _ => rfl
+  rw [runL_n7] at h
+  obtain ⟨nx, g1, h1, h2⟩ := bind_some h
+  obtain ⟨d, hs, hl⟩ := hsq h1
+  have Rq := (runX_ok (Map := Map) lib hq).1 trivial trivial hc.2 (by simp [gen0]) rfl upBelow_gen0 h1
+  have Sq := SemPR.toG ((runX_semR (Map := Map) lib hq).1 trivial trivial trivial hc.2 (by simp [gen0]) rfl
+    upBelow_gen0 clear_gen0 h1)
+  have Bq : BelowIn (gen0 : Gen Map).bo g1 := runX_below (goal := CGoal.done) hq rfl trivial hc.2 h1
+  have cq : ∀ k, HoonMap.get g1.cond k = Option.none := fun k => by rw [Rq.cnd]; exact gen0_cond_none k
+  obtain ⟨q1, q2, q3, q4⟩ := Rq.ext
+  have qlo := Rq.lo
+  have qhi := Rq.hi
+  have dre : d < g1.re := (Rq.regs d (by rw [hs]; rfl)).2
+  have CR := collRun_n4 lib hp sp kp ap h2 hs hl hc.1 (by omega) (q3.trans rfl) (Rq.grow.up upBelow_gen0)
+    (clear_gen0.growU Rq.grow) Rq.lo Rq.hi dre (cq d) (fun k hk => by simp [cq k] at hk)
+    (List.nodup_cons.mpr ⟨fun hm => by
+      obtain ⟨e, he, e1⟩ := List.mem_map.mp hm
+      have := (Rq.labs e he).2.1; omega, Rq.nodup⟩)
+    (fun e he => by obtain ⟨a, b, th, hb⟩ := Rq.labs e he; exact ⟨by omega, [], _, hb⟩)
+  have Cre := CR.re
+  have Cbo := CR.bo
+  refine ⟨⟨by omega, by omega, CR.drop.trans q3, fun o ho => (CR.keep o (by omega) (fun hm => ?_)).trans (q4 o ho)⟩,
+    Rq.grow.trans CR.grow, (condFresh_of_eq q1 Rq.cnd).trans CR.pfor.1, CR.lo, CR.hi, Or.inl CR.ent,
+    fun r hr => ⟨by have := (CR.regs r hr).1; omega, (CR.regs r hr).2⟩, CR.dist,
+    fun e he => ⟨(CR.eregs e he).1, fun r hr => ⟨by have := ((CR.eregs e he).2 r hr).1; omega,
+      ((CR.eregs e he).2 r hr).2⟩⟩,
+    fun e he => ⟨by have := (CR.labs e he).1; omega, (CR.labs e he).2⟩, CR.nodup,
+    by have := CR.size; simp only [sixCount] at this ⊢; omega,
+    fun s hs' => by rw [p7, CR.nec s hs']; rfl, CR.ncond, CR.econd, ?_⟩
+  · obtain ⟨e, he, e1⟩ := List.mem_map.mp hm
+    have := (Rq.labs e he).1; omega
+  intro c ned σ O st t gul s0 s ag hned regs hh hn
+  have agC : AgreeU lib O c gul st t g2.cond ned g1 g2 nex.laz s0 s :=
+    ⟨fun o l u hnl => ag.1 o (by omega) u hnl, ag.2⟩
+  have Sp := CR.sem g2.cond (fun _ _ => rfl) c ned σ O st t gul s0 s agC (fun r hr => Or.inl (hned r hr)) regs hh hn
+  have u1 : ∀ x, x < g1.re → unproxy g2.cond x = id x := fun x hx =>
+    unproxy_none (by rw [ProxyFor.get_lt CR.pfor hx]; exact cq x)
+  show GoalSem lib O c gul st _ regs t nex.th CGoal.done (pureEval (Nomm.n7 (Nomm.n4 p) q) s)
+  cases ev : pureEval (Nomm.n4 p) s with
+  | none =>
+    rw [ev] at Sp
+    have e7 : pureEval (Nomm.n7 (Nomm.n4 p) q) s = none := by rw [p7, ev]; rfl
+    rw [e7]; exact goalSem_none _ Sp
+  | some v =>
+    rw [ev] at Sp
+    have e7 : pureEval (Nomm.n7 (Nomm.n4 p) q) s = pureEval q v := by rw [p7, ev]; rfl
+    rw [e7]
+    obtain ⟨m, rfl⟩ : ∃ m, v = A m := by
+      rw [pureEval_n4] at ev
+      cases ep : pureEval p s with
+      | none => rw [ep] at ev; cases ev
+      | some x =>
+        rw [ep] at ev
+        cases x with
+        | atom n => simp [incF] at ev; exact ⟨n + 1, ev.symm⟩
+        | cell _ _ => simp [incF] at ev
+    have fit : FitsS nx.laz.sure (A m) := ⟨by rw [hs]; trivial, fun y hy => by rw [hl y hy]; simp⟩
+    obtain ⟨R, hR, kR, eR⟩ := Sp.1 fit
+    have agQ : AgreeP lib O c gul st t (Need.pair ned (Need.this d)) gen0 g1 nx.laz (C s0 (A m)) (A m) := by
+      refine ⟨fun o l u hnl => ?_, fun e he => ?_⟩
+      · have hn2 : o ∉ (entries nex.laz).map Prod.fst := fun hm => by
+          obtain ⟨e', he', e1⟩ := List.mem_map.mp hm; have := (CR.labs e' he').1; omega
+        rw [ag.1 o l (by omega) hn2, CR.keep o u hnl]
+        cases hg : HoonMap.get g1.blocks o with
+        | none => rfl
+        | some b => simp only [Option.map_some, unproxyBlob, renBlob_congr u1 (Bq o b l u hg), renBlob_id]
+      · obtain ⟨l, lt, th, hb⟩ := Rq.labs e he
+        obtain ⟨F, hF, hP⟩ := CR.front e he
+        have hb2 := hF [] (Termin.hop th) hb
+        rw [List.append_nil] at hb2
+        have hn2 : e.1 ∉ (entries nex.laz).map Prod.fst := fun hm => by
+          obtain ⟨e', he', e1⟩ := List.mem_map.mp hm; have := (CR.labs e' he').1; omega
+        refine ⟨F.map (renPole (unproxy g2.cond)), th, hb, ?_, ?_⟩
+        · rw [ag.1 e.1 l (by omega) hn2, hb2]
+          have hj := (Bq e.1 _ l (by omega) hb).2.2
+          simp only [Option.map_some, unproxyBlob, renBlob, List.map_nil, renFin, renJmp_congr u1 hj, renJmp_id]
+        · exact collP_fillSem hP (by rw [ProxyFor.get_lt CR.pfor dre]; exact cq d)
+            (fun x hx => by rw [ProxyFor.get_lt CR.pfor ((Rq.eregs e he).2 x hx).2]; exact cq x)
+            (fun k hk => rfl) lib O c gul st t ned g1.re s0 m
+    have inQ : ∀ r, NMem (Need.pair ned (Need.this d)) r → InR (CGoal.done : CGoal S) gen0 g1 nx.laz.sure.ned r := by
+      intro r hr
+      rcases hr with hr | hr
+      · exact Or.inl (by have := hned r hr; omega)
+      · exact Or.inr (Or.inr (by rw [hs]; exact hr))
+    have hR' : SkaModel.read d R = some (A m) := by rw [hs] at hR; exact hR
+    have hnR : HoldsN (Need.pair ned (Need.this d)) R (C s0 (A m)) :=
+      ⟨HoldsN.agree ned (fun r hr => kR r (Or.inr hr)) hn, hR'⟩
+    have Sq' := Sq c _ σ O st t gul _ _ agQ inQ R ⟨hR, fit.2⟩ hnR
+    exact eR.trans Sq'
+
+end Run
