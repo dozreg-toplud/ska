@@ -11,6 +11,10 @@ Everything here is about one noun, the pill, and is said with `cue` and
 `Eval` alone.  No Lean model of the compiler or of the interpreter appears:
 the compiler and the interpreter are the Nock inside the pill.
 
+The arms of the pill are run with `EvalA` (`Pull`, `Slam`), so the statements
+say nothing about a scry gate or library code that would run a hint with a
+cell for a tag.
+
 The pill decodes to `[%steel nok trap ~]`, and `nok` on `[trap ~]` computes
 the SKA core.  That core is three cores deep:
 
@@ -50,13 +54,13 @@ open Nock
 
 /-- The arm at `axis` of the battery of `core`: `*[core 9 axis 0 1]`. -/
 def Pull (core : Noun) (axis : Nat) (arm : Noun) : Prop :=
-  Eval core (n3 (A 9) (A axis) (slot 1)) arm
+  EvalA core (n3 (A 9) (A axis) (slot 1)) arm
 
 /-- The gate called on a sample: `*[gate(+6 sam) 9 2 0 1]`. -/
 def Slam (gate sam out : Noun) : Prop :=
   ∃ battery bunt context,
     gate = C battery (C bunt context) ∧
-    Eval (C battery (C sam context)) (n3 (A 9) (A 2) (slot 1)) out
+    EvalA (C battery (C sam context)) (n3 (A 9) (A 2) (slot 1)) out
 
 /-! ## Constants of the pill
 

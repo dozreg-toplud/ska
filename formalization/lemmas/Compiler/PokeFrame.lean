@@ -167,7 +167,7 @@ theorem poke_frame {cr : Noun} (hb : slot? 2 cr = slot? 2 cor) {ovo x : Noun}
   unfold pokeN at h
   rw [h23, cor_ipoke] at h
   simp only [nock_exec] at h
-  have he := nock_eq_some_iff.1 h
+  have he := eval_of_nock h
   obtain ⟨r, hr, gr⟩ := Frame.absNock_sound (S := C ipokeBat (C ovo cr)) he 1000 (.sub [])
     (by simp [Frame.Ab.Gam, slotAtPath])
   have hok := List.all_eq_true.1 ipoke_check r hr

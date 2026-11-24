@@ -217,10 +217,10 @@ theorem got_by {mug : Noun → Nat} (ctx : Noun) (hc : NeedIn ctx ∧ SomeIn ctx
     (∀ v, Get a k v →
       Eval (C by.got.battery (C k (C by.battery (C a ctx)))) by.got.battery v) ∧
     ((∀ v, ¬ Get a k v) →
-      ∀ p, ¬ Eval (C by.got.battery (C k (C by.battery (C a ctx)))) by.got.battery p) := by
+      ∀ p, ¬ EvalA (C by.got.battery (C k (C by.battery (C a ctx)))) by.got.battery p) := by
   refine ⟨fun v hg => eval_of_nock (got_gate ctx hc k a v (getF_some h hg)), ?_⟩
   intro hn p he
-  have := nock_of_eval he
+  have := nock_of_evalA he
   rw [got_gate_nil ctx hc k a (getF_none h hn)] at this
   cases this
 
