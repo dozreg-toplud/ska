@@ -717,6 +717,7 @@ elif WHICH == 'switch':
              ('swPOMT', pomt, 'The trap of `m` in `plain-of`: the first `%imm` into `l` or `r`.'),
              ('swPOC', poc, '`plain-of` from `?~  m`.'),
              ('swPOB', pob, 'The body of the gate `plain-of`.'),
+             ('swPSShape', dig(psb, [7, 15, 3, 7, 14, 6]), '`?=([[%imm *] ~] body.nb)` in `plains-of`.'),
              ('swPSB', psb, 'The body of the gate `plains-of`.'),
              ('swCSSG', cssg, 'The gate of the `+sort` in `cases`: `(lth c.a c.b)`.'),
              ('swCST', cst, 'The trap of `cases`.'),
