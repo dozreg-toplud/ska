@@ -33,10 +33,11 @@ taken, and the recursion of the analysis is finite.
    `&` only, and a leaf `|` embeds no leaf `&`.  `+msg-sock` only cuts
    subtrees of `a` down to `|+~`, so `cape-size` plus the number of leaves
    `&` strictly decreases at each `%he` turn.  For example `a = [[& |] [5 ~]]`
-   and `b = &+[5 6]` give `|+~`.  Not proved in Lean (it needs the stack to be
-   in the graph, a field of the convergence invariant, and the two models of
-   `HeSock.lean` and `CallGraph.lean`).  On the real compiler a `%he` turn
-   was never followed by another (item 2 of section 2).
+   and `b = &+[5 6]` give `|+~`.  Proved: `msgSock_he_lt` of `HeTurn.lean`,
+   and `resolve_he_bound` of `HeBound.lean` (at most `heMeasure` of the
+   subject sock turns `%he` in a row, given `SInv`, which puts the stack in
+   the graph).  On the real compiler a `%he` turn was never followed by
+   another (item 2 of section 2).
 3. The stack of functions in progress.  A new frame is pushed only for an
    identity that is not in the graph, not a memo hit, not `%rec` and not
    `%he`.  The formulas of frames are callable formulas: a direct call needs
