@@ -1,4 +1,5 @@
 import lemmas.Ska.CompConsGH
+import lemmas.Ska.CompCallParent
 
 /-!
 # The fragment with calls `FragUC` and its contract
@@ -14,7 +15,11 @@ is in `FragC` and whose tail is in `FragU`; `FragUC` is `FragU` or `FragC`.
   `UOKC.wrap`).
 * `finishLUC_contractUC`: the whole-subject code of a nomm of `FragUC` with
   at most 255 `%6` meets `BellContract … true`.
-* `uokc_example2`: `[[[2 [0 3] [0 2]] [0 1]] [0 1]]`, a call two conses deep.
+* `uokc_example2`: `[[[2 [0 3] [0 2]] [0 1]] [0 1]]`, a call two conses deep;
+  `finishLUC` equals its raw blocks (`tools/hoon/cc2dump.hoon`, subject
+  `[[4 0 1] 5]`, product `[[6 [4 0 1] 5] [4 0 1] 5]`): the outer tail's need
+  is parked behind the inner cons (`0w3 mov v0 v3`), the inner tail's behind
+  the call (`0w5 mov v0 v5`).
 -/
 
 set_option linter.unusedSectionVars false
@@ -119,6 +124,13 @@ theorem finishLUC_contractUC {lib : Lib} {code : Bell → Option Nomm} (hok : Co
   simp only [if_true, Option.some.injEq] at hargs
   subst hargs
   exact H.2 s hs
+
+#guard monoOutC envR (Nomm.cons (Nomm.cons (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) (Nomm.n0 1)) (Nomm.n0 1)) 9 ==
+  some (NeedOrd.this, 1, [(0, bk [Pole.mov 0 9, Pole.cel 9, Pole.hed 9 11, Pole.mov 11 8, Pole.tal 9 10,
+      Pole.mov 10 7] (hp 7)),
+    (1, bk [] (Termin.don 1)), (2, bk [Pole.con 2 3 1] (hp 1)), (3, bk [Pole.mov 0 3] (hp 2)),
+    (4, bk [Pole.con 4 5 2] (hp 3)), (5, bk [Pole.mov 0 5] (hp 4)), (6, bk [Pole.mov 6 4] (hp 5)),
+    (7, bk [Pole.nok 7 8 6] (hp 6)), (8, none)])
 
 /-- **`[[[2 [0 3] [0 2]] [0 1]] [0 1]]` end to end**: a call in the head of
 a cons in the head of a cons, which no class before `FragUC` has. -/
