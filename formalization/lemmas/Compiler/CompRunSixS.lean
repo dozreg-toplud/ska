@@ -126,5 +126,167 @@ theorem cr6s_tail (h7 : slot? 7 ctx = some compK) (x : GenRest) (hx : x.NoSoft) 
         lsh_arm, hsh, cf_emit_g, hg1, bind, StateT.bind, lazyShut, Lazy.softLess_noSoft, ek, hD2, cr_cp_arm, hcp,
         NextL.goal, CGoalL.toNoun, pure, StateT.pure]
 
+/-! ## `+past-fork` keeps the invariant -/
+
+theorem pastFork_cod {cod : Bell → Option Bool} {nom : Nomm} (h : hinted cod nom = hinted noCode nom)
+    (laz : Lazy CSet) : Lazy.pastFork cod laz nom = Lazy.pastFork noCode laz nom := by
+  simp only [Lazy.pastFork, h]
+
+/-- The forks of `+past-fork` when the test is hinted. -/
+theorem pastFork_some {cod : Bell → Option Bool} {laz laz' : Lazy CSet} {nom : Nomm}
+    (h : Lazy.pastFork cod laz nom = some laz') :
+    laz' = laz ∨ laz' = Lazy.mk laz.sure (laz.fork.map pfE) laz.bond := by
+  unfold Lazy.pastFork at h
+  split at h
+  · cases h
+  · cases h; exact Or.inl rfl
+  · cases h; exact Or.inr rfl
+
+theorem fregs_pf : ∀ f : List (Lazy.ForkE CSet), fregs (f.map pfE) = fregs f
+  | [] => rfl
+  | ((oy, y), (on, n)) :: rest => by
+    simp [fregs, pfE, lregs, bregs, flattenNeed, Sure.bunt, fregs_pf rest]
+
+theorem walkPF_pf {Q : Sure CSet → Prop} (hb : Q Sure.bunt) : ∀ f : List (Lazy.ForkE CSet),
+    WalkPF (fun _ s => Q s) f → WalkPF (fun _ s => Q s) (f.map pfE)
+  | [], _ => trivial
+  | ((oy, y), (on, n)) :: rest, ⟨hy, hn, hr⟩ =>
+    ⟨⟨hb, trivial, hy, trivial⟩, ⟨hb, trivial, hn, trivial⟩, walkPF_pf hb rest hr⟩
+
+theorem flabs_pf : ∀ (f : List (Lazy.ForkE CSet)) (o : Nat), o ∈ flabs (f.map pfE) → o ∈ flabs f
+  | [], o, h => by simp [flabs] at h
+  | ((oy, y), (on, n)) :: rest, o, h => by
+    simp only [List.map_cons, pfE, flabs, llabs, blabs, List.mem_cons, List.mem_append, List.not_mem_nil,
+      or_false, false_or, List.append_nil] at h ⊢
+    rcases h with h | h | (h | h) | (h | h) | h
+    · exact Or.inl h
+    · exact Or.inr (Or.inl h)
+    · exact Or.inl h
+    · exact Or.inr (Or.inr (Or.inl h))
+    · exact Or.inr (Or.inl h)
+    · exact Or.inr (Or.inr (Or.inr (Or.inl h)))
+    · exact Or.inr (Or.inr (Or.inr (Or.inr (flabs_pf rest o h))))
+
+theorem fkeys_pf : ∀ f : List (Lazy.ForkE CSet), FKeys f → FKeys (f.map pfE)
+  | [], _ => trivial
+  | ((oy, y), (on, n)) :: rest, ⟨hy, hn, hr⟩ => by
+    simp only [List.map_cons, pfE, FKeys, LKeys, BKeys, List.map_nil, List.nodup_nil, List.map_cons,
+      List.nodup_cons, List.not_mem_nil, not_false_eq_true, and_self, true_and, and_true]
+    exact ⟨hy, hn, fkeys_pf rest hr⟩
+
+/-- **`+past-fork` keeps the registers.** -/
+theorem lregs_pastFork {cod : Bell → Option Bool} {laz laz' : Lazy CSet} {nom : Nomm}
+    (h : Lazy.pastFork cod laz nom = some laz') : lregs laz' = lregs laz := by
+  rcases pastFork_some h with rfl | rfl
+  · rfl
+  · obtain ⟨s, f, b⟩ := laz
+    simp [lregs, fregs_pf]
+
+/-- **`+past-fork` keeps `LAll` of a predicate that the bunt meets.** -/
+theorem lall_pastFork {cod : Bell → Option Bool} {laz laz' : Lazy CSet} {nom : Nomm} {Q : Sure CSet → Prop}
+    (hb : Q Sure.bunt) (h : Lazy.pastFork cod laz nom = some laz') (hl : LAll Q laz) : LAll Q laz' := by
+  rcases pastFork_some h with rfl | rfl
+  · exact hl
+  · obtain ⟨s, f, b⟩ := laz
+    exact ⟨hl.1, walkPF_pf hb f hl.2.1, hl.2.2⟩
+
+/-- **`+past-fork` keeps `LInv`.** -/
+theorem linv_pastFork {cod : Bell → Option Bool} {laz laz' : Lazy CSet} {nom : Nomm} {kr kb : Nat}
+    (h : Lazy.pastFork cod laz nom = some laz') (hl : LInv kr kb laz) : LInv kr kb laz' := by
+  obtain ⟨h1, h2, h3, h4⟩ := hl
+  refine ⟨lall_pastFork (linv_bunt kr kb).1.1 h h1, by rw [lregs_pastFork h]; exact h2, ?_, ?_⟩
+  · rcases pastFork_some h with rfl | rfl
+    · exact h3
+    · obtain ⟨s, f, b⟩ := laz
+      obtain ⟨a1, a2, a3, a4⟩ := h3
+      refine ⟨?_, a2, fkeys_pf f a3, a4⟩
+      have : (f.map pfE).map (fun e => e.1.1) = f.map (fun e => e.1.1) := by
+        simp [Function.comp_def, pfE]
+      simpa only [Lazy.fork, this] using a1
+  · rcases pastFork_some h with rfl | rfl
+    · exact h4
+    · obtain ⟨s, f, b⟩ := laz
+      intro o ho
+      simp only [llabs, List.mem_append] at ho h4
+      rcases ho with ho | ho
+      · exact h4 o (Or.inl (flabs_pf f o ho))
+      · exact h4 o (Or.inr ho)
+
+/-! ## From `+past-fork` on -/
+
+/-- Phase S from `+past-fork` on, in the model. -/
+noncomputable def sixPM (env : CallEnv) (msup : Option Nomm) (p : Nomm) (region : List Nat) (lazy : Lazy CSet)
+    (yes nuh : Nat) : CM (TreapMap mugF) (NextL CSet) := do
+  let lazy ← liftO (Lazy.pastFork env.cod lazy p)
+  let nexCond ← runLC env msup p (CGoalL.pick (jmp0 yes) (jmp0 nuh)) region
+  sixTail nexCond lazy
+
+theorem pick_noun (yes nuh : Nat) : (CGoalL.pick (jmp0 yes) (jmp0 nuh) : CGoalL CSet).toNoun
+    = C (A 0x6b636970) (C (C (A 0) (A yes)) (C (A 0) (A nuh))) := by
+  simp [CGoalL.toNoun, cr_jmp0]
+
+/-- **Phase S from `+past-fork` on** (`cr6S7`): `+past-fork` over `p`, the
+run of `p` for `[%pick ~^yes ~^nuh]`, and the tail (`cr6s_tail`), given the
+link of `p` on that goal and what its runs return, the registers of `lazy`
+below the counter and no look at axis `0` in it. -/
+theorem cr6s_p (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q r : Nomm) (region : List Nat)
+    (hpc : hinted env.cod p = hinted noCode p) (hpn : hinted noCode p ≠ Option.none)
+    (yes nuh : Nat)
+    (hP : ∀ g' : Gen (TreapMap mugF), g'.drop = false →
+      CompRunAtR (runLC env msup) ctx p (CGoalL.pick (jmp0 yes) (jmp0 nuh)) region g')
+    (hR : ResFor env msup p region)
+    (x : GenRest) (hx : x.NoSoft) (g : Gen (TreapMap mugF)) (hd : g.drop = false)
+    (lazy : Lazy CSet) (hlz : ∀ y ∈ lregs lazy, y < g.re) (hlok : LAll CrLok lazy)
+    (mono goalN sup V6 V5 V4 V3 V2 V1 V0 : Noun) :
+    nock (C (C lazy.toNoun (C (A yes) (A nuh))) (C V6 (C V5 (C V4 (C V3 (C V2 (C V1 (C V0
+      (crSubj mono (Nomm.n6 p q r).toNoun goalN (listNoun A region) sup (compCore g x ctx)))))))))) cr6S7
+      = (sixPM env msup p region lazy yes nuh g).map fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  have hpf := comp_past_fork h7 hcode (genNoun g x) lazy p hpn
+  have hD1 := pf_at
+  unfold sixPM
+  rw [pastFork_cod hpc]
+  simp only [compCore] at hpf ⊢
+  cases e1 : Lazy.pastFork noCode lazy p with
+  | none =>
+    rw [e1] at hpf
+    generalize comp.door = Dr at hpf hD1 ⊢
+    unfold cr6S7
+    simp [nock_exec, crSubj, Nomm.toNoun, hD1, pf_arm, hpf, liftO, bind, StateT.bind]
+  | some lazy' =>
+    rw [e1] at hpf
+    simp only [Option.map_some] at hpf
+    have hq1 := hP g hd x mono sup hx
+    rw [pick_noun] at hq1
+    simp only [crSubj, compCore] at hq1
+    cases e2 : runLC (S := CSet) (Map := TreapMap mugF) env msup p (CGoalL.pick (jmp0 yes) (jmp0 nuh)) region g with
+    | none =>
+      rw [e2] at hq1
+      generalize comp.door = Dr at hpf hD1 hq1 ⊢
+      unfold cr6S7 cr6S8
+      simp [nock_exec, crSubj, Nomm.toNoun, hD1, pf_arm, hpf, liftO, bind, StateT.bind, hq1, e2, cr_bat_dol]
+    | some rr =>
+      obtain ⟨nexCond, g'⟩ := rr
+      rw [e2] at hq1
+      simp only [Option.map_some] at hq1
+      obtain ⟨l1, -, gi, fr⟩ := hR (CGoalL.pick (jmp0 yes) (jmp0 nuh)) g g' nexCond
+        (show GInv g (CGoalL.pick (jmp0 yes) (jmp0 nuh)) from ⟨hd, jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩) e2
+      have hf : ∀ y ∈ lregs nexCond.laz, y < g'.re := lnb_regs gi.1.1
+      have hs' : ∀ y ∈ lregs lazy', y < g'.re := fun y hy => by
+        rw [lregs_pastFork e1] at hy; have := hlz y hy; omega
+      have ap : ∀ y ∈ lregs nexCond.laz, y ∉ lregs lazy' := fun y hy hy' => by
+        rw [lregs_pastFork e1] at hy'
+        have := hlz y hy'
+        rcases fr y hy with h | h
+        · omega
+        · simp [gregs] at h
+      have ht := cr6s_tail h7 x hx g' nexCond lazy' (C (A yes) (A nuh)) V6 V5 V4 V3 V2 V1 V0 crBat crB
+        (C mono (C (Nomm.n6 p q r).toNoun (C goalN (C (listNoun A region) sup)))) hf hs' ap
+        (lall_pastFork (fun y hy => by simp [Sure.bunt] at hy; exact absurd hy (HoonSet.mem_empty y)) e1 hlok)
+      simp only [compCore, Nomm.toNoun] at ht
+      generalize comp.door = Dr at hpf hD1 hq1 ht ⊢
+      unfold cr6S7 cr6S8
+      simp [nock_exec, crSubj, Nomm.toNoun, hD1, pf_arm, hpf, liftO, bind, StateT.bind, hq1, e2, cr_bat_dol, ht]
+
 end Compiler
 end Formalization
