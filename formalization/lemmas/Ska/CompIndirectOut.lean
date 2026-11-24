@@ -450,7 +450,9 @@ theorem indirect_prefixN {sur : Sure S} {th : Jmp} {g0 g1 g2 g3 : Gen Map} {nex0
 /-- **The `sem` of a run that calls, under a fork-free `%next`**: `SemNV`
 with the oracle's state moving, for `+mink`'s tone `r` on a formula `f`
 that the nomm stands for on the subjects of `P` (`GoalSemCM` in place of
-`GoalSem`, at every later `cond`). -/
+`GoalSem`, at every later `cond`).  The program agrees with the run's
+blocks at every state of the oracle (`AgreeU` at each `st'`), because the
+lazy blocks of a parent run after a call, at the oracle's new state. -/
 def SemNC (lib : Lib) (P : Noun → Prop) (f : Noun) (sur : Sure S) (th : Jmp) (g0 g1 : Gen Map) (nex : NextL S) :
     Prop :=
   ∀ (cf : Map (Nat × List Nat)), (∀ k, k < g1.re → HoonMap.get cf k = HoonMap.get g1.cond k) →
@@ -458,7 +460,7 @@ def SemNC (lib : Lib) (P : Noun → Prop) (f : Noun) (sur : Sure S) (th : Jmp) (
       (gul : Noun), OracleSteps Inv ν O → OracleFwd lib Inv ν O n →
     ∀ (st : σ) (t tm : Trace) (s0 s : Noun) (r : Tone), Inv st → Forall2 (FrameRel lib (ν st)) t tm → P s →
     minkF lib gul n tm s f = some r →
-    AgreeU lib O c gul st t cf ned g0 g1 nex.laz s0 s → (∀ x, NMem ned x → g1.re ≤ x) →
+    (∀ st' : σ, AgreeU lib O c gul st' t cf ned g0 g1 nex.laz s0 s) → (∀ x, NMem ned x → g1.re ≤ x) →
     ∀ regs, HoldsS nex.laz.sure regs s → HoldsN ned regs s0 →
     GoalSemCM lib O c gul Inv ν (fun x => (x < g0.re ∨ NMem ned x) ∧ ¬ NMem sur.ned x) st regs t tm nex.th
       (CGoal.next sur th) r
@@ -554,7 +556,7 @@ theorem indirect_runS (lib : Lib) {p q : Nomm} (up : UOK (S := S) (Map := Map) l
   have hcf6 : ∀ x, x < g3.re → HoonMap.get cf x = HoonMap.get g0.cond x := fun x hx => by
     rw [hcf x (by have := Rm.ext.1; omega), cf3 x hx]
   have ag3 : AgreeU lib O c gul st t cf ned g3 g' nex.laz s0 s :=
-    AgreeU.part ag (by omega) (Ext.refl g') (fun e he => he) (fun k _ _ hk => hk)
+    AgreeU.part (ag st) (by omega) (Ext.refl g') (fun e he => he) (fun k _ _ hk => hk)
       (fun e he => Nat.lt_trans (Rm.labs e he).2.1 Rm.hi)
   have G := Rm.sem cf (fun k hk => hcf k hk) c ned σ O st t gul s0 s ag3 hned regs hh hn
   have nlab : ∀ k, k < g3.bo → k ∉ (entries nex.laz).map Prod.fst := fun k hk hm => by
@@ -562,7 +564,7 @@ theorem indirect_runS (lib : Lib) {p q : Nomm} (up : UOK (S := S) (Map := Map) l
     have := (Rm.labs e he).1; omega
   have hbo : HoonMap.get c.blocks (g0.bo + 1) =
       some ⟨[], [Pole.nok g2.re (g2.re + 1) g0.re], Termin.hop (jmp0 g0.bo)⟩ := by
-    rw [ag.1 (g0.bo + 1) (by omega) (by have := Rm.ext.2.1; omega) (nlab _ (by omega)),
+    rw [(ag st).1 (g0.bo + 1) (by omega) (by have := Rm.ext.2.1; omega) (nlab _ (by omega)),
       Rm.ext.2.2.2 _ (by omega), k3o]
     simp only [Option.map_some, unproxyBlob, renBlob, List.map_nil, List.map_cons, renPole, renFin,
       renJmp_nil _ (show (jmp0 g0.bo).args = [] from rfl)]
@@ -572,7 +574,7 @@ theorem indirect_runS (lib : Lib) {p q : Nomm} (up : UOK (S := S) (Map := Map) l
   have Hout := outGoal_kerf (Inv := Inv) (ν := ν) (lib := lib) (O := O) (gul := gul)
     (K := fun x => (x < g0.re ∨ NMem ned x) ∧ ¬ NMem sur.ned x) hk2 d0 hth hok.1 hok.2
     (cf := cf) (c := c)
-    (by rw [ag.1 g0.bo (Nat.le_refl _) (by have := Rm.ext.2.1; omega) (nlab _ (by omega)),
+    (by rw [(ag st).1 g0.bo (Nat.le_refl _) (by have := Rm.ext.2.1; omega) (nlab _ (by omega)),
       Rm.ext.2.2.2 _ (by omega), k3out])
     (fun x hx => by
       rcases hx with e | e | ⟨a, b⟩
