@@ -248,5 +248,130 @@ theorem hd_gate (K cod : Noun) : ∀ (n : Nomm) (b : Bool), hinted noCode n = so
       clear ihh ihq h
       cases b <;> simp only [loob] at e1 e2 <;> hd_simp
 
+
+/-! ## `+past`
+
+`+past` is door arm `7166` (core axis `11262`, no hint; found as the callee
+of the cons case of `+run` on the sample `[nex nom region]`).  Its battery
+`paBat` is `[6 paTest [[0 12] 0 30] paHi]`: the inline test of the need
+(`[%none ~]`, looks `~` or `[1 ~ ~]`, no fork), which returns `[nex gen]`, and
+otherwise `paHi`, the slam of `+hinted` (arm `96116` of `K` at axis `127`, on
+`[nom code.long-ska]`, the code at axis `52` of `ctx`), then either `[nex gen]`
+or the `%hop` block, `+set-tag` and the bond. -/
+
+def paTest : Noun :=
+  (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 200))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x656e6f6e)) (C (A 0) (A 400)))) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 401)))) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (C (A 6) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 201)))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 3) (C (A 0) (A 201))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 1)) (C (A 0) (A 402)))) (C (C (A 6) (C (C (A 3) (C (A 0) (A 403))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 806)))) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 807)))) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (A 1) (A 1)))))))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 202)))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (A 1) (A 1)))))
+
+def paHi : Noun :=
+  (C (A 6) (C (C (A 8) (C (C (A 9) (C (A 0x17774) (C (A 0) (A 127)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 58)) (C (A 0) (A 2036)))) (C (A 0) (A 2)))))))) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 0xaaaa) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A 0)))) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A 0)))) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A 0x706f68)))) (C (A 0) (A 115)))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 62) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 10) (C (C (A 62) (C (A 8) (C (C (A 9) (C (A 0x555de) (C (A 0) (A 15)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 6)) (C (A 0) (A 123)))) (C (A 0) (A 2))))))))) (C (A 0) (A 1)))) (C (C (C (A 1) (A 0x7478656e)) (C (C (C (A 1) (C (C (A 0x656e6f6e) (A 0)) (A 0))) (C (C (A 1) (A 0)) (C (C (C (A 0) (A 2)) (C (C (A 0) (A 228)) (C (C (A 0) (A 458)) (C (A 1) (A 0))))) (C (A 0) (A 459))))) (C (C (A 1) (A 0)) (C (A 0) (A 2))))) (C (A 0) (A 62))))))))))))) (C (C (A 0) (A 12)) (C (A 0) (A 30))))))
+
+def paBat : Noun := C (A 6) (C paTest (C (C (C (A 0) (A 12)) (C (A 0) (A 30))) paHi))
+
+/-- The arm `+past`: build the gate on its bunt. -/
+def paArm : Noun :=
+  C (A 8) (C (C (A 1) (C (C (A 0x7478656e) (C (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))
+    (C (A 0) (A 0)))) (C (C (A 0) (A 0)) (A 0)))) (C (C (A 1) paBat) (C (A 0) (A 1))))
+
+theorem comp_past_at : slot? 7166 comp.door = some paArm := by kernel_rfl
+
+/-- The test of `+past`, as the model writes it. -/
+noncomputable def paTestB (laz : Lazy CSet) : Bool :=
+  decide (laz.sure.ned = Need.none) && HoonSet.small laz.sure.lok && laz.fork.isEmpty
+
+/-- **The test of `+past`** on the noun of a `%next` goal at axis `12`. -/
+theorem pa_test (bat rest D th : Noun) (laz : Lazy CSet) :
+    nock (C bat (C (C (C (A 0x7478656e) (C laz.toNoun th)) rest) D)) paTest
+      = some (loob (paTestB laz)) := by
+  obtain ⟨⟨ned, lok⟩, f, b⟩ := laz
+  unfold paTest
+  cases ned with
+  | pair p q =>
+    obtain ⟨a, b', hp⟩ := cd_need_cell p
+    simp [nock_exec, Lazy.toNoun, Sure.toNoun, Need.toNoun, hp, paTestB, Lazy.sure, eqCode, loob]
+  | both r h t =>
+    simp [nock_exec, Lazy.toNoun, Sure.toNoun, Need.toNoun, paTestB, Lazy.sure, eqCode_atom, loob,
+      Tag.both, Tag.none]
+  | this r =>
+    simp [nock_exec, Lazy.toNoun, Sure.toNoun, Need.toNoun, paTestB, Lazy.sure, eqCode_atom, loob,
+      Tag.this, Tag.none]
+  | none =>
+    rcases cs_small_cases lok with ⟨hsm, hl | hl⟩ | ⟨hsm, n, l, r, hl, hne⟩
+    · cases f <;> simp [nock_exec, Lazy.toNoun, Lazy.forksNoun, Sure.toNoun, Need.toNoun, paTestB,
+        Lazy.sure, Lazy.fork, eqCode_atom, eqCode, loob, Tag.none, hl, hsm]
+    · cases f <;> simp [nock_exec, Lazy.toNoun, Lazy.forksNoun, Sure.toNoun, Need.toNoun, paTestB,
+        Lazy.sure, Lazy.fork, eqCode_atom, eqCode, loob, Tag.none, hl, hsm]
+    · rcases n with k | ⟨n1, n2⟩
+      · by_cases hk : k = 1
+        · subst hk
+          rcases l with l | ⟨l1, l2⟩
+          · by_cases hl0 : l = 0
+            · subst hl0
+              rcases r with r | ⟨r1, r2⟩
+              · have hr0 : r ≠ 0 := fun e => hne ⟨rfl, rfl, by rw [e]⟩
+                simp [nock_exec, Lazy.toNoun, Sure.toNoun, Need.toNoun, paTestB, Lazy.sure, eqCode_atom,
+                  loob, Tag.none, hl, hsm, Ne.symm hr0]
+              · simp [nock_exec, Lazy.toNoun, Sure.toNoun, Need.toNoun, paTestB, Lazy.sure, eqCode_atom,
+                  eqCode, loob, Tag.none, hl, hsm]
+            · simp [nock_exec, Lazy.toNoun, Sure.toNoun, Need.toNoun, paTestB, Lazy.sure, eqCode_atom,
+                loob, Tag.none, hl, hsm, Ne.symm hl0]
+          · simp [nock_exec, Lazy.toNoun, Sure.toNoun, Need.toNoun, paTestB, Lazy.sure, eqCode_atom,
+              eqCode, loob, Tag.none, hl, hsm]
+        · simp [nock_exec, Lazy.toNoun, Sure.toNoun, Need.toNoun, paTestB, Lazy.sure, eqCode_atom,
+            loob, Tag.none, hl, hsm, Ne.symm hk]
+      · simp [nock_exec, Lazy.toNoun, Sure.toNoun, Need.toNoun, paTestB, Lazy.sure, eqCode_atom,
+          eqCode, loob, Tag.none, hl, hsm]
+
+
+theorem pa_cond (laz : Lazy CSet) :
+    (laz.sure.ned = Need.none ∧ HoonSet.small laz.sure.lok = true ∧ laz.fork.isEmpty = true)
+      ↔ paTestB laz = true := by
+  simp [paTestB, and_assoc]
+
+variable {ctx : Noun}
+
+/-- **`+past` is `pastL noCode`** on every `next` and every nomm on which
+`hinted noCode` returns, in a context with `K` at axis `7` and a code table
+at axis `52`.  It touches none of `cache`, `soft`, `sofs`. -/
+theorem comp_past (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (x : GenRest) (g : Gen (TreapMap mugF)) (nex : NextL CSet) (nom : Nomm) (region : List Nat)
+    (hnom : hinted noCode nom ≠ Option.none) :
+    nock (C paBat (C (C nex.goal.toNoun (C nom.toNoun (listNoun A region))) (compCore g x ctx))) paBat
+      = (pastL noCode nex nom region g).map fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
+  obtain ⟨laz, ⟨args, there⟩⟩ := nex
+  have ht := pa_test paBat (C nom.toNoun (listNoun A region)) (compCore g x ctx)
+    (Jmp.toNoun ⟨args, there⟩) laz
+  simp only [NextL.goal, CGoalL.toNoun]
+  nock_open paBat
+  rw [nock_op6, ht]
+  by_cases hb : paTestB laz = true
+  · have hp : (laz.sure.ned = Need.none ∧ HoonSet.small laz.sure.lok = true ∧ laz.fork.isEmpty = true) :=
+      (pa_cond laz).2 hb
+    simp [hb, loob, nock_exec, pastL, hp, pure, StateT.pure, NextL.goal, CGoalL.toNoun]
+  · have hp : ¬ (laz.sure.ned = Need.none ∧ HoonSet.small laz.sure.lok = true ∧ laz.fork.isEmpty = true) :=
+      fun h => hb ((pa_cond laz).1 h)
+    simp only [Bool.not_eq_true] at hb
+    rcases e : hinted noCode nom with _ | b
+    · exact absurd e hnom
+    unfold pastL
+    rw [if_neg hp, e]
+    have hh := hd_gate compK cod nom b e
+    have he := cf_emit (x := x) hc g ⟨[], [], Termin.hop ⟨args, there⟩⟩
+    simp only [Blob.toNoun, listNoun, Termin.toNoun, Tag.hop, Jmp.toNoun] at he
+    have hst := comp_set_tag x hc (cfEmitG ⟨[], [], Termin.hop ⟨args, there⟩⟩ g) g.bo region
+    have hD2 := comp_emit_at
+    have hD3 := comp_set_tag_at
+    simp only [compCore] at hst ⊢
+    generalize comp.door = Dr at hD2 hD3 he hst ⊢
+    nock_open paHi
+    obtain ⟨sr, fk, bd⟩ := laz
+    cases b
+    · simp [hb, loob, nock_exec, pastL, hp, e, pure, StateT.pure, NextL.goal, CGoalL.toNoun, h7, hcode,
+        compK_hd, hd_arm, hh, Jmp.toNoun]
+    · simp [hb, loob, nock_exec, pastL, hp, e, pure, StateT.pure, NextL.goal, CGoalL.toNoun, h7, hcode,
+        compK_hd, hd_arm, hh, Jmp.toNoun, hD2, hD3, comp_emit_arm, he, comp_set_tag_arm, hst, cf_emit_g,
+        setTag, bind, StateT.bind, Lazy.toNoun, Lazy.forksNoun, Lazy.bondsNoun, Sure.toNoun, Sure.bunt,
+        Need.toNoun, Tag.none, HoonSet.toNoun_empty, jmp0, listNoun, Lazy.sure, Lazy.fork, Lazy.bond]
+
 end Compiler
 end Formalization
