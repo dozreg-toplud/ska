@@ -64,14 +64,17 @@ def hopChain (bl : Map Blob) (rev : Map (List Nat)) :
           hopChain bl rev n t.there { bnew with fin := b1.fin } (seg :: segs) (t.there :: saw)
     | _ => some (hopDone bnew segs, saw)
 
+/-- The gate of the `+roll` over `topo`. -/
+def hopsStep (fuel : Nat) (bl : Map Blob) (rev : Map (List Nat)) (acc : Map Blob × List Nat) (o : Nat) :
+    Option (Map Blob × List Nat) :=
+  if o ∈ acc.2 then some acc
+  else (HoonMap.get bl o).bind fun b =>
+    (hopChain bl rev fuel o b [] acc.2).map fun r => (HoonMap.put acc.1 o r.1, r.2)
+
 /-- `+remove-hops`. -/
 def removeHops (fuel : Nat) (bl : Map Blob) (rev : Map (List Nat)) (topo : List Nat) :
     Option (Bool × Map Blob) :=
-  (topo.foldlM (fun (acc : Map Blob × List Nat) o =>
-      if o ∈ acc.2 then some acc
-      else (HoonMap.get bl o).bind fun b =>
-        (hopChain bl rev fuel o b [] acc.2).map fun r => (HoonMap.put acc.1 o r.1, r.2))
-    (HoonMap.empty, [])).map fun r => (decide (r.2 ≠ []), r.1)
+  (topo.foldlM (hopsStep fuel bl rev) (HoonMap.empty, [])).map fun r => (decide (r.2 ≠ []), r.1)
 
 /-- **The preservation statement of `+remove-hops`** (open). -/
 def HopsKeeps [MapKeys Map] (fuel : Nat) : Prop :=
