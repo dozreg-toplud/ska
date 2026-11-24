@@ -25,10 +25,10 @@ depends on `j` only (`folE_le`, `resE_le`), by `folStep_mono`,
 hypothesis on `+analyze` (`AnaGe`: what `iterN j` of the gate returns decodes,
 and `Ana.analyze` returns it at a fuel that depends on `j` only).
 
-The model's `Ana.resolveStep` departs from the Hoon in the `%rec` branch
-(`resolveStepH`, `Compiler/ResolveLoop.lean`); the results are stated against
-`Ana.resolve` under the bridge `hStep : resolveStepH = Ana.resolveStep`, which
-is `rfl` once the model patches with `orig.1`.
+The results are stated against `Ana.resolve` with the bridge
+`StepBridge env` (`resolveStepH = Ana.resolveStep`), which holds by `rfl`
+(`stepBridge`, from `resolveStepH_eq`) since the model's `%rec` branch patches
+with `orig.1` as the Hoon does.
 
 With the converse, `FolDecodes` and `ResIs` of the limit of the model
 (`resInf`) hold, so `fol_loop_le` needs no hypothesis on the pill's runs
@@ -134,6 +134,9 @@ def AnaGe (regsNoun : R → Noun) (env : Env R) (memoF : Memo FinMap) (K : Noun)
 def StepBridge (env : Env R) : Prop :=
   ∀ (rl : ResGo FinMap R) (an : AnaGo FinMap R) (orig idT : Ident) (gen : GenS FinMap R),
     resolveStepH env rl an orig idT gen = Ana.resolveStep env rl an orig idT gen
+
+/-- The bridge holds: the model's turn is the Hoon's. -/
+theorem stepBridge (env : Env R) : StepBridge env := fun _ _ _ _ _ => by rw [resolveStepH_eq]
 
 section
 variable (regsNoun : R → Noun) (env : Env R) (memoF : Memo FinMap) (rest K : Noun)

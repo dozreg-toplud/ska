@@ -19,12 +19,14 @@ The loop reads nothing else of `D`: of `folSubj` it reads `gen` and the rest,
 of `s` only `sock.prod.s`.  So `ResIs`, which quantifies over the whole
 `dirSubj`, holds of any `res` that is a function of the identity and `gen`.
 
-Found while linking: in the `%rec` branch the Hoon patches the product of the
-function in progress with `sock.prod.s` (`(patch-prod [prod map]:d sock.prod.s)`,
-the sample `[... 0 32756]` of the gate at `[9 22 0 0x7ffffff]`), the subject
-sock the loop began with, not with the current `id-there`; `Ana.resolveStep`
-patches with `idT.1`.  The two differ after a `%he` step.  `resolveStepH`
-is `Ana.resolveStep` with `orig.1` there, which is what the pill computes.
+In the `%rec` branch the Hoon patches the product of the function in progress
+with `sock.prod.s` (`(patch-prod [prod map]:d sock.prod.s)`, the sample
+`[... 0 32756]` of the gate at `[9 22 0 0x7ffffff]`), the subject sock the loop
+began with, not with the current `id-there`.  `resolveStepH` is written after
+the Hoon, and `Ana.resolveStep` now patches with `orig.1` as well, so the two
+are equal (`resolveStepH_eq`, by `rfl`).  The case theorem is stated once over
+an evaluator (`resolve_stepW`, `nockW c` with `c` equal to `nock` off `FFar`),
+and `resolve_step` is its case `c := nock`.
 -/
 
 namespace Formalization
@@ -65,6 +67,10 @@ def resolveStepH (env : Env R) (resolve : ResGo M R) (analyze : AnaGo M R) (orig
 theorem resolveStepH_self (env : Env R) (resolve : ResGo M R) (analyze : AnaGo M R) (i : Ident)
     (gen : GenS M R) :
     resolveStepH env resolve analyze i i gen = Ana.resolveStep env resolve analyze i i gen := rfl
+
+/-- `Ana.resolveStep` now patches with `orig.1` in the `%rec` branch, so it is
+the Hoon's turn of the loop on every identity. -/
+theorem resolveStepH_eq : resolveStepH (M := M) (R := R) = Ana.resolveStep := rfl
 
 /-- The subject of the loop `resolve` on the identity `idT`. -/
 noncomputable def resSubj (regsNoun : R → Noun) (rest fol : Noun) (sub : Anno) (seat mk : Option Noun)

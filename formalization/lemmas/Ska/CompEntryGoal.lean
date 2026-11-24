@@ -1,37 +1,32 @@
 import lemmas.Ska.CompFragX
 
 /-!
-# The open case: runs for a goal `%next` whose need has forks (statements)
+# The open case: runs for a goal `%next` whose need has entries
 
-Nothing here is proved.  These are the statements that the last piece of
-the pure fragment needs: a `%6` (or any nomm) that runs for a goal `%next
-laz th` whose lazy need `laz` has entries, as `p` of `[7 p q]` when `q`
-ends in a `%6` (`[7 [6 [0 2] [1 1] [1 2]] [6 [0 2] [0 3] [0 1]]]`), and as a
-branch of the case `sixNextFork`.
+The statements that the last piece of the pure fragment needs: a nomm `p`
+that runs for a goal `%next laz th` whose lazy need `laz` has entries, as `p`
+of `[7 p q]` when `q` has a `%6` (`[7 [6 [0 2] [1 1] [1 2]] [6 [0 2] [0 3] [0 1]]]`),
+and as a branch of the case `sixNextFork`.
 
 ## (a) `RunOKE`: the relation for a goal with entries
 
-A run for such a goal does two things that a run for a fork-free goal does
-not.  It puts ops in front of the old bodies of the goal's lazy blocks
-(`+collapse-lazy-atom`, `+kern`, `+fork` reach into them through `walkLazy`),
-and those ops read registers that the run writes, directly in the block that
-the goal's jump enters and through a proxy elsewhere.  So the filling of the
-goal's entries can only be stated relative to the registers at the time the
-code of the run reaches `th`: the code between `th` and an entry block is
-the code of the goal's continuation, which writes only registers allocated
-before the run (and never the input registers), so at the entry block the
-registers agree with those at `th` on the registers the run allocated.
+The arms that meet a goal with entries keep the goal's labels.  `+from`
+(`%0`) moves the need of each entry under the axis and puts no op.
+`+split` (cons) and `+into` (`%10`) split the need of each entry at its own
+label and put `%con` ops in front of the old body, which read the halves.
+`+mede` (`%1`), `+collapse-lazy-atom` (`%3`, `%4`, `%5`), `+kern` and `+fork`
+consume the entries and put ops in front of their bodies; all but `+mede`
+read a register of the run there, through a proxy.  So `RunOKE` pairs each
+entry `(o, L)` of the goal with the ops `F` the run put in front of block `o`
+and with the entry of the result at `o`, if any: that entry's need, filled
+by the final pass and followed by `F`, fills `L` for the product
+(`FrontSem`); with no entry there, `F` alone fills `L`.  The other entries
+of the result are new, from a `%6` in `p`, as in `RunOKG`.
+`CompEntryRun.lean` proves it for `%0` and composes it with `RunOKG` of `q`
+for `[7 p q]`.
 
-`EntryFill`: for every entry `e` of `laz`, the run put ops `Arun` in front of
-the old body of the block `e.1` (`g1` holds `⟨[], Arun ++ body, fin⟩` where
-`g0` held `⟨[], body, fin⟩`), and for every `R` that agrees with the
-registers `regs'` at `th` on the registers in `[g0.re, g1.re)` and holds the
-input need `ned` for `s0`, the ops `Arun` fill `e`'s need for the product
-`p` (and crash when `p` has not its shape), keeping the input registers and
-the registers allocated before the run outside `e`'s need.  `GoalSemE` is
-`GoalSem` of the sure part with `EntryFill` at the `regs'` it gives, and
-`RunOKE` is `RunOKN` with it.  For a goal without entries (`ofSure`),
-`EntryFill` holds trivially and `RunOKE` is `RunOKN` (`entryFill_ofSure`).
+The earlier statement (`EntryFill`, `GoalSemE`) put every entry of the
+result at a new label and so fitted none of these arms.
 
 ## (b) The threading of `+sect` and the proxies
 
@@ -67,58 +62,57 @@ open Nock Lazy
 
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
 
-/-- **The filling of the goal's entries, relative to the registers `regs'`
-at the time the code reaches the goal's jump.** -/
-def EntryFill (lib : Lib) {σ : Type} (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace)
-    (ned : Need) (g0 g1 : Gen Map) (laz : Lazy S) (s0 p : Noun) (regs' : Map (Option Noun)) : Prop :=
-  ∀ e ∈ entries laz, ∃ (body : List Pole) (fin : Termin) (Arun : List Pole),
-    HoonMap.get g0.blocks e.1 = some ⟨[], body, fin⟩ ∧ HoonMap.get g1.blocks e.1 = some ⟨[], Arun ++ body, fin⟩ ∧
-    ∀ R : Map (Option Noun), (∀ r, g0.re ≤ r → r < g1.re → SkaModel.read r R = SkaModel.read r regs') →
-      HoldsN ned R s0 →
-      (FitsS e.2.sure p → ∃ R', Runs lib O c gul st t Arun R R' ∧ HoldsS e.2.sure R' p ∧
-        ∀ x, (NMem ned x ∨ x < g0.re) → ¬ NMem e.2.sure.ned x → SkaModel.read x R' = SkaModel.read x R) ∧
-      (¬ FitsS e.2.sure p → Crashes lib O c gul st t Arun R)
+/-- **What the ops `F` put in front of a goal entry's block do**: whatever
+fills the result's need `L'` at that label for the subject `s` of the run,
+followed by `F`, fills the goal entry's need `L` for the product `v` of the
+nomm.  `lo` bounds the registers the fill keeps at the result (the end of the
+run), `lo0` at the goal (the start of the run).  For an entry of the goal that
+the run consumes (no entry of the result at its label), `L'` is the bunt and
+the final pass puts nothing there, so `F` alone fills `L` (`A = []`). -/
+def FrontSem (lo0 lo : Nat) (nm : Nomm) (L' : Sure S) (F : List Pole) (L : Sure S) : Prop :=
+  ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace) (ned : Need)
+    (A : List Pole) (s0 s v : Noun), (∀ r, NMem ned r → lo ≤ r) → pureEval nm s = some v →
+    FillSem (Map := Map) lib O c gul st t ned lo L' A s0 s → FillSem lib O c gul st t ned lo0 L (A ++ F) s0 v
 
-/-- **`GoalSem` for a goal `%next laz th` with entries**: the sure part as
-`GoalSem` says, and the entries filled relative to the registers at `th`. -/
-def GoalSemE (lib : Lib) {σ : Type} (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (K : Nat → Prop)
-    (ned : Need) (g0 g1 : Gen Map) (s0 : Noun) (regs : Map (Option Noun)) (t : Trace) (je : Jmp)
-    (laz : Lazy S) (th : Jmp) : Option Noun → Prop
-  | none => goJ lib O c gul st regs t je = some (Tone.two t, st)
-  | some p =>
-    (FitsS laz.sure p → ∃ regs', HoldsN laz.sure.ned regs' p ∧
-      (∀ r, K r → SkaModel.read r regs' = SkaModel.read r regs) ∧
-      goJ lib O c gul st regs t je = goJ lib O c gul st regs' t th ∧
-      EntryFill lib O c gul st t ned g0 g1 laz s0 p regs') ∧
-    (¬ FitsS laz.sure p → goJ lib O c gul st regs t je = some (Tone.two t, st))
-
-/-- **The relation for one run for a goal `%next laz th` whose need may have
-entries** (the statement of the open case).  `RunOKN` with `GoalSemE`; the
-entries of the result and those of the goal share no label (the goal's
-were allocated before the run). -/
+/-- **The relation for one run of `runL` for a goal `%next laz th` whose
+need may have entries.**  It replaces the earlier statement, which put every
+entry of the result at a new label.  The entries of the goal keep their
+labels: each gets ops `F` in front of its old body (`front`), and either the
+result has an entry at the same label whose need, filled and followed by
+`F`, fills the goal entry's need, or the run consumed it and `F` alone fills
+it (`FrontSem`).  Every other entry of the result is new, as in `RunOKG`
+(`labs`).  The blocks below `g0.bo` other than the goal's entries are kept
+(`keep`); `GrowU` keeps only terminators and parameters, so it holds through
+`F`.  `cnd`: the run makes no proxy. -/
 structure RunOKE (lib : Lib) (nm : Nomm) (laz : Lazy S) (th : Jmp) (g0 g1 : Gen Map) (nex : NextL S) : Prop where
-  ext : Ext g0 g1
+  re : g0.re ≤ g1.re
+  bo : g0.bo ≤ g1.bo
+  drop : g1.drop = g0.drop
+  keep : ∀ o, o < g0.bo → o ∉ (entries laz).map Prod.fst → HoonMap.get g1.blocks o = HoonMap.get g0.blocks o
   grow : GrowU g0 g1
+  cnd : g1.cond = g0.cond
   lo : 1 ≤ nex.th.there
   hi : nex.th.there < g1.bo
+  thle : th.there ≤ nex.th.there
+  ent : Fresh g1 nex.th ∨ nex.th = th
   regs : ∀ r, NMem nex.laz.sure.ned r → NMem laz.sure.ned r ∨ (g0.re ≤ r ∧ r < g1.re)
   dist : Distinct nex.laz.sure.ned
-  eregs : ∀ e ∈ entries nex.laz, Distinct e.2.sure.ned ∧ ∀ r, NMem e.2.sure.ned r → g0.re ≤ r ∧ r < g1.re
-  labs : ∀ e ∈ entries nex.laz, g0.bo ≤ e.1 ∧ e.1 < nex.th.there ∧
-    ∃ th, HoonMap.get g1.blocks e.1 = some ⟨[], [], Termin.hop th⟩
+  eregs : ∀ e ∈ entries nex.laz, Distinct e.2.sure.ned ∧ ∀ r, NMem e.2.sure.ned r →
+    (∃ e0 ∈ entries laz, NMem e0.2.sure.ned r) ∨ (g0.re ≤ r ∧ r < g1.re)
+  labs : ∀ e ∈ entries nex.laz, e.1 ∈ (entries laz).map Prod.fst ∨
+    (g0.bo ≤ e.1 ∧ e.1 < nex.th.there ∧ ∃ th, HoonMap.get g1.blocks e.1 = some ⟨[], [], Termin.hop th⟩)
   nodup : ((entries nex.laz).map Prod.fst).Nodup
+  size : (entries nex.laz).length ≤ (entries laz).length + 2 * sixCount nm
+  front : ∀ e ∈ entries laz, ∃ F : List Pole,
+    (∀ B fin, HoonMap.get g0.blocks e.1 = some ⟨[], B, fin⟩ → HoonMap.get g1.blocks e.1 = some ⟨[], F ++ B, fin⟩) ∧
+    ((∃ L', (e.1, L') ∈ entries nex.laz ∧ FrontSem (Map := Map) g0.re g1.re nm L'.sure F e.2.sure) ∨
+     (e.1 ∉ (entries nex.laz).map Prod.fst ∧ FrontSem (Map := Map) g0.re g1.re nm Sure.bunt F e.2.sure))
   nec : ∀ s, ¬ FitsS nex.laz.sure s → pureEval nm s = none ∨ ∃ p, pureEval nm s = some p ∧ ¬ FitsS laz.sure p
   sem : ∀ (c : Straight Map) (ned : Need) (σ : Type) (O : Oracle σ) (st : σ) (t : Trace) (gul : Noun) (s0 s : Noun),
     AgreeP lib O c gul st t ned g0 g1 nex.laz s0 s → (∀ r, NMem ned r → g1.re ≤ r) →
     ∀ regs, HoldsS nex.laz.sure regs s → HoldsN ned regs s0 →
-    GoalSemE lib O c gul st (fun r => (r < g0.re ∨ NMem ned r) ∧ ¬ NMem laz.sure.ned r) ned g0 g1 s0 regs t
-      nex.th laz th (pureEval nm s)
-
-/-- A goal without entries asks nothing of them. -/
-theorem entryFill_ofSure (lib : Lib) {σ : Type} (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace)
-    (ned : Need) (g0 g1 : Gen Map) (sur : Sure S) (s0 p : Noun) (regs' : Map (Option Noun)) :
-    EntryFill lib O c gul st t ned g0 g1 (ofSure sur) s0 p regs' := by
-  intro e he; rw [entries_ofSure] at he; exact absurd he List.not_mem_nil
+    GoalSem lib O c gul st (fun r => (r < g0.re ∨ NMem ned r) ∧ ¬ NMem laz.sure.ned r) regs t nex.th
+      (CGoal.next laz.sure th) (pureEval nm s)
 
 /-- **(b), the part on registers**: at a block of a proxy's region reached
 where the proxy's definition `d` was made with the value `val d`, the proxy

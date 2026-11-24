@@ -22,12 +22,15 @@ from the trap with `id-there` set to `[sock.prod.s fol-new]`, the loop returns
 set of callee entries is the noun of `Treap.ins`; it is a statement about
 nouns only (no Nock), left open here.
 
-Found while reading the loop: `resolve` asks `+git:mi` with `fol-new` and
-`sock.prod.s` of the trap, not with the current `id-there`.  After a `%he`
-generalization (`resolve(id-there +.u.par)`) the memo is still asked for the
-original subject sock, while `Ana.resolveStep` asks with the generalized one.
-So `ResIs` holds of `Ana.resolve` only on runs with no `%he` before a memo
-lookup; on the first turn of the loop the two agree.
+The loop `resolve` asks `+git:mi` with `fol-new` and `sock.prod.s` of the
+trap, not with the current `id-there`, also after a `%he` generalization
+(`resolve(id-there +.u.par)`), and so does `Ana.resolveStep`, which carries the
+identity the loop began with as `orig`.
+
+The theorems are stated over `nockW c` for any `c` that is `nock` off `FFar`:
+`fol_loop_op2` takes the trap `nock-2-direct-non-inlined` as `c` kicks it
+(`DirIsW c`), and `dirIsW_of` gives `DirIsW` for a `c` that runs that trap
+inline with a `c0` (`fol_loop_direct` over `nockW c0`, from `ResIsW c0`).
 -/
 
 namespace Formalization

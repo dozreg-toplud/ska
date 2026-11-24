@@ -467,7 +467,9 @@ new function, analysed now.
 `orig` is the identity the loop began with, the site sock and formula of the
 call (`[sock.prod.s fol-new]` of the trap around the loop): the Hoon asks
 `+git:mi` with these, not with `id-there`, so after a `%he` step the lookup
-is the one that just missed, on the same `done`.  The loop `resolve` passed
+is the one that just missed, on the same `done`; and the `%rec` branch
+patches the product with `orig.1` (`(patch-prod [prod map]:d sock.prod.s)`),
+not with the current, maybe generalized, `idT.1`.  The loop `resolve` passed
 in is the loop for the same `orig`. -/
 def resolveStep (env : Env R) (resolve : ResGo M R) (analyze : AnaGo M R) (orig idT : Ident)
     (gen : GenS M R) : Option ((Ident × FDatum M) × GenS M R) :=
@@ -486,7 +488,7 @@ def resolveStep (env : Env R) (resolve : ResGo M R) (analyze : AnaGo M R) (orig 
   | some (some (false, i)) => resolve i gen
   | some (some (true, i)) =>
     let d := gitG gen.st.g i
-    let m := patchProd d.prod d.map idT.1
+    let m := patchProd d.prod d.map orig.1
     (Treap.get gen.st.order i).map fun o =>
       ((i, { d with prod := m.sock, map := m.src }), { gen with low := min gen.low o, back := true })
   | some none =>

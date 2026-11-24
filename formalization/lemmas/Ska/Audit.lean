@@ -1,6 +1,7 @@
 import lemmas.Ska.Statements
 import lemmas.Ska.KnowMeets
 import lemmas.Ska.LessProvides
+import lemmas.Ska.SiteCover
 import lemmas.Ska.AnaInv
 import lemmas.Ska.StaleWitness
 import lemmas.Ska.CapeFacts
@@ -351,6 +352,11 @@ open Formalization.SkaModel
 #print axioms Bake.lessProvidesNF_of_cover
 #print axioms PokeM.pokeLessNF_of_cover
 #print axioms PokeM.pokeSites_of_cover
+#print axioms Bake.knowT_datTab
+#print axioms Bake.know_sites_knowT
+#print axioms Bake.siteCover_of
+#print axioms Bake.lessProvidesNF_of_replay
+#print axioms Bake.prodSame_of_M
 #print axioms Ana.fuelStep
 #print axioms Ana.folLoop_fuel_le
 #print axioms Ana.resolve_fuel_le
@@ -359,3 +365,10 @@ open Formalization.SkaModel
 #print axioms Ana.passLoop_fuel_le
 #print axioms Ana.memberLoop_fuel_le
 #print axioms Ana.skaPoke_fuel_le
+#print axioms GenLe.fits_and
+#print axioms HeChain.lift
+#print axioms HeChain.genLe
+#print axioms Ana.ansW_hitGen
+#print axioms answers_less
+#print axioms answers_rel
+#print axioms answers_relN
