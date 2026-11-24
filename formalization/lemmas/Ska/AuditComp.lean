@@ -789,3 +789,17 @@ open Formalization.SkaModel.Comp
 #print axioms runOKL_n4
 #print axioms runOKL_n4_none
 #print axioms runOKL_seven
+#print axioms minkF_consT
+#print axioms mink_consT_bwd
+#print axioms consNT_ok
+#print axioms runOKL_n01
+#print axioms bondOK_n0
+#print axioms bondOK_n4
+#print axioms entNew_indirect
+#print axioms consT_runN
+#print axioms consT_cleanN
+#print axioms consT_runD
+#print axioms uokc_consT
+#print axioms uokc_consTA
+#print axioms consT_example1
+#print axioms consT_example4

@@ -8,7 +8,10 @@ README Gaps 12.17 (twentieth session).  (b) of `CompHypOf.lean` for the
 whole-subject version on `FragUCG`: `FragUC` (the call-free `FragU`, the
 indirect call, the cons whose head calls) with at most 255 `%6`, from the
 joint induction `UOKC` (`finishLUC_contractUC`).  It contains `FragUCCM`
-(`fragUCCM_sub`), so `rawMono_fragUCC` is a corollary.
+(`fragUCCM_sub`), so `rawMono_fragUCC` is a corollary.  Since the twenty-second
+session `FragC` has the cons whose tail is an indirect call (`FragC.consT`,
+README Gaps 12.19), so `RawMono` covers `[[0 1] [2 [0 3] [0 2]]]` and
+`[[4 [0 3]] [2 [0 3] [0 2]]]`.
 -/
 
 set_option linter.unusedSectionVars false
@@ -47,6 +50,16 @@ theorem fragUCCM_sub {nm : Nomm} (h : FragUCCM S nm) : FragUCG S nm := by
 theorem compHyp_of_fragUCG {lib : Lib} {ref : Ref M Map J H} {D : CompData M Map J H}
     (P : CompRest S A lib ref D (FragUCG S) (FragUN S)) : CompHyp A lib ref :=
   compHyp_of_pieces (S := S) A ⟨P, rawMono_fragUCG lib, rawNary_fragU lib⟩
+
+/-- `[[0 1] [2 [0 3] [0 2]]]` and `[[4 [0 3]] [2 [0 3] [0 2]]]` (a call in the
+tail of a cons, README Gaps 12.19) are in `FragUCG`. -/
+example : FragUCG S (Nomm.cons (Nomm.n0 1) (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) ∧
+    FragUCG S (Nomm.cons (Nomm.n4 (Nomm.n0 3)) (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) :=
+  ⟨⟨Or.inr (Comp.FragC.consT (Comp.FragB.n0 (Nat.le_refl 1)) (Comp.FragU.x (Comp.FragX.frag fun _ => trivial))
+      (Comp.FragU.x (Comp.FragX.frag fun _ => trivial)) rfl), by decide⟩,
+    ⟨Or.inr (Comp.FragC.consT (Comp.FragB.n4 (Comp.FragX.frag fun _ => trivial))
+      (Comp.FragU.x (Comp.FragX.frag fun _ => trivial)) (Comp.FragU.x (Comp.FragX.frag fun _ => trivial)) rfl),
+      by decide⟩⟩
 
 /-- `[[[2 [0 3] [0 2]] [0 1]] [0 1]]` is in `FragUCG` and not in `FragUCCM`'s
 shapes (its head is a cons). -/
