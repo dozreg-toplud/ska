@@ -488,6 +488,145 @@ theorem runOKG_n5_semR (lib : Lib) {p q : Nomm} (hp : NextOK (S := S) (Map := Ma
     (fun x y hn => absurd (hn.elim (fun a => a (fitsS_lazyReg _ x)) (fun a => a (fitsS_lazyReg _ y))) id)
     (fun c hc σ O st regs t gul x y _ _ hx hy => B c hc d0 σ O st regs t gul x y hx hy)
 
+/-- **`+split` keeps the registers of the head and the tail**: the ops of
+the split block write only registers of the goal's need outside both
+(`wr_splitNeedS`). -/
+theorem split_okK {laz : Sure S} {th : Jmp} {g g' : Gen Map} {hed tel : Sure S} {o : Nat}
+    (h : Comp.split ⟨laz, th⟩ g = some ((hed, tel, o), g')) (hd : g.drop = false) (dn : Distinct laz.ned)
+    (lo : ∀ y, NMem laz.ned y → y < g.re) :
+    o = g.bo ∧ Ext g g' ∧ g'.bo = g.bo + 1 ∧
+    (∀ y, NMem hed.ned y → NMem laz.ned y ∨ (g.re ≤ y ∧ y < g'.re)) ∧
+    (∀ y, NMem tel.ned y → NMem laz.ned y ∨ (g.re ≤ y ∧ y < g'.re)) ∧
+    (Distinct hed.ned ∧ Distinct tel.ned ∧ (∀ y, NMem hed.ned y → ¬ NMem tel.ned y)) ∧
+    (∀ (c : Straight Map), Agree c g g' → ∀ (lib : Lib) (σ : Type) (O : Oracle σ) st t
+        (R : Map (Option Noun)) a b gul, HoldsN hed.ned R a → HoldsN tel.ned R b →
+        ∃ R', HoldsN laz.ned R' (C a b) ∧
+          (∀ y, (¬ NMem laz.ned y ∨ NMem hed.ned y ∨ NMem tel.ned y) → SkaModel.read y R' = SkaModel.read y R) ∧
+          goJ lib O c gul st R t (jmp0 o) = goJ lib O c gul st R' t th) := by
+  have h0 := h
+  simp only [Comp.split] at h
+  obtain ⟨o', g0, h0', h⟩ := bind_some h
+  rw [emit_apply] at h0'
+  simp only [Option.some.injEq, Prod.mk.injEq] at h0'
+  obtain ⟨rfl, rfl⟩ := h0'
+  obtain ⟨⟨sh, st⟩, g1, h2, h⟩ := bind_some h
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨⟨rfl, rfl, rfl⟩, rfl⟩ := h
+  obtain ⟨-, E, eb', M1', M2', SP⟩ := split_ok h0
+  obtain ⟨Dh', Dt', Dht', -, -⟩ := SP dn lo
+  simp only [splitSure] at h2
+  obtain ⟨⟨lh, lt⟩, hl, h2⟩ := Option.bind_eq_some_iff.mp h2
+  obtain ⟨⟨⟨nh, nt⟩, g2⟩, h3, h4⟩ := Option.map_eq_some_iff.mp h2
+  simp only [Option.some.injEq, Prod.mk.injEq] at h4
+  obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h4
+  obtain ⟨eb, ed, er, eo, M1, M2, D, SB⟩ := splitNeed_spec h3
+  replace eb : g2.bo = g.bo + 1 := eb
+  have hn : NB (g.emitted ⟨[], [], Termin.hop th⟩).re laz.ned := fun r hr => by
+    simp only [emitted_re]; exact lo r hr
+  have W := wr_splitNeedS dn hn h3
+  refine ⟨rfl, E, eb', M1', M2', ⟨Dh', Dt', Dht'⟩, fun c hc lib σ O st' t R a b gul ha hb => ?_⟩
+  obtain ⟨A, Fr, Sm⟩ := SB hd
+  obtain ⟨R', r1, hl', u⟩ := Sm dn lo lib σ O c gul st' t R a b ha hb
+  have hg1 : HoonMap.get (g.emitted ⟨[], [], Termin.hop th⟩).blocks g.bo = some ⟨[], [], Termin.hop th⟩ :=
+    emitted_get g _ hd
+  have hg2 : HoonMap.get g2.blocks g.bo = some ⟨[], A ++ [], Termin.hop th⟩ := Fr.blk _ _ hg1
+  have hb0 : HoonMap.get c.blocks g.bo = some ⟨[], A ++ [], Termin.hop th⟩ := by
+    rw [hc g.bo (Nat.le_refl _) (by rw [eb]; omega)]
+    exact hg2
+  have WA : OpsWr (fun y => NMem laz.ned y ∧ ¬ NMem nh y ∧ ¬ NMem nt y) A := by
+    rcases W g.bo _ hg2 with ⟨b, A', hb1, eqb, WA⟩ | WB
+    · rw [hg1] at hb1
+      simp only [Option.some.injEq] at hb1
+      subst hb1
+      simp only [Blob.mk.injEq, List.append_nil, true_and] at eqb
+      rw [eqb.1]; exact WA
+    · have := WB.2; simpa using this
+  refine ⟨R', hl', fun y hy => ?_, ?_⟩
+  · by_cases hm : NMem laz.ned y
+    · have hy' : NMem nh y ∨ NMem nt y := by
+        rcases hy with hy | hy
+        · exact absurd hm hy
+        · exact hy
+      exact runs_read WA (fun hq => hy'.elim hq.2.1 hq.2.2) r1 (holdsN_some _ hl' hm)
+    · exact u y hm
+  · rw [goJ_jmp0 _ _ _ _ hb0, r1, execBlob_hop]
+
+/-- **Cons for a fork-free `%next` with the relaxed `sem`.** -/
+theorem consN_semR (lib : Lib) {p q : Nomm} (hp : NextOK (S := S) (Map := Map) lib p)
+    (hq : NextOK (S := S) (Map := Map) lib q) (sp : OKNR (S := S) (Map := Map) lib p)
+    (sq : OKNR (S := S) (Map := Map) lib q) (cp : CleanN S Map p) (cq : CleanN S Map q)
+    (hpp : p.pure = true) (hqp : q.pure = true) {sur : Sure S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map}
+    {nex : NextL S} (hj : GJ g0.bo (CGoal.next sur th)) (hok : GoalOK g0 (CGoal.next sur th)) (hcl : Clean sur.ned)
+    (hcount : sixCount (Nomm.cons p q) ≤ 255) (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0) (hcl0 : Clear g0)
+    (h : (do
+      let (hed, tel, o) ← splitL ⟨ofSure sur, th⟩
+      let nexh ← pastL noCode ⟨hed, jmp0 o⟩ q region
+      let nex2 ← runL q (CGoalL.next tel nexh.th) region
+      let nex2 ← pastL noCode nex2 p region
+      let nex1 ← runL p (CGoalL.next nexh.laz nex2.th) region
+      copyL nex1 nex2.laz : CM Map (NextL S)) g0 = some (nex, g1)) :
+    SemNR (Map := Map) lib (Nomm.cons p q) sur th g0 g1 nex := by
+  obtain ⟨⟨hed', tel', o⟩, g2x, h2, h⟩ := bind_some h
+  rw [splitL_mk, map_apply] at h2
+  obtain ⟨⟨⟨hed, tel, o'⟩, g2⟩, hs2, e2⟩ := Option.map_eq_some_iff.mp h2
+  simp only [Prod.mk.injEq] at e2
+  obtain ⟨⟨rfl, rfl, rfl⟩, rfl⟩ := e2
+  clear h2
+  simp only at h
+  obtain ⟨nexh, g2', hph, h⟩ := bind_some h
+  rw [pastL_mk _ _ _ hqp, pure_apply] at hph
+  simp only [Option.some.injEq, Prod.mk.injEq] at hph
+  obtain ⟨rfl, rfl⟩ := hph
+  obtain ⟨nex2, g3, h3, h⟩ := bind_some h
+  obtain ⟨nex2', g3', hp2, h⟩ := bind_some h
+  rw [pastL_pure _ _ hpp, pure_apply] at hp2
+  simp only [Option.some.injEq, Prod.mk.injEq] at hp2
+  obtain ⟨rfl, rfl⟩ := hp2
+  obtain ⟨nex1, g4, h4, hcp⟩ := bind_some h
+  obtain ⟨eo, E2, _, Mh, Mt, SP⟩ := split_ok hs2
+  obtain ⟨Dh, Dt, Dht, F, B⟩ := SP hok.1 hok.2
+  obtain ⟨G2, eo', lt2, _⟩ := split_down hs2 hj.1 hj.2 d0
+  simp only at eo'
+  subst eo
+  have CS := clean_split hs2 hcl
+  simp only at CS
+  have c2 : g2.cond = g0.cond := (kc_split _).keep _ _ _ hs2
+  have d2 : g2.drop = false := E2.2.2.1.trans d0
+  have u2 : UpBelow g2 := (G2.toU hu).up hu
+  have lt2' : ∀ (n : Need), (∀ y, NMem n y → NMem sur.ned y ∨ (g0.re ≤ y ∧ y < g2.re)) →
+      ∀ y, NMem n y → y < g2.re := fun n M y hy => by
+    rcases M y hy with a | ⟨_, a⟩
+    · exact Nat.lt_of_lt_of_le (hok.2 y a) E2.1
+    · exact a
+  simp only [sixCount] at hcount
+  have Rq := hq (sur := tel) (th := jmp0 g0.bo) ⟨b0, by simp only [jmp0]; omega⟩ rfl ⟨Dt, lt2' _ Mt⟩ CS.2
+    (by omega) (by omega) d2 u2 h3
+  have cl2 : Clear g2 := hcl0.growU (G2.toU hu)
+  have Sq := sq (sur := tel) (th := jmp0 g0.bo) ⟨b0, by simp only [jmp0]; omega⟩ rfl ⟨Dt, lt2' _ Mt⟩ CS.2
+    (by omega) (by omega) d2 u2 cl2 h3
+  have d3 : g3.drop = false := Rq.ext.2.2.1.trans d2
+  have u3 : UpBelow g3 := Rq.grow.up u2
+  have Rp := hp (sur := hed) (th := nex2.th) ⟨Rq.lo, Rq.hi⟩ (nextArgs_nil Rq.ent rfl)
+    ⟨Dh, fun y hy => Nat.lt_of_lt_of_le (lt2' _ Mh y hy) Rq.ext.1⟩ CS.1 (by omega)
+    (by have := Rq.lo; have := Rq.hi; omega) d3 u3 h4
+  have Sp := sp (sur := hed) (th := nex2.th) ⟨Rq.lo, Rq.hi⟩ (nextArgs_nil Rq.ent rfl)
+    ⟨Dh, fun y hy => Nat.lt_of_lt_of_le (lt2' _ Mh y hy) Rq.ext.1⟩ CS.1 (by omega)
+    (by have := Rq.lo; have := Rq.hi; omega) d3 u3 (cl2.growU Rq.grow) h4
+  obtain ⟨-, -, -, -, -, -, BK⟩ := split_okK hs2 d0 hok.1 hok.2
+  refine binaryN_semR (pureEval_cons p q) hok E2 Mh Mt Dht Rq Rp Sq Sp (cq CS.2 h3) (cp CS.1 h4) hcp d0
+    (fun x y hn => Or.inr ⟨C x y, rfl, fun hf => ?_⟩)
+    (fun c hc σ O st regs t gul x y fx fy hx hy => ?_)
+  · rcases hn with a | a
+    · exact a ((F x y).mp hf).1
+    · exact a ((F x y).mp hf).2
+  · refine ⟨fun _ => ?_, fun hn => absurd ((F x y).mpr ⟨fx, fy⟩) hn⟩
+    obtain ⟨R', hl, u, e⟩ := BK c hc lib σ O st t regs x y gul hx hy
+    refine ⟨R', hl, fun r hr => u r ?_, e⟩
+    rcases hr with ⟨_, k⟩ | k | k
+    · exact Or.inl k
+    · exact Or.inr (Or.inl k)
+    · exact Or.inr (Or.inr k)
+
 end Comp
 end SkaModel
 end Formalization
