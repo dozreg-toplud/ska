@@ -1799,16 +1799,32 @@ import only its theorems.  So:
    eight steps (each `unfold`ing one or two pieces at the formula position,
    with `optC` and the block nouns generalized) checks in about a second.
 
-   Left, in the order to do it: (1) the converse of the fuelled passes
-   (where the gate returns, some fuel makes the model return), on blocks
-   with the invariants of the model side; (2) `+switch-chains` (2916 cells:
+   Left, in the order to do it: (1) the converse for the structural loop of
+   `+optimize-once` (`structLoop`); the converse of the three fuelled passes
+   is done (`Compiler/OptLinkFuel.lean`: some fuel makes `bbTopo`,
+   `removeHops`, `removeEmptyMiddle` return on an acyclic CFG that is
+   `Closed`, with `ArityOK` and, for `+remove-hops`, `TopoInv`; the measure of
+   each loop is the rank `ρ` of `Acyclic`, and `bb_gate_total`,
+   `rh_gate_total`, `rem_gate_total` are the links with no condition on the
+   model).  The measure of the structural loop is the triple (number of
+   blocks, number of blocks with a two-way end, sum over the jumps of every
+   block of `ρ` of the target), lexicographic, with the `ρ` that every pass
+   keeps (`hops_acyclic`, `rub_acyclic`, `mid_acyclic`): a merge of
+   `+remove-hops` drops a block, a change of `+remove-useless-branching` turns
+   a two-way end into a hop, a change of `+remove-empty-middle` sends a jump
+   to a target of strictly lower rank; what is missing are the model-level
+   facts that each pass keeps `Closed`, `ArityOK`, the block `0` and the
+   two-way ends without arguments (the `?>` of `+remove-useless-branching`),
+   so that every round's passes return.  The loop of `+optimize` (`OptHalts`)
+   needs, beyond that, a hypothesis on `P.alias` (it reports a change when it
+   folds a branch or drops a block).  (2) `+switch-chains` (2916 cells:
    `+bb-topo` and `+rev-cfg` linked already, `+sort` against `qsort`, the
    trees of the binary search), which discharges `SwitchLink`; (3) `+alias`
    (6048 cells, the info maps, `+join-info` and `+join-imms` that walk two
-   treaps at once, `+uni:by` and `+int:in` whose links are relations),
-   which discharges `AliasLink`.  Estimates: a pass of about 500 cells took
-   one to two hours of proof once its nouns were cut by
-   `tools/gen/optlink.py`; `+trim-trace-hints` (1135 cells, two nested loops,
-   a map of maps, a new library arm) took about four hours; the cost grows
-   with the number of loops whose accumulator holds a set or a map that the
-   model keeps in another form.
+   treaps at once, `+uni:by` and `+int:in` whose links are relations), which
+   discharges `AliasLink`.  Estimates: a pass of about 500 cells took one to
+   two hours of proof once its nouns were cut by `tools/gen/optlink.py`;
+   `+trim-trace-hints` (1135 cells, two nested loops, a map of maps, a new
+   library arm) took about four hours; the cost grows with the number of loops
+   whose accumulator holds a set or a map that the model keeps in another
+   form.

@@ -30,6 +30,24 @@ pre-o1)`).
 
 * `bb_gate_total`, `rh_gate_total`, `rem_gate_total`: the links with the
   fuel found here.
+
+Not proved here: the structural loop of `+optimize-once` (`structLoop`,
+whose count `n` bounds the rounds).  Its measure is the triple (number of
+blocks, number of blocks with a two-way end, sum over the jumps of every
+block of `ρ` of the target), ordered lexicographically, with `ρ` the rank of
+`Acyclic`, which every pass keeps with the same `ρ` (`hops_acyclic`,
+`rub_acyclic`, `mid_acyclic` of `Ska/OptDriverTopo.lean`).  A round that
+reports a change lowers it: `+remove-hops` with a merge drops the merged
+blocks (without one it keeps the blocks of `topo` and drops only the others,
+`hops_same`); `+remove-useless-branching` with a change turns a two-way end
+into a hop and keeps the labels; `+remove-empty-middle` with a change sends a
+jump past at least one empty block, to a target of lower rank
+(`rewriteJump_rank`, `rewriteHop_rank` give `≤`; a jump that is rewritten
+goes strictly down), and keeps the labels and the kinds of ends.  What the
+proof needs besides the measure is that every round's passes return, so
+that `Closed`, `ArityOK`, the two-way ends passing no arguments (the `?>` of
+`+remove-useless-branching`) and the block `0` hold of every round's blocks:
+facts about the passes that the model side has not stated yet.
 -/
 
 namespace Formalization
