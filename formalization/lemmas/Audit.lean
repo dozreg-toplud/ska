@@ -658,3 +658,4 @@ open Formalization
 #print axioms Compiler.cra_copy_lok
 #print axioms Compiler.cra_into_lok
 #print axioms Compiler.cra_run_lok
+#print axioms Compiler.comp_run_all
