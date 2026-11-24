@@ -21,6 +21,9 @@ helpers are arms of `compTypes` (axis `3` of `compK`).  An arm of `optC` is
 * `oo`: `+optimize-once` (`180`): the structural loop and the rest `ooAfter`.
 * `ooa`: `ooAfter` cut at each `=^` and `=.` (`ooR1` to `ooR12`, `ooFin`).
 * `opt`: `+optimize` (`2941`): its trap and the call of `+switch-chains`.
+* `switch`: `+switch-chains` (`182`): its gates `test-of`, `chain-of`,
+  `plain-of`, `plains-of`, `cases`, `tree`, `uses`, `nex` and the walk, cut
+  at each test and branch the proofs step through.
 
 Every part is checked against the pill when the Lean file states the arm as
 a kernel fact; the script asserts the shape it cuts."""
@@ -594,6 +597,156 @@ elif WHICH == 'trim':
              ('trRnBunt', rnbunt, 'Its sample bunt.'),
              ('trBody', body, 'The gate body of `+trim-trace-hints`.'),
              ('trBunt', bunt, 'Its sample bunt.'), ('trHint', hint, 'Its `%fast` hint.')]
+elif WHICH == 'switch':
+    bunt, body, hint = opt_arm(182)
+    def dig(n, axes):
+        for ax in axes:
+            n = norm(slot(ax, n))
+            assert n is not None
+        return n
+    def gate_of(g):
+        # [8 [1 BUNT] [[1 BODY] [0 1]]]
+        e, bq, mk = seq(g, 3)
+        assert e == ('A', 8)
+        b1, ctx = seq(mk, 2)
+        assert ctx == ('C', ('A', 0), ('A', 1)), ctx
+        return norm(bq)[2], norm(b1)[2]
+    # BODY = [8 TOPO [8 REV [8 USES [7 [0 1] [8 TO [8 CH [7 [0 1] [8 PO [8 PS [7 [0 1]
+    #        [8 CS [8 TR [8 [0 0xffe] [8 [1 0] [8 NEX [8 [1 WALK] [9 2 [0 1]]]]]]]]]]]]]]]]]
+    _, topo, r = seq(body, 3)
+    _, rev, r = seq(r, 3)
+    _, uses, r = seq(r, 3)
+    _, _, r = seq(r, 3)
+    _, tog, r = seq(r, 3)
+    _, chg, r = seq(r, 3)
+    _, _, r = seq(r, 3)
+    _, pog, r = seq(r, 3)
+    _, psg, r = seq(r, 3)
+    _, _, r = seq(r, 3)
+    _, csg, r = seq(r, 3)
+    _, trg, r = seq(r, 3)
+    _, outi, r = seq(r, 3)
+    _, donei, r = seq(r, 3)
+    _, nex, r = seq(r, 3)
+    _, walkq, _ = seq(r, 3)
+    walk = norm(walkq)[2]
+    _, tob = gate_of(tog)
+    _, chb = gate_of(chg)
+    _, pob = gate_of(pog)
+    _, psb = gate_of(psg)
+    _, csb = gate_of(csg)
+    trbunt, trb = gate_of(trg)
+    # USES = [8 PUTGATE [8 REPDOOR [9 2 [10 [6 [7 [0 3] [8 [1 RB] [[1 RG] [0 1]]]]] [0 2]]]]]
+    putb = dig(uses, [6, 7, 2, 3])
+    rb = dig(uses, [7, 7, 7, 13, 7, 6, 3])
+    rg = dig(uses, [7, 7, 7, 13, 7, 7, 2, 3])
+    # RG = [7 [10 [13 PARROLL] [0 1]] [7 [10 [13 FINROLL] [0 1]] BODYROLL]]
+    opg = dig(rg, [7, 7, 7, 7, 13, 3, 7, 7, 2, 3])
+    # test-of: [8 GOT [6 CLQ Y [1 0]]]
+    toclq = dig(tob, [7, 6])
+    toy = dig(tob, [7, 14])
+    toyb = dig(toy, [7, 7, 14])
+    toeqq = dig(toyb, [7, 14, 6])
+    tobod = dig(toyb, [7, 14, 14, 14])
+    tohm = dig(tobod, [7, 14])
+    toh = dig(tohm, [6])
+    tom = dig(tohm, [7, 6])
+    tos = dig(tohm, [7, 7, 15, 15])
+    toc = dig(tos, [14])
+    tolth = dig(toc, [7, 14, 6])
+    toeq = dig(toc, [7, 14, 14, 6])
+    touses = dig(toc, [7, 14, 14, 14, 6])
+    # plain-of: [8 GOT [6 EQQ [8 M REST] [1 0]]]
+    poeqq = dig(pob, [7, 6])
+    assert eqn(poeqq, toeqq)  # the test of `fin.b` in `plain-of` is `swTOEqq`
+    pomt = dig(pob, [7, 14, 6, 7, 6, 3])
+    poc = dig(pob, [7, 14, 7])
+    # cases: [8 [1 0 0] [8 [1 TRAP] [9 2 [0 1]]]]
+    cst = dig(csb, [7, 6, 3])
+    cssg = dig(cst, [14, 7, 7, 13, 3, 7, 7, 2, 3])
+    # tree
+    trleaf = dig(trb, [14, 14])
+    trsplit = dig(trb, [14, 15])
+    trrec = dig(trsplit, [7, 7, 7, 14, 14])
+    # nex: [8 ROLL [9 2 [10 [6 [KEYS [7 [0 3] [8 [1 0 0] [[1 G] [0 1]]]]]] [0 2]]]]
+    nexg = dig(nex, [7, 7, 13, 3, 7, 7, 2, 3])
+    # walk: [6 [5 [1 0] [0 0x3ffe]] [0 30] [6 HAS SKIP [8 CS [6 GTE4 [6 [3 [0 2]] TAG [0 0]] PLAIN]]]]
+    whas = dig(walk, [15, 6])
+    wcs = dig(walk, [15, 15, 6])
+    wgte = dig(walk, [15, 15, 7, 6])
+    wtag = dig(walk, [15, 15, 7, 14, 14])
+    wplain = dig(walk, [15, 15, 7, 15])
+    # TAG = [8 [0 8] [8 [0 0x33e] [8 [0 0x39e] [8 MIS [8 IDS [7 DONE [7 OUT [8 CAS [8 NODE TFIN]]]]]]]]]
+    wtids = dig(wtag, [7, 7, 7, 7, 6])
+    wtr = dig(wtag, [7, 7, 7, 7, 7])
+    wtdel = dig(wtr, [7, 6, 13])
+    wtcas = dig(wtr, [7, 7, 6])
+    wtfin = dig(wtr, [7, 7, 7])
+    # PLAIN = [8 PS [6 LTH4 SKIP [6 [3 [0 2]] PB [0 0]]]]
+    wpb = dig(wplain, [7, 15, 14])
+    wpr = dig(wpb, [7, 7, 7])
+    wpdel = dig(wpr, [7, 6, 13])
+    wpcas = dig(wpr, [7, 7, 6])
+    wpned = dig(wpr, [7, 7, 7, 6])
+    wpfin = dig(wpr, [7, 7, 7, 7])
+    wpidt = dig(wpfin, [7, 6, 7, 7, 6, 3])
+    wpnode = dig(wpfin, [7, 7, 7, 7])
+    wpskg = dig(wpnode, [7, 7, 7, 6, 7, 7, 13, 3, 7, 7, 2, 3])
+    defs += [('swPutB', putb, 'The body of the gate `put` of `uses`: `(~(put by acc) r +((~(gut by acc) r 0)))`.'),
+             ('swOpG', opg, 'The gate of the `+roll` over `body.b` in `uses`.'),
+             ('swRepG', rg, 'The gate of the `+rep:by` that makes `uses`.'),
+             ('swRepB', rb, 'Its sample bunt.'),
+             ('swUses', uses, '`uses`: how many times each register is mentioned.'),
+             ('swTOClq', toclq, '`?=([%clq * [~ *] [~ *]] fin.b)` in `test-of`.'),
+             ('swTOEqq', toeqq, '`?=([%eqq * * [~ *] [~ *]] fin.yb)` in `test-of`.'),
+             ('swTOH', toh, 'The unit `h` of `test-of`: the `%hed` of the two ops.'),
+             ('swTOM', tom, 'The unit `m` of `test-of`: the `%imm` of the two ops.'),
+             ('swTOLth', tolth, '`(lth c (bex 31))` in `test-of`.'),
+             ('swTOEq', toeq, 'The test of the registers of the `%eqq` in `test-of`.'),
+             ('swTOUses', touses, 'The test of the `uses` of `d` and `r` in `test-of`.'),
+             ('swTOC', toc, '`test-of` from `c`: its tests and the test it returns.'),
+             ('swTOS', tos, '`test-of` from `=(s.u.h s.fin.b)`.'),
+             ('swTOHM', tohm, '`test-of` from `h`.'),
+             ('swTOBod', tobod, '`test-of` from `bod`.'),
+             ('swTOYb', toyb, '`test-of` from `yb`.'),
+             ('swTOY', toy, '`test-of` after the test of `fin.b`.'),
+             ('swTOB', tob, 'The body of the gate `test-of`.'),
+             ('swCHB', chb, 'The body of the gate `chain-of`.'),
+             ('swPOMT', pomt, 'The trap of `m` in `plain-of`: the first `%imm` into `l` or `r`.'),
+             ('swPOC', poc, '`plain-of` from `?~  m`.'),
+             ('swPOB', pob, 'The body of the gate `plain-of`.'),
+             ('swPSB', psb, 'The body of the gate `plains-of`.'),
+             ('swCSSG', cssg, 'The gate of the `+sort` in `cases`: `(lth c.a c.b)`.'),
+             ('swCST', cst, 'The trap of `cases`.'),
+             ('swCSB', csb, 'The body of the gate `cases`.'),
+             ('swTRLeaf', trleaf, 'The leaf of `tree`: `[~[[%imm c r]] [%eqq d r [~ hit] [~ mis]] ids out]`.'),
+             ('swTRRec', trrec, 'The two recursions of `tree` and the node it returns.'),
+             ('swTRSplit', trsplit, '`tree` from `haf`.'),
+             ('swTRB', trb, 'The body of the gate `tree`.'),
+             ('swTRBunt', trbunt, 'Its sample bunt.'),
+             ('swNexG', nexg, 'The gate of the `+roll` of `nex`.'),
+             ('swNex', nex, '`nex`: the first label that no block has.'),
+             ('swWHas', whas, '`(~(has in done) i.topo)`.'),
+             ('swWCs', wcs, '`(chain-of i.topo)`.'),
+             ('swWGte', wgte, '`(gte (lent cs) 4)`.'),
+             ('swWTIds', wtids, 'The labels `ids` of a tagged chain.'),
+             ('swWTDel', wtdel, '`(roll ids |=([o=@uwoo acc=_out] (~(del by acc) o)))` of a tagged chain.'),
+             ('swWTCas', wtcas, '`cas` of a tagged chain.'),
+             ('swWTFin', wtfin, 'A tagged chain from `node`: the tree, the head, the next turn.'),
+             ('swWTR', wtr, 'A tagged chain from `done`.'),
+             ('swWTag', wtag, 'A tagged chain, after `?>  ?=(^ cs)`.'),
+             ('swWPDel', wpdel, '`(roll old |=([o=@uwoo acc=_out] (~(del by acc) o)))` of a plain chain.'),
+             ('swWPCas', wpcas, '`cas` of a plain chain.'),
+             ('swWPNed', wpned, '`ned` of a plain chain.'),
+             ('swWPIdT', wpidt, 'The trap of `ids` of a plain chain: new labels from `nex`.'),
+             ('swWPSkG', wpskg, 'The test of the `+skip` of a plain chain: an `%imm` into the register of the first test.'),
+             ('swWPNode', wpnode, 'A plain chain from `node`: the tree, the head, the next turn.'),
+             ('swWPFin', wpfin, 'A plain chain from `ids`.'),
+             ('swWPR', wpr, 'A plain chain from `done`.'),
+             ('swWPB', wpb, 'A plain chain, after `?>  ?=(^ ps)`.'),
+             ('swWPlain', wplain, 'The plain branch of the walk: `ps` and its tests.'),
+             ('swWalk', walk, 'The walk of `+switch-chains` over `topo`.'),
+             ('swBodyCut', body, 'The gate body of `+switch-chains`.')]
 else:
     raise SystemExit('unknown ' + WHICH)
 with open(os.path.join(OUT, WHICH + '.lean'), 'w') as f:
