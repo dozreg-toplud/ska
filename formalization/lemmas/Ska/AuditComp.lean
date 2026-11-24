@@ -83,6 +83,7 @@ import lemmas.Ska.CompConsCallWrap
 import lemmas.Ska.CompHypOfCons
 import lemmas.Ska.CompConsCallTopB
 import lemmas.Ska.CompHypOfUOKC
+import lemmas.Ska.CompRunOKLC
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -803,3 +804,8 @@ open Formalization.SkaModel.Comp
 #print axioms uokc_consTA
 #print axioms consT_example1
 #print axioms consT_example4
+#print axioms copyL_th
+#print axioms entNew_consH
+#print axioms entNew_consT
+#print axioms uokc_entNew_of_fragC
+#print axioms consT_example5
