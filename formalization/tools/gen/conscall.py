@@ -34,8 +34,7 @@ rep("""  · rw [(entries_side_perm _ _ _).length_eq, List.length_append]
 i = body.index("  · rw [hev]\n    have hn : ¬ FitsS")
 j = body.index("  · rw [kc3]\n    rcases CM r hr")
 body = body[:i] + """  · have a : ¬ FitsS nexp.laz.sure s := fun a => hs ((CF s).mpr ⟨a, hqt s⟩)
-    rw [pureEval_cons, hp.nec s a]
-    rfl
+    exact hp.nec s a
 """ + body[j:]
 rep("""    · obtain ⟨x, y, th, z⟩ := hq.labs e a
       have := hq.hi""", """    · obtain ⟨x, y, th, z⟩ := hq.labs e a
