@@ -666,5 +666,194 @@ theorem comp_run_n5 (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 
     simp [nock_exec, hre0, hre1, hD1, hbr, ht, bind, StateT.bind, eb]
 
 
+/-! ## The case `%10`
+
+`crK10` is `+simple-next`, `+into` on the axis, then the tail `cr10Tail`:
+`+past` of `[%next rec ~ o]` with `v`, the run of `v` into the donor need,
+`+past` with `q`, the run of `q` into the recipient need, and `+copy`. -/
+
+def cr10Tail : Noun :=
+  (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 0x2bfe) (C (A 0) (A 63)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 7) (C (C (A 0) (A 3)) (C (C (A 1) (A 0x7478656e)) (C (C (A 0) (A 10)) (C (C (A 1) (A 0)) (C (A 0) (A 11))))))) (C (C (A 0) (A 4053)) (C (A 0) (A 2030))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 510) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 5) (C (A 10) (C (C (A 118) (C (C (A 1) (A 0x7478656e)) (C (C (A 0) (A 12)) (C (A 0) (A 11))))) (C (A 10) (C (C (A 58) (C (A 0) (A 4053))) (C (A 0) (A 15)))))))))) (C (A 7) (C (C (A 10) (C (C (A 1022) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 0x2bfe) (C (A 0) (A 255)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 6)) (C (C (A 0) (A 8171)) (C (A 0) (A 8174))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 2046) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 5) (C (A 10) (C (C (A 118) (C (C (A 1) (A 0x7478656e)) (C (C (A 0) (A 58)) (C (A 0) (A 11))))) (C (A 10) (C (C (A 58) (C (A 0) (A 8171))) (C (A 0) (A 63)))))))))) (C (A 7) (C (C (A 10) (C (C (A 4094) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 8) (C (C (A 9) (C (A 0x55dae) (C (A 0) (A 1023)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 6)) (C (A 0) (A 58)))) (C (A 0) (A 2))))))))))))))))))))))))))))))))))))))))
+
+def cr10Head : Noun :=
+  (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 9) (C (A 4) (C (A 0) (A 1)))))) (C (A 7) (C (C (A 10) (C (C (A 126) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 1372) (C (A 0) (A 31)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 6)) (C (A 0) (A 2004)))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 254) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) cr10Tail))))))))))))))))
+
+theorem cr10_eq : crK10 = cr10Head := by kernel_rfl
+
+theorem cr_disp_n10 (t mono goal region sup D : Noun) :
+    nock (crSubj mono (C (A 10) t) goal region sup D) crDol
+      = nock (crSubj mono (C (A 10) t) goal region sup D) crK10 := by
+  nock_open crDol
+  simp [nock_exec, crSubj, crTc, crT]
+
+theorem cr_jmp0 (o : Nat) : (jmp0 o).toNoun = C (A 0) (A o) := by
+  simp [Jmp.toNoun, jmp0, listNoun]
+
+/-- The noun of a fork-free `%next` goal. -/
+theorem cr_goal_sure (s : Sure CSet) (th : Jmp) : (CGoal.toL (CGoal.next s th) : CGoalL CSet).toNoun
+    = C (A 0x7478656e) (C (lazyNoun s) th.toNoun) := by
+  simp [CGoal.toL, CGoalL.toNoun, Lazy.toNoun_ofSure]
+
+theorem cr_int_arm (d : Noun) : nock d intArm = some (C intBat (C (C (C (A 0x7478656e)
+    (C (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0))) (C (A 0) (A 0)))) (A 0)) d)) := by
+  unfold intArm; simp only [nock_exec]
+
+/-- **The tail of `%10`**: `+past` (the identity on a pure `v`), `v` into
+the donor need `don` with `then` the block `o`, `+past` (the identity on a
+pure `q`), `q` into the recipient need `rec`, `+copy`. -/
+theorem cr10_tail (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (a : Nat) (v q : Nomm) (hvp : v.pure = true) (hqp : q.pure = true) (hv6 : noSix v = true)
+    (hq6 : noSix q = true) (region : List Nat) (x : GenRest) (hx : x.NoSoft) (mono goalN sup nextN : Noun)
+    (don rec : Sure CSet) (o : Nat) (g1 : Gen (TreapMap mugF))
+    (hv : CompRunAt ctx v (CGoal.toL (CGoal.next don (jmp0 o))) region g1)
+    (hq : ∀ th g2, CompRunAt ctx q (CGoal.toL (CGoal.next rec th)) region g2)
+    (hcp : ∀ nexD g2 nexR g3, run v (CGoal.next don (jmp0 o)) g1 = some (nexD, g2) →
+      run q (CGoal.next rec nexD.th) g2 = some (nexR, g3) → CrCopyOk g3 nexR nexD.laz) :
+    nock (C (C (lazyNoun don) (C (lazyNoun rec) (A o))) (C nextN (crSubj mono (Nomm.n10 a v q).toNoun goalN
+      (listNoun A region) sup (compCore g1 x ctx)))) cr10Tail
+      = ((do
+          let nexD ← run v (CGoal.next don (jmp0 o))
+          let nexR ← run q (CGoal.next rec nexD.th)
+          copy nexR nexD.laz : CM (TreapMap mugF) (Next CSet)) g1).map
+          fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  obtain ⟨hc, hl, -⟩ := comp_ctx_pill ctx h7
+  have hpa1 := cr_past_pure h7 hcode x g1 ⟨rec, jmp0 o⟩ v hvp region
+  simp only [cr_jmp0] at hpa1
+  have hv1 := cr_at_run hvp hv6 hv x mono sup hx
+  rw [cr_goal_sure, cr_jmp0] at hv1
+  simp only [crSubj, compCore] at hv1
+  have hD1 := cr_past_at
+  have hD2 := comp_cp_at
+  simp only [compCore]
+  cases eq : run (S := CSet) (Map := TreapMap mugF) v (CGoal.next don (jmp0 o)) g1 with
+  | none =>
+    rw [eq] at hv1
+    generalize comp.door = Dr at hv1 hD1 hD2 hpa1 ⊢
+    nock_open cr10Tail
+    simp [nock_exec, crSubj, Nomm.toNoun, cr_bat_dol, hv1, bind, StateT.bind, eq, h7, hcode, hD1,
+      cr_past_arm, hpa1]
+  | some r =>
+    obtain ⟨nexD, g2⟩ := r
+    rw [eq] at hv1
+    simp only [Option.map_some, cr_next_noun'] at hv1
+    have hpa2 := cr_past_pure h7 hcode x g2 nexD q hqp region
+    have hq1 := cr_at_run hqp hq6 (hq nexD.th g2) x mono sup hx
+    rw [cr_goal_sure] at hq1
+    simp only [crSubj, compCore] at hq1
+    cases eq2 : run (S := CSet) (Map := TreapMap mugF) q (CGoal.next rec nexD.th) g2 with
+    | none =>
+      rw [eq2] at hq1
+      generalize comp.door = Dr at hv1 hD1 hD2 hpa1 hpa2 hq1 ⊢
+      nock_open cr10Tail
+      simp [nock_exec, crSubj, Nomm.toNoun, cr_bat_dol, hv1, bind, StateT.bind, eq, h7, hcode, hD1,
+        cr_past_arm, hpa1, hpa2, hq1, eq2]
+    | some r' =>
+      obtain ⟨nexR, g3⟩ := r'
+      rw [eq2] at hq1
+      simp only [Option.map_some, cr_next_noun'] at hq1
+      obtain ⟨hlt, hrt, hm⟩ := hcp nexD g2 nexR g3 eq eq2
+      have hcpy := comp_copy (x := x) hc hl g3 nexR nexD.laz hlt hrt hm
+      simp only [compCore, cr_next_noun'] at hcpy
+      generalize comp.door = Dr at hv1 hD1 hD2 hpa1 hpa2 hq1 hcpy ⊢
+      nock_open cr10Tail
+      simp [nock_exec, crSubj, Nomm.toNoun, cr_bat_dol, hv1, bind, StateT.bind, eq, h7, hcode, hD1,
+        cr_past_arm, hpa1, hpa2, hq1, eq2, hD2, cr_cp_arm, hcpy, cr_next_noun']
+
+
+/-- What `simpleNext` returns on a goal with no look at `0` has none. -/
+theorem cr_sn_lok (gl : CGoal CSet) (hlok : crLokOk gl) (g : Gen (TreapMap mugF)) (nex : Next CSet)
+    (g1 : Gen (TreapMap mugF)) (e : simpleNext gl g = some (nex, g1)) :
+    ∀ y ∈ HoonSet.toList nex.laz.lok, y ≠ 0 := by
+  cases gl with
+  | next laz th =>
+    simp [simpleNext, pure, StateT.pure] at e
+    rw [← e.1]; exact hlok
+  | done =>
+    simp [simpleNext, re, bind, StateT.bind, pure, StateT.pure, cd_emit_eq] at e
+    rcases e with ⟨rfl, -⟩
+    exact fun y hy => absurd hy (HoonSet.mem_empty y)
+  | pick z o =>
+    simp [simpleNext, re, bind, StateT.bind, pure, StateT.pure, cd_emit_eq] at e
+    rcases e with ⟨rfl, -⟩
+    exact fun y hy => absurd hy (HoonSet.mem_empty y)
+
+/-- The model of `%10` with both `+past` dropped. -/
+theorem cr_run_n10_eq (a : Nat) (v q : Nomm) (hvp : v.pure = true) (hqp : q.pure = true) (gl : CGoal CSet)
+    (g : Gen (TreapMap mugF)) :
+    run (Nomm.n10 a v q) gl g = (do
+      let nex ← simpleNext gl
+      let (don, rec, o) ← into nex a
+      let nexD ← run v (CGoal.next don (jmp0 o))
+      let nexR ← run q (CGoal.next rec nexD.th)
+      copy nexR nexD.laz : CM (TreapMap mugF) (Next CSet)) g := by
+  simp [run, cr_past_model hvp, cr_past_model hqp, bind, StateT.bind, pure, StateT.pure]
+
+/-- **The case `%10` of `+run`** on a fork-free goal with no look at `0`, for
+`[10 [a v] q]` with `a ≠ 0` and pure `v` and `q` with no `%6`:
+`+simple-next`, `+into`, then `cr10_tail`.  The needs that `+into` returns
+have no look at `0` (`hil`) and the copy meets `CrCopyOk` (`hcp`), both on
+the states the model reaches. -/
+theorem comp_run_n10 (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (a : Nat) (ha : a ≠ 0) (v q : Nomm) (hvp : v.pure = true) (hqp : q.pure = true) (hv6 : noSix v = true)
+    (hq6 : noSix q = true) (gl : CGoal CSet) (region : List Nat) (g : Gen (TreapMap mugF)) (hlok : crLokOk gl)
+    (hv : ∀ s th g1, (∀ y ∈ HoonSet.toList s.lok, y ≠ 0) →
+      CompRunAt ctx v (CGoal.toL (CGoal.next s th)) region g1)
+    (hq : ∀ s th g1, (∀ y ∈ HoonSet.toList s.lok, y ≠ 0) →
+      CompRunAt ctx q (CGoal.toL (CGoal.next s th)) region g1)
+    (hil : ∀ nex g1 don rec o g2, simpleNext gl g = some (nex, g1) → into nex a g1 = some ((don, rec, o), g2) →
+      (∀ y ∈ HoonSet.toList don.lok, y ≠ 0) ∧ (∀ y ∈ HoonSet.toList rec.lok, y ≠ 0))
+    (hcp : ∀ nex g1 don rec o g2 nexD g3 nexR g4, simpleNext gl g = some (nex, g1) →
+      into nex a g1 = some ((don, rec, o), g2) → run v (CGoal.next don (jmp0 o)) g2 = some (nexD, g3) →
+      run q (CGoal.next rec nexD.th) g3 = some (nexR, g4) → CrCopyOk g4 nexR nexD.laz) :
+    CompRunAt ctx (Nomm.n10 a v q) (CGoal.toL gl) region g := by
+  apply cr_at_of_run (by simp [Nomm.pure, hvp, hqp]) (by simp [noSix, hv6, hq6])
+  intro x mono sup hx
+  obtain ⟨hc, hl, -⟩ := comp_ctx_pill ctx h7
+  have hnn : (Nomm.n10 a v q).toNoun = C (A 10) (C (C (A a) v.toNoun) q.toNoun) := rfl
+  have hsn := comp_simple_next hc x g (CGoal.toL gl) mono (Nomm.n10 a v q).toNoun (listNoun A region) sup
+  rw [simpleNextL_toL, map_apply, Option.map_map] at hsn
+  have hD := comp_int_at
+  rw [cr_run_n10_eq a v q hvp hqp, hnn, cr_disp_n10, cr10_eq]
+  rw [hnn] at hsn
+  cases es : simpleNext (Map := TreapMap mugF) gl g with
+  | none =>
+    rw [es] at hsn
+    simp only [crSubj, compCore, Option.map_none] at hsn ⊢
+    generalize (CGoal.toL gl).toNoun = GN at hsn ⊢
+    generalize comp.door = Dr at hD hsn ⊢
+    nock_open cr10Head
+    simp [nock_exec, cr_bat_sn, hsn, bind, StateT.bind, es]
+  | some r =>
+    obtain ⟨nex, g1⟩ := r
+    rw [es] at hsn
+    simp only [crSubj, compCore, Option.map_some, Function.comp, cr_next_noun] at hsn
+    have h0 := cr_sn_lok gl hlok g nex g1 es
+    have hin := comp_into (x := x) hc hl g1 nex a ha h0
+    simp only [cr_next_noun', compCore] at hin
+    cases ei : into (Map := TreapMap mugF) nex a g1 with
+    | none =>
+      rw [ei] at hin
+      simp only [crSubj, compCore, Option.map_none] at hin ⊢
+      generalize (CGoal.toL gl).toNoun = GN at hsn ⊢
+      generalize comp.door = Dr at hD hsn hin ⊢
+      nock_open cr10Head
+      simp [nock_exec, cr_bat_sn, hsn, bind, StateT.bind, es, hD, cr_int_arm, hin, ei]
+    | some r' =>
+      obtain ⟨⟨don, rec, o⟩, g2⟩ := r'
+      rw [ei] at hin
+      simp only [Option.map_some] at hin
+      obtain ⟨hd0, hr0⟩ := hil nex g1 don rec o g2 es ei
+      have ht := cr10_tail h7 hcode a v q hvp hqp hv6 hq6 region x hx mono (CGoal.toL gl).toNoun sup
+        (C (A 0x7478656e) (C (lazyNoun nex.laz) nex.th.toNoun)) don rec o g2 (hv don (jmp0 o) g2 hd0)
+        (fun th g3 => hq rec th g3 hr0)
+        (fun nexD g3 nexR g4 e1 e2 => hcp nex g1 don rec o g2 nexD g3 nexR g4 es ei e1 e2)
+      rw [hnn] at ht
+      simp only [crSubj, compCore] at ht ⊢
+      generalize (CGoal.toL gl).toNoun = GN at hsn ht ⊢
+      generalize comp.door = Dr at hD hsn hin ht ⊢
+      nock_open cr10Head
+      simp [nock_exec, cr_bat_sn, hsn, bind, StateT.bind, es, hD, cr_int_arm, hin, ei, ht]
+
+
 end Compiler
 end Formalization
