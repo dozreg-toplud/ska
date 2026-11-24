@@ -5,7 +5,7 @@ import lemmas.Ska.OptSwitchWalk
 
 The walk calls `switchTag bl out` at each head: the chain is that of `bl`,
 the blocks so far are `out`.  This file carries `TagHyp` from `bl` to `out`
-(`tagHyp_out`) through an invariant of the walk (`WInv`): outside the
+(`tagHyp_out`) through an invariant of the walk (`SWInv`): outside the
 regions and heads of the chains done the blocks are those of `bl`, a head
 done is its block of `bl` with the `%clq` to the root and the final miss, and
 a block inside a region done is a tree node (`NodeOK`: no parameters, jumps
@@ -342,7 +342,7 @@ chain of `bl` at its head, a member of `topo`; their `tagIds` are in `done`;
 outside their regions and heads the blocks are those of `bl`; a head is its
 block of `bl` with the `%clq` to the root and the final miss; a block in a
 region is a tree node. -/
-structure WInv (bl : Map Blob) (topo : List Nat) (fuel : Nat) (A : List TCh) (out : Map Blob)
+structure SWInv (bl : Map Blob) (topo : List Nat) (fuel : Nat) (A : List TCh) (out : Map Blob)
     (done : List Nat) : Prop where
   ch : ∀ a ∈ A, chainOf bl (revCfg bl topo) fuel a.o = some (a.t0 :: a.tl) ∧ a.o ∈ topo
   dn : ∀ a ∈ A, ∀ k ∈ tagIds (a.t0 :: a.tl), k ∈ done
@@ -352,8 +352,8 @@ structure WInv (bl : Map Blob) (topo : List Nat) (fuel : Nat) (A : List TCh) (ou
   node : ∀ a ∈ A, ∀ k b, TagIn a.t0 a.tl k → HoonMap.get out k = some b →
     NodeOK (TagJ a.t0 a.tl) (TagS a.t0 a.tl) b
 
-theorem winv_nil (bl : Map Blob) (topo : List Nat) (fuel : Nat) (done : List Nat) :
-    WInv bl topo fuel [] bl done :=
+theorem swinv_nil (bl : Map Blob) (topo : List Nat) (fuel : Nat) (done : List Nat) :
+    SWInv bl topo fuel [] bl done :=
   ⟨fun _ h => absurd h List.not_mem_nil, fun _ h => absurd h List.not_mem_nil, fun _ _ => rfl,
     fun _ h => absurd h List.not_mem_nil, fun _ h => absurd h List.not_mem_nil⟩
 
@@ -393,7 +393,7 @@ theorem tagJ_topo (ht : TopoOK bl topo) {n o : Nat} {t0 : STest} {tl : List STes
   · exact hT _ (by rw [show tagMiss t0 tl = lastMiss o (t0 :: tl) from (lastMiss_tag t0 tl).symm]; simp)
 
 /-- A block reachable in the blocks so far is a member of `topo`. -/
-theorem winv_reach {A : List TCh} {out : Map Blob} {done : List Nat} (W : WInv bl topo fuel A out done)
+theorem swinv_reach {A : List TCh} {out : Map Blob} {done : List Nat} (W : SWInv bl topo fuel A out done)
     (ht : TopoOK bl topo) : ∀ k, Reach out k → k ∈ topo := by
   intro k hk
   induction hk with
@@ -418,7 +418,7 @@ theorem winv_reach {A : List TCh} {out : Map Blob} {done : List Nat} (W : WInv b
 
 /-- **`TagHyp` carried from `bl` to the blocks so far**, for a chain of `bl`
 at a head later in `topo` than the chains done and not in `done`. -/
-theorem tagHyp_out {A : List TCh} {out : Map Blob} {done : List Nat} (W : WInv bl topo fuel A out done)
+theorem tagHyp_out {A : List TCh} {out : Map Blob} {done : List Nat} (W : SWInv bl topo fuel A out done)
     (ht : TopoOK bl topo) {o : Nat} {u0 : STest} {ul : List STest}
     (h : chainOf bl (revCfg bl topo) fuel o = some (u0 :: ul)) (ho : o ∈ topo)
     (hrk : ∀ a ∈ A, rk topo a.o < rk topo o) (hod : o ∉ done) : TagHyp out o u0 ul := by
@@ -455,7 +455,7 @@ theorem tagHyp_out {A : List TCh} {out : Map Blob} {done : List Nat} (W : WInv b
     · have hs : HoonMap.get out k = HoonMap.get bl k :=
         W.same k fun a ha => ⟨fun e => hA ⟨a, ha, Or.inl e⟩, fun e => hA ⟨a, ha, Or.inr e⟩⟩
       rw [hs] at hb
-      have hkT := winv_reach W ht k hk
+      have hkT := swinv_reach W ht k hk
       rcases mem_ilabs (labs_into rfl o _ hc k b j hkT hb hj ((tagIn_iff o u0 ul _).mp hjI)) with e | e
       · exact hko e
       · exact hkI ((tagIn_iff o u0 ul _).mpr e)
@@ -484,7 +484,7 @@ end
 
 /-! ## The walk over tagged chains -/
 
-theorem idxOf_cons_ne' {p o : Nat} (l : List Nat) (h : p ≠ o) : (p :: l).idxOf o = l.idxOf o + 1 := by
+theorem sw_idxOf_ne {p o : Nat} (l : List Nat) (h : p ≠ o) : (p :: l).idxOf o = l.idxOf o + 1 := by
   rw [List.idxOf_cons]
   have : (p == o) = false := by simp [h]
   rw [this]; rfl
@@ -495,12 +495,12 @@ theorem rk_pre {x o : Nat} {rest : List Nat} : ∀ (pre : List Nat), x ∈ pre �
   | p :: pre, hx, ho => by
     have hpo : p ≠ o := fun e => ho (by rw [e]; exact List.mem_cons_self)
     have e1 : (p :: pre ++ o :: rest).idxOf o = (pre ++ o :: rest).idxOf o + 1 := by
-      rw [List.cons_append]; exact idxOf_cons_ne' _ hpo
+      rw [List.cons_append]; exact sw_idxOf_ne _ hpo
     unfold rk; rw [e1]
     by_cases hpx : p = x
     · subst hpx; rw [List.cons_append, List.idxOf_cons_self]; omega
     · have e2 : (p :: pre ++ o :: rest).idxOf x = (pre ++ o :: rest).idxOf x + 1 := by
-        rw [List.cons_append]; exact idxOf_cons_ne' _ hpx
+        rw [List.cons_append]; exact sw_idxOf_ne _ hpx
       rw [e2]
       have := rk_pre (rest := rest) pre (by rcases List.mem_cons.mp hx with e | e; exact absurd e.symm hpx; exact e)
         (fun h => ho (List.mem_cons_of_mem _ h))
@@ -512,11 +512,11 @@ variable {bl : Map Blob} {topo : List Nat} {fuel : Nat}
 
 /-- **One tagged chain of the walk**: the invariant and `Keeps` go on. -/
 theorem walk_tag_step (c : Straight Map) {A : List TCh} {out : Map Blob} {done : List Nat}
-    (W : WInv bl topo fuel A out done) (K : Keeps c (withBlocks c out)) (ht : TopoOK bl topo) {o : Nat}
+    (W : SWInv bl topo fuel A out done) (K : Keeps c (withBlocks c out)) (ht : TopoOK bl topo) {o : Nat}
     {u0 : STest} {ul : List STest} (h : chainOf bl (revCfg bl topo) fuel o = some (u0 :: ul)) (ho : o ∈ topo)
     (hrk : ∀ a ∈ A, rk topo a.o < rk topo o) (hod : o ∉ done) {out' : Map Blob} {done' : List Nat}
     (hs : switchTag bl out fuel o (u0 :: ul) done = some (out', done')) :
-    WInv bl topo fuel (A ++ [⟨o, u0, ul⟩]) out' done' ∧ Keeps c (withBlocks c out') := by
+    SWInv bl topo fuel (A ++ [⟨o, u0, ul⟩]) out' done' ∧ Keeps c (withBlocks c out') := by
   have H := tagHyp_out W ht h ho hrk hod
   have D := fun a (ha : a ∈ A) =>
     chain_disj ht (W.ch a ha).1 (W.ch a ha).2 h ho (hrk a ha) (fun hm => hod (W.dn a ha _ hm))
@@ -557,7 +557,7 @@ more is met. -/
 theorem switchWalk_tag (c : Straight Map) (ht : TopoOK bl topo)
     (hnp : ∀ o ∈ topo, ∀ ps, plainsOf bl (revCfg bl topo) fuel o = some ps → ps.length < 4) :
     ∀ (rest pre : List Nat) (A : List TCh) (out : Map Blob) (done : List Nat) (nex : Nat) (outF : Map Blob),
-      topo = pre ++ rest → (∀ a ∈ A, a.o ∈ pre) → WInv bl topo fuel A out done → Keeps c (withBlocks c out) →
+      topo = pre ++ rest → (∀ a ∈ A, a.o ∈ pre) → SWInv bl topo fuel A out done → Keeps c (withBlocks c out) →
       switchWalk bl (revCfg bl topo) fuel rest out done nex = some outF → Keeps c (withBlocks c outF)
   | [], _, _, out, _, _, outF, _, _, _, K, h => by
     simp only [switchWalk, Option.some.injEq] at h; subst h; exact K
@@ -604,7 +604,7 @@ theorem switchChains_keeps_tag (c : Straight Map) {fuel : Nat} {bl' : Map Blob} 
   have ht := bbTopo_ok hb.2.1 htopo
   have K0 : Keeps c (withBlocks c c.blocks) := keeps_refl c
   exact switchWalk_tag c ht (hnp topo htopo) topo [] [] c.blocks [] _ bl' rfl (fun a ha => absurd ha List.not_mem_nil)
-    (winv_nil _ _ _ _) K0 h
+    (swinv_nil _ _ _ _) K0 h
 
 end
 
