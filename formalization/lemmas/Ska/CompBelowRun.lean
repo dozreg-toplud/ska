@@ -14,8 +14,8 @@ condition on which blocks it changes, and (i5) of a run is `Keeps` applied to
 `belowIn_start`.
 
 * `NB n ned`: the registers of `ned` are below `n`.
-* `Keeps g g'`: every `BelowIn lo` of `g` holds of `g'`, `re` grew, `drop`
-  stayed.  The steps: `keeps_re`, `keeps_emit`, `keeps_addOps`.
+* `Keeps g g'`: every `BelowIn lo` of `g` holds of `g'`, `re` and `bo`
+  grew, `drop` stayed.  The steps: `keeps_re`, `keeps_emit`, `keeps_addOps`.
 * The arms: `keeps_must`, `keeps_splitNeed`, `keeps_copyNeed`,
   `keeps_sureRequireLook`, `keeps_medeLoop`, `keeps_crashNeed`,
   `keeps_intoLoop`, ...
@@ -77,16 +77,17 @@ structure Keeps (g g' : Gen Map) : Prop where
   bel : ∀ lo, BelowIn lo g → BelowIn lo g'
   le : g.re ≤ g'.re
   drop : g'.drop = g.drop
+  bo : g.bo ≤ g'.bo
 
-theorem Keeps.refl (g : Gen Map) : Keeps g g := ⟨fun _ h => h, Nat.le_refl _, rfl⟩
+theorem Keeps.refl (g : Gen Map) : Keeps g g := ⟨fun _ h => h, Nat.le_refl _, rfl, Nat.le_refl _⟩
 
 theorem Keeps.trans {g0 g1 g2 : Gen Map} (a : Keeps g0 g1) (b : Keeps g1 g2) : Keeps g0 g2 :=
-  ⟨fun lo h => b.bel lo (a.bel lo h), Nat.le_trans a.le b.le, b.drop.trans a.drop⟩
+  ⟨fun lo h => b.bel lo (a.bel lo h), Nat.le_trans a.le b.le, b.drop.trans a.drop, Nat.le_trans a.bo b.bo⟩
 
 theorem Keeps.dropF {g g' : Gen Map} (k : Keeps g g') (hd : g.drop = false) : g'.drop = false := k.drop.trans hd
 
 theorem keeps_reg (g : Gen Map) (k : Nat) (hk : g.re ≤ k) : Keeps g { g with re := k } :=
-  ⟨fun _ h => belowIn_re h k hk, hk, rfl⟩
+  ⟨fun _ h => belowIn_re h k hk, hk, rfl, Nat.le_refl _⟩
 
 theorem keeps_re {g g' : Gen Map} {r : Nat} (h : (re : CM Map Nat) g = some (r, g')) :
     r = g.re ∧ g'.re = g.re + 1 ∧ Keeps g g' := by
@@ -101,23 +102,23 @@ theorem keeps_emit {g g' : Gen Map} {b : Blob} {o : Nat} (hd : g.drop = false) (
   rw [emit_apply] at e
   simp only [Option.some.injEq, Prod.mk.injEq] at e
   obtain ⟨_, rfl⟩ := e
-  exact ⟨⟨fun _ hl => belowIn_emit hl hd hb h, Nat.le_refl _, rfl⟩, rfl⟩
+  exact ⟨⟨fun _ hl => belowIn_emit hl hd hb h, Nat.le_refl _, rfl, Nat.le_succ _⟩, rfl⟩
 
 theorem addOps_re {g g' : Gen Map} {o : Nat} {ops : List Pole} {u : Unit} (h : addOps o ops g = some (u, g')) :
-    g'.re = g.re ∧ g'.drop = g.drop := by
+    g'.re = g.re ∧ g'.drop = g.drop ∧ g'.bo = g.bo := by
   unfold addOps at h
   by_cases hd : g.drop = true
-  · rw [if_pos hd] at h; cases h; exact ⟨rfl, rfl⟩
+  · rw [if_pos hd] at h; cases h; exact ⟨rfl, rfl, rfl⟩
   · rw [if_neg hd] at h
     obtain ⟨b, _, e⟩ := Option.map_eq_some_iff.mp h
     simp only [Prod.mk.injEq] at e
-    rw [← e.2]; exact ⟨rfl, rfl⟩
+    rw [← e.2]; exact ⟨rfl, rfl, rfl⟩
 
 theorem keeps_addOps {g g' : Gen Map} {o : Nat} {ops : List Pole} {u : Unit} (hA : RegsIn (· < g.re) ops)
     (h : addOps o ops g = some (u, g')) : Keeps g g' ∧ g'.re = g.re := by
   cases u
-  obtain ⟨e1, e2⟩ := addOps_re h
-  exact ⟨⟨fun _ hl => belowIn_addOps hl (Or.inr hA) h, Nat.le_of_eq e1.symm, e2⟩, e1⟩
+  obtain ⟨e1, e2, e3⟩ := addOps_re h
+  exact ⟨⟨fun _ hl => belowIn_addOps hl (Or.inr hA) h, Nat.le_of_eq e1.symm, e2, Nat.le_of_eq e3.symm⟩, e1⟩
 
 /-- The registers of an op, by cases. -/
 theorem regsIn_one {P : Nat → Prop} {p : Pole} (h : ∀ x ∈ poleRegs p, P x) : RegsIn P [p] :=
