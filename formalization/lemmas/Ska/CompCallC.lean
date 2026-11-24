@@ -186,17 +186,17 @@ theorem tailGC_of_past {lib : Lib} {p : Nomm} {env : CallEnv} {P : Noun → Prop
     (hsur : ∀ r, NMem sur.ned r → r < g0.re) (d1 : g1.drop = false) (u1 : UpBelow g1)
     (h : pastL env.cod nex p region g1 = some (nex', g2)) :
     TailGC lib P fc sur (jmp0 o) g0 g2 nex' ∧ ((∀ s, FitsS nex'.laz.sure s) ∨ TotalC lib P fb) ∧
-      Clean nex'.laz.sure.ned := by
+      Clean nex'.laz.sure.ned ∧ (nex'.th = nex.th ∨ g1.bo ≤ nex'.th.there) := by
   rcases Up.kind with ⟨up, Mp⟩ | hh
   · rw [pastL_pure _ _ up.pure, pure_apply] at h
     simp only [Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, rfl⟩ := h
-    exact ⟨TailGC.ofRun R, Or.inr (totalC_of_minkEq Mp), cq⟩
+    exact ⟨TailGC.ofRun R, Or.inr (totalC_of_minkEq Mp), cq, Or.inl rfl⟩
   · rcases pastL_hinted hh h with ⟨x1, x2, en, es, _⟩ | ⟨x1, x2⟩
     · subst x1 x2
-      exact ⟨TailGC.ofRun R, Or.inl (fun s => fitsS_trivial en es s), cq⟩
+      exact ⟨TailGC.ofRun R, Or.inl (fun s => fitsS_trivial en es s), cq, Or.inl rfl⟩
     · subst x1 x2
-      exact ⟨tailGC_past R hsur d1 u1 region, Or.inl (fun s => fitsS_bunt s), trivial⟩
+      exact ⟨tailGC_past R hsur d1 u1 region, Or.inl (fun s => fitsS_bunt s), trivial, Or.inr (Nat.le_refl _)⟩
 
 /-- **The indirect call whose parts may call, under a fork-free `%next sur
 th`, from the pieces of its run** (`runLC_n2_none` with `+simple-next` the
@@ -233,7 +233,7 @@ theorem indirectC_runS (lib : Lib) {p q : Nomm} {env : CallEnv} {P : Noun → Pr
     ⟨trivial, fun r hr => by simp only [lazyReg, NMem] at hr; subst hr; omega⟩ trivial hc.2 (by omega) d3 u3
     cl3 cb3 (fun r hr => by simp only [lazyReg, NMem] at hr; subst hr; rw [cn3]; exact nk _ (by omega)) h4
   have cq := Uq.clean (goal := CGoal.next (lazyReg (g2.re + 1)) (jmp0 (g0.bo + 1))) trivial trivial h4
-  obtain ⟨T, hhd, cq'⟩ := tailGC_of_past Up Rq cq
+  obtain ⟨T, hhd, cq', -⟩ := tailGC_of_past Up Rq cq
     (fun r hr => by simp only [lazyReg, NMem] at hr; subst hr; omega) (Rq.ext.2.2.1.trans d3) (Rq.grow.up u3) h5
   -- the subject part
   have Rp := Up.run (sup := sup) (goal := CGoal.next (lazyReg g2.re) nexF'.th) (region := region) trivial
