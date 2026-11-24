@@ -400,6 +400,136 @@ theorem treeGo_exec (lib : Lib) (O : Oracle σ) (c : Straight Map) (gul : Noun) 
 
 end
 
+/-! ## The tree against the chain -/
+
+/-- Two members of a list sorted strictly by their constants with one
+constant are one. -/
+theorem sorted_uniq : ∀ {l : List SCase}, l.Pairwise (fun a b => a.c < b.c) →
+    ∀ {x y : SCase}, x ∈ l → y ∈ l → x.c = y.c → x = y
+  | [], _, _, _, hx, _, _ => absurd hx List.not_mem_nil
+  | z :: t, hp, x, y, hx, hy, he => by
+    rw [List.pairwise_cons] at hp
+    rcases List.mem_cons.mp hx with rfl | hx' <;> rcases List.mem_cons.mp hy with rfl | hy'
+    · rfl
+    · have := hp.1 y hy'; omega
+    · have := hp.1 x hx'; omega
+    · exact sorted_uniq hp.2 hx' hy' he
+
+/-- The search over the cases `casesOf` keeps takes the target of the first
+case of the value. -/
+theorem pickHit_cases {ces cas : List SCase} (h : casesOf ces = some cas) (mis : Nat) (v : Noun) :
+    pickHit cas mis v = pickHit ces mis v := by
+  obtain ⟨hpw, hsp⟩ := cases_spec h
+  cases v with
+  | cell p q =>
+    have e1 : ∀ l : List SCase, l.find? (fun x => decide (Noun.cell p q = A x.c)) = none :=
+      fun l => List.find?_eq_none.mpr (by simp [A])
+    simp only [pickHit, e1]
+  | atom a =>
+    have ep : (fun x : SCase => decide (Noun.atom a = A x.c)) = fun x => decide (x.c = a) := by
+      funext x; simp [A, eq_comm]
+    simp only [pickHit, ep]
+    cases hf : ces.find? (fun y => decide (y.c = a)) with
+    | some x =>
+      have hx := (hsp a x).mpr hf
+      cases hg : cas.find? (fun y => decide (y.c = a)) with
+      | none =>
+        have := List.find?_eq_none.mp hg x hx.1
+        simp [hx.2] at this
+      | some z =>
+        have hz := List.mem_of_find?_eq_some hg
+        have hzc := List.find?_some hg
+        simp only [decide_eq_true_eq] at hzc
+        rw [sorted_uniq hpw hz hx.1 (hzc.trans hx.2.symm)]
+    | none =>
+      cases hg : cas.find? (fun y => decide (y.c = a)) with
+      | none => rfl
+      | some z =>
+        have hz := List.mem_of_find?_eq_some hg
+        have hzc := List.find?_some hg
+        simp only [decide_eq_true_eq] at hzc
+        have := (hsp a z).mp ⟨hz, hzc⟩
+        rw [hf] at this; cases this
+
+/-- The case a test of the tagged chain makes. -/
+def tagCase (t : STest) : SCase := ⟨t.c, t.hit, t.r⟩
+
+/-- The target of the tagged chain at the value `v` of the head: the hit of
+the first test whose constant is `v`, else `mis`. -/
+def chainPick (cs : List STest) (mis : Nat) (v : Noun) : Nat :=
+  match cs.find? (fun t => decide (v = A t.c)) with
+  | some t => t.hit
+  | none => mis
+
+theorem pickHit_tag (cs : List STest) (mis : Nat) (v : Noun) :
+    pickHit (cs.map tagCase) mis v = chainPick cs mis v := by
+  simp only [pickHit, chainPick, List.find?_map]
+  have e : ((fun x : SCase => decide (v = A x.c)) ∘ tagCase) = fun t => decide (v = A t.c) := rfl
+  rw [e]
+  cases cs.find? (fun t => decide (v = A t.c)) <;> rfl
+
+/-- Deleting a list of labels. -/
+theorem get_foldl_del (ids : List Nat) : ∀ (m : Map Blob) (k : Nat),
+    HoonMap.get (ids.foldl HoonMap.del m) k = if k ∈ ids then none else HoonMap.get m k := by
+  induction ids with
+  | nil => intro m k; simp
+  | cons i t ih =>
+    intro m k
+    simp only [List.foldl_cons, ih, HoonMap.get_del, List.mem_cons]
+    by_cases h1 : k = i <;> by_cases h2 : k ∈ t <;> simp [h1, h2]
+
+/-- The labels of the tagged chain other than the yes side of the first test:
+the yes sides of the others, then the no sides of all but the last. -/
+def tagIds (cs : List STest) : List Nat := (cs.drop 1).map STest.y ++ cs.dropLast.map STest.miss
+
+/-- The final miss of a chain: the no side of its last test. -/
+def tagMiss (t0 : STest) (tl : List STest) : Nat := ((t0 :: tl).getLast (List.cons_ne_nil _ _)).miss
+
+/-- **The tagged chain against its tree**: after `switchTag`, the first block
+ends in a `%clq` to the yes side of the first test and to the final miss, that
+block does the `%hed` and then the root of the tree, the tree takes the
+target the chain takes (`chainPick`) on every value of the head, and no other
+label changes but those of the chain.  Given that the labels of the chain
+are distinct and its leaf registers are not the head. -/
+theorem tag_tree {bl out out' : Map Blob} {fuel o : Nat} {t0 : STest} {tl : List STest}
+    {done done' : List Nat} (h : switchTag bl out fuel o (t0 :: tl) done = some (out', done'))
+    (hnd : (tagIds (t0 :: tl)).Nodup) (hy : t0.y ∉ tagIds (t0 :: tl)) (ho : o ∉ tagIds (t0 :: tl))
+    (hoy : o ≠ t0.y) (hr : ∀ t ∈ t0 :: tl, t.r ≠ t0.d) :
+    ∃ b nb nf, HoonMap.get bl o = some b ∧
+      HoonMap.get out' o = some { b with fin := Termin.clq t0.s ⟨[], t0.y⟩ ⟨[], tagMiss t0 tl⟩ } ∧
+      HoonMap.get out' t0.y = some ⟨[], Pole.hed t0.s t0.d :: nb, nf⟩ ∧
+      (∀ v, treeGo out' t0.d ((t0 :: tl).map STest.r) v fuel ⟨[], nb, nf⟩ =
+        some (chainPick (t0 :: tl) (tagMiss t0 tl) v)) ∧
+      (∀ k, k ≠ o → k ≠ t0.y → k ∉ tagIds (t0 :: tl) → HoonMap.get out' k = HoonMap.get out k) ∧
+      done' = tagIds (t0 :: tl) ++ done := by
+  rw [switchTag] at h
+  simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  obtain ⟨cas, hc, ⟨nb, nf, ids2, nout⟩, hs, b, hb, he⟩ := h
+  simp only [Prod.mk.injEq] at he
+  obtain ⟨rfl, rfl⟩ := he
+  have hc' : casesOf ((t0 :: tl).map tagCase) = some cas := hc
+  obtain ⟨hpw, hsp⟩ := cases_spec hc'
+  have hrc : ∀ x ∈ cas, x.r ≠ t0.d ∧ x.r ∈ (t0 :: tl).map STest.r := by
+    intro x hx
+    have hf := (hsp x.c x).mp ⟨hx, rfl⟩
+    obtain ⟨t, ht, rfl⟩ := List.mem_map.mp (List.mem_of_find?_eq_some hf)
+    exact ⟨hr t ht, List.mem_map_of_mem ht⟩
+  obtain ⟨used, eu, fr, go⟩ := stree_go _ _ _ fuel cas _ _ nb nf ids2 nout hs hpw hrc hnd
+  have hus : ∀ k ∈ used, k ∈ tagIds (t0 :: tl) := fun k hk => by
+    show k ∈ tl.map STest.y ++ (t0 :: tl).dropLast.map STest.miss
+    rw [eu]; exact List.mem_append_left _ hk
+  refine ⟨b, nb, nf, hb, by rw [HoonMap.get_put, if_pos rfl]; rfl, ?_, fun v => ?_, fun k k1 k2 k3 => ?_, rfl⟩
+  · rw [HoonMap.get_put, if_neg (Ne.symm hoy), HoonMap.get_put, if_pos rfl]
+  · rw [go _ (fun k hk => ?_) v, pickHit_cases hc', pickHit_tag]
+    · rfl
+    · have h1 : k ≠ o := fun e => ho (e ▸ hus k hk)
+      have h2 : k ≠ t0.y := fun e => hy (e ▸ hus k hk)
+      rw [HoonMap.get_put, if_neg h1, HoonMap.get_put, if_neg h2]
+  · have k4 : k ∉ used := fun hk => k3 (hus k hk)
+    rw [HoonMap.get_put, if_neg k1, HoonMap.get_put, if_neg k2, fr k k4, get_foldl_del]
+    have : k ∉ tl.map STest.y ++ (t0 :: tl).dropLast.map STest.miss := k3
+    simp only [this, if_false]
+
 end Opt
 end SkaModel
 end Formalization
