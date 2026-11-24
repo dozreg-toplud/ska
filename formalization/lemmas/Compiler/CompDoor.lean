@@ -1,6 +1,8 @@
 import lemmas.Compiler.CompGen
+import lemmas.Ska.CompLazyRun
 import lemmas.Compiler.TreapMap
 import lemmas.Hoon.Layer2
+import lemmas.Hoon.GasBy
 import lemmas.Pill.Facts
 import lemmas.KernelRfl
 
@@ -278,6 +280,50 @@ theorem comp_split_need (hc : CompIn ctx) (g : Gen (TreapMap mugF)) (ned : Need)
     simp [nock_exec, Need.toNoun, eqCode, Tag.both, comp_must_arm, comp_must' ctx x, e1, e2,
       comp_add_ops_arm, comp_add_con ctx x hc, splitNeed, bind, StateT.bind, pure, StateT.pure]
     cases addOps (Map := TreapMap mugF) o [Pole.con r1 r2 r] g2 <;> simp [nock_exec]
+
+/-! ## `+copy-tag` -/
+
+/-- `+gas:by` of the pairs `[o v]` for the labels of a list. -/
+theorem cd_gas {ν : Type} (f : ν → Noun) (v : ν) :
+    ∀ (tos : List Nat) (m : TreapMap mugF ν),
+      gasF mugF (HoonMap.toNoun f m) (tos.map fun o => (A o, f v))
+        = some (HoonMap.toNoun f (tos.foldl (fun m o => HoonMap.put m o v) m))
+  | [], _ => rfl
+  | o :: tos, m => by
+    simp only [List.map_cons, gasF, putF_hoonMap, List.foldl_cons]
+    exact cd_gas f v tos _
+
+variable {ctx} in
+/-- `+copy-tag`: `?:  dropping  gen`, else the region of block `from` (by
+`got`, a crash where the model is `none`) put under each label of `to` by
+`+gas:by` of a `+turn`. -/
+theorem comp_copy_tag (hc : CompIn ctx) (g : Gen (TreapMap mugF)) (frm : Nat) (tos : List Nat) :
+    nock (C comp.copy_tag.battery (C (C (A frm) (listNoun A tos)) (compCore g x ctx)))
+      comp.copy_tag.battery = (copyTag frm tos g).map fun p => genNoun p.2 x := by
+  have hget := getF_hoonMap (listNoun A) g.tags frm
+  have hgc : NeedIn layer2 ∧ SomeIn layer2 ∧ GorIn mugF layer2 :=
+    ⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩
+  nock_open comp.copy_tag.battery
+  cases h : g.drop
+  · cases e : HoonMap.get g.tags frm with
+    | none =>
+      rw [e] at hget
+      have hgot := got_gate_nil layer2 hgc (A frm) _ hget
+      simp [nock_exec, genNoun, cgModeNoun, h, comp_h110, eqCode_atom, hc, by_arm, by.arm_at,
+        by.got.arm_at, got_arm, hgot, copyTag, e]
+    | some region =>
+      rw [e] at hget
+      have hgot := got_gate layer2 hgc (A frm) _ _ hget
+      have hturn := fun r rest => turn_gate layer2 homo.arm_at
+        (C (C (A 0) (A 6)) (C (A 0) (A 14))) (A 0) (C r rest) (fun y => C y r) (tos.map A)
+        (fun y _ => by simp [nock_exec])
+      have hgas := gas_gate layer2 gorIn_morIn_layer2 (tos.map fun o => (A o, listNoun A region))
+        _ _ (cd_gas (listNoun A) region tos g.tags)
+      simp [nock_exec, genNoun, cgModeNoun, h, comp_h110, eqCode_atom, hc, by_arm, by.arm_at,
+        by.got.arm_at, got_arm, hgot, copyTag, e, turn_arm, turn.arm_at, hturn, gas_arm,
+        by.gas.arm_at, Function.comp_def, pairNoun, cd_listNoun_listN] at hgas ⊢
+      simp [hgas]
+  · simp [nock_exec, genNoun, cgModeNoun, h, comp_h110, eqCode_atom, copyTag]
 
 end Compiler
 end Formalization
