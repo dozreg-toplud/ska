@@ -1270,6 +1270,24 @@ import only its theorems.  So:
     from its gate yet (`finCtx` and the four slots of its rest are
     hypotheses), and the `?.  done` branch (`[need-new 0 ~]`) and the
     `+coerce-soft` branch are not linked.
+    The gate `member` (`%compile-scc-fn`, axis `358182910` of `K`, body
+    1051 cells, sample bunt `[[[1 0] 0 0] %done 0 0 0 0 0 0 0 0]`), mapped
+    for the next step: `done` is pushed as `=(%done mode)` (mode at `26`),
+    `?>  ?=(^ less.b)` reads `56`; the door `comp` is arm `5590` of `K`
+    (at `511`) on `[scc long-ska jets-hot map-local top b]`; `+inlined` is
+    arm `0x5dde` of `K` (at `1023`) on `[b long-ska jets-hot cache]`, its
+    cache put at `2015`; `gen` is the bunt of `line-short` (its `mode` is
+    already `%run`) with `cache` at `766`; the final pass is the `&` branch
+    of `[6 [0 30] ..]`: `mode.gen` set at `46`, `+run` (door arm `3071`,
+    battery `2047`) on `[| nomm [%done ~] ~ ~]`, `+collapse-shape` (door
+    arm `1526`) on `[nex cape.less.b]`, `+bake-need` (`0x5ddd4` of `K` at
+    `0x3fff`), `+sure-of` (`0x2bae` of `K`, not linked) of
+    `[(need-to-ordered ned.sure.laz) lok.sure.laz]` (`+need-to-ordered` is
+    `0xaebc`, `nta_gate`); then `cache` at `8159` from `1790`, `was` by
+    `+get:by` (arm `764`) on `sure.cache`, `sur`, `+put:by` (arm `340`) at
+    `0x7fdff`, `moved` with `+fall` (`3007` of `layer2`), the push of
+    `finish` (`finArm`), `+get:by` of `map-local` at `b`, and on `~` the
+    product `[chg (put:by map-local b (finish ~)) cache]`.
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
