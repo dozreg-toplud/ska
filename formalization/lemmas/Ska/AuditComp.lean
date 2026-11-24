@@ -972,3 +972,13 @@ open Formalization.SkaModel.Comp
 #print axioms Formalization.SkaModel.PokeM.compHyp_of_NCG
 #print axioms nc_c8tTail
 #print axioms c8t_example
+#print axioms minkC4_four
+#print axioms goalSemCM_of_returnsC
+#print axioms unaryGC_ok
+#print axioms four_runD
+#print axioms four_runN
+#print axioms runLC_n4_last
+#print axioms okc_fourC
+#print axioms uokc_fourC
+#print axioms uokc_fourA
+#print axioms four_example

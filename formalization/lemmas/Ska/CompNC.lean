@@ -217,6 +217,7 @@ inductive NC : Nat → Bool → Nomm → Prop
   | ind {lv : Nat} {t t' : Bool} {p q : Nomm} : NC 0 t p → NC 0 t' q → bareLitQ q = false →
       NC lv true (Nomm.n2 p q Option.none)
   | four {p : Nomm} : FragX (S := S) p → NC 1 false (Nomm.n4 p)
+  | n4 {t : Bool} {p : Nomm} : NC 0 t p → NC 0 false (Nomm.n4 p)
   | pure {nm : Nomm} : FragU (S := S) nm → NC 0 false nm
   | down {lv lv' : Nat} {t : Bool} {nm : Nomm} : NC lv t nm → lv' ≤ lv → NC lv' t nm
   | forget {lv : Nat} {nm : Nomm} : NC lv true nm → NC lv false nm

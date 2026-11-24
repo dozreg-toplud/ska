@@ -1,4 +1,5 @@
 import lemmas.Ska.CompNCJump
+import lemmas.Ska.CompNCFour
 
 /-!
 # The induction over `NC`
@@ -45,6 +46,7 @@ theorem hinted_nc (cod : Bell → Option Bool) {lv : Nat} {t : Bool} {nm : Nomm}
   | sevenN _ _ _ _ ihq ihp => exact hinted_noDirect_seven ihp ihq
   | ind => rfl
   | four hp => rw [hinted_pure cod _ (fragU_pure (FragU.x (FragX.four hp)))]; simp [fragU_pure (FragU.x (FragX.four hp))]
+  | n4 _ ih => simpa only [hinted, Nomm.pure] using ih
   | pure hf => rw [hinted_pure cod _ (fragU_pure hf)]; simp [fragU_pure hf]
   | down _ _ ih => exact ih
   | forget _ ih => exact ih
@@ -62,6 +64,7 @@ theorem fragU_of_nc {lv : Nat} {t : Bool} {nm : Nomm} (h : NC (S := S) lv t nm) 
   | sevenN _ _ _ hu _ _ => exact hu
   | ind => intro e; simp [Nomm.pure] at e
   | four hp => exact fun _ => FragU.x (FragX.four hp)
+  | n4 _ ih => exact fun e => FragU.four (ih e)
   | pure hf => exact fun _ => hf
   | down _ _ ih => exact ih
   | forget _ ih => exact ih
@@ -77,6 +80,7 @@ theorem nc_lv2_shape {lv : Nat} {t : Bool} {nm : Nomm} (h : NC (S := S) lv t nm)
   | sevenN => intro l; omega
   | ind => intro _; exact ⟨fun _ _ e => (by cases e), fun _ e => (by cases e)⟩
   | four => intro l; omega
+  | n4 => intro l; omega
   | pure => intro l; omega
   | down _ hl ih => intro l; exact ih (by omega)
   | forget _ ih => exact ih
@@ -167,6 +171,13 @@ theorem ncOK {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib code) (
     intro P f hA
     exact ⟨uokcU hok env (FragU.x (FragX.four hp)) hA, fun e => (by cases e), fun _ => lokcs_n4XA hok env hp hA,
       fun l => absurd l (by omega)⟩
+  | @n4 t p hp ihp =>
+    intro P f hA
+    have hh4 := hinted_nc env.cod (NC.n4 hp)
+    refine ⟨?_, fun e => (by cases e), fun l => absurd l (by omega), fun l => absurd l (by omega)⟩
+    rcases pure_or_hinted hh4 with e | hh
+    · exact uokcU hok env (fragU_of_nc (NC.n4 hp) e) hA
+    · exact uokc_fourA env (fun h => (ihp h).1) hh hA rfl
   | pure hf =>
     intro P f hA
     exact ⟨uokcU hok env hf hA, fun e => (by cases e), fun l => absurd l (by omega), fun l => absurd l (by omega)⟩
