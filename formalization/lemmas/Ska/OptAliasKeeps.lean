@@ -571,6 +571,168 @@ theorem akb_live {pick : List Nat → Nat} (hpick : ∀ l : List Nat, l ≠ [] �
 
 end
 
+/-! ## (d) The jump at the end of a block -/
+
+/-- Two splits of a list at a member absent from both prefixes are one. -/
+theorem split_unique {q : Nat} : ∀ (A A' C C' : List Nat), q ∉ A → q ∉ A' → A ++ q :: C = A' ++ q :: C' →
+    A = A' ∧ C = C'
+  | [], [], C, C', _, _, h => by simp only [List.nil_append, List.cons.injEq, true_and] at h; exact ⟨rfl, h⟩
+  | [], a :: A', C, C', _, h2, h => by
+    simp only [List.nil_append, List.cons_append, List.cons.injEq] at h
+    exact absurd (h.1 ▸ List.mem_cons_self) h2
+  | a :: A, [], C, C', h1, _, h => by
+    simp only [List.nil_append, List.cons_append, List.cons.injEq] at h
+    exact absurd (h.1 ▸ List.mem_cons_self) h1
+  | a :: A, a' :: A', C, C', h1, h2, h => by
+    simp only [List.cons_append, List.cons.injEq] at h
+    obtain ⟨e1, e2⟩ := split_unique A A' C C' (fun h' => h1 (List.mem_cons_of_mem _ h'))
+      (fun h' => h2 (List.mem_cons_of_mem _ h')) h.2
+    exact ⟨by rw [h.1, e1], e2⟩
+
+section
+variable {σ : Type} {lib : Lib} {O : Oracle σ} {c : Straight Map} {gul : Noun}
+
+/-- **The jump at the end of a walked block, with its pass**: at a
+configuration `x` of an execution from the entry that stands at the end of
+the body of a jumping block `q` (walked from `g1q` to `g2q`, its end state
+`st'`), with `AKept` and presence at `st'` on `bodyDone` of the whole body,
+when the end before takes the jump `j` to `o` and the pass before goes on
+(`Rp`): the end after (the block stored for `q` in the final state) takes a
+jump `j'` to `o` with the arguments renamed, the block after at `o` has the
+parameters of `o`, the pass after goes on (`Rp'`), and at the start of `o`
+(the walk up to `o`, its start state `st0`) `AKept` and presence hold on
+`DoneS` along `q :: epath es`. -/
+theorem akj_jump {pick : List Nat → Nat} (hpick : ∀ l : List Nat, l ≠ [] → pick l ∈ l) {nargs : Nat}
+    (hD : DInvS c.blocks) {topo : List Nat} {rev : Map (List Nat)} (hT : TopoInvR c.blocks topo rev)
+    {g : AGen Map} (h : aliasWalk pick nargs c.blocks topo (aliasInit rev) = some g)
+    {preq lq' : List Nat} {q : Nat} {g1q g2q : AGen Map} (htq : topo = preq ++ q :: lq')
+    (h1q : aliasWalk pick nargs c.blocks preq (aliasInit rev) = some g1q)
+    (h2q : aliasBlock pick nargs c.blocks g1q q = some g2q) {st' : ABody}
+    (hg2 : g2q.old = st'.old ∧ g2q.info q = some st'.loc ∧ g2q.imms q = some st'.imml)
+    {st : σ} {vals : List Noun} {t : Trace} {es : List (Nat × Nat)} {x : Path.Cfg σ Map} {bq : Blob}
+    (hfe : Path.FromEntry (lib := lib) (O := O) (c := c) (gul := gul) st vals t es x)
+    (hp : x.params = []) (hq : x.b.par = []) (hbody : x.b.body = []) (hxq : x.lab = q)
+    (hbq : HoonMap.get c.blocks q = some bq) (hfin : x.b.fin = bq.fin)
+    {out : List Pole} {rf : Termin × (Nat → List Nat) × Bool}
+    (hfinq : aliasFin st'.old st'.loc g1q.rev g1q.folded q bq.fin = some rf)
+    (hpbq : HoonMap.get g2q.new q = some { par := bq.par, body := out, fin := rf.1 }) {regs' : Map (Option Noun)}
+    (hk : AKept st' (fun x' => read x' x.regs) (fun x' => read x' regs')
+      (bodyDone (ClR c.blocks) bq.body (DoneS c.blocks preq (epath es) bq)))
+    (hP : APres st'.old x.regs regs' (bodyDone (ClR c.blocks) bq.body (DoneS c.blocks preq (epath es) bq)))
+    {j : Jmp} {bo : Blob} (htk : Path.taken x.regs x.b.fin = some j) (hbo : HoonMap.get c.blocks j.there = some bo)
+    {Rp : Map (Option Noun)} (hpass : evalPass j.args bo.par x.regs = some Rp) :
+    ∃ j' preo lo g1o g2o st0 Rp' pbo, HoonMap.get g.new q = some { par := bq.par, body := out, fin := rf.1 } ∧
+      Path.taken regs' rf.1 = some j' ∧
+      j'.there = j.there ∧ j'.args = j.args.map (Option.map g1o.old) ∧
+      HoonMap.get g.new j.there = some pbo ∧ pbo.par = bo.par ∧
+      evalPass j'.args bo.par regs' = some Rp' ∧
+      topo = preo ++ j.there :: lo ∧ aliasWalk pick nargs c.blocks preo (aliasInit rev) = some g1o ∧
+      aliasBlock pick nargs c.blocks g1o j.there = some g2o ∧ aStart nargs g1o j.there bo = some st0 ∧
+      AKept st0 (fun x' => read x' Rp) (fun x' => read x' Rp') (DoneS c.blocks preo (q :: epath es) bo) ∧
+      APres st0.old Rp Rp' (DoneS c.blocks preo (q :: epath es) bo) := by
+  have hS : AliasSSAB c.blocks := hD.2.1
+  have hpn : ParNodup c.blocks := hD.1.1.1.1
+  have hTo := hT.1.1
+  have hat := awa_entry_at hfe
+  obtain ⟨hπ, B, k1, hB, hfB, -, -⟩ := hat
+  rw [hxq] at hπ hB
+  rw [hbq] at hB; cases hB
+  have hRq : Reach c.blocks q := ssk_bpath_reach hπ q List.mem_cons_self
+  rw [hfin] at htk
+  have hj : j ∈ getJmps bq.fin := taken_mem htk
+  have hRo : Reach c.blocks j.there := Reach.jump hRq hbq hj
+  have hoT : j.there ∈ topo := hTo.2.2.2.1 _ hRo
+  obtain ⟨preo, lo, g1o, g2o, htopo, h1o, h2o, h3o⟩ := alias_start_parts h hoT
+  -- the walk invariant at `preo`
+  have hI : AWInv lib O c gul topo preo g1o := by
+    subst htopo
+    have := awa_walk_part (lib := lib) (O := O) (gul := gul) hpick hD preo [] (j.there :: lo) _ g1o
+      (by simpa using hTo) (by simpa using awa_init (lib := lib) (O := O) (gul := gul) hT) h1o
+    simpa using this
+  have hopre : j.there ∉ preo := fun h' =>
+    (List.nodup_append.mp (htopo ▸ hTo).1).2.2 _ h' _ List.mem_cons_self rfl
+  have hqpre : q ∈ preo := awr_pre (htopo ▸ hTo) (htopo ▸ hTo.2.2.2.1 _ hRq) hbq hj rfl
+  -- `preo` is `preq ++ q :: mid`
+  obtain ⟨A, mid, hA⟩ := List.append_of_mem hqpre
+  subst hA
+  have hnd : topo.Nodup := hTo.1
+  have hqA : q ∉ A := by
+    intro hm
+    rw [htopo] at hnd
+    have := (List.nodup_append.mp (List.nodup_append.mp hnd).1).2.2 q hm q List.mem_cons_self
+    exact this rfl
+  have hqpreq : q ∉ preq := fun hm => (List.nodup_append.mp (htq ▸ hnd)).2.2 q hm q List.mem_cons_self rfl
+  have e1 : A ++ q :: (mid ++ j.there :: lo) = preq ++ q :: lq' := by rw [← htq, htopo]; simp
+  obtain ⟨rfl, hlq⟩ := split_unique A preq _ _ hqA hqpreq e1
+  have htopo2 : topo = A ++ q :: (mid ++ j.there :: lo) := by rw [htopo]; simp
+  have hT2 := hT
+  rw [htopo2] at hT2
+  -- the walk over `mid` from `g2q` reaches `g1o`
+  have hwq : aliasWalk pick nargs c.blocks (A ++ [q]) (aliasInit rev) = some g2q := by
+    rw [awa_walk_append, h1q]; simp only [Option.bind_some, aliasWalk, h2q]
+  have hmid : aliasWalk pick nargs c.blocks mid g2q = some g1o := by
+    have e := h1o
+    rw [show A ++ q :: mid = (A ++ [q]) ++ mid by simp, awa_walk_append, hwq, Option.bind_some] at e
+    exact e
+  have htm : TopoOK c.blocks (A ++ q :: (mid ++ j.there :: lo)) := hT2.1.1
+  have hIq : AWInv lib O c gul topo (A ++ [q]) g2q := by
+    have := awa_walk_part (lib := lib) (O := O) (gul := gul) hpick hD (A ++ [q]) [] (mid ++ j.there :: lo) _ g2q
+      (by simpa using htm) (by simpa using awa_init (lib := lib) (O := O) (gul := gul) hT2) hwq
+    rw [htopo2]; simpa using this
+  have hiq : ARev c.blocks (A ++ q :: (mid ++ j.there :: lo)) (A ++ [q]) g2q := by
+    have := hIq.rev; rw [htopo2] at this; exact this
+  obtain ⟨hk1, hDm⟩ := akept_jump hS htm hiq hmid hπ hbq hj hg2.1.symm hk
+  have hP1 : APres g1o.old x.regs regs' (DoneE c.blocks (A ++ q :: mid) (epath es) bq) :=
+    apres_rebase hP fun d hd => hDm d hd
+  -- `EndOK` at `preo`
+  have hE := hI.ends st vals t es x bq j hfe hp hq hbody (by rw [hxq]; exact hqpre) (by rw [hxq]; exact hbq) hj
+  rw [hxq] at hE
+  obtain ⟨lq, mq, pb, hlq', hmq', hpb, -, hok, hab, htake⟩ := hE
+  have hqmid : q ∉ mid := fun hm => (List.nodup_cons.mp (List.nodup_append.mp htm.1).2.1).1 (List.mem_append_left _ hm)
+  have hframe := (awk_walk mid g2q g1o hmid).2 q hqmid
+  rw [hframe.1, hg2.2.1] at hlq'; cases hlq'
+  rw [hframe.2.1, hg2.2.2] at hmq'; cases hmq'
+  rw [hframe.2.2, hpbq] at hpb; cases hpb
+  have htkR : takenR (fun x' => read x' x.regs) bq.fin = some j := by rw [← afn_taken]; exact htk
+  obtain ⟨hqrev, j', hj'R, hj'o, hj'args, -⟩ := htake j htkR
+  -- the parts of the walk of `o`
+  have hne : g1o.rev j.there ≠ [] := List.ne_nil_of_mem hqrev
+  obtain ⟨info, imms, b1, edges, loc0, rb, rfo, f1, f2, f3, f4, f5, -, -, f8⟩ := awa_block_parts h2o (fun e => hne e.1)
+  rw [hbo] at f3; cases f3
+  have hA0 := aStart_of_parts f1 f2 f4 f5
+  rw [if_neg hne] at f1
+  have hau : ∀ u, some u ∈ j.args → DoneE c.blocks (A ++ q :: mid) (epath es) bq u := fun u hu =>
+    awi_fin_done hS hπ hbq hj (jmp_finRegs hj hu)
+  have htT : TopoOK c.blocks ((A ++ q :: mid) ++ j.there :: lo) := htopo ▸ hTo
+  obtain ⟨Rp', hpass', hk2, hP2⟩ := akp_edge hS hpn htT hI.oldw hRo hbo hopre hbq (hframe.1.trans hg2.2.1)
+    (hframe.2.1.trans hg2.2.2) (hframe.2.2.trans hpbq) hok hab hk1 hP1
+    hqrev (aedge_taken_mem hj'R) hj'o hj'args hau hpass f1 f2 f4 f5
+  -- the end after on the file after
+  have hrd : ∀ x' ∈ Path.finReads rf.1, read x' regs' = read x' x.regs := by
+    intro x' hx'
+    obtain ⟨y, hy, rfl⟩ := awa_fin_reads hfinq (hD.2.2 q bq hbq) x' hx'
+    have hyd : DoneE c.blocks (A ++ [q]) (epath es) bq y := awi_fin_done hS hπ hbq hj (awk_finReads_sub hy)
+    exact hk.old y (awa_doneE_body y hyd)
+  have htk' : Path.taken regs' rf.1 = some j' := by
+    rw [afn_taken, afn_taken_congr hrd]; exact hj'R
+  -- the blocks after in the final state
+  have hol : j.there ∉ lo := fun hm => (List.nodup_cons.mp (List.nodup_append.mp htT.1).2.1).1 hm
+  have hqo : q ≠ j.there := fun e => hopre (e ▸ hqpre)
+  have hql : q ∉ lo := by
+    intro hm
+    have := (List.nodup_append.mp htT.1).2.2 q hqpre q (List.mem_cons_of_mem _ hm)
+    exact this rfl
+  have hfl := (awk_walk lo g2o g h3o).2
+  refine ⟨j', A ++ q :: mid, lo, g1o, g2o, _, Rp', { par := bo.par, body := rb.1, fin := rfo.1 }, ?_, htk', hj'o,
+    hj'args, ?_, rfl, hpass', htopo, h1o, h2o,
+    hA0, hk2, hP2⟩
+  · rw [(hfl q hql).2.2, ((awk_block h2o).2 q hqo).2.2]
+    exact hframe.2.2.trans hpbq
+  · rw [(hfl _ hol).2.2, f8]
+    simp only [HoonMap.get_put, if_true]
+
+end
+
 end Opt
 end SkaModel
 end Formalization
