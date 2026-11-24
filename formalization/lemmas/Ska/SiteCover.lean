@@ -3,6 +3,12 @@ import lemmas.Ska.LessProvides
 /-!
 # `SiteCover` from a replay of the analysis and a comparison of two walks
 
+**A dead route.**  The theorems of this file are true, but they lead
+nowhere: `SitesMeet` and `BakesImply` are false on the real compiler
+(`SitesMeetFalse.lean`), and the baking they were to justify miscompiles
+across pokes (`VariantCollision.lean`).  The file is kept as a record; do
+not build on it.
+
 `knowT`: `+know` without folding and with `idc`, whose call product is read
 from a table `T` indexed by the sites so far, the callee's code bell and the
 site sock.  `+know false` with `dat` is the instance `datTab dat`

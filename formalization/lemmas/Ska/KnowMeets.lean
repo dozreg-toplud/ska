@@ -3,6 +3,12 @@ import lemmas.Ska.SitesMeetNF
 /-!
 # `KnowMeetsNF`: the run under a bake against the run without folding
 
+**A dead route.**  The theorems of this file are true, but they lead
+nowhere: `SitesMeet` and `BakesImply` are false on the real compiler
+(`SitesMeetFalse.lean`), and the baking they were to justify miscompiles
+across pokes (`VariantCollision.lean`).  The file is kept as a record; do
+not build on it.
+
 `KnowMeetsNF` (`SitesMeetNF.lean`) compares two runs of `+know` on one
 nomm: run A under a bake `s` with the poke's fold flag, run B under
 `less.cur` without folding.  The two subject socks share a noun (`Meets`),
