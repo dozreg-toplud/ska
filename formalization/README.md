@@ -208,6 +208,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompBakeNeed.lean` | `+bake-need` (arm `384468` of `K`, `bn_at`, its gate body `bnBody` and trap `bnLoop` cut into `bnTest`, `bnYes` with the baking trap `bnAll`, and `bnRec`) when nothing is baked: on a need with no cell of two `%none` and no `%both` with two `%none` halves (`NeedNorm`, true of every need of `+need-ord-alloc-regs`, `needNorm_noar`) and a sock that is `%void` or not wholly known (`all:ca` false) at every node of the need, with `hed:so` and `tel:so` down the walk (`NoBake`), the test of each node is false before `+need-fits` (`bn_test`), `+cons-need` rebuilds each cell (`cn_gate`), and the gate returns `[ned ~]` (`bn_loop`, `bn_gate`). |
 | `Compiler/CompFinish.lean` | The gate `finish` of `+compile-scc-in` (`%compile-scc-finish`, axis `0x2ab2dffd6fbffffffffe` of `K`, `fin_at`, its body `finBody`) on `~` in the subject of `member` (`finCtx`: `gen` at `62`, the tuple `[need-new laz ned-final bak o sur]` at `30`, the door `comp`, `done`, `cape.less.b` and `layer2` in the rest at `6`, `14`, `496`, `0x3ffffff`): `+coerce-lazy`, `+soft-done`, `+add-ops` of the `%imm` ops of `imm.bak = ~` (`fin_turn_nil`) and `+to-straight` of `[%next [[ned.bak ~] ~ ~] ~ o]` give the noun of `finTail`, the tail of `finishLF` (`finishLF_tail`, `fin_gate`); against `finishLF nm ord less (fun n => (n, []))` given the run and `+need-ord-alloc-regs` of `ord` (`fin_gate_finishLF`), from the product of `+collapse-shape` under the hypothesis `hsc` on `+shape-collapse` (`fin_after_cs`), with `bak = [ned-final ~]` from `+bake-need` under `NoBake` (`fin_bak`). |
 | `Compiler/CompSureOf.lean` | `+sure-of` (arm `0x2bae` of `K`, `so_at`, its body `soBody`) and `+inter1-to-inter2` (arm `0xbbbb`, `i2_at`, its body `i2Body` cut into the `+rep:in` `i2Rep` with its gate `i2Gate` and trap `i2Trap`, and the `+turn` `i2Turn`) on a fork-free input, against a model written here, since `lemmas/Ska` had none: `sureLook` (the trap: the walk down to an axis, `%this` where the shape has `%none`, the cells rebuilt with `+cons-need`, a former `%this` or `%both` as a `%both`), `sureOfStep` (the gate: `new` at axis `1` and inside the known part of `less`, a crash at `0`), `sureOf` (the fold over `lok` in the order of `+rep:in`).  `cn_gate_ord` (`+cons-need` on shapes, `consOrd`), `i2_trap`, `i2_gate_step`, `i2_rep`, `i2_gate` (`[sure ~]` on `[[[ned lok] ~] less]`, the `+turn` over `~` giving `~`), `so_gate` (`+sure-of` of `[[ned lok] less]` is `sureOf ned lok less`).  The nouns come from `tools/gen/member.py`. |
+| `Compiler/CompMember.lean` | The gate `member` of `+compile-scc-in` (`%compile-scc-fn`, axis `358182910` of `K`, `mem_at`), its body `memBody` cut by `tools/gen/member.py` into `memComp`, `memInl`, `memR2`, `memRes` (with `memFinal`: `memRun`, `memCs`, `memBak`, `memSur`, `memTuple`), `memAfter` (`memWas`, `memSurK`, `memPut`, `memMoved`, the push of `finArm`) and `memProd` (`memSprev`, `memNew`, `memOld`); `+inlined` (arm `0x5dde`, `inl_at`, its body `inlBody` a slot of the pill, not linked).  The subjects `memSam`, `memCtx` (`done`, `kids`, `map-local` on the core of `+compile-scc-in`), `memDCtx`, `memS0`, `memS3`.  Plumbing with the calls' products as nouns: `mem_entry` (to the final pass, `+inlined` as `hinl`), `mem_r3`, `mem_res`, the calls (`mem_run_call`, `mem_cs_call`, `mem_bak_call`, `mem_sur_call`, `mem_tuple_call`), `mem_final` (the pass returns `[[need-new laz ned-final bak o sur] gen]`), `mem_after` (`=.  cache  cache.gen`, `was` by `getF`, `sur` (`memSurKN`), the put by `putF`, `moved` (`memMovedN`), the push of `finish` on `finCtx`), `mem_prod_new` (with `map-local` and `top` empty: `[chg (put:by ~ b (finish ~)) cache]`, `chg` as `memChgN`). |
+| `Compiler/CompMemberGate.lean` | `member` against the model: `mem_to_finish` (from the sample `[b %done keep map-local top cache]` to the push of `finish` on `memFC`, with the links of `+run`, `+collapse-shape`, `+bake-need`, `+need-to-ordered`, `+sure-of`), `mem_rest_slots` (the slots `6`, `14`, `496`, `0x3ffffff` that `finish` reads), `mem_cond_frag`, `mem_laz_frag` (on the fragment the run leaves `cond` empty and `laz` fork-free), `mem_gate` (with `map-local` and `top` empty the gate returns `[chg [[b s] ~ ~] cache]` with `s` the noun of `finishLF nm ord cape (fun n => (n, []))`, and crashes when it is `none`; hypotheses: `hinl`, `hsc`, the run, `+need-ord-alloc-regs` and `+sure-of` succeed, `NoBake`, `getF`/`putF` on `sure.cache`). |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`, whose `keys` are those of `rap`, the order of `+rep:by` (`treapMap_keys`). |
@@ -1286,13 +1288,39 @@ import only its theorems.  So:
     of `[6 [0 30] ..]`: `mode.gen` set at `46`, `+run` (door arm `3071`,
     battery `2047`) on `[| nomm [%done ~] ~ ~]`, `+collapse-shape` (door
     arm `1526`) on `[nex cape.less.b]`, `+bake-need` (`0x5ddd4` of `K` at
-    `0x3fff`), `+sure-of` (`0x2bae` of `K`, not linked) of
+    `0x3fff`), `+sure-of` (`0x2bae` of `K`, linked later: `so_gate`) of
     `[(need-to-ordered ned.sure.laz) lok.sure.laz]` (`+need-to-ordered` is
     `0xaebc`, `nta_gate`); then `cache` at `8159` from `1790`, `was` by
     `+get:by` (arm `764`) on `sure.cache`, `sur`, `+put:by` (arm `340`) at
     `0x7fdff`, `moved` with `+fall` (`3007` of `layer2`), the push of
     `finish` (`finArm`), `+get:by` of `map-local` at `b`, and on `~` the
     product `[chg (put:by map-local b (finish ~)) cache]`.
+    L, 2026-11-24 (track A, `+sure-of` and `member`),
+    `Compiler/CompSureOf.lean`, `Compiler/CompMember.lean`,
+    `Compiler/CompMemberGate.lean`.  `+sure-of` had no model: `sureOf`
+    (written in `CompSureOf.lean`) folds the gate of the `+rep:in` of
+    `+inter1-to-inter2` over `lok`, and `so_gate` links it on every input
+    (it is `none` exactly on an axis `0` in `lok`).  The body of `member` is
+    cut into named parts (`tools/gen/member.py`, `mem_at`), and on the
+    final pass with `map-local` and `top` empty the gate returns the noun of
+    `finishLF nm ord cape (fun n => (n, []))` as the value of `b` in the
+    new `map-local`, with `chg` (`memChgN`) and the cache of `+inlined`
+    whose `sure.cache` has `sur` put at `b` (`mem_gate`).  On the way,
+    `mem_to_finish` shows that the subject at the push of `finish` is
+    `finCtx` (`memFC`) with the four slots of its rest (`mem_rest_slots`),
+    so `fin_gate_finishLF` applies.  The hypotheses that stay are nouns:
+    `+inlined` returns `[nm cache]` (`hinl`), `+shape-collapse` returns
+    `ord` (`hsc`), `+get:by` and `+put:by` of `sure.cache` (`hwas`,
+    `hput`, through `getF` and `putF`); and the success of the run, of
+    `+need-ord-alloc-regs` and of `+sure-of` (`hrunL`, `hnoar`, `hsur`),
+    `NoBake` for `+bake-need`, and the fragment (`nm` pure, no `%6`,
+    `tenOk`).  `cond` empty and the fork-free `laz` follow from the fragment
+    (`mem_cond_frag`, `mem_laz_frag`).  Not linked: the cases where the run,
+    `+collapse-shape` or `+sure-of` crash (the gate crashes, as `finishLF`
+    does for the first two), the branch where `map-local` holds `b`
+    (`memOld`, `+msg-need-ord`, `+coerce-soft`), and `+compile-scc-in`
+    around `member` (the cache test, `kids`, `done`, the `+roll` of `final`
+    and the `+uni:by` into `nary.cache`).
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
