@@ -10,7 +10,10 @@
 # old blocks, parameters of new blocks and of the targets of new jumps with arguments) write no
 # register of its result's sure need; i2 no register of a need of the result (sure need, every
 # lazy entry's) is a key of cond; i3 those ops write no register of a lazy entry's need; i4 the
-# sure need and the entries' needs share no register.  px: the run made a proxy.
+# sure need and the entries' needs share no register; i5 (a %ck-bad5 line) every register a new or
+# changed block mentions (parameters, ops, terminator with jump arguments) is below re-gen at the
+# end of the run.  px: the run made a proxy.  The output holds the sequence of lines of each case twice
+# (2026-11-24: 5860 lines, 704 with a proxy, no failure of i1 to i5).
 import os, sys
 D = os.path.dirname(os.path.abspath(__file__))
 W = os.path.abspath(os.path.join(D, '..', '..', '..'))
@@ -28,6 +31,9 @@ HELPERS = r'''++  chk-run
   =/  i3=?  =(~ (~(int in lzr) wri))
   =/  i4=?  =(~ (~(int in lzr) sur))
   =/  px=?  !=(cond.g0 cond.g1)
+  =/  ment=(list @uvre)  (chk-mentions g0 g1)
+  =/  i5=?  (levy ment |=(r=@uvre (lth r re-gen.g1)))
+  ?.  i5  [%ck-bad5 px=px re=re-gen.g1 ment=ment]
   ?:  &(i1 i2 i3 i4)  [%ck-ok px ~(wyt in sur) ~(wyt in wri) ~(wyt in lzr) ~(wyt in keys) ~(wyt in (~(int in sur) keys))]
   [%ck-bad i1=i1 i2=i2 i3=i3 i4=i4 px=px sur=sur lzr=lzr wri=wri keys=keys]
 ::
@@ -100,6 +106,19 @@ HELPERS = r'''++  chk-run
   =/  b=(unit blob)  (~(get by blocks.g) there.j)
   ?~  b  ~
   par.u.b
+::
+++  chk-mentions
+  |=  [g0=line-short g1=line-short]
+  ^-  (list @uvre)
+  =/  l=(list [k=@uwoo b=blob])  ~(tap by blocks.g1)
+  =|  acc=(list @uvre)
+  |-  ^-  (list @uvre)
+  ?~  l  acc
+  =/  b=blob  b.i.l
+  =/  has=?  (~(has by blocks.g0) k.i.l)
+  ?:  &(has =((~(got by blocks.g0) k.i.l) b))  $(l t.l)
+  =/  rs=(list @uvre)  (zing (turn body.b get-regs))
+  $(l t.l, acc :(weld par.b rs (get-regs fin.b) acc))
 ::
 ++  chk-writes
   |=  [g0=line-short g1=line-short]
