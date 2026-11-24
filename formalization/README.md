@@ -188,6 +188,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompKernNeed.lean` | The loop of `+kern-need` is `kernLoop` on every need (`kn_at`, so `KnAt` holds with no hypothesis): the case `%both` of `knLoop` cut into `knB1`, `knB2`, `knB4`, `knB5` (`kn_loop_eq`), one folded step lemma per part (`kn_s1` the fresh register, `kn_s2` the call on the tail, `kn_s3` the `=?` test and the register for the head, `kn_s4` the call on the head, `kn_s5` the `%cel` and the `%mov`), chained in `kn_both`; `kn_pair` (a pair is a `%both` on a fresh register), `kn_none`, `kn_this`. |
 | `Compiler/CompKerfLink.lean` | `+kern` (door arm `7167`, `comp_kern_at`, gate `kernBat`, walk gate `kernGB`) and `+kerf` (door arm `27572`, `comp_kerf_at`, gate `kerfBat`) on a fork-free lazy need: `comp_kern_need` (the gate of `+kern-need` is `kernNeed`, from `kn_at`), `kern_gate` (the walk gate at its own block: `+sure-require-look`, nothing on `%none`, the source `r` since `[5 [0 28] [0 252]]` holds, `+has:by` false by `crn_has`, `+kern-need`, `+add-ops`), `kern_ofSure` (the model's `kern o (ofSure s)` written out), `comp_kern` (`+kern` on `lazyNoun s` is `kern o (ofSure s)`, given `CompIn`, `CompLib`, `CompMolds`, `x.SoftOut o` and no looked-at axis `0`), `comp_kerf` (`+kerf` on the goal noun of a fork-free `next` is `kerf (Next.toL n)`, given `x.SoftOut g.bo`). |
 | `Compiler/CompUnaryEnd.lean` | The end of `+compile-unary` up to `+to-straight`: `cu_run_kerf` (from the entry state, the pill's `+run` on a pure nomm with no `%6` and `tenOk`, then the pill's `+kerf` on the `next` it returns in the door with the state it returns, is `runL` then `kerf`, the first two steps of `finishLU`; hypotheses `slot? 7 ctx = some compK` and `slot? 52 ctx = some cod` only); `cu_rp_at` (the `road-pure` that `+compile-unary` slams, axis `254` of `compTypes`, is the noun of `+ska-poke`'s) and `cu_rp_iff` (the gate returns `y` exactly when its trap does, for every trap). |
+| `Compiler/CompUnaryTop.lean` | `+compile-unary` from its entry state to `+to-straight`: `tsArm` and `tsBat` read from the pill (`comp_ts_at`, `ts_arm_eq`, `comp_ts_arm`), the stated link `TsAt` of `+to-straight` on the branch of the fragment (`cond` empty: on `tsSample` it returns `Straight.toNoun` of `toStraightF`), not proved; `cu_kern_cond` and `cu_cond_empty` (`cond` is empty after `+run` and `+kerf`, from `kc_run`); `cu_finish` (`+run`, `+kerf` on its product, `+to-straight` on the product of `+kerf` is `finishLU` mapped by `Straight.toNoun`, given `TsAt`). |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`. |
@@ -967,6 +968,35 @@ import only its theorems.  So:
     input `sub`, `proxies` is `|`).  Not linked yet: the loop of
     `+kern-need` (`KnAt`; `kernLoop_suf` and `kn_suf_eq` settle its
     `=?` tests), `+kern`, `+kerf`, `+to-straight`.
+    L, 2026-11-24 (track A, the end of `+compile-unary`),
+    `Compiler/CompKernNeed.lean`, `Compiler/CompKerfLink.lean`,
+    `Compiler/CompUnaryEnd.lean`, `Compiler/CompUnaryTop.lean`: the loop
+    of `+kern-need` is `kernLoop` on every need (`kn_at`, so `KnAt` holds;
+    the case `%both` cut into `knB1`, `knB2`, `knB4`, `knB5` with one folded
+    step per part), its gate is `kernNeed` (`comp_kern_need`); `+kern` on
+    `lazyNoun s` is `kern o (ofSure s)` (`comp_kern`, through `kern_gate`
+    and `comp_walk_lazy`; hypotheses `CompIn`, `CompLib`, `CompMolds`,
+    `x.SoftOut o`, no look at `0`); `+kerf` on a fork-free `next` is
+    `kerf (Next.toL n)` (`comp_kerf`); from the entry, `+run` then `+kerf`
+    is `runL` then `kerf` (`cu_run_kerf`), `cond` is then empty
+    (`cu_cond_empty`), and with `+to-straight` (door arm `6892`, gate
+    `tsBat`, read from the pill by `comp_ts_at`) the three calls give
+    `finishLU` mapped by `Straight.toNoun` (`cu_finish`), given the stated
+    link `TsAt` of `+to-straight` on its pure renaming branch, which is
+    the one step left.  The `road-pure` that `+compile-unary` slams is
+    axis `254` of `compTypes`, the noun of `+ska-poke`'s (`cu_rp_at`), so
+    the link of `RoadPure.lean` applies to its trap as it is (`cu_rp_iff`:
+    the gate returns `y` exactly when the trap does, for every trap).  The
+    gate of `+to-straight` pushes, in order: `blocks` (`[0 990]`), the gate
+    `unproxy`, `proxies` (`[6 [5 [1 0] [0 0x3f7e]] [1 1] [1 0]]`),
+    `flatten-need` of `ned.nex` (door arm `348` of the core at `63`), `r0`,
+    `n-in` (`+lent`), the trap `run`, the gate `ren` (`+lth` arm `2399`,
+    `+add` `36`, `+sub` `79` of the library), `start` (`+got:by`), then
+    `+del:by`, `+put:by` at `0`, the bunt `[0 0]` of `[re-gen m]`, and the
+    `|^` core whose `$` (arm `190`) runs `rewrite-input` and the `+rep:by`
+    over the blocks.  Not linked: the trap's own glue (the `=^`s, the core
+    `~(run comp gen)`, `+got:by` of `code`, the `:_` with `cache.gen`) and
+    the gate of `+to-straight` itself.
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
