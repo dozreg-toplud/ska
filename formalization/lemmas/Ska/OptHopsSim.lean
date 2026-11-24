@@ -514,3 +514,35 @@ theorem hopsKeeps [MapKeys Map] (fuel : Nat) : HopsKeeps (Map := Map) fuel :=
 end Opt
 end SkaModel
 end Formalization
+
+namespace Formalization
+namespace SkaModel
+namespace Opt
+
+variable {Map : Type → Type} [HoonMap Map]
+
+/-- **`+remove-hops` keeps distinct parameters**: a merged block has the
+parameters of its head. -/
+theorem hops_parNodup {fuel : Nat} {bl : Map Blob} {rev : Map (List Nat)} {topo : List Nat} {ch : Bool}
+    {bl' : Map Blob} (hn : topo.Nodup) (h0 : topo.head? = some 0) (h : removeHops fuel bl rev topo = some (ch, bl'))
+    (hnd : ParNodup bl) : ParNodup bl' := by
+  intro o m hm
+  obtain ⟨b, T, F, hb, -, rfl⟩ := (hops_blocks hn h0 h).back o m hm
+  exact hnd o b hb
+
+/-- **`+remove-hops` keeps the check of `+eval-pass`**: a merged block ends
+as a block before, and each target keeps its parameters. -/
+theorem hops_passOK {fuel : Nat} {bl : Map Blob} {rev : Map (List Nat)} {topo : List Nat} {ch : Bool}
+    {bl' : Map Blob} (hn : topo.Nodup) (h0 : topo.head? = some 0) (h : removeHops fuel bl rev topo = some (ch, bl'))
+    (hpc : PassOK bl) : PassOK bl' := by
+  have H := hops_blocks hn h0 h
+  intro o m j m2 hm hj hm2
+  obtain ⟨b, T, F, hb, hmt, rfl⟩ := H.back o m hm
+  obtain ⟨b2, T2, F2, hb2, -, rfl⟩ := H.back j.there m2 hm2
+  rcases hmt.fin_of with e | ⟨e, be, hbe, e'⟩
+  · exact hpc o b j b2 hb (by rw [← e]; exact hj) hb2
+  · exact hpc e be j b2 hbe (by rw [← e']; exact hj) hb2
+
+end Opt
+end SkaModel
+end Formalization

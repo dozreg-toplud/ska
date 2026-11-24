@@ -11,3 +11,5 @@ open Formalization.SkaModel.Opt
 #print axioms optimize_keeps
 #print axioms hops_keeps
 #print axioms hopsKeeps
+#print axioms hops_parNodup
+#print axioms hops_passOK
