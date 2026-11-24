@@ -158,6 +158,30 @@ theorem sub_of_cover {k ka L : Sock} (hy : ∃ y, Fits ka y) (hs : Sub ka L)
   | void => obtain ⟨y, hy⟩ := hy; exact absurd (hs y hy) id
   | mk cl dl => exact fun x hx => sub_app_cape cl dl ka hy hs x (hk cl dl rfl x hx)
 
+/-! ## Monotone sock operations, for the comparison of two walks -/
+
+/-- The cons of two blank socks is blank. -/
+theorem knit_blank {A B : Sock} (hA : A.Blank) (hB : B.Blank) : (So.knit A B).Blank := by
+  obtain ⟨l, d1, rfl, hl⟩ := hA
+  obtain ⟨r, d2, rfl, hr⟩ := hB
+  simp only [So.knit]
+  split
+  · exact dunno_blank
+  · refine ⟨_, _, rfl, ?_⟩
+    unfold Ca.con
+    split
+    · rfl
+    · simp [Cape.isNo, hl, hr]
+
+/-- **`+knit:so` is monotone**: a cons of socks that know more knows more. -/
+theorem sub_knit {a a' b b' : Sock} (ha : Sub a a') (hb : Sub b b') : Sub (So.knit a b) (So.knit a' b') := by
+  intro x hx
+  rcases knit_fits_inv hx with ⟨b1, b2⟩ | ⟨x1, x2, rfl, h1, h2⟩
+  · have e1 := blank_of_all fun z => ha z (b1.fits z)
+    have e2 := blank_of_all fun z => hb z (b2.fits z)
+    exact (knit_blank e1 e2).fits x
+  · exact knit_fits (ha _ h1) (hb _ h2)
+
 /-! ## The pieces -/
 
 variable {M : Type → Type → Type} [Treap M]
