@@ -190,6 +190,118 @@ theorem kernLoop_kop : ∀ (tgt : Need) (r : Nat) (acc : List Pole) (g g' : Gen 
     exact kernBoth_kop (fun r' acc g g' ops h' => ihh r' acc g g' ops h')
       (fun r' acc g g' ops h' => iht r' acc g g' ops h') hk ha
 
+theorem poleWr_sub {p : Pole} {r : Nat} (h : r ∈ poleWr p) : r ∈ poleRegs p := by
+  cases p <;> simp_all [poleWr, poleRegs]
+
+/-! ## What `+kerf` makes for a fork-free `%next` -/
+
+/-- **`+kerf` under a fork-free `%next sur th`**: the block `out` is the
+next label, the product register `pro` the next register, `+kern` makes no
+proxy (the lazy need has no entries and `out` is its own block), and the
+block `out` is `[A; hop th]` with `A` the ops of `+kern-need`, which mention
+`pro`, the registers of `sur` and fresh registers only, and fill `sur`
+from `pro`. -/
+theorem kerf_ofSure {sur : Sure S} {th : Jmp} {g g' : Gen Map} {out pro : Nat}
+    (h : kerf (⟨ofSure sur, th⟩ : NextL S) g = some ((out, pro), g')) (hd : g.drop = false) :
+    out = g.bo ∧ pro = g.re ∧ g'.bo = g.bo + 1 ∧ g'.drop = g.drop ∧ g'.cond = g.cond ∧ g'.tags = g.tags ∧
+    g.re + 1 ≤ g'.re ∧ ∃ A : List Pole,
+      (∀ k, HoonMap.get g'.blocks k = if k = g.bo then some ⟨[], A, Termin.hop th⟩ else HoonMap.get g.blocks k) ∧
+      (∀ p ∈ A, KOp p) ∧ RegsIn (fun x => x = g.re ∨ NMem sur.ned x ∨ (g.re + 1 ≤ x ∧ x < g'.re)) A ∧
+      (Distinct sur.ned → (∀ x, NMem sur.ned x → x < g.re) → KernSemS (Map := Map) sur g.re (g.re + 1) A) := by
+  unfold kerf at h
+  obtain ⟨o', ge, he, h⟩ := bind_some h
+  rw [emit_apply] at he
+  simp only [Option.some.injEq, Prod.mk.injEq] at he
+  obtain ⟨rfl, rfl⟩ := he
+  obtain ⟨r, g4, h3, h4⟩ := bind_some h
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h4
+  obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h4
+  rw [kern_eq] at h3
+  obtain ⟨r', g1, h1, h3⟩ := bind_some h3
+  rw [re_apply] at h1
+  simp only [Option.some.injEq, Prod.mk.injEq] at h1
+  obtain ⟨rfl, rfl⟩ := h1
+  obtain ⟨gg, g2, h2, h3⟩ := bind_some h3
+  rw [get_apply] at h2
+  simp only [Option.some.injEq, Prod.mk.injEq] at h2
+  obtain ⟨rfl, rfl⟩ := h2
+  have hde : (g.emitted ⟨[], [], Termin.hop th⟩).drop = false := hd
+  simp only at h3
+  rw [if_neg (show ¬ ((g.emitted ⟨[], [], Termin.hop th⟩).drop = true) by simp [hde])] at h3
+  obtain ⟨u, g3, h5, h6⟩ := bind_some h3
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h6
+  obtain ⟨e6, rfl⟩ := h6
+  subst e6
+  simp only [ofSure, walkLazy] at h5
+  obtain ⟨u1, g5, h7, h8⟩ := bind_some h5
+  simp only [List.isEmpty_nil, Bool.and_self, ↓reduceIte, pure_apply, Option.some.injEq,
+    Prod.mk.injEq] at h8
+  obtain ⟨-, rfl⟩ := h8
+  -- the gate at `out`
+  unfold kernGate at h7
+  obtain ⟨ned, g6, h9, h7⟩ := bind_some h7
+  have L := sureRequireLook_spec h9
+  obtain ⟨kk, e1⟩ := L.gen
+  subst e1
+  have lk : g.re + 1 ≤ kk := L.le
+  have eb : ∀ k, HoonMap.get (g.emitted ⟨[], [], Termin.hop th⟩).blocks k =
+      if k = g.bo then some ⟨[], [], Termin.hop th⟩ else HoonMap.get g.blocks k := fun k => by
+    simp only [Gen.emitted, hd, Bool.false_eq_true, ↓reduceIte, HoonMap.get_put]
+  by_cases en : ned = Need.none
+  · rw [if_pos en] at h7
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h7
+    obtain ⟨-, rfl⟩ := h7
+    subst en
+    refine ⟨rfl, rfl, rfl, rfl, rfl, rfl, lk, [], fun k => eb k, fun _ h => absurd h List.not_mem_nil,
+      RegsIn.nil _, fun _ _ => ?_⟩
+    intro lib σ O c gul st t R v _
+    exact ⟨fun _ => ⟨R, Runs.nil R, holdsS_of_sure L trivial, fun _ _ _ => rfl⟩,
+      fun nf => absurd ((fits_sure L v).mp trivial) nf⟩
+  rw [if_neg en] at h7
+  obtain ⟨src, g7, hs, h7⟩ := bind_some h7
+  simp only [↓reduceIte, pure_apply, Option.some.injEq, Prod.mk.injEq] at hs
+  obtain ⟨rfl, rfl⟩ := hs
+  rw [show noSoft g.bo = false from rfl] at h7
+  simp only [Bool.false_eq_true, ↓reduceIte] at h7
+  obtain ⟨ops, g8, h10, h11⟩ := bind_some h7
+  obtain ⟨Ak, hA, K⟩ := kernLoop_spec ned _ [] _ g8 ops h10
+  simp only [List.append_nil] at hA
+  rw [hA] at h10 h11
+  have kop := kernLoop_kop ned _ [] _ g8 Ak h10 (fun _ h => absurd h List.not_mem_nil)
+  obtain ⟨n, rfl⟩ := K.gen
+  have l3 : kk ≤ n := K.le
+  have RI := kernLoop_lt (fun x => x = g.re ∨ NMem sur.ned x ∨ (g.re + 1 ≤ x ∧ x < n)) ned g.re [] _ _ Ak h10
+    (Or.inl rfl) (fun x hx => by
+      rcases L.mem x hx with h' | ⟨a, b⟩
+      · exact Or.inr (Or.inl h')
+      · exact Or.inr (Or.inr ⟨a, by simp only at b; omega⟩))
+    (fun x a b => Or.inr (Or.inr ⟨by simp only at a; omega, b⟩)) (RegsIn.nil _)
+  obtain ⟨b, hb, rfl⟩ := addOps_spec h11 hde
+  have hb' : b = ⟨[], [], Termin.hop th⟩ := by
+    have := hb; simp only [eb, ↓reduceIte] at this
+    exact (Option.some.inj this).symm
+  subst hb'
+  refine ⟨rfl, rfl, rfl, rfl, rfl, rfl, by simp only; omega, Ak, fun k => ?_, kop, RI, ?_⟩
+  · simp only [HoonMap.get_put, List.append_nil]
+    by_cases ek : k = g.bo
+    · simp [ek]
+    · rw [if_neg ek, if_neg ek, eb, if_neg ek]
+  intro dist hlt
+  have dn : Distinct ned := L.dist dist (fun x hx => by have := hlt x hx; simp only [Gen.emitted]; omega)
+  have lt2 : ∀ x, NMem ned x → x < kk := fun x hx => by
+    rcases L.mem x hx with h' | ⟨_, b⟩
+    · have := hlt x h'; omega
+    · simp only at b; omega
+  have KS := K.sem dn lt2
+  intro lib σ O c gul st t R v hR
+  obtain ⟨S1, S2⟩ := KS lib σ O c gul st t R v hR
+  refine ⟨fun f => ?_, fun nf => S2 fun f => nf ((fits_sure L v).mp f)⟩
+  obtain ⟨R', hr', hh, hk⟩ := S1 ((fits_sure L v).mpr f)
+  exact ⟨R', hr', holdsS_of_sure L hh, fun x hx hn => hk x (by simp only; omega) fun hm => by
+    rcases L.mem x hm with h' | ⟨a, _⟩
+    · exact hn h'
+    · simp only [Gen.emitted] at a; omega⟩
+
 /-! ## `OutGoal` of a block that fills the need -/
 
 /-- **A block `[ops; hop th]` whose ops fill `sur` from `pro` and keep the
