@@ -14,12 +14,12 @@ in the rest of the chain, and `ssk_mt_first` (by induction on `MTail`) turns
 after lifts to a path before through the chains (`ssk_mt_path`), every
 definition of a chain member being one of the merged block.
 
-`DefOnceB` after the pass is left: it needs the positions of the merged body
-mapped injectively to definitions before, the chains of two reachable merged
-blocks disjoint (a chain member's one predecessor in `rev` is consumed by the
-merge), and a dead fill kept at the end of the merged body.  So the driver
-theorem **`optimize_keeps_ssaO`** assumes of the passes of the loop only
-`HopsOnce`: that `+remove-hops` gives `DefOnceB` on `AliasSSAB` input.
+`DefOnceB` after the pass is `HopsOnce`, proved in `OptAliasSSAOnce.lean`
+(`hopsOnce_proved`): the positions of the merged body go injectively to
+definitions before, the chains of two reachable merged blocks are disjoint,
+and a dead fill stays at the end of the merged body.  The driver theorem
+**`optimize_keeps_ssaO`** here takes `HopsOnce` as a hypothesis, and
+`optimize_keeps_ssaD` of that file discharges it.
 -/
 
 namespace Formalization

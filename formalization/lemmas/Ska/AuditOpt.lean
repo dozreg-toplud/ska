@@ -34,6 +34,8 @@ import lemmas.Ska.OptSwitchWalkAll
 import lemmas.Ska.OptDriverSwitch
 import lemmas.Ska.OptSwitchSimG
 import lemmas.Ska.OptSwitchPlain
+import lemmas.Ska.OptAliasSSAOnce
+import lemmas.Ska.OptAliasSound
 
 /-! Axioms of the theorems about `+optimize`. -/
 
@@ -216,3 +218,11 @@ open Formalization.SkaModel.Opt
 #print axioms info_joinL
 #print axioms info_joinR
 #print axioms info_param
+#print axioms hk_sites
+#print axioms hk_disj
+#print axioms hk_once
+#print axioms hopsOnce_proved
+#print axioms optimize_keeps_ssaD
+#print axioms as_op
+#print axioms as_frame
+#print axioms as_sem
