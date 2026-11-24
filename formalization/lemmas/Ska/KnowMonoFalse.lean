@@ -3,6 +3,10 @@ import lemmas.Ska.SitesMeet
 /-!
 # `KnowMono` does not follow from the sock operations
 
+**Obsolete for good** since the guard of commit 8f2162e in `+bake-graph`:
+`bakes_ok` (`BakeImp.lean`) needs no `SitesMeet`, of whose route `KnowMono`
+was a part.
+
 `KnowMono` (`SitesMeet.lean`) asks that each site of `+know` under a bake
 `s` below `less.cur` knows at least what a site of the same callee knows
 under `less.cur`.  This file shows that the model of `+know` alone does not

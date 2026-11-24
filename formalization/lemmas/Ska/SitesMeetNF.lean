@@ -3,8 +3,9 @@ import lemmas.Ska.SitesMeet
 /-!
 # `SitesMeet` against `+know` without folding
 
-**A dead route.**  The theorems of this file are true, but they lead
-nowhere: `SitesMeet` and `BakesImply` are false on the real compiler
+**Obsolete for good** since the guard of commit 8f2162e in `+bake-graph`:
+`bakes_ok` (`BakeImp.lean`) needs no `SitesMeet`.  **A dead route.**  The
+theorems of this file are true, but they lead nowhere: `SitesMeet` and `BakesImply` are false on the real compiler
 (`SitesMeetFalse.lean`), and the baking they were to justify miscompiles
 across pokes (`VariantCollision.lean`).  The file is kept as a record; do
 not build on it.
