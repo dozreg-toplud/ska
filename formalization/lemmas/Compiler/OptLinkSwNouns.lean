@@ -56,13 +56,21 @@ def swTOClq : Noun :=
 def swTOEqq : Noun :=
   (C (A 6) (C (C (A 3) (C (A 0) (A 11))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x717165)) (C (A 0) (A 22)))) (C (C (A 6) (C (C (A 3) (C (A 0) (A 23))) (C (C (A 6) (C (C (A 3) (C (A 0) (A 47))) (C (C (A 6) (C (C (A 3) (C (A 0) (A 95))) (C (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 190))) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 380)))) (C (A 1) (A 1))))) (C (C (A 6) (C (C (A 3) (C (A 0) (A 191))) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 382)))) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (A 1) (A 1)))))
 
+/-- The unit `h` of `test-of` when the first op is no `%hed`. -/
+def swTOH1 : Noun :=
+  (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 10))) (C (C (A 5) (C (C (A 1) (A 0x646568)) (C (A 0) (A 20)))) (C (A 1) (A 1))))) (C (C (C (A 1) (A 0)) (C (A 7) (C (C (A 0) (A 10)) (C (C (A 0) (A 6)) (C (A 0) (A 7)))))) (C (A 1) (A 0)))))
+
+/-- The unit `m` of `test-of` when the first op is no `%imm`. -/
+def swTOM1 : Noun :=
+  (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 26))) (C (C (A 5) (C (C (A 1) (A 0x6d6d69)) (C (A 0) (A 52)))) (C (A 1) (A 1))))) (C (C (C (A 1) (A 0)) (C (A 7) (C (C (A 0) (A 26)) (C (C (A 0) (A 6)) (C (A 0) (A 7)))))) (C (A 1) (A 0)))))
+
 /-- The unit `h` of `test-of`: the `%hed` of the two ops. -/
 def swTOH : Noun :=
-  (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 4))) (C (C (A 5) (C (C (A 1) (A 0x646568)) (C (A 0) (A 8)))) (C (A 1) (A 1))))) (C (C (C (A 1) (A 0)) (C (A 7) (C (C (A 0) (A 4)) (C (C (A 0) (A 6)) (C (A 0) (A 7)))))) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 10))) (C (C (A 5) (C (C (A 1) (A 0x646568)) (C (A 0) (A 20)))) (C (A 1) (A 1))))) (C (C (C (A 1) (A 0)) (C (A 7) (C (C (A 0) (A 10)) (C (C (A 0) (A 6)) (C (A 0) (A 7)))))) (C (A 1) (A 0))))))))
+  (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 4))) (C (C (A 5) (C (C (A 1) (A 0x646568)) (C (A 0) (A 8)))) (C (A 1) (A 1))))) (C (C (C (A 1) (A 0)) (C (A 7) (C (C (A 0) (A 4)) (C (C (A 0) (A 6)) (C (A 0) (A 7)))))) swTOH1)))
 
 /-- The unit `m` of `test-of`: the `%imm` of the two ops. -/
 def swTOM : Noun :=
-  (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 12))) (C (C (A 5) (C (C (A 1) (A 0x6d6d69)) (C (A 0) (A 24)))) (C (A 1) (A 1))))) (C (C (C (A 1) (A 0)) (C (A 7) (C (C (A 0) (A 12)) (C (C (A 0) (A 6)) (C (A 0) (A 7)))))) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 26))) (C (C (A 5) (C (C (A 1) (A 0x6d6d69)) (C (A 0) (A 52)))) (C (A 1) (A 1))))) (C (C (C (A 1) (A 0)) (C (A 7) (C (C (A 0) (A 26)) (C (C (A 0) (A 6)) (C (A 0) (A 7)))))) (C (A 1) (A 0))))))))
+  (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 12))) (C (C (A 5) (C (C (A 1) (A 0x6d6d69)) (C (A 0) (A 24)))) (C (A 1) (A 1))))) (C (C (C (A 1) (A 0)) (C (A 7) (C (C (A 0) (A 12)) (C (C (A 0) (A 6)) (C (A 0) (A 7)))))) swTOM1)))
 
 /-- `(lth c (bex 31))` in `test-of`. -/
 def swTOLth : Noun :=

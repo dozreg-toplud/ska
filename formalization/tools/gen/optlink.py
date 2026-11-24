@@ -699,6 +699,8 @@ elif WHICH == 'switch':
              ('swUses', uses, '`uses`: how many times each register is mentioned.'),
              ('swTOClq', toclq, '`?=([%clq * [~ *] [~ *]] fin.b)` in `test-of`.'),
              ('swTOEqq', toeqq, '`?=([%eqq * * [~ *] [~ *]] fin.yb)` in `test-of`.'),
+             ('swTOH1', dig(toh, [15]), 'The unit `h` of `test-of` when the first op is no `%hed`.'),
+             ('swTOM1', dig(tom, [15]), 'The unit `m` of `test-of` when the first op is no `%imm`.'),
              ('swTOH', toh, 'The unit `h` of `test-of`: the `%hed` of the two ops.'),
              ('swTOM', tom, 'The unit `m` of `test-of`: the `%imm` of the two ops.'),
              ('swTOLth', tolth, '`(lth c (bex 31))` in `test-of`.'),
