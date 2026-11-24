@@ -651,16 +651,17 @@ def ResP (res : ResGo M R) : Prop :=
 
 /-- What the `resolve` loop begun with `orig` keeps: `ResP` for the current
 identity, when it is `orig` or the memo lookup at `orig` misses (after a
-`%he` step the loop asks `+git:mi` at `orig` again, on the same `done`). -/
+`%he` step the loop asks `+git:mi` at `orig` again, on the same `done`), and
+`orig.1` is well formed (the `%rec` branch patches with it). -/
 def ResPL (orig : Ident) (res : ResGo M R) : Prop :=
-  ∀ idT gs r gs', (idT = orig ∨ gitMi gs.st.done orig.2 orig.1 = some none) →
+  ∀ idT gs r gs', (idT = orig ∨ gitMi gs.st.done orig.2 orig.1 = some none) → WellFormed orig.1 →
     SInv gs.st → WellFormed idT.1 → res idT gs = some (r, gs') →
     SInv gs'.st ∧ GStepsR (gCore gs.st.g) (gCore gs'.st.g) ∧ Keep gs.st.stk (· ∈ gs.st.stk) gs.st gs'.st ∧
       gs'.gen = gs.gen ∧ WellFormed r.2.prod
 
 theorem resP_of_loop {resl : Ident → ResGo M R} (h : ∀ orig, ResPL orig (resl orig)) :
     ResP (fun i => resl i i) :=
-  fun idT gs r gs' hi hw e => h idT idT gs r gs' (Or.inl rfl) hi hw e
+  fun idT gs r gs' hi hw e => h idT idT gs r gs' (Or.inl rfl) hw hi hw e
 
 /-- What `+analyze` keeps. -/
 def AnaP (ana : AnaGo M R) : Prop :=
@@ -705,7 +706,7 @@ theorem resOK_of_resP {res : ResGo M R} (h : ResP res) (st0 : SkaState M R) : Re
 
 theorem resolveStep_ok (env : Env R) {orig : Ident} {resolve : ResGo M R} {analyze : AnaGo M R}
     (hres : ResPL orig resolve) (hana : AnaP analyze) : ResPL orig (resolveStep env resolve analyze orig) := by
-  intro idT gs r gs' horig hi hw e
+  intro idT gs r gs' horig hwo hi hw e
   unfold resolveStep at e
   cases hg : Treap.get gs.st.g idT with
   | some d =>
@@ -727,11 +728,7 @@ theorem resolveStep_ok (env : Env R) {orig : Ident} {resolve : ResGo M R} {analy
     · cases e
     · rename_i m hm
       cases e
-      have hw' : WellFormed orig.1 := by
-        rcases horig with rfl | hmiss
-        · exact hw
-        · rw [hmiss] at hm; cases hm
-      exact ⟨hi, GStepsR.refl _, Keep.refl' _ rfl rfl rfl, rfl, gitMi_wf hi.done_wf hw' hm⟩
+      exact ⟨hi, GStepsR.refl _, Keep.refl' _ rfl rfl rfl, rfl, gitMi_wf hi.done_wf hwo hm⟩
     · rename_i hmiss
       split at e
       · cases e
@@ -740,13 +737,13 @@ theorem resolveStep_ok (env : Env R) {orig : Ident} {resolve : ResGo M R} {analy
           rcases recursiveCall_cases hrc with ⟨hb, _⟩ | ⟨_, j, hj, hm, _⟩
           · cases hb
           · exact wf_msgSock hw (hi.wf_stk hj) hm
-        exact hres i gs r gs' (Or.inr hmiss) hi hwi e
+        exact hres i gs r gs' (Or.inr hmiss) hwo hi hwi e
       · rename_i i hrc
         simp only [Option.map_eq_some_iff] at e
         obtain ⟨o, _, e⟩ := e
         cases e
         refine ⟨hi, GStepsR.refl _, Keep.refl' _ rfl rfl rfl, rfl, ?_⟩
-        exact wf_patchDatum (d := (gitG gs.st.g i).core) (hi.wf_gitG i) hw
+        exact wf_patchDatum (d := (gitG gs.st.g i).core) (hi.wf_gitG i) hwo
       · simp only [Option.map_eq_some_iff] at e
         obtain ⟨⟨low, st'⟩, ha, e⟩ := e
         cases e
@@ -945,7 +942,7 @@ def AllP (env : Env R) (memoF : Memo M) (n : Nat) : Prop :=
     PassP (passLoop env memoF n) ∧ MemP (memberLoop env memoF n)
 
 theorem allP_zero (env : Env R) (memoF : Memo M) : AllP env memoF 0 := by
-  refine ⟨fun _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ h => ?_,
+  refine ⟨fun _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ h => ?_,
     fun _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ _ _ _ h => ?_⟩
   · rw [resolve_zero] at h; cases h
   · rw [analyze_zero] at h; cases h

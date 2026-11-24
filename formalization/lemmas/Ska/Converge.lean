@@ -284,6 +284,12 @@ theorem answers_rel {lib : Lib} {G : Entry → Prop} (hL : LessRel G) (hP : Prod
     refine ⟨fun lc dl hl y hy => huge_less hs ht hl hy, fun y gul p hy hm => ?_⟩
     obtain ⟨hR, _⟩ := hP _ he y gul p hy hm
     exact ⟨provO_iff.mp (provO_patchProd hs _ _ _ (provO_iff.mpr hR)), statOK_patchProd _ _⟩
+  | @hitGen e s s0 he ht hg =>
+    intro hs0
+    have hs : s ≠ Sock.void := fun e' => hs0 (hg.void_inv e')
+    refine ⟨fun lc dl hl y hy => huge_less hs ht hl (hg.appFits lc (some y) hy), fun y gul p hy hm => ?_⟩
+    obtain ⟨hR, _⟩ := hP _ he y gul p hy hm
+    exact ⟨provO_iff.mp (provO_patchProd hs0 _ _ _ (provO_iff.mpr hR)), statOK_patchProd _ _⟩
   | @gen s s' m f a hm _ ih =>
     intro hs
     have hg := msgSock_genLe hs hm

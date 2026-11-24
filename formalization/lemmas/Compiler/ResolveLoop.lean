@@ -66,6 +66,10 @@ theorem resolveStepH_self (env : Env R) (resolve : ResGo M R) (analyze : AnaGo M
     (gen : GenS M R) :
     resolveStepH env resolve analyze i i gen = Ana.resolveStep env resolve analyze i i gen := rfl
 
+/-- `Ana.resolveStep` now patches with `orig.1` in the `%rec` branch, so it is
+the Hoon's turn of the loop on every identity. -/
+theorem resolveStepH_eq : resolveStepH (M := M) (R := R) = Ana.resolveStep := rfl
+
 /-- The subject of the loop `resolve` on the identity `idT`. -/
 noncomputable def resSubj (regsNoun : R → Noun) (rest fol : Noun) (sub : Anno) (seat mk : Option Noun)
     (bc df : Bool) (gen : GenS FinMap R) (fa fb : Noun) (f s : FolOut) (idT : Ident) : Noun :=

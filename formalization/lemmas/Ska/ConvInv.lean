@@ -34,6 +34,8 @@ open Nock
 inductive AnsW (G : Entry → Prop) : Sock → Noun → TabEntry → Prop where
   | exact {e : Entry} : G e → AnsW G e.more e.fol e.d.tab
   | hit {e : Entry} {s : Sock} : G e → hitTest e s = some true → AnsW G s e.fol (patchDatum e.d s).tab
+  | hitGen {e : Entry} {s s0 : Sock} : G e → hitTest e s = some true → GenLe s0 s →
+      AnsW G s0 e.fol (patchDatum e.d s0).tab
   | gen {s s' m : Sock} {f : Noun} {a : TabEntry} : WellFormed s' → NormSock s' → msgSock s s' = some m →
       AnsW G m f a → AnsW G s f a
 
@@ -69,6 +71,10 @@ theorem AnsW.transfer {G G' : Entry → Prop} (hG : ∀ e, G e → ∃ e', G' e'
     obtain ⟨e', he', hal⟩ := hG _ he
     have := AnsW.hit (G := G') he' (by rw [hitTest_alike hal]; exact ht)
     rw [hal.2.1, patchDatum_tab_alike hal] at this; exact this
+  | hitGen he ht hg =>
+    obtain ⟨e', he', hal⟩ := hG _ he
+    have := AnsW.hitGen (G := G') he' (by rw [hitTest_alike hal]; exact ht) hg
+    rw [hal.2.1, patchDatum_tab_alike hal] at this; exact this
   | gen hw hn hm _ ih => exact AnsW.gen hw hn hm ih
 
 theorem AnsW.mono {G G' : Entry → Prop} (hG : ∀ e, G e → G' e) {s : Sock} {f : Noun} {a : TabEntry}
@@ -80,6 +86,7 @@ theorem AnsW.toAnswers {G : Entry → Prop} {s : Sock} {f : Noun} {a : TabEntry}
   induction h with
   | exact he => exact Answers.exact he
   | hit he ht => exact Answers.hit he ht
+  | hitGen he ht hg => exact Answers.hitGen he ht hg
   | gen _ _ hm _ ih => exact Answers.gen hm ih
 
 theorem AnsW.wf {G : Entry → Prop} (hG : ∀ e, G e → WellFormed e.more ∧ WellFormed e.d.prod)
@@ -87,6 +94,7 @@ theorem AnsW.wf {G : Entry → Prop} (hG : ∀ e, G e → WellFormed e.more ∧ 
   induction h with
   | exact he => exact fun _ => (hG _ he).2
   | hit he _ => exact fun hs => wf_patchDatum (hG _ he).2 hs
+  | hitGen he _ _ => exact fun hs => wf_patchDatum (hG _ he).2 hs
   | gen hw _ hm _ ih => exact fun hs => ih (wf_msgSock hs hw hm)
 
 theorem AnsW.norm {G : Entry → Prop} (hG : ∀ e, G e → NormSock e.d.prod)
@@ -94,6 +102,7 @@ theorem AnsW.norm {G : Entry → Prop} (hG : ∀ e, G e → NormSock e.d.prod)
   induction h with
   | exact he => exact fun _ => hG _ he
   | hit he _ => exact fun hs => normSock_patchDatum (hG _ he) hs
+  | hitGen he _ _ => exact fun hs => normSock_patchDatum (hG _ he) hs
   | gen _ hn hm _ ih => exact fun hs => ih (normSock_msgSock hs hn hm)
 
 theorem answers_mono {G G' : Entry → Prop} (hG : ∀ e, G e → G' e) {s : Sock} {f : Noun} {a : TabEntry}
@@ -101,7 +110,30 @@ theorem answers_mono {G G' : Entry → Prop} (hG : ∀ e, G e → G' e) {s : Soc
   induction h with
   | exact he => exact Answers.exact (hG _ he)
   | hit he ht => exact Answers.hit (hG _ he) ht
+  | hitGen he ht hg => exact Answers.hitGen (hG _ he) ht hg
   | gen hm _ ih => exact Answers.gen hm ih
+
+/-- The subject socks of the `resolve` loop: from the sock `s` it began
+with, each `%he` step goes to `+msg-sock` of the current sock and a partner
+that is well formed and normal (a member of the stack). -/
+inductive HeChain : Sock → Sock → Prop where
+  | refl (s : Sock) : HeChain s s
+  | snoc {s t t' m : Sock} : HeChain s t → WellFormed t' → NormSock t' → msgSock t t' = some m →
+      HeChain s m
+
+/-- An answer at the end of a chain is an answer at its start (by `gen`). -/
+theorem HeChain.lift {G : Entry → Prop} {s t : Sock} (h : HeChain s t) {f : Noun} {a : TabEntry} :
+    AnsW G t f a → AnsW G s f a := by
+  induction h with
+  | refl => exact id
+  | snoc _ hw hn hm ih => exact fun ha => ih (AnsW.gen hw hn hm ha)
+
+/-- The end of a chain generalizes its start. -/
+theorem HeChain.genLe {s t : Sock} (h : HeChain s t) (hs : s ≠ Sock.void) : GenLe s t := by
+  induction h with
+  | refl => exact GenLe.refl _
+  | snoc _ _ _ hm ih =>
+    exact ih.trans (msgSock_genLe (fun e => hs (ih.void_inv e)) hm)
 
 theorem knit_nv {a b : Sock} (ha : a ≠ Sock.void) (hb : b ≠ Sock.void) : So.knit a b ≠ Sock.void := by
   cases a with

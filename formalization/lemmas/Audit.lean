@@ -400,3 +400,4 @@ open Formalization
 #print axioms Compiler.resolve_step
 #print axioms Compiler.resolve_le
 #print axioms Compiler.resLe_resolveH
+#print axioms Compiler.resolveStepH_eq
