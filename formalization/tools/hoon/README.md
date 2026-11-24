@@ -48,3 +48,6 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     `[%0 7]`, `+mock` `[%2 ~]` (2026-11-24).  `collide0.hoon`: the second formula alone agrees.
                     `collide-vars.hoon`: after each poke, `H`'s code bells, their variants' bakes and nomms
                     (two code bells list the one variant, whose nomm is `[7 [0 1] [1 7]]`)
+* `closed.hoon`     `GraphClosed` of `lemmas/Ska/AnaEnds.lean` on the graph `+ska-callgraph` returns, over the 26 pokes of
+                    `sitesmeet4.hoon`, `he2.hoon`, `voidscc.hoon`, `prodsame.hoon` with the memo threaded: 1760 entries,
+                    4052 callee edges, no callee missing, every root an entry (2026-11-24)

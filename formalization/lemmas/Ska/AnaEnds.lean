@@ -21,7 +21,9 @@ taken, and the recursion of the analysis is finite.
    `defer` is set), and an inlined call analyses a formula that
    `+inlineable` accepts, which has no `%2` and no `%9`, so an inlined
    formula inlines nothing.  Every other exit of `fol-loop` is a direct call
-   through `resolve`.
+   through `resolve`.  Proved for the formulas that do not inline, with the direct calls
+   fixed: `folLoopR_stable` of `FolWeight.lean` (the result is the same at
+   every fuel from `folW fol` on).
 2. The `resolve` loop.  Its only turn that loops is `%he`: the identity
    `[a f]` becomes `[(msg-sock a b) f]` for the subject sock `b` of a frame of
    `f` on the stack with `(he-sock a b)`.  When `a = b` the identity is that
@@ -33,10 +35,11 @@ taken, and the recursion of the analysis is finite.
    `&` only, and a leaf `|` embeds no leaf `&`.  `+msg-sock` only cuts
    subtrees of `a` down to `|+~`, so `cape-size` plus the number of leaves
    `&` strictly decreases at each `%he` turn.  For example `a = [[& |] [5 ~]]`
-   and `b = &+[5 6]` give `|+~`.  Not proved in Lean (it needs the stack to be
-   in the graph, a field of the convergence invariant, and the two models of
-   `HeSock.lean` and `CallGraph.lean`).  On the real compiler a `%he` turn
-   was never followed by another (item 2 of section 2).
+   and `b = &+[5 6]` give `|+~`.  Proved: `msgSock_he_lt` of `HeTurn.lean`,
+   and `resolve_he_bound` of `HeBound.lean` (at most `heMeasure` of the
+   subject sock turns `%he` in a row, given `SInv`, which puts the stack in
+   the graph).  On the real compiler a `%he` turn was never followed by
+   another (item 2 of section 2).
 3. The stack of functions in progress.  A new frame is pushed only for an
    identity that is not in the graph, not a memo hit, not `%rec` and not
    `%he`.  The formulas of frames are callable formulas: a direct call needs
@@ -116,7 +119,10 @@ one formula were on the stack (the three pokes of `he2.hoon`, exactly
   callees.  Not proved.  True of the Hoon by the argument of `+cull` (a
   popped component calls no frame below it, a culled member is called only
   by culled members), and every poke checked returned through
-  `+prune-callgraph`.
+  `+prune-callgraph`.  On the 26 pokes of `sitesmeet4.hoon`, `he2.hoon`,
+  `voidscc.hoon` and `prodsame.hoon` every callee of the returned graph was
+  an entry (1760 entries, 4052 edges).  The arm pieces are in
+  `GraphClose.lean` (`cull_closed` and the puts).
 * `pruneLoop_ends`, proved: the loop of `+prune-callgraph` ends on a graph
   closed under callees, within one more than the queue's length plus, for
   each entry not visited, one more than its number of callees.
