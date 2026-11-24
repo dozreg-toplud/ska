@@ -46,6 +46,7 @@ import lemmas.Ska.CompAboveRun
 import lemmas.Ska.CompAboveX
 import lemmas.Ska.CompSevenSame
 import lemmas.Ska.CompThreeNone
+import lemmas.Ska.CompFragU
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -494,3 +495,7 @@ open Formalization.SkaModel.Comp
 #print axioms runOKU_seven3F
 #print axioms finishLF_bellContract73F
 #print axioms finishLF_bellContract_threeNone
+#print axioms RunOKV.toU
+#print axioms RunOKP.toV
+#print axioms okV_fragX
+#print axioms runOKV_seven4

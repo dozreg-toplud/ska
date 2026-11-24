@@ -118,8 +118,8 @@ entries of the goal consumed with ops that do what `CollP d` says for the
 run's final `cond` (`front`), fact (ii) for the result's needs (`ncond`,
 `econd`), fact (i5) (`below`), and the relaxed `sem` against the blocks
 unproxied by any `cond` that agrees with the run's below its end.  `d` is a
-register of the goal's sure need or allocated in the run, and no key of the
-final `cond` (`dreg`, `dkey`).  Either every atom fits the goal's sure need
+register of the goal's sure need or allocated in the run, below the run's
+end, and no key of the final `cond` (`dreg`, `dlt`, `dkey`).  Either every atom fits the goal's sure need
 or none does (`dich`); in the first case `d` holding an atom holds the sure
 need (`dhold`), and the code leaves the product in `d` (`semT`, the `sem` for
 the goal `this d`). -/
@@ -168,6 +168,7 @@ structure CollRunU (lib : Lib) (nm : Nomm) (laz : Lazy S) (th : Jmp) (d : Nat) (
     ∀ regs, HoldsS nex.laz.sure regs s → HoldsN ned regs s0 →
     GoalSem lib O c gul st (KeepI (CGoal.next laz.sure th) g0 ned) regs t nex.th
       (CGoal.next (⟨Need.this d, HoonSet.empty⟩ : Sure S) th) (pureEval nm s)
+  dlt : d < g1.re
 
 theorem fitsS_this_one {d : Nat} {lok : S} (hl : ∀ x ∈ HoonSet.toList lok, x = 1) (n : Noun) :
     FitsS (⟨Need.this d, lok⟩ : Sure S) n :=
@@ -382,7 +383,7 @@ theorem collRun_n4 (lib : Lib) {p : Nomm} (hp : NextOK (S := S) (Map := Map) lib
     fun cf hcf c ned σ O st t gul s0 s ag hned regs hh hn => (semAll cf hcf c ned σ O st t gul s0 s ag hned regs hh hn).1,
     P.rreg, by rw [hcn1]; exact P.rkey, ?dich, ?dhold,
     fun hf cf hcf c ned σ O st t gul s0 s ag hned regs hh hn =>
-      (semAll cf hcf c ned σ O st t gul s0 s ag hned regs hh hn).2 hf⟩
+      (semAll cf hcf c ned σ O st t gul s0 s ag hned regs hh hn).2 hf, by omega⟩
   case ent =>
     rcases Rp.ent with f | e
     · exact f

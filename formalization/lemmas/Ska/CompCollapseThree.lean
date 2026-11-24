@@ -507,7 +507,7 @@ theorem collRun_n3 (lib : Lib) {p : Nomm} (hp : NextOK (S := S) (Map := Map) lib
     fun cf hcf c ned σ O st t gul s0 s ag hned regs hh hn => (semAll cf hcf c ned σ O st t gul s0 s ag hned regs hh hn).1,
     P.rreg, by rw [hcn1]; exact P.rkey, ?dich, ?dhold,
     fun hf cf hcf c ned σ O st t gul s0 s ag hned regs hh hn =>
-      (semAll cf hcf c ned σ O st t gul s0 s ag hned regs hh hn).2 hf⟩
+      (semAll cf hcf c ned σ O st t gul s0 s ag hned regs hh hn).2 hf, by have := r3; omega⟩
   case ent =>
     rcases Rp.ent with f | e
     · exact f
