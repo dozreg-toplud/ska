@@ -10,6 +10,7 @@ import lemmas.Ska.OptSwitchTree
 import lemmas.Ska.OptSwitchSim
 import lemmas.Ska.OptSwitchTag
 import lemmas.Ska.OptSwitchShape
+import lemmas.Ska.OptSwitchHyp
 import lemmas.Ska.OptTrim
 import lemmas.Ska.OptAlias
 
@@ -111,3 +112,9 @@ open Formalization.SkaModel.Opt
 #print axioms test_regs
 #print axioms chainOf_spec
 #print axioms tagHyp_shape
+#print axioms revCfg_count
+#print axioms labs_sorted
+#print axioms labs_into
+#print axioms labs_hits
+#print axioms tagHyp_of
+#print axioms tag_keeps

@@ -363,6 +363,181 @@ theorem test_count {bl : Map Blob} {rev : Map (List Nat)} {p : Nat} {t : STest}
     simp [blobMentions, finRegs, jmpRegs, poleRegs, List.count_cons, hdr, Ne.symm hdr, hsd, hsr,
       Ne.symm hsd, Ne.symm hsr]
 
+/-! ## The hits are outside the region -/
+
+section
+variable {bl : Map Blob} {rev : Map (List Nat)} {topo : List Nat}
+
+/-- **No hit is inside the region.** -/
+theorem labs_hits (ht : TopoOK bl topo) (hrev : rev = revCfg bl topo) :
+    ∀ (p : Nat) (cs : List STest), ChainR bl rev p cs → p ∈ topo → ∀ t ∈ cs, t.hit ∉ (ilabs p cs).tail
+  | _, [], _, _, _, h, _ => absurd h List.not_mem_nil
+  | p, t :: rest, hc, hp, t', ht', hin => by
+    obtain ⟨hto, hrm, hr⟩ := hc
+    obtain ⟨b, yb, l, r, hb, hfin, -, hyb, -, hyf, -⟩ := testOf_spec hto
+    obtain ⟨hy, h1⟩ := topo_jump ht hp hb (j := ⟨[], t.y⟩) (by rw [hfin]; simp [getJmps])
+    obtain ⟨hm, h2⟩ := topo_jump ht hy hyb (j := ⟨[], t.miss⟩) (by rw [hyf]; simp [getJmps])
+    simp only at hy h1 hm h2
+    have hge : ∀ x ∈ ilabs t.miss rest, rk topo t.miss ≤ rk topo x := by
+      intro x hx
+      obtain ⟨L, hL⟩ := labs_head t.miss rest
+      have hs := (labs_sorted ht t.miss rest hr hm).1
+      have hx' : x ∈ ilabs t.miss rest ++ [lastMiss t.miss rest] := List.mem_append_left _ hx
+      rw [hL] at hs hx'
+      rcases List.mem_cons.mp hx' with rfl | hx'
+      · exact Nat.le_refl _
+      · exact Nat.le_of_lt ((List.pairwise_cons.mp hs).1 x hx')
+    change t'.hit ∈ t.y :: ilabs t.miss rest at hin
+    by_cases et : t' = t
+    · subst et
+      obtain ⟨-, h3⟩ := topo_jump ht hy hyb (j := ⟨[], t'.hit⟩) (by rw [hyf]; simp [getJmps])
+      simp only at h3
+      rcases List.mem_cons.mp hin with e | hin
+      · rw [e] at h3; omega
+      cases rest with
+      | nil => simp [ilabs] at hin
+      | cons t2 rest2 =>
+        change t'.hit ∈ t'.miss :: (ilabs t'.miss (t2 :: rest2)).tail at hin
+        rcases List.mem_cons.mp hin with e | hin
+        · -- a hit equal to its own no side: `rev` lists the yes side twice
+          have hcnt := revCfg_count (k := t'.miss) hy hyb
+          rw [← hrev, hyf] at hcnt
+          have hpy : p ≠ t'.y := fun e2 => by rw [e2] at h1; omega
+          rcases hrm (List.cons_ne_nil _ _) with h4 | h4 <;> rw [h4] at hcnt <;>
+            simp [getJmps, e, List.count_cons, hpy, Ne.symm hpy] at hcnt
+        · have h5 := labs_into hrev t'.miss (t2 :: rest2) hr t'.y yb ⟨[], t'.hit⟩ hy hyb
+            (by rw [hyf]; simp [getJmps]) hin
+          have := hge _ h5
+          omega
+    · have ht2 : t' ∈ rest := by
+        rcases List.mem_cons.mp ht' with e | h
+        · exact absurd e et
+        · exact h
+      have ih := labs_hits ht hrev t.miss rest hr hm t' ht2
+      obtain ⟨q, hq⟩ := chainR_test hr t' ht2
+      obtain ⟨-, yb', _, _, -, -, -, hyb', -, hyf', -⟩ := testOf_spec hq
+      have hyt := y_mem_tail t.miss rest t' ht2
+      have hlt := (labs_gt ht hr hm).1 _ hyt
+      have hyT : t'.y ∈ topo :=
+        (labs_sorted ht t.miss rest hr hm).2 _ (List.mem_append_left _ (List.mem_of_mem_tail hyt))
+      obtain ⟨-, h3⟩ := topo_jump ht hyT hyb' (j := ⟨[], t'.hit⟩) (by rw [hyf']; simp [getJmps])
+      simp only at h3
+      rcases List.mem_cons.mp hin with e | hin
+      · rw [e] at h3; omega
+      cases rest with
+      | nil => exact absurd ht2 List.not_mem_nil
+      | cons t2 rest2 =>
+        change t'.hit ∈ t.miss :: (ilabs t.miss (t2 :: rest2)).tail at hin
+        rcases List.mem_cons.mp hin with e | hin
+        · rw [e] at h3; omega
+        · exact ih hin
+
+end
+
+/-! ## `TagHyp` -/
+
+/-- **`TagHyp` from what the driver has**: a chain that `chainOf` returns at
+a member `o` of `topo`, on `rev = revCfg bl topo` with `TopoOK bl topo`. -/
+theorem tagHyp_of {bl : Map Blob} {topo : List Nat} {n o : Nat} {t0 : STest} {tl : List STest}
+    (ht : TopoOK bl topo) (ho : o ∈ topo) (h : chainOf bl (revCfg bl topo) n o = some (t0 :: tl)) :
+    TagHyp bl o t0 tl := by
+  have hc := chainOf_rev n o _ h
+  obtain ⟨hblocks, hhead⟩ := tagHyp_shape h
+  obtain ⟨hS, hT⟩ := labs_sorted ht o (t0 :: tl) hc ho
+  have hgt := labs_gt ht hc ho
+  have hnd : (ilabs o (t0 :: tl) ++ [lastMiss o (t0 :: tl)]).Nodup :=
+    hS.imp (fun h e => by subst e; omega)
+  have e1 : ilabs o (t0 :: tl) ++ [lastMiss o (t0 :: tl)] =
+      o :: t0.y :: (ilabs t0.miss tl ++ [tagMiss t0 tl]) := by
+    show o :: t0.y :: (ilabs t0.miss tl ++ [lastMiss t0.miss tl]) = _
+    rw [lastMiss_tag]
+  rw [e1] at hnd
+  obtain ⟨hn1, hn2⟩ := List.nodup_cons.mp hnd
+  obtain ⟨hn3, hn4⟩ := List.nodup_cons.mp hn2
+  have hperm := ilabs_perm t0 tl
+  have hin_iff : ∀ k, TagIn t0 tl k ↔ k ∈ (ilabs o (t0 :: tl)).tail := by
+    intro k
+    show k = t0.y ∨ k ∈ tagIds (t0 :: tl) ↔ k ∈ t0.y :: ilabs t0.miss tl
+    rw [List.mem_cons, hperm.mem_iff]
+  have hnd' : (ilabs t0.miss tl).Nodup := (List.nodup_append.mp hn4).1
+  have hmissI : tagMiss t0 tl ∉ ilabs t0.miss tl := fun hm =>
+    (List.nodup_append.mp hn4).2.2 _ hm _ (List.mem_singleton_self _) rfl
+  have hq0 : testOf bl (revCfg bl topo) o = some (some t0) := hc.1
+  refine ⟨?_, ?_, ?_, ?_, ?_, hblocks, hhead, ?_, ?_, ?_, ?_, ?_⟩
+  · exact hperm.nodup_iff.mp hnd'
+  · exact fun hm => hn3 (List.mem_append_left _ (hperm.mem_iff.mpr hm))
+  · exact fun hm => hn1 (List.mem_cons_of_mem _ (List.mem_append_left _ (hperm.mem_iff.mpr hm)))
+  · exact fun e => hn1 (by rw [e]; exact List.mem_cons_self)
+  · -- hr
+    intro t ht'
+    rcases List.mem_cons.mp ht' with e | ht'
+    · rw [e]; exact Ne.symm (test_regs hq0).1
+    · obtain ⟨q, hq⟩ := chainR_test hc t (List.mem_cons_of_mem _ ht')
+      obtain ⟨yb0, hyb0, c0d, -⟩ := test_count hq0
+      obtain ⟨yb, hyb, -, cr⟩ := test_count hq
+      obtain ⟨-, -, -, -, -, -, -, -, -, -, -, -, hud, -⟩ := testOf_spec hq0
+      have hne : t.y ≠ t0.y := fun e => hn3 (List.mem_append_left _
+        (by rw [← e]; exact List.mem_of_mem_tail (y_mem_tail t0.miss tl t ht')))
+      intro e
+      rw [e] at cr
+      have := uses_ge2 hne hyb hyb0 t0.d
+      omega
+  · -- hits
+    intro t ht'
+    obtain ⟨q, hq⟩ := chainR_test hc t ht'
+    obtain ⟨-, yb, _, _, -, -, -, hyb, -, hyf, -⟩ := testOf_spec hq
+    have hyt := y_mem_tail o (t0 :: tl) t ht'
+    have hyT : t.y ∈ topo := hT _ (List.mem_append_left _ (List.mem_of_mem_tail hyt))
+    obtain ⟨hh, h3⟩ := topo_jump ht hyT hyb (j := ⟨[], t.hit⟩) (by rw [hyf]; simp [getJmps])
+    simp only at hh h3
+    have h4 := hgt.1 _ hyt
+    refine ⟨ht.2.2.1 _ hh, fun hI => labs_hits ht rfl o (t0 :: tl) hc ho t ht' ((hin_iff _).mp hI),
+      fun e => ?_⟩
+    rw [e] at h3; omega
+  · -- miss
+    refine ⟨ht.2.2.1 _ (hT _ (by rw [e1]; simp)), fun hI => ?_, fun e => hn1 (by rw [← e]; simp)⟩
+    rw [hin_iff] at hI
+    change tagMiss t0 tl ∈ t0.y :: ilabs t0.miss tl at hI
+    rcases List.mem_cons.mp hI with e | e
+    · exact hn3 (by rw [← e]; simp)
+    · exact hmissI e
+  · -- noI
+    intro k b j hk hkI hko hb hj hjI
+    have hkT := ht.2.2.2.1 k hk
+    have h5 := labs_into rfl o (t0 :: tl) hc k b j hkT hb hj ((hin_iff _).mp hjI)
+    change k ∈ o :: (ilabs o (t0 :: tl)).tail at h5
+    rcases List.mem_cons.mp h5 with e | e
+    · exact hko e
+    · exact hkI ((hin_iff _).mpr e)
+  · -- ment
+    intro k b _ hkI hb r hr hrT
+    rw [tagRegs, List.mem_flatMap] at hrT
+    obtain ⟨t, ht', hrt⟩ := hrT
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hrt
+    obtain ⟨q, hq⟩ := chainR_test hc t ht'
+    obtain ⟨yb, hyb, cd, cr⟩ := test_count hq
+    obtain ⟨-, -, -, -, -, -, -, -, -, -, -, -, hud, hur⟩ := testOf_spec hq
+    have hne : k ≠ t.y := fun e => hkI ((hin_iff _).mpr (by rw [e]; exact y_mem_tail o _ t ht'))
+    have h1 := uses_ge2 hne hb hyb r
+    have h2 : 0 < (blobMentions b).count r := List.count_pos_iff.mpr hr
+    rcases hrt with rfl | rfl <;> omega
+  · -- zero
+    intro hz
+    have := hgt.1 0 ((hin_iff 0).mp hz)
+    rw [rk_zero ht] at this
+    omega
+
+/-- **One tagged chain replaced keeps the code**, from what the driver has:
+`switchTag` applied (with the blocks before as both `bl` and `out`) to a
+chain that `chainOf` returns at a member `o` of `topo`, on
+`rev = revCfg c.blocks topo` with `TopoOK c.blocks topo`. -/
+theorem tag_keeps (c : Straight Map) {topo : List Nat} {out' : Map Blob} {fuel n o : Nat} {t0 : STest}
+    {tl : List STest} {done done' : List Nat} (ht : TopoOK c.blocks topo) (ho : o ∈ topo)
+    (hch : chainOf c.blocks (revCfg c.blocks topo) n o = some (t0 :: tl))
+    (h : switchTag c.blocks c.blocks fuel o (t0 :: tl) done = some (out', done')) :
+    Keeps c (withBlocks c out') :=
+  tag_keeps_of c h (tagHyp_of ht ho hch)
+
 end Opt
 end SkaModel
 end Formalization
