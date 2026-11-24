@@ -104,6 +104,7 @@ import lemmas.Compiler.CompSccIn
 import lemmas.Compiler.CompStraightN
 import lemmas.Compiler.CompCoerceLazy
 import lemmas.Compiler.CompBakeNeed
+import lemmas.Compiler.CompFinish
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -780,3 +781,8 @@ open Formalization
 #print axioms Compiler.bn_test
 #print axioms Compiler.bn_loop
 #print axioms Compiler.bn_gate
+#print axioms Compiler.finishLF_tail
+#print axioms Compiler.fin_gate
+#print axioms Compiler.fin_gate_finishLF
+#print axioms Compiler.fin_bak
+#print axioms Compiler.fin_after_cs

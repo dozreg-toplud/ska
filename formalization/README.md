@@ -206,6 +206,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompStraightN.lean` | `+to-straight` on an n-ary input need (the sample `[%next [[ned ~] ~ ~] ~ o]` of the final pass of `+compile-scc-in`, `tsSampleN`): the pushes with `ins` `flattenNeed ned`, `r0` its head, `n-in` its length and `run` `isRun ins r0 0` (`tsn_pre1`, the trap `run` `tsn_run`, `tsn_pre2`, `tsn_pre3`, `tsn_pre`), `ren` is `renReg r0 n-in` (`tsn_ren`), `rer` (`tsn_rer`), the trap of `+rewrite-input` on any need returns `needToOrd ned` and leaves `gen` (`tsn_ri_trap`, `tsn_ri`), the arm `$` takes the renaming branch (`tsn_dol`), `+count-args` is `countArgs` (`ca_gate`), the renaming branch (`tsn_rename`), the gate of the fold in any `CfCore` core (`tsn_step_gen`, `tsn_st_cf`, `tsn_step`), the core (`tsn_core`), and the gate: on a run of inputs with `cond` empty it returns the noun of `toStraightF` (`tsn_at`). |
 | `Compiler/CompCoerceLazy.lean` | `+coerce-lazy` (door battery axis `3580`, `comp_cz_at`, its gate body `czBody` cut into `czX`, `czSrl`, `czLok`, `czTail`) on a fork-free `[sure ~ ~]`: `+axe-in-less-cape` (arm `95` of `K`) is `axeInLessCape` (`aic_loop`, `aic_gate`), `+axe-in-need` (arm `0x5dd4`) is `axeInNeedL` (`ain_loop`, `ain_gate`), the gate of the `+rep:in` over `lok` is `czStep` (`cz_gate_step`) and the fold is `coerceLok` (`coerceLok_eq`, `cz_lok`, with no `0` in its product, `coerceLok_ne0`), `+sure-require-look` of the new sure (`cz_srl`), the trap `sure-loop` is `sureLoop` with `o` not in `soft` (`cz_loop_none`, `cz_loop_this`, `cz_loop_pair`, `cz_loop_both_this`, `cz_loop_both_pair`, `cz_loop_both_both`, `cz_loop`), and the gate is `coerceLazy` (`cz_gate`) or `coerceLazyL` on `ofSure` (`cz_gate_L`). |
 | `Compiler/CompBakeNeed.lean` | `+bake-need` (arm `384468` of `K`, `bn_at`, its gate body `bnBody` and trap `bnLoop` cut into `bnTest`, `bnYes` with the baking trap `bnAll`, and `bnRec`) when nothing is baked: on a need with no cell of two `%none` and no `%both` with two `%none` halves (`NeedNorm`, true of every need of `+need-ord-alloc-regs`, `needNorm_noar`) and a sock that is `%void` or not wholly known (`all:ca` false) at every node of the need, with `hed:so` and `tel:so` down the walk (`NoBake`), the test of each node is false before `+need-fits` (`bn_test`), `+cons-need` rebuilds each cell (`cn_gate`), and the gate returns `[ned ~]` (`bn_loop`, `bn_gate`). |
+| `Compiler/CompFinish.lean` | The gate `finish` of `+compile-scc-in` (`%compile-scc-finish`, axis `0x2ab2dffd6fbffffffffe` of `K`, `fin_at`, its body `finBody`) on `~` in the subject of `member` (`finCtx`: `gen` at `62`, the tuple `[need-new laz ned-final bak o sur]` at `30`, the door `comp`, `done`, `cape.less.b` and `layer2` in the rest at `6`, `14`, `496`, `0x3ffffff`): `+coerce-lazy`, `+soft-done`, `+add-ops` of the `%imm` ops of `imm.bak = ~` (`fin_turn_nil`) and `+to-straight` of `[%next [[ned.bak ~] ~ ~] ~ o]` give the noun of `finTail`, the tail of `finishLF` (`finishLF_tail`, `fin_gate`); against `finishLF nm ord less (fun n => (n, []))` given the run and `+need-ord-alloc-regs` of `ord` (`fin_gate_finishLF`), from the product of `+collapse-shape` under the hypothesis `hsc` on `+shape-collapse` (`fin_after_cs`), with `bak = [ned-final ~]` from `+bake-need` under `NoBake` (`fin_bak`). |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`, whose `keys` are those of `rap`, the order of `+rep:by` (`treapMap_keys`). |
@@ -1252,6 +1253,23 @@ import only its theorems.  So:
     cell of the need is not baked (`+need-fits` is false there) but fails
     `NoBake`.  `+need-fits` is the next helper if the exact condition is
     wanted.
+    L, 2026-11-24 (track A, the gate `finish`), `Compiler/CompFinish.lean`.
+    The gate `finish` is linked on its `done` branch with `pessimized = ~`
+    (`fin_gate`): on the subject of `member`, with a fork-free `laz`,
+    `soft` and `cond` empty, `bak = [ned-final ~]` and the registers of
+    `ned-final` a run, it returns the noun of `finTail ned-final less o
+    laz (fun n => (n, [])) g2`, the part of `finishLF` after
+    `+need-ord-alloc-regs` (`finishLF_tail`, by `rfl`).  `fin_after_cs`
+    puts it after `+collapse-shape`: with `hsc` (the gate of
+    `+shape-collapse` returns `ord`, as `cs_gate` assumes), the run `runL
+    nm done [] gen0 = some (nex, g1)` with `laz.nex = ofSure s` and `cond`
+    of `g1` empty, if the gate of `+collapse-shape` returns `[[NF LZ O]
+    G2]` then these are the nouns of `+need-ord-alloc-regs ord g1` and
+    `finish` on the subject that holds them returns the noun of `finishLF
+    nm ord cape (fun n => (n, []))`.  The subject of `member` is not built
+    from its gate yet (`finCtx` and the four slots of its rest are
+    hypotheses), and the `?.  done` branch (`[need-new 0 ~]`) and the
+    `+coerce-soft` branch are not linked.
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
