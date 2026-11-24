@@ -22,7 +22,7 @@ the multiset alone, so the order of `+rep` does not matter there.
 `TopoOK bl topo`: what the passes need of `topo` (and so of `rev`): no
 duplicates, `0` first, every member a block, every block reachable from `0` a
 member, and every jump of a member going to a later member.  It holds of the
-result of `+bb-topo` on an acyclic CFG (not proved here).
+result of `+bb-topo` on an acyclic CFG (`bbTopo_ok`, `OptTopoOK.lean`).
 -/
 
 namespace Formalization

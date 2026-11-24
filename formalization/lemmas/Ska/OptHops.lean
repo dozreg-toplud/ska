@@ -20,7 +20,7 @@ length of the chain (the Hoon has none).
 an earlier one is skipped), with the flag `!=(~ saw)`.
 
 The preservation statement `HopsKeeps` (proved: `hopsKeeps`, `hops_keeps` in
-`OptHopsSim.lean`): with `TopoOK bl topo` and `rev = revCfg bl topo`, the
+`OptArgs.lean`, from `hops_keepsR_of` of `OptHopsSim.lean`): with `TopoOK bl topo` and `rev = revCfg bl topo`, the
 parameters of every block distinct (`ParNodup`) and no jump argument a
 parameter of its target (`PassOK`, the check of `+eval-pass`, which the code
 before would fail where the moves of the code after go on), the result keeps
@@ -87,7 +87,7 @@ def PassOK (bl : Map Blob) : Prop :=
     ∀ r, some r ∈ j.args → r ∉ b2.par
 
 /-- **The preservation statement of `+remove-hops`** (proved: `hopsKeeps`
-in `OptHopsSim.lean`). -/
+in `OptArgs.lean`). -/
 def HopsKeeps [MapKeys Map] (fuel : Nat) : Prop :=
   ∀ (c : Straight Map) topo ch bl', TopoOK c.blocks topo → ParNodup c.blocks → PassOK c.blocks →
     removeHops fuel c.blocks (revCfg c.blocks topo) topo = some (ch, bl') →

@@ -66,7 +66,11 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     `+remove-empty-middle` alone on raw code (5 cases changed) and after every pass of every
                     round of `+optimize` replayed pass by pass (194 rounds, 2229 checks, 507 hops with
                     arguments redirected by `rewrite-hop`), and on the output after `+switch-chains`, which
-                    equals that of `+optimize` on all 135: no failure (2026-11-24)
+                    equals that of `+optimize` on all 135: no failure (2026-11-24).  `DownPar` of
+                    `lemmas/Ska/OptDownPar.lean` (no argument register of a jump is a parameter of a
+                    block reachable from its target) on the raw code, after every pass of every round
+                    and on the output, on the same 135 cases: no failure, printed as `%downpar-raw`,
+                    `%downpar-fail`, `%downpar-out` when it fails (2026-11-24)
 * `deadcrash.hoon`  nine formulas whose crashing operand has a dead product (`[7 [0 2] [1 5]]`
                     on an atom and the like): `+eval-top` agrees with `+mock` on all
                     (2026-11-24), so `+remove-dead-code` drops no check there

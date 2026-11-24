@@ -85,11 +85,16 @@ For an entry `(st, vals, t, gul)`, `ReadsOK c` says that every real read on
 every path of `c` from the entry reads a value.  A pass from `c` to `c'`
 **keeps** `c` (`Keeps c c'`) when `c'` has the need and the argument count of
 `c`, its block `0` has the parameters of that of `c` (which `topBody`
-checks), and for every entry with `ReadsOK c`: `execEntry` of `c'` returns
-exactly what `execEntry` of `c` returns (the same product, the same crash
-with the same trace, the same block on a scry, and `none` together), and
-`ReadsOK c'` holds.  `Keeps` is reflexive and transitive (`keeps_refl`,
-`keeps_trans`), so the driver composes the passes.
+checks), and for every entry with `ReadsOK c` and `ArgsOK c` (`EntryOK`):
+`execEntry` of `c'` returns exactly what `execEntry` of `c` returns (the same
+product, the same crash with the same trace, the same block on a scry, and
+`none` together), and `EntryOK c'` holds.  `ArgsOK` (every register a pending
+pass moves is in the file) is there for `+remove-empty-middle`, which drops
+such moves (`OptMiddleSim.lean`).  `Keeps` is reflexive and transitive
+(`keeps_refl`, `keeps_trans`), so the driver composes the passes.  `KeepsR`
+is the form with `ReadsOK` alone, in which the simulations of
+`+remove-useless-branching` and `+remove-hops` are proved; `keeps_of_R`
+adds `ArgsOK` kept.
 -/
 
 set_option linter.unusedSectionVars false
@@ -188,13 +193,44 @@ def ArgsOK (lib : Lib) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ)
 
 end
 
-/-- **A pass from `c` to `c'` keeps `c`.** -/
+section
+variable {σ : Type}
+
+/-- What `Keeps` assumes of an entry and keeps: `ReadsOK` and `ArgsOK`. -/
+def EntryOK (lib : Lib) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (vals : List Noun)
+    (t : Trace) : Prop :=
+  ReadsOK lib O c gul st vals t ∧ ArgsOK lib O c gul st vals t
+
+end
+
+/-- **A pass from `c` to `c'` keeps `c`**: the same need, argument count and
+parameters of block `0`, and on every entry with `ReadsOK` and `ArgsOK`
+(`EntryOK`) the same `execEntry`, with `EntryOK` of the code after. -/
 def Keeps (c c' : Straight Map) : Prop :=
+  c'.need = c.need ∧ c'.nargs = c.nargs ∧
+  (HoonMap.get c'.blocks 0).map Blob.par = (HoonMap.get c.blocks 0).map Blob.par ∧
+  ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (gul : Noun) (st : σ) (vals : List Noun) (t : Trace),
+    EntryOK lib O c gul st vals t →
+      execEntry lib O st c' vals t gul = execEntry lib O st c vals t gul ∧ EntryOK lib O c' gul st vals t
+
+/-- `Keeps` with `ReadsOK` alone, the form in which the simulations of
+`+remove-useless-branching` and `+remove-hops` are proved first. -/
+def KeepsR (c c' : Straight Map) : Prop :=
   c'.need = c.need ∧ c'.nargs = c.nargs ∧
   (HoonMap.get c'.blocks 0).map Blob.par = (HoonMap.get c.blocks 0).map Blob.par ∧
   ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (gul : Noun) (st : σ) (vals : List Noun) (t : Trace),
     ReadsOK lib O c gul st vals t →
       execEntry lib O st c' vals t gul = execEntry lib O st c vals t gul ∧ ReadsOK lib O c' gul st vals t
+
+/-- `KeepsR` with `ArgsOK` kept gives `Keeps`. -/
+theorem keeps_of_R {c c' : Straight Map} (h : KeepsR c c')
+    (ha : ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (gul : Noun) (st : σ) (vals : List Noun) (t : Trace),
+      ReadsOK lib O c gul st vals t → ArgsOK lib O c gul st vals t → ArgsOK lib O c' gul st vals t) :
+    Keeps c c' := by
+  obtain ⟨n, a, p, s⟩ := h
+  refine ⟨n, a, p, fun lib σ O gul st vals t ⟨hr, har⟩ => ?_⟩
+  obtain ⟨e, r⟩ := s lib σ O gul st vals t hr
+  exact ⟨e, r, ha lib σ O gul st vals t hr har⟩
 
 theorem keeps_refl (c : Straight Map) : Keeps c c :=
   ⟨rfl, rfl, rfl, fun _ _ _ _ _ _ _ h => ⟨rfl, h⟩⟩
