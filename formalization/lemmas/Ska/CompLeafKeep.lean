@@ -86,6 +86,52 @@ theorem clear_newU {Q : Nat → Prop} {g g' : Gen Map} (h : Clear g) (G : GrowU 
   · rw [h k hk] at h0; cases h0
   · exact ⟨w, u, j⟩
 
+/-! ## The program of the proof -/
+
+/-- The blocks of `src` at the labels of `ks`, put into `m`. -/
+def putFrom (src : Map Blob) : List Nat → Map Blob → Map Blob
+  | [], m => m
+  | k :: ks, m => putFrom src ks (match HoonMap.get src k with | some b => HoonMap.put m k b | none => m)
+
+theorem get_putFrom (src : Map Blob) : ∀ (ks : List Nat) (m : Map Blob) (k : Nat),
+    HoonMap.get (putFrom src ks m) k =
+      if k ∈ ks ∧ (HoonMap.get src k).isSome then HoonMap.get src k else HoonMap.get m k
+  | [], m, k => by simp [putFrom]
+  | k0 :: ks, m, k => by
+    rw [putFrom, get_putFrom src ks]
+    cases e : HoonMap.get src k0 with
+    | none =>
+      by_cases h : k = k0
+      · subst h; simp [e]
+      · simp [h]
+    | some b =>
+      simp only [HoonMap.get_put]
+      by_cases h : k = k0
+      · subst h; simp [e]
+      · simp [h]
+
+/-- **The program of the leaf conversion**: the blocks of `bl` at the labels
+from `lo` below `hi`, the block `bz` at `z`, and no other block. -/
+def regionProg (c : Straight Map) (bl : Map Blob) (lo hi z : Nat) (bz : Blob) : Straight Map :=
+  { c with blocks := putFrom bl (List.range' lo (hi - lo)) (HoonMap.put HoonMap.empty z bz) }
+
+theorem regionProg_in {c : Straight Map} {bl : Map Blob} {lo hi z k : Nat} {bz : Blob} (hz : z < lo)
+    (h0 : lo ≤ k) (h1 : k < hi) : HoonMap.get (regionProg c bl lo hi z bz).blocks k = HoonMap.get bl k := by
+  simp only [regionProg, get_putFrom, List.mem_range'_1, HoonMap.get_put, HoonMap.get_empty]
+  cases HoonMap.get bl k with
+  | none => simp; omega
+  | some b => simp; omega
+
+theorem regionProg_z {c : Straight Map} {bl : Map Blob} {lo hi z : Nat} {bz : Blob} (hz : z < lo) :
+    HoonMap.get (regionProg c bl lo hi z bz).blocks z = some bz := by
+  simp only [regionProg, get_putFrom, List.mem_range'_1, HoonMap.get_put, if_pos]
+  rw [if_neg (by omega)]
+
+theorem regionProg_out {c : Straight Map} {bl : Map Blob} {lo hi z k : Nat} {bz : Blob}
+    (hk : ¬ (lo ≤ k ∧ k < hi)) (hkz : k ≠ z) : HoonMap.get (regionProg c bl lo hi z bz).blocks k = none := by
+  simp only [regionProg, get_putFrom, List.mem_range'_1, HoonMap.get_put, HoonMap.get_empty]
+  rw [if_neg (by omega), if_neg hkz]
+
 section Transfer
 variable {σ : Type} {lib : Lib} {O : Oracle σ} {gul : Noun}
 

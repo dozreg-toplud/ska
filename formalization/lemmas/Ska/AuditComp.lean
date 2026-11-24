@@ -363,3 +363,7 @@ open Formalization.SkaModel.Comp
 #print axioms clear_newU
 #print axioms steps_transfer
 #print axioms steps_exit
+#print axioms get_putFrom
+#print axioms regionProg_in
+#print axioms regionProg_z
+#print axioms regionProg_out
