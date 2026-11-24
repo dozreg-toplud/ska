@@ -204,6 +204,50 @@ theorem steps_exit {c : Straight Map} {Q L : Nat → Prop} (hc : WrIn Q L c) {x 
           rwa [List.append_nil] at this
         · rw [List.mem_singleton] at ha; rw [ha]; exact Or.inr rfl
 
+/-- **A configuration at a jump runs as the jump**: what is left of its block
+is the terminator, which takes `j`, so it runs as `goJ` of `j`. -/
+theorem run_jump {c : Straight Map} {x : Cfg σ Map} {j : Jmp} (hp : x.params = []) (hq : x.b.par = [])
+    (hb : x.b.body = []) (ht : taken x.regs x.b.fin = some j) :
+    Path.run lib O c gul x = goJ lib O c gul x.st x.regs x.t j := by
+  obtain ⟨lab, ⟨par, body, fin⟩, params, regs, t, st⟩ := x
+  simp only at hp hq hb ht
+  subst hp hq hb
+  simp only [Path.run, goJ]
+  rw [execBlob]
+  simp only [ne_eq, not_true_eq_false, or_self, if_false]
+  cases fin with
+  | lti n r z o =>
+    simp only [taken] at ht
+    obtain ⟨v, hv, rfl⟩ := Option.map_eq_some_iff.mp ht
+    simp only [hv, Option.bind_eq_bind, Option.bind_some]; rfl
+  | clq r z o =>
+    simp only [taken] at ht
+    obtain ⟨v, hv, rfl⟩ := Option.map_eq_some_iff.mp ht
+    simp only [hv, Option.bind_eq_bind, Option.bind_some]; rfl
+  | eqq l r z o =>
+    simp only [taken] at ht
+    obtain ⟨v, hv, h2⟩ := Option.bind_eq_some_iff.mp ht
+    obtain ⟨w, hw, rfl⟩ := Option.map_eq_some_iff.mp h2
+    simp only [hv, hw, Option.bind_eq_bind, Option.bind_some]
+  | brn r z o =>
+    simp only [taken] at ht
+    obtain ⟨v, hv, h2⟩ := Option.bind_eq_some_iff.mp ht
+    simp only [hv, Option.bind_eq_bind, Option.bind_some]
+    by_cases e0 : v = A 0
+    · rw [if_pos e0] at h2 ⊢; cases h2; rfl
+    · rw [if_neg e0] at h2 ⊢
+      by_cases e1 : v = A 1
+      · rw [if_pos e1] at h2 ⊢; cases h2; rfl
+      · rw [if_neg e1] at h2; cases h2
+  | brz r z o =>
+    simp only [taken] at ht
+    obtain ⟨v, hv, rfl⟩ := Option.map_eq_some_iff.mp ht
+    simp only [hv, Option.bind_eq_bind, Option.bind_some]
+  | hop t' =>
+    simp only [taken, Option.some.injEq] at ht
+    subst ht; rfl
+  | _ => simp [taken] at ht
+
 end Transfer
 
 end Comp
