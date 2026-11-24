@@ -11,6 +11,7 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
 * `sect2.hoon`      the same on the code before `+optimize`
 * `thread-a/b/c`    162 threading cases: before `+optimize`, after it, and with passes left out
 * `proxy-dump.hoon` the raw blocks of two proxy cases for a subject sock that knows nothing (`lemmas/Ska/ExecPath.lean`)
+* `calldump.hoon`  the raw blocks of calls (`lemmas/Ska/CompCall.lean`): an indirect call, and a direct call of the recursive `R = [6 [3 [0 3]] [9 2 [10 [3 [0 7]] [0 1]]] [0 3]]` as a tail call, under `%next`, in the head of a cons, in a branch of a `%6`, as a test, with its product unused; the top function's nomm, its whole-subject blocks and the n-ary blocks of every function compiled (2026-11-24)
 * `selfkeep.py OUTDIR` writes an instrumented copy of the library and a driver for the register facts of `lemmas/Ska/CompUnproxyRegs.lean`: over the 74 formulas of `thread-a.hoon` and the two of `proxy-dump.hoon`, 2930 runs of `run` in `%run` mode (352 make a proxy), no failure (2026-11-24); with check i5 (every register a new or changed block of a run mentions is below the run's end) the output has 5860 lines (each case's sequence twice), 704 with a proxy, no failure (2026-11-24)
 * `tagkeep.py OUTDIR [a|b|c|x|all]` writes an instrumented copy of the library and a driver for the tag invariant of
                     `lemmas/Ska/CompTagX.lean` and `lemmas/Ska/CompTagU.lean`: at the end of every run of `run` in `%run` mode, with region `rb` and goal `gol`,
