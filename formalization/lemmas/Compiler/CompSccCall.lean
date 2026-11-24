@@ -536,5 +536,75 @@ theorem inl_gate_ind (B CODE LSR JH C1 C2 C3 INL SURE INL' : Noun) (nm : Nomm) (
   · exact inl_gate_miss_ind B CODE LSR JH C1 C2 C3 INL SURE V INL' nm hpu h hg hv hp
 
 
+/-! ## `+compile-unary` on the fragment with indirect calls -/
+
+/-- **The trap of `+compile-unary` on a nomm of the fragment**: as `cu_trap`,
+against `finishLUC env n` (`+run` with calls, `+kerf`, `+to-straight`), for
+every `env`. -/
+theorem cu_trap_c (FUNC SCC CODE LSR JH CACHE NM CA V : Noun) (env : CallEnv) (n : Nomm) (hn : indOk n = true)
+    (hcsi : nock (cuTC (cuSam FUNC SCC CODE LSR JH CACHE)) cuCsi = some (C NM CA))
+    (hgot : getF mugF FUNC CODE = some (C (A 0) V)) (hv : slot? 2 V = some n.toNoun) :
+    nock (cuTC (cuSam FUNC SCC CODE LSR JH CACHE)) cuTrap
+      = (finishLUC (S := CSet) (Map := TreapMap mugF) env n).map fun st => C (C st.toNoun NM) CA := by
+  have h7 : slot? 7 (cuCtx FUNC SCC CODE LSR JH NM) = some compK := rfl
+  have hcode : slot? 52 (cuCtx FUNC SCC CODE LSR JH NM) = some CODE := by simp [cuCtx, nock_exec]
+  obtain ⟨hc, hl, hm⟩ := comp_ctx_pill _ h7
+  have hts : TsAt (cuCtx FUNC SCC CODE LSR JH NM) :=
+    ts_at_of_step hc h7 (ts_step_at hc (lf_ts_rj hc))
+  rw [cu_trap_entry FUNC SCC CODE LSR JH CACHE NM CA hcsi,
+    cu_trap_run FUNC SCC CODE LSR JH CACHE NM CA V n hgot hv,
+    comp_run_entry_c h7 hcode env n hn Option.none (cuRest CA) (A 0) (A 0) (cu_entry_nosoft CA)]
+  have hf : finishLUC (S := CSet) (Map := TreapMap mugF) env n
+      = ((runLC env Option.none n (CGoal.toL (CGoal.done : CGoal CSet)) [] genEntry).bind fun p => kerf p.1 p.2).bind
+          fun q => toStraightF q.2.cond q.2.blocks (Need.this q.1.2) q.1.1 := by
+    rw [Option.bind_assoc]; rfl
+  rw [hf]
+  cases e : runLC (S := CSet) (Map := TreapMap mugF) env Option.none n (CGoal.toL (CGoal.done : CGoal CSet)) []
+      genEntry with
+  | none => simp
+  | some p =>
+    obtain ⟨nexL, g1⟩ := p
+    have hi : CrInv (genEntry : Gen (TreapMap mugF)) CGoal.done := cri_entry
+    obtain ⟨nex, rfl, O⟩ := crf_run env n hn Option.none [] CGoal.done genEntry g1 nexL hi e
+    obtain ⟨nex', e', X⟩ := crx_run env n hn Option.none [] CGoal.done genEntry g1 _ hi e
+    obtain rfl := next_toL_inj e'
+    have hk := comp_kerf hc hl hm (cuRest CA) g1 nex (cu_entry_nosoft CA g1.bo) O.2.2.2.2.2
+    simp only [compCore] at hk
+    simp only [Option.bind_some, Option.map_some, cr_next_noun]
+    rw [cu_trap_kerf, hk]
+    cases e2 : kerf (Next.toL nex) g1 with
+    | none => simp
+    | some q =>
+      obtain ⟨⟨o, sub⟩, g2⟩ := q
+      have e2' : kerf (⟨Lazy.ofSure nex.laz, nex.th⟩ : NextL CSet) g1 = some ((o, sub), g2) := e2
+      obtain ⟨-, -, -, -, c2, -, -, -⟩ := kerf_ofSure e2' O.2.1
+      have hce : ∀ k, HoonMap.get g2.cond k = Option.none := by
+        intro k
+        rw [c2, X.1]
+        exact gen0_cond_none k
+      have h := hts g2 (cuRest CA) sub o hce
+      simp only [compCore] at h
+      simp only [Option.map_some, Option.bind_some]
+      unfold cuS4
+      rw [cu_trap_end, h, cu_gen_cache]
+      cases toStraightF g2.cond g2.blocks (Need.this sub) o <;> rfl
+
+/-- **The gate of `+compile-unary` on a nomm of the fragment with indirect
+calls** (`cu_gate` with calls): `finishLUC env n` for every `env`. -/
+theorem cu_gate_c (FUNC SCC CODE LSR JH CACHE NM CA V : Noun) (env : CallEnv) (n : Nomm) (hn : indOk n = true)
+    (hcsi : nock (cuTC (cuSam FUNC SCC CODE LSR JH CACHE)) cuCsi = some (C NM CA))
+    (hgot : getF mugF FUNC CODE = some (C (A 0) V)) (hv : slot? 2 V = some n.toNoun) :
+    nock (C cuGB (C (cuSam FUNC SCC CODE LSR JH CACHE) compK)) cuGB
+      = (finishLUC (S := CSet) (Map := TreapMap mugF) env n).map fun st => C (C st.toNoun NM) CA := by
+  rw [cu_gate_rp, ← cu_trap_c FUNC SCC CODE LSR JH CACHE NM CA V env n hn hcsi hgot hv]
+  apply Option.ext
+  intro y
+  rw [cu_rp_iff]
+  have hk : nock (cuTC (cuSam FUNC SCC CODE LSR JH CACHE)) rpK
+      = nock (cuTC (cuSam FUNC SCC CODE LSR JH CACHE)) cuTrap := by
+    unfold cuTC
+    simp [rpK, nock_exec]
+  rw [hk]
+
 end Compiler
 end Formalization
