@@ -89,6 +89,7 @@ import lemmas.Ska.CompHypOfFragD
 import lemmas.Ska.CompHypOfFragF
 import lemmas.Ska.CompNCInd
 import lemmas.Ska.CompNCExamples
+import lemmas.Ska.CompRunOKLB
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -993,3 +994,12 @@ open Formalization.SkaModel.Comp
 #print axioms uokc_threeC
 #print axioms uokc_threeA
 #print axioms three_example
+#print axioms AgreeLB.toL
+#print axioms AgreeL.toB
+#print axioms frontLB_of_frontLC
+#print axioms FrontLB.up
+#print axioms FrontLB.toLC
+#print axioms RunOKLC.toB
+#print axioms RunOKLB.up
+#print axioms RunOKLB.toLC
+#print axioms RunOKLB.wrap
