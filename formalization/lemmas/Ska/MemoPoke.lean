@@ -82,9 +82,9 @@ variable {lib : Lib} {code : Bell → Option Nomm} {Mem G : Entry → Prop}
 theorem lessRel_of_graphM (hG : ConvergedGraphM lib code Mem G) : LessRel G := by
   intro e lc dl he hl y hy
   rcases hG e he with hr | hh
-  · obtain ⟨_, _, _, _, gen', _, _, _, _, hle, _⟩ := hr
+  · obtain ⟨_, _, _, _, gen', _, _, _, _, ⟨w, hle⟩, _⟩ := hr
     rw [hle] at hl ⊢
-    exact app_cape_fits gen'.want e.more lc dl (some y) hl hy
+    exact app_cape_fits (Ca.uni gen'.want w) e.more lc dl (some y) hl hy
   · exact lessRel_hit hh lc dl hl y hy
 
 theorem prodRelN_of_graphM (hG : ConvergedGraphM lib code Mem G)
@@ -96,11 +96,12 @@ theorem prodRelN_of_graphM (hG : ConvergedGraphM lib code Mem G)
   | succ K ih =>
     intro e he y gul p hy hm
     rcases hG e he with hr | hh
-    · obtain ⟨P, hPA, n, out, gen', moved, old, h, _, hl, hpm⟩ := hr
+    · obtain ⟨P, hPA, n, out, gen', moved, old, h, _, ⟨w, hl⟩, hpm⟩ := hr
       rw [hl] at hy
       have R := mergeProd_rel moved out.prod old
         (folTopR_relProdN (fun tab ht => rtabL_of_answers hL (fun s f a h => hPA _ _ _ (ht s f a h)))
-          (fun tab ht => rtabP_of_answers ih (fun s f a h => hPA _ _ _ (ht s f a h))) (hwf e he) h hy hm)
+          (fun tab ht => rtabP_of_answers ih (fun s f a h => hPA _ _ _ (ht s f a h))) (hwf e he) h
+          (fits_app_uni (hwf e he) hy) hm)
       rw [← hpm] at R
       exact R
     · exact prodRel_hit hh y gul p hy ⟨K + 1, hm⟩
@@ -118,10 +119,10 @@ theorem annot_of_graphM (hG : ConvergedGraphM lib code Mem G) (hhas : CodeHas co
   have hL := lessRel_of_graphM hG
   have hP := prodRel_of_graphM hG hwf
   rcases hG e he with hr | hh
-  · obtain ⟨P, hPA, n, out, gen', _, _, h, hn, hl, _⟩ := hr
+  · obtain ⟨P, hPA, n, out, gen', _, _, h, hn, ⟨w, hl⟩, _⟩ := hr
     rw [hn, hl]
-    exact folTopR_wantSound (fun tab ht => rtab_of_answers hL hP hhas (fun s f a h => hPA _ _ _ (ht s f a h)))
-      (hwf e he) h
+    exact (folTopR_wantSound (fun tab ht => rtab_of_answers hL hP hhas (fun s f a h => hPA _ _ _ (ht s f a h)))
+      (hwf e he) h).mono (fun x hx => fits_app_uni (hwf e he) hx)
   · obtain ⟨m, _, hm, _, _, hf, hd⟩ := hh
     rw [hd, hf]
     exact hm.annot

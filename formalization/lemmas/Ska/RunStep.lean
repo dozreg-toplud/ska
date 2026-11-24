@@ -51,10 +51,13 @@ def darkOf : Sock → Cape
 /-- What `+run` makes of the result of `fol-loop`, from the old datum `old`
 of the identity `[bus fol]` and whether the identity is in `moved`: the new
 datum, whether it joins `moved`, and `changed`.  `callees` and `area` are not
-in `Datum`. -/
+in `Datum`.  The code requirement is `want` united with the old entry's cape
+before the mask (`(app:ca (uni:ca want old) bus)` with
+`old=?@(less-code.data | cape.less-code.data)`, that is `darkOf old.less`),
+so it only grows across the passes of a loop. -/
 def runDatum (moved : Bool) (bus : Sock) (out : FolOut) (gen' : Gen) (old : Datum) :
     Datum × Bool × Bool :=
-  let less := Ca.app gen'.want bus
+  let less := Ca.app (Ca.uni gen'.want (darkOf old.less)) bus
   let dark := darkOf bus
   let indi := Ca.lack gen'.indi dark
   let pm := mergeProd moved out.prod ⟨old.prod, old.map⟩
@@ -75,7 +78,7 @@ the run. -/
 theorem runDatum_entryM {tab : Tab} {n : Nat} {bus : Sock} {fol : Noun} {out : FolOut} {gen' : Gen}
     (h : folLoopTop tab n bus fol = some (out, gen')) (moved : Bool) (old : Datum) :
     RunEntryM tab ⟨bus, fol, (runDatum moved bus out gen' old).1⟩ :=
-  ⟨n, out, gen', moved, ⟨old.prod, old.map⟩, h, rfl, rfl, rfl⟩
+  ⟨n, out, gen', moved, ⟨old.prod, old.map⟩, h, rfl, ⟨darkOf old.less, rfl⟩, rfl⟩
 
 /-- **`+run` keeps the product well formed.** -/
 theorem runDatum_wf {moved : Bool} {bus : Sock} {out : FolOut} {gen' : Gen} {old : Datum}

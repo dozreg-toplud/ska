@@ -309,12 +309,29 @@ theorem rtab_of_answers {lib : Lib} {code : Bell → Option Nomm} {tab : Tab} {G
   code := fun s f d h => answers_code hc (hans s f d h)
   prod := fun s f d h hs y gul p hy hm => (answers_rel hL hP (hans s f d h) hs).2 y gul p hy hm
 
+/-- **A code requirement united with another cape restricts the subjects**:
+a noun that fits `app:ca (uni:ca want w) s` fits `app:ca want s`, on a
+well-formed sock. -/
+theorem fits_app_uni {want w : Cape} {s : Sock} {x : Noun} (hwf : WellFormed s)
+    (h : Fits (Ca.app (Ca.uni want w) s) x) : Fits (Ca.app want s) x :=
+  app_mono_cape want (Ca.uni want w) s (some x) hwf (fun r hr => (uni_has want w r).mpr (Or.inl hr)) h
+
+/-- With `WantSound`, an entry made by a run on a well-formed subject sock
+satisfies `EntriesOK`: its code requirement, `want` united with a cape,
+restricts the subjects of `app:ca want more` (`fits_app_uni`). -/
+theorem entry_ok_of_run {lib : Lib} {code : Bell → Option Nomm} {tab : Tab} {e : Entry}
+    (hw : WantSound lib code tab) (hr : RunEntry tab e) (hwf : WellFormed e.more) :
+    Annot lib code (Fits e.d.less) e.fol e.d.nomm := by
+  obtain ⟨n, out, gen', h, hn, w, hl⟩ := hr
+  rw [hn, hl]
+  exact (hw n e.more e.fol out gen' h).mono (fun x hx => fits_app_uni hwf hx)
+
 /-- An entry made by a run satisfies `LessRel`. -/
 theorem lessRel_of_run {tab : Tab} {G : Entry → Prop} (hr : ∀ e, G e → RunEntry tab e) : LessRel G := by
   intro e lc dl he hl y hy
-  obtain ⟨_, _, gen', _, _, hle⟩ := hr e he
+  obtain ⟨_, _, gen', _, _, w, hle⟩ := hr e he
   rw [hle] at hl ⊢
-  exact app_cape_fits gen'.want e.more lc dl (some y) hl hy
+  exact app_cape_fits (Ca.uni gen'.want w) e.more lc dl (some y) hl hy
 
 /-! ## `CodeOK` at convergence -/
 
@@ -330,9 +347,9 @@ theorem codeOK_of_converged {lib : Lib} {code : Bell → Option Nomm} {tab : Tab
     (hP : ProdRel lib G) : CodeOK lib code := by
   have hT := rtab_of_answers (lessRel_of_run hr) hP hhas hans
   refine codeOK_of_entries hc fun e he => ?_
-  obtain ⟨n, out, gen', h, hn, hl⟩ := hr e he
+  obtain ⟨n, out, gen', h, hn, w, hl⟩ := hr e he
   rw [hn, hl]
-  exact folLoop_wantSound hT (hwf e he) h
+  exact (folLoop_wantSound hT (hwf e he) h).mono (fun x hx => fits_app_uni (hwf e he) hx)
 
 /-- **The analysis output of an entry of a converged graph agrees with
 `+mink` on every subject of its code requirement**, under the assumptions
@@ -345,10 +362,10 @@ theorem converged_agree {lib : Lib} {code : Bell → Option Nomm} {tab : Tab} {G
     Mink lib gul t x e.fol r ↔ ∃ m, nommF lib gul code m t x e.d.nomm = some r := by
   have hok := codeOK_of_converged hr hans hc hhas hwf hP
   have hT := rtab_of_answers (lessRel_of_run hr) hP hhas hans
-  obtain ⟨n, out, gen', h, hn, hl⟩ := hr e he
+  obtain ⟨n, out, gen', h, hn, w, hl⟩ := hr e he
   rw [hl] at hx
   rw [hn]
-  exact nomm_agree lib gul code hok (folLoop_wantSound hT (hwf e he) h) hx t r
+  exact nomm_agree lib gul code hok (folLoop_wantSound hT (hwf e he) h) (fits_app_uni (hwf e he) hx) t r
 
 /-! ## Where `ProdRel` comes from -/
 
@@ -356,7 +373,7 @@ theorem converged_agree {lib : Lib} {code : Bell → Option Nomm} {tab : Tab} {G
 product sock and provenance are those of the run. -/
 def RunEntryP (tab : Tab) (e : Entry) : Prop :=
   ∃ n out gen', folLoopTop tab n e.more e.fol = some (out, gen') ∧
-    e.d.nomm = out.nomm ∧ e.d.less = Ca.app gen'.want e.more ∧
+    e.d.nomm = out.nomm ∧ (∃ w, e.d.less = Ca.app (Ca.uni gen'.want w) e.more) ∧
     e.d.prod = out.prod.sock ∧ e.d.map = out.prod.src
 
 theorem RunEntryP.run {tab : Tab} {e : Entry} (h : RunEntryP tab e) : RunEntry tab e :=
@@ -372,10 +389,10 @@ theorem prodRel_of_rtab {lib : Lib} {code : Bell → Option Nomm} {tab : Tab} {G
     (hT : RTab lib code tab) (hr : ∀ e, G e → RunEntryP tab e) (hwf : ∀ e, G e → WellFormed e.more) :
     ProdRel lib G := by
   intro e he y gul p hy hm
-  obtain ⟨n, out, gen', h, _, hl, hp, hmap⟩ := hr e he
+  obtain ⟨n, out, gen', h, _, ⟨w, hl⟩, hp, hmap⟩ := hr e he
   rw [hl] at hy
   rw [hp, hmap]
-  exact folLoop_relProd hT (hwf e he) h hy hm
+  exact folLoop_relProd hT (hwf e he) h (fits_app_uni (hwf e he) hy) hm
 
 end SkaModel
 end Formalization

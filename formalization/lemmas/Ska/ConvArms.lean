@@ -337,7 +337,7 @@ theorem runDatum_unchanged {moved : Bool} {bus : Sock} {out : FolOut} {gen' : Ge
 theorem runDatum_runEntryR {P : Sock → Noun → TabEntry → Prop} {n : Nat} {bus : Sock} {fol : Noun}
     {out : FolOut} {gen' : Gen} (h : FolTopR P n bus fol out gen') (moved : Bool) (old : Datum) :
     RunEntryR P ⟨bus, fol, (runDatum moved bus out gen' old).1⟩ :=
-  ⟨n, out, gen', moved, ⟨old.prod, old.map⟩, h, rfl, rfl, rfl⟩
+  ⟨n, out, gen', moved, ⟨old.prod, old.map⟩, h, rfl, ⟨darkOf old.less, rfl⟩, rfl⟩
 
 theorem inCallees_ins {cs : M CalleeEntry Unit} {seat : Option Noun} {i c : Ident}
     (h : InCallees (Treap.ins cs ⟨seat, i⟩) c) : c = i ∨ InCallees cs c := by
@@ -645,7 +645,7 @@ theorem runStep_ok2 (env : Env R) (memoF : Memo M) {n : Nat}
           show ∃ y, Fits rd.1.less y
           rw [← hrd]
           obtain ⟨y, hy⟩ := wf_inhab (hc.s.wf_stk hid) (c1.nv id d0 (by rw [hg0]; exact hd0))
-          exact ⟨y, app_fits gs.gen.want id.1 y hy⟩
+          exact ⟨y, app_fits _ id.1 y hy⟩
         · rw [eo] at ho; obtain ⟨o, ho'⟩ := hidO; rw [ho'] at ho; cases ho
       · rw [eo]; exact c1.dat i d hd
     · obtain ⟨hcl, hfc⟩ := c1.clo hm
