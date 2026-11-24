@@ -54,6 +54,7 @@ import lemmas.Ska.OptAliasRel
 import lemmas.Ska.OptAliasFwd
 import lemmas.Ska.OptAliasBack
 import lemmas.Ska.OptAliasKeepsB
+import lemmas.Ska.OptAliasResult
 
 /-! Axioms of the theorems about `+optimize`. -/
 
@@ -357,3 +358,13 @@ open Formalization.SkaModel.Opt
 #print axioms alias_keeps_of
 #print axioms alias_keepsB
 #print axioms alias_keepsB_pickR
+#print axioms aw_new
+#print axioms afin_nolti
+#print axioms afin_jmps
+#print axioms alias_nolti
+#print axioms alias_parNodup
+#print axioms alias_targetsSub
+#print axioms alias_acyclic
+#print axioms alias_closed
+#print axioms topoOK_filter
+#print axioms alias_topoInvR
