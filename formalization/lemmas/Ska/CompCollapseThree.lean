@@ -65,6 +65,87 @@ theorem forl_above {r o : Nat} {P : Nat → Prop} {g g' : Gen Map} {x : Nat × N
     refine ⟨fun x hx => ?_, RegsIn.nil _, jmpIn_jmp0 _ _⟩
     simp only [List.mem_cons, List.mem_nil_iff, or_false] at hx; rw [hx]; exact hr
 
+/-! ## Looks at axis `0` (a question of the linking track) -/
+
+/-- **`+from-sure` makes no look at axis `0` from looks without one**: a new
+look is `axe` itself (which is not `0`, since `fromSure 0` is `none`) or
+`pegF axe x` of an old look `x ≠ 0` (`pegF_pos`). -/
+theorem fromSure_lok_ne0 {axe : Nat} {sur sur' : Sure S} (h : fromSure axe sur = some sur')
+    (hl : ∀ x ∈ HoonSet.toList sur.lok, x ≠ 0) : ∀ x ∈ HoonSet.toList sur'.lok, x ≠ 0 := by
+  unfold fromSure at h
+  by_cases a0 : axe = 0
+  · rw [if_pos a0] at h; cases h
+  rw [if_neg a0] at h
+  have hrun : ∀ y ∈ HoonSet.toList (setRun (Hoon.pegF axe) sur.lok : S), y ≠ 0 := by
+    intro y hy
+    obtain ⟨x, hx, rfl⟩ := (mem_setRun _ _ _).mp hy
+    have := Hoon.pegF_pos axe (by omega) x (by have := hl x hx; omega)
+    omega
+  by_cases hn : sur.ned = Need.none
+  · rw [if_pos hn] at h
+    by_cases a1 : axe = 1
+    · rw [if_pos a1] at h; cases h
+    rw [if_neg a1] at h
+    cases h
+    intro x hx
+    split at hx
+    · rw [mem_setOne] at hx; omega
+    · exact hrun x hx
+  · rw [if_neg hn] at h
+    cases h
+    exact hrun
+
+/-- **`+split-sure` makes no look at axis `0`**: it crashes on one (`none`), and
+its new looks are `mas axe` of looks at axes from `4` on. -/
+theorem splitLok_ne0 {lok h t : S} (hs : splitLok lok = some (h, t)) :
+    (∀ x ∈ HoonSet.toList h, x ≠ 0) ∧ ∀ x ∈ HoonSet.toList t, x ≠ 0 := by
+  unfold splitLok at hs
+  have key : ∀ (l : List Nat) (a b : S) (c d : S), (∀ x ∈ HoonSet.toList a, x ≠ 0) → (∀ x ∈ HoonSet.toList b, x ≠ 0) →
+      l.foldl (fun acc axe => acc.bind fun (h, t) =>
+        if axe = 0 then Option.none
+        else if axe = 1 ∨ axe = 2 ∨ axe = 3 then some (h, t)
+        else if cap axe = 2 then some (HoonSet.put h (mas axe), t)
+        else some (h, HoonSet.put t (mas axe))) (some (a, b)) = some (c, d) →
+      (∀ x ∈ HoonSet.toList c, x ≠ 0) ∧ ∀ x ∈ HoonSet.toList d, x ≠ 0 := by
+    intro l
+    induction l with
+    | nil => intro a b c d ha hb e; simp only [List.foldl_nil, Option.some.injEq, Prod.mk.injEq] at e
+             obtain ⟨rfl, rfl⟩ := e; exact ⟨ha, hb⟩
+    | cons y l ih =>
+      intro a b c d ha hb e
+      simp only [List.foldl_cons, Option.bind_some] at e
+      have hm : 4 ≤ y → mas y ≠ 0 := fun hy => by have := mas_pos y (by omega); omega
+      by_cases y0 : y = 0
+      · rw [if_pos y0] at e
+        have : ∀ (l : List Nat), l.foldl (fun acc axe => acc.bind fun (h, t) =>
+            if axe = 0 then Option.none
+            else if axe = 1 ∨ axe = 2 ∨ axe = 3 then some (h, t)
+            else if cap axe = 2 then some (HoonSet.put h (mas axe), t)
+            else some (h, HoonSet.put t (mas axe))) (Option.none : Option (S × S)) = Option.none := by
+          intro l; induction l with
+          | nil => rfl
+          | cons _ _ ih' => simpa using ih'
+        rw [this] at e; cases e
+      rw [if_neg y0] at e
+      by_cases y1 : y = 1 ∨ y = 2 ∨ y = 3
+      · rw [if_pos y1] at e; exact ih a b c d ha hb e
+      rw [if_neg y1] at e
+      have y4 : 4 ≤ y := by omega
+      by_cases c2 : cap y = 2
+      · rw [if_pos c2] at e
+        exact ih _ b c d (fun x hx => by
+          rw [HoonSet.mem_put] at hx
+          rcases hx with rfl | hx
+          · exact hm y4
+          · exact ha x hx) hb e
+      · rw [if_neg c2] at e
+        exact ih a _ c d ha (fun x hx => by
+          rw [HoonSet.mem_put] at hx
+          rcases hx with rfl | hx
+          · exact hm y4
+          · exact hb x hx) e
+  exact key _ _ _ _ _ (fun x hx => absurd hx (HoonSet.mem_empty x)) (fun x hx => absurd hx (HoonSet.mem_empty x)) hs
+
 section Run
 variable [HoonMapKeys Map]
 

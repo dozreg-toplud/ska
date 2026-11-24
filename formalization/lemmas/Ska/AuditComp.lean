@@ -463,3 +463,5 @@ open Formalization.SkaModel.Comp
 #print axioms finishLF_bellContract73U
 #print axioms runL_n01_done_ne
 #print axioms finishLF_bellContract_three
+#print axioms fromSure_lok_ne0
+#print axioms splitLok_ne0
