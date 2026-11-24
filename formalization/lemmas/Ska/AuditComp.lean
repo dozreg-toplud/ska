@@ -10,6 +10,7 @@ import lemmas.Ska.CompSixNextOK
 import lemmas.Ska.CompSevenN
 import lemmas.Ska.CompFragM
 import lemmas.Ska.CompFragX
+import lemmas.Ska.CompUnproxy
 import lemmas.Ska.CompEntryGoal
 import lemmas.Ska.CompFromRun
 import lemmas.Ska.CompEntryRun
@@ -245,3 +246,13 @@ open Formalization.SkaModel.Comp
 #print axioms Formalization.SkaModel.Path.steps_reads
 #print axioms Formalization.SkaModel.Path.guarded_reads
 #print axioms Formalization.SkaModel.Path.steps_det
+#print axioms unproxyBlob_empty
+#print axioms proxy_condFresh
+#print axioms CondFresh.trans
+#print axioms unproxy_condFresh
+#print axioms agreeU_empty
+#print axioms rankDown_start
+#print axioms chase_ren
+#print axioms chaseFin_ren
+#print axioms keepBlock_ren
+#print axioms renameBlocks_ren
