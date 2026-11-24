@@ -581,6 +581,9 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/RawInvRun.lean`, `Ska/RawInvCons.lean`, `Ska/RawInvInto.lean` | **`run_raw`**: `RawIH nm` for every nomm, the run-level invariant of `run` (the first fragment): `SI` kept, and every register live at the run's entry is in its result's need or live at its goal's continuation and not named by the goal. `sub_facts` (track C's `run_keeps`, `run_foot`, `run_down`), `raw_tail`, `raw_binTail`, the cases `raw_n0`, `raw_n1`, `raw_n7`, `raw_n4`, `raw_n3`, `raw_cons`, `raw_n5`, `raw_n10` (`intoRec_raw`, `raw_into`). |
 | `Ska/RawInvOut.lean`, `Ska/RawInvOutMain.lean` | Through the renaming path of `+to-straight`: `mem_aliasReads` (`srcs`), `renReg_surj`, `chase_raw`, `chaseFin_raw`, and **`optIn_toStraight`**: blocks that jump down, define each register once, have no trace hint op, pass no argument into a reachable parameter and leave live at the entry only input registers give an output with `OptIn`. |
 | `Ska/RawInvKern.lean`, `Ska/RawInvTop.lean`, `Ska/AuditRaw.lean` | The prologue (`kernLoop_raw`, `raw_sureLoop`) and the main theorems of track D: **`optIn_finish`**, **`optIn_finishLF`**, **`optIn_finishLU`** (`OptIn` of the raw blocks of the n-ary and whole-subject final passes on `Frag nm CGoal.done`, nothing baked), `rawDInv_finishLF`, `rawDInv_finishLU` (the field `rawDInv` of `CompHypOf.lean`), `optimize_keeps_finishLF`, `optimize_keeps_finishLU`; their axioms. |
+| `Ska/RawInvClosed.lean`, `Ska/RawInvClosedRun.lean` | **`run_closed`**: a run of `run` from a state that does not drop and has `Clear` jumps from its own blocks (labels from `g0.bo` on) only to its own labels or to its goal's targets (`ClosedR g0.bo (GTgt goal)`), and its result's jump is at one of them; one lemma per arm (`cs_split`, `cs_into`, `cs_copy`, `cs_mede`, `cs_collapse`, ...) and per case. |
+| `Ska/RawInvCut.lean` | The liveness cut for code changed after a run (Gaps 14): `LiveAv bl Z k r` (a path from `k` that never enters `Z` reads `r`), **`live_cut`** (a live register is live along such a path or live at a block of `Z`), `liveAv_frame`, **`liveAv_region`** (a path that avoids `Z` inside a region closed up to `Z` reads only registers the region's blocks mention), `blockRF_in`; `raw_coerce` (`+coerce-lazy` at one block on a fork-free need, from `raw_sureLoop`). |
+| `Ska/RawInvSix.lean` | **`optIn_finishLF6`**: the n-ary raw blocks of `[6 c a b]` under `%done` with `c`, `a`, `b` in the first fragment meet `OptIn` (`runL_six_done` of track C; the liveness at the entry is cut at the branch blocks, a path that avoids them stays in the test's code by `run_closed` and `RunOK.ext`, which mentions only registers allocated in it by `run_above`); `optIn_finishLF_frag6`, `rawDInv_finishLF_frag6`, `optimize_keeps_finishLF_frag6` on track C's class `Frag6`. |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
@@ -1979,8 +1982,21 @@ import only its theorems.  So:
    reachability and ranks pass through the bijective renaming and the
    chase of the bypassed hops.  `DefFirst` is stated through liveness
    (`defFirst_of_live`: no register with a definition live at `0`).
+   A `%6` at the top (track C's class `Frag6`, the n-ary version):
+   **`optIn_finishLF6`**, `optIn_finishLF_frag6`, `rawDInv_finishLF_frag6`,
+   `optimize_keeps_finishLF_frag6` (`RawInvClosed*.lean`, `RawInvCut.lean`,
+   `RawInvSix.lean`).  The robust liveness asked below was not needed in
+   its general form: `run_closed` (the test's code jumps only into itself or
+   to the two branch blocks), `run_above` of track C (that code mentions
+   only registers from `gs.re` on), `RunOK.ext` of track C (a fork-free run
+   leaves the blocks below its start as they were, so the branch blocks and
+   the code of `a` and `b` are untouched by the run of `c`), `live_cut` and
+   `liveAv_region` give it for this case: a register live at the entry is
+   read on a path that avoids the branch blocks, so it is the test's own
+   (then in the test's need, which the entry's `+sure-loop` defines), or it
+   is live at a branch block, whose `+sure-loop` reads only inputs.
 
-   **Left, in this order.**  (a) `%6` (`FragX`).  Two obstacles, both met
+   **Left, in this order.**  (a) `%6` (`FragX`; `Frag6` is done).  Two obstacles, both met
    on the way here.  First, the liveness spec of a run is about the state
    at its end; with `%6` the final pass (and `+split`, `+copy` of the
    parents) put ops in front of lazy blocks inside a run's code after the
@@ -2013,5 +2029,5 @@ import only its theorems.  So:
    as in `raw_binTail`) fits the present spec; nested calls need the
    induction on `runLC`, most simply by making the case lemmas take the
    runner as a parameter with its unfolding equations.  Estimate: `Frag6`
-   with the robust spec, about 1000 lines; `FragX`, as much again as what
-   is done here (about 5000 lines), most of it the lazy arms.
+   took about 1300 lines (closure, cut, the top case); `FragX`, as much
+   again as what is done here (about 5000 lines), most of it the lazy arms.
