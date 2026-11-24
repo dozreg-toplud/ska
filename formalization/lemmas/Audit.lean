@@ -96,6 +96,7 @@ import lemmas.Compiler.CompStraightPre
 import lemmas.Compiler.CompStraightCore
 import lemmas.Compiler.CompMapRegs
 import lemmas.Compiler.CompChase
+import lemmas.Compiler.CompChaseFin
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -720,3 +721,7 @@ open Formalization
 #print axioms Compiler.ch_loop_of_chase
 #print axioms Compiler.ch_chase_of_loop
 #print axioms Compiler.ch_nock
+#print axioms Compiler.ts_cf_at
+#print axioms Compiler.ch_gate
+#print axioms Compiler.cf_chase_cell
+#print axioms Compiler.cf_gate
