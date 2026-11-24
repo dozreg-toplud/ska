@@ -92,6 +92,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Hoon/MapFolds.lean`, `Hoon/SetFolds.lean` | `+key:by`, `+run:by`, `+any:by`, `+wyt` of `+by` and `+in` (one noun); `+gas:in`, `+any:in`, `+run:in`, `+del:in`. |
 | `Hoon/Canon.lean` | Pure Lean: treaps are canonical.  Two `IsMap` nouns with the same pairs are equal (`isMap_ext`), and two `IsSet` nouns with the same keys (`isSet_ext`, through `toMap_inj`).  `+tap:by` lists the pairs in strictly decreasing `+gor` order of the keys (`tapList_pairwise`), which determines the list (`tapList_unique`); the order of `+rep` is the pre-order of the canonical treap (`preorder_ext`, `mem_preorder`). |
 | `Hoon/DifIn.lean` | `+bif:in` and `+dif:in` against `bifInF` and `difInF` (`bif_gate`, `dif_in_gate`); on sets, `+bif` returns a node with root `b` whose subtrees are sets of the keys before and after `b` in `+gor` order (`bifInF_spec`), and `+dif` returns a set of the keys of `a` that `b` does not hold (`difInF_spec`, `dif_in`).  The merge of `+dif` is `mergeInF` of `+del:in`.  The generator names no noun of `+bif`, so its arm is defined there (`bifArm`, `bif_arm_at` by the kernel). |
+| `Hoon/UniIn.lean` | `+uni:in` (`in.uni.*`): its loop is not structurally recursive (an outer call takes the product of an inner one as a set), so its model is a relation `UniR`, one constructor per branch, and `uni_loop`, `uni_in_gate` run the Nock on every derivation.  On two sets a derivation exists and ends in a set with the members of both and at most as many nodes (`uniP_of_sets`, by induction on the nodes: while the root of `a` comes first in `+mor` order the loop walks down `b` with it at the root, `uni_domA`, and symmetrically `uni_domB`), so the gate returns such a set (`uni_in`). |
 | `Hoon/Ju.lean` | The doors `+ju` (get, put, has, del, gas) and `+ja` (get, add). |
 | `Hoon/ListsMore.lean` | `+skim`, `+skip`, `+murn`, `+rear`, `+snip`. |
 | `Hoon/ListsSort.lean` | `+welp`, `+zing`, `+snoc`, `+skid`, `+spin`, and `+sort` against the quicksort `qsort`, which permutes its list. |
@@ -143,14 +144,15 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/RegisterFast.lean` | `+register-fast` for registrations kept as nouns: `registerFastP`, the pill's run of the gate decoded into `[miss regs]`, satisfies `RegisterFastIs` for every `Env Noun` that uses it, given `RegisterFastShape` (every return of the gate is a cell with a flag at its head; `registerFastIs_of`).  The shape fact is proved in `Compiler/RegisterFastShape.lean`. |
 | `Compiler/FrameCall.lean` | `absNockS`: `absNock` of `Compiler/Frame.lean` with calls (Nock `2`, and `9` through `[2 [0 1] 0 b]`) either summarized or followed.  A summary entry `⟨pre, fs, post⟩` answers a call whose core is below `pre` and whose formula is below `fs` (`le`, a decidable test of inclusion of shapes, `le_sound`) with the shapes `post`; a call whose formula is known (a literal, or a path that a resolver `K` maps to a noun of the base, `KOK`) and accepted by `fol` runs that formula on the core's shape; every other call is `unk`.  `absNockS_sound`: what Nock computes, a shape of `absNockS` describes, given only that every summary passes `summOK` (the interpreter run on its `pre`, with the same summaries, returns shapes below `post`).  The induction on `Eval` meets a loop's call to itself at a smaller derivation, so the check is not circular (`second_of_first`, `call_sound`). |
 | `Compiler/RegisterFastShape.lean` | `registerFastShape`: every return of the pill's `+register-fast` is `[flag b, r']`, by two kernel checks of `absNockS` on the gate's battery from the base `[battery [[clue prod reg] ana]]`: the resolver `rfK` knows the battery and `ana`; the followed formulas (`rfFol`) are the battery of `print-ska` (`[9 97710 0 255]`), the arm `same` of layer 2 (`[8 [1 0] [1 0 6] 0 1]`) and the battery `[0 6]` of the gate `same` builds, so `%-  (print-ska n |.(...))  gen` returns the shape of `gen` and the trap is never run; the summaries are the two loops `past-loop` (`rfL1`, at axis `1123630016355293` of the battery) and `sock-loop` (`rfL2`, at `4602388546991284221`) on the cores the gate builds for them (`rfPre1`, `rfPre2`, with `gen` as `[1 reg]`), each returning `[0 *]` or `[1 *]` (`rf_summ_ok`); the gate's run gives 287 shapes, each `[0 *]` or `[1 *]` (`rf_main_ok`).  The checks take about a second.  `registerFastIs_pill`: `RegisterFastIs` for every `Env Noun` with `registerFast = registerFastP`; `ska_poke_ana_iff_pill`: `ska_poke_ana_iff` for that `env`, with no hypothesis on `+register-fast`. |
-| `Compiler/CompGen.lean` | The noun of the state of `+comp` (`line-short`, `[re-gen bo-gen id-gen mode blocks tags cond cache soft sofs]`): `genNoun g x`, a `Gen` of `Ska/CompModel.lean` with the three fields it leaves out carried as opaque nouns (`GenRest`: `cache` at axis `510`, `soft` at `1022`, `sofs` at `1023`), in the shared encodings of `Ska/Types.lean` (`Blob.toNoun`, `listNoun A` for a region, `HoonMap.toNoun`, `condValNoun` for `[def tag]`, `cgModeNoun` for `%drop` and `%run`).  The slots of the fields (`genNoun_re`, ..., `genNoun_tags`), and `+re`, `+oo`, `+id` on the noun (`re_noun`, `oo_noun`, `id_noun`: the edit at axis `2`, `6`, `14` the Hoon makes is the model's result, encoded).  The links of the pill's arms of the door are in `Compiler/CompDoor.lean`. |
+| `Compiler/CompGen.lean` | The noun of the state of `+comp` (`line-short`, `[re-gen bo-gen id-gen mode blocks tags cond cache soft sofs]`): `genNoun g x`, a `Gen` of `Ska/CompModel.lean` with the three fields it leaves out carried as opaque nouns (`GenRest`: `cache` at axis `510`, `soft` at `1022`, `sofs` at `1023`), in the shared encodings of `Ska/Types.lean` (`Blob.toNoun`, `listNoun A` for a region, `HoonMap.toNoun`, `condValNoun` for `[def tag]`, `cgModeNoun` for `%drop` and `%run`).  The slots of the fields (`genNoun_re`, ..., `genNoun_tags`), and `+re`, `+oo`, `+id` on the noun (`re_noun`, `oo_noun`, `id_noun`: the edit at axis `2`, `6`, `14` the Hoon makes is the model's result, encoded).  The links of the pill's arms of the door are in `Compiler/CompDoor.lean`.  For the arms that test `(~(has by soft.gen) o)`: `genNoun_soft` and `GenRest.SoftOut x o` (`getF` on the noun of `soft` gives `~` at `o`, so the test is `|`). |
 | `Compiler/CompDoor.lean` | The arms of the door of `+comp` (`comp.door`, generated) against `Ska/CompModel.lean` and `copyTag` of `Ska/CompLazyRun.lean`, as exact equalities over `genNoun`, crashes included, on maps of `TreapMap mugF`, in every context `ctx` of the door with layer 2 at axis `262143` (`CompIn`): `comp_re`, `comp_oo`, `comp_id` (the arm on `[comp.door [gen ctx]]` returns `[x gen']` as `re`, `oo`, `freshId` say), `comp_dropping` (the unnamed shared arm `dropArm`, at axis `1398` of the door by `comp_drop_at`), and the gates `comp_emir`, `comp_set_tag` (`+put:by` unless dropping), `comp_add_ops`, `comp_copy_tag` (`got:by`, a crash where the model is `none`, then `+weld`, or `+turn` and `+gas:by`), `comp_emit` (`+oo` and `+emir`), `comp_bomb` (every `HoonSet`), `comp_must`, `comp_split_need` (every need, through `+re`, `+must` and `+add-ops`).  The simprocs unfold `comp.door` down to `+dropping` and leave its axis as the content-named noun `comp.h50f637450e98` (`comp_h110`). |
 | `Compiler/CompSet.lean` | The `HoonSet` instance of `Ska/CompModel.lean` on the canonical treap (`csHoonSet`): a set is a `FinMap Nat Unit` (`CSet`), its noun `FinMap.setNoun` with the key `k` encoded as the atom `k` (`csTKeyNat`), and `toList` the pre-order of that noun, the order of `+rep:in` and `+run:in` (`cs_preorder`).  `cs_put_in`: `+put:in` gives the noun of `HoonSet.put`; `cs_runInF`: `+run:in`'s model from `~` gives the noun of `setRun`; `cs_run_in_loop_on`, `cs_run_in_gate_on`: the pill's `+run:in` with a gate known only on the members; `cs_mem_setRun`, `cs_ext`: `setRun` is the set of the images in every order of the fold.  Of the model's uses only `sureRequireLook` depends on the order (it allocates registers in the fold's order), and that order is the pre-order. |
 | `Compiler/CompFrom.lean` | `+from-sure` against `fromSure` (`comp_from_sure`) and `+from` against `«from»` on a fork-free lazy need `[sure ~ ~]` (`comp_from`), exact over the nouns, crashes included, under `CompIn ctx` and on every noun of the state (neither arm reads `gen`), with the side condition that no looked-at axis is `0`.  The loop (`cf_loop`) runs `+cap` and `+mas` of layer 1 (axis `524287` of `ctx`, `cf_layer1`); the gate of the `+run:in` (`cfPegBat`, written here) runs `+peg` of layer 1 (`cf_peg_gate`).  `comp_from_sure_at`: the arm at `7163` of `comp.door`, by the kernel. |
 | `Compiler/CompSplit.lean` | `+split-sure` against `splitSure` (`comp_split_sure`), exact over `genNoun`, crashes of `+split-need` included, under `CompIn ctx` and with no look at axis `0`.  The `+rep:in` is `rep_gate_on` of `Compiler/SkaCull.lean` with the state a pair of `CSet` (`ssN`); its gate `ssRepBat` (axis `57213` of the battery, `ss_rep_bat_at` by the kernel) is `ssStep` on every look but `0` (`ss_gate`: `+cap`, `+mas` of layer 1, `+put:in` of layer 2), and `splitLok` is the fold of `ssStep` (`ss_splitLok`).  `comp_split_need_at`: `+split-need` at `55294` of `comp.door`.  `+split` against `split` on a `next` whose lazy need is `[sure ~ ~]` (`comp_split`): `+emit` of the `%hop` (`comp_emit`, `cd_emit_eq`), then its loop `comp.split.loop` (`csp_loop`), which runs `+split-sure` and takes the branch of the test `&(?=(~ fork.laz) ?=(~ bond.laz))` that returns `[[sure-h ~ ~] [sure-t ~ ~]]`, so no `spin-split` and no `+lazy-prune` run; same side condition. |
 | `Compiler/CompInto.lean` | `+into-need`, `+into-sure` and `+into` against `intoNeed`, `intoSure`, `into` (`comp_into_need`, `comp_into_sure`, `comp_into`, the last on `[sure ~ ~]`), exact over `genNoun`, crashes of `+add-ops` and `+must` included, under `CompIn ctx` and `CompLib ctx` (the core `K` at axis `7` of `ctx` holds `+gep` at `5597` and `+cons-need` at `350`); `+into-sure` and `+into` also need `axe` not `0` and no look at axis `0` (`+into-need` is exact on every axis).  `+gep` against `gep` on every two atoms, crashes included (`gep_gate`, in any core with layer 2 at `65535`: `+lth`, `+sub`, `+met`, `+rsh`, `+bex`, `+dec`, `+dis`, `+con`, with `ci_metF_mono` for the `+sub`), `+cons-need` against `consNeed` (`cn_gate`).  The loop of `+into-need` (`inn_loop`, by strong induction on the axis, every case of the need and both values of `+cap`), its `roll` (`inn_roll`, through `ci_roll_gate`, `+roll` with a gate known on the nouns of a type), the gate of the `+rep:in` of `+into-sure` (`is_gate`, `isStep`, `is_intoLok`), the loop of `+into` (`cit_loop`).  The nouns are written here and tied by the kernel: `gepBat`/`gepArm` (`gep_arm_at`, axis `259549` of `cor`), `cnBat`/`cnArm` (`cn_arm_at`, `16222` of `cor`), `innBat`, `innL0`, `innG0`, `innArm` (`comp_inn_at`, door axis `214`), `isBat`, `isG0`, `isArm` (`comp_is_at`, `1769470`), `intBat`, `intL0`, `intArm` (`comp_int_at`, `860`).  The simprocs unfold `comp.door` down to an unnamed arm in hash-named pieces, so a proof that calls an unnamed arm first generalizes `comp.door` to a variable `D` with the arm's `slot?` fact (`comp_into_sure`, `cit_loop`). |
 | `Compiler/CompForlLink.lean` | `+forl` (door axis `442362`, `flBat` written here, `comp_fl_at`) against `forl` (`comp_forl`), exact over `genNoun`, under `CompIn ctx` only.  The state after each `+emit` is kept folded as `cfEmitG b g` (`cf_emit_g`, `cf_emit`), one lemma per emit (`fl_e1`, `fl_e2`, `fl_e3`) and the model with its states folded (`fl_forl_eq`); the whole proof is one `simp only` that never unfolds `genNoun` (12 s).  No field of `cache`, `soft`, `sofs` is read or written. |
-| `Compiler/CompCopyLink.lean` | `+flatten-need` (door axis `220`, `comp_flatten_need`, on every state noun, by induction on the need, with `+weld`), `+copy-need-make-ops` (`3452`, `comp_copy_need`), `+copy-lazy` (`1022`, `comp_copy_lazy`), `+copy` (`220590`, `comp_copy`) `+sure-require-look` (`887`, `comp_sure_require_look`) and `+insert-hop` (`2`, `comp_insert_hop`, against `insertHop` of `Ska/CompLazyRun.lean`, exact, crashes of `got` and of its two `?>` included, under `CompIn ctx` only), each battery written here and tied to the pill by a kernel fact on `comp.door`.  The loop of `+copy-need-make-ops` is a work list (`CnE`, subject `cnT`); one lemma per kind of step (`cnm_st_*`) and `cnm_seg`, by induction on the first need, show that it pops `|+[l r]` and pushes what `copyNeed` returns.  Its four `~?` prints are passed on the branch where their tests are false: no `%mov` joins a register to itself (`cnMeet`) and the registers of both needs are below `re-gen` (`cnLt`), so that a fresh register differs from them.  `+copy-lazy` and `+copy` on `[sure ~ ~]` (the fork and bond lists stay `~`), given `CsUniIs` (`+uni:in` of layer 2 computes the union of `csHoonSet`, not linked).  `+sure-require-look`: the trap is `lookPath` (`srl_loop`, strong induction on the axis), the gate of the `rep` is `srlStep` (`srl_gate`), and `+rep:in` folds in the order `HoonSet.toList` (`rep_gate_on`, `cs_preorder`, `srl_fold`), with no look at `0`.  `CompLib ctx` for `+cons-need`.  None of these arms reads or writes `cache`, `soft`, `sofs`. |
+| `Compiler/CompCopyLink.lean` | `+flatten-need` (door axis `220`, `comp_flatten_need`, on every state noun, by induction on the need, with `+weld`), `+copy-need-make-ops` (`3452`, `comp_copy_need`), `+copy-lazy` (`1022`, `comp_copy_lazy`), `+copy` (`220590`, `comp_copy`) `+sure-require-look` (`887`, `comp_sure_require_look`) and `+insert-hop` (`2`, `comp_insert_hop`, against `insertHop` of `Ska/CompLazyRun.lean`, exact, crashes of `got` and of its two `?>` included, under `CompIn ctx` only), each battery written here and tied to the pill by a kernel fact on `comp.door`.  The loop of `+copy-need-make-ops` is a work list (`CnE`, subject `cnT`); one lemma per kind of step (`cnm_st_*`) and `cnm_seg`, by induction on the first need, show that it pops `|+[l r]` and pushes what `copyNeed` returns.  Its four `~?` prints are passed on the branch where their tests are false: no `%mov` joins a register to itself (`cnMeet`) and the registers of both needs are below `re-gen` (`cnLt`), so that a fresh register differs from them.  `+copy-lazy` and `+copy` on `[sure ~ ~]` (the fork and bond lists stay `~`); `+uni:in` of layer 2 computes the union of `csHoonSet` (`cs_uni_is`, from `uni_in` and `isSet_ext`).  `+sure-require-look`: the trap is `lookPath` (`srl_loop`, strong induction on the axis), the gate of the `rep` is `srlStep` (`srl_gate`), and `+rep:in` folds in the order `HoonSet.toList` (`rep_gate_on`, `cs_preorder`, `srl_fold`), with no look at `0`.  `CompLib ctx` for `+cons-need`.  None of these arms reads or writes `cache`, `soft`, `sofs`. |
+| `Compiler/CompMedeLink.lean` | `+crash-need` (door axis `27310`, no hint, `comp_crash_need`, against `crashNeed`, crashes of `got` included, where the block is not a key of `soft`: `GenRest.SoftOut`; otherwise the pill runs `+soft-ask`, which has no model), `+walk-lazy` (`30`, `comp_walk_lazy`: on `[s ~ ~]` one slam of its gate, on every door), `+mede` (`27307`, `comp_mede`, against `mede` on `[sure ~ ~]`: its loop is `medeLoop`, `md_loop`, and its gate `md_gate`), `+proxy` (`441178`, `comp_proxy`, exact) and `+lazy-bound` (`884726`, `comp_lazy_bound`, on every `NextL`, its `?>` included), each arm written here and tied by a kernel fact on `comp.door`.  `+mede` needs `CompMolds ctx`: the arm `+walk-lazy` and the gate of `+mede` start from bunts that the pill computes by running the molds `need-lazy` (arm `191`) and `sure` (arm `4`) of the core at axis `15` of `ctx`, and the strict executor needs these runs to return. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`. |
@@ -456,8 +458,9 @@ import only its theorems.  So:
    `+dvr`, `+div`, `+mod` by zero and `+snag` past the end crash; nothing is
    proved about gates slammed on nouns of the wrong shape, nor about nouns on
    which a model is `none`.
-5. **Not done among the arms of the library:** `+uni`, `+int` of `+by` and
-   `+in`, and `+dif` of `+by` (`+dif:in` is done, `Hoon/DifIn.lean`).
+5. **Not done among the arms of the library:** `+uni:by`, `+int` of `+by` and
+   `+in`, and `+dif` of `+by` (`+dif:in` is done, `Hoon/DifIn.lean`, and
+   `+uni:in`, `Hoon/UniIn.lean`).
 6. **The arms of `+ca` and `+so` are all done.**  No arm of `+ca` or `+so`
    disagrees with B's model.
 7. **The virtualization arms are done** up to formatting: `+mink`, `+monk`,
@@ -661,18 +664,36 @@ import only its theorems.  So:
      runs the library's printer when a `%mov` joins a register to itself,
      which the link does not cover), `+copy-lazy` and `+copy`
      (`comp_copy_lazy`, `comp_copy`, on `[sure ~ ~]`, the same side
-     conditions, and `CsUniIs`: `+uni:in` of layer 2 is not linked), and
+     conditions; `CsUniIs` is discharged by `cs_uni_is`, 2026-11-24, from
+     `uni_in` of `Hoon/UniIn.lean`), and
      `+sure-require-look` (`comp_sure_require_look`, no look at `0`, the
      order of `+rep:in` being `HoonSet.toList` of `csHoonSet`), and
      `+insert-hop` (`comp_insert_hop`, `CompIn ctx` only, exact), all in
      `Compiler/CompCopyLink.lean`.  `CompLib ctx` is needed by
      `+copy-need-make-ops` (and so `+copy-lazy`, `+copy`) and
      `+sure-require-look` for `+cons-need`.  None of these touches
-     `cache`, `soft`, `sofs`.  Not linked yet: `+mede` (door axis `27307`;
-     it calls `+walk-lazy`, which has no model, and `+crash-need`, which
-     tests `(~(has by soft.gen) o)`, so a link needs `o` not a key of
-     `soft`), `+lazy-bound` (`884726`), `+proxy`
-     (`441178`), `+crash-need` (no hint; reads `soft`).
+     `cache`, `soft`, `sofs`.
+     L, 2026-11-24 (track A, latest), `Compiler/CompMedeLink.lean`:
+     `+crash-need` (door axis `27310`, found by its bunt `[o=0 [%& %imm 0]
+     [%none ~]]` among the arms that call `+flatten-need`; `comp_crash_need`,
+     every atom and need, with `GenRest.SoftOut x o`: in both branches it
+     tests `(~(has by soft.gen) o)` and on `&` runs `+soft-ask`, which has
+     no model; it reads `soft`, writes none of the three), `+walk-lazy`
+     (`30`, `comp_walk_lazy`, on `[s ~ ~]`: one slam of its gate, which
+     is `walkLazy` of `Ska/CompLazyArms.lean` on `ofSure s`, so no new
+     model is needed; it reads none of the three itself), `+mede`
+     (`27307`, `comp_mede`, against `mede` on `[sure ~ ~]`, with
+     `CompIn`, `CompLib`, `CompMolds ctx`, the new block `g.bo` not a key
+     of `soft` and no look at `0`; it reads `soft` through `+crash-need`),
+     `+proxy` (`441178`, `comp_proxy`, exact, crashes of `got` included,
+     `CompIn` only; it writes `cond`, touches none of the three) and
+     `+lazy-bound` (`884726`, `comp_lazy_bound`, exact on every `NextL`,
+     the `?>` on the arguments included, `CompIn` only; none of the
+     three).  `CompMolds ctx`: the arm `+walk-lazy` and the gate of
+     `+mede` start from bunts that the pill computes by running the molds
+     `need-lazy` (arm `191`) and `sure` (arm `4`) of the core at axis `15`
+     of `ctx` (`K`'s payload), and the strict executor needs these runs to
+     return; it is not yet proved of the pill's `ctx`.
      The door axes found by the hint cords
      (`~%  %comp-<name>`): `+into-sure` `1769470`, `+into-need` `214`,
      `+into` `860`, `+flatten-need` `220`, `+insert-hop` `2`, `+copy`
@@ -680,10 +701,10 @@ import only its theorems.  So:
      `27307`, `+forl` `442362`, `+lazy-bound` `884726`, `+proxy`
      `441178`, `+sure-require-look` `887`, `+emit` `27306` (the core axis
      is the door axis with a `0` put after its leading bit, e.g. `+emit`
-     `43690`); `+crash-need` and `+re` carry no hint.
-     M: `+crash-need` (s),
-     `+mede`, `+collapse-lazy-atom`, `+past`,
-     `+run` (s), and in the lazy files `+lazy-bound`, `+proxy`, `+kern`
+     `43690`); `+crash-need` (`27310`, by its bunt) and `+re` carry no
+     hint, `+walk-lazy` is at `30`.
+     M: `+collapse-lazy-atom`, `+past`,
+     `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
      `+laze-this-only`, `+soft-fork` (s) (`+insert-hop` is now linked).
@@ -718,19 +739,21 @@ import only its theorems.  So:
      lazy files `+lazy-bound`, `+proxy`, `+kern`, `+lazy-shut`, `+kerf`,
      `+insert-hop`, `+fork-sure`, `+fork-need`, `+fork`, `+sect`,
      `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`, `+laze-this-only`,
-     `+soft-fork`).  Without a model: `+run-shape`, `+callee-sure`,
+     `+soft-fork`, `+walk-lazy` (`walkLazy` of `Ska/CompLazyArms.lean`)).
+     Without a model: `+run-shape`, `+callee-sure`,
      `+callee-need`, `+callee-compiled`, `+mean-konst`, `+lazy-empty`,
      `+lazy-prune`, the other `laze-*` arms, `+need-ord-cut`,
-     `+need-ord-from`, `+walk-lazy`, `+kern-r-need`, `+kern-need`,
+     `+need-ord-from`, `+kern-r-need`, `+kern-need`,
      `+past-if`, `+sound`, `+made`, the other `soft-*` arms,
      `+emit-cold`, `+past-fork`, `+coerce-ord`,
      `+coerce-soft`, `+need-ord-alloc-regs`, `+coerce-lazy`,
      `+next-lazy-collapse`, `+collapse-shape`, `+to-straight`.  The next
-     links to make: `+uni:in` of layer 2 (to discharge `CsUniIs`),
-     `+walk-lazy` on `[sure ~ ~]` (a model first) and `+crash-need` with
-     `o` not in `soft`, then `+mede`; `+lazy-bound`,
-     `+proxy` (`+copy-need-make-ops` has no model of its own: `copyNeed` is
-     its model, now linked).
+     links to make: `CompMolds` of the pill's `ctx` (two mold runs, by the
+     kernel once `K` is pinned); `+collapse-lazy-atom` on `[sure ~ ~]`
+     (from `comp_sure_require_look`, `comp_proxy`, `comp_crash_need`,
+     `comp_walk_lazy`, `comp_add_ops`); `+past`; then the fork arms
+     (`+copy-need-make-ops` has no model of its own: `copyNeed` is its
+     model, linked).
    - *Modelled, not linked*:
      `+uni-sock`, `+norm-sock`, `+know`,
      `+bake-graph`; `+reverse-bell-graph`, `+hot-stale`, `+del-bells`;

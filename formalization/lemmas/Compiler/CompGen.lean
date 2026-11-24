@@ -1,5 +1,7 @@
 import lemmas.Ska.CompModel
 import lemmas.Exec
+import lemmas.Hoon.Maps
+import lemmas.Hoon.Mug
 
 /-!
 # The noun of the state of `+comp`
@@ -25,6 +27,10 @@ The arms `+re`, `+oo`, `+id`, `+dropping`, `+set-tag`, `+emir`, `+emit` and
 `id_noun` are what their Hoon builds on the noun (`[re-gen.gen gen(re-gen
 +(re-gen.gen))]`, an edit at axis `2`, `6`, `14`): the model's result,
 encoded.  The pill's arms of the door are linked in `CompDoor.lean`.
+
+The arms that test `(~(has by soft.gen) o)` (`+crash-need`, `+run`,
+`+kern`) read `soft` through `genNoun_soft`; `GenRest.SoftOut x o` says that
+the test is `|`, the branch the models take.
 -/
 
 namespace Formalization
@@ -67,6 +73,17 @@ theorem genNoun_blocks (g : Gen Map) (x : GenRest) :
 theorem genNoun_tags (g : Gen Map) (x : GenRest) :
     slot? 126 (genNoun g x) = some (HoonMap.toNoun (listNoun A) g.tags) := by
   simp only [genNoun, nock_exec]
+
+theorem genNoun_soft (g : Gen Map) (x : GenRest) : slot? 1022 (genNoun g x) = some x.soft := by
+  simp only [genNoun, nock_exec]
+
+/-- `o` is not a key of `soft`: `+get:by` (its model `getF`) on the noun of
+`soft` gives `~` at `o`, so `(~(has by soft.gen) o)` is `|`.  This is what
+`+crash-need` (and `+run`, `+kern`) read of `soft`; for example it holds
+when `soft` is `~` (`getF` of `~` is `~`), or a map without the key
+(`getF_none`). -/
+def GenRest.SoftOut (x : GenRest) (o : Nat) : Prop :=
+  Hoon.getF Hoon.mugF (A o) x.soft = some (A 0)
 
 /-- `+re` on the noun: `[re-gen.gen gen(re-gen +(re-gen.gen))]`. -/
 theorem re_noun (g : Gen Map) (x : GenRest) :

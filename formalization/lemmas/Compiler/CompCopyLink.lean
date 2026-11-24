@@ -1,4 +1,5 @@
 import lemmas.Compiler.CompForlLink
+import lemmas.Hoon.UniIn
 
 /-!
 # `+flatten-need`, `+copy-need-make-ops`, `+copy-lazy`, `+copy` of the door of `+comp`
@@ -388,8 +389,8 @@ theorem comp_copy_need (hl : CompLib ctx) (g : Gen (TreapMap mugF)) (l r : Need)
 On fork-free lazy needs `[sure ~ ~]` the tests `=(~ fork.second)` and
 `=(~ bond.second)` hold, so the fork and bond lists stay `~` and the merge
 branches (the gates `clG0`, ..., `clG5`) are not reached.  The union of the
-looks is `+uni:in` of layer 2, which is not linked: `CsUniIs` assumes it
-computes `HoonSet.uni` of `csHoonSet`.
+looks is `+uni:in` of layer 2, which computes `HoonSet.uni` of `csHoonSet`
+(`cs_uni_is`, from `uni_in` of `Hoon/UniIn.lean` and `isSet_ext`).
 -/
 
 def clG5 : Noun :=
@@ -439,10 +440,27 @@ def CsUniIs : Prop := ∀ a b : CSet,
   nock (C in.uni.battery (C (HoonSet.toNoun b) (C in.battery (C (HoonSet.toNoun a) layer2))))
     in.uni.battery = some (HoonSet.toNoun (HoonSet.uni a b))
 
+/-- `+uni:in` of layer 2 on the set nouns of `csHoonSet` is the noun of the
+union. -/
+theorem cs_uni_is : CsUniIs := by
+  intro a b
+  obtain ⟨out, h, hs, hk⟩ := Hoon.uni_in layer2 gorIn_morIn_layer2 _ _ (cs_isSet a) (cs_isSet b)
+  rw [h, isSet_ext hs (cs_isSet (HoonSet.uni a b))]
+  intro k
+  rw [hk, cs_has, cs_has, cs_has]
+  constructor
+  · rintro (⟨y, hy, rfl⟩ | ⟨y, hy, rfl⟩)
+    · exact ⟨y, (HoonSet.mem_uni a b y).2 (Or.inl hy), rfl⟩
+    · exact ⟨y, (HoonSet.mem_uni a b y).2 (Or.inr hy), rfl⟩
+  · rintro ⟨y, hy, rfl⟩
+    rcases (HoonSet.mem_uni a b y).1 hy with h | h
+    · exact Or.inl ⟨y, h, rfl⟩
+    · exact Or.inr ⟨y, h, rfl⟩
+
 variable {x} in
-/-- `+copy-lazy` on fork-free lazy needs, given `+uni:in`, under the side
-conditions of `comp_copy_need`. -/
-theorem comp_copy_lazy (hc : CompIn ctx) (hl : CompLib ctx) (hu : CsUniIs) (g : Gen (TreapMap mugF))
+/-- `+copy-lazy` on fork-free lazy needs, under the side conditions of
+`comp_copy_need`. -/
+theorem comp_copy_lazy (hc : CompIn ctx) (hl : CompLib ctx) (g : Gen (TreapMap mugF))
     (o : Nat) (f s : Sure CSet) (hlt : cnLt g.re f.ned) (hrt : cnLt g.re s.ned)
     (hm : cnMeet f.ned s.ned) :
     nock (C clBat (C (C (A o) (C (lazyNoun f) (lazyNoun s))) (compCore g x ctx))) clBat
@@ -452,7 +470,7 @@ theorem comp_copy_lazy (hc : CompIn ctx) (hl : CompLib ctx) (hu : CsUniIs) (g : 
   have hcn := comp_copy_need (x := x) hl g f.ned s.ned hlt hrt hm
   rw [e] at hcn
   have hao := comp_add_ops x hc g1 o ops
-  have huni := hu f.lok s.lok
+  have huni := cs_uni_is f.lok s.lok
   have hD1 := comp_cnm_at
   have hD2 := comp_add_ops_at
   simp only [compCore] at hcn hao ⊢
@@ -487,9 +505,9 @@ theorem comp_emit_at : slot? 27306 comp.door = some comp.emit.arm := by kernel_r
 
 variable {x} in
 /-- `+copy`: `+emit` of `[~ ~ %hop then.first]`, then `+copy-lazy` into the
-new block, on fork-free lazy needs, given `+uni:in`, with the side
-conditions of `comp_copy_need` on the sure needs. -/
-theorem comp_copy (hc : CompIn ctx) (hl : CompLib ctx) (hu : CsUniIs) (g : Gen (TreapMap mugF))
+new block, on fork-free lazy needs, with the side conditions of
+`comp_copy_need` on the sure needs. -/
+theorem comp_copy (hc : CompIn ctx) (hl : CompLib ctx) (g : Gen (TreapMap mugF))
     (first : Next CSet) (second : Sure CSet) (hlt : cnLt g.re first.laz.ned)
     (hrt : cnLt g.re second.ned) (hm : cnMeet first.laz.ned second.ned) :
     nock (C cpBat (C (C first.goal.toNoun (lazyNoun second)) (compCore g x ctx))) cpBat
@@ -498,7 +516,7 @@ theorem comp_copy (hc : CompIn ctx) (hl : CompLib ctx) (hu : CsUniIs) (g : Gen (
   have he := cf_emit (x := x) hc g ⟨[], [], Termin.hop th⟩
   simp only [Blob.toNoun, listNoun, Termin.toNoun, Tag.hop, Jmp.toNoun] at he
   have hre := cf_emitG_re ⟨[], [], Termin.hop th⟩ g
-  have hcl := comp_copy_lazy (x := x) hc hl hu (cfEmitG ⟨[], [], Termin.hop th⟩ g) g.bo laz second
+  have hcl := comp_copy_lazy (x := x) hc hl (cfEmitG ⟨[], [], Termin.hop th⟩ g) g.bo laz second
     (by rw [hre]; exact hlt) (by rw [hre]; exact hrt) hm
   have hD1 := comp_cp_at
   have hD2 := comp_emit_at
