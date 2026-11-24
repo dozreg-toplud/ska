@@ -20,6 +20,16 @@ takes `pro` itself as its source and makes no proxy.
 * `outGoal_next_of_fill`: a block `[ops; hop th]` whose ops fill `sur` from
   `pro` and keep `K` meets `OutGoal` for `%next sur th`.
 * `kerf_ofSure`: what `+kerf` makes for a fork-free `%next`.
+* `outGoal_kerf`: `OutGoal` of that block in every program that agrees
+  with it, keeping the registers below `pro` and from the end of `+kerf` on.
+* `indirect_prefixN`: the blocks before the two runs, from any state.
+* `SemNC`, `RunOKNC`: `RunOKNV` with `GoalSemCM` against the oracle for
+  `+mink`'s tone on the formula in place of `GoalSem` of a pure value.
+* `indirect_runS`, `indirect_runN`: the indirect call under a fork-free
+  `%next` meets `RunOKNC` from any state with the hypotheses of `OKNV`.
+* `indirect_runD`, `indirect_runP`: under `%done` and `%pick`, the block of
+  `+simple-next` and `RunOKNC` under `%next (lazy-from-reg re)` into it.
+  `outGoal_done`, `outGoal_pick` turn that goal into `%done` and `%pick`.
 -/
 
 set_option linter.unusedSectionVars false
