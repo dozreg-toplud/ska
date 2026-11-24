@@ -260,3 +260,6 @@ open Formalization.SkaModel.Opt
 #print axioms ast_start_names
 #print axioms ast_imms_sub
 #print axioms aedge_mem
+#print axioms aedge_abinv
+#print axioms ast_start_keys
+#print axioms ast_pars_names

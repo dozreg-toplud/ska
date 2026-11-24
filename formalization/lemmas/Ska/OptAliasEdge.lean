@@ -297,6 +297,269 @@ theorem aedge_aok {g : AGen Map} {o q : Nat} {b : Blob} {info : AInfo} {imms : A
     · rw [ho, hoff _ hop, hoff _ hdp]; exact hok.old d hdq
     · rw [ho]
 
+/-! ## The structural invariant at the start -/
+
+theorem aedge_joinReg_empL (y : InfoReg) : joinReg {} y = {} := by
+  cases y; simp [joinReg, InfoReg.loobImm]
+
+theorem aedge_joinReg_empR (x : InfoReg) : joinReg x {} = {} := by
+  obtain ⟨c, l, ho, to, hh, ht, dc, im⟩ := x
+  simp only [joinReg, InfoReg.loobImm, InfoReg.mk.injEq]
+  refine ⟨by simp, by simp, by simp, by simp, ?_, ?_, ?_, ?_⟩ <;> split <;> simp_all
+
+theorem aedge_joinE_ne {a b : InfoReg} (h : joinRegE a b ≠ {}) : a ≠ {} ∧ b ≠ {} := by
+  unfold joinRegE at h
+  split at h
+  · rename_i e; subst e; exact ⟨h, h⟩
+  · exact ⟨fun e => h (by rw [e, aedge_joinReg_empL]), fun e => h (by rw [e, aedge_joinReg_empR])⟩
+
+/-- Every non-empty fact of `m` is at a key where `iq` has a non-empty
+fact. -/
+def KeysIn (m iq : AInfo) : Prop := ∀ r i, m r = some i → i = {} ∨ ∃ i', iq r = some i' ∧ i' ≠ {}
+
+theorem aedge_keys_fold (g : AGen Map) (iq : AInfo) : ∀ (t : List Nat) (acc info : AInfo),
+    t.foldlM (fun acc o1 => (g.info o1).map fun i1 => joinInfoA acc i1) acc = some info →
+    (KeysIn acc iq ∨ ∃ q ∈ t, g.info q = some iq) → KeysIn info iq
+  | [], acc, info, h, hh => by
+    simp only [List.foldlM_nil] at h
+    cases h
+    rcases hh with hh | ⟨q, hq, _⟩
+    · exact hh
+    · cases hq
+  | o1 :: t, acc, info, h, hh => by
+    simp only [List.foldlM_cons] at h
+    obtain ⟨acc', h1, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨i1, hi1, rfl⟩ := Option.map_eq_some_iff.mp h1
+    apply aedge_keys_fold g iq t _ info h
+    have side : ∀ (a b : AInfo), (∀ r x y, a r = some x → b r = some y → x ≠ {} → ∃ i', iq r = some i' ∧ i' ≠ {}) →
+        KeysIn (joinInfoA a b) iq := by
+      intro a b hab r i hr
+      cases ha : a r with
+      | none => simp [joinInfoA, ha] at hr
+      | some x =>
+        cases hb : b r with
+        | none => simp [joinInfoA, ha, hb] at hr
+        | some y =>
+          simp only [joinInfoA, ha, hb, Option.some.injEq] at hr
+          subst hr
+          by_cases e : joinRegE x y = {}
+          · exact Or.inl e
+          · exact Or.inr (hab r x y ha hb (aedge_joinE_ne e).1)
+    rcases hh with hh | ⟨q, hq, hiq⟩
+    · refine Or.inl (side _ _ fun r x y hx _ hne => ?_)
+      rcases hh r x hx with e | e
+      · exact absurd e hne
+      · exact e
+    · rcases List.mem_cons.mp hq with rfl | hq
+      · have e1 : i1 = iq := Option.some.inj (hi1.symm.trans hiq)
+        refine Or.inl fun r i hr => ?_
+        cases ha : acc r with
+        | none => simp [joinInfoA, ha] at hr
+        | some x =>
+          cases hb : i1 r with
+          | none => simp [joinInfoA, ha, hb] at hr
+          | some y =>
+            simp only [joinInfoA, ha, hb, Option.some.injEq] at hr
+            subst hr
+            by_cases e : joinRegE x y = {}
+            · exact Or.inl e
+            · exact Or.inr ⟨y, by rw [← e1]; exact hb, (aedge_joinE_ne e).2⟩
+      · exact Or.inr ⟨q, hq, hiq⟩
+
+/-- **The non-empty facts at the start** are at keys where the listed
+predecessor `q` has non-empty facts, or at the register its end tests. -/
+theorem ast_start_keys {g : AGen Map} {o q : Nat} {pre : List Nat} {info iq : AInfo} {pb : Blob}
+    (h : aliasStart g o pre = some info) (hq : q ∈ pre) (hiq : g.info q = some iq)
+    (hpb : HoonMap.get g.new q = some pb) :
+    ∀ r i, info r = some i → i = {} ∨ (∃ i', iq r = some i' ∧ i' ≠ {}) ∨ r ∈ Path.finReads pb.fin := by
+  cases pre with
+  | nil => cases hq
+  | cons p t =>
+    simp only [aliasStart] at h
+    obtain ⟨i0, hi0, h⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨info0, hf, h⟩ := Option.bind_eq_some_iff.mp h
+    have hj : KeysIn info0 iq := aedge_keys_fold g iq t i0 info0 hf (by
+      rcases List.mem_cons.mp hq with rfl | hq
+      · rw [hiq] at hi0; cases hi0
+        exact Or.inl fun r i hr => by
+          by_cases e : i = {}
+          · exact Or.inl e
+          · exact Or.inr ⟨i, hr, e⟩
+      · exact Or.inr ⟨q, hq, hiq⟩)
+    have plain : ∀ r i, info0 r = some i → i = {} ∨ (∃ i', iq r = some i' ∧ i' ≠ {}) ∨ r ∈ Path.finReads pb.fin :=
+      fun r i hr => (hj r i hr).elim Or.inl (fun e => Or.inr (Or.inl e))
+    by_cases ht : t ≠ []
+    · rw [if_pos ht] at h; cases h; exact plain
+    have htn : t = [] := Classical.byContradiction ht
+    subst htn
+    have hqp : q = p := by simpa using hq
+    subst hqp
+    rw [if_neg (fun e => e rfl)] at h
+    obtain ⟨pb', hpb', h⟩ := Option.bind_eq_some_iff.mp h
+    rw [hpb] at hpb'; cases hpb'
+    have jab : ∀ s (f : InfoReg → InfoReg) m', s ∈ Path.finReads pb.fin → jabA info0 s f = some m' →
+        ∀ r i, m' r = some i → i = {} ∨ (∃ i', iq r = some i' ∧ i' ≠ {}) ∨ r ∈ Path.finReads pb.fin := by
+      intro s f m' hs e r i hr
+      obtain ⟨i0', _, rfl⟩ := as_jab e
+      by_cases er : r = s
+      · subst er; exact Or.inr (Or.inr hs)
+      · rw [as_upd_other _ _ er] at hr; exact plain r i hr
+    revert h
+    cases hfin : pb.fin with
+    | brn s z o' =>
+      have hs : s ∈ Path.finReads pb.fin := by rw [hfin]; simp [Path.finReads]
+      intro h
+      rw [← hfin]
+      simp only at h
+      split at h
+      · exact jab _ _ _ hs h
+      · split at h
+        · exact jab _ _ _ hs h
+        · split at h
+          · exact jab _ _ _ hs h
+          · cases h
+    | brz s z o' =>
+      have hs : s ∈ Path.finReads pb.fin := by rw [hfin]; simp [Path.finReads]
+      intro h
+      rw [← hfin]
+      simp only at h
+      split at h
+      · exact jab _ _ _ hs h
+      · split at h
+        · obtain ⟨si, -, h⟩ := Option.bind_eq_some_iff.mp h
+          split at h
+          · exact jab _ _ _ hs h
+          · cases h; exact plain
+        · cases h; exact plain
+    | clq s z o' =>
+      have hs : s ∈ Path.finReads pb.fin := by rw [hfin]; simp [Path.finReads]
+      intro h
+      rw [← hfin]
+      simp only at h
+      split at h
+      · exact jab _ _ _ hs h
+      · split at h
+        · cases h; exact plain
+        · cases h
+    | hop => intro h; rw [← hfin]; cases h; exact plain
+    | lti => intro h; rw [← hfin]; cases h; exact plain
+    | eqq => intro h; rw [← hfin]; cases h; exact plain
+    | jmp => intro h; rw [← hfin]; cases h; exact plain
+    | jmf => intro h; rw [← hfin]; cases h; exact plain
+    | jsp => intro h; rw [← hfin]; cases h; exact plain
+    | jsf => intro h; rw [← hfin]; cases h; exact plain
+    | don => intro h; rw [← hfin]; cases h; exact plain
+    | bom => intro h; rw [← hfin]; cases h; exact plain
+
+theorem aedge_filterMap_lt : ∀ {l : List (Option InfoReg)}, none ∈ l → (l.filterMap id).length < l.length
+  | [], h => absurd h List.not_mem_nil
+  | a :: l, h => by
+    cases a with
+    | none => simp only [List.filterMap_cons, id, List.length_cons]; exact Nat.lt_succ_of_le (List.length_filterMap_le _ _)
+    | some a =>
+      simp only [List.filterMap_cons, id, List.length_cons]
+      have : none ∈ l := by simpa using h
+      exact Nat.succ_lt_succ (aedge_filterMap_lt this)
+
+/-- `param-info` names nothing when an edge passes `~`. -/
+theorem aedge_param_none {ins : List (Option InfoReg)} (h : none ∈ ins) {x : Nat} : ¬ ANames (paramInfo ins) x := by
+  intro hx
+  unfold paramInfo at hx
+  split at hx
+  · exact ab_nm_empty hx
+  · rename_i hd tl heq
+    dsimp only at hx
+    have hlt := aedge_filterMap_lt h
+    rw [heq] at hlt
+    have hne : ¬ ((hd :: tl).length = ins.length) := by omega
+    rw [heq] at hx
+    simp only [hne, if_false] at hx
+    rcases hx with hx | hx | hx | hx | hx <;> simp at hx
+
+/-- **The parameter loop keeps the names in `D`** when the facts of `q`'s
+arguments name only registers of `D`; a key of the result is a key before or
+a parameter. -/
+theorem ast_pars_names {g : AGen Map} {q : Nat} {iq : AInfo} {D : Nat → Prop} (hiq : g.info q = some iq)
+    (hD : ∀ r i y, iq r = some i → ANames i y → D y) :
+    ∀ (ps : List Nat) (edges : List (Nat × List (Option Nat))) (loc loc0 : AInfo) (args : List (Option Nat)),
+      aliasPars g ps edges loc = some loc0 → (q, args) ∈ edges →
+      (∀ r i y, loc r = some i → ANames i y → D y) →
+      (∀ r i y, loc0 r = some i → ANames i y → D y) ∧ (∀ r i, loc0 r = some i → loc r = some i ∨ r ∈ ps)
+  | [], edges, loc, loc0, args, h, _, hl => by
+    simp only [aliasPars, Option.some.injEq] at h
+    subst h
+    exact ⟨hl, fun r i hr => Or.inl hr⟩
+  | x :: ps, edges, loc, loc0, args, h, he, hl => by
+    simp only [aliasPars] at h
+    obtain ⟨ins, hins, h⟩ := Option.bind_eq_some_iff.mp h
+    have hx : ∀ y, ANames (paramInfo ins) y → D y := by
+      intro y hy
+      obtain ⟨w, hw, hwq⟩ := ast_mapM_mem hins he
+      cases args with
+      | nil => simp [aliasIn] at hwq
+      | cons a0 rest =>
+        cases a0 with
+        | none =>
+          simp only [aliasIn, Option.some.injEq] at hwq; subst hwq
+          exact absurd hy (aedge_param_none hw)
+        | some u =>
+          simp only [aliasIn, hiq, Option.bind_some] at hwq
+          obtain ⟨a, ha, rfl⟩ := Option.map_eq_some_iff.mp hwq
+          exact hD u a y ha (ast_param_names hw hy)
+    obtain ⟨n1, n2⟩ := ast_pars_names hiq hD ps _ _ loc0 args.tail h
+      (List.mem_map.mpr ⟨(q, args), he, rfl⟩) (fun r i y hr hy => by
+        by_cases e : r = x
+        · subst e; rw [as_upd_self] at hr; cases hr; exact hx y hy
+        · rw [as_upd_other _ _ e] at hr; exact hl r i y hr hy)
+    refine ⟨n1, fun r i hr => ?_⟩
+    rcases n2 r i hr with hr | hr
+    · by_cases e : r = x
+      · subst e; exact Or.inr List.mem_cons_self
+      · rw [as_upd_other _ _ e] at hr; exact Or.inl hr
+    · exact Or.inr (List.mem_cons_of_mem _ hr)
+
+/-- **`ABInv` at the start of a block from `ABInv` at the end of the
+predecessor taken**: `Def` at `q`'s end and the parameters of `o` are in
+`Def` at `o`, the registers `q`'s end reads are in `Def` at `q`'s end, a
+register done at `o` is done at `q`'s end with the same `old` or is a
+parameter that keeps its own name, and a register outside `Def` at `o` in `Cl`
+keeps its own name in the global `old`. -/
+theorem aedge_abinv {g : AGen Map} {o q : Nat} {b : Blob} {info : AInfo} {imms : AImms}
+    {edges : List (Nat × List (Option Nat))} {loc0 : AInfo}
+    (hst : aliasStart g o (g.rev o) = some info) (him : aliasStartImms g (g.rev o) = some imms)
+    (hed : aliasEdges g o (g.rev o) = some edges) (hpa : aliasPars g b.par edges info = some loc0)
+    (hq : q ∈ g.rev o) {lq : AInfo} {mq : AImms} {oq : Nat → Nat} (hlq : g.info q = some lq)
+    (hmq : g.imms q = some mq) {pb : Blob} (hpb : HoonMap.get g.new q = some pb)
+    {Defq Dq Defo Do Cl : Nat → Prop} (hi : ABInv ⟨oq, lq, mq⟩ Defq Dq Cl)
+    {j : Jmp} (hj : j ∈ getJmps pb.fin) (hjo : j.there = o)
+    (hDef : ∀ x, Defq x → Defo x) (hparD : ∀ x ∈ b.par, Defo x) (hfinD : ∀ x ∈ Path.finReads pb.fin, Defq x)
+    (hDo : ∀ x, Do x → (Dq x ∧ g.old x = oq x) ∨ (x ∈ b.par ∧ g.old x = x))
+    (hself : ∀ d, ¬ Defo d → Cl d → g.old d = d) :
+    ABInv ⟨g.old, loc0, imms⟩ Defo Do Cl := by
+  have he : (q, j.args) ∈ edges := aedge_mem hed hq hpb hj hjo
+  have hN := ast_start_names hst hq hlq
+  have hK := ast_start_keys hst hq hlq hpb
+  obtain ⟨n1, n2⟩ := ast_pars_names (D := Defo) hlq (fun r i y hr hy => hDef y (hi.loc.1 r i y hr hy))
+    b.par edges info loc0 j.args hpa he (fun r i y hr hy => by
+      obtain ⟨i', hi', hy'⟩ := hN r i y hr hy
+      exact hDef y (hi.loc.1 r i' y hi' hy'))
+  refine ⟨fun n r hr => hDef r (hi.imm n r (ast_imms_sub him hq hmq n r hr)), ⟨n1, fun r i hr => ?_⟩,
+    fun d hd => ?_, fun d hd => ?_, hself⟩
+  · rcases n2 r i hr with hr | hr
+    · rcases hK r i hr with e | ⟨i', hi', hne⟩ | hf
+      · exact Or.inl e
+      · rcases hi.loc.2 r i' hi' with e | e
+        · exact absurd e hne
+        · exact Or.inr (hDef r e)
+      · exact Or.inr (hDef r (hfinD r hf))
+    · exact Or.inr (hparD r hr)
+  · rcases hDo d hd with ⟨hdq, ho⟩ | ⟨hp, ho⟩
+    · simp only; rw [ho]; exact hDef _ (hi.old d hdq)
+    · simp only; rw [ho]; exact hparD d hp
+  · rcases hDo d hd with ⟨hdq, -⟩ | ⟨hp, -⟩
+    · exact hDef d (hi.done d hdq)
+    · exact hparD d hp
+
 end Opt
 end SkaModel
 end Formalization
