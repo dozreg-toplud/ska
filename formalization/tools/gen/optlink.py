@@ -4,7 +4,7 @@ as Lean definitions, cut into named parts.
     tools/capped.sh -m 3G python3 tools/gen/optlink.py WHICH [OUTDIR]
 
 writes `OUTDIR/<WHICH>.lean` (default `.`).  The optimizer is the core `optC`
-at axis `31` of `cor` (battery `nh58984ad6cdbd`, payload `compK`); the
+at axis `31` of `cor` (battery `nh6e49f3724ff1`, payload `compK`); the
 helpers are arms of `compTypes` (axis `3` of `compK`).  An arm of `optC` is
 `[7 [8 [1 bunt] [1 body] [0 1]] hint]`, an arm of `compTypes` is
 `[8 [1 bunt] [1 body] [0 1]]`.  WHICH is one of:
