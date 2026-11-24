@@ -1,0 +1,291 @@
+import lemmas.Compiler.CompMapRegs
+import lemmas.Ska.OptDriver
+
+/-!
+# The pill link of the optimizer: the core, the keys, the nouns
+
+The optimizer's arms are those of the `|%` core `optC` at axis `31` of `cor`
+(`optC_at`): its battery `nh58984ad6cdbd` on the payload `compK`, the core
+of the compiler.  The small helpers (`+get-jmps`, `+get-regs`, ...) are arms
+of `compTypes`, at axis `7` of `optC` (`optC_types`).  `layer2`, the library
+core with `+by`, `+in`, `+roll`, ..., is at axis `0x1ffff` of `optC`
+(`optC_layer2`).
+
+* `Opt.MapKeys (TreapMap mugF)`: the keys in the order in which `+rep:by`
+  visits them (`TreapMap.rap`, pre-order), with `nodup` from the strict
+  `+gor` order of `TreapMap.tap` (`tap_pairwise`), of which `rap` is a
+  permutation (`Tr.pre_perm`).  Every `+rep:by` of a pass is a fold over
+  these keys in its model.
+* The nouns of the IR are injective (`blob_toNoun_inj`, `termin_toNoun_inj`,
+  `pole_toNoun_inj`, `jmp_toNoun_inj`), by decoders that undo them
+  (`blobDec_toNoun`, ...).  The Hoon compares blobs and terminators as nouns
+  (`=(nex-z nex-o)` and `!=(new-fin fin.b)` of `+remove-useless-branching`),
+  the models as values.
+* `NoLti bl`: no block ends in `%lti`.  `+get-jmps` and `+get-regs` give `~`
+  on `%lti` where `getJmps` and `finRegs` do not, so the links of the passes
+  that run them on terminators take it; every pass before `+switch-chains`
+  meets only blocks without `%lti`.
+-/
+
+namespace Formalization
+namespace Compiler
+
+open Nock Pill Hoon SkaModel
+
+set_option linter.unusedSimpArgs false
+set_option linter.unusedVariables false
+
+/-! ## The core -/
+
+/-- The optimizer's core: its battery on `compK`. -/
+def optC : Noun := C nh58984ad6cdbd compK
+
+/-- `optC` is at axis `31` of `cor`. -/
+theorem optC_at : slot? 31 cor = some optC := by kernel_rfl
+
+theorem optC_compK : slot? 3 optC = some compK := rfl
+
+theorem optC_types : slot? 7 optC = some compTypes := rfl
+
+theorem optC_layer2 : slot? 0x1ffff optC = some layer2 := by
+  have h : slot? 3 optC = slot? 1 compK := rfl
+  have := slot_spine (by omega) (by omega) h 15
+  simp only [show 2 ^ 15 * (3 + 1) - 1 = 0x1ffff from rfl,
+    show 2 ^ 15 * (1 + 1) - 1 = 65535 from rfl] at this
+  rw [this]
+  exact compK_layer2
+
+/-! ## The keys of a treap in the order of `+rep:by` -/
+
+namespace Tr
+
+variable {ν : Type}
+
+/-- The pre-order of `+rep` is a permutation of the order of `+tap`. -/
+theorem pre_perm : ∀ t : Tr ν, (t.pre).Perm t.tapL
+  | nil => List.Perm.nil
+  | node k v l r => by
+    simp only [pre, tapL]
+    have hl := pre_perm l
+    have hr := pre_perm r
+    refine List.Perm.trans (List.Perm.cons _ (List.Perm.append hl hr)) ?_
+    refine List.Perm.trans (List.Perm.cons _ List.perm_append_comm) ?_
+    exact List.perm_middle.symm
+
+end Tr
+
+theorem rap_keys_nodup {ν : Type} (m : TreapMap mugF ν) : ((TreapMap.rap m).map Prod.fst).Nodup := by
+  have hp : ((TreapMap.rap m).map Prod.fst).Perm ((TreapMap.tap m).map Prod.fst) :=
+    (Tr.pre_perm m.1).map Prod.fst
+  rw [hp.nodup_iff, List.nodup_iff_pairwise_ne, List.pairwise_map]
+  exact (TreapMap.tap_pairwise m).imp fun h => h.1
+
+/-- **The keys of the optimizer's models on treaps**: those of `rap`, the
+order of `+rep:by`. -/
+instance optMapKeys : Opt.MapKeys (TreapMap mugF) where
+  keys m := (TreapMap.rap m).map Prod.fst
+  mem_keys m k := by
+    constructor
+    · intro hk
+      obtain ⟨⟨k', v⟩, hm, rfl⟩ := List.mem_map.1 hk
+      show (TreapMap.get m k').isSome = true
+      rw [(TreapMap.mem_rap m k' v).1 hm]
+      rfl
+    · intro hk
+      obtain ⟨v, hv⟩ := Option.isSome_iff_exists.1 hk
+      exact List.mem_map.2 ⟨(k, v), (TreapMap.mem_rap m k v).2 hv, rfl⟩
+  nodup m := rap_keys_nodup m
+
+theorem optKeys_eq {ν : Type} (m : TreapMap mugF ν) :
+    Opt.MapKeys.keys m = (TreapMap.rap m).map Prod.fst := rfl
+
+/-- A fold over the keys that looks each key up is a fold over the pairs of
+`rap`. -/
+theorem foldl_keys_rap {ν σ : Type} (m : TreapMap mugF ν) (g : σ → Nat → ν → Option σ) :
+    ∀ (L : List (Nat × ν)), (∀ p ∈ L, HoonMap.get m p.1 = some p.2) → ∀ (acc : Option σ),
+    (L.map Prod.fst).foldl (fun acc k => acc.bind fun s => (HoonMap.get m k).bind fun v => g s k v) acc
+      = acc.bind fun s => L.foldlM (fun s p => g s p.1 p.2) s
+  | [], _, acc => by cases acc <;> rfl
+  | p :: L, hL, acc => by
+    have hp := hL p (by simp)
+    have ih := foldl_keys_rap m g L (fun q hq => hL q (by simp [hq]))
+    simp only [List.map_cons, List.foldl_cons]
+    rw [ih]
+    cases acc with
+    | none => rfl
+    | some a => simp only [Option.bind_some, hp, List.foldlM_cons]; cases g a p.1 p.2 <;> rfl
+
+theorem rap_get {ν : Type} (m : TreapMap mugF ν) : ∀ p ∈ TreapMap.rap m, HoonMap.get m p.1 = some p.2 :=
+  fun p hp => by rw [hoonMap_get]; exact (TreapMap.mem_rap m p.1 p.2).1 hp
+
+/-! ## Decoders of the nouns of the IR -/
+
+namespace OptDec
+
+/-- The atom of an atom, `0` of a cell. -/
+def atomOf : Noun → Nat
+  | Noun.atom n => n
+  | _ => 0
+
+/-- The head of a cell. -/
+def hd : Noun → Noun
+  | Noun.cell h _ => h
+  | x => x
+
+/-- The tail of a cell. -/
+def tl : Noun → Noun
+  | Noun.cell _ t => t
+  | x => x
+
+def listDec {α : Type} (f : Noun → α) : Noun → List α
+  | Noun.cell h t => f h :: listDec f t
+  | _ => []
+
+theorem listDec_listNoun {α : Type} (f : Noun → α) (g : α → Noun) (h : ∀ x, f (g x) = x) :
+    ∀ l : List α, listDec f (listNoun g l) = l
+  | [] => rfl
+  | x :: l => by simp [listNoun, listDec, h, listDec_listNoun f g h l]
+
+def unitDec {α : Type} (f : Noun → α) : Noun → Option α
+  | Noun.cell _ v => some (f v)
+  | _ => Option.none
+
+theorem unitDec_unitNoun {α : Type} (f : Noun → α) (g : α → Noun) (h : ∀ x, f (g x) = x) :
+    ∀ u : Option α, unitDec f (unitNoun g u) = u
+  | Option.none => rfl
+  | Option.some x => by simp [unitNoun, unitDec, h]
+
+def capeDec : Noun → Cape
+  | Noun.atom 1 => Cape.no
+  | Noun.cell h t => Cape.cell (capeDec h) (capeDec t)
+  | _ => Cape.yes
+
+theorem capeDec_toNoun : ∀ c : Cape, capeDec c.toNoun = c
+  | Cape.yes => rfl
+  | Cape.no => rfl
+  | Cape.cell h t => by simp [Cape.toNoun, capeDec, capeDec_toNoun h, capeDec_toNoun t]
+
+def sockDec : Noun → Sock
+  | Noun.cell c d => Sock.mk (capeDec c) d
+  | _ => Sock.void
+
+theorem sockDec_toNoun : ∀ s : Sock, sockDec s.toNoun = s
+  | Sock.void => rfl
+  | Sock.mk c d => by simp [Sock.toNoun, sockDec, capeDec_toNoun]
+
+def bellDec (n : Noun) : Bell := ⟨sockDec (hd n), tl n⟩
+
+theorem bellDec_toNoun (b : Bell) : bellDec b.toNoun = b := by
+  simp [bellDec, Bell.toNoun, hd, tl, sockDec_toNoun]
+
+def ringDec (n : Noun) : Ring := ⟨listDec atomOf (hd n), atomOf (tl n)⟩
+
+theorem ringDec_toNoun (r : Ring) : ringDec r.toNoun = r := by
+  simp [ringDec, Ring.toNoun, hd, tl, atomOf, listDec_listNoun atomOf A (fun _ => rfl)]
+
+def jmpDec (n : Noun) : Jmp := ⟨listDec (unitDec atomOf) (hd n), atomOf (tl n)⟩
+
+theorem jmpDec_toNoun (j : Jmp) : jmpDec j.toNoun = j := by
+  simp [jmpDec, Jmp.toNoun, hd, tl, atomOf,
+    listDec_listNoun (unitDec atomOf) (unitNoun A) (unitDec_unitNoun atomOf A (fun _ => rfl))]
+
+/-- The op of a noun, by its tag. -/
+def poleDec (n : Noun) : Pole :=
+  let t := atomOf (hd n)
+  let r := tl n
+  if t = Tag.imm then Pole.imm (hd r) (atomOf (tl r))
+  else if t = Tag.mov then Pole.mov (atomOf (hd r)) (atomOf (tl r))
+  else if t = Tag.inc then Pole.inc (atomOf (hd r)) (atomOf (tl r))
+  else if t = Tag.con then Pole.con (atomOf (hd r)) (atomOf (hd (tl r))) (atomOf (tl (tl r)))
+  else if t = Tag.hed then Pole.hed (atomOf (hd r)) (atomOf (tl r))
+  else if t = Tag.tal then Pole.tal (atomOf (hd r)) (atomOf (tl r))
+  else if t = Tag.cel then Pole.cel (atomOf r)
+  else if t = Tag.lob then Pole.lob (atomOf r)
+  else if t = Tag.equ then Pole.equ (atomOf (hd r)) (atomOf (tl r))
+  else if t = Tag.hsp then Pole.hsp (atomOf (hd r)) (tl r)
+  else if t = Tag.hse then Pole.hse (atomOf (hd r)) (tl r)
+  else if t = Tag.hdp then Pole.hdp (atomOf (hd r)) (atomOf (hd (tl r))) (tl (tl r))
+  else if t = Tag.hde then Pole.hde (atomOf (hd r)) (atomOf (hd (tl r))) (tl (tl r))
+  else if t = Tag.hmp then Pole.hmp (bellDec (hd r)) (listDec atomOf (hd (tl r))) (tl (tl r))
+  else if t = Tag.hme then Pole.hme (bellDec (hd r)) (listDec atomOf (hd (tl r))) (tl (tl r))
+  else if t = Tag.hcp then Pole.hcp (hd r) (tl r)
+  else if t = Tag.hce then Pole.hce (hd r) (tl r)
+  else if t = Tag.spy then Pole.spy (atomOf (hd r)) (atomOf (hd (tl r))) (atomOf (tl (tl r)))
+  else if t = Tag.nok then Pole.nok (atomOf (hd r)) (atomOf (hd (tl r))) (atomOf (tl (tl r)))
+  else if t = Tag.cal then Pole.cal (bellDec (hd r)) (listDec atomOf (hd (tl r))) (atomOf (tl (tl r)))
+  else if t = Tag.caf then Pole.caf (bellDec (hd r)) (listDec atomOf (hd (tl r)))
+    (atomOf (hd (tl (tl r)))) (ringDec (tl (tl (tl r))))
+  else if t = Tag.cam then Pole.cam (bellDec (hd r)) (listDec atomOf (hd (tl r)))
+    (atomOf (hd (tl (tl r)))) (tl (tl (tl r)))
+  else if t = Tag.csl then Pole.csl (bellDec (hd r)) (atomOf (hd (tl r))) (atomOf (tl (tl r)))
+  else if t = Tag.csf then Pole.csf (bellDec (hd r)) (atomOf (hd (tl r))) (atomOf (hd (tl (tl r))))
+    (ringDec (tl (tl (tl r))))
+  else Pole.csm (bellDec (hd r)) (atomOf (hd (tl r))) (atomOf (hd (tl (tl r)))) (tl (tl (tl r)))
+
+theorem poleDec_toNoun (p : Pole) : poleDec p.toNoun = p := by
+  have hl := listDec_listNoun atomOf A (fun _ => rfl)
+  cases p <;> simp [poleDec, Pole.toNoun, hd, tl, atomOf, Tag.imm, Tag.mov, Tag.inc, Tag.con, Tag.hed,
+    Tag.tal, Tag.cel, Tag.lob, Tag.equ, Tag.hsp, Tag.hse, Tag.hdp, Tag.hde, Tag.hmp, Tag.hme, Tag.hcp,
+    Tag.hce, Tag.spy, Tag.nok, Tag.cal, Tag.caf, Tag.cam, Tag.csl, Tag.csf, Tag.csm, bellDec_toNoun,
+    ringDec_toNoun, hl]
+
+/-- The terminator of a noun, by its tag. -/
+def terminDec (n : Noun) : Termin :=
+  let t := atomOf (hd n)
+  let r := tl n
+  if t = Tag.clq then Termin.clq (atomOf (hd r)) (jmpDec (hd (tl r))) (jmpDec (tl (tl r)))
+  else if t = Tag.eqq then Termin.eqq (atomOf (hd r)) (atomOf (hd (tl r))) (jmpDec (hd (tl (tl r))))
+    (jmpDec (tl (tl (tl r))))
+  else if t = Tag.brn then Termin.brn (atomOf (hd r)) (jmpDec (hd (tl r))) (jmpDec (tl (tl r)))
+  else if t = Tag.brz then Termin.brz (atomOf (hd r)) (jmpDec (hd (tl r))) (jmpDec (tl (tl r)))
+  else if t = Tag.hop then Termin.hop (jmpDec r)
+  else if t = Tag.jmp then Termin.jmp (bellDec (hd r)) (listDec atomOf (tl r))
+  else if t = Tag.jmf then Termin.jmf (bellDec (hd r)) (listDec atomOf (hd (tl r))) (ringDec (tl (tl r)))
+  else if t = Tag.jsp then Termin.jsp (bellDec (hd r)) (atomOf (tl r))
+  else if t = Tag.jsf then Termin.jsf (bellDec (hd r)) (atomOf (hd (tl r))) (ringDec (tl (tl r)))
+  else if t = Tag.don then Termin.don (atomOf r)
+  else if t = Tag.bom then Termin.bom (unitDec atomOf r)
+  else Termin.lti (atomOf (hd r)) (atomOf (hd (tl r))) (jmpDec (hd (tl (tl r)))) (jmpDec (tl (tl (tl r))))
+
+theorem terminDec_toNoun (t : Termin) : terminDec t.toNoun = t := by
+  have hl := listDec_listNoun atomOf A (fun _ => rfl)
+  have hu := unitDec_unitNoun atomOf A (fun _ => rfl)
+  cases t <;> simp [terminDec, Termin.toNoun, hd, tl, atomOf, Tag.clq, Tag.eqq, Tag.brn, Tag.brz, Tag.hop,
+    Tag.jmp, Tag.jmf, Tag.jsp, Tag.jsf, Tag.don, Tag.bom, Tag.lti, bellDec_toNoun, ringDec_toNoun,
+    jmpDec_toNoun, hl, hu]
+
+def blobDec (n : Noun) : Blob := ⟨listDec atomOf (hd n), listDec poleDec (hd (tl n)), terminDec (tl (tl n))⟩
+
+theorem blobDec_toNoun (b : Blob) : blobDec b.toNoun = b := by
+  simp [blobDec, Blob.toNoun, hd, tl, listDec_listNoun atomOf A (fun _ => rfl),
+    listDec_listNoun poleDec Pole.toNoun poleDec_toNoun, terminDec_toNoun]
+
+end OptDec
+
+open OptDec
+
+theorem jmp_toNoun_inj {a b : Jmp} : a.toNoun = b.toNoun ↔ a = b :=
+  ⟨fun h => by rw [← jmpDec_toNoun a, h, jmpDec_toNoun], fun h => h ▸ rfl⟩
+
+theorem pole_toNoun_inj {a b : Pole} : a.toNoun = b.toNoun ↔ a = b :=
+  ⟨fun h => by rw [← poleDec_toNoun a, h, poleDec_toNoun], fun h => h ▸ rfl⟩
+
+theorem termin_toNoun_inj {a b : Termin} : a.toNoun = b.toNoun ↔ a = b :=
+  ⟨fun h => by rw [← terminDec_toNoun a, h, terminDec_toNoun], fun h => h ▸ rfl⟩
+
+theorem blob_toNoun_inj {a b : Blob} : a.toNoun = b.toNoun ↔ a = b :=
+  ⟨fun h => by rw [← blobDec_toNoun a, h, blobDec_toNoun], fun h => h ▸ rfl⟩
+
+/-! ## No `%lti` -/
+
+/-- A terminator other than `%lti`, the terminators of `termin`. -/
+def finPlain : Termin → Bool
+  | Termin.lti _ _ _ _ => false
+  | _ => true
+
+/-- No block ends in `%lti`: blocks of the type `blob`. -/
+def NoLti {Map : Type → Type} [HoonMap Map] (bl : Map Blob) : Prop :=
+  ∀ o b, HoonMap.get bl o = some b → finPlain b.fin = true
+
+end Compiler
+end Formalization
