@@ -219,6 +219,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompSccOne.lean` | `cu_gate_scc_one` with the calls linked: `csi_gate_scc_one_m` (`+compile-scc-in` on `[b ~ ~]`) and `cu_gate_scc_one_m` (`+compile-unary`) state the product as a `bind` over `finishLF nm (sccSur nex cape) cape`, crashing when it is `none` (`csi_final_one_none`, `cu_gate_none`), with `+inlined` (`inl_gate`, under `InlOK`), `+shape-collapse` (`hsc_of_sure`), `kids` for a bell that does not call itself (`NoSelfCall`, `csi_kids_noself` with `int_in`; `NoCalls`, `csi_kids_nocalls`; `ju_has_kids`), `+uni:by` (`uni_by_one`, `IsMap` of `nary`), `+sure-of` succeeding on the fragment (`scc_sur_frag`, by `cra_run_lok` and `sureOf_some`) `args.then` empty on the fragment (`crx_run_args`, `args_frag`) and `was` from the put (`getF_of_putF`).  Left: `hrunL`, `hnoar`, `hb` (the model), `hnary`, `hnmap`, `hcalls` (`NoSelfCall`), `InlOK`, `hput` (the state nouns).  `csi_gate_scc_one_f`, `cu_gate_scc_one_f` fold the run in: a `bind` over `runL` and `finishLF` with `ord := sccSur` of that run, crashing when it is `none` (`mem_gate_none`: the run or `+collapse-shape` crash), under `NoBakeOne` (nothing baked whenever the pass gets to `+bake-need`) and on the state nouns `hnary`, `IsMap` of `nary` and `sure.cache`, `NoSelfCall`, `InlOK`.  The cache hit: when every member of a tree `scc` is in `nary.cache`, `+compile-scc-in` returns the `+gas:by` of the cached straights in the order of `+tap:in` and the cache unchanged (`csi_hit`, `csi_hit_one`, with `+levy`, `+has:by`, `+turn` of `csiHitGate` and `+got:by`), and `+compile-unary` returns `finishLU` with it (`cu_gate_hit`). |
 | `Compiler/CompMemOld.lean` | The branch `memOld` of `member` (`map-local` holds a straight of `b`) on a fixed point reached: `+msg-need-ord` (arm `20` of `K`, nouns by `tools/gen/msgneed.py`, `msg_at`) of two equal shapes is that shape (`msg_eq`), so with the previous shape equal to `need-new` the gate returns `[moved (~(put by map-local) b (finish ~)) cache]` (`mem_prod_old`, `mem_gate_old`: a `bind` over `finishLF`, `map-local` a map).  The pessimized case (`+coerce-soft`) is not linked. |
 | `Compiler/CompNoNN.lean` | `+need-ord-alloc-regs` of `sccSur` succeeds on the fragment (`noar_frag`): the invariant `NN` (no cell and no `%both` of a need with two `%none` halves) holds of the sure need of every run (`nn_run`, through `+simple-next`, `+bomb`, `+from` (`nn_fromPath`), `+split` (`nn_splitNeed`, `nn_must`), `+into` (`nn_intoLoop`, `nn_rollTack`), `+copy` (`nn_copyNeed`)), goes to the shape (`nno_needToOrd`) and through `+sure-of` (`nno_sureLook`, `nno_sureOf`), and `+need-ord-alloc-regs` succeeds on it (`noar_nno`).  A bell whose cape is `|` bakes nothing (`noBake_no`), so for it `cu_gate_scc_one_f` holds with no hypothesis on the model but the fragment (`cu_gate_scc_one_no`). |
+| `Compiler/CompRunTwo.lean` | The case `%2` of `+run` for an indirect call (`info` `~`), against the model with calls `runLC env msup` (`callL` with `info = none`): `CompRunAtR R` (`CompRunAt` against any model `R`, `CompRunAt` is `CompRunAtR runL`), `CompRunAtC env` (against `runLC env msup` for every `msup`; from `CompRunAt` on a pure nomm, `crc_of_pure`, by `runLC_eq`); `CrOut`, `CrRes` (what a run returns: fork-free, below the counter, made of fresh registers and the goal's need, distinct, no look at `0`) and the facts of the `+copy` of two runs (`crf_copy_ok`, `crf_copy_out`); the Nock of the case cut by `tools/gen/runtwo.py` (`cr2_eq`: `[6 [5 [1 0] [0 471]] cr2Ind cr2Dir]`, the direct call `cr2Dir` read from the pill); `cr2_tail` (the run of `q` into the `%nok` block, `+past` over a pure `p`, the run of `p`, `+copy`), `cr2_kf` (`+kerf`, two `+re`, the call block), `comp_run_n2` (the case on every fork-free goal with `CrInv`, `p` pure with no `%6`, given the parts, `Cr2Parts`); `cr5_tailC` (the tail of `%5` with a `q` that may call).  The header lists the helper calls in order and what the branch reads of the state. |
+| `Compiler/CompRunCall.lean` | `+run` on the fragment with indirect calls (`indOk`: pure with no `%6` and `tenOk`, closed under `[2 p q ~]` and `[5 p q]` with `p` pure and `q` in it, under `%3`, `%4`, and `%7` of two of it), against `runLC`: `comp_run_n4C`, `comp_run_n3C` (the proofs of `comp_run_n4`, `comp_run_n3` with `runLC`), `comp_run_n7C` (`q` with `sup` set to `p`), `comp_run_n5C`; the invariant `crf_run` (every run of the fragment from a goal with `CrInv` meets `CrRes`); `comp_run_all_c` (**`CompRunAtC` on every nomm of `indOk`**, every goal and state with `CrInv`, every region and `env`, given only `slot? 7 ctx = some compK` and `slot? 52 ctx = some cod`), `comp_run_entry_c`, and an `example` on `[7 [2 [0 1] [2 [0 3] [0 2] ~] ~] [0 2]]`. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`, whose `keys` are those of `rap`, the order of `+rep:by` (`treapMap_keys`). |
@@ -646,9 +648,9 @@ import only its theorems.  So:
    `+dvr`, `+div`, `+mod` by zero and `+snag` past the end crash; nothing is
    proved about gates slammed on nouns of the wrong shape, nor about nouns on
    which a model is `none`.
-5. **Not done among the arms of the library:** `+uni:by`, `+int` of `+by` and
-   `+in`, and `+dif` of `+by` (`+dif:in` is done, `Hoon/DifIn.lean`, and
-   `+uni:in`, `Hoon/UniIn.lean`).
+5. **Not done among the arms of the library:** `+int` of `+by` and
+   `+in`, and `+dif` of `+by` (`+dif:in` is done, `Hoon/DifIn.lean`,
+   `+uni:in`, `Hoon/UniIn.lean`, and `+uni:by`, `Hoon/UniBy.lean`).
 6. **The arms of `+ca` and `+so` are all done.**  No arm of `+ca` or `+so`
    disagrees with B's model.
 7. **The virtualization arms are done** up to formatting: `+mink`, `+monk`,
@@ -1413,6 +1415,50 @@ import only its theorems.  So:
     `+laze-collapse`, `+laze-may`, `+bake-need-ord`), the pessimized
     `finish` (`+coerce-soft`), a nomm with calls in `+inlined` (`+scc-of`,
     the recursion through `inlined-loop`).
+    L, 2026-11-24 (track A, the indirect call), `Compiler/CompRunTwo.lean`,
+    `Compiler/CompRunCall.lean`.  The case `%2` of `+run` for `info` `~`
+    (lines 3900 to 3924) is linked against the model with calls, `runLC
+    env msup` (`callL` with `info = none`; `runL` is `none` on `%2`), with
+    no departure: `+simple-next`, `+kerf` (block `out`, product `pro`), two
+    `+re`, the block `[~ [%nok r-sub r-fol pro]~ %hop ~ out]`, `q` for
+    `[%next [[%this r-fol] ~] ~ ~] ~ o]`, `+past` over `p`, `p` for
+    `[%next [[%this r-sub] ~] ~ ~] then.nex-fol]`, `+copy`
+    (`comp_run_n2`, on every fork-free goal with `CrInv`, `p` pure with no
+    `%6`).  The branch reads, besides what the pure cases read, `soft` at
+    the block `out` it has just emitted (through `+kern`; no key when
+    `soft` is empty) and `code.long-ska` through `+hinted` in `+past`
+    (not read on a pure `p`); not `mono`, `sup`, `jets`, `cache`, `calls`,
+    `sofs`, and `cond` is not written (no proxy on a fork-free need).  The
+    goals of the parts are fork-free, so `CompRunAt` needs no new class of
+    goals; what is generalized is the model: `CompRunAtR R` takes the model
+    as a parameter, `CompRunAtC env` is `CompRunAtR (runLC env msup)` for
+    every `msup` (the Hoon's `sup` noun stays quantified), and on a pure
+    nomm it follows from `CompRunAt` (`crc_of_pure`, `runLC_eq`).  Where
+    the class of goals does have to grow: `+past` parks a need that asks
+    something in a bond when its nomm is hinted, and every nomm with an
+    indirect call is hinted, so a cons, `%5`, `%10` or `%2` whose part that
+    runs first in Nock order calls returns a lazy need with a bond, and the
+    head of a cons whose tail calls runs for a goal `[%next [*sure ~ [[o
+    [hed ~ ~]] ~]] ..]`: a fork-free need with bonds one level deep (each
+    bond's need `[s ~ ~]`, which `+past`, `+split`, `+into` and `+copy`
+    keep).  The links of `+from`, `+mede`, `+collapse-lazy-atom`,
+    `+split`, `+into`, `+copy` and `+kern` are on `[sure ~ ~]` only, so the
+    summary is stated on the fragment where no bond arises: `indOk` (pure
+    with no `%6` and `tenOk`, closed under `[2 p q ~]` and `[5 p q]` with
+    `p` pure and `q` in it, under `%3`, `%4`, and `%7` of two of it; a Nock
+    `9` `[7 c [2 [0 1] [0 b] ~]]` with `c` in it is in it).
+    `comp_run_all_c`: `CompRunAtC` on every nomm of `indOk`, every goal and
+    state with `CrInv`, every region and `env`, given only `slot? 7 ctx =
+    some compK` and `slot? 52 ctx = some cod`; the invariant `crf_run`
+    (every run of the fragment returns a fork-free `next` below the
+    counter, made of fresh registers and the goal's need, distinct, no look
+    at `0`) gives the side condition of every `+copy` and the goals of `%7`.
+    `comp_run_all'` stays.  Next, for nesting in any way: the links of the
+    seven arms above on a need with bonds one level deep (their loops
+    `spin-split`, `turn`, `+lazy-prune`, the `malt`, `silt`, `spin`,
+    `skip` of `+copy-lazy`, and `+proxy` with `tags` in `+kern`,
+    `+collapse-lazy-atom`, `+mede`), and `CrInv` for such needs (bond
+    blocks tagged, bond needs below the counter and apart).
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
