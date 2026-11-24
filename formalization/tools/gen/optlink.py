@@ -248,6 +248,88 @@ elif WHICH == 'rh':
              ('rhGate', gate, 'The gate of the `+roll` over `topo`.'),
              ('rhBody', body, 'The gate body of `+remove-hops`.'),
              ('rhBunt', bunt, 'Its sample bunt.'), ('rhHint', hint, 'Its `%fast` hint.')]
+elif WHICH == 'rem':
+    bunt, body, hint = opt_arm(2940)
+    # body = [8 READERS [8 [1 BAT] [9 10 [0 1]]]]
+    _, readers, r2 = seq(body, 3)
+    _, batq, _ = seq(r2, 3)
+    bat = norm(batq)[2]
+    hop, mj = seq(bat, 2)
+    main, jump = seq(mj, 2)
+    hbunt, hbody = ct_arm_of(hop)
+    jbunt, jbody = ct_arm_of(jump)
+    # READERS = [6 ANYCALL REPCALL [1 0]]
+    _, anycall, repcall, _ = seq(readers, 4)
+    def slam_gate(call):
+        # [8 DOOR [9 2 [10 [6 [7 [0 3] [8 [1 GB] [[1 GATE] [0 1]]]]] [0 2]]]]
+        _, door, sl = seq(call, 3)
+        _, _, ed = seq(sl, 3)
+        _, e6, _ = seq(ed, 3)
+        _, mk = seq(e6, 2)
+        _, _, mk2 = seq(mk, 3)
+        _, gb1, g1, _ = seq(mk2, 4)
+        return norm(gb1)[2], norm(g1)[2]
+    anyb, anyg = slam_gate(anycall)
+    rdb, rdg = slam_gate(repcall)
+    mainb, maing = slam_gate(main)
+    # rdg = [8 [8 [1 [0 0]] [[1 PUT] [0 1]]] [7 [10 [29 ROLLFIN] [0 1]] ROLLBODY]]
+    _, putmk, rd1 = seq(rdg, 3)
+    _, _, pm2 = seq(putmk, 3)
+    putg = norm(norm(pm2)[1])[2]
+    _, ed29, rollbody = seq(rd1, 3)
+    # ROLLBODY = [8 ROLLARM [9 2 [10 [6 [[0 486] [7 [0 3] [8 [BUNTF [[1 OPG] [0 1]]]]]]] [0 2]]]]
+    _, _, rb1 = seq(rollbody, 3)
+    _, _, rb2 = seq(rb1, 3)
+    _, rb3, _ = seq(rb2, 3)
+    _, rb4 = seq(rb3, 2)
+    _, rb5 = seq(rb4, 2)
+    _, _, rb6 = seq(rb5, 3)
+    _, buntf, opg1, _ = seq(rb6, 4)
+    opg = norm(opg1)[2]
+    # HOP body: [8 GOT [6 T1 [6 T2 [6 LEVY [8 SUB [8 PASS KICK]] [0 14]] [0 14]] [0 14]]]
+    _, hgot, h1 = seq(hbody, 3)
+    _, _, h2, _ = seq(h1, 4)
+    _, _, h3, _ = seq(h2, 4)
+    _, levy, h4, _ = seq(h3, 4)
+    _, sub, h5 = seq(h4, 3)
+    _, passg, hkick = seq(h5, 3)
+    # LEVY = [8 LEVYARM [9 2 [10 [6 [[0 12] [7 [0 3] [8 [1 0] [[1 LG] [0 1]]]]]] [0 2]]]]
+    _, _, l1 = seq(levy, 3)
+    _, _, l2 = seq(l1, 3)
+    _, l3, _ = seq(l2, 3)
+    _, l4 = seq(l3, 2)
+    _, l5 = seq(l4, 2)
+    _, _, l6 = seq(l5, 3)
+    _, _, lg1, _ = seq(l6, 4)
+    levyg = norm(lg1)[2]
+    # SUB = [8 [1 0] [8 [0 12] [8 [0 124] [8 [1 SUBT] [9 2 [0 1]]]]]]
+    _, _, s1 = seq(sub, 3)
+    _, _, s2 = seq(s1, 3)
+    _, _, s3 = seq(s2, 3)
+    _, subtq, _ = seq(s3, 3)
+    subt = norm(subtq)[2]
+    # PASS = [8 [1 0] [[1 PB] [0 1]]]
+    _, _, p1 = seq(passg, 3)
+    ob, _ = seq(p1, 2)
+    passb = norm(ob)[2]
+    defs += [('remPutG', putg, 'The gate `put` of `readers`: `(~(put ju acc) r o)`.'),
+             ('remOpG', opg, 'The gate of the `+roll` over `body.b` in `readers`.'),
+             ('remBuntF', buntf, 'The sample of that gate, `[*pole acc]`, its bunt made by the mold `pole` (arm `2743` of `compTypes`).'),
+             ('remRdG', rdg, 'The gate of the `+rep:by` that makes `readers`.'),
+             ('remRdB', rdb, 'Its sample bunt.'),
+             ('remAnyG', anyg, 'The test of the `+any:by`: an empty block with parameters that ends in a `%hop`.'),
+             ('remAnyB', anyb, 'Its sample bunt.'),
+             ('remReaders', readers, '`readers`.'),
+             ('remLevyG', levyg, 'The gate of the `+levy` of `rewrite-hop`: no reader but `there.j`.'),
+             ('remSubT', subt, 'The trap that makes `sub`.'),
+             ('remPassB', passb, 'The body of the gate `pass`.'),
+             ('remHopBody', hbody, 'The gate body of `rewrite-hop` (arm `4` of the `|^` core).'),
+             ('remJumpBody', jbody, 'The gate body of `rewrite-jump` (arm `11` of the `|^` core).'),
+             ('remMainG', maing, 'The gate of the `+rep:by` of `$` (arm `10` of the `|^` core).'),
+             ('remMainB', mainb, 'Its sample bunt.'),
+             ('remBat', bat, 'The battery of the `|^` core: `rewrite-hop`, `$`, `rewrite-jump`.'),
+             ('remBody', body, 'The gate body of `+remove-empty-middle`.'),
+             ('remBunt', bunt, 'Its sample bunt.'), ('remHint', hint, 'Its `%fast` hint.')]
 else:
     raise SystemExit('unknown ' + WHICH)
 with open(os.path.join(OUT, WHICH + '.lean'), 'w') as f:
