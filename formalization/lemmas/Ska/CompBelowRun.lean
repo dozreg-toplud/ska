@@ -483,6 +483,139 @@ theorem keeps_bomb {miss : Option Nat} {g g' : Gen Map} {nex : Next S} (hd : g.d
   obtain ⟨rfl, rfl⟩ := h
   exact ⟨k1, nb_none _, jmpIn_jmp0 _ _⟩
 
+/-! ## `+split`, `+into`, `+copy` -/
+
+theorem nb_rollTack {n : Nat} : ∀ (tack : List (Bool × Need)) (acc : Need), NB n acc → (∀ e ∈ tack, NB n e.2) →
+    NB n (tack.foldl (fun acc e => side e.1 acc e.2) acc)
+  | [], _, ha, _ => ha
+  | e :: tack, _, ha, ht => nb_rollTack tack _
+      (fun y hy => ((nmem_side _ _ _ y).mp hy).elim (ha y) (ht e (List.mem_cons_self ..) y))
+      (fun x hx => ht x (List.mem_cons_of_mem _ hx))
+
+theorem keeps_intoLoop {o : Nat} : ∀ (axe : Nat) (ned : Need) (tack : List (Bool × Need)) (ops : List Pole)
+    (g g' : Gen Map) (x : Need × Need), intoLoop o axe ned tack ops g = some (x, g') →
+    NB g.re ned → (∀ e ∈ tack, NB g.re e.2) → RegsIn (· < g.re) ops → Keeps g g' ∧ NB g'.re x.1 ∧ NB g'.re x.2 := by
+  intro axe
+  induction axe using Nat.strongRecOn with
+  | ind axe ih =>
+  intro ned tack ops g g' x h hc ht hA
+  rw [intoLoop] at h
+  by_cases h1 : axe ≤ 1
+  · rw [dif_pos h1] at h
+    obtain ⟨u, g1, h2, h⟩ := bind_some h
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    obtain ⟨k, e⟩ := keeps_addOps hA h2
+    exact ⟨k, hc.mono (Nat.le_of_eq e.symm),
+      nb_rollTack tack Need.none (nb_none _) (fun e' he => (ht e' he).mono (Nat.le_of_eq e.symm))⟩
+  rw [dif_neg h1] at h
+  have lt := mas_lt axe (by omega)
+  cases ned with
+  | none =>
+    exact ih _ lt _ _ _ _ _ _ h (nb_none _) (by
+      intro e he; rcases List.mem_cons.mp he with e' | he
+      · rw [e']; exact nb_none _
+      · exact ht e he) hA
+  | this r =>
+    simp only at h
+    obtain ⟨l, g1, h1', h⟩ := bind_some h
+    obtain ⟨r', g2, h2, h⟩ := bind_some h
+    obtain ⟨e1, q1, k1⟩ := keeps_re h1'
+    obtain ⟨e2, q2, k2⟩ := keeps_re h2
+    have hr : r < g.re := hc r rfl
+    obtain ⟨k, n1, n2⟩ := ih _ lt _ _ _ _ _ _ h (nb_this (by split <;> omega)) (by
+      intro e he; rcases List.mem_cons.mp he with e' | he
+      · rw [e']; exact nb_this (by split <;> omega)
+      · exact (ht e he).mono (by omega)) (regsIn_con (by omega) (by omega) (by omega) (hA.mono fun _ e => by omega))
+    exact ⟨k1.trans (k2.trans k), n1, n2⟩
+  | pair p q =>
+    simp only at h
+    exact ih _ lt _ _ _ _ _ _ h (by split <;> first | exact fun y hy => hc y (Or.inl hy) | exact fun y hy => hc y (Or.inr hy))
+      (by
+        intro e he; rcases List.mem_cons.mp he with e' | he
+        · rw [e']; show NB _ (if _ then _ else _); split
+          · exact fun y hy => hc y (Or.inr hy)
+          · exact fun y hy => hc y (Or.inl hy)
+        · exact ht e he) hA
+  | both r hh t =>
+    simp only at h
+    obtain ⟨⟨lr, ln⟩, g1, h1', h⟩ := bind_some h
+    obtain ⟨⟨rr, rn⟩, g2, h2, h⟩ := bind_some h
+    have hr : r < g.re := hc r (Or.inl rfl)
+    obtain ⟨k1, nl, rl⟩ := keeps_must (fun y hy => hc y (Or.inr (Or.inl hy))) h1'
+    obtain ⟨k2, nr, rr2⟩ := keeps_must (NB.mono (n := g.re) (fun y hy => hc y (Or.inr (Or.inr hy))) k1.le) h2
+    have l1 := k1.le
+    have l2 := k2.le
+    obtain ⟨k, n1, n2⟩ := ih _ lt _ _ _ _ _ _ h (by split; exact nl.mono l2; exact nr) (by
+      intro e he; rcases List.mem_cons.mp he with e' | he
+      · rw [e']; show NB _ (if _ then _ else _); split
+        · exact nr
+        · exact nl.mono l2
+      · exact (ht e he).mono (by omega)) (regsIn_con (by omega) (by omega) (by omega) (hA.mono fun _ e => by omega))
+    exact ⟨k1.trans (k2.trans k), n1, n2⟩
+
+theorem keeps_split {laz : Sure S} {th : Jmp} {g g' : Gen Map} {x : Sure S × Sure S × Nat} (hd : g.drop = false)
+    (hn : NB g.re laz.ned) (hj : JmpIn (· < g.re) th) (h : Comp.split ⟨laz, th⟩ g = some (x, g')) :
+    Keeps g g' ∧ NB g'.re x.1.ned ∧ NB g'.re x.2.1.ned := by
+  simp only [Comp.split] at h
+  obtain ⟨o, g0, h0, h⟩ := bind_some h
+  obtain ⟨k0, _⟩ := keeps_emit hd (blobIn_fin (f := Termin.hop th) hj) h0
+  obtain ⟨⟨sh, st⟩, g1, h2, h⟩ := bind_some h
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨rfl, rfl⟩ := h
+  simp only [splitSure] at h2
+  obtain ⟨⟨lh, lt⟩, _, h2⟩ := Option.bind_eq_some_iff.mp h2
+  obtain ⟨⟨⟨nh, nt⟩, g2⟩, h3, h4⟩ := Option.map_eq_some_iff.mp h2
+  simp only [Option.some.injEq, Prod.mk.injEq] at h4
+  obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h4
+  obtain ⟨k3, n1, n2⟩ := keeps_splitNeed (hn.mono k0.le) h3
+  exact ⟨k0.trans k3, n1, n2⟩
+
+theorem keeps_copy {first : Next S} {second : Sure S} {g g' : Gen Map} {nex : Next S} (hd : g.drop = false)
+    (h1 : NextIn g.re first) (h2 : NB g.re second.ned) (h : copy first second g = some (nex, g')) :
+    Keeps g g' ∧ NextIn g'.re nex := by
+  simp only [copy] at h
+  obtain ⟨o, g0, h0, h⟩ := bind_some h
+  obtain ⟨k0, _⟩ := keeps_emit hd (blobIn_fin (f := Termin.hop first.th) h1.2) h0
+  obtain ⟨laz, g1, h1', h⟩ := bind_some h
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨rfl, rfl⟩ := h
+  simp only [copyLazy] at h1'
+  obtain ⟨⟨n1, o1⟩, g2, h2', h1'⟩ := bind_some h1'
+  obtain ⟨k2, nb2, rg2⟩ := keeps_copyNeed h2' (h1.1.mono k0.le) (h2.mono k0.le)
+  obtain ⟨u, g3, h3, h1'⟩ := bind_some h1'
+  obtain ⟨k3, e3⟩ := keeps_addOps rg2 h3
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h1'
+  obtain ⟨rfl, rfl⟩ := h1'
+  exact ⟨k0.trans (k2.trans k3), nb2.mono (Nat.le_of_eq e3.symm), jmpIn_jmp0 _ _⟩
+
+theorem keeps_into {nex : Next S} {axe : Nat} {g g' : Gen Map} {x : Sure S × Sure S × Nat} (hd : g.drop = false)
+    (hn : NextIn g.re nex) (h : into nex axe g = some (x, g')) :
+    Keeps g g' ∧ NB g'.re x.1.ned ∧ NB g'.re x.2.1.ned := by
+  simp only [into] at h
+  obtain ⟨o, g0, h0, h⟩ := bind_some h
+  obtain ⟨k0, _⟩ := keeps_emit hd (blobIn_fin (f := Termin.hop nex.th) hn.2) h0
+  obtain ⟨⟨sd, sr⟩, g1, h2, h⟩ := bind_some h
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨rfl, rfl⟩ := h
+  simp only [intoSure] at h2
+  obtain ⟨⟨ld, lr⟩, _, h2⟩ := Option.bind_eq_some_iff.mp h2
+  obtain ⟨⟨⟨nd, nr⟩, g2⟩, h3, h4⟩ := Option.map_eq_some_iff.mp h2
+  simp only [Option.some.injEq, Prod.mk.injEq] at h4
+  obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h4
+  simp only [intoNeed] at h3
+  by_cases a0 : axe = 0
+  · simp [a0] at h3
+  rw [if_neg a0] at h3
+  by_cases a1 : axe = 1
+  · rw [if_pos a1] at h3
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h3
+    obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h3
+    exact ⟨k0, hn.1.mono k0.le, nb_none _⟩
+  rw [if_neg a1] at h3
+  obtain ⟨k3, n1, n2⟩ := keeps_intoLoop _ _ _ _ _ _ _ h3 (hn.1.mono k0.le) (fun e he => by simp at he) (RegsIn.nil _)
+  exact ⟨k0.trans k3, n1, n2⟩
+
 end Comp
 end SkaModel
 end Formalization
