@@ -3170,9 +3170,12 @@ import only its theorems.  So:
     which full doubling needs, `M_{k-1} > M_k + M_{k+1}`), always below a
     third of the passes: each push of one identity needs a cull between,
     and a cull ends a pass.  Wall time on the plain library is polynomial:
-    about 0.6, 3.3 and 22 s per `+ska-callgraph` call for one register of
-    195, 395 and 795 slots (a power 2.5 to 2.7 of the size: the passes
-    times the runs of a pass times the formula with its long axes).  Search for a loop that does not
+    about 0.6, 3.3, 22 and 75 s per `+ska-callgraph` call for one
+    register of 195, 395, 795 and 1195 slots (`c 1 600 595`, the smallest
+    input seen over 60 s; a power 2.5 to 3 of the size: the passes times
+    the runs of a pass times the formula with its long axes).  That time
+    is the plain iteration of a long register, not the re-pushes (one
+    restarting callee, at most 2 pushes of one identity).  Search for a loop that does not
     return: 960 random cores with two shared formulas and feedback of
     site products into the root's registers (50 re-pushes, at most 18
     passes), 1280 random self-calls of one formula at many subjects (3690
