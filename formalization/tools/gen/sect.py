@@ -14,7 +14,7 @@ the gate batteries `scG0`, `scG1` and the bunt of their sample, whose
 branches when `tars` has no target are `scG0Y`, `scG1Y`; the branch with a
 target, the same in both, is `scGS`.  Writes OUTFILE between
 `-- BEGIN sect` and `-- END sect`; the parts are substituted by structural
-equality, so `scBat` unfolds to the pill's noun (`sc_at` is a kernel fact)."""
+equality, so `scBat` unfolds to the pill's noun (`sect_at` is a kernel fact)."""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from nouns import slot, norm

@@ -60,9 +60,6 @@ theorem sectStep_some {rid : Nat} {yes : Bool} {made : TreapMap mugF (Nat × Lis
   rw [hk]
   rfl
 
-theorem unitNoun_some' (y : Nat) : unitNoun A (some y) = C (A 0) (A y) := rfl
-theorem unitNoun_none' : unitNoun A (Option.none : Option Nat) = A 0 := rfl
-
 /-- **The gate of `~(rep by made-0)`** is `sectStep rid true made`. -/
 theorem sc_g0 (hc : CompIn ctx) (rid : Nat) (IB IS IC Y1 Y2 Y3 Y4 Y5 Y6 Y7 bc : Noun)
     (hins : ∀ tag : List Nat, nock (C IB (C (listNoun A tag) IC)) IB = some (loob (tag.any (· == rid))))
@@ -551,6 +548,93 @@ theorem sc_nd (hc : CompIn ctx) (o1b o0b : Nat) (Y6 N0 N1 : Noun) (o0 o1 rid : N
     unfold scND scOt
     simp [nock_exec, hc, by_arm, by.arm_at, by.dif.arm_at, dif_arm, hd0, hd1, by.got.arm_at, got_arm, g0, g1,
       Blob.toNoun, Termin.toNoun, Jmp.toNoun, Tag.clq, Tag.eqq, Tag.brn, Tag.brz, Tag.hop, Tag.jmp, Tag.jmf, Tag.jsp, Tag.jsf, Tag.don, Tag.bom, Tag.lti]
+
+/-- `?:  dropping  gen  scND`. -/
+theorem sc_thr (hc : CompIn ctx) (o1b o0b : Nat) (Y6 N0 N1 : Noun) (o0 o1 rid : Nat) (rest : List Nat)
+    (cb cbw : TreapMap mugF (Nat × List Nat)) (g : Gen (TreapMap mugF)) :
+    nock (scT (ctx := ctx) x o1b o0b Y6 N0 N1 o0 o1 rid rest cb cbw g) scThr
+      = ((if g.drop then pure () else sectThread rid o0 o1 cb cbw : CM (TreapMap mugF) Unit) g).map
+          fun p => genNoun p.2 x := by
+  have hn := sc_nd x hc o1b o0b Y6 N0 N1 o0 o1 rid rest cb cbw g
+  have hdr := comp_dropping ctx x g
+  have hda := comp_drop_at' (C (genNoun g x) ctx)
+  simp only [scT, compCore] at hn hdr hda ⊢
+  generalize comp.door = Dr at hn hdr hda ⊢
+  unfold scThr
+  cases hd : g.drop
+  · simp [nock_exec, hda, hdr, hd, loob, hn]
+  · simp [nock_exec, hda, hdr, hd, loob, pure_apply]
+
+/-- The sample of `+sect`. -/
+noncomputable def scSmp (nex0 nex1 : NextL CSet) (o0 o1 : Nat) (rb : List Nat) (cb cbw : TreapMap mugF (Nat × List Nat)) :
+    Noun :=
+  C nex0.goal.toNoun (C nex1.goal.toNoun (C (A o0) (C (A o1) (C (listNoun A rb)
+    (C (HoonMap.toNoun condValNoun cb) (HoonMap.toNoun condValNoun cbw))))))
+
+/-- **`+sect` is the model's `sect`**: the gate's battery on its sample and
+the door. -/
+theorem comp_sect (hc : CompIn ctx) (nex0 nex1 : NextL CSet) (o0 o1 : Nat) (rb : List Nat)
+    (cb cbw : TreapMap mugF (Nat × List Nat)) (g : Gen (TreapMap mugF)) :
+    nock (C scBat (C (scSmp nex0 nex1 o0 o1 rb cb cbw) (compCore g x ctx))) scBat
+      = (sect nex0 nex1 o0 o1 rb cb cbw g).map
+          fun p => C (C p.1.1.toNoun (C (A p.1.2.1) (A p.1.2.2))) (genNoun p.2 x) := by
+  cases rb with
+  | nil =>
+    unfold scBat
+    simp [nock_exec, scSmp, listNoun, sect]
+  | cons rid rest =>
+  obtain ⟨l0, ⟨a0, t0⟩⟩ := nex0
+  obtain ⟨l1, ⟨a1, t1⟩⟩ := nex1
+  have he1 := cf_emit (x := x) hc g ⟨[], [], Termin.hop ⟨a0, t0⟩⟩
+  generalize hg1 : cfEmitG ⟨[], [], Termin.hop ⟨a0, t0⟩⟩ g = g1 at he1
+  have he2 := cf_emit (x := x) hc g1 ⟨[], [], Termin.hop ⟨a1, t1⟩⟩
+  generalize hg2 : cfEmitG ⟨[], [], Termin.hop ⟨a1, t1⟩⟩ g1 = g2 at he2
+  have hst1 := comp_set_tag x hc g2 g.bo (rid :: rest)
+  have hst2 := comp_set_tag x hc (stG g.bo (rid :: rest) g2) g1.bo (rid :: rest)
+  simp only [st_apply, Option.map_some] at hst1 hst2
+  generalize hg4 : stG g1.bo (rid :: rest) (stG g.bo (rid :: rest) g2) = g4 at hst2
+  have ht := sc_thr x hc g1.bo g.bo scBat (CGoalL.next l0 ⟨a0, t0⟩ : CGoalL CSet).toNoun
+    (CGoalL.next l1 ⟨a1, t1⟩ : CGoalL CSet).toNoun o0 o1 rid rest cb cbw g4
+  have hD1 := comp_emit_at
+  have hD2 := comp_set_tag_at
+  have hm : sect ⟨l0, ⟨a0, t0⟩⟩ ⟨l1, ⟨a1, t1⟩⟩ o0 o1 (rid :: rest) cb cbw g
+      = ((if g4.drop then pure () else sectThread rid o0 o1 cb cbw : CM (TreapMap mugF) Unit) g4).bind
+        (fun p => (if a0 ≠ [] then (fun _ => Option.none) else if a1 ≠ [] then (fun _ => Option.none) else
+          pure (Lazy.mk Sure.bunt [((g.bo, l0), (g1.bo, l1))] [], g.bo, g1.bo) :
+            CM (TreapMap mugF) (Lazy CSet × Nat × Nat)) p.2) := by
+    unfold sect
+    simp only [bind_apply, cf_emit_g, hg1, hg2, Option.bind_some, st_apply, hg4, get_apply']
+    split <;> rfl
+  rw [hm]
+  simp only [NextL.goal, cgl_next_noun6, scT, compCore] at ht ⊢
+  simp only [scSmp, NextL.goal, cgl_next_noun6, compCore, listNoun] at hst1 hst2 ht ⊢
+  simp only [Blob.toNoun, listNoun, Termin.toNoun, Tag.hop, Jmp.toNoun] at he1 he2
+  generalize comp.door = Dr at he1 he2 hst1 hst2 hD1 hD2 ht ⊢
+  cases e : ((if g4.drop then pure () else sectThread rid o0 o1 cb cbw : CM (TreapMap mugF) Unit) g4) with
+  | none =>
+    rw [e] at ht
+    conv => lhs; arg 2; unfold scBat
+    unfold scB
+    simp [nock_exec, hD1, comp_emit_arm, he1, he2, hD2, comp_set_tag_arm, hst1, hst2, ht, listNoun, e]
+  | some r =>
+    obtain ⟨u, g5⟩ := r
+    rw [e] at ht
+    simp only [Option.map_some] at ht
+    rcases a0 with _ | ⟨a0h, a0t⟩
+    · rcases a1 with _ | ⟨a1h, a1t⟩
+      · simp only [listNoun] at he1 he2 ht
+        conv => lhs; arg 2; unfold scBat
+        unfold scB scTail
+        simp [nock_exec, hD1, comp_emit_arm, he1, he2, hD2, comp_set_tag_arm, hst1, hst2, ht, listNoun, e,
+          lyn_lazy_noun, pure_apply]
+      · simp only [listNoun] at he1 he2 ht
+        conv => lhs; arg 2; unfold scBat
+        unfold scB scTail
+        simp [nock_exec, hD1, comp_emit_arm, he1, he2, hD2, comp_set_tag_arm, hst1, hst2, ht, listNoun, e]
+    · simp only [listNoun] at he1 he2 ht
+      conv => lhs; arg 2; unfold scBat
+      unfold scB scTail
+      simp [nock_exec, hD1, comp_emit_arm, he1, he2, hD2, comp_set_tag_arm, hst1, hst2, ht, listNoun, e]
 
 end Compiler
 end Formalization

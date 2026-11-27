@@ -5,7 +5,7 @@ import lemmas.Compiler.CompRunLink
 
 Written by `tools/gen/sect.py` between the markers; do not edit by hand.
 The gate is door arm `6906`, `[7 [8 [1 scBunt] [1 scBat] 0 1] [11 %fast ..]]`
-(`sc_at`); `scBat` is built from the parts, so `sc_at` checks the cut.
+(`sect_at`); `scBat` is built from the parts, so `sect_at` checks the cut.
 -/
 
 namespace Formalization
@@ -81,12 +81,12 @@ def scBunt : Noun :=
 -- END sect
 
 /-- The arm `+sect` of the door, with its `%fast` hint. -/
-def scArm : Noun :=
+def sectArm : Noun :=
   C (A 7) (C (C (A 8) (C (C (A 1) scBunt) (C (C (A 1) scBat) (C (A 0) (A 1)))))
     (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x746365732d706d6f63) (C (C (A 0) (A 0x7ffff)) (A 0)))))
       (C (A 0) (A 1)))))
 
-theorem sc_at : slot? 6906 comp.door = some scArm := by kernel_rfl
+theorem sect_at : slot? 6906 comp.door = some sectArm := by kernel_rfl
 
 end Compiler
 end Formalization
