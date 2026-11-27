@@ -452,6 +452,18 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
     With calls: `EntryMono`, `EntryNary` on `MonoCalls` / `NaryCalls` are
     still leaves (the guard holds on `enumCX`; needs D's `OptIn` with calls
     and a run-level `KP` for the call arms).  No pill link: model facts.
+    SEVENTH PASS, the first blocker with calls: `entryOK_of`'s hypothesis
+    `CelGuard` is FALSE on the raw code of a direct call.  `+mono-try-call`
+    guards its split by a `%clq` TERMINATOR of another block, not by a `%cel`
+    of the same body: in `Ska/CompDirectMCheck.lean`, case `%dt` (`[8 [1 R]
+    [9 2 [0 1]]]`, `#guard`ed equal to the real compiler), block 4 is `[hed 2
+    4, tal 2 3]` with no `%cel 2`, reached from block 5 `clq 2 (jmp0 4)
+    (jmp0 2)` (also `%dn`: blocks 7 and 8).  So `EntryMono` on `CallTreeDB`
+    needs `entryOK_of` with a PATH guard (`EInv` carrying "register `s` is a
+    cell" along the yes-edge of `clq s` into a block that splits `s` before
+    writing it), then `KP` for the call arms with that guard, then D's
+    `OptIn` with calls for `DefFirst` / `ReadsIn` (D: `ArmsL` = `n5`,
+    `cons`, `n10`, `n2` left).  Not started.
 2.d `optRef`: see the table; with calls the input side of track H's
     totality (`opt_total_*` need `FragX` because the alias pass reads only
     call-free blocks) is open.
