@@ -137,6 +137,7 @@ import lemmas.Compiler.CompRunSixRes
 import lemmas.Compiler.CompSixFork
 import lemmas.Compiler.DifMap
 import lemmas.Ska.CompSixFuel
+import lemmas.Compiler.CompSect
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -1109,4 +1110,8 @@ open Formalization
 #print axioms Hoon.dif_by
 #print axioms Compiler.get_difM
 #print axioms Compiler.dif_by_hoonMap
+#print axioms Compiler.comp_sect
+#print axioms Compiler.sc_nd
+#print axioms Compiler.sc_jabs
+#print axioms Compiler.sc_rep0
 #print axioms SkaModel.Comp.sixNextLC_fuel
