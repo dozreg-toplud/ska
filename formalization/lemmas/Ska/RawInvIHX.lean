@@ -1,6 +1,7 @@
 import lemmas.Ska.RawInvFragX
 import lemmas.Ska.RawInvTopX
 import lemmas.Ska.CompFragX
+import lemmas.Ska.CompSevenN
 
 /-!
 # Raw `+comp` output on `FragX`: the run-level invariant
@@ -112,6 +113,33 @@ theorem rawX_sevenFrom {axe : Nat} {q : Nomm} (ha : 2 ≤ axe) (ihq : RawIHX S M
   obtain ⟨nx, laz', h1, hl, rfl⟩ := runL_seven_from ha hr
   obtain ⟨S1, L1⟩ := ihq goal region g0 g1 nx K hK h hg hD hj hA hfd h1
   exact ⟨S1, fun r hlv => L1 r (hlv.mono fun x y e => e.imp id (lazK_fromL hl))⟩
+
+/-! ## `[7 p q]` with `q` in the first fragment -/
+
+theorem KVan.mono {K : Nat → Nat → Prop} {lo lo' : Nat} (h : KVan K lo) (hl : lo ≤ lo') : KVan K lo' :=
+  ⟨fun k r hk => h.van k r (Nat.le_trans hl hk)⟩
+
+/-- **The case `seven`**: `q` of the first fragment (`run_rawUK`), then `p`
+for its fork-free result. -/
+theorem rawX_seven {p q : Nomm} (hq : ∀ goal : CGoal S, Frag q goal) (ihp : RawIHX S Map X p) :
+    RawIHX S Map X (Nomm.n7 p q) := by
+  intro goal region g0 g1 nex K hK h hg hD hj hA hfd hr
+  rw [runL_n7] at hr
+  obtain ⟨nq', g2, h2, hr⟩ := bind_some hr
+  rw [runL_frag (hq goal) region g0] at h2
+  obtain ⟨⟨nq, g2'⟩, hq2, e⟩ := Option.map_eq_some_iff.mp h2
+  simp only [Prod.mk.injEq] at e
+  obtain ⟨rfl, rfl⟩ := e
+  obtain ⟨S2, L2⟩ := run_rawUK (K := K) h hg hD hj hA hfd hq2
+  obtain ⟨-, b2, nb2, d2, s2, dd2, a2, lo2, hi2⟩ := sub_facts h hg hD hj hA hq2
+  rw [Next.goal_toL] at hr
+  obtain ⟨S1, L1⟩ := ihp nq.goal region _ g1 nex K (hK.mono b2) S2
+    ⟨nb2, fun x hx => by rw [a2] at hx; cases hx⟩ d2 ⟨lo2, hi2⟩ a2 (defd_next h hfd s2 dd2) hr
+  refine ⟨S1, fun r hl => ?_⟩
+  obtain ⟨hl', hn⟩ := L1 r hl
+  rcases L2 r hl' with e | e
+  · exact absurd e hn
+  · exact e
 
 end Raw
 end SkaModel
