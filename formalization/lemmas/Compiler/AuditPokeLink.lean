@@ -1,3 +1,4 @@
+import lemmas.Compiler.PokeLinkJetsCole
 import lemmas.Compiler.PokeLinkJetsP
 import lemmas.Compiler.PokeLink
 import lemmas.Compiler.PokeLinkFull
@@ -219,3 +220,5 @@ open Formalization Formalization.Compiler
 #print axioms gateCole_of_good
 #print axioms jetsOfGood_P
 #print axioms pokeModel_fullReachP8
+#print axioms jetsOfCole6_P
+#print axioms pokeModel_fullReachP9
