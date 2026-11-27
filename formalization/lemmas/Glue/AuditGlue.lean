@@ -19,6 +19,23 @@ import lemmas.Compiler.FolLoopConv
 import lemmas.Compiler.RoadPure
 import lemmas.Ska.CompDirectMTop
 import lemmas.Ska.OptAliasWitness
+import lemmas.Glue.MonoCalls
+import lemmas.Glue.InvMemo
+import lemmas.Glue.LibPill
+import lemmas.Compiler.CompSofPush
+import lemmas.Compiler.CompShapeColLoop
+import lemmas.Compiler.CompShapeColOrig
+import lemmas.Compiler.CompShapeColI12
+import lemmas.Compiler.CompCoerceLazyGen
+import lemmas.Ska.CompNaryTopRecEx
+import lemmas.Ska.CompNaryTopClose
+import lemmas.Ska.RawInvCLIJ
+import lemmas.Ska.PassFreeze
+import lemmas.Ska.PassMoves
+import lemmas.Ska.PassIdents
+import lemmas.Ska.CompTenLS
+import lemmas.Ska.CompSixLSRCall
+import lemmas.Compiler.CompShapeColRet
 
 /-!
 # Audit of `formalization/LEDGER.md`
@@ -194,5 +211,100 @@ namespace Formalization
 #print axioms SkaModel.Glue.fullAnswers_of_cg
 #print axioms SkaModel.Glue.rawMonoM_of
 #print axioms SkaModel.Glue.rawMonoM_fragX
+
+/-! ## Names of the ledger after 2026-11-27 (second pass) -/
+#check @SkaModel.Comp.NC.noDirect
+#check @SkaModel.PokeM.fragUFG_subNC
+#check @SkaModel.Comp.CallTreeD
+#check @SkaModel.Comp.QDirect
+#check @SkaModel.Comp.CallTreeDN
+#check @SkaModel.Comp.finishLFC_bellContractCallTreeDN
+#check @SkaModel.Comp.finishLUCM_bellContractCallTreeA
+#check @SkaModel.Comp.finishLUCM_bellContractTopTree
+#check @SkaModel.Comp.finishLFC_bellContractCallTreeA
+#check @SkaModel.Comp.finishLFC_contractTailN
+#check @SkaModel.Comp.Six0
+#check @SkaModel.Comp.finishLUC_contractSix0
+#check @SkaModel.Comp.NeedsRead
+#check @SkaModel.Comp.tableOK_classes
+#check @SkaModel.Comp.closed_entry
+#check @SkaModel.Comp.closed_selfCall
+#check @SkaModel.Comp.closed_selfWalk
+#check @SkaModel.Comp.closed_pairWalk
+#check @SkaModel.Comp.tableOK_callTreeA
+#check @SkaModel.Comp.closed_treeNary
+#check @SkaModel.Raw.LiveC
+#check @SkaModel.Raw.LiveRun
+#check @SkaModel.Raw.liveC_n0
+#check @SkaModel.Opt.optIn_iff
+#check @SkaModel.Opt.optimize_keeps_optIn
+#check @Compiler.cu_gate_dir_csi
+#check @Compiler.cu_gate_dir_arms
+#check @Compiler.cu_gate_dir_this
+#check @Compiler.CsiNeeds
+#check @Compiler.CsiSures
+#check @Compiler.sof_push
+#check @Compiler.comp_coerce_lazy_all
+#check @Compiler.fx_gate
+#check @Compiler.i12_gate
+#check @Compiler.fr_gate
+#check @Compiler.oi_gate
+#check @Compiler.ic_gate
+#check @Compiler.blob_toNoun_inj
+#check @SkaModel.Annot.inline
+#check @SkaModel.Opt.ReadsOK
+#check @SkaModel.Opt.ArgsOK
+#check @SkaModel.Opt.LocalOK
+#check @SkaModel.Opt.Keeps
+#check @SkaModel.Opt.optimize_keeps_plain_pickR
+#check @SkaModel.PokeM.bellContract_of_keeps
+#check @SkaModel.PokeM.sound_lift
+#check @SkaModel.PokeM.invKept_lift
+#check @SkaModel.Comp.finishLFC_eq_M
+#check @SkaModel.Ana.FinIdents
+#check @SkaModel.Ana.PassMoves
+#check @SkaModel.Ana.freeze_no_chain
+#check @SkaModel.Ana.KruskalBT
+#check @SkaModel.Ana.passMoves_chain
+#check @SkaModel.Ana.finPushes_of_freezeC
+#check @SkaModel.Ana.finIdents_of_kruskal
+#check @SkaModel.Comp.lokSE_tenR
+#check @SkaModel.Comp.finishLFC_contractGBN
+#check @SkaModel.Comp.finishLFC_contractRT
+#check @Compiler.cu_gate_scc_one_six_fix
+#check @Compiler.FixRet
+#check @Compiler.scOrd
+#check @SkaModel.Ana.finPushes_of_freeze
+#check @SkaModel.Ana.EvFrozen
+
+/-! ## The glue theorems of the second pass -/
+#print axioms SkaModel.Glue.rawMonoD_calls
+#print axioms SkaModel.Glue.rawNaryD_calls
+#print axioms SkaModel.Glue.noDirect_NCG
+#print axioms SkaModel.Glue.noDirect_fragUFG
+#print axioms SkaModel.Glue.six0_noDirect
+#print axioms SkaModel.Glue.contract_of_piecesM
+#print axioms SkaModel.Glue.compHyp_of_piecesM
+#print axioms SkaModel.Glue.compRestM_of_O
+#print axioms SkaModel.Glue.rawOptIn_of
+#print axioms SkaModel.Glue.optInMono_fragX
+#print axioms SkaModel.Glue.optInNary_fragX
+#print axioms SkaModel.Glue.compHyp_of_calls
+#print axioms SkaModel.Glue.rawEntry_of
+#print axioms SkaModel.Glue.optRef_fragX'
+#print axioms SkaModel.Glue.optTotalMono_fragX
+#print axioms SkaModel.Glue.optTotalNary_fragX
+#print axioms SkaModel.Glue.optRef_of_total
+#print axioms SkaModel.Glue.invSM_init
+#print axioms SkaModel.Glue.sound_and
+#print axioms SkaModel.Glue.pokeS_memo
+#print axioms SkaModel.Glue.gap_of_compM
+#print axioms SkaModel.Glue.fullAnswers_of_cgM
+#print axioms SkaModel.Glue.libP_slam
+#print axioms SkaModel.Glue.libP_rendLeaf
+#print axioms SkaModel.Glue.libP_hand
+#print axioms SkaModel.Glue.libP_format
+#print axioms SkaModel.Glue.libP_evalMook
+#print axioms SkaModel.Glue.straight_toNoun_inj
 
 end Formalization

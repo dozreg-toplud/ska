@@ -897,7 +897,12 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/RawInvCLIJ.lean` | The pair of the run-level liveness with calls and the first arms (README Gaps 14 (b)): `GRegL`, `GoalL`, **`IL`**, `JL` (`IL` of the result's goal, so `jl_il` is `liveRun_seven`'s `hJ`), `AddSt` (a step that only adds ops and proxies), `GStep`, `WalkP`, **`walkList_prepG`**, **`walkLazy_prepG`** (a walk whose gate only puts ops in front, under any `cond`: the `Prep` lemma without `KI`), **`unpM_prepG`** (the unproxied blocks after such a walk, ops unproxied by the new `cond`), `jdown_mapVals`, `IL.downU`, `addOps_step`, `medeLoop_step`, `medeGate_step`, `medeL_walk`, **`liveC_medeL`** (`%1` under `%next`), `LiveC.fromL`, `liveC_dead`, `liveC_bombL`, `liveC_simpleNextL_pick`, **`liveC_n0`**, **`liveC_n1`** (`%0` and `%1` under every goal, from `IL`). |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `Glue/RawOptIn.lean` | Track G (glue, README Gaps 22): `CompPieces` of `Ska/CompHypOf.lean` restated with track D's `OptIn` (`RawOptIn`) and the pill's passes at fuels per reference form (`OptRef`) in place of `rawDInv`, `optEq`, `optAlias`, `optSSA` (`RefSide`, `CompRestO`, `CompPiecesO`); `keeps_of_optIn`, `contract_of_piecesO`, `compHyp_of_piecesO` (to `CompHyp`, the hypothesis of `gap_of_comp`); on `FragX`: `rawMono_fragX`, `rawNary_fragX`, `rawOptIn_fragX`, `compHyp_of_fragX` (from `CompRestO` alone), `optRef_fragX` (from `optimize_total_finishLUX` / `-LFX`, given `A.optimize` = the pill's and `Straight.toNoun` injective); `fullAnswers_of_cg` (`FullAnswers` of the model of `+poke` from `CgHalts`, `MemoNoCallees` under `InvB`, `BakeEnds`, `RootAnswers`); `RawMonoM` (`RawMono` against `finishLUCM`, the compile with direct calls), `rawMonoM_of` (from `RawMono` on `noDirect` classes), `rawMonoM_fragX`. |
-| `Glue/AuditGlue.lean` | `#check` of every declaration `LEDGER.md` names, `#print axioms` of the theorems of `Glue/`. |
+| `Glue/MonoCalls.lean` | Track G (Gaps 22 (b)): mismatch M3 closed.  `MonoClass`, `NaryClass` (classes that see `env`, `N`, the bell), `RawMonoD` (against `finishLUCM`), `RawNaryD`, `RefSideM`, `CompRestM`, `CompPiecesM`, `finishLUCM_this`, `contract_of_piecesM`, `compHyp_of_piecesM`, `compRestM_of_O`; `noDirect_NCG`, `noDirect_fragUFG`, `six0_noDirect`; `MonoCalls` (`NCG`, `CallTreeDB`, `CallTreeAB`, `TopTreeB`, `Six0B`), `NaryCalls` (`FragUN`, `CallTreeAN`, `CallTreeDNB`), `rawMonoD_calls`, `rawNaryD_calls`; leaves `OptInMono`, `OptInNary` (`rawOptIn_of`, proved on `FragX`), `EntryMono`, `EntryNary` (`rawEntry_of`), `OptTotalMono`, `OptTotalNary` (`optRef_of_total`, proved on `FragX`); `compHyp_of_calls`; `straight_toNoun_inj`, `optRef_fragX'`. |
+| `Glue/InvMemo.lean` | Track G (Gaps 22 (c)): mismatch M8 for `anaArm`.  `InvSM`, `invSM_init`, `sound_and`, `compileStep_long`, `anaArm_memo`, `pokeS_memo`, `gap_of_compM`, `anaArm_someN`, `fullAnswers_of_cgM`. |
+| `Glue/InvMemoP.lean` | Track G: M8 on track P's route.  `anaArmP_memo`, `pokeS_memoP`, `anaArmP_someN`, `fullAnswers_of_cgMP`, `gap_of_armPM` (`invStart` at `cor`), `halting_of_cgMP`. |
+| `Glue/LibPill.lean` | Track G (Gaps 22 (d)): the `lib` of the pill `libP`; `libP_slam`, `libP_rendLeaf`, `libP_hand`; leaves `RendRestTonFree`, `SoftTankUnit`, `SkipMsgTonFree`, `EvalMookSame`; `libP_rendRest`, `libP_softTank`, `libP_skipMsg`, `libP_format`, `libP_evalMook`. |
+| `Glue/AuditGlue.lean` | `#check` of every declaration `LEDGER.md` names, `#print axioms` of the theorems of `Glue/` (3500M cap). |
+| `Glue/AuditGlueP.lean` | The same for track P's route and the names that cannot be imported beside `AuditGlue.lean`'s (the two build clashes). |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
 Every main theorem depends on `propext`, `Classical.choice` and `Quot.sound`
@@ -4654,17 +4659,30 @@ import only its theorems.  So:
 
 22. **The ledger** (track G, 2026-11-27, `LEDGER.md`, `lemmas/Glue/`).  `LEDGER.md` traces
     every field of `Gap` (`Assembly.lean`) down to its open leaves, with the mismatches
-    between the shapes the fields need and the shapes the tracks prove, and the open leaves
-    in order of what they block; every name it cites is checked in `Glue/AuditGlue.lean`.
-    Proved here by composition (`Glue/RawOptIn.lean`): `CompHyp` from `CompPiecesO`
-    (`compHyp_of_piecesO`: `OptIn` in place of `DInvS`, the old route through
-    `DriverRestSSA` being closed by `not_aliasOnceB` / `w_opt`), and from `CompRestO` alone
-    on `FragX` (`compHyp_of_fragX`); `OptRef` on `FragX` from the optimizer's totality
-    (`optRef_fragX`, given `Straight.toNoun` injective); `FullAnswers` from `CgHalts`
-    (`fullAnswers_of_cg`).  Not done: `refMono` and `RawMono` restated with `finishLUCM`
-    and a class that sees `env` and `N` (mismatch M3 of the ledger), so that the
-    direct-call theorems of tracks J and K plug in; `MemoNoCallees` in the invariant (M8);
-    the choice of `lib` for `LibSlam`, `RendLeafIs`, `HandIs`.
+    between the shapes the fields need and the shapes the tracks prove (M1 to M15), and the
+    open leaves in order of what they block; every name it cites is checked in
+    `Glue/AuditGlue.lean` or `Glue/AuditGlueP.lean`.  Proved here by composition:
+    (a) `CompHyp` from `CompPiecesO` (`compHyp_of_piecesO`: `OptIn` in place of `DInvS`) and
+    on `FragX` (`compHyp_of_fragX`).  (b) Mismatch M3 closed (`Glue/MonoCalls.lean`):
+    `CompPiecesM` with `refMono` at `finishLUCM` and classes `MonoClass`, `NaryClass` that
+    see `env`, `N`, the bell (`compHyp_of_piecesM`, `compRestM_of_O`); the classes with calls
+    `MonoCalls` (`NCG`, `CallTreeD`, `CallTreeA`, `TopTree`, `Six0`) and `NaryCalls`
+    (`FragUN`, `CallTreeA`, `CallTreeDN`) with their raw contracts (`rawMonoD_calls`,
+    `rawNaryD_calls`); `compHyp_of_calls` from `CompRestM` and the leaves `OptInMono`,
+    `OptInNary` (track D); `OptRef` from the leaves `OptTotalMono`, `OptTotalNary` and
+    `hpill` (`optRef_of_total`), `rawEntry` from `EntryMono`, `EntryNary` (`rawEntry_of`),
+    all proved on `FragX`; `straight_toNoun_inj` (`hinj`, also track P's), `optRef_fragX'`.
+    (c) Mismatch M8 closed (`Glue/InvMemo.lean`, `Glue/InvMemoP.lean`): the invariant
+    `InvSM` (`InvS` and `MemoNoCallees`), kept (`pokeS_memo`, `pokeS_memoP`), true at the
+    start and at `cor` (`invSM_init`, `gap_of_armPM`), `FullAnswers` on it from `CgHalts`,
+    `BakeEnds`, `RootAnswers` with no other hypothesis (`fullAnswers_of_cgM`,
+    `fullAnswers_of_cgMP`, `halting_of_cgMP`), for `anaArm` and track P's `anaArmP`.
+    (d) The `lib` of the pill (`Glue/LibPill.lean`, `libP`): `LibSlam`, `RendLeafIs`,
+    `HandIs` proved; `LibFormat`, `MookFormat` from four statements about the pill alone
+    (`RendRestTonFree`, `SoftTankUnit`, `SkipMsgTonFree`, `EvalMookSame`).  Not done:
+    every leaf of `LEDGER.md` section 10; two build clashes block composing files
+    (`Compiler.unitNoun_id_inj` in `PokeEnc` and `OptLinkAlJReg`, `Comp.isLeaf` in
+    `SccLoopMsg` and `CompNCJump`).
 23. **The poke on states: `enc` and the `%full` branch** (track P, 2026-11-27,
     `Ska/PokeEnc.lean`, `Compiler/PokeLink.lean`, `Compiler/AuditPokeLink.lean`).
     The fields of `pokeModel` that no track owned (LEDGER 1.1, 1.2, 1.6, 4.1, M9, M11).
