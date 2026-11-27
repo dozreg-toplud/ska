@@ -3,27 +3,43 @@ import lemmas.Compiler.CompSixKerf
 import lemmas.Compiler.CompForkKeep
 
 /-!
-# Phase F of `%6`: its head
+# Phase F of `%6`
 
 Phase F (the branch of `%6` under a `%next` goal whose `+leap` is `~`, whose
 need with the bunt sure is not `+none-equivalent`, and whose `+kerf` test
-says no) is the chain `cr6F0` ... of `CompRunSixN.lean`:
+says no) is the chain `cr6F0` ... `cr6F14` of `CompRunSixN.lean`:
 
     =^  r-cond  gen  re                        :: cr6F0
     =^  [nex-0 nex-1]  gen  (fork nex r-cond)  :: cr6F1
     =^  region-id  gen  id                     :: cr6F2
     =/  region-branch  [region-id region]      :: cr6F3
-    ... the reads of `cond`, the runs of `r` and `q`, `+sect`, `+past-fork`,
-    the `%brn` block, `+lazy-shut`, the run of `p`, `+copy`
+    =/  cond-before  cond.gen                  :: cr6F4
+    =^  nex-1  gen  $(nomm r, goal goal-1, ..) :: cr6F5
+    =/  cond-between  cond.gen                 :: cr6F6
+    =^  nex-0  gen  $(nomm q, goal goal-0, ..) :: cr6F7
+    =^  [lazy yes nuh]  gen  (sect ...)        :: cr6F8
+    =.  lazy  (past-fork lazy p.nomm)          :: cr6F9
+    =^  o  gen  (emit ~ ~ [%brn r-cond ~^yes ~^nuh])  :: cr6F10
+    =^  lazy  gen  (lazy-shut o lazy)          :: cr6F11
+    =^  nex-cond  gen  $(nomm p, goal [%next (lazy-from-need this+r-cond) ~ o])  :: cr6F12
+    (copy nex-cond lazy)                       :: cr6F13, cr6F14
 
 The model is `sixNextForkC` of `Ska/CompRunLC.lean`, in the same order
 (`re`, `forkL`, `idM`, `rid :: region`, `getCond`, the run of `r`, `getCond`,
 the run of `q`, `sect`, `pastFork`, `emit` of the `%brn` block, `lazyShut`,
-the run of `p` on `[%next [[%this r-cond] ~] ~ ~] ~ o]`, `copyL`).  No
-departure.
+the run of `p` on `[%next [[%this r-cond] ~] ~ ~] ~ o]`, `copyL`).  Compared
+push by push: no departure.  Unlike phase S, the Hoon has no assert before
+`+sect` here (the goals of `+fork` are `next`s by their type).
 
-`cr6f_s03`: the first four pushes (`+re`, `+fork` by `comp_fork_all`, `+id`,
-the region), then a continuation from `cr6F4` on.
+`cr6f_s03` (F0-F3: `+re`, `+fork` by `comp_fork_all`, `+id`, the region),
+`cr6f_mid` (F4-F7: the two runs, as `cr6s_mid`), `cr6f_lyn` (F8: `+sect` by
+`comp_sect`), `cr6f_p` (F9-F14: `+past-fork`, the `%brn` block,
+`+lazy-shut`, the run of `p`, `+copy`), each proved alone so no kernel check
+runs the whole phase; `cr6f_head` (the head on the way to phase F),
+`runLC_n6_f` (the model).  **`comp_run_n6_f`**: the case in phase F;
+**`res_n6_f`**: its `GRes`.  What `+fork` keeps is in `CompForkKeep.lean`
+(`km_forkL`, `forkL_spec`, `ginv_forkL`); `six_f_runs`: what the two runs
+return (the branch needs apart, every register above `r-cond`).
 -/
 
 namespace Formalization
