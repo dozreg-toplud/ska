@@ -32,8 +32,10 @@ pre-o1)`).
   fuel found here.
 
 Not proved here: the structural loop of `+optimize-once` (`structLoop`,
-whose count `n` bounds the rounds).  Its measure is the triple (number of
-blocks, number of blocks with a two-way end, sum over the jumps of every
+whose count `n` bounds the rounds; proved in `OptLinkTotalLoop.lean`,
+`structLoop_total`).  Its measure is the triple (number of blocks, weight of
+the two-way ends, `2` for a `%brn` and `1` for the others, since `+alias`
+reports a change when it turns a `%brn` into a `%brz`, sum over the jumps of every
 block of `ρ` of the target), ordered lexicographically, with `ρ` the rank of
 `Acyclic`, which every pass keeps with the same `ρ` (`hops_acyclic`,
 `rub_acyclic`, `mid_acyclic` of `Ska/OptDriverTopo.lean`).  A round that
