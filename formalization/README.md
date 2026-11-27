@@ -341,6 +341,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompSccSix.lean` | **The top on `SixOk`** (README Gaps 9): the chain of `CompSccCallGate.lean` restated for `SixOk` with `Bake.NoAx0` (copied by script: `fin_gate_ts`, `fin_gate_finishLF_six`, `mem_to_finish_six`, `mem_gate_six`, `csi_gate_scc_one_m_six`, `mem_gate_none_six`, `csi_gate_scc_one_f_six`, `cu_trap_six`, `cu_gate_six`), with `comp_run_entry_six`, `indPure_of_sixOk`, `entry_lok`, `scc_sur_six`, and `comp_kerf_all` for the unary pass; the named hypotheses `TsOn Q` / `TsMapAt` (`+to-straight` on every `cond`; `tsOn_empty` on an empty one) and `FinSure` (a fork-free final pass; `finSure_n7_n1`); **`cu_gate_scc_one_six`**, `cu_gate_scc_one_six_q`, **`cu_gate_scc_one_six_fol`** (`NoAx0` from `+fol-loop`, `FolMade`, `folMade_noAx0`); two examples with `%6`. |
 | `Compiler/CompCoerceLazyGen.lean` | **`+coerce-lazy` on every lazy need** (forks and bonds to any depth): `czTail` with its roll gates named (`czBG`, `czFG`, `cz_tail_eq`); the root part on any lazy need (`cz_lokG`, `cz_srlG`, `cz_x`); the gates (`cz_bgate`, `cz_fgate`: the gate slammed again on the entry's label and need, the same `ned` and `less`); one step (`cz_step`, cut into `cz_step_none`, `cz_step_ee`, `cz_step_eb`, `cz_step_fe`, `cz_step_fb` to keep each kernel check small); **`cz_all`**, **`comp_coerce_lazy_all`**: the gate is `coerceLazyL ned less o laz` (the bonds before the forks, no departure), with an empty `soft`. |
 | `Compiler/CompSccSixSc.lean` | **The top on `SixOk` with the `ord` of `+shape-collapse`** (README Gaps 9): the chain of `CompSccSix.lean` without `FinSure` (`fin_gate_ts_L` with `comp_coerce_lazy_all`, `fin_gate_finishLF_six_L`, `lazy_toNoun_eta`, `mem_to_finish_six_L`, `mem_gate_six_L`, `scc_sur_six_L`, `csi_gate_scc_one_m_six_L`, `mem_gate_none_six_L`, `csi_gate_scc_one_f_six_L`, `cu_gate_scc_one_six_q_L`) for any `ordOf` that `+shape-collapse` returns (`ScAt`, `NoBakeOneO`, `noBakeOneO_no`); `scOrd`, `ScRet` (the model's `shapeCol` returns at `fuel`), `scAt_of_scRet`; **`cu_gate_scc_one_six_sc`**, **`cu_gate_scc_one_six_fol_sc`** (`ord` = `scOrd fuel p.1 cape`, `sccSur` into `sure.cache`, `+to-straight` by `tsMapAt_holds`); `sixBare` with three `#guard`s (the model's final pass and `shapeCol` give the Hoon's `[[%this ~] %this ~]`, `+sure-of` gives `[[%this ~] %none ~]`, fuel `3` suffices and `2` does not) and an `example`. |
+| `Compiler/CompShapeColRet.lean` | When the model's `+shape-collapse` returns (README Gaps 9): the fork skeleton `Sk`, `I2.skel` (`fixRound_skel`, `fixKids_skel`, `fixLoop_skel`), **`orig_some`** (`+inter2-orig` succeeds on two trees of one skeleton, mutual with `origLoop_some`), `inter2Collapse_some`; `I1.LokOk` (no look at `0` at any node), `I1.lokOkF_append`, **`i12_some`** (mutual with `i12Forks_some`), **`l2i_lokOk`** (from `WalkP` of `CrLok`, mutual with `l2iForks_lokOk`, `l2iBonds_lokOk`); `FixRet` (the loop of `fixLoop` stops within `fuel` rounds), `scRet_of_fixRet` (by `entry_lok`), **`cu_gate_scc_one_six_fix`** (the top with `FixRet` the one hypothesis on `+shape-collapse`). |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
 | `Compiler/TreapList.lean` | On `TreapMap`: `ext` (equal lookups give equal treaps, by `isMap_ext` under every layout of the values and `Tr.toNoun_inj`), the listings `tap` and `rap` whose nouns are those of `+tap:by` and `+rep` (`tapList_toNoun`, `preorder_toNoun`) with `mem_tap`, `mem_rap`, `tap_pairwise`, and the instance of `HoonMapKeys`, whose `keys` are those of `rap`, the order of `+rep:by` (`treapMap_keys`). |
@@ -2348,7 +2349,10 @@ import only its theorems.  So:
     `3` suffices, `2` does not).  `ScRet` holds `i12` (no look at `0`,
     which `entry_lok` should give through the unions of `l2i`), `orig`
     (`fixLoop` keeps the fork skeleton, so `?>  ?=(^ fixes)` holds) and
-    the fuel of `fixLoop`; none of the three is proved.  The fuel
+    the fuel of `fixLoop`; the first two are proved (`i12_some`,
+    `l2i_lokOk`, `orig_some`, `fixLoop_skel`, `scRet_of_fixRet`,
+    `Compiler/CompShapeColRet.lean`), so `cu_gate_scc_one_six_fix` has
+    only `FixRet` (the loop stops within `fuel` rounds) on it.  The fuel
     (`Ska/ShapeColAlg.lean`): `uniOrd` is commutative (every shape of
     depth at most `3`), but NOT associative on all shapes: `(this ∪ pair
     none none) ∪ both none none` is `both none none`, `this ∪ (pair none
@@ -2362,10 +2366,9 @@ import only its theorems.  So:
     Need.none Need.none` in the final pass, which `needToOrd` would map to
     `pair none none`), and the chain argument (pointwise order on trees of
     one skeleton, depth bounded).  The witness is not a counterexample to
-    termination: it needs a non-normal shape.  Next: `i12` and `orig`
-    succeed (two small mutual inductions), then the algebra on normal
-    shapes, then the bound; the converse of `ic_loop` needs an induction
-    on `Eval`.
+    termination: it needs a non-normal shape.  Next: the algebra on
+    normal shapes, then the bound (which closes `FixRet`); the converse of
+    `ic_loop` needs an induction on `Eval`.
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,

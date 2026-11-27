@@ -155,6 +155,7 @@ import lemmas.Compiler.CompShapeColLoop
 import lemmas.Compiler.CompShapeColL2i
 import lemmas.Compiler.CompSccSixSc
 import lemmas.Ska.ShapeColAlg
+import lemmas.Compiler.CompShapeColRet
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -1212,3 +1213,8 @@ open Formalization
 #print axioms Compiler.cu_gate_scc_one_six_q_L
 #print axioms Compiler.cu_gate_scc_one_six_sc
 #print axioms Compiler.cu_gate_scc_one_six_fol_sc
+#print axioms Compiler.orig_some
+#print axioms Compiler.i12_some
+#print axioms Compiler.l2i_lokOk
+#print axioms Compiler.scRet_of_fixRet
+#print axioms Compiler.cu_gate_scc_one_six_fix
