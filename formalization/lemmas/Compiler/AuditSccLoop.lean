@@ -50,7 +50,7 @@ open Formalization.SkaModel.SccLoop
 #print axioms Formalization.Compiler.sw_keep
 #print axioms Formalization.Compiler.sw_mem
 #print axioms Formalization.Compiler.sw_st
-#print axioms Formalization.Compiler.sw_gate
+#print axioms Formalization.Compiler.csSw_gate
 #print axioms Formalization.Compiler.sw_fold
 #print axioms Formalization.Compiler.sw_roll
 #print axioms Formalization.Compiler.fin_fold
