@@ -287,5 +287,71 @@ theorem crd_blk_next (h7 : slot? 7 ctx = some compK) (x : GenRest) (hx : x.NoSof
       simp [nock_exec, crdS6, hsn, cr_bat_sn, hkd, hkd', hD1, comp_kerf_arm, hkf, bind, StateT.bind, ek, hD3, comp_emit_arm,
         he, cf_emit_g]
 
+/-! ## Steps `7` to `14` -/
+
+/-- The `next` of the argument: `[%next (lazy-from-need sub-ned) ~ call-block]`. -/
+noncomputable def crdArg (subNed : Need) (cb : Nat) : NextL CSet := ⟨Lazy.ofSure ⟨subNed, HoonSet.empty⟩, jmp0 cb⟩
+
+/-- The model of the call from step `7` on. -/
+noncomputable def crdCallM (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (b : Bell) (subNed : Need)
+    (goal : CGoalL CSet) (region : List Nat) : CM (TreapMap mugF) (NextL CSet) := do
+  let cb ← crdBlockM b (flattenNeed subNed) goal
+  crdTailM env msup p q (crdArg subNed cb) region
+
+theorem crd_arg_noun (subNed : Need) (cb : Nat) :
+    (crdArg subNed cb).goal.toNoun
+      = C (A 0x7478656e) (C (C (C subNed.toNoun (A 0)) (C (A 0) (A 0))) (C (A 0) (A cb))) := by
+  simp [crdArg, cr_next_nounL, Lazy.toNoun_ofSure, lazyNoun, Sure.toNoun, HoonSet.toNoun_empty, Jmp.toNoun,
+    jmp0, listNoun]
+
+/-- **Steps `7` to `14`**: the call blocks (given, `hblk`), `?@` of an atom
+(step `8`), `nex-arg` with `(~(has by soft.gen) call-block)` `|` under
+`NoSoft` (step `9`), and the tail (`crd_ctail`). -/
+theorem crd_from7 (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (hpn : hinted noCode p ≠ Option.none)
+    (region : List Nat) (x : GenRest) (hx : x.NoSoft) (V5 V2 PV sup : Noun) (subNed : Need) (b : Bell)
+    (goal : CGoalL CSet) (g : Gen (TreapMap mugF))
+    (hblk : nock (crdS6 V5 (listNoun A (flattenNeed subNed)) subNed.toNoun V2 PV
+      (crSubj (A 1) (crdN p q b) goal.toNoun (listNoun A region) sup (compCore g x ctx))) crDKc7
+      = (crdBlockM b (flattenNeed subNed) goal g).map fun p => C (A p.1) (genNoun p.2 x))
+    (hq : ∀ cb g1, crdBlockM b (flattenNeed subNed) goal g = some (cb, g1) →
+      RunAt env msup ctx x (A 1) sup q (CGoalL.next (Lazy.ofSure Sure.bunt) (jmp0 cb)) region g1)
+    (hp : ∀ cb g1 nexF g2 nexF' g3, crdBlockM b (flattenNeed subNed) goal g = some (cb, g1) →
+      crdFq env msup q (jmp0 cb) region g1 = some (nexF, g2) → pastL noCode nexF p region g2 = some (nexF', g3) →
+      RunAt env msup ctx x (A 1) sup p (CGoalL.next (Lazy.ofSure ⟨subNed, HoonSet.empty⟩) nexF'.th) region g3)
+    (hcp : ∀ cb g1 nexF g2 nexF' g3 nexS g4, crdBlockM b (flattenNeed subNed) goal g = some (cb, g1) →
+      crdFq env msup q (jmp0 cb) region g1 = some (nexF, g2) → pastL noCode nexF p region g2 = some (nexF', g3) →
+      runLC env msup p (CGoalL.next (Lazy.ofSure ⟨subNed, HoonSet.empty⟩) nexF'.th) region g3 = some (nexS, g4) →
+      CopyH g4.re nexS.laz nexF'.laz) :
+    nock (crdS6 V5 (listNoun A (flattenNeed subNed)) subNed.toNoun V2 PV
+      (crSubj (A 1) (crdN p q b) goal.toNoun (listNoun A region) sup (compCore g x ctx))) crDKr7
+      = (crdCallM env msup p q b subNed goal region g).map fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  have h15 := cr_ctx15 h7
+  obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
+  unfold crdCallM
+  rw [bind_apply]
+  simp only [crSubj, compCore, crdS6] at hblk ⊢
+  cases eb : crdBlockM b (flattenNeed subNed) goal g with
+  | none =>
+    rw [eb] at hblk
+    generalize comp.door = Dr at hblk ⊢
+    unfold crDKr7
+    simp [nock_exec, hblk]
+  | some r =>
+    obtain ⟨cb, g1⟩ := r
+    rw [eb] at hblk
+    simp only [Option.map_some] at hblk
+    have ht := crd_ctail h7 hcode env msup p q hpn region x (A 1) (C (A 0) (C b.toNoun (A 0))) sup goal.toNoun
+      (crdArg subNed cb) (C subNed.toNoun (A cb)) (A cb) (A 1) V5 (listNoun A (flattenNeed subNed)) subNed.toNoun V2
+      (A 0) PV g1 (hq cb g1 eb) (fun nexF g2 nexF' g3 e e3 => hp cb g1 nexF g2 nexF' g3 eb e e3)
+      (fun nexF g2 nexF' g3 nexS g4 e e3 e4 => hcp cb g1 nexF g2 nexF' g3 nexS g4 eb e e3 e4)
+    rw [crd_arg_noun] at ht
+    have hs := crn_has x cb (hx cb)
+    simp only [crSubj, compCore, crdS9] at ht
+    generalize comp.door = Dr at hblk ht ⊢
+    unfold crDKr7 crDKr8 crDKc8 crDKr9 crDKc9
+    simp [nock_exec, hblk, h15, hc, ct_lfn_at, ct_lfn_arm, ct_lfn_gate, by_arm, by.arm_at, by.has.arm_at, has_arm, hs,
+      ht]
+
 end Compiler
 end Formalization
