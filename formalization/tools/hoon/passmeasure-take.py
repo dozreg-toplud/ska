@@ -20,6 +20,7 @@
 #        ([2 [1 [W 0]] [1 W]] runs to itself, with no provenance), so it survives +patch-prod
 #   batch OUTDIR                    writes the designed batch (drivers tk-*.hoon, several cases each)
 #   batch2 OUTDIR                   family a, complements (drivers ta-*.hoon): see batch2
+#   debuglib LIB.hoon OUT.hoon      LIB (of passmeasure.py) with %pm-sub / %pm-kid: subject heads
 #   --sum[-v] OUT.txt...            per case: root passes, %st recurrence, pushes, re-pushes, takeovers,
 #        changes of the root's callee set (-v: the set per pass)
 import os, sys
@@ -228,6 +229,19 @@ if __name__ == '__main__':
         summary(sys.argv[2:], sys.argv[1] == '--sum-v'); sys.exit(0)
     if sys.argv[1] == 'batch':
         batch(sys.argv[2]); sys.exit(0)
+    if sys.argv[1] == 'debuglib':   # debuglib LIB.hoon OUT.hoon: the library of passmeasure.py plus
+        # [%pm-sub mug head] at every push and [%pm-kid caller kid head] at every resolve (the head of
+        # the subject sock, %big when its jam is over 400 bytes)
+        hd = lambda v: ('?:(?=(%%void more.%s) %%void ?@(cape.more.%s %%atom =/(h (hed:so more.%s) '
+                        '?:((gth (met 3 (jam h)) 400) %%big h))))' % (v, v, v))
+        t = open(sys.argv[2]).read().split('\n')
+        k = [i for i, l in enumerate(t) if l.startswith('    ~&  [%pm-new (mug id) index (lent stk.st)]')]
+        assert len(k) == 1
+        t[k[0] + 1:k[0] + 1] = ['    ~&  [%%pm-sub (mug id) %s]' % hd('id')]
+        k = [i for i, l in enumerate(t) if l.startswith('        =*  resolve  $')]
+        assert len(k) == 1
+        t[k[0] + 1:k[0] + 1] = ['        ~&  [%%pm-kid (mug id) (mug id-there) %s]' % hd('id-there')]
+        open(sys.argv[3], 'w').write('\n'.join(t)); sys.exit(0)
     if sys.argv[1] == 'batch2':
         batch2(sys.argv[2]); sys.exit(0)
     out, fam = sys.argv[1], sys.argv[2]
