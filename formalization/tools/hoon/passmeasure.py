@@ -258,7 +258,8 @@ if sys.argv[1] in ('--sum', '--passes', '--passes-v'):
 out = sys.argv[1]
 seed = int(sys.argv[2]) if len(sys.argv) > 2 else 1
 os.makedirs(out, exist_ok=True)
-src = open(os.path.join(W, 'desk/lib/nock-compilation.hoon')).read().split('\n')
+# PASSMEASURE_IN=LIB instruments another copy (a patched one of passfix.py, track F)
+src = open(os.environ.get('PASSMEASURE_IN') or os.path.join(W, 'desk/lib/nock-compilation.hoon')).read().split('\n')
 
 def find(anchor, start=0):
     k = [i for i, l in enumerate(src) if l == anchor and i >= start]
