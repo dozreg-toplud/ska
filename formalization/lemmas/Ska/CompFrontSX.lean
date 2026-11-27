@@ -242,6 +242,30 @@ theorem frontS_pairX {comb : Noun → Noun → Noun} {Qp Qq : Wit} {lo0 lo0q loq
           (Crashes.append_right (r1.append r2) ((FQ.run lib σ O c gul st t R2 s vq dq wq qq q2 dq2 eq2).2 ft))
         simpa only [List.append_assoc] using this
 
+/-- **`FrontsS.toFront` with the disjointness at the goal's labels only**
+(README Gaps 12.32): the result entries at new labels may hold the goal's
+own registers (the park entry of a cons with a hinted tail), and the field
+`front` reads only the result entries at the goal's labels. -/
+theorem FrontsS.toFrontG {Q : Wit} {x : Bool} {g0 g1 : Gen Map} {L : Lazy S} {nex : NextL S}
+    (h : FrontsS (Map := Map) Q x g0 g1 L nex) (hl : g0.re ≤ g1.re)
+    (hL : ∀ r, NMem L.sure.ned r → r < g0.re)
+    (hLE : ∀ e ∈ entries nex.laz, e.1 ∈ (entries L).map Prod.fst → ∀ r, NMem (gsE x L) r → ¬ NMem e.2.sure.ned r)
+    (hd : ∀ s v d w r, Q s v d w → NMem d r → g0.re ≤ r ∧ r < g1.re) :
+    ∀ e ∈ entries L, ∃ F : List Pole,
+      (∀ B fin, HoonMap.get g0.blocks e.1 = some ⟨[], B, fin⟩ → HoonMap.get g1.blocks e.1 = some ⟨[], F ++ B, fin⟩) ∧
+      ∀ cf : Map (Nat × List Nat), (∀ k, k < g1.re → HoonMap.get cf k = HoonMap.get g1.cond k) →
+      ((∃ L', (e.1, L') ∈ entries nex.laz ∧
+          FrontLB (Map := Map) Q (gsE x L) g0.re g1.re L'.sure (F.map (renPole (unproxy cf))) e.2.sure) ∨
+       (e.1 ∉ (entries nex.laz).map Prod.fst ∧
+          FrontLB (Map := Map) Q (gsE x L) g0.re g1.re Sure.bunt (F.map (renPole (unproxy cf))) e.2.sure)) := by
+  intro e he
+  have hel : e.1 ∈ (entries L).map Prod.fst := List.mem_map.mpr ⟨e, he, rfl⟩
+  obtain ⟨F, hb, hf⟩ := h e he
+  have hE := gsE_lt (x := x) hL
+  refine ⟨F, hb, fun cf hcf => (hf cf hcf).imp (fun ⟨L', hm, fs⟩ => ⟨L', hm, fs.toLB hl
+    (fun r hr => ⟨hE r hr, hLE _ hm hel r hr⟩) hd⟩) (fun ⟨hn, fs⟩ => ⟨hn, fs.toLB hl
+    (fun r hr => ⟨hE r hr, fun hm => by simp [Sure.bunt, NMem] at hm⟩) hd⟩)⟩
+
 end Comp
 end SkaModel
 end Formalization
