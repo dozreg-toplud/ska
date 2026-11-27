@@ -9,6 +9,7 @@ import lemmas.Compiler.CompRunDirectMonoP
 import lemmas.Compiler.CompRunDirectMonoC
 import lemmas.Compiler.CompRunRClass
 import lemmas.Compiler.CompUnaryDir
+import lemmas.Compiler.CompUnaryDirT
 import lemmas.Compiler.CompSofPush
 import lemmas.Compiler.CompSofArms
 import lemmas.Compiler.CompCalleeComp
@@ -235,3 +236,27 @@ open Formalization.Compiler
 #print axioms Formalization.Compiler.sfTable_code
 #print axioms Formalization.Compiler.sofBell_code
 #print axioms Formalization.Compiler.cu_gate_dir_ana
+#print axioms Formalization.Compiler.needRead_ext
+#print axioms Formalization.Compiler.sureHit_ext
+#print axioms Formalization.Compiler.ext_trans
+#print axioms Formalization.Compiler.xt_trans
+#print axioms Formalization.Compiler.comp_run_n3LRT
+#print axioms Formalization.Compiler.comp_run_n4LRT
+#print axioms Formalization.Compiler.comp_run_consLRT
+#print axioms Formalization.Compiler.comp_run_n5LRT
+#print axioms Formalization.Compiler.comp_run_n2LRT
+#print axioms Formalization.Compiler.comp_run_n10LRT
+#print axioms Formalization.Compiler.cr6s_s01T
+#print axioms Formalization.Compiler.cr6f_s03T
+#print axioms Formalization.Compiler.cr6l_eqT
+#print axioms Formalization.Compiler.comp_run_n6_allRT
+#print axioms Formalization.Compiler.comp_run_n7T
+#print axioms Formalization.Compiler.comp_run_n2_directXT
+#print axioms Formalization.Compiler.dirCallsT_of
+#print axioms Formalization.Compiler.comp_run_dirT
+#print axioms Formalization.Compiler.comp_run_dirXT
+#print axioms Formalization.Compiler.res_dirT
+#print axioms Formalization.Compiler.cu_trap_dirT
+#print axioms Formalization.Compiler.cu_gate_dirT
+#print axioms Formalization.Compiler.cu_gate_dirExt
+#print axioms Formalization.Compiler.cu_gate_dir_of_T
