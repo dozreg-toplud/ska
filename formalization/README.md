@@ -829,6 +829,9 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/RawInvAT.lean` | `RunAT`, the first fragment (README Gaps 14): `BAT` (a block passes as many arguments as its targets have parameters, a two-way end none), **`GA`** (the relation of a run: blocks below the old `bo` keep parameters and ends both ways, the new blocks meet `BAT` in the final map and jump below its `bo`, no block above it that was not there), `GA.trans`, `ga_quiet` (a step that makes no label, `Quiet`), `ga_emit` / `ga_emitF` / `ga_emitN`, `at_of_ga` (`ArityOK` and `TwoNA` from the empty state), `fresh_ga`, `GFresh` (the goal's jumps `Fresh`), the helpers of `run` (`ga_bomb`, `ga_simpleNext`, `ga_copy`, `ga_split`, `ga_into`, `ga_mede`, `ga_collapse`, `ga_doneBlocks`, **`ga_forl`**: `if0`, `if1` pass `[r0]`, `[r1]` to `barg`, whose parameter is `[r]`), `ATIH`, `entry_fresh`, `sub_at` (a sub-run, its result `Fresh` by `run_down`), the cases and **`run_at`** (every run of `run` from a state whose goal jumps are `Fresh` is a `GA`). |
 | `Ska/RawInvATX.lean` | `RunAT` on `FragX` (README Gaps 14): `ATR` (a `GA` and a `Fresh` result in `[1, g1.bo)`), `ATX`, the cases in the shape of `runX_eap` (`atx_frag` by `run_at` and `run_down`, `atx_seven`, `atx_sevenFrom`, `atx_four`, `atx_three`, `atx_binary` with `copyL_apart_some`, `atx_cons`, `ga_n5Pre`, `atx_five`, `atx_ten`, `atx_sixP`, `atx_sixN`), `ga_sixGenL`, `ga_same` (`+sect` by `SameBlocks`), `forkSure_out`, **`ga_forkSure`** (the fork blocks pass as many registers as the join has parameters, `NCopy.length`; the join hops to the goal's `Fresh` block), **`runX_at`**, **`runAT_fragX`** (`RunAT` on every nomm of `FragX` with at most 255 `%6`), and the theorems of `RawInvStX.lean` without `RunAT`: **`stIn_finishLFX_at`**, **`stIn_finishLUX_at`**, **`optInput_finishLFX_at`**, **`optInput_finishLUX_at`**, **`opt_total_finishLFX_at`**, **`opt_total_finishLUX_at`** (given only `GateTotalN` and `AliasRetN`, track H's). |
 | `Ska/RawInvCheckC.lean` | Executable checks with indirect calls (README Gaps 14 (b)): on the 120 nomms of `enumC` run through `runLC envR` (`runC`), the raw blocks meet `Closed`, `ArityOK`, `TwoNA` (`stB`, the facts of `RunAT`), and both final passes (`finishLUC`, `finishLFC` as `naryC`) meet `okSt` (`Closed`, `ArityOK`, `TwoNA`, the block `0`) and `okReads` (`ReadsIn nargs` over the reachable blocks); 60 raw runs and 60 n-ary outputs have a jump with arguments (`argsB`). |
+| `Ska/RawInvCheckCX.lean` | The wide check with indirect calls (README Gaps 14 (b)): `enumCX`, 3,960 nomms (72 calls `[2 p q]` over `baseC`, one part with a `%6`, under the 18 contexts `ctxC`: subject, formula or both of a call, head, tail or both of a cons, condition or either branch of a `%6`, either side of `%7`, `%3`, `%4`, either side of `%5`, patch or target of `%10`, before a call; 8 calls under two contexts) through `runLC envR`: on both final passes the eight fields of `OptIn` (`checkOut`), `okSt`, `okReads`; on the raw blocks `stB`; `atGoalC` (the statement of `ht_runLC`) under `%next`, `%pick` and a goal with a bond (`goalB`, `gB`: 3,912 runs, 3,888 with proxies).  No field fails.  Of the run-level facts of `FragX`, `liveKB` fails on the 336 runs with proxies (the `+kern` of a call reads lazy blocks through proxies) and `lazyOKB` on 352 (`+past-fork` parks a branch's need in a bond at the branch label, `enumCX[78]`). |
+| `Ska/RawInvCQ.lean` | `QM m` (every run of `m` is `Quiet`: no label made, blocks keep parameters and ends), its combinators and tactic `qmb`, and the arms that emit nothing, from the text of `CompSimBody.lean` with `QM` for `SimM`: the needs (`qm_must` .. `qm_kernLoop`), `qm_splitLoop`, `qm_intoLoopL`, `qm_copyLazyL` (with `qm_mergeForks`, `qm_mergeBonds`), `qm_walkLazy`, `qm_collapseGate`, `qm_kern` (its proxies only touch `cond`, its ops go in through `+add-ops`), `qm_lazyShut`.  README Gaps 14 (b). |
+| `Ska/RawInvCAT.lean` | `RunAT` with indirect calls (README Gaps 14 (b)): the state invariant `ATS` (labels in `[1, bo)`, every block meets `BATC` in the map and jumps below its label), `KP`, `Stab`, the triple `HT P m Q` with `pure'`, `bind'`, `ite'`, `conseq`, `weak`, `frame`, `quiet` (a `QM` step), `emit'`; the arms that emit (`ht_simpleNextL`, `ht_bombL`, `ht_splitL`, `ht_intoL`, `ht_copyL`, `ht_pastL`, `ht_medeL`, `ht_collapse`, `ht_forl`, `ht_doneBlocks`, `ht_kerf`), **`ht_callL`** (the indirect call), **`ht_runLC`** (`runLC env sup` on `PlainN`, every goal, lazy goals with forks and bonds included: `Fresh` goal jumps give a `Fresh` result jump), **`runATC_plain`** (`Closed`, `ArityOK`, `TwoNA` of the raw blocks of the top run), **`runDownC_plain`** (`Down` of them). |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
@@ -3205,12 +3208,43 @@ import only its theorems.  So:
    `flattenNeed ned`, as many by `NCopy.length` (`ga_forkSure`); `+sect`
    keeps the blocks of `sixGenL` (`SameBlocks`).  No statement turned out
    false; the induction is proved, so `atGoalB` stays the check of its
-   statement.  Left on track D: indirect calls, (b) below.  With indirect calls the
-   facts of `RunAT`, of `StInv` and `ReadsIn` hold on all 120 nomms of
-   `enumC` on both final passes (`RawInvCheckC.lean`), so the statements
-   carry over; the proof needs the induction on `runLC` of (b), and for
-   `RunAT` the `GA` of the arm of `%2` (`+kerf`'s hop, `+kern`'s ops, the
-   `%nok` block).
+   statement.  Left on track D: indirect calls, (b) below.
+
+   **Indirect calls, 2026-11-27, eleventh session (`RawInvCheckCX.lean`,
+   `RawInvCQ.lean`, `RawInvCAT.lean`).**  The check first: on 3,960 nomms
+   with indirect calls in every position (`enumCX`: subject, formula, both,
+   head, tail, both halves of a cons, condition and branches of a `%6`,
+   under `%7`, `%3`, `%4`, `%5`, `%10`, nested calls) all eight fields of
+   `OptIn`, the facts of `StInv` and `ReadsIn` over the reachable blocks
+   hold on both final passes (`finishLUC`, `finishLFC`), and `Closed`,
+   `ArityOK`, `TwoNA` with a `Fresh` result on the raw blocks under
+   `%done`, `%next`, `%pick` and a goal with a bond.  No finding.  Two
+   run-level facts of `FragX` do not carry: `liveKB` (no register live at
+   the entry once the lazy entries define their needs) fails on exactly the
+   336 runs whose `cond` has proxies, since the `+kern` of a call under a
+   lazy need reads the need's lazy blocks through proxies that nothing
+   defines; and the lazy entries need not lie at distinct labels (`+past-fork`
+   behind a hinted test parks each branch's need in a bond at the branch
+   block, `[6 [2 [0 1] [0 1]] [0 2] [0 3]]`).  Proved: `RunAT`'s facts on
+   the class `PlainN` of track C (`CompSimBody.lean`: `%0`, `%1`, `%3`,
+   `%4`, `%5`, cons, `%7`, `%10` and indirect calls `[2 p q]` with any
+   `PlainN` parts, nested; no `%6`, no direct call, no hint), for every goal
+   including lazy ones with forks and bonds: **`ht_runLC`**,
+   **`runATC_plain`** (`Closed`, `ArityOK`, `TwoNA` of the top run's raw
+   blocks) and **`runDownC_plain`** (they jump down).  Without `%6` no block
+   hops up, so a state invariant does what `GA` did on `FragX`: `ATS` (every
+   block meets the arity of its targets in the map itself and jumps below
+   its label), carried by Hoare triples `HT` that compose by `bind'`.  The
+   arm of `%2`: `+kern` emits no block (`qm_kern`: proxies only touch `cond`,
+   the ops go into existing lazy blocks by `+add-ops`), so `+kerf` emits one
+   hop to the goal's `Fresh` jump and the `%nok` block hops to it
+   (`ht_kerf`, `ht_callL`).  Not proved: `OptIn`, and the parts of `StInv`
+   and `ReadsIn` of the final passes, for `runLC`.  What blocks them is the
+   liveness spec of a run (`RawIHX` for `runL`): with calls it must be
+   stated modulo `unproxy` (the proxies are live) and over lazy goals with
+   bonds (the cons with a call in its tail runs its head under a bond goal,
+   `+past`); `stOut_ren` takes it as its hypothesis `hl`, so the final-pass
+   facts of `StInv` wait for it too.
 
    **Left, in this order.**  (a) `%6` (`FragX`; `Frag6` is done; see the
    paragraph above for what holds and what is proved).  Two obstacles, both met

@@ -11,6 +11,7 @@ import lemmas.Ska.RawInvEApart
 import lemmas.Ska.RawInvWholeX
 import lemmas.Ska.RawInvStX
 import lemmas.Ska.RawInvATX
+import lemmas.Ska.RawInvCAT
 
 /-!
 # Axioms of the main theorems of track D (README Gaps 14)
@@ -138,3 +139,9 @@ open Formalization SkaModel Raw
 #print axioms optInput_finishLUX_at
 #print axioms Formalization.Compiler.opt_total_finishLFX_at
 #print axioms Formalization.Compiler.opt_total_finishLUX_at
+#print axioms Formalization.SkaModel.Comp.qm_kern
+#print axioms Formalization.SkaModel.Comp.qm_copyLazyL
+#print axioms ht_callL
+#print axioms ht_runLC
+#print axioms runATC_plain
+#print axioms runDownC_plain
