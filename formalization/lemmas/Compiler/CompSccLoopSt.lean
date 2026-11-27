@@ -104,8 +104,15 @@ def SccN (c : Cfg Noun N) (SCC : Noun) : Prop :=
   Tree SCC ∧ tapList SCC = c.scc ∧ (preorder SCC).length = c.scc.length
 
 /-- The print of `csfRec`, `(print-comp 0 |.(leaf+"[fixpoint-compilation {(scow %ud counter)}]"))`,
-returns a gate that gives back its sample.  In the pill `print-comp` is the `+slog` version
-(`comp-verb` is set), so this runs `+scow` on `counter`: a statement about the pill alone. -/
+returns a gate that gives back its sample.  `print-comp` (lines 107 to 110) is `!@  comp-verb
+same  %*($ slog pri pri, a ~[$:print])`, and line 100 (`=/  comp-verb  ~`) is commented out, so
+`comp-verb` is NOT defined and the pill's `print-comp` is the `+slog` branch.  What this then
+needs, in order: (1) `$:print` returns: the trap builds the tape `"[fixpoint-compilation "`, the
+`+scow %ud` of the atom `counter` (any tape: its value is not read) and `"]"`, so it is exactly
+"`+scow %ud` on an atom returns a tape"; (2) `+slog` on the one-tank list runs the dynamic hint
+`~>(%slog.[pri i.a] ..)`, a Nock 11 with a cell hint whose clue `[pri i.a]` returns, so the hint
+returns its body (`nock_op11_cell`), and on `~` it gives `same`; (3) `same` gives back its
+sample.  With line 100 uncommented `print-comp` is `same` and only (3) is left. -/
 def PrintId (p : LoopP) : Prop :=
   ∀ (k : Nat) (ST ML CA RES : Noun), ∃ BAT SAM CTX,
     nock (C RES (p.core (A k) ST ML CA)) csfRecPrint = some (C BAT (C SAM CTX)) ∧

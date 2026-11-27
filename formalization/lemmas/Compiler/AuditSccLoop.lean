@@ -3,6 +3,7 @@ import lemmas.Ska.SccLoopCycle
 import lemmas.Ska.SccLoopTotal
 import lemmas.Compiler.CompSccLoopGate
 import lemmas.Compiler.CompSccLoopUse
+import lemmas.Compiler.CompSccLoopClose
 
 /-! The axioms of the theorems of `Ska/SccLoop.lean`, `Ska/SccLoopMsg.lean` and `Ska/SccLoopCycle.lean`
 (README Gaps 21): each must print
@@ -64,3 +65,22 @@ open Formalization.SkaModel.SccLoop
 #print axioms Formalization.Compiler.csiNeeds_of_loop
 #print axioms Formalization.Compiler.csiSures_of_loop
 #print axioms Formalization.Compiler.sureHolds_uni
+#print axioms Formalization.SkaModel.SccLoop.dfsF_total
+#print axioms Formalization.SkaModel.SccLoop.dfsOrder_sub
+#print axioms Formalization.SkaModel.SccLoop.dfsOrder_cover
+#print axioms Formalization.Compiler.ord_trap
+#print axioms Formalization.Compiler.csf_order
+#print axioms Formalization.Compiler.rep_gate_kinv
+#print axioms Formalization.Compiler.csi_kids
+#print axioms Formalization.Compiler.csi_done_false
+#print axioms Formalization.Compiler.kids_self
+#print axioms Formalization.SkaModel.SccLoop.compileSccIn_ml_some
+#print axioms Formalization.SkaModel.SccLoop.compileSccIn_ml_out
+#print axioms Formalization.Compiler.csi_levy_miss
+#print axioms Formalization.Compiler.top_of_exact
+#print axioms Formalization.Compiler.kids_facts
+#print axioms Formalization.Compiler.csi_gate_loop_d
+#print axioms Formalization.Compiler.csi_gate_ranked
+#print axioms Formalization.Compiler.csiNeeds_of_loopR
+#print axioms Formalization.Compiler.ccc_csi_open
+#print axioms Formalization.Compiler.cccMiss_of_loop
