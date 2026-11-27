@@ -37,26 +37,26 @@ noncomputable def mtcS (l : List Nat) (ned : Need) (r o fail : Nat) (Z : Noun) (
   l.foldr (fun a s => C (A a) s) (mtcT ned r o fail Z g x ctx)
 
 /-- The state after one `+re`. -/
-abbrev reG (g : Gen (TreapMap mugF)) : Gen (TreapMap mugF) := { g with re := g.re + 1 }
+abbrev mtcReG (g : Gen (TreapMap mugF)) : Gen (TreapMap mugF) := { g with re := g.re + 1 }
 
 /-! ## The cell branch -/
 
 theorem mtcPA_0 (ned : Need) (r o fail : Nat) (Z : Noun) (g : Gen (TreapMap mugF)) :
-    nock (mtcT ned r o fail Z g x ctx) mtcPAr0 = nock (mtcS [g.re] ned r o fail Z (reG g) x ctx) mtcPAr1 := by
+    nock (mtcT ned r o fail Z g x ctx) mtcPAr0 = nock (mtcS [g.re] ned r o fail Z (mtcReG g) x ctx) mtcPAr1 := by
   have hD := comp_re_at
   have hre := comp_re' ctx x g
   conv => { lhs; arg 2; unfold mtcPAr0 }
-  simp only [mtcS, mtcT, compCore, List.foldr, reG] at hre ⊢
+  simp only [mtcS, mtcT, compCore, List.foldr, mtcReG] at hre ⊢
   generalize comp.door = Dr at hD hre ⊢
   simp [nock_exec, mtcPAv0, hD, hre]
 
 theorem mtcPA_1 (ned : Need) (rt r o fail : Nat) (Z : Noun) (g : Gen (TreapMap mugF)) :
     nock (mtcS [rt] ned r o fail Z g x ctx) mtcPAr1
-      = nock (mtcS [g.re, rt] ned r o fail Z (reG g) x ctx) mtcPAr2 := by
+      = nock (mtcS [g.re, rt] ned r o fail Z (mtcReG g) x ctx) mtcPAr2 := by
   have hD := comp_re_at
   have hre := comp_re' ctx x g
   conv => { lhs; arg 2; unfold mtcPAr1 }
-  simp only [mtcS, mtcT, compCore, List.foldr, reG] at hre ⊢
+  simp only [mtcS, mtcT, compCore, List.foldr, mtcReG] at hre ⊢
   generalize comp.door = Dr at hD hre ⊢
   simp [nock_exec, mtcPAv1, hD, hre]
 
@@ -127,21 +127,21 @@ theorem mtcPA_L (hc : CompIn ctx) (ned : Need) (os oh ot rh rt r o fail : Nat) (
 /-! ## The `%both` branch -/
 
 theorem mtcBO_0 (ned : Need) (r o fail : Nat) (Z : Noun) (g : Gen (TreapMap mugF)) :
-    nock (mtcT ned r o fail Z g x ctx) mtcBOr0 = nock (mtcS [g.re] ned r o fail Z (reG g) x ctx) mtcBOr1 := by
+    nock (mtcT ned r o fail Z g x ctx) mtcBOr0 = nock (mtcS [g.re] ned r o fail Z (mtcReG g) x ctx) mtcBOr1 := by
   have hD := comp_re_at
   have hre := comp_re' ctx x g
   conv => { lhs; arg 2; unfold mtcBOr0 }
-  simp only [mtcS, mtcT, compCore, List.foldr, reG] at hre ⊢
+  simp only [mtcS, mtcT, compCore, List.foldr, mtcReG] at hre ⊢
   generalize comp.door = Dr at hD hre ⊢
   simp [nock_exec, mtcBOv0, hD, hre]
 
 theorem mtcBO_1 (ned : Need) (rt r o fail : Nat) (Z : Noun) (g : Gen (TreapMap mugF)) :
     nock (mtcS [rt] ned r o fail Z g x ctx) mtcBOr1
-      = nock (mtcS [g.re, rt] ned r o fail Z (reG g) x ctx) mtcBOr2 := by
+      = nock (mtcS [g.re, rt] ned r o fail Z (mtcReG g) x ctx) mtcBOr2 := by
   have hD := comp_re_at
   have hre := comp_re' ctx x g
   conv => { lhs; arg 2; unfold mtcBOr1 }
-  simp only [mtcS, mtcT, compCore, List.foldr, reG] at hre ⊢
+  simp only [mtcS, mtcT, compCore, List.foldr, mtcReG] at hre ⊢
   generalize comp.door = Dr at hD hre ⊢
   simp [nock_exec, mtcBOv1, hD, hre]
 
@@ -234,12 +234,12 @@ theorem mtc_pair (hc : CompIn ctx) (fail : Nat) (Z : Noun) (h t : Need)
     (ih_h : MtcAt ctx x fail Z h) (ih_t : MtcAt ctx x fail Z t) : MtcAt ctx x fail Z (Need.pair h t) := by
   intro r o g
   rw [mtc_disp_pair, mtcPA_0, mtcPA_1]
-  show _ = ((monoTryLoop fail t g.re o (reG (reG g))).bind fun p =>
-    (monoTryLoop fail h (reG g).re p.1 p.2).bind fun q =>
-    (emit (mtcSplit r (reG g).re g.re q.1) q.2).bind fun s => emit (mtcClq r s.1 fail) s.2).map
+  show _ = ((monoTryLoop fail t g.re o (mtcReG (mtcReG g))).bind fun p =>
+    (monoTryLoop fail h (mtcReG g).re p.1 p.2).bind fun q =>
+    (emit (mtcSplit r (mtcReG g).re g.re q.1) q.2).bind fun s => emit (mtcClq r s.1 fail) s.2).map
       (fun p => C (A p.1) (genNoun p.2 x))
-  have et := ih_t g.re o (reG (reG g))
-  cases e3 : monoTryLoop fail t g.re o (reG (reG g)) with
+  have et := ih_t g.re o (mtcReG (mtcReG g))
+  cases e3 : monoTryLoop fail t g.re o (mtcReG (mtcReG g)) with
   | none =>
     rw [e3] at et
     rw [mtcPA_2n x h t _ _ r o fail Z _ et]; rfl
@@ -248,8 +248,8 @@ theorem mtc_pair (hc : CompIn ctx) (fail : Nat) (Z : Noun) (h t : Need)
     rw [e3] at et
     rw [mtcPA_2 x h t _ _ r o fail Z _ g3 ot et]
     simp only [Option.bind_some]
-    have eh := ih_h (reG g).re ot g3
-    cases e4 : monoTryLoop fail h (reG g).re ot g3 with
+    have eh := ih_h (mtcReG g).re ot g3
+    cases e4 : monoTryLoop fail h (mtcReG g).re ot g3 with
     | none => rw [e4] at eh; rw [mtcPA_3n x h t ot _ _ r o fail Z _ eh]; rfl
     | some q =>
       obtain ⟨oh, g4⟩ := q
@@ -263,13 +263,13 @@ theorem mtc_both (hc : CompIn ctx) (fail : Nat) (Z : Noun) (rn : Nat) (h t : Nee
     MtcAt ctx x fail Z (Need.both rn h t) := by
   intro r o g
   rw [mtc_disp_both, mtcBO_0, mtcBO_1]
-  show _ = ((monoTryLoop fail t g.re o (reG (reG g))).bind fun p =>
-    (monoTryLoop fail h (reG g).re p.1 p.2).bind fun q =>
+  show _ = ((monoTryLoop fail t g.re o (mtcReG (mtcReG g))).bind fun p =>
+    (monoTryLoop fail h (mtcReG g).re p.1 p.2).bind fun q =>
     (if r = rn then (crashM : CM (TreapMap mugF) Nat) else
-      (emit (mtcSplit3 r (reG g).re g.re rn q.1) >>= fun os => emit (mtcClq r os fail))) q.2).map
+      (emit (mtcSplit3 r (mtcReG g).re g.re rn q.1) >>= fun os => emit (mtcClq r os fail))) q.2).map
       (fun p => C (A p.1) (genNoun p.2 x))
-  have et := ih_t g.re o (reG (reG g))
-  cases e3 : monoTryLoop fail t g.re o (reG (reG g)) with
+  have et := ih_t g.re o (mtcReG (mtcReG g))
+  cases e3 : monoTryLoop fail t g.re o (mtcReG (mtcReG g)) with
   | none =>
     rw [e3] at et
     rw [mtcBO_2n x rn h t _ _ r o fail Z _ et]; rfl
@@ -278,8 +278,8 @@ theorem mtc_both (hc : CompIn ctx) (fail : Nat) (Z : Noun) (rn : Nat) (h t : Nee
     rw [e3] at et
     rw [mtcBO_2 x rn h t _ _ r o fail Z _ g3 ot et]
     simp only [Option.bind_some]
-    have eh := ih_h (reG g).re ot g3
-    cases e4 : monoTryLoop fail h (reG g).re ot g3 with
+    have eh := ih_h (mtcReG g).re ot g3
+    cases e4 : monoTryLoop fail h (mtcReG g).re ot g3 with
     | none => rw [e4] at eh; rw [mtcBO_3n x rn h t ot _ _ r o fail Z _ eh]; rfl
     | some q =>
       obtain ⟨oh, g4⟩ := q

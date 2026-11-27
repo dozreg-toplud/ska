@@ -96,14 +96,14 @@ theorem crd_blkM_done (hc : CompIn ctx) (x : GenRest) (SOF V5 V2 PV : Noun) (sub
       crDKc7
       = (crdBlockMM b (flattenNeed subNed) CGoalL.done g).map fun p => crdBlkN p x := by
   have hre := comp_re' ctx x g
-  have he1 := cf_emit (x := x) hc (reG g) ⟨[], [], Termin.jmp b (flattenNeed subNed)⟩
-  have he2 := cf_emit (x := x) hc (cfEmitG ⟨[], [], Termin.jmp b (flattenNeed subNed)⟩ (reG g))
+  have he1 := cf_emit (x := x) hc (mtcReG g) ⟨[], [], Termin.jmp b (flattenNeed subNed)⟩
+  have he2 := cf_emit (x := x) hc (cfEmitG ⟨[], [], Termin.jmp b (flattenNeed subNed)⟩ (mtcReG g))
     ⟨[], [], Termin.jsp b g.re⟩
   simp only [Blob.toNoun, listNoun, Termin.toNoun, Tag.jmp, Tag.jsp] at he1 he2
   have hD := comp_emit_at
   have hDr := comp_re_at
   simp only [crdBlockMM, bind_apply, re_apply, cf_emit_g, Option.bind_some, pure_apply, Option.map_some]
-  simp only [crSubj, compCore, reG] at hre he1 he2 ⊢
+  simp only [crSubj, compCore, mtcReG] at hre he1 he2 ⊢
   generalize comp.door = Dr at hre he1 he2 hD hDr ⊢
   unfold crDKc7 crD7 crD7Op crD7Jop crD7T crD7D crD7Dm
   simp [nock_exec, CGoalL.toNoun, hD, hDr, hre, comp_emit_arm, he1, he2, crdBlkN, cf_emitG_re]
@@ -210,21 +210,21 @@ variable (x : GenRest) (KP NEX JG OG SOF V5 SV SN V2 PV mono N GN RG sup : Noun)
 
 theorem crNM_0 (g : Gen (TreapMap mugF)) :
     nock (crNS [] KP NEX JG OG SOF V5 SV SN V2 PV mono N GN RG sup g x ctx) crNMr0
-      = nock (crNS [g.re] KP NEX JG OG SOF V5 SV SN V2 PV mono N GN RG sup (reG g) x ctx) crNMr1 := by
+      = nock (crNS [g.re] KP NEX JG OG SOF V5 SV SN V2 PV mono N GN RG sup (mtcReG g) x ctx) crNMr1 := by
   have hD := comp_re_at
   have hre := comp_re' ctx x g
   conv => { lhs; arg 2; unfold crNMr0 }
-  simp only [crNS, crSubj, compCore, List.foldr, reG] at hre ⊢
+  simp only [crNS, crSubj, compCore, List.foldr, mtcReG] at hre ⊢
   generalize comp.door = Dr at hD hre ⊢
   simp [nock_exec, crNMv0, hD, hre]
 
 theorem crNM_1 (a1 : Nat) (g : Gen (TreapMap mugF)) :
     nock (crNS [a1] KP NEX JG OG SOF V5 SV SN V2 PV mono N GN RG sup g x ctx) crNMr1
-      = nock (crNS [g.re, a1] KP NEX JG OG SOF V5 SV SN V2 PV mono N GN RG sup (reG g) x ctx) crNMr2 := by
+      = nock (crNS [g.re, a1] KP NEX JG OG SOF V5 SV SN V2 PV mono N GN RG sup (mtcReG g) x ctx) crNMr2 := by
   have hD := comp_re_at
   have hre := comp_re' ctx x g
   conv => { lhs; arg 2; unfold crNMr1 }
-  simp only [crNS, crSubj, compCore, List.foldr, reG] at hre ⊢
+  simp only [crNS, crSubj, compCore, List.foldr, mtcReG] at hre ⊢
   generalize comp.door = Dr at hD hre ⊢
   simp [nock_exec, crNMv1, hD, hre]
 
@@ -249,22 +249,22 @@ theorem crNM_2 (hc : CompIn ctx) (out pro a2 a1 : Nat) (g : Gen (TreapMap mugF))
 
 theorem crNM_3 (a3 a2 a1 : Nat) (g : Gen (TreapMap mugF)) :
     nock (crNS [a3, a2, a1] KP NEX JG OG SOF V5 SV SN V2 PV mono N GN RG sup g x ctx) crNMr3
-      = nock (crNS [g.re, a3, a2, a1] KP NEX JG OG SOF V5 SV SN V2 PV mono N GN RG sup (reG g) x ctx) crNMr4 := by
+      = nock (crNS [g.re, a3, a2, a1] KP NEX JG OG SOF V5 SV SN V2 PV mono N GN RG sup (mtcReG g) x ctx) crNMr4 := by
   have hD := comp_re_at
   have hre := comp_re' ctx x g
   conv => { lhs; arg 2; unfold crNMr3 }
-  simp only [crNS, crSubj, compCore, List.foldr, reG] at hre ⊢
+  simp only [crNS, crSubj, compCore, List.foldr, mtcReG] at hre ⊢
   generalize comp.door = Dr at hD hre ⊢
   simp [nock_exec, crNMv3, hD, hre]
 
 theorem crNM_4 (a4 a3 a2 a1 : Nat) (g : Gen (TreapMap mugF)) :
     nock (crNS [a4, a3, a2, a1] KP NEX JG OG SOF V5 SV SN V2 PV mono N GN RG sup g x ctx) crNMr4
-      = nock (crNS [g.re, a4, a3, a2, a1] KP NEX JG OG SOF V5 SV SN V2 PV mono N GN RG sup (reG g) x ctx)
+      = nock (crNS [g.re, a4, a3, a2, a1] KP NEX JG OG SOF V5 SV SN V2 PV mono N GN RG sup (mtcReG g) x ctx)
           crNMr5 := by
   have hD := comp_re_at
   have hre := comp_re' ctx x g
   conv => { lhs; arg 2; unfold crNMr4 }
-  simp only [crNS, crSubj, compCore, List.foldr, reG] at hre ⊢
+  simp only [crNS, crSubj, compCore, List.foldr, mtcReG] at hre ⊢
   generalize comp.door = Dr at hD hre ⊢
   simp [nock_exec, crNMv4, hD, hre]
 
@@ -437,7 +437,7 @@ theorem crd_blkM_next (h7 : slot? 7 ctx = some compK) (x : GenRest) (hx : x.NoSo
       rw [crd7_nm h7 x SOF V5 _ _ V2 PV p q b _ sup goal k hk hkd g g1 g2 nex0 out pro hsn hkf]
       rw [crNM_0, crNM_1, crNM_2 (hc := hc), crNM_3, crNM_4, crNM_5 (hc := hc), crNM_6 (hc := hc), crNM_L]
       simp [Option.bind_some, re_apply, cf_emit_g, pure_apply, bind_apply, crdBlkN, cf_emitG_re, cf_emitG_bo, ek,
-        Functor.map, StateT.map, reG]
+        Functor.map, StateT.map, mtcReG]
 
 /-! ## Steps `8` and `9` under `mono` `&` -/
 
