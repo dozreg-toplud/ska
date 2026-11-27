@@ -86,6 +86,8 @@ theorem minkF_trace (lib : Lib) (gul : Noun) :
         | none => rfl
         | some x => cases x <;> simp [Tone.app, tbind]
       · rw [ih t, ← tbind_map_app]; rfl
+    · rw [ih t, ← tbind_map_app]; congr 1; funext c
+      rw [ih t, ← tbind_map_app]; rfl
     · rw [ih t, ← tbind_map_app]; congr 1; funext r
       rw [ih t, ← tbind_map_app]; congr 1; funext p
       split
@@ -170,6 +172,7 @@ theorem minkF_good (lib : Lib) (gul : Noun) :
           · exact Or.inl hst
           · exact Or.inr hm'
         · exact Or.inr hm
+    · exact tbind_good (I _ _) (fun _ _ h => tbind_good (I _ _) (fun _ _ h => S _ _ h (Z _)) h) h
     · refine tbind_good (I _ _) (fun _ _ h => tbind_good (I _ _) (fun _ _ h => ?_) h) h
       split at h
       · exact S _ _ h T

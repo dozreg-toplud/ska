@@ -122,6 +122,9 @@ def NStep (ctx gul : Noun) (G : Trace → Noun → Noun → Option Noun)
   | Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.atom tag) clue) nx) =>
       nb (G t s clue) fun c => nb (G (hintTrace tag c t) s nx) fun p =>
         (call s (C (A 11) (C (C (A tag) (C (A 1) c)) (C (A 1) p)))).bind fun r => some (C (A 0) r)
+  | Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.cell x y) clue) nx) =>
+      nb (G t s clue) fun c => nb (G t s nx) fun p =>
+        (call s (C (A 11) (C (C (C x y) (C (A 1) c)) (C (A 1) p)))).bind fun r => some (C (A 0) r)
   | Noun.cell (Noun.atom 12) (Noun.cell ref path) =>
       nb (G t s ref) fun r => nb (G t s path) fun p =>
         if A 0 = gul then some (twoN t) else
@@ -266,7 +269,7 @@ theorem mink_loop_unfold (ctx gul : Noun) (call : Noun → Noun → Option Noun)
       have e5 : ¬ (1953460339 = tag) := fun h => h5 h.symm
       simp [stopTag, Tag.hunk, Tag.hand, Tag.mean, Tag.lose, Tag.spot, nock_exec, eqCode, e1, e2, e3,
         e4, e5, h1, h2, h3, h4, h5]
-    | 11, Noun.cell (Noun.cell (Noun.cell _ _) _) _ =>
+    | 11, Noun.cell (Noun.cell (Noun.cell x y) clue) nx =>
       conv => lhs; arg 3; unfold mink.loop
       simp [nock_exec, nockW_ite, NStep, nb_exec, slamArm, slamGate, hintTrace, bind_bind_some,
         eq0_bind, Tag.hunk]
@@ -343,6 +346,7 @@ theorem nstep_mono (ctx gul : Noun) {G1 G2 : Trace → Noun → Noun → Option 
   · exact ite_mono R (nb_mono (hG _ _ _) fun _ => nb_mono (hG _ _ _) fun _ =>
       Below?.bind (slamArm_mono hc _ _ _) fun _ => R)
   · exact nb_mono (hG _ _ _) fun _ => Below?.bind (hc _ _) fun _ => R
+  · exact nb_mono (hG _ _ _) fun _ => nb_mono (hG _ _ _) fun _ => Below?.bind (hc _ _) fun _ => R
   · exact nb_mono (hG _ _ _) fun _ => nb_mono (hG _ _ _) fun _ => Below?.bind (hc _ _) fun _ => R
   · exact nb_mono (hG _ _ _) fun _ => nb_mono (hG _ _ _) fun _ =>
       ite_mono R (Below?.bind (slamGate_mono hc _ _) fun _ => R)

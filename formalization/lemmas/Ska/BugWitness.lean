@@ -41,8 +41,8 @@ with the oracle that answers nothing, which satisfies every hypothesis of
    the formula itself on the subject.  Vere gives that formula to its plain
    interpreter; `+eval-top` runs `%nok` by `+eval-top`, which compiles and
    runs the same code again.  So `+eval-top` never returns on
-   `[11 %bare 1 42]`, which Nock reduces to `42` (`bare_loops`), and `Meek`
-   fails.  `+mink` itself runs its hint under `~> %bare`.
+   `[11 %bare 1 42]`, which Nock reduces to `42` (`bare_loops`), and
+   `NockEquivalence` fails.  `+mink` itself runs its hint under `~> %bare`.
 -/
 
 namespace Formalization
