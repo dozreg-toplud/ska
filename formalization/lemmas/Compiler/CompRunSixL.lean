@@ -190,5 +190,181 @@ theorem runLC_n6_l (env : CallEnv) (msup : Option Nomm) (p q r : Nomm) (laz rest
   simp only [hlp]
   rw [sixNextLC_leap_none env.cod _ _ _ p q r 0 1 rest th region h2]
 
+/-! ## The side conditions of the copies -/
+
+/-- **What `+leap` keeps of the invariant**: the rest and every `by` meet
+`LInv`, no register is in two of them or twice in one, and each is a
+register of the goal's need. -/
+def LeapInv (kr kb : Nat) (laz : Lazy CSet) (q r : Nomm) : Prop :=
+  ∀ rest bys, leap laz q r = some (some (rest, bys)) →
+    LInv kr kb rest ∧ (∀ b ∈ bys, LInv kr kb b) ∧ (lregs rest ++ bys.flatMap lregs).Nodup ∧
+      ∀ y ∈ lregs rest ++ bys.flatMap lregs, y ∈ lregs laz
+
+/-- **The copies of the loop meet `CopyChain`**, and what `copyAll` returns:
+from a result with `GInv`, `by`s with `LInv` whose registers are apart from
+each other and from the result's. -/
+theorem copyAll_chain : ∀ (bys : List (Lazy CSet)) (nex : NextL CSet) (g : Gen (TreapMap mugF)),
+    GInv g nex.goal → (∀ b ∈ bys, LInv g.re g.bo b) → (bys.flatMap lregs).Nodup →
+    (∀ y ∈ lregs nex.laz, y ∉ bys.flatMap lregs) →
+    CopyChain g nex bys ∧ ∀ nf g', copyAll nex bys g = some (nf, g') →
+      g.re ≤ g'.re ∧ g.bo ≤ g'.bo ∧ GInv g' nf.goal ∧
+        ∀ y ∈ lregs nf.laz, y ∈ lregs nex.laz ∨ y ∈ bys.flatMap lregs ∨ g.re ≤ y
+  | [], nex, g, hi, _, _, _ => by
+    refine ⟨trivial, fun nf g' h => ?_⟩
+    simp only [copyAll, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨Nat.le_refl _, Nat.le_refl _, hi, fun y hy => Or.inl hy⟩
+  | b :: bs, nex, g, hi, hb, hnd, hap => by
+    have hi' : LInv g.re g.bo nex.laz ∧ g.drop = false ∧ JmpIn (· < g.re) nex.th := hi
+    obtain ⟨hn, hd, -⟩ := hi'
+    have hb0 := hb b List.mem_cons_self
+    rw [List.flatMap_cons] at hnd hap
+    have hnd' := List.nodup_append.1 hnd
+    have hH : CopyH g.re nex.laz b :=
+      copyH_of_regs (lnb_regs hn.1) (lnb_regs hb0.1) (fun y hy hy' => hap y hy (List.mem_append_left _ hy'))
+    have ap : (lregs nex.laz ++ lregs b).Nodup :=
+      List.nodup_append.2 ⟨hn.2.1, hb0.2.1, fun a ha c hc e => hap a ha (List.mem_append_left _ (e ▸ hc))⟩
+    have step : ∀ nex' g1, copyL nex b g = some (nex', g1) →
+        g.re ≤ g1.re ∧ g.bo ≤ g1.bo ∧ (CopyChain g1 nex' bs ∧ ∀ nf g', copyAll nex' bs g1 = some (nf, g') →
+          g1.re ≤ g'.re ∧ g1.bo ≤ g'.bo ∧ GInv g' nf.goal ∧
+            ∀ y ∈ lregs nf.laz, y ∈ lregs nex'.laz ∨ y ∈ bs.flatMap lregs ∨ g1.re ≤ y) ∧
+          ∀ y ∈ lregs nex'.laz, y ∈ lregs nex.laz ++ lregs b ∨ g.re ≤ y := by
+      intro nex' g1 h
+      obtain ⟨le, bo, gi, rg⟩ := copyL_inv hn hb0 ap hd h
+      refine ⟨le, bo, copyAll_chain bs nex' g1 gi
+        (fun b' hb' => linv_mono (hb b' (List.mem_cons_of_mem _ hb')) le bo) hnd'.2.1 (fun y hy hy' => ?_), rg⟩
+      rcases rg y hy with e | e
+      · rcases List.mem_append.1 e with e | e
+        · exact hap y e (List.mem_append_right _ hy')
+        · exact hnd'.2.2 y e y hy' rfl
+      · obtain ⟨b', hb', hyb⟩ := List.mem_flatMap.1 hy'
+        have := lnb_regs (hb b' (List.mem_cons_of_mem _ hb')).1 y hyb
+        omega
+    refine ⟨⟨hH, fun nex' g1 h => (step nex' g1 h).2.2.1.1⟩, fun nf g' h => ?_⟩
+    simp only [copyAll] at h
+    obtain ⟨nex', g1, e1, e2⟩ := bind_some h
+    obtain ⟨le, bo, ⟨-, hr⟩, rg⟩ := step nex' g1 e1
+    obtain ⟨le2, bo2, gi2, rg2⟩ := hr nf g' e2
+    refine ⟨Nat.le_trans le le2, Nat.le_trans bo bo2, gi2, fun y hy => ?_⟩
+    rcases rg2 y hy with e | e | e
+    · rcases rg y e with e' | e'
+      · rcases List.mem_append.1 e' with e' | e'
+        · exact Or.inl e'
+        · exact Or.inr (Or.inl (List.mem_append_left _ e'))
+      · exact Or.inr (Or.inr e')
+    · exact Or.inr (Or.inl (List.mem_append_right _ e))
+    · exact Or.inr (Or.inr (Nat.le_trans le e))
+
+/-- The goal of the run on the rest meets `GInv`. -/
+theorem ginv_rest {g : Gen (TreapMap mugF)} {laz rest : Lazy CSet} {th : Jmp} {q r : Nomm}
+    {bys : List (Lazy CSet)} (hinv : GInv g (CGoalL.next laz th)) (hli : LeapInv g.re g.bo laz q r)
+    (hlp : leap laz q r = some (some (rest, bys))) : GInv g (CGoalL.next rest th) :=
+  ⟨(hli rest bys hlp).1, hinv.2.1, hinv.2.2⟩
+
+/-- The copies of phase L after the run on the rest: `CopyChain`, and what
+the loop returns, from what the run returns (`GRes`). -/
+theorem chain_l {g g1 : Gen (TreapMap mugF)} {laz rest : Lazy CSet} {th : Jmp} {q r : Nomm}
+    {bys : List (Lazy CSet)} {nex : NextL CSet} (hli : LeapInv g.re g.bo laz q r)
+    (hlp : leap laz q r = some (some (rest, bys))) (hR : GRes g (CGoalL.next rest th) g1 nex) :
+    CopyChain g1 nex bys ∧ ∀ nf g', copyAll nex bys g1 = some (nf, g') → GRes g (CGoalL.next laz th) g' nf := by
+  obtain ⟨_, hb, hnd, hin⟩ := hli rest bys hlp
+  obtain ⟨l1, b1, gi1, rg1⟩ := hR
+  have hnd' := List.nodup_append.1 hnd
+  have hbr : ∀ y ∈ bys.flatMap lregs, y < g.re := fun y hy => by
+    obtain ⟨b', hb', hyb⟩ := List.mem_flatMap.1 hy
+    exact lnb_regs (hb b' hb').1 y hyb
+  obtain ⟨hc, hres⟩ := copyAll_chain bys nex g1 gi1 (fun b' hb' => linv_mono (hb b' hb') l1 b1) hnd'.2.1
+    (fun y hy hy' => by
+      rcases rg1 y hy with e | e
+      · have := hbr y hy'; omega
+      · exact hnd'.2.2 y e y hy' rfl)
+  refine ⟨hc, fun nf g' h => ?_⟩
+  obtain ⟨l2, b2, gi2, rg2⟩ := hres nf g' h
+  refine ⟨Nat.le_trans l1 l2, Nat.le_trans b1 b2, gi2, fun y hy => ?_⟩
+  rcases rg2 y hy with e | e | e
+  · rcases rg1 y e with e' | e'
+    · exact Or.inl e'
+    · exact Or.inr (hin y (List.mem_append_left _ e'))
+  · exact Or.inr (hin y (List.mem_append_right _ e))
+  · exact Or.inl (Nat.le_trans l1 e)
+
+/-! ## The case `%6` in phase L -/
+
+/-- **The case `%6` of `+run` in phase L**: under a `%next` goal with `GInv`
+whose `+leap` gives `[~ rest bys]` (`hlp`; the Nock is `lp6_leap`, which needs
+`Bake.NoAx0` of the branches), with `LeapTwice` and what `+leap` keeps
+(`LeapInv`), given the link of the case on the goal `[%next rest then]` in
+the same state (`hRe`, whatever phase it takes: `comp_run_n6_nf`,
+`comp_run_n6_k`, phase F) and what that run returns (`hReR`): the run on the
+rest, then `+copy` of each `by` (`copyAll`). -/
+theorem comp_run_n6_l (h7 : slot? 7 ctx = some compK) (env : CallEnv) (msup : Option Nomm) (p q r : Nomm)
+    (region : List Nat) (hq : Bake.NoAx0 q) (hr : Bake.NoAx0 r)
+    (laz : Lazy CSet) (th : Jmp) (g : Gen (TreapMap mugF)) (hinv : GInv g (CGoalL.next laz th))
+    (rest : Lazy CSet) (bys : List (Lazy CSet)) (hlp : leap laz q r = some (some (rest, bys)))
+    (htw : LeapTwice laz q r) (hli : LeapInv g.re g.bo laz q r)
+    (hRe : CompRunAtR (runLC env msup) ctx (Nomm.n6 p q r) (CGoalL.next rest th) region g)
+    (hReR : ∀ nex g', runLC env msup (Nomm.n6 p q r) (CGoalL.next rest th) region g = some (nex, g') →
+      GRes g (CGoalL.next rest th) g' nex) :
+    CompRunAtR (runLC env msup) ctx (Nomm.n6 p q r) (CGoalL.next laz th) region g := by
+  intro x mono sup hx
+  have hl : LAll CrLok laz := lall_mono (fun _ h => h.1) hinv.1.1
+  have hLp := lp6_leap h7 laz q r hl hq hr g x
+  rw [hlp, Option.map_some] at hLp
+  rw [cr6l_head p q r laz rest th bys region x g mono sup hLp,
+    runLC_n6_l env msup p q r laz rest th bys region hlp (htw rest bys hlp)]
+  exact cr6l_eq h7 x g mono _ _ _ sup _ bys _ (hRe x mono sup hx)
+    (fun nex g' e => (chain_l hli hlp (hReR nex g' e)).1)
+
+/-- **What `%6` returns in phase L**: `GRes`, given what the run on the rest
+returns. -/
+theorem res_n6_l {env : CallEnv} {msup : Option Nomm} {p q r : Nomm} {region : List Nat}
+    (laz : Lazy CSet) (th : Jmp) (g g' : Gen (TreapMap mugF)) (nex : NextL CSet)
+    (rest : Lazy CSet) (bys : List (Lazy CSet)) (hlp : leap laz q r = some (some (rest, bys)))
+    (htw : LeapTwice laz q r) (hli : LeapInv g.re g.bo laz q r)
+    (hReR : ∀ nex g', runLC env msup (Nomm.n6 p q r) (CGoalL.next rest th) region g = some (nex, g') →
+      GRes g (CGoalL.next rest th) g' nex)
+    (h : runLC env msup (Nomm.n6 p q r) (CGoalL.next laz th) region g = some (nex, g')) :
+    GRes g (CGoalL.next laz th) g' nex := by
+  rw [runLC_n6_l env msup p q r laz rest th bys region hlp (htw rest bys hlp)] at h
+  obtain ⟨n1, g1, e1, e2⟩ := bind_some h
+  exact (chain_l hli hlp (hReR n1 g1 e1)).2 nex g' e2
+
+/-! ## The re-entry: phase S on a fork-free rest, phase K -/
+
+/-- **Phase L, then phase S** on a rest with no fork and no bond
+(`comp_run_n6_nf`). -/
+theorem comp_run_n6_l_nf (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q r : Nomm) (region : List Nat)
+    (P : SixParts env msup ctx p region) (Q : ∀ rid, SixParts env msup ctx q (rid :: region))
+    (R : ∀ rid, SixParts env msup ctx r (rid :: region)) (hq : Bake.NoAx0 q) (hr : Bake.NoAx0 r)
+    (laz : Lazy CSet) (th : Jmp) (g : Gen (TreapMap mugF)) (hinv : GInv g (CGoalL.next laz th))
+    (s : Sure CSet) (bys : List (Lazy CSet)) (hlp : leap laz q r = some (some (Lazy.mk s [] [], bys)))
+    (htw : LeapTwice laz q r) (hli : LeapInv g.re g.bo laz q r) :
+    CompRunAtR (runLC env msup) ctx (Nomm.n6 p q r) (CGoalL.next laz th) region g :=
+  comp_run_n6_l h7 env msup p q r region hq hr laz th g hinv _ bys hlp htw hli
+    (comp_run_n6_nf h7 hcode env msup p q r region P Q R s th g (ginv_rest hinv hli hlp))
+    (fun nex g' e => res_n6_nf P.res (fun rid => (Q rid).res) (fun rid => (R rid).res) s th g g' nex
+      (ginv_rest hinv hli hlp) e)
+
+/-- **Phase L, then phase K** on the rest (`comp_run_n6_k`): its `+leap` is
+`~` by `LeapTwice`, in the Nock by `lp6_leap_none`. -/
+theorem comp_run_n6_l_k (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q r : Nomm) (region : List Nat)
+    (P : SixParts env msup ctx p region) (Q : ∀ rid, SixParts env msup ctx q (rid :: region))
+    (R : ∀ rid, SixParts env msup ctx r (rid :: region)) (hq : Bake.NoAx0 q) (hr : Bake.NoAx0 r)
+    (laz : Lazy CSet) (th : Jmp) (g : Gen (TreapMap mugF)) (hinv : GInv g (CGoalL.next laz th))
+    (rest : Lazy CSet) (bys : List (Lazy CSet)) (hlp : leap laz q r = some (some (rest, bys)))
+    (htw : LeapTwice laz q r) (hli : LeapInv g.re g.bo laz q r)
+    (hne : Lazy.noneEquivalentL (Lazy.mk Sure.bunt rest.fork rest.bond) = false)
+    (hkt : kerfTest q r rest = true) :
+    CompRunAtR (runLC env msup) ctx (Nomm.n6 p q r) (CGoalL.next laz th) region g := by
+  have hi := ginv_rest hinv hli hlp
+  have hl : LAll CrLok rest := lall_mono (fun _ h => h.1) hi.1.1
+  have h2 := htw rest bys hlp
+  exact comp_run_n6_l h7 env msup p q r region hq hr laz th g hinv rest bys hlp htw hli
+    (comp_run_n6_k h7 hcode env msup p q r region P Q R rest th g hi h2 (lp6_leap_none h7 hl hq hr g h2) hne hkt)
+    (fun nex g' e => res_n6_k P.res (fun rid => (Q rid).res) (fun rid => (R rid).res) rest th g g' nex hi h2 hne
+      hkt e)
+
 end Compiler
 end Formalization
