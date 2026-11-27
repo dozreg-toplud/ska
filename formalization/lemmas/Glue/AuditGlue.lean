@@ -1,0 +1,171 @@
+import lemmas.Assembly
+import lemmas.Glue.RawOptIn
+import lemmas.Ska.SccLoop
+import lemmas.Compiler.CompShapeColSur
+import lemmas.Ska.CompLeapTwice
+import lemmas.Compiler.CompRunRClass
+import lemmas.Compiler.CompRunAllSix
+import lemmas.Ska.PassStab
+import lemmas.Ska.PassMeasureB
+import lemmas.Ska.OptAliasOnce
+import lemmas.Compiler.CompStraightMapSix
+import lemmas.Ska.CompDirectMCloseEx
+import lemmas.Ska.CompDirectMTailP
+import lemmas.Ska.CompDirectMTree
+import lemmas.Ska.RawInvCAT
+
+/-!
+# Audit of `formalization/LEDGER.md`
+
+Every declaration the ledger names, checked to exist, and the axioms of the
+theorems of `lemmas/Glue/`.  Run:
+`systemd-run --user --scope -q -p MemoryMax=3500M -p MemorySwapMax=0 -- lake env lean lemmas/Glue/AuditGlue.lean`.
+-/
+
+namespace Formalization
+
+/-! ## `Gap` and the assembly -/
+#check @Assembly.Gap
+#check @Assembly.full_of
+#check @Assembly.PokeModel
+#check @Assembly.Contract
+#check @Assembly.Halting
+#check @Assembly.InvStart
+#check @Assembly.InvKept
+#check @Assembly.LibSlam
+#check @Assembly.LibFormat
+#check @Assembly.MookFormat
+#check @Assembly.cueRoot
+#check @Assembly.ovumMold
+#check @Assembly.pokeValid
+#check @Assembly.reach_model
+#check @Compiler.pokeFrame_corIn
+#check @Compiler.pokeIs_of_frame
+#check @Compiler.pokeN_validates
+#check @Compiler.pokeDireBad
+#check @Compiler.listMoldIs
+#check @Compiler.mookOtherTwo_of
+#check @Compiler.rendBaseIs_layer4
+#check @Compiler.mock_pill_iff
+#check @Compiler.eval_mook_le
+#check @Compiler.SlamIsNock
+#check @Compiler.RendLeafIs
+#check @Compiler.HandIs
+#check @Compiler.RendRestIs
+#check @Compiler.SoftTankIs
+#check @Compiler.SkipMsgIs
+#check @Compiler.EvalMookMsgIs
+#check @Compiler.CorIn
+#check @Compiler.PokeReach
+
+/-! ## Contract, InvKept, InvStart: the model side -/
+#check @SkaModel.Sound
+#check @SkaModel.FullAnswers
+#check @SkaModel.PokeM.liftPoke
+#check @SkaModel.PokeM.liftInv
+#check @SkaModel.PokeM.gap_of
+#check @SkaModel.PokeM.gap_of_comp
+#check @SkaModel.PokeM.anaHyp_of_arm
+#check @SkaModel.PokeM.pokeBakes
+#check @SkaModel.PokeM.CompHyp
+#check @SkaModel.PokeM.InvS
+#check @SkaModel.PokeM.CompRest
+#check @SkaModel.PokeM.CompPieces
+#check @SkaModel.PokeM.compHyp_of_pieces
+#check @SkaModel.PokeM.contract_of_pieces
+#check @SkaModel.PokeM.CompRest.keeps
+#check @SkaModel.PokeM.RawMono
+#check @SkaModel.PokeM.RawNary
+#check @SkaModel.PokeM.rawMono_fragU
+#check @SkaModel.PokeM.rawNary_fragU
+#check @SkaModel.PokeM.compHyp_of_frag
+#check @SkaModel.PokeM.rawMono_NCG
+#check @SkaModel.PokeM.compHyp_of_NCG
+#check @SkaModel.PokeM.rawMono_fragUFG
+#check @SkaModel.PokeM.compHyp_of_fragUFG
+#check @SkaModel.PokeM.rawMono_fragUCG
+#check @SkaModel.PokeM.rawMono_fragUDG
+#check @SkaModel.PokeM.rawMono_fragUEG
+#check @SkaModel.Bake.InvB
+#check @SkaModel.Bake.InvB.init
+
+/-! ## The raw side and the optimizer -/
+#check @SkaModel.Comp.FragX
+#check @SkaModel.Comp.FragU
+#check @SkaModel.Comp.fragX_pure
+#check @SkaModel.Comp.finishLUC_eq
+#check @SkaModel.Comp.finishLFC_eq
+#check @SkaModel.Comp.finishLUCM_eq
+#check @SkaModel.Comp.runLCM_eq
+#check @SkaModel.Comp.finishLF_bellContractX
+#check @SkaModel.Comp.finishLUC_contractNC
+#check @SkaModel.Raw.optIn_finishLUX
+#check @SkaModel.Raw.optIn_finishLFX
+#check @SkaModel.Raw.optIn_finishLFX_of
+#check @SkaModel.Raw.optimize_keeps_finishLFX
+#check @SkaModel.Raw.optimize_keeps_finishLUX
+#check @SkaModel.Raw.runAT_fragX
+#check @SkaModel.Raw.runATC_plain
+#check @SkaModel.Opt.OptIn
+#check @SkaModel.Opt.DInvS
+#check @SkaModel.Opt.DInvR
+#check @SkaModel.Opt.optimize_keeps_optIn
+#check @SkaModel.Opt.optimize_keeps_ssaR
+#check @SkaModel.Opt.AliasOnceB
+#check @Compiler.gateTotalN
+#check @Compiler.aliasReadsN
+#check @Compiler.optimize_total_finishLFX
+#check @Compiler.optimize_total_finishLUX
+
+/-! ## The pill link of `+comp` -/
+#check @Compiler.cu_gate_scc_one_six_ts
+#check @Compiler.cu_gate_six_ts
+#check @Compiler.tsMapAt_holds
+#check @Compiler.FinSure
+#check @Compiler.NoSelfCall
+#check @Compiler.shapeCol_sccSur
+#check @Compiler.shapeCol_finSure
+#check @Compiler.comp_run_all_l6
+#check @Compiler.res_all6
+#check @Compiler.comp_run_dir
+#check @Compiler.res_dir
+#check @SkaModel.Comp.leap_twice
+
+/-! ## Direct calls and the SCC loop -/
+#check @SkaModel.Comp.finishLUCM_bellContractCallTreeD
+#check @SkaModel.Comp.finishLUCM_contractTailP
+#check @SkaModel.Comp.closed_slotCall
+#check @SkaModel.Comp.dt_closed_of_table
+#check @SkaModel.SccLoop.final_member
+#check @SkaModel.SccLoop.final_keeps
+#check @SkaModel.SccLoop.loop_end
+
+/-! ## Halting -/
+#check @SkaModel.PokeM.fullAnswers_of
+#check @SkaModel.PokeM.fullAnswers_of_loops
+#check @SkaModel.PokeM.finalEnds_always
+#check @SkaModel.PokeM.fullAnswers_lift
+#check @SkaModel.PokeM.CgHalts
+#check @SkaModel.PokeM.anaHalts_of_cgHalts
+#check @SkaModel.PokeM.anaEndsN_of_halts
+#check @SkaModel.PokeM.anaEnds_of_N
+#check @SkaModel.PokeM.AnaEnds
+#check @SkaModel.PokeM.BakeEnds
+#check @SkaModel.PokeM.RootAnswers
+#check @SkaModel.Ana.memoNoCallees_skaPoke
+#check @SkaModel.Ana.passLoop_returns_fin
+#check @SkaModel.Ana.FinPushes
+#check @SkaModel.Ana.passOn_old
+
+/-! ## The glue theorems -/
+#print axioms SkaModel.Glue.keeps_of_optIn
+#print axioms SkaModel.Glue.contract_of_piecesO
+#print axioms SkaModel.Glue.compHyp_of_piecesO
+#print axioms SkaModel.Glue.rawMono_fragX
+#print axioms SkaModel.Glue.rawNary_fragX
+#print axioms SkaModel.Glue.rawOptIn_fragX
+#print axioms SkaModel.Glue.compHyp_of_fragX
+#print axioms SkaModel.Glue.optRef_fragX
+#print axioms SkaModel.Glue.fullAnswers_of_cg
+
+end Formalization
