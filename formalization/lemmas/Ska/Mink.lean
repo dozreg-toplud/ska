@@ -312,8 +312,8 @@ theorem Eval.toEvalH {s f p : Noun} (h : Eval s f p) : EvalH s f p := by
       | cell x y => exact EvalH.op11_ctag ih1 ih2
   | op11_atom _ ih => exact EvalH.op11_atom ih
 
-/-- If Nock computes `p` from `s` and `f` with atom hint tags, then `+mink`
-returns `[%0 p]`, from any trace and with any scry gate. -/
+/-- If Nock computes `p` from `s` and `f` (`EvalH`, the same as `Eval`),
+then `+mink` returns `[%0 p]`, from any trace and with any scry gate. -/
 theorem mink_of_evalH (lib : Lib) (gul : Noun) {s f p : Noun} (h : EvalH s f p) :
     ∃ n, ∀ t, minkF lib gul n t s f = some (Tone.zero p) := by
   have L := fun {n m : Nat} (hle : n ≤ m) {t s f r} (h : minkF lib gul n t s f = some r) =>

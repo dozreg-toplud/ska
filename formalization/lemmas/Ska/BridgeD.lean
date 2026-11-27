@@ -426,6 +426,14 @@ theorem bridge_stepD (env : Env R) (hP : ∀ g tab, TabIn (Pf g) tab → TabWF t
           rw [if_neg hc, hm _ _ _ (by rw [goL_tl (by simp [GenS.at]), goL_hd])]
           simp only [Option.bind_some]
           rw [goL_tl (by simp [GenS.at]), goL_tl (by simp [GenS.at]), goL_hd]; rfl
+  | op11c x y h1 h2 f =>
+    simp only [folStep, hs] at h
+    refine ⟨hgo.inv hi hsub h, hgo.le hi hsub h, fun γ => ?_⟩
+    refine folR_of_calls (calls := [((C (A 11) (C (C (A 0) (C h1 h2)) f), sub, mk, bc, df, gs.at γ),
+        (out, gs'.at (γ + 1)))]) (g' := gs'.at (γ + 1)) tabIn_none
+        (by simpa using hgo.ch hi hsub h (PLe.refl _ _) _ _) ?_ rfl
+    simp only [SkaModel.folStep, hs]
+    rw [goL_hd]
   | op12 a b q =>
     simp only [folStep, hs, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨⟨p1, g1⟩, h1, ⟨q1, g2⟩, h2, rfl, rfl⟩ := h

@@ -55,6 +55,7 @@ theorem Annot.mono {lib : Lib} {code : Bell → Option Nomm} :
   | n10 hax _ _ ih1 ih2 => intro Q hQ; exact Annot.n10 hax (ih1 hQ) (ih2 hQ)
   | n11s _ ih => intro Q hQ; exact Annot.n11s (ih hQ)
   | n11d _ _ ih1 ih2 => intro Q hQ; exact Annot.n11d (ih1 hQ) (ih2 hQ)
+  | n11c _ _ ih1 ih2 => intro Q hQ; exact Annot.n11c (ih1 hQ) (ih2 hQ)
   | mean _ _ ih1 ih2 => intro Q hQ; exact Annot.mean (ih1 hQ) (ih2 hQ)
   | n12 _ _ ih1 ih2 => intro Q hQ; exact Annot.n12 (ih1 hQ) (ih2 hQ)
   | bare hb => intro Q _; exact Annot.bare hb
@@ -123,7 +124,9 @@ theorem shape_other_crash {f : Noun} (h : shape f = Shape.other) (lib : Lib) (gu
   | Noun.cell (Noun.atom 11) (Noun.atom _), _ => rfl
   | Noun.cell (Noun.atom 11) (Noun.cell (Noun.atom _) (Noun.atom _)), _ => rfl
   | Noun.cell (Noun.atom 11) (Noun.cell (Noun.atom _) (Noun.cell _ _)), h => simp [shape] at h
-  | Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.cell _ _) _) _), _ => rfl
+  | Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.cell _ _) (Noun.atom _)) _), _ => rfl
+  | Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.cell _ _) (Noun.cell _ _)) _), h =>
+    simp [shape] at h
   | Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.atom _) (Noun.atom _)) _), _ => rfl
   | Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.atom _) (Noun.cell _ _)) _), h =>
     simp [shape] at h
@@ -339,7 +342,33 @@ theorem mink_memo_iff {x h f p : Noun} (hh : ∃ c, Mink lib gul [] x h (Tone.ze
   · intro hm; exact (mink_inv_n11d hm).2
   · intro hf; obtain ⟨c, hc⟩ := hh; exact mink_mk_n11d _ hc hf
 
+/-- A hint whose tag is a cell returns what the hint with the tag `%$`
+returns, from every trace (`minkF_ctag`). -/
+theorem mink_ctag_iff {t : Trace} {x a b h f : Noun} {r : Tone} :
+    Mink lib gul t x (n3 (A 11) (C (C a b) h) f) r ↔ Mink lib gul t x (n3 (A 11) (C (A 0) h) f) r := by
+  simp only [Mink, minkF_ctag]
+
 end MinkParts
+
+/-- **What stands for the hint `[11 [%$ h] f]` stands for `[11 [[a b] h] f]`**,
+whose tag is a cell: a nomm `[%11 [%$ h] f]` is the case `n11c`, and a crash
+or a folded literal holds of both, which `+mink` runs alike. -/
+theorem annot_ctag {lib : Lib} {code : Bell → Option Nomm} {P : Noun → Prop} {a b h f : Noun}
+    {nm : Nomm} (hA : Annot lib code P (n3 (A 11) (C (A 0) h) f) nm) :
+    Annot lib code P (n3 (A 11) (C (C a b) h) f) nm := by
+  generalize hF : n3 (A 11) (C (A 0) h) f = F at hA
+  cases hA with
+  | n11d hh hf =>
+    simp only [n3, C, A, Noun.cell.injEq, Noun.atom.injEq] at hF
+    obtain ⟨-, ⟨rfl, rfl⟩, rfl⟩ := hF
+    exact Annot.n11c hh hf
+  | crash hcr => subst hF; exact Annot.crash fun gul t s => (mink_ctag_iff).mpr (hcr gul t s)
+  | fold hv => subst hF; exact Annot.fold fun x gul hx => (mink_ctag_iff).mpr (hv x gul hx)
+  | bare hb => subst hF; simp [isBare] at hb
+  | bareLit hb => subst hF; simp [isBare] at hb
+  | memo => simp [n3, C, A, Tag.memo] at hF
+  | mean => simp [n3, C, A, Tag.mean] at hF
+  | _ => simp [n3, n2, n4, C, A, slot, quote] at hF
 
 /-! ## Socks that know all -/
 

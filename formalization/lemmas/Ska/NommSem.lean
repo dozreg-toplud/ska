@@ -192,6 +192,11 @@ inductive Annot (lib : Lib) (code : Bell → Option Nomm) : (Noun → Prop) → 
       Annot lib code P (n3 (A 11) (A tag) f) (Nomm.n11s tag q f)
   | n11d {P tag h f p q} : Annot lib code P h p → Annot lib code P f q →
       Annot lib code P (n3 (A 11) (C (A tag) h) f) (Nomm.n11d tag p q f)
+  /-- `[11 [t h] f]` whose tag `t` is a cell names no hint: as under the tag
+  `%$`, the clue is computed and dropped, and the nomm is that of
+  `[11 [%$ h] f]`. -/
+  | n11c {P x y h f p q} : Annot lib code P h p → Annot lib code P f q →
+      Annot lib code P (n3 (A 11) (C (C x y) h) f) (Nomm.n11d 0 p q f)
   | mean {P h f p q b k} : Annot lib code P h p → Annot lib code P f q →
       Annot lib code P (n3 (A 11) (C (A Tag.mean) h) f) (Nomm.mean p b q f k)
   | n12 {P b c p q} : Annot lib code P b p → Annot lib code P c q →

@@ -173,6 +173,7 @@ theorem Annot.mono_code {lib : Lib} {code code' : Bell → Option Nomm}
   | n10 hx _ _ ih1 ih2 => exact Annot.n10 hx ih1 ih2
   | n11s _ ih => exact Annot.n11s ih
   | n11d _ _ ih1 ih2 => exact Annot.n11d ih1 ih2
+  | n11c _ _ ih1 ih2 => exact Annot.n11c ih1 ih2
   | mean _ _ ih1 ih2 => exact Annot.mean ih1 ih2
   | n12 _ _ ih1 ih2 => exact Annot.n12 ih1 ih2
   | bare hb => exact Annot.bare hb

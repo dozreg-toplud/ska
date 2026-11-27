@@ -40,7 +40,7 @@ theorem cu_rp_iff (T y : Noun) : nock (C rpBat (C T rpCtx)) rpBat = some y ↔ n
   constructor
   · exact fun h => h.2
   · intro h
-    obtain ⟨n, hn⟩ := mink_of_evalH rpLib (A 0) (SkaModel.EvalA.toEvalH (evalA_of_nock h))
+    obtain ⟨n, hn⟩ := mink_of_evalH rpLib (A 0) (SkaModel.Eval.toEvalH (eval_of_nock h))
     exact ⟨⟨y, n, hn []⟩, h⟩
 
 /-- **`+run` then `+kerf` from the entry of `+compile-unary`** is `runL`

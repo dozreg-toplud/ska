@@ -40,7 +40,8 @@ def folLoopR (env : Env R) (res : ResGo M R) : Nat → FolGoS M R
   | n + 1 => folStep env res (folLoopR env res n)
 
 /-- **The weight of a formula**: one per node that `fol-loop` analyses, with
-`%8`, `%9` and `%11` above the forms they are rewritten into. -/
+`%8`, `%9` and `%11` above the forms they are rewritten into (a `%11` whose
+tag is a cell one above the `%11` with the tag `%$`). -/
 def folW : Noun → Nat
   | Noun.cell (Noun.cell a b) q => folW (Noun.cell a b) + folW q + 1
   | Noun.cell (Noun.atom 2) (Noun.cell (Noun.cell a b) q) => folW (Noun.cell a b) + folW q + 1
@@ -57,6 +58,8 @@ def folW : Noun → Nat
   | Noun.cell (Noun.atom 11) (Noun.cell (Noun.atom _) (Noun.cell a b)) => folW (Noun.cell a b) + 4
   | Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.atom _) (Noun.cell h1 h2)) f) =>
       folW (Noun.cell h1 h2) + folW f + 4
+  | Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.cell _ _) (Noun.cell h1 h2)) f) =>
+      folW (Noun.cell h1 h2) + folW f + 5
   | Noun.cell (Noun.atom 12) (Noun.cell (Noun.cell a b) q) => folW (Noun.cell a b) + folW q + 1
   | _ => 1
 
@@ -127,6 +130,9 @@ theorem shape_op11s {fol a b : Noun} {p : Nat} (h : shape fol = Shape.op11s p a 
   unfold shape at h; split at h <;> cases h <;> rfl
 theorem shape_op11d {fol h1 h2 f : Noun} {tag : Nat} (h : shape fol = Shape.op11d tag h1 h2 f) :
     fol = C (A 11) (C (C (A tag) (C h1 h2)) f) := by
+  unfold shape at h; split at h <;> cases h <;> rfl
+theorem shape_op11c {fol x y h1 h2 f : Noun} (h : shape fol = Shape.op11c x y h1 h2 f) :
+    fol = C (A 11) (C (C (C x y) (C h1 h2)) f) := by
   unfold shape at h; split at h <;> cases h <;> rfl
 theorem shape_op12 {fol a b q : Noun} (h : shape fol = Shape.op12 a b q) : fol = C (A 12) (C (C a b) q) := by
   unfold shape at h; split at h <;> cases h <;> rfl
@@ -240,6 +246,8 @@ theorem folStep_congr {env : Env R} {res : ResGo M R} {go1 go2 : FolGoS M R} {fo
       split
       · exact e3 _ (by simp) _ _ _
       · simp only [meanArm_congr e4, e2]
+    next x y h1 h2 f heq =>
+      cases shape_op11c heq; simp [inlineable] at hi
     next a b q heq =>
       cases shape_op12 heq
       cases q with

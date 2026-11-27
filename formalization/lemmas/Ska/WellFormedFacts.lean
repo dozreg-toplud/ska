@@ -477,6 +477,9 @@ theorem folStep_wf {tab : Tab} {go go' : FolGo} (htab : TabWF tab) (IH : GoWF go
       refine ⟨w3, _, e1', ?_⟩
       simp only [if_neg hc, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq]
       exact ⟨arm, meanArm_wf IH wh harm, _, e3, rfl, rfl⟩
+  | op11c x y h1 h2 f =>
+    simp only [folStep, hs] at h ⊢
+    exact IH _ _ _ _ _ _ _ _ hsub h
   | op12 a b q =>
     simp only [folStep, hs, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h ⊢
     obtain ⟨⟨p1, g1⟩, h1, ⟨q1, g2⟩, h2, rfl, rfl⟩ := h

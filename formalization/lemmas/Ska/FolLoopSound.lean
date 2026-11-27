@@ -620,6 +620,18 @@ theorem good_op8 {m : Nat} (IH' : ∀ k, k < m → GoGood lib code (folLoopF tab
     obtain ⟨y, m1, m2⟩ := mink_inv_n8 hm
     exact G2.prod (C y x) gul p (knit_fits (Gb.prod x gul y hx m1) hx) m2
 
+/-! ## A hint whose tag is a cell, analysed as under `%$` -/
+
+theorem good_op11c (IH : GoGood lib code go) {x y h1 h2 f : Noun}
+    (hs : shape fol = Shape.op11c x y h1 h2 f)
+    (h : folStep tab go fol sub mk bc df gen = some (out, gen')) : Good lib code fol sub out := by
+  have hf := shape_eq hs (by simp)
+  simp only [Shape.fol] at hf
+  subst hf
+  simp only [folStep, hs] at h
+  have G' := IH _ _ _ _ _ _ _ _ h
+  exact G'.transfer (fun _ _ _ => mink_ctag_iff) (annot_ctag G'.annot)
+
 end Cases
 
 /-! ## The main theorem -/
@@ -657,6 +669,7 @@ theorem folLoop_good {lib : Lib} {code : Bell → Option Nomm} {tab : Tab} (hT :
     · exact good_bare IH hs hp h
     · exact good_op11s_plain IH hs hp h
   | op11d tag h1 h2 f => exact good_op11d IH hs h
+  | op11c x y h1 h2 f => exact good_op11c IH hs h
   | op12 a b q => exact good_op12 IH hs h
   | other => exact good_other hs h
 

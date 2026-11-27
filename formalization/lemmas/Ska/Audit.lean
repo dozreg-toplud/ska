@@ -92,7 +92,7 @@ open Formalization.SkaModel
 #print axioms bare_loops
 #print axioms eval_bare
 #print axioms bare_runs
-#print axioms EvalA.toEvalH
+#print axioms Eval.toEvalH
 #print axioms toneRel_mink_self
 #print axioms nomm_fwd
 #print axioms nomm_bwd

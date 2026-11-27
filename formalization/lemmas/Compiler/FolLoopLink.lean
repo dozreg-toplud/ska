@@ -322,6 +322,26 @@ theorem fol_loop_op9 (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar f 
   nockW_open fol_loop.battery
   simp (disch := ffar_disch) [nock_exec, hcf, Ana.folStep, shape, h]
 
+/-- `[%11 [a=^ h=^] f=*]`: a tag that is a cell, the same as `[%11 [%$ h] f]`. -/
+theorem fol_loop_op11c (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar f → c s f = nock s f)
+    (regsNoun : R → Noun) (env : Env R) (res : ResGo FinMap R)
+    (go : FolGoS FinMap R) (rest : Noun) (hgo : GoIsW c regsNoun rest go) (x y h1 h2 f : Noun)
+    (sub : Anno) (seat mk : Option Noun) (bc df : Bool) (gen : GenS FinMap R) :
+    nockW c (folSubj regsNoun rest (C (A 11) (C (C (C x y) (C h1 h2)) f)) sub seat mk bc df gen)
+        fol_loop.battery
+      = (Ana.folStep env res go (C (A 11) (C (C (C x y) (C h1 h2)) f)) sub seat mk bc df gen).map
+          (folOutNoun regsNoun) := by
+  have h := hgo (C (A 11) (C (C (A 0) (C h1 h2)) f)) sub seat mk bc df gen
+  unfold folSubj at h ⊢
+  generalize flag df = n1 at h ⊢
+  generalize flag bc = n2 at h ⊢
+  generalize unitNoun id mk = n3 at h ⊢
+  generalize unitNoun id seat = n4 at h ⊢
+  generalize GenS.toNoun regsNoun gen = n5 at h ⊢
+  generalize sub.toNoun = n6 at h ⊢
+  nockW_open fol_loop.battery
+  simp (disch := ffar_disch) [nock_exec, hcf, Ana.folStep, shape, h]
+
 /-! ## The cases that read the library core
 
 The rest of the subject of `+run` is `[bus [data run-gate]]`, by its `=/`s.
@@ -614,7 +634,8 @@ theorem fol_loop_other (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar 
   | .cell (.atom 11) (.atom _), _ => simp [nock_exec]
   | .cell (.atom 11) (.cell (.atom _) (.atom _)), _ => simp [nock_exec]
   | .cell (.atom 11) (.cell (.atom _) (.cell _ _)), hs => simp [shape] at hs
-  | .cell (.atom 11) (.cell (.cell (.cell _ _) _) _), _ => simp [nock_exec]
+  | .cell (.atom 11) (.cell (.cell (.cell _ _) (.atom _)) _), _ => simp [nock_exec]
+  | .cell (.atom 11) (.cell (.cell (.cell _ _) (.cell _ _)) _), hs => simp [shape] at hs
   | .cell (.atom 11) (.cell (.cell (.atom _) (.atom _)) _), _ => simp [nock_exec]
   | .cell (.atom 11) (.cell (.cell (.atom _) (.cell _ _)) _), hs => simp [shape] at hs
   | .cell (.atom (_ + 13)) _, _ => simp [nock_exec]
@@ -1263,6 +1284,8 @@ theorem fol_loop_step (c : Noun → Noun → Option Noun) (hcf : ∀ s f, FFar f
     | op11d tag h1 h2' f =>
       exact fol_loop_op11d c hcf regsNoun env res go rest hgo hana hsoft hreg tag h1 h2' f sub seat mk bc df
         gen
+    | op11c x y h1 h2' f =>
+      exact fol_loop_op11c c hcf regsNoun env res go rest hgo x y h1 h2' f sub seat mk bc df gen
     | op12 a b q => exact fol_loop_op12 c hcf regsNoun env res go rest hgo a b q sub seat mk bc df gen
     | other => exact fol_loop_other c hcf regsNoun env res go rest _ hsh sub seat mk bc df gen
 

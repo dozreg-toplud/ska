@@ -10,14 +10,15 @@ import lemmas.Compiler.MookOther
 /-!
 # The assembly
 
-`Loads`, `Meek`, `Weak`, `Converse` and `Halts` of `core/Statement.lean`, so
+`Loads`, `NockEquivalence`, `MockEquivalence`, `MockEquivalenceInverse` and
+`Halts` of `core/Statement.lean`, so
 `Full`, from the hypotheses below and nothing else (`full_of`).  Each
 hypothesis is a `def … : Prop` that names its owner; `Gap` lists them all.
 This file is the remaining gap of the whole project.
 
 The way through:
 
-1. The pill's core is `core` of `lemmas/Pill` (`isCore_eq`, from `CueRoot`).
+1. The pill's core is `core` of `lemmas/Pill` (`fromPill_eq`, from `CueRoot`).
 2. The outer `+poke` slams the inner one and puts its core back at axis `7`
    (`poke_iff`, proved here from the pill's Nock).
 3. Every core that `Reach` allows is `[ob [interp.battery cr]]` with `CorIn cr`
@@ -230,17 +231,17 @@ end
 
 /-! ## The pill's core -/
 
-theorem isCore_core (hcue : CueRoot) : Ska.FromPill core :=
-  ⟨nok, trap, by rw [hcue, root_eq]; rfl, evalFuel_sound 252 core_evalFuel⟩
+theorem fromPill_core (hcue : CueRoot) : Ska.FromPill core :=
+  Ska.fromPill_iff_eval.2 ⟨nok, trap, by rw [hcue, root_eq]; rfl, evalFuel_sound 252 core_evalFuel⟩
 
-theorem isCore_eq (hcue : CueRoot) {core₀ : Noun} (h : Ska.FromPill core₀) : core₀ = core := by
-  obtain ⟨nok', trap', hc, he⟩ := h
+theorem fromPill_eq (hcue : CueRoot) {core₀ : Noun} (h : Ska.FromPill core₀) : core₀ = core := by
+  obtain ⟨nok', trap', hc, he⟩ := Ska.fromPill_iff_eval.1 h
   rw [hcue, root_eq, Option.some.injEq] at hc
   simp only [n4, Noun.cell.injEq] at hc
   obtain ⟨-, rfl, rfl, -⟩ := hc
   exact Eval.deterministic he (evalFuel_sound 252 core_evalFuel)
 
-theorem loads (hcue : CueRoot) : Ska.Loads := ⟨core, isCore_core hcue⟩
+theorem loads (hcue : CueRoot) : Ska.Loads := ⟨core, fromPill_core hcue⟩
 
 theorem corIn_cor : CorIn cor := by
   obtain ⟨_, _, h⟩ := core_shape
@@ -260,14 +261,14 @@ theorem mook_other (hmo : MookOther) {cr : Noun} (hc : CorIn cr) {ton toon core'
     (h : Ska.Mook (C ob (icore cr)) ton toon core') :
     ∃ (t : Tone) (z : Noun), Ska.Mook (C ob (icore cr)) t.toNoun z core' := by
   obtain ⟨e, gate, inner, he, hpg, hsl, hed⟩ := h
-  rw [slot_core] at he
+  rw [fas_core] at he
   subst he
   have h1 := (pull_slam (mook_pull cr)).1 ⟨gate, hpg, hsl⟩
   obtain ⟨t, y, z, cr', e1, h2⟩ := hmo cr hc ton _ h1
   simp only [Noun.cell.injEq] at e1
   obtain ⟨rfl, rfl⟩ := e1
   obtain ⟨gate', hpg', hsl'⟩ := (pull_slam (mook_pull cr)).2 h2
-  exact ⟨t, z, icore cr, gate', inner, (slot_core ob cr).2 rfl, hpg', hsl', hed⟩
+  exact ⟨t, z, icore cr, gate', inner, (fas_core ob cr).2 rfl, hpg', hsl', hed⟩
 
 /-! ## What the pill's core can become -/
 
@@ -292,7 +293,7 @@ theorem reach_model (hcue : CueRoot) (hslam : LibSlam lib) (hpm : PokeModel pk)
   have hrb := rendBaseIs_layer4 lib hleaf hhand hrest
   have hmo : MookOther :=
     mookOther_of (mookOtherTwo_of lib hslam pk hpk hrb hst hm hlist hbad hmsg)
-  rw [isCore_eq hcue h0] at h
+  rw [fromPill_eq hcue h0] at h
   induction h with
   | pill => exact ⟨cor, core_eq, corIn_cor, ReachI.start⟩
   | @poke c ovo prod core' _ hp hhot ih =>
@@ -348,6 +349,7 @@ theorem Gap.reach (g : Gap lib pk InvC) {core₀ c : Noun} (h0 : Ska.FromPill co
   exact ⟨cr, rfl, hc, reach_inv lib g.contract.toPokeSteps g.invKept g.invStart hr⟩
 
 theorem meek_of (g : Gap lib pk InvC) : Ska.NockEquivalence := by
+  refine Ska.nockEquivalence_iff_eval.2 ?_
   intro core₀ c s f p gul h0 hr hA
   have hpk := pokeIs_all g.pokeModel
   obtain ⟨cr, rfl, hc, hr'⟩ := reach_model cueRoot g.libSlam g.pokeModel ovumMold
@@ -362,7 +364,7 @@ theorem weak_of (g : Gap lib pk InvC) : Ska.MockEquivalence := by
   have hlist := listMoldIs
   have hmm : EvalMookMsgIs lib := g.mookFormat
   have hrb := rendBaseIs_layer4 lib hleaf hhand hrest
-  have e0 := isCore_eq cueRoot h0
+  have e0 := fromPill_eq cueRoot h0
   obtain ⟨cr, rfl, hc, hr'⟩ := reach_model cueRoot g.libSlam g.pokeModel ovumMold
     g.libFormat g.mookFormat h0 hr
   subst e0
@@ -379,7 +381,7 @@ theorem converse_of (g : Gap lib pk InvC) : Ska.MockEquivalenceInverse := by
   have hlist := listMoldIs
   have hmm : EvalMookMsgIs lib := g.mookFormat
   have hrb := rendBaseIs_layer4 lib hleaf hhand hrest
-  have e0 := isCore_eq cueRoot h0
+  have e0 := fromPill_eq cueRoot h0
   obtain ⟨cr, rfl, hc, hr'⟩ := reach_model cueRoot g.libSlam g.pokeModel ovumMold
     g.libFormat g.mookFormat h0 hr
   subst e0
