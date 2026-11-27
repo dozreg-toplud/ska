@@ -31,6 +31,10 @@ import lemmas.Ska.CompNaryTopRecEx
 import lemmas.Ska.CompNaryTopClose
 import lemmas.Ska.RawInvCLIJ
 import lemmas.Ska.PassFreeze
+import lemmas.Ska.PassMoves
+import lemmas.Ska.PassIdents
+import lemmas.Ska.CompTenLS
+import lemmas.Ska.CompSixLSRCall
 
 /-!
 # Audit of `formalization/LEDGER.md`
@@ -260,6 +264,12 @@ namespace Formalization
 #check @SkaModel.Ana.PassMoves
 #check @SkaModel.Ana.freeze_no_chain
 #check @SkaModel.Ana.KruskalBT
+#check @SkaModel.Ana.passMoves_chain
+#check @SkaModel.Ana.finPushes_of_freezeC
+#check @SkaModel.Ana.finIdents_of_kruskal
+#check @SkaModel.Comp.lokSE_tenR
+#check @SkaModel.Comp.finishLFC_contractGBN
+#check @SkaModel.Comp.finishLFC_contractRT
 #check @SkaModel.Ana.finPushes_of_freeze
 #check @SkaModel.Ana.EvFrozen
 

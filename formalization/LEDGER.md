@@ -162,9 +162,12 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
     `tableOK_classes`, `closed_entry`, `closed_selfCall`, `closed_selfWalk`,
     `closed_pairWalk` (recursion, self and mutual) under `NeedsRead`.
 2.b' `inFragM`, `inFragN`: FALSE on real code for every class so far: no
-    class has `%10`, `%11` (hints), `%12`, `%mean`, memo keys, `%6` in the
-    n-ary version, or baked n-ary code (M5).  Owners C (`%6`, `%10`: branch
-    -c `CompTenLSCheck`), J, K.
+    class has `%11` (hints), `%12`, `%mean`, memo keys, `%10` at goals with
+    entries, or baked n-ary code (M5).  Track C (README Gaps 12.35): `%10`
+    only at goals without entries (`LOKSE`, `lokSE_tenR`), `%6` with
+    branches as hypotheses for the n-ary top (`finishLFC_contractGBN`), the
+    tree of J's `R` (`finishLFC_contractRT`); not yet a class with a bell
+    contract usable here.  Owners C, J, K.
 2.c `rawEntry` (LEAF `EntryMono`, `EntryNary`; no owner).  WHAT IT STATES:
     on the RAW code `s` of a bell (before `+optimize`), entered with `[x]`
     (mono) or the split of `x` (n-ary) for `x` fitting the bell, for every
@@ -245,10 +248,13 @@ Chain: `fullAnswers_lift henc` of `FullAnswers (pokeS A) InvC'`:
 
 3.1 `CgHalts lib env regOf`: track F.  `finPushes_of_freeze`
     (`Ska/PassFreeze.lean`): `FinPushes` from (i) `FinIdents`, C
-    `PassMoves`, R `EvFrozen` (open: a member that stays changes callees
-    finitely often); `freeze_no_chain`; `KruskalBT` stated only.  On branch
-    -e, not merged: `finPushes_of_freezeC` (`FinPushes` from (i) and R
-    alone given `MemoNoCallees` and `PassHyp`), `passMoves_chain`.
+    `PassMoves`, R `EvFrozen`; C now PROVED along every chain
+    (`passMoves_chain`, `Ska/PassMoves.lean`), so `finPushes_of_freezeC`:
+    `FinPushes` from (i) and R alone, given `MemoNoCallees` (which `InvSM`
+    carries) and `PassHyp` at the start.  (i) reduced to `FinBranch` and
+    `KruskalBT` (stated only) by König (`finIdents_of_kruskal`,
+    `Ska/PassIdents.lean`).  OPEN: R (`EvFrozen`), `FinBranch`, the fuel of
+    `+run`.
 3.2 `MemoNoCallees`: in the invariant `InvSM` (PROVED kept:
     `Glue.pokeS_memo`, `anaArm_memo`; on P's route `pokeS_memoP`,
     `anaArmP_memo`; start: `invSM_init`).  On P's route the halting field is
