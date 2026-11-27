@@ -10,6 +10,7 @@ import lemmas.Compiler.CompRunDirectMonoC
 import lemmas.Compiler.CompRunRClass
 import lemmas.Compiler.CompUnaryDir
 import lemmas.Compiler.CompSofPush
+import lemmas.Compiler.CompSofArms
 
 /-! The axioms of the link of the direct call of `%2` (README Gaps 19). -/
 
@@ -203,3 +204,18 @@ open Formalization.Compiler
 #print axioms Formalization.Compiler.needSoftRet_triv
 #print axioms Formalization.Compiler.sofArms_triv
 #print axioms Formalization.Compiler.cu_gate_dir_this
+#print axioms Formalization.SkaModel.Comp.needOrdEdit_some
+#print axioms Formalization.SkaModel.Comp.soundFar_some
+#print axioms Formalization.SkaModel.Comp.needSoft_some
+#print axioms Formalization.Compiler.noe_gate
+#print axioms Formalization.Compiler.noe_gateK
+#print axioms Formalization.Compiler.sf_at
+#print axioms Formalization.Compiler.sf_gate
+#print axioms Formalization.Compiler.cellsure_gate
+#print axioms Formalization.Compiler.ns_gate
+#print axioms Formalization.Compiler.codeNomms_nommOf
+#print axioms Formalization.Compiler.sfTable_of
+#print axioms Formalization.Compiler.soundFarRet_of
+#print axioms Formalization.Compiler.needSoftRet_of
+#print axioms Formalization.Compiler.sofArms_code
+#print axioms Formalization.Compiler.cu_gate_dir_code

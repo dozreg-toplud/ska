@@ -14,7 +14,7 @@ sur) (hed:so k)]` and `[t (tel-need-ord sur) (tel:so k)]`.  The arms
 `hon_gate`, `ton_gate` (`CompShapeColMsg.lean`); `hed:so`, `tel:so` come
 from the library core at K axis `63` (`compK_lib`, `so_hed_gate`).
 
-* `csu_arm`, **`csu_gate`**: `+cell-sure` is `cellSure` (`none`: `-.k` of
+* `cellsure_arm`, **`cellsure_gate`**: `+cell-sure` is `cellSure` (`none`: `-.k` of
   `%void`).
 * **`ns_gate`**: where `needSoft` returns, the gate returns its loobean.
 -/
@@ -27,12 +27,12 @@ open Nock Pill Hoon SkaModel SkaModel.Comp
 set_option linter.unusedSimpArgs false
 set_option linter.unusedVariables false
 
-theorem csu_arm (d : Noun) :
+theorem cellsure_arm (d : Noun) :
     nock d csArm = some (C csBat (C (C (C (A 0x656e6f6e) (A 0)) (C (A 1) (A 0))) d)) := by
   unfold csArm; simp only [nock_exec]
 
 /-- **`+cell-sure` is `cellSure`**, for every need and sock. -/
-theorem csu_gate (KC : Noun) (sur : NeedOrd) (k : Sock) :
+theorem cellsure_gate (KC : Noun) (sur : NeedOrd) (k : Sock) :
     nock (C csBat (C (C sur.toNoun k.toNoun) KC)) csBat = (cellSure sur k).map loob := by
   conv => { lhs; arg 2; unfold csBat }
   cases sur with
@@ -76,10 +76,10 @@ theorem ns_gate : ∀ (ned sur : NeedOrd) (k : Sock) (s : Bool), needSoft ned su
     intro sur k s hs
     simp only [needSoft] at hs
     obtain ⟨c, hc, hs⟩ := Option.bind_eq_some_iff.1 hs
-    have hcs := (csu_gate compK sur k).trans (congrArg (Option.map _) hc)
+    have hcs := (cellsure_gate compK sur k).trans (congrArg (Option.map _) hc)
     simp only [Option.map_some] at hcs
     have hK := compK_cs
-    have hca := csu_arm
+    have hca := cellsure_arm
     have hl := compK_lib
     have hhed := so_hed_gate (C so.battery lib) k
     have htel := so_tel_gate (C so.battery lib) k
@@ -109,10 +109,10 @@ theorem ns_gate : ∀ (ned sur : NeedOrd) (k : Sock) (s : Bool), needSoft ned su
     intro sur k s hs
     simp only [needSoft] at hs
     obtain ⟨c, hc, hs⟩ := Option.bind_eq_some_iff.1 hs
-    have hcs := (csu_gate compK sur k).trans (congrArg (Option.map _) hc)
+    have hcs := (cellsure_gate compK sur k).trans (congrArg (Option.map _) hc)
     simp only [Option.map_some] at hcs
     have hK := compK_cs
-    have hca := csu_arm
+    have hca := cellsure_arm
     have hl := compK_lib
     have hhed := so_hed_gate (C so.battery lib) k
     have htel := so_tel_gate (C so.battery lib) k
