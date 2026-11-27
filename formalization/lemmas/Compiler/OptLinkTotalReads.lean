@@ -4,6 +4,7 @@ import lemmas.Ska.OptAliasSSARub
 import lemmas.Ska.RawInvBase
 import lemmas.Ska.OptAliasSSAHops
 import lemmas.Ska.OptAliasInv
+import lemmas.Ska.OptAliasSSADead
 
 /-!
 # The passes keep `ReadsIn N`: the passes that keep every definition
@@ -170,6 +171,106 @@ theorem hops_reads {N fuel : Nat} {bl bl' : Map Blob} {rev : Map (List Nat)} {to
     exact List.mem_filterMap.mpr ⟨op, List.mem_of_mem_take hop, hd⟩
   · obtain ⟨y, -, m', hm'', hr'⟩ := hD o' ho' b' hb' r hm'
     exact bdef_allDefs hm'' hr'
+
+/-- **`+remove-dead-code` keeps `ReadsIn N`**: a read after is a read before
+of a live register; a register `bl` defines is defined before the read on a
+path (`DefFirst`), and that definition is live, so kept (the argument of
+`ssk_dead`). -/
+theorem dead_reads {N : Nat} {bl bl' : Map Blob} {topo : List Nat} (ht : TopoOK bl topo)
+    (h : removeDeadCode bl topo.reverse = some bl') (h2 : DefFirst bl) (hR : ReadsIn N bl) : ReadsIn N bl' := by
+  obtain ⟨Sf, W, hout⟩ := ssk_dead_walk ht h
+  have hback : ∀ o b', HoonMap.get bl' o = some b' → o ∈ topo ∧ ∃ b, HoonMap.get bl o = some b ∧
+      b' = { b with body := (deadF b.body (Sf o)).1 } := by
+    intro o b' hb'
+    by_cases ho : o ∈ topo
+    · obtain ⟨b, hb, hb2, -⟩ := W.blk o ho
+      rw [hb2] at hb'; cases hb'
+      exact ⟨ho, b, hb, rfl⟩
+    · rw [hout o ho] at hb'; cases hb'
+  have hreach : ∀ o, Reach bl' o → Reach bl o := by
+    intro o hr
+    induction hr with
+    | zero => exact Reach.zero
+    | jump _ hb hj ih =>
+      obtain ⟨-, b, hb0, rfl⟩ := hback _ _ hb
+      exact Reach.jump (j := _) ih hb0 hj
+  have hbpath : ∀ L, BPath bl' L → BPath bl L := by
+    intro L hL
+    induction hL with
+    | start => exact BPath.start
+    | step _ hb hj ih =>
+      obtain ⟨-, b, hb0, rfl⟩ := hback _ _ hb
+      exact BPath.step ih hb0 hj
+  -- a read after is a read before, of a live register
+  have hrm : ∀ o b j r, HoonMap.get bl o = some b → ReadAt { b with body := (deadF b.body (Sf o)).1 } j r →
+      o ∈ topo → ReadAt b (didx b.body (Sf o) j) r ∧ r ∈ (deadF (b.body.drop (didx b.body (Sf o) j)) (Sf o)).2 := by
+    intro o b j r hb h ho
+    rcases h with h | ⟨hj, h⟩
+    · simp only at h
+      cases e : ((deadF b.body (Sf o)).1.drop j).head? with
+      | none => rw [e] at h; simp at h
+      | some op =>
+        rw [e] at h
+        simp only [Option.map_some, Option.getD_some] at h
+        refine ⟨Or.inl ?_, ssk_dd_read (Sf o) b.body j op e r (ssk_reads_regs h)⟩
+        rw [← ssk_dd_head, e]
+        simp only [Option.map_some, Option.getD_some]
+        exact h
+    · simp only at hj
+      have hd : didx b.body (Sf o) j = b.body.length := ssk_dd_len _ _ _ (by omega)
+      rw [hd]
+      refine ⟨Or.inr ⟨rfl, h⟩, ?_⟩
+      rw [List.drop_length]
+      obtain ⟨b2, hb2, -, hfin⟩ := W.blk o ho
+      rw [hb] at hb2; cases hb2
+      exact hfin r h
+  -- along a path, the live set at a block's start is in `Sf` of every block before
+  have hlivep : ∀ L, BPath bl L → ∀ o p b, L = o :: p → HoonMap.get bl o = some b →
+      ∀ x ∈ (deadF b.body (Sf o)).2, ∀ o' ∈ p, x ∈ Sf o' := by
+    intro L hL
+    induction hL with
+    | start => intro o p b e; cases e; intro _ _ _ _ h; cases h
+    | @step p0 o0 b0 j hp hb0 hj ih =>
+      intro o p b e hb x hx o' ho'
+      cases e
+      have ho0 : o0 ∈ topo := ht.2.2.2.1 o0 (ssk_bpath_reach hp o0 List.mem_cons_self)
+      have hx0 : x ∈ Sf o0 := W.jmp o0 b0 j b ho0 hb0 hj hb x hx
+      rcases List.mem_cons.mp ho' with rfl | ho'
+      · exact hx0
+      · exact ih o0 p0 b0 rfl hb0 x (deadF_sup _ _ x hx0) o' ho'
+  refine readsIn_of_lift hR fun o b' i r hr hb' hread _ => ?_
+  obtain ⟨ho, b, hb, rfl⟩ := hback _ _ hb'
+  obtain ⟨hrd, hlv⟩ := hrm o b i r hb hread ho
+  refine ⟨⟨o, b, _, hreach _ hr, hb, hrd⟩, fun hr0 => ?_⟩
+  obtain ⟨pth, hpath⟩ := awi_reach_bpath hr
+  have hpb := hbpath _ hpath
+  rcases h2 o pth b hpb hb _ r hrd hr0 with h | h | ⟨o', ho', b2, hb2, hm⟩
+  · exact bdef_allDefs hb' (List.mem_append_left _ h)
+  · refine bdef_allDefs hb' (List.mem_append_right _ ?_)
+    obtain ⟨op, hop, hd⟩ := List.mem_filterMap.mp h
+    obtain ⟨i', hi'⟩ := List.mem_iff_getElem?.mp hop
+    rw [List.getElem?_take] at hi'
+    split at hi'
+    · rename_i hlt
+      have := ssk_dd_def (Sf o) b.body i' i r op hi' hd (ssk_dd_live (Sf o) b.body (by omega) hlv) hlt
+      obtain ⟨op2, hop2, hd2⟩ := List.mem_filterMap.mp this
+      exact List.mem_filterMap.mpr ⟨op2, List.mem_of_mem_take hop2, hd2⟩
+    · cases hi'
+  · have ho2 : o' ∈ topo := ht.2.2.2.1 o' (ssk_bpath_reach hpb o' (List.mem_cons_of_mem _ ho'))
+    obtain ⟨b3, hb3, hb3', -⟩ := W.blk o' ho2
+    rw [hb2] at hb3; cases hb3
+    refine bdef_allDefs hb3' ?_
+    have hS : r ∈ Sf o' := hlivep _ hpb o pth b rfl hb r (ssk_dd_live (Sf o) b.body (Nat.zero_le _) hlv) o' ho'
+    simp only [blockDefs, List.mem_append] at hm ⊢
+    rcases hm with hm | hm
+    · exact Or.inl hm
+    · right
+      obtain ⟨op, hop, hd⟩ := List.mem_filterMap.mp hm
+      obtain ⟨i', hi'⟩ := List.mem_iff_getElem?.mp hop
+      have hlen := ssk_dd_len (Sf o') b2.body _ (Nat.le_refl _)
+      have := ssk_dd_def (Sf o') b2.body i' _ r op hi' hd (deadF_sup _ _ r hS)
+        (by rw [hlen]; exact (List.getElem?_eq_some_iff.mp hi').1)
+      rwa [List.take_length] at this
 
 end
 
