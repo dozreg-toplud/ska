@@ -275,5 +275,47 @@ end
 
 end
 
+/-! ## The test of `+kerf` -/
+
+/-- The model's test of `+kerf` in `sixNextLC` (with an empty `soft`). -/
+noncomputable def kerfTest (q r : Nomm) (laz : Lazy CSet) : Bool :=
+  (whole q && whole r) || thisOnly laz || Lazy.lazyBig (Lazy.softLess Lazy.noSoft laz) ||
+    softFork Lazy.noSoft (fun _ => false) laz
+
+/-- `ana` is at axis `63` of the context. -/
+theorem ctx_ana (h7 : slot? 7 ctx = some compK) : slot? 63 ctx = some ana := by
+  have := slot_spine (by omega) (by omega) (show slot? 7 ctx = slot? 1 compK from h7) 3
+  simp only [show 2 ^ 3 * (7 + 1) - 1 = 63 from rfl, show 2 ^ 3 * (1 + 1) - 1 = 15 from rfl] at this
+  rw [this]; rfl
+
+/-- **The test of `+kerf`** (`cr6TK`) on the subject of the case `%6` with
+`lep` pushed, under a `%next` goal and an empty `soft`, is the model's
+`kerfTest`: `+whole` of both branches (`wh_gate`), `+this-only` (`tho_all`),
+`+lazy-big` of `+soft-less` (`lg_gate`, `sl_all`), `+soft-fork` (`sfk_all`). -/
+theorem cr6tk_eq (h7 : slot? 7 ctx = some compK) (p q r : Nomm) (laz : Lazy CSet) (th : Jmp)
+    (region : List Nat) (x : GenRest) (hx : x.NoSoft) (g : Gen (TreapMap mugF)) (mono sup LEP : Noun) :
+    nock (C LEP (crSubj mono (Nomm.n6 p q r).toNoun (CGoalL.next laz th).toNoun (listNoun A region) sup
+      (compCore g x ctx))) cr6TK = some (loob (kerfTest q r laz)) := by
+  obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
+  have h63 := ctx_ana h7
+  have hwq := wh_gate ana q
+  have hwr := wh_gate ana r
+  have htho := tho_all laz
+  have hsl := sl_all hc x hx g laz
+  have hlg := lg_gate laz
+  have hsf := sfk_all hc x hx g laz q.toNoun r.toNoun
+  have hD1 := sl_at
+  have hD2 := sfk_at
+  have hD0 := wh_at
+  have hDt := tho_at
+  unfold kerfTest
+  rw [Lazy.softLess_noSoft, softFork_noSoft]
+  simp only [crSubj, compCore] at hsl hsf ⊢
+  generalize comp.door = Dr at hsl hsf hD1 hD2 ⊢
+  unfold cr6TK
+  cases ewq : whole q <;> cases ewr : whole r <;> cases et : thisOnly laz <;> cases eb : Lazy.lazyBig laz <;>
+    simp [nock_exec, Nomm.toNoun, CGoalL.toNoun, h7, h63, hD0, wh_arm, hwq, hwr, hDt, tho_arm, htho, lg_at,
+      lg_arm, hlg, hD1, sl_arm, hsl, hD2, sfk_arm, hsf, loob, ewq, ewr, et, eb]
+
 end Compiler
 end Formalization
