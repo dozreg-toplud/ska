@@ -3808,7 +3808,7 @@ import only its theorems.  So:
     | the stack (finitely many identities) | argued (Kruskal over `+he-sock`), not proved | `AnaEnds.lean` header |
     | one entry | proved; `RunW` of every stack member proved | `entry_finite`, `Ana.run_entry_step`, `run_winv` |
     | the pass loop, passes | proved, with the bound `B` on `next` named, or finitely many pushes per chain | `passOn_wf_W`, `passOn_wf_fin` |
-    | no culled identity pushed again (b) | false: `repush.hoon` (one site can push one identity twice); replaced by `FinPushes`, not proved; no loop that does not return in 2,260 searched cores, passes linear in the register slots | `PassMeasureB.lean`, `passmeasure-tab.py` |
+    | no culled identity pushed again (b) | false: `repush.hoon` (one site can push one identity twice); replaced by `FinPushes`, not proved; no loop that does not return in 2,260 searched cores and 66 cores designed for a `%rec` takeover cycle (`passmeasure-take.py`), passes linear in the register slots | `PassMeasureB.lean`, `passmeasure-tab.py` |
     | the pass loop, fuel | proved, given that each pass returns at some fuel and `B`, or `FinPushes` | `passLoop_returns`, `passLoop_returns_fin` |
     | `+sweep`, `+cull` | proved: each returns at every fuel above an explicit potential (frames left, and per identity not marked its kids plus 2 or 1) | `sweepLoop_ends`, `liveLoop_ends`, `sweep_ends`, `cull_ends` (`PassStab.lean`) |
     | an entry across a pass, pushes or not | proved: every identity on the stack at a pass's start keeps or lowers its value (culled: `none`), the root stays, and one falls or something is pushed; an identity on the stack from some pass on is eventually constant | `passOn_old`, `chain_present_const`, `chain_root_const` |
@@ -3943,6 +3943,64 @@ import only its theorems.  So:
     persistent ones froze cannot be tested on the traces: in all 9,982 loops a
     member on the stack at the loop's last start still moves at the last pass
     that goes on, so no pass comes after the freeze.
+
+    Can the transient callees of a persistent member change forever
+    (2026-11-27, `tools/hoon/passmeasure-take.py`)?  The designs follow from
+    the Hoon, in four steps.  (1) A site of a persistent member `M` whose
+    subject is constant and whose identity is in the graph resolves to it
+    exactly at every later run, and `M` keeps calling it, so `+cull` never
+    drops it and it is persistent too.  (2) So once the persistent entries
+    are constant, the sites before the first site `k` whose callee varies
+    have constant callees with constant entries, `k`'s subject `s` is
+    constant, and `k` resolves by `%rec` (or `%he`, then `%rec`) to the
+    newest stack member of its formula that covers `s` (its `less-code` is
+    satisfied and `s` knows no more on its `indi`), because a push of
+    `[s f]` or a memo hit would be final.  (3) That target changes only
+    when a newer member that covers `s` is pushed, and a push needs a kid
+    that no member on the stack covers.  (4) By fact (b), a target's
+    product after `+patch-prod` depends on the target only through its
+    precision, which is a function of its age (the passes since its push,
+    a re-pushed member restarting from the bunt entry).  With one source
+    of age every restart gives the same kid, so the pushes stop, and a
+    cycle needs at least two ages.  Built (66 cores, each run with the
+    instrumented library): family X, 32 cores: a site `k_t` per tag `t`
+    (two formulas, or one formula with two tags) on `[[[1 t] [| c]] K]`
+    (`c` a constant known from the root's second run on, so the drained
+    subject differs from the first run's), seeded by `[[[1 t] [R.0 |]]
+    K]` while the root's register keeps `R.0`, and sites `j_t` building
+    `p = [X.i Y.j]` from the shift registers in the products of two `k`
+    targets, so that two ages give the incomparable partial patterns
+    `[v |]` and `[| v]`, both covering `s`; variants with the `j` sites
+    swapped, one formula with two tags, two `j` sites per tag, a ring of
+    three tags, longer seeds, and a Nock quine `Y = [2 [1 [W 0]] [1 W]]`
+    as the register value (it runs to itself with no provenance).  Family
+    A, 34 cores (complements): each tag has sites `[X.i |]` and `[| X.j]`
+    fed by the other tag's target, so its two members both cover the `k`
+    subject but not each other's `j` subject, meant to make a fresh
+    register push the culled complement, which takes over `k` and restarts
+    the other tag.  Results (`passmeasure-take.py --sum-v`): all 66
+    returned, the longest root loop took 10 passes, the `%st` hash never
+    recurred, no identity was pushed twice (0 re-pushes), 12 `%rec`
+    takeovers (each at the drain of a `k` site's subject), at most 3
+    changes of the root's callee set; the tests of `passmeasure-freeze.py`
+    (T0 to T6, E, Et, N, NP, P2A, P2D) have 0 fails on the 66 traces.  Why
+    they settle, seen with a debug copy of the library that prints every
+    kid's subject: in X, `p = [v v]` built by a cons has the cape `[& &]`,
+    which is not `&`, so its call is indirect, and `+lack:ca` with the
+    `dark` of a subject that knows `p` drops it from `indi`; such a member
+    covers every subject of its tag that agrees on `less-code`, so after
+    the first pass it blocks every push of its tag.  In A, every pattern a
+    `j` site can make appears at its first read, when all registers are
+    fresh (the most precise products), and gets its member then; later
+    kids are less precise, so a live member covers them, and no restart
+    happens.  So no cycle, and the reason seen is a covering one: a push
+    needs a kid that no live member covers, a site's kid loses precision
+    except after a restart upstream, and a restart needs a push.  It is
+    not one claim yet: the order in which "covered" would be a measure is
+    not stated.  The exit test of the pass loop does not bypass R: it stops
+    at the first pass with no changed run and no push, transient members
+    run and push, so "persistent members frozen" gives the exit only
+    through `freeze_no_chain`, which assumes R.
 
     Still open: R (`EvFrozen`), (i)'s `FinBranch`, and the fuel of `+run`
     inside the member loop, which is the whole recursion; so `CgHalts` is
