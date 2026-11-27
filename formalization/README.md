@@ -324,8 +324,10 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/OptLinkTotalHops.lean` | **`hops_inv_step`**: `+remove-hops` keeps `StInv`, does not raise `mu` and lowers it on a merge; `hops_keys` (the blocks of the result are on `topo`), `mtail_end`, **`hops_drop`** (a merged label holds no block: `hopChain_saw`, `suffix_fwd`, `hopsFold_drop`). |
 | `Compiler/OptLinkTotalLoop.lean` | **`structLoop_total`**: on `StInv ρ L` blocks with `TopoInv`, the structural loop of `+optimize-once` returns one result for every fuel and count past a bound, with `StInv`, `TopoInv` and `mu` not above the input's (`LoopOK`), by `lex_induction` on `mu`; `structEntry_total` with `+bb-topo` and `+rev-cfg` first. |
 | `Compiler/OptLinkTotalOnce.lean` | `dead_isSome`, **`dead_step`** (`+remove-dead-code` keeps `StInv`, `TopoInv`, `mu` not above); **`PassTotal P ρ L J`**, what the converse assumes of `+alias`, `+trim-trace-hints`, `+switch-chains` with `DriverHyp` at `J` and `TopoInvR` (Gaps 13); **`optimizeOnce_total`**, **`optLoop_total`** (by `lex_induction`: a turn that reports a change lowers `mu`), **`optimizeF_total`**, `optHalts_of` (`OptHalts` from `PassTotal`). |
-| `Compiler/OptLinkTotalGate.lean`, `Compiler/AuditOptTotal.lean` | **`opt_gate_total_of`**: for the passes of the Hoon, on blocks with no `%lti`, `StInv` and `J` with `PassTotal`, some fuel makes `optimizeF` return `s'` and the pill's `+optimize` returns the noun of `s'`.  The audit: axioms, and `#guard` checks of `mu`, the flags and the returns of `+alias`, `+trim-trace-hints`, `+switch-chains` and `optLoop` on `xhBlocks`, `xaBlocks`, `xbBlocks` (the `%brn` to `%brz` change, Gaps 13). |
+| `Compiler/OptLinkTotalGate.lean`, `Compiler/AuditOptTotal.lean` | **`opt_gate_total_of`**: for the passes of the Hoon, on blocks with no `%lti`, `StInv` and `J` with `PassTotal`, some fuel makes `optimizeF` return `s'` and the pill's `+optimize` returns the noun of `s'`.  The audit: axioms, and `#guard` checks of `mu`, the flags and the returns of `+alias`, `+trim-trace-hints`, `+switch-chains` and `optLoop` on `xhBlocks`, `xaBlocks`, `xbBlocks` (the `%brn` to `%brz` change, Gaps 13); the walk invariant of `+alias` at every step of the walk on the three examples (`walkStates`, `walkInvB`); the witnesses of `not_aliasRet` and of a `pick` that picks no member. |
 | `Compiler/OptLinkTotalPass.lean` | `mu_le_pw`, `mu_lt_pw2`; **`afin_facts`** (the end `+alias` makes: old targets and arity, weight and rank sum not above, a change only with a lower weight); `aw_flag`, `alias_zero`, **`aliasM_step`** (where `aliasM` returns: `StInv` kept, `mu` not above, lower on a change); `trimWalk_isSome`, `stInv_shape`, **`trim_step`**; `stInv_of` (`StInv` from `Acyclic`, `Closed`, `ArityOK`, block `0`, `TwoNA`); `AliasRet`, `SwitchRet` (open); **`passTotal_of`** (`PassTotal` at `DInvR` from them and `driverHypR_of`); **`opt_gate_total`** (the link of `+optimize` with the model returning, given `AliasRet` and `SwitchRet`, on blocks with `StInv` and `DInvR`). |
+| `Compiler/OptLinkTotalSwitch.lean` | **`switchRet_of`**: `SwitchRet sfuel ρ L` for a fuel above `ρ` of every member of `L` (`switchChains_some`, from `RkDown`, `Closed` and the keys of `StInv`): `hsort_some`, `casesOf_some`, `stree_some` (`k` cases take `2 (k - 1)` labels and depth `k`), `freshIds_len`, `testOf_some`, `chainOf_some`, `plainOf_some`, `plainsOf_some` (the chains follow a jump, so the rank falls), `switchTag_some`, `switchPlain_some`, `switchWalk_some`. |
+| `Compiler/OptLinkTotalAlias.lean` | The places where the model of `+alias` returns `none` (header); **`not_aliasRet`**: `AliasRet` is false (`AliasWit.wBl`, one block `[%cel 1] [%bom ~]` with `DInvR`, `StInv` and `TopoInvR`, crashes with one argument); `ReadsIn n` (every register a reachable block reads is defined or below `n`) and the corrected `AliasRetN` (open); `aliasOp_some`, `aliasFin_some` (an op and an end return once the registers they read have facts, and a two-way end passes no arguments). |
 | `Compiler/OptLinkSwNouns.lean` | `+switch-chains` (arm `182` of `optC`, `sw_at_cut`, `swBody_eq`): its nouns cut by `tools/gen/optlink.py switch` (the gates `test-of` `swTOB`, `chain-of` `swCHB`, `plain-of` `swPOB`, `plains-of` `swPSB`, `cases` `swCSB`, `tree` `swTRB`, `uses`, `nex`, the walk `swWalk` and its two branches, each cut at the tests the proofs step through), the subjects `swS3` to `swS9` after `uses` and each gate, and the nouns `stestN`, `splainN`, `spN`, `scaseN` of the model's values. |
 | `Compiler/OptLinkSwUses.lean` | `uses` (`sw_uses`): a map related to `usesOf` (`UsesRel`: at each register with a positive count, that count), through the gate `put` (`uses_gut`, `uses_put`, `bump`), the gate of the `+roll` over the ops and the gate of the `+rep:by` (`sw_repg`, the pattern of `rd_step`). |
 | `Compiler/OptLinkSwTest.lean` | **The gate `test-of` is `testOf`**, crashes included (`sw_test`): the model restated by the steps (`testOf_eq`: `clqNA`, `eqqNA`, `toYb`, `toBod`, `toHM`, `toC`), each Nock step stated as the subject it starts from (`to_clq`, `to_y`, `to_yb`, `to_eqq`, `to_bod`, `to_hm`, `to_h`, `to_m`, `to_s`, `to_c`, `to_eq`). |
@@ -2478,27 +2480,57 @@ import only its theorems.  So:
    (`aliasM (Ana.pickR FinMap)`, `trimTraceHints`, `switchChains sfuel`), on
    blocks with `StInv ρ L` and `DInvR`, given `AliasRet` and `SwitchRet`,
    some fuel makes `optimizeF` return `s'`, and the pill's `+optimize`
-   returns the noun of `s'`.  The two facts left:
-   * `AliasRet pick ρ L`: `aliasM` returns on blocks with `StInv`, `DInvR`
-     and `TopoInvR`.  It needs every register it reads to have a fact
-     (`aliasOp` and `aliasFin` read `loc`, `aliasIn` reads the facts of the
-     predecessor at the argument, `aliasStart` the facts of every
-     predecessor in `g.rev`, which `topo` order and `RevSound` make walked
-     before, and not dropped since a drop deletes its edges), the edges to
-     have the arity of the parameters (`aliasIn` on `[]` is `none`, and the
-     walked ends keep the arity by `afin_facts`), and a one-predecessor
-     `%brn` or `%clq` to jump to the block (else `aliasStart` is `none`).  The
-     facts of a register come from a definition before it on every path
-     (`DefFirst`), and the pointwise join keeps a key that both sides have,
-     so the invariant to carry is that every register defined on every path
-     to the end of a walked block has a fact (under `old`) in its
-     `info.gen`.  The soundness proof (`OptAliasAll.lean`, `ABInv`, `ALoc`)
-     assumes that the walk returns and has no such lemma.  Checked with
-     `#guard` on `xaBlocks`, `xbBlocks`, `xhBlocks`.
-   * `SwitchRet sfuel ρ L`: `switchChains sfuel` returns on blocks with
-     `StInv ρ L` and `DInvR`.  A fuel that depends on `L` should do (the
-     chains, `+bb-topo` and the tree are bounded by the number of blocks).
-     Checked with `#guard` on the three examples.
+   returns the noun of `s'`.
+
+   Second session (2026-11-27).  `SwitchRet` is proved
+   (`OptLinkTotalSwitch.lean`, **`switchRet_of`**): `switchChains sfuel`
+   returns on blocks with `StInv ρ L` once `ρ o < sfuel` for every `o ∈ L`.
+   The fuel bounds `+bb-topo` by `ρ 0`, and `chain-of` and `plains-of` by
+   the rank, because each step follows the no side of a test, a jump.  The
+   tree over `k ≥ 1` cases takes `2 (k - 1)` labels and depth `k`, and both
+   rewrites give it enough (the tagged chain `2 (|chain| - 1)` labels,
+   `freshIds` at least `2 (k - 1)`), with `k` at most the length of the
+   chain, which is at most the fuel.  `DInvR` is not used.
+
+   **`AliasRet` is false as stated** (`OptLinkTotalAlias.lean`,
+   **`not_aliasRet`**), so `opt_gate_total` holds vacuously.  The one block
+   `[%cel 1] [%bom ~]` has `StInv`, `DInvR` and `TopoInvR` (it defines no
+   register, so `DefFirst` and `DefOnceR` hold), but with `n = 1` the model
+   looks up the facts of register `1`, which neither the entry nor a
+   definition gives, and crashes, as the Hoon's `got:by` does.  `DefFirst`
+   speaks only of registers in `allDefs`, and the arguments of the entry
+   (`entryInfo n`, registers below `n`) are read without a definition, as in
+   `xbBlocks`.  The field missing from `DInvR` is **`ReadsIn n bl`**: every
+   register a reachable block reads is in `allDefs bl` or below `n`.  Also,
+   a `pick` that picks no member makes the model crash (`wPick` in the
+   audit), so the corrected statement **`AliasRetN`** (open) is for a `pick`
+   that picks a member, with `ReadsIn n`.  Restating `opt_gate_total` with
+   it needs `PassTotal` at one `N = s.nargs` (the loop keeps `nargs`) with
+   `J = DInvR ∧ ReadsIn N`, so every pass must keep `ReadsIn N` (a new
+   obligation, open) and raw `+comp` output must have `ReadsIn nargs`
+   (track D).
+
+   The places where the model of `+alias` returns `none` are listed in the
+   header of `OptLinkTotalAlias.lean`: the block of `o` (`TopoOK`), the
+   facts, immediates and new block of every predecessor in `g.rev o`, a
+   one-predecessor `%brn` or `%clq` with no target `o`, the facts of its
+   test register, an edge with fewer arguments than parameters, the facts
+   of an argument, of a register an op reads, and of the test register of
+   an end, and a two-way end with arguments.  Proved: the op and end cases
+   (`aliasOp_some`: an op returns once every register it reads has a fact
+   under `old`, `aliasFin_some`: an end returns once a two-way end passes
+   no arguments and its test register has a fact).  The walk invariant is
+   checked with `#guard` at every step of the walk on `xaBlocks`,
+   `xbBlocks` and `xhBlocks` (`walkInvB`): every predecessor of the next
+   block is walked, a walked predecessor of an unwalked `o` has its new
+   block, facts and immediates, jumps to `o`, and has a fact for the test
+   register of a one-predecessor two-way end, the facts of a walked block
+   refer only to registers with facts, and a kept walked block has a fact
+   for `old r` for every `r` below `n` or defined on every path to it.
+   Left for `AliasRetN`: the proof of that invariant by induction on the
+   walk, which needs besides that every walked block that is kept is
+   reachable and that `old r = r` until the one definition of `r` is walked
+   (`DefOnceR`), and that the immediates refer only to registers with facts.
 
    **What the input must satisfy** (for track D).  By `stInv_of`,
    `StInv ρ (MapKeys.keys bl)` follows from `Acyclic`, `Closed`, `ArityOK`,
