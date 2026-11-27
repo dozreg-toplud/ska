@@ -17,6 +17,8 @@ import lemmas.Ska.RawInvCLIJ
 import lemmas.Ska.RawInvCLCollapse
 import lemmas.Ska.RawInvCLRun
 import lemmas.Ska.RawInvCLPast
+import lemmas.Ska.RawInvCLFrameRun
+import lemmas.Ska.RawInvCLCopyIL
 
 /-!
 # Axioms of the main theorems of track D (README Gaps 14)
@@ -193,3 +195,22 @@ open Formalization SkaModel Raw
 #print axioms pastL_spec
 #print axioms pastL_frame
 #print axioms il_lazyReg_after
+#print axioms frame_copyL
+#print axioms frame_chain
+#print axioms frame_splitL
+#print axioms frame_intoL
+#print axioms frame_kerf
+#print axioms frame_collapseL
+#print axioms frame_medeL
+#print axioms frameRun_n2
+#print axioms frameRun_cons
+#print axioms frameRun_n10
+#print axioms frameRun_n5
+#print axioms frameRun_plain
+#print axioms copyNeed_dist
+#print axioms copyNeed_mv
+#print axioms mr_copyLazyL
+#print axioms copyL_live
+#print axioms cr_copyLazyL
+#print axioms copyL_il
+#print axioms copyL_spec
