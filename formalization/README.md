@@ -1206,6 +1206,12 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Glue/GuardCallsA.lean` | Track G (Gaps 22 (k)): `FL`, `XB` (stages), `LzL` (lazy labels), `GFL`, `invA_congr`, `KPA` with `pure'`, `bind'`, `mono`, `fail`, `crash`, `ite'`, `same`, `re'`, the lifting lemmas `emit'`, `addOps'`, `mtc`; `kpa_simpleNextL`, `KerfA` (open), **`kpa_monoBlocks`**. |
 | `Glue/GuardCallsD.lean` | Track G (Gaps 22 (k)): `kpa_copyNeed` (ported by script), `FkL`, `BdL`, `kpa_copyLazyL`, `kpa_mergeForks`, `kpa_mergeBonds`, `RN`, `kpa_copyL`, `kpa_setTag`, `kpa_pastL`, `kpa_needOrd`, `RunA`, `kpa_callTail`, **`kpa_callDM`** (the direct call keeps `InvA`), `invA_gen0`, `runA_top`. |
 | `Glue/GuardCallsCheck.lean` | Track G (Gaps 22 (k)): `blocksOKAB` (`BlocksOKA` with the greatest annotation on all blocks), `stages`, `tallyS`: the end of the run, after `+kerf`, and the finished code of the seven `CompDirectMCheck` calls and of `enumDX`. |
+| `Glue/GuardCallsB.lean` | Track G (Gaps 22 (l)): the class `NoSixC` / `NoSixM` (no `%6`, calls included), `LzS` (every sure need of a lazy), `DN` (distinct registers below `re`), `GD`, `RS` and `KPA.andR` (register facts beside `KPA`), `RunG` (`RunA` with `DN` goals), `KerfG` (the true form of the ninth pass's `KerfA`, which is false as stated), the named hypothesis `KIMid` (owed by track D: runs, `+split`, `+into` keep `LzS (DN re)`), `KPA.get'`, `KPA.proxy'`, `KPA.sureRequireLook'`, `kpa_walkLazy` (`+walk-lazy` over `FL` labels). |
+| `Glue/GuardCallsK.lean` | Track G (Gaps 22 (l)): `kpa_kernAdd`, `kpa_kernGate` (one gate of `+kern`: `kernNeed_guarded` at an `FL` label), `kpa_kern`, **`kerfG`** (`+kerf` mid-run for `DN` entries), `kpa_simpleNextLG`, `kpa_monoBlocksG`, `kpa_callTailG`, **`kpa_callDMG`** (the direct call), **`kpa_callLI`** (the indirect call). |
+| `Glue/GuardCallsL.lean` | Track G (Gaps 22 (l)): the lazy arms over `KPA`: `kpa_doneBlocks`, `kpa_forl`, `kpa_bombL`, `kpa_crashNeed`, `kpa_medeLoop`, `kpa_medeL`, `kpa_collapseGate`, `kpa_collapseLazyAtomL`, `kpa_splitL` / `kpa_intoL` (with `LzL` of both halves, `lzL_lazyPrune`), `lzL_fromL`, `lzS_fromL`, `rs_pastL`. |
+| `Glue/GuardCallsR.lean` | Track G (Gaps 22 (l)): `rs_run`, `rs_split`, `rs_into` (`KIMid` as `RS`), the arms `runG_n0`, `runG_n1`, `runG_n3`, `runG_n4`, `runG_n5`, `runG_n7`, `runG_cons`, `runG_n10`, `runG_n2`, and **`runG_lcm`**: `RunG (runLCM env true sup nm)` on `NoSixC` under `KIMid`. |
+| `Glue/GuardCallsTop.lean` | Track G (Gaps 22 (l)): the named hypothesis `StraightA` (the final pass keeps the annotation), `top_kerfA`, **`guardMonoC_noSix`** (`GuardMonoC` on `NoSixM` from `KIMid` and `StraightA`), `guardMonoC_sub`, `entryMono_noSix`. |
+| `Glue/GuardCallsCheckD.lean` | Track G (Gaps 22 (l)): `lzsB` (Boolean `LzS (DN re)`), `endDN`: `KIMid`'s run clause at the end of the top run: 7 of 7 direct calls, 198 of 198 `enumDX` nomms (one in 40). |
 | `Glue/GuardFinalTop.lean` | Track G (Gaps 22 (e)): **`guardFinalU`**, **`guardFinalF`** (the two final-pass leaves are theorems), `guardMonoX`, `guardNaryX`, **`compHyp_of_fragX₃`** (`CompHyp` on `FragX` from `CompRestOE` alone, no guard leaf); two `example`s on `[6 [0 2] [6 [0 6] [0 3] [0 1]] [1 0]]`. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
@@ -6379,7 +6385,19 @@ import only its theorems.  So:
     in 8).  Not done: `KerfA`
     (`+kern` mid-run, track D's `KI` there), `RunA` of the other arms of `runLCM`, the
     final passes; LEDGER ninth pass (D's `LRL` forms, M17 pending, `InvBSR`, `InlPill`
-    to Q).
+    to Q).  (l) Tenth pass: **`GuardMonoC` is a theorem on `NoSixM`** (every nomm with
+    no `%6`, direct and indirect calls included) under two named hypotheses
+    (`guardMonoC_noSix`, `Glue/GuardCallsTop.lean`): `KIMid` (track D: runs, `+split` and
+    `+into` keep "every sure need of the lazy has distinct registers below `re`"; checked
+    at the top run on 7 + 198 nomms, `Glue/GuardCallsCheckD.lean`) and `StraightA` (the
+    final pass keeps the annotation; checked by the third stage of `GuardCallsCheck`).  The
+    ninth pass's `KerfA` is false as stated by the argument (a need with a register twice; no witness run); its true form
+    `KerfG` (`DN` entries) is proved (`kerfG`), and so are all the arms (`runG_lcm`).
+    `entryMono_noSix`: `EntryMono` on `NoSixM` from D's `OptInMono`, `ReadsInMono` and
+    the two hypotheses.  Not done: `StraightA` (`RenOK` fails as such with calls: an inner
+    `+kerf`'s proxies merge with the register its `%nok` / `%cal` writes; the annotation
+    must be renamed with the registers), `KIMid` (track D), `GuardNaryC` (its run is
+    `runLCM env false`, whose direct call is `callL`'s `%cal` branch, not covered).
 23. **The poke on states: `enc` and the `%full` branch** (track P, 2026-11-27,
     `Ska/PokeEnc.lean`, `Compiler/PokeLink.lean`, `Compiler/PokeLinkFull.lean`, `Compiler/PokeLinkOpt.lean`,
     `Compiler/PokeLinkScc.lean`, `Compiler/PokeLinkJet.lean`, `Compiler/PokeLinkReach.lean`,

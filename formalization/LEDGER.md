@@ -1,4 +1,4 @@
-# LEDGER: what `Full` rests on (track G, 2026-11-27, ninth pass)
+# LEDGER: what `Full` rests on (track G, 2026-11-27, tenth pass)
 
 `Full` (`core/Statement.lean`) is proved by `Assembly.full_of` from one
 structure, `Assembly.Gap lib pk InvC`, with eight fields.  This file traces
@@ -21,6 +21,30 @@ base eb51715 (digest [282]); track G's new names are checked in `AuditGlue.lean`
 (digest [292]); track G's new names are checked in `AuditGlue.lean` (section
 "ninth pass"); names of other tracks from digest [283] to [295] are *not
 checked here* (taken from the digest and the coordinator).
+
+The tenth pass is at base 34b83be (digest [299]); track G's new names are
+checked in `AuditGlue.lean` (section "tenth pass"); names of other tracks
+from digest [296] to [299] and the brief are *not checked here*.
+
+READ FIRST (tenth pass, base 34b83be, digest [296] to [299]):
+- `GuardMonoC` IS A THEOREM on `NoSixM` (no `%6`; direct and indirect
+  calls included) under two named hypotheses: `guardMonoC_noSix`
+  (`Glue/GuardCallsTop.lean`) from `KIMid` (owed by track D) and
+  `StraightA` (track G); `entryMono_noSix`: `EntryMono` on `NoSixM` from
+  D's `OptInMono`, `ReadsInMono` and these two.  See 2.c, TENTH PASS.
+- FINDING (argued, no witness run): the ninth pass's `KerfA` is FALSE as stated (any `nex` with
+  `FL` labels): `+kern-need` of a need with a register twice puts a split
+  after a write of its register.  True form: `KerfG` (every sure need of
+  the lazy `DN`: distinct registers below `re`), PROVED (`kerfG`).
+- Other tracks ([296] to [299], and the brief): K: `monoLinkGood3_of_gate`
+  (`MonoLinkGood3` from the gate), decoding (b), the 6 soft calls of the
+  corpus are one tail call, `callLS_soft_tail`; I: `NM` decoded
+  (`ml_decode`, `csiDec_of_loop`), soft members and `+soft-emit` cut; P: the
+  SCC loop `srLoop` linked (`loopLinkAt_flagsOfT`) up to the leaves
+  `SccsLeafAt` (`+tarjan`, Q) and `EvalFinAt` (`+eval-finalized`),
+  `LoopRunAt` false on an empty SCC list (restated `LoopRunAtT`), `PGood4`;
+  C: the top in `RunOKGD`; J: 18 of 39, `SurGBT`, `runOKGBT_sevenG`; D: the
+  four leaves owed in the `LRL` form.
 
 READ FIRST (ninth pass, base 776fe98, digest [283] to [295]):
 - `rawEntry` WITH CALLS (2.c), `GuardMonoC`: the run-level induction is
@@ -400,7 +424,7 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
 | `rawMono`, `rawNary` | PROVED | `rawMonoD_calls`, `rawNaryD_calls` | done |
 | `rawOptIn` | LEAF | `OptInMono S Map FM`, `OptInNary S Map FN` (`rawOptIn_of`); PROVED on `FragX` (`optInMono_fragX`, `optInNary_fragX`) | D |
 | `optRef` | LEAF | `OptTotalMono S FM`, `OptTotalNary S FN` + `hpill` (`optRef_of_total`); PROVED on `FragX` (`optTotalMono_fragX`, `optTotalNary_fragX`); `hinj` PROVED (track P's `Compiler.straight_toNoun_inj`) | H (input side D), P (`hpill` = `OptLink`, restated `OptLinkOn`) |
-| `rawEntry` | LEAF | `EntryMono S Map lib FM`, `EntryNary S Map lib FN` (`rawEntry_of`); PROVED on `FragX` with NO leaf (`guardFinalU`, `guardFinalF`, hence `guardMonoX`, `guardNaryX`, `rawEntry_fragX`; `compHyp_of_fragX₃`; generic `entryOK_of`; 2.c); with calls: `entryMono_of` / `entryNary_of` from `OptInMono`/`-Nary` (D), `ReadsInMono`/`-Nary` (D), `GuardMonoC`/`-NaryC` (G; `mtl_kpa`, `kpa_monoBlocks`, `kpa_callDM` over `InvA` (`KPA`); `KerfA` and `RunA` of the other arms open); general `entryOK_ofK` | G, D |
+| `rawEntry` | LEAF | `EntryMono S Map lib FM`, `EntryNary S Map lib FN` (`rawEntry_of`); PROVED on `FragX` with NO leaf (`guardFinalU`, `guardFinalF`, hence `guardMonoX`, `guardNaryX`, `rawEntry_fragX`; `compHyp_of_fragX₃`; generic `entryOK_of`; 2.c); with calls: `entryMono_of` / `entryNary_of` from `OptInMono`/`-Nary` (D), `ReadsInMono`/`-Nary` (D), `GuardMonoC`/`-NaryC` (G; `mtl_kpa`, `kpa_monoBlocks`, `kpa_callDM` over `InvA` (`KPA`); TENTH PASS: `guardMonoC_noSix` on `NoSixM` from the named hypotheses `KIMid` (D) and `StraightA` (G), `entryMono_noSix`; `KerfA` false as stated, `kerfG` proved); general `entryOK_ofK` | G, D |
 | `refMono`, `refNary` | OPEN | pill link at `finishLUCM` / `finishLFC` | A, I, K |
 | `inFragM`, `inFragN` | OPEN, FALSE today | every compiled nomm in `MonoCalls` / `NaryCalls` | C, J, K |
 | `inlAnnot` | model half PROVED (`inlAnnot_of`), from two LEAVES | `InlPill` (pill half: `D.inl` is `inlinedM`), `InvBS` (the analysis gives `CodeOKS`); 2.e | none, none |
@@ -679,6 +703,32 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
       timed out at 900 s.  So the run-level target of `RunA` / `runA_top`
       is true there, and the final passes keep the annotation (step 4:
       the renaming of `+to-straight` maps it, no counterexample).
+    TENTH PASS (`Glue/GuardCallsB.lean`, `GuardCallsK.lean`,
+    `GuardCallsL.lean`, `GuardCallsR.lean`, `GuardCallsTop.lean`,
+    `GuardCallsCheckD.lean`).
+    - `RunG`: `RunA` for goals whose lazy has `DN` entries (`LzS (DN re)`:
+      every sure need, root, forks and bonds, has distinct registers below
+      `re`).  PROVED: `kerfG` (`+kerf` mid-run: each gate's `+kern-need`
+      is guarded, `kernNeed_guarded`, at an `FL` label), the lazy arms
+      (`kpa_splitL`, `kpa_intoL`, `kpa_medeL`, `kpa_collapseLazyAtomL`,
+      `lzL_fromL`, `kpa_forl`, `kpa_doneBlocks`, `kpa_bombL`), the calls
+      (`kpa_callDMG`, `kpa_callLI`), every arm and **`runG_lcm`**
+      (`RunG (runLCM env true sup nm)` on `NoSixC`, the rest fail), the top
+      `+kerf` (`top_kerfA`), **`guardMonoC_noSix`**, `entryMono_noSix`.
+    - NAMED HYPOTHESES: `KIMid env` (TRACK D: a run of the class, `+split`
+      and `+into` keep `LzS (DN re)`; the result's `DN` is what `+kerf`
+      needs, the halves' `DN` is what the sub-goals need; CHECKED at the end
+      of the top run on 7 of 7 calls and 198 of 198 `enumDX`, one in 40,
+      `GuardCallsCheckD.lean`); `StraightA env` (TRACK G: the final pass
+      takes `InvA K` with an unannotated start block to a cell annotation of
+      the finished code; CHECKED by the third stage of `GuardCallsCheck`).
+    - OPEN, in order: `StraightA` (the old `RenOK` route fails as such with
+      calls: an inner `+kerf` leaves proxies in `cond` for the register its
+      `%nok` / `%cal` writes, so unproxying merges a written register with
+      another; rename `K` with the registers and prove `+chase` keeps the
+      edge condition); `KIMid` (D); `GuardNaryC` (its run is `runLCM env
+      false`: the direct call is `callL`'s `%cal` branch, plus
+      `+need-ord-alloc-regs` and `+coerce-lazy`).
 2.d `optRef`: see the table; with calls the input side of track H's
     totality (`opt_total_*` need `FragX` because the alias pass reads only
     call-free blocks) is open.
@@ -1061,7 +1111,9 @@ M20 (eighth pass, track I [281]). `runLC` / `runLCM` do NOT cover SOFT
    `OptTotalMono` / `OptTotalNary` on the classes with calls (2.c, 2.d):
    track D in the `LRL` form (`ArmsL.cons` / `.n10` FALSE as stated, [293];
    `liveRun_plain_of_specs` from `SplitSpecL`, `IntoSpecL`), track H's
-   input side.  `GuardMonoC` (2.c): track G (`KerfA`, `RunA`).
+   input side.  `GuardMonoC` (2.c): a theorem on `NoSixM` from `KIMid`
+   (track D, owed: `DN` kept by runs, `+split`, `+into`) and `StraightA`
+   (track G, open: the final pass) (`guardMonoC_noSix`, tenth pass).
 5. `CgHalts` (3.1): FALSE of the current compiler (M17); the Hoon change
    is APPROVED and being applied on track F's branch (PENDING), then
    `EvFrozen` for the new loop (track F).

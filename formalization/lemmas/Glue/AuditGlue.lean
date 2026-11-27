@@ -80,6 +80,7 @@ import lemmas.Ska.CompGen
 import lemmas.Glue.InlineAnnot
 import lemmas.Glue.InlineCheck
 import lemmas.Glue.GuardCallsMono
+import lemmas.Glue.GuardCallsTop
 
 /-!
 # Audit of `formalization/LEDGER.md`
@@ -583,5 +584,21 @@ namespace Formalization
 #print axioms SkaModel.Glue.kpa_needOrd
 #print axioms SkaModel.Glue.kpa_callTail
 #print axioms SkaModel.Glue.kpa_callDM
+
+-- tenth pass, track G: `RunG`, `kerfG`, `GuardMonoC` on `NoSixM` (2.c)
+#check @SkaModel.Glue.NoSixM
+#check @SkaModel.Glue.KIMid
+#check @SkaModel.Glue.StraightA
+#check @SkaModel.Glue.RunG
+#print axioms SkaModel.Glue.kerfG
+#print axioms SkaModel.Glue.kpa_callDMG
+#print axioms SkaModel.Glue.kpa_callLI
+#print axioms SkaModel.Glue.kpa_splitL
+#print axioms SkaModel.Glue.kpa_intoL
+#print axioms SkaModel.Glue.kpa_medeL
+#print axioms SkaModel.Glue.kpa_collapseLazyAtomL
+#print axioms SkaModel.Glue.runG_lcm
+#print axioms SkaModel.Glue.guardMonoC_noSix
+#print axioms SkaModel.Glue.entryMono_noSix
 
 end Formalization
