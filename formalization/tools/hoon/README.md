@@ -209,3 +209,7 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
 * `undefarg.hoon`   the raw blocks of `[7 [6 [0 1] [0 0] [1 0]] [6 [0 1] [0 2] [1 0]]]`: block `0wa` hops passing `0v7`, which nothing
                     defines (a kid register of `+fork-need` whose branch went to `+bomb`); the edge is dead, the first
                     `+alias` removes it, and raw and optimized code agree with `+mock` (2026-11-24)
+* `xbcheck.hoon`     the block map `[%lob 1]` then `[%brn 1 1 2]` (two arguments): the first `+alias` reports a change
+                    and turns the `%brn` into a `%brz` with the same blocks and targets, a second reports none,
+                    and `+optimize` returns after two rounds (2026-11-27; the witness `xbBlocks` of
+                    `Compiler/AuditOptTotal.lean`, for the weight of `%brn` in the measure)
