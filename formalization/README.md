@@ -239,6 +239,10 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompShapeColUni.lean` | `+uni-need-ord` in full (README Gaps 9): `nord_inj`, `nord_toNoun_eq`, `nord_eqCode` (`=(a b)` on shapes), **`uno_gate`** (the gate body `unoBody` on `[[a b] K]` is `uniOrd a b` of `Ska/ShapeCol.lean` for every `a`, `b`, given `+cons-need` at `350` of `K`; by induction on `a`, the two recursive calls under `~+` from the induction hypothesis). |
 | `Compiler/CompShapeColSur.lean` | The new `ord` against the old one (README Gaps 9): `sureOfS_eq` (`sureOfS` on `CSet` is `sureOf`), **`shapeCol_sccSur`** (on a fork-free result `shapeCol` is `sccSur`), **`shapeCol_finSure`** (under `FinSure`, `sccSur` is `shapeCol` of the final pass of `cu_gate_scc_one_six`). |
 | `Compiler/CompShapeColMsg.lean` | The MSG arms of `+shape-collapse` in full (README Gaps 9; nouns by `tools/gen/shapecolmsg.py`): `+need-ord-regs` (arm `1396`) is `ordRegs` (`nor_trap`, `nor_gate`), `+hed-need-ord` (`374`) / `+tel-need-ord` (`92`) are `ordHed` / `ordTel` (`hon_gate`, `ton_gate`); `+msg-need-ord` (arm `20`): its tests (`msg_t1`, `msg_t2`, `msg_or4`, `msg_dispatch`), the one-sided case (`msg_sd`, `msg_hd`, `msg_td`, `msg_res`, `msg_one_core`, `msg_one_rest`, `msg_one`), `(msg none+~ d less)` is `msgNone` (`msg_none_gate`), the cells (`msg_cells`), **`msg_gate`** (the gate body on `[[a b less] K]` is `msgOrd a b less` for every `a`, `b`, `less`, given `MsgK K`: `+cons-need`, `layer1`, `+need-ord-regs`, `split-max`, the library at `63`; `msg_gate_K` on `K` itself); `+msg-need-ord-fix-aware` (arm `1502`): `fx_top`, `fx_t2`, `fx_t3`, `fx_rest`, `fx_here`, `fx_cons`, `fx_end`, `fx_cell`, **`fx_gate`** (the gate body on `[[a b fix less] K]` is `msgFix a b fix less` for every input, by induction on `fix`, given `FixK K`; `fx_gate_K`). |
+| `Compiler/CompShapeColI12.lean` | `+inter1-to-inter2` with forks to any depth (README Gaps 9): the nouns of `need-inter1` over `CSet` (`I1.toNounC`, `I1.forksNounC`, `I1.forkN`, `I2.forkN`, `I1.forksNounC_eq`, `I2.forksNoun_eq`), `sureOfS_eqC`, the `+turn` gate named (`i2TG`, `i2Turn_eq`), **`i12_gate`** (the gate body on `[[intr less] K]` is `i12 less intr`, a crash being `none`), mutual with `i12_forks` (the `+turn` over the forks, through `turn_gate_mapM`). |
+| `Compiler/CompShapeColFix.lean` | `+inter2-fix-round` with forks to any depth (README Gaps 9): the trap's subject `frT` (the updated `parent` in it), the `+turn` gate named (`frTG`, `frTurn_eq`), the `+roll` gate (`fr_step`: `uniOrd acc (msgOrd sure.y sure.n less)`) and the roll from the updated parent (`fr_roll`: `rollMsg`), **`fr_trap`** (the trap on `prev` with `parent` is `fixRound less prev parent`), mutual with `fr_kids`, and **`fr_gate`** (the gate body is `fixRound less prev [%none ~]`). |
+| `Compiler/CompShapeColOrig.lean` | `+inter2-orig` with forks to any depth (README Gaps 9): **`oi_gate`** (the gate body on `[[intr fix less] K]` is `orig less intr fix`, `none` being the crash of `?>  ?=(^ fixes)`), mutual with `oi_loop` (its trap over `forks` and `fixes` is `origLoop`, with `fx_gate_K` and `uno_gate`). |
+| `Compiler/CompShapeColLoop.lean` | The fixed point of `+inter2-collapse` (README Gaps 9): `fixLoop_succ`, `fixLoop_mono` (more fuel, same product), **`ic_loop`** (when `fixLoop less fuel fix` succeeds, the trap returns its product), **`ic_gate`** (when `inter2Collapse fuel intr less` succeeds, the gate body of `+inter2-collapse` returns it). |
 | `Hoon/IntIn.lean` | `+int:in` with the door's set empty is `~` whatever its sample (`int_in_nil`); the whole loop against the relation `IntR` (the swap and the two branches through `+uni:in`, `UniR`), on every derivation (`int_loop`, `int_in_gate`), and on two sets a derivation to a set with the members of both (`intP_of_sets`, `int_in`); `+rep` over a treap of one node is the gate on that node and the first accumulator, whatever the gate (`rep_gate_one`). |
 | `Hoon/UniBy.lean` | `+uni:by`: the relation `UniByR` (one constructor per branch of the loop, the pair of `b` kept on equal keys) and the Nock on every derivation (`uni_by_loop`, `uni_by_gate`); on two maps a derivation to a map with the pairs of `b` and those of `a` whose key `b` lacks (`UniSpec`, `uniByP_of_maps` by induction on the number of nodes, as `uniP_of_sets` of `UniIn.lean`; `uni_by`); with a map of one pair it is `putF` (`uni_by_one`, by `isMap_ext`). |
 | `Hoon/UnoBy.lean` | `+uno:by` (axis `2` of the battery of `+by`, `uno_at`), the general union: the relation `UnoByR` (the branches of `+uni:by` with `[p.n.a (meg p.n.a q.n.a q.n.b)]` at equal keys) and its Nock (`uno_loop`, `uno_gate`, `uno_arm`, `uno_outer`); on two maps whose values meet `V` with a gate `meg` that gives `f k va vb` on them, a map whose value at each key (`look`, `look_get`) is `mergeO f k` of those of the two maps (`unoByP_of_maps`, `uno_by`). |
@@ -2268,12 +2272,29 @@ import only its theorems.  So:
     (2026-11-27, `Compiler/CompShapeColMsg.lean`), each for every input
     and any `K` with the arms it reads (`MsgK`, `FixK`, proved for `K`).
     The two `+coerce-lazy` rolls over bonds and forks are linked already
-    (`comp_coerce_lazy_all`, `Compiler/CompCoerceLazyGen.lean`).  Next, in
-    order, the trees: `+inter1-to-inter2` with forks
-    (`i12`, the `+turn` beside `i2_gate`), `+inter2-fix-round` (the trap
-    `round` with `parent`, its `+turn` and `+roll`), `+inter2-orig`, the
-    loop of `+inter2-collapse` (as `fixLoop` at some fuel), and
-    `+lazy-to-inter1` with forks and bonds (`+weld`, `+uni:in` on `CSet`).
+    (`comp_coerce_lazy_all`, `Compiler/CompCoerceLazyGen.lean`).  The
+    trees, forks to any depth (2026-11-27): `+inter1-to-inter2` (`i12_gate`,
+    `CompShapeColI12.lean`), `+inter2-fix-round` (`fr_gate`, `fr_trap`,
+    `CompShapeColFix.lean`), `+inter2-orig` (`oi_gate`,
+    `CompShapeColOrig.lean`), and the loop of `+inter2-collapse` and the
+    arm when the model succeeds at some fuel (`ic_loop`, `ic_gate`,
+    `CompShapeColLoop.lean`; the converse, that the Hoon's loop returning
+    gives a fuel, would need an induction on `Eval`: `evalFuel` has no
+    completeness lemma).  On the fuel: each round is inflationary at every
+    node for the order whose join is `uniOrd` (the new sure is a fold of
+    `uniOrd` from `uniOrd parent s`), and no arm of a round deepens a
+    shape, so the trees form an ascending chain of trees of one fork
+    skeleton over the finitely many shapes of bounded depth; if `uniOrd` is
+    a semilattice join on the shapes the arms produce, the loop stops
+    within (nodes x height of that poset) + 1 rounds.  Not proved.  Next,
+    in order: `+lazy-to-inter1` with forks and bonds (arm `6006`, the
+    `l2iNo` branch: a `+roll` over `bond.laz` from `[[(need-to-ordered
+    ned) lok] fork-new]`, `fork-new` the `+turn` over the forks, the gate
+    recursing at axis `63` of its subject, `+uni-need-ord` at `2794`,
+    `+uni:in` (`cs_uni_is`), `+weld` (`weld_gate_list`); mutual over
+    `Lazy`, `l2i`, `l2iForks`, `l2iBonds`), then `+shape-collapse` as one
+    gate theorem against `shapeCol` (from `l2i`, `i12_gate`, `ic_gate`),
+    then the top with `shapeCol` as `ord`.
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
