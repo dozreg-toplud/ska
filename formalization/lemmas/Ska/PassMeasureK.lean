@@ -777,5 +777,80 @@ theorem runDatum_map_step (moved : Bool) (bus : Sock) (out : FolOut) (gen' : Gen
   · rename_i hm; rw [if_neg hm] at he
     exact doubleInt_map _ out.prod ⟨old.prod, old.map⟩ (Nat.lt_succ_self _) hv hp he
 
+/-! ## `indi` and `seek`, and the step of an entry -/
+
+/-- `+msg-ca` only rises in `CapeLe` over its second argument. -/
+theorem capeLe_msgCa : ∀ a b : Cape, CapeLe b (msgCa a b)
+  | a, b => by
+    unfold msgCa
+    split
+    · rename_i h; subst h; exact capeLe_refl _
+    · split
+      · rename_i ah aT bh bT _
+        exact CapeLe.cell (capeLe_msgCa ah bh) (capeLe_msgCa aT bT)
+      · exact CapeLe.yes _
+
+/-- When `less-code`, the product and the map stay, `indi` stays or is merged
+by `+msg-ca` with the old one (then `+lack:ca` of `dark`), and when `indi`
+stays too, `seek` stays or rises by `+msg-ca` over the old one. -/
+theorem runDatum_indi_seek (moved : Bool) (bus : Sock) (out : FolOut) (gen' : Gen) (old : Datum)
+    (hl : (runDatum moved bus out gen' old).1.less = old.less)
+    (hp : (runDatum moved bus out gen' old).1.prod = old.prod)
+    (hm : (runDatum moved bus out gen' old).1.map = old.map) :
+    ((runDatum moved bus out gen' old).1.indi = old.indi ∨
+      (runDatum moved bus out gen' old).1.indi =
+        Ca.lack (msgCa (Ca.lack gen'.indi (darkOf bus)) old.indi) (darkOf bus)) ∧
+    ((runDatum moved bus out gen' old).1.indi = old.indi →
+      (runDatum moved bus out gen' old).1.seek = old.seek ∨
+        ((runDatum moved bus out gen' old).1.seek = msgCa gen'.seek old.seek ∧
+          CapeLe old.seek (runDatum moved bus out gen' old).1.seek)) := by
+  simp only [runDatum] at hl hp hm ⊢
+  rw [hl, hp, hm]
+  refine ⟨?_, ?_⟩
+  · by_cases hi : Ca.lack gen'.indi (darkOf bus) = old.indi
+    · left; simp [hi]
+    · right; simp [hi]
+  · intro hi
+    rw [hi]
+    by_cases hs : gen'.seek = old.seek
+    · left; simp [hs]
+    · right; simp; rw [if_neg hs]; exact ⟨fun h => absurd h hs, capeLe_msgCa _ _⟩
+
+/-- **The step of an entry** (`+run` on an entry after its first run, on a
+tidy `bus`): `less-code` stays at most `kS bus`, and the entry moves in the
+lexicographic order of track F: `less-code` rises in `kS`, else the product
+falls in `kS`, else the map falls in `MapLt` over the product's cape, else
+`indi` stays or is merged with the old one, and with `indi` the same `seek`
+stays or rises in `CapeLe`.  The invariants it needs are kept: `less-code`
+is a mask of `bus` (by construction), the product is not `%void` and is
+normal (`runDatum_prod_step`, `runDatum_norm`).  Not here: that the map stays
+`PiNorm`, and the bound of the `indi` and `seek` merges. -/
+theorem runDatum_measure (moved : Bool) {bus : Sock} (out : FolOut) (gen' : Gen) (old : Datum)
+    (hb : Tidy bus) {c0 : Cape} (h0 : old.less = Ca.app c0 bus)
+    (hv : old.prod ≠ Sock.void) (hn : NormSock old.prod) (hp : PiNorm old.map) :
+    let d := (runDatum moved bus out gen' old).1
+    kS d.less ≤ kS bus ∧ d.prod ≠ Sock.void ∧
+    (kS old.less < kS d.less ∨
+      (d.less = old.less ∧
+        (kS d.prod < kS old.prod ∨
+          (d.prod = old.prod ∧
+            (MapLt (darkOf old.prod) d.map old.map ∨
+              (d.map = old.map ∧
+                (d.indi = old.indi ∨ d.indi = Ca.lack (msgCa (Ca.lack gen'.indi (darkOf bus)) old.indi) (darkOf bus)) ∧
+                (d.indi = old.indi → d.seek = old.seek ∨ (d.seek = msgCa gen'.seek old.seek ∧ CapeLe old.seek d.seek)))))))) := by
+  intro d
+  obtain ⟨hl, hlb⟩ := runDatum_less_step moved out gen' old hb h0
+  obtain ⟨hpr, hpv⟩ := runDatum_prod_step moved bus out gen' old hv hn
+  refine ⟨hlb, hpv, ?_⟩
+  rcases hl with hl | hl
+  · right; refine ⟨hl, ?_⟩
+    rcases hpr with hpr | hpr
+    · right; refine ⟨hpr, ?_⟩
+      rcases runDatum_map_step moved bus out gen' old hv hp hpr with hm | hm
+      · right; exact ⟨hm, runDatum_indi_seek moved bus out gen' old hl hpr hm⟩
+      · left; exact hm
+    · left; exact hpr
+  · left; exact hl
+
 end SkaModel
 end Formalization
