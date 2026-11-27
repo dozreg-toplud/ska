@@ -715,6 +715,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/PassMeasureB.lean` | The bound on `next` restated (track F, Gaps 16).  Point (b) (no culled identity pushed again) is false on the compiler (`tools/hoon/repush.hoon`); the header says how and what is measured.  `FinPushes` (along every chain of passes `next`, one more per push, stays below some bound), `finPushes_of_bound` (the old bound gives it), `passOn_wf_fin`, `passNext_acc_fin`, **`passLoop_returns_fin`** (`passLoop_returns` with `FinPushes` in place of `B`); what a proof of `FinPushes` needs. |
 | `Ska/PassStab.lean` | What holds of the pass loop whatever its measure (track F, Gaps 16).  `valE_run_ext` (a `+run` that keeps the old stack at the bottom keeps or lowers the value of every identity on it), **`memberLoop_old`** (`memberLoop_le` without `next` the same: the member loop, pushes or not, keeps the old stack at the bottom, keeps or lowers the value of every identity on it and, when it reports `changed`, lowers one of its members), `mem_of_above`, **`passOn_old`** (a pass that goes on keeps or lowers the value of every identity on the stack at its start, a culled one falling to `none`, keeps the root, and lowers one or pushes), `chain_root_mem`, **`chain_present_const`** (along an infinite chain of passes an identity on the stack from some pass on has an eventually constant value), `chain_root_const`; the fuel of `+sweep` and `+cull`: `has_ins_ident`, `leftTerm`, `leftSum` (the weight of the identities of a set not marked yet), `leftSum_ins_le`, `leftSum_ins_lt`, `mem_tap_of_has`, **`liveLoop_ends`**, `stackPot`, **`sweepLoop_ends`**, `sweepFuel`, **`sweep_ends`**, `cullFuel`, **`cull_ends`** (each returns at every fuel above an explicit potential). |
 | `Ska/PassStabM.lean` | Candidate measures of the pass loop, stated and tested, not proved (track F, Gaps 16): `StabLtA` (lex by DFS number of the members' entries, the oldest change dominating), `stabVal`, `SvLt`, `StabLt` (candidate D: the same of the entry and the `+dirty` flag), `svLt_of_olt`, `stabLt_of_A`.  Both fail on recorded passes (Gaps 16), and neither order is well founded by itself (the DFS numbers are not bounded). |
+| `Ska/PassFreeze.lean` | The freezing argument for the pass loop, no global measure (track F, Gaps 16).  `MembR` (a member: on the stack, not in the fixed bottom `rest`), `memberLoop_clean`, **`passOn_dirty`** (a pass that goes on had a member dirty at its start), `kids_of_get`, **`cull_keeps_kid`** (a callee of a member that `+cull` keeps is kept if it was a member), **`cull_reach`** (every member after `+cull` is reached from the root over callees through members), `passOn_cull`, `passOn_shape`, `Pers`, `FrozenFrom`, `uniform_frozen`, `reach_mem`, **`freeze_abstract`** (the argument on any sequence of states), `FinIdents` ((i) along a chain), `PassMoves` (C: at every pass a member of its start falls, is culled or changes callees; held on every recorded pass, not proved), `EvFrozen` (R, the open claim: a member that stays has an eventually constant callee set), **`freeze_no_chain`** (no infinite chain of passes given the three), **`finPushes_of_freeze`** (`FinPushes` from them); `BT`, `BTEmb`, `KruskalBT` (Kruskal for `+he-sock`, stated only, and why it gives less than `FinIdents`). |
 | `Ska/HeTurn.lean` | The `%he` lemma: `msgSock_he_lt` (if `heSock a b` and `a ≠ b`, then `msgSock a b` has a smaller `heMeasure`, the size of the cape plus its number of leaves `&`, than `a`) and so `msgSock_ne_of_he` (`msgSock a b ≠ some a`), from `knit_eq_cell`, `heSock_size` (`+he-sock` never grows the cape), `msgSock_cases` (the result is `|+~` or the knit of the results on the halves of two cells over cells), `msgSock_le` (the result's cape is no larger than either sock's, with no more leaves `&` than the first's) and `msgSock_left_size` (if the result is `a`, the cape of `b` is no smaller).  For example `a = [[& |] [5 ~]]` and `b = &+[5 6]` give `|+~`, measure `4` to `1`. |
 | `Ska/HeBound.lean` | The `resolve` loop makes boundedly many `%he` turns: `recLoop_he` (a `%he` answer of `+recursive-call` comes from a frame of the same formula whose subject sock `+he-sock` embeds), `recursiveCall_he_lt` (for an identity off the stack the new subject sock has a smaller `heMeasure`), `HeTurn` (a `%he` turn of the loop begun with `orig`: the memo lookup at `orig.2` and the current sock missed), `resolve_heTurn` (a turn is one unit of fuel in the same state), `heTurn_lt` (with `env.he = heSock` and `SInv`, a turn cuts `heMeasure`), and `resolve_he_bound`, `resolve_he_bound'`: from `i` the loop reaches, after `k ≤ heMeasure i.1 ≤ 2 * sockSize i.1` turns `%he`, an identity whose turn is not `%he`, and the loop at `i` with fuel `n + k` is the loop there with fuel `n`. |
 | `Ska/FolWeight.lean` | `fol-loop` within one run, with the direct calls fixed (`folLoopR env res`).  `folW`: a weight that counts `%8`, `%9`, `%11` above the `%7` and `%2` forms they become.  `NoInl`: the calls that never inline (an inlineable formula, or `[2 [0 1] x]` with `x` inlineable and `bare-call`, `memo-key` or `defer` set); `callStep_noInl` (with a flag set the inline branch is not taken), `folStep_congr` (on such a call, one level depends only on calls of smaller weight that never inline: an inlineable formula has no `%2`, no `%9`, and its `%11` forms set a flag), `folLoopR_stable`, `folLoopR_at_weight`: on such a formula the result is the same at every fuel from `folW fol` on, crashes included, whatever `res` is.  An inlined formula is inlineable, so inlining goes one level deep.  The fuel of a formula that inlines is not bounded by its weight: `[9 2 [0 1]]` (weight `8`) against `&+[g 0]` analyses the battery `g` inline. |
@@ -3561,6 +3562,7 @@ import only its theorems.  So:
     | `+sweep`, `+cull` | proved: each returns at every fuel above an explicit potential (frames left, and per identity not marked its kids plus 2 or 1) | `sweepLoop_ends`, `liveLoop_ends`, `sweep_ends`, `cull_ends` (`PassStab.lean`) |
     | an entry across a pass, pushes or not | proved: every identity on the stack at a pass's start keeps or lowers its value (culled: `none`), the root stays, and one falls or something is pushed; an identity on the stack from some pass on is eventually constant | `passOn_old`, `chain_present_const`, `chain_root_const` |
     | a measure for `FinPushes` | candidates stated, none survives the traces: lex by DFS number of the entries fails at 407 of 18,682 passes, with the `+dirty` flag at 43; neither order is well founded by itself | `PassStabM.lean`, `passmeasure-stab.py` |
+    | `FinPushes` by freezing (no measure) | proved from (i) `FinIdents`, C `PassMoves` (a model fact, every recorded pass) and R `EvFrozen` (open: a member that stays changes callees finitely often) | `freeze_no_chain`, `finPushes_of_freeze` (`PassFreeze.lean`), `passmeasure-freeze.py` |
     | the member loop | structural over its list, each step a `+run` (the whole recursion) | `Analysis.lean` |
     | `+prune-callgraph` | proved on a closed graph | `pruneLoop_ends`, `pruneCallgraph_ends` |
     | the whole recursion (`+analyze` inside `fol-loop` inside `+run`) | not proved: needs a fuel bound from the above | |
@@ -3609,10 +3611,59 @@ import only its theorems.  So:
     is well founded by itself: DFS numbers are not bounded (a re-push takes
     a fresh one), and a fall at ever later numbers can go on forever.
 
-    Still open: `FinPushes` ((i), and finitely many pushes of each identity
-    along a chain, by the stabilisation above), and the fuel of `+run`
-    inside the member loop, which is the whole recursion; so `CgHalts` is
-    still a hypothesis.
+    The freezing argument (`Ska/PassFreeze.lean`, 2026-11-27, no global
+    measure).  Along an infinite chain of passes the members that stay from
+    some pass on (finitely many by (i)) have eventually constant entries
+    (`chain_present_const`); if their callee sets are eventually constant too
+    (R, `EvFrozen`), every member is eventually one of them, since a member at
+    a pass start is reached from the root through members (`cull_reach`) and a
+    callee of a member that `+cull` keeps is kept when it was a member
+    (`cull_keeps_kid`); then nothing moves, against C (`PassMoves`: some member
+    of the start falls, is culled or changes its callee set).  So there is no
+    infinite chain (`freeze_abstract`, `freeze_no_chain`) and `FinPushes`
+    holds (`finPushes_of_freeze`); also `passOn_dirty` (a pass that goes on
+    had a dirty member).  Tested first on the 2,632 cores rerun with a new
+    print `%pm-tik` (the ticks `[ran chg]` at every pass start;
+    `passmeasure-freeze.py`): `+dirty` is "a callee's chg is at least the
+    member's ran" at all 69,069 member starts; a member that does not run
+    keeps callees and entry; a callee of a kept member that was a member is
+    kept (118,678 checks); every member is reached from the root (18,682
+    passes); no fails.  A correction: a member clean at a pass start can run
+    in that pass (2,798 times), since `+dirty` is tested at the member's turn
+    after its callees ran; it ran only when a callee had changed in the pass
+    (or was culled), never otherwise (4,122 clean members with no callee
+    change, none ran).  What makes a member dirty (48,457 dirty starts after
+    the first): its own change in its last run (32,917), a callee that fell
+    after its run (28,275), a callee pushed in the same pass (219), never a callee
+    whose entry is unchanged ("dirty with nothing changed" does not happen:
+    on the Hoon a callee of a member that stays is never culled, so its ticks
+    are continuous, and its chg moves only when its five fields change).  The
+    open case of R, a member dirty at consecutive starts with its entry and
+    callee set the same: 12,462 such starts, runs up to 120 consecutive starts
+    (`c3x300x180x100x50`; ended by a cull 1,265 times, clean 372, the loop's
+    end 1,975, a fall 18, a callee change 9), and every one of them owed its
+    dirt to a callee on the stack until the loop's end (a register still
+    draining) or to itself, none only to transient callees (the infinite case
+    needs exactly that, since callees that stay freeze).  Changes of the
+    callee set at a constant entry: 1,144 members, at most 49 for one member
+    (`fib6`, 187 starts), growing with the chain depth (33 at d=7, 47 at d=8),
+    so R is a stabilisation, not a small bound.  The two cheap candidates:
+    E (lex by DFS number of the entry and of the set of dirty callers charged
+    to the member, each charged to the newest callee it owes its dirt to)
+    never fails, by inclusion or by size of the sets, but is not well founded
+    by itself (DFS numbers unbounded); comparing passes p and p+2 fails at
+    97 of 14,493 pairs (entries, P2A) and at 5 (with `+dirty`, P2D).  What
+    (i) rests on: `FinIdents` (the members of all passes of one chain lie in
+    one finite list); Kruskal's theorem for `+he-sock` over finitely many
+    leaves (`KruskalBT`, statable in Lean core, not proved) gives only that
+    no single stack is infinite; `FinIdents` needs besides finitely many
+    identities pushable at each frame (finite branching and König).
+
+    Still open: R (`EvFrozen`), C (`PassMoves`, a model fact: a push is a new
+    callee of the start member whose run made it, needing the arms' invariant
+    for callee sets), (i) (`FinIdents`), and the fuel of `+run` inside the
+    member loop, which is the whole recursion; so `CgHalts` is still a
+    hypothesis.
 17. **The pill link of the `+leap` family** (track I, 2026-11-27,
     `Compiler/CompLeap*.lean`, cut by `tools/gen/leap.py`).  Linked, each on
     every input or on a stated invariant, compared with the Hoon part by part

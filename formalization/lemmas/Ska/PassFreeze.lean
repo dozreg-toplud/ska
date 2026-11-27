@@ -42,7 +42,13 @@ Proved here: `passOn_dirty` (a pass that goes on had a member dirty at its
 start), `cull_keeps_kid`, `cull_reach`, `passOn_cull` (the state before the
 `+cull` of a pass), `freeze_abstract` (the argument on any sequence of states
 with the five properties), `freeze_no_chain` (on the model, from `FinIdents`,
-`PassMoves`, `EvFrozen`), `finPushes_of_freeze`.
+`PassMoves`, `EvFrozen`), `finPushes_of_freeze`.  Stated only: `KruskalBT`
+(section 5, what (i) rests on, and why it is less than `FinIdents`).
+
+A correction to the plan of the last session: a member clean at the start of a
+pass can run in it (2,798 times on the traces), since the member loop tests
+`+dirty` at the member's turn, after its callees ran; so the argument uses
+"a member whose callee set stays the same", not "a clean member".
 -/
 
 namespace Formalization
@@ -422,3 +428,42 @@ theorem finPushes_of_freeze (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) 
   obtain ⟨hfin, hC, hR⟩ := hclaims f hf
   exact (freeze_no_chain env memoF hmF hmT hRW id index (f 0).1 (fun k => (f k).2) h0.1 h0.2.1 h0.2.2
     (fun k => by obtain ⟨m, _, hp⟩ := (hf k).2; exact ⟨m, hpass k ▸ hp⟩) a0 rest ha0 hfin hC hR).elim
+
+/-! ## 5. What (i) rests on
+
+`FinIdents` is what the argument uses: along one chain, the members of all its
+passes lie in one finite list.  The argument of `AnaEnds.lean` for (i) is
+Kruskal's theorem for the embedding `+he-sock` (a sock embeds in another when
+it is a part of it, or the two are cells whose halves embed, a leaf only in an
+equal leaf) over finitely many leaves.  It can be stated in Lean core, as
+below (`KruskalBT`), with no Mathlib; it is not proved here.  What it gives is
+less than `FinIdents`: past `he-threshold` frames of one formula the subjects
+along one stack form a bad sequence, so no stack is infinite (one descent).
+`FinIdents` speaks of the union of the stacks of infinitely many passes, and
+needs besides that the identities a run can push be finitely many at each
+frame (finite branching, then König's lemma), which `HeBound.lean` does not
+give either: it bounds the `%he` turns of one `resolve`. -/
+
+/-- Binary trees with leaves in `L` (the shape of a sock: a leaf `|`, or `&`
+over a noun). -/
+inductive BT (L : Type) where
+  | leaf : L → BT L
+  | node : BT L → BT L → BT L
+
+/-- The homeomorphic embedding of `+he-sock`: a part of the bigger tree, or
+cells whose halves embed, or equal leaves. -/
+inductive BTEmb {L : Type} : BT L → BT L → Prop where
+  | leaf (a : L) : BTEmb (.leaf a) (.leaf a)
+  | left {s t₁ t₂ : BT L} : BTEmb s t₁ → BTEmb s (.node t₁ t₂)
+  | right {s t₁ t₂ : BT L} : BTEmb s t₂ → BTEmb s (.node t₁ t₂)
+  | node {s₁ s₂ t₁ t₂ : BT L} : BTEmb s₁ t₁ → BTEmb s₂ t₂ → BTEmb (.node s₁ s₂) (.node t₁ t₂)
+
+/-- **Kruskal's theorem for binary trees over finitely many leaves** (stated,
+not proved): every infinite sequence has an earlier tree that embeds in a
+later one. -/
+def KruskalBT : Prop :=
+  ∀ (L : Type) (ls : List L), (∀ a : L, a ∈ ls) → ∀ t : Nat → BT L, ∃ i j, i < j ∧ BTEmb (t i) (t j)
+
+end Ana
+end SkaModel
+end Formalization
