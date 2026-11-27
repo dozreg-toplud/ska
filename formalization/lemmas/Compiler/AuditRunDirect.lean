@@ -3,6 +3,8 @@ import lemmas.Compiler.CompRunDirectC
 import lemmas.Compiler.CompRunDirectP
 import lemmas.Compiler.CompRunDirectS
 import lemmas.Compiler.CompRunDirectMono
+import lemmas.Compiler.CompRunDirectMonoL
+import lemmas.Compiler.CompRunDirectMonoB
 
 /-! The axioms of the link of the direct call of `%2` (README Gaps 19). -/
 
@@ -45,3 +47,47 @@ open Formalization.Compiler
 #print axioms mtc_none
 #print axioms mtc_this
 #print axioms mtc_loop_eq
+#print axioms mtcPA_0
+#print axioms mtcPA_1
+#print axioms mtcPA_2
+#print axioms mtcPA_2n
+#print axioms mtcPA_3
+#print axioms mtcPA_3n
+#print axioms mtcPA_4
+#print axioms mtcPA_L
+#print axioms mtcBO_0
+#print axioms mtcBO_1
+#print axioms mtcBO_2
+#print axioms mtcBO_2n
+#print axioms mtcBO_3
+#print axioms mtcBO_3n
+#print axioms mtcBO_4
+#print axioms mtcBO_L
+#print axioms mtc_disp_pair
+#print axioms mtc_disp_both
+#print axioms mtc_pair
+#print axioms mtc_both
+#print axioms mtc_loop
+#print axioms mtc_gate
+#print axioms monoBlocks_eq
+#print axioms crd_blkM_done
+#print axioms crNM_eq
+#print axioms crNM_0
+#print axioms crNM_1
+#print axioms crNM_2
+#print axioms crNM_3
+#print axioms crNM_4
+#print axioms crNM_5
+#print axioms crNM_6
+#print axioms crNM_L
+#print axioms crd7_nm
+#print axioms crd_blkM_next
+#print axioms mtc_arm
+#print axioms crd_7to9M
+#print axioms crd_cnfR
+#print axioms crd_ctailR
+#print axioms crd_from7M
+#print axioms crd_head6M
+#print axioms crd_model_callM
+#print axioms crd_callM
+#print axioms callLM_true_direct
