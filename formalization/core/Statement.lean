@@ -113,29 +113,21 @@ In all of them `gul`, the scry gate, is any noun; `~` is no namespace.
 def Loads : Prop :=
   ∃ core, FromPill core
 
-/-- If Nock computes `p` from `s` and `f`, so does the interpreter, on any
-core the pill's core can become, whatever the scry gate. -/
+/-- SKA interpreter computes a result without a crash iff Nock does the same.
+The scry gate is `~`: with a namespace, opcode 12 computes nouns that Nock
+has no rule for. -/
 def NockEquivalence : Prop :=
-  ∀ core₀ core s f p gul,
+  ∀ core₀ core s f p,
     FromPill core₀ → Reach core₀ core →
-    Nock s f p →
-    ∃ core', Top core s f gul (C (A 0) p) core'
+    (Nock s f p ↔
+     ∃ core', Top core s f (A 0) (C (A 0) p) core')
 
-/-- What `+mock` returns, the interpreter returns: a product, a block, or a
-crash with the same rendered trace. -/
+/-- Interpreting with SKA is equivalent to interpreting with +mock -/
 def MockEquivalence : Prop :=
   ∀ core₀ core s f gul toon,
     FromPill core₀ → Reach core₀ core →
-    Mock core₀ s f gul toon →
-    ∃ core', Run core s f gul toon core'
-
-/-- What the interpreter returns, `+mock` returns.  So the interpreter does
-not halt where `+mock` does not. -/
-def MockEquivalenceInverse : Prop :=
-  ∀ core₀ core s f gul toon core',
-    FromPill core₀ → Reach core₀ core →
-    Run core s f gul toon core' →
-    Mock core₀ s f gul toon
+    (Mock core₀ s f gul toon ↔
+     ∃ core', Run core s f gul toon core')
 
 /-- Analysis and compilation of the entry point halt: `[%full s f]` is
 answered for every subject and every formula that is a cell. -/
@@ -145,7 +137,7 @@ def Halts : Prop :=
     ∃ prod core', Poke core (T3 full s (C f₁ f₂)) prod core'
 
 def Full : Prop :=
-  Loads ∧ NockEquivalence ∧ MockEquivalence ∧ MockEquivalenceInverse ∧ Halts
+  Loads ∧ NockEquivalence ∧ MockEquivalence ∧ Halts
 
 end Ska
 end Formalization
