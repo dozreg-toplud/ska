@@ -238,6 +238,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompShapeCol.lean` | `+shape-collapse` (arm `682` of `K`, the `ord` of `finishLF`) on a fork-free lazy need `[[ned lok] ~ ~]` is `sureOf (needToOrd ned) lok less` (`sc_gate_sure`), so `hsc` of `mem_gate` holds with `ord := sur` (`hsc_of_sure`).  On the way, with the nouns cut by `tools/gen/shapecol.py` and tied by `uno_at`, `l2i_at`, `fr_at`, `oi_at`, `ic_at`, `scBody_eq`: `+uni-need-ord` of `[%none ~]` and `X` is `X` (`uno_none`), `+lazy-to-inter1` on no fork and no bond (`l2i_gate_sure`), one round of `+inter2-fix-round` on `[X ~]` is `[X ~]` (`fr_gate_nofork`, with the bunt of `need-inter2` computed by the kernel, `i2n_bunt`), `+inter2-orig` and `+inter2-collapse` on no fork (`oi_gate_nofork`, `ic_gate_nofork`), `+roll` over `~` (`roll_gate_nil`). |
 | `Compiler/CompShapeColUni.lean` | `+uni-need-ord` in full (README Gaps 9): `nord_inj`, `nord_toNoun_eq`, `nord_eqCode` (`=(a b)` on shapes), **`uno_gate`** (the gate body `unoBody` on `[[a b] K]` is `uniOrd a b` of `Ska/ShapeCol.lean` for every `a`, `b`, given `+cons-need` at `350` of `K`; by induction on `a`, the two recursive calls under `~+` from the induction hypothesis). |
 | `Compiler/CompShapeColSur.lean` | The new `ord` against the old one (README Gaps 9): `sureOfS_eq` (`sureOfS` on `CSet` is `sureOf`), **`shapeCol_sccSur`** (on a fork-free result `shapeCol` is `sccSur`), **`shapeCol_finSure`** (under `FinSure`, `sccSur` is `shapeCol` of the final pass of `cu_gate_scc_one_six`). |
+| `Compiler/CompShapeColMsg.lean` | The MSG arms of `+shape-collapse` in full (README Gaps 9; nouns by `tools/gen/shapecolmsg.py`): `+need-ord-regs` (arm `1396`) is `ordRegs` (`nor_trap`, `nor_gate`), `+hed-need-ord` (`374`) / `+tel-need-ord` (`92`) are `ordHed` / `ordTel` (`hon_gate`, `ton_gate`); `+msg-need-ord` (arm `20`): its tests (`msg_t1`, `msg_t2`, `msg_or4`, `msg_dispatch`), the one-sided case (`msg_sd`, `msg_hd`, `msg_td`, `msg_res`, `msg_one_core`, `msg_one_rest`, `msg_one`), `(msg none+~ d less)` is `msgNone` (`msg_none_gate`), the cells (`msg_cells`), **`msg_gate`** (the gate body on `[[a b less] K]` is `msgOrd a b less` for every `a`, `b`, `less`, given `MsgK K`: `+cons-need`, `layer1`, `+need-ord-regs`, `split-max`, the library at `63`; `msg_gate_K` on `K` itself); `+msg-need-ord-fix-aware` (arm `1502`): `fx_top`, `fx_t2`, `fx_t3`, `fx_rest`, `fx_here`, `fx_cons`, `fx_end`, `fx_cell`, **`fx_gate`** (the gate body on `[[a b fix less] K]` is `msgFix a b fix less` for every input, by induction on `fix`, given `FixK K`; `fx_gate_K`). |
 | `Hoon/IntIn.lean` | `+int:in` with the door's set empty is `~` whatever its sample (`int_in_nil`); the whole loop against the relation `IntR` (the swap and the two branches through `+uni:in`, `UniR`), on every derivation (`int_loop`, `int_in_gate`), and on two sets a derivation to a set with the members of both (`intP_of_sets`, `int_in`); `+rep` over a treap of one node is the gate on that node and the first accumulator, whatever the gate (`rep_gate_one`). |
 | `Hoon/UniBy.lean` | `+uni:by`: the relation `UniByR` (one constructor per branch of the loop, the pair of `b` kept on equal keys) and the Nock on every derivation (`uni_by_loop`, `uni_by_gate`); on two maps a derivation to a map with the pairs of `b` and those of `a` whose key `b` lacks (`UniSpec`, `uniByP_of_maps` by induction on the number of nodes, as `uniP_of_sets` of `UniIn.lean`; `uni_by`); with a map of one pair it is `putF` (`uni_by_one`, by `isMap_ext`). |
 | `Hoon/UnoBy.lean` | `+uno:by` (axis `2` of the battery of `+by`, `uno_at`), the general union: the relation `UnoByR` (the branches of `+uni:by` with `[p.n.a (meg p.n.a q.n.a q.n.b)]` at equal keys) and its Nock (`uno_loop`, `uno_gate`, `uno_arm`, `uno_outer`); on two maps whose values meet `V` with a gate `meg` that gives `f k va vb` on them, a map whose value at each key (`look`, `look_get`) is `mergeO f k` of those of the two maps (`unoByP_of_maps`, `uno_by`). |
@@ -2260,11 +2261,15 @@ import only its theorems.  So:
     (`uno_gate`, `Compiler/CompShapeColUni.lean`); on a fork-free result
     the new `ord` is the old one (`shapeCol_sccSur`, `shapeCol_finSure`,
     `Compiler/CompShapeColSur.lean`), so the top under `FinSure` is the top
-    with `shapeCol`.  Next, in order:
-    `+need-ord-regs`, `+msg-need-ord` (`msgOrd`; the case of one side
-    `%this`/`%none` recurses with `[%none ~]` first, `msgNone`),
-    `+hed-need-ord`/`+tel-need-ord`, `+msg-need-ord-fix-aware` (`msgFix`,
-    by induction on `fix`), then the trees: `+inter1-to-inter2` with forks
+    with `shapeCol`; `+need-ord-regs` (`nor_gate`), `+hed-need-ord`,
+    `+tel-need-ord` (`hon_gate`, `ton_gate`), `+msg-need-ord` in full
+    (`msg_gate`, with `msg_none_gate` for `msgNone`) and
+    `+msg-need-ord-fix-aware` in full (`fx_gate`, by induction on `fix`)
+    (2026-11-27, `Compiler/CompShapeColMsg.lean`), each for every input
+    and any `K` with the arms it reads (`MsgK`, `FixK`, proved for `K`).
+    The two `+coerce-lazy` rolls over bonds and forks are linked already
+    (`comp_coerce_lazy_all`, `Compiler/CompCoerceLazyGen.lean`).  Next, in
+    order, the trees: `+inter1-to-inter2` with forks
     (`i12`, the `+turn` beside `i2_gate`), `+inter2-fix-round` (the trap
     `round` with `parent`, its `+turn` and `+roll`), `+inter2-orig`, the
     loop of `+inter2-collapse` (as `fixLoop` at some fuel), and
