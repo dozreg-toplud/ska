@@ -209,6 +209,212 @@ theorem collapseGate_cw {r o B x : Nat} {C0 : Map (Nat × List Nat)} {s : Sure S
   | pair p q => exact crashC _ (fun y hy => hy) h2
   | both r0 p q => exact crashC _ (fun y hy => hy) h2
 
+/-- `entries` read only the forks and the bonds. -/
+theorem entries_mkSure (s : Sure S) (laz : Lazy S) : entries (mk s laz.fork laz.bond) = entries laz := by
+  cases laz; rfl
+
+/-- **The spec of `+collapse-lazy-atom`.** -/
+theorem collapseSpecL : CollapseSpecL S Map := by
+  intro K laz th g0 g1 r there hI h
+  have hd : g0.drop = false := hI.ats.1
+  obtain ⟨hth, hap, hent⟩ := (hI.goal : GoalL g0 (CGoalL.next laz th))
+  obtain ⟨bt, hbt, hpt, targs⟩ := hth
+  obtain ⟨A1, KP1, hfr⟩ := (ht_collapse (⟨laz, th⟩ : NextL S)).run g0 _ g1 hI.ats ⟨bt, hbt, hpt, targs⟩ h
+  have hfr' : Fresh g1 (jmp0 there) := hfr r there rfl
+  have hroot : ∀ y, NMem laz.sure.ned y → y < g0.re ∧ ¬ Defd g0.blocks y := (hent _ (List.mem_cons_self ..)).2.2
+  have hents : ∀ e ∈ entries laz, ∀ y, NMem e.2.sure.ned y → y < g0.re :=
+    fun e he y hy => ((hent e (List.mem_cons_of_mem _ he)).2.2 y hy).1
+  have hER := hI.entry_regs (o := th.there)
+  have hapart : ∀ y, (NMem laz.sure.ned y ∨ g0.re ≤ y) → ∀ e ∈ entries laz, ¬ NMem e.2.sure.ned y := by
+    intro y hy e he hm
+    rcases hy with hy | hy
+    · exact (List.pairwise_cons.mp hap).1 e he y hy hm
+    · have := hents e he y hm; omega
+  have hkey0 : ∀ y, (NMem laz.sure.ned y ∨ g0.re ≤ y) → HoonMap.get g0.cond y = Option.none := by
+    intro y hy
+    rcases hy with hy | hy
+    · exact (hER _ (List.mem_cons_self ..) y hy).2
+    · exact hI.cond_ge hy
+  have hdef0 : ∀ y, (NMem laz.sure.ned y ∨ g0.re ≤ y) → ¬ Defd g0.blocks y := by
+    intro y hy hdy
+    rcases hy with hy | hy
+    · exact (hroot y hy).2 hdy
+    · have := defd_lt hI.regs hdy; omega
+  have hthere : th.there < g0.bo := hI.lab hbt
+  simp only [collapseLazyAtomL] at h
+  have ha : ¬ (th.args ≠ []) := fun h' => h' targs
+  rw [if_neg ha] at h
+  by_cases hn : noneEquivalentL laz = true
+  · rw [if_pos hn] at h
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq, reduceCtorEq, false_and] at h
+  rw [if_neg hn] at h
+  obtain ⟨ned, ga, hga, h⟩ := bind_some h
+  have L := sureRequireLook_spec hga
+  obtain ⟨k, rfl⟩ := L.gen
+  have hk : g0.re ≤ k := L.le
+  obtain ⟨⟨r', there'⟩, gb, hb, h⟩ := bind_some h
+  -- the emitted `%bom` block
+  have hbomD : ∀ R y, Defd ((({ g0 with re := R } : Comp.Gen Map)).emitted ⟨[], [], Termin.bom Option.none⟩).blocks y →
+      Defd g0.blocks y := by
+    intro R y hy
+    have e := (defd_put (b := (⟨[], [], Termin.bom Option.none⟩ : Blob)) hI.ats.free (r := y)).mp
+      (by simpa [Gen.emitted, hd] using hy)
+    rcases e with e | e
+    · exact e
+    · simp [blockDefs] at e
+  have hbomR : ∀ R, g0.re ≤ R → ∀ k b, HoonMap.get ((({ g0 with re := R } : Comp.Gen Map)).emitted
+      ⟨[], [], Termin.bom Option.none⟩).blocks k = some b → BlobIn (· < R) b := by
+    intro R hR k b hb
+    rw [em_get (g := ({ g0 with re := R } : Comp.Gen Map)) hd] at hb
+    split at hb
+    · cases hb; exact blobIn_nil_fin trivial
+    · exact (hI.regs k b hb).mono fun _ hx => Nat.lt_of_lt_of_le hx hR
+  have hbomL : ∀ R, ∃ b, HoonMap.get (unpM ((({ g0 with re := R } : Comp.Gen Map)).emitted
+      ⟨[], [], Termin.bom Option.none⟩)) g0.bo = some b ∧ (∀ y, ¬ BlockRF b y) ∧ getJmps b.fin = [] := by
+    intro R
+    refine ⟨_, unpM_emitted_self (g := ({ g0 with re := R } : Comp.Gen Map)) hd _, fun y hy => ?_, rfl⟩
+    obtain ⟨-, hy | ⟨-, hy⟩⟩ := hy
+    · simp [renBlob, OpsRF] at hy
+    · simp [renBlob, renFin, finRegs] at hy
+  have hbomU : ∀ R x, x < g0.bo → HoonMap.get (unpM ((({ g0 with re := R } : Comp.Gen Map)).emitted
+      ⟨[], [], Termin.bom Option.none⟩)) x = HoonMap.get (unpM g0) x := fun R x hx =>
+    (unpM_emitted_lt (g := ({ g0 with re := R } : Comp.Gen Map)) hd _ hx).trans rfl
+  -- the facts before the walk
+  have P : gb.drop = false ∧ gb.cond = g0.cond ∧ g0.re ≤ gb.re ∧ r' < gb.re ∧
+      (∀ k b, HoonMap.get gb.blocks k = some b → BlobIn (· < gb.re) b) ∧
+      (∀ y, Defd gb.blocks y → Defd g0.blocks y) ∧
+      (NMem laz.sure.ned r' ∨ g0.re ≤ r') ∧
+      (∀ x, x < g0.bo → HoonMap.get (unpM gb) x = HoonMap.get (unpM g0) x) ∧
+      ((there' = th.there ∧ ∀ y, NMem laz.sure.ned y → y = r') ∨
+        (∃ b, HoonMap.get (unpM gb) there' = some b ∧ (∀ y, ¬ BlockRF b y) ∧ getJmps b.fin = [])) := by
+    cases ned with
+    | this r0 =>
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at hb
+      obtain ⟨⟨rfl, rfl⟩, rfl⟩ := hb
+      have hm := L.mem r0 rfl
+      refine ⟨hd, rfl, hk, ?_, fun k b hb => (hI.regs k b hb).mono fun _ hx => Nat.lt_of_lt_of_le hx hk,
+        fun y hy => hy, hm.imp id fun h => h.1, fun _ _ => rfl,
+        Or.inl ⟨rfl, fun y hy => sureRequireLook_keeps hga hy⟩⟩
+      rcases hm with hm | hm
+      · have := (hroot r0 hm).1; show r0 < k; omega
+      · exact hm.2
+    | none =>
+      obtain ⟨x, gx, hx, hb⟩ := bind_some hb
+      rw [re_apply] at hx
+      simp only [Option.some.injEq, Prod.mk.injEq] at hx
+      obtain ⟨rfl, rfl⟩ := hx
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at hb
+      obtain ⟨⟨rfl, rfl⟩, rfl⟩ := hb
+      refine ⟨hd, rfl, Nat.le_succ_of_le hk, Nat.lt_succ_self _,
+        fun k' b hb => (hI.regs k' b hb).mono fun _ hx => Nat.lt_succ_of_lt (Nat.lt_of_lt_of_le hx hk),
+        fun y hy => hy, Or.inr hk, fun _ _ => rfl,
+        Or.inl ⟨rfl, fun y hy => (sureRequireLook_keeps hga hy).elim⟩⟩
+    | pair p q =>
+      obtain ⟨x, gx, hx, hb⟩ := bind_some hb
+      rw [re_apply] at hx
+      simp only [Option.some.injEq, Prod.mk.injEq] at hx
+      obtain ⟨rfl, rfl⟩ := hx
+      obtain ⟨o, gy, hy, hb⟩ := bind_some hb
+      rw [emit_apply] at hy
+      simp only [Option.some.injEq, Prod.mk.injEq] at hy
+      obtain ⟨rfl, rfl⟩ := hy
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at hb
+      obtain ⟨⟨rfl, rfl⟩, rfl⟩ := hb
+      exact ⟨hd, rfl, Nat.le_succ_of_le hk, Nat.lt_succ_self _, hbomR _ (Nat.le_succ_of_le hk),
+        hbomD _, Or.inr hk, hbomU _, Or.inr (hbomL _)⟩
+    | both r0 p q =>
+      obtain ⟨o, gy, hy, hb⟩ := bind_some hb
+      rw [emit_apply] at hy
+      simp only [Option.some.injEq, Prod.mk.injEq] at hy
+      obtain ⟨rfl, rfl⟩ := hy
+      simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at hb
+      obtain ⟨⟨rfl, rfl⟩, rfl⟩ := hb
+      have hm := L.mem r0 (Or.inl rfl)
+      refine ⟨hd, rfl, hk, ?_, hbomR _ hk, hbomD _, hm.imp id fun h => h.1, hbomU _, Or.inr (hbomL _)⟩
+      rcases hm with hm | hm
+      · have := (hroot r0 hm).1; show r0 < k; omega
+      · exact hm.2
+  obtain ⟨Pd, Pc, Pre, Pr, Preg, Pdef, Pold, Pun, Plive⟩ := P
+  obtain ⟨g', gc, hc, h⟩ := bind_some h
+  simp only [get_apply, Option.some.injEq, Prod.mk.injEq] at hc
+  obtain ⟨rfl, rfl⟩ := hc
+  simp only [Pd, Bool.false_eq_true, if_false] at h
+  obtain ⟨u, gd, hw, h⟩ := bind_some h
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨⟨h1, h2⟩, h3⟩ := h
+  subst r' there' gd
+  -- the walk keeps `CW`
+  have W0 : CW r gb.re gb.cond gb := by
+    refine ⟨Pd, Nat.le_refl _, Pr, fun k v hk => ?_, Preg, fun y hy => ?_, fun hy => hdef0 r Pold (Pdef r hy), ?_,
+      fun k v hk => Or.inl hk⟩
+    · rw [Pc] at hk; exact Nat.lt_of_lt_of_le (hI.cond_lt k v hk) Pre
+    · rw [Pc]
+      cases e : HoonMap.get g0.cond y with
+      | none => rfl
+      | some v => exact absurd (Pdef y hy) (hI.cond y v e).2.1
+    · rw [Pc]; exact hkey0 r Pold
+  have W1 : CW r gb.re gb.cond g1 := by
+    refine walkLazy_inv (W := CW r gb.re gb.cond) (fun e he a b hW hg => ?_) W0 hw
+    rcases List.mem_cons.mp he with rfl | he
+    · refine collapseGate_cw (fun y hy => ?_) (fun _ => rfl) hW hg
+      have e : y = r := hy
+      subst e
+      exact ⟨Pr, by rw [Pc]; exact hkey0 _ Pold⟩
+    · rw [entries_mkSure] at he
+      exact collapseGate_cw (fun y hy => ⟨Nat.lt_of_lt_of_le (hents e he y hy) Pre,
+        by rw [Pc]; exact (hER e (List.mem_cons_of_mem _ he) y hy).2⟩)
+        (fun hm => (hapart r Pold e he hm).elim) hW hg
+  have hre1 : gb.re ≤ g1.re := W1.le
+  refine ⟨⟨A1, W1.regs, fun k v hk => ?_, hI.kvan.mono KP1.2.1, hfr', ?_, fun e he => ?_⟩, ?_⟩
+  · refine ⟨W1.clt k v hk, fun hdk => ?_, fun hg => ?_, ?_, ?_⟩
+    · rw [W1.nokey k hdk] at hk; cases hk
+    · have e : k = r := gregL_ofSure.mp hg
+      subst e; rw [W1.rkey] at hk; cases hk
+    · rcases W1.keys k v hk with h | ⟨h, -⟩
+      · rw [Pc] at h; exact Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le (hI.cond k v h).2.2.2.1 Pre) hre1
+      · rw [h]; exact Nat.lt_of_lt_of_le Pr hre1
+    · rcases W1.keys k v hk with h | ⟨h, -⟩
+      · rw [Pc] at h
+        obtain ⟨-, -, -, k4, k5⟩ := hI.cond k v h
+        exact W1.old (Nat.lt_of_lt_of_le k4 Pre) (by rw [Pc]; exact k5)
+      · rw [h]; exact W1.rkey
+  · rw [entries_ofSure]; exact List.pairwise_singleton _ _
+  · rw [entries_ofSure, List.mem_singleton] at he
+    subst he
+    obtain ⟨b, hb, hp, -⟩ := hfr'
+    refine ⟨⟨b, hb, hp⟩, trivial, fun y hy => ?_⟩
+    have e : y = r := hy
+    subst e
+    exact ⟨Nat.lt_of_lt_of_le Pr hre1, W1.rdef⟩
+  -- the liveness
+  intro y hl
+  have hyr : y ≠ r := by
+    intro e; subst e
+    cases hl with
+    | here _ _ hk => exact hk (Or.inr (lazK_ofSure.mpr ⟨rfl, rfl⟩))
+    | next _ _ _ _ hk => exact hk (Or.inr (lazK_ofSure.mpr ⟨rfl, rfl⟩))
+  obtain ⟨St, P, hP, hkill, hread, -⟩ := collapseWalk_prep Pd (fun k v hk => W0.clt k v hk) hw
+  have hc : ∀ x, x < gb.re → HoonMap.get g1.cond x = HoonMap.get gb.cond x := fun x hx => St.1.cond_below hx
+  have hl2 := liveK_walkR (R0 := r) hP hc Preg (fun k x hx => rCol_unproxy W1.rkey (hread k x hx)) hyr hl
+  rcases Plive with ⟨ethere, hroot'⟩ | ⟨b, hb, hrf, hj⟩
+  · subst ethere
+    have hl3 := (liveK_frameP hI.downU Pun hthere).mp hl2
+    refine hl3.mono_r fun x hx => ?_
+    rcases hx with hk | ⟨e, he, ex, hm⟩
+    · exact Or.inl (Or.inl hk)
+    · rcases List.mem_cons.mp he with rfl | he
+      · exact (hyr (hroot' y hm)).elim
+      · refine Or.inr ?_
+        have hm' := hkill e (List.mem_cons_of_mem _ (by rw [entries_mkSure]; exact he)) y hm
+        rcases hm' with (h | h) | h
+        · exact (hyr h).elim
+        · have := hents e he y hm; omega
+        · rw [defsOf_ren]
+          refine List.mem_map.mpr ⟨y, ex ▸ h, unproxy_none ?_⟩
+          exact W1.old (Nat.lt_of_lt_of_le (hents e he y hm) Pre)
+            (by rw [Pc]; exact (hER e (List.mem_cons_of_mem _ he) y hm).2)
+  · exact (liveK_dead hb hrf hj y hl2).elim
+
 end Raw
 end SkaModel
 end Formalization
