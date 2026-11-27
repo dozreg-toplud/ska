@@ -133,7 +133,9 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     member is kept; T3 what each dirty member owes its dirt to; T4 runs of starts at which a member is
                     dirty with entry and callees the same, and whether it owes that only to transient callees; T5 a
                     dirty member at every start of a pass that goes on; T6 every member reached from the root; T7
-                    callee changes at a constant entry; candidates E (dirt charged to the newest callee owed), P2A, P2D
+                    callee changes at a constant entry; candidates E (dirt charged to the newest callee owed), Et (E on
+                    the transient members after the persistent ones froze), P2A, P2D; N, NP (C of `PassMoves.lean`: a pass
+                    with nothing falling, or with a visible push, gave a start member a callee new to the graph)
                     (passes p and p+2).  Over the 2,632 cores of passmeasure-stab.py with `%pm-tik` (2026-11-27):
                     T0 to T6 never fail (69,069 starts, 118,678 kept callees, 18,682 passes), 12,462 stuck starts, none
                     owed only to transient callees, at most 49 callee changes of one member at a constant entry

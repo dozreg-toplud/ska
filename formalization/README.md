@@ -736,6 +736,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/PassStab.lean` | What holds of the pass loop whatever its measure (track F, Gaps 16).  `valE_run_ext` (a `+run` that keeps the old stack at the bottom keeps or lowers the value of every identity on it), **`memberLoop_old`** (`memberLoop_le` without `next` the same: the member loop, pushes or not, keeps the old stack at the bottom, keeps or lowers the value of every identity on it and, when it reports `changed`, lowers one of its members), `mem_of_above`, **`passOn_old`** (a pass that goes on keeps or lowers the value of every identity on the stack at its start, a culled one falling to `none`, keeps the root, and lowers one or pushes), `chain_root_mem`, **`chain_present_const`** (along an infinite chain of passes an identity on the stack from some pass on has an eventually constant value), `chain_root_const`; the fuel of `+sweep` and `+cull`: `has_ins_ident`, `leftTerm`, `leftSum` (the weight of the identities of a set not marked yet), `leftSum_ins_le`, `leftSum_ins_lt`, `mem_tap_of_has`, **`liveLoop_ends`**, `stackPot`, **`sweepLoop_ends`**, `sweepFuel`, **`sweep_ends`**, `cullFuel`, **`cull_ends`** (each returns at every fuel above an explicit potential). |
 | `Ska/PassStabM.lean` | Candidate measures of the pass loop, stated and tested, not proved (track F, Gaps 16): `StabLtA` (lex by DFS number of the members' entries, the oldest change dominating), `stabVal`, `SvLt`, `StabLt` (candidate D: the same of the entry and the `+dirty` flag), `svLt_of_olt`, `stabLt_of_A`.  Both fail on recorded passes (Gaps 16), and neither order is well founded by itself (the DFS numbers are not bounded). |
 | `Ska/PassFreeze.lean` | The freezing argument for the pass loop, no global measure (track F, Gaps 16).  `MembR` (a member: on the stack, not in the fixed bottom `rest`), `memberLoop_clean`, **`passOn_dirty`** (a pass that goes on had a member dirty at its start), `kids_of_get`, **`cull_keeps_kid`** (a callee of a member that `+cull` keeps is kept if it was a member), **`cull_reach`** (every member after `+cull` is reached from the root over callees through members), `passOn_cull`, `passOn_shape`, `Pers`, `FrozenFrom`, `uniform_frozen`, `reach_mem`, **`freeze_abstract`** (the argument on any sequence of states), `FinIdents` ((i) along a chain), `PassMoves` (C: at every pass a member of its start falls, is culled or changes callees; held on every recorded pass, not proved), `EvFrozen` (R, the open claim: a member that stays has an eventually constant callee set), **`freeze_no_chain`** (no infinite chain of passes given the three), **`finPushes_of_freeze`** (`FinPushes` from them); `BT`, `BTEmb`, `KruskalBT` (Kruskal for `+he-sock`, stated only, and why it gives less than `FinIdents`). |
+| `Ska/PassMoves.lean` | C (`PassMoves`) on the model (track F, Gaps 16).  `sweep_nodup` (`+sweep` lists each member once), `inG_keep`, **`resolve_new`** (a `resolve` that moves `next` answers with an identity that was not in the graph), **`runStep_new`**, `run_new` (a run that moves `next` gives its member a callee absent from the graph at the run's start: `NewInv` carried through `fol-loop` beside `RunInv` by `run_folTopRD`), **`memberLoop_new`** (`MemNewG`: the member loop keeps `CInv`, the entries of the other stack identities, and if it pushes, a member has a new callee), **`passOn_moves`** (a pass that goes on: a start member falls, is culled, or its callee set changes; uses `Closed` of `CInv` under `MemoNoCallees`), `PassHyp` (the hypotheses of `PassP2`), **`passHyp_step`** (a pass that goes on keeps them), **`passMoves_chain`** (C along a chain), **`finPushes_of_freezeC`** (`FinPushes` from (i) and R alone). |
+| `Ska/PassIdents.lean` | (i) `FinIdents` reduced (track F, Gaps 16).  `PReach`, `FinBranch`, `Covered`, **`konig`** (König's lemma for a finitely branching relation, Lean core with `Classical.choice`), **`finIdents_of_tree`** (members reached from the root by a finitely branching push relation with no infinite path lie in a finite list), `pigeon_inf`, `subseq_of_inf`, **`noPath_of_kruskal`** (no infinite push path from `KruskalBT`, finitely many formulas and the `%he` guard of `+recursive-call` past some point), **`finIdents_of_kruskal`**.  `FinBranch` is stated, not proved: it is entangled with R. |
 | `Ska/HeTurn.lean` | The `%he` lemma: `msgSock_he_lt` (if `heSock a b` and `a ≠ b`, then `msgSock a b` has a smaller `heMeasure`, the size of the cape plus its number of leaves `&`, than `a`) and so `msgSock_ne_of_he` (`msgSock a b ≠ some a`), from `knit_eq_cell`, `heSock_size` (`+he-sock` never grows the cape), `msgSock_cases` (the result is `|+~` or the knit of the results on the halves of two cells over cells), `msgSock_le` (the result's cape is no larger than either sock's, with no more leaves `&` than the first's) and `msgSock_left_size` (if the result is `a`, the cape of `b` is no smaller).  For example `a = [[& |] [5 ~]]` and `b = &+[5 6]` give `|+~`, measure `4` to `1`. |
 | `Ska/HeBound.lean` | The `resolve` loop makes boundedly many `%he` turns: `recLoop_he` (a `%he` answer of `+recursive-call` comes from a frame of the same formula whose subject sock `+he-sock` embeds), `recursiveCall_he_lt` (for an identity off the stack the new subject sock has a smaller `heMeasure`), `HeTurn` (a `%he` turn of the loop begun with `orig`: the memo lookup at `orig.2` and the current sock missed), `resolve_heTurn` (a turn is one unit of fuel in the same state), `heTurn_lt` (with `env.he = heSock` and `SInv`, a turn cuts `heMeasure`), and `resolve_he_bound`, `resolve_he_bound'`: from `i` the loop reaches, after `k ≤ heMeasure i.1 ≤ 2 * sockSize i.1` turns `%he`, an identity whose turn is not `%he`, and the loop at `i` with fuel `n + k` is the loop there with fuel `n`. |
 | `Ska/FolWeight.lean` | `fol-loop` within one run, with the direct calls fixed (`folLoopR env res`).  `folW`: a weight that counts `%8`, `%9`, `%11` above the `%7` and `%2` forms they become.  `NoInl`: the calls that never inline (an inlineable formula, or `[2 [0 1] x]` with `x` inlineable and `bare-call`, `memo-key` or `defer` set); `callStep_noInl` (with a flag set the inline branch is not taken), `folStep_congr` (on such a call, one level depends only on calls of smaller weight that never inline: an inlineable formula has no `%2`, no `%9`, and its `%11` forms set a flag), `folLoopR_stable`, `folLoopR_at_weight`: on such a formula the result is the same at every fuel from `folW fol` on, crashes included, whatever `res` is.  An inlined formula is inlineable, so inlining goes one level deep.  The fuel of a formula that inlines is not bounded by its weight: `[9 2 [0 1]]` (weight `8`) against `&+[g 0]` analyses the battery `g` inline. |
@@ -3758,11 +3760,43 @@ import only its theorems.  So:
     no single stack is infinite; `FinIdents` needs besides finitely many
     identities pushable at each frame (finite branching and König).
 
-    Still open: R (`EvFrozen`), C (`PassMoves`, a model fact: a push is a new
-    callee of the start member whose run made it, needing the arms' invariant
-    for callee sets), (i) (`FinIdents`), and the fuel of `+run` inside the
-    member loop, which is the whole recursion; so `CgHalts` is still a
-    hypothesis.
+    C on the model (`Ska/PassMoves.lean`, 2026-11-27).  A `resolve` that
+    moves `next` answers with an identity that was not in the graph
+    (`resolve_new`); so a run that pushes gives its member a callee absent from
+    the graph at the run's start (`run_new`, the invariant `NewInv` beside
+    `RunInv`); `+sweep` lists each member once and a run keeps the entries of
+    the other members, so a member loop that pushes leaves some member with
+    such a callee (`memberLoop_new`); the callees of a member at the pass start
+    are in the graph (`Closed` of `CInv`, under `MemoNoCallees`), so its callee
+    set changed unless `+cull` dropped it (`passOn_moves`); with `PassHyp` (the
+    hypotheses of `PassP2`) kept by every pass (`passHyp_step`), C holds along
+    every chain (`passMoves_chain`) and `FinPushes` follows from (i) and R
+    alone (`finPushes_of_freezeC`).  Tested first (`passmeasure-freeze.py`, N
+    and NP): at the 407 passes that went on with no start member falling or
+    culled, and at the 4,726 passes with a visible push, a start member had at
+    the next start a callee that was neither a member nor a callee of a member
+    before; 0 fails.  (i) reduced (`Ska/PassIdents.lean`): `FinIdents` from a
+    push relation that branches finitely (`FinBranch`), reaches every member
+    from the root, keeps its formulas among finitely many and obeys the `%he`
+    guard past some point of each path, by König's lemma (`konig`, proved) and
+    `KruskalBT` (`finIdents_of_kruskal`).  `FinBranch` is not a model fact by
+    itself: a run pushes at most one identity per site, but a site's subject
+    comes from the run's subject and the products of the callees before it,
+    which can take infinitely many values across passes unless the transient
+    callees settle, the same question as R.  On R: "(i) and no identity culled
+    infinitely often" does not give R on the model, since pushes of fresh
+    identities that are popped (finalized, never culled, never pushed again)
+    are not excluded by either; the residual is that from some pass on no
+    member that is a callee of a member that stays is transient, plus the tick
+    facts (a member whose callees that are members are frozen turns clean
+    after one run).  Candidate E restricted to the transient members after the
+    persistent ones froze cannot be tested on the traces: in all 9,982 loops a
+    member on the stack at the loop's last start still moves at the last pass
+    that goes on, so no pass comes after the freeze.
+
+    Still open: R (`EvFrozen`), (i)'s `FinBranch`, and the fuel of `+run`
+    inside the member loop, which is the whole recursion; so `CgHalts` is
+    still a hypothesis.
 17. **The pill link of the `+leap` family** (track I, 2026-11-27,
     `Compiler/CompLeap*.lean`, cut by `tools/gen/leap.py`).  Linked, each on
     every input or on a stated invariant, compared with the Hoon part by part

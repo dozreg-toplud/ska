@@ -25,8 +25,8 @@ What is assumed, along each chain:
   because a pass that goes on changes an entry or pushes, and the function
   pushed is a callee of the start member whose run pushed it (or of one pushed
   by it), absent from that member's callee set before (it was not in the
-  graph); not proved on the model (it needs the arms' invariant for callee
-  sets, as `ConvArms.lean` carries ticks);
+  graph); proved on the model since, in `PassMoves.lean` (`passMoves_chain`,
+  and `finPushes_of_freezeC` drops it from the hypotheses);
 * `EvFrozen` (R, the open claim): a member that stays on the stack from some
   pass on changes its callee set finitely often.  It fails only if such a
   member, with its entry constant, reruns forever; on the Hoon a member reruns

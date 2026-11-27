@@ -26,6 +26,10 @@
 #       differs falls (E: by inclusion of the sets, Ec: by their size);
 #   P2A some member at p falls or is culled by the start of p+2;
 #   P2D lex by DFS number of (entry, +dirty) between p and p+2, the first difference a fall;
+#   Et  E restricted to the transient members (not on the stack at the loop's last start, or there
+#       with another DFS number) at the passes after the persistent members froze (no persistent
+#       member changes entry or callees from that pass on): the first transient position that
+#       differs falls (Et by inclusion, Etc by size); a pass with no transient member is skipped;
 #   N   (C on the model, PassMoves.lean) at every pass that went on with no start member falling or
 #       culled, some start member has at p+1 a callee that was neither a member nor a callee of a
 #       member at p (so not in the graph at p, the graph being closed under callees); NP the same
@@ -76,7 +80,7 @@ def fall(cls): return runclass(*cls) not in ('none', None)
 def analyse(paths, verbose):
     c = {}
     def inc(k, n=1): c[k] = c.get(k, 0) + n
-    fails = {k: [] for k in ('T0', 'T1', 'T1d', 'T2', 'T6', 'T3same', 'T5', 'E', 'Ec', 'P2A', 'P2D', 'N', 'NP')}
+    fails = {k: [] for k in ('T0', 'T1', 'T1d', 'T2', 'T6', 'T3same', 'T5', 'E', 'Ec', 'P2A', 'P2D', 'N', 'NP', 'Et', 'Etc')}
     runs_m = []; runs_l = []; switches = []; tmax = [(0,)]
     for path in paths:
         for case, root, starts in loops_of(path):
@@ -89,6 +93,14 @@ def analyse(paths, verbose):
                     inc('T0 checked')
                     if d != m[4]: fails['T0'].append((case, root, pas, mug))
             stuck_prev = {}; lrun = 0; lstart = None; sw = {}; tstuck = {}; tstuck_prev = {}
+            lastM = starts[-1][1]
+            pers = lambda mug, m: mug in lastM and lastM[mug][1] == m[1]
+            frozen_from = 0
+            for s2 in range(len(starts) - 1):
+                A0, A1 = starts[s2][1], starts[s2 + 1][1]
+                if any(pers(mug, m) and (mug not in A1 or A1[mug][3] != m[3] or fall(A1[mug][2]))
+                       for mug, m in A0.items()):
+                    frozen_from = s2 + 1
             for s in range(len(starts) - 1):
                 (p, M0, T0), (_, M1, T1) = starts[s], starts[s + 1]
                 inc('passes that go on')
@@ -197,6 +209,22 @@ def analyse(paths, verbose):
                         else: verdict = 'fall' if len(b) < len(a) else 'rise' if len(b) > len(a) else None
                         if verdict: break
                     if verdict != 'fall': fails[cand].append((case, root, p, verdict))
+                if s >= frozen_from:
+                    inc('Et passes after the persistent members froze')
+                    tr0 = sorted(((mug, m) for mug, m in M0.items() if not pers(mug, m)), key=lambda x: x[1][1])
+                    if tr0:
+                        inc('Et checked (passes after the persistent members froze, with a transient member)')
+                        for cand in ('Et', 'Etc'):
+                            verdict = None
+                            for mug, m in tr0:
+                                n = M1.get(mug)
+                                if n is None or n[1] != m[1] or fall(n[2]): verdict = 'fall'; break
+                                a, b = dset(charge_prev, mug), dset(charge, mug)
+                                if a == b: continue
+                                if cand == 'Et': verdict = 'fall' if b < a else 'rise'
+                                else: verdict = 'fall' if len(b) < len(a) else 'rise' if len(b) > len(a) else None
+                                if verdict: break
+                            if verdict != 'fall': fails[cand].append((case, root, p, verdict))
                 charge_prev = charge
                 # P2
                 if s + 2 < len(starts):
