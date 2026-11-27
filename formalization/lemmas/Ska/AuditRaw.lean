@@ -7,6 +7,7 @@ import lemmas.Ska.RawInvIHX
 import lemmas.Ska.RawInvIHXBin
 import lemmas.Ska.RawInvIHXSix
 import lemmas.Ska.RawInvFinishX
+import lemmas.Ska.RawInvEApart
 
 /-!
 # Axioms of the main theorems of track D (README Gaps 14)
@@ -92,3 +93,7 @@ open Formalization SkaModel Raw
 #print axioms coerceLazyL_prepI
 #print axioms optIn_finishLFX_of
 #print axioms optimize_keeps_finishLFX_of
+#print axioms runX_eap
+#print axioms lazOK_run
+#print axioms optIn_finishLFX
+#print axioms optimize_keeps_finishLFX
