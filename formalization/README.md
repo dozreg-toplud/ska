@@ -852,6 +852,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/RawInvCheckCX.lean` | The wide check with indirect calls (README Gaps 14 (b)): `enumCX`, 3,960 nomms (72 calls `[2 p q]` over `baseC`, one part with a `%6`, under the 18 contexts `ctxC`: subject, formula or both of a call, head, tail or both of a cons, condition or either branch of a `%6`, either side of `%7`, `%3`, `%4`, either side of `%5`, patch or target of `%10`, before a call; 8 calls under two contexts) through `runLC envR`: on both final passes the eight fields of `OptIn` (`checkOut`), `okSt`, `okReads`; on the raw blocks `stB`; `atGoalC` (the statement of `ht_runLC`) under `%next`, `%pick` and a goal with a bond (`goalB`, `gB`: 3,912 runs, 3,888 with proxies).  No field fails.  Of the run-level facts of `FragX`, `liveKB` fails on the 336 runs with proxies (the `+kern` of a call reads lazy blocks through proxies) and `lazyOKB` on 352 (`+past-fork` parks a branch's need in a bond at the branch label, `enumCX[78]`). |
 | `Ska/RawInvCQ.lean` | `QM m` (every run of `m` is `Quiet`: no label made, blocks keep parameters and ends), its combinators and tactic `qmb`, and the arms that emit nothing, from the text of `CompSimBody.lean` with `QM` for `SimM`: the needs (`qm_must` .. `qm_kernLoop`), `qm_splitLoop`, `qm_intoLoopL`, `qm_copyLazyL` (with `qm_mergeForks`, `qm_mergeBonds`), `qm_walkLazy`, `qm_collapseGate`, `qm_kern` (its proxies only touch `cond`, its ops go in through `+add-ops`), `qm_lazyShut`.  README Gaps 14 (b). |
 | `Ska/RawInvCAT.lean` | `RunAT` with indirect calls (README Gaps 14 (b)): the state invariant `ATS` (labels in `[1, bo)`, every block meets `BATC` in the map and jumps below its label), `KP`, `Stab`, the triple `HT P m Q` with `pure'`, `bind'`, `ite'`, `conseq`, `weak`, `frame`, `quiet` (a `QM` step), `emit'`; the arms that emit (`ht_simpleNextL`, `ht_bombL`, `ht_splitL`, `ht_intoL`, `ht_copyL`, `ht_pastL`, `ht_medeL`, `ht_collapse`, `ht_forl`, `ht_doneBlocks`, `ht_kerf`), **`ht_callL`** (the indirect call), **`ht_runLC`** (`runLC env sup` on `PlainN`, every goal, lazy goals with forks and bonds included: `Fresh` goal jumps give a `Fresh` result jump), **`runATC_plain`** (`Closed`, `ArityOK`, `TwoNA` of the raw blocks of the top run), **`runDownC_plain`** (`Down` of them). |
+| `Ska/RawInvCLCheck.lean` | The liveness spec of a run with indirect calls, checked (README Gaps 14 (b)): on all 3,960 nomms of `enumCX` (2,856 in `PlainN`, `isPlain`) under `%done` from `gen0`, `%next` (`gY`), `%pick` (`gP`) and the bond goal (`gB`), also with outer kills (`live1`, `live1K`): a register live at the result's entry in the unproxied blocks after the run (`unpB`), with the kills of the result's lazy tree, is live at the goal in the unproxied blocks before it with the kills of the goal's lazy tree; the same without `unproxy` fails (`live0`: 336, 336, 80 and 3,768 runs); `lazyOK2B` with `disjB` (no distinct labels) on every top run; `prepOld`: the old blocks change only by ops in front at the goal's lazy entries; not vacuous (3,888 runs read a proxy in an old block). |
+| `Ska/RawInvCLSpec.lean` | The spec as a proposition (README Gaps 14 (b)): `unpM` (blocks read through `unproxy g.cond`), `GLiveKL` (what a lazy goal may leave live: the goal's lazy tree as kills), **`LiveC`**; `liveC_done` (nothing live at the top), `LiveC.trans`, `LiveRun` (the liveness half of the run-level statement for a runner with a pre- and postcondition), **`liveRun_seven`** (the case `%7`), `liveC_refl`, `liveC_fromL` (`%0` under `%next`), `liveC_pick_z`, `liveC_pick_o` (`%1` under `%pick`), `liveC_simpleNextL_done`, `liveK_old` (a path from the new code into the old: frame and ops in front), **`liveK_prepK`** (ops in front of blocks: live after is live before with the kills they meet, or read first by them), `prep_mapVals`, **`unpM_prep`** (the unproxied blocks carry ops in front, `cond` grown by fresh proxies), `LiveK.mono_r`, **`liveK_hop_root`** (the root's kills move along a fresh hop to the goal). |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
@@ -3293,6 +3295,33 @@ import only its theorems.  So:
    bonds (the cons with a call in its tail runs its head under a bond goal,
    `+past`); `stOut_ren` takes it as its hypothesis `hl`, so the final-pass
    facts of `StInv` wait for it too.
+
+   **The liveness spec with calls, 2026-11-27, twelfth session
+   (`RawInvCLCheck.lean`, `RawInvCLSpec.lean`).**  Checked before proved,
+   on all of `enumCX` under `%done`, `%next`, `%pick` and the bond goal,
+   also with outer kills: `LiveC K goal g0 g1 nex`, every register live at
+   `nex.th.there` in `unpM g1` (the blocks read through `unproxy g1.cond`)
+   with the kills `K` and those of the result's lazy tree is
+   `GLiveKL (unpM g0) K goal`: for `%next laz th` live at `th.there` with
+   the kills `K` and those of the goal's own lazy tree (`lazK th.there laz`,
+   the root included), for `%pick` live at a target, for `%done` nothing.
+   The candidate without `unproxy` fails (the proxies are read and never
+   defined).  A proxy whose lazy block is never forced is read on no path
+   from the entry, so the spec says nothing of it; when the block is
+   reached, the path passes the `%nok` that writes the proxied register
+   first.  "Lazy entries at distinct labels" is replaced by nothing:
+   `LazOK` never asked it (entries' needs pairwise apart, never defined,
+   no parameter at an entry hold on every top run).  The old blocks change
+   only by ops in front at the goal's lazy entries (`prepOld`), so the spec
+   compares the unproxied blocks through `Prep` (`unpM_prep`,
+   `liveK_prepK`).  Proved: the spec's composition (`LiveC.trans`,
+   `liveRun_seven` for any pre- and postcondition that chain), `%0` under
+   `%next` (`liveC_fromL`), `%1` under `%pick` (`liveC_pick_z`, `_o`),
+   `+simple-next` under `%done` (`liveC_simpleNextL_done`), the top
+   (`liveC_done`) and the bricks of the
+   walking arms (`liveK_prepK`, `liveK_old`, `unpM_prep`, `liveK_hop_root`).  Not
+   proved: the run-level induction `LiveRun I J (runLC env sup nm)` on
+   `PlainN`, and so `OptIn` of `finishLUC`, `finishLFC`.
 
    **Left, in this order.**  (a) `%6` (`FragX`; `Frag6` is done; see the
    paragraph above for what holds and what is proved).  Two obstacles, both met
