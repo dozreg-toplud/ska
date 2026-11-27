@@ -21,6 +21,8 @@ phase S (`sixNextLC_fork_free`, the model's `sixNextSimpleC`):
   and the call of `+sect` (`comp_sect`), then `cr6s_p` from `+past-fork` on
   (`cr6s_lyn_n`);
 * `km_sect`: `+sect` keeps the counters growing, the mode and the tags.
+* `wh_gate`: `+whole` (arm `1372` of `ana`), the first part of the test of
+  `+kerf`, is the model's `whole` on every nomm.
 
 **`comp_run_n6_nf`**: the case `%6` under a fork-free `%next` goal with
 `GInv`, given the parts (`SixParts`; the branches in the regions

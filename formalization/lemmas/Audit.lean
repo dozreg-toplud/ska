@@ -1118,4 +1118,5 @@ open Formalization
 #print axioms Compiler.comp_run_n6_nf
 #print axioms Compiler.res_n6_nf
 #print axioms Compiler.km_sect
+#print axioms Compiler.wh_gate
 #print axioms SkaModel.Comp.sixNextLC_fuel
