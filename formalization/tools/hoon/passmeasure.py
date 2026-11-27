@@ -312,6 +312,12 @@ src[i + 2:i + 2] = [
     '                (turn ~(tap in callees.d) |=(c=callee-entry (mug id.c)))',
     '            ==',
     '        ==',
+    # %pm-tik (track F, freezing, 2026-11-27): the run counter and the ticks [ran chg] of every
+    # function in progress at the same pass start, so that +dirty can be attributed to the callees
+    # whose chg is at least the member's ran (passmeasure-freeze.py)
+    '    ~&  :*  %pm-tik  (mug id)  pass  tick.st',
+    '            (turn ~(tap by ticks.st) |=([i=identity r=@ud c=@ud] [(mug i) r c]))',
+    '        ==',
     '    =.  pm-prev  (malt pm-cur)',
 ]
 i = find('    ?:  &(!changed =(next.st next-before))', a0)

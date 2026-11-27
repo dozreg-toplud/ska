@@ -63,7 +63,7 @@ theorem callTreeD_dt (lib : Lib) {N : Needs} {P : Noun → Prop} {ndT : NeedOrd}
     CallTreeD lib envD N P true dtFolD dtNomm :=
   CallTreeD.seven (CallTreeD.cons (CallTreeD.n1 nounR) (CallTreeD.n0 1))
     (CallTreeD.seven (CallTreeD.n0 1)
-      (CallTreeD.direct (CallTreeD.n0 1) rfl (by simp [envD]) hNf hNt rfl rfl rfl dt_fits))
+      (CallTreeD.direct (CallTreeD.n0 1) rfl (by simp [envD]) hNf hNt rfl rfl (QDirect.quote lib _ bellR) dt_fits))
 
 #guard (finishLUCM (S := LS) (Map := FM) envD dtNomm).isSome
 #guard (finishLUCM (S := LS) (Map := FM) envD (Nomm.cons dtNomm (Nomm.n0 1))).isSome
