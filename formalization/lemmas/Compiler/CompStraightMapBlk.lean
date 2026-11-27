@@ -170,5 +170,51 @@ theorem tsm_bod {bs : TreapMap mugF Blob} {rn : Nat → Nat} {G R : Noun} (hc : 
     generalize tsmBodBody = BB at hSpin hpb ⊢
     simp [nock_exec, listNoun, hL, hs1, spin.axis, hsp, hSpin, hpb]
 
+/-! ## The gate of the fold -/
+
+/-- **The gate `tsmGate` of the `+rep:by` of the map branch** on a pair
+`[k b]` and the accumulator `[new G]`: `renameStep bs f`, `gen` kept. -/
+theorem tsm_gate {bs : TreapMap mugF Blob} {rn : Nat → Nat} {G R : Noun} (hc : MapCoreS bs rn G R)
+    (hT : slot? 0x1ffff R = some compTypes) (ORD : Noun) (new : TreapMap mugF Blob) (k : Nat) (b : Blob) :
+    nock (C tsmGate (C (C (Tr.pairNoun Blob.toNoun (k, b)) (C (HoonMap.toNoun Blob.toNoun new) G))
+        (C ORD (C tsCoreBat (C G R))))) tsmGate
+      = (renameStep bs rn new (k, b)).map fun m => C (HoonMap.toNoun Blob.toNoun m) G := by
+  obtain ⟨par, body, fin⟩ := b
+  have hp := tsm_par hc.hrer hc.hL par
+  have hpa := tsmPar_at
+  have hb := tsm_bod hc hT body
+  have hba := tsmBod_at
+  have hf := tsm_fin hc fin
+  have hfa := tsmFin_at
+  have hY := (tsm_core_l2 (G := G) hc.hL).2
+  have hbyp := ts_byp (C tsCoreBat (C G R)) ⟨par, body, fin⟩
+  have hL := hc.hL
+  have hput := fun (f' : Termin) => put_gate layer2 gorIn_morIn_layer2 (A k)
+    (Blob.toNoun ⟨par.map rn, body.map (renPole rn), f'⟩)
+    (HoonMap.toNoun Blob.toNoun new) _
+    (putF_hoonMap Blob.toNoun new k ⟨par.map rn, body.map (renPole rn), f'⟩)
+  simp only [Blob.toNoun] at hput hbyp
+  unfold renameStep keepBlock
+  conv => { lhs; arg 2; unfold tsmGate }
+  generalize tsCoreBat = K at hp hpa hb hba hf hfa hY hbyp ⊢
+  generalize tsmParBody = PB at hp hpa ⊢
+  generalize tsmBodBody = BB at hb hba ⊢
+  generalize tsmFinBody = FB at hf hfa ⊢
+  by_cases hk : k = 0
+  · subst hk
+    simp only [Tr.pairNoun, ne_eq, not_true_eq_false, false_and, if_false]
+    cases e : chaseFin bs rn fin <;> rw [e] at hf <;>
+      simp [nock_exec, hp, hpa, hb, hba, hf, hfa, hL, by_arm, by.arm_at, by.put.arm_at, put_arm, hput]
+  · have hk' : ¬ (0 = k) := fun h => hk h.symm
+    cases hby : bypassable true ⟨par, body, fin⟩
+    · rw [hby] at hbyp
+      simp only [Tr.pairNoun, hby, Bool.false_eq_true, and_false, if_false]
+      cases e : chaseFin bs rn fin <;> rw [e] at hf <;>
+        simp [nock_exec, hk', Blob.toNoun, hY, ts_byp_arm, hbyp, loob, hp, hpa, hb, hba, hf, hfa, hL, by_arm, by.arm_at,
+          by.put.arm_at, put_arm, hput]
+    · rw [hby] at hbyp
+      simp only [Tr.pairNoun, hby, ne_eq, hk, not_false_eq_true, and_self, if_true]
+      simp [nock_exec, hk', Blob.toNoun, hY, ts_byp_arm, hbyp, loob]
+
 end Compiler
 end Formalization
