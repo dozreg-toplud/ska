@@ -23,7 +23,7 @@ edit those four axes of the trap core (`%=  fork-loop  ..`).  The model is
 `forkL`, `forkLoop`, `forkForks`, `forkBonds` of `Ska/CompLazyRun.lean`.
 `comp_fork_head`: the arm from the trap's result on (`+oo` twice, the
 assert, the goals) is `forkL`, given the link of the trap.  The trap and
-its gates are not linked yet (README Gaps 9).  `forkForks_ssM`,
+its gates are linked in `CompForkLoop.lean` (`cfk_all`, `comp_fork_all`).  `forkForks_ssM`,
 `forkBonds_ssM`: the model's spins as `ssM` of one step (`fkStepF`,
 `fkStepB`), the form `spsp_gate` of `CompSpinSplit.lean` links.
 -/

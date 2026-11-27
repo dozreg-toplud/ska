@@ -1,4 +1,5 @@
 import lemmas.Compiler.CompRunSixNext
+import lemmas.Compiler.CompLeapGate
 import lemmas.Compiler.CompKernGen
 
 /-!
@@ -454,7 +455,8 @@ theorem cr6k_head (h7 : slot? 7 ctx = some compK) (p q r : Nomm) (laz : Lazy CSe
   simp [nock_exec, hD, lp6_arm, hLp, h7, compK_ne, ne_arm, hn, htk, loob]
 
 /-- **The case `%6` of `+run` in phase K**: under a `%next` goal with
-`GInv` whose `+leap` is `~` (in the model, `hlp`, and in the Nock, `hLp`),
+`GInv` whose `+leap` is `~` (`hlp`, in the model; the Nock of `+leap` is the
+model's by `lp6_leap_none`, for `q` and `r` with no axis `0`, `hq`, `hr`),
 whose need with the bunt sure is not `+none-equivalent` and whose `+kerf`
 test holds, given the parts (`SixParts`, the branches in the regions
 `rid :: region`): `+kerf`, then phase S on the fork-free goal
@@ -464,16 +466,14 @@ theorem comp_run_n6_k (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot
     (P : SixParts env msup ctx p region) (Q : ∀ rid, SixParts env msup ctx q (rid :: region))
     (R : ∀ rid, SixParts env msup ctx r (rid :: region))
     (laz : Lazy CSet) (th : Jmp) (g : Gen (TreapMap mugF)) (hinv : GInv g (CGoalL.next laz th))
-    (hlp : leap laz q r = some Option.none)
-    (hLp : ∀ x : GenRest, x.NoSoft →
-      nock (C lp6Bat (C (C laz.toNoun (C q.toNoun r.toNoun)) (compCore g x ctx))) lp6Bat = some (A 0))
+    (hlp : leap laz q r = some Option.none) (hq : Bake.NoAx0 q) (hr : Bake.NoAx0 r)
     (hne : Lazy.noneEquivalentL (Lazy.mk Sure.bunt laz.fork laz.bond) = false)
     (hkt : kerfTest q r laz = true) :
     CompRunAtR (runLC env msup) ctx (Nomm.n6 p q r) (CGoalL.next laz th) region g := by
   intro x mono sup hx
   have hd := ginv_drop hinv
   have hl : LAll CrLok laz := lall_mono (fun _ h => h.1) hinv.1.1
-  rw [cr6k_head h7 p q r laz th region x hx g mono sup (hLp x hx) hne hkt,
+  rw [cr6k_head h7 p q r laz th region x hx g mono sup (lp6_leap_none h7 hl hq hr g hlp x hx) hne hkt,
     runLC_n6_k env msup p q r laz th region hlp hne hkt]
   exact cr6k_eq h7 env msup p q r laz th region x g mono sup (A 0) (walk_mdP hx _ hl)
     (fun out pro g' ek => comp_run_n6_nf h7 hcode env msup p q r region P Q R ⟨Need.this pro, HoonSet.empty⟩
