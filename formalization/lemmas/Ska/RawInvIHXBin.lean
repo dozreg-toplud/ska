@@ -200,6 +200,116 @@ theorem rawX_binTail {p q : Nomm} (xp : FragX (S := S) p) (xq : FragX (S := S) q
   obtain ⟨hl4, nt'⟩ := L3 x hl3
   exact ⟨hl4, nh', nt'⟩
 
+/-! ## Cons -/
+
+theorem rawX_consBody {p q : Nomm} (xp : FragX (S := S) p) (xq : FragX (S := S) q)
+    (ihp : RawIHX S Map X p) (ihq : RawIHX S Map X q) (hc : sixCount p + sixCount q ≤ 255)
+    {sur : Sure S} {th : Jmp} {region : List Nat} {g0 g1 : Comp.Gen Map} {nex : NextL S}
+    {K : Nat → Nat → Prop} (hK : KVan K g0.bo) (h : SIP X (upRk g0.blocks) g0.bo g0) (hn : NB g0.re sur.ned)
+    (dn : Distinct sur.ned) (ha : th.args = []) (hj1 : 1 ≤ th.there) (hj : th.there < g0.bo)
+    (hf : ∀ y, NMem sur.ned y → ¬ Defd g0.blocks y)
+    (hr : (do
+      let (hed, tel, o) ← splitL ⟨ofSure sur, th⟩
+      let nexh ← pastL noCode ⟨hed, jmp0 o⟩ q region
+      let nex2 ← runL q (CGoalL.next tel nexh.th) region
+      let nex2 ← pastL noCode nex2 p region
+      let nex1 ← runL p (CGoalL.next nexh.laz nex2.th) region
+      copyL nex1 nex2.laz : CM Map (NextL S)) g0 = some (nex, g1)) :
+    SIP X (upRk g1.blocks) g1.bo g1 ∧ nex.th.args = [] ∧ 1 ≤ nex.th.there ∧ nex.th.there < g1.bo ∧
+      ∀ x, LiveK g1.blocks (fun a c => K a c ∨ lazK nex.th.there nex.laz a c) nex.th.there x →
+        LiveK g0.blocks K th.there x ∧ ¬ NMem sur.ned x := by
+  obtain ⟨⟨hed', tel', o⟩, g2x, h2, hr⟩ := bind_some hr
+  rw [splitL_mk, map_apply] at h2
+  obtain ⟨⟨⟨hed, tel, o'⟩, g2⟩, hs2, e2⟩ := Option.map_eq_some_iff.mp h2
+  simp only [Prod.mk.injEq] at e2
+  obtain ⟨⟨rfl, rfl, rfl⟩, rfl⟩ := e2
+  obtain ⟨S2, eo, bo2, l2, fr2, Ls, Ds⟩ := raw_split (K := K) h dn hn ha hj hf hs2
+  simp only at eo; subst eo
+  obtain ⟨-, nh, nt⟩ := keeps_split h.drop hn (fun x hx => by rw [ha] at hx; cases hx) hs2
+  obtain ⟨-, dh, dt, ap, mh, mt⟩ := split_foot h.drop dn hn (fun x hx => by rw [ha] at hx; cases hx) hs2
+  simp only at nh nt dh dt ap mh mt Ls Ds
+  obtain ⟨nexh, g2', hph, hr⟩ := bind_some hr
+  rw [pastL_mk _ _ _ (fragX_pure xq), pure_apply] at hph
+  simp only [Option.some.injEq, Prod.mk.injEq] at hph
+  obtain ⟨rfl, rfl⟩ := hph
+  obtain ⟨nex2, g3, h3, hr⟩ := bind_some hr
+  obtain ⟨nex2', g3', hp2, hr⟩ := bind_some hr
+  rw [pastL_pure _ _ (fragX_pure xp), pure_apply] at hp2
+  simp only [Option.some.injEq, Prod.mk.injEq] at hp2
+  obtain ⟨rfl, rfl⟩ := hp2
+  obtain ⟨nex1, g4, h4, hr⟩ := bind_some hr
+  obtain ⟨S1, a1, lo1, hi1, L1⟩ := rawX_binTail xp xq ihp ihq hc (hK.mono (by omega))
+    (sip_reRank S2 (fun k hk => h.none hk) (finKeep_of_eq fr2)) nh nt dh dt ap rfl
+    (by simp [jmp0]; have := h.bo1; omega) (by simp [jmp0]; omega)
+    (fun x d => by
+      rcases Ds x d with d | ⟨_, e1, e2⟩
+      · have := h.defd_lt d
+        refine ⟨fun e => ?_, fun e => ?_⟩
+        · rcases mh x e with e' | e'
+          · exact hf x e' d
+          · omega
+        · rcases mt x e with e' | e'
+          · exact hf x e' d
+          · omega
+      · exact ⟨e1, e2⟩) h3 h4 hr
+  refine ⟨S1, a1, lo1, hi1, fun x hx => ?_⟩
+  obtain ⟨hl, n1, n2⟩ := L1 x hx
+  rcases Ls x hl with e | e | e
+  · exact absurd e n1
+  · exact absurd e n2
+  · exact e
+
+/-- **The case cons**: `%done` makes the block `don` and runs as `%next`,
+`%pick` makes a `%bom` block and runs both operands for an empty need, as
+`raw_cons`. -/
+theorem rawX_cons {p q : Nomm} (xp : FragX (S := S) p) (xq : FragX (S := S) q) (ihp : RawIHX S Map X p)
+    (ihq : RawIHX S Map X q) : RawIHX S Map X (Nomm.cons p q) := by
+  intro goal region g0 g1 nex K hK h hg hD hj ha hf hc hr
+  have hc' : sixCount p + sixCount q ≤ 255 := by simpa only [sixCount] using hc
+  cases goal with
+  | next sur th =>
+    simp only [CGoal.toL] at hr
+    rw [runL_cons_next] at hr
+    exact rawX_consBody xp xq ihp ihq hc' hK h hg.1 hD ha hj.1 hj.2 (fun y hy d => hf y d hy) hr
+  | done =>
+    simp only [CGoal.toL] at hr
+    rw [runL_cons_done] at hr
+    obtain ⟨r, g3, h3, hr⟩ := bind_some hr
+    obtain ⟨S3, rfl, q3, b3, o3⟩ := sip_re h h3
+    obtain ⟨o, g4, h4, hr⟩ := bind_some hr
+    obtain ⟨S4, rfl, e4, q4, bo4⟩ := sip_emit S3 (emitOK_don (by omega)) h4
+    rw [runL_cons_next] at hr
+    obtain ⟨S1, a1, lo1, hi1, L1⟩ := rawX_consBody (sur := lazyReg g0.re) xp xq ihp ihq hc'
+      (hK.mono (by omega)) (sip_reRank S4 (fun k hk => h.none hk) (finKeep_put (by rw [e4, b3, o3])))
+      (nb_this (by omega)) trivial rfl (by simp [jmp0]; have := h.bo1; omega) (by simp [jmp0]; omega)
+      (fun y hy d => by
+        simp only [lazyReg, NMem] at hy; subst hy
+        rw [e4, defd_put (S3.none (Nat.le_refl _)), b3] at d
+        rcases d with d | d
+        · have := h.defd_lt d; omega
+        · simp [blockDefs, defsOf] at d) hr
+    refine ⟨S1, a1, lo1, hi1, fun x hx => ?_⟩
+    obtain ⟨hl, hn⟩ := L1 x hx
+    exact hn (by simp only [lazyReg, NMem]; exact not_liveK_don (by rw [e4]; exact get_put_self) hl)
+  | pick z o =>
+    simp only [CGoal.toL] at hr
+    rw [runL_cons_pick] at hr
+    obtain ⟨o', g2, h2, hr⟩ := bind_some hr
+    obtain ⟨S2, rfl, e2, q2, bo2⟩ := sip_emit h (emitOK_bom Option.none) h2
+    obtain ⟨nex2, g3, h3, hr⟩ := bind_some hr
+    obtain ⟨nex2', g3', hp2, hr⟩ := bind_some hr
+    rw [pastL_pure _ _ (fragX_pure xp), pure_apply] at hp2
+    simp only [Option.some.injEq, Prod.mk.injEq] at hp2
+    obtain ⟨rfl, rfl⟩ := hp2
+    obtain ⟨nex1, g4, h4, hr⟩ := bind_some hr
+    obtain ⟨S1, a1, lo1, hi1, L1⟩ := rawX_binTail (hs := Sure.bunt) (ts := Sure.bunt) xp xq ihp ihq hc'
+      (hK.mono (by omega)) (sip_reRank S2 (fun k hk => h.none hk) (finKeep_put e2)) (nb_none _) (nb_none _)
+      trivial trivial (fun _ e => e.elim) rfl (by simp [jmp0]; have := h.bo1; omega) (by simp [jmp0]; omega)
+      (fun _ _ => ⟨fun e => e.elim, fun e => e.elim⟩) h3 h4 hr
+    refine ⟨S1, a1, lo1, hi1, fun x hx => ?_⟩
+    obtain ⟨hl, -⟩ := L1 x hx
+    exact absurd hl (not_liveK_bom (by rw [e2]; exact get_put_self))
+
 end Raw
 end SkaModel
 end Formalization
