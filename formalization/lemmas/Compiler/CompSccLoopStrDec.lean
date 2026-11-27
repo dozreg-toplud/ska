@@ -5,7 +5,9 @@ import lemmas.Compiler.CompSccLoopStrGen
 * **`csi_gate_ranked_dec`**: `csi_gate_rankedStr` with `PrintId` discharged (`printId_pill`) and
   the members bells: the gate's `M` is `FinMap.toNoun Straight.toNoun m` for a map of straights
   `m` whose needs are the model's final `ml` (the shape `unaryImageAt_of_gate` asks of `NM`).
-* `finUni`, **`uni_decode`**: the `+uni:by` of two maps of straights (`UniSpec`, as the loop's
+* `CsiDecI` (track K's `CsiDec` of `CompSccOfDecDefs.lean`, restated: that file is not on this
+  base) and **`csiDec_of_loop`**: decoding (a) at a loop under `csi_gate_ranked_dec`'s hypotheses.
+* `finUni`, **`uni_decode`** (the same as track K's `FinMap.uniBy_toNoun`): the `+uni:by` of two maps of straights (`UniSpec`, as the loop's
   `NARYU`) is the noun of their union, the second's pairs winning: so `nary` after the loop
   decodes once the `nary` the last member run leaves decodes (track K's decoding (b)). -/
 
@@ -50,6 +52,41 @@ theorem csi_gate_ranked_dec (c : Cfg Noun NeedOrd) (r : Ranked c) (bs : List Nou
   have hk' : k ∈ c.scc := Classical.byContradiction fun h => by rw [hout k h] at hk; cases hk
   rw [hcfg.scc] at hk'
   exact hbell k hk'
+
+/-- **Track K's `CsiDec`, restated** (`CompSccOfDecDefs.lean` is not on this base; the body is
+the same, so at the merge `CsiDecI = CsiDec` by `rfl`): the map `+compile-scc-in` returns on the
+SCC `S` at the cache `[NR CR]` is the noun of a map of straights. -/
+def CsiDecI (S CODE JETS CALLS JH NR CR : Noun) : Prop :=
+  ∀ M T, nock (C csiBody (C (csiSam S (C CODE (C JETS CALLS)) JH (C NR CR)) compK)) csiBody = some (C M T) →
+    ∃ m : FinMap Bell (Straight (TreapMap mugF)), M = m.toNoun Straight.toNoun
+
+/-- **Decoding (a) at a loop**: `CsiDecI` (track K's `CsiDec`) under the hypotheses of
+`csi_gate_ranked_dec` (the member gates at `LoopRS`, the members bells). -/
+theorem csiDec_of_loop (c : Cfg Noun NeedOrd) (r : Ranked c) (bs : List Noun)
+    (outC : Noun → List Noun) (nout : Noun → NeedOrd) (Q : Noun → Prop)
+    (SCC CODE JETS CALLS JH NARY CR : Noun) (hsam : SamOK SCC CALLS NARY)
+    (hmiss : ∃ b ∈ tapList SCC, getF mugF b NARY = some (A 0))
+    (hnd : (∀ n, SCC ≠ C n (C (A 0) (A 0))) ∨ ∃ n, SCC = C n (C (A 0) (A 0)) ∧ CalleeIn CALLS n n)
+    (hcfg : CfgOf c SCC (kidsOf SCC (C CODE (C JETS CALLS)) JH (C NARY CR)))
+    (hbell : ∀ k ∈ tapList SCC, ∃ b' : Bell, b'.toNoun = k)
+    (hmay : MemGate c (LoopRS bs outC nout Q) (csiCtx (A 1) (kidsOf SCC (C CODE (C JETS CALLS)) JH (C NARY CR))
+      SCC (C CODE (C JETS CALLS)) JH (C NARY CR)) (fun _ => c.none) (A 0) Mode.may (A 0x79616d))
+    (hdone : MemGate c (LoopRS bs outC nout Q) (csiCtx (A 1) (kidsOf SCC (C CODE (C JETS CALLS)) JH (C NARY CR))
+      SCC (C CODE (C JETS CALLS)) JH (C NARY CR)) (fun _ => c.none) (A 0) Mode.done (A 0x656e6f64))
+    (st0 : St Noun NeedOrd)
+    (hmust : ∀ TOP, TopN (maySweep c st0).ml TOP → MemGate c (LoopRS bs outC nout Q)
+      (csiCtx (A 1) (kidsOf SCC (C CODE (C JETS CALLS)) JH (C NARY CR)) SCC (C CODE (C JETS CALLS)) JH (C NARY CR))
+      (topOf c (maySweep c st0)) TOP Mode.must (A 0x7473756d))
+    (hQ : ∀ CA, Q CA → ∃ NR REST, CA = C NR REST ∧ IsMap mugF NR)
+    (hml0 : ∀ b, st0.ml b = none) (hsu0 : SureHolds bs st0.sure (C NARY CR)) (hq0 : Q (C NARY CR)) :
+    CsiDecI SCC CODE JETS CALLS JH NARY CR := by
+  intro M' T h
+  obtain ⟨s, -, -, -, M, NR, REST, NARYU, -, -, -, -, hgo, m, hm, -⟩ :=
+    csi_gate_ranked_dec c r bs outC nout Q SCC CODE JETS CALLS JH NARY CR hsam hmiss hnd hcfg hbell hmay hdone
+      st0 hmust hQ hml0 hsu0 hq0
+  rw [hgo] at h
+  simp only [Option.some.injEq, Noun.cell.injEq] at h
+  exact ⟨m, h.1.symm.trans hm⟩
 
 /-- The union of two maps with the pairs of `m` over those of `n` (`(~(uni by n) m)`). -/
 def finUni {κ ν : Type} (m n : FinMap κ ν) : FinMap κ ν :=

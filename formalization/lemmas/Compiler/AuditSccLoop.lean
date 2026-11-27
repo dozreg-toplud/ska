@@ -155,3 +155,4 @@ open Formalization.SkaModel.SccLoop
 #print axioms Formalization.Compiler.se_slam
 #print axioms Formalization.Compiler.se_nil
 #print axioms Formalization.Compiler.se_end
+#print axioms Formalization.Compiler.csiDec_of_loop
