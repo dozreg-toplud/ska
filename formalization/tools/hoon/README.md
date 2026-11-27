@@ -188,6 +188,21 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     every reached member clean (`+dirty`), `late` (c) the original for N passes (64), then (b);
                     `--cap N` (measurement only) stops a loop at pass N+1 with `[%pm-capped ..]`.
                     `PASSMEASURE_IN=OUT.hoon passmeasure.py DIR` instruments such a copy
+* `passmeasure-quiet.py --instrument LIB.hoon OUT.hoon`, `passmeasure-quiet.py [-v] OUT.txt...` (track F, README
+                    Gaps 16) the measure of the pass loop after dab8478 on traces.  `--instrument` adds to a library of
+                    `passmeasure.py` (run with `PASSMEASURE_IN` on the fixed library) at every pass start `%pq-s` (next,
+                    the size of `g`, whether every identity in `g` at the previous start is still there) and `%pq-m`
+                    (every member above the root: `+dirty`, swept, the mug of its callee set), and at the end of
+                    `+run` `%pq-cal` (a run after the first with no `changed` whose callee set changed).  The check: A
+                    nothing leaves `g` inside a loop, B a pass that goes on with a change and no push lowers one run
+                    and raises none, C a quiet pass that goes on (no change, no push) keeps the five fields, and the
+                    dirty members at the next start are within those at its start minus the reached ones, D the
+                    triple falls.  2026-11-27, on takecycle, takemin, the 346 cores of `passfix-cores.py`, repush,
+                    `passmeasure-lib.hoon`, takesame and the 15 `ck-*` drivers (2,612 cases, 11,537 pass starts, 5,241
+                    passes that go on: 1,990 with a push, 3,251 with a change that lowers a run): no violation, NO quiet
+                    pass that goes on (the clean test never fired), although 1,553 starts had an unreached dirty member
+                    and 936 runs changed their callee set with no `changed`.  The control (the library before dab8478
+                    on `repush.hoon`) fails A at 12 starts.  Largest pass number 62 (`ck-rnd1`, `%rnd1` case 49)
 * `passfix-cores.py all|grid|grid2|ablate|ablate2|one OUT.hoon [..]`, `--tab OUT.txt..` one driver of the 88
                     cores of `passmeasure-take.py` (`all`), or of `core3` cases (two relay chains from `k`'s
                     target into `a`, `b`) for the smallest witness; `--tab` per case: root passes, capped, `%st`
