@@ -5,6 +5,7 @@ import lemmas.Compiler.CompSccOfAnyK
 import lemmas.Compiler.CompSccOfHeightEnv
 import lemmas.Compiler.CompMonoLinkDec
 import lemmas.Compiler.CompSccOfRank
+import lemmas.Compiler.CompMonoLinkStr
 
 /-! The axioms of the link of `+compiled-mono` and of the run at `mono` `|` (README Gaps 19 (g)).
 `CompSccOfAny`, `PokeLinkGood` and track I's `CompSccLoop*` import together since the renames of
@@ -81,3 +82,11 @@ that one's imports light. -/
 #print axioms Formalization.Compiler.monoLinkGood3_of_gate
 #print axioms Formalization.Compiler.memCall_side
 #print axioms Formalization.Compiler.memCallOk_of_rank
+#print axioms Formalization.Compiler.calleeCompiled_sccDStr
+#print axioms Formalization.Compiler.sccLoopAtD_realStr
+#print axioms Formalization.Compiler.calleeCompiled_heights0DStr
+#print axioms Formalization.Compiler.calleeH_of_SDStr
+#print axioms Formalization.Compiler.nmDec_of_top
+#print axioms Formalization.Compiler.cu_gate_dir_sccDStr
+#print axioms Formalization.Compiler.unaryImageAt_of_gateDStr
+#print axioms Formalization.Compiler.monoLinkGood3_of_gateStr
