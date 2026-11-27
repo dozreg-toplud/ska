@@ -1,6 +1,7 @@
 import lemmas.Ska.CompHintTop
 import lemmas.Ska.CompHintCheck
 import lemmas.Ska.CompHintTreeEx
+import lemmas.Ska.CompHintMean
 
 /-! The axioms of the theorems of the hint files (README Gaps 24): only
 `propext`, `Classical.choice`, `Quot.sound`. -/
@@ -38,3 +39,5 @@ open Formalization.SkaModel Formalization.SkaModel.Comp
 #print axioms finishLUCH_bellContractCallTreeH
 #print axioms contract_exCons
 #print axioms contract_exSeven
+#print axioms MeanOK.meac
+#print axioms MeanOK.meaf
