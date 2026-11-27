@@ -28,8 +28,11 @@ The precondition `iB K goal g` (the Prop is `IL` of `RawInvCLIJ.lean`):
   disjoint (`disjB`).
 The postcondition `jB K nex g` is `iB K nex.goal g`.  After the run also:
 `LiveC` (`live1K` at the sub-run), the old blocks change only by ops in
-front at the goal's lazy entries (`prepOld`), and `cond` only grows, by
-keys from the old `re` on.
+front at the goal's lazy entries (`prepOld`), `cond` only grows, by
+keys from the old `re` on, `re` only grows, and every register defined
+after the run was defined before it, is fresh, or is a goal register
+(`defsB`: the frame that `%5`, cons, `%10` and `%2` need for their second
+run's goal).
 -/
 
 namespace Formalization
@@ -101,13 +104,22 @@ def liveCB (K : List (Nat × List Nat)) (goal : CGoalL LS) (g0 g1 : Comp.Gen FM)
     | CGoalL.done => []
   (liveKF (unpB g1) (K ++ killsOf nex.th.there nex.laz) (fuelOf g1) nex.th.there).all G.contains
 
+/-- **The frame of the definitions**: a register a block defines after the
+run was defined before it, is fresh (from the old `re` on), or is a register
+of the goal's lazy tree. -/
+def defsB (goal : CGoalL LS) (g0 g1 : Comp.Gen FM) : Bool :=
+  let D0 := allDefsL g0.blocks
+  let G := goalRegs goal
+  (allDefsL g1.blocks).all fun y => D0.contains y || g0.re ≤ y || G.contains y
+
 /-- A sub-run with its checks: `none` when one fails. -/
 def wrapC (K : List (Nat × List Nat)) (X : Comp.Gen FM → Bool) (rp : CGoalL LS → List Nat → CM FM (NextL LS)) :
     CGoalL LS → List Nat → CM FM (NextL LS) := fun goal region g0 =>
   if !(iB K goal g0 && X g0) then Option.none else
   match rp goal region g0 with
   | some (nex, g1) =>
-    if iB K nex.goal g1 && liveCB K goal g0 g1 nex && prepB goal g0 g1 && condGrowB g0 g1 then some (nex, g1)
+    if iB K nex.goal g1 && liveCB K goal g0 g1 nex && prepB goal g0 g1 && condGrowB g0 g1 && defsB goal g0 g1 &&
+      g0.re ≤ g1.re then some (nex, g1)
     else Option.none
   | Option.none => Option.none
 
