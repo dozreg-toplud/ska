@@ -854,6 +854,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/RawInvCAT.lean` | `RunAT` with indirect calls (README Gaps 14 (b)): the state invariant `ATS` (labels in `[1, bo)`, every block meets `BATC` in the map and jumps below its label), `KP`, `Stab`, the triple `HT P m Q` with `pure'`, `bind'`, `ite'`, `conseq`, `weak`, `frame`, `quiet` (a `QM` step), `emit'`; the arms that emit (`ht_simpleNextL`, `ht_bombL`, `ht_splitL`, `ht_intoL`, `ht_copyL`, `ht_pastL`, `ht_medeL`, `ht_collapse`, `ht_forl`, `ht_doneBlocks`, `ht_kerf`), **`ht_callL`** (the indirect call), **`ht_runLC`** (`runLC env sup` on `PlainN`, every goal, lazy goals with forks and bonds included: `Fresh` goal jumps give a `Fresh` result jump), **`runATC_plain`** (`Closed`, `ArityOK`, `TwoNA` of the raw blocks of the top run), **`runDownC_plain`** (`Down` of them). |
 | `Ska/RawInvCLCheck.lean` | The liveness spec of a run with indirect calls, checked (README Gaps 14 (b)): on all 3,960 nomms of `enumCX` (2,856 in `PlainN`, `isPlain`) under `%done` from `gen0`, `%next` (`gY`), `%pick` (`gP`) and the bond goal (`gB`), also with outer kills (`live1`, `live1K`): a register live at the result's entry in the unproxied blocks after the run (`unpB`), with the kills of the result's lazy tree, is live at the goal in the unproxied blocks before it with the kills of the goal's lazy tree; the same without `unproxy` fails (`live0`: 336, 336, 80 and 3,768 runs); `lazyOK2B` with `disjB` (no distinct labels) on every top run; `prepOld`: the old blocks change only by ops in front at the goal's lazy entries; not vacuous (3,888 runs read a proxy in an old block). |
 | `Ska/RawInvCLSpec.lean` | The spec as a proposition (README Gaps 14 (b)): `unpM` (blocks read through `unproxy g.cond`), `GLiveKL` (what a lazy goal may leave live: the goal's lazy tree as kills), **`LiveC`**; `liveC_done` (nothing live at the top), `LiveC.trans`, `LiveRun` (the liveness half of the run-level statement for a runner with a pre- and postcondition), **`liveRun_seven`** (the case `%7`), `liveC_refl`, `liveC_fromL` (`%0` under `%next`), `liveC_pick_z`, `liveC_pick_o` (`%1` under `%pick`), `liveC_simpleNextL_done`, `liveK_old` (a path from the new code into the old: frame and ops in front), **`liveK_prepK`** (ops in front of blocks: live after is live before with the kills they meet, or read first by them), `prep_mapVals`, **`unpM_prep`** (the unproxied blocks carry ops in front, `cond` grown by fresh proxies), `LiveK.mono_r`, **`liveK_hop_root`** (the root's kills move along a fresh hop to the goal). |
+| `Ska/RawInvCLCheckIJ.lean` | The pre- and postcondition of the run-level liveness with calls checked at every sub-run (README Gaps 14 (b)): `runLCk` is `runLC` on the arms of `PlainN` with each recursive call wrapped by `wrapC`, which fails when the precondition `iB` (`IL`: `ATS`, registers below `re`, `cond` keys below `re`, undefined, no goal register, standing for a non-key below `re`; kills below `bo`; `Fresh` goal jumps; goal lazy entries with a block with no parameter, needs below `re`, undefined, pairwise disjoint) fails before a sub-run, or `iB` of the result's goal, `LiveC`, `prepOld` or the growth of `cond` (keys from the old `re` on) after it; on all 2,856 `PlainN` runs of `enumCX` under `%done`, `%next`, `%pick`, the bond goal and with outer kills no check fails; asking an empty `cond` at every sub-run fails on 2,832 and 290 runs (the wrapper bites). |
+| `Ska/RawInvCLIJ.lean` | The pair of the run-level liveness with calls and the first arms (README Gaps 14 (b)): `GRegL`, `GoalL`, **`IL`**, `JL` (`IL` of the result's goal, so `jl_il` is `liveRun_seven`'s `hJ`), `AddSt` (a step that only adds ops and proxies), `GStep`, `WalkP`, **`walkList_prepG`**, **`walkLazy_prepG`** (a walk whose gate only puts ops in front, under any `cond`: the `Prep` lemma without `KI`), **`unpM_prepG`** (the unproxied blocks after such a walk, ops unproxied by the new `cond`), `jdown_mapVals`, `IL.downU`, `addOps_step`, `medeLoop_step`, `medeGate_step`, `medeL_walk`, **`liveC_medeL`** (`%1` under `%next`), `LiveC.fromL`, `liveC_dead`, `liveC_bombL`, `liveC_simpleNextL_pick`, **`liveC_n0`**, **`liveC_n1`** (`%0` and `%1` under every goal, from `IL`). |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
@@ -3322,6 +3324,30 @@ import only its theorems.  So:
    walking arms (`liveK_prepK`, `liveK_old`, `unpM_prep`, `liveK_hop_root`).  Not
    proved: the run-level induction `LiveRun I J (runLC env sup nm)` on
    `PlainN`, and so `OptIn` of `finishLUC`, `finishLFC`.
+
+   **The pair and the first arms, 2026-11-27, thirteenth session
+   (`RawInvCLCheckIJ.lean`, `RawInvCLIJ.lean`).**  The pre- and
+   postcondition of `LiveRun` are fixed and checked at EVERY sub-run, not
+   only at the top: `IL K goal g` (`ATS`; every block's registers below
+   `re`; every key of `cond` below `re`, defined by no block, no register of
+   the goal's lazy tree, standing for a register below `re` that is no key;
+   `KVan K g.bo`; `Fresh` goal jumps; every entry of the goal's lazy tree,
+   the root included, with a block with no parameter, its sure need
+   `Distinct`, below `re` and defined by no block, the needs pairwise apart)
+   and `JL K nex g := IL K nex.goal g`.  `runLCk` reruns `runLC` on
+   `PlainN` with every recursive call wrapped by the checks of `IL` before
+   and of `JL`, `LiveC`, `prepOld` and the growth of `cond` (by keys from
+   the old `re` on) after: no check fails on the 2,856 `PlainN` runs of
+   `enumCX` under the four goals, also with outer kills.  Proved: the
+   `Prep` lemma for walks under any `cond` (**`walkLazy_prepG`**: a gate
+   that only puts ops in front, defining the entry's need and reading first
+   only what `R` allows, with a preorder `St` on the states; `KI` is not
+   needed), the unproxied blocks after it (**`unpM_prepG`**: ops unproxied by
+   the new `cond`), `+mede` as such a walk (`medeL_walk`), and the liveness
+   of `%0` and `%1` under every goal (**`liveC_n0`**, **`liveC_n1`**, with
+   `liveC_medeL`, `liveC_simpleNextL_pick`, `liveC_bombL`).  Not proved:
+   the `JL` half of these arms, the other arms, `liveRun_plain`, and so
+   `OptIn` of `finishLUC`, `finishLFC`.
 
    **Left, in this order.**  (a) `%6` (`FragX`; `Frag6` is done; see the
    paragraph above for what holds and what is proved).  Two obstacles, both met
