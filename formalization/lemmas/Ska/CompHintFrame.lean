@@ -770,6 +770,49 @@ theorem n11dKept_done {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop
       obtain ⟨ton, st2, hI2, hle2, e2, hrel⟩ := Gh
       exact ⟨_, mink_n11d_clue hst hmh (fun q => by simp), ton, st2, hI2, hle2, by rw [ecopy]; exact e2, hrel⟩
 
+/-- **The contract of a kept dynamic `stopTag` hint at the top**: both
+halves for `[11 [tag fh] fq]`, traces included, on every subject of `P`. -/
+theorem finishLUCH_contractN11dKept (lib : Lib) {env : CallEnv} {N : Needs} {P : Noun → Prop} {fh fq : Noun}
+    {h q : Nomm} (Hq : LOKSFH (S := S) (Map := Map) (snd := snd) lib N env P fq q) (hcq : sixCount q ≤ 255)
+    (hnq : NoBondH (S := S) (Map := Map) snd env q) (hsnd : snd q NeedOrd.this = true)
+    (Hh : LOKSFH (S := S) (Map := Map) (snd := snd) lib N env P fh h) (hch : sixCount h ≤ 255)
+    (hnh : NoBondH (S := S) (Map := Map) snd env h)
+    {tag : Nat} (hs : hintDynamic tag = true) (hst : stopTag tag = true) (body : Noun) {c : Straight Map}
+    (hc : finishLUCH (S := S) env snd (Nomm.n11d tag h q body) = some c) :
+    c.need = NeedOrd.this ∧ ∀ s, P s →
+      ContractFwd lib N s (n3 (A 11) (C (A tag) fh) fq) [s] c ∧
+        ContractBwd lib N s (n3 (A 11) (C (A tag) fh) fq) [s] c :=
+  finishLUCH_contractGBT lib N (fun hr => n11dKept_done Hq hcq hnq hsnd Hh hch hnh hs hst body (by simp [gen0]) rfl
+    upBelow_gen0 clear_gen0 condBelow_gen0 hr) hc
+
+/-- **A kept dynamic `stopTag` hint around a member of `CallTreeHU`** at the
+top, the clue with `LOKSFH` (a member of `CallTreeHU`, `clueLOKS_n0`, or a
+constant, `clueLOKS_n1`). -/
+theorem finishLUCH_contractN11dKeptHU (lib : Lib) {env : CallEnv} {N : Needs} {P : Noun → Prop} {x : Bool}
+    {fh fq : Noun} {h q : Nomm} (hq : CallTreeHU lib env N P x fq q) (hnq : NoBondH (S := S) (Map := Map) snd env q)
+    (hsnd : snd q NeedOrd.this = true)
+    (Hh : LOKSFH (S := S) (Map := Map) (snd := snd) lib N env P fh h) (hch : sixCount h ≤ 255)
+    (hnh : NoBondH (S := S) (Map := Map) snd env h)
+    {tag : Nat} (hs : hintDynamic tag = true) (hst : stopTag tag = true) (body : Noun) {c : Straight Map}
+    (hc : finishLUCH (S := S) env snd (Nomm.n11d tag h q body) = some c) :
+    c.need = NeedOrd.this ∧ ∀ s, P s →
+      ContractFwd lib N s (n3 (A 11) (C (A tag) fh) fq) [s] c ∧
+        ContractBwd lib N s (n3 (A 11) (C (A tag) fh) fq) [s] c :=
+  finishLUCH_contractN11dKept lib (lokSHU_callTreeHU (S := S) (Map := Map) (snd := snd) lib env hq).1.1
+    (by rw [hq.sixCount]; omega) hnq hsnd Hh hch hnh hs hst body hc
+
+/-- A clue `[0 a]` meets `LOKSFH`. -/
+theorem clueLOKS_n0 (lib : Lib) {N : Needs} (env : CallEnv) (P : Noun → Prop) (a : Nat) :
+    LOKSFH (S := S) (Map := Map) (snd := snd) lib N env P (slot a) (Nomm.n0 a) :=
+  (lokSHU_callTreeHU (S := S) (Map := Map) (snd := snd) lib env
+    (CallTreeHU.base (lib := lib) (env := env) (N := N) (P := P) (CallTreeD.n0 a) rfl)).1.1
+
+/-- A constant clue `[1 k]` meets `LOKSFH` (`lokS_n1`, no hint). -/
+theorem clueLOKS_n1 (lib : Lib) {N : Needs} (env : CallEnv) (P : Noun → Prop) (k : Noun) :
+    LOKSFH (S := S) (Map := Map) (snd := snd) lib N env P (quote k) (Nomm.n1 k) :=
+  ((lokS_n1 (S := S) (Map := Map) lib (N := N) env
+    (((CallTreeA.n1 k).kind lib env.cod P).elim (fun h => h.2) (fun h => by cases h))).toM rfl).toF.toH rfl
+
 end
 
 end Comp
