@@ -38,12 +38,20 @@ import lemmas.Ska.PassIdents
 import lemmas.Ska.CompTenLS
 import lemmas.Ska.CompSixLSRCall
 import lemmas.Compiler.CompShapeColRet
+import lemmas.Glue.InvMemoP
+import lemmas.Compiler.PokeLink
+import lemmas.Ska.PokeEnc
+import lemmas.Ska.SccLoopMsg
+import lemmas.Ska.SccLoopCycle
 
 /-!
 # Audit of `formalization/LEDGER.md`
 
 Every declaration the ledger names, checked to exist, and the axioms of the
-theorems of `lemmas/Glue/`.  Run:
+theorems of `lemmas/Glue/`.  Track P's route (`Ska/PokeEnc.lean`,
+`Compiler/PokeLink.lean`, `Glue/InvMemoP.lean`) and track I's
+`Ska/SccLoopMsg.lean` are checked here too since the renames
+`unitNoun_id_injP` and `ordIsLeaf` (M15 closed; `AuditGlueP.lean` folded in).  Run:
 `systemd-run --user --scope -q -p MemoryMax=3500M -p MemorySwapMax=0 -- lake env lean lemmas/Glue/AuditGlue.lean`.
 -/
 
@@ -307,7 +315,7 @@ namespace Formalization
 #print axioms SkaModel.Glue.libP_hand
 #print axioms SkaModel.Glue.libP_format
 #print axioms SkaModel.Glue.libP_evalMook
-#print axioms SkaModel.Glue.straight_toNoun_inj
+#print axioms Compiler.straight_toNoun_inj
 
 -- rawEntry (LEDGER 2.c): the generic lemma and FragX
 #check @SkaModel.Glue.NoPoison
@@ -333,5 +341,34 @@ namespace Formalization
 #print axioms SkaModel.Glue.entryNary_fragX
 #print axioms SkaModel.Glue.rawEntry_fragX
 #print axioms SkaModel.Glue.compHyp_of_fragX'
+
+-- track P's route and track I's SccLoopMsg (was AuditGlueP.lean; M15)
+#check @Compiler.straight_toNoun_inj
+#check @Compiler.enc
+#check @Compiler.enc_inj
+#check @Compiler.cor_enc
+#check @Compiler.cor_enc_gap
+#check @Compiler.emptySt
+#check @Compiler.Flags
+#check @Compiler.anaArmP
+#check @Compiler.anaHyp_of_armP
+#check @Compiler.gap_of_armP
+#check @Compiler.invStart_cor
+#check @Compiler.FuelOK
+#check @Compiler.fuelOK_anaFuel
+#check @Compiler.pokeN_full_of
+#check @Compiler.FullBranchIs
+#check @Compiler.SkaLink
+#check @Compiler.JetRootLink
+#check @Compiler.SccLink
+#check @Compiler.MonoLink
+#check @Compiler.OptLink
+#check @SkaModel.Comp.msgOrd_abs
+#check @SkaModel.SccLoop.cyc_never
+#print axioms SkaModel.Glue.anaArmP_memo
+#print axioms SkaModel.Glue.pokeS_memoP
+#print axioms SkaModel.Glue.fullAnswers_of_cgMP
+#print axioms SkaModel.Glue.gap_of_armPM
+#print axioms SkaModel.Glue.halting_of_cgMP
 
 end Formalization

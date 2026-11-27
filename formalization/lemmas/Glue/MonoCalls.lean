@@ -3,6 +3,7 @@ import lemmas.Ska.CompDirectMTree
 import lemmas.Ska.CompNaryTop
 import lemmas.Ska.CompNaryTopRec
 import lemmas.Ska.CompSixLSClass
+import lemmas.Ska.PokeEnc
 
 /-!
 # Glue: the contract side with calls (mismatch M3 of `LEDGER.md`, finished)
@@ -32,9 +33,9 @@ call environment, the callees' needs and the bell.  Here:
   `OptTotalMono`, `OptTotalNary` (track H's totality of the pill's
   `+optimize`); `rawOptIn_of`, `optRef_of_total` compose them; on `FragX`
   they are proved (`optInMono_fragX`, …, `optTotalNary_fragX`);
-* `straight_toNoun_inj`: `Straight.toNoun` is injective on `TreapMap mugF`
-  (the `hinj` of `optRef_fragX`; track P's copy in `Ska/PokeEnc.lean` cannot
-  be imported beside `OptLinkAlJReg`), so `optRef_fragX'` has no `hinj`;
+* `Compiler.straight_toNoun_inj` (track P's, `Ska/PokeEnc.lean`):
+  `Straight.toNoun` is injective on `TreapMap mugF` (the `hinj` of
+  `optRef_fragX`), so `optRef_fragX'` has no `hinj`;
 * `compHyp_of_calls`: `CompHyp` on the classes with calls from `CompRestM`
   and the two leaves `OptInMono`, `OptInNary` (owner: track D).
 -/
@@ -462,56 +463,13 @@ theorem rawEntry_of {lib : Lib} {ref : Ref M Map J H} {D : CompData M Map J H} {
     exact hn _ _ _ _ _ nm _ s (P.inFragN long jets hot b nm cape data hI hinl hbl (by rw [hr]; rfl)) hs x hx
       args hargs
 
-/-! ## `Straight.toNoun` is injective (the `hinj` of `optRef_fragX`) -/
+/-! ## `Straight.toNoun` is injective (the `hinj` of `optRef_fragX`)
+
+Track P's `Compiler.straight_toNoun_inj` (`Ska/PokeEnc.lean`), importable
+here since its `unitNoun_id_inj` became `unitNoun_id_injP` (M15 closed). -/
 
 section
 open Compiler Pill Hoon
-
-theorem needOrd_toNoun_inj : ∀ a b : NeedOrd, a.toNoun = b.toNoun → a = b
-  | NeedOrd.pair p q, NeedOrd.pair p' q', h => by
-    simp only [NeedOrd.toNoun, Noun.cell.injEq] at h
-    rw [needOrd_toNoun_inj p p' h.1, needOrd_toNoun_inj q q' h.2]
-  | NeedOrd.both p q, NeedOrd.both p' q', h => by
-    simp only [NeedOrd.toNoun, Noun.cell.injEq, true_and] at h
-    rw [needOrd_toNoun_inj p p' h.1, needOrd_toNoun_inj q q' h.2]
-  | NeedOrd.this, NeedOrd.this, _ => rfl
-  | NeedOrd.none, NeedOrd.none, _ => rfl
-  | NeedOrd.pair p q, NeedOrd.both _ _, h
-  | NeedOrd.pair p q, NeedOrd.this, h
-  | NeedOrd.pair p q, NeedOrd.none, h => by
-    cases p <;> simp [NeedOrd.toNoun] at h
-  | NeedOrd.both _ _, NeedOrd.pair p q, h
-  | NeedOrd.this, NeedOrd.pair p q, h
-  | NeedOrd.none, NeedOrd.pair p q, h => by
-    cases p <;> simp [NeedOrd.toNoun] at h
-  | NeedOrd.both _ _, NeedOrd.this, h | NeedOrd.both _ _, NeedOrd.none, h
-  | NeedOrd.this, NeedOrd.both _ _, h | NeedOrd.this, NeedOrd.none, h
-  | NeedOrd.none, NeedOrd.both _ _, h | NeedOrd.none, NeedOrd.this, h => by
-    simp [NeedOrd.toNoun, Tag.both, Tag.this, Tag.none] at h
-
-theorem tr_toNoun_inj {ν : Type} {f : ν → Noun} (hf : ∀ a b, f a = f b → a = b) :
-    ∀ a b : Tr ν, a.toNoun f = b.toNoun f → a = b
-  | Tr.nil, Tr.nil, _ => rfl
-  | Tr.nil, Tr.node _ _ _ _, h => by simp [Tr.toNoun] at h
-  | Tr.node _ _ _ _, Tr.nil, h => by simp [Tr.toNoun] at h
-  | Tr.node k v l r, Tr.node k' v' l' r', h => by
-    simp only [Tr.toNoun, Noun.cell.injEq, Noun.atom.injEq] at h
-    obtain ⟨⟨e1, e2⟩, e3, e4⟩ := h
-    rw [e1, hf v v' e2, tr_toNoun_inj hf l l' e3, tr_toNoun_inj hf r r' e4]
-
-/-- **`Straight.toNoun` is injective on `TreapMap mugF`** (the `hinj` of
-`optRef_fragX`): need (`needOrd_toNoun_inj`), arity, and the treap of blocks
-(`tr_toNoun_inj` with `blob_toNoun_inj`; a `TreapMap` is a subtype).  Track
-P proves the same (`Compiler.straight_toNoun_inj`, `Ska/PokeEnc.lean`), but
-that file cannot be imported here: it and `Compiler/OptLinkAlJReg.lean`
-(imported through `OptLinkTotalAvail`) both declare
-`Compiler.unitNoun_id_inj`. -/
-theorem straight_toNoun_inj : ∀ a b : Straight (TreapMap mugF), a.toNoun = b.toNoun → a = b
-  | ⟨n, k, bl⟩, ⟨n', k', bl'⟩, h => by
-    simp only [Straight.toNoun, Noun.cell.injEq, Noun.atom.injEq] at h
-    obtain ⟨e1, e2, e3⟩ := h
-    have e4 : bl = bl' := Subtype.ext (tr_toNoun_inj (fun _ _ x => blob_toNoun_inj.mp x) bl.1 bl'.1 e3)
-    rw [needOrd_toNoun_inj n n' e1, e2, e4]
 
 /-- **`OptRef` on `FragX` without `hinj`**: `optRef_fragX` with
 `straight_toNoun_inj`; one hypothesis left,
@@ -522,7 +480,7 @@ theorem optRef_fragX' {A : Arms M (TreapMap mugF) J H CR} {lib : Lib} {ref : Ref
     (hpill : ∀ long jets hot b m s, InvB lib long → ref long jets hot b m = some s →
       nock (C optBody (C s.toNoun optC)) optBody = some (A.optimize s).toNoun) :
     OptRef FinMap A lib ref :=
-  optRef_fragX P hpill straight_toNoun_inj
+  optRef_fragX P hpill (fun _ _ h => straight_toNoun_inj h)
 
 /-- **Leaf (the input side of track H's totality, track D's classes): the
 pill's `+optimize` returns on the raw whole-subject code of the class, with
@@ -563,7 +521,7 @@ theorem optRef_of_total {A : Arms M (TreapMap mugF) J H CR} {lib : Lib} {ref : R
   have fin : ∀ s' : Straight (TreapMap mugF), nock (C optBody (C s.toNoun optC)) optBody = some s'.toNoun →
       s' = A.optimize s := fun s' h => by
     rw [hp, Option.some.injEq] at h
-    exact (straight_toNoun_inj _ _ h).symm
+    exact (straight_toNoun_inj h).symm
   cases m with
   | true =>
     obtain ⟨nm, hnm, hs⟩ := P.refMono long jets hot b s hI hr
