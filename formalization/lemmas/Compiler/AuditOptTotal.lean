@@ -1,4 +1,4 @@
-import lemmas.Compiler.OptLinkTotalGate
+import lemmas.Compiler.OptLinkTotalPass
 import lemmas.Ska.OptAliasPlainDriver
 
 /-! `#print axioms` of the converse of `+optimize` (`OptLinkTotal*.lean`),
@@ -26,6 +26,18 @@ open Formalization Compiler SkaModel
 #print axioms optimizeF_total
 #print axioms optHalts_of
 #print axioms opt_gate_total_of
+#print axioms mu_le_pw
+#print axioms mu_lt_pw2
+#print axioms afin_facts
+#print axioms aw_flag
+#print axioms alias_zero
+#print axioms aliasM_step
+#print axioms trimWalk_isSome
+#print axioms stInv_shape
+#print axioms trim_step
+#print axioms stInv_of
+#print axioms passTotal_of
+#print axioms opt_gate_total
 
 namespace AuditOptTotal
 open Opt
@@ -77,5 +89,20 @@ def lexLtB : Nat × Nat × Nat → Nat × Nat × Nat → Bool
 -- a second `+alias` on the result of the first reports no change
 #guard ((aliasM (fun l => l.headD 0) 2 xbBlocks (revCfg xbBlocks [0, 1, 2]) [0, 1, 2]).bind
   fun r => (aliasM (fun l => l.headD 0) 2 r.2 (revCfg r.2 [0, 1, 2]) [0, 1, 2]).map (·.1)) == some false
+
+-- `+trim-trace-hints` returns on the examples and keeps the measure
+#guard (trimTraceHints xaBlocks [0, 2, 1] (revCfg xaBlocks [0, 2, 1])).map (mu ρx [0, 1, 2]) == some (3, 2, 17)
+#guard (trimTraceHints xbBlocks [0, 2, 1] (revCfg xbBlocks [0, 2, 1])).map (mu ρx [0, 1, 2]) == some (3, 2, 17)
+-- `+alias` returns on the examples (`AliasRet`), with the `topo` of `+bb-topo`
+#guard (bbTopo 10 xbBlocks) == some [0, 2, 1]
+#guard (aliasM (fun l => l.headD 0) 2 xbBlocks (revCfg xbBlocks [0, 2, 1]) [0, 2, 1]).isSome
+#guard (aliasM (fun l => l.headD 0) 1 xaBlocks (revCfg xaBlocks [0, 2, 1]) [0, 2, 1]).isSome
+#guard (aliasM (fun l => l.headD 0) 1 xhBlocks (revCfg xhBlocks [0, 1]) [0, 1]).isSome
+-- `+switch-chains` returns on the examples (`SwitchRet`)
+#guard (switchChains 10 xaBlocks).isSome && (switchChains 10 xbBlocks).isSome && (switchChains 10 xhBlocks).isSome
+-- `+optimize` returns on `xbBlocks` after two rounds, as on the real compiler
+#guard ((optLoop 10 ⟨aliasM (fun l => l.headD 0), trimTraceHints, switchChains 10⟩ 2
+  ⟨NeedOrd.none, 2, xbBlocks⟩).map fun s => (HoonMap.get s.blocks 0).map (·.fin)) ==
+  some (some (Termin.brz 1 ⟨[], 1⟩ ⟨[], 2⟩))
 
 end AuditOptTotal
