@@ -6124,7 +6124,7 @@
         .*  subject
         [11 tag.formula 1 product.next]
       ::
-          [%11 [tag=@ clue=*] next=*]
+          [%11 [tag=* clue=*] next=*]
         =/  clue  $(formula clue.formula)
         ?.  ?=(%0 -.clue)  clue
         =/  next
