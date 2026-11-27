@@ -218,5 +218,112 @@ theorem cr6s_lyn_n (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 5
     generalize comp.door = Dr at hs hD hpm ⊢
     unfold cr6S6 cr6SA6
     simp [nock_exec, hD, sect_arm, hs, hpm]
+
+/-! ## The head: `+leap` gives `~`, and the `+kerf`/`+fork` test fails -/
+
+/-- The noun of a fork-free goal `%next`. -/
+theorem next_mk_noun (s : Sure CSet) (args : List (Option Nat)) (there : Nat) :
+    (CGoalL.next (Lazy.mk s [] []) ⟨args, there⟩ : CGoalL CSet).toNoun
+      = C (A 0x7478656e) (C (C s.toNoun (C (A 0) (A 0))) (C (listNoun (unitNoun A) args) (A there))) := rfl
+
+/-- **The head of `%6` under a fork-free `%next` goal**: `lep` is `~` (the
+first test of `+leap`), `?^  lep` fails, and so does `?&  ?=(%next -.goal)
+!(none-equivalent laz.goal(sure *sure))`: phase S (`cr6S0`) runs with `lep`
+pushed. -/
+theorem cr6s_head_nf (h7 : slot? 7 ctx = some compK) (p q r : Nomm) (s : Sure CSet) (th : Jmp)
+    (region : List Nat) (x : GenRest) (g : Gen (TreapMap mugF)) (mono sup : Noun) :
+    nock (crSubj mono (Nomm.n6 p q r).toNoun (CGoalL.next (Lazy.mk s [] []) th).toNoun (listNoun A region) sup
+      (compCore g x ctx)) crDol
+      = nock (C (A 0) (crSubj mono (Nomm.n6 p q r).toNoun (CGoalL.next (Lazy.mk s [] []) th).toNoun
+          (listNoun A region) sup (compCore g x ctx))) cr6S0 := by
+  have hD := lp6_at
+  have hne := ne_all (Lazy.mk Sure.bunt [] [])
+  rw [noneEquivalentL_bunt] at hne
+  simp only [Lazy.toNoun, Lazy.forksNoun, Lazy.bondsNoun, Sure.toNoun, Sure.bunt, Need.toNoun,
+    HoonSet.toNoun_empty, Tag.none] at hne
+  rw [Nomm.toNoun, cr_disp_n6, cr6_eq]
+  obtain ⟨args, there⟩ := th
+  rw [next_mk_noun]
+  simp only [crSubj, compCore]
+  generalize comp.door = Dr at hD ⊢
+  generalize s.toNoun = SN
+  generalize listNoun (unitNoun A) args = AN
+  unfold cr6Head cr6NoLep cr6Lep cr6T2
+  simp [nock_exec, hD, lp6_arm, lp6_nil, h7, compK_ne, ne_arm, hne, loob]
+
+/-! ## The goals of the branches: `cr6S0` and `cr6S1` under `%next` -/
+
+/-- The state after `+oo`. -/
+def ooG (g : Gen (TreapMap mugF)) : Gen (TreapMap mugF) := { g with bo := g.bo + 1 }
+
+/-- The state after `+id`. -/
+def idG (g : Gen (TreapMap mugF)) : Gen (TreapMap mugF) := { g with id := g.id + 1 }
+
+theorem ooG_bo (g : Gen (TreapMap mugF)) : (ooG g).bo = g.bo + 1 := rfl
+
+theorem oo_ap (g : Gen (TreapMap mugF)) : (oo : CM (TreapMap mugF) Nat) g = some (g.bo, ooG g) := rfl
+
+theorem idM_ap (g : Gen (TreapMap mugF)) : (idM : CM (TreapMap mugF) Nat) g = some (g.id, idG g) := rfl
+
+theorem comp_oo' (x : GenRest) (g : Gen (TreapMap mugF)) :
+    nock (C comp.door (C (genNoun g x) ctx)) comp.oo.arm = some (C (A g.bo) (genNoun (ooG g) x)) :=
+  comp_oo ctx x g
+
+theorem comp_id' (x : GenRest) (g : Gen (TreapMap mugF)) :
+    nock (C comp.door (C (genNoun g x) ctx)) comp.id.arm = some (C (A g.id) (genNoun (idG g) x)) :=
+  comp_id ctx x g
+
+/-- **The goals of the branches under `%next`** (`cr6S0` and `cr6S1`, their
+`%next` branches): `+oo` twice, `+fork-sure` of the goal's sure need at
+`there.then.goal`, the goals `[%next [sur-i ~ ~] ~ o-i]`, `+id` and the
+region `[region-id region]`, then a continuation `K` from `cr6S2` on. -/
+theorem cr6s_s01 (hc : CompIn ctx) (p q r : Nomm) (s : Sure CSet) (th : Jmp) (region : List Nat)
+    (x : GenRest) (g : Gen (TreapMap mugF)) (mono sup : Noun)
+    (K : Sure CSet → Sure CSet → Nat → Nat → Nat → CM (TreapMap mugF) (NextL CSet))
+    (hK : ∀ s0 s1 g3, forkSure s th.there g.bo (g.bo + 1) (ooG (ooG g)) = some ((s0, s1), g3) →
+      nock (C (listNoun A (g3.id :: region)) (C (C (CGoalL.next (Lazy.ofSure s0) (jmp0 g.bo)).toNoun
+          (CGoalL.next (Lazy.ofSure s1) (jmp0 (g.bo + 1))).toNoun) (C (A 0)
+          (crSubj mono (Nomm.n6 p q r).toNoun (CGoalL.next (Lazy.mk s [] []) th).toNoun (listNoun A region) sup
+            (compCore (idG g3) x ctx))))) cr6S2
+        = (K s0 s1 g.bo (g.bo + 1) g3.id (idG g3)).map fun p => C p.1.goal.toNoun (genNoun p.2 x)) :
+    nock (C (A 0) (crSubj mono (Nomm.n6 p q r).toNoun (CGoalL.next (Lazy.mk s [] []) th).toNoun
+        (listNoun A region) sup (compCore g x ctx))) cr6S0
+      = ((do
+          let o0 ← oo
+          let o1 ← oo
+          let (s0, s1) ← forkSure s th.there o0 o1
+          let rid ← idM
+          K s0 s1 o0 o1 rid : CM (TreapMap mugF) (NextL CSet)) g).map
+          fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  obtain ⟨args, there⟩ := th
+  have hfs := comp_fork_sure hc x (ooG (ooG g)) s there g.bo (g.bo + 1)
+  have hD1 := comp_oo_at
+  have hD2 := fks_at
+  have hD3 := comp_id_at
+  have ho1 := comp_oo' (ctx := ctx) x g
+  have ho2 := comp_oo' (ctx := ctx) x (ooG g)
+  rw [ooG_bo] at ho2
+  simp only [bind_apply, oo_ap, Option.bind_some, ooG_bo]
+  rw [next_mk_noun] at hK ⊢
+  simp only at hK ⊢
+  cases ef : forkSure s there g.bo (g.bo + 1) (ooG (ooG g)) with
+  | none =>
+    rw [ef] at hfs
+    simp only [Option.bind_none, Option.map_none]
+    simp only [crSubj, compCore] at hfs ⊢
+    generalize comp.door = Dr at hD1 hD2 hD3 hfs ho1 ho2 ⊢
+    unfold cr6S0 cr6SA0
+    simp [nock_exec, hD1, ho1, ho2, hD2, fks_arm, hfs]
+  | some v =>
+    obtain ⟨⟨s0, s1⟩, g3⟩ := v
+    rw [ef] at hfs
+    have hk := hK s0 s1 g3 ef
+    have hi := comp_id' (ctx := ctx) x g3
+    simp only [Option.bind_some, Option.map_some, idM_ap] at hfs ⊢
+    rw [next_jmp0_noun, next_jmp0_noun, Lazy.toNoun_ofSure, Lazy.toNoun_ofSure] at hk
+    simp only [listNoun, lazyNoun, crSubj, compCore] at hk hfs ⊢
+    generalize comp.door = Dr at hD1 hD2 hD3 hfs hk ho1 ho2 hi ⊢
+    unfold cr6S0 cr6SA0 cr6S1 cr6SA1
+    simp [nock_exec, hD1, ho1, ho2, hD2, fks_arm, hfs, hD3, hi, hk]
 end Compiler
 end Formalization
