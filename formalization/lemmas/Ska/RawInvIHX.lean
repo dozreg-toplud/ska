@@ -78,6 +78,41 @@ theorem rawX_frag {nm : Nomm} (hf : ∀ goal : CGoal S, Frag nm goal) : RawIHX S
   · exact absurd (Or.inr (lazK_ofSure.mpr ⟨rfl, e⟩)) hnk
   · exact e
 
+/-! ## `[7 [0 axe] q]` -/
+
+/-- `+from-sure` keeps every register of the need. -/
+theorem fromSure_nmem {axe : Nat} {s s' : Sure S} (h : fromSure axe s = some s') {r : Nat}
+    (hr : NMem s.ned r) : NMem s'.ned r := by
+  unfold fromSure at h
+  split at h
+  · cases h
+  split at h
+  · rename_i hn
+    rw [hn] at hr; exact hr.elim
+  · simp only [Option.some.injEq] at h
+    subst h
+    exact nmem_fromPath_of _ axe r hr
+
+/-- **`+from` keeps the kills**: each entry of the old lazy tree is one of
+the new tree at the same label, whose sure need has the old one's
+registers. -/
+theorem lazK_fromL {axe : Nat} {l l' : Lazy S} (h : fromL axe l = some l') {o x r : Nat}
+    (hk : lazK o l x r) : lazK o l' x r := by
+  obtain ⟨e, he, rfl, hr⟩ := hk
+  rcases List.mem_cons.mp he with rfl | he
+  · exact ⟨(o, l'), List.mem_cons_self, rfl, fromSure_nmem (fromL_sure h) hr⟩
+  · obtain ⟨l1, h1, h2⟩ := (fromL_ent axe l l' h).mem_left he
+    exact ⟨(e.1, l1), List.mem_cons_of_mem _ h2, rfl, fromSure_nmem (fromL_sure h1) hr⟩
+
+/-- **The case `sevenFrom`**: `q`, then `+from` on its lazy need, which
+emits nothing and keeps the kills. -/
+theorem rawX_sevenFrom {axe : Nat} {q : Nomm} (ha : 2 ≤ axe) (ihq : RawIHX S Map X q) :
+    RawIHX S Map X (Nomm.n7 (Nomm.n0 axe) q) := by
+  intro goal region g0 g1 nex K hK h hg hD hj hA hfd hr
+  obtain ⟨nx, laz', h1, hl, rfl⟩ := runL_seven_from ha hr
+  obtain ⟨S1, L1⟩ := ihq goal region g0 g1 nx K hK h hg hD hj hA hfd h1
+  exact ⟨S1, fun r hlv => L1 r (hlv.mono fun x y e => e.imp id (lazK_fromL hl))⟩
+
 end Raw
 end SkaModel
 end Formalization
