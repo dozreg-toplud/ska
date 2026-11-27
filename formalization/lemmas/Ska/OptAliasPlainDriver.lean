@@ -24,7 +24,8 @@ written out field by field (`optIn_iff`: it is `DInvR`), for track C.
 
 The witnesses of `OptAliasWitness.lean` violate it: in `vBlocks` and in
 `wBlocks` register `2` has two definitions in reachable blocks, the `%inc`
-of block `0` and the fill of `+crash-need` (`not_defOnceR_v`,
+of block `0` and a fill of the shape `+crash-need` emitted before commit
+`af5cc39` (`not_defOnceR_v`,
 `not_defOnceR_w`), and neither has `FillFresh` (`not_fillFresh_v`,
 `not_fillFresh_w`).
 

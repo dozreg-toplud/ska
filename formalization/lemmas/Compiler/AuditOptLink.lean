@@ -14,6 +14,7 @@ import lemmas.Compiler.OptLinkOpt
 import lemmas.Hoon.UnoBy
 import lemmas.Compiler.OptLinkTrimLink
 import lemmas.Compiler.OptLinkFuel
+import lemmas.Compiler.OptLinkSwGate
 
 /-!
 # Axioms of the pill link of the optimizer
@@ -146,3 +147,29 @@ open Formalization Compiler
 #print axioms bb_gate_total
 #print axioms rh_gate_total
 #print axioms rem_gate_total
+#print axioms swBody_eq
+#print axioms sw_uses
+#print axioms sw_test
+#print axioms testOf_eq
+#print axioms sw_chain
+#print axioms sw_plain
+#print axioms plainOf_eq
+#print axioms sw_plains
+#print axioms hsort_qsort
+#print axioms sw_cases
+#print axioms sw_tree
+#print axioms sw_nex
+#print axioms wt_ids
+#print axioms wt_r
+#print axioms wt_fin
+#print axioms sw_wtag
+#print axioms wp_old
+#print axioms wp_r
+#print axioms wp_idt
+#print axioms wp_ids
+#print axioms wp_node
+#print axioms sw_wplain
+#print axioms sw_walk
+#print axioms sw_gate
+#print axioms switchLink
+#print axioms opt_gate_sw

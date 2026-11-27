@@ -29,9 +29,9 @@ reachable from `0`.  The second is chosen, as **`DInvR`** = `DInvT`,
   blocks (`DefOnce`: the definitions of the whole map distinct) implies it
   (`defOnceR_of_defOnce`);
 * it holds on the corpus of `tools/hoon/ssacheck.hoon` at every pass of every
-  round once `+crash-need` stops filling the register it tests (the
-  candidate change of the Hoon, not applied); without the change it fails
-  there, as `FillFresh` does.
+  round once `+crash-need` stops filling the register it tests (the change
+  of the Hoon, applied in commit `af5cc39`); before the change it failed
+  there, as `FillFresh` did.
 
 The driver theorem is proved under both (`OptAliasPlainDriver.lean`,
 `OptAliasFresh.lean`).

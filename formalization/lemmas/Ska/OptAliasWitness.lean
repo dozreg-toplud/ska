@@ -44,9 +44,9 @@ runs `0`, `2`, `3`, `5` and returns `s + 1`; the code after runs `0`, `5` and
 returns `0`.
 
 The models of the passes were checked against the Hoon (README), so the real
-`+optimize` should do the same on these blocks; whether `+comp` emits blocks
-of this shape (two `%inc` of one register, a constant test, a `~` argument, a
-fill of `+crash-need` on the first `%inc`'s register) is not checked.
+`+optimize` should do the same on these blocks.  `+comp` no longer emits
+blocks of this shape: the fill of `+crash-need` on the first `%inc`'s register
+(the register its `%cel` tests) is gone since commit `af5cc39`.
 -/
 
 namespace Formalization
