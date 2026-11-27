@@ -62,7 +62,7 @@ def RawIHX (S : Type) [HoonSet S] (Map : Type → Type) [HoonMap Map] [HoonMapKe
     (nm : Nomm) : Prop :=
   ∀ (goal : CGoal S) (region : List Nat) (g0 g1 : Comp.Gen Map) (nex : NextL S) (K : Nat → Nat → Prop),
     KVan K g0.bo → SIP X (upRk g0.blocks) g0.bo g0 → GoalIn g0.re goal → GDist goal → GJ g0.bo goal →
-    GArgs goal → (∀ r, Defd g0.blocks r → ¬ GMem goal r) → sixCount nm ≤ 255 →
+    GArgs goal → (∀ r, Defd g0.blocks r → ¬ GMem goal r) → sixCount nm ≤ 255 → GClean goal →
     runL nm (CGoal.toL goal) region g0 = some (nex, g1) →
     SIP X (upRk g1.blocks) g1.bo g1 ∧ nex.th.args = [] ∧ 1 ≤ nex.th.there ∧ nex.th.there < g1.bo ∧
       ∀ r, LiveK g1.blocks (fun x y => K x y ∨ lazK nex.th.there nex.laz x y) nex.th.there r →
@@ -70,7 +70,7 @@ def RawIHX (S : Type) [HoonSet S] (Map : Type → Type) [HoonMap Map] [HoonMapKe
 
 /-- **The case `frag`**: a nomm of the first fragment, by `run_rawUK`. -/
 theorem rawX_frag {nm : Nomm} (hf : ∀ goal : CGoal S, Frag nm goal) : RawIHX S Map X nm := by
-  intro goal region g0 g1 nex K hK h hg hD hj ha hfd _ hr
+  intro goal region g0 g1 nex K hK h hg hD hj ha hfd _ _ hr
   rw [runL_frag (hf goal) region g0] at hr
   obtain ⟨⟨nex', g1'⟩, hr', e⟩ := Option.map_eq_some_iff.mp hr
   simp only [Prod.mk.injEq] at e
@@ -114,10 +114,10 @@ theorem lazK_fromL {axe : Nat} {l l' : Lazy S} (h : fromL axe l = some l') {o x 
 emits nothing and keeps the kills. -/
 theorem rawX_sevenFrom {axe : Nat} {q : Nomm} (ha : 2 ≤ axe) (ihq : RawIHX S Map X q) :
     RawIHX S Map X (Nomm.n7 (Nomm.n0 axe) q) := by
-  intro goal region g0 g1 nex K hK h hg hD hj hA hfd hc hr
+  intro goal region g0 g1 nex K hK h hg hD hj hA hfd hc hcl hr
   obtain ⟨nx, laz', h1, hl, rfl⟩ := runL_seven_from ha hr
   obtain ⟨S1, a1, lo1, hi1, L1⟩ := ihq goal region g0 g1 nx K hK h hg hD hj hA hfd
-    (by simpa only [sixCount, Nat.zero_add] using hc) h1
+    (by simpa only [sixCount, Nat.zero_add] using hc) hcl h1
   exact ⟨S1, a1, lo1, hi1, fun r hlv => L1 r (hlv.mono fun x y e => e.imp id (lazK_fromL hl))⟩
 
 /-! ## `[7 p q]` with `q` in the first fragment -/
@@ -129,7 +129,7 @@ theorem KVan.mono {K : Nat → Nat → Prop} {lo lo' : Nat} (h : KVan K lo) (hl 
 for its fork-free result. -/
 theorem rawX_seven {p q : Nomm} (hq : ∀ goal : CGoal S, Frag q goal) (ihp : RawIHX S Map X p) :
     RawIHX S Map X (Nomm.n7 p q) := by
-  intro goal region g0 g1 nex K hK h hg hD hj hA hfd hc hr
+  intro goal region g0 g1 nex K hK h hg hD hj hA hfd hc hcl hr
   rw [runL_n7] at hr
   obtain ⟨nq', g2, h2, hr⟩ := bind_some hr
   rw [runL_frag (hq goal) region g0] at h2
@@ -141,7 +141,7 @@ theorem rawX_seven {p q : Nomm} (hq : ∀ goal : CGoal S, Frag q goal) (ihp : Ra
   rw [Next.goal_toL] at hr
   obtain ⟨S1, a1, lo1, hi1, L1⟩ := ihp nq.goal region _ g1 nex K (hK.mono b2) S2
     ⟨nb2, fun x hx => by rw [a2] at hx; cases hx⟩ d2 ⟨lo2, hi2⟩ a2 (defd_next h hfd s2 dd2)
-    (by simp only [sixCount] at hc; omega) hr
+    (by simp only [sixCount] at hc; omega) (run_clean q goal g0 _ nq hcl hq2) hr
   refine ⟨S1, a1, lo1, hi1, fun r hl => ?_⟩
   obtain ⟨hl', hn⟩ := L1 r hl
   rcases L2 r hl' with e | e
@@ -239,7 +239,7 @@ theorem rawX_tail {p : Nomm} (ihp : RawIHX S Map X p) {g0 g g1 g2 : Comp.Gen Map
       rw [e1, defd_put hl] at d
       rcases d with d | d
       · exact hnx d
-      · exact hxb d) hc hr
+      · exact hxb d) hc trivial hr
   refine ⟨S2, a2, lo2, hi2, fun y hy => ?_⟩
   obtain ⟨hl', hn'⟩ := L2 y hy
   have he' : ∀ k, k < g.bo → HoonMap.get g1.blocks k = HoonMap.get g.blocks k := fun k hk => by
@@ -252,7 +252,7 @@ theorem rawX_tail {p : Nomm} (ihp : RawIHX S Map X p) {g0 g g1 g2 : Comp.Gen Map
 /-- **The case `four`**: the block of `%4` (after the collapse of the goal's
 need under `%next`), then the run of the operand, as `raw_n4`. -/
 theorem rawX_four {p : Nomm} (ihp : RawIHX S Map X p) : RawIHX S Map X (Nomm.n4 p) := by
-  intro goal region g0 g1 nex K hK h hg hD hj ha hf hc hr
+  intro goal region g0 g1 nex K hK h hg hD hj ha hf hc _ hr
   simp only [sixCount] at hc
   have hn : ∀ k, g0.bo ≤ k → HoonMap.get g0.blocks k = Option.none := fun k hk => h.none hk
   cases goal with
@@ -354,7 +354,7 @@ theorem finKeep_of_eq {g g' : Comp.Gen Map} (fr : ∀ x, x < g.bo → HoonMap.ge
 /-- **The case `three`**: the test block of `%3` (after `+forl` under
 `%next`), then the run of the operand, as `raw_n3`. -/
 theorem rawX_three {p : Nomm} (ihp : RawIHX S Map X p) : RawIHX S Map X (Nomm.n3 p) := by
-  intro goal region g0 g1 nex K hK h hg hD hj ha hf hc hr
+  intro goal region g0 g1 nex K hK h hg hD hj ha hf hc hcl hr
   simp only [sixCount] at hc
   have hn : ∀ k, g0.bo ≤ k → HoonMap.get g0.blocks k = Option.none := fun k hk => h.none hk
   cases goal with
@@ -401,7 +401,7 @@ theorem rawX_three {p : Nomm} (ihp : RawIHX S Map X p) : RawIHX S Map X (Nomm.n3
     rw [runL_n3_next, noneEquivalentL_ofSure] at hr
     by_cases hne : noneEquivalent laz = true
     · rw [if_pos hne] at hr
-      exact ihp (CGoal.next laz th) region g0 g1 nex K hK h hg hD hj ha hf hc hr
+      exact ihp (CGoal.next laz th) region g0 g1 nex K hK h hg hD hj ha hf hc hcl hr
     rw [if_neg hne] at hr
     obtain ⟨a, g2, h2, hr⟩ := bind_some hr
     have h2' : collapseLazyAtom ⟨laz, th⟩ g0 = some (a, g2) := by
