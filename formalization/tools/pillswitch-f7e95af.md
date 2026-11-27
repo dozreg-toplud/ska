@@ -12,7 +12,9 @@ desk's hoon.hoon.
 
 Arms whose Nock changed: `mink.loop` (one cell test less) and the `$` of
 `+fol-loop` (one case more).  Every other changed noun is a battery or a
-quoted core that holds one of them.
+quoted core that holds one of them, except the battery of `+hinted` (arm
+`96116` of `K`): its source is the same, but `?=(hint-dynamic tag)` tests the
+ten tags in another order (`hdBat` of `Compiler/CompPastLink.lean`).
 
 Hash names that changed, among those the hand-written files use
 ---------------------------------------------------------------
