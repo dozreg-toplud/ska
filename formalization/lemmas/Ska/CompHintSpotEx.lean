@@ -65,6 +65,39 @@ theorem contract_d14 (lib : Lib) (env : CallEnv) (snd : Nomm → NeedOrd → Boo
 
 end
 
+/-! ## The table of the 39 at the top -/
+
+/-- A formula the frame case takes now: `frameFormIn` and the indirect call
+whose subject is not hinted (`noBondH_n2_none`). -/
+def frameFormInS : Nomm → Bool
+  | Nomm.n0 _ => true
+  | Nomm.n4 p => frameFormInS p
+  | Nomm.n7 p q => frameFormInS p && frameFormInS q
+  | Nomm.n2 p q Option.none => hinted envH.cod p == some false && frameFormInS p && frameFormInS q
+  | _ => false
+
+/-- A kept dynamic `stopTag` hint the frame case takes. -/
+def keptIn : Nomm → Bool
+  | Nomm.n11d tag h q _ => hintDynamic tag && stopTag tag && clueIn h && frameFormInS q && (outReason q).isNone
+  | _ => false
+
+/-- `outReasonFrame` with the indirect call under the hint and a hint after a
+step of a sequence (`doneAllT_seven`). -/
+def outReasonSpot (nm : Nomm) : Option String :=
+  match nm with
+  | Nomm.n7 p q => if keptIn q && (outReason p).isNone then Option.none else outReasonFrame nm
+  | Nomm.n11d tag _ _ _ =>
+      if hintDynamic tag && stopTag tag then
+        (if keptIn nm then Option.none else some "kept dynamic stopTag tag, clue or formula out")
+      else outReasonTop nm
+  | _ => outReasonFrame nm
+
+def reasonsSpot : List (String × Option String) :=
+  HintData.all.map fun (n, j) => (n, ((parts j).bind fun (nmN, _, _, _) => nommOf 300 nmN).bind outReasonSpot)
+
+#guard (reasonsSpot.filter fun r => r.2.isNone).map Prod.fst ==
+  ["s01", "s02", "s03", "s06", "d01", "d02", "d06", "d08", "d14", "d21", "d23", "m01"]
+
 end Comp
 end SkaModel
 end Formalization
