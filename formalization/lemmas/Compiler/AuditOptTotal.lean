@@ -1,4 +1,4 @@
-import lemmas.Compiler.OptLinkTotalAlias
+import lemmas.Compiler.OptLinkTotalBlock
 import lemmas.Ska.OptAliasPlainDriver
 
 /-! `#print axioms` of the converse of `+optimize` (`OptLinkTotal*.lean`),
@@ -186,3 +186,11 @@ end AuditOptTotal
 #print axioms not_aliasRet
 #print axioms aliasOp_some
 #print axioms aliasFin_some
+#print axioms aliasOp_inv
+#print axioms aliasBody_inv
+#print axioms aclo_join
+#print axioms aliasStart_inv
+#print axioms aliasStartImms_inv
+#print axioms aliasEdges_inv
+#print axioms aliasPars_inv
+#print axioms aliasBlock_some

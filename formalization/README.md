@@ -336,6 +336,9 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/OptLinkTotalPass.lean` | `mu_le_pw`, `mu_lt_pw2`; **`afin_facts`** (the end `+alias` makes: old targets and arity, weight and rank sum not above, a change only with a lower weight); `aw_flag`, `alias_zero`, **`aliasM_step`** (where `aliasM` returns: `StInv` kept, `mu` not above, lower on a change); `trimWalk_isSome`, `stInv_shape`, **`trim_step`**; `stInv_of` (`StInv` from `Acyclic`, `Closed`, `ArityOK`, block `0`, `TwoNA`); `AliasRet`, `SwitchRet` (open); **`passTotal_of`** (`PassTotal` at `DInvR` from them and `driverHypR_of`); **`opt_gate_total`** (the link of `+optimize` with the model returning, given `AliasRet` and `SwitchRet`, on blocks with `StInv` and `DInvR`). |
 | `Compiler/OptLinkTotalSwitch.lean` | **`switchRet_of`**: `SwitchRet sfuel ρ L` for a fuel above `ρ` of every member of `L` (`switchChains_some`, from `RkDown`, `Closed` and the keys of `StInv`): `hsort_some`, `casesOf_some`, `stree_some` (`k` cases take `2 (k - 1)` labels and depth `k`), `freshIds_len`, `testOf_some`, `chainOf_some`, `plainOf_some`, `plainsOf_some` (the chains follow a jump, so the rank falls), `switchTag_some`, `switchPlain_some`, `switchWalk_some`. |
 | `Compiler/OptLinkTotalAlias.lean` | The places where the model of `+alias` returns `none` (header); **`not_aliasRet`**: `AliasRet` is false (`AliasWit.wBl`, one block `[%cel 1] [%bom ~]` with `DInvR`, `StInv` and `TopoInvR`, crashes with one argument); `ReadsIn n` (every register a reachable block reads is defined or below `n`) and the corrected `AliasRetN` (open); `aliasOp_some`, `aliasFin_some` (an op and an end return once the registers they read have facts, and a two-way end passes no arguments). |
+| `Compiler/OptLinkTotalBody.lean` | The body of a block under `+alias` returns: **`aliasOp_inv`** (one op) and **`aliasBody_inv`** (the body), from a set `S` of registers whose image under `old` has a fact, closed facts (`AClo`: every register a fact refers to, `IRef`, has a fact), immediates with facts (`IClo`), every read in `S` or written before, `old` the identity on the registers written, written once; after, `S` and the registers written have facts, the facts stay closed, none is lost (`KGrow`), `old` changes only where written. |
+| `Compiler/OptLinkTotalStart.lean` | The start of a block under `+alias` returns: **`aliasStart_inv`** (the join and the refinement after a one-predecessor two-way end, places `S1` .. `S5`; the join keeps facts closed, `aclo_join`), **`aliasStartImms_inv`** (`B3`), **`aliasEdges_inv`** (`E1`; every jump of a predecessor to `o` is an edge), **`aliasPars_inv`** (`I1` .. `I3`; `param-info` refers only to what every edge's fact refers to, `iref_paramInfo`). |
+| `Compiler/OptLinkTotalBlock.lean` | **`aliasBlock_some`**: one kept block of the walk returns, from what the walk invariant must give at it (the block, closed facts and immediates and the new block of every predecessor, its jumps to `o` with enough arguments that have facts, `TestFact`, the set `S`, `old` the identity on the parameters and the registers written), with closed facts, immediates with facts, and facts for `S` and the registers written in the new state. |
 | `Compiler/OptLinkSwNouns.lean` | `+switch-chains` (arm `182` of `optC`, `sw_at_cut`, `swBody_eq`): its nouns cut by `tools/gen/optlink.py switch` (the gates `test-of` `swTOB`, `chain-of` `swCHB`, `plain-of` `swPOB`, `plains-of` `swPSB`, `cases` `swCSB`, `tree` `swTRB`, `uses`, `nex`, the walk `swWalk` and its two branches, each cut at the tests the proofs step through), the subjects `swS3` to `swS9` after `uses` and each gate, and the nouns `stestN`, `splainN`, `spN`, `scaseN` of the model's values. |
 | `Compiler/OptLinkSwUses.lean` | `uses` (`sw_uses`): a map related to `usesOf` (`UsesRel`: at each register with a positive count, that count), through the gate `put` (`uses_gut`, `uses_put`, `bump`), the gate of the `+roll` over the ops and the gate of the `+rep:by` (`sw_repg`, the pattern of `rd_step`). |
 | `Compiler/OptLinkSwTest.lean` | **The gate `test-of` is `testOf`**, crashes included (`sw_test`): the model restated by the steps (`testOf_eq`: `clqNA`, `eqqNA`, `toYb`, `toBod`, `toHM`, `toC`), each Nock step stated as the subject it starts from (`to_clq`, `to_y`, `to_yb`, `to_eqq`, `to_bod`, `to_hm`, `to_h`, `to_m`, `to_s`, `to_c`, `to_eq`). |
@@ -2586,6 +2589,33 @@ import only its theorems.  So:
    an argument nor defined, and raw `+comp` output is expected never to do
    that, since `+comp` reads only registers it has written on the path or
    the `n-args` registers of the subject; `ReadsIn s.nargs` is that fact.
+
+   Third session, further.  Every place of the list in the header of
+   `OptLinkTotalAlias.lean` is closed at the level of one kept block, as a
+   hypothesis on the state of the walk at `o`: **`aliasBlock_some`**
+   (`OptLinkTotalBlock.lean`), from `aliasBody_inv` (`OptLinkTotalBody.lean`:
+   the ops in order, with closed facts `AClo`, immediates with facts `IClo`
+   and a set `S` of registers with facts under `old`), `aliasStart_inv`
+   (`S1` .. `S5`), `aliasStartImms_inv` (`B3`), `aliasEdges_inv` (`E1`) and
+   `aliasPars_inv` (`I1` .. `I3`, `OptLinkTotalStart.lean`).  Left for
+   `AliasRetN`: the induction on `aliasWalk` that gives those hypotheses at
+   every kept block from `W0` .. `W3` and the input.  Concretely, with
+   `S r` = `r ∈ b.par`, or `r < n` and `r ∉ allDefs` at the entry, or `r`
+   defined on every path to `o` before `o` (`DefFirst` splits every read into
+   these and an earlier op of the block), the invariant must carry: a
+   predecessor in `g.rev o` is walked and kept, reachable, with its new block
+   jumping to `o` (`W0`, `W1`, from `RevSound`, `TopoOK` and `delJu` only
+   removing); its frozen facts are closed with immediates with facts
+   (`aliasBlock_some` gives that for the block just walked); a fact under the
+   current `old` for every register defined on every path to it, kept since
+   `old` changes only at the registers a later block writes, which by
+   `DefOnceR` are defined only there, so not on every path to an earlier
+   block (`W3`); the arguments of its jumps to `o` have facts and are at
+   least `|par o|` (`afin_facts` with `ArityOK`, and the end's reads are in
+   `S` by `ReadsIn`); `old` the identity on every register not yet written
+   (`DefOnceR` again).  Then `PassTotal` at one `N` with
+   `J = DInvR ∧ ReadsIn N`, the per-pass `ReadsIn N` obligations, and the
+   restated `opt_gate_total` with the two instances are still to do.
 
 14. **Raw `+comp` output meets the optimizer's invariant** (track D,
    2026-11-24, `Ska/RawInv*.lean`, `Ska/AuditRaw.lean`).  The driver theorem

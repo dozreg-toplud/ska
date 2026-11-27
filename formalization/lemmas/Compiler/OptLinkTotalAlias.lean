@@ -45,8 +45,21 @@ In `aliasBlock` (block `o` of `topo`, `pre = g.rev o`):
 Proved here, per op and per end: `aliasOp_some` (`O1` .. `O6`: the op
 returns once every register it reads has a fact under `old`) and
 `aliasFin_some` (`F1` .. `F4`: the end returns once a two-way end passes no
-arguments, `TwoNA` of the input, and its test register has a fact).  What
-is left is the walk invariant that gives those facts (see Gaps 13).
+arguments, `TwoNA` of the input, and its test register has a fact).
+
+Closed at the level of one kept block (third session), each place reduced
+to a hypothesis on the state of the walk at `o`:
+* `O1` .. `O6` over a whole body: `aliasBody_inv` (`OptLinkTotalBody.lean`),
+  from a set `S` of registers with facts under `old`, closed facts (`AClo`)
+  and immediates with facts (`IClo`);
+* `S1` .. `S5`: `aliasStart_inv`; `B3`: `aliasStartImms_inv`; `E1`:
+  `aliasEdges_inv`; `I1` .. `I3`: `aliasPars_inv` (`OptLinkTotalStart.lean`);
+* `B1`, `B4` and all of them together: `aliasBlock_some`
+  (`OptLinkTotalBlock.lean`), with the hypotheses listed in its header.
+Open: the walk invariant `W0` .. `W3` that gives the hypotheses of
+`aliasBlock_some` at every kept block, by induction on `aliasWalk` over
+`topo` (the dropped blocks, `pre = []` and `o ≠ 0`, return by `TopoOK`
+alone), and with it `AliasRetN` (see Gaps 13).
 -/
 
 namespace Formalization
