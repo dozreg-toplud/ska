@@ -79,7 +79,9 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     of `+analyze` (`lemmas/Ska/PassMeasure.lean`, README Gaps 16): per run, how `less-code`, the product, the
                     map, `indi` and `seek` changed; per pass loop, its passes; the members `+cull` drops and whether one is
                     analysed again (also `%pm-rec caller kid target`, `%pm-ex caller kid` at every %rec and exact
-                    resolution, and `%st`, a mug of the members with their entries, at every pass).  `passmeasure-lib.hoon` is its driver over 21 library calls.  Over 2,269 calls (2026-11-27):
+                    resolution, and `%st`, a mug of the members with their entries, at every pass; and `%pm-ent`, at
+                    every pass start each member with its DFS number, how its entry changed since the previous start, its
+                    callees and whether it is `+dirty`, read by `passmeasure-stab.py`).  `passmeasure-lib.hoon` is its driver over 21 library calls.  Over 2,269 calls (2026-11-27):
                     no run against the lexicographic measure (with `less-code` in the order `CapeLe`), 151 runs that changed
                     only the map (open point (a)), 21 culled members and none found again (open point (b)), no pass loop that
                     did not end.  It also checks `Tidy` and `PiNorm` (`lemmas/Ska/PassMeasureT.lean`) at every run: over
@@ -116,6 +118,11 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
 * `passmeasure-u.py SEED N OUT.hoon` random self-calls of ONE formula at many subjects (exact, %rec, %he or a push);
                     1280 cores (seeds 201..216): all returned, 3690 takeovers (69 back to an earlier target), 4 re-pushes,
                     at most 11 passes (2026-11-27)
+* `passmeasure-stab.py [-v] OUT.txt...` reads `%pm-ent` and checks per pass that goes on `passOn_old` of
+                    `lemmas/Ska/PassStab.lean` (no member present at two starts rises) and the candidate measures A, B, C, D,
+                    DB of `lemmas/Ska/PassStabM.lean`.  Over the 2,632 cores of q, u, the chains, the re-push drivers and
+                    cyc (2026-11-27): 18,682 passes, 50,915 pairs, no rise; A fails at 407, B at 415, C never, D at 43
+                    (all in u, an older member goes dirty through a back edge), DB at 49 (README Gaps 16)
 * `passmeasure-cyc.py OUT.hoon` a period-3 %rec takeover designed as a true cycle; it returns in 2 passes, because
                     `fol-loop` analyses both branches of a %6 whatever its test (no dispatch on a known tag) and a
                     `%rec` target's product, patched by `+patch-prod`, depends on the target only through its precision

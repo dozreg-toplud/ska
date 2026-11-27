@@ -23,10 +23,11 @@ it".  `FinPushes` states it per chain, without a bound fixed in advance; the
 old hypothesis implies it (`finPushes_of_bound`), and the two theorems go
 through with it (`passOn_wf_fin`, `passNext_acc_fin`, `passLoop_returns_fin`).
 
-What `FinPushes` needs, not proved: every entry present at two consecutive
-passes falls or stays (the merge of `+run`: `runDatum_prod_step`, the code
-requirement united with the old one), so an identity present from some pass
-on changes finitely often; the root is never culled.  The rest is an eventual
+What `FinPushes` needs: every entry present at two consecutive passes falls
+or stays, so an identity present from some pass on changes finitely often, and
+the root is never culled (proved since, pushes or not: `passOn_old`,
+`chain_present_const`, `chain_root_const` of `Ska/PassStab.lean`).  The rest,
+not proved, is an eventual
 stabilisation along the evaluation order of each run: a call site whose
 subject is eventually constant has an eventually constant callee, once the
 entries `+hit-test` reads (`less-code`, `indi` of the members of the stack
