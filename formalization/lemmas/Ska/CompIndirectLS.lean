@@ -221,6 +221,156 @@ theorem nokLB {lib : Lib} {P : Noun → Prop} {f fb fc : Noun} (M : MinkC2 lib P
       exact ⟨r, ((M.bwd hs hx).2 x _ rfl hy).2 y r rfl hmr, goalSemCM_toCMD (fun p => ⟨p, rfl⟩)
         (goalSemCM_step hν1 (fun z hz => k1 z (hK3 ned hned z hz)) e3 _ _ N)⟩
 
+/-! ## `+kerf` in front -/
+
+/-- **`+kerf` in front of the call's inner run, under a flat lazy goal**
+(`kerfLC` for `RunOKLB`): the inner run's `RunOKLB` under `%next
+(lazy-from-reg pro) (jmp0 out)` gives `RunOKLS` under `%next L th` with the
+witness `kernWit pro`; the fronts at the state level are the ops of `KernPW`
+(`kernPW_fill`), with no result entry at a goal label. -/
+theorem kerfLB {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp} {g0 g2 g' : Gen Map}
+    {out pro : Nat} {nex : NextL S} {Q : Wit}
+    (hk : kerf (⟨L, th⟩ : NextL S) g0 = some ((out, pro), g2)) (d0 : g0.drop = false) (hcb : CondBelow g0)
+    (hu : UpBelow g0) (hth : th.args = []) (h1 : 1 ≤ th.there) (h2 : th.there < g0.bo)
+    (hsd : Distinct L.sure.ned)
+    (hsl : ∀ x, NMem L.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none)
+    (hlab : ∀ e ∈ entries L, e.1 < g0.bo ∧ ∃ B fin, HoonMap.get g0.blocks e.1 = some ⟨[], B, fin⟩)
+    (hnd : ((entries L).map Prod.fst).Nodup)
+    (hed : ∀ e ∈ entries L, Distinct e.2.sure.ned ∧
+      ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none)
+    (R : RunOKLB (Map := Map) lib P f (ofSure (lazyReg pro : Sure S)) (jmp0 out) Q false g2 g' nex) :
+    RunOKLS (Map := Map) lib P f L th (kernWit pro) false g0 g' nex := by
+  obtain ⟨rfl, rfl, b2, dr2, l2, PF, G2, ⟨A0, hB0, P0⟩, hE, hO, c0, crng⟩ := kerf_specL hk d0 hcb hu h1 h2 hlab hnd
+  have e2 : entries (ofSure (lazyReg g0.re : Sure S)) = [] := entries_ofSure _
+  have Re : Ext g2 g' := ⟨R.re, R.bo, R.drop, fun o ho => R.keep o ho (by rw [e2]; simp)⟩
+  have rl := R.re
+  have bl := R.bo
+  have lab' : ∀ e ∈ entries nex.laz, g2.bo ≤ e.1 := fun e he =>
+    (R.labs e he).1.elim (fun h => by rw [e2] at h; cases h) (fun h => h.1)
+  -- the later `cond`s
+  have hcf2 : ∀ (cf : Map (Nat × List Nat)), (∀ k, k < g'.re → HoonMap.get cf k = HoonMap.get g'.cond k) →
+      ∀ x, x < g2.re → HoonMap.get cf x = HoonMap.get g2.cond x := fun cf hcf x hx =>
+    (hcf x (by omega)).trans (R.cfr.get_lt hx)
+  have hfill : ∀ (cf : Map (Nat × List Nat)), (∀ k, k < g'.re → HoonMap.get cf k = HoonMap.get g'.cond k) →
+      ∀ {sur : Sure S} {A : List Pole} {o : Nat}, KernPW (Map := Map) g0.re g2.cond (g0.re + 1) g2.re o sur A →
+      Distinct sur.ned → (∀ x, NMem sur.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none) →
+      ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace)
+        (R : Map (Option Noun)) (v : Noun), SkaModel.read g0.re R = some v →
+      (FitsS sur v → ∃ R', Runs lib O c gul st t (A.map (renPole (unproxy cf))) R R' ∧ HoldsS sur R' v ∧
+        ∀ x, (x < g0.re + 1 ∨ (g2.re ≤ x ∧ x ≠ g0.re)) → ¬ NMem sur.ned x →
+          SkaModel.read x R' = SkaModel.read x R) ∧
+      (¬ FitsS sur v → Crashes lib O c gul st t (A.map (renPole (unproxy cf))) R) :=
+    fun cf hcf sur A o KP hd hsl' => kernPW_fill KP (by omega) hd (fun x hx => (hsl' x hx).1)
+      (by rw [hcf2 cf hcf _ (by omega)]; exact c0)
+      (fun x hx => by rw [hcf2 cf hcf _ (by have := (hsl' x hx).1; omega), PF.get_lt (hsl' x hx).1]; exact (hsl' x hx).2)
+      (hcf2 cf hcf)
+      (fun x a b => by
+        rcases crng x (by omega) with e | ⟨tag, e⟩
+        · exact Or.inl (unproxy_none (by rw [hcf2 cf hcf x b]; exact e))
+        · exact Or.inr (by simp only [unproxy, hcf2 cf hcf x b, e]))
+  -- the shared part of the two `sem` clauses: through the block `out`
+  have conv : ∀ (cf : Map (Nat × List Nat)), (∀ k, k < g'.re → HoonMap.get cf k = HoonMap.get g'.cond k) →
+      ∀ (c : Straight Map) (ned : Need) (σ : Type) (Inv : σ → Prop) (ν : σ → Needs) (O : Oracle σ) (gul : Noun)
+        (st : σ) (t tm : Trace) (s0 s : Noun) (regs : Map (Option Noun)),
+      (∀ st' : σ, AgreeLB lib O c gul st' t cf ned g0 g' nex.laz s0 s) → (∀ x, NMem ned x → g'.re ≤ x) →
+      Forall2 (FrameRel lib (ν st)) t tm → ∀ r,
+      GoalSemCM lib O c gul Inv ν (fun x => (x < g2.re ∨ NMem ned x) ∧ ¬ GMem (CGoal.next (lazyReg g0.re : Sure S)
+        (jmp0 g0.bo)) x) st regs t tm nex.th (CGoal.next (lazyReg g0.re : Sure S) (jmp0 g0.bo)) r →
+      GoalSemCMD lib O c gul Inv ν (fun x => (x < g0.re ∨ NMem ned x) ∧ ¬ NMem L.sure.ned x) st regs t tm nex.th
+        L.sure th (kernWit g0.re s) r := by
+    intro cf hcf c ned σ Inv ν O gul st t tm s0 s regs ag hned htr r G
+    have hbo : HoonMap.get c.blocks g0.bo = some ⟨[], A0.map (renPole (unproxy cf)), Termin.hop th⟩ := by
+      rw [(ag st).1 g0.bo (Nat.le_refl _) (by omega) (fun hm => by
+        obtain ⟨e, he, e1⟩ := List.mem_map.mp hm; have := lab' e he; omega), Re.2.2.2 _ (by omega), hB0]
+      simp only [Option.map_some, unproxyBlob, renBlob, List.map_nil, renFin, renJmp_nil _ hth]
+    cases r with
+    | one q => exact G
+    | two t' => exact G
+    | zero p =>
+      obtain ⟨st1, R1, hI1, hν1, hp1, k1, e1⟩ := G.1 (fitsS_lazyReg _ p)
+      obtain ⟨F1, F2⟩ := hfill cf hcf P0 hsd hsl lib σ O c gul st1 t R1 p hp1
+      refine ⟨fun fp => ?_, fun nf => ?_⟩
+      · obtain ⟨R2, r2, hh2, k2⟩ := F1 fp
+        have e2 : goJ lib O c gul st1 R1 t (jmp0 g0.bo) = goJ lib O c gul st1 R2 t th := by
+          have := r2 [] (Termin.hop th)
+          simp only [List.append_nil] at this
+          rw [goJ_jmp0 _ _ _ _ hbo, this, execBlob_hop]
+        refine ⟨st1, R2, Need.this g0.re, p, hI1, hν1, ⟨rfl, rfl⟩, hh2.1,
+          (k2 g0.re (Or.inl (by omega)) (fun hm => by have := (hsl _ hm).1; omega)).trans hp1,
+          fun x ⟨x1, x2⟩ => ?_, e1.trans e2⟩
+        rw [k2 x (x1.elim (fun h => Or.inl (by omega)) (fun h => Or.inr ⟨by have := hned x h; omega, by
+          have := hned x h; omega⟩)) x2]
+        exact k1 x ⟨x1.elim (fun h => Or.inl (by omega)) Or.inr, fun e => by
+          simp only [GMem, lazyReg, NMem] at e
+          rcases x1 with h | h
+          · omega
+          · have := hned x h; omega⟩
+      · exact ⟨Tone.two t, st1, hI1, hν1, by
+          rw [e1, goJ_jmp0 _ _ _ _ hbo]
+          have := F2 nf [] (Termin.hop th)
+          simp only [List.append_nil] at this
+          exact this, ToneRel.two (frames_mono hν1 htr)⟩
+  have agR : ∀ (cf : Map (Nat × List Nat)) (c : Straight Map) (ned : Need) (σ : Type) (O : Oracle σ) (gul : Noun)
+      (t : Trace) (s0 s : Noun), (∀ st' : σ, AgreeLB lib O c gul st' t cf ned g0 g' nex.laz s0 s) →
+      ∀ st' : σ, AgreeLB lib O c gul st' t cf ned g2 g' nex.laz s0 s :=
+    fun cf c ned σ O gul t s0 s ag st' => agreeLB_mono (ag st') (by omega)
+  -- the fronts at the state level
+  have FS : FrontsS (Map := Map) (kernWit g0.re) false g0 g' L nex := by
+    intro e he
+    obtain ⟨A, hA, KP⟩ := hE e he
+    refine ⟨A, fun B fin hb => by rw [Re.2.2.2 _ (by have := (hlab e he).1; omega)]; exact hA B fin hb,
+      fun cf hcf => Or.inr ⟨fun hm => by
+        obtain ⟨e', he', e1⟩ := List.mem_map.mp hm; have := lab' e' he'; have := (hlab e he).1; omega, ?_⟩⟩
+    refine ⟨fun r hr => by simp [Sure.bunt, NMem] at hr, fun s v d w _ r _ hr => by simp [Sure.bunt, NMem] at hr,
+      fun s v d w _ _ => fitsS_bunt s, fun lib σ O c gul st t R0 s v d w hq _ hd _ => ?_⟩
+    obtain ⟨rfl, rfl⟩ := hq
+    obtain ⟨F1, F2⟩ := hfill cf hcf KP (hed e he).1 (hed e he).2 lib σ O c gul st t R0 w hd
+    refine ⟨fun fv => ?_, F2⟩
+    obtain ⟨R2, r2, hh2, k2⟩ := F1 fv
+    refine ⟨R2, r2, hh2, fun x hx hn' => k2 x ?_ hn'⟩
+    rcases hx with h | h | h
+    · exact Or.inl (by omega)
+    · exact Or.inr ⟨by omega, by omega⟩
+    · simp only [NMem] at h; subst h; exact Or.inl (by omega)
+  have dreg : ∀ s v d w r, kernWit g0.re s v d w → NMem d r → g0.re ≤ r ∧ r < g'.re := fun s v d w r hq hr => by
+    obtain ⟨rfl, rfl⟩ := hq
+    simp only [NMem] at hr; subst hr; exact ⟨Nat.le_refl _, by omega⟩
+  refine ⟨⟨by omega, by omega, Re.2.2.1.trans dr2, fun o ho hn' => by rw [Re.2.2.2 o (by omega), hO o ho hn'],
+    G2.trans R.grow, PF.1.trans R.cfr, R.lo, R.hi, ?_, fun r hr => ?_, R.dist,
+    fun e he => ⟨(R.eregs e he).1, fun r hr => Or.inr (Or.inr ?_)⟩,
+    fun e he => ⟨Or.inr ⟨(by have := lab' e he; omega), (R.labs e he).1.elim (fun h => (by rw [e2] at h; cases h))
+      (fun h => h.2)⟩, (R.labs e he).2⟩, R.nodup,
+    dreg, fun s hs hf => ?_, R.ncond, R.econd,
+    FS.toFront (by omega) (fun r hr => (hsl r hr).1) (fun e he r hr => (by simp [gsE, NMem] at hr)) dreg, ?_, ?_⟩, FS⟩
+  · rcases R.ent with fr | e
+    · exact Or.inl fr
+    · simp only [GoalJ] at e
+      rw [e]
+      exact Or.inl ⟨_, by rw [Re.2.2.2 _ (by simp only [jmp0]; omega)]; exact hB0, rfl, rfl⟩
+  · rcases R.regs r hr with h | h
+    · simp only [ofSure, sure_mk, lazyReg, NMem] at h; subst h; exact Or.inr ⟨Nat.le_refl _, by omega⟩
+    · exact Or.inr ⟨by omega, h.2⟩
+  · rcases (R.eregs e he).2 r hr with ⟨e0, h0, _⟩ | h | h
+    · rw [e2] at h0; cases h0
+    · simp only [ofSure, sure_mk, lazyReg, NMem] at h; subst h; exact ⟨Nat.le_refl _, by omega⟩
+    · exact ⟨by omega, h.2⟩
+  · obtain ⟨N1, N2⟩ := R.nec s hs hf
+    have bad : ∀ {tm : Trace} {r : Tone}, BadC (CGoal.next (lazyReg g0.re : Sure S) (jmp0 g0.bo)) tm r →
+        BadC (CGoal.next L.sure th) tm r := fun h => by
+      rcases h with e | ⟨q, _, nq⟩
+      · exact Or.inl e
+      · exact absurd (fitsS_lazyReg _ q) nq
+    exact ⟨fun gul n tm r hm => bad (N1 gul n tm r hm), fun gul tm => by
+      obtain ⟨r, hm, hb⟩ := N2 gul tm; exact ⟨r, hm, bad hb⟩⟩
+  · intro cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
+    exact conv cf hcf c ned σ Inv ν O gul st t tm s0 s regs ag hned htr r (goalSemCMD_toCM
+      (R.sem cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm (agR cf c ned σ O gul t s0 s ag) hned
+        regs hh hn))
+  · intro cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
+    obtain ⟨r, hm, G⟩ := R.semB cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs (agR cf c ned σ O gul t s0 s ag)
+      hned regs hh hn res hres
+    exact ⟨r, hm, conv cf hcf c ned σ Inv ν O gul st t tm s0 s regs ag hned htr r (goalSemCMD_toCM G)⟩
+
 end Comp
 end SkaModel
 end Formalization
