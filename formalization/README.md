@@ -121,6 +121,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Hoon/MapFolds.lean`, `Hoon/SetFolds.lean` | `+key:by`, `+run:by`, `+any:by`, `+wyt` of `+by` and `+in` (one noun); `+gas:in`, `+any:in`, `+run:in`, `+del:in`. |
 | `Hoon/Canon.lean` | Pure Lean: treaps are canonical.  Two `IsMap` nouns with the same pairs are equal (`isMap_ext`), and two `IsSet` nouns with the same keys (`isSet_ext`, through `toMap_inj`).  `+tap:by` lists the pairs in strictly decreasing `+gor` order of the keys (`tapList_pairwise`), which determines the list (`tapList_unique`); the order of `+rep` is the pre-order of the canonical treap (`preorder_ext`, `mem_preorder`). |
 | `Hoon/DifIn.lean` | `+bif:in` and `+dif:in` against `bifInF` and `difInF` (`bif_gate`, `dif_in_gate`); on sets, `+bif` returns a node with root `b` whose subtrees are sets of the keys before and after `b` in `+gor` order (`bifInF_spec`), and `+dif` returns a set of the keys of `a` that `b` does not hold (`difInF_spec`, `dif_in`).  The merge of `+dif` is `mergeInF` of `+del:in`.  The generator names no noun of `+bif`, so its arm is defined there (`bifArm`, `bif_arm_at` by the kernel). |
+| `Hoon/DifBy.lean` | `+bif:by` and `+dif:by` against `bifByF` and `difByF` (`bif_by_gate`, `dif_by_gate`; the nouns of `+bif:by` cut by hand, `bif_by_arm_at`: axis `342` of the door); on maps, `+dif:by` is a map with the pairs of `a` whose keys `b` does not hold (`difByF_spec`, `dif_by`).  Its merge is `mergeF` of `+del:by`; the `?>  ?=(^ c)` of a cell type are `%toss` hints. |
 | `Hoon/UniIn.lean` | `+uni:in` (`in.uni.*`): its loop is not structurally recursive (an outer call takes the product of an inner one as a set), so its model is a relation `UniR`, one constructor per branch, and `uni_loop`, `uni_in_gate` run the Nock on every derivation.  On two sets a derivation exists and ends in a set with the members of both and at most as many nodes (`uniP_of_sets`, by induction on the nodes: while the root of `a` comes first in `+mor` order the loop walks down `b` with it at the root, `uni_domA`, and symmetrically `uni_domB`), so the gate returns such a set (`uni_in`). |
 | `Hoon/Ju.lean` | The doors `+ju` (get, put, has, del, gas) and `+ja` (get, add). |
 | `Hoon/RollUni.lean` | `+roll` with a gate that may crash (`roll_loop_M`, `roll_gate_M`: the fold stops at the first crash); with the gate itself as the model, `+roll` over a list of one element is the gate on that element and the first accumulator (`roll_gate_one`); the arm `uni` of a door `+by` builds its gate (`uni_by_arm`).  `+uni:by` itself is not linked. |
@@ -259,6 +260,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompRunSixS.lean` | Phase S of `%6`: the tail (`cr6s_tail`, `sixTail`), from `+past-fork` on (`cr6s_p`, `sixPM`), the two `%hop` blocks under `%done` and `%pick` (`cr6s_lyn_dp`, `sixLynDP`), the two runs of the branches with a continuation (`cr6s_mid`), and **`comp_run_n6_dp`: the case `%6` under `%done` and `%pick`** given the links and results of the parts (`SixParts`); `+past-fork` keeps the registers and `LInv` (`lregs_pastFork`, `linv_pastFork`); `kern_reg`. |
 | `Compiler/CompRunSixRes.lean` | What `%6` returns under `%done` and `%pick` (`res_n6_dp`, `GRes`): the tail keeps `GInv` (`six_tail_res`), the fork of the two `%hop` blocks meets `LInv` (`lyn_linv`). |
 | `Compiler/CompSixFork.lean` | `+fork-need` (`fkn_loop`, its loop as `forkNeedGo`; `comp_fork_need`) and `+fork-sure` (`comp_fork_sure`) on every need; `forkSure_inv`: fresh registers, apart, the looks kept, one label taken. |
+| `Compiler/DifMap.lean` | `+dif:by` on the treaps of `TreapMap` is `difM` (`get_difM`, `difByF_hoonMap`, `dif_by_hoonMap`): the two `~(dif by ..)` of `+sect` compute the model's `made0` and `made1`. |
 | `Compiler/CompCoerceLazyGen.lean` | **`+coerce-lazy` on every lazy need** (forks and bonds to any depth): `czTail` with its roll gates named (`czBG`, `czFG`, `cz_tail_eq`); the root part on any lazy need (`cz_lokG`, `cz_srlG`, `cz_x`); the gates (`cz_bgate`, `cz_fgate`: the gate slammed again on the entry's label and need, the same `ned` and `less`); one step (`cz_step`, cut into `cz_step_none`, `cz_step_ee`, `cz_step_eb`, `cz_step_fe`, `cz_step_fb` to keep each kernel check small); **`cz_all`**, **`comp_coerce_lazy_all`**: the gate is `coerceLazyL ned less o laz` (the bonds before the forks, no departure), with an empty `soft`. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
@@ -374,6 +376,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/Bake.lean`, `Ska/Know.lean` | Models of `+uni-sock`, `+norm-sock`, the bake of a callee and `+know`. A subject fitting `less.c` and a site's sock fits the site's variant (`bakeOf_fits`, `rebake_fits`, `pick_fits`). A bake need not imply `less.c` (`uniSock_drops_less`). |
 | `Ska/CompLazy.lean`, `Ska/CompLazyArms.lean` | `Lazy`, the full `need-lazy` with forks and bonds, and the arms that walk them (`+lazy-prune`, `+none-equivalent`, `+lazy-big`, `+soft-less`, `+past-fork`, `+walk-lazy`, `+from`, `+split`, `+into`, `+copy-lazy`), each equal to its fork-free model on a need without forks. |
 | `Ska/CompLazyRun.lean`, `Ska/CompLeap.lean`, `Ska/CompSixNext.lean` | `runL`: the model of `run` over full lazy needs, with `%6` for every goal. For `%next` it is `sixNextL`: `+leap` and the case again, or `+kerf` and the case again, or the fork branch (`+fork`, `+sect`), or the simple one (`+fork-sure`, `+sect`), with `+pass`, `+whole`, `+need-cut`, `+lazy-leap`, `+insert-hop`, `+fork-need`. Nothing is proved yet about what the code of `%6` under `%next` does. Runs of the model found that `+comp` threads through a join a register to which an inner join passed `~` (see the doc of `sixNextL`). That is no bug: such a register is poisoned and only moved. The interpreter used to delete it, and 85 of 162 such formulas crashed it before `+optimize`; with the poisoned registers all 162 run right before and after `+optimize`. |
+| `Ska/CompSixFuel.lean` | The fuel `3` of `sixNextLC`: `LeapTwice laz q r` (`+leap` of the rest that `+leap` returned is `~`, not proved; it held on 726 formulas of `tools/hoon/leaptwice.py`), and under it any larger fuel gives the same (`sixNextLC_fuel`), so the model is the Hoon's unbounded recursion; on a goal with no fork and no bond any fuel from `1` is phase S (`sixNextLC_fork_free`). |
 | `Ska/CompLazyAgree.lean`, `Ska/CompLazyFinal.lean` | `runL_toL`: on a pure nomm without `%6`, `runL` is `run`. `+coerce-lazy` in full; `finishL_bellContract`: the earlier contract theorem carried over to the model with forks. Nothing is proved yet about `%6` itself. |
 | `Ska/CompSix.lean` | `[6 c a b]` under `%done`, with a test and branches that have no `%6` of their own: the final pass meets the contract (`finishL_bellContract6`), and the compiled code crashes exactly when the nomm does (`six_crash_iff`), so it never crashes on a part of the subject that only the branch not taken reads. A nested `%6`, a `%6` as a test, and a `%6` under a `%next` goal are not proved. |
 | `Ska/CompStraightMap.lean`, `Ska/CompCond.lean`, `Ska/CompFinishF.lean` | `toStraightF`, the whole of `+to-straight` with the proxy test and the map path; `finishLF`, the final pass with it. On the proved fragment no proxy register is made (`runL_cond_frag6`), so the earlier contract theorems carry over (`finishLF_bellContract6`, `six_crash_iffF`). What the code does when `+lazy-shut` makes proxies is not proved; the pieces for it are in `CompUnproxy.lean`. |
@@ -1858,22 +1861,31 @@ import only its theorems.  So:
     `+pass-then`, `+pass-edit`), the test of `+kerf` (`+whole`, `+this-only`,
     `+soft-fork`; `+lazy-big` and `+soft-less` are done), `+fork` (its loop
     and the two `spin-split` gates; `+fork-sure`, `+copy-tag`, `+proxy`,
-    `+insert-hop` are done), `+sect` (with `+dif:by`, the two `+rep:by`,
-    `+jab:by`).  Phase S under a fork-free `%next` goal needs only the first
+    `+insert-hop` are done), `+sect` (its two `+rep:by`, `+jab:by`;
+    `+dif:by` is done: `dif_by_hoonMap` of `Compiler/DifMap.lean`, from
+    `Hoon/DifBy.lean`).  Phase S under a fork-free `%next` goal needs only the first
     test of `+leap` (no fork, no bond: `~`), `+none-equivalent` (done),
     `+fork-sure`, `+id` and `+sect`; under a goal whose forks and bonds ask
     nothing (phase S too) `+leap` runs in full.  Its Nock from `cr6S2` on is
     `cr6s_mid`, `cr6S6`'s `%next` branch (`+sect` and two asserts that the
     goals are `%next`), then `cr6s_p` and `cr6s_tail` as they are.  Next,
-    in order: `+sect` (the largest helper, 1217 atoms: its `+rep:by` gate
-    against `sectStep`, `+dif:by`, `+jab:by` against `jabBlock` and
-    `lensHop`), then phase S under `%next` with its `GRes` (the branch goals
+    in order: `+sect` (the largest helper, 1217 atoms, `tools/gen/sixhelp.py
+    sect`: its `+rep:by` gate against `sectStep` by `rep_gate_list` of
+    `CompStraightCore.lean`, whose accumulator is the whole core `dot`,
+    `+jab:by` against `jabBlock` and `lensHop`), then phase S under `%next` with its `GRes` (the branch goals
     `[%next [sur-i ~ ~] ~ o-i]` meet `GInv` by `forkSure_inv`; the result's
     registers are those of `sect`'s fork, fresh, and the test's), then
-    `+leap` and the proof that `+leap` of the rest it returns is `~` (the
-    fuel `3` of `sixNextLC`), the test of `+kerf`, `+fork`, phases F, K, L;
+    `+leap`, the test of `+kerf`, `+fork`, phases F, K, L;
     then the class with `%6` (`SixParts` from the induction, as `PartL`
-    is now) in `comp_run_all_l` and `res_all`.
+    is now) in `comp_run_all_l` and `res_all`.  The fuel `3` (2026-11-27,
+    `Ska/CompSixFuel.lean`): `tools/hoon/leaptwice.py` ran `+leap` again on
+    every rest that `+leap` returned, over 726 formulas (708 leaps, 174 of
+    them with a rest that still forks or bonds): it was `~` every time.
+    `LeapTwice laz q r` states it of the model's `leap` and is not proved;
+    under it `sixNextLC_fuel` gives fuel `3` = any larger fuel, so the link
+    of phase L takes `LeapTwice` as a hypothesis (or proves it: in each
+    block the part at each pass is `%none` after the first round, or still
+    behind a register as in the first round, and no look under it is left).
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
