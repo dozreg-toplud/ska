@@ -94,6 +94,11 @@ import lemmas.Ska.CompSimBodyLift
 import lemmas.Ska.CompLBDone
 import lemmas.Ska.CompLBFour
 import lemmas.Ska.CompNCBond
+import lemmas.Ska.CompFrontS
+import lemmas.Ska.CompFlatCopy
+import lemmas.Ska.CompPairLS
+import lemmas.Ska.CompConsLS
+import lemmas.Ska.CompConsLSRun
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -1040,3 +1045,35 @@ open Formalization.SkaModel.Comp
 #print axioms bondOKC_fourC
 #print axioms bondOKC_fourA
 #print axioms h4c_example
+#print axioms FrontS.toLB
+#print axioms frontS_false
+#print axioms frontS_empty
+#print axioms frontS_pair
+#print axioms FrontsS.toFront
+#print axioms entries_flat
+#print axioms splitSure_ok
+#print axioms splitBonds_flat
+#print axioms SplitBs.spec
+#print axioms splitLoop_flat
+#print axioms get_index_mem
+#print axioms copyLazy_ok
+#print axioms mergeBonds_flat
+#print axioms MergeBs.spec
+#print axioms copyLazyL_flat
+#print axioms copyL_flat
+#print axioms eq_of_label
+#print axioms mem_pairRes_bond
+#print axioms goalSemCMD_of_CM
+#print axioms goalSemCMD_bad
+#print axioms pairLS_ok
+#print axioms clean_copyLazy
+#print axioms fromBonds_flat
+#print axioms fromL_flat
+#print axioms lokS_n0
+#print axioms splitL_flat
+#print axioms copyL_flat'
+#print axioms splitAt_of_splitBs
+#print axioms lokS_consP_run
+#print axioms clean_splitLoop
+#print axioms clean_copyLazyL
+#print axioms lokS_consP
