@@ -20,6 +20,8 @@ changes only `id-gen` and `sofs` of `gen` (`RSt`); the other eight fields are th
 * **`rs_n0`**: the case `[0 a]`, given `LazeFromAt` (the link of `+laze-from`, door arm
   `0x1576a`, not linked yet) at the door.
 * **`rs_n7`**: the case `[7 p q]` from `RsAt` of its two recursive calls.
+* **`rs_cls`**: by induction, `RsAt` on every nomm of `RsCls` (built of `[0 a]`, `[1 k]`,
+  `[7 p q]`), every `sup`, goal and state, given `LazeFromAt` at the door.
 -/
 
 namespace Formalization
@@ -118,6 +120,82 @@ theorem rs_n1 (env : ShapeEnv) (k : Noun) (sup : Option Nomm) (goal : GoalS CSet
   simp only [Nomm.toNoun]
   rw [rs_push, rs_disp_n1]
   simp [rsK1, rsS, rsCoreG, rsDoor, nock_exec, runShape, pure, StateT.pure, noneL_noun]
+
+/-- **The case `[7 p q]`** from the runs of `q` (with `sup` `p`) and of `p` (on the goal
+`[%next l]` of the product `l` of `q`, from the state `q` left). -/
+theorem rs_n7 (env : ShapeEnv) (p q : Nomm) (sup : Option Nomm) (goal : GoalS CSet) (st : RSt CSet)
+    (hq : RsAt ctx env q (some p) goal st)
+    (hp : ∀ l st1, RsAt ctx env p sup (GoalS.next l) st1) :
+    RsAt ctx env (Nomm.n7 p q) sup goal st := by
+  intro y
+  simp only [Nomm.toNoun]
+  rw [rs_push, rs_disp_n7]
+  have hq' := hq y
+  simp only [rsCoreG, supNoun, unitNoun, rsDoor] at hq'
+  nock_open rsK7
+  cases e : runShape env (some p) q goal st with
+  | none =>
+    rw [e] at hq'
+    simp [nock_exec, rsS, rsCoreG, rsDoor, hq', runShape, e, bind, StateT.bind]
+  | some r =>
+    obtain ⟨l, st1⟩ := r
+    rw [e] at hq'
+    have hp' := hp l st1 y
+    simp only [rsCoreG, rsDoor, GoalS.toNoun] at hp'
+    simp [nock_exec, rsS, rsCoreG, rsDoor, hq', runShape, e, bind, StateT.bind]
+    exact hp'
+
+/-- **The link of `+laze-from`** (door arm `0x1576a`) at the door `D`, not proved yet: the
+arm makes a gate whose slam on `[a laz]` is the model `lazeFrom`. -/
+def LazeFromAt (D : Noun) : Prop :=
+  ∃ bat sam c, nock D (C (A 9) (C (A 0x1576a) (C (A 0) (A 1)))) = some (C bat (C sam c)) ∧
+    ∀ (a : Nat) (laz : Laze CSet), nock (C bat (C (C (A a) laz.toNoun) c)) bat = (lazeFrom a laz).map Laze.toNoun
+
+/-- **The case `[0 a]`**: `none` at `0`, the goal's need at `1`, `+laze-from` of it
+elsewhere, given the link of `+laze-from`. -/
+theorem rs_n0 (env : ShapeEnv) (a : Nat) (sup : Option Nomm) (goal : GoalS CSet) (st : RSt CSet)
+    (hf : ∀ y, LazeFromAt (rsDoor st y ctx)) :
+    RsAt ctx env (Nomm.n0 a) sup goal st := by
+  intro y
+  simp only [Nomm.toNoun]
+  rw [rs_push, rs_disp_n0]
+  obtain ⟨bat, sam, c, h9, hg⟩ := hf y
+  have hg' := hg a (simpleS goal)
+  simp only [nock_exec, rsDoor] at h9
+  nock_open rsK0
+  by_cases h0 : a = 0
+  · subst h0
+    simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, pure, StateT.pure, noneL_noun]
+  · by_cases h1 : a = 1
+    · subst h1
+      simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, pure, StateT.pure, rsSimpleN, GoalS.toNoun]
+    · have h0' : ¬ (0 = a) := fun h => h0 h.symm
+      have h1' : ¬ (1 = a) := fun h => h1 h.symm
+      cases e : lazeFrom a (simpleS goal) with
+      | none =>
+        rw [e] at hg'
+        simp [nock_exec, rsS, rsCoreG, rsDoor, h0, h1, h0', h1', h9, hg', runShape, liftS, e, rsSimpleN, GoalS.toNoun]
+      | some l =>
+        rw [e] at hg'
+        simp [nock_exec, rsS, rsCoreG, rsDoor, h0, h1, h0', h1', h9, hg', runShape, liftS, e, rsSimpleN, GoalS.toNoun]
+
+/-- The nomms built of the cases linked so far: `[0 a]`, `[1 k]`, `[7 p q]`. -/
+def RsCls : Nomm → Prop
+  | Nomm.n0 _ => True
+  | Nomm.n1 _ => True
+  | Nomm.n7 p q => RsCls p ∧ RsCls q
+  | _ => False
+
+/-- **The induction over the cases linked so far**: on every nomm of `RsCls`, every `sup`,
+goal and state, the gate of `+run-shape` is `runShape`, given the link of `+laze-from` at
+every state of the door. -/
+theorem rs_cls (env : ShapeEnv) (hf : ∀ st y, LazeFromAt (rsDoor st y ctx)) :
+    ∀ (n : Nomm), RsCls n → ∀ sup goal st, RsAt ctx env n sup goal st
+  | Nomm.n0 a, _, sup, goal, st => rs_n0 env a sup goal st (hf st)
+  | Nomm.n1 k, _, sup, goal, st => rs_n1 env k sup goal st
+  | Nomm.n7 p q, ⟨hp, hq⟩, sup, goal, st =>
+    rs_n7 env p q sup goal st (rs_cls env hf q hq (some p) goal st)
+      (fun l st1 => rs_cls env hf p hp sup (GoalS.next l) st1)
 
 end Compiler
 end Formalization
