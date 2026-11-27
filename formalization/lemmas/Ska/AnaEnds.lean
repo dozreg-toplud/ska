@@ -97,7 +97,11 @@ taken, and the recursion of the analysis is finite.
    cape of `less-code` rises in `CapeLe` (`&` above every cell), not in
    size (6 runs turned `[[& &] |]` into `[& |]`); no run went against the
    lexicographic measure, and every pass loop ended (at most 62 passes,
-   a chain of new functions up to `he-threshold`).
+   a chain of new functions up to `he-threshold`).  The step of one entry
+   in that measure is proved of `runDatum` (`runDatum_measure` of
+   `PassMeasureK.lean`) on a tidy `bus`, with the weight `kS` for
+   `less-code` and the product, and `MapLt` for the map; the bounds of
+   `indi` and `seek`, the invariants it assumes, (b) and the sum are open.
 6. The inner loops `+sweep`, `+cull` (its loop over the queue) and
    `+prune-callgraph` end on a finite graph.  Proved here for
    `+prune-callgraph` (`pruneLoop_ends`), given that the graph is closed under

@@ -77,7 +77,9 @@ finitely many by the argument of `AnaEnds.lean` (callable formulas and
 is compared by `changed` and can change while the product sock does not.
 `PassMeasure.lean` (track F) measured both open points on the real compiler
 and corrects the first component: the mask rises in the order `CapeLe`, not
-in size.
+in size.  `PassMeasureK.lean` proves the step of one entry (`runDatum_measure`)
+with the weight `kS` for `less-code` (rising, on a tidy `bus`) and the
+product (falling), and `MapLt` for the map of a fixed product.
 -/
 
 namespace Formalization
