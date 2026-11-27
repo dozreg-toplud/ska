@@ -2,6 +2,7 @@ import lemmas.Ska.RawInvTop
 import lemmas.Ska.RawInvCheck
 import lemmas.Ska.RawInvSix
 import lemmas.Ska.RawInvTopX
+import lemmas.Ska.RawInvFragX
 
 /-!
 # Axioms of the main theorems of track D (README Gaps 14)
@@ -58,3 +59,6 @@ open Formalization SkaModel Raw
 #print axioms optIn_toStraightR
 #print axioms optIn_toStraight_prep
 #print axioms coerceLazyL_prep
+#print axioms run_rawP
+#print axioms run_rawU
+#print axioms live_prependRk
