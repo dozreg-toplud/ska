@@ -18,6 +18,7 @@ import lemmas.Ska.CompNaryTopCal
 import lemmas.Ska.CompNaryTopDN
 import lemmas.Ska.CompNaryTopRec
 import lemmas.Ska.CompNaryTopRecEx
+import lemmas.Ska.CompNaryTopSixRClose
 
 /-! The axioms of the theorems of track J (direct calls, `Ska/CompDirect.lean`,
 README Gaps 18).  `lake build` prints them; each should be `propext`,
@@ -144,3 +145,18 @@ open Formalization.SkaModel.Comp
 #print axioms closed_selfWalk
 #print axioms tableOK_pairWalk
 #print axioms closed_pairWalk
+#print axioms finishLFC_contractGBW
+#print axioms six_doneGBWN
+#print axioms six_doneGBWM
+#print axioms finishLUCM_contractGBW
+#print axioms doneE_sevenC
+#print axioms doneEM_sevenC
+#print axioms doneEM_tailP
+#print axioms tableOK_walkL
+#print axioms mink_walkL
+#print axioms closed_walkL
+#print axioms tableOK_R
+#print axioms mink_R
+#print axioms closed_R
+#print axioms closed_R_real
+#print axioms closed_dt
