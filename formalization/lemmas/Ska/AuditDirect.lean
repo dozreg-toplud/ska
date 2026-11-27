@@ -6,6 +6,7 @@ import lemmas.Ska.CompDirectMTailP
 import lemmas.Ska.CompDirectMMerge
 import lemmas.Ska.CompDirectMCal
 import lemmas.Ska.CompDirectMCalFour
+import lemmas.Ska.CompDirectMTreeEx
 
 /-! The axioms of the theorems of track J (direct calls, `Ska/CompDirect.lean`,
 README Gaps 18).  `lake build` prints them; each should be `propext`,
@@ -67,3 +68,23 @@ open Formalization.SkaModel.Comp
 #print axioms four_doneBM
 #print axioms finishLUCM_contractFourDirect
 #print axioms fourCallR_bellContract
+#print axioms lokS_consHM
+#print axioms lokS_consFM
+#print axioms lokS_consSM
+#print axioms lokS_indirectFM
+#print axioms lokS_sevenFM
+#print axioms lokS_fiveM
+#print axioms five_doneBM
+#print axioms done_of_lokSFM
+#print axioms callLBM_runM
+#print axioms lokSM_directF
+#print axioms tailP_doneM
+#print axioms jNewLSM_direct
+#print axioms lokSM_callTreeD
+#print axioms callTreeD_done
+#print axioms finishLUCM_contractCallTreeD
+#print axioms finishLUCM_bellContractCallTreeD
+#print axioms dt_contract
+#print axioms dc_contract
+#print axioms dk_contract
+#print axioms dn_contract
