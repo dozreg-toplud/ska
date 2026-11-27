@@ -1072,6 +1072,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/PassIdents.lean` | (i) `FinIdents` reduced (track F, Gaps 16).  `PReach`, `FinBranch`, `Covered`, **`konig`** (König's lemma for a finitely branching relation, Lean core with `Classical.choice`), **`finIdents_of_tree`** (members reached from the root by a finitely branching push relation with no infinite path lie in a finite list), `pigeon_inf`, `subseq_of_inf`, **`noPath_of_kruskal`** (no infinite push path from `KruskalBT`, finitely many formulas and the `%he` guard of `+recursive-call` past some point), **`finIdents_of_kruskal`**.  `FinBranch` is stated, not proved: it is entangled with R. |
 | `Ska/PassQuiet.lean` | Quiet passes and the end of the pass loop (track F, Gaps 16, after dab8478).  `filter_length_le`, `filter_length_lt`, `sweepLoop_congr`, `sweep_congr`, `dcount` (the dirty members of the stack); `PStart` (the convergence invariant at a pass start over a fixed bottom `rest`, the hypotheses of `MemP2`), **`pstart_mem`** (the member loop keeps it, and with no change and no push keeps every `chg` tick, the `ran` tick and callees of every unlisted stack identity, and leaves every listed member clean: the first half of `passStep_ok2`); `PassQuiet` (no change, no push, a reached member dirty at the end), `passLoop_of_quiet`, `passQuiet_mono`, **`passQuiet_step`** (a quiet pass keeps `PStart`, `next` and the stack, and lowers `dcount`: it had a swept member dirty at its start, by `memberLoop_clean` and `sweep_congr`), `passQuiet_inv`; `fam_finite_q` (`fam_finite` with a second, numeric, way down), `PassGoOn` (`PassOn` or `PassQuiet`), `ChainInv`, `passGoOn_inv`, **`passMixed_wf`** (no infinite chain of passes that go on, quiet or not, with `next` bounded), `PassReachQ`, `PassNextQ`, `FinPushesQ`, `finPushesQ_of_bound`, `passNextQ_acc`, **`passLoop_returns_q`** (`passLoop_returns_fin` with quiet passes allowed); `RunHalts` (each run of a stack member from a `CInv` state returns at some fuel), `popGo_some`, **`memberLoop_returns`**, **`passStep_parts`** (from `PStart` every pass stops or goes on at some fuel), **`passLoop_returns_runs`** (the pass loop of one component returns from `ChainInv`, given `RunHalts` and `FinPushesQ`); `passGoOn_next`, `PassGrowG` (no identity leaves `g` in a pass, and a pass that pushes adds one; stated, not proved), `FinIdentsG` (the identities of `g` along a chain in one list), **`finPushesQ_of_grow`**. |
 | `Ska/PassGrow.lean` | No identity leaves the graph in a pass, and `FinIdentsG` from the push tree (track F, Gaps 16).  `GIn` (in `g`), `Sg` (every stack member is in `g`), `GG st st'` (`Sg st'`, no identity of `g st` leaves, the stack grows on top by identities not in `g st`), `Grow` (a push leaves in `g` an identity not there before), with `refl'`, `trans`, `congr_r`; `gg_put`; `prefix_sub` (the first `id` of `N ++ L`, `id ∈ N`, is in `N`); `cull_struct` (`+cull` deletes from `g` and filters from the stack a set strictly above the first `id`); `cull_gg`, `pop_gg` (`+cull` and `+pop` of a root pushed after an ANCHOR `st0` keep `GG st0`); `ResG`, `AnaG` (an `+analyze` of an identity not in `g` keeps `GG`, `Grow`, and leaves it in `g`), `RunG`, `MemG`, `PassG` (the pass loop against an anchor); `resolveStep_g`, `runStep_g` (through `run_folTopRQ` with a `LocalStable` invariant), `memberStep_g`, `passStep_g`, `cullPass_g`, `analyzeStep_g`, **`allG`** (every arm, every fuel); `SInv.sg`, **`passGoOn_grow`** (`PassGrowG` of every pass that goes on), **`passLoop_returns_g`** (the loop of one component returns from `ChainInv`, `RunHalts`, `FinIdentsG`); `finIdentsG_of_tree`, `finIdentsG_of_kruskal` (`FinIdentsG` from `FinBranch`, `KruskalBT`, formulas among finitely many, the `%he` guard, every identity of `g` in a base graph or reached from the root), **`passLoop_returns_k`** (the loop returns from `KruskalBT`, `RunHalts` and a push tree). |
+| `Ska/PassStack.lean` | No infinite sequence of pushes that stay on the stack (track F, Gaps 16): `recLoop_none`, `recursiveCall_none` (`+recursive-call` answering `~` with `he-threshold` frames of the kid's formula on the stack: `he` of the kid's subject over each of theirs is false), `resolveStep_new` (`resolve` analyses afresh exactly after the three misses), `push_guard`, `count_ge_of_seq`, **`noStackSeq_of_kruskal`** (from `KruskalBT`, formulas in a finite list and a tree view `sub` whose embedding gives `he`: no infinite sequence of distinct identities, each pushed with that guard against a stack that holds every earlier one; covers an infinite descent of nested `+analyze` calls and the members of one pass loop, not the pushed functions that finish). |
 | `Ska/HeTurn.lean` | The `%he` lemma: `msgSock_he_lt` (if `heSock a b` and `a ≠ b`, then `msgSock a b` has a smaller `heMeasure`, the size of the cape plus its number of leaves `&`, than `a`) and so `msgSock_ne_of_he` (`msgSock a b ≠ some a`), from `knit_eq_cell`, `heSock_size` (`+he-sock` never grows the cape), `msgSock_cases` (the result is `|+~` or the knit of the results on the halves of two cells over cells), `msgSock_le` (the result's cape is no larger than either sock's, with no more leaves `&` than the first's) and `msgSock_left_size` (if the result is `a`, the cape of `b` is no smaller).  For example `a = [[& |] [5 ~]]` and `b = &+[5 6]` give `|+~`, measure `4` to `1`. |
 | `Ska/HeBound.lean` | The `resolve` loop makes boundedly many `%he` turns: `recLoop_he` (a `%he` answer of `+recursive-call` comes from a frame of the same formula whose subject sock `+he-sock` embeds), `recursiveCall_he_lt` (for an identity off the stack the new subject sock has a smaller `heMeasure`), `HeTurn` (a `%he` turn of the loop begun with `orig`: the memo lookup at `orig.2` and the current sock missed), `resolve_heTurn` (a turn is one unit of fuel in the same state), `heTurn_lt` (with `env.he = heSock` and `SInv`, a turn cuts `heMeasure`), and `resolve_he_bound`, `resolve_he_bound'`: from `i` the loop reaches, after `k ≤ heMeasure i.1 ≤ 2 * sockSize i.1` turns `%he`, an identity whose turn is not `%he`, and the loop at `i` with fuel `n + k` is the loop there with fuel `n`. |
 | `Ska/FolWeight.lean` | `fol-loop` within one run, with the direct calls fixed (`folLoopR env res`).  `folW`: a weight that counts `%8`, `%9`, `%11` above the `%7` and `%2` forms they become.  `NoInl`: the calls that never inline (an inlineable formula, or `[2 [0 1] x]` with `x` inlineable and `bare-call`, `memo-key` or `defer` set); `callStep_noInl` (with a flag set the inline branch is not taken), `folStep_congr` (on such a call, one level depends only on calls of smaller weight that never inline: an inlineable formula has no `%2`, no `%9`, and its `%11` forms set a flag), `folLoopR_stable`, `folLoopR_at_weight`: on such a formula the result is the same at every fuel from `folW fol` on, crashes included, whatever `res` is.  An inlined formula is inlineable, so inlining goes one level deep.  The fuel of a formula that inlines is not bounded by its weight: `[9 2 [0 1]]` (weight `8`) against `&+[g 0]` analyses the battery `g` inline. |
@@ -4818,6 +4819,47 @@ import only its theorems.  So:
     `fol-loop`, the `%he` steps of `resolve`, and the nested `+analyze`, whose
     measure is the identities not yet in `g`: `GG` shows that every nested
     level starts with `g` grown by its root).
+    **The width of the analysis, and a question for the author** (track F,
+    2026-11-28, `Ska/PassStack.lean`, `tools/hoon/passmeasure-forms.py`).
+    The callable formulas: on the 10,532 cases (24,460 pushes) every pushed
+    formula is a subnoun of the root's formula or of the data of its subject
+    sock, except 4 pushes (2 cases of `ck-rnd2`) whose formula is the value
+    of a safe cons of constants of the root formula (`[[[1 0 1] 1 0 1] 1 1]`
+    gives `[[[0 1] 0 1] 1]`, the `saf` product of the `%2` case).  This is
+    what the Hoon gives: a call is direct only when the formula's cape is
+    exactly `&` (`+knit` never folds `[& &]`), and a cape `&` comes from a
+    `%1` constant, a `saf` cons, or a part of a sock that already had it, so
+    the formulas lie in the subnouns of the root's nouns closed under `saf`
+    values, a finite set (atoms from the root's, no more cells).  At most
+    1,009 distinct pushed formulas in one case (a library call).  Proved:
+    the guard of a push (`push_guard`: past `he-threshold` frames of its
+    formula on the stack, the pushed subject embeds none of theirs) and
+    `noStackSeq_of_kruskal`: no infinite sequence of distinct pushes each of
+    which finds every earlier one on the stack.  So, with the formulas finite
+    and a tree view of socks under which embedding gives `+he-sock` (both
+    hypotheses), there is no infinite descent of nested `+analyze` calls,
+    and one pass loop has finitely many members (with dab8478 a member stays
+    on the stack until the stable end), whose entries change finitely often
+    (`OLt`).  This replaces the push tree for those two cases, without
+    `FinBranch`.  Not covered: the functions a loop pushes that FINISH (popped
+    into `done`) before the next push; they are never on the stack together,
+    so the embedding test never compares them.  A site's subject is computed
+    from the values its earlier sites read, and an earlier site can read
+    another finished function from one pass to the next.  The smallest trace
+    (`ck-hand` case 51, 3 kids, 2 sites): `R = [&+[F [[1 0] [0 1]]] F]`,
+    `F = [6 [3 0 6] [0 6] 2 [2 [[0 2] [0 7] 0 6] 0 2] 0 1]`.  Run 1: site 1
+    (the swap call) is `%rec` to `R`, whose product is void, so site 2 is not
+    reached.  Run 2: site 1 `%rec` to `R` again, its product patched for the
+    swapped subject is `&+[0 1]`, and site 2 pushes `[&+[0 1] [F [[1 0] [0 1]]]]`
+    (the subject used as a formula, so `R`'s `less-code` becomes `&`).  Run 3:
+    `R` no longer covers the swapped kid, so site 1 pushes
+    `Y = [[& & &]+[F [[0 1] [1 0]]] F]`, which finishes with an unknown
+    product, and site 2 pushes `[|+~ [F [[1 0] [0 1]]]]`.  The question for
+    the author: what bounds the functions one loop pushes that finish?  The sources of a new read at a
+    fixed site identity are a `%rec` target replaced by a push once its
+    `less-code` grows, and a `done` key `(formula, less-code)` replaced by a
+    later function with the same code requirement whose subject disagrees with
+    the old one where it had indirect calls (`indi`).
 17. **The pill link of the `+leap` family** (track I, 2026-11-27,
     `Compiler/CompLeap*.lean`, cut by `tools/gen/leap.py`).  Linked, each on
     every input or on a stated invariant, compared with the Hoon part by part

@@ -212,6 +212,13 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     re-pushes, at most 64 distinct kids of one parent (514 sites), 572 parents with more kids than
                     `%2`/`%9` nodes (at most twice as many); on the generated cores (no hints) the kid formulas never
                     exceed the sites, so the extra kids are one formula reached with other subject socks.
+* `passmeasure-forms.py --instrument LIB.hoon OUT.hoon`, `passmeasure-forms.py OUT.txt...` (track F, README Gaps 16)
+                    the pushed formulas against the poke's nouns.  `--instrument` adds to a library of `passmeasure.py`
+                    an arm `+pf-subs` (the mugs of every subnoun, memoized) and after the push of `+analyze` a print
+                    `%pf-new` (mug, formula mug, whether the formula is a subnoun of the formula and subject data of the
+                    bottom of the stack, the subject sock and the formula when small); the check counts the distinct pushed
+                    formulas per case and lists the pushes outside.  2026-11-28, 10,532 cases, 24,460 pushes: 4 outside
+                    (2 cases of `ck-rnd2`, the value of a safe cons of constants), at most 1,009 formulas in one case.
 * `passfix-cores.py all|grid|grid2|ablate|ablate2|one OUT.hoon [..]`, `--tab OUT.txt..` one driver of the 88
                     cores of `passmeasure-take.py` (`all`), or of `core3` cases (two relay chains from `k`'s
                     target into `a`, `b`) for the smallest witness; `--tab` per case: root passes, capped, `%st`
