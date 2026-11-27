@@ -232,9 +232,9 @@ noun `q` of `sccs` and `c` of `code.lon`. -/
 noncomputable def lpS (q c : Noun) : Noun :=
   C q (C ncN (C bakedN (srSp root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r c vr)))
 
-/-- The trap `scc-loop`: `[lpBat2 [lpBat (lpS q c)]]`. -/
+/-- The trap `scc-loop`: `[lpBat2 [lpTrapBat (lpS q c)]]`. -/
 noncomputable def lpC2 (q c : Noun) : Noun :=
-  C lpBat2 (C lpBat (lpS root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN bakedN vr q c))
+  C lpBat2 (C lpTrapBat (lpS root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN bakedN vr q c))
 
 /-- The noun of `lon` with `code.lon = c`. -/
 noncomputable def lpLon (c : Noun) : Noun :=
@@ -465,9 +465,9 @@ theorem lp_run (q c c' : Noun)
       some (lpLon r1 r2 r3 r4 jRest callsN seekN r vr c')) :
     nock (lpS root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN bakedN vr q c) srLoop =
       some (lpS root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN bakedN vr q c') := by
-  have hb : nock (C lpBat (lpS root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN bakedN vr q c)) lpBat =
+  have hb : nock (C lpTrapBat (lpS root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN bakedN vr q c)) lpTrapBat =
       some (lpLon r1 r2 r3 r4 jRest callsN seekN r vr c') := by
-    nock_open lpBat
+    nock_open lpTrapBat
     simp only [nock_exec]
     exact h
   rw [srLoop_cut]

@@ -7,7 +7,7 @@ Lean definitions, and the size of `+eval-finalized` (arm `0x57de` of `ana`).
 The parts, by the Hoon of the loop:
 
     =.  lon
-      =<  $  ~%  %poke-scc-loop  ..ride  ~  |.        lpBat   (the |. trap)
+      =<  $  ~%  %poke-scc-loop  ..ride  ~  |.        lpTrapBat   (the |. trap)
       |-  ^-  long-ska                                lpBat2  (the |- trap)
       ?~  sccs  lon                                   lpNo    (the ?~ no branch)
       =/  scc  i.sccs
@@ -80,7 +80,7 @@ parts = [  # (name, noun, doc), leaves first
     ('lpTail', tail, '`=.  code.lon  loc2` and the recursion `scc-loop(sccs t.sccs)`'),
     ('lpNo', no, 'the branch of a nonempty `sccs`'),
     ('lpBat2', bat2, 'the battery of the `|-` trap `scc-loop`'),
-    ('lpBat', bat, 'the battery of the `|.` trap under `%poke-scc-loop`'),
+    ('lpTrapBat', bat, 'the battery of the `|.` trap under `%poke-scc-loop`'),
     ('lpF', F, 'the trap: built, hinted, run'),
 ]
 subs = []
