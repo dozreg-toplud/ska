@@ -13,6 +13,9 @@ import lemmas.Ska.CompHintRegKeepEx
 import lemmas.Ska.CompHintSurEx
 import lemmas.Ska.CompHintSevenCheck
 import lemmas.Ska.CompHintTen
+import lemmas.Ska.CompHintTenEx
+import lemmas.Ska.CompHintSixRegCheck
+import lemmas.Ska.CompHintSurOps
 
 /-! The axioms of the theorems of the hint files (README Gaps 24): only
 `propext`, `Classical.choice`, `Quot.sound`. -/
@@ -168,3 +171,37 @@ open Formalization.SkaModel Formalization.SkaModel.Comp
 #print axioms runLCH_n10_next
 #print axioms pastL_park
 #print axioms runLCH_n10_kept
+#print axioms surGBT_tenKept
+#print axioms surGBT_tenKept'
+#print axioms copyL_bondFront
+#print axioms minkF_ten_cases
+#print axioms mink_ten_bwd
+#print axioms runLCH_six_reg
+#print axioms six_nextGBT
+#print axioms surGBT_six
+#print axioms regGBT_six
+#print axioms regGBT_d18Q
+#print axioms contract_d18
+#print axioms pickD_spotTest
+#print axioms regGBT_spotSix
+#print axioms contract_spotS1
+#print axioms shapeH_spotS2
+#print axioms sixNH_of_shape
+#print axioms regGBT_spotSixW
+#print axioms contract_spotS1W
+#print axioms contract_spotS1S2
+#print axioms into_regLike_sound
+#print axioms into_regLike_fit
+#print axioms surGBT_tenSpot
+#print axioms surGBT_spotS3Ten
+#print axioms regGBT_spotArm45F
+#print axioms contract_spotArm
+#print axioms runLCH_n10_done_next
+#print axioms ten_doneS
+#print axioms contract_d20
+#print axioms runLCH_n11s_kept_sur
+#print axioms surGBT_n11sKept
+#print axioms surGBT_n11dQuiet
+#print axioms collapseL_regLike
+#print axioms surGBT_four
+#print axioms surGBT_three
