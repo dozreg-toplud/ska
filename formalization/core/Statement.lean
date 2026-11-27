@@ -114,13 +114,15 @@ def Loads : Prop :=
   ∃ core, FromPill core
 
 /-- SKA interpreter computes a result without a crash iff Nock does the same.
-The scry gate is `~`: with a namespace, opcode 12 computes nouns that Nock
-has no rule for. -/
+From the interpreter to Nock the scry gate is `~`: with a namespace, opcode
+12 computes nouns that Nock has no rule for. -/
 def NockEquivalence : Prop :=
-  ∀ core₀ core s f p,
+  ∀ core₀ core s f p gul,
     FromPill core₀ → Reach core₀ core →
-    (Nock s f p ↔
-     ∃ core', Top core s f (A 0) (C (A 0) p) core')
+    (Nock s f p →
+      ∃ core', Top core s f gul (C (A 0) p) core') ∧
+    ((∃ core', Top core s f (A 0) (C (A 0) p) core') →
+      Nock s f p)
 
 /-- Interpreting with SKA is equivalent to interpreting with +mock -/
 def MockEquivalence : Prop :=
