@@ -35,6 +35,7 @@ import lemmas.Ska.PassMoves
 import lemmas.Ska.PassIdents
 import lemmas.Ska.CompTenLS
 import lemmas.Ska.CompSixLSRCall
+import lemmas.Compiler.CompShapeColRet
 
 /-!
 # Audit of `formalization/LEDGER.md`
@@ -270,6 +271,9 @@ namespace Formalization
 #check @SkaModel.Comp.lokSE_tenR
 #check @SkaModel.Comp.finishLFC_contractGBN
 #check @SkaModel.Comp.finishLFC_contractRT
+#check @Compiler.cu_gate_scc_one_six_fix
+#check @Compiler.FixRet
+#check @Compiler.scOrd
 #check @SkaModel.Ana.finPushes_of_freeze
 #check @SkaModel.Ana.EvFrozen
 

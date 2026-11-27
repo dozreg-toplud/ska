@@ -85,7 +85,9 @@ Leaves (all track P now):
     `+ska-cole-update`), has NO link.
 1.3 `A.compileUnary` is the pill's `+compile-unary` (299 cells): tracks A,
     I, K.  PROVED: `cu_gate_scc_one_six_ts`, `cu_gate_scc_one_six_fol_ts`
-    (one bell, `NoSelfCall`, `SixOk`, `FinSure`, `NoBakeOneC`); with direct
+    (one bell, `NoSelfCall`, `SixOk`, `FinSure`, `NoBakeOneC`);
+    `cu_gate_scc_one_six_fix` (the same with the `ord` of `+shape-collapse`
+    and `FixRet` in place of `FinSure`, track A); with direct
     calls `cu_gate_dir_csi` → `cu_gate_dir_arms` (`Compiler/CompSofPush.lean`,
     class `DirOk`, named hypotheses `CsiNeeds`, `CsiSures` on the product of
     `+compile-scc-in`), `cu_gate_dir_this` (every callee's need `%this` or
@@ -334,9 +336,13 @@ M3. `runLC` vs `runLCM env true`, and classes blind to `env`, `N`:
 M4. `sccSur` vs `shapeCol`: the model side needs nothing (`RawNary` and
     `RawNaryD` hold for every `ord`); the pill link must output `shapeCol`.
     Track A: `+shape-collapse` linked against `shapeCol` with forks and
-    bonds (`fx_gate`, `i12_gate`, `fr_gate`, `oi_gate`, `ic_gate`;
-    `l2i_gate` on branch -a, not merged); `FinSure` still in the `cu_gate`
-    tops.
+    bonds (`fx_gate`, `i12_gate`, `fr_gate`, `oi_gate`, `ic_gate`), and
+    `cu_gate_scc_one_six_fix` (`Compiler/CompShapeColRet.lean`): the
+    one-bell top with `ord = scOrd fuel p.1 cape` (the `ord` of
+    `+shape-collapse`), NO `FinSure`, one hypothesis `FixRet` (the fuel of
+    `fixLoop`).  With `RawNaryD` for every `ord` the model side composes:
+    M4 is down to `FixRet` (and the `sure.cache` entry `sccSur p.1 cape`,
+    which `CsiSures` reads).
 M5. Baking: every n-ary class has nothing baked; the compiler bakes.  No
     owner.
 M6. `NoSelfCall`, one-bell SCCs: the `cu_gate` tops; model side has
@@ -376,7 +382,8 @@ M15. Build clashes (section 0): `Compiler.unitNoun_id_inj` (PokeEnc vs
 
 1. The pill link of `+compile-unary` / `+compile-scc` read as `refMono`,
    `refNary`, `unary`, `scc` (1.3, 1.4, 2.a, 2.h): `csiFix` (1,000 of 2,519
-   cells), (f) on cell needs, `FinSure` dropped.  Tracks A, I, K.
+   cells), (f) on cell needs, `FixRet` (A's one-bell top no longer needs
+   `FinSure`).  Tracks A, I, K.
 2. `answers` / `RootAnswers` (2.h, 3.4): TOTALITY of the compile.  The sweep
    loop does not end in general on the model (`cyc_never`); needs a property
    of the member compile (track I's candidate), then totality of `+scc-of`,
