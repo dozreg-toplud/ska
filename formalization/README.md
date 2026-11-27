@@ -608,6 +608,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/PassMeasureA.lean` | The writes of the state-passing analysis keep `Tidy` (track F, Gaps 16).  A copy of the bridge of `Bridge.lean` over a predicate of the subject (`QPres`, `ResOKQ`, `GoOKQ`, `bridge_stepQ`, `folLoop_goOKQ`, `run_folTopRQ`: `WellFormed` replaced by `QA`, kept by `FolR P`, and `QS` for `resolve`), since a tidy invariant cannot be kept at an untidy subject.  `MemoTP` (memo entries with a tidy `less-code`, product and normal map), `gitMi_tp` (a hit is patched tidy), `TInv` (`GraphTP` and `MemoTP`), `hit_tp`, `push_tp`, `runEnd_gStepT` (the write of `+run` is a `GStepT.run`), `popGo_tp`, `cull_tp`; `PWT` (answers well formed and tidy), `QAT`, `QST`, `qpres`; `ResPT`, `AnaPT`, `RunPT`, `MemPT`, `PassPT` and their steps (`resolveStep_tp`: graph, memo hit, `%rec` by `annoTP_patchProd`, `%he` by `tidy_msgSock` with a tidy stack member; `runStep_tp`, `memberStep_tp`, `passStep_tp`, `cullPass_tp`, `analyzeStep_tp`), `allPT` (every arm keeps `TInv` at every fuel, given `SInv` from `allP`), `skaCallgraph_tp` (the graph of `+ska-callgraph` is `GraphTP` from a tidy root and a tidy memo of earlier pokes), `run_entry` (a run moves the entry of `id` from `old` to `runDatum` of it). |
 | `Ska/PassMeasureI.lean` | `indi` as a number (track F, Gaps 16).  `capeNo_of_le`, `con_mono`, `capeLe_hed`, `capeLe_tel`, `lack_capeNo`, `lack_self`, `lack_mono` (`+lack:ca` by a fixed cape is monotone in `CapeLe`); `Within` (cells only where a shape has them), `shU` (union of shapes), `within_lack`, `within_msgCa`, `msgCa_isNo`, `normCape_msgCa_right` (`+msg-ca` keeps a normal second argument normal, whatever the first); `topB`, `wB` (`&` 0, `\|` `topB B`, a cell one more than its parts), `wB_step` (the weight falls as a normal cape rises in `CapeLe` within `B`, strictly when it changes), `wB_mono_B`, `indiW`, `indi_merge_step` (a change of the merge of `+run` lowers `indiW dark indi`, for a normal old `indi` fixed by `+lack:ca` of `dark`). |
 | `Ska/PassMeasureE.lean` | The measure of one entry (track F, Gaps 16).  `mergeProd_old_void` (an old product `%void` stays with its map or is replaced by the run's), `entryM` (eight numbers: `kS bus - kS less-code`, `%void` or not, `kS` of the product, `mapL`, `mapA`, `indiW`, cells and `\|` leaves of `seek`), `EntryLt` (lexicographic, `entryLt_wf`), `EntrySame` (the five fields of `changed`), `RunW` (`less-code` a mask of `bus`, `indi` normal and fixed by `+lack:ca` of `dark`; `runW_bunt`, `runW_runDatum`), `runDatum_entry_step` (a run from a `RunW` entry on a tidy `bus` keeps the five fields or lowers the tuple, `%void` products included), `entry_finite` (no infinite sequence of such changes), `Ana.run_entry_step` (the same for a `+run` of a stack member on the state-passing analysis, from `SInv` and `TInv`). |
+| `Ska/PassMeasureN.lean` | `next` and the stack (track F, Gaps 16).  `NStep` (`next` does not fall, and the stack is the same when `next` is), `cull_next`, `pop_next`, `runEnd_next`, and `allN`: at every fuel `resolve` (with the capes of `gen`), `+run` (over `run_folTopRQ` with trivial `P`), the member loop and `+analyze` keep `NStep`, and the pass loop does not lower `next` (its `+cull` changes the stack with `next` the same).  No invariant is needed. |
+| `Ska/PassMeasureP.lean` | The pass loop of `+analyze` ends (track F, Gaps 16).  `lex_trans`, `lexM8_trans`, `OLt`/`OLe` (a member's value: `none`, off the stack, below every tuple; `oLt_wf`, `oLt_trans`), `ev_const` (a non-increasing sequence in a well-founded order is eventually constant), `fam_finite` (no finite family of non-increasing sequences with one falling at every step), `runDatum_changed` (`changed` of `+run` is the change of the five fields), `valE`, `SubSt`, `cull_sub`, `valE_run`, `StkW` (every stack member's entry `RunW`), `RunStkW` (a `+run` keeps it: named), `run_changed`, `memberLoop_le` (with `next` the same the member loop keeps or lowers every member's value, lowers one when it reports `changed`, and keeps `StkW`), `PassOn` (one pass that goes on), `passLoop_of_on` (it is the pass loop calling itself), `passOn_inv`, `passOn_wf` (no infinite sequence of passes, from `SInv`, `TInv`, `StkW`, given `RunStkW` and a bound on `next`).  `AuditPassF.lean` prints their axioms. |
 | `Ska/HeTurn.lean` | The `%he` lemma: `msgSock_he_lt` (if `heSock a b` and `a ≠ b`, then `msgSock a b` has a smaller `heMeasure`, the size of the cape plus its number of leaves `&`, than `a`) and so `msgSock_ne_of_he` (`msgSock a b ≠ some a`), from `knit_eq_cell`, `heSock_size` (`+he-sock` never grows the cape), `msgSock_cases` (the result is `|+~` or the knit of the results on the halves of two cells over cells), `msgSock_le` (the result's cape is no larger than either sock's, with no more leaves `&` than the first's) and `msgSock_left_size` (if the result is `a`, the cape of `b` is no smaller).  For example `a = [[& |] [5 ~]]` and `b = &+[5 6]` give `|+~`, measure `4` to `1`. |
 | `Ska/HeBound.lean` | The `resolve` loop makes boundedly many `%he` turns: `recLoop_he` (a `%he` answer of `+recursive-call` comes from a frame of the same formula whose subject sock `+he-sock` embeds), `recursiveCall_he_lt` (for an identity off the stack the new subject sock has a smaller `heMeasure`), `HeTurn` (a `%he` turn of the loop begun with `orig`: the memo lookup at `orig.2` and the current sock missed), `resolve_heTurn` (a turn is one unit of fuel in the same state), `heTurn_lt` (with `env.he = heSock` and `SInv`, a turn cuts `heMeasure`), and `resolve_he_bound`, `resolve_he_bound'`: from `i` the loop reaches, after `k ≤ heMeasure i.1 ≤ 2 * sockSize i.1` turns `%he`, an identity whose turn is not `%he`, and the loop at `i` with fuel `n + k` is the loop there with fuel `n`. |
 | `Ska/FolWeight.lean` | `fol-loop` within one run, with the direct calls fixed (`folLoopR env res`).  `folW`: a weight that counts `%8`, `%9`, `%11` above the `%7` and `%2` forms they become.  `NoInl`: the calls that never inline (an inlineable formula, or `[2 [0 1] x]` with `x` inlineable and `bare-call`, `memo-key` or `defer` set); `callStep_noInl` (with a flag set the inline branch is not taken), `folStep_congr` (on such a call, one level depends only on calls of smaller weight that never inline: an inlineable formula has no `%2`, no `%9`, and its `%11` forms set a flag), `folLoopR_stable`, `folLoopR_at_weight`: on such a formula the result is the same at every fuel from `folW fol` on, crashes included, whatever `res` is.  An inlined formula is inlineable, so inlining goes one level deep.  The fuel of a formula that inlines is not bounded by its weight: `[9 2 [0 1]]` (weight `8`) against `&+[g 0]` analyses the battery `g` inline. |
@@ -2827,12 +2829,54 @@ import only its theorems.  So:
     `less-code` was always a mask of `bus`, the old `indi` always fixed and
     the new one normal, and 680 runs had an old product `%void` (512 kept
     it, 168 left it).
-    Still open: the stack invariant that every stack member's entry is
-    `RunW` (an induction over the arms like `allPT`), that the `indi` of
-    `fol-loop` is normal, a static bound on the number of changes (the
-    tuple is lexicographic: a change of an upper number can reset the lower
-    ones), (b), and the sum over the component, so `CgHalts` is still a
-    hypothesis.
+    Since (`Ska/PassMeasureN.lean`, `Ska/PassMeasureP.lean`): **the pass
+    loop ends on the model, with two hypotheses named** (`passOn_wf`).  A
+    pass that goes on (`PassOn`; `passLoop_of_on`: it is the pass loop
+    calling itself) raises `next` or leaves it, and with `next` the same the
+    member loop runs on the same stack (`allN`: every arm keeps `next` or
+    raises it, and `resolve`, `+run`, the member loop and `+analyze` keep
+    the stack when they keep `next`), every member's value (`valE`: the
+    tuple `entryM` of its entry, `none` once `+cull` drops it) stays or
+    falls, and one falls, since `changed` is the change of the five fields
+    (`runDatum_changed`, `memberLoop_le`, `passOn_inv`).  The measure is
+    `B - next`, then the members' values pointwise; `passOn_wf` rules out an
+    infinite sequence of passes by `ev_const` (a bounded `next` stops
+    growing) and `fam_finite` (finitely many non-increasing values in a
+    well-founded order, one falling at every step).  Named: `RunStkW` (a
+    `+run` keeps every stack member's entry `RunW`; the writes give it by
+    `runW_bunt`, `runW_runDatum`, open are the `indi` of `fol-loop` normal
+    and the subject of a pushed identity not `%void`, which needs the
+    guard of `callStep` carried through the copy of the bridge), and a bound
+    `B` on `next` along the passes.  `next` counts pushes, and a push is at
+    an identity not in the graph, so `B` follows from finitely many
+    identities (Kruskal over `+he-sock`, argued in `Ska/AnaEnds.lean`) and
+    (b) (a member that `+cull` drops is not pushed again); without (b) a pass
+    could push an identity that `+cull` then drops, again and again, and a
+    bound on the identities alone would not give `B`.  The data
+    (`passmeasure.py --passes`): of 5,058 passes that reached `%pm-end`,
+    2,446 went on, 947 with a push and 1,499 with `next` the same, each of
+    those with every run kept or lowered, one lowered and no more members
+    in the next pass; none against the measure (62 more passes returned a
+    lowlink below the index, so they do not go on).
+    How far this is from `CgHalts` (`+ska-callgraph` returns at some fuel):
+
+    | loop | ends | where |
+    |---|---|---|
+    | `fol-loop` within one run | proved for formulas that do not inline (one level of inlining, not bounded by the weight) | `FolWeight.lean` (`folLoopR_at_weight`) |
+    | `%he` turns of `resolve` | proved: each turn cuts `heMeasure` | `HeTurn.lean`, `HeBound.lean` |
+    | the stack (finitely many identities) | argued (Kruskal over `+he-sock`), not proved | `AnaEnds.lean` header |
+    | one entry | proved from `RunW` | `entry_finite`, `Ana.run_entry_step` |
+    | the pass loop | proved, with `RunStkW` and the bound `B` on `next` named | `passOn_wf` |
+    | the member loop, `+sweep`, `+cull` | structural over finite lists and graphs; fuel not bounded in Lean | `Analysis.lean` |
+    | `+prune-callgraph` | proved on a closed graph | `pruneLoop_ends`, `pruneCallgraph_ends` |
+    | the whole recursion (`+analyze` inside `fol-loop` inside `+run`) | not proved: needs a fuel bound from the above | |
+
+    Still open: `RunStkW` (the induction over the arms, like `allPT`, with
+    `NormCape` of `indi` in `GraphTP` and `MemoTP`, and `≠ %void` of the
+    subject socks given to `resolve`), the bound `B` from a bound on the
+    identities and (b), and the fuel: `passOn_wf` says the passes are
+    finitely many, `CgHalts` needs a fuel at which every arm returns, so
+    `CgHalts` is still a hypothesis.
 17. **The pill link of the `+leap` family** (track I, 2026-11-27,
     `Compiler/CompLeap*.lean`, cut by `tools/gen/leap.py`).  Linked, each on
     every input or on a stated invariant, compared with the Hoon part by part
