@@ -323,6 +323,12 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/OptLinkAlJInfo.lean` | Phase 4 of `+alias` (Gaps 13): `JIR`, the loop of `join-info` (the trap `alJITrap`), one constructor per branch with `=(a b)` (`eq`) and the four `+uni:by` branches (`mg`, `mn`, `ng`, `nn`, `UniByR`), run by `ji_loop`; `jiP_of_maps` (on two maps whose values `join-reg` takes: keys of both, the value `join-reg` of the two or, from an equal subtree, the value itself, `JV`); `InfoMapRel` (a map of atoms to related `info-reg` nouns, the same keys), `infoRel_joinReg_both`, `infoRel_joinRegE_of`; **`join-info` of related maps is related to `joinInfoA`** (`al_jinfo`). |
 | `Compiler/OptLinkAlJImms.lean` | Phase 5 of `+alias` (Gaps 13): `JMR`, the loop of `join-imms` (the trap `alJMTrap`), as `JIR` with the equal root split into `same` (the `+int:in`, `IntR`, not empty) and `same0` (empty: `+uni:by` of the halves), run by `jm_loop`; `jmP_of_maps` (on maps of sets that are not empty, `SetVals`: a key kept exactly where the two sets meet, `Kp`, its value their intersection, `VSpec`); `ImmsRel` (each value a set with the members of the list at its key, an empty list absent); **`join-imms` of related jugs is related to `joinImmsA`** (`al_jimms`). |
 | `Compiler/OptLinkAlPrelude.lean` | Phase 6 of `+alias` (Gaps 13): the prelude `(~(run by rev) (bake silt (list @uwoo)))`: `+bake` (`bake_at`, arm `0xbef7f7` of `layer2`, nouns `alBakeArm`, `alBakeB`, `alBakeInner`) runs the mold `(list @uwoo)` (`+list`, `list_at`, arm `1407` of `layer1`, `alListArm`, `alListB`, `alListMB`) on its default `~` for its bunt (`list_mb`), and its gate slams `+silt` (`bake_inner`, `siltF_saw`); **`rev.gen` is `JugRel` to `dedupN` of the jar** (`al_revinit`, by `run_by_P`); **the gate body is the walk `alWalk` on `gen` = `alGen0 R0`** (`al_prelude`). |
+| `Compiler/OptLinkAlState.lean` | The state `gen` of the walk of `+alias` against the model's `AGen` (shared by phases 7 to 16): `genN` (the eight fields), `alWS` (the walk's subject), `InfoStoreRel` and `ImmsStoreRel` (`info.gen`, `imms.gen`), **`GenRel g N`** (between two blocks: `new` the noun of `g.new`, `OldRel`, the two stores, `JugRel` for `rev`, the flag of `folded`; `info-local` and `imms-local` any nouns) and **`GenRelL g loc imml N`** (inside a block: with `InfoMapRel` and `ImmsRel` for the two local fields); `genRel_start`: `alGen0 R0` of `al_prelude` is `GenRel` to the start state `alG0 rev` of `aliasM`. |
+| `Compiler/OptLinkAlNounsStart.lean` | The nouns of phases 7 to 12 of `+alias`, by `tools/gen/optlink.py alstart`: the gates and traps inside the nouns of `OptLinkAlNouns.lean` (the lenses `alLsZ`, `alLsO`, `alLsL`, `alLsC`, the gates `alUnG`, `alJnG`, `alImG`, `alEdT`, `alEdM`, `alPaIn`, `alPaTl`, the trap `alEnT`) and those nouns cut at them (`alXC`, `alX_cut : alX = alXC` by `rfl`). |
+| `Compiler/OptLinkAlStart.lean` | Phases 7 and 11 of `+alias`: `al_end` (on `topo = ~` the walk gives `[folded new]`), **`al_pre`** (`pre` is a list of atoms with no duplicates and the members of `g.rev o`: `+get:ju` on `JugRel`, `+tap:in`), `al_pre_perm` (with `RevNodup`, a permutation of `g.rev o`), `al_bob` (`bob` is the noun of the block). |
+| `Compiler/OptLinkAlStartUn.lean` | Phase 8 of `+alias`: `jug_del`, `jug_delJu` (`+del:ju` on `JugRel`; `delJu` on lists with no duplicates), `jmp_bunt_at` (the bunt of the mold `jmp`, arm `20` of `compTypes`, by `evalFuel`), `al_unt` (the test), **`al_unreach`** (the branch of an unreachable block: `folded`, the `+roll` of `+del:ju` over the jumps, the walk on `t.topo`, against `alUnState`). |
+| `Compiler/OptLinkAlStartInfo.lean` | Phase 9 of `+alias`, in part: `info_got`, `infoMapRel_put`, `infoMapRel_of_aInfoEq` (`InfoMapRel` along `AInfoEq`, for `aliasStart_perm`), **`al_ent`** (the trap of the entry block gives `entryInfo n-args`), `al_jng` and **`al_jnroll`** (the `+roll` of `join-info` over `t.pre` is the model's `foldlM` of `joinInfoA` from the facts of `i.pre`). |
+| `Compiler/OptLinkAlStartImms.lean` | Phase 10 of `+alias`: `imms_got`, `immsRel_of_immsEq`, `al_img`, **`al_imms`** (`imms` is `ImmsRel` to `aliasStartImms g pre` on the Hoon's `pre`). |
 | `Compiler/AuditOptLink.lean` | `#print axioms` of the main theorems of `Compiler/OptLink*.lean`; `OptLinkBase.lean` also has `+rep` forward (`rep_gate_fwd`) and against a relation (`rep_gate_rel`). |
 | `Ska/Types.lean` | Models of the IR types (`Bell`, `Sock`, `Cape`, `Pole`, `Termin`, `Blob`, `Straight`, `Tone`, ...), each with its Hoon noun layout. |
 | `Ska/Mink.lean`, `Ska/MinkTrace.lean` | Models of `+mink`, `+mook` and `+mock`; what Nock computes, `+mink` returns (`mink_of_evalH`, with `EvalH` the same as `Eval`: `EvalH.toEval`, `Eval.toEvalH`), also on a dynamic hint whose tag is a cell (`eval_cell_tag`); with no scry gate, what `+mink` returns as `[%0 p]` Nock computes (`evalH_of_minkF_nil`, `eval_of_minkF_nil`). |
@@ -2265,11 +2271,11 @@ import only its theorems.  So:
    | 4 | `join-info` | `alJInfoB` | 300 | `+mor`, `+gor`, `+uni:by` (`UniByR`), `join-reg` | `joinInfoA`: done, `al_jinfo` (loop relation `JIR`, `ji_loop`, `jiP_of_maps`; maps by `InfoMapRel`) |
    | 5 | `join-imms` | `alJImmsB` | 340 | `+int:in`, `+uni:by` | `joinImmsA`: done, `al_jimms` (loop relation `JMR`, `jm_loop`, `jmP_of_maps`; jugs by `ImmsRel`, an empty set dropped) |
    | 6 | prelude | `alGenBunt`, `alRevInit` | 97 | `+run:by` (`run_by_P`), `+bake`, `+list`, `+silt` (`silt_gate`) | the start state of `aliasM` (`rev` by `JugRel` to `dedupN` of the jar): done, `al_revinit`, `al_prelude` (the body is `alWalk` on `alGen0 R0`) |
-   | 7 | end of the walk, `pre` | in `alWalk`, `alPre` | 7 + 35 | `+get:ju`, `+tap:in` (`tap_in`) | `aliasWalk []`; `g.rev o` up to order |
-   | 8 | unreachable block | `alUnT`, `alUnB` (`alUnRoll`) | 136 | `+got:by`, `+get-jmps`, `+roll`, `+del:ju` | the first branch of `aliasBlock` |
-   | 9 | facts at the start | `alInfo` (`alEntry` 69, `alJoin` 608: `alJnRoll` 81, `alJnPreB`, `alJnRef` 512 with `alJnBrn` 207, `alJnBrz` 173, `alJnClq` 87) | 687 | `+put:by`, `+got:by`, `join-info`, `+jab:by` | `entryInfo`, `aliasStart` |
-   | 10 | `imms` and the two `=.` | `alImms` | 89 + 10 | `+got:by`, `join-imms` | `aliasStartImms` |
-   | 11 | `bob` | `alBob` | 21 | `+got:by` | `HoonMap.get bl o` |
+   | 7 | end of the walk, `pre` | in `alWalk`, `alPre` | 7 + 35 | `+get:ju`, `+tap:in` (`tap_in`) | `aliasWalk []`; `g.rev o` up to order: done, `al_end`, `al_pre`, `al_pre_perm` (`OptLinkAlStart.lean`) |
+   | 8 | unreachable block | `alUnT`, `alUnB` (`alUnRoll`) | 136 | `+got:by`, `+get-jmps`, `+roll`, `+del:ju` | the first branch of `aliasBlock`: done, `al_unt`, `al_unreach` (`OptLinkAlStartUn.lean`, given `RevNodup`) |
+   | 9 | facts at the start | `alInfo` (`alEntry` 69, `alJoin` 608: `alJnRoll` 81, `alJnPreB`, `alJnRef` 512 with `alJnBrn` 207, `alJnBrz` 173, `alJnClq` 87) | 687 | `+put:by`, `+got:by`, `join-info`, `+jab:by` | `entryInfo`, `aliasStart`: the entry trap (`al_ent`) and the `+roll` of `join-info` (`al_jnroll`) done (`OptLinkAlStartInfo.lean`); the refinement `alJnRef`, the `?^ t.pre` test and the assembly of `alInfo` left |
+   | 10 | `imms` and the two `=.` | `alImms` | 89 + 10 | `+got:by`, `join-imms` | `aliasStartImms`: `imms` done, `al_imms` (`OptLinkAlStartImms.lean`); the two `=.` left to the assembly |
+   | 11 | `bob` | `alBob` | 21 | `+got:by` | `HoonMap.get bl o`: done, `al_bob` (`OptLinkAlStart.lean`) |
    | 12 | parameters | `alPars` (`alEdges` 112, trap `alParT` 203) | 329 | `+zing`, `+turn`, `+murn`, `+get-jmps`, `+got:by`, `+put:by`, `param-info`, `+flop` | `aliasEdges`, `aliasPars` |
    | 13 | body | `alBody` (gate `alBodyG` 2336, one noun per op: `%imm` 154, `%mov` 46, `%inc` 181, `%con` 349, `%hed` 191, `%tal` 191, `%cel` 100, `%lob` 135, `%equ` 47, the hints 5 to 29, `%spy` 81, `%nok` 81, `%cal` 74, `%caf` 76, `%cam` 76, `%csl` 106, `%csf` 69, `%csm` = `alOpLast` 76) | 2409 | `+roll`, `+flop`, `rn`, `+get:ju`, `+put:ju`, `+put:by`, `+got:by`, `+jab:by`, `+int:in`, `+put:in`, `+turn` | `aliasOp`, `aliasBody` |
    | 14 | end | `alFin` (`%clq` 226, `%eqq` 110, `%brn` 260, `%brz` 158, `%hop` 39, `%jmp`, `%jmf` 25, `%jsp`, `%jsf`, `%don` 18, `%bom` = `alFinLast` 10) | 980 | `rn`, `+got:by`, `+del:ju`, `+turn`, `+lift` | `aliasFin`, `aliasFold` |
@@ -2282,10 +2288,22 @@ import only its theorems.  So:
    `OptLinkAlJInfo.lean`), phase 5 (`al_jimms`, `OptLinkAlJImms.lean`) and
    phase 6 (`al_revinit`, `al_prelude`, `OptLinkAlPrelude.lean`: the gate
    of `(bake silt (list @uwoo))` is built by running the mold `(list @uwoo)`
-   on its default `~`, which returns `~` without calling `@uwoo`); next is
-   phase 7, the end of the walk and `pre`, then the walk phases in the order
-   of the table, with the model-side lemmas of Gaps 15 (merge
-   `dozreg/formalization-ska` first).  The
+   on its default `~`, which returns `~` without calling `@uwoo`).  The
+   state of the walk is `GenRel g N` (between blocks) and `GenRelL g loc
+   imml N` (inside a block) of `OptLinkAlState.lean`, the subject `alWS`;
+   the phases after 12 (the body, the end) state their subjects with them.
+   Then phases 7, 8, 10 (`imms`) and 11 (`OptLinkAlStart*.lean`, nouns cut
+   by `optlink.py alstart` into `OptLinkAlNounsStart.lean`) and, of phase
+   9, the entry trap and the `+roll` of `join-info` (`al_ent`,
+   `al_jnroll`).  The order of `pre`: the Hoon's list `preH` (`al_pre`) has
+   no duplicates and the members of `g.rev o`, so with `RevNodup`
+   (`aliasM_inv`) it is a permutation of `g.rev o` (`al_pre_perm`); each
+   phase is linked against the model run on `preH`, and `aliasStart_perm`,
+   `aliasStartImms_perm` with `infoMapRel_of_aInfoEq`, `immsRel_of_immsEq`
+   move the result to `g.rev o`.  Left of phases 7 to 12: the refinement
+   `alJnRef` (its `%brz` case with `BrzInv`, `brzInv_loob`), the `?^ t.pre`
+   test and the assembly of `alInfo`, the two `=.` after `imms`, phase 12
+   (`alEdges`, the trap `alParT`).  The
    loops of `join-info` and `join-imms` went through as `int_loop` did: one
    `nock_open` of the trap and one `simp` per constructor; the builders
    follow `intP_of_sets` (induction on `uniSz a + uniSz b`), the order

@@ -1,4 +1,4 @@
-import lemmas.Compiler.OptLinkAlPrelude
+import lemmas.Compiler.OptLinkAlStartImms
 import lemmas.Compiler.OptLinkRub
 import lemmas.Compiler.OptLinkDead
 import lemmas.Compiler.OptLinkRev
@@ -190,3 +190,20 @@ open Formalization Compiler
 #print axioms list_at
 #print axioms al_revinit
 #print axioms al_prelude
+#print axioms genRel_start
+#print axioms al_end
+#print axioms al_pre
+#print axioms al_pre_perm
+#print axioms al_bob
+#print axioms jug_delJu
+#print axioms jmp_bunt_at
+#print axioms al_unt
+#print axioms al_unreach
+#print axioms info_got
+#print axioms infoMapRel_put
+#print axioms infoMapRel_of_aInfoEq
+#print axioms al_ent
+#print axioms al_jnroll
+#print axioms imms_got
+#print axioms immsRel_of_immsEq
+#print axioms al_imms
