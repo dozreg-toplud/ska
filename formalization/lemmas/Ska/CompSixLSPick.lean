@@ -16,6 +16,9 @@ a flat goal with no entry, so their `LOKS` gives `RunOKGB` under `%pick`
 * `lokS_pick`: `LOKS` at that goal gives `PickOK`.
 * `callTreeA_pickInd`, `callTreeA_pickN0`: the indirect call and `[0 axe]`
   (`axe ≥ 1`) of `CallTreeA` meet `PickOK`.
+* `PickTree` (those two, and `[7 p q]` with `p` of index `true` in
+  `CallTreeA` and `q` in `PickTree`), `pickTree_pick`: every test of
+  `PickTree` meets `PickOK` under `%pick`.
 -/
 
 set_option linter.unusedSectionVars false
@@ -141,6 +144,73 @@ theorem callTreeA_pickN0 (lib : Lib) {N : Needs} (env : CallEnv) {axe : Nat} (ha
   rw [runLC_pick_next env sup (Or.inr ⟨_, hax, rfl⟩) z o region g0] at hr
   exact lokS_pick ((lokS_callTreeA (S := S) (Map := Map) lib (N := N) env hc P).2 rfl).1
     (by rw [hc.sixCount]; omega) hj ha b0 d0 hu hcl hcb hr
+
+/-- **The tests of the class that meet `PickOK`**: the indirect call and
+`[0 axe]` (`axe ≥ 1`) of `CallTreeA`, and `[7 p q]` with `p` of index `true`
+and `q` such a test. -/
+inductive PickTree : Noun → Nomm → Prop
+  | ind {b1 b2 : Bool} {b c : Noun} {p q : Nomm} : CallTreeA b1 b p → CallTreeA b2 c q →
+      PickTree (n3 (A 2) b c) (Nomm.n2 p q Option.none)
+  | n0 {axe : Nat} : 1 ≤ axe → PickTree (slot axe) (Nomm.n0 axe)
+  | seven {b c : Noun} {p q : Nomm} : CallTreeA true b p → PickTree c q → PickTree (n3 (A 7) b c) (Nomm.n7 p q)
+
+theorem PickTree.sixCount {f : Noun} {nm : Nomm} (h : PickTree f nm) : sixCount nm = 0 := by
+  induction h with
+  | ind hp hq => exact (CallTreeA.ind hp hq).sixCount
+  | n0 _ => rfl
+  | seven hp _ ihq => simp only [Comp.sixCount, hp.sixCount, ihq]
+
+/-- **Every test of `PickTree` under `%pick z o` meets `PickOK`**: for `[7
+p q]`, `q`'s `PickOK` (on the products of `p`) gives every premise of
+`LOKS.run` for `p` at `q`'s result (the jump of `q` is a fresh block or `z`
+or `o`, all without arguments), and `runOKGB_sevenL` composes, as in
+`callTreeA_done`. -/
+theorem pickTree_pick (lib : Lib) {N : Needs} (env : CallEnv) {f : Noun} {nm : Nomm} (h : PickTree f nm) :
+    ∀ (P : Noun → Prop) {sup : Option Nomm} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S} {z o : Jmp},
+    GJ g0.bo (CGoal.pick z o : CGoal S) → z.args = [] ∧ o.args = [] →
+    1 ≤ g0.bo → g0.drop = false → UpBelow g0 → Clear g0 → CondBelow g0 →
+    runLC env sup nm (CGoalL.pick z o) region g0 = some (nex, g1) → PickOK (S := S) (Map := Map) lib N P f z o g0 g1 nex := by
+  induction h with
+  | ind hp hq =>
+    intro P sup region g0 g1 nex z o hj ha b0 d0 hu hcl hcb hr
+    exact callTreeA_pickInd lib env (CallTreeA.ind hp hq) P hj ha b0 d0 hu hcl hcb hr
+  | n0 hax =>
+    intro P sup region g0 g1 nex z o hj ha b0 d0 hu hcl hcb hr
+    exact callTreeA_pickN0 lib env hax P hj ha b0 d0 hu hcl hcb hr
+  | @seven b c p q hp hq ihq =>
+    intro P sup region g0 g1 nex z o hj ha b0 d0 hu hcl hcb hr
+    rw [runLC_n7] at hr
+    obtain ⟨nx, ga, h1, h2⟩ := bind_some hr
+    have D := ihq (Img lib P b) hj ha b0 d0 hu hcl hcb h1
+    have Rq := D.run
+    have Lp := ((lokS_callTreeA (S := S) (Map := Map) lib (N := N) env hp P).2 rfl).1
+    have hjx : nx.th.args = [] := by
+      rcases Rq.ent with ⟨_, _, _, ha'⟩ | e
+      · exact ha'
+      · rcases e with e | e
+        · rw [e]; exact ha.1
+        · rw [e]; exact ha.2
+    obtain ⟨⟨Q, RS⟩, hne, -, hfl, hec⟩ := Lp.run (sup := sup) (L := nx.laz) (th := nx.th) (region := region)
+      (by rw [hp.sixCount]; omega) (by have := Rq.ext.2.1; omega) (Rq.ext.2.2.1.trans d0) (Rq.grow.up hu)
+      (Clear.growU hcl Rq.grow) (Rq.cfr.below hcb) Rq.lo Rq.hi hjx D.nent Rq.dist
+      (fun x hx => ⟨by
+        rcases Rq.regs x hx with e | e
+        · exact e.elim
+        · exact e.2, Rq.ncond x hx⟩)
+      (fun e he => ⟨(Rq.labs e he).2.1, (Rq.labs e he).2.2⟩) Rq.nodup
+      (fun e he => ⟨(Rq.eregs e he).1, fun x hx => ⟨((Rq.eregs e he).2 x hx).2, Rq.econd e he x hx⟩⟩)
+      D.flat D.clean D.eclean h2
+    exact ⟨runOKGB_sevenL (minkC7_seven lib P b c) Rq RS.toRunOKLB (fun r hr => hr.elim), hne, hfl,
+      Lp.clean (L := nx.laz) D.clean h2, hec⟩
+
+/-- `[7 [0 1] [2 [0 3] [0 2]]]`, an indirect call as the `q` of a `%7`, is a
+test of `PickTree`; so is `[7 [2 [0 3] [0 2]] [0 2]]`. -/
+example : PickTree (n3 (A 7) (slot 1) (n3 (A 2) (slot 3) (slot 2)))
+    (Nomm.n7 (Nomm.n0 1) (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) :=
+  PickTree.seven (CallTreeA.n0 1) (PickTree.ind (CallTreeA.n0 3) (CallTreeA.n0 2))
+example : PickTree (n3 (A 7) (n3 (A 2) (slot 3) (slot 2)) (slot 2))
+    (Nomm.n7 (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) (Nomm.n0 2)) :=
+  PickTree.seven (CallTreeA.ind (CallTreeA.n0 3) (CallTreeA.n0 2)) (PickTree.n0 (by omega))
 
 end Comp
 end SkaModel

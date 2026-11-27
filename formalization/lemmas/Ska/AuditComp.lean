@@ -113,6 +113,7 @@ import lemmas.Ska.CompOneLS
 import lemmas.Ska.CompPairLSX
 import lemmas.Ska.CompLOKSXUnary
 import lemmas.Ska.CompPairLSXCheck
+import lemmas.Ska.CompSixLSPick
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -1225,3 +1226,9 @@ open Formalization.SkaModel.Comp
 #print axioms lokSX_indirectF
 #print axioms apartS_five
 #print axioms lokSX_five
+#print axioms runLC_pick_next
+#print axioms runOKGB_pick
+#print axioms lokS_pick
+#print axioms callTreeA_pickInd
+#print axioms callTreeA_pickN0
+#print axioms pickTree_pick
