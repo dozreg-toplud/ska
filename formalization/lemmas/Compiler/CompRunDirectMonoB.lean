@@ -339,5 +339,105 @@ theorem crNM_L (x : GenRest) (KP NEX JG OG SOF V5 SV SN V2 PV mono N GN RG sup :
   generalize comp.door = Dr
   simp [nock_exec]
 
+/-- The gate `jump-op` made on the subject of step `7` at the state `g0`. -/
+noncomputable abbrev crJG (SOF V5 SV SN V2 PV mono N GN RG sup : Noun) (g0 : Gen (TreapMap mugF)) (x : GenRest)
+    (ctx : Noun) : Noun :=
+  C crJopBat (C (A 0) (C (crOG SOF V5 SV SN V2 PV mono N GN RG sup g0 x ctx)
+    (crdS6m SOF V5 SV SN V2 PV (crSubj mono N GN RG sup (compCore g0 x ctx)))))
+
+/-- **Step `7` on a `%next` or `%pick` goal under `mono` `&`, up to
+`crD7Nm`**: the test of `%done` fails, `+simple-next`, `+kerf`, the test of
+`mono`. -/
+theorem crd7_nm (h7 : slot? 7 ctx = some compK) (x : GenRest) (SOF V5 SV SN V2 PV : Noun) (p q : Nomm) (b : Bell)
+    (RG sup : Noun) (goal : CGoalL CSet) (k : Nat) (hk : goal.toNoun = C (A k) (crdGoalT goal))
+    (hkd : k ≠ 0x656e6f64) (g g1 g2 : Gen (TreapMap mugF)) (nex0 : NextL CSet) (out pro : Nat)
+    (hsn : nock (crSubj (A 0) (crdN p q b) goal.toNoun RG sup (compCore g x ctx)) crSn
+      = some (C nex0.goal.toNoun (genNoun g1 x)))
+    (hkf : nock (C kerfBat (C nex0.goal.toNoun (compCore g1 x ctx))) kerfBat
+      = some (C (C (A out) (A pro)) (genNoun g2 x))) :
+    nock (crdS6m SOF V5 SV SN V2 PV (crSubj (A 0) (crdN p q b) goal.toNoun RG sup (compCore g x ctx))) crDKc7
+      = nock (crNS [] (C (A out) (A pro)) nex0.goal.toNoun (crJG SOF V5 SV SN V2 PV (A 0) (crdN p q b) goal.toNoun RG sup g x ctx)
+          (crOG SOF V5 SV SN V2 PV (A 0) (crdN p q b) goal.toNoun RG sup g x ctx)
+          SOF V5 SV SN V2 PV (A 0) (crdN p q b) goal.toNoun RG sup g2 x ctx) crNMr0 := by
+  obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
+  have hkd' : (0x656e6f64 : Nat) ≠ k := fun h => hkd h.symm
+  have hD1 := comp_kerf_at
+  rw [← crNM_eq]
+  simp only [crNS, crJG, crOG, crSubj, compCore, List.foldr] at hsn hkf ⊢
+  rw [hk] at hsn ⊢
+  generalize comp.door = Dr at hsn hkf hD1 ⊢
+  unfold crDKc7 crD7 crD7T crD7Nr0 crD7Nc0 crD7Nr1 crD7Nc1 crD7Ne
+  rw [crD7Op_eq, crD7Jop_eq]
+  simp [nock_exec, crdS6m, hsn, cr_bat_sn, hkd, hkd', hD1, comp_kerf_arm, hkf]
+
+/-- **Step `7` on a `%next` or `%pick` goal under `mono` `&`** (`crD7Nm`):
+`+simple-next`, `+kerf`, `+re` twice, the `+emit` of `merge`, `+re` twice,
+the `+emit` of `opt` (`call-op ~ pro-opt`: `%cal`) and of `pes` (`call-op
+`sub-pes pro-pes`: `%csl`), no key, no ring. -/
+theorem crd_blkM_next (h7 : slot? 7 ctx = some compK) (x : GenRest) (hx : x.NoSoft) (SOF V5 V2 PV : Noun)
+    (subNed : Need) (p q : Nomm) (b : Bell) (region : List Nat) (sup : Noun) (goal : CGoalL CSet)
+    (hgd : goal ≠ CGoalL.done) (g : Gen (TreapMap mugF)) (hinv : GInv g goal) :
+    nock (crdS6m SOF V5 (listNoun A (flattenNeed subNed)) subNed.toNoun V2 PV
+      (crSubj (A 0) (crdN p q b) goal.toNoun (listNoun A region) sup (compCore g x ctx))) crDKc7
+      = (crdBlockMM b (flattenNeed subNed) goal g).map fun p => crdBlkN p x := by
+  obtain ⟨hc, hl, hm⟩ := comp_ctx_pill ctx h7
+  have hmod : crdBlockMM b (flattenNeed subNed) goal = (do
+      let nex ← simpleNextL goal
+      let (out, pro) ← kerf nex
+      let merged ← re
+      let subPes ← re
+      let merge ← emit (crMerge merged pro out)
+      let proOpt ← re
+      let proPes ← re
+      let opt ← emit (crOpt b (flattenNeed subNed) proOpt merge)
+      let pes ← emit (crPes b subPes proPes merge)
+      pure (opt, subPes, pes) : CM (TreapMap mugF) (Nat × Nat × Nat)) := by
+    cases goal with
+    | done => exact absurd rfl hgd
+    | _ => rfl
+  have htd : ∃ k, goal.toNoun = C (A k) (crdGoalT goal) ∧ k ≠ 0x656e6f64 := by
+    cases goal with
+    | done => exact absurd rfl hgd
+    | next laz th => exact ⟨_, rfl, by decide⟩
+    | pick z o => exact ⟨_, rfl, by decide⟩
+  obtain ⟨k, hk, hkd⟩ := htd
+  have hkd' : (0x656e6f64 : Nat) ≠ k := fun h => hkd h.symm
+  have hsn := comp_simple_next hc x g goal (A 0) (crdN p q b) (listNoun A region) sup
+  rw [hmod, bind_apply]
+  cases e : simpleNextL (S := CSet) (Map := TreapMap mugF) goal g with
+  | none =>
+    rw [e] at hsn
+    simp only [Option.map_none] at hsn
+    simp only [crSubj, compCore] at hsn ⊢
+    rw [hk] at hsn ⊢
+    generalize comp.door = Dr at hsn ⊢
+    unfold crDKc7 crD7 crD7Op crD7Jop crD7T crD7Nr0 crD7Nc0
+    simp [nock_exec, crdS6m, hsn, cr_bat_sn, hkd, hkd']
+  | some r =>
+    obtain ⟨nex0, g1⟩ := r
+    rw [e] at hsn
+    simp only [Option.map_some] at hsn
+    obtain ⟨-, -, ⟨⟨lnb, -⟩, d1, -⟩, -⟩ := simpleNextL_res hinv e
+    have hkf := comp_kerf_all hc hl hm x g1 nex0 (walk_mdP hx g1.bo (lall_mono (fun _ hs => hs.1) lnb))
+    have hD1 := comp_kerf_at
+    rw [cr_next_nounL] at hsn
+    cases ek : kerf nex0 g1 with
+    | none =>
+      rw [ek] at hkf
+      simp only [crSubj, compCore] at hsn hkf ⊢
+      rw [hk] at hsn ⊢
+      generalize comp.door = Dr at hsn hkf hD1 ⊢
+      unfold crDKc7 crD7 crD7Op crD7Jop crD7T crD7Nr0 crD7Nc0 crD7Nr1 crD7Nc1
+      simp [nock_exec, crdS6m, hsn, cr_bat_sn, hkd, hkd', hD1, comp_kerf_arm, hkf, bind, StateT.bind, ek]
+    | some r2 =>
+      obtain ⟨⟨out, pro⟩, g2⟩ := r2
+      rw [ek] at hkf
+      simp only [Option.map_some] at hkf
+      rw [← cr_next_nounL] at hsn hkf
+      rw [crd7_nm h7 x SOF V5 _ _ V2 PV p q b _ sup goal k hk hkd g g1 g2 nex0 out pro hsn hkf]
+      rw [crNM_0, crNM_1, crNM_2 (hc := hc), crNM_3, crNM_4, crNM_5 (hc := hc), crNM_6 (hc := hc), crNM_L]
+      simp [Option.bind_some, re_apply, cf_emit_g, pure_apply, bind_apply, crdBlkN, cf_emitG_re, cf_emitG_bo, ek,
+        Functor.map, StateT.map, reG]
+
 end Compiler
 end Formalization
