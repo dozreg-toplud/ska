@@ -1,4 +1,5 @@
 import lemmas.Compiler.PokeLink
+import lemmas.Compiler.PokeLinkFull
 
 /-! # Audit of track P: `enc` and the `%full` branch of `+poke` -/
 
@@ -24,3 +25,19 @@ open Formalization Formalization.Compiler
 #print axioms invStart_cor
 #print axioms pokeN_full_of
 #print axioms fuelOK_anaFuel
+#check @fullBranchIs
+#check @pokeN_full
+#check @pokeModel_full
+#check @pokeModel_full_corIn
+#check @JetRootLinkR
+#print axioms vovum_full
+#print axioms mold_full_cell
+#print axioms mold_full_atom
+#print axioms ipokeR_eq
+#print axioms full_run
+#print axioms fullBranchIs
+#print axioms pokeN_full_atom
+#print axioms jetRootLink_false
+#print axioms pokeN_full
+#print axioms pokeModel_full
+#print axioms pokeModel_full_corIn

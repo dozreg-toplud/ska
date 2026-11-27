@@ -349,5 +349,106 @@ theorem pokeN_full_atom (fl : Flags) (st : PSt) (s : Noun) (a : Nat) :
   rw [pokeN_eq (enc_slot2 fl st), nock_eight ipokeBat_eq]
   simp only [Ovum.toNoun, ipokeB_full_atom (enc_slot15 fl st), Option.bind_none]
 
+
+/-! ## `pokeModel` on `%full` from the links -/
+
+section Model
+
+variable (fl : Flags) (Ar : Arms FinMap (TreapMap mugF) Noun Noun (Noun × Noun))
+
+/-- **`JetRootLink` is false of the pill's test**: its right side always
+returns, but on a state whose `jets` noun is an atom the pill's test reads
+`call.cole` from it and crashes.  (`J := Noun` admits such states.) -/
+theorem jrP_jets_atom (b : Noun) : jrP (enc fl { emptySt with jets := A 0 }) b = none := by
+  simp [jrP, getRaw, byArmO, enc, stNoun, longNoun, nock_exec]
+
+theorem jetRootLink_false (b : Bell) : ¬ JetRootLink fl Ar jrP := by
+  intro h
+  have e := h { emptySt with jets := A 0 } b
+  rw [jrP_jets_atom] at e
+  cases e
+
+/-- **The jetted-root link, where `pokeN_full_of` uses it**: on the state
+that the model's `+ska-poke` returns, at the root bell it returns.  Implied
+by `JetRootLink` (`jetRootLinkR_of`), and not false of `jrP`. -/
+def JetRootLinkR (jr : Noun → Noun → Option (Option Noun)) : Prop :=
+  ∀ (st : PSt) s f r, Ar.skaPoke s f st.long st.jets st.hot = some r →
+    jr (enc fl { st with long := r.2.1, jets := r.2.2.1 }) r.1.toNoun =
+      some ((Ar.jetRoot r.2.2.1 st.hot r.1).map Straight.toNoun)
+
+theorem jetRootLinkR_of {jr : Noun → Noun → Option (Option Noun)} (h : JetRootLink fl Ar jr) :
+    JetRootLinkR fl Ar jr := fun st _ _ r _ => h { st with long := r.2.1, jets := r.2.2.1 } r.1
+
+/-- **`pokeModel` on a `%full` with a cell formula, from the links alone**:
+on every encoded state, the pill's inner `+poke` is
+`liftPoke (enc fl) (pokeS Ar)`, from `SkaLink`, `JetRootLinkR`, `SccLink`,
+`MonoLink`, `OptLink` of the pill's callees (no `FullBranchIs`: it is
+`fullBranchIs`). -/
+theorem pokeN_full (hS : SkaLink fl Ar skaP) (hJ : JetRootLinkR fl Ar jrP) (hC : SccLink fl Ar sccP)
+    (hM : MonoLink fl Ar monoP) (hO : OptLink Ar optP) (st : PSt) (s f₁ f₂ : Noun) :
+    pokeN (enc fl st) (Ovum.full s (C f₁ f₂)).toNoun =
+      (liftPoke (enc fl) (pokeS Ar) (enc fl st) (Ovum.full s (C f₁ f₂))).map fun r => C r.1.toNoun r.2 := by
+  rw [fullBranchIs fl st s f₁ f₂, liftPoke_enc_fl]
+  unfold pillFull
+  rw [hS]
+  simp only [pokeS]
+  cases e1 : Ar.skaPoke s (C f₁ f₂) st.long st.jets st.hot with
+  | none => rfl
+  | some r =>
+    simp only [Option.map_some, Option.bind_some]
+    rw [hJ st s (C f₁ f₂) r e1]
+    simp only [Option.bind_some]
+    cases e2 : Ar.jetRoot r.2.2.1 st.hot r.1 with
+    | some out => simp [Prod.toNoun]
+    | none =>
+      simp only [Option.map_none]
+      unfold compileStep
+      rw [hC]
+      cases e3 : Ar.sccOf r.1 r.2.1 st.cache.sccs with
+      | none => rfl
+      | some q =>
+        simp only [Option.map_some, Option.bind_some, if_true]
+        rw [hM]
+        cases e4 : compiledMono Ar { st with long := r.2.1, jets := r.2.2.1, cache := { st.cache with sccs := q.2 } } r.1 q.1 with
+        | none => rfl
+        | some p =>
+          simp only [Option.map_some, Option.bind_some]
+          rw [hO]
+          simp [Prod.toNoun]
+
+/-- **`pokeModel` on every `%full`**, on every encoded state: a cell formula
+by `pokeN_full`, an atom formula because the pill crashes
+(`pokeN_full_atom`) and so does the model, when its `+ska-poke` answers no
+atom formula (as `anaArmP`, `anaArmP_atom`). -/
+theorem pokeModel_full (hS : SkaLink fl Ar skaP) (hJ : JetRootLinkR fl Ar jrP) (hC : SccLink fl Ar sccP)
+    (hM : MonoLink fl Ar monoP) (hO : OptLink Ar optP)
+    (hAt : ∀ s a L j h, Ar.skaPoke s (A a) L j h = none) (st : PSt) (s f : Noun) :
+    pokeN (enc fl st) (Ovum.full s f).toNoun =
+      (liftPoke (enc fl) (pokeS Ar) (enc fl st) (Ovum.full s f)).map fun r => C r.1.toNoun r.2 := by
+  cases f with
+  | atom a => rw [pokeN_full_atom, liftPoke_enc_fl]; simp [pokeS, hAt]
+  | cell f₁ f₂ => exact pokeN_full fl Ar hS hJ hC hM hO st s f₁ f₂
+
+/-- **The field `pokeModel` restricted to `%full`**, in the form of
+`PokeModel` (every core with `CorIn`), from the links and the image
+condition `PokeReachEnc` (open, leaf 1.1). -/
+theorem pokeModel_full_corIn (hR : PokeReachEnc fl) (hS : SkaLink fl Ar skaP) (hJ : JetRootLinkR fl Ar jrP)
+    (hC : SccLink fl Ar sccP) (hM : MonoLink fl Ar monoP) (hO : OptLink Ar optP)
+    (hAt : ∀ s a L j h, Ar.skaPoke s (A a) L j h = none) :
+    ∀ cr, CorIn cr → ∀ s f, pokeN cr (Ovum.full s f).toNoun =
+      (liftPoke (enc fl) (pokeS Ar) cr (Ovum.full s f)).map fun r => C r.1.toNoun r.2 := by
+  intro cr hc s f
+  obtain ⟨st, rfl⟩ := hR cr hc.2.2
+  exact pokeModel_full fl Ar hS hJ hC hM hO hAt st s f
+
+end Model
+
+/-- `anaArmP` answers no atom formula. -/
+theorem anaArmP_atom {M : Type → Type → Type} [Treap M] {J H R : Type} (env : Env R)
+    (jet : H → J → (Bell → Option Datum) → R → Bell → Bool) (fold frozen : Bool)
+    (fuel : Noun → Noun → LongB M → J → Nat) (bf : BEnv M → Nat) (regOf : J → R)
+    (jetsOf : H → J → R → LongB M → LongB M → J) (newOf : R → Noun) (s : Noun) (a : Nat) (L : LongB M) (j : J) (h : H) :
+    anaArmP env jet fold frozen fuel bf regOf jetsOf newOf s (A a) L j h = none := rfl
+
 end Compiler
 end Formalization
