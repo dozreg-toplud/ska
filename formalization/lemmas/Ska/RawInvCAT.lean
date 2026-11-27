@@ -8,9 +8,9 @@ README Gaps 14 (b), track D.  The facts of `RunAT` for `runLC` (calls) on
 indirect calls anywhere, nested), under every goal, lazy ones with forks
 and bonds included.  Without `%6` no block jumps up, so a state invariant
 does it where `FragX` needed the relation `GA`:
-* `ATS g`: no `drop`, every block lies below `bo` and meets `BATC` (each
+* `ATS g`: no `drop`, every block lies in `[1, bo)`, meets `BATC` (each
   jump goes to a block with as many parameters as it passes, a two-way end
-  passes none) in the map itself;
+  passes none) in the map itself, and jumps below its own label;
 * `HT P m Q`: from a state with `ATS` and `P`, a run of `m` ends in a state
   with `ATS`, keeps the blocks' parameters and ends (`KP`), and meets `Q`.
   Kept by `bind`, `pure`, `if`; a `QM` step keeps every stable `P`
@@ -25,7 +25,8 @@ only `Fresh` hops (`ht_kerf`, `ht_callL`).
 * **`ht_runLC`**: `runLC env sup nm` on `PlainN` is `HT` from `Fresh` goal
   jumps to a `Fresh` result jump.
 * **`runATC_plain`**: the raw blocks of the top run of `runLC env` on a
-  nomm of `PlainN` meet `Closed`, `ArityOK` and `TwoNA`.
+  nomm of `PlainN` meet `Closed`, `ArityOK` and `TwoNA`;
+  **`runDownC_plain`**: they jump down (`Down`), the result jump is `Fresh`.
 -/
 
 set_option linter.unusedSectionVars false
@@ -48,9 +49,11 @@ def BATC (bl : Map Blob) (b : Blob) : Prop :=
   (∀ j ∈ finJumps b.fin, ∃ b2, HoonMap.get bl j.there = some b2 ∧ j.args.length = b2.par.length) ∧
   (Compiler.twoWay b.fin = true → ∀ j ∈ finJumps b.fin, j.args = [])
 
-/-- **The state invariant.** -/
+/-- **The state invariant**: no `drop`, labels from `1` below `bo`, every
+block meets `BATC` in the map and jumps below its own label. -/
 def ATS (g : Comp.Gen Map) : Prop :=
-  g.drop = false ∧ ∀ k b, HoonMap.get g.blocks k = some b → k < g.bo ∧ BATC g.blocks b
+  g.drop = false ∧ 1 ≤ g.bo ∧ ∀ k b, HoonMap.get g.blocks k = some b →
+    k < g.bo ∧ BATC g.blocks b ∧ 1 ≤ k ∧ ∀ j ∈ finJumps b.fin, j.there < k
 
 /-- **The blocks of `g` keep their parameters and ends in `g'`.** -/
 def KP (g g' : Comp.Gen Map) : Prop :=
@@ -107,11 +110,11 @@ theorem batc_fresh {g : Comp.Gen Map} {b : Blob} (h : ∀ j ∈ finJumps b.fin, 
     exact a2
 
 theorem ats_quiet {g g' : Comp.Gen Map} (a : ATS g) (q : Quiet g g') : ATS g' ∧ KP g g' := by
-  have K : KP g g' := ⟨q.1.drop, q.1.bo, fun k b hb => q.1.keep k b (a.2 k b hb).1 hb⟩
-  refine ⟨⟨q.1.drop.trans a.1, fun k b' hb' => ?_⟩, K⟩
+  have K : KP g g' := ⟨q.1.drop, q.1.bo, fun k b hb => q.1.keep k b (a.2.2 k b hb).1 hb⟩
+  refine ⟨⟨q.1.drop.trans a.1, by rw [q.2]; exact a.2.1, fun k b' hb' => ?_⟩, K⟩
   rcases q.1.new k b' hb' with ⟨b, hb, -, hf⟩ | ⟨l, u, -⟩
-  · obtain ⟨l, B⟩ := a.2 k b hb
-    refine ⟨by rw [q.2]; exact l, ?_⟩
+  · obtain ⟨l, B, l1, J⟩ := a.2.2 k b hb
+    refine ⟨by rw [q.2]; exact l, ?_, l1, fun j hj => J j (by rw [hf] at hj; exact hj)⟩
     have B' := batc_kp B K
     exact ⟨fun j hj => B'.1 j (by rw [hf] at hj; exact hj), fun ht j hj => B'.2 (by rw [hf] at ht; exact ht) j
       (by rw [hf] at hj; exact hj)⟩
@@ -120,16 +123,18 @@ theorem ats_quiet {g g' : Comp.Gen Map} (a : ATS g) (q : Quiet g g') : ATS g' �
 theorem ats_emit {g : Comp.Gen Map} {b : Blob} (a : ATS g) (hb : BATC g.blocks b) :
     ATS (g.emitted b) ∧ KP g (g.emitted b) ∧ HoonMap.get (g.emitted b).blocks g.bo = some b := by
   have K : KP g (g.emitted b) := ⟨rfl, Nat.le_succ _, fun k x hx => ⟨x, by
-    rw [em_get a.1, if_neg (Nat.ne_of_lt (a.2 k x hx).1)]; exact hx, rfl, rfl⟩⟩
-  refine ⟨⟨a.1, fun k x hx => ?_⟩, K, by rw [em_get a.1, if_pos rfl]⟩
+    rw [em_get a.1, if_neg (Nat.ne_of_lt (a.2.2 k x hx).1)]; exact hx, rfl, rfl⟩⟩
+  refine ⟨⟨a.1, by simp only [emitted_bo]; omega, fun k x hx => ?_⟩, K, by rw [em_get a.1, if_pos rfl]⟩
   rw [em_get a.1] at hx
   by_cases e : k = g.bo
   · rw [if_pos e] at hx
     cases hx
-    exact ⟨by simp only [emitted_bo]; omega, batc_kp hb K⟩
+    refine ⟨by simp only [emitted_bo]; omega, batc_kp hb K, by have := a.2.1; omega, fun j hj => ?_⟩
+    obtain ⟨b2, h2, -⟩ := hb.1 j hj
+    rw [e]; exact (a.2.2 _ b2 h2).1
   · rw [if_neg e] at hx
-    obtain ⟨l, B⟩ := a.2 k x hx
-    exact ⟨by simp only [emitted_bo]; omega, batc_kp B K⟩
+    obtain ⟨l, B, l1, J⟩ := a.2.2 k x hx
+    exact ⟨by simp only [emitted_bo]; omega, batc_kp B K, l1, J⟩
 
 /-- **The triple**: from `ATS` and `P`, a run of `m` keeps `ATS`, keeps the
 blocks (`KP`) and meets `Q`. -/
@@ -553,20 +558,37 @@ def RunATC (S : Type) [HoonSet S] (Map : Type → Type) [HoonMap Map] [HoonMapKe
 theorem stIn_of_ats {g : Comp.Gen Map} (a : ATS g) :
     Compiler.Closed g.blocks ∧ Compiler.ArityOK g.blocks ∧ Compiler.TwoNA g.blocks := by
   refine ⟨fun o b j hb hj => ?_, fun o b j b2 hb hj hb2 => ?_, fun o b j hb ht hj => ?_⟩
-  · obtain ⟨b2, h2, -⟩ := (a.2 o b hb).2.1 j (by rw [← getJmps_eq]; exact hj)
+  · obtain ⟨b2, h2, -⟩ := (a.2.2 o b hb).2.1.1 j (by rw [← getJmps_eq]; exact hj)
     rw [h2]; rfl
-  · obtain ⟨b3, h3, e3⟩ := (a.2 o b hb).2.1 j (by rw [← getJmps_eq]; exact hj)
+  · obtain ⟨b3, h3, e3⟩ := (a.2.2 o b hb).2.1.1 j (by rw [← getJmps_eq]; exact hj)
     rw [h3] at hb2; cases hb2; exact e3
-  · exact (a.2 o b hb).2.2 ht j (by rw [← getJmps_eq]; exact hj)
+  · exact (a.2.2 o b hb).2.1.2 ht j (by rw [← getJmps_eq]; exact hj)
+
+/-- `ATS` gives `Down` (every block at a label from `1`, jumping to labels
+from `1` below its own). -/
+theorem down_of_ats {g : Comp.Gen Map} (a : ATS g) : Down g.blocks := by
+  intro k b hb
+  obtain ⟨-, B, l1, J⟩ := a.2.2 k b hb
+  refine ⟨l1, fun j hj => ⟨?_, J j hj⟩⟩
+  obtain ⟨b2, h2, -⟩ := B.1 j hj
+  exact (a.2.2 _ b2 h2).2.2.1
 
 theorem ats_gen0 : ATS (gen0 : Comp.Gen Map) :=
-  ⟨rfl, fun k b hb => by simp [gen0, HoonMap.get_empty] at hb⟩
+  ⟨rfl, by simp [gen0], fun k b hb => by simp [gen0, HoonMap.get_empty] at hb⟩
 
 /-- **`RunATC` on `PlainN`**: every nomm with no `%6`, no direct call and no
 hint, indirect calls anywhere. -/
 theorem runATC_plain (env : CallEnv) {nm : Nomm} (hp : PlainN nm) : RunATC S Map env nm := by
   intro nex g1 h
   exact stIn_of_ats ((ht_runLC env nm hp Option.none CGoalL.done []).run _ _ _ ats_gen0 trivial h).1
+
+/-- **The raw blocks of `runLC` on `PlainN` jump down** (`Down`, so
+`DownRk id`), and the result jump is `Fresh`. -/
+theorem runDownC_plain (env : CallEnv) {nm : Nomm} (hp : PlainN nm) {nex : NextL S} {g1 : Comp.Gen Map}
+    (h : runLC env Option.none nm (CGoalL.done : CGoalL S) [] (gen0 : Comp.Gen Map) = some (nex, g1)) :
+    Down g1.blocks ∧ Fresh g1 nex.th := by
+  obtain ⟨A, -, F⟩ := (ht_runLC env nm hp Option.none CGoalL.done []).run _ _ _ ats_gen0 trivial h
+  exact ⟨down_of_ats A, F⟩
 
 end Raw
 end SkaModel
