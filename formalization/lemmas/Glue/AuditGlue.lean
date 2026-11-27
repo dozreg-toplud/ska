@@ -30,6 +30,7 @@ import lemmas.Compiler.CompCoerceLazyGen
 import lemmas.Ska.CompNaryTopRecEx
 import lemmas.Ska.CompNaryTopClose
 import lemmas.Ska.RawInvCLIJ
+import lemmas.Ska.PassFreeze
 
 /-!
 # Audit of `formalization/LEDGER.md`
@@ -249,6 +250,8 @@ namespace Formalization
 #check @SkaModel.Opt.ReadsOK
 #check @SkaModel.Opt.ArgsOK
 #check @SkaModel.Opt.LocalOK
+#check @SkaModel.Ana.finPushes_of_freeze
+#check @SkaModel.Ana.EvFrozen
 
 /-! ## The glue theorems of the second pass -/
 #print axioms SkaModel.Glue.rawMonoD_calls
@@ -264,7 +267,6 @@ namespace Formalization
 #print axioms SkaModel.Glue.optInNary_fragX
 #print axioms SkaModel.Glue.compHyp_of_calls
 #print axioms SkaModel.Glue.rawEntry_of
-#print axioms SkaModel.Glue.straight_toNoun_inj
 #print axioms SkaModel.Glue.optRef_fragX'
 #print axioms SkaModel.Glue.optTotalMono_fragX
 #print axioms SkaModel.Glue.optTotalNary_fragX
@@ -279,5 +281,6 @@ namespace Formalization
 #print axioms SkaModel.Glue.libP_hand
 #print axioms SkaModel.Glue.libP_format
 #print axioms SkaModel.Glue.libP_evalMook
+#print axioms SkaModel.Glue.straight_toNoun_inj
 
 end Formalization

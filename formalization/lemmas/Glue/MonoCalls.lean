@@ -33,7 +33,8 @@ call environment, the callees' needs and the bell.  Here:
   `+optimize`); `rawOptIn_of`, `optRef_of_total` compose them; on `FragX`
   they are proved (`optInMono_fragX`, …, `optTotalNary_fragX`);
 * `straight_toNoun_inj`: `Straight.toNoun` is injective on `TreapMap mugF`
-  (the `hinj` of `optRef_fragX`), so `optRef_fragX'` has no `hinj`;
+  (the `hinj` of `optRef_fragX`; track P's copy in `Ska/PokeEnc.lean` cannot
+  be imported beside `OptLinkAlJReg`), so `optRef_fragX'` has no `hinj`;
 * `compHyp_of_calls`: `CompHyp` on the classes with calls from `CompRestM`
   and the two leaves `OptInMono`, `OptInNary` (owner: track D).
 -/
@@ -500,7 +501,11 @@ theorem tr_toNoun_inj {ν : Type} {f : ν → Noun} (hf : ∀ a b, f a = f b →
 
 /-- **`Straight.toNoun` is injective on `TreapMap mugF`** (the `hinj` of
 `optRef_fragX`): need (`needOrd_toNoun_inj`), arity, and the treap of blocks
-(`tr_toNoun_inj` with `blob_toNoun_inj`; a `TreapMap` is a subtype). -/
+(`tr_toNoun_inj` with `blob_toNoun_inj`; a `TreapMap` is a subtype).  Track
+P proves the same (`Compiler.straight_toNoun_inj`, `Ska/PokeEnc.lean`), but
+that file cannot be imported here: it and `Compiler/OptLinkAlJReg.lean`
+(imported through `OptLinkTotalAvail`) both declare
+`Compiler.unitNoun_id_inj`. -/
 theorem straight_toNoun_inj : ∀ a b : Straight (TreapMap mugF), a.toNoun = b.toNoun → a = b
   | ⟨n, k, bl⟩, ⟨n', k', bl'⟩, h => by
     simp only [Straight.toNoun, Noun.cell.injEq, Noun.atom.injEq] at h
@@ -509,8 +514,9 @@ theorem straight_toNoun_inj : ∀ a b : Straight (TreapMap mugF), a.toNoun = b.t
     rw [needOrd_toNoun_inj n n' e1, e2, e4]
 
 /-- **`OptRef` on `FragX` without `hinj`**: `optRef_fragX` with
-`straight_toNoun_inj`; one hypothesis left, `hpill` (`A.optimize` is what the
-pill's `+optimize` returns on each reference form). -/
+`straight_toNoun_inj`; one hypothesis left,
+`hpill` (`A.optimize` is what the pill's `+optimize` returns on each
+reference form). -/
 theorem optRef_fragX' {A : Arms M (TreapMap mugF) J H CR} {lib : Lib} {ref : Ref M (TreapMap mugF) J H}
     {D : CompData M (TreapMap mugF) J H} (P : RefSide S lib ref D (FragXM S) (FragXN S))
     (hpill : ∀ long jets hot b m s, InvB lib long → ref long jets hot b m = some s →
