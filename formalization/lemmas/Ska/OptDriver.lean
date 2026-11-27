@@ -26,14 +26,16 @@ blocks, `topo` and `rev`, meant as `TopoOK` with `rev` listing the
 predecessors), then `optimizeF` keeps the code on blocks with `BInv`
 (`Keeps`: on entries with `ReadsOK` and `ArgsOK`, the same `execEntry`, and
 both kept).  The fields proved so far are in `OptDriverFields.lean`.  Termination of `+optimize` is the named hypothesis
-`OptHalts`: some fuel is enough.  A measure that would prove it: every
+`OptHalts`: some fuel is enough.  A measure that proves it: every
 structural pass that reports a change removes a block (`+remove-hops`), turns
 a two-way end into a hop (`+remove-useless-branching`) or makes a jump skip a
-block on an acyclic CFG (`+remove-empty-middle`), so the pair (number of
-blocks, number of two-way ends, sum over jumps of the length of the chain of
-empty blocks after it) decreases lexicographically; `+alias` reports a change
-only when it folds a branch or drops a block, which decreases the same pair,
-but that is a fact about `+alias` still to be proved.
+block on an acyclic CFG (`+remove-empty-middle`), so the triple (number of
+blocks, weight of the two-way ends, sum over the jumps of the rank of the
+target) decreases lexicographically.  `+alias` reports a change when it folds
+a branch, drops a block, or turns a `%brn` on a known loob into a `%brz`; the
+last keeps the blocks and the two-way ends, so the weight counts a `%brn` `2`
+and the other two-way ends `1` (`Compiler/OptLinkTotal*.lean`, README Gaps
+13).
 -/
 
 set_option linter.unusedSectionVars false

@@ -320,11 +320,12 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/OptLinkTrimLink.lean` | **`+trim-trace-hints` where `trimTraceHints` returns** (`tr_gate`), so `TrimLink P` for every `P` whose `trim` is the model (`trimLink`); the pairs of the noun of a treap (`get_hoonMap`), the model's `+run:by` (`get_trimRun`, `noLti_trim`); `oo_gate_trim` and `opt_gate_trim`, the gates of `+optimize-once` and `+optimize` with only `+alias` (and `+switch-chains`) as hypotheses. |
 | `Compiler/OptLinkFuel.lean` | The fuelled passes return with enough fuel, the measure a rank `ρ` that decreases along every jump (`Acyclic`): `+bb-topo` with fuel above `ρ 0` (`bbTopo_some`, on a `Closed` CFG with a block `0`), `+remove-hops` above the ranks of `topo` (`removeHops_some`, with `TopoInv` and `ArityOK`), `+remove-empty-middle` above the ranks of the blocks (`removeEmptyMiddle_some`, `Closed`, `ArityOK`); so their links hold with no condition on the model (`bb_gate_total`, `rh_gate_total`, `rem_gate_total`). |
 | `Compiler/OptLinkTotalMono.lean` | The fuelled passes are monotone in the fuel (`FuelMono`; `dfs_mono`, `hopChain_mono`, `rewriteJump_mono`, `rewriteHop_mono`, `middleFin_mono`, `bbTopo_mono`, `removeHops_mono`, `removeEmptyMiddle_mono`), so the converses of `OptLinkFuel.lean` give a result that no longer depends on the fuel past a bound (`stable_of_mono`; `bbTopo_stable`, `removeHops_stable`, `removeEmptyMiddle_stable`). |
-| `Compiler/OptLinkTotalInv.lean` | The invariant and the measure of the structural loop (Gaps 13): `StInv ρ L` (`RkDown ρ`, `Closed`, `ArityOK`, a block `0`, `TwoNA`: the two-way ends pass no arguments, labels in `L`), the measure `mu ρ L` (blocks, two-way ends, sum over the jumps of `ρ` of the target, each a sum over `L`), `LexLt`, `LexLe`, `lex_induction`; `rub_isSome`; **`rub_inv_step`**, **`mid_inv_step`**: the pass keeps `StInv`, does not raise `mu` and lowers it when it reports a change (`rubFold_flag`, `midFold_true`; `rj_cases`, `rh_cases`, `rj_ok`, `rh_ok`, `rj_noargs`, `rj_strict`, `rh_strict`, `mf_facts`). |
+| `Compiler/OptLinkTotalInv.lean` | The invariant and the measure of the structural loop (Gaps 13): `StInv ρ L` (`RkDown ρ`, `Closed`, `ArityOK`, a block `0`, `TwoNA`: the two-way ends pass no arguments, labels in `L`), the measure `mu ρ L` (blocks, weight of the two-way ends `twoW`: `2` for a `%brn`, `1` for the others, sum over the jumps of `ρ` of the target, each a sum over `L`), `LexLt`, `LexLe`, `lex_induction`; `rub_isSome`; **`rub_inv_step`**, **`mid_inv_step`**: the pass keeps `StInv`, does not raise `mu` and lowers it when it reports a change (`rubFold_flag`, `midFold_true`; `rj_cases`, `rh_cases`, `rj_ok`, `rh_ok`, `rj_noargs`, `rj_strict`, `rh_strict`, `mf_facts`). |
 | `Compiler/OptLinkTotalHops.lean` | **`hops_inv_step`**: `+remove-hops` keeps `StInv`, does not raise `mu` and lowers it on a merge; `hops_keys` (the blocks of the result are on `topo`), `mtail_end`, **`hops_drop`** (a merged label holds no block: `hopChain_saw`, `suffix_fwd`, `hopsFold_drop`). |
 | `Compiler/OptLinkTotalLoop.lean` | **`structLoop_total`**: on `StInv ρ L` blocks with `TopoInv`, the structural loop of `+optimize-once` returns one result for every fuel and count past a bound, with `StInv`, `TopoInv` and `mu` not above the input's (`LoopOK`), by `lex_induction` on `mu`; `structEntry_total` with `+bb-topo` and `+rev-cfg` first. |
-| `Compiler/OptLinkTotalOnce.lean` | `dead_isSome`, **`dead_step`** (`+remove-dead-code` keeps `StInv`, `TopoInv`, `mu` not above); **`PassTotal P ρ L J`**, what the converse assumes of `+alias`, `+trim-trace-hints`, `+switch-chains` and of a block invariant `J` (Gaps 13); `structLoop_J`; **`optimizeOnce_total`**, **`optLoop_total`** (by `lex_induction`: a turn that reports a change lowers `mu`), **`optimizeF_total`**, `optHalts_of` (`OptHalts` from `PassTotal`). |
-| `Compiler/OptLinkTotalGate.lean`, `Compiler/AuditOptTotal.lean` | **`opt_gate_total_of`**: for the passes of the Hoon, on blocks with no `%lti`, `StInv` and `J` with `PassTotal`, some fuel makes `optimizeF` return `s'` and the pill's `+optimize` returns the noun of `s'`.  The audit: axioms, and `#guard` checks of `mu` and the flags on `xhBlocks` and `xaBlocks`. |
+| `Compiler/OptLinkTotalOnce.lean` | `dead_isSome`, **`dead_step`** (`+remove-dead-code` keeps `StInv`, `TopoInv`, `mu` not above); **`PassTotal P ρ L J`**, what the converse assumes of `+alias`, `+trim-trace-hints`, `+switch-chains` with `DriverHyp` at `J` and `TopoInvR` (Gaps 13); **`optimizeOnce_total`**, **`optLoop_total`** (by `lex_induction`: a turn that reports a change lowers `mu`), **`optimizeF_total`**, `optHalts_of` (`OptHalts` from `PassTotal`). |
+| `Compiler/OptLinkTotalGate.lean`, `Compiler/AuditOptTotal.lean` | **`opt_gate_total_of`**: for the passes of the Hoon, on blocks with no `%lti`, `StInv` and `J` with `PassTotal`, some fuel makes `optimizeF` return `s'` and the pill's `+optimize` returns the noun of `s'`.  The audit: axioms, and `#guard` checks of `mu`, the flags and the returns of `+alias`, `+trim-trace-hints`, `+switch-chains` and `optLoop` on `xhBlocks`, `xaBlocks`, `xbBlocks` (the `%brn` to `%brz` change, Gaps 13). |
+| `Compiler/OptLinkTotalPass.lean` | `mu_le_pw`, `mu_lt_pw2`; **`afin_facts`** (the end `+alias` makes: old targets and arity, weight and rank sum not above, a change only with a lower weight); `aw_flag`, `alias_zero`, **`aliasM_step`** (where `aliasM` returns: `StInv` kept, `mu` not above, lower on a change); `trimWalk_isSome`, `stInv_shape`, **`trim_step`**; `stInv_of` (`StInv` from `Acyclic`, `Closed`, `ArityOK`, block `0`, `TwoNA`); `AliasRet`, `SwitchRet` (open); **`passTotal_of`** (`PassTotal` at `DInvR` from them and `driverHypR_of`); **`opt_gate_total`** (the link of `+optimize` with the model returning, given `AliasRet` and `SwitchRet`, on blocks with `StInv` and `DInvR`). |
 | `Compiler/OptLinkSwNouns.lean` | `+switch-chains` (arm `182` of `optC`, `sw_at_cut`, `swBody_eq`): its nouns cut by `tools/gen/optlink.py switch` (the gates `test-of` `swTOB`, `chain-of` `swCHB`, `plain-of` `swPOB`, `plains-of` `swPSB`, `cases` `swCSB`, `tree` `swTRB`, `uses`, `nex`, the walk `swWalk` and its two branches, each cut at the tests the proofs step through), the subjects `swS3` to `swS9` after `uses` and each gate, and the nouns `stestN`, `splainN`, `spN`, `scaseN` of the model's values. |
 | `Compiler/OptLinkSwUses.lean` | `uses` (`sw_uses`): a map related to `usesOf` (`UsesRel`: at each register with a positive count, that count), through the gate `put` (`uses_gut`, `uses_put`, `bump`), the gate of the `+roll` over the ops and the gate of the `+rep:by` (`sw_repg`, the pattern of `rd_step`). |
 | `Compiler/OptLinkSwTest.lean` | **The gate `test-of` is `testOf`**, crashes included (`sw_test`): the model restated by the steps (`testOf_eq`: `clqNA`, `eqqNA`, `toYb`, `toBod`, `toHM`, `toC`), each Nock step stated as the subject it starts from (`to_clq`, `to_y`, `to_yb`, `to_eqq`, `to_bod`, `to_hm`, `to_h`, `to_m`, `to_s`, `to_c`, `to_eq`). |
@@ -2433,62 +2434,82 @@ import only its theorems.  So:
    the driver runs every pass and loop with the same fuel.  The invariant of
    the structural loop is `StInv ρ L` (a rank `ρ` that falls along every jump,
    `Closed`, `ArityOK`, a block `0`, two-way ends that pass no arguments,
-   labels in a list `L`) and its measure `mu ρ L` the triple (blocks, two-way
-   ends, sum over the jumps of `ρ` of the target), lexicographic.  Each
-   structural pass keeps `StInv` with the same `ρ` and `L`, does not raise
-   `mu`, and lowers it when it reports a change (`hops_inv_step`: a merge
-   drops the merged block, `hops_drop`, whose proof needs the order of the
-   fold over `topo`; `rub_inv_step`: a fold turns a two-way end into a hop;
-   `mid_inv_step`: a rewritten jump lands at a strictly lower rank), so
-   **`structLoop_total`** holds with no condition on the model.  The same
-   for `+remove-dead-code` (`dead_step`).  The outer loop is proved under
-   **`PassTotal P ρ L J`** (`OptLinkTotalOnce.lean`), which states exactly
-   what is assumed: over a block invariant `J` that the structural passes and
-   `+remove-dead-code` keep, `+alias` returns on blocks with `StInv`, `J` and
-   `TopoInv`, keeps them (with the filtered `topo` and its `+rev-cfg`), does
-   not raise `mu` and lowers it when it reports a change, `+trim-trace-hints` returns,
-   keeps them and does not raise `mu`, and `+switch-chains` returns.  Then
-   `optimizeF_total`, `optHalts_of` and **`opt_gate_total_of`** (the pill's
-   `+optimize` returns the noun of the model's result, for some fuel).
-   Checked with `#guard` on `xhBlocks` and `xaBlocks` (`AuditOptTotal.lean`):
-   the merge of `+remove-hops`, the fold of `+remove-useless-branching` and
-   the fold and drops of `+alias` each lower `mu`.
+   labels in a list `L`) and its measure `mu ρ L` the triple (blocks, weight
+   of the two-way ends, sum over the jumps of `ρ` of the target),
+   lexicographic.  The weight (`twoW`) is `2` for a `%brn` end and `1` for
+   the other two-way ends, because `+alias` reports a change when it turns a
+   `%brn` whose test register is known to be a loob into a `%brz` (`aliasFin`,
+   the case `hasImm = none`, `isLoob`), which keeps the blocks, the kinds of
+   two-way ends and the targets.  With every two-way end counted `1`, `mu`
+   stayed the same on that change while the loop went on: `xbBlocks` of
+   `AuditOptTotal.lean` (`[%lob 1]` then `[%brn 1 1 2]`, two arguments).  The
+   real compiler does the same (`tools/hoon/xbcheck.hoon`, 2026-11-27):
+   `+alias` returns `folded=%.y` with `[%brz 0v1 [~ 0w1] [~ 0w2]]` and the
+   `%lob` kept, a second `+alias` returns `%.n`, and `+optimize` returns
+   after two rounds of `+optimize-once`.  With the weight, `mu` falls from
+   `(3, 2, 17)` to `(3, 1, 17)` there (`#guard`).
 
-   **A finding**: the field `alias` of `PassTotal` is false as stated.
-   `+alias` reports a change not only when it folds a branch (to a hop or to
-   `[%bom ~]`) or drops a block, but also when it turns a `%brn` whose test
-   register is known to be a loob into a `%brz` (`aliasFin`, the case
-   `hasImm = none`, `isLoob`), which keeps the blocks, the kinds of ends and
-   the targets, so `mu` stays the same while the loop goes on: `xbBlocks` of
-   `AuditOptTotal.lean` (`[%lob 1]` then `[%brn 1 1 2]`, two arguments), on
-   which `aliasM` returns `folded` with `mu` unchanged (`#guard`).  The Hoon
-   does the same (`al_link`: the pill's `+alias` returns the model's result
-   where the model returns).  The loop still ends (the number of `%brn` ends
-   falls), so the fix is the measure: count a `%brn` end above the other
-   two-way ends in the second component of `mu` (weights `2` and `1`); the
-   structural passes keep the kind of every end they keep, so their proofs
-   carry over with `twoWay` replaced by the weight.
+   Each structural pass keeps `StInv` with the same `ρ` and `L`, does not
+   raise `mu`, and lowers it when it reports a change (`hops_inv_step`: a
+   merge drops the merged block, `hops_drop`; `rub_inv_step`: a fold turns a
+   two-way end into a hop; `mid_inv_step`: a rewritten jump lands at a
+   strictly lower rank, and the end keeps its kind and so its weight,
+   `mf_facts`), so **`structLoop_total`** holds with no condition on the
+   model.  The same holds for `+remove-dead-code` (`dead_step`).  The outer
+   loop is proved under **`PassTotal P ρ L J`** (`OptLinkTotalOnce.lean`):
+   `DriverHyp` at every fuel with `J` and `TopoInvR` (each pass keeps `J`,
+   and `topo`, `rev` keep `TopoInvR`), `+alias` returns on blocks with
+   `StInv`, `J` and `TopoInvR`, keeps `StInv`, does not raise `mu` and lowers
+   it when it reports a change, `+trim-trace-hints` returns, keeps `StInv`
+   and does not raise `mu`, and `+switch-chains` returns.  Then
+   `optimizeF_total`, `optHalts_of` and `opt_gate_total_of`.
 
-   Left, in the order to do it: (0) the weighted second component, then
-   (1) `PassTotal` for `P.alias = aliasM
-   (Ana.pickR FinMap)`, `P.trim = trimTraceHints`, `P.switch = switchChains
-   sfuel`, with `J` = `DInvR` (= `OptIn`) or what of it is needed.  For
-   `+alias`: that it returns needs every register it reads to have a fact
-   (`aliasOp` and `aliasFin` read `loc`, `aliasIn` reads the facts of the
-   predecessor at the argument, `aliasStart` the facts of every predecessor,
-   which `topo` order and `RevSound` give), the edges to have the arity of the
-   parameters (`aliasIn` on `[]` is `none`) and the two-way ends no arguments;
-   that it keeps `StInv` and lowers `mu` when `folded`: its ends are the old
-   ones renamed or folded (`aliasFin`), its blocks a subset of the old.
-   `DriverHyp` at `DInvR` (`driverHypR_of`) already gives `J` kept by the
-   structural passes and `+remove-dead-code` (with `TopoInvR` in place of
-   `TopoInv`), and `TopoInvR` of the filtered `topo` after `+alias`
-   (`alias_topoInvR`).  For `+trim-trace-hints`: `trim_shape` (same ends and
-   labels) gives `StInv` and `mu`, its return is still to prove.  For
-   `+switch-chains`: some `sfuel` makes it return.  (2) `Closed`, `ArityOK`,
-   `TwoNA` and the block `0` of raw `+comp` output (track D proves `OptIn`,
-   which has none of them; `ArityOK` and `Closed` are what `+eval-pass` and
-   `got` need).
+   `PassTotal` is discharged for the passes of the Hoon at `J = DInvR` by
+   **`passTotal_of`** (`OptLinkTotalPass.lean`) up to two named facts.  The
+   field `drv` is `driverHypR_of`.  For `+alias`, `aliasM_step` proves the
+   rest where the model returns: its ends are the old ones renamed, folded
+   to a hop on an old target, a `%brn` made a `%brz`, or `[%bom ~]`
+   (`afin_facts`: old targets with the old arity, no arguments on a two-way
+   end, weight and rank sum not above, the flag set only with a lower
+   weight), block `0` is kept (`alias_zero`), and a change drops a block or
+   lowers the weight of one (`aw_flag`).  `+trim-trace-hints` returns on a
+   `topo` with `TopoOK` and keeps `StInv` and `mu` (`trim_step`, from
+   `trim_shape`).  **`opt_gate_total`**: for the passes of the Hoon
+   (`aliasM (Ana.pickR FinMap)`, `trimTraceHints`, `switchChains sfuel`), on
+   blocks with `StInv ρ L` and `DInvR`, given `AliasRet` and `SwitchRet`,
+   some fuel makes `optimizeF` return `s'`, and the pill's `+optimize`
+   returns the noun of `s'`.  The two facts left:
+   * `AliasRet pick ρ L`: `aliasM` returns on blocks with `StInv`, `DInvR`
+     and `TopoInvR`.  It needs every register it reads to have a fact
+     (`aliasOp` and `aliasFin` read `loc`, `aliasIn` reads the facts of the
+     predecessor at the argument, `aliasStart` the facts of every
+     predecessor in `g.rev`, which `topo` order and `RevSound` make walked
+     before, and not dropped since a drop deletes its edges), the edges to
+     have the arity of the parameters (`aliasIn` on `[]` is `none`, and the
+     walked ends keep the arity by `afin_facts`), and a one-predecessor
+     `%brn` or `%clq` to jump to the block (else `aliasStart` is `none`).  The
+     facts of a register come from a definition before it on every path
+     (`DefFirst`), and the pointwise join keeps a key that both sides have,
+     so the invariant to carry is that every register defined on every path
+     to the end of a walked block has a fact (under `old`) in its
+     `info.gen`.  The soundness proof (`OptAliasAll.lean`, `ABInv`, `ALoc`)
+     assumes that the walk returns and has no such lemma.  Checked with
+     `#guard` on `xaBlocks`, `xbBlocks`, `xhBlocks`.
+   * `SwitchRet sfuel ρ L`: `switchChains sfuel` returns on blocks with
+     `StInv ρ L` and `DInvR`.  A fuel that depends on `L` should do (the
+     chains, `+bb-topo` and the tree are bounded by the number of blocks).
+     Checked with `#guard` on the three examples.
+
+   **What the input must satisfy** (for track D).  By `stInv_of`,
+   `StInv ρ (MapKeys.keys bl)` follows from `Acyclic`, `Closed`, `ArityOK`,
+   a block `0` and `TwoNA`, and `opt_gate_total` asks `DInvR` (= `OptIn`)
+   besides.  Of these, raw `+comp` output has by track D `Acyclic`, `NoLti`,
+   `ParNodup` and the rest of `OptIn` (with `DownRk` and `ArgsAboveR` on the
+   blocks of the generator).  It does not yet have `Closed` (every jump goes
+   to a block, which `got` needs), `ArityOK` (every jump has the arity of its
+   target, which `+eval-pass` needs), `TwoNA` (the two-way ends pass no
+   arguments, the `?>` of `+remove-useless-branching` and of `aliasFin`) or
+   the block `0` (the entry).
 
 14. **Raw `+comp` output meets the optimizer's invariant** (track D,
    2026-11-24, `Ska/RawInv*.lean`, `Ska/AuditRaw.lean`).  The driver theorem
