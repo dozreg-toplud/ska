@@ -68,5 +68,33 @@ theorem hotN_of {CODE JETS CALLS CALL JH : Noun} (hc : slot? 126 JETS = some CAL
       generalize compK = KC at hL ⊢
       simp [nock_exec, hL, biff.arm_at, biff_arm, by.arm_at, by_arm, by.get.arm_at, get_arm, hc, hG, hG2, loob]
 
+/-! ## The whole: the pill half of `InlPill`, on the nouns -/
+
+/-- An empty `inl.cache` is coherent. -/
+theorem inlCoh_empty {code : Bell → Option Nomm} {calls : Bell → Bell → Bool} {hot single : Bell → Bool}
+    {Q : Noun → Prop} {C1 C2 C3 SURE : Noun} (hq : Q C3) :
+    InlCoh code calls hot single Q (cacheN C1 C2 C3 (A 0) SURE) :=
+  ⟨C1, C2, C3, A 0, SURE, rfl, hq, IsMap.nil, fun b v h => by simp [getF] at h⟩
+
+/-- **The pill's `+inlined` is `inlinedM`** (the pill half of `InlPill`, on
+the nouns of one call): on a cache with `InlCoh`, whenever `inlinedM` with
+`hot := hotOf CALL JH` returns `m` at some fuel, the gate (the slot
+`inlBody` of `CompMember.lean`) returns `m` and a cache with `InlCoh`.
+Hypotheses: `code.long-ska` holds `code` (`CodeN`), `calls.long-ska`
+answers `calls c c` (`CallsN`), `call.cole.jets.long-ska` (`CALL`) and
+`jets-hot` are maps, and `+scc-of` answers `single` under an invariant `Q`
+of `sccs` (`SccQ`). -/
+theorem inl_pill_gate {code : Bell → Option Nomm} {calls : Bell → Bell → Bool} {single : Bell → Bool}
+    {Q : Noun → Prop} {CODE JETS CALLS CALL JH CA : Noun}
+    (hcode : CodeN CODE code) (hcalls : CallsN CALLS calls) (hc : slot? 126 JETS = some CALL)
+    (h1 : IsMap mugF CALL) (h2 : IsMap mugF JH) (hQ : SccQ CALLS single Q)
+    (hI : InlCoh code calls (hotOf CALL JH) single Q CA) {fuel : Nat} {b : Bell} {m : Nomm}
+    (hm : inlinedM code calls (hotOf CALL JH) single fuel b = some m) :
+    ∃ CA', InlCoh code calls (hotOf CALL JH) single Q CA' ∧
+      nock (C inlBody (C (C b.toNoun (C (C CODE (C JETS CALLS)) (C JH CA))) compK)) inlBody
+        = some (C m.toNoun CA') := by
+  rw [inlBody_eq]
+  exact inl_gate_fuel hcode (hotN_of hc h1 h2) hcalls hQ fuel CA b m hI hm
+
 end Compiler
 end Formalization
