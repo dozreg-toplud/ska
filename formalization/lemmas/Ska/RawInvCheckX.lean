@@ -291,6 +291,22 @@ def exEAp : List Nomm :=
 #guard exEAp.all fun nm => okOut (naryX nm) &&
   ((runX nm).map fun (nex, g) => disjB nex && lazyOKB g.blocks nex && !(entries nex.laz).isEmpty) == some true
 
+/- The instances of `optIn_finishLUX` (`RawInvWholeX.lean`): the whole-subject
+pass succeeds on both, `+kerf` makes a proxy (so `+to-straight` takes its map
+path), and the output passes `okOut`.  On all of `enumX` `+kerf` makes a
+proxy, and every key of `cond` is a proxy for the register of `+kern`. -/
+def kerfX (nm : Nomm) : Option (Nat × Comp.Gen FM) :=
+  (runX nm).bind fun (nex, g1) => (kerf (S := LS) (Map := FM) nex g1).map fun ((_, sub), g2) => (sub, g2)
+
+#guard exEAp.all fun nm => (mono nm).isSome && okOut (mono nm) &&
+  ((kerfX nm).map fun (_, g2) => hasProxies g2.cond) == some true
+#guard enumX.all fun nm => match kerfX nm with
+  | some (sub, g2) => hasProxies g2.cond && (HoonMapKeys.keys g2.cond).all fun k =>
+      match HoonMap.get g2.cond k with
+      | some e => e.1 == sub && sub < k
+      | none => false
+  | none => true
+
 end Raw
 end SkaModel
 end Formalization
