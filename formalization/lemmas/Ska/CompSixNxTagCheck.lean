@@ -21,6 +21,12 @@ README Gaps 12.38, step 1.  Two checks on the executable model, as
   tags.  Under the states of `statesH` (tags `[]`, which have not `[7]` as a
   suffix) the same runs that make a proxy at a goal entry give a key with
   the tag `[]`: the premise on the goal's entries is needed.
+* `cleanSix` (step 4, the clean clause of `LOKTE` for a `%6`): under the 6
+  goals with no entry, the 5,880 phase-S runs of the 245 `%6` nomms leave a
+  clean sure need, and the 20 runs of their 5 tests under `%pick` leave a
+  clean sure need (the `%6`'s sure need is `+copy` of the test's with the
+  bunt, so the property the test needs is `PickC`: its sure need under
+  `%pick` is clean, which `PickD` does not give).
 -/
 
 namespace Formalization
@@ -112,6 +118,24 @@ def tagCTally (sts : List (Gen FM)) : Nat × Nat × Nat × Nat × Nat × Nat × 
 -- runs at goals with no entry meet the premise, and 8,688 runs add a key
 -- with the tag `[]`.
 #guard tagCTally statesH == (15720, 15720, 3144, 8688, 0, 5952, 8844)
+
+
+/-! ## The clean clause of `LOKTE` for a `%6` (step 4) -/
+
+/-- Under the 6 goals with no entry: `(runs, result's sure clean)` for the
+245 `%6` nomms of `SixCheck`, and `(runs, sure clean)` for their 5 tests
+under `%pick`. -/
+def cleanSix : (Nat × Nat) × (Nat × Nat) :=
+  let rs := sixes.flatMap fun nm => LSXCheck.sures.flatMap fun s => LSXCheck.jumps.flatMap fun th =>
+    statesH.filterMap fun g => (runLC envR Option.none nm (CGoalL.next (ofSure s) th : CGoalL LS) [7] g).map fun (nex, _) =>
+      SixNxCheck.cleanB nex.laz.sure.ned
+  let ts := tests.flatMap fun c => LSXCheck.jumps.flatMap fun z => statesH.filterMap fun g =>
+    (runLC envR Option.none c (CGoalL.pick z (jmp0 2) : CGoalL LS) [7] g).map fun (nex, _) => SixNxCheck.cleanB nex.laz.sure.ned
+  ((rs.length, (rs.filter id).length), (ts.length, (ts.filter id).length))
+
+-- Every one of the 5,880 phase-S runs leaves a clean sure need, and so does
+-- every one of the 20 runs of the tests under `%pick`.
+#guard cleanSix == ((5880, 5880), (20, 20))
 
 end SixNxTagCheck
 end Comp
