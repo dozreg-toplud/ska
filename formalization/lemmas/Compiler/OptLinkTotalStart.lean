@@ -209,20 +209,30 @@ block; each is a jump of the new block of a predecessor to `o`. -/
 theorem aliasEdges_inv (g : Opt.AGen Map) (o : Nat) (pre : List Nat)
     (hn : ∀ q ∈ pre, (HoonMap.get g.new q).isSome) :
     ∃ es, Opt.aliasEdges g o pre = some es ∧
-      ∀ e ∈ es, e.1 ∈ pre ∧ ∃ pb, HoonMap.get g.new e.1 = some pb ∧ ∃ j ∈ Opt.getJmps pb.fin, j.there = o ∧ e.2 = j.args := by
+      (∀ e ∈ es, e.1 ∈ pre ∧ ∃ pb, HoonMap.get g.new e.1 = some pb ∧ ∃ j ∈ Opt.getJmps pb.fin, j.there = o ∧ e.2 = j.args) ∧
+      ∀ q ∈ pre, ∀ pb, HoonMap.get g.new q = some pb → ∀ j ∈ Opt.getJmps pb.fin, j.there = o → (q, j.args) ∈ es := by
   have M : ∀ (l : List Nat), (∀ q ∈ l, (HoonMap.get g.new q).isSome) →
       ∃ ls, (l.mapM fun p => (HoonMap.get g.new p).map fun pb =>
         (Opt.getJmps pb.fin).filterMap fun j => if j.there = o then some (p, j.args) else none) = some ls ∧
-        ∀ e ∈ ls.flatten, e.1 ∈ l ∧ ∃ pb, HoonMap.get g.new e.1 = some pb ∧
-          ∃ j ∈ Opt.getJmps pb.fin, j.there = o ∧ e.2 = j.args := by
+        (∀ e ∈ ls.flatten, e.1 ∈ l ∧ ∃ pb, HoonMap.get g.new e.1 = some pb ∧
+          ∃ j ∈ Opt.getJmps pb.fin, j.there = o ∧ e.2 = j.args) ∧
+        ∀ q ∈ l, ∀ pb, HoonMap.get g.new q = some pb → ∀ j ∈ Opt.getJmps pb.fin, j.there = o →
+          (q, j.args) ∈ ls.flatten := by
     intro l
     induction l with
-    | nil => exact fun _ => ⟨[], rfl, fun _ h => by simp at h⟩
+    | nil => exact fun _ => ⟨[], rfl, fun _ h => by simp at h, fun _ h => by cases h⟩
     | cons q l ih =>
       intro hl
       obtain ⟨pb, epb⟩ := Option.isSome_iff_exists.1 (hl q List.mem_cons_self)
-      obtain ⟨ls, e, h⟩ := ih (fun q' hq' => hl q' (List.mem_cons_of_mem _ hq'))
-      refine ⟨_ :: ls, by simp only [List.mapM_cons, epb, Option.map_some, Option.bind_some, e]; rfl, ?_⟩
+      obtain ⟨ls, e, h, h'⟩ := ih (fun q' hq' => hl q' (List.mem_cons_of_mem _ hq'))
+      refine ⟨_ :: ls, by simp only [List.mapM_cons, epb, Option.map_some, Option.bind_some, e]; rfl, ?_, ?_⟩
+      rotate_left
+      · intro q' hq' pb' hpb' j hj hjo
+        rw [List.flatten_cons]
+        rcases List.mem_cons.1 hq' with rfl | hq'
+        · rw [epb] at hpb'; cases hpb'
+          exact List.mem_append_left _ (List.mem_filterMap.2 ⟨j, hj, by simp [hjo]⟩)
+        · exact List.mem_append_right _ (h' q' hq' pb' hpb' j hj hjo)
       intro x hx
       rcases List.mem_append.1 (List.flatten_cons ▸ hx) with hx | hx
       · obtain ⟨j, hj, hjx⟩ := List.mem_filterMap.1 hx
@@ -230,8 +240,8 @@ theorem aliasEdges_inv (g : Opt.AGen Map) (o : Nat) (pre : List Nat)
         · rename_i c; cases hjx; exact ⟨List.mem_cons_self, pb, epb, j, hj, c, rfl⟩
         · cases hjx
       · obtain ⟨h1, h2⟩ := h x hx; exact ⟨List.mem_cons_of_mem _ h1, h2⟩
-  obtain ⟨ls, e, h⟩ := M pre hn
-  exact ⟨ls.flatten, by simp only [Opt.aliasEdges, e, Option.map_some], h⟩
+  obtain ⟨ls, e, h, h'⟩ := M pre hn
+  exact ⟨ls.flatten, by simp only [Opt.aliasEdges, e, Option.map_some], h, h'⟩
 
 /-! ## The parameter loop (`I1` .. `I3`) -/
 
