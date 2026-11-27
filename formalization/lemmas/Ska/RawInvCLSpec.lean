@@ -27,8 +27,11 @@ pure arms (`liveC_refl`, `liveC_fromL`: `%0` under `%next`), the top
 facts every arm that walks the goal's lazy need uses: ops put in front of
 blocks (`liveK_prepK`: a register live after them is live before them with
 the kills they meet, or read first by them) and that `unpM` carries such
-ops (`prep_mapVals`, `renBlob_congr` of track C for a `cond` that grew by
-fresh proxies).
+ops (`prep_mapVals`, `unpM_prep`: through `renBlob_congr` of track C for a
+`cond` that grew by fresh proxies), and the step over a fresh hop block to
+the goal (`liveK_hop_root`: the root's kills move from the hop block to the
+goal's continuation; `LiveK.mono_r`: kills matter only for the register
+tracked), the shape of `+mede`'s hop and of `+kerf`'s.
 -/
 
 set_option linter.unusedSectionVars false
@@ -180,6 +183,44 @@ theorem unpM_prep {P : Nat → List Pole} {g g' : Comp.Gen Map} (hP : Prep P g.b
   | some b =>
     simp only [Option.map_some]
     rw [renBlob_unproxy_grow hc (hR k _ (by rw [hP k, hb]; rfl)), renBlob_pre]
+
+/-! ## A fresh hop to the goal -/
+
+/-- **Kills matter only at the register tracked**: a path for `r` keeps
+going when the new kills are among the old ones for `r`. -/
+theorem LiveK.mono_r {bl : Map Blob} {K K' : Nat → Nat → Prop} {k r : Nat} (h : LiveK bl K k r)
+    (hK : ∀ x, K' x r → K x r) : LiveK bl K' k r := by
+  induction h with
+  | here hb hr hk => exact LiveK.here hb hr fun h' => hk (hK _ h')
+  | next hb hj _ hd hk ih => exact LiveK.next hb hj (ih hK) hd fun h' => hk (hK _ h')
+
+/-- **The root's kills move along a fresh hop to the goal**: a register live
+at a hop block `o` to `th`, with the kills of a lazy tree rooted at `o`, is
+live at `th.there` with the kills of the same tree rooted there, when no
+outer kill and no entry of the tree is at `o` and `th.there ≠ o`.  The
+shape of `+mede`'s hop and of `+kerf`'s hop block, before their ops are put
+in front (`liveK_prepK`). -/
+theorem liveK_hop_root {bl : Map Blob} {K : Nat → Nat → Prop} {o : Nat} {laz : Lazy S} {th : Jmp} {r : Nat}
+    (hb : HoonMap.get bl o = some ⟨[], [], Termin.hop th⟩) (hth : th.args = [])
+    (hK : ∀ y, ¬ K o y) (hent : ∀ e ∈ entries laz, e.1 ≠ o) (hne : th.there ≠ o)
+    (h : LiveK bl (fun x y => K x y ∨ lazK o laz x y) o r) :
+    LiveK bl (fun x y => K x y ∨ lazK th.there laz x y) th.there r := by
+  have hroot : ¬ NMem laz.sure.ned r := fun hm => h.nk (Or.inr ⟨(o, laz), List.mem_cons_self, rfl, hm⟩)
+  cases h with
+  | here hb' hr _ =>
+    rw [hb] at hb'; cases hb'
+    obtain ⟨-, hr⟩ := hr
+    rcases hr with hr | ⟨-, hr⟩
+    · exact absurd hr (by simp [OpsRF])
+    · simp [finRegs, jmpRegs, hth] at hr
+  | next hb' hj hl _ _ =>
+    rw [hb] at hb'; cases hb'
+    rw [getJmps_hop, List.mem_singleton] at hj
+    subst hj
+    refine hl.mono_r fun x hx => hx.elim Or.inl fun ⟨e, he, ex, hm⟩ => ?_
+    rcases List.mem_cons.mp he with rfl | he'
+    · exact absurd hm hroot
+    · exact Or.inr ⟨e, List.mem_cons_of_mem _ he', ex, hm⟩
 
 end Raw
 end SkaModel
