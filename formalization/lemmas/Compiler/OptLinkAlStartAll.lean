@@ -140,5 +140,34 @@ theorem al_start {g : Opt.AGen (TreapMap mugF)} {GEN : Noun} (hg : GenRel g GEN)
   unfold alWS genN at hI1 hM1 ⊢
   simp [nock_exec, alStartF, hI1, hM1]
 
+theorem alWS_topo (GEN NA BL REV TOPO : Noun) : slot? 247 (alWS GEN NA BL REV TOPO) = some TOPO := by
+  unfold alWS; simp [nock_exec]
+
+/-- **The walk up to `bob`** on a block that is not unreachable: `pre`
+(`al_pre`), the test (`al_unt`) and `al_start`, for any cut `X` of the walk
+after `bob` (`alWalk_start`). -/
+theorem al_walk_start {g : Opt.AGen (TreapMap mugF)} {GEN : Noun} (hg : GenRel g GEN) (hb : Opt.BrzInv g)
+    (hn : Opt.RevNodup g.rev) (nargs : Nat) (BL REV T : Noun) (o : Nat) (hr : ¬(g.rev o = [] ∧ o ≠ 0))
+    {info : Opt.AInfo} {imms : Opt.AImms}
+    (hi : (if g.rev o = [] then some (Opt.entryInfo nargs) else Opt.aliasStart g o (g.rev o)) = some info)
+    (hj : Opt.aliasStartImms g (g.rev o) = some imms) (X : Noun)
+    (hX : alWalk = C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 247))))
+      (C (C (C (A 0) (A 895)) (C (A 0) (A 12))) (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C alPre
+      (C (A 6) (C alUnT (C alUnB (alStartF (C (A 8) (C alBob X))))))))))))) :
+    ∃ preH GEN' INFO IMMS, preH.Perm (g.rev o) ∧ GenRelL g info imms GEN' ∧ InfoMapRel INFO info ∧
+      ImmsRel IMMS imms ∧
+      nock (alWS GEN (A nargs) BL REV (C (A o) T)) alWalk =
+        nock (C IMMS (C INFO (C (listNoun A preH) (alWS GEN' (A nargs) BL REV (C (A o) T))))) (C (A 8) (C alBob X)) := by
+  obtain ⟨preH, hpre, hd, hm⟩ := al_pre hg (A nargs) BL REV T o
+  have hp := al_pre_perm hn hd hm
+  have hunt := al_unt GEN (A nargs) BL REV T preH o
+  have hne : ¬(preH = [] ∧ o ≠ 0) := fun ⟨h1, h2⟩ => hr ⟨by rw [h1] at hp; exact hp.nil_eq.symm, h2⟩
+  obtain ⟨GEN', INFO, IMMS, h1, h2, h3, hs⟩ := al_start hg hb hn nargs BL REV T o preH hd hm hi hj
+    (C (A 8) (C alBob X))
+  refine ⟨preH, GEN', INFO, IMMS, hp, h1, h2, h3, ?_⟩
+  rw [← hs]
+  conv => lhs; rw [hX]
+  simp [nock_exec, alWS_topo, hpre, hunt, hne, flag]
+
 end Compiler
 end Formalization

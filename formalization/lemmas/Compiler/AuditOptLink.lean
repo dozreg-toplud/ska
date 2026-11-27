@@ -215,3 +215,4 @@ open Formalization Compiler
 #print axioms al_info
 #print axioms alWalk_start
 #print axioms al_start
+#print axioms al_walk_start
