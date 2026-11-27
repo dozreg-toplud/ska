@@ -117,6 +117,19 @@ def summarize(path):
             if c['%pm-untidy'] <= 30:
                 print(case, l[:400])
             continue
+        if tag == '%pm-indi-denorm':
+            inc('indi not normal'); print(case, l[:300]); continue
+        if tag == '%pm-h0':
+            # h0, indi fixed, old product void, new product void, changed
+            h0, hi, hv, nv, ch = t[2:7]
+            if h0 == '%.n': inc('h0 fails')
+            if hi == '%.n': inc('indi not fixed by lack of dark')
+            if hv == '%.y':
+                inc('old product %void'); inc('old product %void, new %void ' + nv + ' changed ' + ch)
+            inc('%pm-h0')
+            if h0 == '%.n' or hi == '%.n' or c['%pm-h0'] <= 10:
+                print(case, l[:400])
+            continue
         if tag in ('%pm-end', '%pm-a', '%pm-bad'):
             inc(tag + (' ' + t[1] if tag == '%pm-bad' else ''))
             if tag != '%pm-end':
@@ -223,6 +236,24 @@ src[i:i] = [
     '      =/  pm-p-old=?  (pm-pin map.data)',
     '      =/  pm-p-pro=?  (pm-pin src.pro)',
     '      =/  pm-p-new=?  (pm-pin map.data-new)',
+    # h0 (lemmas/Ska/PassMeasureA.lean): the old less-code is a mask of bus; the old indi is fixed
+    # by +lack:ca of dark; hv: the old product is %void.  Printed at a run after the first when
+    # h0 or the indi check fails or the old product is %void; %pm-indi-denorm when the new indi
+    # has a [| |] (lemmas/Ska/PassMeasureI.lean assumes it is normal).
+    '      =/  pm-h0=?  =(less-code.data (app:ca ?@(less-code.data | cape.less-code.data) bus))',
+    '      =/  pm-hi=?  =(indi.data (lack:ca indi.data dark))',
+    '      =/  pm-hv=?  ?=(@ prod.data)',
+    '      =/  pm-nc',
+    '        |=  c=cape',
+    '        ^-  ?',
+    '        ?@  c  &',
+    '        ?:  &(?=(%| -.c) ?=(%| +.c))  |',
+    '        &($(c -.c) $(c +.c))',
+    '      ~?  !(pm-nc indi.data-new)  [%pm-indi-denorm (mug id) indi.data-new]',
+    '      ~?  &(!pm-first |(!pm-h0 !pm-hi pm-hv))',
+    '        :*  %pm-h0  (mug id)  pm-h0  pm-hi  pm-hv  ?=(@ prod.data-new)  changed',
+    '            (pm-small less-code.data)  (pm-small bus)',
+    '        ==',
     '      ~?  !&(pm-t-bus pm-t-pro pm-t-prd pm-t-old pm-t-lc pm-t-cal pm-p-old pm-p-pro pm-p-new)',
     '        :*  %pm-untidy  (mug id)  pm-t-bus  pm-t-pro  pm-t-prd  pm-t-old  pm-t-lc',
     '            pm-t-cal  pm-p-old  pm-p-pro  pm-p-new  (pm-small bus)  (pm-small src.pro)',
