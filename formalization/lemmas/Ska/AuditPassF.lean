@@ -11,6 +11,7 @@ import lemmas.Ska.PassFreeze
 import lemmas.Ska.PassMoves
 import lemmas.Ska.PassIdents
 import lemmas.Ska.PassQuiet
+import lemmas.Ska.PassGrow
 
 /-! The axioms of the theorems of track F (`Ska/PassMeasure.lean`,
 `Ska/PassMeasureK.lean`, `Ska/PassMeasureT.lean`, `Ska/PassMeasureS.lean`, `Ska/PassMeasureA.lean`,
@@ -173,3 +174,11 @@ out. -/
 #print axioms Ana.passLoop_returns_runs
 #print axioms Ana.passGoOn_next
 #print axioms Ana.finPushesQ_of_grow
+#print axioms Ana.cull_gg
+#print axioms Ana.pop_gg
+#print axioms Ana.allG
+#print axioms Ana.passGoOn_grow
+#print axioms Ana.passLoop_returns_g
+#print axioms Ana.finIdentsG_of_tree
+#print axioms Ana.finIdentsG_of_kruskal
+#print axioms Ana.passLoop_returns_k
