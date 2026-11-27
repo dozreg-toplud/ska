@@ -90,14 +90,15 @@ theorem labUniq_exQ (env : CallEnv) {sup : Option Nomm} {region : List Nat} {g0 
 
 /-- **A `p` that only fronts its goal's labels, at any lazy goal** (the
 shape `runOKGD_sevenG` takes): every run under `%next L th` from a goal of
-`GoalG` whose registers are no keys of `cond`, with `LabUniq` (the
-premise of the cons's `+copy`), from a state with the invariants of the
+`GoalG` whose registers are no keys of `cond`, with `LabUniq` and `Clean`
+needs (the premises of the cons's `+copy`), from a state with the invariants of the
 runs under `%done`, meets `RunOKGen` with `x = false`, grows as `GrowU`
 and re-points none of the goal's entries. -/
 abbrev NextGG (lib : Lib) (N : Needs) (env : CallEnv) (P : Noun → Prop) (f : Noun) (nm : Nomm) : Prop :=
   ∀ {sup : Option Nomm} {region : List Nat} {g0 g1 : Gen Map} {L : Lazy S} {th : Jmp} {nex : NextL S},
     GoalG (Map := Map) L th g0 → (∀ r, NMem L.sure.ned r → HoonMap.get g0.cond r = Option.none) →
     (∀ e ∈ entries L, ∀ r, NMem e.2.sure.ned r → HoonMap.get g0.cond r = Option.none) → Raw.LabUniq L →
+    Clean L.sure.ned → (∀ e ∈ entries L, Clean e.2.sure.ned) →
     1 ≤ g0.bo → g0.drop = false → UpBelow g0 → Clear g0 → CondBelow g0 →
     runLC env sup nm (CGoalL.next L th) region g0 = some (nex, g1) →
     ∃ Q : Wit, RunOKGen lib N P f L th Q false g0 g1 nex ∧ GrowU g0 g1 ∧
@@ -106,7 +107,7 @@ abbrev NextGG (lib : Lib) (N : Needs) (env : CallEnv) (P : Noun → Prop) (f : N
 /-- **`[0 axe]` is in the class** (axis at least `2`). -/
 theorem nextGG_n0 (lib : Lib) (N : Needs) (env : CallEnv) (P : Noun → Prop) {axe : Nat} (ha : 2 ≤ axe) :
     NextGG (S := S) (Map := Map) lib N env P (slot axe) (Nomm.n0 axe) := by
-  intro sup region g0 g1 L th nex G hnc hec _ _ _ _ _ _ h
+  intro sup region g0 g1 L th nex G hnc hec _ _ _ _ _ _ _ _ h
   rw [runLC_n0_next_from env sup ha] at h
   obtain ⟨L', hf, e⟩ := Option.map_eq_some_iff.mp h
   simp only [Prod.mk.injEq] at e
@@ -116,13 +117,16 @@ theorem nextGG_n0 (lib : Lib) (N : Needs) (env : CallEnv) (P : Noun → Prop) {a
   exact ⟨_, runOKGen_n0 (N := N) lib M0 hf G hnc hec id, GrowU.refl _, fun _ _ => not_repointG_refl⟩
 
 /-- **`[7 p q]` under `%done`**: `q` of `SixDG` (a `%6`, any test, labels of
-its result possibly repeated) whose results are `LabUniq`, and `p` of
+its result possibly repeated) whose results are `LabUniq` with `Clean`
+needs, and `p` of
 `NextGG` at the image of `p`'s formula. -/
 theorem seven_doneGD (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Prop} {fp fq : Noun} {p q : Nomm} {k : Nat}
     (Hp : NextGG (S := S) (Map := Map) lib N env P fp p)
     (Hq : SixDG (S := S) (Map := Map) lib N env (Img lib P fp) fq q k)
     (Lq : ∀ {sup : Option Nomm} {region : List Nat} {g0 g1 : Gen Map} {nx : NextL S},
-      runLC env sup q (CGoalL.done : CGoalL S) region g0 = some (nx, g1) → Raw.LabUniq nx.laz)
+      1 ≤ g0.bo → g0.drop = false → UpBelow g0 → Clear g0 → CondBelow g0 →
+      runLC env sup q (CGoalL.done : CGoalL S) region g0 = some (nx, g1) →
+      Raw.LabUniq nx.laz ∧ Clean nx.laz.sure.ned ∧ ∀ e ∈ entries nx.laz, Clean e.2.sure.ned)
     {sup : Option Nomm} {region : List Nat} {g0 g2 : Gen Map} {nex : NextL S}
     (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0) (hcl : Clear g0) (hcb : CondBelow g0)
     (h : runLC env sup (Nomm.n7 p q) (CGoalL.done : CGoalL S) region g0 = some (nex, g2)) :
@@ -132,7 +136,8 @@ theorem seven_doneGD (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Prop}
   have Rq := (Hq b0 d0 hu hcl hcb h1).1
   simp only [NextL.goal] at h2
   have b1 : 1 ≤ g1.bo := Nat.le_trans b0 Rq.ext.2.1
-  obtain ⟨Q, Rp, hgu, hnr⟩ := Hp (Rq.goalOut b0 (fun r hr => hr.elim)) Rq.ncond Rq.econd (Lq h1) b1
+  obtain ⟨lu, cl, ecl⟩ := Lq b0 d0 hu hcl hcb h1
+  obtain ⟨Q, Rp, hgu, hnr⟩ := Hp (Rq.goalOut b0 (fun r hr => hr.elim)) Rq.ncond Rq.econd lu cl ecl b1
     (Rq.ext.2.2.1.trans d0) (Rq.grow.up hu) (hcl.growU Rq.grow) (Rq.cfr.below hcb) h2
   exact runOKGD_sevenG (minkC7_seven lib P fp fq) Rq Rp hgu hnr (fun r hr => hr.elim)
 
@@ -142,7 +147,9 @@ theorem seven_contractGD (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → P
     {k : Nat} (Hp : NextGG (S := S) (Map := Map) lib N env P fp p)
     (Hq : SixDG (S := S) (Map := Map) lib N env (Img lib P fp) fq q k)
     (Lq : ∀ {sup : Option Nomm} {region : List Nat} {g0 g1 : Gen Map} {nx : NextL S},
-      runLC env sup q (CGoalL.done : CGoalL S) region g0 = some (nx, g1) → Raw.LabUniq nx.laz)
+      1 ≤ g0.bo → g0.drop = false → UpBelow g0 → Clear g0 → CondBelow g0 →
+      runLC env sup q (CGoalL.done : CGoalL S) region g0 = some (nx, g1) →
+      Raw.LabUniq nx.laz ∧ Clean nx.laz.sure.ned ∧ ∀ e ∈ entries nx.laz, Clean e.2.sure.ned)
     {c : Straight Map} (hc : finishLUC (S := S) env (Nomm.n7 p q) = some c) :
     c.need = NeedOrd.this ∧ ∀ s, P s →
       ContractFwd lib N s (n3 (A 7) fp fq) [s] c ∧ ContractBwd lib N s (n3 (A 7) fp fq) [s] c :=
