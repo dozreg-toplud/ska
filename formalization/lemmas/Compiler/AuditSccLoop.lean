@@ -8,6 +8,7 @@ import lemmas.Compiler.CompSccLoopPrint
 import lemmas.Compiler.CompSccLoopMemDone
 import lemmas.Compiler.CompSccLoopMemShape
 import lemmas.Ska.SccLoopReal
+import lemmas.Compiler.CompSccLoopMemStep
 
 /-! The axioms of the theorems of `Ska/SccLoop.lean`, `Ska/SccLoopMsg.lean` and `Ska/SccLoopCycle.lean`
 (README Gaps 21): each must print
@@ -102,3 +103,17 @@ open Formalization.SkaModel.SccLoop
 #print axioms Formalization.SkaModel.SccLoop.compReal_done
 #print axioms Formalization.SkaModel.SccLoop.toStraightF_need
 #print axioms Formalization.SkaModel.SccLoop.finishLFC_need
+#print axioms Formalization.Compiler.memMovedN_was
+#print axioms Formalization.Compiler.memChgN_loob
+#print axioms Formalization.Compiler.memChgO_loob
+#print axioms Formalization.Compiler.csMlExact_put
+#print axioms Formalization.Compiler.csSureHolds_put
+#print axioms Formalization.Compiler.csAgreeIP_put
+#print axioms Formalization.Compiler.csExt_put
+#print axioms Formalization.Compiler.csQK_put
+#print axioms Formalization.Compiler.rK_sure
+#print axioms Formalization.Compiler.memDoneM_eq
+#print axioms Formalization.Compiler.mem_done_step
+#print axioms Formalization.Compiler.memGate_done_real
+#print axioms Formalization.Compiler.sure_miss_of_agree
+#print axioms Formalization.Compiler.memGate_done_K
