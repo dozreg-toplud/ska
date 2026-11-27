@@ -500,5 +500,182 @@ theorem crd_7to9M (h7 : slot? 7 ctx = some compK) (x : GenRest) (hx : x.NoSoft) 
       simp [nock_exec, hblk, hD, mtc_arm, hm, h15, hc, ct_lfn_at, ct_lfn_arm, ct_lfn_gate, by_arm, by.arm_at,
         by.has.arm_at, has_arm, hs, Need.toNoun, Tag.this]
 
+/-! ## The tail (steps `10` to `14`) for any run model
+
+`crd_cnf` and `crd_ctail` (`CompRunDirectC.lean`) with the runs of `p` and
+`q` against any model `R` (under `mono` `&` the runs are `runLCM env
+true`); the same proofs. -/
+
+/-- One instance of the run link against the model `R`. -/
+def RunAtR (R : Nomm → CGoalL CSet → List Nat → CM (TreapMap mugF) (NextL CSet)) (ctx : Noun) (x : GenRest)
+    (mono sup : Noun) (n : Nomm) (goal : CGoalL CSet) (region : List Nat) (g : Gen (TreapMap mugF)) : Prop :=
+  nock (crSubj mono n.toNoun goal.toNoun (listNoun A region) sup (compCore g x ctx)) crDol
+    = (R n goal region g).map fun p => C p.1.goal.toNoun (genNoun p.2 x)
+
+/-- The first push of the run of `q` against `R`. -/
+noncomputable def crdFqR (R : Nomm → CGoalL CSet → List Nat → CM (TreapMap mugF) (NextL CSet)) (q : Nomm)
+    (th : Jmp) (region : List Nat) : CM (TreapMap mugF) (NextL CSet) :=
+  if safeFolFol q then pure ⟨Lazy.ofSure Sure.bunt, th⟩
+  else R q (CGoalL.next (Lazy.ofSure Sure.bunt) th) region
+
+/-- The model of the tail of the call against `R`. -/
+noncomputable def crdTailMR (R : Nomm → CGoalL CSet → List Nat → CM (TreapMap mugF) (NextL CSet)) (p q : Nomm)
+    (nexA : NextL CSet) (region : List Nat) : CM (TreapMap mugF) (NextL CSet) := do
+  let nexFol ← crdFqR R q nexA.th region
+  let nexFol ← pastL noCode nexFol p region
+  let nexSub ← R p (CGoalL.next nexA.laz nexFol.th) region
+  copyL nexSub nexFol.laz
+
+theorem crd_cnfR (h7 : slot? 7 ctx = some compK) (R : Nomm → CGoalL CSet → List Nat → CM (TreapMap mugF) (NextL CSet)) (p q : Nomm)
+    (region : List Nat) (x : GenRest) (mono I sup goalN : Noun) (nexA : NextL CSet)
+    (V8 V7 V6 V5 V4 V3 V2 V1 PV : Noun) (g : Gen (TreapMap mugF))
+    (hq : RunAtR R ctx x mono sup q (CGoalL.next (Lazy.ofSure Sure.bunt) nexA.th) region g) :
+    nock (crdS9 nexA.goal.toNoun V8 V7 V6 V5 V4 V3 V2 V1 PV
+      (crSubj mono (C (A 2) (C p.toNoun (C q.toNoun I))) goalN (listNoun A region) sup (compCore g x ctx))) crDKc10
+      = (crdFqR R q nexA.th region g).map fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  have h63 := crd_ctx63 h7
+  have hsa : slot? 767 ana = some safe_fol_fol.arm := safe_fol_fol.arm_at
+  have hsf := safe_fol_fol_pill q
+  have hq1 := hq
+  unfold RunAtR at hq1
+  rw [cgl_next_noun, cr_bunt_noun] at hq1
+  rw [cr_next_nounL]
+  unfold crDKc10 crdFqR
+  simp only [crSubj, compCore] at hq1 ⊢
+  generalize comp.door = Dr at hq1 ⊢
+  cases hs : safeFolFol q with
+  | true =>
+    simp [nock_exec, h63, hsa, safe_fol_fol_arm, hsf, hs, loob, pure, StateT.pure, cr_next_nounL, cr_bunt_noun]
+  | false =>
+    simp [nock_exec, h63, hsa, safe_fol_fol_arm, hsf, hs, loob, cr_bat_dol, hq1]
+
+/-- **The tail of the call** (steps `10` to `14`): `crd_cnf`, `+past` over
+`p` (`comp_past`), the run of `p` for `[%next laz.nex-arg then.nex-fol]`,
+`+copy` (`comp_copy_all`). -/
+theorem crd_ctailR (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (R : Nomm → CGoalL CSet → List Nat → CM (TreapMap mugF) (NextL CSet)) (p q : Nomm) (hpn : hinted noCode p ≠ Option.none)
+    (region : List Nat) (x : GenRest) (mono I sup goalN : Noun) (nexA : NextL CSet)
+    (V8 V7 V6 V5 V4 V3 V2 V1 PV : Noun) (g : Gen (TreapMap mugF))
+    (hq : RunAtR R ctx x mono sup q (CGoalL.next (Lazy.ofSure Sure.bunt) nexA.th) region g)
+    (hp : ∀ nexF g2 nexF' g3, crdFqR R q nexA.th region g = some (nexF, g2) →
+      pastL noCode nexF p region g2 = some (nexF', g3) →
+      RunAtR R ctx x mono sup p (CGoalL.next nexA.laz nexF'.th) region g3)
+    (hcp : ∀ nexF g2 nexF' g3 nexS g4, crdFqR R q nexA.th region g = some (nexF, g2) →
+      pastL noCode nexF p region g2 = some (nexF', g3) →
+      R p (CGoalL.next nexA.laz nexF'.th) region g3 = some (nexS, g4) →
+      CopyH g4.re nexS.laz nexF'.laz) :
+    nock (crdS9 nexA.goal.toNoun V8 V7 V6 V5 V4 V3 V2 V1 PV
+      (crSubj mono (C (A 2) (C p.toNoun (C q.toNoun I))) goalN (listNoun A region) sup (compCore g x ctx))) crDKr10
+      = (crdTailMR R p q nexA region g).map fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  have hnf := crd_cnfR h7 R p q region x mono I sup goalN nexA V8 V7 V6 V5 V4 V3 V2 V1 PV g hq
+  have hD1 := cr_past_at
+  have hD2 := comp_cp_at
+  unfold crdTailMR
+  generalize hF : crdFqR R q nexA.th region = F at hnf hp hcp
+  simp only [crSubj, compCore, crdS9, cr_next_nounL] at hnf ⊢
+  cases eq : F g with
+  | none =>
+    rw [eq] at hnf
+    generalize comp.door = Dr at hnf hD1 hD2 ⊢
+    unfold crDKr10
+    simp [nock_exec, hnf, bind, StateT.bind, eq]
+  | some r =>
+    obtain ⟨nexF, g2⟩ := r
+    rw [eq] at hnf
+    simp only [Option.map_some, cr_next_nounL] at hnf
+    have hpa := comp_past h7 hcode x g2 nexF p region hpn
+    simp only [cr_next_nounL, compCore] at hpa
+    cases e3 : pastL (S := CSet) (Map := TreapMap mugF) noCode nexF p region g2 with
+    | none =>
+      rw [e3] at hpa
+      generalize comp.door = Dr at hnf hD1 hD2 hpa ⊢
+      unfold crDKr10 crDKr11 crDKc11
+      simp [nock_exec, crSubj, Nomm.toNoun, hnf, bind, StateT.bind, h7, hcode, hD1, cr_past_arm, hpa, eq, e3]
+    | some r3 =>
+      obtain ⟨nexF', g3⟩ := r3
+      rw [e3] at hpa
+      simp only [Option.map_some, cr_next_nounL] at hpa
+      have hp1 := hp nexF g2 nexF' g3 eq e3
+      unfold RunAtR at hp1
+      rw [cgl_next_noun] at hp1
+      simp only [crSubj, compCore] at hp1
+      cases eq2 : R p
+          (CGoalL.next nexA.laz nexF'.th) region g3 with
+      | none =>
+        rw [eq2] at hp1
+        generalize comp.door = Dr at hnf hD1 hD2 hpa hp1 ⊢
+        unfold crDKr10 crDKr11 crDKc11 crDKr12 crDKc12
+        simp [nock_exec, crSubj, Nomm.toNoun, hnf, bind, StateT.bind, h7, hcode, hD1, cr_past_arm, hpa,
+          cr_bat_dol, hp1, eq, e3, eq2]
+      | some r' =>
+        obtain ⟨nexS, g4⟩ := r'
+        rw [eq2] at hp1
+        simp only [Option.map_some, cr_next_nounL] at hp1
+        have hcpy := comp_copy_all h7 x g4 nexS nexF'.laz (hcp nexF g2 nexF' g3 nexS g4 eq e3 eq2)
+        simp only [compCore, cr_next_nounL] at hcpy
+        generalize comp.door = Dr at hnf hD1 hD2 hpa hp1 hcpy ⊢
+        unfold crDKr10 crDKr11 crDKc11 crDKr12 crDKc12 crDKr13 crDKc13 crDKr14
+        simp [nock_exec, crSubj, Nomm.toNoun, hnf, bind, StateT.bind, h7, hcode, hD1, cr_past_arm, hpa,
+          cr_bat_dol, hp1, eq, e3, eq2, hD2, cr_cp_arm, hcpy, cr_next_nounL, Function.comp_def]
+
+
+/-! ## Steps `7` to `14` under `mono` `&` -/
+
+theorem crdArg_this (s o : Nat) : crdArg (Need.this s) o = ⟨Lazy.ofSure (lazyReg s), jmp0 o⟩ := rfl
+
+/-- **The model of the call from step `7` on under `mono` `&`** (`callDM`
+past `+need-ord-alloc-regs`): `monoBlocks`, then the tail with `nex-arg`
+`[%next (lazy-from-need [%this sub-pes]) ~ call-block]`. -/
+noncomputable def crdCallMM (R : Nomm → CGoalL CSet → List Nat → CM (TreapMap mugF) (NextL CSet)) (p q : Nomm)
+    (b : Bell) (subNed : Need) (goal : CGoalL CSet) (region : List Nat) : CM (TreapMap mugF) (NextL CSet) := do
+  let (subPes, o) ← monoBlocks b subNed goal
+  crdTailMR R p q ⟨Lazy.ofSure (lazyReg subPes), jmp0 o⟩ region
+
+/-- **Steps `7` to `14` under `mono` `&`**: the blocks (given, `hblk`),
+`+mono-try-call`, `nex-arg`, the tail against `R`, with the runs of `q`
+and `p` and the `CopyH` of their results at the states the call reaches. -/
+theorem crd_from7M (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (R : Nomm → CGoalL CSet → List Nat → CM (TreapMap mugF) (NextL CSet)) (p q : Nomm)
+    (hpn : hinted noCode p ≠ Option.none) (region : List Nat) (x : GenRest) (hx : x.NoSoft) (SOF V5 V2 PV sup : Noun)
+    (subNed : Need) (b : Bell) (goal : CGoalL CSet) (g : Gen (TreapMap mugF))
+    (hblk : nock (crdS6m SOF V5 (listNoun A (flattenNeed subNed)) subNed.toNoun V2 PV
+      (crSubj (A 0) (crdN p q b) goal.toNoun (listNoun A region) sup (compCore g x ctx))) crDKc7
+      = (crdBlockMM b (flattenNeed subNed) goal g).map fun p => crdBlkN p x)
+    (hq : ∀ s o g1, monoBlocks b subNed goal g = some ((s, o), g1) →
+      RunAtR R ctx x (A 0) sup q (CGoalL.next (Lazy.ofSure Sure.bunt) (jmp0 o)) region g1)
+    (hp : ∀ s o g1 nexF g2 nexF' g3, monoBlocks b subNed goal g = some ((s, o), g1) →
+      crdFqR R q (jmp0 o) region g1 = some (nexF, g2) → pastL noCode nexF p region g2 = some (nexF', g3) →
+      RunAtR R ctx x (A 0) sup p (CGoalL.next (Lazy.ofSure (lazyReg s)) nexF'.th) region g3)
+    (hcp : ∀ s o g1 nexF g2 nexF' g3 nexS g4, monoBlocks b subNed goal g = some ((s, o), g1) →
+      crdFqR R q (jmp0 o) region g1 = some (nexF, g2) → pastL noCode nexF p region g2 = some (nexF', g3) →
+      R p (CGoalL.next (Lazy.ofSure (lazyReg s)) nexF'.th) region g3 = some (nexS, g4) →
+      CopyH g4.re nexS.laz nexF'.laz) :
+    nock (crdS6m SOF V5 (listNoun A (flattenNeed subNed)) subNed.toNoun V2 PV
+      (crSubj (A 0) (crdN p q b) goal.toNoun (listNoun A region) sup (compCore g x ctx))) crDKr7
+      = (crdCallMM R p q b subNed goal region g).map fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  rw [crd_7to9M h7 x hx SOF V5 V2 PV subNed p q b (listNoun A region) sup goal g hblk]
+  unfold crdCallMM
+  rw [monoBlocks_eq]
+  simp only [bind_apply]
+  cases eb : crdBlockMM b (flattenNeed subNed) goal g with
+  | none => rfl
+  | some r =>
+    obtain ⟨⟨opt, s, pes⟩, g1⟩ := r
+    simp only [Option.bind_some]
+    cases em : monoTryCall (Map := TreapMap mugF) subNed opt s pes g1 with
+    | none => rfl
+    | some r' =>
+      obtain ⟨o, g2⟩ := r'
+      have hmb : monoBlocks b subNed goal g = some ((s, o), g2) := by
+        rw [monoBlocks_eq]; simp [bind_apply, eb, em, pure_apply, Functor.map, StateT.map]
+      simp only [Option.bind_some, pure_apply]
+      have ht := crd_ctailR h7 hcode R p q hpn region x (A 0) (C (A 0) (C b.toNoun (A 0))) sup goal.toNoun
+        (crdArg (Need.this s) o) (C (Need.this s).toNoun (A o)) (C (A opt) (C (A s) (A pes))) SOF V5
+        (listNoun A (flattenNeed subNed)) subNed.toNoun V2 (A 0) PV g2 (hq s o g2 hmb)
+        (fun nexF g3 nexF' g4 e e3 => hp s o g2 nexF g3 nexF' g4 hmb e e3)
+        (fun nexF g3 nexF' g4 nexS g5 e e3 e4 => hcp s o g2 nexF g3 nexF' g4 nexS g5 hmb e e3 e4)
+      rw [crdArg_this] at ht
+      exact ht
+
 end Compiler
 end Formalization
