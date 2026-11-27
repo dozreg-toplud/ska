@@ -3,6 +3,7 @@ import lemmas.Compiler.CompRunTNClass
 import lemmas.Compiler.CompSccOfAny
 import lemmas.Compiler.CompSccOfAnyK
 import lemmas.Compiler.CompSccOfHeightEnv
+import lemmas.Compiler.CompMonoLinkDec
 
 /-! The axioms of the link of `+compiled-mono` and of the run at `mono` `|` (README Gaps 19 (g)).
 `CompSccOfAny`, `PokeLinkGood` and track I's `CompSccLoop*` import together since the renames of
@@ -60,3 +61,20 @@ that one's imports light. -/
 #print axioms Formalization.Compiler.envLim_agree
 #print axioms Formalization.Compiler.envFrom_envIt
 #print axioms Formalization.Compiler.calleeCompiled_oneKA
+#print axioms Formalization.Compiler.FinMap.uniBy_toNoun
+#print axioms Formalization.Compiler.cacheDec_put
+#print axioms Formalization.Compiler.cacheDec_uni
+#print axioms Formalization.Compiler.rKD_sure
+#print axioms Formalization.Compiler.calleeCompiled_sccD
+#print axioms Formalization.Compiler.eMD_step
+#print axioms Formalization.Compiler.eMD_start
+#print axioms Formalization.Compiler.sccLoopAtD_real
+#print axioms Formalization.Compiler.calleeCompiled_oneKD
+#print axioms Formalization.Compiler.calleeCompiled_heightsD
+#print axioms Formalization.Compiler.calleeCompiled_heights0D
+#print axioms Formalization.Compiler.callOkTN_memOkD
+#print axioms Formalization.Compiler.calleeH_of_SD
+#print axioms Formalization.Compiler.cu_gate_dir_sccD
+#print axioms Formalization.Compiler.cacheNoun_of_dec
+#print axioms Formalization.Compiler.unaryImageAt_of_gateD
+#print axioms Formalization.Compiler.monoLinkGood3_of_gate
