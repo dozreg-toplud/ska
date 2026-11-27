@@ -141,6 +141,105 @@ theorem rawX_seven {p q : Nomm} (hq : ∀ goal : CGoal S, Frag q goal) (ihp : Ra
   · exact absurd e hn
   · exact e
 
+/-! ## Re-ranking a state after steps that keep the old terminators -/
+
+/-- The blocks of `g0` keep their terminators in `g`. -/
+def FinKeep (g0 g : Comp.Gen Map) : Prop :=
+  ∀ k, k < g0.bo → (HoonMap.get g.blocks k).map Blob.fin = (HoonMap.get g0.blocks k).map Blob.fin
+
+theorem FinKeep.refl (g : Comp.Gen Map) : FinKeep g g := fun _ _ => rfl
+
+theorem FinKeep.trans {g0 g1 g2 : Comp.Gen Map} (a : FinKeep g0 g1) (b : FinKeep g1 g2) (hb : g0.bo ≤ g1.bo) :
+    FinKeep g0 g2 := fun k hk => (b k (by omega)).trans (a k hk)
+
+theorem finKeep_of_grow {g g' : Comp.Gen Map} (G : Grow g g') : FinKeep g g' := fun k hk => by
+  cases e0 : HoonMap.get g.blocks k with
+  | none =>
+    cases e1 : HoonMap.get g'.blocks k with
+    | none => rfl
+    | some b' =>
+      rcases G.new k b' e1 with ⟨b, e, -, -⟩ | ⟨hlo, -, -⟩
+      · rw [e0] at e; cases e
+      · omega
+  | some b =>
+    obtain ⟨b', h', -, hf⟩ := G.keep k b hk e0
+    rw [h']; simp [hf]
+
+theorem finKeep_blocks {g g' : Comp.Gen Map} (e : g'.blocks = g.blocks) : FinKeep g g' := fun k _ => by rw [e]
+
+theorem finKeep_put {g g' : Comp.Gen Map} {b : Blob} (e : g'.blocks = HoonMap.put g.blocks g.bo b) :
+    FinKeep g g' := fun k hk => by rw [e, get_put_ne (by omega)]
+
+/-- **A state with the invariant in the rank of an older state's blocks has
+it in its own rank**, when the old blocks keep their terminators. -/
+theorem sip_reRank {g0 g : Comp.Gen Map} (h : SIP X (upRk g0.blocks) g0.bo g)
+    (hn : ∀ k, g0.bo ≤ k → HoonMap.get g0.blocks k = Option.none) (F : FinKeep g0 g) :
+    SIP X (upRk g.blocks) g.bo g := by
+  have E : ∀ k, upRk g.blocks k = upRk g0.blocks k := by
+    intro k
+    by_cases hk : k < g0.bo
+    · exact upRk_congr (F k hk)
+    · have n0 := hn k (Nat.le_of_not_lt hk)
+      have r0 : upRk g0.blocks k = 3 * k := by unfold upRk; rw [n0]
+      rw [r0]
+      unfold upRk
+      cases e1 : HoonMap.get g.blocks k with
+      | none => rfl
+      | some b =>
+        obtain ⟨p, bd, f⟩ := b
+        cases f with
+        | hop j =>
+          simp only
+          split
+          · rename_i hlt
+            have := h.jr k _ e1 j (by simp [getJmps])
+            rw [h.rk k (by omega), h.rk j.there (by omega)] at this
+            omega
+          · rfl
+        | _ => rfl
+  have hlo := h.lob
+  refine ⟨h.drop, h.bo1, h.lab, h.regs, h.nd, h.cr, h.tr, fun k b hb j hj => by
+      rw [E, E]; exact h.jr k b hb j hj, Nat.le_refl _, fun k hk => ?_, fun x hx => ?_, h.x⟩
+  · rw [E]; exact h.rk k (by omega)
+  · rw [E]
+    by_cases e : x < g0.bo
+    · have := h.rlo x e; omega
+    · rw [h.rk x (by omega)]; omega
+
+/-! ## A block, then the run of an operand of `FragX` -/
+
+/-- **A block, then the run of an operand of `FragX` for a fresh register
+`x`**: what is live at the run's entry, with the kills of the operand's
+lazy tree, is live at the block and not `x`. -/
+theorem rawX_tail {p : Nomm} (ihp : RawIHX S Map X p) {g0 g g1 g2 : Comp.Gen Map} {b : Blob} {x o : Nat}
+    {nex : NextL S} {region : List Nat} {K : Nat → Nat → Prop} (hK : KVan K g0.bo)
+    (h : SIP X (upRk g0.blocks) g0.bo g) (hn : ∀ k, g0.bo ≤ k → HoonMap.get g0.blocks k = Option.none)
+    (F : FinKeep g0 g) (E : EmitOK g b) (hx : x < g.re) (hnx : ¬ Defd g.blocks x) (hxb : x ∉ blockDefs b)
+    (he : (emit b : CM Map Nat) g = some (o, g1))
+    (hr : runL p (CGoalL.next (ofSure (lazyReg x)) (jmp0 o)) region g1 = some (nex, g2)) :
+    SIP X (upRk g2.blocks) g2.bo g2 ∧
+      ∀ y, LiveK g2.blocks (fun a c => K a c ∨ lazK nex.th.there nex.laz a c) nex.th.there y →
+        (BlockRF b y ∨ ∃ j ∈ getJmps b.fin, LiveK g.blocks K j.there y ∧ y ∉ blockDefs b) ∧ y ≠ x := by
+  obtain ⟨S1, rfl, e1, q1, bo1⟩ := sip_emit h E he
+  have hl := h.none (Nat.le_refl g.bo)
+  have hlo := h.lob
+  have S1' := sip_reRank S1 hn (F.trans (finKeep_put e1) hlo)
+  obtain ⟨S2, L2⟩ := ihp (CGoal.next (lazyReg x) (jmp0 g.bo)) region g1 g2 nex K (hK.mono (by omega)) S1'
+    ⟨nb_this (by omega), jmpIn_jmp0 _ _⟩ trivial
+    ⟨by simp [jmp0]; have := h.bo1; omega, by simp [jmp0]; omega⟩ rfl
+    (fun r d hm => by
+      simp only [GMem, lazyReg, NMem] at hm; subst hm
+      rw [e1, defd_put hl] at d
+      rcases d with d | d
+      · exact hnx d
+      · exact hxb d) hr
+  refine ⟨S2, fun y hy => ?_⟩
+  obtain ⟨hl', hn'⟩ := L2 y hy
+  have he' : ∀ k, k < g.bo → HoonMap.get g1.blocks k = HoonMap.get g.blocks k := fun k hk => by
+    rw [e1, get_put_ne (by omega)]
+  exact ⟨liveK_unfoldP (by rw [e1]; exact get_put_self) (h.below g.bo) he' E.jd hl',
+    fun e => hn' (by simp [lazyReg, NMem, e])⟩
+
 end Raw
 end SkaModel
 end Formalization
