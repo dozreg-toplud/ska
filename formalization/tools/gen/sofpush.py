@@ -31,6 +31,12 @@ emit('sf', sf, 109, ('compK', 5467), 'compK_sf', '`+sound-far` (arm `5467` of `K
 ns = slot(core2bat(5466), Kbat)
 assert lean(slot(2, ns)) == '(A 8)'
 emit('ns', ns, 29, ('compK', 5466), 'compK_ns', '`+need-soft` (arm `5466` of `K`)')
+noe = slot(core2bat(5596), Kbat)
+assert lean(slot(2, noe)) == '(A 8)'
+emit('noe', noe, 29, ('compK', 5596), 'compK_noe', '`+need-ord-edit` (arm `5596` of `K`)')
+cs = slot(core2bat(48047), Kbat)
+assert lean(slot(2, cs)) == '(A 8)'
+emit('cs', cs, 29, ('compK', 48047), 'compK_cs', '`+cell-sure` (arm `48047` of `K`)')
 hdr = '''import lemmas.Compiler.CompPastLink
 
 /-!
@@ -38,7 +44,8 @@ hdr = '''import lemmas.Compiler.CompPastLink
 
 Written by `tools/gen/sofpush.py` from the pill: `+sound` (door arm
 `13654`, `(sound-far nom ned code.long-ska 3)`), `+sound-far` (arm `5467` of
-`K`, behind its `%fast` hint), `+need-soft` (arm `5466` of `K`), each with
+`K`, behind its `%fast` hint), `+need-soft` (arm `5466` of `K`), `+need-ord-edit`
+(arm `5596` of `K`), `+cell-sure` (arm `48047` of `K`), each with
 its gate battery and the kernel fact of where it sits.
 -/
 
