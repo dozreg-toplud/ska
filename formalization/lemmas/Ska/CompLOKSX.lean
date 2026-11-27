@@ -23,6 +23,7 @@ as the goal of the `p` of `[7 p q]`, and there `p` meets `LOKS false`, which
 does not assume G.  It holds on every run of the checker.
 * `apartS_n0`, `apartS_n1`: `[0 axe]` (`axe ≥ 1`: the result entry is the goal
   entry seen at `axe`) and `[1 k]` (no entry); `lokSX_n0`, `lokSX_n1`.
+* `apartS_seven`: `[7 p q]` from its parts' `LOKS` and `ApartS`; `lokSX_seven`.
 -/
 
 set_option linter.unusedSectionVars false
@@ -163,6 +164,89 @@ theorem lokSX_n0 (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Prop} {f 
 theorem lokSX_n1 (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Prop} {f : Noun} {k : Noun}
     (M : MinkEq lib P f (Nomm.n1 k)) : LOKSX (S := S) (Map := Map) false lib N env P f (Nomm.n1 k) :=
   (lokS_n1 lib env M).toX (apartS_n1 env)
+
+/-! ## `[7 p q]` -/
+
+/-- **`[7 p q]` meets `ApartS`** when its parts meet `LOKS` (any flags) and
+`ApartS`: a result entry of `p` at a goal label of the `%7` is at a label of
+`q`'s result (`p`'s new labels are above the start), so it reads `q`'s entry
+there or `p`'s registers, and `q`'s entry reads the goal's entry there or
+`q`'s registers. -/
+theorem apartS_seven {xp xq : Bool} {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop} {fb fc : Noun}
+    {p q : Nomm} (Lq : LOKS (S := S) (Map := Map) xq lib N env (Img lib P fb) fc q)
+    (Lp : LOKS (S := S) (Map := Map) xp lib N env P fb p)
+    (Aq : ApartS (S := S) (Map := Map) env q) (Ap : ApartS (S := S) (Map := Map) env p) :
+    ApartS (S := S) (Map := Map) env (Nomm.n7 p q) := by
+  intro sup L th region g0 g2 nex hcount b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcl' hce hr
+  rw [runLC_n7] at hr
+  obtain ⟨nx, g1, hq, hp⟩ := bind_some hr
+  have cq : sixCount q ≤ 255 := by simp only [sixCount] at hcount; omega
+  have cp : sixCount p ≤ 255 := by simp only [sixCount] at hcount; omega
+  obtain ⟨⟨Qq, Rq⟩, qne, qj, qfl, qec⟩ :=
+    Lq.run cq b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcl' hce hq
+  have Pq := Aq cq b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcl' hce hq
+  have qc := Lq.clean hcl' hq
+  have hargs : nx.th.args = [] := by
+    rcases Rq.ent with ⟨_, _, _, ha⟩ | e
+    · exact ha
+    · simp only [GoalJ] at e; rw [e]; exact hta
+  have q1 := Rq.re
+  have q2 := Rq.bo
+  have Pp := Ap (sup := sup) (L := nx.laz) (th := nx.th) (region := region) cp
+    (by omega) (Rq.drop.trans d0) (Rq.grow.up hu) (Clear.growU hcl Rq.grow) (Rq.cfr.below hcb)
+    Rq.lo Rq.hi hargs qne Rq.dist
+    (fun x hx => ⟨by
+      rcases Rq.regs x hx with h | h
+      · have := (hsl x h).1; omega
+      · exact h.2, Rq.ncond x hx⟩)
+    (fun e he => ⟨by
+      rcases (Rq.labs e he).1 with h | h
+      · obtain ⟨e0, he0, e1⟩ := List.mem_map.mp h
+        have := (hlab e0 he0).1; rw [e1] at this; omega
+      · exact h.2, (Rq.labs e he).2⟩) Rq.nodup
+    (fun e he => ⟨(Rq.eregs e he).1, fun x hx => ⟨by
+      rcases (Rq.eregs e he).2 x hx with ⟨e0, he0, h⟩ | h | h
+      · have := ((hed e0 he0).2 x h).1; omega
+      · have := (hsl x h).1; omega
+      · exact h.2, Rq.econd e he x hx⟩⟩) qfl qc qec hp
+  obtain ⟨⟨Qp, Rp⟩, -, -, -, -⟩ := Lp.run (sup := sup) (L := nx.laz) (th := nx.th) (region := region) cp
+    (by omega) (Rq.drop.trans d0) (Rq.grow.up hu) (Clear.growU hcl Rq.grow) (Rq.cfr.below hcb)
+    Rq.lo Rq.hi hargs qne Rq.dist
+    (fun x hx => ⟨by
+      rcases Rq.regs x hx with h | h
+      · have := (hsl x h).1; omega
+      · exact h.2, Rq.ncond x hx⟩)
+    (fun e he => ⟨by
+      rcases (Rq.labs e he).1 with h | h
+      · obtain ⟨e0, he0, e1⟩ := List.mem_map.mp h
+        have := (hlab e0 he0).1; rw [e1] at this; omega
+      · exact h.2, (Rq.labs e he).2⟩) Rq.nodup
+    (fun e he => ⟨(Rq.eregs e he).1, fun x hx => ⟨by
+      rcases (Rq.eregs e he).2 x hx with ⟨e0, he0, h⟩ | h | h
+      · have := ((hed e0 he0).2 x h).1; omega
+      · have := (hsl x h).1; omega
+      · exact h.2, Rq.econd e he x hx⟩⟩) qfl qc qec hp
+  have p1 := Rp.re
+  intro e1 he1 hl r hr
+  obtain ⟨e, he, el⟩ := List.mem_map.mp hl
+  have hlt := (hlab e he).1
+  -- `p`'s result entry is at a label of `q`'s result
+  rcases (Rp.labs e1 he1).1 with hl1 | hl1
+  · rcases Pp e1 he1 hl1 r hr with ⟨e0, he0, e01, hm⟩ | h
+    · have hl0 : e0.1 ∈ (entries L).map Prod.fst := by rw [e01]; exact hl
+      rcases Pq e0 he0 hl0 r hm with ⟨e00, he00, e001, hm0⟩ | h
+      · exact Or.inl ⟨e00, he00, e001.trans e01, hm0⟩
+      · exact Or.inr ⟨h.1, by omega⟩
+    · exact Or.inr ⟨by omega, h.2⟩
+  · exfalso; rw [← el] at hl1; omega
+
+/-- **`[7 p q]` in `LOKSX`**: `lokS_seven` and `apartS_seven`. -/
+theorem lokSX_seven {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop} {fb fc : Noun} {p q : Nomm}
+    (Lq : LOKS (S := S) (Map := Map) false lib N env (Img lib P fb) fc q)
+    (Lp : LOKS (S := S) (Map := Map) false lib N env P fb p)
+    (Aq : ApartS (S := S) (Map := Map) env q) (Ap : ApartS (S := S) (Map := Map) env p) :
+    LOKSX (S := S) (Map := Map) false lib N env P (n3 (A 7) fb fc) (Nomm.n7 p q) :=
+  (lokS_seven Lq Lp).toX (apartS_seven Lq Lp Aq Ap)
 
 end Comp
 end SkaModel
