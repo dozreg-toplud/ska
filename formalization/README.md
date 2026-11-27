@@ -252,6 +252,14 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompTarjanBunt.lean` | Track Q (Gaps 29): `tjSamB_run` (the mold bunt, by the kernel), `tjGraphAt_jug`, **`tarjanLinkAt_jug`** (`TarjanLinkAt` on every nonempty jug noun), `scoSub_jug`, `scoSub_start`, **`sccG_missJ`**. |
 | `Compiler/CompSccOfMissCut.lean`, `CompSccOfMiss.lean`, `CompSccOfMiss2.lean`, `CompSccOfMissBunt.lean`, `CompSccOfMissEnc.lean` | Track Q (Gaps 29): the miss of `+scc-of` (373 cells, `tools/gen/sccofmiss.py`) against `scoMiss`: `sco_trap`, `sco_sub`, `sco_roll`, `sco_got`, `sco_miss`, `scoBunts_sccCore`, **`sccG_miss_enc`** (on track P's encoding). |
 | `Compiler/AuditTarjan.lean` | `#print axioms` of the main `+tarjan` theorems (model and pill; within `[propext, Classical.choice, Quot.sound]`). |
+| `Compiler/CompTarjanJug.lean` | Track Q (Gaps 29): the jug of push 8 of `spRest`: `keysIn` (the `skim` with `has:by new-code`), `jugOf`, `jugNoun`, `jugOf_foldl` (the `rep` with `put:by` from `~` is `jugOf`). |
+| `Compiler/CompTarjanPoke.lean` | Track Q (Gaps 29): push 8 of `spRest` linked, no hypothesis: **`srSccs_empty`** (the guard `?:  =(~ new-code)  ~`), **`srSccs_tarjan`** (on a nonempty table the pill returns the flop of the sets of `tarjanM (tjGraph (jugNoun nc))`); the gates `tp_has`, `tp_silt`, `tp_gate`, `tp_jug`, `tp_trap` (`%poke-tarjan`), `tjJug_jugNoun`; cut by `tools/gen/tarjanpoke.py`. |
+| `Compiler/CompTarjanBridge.lean` | Track Q (Gaps 29): the bridge to track P: `finMap_rap_nodup`, the jug graph (`jugGr_keys_nodup`, `mem_kidsOf_jug`, `mem_tjVerts_jug`, **`tjReach_jug`**: `TjReach` is `Reach`), **`tarjanSpec_of_tj`**, **`tarjanSpecN_of`**, `tarjanSpecN_empty`, **`tarjanExists`** (track P's `TarjanExists`), **`inlinedM_returns_ex`** (`inlinedM_returns` with `TarjanSpecP` discharged). |
+| `Compiler/CompTarjanLeaf.lean` | Track Q (Gaps 29): **`sccsLeafAt_of_tarjan`**: track P's `SccsLeafAt` on every table and subject. |
+| `Compiler/CompSccOfMissImg.lean` | Track Q (Gaps 29): `+scc-of` on the encoded state: `scoOK_enc`, `sccG_miss_eq`, the read-back `rbSet`/`rbSccs` (`sccsNoun_rbSccs`), **`sccImageMiss`**, **`sccImage`** (track P's `SccImageMiss`, `SccImage`), `sccOfP_hit`, **`sccOfP_miss`** (what the miss stores), **`sccOfKeeps_of`** (track P's `SccOfKeeps`). |
+| `Compiler/CompSccOfMissIs.lean` | Track Q (Gaps 29): the `sub` graph of the miss against the table: `scoKids_enc`, `scoReach_key`, `reach_sco`, **`scoScc_iff`** (mutual `ScoReach` is `InScc` under `CodeClosed`, `SccsIs`, `SccsGoodM`, a key `b` without entry), `scoScc_set`; witnesses `sccOfIs_needs_key`, `sccOfIs_needs_good` (track P's `SccOfIs` is false as stated). |
+| `Compiler/CompSccOfMissSem.lean` | Track Q (Gaps 29): `SccOfIsK` (`SccOfIs` with `SccsGoodM sc` and `b` a key), **`sccOfIsK_of`**, `sccOfP_is` (the answer on a key is its SCC), `singleScc_of_sccOf` (`SingleScc` from `+scc-of`'s singleton answers). |
+| `Compiler/CompInlinedL6.lean` | Track Q (Gaps 28): `InlCohM` (every `inl.cache` entry is `inlinedM` of its bell): `inlWalk_congr`, **`inlinedM_congr`**, **`inlinedM_addsTo`** (an old bell's `inlinedM` is the same on the grown table), **`inlCohM_addsTo`** (`%full`), `callsOf_addsTo`, `singleScc_addsTo`, `inlCoh_of_M` (to the noun form `InlCoh`), `JetsStale`, **`inlCohM_jets`** (`%jets` deletes the stale entries). |
 | `Compiler/CompShapeCol.lean` | `+shape-collapse` (arm `682` of `K`, the `ord` of `finishLF`) on a fork-free lazy need `[[ned lok] ~ ~]` is `sureOf (needToOrd ned) lok less` (`sc_gate_sure`), so `hsc` of `mem_gate` holds with `ord := sur` (`hsc_of_sure`).  On the way, with the nouns cut by `tools/gen/shapecol.py` and tied by `uno_at`, `l2i_at`, `fr_at`, `oi_at`, `ic_at`, `scBody_eq`: `+uni-need-ord` of `[%none ~]` and `X` is `X` (`uno_none`), `+lazy-to-inter1` on no fork and no bond (`l2i_gate_sure`), one round of `+inter2-fix-round` on `[X ~]` is `[X ~]` (`fr_gate_nofork`, with the bunt of `need-inter2` computed by the kernel, `i2n_bunt`), `+inter2-orig` and `+inter2-collapse` on no fork (`oi_gate_nofork`, `ic_gate_nofork`), `+roll` over `~` (`roll_gate_nil`). |
 | `Compiler/CompShapeColUni.lean` | `+uni-need-ord` in full (README Gaps 9): `nord_inj`, `nord_toNoun_eq`, `nord_eqCode` (`=(a b)` on shapes), **`uno_gate`** (the gate body `unoBody` on `[[a b] K]` is `uniOrd a b` of `Ska/ShapeCol.lean` for every `a`, `b`, given `+cons-need` at `350` of `K`; by induction on `a`, the two recursive calls under `~+` from the induction hypothesis). |
 | `Compiler/CompShapeColSur.lean` | The new `ord` against the old one (README Gaps 9): `sureOfS_eq` (`sureOfS` on `CSet` is `sureOf`), **`shapeCol_sccSur`** (on a fork-free result `shapeCol` is `sccSur`), **`shapeCol_finSure`** (under `FinSure`, `sccSur` is `shapeCol` of the final pass of `cu_gate_scc_one_six`). |
@@ -1139,6 +1147,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/TarjanTotal.lean` | Track Q (Gaps 29): **`tarjanM_total`**, **`tarjanM_count`** (on a nonempty graph with distinct keys it returns, and each vertex of `tjVerts G` occurs once in the flattened result, nothing else); `connect_ok`, `kidsLoop_ok`, `outer_ok` (the measure `tjMeas`: unvisited vertices). |
 | `Ska/TarjanSound.lean` | Track Q (Gaps 29): **`tarjanM_spec`** (`TjSpec`: each component nonempty and the SCC of each member under `TjReach`, each vertex once, no member of an earlier-emitted component calls a later-emitted one), **`tjSpec_flop`** (flopped: callees first); `kidsLoop_ok2`, `connect_ok2`, `outer_ok2` (`TjInv2`, `TjBR`, `TjKR`, `FinClosed`). |
 | `Ska/TarjanSccOf.lean` | Track Q (Gaps 29): the miss of `+scc-of` on nouns: `scoSub` (the worklist), `scoCs`, `scoRoll`, `scoGot`, **`scoMiss`**. |
+| `Ska/TarjanSccOfTotal.lean`, `Ska/TarjanSccOfSem.lean` | Track Q (Gaps 29): the miss of `+scc-of` on nouns: `ScoOK`, `ScoKids`, `ScoReach`, `SubIs`, `preorder_keys_nodup`, `scoCs_spec`, `scoSub_total` (at `scoFuel`), `tjReach_sub`, `scoRoll_spec`, **`scoMiss_total`**, **`scoMiss_spec`** (the new keys are the nouns reachable from `b`, each with its component of `sub`), `scoReach_fresh`, `scoMiss_keeps`. |
 | `Ska/RawInvBase.lean` | Track D (Gaps 14): `Defd`, `DefUniq` (one definition per register over all blocks, `defOnceR_of_defUniq`), `mem_allDefs`; liveness `Live bl k r` (a path from `k` reads `r` before any definition) and **`defFirst_of_live`**: `DefFirst` when no register with a definition is live at `0`; `NoTr` (no trace hint op) and `trimBr_of_noTr` (the empty stack); `OpsRF`, `BlockRF`, `live_frame` (liveness below `L` sees only blocks below `L`). |
 | `Ska/RawInvStep.lean` | The invariants of raw blocks (`BlkNodup`, `Cross`, `Par1`, `ArgsAbove`, `JDown`) and their two steps, a new block (`*_put`) and ops in front of a block (`*_prepend`, `live_prepend`); `defUniq_of`, `parNodup_of_par1`, `passOK_of`, `downPar_of_args`, `acyclic_of_jdown`. |
 | `Ska/RawInvCheck.lean` | Executable checkers of the eight fields of `OptIn` on the final pass's output and of the run-level invariant on raw blocks, `#guard`ed on `[10 [6 0 1] 5 [0 6] 0 1]`, `[4 [3 [0 1]]]`, `[[0 2] [0 3]]` and on enumerated nomms of the first fragment, of `FragX` and with indirect calls. |
@@ -7130,6 +7139,18 @@ import only its theorems.  So:
        table, `CallsOf` and `SingleScc` (`single c` only for a key alone in its SCC).  Left:
        `TarjanSpecP` of the whole table (from `tarjanM_spec`, Gaps 29, through a graph of the
        table), `SingleScc` from the pill (`SccQ` with the miss path, Gaps 29), `D.inl`.
+    5. *2026-11-28*: the whole-table list is discharged (`inlinedM_returns_ex`,
+       `Compiler/CompTarjanBridge.lean`); `SingleScc` holds for a `single` that is `true` only
+       where `+scc-of`'s answer is a singleton, on `SccsIs` and `SccsGoodM` (`singleScc_of_sccOf`,
+       Gaps 29.5).  `InlCoh` as a state clause on FinMaps, `InlCohM` (`Compiler/CompInlinedL6.lean`):
+       kept by `%full` growth (`inlCohM_addsTo`: an old bell's `inlinedM` is unchanged, the walk
+       never leaves the old keys) and by the `%jets` deletion of stale entries (`inlCohM_jets`,
+       given `JetsStale`: every bell reaching a bell whose `hot` changed is deleted); turned into
+       the noun form by `inlCoh_of_M`.  *Left for `InlPill`*: `D.inl` tied to the pill's
+       `+inlined` (hit and miss; the miss stores an `inlinedM` result by `inl_pill_gate`);
+       `InlCohM` as a clause of track P's `PGood5`, with `%full` giving `AddsTo` and an unchanged
+       `hot`, `%jets` giving `JetsStale` from `ColeCoh` and the caller closure of `calls.lon`,
+       `%fast` emptying `inl.cache`; `SccQ` on `compK` (the context of `+inlined`'s `+scc-of`).
 29. **`+tarjan`: model, correctness, pill link; the miss of `+scc-of`** (track Q, 2026-11-27,
     `Ska/Tarjan*.lean`, `Compiler/CompTarjan*.lean`, `Compiler/CompSccOfMiss*.lean`,
     `tools/gen/tarjancheck.py`, `tarjancut.py`, `sccofmiss.py`, `tools/hoon/tarjandump.hoon`,
@@ -7151,3 +7172,12 @@ import only its theorems.  So:
        whole-table list of Gaps 28.4.  (b) `scoMiss` returns (`scoSub` at its measure, then
        `tarjanM_total`, `scoRoll`, `scoGot` by the partition) and its stored set is `b`'s SCC in
        the graph of the callees without an SCC in `sccs`: `SccImageMiss`, `SccQ`, track K.
+    5. *2026-11-28, done*: (a) `sccsLeafAt_of_tarjan` (track P's `SccsLeafAt`, push 8 linked by
+       `srSccs_empty`/`srSccs_tarjan`, the bridge `tarjanSpecN_of`), `tarjanExists` (track P's
+       `TarjanExists`); (b) `scoMiss_total`, `scoMiss_spec`; (c) `sccImageMiss`, `sccImage`,
+       `sccOfKeeps_of` (track P's `SccImageMiss`, `SccImage`, `SccOfKeeps`), `sccOfIsK_of`.
+       *Finding*: track P's `SccOfIs` is FALSE as stated (witnesses `sccOfIs_needs_key`,
+       `sccOfIs_needs_good` in `Compiler/CompSccOfMissIs.lean`): it needs `SccsGoodM sc` (else a
+       cached member of `b`'s SCC cuts the walk) and `b` a key of `L.code` (else `b ↦ {b}` while
+       `sccSet` is empty); `SccOfIsK` adds both and holds.  *Left*: track K's `UnarySccsIs` (each
+       `+scc-of` call of `+compile-unary` is on a key with `SccsGoodM`: then `sccOfIsK_of`).
