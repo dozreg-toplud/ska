@@ -444,6 +444,154 @@ theorem passLoop_returns_q (env : Env R) {memoF : Memo M} (hmF : MemoWF memoF) (
       rw [e]
       exact passLoop_fuel_le env memoF (Nat.le_max_right m n') id index (y.1 + 1) st' r' hr'
 
+/-! ## 6. The parts of a pass return -/
+
+/-- **Each run of `+run` returns**: from a state with the convergence
+invariant, a run of a stack member at its DFS number returns at some fuel
+(the named hypothesis on the recursion: `fol-loop` and the `+analyze` of the
+callees inside the run). -/
+def RunHalts (env : Env R) (memoF : Memo M) : Prop :=
+  ∀ m o (st : SkaState M R) (F : Entry → Prop), CInv memoF st F → m ∈ st.stk →
+    Treap.get st.order m = some o → ∃ n r, run env memoF n m o st = some r
+
+theorem popGo_some {id : Ident} : ∀ (l : List Ident) (st : SkaState M R), id ∈ l →
+    ∃ st', popGo id l st = some st'
+  | [], _, h => absurd h List.not_mem_nil
+  | top :: rest, st, h => by
+    unfold popGo
+    by_cases e : top = id
+    · simp only [e, if_true]; exact ⟨_, rfl⟩
+    · simp only [e, if_false]
+      exact popGo_some rest _ ((List.mem_cons.mp h).resolve_left (fun h' => e h'.symm))
+
+/-- **The member loop returns** over members on the stack, from a state with
+the convergence invariant, when each run does. -/
+theorem memberLoop_returns (env : Env R) {memoF : Memo M} (hmF : MemoWF memoF) (hmN : MemoNorm memoF)
+    (hrun : RunHalts env memoF) (index pass : Nat) :
+    ∀ (ms : List Ident) (st : SkaState M R) (F : Entry → Prop), CInv memoF st F → (∀ m ∈ ms, m ∈ st.stk) →
+      ∃ n r, memberLoop env memoF n index pass ms st = some r
+  | [], st, _, _, _ => ⟨1, _, by rw [memberLoop_succ]; rfl⟩
+  | m :: ms, st, F, hc, hms => by
+    cases hd : dirty m st with
+    | false =>
+      obtain ⟨n, r, h⟩ := memberLoop_returns env hmF hmN hrun index pass ms st F hc
+        (fun x hx => hms x (List.mem_cons_of_mem _ hx))
+      exact ⟨n + 1, r, by rw [memberLoop_succ]; simp only [memberStep, hd, if_true]; exact h⟩
+    | true =>
+      have key : ∀ st1 : SkaState M R, CInv memoF st1 F → st1.stk = st.stk → ∃ n r,
+          ((Treap.get st1.order m).bind fun o => (run env memoF n m o st1).bind fun r =>
+            if r.1.1 < index then some ((r.1.1, r.1.2.2), r.2) else
+            (memberLoop env memoF n index pass ms r.2).map fun t => ((min r.1.1 t.1.1, r.1.2.2 || t.1.2), t.2))
+            = some r := by
+        intro st1 hc1 hs1
+        have hm : m ∈ st1.stk := by rw [hs1]; exact hms m List.mem_cons_self
+        obtain ⟨o, ho⟩ := (hc1.s.ord_stk m).mpr hm
+        obtain ⟨n0, ⟨r0, st2⟩, hr⟩ := hrun m o st1 F hc1 hm ho
+        obtain ⟨⟨F2, _, c2, _⟩, _, k2, _⟩ :=
+          (allP2 env memoF hmF hmN n0 n0 (Nat.le_refl n0)).2.2.1 m o st1 r0 st2 F hc1 hm ho hr
+        rw [ho]
+        simp only [Option.bind_some]
+        by_cases hl : r0.1 < index
+        · refine ⟨n0, ((r0.1, r0.2.2), st2), ?_⟩
+          rw [hr]; simp only [Option.bind_some, hl, if_true]
+        · obtain ⟨n1, r1, h1⟩ := memberLoop_returns env hmF hmN hrun index pass ms st2 F2 c2 (fun x hx => by
+            obtain ⟨l, el⟩ := k2.1
+            rw [el, hs1]; exact List.mem_append_right _ (hms x (List.mem_cons_of_mem _ hx)))
+          refine ⟨max n0 n1, ((min r0.1 r1.1.1, r0.2.2 || r1.1.2), r1.2), ?_⟩
+          rw [run_fuel_le env memoF (Nat.le_max_left n0 n1) m o st1 _ hr]
+          simp only [Option.bind_some, hl, if_false]
+          rw [memberLoop_fuel_le env memoF (Nat.le_max_right n0 n1) index pass ms st2 _ h1]
+          rfl
+      by_cases hp : pass > 1
+      · obtain ⟨n, r, h⟩ := key ({ st with stats := { st.stats with lateRuns := st.stats.lateRuns + 1 } })
+          (hc.congr rfl rfl rfl rfl rfl rfl rfl) rfl
+        exact ⟨n + 1, r, by
+          rw [memberLoop_succ]; simp only [memberStep, hd, Bool.true_eq_false, if_false, hp, if_true]; exact h⟩
+      · obtain ⟨n, r, h⟩ := key st hc rfl
+        exact ⟨n + 1, r, by
+          rw [memberLoop_succ]; simp only [memberStep, hd, Bool.true_eq_false, if_false, hp]; exact h⟩
+
+/-- **Every pass stops or goes on at some fuel**, from a state with `PStart`,
+when each run of `+run` returns: `+sweep`, the member loop, the end sweep,
+`+cull` and `+pop` all return. -/
+theorem passStep_parts (env : Env R) {memoF : Memo M} (hmF : MemoWF memoF) (hmN : MemoNorm memoF)
+    (hrun : RunHalts env memoF) {id : Ident} {index pass : Nat} {rest : List Ident} {st : SkaState M R}
+    (hP : PStart memoF id index rest st) : ∃ m,
+      (∃ r, passStep m (memberLoop env memoF m) (fun _ _ _ _ => none) id index pass st = some r) ∨
+      ∃ st', PassGoOn env memoF m id index pass st st' := by
+  have hP0 := hP
+  obtain ⟨F, ab0, hc, hs, _, _, _, _⟩ := hP
+  obtain ⟨ab, hab⟩ := above_of_mem (id := id) (stk := st.stk) (by rw [hs]; simp)
+  obtain ⟨members, hsw⟩ := sweep_ends (n := sweepFuel id (Treap.silt ab) st + 1) id (Treap.silt ab) st
+    (Nat.lt_succ_self _)
+  have hmem : ∀ m ∈ members, m ∈ st.stk := by
+    intro m hm
+    obtain ⟨ab0', rest', rfl, hs', _⟩ := above_eq hab
+    rcases sweep_mem hsw m hm with rfl | h
+    · rw [hs']; simp
+    · rw [hs']; exact mem_split_of ((Treap.has_silt _ _).mp h)
+  obtain ⟨n1, ⟨r, st2⟩, hml⟩ := memberLoop_returns env hmF hmN hrun index pass members ({ st with stats := { st.stats with passes := st.stats.passes + 1 } } : SkaState M R) F
+    (hc.congr rfl rfl rfl rfl rfl rfl rfl) hmem
+  let N0 := max (sweepFuel id (Treap.silt ab) st + 1) n1
+  have hsw0 : sweep N0 id (Treap.silt ab) st = some members :=
+    fuel_chain (f := fun k => sweep k id (Treap.silt ab) st) (fun k => sweep_fuel k id _ st)
+      (Nat.le_max_left _ _) _ hsw
+  have hml0 : memberLoop env memoF N0 index pass members ({ st with stats := { st.stats with passes := st.stats.passes + 1 } } : SkaState M R) = some (r, st2) :=
+    memberLoop_fuel_le env memoF (Nat.le_max_right _ _) index pass members ({ st with stats := { st.stats with passes := st.stats.passes + 1 } } : SkaState M R) _ hml
+  by_cases hr1 : r.1 = index
+  · by_cases hq : r.2 = false ∧ st2.next = st.next
+    · -- the end of a pass with no change and no push
+      obtain ⟨hP2, _, _⟩ := pstart_mem env hmF hmN hP0 hab hsw0 hml0 hr1
+      obtain ⟨F2, ab2, c2, hs2, hidx2, hrest2, hrb2, _⟩ := hP2
+      obtain ⟨abE, habE⟩ := above_of_mem (id := id) (stk := st2.stk) (by rw [hs2]; simp)
+      obtain ⟨msE, hswE⟩ := sweep_ends (n := sweepFuel id (Treap.silt abE) st2 + 1) id (Treap.silt abE) st2
+        (Nat.lt_succ_self _)
+      obtain ⟨st3, hcu⟩ := cull_ends (n := cullFuel abE st2 + 1) habE (Nat.lt_succ_self _)
+      obtain ⟨_, _, k3, _⟩ := cull_ok2 c2 hs2 hidx2 hrest2 hrb2 hcu
+      obtain ⟨st4, hpop⟩ := popGo_some (id := id) st3.stk st3 (by
+        obtain ⟨l, el⟩ := k3.1; rw [el]; simp)
+      let N := max N0 (max (sweepFuel id (Treap.silt abE) st2 + 1) (cullFuel abE st2 + 1))
+      have hswN : sweep N id (Treap.silt ab) st = some members :=
+        fuel_chain (f := fun k => sweep k id (Treap.silt ab) st) (fun k => sweep_fuel k id _ st)
+          (Nat.le_max_left _ _) _ hsw0
+      have hmlN : memberLoop env memoF N index pass members ({ st with stats := { st.stats with passes := st.stats.passes + 1 } } : SkaState M R) = some (r, st2) :=
+        memberLoop_fuel_le env memoF (Nat.le_max_left _ _) index pass members ({ st with stats := { st.stats with passes := st.stats.passes + 1 } } : SkaState M R) _ hml0
+      have hswEN : sweep N id (Treap.silt abE) st2 = some msE :=
+        fuel_chain (f := fun k => sweep k id (Treap.silt abE) st2) (fun k => sweep_fuel k id _ st2)
+          (Nat.le_trans (Nat.le_max_left _ _) (Nat.le_max_right _ _)) _ hswE
+      refine ⟨N, ?_⟩
+      cases hany : msE.any (fun m => dirty m st2) with
+      | true =>
+        exact Or.inr ⟨st2, Or.inr ⟨ab, members, r, hab, hswN, hmlN, hr1, hq.1, hq.2, abE, msE, habE, hswEN, hany⟩⟩
+      | false =>
+        have hcuN : cull N id st2 = some st3 := by
+          exact fuel_chain (f := fun k => cull k id st2) (fun k => cull_fuel k id st2)
+            (Nat.le_trans (Nat.le_max_right _ _) (Nat.le_max_right _ _)) _ hcu
+        refine Or.inl ⟨(st2.next, st4), ?_⟩
+        unfold passStep
+        simp only [hab, hswN, Option.bind_some, hmlN]
+        rw [if_neg (fun hc => hc hr1), if_pos hq]
+        unfold passEnd
+        simp only [habE, hswEN, Option.bind_some, hany, Bool.false_eq_true, if_false, hcuN]
+        unfold pop
+        rw [hpop]; rfl
+    · exact ⟨N0, Or.inr ⟨st2, Or.inl ⟨ab, members, r, hab, hsw0, hml0, hr1, hq⟩⟩⟩
+  · refine ⟨N0, Or.inl ⟨(r.1, st2), ?_⟩⟩
+    unfold passStep
+    simp only [hab, hsw0, Option.bind_some, hml0]
+    rw [if_pos hr1]
+
+/-- **The pass loop of one component returns**, from a state with
+`ChainInv`, when each run of `+run` returns and every chain of its passes
+pushes finitely often. -/
+theorem passLoop_returns_runs (env : Env R) {memoF : Memo M} (hmF : MemoWF memoF) (hmT : MemoTP memoF)
+    (hmN : MemoNorm memoF) (hmI : MemoNI memoF) (hrun : RunHalts env memoF) (id : Ident) (index : Nat)
+    (rest : List Ident) (x : Nat × SkaState M R) (hc : ChainInv memoF id index rest x.2)
+    (hB : FinPushesQ env memoF id index x) :
+    ∃ n r, passLoop env memoF n id index x.1 x.2 = some r :=
+  passLoop_returns_q env hmF hmT hmN hmI id index rest x hc hB fun y hy =>
+    passStep_parts env hmF hmN hrun (passReachQ_inv env hmF hmT hmN hmI hy hc).2.2.2
+
 end Ana
 end SkaModel
 end Formalization
