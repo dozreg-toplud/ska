@@ -394,5 +394,122 @@ theorem runLC_n6_f (env : CallEnv) (msup : Option Nomm) (p q r : Nomm) (laz : La
   rw [sixNextLC.eq_2]
   simp only [hlp, hne, Bool.not_false, if_true, hkt, Bool.false_eq_true, if_false]
 
+/-! ## The case in phase F -/
+
+theorem reG_re (g : Gen (TreapMap mugF)) : (reG g).re = g.re + 1 := rfl
+theorem reG_bo (g : Gen (TreapMap mugF)) : (reG g).bo = g.bo := rfl
+
+/-- **What the two runs of phase F return**: the branch needs meet `LInv`,
+are apart, and every register of them is above `r-cond` (the registers of
+the goals of `+fork` are fresh after `+re`, the rest is fresh after `+fork`). -/
+theorem six_f_runs {env : CallEnv} {msup : Option Nomm} {q r : Nomm} {rb : List Nat}
+    (ihq : ResFor env msup q rb) (ihr : ResFor env msup r rb)
+    {laz : Lazy CSet} {th : Jmp} {g g3 g1 g2 : Gen (TreapMap mugF)} {n0 n1 nex0 nex1 : NextL CSet}
+    (hinv : GInv g (CGoalL.next laz th)) (ef : forkL ⟨laz, th⟩ g.re (reG g) = some ((n0, n1), g3))
+    (e1 : runLC env msup r n1.goal rb (idG g3) = some (nex1, g1))
+    (e2 : runLC env msup q n0.goal rb g1 = some (nex0, g2)) :
+    g.re < g2.re ∧ g.bo ≤ g2.bo ∧ g2.drop = false ∧ LInv g2.re g2.bo nex0.laz ∧ LInv g2.re g2.bo nex1.laz ∧
+      (∀ y ∈ lregs nex0.laz, y ∉ lregs nex1.laz) ∧ (∀ y ∈ lregs nex0.laz ++ lregs nex1.laz, g.re < y) := by
+  have hR : GInv (reG g) (CGoalL.next laz th) := ginv_mono hinv (Nat.le_succ _) (Nat.le_refl _) rfl
+  obtain ⟨gi0, gi1⟩ := ginv_forkL hR ef
+  have hl : LAll CrLok laz := lall_mono (fun _ h => h.1) hinv.1.1
+  obtain ⟨-, -, F, -, -, -⟩ := forkL_spec hl ef
+  obtain ⟨k3r, k3b, -⟩ := (km_forkL (Map := TreapMap mugF) (S := CSet) _ _).keep _ _ _ ef
+  rw [reG_re] at F k3r
+  rw [reG_bo] at k3b
+  have gi1' : GInv (idG g3) n1.goal := gi1
+  obtain ⟨l1, b1, gj1, s1r⟩ := ihr _ (idG g3) g1 nex1 gi1' e1
+  have hi0 : GInv g1 n0.goal := ginv_mono gi0 l1 b1 ((ginv_drop gj1).trans (ginv_drop gi1').symm)
+  obtain ⟨l2, b2, gj2, s2r⟩ := ihq _ g1 g2 nex0 hi0 e2
+  have rI : (idG g3).re = g3.re := rfl
+  have bI : (idG g3).bo = g3.bo := rfl
+  rw [rI] at l1 s1r
+  rw [bI] at b1
+  have f0 : ∀ y ∈ lregs nex0.laz, g1.re ≤ y ∨ y ∈ lregs n0.laz := s2r
+  have f1 : ∀ y ∈ lregs nex1.laz, g3.re ≤ y ∨ y ∈ lregs n1.laz := s1r
+  refine ⟨by omega, by omega, ginv_drop gj2, gj2.1, linv_mono gj1.1 l2 b2, ?_, ?_⟩
+  · intro y hy hy'
+    have hb1 := lnb_regs gj1.1.1 y hy'
+    rcases f0 y hy with e | e
+    · omega
+    · rcases f1 y hy' with e' | e'
+      · have := (F.2 y (List.mem_append_left _ e)).2; omega
+      · exact (List.nodup_append.1 F.1).2.2 y e y e' rfl
+  · intro y hy
+    rcases List.mem_append.1 hy with hy | hy
+    · rcases f0 y hy with e | e
+      · omega
+      · have := (F.2 y (List.mem_append_left _ e)).1; omega
+    · rcases f1 y hy with e | e
+      · omega
+      · have := (F.2 y (List.mem_append_right _ e)).1; omega
+
+/-- Phase F after `+id`, in the model: the rest of `sixNextForkC`. -/
+noncomputable def sixFK (env : CallEnv) (msup : Option Nomm) (p q r : Nomm) (region : List Nat)
+    (n0 n1 : NextL CSet) (rc rid : Nat) : CM (TreapMap mugF) (NextL CSet) := do
+  let cb ← getCond
+  let nex1 ← runLC env msup r (CGoalL.next n1.laz n1.th) (rid :: region)
+  let cbw ← getCond
+  let nex0 ← runLC env msup q (CGoalL.next n0.laz n0.th) (rid :: region)
+  sixLynF env msup p region (rid :: region) rc n0.th.there n1.th.there cb cbw nex0 nex1
+
+theorem sixNextForkC_eq (env : CallEnv) (msup : Option Nomm) (p q r : Nomm) (laz : Lazy CSet) (th : Jmp)
+    (region : List Nat) :
+    (sixNextForkC env.cod (runLC env msup p) (runLC env msup q) (runLC env msup r) p laz th region :
+      CM (TreapMap mugF) (NextL CSet))
+      = (do
+          let rc ← re
+          let (n0, n1) ← forkL ⟨laz, th⟩ rc
+          let rid ← idM
+          sixFK env msup p q r region n0 n1 rc rid) := rfl
+
+/-- **The case `%6` of `+run` in phase F**: under a `%next` goal with
+`GInv` whose `+leap` is `~` (`hlp`, in the model; the Nock of `+leap` by
+`lp6_leap_none`, for `q` and `r` with no axis `0`, `hq`, `hr`), whose need
+with the bunt sure is not `+none-equivalent` and whose `+kerf` test fails,
+given the parts (`SixParts`, the branches in the regions `rid :: region`):
+`+re`, `+fork`, `+id`, the two runs, `+sect`, `+past-fork`, the `%brn`
+block, `+lazy-shut`, the run of `p` on `[%next [[%this r-cond] ~] ~ ~] ~ o]`,
+`+copy`. -/
+theorem comp_run_n6_f (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q r : Nomm) (region : List Nat)
+    (P : SixParts env msup ctx p region) (Q : ∀ rid, SixParts env msup ctx q (rid :: region))
+    (R : ∀ rid, SixParts env msup ctx r (rid :: region))
+    (laz : Lazy CSet) (th : Jmp) (g : Gen (TreapMap mugF)) (hinv : GInv g (CGoalL.next laz th))
+    (hlp : leap laz q r = some Option.none) (hq : Bake.NoAx0 q) (hr : Bake.NoAx0 r)
+    (hne : Lazy.noneEquivalentL (Lazy.mk Sure.bunt laz.fork laz.bond) = false)
+    (hkt : kerfTest q r laz = false) :
+    CompRunAtR (runLC env msup) ctx (Nomm.n6 p q r) (CGoalL.next laz th) region g := by
+  intro x mono sup hx
+  have hl : LAll CrLok laz := lall_mono (fun _ h => h.1) hinv.1.1
+  rw [cr6f_head h7 p q r laz th region x hx g mono sup (lp6_leap_none h7 hl hq hr g hlp x hx) hne hkt,
+    runLC_n6_f env msup p q r laz th region hlp hne hkt, sixNextForkC_eq]
+  refine cr6f_s03 h7 p q r laz th region x g mono sup (sixFK env msup p q r region) (fun n0 n1 g3 ef => ?_)
+  have hR : GInv (reG g) (CGoalL.next laz th) := ginv_mono hinv (Nat.le_succ _) (Nat.le_refl _) rfl
+  obtain ⟨gi0, gi1⟩ := ginv_forkL hR ef
+  have gi1' : GInv (idG g3) n1.goal := gi1
+  obtain ⟨e0, e1', -, -, -, -⟩ := forkL_spec hl ef
+  obtain ⟨l0, t0⟩ := n0
+  obtain ⟨l1, t1⟩ := n1
+  simp only at e0 e1'
+  subst e0 e1'
+  exact cr6f_mid env msup p q r (g3.id :: region) (NextL.goal ⟨l0, jmp0 (reG g).bo⟩)
+    (NextL.goal ⟨l1, jmp0 ((reG g).bo + 1)⟩) x hx (idG g3) mono (CGoalL.next laz th).toNoun (listNoun A region)
+    sup (A 0) g3.id g.re
+    (fun cb cbw nex0 nex1 => sixLynF env msup p region (g3.id :: region) g.re (reG g).bo ((reG g).bo + 1)
+      cb cbw nex0 nex1)
+    ((R g3.id).link _ _ gi1')
+    (fun nex1 g1 e1 => (Q g3.id).link _ g1 (by
+      obtain ⟨l1', b1', gj1, -⟩ := (R g3.id).res _ _ g1 nex1 gi1' e1
+      exact ginv_mono gi0 l1' b1' ((ginv_drop gj1).trans (ginv_drop gi1').symm)))
+    (fun nex1 g1 nex0 g2 e1 e2 => by
+      obtain ⟨lt2, -, d2, h0, h1, ap01, fr⟩ := six_f_runs (Q g3.id).res (R g3.id).res hinv ef e1 e2
+      unfold condN
+      exact cr6f_lyn h7 hcode env msup p q r region (g3.id :: region) P.cod P.hin g.re
+        (fun o g' hg' => P.link _ g' hg') P.res x hx g2 d2 lt2 nex0 nex1 h0 h1 ap01
+        (fun h => by have := fr _ (List.mem_append_left _ h); omega)
+        (fun h => by have := fr _ (List.mem_append_right _ h); omega)
+        l0 l1 _ _ g3.id (idG g3).cond g1.cond mono _ sup)
+
 end Compiler
 end Formalization
