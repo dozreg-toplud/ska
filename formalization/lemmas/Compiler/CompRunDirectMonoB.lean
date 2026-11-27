@@ -439,5 +439,66 @@ theorem crd_blkM_next (h7 : slot? 7 ctx = some compK) (x : GenRest) (hx : x.NoSo
       simp [Option.bind_some, re_apply, cf_emit_g, pure_apply, bind_apply, crdBlkN, cf_emitG_re, cf_emitG_bo, ek,
         Functor.map, StateT.map, reG]
 
+/-! ## Steps `8` and `9` under `mono` `&` -/
+
+/-- The gate `+mono-try-call` from the door at any state (`mtc_at`: the
+gate with its bunt, under the hint `~%`). -/
+theorem mtc_arm (D : Noun) : nock D (C (A 7) (C (C (A 8) (C (C (A 1) (C (C (A 0x656e6f6e) (A 0))
+    (C (A 0) (C (A 0) (A 0))))) (C (C (A 1) mtcGB) (C (A 0) (A 1))))) mtcHint))
+      = some (C mtcGB (C (C (C (A 0x656e6f6e) (A 0)) (C (A 0) (C (A 0) (A 0)))) D)) := by
+  unfold mtcHint; simp [nock_exec]
+
+/-- **Steps `7` to `9` under `mono` `&`**: the blocks (given, `hblk`), then
+step `8` on the cell `[opt sub-pes pes]` (`+mono-try-call`, `mtc_gate`;
+`sub-ned` becomes `[%this sub-pes]`), then `nex-arg` with `(~(has by
+soft.gen) call-block)` `|` under `NoSoft` (step `9`); the rest from step
+`10` on. -/
+theorem crd_7to9M (h7 : slot? 7 ctx = some compK) (x : GenRest) (hx : x.NoSoft) (SOF V5 V2 PV : Noun)
+    (subNed : Need) (p q : Nomm) (b : Bell) (RG sup : Noun) (goal : CGoalL CSet) (g : Gen (TreapMap mugF))
+    (hblk : nock (crdS6m SOF V5 (listNoun A (flattenNeed subNed)) subNed.toNoun V2 PV
+      (crSubj (A 0) (crdN p q b) goal.toNoun RG sup (compCore g x ctx))) crDKc7
+      = (crdBlockMM b (flattenNeed subNed) goal g).map fun p => crdBlkN p x) :
+    nock (crdS6m SOF V5 (listNoun A (flattenNeed subNed)) subNed.toNoun V2 PV
+      (crSubj (A 0) (crdN p q b) goal.toNoun RG sup (compCore g x ctx))) crDKr7
+      = (crdBlockMM b (flattenNeed subNed) goal g).bind fun r =>
+          (monoTryCall subNed r.1.1 r.1.2.1 r.1.2.2 r.2).bind fun r' =>
+          nock (crdS9 (crdArg (Need.this r.1.2.1) r'.1).goal.toNoun (C (Need.this r.1.2.1).toNoun (A r'.1))
+            (C (A r.1.1) (C (A r.1.2.1) (A r.1.2.2))) SOF V5 (listNoun A (flattenNeed subNed)) subNed.toNoun V2
+            (A 0) PV (crSubj (A 0) (crdN p q b) goal.toNoun RG sup (compCore r'.2 x ctx))) crDKr10 := by
+  have h15 := cr_ctx15 h7
+  obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
+  have hD := mtc_at
+  simp only [crSubj, compCore, crdS6m] at hblk ⊢
+  cases eb : crdBlockMM b (flattenNeed subNed) goal g with
+  | none =>
+    rw [eb] at hblk
+    generalize comp.door = Dr at hblk hD ⊢
+    unfold crDKr7
+    simp [nock_exec, hblk]
+  | some r =>
+    obtain ⟨⟨opt, subPes, pes⟩, g1⟩ := r
+    rw [eb] at hblk
+    simp only [Option.map_some, crdBlkN] at hblk
+    have hm := mtc_gate x hc subNed opt subPes pes g1
+    simp only [compCore] at hm
+    simp only [Option.bind_some]
+    cases em : monoTryCall (Map := TreapMap mugF) subNed opt subPes pes g1 with
+    | none =>
+      rw [em] at hm
+      generalize comp.door = Dr at hblk hD hm ⊢
+      unfold crDKr7 crDKr8 crDKc8
+      simp [nock_exec, hblk, hD, mtc_arm, hm]
+    | some r' =>
+      obtain ⟨o, g2⟩ := r'
+      rw [em] at hm
+      simp only [Option.map_some] at hm
+      have hs := crn_has x o (hx o)
+      simp only [Option.bind_some]
+      rw [crd_arg_noun]
+      generalize comp.door = Dr at hblk hD hm ⊢
+      unfold crDKr7 crDKr8 crDKc8 crDKr9 crDKc9
+      simp [nock_exec, hblk, hD, mtc_arm, hm, h15, hc, ct_lfn_at, ct_lfn_arm, ct_lfn_gate, by_arm, by.arm_at,
+        by.has.arm_at, has_arm, hs, Need.toNoun, Tag.this]
+
 end Compiler
 end Formalization
