@@ -228,6 +228,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompStraightMapPre.lean` | Written by `tools/gen/tsmpre.py`: the states of `+to-straight` with the noun `PX` of `proxies` (`tsS5P`, `tsS7P`, `tsCoreStP`, equal to the old ones at `(A 1)`: `tsS5N_eq_P`, `tsCoreStN_eq_P`), pushes 1 to 5 with `cond` a cell (`tsnp_pre1`: `proxies` is `&`), and `tsnp_r_layer1`, `tsnp_pre2`, `tsnp_ren`, `tsnp_pre3`, `tsnp_pre3_nil` copied from `CompStraightN.lean` with `PX`. |
 | `Compiler/CompStraightMapAt.lean` | The bunts of the map path by the kernel on a spine of free nouns (`tsm_rep_bunt_sp`, `tsm_arg_bunt_sp`, `tsm_blob_bunt_eq`), `ctx_of_slot7`, `proxies` from `cond` (`hasProxies_cell`, `hasProxies_none`), the pushes with proxies (`tsnp_pre`), the core (`tsmp_core`), the gate with proxies (`tsmp_at`) and on every `cond` (`ts_at_all`: the noun of `toStraightF` on a run of inputs), the whole-subject `TsAt` on every `cond` (`ts_at_this`, `ts_at_proved`). |
 | `Compiler/CompStraightMapSix.lean` | Written by `tools/gen/tsmsix.py`: track A's `TsMapAt` holds (`tsMapAt_holds`), and its tops without it (`cu_gate_scc_one_six_ts`, `cu_gate_scc_one_six_fol_ts`, `cu_gate_six_ts`). |
+| `Compiler/CompStraightRun.lean` | `+to-straight` with `run` `\|` (README Gaps 20, track A): `rmN` (the noun of the state `[re-gen m]`), `RerM` (the stateful `RerS`), `tsRerMap_eq` (the branch of `rer` through `m`, by the kernel), **`tsr_rer`** (`rer` with `run` `\|` and any `proxies` is the model's `rer cond proxies false ren`: `+get:by` of `m`, on a miss `re-gen` up and `+put:by`), `spinM_mapM`, `tsr_parG`, **`tsr_par`** (`rewritePar`), `argStep`, `tsr_argG`, **`tsr_args`** (`rewriteArgs`). |
 | `Compiler/CompStraightN.lean` | `+to-straight` on an n-ary input need (the sample `[%next [[ned ~] ~ ~] ~ o]` of the final pass of `+compile-scc-in`, `tsSampleN`): the pushes with `ins` `flattenNeed ned`, `r0` its head, `n-in` its length and `run` `isRun ins r0 0` (`tsn_pre1`, the trap `run` `tsn_run`, `tsn_pre2`, `tsn_pre3`, `tsn_pre`), `ren` is `renReg r0 n-in` (`tsn_ren`), `rer` (`tsn_rer`), the trap of `+rewrite-input` on any need returns `needToOrd ned` and leaves `gen` (`tsn_ri_trap`, `tsn_ri`), the arm `$` takes the renaming branch (`tsn_dol`), `+count-args` is `countArgs` (`ca_gate`), the renaming branch (`tsn_rename`), the gate of the fold in any `CfCore` core (`tsn_step_gen`, `tsn_st_cf`, `tsn_step`), the core (`tsn_core`), and the gate: on a run of inputs with `cond` empty it returns the noun of `toStraightF` (`tsn_at`). |
 | `Compiler/CompCoerceLazy.lean` | `+coerce-lazy` (door battery axis `3580`, `comp_cz_at`, its gate body `czBody` cut into `czX`, `czSrl`, `czLok`, `czTail`) on a fork-free `[sure ~ ~]`: `+axe-in-less-cape` (arm `95` of `K`) is `axeInLessCape` (`aic_loop`, `aic_gate`), `+axe-in-need` (arm `0x5dd4`) is `axeInNeedL` (`ain_loop`, `ain_gate`), the gate of the `+rep:in` over `lok` is `czStep` (`cz_gate_step`) and the fold is `coerceLok` (`coerceLok_eq`, `cz_lok`, with no `0` in its product, `coerceLok_ne0`), `+sure-require-look` of the new sure (`cz_srl`), the trap `sure-loop` is `sureLoop` with `o` not in `soft` (`cz_loop_none`, `cz_loop_this`, `cz_loop_pair`, `cz_loop_both_this`, `cz_loop_both_pair`, `cz_loop_both_both`, `cz_loop`), and the gate is `coerceLazy` (`cz_gate`) or `coerceLazyL` on `ofSure` (`cz_gate_L`). |
 | `Compiler/CompBakeNeed.lean` | `+bake-need` (arm `384468` of `K`, `bn_at`, its gate body `bnBody` and trap `bnLoop` cut into `bnTest`, `bnYes` with the baking trap `bnAll`, and `bnRec`) when nothing is baked: on a need with no cell of two `%none` and no `%both` with two `%none` halves (`NeedNorm`, true of every need of `+need-ord-alloc-regs`, `needNorm_noar`) and a sock that is `%void` or not wholly known (`all:ca` false) at every node of the need, with `hed:so` and `tel:so` down the walk (`NoBake`), the test of each node is false before `+need-fits` (`bn_test`), `+cons-need` rebuilds each cell (`cn_gate`), and the gate returns `[ned ~]` (`bn_loop`, `bn_gate`). |
@@ -360,6 +361,9 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompSccSixSc.lean` | **The top on `SixOk` with the `ord` of `+shape-collapse`** (README Gaps 9): the chain of `CompSccSix.lean` without `FinSure` (`fin_gate_ts_L` with `comp_coerce_lazy_all`, `fin_gate_finishLF_six_L`, `lazy_toNoun_eta`, `mem_to_finish_six_L`, `mem_gate_six_L`, `scc_sur_six_L`, `csi_gate_scc_one_m_six_L`, `mem_gate_none_six_L`, `csi_gate_scc_one_f_six_L`, `cu_gate_scc_one_six_q_L`) for any `ordOf` that `+shape-collapse` returns (`ScAt`, `NoBakeOneO`, `noBakeOneO_no`); `scOrd`, `ScRet` (the model's `shapeCol` returns at `fuel`), `scAt_of_scRet`; **`cu_gate_scc_one_six_sc`**, **`cu_gate_scc_one_six_fol_sc`** (`ord` = `scOrd fuel p.1 cape`, `sccSur` into `sure.cache`, `+to-straight` by `tsMapAt_holds`); `sixBare` with three `#guard`s (the model's final pass and `shapeCol` give the Hoon's `[[%this ~] %this ~]`, `+sure-of` gives `[[%this ~] %none ~]`, fuel `3` suffices and `2` does not) and an `example`. |
 | `Compiler/CompShapeColRet.lean` | When the model's `+shape-collapse` returns (README Gaps 9): the fork skeleton `Sk`, `I2.skel` (`fixRound_skel`, `fixKids_skel`, `fixLoop_skel`), **`orig_some`** (`+inter2-orig` succeeds on two trees of one skeleton, mutual with `origLoop_some`), `inter2Collapse_some`; `I1.LokOk` (no look at `0` at any node), `I1.lokOkF_append`, **`i12_some`** (mutual with `i12Forks_some`), **`l2i_lokOk`** (from `WalkP` of `CrLok`, mutual with `l2iForks_lokOk`, `l2iBonds_lokOk`); `FixRet` (the loop of `fixLoop` stops within `fuel` rounds), `scRet_of_fixRet` (by `entry_lok`), **`cu_gate_scc_one_six_fix`** (the top with `FixRet` the one hypothesis on `+shape-collapse`). |
 | `Compiler/CompShapeColFuel.lean` | **The tops without `FixRet`** (README Gaps 9): `l2i_normal` (normal needs in a lazy need give normal needs in `l2i`, mutual with `l2iForks_normal`, `l2iBonds_normal`), `NormRun` (every sure need of the final pass's lazy need is normal, the one hypothesis left on `+shape-collapse`), `scFuel` (`fixFuel` of the run's first tree), `scOrdR`, `shapeCol_ret`, `fixRet_norm`, `scAt_R`; **`cu_gate_scc_one_six_nf`** (nothing baked, `NoBakeOneO`), **`cu_gate_scc_one_six_bake_nf`** (the real bake, `BakeRunO`), `cu_gate_scc_one_six_fol_nf`, `cu_gate_scc_one_six_bake_fol_nf`; examples on `sixBare` and on `sixHead` (a known head, `bakeRunO_head`). |
+| `Compiler/CompRunAllNormArms.lean` | The arms of `+run` keep every sure need `Clean` (no `[%pair [%none ~] [%none ~]]`, `Ska/CompSem.lean`), forks and bonds to any depth (`LAll CleanS`, README Gaps 9): `ordNormal_of_clean`, `lc_split`/`lc_splitL`, `lc_into`/`lc_intoL`, `lc_from`, `lc_past`, `lc_simpleNext`, `lc_bombL`, `lc_copy` (with the merge, `lc_mforks`, `lc_mbonds`), `lc_copyL`, `lc_copyAll`, `lc_fork`/`lc_forkL` (`+fork-need` keeps the shape, `NCopy.clean`), `cs_forkSure'`, `lc_sect`, `lc_pastFork`, `lc_lazyShut`, `clean_needCut`, `clean_needFrom`, `lc_lazyLeap`, `lc_leapLoop`, `lc_leap`. |
+| `Compiler/CompRunAllNorm.lean` | **`NormRun` proved** (README Gaps 9): `GCl`, `ClnFor` (clean goals give clean lazy needs), the cases `cln_n0` .. `cln_n10`, `cln_cons`, `%6` (`cln_sixFork`, `cln_sixSimple`, `cln_sixNext` by fuel, `cln_n6`), **`cln_all6`** (every run of `runLC env msup` of a `SixOk` nomm), **`normRun_six`** (`NormRun env nm` for every `SixOk` nomm and `env`). |
+| `Compiler/CompShapeColNorm.lean` | The one-bell tops with `NormRun` discharged (README Gaps 9): **`cu_gate_scc_one_six_cl`** (nothing baked), **`cu_gate_scc_one_six_bake_cl`** (the real bake, `BakeRunO` left), `cu_gate_scc_one_six_fol_cl`, `cu_gate_scc_one_six_bake_fol_cl`; an example on `sixBare` with no hypothesis but the state nouns. |
 | `Compiler/CompSccSixBake.lean` | The top on `SixOk` with the real bake (README Gaps 9, plan (a), (b), (d)): `fin_turn_imm` (the `+turn` of `\|=([r v] [%imm v r])` over `imm.bak`), `fin_gate_ts_B`, `fin_gate_finishLF_six_B` (`finish` on `[ned.bak imm.bak]` is `finTail` with `fun n => bakeNeed n know`, given that the residual is a run), `mem_final_B`, `memFCB`, `mem_to_finish_six_B` (from `bn_gateB`), `mem_gate_six_B`, `BakeRunO` (the residual of every final pass is a run, in place of `NoBakeOneO`), `bakeRunO_of_infix`, `bakeRunO_no`, `csi_gate_scc_one_m_six_B`, `csi_gate_scc_one_f_six_B`, **`cu_gate_scc_one_six_q_B`** (any `ordOf` with `ScAt`; the n-ary entry is `finishLFB env nm (ordOf p.1) (Sock.mk cape DATA)`), `cu_gate_scc_one_six_bake` (with `scOrd fuel` and `FixRet`), `noar_pair_this`, `bakeRunO_head` (a wholly known head when the `ord` is a cell with a `%this` head); the example `sixHead` (`%s01`, `[6 [0 2] [0 6] [0 7]]` under `[& \|]`) with `#guard`s that the model bakes one register and leaves a run of two. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
@@ -2621,6 +2625,23 @@ import only its theorems.  So:
     (`assocWitness`; `this ∪ pair none none` is `both none none`, and that
     `∪ pair none none` is `this` again), so `NormRun` is needed for this
     proof.
+    DONE, 2026-11-27 (track A, `Compiler/CompRunAllNormArms.lean`,
+    `CompRunAllNorm.lean`, `CompShapeColNorm.lean`): `NormRun` is a
+    theorem (`normRun_six`).  The invariant is on needs: every sure need
+    of a lazy need, forks and bonds to any depth, is `Clean` (no
+    `[%pair [%none ~] [%none ~]]`, `ordNormal_of_clean`).  It asks nothing
+    of the state, so it is a separate induction beside `res_all6`
+    (`cln_all6`, `ClnFor`), with no field added to `GInv`.  The arms that
+    build sure needs keep it: `+from` (`fromPath` wraps a need that is not
+    `none`), `+split` and `+must`, `+into` (`rollTack` through
+    `+cons-need`), `+copy-need-make-ops` (through `+cons-need`, and the
+    merge of forks and bonds), `+fork-need` (the same shape, `NCopy`),
+    `+need-cut` (through `+cons-need`) and `+need-from` in `+leap`; the
+    rest move sure needs or make `bunt` and `this`.  No nomm can produce a
+    non-normal need, so the enumeration check was not repeated per prefix.
+    The tops `cu_gate_scc_one_six_cl` (nothing baked) and
+    `cu_gate_scc_one_six_bake_cl` (the real bake) have no hypothesis on
+    `+shape-collapse`; the bake top keeps `BakeRunO` (Gaps 20, track A).
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
@@ -4967,6 +4988,29 @@ import only its theorems.  So:
     premise `isRun .. = true`), so the stateful case (`run` `|`, the
     n-ary pass with a baked or coerced input) is not needed by
     `TsMapAt`; it is still not linked.
+    L, 2026-11-27 (track A, `run` `|`, `Compiler/CompStraightRun.lean`).
+    The state of the map path is `[re-gen m]` (`rmN`, `m` a `TreapMap mugF
+    Nat`); `RerM rr R` says the gate `rer` in the core `[tsCoreBat [(rmN
+    st) R]]` returns the noun of the model's `rr r st`.  Linked: `rer`
+    with `run` `|` and any `proxies` (`tsr_rer`, on a rest `R` of the shape
+    of `tsm_rer_prox` with `run` `A 1`: `+get:by` of `m`, a hit returns it,
+    a miss returns `re-gen`, edits `re-gen` up and `+put:by`s `m`;
+    `tsRerMap_eq` is the branch as the kernel computes it), and, for any
+    `RerM`, `rewrite-par` (`tsr_par`) and `rewrite-args` (`tsr_args`)
+    threading the state through `+spin` (`spin_gate_T`, `spinM_mapM`).
+    Left, in order: `rewrite-jump`, `-hop` (as `tsm_jmp`, `tsm_hop` with
+    `tsr_args`), `-op` (the 25 tags: `tools/gen/tsmops.py` with the state,
+    each `=^` one `RerM` step), `-body`, `-fin`, the gate of the fold
+    (`=.  gen  gen-acc`, then the three `=^`) against `mapBlocks`'s step,
+    the branch through `rep_gate_list` with `σ` the pair `[new gen]`,
+    `rewrite-input` with the state (`rewriteInputGo`), the pushes when
+    `isRun` is false (`run` `A 1`), `$` taking the map branch, and
+    `ts_at_all` without `isRun`; then `BakeRunO` goes from the bake top.
+    The order of the fold: `HoonMapKeys.keys` of `TreapMap mugF` is
+    `rap` (`TreapList.lean`), the order `+rep:by` visits (`ts_fold_keys`,
+    `rep_gate_list`), so a statement over `TreapMap mugF` numbers the
+    non-argument registers in the Hoon's order; the caveat of the bake
+    check is about checks run over another map type.
 21. **`+compile-scc-in` as a loop** (track I, 2026-11-27, `Ska/SccLoop.lean`,
     `Ska/SccLoopCheck.lean`, `tools/hoon/sccloop.py`).
     1. *The map* (lines 3441 to 3717 of `desk/lib/nock-compilation.hoon`, arm `2732` of `K`, body
