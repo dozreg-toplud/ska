@@ -8,6 +8,8 @@ import lemmas.Compiler.CompSccOfRank
 import lemmas.Compiler.CompMonoLinkStr
 import lemmas.Compiler.CompMonoLinkTop5
 import lemmas.Compiler.CompMonoLinkSccs
+import lemmas.Compiler.CompSccOfSoftSim
+import lemmas.Compiler.CompRunSoftRes
 
 /-! The axioms of the link of `+compiled-mono` and of the run at `mono` `|` (README Gaps 19 (g)).
 `CompSccOfAny`, `PokeLinkGood` and track I's `CompSccLoop*` import together since the renames of
@@ -119,3 +121,9 @@ that one's imports light. -/
 #print axioms Formalization.Compiler.good5_full_stepU
 #print axioms Formalization.Compiler.pokeReachGood5U
 #print axioms Formalization.Compiler.pokeModel_fullReachP5U
+#print axioms Formalization.SkaModel.Comp.callLS_simB
+#print axioms Formalization.SkaModel.Comp.runLCS_simD
+#print axioms Formalization.Compiler.sofOff_of_dirTN
+#print axioms Formalization.Compiler.memRunS_dir
+#print axioms Formalization.Compiler.res_softFree
+#print axioms Formalization.Compiler.softChainG_ginv
