@@ -13,7 +13,7 @@ interpreter model on the table of `R`'s and `R2`'s real entries
 (`tableRR2`), agree with `+mink` on every subject.
 
 * `sixCases`, `sixWhole`, `sixAll`: 22 nomms; every whole-subject code
-  compiles and agrees on its subjects (128 runs), and so does every n-ary
+  compiles and agrees on its subjects (126 runs), and so does every n-ary
   code that compiles (200 codes, 956 runs, 936 of them products).
 * `nommLW`, the terminating walker of step 5: `[6 [3 [0 3]] [2 [[0 2] [0 7]]
   [0 2]] [0 3]]` on `[L x]` calls itself on `[L x.tail]` while `x` is a cell
