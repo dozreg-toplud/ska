@@ -10,7 +10,7 @@ The gate of one sweep step (`csfSwGate`, on the sample `[b st m c]` and the trap
 * `sw_keep`: `keep`, `(gth t (mul 4 ~(wyt in scc)))`;
 * `sw_mem`: the call of `member` (the hypothesis `MemGate`);
 * `sw_st`: the new `st` (`+put:by` of `ran` and of `chg`);
-* `sw_gate`: the gate, against `sweepStep` under `StN` and `R`;
+* `csSw_gate`: the gate, against `sweepStep` under `StN` and `R`;
 * `sw_roll`: the `+roll` over `order`, against `sweep`. -/
 
 namespace Formalization
@@ -164,7 +164,7 @@ theorem member_chg (c : Cfg Noun N) (top : Noun → N) (b : Noun) (m : Mode) (ke
 
 /-- **One sweep step**: the gate on `[b st m c]` and the trap core returns the nouns of
 `sweepStep c top st b`. -/
-theorem sw_gate (c : Cfg Noun N) (R : (Noun → Option N) → (Noun → Option N) → Noun → Noun → Prop)
+theorem csSw_gate (c : Cfg Noun N) (R : (Noun → Option N) → (Noun → Option N) → Noun → Noun → Prop)
     (p : LoopP) (top : Noun → N)
     (hm : MemGate c R p.ctx top p.TOP Mode.must (A 0x7473756d))
     (hkids : KidsN c p.KIDS) (hscc : SccN c p.SCC)
@@ -240,7 +240,7 @@ theorem sw_fold (c : Cfg Noun N) (R : (Noun → Option N) → (Noun → Option N
   | cons b l ih =>
     intro hl st ST ML CA hst hR
     obtain ⟨ST1, ML1, CA1, h1, hst1, hR1⟩ :=
-      sw_gate c R p top hm hkids hscc CNT ST0 ML0 CA0 st b ST ML CA (hl b (by simp)) hst hR
+      csSw_gate c R p top hm hkids hscc CNT ST0 ML0 CA0 st b ST ML CA (hl b (by simp)) hst hR
     obtain ⟨ST', ML', CA', h2, hst', hR'⟩ :=
       ih (fun x hx => hl x (by simp [hx])) _ ST1 ML1 CA1 hst1 hR1
     refine ⟨ST', ML', CA', ?_, hst', hR'⟩
