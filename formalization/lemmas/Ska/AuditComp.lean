@@ -116,6 +116,8 @@ import lemmas.Ska.CompPairLSXCheck
 import lemmas.Ska.CompSixLSPick
 import lemmas.Ska.CompSixLSClass
 import lemmas.Ska.CompSixLSRCall
+import lemmas.Ska.CompSixNxWrap
+import lemmas.Ska.CompSixNxGoal
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -1281,3 +1283,17 @@ open Formalization.SkaModel.Comp
 #print axioms finishLUC_contractR
 #print axioms doneE_tailN
 #print axioms finishLFC_contractRT
+#print axioms Unwraps.walkEq
+#print axioms RunOKLS.toT
+#print axioms LOKS.toT
+#print axioms LOKT.toE
+#print axioms entries_nil_flat
+#print axioms LOKS1.toS
+#print axioms lokS1_seven
+#print axioms sixNextSimpleC_apart
+#print axioms runLC_six_nextE
+#print axioms sect_specS
+#print axioms pastFork_unwraps
+#print axioms copyLazyL_flatFirst
+#print axioms copyL_unwraps
+#print axioms sixNextSimpleC_plain
