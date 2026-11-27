@@ -16,6 +16,7 @@ import lemmas.Compiler.CompCalleeComp
 import lemmas.Compiler.CompSofCode
 import lemmas.Compiler.CompCalleeCompOne
 import lemmas.Compiler.CompSccOfOneGate
+import lemmas.Compiler.CompSccOfAny
 
 /-! The axioms of the link of the direct call of `%2` (README Gaps 19). -/
 
@@ -290,3 +291,13 @@ open Formalization.Compiler
 #print axioms Formalization.Compiler.callAt_one
 #print axioms Formalization.Compiler.cu_gate_dir_one
 #print axioms Formalization.Compiler.cu_gate_dir_one_call
+#print axioms Formalization.Compiler.members_miss
+#print axioms Formalization.Compiler.sccClosed_put
+#print axioms Formalization.Compiler.compileSccIn_sure_some
+#print axioms Formalization.Compiler.calleeCompiled_of_P
+#print axioms Formalization.Compiler.calleeCompiled_scc
+#print axioms Formalization.Compiler.calleeCompiled_oneK
+#print axioms Formalization.Compiler.calleeCompiledP_rank
+#print axioms Formalization.Compiler.callAt_any
+#print axioms Formalization.Compiler.envP_agree
+#print axioms Formalization.Compiler.cu_gate_dir_scc
