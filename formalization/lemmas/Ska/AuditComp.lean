@@ -99,6 +99,8 @@ import lemmas.Ska.CompFlatCopy
 import lemmas.Ska.CompPairLS
 import lemmas.Ska.CompConsLS
 import lemmas.Ska.CompConsLSRun
+import lemmas.Ska.CompPastLS
+import lemmas.Ska.CompConsLSCall
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -1077,3 +1079,10 @@ open Formalization.SkaModel.Comp
 #print axioms clean_splitLoop
 #print axioms clean_copyLazyL
 #print axioms lokS_consP
+#print axioms pairLS_core
+#print axioms pairLS_sem
+#print axioms pairLS_semB
+#print axioms pairLS_fronts
+#print axioms RunOKLS.past
+#print axioms lokS_cons_run
+#print axioms lokS_cons
