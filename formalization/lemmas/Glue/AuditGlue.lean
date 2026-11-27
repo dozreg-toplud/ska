@@ -42,6 +42,29 @@ import lemmas.Glue.InvMemoP
 import lemmas.Glue.GuardRun
 import lemmas.Glue.GuardTop
 import lemmas.Glue.GuardFinalTop
+import lemmas.Compiler.PokeLinkGood
+import lemmas.Compiler.PokeLinkRestCut
+import lemmas.Compiler.PokeLinkRest
+import lemmas.Ska.ShapeColAlgFix
+import lemmas.Compiler.CompRunAllNorm
+import lemmas.Compiler.CompShapeColNorm
+import lemmas.Compiler.CompStraightRun
+import lemmas.Compiler.CompUnaryDirE
+import lemmas.Compiler.CompSccOfOne
+import lemmas.Compiler.CompSccOfOneGate
+import lemmas.Compiler.CompSccLoopSt
+import lemmas.Compiler.SkaCallgraph
+import lemmas.Ska.CompHintTree
+import lemmas.Ska.CompHintTreeU
+import lemmas.Ska.CompHintKeep
+import lemmas.Ska.CompSixNxTag
+import lemmas.Ska.CompSixNxClass
+import lemmas.Compiler.CompRunHintKS
+import lemmas.Compiler.CompRunHintKD
+import lemmas.Compiler.CompRunHintPI
+import lemmas.Compiler.CompRunHintClass
+import lemmas.Ska.SccLoopTotal
+import lemmas.Compiler.CompShapeColFuel
 import lemmas.Compiler.PokeLink
 import lemmas.Ska.PokeEnc
 import lemmas.Ska.SccLoopMsg
@@ -421,5 +444,51 @@ namespace Formalization
 #print axioms SkaModel.Glue.guardMonoX
 #print axioms SkaModel.Glue.guardNaryX
 #print axioms SkaModel.Glue.compHyp_of_fragX₃
+
+/-! ## LEDGER sixth pass: names from digest [256] to [269] -/
+#check @Compiler.pokeReachGood
+#check @Compiler.pokeModel_fullReach
+#check @Compiler.pokeModel_fullReachP
+#check @Compiler.good_empty
+#check @Compiler.good_full_step
+#check @Compiler.spRest_cut
+#check @Compiler.spRest_of_parts
+#check @SkaModel.Comp.fixRet_bound
+#check @Compiler.normRun_six
+#check @Compiler.cu_gate_scc_one_six_cl
+#check @Compiler.cu_gate_scc_one_six_bake_cl
+#check @Compiler.cu_gate_scc_one_six_fol_cl
+#check @Compiler.cu_gate_scc_one_six_bake_fol_cl
+#check @Compiler.tsr_rer
+#check @Compiler.tsr_par
+#check @Compiler.tsr_args
+#check @Compiler.cu_gate_dirE
+#check @Compiler.ccc_scc_hit
+#check @Compiler.calleeCompiled_one
+#check @Compiler.cu_gate_dir_one
+-- not checked (build clash M15': `Compiler.sw_gate` in `CompSccLoopStep` and `OptLinkSwGate`): Compiler.csi_gate_loop
+-- not checked (build clash M15': `Compiler.sw_gate` in `CompSccLoopStep` and `OptLinkSwGate`): Compiler.csi_gate_ranked
+-- not checked (build clash M15': `Compiler.sw_gate` in `CompSccLoopStep` and `OptLinkSwGate`): Compiler.cccMiss_of_loop
+#check @Compiler.PrintId
+#check @Compiler.cg_print
+#check @SkaModel.Comp.lokSH_callTreeH
+#check @SkaModel.Comp.finishLUCH_contractCallTreeHU
+#check @SkaModel.Comp.n11sKept_done
+#check @SkaModel.Comp.finishLUCH_contractN11sKept
+#check @SkaModel.Comp.tagLSP_callTreeA
+#check @SkaModel.Comp.finishLUC_contractSix1
+#check @Compiler.comp_run_n11s_kept
+#check @Compiler.comp_run_n11d_kept
+#check @Compiler.comp_past_if
+#check @Compiler.comp_run_hint
+#check @Compiler.HintSound
+#check @SkaModel.Ana.EvFrozen
+#check @SkaModel.Comp.CallTreeH
+#check @SkaModel.Comp.CallTreeHU
+#check @SkaModel.Comp.Six1
+#check @Compiler.HintOk
+#check @Compiler.MemGate
+#check @SkaModel.SccLoop.Ranked
+#check @Compiler.NormRun
 
 end Formalization

@@ -1,4 +1,4 @@
-# LEDGER: what `Full` rests on (track G, 2026-11-27, fourth pass)
+# LEDGER: what `Full` rests on (track G, 2026-11-27, sixth pass)
 
 `Full` (`core/Statement.lean`) is proved by `Assembly.full_of` from one
 structure, `Assembly.Gap lib pk InvC`, with eight fields.  This file traces
@@ -8,8 +8,23 @@ too, since M15 closed), and the theorems of
 `lemmas/Glue/` have their axioms printed there (all within `propext`,
 `Classical.choice`, `Quot.sound`).  A line that could not be verified is
 marked *not checked*; names on a track branch that is not merged are marked
-*(branch -x, not merged)*.  Names merged after this branch's base 23a62c2
-(digest entries [254], [255]) are marked *[255], not checked here*.
+*(branch -x, not merged)*.  The marks *[255], not checked here* are from
+the fourth pass (base 23a62c2).  The sixth pass is at base e4dfa5c (digest
+[269]: every track merged through [269]); the names it adds from digest
+entries [256] to [269] are checked in `AuditGlue.lean` (section "sixth
+pass") unless marked *not checked*.
+
+READ FIRST (sixth pass):
+- `halting` is FALSE of the compiler as it is (section 3, M17): the pass
+  loop of `+analyze` does not end on `tools/hoon/takecycle.hoon`.  `Full`
+  cannot be proved by `full_of` until the Hoon changes.
+- `contract` on `FragX`: `rawEntry` has no leaf left (`guardFinalU`,
+  `guardFinalF`, `compHyp_of_fragX₃`, 2.c).
+- Build clash M15 is REOPENED: two `Compiler.sw_gate` (track I's loop and
+  the optimizer link), section 9.
+- Track I's `PrintId` is TRUE of this pill and provable like `cg_print`
+  (1.4, M18): the earlier reading that the pill's `print-comp` slogs was
+  wrong.
 
 Words: PROVED (a theorem, name and file, with its class of inputs), OPEN (no
 theorem; stated as a `def … : Prop` where one exists), *composition only*
@@ -96,6 +111,16 @@ Leaves (all track P now):
     `resolve_iff`); `spRest`, the baking half (`+bake-graph`, `new-code`,
     the SCC loop with `+eval-finalized`, the writes of `seek` and `calls`,
     `+ska-cole-update`), has NO link (`SpRestAt`: 1,120 cells in 12 parts, none linked).
+    Track P [260], [264]: `PGood` (the jets noun is seven `IsMap` parts,
+    `JetsGood`, `MonoIn Cls`), `good_empty`, `good_full_step`,
+    `pokeReachGood`, `pokeModel_fullReach`, `pokeModel_fullReachP`:
+    `pokeModel` on `%full` at EVERY reachable core, from the named
+    `SpRestGood` (none of its 1,120 cells linked), `SccImage` (reduced to
+    `SccImageMiss`: 373 cells and `+tarjan` 837), `MonoLinkGood`,
+    `OtherKeeps` (`%dire`, `%jets`, `%fast`), `UnaryKeeps`, `JetsOfGood`;
+    `spRest_cut`, `spRest_of_parts` (the baking half cut into parts; 21
+    pokes, no difference between model and Hoon).  Decided: the flags need
+    a model `flagsOf` and `Closed` in `PGood` (M12).
 1.3 `A.compileUnary` is the pill's `+compile-unary` (299 cells): tracks A,
     I, K.  PROVED: `cu_gate_scc_one_six_ts`, `cu_gate_scc_one_six_fol_ts`
     (one bell, `NoSelfCall`, `SixOk`, `FinSure`, `NoBakeOneC`);
@@ -125,6 +150,20 @@ Leaves (all track P now):
     `bn_gateB` (`+bake-need` on every need and sock).  Not done: the top
     without `NoBakeOneO`, `+bake-need-ord` (268 cells).  In 11 real `%full`
     pokes no n-ary entry bakes (`imm` is `~`).
+    Track A [258], [266]: `FixRet` is a THEOREM under `NormRun`
+    (`fixRet_bound`: `size × wB depth + 1` rounds), and `NormRun` (no `pair
+    none none` in a sure need) is a THEOREM on `SixOk` (`normRun_six`, by
+    track D's `Clean`); tops `cu_gate_scc_one_six_cl`, `_bake_cl`, `_fol_cl`,
+    `_bake_fol_cl` assume nothing on `+shape-collapse`.  Left: `NoSelfCall`,
+    `NoAx0` / `FolMade`, `NoBakeOneO` / `BakeRunO`; `+to-straight` with `run`
+    `|` (started: `tsr_rer`, `tsr_par`, `tsr_args`, `Compiler/CompStraightRun.lean`).
+    Track K [259], [263]: `cu_gate_dirE` (the call's tail threaded, `AgreeE`
+    at the final cache, `DirCallsT` recursive in the call's subject and
+    formula); `ccc_scc_hit`, `calleeCompiled_one`, `cu_gate_dir_one` (no
+    hypothesis on the compile of a one-bell callee); 107 of 107 misses of
+    `+callee-compiled` take the `+scc-of` hit path.  Open: `+scc-of` on a
+    singleton (409 cells and `+tarjan`, no owner), the general SCC (I),
+    `hE0`, `CodeNoRing`, `CodeAna`.
 1.4 `A.compileScc` is the pill's `+compile-scc` (61 cells) over
     `+compile-scc-in` (2,519 cells on this pill): track I.  The loop is
     modelled (`SccLoop.lean`).  [251]: `Ranked c` (a bounded rank on
@@ -135,6 +174,22 @@ Leaves (all track P now):
     `tools/hoon/sccfall.py`).  The pill link: `csiFix` cut (`csiFix_cut`,
     `tools/gen/csifix.py`), `csf_fix`, `csf_enter`, `csf_trap`,
     `csf_trap_end`, `csf_trap_rec`; open: the loop link end to end.
+    Track I [256], [263]: the loop link: `csi_gate_loop` (the pill's
+    `+compile-scc-in` as a loop against `compileSccIn c false fuel`, with
+    `MemGate`, three modes, the only hypothesis about `+run`),
+    `csi_gate_ranked`, `cccMiss_of_loop` (under `Ranked`; these three *not
+    checked*: their files cannot be imported beside `AuditGlue`'s, M15).  Side hypotheses
+    left: `hlevy`, `hkidsP`, `hdn`, `hdfs` (the DFS, 288 cells), `SccN`,
+    `hR0`, and `PrintId` (`Compiler/CompSccLoopSt.lean`: the printer the
+    loop pulls is the identity).  `PrintId` is a LEAF ABOUT TO CLOSE: in
+    this tree `!@` takes its FIRST branch when the wing is MISSING
+    (`?.((feel p.gen) q r)`, `desk/sys/hoon.hoon` line 10132), `comp-verb`
+    is not defined, so `print-comp` is `same`: the pill's
+    `print_comp.battery` is `[9 97710 [0 511]]`, the pull of `same`, as
+    for `print-ska`.  So `PrintId` is provable like `cg_print`
+    (`Compiler/SkaCallgraph.lean`); the comment in `CompSccLoopSt.lean` and
+    digest [256] ("the pill slogs, the loop runs `(scow %ud counter)`")
+    were a misreading (M18).  Track I told.
 1.5 `A.optimize` is the pill's `+optimize`: PROVED on `FragX` (track H,
     `optimize_total_finishLUX`, `-LFX`, `opt_gate`).  Track P's `OptLink`.
 1.6 `+scc-of` (409 cells by P's count, 430 tree cells by
@@ -182,7 +237,7 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
 | `rawMono`, `rawNary` | PROVED | `rawMonoD_calls`, `rawNaryD_calls` | done |
 | `rawOptIn` | LEAF | `OptInMono S Map FM`, `OptInNary S Map FN` (`rawOptIn_of`); PROVED on `FragX` (`optInMono_fragX`, `optInNary_fragX`) | D |
 | `optRef` | LEAF | `OptTotalMono S FM`, `OptTotalNary S FN` + `hpill` (`optRef_of_total`); PROVED on `FragX` (`optTotalMono_fragX`, `optTotalNary_fragX`); `hinj` PROVED (track P's `Compiler.straight_toNoun_inj`) | H (input side D), P (`hpill` = `OptLink`, restated `OptLinkOn`) |
-| `rawEntry` | LEAF | `EntryMono S Map lib FM`, `EntryNary S Map lib FN` (`rawEntry_of`); PROVED on `FragX` from the LEAVES `GuardFinalU`, `GuardFinalF`, the final passes alone (`guardMonoX_of`, `guardNaryX_of`, `rawEntry_fragX`; generic `entryOK_of`); the run-level induction PROVED (`runX_blocksOK`, 2.c) | G |
+| `rawEntry` | LEAF | `EntryMono S Map lib FM`, `EntryNary S Map lib FN` (`rawEntry_of`); PROVED on `FragX` with NO leaf (`guardFinalU`, `guardFinalF`, hence `guardMonoX`, `guardNaryX`, `rawEntry_fragX`; `compHyp_of_fragX₃`; generic `entryOK_of`; 2.c); on the classes with calls still a leaf | G |
 | `refMono`, `refNary` | OPEN | pill link at `finishLUCM` / `finishLFC` | A, I, K |
 | `inFragM`, `inFragN` | OPEN, FALSE today | every compiled nomm in `MonoCalls` / `NaryCalls` | C, J, K |
 | `inlAnnot` | OPEN | 2.e (model half stated there, not proved) | none |
@@ -224,6 +279,25 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
     `finishLUCH_contractN11s`.  Gap: `Annot.mean` lacks the side conditions
     that `FrameRel.meaf` / `.meac` need.  Track Q (new): the pill link of
     the hint cases of `+run` against `runLCH`.  See M16.
+    SIXTH PASS, classes ([256] to [269]).  Track J: `CallTreeH` (=
+    `CallTreeD` with hints `n11s`, `n11d` whose tags are not kept, `ClueSafe`)
+    and `CallTreeHU` (hints not kept around PURE formulas, `KindU`),
+    `lokSH_callTreeH`, `finishLUCH_contractCallTreeHU`; kept STATIC hints at
+    the top under `%done` (`n11sKept_done`, `finishLUCH_contractN11sKept`);
+    5 of the 39 dumped real formulas are in a class.  Nested results can
+    repeat entry labels (4 of 22), so the relations' distinct-labels clause
+    must change.  Track C [262]: `tagLSP_callTreeA`, the class `Six1` (`%6`
+    at the top or under `[4 p]` / `[3 p]`), `finishLUC_contractSix1`; NO
+    other parent admits a `%6` by copy; C, J, D hit the same wall
+    (non-flat needs, repeated entry labels), so C's next session designs ONE
+    relation `RunOKG` for arbitrary lazy goals.  For the glue, C proposes
+    `six1_noDirect`, `rawMonoD_six1`, `Six1B` in `MonoCalls` (*not
+    written*).  Track Q [257], [268]: `HintOk` = `DirOk` and every `n11s` /
+    `n11d` (kept tags included: `comp_run_n11s_kept`, `comp_run_n11d_kept`),
+    `comp_past_if` (`+past-if` linked), `comp_run_hint`, which now takes a
+    hypothesis `HintSound` (`Compiler/CompRunHintClass.lean`; trivial on the
+    old class, not yet derived from `SfClosed`).  Left for Q: a hint inside
+    a direct call, `n12` (318 cells), `mean`.
 2.c `rawEntry` (LEAF `EntryMono`, `EntryNary`).  WHAT IT STATES: on the
     RAW code `s` of a bell (before `+optimize`), entered with `[x]` (mono) or
     the split of `x` (n-ary) for `x` fitting the bell, for every oracle, scry
@@ -293,18 +367,29 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
     (`+kerf`, `+to-straight`), `GuardFinalF` (`+need-ord-alloc-regs`,
     `+coerce-lazy`, the baked constants, `+to-straight`), with
     `guardMonoX_of`, `guardNaryX_of`, `compHyp_of_fragX''`.
-    OPEN, first block: `+kern` over the result's lazy tree (in `+kerf`) and
-    `+coerce-lazy` (`sureLoop_guard` per entry) need `Distinct` of each
-    entry's `sureRequireLook` output, below `re`, apart from the source
-    register (D's `KI`/`kernStep`, `CoI`/`coI_step` carry these; restate
-    them with the guard).  Then `+to-straight` (map path for `finishLU`:
-    unproxying fixes every defined register, D's `KI`; then D's `stOut_ren`:
-    the renaming is injective on a block's registers, so a guard and its
-    `%cel` stay on one register; `chase` and `rewriteFin` touch only ends;
-    `rewriteArgs` keeps `none` and `some` apart).
-    (`sureLoop_guard`, the entry `kernNeed`).  With calls: the same two
-    leaves (they hold on `enumCX`) and D's `OptIn` with calls
-    (`OptInMono`, `OptInNary`).  No pill link: model facts.
+    SIXTH PASS (`Glue/GuardFinal.lean`, `Glue/GuardFinalTop.lean`): the
+    two final-pass leaves are THEOREMS, `guardFinalU`, `guardFinalF`, so
+    `guardMonoX : GuardMonoX`, `guardNaryX : GuardNaryX`, and
+    `compHyp_of_fragX₃`: `CompHyp` on `FragX` from `CompRestOE` alone.
+    `+kern`: `kernStepG`, `kernListG` carry `BlocksOK` beside track D's `KI`
+    (each gate puts one `+kern-need` output in front, guarded by
+    `kernLoop_guarded` from `KI`'s facts: the entry's sure need `Distinct`,
+    below `sub`, the source register not in it).  `+coerce-lazy`:
+    `coerceStepG`, `coerceLazyLG` beside D's `CoI` (`sureLoop_guard`).
+    `+to-straight`: `blocksOK_rename` (the renaming path keeps `BlocksOK`
+    when the renaming sends no register a body writes onto another,
+    `RenOK`; `+chase` returns a jump of the end or the hop of a block,
+    `chase_keeps`, by fixpoint induction with no rank).  On the map path
+    of `finishLU` the renaming is `renReg ∘ unproxy` (`toStraightF_run`):
+    `unproxy` fixes every defined register (no defined register is a key of
+    `cond`, `KI`) and sends the others to themselves or to `sub`, which is
+    not defined; `renReg` is injective.  On `finishLF` there is no proxy
+    (`cond` stays empty) and the renaming is `renReg`.  D's statements were
+    usable as they are; nothing was restated.  Examples on a nested `%6`
+    (`[6 [0 2] [6 [0 6] [0 3] [0 1]] [1 0]]`) in `GuardFinalTop.lean`.
+    With calls: `EntryMono`, `EntryNary` on `MonoCalls` / `NaryCalls` are
+    still leaves (the guard holds on `enumCX`; needs D's `OptIn` with calls
+    and a run-level `KP` for the call arms).  No pill link: model facts.
 2.d `optRef`: see the table; with calls the input side of track H's
     totality (`opt_total_*` need `FragX` because the alias pass reads only
     call-free blocks) is open.
@@ -336,7 +421,7 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
     (`Ska/FolLoopFacts.lean`) along `Img lib P b ⊆ Fits c.less` (from
     `direct`).  That last premise is the IH at the CALLEE, so the
     induction is nested in an outer one on the chain of singleton SCCs
-    (the fuel of `inlinedM`).  Not done in the fourth pass (no
+    (the fuel of `inlinedM`).  Not done in the fourth to sixth passes (no
     `inlinedM` yet; the `BlocksOK` work came first).
 2.g `callee : CalleeNeeds (D.env …) (refN A ref …)`: tracks I, J.  I's
     `final_member`, `final_keeps` give (b), (c) under `Hyp` (`kidsOnly`,
@@ -365,10 +450,11 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
 
 2.i WHAT `contract` RESTS ON when every compiled nomm is in `FragX`
     (`compHyp_of_fragX'`, `Glue/EntryFragX.lean`, then `gap_of_armPM`):
-    - model facts: `GuardFinalU`, `GuardFinalF` (2.c: the final passes
-      alone; the run-level induction PROVED, `runX_blocksOK`); `inlAnnot`'s model half (2.e, stated, no
-      `inlinedM`); `callee` (2.g, I, J); the totality in `answers` (2.h:
-      `Ranked` of the real member compile, track I);
+    - model facts: `inlAnnot`'s model half (2.e, stated, no `inlinedM`);
+      `callee` (2.g, I, J); the totality in `answers` (2.h: `Ranked` of the
+      real member compile, track I).  The guard leaves are CLOSED
+      (`guardFinalU`, `guardFinalF`; `compHyp_of_fragX₃` needs only
+      `CompRestOE`);
     - pill links: `refMono`, `refNary` (2.a: `+compile-unary`,
       `+compile-scc`, now threaded through cache misses, K), `unary`,
       `scc`, `hpill` of `optRef` (P's `OptLink`, false as stated, restated
@@ -378,10 +464,31 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
       `fast`;
     - class membership: `inFragM`, `inFragN` (every nomm the analysis
       compiles is in `FragX`; false in general, 2.b').
-    `rawOptIn`, `rawMono`, `rawNary` and `rawEntry` (up to its two leaves)
-    are discharged on `FragX`.
+    `rawOptIn`, `rawMono`, `rawNary` and `rawEntry` are discharged on
+    `FragX` with no leaf.
 
 ## 3. `halting : FullAnswers pk InvC`
+
+FALSE OF THE CURRENT COMPILER (digest [265], M17).  The pass loop of
+`+analyze` does not end on `tools/hoon/takecycle.hoon`: one `%full` poke on
+the fresh core (subject 0, a hand-built formula: a root with a 3-slot shift
+register, two relay chains of lengths 2 and 4 feeding complement sites;
+`%rec` takeovers at a constant-subject site of the root after `+cull`).
+Reproduced by the coordinator (`runhoon.sh takecycle.hoon 240`: `%poke-1`,
+no `%poke-1-returned`, exit 124); instrumented, the root identity runs
+7,283 passes with the `%st` hash periodic (period 18 from pass 7).  So
+`EvFrozen`, `FinPushes`, `CgHalts`, hence `Halts`, are FALSE, and for any
+`pk` that meets `pokeModel` (1) the poke has no answer at `cor`, where
+`InvC` holds (section 4): `halting` is false as stated until the Hoon
+changes (the user's decision; track F's candidates: keep the member's datum
+on `+cull` and restart a re-push from it, or cull only at the end of the
+pass loop).  What depends on it: the field `halting`, hence `Full` through
+`full_of`; the hypothesis `CgHalts` of `fullAnswers_of_cgM`,
+`fullAnswers_of_cgMP`, `halting_of_cgMP` (the theorems stay true, their
+hypothesis cannot be met); 3.1 entirely.  Not affected: `contract`,
+`invStart`, `invKept`, `libSlam`, `libFormat`, `mookFormat`, `pokeModel`
+(no field but `halting` asks the analysis to end), and 3.3, 3.4 as
+statements.
 
 Chain: `fullAnswers_lift henc` of `FullAnswers (pokeS A) InvC'`:
 - NEW `Glue.fullAnswers_of_cgM` (`Glue/InvMemo.lean`): `FullAnswers (pokeS
@@ -405,7 +512,11 @@ Chain: `fullAnswers_lift henc` of `FullAnswers (pokeS A) InvC'`:
     (`tools/hoon/passmeasure-take.py`): all return, at most 10 passes, no
     `%st` recurrence, no re-push; the mechanism is argued from the Hoon,
     not proved, and there is no Lean yet (next: `Covers`, one covering
-    claim, `EvFrozen` and `FinBranch` from it).
+    claim, `EvFrozen` and `FinBranch` from it).  SUPERSEDED by [265]:
+    `takecycle.hoon` is a `%rec` takeover cycle that never ends, so R is
+    FALSE (section 3 head, M17).  Track F's next session (no Lean): the
+    mechanism table, a minimal witness, candidate fixes measured on COPIES
+    of the Hoon, a recommendation with a diff not applied.
 3.2 `MemoNoCallees`: in the invariant `InvSM` (PROVED kept:
     `Glue.pokeS_memo`, `anaArm_memo`; on P's route `pokeS_memoP`,
     `anaArmP_memo`; start: `invSM_init`).  On P's route the halting field is
@@ -505,12 +616,14 @@ M8. `MemoNoCallees` not in the invariant: RECONCILED (`InvSM`;
     `gap_of_compM`, `fullAnswers_of_cgM` for `anaArm`; `gap_of_armPM`,
     `fullAnswers_of_cgMP`, `halting_of_cgMP` for `anaArmP`).
 M9. Fuel: P3 (`FuelOK`, `fuelOK_anaFuel`).
-M10. `FinPushes`: track F reduces it to `EvFrozen` (and (i)).
+M10. `FinPushes`: track F reduces it to `EvFrozen` (and (i)); both FALSE
+    of the current compiler (M17).
 M11. `pokeModel` over `liftPoke`: track P (`enc`, `cor_enc`).
 M12 (P1). The flags `[nomm pure total]` of each `code` entry are not in
     `VarEntry`; `enc` takes them as a parameter; `+compile-unary` reads them;
     the image of `PokeReach` cores needs a model of the flags (open; read
-    from the Hoon, not tested on the compiler).
+    from the Hoon, not tested on the compiler).  Decided [264]: a model
+    `flagsOf` and `Closed` in `PGood` (track P).
 M13 (P2). `+ska-cole-update` reads the new bells, their `seek`, the hot
     rings; `anaArm`'s `jetsOf j reg'` cannot see them, so `anaArm` is not
     the pill; `anaArmP` replaces it.  Consequence: `gap_of_comp`,
@@ -526,7 +639,13 @@ M14 (P4). A `%full` with an ATOM formula: the pill crashes in the mold
 M15. Build clashes (section 0): CLOSED in the fourth pass (P's
     `unitNoun_id_injP`, I's `ordIsLeaf`; `AuditGlueP` folded into
     `AuditGlue`; `MonoCalls` uses P's `straight_toNoun_inj`).  No clash left
-    among the files `AuditGlue` imports.
+    among the files `AuditGlue` imports.  REOPENED in the sixth pass:
+    `Formalization.Compiler.sw_gate` is declared both in
+    `Compiler/CompSccLoopStep.lean` (track I, the sweep step; imported by
+    `CompSccLoopInd`, hence `CompSccLoopClose`) and in
+    `Compiler/OptLinkSwGate.lean` (the optimizer link), so no file can import
+    both; `AuditGlue` leaves out I's loop files.  Fix: track I renames its
+    `sw_gate` (e.g. `sweep_gate`).
 M16 (in the making). Hints: track J's `runLCH env snd mono` is a THIRD model
     of `+run` beside `runLC` and `runLCM env true` (the hint cases are its
     only difference: `runLCH_eq`, `finishLUCH_eq`, `finishLFCH_eq`).  The
@@ -535,7 +654,23 @@ M16 (in the making). Hints: track J's `runLCH env snd mono` is a THIRD model
     `RawMonoD`, `RawNaryD` and `inFragM` / `inFragN` must be restated at
     `finishLUCH` / `finishLFCH` (with an `_of` lemma from the hint-free
     classes, as `compRestM_of_O` did for M3), and track Q's pill link must
-    land on `runLCH`.  Owners: J (model), Q (pill), G (glue).
+    land on `runLCH`.  Owners: J (model), Q (pill), G (glue).  Sixth pass:
+    Q's `comp_run_hint` covers every `n11s` / `n11d` (kept tags too) under a
+    NEW hypothesis `HintSound` (not yet derived from `SfClosed`), so the
+    restated `refMono` at `finishLUCH` will carry it; J's classes
+    `CallTreeH`, `CallTreeHU` hold 5 of the 39 real formulas.  Not restated
+    yet (the glue waits for C's `RunOKG`, 2.b').
+M17. `halting` is FALSE of the current compiler (digest [265], section 3):
+    the pass loop of `+analyze` does not end on `tools/hoon/takecycle.hoon`.
+    `CgHalts`, `EvFrozen`, `FinPushes`, `Halts` are false.  A Hoon change
+    (the user's decision) is needed before `Full` can be proved.
+M18. `PrintId` (track I's loop theorems) rested on a misreading: `!@` takes
+    its FIRST branch when the wing is MISSING (`desk/sys/hoon.hoon` line
+    10132), so with `comp-verb` not defined `print-comp` is `same`
+    (`print_comp.battery = [9 97710 [0 511]]`) and `PrintId` is provable
+    like `cg_print` (1.4).  No entry of this ledger said the pill slogs;
+    the misreading was in `Compiler/CompSccLoopSt.lean`'s comment and
+    digest [256] (corrected in [269]).
 
 ## 10. OPEN LEAVES, in order of what blocks the most
 
@@ -555,13 +690,14 @@ M16 (in the making). Hints: track J's `runLCH env snd mono` is a THIRD model
 4. `OptInMono` / `OptInNary` and `OptTotalMono` / `OptTotalNary` on the
    classes with calls (2.c, 2.d): track D (`ArmsL` = `n5`, `cons`, `n10`,
    `n2` left), track H's input side.
-5. `CgHalts` (3.1): `EvFrozen` (track F, designs only).
+5. `CgHalts` (3.1): FALSE of the current compiler (M17); needs a Hoon
+   change first (the user's decision), then `EvFrozen` for the new loop
+   (track F).
 6. `pokeModel` (1.2): `OptLinkOn`, `JetRootLinkR`, `SccImage`, `SpRestAt`
    (1,120 cells), `PokeReachEnc`, the image of `enc` with M12: track P.
-7. `GuardFinalU` / `GuardFinalF` (2.c): all that `rawEntry` on `FragX` still
-   needs; the run-level induction is PROVED (`runX_blocksOK`), left `+kern`
-   / `+coerce-lazy` over the result's lazy tree and `+to-straight`.
-   Track G.
+7. `GuardFinalU` / `GuardFinalF` (2.c): CLOSED in the sixth pass
+   (`guardFinalU`, `guardFinalF`).  Left of `rawEntry`: the classes with
+   calls (`EntryMono` on `MonoCalls`).  Track G.
 8. `BakeEnds` (3.3): no measure.  NO OWNER.
 9. `callee` (2.g): tracks I, J.
 10. `inlAnnot` (2.e): model half stated (`inlinedM`, one `Annot`
@@ -572,7 +708,8 @@ M16 (in the making). Hints: track J's `runLCH env snd mono` is a THIRD model
     `EvalMookSame`.  NO OWNER.
 13. M5 (baked n-ary code): track A (bake model and `bn_gateB` exist; no
     real poke bakes).
-14. M16 (hints, `runLCH`): J, Q, G.
+14. M16 (hints, `runLCH`): J, Q, G; Q's `HintSound` from `SfClosed`.
+15. `PrintId` (1.4, M18): about to close (provable like `cg_print`), track I.
 
 Leaves with NO owner: 2.e `inlAnnot`, 2.h `answers` (totality beyond I's
 loop), `stable`, `jetRoot`, `jets`, `fast`, 3.3 `BakeEnds`, 3.4
@@ -584,4 +721,7 @@ P).  Closed since the first pass: M3, M8 (both arms), `hinj`, 1.1 (`enc`),
 pass).  Reduced in the third pass: `rawEntry` on `FragX` to `GuardMonoX`,
 `GuardNaryX`; in the fourth: those two to the run-level induction and
 `+to-straight`.  Found false since the third pass: P's `JetRootLink` and
-`OptLink` as stated (restated), C's `RunOKLS` in phase F.
+`OptLink` as stated (restated), C's `RunOKLS` in phase F, and (sixth pass)
+`halting` itself (M17: `CgHalts`, `EvFrozen`, `FinPushes` false of the
+compiler as it is).  Closed in the sixth pass: 2.c on `FragX` (no guard
+leaf).  Corrected in the sixth pass: `PrintId` is true of the pill (M18).
