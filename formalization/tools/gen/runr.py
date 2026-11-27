@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Write lemmas/Compiler/CompRunR{Res,Leaf,Cons,Five,Ten}.lean: copies of track
+"""Write lemmas/Compiler/CompRunR{Res,Leaf,Cons,Five,Ten,Past}.lean and
+CompRunRSix{S,N,F,L,All}.lean: copies of track
 A's case lemmas of +run (and of their results) against `runLCM env true msup`
 with the link `CompRunAtX ... X` (CompRunRBase.lean), parts as `PartR` and
 +past as `PastAt ctx env.cod` (README Gaps 19).  The originals are not
@@ -19,7 +20,14 @@ copies).  The rules are textual and every rule asserts its count per file
 * +past: `pastL noCode` -> `pastL env.cod`, `hinted noCode n ≠ none` ->
   `PastAt ctx env.cod n`, `comp_past h7 hcode x g nex n region h` ->
   `h x g nex region`, `hinted_nd env.cod P.nd` -> `P.past`, the switches
-  `pastL_cod` dropped.
+  `pastL_cod` dropped;
+* %6: `SixParts env msup ctx` -> `SixPartsR env msup ctx X` (link `CompRunAtX`,
+  `ResForR`, and `PastForkAt ctx env.cod`: the pill's +past-fork over the part
+  is `Lazy.pastFork env.cod`), `(hpc : hinted env.cod p = hinted noCode p)
+  (hpn : hinted noCode p ≠ none)` -> `(hpn : PastForkAt ctx env.cod p)`,
+  `comp_past_fork h7 hcode G lazy p hpn` -> `hpn G lazy`, `P.cod P.hin` ->
+  `P.pf`, `pastFork_cod` dropped; `comp_past_forkR` copies `comp_past_fork`
+  with the code table (`hd_gateR`).
 """
 import re, sys
 
@@ -62,6 +70,9 @@ def rename(s):
     return s
 
 RULES = [
+    # (first: before 'hpn') +past-fork over the test of %6
+    ('hpf', r'\(hpc : hinted env\.cod (\w+) = hinted noCode \1\) \(hpn : hinted noCode \1 ≠ Option\.none\)',
+     r'(hpn : PastForkAt ctx env.cod \1)'),
     ('linkR', r'CompRunAtR \(runLC env msup\) ctx', 'CompRunAtX (runLCM env true msup) ctx X'),
     ('intro', r'intro x mono sup hx\b(?! hX)', 'intro x mono sup hx hX'),
     ('app', r'(?<!intro) x mono sup hx\b(?! hX)', ' x mono sup hx hX'),
@@ -78,6 +89,13 @@ RULES = [
     ('ndone', r'\n *obtain ⟨\w+, -⟩ := hinted_nd env\.cod \w+\.nd', ''),
     ('ndsnd', r'(\n *)obtain ⟨-, (\w+)⟩ := hinted_nd env\.cod (\w+)\.nd', r'\1have \2 := \3.past'),
     ('pastcod', r'\n *simp only \[pastL_cod \w+(?:, pastL_cod \w+)*\]', ''),
+    # %6: the parts as `SixPartsR`, +past-fork as `PastForkAt ctx env.cod`
+    ('sixparts', r'SixParts env msup ctx', 'SixPartsR env msup ctx X'),
+    ('hpcapp', r'\bhpc hpn\b', 'hpn'),
+    ('cpf', r'comp_past_fork h7 hcode (\(genNoun \w+ x\)) (\w+) (\w+) (h\w+)', r'\4 \1 \2'),
+    ('pfcod', r'\n *rw \[pastFork_cod \w+\]', ''),
+    ('pfnc', r'Lazy\.pastFork noCode', 'Lazy.pastFork env.cod'),
+    ('codhin', r'\b(\w+)\.cod \1\.hin\b', r'\1.pf'),
 ]
 
 AUTO = '(hX : X x mono sup := by assumption)'
@@ -122,6 +140,7 @@ def gen(out, header, parts, expect):
             assert expect.get(k, 0) == v, (out, k, v, expect.get(k, 0))
     for b in body:
         assert 'runLC ' not in b and 'runLC]' not in b and 'pastL noCode' not in b, (out, b[:200])
+        assert 'noCode' not in b and 'SixParts ' not in b, (out, b[:60], [l for l in b.split('\n') if 'noCode' in l or 'SixParts ' in l])
     txt = header + '\n'.join(body) + '\nend Compiler\nend Formalization\n'
     open(D + out, 'w').write(txt)
 
@@ -244,6 +263,72 @@ def gen_past():
     blk = rep1(blk, 'rcases e : hinted noCode nom with', 'rcases e : hinted env.cod nom with', 1)
     blk = rep1(blk, 'have hh := hd_gate compK cod nom b e', 'have hh := hd_gateR cod env nom b hcc e', 1)
     return blk
+
+
+# --- %6 ------------------------------------------------------------------------
+SIXBASE = """/-- **`+past-fork` over `n` is `Lazy.pastFork cod`**, on every lazy need
+and state noun. -/
+def PastForkAt (ctx : Noun) (cod : Bell → Option Bool) (n : Nomm) : Prop :=
+  ∀ (G : Noun) (laz : Lazy CSet), nock (C pfBat (C (C laz.toNoun n.toNoun) (C comp.door (C G ctx)))) pfBat
+    = (Lazy.pastFork cod laz n).map Lazy.toNoun
+
+/-- The parts of `%6` against `runLCM env true msup` (`SixParts` with the
+link `CompRunAtX`, the result `ResForR`, and `+past-fork` as `PastForkAt`). -/
+structure SixPartsR (env : CallEnv) (msup : Option Nomm) (ctx : Noun) (X : GenRest → Noun → Noun → Prop) (n : Nomm)
+    (region : List Nat) : Prop where
+  link : ∀ (goal : CGoalL CSet) (g : Gen (TreapMap mugF)), GInv g goal →
+    CompRunAtX (runLCM env true msup) ctx X n goal region g
+  res : ResForR (runLCM env true msup) n region
+  pf : PastForkAt ctx env.cod n
+
+"""
+
+def gen_pf():
+    blk, = extract(D + 'CompSixHelp.lean', ['comp_past_fork'])
+    blk = rep1(blk, 'theorem comp_past_fork ', 'theorem comp_past_forkR ', 1)
+    blk = rep1(blk, '(hnom : hinted noCode nom ≠ Option.none)', '(env : CallEnv) (hcc : CallCode cod env nom)\n'
+               '    (hnom : hinted env.cod nom ≠ Option.none)', 1)
+    blk = rep1(blk, 'Lazy.pastFork noCode', 'Lazy.pastFork env.cod', 1)
+    blk = rep1(blk, 'rcases e : hinted noCode nom with', 'rcases e : hinted env.cod nom with', 1)
+    blk = rep1(blk, 'have hh := hd_gate compK cod nom b e', 'have hh := hd_gateR cod env nom b hcc e', 1)
+    blk = rep1(blk, '`pastFork noCode`', '`pastFork env.cod` (copy of `comp_past_fork`)', 1)
+    blk = rep1(blk, '(`hinted noCode nom ≠ none`)', '(`hinted env.cod nom ≠ none`, every callee with its code entry)', 1)
+    return blk
+
+hs = head(['lemmas.Compiler.CompRunRPast', 'lemmas.Compiler.CompRunSixRes'],
+          '# Phase S of `%6` against `runLCM env true` (copies of `CompRunSixS.lean`, `CompRunSixRes.lean`)\n\n'
+          '`PastForkAt`, `SixPartsR`, `comp_past_forkR` (`+past-fork` reading the code table).')
+gen('CompRunRSixS.lean', hs + SIXBASE + gen_pf() + '\n',
+    [('CompRunSixS.lean', ['sixPM', 'cr6s_p', 'sixLynDP', 'cr6s_lyn_dp', 'cr6s_mid', 'runLC_n6_dp',
+                           'comp_run_n6_dp'], []),
+     ('CompRunSixRes.lean', ['res_n6_dp'], [])],
+    {'app': 3, 'auto': 3, 'codhin': 1, 'cpf': 1, 'hpcapp': 1, 'hpf': 2, 'intro': 1, 'linkR': 5, 'pfcod': 1, 'pfnc': 1, 'resfor': 5, 'runenv': 13, 'sixparts': 3})
+gen('CompRunRSixN.lean',
+    head(['lemmas.Compiler.CompRunRSixS', 'lemmas.Compiler.CompSixKerf'],
+         '# Phases S on `%next` and K of `%6` against `runLCM env true` (copies of `CompRunSixNext.lean`, `CompSixKerf.lean`)'),
+    [('CompRunSixNext.lean', ['sixLynN', 'cr6s_lyn_n', 'sixNfK', 'runLC_n6_nf', 'comp_run_n6_nf', 'res_n6_nf'], []),
+     ('CompSixKerf.lean', ['runLC_n6_k', 'cr6k_eq', 'comp_run_n6_k', 'res_n6_k'], [])],
+    {'app': 1, 'auto': 2, 'codhin': 1, 'hpcapp': 1, 'hpf': 1, 'intro': 2, 'linkR': 3, 'resfor': 7, 'runenv': 13, 'sixparts': 6})
+gen('CompRunRSixF.lean',
+    head(['lemmas.Compiler.CompRunRSixN', 'lemmas.Compiler.CompRunSixF'],
+         '# Phase F of `%6` against `runLCM env true` (copies of `CompRunSixF.lean`)'),
+    [('CompRunSixF.lean', ['sixPF', 'cr6f_p', 'sixLynF', 'cr6f_lyn', 'cr6f_mid', 'runLC_n6_f', 'six_f_runs', 'sixFK',
+                           'sixNextForkC_eq', 'comp_run_n6_f', 'res_n6_f'], [])],
+    {'app': 3, 'auto': 3, 'codhin': 1, 'cpf': 1, 'hpcapp': 1, 'hpf': 2, 'intro': 1, 'linkR': 5, 'pfcod': 1, 'pfnc': 1, 'resfor': 7, 'runenv': 21, 'sixparts': 3})
+gen('CompRunRSixL.lean',
+    head(['lemmas.Compiler.CompRunRSixN', 'lemmas.Ska.CompLeapTwiceRun'],
+         '# Phase L of `%6` against `runLCM env true` (copies of `CompRunSixL.lean`, `Ska/CompLeapTwiceRun.lean`)'),
+    [('CompRunSixL.lean', ['runLC_n6_l', 'comp_run_n6_l', 'res_n6_l', 'comp_run_n6_l_nf', 'comp_run_n6_l_k'], []),
+     ('../Ska/CompLeapTwiceRun.lean', ['comp_run_n6_l_tw', 'res_n6_l_tw', 'comp_run_n6_l_nf_tw', 'comp_run_n6_l_k_tw'],
+      [])],
+    {'app': 1, 'intro': 1, 'linkR': 8, 'runenv': 12, 'sixparts': 12})
+gen('CompRunRSixAll.lean',
+    head(['lemmas.Compiler.CompRunRSixF', 'lemmas.Compiler.CompRunRSixL', 'lemmas.Compiler.CompRunSixAll'],
+         '# `%6` on every goal against `runLCM env true` (copies of `CompRunSixAll.lean`)'),
+    [('CompRunSixAll.lean', ['runLC_n6_ne', 'runLC_n6_ne_eq', 'comp_run_n6_ne', 'res_n6_ne', 'comp_run_n6_nl',
+                             'res_n6_nl', 'comp_run_n6_l_f', 'comp_run_n6_l_ne', 'runLC_n6_crash', 'comp_run_n6_next',
+                             'res_n6_next', 'comp_run_n6_all', 'res_n6_all'], [])],
+    {'codhin': 1, 'intro': 2, 'linkR': 6, 'resfor': 15, 'runenv': 7, 'sixparts': 20})
 
 txt = head(['lemmas.Compiler.CompRunRBase'],
            '# `+hinted` and `+past` reading the code table (copies of `hd_gate`, `comp_past` of `CompPastLink.lean`)')

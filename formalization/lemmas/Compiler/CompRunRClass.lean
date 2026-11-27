@@ -1,5 +1,5 @@
 import lemmas.Compiler.CompRunRTen
-import lemmas.Compiler.CompRunRPast
+import lemmas.Compiler.CompRunRSixAll
 
 /-!
 # The run link at `mono` `&` on the plain class with direct calls (README Gaps 19)
@@ -95,6 +95,20 @@ theorem pastAt_code (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 
   obtain ⟨c, hc⟩ := hinted_code n hcc
   exact comp_pastR h7 hcode x g nex n region env hcc (by rw [hc]; simp)
 
+/-- **`+past-fork` over a nomm whose callees have their code entries** is
+`Lazy.pastFork env.cod`. -/
+theorem pastForkAt_code (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) {n : Nomm} (hcc : CallCode cod env n) : PastForkAt ctx env.cod n := by
+  intro G laz
+  obtain ⟨c, hc⟩ := hinted_code n hcc
+  exact comp_past_forkR h7 hcode G laz n env hcc (by rw [hc]; simp)
+
+/-- A part of `%6` from its `PartR` and its callees' code entries. -/
+theorem sixR_of (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    {env : CallEnv} {msup : Option Nomm} {X : GenRest → Noun → Noun → Prop} {n : Nomm} {region : List Nat}
+    (N : PartR env msup ctx X n region) (hcc : CallCode cod env n) : SixPartsR env msup ctx X n region :=
+  ⟨N.link, N.res, pastForkAt_code h7 hcode env hcc⟩
+
 /-! ## The class -/
 
 /-- **The plain class with direct calls.** -/
@@ -107,6 +121,7 @@ def DirOk : Nomm → Bool
   | Nomm.n3 p => DirOk p
   | Nomm.n4 p => DirOk p
   | Nomm.n5 p q => DirOk p && DirOk q
+  | Nomm.n6 p q r => DirOk p && DirOk q && DirOk r
   | Nomm.n7 p q => DirOk p && DirOk q
   | Nomm.n10 a v q => (a != 0 && DirOk v) && DirOk q
   | _ => false
@@ -126,6 +141,7 @@ def DirCalls (env : CallEnv) (cod ctx : Noun) (E : GenRest → Prop) : Option No
   | ms, Nomm.n3 p => DirCalls env cod ctx E ms p
   | ms, Nomm.n4 p => DirCalls env cod ctx E ms p
   | ms, Nomm.n5 p q => DirCalls env cod ctx E ms p ∧ DirCalls env cod ctx E ms q
+  | ms, Nomm.n6 p q r => DirCalls env cod ctx E ms p ∧ DirCalls env cod ctx E ms q ∧ DirCalls env cod ctx E ms r
   | ms, Nomm.n7 p q => DirCalls env cod ctx E ms p ∧ DirCalls env cod ctx E (some p) q
   | ms, Nomm.n10 _ v q => DirCalls env cod ctx E ms v ∧ DirCalls env cod ctx E ms q
   | _, _ => True
@@ -157,11 +173,42 @@ theorem callCode_of_dir {env : CallEnv} {cod : Noun} {E : GenRest → Prop} :
   | Nomm.n10 a v q, h, ms, hd => by
     simp only [DirOk, Bool.and_eq_true] at h; simp only [DirCalls] at hd; simp only [CallCode]
     exact ⟨callCode_of_dir v h.1.2 ms hd.1, callCode_of_dir q h.2 ms hd.2⟩
-  | Nomm.n6 _ _ _, h, _, _ => by simp [DirOk] at h
+  | Nomm.n6 p q r, h, ms, hd => by
+    simp only [DirOk, Bool.and_eq_true] at h; simp only [DirCalls] at hd; simp only [CallCode]
+    exact ⟨callCode_of_dir p h.1.1 ms hd.1, callCode_of_dir q h.1.2 ms hd.2.1, callCode_of_dir r h.2 ms hd.2.2⟩
   | Nomm.n11s _ _ _, h, _, _ => by simp [DirOk] at h
   | Nomm.n11d _ _ _ _, h, _, _ => by simp [DirOk] at h
   | Nomm.n12 _ _, h, _, _ => by simp [DirOk] at h
   | Nomm.mean _ _ _ _ _, h, _, _ => by simp [DirOk] at h
+
+/-- `DirOk` has no `%10` at axis `0`: `Bake.NoAx0`, which `%6` asks of its
+branches. -/
+theorem noAx0_of_dir : ∀ (n : Nomm), DirOk n = true → Bake.NoAx0 n
+  | Nomm.cons p q, h => by
+    simp only [DirOk, Bool.and_eq_true] at h; exact ⟨noAx0_of_dir p h.1, noAx0_of_dir q h.2⟩
+  | Nomm.n0 _, _ => trivial
+  | Nomm.n1 _, _ => trivial
+  | Nomm.n2 p q Option.none, h => by
+    simp only [DirOk, Bool.and_eq_true] at h; exact ⟨noAx0_of_dir p h.1, noAx0_of_dir q h.2⟩
+  | Nomm.n2 p q (some (_, Option.none)), h => by
+    simp only [DirOk, Bool.and_eq_true] at h; exact ⟨noAx0_of_dir p h.1, noAx0_of_dir q h.2⟩
+  | Nomm.n2 _ _ (some (_, some _)), h => by simp [DirOk] at h
+  | Nomm.n3 p, h => by simp only [DirOk] at h; exact noAx0_of_dir p h
+  | Nomm.n4 p, h => by simp only [DirOk] at h; exact noAx0_of_dir p h
+  | Nomm.n5 p q, h => by
+    simp only [DirOk, Bool.and_eq_true] at h; exact ⟨noAx0_of_dir p h.1, noAx0_of_dir q h.2⟩
+  | Nomm.n6 p q r, h => by
+    simp only [DirOk, Bool.and_eq_true] at h
+    exact ⟨noAx0_of_dir p h.1.1, noAx0_of_dir q h.1.2, noAx0_of_dir r h.2⟩
+  | Nomm.n7 p q, h => by
+    simp only [DirOk, Bool.and_eq_true] at h; exact ⟨noAx0_of_dir p h.1, noAx0_of_dir q h.2⟩
+  | Nomm.n10 a v q, h => by
+    simp only [DirOk, Bool.and_eq_true, bne_iff_ne, ne_eq] at h
+    exact ⟨h.1.1, noAx0_of_dir v h.1.2, noAx0_of_dir q h.2⟩
+  | Nomm.n11s _ _ _, h => by simp [DirOk] at h
+  | Nomm.n11d _ _ _ _, h => by simp [DirOk] at h
+  | Nomm.n12 _ _, h => by simp [DirOk] at h
+  | Nomm.mean _ _ _ _ _, h => by simp [DirOk] at h
 
 /-- `ResFor` of a nomm with no direct call is `ResForR (runLCM env true msup)`. -/
 theorem resR_of_res {env : CallEnv} {msup : Option Nomm} {n : Nomm} {region : List Nat} (hn : n.noDirect = true)
@@ -241,7 +288,22 @@ theorem comp_run_dir (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot?
     have Q := comp_run_dir h7 hcode env E q h.2 msup region hd.2
     exact ⟨fun goal g hi => comp_run_n10LR h7 hcode env msup a h.1.1 v q V Q goal g hi, res_n10R h.1.1 V.res Q.res,
       pastAt_code h7 hcode env hc⟩
-  | Nomm.n6 _ _ _, h, _, _, _ => by simp [DirOk] at h
+  | Nomm.n6 p q r, h, msup, region, hd => by
+    have hc := callCode_of_dir (ctx := ctx) _ h msup hd
+    have ha := noAx0_of_dir _ h
+    simp only [DirOk, Bool.and_eq_true] at h; simp only [DirCalls] at hd; simp only [Bake.NoAx0] at ha
+    have hc' := hc
+    simp only [CallCode] at hc'
+    have P := comp_run_dir h7 hcode env E p h.1.1 msup region hd.1
+    have Q := fun rg => comp_run_dir h7 hcode env E q h.1.2 msup rg hd.2.1
+    have R := fun rg => comp_run_dir h7 hcode env E r h.2 msup rg hd.2.2
+    exact ⟨fun goal g hi => comp_run_n6_allR h7 hcode env msup p q r region (sixR_of h7 hcode P hc'.1)
+        (sixR_of h7 hcode (Q region) hc'.2.1) (sixR_of h7 hcode (R region) hc'.2.2)
+        (fun rid => sixR_of h7 hcode (Q (rid :: region)) hc'.2.1)
+        (fun rid => sixR_of h7 hcode (R (rid :: region)) hc'.2.2) ha.2.1 ha.2.2 goal g hi,
+      res_n6_allR P.res (Q region).res (R region).res (fun rid => (Q (rid :: region)).res)
+        (fun rid => (R (rid :: region)).res) ha.2.1 ha.2.2,
+      pastAt_code h7 hcode env hc⟩
   | Nomm.n11s _ _ _, h, _, _, _ => by simp [DirOk] at h
   | Nomm.n11d _ _ _ _, h, _, _, _ => by simp [DirOk] at h
   | Nomm.n12 _ _, h, _, _, _ => by simp [DirOk] at h
@@ -300,6 +362,31 @@ example (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = som
       goal region g :=
   comp_run_dirMM h7 hcode env E _ rfl msup region
     (by simp only [DirCalls]; exact ⟨hb', ⟨hb, trivial, trivial⟩, trivial⟩) goal g hi
+
+/-- **An example**: a direct call in a branch of a `%6`, `[6 [0 2] [2 [0 1]
+[1 k] [~ b ~]] [1 0]]`, on every goal with `GInv`. -/
+example (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod) (env : CallEnv)
+    (E : GenRest → Prop) (msup : Option Nomm) (k : Noun) (b : Bell)
+    (hb : CallOk env cod ctx E msup (Nomm.n0 1) (Nomm.n1 k) b) (goal : CGoalL CSet) (region : List Nat)
+    (g : Gen (TreapMap mugF)) (hi : GInv g goal) :
+    CompRunAtMM env msup ctx E
+      (Nomm.n6 (Nomm.n0 2) (Nomm.n2 (Nomm.n0 1) (Nomm.n1 k) (some (b, Option.none))) (Nomm.n1 (A 0)))
+      goal region g :=
+  comp_run_dirMM h7 hcode env E _ rfl msup region
+    (by simp only [DirCalls]; exact ⟨trivial, ⟨hb, trivial, trivial⟩, trivial⟩) goal g hi
+
+/-- **An example**: a direct call as the test of a `%6` (its run gets the
+`%pick` goal, or the `%next` goal of the fork's condition register), `[6 [2
+[0 1] [1 k] [~ b ~]] [1 0] [1 1]]`, on every goal with `GInv`. -/
+example (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod) (env : CallEnv)
+    (E : GenRest → Prop) (msup : Option Nomm) (k : Noun) (b : Bell)
+    (hb : CallOk env cod ctx E msup (Nomm.n0 1) (Nomm.n1 k) b) (goal : CGoalL CSet) (region : List Nat)
+    (g : Gen (TreapMap mugF)) (hi : GInv g goal) :
+    CompRunAtMM env msup ctx E
+      (Nomm.n6 (Nomm.n2 (Nomm.n0 1) (Nomm.n1 k) (some (b, Option.none))) (Nomm.n1 (A 0)) (Nomm.n1 (A 1)))
+      goal region g :=
+  comp_run_dirMM h7 hcode env E _ rfl msup region
+    (by simp only [DirCalls]; exact ⟨⟨hb, trivial, trivial⟩, trivial, trivial⟩) goal g hi
 
 end Compiler
 end Formalization
