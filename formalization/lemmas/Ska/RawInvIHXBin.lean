@@ -483,6 +483,80 @@ theorem rawX_five {p q : Nomm} (xp : FragX (S := S) p) (xq : FragX (S := S) q) (
   · exact absurd e n2
   · exact e
 
+/-! ## `%10` -/
+
+/-- **The case `%10`**: `+simple-next`, `+into` of its need, then the run
+of the value `v` for the donor's need and of the target `q` for the
+recipient's, and the copy, as `raw_n10`. -/
+theorem rawX_ten (a : Nat) {v q : Nomm} (xv : FragX (S := S) v) (xq : FragX (S := S) q) (ihv : RawIHX S Map X v)
+    (ihq : RawIHX S Map X q) : RawIHX S Map X (Nomm.n10 a v q) := by
+  intro goal region g0 g1 nex K hK h hg hD hj ha hf hc hr
+  have hc' : sixCount q + sixCount v ≤ 255 := by simp only [sixCount] at hc; omega
+  rw [runL_n10_body] at hr
+  obtain ⟨next, gs, hs, hr⟩ := bind_some hr
+  rw [simpleNextL_toL, map_apply] at hs
+  obtain ⟨⟨nx, g2⟩, hs', e⟩ := Option.map_eq_some_iff.mp hs
+  simp only [Prod.mk.injEq] at e
+  obtain ⟨rfl, rfl⟩ := e
+  obtain ⟨S2, l2, bo2, a2, t2, fr2, dd2, L2, m2, -⟩ := raw_simpleNext (K := K) h hj ha hg hs'
+  have D2 := simpleNext_dist hD hs'
+  have hgm : ∀ x, GMem goal x → x < g0.re := fun x hx => by
+    cases goal with
+    | next laz th => exact hg.1 x hx
+    | _ => exact hx.elim
+  have nb2 : NB g2.re nx.laz.ned := fun y hy => by
+    rcases m2 y hy with e | e
+    · have := hgm y e; omega
+    · exact e.2
+  have nf2 : ∀ y, NMem nx.laz.ned y → ¬ Defd g2.blocks y := fun y hy d => by
+    rw [dd2] at d
+    rcases m2 y hy with e | e
+    · exact hf y d e
+    · have := h.defd_lt d; omega
+  unfold n10Body at hr
+  obtain ⟨⟨don', rec', o⟩, g3x, h3, hr⟩ := bind_some hr
+  rw [show (Next.toL nx : NextL S) = ⟨ofSure nx.laz, nx.th⟩ from rfl, intoL_mk, map_apply] at h3
+  obtain ⟨⟨⟨don, rec, o'⟩, g3⟩, hs3, e3⟩ := Option.map_eq_some_iff.mp h3
+  simp only [Prod.mk.injEq] at e3
+  obtain ⟨⟨rfl, rfl, rfl⟩, rfl⟩ := e3
+  obtain ⟨S3, eo, bo3, l3, fr3, L3, dd3, Dd, Dr, Ap, md, mr⟩ := raw_into (K := K) S2 D2 nb2 a2 t2 nf2 hs3
+  subst eo
+  obtain ⟨-, nd3, nr3⟩ := keeps_into S2.drop ⟨nb2, fun x hx => by rw [a2] at hx; cases hx⟩ hs3
+  simp only at nd3 nr3
+  obtain ⟨nexR, g3', hpr, hr⟩ := bind_some hr
+  rw [pastL_mk _ _ _ (fragX_pure xv), pure_apply] at hpr
+  simp only [Option.some.injEq, Prod.mk.injEq] at hpr
+  obtain ⟨rfl, rfl⟩ := hpr
+  obtain ⟨nexDon, g4, h4, hr⟩ := bind_some hr
+  obtain ⟨nexDon', g4', hpd, hr⟩ := bind_some hr
+  rw [pastL_pure _ _ (fragX_pure xq), pure_apply] at hpd
+  simp only [Option.some.injEq, Prod.mk.injEq] at hpd
+  obtain ⟨rfl, rfl⟩ := hpd
+  obtain ⟨nexRec, g5, h5, hr⟩ := bind_some hr
+  have F3 : FinKeep g0 g3 := (finKeep_of_eq fr2).trans (finKeep_of_eq fr3) bo2
+  obtain ⟨S1, a1, lo1, hi1, L1⟩ := rawX_binTail (hs := rec) (ts := don) (j := jmp0 g2.bo) xq xv ihq ihv hc'
+    (hK.mono S3.lob) (sip_reRank S3 (fun k hk => h.none hk) F3) nr3 nd3 Dr Dd (fun x e1 e2 => Ap x e2 e1) rfl
+    (by simp [jmp0]; have := S2.bo1; omega) (by simp [jmp0]; omega)
+    (fun x d => by
+      rcases dd3 x d with d | ⟨-, n1, n2⟩
+      · have lt := S2.defd_lt d
+        refine ⟨fun e => ?_, fun e => ?_⟩
+        · rcases mr x e with e' | e'
+          · exact nf2 x e' d
+          · omega
+        · rcases md x e with e' | e'
+          · exact nf2 x e' d
+          · omega
+      · exact ⟨n2, n1⟩) h4 h5 hr
+  refine ⟨S1, a1, lo1, hi1, fun x hx => ?_⟩
+  obtain ⟨hl, n1, n2⟩ := L1 x hx
+  rcases L3 x hl with e | e | ⟨hl', hn'⟩
+  · exact absurd e n2
+  · exact absurd e n1
+  · rcases L2 x hl' with e | e
+    · exact absurd e hn'
+    · exact e
+
 end Raw
 end SkaModel
 end Formalization
