@@ -23,12 +23,15 @@ induction on `runLC`.
 Proved here: `LiveC` composes along a goal chain (`LiveC.trans`, the shape
 of `%7`: `liveRun_seven` for any pre- and postcondition that chain), the
 pure arms (`liveC_refl`, `liveC_fromL`: `%0` under `%next`; `liveC_pick_z`,
-`liveC_pick_o`: `%1` under `%pick`), the top
+`liveC_pick_o`: `%1` under `%pick`), `+simple-next` under `%done`
+(`liveC_simpleNextL_done`: the `%don` block of a fresh register that is no
+proxy), the top
 (`liveC_done`: nothing is live at the entry under `%done`), and the two
 facts every arm that walks the goal's lazy need uses: ops put in front of
 blocks (`liveK_prepK`: a register live after them is live before them with
 the kills they meet, or read first by them) and that `unpM` carries such
-ops (`prep_mapVals`, `unpM_prep`: through `renBlob_congr` of track C for a
+ops (`liveK_old`: a path from the new code into the old one; `prep_mapVals`,
+`unpM_prep`: through `renBlob_congr` of track C for a
 `cond` that grew by fresh proxies), and the step over a fresh hop block to
 the goal (`liveK_hop_root`: the root's kills move from the hop block to the
 goal's continuation; `LiveK.mono_r`: kills matter only for the register
@@ -139,6 +142,49 @@ theorem liveC_pick_o {K : Nat → Nat → Prop} {z o : Jmp} {laz : Lazy S} {g : 
     LiveC K (CGoalL.pick z o) g g ⟨laz, o⟩ :=
   fun _ hl => Or.inr (hl.mono fun _ _ hk => Or.inl hk)
 
+/-- **`+simple-next` under `%done`**: the `%don` block reads only the fresh
+register its result's need names, when that register is no proxy. -/
+theorem liveC_simpleNextL_done {K : Nat → Nat → Prop} {g0 g1 : Comp.Gen Map} {nex : NextL S}
+    (hd : g0.drop = false) (hc : HoonMap.get g0.cond g0.re = Option.none)
+    (h : (simpleNextL (CGoalL.done : CGoalL S) : CM Map (NextL S)) g0 = some (nex, g1)) :
+    LiveC K CGoalL.done g0 g1 nex := by
+  simp only [simpleNextL] at h
+  obtain ⟨r, ga, ha, h⟩ := bind_some h
+  rw [re_apply] at ha
+  simp only [Option.some.injEq, Prod.mk.injEq] at ha
+  obtain ⟨rfl, rfl⟩ := ha
+  obtain ⟨o, gb, hb, h⟩ := bind_some h
+  rw [emit_apply] at hb
+  simp only [Option.some.injEq, Prod.mk.injEq] at hb
+  obtain ⟨rfl, rfl⟩ := hb
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨rfl, rfl⟩ := h
+  intro y hl
+  have hu : unproxy g0.cond g0.re = g0.re := unproxy_none hc
+  have hget : ∀ k, k = g0.bo → HoonMap.get (unpM (({ g0 with re := g0.re + 1 } : Comp.Gen Map).emitted
+      ⟨[], [], Termin.don g0.re⟩)) k = some ⟨[], [], Termin.don g0.re⟩ := by
+    intro k ek
+    subst ek
+    unfold unpM
+    rw [get_mapVals]
+    simp only [Gen.emitted, hd, Bool.false_eq_true, if_false]
+    rw [get_put_self]
+    simp [renBlob, renFin, hu]
+  cases hl with
+  | here hb' hr hk =>
+    have hb2 := (hget _ rfl).symm.trans hb'
+    cases hb2
+    obtain ⟨-, hr⟩ := hr
+    rcases hr with hr | ⟨-, hr⟩
+    · exact absurd hr (by simp [OpsRF])
+    · simp only [finRegs, List.mem_singleton] at hr
+      subst hr
+      exact hk (Or.inr (lazK_ofSure.mpr ⟨rfl, rfl⟩))
+  | next hb' hj _ _ _ =>
+    have hb2 := (hget _ rfl).symm.trans hb'
+    cases hb2
+    simp [getJmps] at hj
+
 /-! ## Ops in front of blocks -/
 
 /-- **A register live after ops are put in front of blocks is live before
@@ -194,6 +240,20 @@ theorem unpM_prep {P : Nat → List Pole} {g g' : Comp.Gen Map} (hP : Prep P g.b
   | some b =>
     simp only [Option.map_some]
     rw [renBlob_unproxy_grow hc (hR k _ (by rw [hP k, hb]; rfl)), renBlob_pre]
+
+/-- **A path into the old code after a run**: when the blocks below `L` are
+the old ones with the ops `P` in front (each defining the kills `K'` at its
+label), and the old blocks jump down below `L`, a register live at an old
+label is live there before the ops with the kills they meet, or read first
+by them.  The step of every arm whose code hops into its goal's
+continuation, with `unpM_prep` for the unproxied blocks. -/
+theorem liveK_old {P : Nat → List Pole} {bl0 blP bl1 : Map Blob} {L : Nat} (hP : Prep P bl0 blP)
+    (hd : DownBelowP bl0 L) (he : ∀ x, x < L → HoonMap.get bl1 x = HoonMap.get blP x)
+    {K K' : Nat → Nat → Prop} (hK : ∀ k r, K' k r → r ∈ defsOf (P k)) {k r : Nat} (hk : k < L)
+    (h : LiveK bl1 K k r) : LiveK bl0 (fun x y => K x y ∨ K' x y) k r ∨ ∃ k', OpsRF (P k') r := by
+  obtain ⟨ρ, hj, h1, h2⟩ := hd
+  have hdP : DownBelowP blP L := ⟨ρ, jdownR_prep hP hj, h1, h2⟩
+  exact liveK_prepK hP hK ((liveK_frameP hdP he hk).mp h)
 
 /-! ## A fresh hop to the goal -/
 
