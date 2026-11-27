@@ -634,6 +634,10 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/RawInvClosed.lean`, `Ska/RawInvClosedRun.lean` | **`run_closed`**: a run of `run` from a state that does not drop and has `Clear` jumps from its own blocks (labels from `g0.bo` on) only to its own labels or to its goal's targets (`ClosedR g0.bo (GTgt goal)`), and its result's jump is at one of them; one lemma per arm (`cs_split`, `cs_into`, `cs_copy`, `cs_mede`, `cs_collapse`, ...) and per case. |
 | `Ska/RawInvCut.lean` | The liveness cut for code changed after a run (Gaps 14): `LiveAv bl Z k r` (a path from `k` that never enters `Z` reads `r`), **`live_cut`** (a live register is live along such a path or live at a block of `Z`), `liveAv_frame`, **`liveAv_region`** (a path that avoids `Z` inside a region closed up to `Z` reads only registers the region's blocks mention), `blockRF_in`; `raw_coerce` (`+coerce-lazy` at one block on a fork-free need, from `raw_sureLoop`). |
 | `Ska/RawInvSix.lean` | **`optIn_finishLF6`**: the n-ary raw blocks of `[6 c a b]` under `%done` with `c`, `a`, `b` in the first fragment meet `OptIn` (`runL_six_done` of track C; the liveness at the entry is cut at the branch blocks, a path that avoids them stays in the test's code by `run_closed` and `RunOK.ext`, which mentions only registers allocated in it by `run_above`); `optIn_finishLF_frag6`, `rawDInv_finishLF_frag6`, `optimize_keeps_finishLF_frag6` on track C's class `Frag6`. |
+| `Ska/RawInvCheckX.lean` | Executable checks on `FragX` with a `%6` below the top (Gaps 14): `enumX`, 4,080 nomms (240 `%6` over the first fragment in 17 contexts: under `%7`, `%4`, `%3`, cons, `%5`, `%10`, inside a `%6`); `checkOut` holds of both final passes on all; `checkRunX`, the candidate run-level invariant (`rkDownB`: jumps down in `upRk`; `argsAboveRkB`; distinct parameters; one definition per register; `liveKB`: nothing live at the entry once each lazy entry first defines its sure need; `lazyOKB`), holds on all; `JDown`, `Par1` and the liveness cut without kills (`liveCutB`) fail, with witnesses `exUp`, `exPar2`, `exCut`; `checkPrep`: after `+coerce-lazy` the blocks are the raw ones with ops in front only at lazy entries, defining the entry's need and reading first only inputs. |
+| `Ska/RawInvLiveK.lean` | `LiveK bl K k r` (liveness where the block at each `x` first defines `K x`), `Prep P bl bl'` (ops `P k` in front of every block), **`live_prep`**, **`live_entry_of_prep`** (after prologues that define the kills, only what they read first is live at an entry where nothing is live with the kills), `prep_trans`, `prep_put`, `defd_prep`; the ranked fields `JDownR ρ`, `ArgsAboveR ρ` with `acyclic_of_jdownR`, `passOK_ofR`, `downPar_of_argsR`, and their keeping by prologues (`upRk_prep`, `jdownR_upRk_prep`, `argsAboveR_upRk_prep`, `parNodup_prep`). |
+| `Ska/RawInvOutR.lean` | Generated from `chase_raw`, `chaseFin_raw`, `optIn_toStraight` with `Down` replaced by `DownRk ρ`: `chase_rawR`, `chaseFin_rawR`, **`optIn_toStraightR`** (`OptIn` after `+to-straight` for blocks that go down in any rank, as the fork blocks of `%6` under `%next` need). |
+| `Ska/RawInvTopX.lean` | **`optIn_toStraight_prep`**: `OptIn` of `+to-straight` after prologues at the lazy entries, from `DownRk (upRk bl)`, `ArgsAboveR (upRk bl)` and `¬ LiveK` at the entry of the raw blocks and the prologue facts that `checkPrep` checks; **`liveK_prep`** (prologues that define the old kills and read first only the new ones turn `LiveK` with the new kills into `LiveK` with the old), `downRk_prep`, `jdownR_of_downRk`, `noTr_prep`; **`coerceLazyL_prep`** (`+coerce-lazy` over a lazy tree is a `Prep` with `CoerceMany`: the ops at each entry define its sure need, read first only the input need, no trace hint op, given `CoerceStep` of each one-entry step under an invariant `I` of the states; `coerceList_prep`, through `coerceLazyL_flat`). |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
@@ -2363,7 +2367,40 @@ import only its theorems.  So:
    (then in the test's need, which the entry's `+sure-loop` defines), or it
    is live at a branch block, whose `+sure-loop` reads only inputs.
 
-   **Left, in this order.**  (a) `%6` (`FragX`; `Frag6` is done).  Two obstacles, both met
+   **`FragX`, 2026-11-27 (`RawInvCheckX.lean`, `RawInvLiveK.lean`,
+   `RawInvOutR.lean`, `RawInvTopX.lean`).**  Checked on 4,080 nomms with a
+   `%6` below the top (`enumX`): no field of `OptIn` fails on either final
+   pass, so no Hoon test was needed.  Three fields of `SI` are false there:
+   `JDown` (the fork blocks hop up to the join, `[4 [6 [0 1] [0 1] [0 1]]]`),
+   `Par1` (the join has two parameters, `[7 [6 [0 1] [0 1] [0 1]] [[0 3]
+   [0 2]]]`) and, more to the point, the liveness cut at the lazy entries
+   that the obstacle paragraph below proposes: in `[[0 3] [6 [0 6] [0 2] [0
+   1]]]` the head's register is defined at the entry and read by the `%con`
+   after the join, so it is live at both fork blocks though no lazy need
+   holds it.  The spec that holds (`checkRunX`) follows paths from the entry
+   through the lazy entries with kills: `LiveK bl K entry r` is false for
+   every `r` when `K` gives each lazy entry the registers of its sure need;
+   with the ranked forms `DownRk (upRk bl)` and `ArgsAboveR (upRk bl)` of
+   `JDown` and `ArgsAbove` and distinct parameters per block in place of
+   `Par1`.  Proved: the final pass from these facts,
+   **`optIn_toStraight_prep`** (through `optIn_toStraightR`, `live_prep`),
+   and the composition step **`liveK_prep`** for a parent's ops in front of
+   a sub-run's lazy entries.  Left for `FragX`: (i) the run-level induction
+   of those facts (`RawIHX`): its first obstacle is that `run_raw` asks `SI`
+   of the start state, which a first-fragment sub-run that starts after a
+   `%6` (the head of `[[0 3] [6 ...]]`, the `p` of `[5 p q]` with `%6` in
+   `q`) does not have, so `SI` must be replaced by the ranked fields in the
+   arm lemmas or a frame lemma must show that a run's new blocks do not
+   depend on those fields of the old ones; (ii) the one-entry step of
+   `+coerce-lazy` (`CoerceStep`, under an invariant that also gives
+   `BlkNodup` and `Cross` after it): `raw_coerce` has it but asks `SI`; the
+   iteration over the lazy tree is proved (`coerceLazyL_prep`), and
+   `checkPrep` checks the facts; (iii)
+   the unfolding of `finishLF` on `FragX` (`toStraightF_eq`, since no run of
+   `FragX` makes a proxy).
+
+   **Left, in this order.**  (a) `%6` (`FragX`; `Frag6` is done; see the
+   paragraph above for what holds and what is proved).  Two obstacles, both met
    on the way here.  First, the liveness spec of a run is about the state
    at its end; with `%6` the final pass (and `+split`, `+copy` of the
    parents) put ops in front of lazy blocks inside a run's code after the
