@@ -1,17 +1,21 @@
-import lemmas.Compiler.OptLinkAlStartAll
+import lemmas.Compiler.OptLinkAlStartImms
 
 /-!
 # `+alias`: the phases the walk takes as hypotheses (README Gaps 13)
 
 This file imports neither `OptLinkAlFin.lean` nor `OptLinkAlBody.lean`
-(both declare `alRnArm` and `alBat_rn`, so no file can import both), so
-each hypothesis can be proved where its phase is.
+(both declare `alRnArm` and `alBat_rn`, so no file can import both, and
+`OptLinkAlStartAll.lean`, `OptLinkAlParsTrap.lean` import the second), so
+each hypothesis is stated here and proved where its phase is
+(`OptLinkAlWalkBody.lean`: `al_start_link`, `al_pars_link`, `al_body_link`).
 
-* `AlStartLink`: phases 9 and 10, the statement of `al_start` fixed in
-  `OptLinkAlStartAll.lean`.
-* `AlParsLink`: phase 12 (`alPars`).
+* `alStartW`: the noun `alStartF` of `OptLinkAlStartAll.lean`, copied
+  (`al_start_link` checks the copy by `rfl`).
+* `AlStartLink`: phases 9 and 10, the statement of `al_start`.
+* `AlParsLink`: phase 12 (`alPars`), `al_pars` with `NoLti` of `g.new`.
 * `AlBodyLink`: the statement of `al_body_gen` (phase 13) for `Ana.pickR
-  FinMap`; proved by `al_body_link` (`OptLinkAlWalkBody.lean`).
+  FinMap`.
+* `noLti_opt`, `noLti_of_opt`: `NoLti` of `OptLinkBase.lean` is `Opt.NoLti`.
 -/
 
 namespace Formalization
@@ -25,7 +29,29 @@ attribute [local instance] SkaModel.Ana.tkeyNat
 
 /-! ## The phases open elsewhere, as hypotheses -/
 
-/-- **Phases 9 and 10** (`alStartF`, from `=^  info  gen` through the two
+/-- `alStartF` of `OptLinkAlStartAll.lean`: from `=^  info  gen` through the
+two `=.`, then `K`. -/
+def alStartW (K : Noun) : Noun :=
+  C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C alInfo (C (A 7) (C (C (A 10) (C (C (A 30) (C (A 0) (A 5))) (C (A 0) (A 1))))
+    (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) (C (A 8) (C alImms (C (A 7) (C (C (A 10) (C (C (A 2014)
+    (C (A 0) (A 6))) (C (A 0) (A 1)))) (C (A 7) (C (C (A 10) (C (C (A 4030) (C (A 0) (A 2))) (C (A 0) (A 1))))
+    K)))))))))))))
+
+/-- The two forms of "no `%lti`" agree. -/
+theorem noLti_opt {bl : TreapMap mugF Blob} (h : NoLti bl) : Opt.NoLti bl := by
+  intro o b hb n s z o' e
+  have := h o b hb
+  rw [e] at this
+  cases this
+
+theorem noLti_of_opt {bl : TreapMap mugF Blob} (h : Opt.NoLti bl) : NoLti bl := by
+  intro o b hb
+  cases e : b.fin with
+  | lti n s z o' => exact absurd e (h o b hb n s z o')
+  | _ => rfl
+
+
+/-- **Phases 9 and 10** (`alStartW`, from `=^  info  gen` through the two
 `=.`): the statement of `al_start` that `OptLinkAlStartAll.lean` fixes. -/
 def AlStartLink : Prop :=
   ∀ {g : Opt.AGen (TreapMap mugF)} {GEN : Noun} (hg : GenRel g GEN) (hb : Opt.BrzInv g) (hn : Opt.RevNodup g.rev)
@@ -34,7 +60,7 @@ def AlStartLink : Prop :=
     (hi : (if g.rev o = [] then some (Opt.entryInfo nargs) else Opt.aliasStart g o (g.rev o)) = some info)
     (hj : Opt.aliasStartImms g (g.rev o) = some imms) (K : Noun),
     ∃ GEN' INFO IMMS, GenRelL g info imms GEN' ∧ InfoMapRel INFO info ∧ ImmsRel IMMS imms ∧
-      nock (C (listNoun A preH) (alWS GEN (A nargs) BL REV (C (A o) T))) (alStartF K)
+      nock (C (listNoun A preH) (alWS GEN (A nargs) BL REV (C (A o) T))) (alStartW K)
         = nock (C IMMS (C INFO (C (listNoun A preH) (alWS GEN' (A nargs) BL REV (C (A o) T))))) K
 
 /-- **Phase 12** (`alPars`), as the link needs it. -/

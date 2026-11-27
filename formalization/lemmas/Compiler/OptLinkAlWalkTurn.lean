@@ -9,7 +9,7 @@ in the form the link needs (each on the model's `g.rev o`, the Hoon's `pre`
 any list with no duplicates and the members of `g.rev o`):
 
 * `AlStartLink`: phases 9 and 10, the statement of `al_start` fixed in
-  `OptLinkAlStartAll.lean` (track B): `alStartF K` runs to `K` on `[imms
+  `OptLinkAlStartAll.lean` (track B): `alStartW K` runs to `K` on `[imms
   [info [pre WALK]]]` with `gen` `GenRelL g info imms`.
 * `AlParsLink`: phase 12, `=^  par-new  gen` (`alPars`) returns
   `[par.bob gen]` with `info-local` `InfoMapRel` to `aliasPars g b.par
@@ -21,7 +21,7 @@ any list with no duplicates and the members of `g.rev o`):
   `al_body_gen` and `al_fin`; `al_body_link` (`OptLinkAlWalkBody.lean`)
   proves it.
 
-* `alW1_start`: the branch of a reached block is `alStartF [8 alBob alW4]`;
+* `alW1_start`: the branch of a reached block is `alStartW [8 alBob alW4]`;
   `al_reach_comp`: the Nock from `bob` to `alTail`, from the product of
   each phase.
 * `al_walk_step`: the walk on `o :: t` is the unreachable branch or `alW1`.
@@ -43,7 +43,7 @@ attribute [local instance] SkaModel.Ana.tkeyNat
 
 /-! ## The Nock of a turn -/
 
-theorem alW1_start : alW1 = alStartF (C (A 8) (C alBob alW4)) := rfl
+theorem alW1_start : alW1 = alStartW (C (A 8) (C alBob alW4)) := rfl
 
 /-- The Nock of a reached block from `bob` to `alTail`, from the product of
 each phase. -/

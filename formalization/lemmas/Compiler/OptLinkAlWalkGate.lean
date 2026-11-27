@@ -27,19 +27,6 @@ set_option linter.unusedVariables false
 
 attribute [local instance] SkaModel.Ana.tkeyNat
 
-/-- The two forms of "no `%lti`" agree. -/
-theorem noLti_opt {bl : TreapMap mugF Blob} (h : NoLti bl) : Opt.NoLti bl := by
-  intro o b hb n s z o' e
-  have := h o b hb
-  rw [e] at this
-  cases this
-
-theorem noLti_of_opt {bl : TreapMap mugF Blob} (h : Opt.NoLti bl) : NoLti bl := by
-  intro o b hb
-  cases e : b.fin with
-  | lti n s z o' => exact absurd e (h o b hb n s z o')
-  | _ => rfl
-
 /-- **Phase 16, the walk**: `alWalk` on `topo` from `gen` `GenRel g` returns
 `[folded new]` of the state `aliasWalk` ends in. -/
 theorem al_walk (h9 : AlStartLink) (h12 : AlParsLink) (h13 : AlBodyLink) (nargs : Nat)
