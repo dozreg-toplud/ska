@@ -673,7 +673,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/RawInvTopX.lean` | **`optIn_toStraight_prep`**: `OptIn` of `+to-straight` after prologues at the lazy entries, from `DownRk (upRk bl)`, `ArgsAboveR (upRk bl)` and `¬ LiveK` at the entry of the raw blocks and the prologue facts that `checkPrep` checks; **`liveK_prep`** (prologues that define the old kills and read first only the new ones turn `LiveK` with the new kills into `LiveK` with the old), `downRk_prep`, `jdownR_of_downRk`, `noTr_prep`; **`coerceLazyL_prep`** (`+coerce-lazy` over a lazy tree is a `Prep` with `CoerceMany`: the ops at each entry define its sure need, read first only the input need, no trace hint op, given `CoerceStep` of each one-entry step under an invariant `I` of the states; `coerceList_prep`, through `coerceLazyL_flat`). |
 | `Ska/RawInvGenP.lean` | Track D (Gaps 14, `FragX` step 1): `SIP X ρ lo g`, the state invariant without the jump and parameter fields of `SI`: jumps down in a rank `ρ` (`JDownR`), `ρ k = 3 k` from `lo` on and `ρ x < 3 lo` below, and a predicate `X` of the blocks kept by a new block and by ops in front (`XOK`; `Xstd` = `JDown`, `Par1`, `ArgsAbove`, so `si_sip`, `sip_si`: `SI g ↔ SIP Xstd (3 * ·) 0 g`); `sip_reg`, `sip_re`, `sip_emit`, `sip_addOps`, `SIP.below`; liveness by rank: `live_frameRk`, `live_unfoldRk`, `live_prependRk`, and the label forms `DownBelowP`, `live_unfoldP`, `live_frameP`; with kills: `KVan K lo` (no kill from `lo` on), `GLiveK`, `gLiveK_none`, `liveK_cases`, `liveK_iff`, `liveK_frameRk`, `liveK_unfoldRk`, `liveK_prependRk`, `liveK_unfoldP`, `liveK_frameP`. |
 | `Ska/RawInvFragX.lean` | **`run_rawU`**: a run of the first fragment from a state with `SIP X (upRk g0.blocks) g0.bo` (blocks that hop up as `%6` under `%next` makes them, joins with several parameters) keeps it in the rank of the end state and has the liveness spec of `run_raw` (`run_rawP` with `ρ := upRk g0.blocks`; `upRk_congr`: the ranks do not change, since the old terminators are kept, `run_down`, and no new block hops up); **`run_rawUK`**, the same with the liveness over `LiveK K` for kills below `g0.bo`. |
-| `Ska/RawInvIHX.lean` | Track D (Gaps 14, `FragX` step 2): `lazK o laz` (each entry of a lazy tree first defines its sure need), **`RawIHX X nm`**: a run of `runL nm` for a fork-free goal from a state with `SIP X (upRk g0.blocks) g0.bo` keeps it in the end state's rank, and for kills `K` that vanish from `g0.bo` on, a register `LiveK` at its entry with `K` and the kills `lazK` of its result is `GLiveK K` at the goal; `FinKeep`, **`sip_reRank`** (the invariant in an older state's rank becomes the state's own, when the old terminators are kept), `rawX_tail`; the cases of `FragX` proved: **`rawX_frag`**, **`rawX_sevenFrom`** (`lazK_fromL`: `+from` keeps the kills), **`rawX_seven`**, **`rawX_four`**, **`rawX_three`**. |
+| `Ska/RawInvIHX.lean` | Track D (Gaps 14, `FragX` step 2): `lazK o laz` (each entry of a lazy tree first defines its sure need), **`RawIHX X nm`**: a run of `runL nm` for a fork-free goal from a state with `SIP X (upRk g0.blocks) g0.bo`, when `nm` has at most 255 `%6`, keeps it in the end state's rank, returns a jump with no arguments to a label in `[1, g1.bo)`, and for kills `K` that vanish from `g0.bo` on, a register `LiveK` at its entry with `K` and the kills `lazK` of its result is `GLiveK K` at the goal; `FinKeep`, **`sip_reRank`** (the invariant in an older state's rank becomes the state's own, when the old terminators are kept), `rawX_tail`; the cases of `FragX` proved: **`rawX_frag`**, **`rawX_sevenFrom`** (`lazK_fromL`: `+from` keeps the kills), **`rawX_seven`**, **`rawX_four`**, **`rawX_three`**. |
+| `Ska/RawInvIHXBin.lean` | Track D (Gaps 14, `FragX` step 2): the binary cases of `RawIHX`.  `LiveK.monoB` (kills compared at one register, at labels with a block), `lazK_cases`, `lazK_root`, `lazK_ent`, `lazK_side` (the kills of two lazy needs side by side); **`rawX_binTail`**: `q` into the block before, `p` into `q`'s code with `q`'s kills cut at `q`'s end (so they vanish there), and `+copy`, whose two lazy needs lie apart (`labs` of `runX_keeps`, `copyL_apart_some`), so `raw_copy` applies and the moves of the copy block, which define every register of the two sure needs that the merged need does not keep, replace the kills of the two roots; the facts of `sub_facts` from `runX_keeps`, `runX_foot` and the jump facts of `RawIHX`; the cases **`rawX_cons`** (`rawX_consBody`), **`rawX_five`**, **`rawX_ten`**. |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
@@ -2540,13 +2541,19 @@ import only its theorems.  So:
    (2026-11-27, third session: `run_rawPK`, `run_rawUK`), and so is part of
    (i'): `RawIHX` is stated (`RawInvIHX.lean`, checked under `%next` and
    `%pick` by `checkGoalX`) and proved for the cases `frag`, `sevenFrom`,
-   `seven`, `four` and `three` of `FragX`.  Left of (i'): cons, `%5` and
-   `%10` (the second run's result may have forks, so `+copy` is `copyL`
-   with a lazy second need: its ops at the new block define the first
-   result's sure need and the second's from the merged need, which replaces
-   the kill of the second result's root; and when both runs have a `%6`,
-   `mergeForks`), and `%6` itself (`sixNextSimple`, `sect`, the join's
-   parameters); (ii) the one-entry step of
+   `seven`, `four` and `three` of `FragX`, and (fourth session,
+   `RawInvIHXBin.lean`) cons, `%5` and `%10`.  For those `RawIHX` now asks
+   at most 255 `%6` (as every `FragX` theorem of track C does) and returns
+   the result's jump (no arguments, a label in `[1, g1.bo)`; checked by
+   `checkGoalX`).  The second run's result may have forks, but the entries
+   of the two results lie apart (`labs` of `runX_keeps`), so `+copy` is the
+   copy of the sure needs (`copyL_apart_some`) and no `mergeForks` case
+   arises; the moves of the copy block define the registers of both sure
+   needs that the merged need does not keep, so the kills of the two roots
+   (not entries of the result) do not touch a register live after it
+   (`LiveK.monoB`).  Left of (i'): `%6` itself (`sixBody` for `%done` and
+   `%pick`, `sixNextSimple` for a fork-free `%next`: `forkSure`, `sect`,
+   the join's parameters, `X` kept across `sectThread`); (ii) the one-entry step of
    `+coerce-lazy` (`CoerceStep`, under an invariant that also gives
    `BlkNodup` and `Cross` after it): `raw_coerce` has it but asks `SI`; the
    iteration over the lazy tree is proved (`coerceLazyL_prep`), and

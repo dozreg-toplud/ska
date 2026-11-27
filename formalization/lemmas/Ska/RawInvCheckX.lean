@@ -219,7 +219,9 @@ need, only registers live at the goal's continuation that the goal does
 not name.  Checked from a state whose block `1` reads registers `0` and
 `1` (`con 0 1 2, don 2`), for the goal `%next` with need `0` into `1`
 (so only `1` may be live, and it is in 3,028 of the 4,320 runs), and for
-`%pick` into `1` and `2` (`don 3`), with the other fields of `checkRunX`. -/
+`%pick` into `1` and `2` (`don 3`), with the other fields of `checkRunX`
+and the result's jump: no arguments, to a label from `1` below the end's
+`bo`. -/
 
 def gY : Comp.Gen FM :=
   ⟨3, 2, 0, false, HoonMap.put (HoonMap.empty : FM Blob) 1 ⟨[], [Pole.con 0 1 2], Termin.don 2⟩,
@@ -236,7 +238,8 @@ def checkGoalX (goal : CGoal LS) (g0 : Comp.Gen FM) (ok : Nat → Bool) (nm : No
   (runL nm (CGoal.toL goal) [] g0).map fun (nex, g) =>
     let m := g.blocks
     defOnceB m && noTrB m && parNodupB m && rkDownB m && argsAboveRkB m && lazyOKB m nex &&
-      nex.th.args.isEmpty && (liveAtEntry m nex).all ok
+      nex.th.args.isEmpty && decide (1 ≤ nex.th.there) && decide (nex.th.there < g.bo) &&
+      (liveAtEntry m nex).all ok
 
 #guard (sixes ++ enumX).all fun nm =>
   checkGoalX (CGoal.next (lazyReg 0) (jmp0 1)) gY (· == 1) nm == some true
