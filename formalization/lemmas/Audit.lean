@@ -147,6 +147,9 @@ import lemmas.Compiler.CompRunSixAll
 import lemmas.Compiler.CompRunAllSix
 import lemmas.Compiler.CompSccSix
 import lemmas.Compiler.CompRunTagsSix
+import lemmas.Ska.ShapeColCheck
+import lemmas.Compiler.CompShapeColUni
+import lemmas.Compiler.CompShapeColSur
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -1179,3 +1182,7 @@ open Formalization
 #print axioms Compiler.cu_gate_scc_one_six_fol
 #print axioms Compiler.km_sixNextLC
 #print axioms Compiler.km_runLC6
+#print axioms SkaModel.Comp.shapeCol_ofSure
+#print axioms Compiler.uno_gate
+#print axioms Compiler.shapeCol_sccSur
+#print axioms Compiler.shapeCol_finSure
