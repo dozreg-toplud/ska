@@ -28,7 +28,7 @@ from digest [296] to [299] and the brief are *not checked here*.
 
 The eleventh pass is at base 812e4aa (digest [302]: every track merged
 through [302], the FIXED compiler, pill 03d6233e...), with integration
-6e1dff4 (track D's leaves) merged in; track G's new names are checked in
+75dffca (track D's leaves at 6e1dff4, track C) merged in; track G's new names are checked in
 `AuditGlue.lean` (section "eleventh pass"); the names of other tracks from
 digest [296] to [302] cited below were FOUND in the tree at 812e4aa (grep,
 file named), not `#check`ed, except track D's four leaves (checked).
@@ -65,8 +65,10 @@ READ FIRST (eleventh pass, base 812e4aa, digest [296] to [302]):
   (`kim_run_plainIL`); the `GD`-only form is checked (0 failures on 2,856
   nomms under 7 goals) and is D's next step, with `LzS Q l ↔ kimLz Q l`
   and the DIRECT call in its inductions (to reach `NoSixM`).  So
-  `EntryMono` on `PlainM` rests on `KIMid`'s run clause (D) and `ProxEnd`
-  alone (`entryMono_plain` if built, see 2.c ELEVENTH PASS); `EntryNary`
+  `EntryMono` on `PlainM` rests on `KIMid` (D: the run clause, and the
+  bridge from D's `kimLz` form of `kim_split` / `kim_into` to `LzS`) and
+  `ProxEnd` alone: **`entryMono_plain`** (`Glue/StraightPlain.lean`, on
+  this branch after merging integration 75dffca); `EntryNary`
   on `PlainNC` still needs `GuardNaryC` (G, not started).  D also found
   `IL` FALSE at `%6` as stated (`+fork-need`'s `o0` / `o1` hop up to the
   join, `+fork`'s `insertHop` rewrites an old entry block; reached from the
@@ -831,9 +833,11 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
       written only by the `%nok` / `%cal` block emitted after the kerf,
       never in one of its lazy blocks.  CHECKED: 7 of 7, 7,920 of 7,920
       (`tallyP`), the old fact failing on 640.
-    - With track D's leaves (integration 6e1dff4): D's class `PlainM`
-      (indirect calls only) is inside `NoSixM`, so on it `EntryMono` rests
-      on `KIMid`'s run clause and `ProxEnd` alone.
+    - With track D's leaves (integration 6e1dff4, merged here at 75dffca):
+      D's class `PlainM` (indirect calls only) is inside `NoSixM`
+      (`noSix_of_plain`), so `guardMonoC_plain` and **`entryMono_plain`**
+      (`Glue/StraightPlain.lean`): `EntryMono` on `PlainM` from `KIMid` and
+      `ProxEnd` alone (D's `optInMono_plain`, `readsInMono_plain`).
     - OPEN, in order: `ProxEnd` (a run invariant on `cond` beside `InvA`:
       every arm, as `KPA` carries `InvA` only); `KIMid`'s run clause in the
       `GD` form (D); `GuardNaryC` (its run is `runLCM env false`; the final
