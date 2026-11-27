@@ -10,6 +10,8 @@ import lemmas.Compiler.PokeLinkGood2
 import lemmas.Compiler.PokeLinkGoodK
 import lemmas.Ska.PokeFlagsOf
 import lemmas.Compiler.PokeLinkLoop
+import lemmas.Compiler.PokeLinkLoopRun
+import lemmas.Compiler.PokeLinkGood4
 
 /-! # Audit of track P: `enc` and the `%full` branch of `+poke` -/
 
@@ -159,3 +161,19 @@ open Formalization Formalization.Compiler
 #check @SccsLeafAt
 #check @LoopRunAt
 #check @LoopTotal
+#print axioms srLoop_cut
+#print axioms FinMap.jabF_toNoun
+#print axioms lp_g1
+#print axioms lp_g2
+#print axioms lp_loc1
+#print axioms lp_loc2
+#print axioms lp_trap
+#print axioms lp_run
+#print axioms acc_loop
+#print axioms acc_final
+#print axioms loopRunAtT
+#print axioms loopLinkAt_flagsOfT
+#print axioms good4_empty
+#print axioms flags_poke
+#check @EvalFinAt
+#check @LoopRunAtT
