@@ -1,5 +1,7 @@
 import lemmas.Compiler.OptLinkTotalBlock
+import lemmas.Compiler.OptLinkTotalWalkStep
 import lemmas.Ska.OptAliasPlainDriver
+import lemmas.Ska.RawInvCheckX
 
 /-! `#print axioms` of the converse of `+optimize` (`OptLinkTotal*.lean`),
 and checks of the facts it proves and assumes on the example block maps of
@@ -177,6 +179,94 @@ def wPick : LM Blob := ⟨[(0, ⟨[], [Pole.imm (Nock.A 5) 1, Pole.imm (Nock.A 5
 #guard (aliasM (fun _ => 7) 0 wPick (revCfg wPick [0]) [0]).isNone
 #guard (aliasM (fun l => l.headD 0) 0 wPick (revCfg wPick [0]) [0]).isSome
 
+/-! ## `WInv` (`OptLinkTotalWalk.lean`), checked at every step
+
+`winvB` is the decidable form of the fields `none`, `drop`, `old` and `kept`
+of `WInv` (registers below `R`, paths of `pathsTo` with fuel `20`; `ARev` is
+proved by track E), `inputB` the input on the reachable blocks (`ReadsIn`,
+`Closed`, `ArityOK`, `TwoNA`), and `runB` the list of (step, field) that
+fail on the walk of `topo = bbTopo`.  It holds at every step on the three
+examples and on all 4,080 raw outputs of `enumX` (`RawInvCheckX.lean`, the
+input holds on each), among them `enumX[340]`, which has unreachable blocks
+(about 50 s). -/
+
+def dstsB (b : Blob) : List Nat := b.body.filterMap aliasDst
+def reachB (bl : LM Blob) (q : Nat) : Bool := !(pathsTo bl 20 q).isEmpty
+def allDefsB (bl : LM Blob) : List Nat := bl.l.flatMap fun (_, b) => blockDefs b
+def sqB (n : Nat) (bl : LM Blob) (q : Nat) (b : Blob) (r : Nat) : Bool :=
+  b.par.contains r || (!(allDefsB bl).contains r && decide (r < n)) ||
+  ((allDefsB bl).contains r && (pathsTo bl 20 q).all fun path => (path.drop 1).any fun o' =>
+    ((HoonMap.get bl o').map fun b' => (blockDefs b').contains r).getD false)
+def testFactB : Termin → AInfo → Bool
+  | Termin.brn s _ _, i => (i s).isSome
+  | Termin.brz s _ _, i => (i s).isSome
+  | Termin.clq s _ _, i => (i s).isSome
+  | _, _ => true
+
+def winvB (R n : Nat) (bl : LM Blob) (pre : List Nat) (g : AGen LM) : List Bool :=
+  let ks := bl.l.map Prod.fst
+  [ ks.all fun t => pre.contains t || (g.info t).isNone,
+    ks.all fun t => pre.contains t || (g.rev t).all fun q => !pre.contains q || (g.info q).isSome,
+    (List.range R).all fun r => g.old r == r || pre.any fun q => (g.info q).isSome &&
+      ((HoonMap.get bl q).map fun b => (dstsB b).contains r).getD false,
+    ks.all fun q => match g.info q with
+      | none => true
+      | some i => reachB bl q && (g.imms q).isSome &&
+        ((List.range R).all fun k => match i k with
+          | some f => (refsB f).all fun x => (i x).isSome
+          | none => true) &&
+        match HoonMap.get bl q, HoonMap.get g.new q with
+        | some bq, some pb => testFactB pb.fin i &&
+            ((getJmps pb.fin).all fun j => match HoonMap.get bl j.there with
+              | some bt => decide (bt.par.length ≤ j.args.length) &&
+                  ((List.range bt.par.length).all fun k => match j.args[k]? with
+                    | some (some u) => (i u).isSome
+                    | _ => true)
+              | none => false) &&
+            (ks.all fun t => pre.contains t || !(g.rev t).contains q || (getJmps pb.fin).any (·.there == t)) &&
+            ((List.range R).all fun r => !(sqB n bl q bq r || (dstsB bq).contains r) || (i (g.old r)).isSome)
+        | _, _ => false ]
+
+def walkPre (pick : List Nat → Nat) (n : Nat) (bl : LM Blob) : List Nat → List Nat → AGen LM → List (List Nat × AGen LM)
+  | pre, [], g => [(pre, g)]
+  | pre, o :: t, g => (pre, g) :: match aliasBlock pick n bl g o with
+    | some g' => walkPre pick n bl (pre ++ [o]) t g'
+    | none => []
+
+def inputB (n : Nat) (bl : LM Blob) : Bool :=
+  bl.l.all fun (o, b) => !reachB bl o ||
+    ((List.range (b.body.length + 1)).all fun i =>
+      ((((b.body.drop i).head?.map aliasReads).getD []) ++ (if i = b.body.length then finRegs b.fin else [])).all
+        fun r => (allDefsB bl).contains r || decide (r < n)) &&
+    (getJmps b.fin).all fun j => match HoonMap.get bl j.there with
+      | some bt => j.args.length == bt.par.length && (!twoWay b.fin || j.args.isEmpty)
+      | none => false
+
+def maxReg (bl : LM Blob) : Nat :=
+  (bl.l.flatMap fun (_, b) => blockDefs b ++ (b.body.flatMap poleRegs) ++ finRegs b.fin).foldl max 0
+
+/-- `some (complete, failures)` when the input holds, `none` otherwise. -/
+def runB (n : Nat) (bl : LM Blob) : Option (Bool × List (Nat × Nat)) :=
+  match bbTopo 30 bl with
+  | none => none
+  | some topo =>
+    if !inputB n bl then none else
+    let st := walkPre (fun l => l.headD 0) n bl [] topo (aliasInit (revCfg bl topo))
+    some (st.length == topo.length + 1,
+      (st.zipIdx.flatMap fun ((pre, g), k) =>
+        ((winvB (maxReg bl + 2) n bl pre g).zipIdx.filter (!·.1)).map fun (_, f) => (k, f)))
+
+def rawL (nm : Nomm) : Option (Nat × LM Blob) :=
+  (Raw.naryX nm).map fun s => (s.nargs, ⟨Raw.blocksOf s.blocks⟩)
+
+#guard runB 1 xaBlocks == some (true, [])
+#guard runB 2 xbBlocks == some (true, [])
+#guard runB 1 xhBlocks == some (true, [])
+-- `enumX[340]`: eight blocks, some unreachable
+#guard (Raw.enumX[340]?.bind rawL).map (fun (n, bl) => (bl.l.length, runB n bl)) == some (8, some (true, []))
+#guard (Raw.enumX.filterMap rawL).length == 4080
+#guard (Raw.enumX.filterMap rawL).all fun (n, bl) => runB n bl == some (true, [])
+
 end AuditOptTotal
 #print axioms switchRet_of
 #print axioms switchChains_some
@@ -194,3 +284,10 @@ end AuditOptTotal
 #print axioms aliasEdges_inv
 #print axioms aliasPars_inv
 #print axioms aliasBlock_some
+#print axioms readS
+#print axioms later_dst
+#print axioms afin_walk
+#print axioms winv_drop
+#print axioms winv_kept
+#print axioms winv_walk
+#print axioms aliasRetN_of
