@@ -317,5 +317,59 @@ theorem cr6tk_eq (h7 : slot? 7 ctx = some compK) (p q r : Nomm) (laz : Lazy CSet
     simp [nock_exec, Nomm.toNoun, CGoalL.toNoun, h7, h63, hD0, wh_arm, hwq, hwr, hDt, tho_arm, htho, lg_at,
       lg_arm, hlg, hD1, sl_arm, hsl, hD2, sfk_arm, hsf, loob, ewq, ewr, et, eb]
 
+/-! ## Phase K: `+kerf`, then the case again on a fork-free goal -/
+
+/-- What `+kerf` returns: the new block is the label counter, the register
+is fresh and below the counter after it, the mode is kept. -/
+theorem kerf_inv {laz : Lazy CSet} {th : Jmp} {g g' : Gen (TreapMap mugF)} {out pro : Nat}
+    (h : kerf ⟨laz, th⟩ g = some ((out, pro), g')) :
+    out = g.bo ∧ g.re ≤ pro ∧ pro < g'.re ∧ g.bo < g'.bo ∧ g'.drop = g.drop := by
+  unfold kerf at h
+  obtain ⟨o, g1, h1, h⟩ := bind_some h
+  rw [emit_apply] at h1
+  simp only [Option.some.injEq, Prod.mk.injEq] at h1
+  obtain ⟨rfl, rfl⟩ := h1
+  obtain ⟨r, g2, h2, h⟩ := bind_some h
+  rw [pure_apply] at h
+  simp only [Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h
+  obtain ⟨er, lr⟩ := kern_reg h2
+  obtain ⟨-, kb, kd⟩ := (km_kern (Map := TreapMap mugF) (S := CSet) _ _).keep _ _ _ h2
+  simp only [emitted_bo, emitted_re, emitted_drop] at er lr kb kd
+  exact ⟨rfl, er ▸ Nat.le_refl _, er ▸ lr, by omega, kd⟩
+
+/-- The goal of phase K after `+kerf` meets `GInv`. -/
+theorem ginv_kerf {laz : Lazy CSet} {th : Jmp} {g g' : Gen (TreapMap mugF)} {out pro : Nat}
+    (h : kerf ⟨laz, th⟩ g = some ((out, pro), g')) (hd : g.drop = false) :
+    GInv g' (CGoalL.next (Lazy.ofSure ⟨Need.this pro, HoonSet.empty⟩) (jmp0 out)) := by
+  obtain ⟨-, -, hp, -, kd⟩ := kerf_inv h
+  refine ginv_ofSure (fun y hy => ?_) (fun y hy => ?_) trivial (kd.trans hd)
+  · exact absurd hy (HoonSet.mem_empty y)
+  · simp only [NMem] at hy; omega
+
+/-- The model of `%6` under a `%next` goal whose `+leap` is `~`, whose need
+with the bunt sure is not `+none-equivalent` and whose `+kerf` test holds:
+`+kerf`, then the case on the goal `[%next [[%this pro] ~] ~ ~] ~ out]`. -/
+theorem runLC_n6_k (env : CallEnv) (msup : Option Nomm) (p q r : Nomm) (laz : Lazy CSet) (th : Jmp)
+    (region : List Nat) (hlp : leap laz q r = some Option.none)
+    (hne : Lazy.noneEquivalentL (Lazy.mk Sure.bunt laz.fork laz.bond) = false) (hkt : kerfTest q r laz = true) :
+    (runLC env msup (Nomm.n6 p q r) (CGoalL.next laz th) region : CM (TreapMap mugF) (NextL CSet))
+      = (do
+          let (out, pro) ← kerf ⟨laz, th⟩
+          runLC env msup (Nomm.n6 p q r)
+            (CGoalL.next (Lazy.ofSure ⟨Need.this pro, HoonSet.empty⟩) (jmp0 out)) region) := by
+  show sixNextLC env.cod _ _ _ p q r 3 laz th region = _
+  unfold kerfTest at hkt
+  rw [sixNextLC.eq_2]
+  simp only [hlp, hne, Bool.not_false, if_true, hkt]
+  congr 1
+  funext v
+  obtain ⟨out, pro⟩ := v
+  have e : ∀ L J, (runLC env msup (Nomm.n6 p q r) (CGoalL.next L J) region : CM (TreapMap mugF) (NextL CSet))
+      = sixNextLC env.cod (runLC env msup p) (runLC env msup q) (runLC env msup r) p q r 3 L J region :=
+    fun _ _ => rfl
+  rw [e]
+  simp only [Lazy.ofSure, sixNextLC_fork_free]
+
 end Compiler
 end Formalization
