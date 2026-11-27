@@ -528,24 +528,24 @@ theorem passOn_inv (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmT : Me
   exact ⟨fun j => ole_trans (valE_sub S j) (A j), i, ole_lt_trans (valE_sub S i) hlt⟩
 
 /-- **The pass loop of `+analyze` ends**: there is no infinite sequence of
-passes of a component that go on, from a state with the construction, tidy
+passes of a component that go on (each at some fuel), from a state with the construction, tidy
 and stack invariants, when `+run` keeps the stack invariant (`RunStkW`) and
 `next` stays below a bound `B` along the passes (the bound on the number of
 functions analysed: finitely many identities and no culled member pushed
 again). -/
 theorem passOn_wf (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmT : MemoTP memoF)
-    (hRW : ∀ k, RunStkW (run env memoF k)) (n : Nat) (id : Ident) (index p B : Nat)
+    (hRW : ∀ k, RunStkW (run env memoF k)) (id : Ident) (index p B : Nat)
     (f : Nat → SkaState M R) (h0i : SInv (f 0)) (h0t : TInv (f 0)) (h0w : WInv (f 0))
-    (hon : ∀ k, PassOn env memoF n id index (p + k) (f k) (f (k + 1)))
+    (hon : ∀ k, ∃ n, PassOn env memoF n id index (p + k) (f k) (f (k + 1)))
     (hB : ∀ k, (f k).next ≤ B) : False := by
   have inv : ∀ k, SInv (f k) ∧ TInv (f k) ∧ WInv (f k) := by
     intro k
     induction k with
     | zero => exact ⟨h0i, h0t, h0w⟩
     | succ k ih =>
-      obtain ⟨a, b, c, _, _⟩ := passOn_inv env memoF hmF hmT hRW ih.1 ih.2.1 ih.2.2 (hon k)
+      obtain ⟨a, b, c, _, _⟩ := passOn_inv env memoF hmF hmT hRW ih.1 ih.2.1 ih.2.2 (hon k).choose_spec
       exact ⟨a, b, c⟩
-  have step := fun k => passOn_inv env memoF hmF hmT hRW (inv k).1 (inv k).2.1 (inv k).2.2 (hon k)
+  have step := fun k => passOn_inv env memoF hmF hmT hRW (inv k).1 (inv k).2.1 (inv k).2.2 (hon k).choose_spec
   obtain ⟨K, hK⟩ := ev_const (r := fun a b : Nat => a < b) Nat.lt_wfRel.wf (fun _ _ _ => Nat.lt_trans)
     (fun k => B - (f k).next) (fun k => by
       have h1 := (step k).2.2.2.1

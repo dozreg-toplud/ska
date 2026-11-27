@@ -3,6 +3,7 @@ import lemmas.Ska.PassMeasureS
 import lemmas.Ska.PassMeasureE
 import lemmas.Ska.PassMeasureP
 import lemmas.Ska.PassMeasureW
+import lemmas.Ska.PassMeasureF
 
 /-! The axioms of the theorems of track F (`Ska/PassMeasure.lean`,
 `Ska/PassMeasureK.lean`, `Ska/PassMeasureT.lean`, `Ska/PassMeasureS.lean`, `Ska/PassMeasureA.lean`,
@@ -111,3 +112,9 @@ out. -/
 #print axioms Ana.run_winv
 #print axioms Ana.passOn_wf_W
 #print axioms Ana.skaCallgraph_w
+
+-- the fuel of the pass loop (`Ska/PassMeasureF.lean`)
+#print axioms Ana.acc_of_no_chain
+#print axioms Ana.passOn_mono
+#print axioms Ana.passNext_acc
+#print axioms Ana.passLoop_returns

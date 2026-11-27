@@ -740,11 +740,11 @@ named: there is no infinite sequence of passes of a component that go on,
 from a state with `SInv`, `TInv` and `WInv`, for a persistent memo with
 well-formed and tidy entries whose `indi` is normal. -/
 theorem passOn_wf_W (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmT : MemoTP memoF)
-    (hmN : MemoNI memoF) (n : Nat) (id : Ident) (index p B : Nat)
+    (hmN : MemoNI memoF) (id : Ident) (index p B : Nat)
     (f : Nat → SkaState M R) (h0i : SInv (f 0)) (h0t : TInv (f 0)) (h0w : WInv (f 0))
-    (hon : ∀ k, PassOn env memoF n id index (p + k) (f k) (f (k + 1)))
+    (hon : ∀ k, ∃ n, PassOn env memoF n id index (p + k) (f k) (f (k + 1)))
     (hB : ∀ k, (f k).next ≤ B) : False :=
-  passOn_wf env memoF hmF hmT (run_winv env memoF hmF hmT hmN) n id index p B f h0i h0t h0w hon hB
+  passOn_wf env memoF hmF hmT (run_winv env memoF hmF hmT hmN) id index p B f h0i h0t h0w hon hB
 
 /-- **`+ska-callgraph` keeps `WInv`**: from a root whose subject sock is well
 formed, tidy and not `%void`. -/
