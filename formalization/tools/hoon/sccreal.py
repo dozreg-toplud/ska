@@ -16,6 +16,7 @@
 #                                ned-final, need-new, the raw sur, o, =(~ soft.gen) after the
 #                                run; mem: each member [bell view-need view-sure pure jet];
 #                                out: each key of nary.cache [bell need sure pure jet]
+#   [%ds S b soft]               right after: ~(tap by soft.gen) after the run, each [o soft-call]
 #   [%dp S b prev np]            at the product: the previous entry's need (or ~) and
 #                                need-pessimized
 #   [%fin S entries]             the needs of the entries the final pass returns (as mugs)
@@ -160,6 +161,9 @@ if sys.argv[1] in ('--lean', '--tally'):
             recs.append(dict(case=case, b=b, less=less, nomm=nomm, laz=laz, ord=ord_, nedf=nedf,
                              nn=nn, sur=sur, o=o, nosoft=nosoft, mem=lst(mem), out=lst(out)))
             pend[(S, b)] = recs[-1]
+        elif tag == 'ds':
+            S, (b, sl) = e[1]
+            pend[(S, b)]['soft'] = lst(sl)
         elif tag == 'dp':
             S, (b, (prev, np)) = e[1]
             r = pend.pop((S, b))
@@ -172,10 +176,12 @@ if sys.argv[1] in ('--lean', '--tally'):
     print('/-- One `%done` compile: the case, the bell\'s mug, `less.b`, the nomm, `laz`, the `ord` of')
     print('`+shape-collapse`, `ned-final`, `need-new`, the raw `sur`, `o`, no soft call, the members')
     print('`[bell need sure pure jet]` (the views), the callees outside `[bell need sure pure jet]`')
-    print('(only those the nomm calls), the previous entry (`~` or `[~ need]`), `need-pessimized`. -/')
+    print('(only those the nomm calls), the previous entry (`~` or `[~ need]`), `need-pessimized`,')
+    print('the soft map after the run (`~(tap by soft.gen)`, each `[o soft-call]`). -/')
     print('structure DoneRec where\n  cs : String\n  b : Nat\n  less : String\n  nomm : String\n  laz : String')
     print('  ord : String\n  nedf : String\n  nn : String\n  sur : String\n  o : Nat\n  nosoft : Bool')
-    print('  mem : List String\n  out : List String\n  prev : String\n  np : String\n')
+    print('  mem : List String\n  out : List String\n  prev : String\n  np : String')
+    print('  soft : List String := []\n')
     names = []
     for i, r in enumerate(recs):
         cal = callees(r['nomm'], [])
@@ -188,7 +194,8 @@ if sys.argv[1] in ('--lean', '--tally'):
         print('  o := %d\n  nosoft := %s' % (r['o'], 'true' if r['nosoft'] == 0 else 'false'))
         print('  mem := [%s]' % ', '.join('"%s"' % ns(x) for x in r['mem']))
         print('  out := [%s]' % ', '.join('"%s"' % ns(x) for x in out))
-        print('  prev := "%s"\n  np := "%s"\n' % (ns(r['prev']), ns(r['np'])))
+        print('  prev := "%s"\n  np := "%s"' % (ns(r['prev']), ns(r['np'])))
+        print('  soft := [%s]\n' % ', '.join('"%s"' % ns(x) for x in r.get('soft', [])))
     print('def recs : List DoneRec := [%s]\n' % ', '.join(names))
     print('end Formalization.SkaModel.SccLoop.RealData')
     sys.exit(0)
@@ -234,6 +241,9 @@ ins('      [[(need-to-ordered ned.bak) laz ned-final bak o sur] gen]', [
     '                  (~(has by call.cole.jets.long-ska) k)',
     '              ==',
     '          ==',
+], after=False)
+ins('      [[(need-to-ordered ned.bak) laz ned-final bak o sur] gen]', [
+    '      ~&  ^-(* [%ds (mug scc) (mug b) ~(tap by soft.gen)])',
 ], after=False)
 ins('    ?~  s-previous=(~(get by map-local) b)', [
     '    ~&  ^-  *',
