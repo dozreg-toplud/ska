@@ -2,6 +2,8 @@ import lemmas.Compiler.PokeLink
 import lemmas.Compiler.PokeLinkFull
 import lemmas.Compiler.PokeLinkScc
 import lemmas.Compiler.PokeLinkSka
+import lemmas.Compiler.PokeLinkGood
+import lemmas.Compiler.PokeLinkSccHit
 
 /-! # Audit of track P: `enc` and the `%full` branch of `+poke` -/
 
@@ -83,3 +85,20 @@ open Formalization Formalization.Compiler
 #print axioms skaRaw_iff
 #print axioms skaLinkAt_of
 #print axioms pokeN_fullAt2
+#print axioms keyRaw_enc
+#print axioms good_empty
+#print axioms skaKeeps_of_armP
+#print axioms compiledMono_good
+#print axioms good_full_step
+#print axioms optInAt_of_good
+#print axioms skaLinkAt_good
+#print axioms pokeN_fullAt3
+#print axioms pokeModel_fullGood
+#print axioms full_step_good
+#print axioms pokeReachGood
+#print axioms pokeModel_fullReach
+#print axioms pokeModel_fullReachP
+#print axioms sccG_eq
+#print axioms sccBat_run
+#print axioms sccG_hit
+#print axioms sccImage_of_miss
