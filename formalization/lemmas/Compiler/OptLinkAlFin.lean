@@ -3,7 +3,7 @@ import lemmas.Compiler.CompLift
 import lemmas.Ska.OptAliasBrz
 
 /-!
-# `+alias`: the end of a block, the ends that only rename (phase 14, README Gaps 13)
+# `+alias`: the end of a block, the ends that rename and `%eqq` (phase 14, README Gaps 13)
 
 ```hoon
   =^  fin-new=termin  gen
@@ -20,17 +20,32 @@ import lemmas.Ska.OptAliasBrz
 ```
 
 The `?-` (`alFin`) runs in the subject `[body-new [par-new [bob [imms [info
-[pre WALK]]]]]]` (`alFS`), where `WALK = [alBat [GEN [Y [Z optC]]]]` is the
-core of the walk (axis `127`): `fin.bob` is at `59`, `gen` at `510`, and
-`rn` is the arm `10` of `WALK`.  `GEN` is `[new old info imms info-local
-imms-local rev folded]` (`alGenN`).
+[pre WALK]]]]]]` (`alFS`), where `WALK` is the core of the walk (axis `127`,
+`alWS GEN NA BL REV TOPO` of `OptLinkAlState.lean`, `gen` its axis `6`):
+`fin.bob` is at `59`, `gen` at `510`, `o = i.topo` at `262126` (seen
+after two pushes), and `rn` is the arm `10` of `WALK`.
 
-* `alFS`, `alGenN`: the subject and the noun of `gen`.
-* `alBat_rn`: the battery with the arm `rn` at `6` exposed.
+* `alFS`: the subject; `alBat_rn`, `al_rn_arm`, `al_rn_gate`: the arm `rn`
+  and its slam (`al_rn`).
 * `alF_hop`, `alF_jmp`, `alF_jmf`, `alF_jsp`, `alF_jsf`, `alF_don`,
-  `alF_bom`: **each case returns `[fin-new gen]` with `fin-new` the
-  model's end**, the registers renamed by `f` where `old.gen` is `OldRel` to
-  `f`, and `gen` unchanged.
+  `alF_bom`: **each of these cases returns `[fin-new gen]` with `fin-new`
+  the model's end**, the registers renamed by `f` where `old.gen` is
+  `OldRel` to `f`, and `gen` unchanged (`+turn` with `rn` by
+  `mr_turn_ren`, with `(lift rn)` by `lf_turn`).
+* `alF_jug_del`: **`+del:ju`** on a `JugRel` jug: the filter of the list at
+  the key; `jugRel_congr`, `jugRel_delJu` (on lists without duplicates,
+  `RevNodup`, that is `Opt.delJu`).
+* `alF_got`: `(~(got by info-local.gen) c)` on an `InfoMapRel` map, where
+  the model has facts at `c`: an `InfoRel` noun.
+* `lb_atomImm`, `lb_none`: what `InfoRel` fixes of `is-loob`.
+* `AlFinOK FC fin`: **what the link of an end states**, on a `gen` noun
+  `GenRelL g loc imml` with `RevNodup g.rev`: where `aliasFin g.old loc
+  g.rev g.folded o fin` returns `res`, the case `FC` returns `[fin-new gen]`
+  with `fin-new` the noun of `res.1` and `gen` again `GenRelL` to `g` with
+  `rev := res.2.1` and `folded := res.2.2`.
+* `alF_eqq`: **`AlFinOK alFinEqq`**.  The other two-way ends are in
+  `OptLinkAlFinClq.lean`, `OptLinkAlFinBrn.lean`, `OptLinkAlFinBrz.lean`,
+  the dispatch `al_fin` in `OptLinkAlFinAll.lean`.
 -/
 
 namespace Formalization
@@ -41,12 +56,8 @@ open Nock Pill Hoon SkaModel
 set_option linter.unusedSimpArgs false
 set_option linter.unusedVariables false
 
-/-- The noun of `gen`: `[new old info imms info-local imms-local rev folded]`. -/
-def alGenN (NEW OLD INFO IMMS LOC IMML REV FOLD : Noun) : Noun :=
-  C NEW (C OLD (C INFO (C IMMS (C LOC (C IMML (C REV FOLD))))))
-
 /-- The subject of the end: `[body-new [par-new [bob [imms [info [pre WALK]]]]]]`,
-the walk core `WALK = [alBat [GEN [Y [Z optC]]]]`. -/
+`WALK` the core of the walk. -/
 def alFS (X1 X2 BOB X4 X5 X6 WALK : Noun) : Noun :=
   C X1 (C X2 (C BOB (C X4 (C X5 (C X6 WALK)))))
 
