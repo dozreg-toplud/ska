@@ -190,5 +190,65 @@ theorem al_part (g : Opt.AGen (TreapMap mugF)) {INFO : Noun} (hI : InfoStoreRel 
     simp [nock_exec, hL2, eqCode, turn.arm_at, turn_arm, hturn, by.arm_at, by_arm, by.put.arm_at, put_arm, hput,
       hN, htl]
 
+/-! ## Phase 12 -/
+
+/-- `GenRelL` moves along `AInfoEq` of the facts of `info-local`. -/
+theorem GenRelL.of_aInfoEq {g : Opt.AGen (TreapMap mugF)} {loc loc' : Opt.AInfo} {imml : Opt.AImms} {N : Noun}
+    (h : GenRelL g loc imml N) (e : Opt.AInfoEq loc loc') : GenRelL g loc' imml N := by
+  obtain ⟨OLD, INFO, IMMS, LOC, IMML, REV, hN, h1, h2, h3, h4, h5, h6⟩ := h
+  exact ⟨OLD, INFO, IMMS, LOC, IMML, REV, hN, h1, h2, h3, h4, infoMapRel_of_aInfoEq h5 e, h6⟩
+
+/-- **Phase 12 on the Hoon's `pre`**: on a `gen` related to `g` with facts
+`loc`, `alPars` returns `[par.bob gen']`, `gen'` related to `g` with the facts
+of `aliasPars` on the edges of `aliasEdges g o pre`. -/
+theorem al_pars_perm {g : Opt.AGen (TreapMap mugF)} {loc : Opt.AInfo} {imml : Opt.AImms} {GEN : Noun}
+    (hg : GenRelL g loc imml GEN) (hn : Opt.NoLti g.new) (IMMS INF NA BL REV T : Noun) (o : Nat)
+    (pre : List Nat) (b : Blob) (edges : List (Nat × List (Option Nat))) (loc' : Opt.AInfo)
+    (he : Opt.aliasEdges g o pre = some edges) (hp : Opt.aliasPars g b.par edges loc = some loc') :
+    ∃ GEN', GenRelL g loc' imml GEN' ∧
+      nock (C b.toNoun (C IMMS (C INF (C (listNoun A pre) (alWS GEN NA BL REV (C (A o) T)))))) alPars
+        = some (C (listNoun A b.par) GEN') := by
+  obtain ⟨OLD, INFO, IMMSg, LOC, IMML, R, rfl, hO, hI, hM, hR, hLOC, hIML⟩ := hg
+  have hE := al_edges g hn o pre (Blob.toNoun b) IMMS INF OLD INFO IMMSg LOC IMML R (flag g.folded) NA BL REV T
+  rw [he, Option.map_some] at hE
+  obtain ⟨LOC', hLOC', htrap⟩ := al_part g hI (HoonMap.toNoun Blob.toNoun g.new) OLD IMMSg IMML R (flag g.folded)
+    NA BL REV (C (A o) T) (C (listNoun Pole.toNoun b.body) b.fin.toNoun) IMMS INF (listNoun A pre) b.par edges loc
+    loc' LOC [] hLOC hp
+  refine ⟨genN (HoonMap.toNoun Blob.toNoun g.new) OLD INFO IMMSg LOC' IMML R (flag g.folded),
+    ⟨OLD, INFO, IMMSg, LOC', IMML, R, rfl, hO, hI, hM, hR, hLOC', hIML⟩, ?_⟩
+  simp only [List.reverse_nil, List.nil_append, listNoun] at htrap
+  rw [show Blob.toNoun b = C (listNoun A b.par) (C (listNoun Pole.toNoun b.body) b.fin.toNoun) from rfl] at hE ⊢
+  unfold alPS at hE
+  unfold alPTC at htrap
+  simp [nock_exec, alPars, alEdges_cut, alParT_cut, hE, htrap]
+
+/-- **Phase 12**: on a `gen` related to `g` with facts `loc` (after phases 9
+to 11), with `pre` the Hoon's list (`al_pre`: no duplicates, the members of
+`g.rev o`) and `RevNodup g.rev`, `NoLti g.new` of the walk's invariants, where
+the model's `aliasEdges g o (g.rev o)` and `aliasPars` return, `alPars`
+returns `[par.bob gen']` with `gen'` related to `g` and the model's facts
+`loc'`, imms unchanged. -/
+theorem al_pars {g : Opt.AGen (TreapMap mugF)} {loc : Opt.AInfo} {imml : Opt.AImms} {GEN : Noun}
+    (hg : GenRelL g loc imml GEN) (hr : Opt.RevNodup g.rev) (hn : Opt.NoLti g.new)
+    (IMMS INF NA BL REV T : Noun) (o : Nat) (pre : List Nat) (hd : pre.Nodup) (hm : ∀ x, x ∈ pre ↔ x ∈ g.rev o)
+    (b : Blob) (edges : List (Nat × List (Option Nat))) (loc' : Opt.AInfo)
+    (he : Opt.aliasEdges g o (g.rev o) = some edges) (hp : Opt.aliasPars g b.par edges loc = some loc') :
+    ∃ GEN', GenRelL g loc' imml GEN' ∧
+      nock (C b.toNoun (C IMMS (C INF (C (listNoun A pre) (alWS GEN NA BL REV (C (A o) T)))))) alPars
+        = some (C (listNoun A b.par) GEN') := by
+  have hP := al_pre_perm hr hd hm
+  have h := Opt.aliasPars_edges_perm g o b.par hP (Opt.aInfoEq_equiv.refl loc)
+  rw [he, Option.bind_some, hp] at h
+  cases eH : Opt.aliasEdges g o pre with
+  | none => rw [eH] at h; simp at h
+  | some edgesH =>
+    rw [eH, Option.bind_some] at h
+    cases eP : Opt.aliasPars g b.par edgesH loc with
+    | none => rw [eP] at h; simp at h
+    | some locH =>
+      rw [eP] at h
+      obtain ⟨GEN', hG', hN⟩ := al_pars_perm hg hn IMMS INF NA BL REV T o pre b edgesH locH eH eP
+      exact ⟨GEN', hG'.of_aInfoEq h, hN⟩
+
 end Compiler
 end Formalization
