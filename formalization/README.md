@@ -276,17 +276,22 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompRunDirectS.lean` | `+callee-sure` and `+callee-need` (README Gaps 19): `csu_gate` (`+callee-sure`, door arm `4060`, is `env.sure b` under `SureNoun`: `sure.cache`, axis `31` of `cache`, holds `env.sure b` or nothing with `env.sure b = none`; `sureNoun_of_map` on a map noun), `ccc_nary` (`+callee-compiled`, door arm `13791`, on a hit in `nary.cache`), `cne_read` (`+callee-need`, door arm `221180`, with no ring in its read-only cases `NeedRead`: `scc` member with `map-local` or `top`, non-member in `nary.cache`; the state unchanged), `CallNounR`, `callNoun_of_r`, **`comp_run_n2_callR`** (the call as `CompRunAtM` with `CallNounR`). |
 | `Compiler/CompRunDirectMono.lean` | `+mono-try-call` (door arm `437183`) against `monoTryLoop` (README Gaps 19): the nouns (`mtcLoop` the trap, `mtcGB` the gate, `mtc_gb`, `mtc_at`), the trap's subject `mtcT`, the statement `MtcAt`, the trap on `%none` and `%this` (`mtc_none`, `mtc_this`), and the cut of the cell and `%both` branches into five pushes and a last `+emit` (`mtcPAr<i>`, `mtcBOr<i>`, `mtc_loop_eq`, by `tools/gen/monotry.py`). |
 | `Compiler/CompRunDirectMonoL.lean` | `+mono-try-call` on a cell and on `%both`, one push per lemma (README Gaps 19): the subject after the pushes `mtcS`, `mtcPA_0` .. `mtcPA_4`, `mtcPA_L` and `mtcBO_0` .. `mtcBO_4`, `mtcBO_L` (`+re`, `+re`, the run on the tail, the run on the head, with `_2n`/`_3n` for a failing run, the split `+emit`, the `%clq` `+emit`), the dispatch `mtc_disp_pair`, `mtc_disp_both`, **`mtc_pair`**, **`mtc_both`**, **`mtc_loop`** (the trap on every need is `monoTryLoop`), **`mtc_gate`** (the gate on `[ned opt [sub pes]]` is `monoTryCall`). |
-| `Compiler/CompRunDirectMonoB.lean` | The direct call under `mono` `&` (README Gaps 19): step 7 (`crdBlockMM`, `monoBlocks_eq`, `crd_blkM_done` on `crD7Dm`, the cut `crNMr<i>` of `crD7Nm` by `tools/gen/monoblk.py` with one lemma per push `crNM_0` .. `crNM_6`, `crNM_L`, `crd7_nm`, `crd_blkM_next`), steps 8 and 9 (`mtc_arm`, `crd_7to9M`: `+mono-try-call` by `mtc_gate`, `sub-ned` `[%this sub-pes]`), the tail against any run model (`RunAtR`, `crdFqR`, `crdTailMR`, `crd_cnfR`, `crd_ctailR`), `crd_from7M` (steps 7 to 14, model `crdCallMM`), `CallNounM` and `crd_head6M` (steps 0 to 6 at any `mono` and `sof`), `crd_model_callM` (`callDM` is `needOrdAllocRegs nb >>= crdCallMM`), **`crd_callM`** (the call `crDCall` at `mono` `A 0`), `callLM_true_direct`. |
-| `Compiler/CompRunDirectMonoP.lean` | The case `%2` on a direct call under `mono` `&` (README Gaps 19): `km_monoTryLoop`, `km_crdBlockMM`, `km_monoBlocks`, `crdBlockMM_sub`, `monoBlocks_sub` (`sub-pes` fresh), `ginv_noar`, `crd_goalsM` (the goals of `q` and `p` after `monoBlocks`), `runLCM_n2_direct`, `crd_model_n2M`, **`comp_run_n2_callMono`** (from `cr2Dir`, `RunAtR (runLCM env true msup)` at `mono` `A 0`), `ResForR`, `CompRunAtMM`, `PartLM`, `crd_fq_resR`, `crd_hpqM`, **`res_n2_callMono`**, **`comp_run_n2_callMM`**, the dropped call against any run model (`crd_nfR`, `crd_dropR`, `crd_model_dropM`, `comp_run_n2_dropMono`, `res_n2_dropMono`), **`comp_run_n2_directMM`** and **`res_n2_directMono`** (dropped or not, every goal with `GInv`), `noDirect_of_nd`, `partLM_of_partL`, `comp_run_n2_directML`, `res_n2_directML` (parts from `PartL`). |
+| `Compiler/CompRunDirectMonoB.lean` | The direct call under `mono` `&` (README Gaps 19): step 7 (`crdBlockMM`, `monoBlocks_eq`, `crd_blkM_done` on `crD7Dm`, the cut `crNMr<i>` of `crD7Nm` by `tools/gen/monoblk.py` with one lemma per push `crNM_0` .. `crNM_6`, `crNM_L`, `crd7_nm`, `crd_blkM_next`), steps 8 and 9 (`mtc_arm`, `crd_7to9M`: `+mono-try-call` by `mtc_gate`, `sub-ned` `[%this sub-pes]`), the tail against any run model and any code table `cd` of `+past` over `p` (`RunAtR`, `crdFqR`, `crdTailMR R cd`, `crd_cnfR`, `crd_ctailR`; `PastAt ctx cd n`: the pill's `+past` over `n` is `pastL cd`, `pastAt_nd`), `crd_from7M` (steps 7 to 14, model `crdCallMM`), `CallNounM` and `crd_head6M` (steps 0 to 6 at any `mono` and `sof`), `crd_model_callM` (`callDM` is `needOrdAllocRegs nb >>= crdCallMM R env.cod`, no hypothesis on `+hinted` of `p`), **`crd_callM`** (the call `crDCall` at `mono` `A 0`), `callLM_true_direct`. |
+| `Compiler/CompRunDirectMonoP.lean` | The case `%2` on a direct call under `mono` `&` (README Gaps 19): `km_monoTryLoop`, `km_crdBlockMM`, `km_monoBlocks`, `crdBlockMM_sub`, `monoBlocks_sub` (`sub-pes` fresh), `ginv_noar`, `crd_goalsM` (the goals of `q` and `p` after `monoBlocks`), `runLCM_n2_direct`, `crd_model_n2M`, **`comp_run_n2_callMono`** (from `cr2Dir`, `RunAtR (runLCM env true msup)` at `mono` `A 0`), `ResForR`, `CompRunAtMM`, `PartLM`, `crd_fq_resR`, `crd_hpqM`, **`res_n2_callMono`**, **`comp_run_n2_callMM`**, the dropped call against any run model (`crd_nfR`, `crd_dropR`, `crd_model_dropM`, `comp_run_n2_dropMono`, `res_n2_dropMono`), **`comp_run_n2_directMM`** and **`res_n2_directMono`** (dropped or not, every goal with `GInv`; `+past` over `p` as `PastAt ctx env.cod p`, so `p` may hold direct calls), `noDirect_of_nd`, `partLM_of_partL`, `comp_run_n2_directML`, `res_n2_directML` (parts from `PartL`). |
 | `Compiler/CompRunDirectMonoC.lean` | The case `%2` on a direct call under `mono` `&` with subject and formula in the class `SixOk`/`NoAx0` (README Gaps 19): `partL_six`, **`comp_run_n2_direct_six`**, `res_n2_direct_six`. |
-| `Compiler/CompRunRBase.lean` | The run link with a rest predicate (README Gaps 19): `CompRunAtX` (`CompRunAtR` with `X x mono sup`), `XM E msup` and `crx_iff_mm` (at `XM` it is `CompRunAtMM`), `crx_of_r`, `crx_of_runLC`, `PastAt` (`+past` over `n` is `pastL cod`), `pastAt_nd`, `PartR` (link, `ResForR`, `PastAt ctx env.cod`), `partR_of_partL`, `partLM_of_partR`, `CallCode` (the code entries of the callees), `runLCM_n2_none`, `runLCM_cons_done`. |
+| `Compiler/CompRunRBase.lean` | The run link with a rest predicate (README Gaps 19): `CompRunAtX` (`CompRunAtR` with `X x mono sup`), `XM E msup` and `crx_iff_mm` (at `XM` it is `CompRunAtMM`), `crx_of_r`, `crx_of_runLC` (`PastAt`, `pastAt_nd` are in `CompRunDirectMonoB.lean`), `PartR` (link, `ResForR`, `PastAt ctx env.cod`), `partR_of_partL`, `partLM_of_partR`, `CallCode` (the code entries of the callees), `runLCM_n2_none`, `runLCM_cons_done`. |
 | `Compiler/CompRunRRes.lean` | Generated by `tools/gen/runr.py` from `CompRunResAll.lean`: the results against `runLCM env true msup` (`res_n3R`, `res_n4R`, `res_n7R`, `res_n5R`, `res_n2R`, `res_consR`, `res_n10R`, the tails). |
 | `Compiler/CompRunRLeaf.lean` | Generated by `tools/gen/runr.py` from `CompRunCall.lean`, `CompRunLeafL.lean`: `%3`, `%4` (`comp_run_n3LR`, `comp_run_n4LR`) and `%7` (`comp_run_n7CR`, `q` at its own rest predicate) against `runLCM env true msup` with `CompRunAtX`. |
 | `Compiler/CompRunRCons.lean` | Generated by `tools/gen/runr.py` from `CompRunConsL.lean`: the cons against `runLCM env true msup` (`comp_run_consLR`), parts `PartR`, `+past` by `PastAt`. |
 | `Compiler/CompRunRFive.lean` | Generated by `tools/gen/runr.py` from `CompRunFiveL.lean`: `%5` and the indirect `%2` against `runLCM env true msup` (`comp_run_n5LR`, `comp_run_n2LR`). |
 | `Compiler/CompRunRTen.lean` | Generated by `tools/gen/runr.py` from `CompRunTenL.lean`: `%10` against `runLCM env true msup` (`comp_run_n10LR`). |
 | `Compiler/CompRunRPast.lean` | Generated by `tools/gen/runr.py` from `CompPastLink.lean`: `hd_gateR` (`+hinted` with the code noun is `hinted env.cod` under `CallCode`; the call branch by `got_gate` at `layer2`), `comp_pastR` (`+past` is `pastL env.cod`). |
-| `Compiler/CompRunRClass.lean` | **The run link at `mono` `&` on the plain class with direct calls** (README Gaps 19): `hinted_code`, `pastAt_code`, `DirOk`, `CallOk`, `DirCalls`, `callCode_of_dir`, `resR_of_res`, **`comp_run_dir`** (every member is a `PartR` at `XM E msup`), **`comp_run_dirMM`** (`CompRunAtMM` on every goal with `GInv`), `res_dir`; examples: a cons with a direct call in its head, two direct calls under `%7`. |
+| `Compiler/CompRunRClass.lean` | **The run link at `mono` `&` on the plain class with `%6` and direct calls anywhere** (README Gaps 19): `hinted_code`, `pastAt_code`, `pastForkAt_code`, `sixR_of`, `DirOk` (`%6` in, no `PlainOk` on the subject of a call), `CallOk`, `DirCalls`, `callCode_of_dir`, `noAx0_of_dir` (`DirOk` gives `Bake.NoAx0`), `resR_of_res`, **`comp_run_dir`** (every member is a `PartR` at `XM E msup`; `%6` by `comp_run_n6_allR`), **`comp_run_dirMM`** (`CompRunAtMM` on every goal with `GInv`), `res_dir`; `CallNounMR`, `callNounM_of_r`, `callOk_of_r` (`CallOk` with `+callee-need`, `+callee-sure` read-only); examples: a cons with a direct call in its head, two direct calls under `%7`, a direct call in the subject of a direct call, a direct call in a branch of a `%6`, a direct call as the test of a `%6`. |
+| `Compiler/CompRunRSixS.lean` | Generated by `tools/gen/runr.py` from `CompRunSixS.lean`, `CompRunSixRes.lean`, `CompSixHelp.lean`: `PastForkAt` (`+past-fork` over `n` is `Lazy.pastFork cod`), `SixPartsR` (link `CompRunAtX`, `ResForR`, `PastForkAt ctx env.cod`), `comp_past_forkR` (`+past-fork` with the code table, by `hd_gateR`), phase S under `%done`/`%pick` against `runLCM env true msup` (`cr6s_pR`, `cr6s_lyn_dpR`, `cr6s_midR`, `comp_run_n6_dpR`, `res_n6_dpR`). |
+| `Compiler/CompRunRSixN.lean` | Generated by `tools/gen/runr.py` from `CompRunSixNext.lean`, `CompSixKerf.lean`: phase S on a fork-free `%next` goal and phase K against `runLCM env true msup` (`comp_run_n6_nfR`, `res_n6_nfR`, `comp_run_n6_kR`, `res_n6_kR`). |
+| `Compiler/CompRunRSixF.lean` | Generated by `tools/gen/runr.py` from `CompRunSixF.lean`: phase F against `runLCM env true msup` (`cr6f_pR`, `comp_run_n6_fR`, `res_n6_fR`). |
+| `Compiler/CompRunRSixL.lean` | Generated by `tools/gen/runr.py` from `CompRunSixL.lean`, `Ska/CompLeapTwiceRun.lean`: phase L against `runLCM env true msup` (`comp_run_n6_lR`, `res_n6_lR`, the `_tw` forms). |
+| `Compiler/CompRunRSixAll.lean` | Generated by `tools/gen/runr.py` from `CompRunSixAll.lean`: **`comp_run_n6_allR`**, **`res_n6_allR`**: `%6` on every goal with `GInv` against `runLCM env true msup` with the link `CompRunAtX`, parts `SixPartsR`, `Bake.NoAx0` of the branches. |
 | `Compiler/AuditRunDirect.lean` | `#print axioms` of the theorems of `CompRunDirect*.lean` and `CompRunR*.lean`. |
 | `Compiler/CompRunTenL.lean` | `%10` on every goal with `GInv`, with lazy results (`comp_run_n10L`): `+into` of a lazy need (`comp_into_all`) and the tail (`cr10_tailL`). |
 | `Compiler/CompRunAllL.lean` | **`comp_run_all_l`, `runLinkL`: the run link on every goal with `GInv` for every nomm of the plain class**, every region, `env` and `msup`, given only `slot? 7 ctx = some compK` and `slot? 52 ctx = some cod`; `comp_run_entry_l`; `plainOk_of_indOk` (the fragment `indOk` is in the class); `example`s: `[8 [9 2 [0 1]] c]` for every `c` of the class on every goal with `GInv`, and with `c` a cons whose head calls. |
@@ -3721,17 +3726,41 @@ import only its theorems.  So:
     induction, the call by `comp_run_n2_directMM`/`res_n2_directMono`),
     **`comp_run_dirMM`** (as `CompRunAtMM` on every goal with `GInv`),
     `res_dir`; examples: a cons whose head is a direct call, and two direct
-    calls in a row under `%7`.  Next, in order: (1) a direct call whose
-    subject `p` has a direct call: `crd_ctailR`, `crdTailMR`, `crd_dropR`,
-    `crd_model_callM` (`CompRunDirectMonoB.lean`, `-MonoP.lean`) use
-    `pastL noCode` over `p` and take `hpc : hinted env.cod p = hinted noCode
-    p`, `hinted noCode p ≠ none` (false on a direct call); restate them with
-    `pastL env.cod` and `PastAt ctx env.cod p` (as the copies do), then drop
-    `PlainOk p` from `DirOk`; (2) `%6` in the class: copies of the phases
-    of `comp_run_n6_all` (`CompRunSix*.lean`) by the same script; (3)
-    `cole`, `hot`, `sof` and the agreement of `NeedRead`/`SureNoun` with
-    `env` as invariants of the compile of an SCC; (4) the miss in
-    `nary.cache` (the recursion above).
+    calls in a row under `%7`.  Linked (2026-11-27, seventh session): the
+    two limits of `DirOk` removed.  (1) The direct call takes `+past` over
+    its subject as `PastAt ctx cd p` for any code table (`crdTailMR R cd`,
+    `crd_ctailR`, `crd_dropR`, `crd_from7M`, `crd_callM`; `crd_model_callM`,
+    `crd_model_n2M`, `crd_model_dropM` without `hpc`), so `comp_run_dir`
+    passes `P.past` and the subject may hold direct calls.  (2) `%6`: the
+    phases of `comp_run_n6_all` copied by `tools/gen/runr.py`
+    (`CompRunRSix*.lean`: `SixPartsR`, `PastForkAt`, `comp_past_forkR`,
+    `comp_run_n6_allR`, `res_n6_allR`), `noAx0_of_dir`.  The class is now
+    `DirOk`: `%0`, `%1`, `%3`, `%4`, `%5`, `%6`, `%7`, cons, `%10` (axis not
+    `0`), the indirect call and the direct call with no memo key, nested
+    in any way.  Left for a whole compile at `mono` `&` (the run of
+    `+compile-unary`, K arm `2810`, 299 cells, line 3396: `(~(run comp gen)
+    & nomm [%done ~] ~ ~)` after `+compile-scc-in` and `+comp scc long-ska
+    jets-hot n-ary-map ~ func`), per call (`CallOk`, `callOk_of_r`): (a)
+    `CodePure`, `env.cod b = some (env.pure b)`, `cole` (`call.cole` of
+    `long-ska`, ctx axis `6846`, has no entry for `b`), `hot` (ctx axis
+    `54`): facts of the samples `long-ska`, `jets-hot` of `+compile-unary`,
+    passed unchanged to `+comp` (K arm `5590`); `env` defined from
+    `code.long-ska` and `call.cole`; (b) `NeedRead`/`env.need`: for `b` in
+    `scc` the case `loc` with `map-local` the `n-ary-map` that
+    `+compile-scc-in` (K arm `2732`, 2519 cells) returns, for `b` outside it
+    the case `nary` (`nary.cache` after `+compile-scc-in`, which compiled
+    the callee through `+callee-compiled` unless the n-ary pass inlined the
+    call away); (c) `SureNoun`: `sure.cache` of the cache `+compile-scc-in`
+    returns (put by `member`, line 3544); (d) `sof`: the push `crDKc6`
+    (109 cells) returns: `+sound` (door arm `13654`, 30 cells) over
+    `+sound-far` (K arm `5467`, 350 cells), `+need-soft` (K arm `5466`, 145
+    cells), `+made` (linked), `+hinted` (linked, `hd_gateR`); (e) the miss
+    in `nary.cache`: `+callee-compiled` (door arm `13791`, 145 cells) runs
+    `+scc-of` (K arm `96127`, 430 cells) and `+compile-scc-in` and changes
+    the cache, so the rest `x` of the run link is not kept (the link would
+    thread `x`).  Not in the class: a direct call with a memo key and a
+    callee with a ring (`callDM` crashes on both unless the call is
+    dropped), `%11`, `%12`, `mean`.
 20. **`+to-straight` with proxies: the map path** (track I, 2026-11-27,
     `Compiler/CompStraightMap*.lean`, nouns cut by `tools/gen/tsmap.py`).
     The map first.
