@@ -2656,7 +2656,10 @@ import only its theorems.  So:
    (`+remove-hops`, `+remove-useless-branching`, `+remove-empty-middle`,
    `+alias`, `+trim-trace-hints`, `+remove-dead-code`) to keep
    `ReadsIn N`, and the field `alias` of `PassTotal` stated at `N` only
-   (open).
+   (open).  Checked in a scratch run: on all 4,080 raw outputs of `enumX`,
+   with the model passes, `ReadsIn nargs` (on the reachable blocks) holds
+   on the input of `+alias` and on the output of every round of
+   `optimizeOnce` (up to six rounds), so that `J` is the right one.
 
 14. **Raw `+comp` output meets the optimizer's invariant** (track D,
    2026-11-24, `Ska/RawInv*.lean`, `Ska/AuditRaw.lean`).  The driver theorem
