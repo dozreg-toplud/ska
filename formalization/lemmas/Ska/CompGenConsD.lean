@@ -127,7 +127,7 @@ theorem SplitOKD.base {s sh st : Sure S} {o : Nat} {g g1 : Gen Map} (h : splitSu
     (hd : g.drop = false) {B0 : List Pole} {fin0 : Termin} (hb : HoonMap.get g.blocks o = some ⟨[], B0, fin0⟩)
     (l hl tl : Lazy S) (es : l.sure = s) (eh : hl.sure = sh) (et : tl.sure = st) :
     SplitOKD g g1 [(o, l)] [(o, hl)] [(o, tl)] := by
-  obtain ⟨A, PA, M1, M2, _, RA, RB, SD⟩ := splitSure_ok h hd hb
+  obtain ⟨A, PA, M1, M2, CL, RA, RB, SD⟩ := splitSure_ok h hd hb
   refine ⟨fun k => if k = o then A else [], PA, fun k hk => ?_, fun k => ?_⟩
   · have : k ≠ o := fun e => hk (by simp [e])
     simp [this]
@@ -136,7 +136,7 @@ theorem SplitOKD.base {s sh st : Sure S} {o : Nat} {g g1 : Gen Map} (h : splitSu
       refine ⟨[(s, sh, st, A)], by simp, by simp [atL_single, es], by simp [atL_single, eh, DropT.refl],
         by simp [atL_single, et, DropT.refl], fun p hp => ?_, ?_⟩
       · rw [List.mem_singleton.mp hp]
-        exact ⟨M1, M2, RA, RB, SD⟩
+        exact ⟨M1, M2, RA, RB, SD, CL⟩
       · exact fun _ _ => List.pairwise_singleton _ _
     · have e' : o ≠ k := fun x => e x.symm
       refine ⟨[], by simp [e], by simp [atL_single, e'], by simp [atL_single, e', DropT.refl],

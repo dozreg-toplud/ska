@@ -207,12 +207,13 @@ structure SplitP (lo hi : Nat) (p : SplitE S) : Prop where
       (R : Map (Option Noun)) (a b : Noun), HoldsN p.2.1.ned R a → HoldsN p.2.2.1.ned R b →
       ∃ R', Runs lib O c gul st' t p.2.2.2 R R' ∧ HoldsN p.1.ned R' (C a b) ∧
         ∀ y, ¬ NMem p.1.ned y → SkaModel.read y R' = SkaModel.read y R
+  cl : Clean p.1.ned → Clean p.2.1.ned ∧ Clean p.2.2.1.ned
 
 theorem SplitP.mono {lo hi lo' hi' : Nat} {p : SplitE S} (h : SplitP (Map := Map) lo hi p) (e1 : lo' ≤ lo)
     (e2 : hi ≤ hi') : SplitP (Map := Map) lo' hi' p := by
   refine ⟨fun y hy => ?_, fun y hy => ?_, fun Pr hn hm => h.ra Pr hn (ple_trans hm e1),
     fun hb q hq x hx => Nat.lt_of_lt_of_le (h.rb (fun r hr => Nat.lt_of_lt_of_le (hb r hr) e1) q hq x hx) e2,
-    fun d l => h.sem d (fun y hy => Nat.lt_of_lt_of_le (l y hy) e1)⟩
+    fun d l => h.sem d (fun y hy => Nat.lt_of_lt_of_le (l y hy) e1), h.cl⟩
   · rcases h.mh y hy with a | a
     · exact Or.inl a
     · exact Or.inr ⟨by omega, by omega⟩
@@ -292,7 +293,7 @@ theorem SplitOKL.base {s sh st : Sure S} {o : Nat} {g g1 : Gen Map} (h : splitSu
     (hd : g.drop = false) {B0 : List Pole} {fin0 : Termin} (hb : HoonMap.get g.blocks o = some ⟨[], B0, fin0⟩)
     (l hl tl : Lazy S) (es : l.sure = s) (eh : hl.sure = sh) (et : tl.sure = st) :
     SplitOKL g g1 [(o, l)] [(o, hl)] [(o, tl)] := by
-  obtain ⟨A, PA, M1, M2, _, RA, RB, SD⟩ := splitSure_ok h hd hb
+  obtain ⟨A, PA, M1, M2, CL, RA, RB, SD⟩ := splitSure_ok h hd hb
   refine ⟨fun k => if k = o then A else [], PA, fun k hk => ?_, fun k => ?_⟩
   · have : k ≠ o := fun e => hk (by simp [e])
     simp [this]
@@ -301,7 +302,7 @@ theorem SplitOKL.base {s sh st : Sure S} {o : Nat} {g g1 : Gen Map} (h : splitSu
       refine ⟨[(s, sh, st, A)], by simp, by simp [atL_single, es], by simp [atL_single, eh, DropT.refl],
         by simp [atL_single, et, DropT.refl], fun p hp => ?_⟩
       rw [List.mem_singleton.mp hp]
-      exact ⟨M1, M2, RA, RB, SD⟩
+      exact ⟨M1, M2, RA, RB, SD, CL⟩
     · have e' : o ≠ k := fun x => e x.symm
       refine ⟨[], by simp [e], by simp [atL_single, e'], by simp [atL_single, e', DropT.refl],
         by simp [atL_single, e', DropT.refl], fun _ h => by simp at h⟩
