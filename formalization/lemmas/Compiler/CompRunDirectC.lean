@@ -530,7 +530,7 @@ the call not dropped (`crdDrop`), no ring, `env.need b = some nb`, `sof`
 false, the rest `x` of the state with `NoSoft` and `CallNoun`, every goal with
 `GInv`; the runs of `q` and `p` for the goals of the call (`hpq`). -/
 theorem comp_run_n2_call (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
-    (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (hpl : PlainOk p = true) (b : Bell) (hcd : CodePure cod env b)
+    (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (hpl : NoDirect p) (b : Bell) (hcd : CodePure cod env b)
     (nb : NeedOrd) (sur : Noun) (goal : CGoalL CSet) (region : List Nat) (g : Gen (TreapMap mugF))
     (hinv : GInv g goal) (hdr : crdDrop (env.pure b) goal = false) (hri : env.ring b = Option.none)
     (hnb : env.need b = some nb) (hsof : env.sof (made p msup) p q b nb = false)
@@ -549,7 +549,7 @@ theorem comp_run_n2_call (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : s
         CopyH g5.re nexS.laz nexF'.laz)) :
     RunAt env msup ctx x (A 1) (unitNoun Nomm.toNoun msup) (Nomm.n2 p q (some (b, Option.none))) goal region g := by
   obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
-  obtain ⟨hpc, hpn⟩ := hinted_plain env.cod hpl
+  obtain ⟨hpc, hpn⟩ := hinted_nd env.cod hpl
   obtain ⟨V, hgot, hv⟩ := hcd
   unfold RunAt
   rw [crd_model_call env msup p q b nb goal region hdr hri hnb hsof hpc, crd_noun, cr_disp_n2, cr2_dir, crd_eq]

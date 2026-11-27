@@ -42,16 +42,16 @@ theorem comp_run_all_l (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slo
     have h' := h
     simp only [PlainOk, Bool.and_eq_true] at h'
     exact comp_run_consL h7 hcode env msup p q
-      ⟨comp_run_all_l h7 hcode env p h'.1 msup region, res_all env p h'.1 msup region, h'.1⟩
-      ⟨comp_run_all_l h7 hcode env q h'.2 msup region, res_all env q h'.2 msup region, h'.2⟩ goal g hi
+      ⟨comp_run_all_l h7 hcode env p h'.1 msup region, res_all env p h'.1 msup region, plainOk_noDirect _ h'.1⟩
+      ⟨comp_run_all_l h7 hcode env q h'.2 msup region, res_all env q h'.2 msup region, plainOk_noDirect _ h'.2⟩ goal g hi
   | Nomm.n0 ax, _, msup, region, goal, g, hi => crc_of_pure env rfl (comp_run_n0L h7 ax goal region g hi) msup
   | Nomm.n1 k, _, msup, region, goal, g, hi => crc_of_pure env rfl (comp_run_n1L h7 k goal region g hi) msup
   | Nomm.n2 p q Option.none, h, msup, region, goal, g, hi => by
     have h' := h
     simp only [PlainOk, Bool.and_eq_true] at h'
     exact comp_run_n2L h7 hcode env msup p q
-      ⟨comp_run_all_l h7 hcode env p h'.1 msup region, res_all env p h'.1 msup region, h'.1⟩
-      ⟨comp_run_all_l h7 hcode env q h'.2 msup region, res_all env q h'.2 msup region, h'.2⟩ goal g hi
+      ⟨comp_run_all_l h7 hcode env p h'.1 msup region, res_all env p h'.1 msup region, plainOk_noDirect _ h'.1⟩
+      ⟨comp_run_all_l h7 hcode env q h'.2 msup region, res_all env q h'.2 msup region, plainOk_noDirect _ h'.2⟩ goal g hi
   | Nomm.n3 p, h, msup, region, goal, g, hi => by
     simp only [PlainOk] at h
     exact comp_run_n3L h7 env msup p goal region g hi (comp_run_all_l h7 hcode env p h msup region)
@@ -62,8 +62,8 @@ theorem comp_run_all_l (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slo
     have h' := h
     simp only [PlainOk, Bool.and_eq_true] at h'
     exact comp_run_n5L h7 hcode env msup p q
-      ⟨comp_run_all_l h7 hcode env p h'.1 msup region, res_all env p h'.1 msup region, h'.1⟩
-      ⟨comp_run_all_l h7 hcode env q h'.2 msup region, res_all env q h'.2 msup region, h'.2⟩ goal g hi
+      ⟨comp_run_all_l h7 hcode env p h'.1 msup region, res_all env p h'.1 msup region, plainOk_noDirect _ h'.1⟩
+      ⟨comp_run_all_l h7 hcode env q h'.2 msup region, res_all env q h'.2 msup region, plainOk_noDirect _ h'.2⟩ goal g hi
   | Nomm.n7 p q, h, msup, region, goal, g, hi => by
     simp only [PlainOk, Bool.and_eq_true] at h
     exact comp_run_n7C env msup p q goal region g (comp_run_all_l h7 hcode env q h.2 (some p) region goal g hi)
@@ -73,8 +73,8 @@ theorem comp_run_all_l (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slo
     have h' := h
     simp only [PlainOk, Bool.and_eq_true, bne_iff_ne, ne_eq] at h'
     exact comp_run_n10L h7 hcode env msup a h'.1.1 v q
-      ⟨comp_run_all_l h7 hcode env v h'.1.2 msup region, res_all env v h'.1.2 msup region, h'.1.2⟩
-      ⟨comp_run_all_l h7 hcode env q h'.2 msup region, res_all env q h'.2 msup region, h'.2⟩ goal g hi
+      ⟨comp_run_all_l h7 hcode env v h'.1.2 msup region, res_all env v h'.1.2 msup region, plainOk_noDirect _ h'.1.2⟩
+      ⟨comp_run_all_l h7 hcode env q h'.2 msup region, res_all env q h'.2 msup region, plainOk_noDirect _ h'.2⟩ goal g hi
   | Nomm.n2 _ _ (some _), h, _, _, _, _, _ => by simp [PlainOk] at h
   | Nomm.n6 _ _ _, h, _, _, _, _, _ => by simp [PlainOk] at h
   | Nomm.n11s _ _ _, h, _, _, _, _, _ => by simp [PlainOk] at h

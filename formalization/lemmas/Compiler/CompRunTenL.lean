@@ -125,8 +125,8 @@ theorem comp_run_n10L (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot
     (Q : PartL env msup ctx q region) (goal : CGoalL CSet) (g : Gen (TreapMap mugF)) (hinv : GInv g goal) :
     CompRunAtR (runLC env msup) ctx (Nomm.n10 a v q) goal region g := by
   obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
-  obtain ⟨hvc, hvn⟩ := hinted_plain env.cod V.plain
-  obtain ⟨hqc, hqn⟩ := hinted_plain env.cod Q.plain
+  obtain ⟨hvc, hvn⟩ := hinted_nd env.cod V.nd
+  obtain ⟨hqc, hqn⟩ := hinted_nd env.cod Q.nd
   intro x mono sup hx
   have hnn : (Nomm.n10 a v q).toNoun = C (A 10) (C (C (A a) v.toNoun) q.toNoun) := rfl
   have hsn := comp_simple_next hc x g goal mono (Nomm.n10 a v q).toNoun (listNoun A region) sup

@@ -139,7 +139,7 @@ theorem comp_run_n2_callM (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : 
     CompRunAtM env msup ctx (fun x => ∃ sur, CallNoun msup ctx p q b nb sur x) (Nomm.n2 p q (some (b, Option.none)))
       goal region g := by
   intro x hx ⟨sur, hn⟩
-  exact comp_run_n2_call h7 hcode env msup p q P.plain b hcd nb sur goal region g hinv hdr hri hnb hsof x hx hn
+  exact comp_run_n2_call h7 hcode env msup p q P.nd b hcd nb sur goal region g hinv hdr hri hnb hsof x hx hn
     (crd_hpq env msup p q P Q b nb goal g hinv x hx _)
 
 end Compiler
