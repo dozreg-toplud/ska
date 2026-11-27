@@ -14,6 +14,7 @@ import lemmas.Compiler.CompSofPush
 import lemmas.Compiler.CompSofArms
 import lemmas.Compiler.CompCalleeComp
 import lemmas.Compiler.CompSofCode
+import lemmas.Compiler.CompCalleeCompOne
 
 /-! The axioms of the link of the direct call of `%2` (README Gaps 19). -/
 
@@ -260,3 +261,19 @@ open Formalization.Compiler
 #print axioms Formalization.Compiler.cu_gate_dirT
 #print axioms Formalization.Compiler.cu_gate_dirExt
 #print axioms Formalization.Compiler.cu_gate_dir_of_T
+#print axioms Formalization.Compiler.crd_ctailRT
+#print axioms Formalization.Compiler.crd_dropRT
+#print axioms Formalization.Compiler.crd_callMT
+#print axioms Formalization.Compiler.comp_run_n2_callMonoTT
+#print axioms Formalization.Compiler.comp_run_n2_dropMonoT
+#print axioms Formalization.Compiler.comp_run_n2_directXTT
+#print axioms Formalization.Compiler.dirCallsT_nested
+#print axioms Formalization.Compiler.sureNoun_ext
+#print axioms Formalization.Compiler.callOkT_of_E
+#print axioms Formalization.Compiler.dirCallsT_of_E
+#print axioms Formalization.Compiler.cu_gate_dirE
+#print axioms Formalization.Compiler.cu_gate_dirE_csi
+#print axioms Formalization.Compiler.ccc_csi_eq
+#print axioms Formalization.Compiler.cccMiss_one
+#print axioms Formalization.Compiler.mapSub_put
+#print axioms Formalization.Compiler.ext_one
