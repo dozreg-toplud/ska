@@ -2,28 +2,12 @@ module
 
 public import core.Nock
 
-/-!
-`cue`: the noun that an atom decodes to.  It follows `+cue` and `+rub` of
-hoon.hoon line by line, and it is written to be read, not to be run: the
-table of the nouns decoded so far is a function.
-
-The encoding, from the lowest bit:
-
-* `0`, then a length-prefixed atom:        that atom
-* `1 0`, then two nouns:                   the cell of them
-* `1 1`, then a length-prefixed atom `q`:  the noun that started at bit `q`
-
-A length-prefixed atom of `e` bits is `c` zeros, a one, the low `c - 1` bits
-of `e` (its top bit is implied), and the `e` bits of the atom, where `c` is
-the bit length of `e`.  The atom 0 is the single bit `1`.
--/
-
 @[expose] public section
 
 namespace Formalization
 namespace Nock
 
-/-- The `n` bits of `a` from bit `i` up, as a number: `(cut 0 [i n] a)`. -/
+-- (cut 0 [i n] a)
 def bits (a i n : Nat) : Nat :=
   (a >>> i) % 2 ^ n
 

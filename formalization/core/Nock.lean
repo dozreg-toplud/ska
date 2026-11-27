@@ -1,7 +1,5 @@
 module
-/- Verbatim local specification from docs/nock/4.txt:
-
-Nock 4K
+/-  Nock 4K
 
 A noun is an atom or a cell. An atom is a natural number. A cell is an ordered pair of nouns.
 
@@ -55,267 +53,131 @@ nock(a)             *a
 namespace Formalization
 namespace Nock
 
--- Nock nouns:
--- "A noun is an atom or a cell. An atom is a natural number.
--- A cell is an ordered pair of nouns."
 inductive Noun where
-  | atom : Nat -> Noun
-  | cell : Noun -> Noun -> Noun
-  deriving DecidableEq, Repr
+    | atom : Nat -> Noun
+    | cell : Noun -> Noun -> Noun
+    deriving DecidableEq, Repr
 
--- Constructors with short names for writing Nock formulas.
 abbrev A : Nat -> Noun := Noun.atom
 abbrev C : Noun -> Noun -> Noun := Noun.cell
+abbrev T2 (t : Nat) (x : Noun) : Noun := C (A t) x
+abbrev T3 (t : Nat) (x y : Noun) : Noun := C (A t) (C x y)
+abbrev T4 (t : Nat) (x y z : Noun) : Noun := C (A t) (C x (C y z))
 
--- Nock lists associate to the right: [a b c] == [a [b c]].
-abbrev n2 (x y : Noun) : Noun :=
-  C x y
+-- ?[a b]       0
+-- ?a           1
+def Wut : Noun -> Noun
+    | Noun.cell _ _ => A 0
+    | _ => A 1
 
-abbrev n3 (x y z : Noun) : Noun :=
-  C x (C y z)
+-- +[a b]       +[a b]
+-- +a           1 + a
+def Lus: Noun -> Noun -> Prop
+    | Noun.cell _ _, _ => False
+    | Noun.atom a, p => p = A (1 + a)
 
-abbrev n4 (w x y z : Noun) : Noun :=
-  C w (C x (C y z))
 
--- Formula notation for *[a 0 b].
-abbrev slot (axis : Nat) : Noun :=
-  n2 (A 0) (A axis)
-
--- Formula notation for *[a 1 b].
-abbrev quote (noun : Noun) : Noun :=
-  n2 (A 1) noun
-
--- The ? operator:
--- ?[a b] = 0
--- ?a     = 1
-def wut : Noun -> Noun
-  | Noun.atom _ => A 1
-  | Noun.cell _ _ => A 0
-
--- The = operator:
 -- =[a a] = 0
 -- =[a b] = 1
-def eqCode (left right : Noun) : Noun :=
-  if left = right then A 0 else A 1
+def Tis (a b : Noun) : Noun :=
+    if a = b then A 0 else A 1
 
--- The formula produced by opcode 9's expansion:
--- *[a 9 b c] = *[*[a c] 2 [0 1] 0 b].
--- This helper is the "2 [0 1] 0 b" part.
-abbrev invoke (axis : Nat) : Noun :=
-  n3 (A 2) (slot 1) (slot axis)
+-- /[1 a]               a
+-- /[2 a b]             a
+-- /[3 a b]             b
+-- /[(a + a) b]         /[2 /[a b]]
+-- /[(a + a + 1) b]     /[3 /[a b]]
+inductive Fas : Noun -> Noun -> Noun -> Prop where
+    | one {a} :   Fas (A 1) a a
+    | two {a b} : Fas (A 2) (C a b) a
+    | three {a b} : Fas (A 3) (C a b) b
+    | left {a b p q n} :
+        Fas a b p ->
+        Fas (A 2) p q ->
+        a = A n ->
+        Fas (A (n + n)) b q
+    | right {a b p q n} :
+        Fas a b p ->
+        Fas (A 3) p q ->
+        a = A n ->
+        Fas (A (n + n + 1)) b q
 
--- Relational slot lookup for /.
---
--- one   corresponds to /[1 a] = a.
--- left  corresponds to /[(a + a) b] = /[2 /[a b]].
--- right corresponds to /[(a + a + 1) b] = /[3 /[a b]].
-inductive Slot : Nat -> Noun -> Noun -> Prop where
-  -- /[1 a] = a
-  | one {subject} :
-      Slot 1 subject subject
-  -- /[(a + a) b] = /[2 /[a b]]
-  | left {axis subject head tail} :
-      Slot axis subject (C head tail) ->
-      Slot (2 * axis) subject head
-  -- /[(a + a + 1) b] = /[3 /[a b]]
-  | right {axis subject head tail} :
-      Slot axis subject (C head tail) ->
-      Slot (2 * axis + 1) subject tail
+-- #[1 a b]            a
+-- #[(a + a) b c]      #[a [b /[(a + a + 1) c]] c]
+-- #[(a + a + 1) b c]  #[a [/[(a + a) c] b] c]
+-- #a                  #a
+inductive Hax : Noun -> Noun -> Noun -> Noun -> Prop where
+    | one {a b} : Hax (A 1) a b a
+    | left {a b c p q n} :
+        a = A n ->
+        Fas (A (n + n + 1)) c p ->
+        Hax a (C b p) c q ->
+        Hax (A (n + n)) b c q
+    | right {a b c p q n} :
+        a = A n ->
+        Fas (A (n + n)) c p ->
+        Hax a (C p b) c q ->
+        Hax (A (n + n + 1)) b c q
 
--- Relational edit for #.
---
--- one   corresponds to #[1 a b] = a.
--- left  corresponds to #[(a + a) b c] =
---   #[a [b /[(a + a + 1) c]] c].
--- right corresponds to #[(a + a + 1) b c] =
---   #[a [/[(a + a) c] b] c].
---
--- Edit axis replacement subject out means #[axis replacement subject] = out.
--- As in the spec, an edit at axis 2a is an edit at axis a whose replacement
--- is the new head paired with the old tail, so the axis is consumed from its
--- low bit while the path it names is walked from the root.
-inductive Edit : Nat -> Noun -> Noun -> Noun -> Prop where
-  -- #[1 a b] = a
-  | one {replacement subject} :
-      Edit 1 replacement subject replacement
-  -- #[(a + a) b c] = #[a [b /[(a + a + 1) c]] c]
-  | left {axis replacement subject tail out} :
-      Slot (2 * axis + 1) subject tail ->
-      Edit axis (C replacement tail) subject out ->
-      Edit (2 * axis) replacement subject out
-  -- #[(a + a + 1) b c] = #[a [/[(a + a) c] b] c]
-  | right {axis replacement subject head out} :
-      Slot (2 * axis) subject head ->
-      Edit axis (C head replacement) subject out ->
-      Edit (2 * axis + 1) replacement subject out
-
--- Big-step Nock evaluation: Eval subject formula out means *[subject formula]
--- reduces to out.
---
--- The final catch-all "*a = *a" is intentionally absent: it is the crashing or
--- non-reducing case, so this relation only derives successful evaluations.
-inductive Eval : Noun -> Noun -> Noun -> Prop where
-  -- *[a [b c] d] = [*[a b c] *[a d]]
-  | cell {subject b c d left right} :
-      Eval subject (C b c) left ->
-      Eval subject d right ->
-      Eval subject (C (C b c) d) (C left right)
-  -- *[a 0 b] = /[b a]
-  | op0 {subject axis out} :
-      Slot axis subject out ->
-      Eval subject (slot axis) out
-  -- *[a 1 b] = b
-  | op1 {subject noun} :
-      Eval subject (quote noun) noun
-  -- *[a 2 b c] = *[*[a b] *[a c]]
-  | op2 {subject b c subject' formula' out} :
-      Eval subject b subject' ->
-      Eval subject c formula' ->
-      Eval subject' formula' out ->
-      Eval subject (n3 (A 2) b c) out
-  -- *[a 3 b] = ?*[a b]
-  | op3 {subject b noun} :
-      Eval subject b noun ->
-      Eval subject (n2 (A 3) b) (wut noun)
-  -- *[a 4 b] = +*[a b]; +a = 1 + a for atoms.
-  -- There is no successful constructor for +[a b] = +[a b].
-  | op4 {subject b atom} :
-      Eval subject b (A atom) ->
-      Eval subject (n2 (A 4) b) (A (atom + 1))
-  -- *[a 5 b c] = =[*[a b] *[a c]]
-  | op5 {subject b c left right} :
-      Eval subject b left ->
-      Eval subject c right ->
-      Eval subject (n3 (A 5) b c) (eqCode left right)
-  -- *[a 6 b c d] expands to:
-  -- *[a *[[c d] 0 *[[2 3] 0 *[a 4 4 b]]]]
-  -- The expansion evaluates *[a b], increments twice, slots into [2 3],
-  -- and selects c when the test is 0, or d when the test is 1.
-  | op6_zero {subject b c d out} :
-      Eval subject b (A 0) ->
-      Eval subject c out ->
-      Eval subject (n4 (A 6) b c d) out
-  -- Same spec clause as op6_zero, for the test result 1 branch.
-  | op6_one {subject b c d out} :
-      Eval subject b (A 1) ->
-      Eval subject d out ->
-      Eval subject (n4 (A 6) b c d) out
-  -- *[a 7 b c] = *[*[a b] c]
-  | op7 {subject b c subject' out} :
-      Eval subject b subject' ->
-      Eval subject' c out ->
-      Eval subject (n3 (A 7) b c) out
-  -- *[a 8 b c] = *[[*[a b] a] c]
-  | op8 {subject b c produced out} :
-      Eval subject b produced ->
-      Eval (C produced subject) c out ->
-      Eval subject (n3 (A 8) b c) out
-  -- *[a 9 b c] = *[*[a c] 2 [0 1] 0 b]
-  | op9 {subject axis c core out} :
-      Eval subject c core ->
-      Eval core (invoke axis) out ->
-      Eval subject (n3 (A 9) (A axis) c) out
-  -- *[a 10 [b c] d] = #[b *[a c] *[a d]]
-  | op10 {subject axis c d replacement editedBase out} :
-      Eval subject c replacement ->
-      Eval subject d editedBase ->
-      Edit axis replacement editedBase out ->
-      Eval subject (n3 (A 10) (n2 (A axis) c) d) out
-  -- *[a 11 [b c] d] = *[[*[a c] *[a d]] 0 3]
-  | op11_cell {subject b c d hint product out} :
-      Eval subject c hint ->
-      Eval subject d product ->
-      Eval (C hint product) (slot 3) out ->
-      Eval subject (n3 (A 11) (C b c) d) out
-  -- *[a 11 b c] = *[a c]
-  | op11_atom {subject tag c out} :
-      Eval subject c out ->
-      Eval subject (n3 (A 11) (A tag) c) out
-
--- Nock with atom hint tags: `Eval`, except that `*[a 11 [b c] d]` reduces
--- only when the tag `b` is an atom.
---
--- The specification reduces it for any `b`.  `+mink` of hoon.hoon crashes on
--- a tag that is a cell, and so does the SKA compiler, which follows `+mink`;
--- Hoon never writes such a hint.  `Meek` is stated with this relation until
--- the Hoon follows the specification.
-inductive EvalA : Noun -> Noun -> Noun -> Prop where
-  -- *[a [b c] d] = [*[a b c] *[a d]]
-  | cell {subject b c d left right} :
-      EvalA subject (C b c) left ->
-      EvalA subject d right ->
-      EvalA subject (C (C b c) d) (C left right)
-  -- *[a 0 b] = /[b a]
-  | op0 {subject axis out} :
-      Slot axis subject out ->
-      EvalA subject (slot axis) out
-  -- *[a 1 b] = b
-  | op1 {subject noun} :
-      EvalA subject (quote noun) noun
-  -- *[a 2 b c] = *[*[a b] *[a c]]
-  | op2 {subject b c subject' formula' out} :
-      EvalA subject b subject' ->
-      EvalA subject c formula' ->
-      EvalA subject' formula' out ->
-      EvalA subject (n3 (A 2) b c) out
-  -- *[a 3 b] = ?*[a b]
-  | op3 {subject b noun} :
-      EvalA subject b noun ->
-      EvalA subject (n2 (A 3) b) (wut noun)
-  -- *[a 4 b] = +*[a b]; +a = 1 + a for atoms.
-  -- There is no successful constructor for +[a b] = +[a b].
-  | op4 {subject b atom} :
-      EvalA subject b (A atom) ->
-      EvalA subject (n2 (A 4) b) (A (atom + 1))
-  -- *[a 5 b c] = =[*[a b] *[a c]]
-  | op5 {subject b c left right} :
-      EvalA subject b left ->
-      EvalA subject c right ->
-      EvalA subject (n3 (A 5) b c) (eqCode left right)
-  -- *[a 6 b c d] expands to:
-  -- *[a *[[c d] 0 *[[2 3] 0 *[a 4 4 b]]]]
-  -- The expansion evaluates *[a b], increments twice, slots into [2 3],
-  -- and selects c when the test is 0, or d when the test is 1.
-  | op6_zero {subject b c d out} :
-      EvalA subject b (A 0) ->
-      EvalA subject c out ->
-      EvalA subject (n4 (A 6) b c d) out
-  -- Same spec clause as op6_zero, for the test result 1 branch.
-  | op6_one {subject b c d out} :
-      EvalA subject b (A 1) ->
-      EvalA subject d out ->
-      EvalA subject (n4 (A 6) b c d) out
-  -- *[a 7 b c] = *[*[a b] c]
-  | op7 {subject b c subject' out} :
-      EvalA subject b subject' ->
-      EvalA subject' c out ->
-      EvalA subject (n3 (A 7) b c) out
-  -- *[a 8 b c] = *[[*[a b] a] c]
-  | op8 {subject b c produced out} :
-      EvalA subject b produced ->
-      EvalA (C produced subject) c out ->
-      EvalA subject (n3 (A 8) b c) out
-  -- *[a 9 b c] = *[*[a c] 2 [0 1] 0 b]
-  | op9 {subject axis c core out} :
-      EvalA subject c core ->
-      EvalA core (invoke axis) out ->
-      EvalA subject (n3 (A 9) (A axis) c) out
-  -- *[a 10 [b c] d] = #[b *[a c] *[a d]]
-  | op10 {subject axis c d replacement editedBase out} :
-      EvalA subject c replacement ->
-      EvalA subject d editedBase ->
-      Edit axis replacement editedBase out ->
-      EvalA subject (n3 (A 10) (n2 (A axis) c) d) out
-  -- *[a 11 [b c] d] = *[[*[a c] *[a d]] 0 3], for an atom b only
-  | op11_cell {subject tag c d hint product out} :
-      EvalA subject c hint ->
-      EvalA subject d product ->
-      EvalA (C hint product) (slot 3) out ->
-      EvalA subject (n3 (A 11) (C (A tag) c) d) out
-  -- *[a 11 b c] = *[a c]
-  | op11_atom {subject tag c out} :
-      EvalA subject c out ->
-      EvalA subject (n3 (A 11) (A tag) c) out
+inductive Nock : Noun -> Noun -> Noun -> Prop where
+    | cons {a b c d p q} :
+        Nock a (C b c) p ->
+        Nock a d q ->
+        Nock a (C (C b c) d) (C p q)
+    | op0 {a b p} :
+        Fas b a p ->
+        Nock a (T2 0 b) p
+    | op1 {a b} :
+        Nock a (T2 1 b) b
+    | op2 {a b c p q r} :
+        Nock a b p ->
+        Nock a c q ->
+        Nock p q r ->
+        Nock a (T3 2 b c) r
+    | op3 {a b p q} :
+        Nock a b p ->
+        q = (Wut p) ->
+        Nock a (T2 3 b) q
+    | op4 {a b p q} :
+        Nock a b p ->
+        Lus p q ->
+        Nock a (T2 4 b) q
+    | op5 {a b c p q r} :
+        Nock a b p ->
+        Nock a c q ->
+        r = Tis p q ->
+        Nock a (T3 5 b c) r
+    | op6 {a b c d p q r s} :
+        Nock a (C (A 4) (C (A 4) b)) p ->
+        Nock (C (A 2) (A 3)) (T2 0 p) q ->
+        Nock (C c d) (T2 0 q) r ->
+        Nock a r s ->
+        Nock a (T4 6 b c d) s
+    | op7 {a b c p q} :
+        Nock a b p ->
+        Nock p c q ->
+        Nock a (T3 7 b c) q
+    | op8 {a b c p q} :
+        Nock a b p ->
+        Nock (C p a) c q ->
+        Nock a (T3 8 b c) q
+    | op9 {a b c p q} :
+        Nock a c p ->
+        Nock p (T3 2 (T2 0 (A 1)) (T2 0 b)) q ->
+        Nock a (T3 9 b c) q
+    | op10 {a b c d p q r} :
+        Nock a c p ->
+        Nock a d q ->
+        Hax b p q r ->
+        Nock a (T3 10 (C b c) d) r
+    | op11cell {a b c d p q r} :
+        Nock a c p ->
+        Nock a d q ->
+        Nock (C p q) (T2 0 (A 3)) r ->
+        Nock a (T3 11 (C b c) d) r
+    | op11atom {a c p n} :
+        Nock a c p ->
+        Nock a (T3 11 (A n) c) p
 
 end Nock
 end Formalization
