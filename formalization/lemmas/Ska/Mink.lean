@@ -139,6 +139,10 @@ def minkStep (lib : Lib) (gul : Noun) (go : Trace → Noun → Noun → Option T
       tbind (go trace s clue) fun c =>
         tbind (go (if stopTag tag then (tag, c) :: trace else trace) s nx) fun p =>
           some (Tone.zero p)
+  | Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.cell _ _) clue) nx) =>
+      -- a tag that is a cell is none of the tags that leave a frame
+      tbind (go trace s clue) fun _ =>
+        tbind (go trace s nx) fun p => some (Tone.zero p)
   | Noun.cell (Noun.atom 12) (Noun.cell ref path) =>
       tbind (go trace s ref) fun r =>
         tbind (go trace s path) fun p =>
@@ -191,6 +195,7 @@ theorem minkStep_mono (lib : Lib) (gul : Noun) {go go' : Trace → Noun → Noun
   · exact OptLe.tbind (h _ _ _) fun _ => OptLe.refl _
   · exact OptLe.tbind (h _ _ _) fun _ => OptLe.tbind (h _ _ _) fun _ => OptLe.refl _
   · exact OptLe.tbind (h _ _ _) fun _ => OptLe.tbind (h _ _ _) fun _ => OptLe.refl _
+  · exact OptLe.tbind (h _ _ _) fun _ => OptLe.tbind (h _ _ _) fun _ => OptLe.refl _
 
 theorem minkF_succ (lib : Lib) (gul : Noun) :
     ∀ (n : Nat) (t : Trace) (s f : Noun), OptLe (minkF lib gul n t s f) (minkF lib gul (n + 1) t s f)
@@ -218,15 +223,13 @@ theorem Mink.det {lib : Lib} {gul : Noun} {t : Trace} {s f : Noun} {r r' : Tone}
 
 /-! ## Nock's products are `+mink`'s `%0`
 
-`+mink` takes the tag of a dynamic hint `[11 [b c] d]` to be an atom and
-returns `[%2 trace]` when `b` is a cell, while the Nock specification (and
-`Eval`) reduces it like any other hint.  `EvalH` is `Eval` with that one
-difference, and with opcode 9 stated by its arm; `EvalH.toEval` shows that it
-is a part of `Eval`, and `eval_cell_tag` below shows that the difference is
-real.
+`EvalH` is `Eval` with opcode 9 stated by its arm, and with the dynamic hint
+in two rules, one for a tag that is an atom and one for a tag that is a cell
+(`+mink` leaves a trace frame only under some atom tags).  `EvalH.toEval` and
+`Eval.toEvalH` show that it is the same relation.
 -/
 
-/-- `Eval` where the tag of a dynamic hint is an atom. -/
+/-- `Eval`, in the form the inductions about `+mink` use. -/
 inductive EvalH : Noun → Noun → Noun → Prop where
   | cell {s b c d l r} : EvalH s (C b c) l → EvalH s d r → EvalH s (C (C b c) d) (C l r)
   | op0 {s axis out} : Slot axis s out → EvalH s (slot axis) out
@@ -246,6 +249,8 @@ inductive EvalH : Noun → Noun → Noun → Prop where
       EvalH s (n3 (A 10) (n2 (A axis) c) d) out
   | op11_cell {s tag c d hint out} :
       EvalH s c hint → EvalH s d out → EvalH s (n3 (A 11) (C (A tag) c) d) out
+  | op11_ctag {s x y c d hint out} :
+      EvalH s c hint → EvalH s d out → EvalH s (n3 (A 11) (C (C x y) c) d) out
   | op11_atom {s tag c out} : EvalH s c out → EvalH s (n3 (A 11) (A tag) c) out
 
 theorem EvalH.toEval {s f p : Noun} (h : EvalH s f p) : Eval s f p := by
@@ -265,34 +270,15 @@ theorem EvalH.toEval {s f p : Noun} (h : EvalH s f p) : Eval s f p := by
     exact Eval.op9 ih1 (Eval.op2 (Eval.op0 Slot.one) (Eval.op0 hs) ih2)
   | op10 _ _ he ih1 ih2 => exact Eval.op10 ih1 ih2 he
   | op11_cell _ _ ih1 ih2 => exact Eval.op11_cell ih1 ih2 (Eval.op0 (Slot.right Slot.one))
+  | op11_ctag _ _ ih1 ih2 => exact Eval.op11_cell ih1 ih2 (Eval.op0 (Slot.right Slot.one))
   | op11_atom _ ih => exact Eval.op11_atom ih
-
-/-- `EvalH` is `EvalA` of `core/Nock.lean`, with opcode 9 stated by its arm. -/
-theorem EvalH.toEvalA {s f p : Noun} (h : EvalH s f p) : EvalA s f p := by
-  induction h with
-  | cell _ _ ih1 ih2 => exact EvalA.cell ih1 ih2
-  | op0 hs => exact EvalA.op0 hs
-  | op1 => exact EvalA.op1
-  | op2 _ _ _ ih1 ih2 ih3 => exact EvalA.op2 ih1 ih2 ih3
-  | op3 _ ih => exact EvalA.op3 ih
-  | op4 _ ih => exact EvalA.op4 ih
-  | op5 _ _ ih1 ih2 => exact EvalA.op5 ih1 ih2
-  | op6_zero _ _ ih1 ih2 => exact EvalA.op6_zero ih1 ih2
-  | op6_one _ _ ih1 ih2 => exact EvalA.op6_one ih1 ih2
-  | op7 _ _ ih1 ih2 => exact EvalA.op7 ih1 ih2
-  | op8 _ _ ih1 ih2 => exact EvalA.op8 ih1 ih2
-  | op9 _ hs _ ih1 ih2 =>
-    exact EvalA.op9 ih1 (EvalA.op2 (EvalA.op0 Slot.one) (EvalA.op0 hs) ih2)
-  | op10 _ _ he ih1 ih2 => exact EvalA.op10 ih1 ih2 he
-  | op11_cell _ _ ih1 ih2 => exact EvalA.op11_cell ih1 ih2 (EvalA.op0 (Slot.right Slot.one))
-  | op11_atom _ ih => exact EvalA.op11_atom ih
 
 theorem minkF_succ_eq (lib : Lib) (gul : Noun) (n : Nat) (t : Trace) (s f : Noun) :
     minkF lib gul (n + 1) t s f = minkStep lib gul (minkF lib gul n) t s f := rfl
 
-/-- `EvalA` of `core/Nock.lean` (Nock with atom hint tags) is `EvalH`, which
-states opcode 9 by its arm for the inductions here. -/
-theorem EvalA.toEvalH {s f p : Noun} (h : EvalA s f p) : EvalH s f p := by
+/-- `Eval` is `EvalH`, which states opcode 9 by its arm for the inductions
+here. -/
+theorem Eval.toEvalH {s f p : Noun} (h : Eval s f p) : EvalH s f p := by
   induction h with
   | cell _ _ ih1 ih2 => exact EvalH.cell ih1 ih2
   | op0 hs => exact EvalH.op0 hs
@@ -315,13 +301,15 @@ theorem EvalA.toEvalH {s f p : Noun} (h : EvalA s f p) : EvalH s f p := by
           cases Slot.deterministic hs1 Slot.one
           exact EvalH.op9 ih1 hs2 h3
   | op10 _ _ he ih1 ih2 => exact EvalH.op10 ih1 ih2 he
-  | op11_cell _ _ _ ih1 ih2 ih3 =>
+  | @op11_cell _ b _ _ _ _ _ _ _ _ ih1 ih2 ih3 =>
     cases ih3 with
     | op0 hs =>
       have := slot?_complete hs
       simp [slot?_step 3 (by omega), child] at this
       subst this
-      exact EvalH.op11_cell ih1 ih2
+      cases b with
+      | atom tag => exact EvalH.op11_cell ih1 ih2
+      | cell x y => exact EvalH.op11_ctag ih1 ih2
   | op11_atom _ ih => exact EvalH.op11_atom ih
 
 /-- If Nock computes `p` from `s` and `f` with atom hint tags, then `+mink`
@@ -424,18 +412,25 @@ theorem mink_of_evalH (lib : Lib) (gul : Noun) {s f p : Noun} (h : EvalH s f p) 
     rw [minkF_succ_eq]
     simp only [minkStep]
     rw [L (Nat.le_max_left n1 n2) (h1 t), tbind_zero, L (Nat.le_max_right n1 n2) (h2 _), tbind_zero]
+  | @op11_ctag s x y c d hint out _ _ ih1 ih2 =>
+    obtain ⟨n1, h1⟩ := ih1
+    obtain ⟨n2, h2⟩ := ih2
+    refine ⟨max n1 n2 + 1, fun t => ?_⟩
+    rw [minkF_succ_eq]
+    simp only [minkStep]
+    rw [L (Nat.le_max_left n1 n2) (h1 t), tbind_zero, L (Nat.le_max_right n1 n2) (h2 _), tbind_zero]
   | @op11_atom s tag c out _ ih =>
     obtain ⟨n1, h1⟩ := ih
     refine ⟨n1 + 1, fun t => ?_⟩
     rw [minkF_succ_eq]
     simp only [minkStep, h1, tbind_zero]
 
-/-- The difference: a dynamic hint whose tag is a cell.  Nock reduces
-`[11 [[1 0] 1 0] 1 42]` to `42`; `+mink` returns `[%2 trace]` on it. -/
+/-- A dynamic hint whose tag is a cell: Nock reduces
+`[11 [[1 0] 1 0] 1 42]` to `42`, and so does `+mink`. -/
 theorem eval_cell_tag (lib : Lib) (gul : Noun) (s : Noun) (t : Trace) (n : Nat) :
     Eval s (n3 (A 11) (C (C (A 1) (A 0)) (C (A 1) (A 0))) (C (A 1) (A 42))) (A 42) ∧
-      minkF lib gul (n + 1) t s (n3 (A 11) (C (C (A 1) (A 0)) (C (A 1) (A 0))) (C (A 1) (A 42))) =
-        some (Tone.two t) :=
+      minkF lib gul (n + 2) t s (n3 (A 11) (C (C (A 1) (A 0)) (C (A 1) (A 0))) (C (A 1) (A 42))) =
+        some (Tone.zero (A 42)) :=
   ⟨Eval.op11_cell Eval.op1 Eval.op1 (Eval.op0 (Slot.right Slot.one)), rfl⟩
 
 /-! ## `+mook` and `+mock`

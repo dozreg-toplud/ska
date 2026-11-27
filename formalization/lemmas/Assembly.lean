@@ -230,10 +230,10 @@ end
 
 /-! ## The pill's core -/
 
-theorem isCore_core (hcue : CueRoot) : Ska.IsCore core :=
+theorem isCore_core (hcue : CueRoot) : Ska.FromPill core :=
   ⟨nok, trap, by rw [hcue, root_eq]; rfl, evalFuel_sound 252 core_evalFuel⟩
 
-theorem isCore_eq (hcue : CueRoot) {core₀ : Noun} (h : Ska.IsCore core₀) : core₀ = core := by
+theorem isCore_eq (hcue : CueRoot) {core₀ : Noun} (h : Ska.FromPill core₀) : core₀ = core := by
   obtain ⟨nok', trap', hc, he⟩ := h
   rw [hcue, root_eq, Option.some.injEq] at hc
   simp only [n4, Noun.cell.injEq] at hc
@@ -282,7 +282,7 @@ interpreter core of a compiler's core `cr` that keeps what the interpreter
 reads and that the model reaches from the pill's `cor`. -/
 theorem reach_model (hcue : CueRoot) (hslam : LibSlam lib) (hpm : PokeModel pk)
     (hpv : OvumMold) (hfmt : LibFormat lib)
-    (hmf : MookFormat lib) {core₀ c : Noun} (h0 : Ska.IsCore core₀) (h : Ska.Reach core₀ c) :
+    (hmf : MookFormat lib) {core₀ c : Noun} (h0 : Ska.FromPill core₀) (h : Ska.Reach core₀ c) :
     ∃ cr, c = C ob (icore cr) ∧ CorIn cr ∧ ReachI lib pk cor cr := by
   have hpk := pokeIs_all hpm
   have hbad : ∀ cr, CorIn cr → PokeDireBad cr := fun _ hc => pokeDireBad hc
@@ -341,13 +341,13 @@ structure Gap (lib : Lib) (pk : Noun → Ovum → Option (SkaModel.Prod (TreapMa
   libFormat : LibFormat lib
   mookFormat : MookFormat lib
 
-theorem Gap.reach (g : Gap lib pk InvC) {core₀ c : Noun} (h0 : Ska.IsCore core₀)
+theorem Gap.reach (g : Gap lib pk InvC) {core₀ c : Noun} (h0 : Ska.FromPill core₀)
     (h : Ska.Reach core₀ c) : ∃ cr, c = C ob (icore cr) ∧ CorIn cr ∧ InvC cr := by
   obtain ⟨cr, rfl, hc, hr⟩ := reach_model cueRoot g.libSlam g.pokeModel ovumMold
     g.libFormat g.mookFormat h0 h
   exact ⟨cr, rfl, hc, reach_inv lib g.contract.toPokeSteps g.invKept g.invStart hr⟩
 
-theorem meek_of (g : Gap lib pk InvC) : Ska.Meek := by
+theorem meek_of (g : Gap lib pk InvC) : Ska.NockEquivalence := by
   intro core₀ c s f p gul h0 hr hA
   have hpk := pokeIs_all g.pokeModel
   obtain ⟨cr, rfl, hc, hr'⟩ := reach_model cueRoot g.libSlam g.pokeModel ovumMold
@@ -355,7 +355,7 @@ theorem meek_of (g : Gap lib pk InvC) : Ska.Meek := by
   obtain ⟨st', he⟩ := meek_reach lib g.contract g.halting g.invKept (gul := gul) g.invStart hr' hA
   exact ⟨_, (top_iff lib g.libSlam pk hpk ob cr hc s f gul _ _).2 ⟨_, st', rfl, rfl, he⟩⟩
 
-theorem weak_of (g : Gap lib pk InvC) : Ska.Weak := by
+theorem weak_of (g : Gap lib pk InvC) : Ska.MockEquivalence := by
   intro core₀ c s f gul toon h0 hr hm
   have hpk := pokeIs_all g.pokeModel
   obtain ⟨hleaf, hhand, hrest, hst, hmsg⟩ := g.libFormat
@@ -372,7 +372,7 @@ theorem weak_of (g : Gap lib pk InvC) : Ska.Weak := by
   exact ⟨_, (run_iff lib g.libSlam pk hpk hrb hst hmsg hlist hmm (fun _ hc => pokeDireBad hc) ob cr hc s f gul _ _).2
     ⟨t, st'', rfl, rfl, hrun⟩⟩
 
-theorem converse_of (g : Gap lib pk InvC) : Ska.Converse := by
+theorem converse_of (g : Gap lib pk InvC) : Ska.MockEquivalenceInverse := by
   intro core₀ c s f gul toon c' h0 hr hrun
   have hpk := pokeIs_all g.pokeModel
   obtain ⟨hleaf, hhand, hrest, hst, hmsg⟩ := g.libFormat

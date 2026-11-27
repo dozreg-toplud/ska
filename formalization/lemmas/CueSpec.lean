@@ -1,4 +1,5 @@
 import core.Cue
+import lemmas.Spec
 import lemmas.KernelRfl
 
 /-! `cue` of `core/Cue.lean` on jams made by another implementation

@@ -1,6 +1,7 @@
 module
 
 public import core.Cue
+public import lemmas.Spec
 public import core.Pill
 /-!
 # `cue` in pieces

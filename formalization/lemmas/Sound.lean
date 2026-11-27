@@ -312,9 +312,9 @@ theorem Edit.deterministic {axis replacement subject out out'}
 
 /-! ## The fuelled evaluator -/
 
-/-- A successful fuelled run is a derivation of `EvalA`, Nock with atom hint tags. -/
-theorem evalFuel_soundA : ∀ (fuel : Nat) {subject formula out : Noun},
-    evalFuel fuel subject formula = some out → EvalA subject formula out := by
+/-- A successful fuelled run is a derivation of the big-step relation. -/
+theorem evalFuel_sound : ∀ (fuel : Nat) {subject formula out : Noun},
+    evalFuel fuel subject formula = some out → Eval subject formula out := by
   intro fuel
   induction fuel with
   | zero => intro _ _ _ h; simp [evalFuel] at h
@@ -328,119 +328,62 @@ theorem evalFuel_soundA : ∀ (fuel : Nat) {subject formula out : Noun},
       · rename_i left right hl hr
         simp only [Option.some.injEq] at h
         subst h
-        exact EvalA.cell (ih hl) (ih hr)
+        exact Eval.cell (ih hl) (ih hr)
       · simp at h
-    · exact EvalA.op0 (slot?_sound _ h)
+    · exact Eval.op0 (slot?_sound _ h)
     · simp only [Option.some.injEq] at h
       subst h
-      exact EvalA.op1
+      exact Eval.op1
     · split at h
       · rename_i subject' formula' hb hc
-        exact EvalA.op2 (ih hb) (ih hc) (ih h)
+        exact Eval.op2 (ih hb) (ih hc) (ih h)
       · simp at h
     · split at h
       · rename_i noun hb
         simp only [Option.some.injEq] at h
         subst h
-        exact EvalA.op3 (ih hb)
+        exact Eval.op3 (ih hb)
       · simp at h
     · split at h
       · rename_i atom hb
         simp only [Option.some.injEq] at h
         subst h
-        exact EvalA.op4 (ih hb)
+        exact Eval.op4 (ih hb)
       · simp at h
     · split at h
       · rename_i left right hb hc
         simp only [Option.some.injEq] at h
         subst h
-        exact EvalA.op5 (ih hb) (ih hc)
+        exact Eval.op5 (ih hb) (ih hc)
       · simp at h
     · split at h
       · rename_i hb
-        exact EvalA.op6_zero (ih hb) (ih h)
+        exact Eval.op6_zero (ih hb) (ih h)
       · rename_i hb
-        exact EvalA.op6_one (ih hb) (ih h)
+        exact Eval.op6_one (ih hb) (ih h)
       · simp at h
     · split at h
       · rename_i subject' hb
-        exact EvalA.op7 (ih hb) (ih h)
+        exact Eval.op7 (ih hb) (ih h)
       · simp at h
     · split at h
       · rename_i produced hb
-        exact EvalA.op8 (ih hb) (ih h)
+        exact Eval.op8 (ih hb) (ih h)
       · simp at h
     · split at h
       · rename_i core hc
-        exact EvalA.op9 (ih hc) (ih h)
+        exact Eval.op9 (ih hc) (ih h)
       · simp at h
     · split at h
       · rename_i replacement editedBase hc hd
-        exact EvalA.op10 (ih hc) (ih hd) (edit?_sound _ h)
+        exact Eval.op10 (ih hc) (ih hd) (edit?_sound _ h)
       · simp at h
     · split at h
       · rename_i hint product hc hd
-        exact EvalA.op11_cell (ih hc) (ih hd) (ih h)
+        exact Eval.op11_cell (ih hc) (ih hd) (ih h)
       · simp at h
-    · exact EvalA.op11_atom (ih h)
+    · exact Eval.op11_atom (ih h)
     · simp at h
-
-
-/-- `EvalA` is a part of `Eval`. -/
-theorem EvalA.toEval {s f p : Noun} (h : EvalA s f p) : Eval s f p := by
-  induction h with
-  | cell _ _ ih1 ih2 => exact Eval.cell ih1 ih2
-  | op0 hs => exact Eval.op0 hs
-  | op1 => exact Eval.op1
-  | op2 _ _ _ ih1 ih2 ih3 => exact Eval.op2 ih1 ih2 ih3
-  | op3 _ ih => exact Eval.op3 ih
-  | op4 _ ih => exact Eval.op4 ih
-  | op5 _ _ ih1 ih2 => exact Eval.op5 ih1 ih2
-  | op6_zero _ _ ih1 ih2 => exact Eval.op6_zero ih1 ih2
-  | op6_one _ _ ih1 ih2 => exact Eval.op6_one ih1 ih2
-  | op7 _ _ ih1 ih2 => exact Eval.op7 ih1 ih2
-  | op8 _ _ ih1 ih2 => exact Eval.op8 ih1 ih2
-  | op9 _ _ ih1 ih2 => exact Eval.op9 ih1 ih2
-  | op10 _ _ he ih1 ih2 => exact Eval.op10 ih1 ih2 he
-  | op11_cell _ _ _ ih1 ih2 ih3 => exact Eval.op11_cell ih1 ih2 ih3
-  | op11_atom _ ih => exact Eval.op11_atom ih
-
-/-- A successful fuelled run is a derivation of the big-step relation. -/
-theorem evalFuel_sound (fuel : Nat) {subject formula out : Noun}
-    (h : evalFuel fuel subject formula = some out) : Eval subject formula out :=
-  (evalFuel_soundA fuel h).toEval
-
-/-- `Eval` is deterministic, by induction on the derivation. -/
-theorem Eval.deterministic {s f out out' : Noun}
-    (h : Eval s f out) (h' : Eval s f out') : out = out' := by
-  induction h generalizing out' with
-  | cell _ _ ih1 ih2 => cases h' with | cell h1 h2 => rw [ih1 h1, ih2 h2]
-  | op0 hs => cases h' with | op0 hs' => exact Slot.deterministic hs hs'
-  | op1 => cases h' with | op1 => rfl
-  | op2 _ _ _ ih1 ih2 ih3 =>
-    cases h' with
-    | op2 h1 h2 h3 => cases ih1 h1; cases ih2 h2; exact ih3 h3
-  | op3 _ ih => cases h' with | op3 h1 => rw [ih h1]
-  | op4 _ ih => cases h' with | op4 h1 => cases ih h1; rfl
-  | op5 _ _ ih1 ih2 => cases h' with | op5 h1 h2 => rw [ih1 h1, ih2 h2]
-  | op6_zero _ _ ih1 ih2 =>
-    cases h' with
-    | op6_zero h1 h2 => exact ih2 h2
-    | op6_one h1 h2 => cases ih1 h1
-  | op6_one _ _ ih1 ih2 =>
-    cases h' with
-    | op6_zero h1 h2 => cases ih1 h1
-    | op6_one h1 h2 => exact ih2 h2
-  | op7 _ _ ih1 ih2 => cases h' with | op7 h1 h2 => cases ih1 h1; exact ih2 h2
-  | op8 _ _ ih1 ih2 => cases h' with | op8 h1 h2 => cases ih1 h1; exact ih2 h2
-  | op9 _ _ ih1 ih2 => cases h' with | op9 h1 h2 => cases ih1 h1; exact ih2 h2
-  | op10 _ _ he ih1 ih2 =>
-    cases h' with
-    | op10 h1 h2 he' => cases ih1 h1; cases ih2 h2; exact Edit.deterministic he he'
-  | op11_cell _ _ _ ih1 ih2 ih3 =>
-    cases h' with
-    | op11_cell h1 h2 h3 => cases ih1 h1; cases ih2 h2; exact ih3 h3
-  | op11_atom _ ih => cases h' with | op11_atom h1 => exact ih h1
 
 end Nock
 end Formalization

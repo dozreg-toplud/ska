@@ -5,6 +5,7 @@ import lemmas.Compiler.TreapList
 import lemmas.Compiler.MinkPill
 import lemmas.Ska.Interp
 import core.Statement
+import lemmas.Spec
 
 /-!
 # The ops of `+eval-pole` that leave the function

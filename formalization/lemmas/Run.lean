@@ -65,7 +65,7 @@ def nock (subject formula : Noun) : Option Noun :=
       let replacement ← nock subject c
       let editedBase ← nock subject d
       edit? axis replacement editedBase
-  | Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.atom _) c) d) => do
+  | Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell _ c) d) => do
       let _ ← nock subject c
       nock subject d
   | Noun.cell (Noun.atom 11) (Noun.cell (Noun.atom _) c) => nock subject c
@@ -127,13 +127,9 @@ theorem nock_op10 (s c d : Noun) (axis : Nat) :
         (nock s d).bind fun editedBase => edit? axis replacement editedBase := by
   rw [nock]; rfl
 
-theorem nock_op11_cell (s c d : Noun) (tag : Nat) :
-    nock s (C (A 11) (C (C (A tag) c) d)) = (nock s c).bind fun _ => nock s d := by
+theorem nock_op11_cell (s b c d : Noun) :
+    nock s (C (A 11) (C (C b c) d)) = (nock s c).bind fun _ => nock s d := by
   rw [nock]; rfl
-
-/-- A dynamic hint whose tag is a cell crashes, as in `+mink`. -/
-theorem nock_op11_ctag (s x y c d : Noun) : nock s (C (A 11) (C (C (C x y) c) d)) = none := by
-  rw [nock.eq_def]; rfl
 
 theorem nock_op11_atom (s c : Noun) (tag : Nat) :
     nock s (C (A 11) (C (A tag) c)) = nock s c := by
@@ -170,7 +166,7 @@ theorem lus_eq_some {noun out : Noun} (h : lus noun = some out) :
 
 /-! ## `nock` and `Eval` are the same relation -/
 
-theorem nock_of_evalA {subject formula out : Noun} (h : EvalA subject formula out) :
+theorem nock_of_eval {subject formula out : Noun} (h : Eval subject formula out) :
     nock subject formula = some out := by
   induction h with
   | cell _ _ ihl ihr => simp [nock_cell, ihl, ihr]
@@ -196,68 +192,69 @@ theorem nock_of_evalA {subject formula out : Noun} (h : EvalA subject formula ou
     simp [nock_op11_cell, ihc, ihd]
   | op11_atom _ ih => simp [nock_op11_atom, ih]
 
-theorem evalA_of_nock {subject formula out : Noun} (h : nock subject formula = some out) :
-    EvalA subject formula out := by
-  refine nock.partial_correctness (fun subject formula out => EvalA subject formula out)
+theorem eval_of_nock {subject formula out : Noun} (h : nock subject formula = some out) :
+    Eval subject formula out := by
+  refine nock.partial_correctness (fun subject formula out => Eval subject formula out)
     ?_ subject formula out h
   intro rec ih subject formula out h
   split at h
   · simp only [bind, Option.bind_eq_some_iff, pure, Option.some.injEq] at h
     obtain ⟨left, hl, right, hr, rfl⟩ := h
-    exact EvalA.cell (ih _ _ _ hl) (ih _ _ _ hr)
-  · exact EvalA.op0 (slot?_sound _ h)
-  · cases h; exact EvalA.op1
+    exact Eval.cell (ih _ _ _ hl) (ih _ _ _ hr)
+  · exact Eval.op0 (slot?_sound _ h)
+  · cases h; exact Eval.op1
   · simp only [bind, Option.bind_eq_some_iff] at h
     obtain ⟨subject', hb, formula', hc, h⟩ := h
-    exact EvalA.op2 (ih _ _ _ hb) (ih _ _ _ hc) (ih _ _ _ h)
+    exact Eval.op2 (ih _ _ _ hb) (ih _ _ _ hc) (ih _ _ _ h)
   · simp only [bind, Option.bind_eq_some_iff, pure, Option.some.injEq] at h
     obtain ⟨noun, hb, rfl⟩ := h
-    exact EvalA.op3 (ih _ _ _ hb)
+    exact Eval.op3 (ih _ _ _ hb)
   · simp only [bind, Option.bind_eq_some_iff] at h
     obtain ⟨noun, hb, h⟩ := h
     obtain ⟨atom, rfl, rfl⟩ := lus_eq_some h
-    exact EvalA.op4 (ih _ _ _ hb)
+    exact Eval.op4 (ih _ _ _ hb)
   · simp only [bind, Option.bind_eq_some_iff, pure, Option.some.injEq] at h
     obtain ⟨left, hb, right, hc, rfl⟩ := h
-    exact EvalA.op5 (ih _ _ _ hb) (ih _ _ _ hc)
+    exact Eval.op5 (ih _ _ _ hb) (ih _ _ _ hc)
   · simp only [bind, Option.bind_eq_some_iff] at h
     obtain ⟨test, hb, next, hpick, h⟩ := h
     rcases pick_eq_some hpick with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
-    · exact EvalA.op6_zero (ih _ _ _ hb) (ih _ _ _ h)
-    · exact EvalA.op6_one (ih _ _ _ hb) (ih _ _ _ h)
+    · exact Eval.op6_zero (ih _ _ _ hb) (ih _ _ _ h)
+    · exact Eval.op6_one (ih _ _ _ hb) (ih _ _ _ h)
   · simp only [bind, Option.bind_eq_some_iff] at h
     obtain ⟨subject', hb, h⟩ := h
-    exact EvalA.op7 (ih _ _ _ hb) (ih _ _ _ h)
+    exact Eval.op7 (ih _ _ _ hb) (ih _ _ _ h)
   · simp only [bind, Option.bind_eq_some_iff] at h
     obtain ⟨produced, hb, h⟩ := h
-    exact EvalA.op8 (ih _ _ _ hb) (ih _ _ _ h)
+    exact Eval.op8 (ih _ _ _ hb) (ih _ _ _ h)
   · simp only [bind, Option.bind_eq_some_iff] at h
     obtain ⟨core, hc, arm, harm, h⟩ := h
-    exact EvalA.op9 (ih _ _ _ hc)
-      (EvalA.op2 (EvalA.op0 Slot.one) (EvalA.op0 (slot?_sound _ harm)) (ih _ _ _ h))
+    exact Eval.op9 (ih _ _ _ hc)
+      (Eval.op2 (Eval.op0 Slot.one) (Eval.op0 (slot?_sound _ harm)) (ih _ _ _ h))
   · simp only [bind, Option.bind_eq_some_iff] at h
     obtain ⟨replacement, hc, editedBase, hd, h⟩ := h
-    exact EvalA.op10 (ih _ _ _ hc) (ih _ _ _ hd) (edit?_sound _ h)
+    exact Eval.op10 (ih _ _ _ hc) (ih _ _ _ hd) (edit?_sound _ h)
   · simp only [bind, Option.bind_eq_some_iff] at h
     obtain ⟨hint, hc, h⟩ := h
-    exact EvalA.op11_cell (ih _ _ _ hc) (ih _ _ _ h) (EvalA.op0 (Slot.right Slot.one))
-  · exact EvalA.op11_atom (ih _ _ _ h)
+    exact Eval.op11_cell (ih _ _ _ hc) (ih _ _ _ h) (Eval.op0 (Slot.right Slot.one))
+  · exact Eval.op11_atom (ih _ _ _ h)
   · simp at h
 
-/-- The partial function is Nock with atom hint tags, `EvalA`. -/
+/-- The partial function and the big-step relation of the spec agree. -/
 theorem nock_eq_some_iff {subject formula out : Noun} :
-    nock subject formula = some out ↔ EvalA subject formula out :=
-  ⟨evalA_of_nock, nock_of_evalA⟩
+    nock subject formula = some out ↔ Eval subject formula out :=
+  ⟨eval_of_nock, nock_of_eval⟩
 
-/-- What `nock` returns, Nock returns. -/
-theorem eval_of_nock {subject formula out : Noun} (h : nock subject formula = some out) :
-    Eval subject formula out :=
-  (evalA_of_nock h).toEval
+theorem Eval.deterministic {subject formula out out' : Noun}
+    (h : Eval subject formula out) (h' : Eval subject formula out') : out = out' := by
+  have := nock_of_eval h
+  rw [nock_of_eval h'] at this
+  exact (Option.some.inj this).symm
 
 /-- What the kernel computes with fuel is a fact about `nock`. -/
 theorem nock_of_evalFuel {fuel : Nat} {subject formula out : Noun}
     (h : evalFuel fuel subject formula = some out) : nock subject formula = some out :=
-  nock_of_evalA (evalFuel_soundA fuel h)
+  nock_of_eval (evalFuel_sound fuel h)
 
 end Nock
 end Formalization

@@ -80,11 +80,11 @@ theorem dec_gate_eval (c : Noun) (n : Nat) (h : 0 < n) :
     Eval (C dec.battery (C (A n) c)) dec.battery (A (n - 1)) :=
   eval_of_nock (dec_gate c n h)
 
-/-- No derivation of `EvalA` (Nock with atom hint tags) evaluates `(dec 0)`. -/
+/-- No derivation of the specification evaluates `(dec 0)`. -/
 theorem dec_gate_zero_eval (c : Noun) (p : Noun) :
-    ¬ EvalA (C dec.battery (C (A 0) c)) dec.battery p := by
+    ¬ Eval (C dec.battery (C (A 0) c)) dec.battery p := by
   intro h
-  have := nock_of_evalA h
+  have := nock_of_eval h
   rw [dec_gate_zero] at this
   cases this
 

@@ -6,7 +6,7 @@ import lemmas.Compiler.GitG
 
 The door's context `ctx` is the core of the gate `+comp`: `[battery [sample
 K]]`, with `K` the core in which `+comp` is defined, at axis `63` of `cor`
-(battery at `126`).  `K` is `[nh3d89e8d5f4f5 compTypes]`, and its payload
+(battery at `126`).  `K` is `[nhe0b859c3d8aa compTypes]`, and its payload
 `compTypes` (axis `15` of `ctx`) is the core of the types of the library
 (battery `nh15c74912d225`) on `[0 ana]`.
 
@@ -26,7 +26,7 @@ open Nock Pill Hoon SkaModel SkaModel.Comp
 def compTypes : Noun := C nh15c74912d225 (C (A 0) ana)
 
 /-- The core `K` in which the gate `+comp` is defined. -/
-def compK : Noun := C nh3d89e8d5f4f5 compTypes
+def compK : Noun := C nhe0b859c3d8aa compTypes
 
 /-- `K` is at axis `63` of `cor`. -/
 theorem compK_at : slot? 63 cor = some compK := by kernel_rfl

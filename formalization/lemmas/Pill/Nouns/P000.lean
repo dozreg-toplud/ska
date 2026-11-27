@@ -461,7 +461,8 @@ def nh694710fec834 : Noun := C (A 10) (C nh5ac3820ddc1c nh9d5312e12a2d)
 def nh76fda188b286 : Noun := C (A 9) (C (A 340) nh694710fec834)
 def nh58eb828579d9 : Noun := C (A 8) (C nhc3bbf52a8c2c nh76fda188b286)
 def nh04f80f8b1cdc : Noun := C (A 3) nh444b2a9d973a
-def nhefd0d01bfff6 : Noun := C (C (A 5) (C nh2f8564d9a255 nhb28e70c58131)) nh3e2e97e355dd
+def nhcae5db18c677 : Noun := C nh2f8564d9a255 nhb28e70c58131
+def nhefd0d01bfff6 : Noun := C (C (A 5) nhcae5db18c677) nh3e2e97e355dd
 def nh52967c3051ff : Noun := C (A 6) (C nh792be2c08375 (C (C (A 6) (C nh04f80f8b1cdc nhefd0d01bfff6)) nh3e2e97e355dd))
 def nh342f7044cf3c : Noun := C (A 0) (A 9)
 def nh78090a5c728e : Noun := C (A 0) (A 21)
@@ -2089,7 +2090,6 @@ def nh737033a85994 : Noun := C nh9b2697858e17 nh81c4b2f8fecf
 def nhf6afc74442eb : Noun := C (A 9) (C (A 2399) nh96413f3a42d4)
 def nh2c8c7383a0cd : Noun := C (A 8) (C nhf6afc74442eb nha918b67eae27)
 def nhf7afae22fb17 : Noun := C (A 9) (C (A 190) nh3ce084e0430d)
-def nhe9d854b63801 : Noun := C (A 7) (C nhf7afae22fb17 nhca331e45ee1c)
 
 end Pill
 end Formalization

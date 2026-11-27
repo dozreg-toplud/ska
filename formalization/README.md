@@ -57,10 +57,11 @@ for example `446 comp-need-ord-alloc-regs` and `1014 comp-collapse-shape`.
 
 | File | Content |
 | --- | --- |
-| `Nock.lean` | Nouns, `Slot`, `Edit` and the big-step relation `Eval`: Nock 4K. |
+| `Nock.lean` | Nock 4K, rule for rule: nouns, `Wut`, `Lus`, `Tis`, `Fas`, `Hax` and the relation `Nock`. |
 | `Cue.lean` | `cue : Nat → Option Noun`, after `+cue` of hoon.hoon. Written to be read, not run. |
-| `Pill.lean` | Generated: the pill file as an atom, in 1024-byte chunks. |
-| `Statement.lean` | `Loads`, `Meek`, `Weak`, `Converse`, `Halts`, `Full`, and the few definitions they need (`Pull` and `Slam` with `EvalA`, `IsCore` with `Eval`). Start here. |
+| `Bytes.lean` | `bytes% { b₀, b₁, … }`, the number with these bytes, lowest first: the one piece of metaprogramming in `core/`. |
+| `Pill.lean` | Generated: the pill file as an atom, byte by byte. The lines between its braces are those of vere's `steel.c` (`xxd -i`). |
+| `Statement.lean` | `Loads`, `NockEquivalence`, `MockEquivalence`, `MockEquivalenceInverse`, `Halts`, `Full`, and the few definitions they need. Start here. |
 
 The statements quantify over every core that the pill's core can become by
 pokes and by runs of the interpreter, except through a `%jets` poke that names
@@ -68,20 +69,23 @@ a jet.  Nothing in `core/` is proved.  `lemmas/Compiler/Connect.lean` ties
 `Top`, `Mook`, `Run` and `Mock` to the models, and `lemmas/Assembly.lean`
 proves the statements from the hypotheses it lists.
 
-`Pull` and `Slam`, through which `Poke`, `Top`, `Mook` and `Mock` run the
-arms of the pill, are `EvalA` runs: Nock in which a dynamic hint with a cell
-for a tag crashes, as it does in `+mink`.  So the statements say nothing
-about a scry gate or library code that would run such a hint.  For example,
-a `gul` whose battery holds `[11 [[1 0] 1 0] 1 0]` and that `+mock` slams
-gives no `Mock` run, so `Weak` says nothing about it.  The boot of the
-pill, `IsCore`, keeps `Eval`: the boot run is an `EvalA` run
-(`core_evalFuel` with `evalFuel_soundA`), every `EvalA` run is an `Eval` run,
-and `Eval` is deterministic, so both readings give the same core.
+Every run in the statements is a run of `Nock`, the specification.  There is
+no second relation for hints: since ea6413d `+mink` runs a dynamic hint whose
+tag is a cell, and since f7e95af the compiler compiles one, as Nock reduces
+it.
+
+The proofs do not work with `Nock`, `Fas` and `Hax` directly but with
+`Eval`, `Slot` and `Edit` of `lemmas/Spec.lean` (axes as `Nat`, opcode 6 as
+two rules).  `lemmas/SpecEquiv.lean` proves them the same relations
+(`nock_iff_eval`, `fas_iff_slot`, `hax_iff_edit`).
 
 What a reader of `core/` has to take on trust beyond the Lean kernel:
 
-1. `Eval` is Nock, and `cue` is `+cue`.
-2. `Pill.lean` is the pill file (`tools/pill2core.py --check`).
+1. `Nock` is Nock, and `cue` is `+cue`.
+2. `Pill.lean` is the pill file (`tools/pill2core.py --check`, which also
+   checks a `steel.c`), and `bytes%` of `Bytes.lean` computes the number it
+   says.  `lemmas/CuePill.lean` has the same number as a plain list of
+   literals (`pill_eq`, by `rfl`).
 3. The axes in `Statement.lean` are those of the arms they are named after.
    Each is the formula Hoon compiles the arm's name to against the library.
 

@@ -76,7 +76,7 @@ def nockW (call : Noun → Noun → Option Noun) (subject formula : Noun) : Opti
       let replacement ← nockW call subject c
       let editedBase ← nockW call subject d
       edit? axis replacement editedBase
-  | Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.atom _) c) d) => do
+  | Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell _ c) d) => do
       let _ ← nockW call subject c
       nockW call subject d
   | Noun.cell (Noun.atom 11) (Noun.cell (Noun.atom _) c) => nockW call subject c
@@ -119,11 +119,9 @@ theorem nockW_op9 (axis : Nat) (c : Noun) :
 theorem nockW_op10 (axis : Nat) (c d : Noun) :
     nockW call s (C (A 10) (C (C (A axis) c) d)) =
       (nockW call s c).bind fun r => (nockW call s d).bind fun b => edit? axis r b := by rw [nockW]; try rfl
-theorem nockW_op11_cell (tag : Nat) (c d : Noun) :
-    nockW call s (C (A 11) (C (C (A tag) c) d)) = (nockW call s c).bind fun _ => nockW call s d := by
+theorem nockW_op11_cell (b c d : Noun) :
+    nockW call s (C (A 11) (C (C b c) d)) = (nockW call s c).bind fun _ => nockW call s d := by
   rw [nockW]; try rfl
-theorem nockW_op11_ctag (x y c d : Noun) : nockW call s (C (A 11) (C (C (C x y) c) d)) = none := by
-  rw [nockW.eq_def]; rfl
 theorem nockW_op11_atom (tag : Nat) (c : Noun) :
     nockW call s (C (A 11) (C (A tag) c)) = nockW call s c := by rw [nockW]; try rfl
 
@@ -170,10 +168,8 @@ theorem nock_eq_nockW : ∀ (s f : Noun), nock s f = nockW nock s f
     rw [nock_op9, nockW_op9, nock_eq_nockW s c]
   | s, Noun.cell (Noun.atom 10) (Noun.cell (Noun.cell (Noun.atom ax) c) d) => by
     rw [nock_op10, nockW_op10, nock_eq_nockW s c, nock_eq_nockW s d]
-  | s, Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.atom tag) c) d) => by
+  | s, Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell b c) d) => by
     rw [nock_op11_cell, nockW_op11_cell, nock_eq_nockW s c, nock_eq_nockW s d]
-  | s, Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.cell x y) c) d) => by
-    rw [nock_op11_ctag, nockW_op11_ctag]
   | s, Noun.cell (Noun.atom 11) (Noun.cell (Noun.atom tag) c) => by
     rw [nock_op11_atom, nockW_op11_atom, nock_eq_nockW s c]
   | s, Noun.cell (Noun.atom 0) (Noun.cell _ _) => by rw [nock.eq_def, nockW.eq_def]; rfl
@@ -230,11 +226,9 @@ theorem nockW_mono {c1 c2 : Noun → Noun → Option Noun} (h : ∀ s f, Below? 
   | s, Noun.cell (Noun.atom 10) (Noun.cell (Noun.cell (Noun.atom ax) c) d) => by
     rw [nockW_op10, nockW_op10]
     exact Below?.bind (nockW_mono h s c) fun _ => Below?.bind (nockW_mono h s d) fun _ => Below?.refl _
-  | s, Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.atom tag) c) d) => by
+  | s, Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell b c) d) => by
     rw [nockW_op11_cell, nockW_op11_cell]
     exact Below?.bind (nockW_mono h s c) fun _ => nockW_mono h s d
-  | s, Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.cell x y) c) d) => by
-    rw [nockW_op11_ctag, nockW_op11_ctag]; exact Below?.refl _
   | s, Noun.cell (Noun.atom 11) (Noun.cell (Noun.atom tag) c) => by
     rw [nockW_op11_atom, nockW_op11_atom]; exact nockW_mono h s c
   | s, Noun.cell (Noun.atom 2) (Noun.atom _) => fun x h => by
@@ -289,7 +283,7 @@ theorem iterN_sound : ∀ (k : Nat) (s f : Noun), Below? (iterN k s f) (nock s f
     rw [nock_eq_nockW]; exact nockW_mono (fun s f => iterN_sound k s f) s f
 
 theorem iterN_complete {s f p : Noun} (h : nock s f = some p) : ∃ k, iterN k s f = some p := by
-  have he := evalA_of_nock h
+  have he := eval_of_nock h
   clear h
   have L : ∀ {k k' : Nat}, k ≤ k' → ∀ {s f p}, iterN k s f = some p → iterN k' s f = some p :=
     fun {_ _} hk {s f p} h => iterN_mono hk s f p h
@@ -391,10 +385,10 @@ theorem iterN_complete {s f p : Noun} (h : nock s f = some p) : ∃ k, iterN k s
     have e2 := L (show k2 ≤ max k1 k2 + 1 by omega) h2
     rw [iterN_succ] at e1 e2 ⊢
     simp only [nockW_op10, e1, e2, Option.bind_some, edit?_complete he]
-  | @op11_cell s tag c d hint pr out _ _ h3 ih1 ih2 _ =>
+  | @op11_cell s b c d hint pr out _ _ h3 ih1 ih2 _ =>
     obtain ⟨k1, h1⟩ := ih1
     obtain ⟨k2, h2⟩ := ih2
-    have h3' := nock_of_evalA h3
+    have h3' := nock_of_eval h3
     rw [nock_op0, slot?_step 3 (by omega)] at h3'
     simp only [Nat.reduceDiv, slot?_one, Option.bind_some, child, Nat.reduceMod, decide_true,
       if_true, Option.some.injEq] at h3'

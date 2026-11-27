@@ -13,7 +13,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from nouns import slot, norm, lean
 
-K = ('C', ('R', 'nh3d89e8d5f4f5'), ('C', ('R', 'nh15c74912d225'), ('C', ('A', 0), ('R', 'ana'))))
+K = ('C', ('R', 'nhe0b859c3d8aa'), ('C', ('R', 'nh15c74912d225'), ('C', ('A', 0), ('R', 'ana'))))
 ARMS = {
     'pastFork': ('door', 4061, 'pf'), 'softLess': ('door', 52, 'sl'), 'lazyShut': ('door', 218495, 'lsh'),
     'lazyBig': ('K', 11199, 'lb'), 'lazySize': ('K', 348, 'lsz'), 'thisOnly': ('K', 178934, 'tho'),

@@ -1,6 +1,7 @@
 import lemmas.Compiler.EvalRend
 import lemmas.KernelRfl
 import core.Statement
+import lemmas.Spec
 
 /-!
 # The statements of `core/Statement.lean` against the models
