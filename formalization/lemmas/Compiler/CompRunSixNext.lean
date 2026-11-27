@@ -400,5 +400,168 @@ theorem comp_run_n6_nf (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slo
         (fun yes nuh g' hd' => P.link _ g' ⟨hd', jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩) P.res x hx g2 (ginv_drop gi2)
         nex0 nex1 gi2.1.1 (lnb_mono l2 0 gi1'.1.1) (Lazy.ofSure s0) (Lazy.ofSure s1) g.bo (g.bo + 1)
         (idG g3).cond g1.cond mono (C (Lazy.mk s [] []).toNoun th.toNoun) sup (A 0))
+
+/-! ## What the case returns -/
+
+/-- **The labels `+sect` returns** are below the label counter after it. -/
+theorem sect_labels {nex0 nex1 : NextL CSet} {o0 o1 : Nat} {rb : List Nat}
+    {cb cw : TreapMap mugF (Nat × List Nat)} {g g' : Gen (TreapMap mugF)} {lz : Lazy CSet} {yes nuh : Nat}
+    (h : sect nex0 nex1 o0 o1 rb cb cw g = some ((lz, yes, nuh), g')) : yes < g'.bo ∧ nuh < g'.bo := by
+  unfold sect at h
+  split at h
+  · cases h
+  · obtain ⟨o0b, g1, h1, h⟩ := bind_some h
+    rw [emit_apply] at h1
+    simp only [Option.some.injEq, Prod.mk.injEq] at h1
+    obtain ⟨rfl, rfl⟩ := h1
+    obtain ⟨o1b, g2, h2, h⟩ := bind_some h
+    rw [emit_apply] at h2
+    simp only [Option.some.injEq, Prod.mk.injEq] at h2
+    obtain ⟨rfl, rfl⟩ := h2
+    obtain ⟨_, g3, h3, h⟩ := bind_some h
+    obtain ⟨_, g4, h4, h⟩ := bind_some h
+    obtain ⟨g5, g5', h5, h⟩ := bind_some h
+    simp only [get, Option.some.injEq, Prod.mk.injEq] at h5
+    obtain ⟨rfl, rfl⟩ := h5
+    have b3 := ((KM.setTag' (Map := TreapMap mugF) _ _).keep _ _ _ h3).2.1
+    have b4 := ((KM.setTag' (Map := TreapMap mugF) _ _).keep _ _ _ h4).2.1
+    simp only [emitted_bo] at b3
+    dsimp only at h
+    by_cases hd : g4.drop = true
+    · rw [if_pos hd] at h
+      obtain ⟨e, rfl⟩ := sect_tail h
+      simp only [Prod.mk.injEq] at e
+      obtain ⟨-, rfl, rfl⟩ := e
+      simp only [emitted_bo]
+      omega
+    · rw [if_neg hd] at h
+      obtain ⟨u, g6, h6, h⟩ := bind_some h
+      obtain ⟨e, rfl⟩ := sect_tail h
+      simp only [Prod.mk.injEq] at e
+      obtain ⟨-, rfl, rfl⟩ := e
+      have b6 := ((km_sectThread (Map := TreapMap mugF) _ _ _ _ _).keep _ _ _ h6).2.1
+      simp only [emitted_bo]
+      omega
+
+/-- **What `%6` returns under a fork-free `%next` goal**: `GRes`, given what
+the runs of the parts return; every register of the result is fresh (the
+branch goals' registers come from `+fork-sure`, the branches' needs are
+apart, the fork of `+sect` meets `LInv`). -/
+theorem res_n6_nf {env : CallEnv} {msup : Option Nomm} {p q r : Nomm} {region : List Nat}
+    (ihp : ResFor env msup p region) (ihq : ∀ rid, ResFor env msup q (rid :: region))
+    (ihr : ∀ rid, ResFor env msup r (rid :: region))
+    (s : Sure CSet) (th : Jmp) (g g' : Gen (TreapMap mugF)) (nex : NextL CSet)
+    (hi : GInv g (CGoalL.next (Lazy.mk s [] []) th))
+    (h : runLC env msup (Nomm.n6 p q r) (CGoalL.next (Lazy.mk s [] []) th) region g = some (nex, g')) :
+    GRes g (CGoalL.next (Lazy.mk s [] []) th) g' nex := by
+  have hd := ginv_drop hi
+  have hl0 : CrLok s := hi.1.1.1.1
+  rw [runLC_n6_nf] at h
+  obtain ⟨o0, gA, eA, h⟩ := bind_some h
+  rw [oo_ap] at eA
+  simp only [Option.some.injEq, Prod.mk.injEq] at eA
+  obtain ⟨rfl, rfl⟩ := eA
+  obtain ⟨o1, gB, eB, h⟩ := bind_some h
+  rw [oo_ap, ooG_bo] at eB
+  simp only [Option.some.injEq, Prod.mk.injEq] at eB
+  obtain ⟨rfl, rfl⟩ := eB
+  obtain ⟨⟨s0, s1⟩, g3, ef, h⟩ := bind_some h
+  obtain ⟨r3, b3, d3, lk0, lk1, D0, D1, aps, fr⟩ := forkSure_inv ef
+  obtain ⟨rid, gI, eI, h⟩ := bind_some h
+  rw [idM_ap] at eI
+  simp only [Option.some.injEq, Prod.mk.injEq] at eI
+  obtain ⟨rfl, rfl⟩ := eI
+  have dI : (idG g3).drop = false := d3.trans hd
+  have gi1 : GInv (idG g3) (CGoalL.next (Lazy.ofSure s1) (jmp0 (g.bo + 1))) :=
+    ginv_ofSure (fun y hy => hl0 y (lk1 ▸ hy)) (fun y hy => (fr y (Or.inr hy)).2) D1 dI
+  have gi0 : GInv (idG g3) (CGoalL.next (Lazy.ofSure s0) (jmp0 g.bo)) :=
+    ginv_ofSure (fun y hy => hl0 y (lk0 ▸ hy)) (fun y hy => (fr y (Or.inl hy)).2) D0 dI
+  unfold sixNfK at h
+  obtain ⟨c0, g0, e0, h⟩ := bind_some h
+  simp only [getCond, Option.some.injEq, Prod.mk.injEq] at e0
+  obtain ⟨-, rfl⟩ := e0
+  obtain ⟨nex1, g1, e1, h⟩ := bind_some h
+  obtain ⟨c1, g1', e1', h⟩ := bind_some h
+  simp only [getCond, Option.some.injEq, Prod.mk.injEq] at e1'
+  obtain ⟨-, rfl⟩ := e1'
+  obtain ⟨nex0, g2, e2, h⟩ := bind_some h
+  obtain ⟨l1, b1, gj1, s1r⟩ := ihr g3.id _ _ g1 nex1 gi1 e1
+  have hi0 : GInv g1 (CGoalL.next (Lazy.ofSure s0) (jmp0 g.bo)) :=
+    ginv_mono gi0 l1 b1 ((ginv_drop gj1).trans dI.symm)
+  obtain ⟨l2, b2, gj2, s2r⟩ := ihq g3.id _ g1 g2 nex0 hi0 e2
+  have d2 : g2.drop = false := ginv_drop gj2
+  unfold sixLynN at h
+  obtain ⟨⟨lz, yes, nuh⟩, g4, e3, h⟩ := bind_some h
+  have hlz := sect_lazy e3
+  obtain ⟨k4r, k4b, k4d⟩ := (km_sect nex0 nex1 g.bo (g.bo + 1) (g3.id :: region) c0 c1).keep _ _ _ e3
+  obtain ⟨hy, hn⟩ := sect_labels e3
+  subst hlz
+  have d4 : g4.drop = false := k4d.trans d2
+  unfold sixPM at h
+  obtain ⟨lazy, g7, e7, h⟩ := bind_some h
+  simp only [liftO] at e7
+  cases epf : Lazy.pastFork env.cod (Lazy.mk Sure.bunt [((yes, nex0.laz), (nuh, nex1.laz))] []) p with
+  | none => rw [epf] at e7; cases e7
+  | some lz' =>
+  rw [epf] at e7
+  simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at e7
+  obtain ⟨rfl, rfl⟩ := e7
+  obtain ⟨nexC, g8, e8, h⟩ := bind_some h
+  obtain ⟨l8, b8, gi8, s8⟩ := ihp _ g4 g8 nexC
+    (show GInv g4 (CGoalL.pick (jmp0 yes) (jmp0 nuh)) from ⟨d4, jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩) e8
+  -- the registers of the branches' needs: fresh, or of the goals of `+fork-sure`
+  have rI : (idG g3).re = g3.re := rfl
+  have rO : (ooG (ooG g)).re = g.re := rfl
+  have bI : (idG g3).bo = g3.bo := rfl
+  have f0 : ∀ y ∈ lregs nex0.laz, g1.re ≤ y ∨ NMem s0.ned y := fun y hy => by
+    rcases s2r y hy with e | e
+    · exact Or.inl e
+    · simp only [gregs, lregs_ofSure] at e
+      exact Or.inr ((mem_flatten _ _).1 e)
+  have f1 : ∀ y ∈ lregs nex1.laz, g3.re ≤ y ∨ NMem s1.ned y := fun y hy => by
+    rcases s1r y hy with e | e
+    · exact Or.inl e
+    · simp only [gregs, lregs_ofSure] at e
+      exact Or.inr ((mem_flatten _ _).1 e)
+  have lv0 : LInv g4.re g4.bo nex0.laz := linv_mono gj2.1 k4r k4b
+  have lv1 : LInv g4.re g4.bo nex1.laz := linv_mono gj1.1 (by omega) (by omega)
+  have ap01 : ∀ y ∈ lregs nex0.laz, y ∉ lregs nex1.laz := fun y hy hy' => by
+    have hb1 := lnb_regs gj1.1.1 y hy'
+    rcases f0 y hy with e | e
+    · omega
+    · have := (fr y (Or.inl e)).2
+      rcases f1 y hy' with e' | e'
+      · omega
+      · exact aps y e e'
+  have lvF := lyn_linv lv0 lv1 ap01 hy hn
+  have lvP : LInv g4.re g4.bo lz' := linv_pastFork epf lvF
+  have hC : LInv g8.re g8.bo nexC.laz := gi8.1
+  have hP8 : LInv g8.re g8.bo lz' := linv_mono lvP l8 b8
+  have ap8 : (lregs nexC.laz ++ lregs lz').Nodup := by
+    refine List.nodup_append.2 ⟨gi8.1.2.1, lvP.2.1, fun a ha b hb e => ?_⟩
+    subst e
+    have := lnb_regs lvP.1 a hb
+    rcases s8 a ha with e | e
+    · omega
+    · simp [gregs] at e
+  obtain ⟨l9, b9, gi9, s9⟩ := six_tail_res hC hP8 ap8 (ginv_drop gi8) h
+  have rg3 : g.re ≤ g3.re := rO ▸ r3
+  refine ⟨by omega, by simp only [ooG_bo] at b3; omega, gi9, fun y hy => Or.inl ?_⟩
+  rcases s9 y hy with e | e
+  · rcases List.mem_append.1 e with e | e
+    · rcases s8 y e with e' | e'
+      · omega
+      · simp [gregs] at e'
+    · rw [lregs_pastFork epf] at e
+      simp only [lregs, fregs, bregs, flattenNeed, Sure.bunt, List.nil_append, List.append_nil,
+        List.mem_append] at e
+      rcases e with e | e
+      · rcases f0 y e with e' | e'
+        · omega
+        · have := (fr y (Or.inl e')).1; omega
+      · rcases f1 y e with e' | e'
+        · omega
+        · have := (fr y (Or.inr e')).1; omega
+  · omega
 end Compiler
 end Formalization
