@@ -536,5 +536,159 @@ theorem memDoneCall_of (r : RealCfg) (order : List Noun) (kids : Noun → List N
   obtain ⟨-, C1, C2, C3, C4, SU, hc, -⟩ := hA1
   refine ⟨C1, C2, C3, C4, SU, hc, hy.1.1, hc ▸ hQ1, hrs ▸ hc ▸ hS1, fun b' _ k hk => by simp at hk⟩
 
+/-- **What a `%done` call of `member` still takes** once the run is linked: `MemDoneCall` with
+the threaded run replaced by `+inlined` keeping the cache (`InlKeep`, track A), the class `DirOk`
+and the per-call facts `DirCallsTN` at `EM` (each by `callOkTN_member` or `callOkTN_out`). -/
+def MemDoneRest (r : RealCfg) (order : List Noun) (kids : Noun → List Noun) (env : CallEnv) (SC0 : Noun)
+    (inl : Noun → Option Nomm) (P Pf : Noun → Prop) (S : Noun) (xs : GenRest) (st : St Noun NeedOrd) (keep : Bool)
+    (DN KIDS ML0 CB SCC CODE LSR JH CACHE0 b ML CACHE : Noun) : Prop :=
+  ∃ (cape : Cape) (DATA FOL : Noun) (nm : Nomm) (fuel : Nat), b = C (C cape.toNoun DATA) FOL ∧
+    r.info b = ⟨nm, cape, DATA, fuel⟩ ∧ ∃ CA1,
+    nock (C inlBody (C (C b (C (C CODE LSR) (C JH CACHE))) compK)) inlBody = some (C nm.toNoun CA1) ∧
+    InlKeep inl CACHE CA1 ∧ DirOk nm = true ∧
+    DirCallsTN (envDone r order kids st) CODE (memDCtx SCC (C CODE LSR) JH ML (A 0) b)
+      (EM env SC0 inl P Pf S st xs) (ExtE (EM env SC0 inl P Pf S st xs)) Option.none nm ∧
+    ∃ (nex : NextL CSet) (g1 : Gen (TreapMap mugF)),
+      runLC (envDone r order kids st) Option.none nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF))
+        = some (nex, g1) ∧
+    ∃ ord, shapeCol fuel nex.laz cape = some ord ∧ nex.th.args = [] ∧
+    ∃ (nedF : Need) (g2 : Gen (TreapMap mugF)), needOrdAllocRegs ord g1 = some (nedF, g2) ∧
+      isRun (flattenNeed (bakeNeed nedF (Sock.mk cape DATA)).1)
+        ((flattenNeed (bakeNeed nedF (Sock.mk cape DATA)).1).headD 0) 0 = true ∧
+    ∃ sur, sureOf (needToOrd nex.laz.sure.ned) nex.laz.sure.lok cape = some sur ∧
+      (∃ s, finishLFC (S := CSet) (Map := TreapMap mugF) (envDone r order kids st) nm ord cape
+        (fun n => bakeNeed n (Sock.mk cape DATA)) = some s) ∧
+      ∀ (x1 : GenRest) (C1 C2 C3 C4 SURE' : Noun) (prev : NeedOrd), st.ml b = some prev →
+        msgOrd (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1) prev cape ≠ needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1 →
+        ∃ t, nock (C finBody (C (C (A 0) (msgOrd (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1) prev cape).toNoun)
+              (memFCR keep (wasN (st.sure b)) sur.toNoun
+                (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1).toNoun nex.laz.toNoun nedF.toNoun
+                (bakeNeed nedF (Sock.mk cape DATA)).1.toNoun (immNoun (bakeNeed nedF (Sock.mk cape DATA)).2)
+                nex.th.there (genNoun g2 x1) nm.toNoun
+                (memDCtx SCC (C CODE LSR) JH ML (A 0) b) b ML
+                (A 0) (cacheN C1 C2 C3 C4 SURE') (memCtx DN KIDS ML0 CB SCC (C CODE LSR) JH CACHE0)))) finBody
+          = some (C (msgOrd (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1) prev cape).toNoun t)
+
+theorem memDoneCall_of_rest {r : RealCfg} {order : List Noun} {kids : Noun → List Noun} {nout : Noun → NeedOrd}
+    {env : CallEnv} {SC0 : Noun} {inl : Noun → Option Nomm} {P Pf : Noun → Prop} {S : Noun} {xs : GenRest}
+    (hrs : r.scc = tapList S) (hPS : ∀ k ∈ tapList S, ¬ P k)
+    {st : St Noun NeedOrd} {keep : Bool} {DN KIDS ML0 CB SCC CODE LSR JH CACHE0 b ML CACHE : Noun}
+    (hR : LoopR r.scc (fun _ => []) nout (QK env (RKP SC0 inl Pf) P S xs) st.ml st.sure ML CACHE)
+    (h : MemDoneRest r order kids env SC0 inl P Pf S xs st keep DN KIDS ML0 CB SCC CODE LSR JH CACHE0 b ML CACHE) :
+    MemDoneCall r order kids (fun _ => []) nout env (RKP SC0 inl Pf) P S xs st keep DN KIDS ML0 CB SCC CODE LSR JH
+      CACHE0 b ML CACHE := by
+  obtain ⟨cape, DATA, FOL, nm, fuel, hb, hinfo, CA1, hinl, hik, hn, hd, nex, g1, hrunL, ord, hcol, hargs, nedF, g2,
+    hnoar, hrun, sur, hsur, hfin, hcs⟩ := h
+  exact memDoneCall_of r order kids nout env SC0 inl P Pf S xs hrs hPS st keep DN KIDS ML0 CB SCC CODE LSR JH CACHE0
+    b ML CACHE hR cape DATA FOL nm fuel hb hinfo CA1 hinl hik hn hd nex g1 hrunL ord hcol hargs nedF g2 hnoar hrun sur
+    hsur hfin hcs
+
+/-! ## The `%done` third of `SccLoopAtA` -/
+
+/-- **`SccLoopAtA` with its `%done` third discharged** (`memGate_done_real` with `rKP_sure`,
+`sure_miss_of_agree` at the rest of the loop, `memDoneCall_of_rest` at every call): at a rest where
+`calleeCompiled_sccA` runs the loop (`LoopRest`), the configuration `cfgReal r order kids` with
+`CfgOf` and `Ranked`, the `%may` and `%must` gates, the agreement of `env`, the members bells, and
+per `%done` call `MemDoneRest`. -/
+theorem sccLoopAtA_real (env : CallEnv) (SC0 : Noun) (inl : Noun → Option Nomm) (P Pf : Noun → Prop)
+    (S CODE JETS CALLS JH : Noun) (x : GenRest) (NR CR : Noun)
+    (hx : LoopRest env (RKP SC0 inl Pf) P S x NR CR) (hPS : ∀ k ∈ tapList S, ¬ P k)
+    (hbell : ∀ k ∈ tapList S, ∃ b' : Bell, b'.toNoun = k)
+    (r : RealCfg) (order : List Noun) (kids : Noun → List Noun) (rk : Ranked (cfgReal r order kids))
+    (nout : Noun → NeedOrd)
+    (hcfg : CfgOf (cfgReal r order kids) S (kidsOf S (C CODE (C JETS CALLS)) JH (C NR CR)))
+    (hmay : MemGate (cfgReal r order kids) (LoopR (cfgReal r order kids).scc (fun _ => []) nout (QK env (RKP SC0 inl Pf) P S x))
+      (csiCtx (A 1) (kidsOf S (C CODE (C JETS CALLS)) JH (C NR CR)) S (C CODE (C JETS CALLS)) JH (C NR CR))
+      (fun _ => (cfgReal r order kids).none) (A 0) Mode.may (A 0x79616d))
+    (hmust : ∀ TOP, TopN (maySweep (cfgReal r order kids) (St.empty : St Noun NeedOrd)).ml TOP →
+      MemGate (cfgReal r order kids) (LoopR (cfgReal r order kids).scc (fun _ => []) nout (QK env (RKP SC0 inl Pf) P S x))
+        (csiCtx (A 1) (kidsOf S (C CODE (C JETS CALLS)) JH (C NR CR)) S (C CODE (C JETS CALLS)) JH (C NR CR))
+        (topOf (cfgReal r order kids) (maySweep (cfgReal r order kids) (St.empty : St Noun NeedOrd))) TOP Mode.must
+        (A 0x7473756d))
+    (henv : ∀ (s : St Noun NeedOrd), compileSccIn (cfgReal r order kids) false (fuelR (cfgReal r order kids) rk) St.empty
+      = some s → ∀ b' : Bell, b'.toNoun ∈ (cfgReal r order kids).scc →
+        env.need b' = s.ml b'.toNoun ∧ ∀ v, s.sure b'.toNoun = some v → env.sure b' = v)
+    (hcall : ∀ (st : St Noun NeedOrd) (keep : Bool) (b ML CACHE : Noun), b ∈ r.scc →
+      LoopR r.scc (fun _ => []) nout (QK env (RKP SC0 inl Pf) P S x) st.ml st.sure ML CACHE →
+      MemDoneRest r order kids env SC0 inl P Pf S x st keep (A 1) (kidsOf S (C CODE (C JETS CALLS)) JH (C NR CR)) (A 0)
+        csiBody S CODE (C JETS CALLS) JH (C NR CR) b ML CACHE) :
+    SccLoopAtA env (RKP SC0 inl Pf) P S CODE JETS CALLS JH x NR CR := by
+  obtain ⟨hA, hR, hc, hmiss⟩ := hx
+  have hrs : r.scc = tapList S := hcfg.scc
+  have hxS : ∀ b ∈ r.scc, ∀ N u, slot? 31 x.cache = some N → getF mugF b N ≠ some (C (A 0) u) := by
+    intro b hb
+    refine sure_miss_of_agree hA hPS hbell (fun N hN k hk => ?_) b (hrs ▸ hb)
+    rw [hc] at hN
+    have : N = NR := by simpa [nock_exec] using hN.symm
+    subst this; exact hmiss k hk
+  refine ⟨cfgReal r order kids, rk, fun _ => [], nout, hcfg, hmay, ?_, hmust, henv⟩
+  exact memGate_done_real r order kids (fun _ => []) nout env (RKP SC0 inl Pf) P S x rKP_sure
+    (fun b hb => hrs ▸ hb) hxS (A 1) _ (A 0) csiBody S CODE (C JETS CALLS) JH (C NR CR)
+    (fun st keep b ML CACHE hb hL => memDoneCall_of_rest hrs hPS hL (hcall st keep b ML CACHE hb hL))
+
+/-! ## The gate -/
+
+/-- **A callee of an SCC that is not a lone bell without a self call, with the loop asked at
+`LoopRest`** (`SccCallee` for `SccLoopAtA`). -/
+def SccCalleeA (env : CallEnv) (SC0 CODE JETS CALLS JH : Noun) (inl : Noun → Option Nomm) (b : Bell) : Prop :=
+  ∃ nb S, env.need b = some nb ∧ getF mugF b.toNoun SC0 = some (C (A 0) S) ∧
+    ((∀ n, S ≠ C n (C (A 0) (A 0))) ∨ ∃ n, S = C n (C (A 0) (A 0)) ∧ CalleeIn CALLS n n) ∧
+    ∀ x NR CR, LoopRest env (RKP SC0 inl (fun _ => False)) (fun _ => False) S x NR CR →
+      SccLoopAtA env (RKP SC0 inl (fun _ => False)) (fun _ => False) S CODE JETS CALLS JH x NR CR
+
+def AnyCalleeA (env : CallEnv) (SC0 CODE JETS CALLS JH SCC : Noun) (inl : Noun → Option Nomm) (ctx : Noun)
+    (x0 : GenRest) (b : Bell) : Prop :=
+  (∃ nb, env.need b = some nb ∧ NeedRead ctx x0 b nb ∧ SureNoun env b x0) ∨
+    (hasInF mugF b.toNoun SCC = some false ∧
+      (OneCallee env SC0 CODE CALLS inl b ∨ SccCalleeA env SC0 CODE JETS CALLS JH inl b))
+
+theorem calleeCompiled_rkp0 {env : CallEnv} {SC0 : Noun} {inl : Noun → Option Nomm} {ctx : Noun} {b : Bell}
+    {nb : NeedOrd} (h : CalleeCompiled env (RK SC0 inl) ctx b nb) :
+    CalleeCompiled env (RKP SC0 inl (fun _ => False)) ctx b nb := by
+  intro x NR MO SC RS hA hR hc h0
+  obtain ⟨CA', h1, h2, h3, h4, h5⟩ := h x NR MO SC RS hA (rKP_empty.1 hR) hc h0
+  exact ⟨CA', h1, h2, h3, rKP_empty.2 h4, h5⟩
+
+theorem callAt_anyA {FUNC SCC CODE JETS CALLS JH NM SC0 : Noun} {env : CallEnv} {inl : Noun → Option Nomm}
+    {x0 : GenRest} {b : Bell} (hsg : SccsGood SC0) (hcj : IsMap mugF CALLS ∧ ∀ k v, Get CALLS k v → IsSet mugF v)
+    (h : AnyCalleeA env SC0 CODE JETS CALLS JH SCC inl (cuCtx FUNC SCC CODE (C JETS CALLS) JH NM) x0 b) :
+    ∃ nb, env.need b = some nb ∧
+      CallAt env (RKP SC0 inl (fun _ => False)) (cuCtx FUNC SCC CODE (C JETS CALLS) JH NM) x0 b nb := by
+  have h7 : slot? 7 (cuCtx FUNC SCC CODE (C JETS CALLS) JH NM) = some compK := rfl
+  have hl : slot? 26 (cuCtx FUNC SCC CODE (C JETS CALLS) JH NM) = some (C CODE (C JETS CALLS)) := by
+    simp [cuCtx, nock_exec]
+  have h107 : slot? 107 (cuCtx FUNC SCC CODE (C JETS CALLS) JH NM) = some CALLS := by simp [cuCtx, nock_exec]
+  have h12 : slot? 12 (cuCtx FUNC SCC CODE (C JETS CALLS) JH NM) = some SCC := by simp [cuCtx, nock_exec]
+  rcases h with ⟨nb, hnb, hr, hs⟩ | ⟨hout, hone | ⟨nb, S, hnb, hsc, hnd, hloop⟩⟩
+  · exact ⟨nb, hnb, Or.inl ⟨hr, hs⟩⟩
+  · obtain ⟨cape, DATA, FOL, nm, fuel, envb, p, st, rfl, hsc, hinl, hcalls, hcode, hn, hax, hfix, hbake, hone⟩ := hone
+    refine ⟨st.need, hone.2.2.1, Or.inr ⟨SCC, h12, hout, calleeCompiled_rkp0 ?_⟩⟩
+    exact calleeCompiled_oneK (CODE := CODE) (JETS := JETS) (CALLS := CALLS) (JH := JH) h7 hl
+      (cuCtx_hot _ _ _ _ _ _) h107 env envb cape DATA FOL nm fuel p st inl hsc hinl hcalls hcode hn hax hfix hbake hone
+  · refine ⟨nb, hnb, Or.inr ⟨SCC, h12, hout, calleeCompiled_of_P ?_⟩⟩
+    exact calleeCompiled_sccA h7 hl (cuCtx_hot _ _ _ _ _ _) h107 env inl _ _ b nb S hsg hcj hsc hnd
+      (fun _ _ h => h) (fun _ _ h => h) hnb hloop
+
+/-- **The gate of `+compile-unary` on `DirOk` with callees in SCCs of any size, the loop asked at
+`LoopRest`** (`cu_gate_dir_scc` for `SccCalleeA`, no `PrintId`). -/
+theorem cu_gate_dir_sccA (FUNC SCC CODE JETS CALLS JH CACHE NM CA V COLE SC0 : Noun) (env : CallEnv)
+    (inl : Noun → Option Nomm) (n : Nomm)
+    (hgot : getF mugF FUNC CODE = some (C (A 0) V)) (hv : slot? 2 V = some n.toNoun)
+    (hcl : slot? 190 (C JETS CALLS) = some COLE)
+    (hcsi : nock (cuTC (cuSam FUNC SCC CODE (C JETS CALLS) JH CACHE)) cuCsi = some (C NM CA))
+    (hE0 : AgreeE env (cuRest CA)) (hR0 : RK SC0 inl (cuRest CA))
+    (hn : DirOk n = true)
+    (he : EnvFrom env CODE COLE) (hcr : CodeNoRing CODE COLE n) (hana : CodeAna CODE)
+    (hsg : SccsGood SC0) (hcj : IsMap mugF CALLS ∧ ∀ k v, Get CALLS k v → IsSet mugF v)
+    (hcal : ∀ b ∈ dirBells n,
+      AnyCalleeA env SC0 CODE JETS CALLS JH SCC inl (cuCtx FUNC SCC CODE (C JETS CALLS) JH NM) (cuRest CA) b) :
+    ∃ CA', Ext (cuRest CA) (cuRest CA') ∧ AgreeE env (cuRest CA') ∧ RK SC0 inl (cuRest CA') ∧
+      nock (C cuGB (C (cuSam FUNC SCC CODE (C JETS CALLS) JH CACHE) compK)) cuGB
+        = (finishLUCM (S := CSet) (Map := TreapMap mugF) env n).map fun st => C (C st.toNoun NM) CA' := by
+  obtain ⟨CA', h1, h2, h3, h4⟩ := cu_gate_dirE FUNC SCC CODE (C JETS CALLS) JH CACHE NM CA V COLE env
+    (RKP SC0 inl (fun _ => False)) n hgot hv hcl hcsi hE0 (rKP_empty.2 hR0) hn he hcr hana
+    fun b hb => callAt_anyA hsg hcj (hcal b hb)
+  exact ⟨CA', h1, h2, rKP_empty.1 h3, h4⟩
+
 end Compiler
 end Formalization
