@@ -127,7 +127,7 @@ def nedL (ned : NeedOrd) : Laze S := mk ⟨ned, HoonSet.empty⟩ [] []
 def idS : SM S Nat := fun st => some (st.idg, { st with idg := st.idg + 1 })
 
 /-- A crash or a value, in the monad. -/
-def liftS {α : Type} (o : Option α) : SM S α := fun st => o.map (·, st)
+def shLiftS {α : Type} (o : Option α) : SM S α := fun st => o.map (·, st)
 
 /-- `(~(put in sofs.gen) i)`. -/
 def putSofs (i : Nat) : SM S Unit := fun st => some ((), { st with sofs := HoonSet.put st.sofs i })
@@ -471,14 +471,14 @@ def lazeSect (l0 l1 : Laze S) : SM S (Laze S) := do
 /-- **`+laze-past`**. -/
 def lazePast (env : ShapeEnv) (laz : Laze S) (nom : Nomm) : SM S (Laze S) :=
   if decide (laz.sure.ned = NeedOrd.none) && HoonSet.small laz.sure.lok && laz.fork.isEmpty then pure laz else do
-  let h ← liftS (hinted env.pure nom)
+  let h ← shLiftS (hinted env.pure nom)
   if !h then pure laz else do
   let i ← idS
   pure (mk SureO.bunt [] ((i, mk laz.sure laz.fork []) :: laz.bond))
 
 /-- **`+laze-past-if`**. -/
 def lazePastIf (env : ShapeEnv) (laz : Laze S) (nom : Nomm) : SM S (Laze S) := do
-  let keep ← (if HoonSet.small laz.sure.lok then liftS (soundS env nom laz.sure.ned) else pure false : SM S Bool)
+  let keep ← (if HoonSet.small laz.sure.lok then shLiftS (soundS env nom laz.sure.ned) else pure false : SM S Bool)
   if keep then pure laz else do
   let i ← idS
   pure (mk SureO.bunt laz.fork ((i, mk laz.sure [] []) :: laz.bond))
@@ -513,12 +513,12 @@ def simpleS : GoalS S → Laze S
 /-- The case `[^ *]` under `[%next laz]`. -/
 def consNext (env : ShapeEnv) (rp rq : GoalS S → SM S (Laze S)) (p q : Nomm) (laz : Laze S) :
     SM S (Laze S) := do
-  let (hed, tel) ← liftS (lazeSplit laz)
+  let (hed, tel) ← shLiftS (lazeSplit laz)
   let hed ← lazePast env hed q
   let l2 ← rq (GoalS.next tel)
   let l2 ← lazePast env l2 p
   let l1 ← rp (GoalS.next hed)
-  liftS (lazeCopy l1 l2)
+  shLiftS (lazeCopy l1 l2)
 
 /-- The end of the case `%6`: the branches under `gb`, the test under
 `%pick`. -/
@@ -527,11 +527,11 @@ def sixBranch (env : ShapeEnv) (rp rq rr : GoalS S → SM S (Laze S)) (p : Nomm)
   let l1 ← rr gb
   let l0 ← rq gb
   let lazy ← lazeSect l0 l1
-  let lazy ← liftS (lazePastFork env lazy p)
+  let lazy ← shLiftS (lazePastFork env lazy p)
   let st ← get
   let lazy := if lazeBig (sofsHas st.sofs) lazy then thisL else lazy
   let lc ← rp GoalS.pick
-  liftS (lazeCopy lc lazy)
+  shLiftS (lazeCopy lc lazy)
 
 /-- The middle of the case `%6`: the branches under the halves of
 `+laze-branch`, the test under `[%next this]`. -/
@@ -541,11 +541,11 @@ def sixFork (env : ShapeEnv) (rp rq rr : GoalS S → SM S (Laze S)) (p : Nomm) (
   let l1 ← rr (GoalS.next g1)
   let l0 ← rq (GoalS.next g0)
   let lazy ← lazeSect l0 l1
-  let lazy ← liftS (lazePastFork env lazy p)
+  let lazy ← shLiftS (lazePastFork env lazy p)
   let st ← get
   let lazy := if lazeBig (sofsHas st.sofs) lazy then thisL else lazy
   let lc ← rp (GoalS.next thisL)
-  liftS (lazeCopy lc lazy)
+  shLiftS (lazeCopy lc lazy)
 
 /-- The case `%6` under `[%next laz]`, with fuel for its runs on the same
 nomm. -/
@@ -553,17 +553,17 @@ def sixShape (env : ShapeEnv) (rp rq rr : GoalS S → SM S (Laze S)) (p q r : No
     Nat → Laze S → SM S (Laze S)
   | 0, _ => fun _ => Option.none
   | fuel + 1, laz => do
-    let lep ← liftS (lazeLeaps laz q r)
+    let lep ← shLiftS (lazeLeaps laz q r)
     match lep with
     | some (rest, bys) => do
       let l ← sixShape env rp rq rr p q r fuel rest
-      liftS (bys.foldlM (fun acc by_ => lazeCopy acc by_) l)
+      shLiftS (bys.foldlM (fun acc by_ => lazeCopy acc by_) l)
     | Option.none =>
       if !(noneEq (mk SureO.bunt laz.fork laz.bond)) then do
         let st ← get
         let soft := sofsHas st.sofs
         let kerf ← (if (whole q && whole r) || thisOnlyS laz || lazeBig soft laz then pure true
-          else liftS (softForkS soft (unsS env q r) laz) : SM S Bool)
+          else shLiftS (softForkS soft (unsS env q r) laz) : SM S Bool)
         if kerf then sixShape env rp rq rr p q r fuel thisL
         else sixFork env rp rq rr p laz
       else sixBranch env rp rq rr p (GoalS.next (mk laz.sure [] []))
@@ -579,11 +579,11 @@ def runShape (env : ShapeEnv) : Option Nomm → Nomm → GoalS S → SM S (Laze 
       let l2 ← runShape env sup q (GoalS.next noneL)
       let l2 ← lazePast env l2 p
       let l1 ← runShape env sup p (GoalS.next noneL)
-      liftS (lazeCopy l1 l2)
+      shLiftS (lazeCopy l1 l2)
     | GoalS.done => consNext env (runShape env sup p) (runShape env sup q) p q thisL
     | GoalS.next laz => consNext env (runShape env sup p) (runShape env sup q) p q laz
   | _, Nomm.n0 ax, goal =>
-    if ax = 0 then pure noneL else if ax = 1 then pure (simpleS goal) else liftS (lazeFrom ax (simpleS goal))
+    if ax = 0 then pure noneL else if ax = 1 then pure (simpleS goal) else shLiftS (lazeFrom ax (simpleS goal))
   | _, Nomm.n1 _, _ => pure noneL
   | sup, Nomm.n2 p q info, goal =>
     match info with
@@ -591,23 +591,23 @@ def runShape (env : ShapeEnv) : Option Nomm → Nomm → GoalS S → SM S (Laze 
       let lf ← runShape env sup q (GoalS.next thisL)
       let lf ← lazePast env lf p
       let ls ← runShape env sup p (GoalS.next thisL)
-      liftS (lazeCopy ls lf)
+      shLiftS (lazeCopy ls lf)
     | some (b, k) => do
-      let pu ← liftS (env.pure b)
+      let pu ← shLiftS (env.pure b)
       let drop := pu && (match goal with | GoalS.next l => noneEq l | _ => false)
       let lf ← (if safeFolFol q then pure noneL else runShape env sup q (GoalS.next noneL) : SM S (Laze S))
       let lf ← lazePast env lf p
       let ls ← (if drop then runShape env sup p (GoalS.next noneL) else do
         let ned ← (match k with
           | some (Noun.cell _ _) => pure NeedOrd.this
-          | _ => liftS (env.need b) : SM S NeedOrd)
+          | _ => shLiftS (env.need b) : SM S NeedOrd)
         let sur := if env.jet b then NeedOrd.none else env.sure b
-        let soft ← liftS (softTest env p q b k ned sur sup)
+        let soft ← shLiftS (softTest env p q b k ned sur sup)
         if !soft then runShape env sup p (GoalS.next (nedL ned)) else do
           let i ← idS
           putSofs i
           runShape env sup p (GoalS.next (mk SureO.bunt [] [(i, nedL ned)])) : SM S (Laze S))
-      liftS (lazeCopy ls lf)
+      shLiftS (lazeCopy ls lf)
   | sup, Nomm.n3 p, goal =>
     match goal with
     | GoalS.next l => if noneEq l then runShape env sup p goal else runShape env sup p (GoalS.next thisL)
@@ -617,7 +617,7 @@ def runShape (env : ShapeEnv) : Option Nomm → Nomm → GoalS S → SM S (Laze 
     let lq ← runShape env sup q (GoalS.next thisL)
     let lq ← lazePast env lq p
     let lp ← runShape env sup p (GoalS.next thisL)
-    liftS (lazeCopy lp lq)
+    shLiftS (lazeCopy lp lq)
   | sup, Nomm.n6 p q r, goal =>
     match goal with
     | GoalS.next laz =>
@@ -627,12 +627,12 @@ def runShape (env : ShapeEnv) : Option Nomm → Nomm → GoalS S → SM S (Laze 
     let l ← runShape env (some p) q goal
     runShape env sup p (GoalS.next l)
   | sup, Nomm.n10 a v q, goal => do
-    let (don, rec) ← liftS (lazeInto a (simpleS goal))
+    let (don, rec) ← shLiftS (lazeInto a (simpleS goal))
     let rec ← lazePast env rec v
     let lDon ← runShape env sup v (GoalS.next don)
     let lDon ← lazePast env lDon q
     let lRec ← runShape env sup q (GoalS.next rec)
-    liftS (lazeCopy lRec lDon)
+    shLiftS (lazeCopy lRec lDon)
   | sup, Nomm.n11s tag q _, goal =>
     if !hintStatic tag then runShape env sup q goal else do
     let gol ← lazePastIf env (simpleS goal) q
@@ -645,31 +645,31 @@ def runShape (env : ShapeEnv) : Option Nomm → Nomm → GoalS S → SM S (Laze 
       if safeNomm h then pure lf else do
       let lf ← lazePast env lf h
       let lt ← runShape env sup h (GoalS.next noneL)
-      liftS (lazeCopy lt lf)
+      shLiftS (lazeCopy lt lf)
     else do
       let gol ← lazePastIf env (simpleS goal) q
       let lf ← runShape env sup q (GoalS.next gol)
       let i ← idS
       let lt ← runShape env sup h (GoalS.next thisL)
-      liftS (lazeCopy lt (mk SureO.bunt [] [(i, lf)]))
+      shLiftS (lazeCopy lt (mk SureO.bunt [] [(i, lf)]))
   | sup, Nomm.mean p b q _ k, goal => do
     let gol ← lazePastIf env (simpleS goal) q
     let lf ← runShape env sup q (GoalS.next gol)
     let i ← idS
-    let kon ← liftS (meanKonstS env b k)
-    let ned ← (if kon then pure NeedOrd.none else liftS (env.need b) : SM S NeedOrd)
-    let snd ← liftS (soundS env p ned)
+    let kon ← shLiftS (meanKonstS env b k)
+    let ned ← (if kon then pure NeedOrd.none else shLiftS (env.need b) : SM S NeedOrd)
+    let snd ← shLiftS (soundS env p ned)
     let la ← (if snd then pure (nedL ned) else do
       let j ← idS
       putSofs j
       pure (mk SureO.bunt [] [(j, nedL ned)]) : SM S (Laze S))
     let lt ← runShape env sup p (GoalS.next la)
-    liftS (lazeCopy lt (mk SureO.bunt [] [(i, lf)]))
+    shLiftS (lazeCopy lt (mk SureO.bunt [] [(i, lf)]))
   | sup, Nomm.n12 p q, _ => do
     let lq ← runShape env sup q (GoalS.next thisL)
     let lq ← lazePast env lq p
     let lp ← runShape env sup p (GoalS.next thisL)
-    liftS (lazeCopy lp lq)
+    shLiftS (lazeCopy lp lq)
 
 /-! ## `+laze-to-inter1`, `+laze-collapse`, `+laze-may` -/
 

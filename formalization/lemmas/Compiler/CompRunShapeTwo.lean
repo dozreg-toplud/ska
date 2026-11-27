@@ -68,14 +68,14 @@ structure ShapeCall (ctx : Noun) (env : ShapeEnv) (p q : Nomm) (b : Bell) (k : O
 noncomputable def rsdNedM (env : ShapeEnv) (b : Bell) (k : Option Noun) : SM CSet NeedOrd :=
   match k with
   | some (Noun.cell _ _) => pure NeedOrd.this
-  | _ => liftS (env.need b)
+  | _ => shLiftS (env.need b)
 
 /-- `l-sub` of the direct case when the call is not dropped, in the model. -/
 noncomputable def rsdNdM (env : ShapeEnv) (sup : Option Nomm) (p q : Nomm) (b : Bell) (k : Option Noun) :
     SM CSet (Laze CSet) := do
   let ned ← rsdNedM env b k
   let sur := if env.jet b then NeedOrd.none else env.sure b
-  let soft ← liftS (softTest env p q b k ned sur sup)
+  let soft ← shLiftS (softTest env p q b k ned sur sup)
   if !soft then runShape env sup p (GoalS.next (nedL ned)) else do
     let i ← idS
     putSofs i
@@ -98,11 +98,11 @@ noncomputable def rsdFolM (env : ShapeEnv) (sup : Option Nomm) (q : Nomm) : SM C
 theorem runShape_n2d (env : ShapeEnv) (sup : Option Nomm) (p q : Nomm) (b : Bell) (k : Option Noun)
     (goal : GoalS CSet) :
     runShape env sup (Nomm.n2 p q (some (b, k))) goal = (do
-      let pu ← liftS (env.pure b)
+      let pu ← shLiftS (env.pure b)
       let lf ← rsdFolM env sup q
       let lf ← lazePast env lf p
       let ls ← rsdSubM env sup p q b k (rsdDrop pu goal)
-      liftS (lazeCopy ls lf) : SM CSet (Laze CSet)) := by
+      shLiftS (lazeCopy ls lf) : SM CSet (Laze CSet)) := by
   cases goal <;> rcases k with _ | (_ | ⟨_, _⟩) <;> rw [runShape] <;> first | rfl | simp [rsdSubM, rsdNdM, rsdNedM]
 
 theorem rsK2_eq : rsK2 = rsdArm := by
@@ -176,11 +176,11 @@ theorem rsd_ned (env : ShapeEnv) (b : Bell) (k : Option Noun) (L1 L0 DR PU SIM P
   · obtain ⟨nb, e, h⟩ := hn rfl
     have h' := h st
     simp only [rsDoor] at h'
-    simp [nock_exec, rsS, rsCoreG, rsDoor, unitNoun, rsd_cne_at', h', rsdNedM, liftS, e]
+    simp [nock_exec, rsS, rsCoreG, rsDoor, unitNoun, rsd_cne_at', h', rsdNedM, shLiftS, e]
   · obtain ⟨nb, e, h⟩ := hn rfl
     have h' := h st
     simp only [rsDoor] at h'
-    simp [nock_exec, rsS, rsCoreG, rsDoor, unitNoun, rsd_cne_at', h', rsdNedM, liftS, e]
+    simp [nock_exec, rsS, rsCoreG, rsDoor, unitNoun, rsd_cne_at', h', rsdNedM, shLiftS, e]
   · simp [nock_exec, rsS, rsCoreG, rsDoor, unitNoun, rsdNedM, pure, StateT.pure, NeedOrd.toNoun, Tag.this]
 
 /-- **The push `sur`**: no ring for `b`, so `+callee-sure`. -/
@@ -255,10 +255,10 @@ theorem rsdNedM_spec {env : ShapeEnv} {b : Bell} {k : Option Noun} {st st1 : RSt
     (h : rsdNedM env b k st = some (ned, st1)) :
     st1 = st ∧ (konstCell k = true → ned = NeedOrd.this) ∧ (konstCell k = false → env.need b = some ned) := by
   rcases k with _ | (a | ⟨a1, a2⟩)
-  · cases e : env.need b <;> simp [rsdNedM, liftS, e] at h
+  · cases e : env.need b <;> simp [rsdNedM, shLiftS, e] at h
     obtain ⟨rfl, rfl⟩ := h
     exact ⟨rfl, by simp [konstCell], fun _ => rfl⟩
-  · cases e : env.need b <;> simp [rsdNedM, liftS, e] at h
+  · cases e : env.need b <;> simp [rsdNedM, shLiftS, e] at h
     obtain ⟨rfl, rfl⟩ := h
     exact ⟨rfl, by simp [konstCell], fun _ => rfl⟩
   · simp [rsdNedM, pure, StateT.pure] at h
@@ -303,7 +303,7 @@ theorem rsd_nd (hc : CompIn ctx) (h7 : slot? 7 ctx = some compK) {cod : Noun} (h
       have hp' := hp (nedL ned) st (lzNZ_nedL ned)
       simp only [rsCoreG, rsDoor, GoalS.toNoun, nedL, Laze.toNoun, SureO.toNoun, Laze.forksNoun, Laze.bondsNoun,
         HoonSet.toNoun_empty] at hp'
-      simp [nock_exec, rsS, rsCoreG, rsDoor, hned, hsur, hst, bind, StateT.bind, e1, es, hj, liftS, rsdSn, hp',
+      simp [nock_exec, rsS, rsCoreG, rsDoor, hned, hsur, hst, bind, StateT.bind, e1, es, hj, shLiftS, rsdSn, hp',
         nedL]
     | true =>
       have hp' := hp (Laze.mk SureO.bunt [] [(st.idg, nedL ned)])
@@ -315,7 +315,7 @@ theorem rsd_nd (hc : CompIn ctx) (h7 : slot? 7 ctx = some compK) {cod : Noun} (h
       simp only [rsGenNoun] at hid
       have hc' : slot? 262143 ctx = some layer2 := hc
       simp only [rsGenNoun] at hned hsur hst ⊢
-      simp [nock_exec, rsS, rsCoreG, rsDoor, rsGenNoun, hned, hsur, hst, bind, StateT.bind, e1, es, hj, liftS, rsdSy,
+      simp [nock_exec, rsS, rsCoreG, rsDoor, rsGenNoun, hned, hsur, hst, bind, StateT.bind, e1, es, hj, shLiftS, rsdSy,
         hp', nedL, idS, putSofs, lzp_id_at', comp_id_at, hid, SureO.bunt, hc', in.arm_at, in_arm, in.put.arm_at, put_in_arm, hpu]
 
 
@@ -392,7 +392,7 @@ theorem rs_n2dW (hc : CompIn ctx) (h7 : slot? 7 ctx = some compK) {cod : Noun} (
   cases e1 : rsdFolM env sup q st with
   | none =>
     rw [e1] at hfo
-    simp [nock_exec, rsS, rsCoreG, rsDoor, hpu, hdr, hfo, hpb, liftS, bind, StateT.bind, e1]
+    simp [nock_exec, rsS, rsCoreG, rsDoor, hpu, hdr, hfo, hpb, shLiftS, bind, StateT.bind, e1]
   | some r1 =>
     obtain ⟨lf, st1⟩ := r1
     rw [e1] at hfo
@@ -401,7 +401,7 @@ theorem rs_n2dW (hc : CompIn ctx) (h7 : slot? 7 ctx = some compK) {cod : Noun} (
     cases e2 : lazePast env lf p st1 with
     | none =>
       rw [e2] at hpa
-      simp [nock_exec, rsS, rsCoreG, rsDoor, hpu, hdr, hfo, hpb, liftS, bind, StateT.bind, e1, rsdPa, lzp_at', lzpArm,
+      simp [nock_exec, rsS, rsCoreG, rsDoor, hpu, hdr, hfo, hpb, shLiftS, bind, StateT.bind, e1, rsdPa, lzp_at', lzpArm,
         hpa, e2]
     | some r2 =>
       obtain ⟨lf', st2⟩ := r2
@@ -412,7 +412,7 @@ theorem rs_n2dW (hc : CompIn ctx) (h7 : slot? 7 ctx = some compK) {cod : Noun} (
       cases e3 : rsdSubM env sup p q b k (rsdDrop pu goal) st2 with
       | none =>
         rw [e3] at hsb
-        simp [nock_exec, rsS, rsCoreG, rsDoor, hpu, hdr, hfo, hpb, liftS, bind, StateT.bind, e1, rsdPa, lzp_at', lzpArm,
+        simp [nock_exec, rsS, rsCoreG, rsDoor, hpu, hdr, hfo, hpb, shLiftS, bind, StateT.bind, e1, rsdPa, lzp_at', lzpArm,
           hpa, e2, hsb, e3]
       | some r3 =>
         obtain ⟨ls, st3⟩ := r3
@@ -421,11 +421,11 @@ theorem rs_n2dW (hc : CompIn ctx) (h7 : slot? 7 ctx = some compK) {cod : Noun} (
         cases e4 : lazeCopy ls lf' with
         | none =>
           rw [e4] at hlc
-          simp [nock_exec, rsS, rsCoreG, rsDoor, hpu, hdr, hfo, hpb, liftS, bind, StateT.bind, e1, rsdPa, lzp_at', lzpArm,
+          simp [nock_exec, rsS, rsCoreG, rsDoor, hpu, hdr, hfo, hpb, shLiftS, bind, StateT.bind, e1, rsdPa, lzp_at', lzpArm,
             hpa, e2, hsb, e3, rsdEnd, lc_at', lc_arm, hlc, e4]
         | some l =>
           rw [e4] at hlc
-          simp [nock_exec, rsS, rsCoreG, rsDoor, hpu, hdr, hfo, hpb, liftS, bind, StateT.bind, e1, rsdPa, lzp_at', lzpArm,
+          simp [nock_exec, rsS, rsCoreG, rsDoor, hpu, hdr, hfo, hpb, shLiftS, bind, StateT.bind, e1, rsdPa, lzp_at', lzpArm,
             hpa, e2, hsb, e3, rsdEnd, lc_at', lc_arm, hlc, e4]
 
 

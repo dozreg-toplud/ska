@@ -36,34 +36,34 @@ theorem tenNz (env : ShapeEnv) (a : Nat) (v q : Nomm) (sup : Option Nomm) (goal 
     (e : runShape env sup (Nomm.n10 a v q) goal st = some (l, st1)) : LzNZ l := by
   simp only [runShape] at e
   cases e1 : lazeInto a (simpleS goal) with
-  | none => simp [e1, liftS, bind, StateT.bind] at e
+  | none => simp [e1, shLiftS, bind, StateT.bind] at e
   | some dr =>
     obtain ⟨don, rec⟩ := dr
     obtain ⟨dnz, rnz⟩ := lazeInto_nz a (simpleS goal) (simpleS_nz goal hg) don rec e1
     cases e2 : lazePast env rec v st with
-    | none => simp [e1, e2, liftS, bind, StateT.bind] at e
+    | none => simp [e1, e2, shLiftS, bind, StateT.bind] at e
     | some r2 =>
       obtain ⟨rec', s2⟩ := r2
       have h1 := lazePast_nz env rec v st rec' s2 rnz e2
       cases e3 : runShape env sup v (GoalS.next don) s2 with
-      | none => simp [e1, e2, e3, liftS, bind, StateT.bind] at e
+      | none => simp [e1, e2, e3, shLiftS, bind, StateT.bind] at e
       | some r3 =>
         obtain ⟨ld, s3⟩ := r3
         have h2 := hrv (GoalS.next don) s2 ld s3 dnz e3
         cases e4 : lazePast env ld q s3 with
-        | none => simp [e1, e2, e3, e4, liftS, bind, StateT.bind] at e
+        | none => simp [e1, e2, e3, e4, shLiftS, bind, StateT.bind] at e
         | some r4 =>
           obtain ⟨ld', s4⟩ := r4
           have h3 := lazePast_nz env ld q s3 ld' s4 h2 e4
           cases e5 : runShape env sup q (GoalS.next rec') s4 with
-          | none => simp [e1, e2, e3, e4, e5, liftS, bind, StateT.bind] at e
+          | none => simp [e1, e2, e3, e4, e5, shLiftS, bind, StateT.bind] at e
           | some r5 =>
             obtain ⟨lr, s5⟩ := r5
             have h4 := hrq (GoalS.next rec') s4 lr s5 h1 e5
             cases e6 : lazeCopy lr ld' with
-            | none => simp [e1, e2, e3, e4, e5, e6, liftS, bind, StateT.bind] at e
+            | none => simp [e1, e2, e3, e4, e5, e6, shLiftS, bind, StateT.bind] at e
             | some c =>
-              simp [e1, e2, e3, e4, e5, e6, liftS, bind, StateT.bind] at e
+              simp [e1, e2, e3, e4, e5, e6, shLiftS, bind, StateT.bind] at e
               rw [← e.1]; exact lazeCopy_nz lr ld' c h4 h3 e6
 
 section
@@ -84,7 +84,7 @@ theorem rs_n10W (env : ShapeEnv) (a : Nat) (v q : Nomm) (sup : Option Nomm) (goa
   cases e1 : lazeInto a (simpleS goal) with
   | none =>
     rw [e1] at hsi
-    simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, GoalS.toNoun, rsSimpleN, liftS, bind, StateT.bind,
+    simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, GoalS.toNoun, rsSimpleN, shLiftS, bind, StateT.bind,
       lzi_at', lzi_arm, hsi, e1]
   | some dr =>
     obtain ⟨don, rec⟩ := dr
@@ -96,7 +96,7 @@ theorem rs_n10W (env : ShapeEnv) (a : Nat) (v q : Nomm) (sup : Option Nomm) (goa
     cases e2 : lazePast env rec v st with
     | none =>
       rw [e2] at hpa1
-      simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, GoalS.toNoun, rsSimpleN, liftS, bind, StateT.bind,
+      simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, GoalS.toNoun, rsSimpleN, shLiftS, bind, StateT.bind,
         lzi_at', lzi_arm, hsi, e1, lzp_at', lzpArm, hpa1, e2]
     | some r2 =>
       obtain ⟨rec', st1⟩ := r2
@@ -106,7 +106,7 @@ theorem rs_n10W (env : ShapeEnv) (a : Nat) (v q : Nomm) (sup : Option Nomm) (goa
       cases e3 : runShape env sup v (GoalS.next don) st1 with
       | none =>
         rw [e3] at hv'
-        simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, GoalS.toNoun, rsSimpleN, liftS, bind, StateT.bind,
+        simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, GoalS.toNoun, rsSimpleN, shLiftS, bind, StateT.bind,
           lzi_at', lzi_arm, hsi, e1, lzp_at', lzpArm, hpa1, e2, hv', e3]
       | some r3 =>
         obtain ⟨ld, st2⟩ := r3
@@ -116,7 +116,7 @@ theorem rs_n10W (env : ShapeEnv) (a : Nat) (v q : Nomm) (sup : Option Nomm) (goa
         cases e4 : lazePast env ld q st2 with
         | none =>
           rw [e4] at hpa2
-          simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, GoalS.toNoun, rsSimpleN, liftS, bind, StateT.bind,
+          simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, GoalS.toNoun, rsSimpleN, shLiftS, bind, StateT.bind,
             lzi_at', lzi_arm, hsi, e1, lzp_at', lzpArm, hpa1, e2, hv', e3, hpa2, e4]
         | some r4 =>
           obtain ⟨ld', st3⟩ := r4
@@ -126,7 +126,7 @@ theorem rs_n10W (env : ShapeEnv) (a : Nat) (v q : Nomm) (sup : Option Nomm) (goa
           cases e5 : runShape env sup q (GoalS.next rec') st3 with
           | none =>
             rw [e5] at hq'
-            simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, GoalS.toNoun, rsSimpleN, liftS, bind, StateT.bind,
+            simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, GoalS.toNoun, rsSimpleN, shLiftS, bind, StateT.bind,
               lzi_at', lzi_arm, hsi, e1, lzp_at', lzpArm, hpa1, e2, hv', e3, hpa2, e4, hq', e5]
           | some r5 =>
             obtain ⟨lr, st4⟩ := r5
@@ -135,12 +135,12 @@ theorem rs_n10W (env : ShapeEnv) (a : Nat) (v q : Nomm) (sup : Option Nomm) (goa
             cases e6 : lazeCopy lr ld' with
             | none =>
               rw [e6] at hlc
-              simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, GoalS.toNoun, rsSimpleN, liftS, bind, StateT.bind,
+              simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, GoalS.toNoun, rsSimpleN, shLiftS, bind, StateT.bind,
                 lzi_at', lzi_arm, hsi, e1, lzp_at', lzpArm, hpa1, e2, hv', e3, hpa2, e4, hq', e5, lc_at', lc_arm,
                 hlc, e6]
             | some l =>
               rw [e6] at hlc
-              simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, GoalS.toNoun, rsSimpleN, liftS, bind, StateT.bind,
+              simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, GoalS.toNoun, rsSimpleN, shLiftS, bind, StateT.bind,
                 lzi_at', lzi_arm, hsi, e1, lzp_at', lzpArm, hpa1, e2, hv', e3, hpa2, e4, hq', e5, lc_at', lc_arm,
                 hlc, e6]
 
