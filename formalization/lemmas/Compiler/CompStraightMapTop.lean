@@ -58,5 +58,63 @@ theorem tsm_branch {bs : TreapMap mugF Blob} {rn : Nat → Nat} {G R : Noun} (hc
   cases e : (TreapMap.rap bs).foldlM (renameStep bs rn) HoonMap.empty <;> rw [e] at hrep <;>
     simp [nock_exec, hK, hca, hcg, hL, hB, hRB, by_arm, by.arm_at, by.rep.arm_at, rep_arm, hrep]
 
+/-! ## `rer` with proxies -/
+
+/-- **The gate `unproxy`** of `+to-straight`: `+get:by` of `cond.gen` at `r`,
+`def.u.e` on a hit, else `r`; the model's `unproxy`. -/
+theorem tsm_unproxy {ctx : Noun} (hc : CompIn ctx) (g : Gen (TreapMap mugF)) (x : GenRest) (Bo D : Noun)
+    (o : Nat) (NED : Noun) (r : Nat) :
+    nock (C tsUnBat (C (A r) (C Bo (tsS0N D (genNoun g x) ctx o NED)))) tsUnBat = some (A (unproxy g.cond r)) := by
+  have hgc : SomeIn layer2 ∧ GorIn mugF layer2 := ⟨someIn_layer2, gorIn_morIn_layer2.1⟩
+  have hget := getF_hoonMap condValNoun g.cond r
+  have hg := get_gate layer2 hgc (A r) (HoonMap.toNoun condValNoun g.cond) _ hget
+  conv => { lhs; arg 2; unfold tsUnBat }
+  unfold unproxy
+  simp only [tsS0N]
+  generalize tsBat = T
+  generalize tsUnBat = UB
+  cases e : HoonMap.get g.cond r <;>
+    simp [nock_exec, genNoun, hc, by_arm, by.arm_at, by.get.arm_at, get_arm, hg, e, unitNoun, condValNoun]
+
+/-- **`rer` with `proxies` `&` and `run` `&`**: `[(ren (u r)) gen]` for an
+`unproxy` gate that gives `u` and a `ren` gate that gives `ren`; so `rer` is
+stateless (`RerS`) with the renaming `ren ∘ u`. -/
+theorem tsm_rer_prox (UB US UC RB RS RC GEN SB N R0 INS REST : Noun) (u ren : Nat → Nat)
+    (hu : ∀ r, nock (C UB (C (A r) UC)) UB = some (A (u r)))
+    (hren : ∀ r, nock (C RB (C (A r) RC)) RB = some (A (ren r))) :
+    RerS (fun r => ren (u r)) GEN (C SB (C (C RB (C RS RC)) (C (A 0) (C N (C R0 (C INS
+      (C (A 0) (C (C UB (C US UC)) REST)))))))) := by
+  intro r
+  have h1 := hu r
+  have h2 := hren (u r)
+  conv => { lhs; arg 2; unfold tsRerBody }
+  generalize tsRerMap = M
+  generalize tsCoreBat = K
+  simp [nock_exec, h1, h2]
+
+/-! ## The arm `$` with proxies -/
+
+/-- **The arm `$` with `proxies` `&`** (and `run` `&`): `rewrite-input` gives
+`needToOrd ned` and keeps `gen` (`tsn_ri`, for the stateless `rer`), the
+test `&(run !proxies)` is `|`, so `$` is the map branch on `[(needToOrd ned)
+core]`. -/
+theorem tsm_dol (SB REN N R0 INS REST : Noun) (f : Nat → Nat) (ned : Need)
+    (hrer : RerS f (C (A 0) (A 0)) (C SB (C REN (C (A 0) (C N (C R0 (C INS (C (A 0) REST))))))))
+    (hN : slot? 488 REST = some ned.toNoun) :
+    nock (C tsCoreBat (C (C (A 0) (A 0)) (C SB (C REN (C (A 0) (C N (C R0 (C INS (C (A 0) REST)))))))))
+        (C (A 9) (C (A 190) (C (A 0) (A 1))))
+      = nock (C (needToOrd ned).toNoun (C tsCoreBat (C (C (A 0) (A 0)) (C SB (C REN (C (A 0) (C N (C R0
+          (C INS (C (A 0) REST)))))))))) tsMapBr := by
+  have hri := tsn_ri _ f hrer ned
+  have hdol := ts_dol_at
+  have hria := ts_ri_at
+  generalize tsCoreBat = K at hri hdol hria ⊢
+  generalize tsRiBody = RIB at hri hria ⊢
+  generalize tsRenameBr = RNB at hdol ⊢
+  generalize tsMapBr = MB at hdol ⊢
+  generalize (needToOrd ned).toNoun = ORD at hri ⊢
+  generalize ned.toNoun = NED at hri hN ⊢
+  simp [nock_exec, hdol, hria, hri, hN]
+
 end Compiler
 end Formalization
