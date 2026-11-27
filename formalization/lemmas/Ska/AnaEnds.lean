@@ -89,7 +89,15 @@ taken, and the recursion of the analysis is finite.
    are open: the provenance `map` can change while the product sock does
    not, and a member culled by `+cull` and found again starts from the bunt
    entry.  Not proved.  On the real compiler the largest number of passes of
-   one loop was 6 (section 2).
+   one loop was 6 (section 2).  Measured since (`PassMeasure.lean`, 2,269
+   calls of `+ska-callgraph`, 2026-11-27): the first point happens (151
+   runs changed only the map) and is bounded by the cape of the fixed
+   product (proved for the product `|+~`, `mergeProd_dunno_old`); the
+   second never happened (21 members culled, none analysed again); the
+   cape of `less-code` rises in `CapeLe` (`&` above every cell), not in
+   size (6 runs turned `[[& &] |]` into `[& |]`); no run went against the
+   lexicographic measure, and every pass loop ended (at most 62 passes,
+   a chain of new functions up to `he-threshold`).
 6. The inner loops `+sweep`, `+cull` (its loop over the queue) and
    `+prune-callgraph` end on a finite graph.  Proved here for
    `+prune-callgraph` (`pruneLoop_ends`), given that the graph is closed under
