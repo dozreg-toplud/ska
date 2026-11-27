@@ -222,5 +222,101 @@ theorem cu_gate_dir_arms (FUNC SCC CODE LSR JH CACHE NM CA V COLE : Noun) (env :
   cu_gate_dir_csi FUNC SCC CODE LSR JH CACHE NM CA V COLE env n hgot hv hcl hcr hn he hcsi hneed hsure
     (sofAll_of_arms rfl (by simp [cuCtx, nock_exec]) he (cuRest CA) Option.none n hn (fun b m => (hcr b m).1) harm)
 
+/-! ## A callee whose need is `%this` or `%none` -/
+
+/-- `+sound-far` on a need `%this` or `%none` is `&` at once. -/
+theorem soundFarRet_triv (nom : Nomm) (cod : Noun) {ned : NeedOrd} (h : ned = NeedOrd.this ∨ ned = NeedOrd.none) :
+    SoundFarRet nom ned cod := by
+  refine ⟨true, ?_⟩
+  rcases h with rfl | rfl <;>
+    (conv => lhs; arg 2; unfold sfBat) <;> simp [nock_exec, NeedOrd.toNoun, Tag.this, Tag.none, loob]
+
+/-- `+need-soft` on a need `%this` or `%none` is `|` at once. -/
+theorem needSoftRet_triv (sur : NeedOrd) (k : Sock) {ned : NeedOrd} (h : ned = NeedOrd.this ∨ ned = NeedOrd.none) :
+    NeedSoftRet ned sur k := by
+  refine ⟨false, ?_⟩
+  rcases h with rfl | rfl <;>
+    (conv => lhs; arg 2; unfold nsBat) <;> simp [nock_exec, NeedOrd.toNoun, Tag.this, Tag.none, loob]
+
+/-- `SofArms` from a fact on each callee that holds whatever the call's
+`p` and `msup`. -/
+theorem sofArms_of {env : CallEnv} {cod : Noun}
+    (P : Bell → Prop) (hP : ∀ b, P b → ∀ ms p nb, env.need b = some nb →
+      SoundFarRet (made p ms) nb cod ∧ NeedSoftRet nb (env.sure b) b.less) :
+    ∀ (ms : Option Nomm) (n : Nomm), (∀ b ∈ dirBells n, P b) → SofArms env cod ms n
+  | ms, Nomm.cons p q, hb => by
+    simp only [dirBells, List.mem_append] at hb
+    exact ⟨sofArms_of P hP ms p fun b m => hb b (Or.inl m), sofArms_of P hP ms q fun b m => hb b (Or.inr m)⟩
+  | _, Nomm.n0 _, _ => trivial
+  | _, Nomm.n1 _, _ => trivial
+  | ms, Nomm.n2 p q Option.none, hb => by
+    simp only [dirBells, List.mem_append] at hb
+    exact ⟨sofArms_of P hP ms p fun b m => hb b (Or.inl m), sofArms_of P hP ms q fun b m => hb b (Or.inr m)⟩
+  | ms, Nomm.n2 p q (some (b0, _)), hb => by
+    simp only [dirBells, List.mem_cons, List.mem_append] at hb
+    exact ⟨fun nb hnb => hP b0 (hb b0 (Or.inl rfl)) ms p nb hnb,
+      sofArms_of P hP ms p fun b m => hb b (Or.inr (Or.inl m)), sofArms_of P hP ms q fun b m => hb b (Or.inr (Or.inr m))⟩
+  | ms, Nomm.n3 p, hb => sofArms_of P hP ms p hb
+  | ms, Nomm.n4 p, hb => sofArms_of P hP ms p hb
+  | ms, Nomm.n5 p q, hb => by
+    simp only [dirBells, List.mem_append] at hb
+    exact ⟨sofArms_of P hP ms p fun b m => hb b (Or.inl m), sofArms_of P hP ms q fun b m => hb b (Or.inr m)⟩
+  | ms, Nomm.n6 p q r, hb => by
+    simp only [dirBells, List.mem_append] at hb
+    exact ⟨sofArms_of P hP ms p fun b m => hb b (Or.inl (Or.inl m)),
+      sofArms_of P hP ms q fun b m => hb b (Or.inl (Or.inr m)), sofArms_of P hP ms r fun b m => hb b (Or.inr m)⟩
+  | ms, Nomm.n7 p q, hb => by
+    simp only [dirBells, List.mem_append] at hb
+    exact ⟨sofArms_of P hP ms p fun b m => hb b (Or.inl m), sofArms_of P hP (some p) q fun b m => hb b (Or.inr m)⟩
+  | ms, Nomm.n10 _ v q, hb => by
+    simp only [dirBells, List.mem_append] at hb
+    exact ⟨sofArms_of P hP ms v fun b m => hb b (Or.inl m), sofArms_of P hP ms q fun b m => hb b (Or.inr m)⟩
+  | _, Nomm.n11s _ _ _, _ => trivial
+  | _, Nomm.n11d _ _ _ _, _ => trivial
+  | _, Nomm.n12 _ _, _ => trivial
+  | _, Nomm.mean _ _ _ _ _, _ => trivial
+
+/-- **Item (f) on callees whose need is `%this` or `%none`**: `SofArms`
+holds with no hypothesis on the arms. -/
+theorem sofArms_triv {env : CallEnv} {cod : Noun} (ms : Option Nomm) (n : Nomm)
+    (h : ∀ b ∈ dirBells n, ∀ nb, env.need b = some nb → nb = NeedOrd.this ∨ nb = NeedOrd.none) :
+    SofArms env cod ms n :=
+  sofArms_of (fun b => ∀ nb, env.need b = some nb → nb = NeedOrd.this ∨ nb = NeedOrd.none)
+    (fun b hb _ p nb hnb => ⟨soundFarRet_triv _ cod (hb nb hnb), needSoftRet_triv _ b.less (hb nb hnb)⟩) ms n h
+
+/-- **An example**: `+compile-unary` on code with direct calls whose callees
+need `%this` or `%none` (e.g. `[7 [2 [0 1] [1 k] [~ b ~]] [0 3]]`):
+everything but the state nouns, `EnvFrom` and the named `CsiNeeds`,
+`CsiSures` of `+compile-scc-in`'s product is discharged. -/
+theorem cu_gate_dir_this (FUNC SCC CODE LSR JH CACHE NM CA V COLE : Noun) (env : CallEnv) (n : Nomm)
+    (hgot : getF mugF FUNC CODE = some (C (A 0) V)) (hv : slot? 2 V = some n.toNoun)
+    (hcl : slot? 190 LSR = some COLE) (hcr : CodeNoRing CODE COLE n)
+    (hn : DirOk n = true) (he : EnvFrom env CODE COLE)
+    (hcsi : nock (cuTC (cuSam FUNC SCC CODE LSR JH CACHE)) cuCsi = some (C NM CA))
+    (hneed : CsiNeeds env SCC NM CA n) (hsure : CsiSures env CA n)
+    (hthis : ∀ b ∈ dirBells n, ∀ nb, env.need b = some nb → nb = NeedOrd.this ∨ nb = NeedOrd.none) :
+    nock (C cuGB (C (cuSam FUNC SCC CODE LSR JH CACHE) compK)) cuGB
+      = (finishLUCM (S := CSet) (Map := TreapMap mugF) env n).map fun st => C (C st.toNoun NM) CA :=
+  cu_gate_dir_arms FUNC SCC CODE LSR JH CACHE NM CA V COLE env n hgot hv hcl hcr hn he hcsi hneed hsure
+    (sofArms_triv Option.none n hthis)
+
+example (FUNC SCC CODE LSR JH CACHE NM CA V COLE : Noun) (env : CallEnv) (k : Noun) (b : Bell)
+    (hgot : getF mugF FUNC CODE = some (C (A 0) V))
+    (hv : slot? 2 V = some (Nomm.n7 (Nomm.n2 (Nomm.n0 1) (Nomm.n1 k) (some (b, Option.none))) (Nomm.n0 3)).toNoun)
+    (hcl : slot? 190 LSR = some COLE) (hc : ∃ c, codeOf CODE b = some c) (hr : getF mugF b.toNoun COLE = some (A 0))
+    (he : EnvFrom env CODE COLE)
+    (hcsi : nock (cuTC (cuSam FUNC SCC CODE LSR JH CACHE)) cuCsi = some (C NM CA))
+    (hnb : env.need b = some NeedOrd.this) (hs : SccNeed SCC NM CA b NeedOrd.this)
+    (hsu : SureNoun env b (cuRest CA)) :
+    nock (C cuGB (C (cuSam FUNC SCC CODE LSR JH CACHE) compK)) cuGB
+      = (finishLUCM (S := CSet) (Map := TreapMap mugF) env
+          (Nomm.n7 (Nomm.n2 (Nomm.n0 1) (Nomm.n1 k) (some (b, Option.none))) (Nomm.n0 3))).map
+          fun st => C (C st.toNoun NM) CA :=
+  cu_gate_dir_this FUNC SCC CODE LSR JH CACHE NM CA V COLE env _ hgot hv hcl
+    (fun b' m => by simp [dirBells] at m; subst m; exact ⟨hc, hr⟩) rfl he hcsi
+    (fun b' m => by simp [dirBells] at m; subst m; exact ⟨_, hnb, hs⟩)
+    (fun b' m => by simp [dirBells] at m; subst m; exact hsu)
+    (fun b' m nb h => by simp [dirBells] at m; subst m; rw [hnb] at h; cases h; exact Or.inl rfl)
+
 end Compiler
 end Formalization

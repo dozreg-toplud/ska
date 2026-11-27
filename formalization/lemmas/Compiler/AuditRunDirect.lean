@@ -199,3 +199,7 @@ open Formalization.Compiler
 #print axioms Formalization.Compiler.callCode_of_bells
 #print axioms Formalization.Compiler.sofAll_of_arms
 #print axioms Formalization.Compiler.cu_gate_dir_arms
+#print axioms Formalization.Compiler.soundFarRet_triv
+#print axioms Formalization.Compiler.needSoftRet_triv
+#print axioms Formalization.Compiler.sofArms_triv
+#print axioms Formalization.Compiler.cu_gate_dir_this
