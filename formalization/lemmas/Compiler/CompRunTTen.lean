@@ -19,7 +19,7 @@ set_option linter.unusedVariables false
 variable {ctx : Noun} {X : GenRest → Noun → Noun → Prop} {Y : GenRest → GenRest → Prop}
 
 /-- **The tail of `%10`** with lazy results. -/
-theorem cr10_tailLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+theorem cr10_tailLRT (hYk : YOk X Y) (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
     (env : CallEnv) (msup : Option Nomm) (a : Nat) (v q : Nomm) (hvn : PastAt ctx env.cod v)
     (hqn : PastAt ctx env.cod q) (region : List Nat) (x : GenRest) (hx : x.NoSoft) (mono goalN sup nextN : Noun)
     (don rec : Lazy CSet) (o : Nat) (g1 : Gen (TreapMap mugF))
@@ -32,7 +32,7 @@ theorem cr10_tailLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot?
     (hcp : ∀ nexR g2 n2 g3 n2' g4 n1 g5, pastL env.cod ⟨rec, jmp0 o⟩ v region g1 = some (nexR, g2) →
       runLCM env true msup v (CGoalL.next don nexR.th) region g2 = some (n2, g3) →
       pastL env.cod n2 q region g3 = some (n2', g4) →
-      runLCM env true msup q (CGoalL.next nexR.laz n2'.th) region g4 = some (n1, g5) → CopyH g5.re n1.laz n2'.laz) (hX : X x mono sup := by assumption) (hYk : YOk X Y := by assumption) :
+      runLCM env true msup q (CGoalL.next nexR.laz n2'.th) region g4 = some (n1, g5) → CopyH g5.re n1.laz n2'.laz) (hX : X x mono sup := by assumption) :
     ∃ x', Y x x' ∧ nock (C (C don.toNoun (C rec.toNoun (A o))) (C nextN (crSubj mono (Nomm.n10 a v q).toNoun goalN
       (listNoun A region) sup (compCore g1 x ctx)))) cr10Tail
       = ((do
@@ -117,9 +117,9 @@ theorem cr10_tailLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot?
 
 /-- **The case `%10` of `+run` on every goal with the invariant**, for an
 axis not `0`, `v` and `q` of the plain class (`PartL`). -/
-theorem comp_run_n10LRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+theorem comp_run_n10LRT (hYk : YOk X Y) (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
     (env : CallEnv) (msup : Option Nomm) (a : Nat) (ha : a ≠ 0) (v q : Nomm) (V : PartRT env msup ctx X Y v region)
-    (Q : PartRT env msup ctx X Y q region) (goal : CGoalL CSet) (g : Gen (TreapMap mugF)) (hinv : GInv g goal) (hYk : YOk X Y := by assumption) :
+    (Q : PartRT env msup ctx X Y q region) (goal : CGoalL CSet) (g : Gen (TreapMap mugF)) (hinv : GInv g goal) :
     CompRunAtXT (runLCM env true msup) ctx X Y (Nomm.n10 a v q) goal region g := by
   obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
   have hvn := V.past
@@ -173,7 +173,7 @@ theorem comp_run_n10LRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : sl
         intro nexR g3 e1
         obtain ⟨r3, b3, d3, i3, j3, rg3⟩ := pastL_inv ir (jmpIn_jmp0 _ _) e1
         exact ⟨⟨linv_mono id (by omega) b3, d3.trans d2, j3⟩, i3, rg3⟩
-      obtain ⟨x, hy1, ht⟩ := cr10_tailLRT h7 hcode env msup a v q hvn hqn region x hx mono goal.toNoun sup
+      obtain ⟨x, hy1, ht⟩ := cr10_tailLRT hYk h7 hcode env msup a v q hvn hqn region x hx mono goal.toNoun sup
         (C (A 0x7478656e) (C nex.laz.toNoun nex.th.toNoun)) don rec o g2
         (fun nexR g3 e1 => V.link _ _ (hvg nexR g3 e1).1)
         (fun nexR g3 n2 g4 n2' g5 e1 e2 e3 => by

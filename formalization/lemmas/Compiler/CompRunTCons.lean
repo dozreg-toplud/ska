@@ -21,7 +21,7 @@ variable {ctx : Noun} {X : GenRest → Noun → Noun → Prop} {Y : GenRest → 
 /-- **The tail of the cons case for a `%next` goal**, from `+split` on:
 `+past` of `[%next hed ~ o]` over `q`, `q` into `tel`, `+past` over `p`,
 `p` into the first `+past`'s need, `+copy`; every need lazy. -/
-theorem crc_ntailLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+theorem crc_ntailLRT (hYk : YOk X Y) (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
     (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (hpn : PastAt ctx env.cod p)
     (hqn : PastAt ctx env.cod q) (region : List Nat) (x : GenRest) (hx : x.NoSoft) (mono goalN sup : Noun)
     (hed tel : Lazy CSet) (o : Nat) (g1 : Gen (TreapMap mugF))
@@ -34,7 +34,7 @@ theorem crc_ntailLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot?
     (hcp : ∀ nexh g2 n2 g3 n2' g4 n1 g5, pastL env.cod ⟨hed, jmp0 o⟩ q region g1 = some (nexh, g2) →
       runLCM env true msup q (CGoalL.next tel nexh.th) region g2 = some (n2, g3) →
       pastL env.cod n2 p region g3 = some (n2', g4) →
-      runLCM env true msup p (CGoalL.next nexh.laz n2'.th) region g4 = some (n1, g5) → CopyH g5.re n1.laz n2'.laz) (hX : X x mono sup := by assumption) (hYk : YOk X Y := by assumption) :
+      runLCM env true msup p (CGoalL.next nexh.laz n2'.th) region g4 = some (n1, g5) → CopyH g5.re n1.laz n2'.laz) (hX : X x mono sup := by assumption) :
     ∃ x', Y x x' ∧ nock (C (C hed.toNoun (C tel.toNoun (A o))) (crSubj mono (Nomm.cons p q).toNoun goalN
       (listNoun A region) sup (compCore g1 x ctx))) crcNTail
       = ((do
@@ -118,11 +118,11 @@ theorem crc_ntailLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot?
             e1, hq1, e2, hpa2, e3, hp1, e4, hD2, cr_cp_arm, hcpy, cgl_next_noun, cr_next_nounL]
 
 /-- **The `%next` branch of the cons case on a lazy goal**: `+split`
-(`comp_split_all`), then `crc_ntailLRT`. -/
-theorem crc_nextLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+(`comp_split_all`), then `crc_ntailLRT hYk`. -/
+theorem crc_nextLRT (hYk : YOk X Y) (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
     (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (P : PartRT env msup ctx X Y p region) (Q : PartRT env msup ctx X Y q region)
     (x : GenRest) (hx : x.NoSoft) (mono sup : Noun) (laz : Lazy CSet) (th : Jmp) (g : Gen (TreapMap mugF))
-    (hinv : GInv g (CGoalL.next laz th)) (hX : X x mono sup := by assumption) (hYk : YOk X Y := by assumption) :
+    (hinv : GInv g (CGoalL.next laz th)) (hX : X x mono sup := by assumption) :
     ∃ x', Y x x' ∧ nock (crSubj mono (Nomm.cons p q).toNoun (CGoalL.next laz th).toNoun (listNoun A region) sup
       (compCore g x ctx)) crKc
       = (runLCM env true msup (Nomm.cons p q) (CGoalL.next laz th) region g).map
@@ -146,7 +146,7 @@ theorem crc_nextLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 
     obtain ⟨⟨hed, tel, o⟩, g1⟩ := r
     rw [es] at hsp
     obtain ⟨l1, b1, d1, ih, it, nd, -⟩ := splitL_inv hinv es
-    obtain ⟨x, hy1, ht⟩ := crc_ntailLRT h7 hcode env msup p q hpn hqn region x hx mono
+    obtain ⟨x, hy1, ht⟩ := crc_ntailLRT hYk h7 hcode env msup p q hpn hqn region x hx mono
       (C (A 0x7478656e) (C laz.toNoun th.toNoun)) sup hed tel o g1
       (fun nexh g2 e1 => by
         obtain ⟨r2, b2, d2, i2, j2, rg2⟩ := pastL_inv ih (jmpIn_jmp0 _ _) e1
@@ -174,9 +174,9 @@ theorem crc_nextLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 
 /-- **The branch `%pick` of the cons case**, with lazy results: the
 `[%bom ~]` block `o`, `q` for `[%next *need-lazy ~ o]`, `+past` over `p`,
 `p` for `[%next *need-lazy then]`, `+copy`. -/
-theorem crc_pickLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+theorem crc_pickLRT (hYk : YOk X Y) (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
     (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (P : PartRT env msup ctx X Y p region) (Q : PartRT env msup ctx X Y q region)
-    (x : GenRest) (hx : x.NoSoft) (mono goalN sup : Noun) (g : Gen (TreapMap mugF)) (hd : g.drop = false) (hX : X x mono sup := by assumption) (hYk : YOk X Y := by assumption) :
+    (x : GenRest) (hx : x.NoSoft) (mono goalN sup : Noun) (g : Gen (TreapMap mugF)) (hd : g.drop = false) (hX : X x mono sup := by assumption) :
     ∃ x', Y x x' ∧ nock (crSubj mono (Nomm.cons p q).toNoun goalN (listNoun A region) sup (compCore g x ctx)) crcPick
       = ((do
           let nex2 ← runLCM env true msup q (CGoalL.next (Lazy.ofSure Sure.bunt) (jmp0 g.bo)) region
@@ -261,9 +261,9 @@ theorem crc_pickLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 
 /-- **The cons case of `+run` on every goal with the invariant**, for `p`
 and `q` of the plain class, given their links and results on every goal
 with the invariant (`PartL`). -/
-theorem comp_run_consLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+theorem comp_run_consLRT (hYk : YOk X Y) (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
     (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (P : PartRT env msup ctx X Y p region) (Q : PartRT env msup ctx X Y q region)
-    (goal : CGoalL CSet) (g : Gen (TreapMap mugF)) (hinv : GInv g goal) (hYk : YOk X Y := by assumption) :
+    (goal : CGoalL CSet) (g : Gen (TreapMap mugF)) (hinv : GInv g goal) :
     CompRunAtXT (runLCM env true msup) ctx X Y (Nomm.cons p q) goal region g := by
   intro x mono sup hx hX
   have hY0 : Y x x := hYk.refl x
@@ -272,15 +272,15 @@ theorem comp_run_consLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : s
     rw [show (Nomm.cons p q).toNoun = C p.toNoun q.toNoun from rfl, hab]
   rw [hnn, cr_disp_cons, ← hnn]
   cases goal with
-  | next laz th => exact crc_nextLRT h7 hcode env msup p q P Q x hx mono sup laz th g hinv
+  | next laz th => exact crc_nextLRT hYk h7 hcode env msup p q P Q x hx mono sup laz th g hinv
   | done =>
     have e : (CGoalL.done : CGoalL CSet).toNoun = (CGoal.toL CGoal.done).toNoun := rfl
     rw [e, crc_eq, crc_done_step h7, ← crc_eq, runLCM_cons_done]
     simp only [bind_apply, re_apply, Option.bind_some, cf_emit_g]
-    exact xt_trans hYk hY0 (crc_nextLRT h7 hcode env msup p q P Q x hx mono sup _ _ _
+    exact xt_trans hYk hY0 (crc_nextLRT hYk h7 hcode env msup p q P Q x hx mono sup _ _ _
       (ginv_reg _ (by rw [cf_emitG_re]; simp) (by rw [cf_emitG_drop]; exact hinv)))
   | pick z o =>
-    obtain ⟨x, hy2, hpk⟩ := crc_pickLRT h7 hcode env msup p q P Q x hx mono (CGoalL.pick (S := CSet) z o).toNoun sup g hinv.1
+    obtain ⟨x, hy2, hpk⟩ := crc_pickLRT hYk h7 hcode env msup p q P Q x hx mono (CGoalL.pick (S := CSet) z o).toNoun sup g hinv.1
     replace hY0 := hYk.trans hY0 hy2
     replace hx := hYk.soft hx hy2
     replace hX := hYk.pres hX hy2

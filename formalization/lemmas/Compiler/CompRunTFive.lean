@@ -20,7 +20,7 @@ variable {ctx : Noun} {X : GenRest → Noun → Noun → Prop} {Y : GenRest → 
 
 /-- **The tail of `%5`** with lazy results: `q` into the comparison block
 `o`, `+past` over `p`, `p` with the `then` of `q`'s `+past`, `+copy`. -/
-theorem cr5_tailLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+theorem cr5_tailLRT (hYk : YOk X Y) (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
     (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (hpn : PastAt ctx env.cod p)
     (region : List Nat) (x : GenRest) (hx : x.NoSoft) (mono goalN sup : Noun) (rp rq o : Nat)
     (g1 : Gen (TreapMap mugF))
@@ -31,7 +31,7 @@ theorem cr5_tailLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 
     (hcp : ∀ nexF g2 nexF' g3 nexS g4, runLCM env true msup q (CGoal.toL (CGoal.next (lazyReg (S := CSet) rq) (jmp0 o))) region g1 = some (nexF, g2) →
       pastL env.cod nexF p region g2 = some (nexF', g3) →
       runLCM env true msup p (CGoal.toL (CGoal.next (lazyReg (S := CSet) rp) nexF'.th)) region g3 = some (nexS, g4) →
-      CopyH g4.re nexS.laz nexF'.laz) (hX : X x mono sup := by assumption) (hYk : YOk X Y := by assumption) :
+      CopyH g4.re nexS.laz nexF'.laz) (hX : X x mono sup := by assumption) :
     ∃ x', Y x x' ∧ nock (C (A o) (C (A rq) (C (A rp)
       (crSubj mono (Nomm.n5 p q).toNoun goalN (listNoun A region) sup (compCore g1 x ctx))))) cr5Tail
       = ((do
@@ -107,9 +107,9 @@ theorem cr5_tailLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 
 
 /-- **The case `%5` of `+run` on every goal with the invariant**, `p` and
 `q` of the plain class (`PartL`). -/
-theorem comp_run_n5LRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+theorem comp_run_n5LRT (hYk : YOk X Y) (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
     (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (P : PartRT env msup ctx X Y p region) (Q : PartRT env msup ctx X Y q region)
-    (goal : CGoalL CSet) (g : Gen (TreapMap mugF)) (hinv : GInv g goal) (hYk : YOk X Y := by assumption) :
+    (goal : CGoalL CSet) (g : Gen (TreapMap mugF)) (hinv : GInv g goal) :
     CompRunAtXT (runLCM env true msup) ctx X Y (Nomm.n5 p q) goal region g := by
   have hpn := P.past
   have hd := ginv_drop hinv
@@ -142,7 +142,7 @@ theorem comp_run_n5LRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slo
     have lp : LInv g1.re g1.bo (Lazy.ofSure (lazyReg (S := CSet) g.re)) := linv_reg (by omega)
     have ap : (lregs (Lazy.ofSure (lazyReg (S := CSet) g.re)) ++ lregs (Lazy.ofSure (lazyReg (S := CSet) (g.re + 1)))).Nodup := by
       simp [lregs_reg]
-    obtain ⟨x, hy1, ht⟩ := cr5_tailLRT h7 hcode env msup p q hpn region x hx mono goal.toNoun sup g.re (g.re + 1) o g1
+    obtain ⟨x, hy1, ht⟩ := cr5_tailLRT hYk h7 hcode env msup p q hpn region x hx mono goal.toNoun sup g.re (g.re + 1) o g1
       (Q.link _ _ iq)
       (fun nexF g2 nexF' g3 e e3 => P.link _ _ (tail_pgoal iq lp (Q.res _ _ _ _ iq e) e3).1)
       (fun nexF g2 nexF' g3 nexS g4 e e3 e4 => by
@@ -162,7 +162,7 @@ theorem comp_run_n5LRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slo
 
 /-- **The tail of the indirect call** with lazy results: `q` into the call
 block `o`, `+past` over `p`, `p` with the `then` of `q`'s `+past`, `+copy`. -/
-theorem cr2_tailLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+theorem cr2_tailLRT (hYk : YOk X Y) (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
     (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (hpn : PastAt ctx env.cod p)
     (region : List Nat) (x : GenRest) (hx : x.NoSoft) (mono goalN sup nexN : Noun) (out pro rSub rFol o : Nat)
     (g1 : Gen (TreapMap mugF))
@@ -173,7 +173,7 @@ theorem cr2_tailLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 
     (hcp : ∀ nexF g2 nexF' g3 nexS g4, runLCM env true msup q (CGoal.toL (CGoal.next (lazyReg (S := CSet) rFol) (jmp0 o)))
       region g1 = some (nexF, g2) → pastL env.cod nexF p region g2 = some (nexF', g3) →
       runLCM env true msup p (CGoal.toL (CGoal.next (lazyReg (S := CSet) rSub) nexF'.th)) region g3 = some (nexS, g4) →
-      CopyH g4.re nexS.laz nexF'.laz) (hX : X x mono sup := by assumption) (hYk : YOk X Y := by assumption) :
+      CopyH g4.re nexS.laz nexF'.laz) (hX : X x mono sup := by assumption) :
     ∃ x', Y x x' ∧ nock (C (A o) (C (A rFol) (C (A rSub) (C (C (A out) (A pro)) (C nexN
       (crSubj mono (Nomm.n2 p q Option.none).toNoun goalN (listNoun A region) sup (compCore g1 x ctx))))))) cr2Tail
       = ((do
@@ -249,11 +249,11 @@ theorem cr2_tailLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 
           Function.comp_def]
 
 /-- **From `+kerf` on, on a lazy `next`**: `+kerf` (`comp_kerf_all`), the
-two registers, the call block and `cr2_tailLRT`. -/
-theorem cr2_kfLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+two registers, the call block and `cr2_tailLRT hYk`. -/
+theorem cr2_kfLRT (hYk : YOk X Y) (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
     (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (P : PartRT env msup ctx X Y p region) (Q : PartRT env msup ctx X Y q region)
     (x : GenRest) (hx : x.NoSoft) (mono goalN sup : Noun) (nex0 : NextL CSet)
-    (g1 : Gen (TreapMap mugF)) (hd : g1.drop = false) (hlok : LAll CrLok nex0.laz) (hX : X x mono sup := by assumption) (hYk : YOk X Y := by assumption) :
+    (g1 : Gen (TreapMap mugF)) (hd : g1.drop = false) (hlok : LAll CrLok nex0.laz) (hX : X x mono sup := by assumption) :
     ∃ x', Y x x' ∧ nock (C nex0.goal.toNoun
       (crSubj mono (Nomm.n2 p q Option.none).toNoun goalN (listNoun A region) sup (compCore g1 x ctx))) cr2Kf
       = (cr2KfMLR env msup p q region nex0 g1).map fun p => C p.1.goal.toNoun (genNoun p.2 x') := by
@@ -292,7 +292,7 @@ theorem cr2_kfLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52
     have lp : LInv g5.re g5.bo (Lazy.ofSure (lazyReg (S := CSet) g2.re)) := linv_reg (by omega)
     have ap : (lregs (Lazy.ofSure (lazyReg (S := CSet) g2.re)) ++
         lregs (Lazy.ofSure (lazyReg (S := CSet) (g2.re + 1)))).Nodup := by simp [lregs_reg]
-    obtain ⟨x, hy1, ht⟩ := cr2_tailLRT h7 hcode env msup p q hpn region x hx mono goalN sup
+    obtain ⟨x, hy1, ht⟩ := cr2_tailLRT hYk h7 hcode env msup p q hpn region x hx mono goalN sup
       (C (A 0x7478656e) (C nex0.laz.toNoun nex0.th.toNoun)) out pro g2.re (g2.re + 1) g2.bo g5 (Q.link _ _ iq)
       (fun nexF g6 nexF' g7 e e3 => P.link _ _ (tail_pgoal iq lp (Q.res _ _ _ _ iq e) e3).1)
       (fun nexF g6 nexF' g7 nexS g8 e e3 e4 => by
@@ -312,9 +312,9 @@ theorem cr2_kfLRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52
 invariant**, `p` and `q` of the plain class (`PartL`): `+simple-next`,
 `+kerf` of the lazy `next`, two registers, the block `[%nok r-sub r-fol
 pro]`, `q`, `+past` over `p`, `p`, `+copy`. -/
-theorem comp_run_n2LRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+theorem comp_run_n2LRT (hYk : YOk X Y) (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
     (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (P : PartRT env msup ctx X Y p region) (Q : PartRT env msup ctx X Y q region)
-    (goal : CGoalL CSet) (g : Gen (TreapMap mugF)) (hinv : GInv g goal) (hYk : YOk X Y := by assumption) :
+    (goal : CGoalL CSet) (g : Gen (TreapMap mugF)) (hinv : GInv g goal) :
     CompRunAtXT (runLCM env true msup) ctx X Y (Nomm.n2 p q Option.none) goal region g := by
   obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
   intro x mono sup hx hX
@@ -339,7 +339,7 @@ theorem comp_run_n2LRT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slo
     rw [e] at hsn
     simp only [Option.map_some] at hsn
     obtain ⟨-, -, ⟨⟨lnb, -⟩, d1, -⟩, -⟩ := simpleNextL_res hinv e
-    obtain ⟨x, hy1, hk⟩ := cr2_kfLRT h7 hcode env msup p q P Q x hx mono goal.toNoun sup nex0 g1 d1 (lall_mono (fun _ hs => hs.1) lnb)
+    obtain ⟨x, hy1, hk⟩ := cr2_kfLRT hYk h7 hcode env msup p q P Q x hx mono goal.toNoun sup nex0 g1 d1 (lall_mono (fun _ hs => hs.1) lnb)
     replace hY0 := hYk.trans hY0 hy1
     replace hx := hYk.soft hx hy1
     replace hX := hYk.pres hX hy1

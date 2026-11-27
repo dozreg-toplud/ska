@@ -56,11 +56,18 @@ def extract(path, names):
     return [got[n] for n in names]
 
 RENAMED = []      # copied names (get the suffix T)
+CONT = ['hK']     # continuation hypotheses with an `∃` conclusion
 EXL = []          # copied lemmas with the rest `x` as a parameter (an `∃` conclusion)
+
+HYK = []          # copied theorems with the first binder `hYk : YOk X Y`
 
 def rename(s):
     for n in RENAMED:
-        s = re.sub(r'(?<![\w.])' + re.escape(n) + r'(?![\w\'])', n + 'T', s)
+        if n in HYK:
+            s = re.sub(r'(?<=theorem )' + re.escape(n) + r'(?![\w\'])', n + 'T', s)
+            s = re.sub(r'(?<![\w.])' + re.escape(n) + r'(?![\w\'T])', n + 'T hYk', s)
+        else:
+            s = re.sub(r'(?<![\w.])' + re.escape(n) + r'(?![\w\'])', n + 'T', s)
     return s
 
 SHADOW = ('{i}replace hY0 := hYk.trans hY0 {y}\n{i}replace hx := hYk.soft hx {y}\n'
@@ -96,11 +103,16 @@ def transform(block, pre, cnt):
     pm = block.find(':= by\n')
     if pm < 0:
         cnt['term'] = cnt.get('term', 0) + 1
+        if 'CompRunAtXT' in block or 'PartRT' in block:
+            block = block.replace('theorem ' + name + ' ', 'theorem ' + name + ' (hYk : YOk X Y) ', 1)
+            HYK.append(name)
+            cnt['hyk'] = cnt.get('hyk', 0) + 1
         return block
     assert hm, name
     hdr, concl, proof = block[:hm.start() + 1], block[hm.start() + 1:pm], block[pm:]
     xparam = '(x : GenRest)' in hdr
-    hdr = hdr + ' (hYk : YOk X Y := by assumption)'
+    hdr = hdr.replace('theorem ' + name + ' ', 'theorem ' + name + ' (hYk : YOk X Y) ', 1)
+    HYK.append(name)
     cnt['hyk'] = cnt.get('hyk', 0) + 1
     if xparam:
         assert concl.count('(genNoun p.2 x)') == 1, (name, concl)
@@ -112,29 +124,45 @@ def transform(block, pre, cnt):
         proof = proof.replace(':= by\n', ':= by\n  have hY0 : Y x x := hYk.refl x\n', 1)
     proof = sub('intro', r'\n(\s*)intro x mono sup hx hX\n', r'\n\1intro x mono sup hx hX\n\1have hY0 : Y x x := hYk.refl x\n', proof)
     # link applications and `have`s of copied ∃-lemmas: obtain and shadow
+    hashx = '(hx : x.NoSoft)' in hdr or 'intro x mono sup hx hX' in proof
     lines = proof.split('\n')
     out = []
     k = 0
     nobt = 0
     last_ref = None
+    wit = ('x', 'hY0', None)
     while k < len(lines):
         ln = lines[k]
         ind = len(ln) - len(ln.lstrip())
         if ln.strip() and (ind < (last_ref or 0) or ln.lstrip().startswith(('|', '·'))):
             last_ref = None
+        if ln.strip() and wit[2] is not None and (ind < wit[2] or (ind == wit[2] and ln.lstrip().startswith('|'))):
+            wit = ('x', 'hY0', None)
         mh = re.match(r'^(\s*(?:· )?)have (\w+)( : [^=]*)? := (.*)$', ln)
         if mh:
             j = stmt_end(lines, k)
             st = '\n'.join(lines[k:j])
-            isapp = re.search(r'\bx mono sup hx hX\b', st) is not None
-            iscall = any(re.match(r'(\(\w+ := \w+\) )*' + re.escape(n) + r'\b', mh.group(4)) for n in EXL)
-            if (isapp or iscall) and not mh.group(3):
+            isapp = re.search(r'\bx (mono sup )?hx hX\b', st) is not None
+            iscall = any(re.match(r'(\(\w+ := \w+\) )*' + re.escape(n) + r'\b', mh.group(4)) for n in EXL + CONT)
+            iscont = any(re.match(re.escape(n) + r'\b', mh.group(4)) for n in CONT)
+            if iscont and not mh.group(3):
+                # a continuation: the pill's steps before it are in the text after it, at
+                # the old rest, so the rest is not shadowed; the closing refines use `xK`
+                nobt += 1
+                i, h = mh.group(1), mh.group(2)
+                out.append(f'{i}obtain ⟨xK{nobt}, hy{nobt}, {h}⟩ := {mh.group(4)}')
+                out.extend(lines[k + 1:j])
+                out.append(f'{" " * len(i)}have hY0K{nobt} := hYk.trans hY0 hy{nobt}')
+                wit = (f'xK{nobt}', f'hY0K{nobt}', len(i))
+                cnt['cont'] = cnt.get('cont', 0) + 1
+            elif (isapp or iscall) and not mh.group(3):
                 nobt += 1
                 i, h = mh.group(1), mh.group(2)
                 y = 'hy' + str(nobt)
                 out.append(f'{i}obtain ⟨x, {y}, {h}⟩ := {mh.group(4)}')
                 out.extend(lines[k + 1:j])
-                out.extend(SHADOW.format(i=' ' * len(i), y=y).rstrip('\n').split('\n'))
+                sh = SHADOW.format(i=' ' * len(i), y=y).rstrip('\n').split('\n')
+                out.extend(sh if hashx else sh[:1])
                 cnt['obtain'] = cnt.get('obtain', 0) + 1
             else:
                 out.extend(lines[k:j])
@@ -158,11 +186,11 @@ def transform(block, pre, cnt):
                 continue
         mt = re.match(r'^(\s*)(· )?(?:simp \[|nock_open |conv )', ln)
         if mt and mt.group(2):
-            ln = ln.replace('· ', '· refine ⟨x, hY0, ?_⟩\n' + mt.group(1) + '  ', 1)
+            ln = ln.replace('· ', f'· refine ⟨{wit[0]}, {wit[1]}, ?_⟩\n' + mt.group(1) + '  ', 1)
             cnt['refine'] = cnt.get('refine', 0) + 1
             last_ref = ind + 2
         elif mt and last_ref != ind:
-            out.append(f'{mt.group(1)}refine ⟨x, hY0, ?_⟩')
+            out.append(f'{mt.group(1)}refine ⟨{wit[0]}, {wit[1]}, ?_⟩')
             cnt['refine'] = cnt.get('refine', 0) + 1
             last_ref = ind
         out.append(ln)
@@ -200,7 +228,7 @@ gen('CompRunTLeaf.lean',
          '# `%3`, `%4` of `+run` with the rest threaded (copies of `CompRunRLeaf.lean`)'),
     [('CompRunRLeaf.lean', ['hp_toLR', 'comp_run_n4CR', 'comp_run_n3CR', 'comp_run_n4_nextR', 'comp_run_n4LR',
                             'comp_run_n3_nextR', 'comp_run_n3LR'], [])],
-    {'hyk': 6, 'intro': 4, 'link': 16, 'obtain': 12, 'refine': 20, 'term': 1})
+    {'hyk': 7, 'intro': 4, 'link': 16, 'obtain': 12, 'refine': 20, 'term': 1})
 
 gen('CompRunTCons.lean',
     head(['lemmas.Compiler.CompRunTLeaf', 'lemmas.Compiler.CompRunRCons'],
@@ -219,3 +247,58 @@ gen('CompRunTTen.lean',
          '# `%10` of `+run` with the rest threaded (copies of `CompRunRTen.lean`)'),
     [('CompRunRTen.lean', ['cr10_tailLR', 'comp_run_n10LR'], [])],
     {'exconcl': 1, 'hyk': 2, 'intro': 1, 'link': 3, 'obtain': 3, 'part': 2, 'refine': 8})
+
+# %6: the continuations of the pill's steps (`hK`, `hRe`) conclude `∃ x'`; the
+# continuation of `+cond-between` and the branches (`cr6s_midR`, `cr6f_midR`)
+# runs at the rest the runs of `r` and `q` returned, so it is for every rest.
+KEXT = ('(genNoun p.2 x)) :\n', "(genNoun p.2 x')) :\n")
+KFORK = ('      nock (C (listNoun A (g3.id :: region))', "      ∃ x', Y x x' ∧ nock (C (listNoun A (g3.id :: region))")
+MIDK = ('      runLCM env true msup q goal0 rb g1 = some (nex0, g2) →\n      nock (',
+        "      runLCM env true msup q goal0 rb g1 = some (nex0, g2) →\n      ∀ x, x.NoSoft → X x mono sup → ∃ x', Y x x' ∧ nock (")
+MIDX = ('(genNoun p.2 x)) (hX : X x mono sup := by assumption) :', "(genNoun p.2 x')) (hX : X x mono sup := by assumption) :")
+MIDA = ('have hk := hK nex1 g1 nex0 g2 e1 e2', 'have hk := hK nex1 g1 nex0 g2 e1 e2 x hx hX')
+MIDF = ('(fun nex1 g1 nex0 g2 e1 e2 => by', '(fun nex1 g1 nex0 g2 e1 e2 x hx hX => by')
+KK = ("(hK : ∀ out pro g', kerf ⟨laz, th⟩ g = some ((out, pro), g') →\n      nock (",
+      "(hK : ∀ out pro g', kerf ⟨laz, th⟩ g = some ((out, pro), g') →\n      ∃ x', Y x x' ∧ nock (")
+LRE = [('(hRe : nock (crSubj', "(hRe : ∃ x', Y x x' ∧ nock (crSubj"),
+       ('= (R g).map fun p => C p.1.goal.toNoun (genNoun p.2 x))', "= (R g).map fun p => C p.1.goal.toNoun (genNoun p.2 x'))"),
+       ('  rw [bind_apply]\n  cases eR : R g with', '  obtain ⟨x, hy0, hRe⟩ := hRe\n  replace hY0 := hYk.trans hY0 hy0\n  rw [bind_apply]\n  cases eR : R g with')]
+SIXPS = [('(X : GenRest → Noun → Noun → Prop) (n : Nomm)', '(X : GenRest → Noun → Noun → Prop) (Y : GenRest → GenRest → Prop) (n : Nomm)')]
+
+gen('CompRunTSixS.lean',
+    head(['lemmas.Compiler.CompRunTTen', 'lemmas.Compiler.CompRunRSixAll'],
+         '# Phase S of `%6` with the rest threaded (copies of `CompRunRSixS.lean`, `cr6s_s01`, `cr6s_s01_g`)'),
+    [('CompRunRSixS.lean', ['SixPartsR'], SIXPS),
+     ('CompRunSixNext.lean', ['cr6s_s01'], [KFORK, KEXT]),
+     ('CompRunSixAll.lean', ['cr6s_s01_g'], [KFORK, KEXT]),
+     ('CompRunRSixS.lean', ['cr6s_pR', 'cr6s_lyn_dpR', 'cr6s_midR', 'comp_run_n6_dpR'], [MIDK, MIDX, MIDA, MIDF])],
+    {'cont': 3, 'exconcl': 5, 'hyk': 6, 'intro': 1, 'link': 6, 'obtain': 5, 'pre:      nock (C (listNoun A (g3.': 2, 'pre:      runLCM env true msup q g': 1, 'pre:(X : GenRest → Noun → Noun → P': 1, 'pre:(fun nex1 g1 nex0 g2 e1 e2 => ': 1, 'pre:(genNoun p.2 x)) (hX : X x mon': 1, 'pre:(genNoun p.2 x)) :\n': 2, 'pre:have hk := hK nex1 g1 nex0 g2 ': 1, 'refine': 14, 'six': 3})
+
+gen('CompRunTSixN.lean',
+    head(['lemmas.Compiler.CompRunTSixS'],
+         '# Phases S (fork-free) and K of `%6` with the rest threaded (copies of `CompRunRSixN.lean`)'),
+    [('CompRunRSixN.lean', ['cr6s_lyn_nR', 'comp_run_n6_nfR', 'cr6k_eqR', 'comp_run_n6_kR'], [MIDF, KK, MIDX])],
+    {'cont': 1, 'exact': 2, 'exconcl': 2, 'hyk': 4, 'intro': 2, 'link': 3, 'obtain': 1, 'pre:(fun nex1 g1 nex0 g2 e1 e2 => ': 1, 'pre:(genNoun p.2 x)) (hX : X x mon': 1, "pre:(hK : ∀ out pro g', kerf ⟨laz,": 1, 'refine': 4, 'six': 6})
+
+gen('CompRunTSixF.lean',
+    head(['lemmas.Compiler.CompRunTSixN'],
+         '# Phase F of `%6` with the rest threaded (copies of `CompRunRSixF.lean`, `cr6f_s03`)'),
+    [('CompRunSixF.lean', ['cr6f_s03'], [KEXT, ('      nock (C (listNoun A (g3.id :: region)) (C (A g3.id)', "      ∃ x', Y x x' ∧ nock (C (listNoun A (g3.id :: region)) (C (A g3.id)")]),
+     ('CompRunRSixF.lean', ['cr6f_pR', 'cr6f_lynR', 'cr6f_midR', 'comp_run_n6_fR'], [MIDK, MIDX, MIDA, MIDF])],
+    {'cont': 2, 'exact': 1, 'exconcl': 4, 'hyk': 5, 'intro': 1, 'link': 5, 'obtain': 4, 'pre:      nock (C (listNoun A (g3.': 1, 'pre:      runLCM env true msup q g': 1, 'pre:(fun nex1 g1 nex0 g2 e1 e2 => ': 1, 'pre:(genNoun p.2 x)) (hX : X x mon': 1, 'pre:(genNoun p.2 x)) :\n': 1, 'pre:have hk := hK nex1 g1 nex0 g2 ': 1, 'refine': 11, 'six': 3})
+
+gen('CompRunTSixL.lean',
+    head(['lemmas.Compiler.CompRunTSixF'],
+         '# Phase L of `%6` with the rest threaded (copies of `CompRunRSixL.lean`, `cr6l_eq`)'),
+    [('CompRunSixL.lean', ['cr6l_eq'], LRE + [KEXT]),
+     ('CompRunRSixL.lean', ['comp_run_n6_lR', 'comp_run_n6_l_nfR', 'comp_run_n6_l_kR', 'comp_run_n6_l_twR',
+                            'comp_run_n6_l_nf_twR', 'comp_run_n6_l_k_twR'], [])],
+    {'exact': 1, 'exconcl': 1, 'hyk': 7, 'intro': 1, 'link': 8, 'pre:  rw [bind_apply]\n  cases eR :': 1, 'pre:(hRe : nock (crSubj': 1, 'pre:= (R g).map fun p => C p.1.goa': 1, 'refine': 2, 'six': 12, 'term': 4})
+
+gen('CompRunTSixAll.lean',
+    head(['lemmas.Compiler.CompRunTSixL'],
+         '# `%6` on every goal with the rest threaded (copies of `CompRunRSixAll.lean`)'),
+    [('CompRunRSixAll.lean', ['comp_run_n6_neR', 'comp_run_n6_nlR', 'comp_run_n6_l_fR', 'comp_run_n6_l_neR',
+                              'comp_run_n6_nextR', 'comp_run_n6_allR'],
+      [MIDF, ('region hlp g]\n    rfl\n', 'region hlp g]\n    exact ⟨x, hY0, rfl⟩\n')])],
+    {'exact': 1, 'hyk': 6, 'intro': 2, 'link': 6, 'pre:(fun nex1 g1 nex0 g2 e1 e2 => ': 1, 'pre:region hlp g]\n    rfl\n': 1, 'six': 20})

@@ -19,7 +19,7 @@ set_option linter.unusedVariables false
 variable {ctx : Noun} {X : GenRest → Noun → Noun → Prop} {Y : GenRest → GenRest → Prop}
 
 /-- The fork-free hypothesis on the parts from the general one. -/
-theorem hp_toLRT {env : CallEnv} {msup : Option Nomm} {p : Nomm} {region : List Nat}
+theorem hp_toLRT (hYk : YOk X Y) {env : CallEnv} {msup : Option Nomm} {p : Nomm} {region : List Nat}
     (hp : ∀ (goal : CGoalL CSet) (g1 : Gen (TreapMap mugF)), GInv g1 goal →
       CompRunAtXT (runLCM env true msup) ctx X Y p goal region g1) :
     ∀ s th g1, CrInv g1 (CGoal.next s th) →
@@ -31,9 +31,9 @@ theorem hp_toLRT {env : CallEnv} {msup : Option Nomm} {p : Nomm} {region : List 
 `+collapse-lazy-atom` (or takes a fresh register when the goal needs nothing,
 where the `?>` on the arguments of `then` crashes as the model does), then the
 increment with a `%hop`; then `p` into the argument register. -/
-theorem comp_run_n4CRT (h7 : slot? 7 ctx = some compK) (env : CallEnv) (msup : Option Nomm) (p : Nomm) (gl : CGoal CSet) (region : List Nat)
+theorem comp_run_n4CRT (hYk : YOk X Y) (h7 : slot? 7 ctx = some compK) (env : CallEnv) (msup : Option Nomm) (p : Nomm) (gl : CGoal CSet) (region : List Nat)
     (g : Gen (TreapMap mugF)) (hinv : CrInv g gl)
-    (hp : ∀ s th g1, CrInv g1 (CGoal.next s th) → CompRunAtXT (runLCM env true msup) ctx X Y p (CGoal.toL (CGoal.next s th)) region g1) (hYk : YOk X Y := by assumption) :
+    (hp : ∀ s th g1, CrInv g1 (CGoal.next s th) → CompRunAtXT (runLCM env true msup) ctx X Y p (CGoal.toL (CGoal.next s th)) region g1) :
     CompRunAtXT (runLCM env true msup) ctx X Y (Nomm.n4 p) (CGoal.toL gl) region g := by
   have hlok := hinv.1
   have hd := hinv.2.1
@@ -156,10 +156,10 @@ theorem comp_run_n4CRT (h7 : slot? 7 ctx = some compK) (env : CallEnv) (msup : O
 otherwise `%done` makes the two blocks of `0` and `1`, `%next` runs
 `+collapse-lazy-atom` (a crash on `~`) and `+forl`, and a `%clq` block on a
 fresh register is the goal of `p` (`lazy-from-need`). -/
-theorem comp_run_n3CRT (h7 : slot? 7 ctx = some compK) (env : CallEnv) (msup : Option Nomm) (p : Nomm) (gl : CGoal CSet) (region : List Nat)
+theorem comp_run_n3CRT (hYk : YOk X Y) (h7 : slot? 7 ctx = some compK) (env : CallEnv) (msup : Option Nomm) (p : Nomm) (gl : CGoal CSet) (region : List Nat)
     (g : Gen (TreapMap mugF)) (hinv : CrInv g gl)
     (hg : CompRunAtXT (runLCM env true msup) ctx X Y p (CGoal.toL gl) region g)
-    (hp : ∀ s th g1, CrInv g1 (CGoal.next s th) → CompRunAtXT (runLCM env true msup) ctx X Y p (CGoal.toL (CGoal.next s th)) region g1) (hYk : YOk X Y := by assumption) :
+    (hp : ∀ s th g1, CrInv g1 (CGoal.next s th) → CompRunAtXT (runLCM env true msup) ctx X Y p (CGoal.toL (CGoal.next s th)) region g1) :
     CompRunAtXT (runLCM env true msup) ctx X Y (Nomm.n3 p) (CGoal.toL gl) region g := by
   have hlok := hinv.1
   have hd := hinv.2.1
@@ -299,11 +299,11 @@ theorem comp_run_n3CRT (h7 : slot? 7 ctx = some compK) (env : CallEnv) (msup : O
 /-- **The case `%4` of `+run` on a lazy `%next` goal**: `+collapse-lazy-atom`
 (`comp_collapse_lazy_atom_all`), or a fresh register when the goal needs
 nothing, then the increment and `p` into the argument register. -/
-theorem comp_run_n4_nextRT (h7 : slot? 7 ctx = some compK) (env : CallEnv) (msup : Option Nomm) (p : Nomm)
+theorem comp_run_n4_nextRT (hYk : YOk X Y) (h7 : slot? 7 ctx = some compK) (env : CallEnv) (msup : Option Nomm) (p : Nomm)
     (sur : Sure CSet) (fk : List (Lazy.ForkE CSet)) (bd : List (Nat × Lazy CSet)) (args : List (Option Nat))
     (there : Nat) (region : List Nat) (g : Gen (TreapMap mugF)) (hd : g.drop = false)
     (hlok : LAll CrLok (Lazy.mk sur fk bd))
-    (hp : ∀ s th g1, CrInv g1 (CGoal.next s th) → CompRunAtXT (runLCM env true msup) ctx X Y p (CGoal.toL (CGoal.next s th)) region g1) (hYk : YOk X Y := by assumption) :
+    (hp : ∀ s th g1, CrInv g1 (CGoal.next s th) → CompRunAtXT (runLCM env true msup) ctx X Y p (CGoal.toL (CGoal.next s th)) region g1) :
     CompRunAtXT (runLCM env true msup) ctx X Y (Nomm.n4 p) (CGoalL.next (Lazy.mk sur fk bd) ⟨args, there⟩) region g := by
   obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
   have h15 := cr_ctx15 h7
@@ -377,29 +377,29 @@ theorem comp_run_n4_nextRT (h7 : slot? 7 ctx = some compK) (env : CallEnv) (msup
         cf_emit_g]
 
 /-- **The case `%4` on every goal with the invariant.** -/
-theorem comp_run_n4LRT (h7 : slot? 7 ctx = some compK) (env : CallEnv) (msup : Option Nomm) (p : Nomm)
+theorem comp_run_n4LRT (hYk : YOk X Y) (h7 : slot? 7 ctx = some compK) (env : CallEnv) (msup : Option Nomm) (p : Nomm)
     (goal : CGoalL CSet) (region : List Nat) (g : Gen (TreapMap mugF)) (hi : GInv g goal)
     (hp : ∀ (goal' : CGoalL CSet) (g1 : Gen (TreapMap mugF)), GInv g1 goal' →
-      CompRunAtXT (runLCM env true msup) ctx X Y p goal' region g1) (hYk : YOk X Y := by assumption) :
+      CompRunAtXT (runLCM env true msup) ctx X Y p goal' region g1) :
     CompRunAtXT (runLCM env true msup) ctx X Y (Nomm.n4 p) goal region g := by
   cases goal with
   | next laz th =>
     obtain ⟨sur, fk, bd⟩ := laz
     obtain ⟨args, there⟩ := th
-    exact comp_run_n4_nextRT h7 env msup p sur fk bd args there region g hi.2.1 (lall_mono (fun _ hs => hs.1) hi.1.1)
-      (hp_toLRT hp)
-  | pick z o => exact comp_run_n4CRT h7 env msup p (CGoal.pick z o) region g (gInv_crInv hi) (hp_toLRT hp)
-  | done => exact comp_run_n4CRT h7 env msup p CGoal.done region g (gInv_crInv hi) (hp_toLRT hp)
+    exact comp_run_n4_nextRT hYk h7 env msup p sur fk bd args there region g hi.2.1 (lall_mono (fun _ hs => hs.1) hi.1.1)
+      (hp_toLRT hYk hp)
+  | pick z o => exact comp_run_n4CRT hYk h7 env msup p (CGoal.pick z o) region g (gInv_crInv hi) (hp_toLRT hYk hp)
+  | done => exact comp_run_n4CRT hYk h7 env msup p CGoal.done region g (gInv_crInv hi) (hp_toLRT hYk hp)
 
 /-- **The case `%3` of `+run` on a lazy `%next` goal**: `+none-equivalent`
 (`ne_all`), then either `p` for the goal itself, or `+collapse-lazy-atom`,
 `+forl` and a `%clq` block on a fresh register for `p`. -/
-theorem comp_run_n3_nextRT (h7 : slot? 7 ctx = some compK) (env : CallEnv) (msup : Option Nomm) (p : Nomm)
+theorem comp_run_n3_nextRT (hYk : YOk X Y) (h7 : slot? 7 ctx = some compK) (env : CallEnv) (msup : Option Nomm) (p : Nomm)
     (sur : Sure CSet) (fk : List (Lazy.ForkE CSet)) (bd : List (Nat × Lazy CSet)) (args : List (Option Nat))
     (there : Nat) (region : List Nat) (g : Gen (TreapMap mugF)) (hd : g.drop = false)
     (hlok : LAll CrLok (Lazy.mk sur fk bd))
     (hg : CompRunAtXT (runLCM env true msup) ctx X Y p (CGoalL.next (Lazy.mk sur fk bd) ⟨args, there⟩) region g)
-    (hp : ∀ s th g1, CrInv g1 (CGoal.next s th) → CompRunAtXT (runLCM env true msup) ctx X Y p (CGoal.toL (CGoal.next s th)) region g1) (hYk : YOk X Y := by assumption) :
+    (hp : ∀ s th g1, CrInv g1 (CGoal.next s th) → CompRunAtXT (runLCM env true msup) ctx X Y p (CGoal.toL (CGoal.next s th)) region g1) :
     CompRunAtXT (runLCM env true msup) ctx X Y (Nomm.n3 p) (CGoalL.next (Lazy.mk sur fk bd) ⟨args, there⟩) region g := by
   obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
   have h15 := cr_ctx15 h7
@@ -478,20 +478,20 @@ theorem comp_run_n3_nextRT (h7 : slot? 7 ctx = some compK) (env : CallEnv) (msup
           ct_lfn_at, ct_lfn_arm, ct_lfn_gate, hr, cf_emitG_bo]
 
 /-- **The case `%3` on every goal with the invariant.** -/
-theorem comp_run_n3LRT (h7 : slot? 7 ctx = some compK) (env : CallEnv) (msup : Option Nomm) (p : Nomm)
+theorem comp_run_n3LRT (hYk : YOk X Y) (h7 : slot? 7 ctx = some compK) (env : CallEnv) (msup : Option Nomm) (p : Nomm)
     (goal : CGoalL CSet) (region : List Nat) (g : Gen (TreapMap mugF)) (hi : GInv g goal)
     (hp : ∀ (goal' : CGoalL CSet) (g1 : Gen (TreapMap mugF)), GInv g1 goal' →
-      CompRunAtXT (runLCM env true msup) ctx X Y p goal' region g1) (hYk : YOk X Y := by assumption) :
+      CompRunAtXT (runLCM env true msup) ctx X Y p goal' region g1) :
     CompRunAtXT (runLCM env true msup) ctx X Y (Nomm.n3 p) goal region g := by
   cases goal with
   | next laz th =>
     obtain ⟨sur, fk, bd⟩ := laz
     obtain ⟨args, there⟩ := th
-    exact comp_run_n3_nextRT h7 env msup p sur fk bd args there region g hi.2.1 (lall_mono (fun _ hs => hs.1) hi.1.1)
-      (hp _ g hi) (hp_toLRT hp)
+    exact comp_run_n3_nextRT hYk h7 env msup p sur fk bd args there region g hi.2.1 (lall_mono (fun _ hs => hs.1) hi.1.1)
+      (hp _ g hi) (hp_toLRT hYk hp)
   | pick z o =>
-    exact comp_run_n3CRT h7 env msup p (CGoal.pick z o) region g (gInv_crInv hi) (hp _ g hi) (hp_toLRT hp)
-  | done => exact comp_run_n3CRT h7 env msup p CGoal.done region g (gInv_crInv hi) (hp _ g hi) (hp_toLRT hp)
+    exact comp_run_n3CRT hYk h7 env msup p (CGoal.pick z o) region g (gInv_crInv hi) (hp _ g hi) (hp_toLRT hYk hp)
+  | done => exact comp_run_n3CRT hYk h7 env msup p CGoal.done region g (gInv_crInv hi) (hp _ g hi) (hp_toLRT hYk hp)
 
 end Compiler
 end Formalization
