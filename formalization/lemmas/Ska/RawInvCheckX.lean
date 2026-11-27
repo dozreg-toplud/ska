@@ -307,6 +307,36 @@ def kerfX (nm : Nomm) : Option (Nat × Comp.Gen FM) :=
       | none => false
   | none => true
 
+/-! ## The facts of `StInv` (`Compiler/OptLinkTotalInv.lean`) that `OptIn` lacks
+
+Checked for the optimizer's totality (Gaps 13): `Closed` (every jump
+targets a block), `ArityOK` (a jump passes as many arguments as its target
+has parameters), a block `0`, and `TwoNA` (two-way ends pass no arguments),
+on the output of both final passes over all of `enumX`; the raw blocks of
+the run meet `Closed`, `ArityOK` and `TwoNA` too (their labels start at
+`1`).  Not vacuous: 3,360 n-ary outputs have a jump with arguments. -/
+
+def twoWayB : Termin → Bool
+  | Termin.clq .. | Termin.eqq .. | Termin.brn .. | Termin.brz .. | Termin.lti .. => true
+  | _ => false
+
+/-- `Closed`, `ArityOK`, `TwoNA` of a block map. -/
+def stB (m : FM Blob) : Bool :=
+  (blocksOf m).all fun (_, b) => (getJmps b.fin).all fun j =>
+    (match m.f j.there with
+      | some b2 => j.args.length == b2.par.length
+      | none => false) && (!twoWayB b.fin || j.args.isEmpty)
+
+def okSt (o : Option (Straight FM)) : Bool := match o with
+  | some c => stB c.blocks && (c.blocks.f 0).isSome
+  | none => true
+
+#guard enumX.all fun nm => okSt (naryX nm) && okSt (mono nm) &&
+  match runX nm with | some (_, g) => stB g.blocks | none => true
+#guard (enumX.filter fun nm => match naryX nm with
+  | some c => (blocksOf c.blocks).any fun (_, b) => (getJmps b.fin).any fun j => !j.args.isEmpty
+  | none => false).length == 3360
+
 end Raw
 end SkaModel
 end Formalization
