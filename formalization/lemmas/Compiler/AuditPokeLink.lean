@@ -5,6 +5,8 @@ import lemmas.Compiler.PokeLinkSka
 import lemmas.Compiler.PokeLinkGood
 import lemmas.Compiler.PokeLinkSccHit
 import lemmas.Compiler.PokeLinkRest
+import lemmas.Compiler.PokeLinkRestTail
+import lemmas.Compiler.PokeLinkGood2
 
 /-! # Audit of track P: `enc` and the `%full` branch of `+poke` -/
 
@@ -116,3 +118,13 @@ open Formalization Formalization.Compiler
 #check @NewCodeLinkAt
 #check @LoopLinkAt
 #check @TailLinkAt
+#print axioms newCodeLinkAt
+#print axioms datLinkAt
+#print axioms tailBunt_run
+#print axioms srSeek_run
+#print axioms srCalls_run
+#print axioms srK10_run
+#print axioms tailLinkAt_of
+#print axioms good2_empty
+#check @TailEndAt
+#check @PGood2
