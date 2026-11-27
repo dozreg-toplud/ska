@@ -159,6 +159,14 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     set per pass).  2026-11-27: all 66 returned, at most 10 passes, no `%st` recurrence, no
                     re-push (a cons `[v v]` has the cape `[& &]`, so its member covers every subject of its tag;
                     every pattern appears at the first read, when the registers are fresh)
+                    `batch3 DIR`: family D (22 cores: relays take a formula slot whole, a direct call; chains of
+                    relays delay a source); 21 return, `de3-24-44-111` does not (`takecycle.hoon`)
+* `takecycle.hoon`  the pass loop of `+analyze` does not end (README Gaps 16): one `%full` poke whose root, with a
+                    constant entry, changes its callee set forever by a `%rec` takeover cycle of period 18 at a
+                    constant-subject site (two chains of direct relays of lengths 2 and 4 restart the members
+                    `[V |]`, `[| V]` of one formula in turn).  With the library of
+                    `passmeasure.py` the `%st` hash is periodic (33,135 passes in 300 s, 24 values); on the plain
+                    library no answer in 600 s (2026-11-27)
 * `untidyin.hoon`   the pokes that could plant an untidy sock: `%fast` with data under a `|` and with a cape `[| |]`
                     returns and keeps both templates normalized (`[[& |] [bat 0]]`), `%fast` with a cell cape over an atom
                     and `%dire` with an untidy bell crash, and a `%full` poke then returns with tidy memo subjects (2026-11-27)

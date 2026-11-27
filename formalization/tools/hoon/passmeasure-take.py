@@ -20,6 +20,9 @@
 #        ([2 [1 [W 0]] [1 W]] runs to itself, with no provenance), so it survives +patch-prod
 #   batch OUTDIR                    writes the designed batch (drivers tk-*.hoon, several cases each)
 #   batch2 OUTDIR                   family a, complements (drivers ta-*.hoon): see batch2
+#   batch3 OUTDIR                   family d, direct relays and delays (drivers td-*.hoon): see batch3;
+#        its case de3-24-44-111 (td-03.hoon, case 0; tools/hoon/takecycle.hoon) does not return: a
+#        %rec takeover cycle of period 18 at a constant-subject site of the root (Gaps 16)
 #   debuglib LIB.hoon OUT.hoon      LIB (of passmeasure.py) with %pm-sub / %pm-kid: subject heads
 #   --sum[-v] OUT.txt...            per case: root passes, %st recurrence, pushes, re-pushes, takeovers,
 #        changes of the root's callee set (-v: the set per pass)
@@ -181,6 +184,108 @@ def batch(outdir):
         driver(cs[k:k + 3], p); paths.append(p)
     print(len(cs), 'cases in', len(paths), 'drivers')
 
+def core3(n, ms, sites, tags=None):
+    """family d: R (register n) with the sites (t, pspec) in this order, one formula f_t (register
+    ms[t]) and tag 5+t per t.  pspec: ('w', x) p = x whole, a slot whose cape is & when known (a
+    DIRECT call of p, in less-code: no universal cover); ('c', x, y) p = [x y], a cons (partial
+    patterns [v |], [| v], indirect).  x: None the unknown sample, ('R', i) slot i of R's register
+    (drains at R's pass n+1-i), ('s', a, i) slot i of the register in the product of the earlier
+    site a (its target's age)"""
+    nf = len(ms)
+    tags = tags or [5 + t for t in range(nf)]
+    bs = slots(nf + 1)
+    armK = lambda i: peg(2, bs[i])
+    fs = [farm(ms[t], bs[t + 1], armK(0)) for t in range(nf)]
+    rreg0 = L(7, tuple_val([V] * n))
+    tree = (('c', 'Pr'), ('BAT', 'sam'))
+    prs = slots(n)
+    kax = lambda tr: axis(tr, 'BAT') // 2
+    def src(tr, x):
+        if x is None: return A(axis(tr, 'sam'))
+        if x[0] == 'R': return A(peg(axis(tr, 'Pr'), prs[x[1]]))
+        _, a, i = x
+        assert a < len(pushes)
+        return A(peg(peg(axis(tr, 'site%d' % a), 3), slots(ms[sites[a][0]])[i]))
+    pushes = []
+    for si, (t, ps) in enumerate(sites):
+        pf = src(tree, ps[1]) if ps[0] == 'w' else L(src(tree, ps[1]), src(tree, ps[2]))
+        k = kax(tree)
+        subj = L(L(K(L(1, tags[t])), L(pf, A(axis(tree, 'c')))), A(k))
+        pushes.append(L(2, subj, A(peg(k, armK(t + 1)))))
+        tree = ('site%d' % si, tree)
+    pa = axis(tree, 'Pr')
+    body = L(K(7), tup([A(peg(pa, s)) for s in prs[1:]] + [A(axis(tree, 'sam'))]))
+    for p in reversed(pushes): body = L(8, p, body)
+    R = L(6, L(3, A(3)), K(rreg0), L(8, L(2, A(1), A(armK(0))), body))
+    return '[[& |] [%B 0]]'.replace('%B', n2h(tup([R] + fs))), R
+
+def batch3(outdir):
+    """family d (Gaps 16, track F): (a) relays: a site p = X.l WHOLE (direct, cape &) of its own tag,
+    whose member demands p in less-code, so it covers no kid with p unknown: when X.l drains the site
+    pushes (or %rec-resolves to) a member with p unknown, and when X restarts it pushes the culled
+    direct member again: every flip of X.l restarts the relay's register Z.  (b) chains of N relays
+    (each waiting on the drain of the previous one) or a relay on R's own register (drains at R's
+    pass n+1-l) delay a source, so the complement sites [Z.i |], [| Z'.j] of a main tag (whose k
+    site has the constant drained subject [| |], seeded by [R.0 |]) see fresh registers at
+    different passes, not all at their first read"""
+    os.makedirs(outdir, exist_ok=True)
+    cs = []
+    w = lambda x: ('w', x)
+    hd = lambda x: ('c', x, None)
+    tl = lambda x: ('c', None, x)
+    S = lambda a, i: ('s', a, i)
+    kseed = (0, hd(('R', 0)))
+    # c: one main tag 0 (sites k, a, b); a chain of N relays (tags 1..N) from k's target; a reads
+    # k's target, b the chain's end.  l: the relays' slot; i, j: a's and b's slots
+    for (n, N, m0, mr, l, i, j) in [(3, 2, 4, 4, 1, 1, 1), (3, 3, 4, 4, 1, 1, 1), (3, 4, 4, 4, 1, 1, 1),
+                                    (3, 6, 4, 4, 1, 1, 1), (3, 2, 3, 3, 0, 0, 0), (4, 3, 5, 3, 0, 1, 0),
+                                    (3, 5, 3, 4, 1, 0, 1), (2, 2, 5, 5, 2, 1, 2)]:
+        st = [kseed] + [(r, w(S(r - 1, l))) for r in range(1, N + 1)]
+        st += [(0, hd(S(0, i))), (0, tl(S(N, j)))]
+        cs.append(('dc%d-%d-%d%d-%d%d%d' % (n, N, m0, mr, l, i, j), n, [m0] + [mr] * N, st))
+    # e: a and b both at chain ends: two chains of N1, N2 relays from k's target
+    for (n, N1, N2, m0, mr, l, i, j) in [(3, 1, 3, 4, 4, 1, 1, 1), (3, 2, 4, 4, 4, 1, 1, 1),
+                                         (3, 2, 5, 3, 3, 0, 0, 0), (4, 3, 6, 4, 5, 2, 1, 1)]:
+        st = [kseed]; r = 1; ends = []
+        for Nc in (N1, N2):
+            prev = 0
+            for _ in range(Nc):
+                st.append((r, w(S(prev, l)))); prev = len(st) - 1; r += 1
+            ends.append(prev)
+        st += [(0, hd(S(ends[0], i))), (0, tl(S(ends[1], j)))]
+        cs.append(('de%d-%d%d-%d%d-%d%d%d' % (n, N1, N2, m0, mr, l, i, j), n, [m0] + [mr] * (N1 + N2), st))
+    # o: as c with b before a (site order), and the relays after a
+    for (n, N, m0, mr, l, i, j) in [(3, 2, 4, 4, 1, 1, 1), (3, 4, 4, 3, 0, 1, 0)]:
+        st = [kseed] + [(r, w(S(r - 1, l))) for r in range(1, N + 1)]
+        st += [(0, tl(S(N, j))), (0, hd(S(0, i)))]
+        cs.append(('do%d-%d-%d%d-%d%d%d' % (n, N, m0, mr, l, i, j), n, [m0] + [mr] * N, st))
+    # g: R's own register as the delay: relay on R.l (direct while R.l is known, its p unknown from
+    # R's pass n+2-l on), a chain of N-1 more relays, a reads the chain's end, b k's target
+    for (n, N, m0, mr, l, i, j) in [(5, 2, 4, 4, 1, 1, 1), (6, 3, 4, 4, 2, 1, 1), (4, 4, 3, 3, 0, 0, 0)]:
+        st = [kseed, (1, w(('R', l)))] + [(r, w(S(r - 1, min(1, mr - 2)))) for r in range(2, N + 1)]
+        st += [(0, hd(S(N, i))), (0, tl(S(0, j)))]
+        cs.append(('dg%d-%d-%d%d-%d%d%d' % (n, N, m0, mr, l, i, j), n, [m0] + [mr] * N, st))
+    # p: two main tags 0, 1 (ping-pong): k0, k1; a chain of N relays from k0's target; a0 = [X1.i |],
+    # b0 = [| Z.j] (Z the chain's end), a1 = [X0.i |], b1 = [| Z.j]
+    for (n, N, m0, m1, mr, l, i, j) in [(3, 2, 4, 4, 4, 1, 1, 1), (3, 3, 3, 4, 3, 0, 0, 1),
+                                        (4, 5, 4, 3, 4, 1, 1, 0)]:
+        st = [kseed, (1, hd(('R', 0)))] + [(r + 1, w(S(r if r > 1 else 0, l))) for r in range(1, N + 1)]
+        st += [(0, hd(S(1, i))), (0, tl(S(N + 1, j))), (1, hd(S(0, i))), (1, tl(S(N + 1, j)))]
+        cs.append(('dp%d-%d-%d%d%d-%d%d%d' % (n, N, m0, m1, mr, l, i, j), n, [m0, m1] + [mr] * N, st))
+    # r: three main tags in a ring, each b fed by a relay on the previous tag's target
+    for (n, m, mr, l, i, j) in [(3, 4, 4, 1, 1, 1), (3, 3, 5, 0, 0, 2)]:
+        st = [kseed, (1, hd(('R', 0))), (2, hd(('R', 0))),
+              (3, w(S(2, l))), (4, w(S(0, l))), (5, w(S(1, l)))]
+        st += [(0, hd(S(1, i))), (0, tl(S(3, j))), (1, hd(S(2, i))), (1, tl(S(4, j))),
+               (2, hd(S(0, i))), (2, tl(S(5, j)))]
+        cs.append(('dr%d-%d%d-%d%d%d' % (n, m, mr, l, i, j), n, [m, m, m, mr, mr, mr], st))
+    cs = [(nm, *core3(n, ms, st)) for (nm, n, ms, st) in cs]
+    paths = []
+    for k in range(0, len(cs), 3):
+        p = os.path.join(outdir, 'td-%02d.hoon' % (k // 3))
+        driver(cs[k:k + 3], p); paths.append(p)
+    print(len(cs), 'cases in', len(paths), 'drivers')
+
 def summary(paths, verbose=False):
     """per case: passes of the root's loop, whether its %st hash recurs, pushes, re-pushes after a cull,
     %rec takeovers at the root's sites, and the root's callee set per pass (%pm-ent)"""
@@ -202,7 +307,7 @@ def summary(paths, verbose=False):
             elif t[0] == '%pm-cull':
                 case['culled'] |= {m.strip('~[]') for m in t[2:] if m.strip('~[]')}
             elif t[0] == '%pm-pass' and t[1] == case['root']:
-                case['passes'] = max(case['passes'], int(t[2])); case['st'].append(t[-1])
+                case['passes'] = max(case['passes'], int(t[2].replace('.', ''))); case['st'].append(t[-1])
             elif t[0] == '%pm-rec' and t[1] == case['root']:
                 case['rec'].setdefault(t[2], []).append(t[3])
             elif t[0] == '%pm-ent' and t[1] == case['root']:
@@ -244,6 +349,8 @@ if __name__ == '__main__':
         open(sys.argv[3], 'w').write('\n'.join(t)); sys.exit(0)
     if sys.argv[1] == 'batch2':
         batch2(sys.argv[2]); sys.exit(0)
+    if sys.argv[1] == 'batch3':
+        batch3(sys.argv[2]); sys.exit(0)
     out, fam = sys.argv[1], sys.argv[2]
     a = [int(x) for x in sys.argv[3:]]
     if fam == 'x':
