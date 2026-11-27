@@ -16,14 +16,17 @@ goals `CGoal.toL goal` that the cases of `FragX` give their sub-runs.
   sure need.  What `optIn_toStraight_prep` asks to be live at nothing.
 * **`RawIHX X nm`**: every run of `runL nm` for a fork-free goal from a
   state with `SIP X (upRk g0.blocks) g0.bo` (blocks that hop up as `%6`
-  makes them) keeps that invariant in the end state's rank, and for every
+  makes them), when `nm` has at most 255 `%6` (as every theorem of track C
+  on `FragX` asks), keeps that invariant in the end state's rank, returns a
+  jump with no arguments to a label from `1` below the end's `bo`, and for every
   `K` that vanishes from `g0.bo` on leaves live at its entry, with the
   kills `K` and those of its result's lazy tree, only what its goal's
   continuation needs beyond the goal with the kills `K` (`GLiveK`).  Under
   `%done` nothing is live there, the hypothesis `hl` of
   `optIn_toStraight_prep`.
 * The cases, whole cases of `FragX` at a time: `rawX_frag` (`run_rawUK`
-  and `runL_frag`).
+  and `runL_frag`), `rawX_sevenFrom`, `rawX_seven`, `rawX_four`,
+  `rawX_three`; cons, `%5` and `%10` are in `RawInvIHXBin.lean`.
 -/
 
 set_option linter.unusedSectionVars false
