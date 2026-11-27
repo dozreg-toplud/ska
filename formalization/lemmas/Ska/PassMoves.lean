@@ -396,6 +396,129 @@ theorem passOn_moves (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmT : 
       exact hcl hcg
     · exact Or.inl hml
 
+/-! ## 7. Along a chain of passes -/
+
+/-- What `PassP2` asks of the state at the start of a pass of the component
+of `id` (DFS number `index`, the stack below it `rest`). -/
+def PassHyp (memoF : Memo M) (id : Ident) (index : Nat) (rest : List Ident) (st : SkaState M R)
+    (F : Entry → Prop) : Prop :=
+  CInv memoF st F ∧ (∃ ab0, st.stk = ab0 ++ id :: rest) ∧ Treap.get st.order id = some index ∧
+    (∀ m ∈ rest, MemOK st F m index) ∧ (MemoNoCallees memoF → RestBelow st rest index) ∧
+    (∀ x o, Treap.get st.order x = some o → x ∉ rest → 1 ≤ ranOf st x ∧ LowB st x index) ∧
+    (∀ x o, Treap.get st.order x = some o → x ∉ rest →
+      Reach st (fun y => Treap.get st.order y ≠ none ∧ y ∉ rest) id x)
+
+/-- **A pass that goes on keeps `PassHyp`** (the steps of `passStep_ok2`
+before the next pass). -/
+theorem passHyp_step (env : Env R) (memoF : Memo M) (hall : ∀ k, AllP2 env memoF k) {n : Nat}
+    {id : Ident} {index pass : Nat} {rest : List Ident} {st st' : SkaState M R} {F : Entry → Prop}
+    (hh : PassHyp memoF id index rest st F) (h : PassOn env memoF n id index pass st st') :
+    ∃ F', PassHyp memoF id index rest st' F' := by
+  obtain ⟨hc, ⟨ab0, hs⟩, hidx, hrest, hrb, hcl, hreach⟩ := hh
+  obtain ⟨ab, members, r1, st2, hab, hsw, hml, hr1, hcu, _⟩ := h
+  obtain ⟨ab0', rest', rfl, hs', _⟩ := above_eq hab
+  obtain ⟨rfl, rfl⟩ := nodup_split_unique (hs ▸ hc.s.nodup) (hs.symm.trans hs')
+  have hnd2 : ((ab0 ++ [id]) ++ rest).Nodup := by simpa using (hs ▸ hc.s.nodup)
+  have hmembers : ∀ m ∈ members, m ∈ st.stk ∧ m ∉ rest := by
+    intro m hm
+    have hm' : m ∈ ab0 ++ [id] := by
+      rcases sweep_mem hsw m hm with rfl | h
+      · simp
+      · exact (Treap.has_silt _ _).mp h
+    exact ⟨by rw [hs]; exact mem_split_of hm', fun hr => (List.nodup_append.mp hnd2).2.2 m hm' m hr rfl⟩
+  obtain ⟨⟨F2, _, c2, hrest2⟩, _, k2, fr2, _, hcl2, _⟩ :=
+    (hall n).2.2.2.2 index pass members ({ st with stats := { st.stats with passes := st.stats.passes + 1 } } : SkaState M R)
+      r1 st2 F ab0 rest id (hc.congr rfl rfl rfl rfl rfl rfl rfl) hs hidx hmembers
+      (fun m hm => memOK_congr rfl rfl rfl (hrest m hm)) hcl hml
+  have fr2' : Frame (· ∈ rest) st st2 := ⟨fr2.fin, fr2.ticks, fr2.next, fr2.tick, fr2.newOrd⟩
+  have hidx2 : Treap.get st2.order id = some index := by
+    rw [k2.2.1 id (by rw [hs]; simp)]; exact hidx
+  have hst2 : ∃ l, st2.stk = (l ++ ab0) ++ id :: rest := by
+    obtain ⟨l, el⟩ := k2.1; exact ⟨l, by rw [el]; show l ++ st.stk = _; rw [hs]; simp⟩
+  obtain ⟨l2, el2⟩ := hst2
+  have hsub : ∀ m ∈ rest, m ∈ st.stk := fun m hm => by rw [hs]; simp [hm]
+  have hrb2 : MemoNoCallees memoF → RestBelow st2 rest index := fun hm =>
+    restBelow_keep hc.s (hc.clo hm).1 (hrb hm) hsub (fun m hm' => k2.2.2 m hm')
+      (fun c hc' => k2.2.1 c (hsub c hc')) fr2' (up_of_split hc.ord hs hidx)
+  obtain ⟨c3, _, k3, fr3, hsurv3, hreach3⟩ := cull_ok2 c2 el2 hidx2 hrest2 hrb2 hcu
+  have hrest3 : ∀ m ∈ rest, MemOK st' F2 m index := fun m hm =>
+    memOK_keepRest c2.ord c2.s el2 hidx2 k3 fr3.ticks (fun _ h => h) hm (hrest2 m hm)
+  obtain ⟨l3, el3⟩ := k3.1
+  have hidx3 : Treap.get st'.order id = some index := by rw [k3.2.1 id List.mem_cons_self]; exact hidx2
+  have hsv : ∀ x, Treap.get st'.order x ≠ none → ranOf st' x = ranOf st2 x ∧
+      calleesOf st' x = calleesOf st2 x ∧ Treap.get st'.order x = Treap.get st2.order x :=
+    fun x hx => by
+      obtain ⟨a, b, c⟩ := hsurv3 x hx
+      exact ⟨by simp only [ranOf, Treap.gut, b], by simp only [calleesOf, gitG, Treap.gut, a], c⟩
+  have hcl3 : ∀ x o, Treap.get st'.order x = some o → x ∉ rest → 1 ≤ ranOf st' x ∧ LowB st' x index := by
+    intro x o hxo hx
+    obtain ⟨a, b, d⟩ := hsv x (by rw [hxo]; simp)
+    obtain ⟨h1, h2⟩ := hcl2 x o (by rw [← d]; exact hxo) hx
+    refine ⟨by rw [a]; exact h1, fun c hce oc hco => ?_⟩
+    rw [b] at hce
+    obtain ⟨_, _, dc⟩ := hsv c (by rw [hco]; simp)
+    rw [hr1] at h2
+    exact h2 c hce oc (by rw [← dc]; exact hco)
+  exact ⟨F2, c3, ⟨l3, el3⟩, hidx3, hrest3,
+    fun hm => restBelow_keep c2.s (c2.clo hm).1 (hrb2 hm) (fun m hm' => by rw [el2]; simp [hm'])
+      (fun m hm' => k3.2.2 m (List.mem_cons_of_mem _ hm')) (fun c hc' => k3.2.1 c (List.mem_cons_of_mem _ hc'))
+      fr3 (up_of_split c2.ord el2 hidx2), hcl3, hreach3⟩
+
+/-- **C along a chain of passes**: if the chain starts in a state with the
+hypotheses of `PassP2` and the memo's entries have no callees, `PassMoves`
+holds along it. -/
+theorem passMoves_chain (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmT : MemoTP memoF)
+    (hRW : ∀ k, RunStkW (run env memoF k)) (hall : ∀ k, AllP2 env memoF k) (hNC : MemoNoCallees memoF)
+    (id : Ident) (index p : Nat) (rest : List Ident) (f : Nat → SkaState M R) (F0 : Entry → Prop)
+    (h0 : PassHyp memoF id index rest (f 0) F0) (h0t : TInv (f 0)) (h0w : WInv (f 0))
+    (hon : ∀ k, ∃ n, PassOn env memoF n id index (p + k) (f k) (f (k + 1))) : PassMoves rest f := by
+  obtain ⟨inv, _⟩ := chain_root_mem env memoF hmF hmT hRW id index p f h0.1.s h0t h0w hon
+  have hh : ∀ k, ∃ F, PassHyp memoF id index rest (f k) F := by
+    intro k
+    induction k with
+    | zero => exact ⟨F0, h0⟩
+    | succ k ih =>
+      obtain ⟨F, hk⟩ := ih
+      obtain ⟨n, hp⟩ := hon k
+      exact passHyp_step env memoF hall hk hp
+  intro k
+  obtain ⟨F, hk⟩ := hh k
+  obtain ⟨ab0, hs⟩ := hk.2.1
+  obtain ⟨n, hp⟩ := hon k
+  exact passOn_moves env memoF hmF hmT hRW hall hNC hk.1 (inv k).2.1 (inv k).2.2 hs hp
+
+/-- **`FinPushes` from (i) and R alone**: C is now a theorem
+(`passMoves_chain`), given that the pass loop starts in a state with the
+hypotheses of `PassP2` and that the memo's entries have no callees. -/
+theorem finPushes_of_freezeC (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmT : MemoTP memoF)
+    (hmN : MemoNI memoF) (hmNo : MemoNorm memoF) (hNC : MemoNoCallees memoF) (id : Ident) (index : Nat)
+    (x : Nat × SkaState M R) (ht : TInv x.2) (hw : WInv x.2) (rest : List Ident) (F0 : Entry → Prop)
+    (hh : PassHyp memoF id index rest x.2 F0)
+    (hclaims : ∀ f : Nat → Nat × SkaState M R, (∀ k, PassNext env memoF id index x (f (k + 1)) (f k)) →
+      FinIdents rest (fun k => (f k).2) ∧ EvFrozen rest (fun k => (f k).2)) :
+    FinPushes env memoF id index x := by
+  have hRW := run_winv env memoF hmF hmT hmN
+  have hall : ∀ k, AllP2 env memoF k := fun k => allP2 env memoF hmF hmNo k k (Nat.le_refl k)
+  have hPR : ∀ y, PassReach env memoF id index x y → ∃ F, PassHyp memoF id index rest y.2 F := by
+    intro y hy
+    induction hy with
+    | refl => exact ⟨F0, hh⟩
+    | step _ hp ih =>
+      obtain ⟨F, hk⟩ := ih
+      exact passHyp_step env memoF hall hk hp
+  obtain ⟨ab0, hs⟩ := hh.2.1
+  refine finPushes_of_freeze env memoF hmF hmT hmN id index x hh.1.s ht hw ab0 rest hs (fun f hf => ?_)
+  obtain ⟨h1, h2⟩ := hclaims f hf
+  have h0 := passReach_inv env memoF hmF hmT hmN (hf 0).1 hh.1.s ht hw
+  obtain ⟨F, hk⟩ := hPR _ (hf 0).1
+  have hpass : ∀ k, (f k).1 = (f 0).1 + k := by
+    intro k
+    induction k with
+    | zero => rfl
+    | succ k ih => obtain ⟨_, e, _⟩ := (hf k).2; rw [e, ih]; rfl
+  exact ⟨h1, passMoves_chain env memoF hmF hmT hRW hall hNC id index (f 0).1 rest (fun k => (f k).2) F hk
+    h0.2.1 h0.2.2 (fun k => by obtain ⟨m, _, hp⟩ := (hf k).2; exact ⟨m, hpass k ▸ hp⟩), h2⟩
+
 end Ana
 end SkaModel
 end Formalization
