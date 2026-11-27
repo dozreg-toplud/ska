@@ -32,7 +32,7 @@ theorem lazePast_nz (env : ShapeEnv) (laz : Laze CSet) (nom : Nomm) (st : RSt CS
   split at e
   · simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at e
     rw [← e.1]; exact hl
-  · simp only [bind, StateT.bind, liftS] at e
+  · simp only [bind, StateT.bind, shLiftS] at e
     cases e1 : hinted env.pure nom with
     | none => rw [e1] at e; cases e
     | some b =>
@@ -111,11 +111,11 @@ theorem rs_n5W (env : ShapeEnv) (p q : Nomm) (sup : Option Nomm) (goal : GoalS C
         | none =>
           rw [e4] at hlc
           simp [nock_exec, rsS, rsCoreG, rsDoor, hq', runShape, e1, bind, StateT.bind, lzp_at', lzpArm, hpa, e2,
-            hp', e3, lc_at', lc_arm, hlc, e4, liftS]
+            hp', e3, lc_at', lc_arm, hlc, e4, shLiftS]
         | some l =>
           rw [e4] at hlc
           simp [nock_exec, rsS, rsCoreG, rsDoor, hq', runShape, e1, bind, StateT.bind, lzp_at', lzpArm, hpa, e2,
-            hp', e3, lc_at', lc_arm, hlc, e4, liftS]
+            hp', e3, lc_at', lc_arm, hlc, e4, shLiftS]
 
 
 /-- **The cons case under `[%next laz]`**: `+laze-split` of `laz`, `+laze-past` of the head
@@ -140,7 +140,7 @@ theorem rs_consN (env : ShapeEnv) (p q : Nomm) (sup : Option Nomm) (laz : Laze C
   cases e2 : lazePast env hed q st with
   | none =>
     rw [e2] at hpa1
-    simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, consNext, GoalS.toNoun, rsSimpleN, simpleS, es, liftS,
+    simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, consNext, GoalS.toNoun, rsSimpleN, simpleS, es, shLiftS,
       bind, StateT.bind, lsp_at', lsp_arm, hsp, lzp_at', lzpArm, hpa1, e2]
   | some r2 =>
     obtain ⟨hed', st1⟩ := r2
@@ -150,7 +150,7 @@ theorem rs_consN (env : ShapeEnv) (p q : Nomm) (sup : Option Nomm) (laz : Laze C
     cases e3 : runShape env sup q (GoalS.next tel) st1 with
     | none =>
       rw [e3] at hq'
-      simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, consNext, GoalS.toNoun, rsSimpleN, simpleS, es, liftS,
+      simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, consNext, GoalS.toNoun, rsSimpleN, simpleS, es, shLiftS,
         bind, StateT.bind, lsp_at', lsp_arm, hsp, lzp_at', lzpArm, hpa1, e2, hq', e3]
     | some r3 =>
       obtain ⟨l2, st2⟩ := r3
@@ -160,7 +160,7 @@ theorem rs_consN (env : ShapeEnv) (p q : Nomm) (sup : Option Nomm) (laz : Laze C
       cases e4 : lazePast env l2 p st2 with
       | none =>
         rw [e4] at hpa2
-        simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, consNext, GoalS.toNoun, rsSimpleN, simpleS, es, liftS,
+        simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, consNext, GoalS.toNoun, rsSimpleN, simpleS, es, shLiftS,
           bind, StateT.bind, lsp_at', lsp_arm, hsp, lzp_at', lzpArm, hpa1, e2, hq', e3, hpa2, e4]
       | some r4 =>
         obtain ⟨l2', st3⟩ := r4
@@ -170,7 +170,7 @@ theorem rs_consN (env : ShapeEnv) (p q : Nomm) (sup : Option Nomm) (laz : Laze C
         cases e5 : runShape env sup p (GoalS.next hed') st3 with
         | none =>
           rw [e5] at hp'
-          simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, consNext, GoalS.toNoun, rsSimpleN, simpleS, es, liftS,
+          simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, consNext, GoalS.toNoun, rsSimpleN, simpleS, es, shLiftS,
             bind, StateT.bind, lsp_at', lsp_arm, hsp, lzp_at', lzpArm, hpa1, e2, hq', e3, hpa2, e4, hp', e5]
         | some r5 =>
           obtain ⟨l1, st4⟩ := r5
@@ -180,12 +180,12 @@ theorem rs_consN (env : ShapeEnv) (p q : Nomm) (sup : Option Nomm) (laz : Laze C
           | none =>
             rw [e6] at hlc
             simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, consNext, GoalS.toNoun, rsSimpleN, simpleS, es,
-              liftS, bind, StateT.bind, lsp_at', lsp_arm, hsp, lzp_at', lzpArm, hpa1, e2, hq', e3, hpa2, e4, hp',
+              shLiftS, bind, StateT.bind, lsp_at', lsp_arm, hsp, lzp_at', lzpArm, hpa1, e2, hq', e3, hpa2, e4, hp',
               e5, lc_at', lc_arm, hlc, e6]
           | some l =>
             rw [e6] at hlc
             simp [nock_exec, rsS, rsCoreG, rsDoor, runShape, consNext, GoalS.toNoun, rsSimpleN, simpleS, es,
-              liftS, bind, StateT.bind, lsp_at', lsp_arm, hsp, lzp_at', lzpArm, hpa1, e2, hq', e3, hpa2, e4, hp',
+              shLiftS, bind, StateT.bind, lsp_at', lsp_arm, hsp, lzp_at', lzpArm, hpa1, e2, hq', e3, hpa2, e4, hp',
               e5, lc_at', lc_arm, hlc, e6]
 
 /-- **The cons case under `%pick`**: the run of `q` under `[%next none]`, `+laze-past` over `p`,
@@ -233,11 +233,11 @@ theorem rs_consP (env : ShapeEnv) (p q : Nomm) (sup : Option Nomm) (st : RSt CSe
         | none =>
           rw [e4] at hlc
           simp [nock_exec, rsS, rsCoreG, rsDoor, GoalS.toNoun, hq', runShape, e1, bind, StateT.bind, lzp_at',
-            lzpArm, hpa, e2, hp', e3, lc_at', lc_arm, hlc, e4, liftS]
+            lzpArm, hpa, e2, hp', e3, lc_at', lc_arm, hlc, e4, shLiftS]
         | some l =>
           rw [e4] at hlc
           simp [nock_exec, rsS, rsCoreG, rsDoor, GoalS.toNoun, hq', runShape, e1, bind, StateT.bind, lzp_at',
-            lzpArm, hpa, e2, hp', e3, lc_at', lc_arm, hlc, e4, liftS]
+            lzpArm, hpa, e2, hp', e3, lc_at', lc_arm, hlc, e4, shLiftS]
 
 /-- **The cons case under `%done`**: the gate runs again under `[%next this]`. -/
 theorem rs_consD (env : ShapeEnv) (p q : Nomm) (sup : Option Nomm) (st : RSt CSet)

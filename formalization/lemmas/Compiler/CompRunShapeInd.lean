@@ -80,10 +80,10 @@ theorem rs_n0W (hc : CompIn ctx) (env : ShapeEnv) (a : Nat) (sup : Option Nomm) 
       cases e : lazeFrom a (simpleS goal) with
       | none =>
         rw [e] at hg'
-        simp [nock_exec, rsS, rsCoreG, rsDoor, h0, h1, h0', h1', h9, hg', runShape, liftS, e, rsSimpleN, GoalS.toNoun]
+        simp [nock_exec, rsS, rsCoreG, rsDoor, h0, h1, h0', h1', h9, hg', runShape, shLiftS, e, rsSimpleN, GoalS.toNoun]
       | some l =>
         rw [e] at hg'
-        simp [nock_exec, rsS, rsCoreG, rsDoor, h0, h1, h0', h1', h9, hg', runShape, liftS, e, rsSimpleN, GoalS.toNoun]
+        simp [nock_exec, rsS, rsCoreG, rsDoor, h0, h1, h0', h1', h9, hg', runShape, shLiftS, e, rsSimpleN, GoalS.toNoun]
 
 /-- **The case `[7 p q]`** from the run of `q` and the run of `p` on the `laze` that `q`
 returns. -/
@@ -196,7 +196,7 @@ theorem runShape_nz (env : ShapeEnv) : ∀ (n : Nomm), RsCls n → ∀ sup (goal
     · split at e
       · simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at e
         rw [← e.1]; exact simpleS_nz goal hg
-      · simp only [liftS] at e
+      · simp only [shLiftS] at e
         cases e1 : lazeFrom a (simpleS goal) with
         | none => rw [e1] at e; cases e
         | some l' =>

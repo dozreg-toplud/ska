@@ -174,10 +174,10 @@ theorem rs_n0 (env : ShapeEnv) (a : Nat) (sup : Option Nomm) (goal : GoalS CSet)
       cases e : lazeFrom a (simpleS goal) with
       | none =>
         rw [e] at hg'
-        simp [nock_exec, rsS, rsCoreG, rsDoor, h0, h1, h0', h1', h9, hg', runShape, liftS, e, rsSimpleN, GoalS.toNoun]
+        simp [nock_exec, rsS, rsCoreG, rsDoor, h0, h1, h0', h1', h9, hg', runShape, shLiftS, e, rsSimpleN, GoalS.toNoun]
       | some l =>
         rw [e] at hg'
-        simp [nock_exec, rsS, rsCoreG, rsDoor, h0, h1, h0', h1', h9, hg', runShape, liftS, e, rsSimpleN, GoalS.toNoun]
+        simp [nock_exec, rsS, rsCoreG, rsDoor, h0, h1, h0', h1', h9, hg', runShape, shLiftS, e, rsSimpleN, GoalS.toNoun]
 
 theorem rs_disp_n4 (t s goal sup D : Noun) :
     nock (rsS s (C (A 4) t) goal sup D) rsDol = nock (rsS s (C (A 4) t) goal sup D) rsK4 := by

@@ -67,11 +67,11 @@ theorem rs_n2iW (env : ShapeEnv) (p q : Nomm) (sup : Option Nomm) (goal : GoalS 
         | none =>
           rw [e4] at hlc
           simp [nock_exec, rsS, rsCoreG, rsDoor, hq', runShape, e1, bind, StateT.bind, lzp_at', lzpArm, hpa, e2,
-            hp', e3, lc_at', lc_arm, hlc, e4, liftS]
+            hp', e3, lc_at', lc_arm, hlc, e4, shLiftS]
         | some l =>
           rw [e4] at hlc
           simp [nock_exec, rsS, rsCoreG, rsDoor, hq', runShape, e1, bind, StateT.bind, lzp_at', lzpArm, hpa, e2,
-            hp', e3, lc_at', lc_arm, hlc, e4, liftS]
+            hp', e3, lc_at', lc_arm, hlc, e4, shLiftS]
 
 end
 

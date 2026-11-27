@@ -252,6 +252,14 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompTarjanBunt.lean` | Track Q (Gaps 29): `tjSamB_run` (the mold bunt, by the kernel), `tjGraphAt_jug`, **`tarjanLinkAt_jug`** (`TarjanLinkAt` on every nonempty jug noun), `scoSub_jug`, `scoSub_start`, **`sccG_missJ`**. |
 | `Compiler/CompSccOfMissCut.lean`, `CompSccOfMiss.lean`, `CompSccOfMiss2.lean`, `CompSccOfMissBunt.lean`, `CompSccOfMissEnc.lean` | Track Q (Gaps 29): the miss of `+scc-of` (373 cells, `tools/gen/sccofmiss.py`) against `scoMiss`: `sco_trap`, `sco_sub`, `sco_roll`, `sco_got`, `sco_miss`, `scoBunts_sccCore`, **`sccG_miss_enc`** (on track P's encoding). |
 | `Compiler/AuditTarjan.lean` | `#print axioms` of the main `+tarjan` theorems (model and pill; within `[propext, Classical.choice, Quot.sound]`). |
+| `Compiler/CompTarjanJug.lean` | Track Q (Gaps 29): the jug of push 8 of `spRest`: `keysIn` (the `skim` with `has:by new-code`), `jugOf`, `jugNoun`, `jugOf_foldl` (the `rep` with `put:by` from `~` is `jugOf`). |
+| `Compiler/CompTarjanPoke.lean` | Track Q (Gaps 29): push 8 of `spRest` linked, no hypothesis: **`srSccs_empty`** (the guard `?:  =(~ new-code)  ~`), **`srSccs_tarjan`** (on a nonempty table the pill returns the flop of the sets of `tarjanM (tjGraph (jugNoun nc))`); the gates `tp_has`, `tp_silt`, `tp_gate`, `tp_jug`, `tp_trap` (`%poke-tarjan`), `tjJug_jugNoun`; cut by `tools/gen/tarjanpoke.py`. |
+| `Compiler/CompTarjanBridge.lean` | Track Q (Gaps 29): the bridge to track P: `finMap_rap_nodup`, the jug graph (`jugGr_keys_nodup`, `mem_kidsOf_jug`, `mem_tjVerts_jug`, **`tjReach_jug`**: `TjReach` is `Reach`), **`tarjanSpec_of_tj`**, **`tarjanSpecN_of`**, `tarjanSpecN_empty`, **`tarjanExists`** (track P's `TarjanExists`), **`inlinedM_returns_ex`** (`inlinedM_returns` with `TarjanSpecP` discharged). |
+| `Compiler/CompTarjanLeaf.lean` | Track Q (Gaps 29): **`sccsLeafAt_of_tarjan`**: track P's `SccsLeafAt` on every table and subject. |
+| `Compiler/CompSccOfMissImg.lean` | Track Q (Gaps 29): `+scc-of` on the encoded state: `scoOK_enc`, `sccG_miss_eq`, the read-back `rbSet`/`rbSccs` (`sccsNoun_rbSccs`), **`sccImageMiss`**, **`sccImage`** (track P's `SccImageMiss`, `SccImage`), `sccOfP_hit`, **`sccOfP_miss`** (what the miss stores), **`sccOfKeeps_of`** (track P's `SccOfKeeps`). |
+| `Compiler/CompSccOfMissIs.lean` | Track Q (Gaps 29): the `sub` graph of the miss against the table: `scoKids_enc`, `scoReach_key`, `reach_sco`, **`scoScc_iff`** (mutual `ScoReach` is `InScc` under `CodeClosed`, `SccsIs`, `SccsGoodM`, a key `b` without entry), `scoScc_set`; witnesses `sccOfIs_needs_key`, `sccOfIs_needs_good` (track P's `SccOfIs` is false as stated). |
+| `Compiler/CompSccOfMissSem.lean` | Track Q (Gaps 29): `SccOfIsK` (`SccOfIs` with `SccsGoodM sc` and `b` a key), **`sccOfIsK_of`**, `sccOfP_is` (the answer on a key is its SCC), `singleScc_of_sccOf` (`SingleScc` from `+scc-of`'s singleton answers). |
+| `Compiler/CompInlinedL6.lean` | Track Q (Gaps 28): `InlCohM` (every `inl.cache` entry is `inlinedM` of its bell): `inlWalk_congr`, **`inlinedM_congr`**, **`inlinedM_addsTo`** (an old bell's `inlinedM` is the same on the grown table), **`inlCohM_addsTo`** (`%full`), `callsOf_addsTo`, `singleScc_addsTo`, `inlCoh_of_M` (to the noun form `InlCoh`), `JetsStale`, **`inlCohM_jets`** (`%jets` deletes the stale entries). |
 | `Compiler/CompShapeCol.lean` | `+shape-collapse` (arm `682` of `K`, the `ord` of `finishLF`) on a fork-free lazy need `[[ned lok] ~ ~]` is `sureOf (needToOrd ned) lok less` (`sc_gate_sure`), so `hsc` of `mem_gate` holds with `ord := sur` (`hsc_of_sure`).  On the way, with the nouns cut by `tools/gen/shapecol.py` and tied by `uno_at`, `l2i_at`, `fr_at`, `oi_at`, `ic_at`, `scBody_eq`: `+uni-need-ord` of `[%none ~]` and `X` is `X` (`uno_none`), `+lazy-to-inter1` on no fork and no bond (`l2i_gate_sure`), one round of `+inter2-fix-round` on `[X ~]` is `[X ~]` (`fr_gate_nofork`, with the bunt of `need-inter2` computed by the kernel, `i2n_bunt`), `+inter2-orig` and `+inter2-collapse` on no fork (`oi_gate_nofork`, `ic_gate_nofork`), `+roll` over `~` (`roll_gate_nil`). |
 | `Compiler/CompShapeColUni.lean` | `+uni-need-ord` in full (README Gaps 9): `nord_inj`, `nord_toNoun_eq`, `nord_eqCode` (`=(a b)` on shapes), **`uno_gate`** (the gate body `unoBody` on `[[a b] K]` is `uniOrd a b` of `Ska/ShapeCol.lean` for every `a`, `b`, given `+cons-need` at `350` of `K`; by induction on `a`, the two recursive calls under `~+` from the induction hypothesis). |
 | `Compiler/CompShapeColSur.lean` | The new `ord` against the old one (README Gaps 9): `sureOfS_eq` (`sureOfS` on `CSet` is `sureOf`), **`shapeCol_sccSur`** (on a fork-free result `shapeCol` is `sccSur`), **`shapeCol_finSure`** (under `FinSure`, `sccSur` is `shapeCol` of the final pass of `cu_gate_scc_one_six`). |
@@ -684,6 +692,14 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompSccLoopSoftFinAll.lean` | **`fin_gate_ts_BSC`**, **`fin_gate_finishLFCS_BC`** (Gaps 21.17): the soft `finish` gate with `hcz` discharged by `comp_coerce_lazy_allS`; left: `hreq` (every requirement after `+coerce-lazy` `%none` / `%this`). |
 | `Compiler/CompSccLoopSoftMemDone.lean` | Generated by `tools/gen/softmem.py` (Gaps 21.17): `envDoneS`, `memDoneMS_eqP`, `finishLFCS_need`, `mem_gate_done_RS`, **`mem_done_stepS`** (the `%done` step with the run `runLCS`, `x1.soft = softMapNoun g1.soft`, straight of `finishLFCS`), `MemDoneCallS`, **`memGate_done_realS`**, `memGate_done_KS` (`cfgRealS`, `LoopRS`). |
 | `Ska/SccLoopSoftReqCheck.lean` | The hypotheses of `se_emit` on the corpus (Gaps 21.17, FM model, `#guard`): `reqTNB`, `reqTNB_spec`, `headOkB`, `cutsOkB`, `coerceSt`; on all 65 every requirement after `+coerce-lazy` is `%none` / `%this`, every head block is `[~ ~ %hop ~ *]`, `softCuts` succeeds with no tries, `softDone` succeeds; exactly 6 compiles have a soft call, 1 call with 3 requirements each. |
+| `Ska/SccLoopShape.lean` | The sweeps' compile modelled (Gaps 21.18): `ShapeX`, `shapeEnvOf`, `rsSt0`, `collapseOf`, `lazeRealG`, `lazeReal` (`runShape`, `lazeCollapse` / `lazeMay`, `sureOfS`), **`cfgRealShape`**, `compReal_sweep`, `lazeReal_eq`. |
+| `Ska/SccLoopShapeData.lean` | Generated by `tools/hoon/sccreal.py --shape-lean` (Gaps 21.18): the 109 `%must` / `%may` compiles of `member` on the 18 formulas (`ShapeRec`: bell, nomm, `laze`, `collapsed`, `shape`, `sur`, `id-gen`, `sofs`, views, outside callees, the product), the code tables per case. |
+| `Ska/SccLoopShapeCheck.lean` | `lazeRealG` against the real compiler (Gaps 21.18): `lazeNL`, `shapeXOf`, `decode`; `#guard`s `runOk`, `colOk`, `prodOk` on all 109, and the corpus counts. |
+| `Compiler/CompSccLoopSweepBase.lean` | `member` off `%done`, shared nouns (Gaps 21.18): `memS0X`, `modeN`, `shapeResN`, `memChgTN`, `memShapeSubj`, **`MemShapeBranch`** (the branch's pill computation, the hypothesis for track A). |
+| `Compiler/CompSccLoopMemSweep.lean` | The gate `member` on `%must` / `%may` in the pill (Gaps 21.18): `mem_entryX`, `mem_resX`, `mem_afterX`, `fin_placeholder`, `mem_prod_newX`, `mem_prod_oldX`, **`mem_gate_sweep_R`**. |
+| `Compiler/CompSccLoopSweepStep.lean` | `MemGate` on `%must` / `%may` for `cfgRealShape` (Gaps 21.18): `memChgTN_loob`, `TopH`, `topH_nil`, `topH_of_topN`, **`mem_sweep_step`**, `MemSweepCall`, **`memGate_sweep_real`**, `memGate_may_K`, `memGate_must_K`. |
+| `Compiler/CompSccLoopShapeLoop.lean` | **`csi_gate_ranked_shape`** (Gaps 21.18): the loop's gate for `cfgRealShape`, the `%may`, `%done`, `%must` gates discharged up to `MemSweepCall` / `MemDoneCallStr`. |
+| `Compiler/AuditSccLoopShape.lean` | The axioms of the `%must` / `%may` steps (Gaps 21.18); apart from `AuditSccLoop.lean` because `Ska/RunShape.lean` and `Ska/SccLoopSoft.lean` both define `SkaModel.Comp.liftS`. |
 | `Ska/SccLoopCheck.lean` | The loop model against the real compiler (`#guard`): `traceOk` (every compile in order with `keep`, `need-new`, `sur`, the previous entry and `need-pessimized`, the `any` of every sweep, the final entries' needs; `msg` is `msgOrd` of `ShapeCol.lean`), `bOk` (property (b) on the compiler), `detOk` (the hypotheses `kidsOnly` and `shape` on the dumps), three sweeps on every SCC. |
 | `Ska/CompStraight.lean`, `Ska/CompEntry.lean` | The renaming and chasing of `+to-straight` keep what the code does (`sim_block`), and entering the result does what the entry block did (`toStraight_entry`), for blocks whose jumps go down in some rank of the labels (`DownRk`, `toStraight_entryR`); `Down` is the identity rank. |
 | `Ska/BakeNeed.lean`, `Ska/BakeNeedCheck.lean` | A model of `+bake-need` (`needFits`, `bakeAll`, `bakeGo`, `bakeNeed`, `sockData`, `bakeTest`), `+bake-need-ord` (`ordFits`, `bakeNeedOrd`) and the n-ary final pass with the real bake (`finishLFB env nm ord less`: `finishLFC` with `fun n => bakeNeed n less`); `bakedNoun`. The check (generated by `tools/gen/bakecheck.py` from `tools/hoon/bakedump.txt`, the output of `tools/hoon/bakedump.hoon`): 34 `#guard`s, one per bell `[[cape data] formula]` of call-free code (32 of them bake: known heads, tails, middles, whole subjects, `%both`, a known atom where the need asks a cell, reads through `%6`, `%7`, `%8`, `%10`, `%3`, `%5`), each checking `bakeNeed` against the real `bak`, `bakeNeedOrd` against the real `+bake-need-ord` and `need-to-ordered ned.bak`, the model's whole final pass against the real straight (need, argument count, every block; on the map path of `+to-straight`, 4 cases, the need, the argument count and block `0` only, since the numbering of the other registers follows the fold order of the map instance), and the model's code run by `execEntry` against `minkF` on three subjects that fit the sock. All equal (2026-11-27). |
@@ -1033,6 +1049,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/PassFreeze.lean` | What is left of the freezing argument after dab8478 (track F, Gaps 16).  `MembR` (a member: on the stack, not in the fixed bottom `rest`), `memberLoop_clean`, **`passOn_dirty`** (a pass that goes on had a member dirty at its start), `kids_of_get`, **`cull_keeps_kid`** (a callee of a member that `+cull` keeps is kept if it was a member), **`cull_reach`** (every member after `+cull` is reached from the root over callees through members), `FinIdents` ((i) along a chain); `BT`, `BTEmb`, `KruskalBT` (Kruskal for `+he-sock`, stated only, and why it gives less than `FinIdents`).  The R route (`EvFrozen`, `freeze_abstract`, `freeze_no_chain`, `finPushes_of_freeze` and their lemmas) is deleted: it was about the per-pass `+cull`, which the compiler no longer does. |
 | `Ska/PassMoves.lean` | Model facts about pushes (track F, Gaps 16).  `sweep_nodup` (`+sweep` lists each member once), `inG_keep`, **`resolve_new`** (a `resolve` that moves `next` answers with an identity that was not in the graph), **`runStep_new`**, `run_new` (a run that moves `next` gives its member a callee absent from the graph at the run's start: `NewInv` carried through `fol-loop` beside `RunInv` by `run_folTopRD`), **`memberLoop_new`** (`MemNewG`: the member loop keeps `CInv`, the entries of the other stack identities, and if it pushes, a member has a new callee).  The C route (`passOn_moves`, `PassHyp`, `passHyp_step`, `passMoves_chain`, `finPushes_of_freezeC`) is deleted with the per-pass `+cull` (dab8478). |
 | `Ska/PassIdents.lean` | (i) `FinIdents` reduced (track F, Gaps 16).  `PReach`, `FinBranch`, `Covered`, **`konig`** (König's lemma for a finitely branching relation, Lean core with `Classical.choice`), **`finIdents_of_tree`** (members reached from the root by a finitely branching push relation with no infinite path lie in a finite list), `pigeon_inf`, `subseq_of_inf`, **`noPath_of_kruskal`** (no infinite push path from `KruskalBT`, finitely many formulas and the `%he` guard of `+recursive-call` past some point), **`finIdents_of_kruskal`**.  `FinBranch` is stated, not proved: it is entangled with R. |
+| `Ska/PassQuiet.lean` | Quiet passes and the end of the pass loop (track F, Gaps 16, after dab8478).  `filter_length_le`, `filter_length_lt`, `sweepLoop_congr`, `sweep_congr`, `dcount` (the dirty members of the stack); `PStart` (the convergence invariant at a pass start over a fixed bottom `rest`, the hypotheses of `MemP2`), **`pstart_mem`** (the member loop keeps it, and with no change and no push keeps every `chg` tick, the `ran` tick and callees of every unlisted stack identity, and leaves every listed member clean: the first half of `passStep_ok2`); `PassQuiet` (no change, no push, a reached member dirty at the end), `passLoop_of_quiet`, `passQuiet_mono`, **`passQuiet_step`** (a quiet pass keeps `PStart`, `next` and the stack, and lowers `dcount`: it had a swept member dirty at its start, by `memberLoop_clean` and `sweep_congr`), `passQuiet_inv`; `fam_finite_q` (`fam_finite` with a second, numeric, way down), `PassGoOn` (`PassOn` or `PassQuiet`), `ChainInv`, `passGoOn_inv`, **`passMixed_wf`** (no infinite chain of passes that go on, quiet or not, with `next` bounded), `PassReachQ`, `PassNextQ`, `FinPushesQ`, `finPushesQ_of_bound`, `passNextQ_acc`, **`passLoop_returns_q`** (`passLoop_returns_fin` with quiet passes allowed); `RunHalts` (each run of a stack member from a `CInv` state returns at some fuel), `popGo_some`, **`memberLoop_returns`**, **`passStep_parts`** (from `PStart` every pass stops or goes on at some fuel), **`passLoop_returns_runs`** (the pass loop of one component returns from `ChainInv`, given `RunHalts` and `FinPushesQ`); `passGoOn_next`, `PassGrowG` (no identity leaves `g` in a pass, and a pass that pushes adds one; stated, not proved), `FinIdentsG` (the identities of `g` along a chain in one list), **`finPushesQ_of_grow`**. |
 | `Ska/HeTurn.lean` | The `%he` lemma: `msgSock_he_lt` (if `heSock a b` and `a ≠ b`, then `msgSock a b` has a smaller `heMeasure`, the size of the cape plus its number of leaves `&`, than `a`) and so `msgSock_ne_of_he` (`msgSock a b ≠ some a`), from `knit_eq_cell`, `heSock_size` (`+he-sock` never grows the cape), `msgSock_cases` (the result is `|+~` or the knit of the results on the halves of two cells over cells), `msgSock_le` (the result's cape is no larger than either sock's, with no more leaves `&` than the first's) and `msgSock_left_size` (if the result is `a`, the cape of `b` is no smaller).  For example `a = [[& |] [5 ~]]` and `b = &+[5 6]` give `|+~`, measure `4` to `1`. |
 | `Ska/HeBound.lean` | The `resolve` loop makes boundedly many `%he` turns: `recLoop_he` (a `%he` answer of `+recursive-call` comes from a frame of the same formula whose subject sock `+he-sock` embeds), `recursiveCall_he_lt` (for an identity off the stack the new subject sock has a smaller `heMeasure`), `HeTurn` (a `%he` turn of the loop begun with `orig`: the memo lookup at `orig.2` and the current sock missed), `resolve_heTurn` (a turn is one unit of fuel in the same state), `heTurn_lt` (with `env.he = heSock` and `SInv`, a turn cuts `heMeasure`), and `resolve_he_bound`, `resolve_he_bound'`: from `i` the loop reaches, after `k ≤ heMeasure i.1 ≤ 2 * sockSize i.1` turns `%he`, an identity whose turn is not `%he`, and the loop at `i` with fuel `n + k` is the loop there with fuel `n`. |
 | `Ska/FolWeight.lean` | `fol-loop` within one run, with the direct calls fixed (`folLoopR env res`).  `folW`: a weight that counts `%8`, `%9`, `%11` above the `%7` and `%2` forms they become.  `NoInl`: the calls that never inline (an inlineable formula, or `[2 [0 1] x]` with `x` inlineable and `bare-call`, `memo-key` or `defer` set); `callStep_noInl` (with a flag set the inline branch is not taken), `folStep_congr` (on such a call, one level depends only on calls of smaller weight that never inline: an inlineable formula has no `%2`, no `%9`, and its `%11` forms set a flag), `folLoopR_stable`, `folLoopR_at_weight`: on such a formula the result is the same at every fuel from `folW fol` on, crashes included, whatever `res` is.  An inlined formula is inlineable, so inlining goes one level deep.  The fuel of a formula that inlines is not bounded by its weight: `[9 2 [0 1]]` (weight `8`) against `&+[g 0]` analyses the battery `g` inline. |
@@ -1130,6 +1147,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/TarjanTotal.lean` | Track Q (Gaps 29): **`tarjanM_total`**, **`tarjanM_count`** (on a nonempty graph with distinct keys it returns, and each vertex of `tjVerts G` occurs once in the flattened result, nothing else); `connect_ok`, `kidsLoop_ok`, `outer_ok` (the measure `tjMeas`: unvisited vertices). |
 | `Ska/TarjanSound.lean` | Track Q (Gaps 29): **`tarjanM_spec`** (`TjSpec`: each component nonempty and the SCC of each member under `TjReach`, each vertex once, no member of an earlier-emitted component calls a later-emitted one), **`tjSpec_flop`** (flopped: callees first); `kidsLoop_ok2`, `connect_ok2`, `outer_ok2` (`TjInv2`, `TjBR`, `TjKR`, `FinClosed`). |
 | `Ska/TarjanSccOf.lean` | Track Q (Gaps 29): the miss of `+scc-of` on nouns: `scoSub` (the worklist), `scoCs`, `scoRoll`, `scoGot`, **`scoMiss`**. |
+| `Ska/TarjanSccOfTotal.lean`, `Ska/TarjanSccOfSem.lean` | Track Q (Gaps 29): the miss of `+scc-of` on nouns: `ScoOK`, `ScoKids`, `ScoReach`, `SubIs`, `preorder_keys_nodup`, `scoCs_spec`, `scoSub_total` (at `scoFuel`), `tjReach_sub`, `scoRoll_spec`, **`scoMiss_total`**, **`scoMiss_spec`** (the new keys are the nouns reachable from `b`, each with its component of `sub`), `scoReach_fresh`, `scoMiss_keeps`. |
 | `Ska/RawInvBase.lean` | Track D (Gaps 14): `Defd`, `DefUniq` (one definition per register over all blocks, `defOnceR_of_defUniq`), `mem_allDefs`; liveness `Live bl k r` (a path from `k` reads `r` before any definition) and **`defFirst_of_live`**: `DefFirst` when no register with a definition is live at `0`; `NoTr` (no trace hint op) and `trimBr_of_noTr` (the empty stack); `OpsRF`, `BlockRF`, `live_frame` (liveness below `L` sees only blocks below `L`). |
 | `Ska/RawInvStep.lean` | The invariants of raw blocks (`BlkNodup`, `Cross`, `Par1`, `ArgsAbove`, `JDown`) and their two steps, a new block (`*_put`) and ops in front of a block (`*_prepend`, `live_prepend`); `defUniq_of`, `parNodup_of_par1`, `passOK_of`, `downPar_of_args`, `acyclic_of_jdown`. |
 | `Ska/RawInvCheck.lean` | Executable checkers of the eight fields of `OptIn` on the final pass's output and of the run-level invariant on raw blocks, `#guard`ed on `[10 [6 0 1] 5 [0 6] 0 1]`, `[4 [3 [0 1]]]`, `[[0 2] [0 3]]` and on enumerated nomms of the first fragment, of `FragX` and with indirect calls. |
@@ -4727,6 +4745,29 @@ import only its theorems.  So:
     swept and run, and a run with no change leaves it clean,
     (i)'s `FinBranch` and `KruskalBT`, and the fuel of `+run` inside the
     member loop.
+
+    **Quiet passes and the end of the loop** (track F, 2026-11-28,
+    `Ska/PassQuiet.lean`, `tools/hoon/passmeasure-quiet.py`).  Traces first,
+    on the fixed library over 2,612 cases (takecycle, takemin, the 346 cases of
+    `passfix-cores.py`, repush, `passmeasure-lib.hoon`, takesame, the 15
+    `ck-*` drivers; 11,537 pass starts, 5,241 passes that went on): no
+    identity left `g` between pass starts, no entry rose, every pass that went
+    on pushed (1,990) or lowered an entry (3,251), and no quiet pass went on.
+    But 936 runs reported no `changed` and changed their callee set, so the
+    reached set can move in a pass with no change, and "at most one quiet pass
+    in a row" is not provable from "the reached set stays".  What is proved
+    instead: a quiet pass lowers the number of dirty members of the stack
+    (`passQuiet_step`), so quiet passes in a row are at most the members, and
+    the pass loop of one component returns from `ChainInv` given `RunHalts`
+    and `FinPushesQ` (`passLoop_returns_runs`), with every part of a pass
+    (`+sweep`, the member loop, `+cull`, `+pop`) shown to return.
+    `FinPushesQ` follows from `PassGrowG` on every pass and `FinIdentsG`
+    (`finPushesQ_of_grow`).  Left: `PassGrowG` (a model fact, needs an
+    invariant of every arm: an `+analyze` of an identity not in `g` removes
+    no identity that was in `g` and leaves its root in `g`), `FinIdentsG`
+    (from `KruskalBT` and `FinBranch` over the push tree, as `FinIdents` for
+    the members), and `RunHalts`, which is the recursion (`fol-loop`, and the
+    nested `+analyze` of new identities, bounded by the stack's identities).
 17. **The pill link of the `+leap` family** (track I, 2026-11-27,
     `Compiler/CompLeap*.lean`, cut by `tools/gen/leap.py`).  Linked, each on
     every input or on a stated invariant, compared with the Hoon part by part
@@ -6390,6 +6431,29 @@ import only its theorems.  So:
        (`Ska/SccLoopSoftReqCheck.lean`, the FM model): `hreq`, the head blocks' shape, `softCuts`
        with no tries, `softDone` succeeds, on all 65.  *Not proved*: `hreq` on `TreapMap mugF`
        (the guards are on FM), the path with tries (`seTryPath`, 1707 cells), `+coerce-soft`.
+    18. *The `%must` and `%may` member steps* (track I, 2026-11-28, `Ska/SccLoopShape*.lean`,
+       `Compiler/CompSccLoop{SweepBase,MemSweep,SweepStep,ShapeLoop}.lean`, `tools/hoon/sccreal.py
+       --shape-lib`).  *The model* (`Ska/SccLoopShape.lean`): `RealCfg.laze` instantiated with
+       track A's `runShape` on `[%done ~]` from the bunt state, `lazeCollapse` (`%must`, fuel
+       `m.fuel`) or `lazeMay`, and `sureOfS` of `sure.l` (`lazeRealG`, `lazeReal`, `ShapeX`: `jet` and
+       the code table's nomms), `cfgRealShape`.  *Checked first* (`Ska/SccLoopShapeCheck.lean`): on
+       all 109 sweep compiles of the corpus (68 `%must`, 41 `%may`; 27 with an entry, 30 with a soft
+       call marked in `sofs`, `keep` never set) `runShape` gives the dumped `laze`, `id-gen` and
+       `sofs`, `lazeRealG` (fuel 64) gives `(collapsed, sur)`, `bakeNeedOrd` gives `shape`, and the
+       model's `member` gives the `sur` put, `moved`, `np` and `chg`; no difference;
+       `need-pessimized` = `need-new` on every sweep compile.  *The pill side, proved*
+       (`CompSccLoopMemSweep.lean`): `mem_entryX`, `mem_resX`, `mem_afterX`, `fin_placeholder`
+       (`finish` off `%done` is `[np 0 ~]`), `mem_prod_newX` (`top` any map), `mem_prod_oldX`,
+       **`mem_gate_sweep_R`** (the gate from the branch's product).  *The step, proved*
+       (`CompSccLoopSweepStep.lean`): **`mem_sweep_step`**, `MemSweepCall`, **`memGate_sweep_real`**,
+       `memGate_may_K`, `memGate_must_K` (at `LoopRS` with `QK`, `top` through `TopH`: `topH_nil`,
+       `topH_of_topN`).  *The loop* (`CompSccLoopShapeLoop.lean`): **`csi_gate_ranked_shape`**, the
+       loop's gate for `cfgRealShape` with all three member gates discharged; left: per call
+       `MemSweepCall` (its one pill hypothesis `MemShapeBranch`: `memShape` returns the model's tuple,
+       track A; the cache it leaves, track K) and `MemDoneCallStr` (track K).
+       *Name clash*: `Ska/RunShape.lean` (track A) and `Ska/SccLoopSoft.lean` both define
+       `SkaModel.Comp.liftS`, so no file can import both: a soft `%done` gate and the sweeps' gates in
+       one theorem need one of them renamed (the soft one is also used by track K's `CompRunSoft*`).
 
 22. **The ledger** (track G, 2026-11-27, `LEDGER.md`, `lemmas/Glue/`).  `LEDGER.md` traces
     every field of `Gap` (`Assembly.lean`) down to its open leaves, with the mismatches
@@ -7075,6 +7139,18 @@ import only its theorems.  So:
        table, `CallsOf` and `SingleScc` (`single c` only for a key alone in its SCC).  Left:
        `TarjanSpecP` of the whole table (from `tarjanM_spec`, Gaps 29, through a graph of the
        table), `SingleScc` from the pill (`SccQ` with the miss path, Gaps 29), `D.inl`.
+    5. *2026-11-28*: the whole-table list is discharged (`inlinedM_returns_ex`,
+       `Compiler/CompTarjanBridge.lean`); `SingleScc` holds for a `single` that is `true` only
+       where `+scc-of`'s answer is a singleton, on `SccsIs` and `SccsGoodM` (`singleScc_of_sccOf`,
+       Gaps 29.5).  `InlCoh` as a state clause on FinMaps, `InlCohM` (`Compiler/CompInlinedL6.lean`):
+       kept by `%full` growth (`inlCohM_addsTo`: an old bell's `inlinedM` is unchanged, the walk
+       never leaves the old keys) and by the `%jets` deletion of stale entries (`inlCohM_jets`,
+       given `JetsStale`: every bell reaching a bell whose `hot` changed is deleted); turned into
+       the noun form by `inlCoh_of_M`.  *Left for `InlPill`*: `D.inl` tied to the pill's
+       `+inlined` (hit and miss; the miss stores an `inlinedM` result by `inl_pill_gate`);
+       `InlCohM` as a clause of track P's `PGood5`, with `%full` giving `AddsTo` and an unchanged
+       `hot`, `%jets` giving `JetsStale` from `ColeCoh` and the caller closure of `calls.lon`,
+       `%fast` emptying `inl.cache`; `SccQ` on `compK` (the context of `+inlined`'s `+scc-of`).
 29. **`+tarjan`: model, correctness, pill link; the miss of `+scc-of`** (track Q, 2026-11-27,
     `Ska/Tarjan*.lean`, `Compiler/CompTarjan*.lean`, `Compiler/CompSccOfMiss*.lean`,
     `tools/gen/tarjancheck.py`, `tarjancut.py`, `sccofmiss.py`, `tools/hoon/tarjandump.hoon`,
@@ -7096,3 +7172,12 @@ import only its theorems.  So:
        whole-table list of Gaps 28.4.  (b) `scoMiss` returns (`scoSub` at its measure, then
        `tarjanM_total`, `scoRoll`, `scoGot` by the partition) and its stored set is `b`'s SCC in
        the graph of the callees without an SCC in `sccs`: `SccImageMiss`, `SccQ`, track K.
+    5. *2026-11-28, done*: (a) `sccsLeafAt_of_tarjan` (track P's `SccsLeafAt`, push 8 linked by
+       `srSccs_empty`/`srSccs_tarjan`, the bridge `tarjanSpecN_of`), `tarjanExists` (track P's
+       `TarjanExists`); (b) `scoMiss_total`, `scoMiss_spec`; (c) `sccImageMiss`, `sccImage`,
+       `sccOfKeeps_of` (track P's `SccImageMiss`, `SccImage`, `SccOfKeeps`), `sccOfIsK_of`.
+       *Finding*: track P's `SccOfIs` is FALSE as stated (witnesses `sccOfIs_needs_key`,
+       `sccOfIs_needs_good` in `Compiler/CompSccOfMissIs.lean`): it needs `SccsGoodM sc` (else a
+       cached member of `b`'s SCC cuts the walk) and `b` a key of `L.code` (else `b ↦ {b}` while
+       `sccSet` is empty); `SccOfIsK` adds both and holds.  *Left*: track K's `UnarySccsIs` (each
+       `+scc-of` call of `+compile-unary` is on a key with `SccsGoodM`: then `sccOfIsK_of`).
