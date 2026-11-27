@@ -140,5 +140,88 @@ theorem tsr_par {rr : Nat → RM (TreapMap mugF) Nat} {R : Noun} (hrer : RerM rr
     generalize rmN st = GS at hSpin ⊢
     simp [nock_exec, listNoun, hL, hs1, spin.axis, hsp, hSpin]
 
+/-- The model's step of `rewrite-args` on one unit. -/
+def argStep (rr : Nat → RM (TreapMap mugF) Nat) : Option Nat → RM (TreapMap mugF) (Option Nat)
+  | Option.none => pure Option.none
+  | some r => do let r1 ← rr r; pure (some r1)
+
+/-- **The gate of the `+spin` of `rewrite-args`** with the state. -/
+theorem tsr_argG {rr : Nat → RM (TreapMap mugF) Nat} {R : Noun} (hrer : RerM rr R) (B J G0 : Noun)
+    (a : Option Nat) (st : Nat × TreapMap mugF Nat) :
+    nock (C tsmArgG1 (C (C (unitNoun A a) (rmN st)) (C B (C J (C tsCoreBat (C G0 R)))))) tsmArgG1
+      = (argStep rr a st).map fun p => C (unitNoun A p.1) (rmN p.2) := by
+  have hra := ts_rer_at
+  cases a with
+  | none => simp [nock_exec, tsmArgG1, unitNoun, argStep, pure, StateT.pure]
+  | some r =>
+    have h := hrer r st
+    generalize tsCoreBat = K at hra h ⊢
+    generalize tsRerBody = RB at hra h ⊢
+    cases e : rr r st with
+    | none =>
+      rw [e] at h
+      simp [nock_exec, tsmArgG1, unitNoun, hra, h, argStep, bind, StateT.bind, e]
+    | some p =>
+      rw [e] at h
+      simp [nock_exec, tsmArgG1, unitNoun, hra, h, argStep, bind, StateT.bind, e, pure, StateT.pure]
+
+/-- **`rewrite-args` with the state**: the model's `rewriteArgs rr`. -/
+theorem tsr_args {rr : Nat → RM (TreapMap mugF) Nat} {R : Noun} (hrer : RerM rr R)
+    (hL : slot? 0x7fffffff R = some layer2)
+    (hU : ∀ J G, nock (C tsmArgBody (C J (C tsCoreBat (C G R)))) tsmArgBuntF1 = some (C (A 0) G)) (j : Jmp)
+    (st : Nat × TreapMap mugF Nat) :
+    nock (C tsmArgBody (C (Jmp.toNoun j) (C tsCoreBat (C (rmN st) R)))) tsmArgBody
+      = (rewriteArgs rr j st).map fun p => C (Jmp.toNoun p.1) (rmN p.2) := by
+  obtain ⟨args, there⟩ := j
+  cases args with
+  | nil =>
+    conv => { lhs; arg 2; unfold tsmArgBody }
+    simp [nock_exec, Jmp.toNoun, listNoun, rewriteArgs, pure, StateT.pure]
+  | cons a0 as =>
+    have hsp := spin_arm_l2
+    rw [spin_gate_eq] at hsp
+    have hs1 := spin.arm_at
+    have hSpin := spin_gate_T (unitNoun A) (unitNoun A) rmN layer2 spinIn_layer2 tsmArgG1 (C (A 0) (rmN st))
+      (C tsmArgBody (C (Jmp.toNoun ⟨a0 :: as, there⟩) (C tsCoreBat (C (rmN st) R))))
+      (fun a s => argStep rr a s) (a0 :: as) st
+      (fun a _ s => tsr_argG hrer _ _ _ a s)
+    rw [spinM_mapM] at hSpin
+    have hm : (fun a => match a with
+        | Option.none => (pure Option.none : RM (TreapMap mugF) (Option Nat))
+        | some r => do let r1 ← rr r; pure (some r1)) = argStep rr := by
+      funext a; cases a <;> rfl
+    have hu := hU (Jmp.toNoun ⟨a0 :: as, there⟩) (rmN st)
+    have hR : rewriteArgs rr ⟨a0 :: as, there⟩ st
+        = (List.mapM (argStep rr) (a0 :: as) st).bind (fun p => some ((⟨p.1, there⟩ : Jmp), p.2)) := by
+      unfold rewriteArgs
+      rw [if_neg (List.cons_ne_nil _ _), ← hm]
+      rfl
+    rw [hR]
+    cases em : List.mapM (argStep rr) (a0 :: as) st with
+    | none =>
+      rw [em] at hSpin
+      simp only [Option.map_none] at hSpin
+      rw [← listNoun_map_listN] at hSpin
+      simp only [Jmp.toNoun, listNoun, List.map_cons] at hSpin hu
+      conv => { lhs; arg 2; unfold tsmArgBody }
+      generalize tsmArgBuntF1 = UB at hu ⊢
+      generalize tsCoreBat = K at hSpin hu ⊢
+      generalize tsmArgG1 = AG at hSpin ⊢
+      generalize tsmArgBody = AB at hSpin hu ⊢
+      generalize rmN st = GS at hSpin hu ⊢
+      simp [nock_exec, Jmp.toNoun, listNoun, hL, hs1, spin.axis, hsp, hSpin, hu]
+    | some q =>
+      rw [em] at hSpin
+      simp only [Option.map_some] at hSpin
+      rw [← listNoun_map_listN, ← listNoun_map_listN] at hSpin
+      simp only [Jmp.toNoun, listNoun, List.map_cons] at hSpin hu
+      conv => { lhs; arg 2; unfold tsmArgBody }
+      generalize tsmArgBuntF1 = UB at hu ⊢
+      generalize tsCoreBat = K at hSpin hu ⊢
+      generalize tsmArgG1 = AG at hSpin ⊢
+      generalize tsmArgBody = AB at hSpin hu ⊢
+      generalize rmN st = GS at hSpin hu ⊢
+      simp [nock_exec, Jmp.toNoun, listNoun, hL, hs1, spin.axis, hsp, hSpin, hu]
+
 end Compiler
 end Formalization
