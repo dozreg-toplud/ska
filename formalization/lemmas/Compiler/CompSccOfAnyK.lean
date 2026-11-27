@@ -334,5 +334,207 @@ theorem eM_start {env : CallEnv} {SC0 : Noun} {inl : Noun → Option Nomm} {P Pf
         rw [hc1, cacheN_slot2] at hN; exact (Option.some.inj hN).symm
       subst this; exact hmiss k hk
 
+/-! ## The per-call facts of a member run at `mono` `|` -/
+
+/-- **A hit at `AgreeIP`**: an entry of `b` in `nary.cache`, `b` outside the bells in progress
+with a `sure` entry, reads the need and the sure need of `envA`, which the run's `envR` agrees
+with at `b`. -/
+theorem hit_of_agreeIP {ctx : Noun} {envA envR : CallEnv} {Pe : Noun → Prop} {b : Bell} {nb : NeedOrd}
+    {x : GenRest} {S : Noun} (hS : slot? 12 ctx = some S) (hin : hasInF mugF b.toNoun S = some false)
+    (hnb : envR.need b = some nb) (hag : envR.need b = envA.need b ∧ envR.sure b = envA.sure b)
+    (hA : AgreeIP envA Pe x) (hnp : ¬ Pe b.toNoun) {NR u : Noun} (hNR : slot? 2 x.cache = some NR)
+    (hu : getF mugF b.toNoun NR = some (C (A 0) u)) : NeedRead ctx x b nb ∧ SureNoun envR b x := by
+  obtain ⟨-, NR', MO, SC, INL, SU, hc, -, -, hag', hsa⟩ := hA
+  have h2 : NR' = NR := by rw [hc] at hNR; simpa [cacheN, nock_exec] using hNR
+  subst h2
+  obtain ⟨⟨nb', hnb', hu'⟩, v, hv⟩ := hag' b u hu
+  rw [← hag.1, hnb] at hnb'
+  cases hnb'
+  refine ⟨NeedRead.nary hS hin hNR hu hu', SU, by rw [hc]; simp [cacheN, nock_exec], Or.inl ?_⟩
+  rw [hv, (hsa b v hv hnp).1, hag.2]
+
+/-- **`CallOkTN` of a call outside the SCC at `AgreeIP`** (`callOkTN_of_E` inside a loop): a hit
+reads the cache; a miss compiles the callee's SCC (`CalleeCompiledP` at the bells in progress
+`Pe`) and then hits.  `E` holds `AgreeIP` at `Pe`, the rest predicate `R` and the bells `Pf ⊇ Pe`
+missing in `nary.cache`, and a nested miss keeps it (`hstep`); the run's `envR` agrees with the
+cache's `envA` at `b` outside `Pf`. -/
+theorem callOkTN_of_IP {ctx : Noun} (h7 : slot? 7 ctx = some compK) {envR envA : CallEnv} {cod : Noun}
+    {E : GenRest → Prop} {Pe Pf : Noun → Prop} {R : GenRest → Prop} {msup : Option Nomm} {p q : Nomm}
+    {b : Bell} {nb : NeedOrd}
+    (hcd : CodePure cod envR b) (hc : envR.cod b = some (envR.pure b)) (hri : envR.ring b = Option.none)
+    (hnb : envR.need b = some nb) (hsf : envR.sof (made p msup) p q b nb = false)
+    (hcole : ∃ cole, slot? 6846 ctx = some cole ∧ getF mugF b.toNoun cole = some (A 0))
+    (hhot : ∃ jh, slot? 54 ctx = some jh) (hsof : ∀ x, SofRetN envR msup ctx p q b nb x)
+    {SCC : Noun} (hS : slot? 12 ctx = some SCC) (hin : hasInF mugF b.toNoun SCC = some false)
+    (hag : ¬ Pf b.toNoun → envR.need b = envA.need b ∧ envR.sure b = envA.sure b)
+    (hEA : ∀ x, E x → AgreeIP envA Pe x) (hER : ∀ x, E x → R x)
+    (hEf : ∀ x, E x → ∀ NR, slot? 2 x.cache = some NR → ∀ k, Pf k → getF mugF k NR = some (A 0))
+    (hPe : ∀ k, Pe k → Pf k)
+    (hstep : ∀ x x', E x → Ext x x' → AgreeIP envA Pe x' → R x' → E x')
+    (hcc : CalleeCompiledP envA R Pe ctx b nb) :
+    CallOkTN envR cod ctx E (ExtE E) msup p q b := by
+  refine ⟨hcd, hc, hri, nb, hnb, hsf, fun x _ hE => ?_⟩
+  have hnpf : ∀ y NR u, E y → slot? 2 y.cache = some NR → getF mugF b.toNoun NR = some (C (A 0) u) →
+      ¬ Pf b.toNoun := by
+    intro y NR u hy hN hu hp
+    rw [hEf y hy NR hN _ hp] at hu; cases hu
+  obtain ⟨_, NR, MO, SC, INL, SU, hcx, hnm, -⟩ := hEA x hE
+  have hNR : slot? 2 x.cache = some NR := by rw [hcx]; simp [cacheN, nock_exec]
+  rcases getF_cases (k := b.toNoun) hnm with h0 | ⟨u, hu⟩
+  · obtain ⟨CA', hmiss, hext, hA', hR', N', u', hN', hu'⟩ := hcc x NR MO SC (C INL SU) (hEA x hE) (hER x hE) hcx h0
+    have hE' := hstep x _ hE hext hA' hR'
+    have hpf := hnpf _ N' u' hE' hN' hu'
+    obtain ⟨hr', hs'⟩ := hit_of_agreeIP hS hin hnb (hag hpf) hA' (fun h => hpf (hPe _ h)) hN' hu'
+    have hm := callNounN_of_read h7 hcole hhot hr' hs' (hsof ⟨CA', x.soft, x.sofs⟩)
+    exact ⟨_, _, ⟨hext, fun _ => hE'⟩,
+      callNounMT_of h7 hcole hhot (NeedStep.miss hS hin hcx h0 hmiss) hs' (hsof ⟨CA', x.soft, x.sofs⟩), hm⟩
+  · have hpf := hnpf x NR u hE hNR hu
+    obtain ⟨hr, hs⟩ := hit_of_agreeIP hS hin hnb (hag hpf) (hEA x hE) (fun h => hpf (hPe _ h)) hNR hu
+    have hm := callNounN_of_read h7 hcole hhot hr hs (hsof x)
+    exact ⟨x, _, ⟨ext_refl x, id⟩, callNounMT_of_m hm, hm⟩
+
+/-- **`NeedRead` at a member from `MlExact`** (the context `memDCtx` of `member`, `top` `~`): an
+entry of `map-local` is read (`loc`), and with none the `top` `~` gives `[%none ~]`. -/
+theorem needRead_member {SCC LONG JH ML B : Noun} {ml : Noun → Option NeedOrd} (hml : MlExact ml ML) {b : Bell}
+    (hin : hasInF mugF b.toNoun SCC = some true) (x : GenRest) :
+    NeedRead (memDCtx SCC LONG JH ML (A 0) B) x b ((ml b.toNoun).getD NeedOrd.none) := by
+  have h12 : slot? 12 (memDCtx SCC LONG JH ML (A 0) B) = some SCC := by simp [memDCtx, nock_exec]
+  have h110 : slot? 110 (memDCtx SCC LONG JH ML (A 0) B) = some ML := by simp [memDCtx, nock_exec]
+  have h222 : slot? 222 (memDCtx SCC LONG JH ML (A 0) B) = some (A 0) := by simp [memDCtx, nock_exec]
+  cases hm : ml b.toNoun with
+  | none =>
+    have hg : getF mugF b.toNoun ML = some (A 0) :=
+      getF_none hml.1 fun v hv => by obtain ⟨n, t, hn, -⟩ := hml.2.1 _ v hv; rw [hm] at hn; cases hn
+    exact NeedRead.top h12 hin h110 hg h222 (Or.inr ⟨getF_none IsMap.nil fun v hv => get_nil.1 hv, rfl⟩)
+  | some n =>
+    obtain ⟨t, ht⟩ := hml.2.2 _ n hm
+    exact NeedRead.loc h12 hin h110 (getF_some hml.1 ht) (by simp [nock_exec])
+
+theorem need_done {r : RealCfg} {order : List Noun} {kids : Noun → List Noun} {st : St Noun NeedOrd} {b : Bell}
+    (hb : b.toNoun ∈ r.scc) : (envDone r order kids st).need b = some ((st.ml b.toNoun).getD NeedOrd.none) := by
+  simp [envDone, envView, hb, viewN]
+
+theorem need_done_out {r : RealCfg} {order : List Noun} {kids : Noun → List Noun} {st : St Noun NeedOrd} {b : Bell}
+    (hb : b.toNoun ∉ r.scc) :
+    (envDone r order kids st).need b = r.env.need b ∧ (envDone r order kids st).sure b = r.env.sure b := by
+  simp [envDone, envView, hb]
+
+/-- **`SureNoun` at a member from `SureHolds`** (`envDone` reads `viewS`). -/
+theorem sureNoun_done {r : RealCfg} {order : List Noun} {kids : Noun → List Noun} {st : St Noun NeedOrd} {b : Bell}
+    (hb : b.toNoun ∈ r.scc) {x : GenRest} (h : SureHolds r.scc st.sure x.cache) :
+    SureNoun (envDone r order kids st) b x := by
+  obtain ⟨S0, h31, hall⟩ := h
+  refine ⟨S0, h31, ?_⟩
+  have hs : (envDone r order kids st).sure b = (st.sure b.toNoun).getD NeedOrd.none := by
+    simp [envDone, envView, hb, viewS, cfgReal]
+  rw [hs]
+  rcases hall _ hb with ⟨v, hv, hg⟩ | ⟨hv, hg⟩
+  · left; rw [hv]; exact hg
+  · right; rw [hv]; exact ⟨hg, rfl⟩
+
+/-- **`CallOkTN` of a call of a member** (`callOkTN_of_read` with `needRead_member` and
+`sureNoun_done`). -/
+theorem callOkTN_member {r : RealCfg} {order : List Noun} {kids : Noun → List Noun} {st : St Noun NeedOrd}
+    {SCC LONG JH ML B cod : Noun} {E : GenRest → Prop} {msup : Option Nomm} {p q : Nomm} {b : Bell}
+    (hcd : CodePure cod (envDone r order kids st) b)
+    (hc : (envDone r order kids st).cod b = some ((envDone r order kids st).pure b))
+    (hri : (envDone r order kids st).ring b = Option.none)
+    (hsf : (envDone r order kids st).sof (made p msup) p q b ((st.ml b.toNoun).getD NeedOrd.none) = false)
+    (hcole : ∃ cole, slot? 6846 (memDCtx SCC LONG JH ML (A 0) B) = some cole ∧ getF mugF b.toNoun cole = some (A 0))
+    (hsof : ∀ x, SofRetN (envDone r order kids st) msup (memDCtx SCC LONG JH ML (A 0) B) p q b
+      ((st.ml b.toNoun).getD NeedOrd.none) x)
+    (hml : MlExact st.ml ML) (hin : hasInF mugF b.toNoun SCC = some true) (hb : b.toNoun ∈ r.scc)
+    (hES : ∀ x, E x → SureHolds r.scc st.sure x.cache) :
+    CallOkTN (envDone r order kids st) cod (memDCtx SCC LONG JH ML (A 0) B) E (ExtE E) msup p q b :=
+  callOkTN_of_read rfl (fun x => ⟨ext_refl x, id⟩) hcd hc hri (need_done hb) hsf hcole
+    ⟨JH, by simp [memDCtx, nock_exec]⟩ (fun x _ hEx => ⟨needRead_member hml hin x, sureNoun_done hb (hES x hEx), hsof x⟩)
+
+/-- **`CallOkTN` of a call outside `S` in a member run** (`callOkTN_of_IP` at `E := EM`, the bells in
+progress `PeS P S st` and `PfS Pf S`, `R := RKP SC0 inl (PfS Pf S)`, `envA` the model's `env` with
+`r.env = env`). -/
+theorem callOkTN_out {r : RealCfg} {order : List Noun} {kids : Noun → List Noun} {st : St Noun NeedOrd}
+    {env : CallEnv} (hre : r.env = env) {SC0 : Noun} {inl : Noun → Option Nomm} {P Pf : Noun → Prop} {S : Noun}
+    {xs : GenRest} (hrs : r.scc = tapList S) (hPf : ∀ k, P k → Pf k) (hPS : ∀ k ∈ tapList S, ¬ P k)
+    (hbell : ∀ k ∈ tapList S, ∃ b' : Bell, b'.toNoun = k)
+    {SCC LONG JH ML B cod : Noun} {msup : Option Nomm} {p q : Nomm} {b : Bell} {nb : NeedOrd}
+    (hcd : CodePure cod (envDone r order kids st) b)
+    (hc : (envDone r order kids st).cod b = some ((envDone r order kids st).pure b))
+    (hri : (envDone r order kids st).ring b = Option.none)
+    (hnb : (envDone r order kids st).need b = some nb)
+    (hsf : (envDone r order kids st).sof (made p msup) p q b nb = false)
+    (hcole : ∃ cole, slot? 6846 (memDCtx SCC LONG JH ML (A 0) B) = some cole ∧ getF mugF b.toNoun cole = some (A 0))
+    (hsof : ∀ x, SofRetN (envDone r order kids st) msup (memDCtx SCC LONG JH ML (A 0) B) p q b nb x)
+    (hin : hasInF mugF b.toNoun SCC = some false)
+    (hcc : CalleeCompiledP env (RKP SC0 inl (PfS Pf S)) (PeS P S st) (memDCtx SCC LONG JH ML (A 0) B) b nb) :
+    CallOkTN (envDone r order kids st) cod (memDCtx SCC LONG JH ML (A 0) B) (EM env SC0 inl P Pf S st xs)
+      (ExtE (EM env SC0 inl P Pf S st xs)) msup p q b := by
+  refine callOkTN_of_IP rfl hcd hc hri hnb hsf hcole ⟨JH, by simp [memDCtx, nock_exec]⟩ hsof
+    (by simp [memDCtx, nock_exec]) hin (envA := env) (Pf := PfS Pf S) (fun h => ?_) (fun x h => h.1) (fun x h => h.2.1)
+    (fun x h => h.2.1.2) ?_ (fun x x' h he hA hR => eM_step hPS hbell h he hA hR) hcc
+  · have hb : b.toNoun ∉ r.scc := fun hb => h (Or.inr (hrs ▸ hb))
+    rw [← hre]; exact need_done_out hb
+  · rintro k (h | ⟨h, -⟩)
+    · exact Or.inl (hPf k h)
+    · exact Or.inr h
+
+/-! ## `MemDoneCall` -/
+
+/-- **`MemDoneCall` from the threaded run at `mono` `|`** (`comp_run_dirXTN` at `E := EM`,
+`Y := ExtE EM`): the facts of the model and of track A's arms as in `MemDoneCall`, `+inlined`
+keeping the cache (`InlKeep`), the class `DirOk` and `DirCallsTN` of the member's nomm (each call
+by `callOkTN_member` or `callOkTN_out`), with no outside callees asked of `OutsHeld`
+(`outC := fun _ => []`). -/
+theorem memDoneCall_of (r : RealCfg) (order : List Noun) (kids : Noun → List Noun) (nout : Noun → NeedOrd)
+    (env : CallEnv) (SC0 : Noun) (inl : Noun → Option Nomm) (P Pf : Noun → Prop) (S : Noun) (xs : GenRest)
+    (hrs : r.scc = tapList S) (hPS : ∀ k ∈ tapList S, ¬ P k)
+    (st : St Noun NeedOrd) (keep : Bool) (DN KIDS ML0 CB SCC CODE LSR JH CACHE0 b ML CACHE : Noun)
+    (hR : LoopR r.scc (fun _ => []) nout (QK env (RKP SC0 inl Pf) P S xs) st.ml st.sure ML CACHE)
+    (cape : Cape) (DATA FOL : Noun) (nm : Nomm) (fuel : Nat) (hb : b = C (C cape.toNoun DATA) FOL)
+    (hinfo : r.info b = ⟨nm, cape, DATA, fuel⟩) (CA1 : Noun)
+    (hinl : nock (C inlBody (C (C b (C (C CODE LSR) (C JH CACHE))) compK)) inlBody = some (C nm.toNoun CA1))
+    (hik : InlKeep inl CACHE CA1) (hn : DirOk nm = true)
+    (hd : DirCallsTN (envDone r order kids st) CODE (memDCtx SCC (C CODE LSR) JH ML (A 0) b)
+      (EM env SC0 inl P Pf S st xs) (ExtE (EM env SC0 inl P Pf S st xs)) Option.none nm)
+    (nex : NextL CSet) (g1 : Gen (TreapMap mugF))
+    (hrunL : runLC (envDone r order kids st) Option.none nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF))
+      = some (nex, g1))
+    (ord : NeedOrd) (hcol : shapeCol fuel nex.laz cape = some ord) (hargs : nex.th.args = [])
+    (nedF : Need) (g2 : Gen (TreapMap mugF)) (hnoar : needOrdAllocRegs ord g1 = some (nedF, g2))
+    (hrun : isRun (flattenNeed (bakeNeed nedF (Sock.mk cape DATA)).1)
+        ((flattenNeed (bakeNeed nedF (Sock.mk cape DATA)).1).headD 0) 0 = true)
+    (sur : NeedOrd) (hsur : sureOf (needToOrd nex.laz.sure.ned) nex.laz.sure.lok cape = some sur)
+    (hfin : ∃ s, finishLFC (S := CSet) (Map := TreapMap mugF) (envDone r order kids st) nm ord cape
+        (fun n => bakeNeed n (Sock.mk cape DATA)) = some s)
+    (hcs : ∀ (x1 : GenRest) (C1 C2 C3 C4 SURE' : Noun) (prev : NeedOrd), st.ml b = some prev →
+        msgOrd (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1) prev cape ≠ needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1 →
+        ∃ t, nock (C finBody (C (C (A 0) (msgOrd (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1) prev cape).toNoun)
+              (memFCR keep (wasN (st.sure b)) sur.toNoun
+                (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1).toNoun nex.laz.toNoun nedF.toNoun
+                (bakeNeed nedF (Sock.mk cape DATA)).1.toNoun (immNoun (bakeNeed nedF (Sock.mk cape DATA)).2)
+                nex.th.there (genNoun g2 x1) nm.toNoun
+                (memDCtx SCC (C CODE LSR) JH ML (A 0) b) b ML
+                (A 0) (cacheN C1 C2 C3 C4 SURE') (memCtx DN KIDS ML0 CB SCC (C CODE LSR) JH CACHE0)))) finBody
+          = some (C (msgOrd (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1) prev cape).toNoun t)) :
+    MemDoneCall r order kids (fun _ => []) nout env (RKP SC0 inl Pf) P S xs st keep DN KIDS ML0 CB SCC CODE LSR JH
+      CACHE0 b ML CACHE := by
+  have hE0 : EM env SC0 inl P Pf S st xs (cuRest CA1) := eM_start hPS hR.2.2.2 (hrs ▸ hR.2.1) hik
+  have h7 : slot? 7 (memDCtx SCC (C CODE LSR) JH ML (A 0) b) = some compK := rfl
+  have h52 : slot? 52 (memDCtx SCC (C CODE LSR) JH ML (A 0) b) = some CODE := by simp [memDCtx, nock_exec]
+  have hrun' := comp_run_dirXTN h7 h52 (envDone r order kids st) (EM env SC0 inl P Pf S st xs)
+    (ExtE (EM env SC0 inl P Pf S st xs))
+    (fun msup => yOk_xn msup (fun x => ⟨ext_refl x, id⟩) (fun h1 h2 => ⟨ext_trans h1.1 h2.1, fun h => h2.2 (h1.2 h)⟩)
+      (fun hx h => ext_noSoft hx h.1) (fun hE h => h.2 hE)) nm hn Option.none [] hd CGoalL.done genEntry rfl
+  have hf : (runLCM (S := CSet) (Map := TreapMap mugF) (envDone r order kids st) false Option.none)
+      = runLC (envDone r order kids st) Option.none := by
+    funext n g rg; exact runLCM_false _ n _ g rg
+  rw [hf] at hrun'
+  refine ⟨cape, DATA, FOL, nm, fuel, hb, hinfo, CA1, hinl, nex, g1, hrunL, XN (EM env SC0 inl P Pf S st xs) Option.none,
+    ExtE (EM env SC0 inl P Pf S st xs), hrun', ⟨hE0, rfl, rfl⟩, ?_, ord, hcol, hargs, nedF, g2, hnoar, hrun, sur, hsur,
+    hfin, hcs⟩
+  intro x1 hy
+  obtain ⟨hA1, -, hQ1, hS1⟩ := hy.2 hE0
+  obtain ⟨-, C1, C2, C3, C4, SU, hc, -⟩ := hA1
+  refine ⟨C1, C2, C3, C4, SU, hc, hy.1.1, hc ▸ hQ1, hrs ▸ hc ▸ hS1, fun b' _ k hk => by simp at hk⟩
+
 end Compiler
 end Formalization
