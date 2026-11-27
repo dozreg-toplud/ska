@@ -1,5 +1,6 @@
 import lemmas.Compiler.CompRunDirectKN
 import lemmas.Compiler.CompRunDirect
+import lemmas.Compiler.CompSccIn
 
 /-!
 # The direct call of the case `%2` of `+run`: the call that emits a block
@@ -352,6 +353,87 @@ theorem crd_from7 (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52
     unfold crDKr7 crDKr8 crDKc8 crDKr9 crDKc9
     simp [nock_exec, hblk, h15, hc, ct_lfn_at, ct_lfn_arm, ct_lfn_gate, by_arm, by.arm_at, by.has.arm_at, has_arm, hs,
       ht]
+
+/-! ## Steps `1` to `6`, under the hypotheses on the rest of the compiler -/
+
+/-- The battery of the gate `+callee-need` (door arm `221180`). -/
+noncomputable def cneBat : Noun := (slot? 29 ((slot? 221180 comp.door).getD (A 0))).getD (A 0)
+
+theorem cne_at : slot? 221180 comp.door
+    = some (C (A 8) (C (C (A 1) (C (C (A 1) (A 0)) (C (A 0) (A 0)))) (C (C (A 1) cneBat) (C (A 0) (A 1))))) := by
+  kernel_rfl
+
+/-- The battery of the gate `+callee-sure` (door arm `4060`). -/
+noncomputable def csuBat : Noun := (slot? 29 ((slot? 4060 comp.door).getD (A 0))).getD (A 0)
+
+theorem csu_at : slot? 4060 comp.door
+    = some (C (A 8) (C (C (A 1) (C (C (A 1) (A 0)) (C (A 0) (A 0)))) (C (C (A 1) csuBat) (C (A 0) (A 1))))) := by
+  kernel_rfl
+
+/-- **What the call reads of the rest of the compiler, as nouns** (README
+Gaps 19), for the callee `b` with no key, `nb` its need in the model
+(`env.need b = some nb`), `sur` what `+callee-sure` returns:
+* `cole`: `call.cole.jets.long-ska` (axis `6846` of the context) has no
+  entry for `b` (the model's `env.ring b = none`);
+* `hot`: `jets-hot` (axis `54`) is there (`biff` builds its `get` gate);
+* `need`: `+callee-need` returns `nb` and leaves the state as it is, on
+  every state with this rest `x` (it reads `cache`, which `x` holds);
+* `sure`: `+callee-sure` (`gut:by` of `sure.cache`) returns `sur`;
+* `sof`: the push of `sof` is `|` (the model's `env.sof … = false`), on
+  every state, `sub-ned`, `sub-v`, `callee-pure`, goal and region: it reads
+  none of them. -/
+structure CallNoun (msup : Option Nomm) (ctx : Noun) (p q : Nomm) (b : Bell) (nb : NeedOrd) (sur : Noun)
+    (x : GenRest) : Prop where
+  cole : ∃ cole, slot? 6846 ctx = some cole ∧ getF mugF b.toNoun cole = some (A 0)
+  hot : ∃ jh, slot? 54 ctx = some jh
+  need : ∀ g : Gen (TreapMap mugF),
+    nock (C cneBat (C b.toNoun (compCore g x ctx))) cneBat = some (C nb.toNoun (genNoun g x))
+  sure : ∀ g : Gen (TreapMap mugF), nock (C csuBat (C b.toNoun (compCore g x ctx))) csuBat = some sur
+  sof : ∀ (g : Gen (TreapMap mugF)) (SV SN PV goalN regionN : Noun),
+    nock (C sur (C SV (C SN (C nb.toNoun (C (A 0) (C PV (crSubj (A 1) (crdN p q b) goalN regionN
+      (unitNoun Nomm.toNoun msup) (compCore g x ctx)))))))) crDKc6 = some (A 1)
+
+/-- **Steps `0` to `6`**: `rin` (`get:by`, `~`), `b-ned` (no key:
+`+callee-need`), `sub-ned` (`noar_gate`), `sub-v` (`comp_flatten_need`),
+`b-sur` (`biff` of `~`, then `+callee-sure`), `sof` (`|`), then step `7` on. -/
+theorem crd_head6 (h7 : slot? 7 ctx = some compK) (msup : Option Nomm) (p q : Nomm) (b : Bell) (nb : NeedOrd)
+    (sur : Noun) (x : GenRest) (hn : CallNoun msup ctx p q b nb sur x) (PV goalN : Noun) (region : List Nat)
+    (g : Gen (TreapMap mugF)) :
+    nock (C PV (crSubj (A 1) (crdN p q b) goalN (listNoun A region) (unitNoun Nomm.toNoun msup) (compCore g x ctx)))
+      crDCall
+      = (needOrdAllocRegs nb g).bind fun r => nock (crdS6 sur (listNoun A (flattenNeed r.1)) r.1.toNoun nb.toNoun PV
+          (crSubj (A 1) (crdN p q b) goalN (listNoun A region) (unitNoun Nomm.toNoun msup) (compCore r.2 x ctx)))
+          crDKr7 := by
+  obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
+  obtain ⟨cole, hcole, hgc⟩ := hn.cole
+  obtain ⟨jh, hjh⟩ := hn.hot
+  have hgt := get_gate (mug := mugF) layer2 ⟨someIn_layer2, gorIn_morIn_layer2.1⟩ b.toNoun cole (A 0) hgc
+  have hne := hn.need g
+  have hnoar := noar_gate ctx x nb g
+  have hD1 := cne_at
+  have hD2 := noar_at
+  have hD3 := comp_fn_at
+  have hD4 := csu_at
+  rw [crdk_eq]
+  simp only [crSubj, compCore, crdS6] at hne hnoar ⊢
+  cases e : needOrdAllocRegs nb g with
+  | none =>
+    rw [e] at hnoar
+    generalize comp.door = Dr at hne hnoar hD1 hD2 hD3 hD4 ⊢
+    unfold crDKr0 crDKr1 crDKc1 crDKr2 crDKc2 crDKr3 crDKc3
+    simp [nock_exec, crdN, hc, hcole, by_arm, by.arm_at, by.get.arm_at, get_arm, hgt, hD1, hne, hD2, noarHint, h7, hnoar, e]
+  | some r =>
+    obtain ⟨subNed, g1⟩ := r
+    rw [e] at hnoar
+    simp only [Option.map_some] at hnoar
+    have hfn := comp_flatten_need hc (genNoun g1 x) subNed
+    have hsu := hn.sure g1
+    have hsof := hn.sof g1 (listNoun A (flattenNeed subNed)) subNed.toNoun PV goalN (listNoun A region)
+    simp only [crSubj, compCore] at hsu hsof
+    generalize comp.door = Dr at hne hnoar hD1 hD2 hD3 hD4 hfn hsu hsof ⊢
+    unfold crDKr0 crDKr1 crDKc1 crDKr2 crDKc2 crDKr3 crDKc3 crDKr4 crDKc4 crDKr5 crDKc5 crDKr6
+    simp [nock_exec, crdN, hc, hcole, by_arm, by.arm_at, by.get.arm_at, get_arm, hgt, hD1, hne, hD2, noarHint, h7, hnoar, hD3,
+      comp_fn_arm, hfn, hjh, biff_arm, biff.arm_at, biff_gate_nil, hD4, hsu, hsof]
 
 end Compiler
 end Formalization
