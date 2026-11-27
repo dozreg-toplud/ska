@@ -2397,6 +2397,61 @@ import only its theorems.  So:
     termination: it needs a non-normal shape.  Next: the algebra on
     normal shapes, then the bound (which closes `FixRet`); the converse of
     `ic_loop` needs an induction on `Eval`.
+    MAP (2026-11-27, track A, baking in the final pass, LEDGER M5).
+    (1) `+bake-need [ned know]` (`K` arm `384468`, 557 cells) walks
+    `ned` with the sock `k` (first `know` = `less.b`, then `hed:so` and
+    `tel:so` down the walk).  At a node where `k` is a cell sock, its
+    cape is wholly known (`all:ca`) and `+need-fits` holds of the need
+    and the data, the node becomes `[%none ~]` and the trap `all` puts
+    `[r v]` on the front of `imm` for every register of the part: a
+    `%this r` with its data, a `%both r` with its whole data before its
+    halves, the head before the tail.  So `imm` is the baked registers in
+    reverse preorder.  Elsewhere `%none` and `%this` stay, a cell is
+    rebuilt by `+cons-need` (two `%none` give `%none`), and `[%both r h
+    t]` becomes `[%both r x]` when `x` is a cell, `[%this r]` when both
+    halves were baked away.  (2) `+need-fits [ned som]` (`K` arm `4`, 169
+    cells): `%none` and `%this` fit anything; a cell need, and a `%both`
+    (its register skipped on a need, absent on a shape), ask for a cell
+    and fit by halves.  (3) `+bake-need-ord [ned know]` (`K` arm `1398`,
+    268 cells) is the same walk on a `need-ordered` with no `imm`
+    (`[%both x]` or `[%this ~]`); it runs in the `%must` and `%may`
+    sweeps (the shapes of `+laze-collapse` and `+laze-may`) and in the
+    `shape-check` assert (switched off), NOT in the final pass of a bell
+    alone in its SCC (`done` is `&` there).  (4) `$baked` is `[ned=need
+    imm=(list [r=@uvre v=*])]`.  The final pass (lines 3514, 3535) uses
+    it so: `need-new` is `(need-to-ordered ned.bak)` (into `map-local`,
+    the change test, and the callers' view of the callee's need); `finish`
+    runs `+coerce-lazy` on the whole `ned-final` (the body's registers),
+    then `+add-ops o` of `[%imm v r]` for each pair of `imm` (put in
+    front of the deconsing code of block `o`, line 3570), then
+    `+to-straight` of `[%next [[ned.bak ~] ~ ~] ~ o]`: only the registers
+    of the residual need are arguments.  `sure.cache` gets `+sure-of` of
+    the sure part of `laz`, which does not see the bake.  (5) The model's
+    parameter `bake` of `finishLF` / `finishLFC` must be `fun n =>
+    bakeNeed n less.b` with `less.b = Sock.mk cape DATA` and the pairs in
+    the Hoon's order.  (6) `+to-straight` on the residual: the registers
+    of `ned-final` are a run in preorder (`isRun_needOrdAllocRegs`), so the
+    residual is a run when the baked registers are a prefix or a suffix of
+    that order (a known head or a known tail of the subject); a known part
+    in the middle (`[a [K b]]` with `K` known) leaves `[r0, r0+2]`, the map
+    path with `run` false, whose `+rewrite-input` numbers the inputs
+    afresh: `TsOn` and `ts_at_all` assume `isRun`, so that path is not
+    linked (track I's Gaps 20 has proxies with `run` true only).
+    (7) Linked before this MAP: `bn_gate` (`Compiler/CompBakeNeed.lean`)
+    only when `NoBake` (the sock at every node is `%void` or not wholly
+    known), so the test never reaches `+need-fits`.  Not linked: the
+    branch that bakes (`bnYes`, 12 cells, the trap `bnAll`, 188, with
+    `+known-sock`), `+need-fits` (169), `+bake-need-ord` (268), and
+    `+to-straight` with `run` false.  (8) What bakes in a real poke: a
+    read of a wholly known part folds to a constant before the final pass
+    (in the 11 `%full` pokes of `tools/hoon/bakedump.hoon`, part B, the
+    variants of a recursive gate whose bake knows the sample's tail have no
+    register there, and `imm` is `~` in every n-ary entry), so `+bake-need`
+    bakes a leaf only when the need reaches a known part through a part
+    that is not wholly known (a partly known cell passed whole to a callee
+    that splits it, a `%both`); part A of the driver makes such bells
+    directly (the nomm of a poke that knows nothing, compiled on a bell
+    whose sock knows parts of the subject).
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
