@@ -211,6 +211,40 @@ def checkPrep (nm : Nomm) (ord : NeedOrd) : Option Bool :=
 #guard (enumX.take 600).all fun nm =>
   okRun (checkPrep nm (NeedOrd.both NeedOrd.none (NeedOrd.pair NeedOrd.this NeedOrd.none)))
 
+/-! ## The spec of `RawIHX` under `%next` and `%pick`
+
+`RawIHX` (`RawInvIHX.lean`): a run for a fork-free goal leaves live at its
+entry, once each entry of its result's lazy tree first defines its sure
+need, only registers live at the goal's continuation that the goal does
+not name.  Checked from a state whose block `1` reads registers `0` and
+`1` (`con 0 1 2, don 2`), for the goal `%next` with need `0` into `1`
+(so only `1` may be live, and it is in 3,028 of the 4,320 runs), and for
+`%pick` into `1` and `2` (`don 3`), with the other fields of `checkRunX`. -/
+
+def gY : Comp.Gen FM :=
+  ⟨3, 2, 0, false, HoonMap.put (HoonMap.empty : FM Blob) 1 ⟨[], [Pole.con 0 1 2], Termin.don 2⟩,
+    HoonMap.empty, HoonMap.empty⟩
+
+def gP : Comp.Gen FM :=
+  ⟨4, 3, 0, false, HoonMap.put (HoonMap.put (HoonMap.empty : FM Blob) 1 ⟨[], [Pole.con 0 1 2], Termin.don 2⟩) 2
+    ⟨[], [], Termin.don 3⟩, HoonMap.empty, HoonMap.empty⟩
+
+def liveAtEntry (m : FM Blob) (nex : NextL LS) : List Nat :=
+  liveKF m ((nodesOf nex).map fun x => (x.1, x.2.1)) ((blocksOf m).length + 1) nex.th.there
+
+def checkGoalX (goal : CGoal LS) (g0 : Comp.Gen FM) (ok : Nat → Bool) (nm : Nomm) : Option Bool :=
+  (runL nm (CGoal.toL goal) [] g0).map fun (nex, g) =>
+    let m := g.blocks
+    defOnceB m && noTrB m && parNodupB m && rkDownB m && argsAboveRkB m && lazyOKB m nex &&
+      nex.th.args.isEmpty && (liveAtEntry m nex).all ok
+
+#guard (sixes ++ enumX).all fun nm =>
+  checkGoalX (CGoal.next (lazyReg 0) (jmp0 1)) gY (· == 1) nm == some true
+#guard ((sixes ++ enumX).filter fun nm => ((runL nm (CGoal.toL (CGoal.next (lazyReg 0) (jmp0 1) : CGoal LS)) [] gY).map
+  fun (nex, g) => (liveAtEntry g.blocks nex).contains 1) == some true).length == 3028
+#guard (sixes ++ enumX).all fun nm =>
+  checkGoalX (CGoal.pick (jmp0 1) (jmp0 2)) gP (fun r => r == 0 || r == 1 || r == 3) nm == some true
+
 end Raw
 end SkaModel
 end Formalization
