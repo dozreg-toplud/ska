@@ -1,4 +1,4 @@
-import lemmas.Compiler.OptLinkAlBodyImm
+import lemmas.Compiler.OptLinkAlBodyGate
 
 /-!
 # Axioms of the link of the body of `+alias` (phase 13, README Gaps 13)
@@ -34,3 +34,8 @@ open Formalization Compiler
 #print axioms opOK_tal
 #print axioms opOK_imm
 #print axioms opOK_con
+#print axioms opOK_all
+#print axioms al_bodyG_case
+#print axioms al_bodyG
+#print axioms body_fold
+#print axioms al_body
