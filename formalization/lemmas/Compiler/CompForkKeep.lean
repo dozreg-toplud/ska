@@ -375,26 +375,26 @@ end
 /-! ## The goals of `+fork` -/
 
 mutual
-theorem walkP_and {P Q : Nat → Sure CSet → Prop} : ∀ (o : Nat) (laz : Lazy CSet),
+theorem walkP_andK {P Q : Nat → Sure CSet → Prop} : ∀ (o : Nat) (laz : Lazy CSet),
     WalkP P o laz → WalkP Q o laz → WalkP (fun o s => P o s ∧ Q o s) o laz
-  | o, Lazy.mk s fk bd, ⟨a1, a2, a3⟩, ⟨b1, b2, b3⟩ => ⟨⟨a1, b1⟩, walkPF_and fk a2 b2, walkPB_and bd a3 b3⟩
+  | o, Lazy.mk s fk bd, ⟨a1, a2, a3⟩, ⟨b1, b2, b3⟩ => ⟨⟨a1, b1⟩, walkPF_andK fk a2 b2, walkPB_andK bd a3 b3⟩
 
-theorem walkPF_and {P Q : Nat → Sure CSet → Prop} : ∀ (fk : List (Lazy.ForkE CSet)),
+theorem walkPF_andK {P Q : Nat → Sure CSet → Prop} : ∀ (fk : List (Lazy.ForkE CSet)),
     WalkPF P fk → WalkPF Q fk → WalkPF (fun o s => P o s ∧ Q o s) fk
   | [], _, _ => trivial
   | ((oy, y), (on, n)) :: rest, ⟨a1, a2, a3⟩, ⟨b1, b2, b3⟩ =>
-    ⟨walkP_and oy y a1 b1, walkP_and on n a2 b2, walkPF_and rest a3 b3⟩
+    ⟨walkP_andK oy y a1 b1, walkP_andK on n a2 b2, walkPF_andK rest a3 b3⟩
 
-theorem walkPB_and {P Q : Nat → Sure CSet → Prop} : ∀ (bd : List (Nat × Lazy CSet)),
+theorem walkPB_andK {P Q : Nat → Sure CSet → Prop} : ∀ (bd : List (Nat × Lazy CSet)),
     WalkPB P bd → WalkPB Q bd → WalkPB (fun o s => P o s ∧ Q o s) bd
   | [], _, _ => trivial
-  | (ob, l) :: rest, ⟨a1, a2⟩, ⟨b1, b2⟩ => ⟨walkP_and ob l a1 b1, walkPB_and rest a2 b2⟩
+  | (ob, l) :: rest, ⟨a1, a2⟩, ⟨b1, b2⟩ => ⟨walkP_andK ob l a1 b1, walkPB_andK rest a2 b2⟩
 end
 
 /-- `LNB` from the looks and the registers. -/
 theorem lall_lnb {k : Nat} {laz : Lazy CSet} (hl : LAll CrLok laz) (hr : ∀ r ∈ lregs laz, r < k) :
     LAll (LNB k) laz :=
-  walkP_and 0 laz hl (lall_regs (· < k) laz hr)
+  walkP_andK 0 laz hl (lall_regs (· < k) laz hr)
 
 theorem fyes_mem : ∀ (f : List (Lazy.ForkE CSet)) (x : Nat), x ∈ f.map (fun e => e.1.1) → x ∈ flabs f
   | [], x, h => by simp at h
