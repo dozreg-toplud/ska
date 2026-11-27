@@ -15,6 +15,7 @@ import lemmas.Ska.CompHintSevenCheck
 import lemmas.Ska.CompHintTen
 import lemmas.Ska.CompHintTenEx
 import lemmas.Ska.CompHintSixRegCheck
+import lemmas.Ska.CompHintSurOps
 
 /-! The axioms of the theorems of the hint files (README Gaps 24): only
 `propext`, `Classical.choice`, `Quot.sound`. -/
@@ -198,3 +199,9 @@ open Formalization.SkaModel Formalization.SkaModel.Comp
 #print axioms runLCH_n10_done_next
 #print axioms ten_doneS
 #print axioms contract_d20
+#print axioms runLCH_n11s_kept_sur
+#print axioms surGBT_n11sKept
+#print axioms surGBT_n11dQuiet
+#print axioms collapseL_regLike
+#print axioms surGBT_four
+#print axioms surGBT_three

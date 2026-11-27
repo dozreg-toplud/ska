@@ -177,6 +177,26 @@ open HintNest HintKeep HintSpot HintSeven
 #guard (finishLUCH (S := LS) (Map := FM) envH sndH exD20).isSome
 #guard sndH exD10Q NeedOrd.this
 #guard sndH (Nomm.n0 13) NeedOrd.this
+-- the nomm of `contract_spotArm` is `spotArm`'s text (`Compiler/CompRunHintCallEx.lean`, the clues
+-- `spotK l c l' c'` = `spK l c l' c'`), the recursion `d22`'s call; `+sound` of `%this` holds of its parts
+open HintTen in
+#guard (Nomm.n11d tagSpot (Nomm.n1 (spK 108 29 108 48)) (spotSix (spotS2 (spK 108 36 108 47) (spK 108 38 108 46)
+    (spK 108 42 108 45) (A 77) bellR (A 2) (A 3))) (A 1)).toNoun ==
+  (Nomm.n11d 0x746f7073 (Nomm.n1 (spK 108 29 108 48))
+    (Nomm.n6 (Nomm.n6 (Nomm.n3 (Nomm.n0 6)) (Nomm.n1 (A 1)) (Nomm.n1 (A 0))) (Nomm.n1 (A 0))
+      (Nomm.n11d 0x746f7073 (Nomm.n1 (spK 108 36 108 47))
+        (Nomm.n4 (Nomm.n11d 0x746f7073 (Nomm.n1 (spK 108 38 108 46))
+          (Nomm.n7 (Nomm.n10 6 (Nomm.n11d 0x746f7073 (Nomm.n1 (spK 108 42 108 45)) (Nomm.n0 13) (C (A 0) (A 13)))
+              (Nomm.n0 1))
+            (Nomm.n2 (Nomm.n0 1) (Nomm.n1 (A 77)) (some (bellR, Option.none))))
+          (A 3)))
+        (A 2)))
+    (A 1)).toNoun
+open HintTen in
+#guard sndH (spotSix (spotS2 (spK 108 36 108 47) (spK 108 38 108 46) (spK 108 42 108 45) (A 77) bellR (A 2) (A 3)))
+  NeedOrd.this
+open HintTen in
+#guard sndH (Nomm.n4 (spotS3 (spK 108 38 108 46) (spK 108 42 108 45) (A 77) bellR (A 3))) NeedOrd.this
 end HintTenEx
 
 section
