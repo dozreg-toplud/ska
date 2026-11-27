@@ -1,4 +1,4 @@
-# LEDGER: what `Full` rests on (track G, 2026-11-27, sixth pass)
+# LEDGER: what `Full` rests on (track G, 2026-11-27, seventh pass)
 
 `Full` (`core/Statement.lean`) is proved by `Assembly.full_of` from one
 structure, `Assembly.Gap lib pk InvC`, with eight fields.  This file traces
@@ -12,7 +12,32 @@ marked *not checked*; names on a track branch that is not merged are marked
 the fourth pass (base 23a62c2).  The sixth pass is at base e4dfa5c (digest
 [269]: every track merged through [269]); the names it adds from digest
 entries [256] to [269] are checked in `AuditGlue.lean` (section "sixth
-pass") unless marked *not checked*.
+pass") unless marked *not checked*.  The seventh pass is at base c9f611e (digest
+[272]); its names (digest [270] to [272] and track G's `inlAnnot` files)
+are checked in `AuditGlue.lean` (section "seventh pass").
+
+READ FIRST (seventh pass, base c9f611e, digest [270] to [272]):
+- `inlAnnot`'s MODEL HALF is PROVED (2.e): `inlinedM` (`Glue/Inline.lean`)
+  is checked against the real `+inlined` (`tools/hoon/inldump.hoon`, 20
+  pokes, the 29 entries of `inl.cache` equal, 11 with calls inlined; no
+  difference), and `inlAnnot_of` gives the field from the pill half
+  `InlPill` (no owner) and `InvBS`.  FINDING: the model half as the sixth
+  pass stated it (from `CodeOK`) is FALSE: `Annot.direct` does not say that
+  the call's formula part RETURNS, which `+inlined` needs when it drops it;
+  restated on `CodeOKS` (`AnnotS`, the return at a call with no memo key and
+  a `+safe-fol-fol` formula part).  `InvBS` (the analysis gives `CodeOKS`)
+  is a new leaf of the analysis, no owner.
+- M15 CLOSED again (372dcb9: track I's `csSw_gate`, `csSwG`): `AuditGlue`
+  imports `CompSccLoopInd`, `CompSccLoopClose`, `CompSccLoopPrint`,
+  `CompSccOfAny`, `CompMonoLink`, `CompSccLoopMemDone`, `CompGen` and checks
+  `csi_gate_loop`, `csi_gate_ranked`, `cccMiss_of_loop` and the `_np` forms.
+- M18 CLOSED: `printId_pill` (track I), so `csi_gate_loop_np`,
+  `csi_gate_loop_d_np`, `csi_gate_ranked_np` carry no `PrintId`.
+- Track K's `cu_gate_dir_scc` (callees in SCCs of any size, 1.3) and its
+  FINDING: the member invariant of the SCC loop must be `QK` (`AgreeIP` at
+  `P ∪ S`), not `AgreeE ∧ Ext` (false mid-loop).
+- Track C's `RunOKGen` is ADOPTED for the classes (2.b'), phase F of `%6`
+  open.
 
 READ FIRST (sixth pass):
 - `halting` is FALSE of the compiler as it is (section 3, M17): the pass
@@ -20,8 +45,8 @@ READ FIRST (sixth pass):
   cannot be proved by `full_of` until the Hoon changes.
 - `contract` on `FragX`: `rawEntry` has no leaf left (`guardFinalU`,
   `guardFinalF`, `compHyp_of_fragX₃`, 2.c).
-- Build clash M15 is REOPENED: two `Compiler.sw_gate` (track I's loop and
-  the optimizer link), section 9.
+- Build clash M15 was REOPENED: two `Compiler.sw_gate` (track I's loop and
+  the optimizer link), section 9; closed again in the seventh pass.
 - Track I's `PrintId` is TRUE of this pill and provable like `cg_print`
   (1.4, M18): the earlier reading that the pill's `print-comp` slogs was
   wrong.
@@ -66,7 +91,9 @@ fl` (`Ska/PokeEnc.lean`: the state as the compiler's core, the flags of
 `code` a parameter `fl`, mismatch P1), `enc_inj`, `cor_enc fl : cor = enc fl
 emptySt`, `cor_enc_gap`.
 
-BUILD CLASHES: none left (M15 CLOSED in the fourth pass).  Track P renamed
+BUILD CLASHES: none left (M15 CLOSED in the fourth pass, reopened in the
+sixth by two `Compiler.sw_gate`, CLOSED again by 372dcb9: track I's
+`csSw_gate`, `csSwG`; `AuditGlue` imports the loop files).  Track P renamed
 its `Compiler.unitNoun_id_inj` to `unitNoun_id_injP`, track I renamed
 `Comp.isLeaf` of `Ska/SccLoopMsg.lean` to `ordIsLeaf`.  `AuditGlue.lean` now
 imports `PokeEnc`, `PokeLink`, `InvMemoP`, `SccLoopMsg`, `SccLoopCycle`
@@ -164,6 +191,25 @@ Leaves (all track P now):
     `+callee-compiled` take the `+scc-of` hit path.  Open: `+scc-of` on a
     singleton (409 cells and `+tarjan`, no owner), the general SCC (I),
     `hE0`, `CodeNoRing`, `CodeAna`.
+    SEVENTH PASS, track K [271] (`Compiler/CompSccOfAny.lean`,
+    `Compiler/CompMonoLink.lean`): `cu_gate_dir_scc`, the gate of
+    `+compile-unary` on `DirOk` with callees in SCCs of ANY size, returning
+    `finishLUCM env n` with a cache `CA'` that extends `CA` and keeps
+    `AgreeE`, `RK`.  Its hypotheses: the state nouns `hgot`, `hv`, `hcl`,
+    `hcsi` (the product of `+compile-scc-in`); `hE0 : AgreeE env (cuRest
+    CA)`, `hR0 : RK SC0 inl (cuRest CA)` at the cache `+compile-scc-in`
+    returned; the class `DirOk n`; the code table `EnvFrom`, `CodeNoRing`,
+    `CodeAna`; `SccsGood SC0` (the meaning of `sccs`); `calls` a jug of
+    sets; per callee `AnyCallee` (readable at the start, or outside the
+    caller's SCC and `OneCallee`, track A's chain, or `SccCallee`, track I's
+    loop with `MemGate` holding the nested misses).  Also
+    `calleeCompiled_scc`, `envP`, `envP_agree`, `monoRaw_hit`,
+    `monoLinkAt_of`, `compileUnaryP_gate`, `PGoodK` (for P: what `PGood`
+    must also carry for `hE0`, `hR0`, `SccsGood`).  FINDING (K): `Q :=
+    AgreeE env ∧ Ext` is FALSE mid-loop (each member run writes
+    `sure.cache`; `nary.cache` gets the members only at the final
+    `+uni:by`), so `MemGate` must be stated with `QK` (`AgreeIP` at `P ∪
+    S`, `Compiler.QK`); track I's next `MemGate` on `%done` uses it.
 1.4 `A.compileScc` is the pill's `+compile-scc` (61 cells) over
     `+compile-scc-in` (2,519 cells on this pill): track I.  The loop is
     modelled (`SccLoop.lean`).  [251]: `Ranked c` (a bounded rank on
@@ -177,8 +223,8 @@ Leaves (all track P now):
     Track I [256], [263]: the loop link: `csi_gate_loop` (the pill's
     `+compile-scc-in` as a loop against `compileSccIn c false fuel`, with
     `MemGate`, three modes, the only hypothesis about `+run`),
-    `csi_gate_ranked`, `cccMiss_of_loop` (under `Ranked`; these three *not
-    checked*: their files cannot be imported beside `AuditGlue`'s, M15).  Side hypotheses
+    `csi_gate_ranked`, `cccMiss_of_loop` (under `Ranked`; checked since the
+    seventh pass, M15 closed again).  Side hypotheses
     left: `hlevy`, `hkidsP`, `hdn`, `hdfs` (the DFS, 288 cells), `SccN`,
     `hR0`, and `PrintId` (`Compiler/CompSccLoopSt.lean`: the printer the
     loop pulls is the identity).  `PrintId` is a LEAF ABOUT TO CLOSE: in
@@ -189,7 +235,14 @@ Leaves (all track P now):
     for `print-ska`.  So `PrintId` is provable like `cg_print`
     (`Compiler/SkaCallgraph.lean`); the comment in `CompSccLoopSt.lean` and
     digest [256] ("the pill slogs, the loop runs `(scow %ud counter)`")
-    were a misreading (M18).  Track I told.
+    were a misreading (M18).  Track I told.  SEVENTH PASS [271]: PROVED,
+    `printId_pill`, and the loop theorems without it: `csi_gate_loop_np`,
+    `csi_gate_loop_d_np`, `csi_gate_ranked_np` (M18 closed).  Also
+    `mem_gate_done_R` (`Compiler/CompSccLoopMemDone.lean`): `member` on
+    `%done` at the gate level for a real SCC, both branches, with the run of
+    `+run` at `mono |` and the product of `+coerce-soft` taken as given;
+    `%must` / `%may` not linked (`+run-shape` 3,284 cells, `+laze-collapse`
+    65, `+laze-may` 145, `+bake-need-ord` 268).
 1.5 `A.optimize` is the pill's `+optimize`: PROVED on `FragX` (track H,
     `optimize_total_finishLUX`, `-LFX`, `opt_gate`).  Track P's `OptLink`.
 1.6 `+scc-of` (409 cells by P's count, 430 tree cells by
@@ -240,7 +293,7 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
 | `rawEntry` | LEAF | `EntryMono S Map lib FM`, `EntryNary S Map lib FN` (`rawEntry_of`); PROVED on `FragX` with NO leaf (`guardFinalU`, `guardFinalF`, hence `guardMonoX`, `guardNaryX`, `rawEntry_fragX`; `compHyp_of_fragX₃`; generic `entryOK_of`; 2.c); on the classes with calls still a leaf | G |
 | `refMono`, `refNary` | OPEN | pill link at `finishLUCM` / `finishLFC` | A, I, K |
 | `inFragM`, `inFragN` | OPEN, FALSE today | every compiled nomm in `MonoCalls` / `NaryCalls` | C, J, K |
-| `inlAnnot` | OPEN | 2.e (model half stated there, not proved) | none |
+| `inlAnnot` | model half PROVED (`inlAnnot_of`), from two LEAVES | `InlPill` (pill half: `D.inl` is `inlinedM`), `InvBS` (the analysis gives `CodeOKS`); 2.e | none, none |
 | `callee` | OPEN | `CalleeNeeds`; J's `NeedsRead`, I's `final_keeps` | I, J |
 | `unary`, `scc`, `answers`, `stable`, `jetRoot`, `jets`, `fast` | OPEN | 2.h | A, I, K, P |
 
@@ -290,7 +343,16 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
     at the top or under `[4 p]` / `[3 p]`), `finishLUC_contractSix1`; NO
     other parent admits a `%6` by copy; C, J, D hit the same wall
     (non-flat needs, repeated entry labels), so C's next session designs ONE
-    relation `RunOKG` for arbitrary lazy goals.  For the glue, C proposes
+    relation `RunOKG` for arbitrary lazy goals.  SEVENTH PASS, track C
+    [270] (`Ska/CompGen.lean`): `RunOKGen` = `FrameG` (`LabDisj`, `GrowG` /
+    `RepointG`, per-label fronts) + `SemCoreG` (`nec`, `FrontsG`, `sem` /
+    `semB` under `AgreeG`); every frame clause holds on 308,850 runs;
+    `RunOKLS.toGen`, `FillSemL.cons`, `AgreeG.toLB`.  ADOPTED by the
+    coordinator as the one relation of the classes; HOLE: phase F of `%6`
+    has no semantic clause yet (`[brz proxy kid0 kid1]`, a precondition on a
+    non-input register); C's next session settles it by an executable check
+    first.  So M16's restatement (`refMono` at `finishLUCH`) waits on C's
+    port of the top to `RunOKGen`.  For the glue, C proposes
     `six1_noDirect`, `rawMonoD_six1`, `Six1B` in `MonoCalls` (*not
     written*).  Track Q [257], [268]: `HintOk` = `DirOk` and every `n11s` /
     `n11d` (kept tags included: `comp_run_n11s_kept`, `comp_run_n11d_kept`),
@@ -393,36 +455,75 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
 2.d `optRef`: see the table; with calls the input side of track H's
     totality (`opt_total_*` need `FragX` because the alias pass reads only
     call-free blocks) is open.
-2.e `inlAnnot` (no owner).  WHAT IT STATES: the nomm `D.inl long jets hot b`
-    of `+inlined` stands for the bell's formula on its subjects (`Annot lib
+2.e `inlAnnot`.  WHAT IT STATES: the nomm `D.inl long jets hot b` of
+    `+inlined` stands for the bell's formula on its subjects (`Annot lib
     (realOf long.code) (Fits b.less) b.fol nm`).  THE HOON (`+inlined`,
-    lines 3304 to 3394, 1,345 cells, calls `+scc-of` 430 cells): a
-    structural copy of `nomm:(~(got by code) b)`, the analysis's own nomm,
-    on every constructor, in which a direct call `[%2 p q [~ c ~]]` (no
-    memo key, `safe-fol-fol q`, `c` not hot, `+scc-of c` the singleton
-    `{c}`, `c` not in its own `calls`) becomes `[%7 p' m]`, `m` the
+    lines 3304 to 3394, calls `+scc-of`): a structural copy of
+    `nomm:(~(got by code) b)` on every constructor, in which a direct call
+    `[%2 p q [~ c k]]` with `k = ~`, `+safe-fol-fol q`, `c` not hot, `+scc-of
+    c` = `{c}`, `c` not in its own `calls`, becomes `[%7 p' m]`, `m` the
     inlined nomm of `c` (recursively, memoized in `inl.cache`), unless
-    `nomm-size m` exceeds `inline-max`; the identity when `inline-off`.
-    THE SPLIT.  Pill half: a model `inlinedM fuel code calls hot cache b`
-    of the arm and the link `D.inl = inlinedM …` (the 1,345 cells and
-    `+scc-of`).  Model half (a LEAF to write, `InlAnnotM`): if every entry of
-    the code table meets `CodeOK` (`Annot lib (realOf code) (Fits c.less)
-    c.fol nm_c`, given by `InvB`) and every entry of `inl.cache` is
-    `inlinedM` of its bell on the same table, then `Annot lib (realOf code)
-    (Fits b.less) b.fol (inlinedM … b)`.  "ONE INDUCTION" (the second
-    pass's phrase) is an induction on the `Annot` derivation of `nm_b`: the
-    copy is structural, so each constructor is rebuilt from the copied
-    children (the semantic ones, `fold`, `crash`, `bare`, `bareLit`, `memo`,
-    `six0`, `six1`, `n8l`, keep their nomm or carry the child as an `Annot`
-    premise); only `direct` changes, to `Annot.inline`, whose premises are
-    the copied `p`, `q` returning `c.fol` on every subject (from
-    `safe-fol-fol q` and `direct`'s premise), and `Annot` of `m` on
-    `Img lib P b`: the callee's `CodeOK` restricted by `Annot.mono`
-    (`Ska/FolLoopFacts.lean`) along `Img lib P b ⊆ Fits c.less` (from
-    `direct`).  That last premise is the IH at the CALLEE, so the
-    induction is nested in an outer one on the chain of singleton SCCs
-    (the fuel of `inlinedM`).  Not done in the fourth to sixth passes (no
-    `inlinedM` yet; the `BlocksOK` work came first).
+    `nomm-size m` exceeds `inline-max` (48).
+    SEVENTH PASS (`Glue/Inline.lean`, `Glue/InlineCheck.lean`,
+    `Glue/InlineAnnot.lean`):
+    - MODEL: `inlinedM code calls hot single fuel b` (`inlWalk` the trap,
+      `nommSize` = `+nomm-size`, `inlOK` the test; no cache: it is the
+      function `inl.cache` memoizes; `single c` = "`+scc-of c` is `{c}`";
+      fuel: the callee chain goes down the condensation of `calls`, so one
+      more than the number of bells of `code` is enough).
+    - CHECKED on the real compiler: `tools/hoon/inldump.hoon` (20 pokes in
+      a row: 16 through the `%full` branch by hand with an unknown subject,
+      4 real `%full`; a small callee, one over `inline-max`, a chain of two,
+      a callee whose own inlining takes it over 48, recursive callees, an SCC
+      of two, a non-safe formula part, a memoized call, `%9` arms, a `%spot`
+      hint), `tools/hoon/inlcheck.py` → `Glue/InlineData.lean`; the 29
+      entries of `inl.cache` are `inlinedM` of their bells (`inlFailing =
+      []`), 11 with calls inlined.  NO DIFFERENCE.  Not exercised: a hot
+      callee (`jets-hot` stays `~`).
+    - FINDING (M19): the model half as stated in the sixth pass (from
+      `CodeOK`) is FALSE.  `Annot.inline` needs the dropped formula part `q`
+      to RETURN on every subject; `Annot.direct` says only "if it returns,
+      it is the callee's formula", and `+safe-fol-fol` admits `[%0 a]`.
+      Witness (argued, `InlineAnnot.lean` header): `fol = [7 [6 [3 0 1] [1 0
+      0 1 0] [1 5]] [2 [0 1] [0 7]]]` knowing nothing, callee `[1 0]`;
+      `CodeOK` holds, the inlined nomm returns `0` on an atom where the
+      formula crashes.  The real analysis does not make that call direct
+      (the join of the two products does not know axis 7).
+    - RESTATED and PROVED: `AnnotS` (= `Annot`, and at `direct` with `k =
+      none`, `safeFolFol q`: `q` returns on every subject of `P`),
+      `CodeOKS`, `AnnotS.toAnnot`; `inlWalk_annot` (ONE induction on the
+      `AnnotS` derivation; the inlined call is `Annot.inline`, the callee's
+      `Annot` restricted by `Annot.mono` along `Img lib P b ⊆ Fits c.less`);
+      `inlinedM_annot` (induction on the fuel = the callee chain; no
+      measure, no use of `calls`, `hot`, `single` or the size test);
+      `inlAnnot_of`: the field `inlAnnot` from two LEAVES:
+      - `InlPill lib D` (the pill half, NO OWNER): on every `InvB` state
+        `D.inl … b = some nm` gives `inlinedM (realOf long.code) calls hot
+        single fuel b = some nm` for some fuel, `calls`, `hot`, `single`;
+      - `InvBS M lib` (the analysis half, NO OWNER): the code table of every
+        `InvB` state meets `CodeOKS` (what `InvB.codeOK` gives, plus the
+        return at every droppable direct call; from the analysis's sock at
+        the call: the formula is known, so the axes `q` reads exist).
+    THE PILL HALF, map for a new track: the arm is `0x5dde` of `K`
+    (`Compiler/CompInlined.lean`, body cut by `tools/gen/inlined.py`:
+    `inlBodyN` 1,311 cells = `inlGet` 21, `inlHit` 3, `inlMiss` 1,272 =
+    `inlHot` 64, `inlGot` 24, `inlAfter` 29, the trap `inlTrap` 1,134 with
+    branches cons 59, `%2` 324, `%3` 32, `%4` 32, `%5` 61, `%6` 90, `%7` 61,
+    `%10` 63, `%11` 111, `%12` 61, `%mean` 80).  Linked: `inl_body_at`,
+    `inlBody_eq`, `inline_off_at` (`|`), `inl_trap_pure` (the walk is the
+    identity on a pure nomm and keeps the cache), `inl_gate_miss`,
+    `inl_gate_hit`, `inl_gate` under `InlOK` (pure nomms only);
+    `safe_fol_fol_pill` (`Compiler/Safe.lean`); `+scc-of` by track K
+    (`CompSccOfOne`, `ccc_scc_hit`, `CompSccOfAny`).  Missing: the `%2`
+    branch with an `info` (324 cells: `hot`, `+has:in` of `calls`, the
+    call of `+scc-of`, the recursion `inlined-loop` into the gate itself,
+    which needs an induction on the fuel, `+nomm-size`, no link), the other
+    branches on non-pure children (every branch rebuilds; `%11` both
+    shapes), and the cache coherence: every entry of `inl.cache` is
+    `inlinedM` of its bell on the current table (kept by a miss; the table
+    only grows; `%jets`, `%fast` delete or clear entries).  K's
+    `cu_gate_dir_scc` and `PGoodK` take `inl : Noun → Option Nomm` as a
+    parameter: `InlPill` is what ties it to `D.inl`.
 2.g `callee : CalleeNeeds (D.env …) (refN A ref …)`: tracks I, J.  I's
     `final_member`, `final_keeps` give (b), (c) under `Hyp` (`kidsOnly`,
     `shape` = the disabled `shape-check` assert, `msgSelf`; `msgAbs` now
@@ -450,7 +551,9 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
 
 2.i WHAT `contract` RESTS ON when every compiled nomm is in `FragX`
     (`compHyp_of_fragX'`, `Glue/EntryFragX.lean`, then `gap_of_armPM`):
-    - model facts: `inlAnnot`'s model half (2.e, stated, no `inlinedM`);
+    - model facts: `inlAnnot`'s model half is PROVED (`inlAnnot_of`, 2.e)
+      from the analysis leaf `InvBS` (no owner: `CodeOKS`, the return of a
+      droppable formula part, which `CodeOK` lacks: M19);
       `callee` (2.g, I, J); the totality in `answers` (2.h: `Ranked` of the
       real member compile, track I).  The guard leaves are CLOSED
       (`guardFinalU`, `guardFinalF`; `compHyp_of_fragX₃` needs only
@@ -459,8 +562,9 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
       `+compile-scc`, now threaded through cache misses, K), `unary`,
       `scc`, `hpill` of `optRef` (P's `OptLink`, false as stated, restated
       `OptLinkOn`; the rest of `optRef` is PROVED on `FragX`,
-      `optRef_fragX'`), `inlAnnot`'s pill half (`+inlined`, 1,345 cells,
-      and `+scc-of`, 430), `stable`, `jetRoot` (`JetRootLinkR`), `jets`,
+      `optRef_fragX'`), `inlAnnot`'s pill half `InlPill` (`+inlined`,
+      body 1,311 cells, the `%2` branch 324 and the cache coherence open,
+      and `+scc-of`, 430; no owner), `stable`, `jetRoot` (`JetRootLinkR`), `jets`,
       `fast`;
     - class membership: `inFragM`, `inFragN` (every nomm the analysis
       compiles is in `FragX`; false in general, 2.b').
@@ -645,7 +749,9 @@ M15. Build clashes (section 0): CLOSED in the fourth pass (P's
     `CompSccLoopInd`, hence `CompSccLoopClose`) and in
     `Compiler/OptLinkSwGate.lean` (the optimizer link), so no file can import
     both; `AuditGlue` leaves out I's loop files.  Fix: track I renames its
-    `sw_gate` (e.g. `sweep_gate`).
+    `sw_gate` (e.g. `sweep_gate`).  CLOSED in the seventh pass: 372dcb9 renamed
+    track I's `sw_gate` to `csSw_gate` and `swG` to `csSwG`; `AuditGlue`
+    imports the loop files and checks the three theorems.
 M16 (in the making). Hints: track J's `runLCH env snd mono` is a THIRD model
     of `+run` beside `runLC` and `runLCM env true` (the hint cases are its
     only difference: `runLCH_eq`, `finishLUCH_eq`, `finishLFCH_eq`).  The
@@ -670,7 +776,12 @@ M18. `PrintId` (track I's loop theorems) rested on a misreading: `!@` takes
     (`print_comp.battery = [9 97710 [0 511]]`) and `PrintId` is provable
     like `cg_print` (1.4).  No entry of this ledger said the pill slogs;
     the misreading was in `Compiler/CompSccLoopSt.lean`'s comment and
-    digest [256] (corrected in [269]).
+    digest [256] (corrected in [269]).  CLOSED in the seventh pass:
+    `printId_pill`, `csi_gate_loop_np`, `csi_gate_ranked_np` (track I).
+M19. `inlAnnot` from `CodeOK` is FALSE (2.e): `Annot.direct` lacks the
+    return of the formula part that `+inlined` drops.  Restated on
+    `CodeOKS` / `AnnotS` (`Glue/InlineAnnot.lean`); the analysis must give
+    `InvBS`.
 
 ## 10. OPEN LEAVES, in order of what blocks the most
 
@@ -700,18 +811,19 @@ M18. `PrintId` (track I's loop theorems) rested on a misreading: `!@` takes
    calls (`EntryMono` on `MonoCalls`).  Track G.
 8. `BakeEnds` (3.3): no measure.  NO OWNER.
 9. `callee` (2.g): tracks I, J.
-10. `inlAnnot` (2.e): model half stated (`inlinedM`, one `Annot`
-    induction nested in the callee chain), pill half 1,345 + 430 cells.
-    NO OWNER.
+10. `inlAnnot` (2.e): model half PROVED (`inlAnnot_of`), leaves `InvBS`
+    (the analysis gives `CodeOKS`, M19) and `InlPill` (the pill half: the
+    `%2` branch, 324 cells, `+nomm-size`, the recursion, the cache
+    coherence; map in 2.e).  NO OWNER.
 11. `stable`, `jetRoot`, `jets`, `fast` (2.h): NO OWNER.
 12. Format (7.2, 8): `RendRestTonFree`, `SoftTankUnit`, `SkipMsgTonFree`,
     `EvalMookSame`.  NO OWNER.
 13. M5 (baked n-ary code): track A (bake model and `bn_gateB` exist; no
     real poke bakes).
 14. M16 (hints, `runLCH`): J, Q, G; Q's `HintSound` from `SfClosed`.
-15. `PrintId` (1.4, M18): about to close (provable like `cg_print`), track I.
+15. `PrintId` (1.4, M18): CLOSED (`printId_pill`, track I).
 
-Leaves with NO owner: 2.e `inlAnnot`, 2.h `answers` (totality beyond I's
+Leaves with NO owner: 2.e `InlPill`, `InvBS`, 2.h `answers` (totality beyond I's
 loop), `stable`, `jetRoot`, `jets`, `fast`, 3.3 `BakeEnds`, 3.4
 `RootAnswers`, 7.2 and 8 (four format leaves).  Taken in the fourth pass:
 2.c `GuardMonoX`, `GuardNaryX` (track G).  M5 is track A's since
