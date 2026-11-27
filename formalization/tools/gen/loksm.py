@@ -8,8 +8,8 @@ Run from formalization/:  python3 tools/gen/loksm.py
 (`--counts` prints the table COUNTS from the current sources instead.)
 
 * The declarations copied are the closure of ROOTS: every declaration of
-  lemmas/Ska/*.lean that a copied one names (outside comments) and whose text
-  names `runLC` or a copied declaration.  `LOKS` and `runLC` themselves are
+  FILES that a copied one names (outside comments) and whose text names
+  `runLC` or a copied declaration.  References are followed only into FILES.  `LOKS` and `runLC` themselves are
   not copied: their copies `LOKSM` (CompDirectMCal.lean) and `runLCM`
   (CompRunLCM.lean, tools/gen/runlcm.py) exist.
 * Substitutions, each counted per declaration against COUNTS:
@@ -80,10 +80,13 @@ IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_.']*")
 def refs(text):
     return {t for t in IDENT.findall(strip(text)) if t in decls}
 
+# Follow references only into declarations of FILES: a bare identifier (a
+# local name, a field such as `holds`) can match a declaration of an unrelated
+# file, whose own closure is not ours (a copy must come from FILES anyway).
 reach, stack = set(), list(ROOTS)
 while stack:
     n = stack.pop()
-    if n in reach or n not in decls:
+    if n in reach or n not in decls or decls[n][0] not in FILES:
         continue
     reach.add(n)
     stack.extend(refs(decls[n][2]))
