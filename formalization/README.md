@@ -4282,6 +4282,73 @@ import only its theorems.  So:
     `genNoun p.2 x'` on the right), `DirCalls` take `CallOk` at each rest
     the run reaches, and `finishLUCM` return the final cache, so
     `cu_gate_dir` would end in `cache.gen` of the last call, not `CA`.
+    (g) measured (tenth session, 2026-11-27, `tools/hoon/calleecomp.py`,
+    output `tools/hoon/calleecomp.txt`).
+    *The answer.*  The compile case of `+callee-need` is the normal way a
+    callee outside the SCC gets compiled: depth-first, on the first
+    `+callee-need` of the first member run that reaches it; `+compile-scc-in`
+    compiles no callee up front.  In the whole-subject run of
+    `+compile-unary` (the run `cu_gate_dir` links) it fires in 12 of 37
+    pokes, each time on a direct call of `func`'s own code whose callee
+    `+inlined` had inlined into the n-ary code, so the n-ary pass never
+    reached it.
+    *The measure.*  The instrumented copy prints every `+callee-need` with
+    its case, the brackets of each compile a miss starts, the member runs,
+    the replacements of `+inlined`, and the brackets of the whole-subject
+    run.  The corpus is 37 `%full` pokes run as the `%full` branch runs
+    them (`+ska-poke`, `+scc-of`, `+compiled-mono`, caches emptied first):
+    the 18 of `sccloop.py` and 19 new ones (chains 3 and 6 deep of small
+    arms and of looping arms, mixed chains, shared callees, a diamond, SCCs
+    with callees outside, callees reached only through inlined code, a
+    dropped call, arms too big to inline, Ackermann with outside callees).
+    Over them `+callee-need` ran 1050 times: 499 in the SCC (`map-local`,
+    `top` or none), 444 hits in `nary.cache`, 107 misses, no hot jet.  Of
+    the 107 misses, 51 came in a `%may` run, 44 in a `%done` run (a lone bell
+    that does not call itself runs only `%done`), and 12 in the whole-subject run.  The
+    compiles nest up to 6 deep (`%rc6`, a chain of six looping arms): the
+    misses at depth 0, 1, 2, 3, 4, 5 number 50, 42, 12, 1, 1, 1.  No bell
+    missed twice.  The 12 misses of the whole-subject run are all at its own
+    level (depth 0), all on a callee that `+inlined` had replaced and that
+    no n-ary run reached, and the compile each one starts finds every
+    callee in `nary.cache` (no nested miss).
+    *The trace of `%in3`* (`a` calls `b`, `b` calls `c`, `c` calls `dc`;
+    `a`, `b`, `c` are small).  Here b1 is the poke's formula, b4 the `$` of
+    `a`, b2 the `$` of `dc`, and b3 its loop.  `+compile-scc-in` of {b1}
+    runs member b1 `%done`.  Its code, with b4 inlined, calls b2, which
+    misses.  The compile of {b2} runs member b2 `%done`, whose call of b3
+    misses in turn.  The compile of {b3} (depth 2) runs member b3 `%may`,
+    `%must`, `%must`, `%done`, and its self calls read `none`, `top`, `loc`,
+    `loc`.  Back in b2, a second call of b3 hits, and back in b1 so does
+    b1's call of b3.  Then the whole-subject run of b1 calls b4 (its own
+    code is not inlined).  That call misses, so the compile of {b4} runs
+    member b4 `%done`, and its calls of b2 and b3 hit.
+    *What the link must be.*  (1) The run threads the rest.  At a rest `x`
+    the pill returns the model's result with some rest `x'`, and the parts
+    that follow run at `x'` (`CompRunAtXT` in
+    `Compiler/CompCalleeComp.lean`).  (2) The model of the run does not
+    change.  `runLCM env true msup` and `finishLUCM env n` read the cache
+    only through `env.need` and `env.sure`, and on a direct call
+    `+callee-sure` runs after `+callee-need`.  On a miss, `+compile-scc-in`
+    puts the callee's SCC into `nary.cache` (`uni`) and `sure.cache`, and
+    an entry already there is never changed in the run.  So an `env` read
+    from the FINAL cache gives every call what the pill read, and the fixed
+    `env` of `finishLUCM env n` is the right-hand side only after the fact.
+    The invariant on a rest is that every entry of `nary.cache` and
+    `sure.cache` the run reads agrees with `env` (`NeedRead`'s `nary` case
+    and `SureNoun`).  It holds at `x'` when it held at `x` and the compile
+    of the miss made entries that agree with `env`.  (3) The recursion
+    lives in `+compile-scc-in`, not in the run.  The compile of an SCC `S`
+    misses only on SCCs below `S` in the condensation of `calls.long-ska`
+    (the DAG of SCCs), and those are not yet in `nary.cache`.  So the link
+    of `+compile-scc-in` with callees outside is by induction on the height
+    of `S` in that DAG (the fuel, at most 6 here).  Its model is a
+    `compileScc h S cache` whose member runs see, for a callee `c` outside
+    `S`, the need of `c`'s entry after the compile of `c`'s SCC at a
+    height `< h`.  That is track I's link with one more hypothesis: the
+    gate at the smaller heights.  The whole-subject run of `+compile-unary`
+    needs only one level of it, the named hypothesis `CccMiss` (the gates
+    of `+scc-of` and `+compile-scc-in` on the subject of the miss, in the
+    shape of `hcsi`).
 20. **`+to-straight` with proxies: the map path** (track I, 2026-11-27,
     `Compiler/CompStraightMap*.lean`, nouns cut by `tools/gen/tsmap.py`).
     The map first.
