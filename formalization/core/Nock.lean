@@ -54,12 +54,12 @@ namespace Formalization
 namespace Nock
 
 inductive Noun where
-    | atom : Nat -> Noun
-    | cell : Noun -> Noun -> Noun
+    | atom : Nat → Noun
+    | cell : Noun → Noun → Noun
     deriving DecidableEq, Repr
 
-abbrev A : Nat -> Noun := Noun.atom
-abbrev C : Noun -> Noun -> Noun := Noun.cell
+abbrev A : Nat → Noun := Noun.atom
+abbrev C : Noun → Noun → Noun := Noun.cell
 abbrev T2 (t : Nat) (x : Noun) : Noun := C (A t) x
 abbrev T3 (t : Nat) (x y : Noun) : Noun := C (A t) (C x y)
 abbrev T4 (t : Nat) (x y z : Noun) : Noun := C (A t) (C x (C y z))
@@ -148,7 +148,7 @@ inductive Nock : Noun -> Noun -> Noun -> Prop where
         r = Tis p q ->
         Nock a (T3 5 b c) r
     | op6 {a b c d p q r s} :
-        Nock a (C (A 4) (C (A 4) b)) p ->
+        Nock a (T2 4 (T2 4 b)) p ->
         Nock (C (A 2) (A 3)) (T2 0 p) q ->
         Nock (C c d) (T2 0 q) r ->
         Nock a r s ->

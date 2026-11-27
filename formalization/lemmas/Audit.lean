@@ -142,6 +142,12 @@ open Formalization
 
 #print axioms Nock.evalFuel_sound
 #print axioms Nock.nock_eq_some_iff
+#print axioms Nock.Eval.deterministic
+#print axioms Nock.nock_iff_eval
+#print axioms Nock.nock_eq_some_iff_spec
+#print axioms Nock.fas_iff_slot
+#print axioms Nock.hax_iff_edit
+#print axioms Ska.nockEquivalence_iff_eval
 #print axioms CueExample.cue_words
 #print axioms Pill.core_evalFuel
 #print axioms Pill.core_layer2
@@ -604,7 +610,8 @@ open Formalization
 #print axioms Compiler.rp_mule_cases
 #print axioms Compiler.rp_run_iff
 #print axioms Compiler.ska_poke_gate_iff
-#print axioms Compiler.ska_poke_iff_trap
+#print axioms Compiler.sp_trap_evalH
+#print axioms Compiler.ska_poke_iff
 #print axioms Compiler.evalH_of_minkF_nil
 #print axioms Compiler.ska_poke_iff_evalH
 #print axioms FrameCall.absNockS_sound
