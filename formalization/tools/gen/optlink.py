@@ -807,6 +807,14 @@ elif WHICH == 'alias':
     e6, pilen, pij, piedit = seq(pir3, 4)
     assert e6 == ('A', 6) and eqn(pij, ('C', ('A', 0), ('A', 2)))
     pigate = dig(piroll, [7, 7, 6, 3, 3, 7, 7, 2, 3])
+    # JINFO, JIMMS = [8 [1 TRAP] [9 2 [0 1]]]
+    def trap_of(g):
+        e8, t1, call = seq(g, 3)
+        assert e8 == ('A', 8) and norm(t1)[0] == 'C' and norm(norm(t1)[1]) == ('A', 1)
+        assert eqn(call, ('C', ('A', 9), ('C', ('A', 2), ('C', ('A', 0), ('A', 1)))))
+        return norm(norm(t1)[2])
+    jitrap = trap_of(jinfo)
+    jmtrap = trap_of(jimms)
     # WALK = [6 END [[0 895] [0 12]] [7 [0 1] [8 PRE [6 UNT UNB [7 [0 1] [8 INFO R3]]]]]]
     pre = dig(walk, [15, 7, 6])
     r1 = dig(walk, [15, 7, 7])
@@ -860,8 +868,10 @@ elif WHICH == 'alias':
         ('alRnBunt', rn_bunt, 'Its sample bunt.'),
         ('alJRegB', jreg, 'The body of `join-reg`.'),
         ('alJRegBunt', jreg_bunt, 'Its sample bunt.'),
+        ('alJITrap', jitrap, 'The trap of `join-info`.'),
         ('alJInfoB', jinfo, 'The body of `join-info`.'),
         ('alJInfoBunt', jinfo_bunt, 'Its sample bunt.'),
+        ('alJMTrap', jmtrap, 'The trap of `join-imms`.'),
         ('alJImmsB', jimms, 'The body of `join-imms`.'),
         ('alJImmsBunt', jimms_bunt, 'Its sample bunt.'),
         ('alPIMurn', pimurn, '`have`: `(murn ins same)` in `param-info`.'),
