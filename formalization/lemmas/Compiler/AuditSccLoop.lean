@@ -1,6 +1,7 @@
 import lemmas.Ska.SccLoopCheck
 import lemmas.Ska.SccLoopCycle
 import lemmas.Ska.SccLoopTotal
+import lemmas.Compiler.CompSccLoopGate
 
 /-! The axioms of the theorems of `Ska/SccLoop.lean`, `Ska/SccLoopMsg.lean` and `Ska/SccLoopCycle.lean`
 (README Gaps 21): each must print
@@ -31,3 +32,8 @@ open Formalization.SkaModel.SccLoop
 #print axioms quiet_clean
 #print axioms sweepStep_psi
 #print axioms cyc_not_ranked
+#print axioms Formalization.Compiler.csiFix_cut
+#print axioms Formalization.Compiler.csf_fix
+#print axioms Formalization.Compiler.csf_trap
+#print axioms Formalization.Compiler.csf_trap_end
+#print axioms Formalization.Compiler.csf_trap_rec
