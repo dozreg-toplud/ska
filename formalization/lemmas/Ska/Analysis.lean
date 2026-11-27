@@ -447,6 +447,7 @@ def folStep (env : Env R) (res : ResGo M R) (go : FolGoS M R) (fol : Noun) (sub 
            | none => Nomm.n11d tag h.1.nomm fr.1.nomm f,
          fr.1.prod,
          decide ((tag = Tag.spot ∨ tag = Tag.mean) ∧ h.1.saf = true ∧ fr.1.saf = true)⟩, gen)
+  | Shape.op11c _ _ h1 h2 f => go (C (A 11) (C (C (A 0) (C h1 h2)) f)) sub seat mk bc df gen
   | Shape.op12 a b q =>
     (go (C a b) sub seat mk bc df gen).bind fun p =>
     (go q sub seat mk bc df p.2).bind fun q =>

@@ -27,7 +27,8 @@ What is modelled, and what is not:
   `fol-loop` reads (`TabEntry`), or `none` where the Hoon would crash or not
   return.  `FolLoopSound.lean` states what the proofs assume of the table.
 * `fol-loop` recurses on formulas that are not subformulas (the inlined
-  callee, and the rewrites of `%8`, `%9`, `%bare`, `%memo`), so the model is
+  callee, and the rewrites of `%8`, `%9`, `%bare`, `%memo` and of a hint
+  whose tag is a cell, analysed as under the tag `%$`), so the model is
   fuelled, as `minkF` is: `folLoopF tab n` with `n` levels, and `none` when
   that is not enough.  A theorem about a result that the model returns holds
   of the Hoon whenever the Hoon returns.
@@ -179,6 +180,8 @@ inductive Shape where
   | op11s (p : Nat) (a b : Noun)
   /-- `[%11 [a=@ h=^] f=*]` -/
   | op11d (tag : Nat) (h1 h2 f : Noun)
+  /-- `[%11 [a=^ h=^] f=*]`: a tag that is a cell -/
+  | op11c (x y h1 h2 f : Noun)
   /-- `[%12 p=^ q=*]` -/
   | op12 (a b q : Noun)
   /-- the default -/
@@ -201,6 +204,8 @@ def shape : Noun → Shape
   | Noun.cell (Noun.atom 11) (Noun.cell (Noun.atom p) (Noun.cell a b)) => Shape.op11s p a b
   | Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.atom tag) (Noun.cell h1 h2)) f) =>
       Shape.op11d tag h1 h2 f
+  | Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.cell x y) (Noun.cell h1 h2)) f) =>
+      Shape.op11c x y h1 h2 f
   | Noun.cell (Noun.atom 12) (Noun.cell (Noun.cell a b) q) => Shape.op12 a b q
   | _ => Shape.other
 
@@ -220,6 +225,7 @@ def Shape.fol : Shape → Noun
   | op10 ax don r1 r2 => C (A 10) (C (C (A ax) don) (C r1 r2))
   | op11s p a b => C (A 11) (C (A p) (C a b))
   | op11d tag h1 h2 f => C (A 11) (C (C (A tag) (C h1 h2)) f)
+  | op11c x y h1 h2 f => C (A 11) (C (C (C x y) (C h1 h2)) f)
   | op12 a b q => C (A 12) (C (C a b) q)
   | other => A 0
 
@@ -347,6 +353,7 @@ def folStep (tab : Tab) (go : FolGo) (fol : Noun) (sub : Anno) (mk : Option Noun
            | none => Nomm.n11d tag h.1.nomm fr.1.nomm f,
          fr.1.prod,
          decide ((tag = Tag.spot ∨ tag = Tag.mean) ∧ h.1.saf = true ∧ fr.1.saf = true)⟩, fr.2)
+  | Shape.op11c _ _ h1 h2 f => go (C (A 11) (C (C (A 0) (C h1 h2)) f)) sub mk bc df gen
   | Shape.op12 a b q =>
     (go (C a b) sub mk bc df gen).bind fun p =>
     (go q sub mk bc df p.2).bind fun q =>

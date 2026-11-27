@@ -206,6 +206,18 @@ theorem tbind_zero_id (x : Option Tone) : tbind x (fun p => some (Tone.zero p)) 
   | some (Tone.one _) => rfl
   | some (Tone.two _) => rfl
 
+/-- `%$` (`0`) is not a tag that leaves a frame. -/
+theorem stopTag_zero : stopTag 0 = false := by decide
+
+/-- **A hint whose tag is a cell runs as under the tag `%$`**: `+mink`
+computes the clue, drops it and runs the hinted formula, with no frame,
+at every fuel and from every trace. -/
+theorem minkF_ctag (lib : Lib) (gul : Noun) (n : Nat) (t : Trace) (s x y h f : Noun) :
+    minkF lib gul n t s (n3 (A 11) (C (C x y) h) f) = minkF lib gul n t s (n3 (A 11) (C (A 0) h) f) := by
+  cases n with
+  | zero => rfl
+  | succ n => simp only [minkF_succ_eq, minkStep, stopTag_zero, Bool.false_eq_true, if_false]
+
 /-- A call `[2 b c]` that `+mink` runs with fuel `n + 1`, from the
 induction hypothesis at fuel `n`: by cases on its annotation. -/
 theorem two_fwd (lib : Lib) (gul : Noun) (code : Bell → Option Nomm) (hc : CodeOK lib code)
@@ -415,6 +427,11 @@ theorem nomm_fwd (lib : Lib) (gul : Noun) (code : Bell → Option Nomm) (hc : Co
   | n11d hA1 hA2 =>
     simp only [minkStep] at h
     simp only [nommStep]
+    exact ev_tbind (fun _ h1 => IH hA1 hP h1) (fun _ _ _ h1 => ev_tbind (fun _ h2 => IH hA2 hP h2)
+      (fun _ _ _ h3 => by cases h3; exact Ev.const _) h1) h
+  | n11c hA1 hA2 =>
+    simp only [minkStep] at h
+    simp only [nommStep, stopTag_zero, Bool.false_eq_true, if_false]
     exact ev_tbind (fun _ h1 => IH hA1 hP h1) (fun _ _ _ h1 => ev_tbind (fun _ h2 => IH hA2 hP h2)
       (fun _ _ _ h3 => by cases h3; exact Ev.const _) h1) h
   | mean hA1 hA2 =>
@@ -745,6 +762,12 @@ theorem nomm_bwd (lib : Lib) (gul : Noun) (code : Bell → Option Nomm) (hc : Co
   | n11d hA1 hA2 _ih1 _ih2 =>
     intro hP h; have h0 := h; rw [nommF_succ] at h; apply Ev.succ; simp only [minkF_succ_eq]
     simp only [nommStep] at h
+    simp only [minkStep]
+    exact ev_tbind (fun _ h1 => IH hA1 hP h1) (fun _ _ _ h1 => ev_tbind (fun _ h2 => IH hA2 hP h2)
+      (fun _ _ _ h3 => by cases h3; exact Ev.const _) h1) h
+  | n11c hA1 hA2 _ih1 _ih2 =>
+    intro hP h; have h0 := h; rw [nommF_succ] at h; apply Ev.succ; simp only [minkF_succ_eq]
+    simp only [nommStep, stopTag_zero, Bool.false_eq_true, if_false] at h
     simp only [minkStep]
     exact ev_tbind (fun _ h1 => IH hA1 hP h1) (fun _ _ _ h1 => ev_tbind (fun _ h2 => IH hA2 hP h2)
       (fun _ _ _ h3 => by cases h3; exact Ev.const _) h1) h
