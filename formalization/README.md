@@ -2066,6 +2066,37 @@ import only its theorems.  So:
     Next: the facts of the class that the top reads, now with `%6`:
     `km_runLC` and `tag_all` (`CompRunTags.lean`, still `PlainOk`), then
     the top (`cu_gate_scc_one_f_c`) on `SixOk`.
+    L, 2026-11-27 (track A, the top on `SixOk`: what the chain reads).  The
+    chain from `+run` to `cu_gate_scc_one_f_c` (`CompSccCallGate.lean`,
+    `CompSccCall.lean`, `CompFinish.lean`, `CompUnaryTrap.lean`) is stated on
+    `indOk`, not on `PlainOk`; `km_runLC` and `tag_all` are read by none of
+    it.  Every place that reads the class or a fact of it:
+    (1) `comp_run_entry_c` (the run at the entry; in `mem_to_finish_c`,
+    `mem_gate_none_c`, `cu_trap_c`): lifted by `comp_run_all_l6` at
+    `genEntry` with `[%done ~]`, whose `GInv` is `rfl`.
+    (2) `inl_gate_ind` with `indPure_of_indOk` (`+inlined` is the identity;
+    in `csi_gate_scc_one_m_c`, `csi_gate_scc_one_f_c`): `indPure` already
+    has `%6`, so `indPure_of_sixOk`.
+    (3) `args_frag_c` (`args.then` empty; in `csi_gate_scc_one_m_c`): not
+    needed, `csi_gate_scc_one_f_c` splits on it and both sides crash.
+    (4) `scc_sur_frag_c` (the result's `laz` fork-free, and `+sure-of`
+    succeeds; in `csi_gate_scc_one_m_c`, `mem_gate_none_c`) and with it
+    `hsc_of_sure` (`+shape-collapse`) and `cz_gate_L` in `fin_gate`
+    (`+coerce-lazy` on `[s ~ ~]`): false on `SixOk`.  A `%6` under `%done`
+    leaves the fork `[[yes laz.nex-0] [nuh laz.nex-1]]` in the result, and
+    so does `+sect` under `%next`; on a lazy need with forks `+shape-collapse`
+    runs `+lazy-to-inter1` and the `+inter2-*` arms, which have no model, and
+    the model's `sccSur` (`+sure-of` of the sure part alone) is not what they
+    compute.  So the top keeps a fork-free result as a named hypothesis
+    (`FinSure`), and `+sure-of` succeeds by `GRes` (no look at `0`).
+    (5) `mem_cond_frag_c` (in `mem_gate_c`) and `hcond` of `fin_gate` for
+    `tsn_at`, and `kerf_ofSure` with `crx_run` for `TsAt` in `cu_trap_c`:
+    `cond` empty at `+to-straight`.  False on `SixOk` (`+kern` of `%2`,
+    `+collapse-lazy-atom`, `+lazy-shut`, `+kerf` of phase K, `+sect` write
+    it): the named hypothesis `TsMapAt` (`+to-straight` on every `cond`,
+    track I).
+    (6) `comp_kerf` on `Next.toL` (in `cu_trap_c`, the `+kerf` of the
+    unary pass on a fork-free result): `comp_kerf_all` on every lazy need.
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
