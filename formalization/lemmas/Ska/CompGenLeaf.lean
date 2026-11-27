@@ -14,6 +14,8 @@ needs is the fill of the conjunction of the goal's (`fillSemL_from`).
 * `FromEnt.pairsAt`, `FromEnt.labDisj`, `fillSemL_from`.
 * `runOKGen_n0`: `RunOKGen` of `[0 axe]` at any `GoalG` goal whose
   registers are no keys of `cond`, with `pureWit`, `x = false`.
+* `RunOKGD.goalOut`, `runOKGen_n0_at`: the result of any `RunOKGD` run is
+  such a goal.
 -/
 
 set_option linter.unusedSectionVars false
@@ -148,6 +150,30 @@ theorem runOKGen_n0 (lib : Lib) {N : Needs} {P : Noun → Prop} {f : Noun} {axe 
     show GoalSemD lib O c gul st _ regs t th L.sure th Need.none (W s) (pureEval (Nomm.n0 axe) s)
     simp only [pureEval, hs1]
     exact ⟨fun _ => ⟨regs, hh'.1, trivial, fun _ _ => rfl, rfl⟩, fun nf => absurd (fitsS_of_holdsS hh') nf⟩
+
+/-- **A run's result gives the next part a `GoalG` goal** (`FrameG.goalOut`
+for `RunOKGD`): the result of `q` under any goal whose registers lie below
+the start is a goal `[0 axe]` and the other parts of `[7 p q]` can take. -/
+theorem RunOKGD.goalOut {lib : Lib} {N : Needs} {P : Noun → Prop} {f : Noun} {goal : CGoal S} {g0 g1 : Gen Map}
+    {nex : NextL S} (R : RunOKGD (Map := Map) lib N P f goal g0 g1 nex) (b0 : 1 ≤ g0.bo)
+    (hgm : ∀ r, GMem goal r → r < g0.re) : GoalG (Map := Map) nex.laz nex.th g1 := by
+  have e1 := R.ext.1
+  refine ⟨by have := R.lo; have := R.hi; omega, ⟨R.lo, R.hi⟩,
+    fun e he => ⟨by have := (R.labs e he).1; omega, (R.labs e he).2.1, (R.labs e he).2.2⟩,
+    fun e he => ⟨(R.eregs e he).1, fun r hr => ((R.eregs e he).2 r hr).2⟩, R.labDisj, R.dist, fun r hr => ?_⟩
+  rcases R.regs r hr with h | h
+  · have := hgm r h; omega
+  · exact h.2
+
+/-- **`[0 axe]` at the result of any `RunOKGD` run**: the `p` of
+`[7 [0 axe] q]` meets `RunOKGen` at `q`'s result, entries with bodies,
+forks, bonds and repeated labels included. -/
+theorem runOKGen_n0_at {lib : Lib} {N N' : Needs} {P P' : Noun → Prop} {f f' : Noun} {goal : CGoal S} {g0 g1 : Gen Map}
+    {nx : NextL S} (R : RunOKGD (Map := Map) lib N' P' f' goal g0 g1 nx) (b0 : 1 ≤ g0.bo)
+    (hgm : ∀ r, GMem goal r → r < g0.re) {axe : Nat} (M : MinkEq lib P f (Nomm.n0 axe)) {L' : Lazy S}
+    (hf : fromL axe nx.laz = some L') (W : Noun → Noun) :
+    RunOKGen lib N P f nx.laz nx.th (pureWit (Nomm.n0 axe) (fun _ => Need.none) W) false g1 g1 ⟨L', nx.th⟩ :=
+  runOKGen_n0 lib M hf (R.goalOut b0 hgm) R.ncond R.econd W
 
 end Comp
 end SkaModel

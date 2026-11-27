@@ -1380,3 +1380,5 @@ open Formalization.SkaModel.Comp
 #print axioms FromEnt.labDisj
 #print axioms fillSemL_from
 #print axioms runOKGen_n0
+#print axioms RunOKGD.goalOut
+#print axioms runOKGen_n0_at
