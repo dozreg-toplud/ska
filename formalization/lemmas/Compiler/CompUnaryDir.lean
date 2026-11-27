@@ -250,5 +250,139 @@ theorem cu_gate_dir_s (FUNC SCC CODE LSR JH CACHE NM CA V COLE : Noun) (env : Ca
   cu_gate_dir FUNC SCC CODE LSR JH CACHE NM CA V env n hn
     (dirCalls_of_s rfl he (cuCtx_cole hcl) ⟨JH, cuCtx_hot FUNC SCC CODE LSR JH NM⟩ Option.none n hd) hcsi hgot hv
 
+/-! ## The per-callee facts and what `+compile-scc-in` must give (plan items (d), (e)) -/
+
+/-- The callees of the direct calls of `n`. -/
+def dirBells : Nomm → List Bell
+  | Nomm.cons p q => dirBells p ++ dirBells q
+  | Nomm.n2 p q Option.none => dirBells p ++ dirBells q
+  | Nomm.n2 p q (some (b, _)) => b :: (dirBells p ++ dirBells q)
+  | Nomm.n3 p => dirBells p
+  | Nomm.n4 p => dirBells p
+  | Nomm.n5 p q => dirBells p ++ dirBells q
+  | Nomm.n6 p q r => dirBells p ++ dirBells q ++ dirBells r
+  | Nomm.n7 p q => dirBells p ++ dirBells q
+  | Nomm.n10 _ v q => dirBells v ++ dirBells q
+  | _ => []
+
+/-- (f) **The push of `sof` returns at every direct call of `n`**, each at
+the `msup` its run gets. -/
+def SofAll (env : CallEnv) (ctx : Noun) (x : GenRest) : Option Nomm → Nomm → Prop
+  | ms, Nomm.cons p q => SofAll env ctx x ms p ∧ SofAll env ctx x ms q
+  | ms, Nomm.n2 p q Option.none => SofAll env ctx x ms p ∧ SofAll env ctx x ms q
+  | ms, Nomm.n2 p q (some (b, _)) =>
+      (∀ nb, env.need b = some nb → SofRet env ms ctx p q b nb x) ∧ SofAll env ctx x ms p ∧ SofAll env ctx x ms q
+  | ms, Nomm.n3 p => SofAll env ctx x ms p
+  | ms, Nomm.n4 p => SofAll env ctx x ms p
+  | ms, Nomm.n5 p q => SofAll env ctx x ms p ∧ SofAll env ctx x ms q
+  | ms, Nomm.n6 p q r => SofAll env ctx x ms p ∧ SofAll env ctx x ms q ∧ SofAll env ctx x ms r
+  | ms, Nomm.n7 p q => SofAll env ctx x ms p ∧ SofAll env ctx x (some p) q
+  | ms, Nomm.n10 _ v q => SofAll env ctx x ms v ∧ SofAll env ctx x ms q
+  | _, _ => True
+
+/-- What a callee takes, whatever call it is at: a code entry, no ring, its
+need read by `+callee-need`, `sure.cache`. -/
+def BellFacts (env : CallEnv) (CODE COLE ctx : Noun) (x : GenRest) (b : Bell) : Prop :=
+  (∃ c, codeOf CODE b = some c) ∧ getF mugF b.toNoun COLE = some (A 0) ∧
+    ∃ nb, env.need b = some nb ∧ NeedRead ctx x b nb ∧ SureNoun env b x
+
+theorem dirCallsS_of {env : CallEnv} {CODE COLE ctx : Noun} {x : GenRest} :
+    ∀ (ms : Option Nomm) (n : Nomm), (∀ b ∈ dirBells n, BellFacts env CODE COLE ctx x b) → SofAll env ctx x ms n →
+      DirCallsS env CODE COLE ctx x ms n
+  | ms, Nomm.cons p q, hb, hs => by
+    simp only [dirBells, List.mem_append] at hb; simp only [SofAll] at hs
+    exact ⟨dirCallsS_of ms p (fun b h => hb b (Or.inl h)) hs.1, dirCallsS_of ms q (fun b h => hb b (Or.inr h)) hs.2⟩
+  | _, Nomm.n0 _, _, _ => trivial
+  | _, Nomm.n1 _, _, _ => trivial
+  | ms, Nomm.n2 p q Option.none, hb, hs => by
+    simp only [dirBells, List.mem_append] at hb; simp only [SofAll] at hs
+    exact ⟨dirCallsS_of ms p (fun b h => hb b (Or.inl h)) hs.1, dirCallsS_of ms q (fun b h => hb b (Or.inr h)) hs.2⟩
+  | ms, Nomm.n2 p q (some (b0, k)), hb, hs => by
+    simp only [dirBells, List.mem_cons, List.mem_append] at hb; simp only [SofAll] at hs
+    obtain ⟨hc, hr, nb, hnb, hn, hsu⟩ := hb b0 (Or.inl rfl)
+    exact ⟨⟨hc, hr, nb, hnb, hn, hsu, hs.1 nb hnb⟩,
+      dirCallsS_of ms p (fun b h => hb b (Or.inr (Or.inl h))) hs.2.1,
+      dirCallsS_of ms q (fun b h => hb b (Or.inr (Or.inr h))) hs.2.2⟩
+  | ms, Nomm.n3 p, hb, hs => dirCallsS_of ms p hb hs
+  | ms, Nomm.n4 p, hb, hs => dirCallsS_of ms p hb hs
+  | ms, Nomm.n5 p q, hb, hs => by
+    simp only [dirBells, List.mem_append] at hb; simp only [SofAll] at hs
+    exact ⟨dirCallsS_of ms p (fun b h => hb b (Or.inl h)) hs.1, dirCallsS_of ms q (fun b h => hb b (Or.inr h)) hs.2⟩
+  | ms, Nomm.n6 p q r, hb, hs => by
+    simp only [dirBells, List.mem_append] at hb; simp only [SofAll] at hs
+    exact ⟨dirCallsS_of ms p (fun b h => hb b (Or.inl (Or.inl h))) hs.1,
+      dirCallsS_of ms q (fun b h => hb b (Or.inl (Or.inr h))) hs.2.1,
+      dirCallsS_of ms r (fun b h => hb b (Or.inr h)) hs.2.2⟩
+  | ms, Nomm.n7 p q, hb, hs => by
+    simp only [dirBells, List.mem_append] at hb; simp only [SofAll] at hs
+    exact ⟨dirCallsS_of ms p (fun b h => hb b (Or.inl h)) hs.1,
+      dirCallsS_of (some p) q (fun b h => hb b (Or.inr h)) hs.2⟩
+  | ms, Nomm.n10 _ v q, hb, hs => by
+    simp only [dirBells, List.mem_append] at hb; simp only [SofAll] at hs
+    exact ⟨dirCallsS_of ms v (fun b h => hb b (Or.inl h)) hs.1, dirCallsS_of ms q (fun b h => hb b (Or.inr h)) hs.2⟩
+  | _, Nomm.n11s _ _ _, _, _ => trivial
+  | _, Nomm.n11d _ _ _ _, _, _ => trivial
+  | _, Nomm.n12 _ _, _, _ => trivial
+  | _, Nomm.mean _ _ _ _ _, _, _ => trivial
+
+/-- (d) **What `+callee-need` reads of `+compile-scc-in`'s product `[NM
+CA]`** for the callee `b` with need `nb` (the read-only cases of `NeedRead`
+at the context of `+compile-unary`, whose `top` is `~`): a member of `scc`
+has its `straight` in `NM` (`n-ary-map`) with `need` `nb`; a callee outside
+`scc` has its `straight` in `nary.cache` (axis `2` of `CA`) with `need` `nb`. -/
+def SccNeed (SCC NM CA : Noun) (b : Bell) (nb : NeedOrd) : Prop :=
+  (hasInF mugF b.toNoun SCC = some true ∧
+    ∃ u, getF mugF b.toNoun NM = some (C (A 0) u) ∧ slot? 2 u = some nb.toNoun) ∨
+  (hasInF mugF b.toNoun SCC = some false ∧
+    ∃ N u, slot? 2 CA = some N ∧ getF mugF b.toNoun N = some (C (A 0) u) ∧ slot? 2 u = some nb.toNoun)
+
+theorem needRead_of_scc {FUNC SCC CODE LSR JH NM CA : Noun} {b : Bell} {nb : NeedOrd} (h : SccNeed SCC NM CA b nb) :
+    NeedRead (cuCtx FUNC SCC CODE LSR JH NM) (cuRest CA) b nb := by
+  have h12 : slot? 12 (cuCtx FUNC SCC CODE LSR JH NM) = some SCC := by simp [cuCtx, nock_exec]
+  have h110 : slot? 110 (cuCtx FUNC SCC CODE LSR JH NM) = some NM := by simp [cuCtx, nock_exec]
+  rcases h with ⟨hs, u, hg, hu⟩ | ⟨hs, N, u, hN, hg, hu⟩
+  · exact NeedRead.loc h12 hs h110 hg hu
+  · exact NeedRead.nary h12 hs hN hg hu
+
+/-- (d) **The named hypothesis on `+compile-scc-in`'s product for the
+needs**: every callee of `n` has its need `env.need b = some nb` where
+`+callee-need` reads it (`SccNeed`: `n-ary-map` for a member of `scc`,
+`nary.cache` of the returned cache for the others). -/
+def CsiNeeds (env : CallEnv) (SCC NM CA : Noun) (n : Nomm) : Prop :=
+  ∀ b ∈ dirBells n, ∃ nb, env.need b = some nb ∧ SccNeed SCC NM CA b nb
+
+/-- (e) **The named hypothesis on `+compile-scc-in`'s product for the sure
+needs**: `sure.cache` of the returned cache (axis `31` of `CA`) holds
+`env.sure b` for every callee of `n`, or no entry and `env.sure b` is
+`[%none ~]` (`SureNoun` at the rest `cuRest CA`). -/
+def CsiSures (env : CallEnv) (CA : Noun) (n : Nomm) : Prop :=
+  ∀ b ∈ dirBells n, SureNoun env b (cuRest CA)
+
+/-- The facts of the analysis on the callees of `n`: a code entry in
+`code.long-ska` and no ring in `call.cole`. -/
+def CodeNoRing (CODE COLE : Noun) (n : Nomm) : Prop :=
+  ∀ b ∈ dirBells n, (∃ c, codeOf CODE b = some c) ∧ getF mugF b.toNoun COLE = some (A 0)
+
+/-- **The gate of `+compile-unary` on `DirOk` with direct calls** (README
+Gaps 19): `finishLUCM env n`, for `env` of the samples (`EnvFrom`), given
+on the state nouns the code entry of `func` (`hgot`, `hv`), `call.cole`
+(`hcl`) and `CodeNoRing`; on the class `DirOk`; from `+compile-scc-in`'s
+product `[NM CA]` (`hcsi`) the named `CsiNeeds` and `CsiSures`; and that the
+push of `sof` returns at every call (`SofAll`, item (f)). -/
+theorem cu_gate_dir_csi (FUNC SCC CODE LSR JH CACHE NM CA V COLE : Noun) (env : CallEnv) (n : Nomm)
+    (hgot : getF mugF FUNC CODE = some (C (A 0) V)) (hv : slot? 2 V = some n.toNoun)
+    (hcl : slot? 190 LSR = some COLE) (hcr : CodeNoRing CODE COLE n)
+    (hn : DirOk n = true) (he : EnvFrom env CODE COLE)
+    (hcsi : nock (cuTC (cuSam FUNC SCC CODE LSR JH CACHE)) cuCsi = some (C NM CA))
+    (hneed : CsiNeeds env SCC NM CA n) (hsure : CsiSures env CA n)
+    (hsof : SofAll env (cuCtx FUNC SCC CODE LSR JH NM) (cuRest CA) Option.none n) :
+    nock (C cuGB (C (cuSam FUNC SCC CODE LSR JH CACHE) compK)) cuGB
+      = (finishLUCM (S := CSet) (Map := TreapMap mugF) env n).map fun st => C (C st.toNoun NM) CA :=
+  cu_gate_dir_s FUNC SCC CODE LSR JH CACHE NM CA V COLE env n hn he hcl
+    (dirCallsS_of Option.none n (fun b hb => by
+      obtain ⟨hc, hr⟩ := hcr b hb
+      obtain ⟨nb, hnb, hs⟩ := hneed b hb
+      exact ⟨hc, hr, nb, hnb, needRead_of_scc hs, hsure b hb⟩) hsof) hcsi hgot hv
+
 end Compiler
 end Formalization
