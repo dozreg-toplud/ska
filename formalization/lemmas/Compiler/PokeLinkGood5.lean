@@ -66,9 +66,12 @@ theorem sccSet_get {T : FinMap Bell (VarEntry FinMap)} {b c : Bell} :
 /-- **`HtRank` and `HtScc` of track K from `SccsIs`**: the height is
 `reachCnt` over the keys, constant on an SCC and lower across an edge out of
 it. -/
-theorem htRank_of {code : FinMap Bell (VarEntry FinMap)} {sc : FinMap Bell (FinMap Bell Unit)}
-    (hc : CodeClosed code) (hs : SccsIs code sc) :
-    ∃ ht, HtRank (sccsNoun sc) (callsNoun ⟨Treap.empty, code, Treap.empty⟩) ht ∧ HtScc (sccsNoun sc) ht := by
+theorem htRank_of {L : LongB FinMap} {sc : FinMap Bell (FinMap Bell Unit)}
+    (hc : CodeClosed L.code) (hs : SccsIs L.code sc) :
+    ∃ ht, HtRank (sccsNoun sc) (callsNoun L) ht ∧ HtScc (sccsNoun sc) ht := by
+  generalize hcd : L.code = code at hc hs
+  have hcn : callsNoun L = code.toNoun fun e => FinMap.setNoun e.calls := by rw [← hcd]; rfl
+  rw [hcn]
   obtain ⟨l, hl⟩ := code.2
   refine ⟨htOf code l, ?_, ?_⟩
   · intro k k' S hk hcall hn

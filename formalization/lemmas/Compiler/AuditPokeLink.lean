@@ -12,6 +12,7 @@ import lemmas.Ska.PokeFlagsOf
 import lemmas.Compiler.PokeLinkLoop
 import lemmas.Compiler.PokeLinkLoopRun
 import lemmas.Compiler.PokeLinkGood4
+import lemmas.Compiler.PokeLinkTop5
 
 /-! # Audit of track P: `enc` and the `%full` branch of `+poke` -/
 
@@ -177,3 +178,19 @@ open Formalization Formalization.Compiler
 #print axioms flags_poke
 #check @EvalFinAt
 #check @LoopRunAtT
+#print axioms annot_noAx0
+#print axioms efGo_some
+#print axioms sccLoop_some
+#print axioms loopTotal_of
+#print axioms loopTotal_poke
+#print axioms htRank_of
+#print axioms good5_empty
+#print axioms good5_full_step
+#print axioms good5_mid
+#print axioms heights_good5
+#print axioms loopLinkAt_good5
+#print axioms noAx0_poke
+#print axioms monoLinkGood5_of_gate
+#print axioms pokeModel_fullGood5
+#print axioms pokeReachGood5
+#print axioms pokeModel_fullReachP5
