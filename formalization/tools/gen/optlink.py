@@ -838,6 +838,11 @@ elif WHICH == 'alias':
     D.append(('alFinLast', finelse, 'The last case of the end (no test).'))
     for t, c in jncases:
         D.append(('alJn' + t.capitalize(), c, 'The refinement after a `%%%s`.' % t))
+    jrf = seq(jreg, 8)
+    D.append(('alJRegLa', dig(jrf[1], [6]), '`|(is-loob.a ?=([~ ?] has-imm.a))` in `join-reg`.'))
+    D.append(('alJRegLb', dig(jrf[1], [14, 6]), '`|(is-loob.b ?=([~ ?] has-imm.b))` in `join-reg`.'))
+    for i, fi in enumerate(jrf):
+        D.append(('alJRegF%d' % (i + 1), fi, 'Field %d of the `info-reg` that `join-reg` makes.' % (i + 1)))
     defs += D + [
         ('alGenBunt', genbunt, 'The bunt of `gen`.'),
         ('alRevInit', revinit, '`(~(run by rev) (bake silt (list @uwoo)))`.'),

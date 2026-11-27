@@ -313,6 +313,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/OptLinkSwWalkPlain.lean` | **A plain chain in the walk** (`sw_wplain`): where `switchPlain` returns `(out', done', nex')`, the branch is the next turn of the walk; four steps (`wp_old`, `wp_r`, `wp_ids` with the trap of new labels against `freshIds`, `wp_idt`, and `wp_node` with the `+skip` test `immTo`, `wp_skg`). |
 | `Compiler/OptLinkSwGate.lean` | **The walk** (`sw_walk`, by induction on `topo`), **`+switch-chains` where `switchChains fuel` returns, on blocks with no `%lti`** (`sw_gate`), so `SwitchLink P` for every `P` whose `switch` is the model (`switchLink`), and **`+optimize` with `AliasLink` as the only hypothesis** (`opt_gate_sw`). |
 | `Compiler/OptLinkAlNouns.lean` | The nouns of `+alias` (arm `725` of `optC`, `al_at_cut`, `aliasBody_eq`), cut by `tools/gen/optlink.py alias` at each phase of the plan of Gaps 13: the five arms of its `\|^` core, the prelude, and the walk `alWalk` cut at each `=/` and `=^`, one noun per case of the `?-` over the op (`alOpImm` to `alOpLast`) and over the end (`alFinClq` to `alFinLast`). |
+| `Compiler/OptLinkAlRn.lean` | Phase 1 of `+alias` (Gaps 13): `OldRel N f`, the map `old.gen` as the renaming `f` of the model (`oldRel_nil`: the bunt is `id`; `old_put`: `+put:by` is `updA`); **`rn` is `f`** (`al_rn`). |
+| `Compiler/OptLinkAlJReg.lean` | Phase 2 of `+alias` (Gaps 13): `infoN` (the noun of an `info-reg`), `InfoRel N x` (the sets by `SawRel`, `is-loob` up to `loobImm`), `sawRel_int` (`+int:in` is the filter), `alCtx` (the core the arms of the `\|^` core run in); **`join-reg` of related nouns is related to `joinReg`** (`al_jreg`, each of the eight fields its own fact `f1` to `f8`, the loob tests `al_jr_la`, `al_jr_lb`). |
 | `Compiler/AuditOptLink.lean` | `#print axioms` of the main theorems of `Compiler/OptLink*.lean`; `OptLinkBase.lean` also has `+rep` forward (`rep_gate_fwd`) and against a relation (`rep_gate_rel`). |
 | `Ska/Types.lean` | Models of the IR types (`Bell`, `Sock`, `Cape`, `Pole`, `Termin`, `Blob`, `Straight`, `Tone`, ...), each with its Hoon noun layout. |
 | `Ska/Mink.lean`, `Ska/MinkTrace.lean` | Models of `+mink`, `+mook` and `+mock`; what Nock computes, `+mink` returns (`mink_of_evalH`, with `EvalH` the same as `Eval`: `EvalH.toEval`, `Eval.toEvalH`), also on a dynamic hint whose tag is a cell (`eval_cell_tag`); with no scry gate, what `+mink` returns as `[%0 p]` Nock computes (`evalH_of_minkF_nil`, `eval_of_minkF_nil`). |
@@ -2240,7 +2242,15 @@ import only its theorems.  So:
    | 15 | stores, next turn | `alTail` | 113 | `+put:by` | the record that `aliasBlock` returns |
    | 16 | walk, gate | `alWalk`, `alBodyCut` | | | `aliasWalk` by induction on `topo`, `aliasM`, then `AliasLink` |
 
-   The relations (to be defined in the first files of the link):
+   Linked so far: phase 1 (`al_rn`, `OptLinkAlRn.lean`) and phase 2
+   (`al_jreg`, `OptLinkAlJReg.lean`, with `InfoRel` and `infoN`); next is
+   phase 3, `param-info`, then the loop relation of `join-info`.  The
+   pattern that kept each step small: cut the body into named fields in
+   `optlink.py` (the field nouns of `join-reg` are `alJRegF1` to
+   `alJRegF8`), prove one fact per field with only that field unfolded
+   and the case split it needs, and assemble with `nock_cons_of`.
+
+   The relations (`OldRel` and `InfoRel` are defined, the rest to come):
    `HoonMap.toNoun` exactly for `new.gen` and the result; `OldRel` for
    `old.gen`; `InfoRel N x` for an `info-reg` noun `N` and an `InfoReg` `x`:
    the units and `is-cell` equal, `hed-of` and `tel-of` sets with the members

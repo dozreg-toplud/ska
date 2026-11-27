@@ -190,6 +190,46 @@ def alJnBrz : Noun :=
 def alJnClq : Noun :=
   (C (A 8) (C (C (A 0) (A 189)) (C (A 8) (C (C (A 0) (A 447)) (C (A 6) (C (C (A 6) (C (C (A 5) (C (C (A 0) (A 6)) (C (A 0) (A 0x3fee)))) (C (C (A 6) (C (C (A 6) (C (C (A 5) (C (C (A 0) (A 2)) (C (A 0) (A 0x3fee)))) (C (C (A 1) (A 1)) (C (A 1) (A 0))))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (C (A 8) (C (C (A 8) (C (C (A 1) (C (A 1) (C (A 1) (C (A 0) (C (A 0) (C (A 0) (C (A 0) (C (A 0) (A 0))))))))) (C (C (A 1) (C (A 10) (C (C (A 2) (C (A 1) (A 0))) (C (A 0) (A 6))))) (C (A 0) (A 1))))) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x7ffffff)))) (C (A 9) (C (A 379) (C (A 10) (C (C (A 6) (C (A 0) (A 126))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 1006)) (C (A 0) (A 6)))) (C (A 0) (A 2)))))))))) (C (A 11) (C (C (A 0x6e61656d) (C (A 1) (A 0x74736f6c2d726f737365636375732d716c63))) (C (A 6) (C (C (A 5) (C (C (A 0) (A 2)) (C (A 0) (A 0x3fee)))) (C (C (A 0) (A 30)) (C (A 0) (A 0))))))))))))))
 
+/-- `|(is-loob.a ?=([~ ?] has-imm.a))` in `join-reg`. -/
+def alJRegLa : Noun :=
+  (C (A 6) (C (C (A 0) (A 50)) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 1663))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 3326)))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 1)) (C (A 0) (A 3327)))) (C (C (A 1) (A 0)) (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 3327))))))) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))))))
+
+/-- `|(is-loob.b ?=([~ ?] has-imm.b))` in `join-reg`. -/
+def alJRegLb : Noun :=
+  (C (A 6) (C (C (A 0) (A 54)) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 1791))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 3582)))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 1)) (C (A 0) (A 3583)))) (C (C (A 1) (A 0)) (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 3583))))))) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))))))
+
+/-- Field 1 of the `info-reg` that `join-reg` makes. -/
+def alJRegF1 : Noun :=
+  (C (A 6) (C (C (A 0) (A 24)) (C (C (A 6) (C (C (A 0) (A 26)) (C (C (A 1) (A 0)) (C (A 1) (A 1))))) (C (A 1) (A 1)))))
+
+/-- Field 2 of the `info-reg` that `join-reg` makes. -/
+def alJRegF2 : Noun :=
+  (C (A 6) (C alJRegLa (C (C (A 6) (C alJRegLb (C (C (A 1) (A 0)) (C (A 1) (A 1))))) (C (A 1) (A 1)))))
+
+/-- Field 3 of the `info-reg` that `join-reg` makes. -/
+def alJRegF3 : Noun :=
+  (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6102) (C (A 0) (A 0x7fffff)))) (C (A 9) (C (A 85) (C (A 10) (C (C (A 6) (C (A 0) (A 230))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 238))) (C (A 0) (A 2))))))))
+
+/-- Field 4 of the `info-reg` that `join-reg` makes. -/
+def alJRegF4 : Noun :=
+  (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6102) (C (A 0) (A 0x7fffff)))) (C (A 9) (C (A 85) (C (A 10) (C (C (A 6) (C (A 0) (A 462))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 478))) (C (A 0) (A 2))))))))
+
+/-- Field 5 of the `info-reg` that `join-reg` makes. -/
+def alJRegF5 : Noun :=
+  (C (A 6) (C (C (A 5) (C (C (A 0) (A 414)) (C (A 0) (A 446)))) (C (C (A 0) (A 414)) (C (A 1) (A 0)))))
+
+/-- Field 6 of the `info-reg` that `join-reg` makes. -/
+def alJRegF6 : Noun :=
+  (C (A 6) (C (C (A 5) (C (C (A 0) (A 830)) (C (A 0) (A 894)))) (C (C (A 0) (A 830)) (C (A 1) (A 0)))))
+
+/-- Field 7 of the `info-reg` that `join-reg` makes. -/
+def alJRegF7 : Noun :=
+  (C (A 6) (C (C (A 5) (C (C (A 0) (A 1662)) (C (A 0) (A 1790)))) (C (C (A 0) (A 1662)) (C (A 1) (A 0)))))
+
+/-- Field 8 of the `info-reg` that `join-reg` makes. -/
+def alJRegF8 : Noun :=
+  (C (A 6) (C (C (A 5) (C (C (A 0) (A 1663)) (C (A 0) (A 1791)))) (C (C (A 0) (A 1663)) (C (A 1) (A 0)))))
+
 /-- The bunt of `gen`. -/
 def alGenBunt : Noun :=
   (C (A 0) (C (A 0) (C (A 0) (C (A 0) (C (A 0) (C (A 0) (C (A 0) (A 1))))))))
@@ -208,7 +248,7 @@ def alRnBunt : Noun :=
 
 /-- The body of `join-reg`. -/
 def alJRegB : Noun :=
-  (C (C (A 6) (C (C (A 0) (A 24)) (C (C (A 6) (C (C (A 0) (A 26)) (C (C (A 1) (A 0)) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (C (A 6) (C (C (A 6) (C (C (A 0) (A 50)) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 1663))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 3326)))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 1)) (C (A 0) (A 3327)))) (C (C (A 1) (A 0)) (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 3327))))))) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (C (A 1) (A 0)) (C (A 1) (A 1)))))))) (C (C (A 6) (C (C (A 6) (C (C (A 0) (A 54)) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 1791))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 3582)))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 1)) (C (A 0) (A 3583)))) (C (C (A 1) (A 0)) (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 3583))))))) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (C (A 1) (A 0)) (C (A 1) (A 1)))))))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6102) (C (A 0) (A 0x7fffff)))) (C (A 9) (C (A 85) (C (A 10) (C (C (A 6) (C (A 0) (A 230))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 238))) (C (A 0) (A 2)))))))) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6102) (C (A 0) (A 0x7fffff)))) (C (A 9) (C (A 85) (C (A 10) (C (C (A 6) (C (A 0) (A 462))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 478))) (C (A 0) (A 2)))))))) (C (C (A 6) (C (C (A 5) (C (C (A 0) (A 414)) (C (A 0) (A 446)))) (C (C (A 0) (A 414)) (C (A 1) (A 0))))) (C (C (A 6) (C (C (A 5) (C (C (A 0) (A 830)) (C (A 0) (A 894)))) (C (C (A 0) (A 830)) (C (A 1) (A 0))))) (C (C (A 6) (C (C (A 5) (C (C (A 0) (A 1662)) (C (A 0) (A 1790)))) (C (C (A 0) (A 1662)) (C (A 1) (A 0))))) (C (A 6) (C (C (A 5) (C (C (A 0) (A 1663)) (C (A 0) (A 1791)))) (C (C (A 0) (A 1663)) (C (A 1) (A 0))))))))))))
+  (C alJRegF1 (C alJRegF2 (C alJRegF3 (C alJRegF4 (C alJRegF5 (C alJRegF6 (C alJRegF7 alJRegF8)))))))
 
 /-- Its sample bunt. -/
 def alJRegBunt : Noun :=
