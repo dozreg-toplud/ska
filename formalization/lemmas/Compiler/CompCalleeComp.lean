@@ -237,5 +237,105 @@ theorem crx_of_xt_eq {R : Nomm → CGoalL CSet → List Nat → CM (TreapMap mug
   obtain ⟨x', rfl, e⟩ := h x mono sup hx hX
   exact e
 
+/-! ## The case `%2` on a direct call that misses -/
+
+/-- **A call that misses at `x` runs as the same call at `x'`**: steps `0`
+to `6` at `x` with the need push moving the rest to `x'` (`CallNounMT`) give
+what they give at `x'` when the need there is read with the rest unchanged
+(`CallNounM` at `x'`: after the compile `nary.cache` holds the callee). -/
+theorem crd_call_shift (h7 : slot? 7 ctx = some compK) (msup : Option Nomm) (p q : Nomm) (b : Bell) (nb : NeedOrd)
+    (sur : Noun) (x x' : GenRest) (mono SOF : Noun) (hT : CallNounMT msup ctx p q b nb sur x x' mono SOF)
+    (hn : CallNounM msup ctx p q b nb sur x' mono SOF) (PV goalN : Noun) (region : List Nat) (g : Gen (TreapMap mugF)) :
+    nock (C PV (crSubj mono (crdN p q b) goalN (listNoun A region) (unitNoun Nomm.toNoun msup) (compCore g x ctx)))
+      crDCall
+      = nock (C PV (crSubj mono (crdN p q b) goalN (listNoun A region) (unitNoun Nomm.toNoun msup) (compCore g x' ctx)))
+      crDCall :=
+  (crd_head6MT h7 msup p q b nb sur x x' mono SOF hT PV goalN region g).trans
+    (crd_head6M h7 msup p q b nb sur x' mono SOF hn PV goalN region g).symm
+
+/-- **The case `%2` on a direct call under `mono` `&`, threaded**
+(`comp_run_n2_callMono` with a miss): at the rest `x` the pill's run is the
+model's with the rest `x'` the miss leaves, when `CallNounMT` takes `x` to
+`x'`, the call reads `x'` as `CallNounM`, and the runs of `q` and `p` hold
+at `x'`.  With `x' = x` (no miss) it is `comp_run_n2_callMono`. -/
+theorem comp_run_n2_callMonoT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q : Nomm)
+    (hpn : PastAt ctx env.cod p) (b : Bell) (hcd : CodePure cod env b) (nb : NeedOrd) (sur SOF : Noun)
+    (goal : CGoalL CSet) (region : List Nat) (g : Gen (TreapMap mugF)) (hinv : GInv g goal)
+    (hdr : crdDrop (env.pure b) goal = false) (hri : env.ring b = Option.none) (hnb : env.need b = some nb)
+    (x x' : GenRest) (hx' : x'.NoSoft) (hT : CallNounMT msup ctx p q b nb sur x x' (A 0) SOF)
+    (hn : CallNounM msup ctx p q b nb sur x' (A 0) SOF)
+    (hq : ∀ subNed g1 s o g2, needOrdAllocRegs nb g = some (subNed, g1) →
+      monoBlocks b subNed goal g1 = some ((s, o), g2) →
+      RunAtR (runLCM env true msup) ctx x' (A 0) (unitNoun Nomm.toNoun msup) q
+        (CGoalL.next (Lazy.ofSure Sure.bunt) (jmp0 o)) region g2)
+    (hp : ∀ subNed g1 s o g2 nexF g3 nexF' g4, needOrdAllocRegs nb g = some (subNed, g1) →
+      monoBlocks b subNed goal g1 = some ((s, o), g2) →
+      crdFqR (runLCM env true msup) q (jmp0 o) region g2 = some (nexF, g3) →
+      pastL env.cod nexF p region g3 = some (nexF', g4) →
+      RunAtR (runLCM env true msup) ctx x' (A 0) (unitNoun Nomm.toNoun msup) p
+        (CGoalL.next (Lazy.ofSure (lazyReg s)) nexF'.th) region g4)
+    (hcp : ∀ subNed g1 s o g2 nexF g3 nexF' g4 nexS g5, needOrdAllocRegs nb g = some (subNed, g1) →
+      monoBlocks b subNed goal g1 = some ((s, o), g2) →
+      crdFqR (runLCM env true msup) q (jmp0 o) region g2 = some (nexF, g3) →
+      pastL env.cod nexF p region g3 = some (nexF', g4) →
+      runLCM env true msup p (CGoalL.next (Lazy.ofSure (lazyReg s)) nexF'.th) region g4 = some (nexS, g5) →
+      CopyH g5.re nexS.laz nexF'.laz) :
+    nock (crSubj (A 0) (Nomm.n2 p q (some (b, Option.none))).toNoun goal.toNoun (listNoun A region)
+        (unitNoun Nomm.toNoun msup) (compCore g x ctx)) crDol
+      = (runLCM env true msup (Nomm.n2 p q (some (b, Option.none))) goal region g).map
+          fun r => C r.1.goal.toNoun (genNoun r.2 x') := by
+  obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
+  obtain ⟨V, hgot, hv⟩ := hcd
+  rw [crd_model_n2M env msup p q b nb goal region hdr hri hnb, crd_noun, cr_disp_n2, cr2_dir, crd_eq]
+  have hpure := crd_pure hc hcode p.toNoun q.toNoun b.toNoun (unitNoun id Option.none) V _ (A 0)
+    goal.toNoun (listNoun A region) (unitNoun Nomm.toNoun msup) g x hgot hv
+  have ht := crd_test_all h7 (C (A 2) (C p.toNoun (C q.toNoun (C (A 0) (C b.toNoun (unitNoun id Option.none))))))
+    (A 0) (listNoun A region) (unitNoun Nomm.toNoun msup) (env.pure b) goal g x
+  rw [hdr] at ht
+  have hcall := (crd_call_shift h7 msup p q b nb sur x x' (A 0) SOF hT hn (loob (env.pure b)) goal.toNoun region g).trans
+    (crd_callM h7 hcode (runLCM env true msup) env.cod msup p q hpn b nb sur SOF x' hx' hn (loob (env.pure b))
+      goal region g (fun _ _ e => ginv_noar hinv e) hq hp hcp)
+  simp only [crdN] at hcall
+  have hu : unitNoun (id : Noun → Noun) Option.none = A 0 := rfl
+  rw [hu] at hpure ht ⊢
+  have hl : loob false = A 1 := rfl
+  rw [hl] at ht
+  unfold crDHead
+  simp [nock_exec, hpure, ht, hcall]
+
+/-- **The threaded link of the call**: `comp_run_n2_callMonoT` as
+`CompRunAtXT` at `XM E msup` (any `mono` other than `A 0` is excluded by
+`XM`), with `Y x x'` the facts that take `x` to `x'` and hold at `x'`. -/
+theorem comp_run_n2_callXT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q : Nomm)
+    (hpn : PastAt ctx env.cod p) (b : Bell) (hcd : CodePure cod env b) (nb : NeedOrd) (sur SOF : Noun)
+    (goal : CGoalL CSet) (region : List Nat) (g : Gen (TreapMap mugF)) (hinv : GInv g goal)
+    (hdr : crdDrop (env.pure b) goal = false) (hri : env.ring b = Option.none) (hnb : env.need b = some nb)
+    (E : GenRest → Prop) (Y : GenRest → GenRest → Prop)
+    (hY : ∀ x, x.NoSoft → E x → ∃ x', Y x x' ∧ x'.NoSoft ∧ CallNounMT msup ctx p q b nb sur x x' (A 0) SOF ∧
+      CallNounM msup ctx p q b nb sur x' (A 0) SOF ∧
+      (∀ subNed g1 s o g2, needOrdAllocRegs nb g = some (subNed, g1) →
+        monoBlocks b subNed goal g1 = some ((s, o), g2) →
+        RunAtR (runLCM env true msup) ctx x' (A 0) (unitNoun Nomm.toNoun msup) q
+          (CGoalL.next (Lazy.ofSure Sure.bunt) (jmp0 o)) region g2) ∧
+      (∀ subNed g1 s o g2 nexF g3 nexF' g4, needOrdAllocRegs nb g = some (subNed, g1) →
+        monoBlocks b subNed goal g1 = some ((s, o), g2) →
+        crdFqR (runLCM env true msup) q (jmp0 o) region g2 = some (nexF, g3) →
+        pastL env.cod nexF p region g3 = some (nexF', g4) →
+        RunAtR (runLCM env true msup) ctx x' (A 0) (unitNoun Nomm.toNoun msup) p
+          (CGoalL.next (Lazy.ofSure (lazyReg s)) nexF'.th) region g4))
+    (hcp : ∀ subNed g1 s o g2 nexF g3 nexF' g4 nexS g5, needOrdAllocRegs nb g = some (subNed, g1) →
+      monoBlocks b subNed goal g1 = some ((s, o), g2) →
+      crdFqR (runLCM env true msup) q (jmp0 o) region g2 = some (nexF, g3) →
+      pastL env.cod nexF p region g3 = some (nexF', g4) →
+      runLCM env true msup p (CGoalL.next (Lazy.ofSure (lazyReg s)) nexF'.th) region g4 = some (nexS, g5) →
+      CopyH g5.re nexS.laz nexF'.laz) :
+    CompRunAtXT (runLCM env true msup) ctx (XM E msup) Y (Nomm.n2 p q (some (b, Option.none))) goal region g := by
+  rintro x mono sup hx ⟨hE, rfl, rfl⟩
+  obtain ⟨x', hy, hx', hT, hn, hq, hp⟩ := hY x hx hE
+  exact ⟨x', hy, comp_run_n2_callMonoT h7 hcode env msup p q hpn b hcd nb sur SOF goal region g hinv hdr
+    hri hnb x x' hx' hT hn hq hp hcp⟩
+
 end Compiler
 end Formalization

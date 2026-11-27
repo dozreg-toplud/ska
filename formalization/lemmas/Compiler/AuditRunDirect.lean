@@ -11,6 +11,8 @@ import lemmas.Compiler.CompRunRClass
 import lemmas.Compiler.CompUnaryDir
 import lemmas.Compiler.CompSofPush
 import lemmas.Compiler.CompSofArms
+import lemmas.Compiler.CompCalleeComp
+import lemmas.Compiler.CompSofCode
 
 /-! The axioms of the link of the direct call of `%2` (README Gaps 19). -/
 
@@ -219,3 +221,17 @@ open Formalization.Compiler
 #print axioms Formalization.Compiler.needSoftRet_of
 #print axioms Formalization.Compiler.sofArms_code
 #print axioms Formalization.Compiler.cu_gate_dir_code
+#print axioms Formalization.Compiler.ccc_big
+#print axioms Formalization.Compiler.ccc_miss
+#print axioms Formalization.Compiler.cne_step
+#print axioms Formalization.Compiler.crd_head6MT
+#print axioms Formalization.Compiler.callNounMT_of
+#print axioms Formalization.Compiler.crxt_of_x
+#print axioms Formalization.Compiler.crx_of_xt_eq
+#print axioms Formalization.Compiler.crd_call_shift
+#print axioms Formalization.Compiler.comp_run_n2_callMonoT
+#print axioms Formalization.Compiler.comp_run_n2_callXT
+#print axioms Formalization.Compiler.nommOf_eq
+#print axioms Formalization.Compiler.sfTable_code
+#print axioms Formalization.Compiler.sofBell_code
+#print axioms Formalization.Compiler.cu_gate_dir_ana
