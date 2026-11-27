@@ -1,5 +1,7 @@
 import lemmas.Compiler.CompInlinedL4
 import lemmas.Compiler.CompInlinedL5
+import lemmas.Compiler.CompInlinedL6
+import lemmas.Compiler.CompTarjanBridge
 
 /-! `#print axioms` of the pill link of `+inlined` (track Q, Gaps 28). -/
 
@@ -21,3 +23,12 @@ open Formalization Formalization.Compiler
 #print axioms inlinedM_rank
 #print axioms inlRank_ok
 #print axioms inlinedM_returns
+#print axioms inlinedM_returns_ex
+#print axioms inlWalk_congr
+#print axioms inlinedM_congr
+#print axioms inlinedM_addsTo
+#print axioms inlCohM_addsTo
+#print axioms callsOf_addsTo
+#print axioms singleScc_addsTo
+#print axioms inlCoh_of_M
+#print axioms inlCohM_jets
