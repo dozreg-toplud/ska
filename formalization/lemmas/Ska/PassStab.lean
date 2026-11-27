@@ -167,10 +167,10 @@ theorem mem_of_above {id : Ident} {stk ab : List Ident} (h : above id stk = some
   · exact List.mem_append_left _ h
   · rw [List.mem_singleton.mp h]; exact List.mem_append_right _ List.mem_cons_self
 
-/-- **A pass that goes on, whether or not it pushes**, keeps or lowers the
-value of every identity that was on the stack at its start (one that `+cull`
-drops falls to `none`), keeps the root on the stack, and lowers the value of
-one of them or pushes. -/
+/-- **A pass that goes on with a change, whether or not it pushes**, keeps or
+lowers the value of every identity that was on the stack at its start (no
+member is dropped between passes since dab8478), keeps the root on the stack,
+and lowers the value of one of them or pushes. -/
 theorem passOn_old (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmT : MemoTP memoF)
     (hRW : ∀ k, RunStkW (run env memoF k)) {n : Nat} {id : Ident} {index pass : Nat}
     {st st' : SkaState M R} (hi : SInv st) (ht : TInv st) (hw : WInv st)
@@ -178,25 +178,21 @@ theorem passOn_old (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmT : Me
     (∀ i ∈ st.stk, SkaModel.OLe (valE st' i) (valE st i)) ∧ id ∈ st'.stk ∧
       ((∃ i ∈ st.stk, SkaModel.OLt (valE st' i) (valE st i)) ∨ st.next < st'.next) := by
   have hle := (passOn_inv env memoF hmF hmT hRW hi ht hw h).2.2.2.1
-  obtain ⟨ab, members, r, st2, h1, h2, h3, _, h5, h6⟩ := h
+  obtain ⟨ab, members, r, h1, h2, h3, _, h6⟩ := h
   have i1 : SInv ({ st with stats := { st.stats with passes := st.stats.passes + 1 } } : SkaState M R) :=
     hi.congr rfl rfl rfl rfl
   have t1 : TInv ({ st with stats := { st.stats with passes := st.stats.passes + 1 } } : SkaState M R) :=
     ht.congr rfl rfl
   obtain ⟨_, ⟨l2, e2⟩, A, B⟩ :=
-    memberLoop_old env memoF hmF hmT hRW n index pass members _ r st2 i1 t1 (hw.congr rfl rfl rfl) h3
+    memberLoop_old env memoF hmF hmT hRW n index pass members _ r st' i1 t1 (hw.congr rfl rfl rfl) h3
   have v1 : valE ({ st with stats := { st.stats with passes := st.stats.passes + 1 } } : SkaState M R) =
       valE st := valE_congr rfl rfl
   rw [v1] at A B
-  have S := cull_sub h5
   obtain ⟨ab0, rest, _, hs, _⟩ := above_eq h1
-  have hs2 : st2.stk = (l2 ++ ab0) ++ id :: rest := by
-    rw [e2]; show l2 ++ st.stk = _; rw [hs, List.append_assoc]
-  obtain ⟨_, _, ⟨⟨l', e'⟩, _, _⟩⟩ := cull_ok (allP env memoF hmF n n (Nat.le_refl n) |>.2.2.2.2 index pass
-    members _ r st2 [] (fun _ => False) i1 ⟨st.stk, (List.append_nil _).symm⟩ (fun _ h => h.elim)
-    (fun _ _ h => h) h3).1 h5 hs2
-  have hroot : id ∈ st'.stk := by rw [e']; exact List.mem_append_right _ List.mem_cons_self
-  refine ⟨fun i hi' => ole_trans (valE_sub S i) (A i hi'), hroot, ?_⟩
+  have hroot : id ∈ st'.stk := by
+    rw [e2]; show id ∈ l2 ++ st.stk; rw [hs]
+    exact List.mem_append_right _ (List.mem_append_right _ List.mem_cons_self)
+  refine ⟨fun i hi' => A i hi', hroot, ?_⟩
   cases hr : r.2 with
   | true =>
     have hms : ∀ m ∈ members, m ∈ st.stk := by
@@ -205,7 +201,7 @@ theorem passOn_old (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmT : Me
       · rw [hs]; exact List.mem_append_right _ List.mem_cons_self
       · exact mem_of_above h1 m hm'
     obtain ⟨i, hi', hlt⟩ := B hr hms
-    exact Or.inl ⟨i, hms i hi', ole_lt_trans (valE_sub S i) hlt⟩
+    exact Or.inl ⟨i, hms i hi', hlt⟩
   | false =>
     refine Or.inr (Nat.lt_of_le_of_ne hle fun e => h6 ⟨hr, e.symm⟩)
 

@@ -190,15 +190,17 @@ theorem passStep_n {n : Nat} {mem : MemGo M R} {pass : PassGo M R} (hmem : MemN 
   · simp only [Option.some.injEq, Prod.mk.injEq] at e
     obtain ⟨_, rfl⟩ := e
     exact a
-  · simp only [Option.bind_eq_some_iff] at e
-    obtain ⟨st3, hc, e⟩ := e
-    have b := cull_next hc
-    split at e
-    · simp only [Option.map_eq_some_iff] at e
-      obtain ⟨st4, hp, e⟩ := e
-      cases e
-      rw [pop_next hp, b]; exact a
-    · exact Nat.le_trans (b ▸ a) (hpass _ _ _ _ _ _ e)
+  · split at e
+    · unfold passEnd at e
+      simp only [Option.bind_eq_some_iff] at e
+      obtain ⟨_, _, _, _, e⟩ := e
+      split at e
+      · exact Nat.le_trans a (hpass _ _ _ _ _ _ e)
+      · simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at e
+        obtain ⟨st3, hc, st4, hp, e⟩ := e
+        cases e
+        rw [pop_next hp, cull_next hc]; exact a
+    · exact Nat.le_trans a (hpass _ _ _ _ _ _ e)
 
 theorem cullPass_n {n : Nat} {pass : PassGo M R} (hpass : PassN pass) {id : Ident} {index : Nat}
     {st st' : SkaState M R} {low : Nat} (h : cullPass n pass id index st = some (low, st')) :

@@ -753,19 +753,19 @@ theorem passStep_tp {n : Nat} {mem : MemGo M R} {pass : PassGo M R} (hmem : MemP
   · simp only [Option.some.injEq, Prod.mk.injEq] at e
     obtain ⟨_, rfl⟩ := e
     exact t2
-  · simp only [Option.bind_eq_some_iff] at e
-    obtain ⟨st3, hc, e⟩ := e
-    obtain ⟨l2, el2⟩ := K2.1
-    obtain ⟨i3, _, k3⟩ := cull_ok i2 hc el2
-    have t3 := cull_tp t2 hc
-    have K3 : Keep (id :: rest) (· ∈ rest) st st3 := K2.trans (k3.mono (fun j hj => List.mem_cons_of_mem _ hj))
-    obtain ⟨l3, el3⟩ := K3.1
+  · obtain ⟨l2, el2⟩ := K2.1
     split at e
-    · simp only [Option.map_eq_some_iff] at e
-      obtain ⟨st4, hp, e⟩ := e
-      cases e
-      exact pop_tp i3 t3 hp
-    · exact hpassT id index (p + 1) st3 low st' l3 rest i3 t3 el3 e
+    · unfold passEnd at e
+      simp only [Option.bind_eq_some_iff] at e
+      obtain ⟨_, _, _, _, e⟩ := e
+      split at e
+      · exact hpassT id index (p + 1) st2 low st' l2 rest i2 t2 el2 e
+      · simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at e
+        obtain ⟨st3, hc, st4, hp, e⟩ := e
+        cases e
+        obtain ⟨i3, _, _⟩ := cull_ok i2 hc el2
+        exact pop_tp i3 (cull_tp t2 hc) hp
+    · exact hpassT id index (p + 1) st2 low st' l2 rest i2 t2 el2 e
 
 theorem cullPass_tp {n : Nat} {pass : PassGo M R} (hpassT : PassPT pass) {id : Ident} {index : Nat}
     {st st' : SkaState M R} {low : Nat} {ab0 rest : List Ident} (hi : SInv st) (ht : TInv st)

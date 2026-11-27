@@ -307,11 +307,7 @@ namespace Formalization
 #check @SkaModel.PokeM.invKept_lift
 #check @SkaModel.Comp.finishLFC_eq_M
 #check @SkaModel.Ana.FinIdents
-#check @SkaModel.Ana.PassMoves
-#check @SkaModel.Ana.freeze_no_chain
 #check @SkaModel.Ana.KruskalBT
-#check @SkaModel.Ana.passMoves_chain
-#check @SkaModel.Ana.finPushes_of_freezeC
 #check @SkaModel.Ana.finIdents_of_kruskal
 #check @SkaModel.Comp.lokSE_tenR
 #check @SkaModel.Comp.finishLFC_contractGBN
@@ -319,8 +315,6 @@ namespace Formalization
 #check @Compiler.cu_gate_scc_one_six_fix
 #check @Compiler.FixRet
 #check @Compiler.scOrd
-#check @SkaModel.Ana.finPushes_of_freeze
-#check @SkaModel.Ana.EvFrozen
 
 /-! ## The glue theorems of the second pass -/
 #print axioms SkaModel.Glue.rawMonoD_calls
@@ -492,7 +486,6 @@ namespace Formalization
 #check @Compiler.comp_past_if
 #check @Compiler.comp_run_hint
 #check @Compiler.HintSound
-#check @SkaModel.Ana.EvFrozen
 #check @SkaModel.Comp.CallTreeH
 #check @SkaModel.Comp.CallTreeHU
 #check @SkaModel.Comp.Six1

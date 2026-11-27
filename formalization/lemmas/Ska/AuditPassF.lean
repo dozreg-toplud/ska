@@ -150,20 +150,11 @@ out. -/
 #print axioms Ana.passOn_dirty
 #print axioms Ana.cull_keeps_kid
 #print axioms Ana.cull_reach
-#print axioms Ana.passOn_cull
-#print axioms Ana.passOn_shape
-#print axioms Ana.freeze_abstract
-#print axioms Ana.freeze_no_chain
-#print axioms Ana.finPushes_of_freeze
 -- C on the model (`Ska/PassMoves.lean`)
 #print axioms Ana.sweep_nodup
 #print axioms Ana.resolve_new
 #print axioms Ana.run_new
 #print axioms Ana.memberLoop_new
-#print axioms Ana.passOn_moves
-#print axioms Ana.passHyp_step
-#print axioms Ana.passMoves_chain
-#print axioms Ana.finPushes_of_freezeC
 -- (i) from finite branching, Kruskal and König (`Ska/PassIdents.lean`)
 #print axioms Ana.konig
 #print axioms Ana.finIdents_of_tree

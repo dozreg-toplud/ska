@@ -9,9 +9,12 @@ many.  Here that becomes a statement about fuel: **the pass loop returns at
 some fuel whenever each of its passes does**, that is, at every state the
 passes reach, the pass either stops on its own (with a continuation that
 always fails it still returns: `+sweep`, the member loop, `+cull` and `+pop`
-returned) or goes on (`PassOn`, its `+sweep`, member loop and `+cull`
+returned) or goes on with a change (`PassOn`, its `+sweep` and member loop
 returned), at some fuel, and `next` stays below a bound `B`
-(`passLoop_returns`).
+(`passLoop_returns`).  Since dab8478 a pass can also go on with no change
+(a member that `id` reaches is dirty at the end): such a quiet pass is neither,
+so `passLoop_returns` asks that none is reached; that the quiet passes are
+finitely many is not proved.
 
 The argument: no infinite chain of passes (`passOn_wf_W`) gives `Acc` of the
 pass relation by dependent choice (`acc_of_no_chain`); by induction on it, a
@@ -53,11 +56,10 @@ theorem acc_of_no_chain {α : Type} {r : α → α → Prop} (h : ∀ f : Nat �
 theorem passOn_mono {env : Env R} {memoF : Memo M} {m m' : Nat} (h : m ≤ m') {id : Ident} {index pass : Nat}
     {st st' : SkaState M R} (hp : PassOn env memoF m id index pass st st') :
     PassOn env memoF m' id index pass st st' := by
-  obtain ⟨ab, members, r, st2, h1, h2, h3, h4, h5, h6⟩ := hp
-  exact ⟨ab, members, r, st2, h1,
+  obtain ⟨ab, members, r, h1, h2, h3, h4, h6⟩ := hp
+  exact ⟨ab, members, r, h1,
     fuel_chain (f := fun k => sweep k id (Treap.silt ab) st) (fun k => sweep_fuel k id _ st) h _ h2,
-    memberLoop_fuel_le env memoF h _ _ _ _ _ h3, h4,
-    fuel_chain (f := fun k => cull k id st2) (fun k => cull_fuel k id st2) h _ h5, h6⟩
+    memberLoop_fuel_le env memoF h _ _ _ _ _ h3, h4, h6⟩
 
 /-- The states that the passes of the component of `id` reach from `x`
 (the pass number and the state), each pass going on at some fuel. -/
