@@ -1,0 +1,23 @@
+sprestdump.hoon on the real compiler (runhoon.sh, 2026-11-27): one line per %full poke (the harness evaluates twice; first pass shown)
+0 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 1 %nsccs 1 %big 1 %ncode 1
+1 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 1 %nsccs 1 %big 1 %ncode 2
+2 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 2 %nsccs 2 %big 1 %ncode 4
+3 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 1 %nsccs 1 %big 1 %ncode 5
+4 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 1 %nsccs 1 %big 1 %ncode 6
+5 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 2 %nsccs 2 %big 1 %ncode 8
+6 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 0 %nsccs 0 %big 0 %ncode 8
+7 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 1 %nsccs 1 %big 1 %ncode 9
+8 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 1 %nsccs 1 %big 1 %ncode 10
+9 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 1 %nsccs 1 %big 1 %ncode 11
+10 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 1 %nsccs 1 %big 1 %ncode 12
+11 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 1 %nsccs 1 %big 1 %ncode 13
+12 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 1 %nsccs 1 %big 1 %ncode 14
+13 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 2 %nsccs 2 %big 1 %ncode 16
+14 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 0 %nsccs 0 %big 0 %ncode 16
+15 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 0 %nsccs 0 %big 0 %ncode 16
+16 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 0 %nsccs 0 %big 0 %ncode 16
+17 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 0 %nsccs 0 %big 0 %ncode 16
+18 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 3 %nsccs 2 %big 2 %ncode 19
+19 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 3 %nsccs 2 %big 2 %ncode 22
+20 %root %.y %memo %.y %vars %.y %keys %.y %old %.y %new %.y %same %.y %close %.y %flags %.y %jets %.y %nnew 1 %nsccs 1 %big 1 %ncode 23
+poke-differs lines: 0
