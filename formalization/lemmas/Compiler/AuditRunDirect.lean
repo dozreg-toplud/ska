@@ -18,6 +18,7 @@ import lemmas.Compiler.CompCalleeCompOne
 import lemmas.Compiler.CompSccOfOneGate
 import lemmas.Compiler.CompSccOfAny
 import lemmas.Compiler.CompRunSoftDefs
+import lemmas.Compiler.CompRunSoftCall
 
 /-! The axioms of the link of the direct call of `%2` (README Gaps 19). -/
 
@@ -309,3 +310,12 @@ open Formalization.Compiler
 #print axioms Formalization.Compiler.yOkS_ext
 #print axioms Formalization.Compiler.agreeIP_iff
 #print axioms Formalization.Compiler.callLS_soft_tail
+#print axioms Formalization.Compiler.crn_hasS
+#print axioms Formalization.Compiler.crd_blk_doneS
+#print axioms Formalization.Compiler.crd_from7NTS
+#print axioms Formalization.Compiler.crd_callNTS
+#print axioms Formalization.Compiler.callLS_soft_tailK
+#print axioms Formalization.Compiler.comp_run_n2_softNT
+#print axioms Formalization.Compiler.comp_run_n0_nextS
+#print axioms Formalization.Compiler.comp_run_n2_softTail
+#print axioms Formalization.Compiler.crd_ctailRTQ
