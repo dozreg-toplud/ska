@@ -19,7 +19,9 @@ that writes its source, a body without SDBody, ProxOK holds, cond has keys]`:
   bond's need through a proxy), none splits one, `SDBody` everywhere;
 * the 7 direct calls and the 7,920 `enumDX` nomms: no key is split, but
   `SDBody` FAILS on every state (the split block `[hed r rh, tal r rt]` of
-  `+mono-try-call`), so `nsk` there needs its own argument.
+  `+mono-try-call`), and on 64 `enumDX` states a split register has no
+  definition at all (`tallyD`), so `nsk` there needs its own argument
+  (`Glue/ProxCalls.lean`, `NskEndC`).
 -/
 
 namespace Formalization
@@ -84,6 +86,28 @@ def hand : List Nomm := atomers.flatMap fun a =>
 #guard tallyQ hand == [28, 0, 0, 28, 0, 0, 28, 28]
 #guard tallyQ dmNomms == [7, 0, 0, 0, 0, 7, 7, 2]
 #guard tallyQ enumDX == [7920, 0, 0, 0, 0, 7920, 7920, 5351]
+
+/-- `r` has a definition somewhere. -/
+def defdB (g : Comp.Gen FM) (x : Nat) : Bool := (Raw.blocksOf g.blocks).any fun (_, b) => (writesB b).contains x
+
+/-- Every split register has a definition somewhere. -/
+def splitDefdB (g : Comp.Gen FM) : Bool :=
+  (Raw.blocksOf g.blocks).all fun (_, b) => (b.body.filterMap EntryCheck.splitReg).all (defdB g)
+
+/-- `[nomms, no code, a split register defined nowhere, a key split, wr fails]`. -/
+def tallyD (l : List Nomm) : List Nat :=
+  let rs := l.map fun nm => (kerfState nm).map fun g => (splitDefdB g, keySplitB g, wrB g)
+  [l.length, rs.countP (·.isNone),
+   rs.countP fun r => match r with | some (false, _, _) => true | _ => false,
+   rs.countP fun r => match r with | some (_, true, _) => true | _ => false,
+   rs.countP fun r => match r with | some (_, _, false) => true | _ => false]
+
+/- With direct calls, 64 `enumDX` states split a register that has no
+definition at all (so `nsk` is not `IL.cond` plus a definition there); no
+state splits a key, and `wr` holds everywhere. -/
+#guard tallyD dmNomms == [7, 0, 0, 0, 0]
+#guard tallyD enumDX == [7920, 0, 64, 0, 0]
+#guard tallyD plainCX == [2856, 0, 0, 0, 0]
 
 end ProxPlainCheck
 end Glue
