@@ -682,6 +682,79 @@ theorem runAT_fragX {nm : Nomm} (hf : FragX (S := S) nm) (hc : sixCount nm ≤ 2
   have R := runX_at hf (goal := CGoal.done) (by simp [gen0]) (by simp [gen0]) trivial trivial trivial hc h
   exact at_of_ga R.ga fun k => by simp [gen0, HoonMap.get_empty]
 
+
+section Top
+variable [MapKeys Map]
+
+/-- **The facts of `StInv` and the liveness at `0` of the n-ary code of
+`FragX`**, with no hypothesis on the run (`RunAT` by `runAT_fragX`). -/
+theorem stIn_finishLFX_at {nm : Nomm} (hf : FragX (S := S) nm) (hc : sixCount nm ≤ 255)
+    {ord : NeedOrd} {less : Cape} {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, []))
+    {c' : Straight Map} (h : finishLF (S := S) (Map := Map) nm ord less bake = some c') :
+    Compiler.Closed c'.blocks ∧ Compiler.ArityOK c'.blocks ∧ (HoonMap.get c'.blocks 0).isSome ∧
+      Compiler.TwoNA c'.blocks ∧ ∀ r', Live c'.blocks 0 r' → r' < c'.nargs :=
+  stIn_finishLFX_of hf hc (runAT_fragX hf hc) hbake h
+
+/-- **The same for the whole-subject code of `FragX`.** -/
+theorem stIn_finishLUX_at {nm : Nomm} (hf : FragX (S := S) nm) (hc : sixCount nm ≤ 255)
+    {c' : Straight Map} (h : finishLU (S := S) (Map := Map) nm = some c') :
+    Compiler.Closed c'.blocks ∧ Compiler.ArityOK c'.blocks ∧ (HoonMap.get c'.blocks 0).isSome ∧
+      Compiler.TwoNA c'.blocks ∧ ∀ r', Live c'.blocks 0 r' → r' < c'.nargs :=
+  stIn_finishLUX hf hc (runAT_fragX hf hc) h
+
+/-- **What `+optimize`'s totality asks of the n-ary code of `FragX`**, with
+no hypothesis on the run. -/
+theorem optInput_finishLFX_at {nm : Nomm} (hf : FragX (S := S) nm) (hc : sixCount nm ≤ 255)
+    {ord : NeedOrd} {less : Cape} {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, []))
+    {c' : Straight Map} (h : finishLF (S := S) (Map := Map) nm ord less bake = some c') :
+    ∃ ρ, Compiler.StInv ρ (MapKeys.keys c'.blocks) c'.blocks ∧ DInvR c'.blocks ∧
+      Compiler.ReadsIn c'.nargs c'.blocks :=
+  optInput_finishLFX_of hf hc (runAT_fragX hf hc) hbake h
+
+/-- **What `+optimize`'s totality asks of the whole-subject code of
+`FragX`**, with no hypothesis on the run. -/
+theorem optInput_finishLUX_at {nm : Nomm} (hf : FragX (S := S) nm) (hc : sixCount nm ≤ 255)
+    {c' : Straight Map} (h : finishLU (S := S) (Map := Map) nm = some c') :
+    ∃ ρ, Compiler.StInv ρ (MapKeys.keys c'.blocks) c'.blocks ∧ DInvR c'.blocks ∧
+      Compiler.ReadsIn c'.nargs c'.blocks :=
+  optInput_finishLUX_of hf hc (runAT_fragX hf hc) h
+
+end Top
+
 end Raw
 end SkaModel
+
+namespace Compiler
+
+open Nock SkaModel Comp Raw
+
+section
+variable {S : Type} [HoonSet S]
+
+open Pill Hoon in
+/-- **The pill's `+optimize` returns on the raw n-ary code of every nomm of
+`FragX`**, given `GateTotalN` and `AliasRetN` (track H's); `RunAT` is
+`runAT_fragX`. -/
+theorem opt_total_finishLFX_at (hG : GateTotalN)
+    (hA : ∀ ρ L, AliasRetN (Map := TreapMap mugF) (Ana.pickR FinMap) ρ L)
+    {nm : Nomm} (hf : FragX (S := S) nm) (hc : sixCount nm ≤ 255)
+    {ord : NeedOrd} {less : Cape} {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, []))
+    {c' : Straight (TreapMap mugF)} (h : finishLF (S := S) (Map := TreapMap mugF) nm ord less bake = some c') :
+    ∃ sfuel fuel s', Opt.optimizeF fuel ⟨Opt.aliasM (Ana.pickR FinMap), Opt.trimTraceHints,
+      Opt.switchChains sfuel⟩ c' = some s' ∧ nock (C optBody (C c'.toNoun optC)) optBody = some s'.toNoun :=
+  opt_total_finishLFX hG hA hf hc (runAT_fragX hf hc) hbake h
+
+open Pill Hoon in
+/-- **The same for the raw whole-subject code.** -/
+theorem opt_total_finishLUX_at (hG : GateTotalN)
+    (hA : ∀ ρ L, AliasRetN (Map := TreapMap mugF) (Ana.pickR FinMap) ρ L)
+    {nm : Nomm} (hf : FragX (S := S) nm) (hc : sixCount nm ≤ 255)
+    {c' : Straight (TreapMap mugF)} (h : finishLU (S := S) (Map := TreapMap mugF) nm = some c') :
+    ∃ sfuel fuel s', Opt.optimizeF fuel ⟨Opt.aliasM (Ana.pickR FinMap), Opt.trimTraceHints,
+      Opt.switchChains sfuel⟩ c' = some s' ∧ nock (C optBody (C c'.toNoun optC)) optBody = some s'.toNoun :=
+  opt_total_finishLUX hG hA hf hc (runAT_fragX hf hc) h
+
+end
+
+end Compiler
 end Formalization
