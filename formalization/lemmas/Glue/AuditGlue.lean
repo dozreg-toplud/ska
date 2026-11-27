@@ -69,6 +69,15 @@ import lemmas.Compiler.PokeLink
 import lemmas.Ska.PokeEnc
 import lemmas.Ska.SccLoopMsg
 import lemmas.Ska.SccLoopCycle
+import lemmas.Compiler.CompSccLoopInd
+import lemmas.Compiler.CompSccLoopClose
+import lemmas.Compiler.CompSccLoopPrint
+import lemmas.Compiler.CompSccOfAny
+import lemmas.Compiler.CompMonoLink
+import lemmas.Compiler.CompSccLoopMemDone
+import lemmas.Ska.CompGen
+import lemmas.Glue.InlineAnnot
+import lemmas.Glue.InlineCheck
 
 /-!
 # Audit of `formalization/LEDGER.md`
@@ -466,9 +475,10 @@ namespace Formalization
 #check @Compiler.ccc_scc_hit
 #check @Compiler.calleeCompiled_one
 #check @Compiler.cu_gate_dir_one
--- not checked (build clash M15': `Compiler.sw_gate` in `CompSccLoopStep` and `OptLinkSwGate`): Compiler.csi_gate_loop
--- not checked (build clash M15': `Compiler.sw_gate` in `CompSccLoopStep` and `OptLinkSwGate`): Compiler.csi_gate_ranked
--- not checked (build clash M15': `Compiler.sw_gate` in `CompSccLoopStep` and `OptLinkSwGate`): Compiler.cccMiss_of_loop
+-- M15' closed (372dcb9: track I's `sw_gate` is `csSw_gate`, `swG` is `csSwG`): the loop files import here
+#check @Compiler.csi_gate_loop
+#check @Compiler.csi_gate_ranked
+#check @Compiler.cccMiss_of_loop
 #check @Compiler.PrintId
 #check @Compiler.cg_print
 #check @SkaModel.Comp.lokSH_callTreeH
@@ -490,5 +500,44 @@ namespace Formalization
 #check @Compiler.MemGate
 #check @SkaModel.SccLoop.Ranked
 #check @Compiler.NormRun
+
+/-! ## LEDGER seventh pass: digest [270] to [272], and `inlAnnot` (track G) -/
+-- track I [271]: `PrintId` proved (M18 closed), the loop theorems without it
+#check @Compiler.printId_pill
+#check @Compiler.csi_gate_loop_np
+#check @Compiler.csi_gate_loop_d_np
+#check @Compiler.csi_gate_ranked_np
+#check @Compiler.mem_gate_done_R
+-- track K [271]: callees in SCCs of any size; the member invariant `QK`
+#check @Compiler.cu_gate_dir_scc
+#check @Compiler.calleeCompiled_scc
+#check @Compiler.envP
+#check @Compiler.envP_agree
+#check @Compiler.QK
+#check @Compiler.AnyCallee
+#check @Compiler.monoRaw_hit
+#check @Compiler.monoLinkAt_of
+#check @Compiler.compileUnaryP_gate
+#check @Compiler.PGoodK
+-- track C [270]: `RunOKGen` adopted, phase F open
+#check @SkaModel.Comp.RunOKGen
+#check @SkaModel.Comp.FrameG
+#check @SkaModel.Comp.SemCoreG
+#check @SkaModel.Comp.RunOKLS.toGen
+#check @SkaModel.Comp.FillSemL.cons
+#check @SkaModel.Comp.AgreeG.toLB
+-- track G: the model of `+inlined` and the model half of `inlAnnot` (2.e)
+#check @SkaModel.Glue.inlinedM
+#check @SkaModel.Glue.inlWalk
+#check @SkaModel.Glue.nommSize
+#check @SkaModel.Glue.inlFailing
+#check @SkaModel.Glue.AnnotS
+#check @SkaModel.Glue.CodeOKS
+#check @SkaModel.Glue.InlPill
+#check @SkaModel.Glue.InvBS
+#print axioms SkaModel.Glue.AnnotS.toAnnot
+#print axioms SkaModel.Glue.inlWalk_annot
+#print axioms SkaModel.Glue.inlinedM_annot
+#print axioms SkaModel.Glue.inlAnnot_of
 
 end Formalization
