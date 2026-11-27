@@ -269,9 +269,13 @@ a0 = find('  ++  analyze')
 i = find('    =/  index=@uxsite  next.st', a0)
 src[i + 1:i + 1] = ['    ~&  [%pm-new (mug id) index (lent stk.st)]']
 i = find('    =/  members=(list identity)  (sweep id (silt (above id stk.st)) st)', a0)
-src[i + 1:i + 1] = ['    ~&  [%pm-pass (mug id) pass (lent members) next.st (lent stk.st)]']
+src[i + 1:i + 1] = ['    ~&  [%pm-pass (mug id) pass (lent members) next.st (lent stk.st) %st (mug (turn (above id stk.st) |=(i=identity [i (git-g g.st i)])))]']
 i = find('    ?:  &(!changed =(next.st next-before))', a0)
 src[i:i] = ['    ~&  [%pm-end (mug id) pass changed !=(next.st next-before)]']
+i = find('              %rec', a0)
+src[i + 1:i + 1] = ['            ~&  [%pm-rec (mug id) (mug id-there) (mug +.u.par)]']
+i = find('          ?~  ord=(~(get by order.st.gen) id-there)  [[id-there u.d] gen]', a0)
+src[i:i] = ['          ~&  [%pm-ex (mug id) (mug id-there)]']
 i = find('    =/  dead=(set identity)  (~(dif in members) live)', a0)
 src[i + 1:i + 1] = ['    ~?  !=(~ dead)  [%pm-cull (mug id) (turn ~(tap in dead) mug)]']
 r0 = find('  ++  run', a0)

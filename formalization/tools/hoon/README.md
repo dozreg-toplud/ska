@@ -78,7 +78,8 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
 * `passmeasure.py OUTDIR [seed]` writes an instrumented copy of the library and drivers for the measure of the pass loop
                     of `+analyze` (`lemmas/Ska/PassMeasure.lean`, README Gaps 16): per run, how `less-code`, the product, the
                     map, `indi` and `seek` changed; per pass loop, its passes; the members `+cull` drops and whether one is
-                    analysed again.  `passmeasure-lib.hoon` is its driver over 21 library calls.  Over 2,269 calls (2026-11-27):
+                    analysed again (also `%pm-rec caller kid target`, `%pm-ex caller kid` at every %rec and exact
+                    resolution, and `%st`, a mug of the members with their entries, at every pass).  `passmeasure-lib.hoon` is its driver over 21 library calls.  Over 2,269 calls (2026-11-27):
                     no run against the lexicographic measure (with `less-code` in the order `CapeLe`), 151 runs that changed
                     only the map (open point (a)), 21 culled members and none found again (open point (b)), no pass loop that
                     did not end.  It also checks `Tidy` and `PiNorm` (`lemmas/Ska/PassMeasureT.lean`) at every run: over
@@ -103,6 +104,21 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     the library of `passmeasure.py`; `--sum OUT.txt...` counts pushes per identity, re-pushes after a
                     cull, passes, and cases that did not finish.  Over 363 random cores (seeds 1, 11 to 16): 13
                     re-pushes, at most 2 pushes of one identity, at most 9 passes, all returned (2026-11-27)
+                    `c D N M_0,..,M_{D-1}`: a chain of D restarting callees (`chain`), R's register N slots, g_i's
+                    M_i (decreasing, M_{D-1} >= 3); chain(2, 14, [6, 3]) is the old c14 (2026-11-27, track F step 1:
+                    D = 1..8, passes = the register slots within 5 %, see README Gaps 16)
+* `passmeasure-tab.py OUT.txt...` per case: passes of the root's loop, all passes, pushes of the most pushed identity,
+                    total pushes, identities, re-pushes after a cull, runs, returned; `--take OUT.txt...`: per (caller,
+                    kid) the identities it resolved to (`%pm-rec`, `%pm-ex`), takeovers and returns A..B..A
+* `passmeasure-q.py SEED N OUT.hoon` random cores with two shared formulas (a self-shifting `f`, a restarting `g`),
+                    sites from registers, earlier products, constants, and feedback of site products into R's register;
+                    960 cores (seeds 101..116): all returned, 50 re-pushes, at most 18 passes, 2 pushes of one identity
+* `passmeasure-u.py SEED N OUT.hoon` random self-calls of ONE formula at many subjects (exact, %rec, %he or a push);
+                    1280 cores (seeds 201..216): all returned, 3690 takeovers (69 back to an earlier target), 4 re-pushes,
+                    at most 11 passes (2026-11-27)
+* `passmeasure-cyc.py OUT.hoon` a period-3 %rec takeover designed as a true cycle; it returns in 2 passes, because
+                    `fol-loop` analyses both branches of a %6 whatever its test (no dispatch on a known tag) and a
+                    `%rec` target's product, patched by `+patch-prod`, depends on the target only through its precision
 * `untidyin.hoon`   the pokes that could plant an untidy sock: `%fast` with data under a `|` and with a cape `[| |]`
                     returns and keeps both templates normalized (`[[& |] [bat 0]]`), `%fast` with a cell cape over an atom
                     and `%dire` with an untidy bell crash, and a `%full` poke then returns with tidy memo subjects (2026-11-27)
