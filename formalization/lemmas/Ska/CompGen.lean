@@ -228,24 +228,29 @@ structure FrameG (L : Lazy S) (th : Jmp) (Q : Wit) (g0 g1 : Gen Map) (nex : Next
 
 /-! ## The semantic core -/
 
-/-- **`FrontLB` from a conjunction**: after any ops `A` that fill the needs
-`Ls'` of the result's entries at the label (none: `A` only keeps), the ops
-`F` fill the goal entry's need `L`. -/
-def FrontLG (Q : Wit) (E : Need) (lo0 lo : Nat) (Ls' : List (Sure S)) (F : List Pole) (L : Sure S) : Prop :=
+/-- **`FrontLB` between conjunctions**: after any ops `A` that fill the
+needs `Ls'` of the result's entries at the label (none: `A` only keeps), the
+ops `F` fill the needs `Ls` of ALL the goal's entries at that label.  Per
+goal entry (`FillSem` of one need) it would be false at a goal whose label
+holds two needs: for `[0 1]` (`F = []`) the fill `A` crashes when the
+subject fits one of them and not the other. -/
+def FrontLG (Q : Wit) (E : Need) (lo0 lo : Nat) (Ls' : List (Sure S)) (F : List Pole) (Ls : List (Sure S)) :
+    Prop :=
   ∀ (lib : Lib) (σ : Type) (O : Oracle σ) (c : Straight Map) (gul : Noun) (st : σ) (t : Trace) (ned : Need)
     (A : List Pole) (s0 s v : Noun) (d : Need) (w : Noun), (∀ r, NMem ned r → lo ≤ r) → Q s v d w →
     FillSemL (Map := Map) lib O c gul st t ned lo Ls' A s0 s →
-    FillSem lib O c gul st t (Need.pair (Need.pair ned d) E) lo0 L (A ++ F) (C (C s0 w) v) v
+    FillSemL lib O c gul st t (Need.pair (Need.pair ned d) E) lo0 Ls (A ++ F) (C (C s0 w) v) v
 
 /-- **The fronts' semantics**: a goal entry's block got ops in front that
 fill its need from the result's entries at its label, or it was re-pointed
 (no semantic clause: Gaps 12.39). -/
 def FrontsG (Q : Wit) (x : Bool) (g0 g1 : Gen Map) (L : Lazy S) (nex : NextL S) : Prop :=
-  ∀ e ∈ entries L,
-    (∃ F : List Pole, FrontBlk g0 g1 e.1 F ∧
+  ∀ a ∈ (entries L).map Prod.fst,
+    (∃ F : List Pole, FrontBlk g0 g1 a F ∧
       ∀ cf : Map (Nat × List Nat), (∀ k, k < g1.re → HoonMap.get cf k = HoonMap.get g1.cond k) →
-        FrontLG (Map := Map) Q (gsE x L) g0.re g1.re (suresAt nex.laz e.1) (F.map (renPole (unproxy cf))) e.2.sure) ∨
-    RepointG g0 g1 e.1
+        FrontLG (Map := Map) Q (gsE x L) g0.re g1.re (suresAt nex.laz a) (F.map (renPole (unproxy cf)))
+          (suresAt L a)) ∨
+    RepointG g0 g1 a
 
 /-- **The forward `sem`** (`SemLB` with `AgreeG`). -/
 def SemG (lib : Lib) (N : Needs) (P : Noun → Prop) (f : Noun) (L : Lazy S) (th : Jmp) (Q : Wit) (g0 g1 : Gen Map)
@@ -296,10 +301,12 @@ structure OutG (L : Lazy S) (th : Jmp) (g0 : Gen Map) (nex : NextL S) : Prop whe
 
 /-! ## The old tower feeds the new relation -/
 
-/-- **`RunOKLS` is `RunOKGen`**: `nodup` gives `LabDisj` and turns `AgreeG`
-into `AgreeLB`, `GrowU` is `GrowG`, and the fronts read one need per label. -/
+/-- **`RunOKLS` is `RunOKGen`** at a goal with distinct labels (the premise
+`Nodup` of `LOKS.run`): `nodup` gives `LabDisj` and turns `AgreeG` into
+`AgreeLB`, `GrowU` is `GrowG`, and the fronts read one need per label. -/
 theorem RunOKLS.toGen {lib : Lib} {N : Needs} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp} {Q : Wit}
-    {x : Bool} {g0 g1 : Gen Map} {nex : NextL S} (R : RunOKLS (Map := Map) lib N P f L th Q x g0 g1 nex) :
+    {x : Bool} {g0 g1 : Gen Map} {nex : NextL S} (R : RunOKLS (Map := Map) lib N P f L th Q x g0 g1 nex)
+    (hg : ((entries L).map Prod.fst).Nodup) :
     RunOKGen lib N P f L th Q x g0 g1 nex := by
   have hnd := R.nodup
   refine { re := R.re, bo := R.bo, drop := R.drop, keep := R.keep, grow := R.grow.toG, cfr := R.cfr, lo := R.lo,
@@ -307,16 +314,18 @@ theorem RunOKLS.toGen {lib : Lib} {N : Needs} {P : Noun → Prop} {f : Noun} {L 
            labDisj := labDisj_of_nodup hnd, dreg := R.dreg, ncond := R.ncond, econd := R.econd,
            fronts := fun e he => Or.inl (let ⟨F, hb, _⟩ := R.front e he; ⟨F, hb⟩),
            nec := R.nec, front := ?_, sem := ?_, semB := ?_ }
-  · intro e he
+  · intro a ha
+    obtain ⟨e, he, rfl⟩ := List.mem_map.mp ha
     obtain ⟨F, hb, hf⟩ := R.front e he
     refine Or.inl ⟨F, hb, fun cf hcf => ?_⟩
+    rw [suresAt_single hg he]
     rcases hf cf hcf with ⟨L', hm, fs⟩ | ⟨hn, fs⟩
     · rw [show e.1 = (e.1, L').1 from rfl, suresAt_single hnd hm]
       intro lib σ O c gul st t ned A s0 s v d w hn hq hA
-      exact fs lib σ O c gul st t ned A s0 s v d w hn hq hA.single
+      exact (fs lib σ O c gul st t ned A s0 s v d w hn hq hA.single).toL
     · rw [suresAt_nil hn]
       intro lib σ O c gul st t ned A s0 s v d w hn' hq hA
-      exact fs lib σ O c gul st t ned A s0 s v d w hn' hq hA.nil
+      exact (fs lib σ O c gul st t ned A s0 s v d w hn' hq hA.nil).toL
   · intro cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
     exact R.sem cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s0 s r hI htr hs hm (fun st' => (ag st').toLB hnd)
       hned regs hh hn
