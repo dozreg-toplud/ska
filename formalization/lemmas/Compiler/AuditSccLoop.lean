@@ -18,6 +18,10 @@ import lemmas.Compiler.CompSccLoopSoftEmit
 import lemmas.Compiler.CompSccLoopSoftEmitAll
 import lemmas.Compiler.CompSccLoopSoftMemDone
 import lemmas.Ska.SccLoopSoftReqCheck
+import lemmas.Compiler.CompSccLoopSoftLoop
+import lemmas.Compiler.CompSccLoopSoftReq
+import lemmas.Ska.SccLoopShapeCheck
+import lemmas.Ska.SccLoopSoftShapeCheck
 
 /-! The axioms of the theorems of `Ska/SccLoop.lean`, `Ska/SccLoopMsg.lean` and `Ska/SccLoopCycle.lean`
 (README Gaps 21): each must print
@@ -192,3 +196,32 @@ open Formalization.SkaModel.SccLoop
 #print axioms Formalization.Compiler.mem_done_stepS
 #print axioms Formalization.Compiler.memGate_done_realS
 #print axioms Formalization.Compiler.memGate_done_KS
+
+-- the `%must` / `%may` steps (Gaps 21.18), merged from `AuditSccLoopShape.lean` now that the `liftS` clash is gone
+#print axioms Formalization.SkaModel.SccLoop.compReal_sweep
+#print axioms Formalization.SkaModel.SccLoop.lazeReal_eq
+#print axioms Formalization.Compiler.mem_entryX
+#print axioms Formalization.Compiler.mem_afterX
+#print axioms Formalization.Compiler.fin_placeholder
+#print axioms Formalization.Compiler.mem_prod_newX
+#print axioms Formalization.Compiler.mem_prod_oldX
+#print axioms Formalization.Compiler.mem_gate_sweep_R
+#print axioms Formalization.Compiler.memChgTN_loob
+#print axioms Formalization.Compiler.topH_nil
+#print axioms Formalization.Compiler.topH_of_topN
+#print axioms Formalization.Compiler.mem_sweep_step
+#print axioms Formalization.Compiler.memGate_sweep_real
+#print axioms Formalization.Compiler.memGate_may_K
+#print axioms Formalization.Compiler.memGate_must_K
+#print axioms Formalization.Compiler.csi_gate_ranked_shape
+-- one model with soft members, the loop with soft members, `hreq` (Gaps 21.19)
+#print axioms Formalization.SkaModel.SccLoop.member_cfg_congr
+#print axioms Formalization.SkaModel.SccLoop.cfgRealSS_member_sweep
+#print axioms Formalization.SkaModel.SccLoop.ranked_SS
+#print axioms Formalization.Compiler.memGate_congr
+#print axioms Formalization.Compiler.csi_gate_ranked_soft
+#print axioms Formalization.SkaModel.Comp.se_coerceLazyLS
+#print axioms Formalization.SkaModel.Comp.sr_sureLoopS
+#print axioms Formalization.Compiler.hreq_of_empty
+#print axioms Formalization.Compiler.hreq_of_bunt
+#print axioms Formalization.Compiler.hreq_of_SR
