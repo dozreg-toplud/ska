@@ -55,7 +55,7 @@ theorem tsm_argG {f : Nat → Nat} {G R : Noun} (hrer : RerS f G R) (B J : Noun)
 /-- **`rewrite-args`**: the arguments of a jump renamed by `f`, `G` kept. -/
 theorem tsm_args {f : Nat → Nat} {G R : Noun} (hrer : RerS f G R)
     (hL : slot? 0x7fffffff R = some layer2)
-    (hU : ∀ J, nock (C tsmArgBody (C J (C tsCoreBat (C G R)))) tsmArgBuntF1 = some (A 0)) (j : Jmp) :
+    (hU : ∀ J, nock (C tsmArgBody (C J (C tsCoreBat (C G R)))) tsmArgBuntF1 = some (C (A 0) G)) (j : Jmp) :
     nock (C tsmArgBody (C (Jmp.toNoun j) (C tsCoreBat (C G R)))) tsmArgBody
       = some (C (Jmp.toNoun (renJmp f j)) G) := by
   obtain ⟨args, there⟩ := j
@@ -67,7 +67,7 @@ theorem tsm_args {f : Nat → Nat} {G R : Noun} (hrer : RerS f G R)
     have hsp := spin_arm_l2
     rw [spin_gate_eq] at hsp
     have hs1 := spin.arm_at
-    have hSpin := spin_gate_T (unitNoun A) (unitNoun A) (fun _ : Unit => G) layer2 spinIn_layer2 tsmArgG1 (A 0)
+    have hSpin := spin_gate_T (unitNoun A) (unitNoun A) (fun _ : Unit => G) layer2 spinIn_layer2 tsmArgG1 (C (A 0) G)
       (C tsmArgBody (C (Jmp.toNoun ⟨a0 :: as, there⟩) (C tsCoreBat (C G R))))
       (fun a (_ : Unit) => some (a.map f, ())) (a0 :: as) ()
       (fun a _ _ => by
@@ -102,7 +102,7 @@ theorem tsm_core_arms (G R : Noun) :
 /-- **`rewrite-jump`**: `(rewrite-args (chase & j))`. -/
 theorem tsm_jmp {f : Nat → Nat} {G R : Noun} (bs : TreapMap mugF Blob) (hrer : RerS f G R)
     (hL : slot? 0x7fffffff R = some layer2)
-    (hU : ∀ J, nock (C tsmArgBody (C J (C tsCoreBat (C G R)))) tsmArgBuntF1 = some (A 0))
+    (hU : ∀ J, nock (C tsmArgBody (C J (C tsCoreBat (C G R)))) tsmArgBuntF1 = some (C (A 0) G))
     (hB : slot? 4094 (C tsCoreBat (C G R)) = some (HoonMap.toNoun Blob.toNoun bs)) (j : Jmp) :
     nock (C tsmJmpBody (C (Jmp.toNoun j) (C tsCoreBat (C G R)))) tsmJmpBody
       = (chase bs true j).map fun j' => C (Jmp.toNoun (renJmp f j')) G := by
@@ -131,7 +131,7 @@ theorem tsm_jmp {f : Nat → Nat} {G R : Noun} (bs : TreapMap mugF Blob) (hrer :
 /-- **`rewrite-hop`**: `(rewrite-args (chase | j))`. -/
 theorem tsm_hop {f : Nat → Nat} {G R : Noun} (bs : TreapMap mugF Blob) (hrer : RerS f G R)
     (hL : slot? 0x7fffffff R = some layer2)
-    (hU : ∀ J, nock (C tsmArgBody (C J (C tsCoreBat (C G R)))) tsmArgBuntF1 = some (A 0))
+    (hU : ∀ J, nock (C tsmArgBody (C J (C tsCoreBat (C G R)))) tsmArgBuntF1 = some (C (A 0) G))
     (hB : slot? 4094 (C tsCoreBat (C G R)) = some (HoonMap.toNoun Blob.toNoun bs)) (j : Jmp) :
     nock (C tsmHopBody (C (Jmp.toNoun j) (C tsCoreBat (C G R)))) tsmHopBody
       = (chase bs false j).map fun j' => C (Jmp.toNoun (renJmp f j')) G := by

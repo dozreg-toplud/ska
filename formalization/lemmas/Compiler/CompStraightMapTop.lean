@@ -133,7 +133,7 @@ theorem tsm_core {bs : TreapMap mugF Blob} (UB US UC RB RS RC SB N R0 INS REST :
     (hL : slot? 0x7fffffff (C SB (C (C RB (C RS RC)) (C (A 0) (C N (C R0 (C INS (C (A 0)
       (C (C UB (C US UC)) REST)))))))) = some layer2)
     (hU : ∀ J, nock (C tsmArgBody (C J (C tsCoreBat (C (C (A 0) (A 0)) (C SB (C (C RB (C RS RC)) (C (A 0)
-      (C N (C R0 (C INS (C (A 0) (C (C UB (C US UC)) REST)))))))))))) tsmArgBuntF1 = some (A 0))
+      (C N (C R0 (C INS (C (A 0) (C (C UB (C US UC)) REST)))))))))))) tsmArgBuntF1 = some (C (A 0) (C (A 0) (A 0))))
     (hB : slot? 4094 (C tsCoreBat (C (C (A 0) (A 0)) (C SB (C (C RB (C RS RC)) (C (A 0) (C N (C R0 (C INS
       (C (A 0) (C (C UB (C US UC)) REST)))))))))) = some (HoonMap.toNoun Blob.toNoun bs))
     (hT : slot? 0x1ffff (C SB (C (C RB (C RS RC)) (C (A 0) (C N (C R0 (C INS (C (A 0)
