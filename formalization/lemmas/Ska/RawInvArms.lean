@@ -231,7 +231,8 @@ theorem raw_forl {r o : Nat} {g g' : Comp.Gen Map} {z o' : Nat} (h : SIP X ρ lo
       fresh := fun x hx => by simp [blockDefs, defsOf] at hx; subst hx; rw [b2, b1]; exact hn
       tr := fun _ h => absurd h List.not_mem_nil
       p1 := by simp
-      args := fun j hj x hx => by simp [getJmps] at hj; subst hj; simp [jmp0] at hx }
+      args := fun j hj x hx => by simp [getJmps] at hj; subst hj; simp [jmp0] at hx
+      nup := fun j hj x hx => by simp [getJmps] at hj; subst hj; simp [jmp0] at hx }
   obtain ⟨S3, rfl, e3, q3, bo3⟩ := sip_emit S2 E3 h3
   obtain ⟨if0, g4, h4, hf⟩ := bind_some hf
   have nd0 : ¬ Defd g3.blocks g.re := fun d => by
@@ -252,7 +253,13 @@ theorem raw_forl {r o : Nat} {g g' : Comp.Gen Map} {z o' : Nat} (h : SIP X ρ lo
         rw [get_put_ne (by omega), e3] at hz
         rcases get_put_cases hz with ⟨rfl, rfl⟩ | ⟨-, hz⟩
         · simp at hy; omega
-        · rw [b2, b1] at hz; have := (h.regs z bz hz).1 y hy; omega }
+        · rw [b2, b1] at hz; have := (h.regs z bz hz).1 y hy; omega
+      nup := fun j hj x hx => by
+        simp [getJmps] at hj; subst hj
+        show ¬ HopsUp _ g2.bo
+        rintro ⟨bb, j', hz, hf, hlt⟩
+        rw [e3, get_put_self] at hz
+        cases hz; injection hf with hf; subst hf; simp [jmp0] at hlt; omega }
   obtain ⟨S4, rfl, e4, q4, bo4⟩ := sip_emit S3 E4 h4
   obtain ⟨if1, g5, h5, hf⟩ := bind_some hf
   have nd1 : ¬ Defd g4.blocks g1.re := fun d => by
@@ -274,7 +281,13 @@ theorem raw_forl {r o : Nat} {g g' : Comp.Gen Map} {z o' : Nat} (h : SIP X ρ lo
         rw [get_put_ne (by omega), e4, get_put_ne (by omega), e3] at hz
         rcases get_put_cases hz with ⟨rfl, rfl⟩ | ⟨-, hz⟩
         · simp at hy; omega
-        · rw [b2, b1] at hz; have := (h.regs z bz hz).1 y hy; omega }
+        · rw [b2, b1] at hz; have := (h.regs z bz hz).1 y hy; omega
+      nup := fun j hj x hx => by
+        simp [getJmps] at hj; subst hj
+        show ¬ HopsUp _ g2.bo
+        rintro ⟨bb, j', hz, hf, hlt⟩
+        rw [e4, get_put_ne (by omega), e3, get_put_self] at hz
+        cases hz; injection hf with hf; subst hf; simp [jmp0] at hlt; omega }
   obtain ⟨S5, rfl, e5, q5, bo5⟩ := sip_emit S4 E5 h5
   simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at hf
   obtain ⟨⟨rfl, rfl⟩, rfl⟩ := hf

@@ -248,6 +248,38 @@ def checkGoalX (goal : CGoal LS) (g0 : Comp.Gen FM) (ok : Nat → Bool) (nm : No
 #guard (sixes ++ enumX).all fun nm =>
   checkGoalX (CGoal.pick (jmp0 1) (jmp0 2)) gP (fun r => r == 0 || r == 1 || r == 3) nm == some true
 
+
+/-! ## The predicate `Xup` and what `optIn_finishLFX_of` asks of the run
+
+`Xup` (`RawInvXup.lean`): the label-order `ArgsAbove`, a block that hops
+up has no parameter, no jump with arguments targets a block that hops up;
+on all runs of `enumX` and under `%next` and `%pick`, and not vacuous (in
+3,360 runs a block hops up and a jump has arguments).  `disjB`, the first
+half of `LazOK` (`RawInvFinishX.lean`): the sure needs of the root and of
+the entries are pairwise disjoint (the second half, nothing defines them,
+is in `lazyOKB`). -/
+
+def hopsUpB (m : FM Blob) (k : Nat) : Bool := match m.f k with
+  | some ⟨_, _, Termin.hop j⟩ => decide (k < j.there)
+  | _ => false
+
+def xupB (m : FM Blob) : Bool :=
+  argsAboveB m &&
+  (blocksOf m).all (fun (k, b) => b.par.isEmpty || !hopsUpB m k) &&
+  (blocksOf m).all (fun (_, b) => (getJmps b.fin).all fun j => j.args.isEmpty || !hopsUpB m j.there)
+
+def disjB (nex : NextL LS) : Bool := nodupB ((nodesOf nex).flatMap fun x => x.2.1)
+
+#guard enumX.all fun nm => ((runX nm).map fun (nex, g) => xupB g.blocks && disjB nex) == some true
+#guard (enumX.filter fun nm => ((runX nm).map fun (_, g) =>
+  (blocksOf g.blocks).any (fun (k, _) => hopsUpB g.blocks k) &&
+  (blocksOf g.blocks).any (fun (_, b) => (getJmps b.fin).any fun j => !j.args.isEmpty)) == some true).length == 3360
+#guard (sixes ++ enumX).all fun nm =>
+  ((runL nm (CGoal.toL (CGoal.next (lazyReg 0) (jmp0 1) : CGoal LS)) [] gY).map fun (nex, g) =>
+    xupB g.blocks && disjB nex) == some true
+#guard (sixes ++ enumX).all fun nm =>
+  ((runL nm (CGoal.toL (CGoal.pick (jmp0 1) (jmp0 2) : CGoal LS)) [] gP).map fun (_, g) => xupB g.blocks) == some true
+
 end Raw
 end SkaModel
 end Formalization

@@ -120,12 +120,17 @@ theorem live_frameP {bl bl' : Map Blob} {L : Nat} (hd : DownBelowP bl L)
 
 /-! ## The invariant with ranks -/
 
-/-- **What the two steps keep of a predicate `X` of the blocks.** -/
+/-- **What the two steps keep of a predicate `X` of the blocks.**  Since
+2026-11-27 (sixth session) `put` also has that the old blocks jump below
+the new label and that the new block's jumps with arguments do not target
+a block that hops up (`EmitOK.nup`). -/
 class XOK (X : Map Blob → Prop) : Prop where
   put : ∀ {bl : Map Blob} {l : Nat} {b : Blob}, X bl → (∀ k b', HoonMap.get bl k = some b' → k < l) →
+    (∀ k b', HoonMap.get bl k = some b' → ∀ j ∈ getJmps b'.fin, j.there < l) →
     (∀ j ∈ getJmps b.fin, j.there < l) → b.par.length ≤ 1 →
     (∀ j ∈ getJmps b.fin, ∀ r, some r ∈ j.args → ∀ z bz, HoonMap.get (HoonMap.put bl l b) z = some bz →
       z ≤ j.there → ∀ x ∈ bz.par, x < r) →
+    (∀ j ∈ getJmps b.fin, ∀ r, some r ∈ j.args → ¬ HopsUp bl j.there) →
     X (HoonMap.put bl l b)
   prep : ∀ {bl : Map Blob} {o : Nat} {b : Blob} {A : List Pole}, X bl → HoonMap.get bl o = some b →
     X (HoonMap.put bl o (pre A b))
@@ -134,12 +139,12 @@ class XOK (X : Map Blob → Prop) : Prop where
 def Xstd (bl : Map Blob) : Prop := JDown bl ∧ Par1 bl ∧ ArgsAbove bl
 
 instance : XOK (Xstd (Map := Map)) where
-  put := fun hx hlab hj hp ha =>
+  put := fun hx hlab _ hj hp ha _ =>
     ⟨jdown_put hx.1 hj, par1_put hx.2.1 hp, argsAbove_put hx.2.2 hx.1 hlab fun j hj' r hr => ⟨hj j hj', ha j hj' r hr⟩⟩
   prep := fun hx hb => ⟨jdown_prepend hx.1 hb, par1_prepend hx.2.1 hb, argsAbove_prepend hx.2.2 hb⟩
 
 instance : XOK (fun _ : Map Blob => True) where
-  put := fun _ _ _ _ _ => trivial
+  put := fun _ _ _ _ _ _ _ => trivial
   prep := fun _ _ => trivial
 
 /-- **The invariant of a state, with the jumps going down in a rank `ρ`.** -/
@@ -193,6 +198,20 @@ theorem SIP.below {g : Comp.Gen Map} (h : SIP X ρ lo g) (L : Nat) (hL : g.bo �
     · rw [h.rk x e]; omega
     · have := h.rlo x (by omega); omega
 
+/-- The blocks of a state jump below its `bo`. -/
+theorem SIP.jlt {g : Comp.Gen Map} (h : SIP X ρ lo g) {k : Nat} {b : Blob} (hb : HoonMap.get g.blocks k = some b)
+    {j : Jmp} (hj : j ∈ getJmps b.fin) : j.there < g.bo := by
+  have a := h.jr k b hb j hj
+  have hk := h.lab k b hb
+  have := h.lob
+  have rk : ρ k < 3 * g.bo := by
+    rcases Nat.lt_or_ge k lo with e | e
+    · have := h.rlo k e; omega
+    · rw [h.rk k e]; omega
+  rcases Nat.lt_or_ge j.there lo with e | e
+  · omega
+  · rw [h.rk _ e] at a; omega
+
 theorem sip_reg {g : Comp.Gen Map} (h : SIP X ρ lo g) {k : Nat} (hk : g.re ≤ k) : SIP X ρ lo { g with re := k } :=
   ⟨h.drop, h.bo1, h.lab, fun o b hb => (h.regs o b hb).mono fun x hx => Nat.lt_of_lt_of_le hx hk,
     h.nd, h.cr, h.tr, h.jr, h.lob, h.rk, h.rlo, h.x⟩
@@ -235,7 +254,7 @@ theorem sip_emit {g g' : Comp.Gen Map} {b : Blob} {o : Nat} (h : SIP X ρ lo g) 
       · rw [h.rk _ e]; omega
       · have := h.rlo j.there (by omega); omega
     · exact h.jr k b' hk j hj
-  · exact XOK.put h.x h.lab E.jd E.p1 E.args
+  · exact XOK.put h.x h.lab (fun k b' hb j hj => h.jlt hb hj) E.jd E.p1 E.args E.nup
 
 theorem sip_addOps {g g' : Comp.Gen Map} {o : Nat} {A : List Pole} {u : Unit} (h : SIP X ρ lo g) (P : OpsOK g A)
     (ha : addOps o A g = some (u, g')) :

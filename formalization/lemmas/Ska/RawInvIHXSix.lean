@@ -258,7 +258,9 @@ fork blocks at `l`, `l + 1` that hop up with fresh registers to the join at
 class XSix (X : Map Blob → Prop) extends XOK X : Prop where
   ext : ∀ {bl bl' : Map Blob}, X bl → (∀ k, HoonMap.get bl' k = HoonMap.get bl k) → X bl'
   fork : ∀ {bl bl' : Map Blob} {l t R : Nat} {ned : Need} {a0 a1 : List Nat}, X bl →
-    (∀ k b, HoonMap.get bl k = some b → k < l) → (∀ k b, HoonMap.get bl k = some b → BlobIn (· < R) b) →
+    (∀ k b, HoonMap.get bl k = some b → k < l) →
+    (∀ k b, HoonMap.get bl k = some b → ∀ j ∈ getJmps b.fin, j.there < l) →
+    (∀ k b, HoonMap.get bl k = some b → BlobIn (· < R) b) →
     1 ≤ t → t < l → (∀ x ∈ flattenNeed ned, x < R) → (∀ x ∈ a0, R ≤ x) → (∀ x ∈ a1, R ≤ x) →
     (flattenNeed ned).Nodup → (∀ k, k < l → HoonMap.get bl' k = HoonMap.get bl k) →
     HoonMap.get bl' l = some ⟨[], [], Termin.hop ⟨a0.map some, l + 2⟩⟩ →
@@ -268,7 +270,7 @@ class XSix (X : Map Blob → Prop) extends XOK X : Prop where
 
 instance : XSix (fun _ : Map Blob => True) where
   ext := fun _ _ => trivial
-  fork := fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ => trivial
+  fork := fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ => trivial
 
 theorem sip_sameBlocks {X : Map Blob → Prop} [XSix X] {g g' : Comp.Gen Map} (h : SIP X (upRk g.blocks) g.bo g)
     (hs : SameBlocks g g') : SIP X (upRk g'.blocks) g'.bo g' := by
@@ -400,7 +402,7 @@ theorem sip_forkSure {X : Map Blob → Prop} [XSix X] {sur : Sure S} {th : Jmp} 
       · rw [r0]; omega
       · rw [r1]; omega
       · rw [r2]; omega
-  · exact XSix.fork (l := g0.bo) (t := th.there) (R := g0.re) (ned := sur.ned) h.x h.lab h.regs h1 h2
+  · exact XSix.fork (l := g0.bo) (t := th.there) (R := g0.re) (ned := sur.ned) h.x h.lab (fun k b hb j hj => h.jlt hb hj) h.regs h1 h2
       (fun x hx => hn x ((mem_flatten _ x).mp hx)) (fun x hx => (hreg x (Or.inl ((mem_flatten _ x).mp hx))).1)
       (fun x hx => (hreg x (Or.inr ((mem_flatten _ x).mp hx))).1) (flatten_nodup hd) hold hb0 hb1 hb2 hnone
 

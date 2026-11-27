@@ -115,7 +115,13 @@ theorem si_re {g g' : Comp.Gen Map} {r : Nat} (h : SI g) (hr : (re : CM Map Nat)
   obtain ⟨rfl, rfl⟩ := hr
   exact ⟨si_reg h (Nat.le_succ _), rfl, rfl, rfl, rfl⟩
 
-/-- What a new block owes the invariant. -/
+/-- The block at `k` hops up (as the fork blocks of `%6` under `%next` hop
+to their join). -/
+def HopsUp (bl : Map Blob) (k : Nat) : Prop :=
+  ∃ b j, HoonMap.get bl k = some b ∧ b.fin = Termin.hop j ∧ k < j.there
+
+/-- What a new block owes the invariant.  `nup` (2026-11-27, sixth session,
+for `FragX`): a jump with arguments does not target a block that hops up. -/
 structure EmitOK (g : Comp.Gen Map) (b : Blob) : Prop where
   jd : ∀ j ∈ getJmps b.fin, j.there < g.bo
   regs : BlobIn (· < g.re) b
@@ -125,6 +131,7 @@ structure EmitOK (g : Comp.Gen Map) (b : Blob) : Prop where
   p1 : b.par.length ≤ 1
   args : ∀ j ∈ getJmps b.fin, ∀ r, some r ∈ j.args → ∀ z bz, HoonMap.get (HoonMap.put g.blocks g.bo b) z = some bz →
     z ≤ j.there → ∀ x ∈ bz.par, x < r
+  nup : ∀ j ∈ getJmps b.fin, ∀ r, some r ∈ j.args → ¬ HopsUp g.blocks j.there
 
 theorem si_emit {g g' : Comp.Gen Map} {b : Blob} {o : Nat} (h : SI g) (E : EmitOK g b)
     (he : (emit b : CM Map Nat) g = some (o, g')) :
@@ -164,6 +171,7 @@ theorem emitOK_of {g : Comp.Gen Map} {b : Blob} (hp : b.par = []) (ha : ∀ j �
   tr := ht
   p1 := by rw [hp]; exact Nat.zero_le _
   args := fun j hj' r hr' => by rw [ha j hj'] at hr'; cases hr'
+  nup := fun j hj' r hr' => by rw [ha j hj'] at hr'; cases hr'
 
 /-- A block with no parameter, no body and a hop without arguments. -/
 theorem emitOK_hop {g : Comp.Gen Map} {j : Jmp} (ha : j.args = []) (hj : j.there < g.bo) :
