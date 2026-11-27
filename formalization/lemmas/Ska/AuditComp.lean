@@ -121,6 +121,7 @@ import lemmas.Ska.CompSixNxGoal
 import lemmas.Ska.CompSixNxTop
 import lemmas.Ska.CompSixNxClass
 import lemmas.Ska.CompGen
+import lemmas.Ska.CompGenSeven
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -1358,3 +1359,12 @@ open Formalization.SkaModel.Comp
 #print axioms GrowU.toG
 #print axioms labDisj_of_nodup
 #print axioms RunOKLS.toGen
+#print axioms EntA.ofBlock
+#print axioms EntA.goes
+#print axioms EntA.front
+#print axioms FrameG.goalOut
+#print axioms AgreeG.toA
+#print axioms FillSemL.conv
+#print axioms EntA.conv
+#print axioms frontRG_seven
+#print axioms agreeGA_seven
