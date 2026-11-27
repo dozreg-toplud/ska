@@ -11,3 +11,4 @@ open Formalization.SkaModel.AnnotSF
 #print axioms witCode_not_codeOKS
 #print axioms witLong_invB
 #print axioms invBS_false
+#print axioms inlAnnot_of_inv

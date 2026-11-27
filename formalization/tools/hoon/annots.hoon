@@ -1,4 +1,4 @@
-::  InvBS (track F, README Gaps 25, lemmas/Ska/AnnotS*.lean): at every
+::  InvBS (track F, README Gaps 26, lemmas/Ska/AnnotS.lean): at every
 ::  direct call [%2 p q info] of the code table whose memo key is ~ and
 ::  whose formula part q passes +safe-fol-fol (the calls +inlined may drop
 ::  q of), q returns on every subject that fits the sock at that point.
@@ -13,8 +13,11 @@
 ::  that fits s (the path to it goes through cells the sock knows are
 ::  cells), %1 nothing, a cons both parts, a hint its body (the clue of a
 ::  dynamic one and p of %mean are +safe-nomm: no %0, they return).
-::  Printed: per bell the counts; at the end the totals and every failure
-::  as [q s bell]; then the nomm of the witness's root bell (M19).
+::  Printed: the totals (bells, direct calls, calls +inlined may drop q of,
+::  those whose q is not a literal, failures), every failure as
+::  [q s bell], then the bell and nomm of the witness's root (M19).
+::  2026-11-27: 38 bells, 33 direct, 31 tested, 0 not literal, 0 failures;
+::  the witness's call is indirect (info ~).
 ::
 =/  xk  |=(k=@ ^-(* ?:(=(0 k) [0 1] [4 $(k (dec k))])))
 =/  g1=*   [2 [0 1] [1 [4 0 1]]]
