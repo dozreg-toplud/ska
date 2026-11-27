@@ -1,7 +1,8 @@
 import lemmas.Ska.PassMeasureK
+import lemmas.Ska.PassMeasureS
 
 /-! The axioms of the theorems of track F (`Ska/PassMeasure.lean`,
-`Ska/PassMeasureK.lean`, README Gaps 16), and checks of the measure of
+`Ska/PassMeasureK.lean`, `Ska/PassMeasureT.lean`, `Ska/PassMeasureS.lean`, README Gaps 16), and checks of the measure of
 `PassMeasureK.lean` on the runs that broke the first guess of it.  `lake build` prints them; each should be `propext`,
 `Classical.choice` and `Quot.sound` at most. -/
 
@@ -29,6 +30,22 @@ open Formalization.SkaModel
 #print axioms capeLe_msgCa
 #print axioms runDatum_indi_seek
 #print axioms runDatum_measure
+#print axioms tidy_pull
+#print axioms tidy_darn
+#print axioms tidy_msgSock
+#print axioms annoTP_doubleInt
+#print axioms annoTP_msgAnno
+#print axioms annoTP_patchProd
+#print axioms folStep_tp
+#print axioms folTopR_tp
+#print axioms runDatum_tp
+#print axioms GStepT.tp
+#print axioms graphTP_stepsT
+#print axioms runDatum_measure_graph
+#print axioms msgCa_lex
+#print axioms runDatum_seek_lex
+#print axioms lack_idem
+#print axioms runDatum_indi_lack
 
 open Formalization.Nock
 

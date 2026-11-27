@@ -79,7 +79,12 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     analysed again.  `passmeasure-lib.hoon` is its driver over 21 library calls.  Over 2,269 calls (2026-11-27):
                     no run against the lexicographic measure (with `less-code` in the order `CapeLe`), 151 runs that changed
                     only the map (open point (a)), 21 culled members and none found again (open point (b)), no pass loop that
-                    did not end
+                    did not end.  It also checks `Tidy` and `PiNorm` (`lemmas/Ska/PassMeasureT.lean`) at every run: over
+                    13,297 runs no untidy subject sock, product, `less-code` or callee subject, and no map with `[~ ~]`
+                    (2026-11-27)
+* `untidyin.hoon`   the pokes that could plant an untidy sock: `%fast` with data under a `|` and with a cape `[| |]`
+                    returns and keeps both templates normalized (`[[& |] [bat 0]]`), `%fast` with a cell cape over an atom
+                    and `%dire` with an untidy bell crash, and a `%full` poke then returns with tidy memo subjects (2026-11-27)
 * `closed.hoon`     `GraphClosed` of `lemmas/Ska/AnaEnds.lean` on the graph `+ska-callgraph` returns, over the 26 pokes of
                     `sitesmeet4.hoon`, `he2.hoon`, `voidscc.hoon`, `prodsame.hoon` with the memo threaded: 1760 entries,
                     4052 callee edges, no callee missing, every root an entry (2026-11-24)

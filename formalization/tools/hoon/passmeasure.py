@@ -14,6 +14,13 @@
 #   [%pm-new mug index depth]          +analyze of an identity not in the graph (depth: stack)
 #   [%pm-pass mug pass members next depth], [%pm-end mug pass changed found]
 #   [%pm-cull mug dead-mugs]           +cull dropped members (open point (b) when one is new'd again)
+#   [%pm-untidy mug bus pro prod-new prod-old less-code callees map-old map-pro map-new bus src]
+#        printed only when one flag is %.n: Tidy (lemmas/Ska/PassMeasureK.lean: data 0 under every |,
+#        a cell of data under every cell of the cape, no [| |]) of the subject sock, of fol-loop's
+#        product, of the new and the old product, of the new less-code, of every callee's subject
+#        sock; PiNorm (no [~ ~]) of the old map, of fol-loop's map, of the new map.  On 2026-11-27
+#        (the corpus below without ck-one: 2,266 calls, 13,297 runs, 6,464 after an entry's first):
+#        no such line; a control driver with bus [[& |] [[0 3] 7]] is flagged (bus and less-code).
 # The drivers: ck-hand (621 swapped/rotated self-calls, mutual recursions, products run as formulas),
 # ck-thread (thread-a/b/c, unknown and known subject), ck-rnd0..3 (400 random recursive cores),
 # ck-crn0..4 (500 cores whose products are cores called again), ck-zrx0..3 (400 roots calling a member
@@ -98,6 +105,18 @@ def summarize(path):
             p = int(t[2])
             if p > maxpass[0]: maxpass = (p, case)
             continue
+        if tag == '%pm-untidy':
+            # bus, fol-loop's product, new product, old product, less-code, callees' subjects,
+            # old map, fol-loop's map, new map
+            names = ['bus', 'pro', 'prod-new', 'prod-old', 'less-code', 'callees',
+                     'map-old', 'map-pro', 'map-new']
+            for nm, v in zip(names, t[2:11]):
+                if v == '%.n':
+                    inc('untidy ' + nm)
+            inc('%pm-untidy')
+            if c['%pm-untidy'] <= 30:
+                print(case, l[:400])
+            continue
         if tag in ('%pm-end', '%pm-a', '%pm-bad'):
             inc(tag + (' ' + t[1] if tag == '%pm-bad' else ''))
             if tag != '%pm-end':
@@ -174,6 +193,40 @@ src[i:i] = [
     '        [%pm-bad %lc (mug id) (pm-small less-code.data) (pm-small less-code.data-new)]',
     '      ~?  &(!pm-first !?=(?(%eq %less) pm-pr))',
     '        [%pm-bad %pr (mug id) (pm-small prod.data) (pm-small prod.data-new)]',
+    # Tidy (lemmas/Ska/PassMeasureK.lean): data 0 under every | of the cape, a cell of data under
+    # every cell of the cape, no [| |]; PiNorm: no [~ ~] in a provenance
+    '      =/  pm-tidy',
+    '        |=  s=sock',
+    '        ^-  ?',
+    '        ?@  s  &',
+    '        =/  c=cape  cape.s',
+    '        =/  d=*  data.s',
+    '        |-  ^-  ?',
+    '        ?:  ?=(%| c)  =(0 d)',
+    '        ?:  ?=(%& c)  &',
+    '        ?:  &(?=(%| -.c) ?=(%| +.c))  |',
+    '        ?@  d  |',
+    '        &($(c -.c, d -.d) $(c +.c, d +.d))',
+    '      =/  pm-pin',
+    '        |=  p=*',
+    '        ^-  ?',
+    '        ?@  p  &',
+    '        ?:  &(?=(~ -.p) ?=(~ +.p))  |',
+    '        &($(p -.p) $(p +.p))',
+    '      =/  pm-t-bus=?  (pm-tidy bus)',
+    '      =/  pm-t-pro=?  (pm-tidy sock.pro)',
+    '      =/  pm-t-prd=?  (pm-tidy prod.data-new)',
+    '      =/  pm-t-old=?  (pm-tidy prod.data)',
+    '      =/  pm-t-lc=?  (pm-tidy less-code.data-new)',
+    '      =/  pm-t-cal=?',
+    '        (levy ~(tap in callees) |=(c=callee-entry (pm-tidy more.id.c)))',
+    '      =/  pm-p-old=?  (pm-pin map.data)',
+    '      =/  pm-p-pro=?  (pm-pin src.pro)',
+    '      =/  pm-p-new=?  (pm-pin map.data-new)',
+    '      ~?  !&(pm-t-bus pm-t-pro pm-t-prd pm-t-old pm-t-lc pm-t-cal pm-p-old pm-p-pro pm-p-new)',
+    '        :*  %pm-untidy  (mug id)  pm-t-bus  pm-t-pro  pm-t-prd  pm-t-old  pm-t-lc',
+    '            pm-t-cal  pm-p-old  pm-p-pro  pm-p-new  (pm-small bus)  (pm-small src.pro)',
+    '        ==',
 ]
 open(os.path.join(out, 'lib.hoon'), 'w').write('\n'.join(src))
 
