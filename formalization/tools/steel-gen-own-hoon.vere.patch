@@ -1,24 +1,35 @@
 diff --git a/pkg/vere/nock_compile_tests.c b/pkg/vere/nock_compile_tests.c
-index 948c89980d..671055b474 100644
+index 948c89980d..646c42905a 100644
 --- a/pkg/vere/nock_compile_tests.c
 +++ b/pkg/vere/nock_compile_tests.c
-@@ -3385,9 +3385,13 @@ main(int argc, char* argv[])
+@@ -3385,9 +3385,23 @@ main(int argc, char* argv[])
      u3_weak pro;
  
      if ( !sys_c || !lib_c ) return 1;
 -    cor = _gate(
-+    //  the pill is made by the hoon.hoon it holds, not by the kernel's:
-+    //  the kernel builds U3NC_STEEL_SYS, and the gate below is compiled
-+    //  against that core and run in it.  The trap keeps the core that ran
-+    //  +swat, so with the kernel's own the pill held two hoon.hoons
-+    //
-+    static const c3_c* mak_c =
-       "|=  [sys=@t lib=@t bug=?]\n"
+-      "|=  [sys=@t lib=@t bug=?]\n"
 -      "^-  [%steel p=(list)]\n"
++    //  the pill is made by the hoon.hoon it holds, and that one by itself:
++    //  the kernel builds U3NC_STEEL_SYS, that hoon.hoon builds it again,
++    //  and the gate that makes the pill is compiled by the first against
++    //  the second and run in it.  The trap keeps the core that ran +swat:
++    //  made by the kernel's own, the pill held two hoon.hoons, and what
++    //  the kernel's compiler does showed in it
++    //
++    //  inh_c: build hoon.hoon from its text, compile the first of the
++    //  sources against it, run that on the texts and the other sources
++    //
++    static const c3_c* inh_c =
++      "|=  [sys=@t lib=@t bug=? src=(list @t)]\n"
++      "?~  src  !!\n"
++      "=/  hon=vase  $:(swat *(trap vase) (rain /sys/hoon/hoon sys))\n"
++      "(slum q:(slap hon (ream i.src)) [sys lib bug t.src])\n";
++    static const c3_c* mak_c =
++      "|=  [sys=@t lib=@t bug=? src=(list @t)]\n"
        "=/  mist\n"
        "  |=  [bon=path txt=@]\n"
        "  ^-  hoon\n"
-@@ -3410,9 +3414,15 @@ main(int argc, char* argv[])
+@@ -3410,9 +3424,15 @@ main(int argc, char* argv[])
        "=/  nok  !.\n"
        "  =>  [=_trap ~]  !=\n"
        "  q:$:trap\n"
@@ -27,13 +38,13 @@ index 948c89980d..671055b474 100644
 -           getenv("U3NC_STEEL_BUG") ? c3y : c3n));
 +      "[%steel nok trap ~]\n";
 +
-+    cor = _gate(
-+      "|=  [sys=@t lib=@t bug=? mak=@t]\n"
-+      "^-  *\n"
-+      "=/  hon=vase  $:(swat *(trap vase) (rain /sys/hoon/hoon sys))\n"
-+      "(slum q:(slap hon (ream mak)) [sys lib bug])\n",
++    //  the kernel runs inh_c, the hoon.hoon it built runs inh_c again,
++    //  and the one that built runs mak_c
++    //
++    cor = _gate(inh_c,
 +      u3nq(u3i_bytes(sys_i, (c3_y*)sys_c), u3i_bytes(lib_i, (c3_y*)lib_c),
-+           getenv("U3NC_STEEL_BUG") ? c3y : c3n, u3i_string(mak_c)));
++           getenv("U3NC_STEEL_BUG") ? c3y : c3n,
++           u3nt(u3i_string(inh_c), u3i_string(mak_c), u3_nul)));
      fol = u3nq(9, 2, 0, 1);
      pro = _run("steel: build", _nock_n, cor, fol);
      u3z(cor); u3z(fol);

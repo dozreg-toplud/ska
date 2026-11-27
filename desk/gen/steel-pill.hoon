@@ -7,13 +7,24 @@
   ~>  %memo./ska
   (g v)
 ::
-::  +make: the source of the gate that makes the pill from the two texts.
-::  It is compiled against the hoon.hoon that the pill holds and run in it
+::  +in-hoon: the source of a gate that builds /sys/hoon from its text,
+::  compiles the first of the sources against it, and runs that on the texts
+::  and the other sources
+::
+++  in-hoon
+  ^-  @t
+  %-  of-wain:format
+  :~  '|=  [sys=@t lib=@t bug=? src=(list @t)]'
+      '?~  src  !!'
+      '=/  hon=vase  $:(swat *(trap vase) (rain /sys/hoon/hoon sys))'
+      '(slum q:(slap hon (ream i.src)) [sys lib bug t.src])'
+  ==
+::  +make: the source of the gate that makes the pill from the two texts
 ::
 ++  make
   ^-  @t
   %-  of-wain:format
-  :~  '|=  [sys=@t lib=@t bug=?]'
+  :~  '|=  [sys=@t lib=@t bug=? src=(list @t)]'
       '=/  mist'
       '  |=  [bon=path txt=@]'
       '  ^-  hoon'
@@ -57,14 +68,14 @@
 =/  sys=@t  .^(@t cx+/(scot %p p.bec)/ska/(scot %da now)/sys/hoon/hoon)
 =/  lib=@t
   .^(@t cx+/(scot %p p.bec)/ska/(scot %da now)/lib/nock-compilation/hoon)
-::  the pill is made by the hoon.hoon it holds, not by the kernel's: the
-::  kernel builds /sys/hoon, and +make is compiled against that core and
-::  run in it.  The trap keeps the core that ran +swat, so with the
-::  kernel's own the pill would hold two hoon.hoons, and an edit of
-::  /sys/hoon would be paid in every type that the two no longer share
+::  the pill is made by the hoon.hoon it holds, and that one by itself: the
+::  kernel builds /sys/hoon, that hoon.hoon builds it again (+in-hoon), and
+::  +make is compiled by the first against the second and run in it.  The
+::  trap keeps the core that ran +swat: made by the kernel's own, the pill
+::  held two hoon.hoons, and what the kernel's compiler does showed in it
 ::
 ~>  %slog.[0 leaf+"steel: building /sys/hoon"]
 =/  hon=vase  $:(memo-call swat *(trap vase) (rain /sys/hoon/hoon sys))
-~>  %slog.[0 leaf+"steel: building the pill in it"]
+~>  %slog.[0 leaf+"steel: building /sys/hoon by itself, and the pill in it"]
 ;;  [%steel p=(list)]
-(slum q:(slap hon (ream make)) [sys lib bug])
+(slum q:(slap hon (ream in-hoon)) [sys lib bug ~[make]])
