@@ -6,12 +6,13 @@ import lemmas.Ska.RawInvCLArms
 README Gaps 14 (b), track D.  `LR env sup nm` is `LiveRun IL JL` of
 `runLC env sup nm`.
 
-* `ArmsL env`: the statements not yet proved: the arms `%3`, `%5`, cons,
-  `%10`, the call `%2`, each from `LR` of its parts, and the spec of
-  `+collapse-lazy-atom` (`CollapseSpecL`, which closes `%4` by `liveRun_n4`).
+* `ArmsL env`: the statements not yet proved: the arms `%5`, cons, `%10`,
+  the call `%2`, each from `LR` of its parts, and the local specs of
+  `+collapse-lazy-atom` (`CollapseSpecL`) and `+forl` (`ForlSpecL`), which
+  close `%4` (`liveRun_n4`) and `%3` (`liveRun_n3`).
 * **`liveRun_plainOf`**: `LR env sup nm` on all of `PlainN` from `ArmsL`
-  (`%0`, `%1`, `%7` by `liveRun_n0`, `liveRun_n1`, `liveRun_n7`, `%4` by
-  `liveRun_n4`).
+  (`%0`, `%1`, `%7` by `liveRun_n0`, `liveRun_n1`, `liveRun_n7`, `%3`, `%4`
+  by `liveRun_n3`, `liveRun_n4`).
 * `il_gen0`: the precondition at the top (`gen0`, `%done`, no outer kills);
   **`liveRun_plain_topOf`**: the top run's `JL` and `LiveC` from `ArmsL`.
 -/
@@ -34,9 +35,10 @@ abbrev LR (S : Type) [HoonSet S] (Map : Type → Type) [HoonMap Map] [HoonMapKey
 /-- **The arms not closed yet**, each from `LR` of its parts. -/
 structure ArmsL (S : Type) [HoonSet S] (Map : Type → Type) [HoonMap Map] [HoonMapKeys Map] (env : CallEnv) :
     Prop where
-  n3 : ∀ sup p, PlainN p → LR S Map env sup p → LR S Map env sup (Nomm.n3 p)
   /-- The spec of `+collapse-lazy-atom`: with it `%4` is closed (`liveRun_n4`). -/
   collapse : CollapseSpecL S Map
+  /-- The spec of `+forl`: with it and `collapse`, `%3` is closed (`liveRun_n3`). -/
+  forl : ForlSpecL S Map
   n5 : ∀ sup p q, PlainN p → PlainN q → LR S Map env sup p → LR S Map env sup q →
     LR S Map env sup (Nomm.n5 p q)
   cons : ∀ sup p q, PlainN p → PlainN q → LR S Map env sup p → LR S Map env sup q →
@@ -52,7 +54,7 @@ theorem liveRun_plainOf (env : CallEnv) (A : ArmsL S Map env) :
     ∀ (nm : Nomm), PlainN nm → ∀ (sup : Option Nomm), LR S Map env sup nm
   | Nomm.n0 ax, _, sup => liveRun_n0 env sup ax
   | Nomm.n1 k, _, sup => liveRun_n1 env sup k
-  | Nomm.n3 p, h, sup => A.n3 sup p h (liveRun_plainOf env A p h sup)
+  | Nomm.n3 p, h, sup => liveRun_n3 env sup A.collapse A.forl (liveRun_plainOf env A p h sup)
   | Nomm.n4 p, h, sup => liveRun_n4 env sup A.collapse (liveRun_plainOf env A p h sup)
   | Nomm.n5 p q, h, sup =>
     A.n5 sup p q h.1 h.2 (liveRun_plainOf env A p h.1 sup) (liveRun_plainOf env A q h.2 sup)
