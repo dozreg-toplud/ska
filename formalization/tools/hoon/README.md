@@ -82,7 +82,8 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     analysed again (also `%pm-rec caller kid target`, `%pm-ex caller kid` at every %rec and exact
                     resolution, and `%st`, a mug of the members with their entries, at every pass; and `%pm-ent`, at
                     every pass start each member with its DFS number, how its entry changed since the previous start, its
-                    callees and whether it is `+dirty`, read by `passmeasure-stab.py`).  `passmeasure-lib.hoon` is its driver over 21 library calls.  Over 2,269 calls (2026-11-27):
+                    callees and whether it is `+dirty`, read by `passmeasure-stab.py`; and `%pm-tik`, at the same start
+                    the run counter and `[ran chg]` of every function in progress, read by `passmeasure-freeze.py`).  `passmeasure-lib.hoon` is its driver over 21 library calls.  Over 2,269 calls (2026-11-27):
                     no run against the lexicographic measure (with `less-code` in the order `CapeLe`), 151 runs that changed
                     only the map (open point (a)), 21 culled members and none found again (open point (b)), no pass loop that
                     did not end.  It also checks `Tidy` and `PiNorm` (`lemmas/Ska/PassMeasureT.lean`) at every run: over
@@ -124,6 +125,21 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     DB of `lemmas/Ska/PassStabM.lean`.  Over the 2,632 cores of q, u, the chains, the re-push drivers and
                     cyc (2026-11-27): 18,682 passes, 50,915 pairs, no rise; A fails at 407, B at 415, C never, D at 43
                     (all in u, an older member goes dirty through a back edge), DB at 49 (README Gaps 16)
+* `passmeasure-freeze.py [-v] OUT.txt...` the tests of the freezing argument (`lemmas/Ska/PassFreeze.lean`, README
+                    Gaps 16) on `%pm-ent` and `%pm-tik`: T0 `+dirty` is "a callee's chg >= the member's ran"; T1 a member
+                    that does not run keeps callees and entry, and one clean at the start runs only if a callee changed in
+                    the pass (`+dirty` is tested at the member's turn); T2 a callee of a member kept by `+cull` that was a
+                    member is kept; T3 what each dirty member owes its dirt to; T4 runs of starts at which a member is
+                    dirty with entry and callees the same, and whether it owes that only to transient callees; T5 a
+                    dirty member at every start of a pass that goes on; T6 every member reached from the root; T7
+                    callee changes at a constant entry; candidates E (dirt charged to the newest callee owed), P2A, P2D
+                    (passes p and p+2).  Over the 2,632 cores of passmeasure-stab.py with `%pm-tik` (2026-11-27):
+                    T0 to T6 never fail (69,069 starts, 118,678 kept callees, 18,682 passes), 12,462 stuck starts, none
+                    owed only to transient callees, at most 49 callee changes of one member at a constant entry
+                    (`fib6`); E 0 fails, P2A 97, P2D 5
+* `passmeasure-run.sh LIB OUTDIR DRIVER...` runs drivers with the library of `passmeasure.py`, six at a time, 900 s
+                    each; `passmeasure-show.py OUT.txt CASETAG ROOTMUG` prints one pass loop pass by pass;
+                    `passmeasure-inter.py OUTDIR` matches the D failures of the u cores with their `%rec` takeovers
 * `passmeasure-cyc.py OUT.hoon` a period-3 %rec takeover designed as a true cycle; it returns in 2 passes, because
                     `fol-loop` analyses both branches of a %6 whatever its test (no dispatch on a known tag) and a
                     `%rec` target's product, patched by `+patch-prod`, depends on the target only through its precision
