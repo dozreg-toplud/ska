@@ -184,5 +184,86 @@ theorem crd_drop (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 
         simp [nock_exec, crSubj, Nomm.toNoun, hnf, bind, StateT.bind, h7, hcode, hD1, cr_past_arm, hpa,
           cr_bat_dol, hp1, eq, e3, eq2, hD2, cr_cp_arm, hcpy, cr_next_nounL, Function.comp_def]
 
+/-! ## The case on a dropped call -/
+
+/-- **The callee's code entry**: `b` is a key of `code.long-ska` (the noun
+`cod`) and the field `pure` of its entry is `env.pure b`. -/
+def CodePure (cod : Noun) (env : CallEnv) (b : Bell) : Prop :=
+  ∃ V, getF mugF b.toNoun cod = some (C (A 0) V) ∧ slot? 6 V = some (loob (env.pure b))
+
+/-- What the first push of the dropped call returns. -/
+theorem crd_fq_res {env : CallEnv} {msup : Option Nomm} {q : Nomm} {region : List Nat} (ihq : ResFor env msup q region)
+    {th : Jmp} {g g2 : Gen (TreapMap mugF)} {nexF : NextL CSet} (hd : g.drop = false) (hj : JmpIn (· < g.re) th)
+    (e : (if safeFolFol q then pure ⟨Lazy.ofSure Sure.bunt, th⟩
+          else runLC env msup q (CGoalL.next (Lazy.ofSure Sure.bunt) th) region : CM (TreapMap mugF) (NextL CSet))
+          g = some (nexF, g2)) :
+    GRes g (CGoalL.next (Lazy.ofSure Sure.bunt) th) g2 nexF := by
+  cases hs : safeFolFol q with
+  | true =>
+    simp only [hs, if_true, pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at e
+    obtain ⟨rfl, rfl⟩ := e
+    exact gres_bunt (Nat.le_refl _) (Nat.le_refl _) hd hj
+  | false =>
+    simp only [hs, Bool.false_eq_true, if_false] at e
+    exact ihq _ _ _ _ (ginv_bunt_j hd hj) e
+
+/-- **The case `%2` on a dropped call** (README Gaps 19): a callee whose code
+entry is `pure` (`CodePure`, `hpu`), a `%next` goal whose need asks nothing
+(`hne`), with `GInv`, against `runLC env msup`, for every memo key. -/
+theorem comp_run_n2_drop (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (P : PartL env msup ctx p region) (Q : PartL env msup ctx q region)
+    (b : Bell) (key : Option Noun) (hcd : CodePure cod env b) (laz : Lazy CSet) (th : Jmp)
+    (g : Gen (TreapMap mugF)) (hinv : GInv g (CGoalL.next laz th)) (hpu : env.pure b = true)
+    (hne : Lazy.noneEquivalentL laz = true) :
+    CompRunAtR (runLC env msup) ctx (Nomm.n2 p q (some (b, key))) (CGoalL.next laz th) region g := by
+  obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
+  obtain ⟨hpc, hpn⟩ := hinted_plain env.cod P.plain
+  obtain ⟨V, hgot, hv⟩ := hcd
+  have hd : g.drop = false := hinv.2.1
+  have hj : JmpIn (· < g.re) th := hinv.2.2
+  intro x mono sup hx
+  rw [crd_model env msup p q b key laz th region hpu hne hpc, crd_noun, cr_disp_n2, cr2_dir, crd_eq]
+  have hpure := crd_pure hc hcode p.toNoun q.toNoun b.toNoun (unitNoun id key) V _ mono
+    (CGoalL.next laz th).toNoun (listNoun A region) sup g x hgot hv
+  rw [hpu] at hpure
+  have ht := crd_test h7 (C (A 2) (C p.toNoun (C q.toNoun (C (A 0) (C b.toNoun (unitNoun id key)))))) mono
+    (listNoun A region) sup laz th g x
+  rw [hne] at ht
+  have hdr := crd_drop h7 hcode env msup p q hpn region x hx mono (C (A 0) (C b.toNoun (unitNoun id key))) sup laz th g
+    (Q.link _ g (ginv_bunt_j hd hj))
+    (fun nexF g2 nexF' g3 e e3 =>
+      P.link _ _ (tail_pgoal (ginv_bunt_j hd hj) (linv_bunt _ _) (crd_fq_res Q.res hd hj e) e3).1)
+    (fun nexF g2 nexF' g3 nexS g4 e e3 e4 => by
+      have R2 := crd_fq_res Q.res hd hj e
+      exact (tail_copyH (ginv_bunt_j hd hj) (linv_bunt _ _) (by simp [lregs_bunt]) R2 e3
+        (P.res _ _ _ _ (tail_pgoal (ginv_bunt_j hd hj) (linv_bunt _ _) R2 e3).1 e4)).1)
+  unfold crDHead
+  simp [nock_exec, hpure, ht, loob, hdr]
+
+/-- **What the case on a dropped call returns** (`GRes`). -/
+theorem res_n2_drop {env : CallEnv} {msup : Option Nomm} {p q : Nomm} {region : List Nat}
+    (ihp : ResFor env msup p region) (ihq : ResFor env msup q region) (hpl : PlainOk p = true)
+    {b : Bell} {key : Option Noun} {laz : Lazy CSet} {th : Jmp} (hpu : env.pure b = true)
+    (hne : Lazy.noneEquivalentL laz = true) {g g' : Gen (TreapMap mugF)} {nex : NextL CSet}
+    (hi : GInv g (CGoalL.next laz th))
+    (h : runLC env msup (Nomm.n2 p q (some (b, key))) (CGoalL.next laz th) region g = some (nex, g')) :
+    GRes g (CGoalL.next laz th) g' nex := by
+  have hd : g.drop = false := hi.2.1
+  have hj : JmpIn (· < g.re) th := hi.2.2
+  obtain ⟨hpc, -⟩ := hinted_plain env.cod hpl
+  rw [crd_model env msup p q b key laz th region hpu hne hpc] at h
+  unfold crdDropM at h
+  obtain ⟨n2, g2, e1, h⟩ := bind_some h
+  obtain ⟨n2', g3, e2, h⟩ := bind_some h
+  obtain ⟨n1, g4, e3, e4⟩ := bind_some h
+  have R2 := crd_fq_res ihq hd hj e1
+  have P3 := tail_pgoal (ginv_bunt_j hd hj) (linv_bunt _ _) R2 e2
+  obtain ⟨l, bb, i, s⟩ := tail_res (ginv_bunt_j hd hj) (linv_bunt _ _) (by simp [lregs_bunt]) R2 e2
+    (ihp _ _ _ _ P3.1 e3) e4
+  refine ⟨l, bb, i, fun r hr => ?_⟩
+  rcases s r hr with e | e
+  · simp [lregs_bunt] at e
+  · exact Or.inl e
+
 end Compiler
 end Formalization
