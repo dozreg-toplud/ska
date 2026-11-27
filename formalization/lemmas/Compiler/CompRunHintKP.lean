@@ -138,5 +138,66 @@ theorem partH_n11d_kept (h7 : slot? 7 ctx = some compK) {env : CallEnv} {snd : N
       · exact rg r e
       · left; omega⟩
 
+/-- **The steps of the kept static case** from a goal with `GInv`. -/
+theorem ck_steps {R : Nomm → CGoalL CSet → List Nat → CM (TreapMap mugF) (NextL CSet)} {snd : Nomm → NeedOrd → Bool}
+    {tag : Nat} {q : Nomm} {body : Noun} {region : List Nat}
+    (Qr : ResForR R q region) {goal : CGoalL CSet}
+    {g g1 g2 : Gen (TreapMap mugF)} {nex0 nex1 : NextL CSet} (hi : GInv g goal)
+    (e0 : simpleNextL goal g = some (nex0, g1)) (e1 : pastIfL snd nex0 q region g1 = some (nex1, g2)) :
+    GInv (cfEmitG (ckEpil tag body nex1.th) g2) (CGoalL.next nex1.laz (jmp0 g2.bo)) ∧
+    ∀ n1 g4 n2 g5, R q (CGoalL.next nex1.laz (jmp0 g2.bo)) region (cfEmitG (ckEpil tag body nex1.th) g2)
+        = some (n1, g4) → lazyBound n1 region g4 = some (n2, g5) →
+      GRes g goal (cfEmitG ⟨[], [Pole.hsp tag body], Termin.hop n2.th⟩ g5) ⟨n2.laz, jmp0 g5.bo⟩ := by
+  obtain ⟨l0, b0, ⟨i0, d0, j0⟩, s0⟩ := simpleNextL_res hi e0
+  obtain ⟨r1, b1, d1, i1, j1, m1⟩ := pastIfL_inv i0 j0 e1
+  have iq : GInv (cfEmitG (ckEpil tag body nex1.th) g2) (CGoalL.next nex1.laz (jmp0 g2.bo)) :=
+    ⟨linv_mono i1 (by rw [cf_emitG_re]; exact Nat.le_refl _) (by rw [cf_emitG_bo]; omega), by rw [cf_emitG_drop, d1, d0], jmpIn_jmp0 _ _⟩
+  refine ⟨iq, fun n1 g4 n2 g5 e3 e4 => ?_⟩
+  obtain ⟨l3, b3, i3, s3⟩ := Qr _ _ _ _ iq e3
+  obtain ⟨rfl, r4, b4, d4⟩ := lazyBound_eq e4
+  obtain ⟨i3l, d3, -⟩ := i3
+  obtain ⟨L4, M4⟩ := linv_bound i3l
+  rw [cf_emitG_re] at l3
+  rw [cf_emitG_bo] at b3
+  refine ⟨by rw [cf_emitG_re]; omega, by rw [cf_emitG_bo]; omega,
+    ⟨linv_mono L4 (by rw [cf_emitG_re]; omega) (by rw [cf_emitG_bo]; omega), by rw [cf_emitG_drop, d4, d3],
+      jmpIn_jmp0 _ _⟩, fun r hr => ?_⟩
+  simp only at hr
+  rw [M4] at hr
+  rcases s3 r hr with e | e
+  · left; rw [cf_emitG_re] at e; omega
+  · simp only [gregs] at e
+    rcases s0 r ((m1 r).1 e) with e' | e'
+    · left; exact e'
+    · right; exact e'
+
+/-- **The kept static tag as a part** (`%bout`, `%xray`). -/
+theorem partH_n11s_kept (h7 : slot? 7 ctx = some compK) {env : CallEnv} {snd : Nomm → NeedOrd → Bool}
+    {msup : Option Nomm} {X : GenRest → Noun → Noun → Prop} {tag : Nat} (hst : hintStatic tag = true)
+    {q : Nomm} (body : Noun) {region : List Nat} (Q : PartH env snd msup ctx X q region)
+    (hs : SoundAt ctx snd q) (hpa : PastAt ctx env.cod (Nomm.n11s tag q body)) :
+    PartH env snd msup ctx X (Nomm.n11s tag q body) region := by
+  refine ⟨fun goal g hi => ?_, fun goal g g' nex hi he => ?_, hpa⟩
+  · exact comp_run_n11s_kept h7 env snd msup hst q body goal region g hs (fun nex0 g1 nex1 g2 e0 e1 =>
+      Q.link _ _ (ck_steps (tag := tag) (body := body) Q.res hi e0 e1).1)
+  · rw [runLCH_n11s_kept env snd msup hst] at he
+    obtain ⟨nex0, g1, e0, he⟩ := bind_some he
+    simp only [ckFrom] at he
+    obtain ⟨nex1, g2, e1, he⟩ := bind_some he
+    obtain ⟨epil, g3, e3, he⟩ := bind_some he
+    rw [cf_emit_g] at e3
+    simp only [Option.some.injEq, Prod.mk.injEq] at e3
+    obtain ⟨rfl, rfl⟩ := e3
+    simp only [ckTail] at he
+    obtain ⟨n1, g4, e4, he⟩ := bind_some he
+    obtain ⟨n2, g5, e5, he⟩ := bind_some he
+    obtain ⟨prol, g6, e6, he⟩ := bind_some he
+    rw [cf_emit_g] at e6
+    simp only [Option.some.injEq, Prod.mk.injEq] at e6
+    obtain ⟨rfl, rfl⟩ := e6
+    simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at he
+    obtain ⟨rfl, rfl⟩ := he
+    exact (ck_steps (tag := tag) (body := body) Q.res hi e0 e1).2 n1 g4 n2 g5 e4 e5
+
 end Compiler
 end Formalization
