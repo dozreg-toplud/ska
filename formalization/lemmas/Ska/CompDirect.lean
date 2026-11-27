@@ -70,6 +70,8 @@ interpreter's own oracle meet `OracleFwd`, `Theorems.lean`), only:
   formula on four subjects.
 * `callStep_bwd`, `tailStep_bwd`: the call blocks, backward.
 * `needOrdAllocRegs_clean`: the registers of a callee's need are `Clean`.
+* `fits_of_split`, `split_of_holds`: they hold the callee's subject exactly
+  where it splits by the callee's need.
 * `runLC_n2_direct`: the run of a direct call, step by step.
 * `CalleeNec`.
 -/
@@ -224,6 +226,57 @@ theorem needOrdAllocRegs_clean : ∀ (nd : NeedOrd) (g g' : Gen Map) (sub : Need
     · simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
       obtain ⟨rfl, rfl⟩ := h
       exact ⟨needOrdAllocRegs_clean p _ _ _ h1, needOrdAllocRegs_clean q _ _ _ h2⟩
+
+/-- **A subject that splits by the callee's need fits the registers
+allocated for it**, and conversely (`split_of_holds`): the code's split of
+`p`'s product fails exactly where `split` does, where `CalleeNec` applies. -/
+theorem fits_of_split : ∀ (nd : NeedOrd) (g g' : Gen Map) (sub : Need), needOrdAllocRegs nd g = some (sub, g') →
+    ∀ (s : Noun) (vs : List Noun), SkaModel.split nd s = some vs → Fits sub s
+  | NeedOrd.none, g, g', sub, h, s, vs, _ => by
+    simp only [needOrdAllocRegs, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    trivial
+  | NeedOrd.this, g, g', sub, h, s, vs, _ => by
+    simp only [needOrdAllocRegs, bind_apply, re_apply, pure_apply, Option.bind_some, Option.some.injEq,
+      Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    trivial
+  | NeedOrd.pair p q, g, g', sub, h, s, vs, hs => by
+    obtain ⟨hn, ga, h1, h⟩ := bind_some h
+    obtain ⟨tn, gb, h2, h⟩ := bind_some h
+    split at h
+    · cases h
+    · simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      cases s with
+      | atom _ => simp [SkaModel.split] at hs
+      | cell sh st =>
+        simp only [SkaModel.split] at hs
+        obtain ⟨a, ha, hs⟩ := Option.bind_eq_some_iff.mp hs
+        obtain ⟨b', hb, -⟩ := Option.bind_eq_some_iff.mp hs
+        exact ⟨fits_of_split p _ _ _ h1 sh a ha, fits_of_split q _ _ _ h2 st b' hb⟩
+  | NeedOrd.both p q, g, g', sub, h, s, vs, hs => by
+    obtain ⟨r0, g0', h0, h⟩ := bind_some h
+    obtain ⟨hn, ga, h1, h⟩ := bind_some h
+    obtain ⟨tn, gb, h2, h⟩ := bind_some h
+    split at h
+    · cases h
+    · simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      cases s with
+      | atom _ => simp [SkaModel.split] at hs
+      | cell sh st =>
+        simp only [SkaModel.split] at hs
+        obtain ⟨a, ha, hs⟩ := Option.bind_eq_some_iff.mp hs
+        obtain ⟨b', hb, -⟩ := Option.bind_eq_some_iff.mp hs
+        exact ⟨fits_of_split p _ _ _ h1 sh a ha, fits_of_split q _ _ _ h2 st b' hb⟩
+
+/-- **The registers of a callee's need hold its subject only where it
+splits**: if they hold `s`, `split` succeeds (`allocSplit`, `holds_mapM`). -/
+theorem split_of_holds {nd : NeedOrd} {g g' : Gen Map} {sub : Need} (h : needOrdAllocRegs nd g = some (sub, g'))
+    {regs : Map (Option Noun)} {s : Noun} (hs : HoldsN sub regs s) : ∃ vs, SkaModel.split nd s = some vs := by
+  obtain ⟨vs, hvs⟩ := holds_mapM sub regs s hs
+  exact ⟨vs, by rw [← allocSplit_go nd g g' sub h regs s hs, hvs]⟩
 
 /-! ## The run of a direct call -/
 
