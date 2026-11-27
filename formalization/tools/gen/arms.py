@@ -25,7 +25,7 @@ which = sys.argv[1]
 if which == 'door':
     bat = ('R','comp.door')
 else:
-    K = ('C', ('R','nhe0b859c3d8aa'), ('C', ('R','nh15c74912d225'), ('C', ('A',0), ('R','ana'))))
+    K = ('C', ('R','nh5592f9d7750f'), ('C', ('R','nh15c74912d225'), ('C', ('A',0), ('R','ana'))))
     bat = norm(K)[1]
 for ax, f in arms(bat):
     nm = fastname(f)
