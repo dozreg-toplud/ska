@@ -14,6 +14,7 @@ import lemmas.Compiler.PokeLinkLoopRun
 import lemmas.Compiler.PokeLinkGood4
 import lemmas.Compiler.PokeLinkTop5
 import lemmas.Compiler.PokeLinkEvalFin
+import lemmas.Compiler.PokeLinkCole
 
 /-! # Audit of track P: `enc` and the `%full` branch of `+poke` -/
 
@@ -199,3 +200,6 @@ open Formalization Formalization.Compiler
 #print axioms ef_loop_all
 #print axioms evalFinAt
 #print axioms loopLinkAt_good5E
+#print axioms coleCohM_put
+#print axioms coleCohM_put_bad
+#print axioms coleCohM_fold
