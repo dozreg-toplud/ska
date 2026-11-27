@@ -579,5 +579,203 @@ theorem less_untidy_example :
     Ca.app (Ca.uni Cape.no (darkOf (Sock.mk (Cape.cell Cape.yes Cape.no) (C (A 1) (A 0))))) bus = bus := by
   decide
 
+/-! ## The map, for a product that does not change -/
+
+/-- A map with no `[~ ~]`, which `+cons:pi` never makes. -/
+def PiNorm : Noun → Prop
+  | Noun.atom _ => True
+  | Noun.cell x y => ¬ (x = A 0 ∧ y = A 0) ∧ PiNorm x ∧ PiNorm y
+
+theorem pi_hed_cons (x y : Noun) : Pi.hed (Pi.cons x y) = x := by
+  unfold Pi.cons; split
+  · rename_i h; rw [h.1]; rfl
+  · rfl
+
+theorem pi_tel_cons (x y : Noun) : Pi.tel (Pi.cons x y) = y := by
+  unfold Pi.cons; split
+  · rename_i h; rw [h.2]; rfl
+  · rfl
+
+theorem piNorm_hed {m : Noun} (h : PiNorm m) : PiNorm (Pi.hed m) := by
+  cases m with
+  | atom p => cases p <;> trivial
+  | cell x y => exact h.2.1
+
+theorem piNorm_tel {m : Noun} (h : PiNorm m) : PiNorm (Pi.tel m) := by
+  cases m with
+  | atom p => cases p <;> trivial
+  | cell x y => exact h.2.2
+
+/-- `1` where the map at a cell of the cape is a non-zero atom (an axis not
+spelled out along the cells). -/
+def mapInd : Noun → Nat
+  | Noun.atom 0 => 0
+  | Noun.atom _ => 1
+  | Noun.cell _ _ => 0
+
+theorem mapInd_cons (x y : Noun) : mapInd (Pi.cons x y) = 0 := by
+  unfold Pi.cons; split
+  · rfl
+  · rfl
+
+/-- The leaves of the cape whose map is not `~`. -/
+def mapL : Cape → Noun → Nat
+  | Cape.cell l r, m => mapL l (Pi.hed m) + mapL r (Pi.tel m)
+  | _, m => if m = A 0 then 0 else 1
+
+/-- The cells of the cape at which the map is a non-zero atom. -/
+def mapA : Cape → Noun → Nat
+  | Cape.cell l r, m => mapA l (Pi.hed m) + mapA r (Pi.tel m) + mapInd m
+  | _, _ => 0
+
+/-- **The order in which the map of a fixed product moves**: fewer leaves of
+the product's cape with a map, else fewer cells of it at which the map is an
+atom. -/
+def MapLt (c : Cape) (m' m : Noun) : Prop :=
+  mapL c m' < mapL c m ∨ (mapL c m' = mapL c m ∧ mapA c m' < mapA c m)
+
+theorem map_cell_step (l r : Cape) (rb hs ts : Noun) (hp : PiNorm rb)
+    (i1 : hs = Pi.hed rb ∨ MapLt l hs (Pi.hed rb)) (i2 : ts = Pi.tel rb ∨ MapLt r ts (Pi.tel rb)) :
+    Pi.cons hs ts = rb ∨ MapLt (Cape.cell l r) (Pi.cons hs ts) rb := by
+  have eL : mapL (Cape.cell l r) (Pi.cons hs ts) = mapL l hs + mapL r ts := by
+    simp only [mapL, pi_hed_cons, pi_tel_cons]
+  have eA : mapA (Cape.cell l r) (Pi.cons hs ts) = mapA l hs + mapA r ts := by
+    simp only [mapA, pi_hed_cons, pi_tel_cons, mapInd_cons, Nat.add_zero]
+  have oL : mapL (Cape.cell l r) rb = mapL l (Pi.hed rb) + mapL r (Pi.tel rb) := by simp only [mapL]
+  have oA : mapA (Cape.cell l r) rb = mapA l (Pi.hed rb) + mapA r (Pi.tel rb) + mapInd rb := by
+    simp only [mapA]
+  unfold MapLt at i1 i2 ⊢
+  rcases i1 with e1 | e1 <;> rcases i2 with e2 | e2
+  · subst e1; subst e2
+    cases rb with
+    | atom p =>
+      cases p with
+      | zero => left; rfl
+      | succ q =>
+        right; right
+        have : mapInd (Noun.atom (q + 1)) = 1 := rfl
+        omega
+    | cell x y =>
+      left
+      show Pi.cons x y = C x y
+      unfold Pi.cons
+      exact if_neg hp.1
+  · right; subst e1; omega
+  · right; subst e2; omega
+  · right; omega
+
+theorem map_knit_step {h t : Anno} {cb : Cape} {db rb : Noun} (hp : PiNorm rb)
+    (e : So.knit h.sock t.sock = Sock.mk cb db) (hcb : cb ≠ Cape.no)
+    (ih1 : h.sock = So.hed (Sock.mk cb db) →
+      h.src = Pi.hed rb ∨ MapLt (darkOf (So.hed (Sock.mk cb db))) h.src (Pi.hed rb))
+    (ih2 : t.sock = So.tel (Sock.mk cb db) →
+      t.src = Pi.tel rb ∨ MapLt (darkOf (So.tel (Sock.mk cb db))) t.src (Pi.tel rb)) :
+    Pi.cons h.src t.src = rb ∨ MapLt cb (Pi.cons h.src t.src) rb := by
+  rcases knit_cases h.sock t.sock with e' | e' | ⟨l, r, d1, d2, e1, e2, _, e'⟩
+  · rw [e'] at e; cases e
+  · rw [e'] at e; simp only [Sock.dunno, Sock.mk.injEq] at e; exact absurd e.1.symm hcb
+  · rw [e'] at e; simp only [Sock.mk.injEq] at e
+    obtain ⟨rfl, rfl⟩ := e
+    exact map_cell_step l r rb _ _ hp (ih1 e1) (ih2 e2)
+
+theorem map_dunno_step {cb : Cape} {db rb : Noun} (e : Sock.dunno = Sock.mk cb db) :
+    A 0 = rb ∨ MapLt cb (A 0) rb := by
+  simp only [Sock.dunno, Sock.mk.injEq] at e
+  obtain ⟨rfl, rfl⟩ := e
+  by_cases h0 : rb = A 0
+  · exact Or.inl h0.symm
+  · right; left; simp [mapL, h0]
+
+theorem doubleInt_map : ∀ (k : Nat) (a b : Anno), Sock.msr a.sock + Sock.msr b.sock < k →
+    b.sock ≠ Sock.void → PiNorm b.src → (doubleInt a b).sock = b.sock →
+    (doubleInt a b).src = b.src ∨ MapLt (darkOf b.sock) (doubleInt a b).src b.src := by
+  intro k
+  induction k with
+  | zero => intro _ _ h; omega
+  | succ k ih =>
+  intro a b hk hb hp he
+  by_cases hab : a = b
+  · subst hab; rw [doubleInt_self]; exact Or.inl rfl
+  obtain ⟨sa, ra⟩ := a
+  obtain ⟨sb, rb⟩ := b
+  simp only at hb hp he hk ⊢
+  cases sb with
+  | void => exact absurd rfl hb
+  | mk cb db =>
+  cases sa with
+  | void => rw [doubleInt_void_left rfl hab]; exact Or.inl rfl
+  | mk ca da =>
+    revert he
+    apply doubleInt_cases (fun r => r.sock = Sock.mk cb db → r.src = rb ∨ MapLt cb r.src rb) hab
+    · exact map_dunno_step
+    · intro hno e
+      simp only [not_or] at hno
+      have h1 := msr_hed_lt hno.1 da; have h2 := msr_hed_lt hno.2 db
+      have h3 := msr_tel_lt hno.1 da; have h4 := msr_tel_lt hno.2 db
+      exact map_knit_step hp e hno.2
+        (fun e1 => ih ⟨So.hed (Sock.mk ca da), Pi.hed ra⟩ ⟨So.hed (Sock.mk cb db), Pi.hed rb⟩
+          (by simp only; omega) (hed_ne_void (s := Sock.mk cb db) (by intro h; cases h)) (piNorm_hed hp) e1)
+        (fun e2 => ih ⟨So.tel (Sock.mk ca da), Pi.tel ra⟩ ⟨So.tel (Sock.mk cb db), Pi.tel rb⟩
+          (by simp only; omega) (tel_ne_void (s := Sock.mk cb db) (by intro h; cases h)) (piNorm_tel hp) e2)
+
+theorem msgAnno_map : ∀ (k : Nat) (a b : Anno), Sock.msr a.sock + Sock.msr b.sock < k →
+    b.sock ≠ Sock.void → PiNorm b.src → (msgAnno a b).sock = b.sock →
+    (msgAnno a b).src = b.src ∨ MapLt (darkOf b.sock) (msgAnno a b).src b.src := by
+  intro k
+  induction k with
+  | zero => intro _ _ h; omega
+  | succ k ih =>
+  intro a b hk hb hp he
+  obtain ⟨sa, ra⟩ := a
+  obtain ⟨sb, rb⟩ := b
+  simp only at hb hp hk
+  revert he
+  unfold msgAnno
+  split
+  · rename_i heq
+    simp only [Anno.mk.injEq] at heq
+    intro _; exact Or.inl heq.2
+  · split
+    · intro _; exact Or.inl rfl
+    · exfalso
+      rename_i hh _
+      simp only [Anno.mk.injEq] at hh
+      exact hb hh.1
+    · rename_i ah aT da ra' bh bT db rb' heq1 heq2
+      simp only [Anno.mk.injEq] at heq1 heq2
+      obtain ⟨rfl, rfl⟩ := heq1
+      obtain ⟨rfl, rfl⟩ := heq2
+      intro e
+      have h1 := msr_hed_lt (c := Cape.cell ah aT) (by simp) da
+      have h2 := msr_hed_lt (c := Cape.cell bh bT) (by simp) db
+      have h3 := msr_tel_lt (c := Cape.cell ah aT) (by simp) da
+      have h4 := msr_tel_lt (c := Cape.cell bh bT) (by simp) db
+      exact map_knit_step hp e (by intro h; cases h)
+        (fun e1 => ih ⟨So.hed (Sock.mk (Cape.cell ah aT) da), Pi.hed ra⟩
+          ⟨So.hed (Sock.mk (Cape.cell bh bT) db), Pi.hed rb⟩ (by simp only; omega)
+          (hed_ne_void (s := Sock.mk (Cape.cell bh bT) db) (by intro h; cases h)) (piNorm_hed hp) e1)
+        (fun e2 => ih ⟨So.tel (Sock.mk (Cape.cell ah aT) da), Pi.tel ra⟩
+          ⟨So.tel (Sock.mk (Cape.cell bh bT) db), Pi.tel rb⟩ (by simp only; omega)
+          (tel_ne_void (s := Sock.mk (Cape.cell bh bT) db) (by intro h; cases h)) (piNorm_tel hp) e2)
+    · intro e
+      cases sb with
+      | void => exact absurd rfl hb
+      | mk cb db => exact map_dunno_step e
+
+/-- **Open point (a), for any product**: when the product an entry keeps does
+not change, its map stays or moves down in `MapLt` over the product's cape. -/
+theorem runDatum_map_step (moved : Bool) (bus : Sock) (out : FolOut) (gen' : Gen) (old : Datum)
+    (hv : old.prod ≠ Sock.void) (hp : PiNorm old.map)
+    (he : (runDatum moved bus out gen' old).1.prod = old.prod) :
+    (runDatum moved bus out gen' old).1.map = old.map ∨
+      MapLt (darkOf old.prod) (runDatum moved bus out gen' old).1.map old.map := by
+  simp only [runDatum] at he ⊢
+  unfold mergeProd at he ⊢
+  split
+  · rename_i hm; rw [if_pos hm] at he
+    exact msgAnno_map _ out.prod ⟨old.prod, old.map⟩ (Nat.lt_succ_self _) hv hp he
+  · rename_i hm; rw [if_neg hm] at he
+    exact doubleInt_map _ out.prod ⟨old.prod, old.map⟩ (Nat.lt_succ_self _) hv hp he
+
 end SkaModel
 end Formalization
