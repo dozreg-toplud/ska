@@ -185,7 +185,8 @@ for the analysis fuel `anaFuel env regOf` (`anaEnds_of_N`,
 
 Chain: `(gap_of_comp …).2.2` gives `liftInv enc (InvS lib ref)` of
 `enc ⟨⟨∅, ∅, ∅⟩, jets, hot, ⟨∅, ∅, ∅, rest⟩⟩` for every `jets hot rest`
-(from `InvB.init` and empty caches; it takes `hC` as an argument).
+(`invS_init`, inside `gap_of`; the component does not use `hC`, but
+`gap_of_comp` takes it).
 Leaf 4.1, OPEN, no owner: `cor = enc ⟨⟨∅, ∅, ∅⟩, jets, hot, ⟨∅, ∅, ∅, rest⟩⟩`
 for some `jets hot rest`, i.e. the pill's compiler starts with an empty
 code table, memo, variants and caches (*not checked* on the pill).

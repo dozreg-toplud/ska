@@ -94,6 +94,7 @@ namespace Formalization
 #check @SkaModel.PokeM.rawMono_fragUEG
 #check @SkaModel.Bake.InvB
 #check @SkaModel.Bake.InvB.init
+#check @SkaModel.PokeM.invS_init
 
 /-! ## The raw side and the optimizer -/
 #check @SkaModel.Comp.FragX
