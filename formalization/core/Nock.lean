@@ -91,16 +91,14 @@ inductive Fas : Noun -> Noun -> Noun -> Prop where
     | one {a} :   Fas (A 1) a a
     | two {a b} : Fas (A 2) (C a b) a
     | three {a b} : Fas (A 3) (C a b) b
-    | left {a b p q n} :
-        Fas a b p ->
+    | left {a b p q} :
+        Fas (A a) b p ->
         Fas (A 2) p q ->
-        a = A n ->
-        Fas (A (n + n)) b q
-    | right {a b p q n} :
-        Fas a b p ->
+        Fas (A (a + a)) b q
+    | right {a b p q} :
+        Fas (A a) b p ->
         Fas (A 3) p q ->
-        a = A n ->
-        Fas (A (n + n + 1)) b q
+        Fas (A (a + a + 1)) b q
 
 -- #[1 a b]            a
 -- #[(a + a) b c]      #[a [b /[(a + a + 1) c]] c]
@@ -108,16 +106,14 @@ inductive Fas : Noun -> Noun -> Noun -> Prop where
 -- #a                  #a
 inductive Hax : Noun -> Noun -> Noun -> Noun -> Prop where
     | one {a b} : Hax (A 1) a b a
-    | left {a b c p q n} :
-        a = A n ->
-        Fas (A (n + n + 1)) c p ->
-        Hax a (C b p) c q ->
-        Hax (A (n + n)) b c q
-    | right {a b c p q n} :
-        a = A n ->
-        Fas (A (n + n)) c p ->
-        Hax a (C p b) c q ->
-        Hax (A (n + n + 1)) b c q
+    | left {a b c p q} :
+        Fas (A (a + a + 1)) c p ->
+        Hax (A a) (C b p) c q ->
+        Hax (A (a + a)) b c q
+    | right {a b c p q} :
+        Fas (A (a + a)) c p ->
+        Hax (A a) (C p b) c q ->
+        Hax (A (a + a + 1)) b c q
 
 inductive Nock : Noun -> Noun -> Noun -> Prop where
     | cons {a b c d p q} :

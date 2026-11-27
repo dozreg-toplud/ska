@@ -80,26 +80,26 @@ theorem Fas.atom {a s p : Noun} (h : Fas a s p) : ∃ n, a = A n ∧ Slot n s p 
   | one => exact ⟨1, rfl, Slot.one⟩
   | two => exact ⟨2, rfl, Slot.left (axis := 1) Slot.one⟩
   | three => exact ⟨3, rfl, Slot.right (axis := 1) Slot.one⟩
-  | @left a b p q n _ _ hn ih1 ih2 =>
+  | @left a b p q _ _ ih1 ih2 =>
     obtain ⟨m, hm, h1⟩ := ih1
     obtain ⟨k, hk, h2⟩ := ih2
     cases hk
-    rw [hn] at hm; cases hm
+    cases hm
     obtain ⟨t, rfl⟩ := h2.two_inv
-    exact ⟨2 * n, by rw [Nat.two_mul], Slot.left h1⟩
-  | @right a b p q n _ _ hn ih1 ih2 =>
+    exact ⟨2 * a, by rw [Nat.two_mul], Slot.left h1⟩
+  | @right a b p q _ _ ih1 ih2 =>
     obtain ⟨m, hm, h1⟩ := ih1
     obtain ⟨k, hk, h2⟩ := ih2
     cases hk
-    rw [hn] at hm; cases hm
+    cases hm
     obtain ⟨t, rfl⟩ := h2.three_inv
-    exact ⟨2 * n + 1, by rw [Nat.two_mul], Slot.right h1⟩
+    exact ⟨2 * a + 1, by rw [Nat.two_mul], Slot.right h1⟩
 
 theorem fas_of_slot {n : Nat} {s p : Noun} (h : Slot n s p) : Fas (A n) s p := by
   induction h with
   | one => exact Fas.one
-  | left _ ih => rw [Nat.two_mul]; exact Fas.left ih Fas.two rfl
-  | right _ ih => rw [Nat.two_mul]; exact Fas.right ih Fas.three rfl
+  | left _ ih => rw [Nat.two_mul]; exact Fas.left ih Fas.two
+  | right _ ih => rw [Nat.two_mul]; exact Fas.right ih Fas.three
 
 theorem fas_iff_slot {n : Nat} {s p : Noun} : Fas (A n) s p ↔ Slot n s p :=
   ⟨fun h => by obtain ⟨m, hm, hs⟩ := h.atom; cases hm; exact hs, fas_of_slot⟩
@@ -107,16 +107,16 @@ theorem fas_iff_slot {n : Nat} {s p : Noun} : Fas (A n) s p ↔ Slot n s p :=
 theorem Hax.atom {a r s o : Noun} (h : Hax a r s o) : ∃ n, a = A n ∧ Edit n r s o := by
   induction h with
   | one => exact ⟨1, rfl, Edit.one⟩
-  | @left a b c p q n hn hf _ ih =>
+  | @left a b c p q hf _ ih =>
     obtain ⟨m, hm, he⟩ := ih
-    rw [hn] at hm; cases hm
-    have hs : Slot (2 * n + 1) c p := by rw [Nat.two_mul]; exact fas_iff_slot.mp hf
-    exact ⟨2 * n, by rw [Nat.two_mul], Edit.left hs he⟩
-  | @right a b c p q n hn hf _ ih =>
+    cases hm
+    have hs : Slot (2 * a + 1) c p := by rw [Nat.two_mul]; exact fas_iff_slot.mp hf
+    exact ⟨2 * a, by rw [Nat.two_mul], Edit.left hs he⟩
+  | @right a b c p q hf _ ih =>
     obtain ⟨m, hm, he⟩ := ih
-    rw [hn] at hm; cases hm
-    have hs : Slot (2 * n) c p := by rw [Nat.two_mul]; exact fas_iff_slot.mp hf
-    exact ⟨2 * n + 1, by rw [Nat.two_mul], Edit.right hs he⟩
+    cases hm
+    have hs : Slot (2 * a) c p := by rw [Nat.two_mul]; exact fas_iff_slot.mp hf
+    exact ⟨2 * a + 1, by rw [Nat.two_mul], Edit.right hs he⟩
 
 theorem hax_of_edit {n : Nat} {r s o : Noun} (h : Edit n r s o) : Hax (A n) r s o := by
   induction h with
@@ -124,11 +124,11 @@ theorem hax_of_edit {n : Nat} {r s o : Noun} (h : Edit n r s o) : Hax (A n) r s 
   | left hs _ ih =>
     have hf := fas_of_slot hs
     rw [Nat.two_mul] at hf ⊢
-    exact Hax.left rfl hf ih
+    exact Hax.left hf ih
   | right hs _ ih =>
     have hf := fas_of_slot hs
     rw [Nat.two_mul] at hf ⊢
-    exact Hax.right rfl hf ih
+    exact Hax.right hf ih
 
 theorem hax_iff_edit {n : Nat} {r s o : Noun} : Hax (A n) r s o ↔ Edit n r s o :=
   ⟨fun h => by obtain ⟨m, hm, he⟩ := h.atom; cases hm; exact he, hax_of_edit⟩
