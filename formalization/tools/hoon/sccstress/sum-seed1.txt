@@ -1,0 +1,155 @@
+big   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] this] none]] -> [none [[%both [%both this this] this] none]]
+swp   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] this] none]] -> [none [[%both [%both this this] this] none]]
+osc   |scc| 2  sweeps 3  max-must 2  keep False  final yes
+      [none [[[%both this this] [%both this this]] none]] -> [none [[[%both this this] [%both this this]] none]]
+      [none [[%both [this none] none] none]]
+grow  |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both this [%both this this]] none]] -> [none [[%both this [%both this this]] none]]
+g0    |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+g1    |scc| 2  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+g2    |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this none] [%both this this]] none]] -> [none [[%both [%both this none] [%both this this]] none]]
+g3    |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+g4    |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[this this] none]] -> [none [[this this] none]]
+g5    |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[[this none] none] none]] -> [none [[[this none] none] none]]
+g6    |scc| 2  sweeps 3  max-must 2  keep False  final yes
+      [none [[[this none] [this this]] none]] -> [none [[[this none] [this this]] none]]
+      [none [[%both [%both this this] this] none]] -> [none [[%both [%both this this] this] none]]
+g7    |scc| 3  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+      [none [[%both this [%both this this]] none]] -> [none [[%both this [%both this this]] none]]
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+g8    |scc| 2  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+      [none [[[this none] [%both this none]] none]]
+g9    |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+g10   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+g11   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this none] [%both this this]] none]] -> [none [[%both [%both this none] [%both this this]] none]]
+g12   |scc| 3  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both this [%both this this]] none]] -> [none [[%both this [%both this this]] none]]
+      [none [[%both [%both this this] this] none]] -> [none [[%both [%both this this] this] none]]
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+g13   |scc| 2  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+g15   |scc| 3  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+      [none [[[%both this this] this] none]] -> [none [[[%both this this] this] none]]
+      [none [[%both [%both this this] [%both this none]] none]]
+g16   |scc| 2  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] this] none]] -> [none [[%both [%both this this] this] none]]
+      [none [[[%both this this] [%both this this]] none]] -> [none [[[%both this this] [%both this this]] none]]
+g17   |scc| 1  sweeps 2  max-must 1  keep False  final yes
+      none
+g18   |scc| 3  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+      [none [[%both [%both this this] [this this]] none]] -> [none [[%both [%both this this] [this this]] none]]
+      [none [[%both [%both this none] [%both this this]] none]] -> [none [[%both [%both this none] [%both this this]] none]]
+g19   |scc| 3  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [this none]] none]] -> [none [[%both [%both this this] [this none]] none]]
+      [none [[%both [%both this this] [this this]] none]] -> [none [[%both [%both this this] [this this]] none]]
+      [none [[%both [%both this this] [%both this none]] none]] -> [none [[%both [%both this this] [%both this none]] none]]
+g20   |scc| 3  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+      [none [[[%both this this] [%both this this]] none]] -> [none [[[%both this this] [%both this this]] none]]
+      [none [[%both [%both this this] [%both this this]] none]]
+g21   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [this this]] none]] -> [none [[%both [%both this this] [this this]] none]]
+g21   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [none this]] none]] -> [none [[%both [%both this this] [none this]] none]]
+g22   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [this this] [this none]] none]] -> [none [[%both [this this] [this none]] none]]
+g23   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[[%both this this] [none this]] none]] -> [none [[[%both this this] [none this]] none]]
+g24   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[none [this none]] none]] -> [none [[none [this none]] none]]
+g25   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] this] none]] -> [none [[%both [%both this this] this] none]]
+g26   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[none [this none]] none]] -> [none [[none [this none]] none]]
+g27   |scc| 1  sweeps 4  max-must 3  keep False  final yes
+      [none [[%both none [this none]] none]] -> [none [[%both none [%both this none]] none]] -> [none [[%both none [%both this none]] none]]
+g28   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] this] none]] -> [none [[%both [%both this this] this] none]]
+g29   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both this [this this]] none]] -> [none [[%both this [this this]] none]]
+g30   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+g30   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+g31   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[[%both none this] this] none]] -> [none [[[%both none this] this] none]]
+g32   |scc| 2  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both this [this none]] none]] -> [none [[%both this [this none]] none]]
+      [none [[%both this [%both this this]] none]] -> [none [[%both this [%both this this]] none]]
+g33   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+g33   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[[%both this this] [%both this this]] none]] -> [none [[[%both this this] [%both this this]] none]]
+g34   |scc| 3  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+      [none [[[%both this this] [none this]] none]]
+g36   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[[%both this this] this] none]] -> [none [[[%both this this] this] none]]
+g37   |scc| 2  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both none this] [none this]] none]] -> [none [[%both [%both none this] [none this]] none]]
+      [none [[%both [%both this this] [%both this this]] none]]
+g38   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] this] none]] -> [none [[%both [%both this this] this] none]]
+g39   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[[%both this none] [%both this this]] none]] -> [none [[[%both this none] [%both this this]] none]]
+g40   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[[this this] [%both none this]] none]] -> [none [[[this this] [%both none this]] none]]
+g41   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+g42   |scc| 2  sweeps 3  max-must 2  keep False  final yes
+      [none [[[%both this this] [%both this this]] none]] -> [none [[[%both this this] [%both this this]] none]]
+      [none [[%both [%both this none] [%both this this]] none]] -> [none [[%both [%both this none] [%both this this]] none]]
+g43   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] this] none]] -> [none [[%both [%both this this] this] none]]
+g44   |scc| 2  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+      [none [[[this this] none] none]]
+g45   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this none]] none]] -> [none [[%both [%both this this] [%both this none]] none]]
+g45   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+g46   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+g47   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both this [%both this this]] none]] -> [none [[%both this [%both this this]] none]]
+g48   |scc| 2  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+g49   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [this this]] none]] -> [none [[%both [%both this this] [this this]] none]]
+g50   |scc| 2  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+      [none [[%both [%both this this] [this this]] none]] -> [none [[%both [%both this this] [this this]] none]]
+g51   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both this [%both this this]] none]] -> [none [[%both this [%both this this]] none]]
+g52   |scc| 1  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+g53   |scc| 2  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+g54   |scc| 2  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+      [none [[%both [%both this this] [this this]] none]] -> [none [[%both [%both this this] [this this]] none]]
+g55   |scc| 3  sweeps 3  max-must 2  keep False  final yes
+      [none [[%both [%both this this] this] none]] -> [none [[%both [%both this this] this] none]]
+      [none [[%both [%both this this] [%both this this]] none]] -> [none [[%both [%both this this] [%both this this]] none]]
+      [none [[%both [%both this this] [%both this this]] none]]
+SCCs through the loop: 62, most sweeps: 4 (g27)
