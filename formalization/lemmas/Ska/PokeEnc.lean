@@ -39,7 +39,7 @@ open Nock Pill Hoon SkaModel SkaModel.Ana SkaModel.Bake SkaModel.PokeM
 
 /-! ## Injective nouns -/
 
-theorem unitNoun_id_inj {a b : Option Noun} (h : unitNoun (fun x => x) a = unitNoun (fun x => x) b) :
+theorem unitNoun_id_injP {a b : Option Noun} (h : unitNoun (fun x => x) a = unitNoun (fun x => x) b) :
     a = b := by
   cases a <;> cases b <;> simp_all [unitNoun]
 
@@ -70,7 +70,7 @@ theorem nomm_toNoun_inj : ∀ {a b : Nomm}, a.toNoun = b.toNoun → a = b := by
     obtain ⟨b1, k1⟩ := x
     obtain ⟨b2, k2⟩ := y
     simp only [Noun.cell.injEq] at e
-    rw [bell_toNoun_inj e.1, unitNoun_id_inj e.2]
+    rw [bell_toNoun_inj e.1, unitNoun_id_injP e.2]
   | n3 p ih => intro b h; cases b <;> simp [Nomm.toNoun, nomm_toNoun_ne_atom, nomm_atom_ne_toNoun, Tag.mean] at h ⊢; exact ih h
   | n4 p ih => intro b h; cases b <;> simp [Nomm.toNoun, nomm_toNoun_ne_atom, nomm_atom_ne_toNoun, Tag.mean] at h ⊢; exact ih h
   | n5 p q ihp ihq =>
@@ -96,7 +96,7 @@ theorem nomm_toNoun_inj : ∀ {a b : Nomm}, a.toNoun = b.toNoun → a = b := by
     exact ⟨ihp h.1, ihq h.2⟩
   | mean p bl q body k ihp ihq =>
     intro b h; cases b <;> simp [Nomm.toNoun, nomm_toNoun_ne_atom, nomm_atom_ne_toNoun, Tag.mean] at h ⊢
-    exact ⟨ihp h.1, bell_toNoun_inj h.2.1, ihq h.2.2.1, h.2.2.2.1, unitNoun_id_inj h.2.2.2.2⟩
+    exact ⟨ihp h.1, bell_toNoun_inj h.2.1, ihq h.2.2.1, h.2.2.2.1, unitNoun_id_injP h.2.2.2.2⟩
 
 theorem needOrd_toNoun_ne_atom : ∀ (n : NeedOrd) (k : Nat), n.toNoun ≠ A k := by
   intro n k; cases n <;> simp [NeedOrd.toNoun]
@@ -205,7 +205,7 @@ theorem fdatum_toNoun_inj {a b : FDatum FinMap} (h : a.toNoun = b.toNoun) : a = 
   obtain ⟨hc, hn, hl, hi, hs, ⟨hp, hm⟩, ha⟩ := h
   have hc' : c1 = c2 := FinMap.setNoun_inj hc
   rw [hc', nomm_toNoun_inj hn, Sock.toNoun_inj _ _ hl, Cape.toNoun_inj _ _ hi, Cape.toNoun_inj _ _ hs,
-    Sock.toNoun_inj _ _ hp, hm, unitNoun_id_inj ha]
+    Sock.toNoun_inj _ _ hp, hm, unitNoun_id_injP ha]
 
 theorem memoNoun_inj {a b : Memo FinMap} (h : memoNoun a = memoNoun b) : a = b := by
   refine FinMap.toNoun_inj' (fun x y e => FinMap.toNoun_inj' (fun u w e' => ?_) e) h
