@@ -1,4 +1,4 @@
-import lemmas.Compiler.OptLinkAlStartImms
+import lemmas.Compiler.OptLinkAlStartAll
 import lemmas.Compiler.OptLinkRub
 import lemmas.Compiler.OptLinkDead
 import lemmas.Compiler.OptLinkRev
@@ -207,3 +207,12 @@ open Formalization Compiler
 #print axioms imms_got
 #print axioms immsRel_of_immsEq
 #print axioms al_imms
+#print axioms al_preb
+#print axioms al_jbrn
+#print axioms al_jbrz
+#print axioms al_jclq
+#print axioms al_jnref
+#print axioms al_info
+#print axioms alWalk_start
+#print axioms al_start
+#print axioms al_walk_start
