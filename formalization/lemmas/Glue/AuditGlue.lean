@@ -40,6 +40,7 @@ import lemmas.Ska.CompSixLSRCall
 import lemmas.Compiler.CompShapeColRet
 import lemmas.Glue.InvMemoP
 import lemmas.Glue.GuardRun
+import lemmas.Glue.GuardTop
 import lemmas.Compiler.PokeLink
 import lemmas.Ska.PokeEnc
 import lemmas.Ska.SccLoopMsg
@@ -362,6 +363,25 @@ namespace Formalization
 #print axioms SkaModel.Glue.addOps_ok
 #print axioms SkaModel.Glue.blocksOK_insertHop
 #print axioms SkaModel.Glue.sureLoop_guard
+
+-- GuardMonoX / GuardNaryX (LEDGER 2.c, fifth pass): KP, the run-level induction on FragX, the final passes stated
+#check @SkaModel.Glue.KP
+#check @SkaModel.Glue.Inv
+#check @SkaModel.Glue.RKX
+#check @SkaModel.Glue.GuardFinalU
+#check @SkaModel.Glue.GuardFinalF
+#print axioms SkaModel.Glue.guardedBody_of_noSplit
+#print axioms SkaModel.Glue.kp_copyNeed
+#print axioms SkaModel.Glue.kp_copyLazyL
+#print axioms SkaModel.Glue.kp_forkSure
+#print axioms SkaModel.Glue.run_kp
+#print axioms SkaModel.Glue.rkx_sixN
+#print axioms SkaModel.Glue.rkx_sixP
+#print axioms SkaModel.Glue.runX_kp
+#print axioms SkaModel.Glue.runX_blocksOK
+#print axioms SkaModel.Glue.guardMonoX_of
+#print axioms SkaModel.Glue.guardNaryX_of
+#print axioms SkaModel.Glue.compHyp_of_fragX''
 
 -- track P's route and track I's SccLoopMsg (was AuditGlueP.lean; M15)
 #check @Compiler.straight_toNoun_inj

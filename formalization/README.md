@@ -1002,6 +1002,12 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Glue/AuditGlue.lean` | `#check` of every declaration `LEDGER.md` names (track P's route and track I's `SccLoopMsg` included since M15 closed; the former `AuditGlueP.lean` is folded in), `#print axioms` of the theorems of `Glue/` (3500M cap). |
 | `Glue/GuardKern.lean` | Track G (Gaps 22 (e)): the `%cel` guard of `+kern-need`.  `GuardedPre` (a split guarded inside the list or on `d` with no write of `d` before), `guardedBody_cel`, `guardedBody_cons`, `guardedPre_split`, `guardedPre_append`, `guardedPre_part`; `kernBoth_guard` (the freshness fact: the head's ops between `%cel d` and `%tal d` write no `d`, from D's `KR.defs` and `Distinct`), `kr_guard`, `kernLoop_guard`, `kernLoop_guarded` (with D's `KR`), `kernNeed_guarded`. |
 | `Glue/GuardRun.lean` | Track G (Gaps 22 (e)): `BlocksOK` kept by the block steps of `+comp`.  `BlockOK`, `blocksOK_put`, `blocksOK_emitted`, `addOps_ok` (a guarded list in front), `blocksOK_insertHop`, `sureLoop_guard` (`+sure-loop`, under D's `raw_sureLoop` hypotheses). |
+| `Glue/GuardStep.lean` | Track G (Gaps 22 (e)): `KP P m` (every run of `m` keeps `Inv` = `BlocksOK` and not dropping, with a result in `P`), its combinators (`bind'`, `pure'`, `ite'`, `same`, `addOps'` of a `NoSplit` list, `addOpsG` of a guarded one, `emit'`/`emir'` of a `BlockOK` block, `insertHop'`, `foldl'`) and the tactic `kpb`; `NoSplit`, `guardedBody_of_noSplit`, `JOK` (no `~` among a jump's arguments), `GJK`; the table of every `+add-ops` site of the model and the kind of its ops. |
+| `Glue/GuardArms.lean` | Track G (Gaps 22 (e)): `KP` of the arms of `run` (track D's `QM` proofs with `KP`): `kp_must`, `kp_splitNeed`, `kp_intoLoop`, `kp_copyNeed` (its ops have no split), `kp_lookPath`, `kp_sureRequireLook`, `kp_crashNeed`, `kp_medeLoop`, `kp_bomb`, `kp_simpleNext`, `kp_mede`, `kp_collapseLazyAtom`, `kp_forl`, `kp_doneBlocks`, `kp_split`, `kp_into`, `kp_copyLazy`, `kp_copy`, `kp_past`. |
+| `Glue/GuardFrag.lean` | Track G (Gaps 22 (e)): **`run_kp`**: every run of `run` (the first fragment) for a goal whose jumps pass no `~` keeps `Inv` and returns a jump with no `~` (`RK`; the cases of D's `run_at`). |
+| `Glue/GuardArmsL.lean` | Track G (Gaps 22 (e)): `KP.map'`; `kp_copyLazyL` (with `kp_mergeForks`, `kp_mergeBonds`: `+copy` of lazy needs with forks), `kp_copyL`, `kp_forkNeedGo`, `kp_forkSure`. |
+| `Glue/GuardX.lean` | Track G (Gaps 22 (e)): **`runX_kp`**: on `FragX` every run of `runL` for a fork-free goal with `GJX` jumps keeps `Inv` and returns a jump with no `~` (`RKX`); the cases outside `%6` through `splitL_mk` .. `pastL_pure`, `%6` by `rkx_sixP`, `rkx_sixN` (C's `sixBody_apart`, `sixNextSimple_apart`, `sect_spec` with `KeepR.cnd`, the fork not big by `KeepR.size`); **`runX_blocksOK`** for the top run. |
+| `Glue/GuardTop.lean` | Track G (Gaps 22 (e)): the leaves `GuardFinalU`, `GuardFinalF` (the final passes from the end state of the top run) and `guardMonoX_of`, `guardNaryX_of`, `compHyp_of_fragX''`. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
 Every main theorem depends on `propext`, `Classical.choice` and `Quot.sound`
@@ -5563,8 +5569,13 @@ import only its theorems.  So:
     `GuardNaryX` (checked on all of `enumX`, `enumCX`).  Toward them (`Glue/GuardKern.lean`,
     `Glue/GuardRun.lean`): the freshness fact of `+kern-need` (`kernBoth_guard`,
     `kernLoop_guarded`: its ops are a guarded body) and `BlocksOK` kept by `+emit`,
-    `+add-ops` of a guarded list, `+insert-hop`, `+sure-loop` (`sureLoop_guard`); open: the
-    run-level induction over `FragX` (D's `runX_at` shape) and `+to-straight`.  (f) M15
+    `+add-ops` of a guarded list, `+insert-hop`, `+sure-loop` (`sureLoop_guard`).  The
+    run-level induction is proved (`Glue/GuardStep.lean` .. `Glue/GuardX.lean`, fifth pass):
+    `runX_kp`, `runX_blocksOK` (the raw blocks of the top run of `FragX` meet `BlocksOK`, the
+    result jump passes no `~`), so the two leaves are now `GuardFinalU`, `GuardFinalF`, the
+    final passes alone (`guardMonoX_of`, `guardNaryX_of`, `compHyp_of_fragX''`); open:
+    `+kerf` / `+coerce-lazy` over the result's lazy tree (`Distinct` of each entry's need)
+    and `+to-straight` (map path: unproxying, renaming, `+chase`).  (f) M15
     closed: no build clash is left among the files `AuditGlue` imports.  (g) M16 (in the
     making): track J's `runLCH` (hints) is a third model of `+run`; `refMono` and the
     classes must eventually be stated at `finishLUCH`.  Not done: every leaf of `LEDGER.md`

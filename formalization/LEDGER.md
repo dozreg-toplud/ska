@@ -182,7 +182,7 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
 | `rawMono`, `rawNary` | PROVED | `rawMonoD_calls`, `rawNaryD_calls` | done |
 | `rawOptIn` | LEAF | `OptInMono S Map FM`, `OptInNary S Map FN` (`rawOptIn_of`); PROVED on `FragX` (`optInMono_fragX`, `optInNary_fragX`) | D |
 | `optRef` | LEAF | `OptTotalMono S FM`, `OptTotalNary S FN` + `hpill` (`optRef_of_total`); PROVED on `FragX` (`optTotalMono_fragX`, `optTotalNary_fragX`); `hinj` PROVED (track P's `Compiler.straight_toNoun_inj`) | H (input side D), P (`hpill` = `OptLink`, restated `OptLinkOn`) |
-| `rawEntry` | LEAF | `EntryMono S Map lib FM`, `EntryNary S Map lib FN` (`rawEntry_of`); PROVED on `FragX` from the LEAVES `GuardMonoX`, `GuardNaryX` (`entryMono_fragX`, `entryNary_fragX`, `rawEntry_fragX`; generic `entryOK_of`); the `+kern-need` guard and the block steps PROVED (`kernLoop_guarded`, `sureLoop_guard`, 2.c) | G |
+| `rawEntry` | LEAF | `EntryMono S Map lib FM`, `EntryNary S Map lib FN` (`rawEntry_of`); PROVED on `FragX` from the LEAVES `GuardFinalU`, `GuardFinalF`, the final passes alone (`guardMonoX_of`, `guardNaryX_of`, `rawEntry_fragX`; generic `entryOK_of`); the run-level induction PROVED (`runX_blocksOK`, 2.c) | G |
 | `refMono`, `refNary` | OPEN | pill link at `finishLUCM` / `finishLFC` | A, I, K |
 | `inFragM`, `inFragN` | OPEN, FALSE today | every compiled nomm in `MonoCalls` / `NaryCalls` | C, J, K |
 | `inlAnnot` | OPEN | 2.e (model half stated there, not proved) | none |
@@ -274,16 +274,34 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
     threading (`sectStep`: a proxy one branch made); on `FragX` a run leaves
     `cond` as it is (D's `KeepX`, field `cnd`), so `+sect` is `SameBlocks`
     (`sect_spec`).
-    OPEN, first block: the run-level induction itself (`BlocksOK g0.blocks
-    → runL nm goal region g0 = some (nex, g1) → BlocksOK g1.blocks` on
-    `FragX`), case by case as D's `runX_at` (`RawInvATX.lean`, `RawInvAT.lean`:
-    about 1,500 lines there): each case composes the step lemmas above
-    with D's specs of `+fork-sure`, `+sect`, `+copy`, `+forl`, `+mede`,
-    `+collapse-lazy-atom` and `coerceLazy` (which needs `Distinct` of the
-    target of `sureRequireLook`).  Then `+to-straight` (D's `stOut_ren`:
+    FIFTH PASS (`Glue/GuardStep.lean` .. `Glue/GuardTop.lean`).  PROVED the
+    run-level induction, as an all-blocks invariant with no label
+    bookkeeping: `KP P m` (every run of `m` keeps `Inv` = `BlocksOK` and
+    `drop = false`, with a result in `P`), the tactic `kpb`, and `KP` of
+    every arm `run`/`runL` reaches on `FragX`.  The ops of every `+add-ops`
+    of a run have no `%hed`/`%tal` (`NoSplit`, `guardedBody_of_noSplit`;
+    the table in `GuardStep.lean`: `+split-need`, `+into-need`,
+    `+copy-need-make-ops`, `+crash-need`, `+mede`, `+collapse-lazy-atom`);
+    only `+kern-need` makes splits, and no run of `FragX` reaches `+kern`
+    (no `+kerf`, the fork of a `%6` is not big).  `run_kp` (first
+    fragment), `runX_kp` (`FragX`: `%6` by C's `sixBody_apart`,
+    `sixNextSimple_apart`, `forkSure_spec`, `sect_spec` with `KeepR.cnd`,
+    `KeepR.size`; the `KeepX` facts need the goal's registers below `re`,
+    which holds of every sub-goal: `jmp0`s and fork-fresh registers),
+    `runX_blocksOK` (the top run).  So the leaves are now the final passes
+    alone, stated exactly from the run's end state: `GuardFinalU`
+    (`+kerf`, `+to-straight`), `GuardFinalF` (`+need-ord-alloc-regs`,
+    `+coerce-lazy`, the baked constants, `+to-straight`), with
+    `guardMonoX_of`, `guardNaryX_of`, `compHyp_of_fragX''`.
+    OPEN, first block: `+kern` over the result's lazy tree (in `+kerf`) and
+    `+coerce-lazy` (`sureLoop_guard` per entry) need `Distinct` of each
+    entry's `sureRequireLook` output, below `re`, apart from the source
+    register (D's `KI`/`kernStep`, `CoI`/`coI_step` carry these; restate
+    them with the guard).  Then `+to-straight` (map path for `finishLU`:
+    unproxying fixes every defined register, D's `KI`; then D's `stOut_ren`:
     the renaming is injective on a block's registers, so a guard and its
-    `%cel` stay on one register; unproxying; `chase` and `rewriteFin`
-    touch only ends) and the prologues of `finishLU` / `finishLF`
+    `%cel` stay on one register; `chase` and `rewriteFin` touch only ends;
+    `rewriteArgs` keeps `none` and `some` apart).
     (`sureLoop_guard`, the entry `kernNeed`).  With calls: the same two
     leaves (they hold on `enumCX`) and D's `OptIn` with calls
     (`OptInMono`, `OptInNary`).  No pill link: model facts.
@@ -347,9 +365,8 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
 
 2.i WHAT `contract` RESTS ON when every compiled nomm is in `FragX`
     (`compHyp_of_fragX'`, `Glue/EntryFragX.lean`, then `gap_of_armPM`):
-    - model facts: `GuardMonoX`, `GuardNaryX` (2.c: the `+kern-need` guard
-      and the block steps PROVED; the run-level induction and
-      `+to-straight` open); `inlAnnot`'s model half (2.e, stated, no
+    - model facts: `GuardFinalU`, `GuardFinalF` (2.c: the final passes
+      alone; the run-level induction PROVED, `runX_blocksOK`); `inlAnnot`'s model half (2.e, stated, no
       `inlinedM`); `callee` (2.g, I, J); the totality in `answers` (2.h:
       `Ranked` of the real member compile, track I);
     - pill links: `refMono`, `refNary` (2.a: `+compile-unary`,
@@ -541,9 +558,9 @@ M16 (in the making). Hints: track J's `runLCH env snd mono` is a THIRD model
 5. `CgHalts` (3.1): `EvFrozen` (track F, designs only).
 6. `pokeModel` (1.2): `OptLinkOn`, `JetRootLinkR`, `SccImage`, `SpRestAt`
    (1,120 cells), `PokeReachEnc`, the image of `enc` with M12: track P.
-7. `GuardMonoX` / `GuardNaryX` (2.c): all that `rawEntry` on `FragX` still
-   needs; the `+kern-need` guard and the block steps are PROVED, left the
-   run-level induction (in D's `runX_at` shape) and `+to-straight`.
+7. `GuardFinalU` / `GuardFinalF` (2.c): all that `rawEntry` on `FragX` still
+   needs; the run-level induction is PROVED (`runX_blocksOK`), left `+kern`
+   / `+coerce-lazy` over the result's lazy tree and `+to-straight`.
    Track G.
 8. `BakeEnds` (3.3): no measure.  NO OWNER.
 9. `callee` (2.g): tracks I, J.
