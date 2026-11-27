@@ -1,5 +1,6 @@
 import lemmas.Compiler.CompLeapNeed
 import lemmas.Hoon.ListsSort
+import lemmas.Ska.DatFacts
 
 /-!
 # `+pass` and its helpers, arms of the core `K` of `+comp`
@@ -527,6 +528,289 @@ theorem ped_gate {K : Noun} (hK : PassIn K) (axe : Nat) (don rec : List (Nat × 
   nock_open pedBat
   simp [nock_exec, hK.1, turn.arm_at, turn_arm, zing.arm_at, lq_zing_arm, weld.arm_at, weld_arm,
     ht1, ht2, hz, hw, lN, List.map_append, Function.comp_def]
+
+/-! ## `+pass-both` and `+pass` -/
+
+/-- The `murn` gate of `+pass-both` on a part `y = [q t]` of the second
+branch, for a part `x = [p s]` of the first, on positive axes. -/
+def pbOne (x y : Nat × Nat) : Option (Nat × Nat) :=
+  match (gep x.1 y.1).join with
+  | some d => if y.2 = pegF x.2 d then some y else Option.none
+  | Option.none => match (gep y.1 x.1).join with
+    | some d => if x.2 = pegF y.2 d then some x else Option.none
+    | Option.none => Option.none
+
+/-- What `+pass-both` gives on the parts `a`, `b` of two branches that are
+not crashes. -/
+def pbJoin (a b : List (Nat × Nat)) : List (Nat × Nat) :=
+  if a.isEmpty then [] else if b.isEmpty then [] else (a.map fun x => b.filterMap (pbOne x)).flatten
+
+theorem passBothW_pos {bq br : Bool} {a b : List (Nat × Nat)} (ha : PosL a) (hb : PosL b) :
+    passBothW bq br (some a) (some b) = some (if bq then b else if br then a else pbJoin a b) := by
+  unfold passBothW pbJoin
+  cases bq <;> cases br <;> simp only [Bool.false_eq_true, ↓reduceIte, Option.bind_some]
+  all_goals
+    by_cases e1 : a.isEmpty
+    · simp [e1]
+    by_cases e2 : b.isEmpty
+    · simp [e1, e2]
+    simp only [e1, e2, Bool.false_eq_true, ↓reduceIte]
+    rw [turnO_some _ (fun x => b.filterMap (pbOne x)) a (fun x hx => murnO_some _ _ b (fun y hy => by
+      obtain ⟨hx1, hx2⟩ := ha x hx
+      obtain ⟨hy1, hy2⟩ := hb y hy
+      obtain ⟨x1, x2⟩ := x
+      obtain ⟨y1, y2⟩ := y
+      simp only at hx1 hx2 hy1 hy2 ⊢
+      unfold passBothOne pbOne
+      rw [gep_pos hx1 hy1, gep_pos hy1 hx1]
+      rcases e1 : (gep x1 y1).join with _ | d <;> rcases e2 : (gep y1 x1).join with _ | d' <;>
+        simp only [Option.bind_some, Option.map_some] <;> (try split) <;> simp_all))]
+    rfl
+
+theorem pbJoin_posL {a b : List (Nat × Nat)} (ha : PosL a) (hb : PosL b) : PosL (pbJoin a b) := by
+  unfold pbJoin
+  split
+  · intro e he; simp at he
+  split
+  · intro e he; simp at he
+  intro e he
+  simp only [List.mem_flatten, List.mem_map] at he
+  obtain ⟨_, ⟨x, hx, rfl⟩, he⟩ := he
+  obtain ⟨y, hy, hxy⟩ := List.mem_filterMap.1 he
+  unfold pbOne at hxy
+  split at hxy
+  · split at hxy
+    · exact (Option.some.inj hxy) ▸ hb y hy
+    · cases hxy
+  · split at hxy
+    · split at hxy
+      · exact (Option.some.inj hxy) ▸ ha x hx
+      · cases hxy
+    · cases hxy
+
+/-- The inner gate of `+pass-both`. -/
+theorem pbt_g1 {K : Noun} (hK : PassIn K) (x y : Nat × Nat) (hx : x.1 ≠ 0 ∧ x.2 ≠ 0)
+    (hy : y.1 ≠ 0 ∧ y.2 ≠ 0) (B A' Q : Noun) :
+    nock (C pbtG1 (C (pN y) (C pbtG2 (C (pN x) (C B (C A' (C pbtBat (C Q K)))))))) pbtG1
+      = some (unitNoun pN (pbOne x y)) := by
+  obtain ⟨p, s⟩ := x
+  obtain ⟨q, t⟩ := y
+  obtain ⟨hp, hs⟩ := hx
+  obtain ⟨hq, ht⟩ := hy
+  simp only at hp hs hq ht
+  have hl1 := pi_layer1 hK
+  have hg1 := pi_gep hK hp hq
+  have hg2 := pi_gep hK hq hp
+  unfold pbOne
+  nock_open pbtG1
+  cases e1 : (gep p q).join with
+  | some d =>
+    rw [e1] at hg1
+    have hpg := pi_peg hs (gep_join_pos e1)
+    by_cases et : t = pegF s d
+    · simp [nock_exec, pN, hK.2.1, gepArm, hg1, unitNoun, hl1, peg_arm, peg.arm_at, hpg, et]
+    · have et' : ¬ (pegF s d = t) := fun h => et h.symm
+      simp [nock_exec, pN, hK.2.1, gepArm, hg1, unitNoun, hl1, peg_arm, peg.arm_at, hpg, et, et',
+        eqCode_atom]
+  | none =>
+    rw [e1] at hg1
+    cases e2 : (gep q p).join with
+    | some d =>
+      rw [e2] at hg2
+      have hpg := pi_peg ht (gep_join_pos e2)
+      by_cases es : s = pegF t d
+      · simp [nock_exec, pN, hK.2.1, gepArm, hg1, hg2, unitNoun, hl1, peg_arm, peg.arm_at, hpg, es]
+      · have es' : ¬ (pegF t d = s) := fun h => es h.symm
+        simp [nock_exec, pN, hK.2.1, gepArm, hg1, hg2, unitNoun, hl1, peg_arm, peg.arm_at, hpg, es,
+          es', eqCode_atom]
+    | none =>
+      rw [e2] at hg2
+      simp [nock_exec, pN, hK.2.1, gepArm, hg1, hg2, unitNoun]
+
+/-- The outer gate of `+pass-both`. -/
+theorem pbt_g2 {K : Noun} (hK : PassIn K) (x : Nat × Nat) (hx : x.1 ≠ 0 ∧ x.2 ≠ 0)
+    (b : List (Nat × Nat)) (hb : PosL b) (A' Q : Noun) :
+    nock (C pbtG2 (C (pN x) (C (lN b) (C A' (C pbtBat (C Q K)))))) pbtG2
+      = some (listN ((b.filterMap (pbOne x)).map pN)) := by
+  have hm := lq_murn_gate pN pN layer2 homoIn_layer2 pbtG1 (C (A 0) (A 0))
+    (C pbtG2 (C (pN x) (C (lN b) (C A' (C pbtBat (C Q K)))))) (pbOne x) b
+    (fun y hy => pbt_g1 hK x y hx (hb y hy) _ _ _)
+  simp only [lN] at hm ⊢
+  nock_open pbtG2
+  simp [nock_exec, hK.1, murn.arm_at, lq_murn_arm, hm]
+
+/-- **`+pass-both`**, given what `+pass` gives on the two branches. -/
+theorem pbt_core {K : Noun} (hK : PassIn K) (q r : Nomm) (a b : List (Nat × Nat)) (ha : PosL a)
+    (hb : PosL b) (hq : nock (C pasBat (C q.toNoun K)) pasBat = some (lN a))
+    (hr : nock (C pasBat (C r.toNoun K)) pasBat = some (lN b)) :
+    nock (C pbtBat (C (C q.toNoun r.toNoun) K)) pbtBat
+      = some (lN (if passBomb q then b else if passBomb r then a else pbJoin a b)) := by
+  have hbq := pbo_gate K q
+  have hbr := pbo_gate K r
+  have hK' : PassIn K := hK
+  have hl0 : lN [] = A 0 := rfl
+  obtain ⟨hL2, _, hpbo, hpas, _⟩ := hK
+  cases eq : passBomb q
+  · cases er : passBomb r
+    · simp only [Bool.false_eq_true, ↓reduceIte]
+      unfold pbJoin
+      by_cases e1 : a.isEmpty
+      · have : a = [] := List.isEmpty_iff.1 e1
+        subst this
+        nock_open pbtBat
+        simp [nock_exec, hpbo, pboArm, hbq, hbr, eq, er, loob, hpas, pasArm, hq, hl0]
+      have hne : a ≠ [] := fun h => by simp [h] at e1
+      have hn0 : ¬ (A 0 = lN a) := by
+        obtain ⟨y, ys, rfl⟩ := List.exists_cons_of_ne_nil hne; simp [lN, listN, appendN]
+      by_cases e2 : b.isEmpty
+      · have : b = [] := List.isEmpty_iff.1 e2
+        subst this
+        nock_open pbtBat
+        simp [nock_exec, hpbo, pboArm, hbq, hbr, eq, er, loob, hpas, pasArm, hq, hr, hn0, e1, hl0]
+      have hne2 : b ≠ [] := fun h => by simp [h] at e2
+      have hn2 : ¬ (A 0 = lN b) := by
+        obtain ⟨y, ys, rfl⟩ := List.exists_cons_of_ne_nil hne2; simp [lN, listN, appendN]
+      have ht := lq_turn_gate pN listN layer2 homoIn_layer2 pbtG2 (C (A 0) (A 0))
+        (C (lN b) (C (lN a) (C pbtBat (C (C q.toNoun r.toNoun) K))))
+        (fun x => (b.filterMap (pbOne x)).map pN) a
+        (fun x hx => pbt_g2 hK' x (ha x hx) b hb _ _)
+      have hz : nock (C zing.battery (C (listN (a.map fun x => listN ((b.filterMap (pbOne x)).map pN)))
+          layer2)) zing.battery = some (lN (a.map fun x => b.filterMap (pbOne x)).flatten) := by
+        have := lq_zing (a.map fun x => b.filterMap (pbOne x))
+        simpa [List.map_map, Function.comp_def] using this
+      simp only [List.map_map, Function.comp_def] at ht
+      have hla : lN a = listN (a.map pN) := rfl
+      rw [← hla] at ht
+      nock_open pbtBat
+      simp [nock_exec, hpbo, pboArm, hbq, hbr, eq, er, loob, hpas, pasArm, hq, hr, hn0, hn2, e1, e2,
+        hL2, turn.arm_at, turn_arm, zing.arm_at, lq_zing_arm, ht, hz]
+    · nock_open pbtBat
+      simp [nock_exec, hpbo, pboArm, hbq, hbr, eq, er, loob, hpas, pasArm, hq]
+  · nock_open pbtBat
+    simp [nock_exec, hpbo, pboArm, hbq, eq, loob, hpas, pasArm, hr]
+
+
+theorem pas_g {K : Noun} (hK : PassIn K) (G : Noun) (k : Nat) (hk : k = 2 ∨ k = 3)
+    (hG : G = C (C (A 8) (C (C (A 9) (C (A 46) (C (A 0) (A 0x1fffff)))) (C (A 9) (C (A 2)
+      (C (A 10) (C (C (A 6) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 1) (A k)))) (C (A 0) (A 28))))
+      (C (A 0) (A 2)))))))) (C (A 0) (A 13)))
+    (e : Nat × Nat) (he : e.1 ≠ 0) (X : Noun) :
+    nock (C G (C (pN e) (C pasBat (C X K)))) G = some (pN (pegF k e.1, e.2)) := by
+  have hl1 := pi_layer1 hK
+  have hp := pi_peg (a := k) (by omega) he
+  subst hG
+  simp [nock_exec, pN, hl1, peg_arm, peg.arm_at, hp]
+
+/-- **`+pass`** on a nomm with no `%10` at axis `0`: `passN`, a list of parts
+with no axis `0`. -/
+theorem pas_gate {K : Noun} (hK : PassIn K) : ∀ n : Nomm, Bake.NoAx0 n →
+    ∃ l, passN n = some l ∧ PosL l ∧ nock (C pasBat (C n.toNoun K)) pasBat = some (lN l)
+  | Nomm.cons p q, h => by
+    obtain ⟨lp, ep, pp, np⟩ := pas_gate hK p h.1
+    obtain ⟨lq, eq, pq, nq⟩ := pas_gate hK q h.2
+    refine ⟨lp.map (fun e => (pegF 2 e.1, e.2)) ++ lq.map (fun e => (pegF 3 e.1, e.2)),
+      by simp [passN, ep, eq], ?_, ?_⟩
+    · intro e he
+      simp only [List.mem_append, List.mem_map] at he
+      rcases he with ⟨x, hx, rfl⟩ | ⟨x, hx, rfl⟩
+      · exact ⟨pegF_ne (by omega) (pp x hx).1, (pp x hx).2⟩
+      · exact ⟨pegF_ne (by omega) (pq x hx).1, (pq x hx).2⟩
+    · obtain ⟨a, b, hab⟩ := lq_nomm_cell p
+      have ht1 := lq_turn_gate pN pN layer2 homoIn_layer2 pasG1 (C (A 0) (A 0))
+        (C pasBat (C (Nomm.cons p q).toNoun K)) (fun e => (pegF 2 e.1, e.2)) lp
+        (fun e he => pas_g hK pasG1 2 (by omega) rfl e (pp e he).1 _)
+      have ht2 := lq_turn_gate pN pN layer2 homoIn_layer2 pasG2 (C (A 0) (A 0))
+        (C pasBat (C (Nomm.cons p q).toNoun K)) (fun e => (pegF 3 e.1, e.2)) lq
+        (fun e he => pas_g hK pasG2 3 (by omega) rfl e (pq e he).1 _)
+      have hw := weld_gate_list layer2 ((lp.map fun e => (pegF 2 e.1, e.2)).map pN)
+        ((lq.map fun e => (pegF 3 e.1, e.2)).map pN)
+      simp only [lN] at np nq ⊢
+      simp only [Nomm.toNoun, hab] at ht1 ht2 np
+      simp only [List.map_map] at ht1 ht2 hw ⊢
+      nock_open pasBat
+      simp [nock_exec, Nomm.toNoun, hab, hK.1, turn.arm_at, turn_arm, weld.arm_at, weld_arm, np, nq,
+        ht1, ht2, hw]
+  | Nomm.n0 a, _ => by
+    by_cases a0 : a = 0
+    · subst a0
+      refine ⟨[], by simp [passN], fun e he => by simp at he, ?_⟩
+      nock_open pasBat; simp [nock_exec, Nomm.toNoun, lN, eqCode_self]
+    · have a0' : ¬ (0 = a) := fun e => a0 e.symm
+      refine ⟨[(1, a)], by simp [passN, a0], fun e he => by simp at he; subst he; simp [a0], ?_⟩
+      nock_open pasBat; simp [nock_exec, Nomm.toNoun, lN, pN, a0, a0', eqCode_atom]
+  | Nomm.n1 k, _ => ⟨[], by simp [passN], fun e he => by simp at he, by
+      nock_open pasBat; simp [nock_exec, Nomm.toNoun, lN]⟩
+  | Nomm.n2 p q info, _ => ⟨[], by simp [passN], fun e he => by simp at he, by
+      nock_open pasBat; simp [nock_exec, Nomm.toNoun, lN]⟩
+  | Nomm.n3 p, _ => ⟨[], by simp [passN], fun e he => by simp at he, by
+      nock_open pasBat; simp [nock_exec, Nomm.toNoun, lN]⟩
+  | Nomm.n4 p, _ => ⟨[], by simp [passN], fun e he => by simp at he, by
+      nock_open pasBat; simp [nock_exec, Nomm.toNoun, lN]⟩
+  | Nomm.n5 p q, _ => ⟨[], by simp [passN], fun e he => by simp at he, by
+      nock_open pasBat; simp [nock_exec, Nomm.toNoun, lN]⟩
+  | Nomm.n12 p q, _ => ⟨[], by simp [passN], fun e he => by simp at he, by
+      nock_open pasBat; simp [nock_exec, Nomm.toNoun, lN]⟩
+  | Nomm.mean p b q body k, _ => ⟨[], by simp [passN], fun e he => by simp at he, by
+      nock_open pasBat; simp [nock_exec, Nomm.toNoun, lN, Tag.mean]⟩
+  | Nomm.n11s tag q body, h => by
+    obtain ⟨l, e, pl, nl⟩ := pas_gate hK q h
+    refine ⟨l, by simp [passN, e], pl, ?_⟩
+    nock_open pasBat; simp [nock_exec, Nomm.toNoun, nl]
+  | Nomm.n11d tag hh q body, h => by
+    obtain ⟨l, e, pl, nl⟩ := pas_gate hK q h.2
+    refine ⟨l, by simp [passN, e], pl, ?_⟩
+    nock_open pasBat; simp [nock_exec, Nomm.toNoun, nl]
+  | Nomm.n6 p q r, h => by
+    obtain ⟨lq, eq, pq, nq⟩ := pas_gate hK q h.2.1
+    obtain ⟨lr, er, pr, nr⟩ := pas_gate hK r h.2.2
+    have hc := pbt_core hK q r lq lr pq pr nq nr
+    refine ⟨_, by simp only [passN, eq, er]; exact passBothW_pos pq pr, ?_, ?_⟩
+    · split
+      · exact pr
+      · split
+        · exact pq
+        · exact pbJoin_posL pq pr
+    · nock_open pasBat
+      simp [nock_exec, Nomm.toNoun, hK.2.2.2.2.2.2, pbtArm, hc]
+  | Nomm.n7 p q, h => by
+    obtain ⟨lp, ep, pp, np⟩ := pas_gate hK p h.1
+    obtain ⟨lq, eq, pq, nq⟩ := pas_gate hK q h.2
+    have hg := pth_gate hK lp lq pp pq
+    obtain ⟨l, el⟩ : ∃ l, passThen lp lq = some l := ⟨_, passThen_pos pp pq⟩
+    rw [el] at hg
+    refine ⟨l, by simp [passN, ep, eq, el], passThen_posL pp pq el, ?_⟩
+    nock_open pasBat
+    simp [nock_exec, Nomm.toNoun, hK.2.2.2.2.1, pthArm, np, nq, hg]
+  | Nomm.n10 a v q, h => by
+    obtain ⟨lv, ev, pv, nv⟩ := pas_gate hK v h.2.1
+    obtain ⟨lq, eq, pq, nq⟩ := pas_gate hK q h.2.2
+    have hg := ped_gate hK a lv lq h.1 pv pq
+    obtain ⟨l, el⟩ : ∃ l, passEdit a lv lq = some l := ⟨_, passEdit_pos h.1 pq⟩
+    rw [el] at hg
+    refine ⟨l, by simp [passN, ev, eq, el], passEdit_posL h.1 pv pq el, ?_⟩
+    nock_open pasBat
+    simp [nock_exec, Nomm.toNoun, hK.2.2.2.2.2.1, pedArm, nv, nq, hg]
+
+/-- **`+pass`** is `passN` on every nomm with no `%10` at axis `0`. -/
+theorem pas_link {K : Noun} (hK : PassIn K) (n : Nomm) (h : Bake.NoAx0 n) :
+    nock (C pasBat (C n.toNoun K)) pasBat = (passN n).map lN := by
+  obtain ⟨l, e, _, hn⟩ := pas_gate hK n h
+  rw [hn, e]; rfl
+
+/-- **`+pass-both`** is `passBoth` on every two nomms with no `%10` at axis
+`0`, a list of parts with no axis `0`. -/
+theorem pbt_gate {K : Noun} (hK : PassIn K) (q r : Nomm) (hq : Bake.NoAx0 q) (hr : Bake.NoAx0 r) :
+    ∃ l, passBoth q r = some l ∧ PosL l ∧
+      nock (C pbtBat (C (C q.toNoun r.toNoun) K)) pbtBat = some (lN l) := by
+  obtain ⟨lq, eq, pq, nq⟩ := pas_gate hK q hq
+  obtain ⟨lr, er, pr, nr⟩ := pas_gate hK r hr
+  refine ⟨_, by unfold passBoth; rw [eq, er]; exact passBothW_pos pq pr, ?_,
+    pbt_core hK q r lq lr pq pr nq nr⟩
+  split
+  · exact pr
+  · split
+    · exact pq
+    · exact pbJoin_posL pq pr
 
 end Compiler
 end Formalization
