@@ -1,4 +1,4 @@
-# LEDGER: what `Full` rests on (track G, 2026-11-27, second pass)
+# LEDGER: what `Full` rests on (track G, 2026-11-27, third pass)
 
 `Full` (`core/Statement.lean`) is proved by `Assembly.full_of` from one
 structure, `Assembly.Gap lib pk InvC`, with eight fields.  This file traces
@@ -91,8 +91,10 @@ Leaves (all track P now):
     calls `cu_gate_dir_csi` → `cu_gate_dir_arms` (`Compiler/CompSofPush.lean`,
     class `DirOk`, named hypotheses `CsiNeeds`, `CsiSures` on the product of
     `+compile-scc-in`), `cu_gate_dir_this` (every callee's need `%this` or
-    `%none`).  Open: (f) on cell needs (`+sound-far` 329 cells, `+need-soft`
-    134 cells: track K, models on branch -g), (g) `nary.cache` threading.
+    `%none`), and track K's `cu_gate_dir_code` (`Compiler/CompSofArms.lean`:
+    item (f) discharged on `DirOk` from facts of the code table, `SofBell`,
+    `SfTable`).  Open: (f) on cell needs outside `DirOk` (`+sound-far` 329
+    cells, `+need-soft` 134 cells: track K), (g) `nary.cache` threading.
     Its output is `finishLUCM` (`runLCM env true`), which now matches
     `RefSideM.refMono` (M3 closed).
 1.4 `A.compileScc` is the pill's `+compile-scc` (61 cells) over
@@ -145,7 +147,7 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
 | `rawMono`, `rawNary` | PROVED | `rawMonoD_calls`, `rawNaryD_calls` | done |
 | `rawOptIn` | LEAF | `OptInMono S Map FM`, `OptInNary S Map FN` (`rawOptIn_of`); PROVED on `FragX` (`optInMono_fragX`, `optInNary_fragX`) | D |
 | `optRef` | LEAF | `OptTotalMono S FM`, `OptTotalNary S FN` + `hpill` (`optRef_of_total`); PROVED on `FragX` (`optTotalMono_fragX`, `optTotalNary_fragX`); `hinj` PROVED (`straight_toNoun_inj`; also track P) | H (input side D), P (`hpill` = `OptLink`) |
-| `rawEntry` | LEAF | `EntryMono S Map lib FM`, `EntryNary S Map lib FN` (`rawEntry_of`) | none (2.c) |
+| `rawEntry` | LEAF | `EntryMono S Map lib FM`, `EntryNary S Map lib FN` (`rawEntry_of`); PROVED on `FragX` from the LEAVES `GuardMonoX`, `GuardNaryX` (`entryMono_fragX`, `entryNary_fragX`, `rawEntry_fragX`; generic `entryOK_of`) | none (2.c; natural owner D) |
 | `refMono`, `refNary` | OPEN | pill link at `finishLUCM` / `finishLFC` | A, I, K |
 | `inFragM`, `inFragN` | OPEN, FALSE today | every compiled nomm in `MonoCalls` / `NaryCalls` | C, J, K |
 | `inlAnnot` | OPEN | 2.e | none |
@@ -170,29 +172,49 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
     branches as hypotheses for the n-ary top (`finishLFC_contractGBN`), the
     tree of J's `R` (`finishLFC_contractRT`); not yet a class with a bell
     contract usable here.  Owners C, J, K.
-2.c `rawEntry` (LEAF `EntryMono`, `EntryNary`; no owner).  WHAT IT STATES:
-    on the RAW code `s` of a bell (before `+optimize`), entered with `[x]`
-    (mono) or the split of `x` (n-ary) for `x` fitting the bell, for every
-    oracle, scry gate, state and trace, `Opt.EntryOK = ReadsOK ∧ ArgsOK ∧
-    LocalOK` (`Ska/Opt.lean`): on every path from the entry, every real
-    read reads a defined register, every argument a pending pass moves is
-    defined, and every `%imm`/`%mov`/`%con`/`%hed`/`%tal` reached with no
-    pending parameters executes.  It is what `Opt.Keeps` assumes of an
-    entry (`bellContract_of_keeps`); it is NOT implied by the contract (on
-    a subject where Nock crashes the code may crash by any read).  CLOSEST:
-    track D's `OptIn` (`defFirst`: a read of a register WITH a definition
-    comes after one; `defOnce`, `passOK`), `runATC_plain` (`Closed`,
-    `ArityOK`, `TwoNA` on `PlainN`), D's liveness with calls (`LiveC`,
-    `LiveRun`: what is live at the entry).  A PROOF NEEDS: (i) a generic
-    lemma on straights, by induction on `Path.FromEntry`: `OptIn` +
-    `Closed` (every register read without a definition is a parameter of
-    block `0`) + `ArityOK` (the entry gives `nargs` values) + a `%cel`-guard
-    property (every `%hed`/`%tal` of a register follows a `%cel` on it or a
-    cons into it) → `EntryOK`; (ii) the four static properties of the raw
-    code of each class (D has `OptIn` on `FragX`, `Closed`, `ArityOK` on
-    `PlainN`; the guard is new).  No pill link: a model fact.  Size: (i)
-    is of the size of `optimize_keeps_plain_pickR` (the `Opt*Sim` files), (ii)
-    the size of D's `RawInvC*` per class.
+2.c `rawEntry` (LEAF `EntryMono`, `EntryNary`).  WHAT IT STATES: on the
+    RAW code `s` of a bell (before `+optimize`), entered with `[x]` (mono) or
+    the split of `x` (n-ary) for `x` fitting the bell, for every oracle, scry
+    gate, state and trace, `Opt.EntryOK = ReadsOK ∧ ArgsOK ∧ LocalOK`
+    (`Ska/Opt.lean`): on every path from the entry, every real read reads a
+    defined register, every argument a pending pass moves is defined, and
+    every `%imm`/`%mov`/`%con`/`%hed`/`%tal` reached with no pending
+    parameters executes.  It is what `Opt.Keeps` assumes of an entry
+    (`bellContract_of_keeps`).
+    IS IT TRUE AS STATED: yes, on every subject, fitting or not
+    (`Glue/EntryCheck.lean`): along the path of the model's interpreter from
+    the entry, on the raw output of both final passes, with 45 subjects
+    (atoms where cells are wanted, non-loobean tests included): `enumX`
+    183,600 runs per pass, `enumCX` 178,200 runs per pass under four oracles;
+    every run ends by `endOf`, none is stuck, no configuration fails a part.
+    What guards a `%hed`/`%tal`: the `%cel` that `+kern-need` emits in the
+    same op list (`kernBoth`: `mov r d, cel d, hed d rh, .., tal d rt, ..`;
+    the head's ops between write fresh registers; 1,824 outputs have a
+    `%hed`/`%tal` not right after its `%cel`).  No raw output passes `~`
+    (3,360 n-ary outputs pass arguments), so no register is poisoned.
+    PROVED (`Glue/Entry.lean`): `entryOK_of`: `EntryOK` from `DefFirst` (a
+    field of D's `OptIn`), `Compiler.ReadsIn nargs`, `NoPoison` (no reachable
+    jump passes `~`), `CelGuard` (every `%hed s`/`%tal s` of a reachable
+    block after a `%cel s` of its body with no write of `s` between) and at
+    least `nargs` entry values; one invariant `EInv` kept by every `Step`
+    (`einv_step`).  `Closed`, `ArityOK`, `TwoNA` and the liveness at `0` are
+    not needed.  On `FragX` (`Glue/EntryFragX.lean`): `DefFirst` and
+    `ReadsIn` are D's (`optIn_finishLUX`/`-LFX`, `optInput_finishLUX_at`/
+    `-LFX_at`), so `entry_finishLUX`, `entry_finishLFX`, `entryMono_fragX`,
+    `entryNary_fragX`, `rawEntry_fragX` and `compHyp_of_fragX'` (`CompHyp`
+    from `CompRestOE` = `CompRestO` without `rawEntry`) rest on the two LEAVES
+    `GuardMonoX`, `GuardNaryX` (`NoPoison` and `CelGuard` of `finishLU`,
+    `finishLF` output).  `EntryNary` needs no relation of the cape to the
+    bell: the cape only removes look checks, never a `%cel`.
+    OPEN: the two leaves, a run-level induction in the style of D's
+    `runX_at`: the all-blocks form (`BlocksOK`: no block passes `~`, every
+    block's body guarded; `noPoison_of_blocksOK`, `celGuard_of_blocksOK`,
+    `guardedBody_append`) holds of the raw runs under `%done`, `%next`, `%pick` (`sixes`,
+    `enumX`, `enumCX`), and is kept by `emit` of such a block, `addOps` of a
+    guarded list (a prefix does not separate a `%cel` from its `%hed`) and
+    `+insert-hop`; then `+to-straight` (renaming, unproxying, `chase`) must
+    keep it.  With calls: the same two leaves (they hold on `enumCX`) and D's
+    `OptIn` with calls (`OptInMono`, `OptInNary`).  No pill link: model facts.
 2.d `optRef`: see the table; with calls the input side of track H's
     totality (`opt_total_*` need `FragX` because the alias pass reads only
     call-free blocks) is open.
@@ -236,6 +258,20 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
     property is the open research step; the rest is one totality theorem per
     arm (about 1,000 cells).  `stable`, `jetRoot`, `jets`, `fast`: no owner
     (P's branch map of `+poke` covers their arms).
+
+2.i WHAT `contract` RESTS ON when every compiled nomm is in `FragX`
+    (`compHyp_of_fragX'`, `Glue/EntryFragX.lean`, then `gap_of_armPM`):
+    - model facts: `GuardMonoX`, `GuardNaryX` (2.c); `inlAnnot`'s model
+      half (2.e); `callee` (2.g, I, J); the totality in `answers` (2.h,
+      blocked by `cyc_never`);
+    - pill links: `refMono`, `refNary` (2.a: `+compile-unary`,
+      `+compile-scc`), `unary`, `scc`, `hpill` of `optRef` (`OptLink`; the
+      rest of `optRef` is PROVED on `FragX`, `optRef_fragX'`), `inlAnnot`'s
+      pill half (`+inlined`), `stable`, `jetRoot`, `jets`, `fast`;
+    - class membership: `inFragM`, `inFragN` (every nomm the analysis
+      compiles is in `FragX`; false in general, 2.b').
+    `rawOptIn`, `rawMono`, `rawNary` and now `rawEntry` (up to its two
+    leaves) are discharged on `FragX`.
 
 ## 3. `halting : FullAnswers pk InvC`
 
@@ -343,8 +379,8 @@ M4. `sccSur` vs `shapeCol`: the model side needs nothing (`RawNary` and
     `fixLoop`).  With `RawNaryD` for every `ord` the model side composes:
     M4 is down to `FixRet` (and the `sure.cache` entry `sccSur p.1 cape`,
     which `CsiSures` reads).
-M5. Baking: every n-ary class has nothing baked; the compiler bakes.  No
-    owner.
+M5. Baking: every n-ary class has nothing baked; the compiler bakes.  Owner:
+    track A (since 2026-11-27).
 M6. `NoSelfCall`, one-bell SCCs: the `cu_gate` tops; model side has
     recursion (`closed_selfWalk`, `closed_pairWalk`), the pill side needs
     `csiFix` (track I).
@@ -396,8 +432,10 @@ M15. Build clashes (section 0): `Compiler.unitNoun_id_inj` (PokeEnc vs
    classes with calls (2.c, 2.d): track D (`OptIn` on `PlainN` not proved),
    track H's input side.
 5. `CgHalts` (3.1): `EvFrozen` (track F).
-6. `EntryMono` / `EntryNary` (2.c, `rawEntry`): a generic `EntryOK` lemma
-   from `OptIn`, `Closed`, `ArityOK`, a `%cel` guard.  NO OWNER.
+6. `GuardMonoX` / `GuardNaryX` (2.c): all that `rawEntry` on `FragX`
+   still needs (`entryOK_of` and D's `DefFirst`, `ReadsIn` give the rest):
+   two static facts of the raw blocks, one run-level induction.  NO OWNER
+   (natural owner D, whose run inductions it extends).
 7. `pokeModel` (1.2 `FullBranchIs` and the five links, `spRest`, 1.6, the
    image of `enc` with M12): track P.
 8. `BakeEnds` (3.3): no measure.  NO OWNER.
@@ -406,12 +444,13 @@ M15. Build clashes (section 0): `Compiler.unitNoun_id_inj` (PokeEnc vs
 11. `stable`, `jetRoot`, `jets`, `fast` (2.h): NO OWNER.
 12. Format (7.2, 8): `RendRestTonFree`, `SoftTankUnit`, `SkipMsgTonFree`,
     `EvalMookSame`.  NO OWNER.
-13. M5 (baked n-ary code).  NO OWNER.
+13. M5 (baked n-ary code).  Track A.
 
-Leaves with NO owner: 2.c `rawEntry` (`EntryMono`, `EntryNary`), 2.e
+Leaves with NO owner: 2.c `GuardMonoX`, `GuardNaryX` (all of `rawEntry` on `FragX`), 2.e
 `inlAnnot`, 2.h `answers` (totality beyond I's loop), `stable`, `jetRoot`,
 `jets`, `fast`, 3.3 `BakeEnds`, 3.4 `RootAnswers`, 7.2 and 8 (four format
-leaves), M5, M15 (the renames).  Owned since the first pass: 1.2, 1.6, M11,
+leaves), M15 (the renames).  M5 is track A's since 2026-11-27.  Owned since the first pass: 1.2, 1.6, M11,
 M12 to M14 (track P).  Closed since the first pass: M3, M8 (both arms),
 `hinj`, 1.1 (`enc`), 4.1 / `invStart` (`invStart_cor`, `gap_of_armPM`), 6,
-7.1.
+7.1.  Reduced in the third pass: `rawEntry` on `FragX` to `GuardMonoX`,
+`GuardNaryX` (`entryOK_of`, `compHyp_of_fragX'`).
