@@ -383,5 +383,113 @@ theorem mem_done_step (r : RealCfg) (order : List Noun) (kids : Noun → List No
         rw [e1, e2]
         exact ⟨csMlExact_put hR.1 hp, hSH', hout' _, hQ'⟩
 
+/-! ## `MemGate` on `%done` -/
+
+/-- The environment of a member compile on the state `st` of the final pass (`top` `~`). -/
+noncomputable def envDone (r : RealCfg) (order : List Noun) (kids : Noun → List Noun) (st : St Noun NeedOrd) : CallEnv :=
+  envView r.env r.scc (viewN (fun _ => NeedOrd.none) st) (viewS (cfgReal r order kids) st)
+
+/-- **What one `%done` call of `member` takes** (on the state `st`, `keep`, `map-local` `ML`, `cache`
+`CACHE`, in the context `memCtx DN KIDS ML0 CB SCC [CODE LSR] JH CACHE0`): the member is a bell
+`[[cape DATA] FOL]` whose `r.info` is its nomm, cape, data, fuel; `+inlined` gives the nomm
+(`hinl`, track A); the model's run returns (`hrunL`) and **the pill's run is the threaded link
+`CompRunAtXT` at `mono` `|`** for some `X`, `Y` (owner: track K), with `X` at the rest after
+`+inlined` and every rest `Y` gives having no soft, a cache `[C1 C2 C3 C4 SURE]`, `QK`, the
+members' `sure` entries and the outside callees held; the model's `+shape-collapse`,
+`+need-ord-alloc-regs`, `+sure-of` and `finish ~` return; the residual of the bake is a run
+(track A's `BakeRunO`); and `+coerce-soft` (`hcs`) where `need-pessimized` is not `need-new`. -/
+def MemDoneCall (r : RealCfg) (order : List Noun) (kids : Noun → List Noun) (outC : Noun → List Noun)
+    (nout : Noun → NeedOrd) (envK : CallEnv) (RR : GenRest → Prop) (P : Noun → Prop) (S : Noun) (x : GenRest)
+    (st : St Noun NeedOrd) (keep : Bool) (DN KIDS ML0 CB SCC CODE LSR JH CACHE0 b ML CACHE : Noun) : Prop :=
+  ∃ (cape : Cape) (DATA FOL : Noun) (nm : Nomm) (fuel : Nat), b = C (C cape.toNoun DATA) FOL ∧
+    r.info b = ⟨nm, cape, DATA, fuel⟩ ∧ ∃ CA1,
+    nock (C inlBody (C (C b (C (C CODE LSR) (C JH CACHE))) compK)) inlBody = some (C nm.toNoun CA1) ∧
+    ∃ (nex : NextL CSet) (g1 : Gen (TreapMap mugF)),
+      runLC (envDone r order kids st) Option.none nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF))
+        = some (nex, g1) ∧
+    ∃ (X : GenRest → Noun → Noun → Prop) (Y : GenRest → GenRest → Prop),
+      CompRunAtXT (runLC (envDone r order kids st) Option.none) (memDCtx SCC (C CODE LSR) JH ML (A 0) b) X Y nm
+        CGoalL.done [] genEntry ∧ X (cuRest CA1) (A 1) (A 0) ∧
+      (∀ x1, Y (cuRest CA1) x1 → ∃ C1 C2 C3 C4 SURE, x1.cache = cacheN C1 C2 C3 C4 SURE ∧ x1.soft = A 0 ∧
+        QK envK RR P S x (cacheN C1 C2 C3 C4 SURE) ∧ SureHolds r.scc st.sure (cacheN C1 C2 C3 C4 SURE) ∧
+        ∀ b', ((st.ml b').isSome ∨ b' = b) → ∀ k ∈ outC b', ∃ NR u,
+          slot? 2 (cacheN C1 C2 C3 C4 SURE) = some NR ∧ getF mugF k NR = some (C (A 0) u) ∧ slot? 2 u = some (nout k).toNoun) ∧
+    ∃ ord, shapeCol fuel nex.laz cape = some ord ∧ nex.th.args = [] ∧
+    ∃ (nedF : Need) (g2 : Gen (TreapMap mugF)), needOrdAllocRegs ord g1 = some (nedF, g2) ∧
+      isRun (flattenNeed (bakeNeed nedF (Sock.mk cape DATA)).1)
+        ((flattenNeed (bakeNeed nedF (Sock.mk cape DATA)).1).headD 0) 0 = true ∧
+    ∃ sur, sureOf (needToOrd nex.laz.sure.ned) nex.laz.sure.lok cape = some sur ∧
+      (∃ s, finishLFC (S := CSet) (Map := TreapMap mugF) (envDone r order kids st) nm ord cape
+        (fun n => bakeNeed n (Sock.mk cape DATA)) = some s) ∧
+      ∀ (x1 : GenRest) (C1 C2 C3 C4 SURE' : Noun) (prev : NeedOrd), st.ml b = some prev →
+        msgOrd (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1) prev cape ≠ needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1 →
+        ∃ t, nock (C finBody (C (C (A 0) (msgOrd (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1) prev cape).toNoun)
+              (memFCR keep (wasN (st.sure b)) sur.toNoun
+                (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1).toNoun nex.laz.toNoun nedF.toNoun
+                (bakeNeed nedF (Sock.mk cape DATA)).1.toNoun (immNoun (bakeNeed nedF (Sock.mk cape DATA)).2)
+                nex.th.there (genNoun g2 x1) nm.toNoun
+                (memDCtx SCC (C CODE LSR) JH ML (A 0) b) b ML
+                (A 0) (cacheN C1 C2 C3 C4 SURE') (memCtx DN KIDS ML0 CB SCC (C CODE LSR) JH CACHE0)))) finBody
+          = some (C (msgOrd (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1) prev cape).toNoun t)
+
+/-- **`MemGate` on `%done` for a real SCC** (`cfgReal`, `LoopR` at track K's `QK env RR P S x`, the
+context of the loop `memCtx DN KIDS ML0 CB SCC [CODE LSR] JH CACHE0`, `top` and `TOP` `~`): from
+`MemDoneCall` at every call, the members in `S` (`hS`), the start rest `x` without `sure` entries
+at the members (`hxS`) and `RR` blind to `sure.cache` (`hRR`). -/
+theorem memGate_done_real (r : RealCfg) (order : List Noun) (kids : Noun → List Noun) (outC : Noun → List Noun)
+    (nout : Noun → NeedOrd) (envK : CallEnv) (RR : GenRest → Prop) (P : Noun → Prop) (S : Noun) (x : GenRest)
+    (hRR : ∀ NR MO SC INL SU SU' s f : Noun, RR ⟨cacheN NR MO SC INL SU, s, f⟩ → RR ⟨cacheN NR MO SC INL SU', s, f⟩)
+    (hS : ∀ b ∈ r.scc, b ∈ tapList S)
+    (hxS : ∀ b ∈ r.scc, ∀ N u, slot? 31 x.cache = some N → getF mugF b N ≠ some (C (A 0) u))
+    (DN KIDS ML0 CB SCC CODE LSR JH CACHE0 : Noun)
+    (hcall : ∀ (st : St Noun NeedOrd) (keep : Bool) (b ML CACHE : Noun), b ∈ r.scc →
+      LoopR r.scc outC nout (QK envK RR P S x) st.ml st.sure ML CACHE →
+      MemDoneCall r order kids outC nout envK RR P S x st keep DN KIDS ML0 CB SCC CODE LSR JH CACHE0 b ML CACHE) :
+    MemGate (cfgReal r order kids) (LoopR (cfgReal r order kids).scc outC nout (QK envK RR P S x))
+      (memCtx DN KIDS ML0 CB SCC (C CODE LSR) JH CACHE0) (fun _ => (cfgReal r order kids).none) (A 0) Mode.done
+      (A 0x656e6f64) := by
+  intro st keep b ML CA hb hR
+  obtain ⟨cape, DATA, FOL, nm, fuel, rfl, hinfo, CA1, hinl, nex, g1, hrunL, X, Y, hXT, hX, hY, ord, hcol, hargs,
+    nedF, g2, hnoar, hrun, sur, hsur, hfin, hcs⟩ := hcall st keep b ML CA hb hR
+  obtain ⟨x1, hY1, heq⟩ := hXT (cuRest CA1) (A 1) (A 0) (cu_entry_nosoft CA1) hX
+  have hge : (genEntry : Gen (TreapMap mugF)) = gen0 := rfl
+  rw [hge, hrunL] at heq
+  obtain ⟨C1, C2, C3, C4, SURE, hx1, hs1, hQ1, hsh1, hout1⟩ := hY x1 hY1
+  exact mem_done_step r order kids outC nout envK RR P S x hRR st keep cape DATA FOL nm fuel hinfo hb (hS _ hb)
+    (hxS _ hb) ML CA DN KIDS ML0 CB SCC CODE LSR JH CACHE0 hR CA1 hinl nex g1 hrunL x1 heq C1 C2 C3 C4 SURE hx1 hs1
+    hQ1 hsh1 hout1 ord hcol hargs nedF g2 hnoar hrun sur hsur hfin (fun prev SURE' hm hnp => hcs x1 C1 C2 C3 C4 SURE' prev hm hnp)
+
+/-- **The start rest of a miss has no `sure` entry at the members** of the SCC `S`: `AgreeIP env P x`
+with `S` outside `P`, the members bells that miss in `nary.cache` (track K's miss: `members_miss`). -/
+theorem sure_miss_of_agree {env : CallEnv} {P : Noun → Prop} {S : Noun} {x : GenRest} (hA : AgreeIP env P x)
+    (hPS : ∀ k ∈ tapList S, ¬ P k) (hbell : ∀ k ∈ tapList S, ∃ b' : Bell, b'.toNoun = k)
+    (hmiss : ∀ NR, slot? 2 x.cache = some NR → ∀ k ∈ tapList S, getF mugF k NR = some (A 0)) :
+    ∀ k ∈ tapList S, ∀ N u, slot? 31 x.cache = some N → getF mugF k N ≠ some (C (A 0) u) := by
+  intro k hk N u hN hg
+  obtain ⟨-, NR, MO, SC, INL, SU, hc, -, -, -, h4⟩ := hA
+  rw [hc, cacheN_slot31] at hN
+  obtain rfl := Option.some.inj hN
+  obtain ⟨b', rfl⟩ := hbell k hk
+  obtain ⟨-, u', hu'⟩ := h4 b' u hg (hPS _ hk)
+  rw [hmiss NR (by rw [hc, cacheN_slot2]) _ hk] at hu'
+  cases hu'
+
+/-- **The `%done` third of track K's `SccLoopAt`** (`R := RK SC0 inl`, the context `csiCtx` of the
+loop on the sample `[S [CODE JETS CALLS] JH [NR CR]]`): `memGate_done_real` with `rK_sure`. -/
+theorem memGate_done_K (r : RealCfg) (order : List Noun) (kids : Noun → List Noun) (outC : Noun → List Noun)
+    (nout : Noun → NeedOrd) (env : CallEnv) (SC0 : Noun) (inl : Noun → Option Nomm) (P : Noun → Prop)
+    (S CODE JETS CALLS JH : Noun) (x : GenRest) (NR CR : Noun)
+    (hS : ∀ b ∈ r.scc, b ∈ tapList S)
+    (hxS : ∀ b ∈ r.scc, ∀ N u, slot? 31 x.cache = some N → getF mugF b N ≠ some (C (A 0) u))
+    (hcall : ∀ (st : St Noun NeedOrd) (keep : Bool) (b ML CACHE : Noun), b ∈ r.scc →
+      LoopR r.scc outC nout (QK env (RK SC0 inl) P S x) st.ml st.sure ML CACHE →
+      MemDoneCall r order kids outC nout env (RK SC0 inl) P S x st keep (A 1)
+        (kidsOf S (C CODE (C JETS CALLS)) JH (C NR CR)) (A 0) csiBody S CODE (C JETS CALLS) JH (C NR CR) b ML CACHE) :
+    MemGate (cfgReal r order kids) (LoopR (cfgReal r order kids).scc outC nout (QK env (RK SC0 inl) P S x))
+      (csiCtx (A 1) (kidsOf S (C CODE (C JETS CALLS)) JH (C NR CR)) S (C CODE (C JETS CALLS)) JH (C NR CR))
+      (fun _ => (cfgReal r order kids).none) (A 0) Mode.done (A 0x656e6f64) :=
+  memGate_done_real r order kids outC nout env (RK SC0 inl) P S x rK_sure hS hxS (A 1) _ (A 0) csiBody S CODE
+    (C JETS CALLS) JH (C NR CR) hcall
+
 end Compiler
 end Formalization
