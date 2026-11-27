@@ -181,3 +181,5 @@ open Formalization.Compiler
 #print axioms Formalization.Compiler.pastForkAt_code
 #print axioms Formalization.Compiler.sixR_of
 #print axioms Formalization.Compiler.noAx0_of_dir
+#print axioms Formalization.Compiler.callNounM_of_r
+#print axioms Formalization.Compiler.callOk_of_r

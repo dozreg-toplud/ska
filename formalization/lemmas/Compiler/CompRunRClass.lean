@@ -4,8 +4,8 @@ import lemmas.Compiler.CompRunRSixAll
 /-!
 # The run link at `mono` `&` on the plain class with direct calls (README Gaps 19)
 
-`DirOk`: the plain class (`%0`, `%1`, `%3`, `%4`, `%5`, `%7`, cons, `%10`
-with an axis not `0`, the indirect call), nested in any way, with the direct
+`DirOk`: the plain class with `%6` (`%0`, `%1`, `%3`, `%4`, `%5`, `%6`, `%7`,
+cons, `%10` with an axis not `0`, the indirect call), nested in any way, with the direct
 call `[2 p q [~ b ~]]` (no memo key), with direct calls anywhere (also in
 the subject `p` of a direct call: the case `%2` of `CompRunDirectMonoP.lean`
 takes `+past` over `p` as `PastAt ctx env.cod p`, which the induction gives).  `DirCalls env cod ctx E msup n`: per direct
@@ -21,6 +21,11 @@ with `E` (the `msup` of each call is the one the run gives it: `%7` hands
   every goal with `GInv`, its `GRes`, and `PastAt`; by induction, the call
   case by `comp_run_n2_directMM` / `res_n2_directMono`.
 * **`comp_run_dirMM`**, `res_dir`: the same as `CompRunAtMM` and `ResForR`.
+* `%6` (any part with direct calls, also the test) by `comp_run_n6_allR`
+  (`CompRunRSixAll.lean`), its parts `SixPartsR` (`sixR_of`, `+past-fork` by
+  `pastForkAt_code`), `Bake.NoAx0` from `DirOk` (`noAx0_of_dir`).
+* `CallNounMR`, `callNounM_of_r`, `callOk_of_r`: `CallOk` with `+callee-need`
+  and `+callee-sure` read-only (`NeedRead`, `SureNoun`).
 -/
 
 namespace Formalization
@@ -111,7 +116,8 @@ theorem sixR_of (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 c
 
 /-! ## The class -/
 
-/-- **The plain class with direct calls.** -/
+/-- **The plain class with `%6` and direct calls** (no memo key), nested in
+any way. -/
 def DirOk : Nomm → Bool
   | Nomm.cons p q => DirOk p && DirOk q
   | Nomm.n0 _ => true
@@ -131,6 +137,35 @@ def CallOk (env : CallEnv) (cod ctx : Noun) (E : GenRest → Prop) (msup : Optio
     Prop :=
   CodePure cod env b ∧ env.cod b = some (env.pure b) ∧ env.ring b = Option.none ∧
     ∃ nb, env.need b = some nb ∧ ∀ x, E x → ∃ sur SOF, CallNounM msup ctx p q b nb sur x (A 0) SOF
+
+/-- `CallNounM` at `mono` `A 0` with `+callee-need` and `+callee-sure` in
+their read-only cases (`NeedRead`, `SureNoun`, `CompRunDirectS.lean`): what
+is left is the call's `cole` entry `~`, `jets-hot`, and that the push of `sof`
+returns (any value: `mono` `&` does not read it). -/
+structure CallNounMR (env : CallEnv) (msup : Option Nomm) (ctx : Noun) (p q : Nomm) (b : Bell) (nb : NeedOrd)
+    (x : GenRest) (SOF : Noun) : Prop where
+  cole : ∃ cole, slot? 6846 ctx = some cole ∧ getF mugF b.toNoun cole = some (A 0)
+  hot : ∃ jh, slot? 54 ctx = some jh
+  need : NeedRead ctx x b nb
+  sure : SureNoun env b x
+  sof : ∀ (g : Gen (TreapMap mugF)) (SV SN PV goalN regionN : Noun),
+    nock (C (env.sure b).toNoun (C SV (C SN (C nb.toNoun (C (A 0) (C PV (crSubj (A 0) (crdN p q b) goalN regionN
+      (unitNoun Nomm.toNoun msup) (compCore g x ctx)))))))) crDKc6 = some SOF
+
+theorem callNounM_of_r (h7 : slot? 7 ctx = some compK) {env : CallEnv} {msup : Option Nomm} {p q : Nomm} {b : Bell}
+    {nb : NeedOrd} {x : GenRest} {SOF : Noun} (h : CallNounMR env msup ctx p q b nb x SOF) :
+    CallNounM msup ctx p q b nb (env.sure b).toNoun x (A 0) SOF :=
+  ⟨h.cole, h.hot, cne_read h7 b nb x h.cole h.hot h.need, csu_gate (comp_ctx_pill ctx h7).1 env b x h.sure, h.sof⟩
+
+/-- `CallOk` from the code entry, no ring, `env.need b = some nb`, and
+`CallNounMR` for every rest with `E`. -/
+theorem callOk_of_r (h7 : slot? 7 ctx = some compK) {env : CallEnv} {cod : Noun} {E : GenRest → Prop}
+    {msup : Option Nomm} {p q : Nomm} {b : Bell} (hcd : CodePure cod env b) (hc : env.cod b = some (env.pure b))
+    (hri : env.ring b = Option.none) {nb : NeedOrd} (hnb : env.need b = some nb)
+    (hE : ∀ x, E x → ∃ SOF, CallNounMR env msup ctx p q b nb x SOF) : CallOk env cod ctx E msup p q b :=
+  ⟨hcd, hc, hri, nb, hnb, fun x hx => by
+    obtain ⟨SOF, h⟩ := hE x hx
+    exact ⟨_, SOF, callNounM_of_r h7 h⟩⟩
 
 /-- **`CallOk` of every direct call**, each at the `msup` its run gets. -/
 def DirCalls (env : CallEnv) (cod ctx : Noun) (E : GenRest → Prop) : Option Nomm → Nomm → Prop
