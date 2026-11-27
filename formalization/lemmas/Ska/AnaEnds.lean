@@ -15,8 +15,9 @@ taken, and the recursion of the analysis is finite.
 
 1. `fol-loop` within one run.  It recurses on the parts of the formula.
    `%8` and `%9` are rewritten into `%7` forms whose parts are parts of the
-   formula and small fixed formulas, so a weight that counts `%8` and `%9`
-   above `%7` decreases.  The rest leaves the formula: `%11 %bare` analyses
+   formula and small fixed formulas, and a hint whose tag is a cell into the
+   hint under `%$` with the same parts, so a weight that counts `%8`, `%9`
+   and the cell tag above the forms they become decreases.  The rest leaves the formula: `%11 %bare` analyses
    only `[0 1]` and `[1 fol]` and then makes an indirect call (`bare-call`),
    `%11 %memo` and `%mean` make direct calls (never inlined, as `memo-key` or
    `defer` is set), and an inlined call analyses a formula that
