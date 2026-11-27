@@ -1,0 +1,428 @@
+exit 0
+ska: 1657 jetted arms
+[ %poke
+  0
+  %apt
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %hot-apt
+  %.y
+  %hot-nil
+  %.y
+  %shape
+  %.y
+  %call-wyt
+  0
+  %call
+  ~
+]
+[ %poke
+  1
+  %apt
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %hot-apt
+  %.y
+  %hot-nil
+  %.y
+  %shape
+  %.y
+  %call-wyt
+  0
+  %call
+  ~
+]
+[ %poke
+  2
+  %apt
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %hot-apt
+  %.y
+  %hot-nil
+  %.y
+  %shape
+  %.y
+  %call-wyt
+  0
+  %call
+  ~
+]
+[ %poke
+  3
+  %apt
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %hot-apt
+  %.y
+  %hot-nil
+  %.y
+  %shape
+  %.y
+  %call-wyt
+  1
+  %call
+  ~[
+    [ p=[less=[cape=[[%.n %.y] %.n] data=[[0 1 42] 0]] fol=[[9 5 0 1] [1 3]]]
+      q=[path=/c axe=4]
+    ]
+  ]
+]
+[ %poke
+  4
+  %apt
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %hot-apt
+  %.y
+  %hot-nil
+  %.y
+  %shape
+  %.y
+  %call-wyt
+  1
+  %call
+  ~[
+    [ p=[less=[cape=[[%.n %.y] %.n] data=[[0 1 42] 0]] fol=[[9 5 0 1] [1 3]]]
+      q=[path=/c axe=4]
+    ]
+  ]
+]
+[ %poke
+  5
+  %apt
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %hot-apt
+  %.y
+  %hot-nil
+  %.y
+  %shape
+  %.y
+  %call-wyt
+  1
+  %call
+  ~[
+    [ p=[less=[cape=[[%.n %.y] %.n] data=[[0 1 42] 0]] fol=[[9 5 0 1] [1 3]]]
+      q=[path=/c axe=4]
+    ]
+  ]
+]
+[ %poke
+  6
+  %apt
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %hot-apt
+  %.y
+  %hot-nil
+  %.y
+  %shape
+  %.y
+  %call-wyt
+  1
+  %call
+  ~[
+    [ p=[less=[cape=[[%.n %.y] %.n] data=[[0 1 42] 0]] fol=[[9 5 0 1] [1 3]]]
+      q=[path=/c axe=4]
+    ]
+  ]
+]
+[ %poke
+  7
+  %apt
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %hot-apt
+  %.y
+  %hot-nil
+  %.y
+  %shape
+  %.y
+  %call-wyt
+  1
+  %call
+  ~[
+    [ p=[less=[cape=[[%.n %.y] %.n] data=[[0 1 42] 0]] fol=[[9 5 0 1] [1 3]]]
+      q=[path=/c axe=4]
+    ]
+  ]
+]
+[ %poke
+  8
+  %apt
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %hot-apt
+  %.y
+  %hot-nil
+  %.y
+  %shape
+  %.y
+  %call-wyt
+  1
+  %call
+  ~[
+    [ p=[less=[cape=[[%.n %.y] %.n] data=[[0 1 42] 0]] fol=[[9 5 0 1] [1 3]]]
+      q=[path=/c axe=4]
+    ]
+  ]
+]
+[ %poke
+  0
+  %apt
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %hot-apt
+  %.y
+  %hot-nil
+  %.y
+  %shape
+  %.y
+  %call-wyt
+  0
+  %call
+  ~
+]
+[ %poke
+  1
+  %apt
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %hot-apt
+  %.y
+  %hot-nil
+  %.y
+  %shape
+  %.y
+  %call-wyt
+  0
+  %call
+  ~
+]
+[ %poke
+  2
+  %apt
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %hot-apt
+  %.y
+  %hot-nil
+  %.y
+  %shape
+  %.y
+  %call-wyt
+  0
+  %call
+  ~
+]
+[ %poke
+  3
+  %apt
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %hot-apt
+  %.y
+  %hot-nil
+  %.y
+  %shape
+  %.y
+  %call-wyt
+  1
+  %call
+  ~[
+    [ p=[less=[cape=[[%.n %.y] %.n] data=[[0 1 42] 0]] fol=[[9 5 0 1] [1 3]]]
+      q=[path=/c axe=4]
+    ]
+  ]
+]
+[ %poke
+  4
+  %apt
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %hot-apt
+  %.y
+  %hot-nil
+  %.y
+  %shape
+  %.y
+  %call-wyt
+  1
+  %call
+  ~[
+    [ p=[less=[cape=[[%.n %.y] %.n] data=[[0 1 42] 0]] fol=[[9 5 0 1] [1 3]]]
+      q=[path=/c axe=4]
+    ]
+  ]
+]
+[ %poke
+  5
+  %apt
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %hot-apt
+  %.y
+  %hot-nil
+  %.y
+  %shape
+  %.y
+  %call-wyt
+  1
+  %call
+  ~[
+    [ p=[less=[cape=[[%.n %.y] %.n] data=[[0 1 42] 0]] fol=[[9 5 0 1] [1 3]]]
+      q=[path=/c axe=4]
+    ]
+  ]
+]
+[ %poke
+  6
+  %apt
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %hot-apt
+  %.y
+  %hot-nil
+  %.y
+  %shape
+  %.y
+  %call-wyt
+  1
+  %call
+  ~[
+    [ p=[less=[cape=[[%.n %.y] %.n] data=[[0 1 42] 0]] fol=[[9 5 0 1] [1 3]]]
+      q=[path=/c axe=4]
+    ]
+  ]
+]
+[ %poke
+  7
+  %apt
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %hot-apt
+  %.y
+  %hot-nil
+  %.y
+  %shape
+  %.y
+  %call-wyt
+  1
+  %call
+  ~[
+    [ p=[less=[cape=[[%.n %.y] %.n] data=[[0 1 42] 0]] fol=[[9 5 0 1] [1 3]]]
+      q=[path=/c axe=4]
+    ]
+  ]
+]
+[ %poke
+  8
+  %apt
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %.y
+  %hot-apt
+  %.y
+  %hot-nil
+  %.y
+  %shape
+  %.y
+  %call-wyt
+  1
+  %call
+  ~[
+    [ p=[less=[cape=[[%.n %.y] %.n] data=[[0 1 42] 0]] fol=[[9 5 0 1] [1 3]]]
+      q=[path=/c axe=4]
+    ]
+  ]
+]
