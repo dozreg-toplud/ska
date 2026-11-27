@@ -81,6 +81,82 @@ theorem pickD_of_pickTree (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → 
   rw [pickTree_noEnt (S := S) (Map := Map) env h hn hr]
   exact Nat.le_refl _
 
+/-! ## `[3 p]` as a test -/
+
+/-- **`[3 p]` under `%pick z o`** (step 3): the block `[clq r z o]`, then
+`p` under `%next (lazy-from-reg r)` into it, composed by `unaryGTB_ok` (the
+text of `three_doneB` with the block of `%pick` in place of `+done-blocks`). -/
+theorem three_pickB (lib : Lib) {N : Needs} {p : Nomm} {env : CallEnv} {P : Noun → Prop} {f fb : Noun}
+    (Sp : LOKSF (S := S) (Map := Map) lib N env P fb p) (M : MinkC3 lib P f fb) {sup : Option Nomm}
+    {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S} {z o : Jmp} (hcount : sixCount p ≤ 255)
+    (hj : GJ g0.bo (CGoal.pick z o : CGoal S)) (ha : z.args = [] ∧ o.args = []) (b0 : 1 ≤ g0.bo)
+    (d0 : g0.drop = false) (hu : UpBelow g0) (hcl0 : Clear g0) (hcb : CondBelow g0)
+    (h : runLC env sup (Nomm.n3 p) (CGoalL.pick z o) region g0 = some (nex, g1)) :
+    PickOK lib N P f z o g0 g1 nex := by
+  have e3 : (runLC env sup (Nomm.n3 p) (CGoalL.pick z o : CGoalL S) region : CM Map (NextL S)) = (do
+      let r ← re
+      let oc ← emit ⟨[], [], Termin.clq r z o⟩
+      runLC env sup p (CGoalL.next (ofSure (lazyReg r)) (jmp0 oc)) region) := by
+    conv => lhs; unfold runLC
+  rw [e3] at h
+  simp only [bind_apply, re_apply, emit_apply, Option.bind_some] at h
+  have e0 : entries (ofSure (lazyReg g0.re : Sure S)) = [] := entries_ofSure _
+  have JB : JumpsBelow (Termin.clq g0.re z o) g0.bo := jumpsBelow_two rfl hj.1 hj.2
+  have G1 : GrowU g0 ({ g0 with re := g0.re + 1 }.emitted ⟨[], [], Termin.clq g0.re z o⟩) :=
+    ((grow_re g0).trans (grow_emit (g := { g0 with re := g0.re + 1 }) (b := ⟨[], [], Termin.clq g0.re z o⟩) JB)).toU hu
+  obtain ⟨⟨Qp, Rp⟩, pne, -, pfl, pec⟩ := Sp.run (L := ofSure (lazyReg g0.re)) (th := jmp0 g0.bo) (Or.inr e0) hcount
+    (by simp only [Gen.emitted]; omega) (by simp only [Gen.emitted]; exact d0) (G1.up hu) (hcl0.growU G1)
+    (fun k hk => by have := hcb k hk; simp only [Gen.emitted] at this ⊢; omega)
+    b0 (by simp only [jmp0, Gen.emitted]; omega) rfl (by rw [e0]; simp) trivial
+    (fun x hx => by
+      simp only [lazyReg, ofSure, NMem] at hx; subst hx
+      exact ⟨by simp only [Gen.emitted]; omega, condBelow_none hcb (Nat.le_refl _)⟩)
+    (fun e he => by rw [e0] at he; cases he) (by rw [e0]; simp) (fun e he => by rw [e0] at he; cases he)
+    (flat_ofSure _) trivial (fun e he => by rw [e0] at he; cases he) h
+  have RG := Rp.toRunOKLB.toGB (fun r hr => by
+    simp only [lazyReg, NMem] at hr; subst hr; simp only [Gen.emitted]; omega)
+  refine ⟨?_, pne, pfl, Sp.clean (L := ofSure (lazyReg g0.re)) trivial h, pec⟩
+  refine unaryGTB_ok (T := fun _ => wutTone) wutTone_keep M.fwd M.bwd ((ext_re _).trans (ext_emit _ _)) G1
+    (by simp only [Gen.emitted]) ⟨Nat.le_refl _, by simp only [Gen.emitted]; omega⟩
+    (by simp only [Gen.emitted]; omega) (fresh_emitted (g := { g0 with re := g0.re + 1 }) d0 rfl rfl) RG ?_ ?_
+  · intro cf hcf k h0 h1
+    have ek : k = g0.bo := by simp only [Gen.emitted] at h1; omega
+    subst ek
+    have c0 : HoonMap.get cf g0.re = Option.none := by
+      rw [hcf _ (by simp only [Gen.emitted]; omega)]; exact condBelow_none hcb (Nat.le_refl _)
+    rw [emitted_get ({ g0 with re := g0.re + 1 } : Gen Map) _ d0]
+    simp only [Option.map_some, unproxyBlob, renBlob, List.map_nil, renFin, unproxy_none c0,
+      renJmp_nil _ ha.1, renJmp_nil _ ha.2]
+  · intro c hc σ Inv ν O gul st regs t tm x hI htr hx
+    have hb := emitted_get' (g := { g0 with re := g0.re + 1 }) d0
+      (hc _ (Nat.le_refl _) (by simp only [Gen.emitted]; omega))
+    have hj' := goJ_jmp0 (lib := lib) (O := O) (gul := gul) (st := st) regs t _ _ hb
+    rw [execBlob_clq, hx, Option.bind_some] at hj'
+    cases x with
+    | atom n =>
+      exact ⟨(fun e => by cases e), fun _ => ⟨st, regs, hI, Needs.le_refl _, trivial, fun _ _ => rfl, hj'⟩,
+        fun _ h1 => absurd rfl h1⟩
+    | cell u v =>
+      exact ⟨fun _ => ⟨st, regs, hI, Needs.le_refl _, trivial, fun _ _ => rfl, hj'⟩, (fun e => by cases e),
+        fun h0 _ => absurd rfl h0⟩
+
+/-- **`[3 p]` with `p` in `CallTreeA` with `NoEntF` meets `PickD`** with the
+bound `0`. -/
+theorem pickD_three (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Prop} {b : Bool} {fb : Noun} {p : Nomm}
+    (hp : CallTreeA b fb p) (hn : NoEntF p) : PickD (S := S) (Map := Map) lib N env P (n2 (A 3) fb) (Nomm.n3 p) 0 := by
+  intro sup region g0 g1 nex z o hz ho hj b0 d0 hu hcl hcb hr
+  refine ⟨(three_pickB lib (lokS_callTreeA lib env hp P).1.1 (minkC3_three lib P fb) (by rw [hp.sixCount]; omega)
+    hj ⟨hz, ho⟩ b0 d0 hu hcl hcb hr).run, ?_⟩
+  have e3 : (runLC env sup (Nomm.n3 p) (CGoalL.pick z o : CGoalL S) region : CM Map (NextL S)) = (do
+      let r ← re
+      let oc ← emit ⟨[], [], Termin.clq r z o⟩
+      runLC env sup p (CGoalL.next (ofSure (lazyReg r)) (jmp0 oc)) region) := by
+    conv => lhs; unfold runLC
+  rw [e3] at hr
+  simp only [bind_apply, re_apply, emit_apply, Option.bind_some] at hr
+  rw [noEnt_of_noEntF (S := S) (Map := Map) env hn (goal := CGoal.next (lazyReg g0.re) (jmp0 g0.bo)) trivial hr]
+  exact Nat.le_refl _
+
 /-! ## The class -/
 
 /-- **The tests of the class**: call-free (in `FragX`, which gives `UOK`,
@@ -89,6 +165,7 @@ with needs without entries). -/
 inductive SixTest : Noun → Nomm → Prop
   | pure {b : Bool} {f : Noun} {c : Nomm} : FragX (S := S) c → CallTreeA b f c → c.pure = true → SixTest f c
   | call {f : Noun} {c : Nomm} : PickTree f c → NoEntF c → SixTest f c
+  | three {b : Bool} {f : Noun} {p : Nomm} : CallTreeA b f p → NoEntF p → SixTest (n2 (A 3) f) (Nomm.n3 p)
 
 theorem sixTest_pickD (lib : Lib) {N : Needs} (env : CallEnv) (P : Noun → Prop) {f : Noun} {c : Nomm}
     (h : SixTest (S := S) f c) : PickD (S := S) (Map := Map) lib N env P f c 0 := by
@@ -100,6 +177,7 @@ theorem sixTest_pickD (lib : Lib) {N : Needs} (env : CallEnv) (P : Noun → Prop
         (by rw [ht.sixCount]; omega)
     rwa [ht.sixCount] at H
   | call ht hn => exact pickD_of_pickTree lib env ht hn
+  | three hp hn => exact pickD_three lib env hp hn
 
 /-- **`[6 c a b]` at the top, nested in the branches**: a leaf of
 `CallTreeA` whose need has no entries, or a `%6` whose test is in `SixTest`
@@ -183,6 +261,23 @@ theorem sixNested_contract (lib : Lib) (env : CallEnv) {c : Straight Map}
         (CallTreeA.three (CallTreeA.n0 2)) rfl)
       (Six0.six sixTest_ind (six0_n0 2) (six0_n0 3) (by decide)) (six0_n0 3) (by decide)) hc N
   ⟨H.1, fun s => H.2 s trivial⟩
+
+/-- `[6 [3 [2 [0 3] [0 2]]] [0 2] [0 3]]`: the cell test of a call as the
+test. -/
+theorem sixThreeCall_contract (lib : Lib) (env : CallEnv) {c : Straight Map}
+    (hc : finishLUC (S := S) (Map := Map) env
+      (Nomm.n6 (Nomm.n3 (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) (Nomm.n0 2) (Nomm.n0 3)) = some c)
+    (N : Needs) : c.need = NeedOrd.this ∧ ∀ s,
+      ContractFwd lib N s (n4 (A 6) (n2 (A 3) (n3 (A 2) (slot 3) (slot 2))) (slot 2) (slot 3)) [s] c ∧
+      ContractBwd lib N s (n4 (A 6) (n2 (A 3) (n3 (A 2) (slot 3) (slot 2))) (slot 2) (slot 3)) [s] c :=
+  have H := finishLUC_contractSix0 lib env (fun _ => True)
+    (Six0.six (SixTest.three (CallTreeA.ind (CallTreeA.n0 3) (CallTreeA.n0 2))
+        (NoEntF.ind rfl rfl (NoEntF.pure rfl rfl)))
+      (six0_n0 2) (six0_n0 3) (by decide)) hc N
+  ⟨H.1, fun s => H.2 s trivial⟩
+
+#guard SixCheck.sem [Nomm.n6 (Nomm.n3 (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) (Nomm.n0 2) (Nomm.n0 3)] ==
+  (1, 1, 24, 24)
 
 -- The whole-subject code of each instance exists and agrees with `+mink` on
 -- the 24 subjects of `CompSixLSCheck.lean`.
