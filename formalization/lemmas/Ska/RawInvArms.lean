@@ -22,6 +22,7 @@ open Nock Opt Comp
 
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
 variable {X : Map Blob → Prop} [XOK X] {ρ : Nat → Nat} {lo : Nat}
+variable {K : Nat → Nat → Prop} [KVan K lo]
 
 theorem get_put_put {bl : Map Blob} {o x : Nat} {b b' : Blob} :
     HoonMap.get (HoonMap.put (HoonMap.put bl o b) o b') x = HoonMap.get (HoonMap.put bl o b') x := by
@@ -36,14 +37,17 @@ where its targets are live. -/
 theorem blockRF_fin {f : Termin} {r : Nat} : BlockRF ⟨[], [], f⟩ r ↔ r ∈ finRegs f := by
   simp [BlockRF, OpsRF, defsOf]
 
-theorem not_live_bom {bl : Map Blob} {k : Nat} {m : Option Nat} (hk : HoonMap.get bl k = some ⟨[], [], Termin.bom m⟩)
-    {r : Nat} : ¬ Live bl k r := by
+theorem not_liveK_bom {bl : Map Blob} {k : Nat} {m : Option Nat} (hk : HoonMap.get bl k = some ⟨[], [], Termin.bom m⟩)
+    {r : Nat} : ¬ LiveK bl K k r := by
   intro h
-  obtain ⟨b, hb, hr⟩ := live_iff.mp h
+  obtain ⟨b, hb, hr⟩ := liveK_cases h
   rw [hk] at hb; cases hb
   rcases hr with hr | ⟨j, hj, _⟩
   · simp [blockRF_fin, finRegs] at hr
   · simp [getJmps] at hj
+
+theorem not_live_bom {bl : Map Blob} {k : Nat} {m : Option Nat} (hk : HoonMap.get bl k = some ⟨[], [], Termin.bom m⟩)
+    {r : Nat} : ¬ Live bl k r := fun h => not_liveK_bom (K := fun _ _ => False) hk (liveK_of_live h)
 
 theorem jmpRegs_nil {j : Jmp} (h : j.args = []) : jmpRegs j = [] := by simp [jmpRegs, h]
 
@@ -59,14 +63,14 @@ theorem emitOK_bom {g : Comp.Gen Map} (m : Option Nat) : EmitOK g ⟨[], [], Ter
 theorem raw_bomb {miss : Option Nat} {g g' : Comp.Gen Map} {nex : Next S} (h : SIP X ρ lo g)
     (hb : (bomb miss : CM Map (Next S)) g = some (nex, g')) :
     SIP X ρ lo g' ∧ nex.laz.ned = Need.none ∧ (∀ x, x < g.bo → HoonMap.get g'.blocks x = HoonMap.get g.blocks x) ∧
-      (∀ r, ¬ Live g'.blocks nex.th.there r) ∧ (∀ r, Defd g'.blocks r ↔ Defd g.blocks r) := by
+      (∀ r, ¬ LiveK g'.blocks K nex.th.there r) ∧ (∀ r, Defd g'.blocks r ↔ Defd g.blocks r) := by
   simp only [bomb] at hb
   obtain ⟨o, g1, h1, hb⟩ := bind_some hb
   simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at hb
   obtain ⟨rfl, rfl⟩ := hb
   obtain ⟨S1, rfl, e1, -, -⟩ := sip_emit h (emitOK_bom miss) h1
   refine ⟨S1, rfl, fun x hx => by rw [e1, get_put_ne (Nat.ne_of_lt hx)], fun r => ?_, fun r => ?_⟩
-  · exact not_live_bom (by rw [e1]; exact get_put_self)
+  · exact not_liveK_bom (by rw [e1]; exact get_put_self)
   · rw [e1, defd_put (h.none (Nat.le_refl _))]; simp [blockDefs]
 
 theorem emitOK_don {g : Comp.Gen Map} {r : Nat} (hr : r < g.re) : EmitOK g ⟨[], [], Termin.don r⟩ :=
@@ -80,10 +84,10 @@ theorem emitOK_immDon {g : Comp.Gen Map} {r : Nat} {n : Noun} (h : SIP X ρ lo g
     (regsIn_one (fun x hx => by simp [Comp.poleRegs] at hx; omega)) hr (by simp [defsOf, aliasDst])
     (fun r' hr' => by simp [defsOf, aliasDst] at hr'; subst hr'; exact hn) (fun op hop => by simp at hop; subst hop; rfl)
 
-theorem live_immDon {bl : Map Blob} {k : Nat} {r : Nat} {n : Noun}
-    (hk : HoonMap.get bl k = some ⟨[], [Pole.imm n r], Termin.don r⟩) {x : Nat} : ¬ Live bl k x := by
+theorem liveK_immDon {bl : Map Blob} {k : Nat} {r : Nat} {n : Noun}
+    (hk : HoonMap.get bl k = some ⟨[], [Pole.imm n r], Termin.don r⟩) {x : Nat} : ¬ LiveK bl K k x := by
   intro h
-  obtain ⟨b, hb, hr⟩ := live_iff.mp h
+  obtain ⟨b, hb, hr⟩ := liveK_cases h
   rw [hk] at hb; cases hb
   rcases hr with ⟨_, hr⟩ | ⟨j, hj, _⟩
   · simp only [OpsRF, reads_imm, false_or, defsOf, List.filterMap_cons, aliasDst, List.filterMap_nil,
@@ -93,11 +97,15 @@ theorem live_immDon {bl : Map Blob} {k : Nat} {r : Nat} {n : Noun}
     · exact hn hr
   · simp [getJmps] at hj
 
+theorem live_immDon {bl : Map Blob} {k : Nat} {r : Nat} {n : Noun}
+    (hk : HoonMap.get bl k = some ⟨[], [Pole.imm n r], Termin.don r⟩) {x : Nat} : ¬ Live bl k x :=
+  fun h => liveK_immDon (K := fun _ _ => False) hk (liveK_of_live h)
+
 theorem raw_doneBlocks {g g' : Comp.Gen Map} {o0 o1 : Nat} (h : SIP X ρ lo g)
     (hd : (doneBlocks : CM Map (Nat × Nat)) g = some ((o0, o1), g')) :
     SIP X ρ lo g' ∧ g.re ≤ g'.re ∧ o0 = g.bo ∧ o1 = g.bo + 1 ∧ g'.bo = g.bo + 2 ∧
       (∀ x, x < g.bo → HoonMap.get g'.blocks x = HoonMap.get g.blocks x) ∧
-      (∀ r, ¬ Live g'.blocks o0 r) ∧ (∀ r, ¬ Live g'.blocks o1 r) ∧
+      (∀ r, ¬ LiveK g'.blocks K o0 r) ∧ (∀ r, ¬ LiveK g'.blocks K o1 r) ∧
       (∀ r, Defd g'.blocks r → Defd g.blocks r ∨ (g.re ≤ r ∧ r < g'.re)) := by
   simp only [doneBlocks] at hd
   obtain ⟨r0, g1, h1, hd⟩ := bind_some hd
@@ -117,8 +125,8 @@ theorem raw_doneBlocks {g g' : Comp.Gen Map} {o0 o1 : Nat} (h : SIP X ρ lo g)
   simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at hd
   obtain ⟨⟨rfl, rfl⟩, rfl⟩ := hd
   have l3 : g3.bo = g.bo + 1 := by omega
-  refine ⟨S4, by omega, by omega, by omega, by omega, fun x hx => ?_, fun r => live_immDon (n := A 0) (r := g.re) ?_,
-    fun r => live_immDon (n := A 1) (r := g1.re) ?_, fun r d => ?_⟩
+  refine ⟨S4, by omega, by omega, by omega, by omega, fun x hx => ?_, fun r => liveK_immDon (n := A 0) (r := g.re) ?_,
+    fun r => liveK_immDon (n := A 1) (r := g1.re) ?_, fun r d => ?_⟩
   · rw [e4, get_put_ne (by omega), e3, get_put_ne (by omega), b2, b1]
   · rw [e4, get_put_ne (by omega), e3, o2', o1']; exact get_put_self
   · rw [e4, l3]; exact get_put_self
@@ -136,7 +144,7 @@ theorem raw_simpleNext {goal : CGoal S} {g g' : Comp.Gen Map} {nex : Next S} (h 
     SIP X ρ lo g' ∧ g.re ≤ g'.re ∧ g.bo ≤ g'.bo ∧ nex.th.args = [] ∧ nex.th.there < g'.bo ∧
       (∀ x, x < g.bo → HoonMap.get g'.blocks x = HoonMap.get g.blocks x) ∧
       (∀ r, Defd g'.blocks r ↔ Defd g.blocks r) ∧
-      (∀ r, Live g'.blocks nex.th.there r → NMem nex.laz.ned r ∨ GLive g.blocks goal r) ∧
+      (∀ r, LiveK g'.blocks K nex.th.there r → NMem nex.laz.ned r ∨ GLiveK g.blocks K goal r) ∧
       (∀ r, NMem nex.laz.ned r → GMem goal r ∨ (g.re ≤ r ∧ r < g'.re)) ∧
       (∀ r, GMem goal r → NMem nex.laz.ned r) := by
   cases goal with
@@ -161,7 +169,7 @@ theorem raw_simpleNext {goal : CGoal S} {g g' : Comp.Gen Map} {nex : Next S} (h 
     · rw [e2, get_put_ne (by omega), b1]
     · rw [e2, defd_put (S1.none (Nat.le_refl _)), b1]; simp [blockDefs]
     · have hk : HoonMap.get g2.blocks g1.bo = some ⟨[], [], Termin.don g.re⟩ := by rw [e2]; exact get_put_self
-      obtain ⟨b, hb, hr'⟩ := live_iff.mp hr
+      obtain ⟨b, hb, hr'⟩ := liveK_cases hr
       simp only [jmp0] at hb
       rw [hk] at hb; cases hb
       rcases hr' with hr' | ⟨j, hj', _⟩
@@ -189,7 +197,7 @@ theorem raw_simpleNext {goal : CGoal S} {g g' : Comp.Gen Map} {nex : Next S} (h 
     · rw [e2, defd_put (S1.none (Nat.le_refl _)), b1]; simp [blockDefs]
     · have he : ∀ x, x < g1.bo → HoonMap.get g2.blocks x = HoonMap.get g1.blocks x := fun x hx => by
         rw [e2, get_put_ne (by omega)]
-      rcases live_unfoldP (by rw [e2]; exact get_put_self) (S1.below g1.bo) he
+      rcases liveK_unfoldP (by rw [e2]; exact get_put_self) (S1.below g1.bo) he
         (fun j hj' => by simp [getJmps] at hj'; rcases hj' with rfl | rfl <;> omega) hr with hr' | ⟨j, hj', hl, _⟩
       · simp [BlockRF, OpsRF, defsOf, finRegs, jmpRegs, ha.1, ha.2] at hr'; exact Or.inl hr'
       · rw [b1] at hl
@@ -207,7 +215,7 @@ theorem raw_forl {r o : Nat} {g g' : Comp.Gen Map} {z o' : Nat} (h : SIP X ρ lo
     (ho : o < g.bo) (hf : forl r o g = some ((z, o'), g')) :
     SIP X ρ lo g' ∧ g'.re = g.re + 2 ∧ g'.bo = g.bo + 3 ∧ z = g.bo + 1 ∧ o' = g.bo + 2 ∧
       (∀ x, x < g.bo → HoonMap.get g'.blocks x = HoonMap.get g.blocks x) ∧
-      (∀ x, Live g'.blocks z x → x ≠ r ∧ Live g.blocks o x) ∧ (∀ x, Live g'.blocks o' x → x ≠ r ∧ Live g.blocks o x) ∧
+      (∀ x, LiveK g'.blocks K z x → x ≠ r ∧ LiveK g.blocks K o x) ∧ (∀ x, LiveK g'.blocks K o' x → x ≠ r ∧ LiveK g.blocks K o x) ∧
       (∀ x, Defd g'.blocks x → Defd g.blocks x ∨ x = r ∨ (g.re ≤ x ∧ x < g.re + 2)) := by
   simp only [forl] at hf
   obtain ⟨r0, g1, h1, hf⟩ := bind_some hf
@@ -274,15 +282,15 @@ theorem raw_forl {r o : Nat} {g g' : Comp.Gen Map} {z o' : Nat} (h : SIP X ρ lo
     rw [e5, get_put_ne (by omega), e4, get_put_ne (by omega), e3]; exact get_put_self
   have below : ∀ x, x < g2.bo → HoonMap.get g5.blocks x = HoonMap.get g.blocks x := fun x hx => by
     rw [e5, get_put_ne (by omega), e4, get_put_ne (by omega), e3, get_put_ne (by omega), b2, b1]
-  have liveBarg : ∀ x, Live g5.blocks g2.bo x → x ≠ r ∧ Live g.blocks o x := fun x hl => by
-    rcases live_unfoldP gbarg (h.below (g2.bo)) below (fun j hj => by simp [getJmps] at hj; subst hj; simp [jmp0]; omega)
+  have liveBarg : ∀ x, LiveK g5.blocks K g2.bo x → x ≠ r ∧ LiveK g.blocks K o x := fun x hl => by
+    rcases liveK_unfoldP gbarg (h.below (g2.bo)) below (fun j hj => by simp [getJmps] at hj; subst hj; simp [jmp0]; omega)
       hl with hr' | ⟨j, hj, hl', hn'⟩
     · simp [BlockRF, OpsRF, defsOf, finRegs, jmpRegs, jmp0] at hr'
     · simp [getJmps] at hj; subst hj
       exact ⟨fun e => hn' (by simp [blockDefs, e]), hl'⟩
   have liveIf : ∀ (k : Nat) (n : Noun) (rr : Nat), HoonMap.get g5.blocks k = some ⟨[], [Pole.imm n rr], Termin.hop ⟨[some rr], g2.bo⟩⟩ →
-      g2.bo < k → ∀ x, Live g5.blocks k x → x ≠ r ∧ Live g.blocks o x := fun k n rr hk hlt x hl => by
-    obtain ⟨b, hb, hr'⟩ := live_iff.mp hl
+      g2.bo < k → ∀ x, LiveK g5.blocks K k x → x ≠ r ∧ LiveK g.blocks K o x := fun k n rr hk hlt x hl => by
+    obtain ⟨b, hb, hr'⟩ := liveK_cases hl
     rw [hk] at hb; cases hb
     rcases hr' with hr' | ⟨j, hj, hl', _⟩
     · simp [BlockRF, OpsRF, reads_imm, defsOf, aliasDst, finRegs, jmpRegs] at hr'

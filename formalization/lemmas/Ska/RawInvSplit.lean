@@ -22,6 +22,7 @@ open Nock Opt Comp
 
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
 variable {X : Map Blob → Prop} [XOK X] {ρ : Nat → Nat} {lo : Nat}
+variable {K : Nat → Nat → Prop} [KVan K lo]
 
 /-! ## `+must` and `+split-need` -/
 
@@ -157,8 +158,8 @@ theorem raw_split {laz : Sure S} {th : Jmp} {g g' : Comp.Gen Map} {x : Sure S ×
     (hs : Comp.split ⟨laz, th⟩ g = some (x, g')) :
     SIP X ρ lo g' ∧ x.2.2 = g.bo ∧ g'.bo = g.bo + 1 ∧ g.re ≤ g'.re ∧
       (∀ k, k < g.bo → HoonMap.get g'.blocks k = HoonMap.get g.blocks k) ∧
-      (∀ y, Live g'.blocks g.bo y → NMem x.1.ned y ∨ NMem x.2.1.ned y ∨
-        (Live g.blocks th.there y ∧ ¬ NMem laz.ned y)) ∧
+      (∀ y, LiveK g'.blocks K g.bo y → NMem x.1.ned y ∨ NMem x.2.1.ned y ∨
+        (LiveK g.blocks K th.there y ∧ ¬ NMem laz.ned y)) ∧
       (∀ y, Defd g'.blocks y → Defd g.blocks y ∨ (NMem laz.ned y ∧ ¬ NMem x.1.ned y ∧ ¬ NMem x.2.1.ned y)) := by
   simp only [Comp.split] at hs
   obtain ⟨o, g1, h1, hs⟩ := bind_some hs
@@ -183,7 +184,7 @@ theorem raw_split {laz : Sure S} {th : Jmp} {g g' : Comp.Gen Map} {x : Sure S ×
     rw [hget k, if_neg (by omega), e1, get_put_ne (by omega)]
   refine ⟨S3, rfl, by omega, by omega, below, fun y hy => ?_, fun y hy => ?_⟩
   · have hk : HoonMap.get g3.blocks g.bo = some ⟨[], A ++ [], Termin.hop th⟩ := by rw [hget, if_pos rfl]
-    rcases live_unfoldP hk (h.below g.bo) below (fun j hj' => by simp [getJmps] at hj'; subst hj'; exact hj) hy with
+    rcases liveK_unfoldP hk (h.below g.bo) below (fun j hj' => by simp [getJmps] at hj'; subst hj'; exact hj) hy with
       ⟨-, hr⟩ | ⟨j, hj', hl, hn'⟩
     · simp only [List.append_nil] at hr
       rcases hr with hr | ⟨-, hr⟩
@@ -695,8 +696,8 @@ theorem raw_copy [HoonMapKeys Map] {first : Next S} {second : Sure S} {g g' : Co
     (hc : copy first second g = some (nex, g')) :
     SIP X ρ lo g' ∧ nex.th = jmp0 g.bo ∧ g'.bo = g.bo + 1 ∧ g.re ≤ g'.re ∧
       (∀ k, k < g.bo → HoonMap.get g'.blocks k = HoonMap.get g.blocks k) ∧
-      (∀ y, Live g'.blocks g.bo y → NMem nex.laz.ned y ∨
-        (Live g.blocks first.th.there y ∧ ¬ NMem first.laz.ned y ∧ ¬ NMem second.ned y)) ∧
+      (∀ y, LiveK g'.blocks K g.bo y → NMem nex.laz.ned y ∨
+        (LiveK g.blocks K first.th.there y ∧ ¬ NMem first.laz.ned y ∧ ¬ NMem second.ned y)) ∧
       (∀ y, Defd g'.blocks y → Defd g.blocks y ∨
         ((NMem first.laz.ned y ∨ NMem second.ned y) ∧ ¬ NMem nex.laz.ned y)) := by
   simp only [copy] at hc
@@ -734,7 +735,7 @@ theorem raw_copy [HoonMapKeys Map] {first : Next S} {second : Sure S} {g g' : Co
   refine ⟨S4, rfl, by rw [o4, bo3, bo1], by rw [q4]; have := c3.le; omega, below, fun y hy => ?_, fun y hy => ?_⟩
   · have hk : HoonMap.get g4.blocks g.bo = some ⟨[], B ++ [], Termin.hop first.th⟩ := by
       rw [e4]; exact get_put_self
-    rcases live_unfoldP hk (h.below g.bo) below (fun j hj' => by simp [getJmps] at hj'; subst hj'; exact hj) hy with
+    rcases liveK_unfoldP hk (h.below g.bo) below (fun j hj' => by simp [getJmps] at hj'; subst hj'; exact hj) hy with
       ⟨-, hr⟩ | ⟨j, hj', hl, hn'⟩
     · simp only [List.append_nil] at hr
       rcases hr with hr | ⟨-, hr⟩

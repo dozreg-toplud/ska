@@ -22,16 +22,20 @@ open Nock Opt Comp
 
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
 variable {X : Map Blob → Prop} [XOK X] {ρ : Nat → Nat} {lo : Nat}
+variable {K : Nat → Nat → Prop} [KVan K lo]
 
-theorem not_live_don {bl : Map Blob} {k r x : Nat} (hk : HoonMap.get bl k = some ⟨[], [], Termin.don r⟩)
-    (hx : Live bl k x) : x = r := by
-  obtain ⟨b, hb, hr⟩ := live_iff.mp hx
+theorem not_liveK_don {bl : Map Blob} {k r x : Nat} (hk : HoonMap.get bl k = some ⟨[], [], Termin.don r⟩)
+    (hx : LiveK bl K k x) : x = r := by
+  obtain ⟨b, hb, hr⟩ := liveK_cases hx
   rw [hk] at hb; cases hb
   rcases hr with hr | ⟨j, hj, _⟩
   · rw [blockRF_fin] at hr; simpa [finRegs] using hr
   · simp [getJmps] at hj
 
-theorem raw_cons {p q : Nomm} (ihp : RawIHP S Map X ρ lo p) (ihq : RawIHP S Map X ρ lo q) : RawIHP S Map X ρ lo (Nomm.cons p q) := by
+theorem not_live_don {bl : Map Blob} {k r x : Nat} (hk : HoonMap.get bl k = some ⟨[], [], Termin.don r⟩)
+    (hx : Live bl k x) : x = r := not_liveK_don (K := fun _ _ => False) hk (liveK_of_live hx)
+
+theorem raw_cons {p q : Nomm} (ihp : RawIHPK S Map X ρ lo K p) (ihq : RawIHPK S Map X ρ lo K q) : RawIHPK S Map X ρ lo K (Nomm.cons p q) := by
   intro goal g0 g1 nex h hg hD hj ha hf hr
   cases goal with
   | done =>
@@ -56,7 +60,7 @@ theorem raw_cons {p q : Nomm} (ihp : RawIHP S Map X ρ lo p) (ihq : RawIHP S Map
     rcases L1 x hx with e | ⟨hl, hn⟩
     · exact Or.inl e
     · exfalso
-      exact hn (by simp only [lazyReg, NMem]; exact not_live_don (by rw [e4]; exact get_put_self) hl)
+      exact hn (by simp only [lazyReg, NMem]; exact not_liveK_don (by rw [e4]; exact get_put_self) hl)
   | next laz th =>
     simp only [run, bind_apply, pure_apply, Option.bind_some] at hr
     exact raw_consNext ihp ihq h hg.1 hD ha hj.1 hj.2 (fun y hy d => hf y d hy) hr
@@ -74,7 +78,7 @@ theorem raw_cons {p q : Nomm} (ihp : RawIHP S Map X ρ lo p) (ihq : RawIHP S Map
     refine ⟨S1, fun x hx => ?_⟩
     rcases L1 x hx with e | ⟨hl, -⟩
     · exact Or.inl e
-    · exact absurd hl (not_live_bom (by rw [e2]; exact get_put_self))
+    · exact absurd hl (not_liveK_bom (by rw [e2]; exact get_put_self))
 
 /-! ## `%5` -/
 
@@ -89,7 +93,7 @@ theorem blockRF_eqq {a c y : Nat} {z o : Jmp} (hz : z.args = []) (ho : o.args = 
     (h : BlockRF ⟨[], [], Termin.eqq a c z o⟩ y) : y = a ∨ y = c := by
   rw [blockRF_fin] at h; simpa [finRegs, jmpRegs, hz, ho] using h
 
-theorem raw_n5 {p q : Nomm} (ihp : RawIHP S Map X ρ lo p) (ihq : RawIHP S Map X ρ lo q) : RawIHP S Map X ρ lo (Nomm.n5 p q) := by
+theorem raw_n5 {p q : Nomm} (ihp : RawIHPK S Map X ρ lo K p) (ihq : RawIHPK S Map X ρ lo K q) : RawIHPK S Map X ρ lo K (Nomm.n5 p q) := by
   intro goal g0 g1 nex h hg hD hj ha hf hr
   simp only [run] at hr
   obtain ⟨rp, g2, h2, hr⟩ := bind_some hr
@@ -100,7 +104,7 @@ theorem raw_n5 {p q : Nomm} (ihp : RawIHP S Map X ρ lo p) (ihq : RawIHP S Map X
   have b30 : g3.blocks = g0.blocks := by rw [b3, b2]
   have H : SIP X ρ lo g4 ∧ 1 ≤ o ∧ o < g4.bo ∧ g3.re ≤ g4.re ∧
       (∀ x, Defd g4.blocks x → Defd g0.blocks x ∨ g3.re ≤ x ∨ GMem goal x) ∧
-      (∀ x, Live g4.blocks o x → x = g0.re ∨ x = g2.re ∨ GLive g0.blocks goal x) := by
+      (∀ x, LiveK g4.blocks K o x → x = g0.re ∨ x = g2.re ∨ GLiveK g0.blocks K goal x) := by
     cases goal with
     | pick z o' =>
       simp only [GJ] at hj
@@ -111,7 +115,7 @@ theorem raw_n5 {p q : Nomm} (ihp : RawIHP S Map X ρ lo p) (ihq : RawIHP S Map X
         rcases d with d | d
         · exact Or.inl d
         · simp [blockDefs, defsOf] at d
-      · rcases live_unfoldP (by rw [e4]; exact get_put_self) (S3.below g3.bo)
+      · rcases liveK_unfoldP (by rw [e4]; exact get_put_self) (S3.below g3.bo)
           (fun k hk => by rw [e4, get_put_ne (by omega)])
           (fun j hj' => by simp [getJmps] at hj'; rcases hj' with rfl | rfl <;> omega) hl with
           e | ⟨j, hj', hl', -⟩
@@ -126,7 +130,7 @@ theorem raw_n5 {p q : Nomm} (ihp : RawIHP S Map X ρ lo p) (ihq : RawIHP S Map X
     | done =>
       simp only at h4
       obtain ⟨⟨o0, o1⟩, g5, h5, h4⟩ := bind_some h4
-      obtain ⟨S5, l5, rfl, rfl, bo5, fr5, n0, n1, dd5⟩ := raw_doneBlocks S3 h5
+      obtain ⟨S5, l5, rfl, rfl, bo5, fr5, n0, n1, dd5⟩ := raw_doneBlocks (K := K) S3 h5
       obtain ⟨S4, rfl, e4, q4, bo4⟩ := sip_emit S5 (emitOK_eqq (by omega) (by omega) rfl rfl
         (by simp [jmp0]; omega) (by simp [jmp0]; omega)) h4
       refine ⟨S4, by have := h.bo1; omega, by omega, by omega, fun x d => ?_, fun x hl => ?_⟩
@@ -136,7 +140,7 @@ theorem raw_n5 {p q : Nomm} (ihp : RawIHP S Map X ρ lo p) (ihq : RawIHP S Map X
           · rw [b30] at d; exact Or.inl d
           · exact Or.inr (Or.inl d.1)
         · simp [blockDefs, defsOf] at d
-      · rcases live_unfoldP (by rw [e4]; exact get_put_self) (S5.below g5.bo)
+      · rcases liveK_unfoldP (by rw [e4]; exact get_put_self) (S5.below g5.bo)
           (fun k hk => by rw [e4, get_put_ne (by omega)])
           (fun j hj' => by simp [getJmps] at hj'; rcases hj' with rfl | rfl <;> simp [jmp0] <;> omega) hl with
           e | ⟨j, hj', hl', -⟩
@@ -151,7 +155,7 @@ theorem raw_n5 {p q : Nomm} (ihp : RawIHP S Map X ρ lo p) (ihq : RawIHP S Map X
       have hjt : th.there < g0.bo := hj.2
       simp only at h4
       obtain ⟨a, g5, h5, h4⟩ := bind_some h4
-      obtain ⟨S5, l5, bo5, ha5, fr5, cn, cs⟩ := raw_collapse S3 (hg.1.mono (by omega)) (by omega)
+      obtain ⟨S5, l5, bo5, ha5, fr5, cn, cs⟩ := raw_collapse (K := K) S3 (hg.1.mono (by omega)) (by omega)
         (fun y hy d => by rw [b30] at d; exact hf y d hy) h5
       cases a with
       | none =>
@@ -170,7 +174,7 @@ theorem raw_n5 {p q : Nomm} (ihp : RawIHP S Map X ρ lo p) (ihq : RawIHP S Map X
           rcases d with d | d
           · exact Or.inl d
           · simp [blockDefs, defsOf, aliasDst] at d
-        · rcases live_unfoldP (by rw [e4]; exact get_put_self) (S3.below g3.bo)
+        · rcases liveK_unfoldP (by rw [e4]; exact get_put_self) (S3.below g3.bo)
             (fun k hk => by rw [e4, get_put_ne (by omega)])
             (fun j hj' => by simp [getJmps] at hj'; rw [hj']; simp [jmp0]; omega) hl with
             ⟨-, e⟩ | ⟨j, hj', hl', -⟩
@@ -189,7 +193,7 @@ theorem raw_n5 {p q : Nomm} (ihp : RawIHP S Map X ρ lo p) (ihq : RawIHP S Map X
         obtain ⟨rm, rl, nd, tl, dd, lv⟩ := cs r o' rfl
         simp only at h4
         obtain ⟨⟨z, o''⟩, g6, h6, h4⟩ := bind_some h4
-        obtain ⟨S6, q6, bo6, rfl, rfl, fr6, lz, lo', dd6⟩ := raw_forl S5 rl nd tl h6
+        obtain ⟨S6, q6, bo6, rfl, rfl, fr6, lz, lo', dd6⟩ := raw_forl (K := K) S5 rl nd tl h6
         obtain ⟨S4, rfl, e4, q4, bo4⟩ := sip_emit S6 (emitOK_eqq (by omega) (by omega) rfl rfl
           (by simp [jmp0]; omega) (by simp [jmp0]; omega)) h4
         refine ⟨S4, by have := h.bo1; omega, by omega, by omega, fun x d => ?_, fun x hl => ?_⟩
@@ -204,7 +208,7 @@ theorem raw_n5 {p q : Nomm} (ihp : RawIHP S Map X ρ lo p) (ihq : RawIHP S Map X
               · exact Or.inr (Or.inl e.1)
             · exact Or.inr (Or.inl (by omega))
           · simp [blockDefs, defsOf] at d
-        · rcases live_unfoldP (by rw [e4]; exact get_put_self) (S6.below g6.bo)
+        · rcases liveK_unfoldP (by rw [e4]; exact get_put_self) (S6.below g6.bo)
             (fun k hk => by rw [e4, get_put_ne (by omega)])
             (fun j hj' => by simp [getJmps] at hj'; rcases hj' with rfl | rfl <;> simp [jmp0] <;> omega) hl with
             e | ⟨j, hj', hl', -⟩
@@ -212,7 +216,7 @@ theorem raw_n5 {p q : Nomm} (ihp : RawIHP S Map X ρ lo p) (ihq : RawIHP S Map X
             · exact Or.inl e
             · exact Or.inr (Or.inl e)
           · simp [getJmps] at hj'
-            have hl'' : x ≠ r ∧ Live g5.blocks o' x := by
+            have hl'' : x ≠ r ∧ LiveK g5.blocks K o' x := by
               rcases hj' with rfl | rfl
               · exact lz x hl'
               · exact lo' x hl'
