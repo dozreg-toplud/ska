@@ -1,4 +1,5 @@
 import lemmas.Compiler.OptLinkTotalLoop
+import lemmas.Ska.OptAliasSSA
 
 /-!
 # `+optimize-once` and `+optimize` return, given what `+alias` and
@@ -11,12 +12,13 @@ ends).
 
 `PassTotal P ρ L J`: **what the converse of `+optimize` needs of the passes
 that are parameters of the driver**, over a block invariant `J` (meant as
-`DInvR`, the invariant of raw `+comp` output, `OptIn`) that the structural
-passes and `+remove-dead-code` keep: `+alias` returns on blocks with `StInv`,
-`J` and `TopoInv`, keeps them (with the filtered `topo` and its `+rev-cfg`),
-does not raise the measure and lowers it when it reports a change;
-`+trim-trace-hints` returns, keeps them and does not raise the measure;
-`+switch-chains` returns.
+`DInvR`, the invariant of raw `+comp` output, `OptIn`): `DriverHyp` with `J`
+and `TopoInvR` at every fuel (every pass keeps `J`, and `topo`, `rev` keep
+`TopoInvR`; `driverHypR_of`), `+alias` returns on blocks with `StInv`, `J`
+and `TopoInvR`, keeps `StInv`, does not raise the measure and lowers it when
+it reports a change; `+trim-trace-hints` returns, keeps `StInv` and does not
+raise the measure; `+switch-chains` returns.  `passTotal_of`
+(`OptLinkTotalPass.lean`) builds it for the passes of the Hoon.
 
 `optimizeOnce_total`, `optLoop_total` (induction along `LexLt` of the
 measure: a turn that reports a change lowers it), **`optimizeF_total`**: under
@@ -137,45 +139,22 @@ def topoF (bl : Map Blob) (topo : List Nat) : List Nat := topo.filter fun o => (
 variable [Opt.MapKeys Map]
 
 /-- **What the converse of `+optimize` assumes of `+alias`,
-`+trim-trace-hints`, `+switch-chains`**, over a block invariant `J` that the
-structural passes and `+remove-dead-code` keep. -/
+`+trim-trace-hints`, `+switch-chains`**, over a block invariant `J`: the
+driver's hypothesis `DriverHyp` at every fuel with `J` and `TopoInvR` (each
+pass keeps `J` and `TopoInvR`, which `driverHypR_of` proves for `J = DInvR`
+and the passes of the Hoon), and that `+alias` and `+trim-trace-hints` return,
+keep `StInv` and do not raise the measure, `+alias` lowering it when it
+reports a change, and that `+switch-chains` returns. -/
 structure PassTotal (P : Opt.Passes Map) (ρ : Nat → Nat) (L : List Nat) (J : Map Blob → Prop) : Prop where
-  hops : ∀ fuel bl topo rev r, StInv ρ L bl → J bl → Opt.TopoInv bl topo rev →
-    Opt.removeHops fuel bl rev topo = some r → J r.2
-  rub : ∀ bl r, StInv ρ L bl → J bl → Opt.removeUselessBranching bl = some r → J r.2
-  mid : ∀ fuel bl r, StInv ρ L bl → J bl → Opt.removeEmptyMiddle fuel bl = some r → J r.2
-  dead : ∀ bl topo rev bd, StInv ρ L bl → J bl → Opt.TopoInv bl topo rev →
-    Opt.removeDeadCode bl topo.reverse = some bd → J bd
-  alias : ∀ n bl topo rev, StInv ρ L bl → J bl → Opt.TopoInv bl topo rev →
-    ∃ f bl', P.alias n bl rev topo = some (f, bl') ∧ StInv ρ L bl' ∧ J bl' ∧
-      Opt.TopoInv bl' (topoF bl' topo) (Opt.revCfg bl' (topoF bl' topo)) ∧
+  drv : ∀ fuel, Opt.DriverHyp fuel P J Opt.TopoInvR
+  alias : ∀ n bl topo rev, StInv ρ L bl → J bl → Opt.TopoInvR bl topo rev →
+    ∃ f bl', P.alias n bl rev topo = some (f, bl') ∧ StInv ρ L bl' ∧
       LexLe (mu ρ L bl') (mu ρ L bl) ∧ (f = true → LexLt (mu ρ L bl') (mu ρ L bl))
-  trim : ∀ bl topo rev, StInv ρ L bl → J bl → Opt.TopoInv bl topo rev →
-    ∃ bl', P.trim bl topo rev = some bl' ∧ StInv ρ L bl' ∧ J bl' ∧ Opt.TopoInv bl' topo rev ∧
-      LexLe (mu ρ L bl') (mu ρ L bl)
+  trim : ∀ bl topo rev, StInv ρ L bl → J bl → Opt.TopoInvR bl topo rev →
+    ∃ bl', P.trim bl topo rev = some bl' ∧ StInv ρ L bl' ∧ LexLe (mu ρ L bl') (mu ρ L bl)
   switch : ∀ bl, StInv ρ L bl → J bl → (P.switch bl).isSome
 
 variable {P : Opt.Passes Map} {ρ : Nat → Nat} {L : List Nat} {J : Map Blob → Prop}
-
-/-- The structural loop keeps `J`. -/
-theorem structLoop_J (H : PassTotal P ρ L J) (fuel : Nat) : ∀ (n : Nat) (bl : Map Blob) topo rev r,
-    StInv ρ L bl → J bl → Opt.TopoInv bl topo rev → Opt.structLoop fuel n bl topo rev = some r → J r.2.2
-  | 0, _, _, _, _, _, _, _, h => by cases h
-  | n + 1, bl, topo, rev, r, hI, hJ, hi, h => by
-    simp only [Opt.structLoop, Option.bind_eq_some_iff] at h
-    obtain ⟨⟨c1, b1⟩, h1, ⟨c2, b2⟩, h2, ⟨c3, b3⟩, h3, h⟩ := h
-    have I1 := (hops_inv_step hI hi h1).1
-    have J1 := H.hops _ _ _ _ _ hI hJ hi h1
-    have I2 := (rub_inv_step I1 h2).1
-    have J2 := H.rub _ _ I1 J1 h2
-    have I3 := (mid_inv_step I2 h3).1
-    have J3 := H.mid _ _ _ I2 J2 h3
-    simp only at h
-    split at h
-    · cases h; exact J3
-    · obtain ⟨topo', ht, h⟩ := Option.bind_eq_some_iff.mp h
-      exact structLoop_J H fuel n b3 topo' _ r I3 J3
-        (Opt.topoInv_revCfg (Opt.bbTopo_ok I3.acyclic ht)) h
 
 /-- **`+optimize-once` returns**, past a bound on the fuel, keeps `StInv`
 and `J`, does not raise the measure and lowers it when it reports a change. -/
@@ -186,23 +165,26 @@ theorem optimizeOnce_total (H : PassTotal P ρ L J) (s : Straight Map) (hI : StI
   obtain ⟨F0, topo0, hF0⟩ := bbTopo_stable hI.acyclic hI.closed hI.zero
   have t0 := Opt.topoInv_revCfg (Opt.bbTopo_ok hI.acyclic (hF0 F0 (Nat.le_refl _)))
   obtain ⟨Fl, ⟨tp, rv, bs⟩, hFl⟩ := structLoop_total ρ L s.blocks topo0 _ hI t0
-  obtain ⟨el, Il, tl, ll⟩ := hFl Fl Fl (Nat.le_refl _) (Nat.le_refl _)
-  have Jl := structLoop_J H Fl Fl s.blocks topo0 _ _ hI hJ t0 el
-  obtain ⟨fa, ba, ea, Ia, Ja, ta, la, sa⟩ := H.alias s.nargs bs tp rv Il Jl tl
-  obtain ⟨bt, et, It, Jt, tt, lt⟩ := H.trim ba (topoF ba tp) _ Ia Ja ta
+  obtain ⟨el, Il, tl, ll⟩ := hFl (F0 + Fl) (F0 + Fl) (by omega) (by omega)
+  obtain ⟨-, Jl, tRl⟩ := Opt.structLoop_keeps (H.drv (F0 + Fl)) (F0 + Fl) s.blocks topo0 _ _ hJ
+    ((H.drv (F0 + Fl)).topo _ _ hJ (hF0 _ (by omega))) el
+  obtain ⟨fa, ba, ea, Ia, la, sa⟩ := H.alias s.nargs bs tp rv Il Jl tRl
+  obtain ⟨-, Ja, tRa⟩ := (H.drv 0).alias _ _ _ _ _ _ Jl tRl ea
+  obtain ⟨bt, et, It, lt⟩ := H.trim ba (topoF ba tp) _ Ia Ja tRa
+  obtain ⟨-, Jt, tRt⟩ := (H.drv 0).trim _ _ _ _ Ja tRa et
   obtain ⟨bd, ed⟩ := Option.isSome_iff_exists.1
-    (dead_isSome (bl := bt) (revTopo := (topoF ba tp).reverse) fun o ho => tt.1.2.2.1 o (List.mem_reverse.mp ho))
-  obtain ⟨Id, td, ld⟩ := dead_step It tt ed
-  have Jd := H.dead _ _ _ _ It Jt tt ed
+    (dead_isSome (bl := bt) (revTopo := (topoF ba tp).reverse) fun o ho => tRt.1.1.2.2.1 o (List.mem_reverse.mp ho))
+  obtain ⟨Id, td, ld⟩ := dead_step It tRt.1 ed
+  obtain ⟨-, Jd, tRd⟩ := (H.drv 0).dead _ _ _ _ Jt tRt ed
   obtain ⟨Fh, ⟨c1, b1⟩, hFh⟩ := removeHops_stable td Id.acyclic Id.arity
   obtain ⟨I1, l1, s1⟩ := hops_inv_step Id td (hFh Fh (Nat.le_refl _))
   obtain ⟨⟨c2, b2⟩, h2⟩ := Option.isSome_iff_exists.1 (rub_isSome I1.closed I1.two)
   obtain ⟨I2, l2, s2⟩ := rub_inv_step I1 h2
   obtain ⟨Fm, ⟨c3, b3⟩, hFm⟩ := removeEmptyMiddle_stable I2.acyclic I2.closed I2.arity
   obtain ⟨I3, l3, s3⟩ := mid_inv_step I2 (hFm Fm (Nat.le_refl _))
-  have J1 := H.hops _ _ _ _ _ Id Jd td (hFh Fh (Nat.le_refl _))
-  have J2 := H.rub _ _ I1 J1 h2
-  have J3 := H.mid _ _ _ I2 J2 (hFm Fm (Nat.le_refl _))
+  obtain ⟨-, J1, -⟩ := (H.drv Fh).hops _ _ _ _ _ Jd tRd (hFh Fh (Nat.le_refl _))
+  obtain ⟨-, J2, -⟩ := (H.drv 0).rub _ [] HoonMap.empty _ _ J1 h2
+  obtain ⟨-, J3, -⟩ := (H.drv Fm).middle _ [] HoonMap.empty _ _ J2 (hFm Fm (Nat.le_refl _))
   have lpost : LexLe (mu ρ L b3) (mu ρ L ba) := lexLe_trans l3 (lexLe_trans l2 (lexLe_trans l1 (lexLe_trans ld lt)))
   refine ⟨F0 + Fl + Fh + Fm, (fa || c1 || c2 || c3, Opt.withBlocks s b3), fun fuel hf => ?_⟩
   obtain ⟨el', -⟩ := hFl fuel fuel (by omega) (by omega)

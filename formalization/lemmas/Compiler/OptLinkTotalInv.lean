@@ -11,9 +11,14 @@ jump (`RkDown`, `Acyclic` with a named rank), every jump goes to a block
 the two-way ends pass no arguments (`TwoNA`, the `?>` of
 `+remove-useless-branching`), and every label is in the list `L`.
 
-The measure `mu ρ L bl` is the triple (number of blocks, number of blocks with
-a two-way end, sum over the jumps of every block of `ρ` of the target), each a
-sum over `L`, ordered lexicographically (`LexLt`, `LexLe`).
+The measure `mu ρ L bl` is the triple (number of blocks, the weight of the
+two-way ends, sum over the jumps of every block of `ρ` of the target), each a
+sum over `L`, ordered lexicographically (`LexLt`, `LexLe`).  The weight of an
+end (`twoW`) is `2` for a `%brn`, `1` for the other two-way ends and `0`
+otherwise: `+alias` reports a change when it turns a `%brn` on a known loob
+into a `%brz` (`AuditOptTotal.lean`, `xbBlocks`), which only this weight
+sees.  The structural passes keep the kind of every end they do not fold to a
+hop (`mf_facts`), so they keep the weight.
 
 Here, for `+remove-useless-branching` (`rub_inv_step`) and
 `+remove-empty-middle` (`mid_inv_step`): the pass keeps `StInv` with the same `ρ`
@@ -154,8 +159,16 @@ def presN : Option Blob → Nat
   | some _ => 1
   | none => 0
 
+/-- The weight of an end: `2` for a `%brn`, `1` for the other two-way ends. -/
+def twoW : Termin → Nat
+  | Termin.brn .. => 2
+  | Termin.clq .. => 1
+  | Termin.eqq .. => 1
+  | Termin.brz .. => 1
+  | _ => 0
+
 def twoCnt : Option Blob → Nat
-  | some b => if twoWay b.fin then 1 else 0
+  | some b => twoW b.fin
   | none => 0
 
 /-- The sum over the jumps of an end of the rank of the target. -/
@@ -357,14 +370,14 @@ theorem rub_inv_step {ρ : Nat → Nat} {L : List Nat} {bl bl' : Map Blob} {ch :
             rw [hb0]
             rcases hc with rfl | ⟨z, o', nz, -, -, -, h2, -, -⟩
             · exact Nat.le_refl _
-            · simp [twoCnt, Opt.rubBlob, h2, twoWay]
+            · simp [twoCnt, Opt.rubBlob, h2, twoWay, twoW]
         · obtain ⟨e', he', e2⟩ := (hb k).2 b hbk
           rw [he] at he'; cases he'
           rw [e2, hbk]
           rcases Opt.rubFin_cases he with h1 | ⟨z, o', nz, -, -, -, -, h2, hf⟩
           · rw [h1] at hne; exact absurd rfl hne
           · rcases hf with ⟨s, hf, -⟩ | ⟨s, hf, -⟩ | ⟨l, r, hf, -⟩ | ⟨s, hf, -⟩ <;>
-              simp [twoCnt, Opt.rubBlob, h2, hf, twoWay])
+              simp [twoCnt, Opt.rubBlob, h2, hf, twoWay, twoW])
   · obtain ⟨k, b, e, hbk, he, hne⟩ := (rub_flag h).1 hc
     -- as in the case above
     refine mu_lt2 (fun o _ => presN_iff (hsome o)) (fun o _ => ?_) (hI.keys k (by simp [hbk])) ?_
@@ -375,14 +388,14 @@ theorem rub_inv_step {ρ : Nat → Nat} {L : List Nat} {bl bl' : Map Blob} {ch :
         rw [hb0]
         rcases hc with rfl | ⟨z, o', nz, -, -, -, h2, -, -⟩
         · exact Nat.le_refl _
-        · simp [twoCnt, Opt.rubBlob, h2, twoWay]
+        · simp [twoCnt, Opt.rubBlob, h2, twoWay, twoW]
     · obtain ⟨e', he', e2⟩ := (hb k).2 b hbk
       rw [he] at he'; cases he'
       rw [e2, hbk]
       rcases Opt.rubFin_cases he with h1 | ⟨z, o', nz, -, -, -, -, h2, hf⟩
       · rw [h1] at hne; exact absurd rfl hne
       · rcases hf with ⟨s, hf, -⟩ | ⟨s, hf, -⟩ | ⟨l, r, hf, -⟩ | ⟨s, hf, -⟩ <;>
-          simp [twoCnt, Opt.rubBlob, h2, hf, twoWay]
+          simp [twoCnt, Opt.rubBlob, h2, hf, twoWay, twoW]
 
 end
 
@@ -492,13 +505,13 @@ theorem rh_strict {bl : Map Blob} {rd : Nat → List Nat} {ρ : Nat → Nat} (hr
       have h2 := hr j.there nex t hnex (by rw [ht]; simp [Opt.getJmps])
       simp only at h1; omega
 
-/-- What `middleFin` keeps: the kind of the end, the targets with their
+/-- What `middleFin` keeps: the kind of the end (and so its weight), the targets with their
 arity, the two-way ends without arguments, and the rank sum, which falls when
 the end changes. -/
 theorem mf_facts {bl : Map Blob} {rd : Nat → List Nat} {fuel : Nat} {ρ : Nat → Nat} (hr : RkDown ρ bl)
     (hc : Closed bl) (har : ArityOK bl) {f f' : Termin} (hj : ∀ j ∈ Opt.getJmps f, JOK bl j)
     (h2 : twoWay f = true → ∀ j ∈ Opt.getJmps f, j.args = []) (h : Opt.middleFin bl rd fuel f = some f') :
-    twoWay f' = twoWay f ∧ (∀ j ∈ Opt.getJmps f', JOK bl j) ∧
+    (twoWay f' = twoWay f ∧ twoW f' = twoW f) ∧ (∀ j ∈ Opt.getJmps f', JOK bl j) ∧
       (twoWay f' = true → ∀ j ∈ Opt.getJmps f', j.args = []) ∧
       finRk ρ f' ≤ finRk ρ f ∧ (f' ≠ f → finRk ρ f' < finRk ρ f) := by
   cases f with
@@ -511,7 +524,7 @@ theorem mf_facts {bl : Map Blob} {rd : Nat → List Nat} {fuel : Nat} {ρ : Nat 
     have ao := rj_noargs _ o o' (h2 rfl o (by simp [Opt.getJmps])) ho
     have rz := Opt.rewriteJump_rank hr _ _ _ hz
     have ro := Opt.rewriteJump_rank hr _ _ _ ho
-    refine ⟨rfl, ?_, ?_, ?_, fun hne => ?_⟩
+    refine ⟨⟨rfl, rfl⟩, ?_, ?_, ?_, fun hne => ?_⟩
     · simp only [Opt.getJmps, List.mem_cons, List.not_mem_nil, or_false]
       rintro j (rfl | rfl) <;> assumption
     · simp only [Opt.getJmps, List.mem_cons, List.not_mem_nil, or_false]
@@ -527,7 +540,7 @@ theorem mf_facts {bl : Map Blob} {rd : Nat → List Nat} {fuel : Nat} {ρ : Nat 
     obtain ⟨t', ht, rfl⟩ := h
     have jt := rh_ok hc har _ t t' (hj t (by simp [Opt.getJmps])) ht
     have rt := Opt.rewriteHop_rank hr _ _ _ ht
-    refine ⟨rfl, ?_, fun h => by simp [twoWay] at h, ?_, fun hne => ?_⟩
+    refine ⟨⟨rfl, rfl⟩, ?_, fun h => by simp [twoWay] at h, ?_, fun hne => ?_⟩
     · simp only [Opt.getJmps, List.mem_singleton]; rintro j rfl; exact jt
     · simp only [finRk, Opt.getJmps, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]; omega
     · have := rh_strict hr _ t t' ht (fun e => hne (by rw [e]))
@@ -535,7 +548,7 @@ theorem mf_facts {bl : Map Blob} {rd : Nat → List Nat} {fuel : Nat} {ρ : Nat 
   | _ =>
     simp only [Opt.middleFin, Option.some.injEq] at h
     subst h
-    exact ⟨rfl, hj, h2, Nat.le_refl _, fun h => absurd rfl h⟩
+    exact ⟨⟨rfl, rfl⟩, hj, h2, Nat.le_refl _, fun h => absurd rfl h⟩
 
 variable [Opt.MapKeys Map]
 
@@ -579,7 +592,7 @@ theorem mid_inv_step {ρ : Nat → Nat} {L : List Nat} {fuel : Nat} {bl bl' : Ma
     exact ⟨b2, hb2, hI.arity o b j b2 hbo hj hb2⟩
   have hF : ∀ k b, HoonMap.get bl k = some b → ∃ f', Opt.middleFin bl (Opt.readersOf bl) fuel b.fin = some f' ∧
       HoonMap.get bl' k = some { b with fin := f' } ∧
-      (twoWay f' = twoWay b.fin ∧ (∀ j ∈ Opt.getJmps f', JOK bl j) ∧
+      ((twoWay f' = twoWay b.fin ∧ twoW f' = twoW b.fin) ∧ (∀ j ∈ Opt.getJmps f', JOK bl j) ∧
         (twoWay f' = true → ∀ j ∈ Opt.getJmps f', j.args = []) ∧
         finRk ρ f' ≤ finRk ρ b.fin ∧ (f' ≠ b.fin → finRk ρ f' < finRk ρ b.fin)) := by
     intro k b hbk
@@ -607,7 +620,7 @@ theorem mid_inv_step {ρ : Nat → Nat} {L : List Nat} {fuel : Nat} {bl bl' : Ma
     | some b =>
       obtain ⟨f', -, e', k1, -, -, k4, -⟩ := hF o b e1
       rw [e']
-      exact ⟨by simp [presN], by simp [twoCnt, k1], by simpa [rkN] using k4⟩
+      exact ⟨by simp [presN], by simp [twoCnt, k1.2], by simpa [rkN] using k4⟩
   refine ⟨⟨fun o b' j' hb' hj' => ?_, fun o b' j' hb' hj' => ?_, fun o b' j' b2' hb' hj' hb2' => ?_,
     by rw [hsome]; exact hI.zero, fun o b' j' hb' ht hj' => ?_, fun o ho => hI.keys o (by rw [← hsome]; exact ho)⟩,
     ?_, fun hc => ?_⟩

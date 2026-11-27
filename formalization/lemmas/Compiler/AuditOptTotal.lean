@@ -21,7 +21,6 @@ open Formalization Compiler SkaModel
 #print axioms structLoop_total
 #print axioms structEntry_total
 #print axioms dead_step
-#print axioms structLoop_J
 #print axioms optimizeOnce_total
 #print axioms optLoop_total
 #print axioms optimizeF_total
@@ -40,28 +39,43 @@ def ρx (o : Nat) : Nat := 10 - o
   some (true, (1, 0, 0))
 -- `+alias` folds the `%brn` of block `0` and drops blocks `1` and `2`: the
 -- measure falls from three blocks to one.
-#guard (mu ρx [0, 1, 2] xaBlocks) == (3, 1, 17)
+#guard (mu ρx [0, 1, 2] xaBlocks) == (3, 2, 17)
 #guard ((aliasM (fun l => l.headD 0) 1 xaBlocks (revCfg xaBlocks [0, 1, 2]) [0, 1, 2]).map
   fun r => (r.1, mu ρx [0, 1, 2] r.2)) == some (true, (1, 0, 0))
 -- `+remove-useless-branching` turns the `%brn` of `xaBlocks`, whose two
--- targets are equal blocks, into a hop: one two-way end fewer.
+-- targets are equal blocks, into a hop: the weight of the ends falls by 2.
 #guard (removeUselessBranching xaBlocks).map (fun r => (r.1, mu ρx [0, 1, 2] r.2)) == some (true, (3, 0, 9))
 #guard (removeEmptyMiddle 10 xaBlocks).map (·.1) == some false
 #guard (bbTopo 10 xaBlocks) == some [0, 2, 1]
 
 /-- **A finding on the measure**: `+alias` reports a change (`folded`) when it
 turns a `%brn` whose test register is known to be a loob into a `%brz`, which
-keeps the blocks, the two-way ends and the targets, so `mu` stays the same
-while the loop of `+optimize` goes on (the field `alias` of `PassTotal`
-fails here).  The number of `%brn` ends falls, so a measure that counts a
-`%brn` above the other two-way ends would decrease. -/
+keeps the blocks, the two-way ends and the targets.  With every two-way end
+of weight `1` the measure stayed `(3, 1, 17)` while the loop of `+optimize`
+went on; with a `%brn` of weight `2` (`twoW`) it falls from `(3, 2, 17)` to
+`(3, 1, 17)`.  The real compiler does the same (`xbcheck.hoon` in the
+report of 2026-11-27): `+alias` returns `folded=%.y` with the `%brz`, and
+`+optimize` returns after two rounds. -/
 def xbBlocks : LM Blob :=
   ⟨[(0, ⟨[], [Pole.lob 1], Termin.brn 1 ⟨[], 1⟩ ⟨[], 2⟩⟩), (1, ⟨[], [], Termin.don 1⟩),
     (2, ⟨[], [], Termin.don 0⟩)]⟩
 
-#guard (mu ρx [0, 1, 2] xbBlocks) == (3, 1, 17)
+#guard (mu ρx [0, 1, 2] xbBlocks) == (3, 2, 17)
 #guard ((aliasM (fun l => l.headD 0) 2 xbBlocks (revCfg xbBlocks [0, 1, 2]) [0, 1, 2]).map
   fun r => (r.1, mu ρx [0, 1, 2] r.2, (HoonMap.get r.2 0).map (·.fin))) ==
   some (true, (3, 1, 17), some (Termin.brz 1 ⟨[], 1⟩ ⟨[], 2⟩))
+
+/-- `LexLt` as a test. -/
+def lexLtB : Nat × Nat × Nat → Nat × Nat × Nat → Bool
+  | (a', b', c'), (a, b, c) => a' < a || (a' == a && (b' < b || (b' == b && c' < c)))
+
+-- the measure falls on every change of `+alias` on the examples
+#guard ((aliasM (fun l => l.headD 0) 2 xbBlocks (revCfg xbBlocks [0, 1, 2]) [0, 1, 2]).map
+  fun r => lexLtB (mu ρx [0, 1, 2] r.2) (mu ρx [0, 1, 2] xbBlocks)) == some true
+#guard ((aliasM (fun l => l.headD 0) 1 xaBlocks (revCfg xaBlocks [0, 1, 2]) [0, 1, 2]).map
+  fun r => lexLtB (mu ρx [0, 1, 2] r.2) (mu ρx [0, 1, 2] xaBlocks)) == some true
+-- a second `+alias` on the result of the first reports no change
+#guard ((aliasM (fun l => l.headD 0) 2 xbBlocks (revCfg xbBlocks [0, 1, 2]) [0, 1, 2]).bind
+  fun r => (aliasM (fun l => l.headD 0) 2 r.2 (revCfg r.2 [0, 1, 2]) [0, 1, 2]).map (·.1)) == some false
 
 end AuditOptTotal
