@@ -15,6 +15,8 @@ goals.  The text of `lokS_cons_run` with the two runs and the tail's
 * `lokS_indirect_runF`, `lokS_indirectF`, `jNewLS_indirectF`: the indirect
   call whose parts meet `LOKSF` meets `LOKS false` (its parts run at goals
   with no entry).
+* `lokS_sevenF`, `jNewLSF_seven`: `[7 p q]` with `q` meeting `LOKSF` and
+  `p` `LOKS false` meets `LOKSF`.
 -/
 
 set_option linter.unusedSectionVars false
@@ -779,6 +781,117 @@ theorem jNewLS_indirectF (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → 
   fun hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs hce hr =>
     (lokS_indirect_runF lib env M hfb Kp Sp Sq hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs
       hce hr).2.2.1
+
+/-! ## `[7 p q]` with `q` meeting `LOKSF` -/
+
+/-- **`[7 p q]` at a flag-free goal**: `LOKSF` of `q` on the products
+of `p` and `LOKS false` of `p` give `LOKSF` of `[7 p q]` (`lokS_seven`).  `q`'s result
+is flat with clean entries and its jump at no entry (`LOKS` of `q`), so it
+meets the premises of `LOKS.run` for `p`; the jump of the whole is `p`'s,
+the goal's or new. -/
+theorem lokS_sevenF {lib : Lib} {env : CallEnv} {P : Noun → Prop} {fb fc : Noun} {p q : Nomm}
+    (Lq : LOKSF (S := S) (Map := Map) lib env (Img lib P fb) fc q)
+    (Lp : LOKS (S := S) (Map := Map) false lib env P fb p) :
+    LOKSF (S := S) (Map := Map) lib env P (n3 (A 7) fb fc) (Nomm.n7 p q) := by
+  refine ⟨fun {sup L th region g0 g1 nex} hc hr => ?_, fun {sup L th region g0 g2 nex} hF hcount b0 d0 hu hcl hcb
+    h1 h2 hta ht hsd hsl hlab hnd hed hfl hcl' hce hr => ?_⟩
+  · rw [runLC_n7] at hr
+    obtain ⟨nx, ga, e1, e2⟩ := bind_some hr
+    exact Lp.clean (Lq.clean hc e1) e2
+  · rw [runLC_n7] at hr
+    obtain ⟨nx, g1, hq, hp⟩ := bind_some hr
+    have cq : sixCount q ≤ 255 := by simp only [sixCount] at hcount; omega
+    have cp : sixCount p ≤ 255 := by simp only [sixCount] at hcount; omega
+    obtain ⟨⟨Qq, Rq⟩, qne, qj, qfl, qec⟩ :=
+      Lq.run hF cq b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcl' hce hq
+    have qc := Lq.clean hcl' hq
+    have hargs : nx.th.args = [] := by
+      rcases Rq.ent with ⟨_, _, _, ha⟩ | e
+      · exact ha
+      · simp only [GoalJ] at e; rw [e]; exact hta
+    have q1 := Rq.re
+    have q2 := Rq.bo
+    obtain ⟨⟨Qp, Rp⟩, pne, pj, pfl, pec⟩ := Lp.run (sup := sup) (L := nx.laz) (th := nx.th) (region := region) cp
+      (by omega) (Rq.drop.trans d0) (Rq.grow.up hu) (Clear.growU hcl Rq.grow) (Rq.cfr.below hcb)
+      Rq.lo Rq.hi hargs qne Rq.dist
+      (fun x hx => ⟨by
+        rcases Rq.regs x hx with h | h
+        · have := (hsl x h).1; omega
+        · exact h.2, Rq.ncond x hx⟩)
+      (fun e he => ⟨by
+        rcases (Rq.labs e he).1 with h | h
+        · obtain ⟨e0, he0, e1⟩ := List.mem_map.mp h
+          have := (hlab e0 he0).1; rw [e1] at this; omega
+        · exact h.2, (Rq.labs e he).2⟩) Rq.nodup
+      (fun e he => ⟨(Rq.eregs e he).1, fun x hx => ⟨by
+        rcases (Rq.eregs e he).2 x hx with ⟨e0, he0, h⟩ | h | h
+        · have := ((hed e0 he0).2 x h).1; omega
+        · have := (hsl x h).1; omega
+        · exact h.2, Rq.econd e he x hx⟩⟩) qfl qc qec hp
+    refine ⟨⟨_, runOKLS_seven Rq Rp (fun r hr => (hsl r hr).1) (fun e he => (hlab e he).1)
+      (fun e he r hr => hr.elim)⟩, pne, ?_, pfl, pec⟩
+    rcases pj with e | e
+    · rw [e]; exact qj
+    · exact Or.inr (by have := Rp.bo; omega)
+
+/-- **The jump of a hinted `[7 p q]` is a block it made**: `p`'s jump is
+new, or it is `q`'s, new when `q` is hinted; when `q` is not, `p` is. -/
+theorem jNewLSF_seven {lib : Lib} {env : CallEnv} {P : Noun → Prop} {fb fc : Noun} {p q : Nomm}
+    (Lq : LOKSF (S := S) (Map := Map) lib env (Img lib P fb) fc q)
+    (Lp : LOKS (S := S) (Map := Map) false lib env P fb p)
+    (Jq : hinted env.cod q = some true → JNewLSF (S := S) (Map := Map) env q)
+    (Jp : hinted env.cod p = some true → JNewLS (S := S) (Map := Map) env p)
+    (hh : hinted env.cod (Nomm.n7 p q) = some true) : JNewLSF (S := S) (Map := Map) env (Nomm.n7 p q) := by
+  intro sup L th region g0 g2 nex hF hcount b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcl' hce hr
+  rw [runLC_n7] at hr
+  obtain ⟨nx, g1, hq, hp⟩ := bind_some hr
+  have cq : sixCount q ≤ 255 := by simp only [sixCount] at hcount; omega
+  have cp : sixCount p ≤ 255 := by simp only [sixCount] at hcount; omega
+  obtain ⟨⟨Qq, Rq⟩, qne, qj, qfl, qec⟩ :=
+    Lq.run hF cq b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcl' hce hq
+  have qc := Lq.clean hcl' hq
+  have hargs : nx.th.args = [] := by
+    rcases Rq.ent with ⟨_, _, _, ha⟩ | e
+    · exact ha
+    · simp only [GoalJ] at e; rw [e]; exact hta
+  have q1 := Rq.re
+  have q2 := Rq.bo
+  have A1 : ∀ x, NMem nx.laz.sure.ned x → x < g1.re ∧ HoonMap.get g1.cond x = Option.none := fun x hx => ⟨by
+      rcases Rq.regs x hx with h | h
+      · have := (hsl x h).1; omega
+      · exact h.2, Rq.ncond x hx⟩
+  have A2 : ∀ e ∈ entries nx.laz, e.1 < g1.bo ∧ ∃ B th', HoonMap.get g1.blocks e.1 = some ⟨[], B, Termin.hop th'⟩ :=
+    fun e he => ⟨by
+      rcases (Rq.labs e he).1 with h | h
+      · obtain ⟨e0, he0, e1⟩ := List.mem_map.mp h
+        have := (hlab e0 he0).1; rw [e1] at this; omega
+      · exact h.2, (Rq.labs e he).2⟩
+  have A3 : ∀ e ∈ entries nx.laz, Distinct e.2.sure.ned ∧
+      ∀ x, NMem e.2.sure.ned x → x < g1.re ∧ HoonMap.get g1.cond x = Option.none := fun e he =>
+    ⟨(Rq.eregs e he).1, fun x hx => ⟨by
+      rcases (Rq.eregs e he).2 x hx with ⟨e0, he0, h⟩ | h | h
+      · have := ((hed e0 he0).2 x h).1; omega
+      · have := (hsl x h).1; omega
+      · exact h.2, Rq.econd e he x hx⟩⟩
+  have pj := (Lp.run (sup := sup) (L := nx.laz) (th := nx.th) (region := region) cp
+    (by omega) (Rq.drop.trans d0) (Rq.grow.up hu) (Clear.growU hcl Rq.grow) (Rq.cfr.below hcb)
+    Rq.lo Rq.hi hargs qne Rq.dist A1 A2 Rq.nodup A3 qfl qc qec hp).2.2.1
+  by_cases hq' : hinted env.cod q = some true
+  · have jq := Jq hq' hF cq b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcl' hce hq
+    rcases pj with e | e
+    · rw [e]; exact jq
+    · omega
+  · have hp' : hinted env.cod p = some true := by
+      simp only [hinted] at hh
+      cases e : hinted env.cod p with
+      | none => rw [e] at hh; cases hh
+      | some b => cases b with
+        | true => rfl
+        | false => rw [e] at hh; exact absurd hh hq'
+    have jp := Jp hp' (sup := sup) (L := nx.laz) (th := nx.th) (region := region) cp
+      (by omega) (Rq.drop.trans d0) (Rq.grow.up hu) (Clear.growU hcl Rq.grow) (Rq.cfr.below hcb)
+      Rq.lo Rq.hi hargs qne Rq.dist A1 A2 Rq.nodup A3 qfl qc qec hp
+    omega
 
 end Comp
 end SkaModel
