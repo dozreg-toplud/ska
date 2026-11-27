@@ -25,7 +25,13 @@ phase S (`sixNextLC_fork_free`, the model's `sixNextSimpleC`):
 **`comp_run_n6_nf`**: the case `%6` under a fork-free `%next` goal with
 `GInv`, given the parts (`SixParts`; the branches in the regions
 `rid :: region`).  The branch goals meet `GInv` by `forkSure_inv`
-(`ginv_ofSure`).
+(`ginv_ofSure`).  **`res_n6_nf`**: what it returns meets `GRes`, every
+register of the result fresh (`sect_labels`: the labels `+sect` returns are
+below the label counter).
+
+Compared with the Hoon part by part: no departure.  The Hoon asserts
+`?=(%next -.goal-0)` and `?=(%next -.goal-1)` before `+sect`; the model has
+no such asserts, since its goals are `%next` by construction.
 -/
 
 namespace Formalization
@@ -563,5 +569,55 @@ theorem res_n6_nf {env : CallEnv} {msup : Option Nomm} {p q r : Nomm} {region : 
         · omega
         · have := (fr y (Or.inr e')).1; omega
   · omega
+
+/-! ## `+whole`, the first part of the test of `+kerf` -/
+
+/-- The battery of `+whole` (arm `1372` of `ana`). -/
+def whBat : Noun :=
+  (C (A 7) (C (C (A 0) (A 1)) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 6))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 1)) (C (A 0) (A 12)))) (C (C (A 6) (C (C (A 3) (C (A 0) (A 13))) (C (C (A 1) (A 1)) (C (A 1) (A 0))))) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 6))) (C (C (A 5) (C (C (A 1) (A 2)) (C (A 0) (A 12)))) (C (A 1) (A 1))))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 6))) (C (C (A 5) (C (C (A 1) (A 3)) (C (A 0) (A 12)))) (C (A 1) (A 1))))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 6))) (C (C (A 5) (C (C (A 1) (A 4)) (C (A 0) (A 12)))) (C (A 1) (A 1))))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 6))) (C (C (A 5) (C (C (A 1) (A 5)) (C (A 0) (A 12)))) (C (A 1) (A 1))))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 6))) (C (C (A 5) (C (C (A 1) (A 12)) (C (A 0) (A 12)))) (C (A 1) (A 1))))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 6))) (C (C (A 5) (C (C (A 1) (A 6)) (C (A 0) (A 12)))) (C (A 1) (A 1))))) (C (C (A 6) (C (C (A 8) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 118))) (C (A 0) (A 2)))))))) (C (C (A 6) (C (C (A 8) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 119))) (C (A 0) (A 2)))))))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 6))) (C (C (A 5) (C (C (A 1) (A 7)) (C (A 0) (A 12)))) (C (A 1) (A 1))))) (C (C (A 8) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 59))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 6))) (C (C (A 5) (C (C (A 1) (A 11)) (C (A 0) (A 12)))) (C (A 1) (A 1))))) (C (C (A 8) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 118))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 6))) (C (C (A 5) (C (C (A 1) (A 0x6e61656d)) (C (A 0) (A 12)))) (C (A 1) (A 1))))) (C (C (A 8) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 238))) (C (A 0) (A 2)))))))) (C (A 11) (C (C (A 0x73736f74) (C (A 1) (A 0))) (C (A 1) (A 1))))))))))))))))))))))))))))))))))))
+
+def whBunt : Noun :=
+  (C (A 0) (A 0))
+
+def whArm : Noun := C (A 8) (C (C (A 1) whBunt) (C (C (A 1) whBat) (C (A 0) (A 1))))
+
+theorem wh_at : slot? 1372 ana = some whArm := by kernel_rfl
+
+theorem wh_arm (d : Noun) : nock d whArm = some (C whBat (C whBunt d)) := by
+  unfold whArm; simp only [nock_exec]
+
+/-- **`+whole` on every nomm** is the model's `whole` (the product is in one
+register): `&` on `%1` of an atom, `%2`, `%3`, `%4`, `%5`, `%12`; both
+branches of `%6`; `q` of `%7`, `%11` and `%mean`; `|` otherwise. -/
+theorem wh_gate (K : Noun) : ∀ n : Nomm, nock (C whBat (C n.toNoun K)) whBat = some (loob (whole n))
+  | Nomm.cons p q => by
+    obtain ⟨a, b, hab⟩ := crc_nomm_cell p
+    nock_open whBat
+    simp [nock_exec, Nomm.toNoun, hab, whole]
+  | Nomm.n0 ax => by nock_open whBat; simp [nock_exec, Nomm.toNoun, whole]
+  | Nomm.n1 k => by cases k <;> (nock_open whBat; simp [nock_exec, Nomm.toNoun, whole])
+  | Nomm.n2 p q info => by nock_open whBat; simp [nock_exec, Nomm.toNoun, whole]
+  | Nomm.n3 p => by nock_open whBat; simp [nock_exec, Nomm.toNoun, whole]
+  | Nomm.n4 p => by nock_open whBat; simp [nock_exec, Nomm.toNoun, whole]
+  | Nomm.n5 p q => by nock_open whBat; simp [nock_exec, Nomm.toNoun, whole]
+  | Nomm.n6 p q r => by
+    have hq := wh_gate K q
+    have hr := wh_gate K r
+    nock_open whBat
+    cases eq : whole q <;> cases er : whole r <;> simp [nock_exec, Nomm.toNoun, whole, hq, hr, eq, er]
+  | Nomm.n7 p q => by
+    have hq := wh_gate K q
+    nock_open whBat; simp [nock_exec, Nomm.toNoun, whole, hq]
+  | Nomm.n10 a v q => by nock_open whBat; simp [nock_exec, Nomm.toNoun, whole]
+  | Nomm.n11s tag q body => by
+    have hq := wh_gate K q
+    nock_open whBat; simp [nock_exec, Nomm.toNoun, whole, hq]
+  | Nomm.n11d tag h q body => by
+    have hq := wh_gate K q
+    nock_open whBat; simp [nock_exec, Nomm.toNoun, whole, hq]
+  | Nomm.n12 p q => by nock_open whBat; simp [nock_exec, Nomm.toNoun, whole]
+  | Nomm.mean p b q body k => by
+    have hq := wh_gate K q
+    nock_open whBat; simp [nock_exec, Nomm.toNoun, whole, hq, Tag.mean]
 end Compiler
 end Formalization
