@@ -18,8 +18,6 @@ import lemmas.Compiler.CompSccLoopSoftEmit
 import lemmas.Compiler.CompSccLoopSoftEmitAll
 import lemmas.Compiler.CompSccLoopSoftMemDone
 import lemmas.Ska.SccLoopSoftReqCheck
-import lemmas.Compiler.CompSccLoopShapeLoop
-import lemmas.Ska.SccLoopShapeCheck
 
 /-! The axioms of the theorems of `Ska/SccLoop.lean`, `Ska/SccLoopMsg.lean` and `Ska/SccLoopCycle.lean`
 (README Gaps 21): each must print
@@ -194,19 +192,3 @@ open Formalization.SkaModel.SccLoop
 #print axioms Formalization.Compiler.mem_done_stepS
 #print axioms Formalization.Compiler.memGate_done_realS
 #print axioms Formalization.Compiler.memGate_done_KS
-#print axioms Formalization.SkaModel.SccLoop.compReal_sweep
-#print axioms Formalization.SkaModel.SccLoop.lazeReal_eq
-#print axioms Formalization.Compiler.mem_entryX
-#print axioms Formalization.Compiler.mem_afterX
-#print axioms Formalization.Compiler.fin_placeholder
-#print axioms Formalization.Compiler.mem_prod_newX
-#print axioms Formalization.Compiler.mem_prod_oldX
-#print axioms Formalization.Compiler.mem_gate_sweep_R
-#print axioms Formalization.Compiler.memChgTN_loob
-#print axioms Formalization.Compiler.topH_nil
-#print axioms Formalization.Compiler.topH_of_topN
-#print axioms Formalization.Compiler.mem_sweep_step
-#print axioms Formalization.Compiler.memGate_sweep_real
-#print axioms Formalization.Compiler.memGate_may_K
-#print axioms Formalization.Compiler.memGate_must_K
-#print axioms Formalization.Compiler.csi_gate_ranked_shape
