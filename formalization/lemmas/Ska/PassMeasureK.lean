@@ -450,5 +450,134 @@ theorem less_genZ {bus : Sock} (hb : Tidy bus) (want c0 : Cape) :
   rw [app_idem c0 hb] at h
   exact h
 
+/-! ## The product -/
+
+theorem genZ_ne_void {T S : Sock} (h : GenZ T S) : T ≠ Sock.void → S ≠ Sock.void := by
+  induction h with
+  | refl => exact id
+  | dunno => intro _ h; cases h
+  | knit _ _ ih1 ih2 => intro hv; exact knit_ne_void (ih1 (hed_ne_void hv)) (ih2 (tel_ne_void hv))
+
+theorem doubleInt_genZ : ∀ (k : Nat) (a b : Anno), Sock.msr a.sock + Sock.msr b.sock < k →
+    b.sock ≠ Sock.void → GenZ b.sock (doubleInt a b).sock := by
+  intro k
+  induction k with
+  | zero => intro _ _ h; omega
+  | succ k ih =>
+  intro a b hk hb
+  by_cases hab : a = b
+  · subst hab; rw [doubleInt_self]; exact GenZ.refl _
+  obtain ⟨sa, ra⟩ := a
+  obtain ⟨sb, rb⟩ := b
+  simp only at hb
+  cases sb with
+  | void => exact absurd rfl hb
+  | mk cb db =>
+  cases sa with
+  | void => rw [doubleInt_void_left rfl hab]; exact GenZ.refl _
+  | mk ca da =>
+    apply doubleInt_cases (fun r => GenZ (Sock.mk cb db) r.sock) hab (GenZ.dunno _)
+    intro hno
+    simp only [not_or] at hno
+    have h1 := msr_hed_lt hno.1 da; have h2 := msr_hed_lt hno.2 db
+    have h3 := msr_tel_lt hno.1 da; have h4 := msr_tel_lt hno.2 db
+    simp only at hk
+    exact GenZ.knit
+      (ih ⟨So.hed (Sock.mk ca da), Pi.hed ra⟩ ⟨So.hed (Sock.mk cb db), Pi.hed rb⟩ (by simp only; omega)
+        (hed_ne_void (s := Sock.mk cb db) (by intro h; cases h)))
+      (ih ⟨So.tel (Sock.mk ca da), Pi.tel ra⟩ ⟨So.tel (Sock.mk cb db), Pi.tel rb⟩ (by simp only; omega)
+        (tel_ne_void (s := Sock.mk cb db) (by intro h; cases h)))
+
+theorem msgAnno_genZ : ∀ (k : Nat) (a b : Anno), Sock.msr a.sock + Sock.msr b.sock < k →
+    b.sock ≠ Sock.void → GenZ b.sock (msgAnno a b).sock := by
+  intro k
+  induction k with
+  | zero => intro _ _ h; omega
+  | succ k ih =>
+  intro a b hk hb
+  obtain ⟨sa, ra⟩ := a
+  obtain ⟨sb, rb⟩ := b
+  simp only at hb
+  unfold msgAnno
+  split
+  · rename_i heq
+    simp only [Anno.mk.injEq] at heq
+    rw [heq.1]; exact GenZ.refl _
+  · split
+    · exact GenZ.refl _
+    · exfalso
+      rename_i hh _
+      simp only [Anno.mk.injEq] at hh
+      exact hb hh.1
+    · rename_i ah aT da ra' bh bT db rb' heq1 heq2
+      simp only [Anno.mk.injEq] at heq1 heq2
+      obtain ⟨rfl, rfl⟩ := heq1
+      obtain ⟨rfl, rfl⟩ := heq2
+      simp only at hk
+      have h1 := msr_hed_lt (c := Cape.cell ah aT) (by simp) da
+      have h2 := msr_hed_lt (c := Cape.cell bh bT) (by simp) db
+      have h3 := msr_tel_lt (c := Cape.cell ah aT) (by simp) da
+      have h4 := msr_tel_lt (c := Cape.cell bh bT) (by simp) db
+      exact GenZ.knit
+        (ih ⟨So.hed (Sock.mk (Cape.cell ah aT) da), Pi.hed ra⟩ ⟨So.hed (Sock.mk (Cape.cell bh bT) db), Pi.hed rb⟩
+          (by simp only; omega) (hed_ne_void (s := Sock.mk (Cape.cell bh bT) db) (by intro h; cases h)))
+        (ih ⟨So.tel (Sock.mk (Cape.cell ah aT) da), Pi.tel ra⟩ ⟨So.tel (Sock.mk (Cape.cell bh bT) db), Pi.tel rb⟩
+          (by simp only; omega) (tel_ne_void (s := Sock.mk (Cape.cell bh bT) db) (by intro h; cases h)))
+    · exact GenZ.dunno _
+
+/-- **The product an entry keeps forgets parts of the old one.** -/
+theorem mergeProd_genZ (moved : Bool) (new old : Anno) (hv : old.sock ≠ Sock.void) :
+    GenZ old.sock (mergeProd moved new old).sock := by
+  unfold mergeProd
+  split
+  · exact msgAnno_genZ _ new old (Nat.lt_succ_self _) hv
+  · exact doubleInt_genZ _ new old (Nat.lt_succ_self _) hv
+
+/-- **The product of an entry only falls in `kS`, strictly when it changes**,
+and stays not `%void`, once it is not `%void`. -/
+theorem runDatum_prod_step (moved : Bool) (bus : Sock) (out : FolOut) (gen' : Gen) (old : Datum)
+    (hv : old.prod ≠ Sock.void) (hn : NormSock old.prod) :
+    ((runDatum moved bus out gen' old).1.prod = old.prod ∨
+      kS (runDatum moved bus out gen' old).1.prod < kS old.prod) ∧
+    (runDatum moved bus out gen' old).1.prod ≠ Sock.void := by
+  have g := mergeProd_genZ moved out.prod ⟨old.prod, old.map⟩ hv
+  exact ⟨genZ_k g hn hv, genZ_ne_void g hv⟩
+
+/-! ## `less-code` -/
+
+/-- **`less-code` of an entry only rises in `kS`, strictly when it changes, and
+stays at most `kS bus`**, on a tidy `bus`, once it is a mask of `bus` (which
+it is after the first run, `runDatum_less`). -/
+theorem runDatum_less_step (moved : Bool) {bus : Sock} (out : FolOut) (gen' : Gen) (old : Datum)
+    (hb : Tidy bus) {c0 : Cape} (h0 : old.less = Ca.app c0 bus) :
+    ((runDatum moved bus out gen' old).1.less = old.less ∨
+      kS old.less < kS (runDatum moved bus out gen' old).1.less) ∧
+    kS (runDatum moved bus out gen' old).1.less ≤ kS bus := by
+  show (Ca.app (Ca.uni gen'.want (darkOf old.less)) bus = old.less ∨
+      kS old.less < kS (Ca.app (Ca.uni gen'.want (darkOf old.less)) bus)) ∧
+    kS (Ca.app (Ca.uni gen'.want (darkOf old.less)) bus) ≤ kS bus
+  by_cases hv : bus = Sock.void
+  · subst hv; rw [h0, app_void, app_void]; exact ⟨Or.inl rfl, Nat.le_refl _⟩
+  refine ⟨?_, ?_⟩
+  · have g := less_genZ hb gen'.want c0
+    rw [← h0] at g
+    rcases genZ_k g (tidy_norm (tidy_app _ hb)) (app_ne_void _ hv) with e | e
+    · exact Or.inl e.symm
+    · exact Or.inr e
+  · rcases genZ_k (genZ_app (Ca.uni gen'.want (darkOf old.less)) bus) (tidy_norm hb) hv with e | e
+    · rw [e]; exact Nat.le_refl _
+    · exact Nat.le_of_lt e
+
+/-- Without `Tidy` the step is false: on `[[& |] [1 7]]` the mask `[& |]`
+keeps the `7`, the mask `[& &]` (the old cape united with a `want` of
+`[& &]`) drops it, with the same cape, and a `want` of `|` brings it back. -/
+theorem less_untidy_example :
+    let bus := Sock.mk (Cape.cell Cape.yes Cape.no) (C (A 1) (A 7))
+    Ca.app (Cape.cell Cape.yes Cape.no) bus = bus ∧
+    Ca.app (Ca.uni (Cape.cell Cape.yes Cape.yes) (Cape.cell Cape.yes Cape.no)) bus =
+      Sock.mk (Cape.cell Cape.yes Cape.no) (C (A 1) (A 0)) ∧
+    Ca.app (Ca.uni Cape.no (darkOf (Sock.mk (Cape.cell Cape.yes Cape.no) (C (A 1) (A 0))))) bus = bus := by
+  decide
+
 end SkaModel
 end Formalization
