@@ -1,4 +1,4 @@
-# LEDGER: what `Full` rests on (track G, 2026-11-28, twelfth pass)
+# LEDGER: what `Full` rests on (track G, 2026-11-28, thirteenth pass)
 
 `Full` (`core/Statement.lean`) is proved by `Assembly.full_of` from one
 structure, `Assembly.Gap lib pk InvC`, with eight fields.  This file traces
@@ -36,6 +36,140 @@ file named), not `#check`ed, except track D's four leaves (checked).
 The twelfth pass is at base fbf606d (digest [305]); track G's new names are
 checked in `AuditGlue.lean` (section "twelfth pass"); names of other tracks
 from digest [303] to [305] are *not checked here* (taken from the digest).
+
+The thirteenth pass is at base e4345c23 (digest [314]; K's [315] merge
+09681a71 is NOT in this tree).  Its names, and the names of other tracks
+from digest [306] to [314] that it cites, are checked in
+`lemmas/Glue/AuditGlue13.lean` (a second audit file, so that neither audit
+exceeds the 3500M cap); names from [315] are *not checked here*.
+
+## THE ASSEMBLY (thirteenth pass): where `Full` stands, in ONE theorem
+
+`Glue.gap13` (`lemmas/Glue/Assemble13.lean`) proves the WHOLE `Gap` (all
+eight fields), and `Glue.full13` proves `Full` from it by `full_of`.  It is
+stated for track P's route and for any class pair `FM`, `FN`:
+
+    gap13 Ar ref D (hR : Route13 Ar env jet fold frozen bf regOf jetsOf newOf)
+      (hP : PokeLeaves13 Ar env jet fold frozen bf jetsOf newOf)
+      (hC : CompLeaves13 S Ar libP ref D FM FN) (hK : ClassLeaves13 S libP FM FN)
+      (hH : HaltLeaves13 Ar ref env jet fold frozen bf regOf) (hF : FormatLeaves13) :
+      Assembly.Gap libP (liftPoke (enc flagsOf) (pokeS Ar)) (liftInv (enc flagsOf) (InvSM libP ref))
+
+`lib` is `libP`, `pk` is the model on nouns of track P (`enc flagsOf`), and
+`InvC` is `InvSM` (the memo invariant of section 3.2).  `Route13` holds only
+CHOICES of parameters (the arms of P's route, `anaArmP` at the fuel
+`anaFuel`, the four `env` equations, the shape of `regOf`).  The other five
+records hold the LEAVES, one field each, listed with owners in section 10.
+
+The class pair enters only through `ClassLeaves13` (the raw contracts, `OptIn`,
+the entry and the totality of the pill's `+optimize` on the class).  That
+record is closed under union (`classLeaves_or`).  It is PROVED with no leaf on
+`FragX` (`classLeaves_fragX`), and on `PlainCalls` (`PlainCallsM = MonoCalls ∩
+PlainM`, `PlainCallsN = NaryCalls ∩ PlainNC`) from track D's `KIMid` and the
+two totality leaves (`classLeaves_plain`).  So:
+
+- `gap13_fragX`: the class is `FragX`, and no class leaf is left;
+- `gap13_fragXPlain`: the class is `FragX ∪ PlainCalls`, the LARGEST union
+  for which both the model contract and every other model fact of the class
+  exist today, with three class leaves left (`KIMid`, `OptTotalMono` and
+  `OptTotalNary` on `PlainCalls`).
+
+The strongest RESTRICTION of `Full` that the pieces support is therefore this
+one.  It holds for the pokes of P's route on code whose every compiled nomm
+lies in `FragX ∪ PlainCalls`, which is the content of the leaves `inFragM` and
+`inFragN`.  Those two are FALSE of the real compiler today, because real
+nomms carry hints, memo keys, `%6` with calls and baked n-ary entries.
+
+THE CLASSES (rows) BY PIECE (columns).  A cell is a theorem name, or the
+missing leaf with its owner.
+
+| class | pill link of `+run` / `+compile-unary` | model contract (`RawMonoD` / `RawNaryD`) | raw `OptIn` | entry (`EntryMono` / `-Nary`) | optimizer totality |
+|---|---|---|---|---|---|
+| `FragX` (pure, `%6`) | K's gate on `DirOk` (`cu_gate_dir_sccDS`, `unaryFinish_of_rest5`); `FragX` admits a `%10` at axis 0, `DirOk` does not (A's `NoAx0`) | `rawMonoM_fragX`, `rawNary_fragX` | `optInMono_fragX`, `optInNary_fragX` | `entryMono_fragX`, `entryNary_fragX` (no leaf: `guardMonoX`, `guardNaryX`) | `optTotalMono_fragX`, `optTotalNary_fragX` (H) |
+| `PlainCalls` (indirect calls, no `%6`, no direct call, no hint, nothing baked) | `DirOk` (K) | `rawMonoD_calls`, `rawNaryD_calls` restricted | `optInMono_plain`, `optInNary_plain` (D) | `entryMono_plainK`, `entryNary_plain` from `KIMid` (D) | MISSING `OptTotalMono` / `-Nary` (H finished on `FragX`: the alias pass reads only call-free blocks) |
+| `MonoCalls ∩ NoSixM` (direct calls, no `%6`) | `DirOk` (K) | `rawMonoD_calls` (`CallTreeDB`) | MISSING `OptInMono` on `NoSixM` (D) | `entryMono_noSixN` from `OptInMono`, `ReadsInMono`, `KIMid`, `KeyUndefC` (D) and `NskEndC` (G) | MISSING |
+| `NaryCalls` with direct calls (`CallTreeDNB`) | `DirOk` (K) | `rawNaryD_callTreeDN` | MISSING (D) | MISSING `GuardNaryC` with `%cal` / `%jmp` (G) | MISSING |
+| `%6` with calls (`Six0B`) | `DirOk` (K) | `rawMonoD_six0` | MISSING: D's `IL` is false at `%6`, candidate `ATS6` | MISSING (D's `ATS6`) | MISSING |
+| C's general relation (`RunOKGen`) | `DirOk` (K) | per example and at the top only (`finishLUC_contractGD`, `exCons_contract`, `runOKGen_cons00`): no `RawMono` class yet | MISSING | MISSING | MISSING |
+| hinted (`CallTreeH`, `CallTreeHU`, J's 20 of 39 arms, `contract_spotArm`) | Q: `comp_run_hintC` (`HintOkC`) on `runLCH` | J at `finishLUCH`, NOT at `finishLUCM` (M16) | MISSING | MISSING | MISSING |
+| soft calls (`CallEnv.sof`) | I: `csi_gate_ranked_soft` on `runLCS` | MISSING (M20; `runLCS` differs from the Hoon at `+mede`) | MISSING | MISSING | MISSING |
+| baked n-ary | A: `bn_gateB` | MISSING (M5) | MISSING | MISSING (map path of `+to-straight`) | MISSING |
+
+MISFITS (pieces that do not fit as stated), in the order found:
+
+1. Track P's top `pokeModel_fullReachP6L` gives `pokeModel` on `%full`
+   only.  `PokeModel` asks every non-hot ovum, and P's `OtherKeeps6` says only
+   that the other pokes keep `PGood6`.  BRIDGED by a new leaf `PokeOther13`
+   (P: `%dire`, `%fast`, `%jets ~` are the model's) and
+   `pokeModel_of_fullOther`.
+2. Track P's top takes the gate in the OLD record `UnaryGateAt`.  Track K's
+   record is `GateRest5` (built into `UnaryGateAtS`, soft members admitted),
+   and K's file says that no map leads from the new record to the old one.
+   BRIDGED: `monoLinkGood6_of_rest5` (K's record asked at `PGood6` states
+   and read at `.good5`) and `pokeModel_fullReachP6K` (P's proof of
+   `pokeModel_fullReachP6` with it).  K's own top `pokeModel_fullReachP5S` is
+   over `PGood5` and takes `SccOfIs`, which track Q found FALSE as stated.
+3. Track P's top takes any fuel with `FuelOK`, `halting_of_cgMP` takes the
+   fuel `anaFuel`.  BRIDGED: `Route13` fixes `anaFuel`, and `gap13` uses
+   `fuelOK_anaFuel`.
+4. THE STATE RESTRICTION (not bridged, not a short lemma).  `CompHyp` asks
+   `unary`, `refMono`, `inlAnnot` and the rest on EVERY `InvB` table and
+   cache, while the pill facts hold on REACHED states only.  K's record holds
+   at `PGood6` states, and there it gives exactly the equality `refMono` /
+   `unary` need (`unaryFinish_of_rest5`: the pill's `+compile-unary` is
+   `finishLUCM (S := CSet)` of the code table's nomm, on `DirOk`).  Track Q's
+   truthful `inlAnnot_of_inv` (from `InlPill` and `InvBSR`) also holds only on
+   the states of an invariant, because `InvBS` over every `InvB` state is
+   false (`invBS_false`).  The fix is a `CompHyp` relative to an invariant
+   `I` of reached states, with `pokeS_sound` and `pokeS_invKept` re-proved
+   relative to it and `InvC := liftInv (enc flagsOf) (InvSM ∧ I)`.  That is a
+   restatement of the `PokeM` chain (`Ska/PokeModel.lean`), owner G.
+5. The pill link fixes `S := CSet`.  `gap13` is generic in `S`, so it is
+   used at `S := CSet`.  Fits.
+6. M16 (hints) and M20 (soft calls) keep their classes out of
+   `ClassLeaves13`, whose contracts are at `finishLUCM` / `finishLFC`.
+   Track J's hinted contracts are at `finishLUCH`, and track I's soft model
+   `runLCS` disagrees with the Hoon at `+mede` (the compiler is right, see
+   below).
+7. Track C's contracts in the general relation are not a class.  They are
+   proved per example (`exCons_contract`) or at the top
+   (`finishLUC_contractGD`), so they do not enter `ClassLeaves13` until C's
+   `runOKGen_all` / `contract_all` exists.
+
+DIGEST [306] TO [315] (beyond the table):
+- [306], [312] P: `+eval-finalized` linked, the SCC loop rests on Q's
+  `SccsLeafAt` alone, then nothing about `+scc-of`, `+tarjan` or the loop is
+  assumed (`pokeModel_fullReachP6L` over `PGood6 = PGood5 + ColeDom`).
+  FINDING of P: `hJC` was false as stated (`coleCohM_put_bad`), restated
+  `JetsOfCole6`.
+- [307], [313] F: the pass-loop fix (dab8478) is merged since [300].  On
+  the fixed loop `passLoop_returns_k` (one component returns from
+  `KruskalBT`, `RunHalts` and a push tree), `PassGrowG` proved.  `CgHalts`
+  itself is still open, and `FinBranch` is entangled with the finiteness of
+  the identities.
+- [307] Q: `tarjanM_spec`, `sccsLeafAt_of_tarjan`, `tarjanExists`,
+  `sccImage`, `sccOfKeeps_of`; P's `SccOfIs` FALSE as stated, true form
+  `SccOfIsK`.
+- [308], [315] K: `cu_gate_dir_sccDS` (soft members), `GateRest5`,
+  `pokeModel_fullReachP5S`; at [315] (not in this tree)
+  `pokeModel_fullReachP5U` without member gates and without `UnarySccsIs`.
+- [309] J: 20 of 39 hinted arms, `contract_spotArm` (both halves at the top
+  for Q's real `!:` arm).
+- [310] C: `exCons_contract` (unconditional), `runOKGen_cons00`.
+- [311] Q: THE `+inlined` BAKE CASE IS SAFE on the real compiler
+  (`tools/hoon/annots2.hoon`: the bake leaves `[%0 2]`, which `+inlined`
+  drops; `+eval-top` agrees with `+mink` on all 12 subjects).  `KC`,
+  `DetK`, `sffOn_of_detK`; `InvBSR` is with track Q and still open (the
+  analysis must hand the bake `DetK`).
+- [314] I: `csi_gate_ranked_soft`.  The `+mede` MODEL DIFFERENCE is
+  REPRODUCED (`tools/hoon/medesoft.hoon`, 5 cases): `+crash-need` asks
+  `+soft-ask` at a soft block, the model's `%1` never does.  The
+  coordinator checked the real compiler on those five gates against `+mink`
+  on 40 subjects (formalization-keep/medemink-2026-11-28.hoon): all 40
+  agree, so the compiler is right and the model is wrong.  Track I fixes the
+  model (`medeLS`, `runLCS2`).
+- `split-max` (track S since [301]) is still OPEN: `+msg-need-ord` is not
+  monotone, and a real cycle would make the totality leaf `answers` false.
 
 READ FIRST (twelfth pass, base fbf606d, digest [303] to [305]):
 - **`EntryMono` on `PlainM` and `EntryNary` on `PlainNC` rest on `KIMid`
