@@ -1,5 +1,6 @@
 import lemmas.Compiler.CompRunHintEx
 import lemmas.Compiler.CompRunHintCallEx
+import lemmas.Compiler.CompRunHintMeanEx
 
 /-! The axioms of the link of the hint cases of `+run` (README Gaps 25). -/
 
@@ -83,3 +84,27 @@ open Formalization.Compiler
 #print axioms comp_run_n12H
 #print axioms res_n12H
 #print axioms partH_n12
+#print axioms comp_mean_konst
+#print axioms cr_disp_mean
+#print axioms runLCH_mean_none
+#print axioms comp_run_mean_yes
+#print axioms cm_n11
+#print axioms cm_n10
+#print axioms cm_n7
+#print axioms cm_n5
+#print axioms cm_no
+#print axioms runLCH_mean_konst
+#print axioms comp_run_mean_no
+#print axioms cm_steps
+#print axioms partH_mean_yes
+#print axioms partH_mean_no
+#print axioms partH_mean
+#print axioms sfSnd_none
+#print axioms callCode_of_hintM
+#print axioms noAx0_of_hintM
+#print axioms comp_run_hintM
+#print axioms hintSound_of_tabM
+#print axioms entries_of_callsM
+#print axioms comp_run_hint_tabM
+#print axioms comp_run_hint_anaM
+#print axioms comp_run_hint_anaXM
