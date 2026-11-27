@@ -203,5 +203,283 @@ theorem lzl_sur (hc : CompIn ctx) (hl : CompLib ctx) (G : Noun) (p s : Nat) (hp 
         simp [nock_exec, cutNoun, unitNoun, lzSur, e1, e2, hc, in_arm, in.arm_at, in.rep.arm_at, rep_arm, hk,
           hD, ndf_arm, hf]
 
+/-! ## The turns -/
+
+/-- **The turns of `+lazy-leap`** over the forks (gate `lzlG2`) and the
+bonds (gate `lzlG3`), then the prunes (`lzlR2`), given the gates. -/
+theorem lzl_r2 (hc : CompIn ctx) (G : Noun) (p s : Nat) (sur sb sr : Sure CSet)
+    (fk : List (Lazy.ForkE CSet)) (bd : List (Nat × Lazy CSet)) (cutN : Noun)
+    (hF : ∀ e ∈ fk, ∀ SS cN : Noun, nock (C lzlG2 (C (forkE e) (C SS (C cN (C lzlBat
+      (C (C (A p) (C (A s) (C sur.toNoun (C (listN (fk.map forkE)) (listN (bd.map bondE))))))
+        (C comp.door (C G ctx)))))))) lzlG2 = (lfF p s e).map f2N)
+    (hB : ∀ e ∈ bd, ∀ FS SS cN : Noun, nock (C lzlG3 (C (bondE e) (C FS (C SS (C cN (C lzlBat
+      (C (C (A p) (C (A s) (C sur.toNoun (C (listN (fk.map forkE)) (listN (bd.map bondE))))))
+        (C comp.door (C G ctx))))))))) lzlG3 = (lbF p s e).map b2N) :
+    nock (C (C sb.toNoun sr.toNoun) (C cutN (C lzlBat
+      (C (C (A p) (C (A s) (C sur.toNoun (C (listN (fk.map forkE)) (listN (bd.map bondE))))))
+        (C comp.door (C G ctx)))))) lzlR2
+      = (fk.mapM (lfF p s)).bind fun fs => (bd.mapM (lbF p s)).map fun bs =>
+          lpN (Lazy.lazyPrune (Lazy.mk sb (fs.map Prod.fst) (bs.map Prod.fst)),
+            Lazy.lazyPrune (Lazy.mk sr (fs.map Prod.snd) (bs.map Prod.snd))) := by
+  have hFk := turn_gate_mapT forkE f2N layer2 homoIn_layer2 lzlG2 (C (C (A 0) lzBunt) (C (A 0) lzBunt))
+    (C (C sb.toNoun sr.toNoun) (C cutN (C lzlBat
+      (C (C (A p) (C (A s) (C sur.toNoun (C (listN (fk.map forkE)) (listN (bd.map bondE))))))
+        (C comp.door (C G ctx)))))) (lfF p s) fk (fun e he => hF e he _ _)
+  unfold lzBunt at hFk
+  cases e1 : fk.mapM (lfF p s) with
+  | none =>
+    rw [e1] at hFk
+    unfold lzlR2
+    simp [nock_exec, hc, turn.arm_at, turn_arm, hFk, buntGate]
+  | some fs =>
+    rw [e1] at hFk
+    have hBd := turn_gate_mapT bondE b2N layer2 homoIn_layer2 lzlG3 (C (A 0) lzBunt)
+      (C (listN (fs.map f2N)) (C (C sb.toNoun sr.toNoun) (C cutN (C lzlBat
+        (C (C (A p) (C (A s) (C sur.toNoun (C (listN (fk.map forkE)) (listN (bd.map bondE))))))
+          (C comp.door (C G ctx)))))))
+      (lbF p s) bd (fun e he => hB e he _ _ _)
+    unfold lzBunt at hBd
+    cases e2 : bd.mapM (lbF p s) with
+    | none =>
+      rw [e2] at hBd
+      unfold lzlR2
+      simp [nock_exec, hc, turn.arm_at, turn_arm, hFk, hBd, buntGate]
+    | some bs =>
+      rw [e2] at hBd
+      have hP := lzl_pr hc G lzlBat
+        (C (A p) (C (A s) (C sur.toNoun (C (listN (fk.map forkE)) (listN (bd.map bondE)))))) cutN sb sr fs bs
+      generalize comp.door = Dr at hP hFk hBd ⊢
+      unfold lzlR2
+      simp [nock_exec, hc, turn.arm_at, turn_arm, hFk, hBd, buntGate, hP]
+
+/-! ## `+lazy-leap` on every lazy need -/
+
+section
+variable (hc : CompIn ctx) (hl : CompLib ctx) (G : Noun) (p s : Nat) (hp : p ≠ 0) (hs : s ≠ 0)
+include hc hl hp hs
+
+mutual
+/-- `+lazy-leap` on every lazy need whose looks are not `0`, from any block. -/
+theorem lzl_all : ∀ (laz : Lazy CSet) (o : Nat), WalkP (fun _ s => CrLok s) o laz →
+    nock (C lzlBat (C (C (A p) (C (A s) laz.toNoun)) (C comp.door (C G ctx)))) lzlBat
+      = (lazyLeap p s laz).map lpN
+  | Lazy.mk sur fk bd, o, ⟨hs0, hfk, hbd⟩ => by
+    have hcut := ndc_gate hc hl G sur.ned p
+    have hD := ndc_at
+    rw [lazyLeap_eq, lazy_toNoun_mk]
+    have hr2 := fun sb sr cutN => lzl_r2 hc G p s sur sb sr fk bd cutN
+      (fun e he SS cN => lzl_forks fk hfk e he SS cN _) (fun e he FS SS cN => lzl_bonds bd hbd e he FS SS cN _)
+    have hsur := fun cut => lzl_sur hc hl G p s hp hs sur (listN (fk.map forkE)) (listN (bd.map bondE)) hs0 cut
+    simp only [Sure.toNoun] at hr2 hsur ⊢
+    generalize comp.door = Dr at hcut hD hr2 hsur ⊢
+    cases e1 : needCut p sur.ned with
+    | none =>
+      rw [e1] at hcut
+      conv => lhs; arg 2; unfold lzlBat
+      simp [nock_exec, hD, ndc_arm, hcut]
+    | some cut =>
+      rw [e1] at hcut
+      have hs1 := hsur cut
+      cases e2 : lzSur p s sur cut with
+      | none =>
+        rw [e2] at hs1
+        conv => lhs; arg 2; unfold lzlBat
+        simp [nock_exec, hD, ndc_arm, hcut, hs1, e2]
+      | some ss =>
+        obtain ⟨sb, sr⟩ := ss
+        rw [e2] at hs1
+        conv => lhs; arg 2; unfold lzlBat
+        simp [nock_exec, hD, ndc_arm, hcut, hs1, e2, hr2]
+        cases fk.mapM (lfF p s) <;> cases bd.mapM (lbF p s) <;> rfl
+
+theorem lzl_forks : ∀ (fk : List (Lazy.ForkE CSet)), WalkPF (fun _ s => CrLok s) fk → ∀ e ∈ fk, ∀ SS cN L : Noun,
+    nock (C lzlG2 (C (forkE e) (C SS (C cN (C lzlBat (C (C (A p) (C (A s) L)) (C comp.door (C G ctx))))))))
+      lzlG2 = (lfF p s e).map f2N
+  | [], _, e, he => absurd he List.not_mem_nil
+  | ((oy, y), (on, n)) :: rest, ⟨hy, hn, hr⟩, e, he => by
+    rcases List.mem_cons.1 he with rfl | he'
+    · intro SS cN L
+      have ihy := lzl_all y oy hy
+      have ihn := lzl_all n on hn
+      unfold lzlG2
+      cases e1 : lazyLeap p s y with
+      | none => rw [e1] at ihy; simp [nock_exec, forkE, ihy, lfF, e1]
+      | some yy =>
+        rw [e1] at ihy
+        cases e2 : lazyLeap p s n with
+        | none => rw [e2] at ihn; simp [nock_exec, forkE, ihy, ihn, lfF, e1, e2]
+        | some nn => rw [e2] at ihn; simp [nock_exec, forkE, ihy, ihn, lfF, e1, e2, lpN, f2N]
+    · exact lzl_forks rest hr e he'
+
+theorem lzl_bonds : ∀ (bd : List (Nat × Lazy CSet)), WalkPB (fun _ s => CrLok s) bd → ∀ e ∈ bd,
+    ∀ FS SS cN L : Noun,
+    nock (C lzlG3 (C (bondE e) (C FS (C SS (C cN (C lzlBat (C (C (A p) (C (A s) L)) (C comp.door (C G ctx)))))))))
+      lzlG3 = (lbF p s e).map b2N
+  | [], _, e, he => absurd he List.not_mem_nil
+  | (ob, l) :: rest, ⟨hl', hr⟩, e, he => by
+    rcases List.mem_cons.1 he with rfl | he'
+    · intro FS SS cN L
+      have ihl := lzl_all l ob hl'
+      unfold lzlG3
+      cases e1 : lazyLeap p s l with
+      | none => rw [e1] at ihl; simp [nock_exec, bondE, ihl, lbF, e1]
+      | some bb => rw [e1] at ihl; simp [nock_exec, bondE, ihl, lbF, e1, lpN, b2N]
+    · exact lzl_bonds rest hr e he'
+end
+
+end
+
+/-- **`+lazy-leap`** is `lazyLeap` on every lazy need whose looks are not
+`0`, on positive `p` and `s`, crashes included, in every door core whose
+context has layer 2 and `+cons-need` and `+gep` in `K` (`CompLib`). -/
+theorem lzl_gate (hc : CompIn ctx) (hl : CompLib ctx) (G : Noun) {p s : Nat} {laz : Lazy CSet}
+    (h : LAll CrLok laz) (hp : p ≠ 0) (hs : s ≠ 0) :
+    nock (C lzlBat (C (C (A p) (C (A s) laz.toNoun)) (C comp.door (C G ctx)))) lzlBat
+      = (lazyLeap p s laz).map (fun x => C x.1.toNoun x.2.toNoun) :=
+  lzl_all hc hl G p s hp hs laz 0 h
+
+/-! ## The looks of what `+lazy-leap` returns -/
+
+/-- The fold of `leapLok` keeps the looks positive. -/
+theorem llFold_pos {p s : Nat} (hs : s ≠ 0) : ∀ (l : List Nat) (acc : CSet × CSet), (∀ y ∈ l, y ≠ 0) →
+    (∀ y ∈ HoonSet.toList acc.1, y ≠ 0) → (∀ y ∈ HoonSet.toList acc.2, y ≠ 0) →
+    (∀ y ∈ HoonSet.toList (l.foldl (llStep p s) acc).1, y ≠ 0) ∧
+      (∀ y ∈ HoonSet.toList (l.foldl (llStep p s) acc).2, y ≠ 0)
+  | [], acc, _, h1, h2 => ⟨h1, h2⟩
+  | a :: l, acc, hl, h1, h2 => by
+    rw [List.foldl_cons]
+    have ha : a ≠ 0 := hl a List.mem_cons_self
+    refine llFold_pos hs l _ (fun y hy => hl y (List.mem_cons_of_mem _ hy)) ?_ ?_ <;>
+    · unfold llStep
+      cases e : (gep p a).join with
+      | none =>
+        simp only
+        first
+        | exact h1
+        | intro y hy; rcases (HoonSet.mem_put _ _ _).1 hy with rfl | hy; exact ha; exact h2 y hy
+      | some d =>
+        simp only
+        first
+        | exact h2
+        | intro y hy; rcases (HoonSet.mem_put _ _ _).1 hy with rfl | hy
+          · exact pegF_ne hs (gep_join_pos e)
+          · exact h1 y hy
+
+theorem leapLok_lok {p s : Nat} {lok lb lr : CSet} (hp : p ≠ 0) (hs : s ≠ 0)
+    (h0 : ∀ y ∈ HoonSet.toList lok, y ≠ 0) (h : leapLok p s lok = some (lb, lr)) :
+    (∀ y ∈ HoonSet.toList lb, y ≠ 0) ∧ (∀ y ∈ HoonSet.toList lr, y ≠ 0) := by
+  rw [leapLok_pos p s lok hp h0, Option.some.injEq] at h
+  have := llFold_pos (p := p) hs (HoonSet.toList lok) (HoonSet.empty, HoonSet.empty) h0
+    (fun y hy => absurd hy (HoonSet.mem_empty y)) (fun y hy => absurd hy (HoonSet.mem_empty y))
+  rw [h] at this
+  exact this
+
+theorem lzSur_lok {p s : Nat} (hp : p ≠ 0) (hs : s ≠ 0) {sur sb sr : Sure CSet} {cut : Option (Need × Need)}
+    (h0 : CrLok sur) (h : lzSur p s sur cut = some (sb, sr)) : CrLok sb ∧ CrLok sr := by
+  cases cut with
+  | none =>
+    simp only [lzSur, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨fun y hy => absurd hy (HoonSet.mem_empty y), h0⟩
+  | some dr =>
+    obtain ⟨don, rec⟩ := dr
+    simp only [lzSur] at h
+    cases e1 : leapLok p s sur.lok with
+    | none => simp [e1] at h
+    | some lb =>
+      obtain ⟨lb, lr⟩ := lb
+      cases e2 : needFrom s don with
+      | none => simp [e1, e2] at h
+      | some nf =>
+        simp only [e1, e2, Option.bind_some, Option.map_some, Option.some.injEq, Prod.mk.injEq] at h
+        obtain ⟨rfl, rfl⟩ := h
+        exact leapLok_lok hp hs h0 e1
+
+section
+variable {p s : Nat} (hp : p ≠ 0) (hs : s ≠ 0)
+include hp hs
+
+mutual
+theorem lzl_lall_all : ∀ (laz : Lazy CSet) (o : Nat) (b r : Lazy CSet), WalkP (fun _ s => CrLok s) o laz →
+    lazyLeap p s laz = some (b, r) → LAll CrLok b ∧ LAll CrLok r
+  | Lazy.mk sur fk bd, o, b, r, ⟨hs0, hfk, hbd⟩, h => by
+    rw [lazyLeap_eq] at h
+    cases e1 : needCut p sur.ned with
+    | none => simp [e1] at h
+    | some cut =>
+      cases e2 : lzSur p s sur cut with
+      | none => simp [e1, e2] at h
+      | some ss =>
+        obtain ⟨sb, sr⟩ := ss
+        cases e3 : fk.mapM (lfF p s) with
+        | none => simp [e1, e2, e3] at h
+        | some fs =>
+          cases e4 : bd.mapM (lbF p s) with
+          | none => simp [e1, e2, e3, e4] at h
+          | some bs =>
+            simp only [e1, e2, e3, e4, Option.bind_some, Option.map_some, Option.some.injEq,
+              Prod.mk.injEq] at h
+            obtain ⟨rfl, rfl⟩ := h
+            have hss := lzSur_lok hp hs hs0 e2
+            obtain ⟨hf1, hf2⟩ := lzl_lall_forks fk hfk fs e3
+            obtain ⟨hb1, hb2⟩ := lzl_lall_bonds bd hbd bs e4
+            exact ⟨walkP_prune 0 _ ⟨hss.1, hf1, hb1⟩, walkP_prune 0 _ ⟨hss.2, hf2, hb2⟩⟩
+
+theorem lzl_lall_forks : ∀ (fk : List (Lazy.ForkE CSet)), WalkPF (fun _ s => CrLok s) fk →
+    ∀ fs, fk.mapM (lfF p s) = some fs →
+    WalkPF (fun _ s => CrLok s) (fs.map Prod.fst) ∧ WalkPF (fun _ s => CrLok s) (fs.map Prod.snd)
+  | [], _, fs, h => by
+    simp only [List.mapM_nil, pure, Option.some.injEq] at h
+    subst h; exact ⟨trivial, trivial⟩
+  | ((oy, y), (on, n)) :: rest, ⟨hy, hn, hr⟩, fs, h => by
+    simp only [List.mapM_cons] at h
+    cases e1 : lazyLeap p s y with
+    | none => simp [lfF, e1] at h
+    | some yy =>
+      obtain ⟨yb, yr⟩ := yy
+      cases e2 : lazyLeap p s n with
+      | none => simp [lfF, e1, e2] at h
+      | some nn =>
+        obtain ⟨nb, nr⟩ := nn
+        cases e3 : rest.mapM (lfF p s) with
+        | none => simp [lfF, e1, e2, e3] at h
+        | some rs =>
+          simp [lfF, e1, e2, e3] at h
+          subst h
+          obtain ⟨y1, y2⟩ := lzl_lall_all y oy yb yr hy e1
+          obtain ⟨n1, n2⟩ := lzl_lall_all n on nb nr hn e2
+          obtain ⟨r1, r2⟩ := lzl_lall_forks rest hr rs e3
+          exact ⟨⟨Eq.mp (walkP_irrel CrLok 0 oy yb) y1, Eq.mp (walkP_irrel CrLok 0 on nb) n1, r1⟩,
+            ⟨Eq.mp (walkP_irrel CrLok 0 oy yr) y2, Eq.mp (walkP_irrel CrLok 0 on nr) n2, r2⟩⟩
+
+theorem lzl_lall_bonds : ∀ (bd : List (Nat × Lazy CSet)), WalkPB (fun _ s => CrLok s) bd →
+    ∀ bs, bd.mapM (lbF p s) = some bs →
+    WalkPB (fun _ s => CrLok s) (bs.map Prod.fst) ∧ WalkPB (fun _ s => CrLok s) (bs.map Prod.snd)
+  | [], _, bs, h => by
+    simp only [List.mapM_nil, pure, Option.some.injEq] at h
+    subst h; exact ⟨trivial, trivial⟩
+  | (ob, l) :: rest, ⟨hl', hr⟩, bs, h => by
+    simp only [List.mapM_cons] at h
+    cases e1 : lazyLeap p s l with
+    | none => simp [lbF, e1] at h
+    | some bb =>
+      obtain ⟨lb, lr⟩ := bb
+      cases e3 : rest.mapM (lbF p s) with
+      | none => simp [lbF, e1, e3] at h
+      | some rs =>
+        simp [lbF, e1, e3] at h
+        subst h
+        obtain ⟨l1, l2⟩ := lzl_lall_all l ob lb lr hl' e1
+        obtain ⟨r1, r2⟩ := lzl_lall_bonds rest hr rs e3
+        exact ⟨⟨Eq.mp (walkP_irrel CrLok 0 ob lb) l1, r1⟩, ⟨Eq.mp (walkP_irrel CrLok 0 ob lr) l2, r2⟩⟩
+end
+
+end
+
+/-- What `+lazy-leap` returns looks at no axis `0`. -/
+theorem lzl_lall {p s : Nat} (hp : p ≠ 0) (hs : s ≠ 0) {laz b r : Lazy CSet} (hl : LAll CrLok laz)
+    (h : lazyLeap p s laz = some (b, r)) : LAll CrLok b ∧ LAll CrLok r :=
+  lzl_lall_all hp hs laz 0 b r hl h
+
 end Compiler
 end Formalization
