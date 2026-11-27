@@ -375,5 +375,117 @@ theorem jiP_of_maps {jr : Noun → Noun → Noun → Prop} : ∀ (m : Nat) (a b 
   | zero => exact jiP_step (fun a b h => absurd h (Nat.not_lt_zero _))
   | succ m ih => exact jiP_step (fun a b h ha hb hj => ih a b (by omega) ha hb hj)
 
+/-! ## Against the model -/
+
+/-- A map of registers to `info-reg` nouns holds the facts of `m`: its keys
+are atoms, each value related to the fact of its key, and every key of `m`
+is there. -/
+def InfoMapRel (N : Noun) (m : Opt.AInfo) : Prop :=
+  IsMap mugF N ∧ (∀ k v, Get N k v → ∃ r x, k = A r ∧ m r = some x ∧ InfoRel v x) ∧
+    ∀ r x, m r = some x → KIn N (A r)
+
+theorem flag_inj {b b' : Bool} (h : flag b = flag b') : b = b' := by
+  cases b <;> cases b' <;> simp_all [flag]
+
+theorem infoN_inj {x y : Opt.InfoReg} {lb lb' : Bool} {hs ts hs' ts' : Noun}
+    (h : infoN x lb hs ts = infoN y lb' hs' ts') :
+    x.isCell = y.isCell ∧ lb = lb' ∧ hs = hs' ∧ ts = ts' ∧ x.hasHed = y.hasHed ∧ x.hasTel = y.hasTel ∧
+      x.decOf = y.decOf ∧ x.hasImm = y.hasImm := by
+  simp only [infoN, Noun.cell.injEq] at h
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8⟩ := h
+  exact ⟨flag_inj h1, flag_inj h2, h3, h4, (unitNoun_A_inj _ _).1 h5, (unitNoun_A_inj _ _).1 h6,
+    (unitNoun_A_inj _ _).1 h7, (unitNoun_id_inj _ _).1 h8⟩
+
+theorem loobImm_of_hasImm {x y : Opt.InfoReg} (h : x.hasImm = y.hasImm) : x.loobImm = y.loobImm := by
+  unfold Opt.InfoReg.loobImm; rw [h]
+
+/-- A noun related to two facts is related to their join. -/
+theorem infoRel_joinReg_both {v : Noun} {x y : Opt.InfoReg} (hx : InfoRel v x) (hy : InfoRel v y) :
+    InfoRel v (Opt.joinReg x y) := by
+  obtain ⟨lb, hs, ts, rfl, hhx, htx, hlx⟩ := hx
+  obtain ⟨lb', hs', ts', e, hhy, hty, hly⟩ := hy
+  obtain ⟨c1, c2, c3, c4, c5, c6, c7, c8⟩ := infoN_inj e
+  subst c2 c3 c4
+  have hli : (Opt.joinReg x y).loobImm = x.loobImm := by
+    apply loobImm_of_hasImm; simp [Opt.joinReg, c8]
+  refine ⟨lb, hs, ts, ?_, sawRel_int hhx hhy hhx.1 (fun k => ⟨fun h => ⟨h, h⟩, fun h => h.1⟩),
+    sawRel_int htx hty htx.1 (fun k => ⟨fun h => ⟨h, h⟩, fun h => h.1⟩), ?_⟩
+  · simp [infoN, Opt.joinReg, c1, c5, c6, c7, c8]
+  · rw [hli]
+    have e8 := loobImm_of_hasImm c8
+    rw [← e8] at hly
+    simp only [Opt.joinReg]
+    revert hlx hly
+    cases lb <;> cases x.isLoob <;> cases y.isLoob <;> cases x.loobImm <;> simp
+
+/-- The join of a fact with itself is related to the fact. -/
+theorem infoRel_of_joinReg_self {v : Noun} {x : Opt.InfoReg} (h : InfoRel v (Opt.joinReg x x)) : InfoRel v x := by
+  obtain ⟨lb, hs, ts, rfl, hh, ht, hl⟩ := h
+  have hli : (Opt.joinReg x x).loobImm = x.loobImm := by
+    apply loobImm_of_hasImm; simp [Opt.joinReg]
+  refine ⟨lb, hs, ts, ?_, ?_, ?_, ?_⟩
+  · simp [infoN, Opt.joinReg]
+  · have : x.hedOf.filter (· ∈ x.hedOf) = x.hedOf := List.filter_eq_self.2 (fun a ha => by simpa using ha)
+    simpa [Opt.joinReg, this] using hh
+  · have : x.telOf.filter (· ∈ x.telOf) = x.telOf := List.filter_eq_self.2 (fun a ha => by simpa using ha)
+    simpa [Opt.joinReg, this] using ht
+  · rw [hli] at hl
+    simp only [Opt.joinReg] at hl
+    revert hl
+    cases lb <;> cases x.isLoob <;> cases x.loobImm <;> simp
+
+theorem infoRel_joinRegE_of {v : Noun} {x y : Opt.InfoReg} (h : InfoRel v (Opt.joinReg x y)) :
+    InfoRel v (Opt.joinRegE x y) := by
+  unfold Opt.joinRegE
+  split
+  · rename_i e; subst e; exact infoRel_of_joinReg_self h
+  · exact h
+
+theorem infoRel_joinRegE_both {v : Noun} {x y : Opt.InfoReg} (hx : InfoRel v x) (hy : InfoRel v y) :
+    InfoRel v (Opt.joinRegE x y) :=
+  infoRel_joinRegE_of (infoRel_joinReg_both hx hy)
+
+/-- **`join-info`** of two maps related to `ma` and `mb` is related to `joinInfoA ma mb`. -/
+theorem al_jinfo (G Y Z : Noun) {Na Nb : Noun} {ma mb : Opt.AInfo} (ha : InfoMapRel Na ma)
+    (hb : InfoMapRel Nb mb) :
+    ∃ N, nock (C alJInfoB (C (C Na Nb) (alCtx alBat G Y Z))) alJInfoB = some N ∧
+      InfoMapRel N (Opt.joinInfoA ma mb) := by
+  have hj : JrOn (jrK (alCtx alBat G Y Z)) Na Nb := by
+    intro k va vb h1 h2
+    obtain ⟨r, x, -, -, hx⟩ := ha.2.1 k va h1
+    obtain ⟨r', y, -, -, hy⟩ := hb.2.1 k vb h2
+    obtain ⟨N, hN, -⟩ := al_jreg alBat G Y Z hx hy
+    exact ⟨N, hN⟩
+  obtain ⟨out, hR, hmap, hv, hk⟩ := jiP_of_maps _ Na Nb (Nat.le_refl _) ha.1 hb.1 hj
+  refine ⟨out, ?_, hmap, fun k v hg => ?_, fun r x hx => ?_⟩
+  · obtain ⟨R, hX⟩ : ∃ R, alBat = C alJRArm R := ⟨_, rfl⟩
+    unfold alCtx at hR ⊢
+    rw [hX] at hR ⊢
+    have hl := ji_loop R G Y Z optC alJInfoB optC_layer2 hR
+    nock_open alJInfoB
+    simp [nock_exec, hl]
+  · obtain ⟨va, vb, h1, h2, h3⟩ := hv k v hg
+    obtain ⟨r, x, rfl, hxr, hx⟩ := ha.2.1 _ va h1
+    obtain ⟨r', y, e, hyr, hy⟩ := hb.2.1 _ vb h2
+    cases e
+    refine ⟨r, Opt.joinRegE x y, rfl, by simp [Opt.joinInfoA, hxr, hyr], ?_⟩
+    rcases h3 with ⟨rfl, rfl⟩ | h3
+    · exact infoRel_joinRegE_both hx hy
+    · obtain ⟨N, hN, hNr⟩ := al_jreg alBat G Y Z hx hy
+      have : v = N := by
+        unfold jrK at h3
+        unfold alJRS at hN
+        rw [h3] at hN
+        exact Option.some.inj hN
+      subst this
+      exact infoRel_joinRegE_of hNr
+  · unfold Opt.joinInfoA at hx
+    cases e1 : ma r with
+    | none => rw [e1] at hx; cases hx
+    | some xa =>
+      cases e2 : mb r with
+      | none => rw [e1, e2] at hx; cases hx
+      | some xb => exact (hk _).2 ⟨ha.2.2 r xa e1, hb.2.2 r xb e2⟩
+
 end Compiler
 end Formalization
