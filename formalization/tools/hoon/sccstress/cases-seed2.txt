@@ -1,0 +1,219 @@
+big
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s s (p [[s -.s] [+.s [a.s b.s c.s d.s]]])))
+swp
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s [s -.s +.s] (p [[b.s a.s] [d.s c.s]])))
+osc
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s s (q [[s s] [s s]])))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?@(b.s [a.s b.s c.s d.s] (p [[-.s +.s] [a.s c.s]])))
+cyc1
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s s ?@(c.s (p [+.s -.s]) [-.s +.s a.s b.s c.s d.s])))
+cyc2
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s s (p [[c.s d.s] [-.s b.s]])))
+cyc3
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s s (q [+.s -.s])))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?@(c.s [-.s a.s b.s] (p [+.s [c.s d.s]])))
+cyc4
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s s ?@(b.s (p [+.s -.s]) ?@(c.s [-.s a.s b.s] (p [[d.s c.s] -.s])))))
+cyc5
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s +.s ?@(b.s (p [+.s -.s]) ?@(c.s s (p [[s a.s] [c.s s]])))))
+grow
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(c.s -.s ?@(d.s (p [[s a.s] [b.s c.s]]) (p [[a.s s] [-.s +.s]]))))
+g0
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(c.s c.s) ?:(.=(a.s b.s) [(p [[+.s 0] [a.s a.s]]) (p [[-.s c.s] [c.s d.s]])] c.s) (p [[+.s -.s] [s s]])))
+g1
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [[(q [[d.s +.s] [0 +.s]]) ?@(c.s 0 (q [[+.s d.s] [s c.s]]))] [?:(.=(d.s c.s) (q [[0 d.s] [+.s s]]) (p [[s a.s] [d.s b.s]])) (q [[d.s b.s] [c.s 0]])]])
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s d.s ?:(.=(a.s a.s) [(p [[s 0] [c.s c.s]]) (p [[-.s a.s] [d.s c.s]])] [(p [[0 s] [+.s a.s]]) (p [[0 -.s] [c.s +.s]])])))
+g2
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] (p [[a.s +.s] [c.s -.s]]))
+g3
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(b.s [?@(c.s a.s (p [[0 a.s] [c.s c.s]])) d.s] ?@(d.s [0 d.s] ?:(.=(c.s c.s) a.s c.s))))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] (p [[b.s b.s] [a.s c.s]]))
+g4
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(c.s ?@(b.s (p [[-.s -.s] [a.s a.s]]) [(p [[+.s s] [a.s b.s]]) -.s]) ?@(d.s ?@(a.s (p [[+.s a.s] [-.s +.s]]) (p [[a.s 0] [a.s s]])) ?@(a.s b.s 0))))
+g5
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(d.s a.s) ?@(a.s (p [[d.s b.s] [a.s +.s]]) ?:(.=(d.s c.s) -.s (p [[-.s +.s] [0 -.s]]))) s))
+g6
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s ?@(d.s [a.s s] b.s) ?:(.=(a.s b.s) [(r [[s +.s] [c.s 0]]) (q [[b.s s] [d.s 0]])] d.s)))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?@(c.s ?:(.=(b.s d.s) ?@(a.s c.s s) ?@(d.s [s -.s +.s] (q [[b.s d.s] [d.s -.s]]))) [?@(d.s [a.s s] (r [[c.s b.s] [a.s -.s]])) [(p [[b.s -.s] [d.s 0]]) (p [[+.s c.s] [a.s -.s]])]]))
+  ++  r  |=(s=[[a=* b=*] [c=* d=*]] ?@(b.s ?@(a.s [0 (p [[+.s s] [+.s 0]])] [(r [[s c.s] [-.s 0]]) (r [[c.s a.s] [c.s +.s]])]) ?@(c.s ?:(.=(b.s a.s) a.s (q [[+.s d.s] [0 +.s]])) ?:(.=(d.s c.s) (q [[s 0] [-.s b.s]]) [-.s +.s]))))
+g7
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [(p [[0 a.s] [d.s +.s]]) ?@(c.s [s -.s +.s] [-.s -.s])])
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?@(b.s [?@(d.s c.s d.s) ?:(.=(c.s b.s) (p [[0 -.s] [-.s s]]) (r [[s -.s] [0 b.s]]))] ?@(c.s ?@(d.s 0 (q [[-.s c.s] [a.s b.s]])) ?@(d.s (r [[-.s a.s] [s d.s]]) (r [[0 +.s] [c.s s]])))))
+  ++  r  |=(s=[[a=* b=*] [c=* d=*]] ?@(d.s d.s ?@(a.s ?@(c.s d.s -.s) ?:(.=(a.s b.s) 0 [a.s s]))))
+g8
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [?@(d.s 0 ?@(b.s (p [[+.s -.s] [+.s c.s]]) (p [[b.s +.s] [c.s b.s]]))) [?:(.=(b.s a.s) a.s (p [[c.s a.s] [c.s -.s]])) ?:(.=(a.s c.s) (p [[+.s d.s] [b.s +.s]]) [a.s s])]])
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s (r [[s d.s] [c.s s]]) ?@(b.s ?@(c.s a.s (q [[-.s c.s] [b.s c.s]])) ?:(.=(b.s b.s) +.s -.s))))
+  ++  r  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(a.s a.s) ?@(c.s ?@(b.s c.s (p [[d.s d.s] [d.s -.s]])) ?@(d.s s a.s)) ?:(.=(b.s b.s) ?@(a.s (p [[c.s b.s] [+.s 0]]) -.s) ?:(.=(c.s a.s) a.s (p [[0 a.s] [d.s -.s]])))))
+g9
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(d.s ?@(c.s [(p [[+.s +.s] [s -.s]]) d.s] ?@(b.s [-.s +.s] -.s)) ?:(.=(d.s b.s) ?:(.=(b.s c.s) (q [[b.s a.s] [a.s d.s]]) [a.s s]) ?@(c.s (p [[-.s +.s] [a.s 0]]) c.s))))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] (p [[+.s 0] [b.s +.s]]))
+g10
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [[d.s (q [[-.s -.s] [d.s d.s]])] ?@(c.s ?:(.=(b.s d.s) 0 +.s) ?@(a.s (p [[a.s a.s] [-.s -.s]]) (p [[s s] [+.s b.s]])))])
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(b.s c.s) c.s ?:(.=(b.s c.s) c.s ?:(.=(a.s a.s) c.s (q [[+.s a.s] [s s]])))))
+g11
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(a.s c.s) ?@(c.s [(p [[a.s a.s] [s -.s]]) [s -.s +.s]] [[s -.s +.s] (p [[-.s -.s] [d.s c.s]])]) [-.s +.s]))
+g12
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(c.s a.s) [d.s ?@(c.s (p [[d.s d.s] [d.s b.s]]) [a.s s])] [?@(b.s (q [[-.s c.s] [c.s -.s]]) (p [[c.s +.s] [-.s +.s]])) (p [[s c.s] [a.s 0]])]))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(b.s d.s) ?@(c.s [+.s [s -.s +.s]] [(p [[-.s 0] [a.s +.s]]) (p [[+.s +.s] [s +.s]])]) [(p [[+.s 0] [s -.s]]) (p [[-.s b.s] [-.s +.s]])]))
+g13
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s [[(r [[s s] [c.s c.s]]) (p [[-.s +.s] [+.s c.s]])] ?@(c.s [s -.s +.s] (q [[s a.s] [-.s a.s]]))] a.s))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] [?@(c.s ?:(.=(b.s c.s) (q [[-.s d.s] [+.s b.s]]) s) ?@(d.s +.s (p [[+.s d.s] [d.s s]]))) +.s])
+  ++  r  |=(s=[[a=* b=*] [c=* d=*]] ?@(d.s ?@(b.s -.s (p [[d.s d.s] [d.s +.s]])) (r [[d.s c.s] [a.s -.s]])))
+g14
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(b.s b.s) ?:(.=(b.s d.s) ?:(.=(b.s b.s) [-.s +.s] (p [[c.s 0] [-.s a.s]])) (q [[a.s s] [+.s -.s]])) (p [[c.s +.s] [b.s 0]])))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] [[?:(.=(c.s c.s) (p [[b.s -.s] [c.s c.s]]) d.s) [a.s [-.s +.s]]] ?@(c.s [(p [[d.s a.s] [s b.s]]) b.s] ?@(d.s +.s [a.s s]))])
+g15
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(c.s b.s) ?:(.=(a.s b.s) [-.s b.s] [(p [[b.s c.s] [s c.s]]) (p [[b.s d.s] [d.s s]])]) [[[s -.s +.s] (p [[-.s +.s] [s c.s]])] ?@(a.s [s -.s +.s] d.s)]))
+g16
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(a.s a.s) ?@(b.s (p [[s c.s] [d.s d.s]]) ?:(.=(d.s d.s) -.s b.s)) ?:(.=(c.s c.s) ?@(c.s c.s (p [[-.s c.s] [b.s 0]])) ?:(.=(d.s a.s) b.s a.s))))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] (q [[c.s c.s] [0 0]]))
+g17
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(c.s ?@(b.s ?@(d.s (p [[-.s 0] [+.s -.s]]) b.s) ?@(d.s (q [[b.s +.s] [0 c.s]]) b.s)) ?:(.=(b.s d.s) (p [[-.s c.s] [b.s 0]]) [(q [[c.s d.s] [a.s -.s]]) (q [[d.s c.s] [-.s d.s]])])))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] [[?@(b.s s [s -.s +.s]) ?:(.=(d.s a.s) [a.s s] [s -.s +.s])] 0])
+g18
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(c.s +.s ?:(.=(b.s d.s) ?:(.=(d.s b.s) (p [[c.s a.s] [-.s b.s]]) (p [[a.s s] [d.s +.s]])) ?@(d.s (p [[b.s a.s] [b.s d.s]]) (p [[c.s a.s] [0 0]])))))
+g19
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] (p [[0 b.s] [-.s c.s]]))
+g20
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [?:(.=(a.s c.s) (p [[d.s d.s] [c.s a.s]]) d.s) ?:(.=(c.s c.s) ?:(.=(b.s b.s) (p [[s +.s] [c.s d.s]]) b.s) (q [[s 0] [0 a.s]]))])
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(a.s d.s) ?@(b.s ?:(.=(c.s c.s) (q [[b.s c.s] [d.s c.s]]) c.s) ?@(a.s [a.s s] d.s)) +.s))
+g21
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [?:(.=(a.s a.s) 0 [b.s b.s]) ?@(d.s ?:(.=(a.s a.s) (p [[d.s b.s] [0 0]]) (p [[0 d.s] [b.s c.s]])) ?:(.=(a.s a.s) (p [[+.s a.s] [a.s d.s]]) b.s))])
+g22
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [?@(a.s +.s [b.s (p [[-.s d.s] [d.s d.s]])]) [?@(d.s (p [[+.s a.s] [-.s +.s]]) (p [[-.s a.s] [-.s 0]])) +.s]])
+g23
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(b.s b.s) [?:(.=(c.s b.s) a.s [s -.s +.s]) (p [[0 c.s] [c.s +.s]])] [?:(.=(d.s b.s) a.s (p [[d.s d.s] [+.s +.s]])) ?@(a.s [a.s s] (p [[-.s b.s] [+.s +.s]]))]))
+g24
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [[-.s +.s] [?:(.=(a.s b.s) (p [[0 -.s] [s c.s]]) [-.s +.s]) [d.s -.s]]])
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] (q [[-.s c.s] [a.s -.s]]))
+  ++  r  |=(s=[[a=* b=*] [c=* d=*]] ?@(c.s ?@(a.s ?@(b.s [-.s +.s] (q [[-.s -.s] [+.s 0]])) ?@(b.s c.s d.s)) [(q [[0 s] [a.s b.s]]) ?@(d.s (p [[0 0] [+.s 0]]) [-.s +.s])]))
+g25
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(d.s [a.s s] 0))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(a.s d.s) ?@(c.s [[a.s s] (r [[-.s d.s] [b.s a.s]])] (r [[a.s 0] [a.s -.s]])) ?:(.=(d.s b.s) [(r [[-.s -.s] [0 a.s]]) (p [[d.s a.s] [d.s c.s]])] ?@(c.s (r [[s -.s] [c.s a.s]]) [s -.s +.s]))))
+  ++  r  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(d.s d.s) ?@(b.s ?@(a.s (q [[-.s +.s] [0 d.s]]) 0) ?:(.=(b.s d.s) (q [[a.s 0] [0 0]]) (r [[-.s a.s] [b.s b.s]]))) [[[a.s s] [s -.s +.s]] (r [[+.s s] [c.s d.s]])]))
+g26
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] (p [[+.s s] [0 c.s]]))
+g27
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(d.s ?:(.=(d.s b.s) [+.s s] ?@(b.s (p [[c.s s] [d.s -.s]]) s)) ?:(.=(c.s b.s) ?:(.=(a.s a.s) (q [[a.s d.s] [a.s b.s]]) +.s) (q [[-.s s] [c.s a.s]]))))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(d.s a.s) ?@(b.s [d.s a.s] b.s) +.s))
+g28
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(d.s b.s) (p [[s d.s] [d.s s]]) ?:(.=(c.s c.s) [(q [[b.s a.s] [c.s s]]) d.s] +.s)))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?@(c.s ?:(.=(d.s d.s) [[-.s +.s] [a.s s]] ?:(.=(d.s c.s) 0 (r [[b.s b.s] [+.s +.s]]))) ?@(a.s ?:(.=(b.s b.s) [s -.s +.s] (r [[+.s -.s] [-.s c.s]])) [d.s a.s])))
+  ++  r  |=(s=[[a=* b=*] [c=* d=*]] ?@(d.s ?@(b.s a.s c.s) (p [[b.s b.s] [c.s d.s]])))
+g29
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(a.s c.s) a.s ?@(b.s ?@(a.s c.s (p [[+.s a.s] [-.s 0]])) ?:(.=(a.s b.s) -.s (p [[-.s b.s] [d.s -.s]])))))
+g30
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(d.s a.s) (p [[c.s a.s] [+.s +.s]]) ?:(.=(c.s d.s) ?@(c.s (q [[0 b.s] [b.s a.s]]) (p [[s a.s] [0 a.s]])) (q [[s c.s] [b.s 0]]))))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(a.s b.s) ?@(b.s (q [[c.s a.s] [-.s s]]) [(p [[a.s d.s] [-.s 0]]) (p [[+.s s] [b.s 0]])]) [?@(b.s 0 (q [[s 0] [+.s a.s]])) (q [[c.s 0] [0 0]])]))
+g31
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(a.s d.s) b.s [?:(.=(c.s d.s) (p [[+.s a.s] [0 -.s]]) [s -.s +.s]) [[s -.s +.s] s]]))
+g32
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [?@(a.s ?:(.=(a.s b.s) 0 [a.s s]) ?:(.=(b.s a.s) c.s (q [[d.s 0] [+.s b.s]]))) s])
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s [?@(d.s [s -.s +.s] [s -.s +.s]) [-.s (r [[d.s +.s] [b.s +.s]])]] (q [[s c.s] [+.s s]])))
+  ++  r  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(c.s c.s) ?@(d.s ?@(b.s [a.s s] (q [[c.s b.s] [c.s 0]])) ?@(b.s [-.s +.s] 0)) ?@(c.s ?@(d.s (r [[b.s -.s] [a.s a.s]]) d.s) ?@(b.s 0 -.s))))
+g33
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(d.s (p [[+.s d.s] [b.s -.s]]) [(p [[-.s s] [a.s -.s]]) ?@(b.s [a.s s] a.s)]))
+g34
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [(p [[-.s -.s] [d.s c.s]]) ?:(.=(a.s d.s) ?@(b.s (p [[b.s b.s] [-.s 0]]) d.s) ?:(.=(d.s a.s) (p [[a.s +.s] [b.s -.s]]) (p [[s -.s] [+.s -.s]])))])
+g35
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] (p [[+.s a.s] [c.s -.s]]))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?@(d.s ?@(c.s [a.s +.s] ?@(a.s (p [[s b.s] [s a.s]]) (p [[c.s c.s] [+.s 0]]))) ?@(a.s [0 (p [[d.s 0] [+.s c.s]])] [s (p [[s a.s] [s 0]])])))
+g36
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(d.s [?:(.=(c.s b.s) (q [[c.s 0] [+.s s]]) (q [[c.s s] [+.s a.s]])) (p [[a.s b.s] [c.s b.s]])] c.s))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s ?@(c.s [s -.s +.s] s) c.s))
+g37
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(b.s d.s) ?:(.=(c.s b.s) ?@(d.s (p [[-.s +.s] [b.s a.s]]) c.s) ?:(.=(b.s c.s) a.s d.s)) c.s))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] [?@(d.s ?:(.=(d.s b.s) 0 c.s) [(q [[-.s 0] [c.s b.s]]) (p [[s c.s] [s -.s]])]) ?@(b.s [-.s +.s] c.s)])
+g38
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [?:(.=(d.s c.s) [s s] [(p [[0 +.s] [a.s -.s]]) (p [[s b.s] [0 s]])]) ?@(a.s ?@(b.s (p [[-.s c.s] [c.s c.s]]) -.s) [(p [[s b.s] [b.s +.s]]) [a.s s]])])
+g39
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [[[(p [[s +.s] [a.s 0]]) -.s] ?:(.=(c.s b.s) b.s (p [[c.s b.s] [d.s d.s]]))] ?@(b.s ?@(d.s (q [[d.s a.s] [c.s s]]) [s -.s +.s]) ?@(d.s (p [[0 -.s] [s d.s]]) (p [[+.s +.s] [d.s +.s]])))])
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(c.s c.s) [?@(c.s (q [[s a.s] [0 d.s]]) (p [[d.s a.s] [+.s c.s]])) ?@(d.s (p [[d.s d.s] [s b.s]]) (p [[d.s d.s] [0 b.s]]))] ?@(a.s (q [[a.s d.s] [s s]]) ?:(.=(a.s c.s) (q [[d.s c.s] [s -.s]]) [s -.s +.s]))))
+g40
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(c.s b.s) ?@(c.s [+.s b.s] +.s) ?@(b.s [+.s (p [[0 d.s] [b.s b.s]])] ?@(a.s 0 +.s))))
+g41
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] (p [[b.s +.s] [a.s s]]))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s ?@(c.s (p [[+.s d.s] [-.s s]]) [(q [[-.s +.s] [+.s d.s]]) d.s]) ?:(.=(a.s d.s) [-.s (q [[s c.s] [+.s -.s]])] (q [[s c.s] [+.s b.s]]))))
+g42
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(a.s a.s) ?@(c.s ?@(b.s (p [[s d.s] [0 0]]) [-.s +.s]) ?@(b.s (r [[s s] [b.s b.s]]) (q [[b.s +.s] [0 0]]))) (p [[c.s a.s] [b.s +.s]])))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] (r [[b.s s] [+.s 0]]))
+  ++  r  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(d.s d.s) [+.s a.s] ?:(.=(d.s c.s) (p [[0 c.s] [s c.s]]) [(q [[a.s s] [s -.s]]) (q [[-.s a.s] [d.s b.s]])])))
+g43
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(a.s c.s) ?:(.=(d.s d.s) ?:(.=(a.s c.s) [a.s s] c.s) ?:(.=(c.s d.s) c.s (p [[c.s a.s] [c.s b.s]]))) [(q [[a.s 0] [b.s b.s]]) ?@(c.s (p [[b.s a.s] [+.s c.s]]) (q [[+.s b.s] [d.s -.s]]))]))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?@(c.s ?@(d.s ?@(a.s c.s (q [[a.s d.s] [a.s b.s]])) ?:(.=(d.s a.s) (q [[d.s -.s] [b.s d.s]]) [a.s s])) [?:(.=(a.s b.s) (q [[b.s 0] [a.s a.s]]) (p [[-.s 0] [d.s c.s]])) ?@(b.s +.s b.s)]))
+g44
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [?@(b.s 0 ?@(c.s (p [[d.s d.s] [-.s d.s]]) -.s)) [?@(d.s (p [[0 b.s] [s -.s]]) (q [[b.s s] [s b.s]])) [[a.s s] (q [[-.s b.s] [-.s d.s]])]]])
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(c.s a.s) (p [[c.s s] [s s]]) ?@(c.s [-.s (p [[-.s b.s] [0 -.s]])] ?@(b.s -.s +.s))))
+g45
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [[a.s s] (q [[c.s c.s] [s d.s]])])
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?@(d.s ?:(.=(d.s a.s) ?@(c.s (q [[b.s s] [a.s d.s]]) [a.s s]) (q [[+.s 0] [0 0]])) ?:(.=(b.s a.s) (p [[a.s 0] [+.s 0]]) (p [[c.s b.s] [-.s b.s]]))))
+g46
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(c.s d.s [?@(a.s b.s (p [[+.s 0] [d.s b.s]])) (p [[0 -.s] [+.s +.s]])]))
+g47
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [?@(a.s [(p [[+.s a.s] [d.s b.s]]) (p [[s s] [+.s c.s]])] ?@(c.s (p [[c.s +.s] [a.s 0]]) (p [[0 d.s] [a.s a.s]]))) ?:(.=(c.s d.s) ?:(.=(a.s b.s) b.s [a.s s]) (p [[a.s d.s] [+.s a.s]]))])
+g48
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [[?@(b.s -.s (q [[0 b.s] [c.s s]])) [(q [[-.s b.s] [s 0]]) (p [[a.s d.s] [b.s 0]])]] ?@(c.s c.s [a.s (q [[s c.s] [0 0]])])])
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] [?@(d.s ?@(a.s b.s (p [[c.s d.s] [0 a.s]])) (p [[b.s +.s] [0 -.s]])) [?@(a.s +.s [s -.s +.s]) [-.s +.s]]])
+g49
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(a.s b.s) ?@(c.s ?@(b.s (p [[c.s c.s] [d.s 0]]) (r [[s s] [s b.s]])) ?@(b.s (p [[b.s c.s] [d.s b.s]]) d.s)) ?@(a.s ?@(b.s (q [[a.s -.s] [+.s 0]]) s) ?@(d.s [a.s s] (r [[a.s c.s] [s -.s]])))))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] (p [[a.s c.s] [s +.s]]))
+  ++  r  |=(s=[[a=* b=*] [c=* d=*]] ?@(b.s ?@(d.s ?@(c.s a.s (p [[b.s d.s] [0 s]])) ?@(a.s 0 s)) ?:(.=(b.s b.s) (r [[c.s 0] [b.s 0]]) ?@(a.s 0 (q [[0 a.s] [c.s b.s]])))))
+g50
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [[?:(.=(a.s d.s) [-.s +.s] [a.s s]) ?@(a.s d.s (p [[a.s a.s] [+.s -.s]]))] ?:(.=(a.s c.s) ?@(a.s [a.s s] (p [[+.s d.s] [0 -.s]])) ?:(.=(d.s c.s) (p [[+.s -.s] [d.s +.s]]) (q [[a.s -.s] [d.s b.s]])))])
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] (q [[a.s b.s] [d.s b.s]]))
+g51
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(d.s a.s) ?@(d.s [(p [[d.s +.s] [0 s]]) (p [[s s] [b.s d.s]])] ?:(.=(d.s b.s) +.s +.s)) [?@(c.s (p [[b.s a.s] [a.s +.s]]) [s -.s +.s]) [d.s (p [[+.s a.s] [+.s -.s]])]]))
+g52
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s ?@(b.s b.s (p [[b.s +.s] [0 a.s]])) ?:(.=(c.s c.s) ?:(.=(a.s b.s) (q [[c.s b.s] [a.s c.s]]) s) [s (q [[d.s +.s] [c.s c.s]])])))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] (p [[s b.s] [b.s d.s]]))
+g53
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(c.s [?:(.=(d.s d.s) s (p [[a.s d.s] [-.s +.s]])) ?@(b.s (p [[c.s s] [s a.s]]) s)] [?:(.=(b.s d.s) (r [[b.s c.s] [d.s 0]]) c.s) a.s]))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?@(b.s ?:(.=(d.s b.s) [(p [[-.s s] [a.s +.s]]) (r [[+.s s] [+.s -.s]])] [b.s -.s]) ?@(d.s [0 (q [[a.s a.s] [b.s s]])] (q [[b.s c.s] [b.s s]]))))
+  ++  r  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s [?@(b.s (r [[a.s s] [+.s a.s]]) c.s) ?@(b.s a.s (r [[-.s 0] [d.s +.s]]))] (q [[b.s +.s] [+.s 0]])))
+g54
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] (q [[c.s +.s] [0 s]]))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(c.s c.s) [?@(d.s [s -.s +.s] b.s) [a.s a.s]] ?@(b.s [(q [[0 0] [s b.s]]) (q [[+.s -.s] [b.s 0]])] ?@(d.s d.s (q [[a.s b.s] [b.s s]])))))
+g55
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] (q [[s 0] [d.s c.s]]))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] (p [[-.s +.s] [s 0]]))
+g56
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s ?:(.=(a.s a.s) ?@(b.s 0 +.s) ?:(.=(d.s b.s) (p [[s d.s] [-.s c.s]]) 0)) ?@(c.s ?@(d.s (p [[+.s a.s] [0 c.s]]) -.s) ?@(b.s s (p [[a.s 0] [-.s d.s]])))))
+g57
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(b.s [?@(c.s (q [[b.s s] [b.s b.s]]) (q [[b.s b.s] [-.s b.s]])) ?@(c.s a.s 0)] [a.s s]))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(d.s a.s) ?@(c.s ?@(b.s [s -.s +.s] (q [[a.s c.s] [+.s +.s]])) ?:(.=(c.s b.s) (p [[b.s +.s] [d.s +.s]]) (q [[a.s a.s] [0 s]]))) ?@(c.s ?@(a.s d.s (p [[s d.s] [b.s c.s]])) [-.s a.s])))
+g58
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(c.s ?@(b.s ?@(a.s (q [[s d.s] [d.s 0]]) -.s) (r [[s d.s] [0 0]])) [(r [[c.s 0] [b.s d.s]]) [(r [[a.s c.s] [b.s s]]) (p [[c.s s] [c.s d.s]])]]))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(d.s b.s) [?:(.=(d.s c.s) +.s (p [[0 0] [a.s 0]])) 0] ?:(.=(c.s c.s) ?@(d.s [-.s +.s] a.s) [[-.s +.s] (r [[c.s d.s] [-.s s]])])))
+  ++  r  |=(s=[[a=* b=*] [c=* d=*]] (r [[b.s d.s] [+.s c.s]]))
+g59
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s [[(r [[d.s a.s] [+.s -.s]]) b.s] (p [[b.s -.s] [-.s c.s]])] ?@(c.s [b.s (p [[a.s d.s] [c.s -.s]])] ?@(b.s (q [[c.s d.s] [a.s a.s]]) (q [[+.s a.s] [c.s 0]])))))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?@(c.s ?@(b.s ?@(a.s -.s (r [[a.s +.s] [d.s a.s]])) [(q [[a.s d.s] [-.s -.s]]) a.s]) ?@(b.s (r [[b.s -.s] [d.s s]]) s)))
+  ++  r  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(b.s d.s) ?@(d.s [s -.s +.s] ?@(b.s (q [[0 s] [c.s 0]]) (q [[c.s 0] [a.s s]]))) [?@(b.s (q [[b.s 0] [0 -.s]]) (q [[d.s b.s] [0 s]])) ?:(.=(a.s c.s) a.s c.s)]))
+g60
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] (p [[b.s -.s] [-.s a.s]]))
+g61
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [?@(a.s [+.s -.s] ?@(c.s a.s [a.s s])) (p [[0 -.s] [a.s +.s]])])
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s [?:(.=(c.s a.s) (q [[s -.s] [b.s c.s]]) a.s) ?@(c.s (p [[-.s c.s] [+.s d.s]]) -.s)] ?@(c.s ?@(b.s [-.s +.s] (q [[b.s +.s] [-.s 0]])) ?@(d.s -.s [a.s s]))))
+g62
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(d.s ?@(a.s ?@(c.s (q [[b.s 0] [a.s c.s]]) (q [[b.s d.s] [d.s d.s]])) ?@(c.s (p [[b.s d.s] [0 b.s]]) s)) ?@(b.s ?@(c.s -.s (p [[+.s s] [+.s -.s]])) ?:(.=(c.s d.s) (q [[c.s +.s] [+.s 0]]) (q [[+.s a.s] [+.s a.s]])))))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(d.s b.s) [?:(.=(b.s b.s) s (q [[b.s d.s] [b.s +.s]])) ?@(c.s (q [[b.s d.s] [0 c.s]]) (q [[0 -.s] [d.s s]]))] ?:(.=(d.s b.s) ?:(.=(a.s d.s) -.s (q [[s a.s] [b.s 0]])) d.s)))
+g63
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s ?:(.=(b.s d.s) ?@(b.s d.s d.s) [(p [[d.s a.s] [0 a.s]]) -.s]) ?:(.=(b.s c.s) ?@(b.s [s -.s +.s] c.s) [[-.s +.s] c.s])))
+g64
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] (q [[a.s +.s] [c.s -.s]]))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] [?@(a.s ?:(.=(d.s c.s) a.s (p [[-.s c.s] [-.s b.s]])) ?:(.=(b.s a.s) (q [[a.s 0] [0 s]]) [a.s s])) (q [[a.s s] [d.s b.s]])])
+g65
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] (p [[b.s +.s] [0 0]]))
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?@(a.s ?@(d.s [s -.s +.s] [c.s s]) ?@(c.s ?:(.=(c.s c.s) b.s (r [[s b.s] [b.s +.s]])) ?@(b.s -.s d.s))))
+  ++  r  |=(s=[[a=* b=*] [c=* d=*]] [?@(c.s (q [[0 a.s] [0 d.s]]) [(q [[0 -.s] [s 0]]) (p [[s b.s] [-.s c.s]])]) ?:(.=(c.s c.s) a.s [[-.s +.s] (p [[-.s 0] [-.s c.s]])])])
+g66
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [(q [[+.s 0] [0 b.s]]) (q [[-.s +.s] [d.s +.s]])])
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?@(c.s ?@(b.s ?:(.=(a.s c.s) [a.s s] (p [[-.s -.s] [a.s b.s]])) ?@(d.s (q [[0 +.s] [d.s s]]) d.s)) ?:(.=(c.s a.s) [(p [[0 d.s] [a.s -.s]]) s] ?@(a.s [a.s s] (p [[d.s d.s] [s a.s]])))))
+g67
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] (p [[a.s b.s] [s -.s]]))
+g68
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] (p [[0 a.s] [d.s -.s]]))
+g69
+  ++  p  |=(s=[[a=* b=*] [c=* d=*]] [?:(.=(b.s b.s) [(q [[-.s 0] [-.s s]]) (p [[a.s 0] [s c.s]])] (p [[s c.s] [c.s +.s]])) [?@(b.s d.s s) [s -.s +.s]]])
+  ++  q  |=(s=[[a=* b=*] [c=* d=*]] ?@(d.s [?:(.=(c.s c.s) -.s (r [[a.s 0] [a.s -.s]])) ?@(c.s (p [[a.s -.s] [b.s s]]) s)] ?@(b.s [s -.s +.s] ?@(c.s (q [[-.s s] [b.s +.s]]) c.s))))
+  ++  r  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(c.s a.s) ?@(d.s ?@(a.s [s -.s +.s] d.s) ?@(b.s (p [[d.s s] [a.s 0]]) (r [[a.s c.s] [-.s c.s]]))) (r [[b.s d.s] [s b.s]])))
