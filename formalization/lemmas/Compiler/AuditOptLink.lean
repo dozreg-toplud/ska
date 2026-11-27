@@ -1,4 +1,4 @@
-import lemmas.Compiler.OptLinkAlJImms
+import lemmas.Compiler.OptLinkAlPrelude
 import lemmas.Compiler.OptLinkRub
 import lemmas.Compiler.OptLinkDead
 import lemmas.Compiler.OptLinkRev
@@ -186,3 +186,7 @@ open Formalization Compiler
 #print axioms jm_loop
 #print axioms jmP_of_maps
 #print axioms al_jimms
+#print axioms bake_at
+#print axioms list_at
+#print axioms al_revinit
+#print axioms al_prelude
