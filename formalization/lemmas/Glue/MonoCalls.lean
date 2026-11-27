@@ -377,6 +377,45 @@ theorem compHyp_of_calls {M' : Type → Type → Type} [Treap M'] {lib : Lib} {r
     { toCompRestM := P, rawOptIn := rawOptIn_of A P.toRefSideM hm hn, rawMono := rawMonoD_calls lib,
       rawNary := rawNaryD_calls lib }
 
+/-! ## `rawEntry` as a statement about the model, per class -/
+
+/-- **Leaf (no owner): `EntryOK` of the raw whole-subject code of the class**
+on every subject of the bell, every oracle, scry gate, state and trace. -/
+def EntryMono (S : Type) [Comp.HoonSet S] (Map : Type → Type) [HoonMap Map] [Comp.HoonMapKeys Map]
+    (lib : Lib) (FM : MonoClass) : Prop :=
+  ∀ env N bl nm (s : Straight Map), FM env N bl nm → Comp.finishLUCM (S := S) env nm = some s →
+    ∀ x, SkaModel.Fits bl.less x →
+      ∀ (σ : Type) (O : Oracle σ) (gul : Noun) (st : σ) (t : Trace), Opt.EntryOK lib O s gul st [x] t
+
+/-- **Leaf (no owner): `EntryOK` of the raw n-ary code of the class**, entered
+with the split of a subject of the bell. -/
+def EntryNary (S : Type) [Comp.HoonSet S] (Map : Type → Type) [HoonMap Map] [Comp.HoonMapKeys Map]
+    (lib : Lib) (FN : NaryClass) : Prop :=
+  ∀ env N bl cape bake nm ord (s : Straight Map), FN env N bl cape bake nm →
+    Comp.finishLFC (S := S) env nm ord cape bake = some s →
+    ∀ x, SkaModel.Fits bl.less x → ∀ args, SkaModel.split s.need x = some args →
+      ∀ (σ : Type) (O : Oracle σ) (gul : Noun) (st : σ) (t : Trace), Opt.EntryOK lib O s gul st args t
+
+/-- **The field `rawEntry` of `CompRestM` from the two leaves.** -/
+theorem rawEntry_of {lib : Lib} {ref : Ref M Map J H} {D : CompData M Map J H} {FM : MonoClass}
+    {FN : NaryClass} (P : RefSideM S A lib ref D FM FN) (hm : EntryMono S Map lib FM)
+    (hn : EntryNary S Map lib FN) :
+    ∀ long jets hot b m s, InvB lib long → ref long jets hot b m = some s →
+      ∀ x, SkaModel.Fits b.less x → ∀ args, (if m then some [x] else SkaModel.split s.need x) = some args →
+        ∀ (σ : Type) (O : Oracle σ) (gul : Noun) (st : σ) (t : Trace), Opt.EntryOK lib O s gul st args t := by
+  intro long jets hot b m s hI hr x hx args hargs
+  cases m with
+  | true =>
+    simp only [if_true, Option.some.injEq] at hargs
+    subst hargs
+    obtain ⟨nm, hnm, hs⟩ := P.refMono long jets hot b s hI hr
+    exact hm _ _ _ nm s (P.inFragM long jets hot b nm hI hnm (by rw [hr]; rfl)) hs x hx
+  | false =>
+    simp only [Bool.false_eq_true, if_false] at hargs
+    obtain ⟨nm, nb, cape, data, hnb, hinl, hbl, hs⟩ := P.refNary long jets hot b s hI hr
+    exact hn _ _ _ _ _ nm _ s (P.inFragN long jets hot b nm cape data hI hinl hbl (by rw [hr]; rfl)) hs x hx
+      args hargs
+
 /-! ## `Straight.toNoun` is injective (the `hinj` of `optRef_fragX`) -/
 
 section
