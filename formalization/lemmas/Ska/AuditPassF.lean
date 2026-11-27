@@ -4,6 +4,7 @@ import lemmas.Ska.PassMeasureE
 import lemmas.Ska.PassMeasureP
 import lemmas.Ska.PassMeasureW
 import lemmas.Ska.PassMeasureF
+import lemmas.Ska.PassMeasureB
 
 /-! The axioms of the theorems of track F (`Ska/PassMeasure.lean`,
 `Ska/PassMeasureK.lean`, `Ska/PassMeasureT.lean`, `Ska/PassMeasureS.lean`, `Ska/PassMeasureA.lean`,
@@ -118,3 +119,9 @@ out. -/
 #print axioms Ana.passOn_mono
 #print axioms Ana.passNext_acc
 #print axioms Ana.passLoop_returns
+
+-- the bound on `next` restated: finitely many pushes per chain (`Ska/PassMeasureB.lean`)
+#print axioms Ana.finPushes_of_bound
+#print axioms Ana.passOn_wf_fin
+#print axioms Ana.passNext_acc_fin
+#print axioms Ana.passLoop_returns_fin
