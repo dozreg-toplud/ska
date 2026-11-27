@@ -12,6 +12,7 @@ is not ported to Lean and no port is trusted.
 | `lemmas/` | Everything else: executable Nock, tactics, the pill's nouns as Lean definitions, models and proofs. |
 | `pill/steel.pill` | The pill that `core/Pill.lean` and `lemmas/Pill/` are generated from. |
 | `tools/` | The generators and the memory cap. |
+| `LEDGER.md` | What each field of `Gap` (`lemmas/Assembly.lean`) rests on today, down to the open leaves, and the mismatches between tracks (track G). |
 
 ## Build
 
@@ -858,6 +859,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/RawInvCLCheck.lean` | The liveness spec of a run with indirect calls, checked (README Gaps 14 (b)): on all 3,960 nomms of `enumCX` (2,856 in `PlainN`, `isPlain`) under `%done` from `gen0`, `%next` (`gY`), `%pick` (`gP`) and the bond goal (`gB`), also with outer kills (`live1`, `live1K`): a register live at the result's entry in the unproxied blocks after the run (`unpB`), with the kills of the result's lazy tree, is live at the goal in the unproxied blocks before it with the kills of the goal's lazy tree; the same without `unproxy` fails (`live0`: 336, 336, 80 and 3,768 runs); `lazyOK2B` with `disjB` (no distinct labels) on every top run; `prepOld`: the old blocks change only by ops in front at the goal's lazy entries; not vacuous (3,888 runs read a proxy in an old block). |
 | `Ska/RawInvCLSpec.lean` | The spec as a proposition (README Gaps 14 (b)): `unpM` (blocks read through `unproxy g.cond`), `GLiveKL` (what a lazy goal may leave live: the goal's lazy tree as kills), **`LiveC`**; `liveC_done` (nothing live at the top), `LiveC.trans`, `LiveRun` (the liveness half of the run-level statement for a runner with a pre- and postcondition), **`liveRun_seven`** (the case `%7`), `liveC_refl`, `liveC_fromL` (`%0` under `%next`), `liveC_pick_z`, `liveC_pick_o` (`%1` under `%pick`), `liveC_simpleNextL_done`, `liveK_old` (a path from the new code into the old: frame and ops in front), **`liveK_prepK`** (ops in front of blocks: live after is live before with the kills they meet, or read first by them), `prep_mapVals`, **`unpM_prep`** (the unproxied blocks carry ops in front, `cond` grown by fresh proxies), `LiveK.mono_r`, **`liveK_hop_root`** (the root's kills move along a fresh hop to the goal). |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
+| `Glue/RawOptIn.lean` | Track G (glue, README Gaps 22): `CompPieces` of `Ska/CompHypOf.lean` restated with track D's `OptIn` (`RawOptIn`) and the pill's passes at fuels per reference form (`OptRef`) in place of `rawDInv`, `optEq`, `optAlias`, `optSSA` (`RefSide`, `CompRestO`, `CompPiecesO`); `keeps_of_optIn`, `contract_of_piecesO`, `compHyp_of_piecesO` (to `CompHyp`, the hypothesis of `gap_of_comp`); on `FragX`: `rawMono_fragX`, `rawNary_fragX`, `rawOptIn_fragX`, `compHyp_of_fragX` (from `CompRestO` alone), `optRef_fragX` (from `optimize_total_finishLUX` / `-LFX`, given `A.optimize` = the pill's and `Straight.toNoun` injective); `fullAnswers_of_cg` (`FullAnswers` of the model of `+poke` from `CgHalts`, `MemoNoCallees` under `InvB`, `BakeEnds`, `RootAnswers`); `RawMonoM` (`RawMono` against `finishLUCM`, the compile with direct calls), `rawMonoM_of` (from `RawMono` on `noDirect` classes), `rawMonoM_fragX`. |
+| `Glue/AuditGlue.lean` | `#check` of every declaration `LEDGER.md` names, `#print axioms` of the theorems of `Glue/`. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
 Every main theorem depends on `propext`, `Classical.choice` and `Quot.sound`
@@ -4378,3 +4381,16 @@ import only its theorems.  So:
        into `this`.  The pill link of the loop is not started.  Its skeleton is `csiFix` (956
        cells): the DFS `order`, the `%may` `+roll`, `top` by `+run:by`, and the `|-` over a
        `+roll` of `order`, with `member` as a hypothesis in the shape of `mem_gate_six`.
+22. **The ledger** (track G, 2026-11-27, `LEDGER.md`, `lemmas/Glue/`).  `LEDGER.md` traces
+    every field of `Gap` (`Assembly.lean`) down to its open leaves, with the mismatches
+    between the shapes the fields need and the shapes the tracks prove, and the open leaves
+    in order of what they block; every name it cites is checked in `Glue/AuditGlue.lean`.
+    Proved here by composition (`Glue/RawOptIn.lean`): `CompHyp` from `CompPiecesO`
+    (`compHyp_of_piecesO`: `OptIn` in place of `DInvS`, the old route through
+    `DriverRestSSA` being closed by `not_aliasOnceB` / `w_opt`), and from `CompRestO` alone
+    on `FragX` (`compHyp_of_fragX`); `OptRef` on `FragX` from the optimizer's totality
+    (`optRef_fragX`, given `Straight.toNoun` injective); `FullAnswers` from `CgHalts`
+    (`fullAnswers_of_cg`).  Not done: `refMono` and `RawMono` restated with `finishLUCM`
+    and a class that sees `env` and `N` (mismatch M3 of the ledger), so that the
+    direct-call theorems of tracks J and K plug in; `MemoNoCallees` in the invariant (M8);
+    the choice of `lib` for `LibSlam`, `RendLeafIs`, `HandIs`.
