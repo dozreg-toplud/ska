@@ -301,3 +301,26 @@ theorem kpa_callDM (hk : KerfA S Map) (env : CallEnv) {rp rq : CGoalL S → List
       exact hnone
   | pick z o => exact hnone
   | done => exact hnone
+
+/-! ## The top of a run -/
+
+/-- **The empty state meets `InvA` with no annotation.** -/
+theorem invA_gen0 : InvA (fun _ _ => False) (gen0 : Comp.Gen Map) where
+  ok := ⟨fun o b hb => by simp [gen0, HoonMap.get_empty] at hb, fun _ _ _ _ hk => hk.elim, fun _ hk => hk,
+    fun _ _ _ _ _ _ hk => hk.elim, fun o b hb => by simp [gen0, HoonMap.get_empty] at hb⟩
+  drop := rfl
+  below := fun o b hb => by simp [gen0, HoonMap.get_empty] at hb
+  kin := fun _ _ hk => hk.elim
+
+/-- **What `RunA` gives of the top run** (`finishLUCM` runs `runLCM env true`
+under `%done` from `gen0`): an annotation `K` with `InvA K` at its end and a
+result jump at an `FL` label. -/
+theorem runA_top {run : CGoalL S → List Nat → CM Map (NextL S)} (h : RunA run) {nex : NextL S}
+    {g1 : Comp.Gen Map} (e : run CGoalL.done [] gen0 = some (nex, g1)) : ∃ K, InvA K g1 ∧ RN K g1.bo g1.re nex := by
+  obtain ⟨K', hI, -, hR⟩ := (h (fun _ _ => False) 1 0 CGoalL.done [] trivial).k _ gen0 nex g1 invA_gen0
+    (by simp [gen0]) (XB.refl _ _ _) e
+  exact ⟨K', hI, hR⟩
+
+end Glue
+end SkaModel
+end Formalization
