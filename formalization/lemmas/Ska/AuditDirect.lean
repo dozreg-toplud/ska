@@ -61,3 +61,5 @@ open Formalization.SkaModel.Comp
 #print axioms treeN_run
 #print axioms runLCM_cal
 #print axioms callLBM_run
+#print axioms LOKS.toM
+#print axioms lokSM_direct

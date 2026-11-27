@@ -330,6 +330,65 @@ theorem callLBM_run (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Prop} 
     have := labS e he; simp only [jmp0] at ee; omega, by simp only [jmp0]; have := Rq.ext.2.1; simp only at this; omega,
     ⟨hfl'.1, hfl'.2⟩, hec⟩
 
+/-! ## The class relation of the whole-subject code -/
+
+/-- **`LOKS` of the whole-subject code**: the fields of `LOKS` for the run
+with `mono` `&` (`runLCM env true`, what `+compile-unary` runs), in place of
+`runLC env`.  On a nomm with no direct call the two runs are the same
+(`LOKS.toM`); a direct call meets it (`lokSM_direct`), not `LOKS`, whose run
+`runLC` is the n-ary version's. -/
+structure LOKSM (x : Bool) (lib : Lib) (N : Needs) (env : CallEnv) (P : Noun → Prop) (f : Noun) (nm : Nomm) :
+    Prop where
+  clean : ∀ {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
+    Clean L.sure.ned → runLCM env true sup nm (CGoalL.next L th) region g0 = some (nex, g1) →
+    Clean nex.laz.sure.ned
+  run : ∀ {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
+    sixCount nm ≤ 255 → 1 ≤ g0.bo → g0.drop = false → UpBelow g0 → Clear g0 → CondBelow g0 →
+    1 ≤ th.there → th.there < g0.bo → th.args = [] → th.there ∉ (entries L).map Prod.fst → Distinct L.sure.ned →
+    (∀ x, NMem L.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none) →
+    (∀ e ∈ entries L, e.1 < g0.bo ∧ ∃ B th', HoonMap.get g0.blocks e.1 = some ⟨[], B, Termin.hop th'⟩) →
+    ((entries L).map Prod.fst).Nodup →
+    (∀ e ∈ entries L, Distinct e.2.sure.ned ∧
+      ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none) →
+    Flat L → Clean L.sure.ned → (∀ e ∈ entries L, Clean e.2.sure.ned) →
+    runLCM env true sup nm (CGoalL.next L th) region g0 = some (nex, g1) →
+    (∃ Q, RunOKLS (Map := Map) lib N P f L th Q x g0 g1 nex) ∧ nex.th.there ∉ (entries nex.laz).map Prod.fst ∧
+      (nex.th = th ∨ g0.bo ≤ nex.th.there) ∧ Flat nex.laz ∧ (∀ e ∈ entries nex.laz, Clean e.2.sure.ned)
+
+/-- **`LOKS` of a nomm with no direct call is `LOKSM`** (`runLCM_true`). -/
+theorem LOKS.toM {x : Bool} {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm}
+    (H : LOKS (S := S) (Map := Map) x lib N env P f nm) (hd : nm.noDirect = true) :
+    LOKSM (S := S) (Map := Map) x lib N env P f nm :=
+  ⟨fun hc hr => H.clean hc (by rwa [runLCM_true env hd] at hr),
+   fun hc b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs hce hr =>
+    H.run hc b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs hce (by rwa [runLCM_true env hd] at hr)⟩
+
+/-- **The direct call `[2 p q b]` meets `LOKSM false`** (`callLBM_run`), for a
+callee that is not pure (so the call is never dropped), `p` meeting `LOKS
+false` with no direct call, `q` skipped and returning the callee's formula,
+the products of `p` fitting the bell, and the needs of `tail_done`. -/
+theorem lokSM_direct (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Prop} {p q : Nomm} {fb fq : Noun}
+    {b : Bell} {bNed ndT : NeedOrd} (hring : env.ring b = Option.none) (hned : env.need b = some bNed)
+    (hNf : N b false = some bNed) (hNt : N b true = some ndT) (hpure : env.pure b = false)
+    (Sp : LOKS (S := S) (Map := Map) false lib N env P fb p) (hpd : p.noDirect = true)
+    (hq : safeFolFol q = true)
+    (hAp : ∀ x gul y, P x → Mink lib gul [] x fb (Tone.zero y) → SkaModel.Fits b.less y)
+    (hq1 : ∀ {s gul : Noun} {n : Nat} {tm : Trace} {rc : Tone}, P s → minkF lib gul n tm s fq = some rc →
+      rc = Tone.zero b.fol)
+    (hq2 : ∀ {s gul : Noun} {tm : Trace}, P s → Mink lib gul tm s fq (Tone.zero b.fol)) :
+    LOKSM (S := S) (Map := Map) false lib N env P (n3 (A 2) fb fq) (Nomm.n2 p q (some (b, Option.none))) := by
+  refine ⟨fun {sup L th region g0 g1 nex} hc hr => ?_, fun {sup L th region g0 g1 nex} hcount b0 d0 hu hcl0 hcb h1
+    h2 hta ht hsd hsl hlab hnd hed hfl hcs hce hr => ?_⟩
+  · have hp' : (env.pure b && noneEquivalentL L) = false := by rw [hpure]; rfl
+    obtain ⟨sub, gA, out, pro, g2, o', gT, nexS, g5, -, -, -, hp, hc'⟩ := runLCM_cal hring hned hq hp' hr
+    rw [runLCM_true env hpd] at hp
+    exact clean_copyL hc' (Sp.clean (L := ofSure (lazyReg (g2.re + 1))) trivial hp) trivial
+  · have hp' : (env.pure b && noneEquivalentL L) = false := by rw [hpure]; rfl
+    have hc6 : sixCount p ≤ 255 := by simp only [sixCount] at hcount; omega
+    obtain ⟨A, B, C', D, E⟩ := callLBM_run lib env hring hned hNf hNt Sp hpd hc6 hq hAp hq1 hq2 hp' b0 d0 hu hcl0
+      hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs hce hr
+    exact ⟨A, B, Or.inr C', D, E⟩
+
 end Comp
 end SkaModel
 end Formalization
