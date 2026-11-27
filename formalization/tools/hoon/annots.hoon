@@ -1,4 +1,4 @@
-::  InvBS (track F, README Gaps 26, lemmas/Ska/AnnotS.lean): at every
+::  InvBS (track F, README Gaps 27, lemmas/Ska/AnnotS.lean): at every
 ::  direct call [%2 p q info] of the code table whose memo key is ~ and
 ::  whose formula part q passes +safe-fol-fol (the calls +inlined may drop
 ::  q of), q returns on every subject that fits the sock at that point.

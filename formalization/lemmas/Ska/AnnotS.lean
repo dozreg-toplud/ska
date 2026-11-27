@@ -2,7 +2,7 @@ import lemmas.Glue.InlineAnnot
 import lemmas.Ska.KnowSound
 
 /-!
-# `InvBS` (track F, README Gaps 26): what the analysis knows at a direct call
+# `InvBS` (track F, README Gaps 27): what the analysis knows at a direct call
 
 `InvBS` (`Glue/InlineAnnot.lean`) asks that the code table of EVERY `InvB`
 state meet `CodeOKS`: at a direct call with no memo key whose formula part
@@ -406,7 +406,7 @@ theorem invBS_false (M : Type → Type → Type) [Treap M] (lib : Lib) : ¬ Glue
 states the pokes reach (`Step`, for the real compiler a `skaPokeB` poke on
 the hypotheses of `skaPokeB_sound`), inside `InvB`, true of the empty state,
 kept by every step, and giving `CodeOKS`.  The first open case is `keep`:
-the copy of the analysis's `Annot` proofs with `AnnotS` (README Gaps 26). -/
+the copy of the analysis's `Annot` proofs with `AnnotS` (README Gaps 27). -/
 def InvBSR (M : Type → Type → Type) [Treap M] (lib : Lib) (Step : LongB M → LongB M → Prop) : Prop :=
   ∃ I : LongB M → Prop, (∀ L, I L → InvB lib L) ∧ I ⟨Treap.empty, Treap.empty, Treap.empty⟩ ∧
     (∀ L L', I L → Step L L' → I L') ∧ ∀ L, I L → Glue.CodeOKS lib (realOf L.code)
