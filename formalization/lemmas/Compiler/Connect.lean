@@ -78,10 +78,10 @@ theorem pull_slam {ctx battery bunt sam out : Noun} {axis : Nat}
   constructor
   · rintro ⟨gate, hp, hs⟩
     rw [Ska.pull_iff_nock, hpull, Option.some.injEq] at hp
-    obtain ⟨b, u, c, rfl, hs⟩ := Ska.slam_iff_nock.1 hs
+    obtain ⟨b, u, c, rfl, hn⟩ := Ska.slam_iff_nock.1 hs
     simp only [Noun.cell.injEq] at hp
     obtain ⟨rfl, -, rfl⟩ := hp
-    simpa [nock_exec] using hs
+    simpa [nock_exec] using hn
   · intro h
     refine ⟨_, Ska.pull_iff_nock.2 hpull, Ska.slam_iff_nock.2 ⟨battery, bunt, ctx, rfl, ?_⟩⟩
     simpa [nock_exec] using h
