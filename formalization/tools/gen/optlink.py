@@ -757,7 +757,7 @@ elif WHICH == 'switch':
              ('swWPlain', wplain, 'The plain branch of the walk: `ps` and its tests.'),
              ('swWalk', walk, 'The walk of `+switch-chains` over `topo`.'),
              ('swBodyCut', body, 'The gate body of `+switch-chains`.')]
-elif WHICH == 'alias':
+elif WHICH in ('alias', 'alstart'):
     bunt, body, hint = opt_arm(725)
     def dig(n, axes):
         for ax in axes:
@@ -942,6 +942,58 @@ elif WHICH == 'alias':
         ('alBat', bat, 'The battery of the `|^` core.'),
         ('alBodyCut', body, 'The gate body of `+alias`.'),
     ]
+    if WHICH == 'alstart':
+        # the start of a block's turn (phases 7 to 12): the gates and traps
+        # inside the nouns of `alias`, and those nouns cut at them (`<name>C`,
+        # equal to `<name>` of `OptLinkAlNouns.lean` by `rfl`); the nouns of
+        # `alias` are only named, not written again
+        byname = {nm: n for nm, n, _ in defs}
+        def gate_at(n, axes):
+            g1 = dig(n, axes)
+            return g1
+        lens = dict((t, dig(c, [7, 6, 3, 3, 7, 7, 7, 2, 3])) for t, c in jncases) if False else None
+        jc = dict(jncases)
+        lsz = dig(jc['brn'], [7, 7, 6, 7, 7, 6, 7, 2, 3]) if False else None
+        def cores(n, ax=1, out=None):
+            if out is None:
+                out = []
+            n = norm(n)
+            if n[0] != 'C':
+                return out
+            h, t = norm(n[1]), norm(n[2])
+            if h[0] == 'C' and norm(h[1]) == ('A', 1) and t == ('C', ('A', 0), ('A', 1)):
+                out.append(norm(h[2]))
+            cores(n[1], 2 * ax, out)
+            cores(n[2], 2 * ax + 1, out)
+            return out
+        ung, = cores(unroll)
+        jng, = cores(jnroll)
+        img, = cores(imms)
+        edt, edm = cores(edges)
+        pain, patl = cores(partrap)
+        brn_ls = cores(jc['brn'])
+        brz_ls = cores(jc['brz'])
+        clq_ls = cores(jc['clq'])
+        assert len(brn_ls) == 3 and brz_ls == brn_ls[:2] and len(clq_ls) == 1
+        ent = dig(entry, [7, 7, 6, 3])
+        assert eqn(dig(entry, [7, 7, 7]), ('C', ('A', 9), ('C', ('A', 2), ('C', ('A', 0), ('A', 1)))))
+        X = ['alUnRoll', 'alEntry', 'alJnRoll', 'alJnBrn', 'alJnBrz', 'alJnClq', 'alImms', 'alEdges', 'alParT']
+        NP = [
+            ('alLsZ', brn_ls[0], 'The lens `+<(has-imm `&)` of the refinement.'),
+            ('alLsO', brn_ls[1], 'The lens `+<(has-imm `|)` of the refinement.'),
+            ('alLsL', brn_ls[2], 'The lens `+<(is-loob &)` of the refinement.'),
+            ('alLsC', clq_ls[0], 'The lens `+<(is-cell &)` of the refinement.'),
+            ('alUnG', ung, 'The gate of the `+roll` of an unreachable block: `(~(del ju acc) there.j o)`.'),
+            ('alEnT', ent, 'The trap of the entry block over `r`.'),
+            ('alJnG', jng, 'The gate of the `+roll` of `join-info` over `t.pre`.'),
+            ('alImG', img, 'The gate of the `+roll` of `join-imms` over `t.pre`.'),
+            ('alEdM', edm, 'The gate of the `+murn` of `edges` over the jumps of a predecessor.'),
+            ('alEdT', edt, 'The gate of the `+turn` of `edges` over `pre`.'),
+            ('alPaIn', pain, 'The gate of the `+turn` of `ins` over `edges`.'),
+            ('alPaTl', patl, 'The gate of the `+turn` that drops the first argument of each edge.'),
+        ]
+        defs = [(nm, n, False) for nm, n, _ in defs if nm not in X and cells(n) > 3] + NP + [
+            (nm + 'C', byname[nm], '`%s`, cut at its gates.' % nm) for nm in X]
     for nm, n, _ in defs:
         print(nm, cells(n) if 'cells' in globals() else '')
 else:
