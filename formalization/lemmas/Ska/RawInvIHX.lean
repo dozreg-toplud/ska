@@ -339,6 +339,95 @@ theorem rawX_four {p : Nomm} (ihp : RawIHX S Map X p) : RawIHX S Map X (Nomm.n4 
       · exact absurd e (fun e' => hn' (by rw [blockDefs_inc]; exact e'))
       · exact e
 
+/-! ## `%3` -/
+
+theorem finKeep_of_eq {g g' : Comp.Gen Map} (fr : ∀ x, x < g.bo → HoonMap.get g'.blocks x = HoonMap.get g.blocks x) :
+    FinKeep g g' := fun k hk => by rw [fr k hk]
+
+/-- **The case `three`**: the test block of `%3` (after `+forl` under
+`%next`), then the run of the operand, as `raw_n3`. -/
+theorem rawX_three {p : Nomm} (ihp : RawIHX S Map X p) : RawIHX S Map X (Nomm.n3 p) := by
+  intro goal region g0 g1 nex K hK h hg hD hj ha hf hr
+  have hn : ∀ k, g0.bo ≤ k → HoonMap.get g0.blocks k = Option.none := fun k hk => h.none hk
+  cases goal with
+  | done =>
+    simp only [CGoal.toL] at hr
+    rw [runL_n3_done] at hr
+    obtain ⟨⟨o0, o1⟩, g2, h2, hr⟩ := bind_some hr
+    obtain ⟨S2, l2, rfl, rfl, bo2, fr2, n0, n1, dd2⟩ := raw_doneBlocks (K := K) h h2
+    obtain ⟨r, g3, h3, hr⟩ := bind_some hr
+    obtain ⟨S3, rfl, q3, b3, o3⟩ := sip_re S2 h3
+    obtain ⟨oc, g4, h4, hr⟩ := bind_some hr
+    obtain ⟨S1, L1⟩ := rawX_tail ihp hK S3 hn ((finKeep_of_eq fr2).trans (finKeep_blocks b3) (by omega))
+      (emitOK_clq (show g2.re < g3.re by omega) rfl rfl
+      (show (jmp0 g0.bo).there < g3.bo by simp [jmp0]; omega) (show (jmp0 (g0.bo + 1)).there < g3.bo by simp [jmp0]; omega))
+      (show g2.re < g3.re by omega) (fun d => by rw [b3] at d; have := S2.defd_lt d; omega)
+      (by simp [blockDefs, defsOf]) h4 hr
+    refine ⟨S1, fun y hy => ?_⟩
+    rcases L1 y hy with ⟨e | ⟨j, hj', hl, -⟩, hne⟩
+    · exact absurd (blockRF_clq rfl rfl e) hne
+    · rw [b3] at hl
+      simp [getJmps] at hj'
+      rcases hj' with rfl | rfl
+      · exact absurd hl (n0 y)
+      · exact absurd hl (n1 y)
+  | pick z o =>
+    simp only [GJ] at hj
+    simp only [CGoal.toL] at hr
+    rw [runL_n3_pick] at hr
+    obtain ⟨r, g3, h3, hr⟩ := bind_some hr
+    obtain ⟨S3, rfl, q3, b3, o3⟩ := sip_re h h3
+    obtain ⟨oc, g4, h4, hr⟩ := bind_some hr
+    obtain ⟨S1, L1⟩ := rawX_tail ihp hK S3 hn (finKeep_blocks b3) (emitOK_clq (by omega) ha.1 ha.2 (by omega) (by omega))
+      (by omega) (fun d => by rw [b3] at d; have := h.defd_lt d; omega) (by simp [blockDefs, defsOf]) h4 hr
+    refine ⟨S1, fun y hy => ?_⟩
+    rcases L1 y hy with ⟨e | ⟨j, hj', hl, -⟩, hne⟩
+    · exact absurd (blockRF_clq ha.1 ha.2 e) hne
+    · rw [b3] at hl
+      simp [getJmps] at hj'
+      rcases hj' with rfl | rfl
+      · exact Or.inl hl
+      · exact Or.inr hl
+  | next laz th =>
+    simp only [CGoal.toL] at hr
+    rw [runL_n3_next, noneEquivalentL_ofSure] at hr
+    by_cases hne : noneEquivalent laz = true
+    · rw [if_pos hne] at hr
+      exact ihp (CGoal.next laz th) region g0 g1 nex K hK h hg hD hj ha hf hr
+    rw [if_neg hne] at hr
+    obtain ⟨a, g2, h2, hr⟩ := bind_some hr
+    have h2' : collapseLazyAtom ⟨laz, th⟩ g0 = some (a, g2) := by
+      rw [← collapseLazyAtomL_toL]; exact h2
+    obtain ⟨S2, l2, bo2, ha2, fr2, cn, cs⟩ := raw_collapse (K := K) h hg.1 hj.2 (fun y hy d => hf y d hy) h2'
+    have F2 : FinKeep g0 g2 := finKeep_of_grow (collapse_down h2' hj.1 hj.2 h.bo1).1
+    cases a with
+    | none => cases hr
+    | some x =>
+      obtain ⟨r, o⟩ := x
+      obtain ⟨-, rl, nd, tl, -, lv⟩ := cs r o rfl
+      simp only at hr
+      obtain ⟨⟨z, o'⟩, g3, h3, hr⟩ := bind_some hr
+      obtain ⟨S3, q3, bo3, rfl, rfl, fr3, lz, lo', -⟩ := raw_forl (K := K) S2 rl nd tl h3
+      obtain ⟨r', g4, h4, hr⟩ := bind_some hr
+      obtain ⟨S4, rfl, q4, b4, o4⟩ := sip_re S3 h4
+      obtain ⟨oc, g5, h5, hr⟩ := bind_some hr
+      have F4 : FinKeep g0 g4 := (F2.trans (finKeep_of_eq fr3) bo2).trans (finKeep_blocks b4) (by omega)
+      obtain ⟨S1, L1⟩ := rawX_tail ihp hK S4 hn F4 (emitOK_clq (by omega) rfl rfl (by simp [jmp0]; omega)
+        (by simp [jmp0]; omega)) (by omega) (fun d => by rw [b4] at d; have := S3.defd_lt d; omega)
+        (by simp [blockDefs, defsOf]) h5 hr
+      refine ⟨S1, fun y hy => ?_⟩
+      rcases L1 y hy with ⟨e | ⟨j, hj', hl, -⟩, hne'⟩
+      · exact absurd (blockRF_clq rfl rfl e) hne'
+      · rw [b4] at hl
+        simp [getJmps] at hj'
+        have hl' : y ≠ r ∧ LiveK g2.blocks K o y := by
+          rcases hj' with rfl | rfl
+          · exact lz y hl
+          · exact lo' y hl
+        rcases lv y hl'.2 with e | e
+        · exact absurd e hl'.1
+        · exact e
+
 end Raw
 end SkaModel
 end Formalization
