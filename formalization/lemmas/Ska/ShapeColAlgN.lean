@@ -337,11 +337,11 @@ theorem msgNone_normal_depth : ∀ (d : NeedOrd) (c : Cape),
   | NeedOrd.both _ _, Cape.yes => by simp [msgNone, ordNormal, ordDepth]
   | NeedOrd.both _ _, Cape.no => by simp [msgNone, ordNormal, ordDepth]
 
-theorem ordDepth_hed_tel {d : NeedOrd} (hd : isLeaf d = false) :
+theorem ordDepth_hed_tel {d : NeedOrd} (hd : ordIsLeaf d = false) :
     max (ordDepth (ordHed d)) (ordDepth (ordTel d)) + 1 = ordDepth d := by
-  cases d <;> simp_all [isLeaf, ordHed, ordTel, ordDepth]
+  cases d <;> simp_all [ordIsLeaf, ordHed, ordTel, ordDepth]
 
-theorem msgOne_normal_depth (s d : NeedOrd) (c : Cape) (hd : isLeaf d = false) :
+theorem msgOne_normal_depth (s d : NeedOrd) (c : Cape) (hd : ordIsLeaf d = false) :
     ordNormal (msgOne s d c) = true ∧ ordDepth (msgOne s d c) ≤ ordDepth d := by
   cases c with
   | cell lh lt =>
@@ -364,7 +364,7 @@ theorem msgOrd_normal_depth : ∀ (a b : NeedOrd) (c : Cape), ordNormal a = true
   · intro a ha b c hna hnb
     by_cases hab : a = b
     · rw [hab, msgOrd_self]; exact ⟨hnb, Nat.le_max_right _ _⟩
-    cases hb : isLeaf b
+    cases hb : ordIsLeaf b
     · rw [msgOrd_left _ _ _ ha hb]
       have := msgOne_normal_depth a b c hb
       exact ⟨this.1, Nat.le_trans this.2 (Nat.le_max_right _ _)⟩
@@ -372,7 +372,7 @@ theorem msgOrd_normal_depth : ∀ (a b : NeedOrd) (c : Cape), ordNormal a = true
   · intro a ha ih1 ih2 b c hna hnb
     by_cases hab : a = b
     · rw [hab, msgOrd_self]; exact ⟨hnb, Nat.le_max_right _ _⟩
-    cases hb : isLeaf b
+    cases hb : ordIsLeaf b
     · rw [msgOrd_inner _ _ _ ha hb hab]
       have h1 := ih1 (ordHed b) (capeHed c) (ordNormal_hed hna) (ordNormal_hed hnb)
       have h2 := ih2 (ordTel b) (capeTel c) (ordNormal_tel hna) (ordNormal_tel hnb)
