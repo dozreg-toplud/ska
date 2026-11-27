@@ -168,6 +168,49 @@ def exCut : Nomm := Nomm.cons (Nomm.n0 3) (Nomm.n6 (Nomm.n0 6) (Nomm.n0 2) (Nomm
   (nex.th.there, (blocksOf g.blocks).find? (·.1 == 2) |>.map fun kb => kb.2.body.flatMap aliasReads)) ==
   some (10, some [1, 2])
 
+
+/-! ## The prologues of `+coerce-lazy`
+
+The hypotheses of `optIn_toStraight_prep` (`RawInvTopX.lean`) on the
+model's final pass: after `+coerce-lazy` every block is the raw block with
+ops in front, only at lazy entries; the ops at an entry define the
+registers of its sure need and read first only the input registers;
+every register is defined once, no trace hint op, no input defined. -/
+
+/-- The registers the ops read before they write them. -/
+def readsFirst : List Pole → List Nat
+  | [] => []
+  | op :: A => aliasReads op ++ (readsFirst A).filter fun r => aliasDst op != some r
+
+/-- The ops in front of `b` in `b'`, if `b'` is `b` with ops in front. -/
+def prefixOf (b b' : Blob) : Option (List Pole) :=
+  let n := b'.body.length - b.body.length
+  if b'.par == b.par && b'.fin == b.fin && b.body.length ≤ b'.body.length && b'.body.drop n == b.body then
+    some (b'.body.take n) else none
+
+def checkPrep (nm : Nomm) (ord : NeedOrd) : Option Bool :=
+  (runX nm).bind fun (nex, g1) =>
+    (needOrdAllocRegs ord g1).bind fun (ned, g2) =>
+      (coerceLazyL ned Cape.no nex.th.there nex.laz g2).map fun (_, g3) =>
+        let m := g1.blocks
+        let m3 := g3.blocks
+        let N := nodesOf nex
+        let I := flattenNeed ned
+        (blocksOf m3).length == (blocksOf m).length &&
+        (blocksOf m).all (fun (k, b) => match m3.f k with
+          | none => false
+          | some b' => match prefixOf b b' with
+            | none => false
+            | some A =>
+              (A.isEmpty || (N.map (·.1)).contains k) &&
+              (readsFirst A).all I.contains &&
+              (N.filter (·.1 == k)).all fun x => x.2.1.all fun r => (defsOf A).contains r) &&
+        defOnceB m3 && noTrB m3 && I.all fun r => ! (allDefsL m3).contains r
+
+#guard enumX.all fun nm => okRun (checkPrep nm NeedOrd.this)
+#guard (enumX.take 600).all fun nm =>
+  okRun (checkPrep nm (NeedOrd.both NeedOrd.none (NeedOrd.pair NeedOrd.this NeedOrd.none)))
+
 end Raw
 end SkaModel
 end Formalization
