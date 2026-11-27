@@ -41,3 +41,5 @@ that one's imports light. -/
 #print axioms Formalization.Compiler.sccLoopAtA_real
 #print axioms Formalization.Compiler.callAt_anyA
 #print axioms Formalization.Compiler.cu_gate_dir_sccA
+#print axioms Formalization.Compiler.calleeCompiled_oneKP
+#print axioms Formalization.Compiler.sccCalleeA_of_real
