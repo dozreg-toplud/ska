@@ -1,5 +1,6 @@
 import lemmas.Compiler.CompRunSoftDefs
 import lemmas.Compiler.CompRunTNCall
+import lemmas.Compiler.CompRunTCallQ
 
 /-! # The soft direct call in the pill: the blocks (README Gaps 19 (g), track K)
 
@@ -88,7 +89,8 @@ theorem crd_from7NTS (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot?
     (hpn : PastAt ctx cd p) (region : List Nat) (gs : GenSf (TreapMap mugF)) (x : GenRest)
     (hx : x.soft = softMapNoun gs.soft) (sur : NeedOrd) (V2 PV sup : Noun) (subNed : Need) (b : Bell)
     {Y : GenRest → GenRest → Prop} (hr : ∀ x, Y x x) (ht : ∀ {x y z : GenRest}, Y x y → Y y z → Y x z)
-    (hq : ∀ nexB gs2, softBond (crdArg subNed gs.g.bo) region (softGs1 gs b subNed sur) = some (nexB, gs2) →
+    (hq : safeFolFol q = false → ∀ nexB gs2,
+      softBond (crdArg subNed gs.g.bo) region (softGs1 gs b subNed sur) = some (nexB, gs2) →
       RunAtRT R ctx Y { x with soft := softMapNoun gs2.soft } (A 1) sup q
         (CGoalL.next (Lazy.ofSure Sure.bunt) nexB.th) region gs2.g)
     (hp : ∀ nexB gs2, softBond (crdArg subNed gs.g.bo) region (softGs1 gs b subNed sur) = some (nexB, gs2) →
@@ -131,10 +133,10 @@ theorem crd_from7NTS (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot?
     obtain ⟨nexB, gs2⟩ := r
     rw [eb] at hsb
     simp only [Option.map_some] at hsb
-    obtain ⟨x', hy, ht'⟩ := crd_ctailRT h7 hcode R cd p q hpn region { x with soft := softMapNoun gs2.soft } (A 1)
+    obtain ⟨x', hy, ht'⟩ := crd_ctailRTQ h7 hcode R cd p q hpn region { x with soft := softMapNoun gs2.soft } (A 1)
       (C (A 0) (C b.toNoun (A 0))) sup (CGoalL.done : CGoalL CSet).toNoun nexB (C subNed.toNoun (A gs.g.bo))
       (A gs.g.bo) (A 0) sur.toNoun (listNoun A (flattenNeed subNed)) subNed.toNoun V2 (A 0) PV gs2.g hr ht
-      (hq nexB gs2 eb) (hp nexB gs2 eb) (hcp nexB gs2 eb)
+      (fun hs => hq hs nexB gs2 eb) (hp nexB gs2 eb) (hcp nexB gs2 eb)
     refine ⟨x', (fun n' g' h => by cases h; exact hy), ?_⟩
     simp only [Option.bind_some]
     simp only [crSubj, compCore, crdS9, crdS6m] at hblk hsb ht' ⊢
@@ -154,7 +156,7 @@ theorem crd_callNTS (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 
     (gs : GenSf (TreapMap mugF)) (x : GenRest) (hx : x.soft = softMapNoun gs.soft)
     (hn : CallNounM msup ctx p q b nb sur.toNoun x (A 1) (A 0)) (PV : Noun) (region : List Nat)
     {Y : GenRest → GenRest → Prop} (hr : ∀ x, Y x x) (ht : ∀ {x y z : GenRest}, Y x y → Y y z → Y x z)
-    (hq : ∀ subNed g1 nexB gs2, needOrdAllocRegs nb gs.g = some (subNed, g1) →
+    (hq : safeFolFol q = false → ∀ subNed g1 nexB gs2, needOrdAllocRegs nb gs.g = some (subNed, g1) →
       softBond (crdArg subNed g1.bo) region (softGs1 ⟨g1, gs.soft⟩ b subNed sur) = some (nexB, gs2) →
       RunAtRT R ctx Y { x with soft := softMapNoun gs2.soft } (A 1) (unitNoun Nomm.toNoun msup) q
         (CGoalL.next (Lazy.ofSure Sure.bunt) nexB.th) region gs2.g)
@@ -182,7 +184,7 @@ theorem crd_callNTS (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 
   | some r =>
     obtain ⟨subNed, g1⟩ := r
     obtain ⟨x', hy, hc⟩ := crd_from7NTS h7 hcode R cd p q hpn region ⟨g1, gs.soft⟩ x hx sur nb.toNoun PV
-      (unitNoun Nomm.toNoun msup) subNed b hr ht (hq subNed g1 · · e) (hp subNed g1 · · e) (hcp subNed g1 · · e)
+      (unitNoun Nomm.toNoun msup) subNed b hr ht (fun hs nB g2 h => hq hs subNed g1 nB g2 e h) (hp subNed g1 · · e) (hcp subNed g1 · · e)
     refine ⟨x', (fun s' g' nB g2 h h2 => by cases h; exact hy nB g2 h2), ?_⟩
     simpa only [Option.bind_some] using hc
 
@@ -230,7 +232,7 @@ theorem callLS_soft_tailK (env : CallEnv) (R : Nomm → CGoalL CSet → List Nat
 `safe-fol-fol` holds of the formula `q`, the run of the subject `p` is a lifted `R` that does not
 read `soft.gen`): from a rest whose `soft` is the noun of the model's map, the pill's `$` of
 `+run` is `runLCS env snd msup` on `[2 p q [~ b ~]]` under `%done` (`callLS_soft_tailK`), the
-runs of `q` and `p` threading the rest at `Y` with `soft` kept (`Yt`), the rest returned related
+run of `p` threading the rest at `Y` with `soft` kept (the run of `q` is skipped), the rest returned related
 to `x` by `Y` (blind to `soft`). -/
 theorem comp_run_n2_softNT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
     (env : CallEnv) (snd : Nomm → NeedOrd → Bool) (msup : Option Nomm) (p q : Nomm)
@@ -244,10 +246,6 @@ theorem comp_run_n2_softNT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode :
     (hsY : ∀ {x y : GenRest} (s : Noun), Y x y → Y x { y with soft := s })
     (x : GenRest) (hx : x.soft = softMapNoun gs.soft)
     (hn : CallNounM msup ctx p q b nb (env.sure b).toNoun x (A 1) (A 0))
-    (hq : ∀ subNed g1 nexB gs2, needOrdAllocRegs nb gs.g = some (subNed, g1) →
-      softBond (crdArg subNed g1.bo) region (softGs1 ⟨g1, gs.soft⟩ b subNed (env.sure b)) = some (nexB, gs2) →
-      RunAtRT R ctx (fun a c => Y a c ∧ c.soft = a.soft) { x with soft := softMapNoun gs2.soft } (A 1)
-        (unitNoun Nomm.toNoun msup) q (CGoalL.next (Lazy.ofSure Sure.bunt) nexB.th) region gs2.g)
     (hp : ∀ subNed g1 nexB gs2, needOrdAllocRegs nb gs.g = some (subNed, g1) →
       softBond (crdArg subNed g1.bo) region (softGs1 ⟨g1, gs.soft⟩ b subNed (env.sure b)) = some (nexB, gs2) →
       ∀ x1, (Y { x with soft := softMapNoun gs2.soft } x1 ∧ x1.soft = softMapNoun gs2.soft) →
@@ -269,7 +267,8 @@ theorem comp_run_n2_softNT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode :
   obtain ⟨V, hgot, hv⟩ := hcd
   obtain ⟨x', hy, hcall⟩ := crd_callNTS (Y := fun a c => Y a c ∧ c.soft = a.soft) h7 hcode R env.cod msup p q hpn b
     nb (env.sure b) gs x hx hn (loob (env.pure b)) region (fun a => ⟨hr a, rfl⟩)
-    (fun h1 h2 => ⟨ht h1.1 h2.1, h2.2.trans h1.2⟩) hq (fun s g n g2 h h2 x1 hx1 => hp s g n g2 h h2 x1 hx1) hcp
+    (fun h1 h2 => ⟨ht h1.1 h2.1, h2.2.trans h1.2⟩) (fun h => absurd (hsq.symm.trans h) (by decide))
+    (fun s g n g2 h h2 x1 hx1 => hp s g n g2 h h2 x1 hx1) hcp
   have hmod : runLCS (S := CSet) (Map := TreapMap mugF) env snd msup (Nomm.n2 p q (some (b, Option.none)))
       CGoalL.done region gs = callLS env (fun g r => liftS (R p g r)) (runLCS env snd msup q) p q
         (some (b, Option.none)) msup (CGoalL.done : CGoalL CSet) region gs := by
@@ -312,6 +311,94 @@ theorem comp_run_n2_softNT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode :
         simp only at hs1 ⊢
         rw [hs1]
       simp only [Option.bind_some, e2, Option.map_map, Function.comp_def, hx']
+
+/-- **The case `%0` on a `%next` goal at any `soft`**: `comp_run_n0_next` (copied from
+`CompRunLeafL.lean` with the `NoSoft` binder dropped: the proof never reads `soft`). -/
+theorem comp_run_n0_nextS (h7 : slot? 7 ctx = some compK) (ax : Nat) (laz : Lazy CSet) (th : Jmp)
+    (region : List Nat) (g : Gen (TreapMap mugF)) (hlok : WalkP lok0 0 laz) (x : GenRest) (mono sup : Noun) :
+    nock (crSubj mono (Nomm.n0 ax).toNoun (CGoalL.next laz th).toNoun (listNoun A region) sup (compCore g x ctx)) crDol
+      = (runL (Nomm.n0 ax) (CGoalL.next laz th) region g).map fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
+  simp only [Nomm.toNoun]
+  rw [cr_disp_n0]
+  by_cases h0 : ax = 0
+  · subst h0
+    have hD := comp_bomb_at
+    simp only [compCore]
+    have hb := comp_bomb (S := CSet) x hc g (some th.there)
+    simp [compCore, bomb, cd_emit_eq, bind, StateT.bind, pure, StateT.pure, unitNoun, Next.goal,
+      CGoal.toNoun, Jmp.toNoun, jmp0, lazyNoun, Sure.toNoun, Sure.bunt, Need.toNoun, HoonSet.toNoun_empty,
+      listNoun] at hb
+    generalize comp.door = Dr at hb hD ⊢
+    nock_open crK0
+    simp [nock_exec, crSubj, hD, comp_bomb_arm, CGoalL.toNoun, Jmp.toNoun, unitNoun, hb,
+      runL, bombL, cd_emit_eq, NextL.goal, Next.goal, CGoal.toNoun, Lazy.toNoun_ofSure, Functor.map,
+      StateT.map, jmp0, lazyNoun, Sure.toNoun, Sure.bunt, Need.toNoun, HoonSet.toNoun_empty, listNoun]
+  · have h0' : ¬ (0 = ax) := fun h => h0 h.symm
+    have hD2 := comp_from_at
+    have hsn := comp_simple_next hc x g (CGoalL.next laz th) mono (C (A 0) (A ax)) (listNoun A region) sup
+    have e : simpleNextL (CGoalL.next laz th) g = some (⟨laz, th⟩, g) := rfl
+    rw [e] at hsn
+    simp only [crSubj, compCore, Option.map_some] at hsn
+    have hng : (NextL.goal ⟨laz, th⟩ : CGoalL CSet).toNoun = C (A 0x7478656e) (C laz.toNoun th.toNoun) := rfl
+    rw [hng] at hsn
+    have hf := cfr_all hc (genNoun g x) ax laz 0 hlok
+    simp only [compCore]
+    generalize comp.door = Dr at hsn hD2 hf ⊢
+    nock_open crK0
+    by_cases h1 : ax = 1
+    · subst h1
+      simp [nock_exec, crSubj, hsn, cr_bat_sn, runL, e, hng, pure, StateT.pure, bind, StateT.bind]
+    · have h1' : ¬ (1 = ax) := fun h => h1 h.symm
+      cases ef : Lazy.fromL ax laz with
+      | none =>
+        rw [ef] at hf
+        simp [nock_exec, crSubj, h0, h0', h1, h1', hsn, cr_bat_sn, runL, e, hng, pure, StateT.pure, bind,
+          StateT.bind, hD2, comp_from_arm, hf, ef, simpleNextL]
+      | some laz' =>
+        rw [ef] at hf
+        simp [nock_exec, crSubj, h0, h0', h1, h1', hsn, cr_bat_sn, runL, e, hng, pure, StateT.pure, bind,
+          StateT.bind, hD2, comp_from_arm, hf, ef, simpleNextL]
+        simp [NextL.goal, CGoalL.toNoun]
+
+theorem runLC_n0 (env : CallEnv) (sup : Option Nomm) (ax : Nat) (goal : CGoalL CSet) (region : List Nat) :
+    (runLC env sup (Nomm.n0 ax) goal region : CM (TreapMap mugF) (NextL CSet)) = runL (Nomm.n0 ax) goal region := rfl
+
+/-- **The soft tail call of the corpus** (`[2 [0 1] [1 f] [~ b ~]]` under `%done`, `sof` `&`):
+`comp_run_n2_softNT` with `R := runLC env msup`, the run of `[0 1]` by `comp_run_n0_nextS` (it
+returns its goal; the rest kept), `[1 f]` skipped by `+safe-fol-fol`.  Left: `CallNounM` at `x`
+with the push of `sof` giving `&`, the lock walk of the lazy need `+soft-bond` returns, and the
+`+copy` side condition. -/
+theorem comp_run_n2_softTail (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (snd : Nomm → NeedOrd → Bool) (msup : Option Nomm) (f : Noun)
+    (hpn : PastAt ctx env.cod (Nomm.n0 1)) (b : Bell) (hcd : CodePure cod env b) (nb : NeedOrd)
+    (region : List Nat) (gs : GenSf (TreapMap mugF))
+    (hri : env.ring b = Option.none) (hnb : env.need b = some nb)
+    (hsof : env.sof (made (Nomm.n0 1) msup) (Nomm.n0 1) (Nomm.n1 f) b nb = true)
+    {Y : GenRest → GenRest → Prop} (hr : ∀ x, Y x x) (ht : ∀ {x y z : GenRest}, Y x y → Y y z → Y x z)
+    (hsY : ∀ {x y : GenRest} (s : Noun), Y x y → Y x { y with soft := s })
+    (x : GenRest) (hx : x.soft = softMapNoun gs.soft)
+    (hn : CallNounM msup ctx (Nomm.n0 1) (Nomm.n1 f) b nb (env.sure b).toNoun x (A 1) (A 0))
+    (hlok : ∀ subNed g1 nexB gs2, needOrdAllocRegs nb gs.g = some (subNed, g1) →
+      softBond (crdArg subNed g1.bo) region (softGs1 ⟨g1, gs.soft⟩ b subNed (env.sure b)) = some (nexB, gs2) →
+      WalkP lok0 0 nexB.laz)
+    (hcp : ∀ subNed g1 nexB gs2, needOrdAllocRegs nb gs.g = some (subNed, g1) →
+      softBond (crdArg subNed g1.bo) region (softGs1 ⟨g1, gs.soft⟩ b subNed (env.sure b)) = some (nexB, gs2) →
+      ∀ nexF g2 nexF' g3 nexS g4, crdFqR (runLC env msup) (Nomm.n1 f) nexB.th region gs2.g = some (nexF, g2) →
+      pastL env.cod nexF (Nomm.n0 1) region g2 = some (nexF', g3) →
+      runLC env msup (Nomm.n0 1) (CGoalL.next nexB.laz nexF'.th) region g3 = some (nexS, g4) →
+      CopyH g4.re nexS.laz nexF'.laz) :
+    ∃ x', Y x x' ∧
+      nock (crSubj (A 1) (Nomm.n2 (Nomm.n0 1) (Nomm.n1 f) (some (b, Option.none))).toNoun
+        (CGoalL.done : CGoalL CSet).toNoun (listNoun A region) (unitNoun Nomm.toNoun msup) (compCore gs.g x ctx)) crDol
+      = (runLCS (S := CSet) env snd msup (Nomm.n2 (Nomm.n0 1) (Nomm.n1 f) (some (b, Option.none))) CGoalL.done
+          region gs).map
+          fun r => C r.1.goal.toNoun (genNoun r.2.g { x' with soft := softMapNoun r.2.soft }) :=
+  comp_run_n2_softNT h7 hcode env snd msup (Nomm.n0 1) (Nomm.n1 f) (runLC env msup) (fun _ _ => rfl) rfl hpn b hcd
+    nb region gs hri hnb hsof hr ht hsY x hx hn
+    (fun subNed g1 nexB gs2 e1 e2 x1 hx1 nexF g2 nexF' g3 h3 h4 => ⟨x1, ⟨hr x1, rfl⟩, by
+      rw [runLC_n0]; exact comp_run_n0_nextS h7 1 nexB.laz nexF'.th region g3 (hlok subNed g1 nexB gs2 e1 e2) x1 _ _⟩)
+    hcp
 
 end Compiler
 end Formalization
