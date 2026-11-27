@@ -8,9 +8,9 @@ import lemmas.Compiler.CompSplit
 need with `+rep:in` and the gate `lzlG1`: a look under the part at `p` goes to
 the looks of `by` as an axis under `s`, any other stays (`leapLok`).  Linked
 here: the gate (`lzl_g1`, one step `llStep`) and the fold (`lzl_lok`), on
-positive `p` and `s` and looks.  Not linked yet: the rest of the battery
-(`+need-cut`, `+need-from`, the turns over the forks `lzlG2` and the bonds
-`lzlG3`, the two `+lazy-prune`), README Gaps 17.
+positive `p` and `s` and looks.  The rest of the battery (`+need-cut`,
+`+need-from`, the turns over the forks `lzlG2` and the bonds `lzlG3`, the two
+`+lazy-prune`) is linked in `Compiler/CompLeapLazyGate.lean` (`lzl_gate`).
 -/
 
 namespace Formalization

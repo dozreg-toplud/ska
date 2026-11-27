@@ -23,7 +23,7 @@ variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys
 
 section
 
-variable {lib : Lib} {P : Noun → Prop} {f fh ft : Noun} {L : Lazy S} {th : Jmp}
+variable {lib : Lib} {N : Needs} {P : Noun → Prop} {f fh ft : Noun} {L : Lazy S} {th : Jmp}
     {g0 g' g'' gb g1 g2 g3' g3 : Gen Map} {hed tel Lh : Lazy S} {o : Nat} {jt : Jmp} {Qh Qt : Wit}
     {nexq nexp : NextL S} {n : Next S} {r : List (Nat × Lazy S)} {PB : Nat → List Pole}
     {Fin : Noun → Nat → Trace → Noun → Noun → Tone → Prop} {FinB : Noun → Trace → Noun → Noun → Tone → Prop}
@@ -62,8 +62,8 @@ variable {lib : Lib} {P : Noun → Prop} {f fh ft : Noun} {L : Lazy S} {th : Jmp
         HoonMap.get gb.blocks g''.bo = some ⟨[], [], Termin.hop (jmp0 o)⟩))
     (hhd : (∀ s, FitsS nexq.laz.sure s) ∨ TotalC lib P fh)
     -- the parts
-    (hq : RunOKLS (Map := Map) lib P ft tel jt Qt false gb g1 nexq)
-    (hp : RunOKLS (Map := Map) lib P fh Lh nexq.th Qh false g1 g2 nexp)
+    (hq : RunOKLS (Map := Map) lib N P ft tel jt Qt false gb g1 nexq)
+    (hp : RunOKLS (Map := Map) lib N P fh Lh nexq.th Qh false g1 g2 nexp)
     (hqf : Flat nexq.laz) (hpf : Flat nexp.laz)
     (hqc : ∀ e ∈ entries nexq.laz, Clean e.2.sure.ned) (hpc : ∀ e ∈ entries nexp.laz, Clean e.2.sure.ned)
     (cq : Clean nexq.laz.sure.ned) (cp : Clean nexp.laz.sure.ned)
@@ -131,7 +131,7 @@ theorem pairLS_sem {idx : Map (Nat × Lazy S)}
               HoldsN d R4 w ∧ HoldsN dq R4 wq ∧
               goJ lib O c gul st2 R3 t jt = goJ lib O c gul st2 R4 t (jmp0 o)) ∧
             (¬ FitsS hed.sure x → goJ lib O c gul st2 R3 t jt = some (Tone.two t, st2))) :
-    SemLB lib P f L th (pairWit C Qh Qt) g0 g3 (pairRes n r nexq.laz.bond nexp.laz.bond) := by
+    SemLB lib N P f L th (pairWit C Qh Qt) g0 g3 (pairRes n r nexq.laz.bond nexp.laz.bond) := by
   have b0' := hpre.2.1
   have bB : g''.bo = g'.bo := hB.bo
   have bgb := hgb.2.1
@@ -160,14 +160,14 @@ theorem pairLS_sem {idx : Map (Nat × Lazy S)}
   have bM : g3.bo = g3'.bo := PP.bo
   have rM : g3'.re ≤ g3.re := PP.re
   have cM : g3.cond = g3'.cond := PP.cond
-  intro cf hcf c ned σ Inv ν O n0 gul hS hF st t tm s0 s r0 hI htr hs hm ag hned regs hh hn
+  intro cf hcf c ned σ Inv ν O n0 gul hN hS hF st t tm s0 s r0 hI htr hs hm ag hned regs hh hn
   have hcf2 : ∀ k, k < g2.re → HoonMap.get cf k = HoonMap.get g2.cond k := fun k hk =>
     (hcf k (by omega)).trans (by rw [cM, kc3])
   have hcf1 : ∀ k, k < g1.re → HoonMap.get cf k = HoonMap.get g1.cond k := fun k hk =>
     (hcf2 k (by omega)).trans (hp.cfr.get_lt hk)
   obtain ⟨R1, agQ0, agP, hned2, hs1, hn1, e1, keep1, K⟩ := core cf hcf c ned σ O gul st t s0 s ag hned regs hh hn
   obtain ⟨n', hn', rh, hmh, H⟩ := Mf hs hm
-  have Gh := hp.sem cf hcf2 c ned σ Inv ν O n' gul hS (oracleFwd_le hF (Nat.le_of_lt hn')) st t tm s0 s rh hI htr
+  have Gh := hp.sem cf hcf2 c ned σ Inv ν O n' gul hN hS (oracleFwd_le hF (Nat.le_of_lt hn')) st t tm s0 s rh hI htr
     hs hmh agP hned2 R1 hs1 hn1
   rcases H with ⟨hnz, rfl⟩ | ⟨x, rfl, rt, hmt, Ht⟩
   · exact goalSemCMD_ret hnz (returnsC_step (Needs.le_refl _) e1 (returnsC_of_goalSemCMD hnz Gh))
@@ -175,7 +175,7 @@ theorem pairLS_sem {idx : Map (Nat × Lazy S)}
   · obtain ⟨st1, R2, d, w, hI1, hν1, hqd, hx2, hd2, k2, e2⟩ := Gh.1 fx
     obtain ⟨agQ, hnQ, hsQ, hnQ', J⟩ := K x R2 d w hqd fx hx2 hd2 k2
     have htr1 := frames_mono hν1 htr
-    have Gq := hq.sem cf hcf1 c (Need.pair ned d) σ Inv ν O n' gul hS (oracleFwd_le hF (Nat.le_of_lt hn')) st1 t
+    have Gq := hq.sem cf hcf1 c (Need.pair ned d) σ Inv ν O n' gul hN hS (oracleFwd_le hF (Nat.le_of_lt hn')) st1 t
       tm (C s0 w) s rt hI1 htr1 hs hmt agQ hnQ R2 hsQ hnQ'
     have e12 := e1.trans e2
     rcases Ht with ⟨hnz, rfl⟩ | ⟨y, rfl, hfin⟩
@@ -251,7 +251,7 @@ theorem pairLS_semB {idx : Map (Nat × Lazy S)}
               HoldsN d R4 w ∧ HoldsN dq R4 wq ∧
               goJ lib O c gul st2 R3 t jt = goJ lib O c gul st2 R4 t (jmp0 o)) ∧
             (¬ FitsS hed.sure x → goJ lib O c gul st2 R3 t jt = some (Tone.two t, st2))) :
-    SemLBB lib P f L th (pairWit C Qh Qt) g0 g3 (pairRes n r nexq.laz.bond nexp.laz.bond) := by
+    SemLBB lib N P f L th (pairWit C Qh Qt) g0 g3 (pairRes n r nexq.laz.bond nexp.laz.bond) := by
   have b0' := hpre.2.1
   have bB : g''.bo = g'.bo := hB.bo
   have bgb := hgb.2.1
@@ -280,13 +280,13 @@ theorem pairLS_semB {idx : Map (Nat × Lazy S)}
   have bM : g3.bo = g3'.bo := PP.bo
   have rM : g3'.re ≤ g3.re := PP.re
   have cM : g3.cond = g3'.cond := PP.cond
-  intro cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
+  intro cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
   have hcf2 : ∀ k, k < g2.re → HoonMap.get cf k = HoonMap.get g2.cond k := fun k hk =>
     (hcf k (by omega)).trans (by rw [cM, kc3])
   have hcf1 : ∀ k, k < g1.re → HoonMap.get cf k = HoonMap.get g1.cond k := fun k hk =>
     (hcf2 k (by omega)).trans (hp.cfr.get_lt hk)
   obtain ⟨R1, agQ0, agP, hned2, hs1, hn1, e1, keep1, K⟩ := core cf hcf c ned σ O gul st t s0 s ag hned regs hh hn
-  obtain ⟨rh, hmh, Gh⟩ := hp.semB cf hcf2 c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs agP hned2 R1 hs1 hn1
+  obtain ⟨rh, hmh, Gh⟩ := hp.semB cf hcf2 c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs agP hned2 R1 hs1 hn1
     res (by rw [← e1]; exact hres)
   cases rh with
   | one q =>
@@ -301,7 +301,7 @@ theorem pairLS_semB {idx : Map (Nat × Lazy S)}
       obtain ⟨agQ, hnQ, hsQ, hnQ', J⟩ := K x R2 d w hqd fx hx2 hd2 k2
       have htr1 := frames_mono hν1 htr
       have e12 := e1.trans e2
-      obtain ⟨rt, hmt, Gq⟩ := hq.semB cf hcf1 c (Need.pair ned d) σ Inv ν O gul hS hB st1 t tm (C s0 w) s hI1 htr1
+      obtain ⟨rt, hmt, Gq⟩ := hq.semB cf hcf1 c (Need.pair ned d) σ Inv ν O gul hN hS hB st1 t tm (C s0 w) s hI1 htr1
         hs agQ hnQ R2 hsQ hnQ' res (by rw [← e12]; exact hres)
       have MB := (Mb hs hmh).2 x rt rfl hmt
       cases rt with

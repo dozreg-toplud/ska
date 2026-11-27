@@ -104,6 +104,11 @@ import lemmas.Ska.CompConsLSCall
 import lemmas.Ska.CompIndirectLS
 import lemmas.Ska.CompCallTreeTop
 import lemmas.Ska.CompSevenLS
+import lemmas.Ska.CompFourLS
+import lemmas.Ska.CompConsLSF
+import lemmas.Ska.CompThreeLS
+import lemmas.Ska.CompFourTop
+import lemmas.Ska.CompFiveLS
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -1127,3 +1132,44 @@ open Formalization.SkaModel.Comp
 #print axioms finishLUC_bellContractCallTree7
 #print axioms TopTree.to7
 #print axioms sevenIn_contract
+#print axioms incLB
+#print axioms collLS
+#print axioms RunOKLS.unflag
+#print axioms LOKS.toF
+#print axioms JNewLS.toF
+#print axioms lokS_four_run
+#print axioms lokS_four
+#print axioms jNewLS_four
+#print axioms split_none
+#print axioms lokS_cons_runF
+#print axioms lokS_consF
+#print axioms jNewLSF_cons
+#print axioms lokS_indirect_runF
+#print axioms lokS_indirectF
+#print axioms jNewLS_indirectF
+#print axioms lokS_sevenF
+#print axioms jNewLSF_seven
+#print axioms unaryGB_ok
+#print axioms four_doneB
+#print axioms lokS_doneF
+#print axioms done_of_lokSF
+#print axioms CallTreeA.annot
+#print axioms CallTreeA.kind
+#print axioms lokS_callTreeA
+#print axioms callTreeA_done
+#print axioms finishLUC_contractCallTreeA
+#print axioms finishLUC_bellContractCallTreeA
+#print axioms CallTree7.toA
+#print axioms fourInd_contract
+#print axioms fourCons_contract
+#print axioms forl_fix
+#print axioms clqLB
+#print axioms RunOKLS.wutNone
+#print axioms lokS_three_run
+#print axioms lokS_three
+#print axioms jNewLS_three
+#print axioms unaryGTB_ok
+#print axioms three_doneB
+#print axioms threeInd_contract
+#print axioms Needs.none_le
+#print axioms minkC5_five

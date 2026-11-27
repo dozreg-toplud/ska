@@ -160,11 +160,11 @@ def FrontLB (Q : Wit) (E : Need) (lo0 lo : Nat) (L' : Sure S) (F : List Pole) (L
     FillSem lib O c gul st t (Need.pair (Need.pair ned d) E) lo0 L (A ++ F) (C (C s0 w) v) v
 
 /-- **The forward `sem` of `RunOKLB`** (`SemLC` with `AgreeLB`). -/
-def SemLB (lib : Lib) (P : Noun → Prop) (f : Noun) (L : Lazy S) (th : Jmp) (Q : Wit) (g0 g1 : Gen Map)
+def SemLB (lib : Lib) (N : Needs) (P : Noun → Prop) (f : Noun) (L : Lazy S) (th : Jmp) (Q : Wit) (g0 g1 : Gen Map)
     (nex : NextL S) : Prop :=
   ∀ (cf : Map (Nat × List Nat)), (∀ k, k < g1.re → HoonMap.get cf k = HoonMap.get g1.cond k) →
     ∀ (c : Straight Map) (ned : Need) (σ : Type) (Inv : σ → Prop) (ν : σ → Needs) (O : Oracle σ) (n : Nat)
-      (gul : Noun), OracleSteps Inv ν O → OracleFwd lib Inv ν O n →
+      (gul : Noun), (∀ st, Inv st → N ≤ ν st) → OracleSteps Inv ν O → OracleFwd lib Inv ν O n →
     ∀ (st : σ) (t tm : Trace) (s0 s : Noun) (r : Tone), Inv st → Forall2 (FrameRel lib (ν st)) t tm → P s →
     minkF lib gul n tm s f = some r →
     (∀ st' : σ, AgreeLB lib O c gul st' t cf ned g0 g1 nex.laz s0 s) → (∀ x, NMem ned x → g1.re ≤ x) →
@@ -173,11 +173,11 @@ def SemLB (lib : Lib) (P : Noun → Prop) (f : Noun) (L : Lazy S) (th : Jmp) (Q 
       L.sure th (Q s) r
 
 /-- **The backward `sem` of `RunOKLB`** (`SemLCB` with `AgreeLB`). -/
-def SemLBB (lib : Lib) (P : Noun → Prop) (f : Noun) (L : Lazy S) (th : Jmp) (Q : Wit) (g0 g1 : Gen Map)
+def SemLBB (lib : Lib) (N : Needs) (P : Noun → Prop) (f : Noun) (L : Lazy S) (th : Jmp) (Q : Wit) (g0 g1 : Gen Map)
     (nex : NextL S) : Prop :=
   ∀ (cf : Map (Nat × List Nat)), (∀ k, k < g1.re → HoonMap.get cf k = HoonMap.get g1.cond k) →
     ∀ (c : Straight Map) (ned : Need) (σ : Type) (Inv : σ → Prop) (ν : σ → Needs) (O : Oracle σ)
-      (gul : Noun), OracleSteps Inv ν O → OracleBwd lib Inv ν O →
+      (gul : Noun), (∀ st, Inv st → N ≤ ν st) → OracleSteps Inv ν O → OracleBwd lib Inv ν O →
     ∀ (st : σ) (t tm : Trace) (s0 s : Noun), Inv st → Forall2 (FrameRel lib (ν st)) t tm → P s →
     (∀ st' : σ, AgreeLB lib O c gul st' t cf ned g0 g1 nex.laz s0 s) → (∀ x, NMem ned x → g1.re ≤ x) →
     ∀ regs, HoldsS nex.laz.sure regs s → HoldsN ned regs s0 →
@@ -191,7 +191,7 @@ lazy need `L`, with bodies at the entries**: `RunOKLC` with `labs` allowing
 a body `B` at every result entry, `front` through `FrontLB` (the fronts may
 read the goal's sure registers when `x`), and the `sem` clauses assuming
 `AgreeLB`. -/
-structure RunOKLB (lib : Lib) (P : Noun → Prop) (f : Noun) (L : Lazy S) (th : Jmp) (Q : Wit) (x : Bool)
+structure RunOKLB (lib : Lib) (N : Needs) (P : Noun → Prop) (f : Noun) (L : Lazy S) (th : Jmp) (Q : Wit) (x : Bool)
     (g0 g1 : Gen Map) (nex : NextL S) : Prop where
   re : g0.re ≤ g1.re
   bo : g0.bo ≤ g1.bo
@@ -220,13 +220,13 @@ structure RunOKLB (lib : Lib) (P : Noun → Prop) (f : Noun) (L : Lazy S) (th : 
         FrontLB (Map := Map) Q (gsE x L) g0.re g1.re L'.sure (F.map (renPole (unproxy cf))) e.2.sure) ∨
      (e.1 ∉ (entries nex.laz).map Prod.fst ∧
         FrontLB (Map := Map) Q (gsE x L) g0.re g1.re Sure.bunt (F.map (renPole (unproxy cf))) e.2.sure))
-  sem : SemLB lib P f L th Q g0 g1 nex
-  semB : SemLBB lib P f L th Q g0 g1 nex
+  sem : SemLB lib N P f L th Q g0 g1 nex
+  semB : SemLBB lib N P f L th Q g0 g1 nex
 
 /-! ## Bodies and the old relation -/
 
 section Agree
-variable {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ} {t : Trace}
+variable {lib : Lib} {N : Needs} {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ} {t : Trace}
   {cond : Map (Nat × List Nat)} {ned : Need} {g0 g1 : Gen Map} {laz : Lazy S} {s0 s : Noun}
 
 /-- **`AgreeLB` gives `AgreeL` where the made entries' blocks are empty.** -/
@@ -301,9 +301,9 @@ theorem gsE_lt {x : Bool} {L : Lazy S} {lo : Nat} (h : ∀ r, NMem L.sure.ned r 
 /-- **`RunOKLC` gives `RunOKLB` with `x = false`**: the made entries'
 blocks are empty, so `AgreeLB` gives `AgreeL`, and a front of `RunOKLC` is
 one of `RunOKLB` with no goal register. -/
-theorem RunOKLC.toB {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp} {Q : Wit} {g0 g1 : Gen Map}
+theorem RunOKLC.toB {lib : Lib} {N : Needs} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp} {Q : Wit} {g0 g1 : Gen Map}
     {nex : NextL S} (R : RunOKLC (Map := Map) lib P f L th Q g0 g1 nex) :
-    RunOKLB (Map := Map) lib P f L th Q false g0 g1 nex := by
+    RunOKLB (Map := Map) lib N P f L th Q false g0 g1 nex := by
   have hl : ∀ e ∈ entries nex.laz, g0.bo ≤ e.1 → ∃ th, HoonMap.get g1.blocks e.1 = some ⟨[], [], Termin.hop th⟩ :=
     fun e he _ => (R.labs e he).2
   refine ⟨R.re, R.bo, R.drop, R.keep, R.grow, R.cfr, R.lo, R.hi, R.ent, R.regs, R.dist, R.eregs,
@@ -314,27 +314,34 @@ theorem RunOKLC.toB {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th 
     exact ⟨F, hb, fun cf hcf => (hf cf hcf).imp
       (fun ⟨L', hm, fl⟩ => ⟨L', hm, frontLB_of_frontLC (fun r hr => hr.elim) fl⟩)
       (fun ⟨hn, fl⟩ => ⟨hn, frontLB_of_frontLC (fun r hr => hr.elim) fl⟩)⟩
-  · intro cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
+  · intro cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
     exact R.sem cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm (fun st' => (ag st').toL hl) hned
       regs hh hn
-  · intro cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
+  · intro cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
     exact R.semB cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs (fun st' => (ag st').toL hl) hned regs
       hh hn res hres
 
 /-- **The weakening of `x`**, when the goal's sure registers lie below the
 run's start. -/
-theorem RunOKLB.up {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp} {Q : Wit} {g0 g1 : Gen Map}
-    {nex : NextL S} (R : RunOKLB (Map := Map) lib P f L th Q false g0 g1 nex)
-    (hL : ∀ r, NMem L.sure.ned r → r < g0.re) (x : Bool) : RunOKLB (Map := Map) lib P f L th Q x g0 g1 nex := by
+theorem RunOKLB.up {lib : Lib} {N : Needs} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp} {Q : Wit} {g0 g1 : Gen Map}
+    {nex : NextL S} (R : RunOKLB (Map := Map) lib N P f L th Q false g0 g1 nex)
+    (hL : ∀ r, NMem L.sure.ned r → r < g0.re) (x : Bool) : RunOKLB (Map := Map) lib N P f L th Q x g0 g1 nex := by
   refine ⟨R.re, R.bo, R.drop, R.keep, R.grow, R.cfr, R.lo, R.hi, R.ent, R.regs, R.dist, R.eregs, R.labs, R.nodup,
     R.dreg, R.nec, R.ncond, R.econd, fun e he => ?_, R.sem, R.semB⟩
   obtain ⟨F, hb, hf⟩ := R.front e he
   exact ⟨F, hb, fun cf hcf => (hf cf hcf).imp
     (fun ⟨L', hm, fl⟩ => ⟨L', hm, fl.up (gsE_lt hL)⟩) (fun ⟨hn, fl⟩ => ⟨hn, fl.up (gsE_lt hL)⟩)⟩
 
-/-- **`RunOKLB` with `x = false` and empty bodies is `RunOKLC`.** -/
+/-- **The needs that answer nothing**: below every table of needs, so
+`RunOKLB` at them assumes nothing of the oracle's needs. -/
+def Needs.none : Needs := fun _ _ => Option.none
+
+theorem Needs.none_le (N : Needs) : Needs.none ≤ N := fun _ _ _ h => by cases h
+
+/-- **`RunOKLB` with `x = false` and empty bodies, at the needs that
+answer nothing, is `RunOKLC`.** -/
 theorem RunOKLB.toLC {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp} {Q : Wit} {g0 g1 : Gen Map}
-    {nex : NextL S} (R : RunOKLB (Map := Map) lib P f L th Q false g0 g1 nex)
+    {nex : NextL S} (R : RunOKLB (Map := Map) lib Needs.none P f L th Q false g0 g1 nex)
     (he : ∀ e ∈ entries nex.laz, (e.1 ∈ (entries L).map Prod.fst ∨ (g0.bo ≤ e.1 ∧ e.1 < nex.th.there)) ∧
       ∃ th, HoonMap.get g1.blocks e.1 = some ⟨[], [], Termin.hop th⟩) :
     RunOKLC (Map := Map) lib P f L th Q g0 g1 nex := by
@@ -346,28 +353,30 @@ theorem RunOKLB.toLC {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th
     exact ⟨F, hb, fun cf hcf => (hf cf hcf).imp
       (fun ⟨L', hm, fl⟩ => ⟨L', hm, FrontLB.toLC fl⟩) (fun ⟨hn, fl⟩ => ⟨hn, FrontLB.toLC fl⟩)⟩
   · intro cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
-    exact R.sem cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm (fun st' => (ag st').toB) hned
+    exact R.sem cf hcf c ned σ Inv ν O n gul (fun _ _ => Needs.none_le _) hS hF st t tm s0 s r hI htr hs hm
+      (fun st' => (ag st').toB) hned
       regs hh hn
   · intro cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
-    exact R.semB cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs (fun st' => (ag st').toB) hned regs
+    exact R.semB cf hcf c ned σ Inv ν O gul (fun _ _ => Needs.none_le _) hS hB st t tm s0 s hI htr hs
+      (fun st' => (ag st').toB) hned regs
       hh hn res hres
 
 /-- **Through `WrapRel`** (the memo hint, the folded `%6`). -/
-theorem RunOKLB.wrap {lib : Lib} {P : Noun → Prop} {f f' : Noun} (W : WrapRel lib P f f') {L : Lazy S} {th : Jmp}
-    {Q : Wit} {x : Bool} {g0 g1 : Gen Map} {nex : NextL S} (R : RunOKLB (Map := Map) lib P f L th Q x g0 g1 nex) :
-    RunOKLB lib P f' L th Q x g0 g1 nex := by
+theorem RunOKLB.wrap {lib : Lib} {N : Needs} {P : Noun → Prop} {f f' : Noun} (W : WrapRel lib P f f') {L : Lazy S} {th : Jmp}
+    {Q : Wit} {x : Bool} {g0 g1 : Gen Map} {nex : NextL S} (R : RunOKLB (Map := Map) lib N P f L th Q x g0 g1 nex) :
+    RunOKLB lib N P f' L th Q x g0 g1 nex := by
   refine ⟨R.re, R.bo, R.drop, R.keep, R.grow, R.cfr, R.lo, R.hi, R.ent, R.regs, R.dist, R.eregs, R.labs, R.nodup,
     R.dreg, fun s hs hf => ⟨fun gul n tm r hm => ?_, fun gul tm => ?_⟩, R.ncond, R.econd, R.front, ?_, ?_⟩
   · obtain ⟨n', _, hm'⟩ := W.fwd hs hm
     exact (R.nec s hs hf).1 gul n' tm r hm'
   · obtain ⟨r, hm, hb⟩ := (R.nec s hs hf).2 gul tm
     exact ⟨r, W.bwd hs hm, hb⟩
-  · intro cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
+  · intro cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
     obtain ⟨n', hle, hm'⟩ := W.fwd hs hm
-    exact R.sem cf hcf c ned σ Inv ν O n' gul hS (oracleFwd_le hF hle) st t tm s0 s r hI htr hs hm' ag hned
+    exact R.sem cf hcf c ned σ Inv ν O n' gul hN hS (oracleFwd_le hF hle) st t tm s0 s r hI htr hs hm' ag hned
       regs hh hn
-  · intro cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
-    obtain ⟨r, hm, G⟩ := R.semB cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
+  · intro cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
+    obtain ⟨r, hm, G⟩ := R.semB cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
     exact ⟨r, W.bwd hs hm, G⟩
 
 end Comp

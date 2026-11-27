@@ -46,12 +46,12 @@ theorem holdsN_atom_mem : ∀ {ned : Need} {R : Map (Option Noun)} {m d : Nat},
 
 /-- **`[4 p]` from `CollRunU`, any register `d`**: `RunOKLB` with
 `x = true` (the fronts may read the goal's register `d`). -/
-theorem runOKLB_n4 {lib : Lib} {P : Noun → Prop} {f : Noun} {p : Nomm} (M : MinkEq lib P f (Nomm.n4 p))
+theorem runOKLB_n4 {lib : Lib} {N : Needs} {P : Noun → Prop} {f : Noun} {p : Nomm} (M : MinkEq lib P f (Nomm.n4 p))
     {L : Lazy S} {th : Jmp} {d : Nat} {g0 g1 : Gen Map} {nex : NextL S}
     (CR : CollRunU (Map := Map) lib (Nomm.n4 p) L th d g0 g1 nex)
     (hL : ∀ r, NMem L.sure.ned r → r < g0.re) (hlab : ∀ e ∈ entries L, e.1 < g0.bo)
     (hec : ∀ e ∈ entries L, ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none) :
-    ∃ Q, RunOKLB (Map := Map) lib P f L th Q true g0 g1 nex := by
+    ∃ Q, RunOKLB (Map := Map) lib N P f L th Q true g0 g1 nex := by
   by_cases hdf : g0.re ≤ d
   · exact ⟨_, ((runOKL_n4 CR hdf hlab hec).toLC M).toB.up hL true⟩
   have hd : NMem L.sure.ned d := CR.dreg.resolve_right hdf
@@ -99,7 +99,7 @@ theorem runOKLB_n4 {lib : Lib} {P : Noun → Prop} {f : Noun} {p : Nomm} (M : Mi
         · exact Or.inl (Or.inl hz)
         · exact hz.elim
         · exact Or.inr (hL z hz))
-  · intro cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
+  · intro cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
     have ag' : AgreeU lib O c gul st t cf ned g0 g1 nex.laz s0 s :=
       ((ag st).toL hl).toU fun e he => (CR.labs e he).1
     have Sp := CR.sem cf hcf c ned σ O st t gul s0 s ag' (fun r hr => Or.inl (hned r hr)) regs hh hn
@@ -109,7 +109,7 @@ theorem runOKLB_n4 {lib : Lib} {P : Noun → Prop} {f : Noun} {p : Nomm} (M : Mi
         rcases hx with ⟨h | h, h'⟩
         · exact Or.inl ⟨h, h'⟩
         · exact Or.inr h) Sp))
-  · intro cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
+  · intro cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
     have ag' : AgreeU lib O c gul st t cf ned g0 g1 nex.laz s0 s :=
       ((ag st).toL hl).toU fun e he => (CR.labs e he).1
     have Sp := CR.sem cf hcf c ned σ O st t gul s0 s ag' (fun r hr => Or.inl (hned r hr)) regs hh hn
@@ -123,8 +123,8 @@ theorem runOKLB_n4 {lib : Lib} {P : Noun → Prop} {f : Noun} {p : Nomm} (M : Mi
 at the entries, the fronts reading the goal's register when
 `+collapse-lazy-atom` takes it (`collRun_n4`, `runOKLB_n4`);
 its jump is at none of its entries (they are all new and below it). -/
-theorem lokb_n4X (lib : Lib) (env : CallEnv) {p : Nomm} (hp : FragX (S := S) p) {P : Noun → Prop} {f : Noun}
-    (M : MinkEq lib P f (Nomm.n4 p)) : LOKB (S := S) (Map := Map) true lib env P f (Nomm.n4 p) := by
+theorem lokb_n4X (lib : Lib) {N : Needs} (env : CallEnv) {p : Nomm} (hp : FragX (S := S) p) {P : Noun → Prop} {f : Noun}
+    (M : MinkEq lib P f (Nomm.n4 p)) : LOKB (S := S) (Map := Map) true lib N env P f (Nomm.n4 p) := by
   have pp : (Nomm.n4 p).pure = true := by simpa [Nomm.pure] using fragX_pure hp
   refine ⟨fun {sup L th region g0 g1 nex} hc h => ?_, fun {sup L th region g0 g1 nex} hc b0 d0 hu hcl hcb h1 h2
     ha ht hsd hsl hlab hnd hed h => ?_⟩

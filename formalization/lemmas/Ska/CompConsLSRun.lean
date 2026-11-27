@@ -135,10 +135,10 @@ theorem splitAt_of_splitBs {b bh bt : List (Nat × Lazy S)} (hf : FlatB b) {sh0 
 /-- **The cons of two call-free parts under a flat lazy goal** (the run
 field of `LOKS`): both `+past`s are the identity, `pairLS_ok` composes the
 parts' `RunOKLS`. -/
-theorem lokS_consP_run (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {fh ft : Noun}
+theorem lokS_consP_run (lib : Lib) {N : Needs} (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {fh ft : Noun}
     (hfh : ∃ x y, fh = C x y) (hpp : p.pure = true) (hqp : q.pure = true)
     (Mp : MinkEq lib P fh p) (Mq : MinkEq lib P ft q)
-    (Sp : LOKS (S := S) (Map := Map) false lib env P fh p) (Sq : LOKS (S := S) (Map := Map) false lib env P ft q)
+    (Sp : LOKS (S := S) (Map := Map) false lib N env P fh p) (Sq : LOKS (S := S) (Map := Map) false lib N env P ft q)
     {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S}
     (hcount : sixCount (Nomm.cons p q) ≤ 255) (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0)
     (hcl0 : Clear g0) (hcb : CondBelow g0) (h1 : 1 ≤ th.there) (h2 : th.there < g0.bo) (hta : th.args = [])
@@ -150,7 +150,7 @@ theorem lokS_consP_run (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Pr
       ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none)
     (hfl : Flat L) (hcs : Clean L.sure.ned) (hce : ∀ e ∈ entries L, Clean e.2.sure.ned)
     (hr : runLC env sup (Nomm.cons p q) (CGoalL.next L th) region g0 = some (nex, g1)) :
-    (∃ Q, RunOKLS (Map := Map) lib P (C fh ft) L th Q false g0 g1 nex) ∧
+    (∃ Q, RunOKLS (Map := Map) lib N P (C fh ft) L th Q false g0 g1 nex) ∧
       nex.th.there ∉ (entries nex.laz).map Prod.fst ∧ (nex.th = th ∨ g0.bo ≤ nex.th.there) ∧ Flat nex.laz ∧
       (∀ e ∈ entries nex.laz, Clean e.2.sure.ned) := by
   have e : (runLC env sup (Nomm.cons p q) (CGoalL.next L th) region : CM Map (NextL S)) = (do
@@ -437,11 +437,11 @@ theorem clean_copyLazyL {o : Nat} {a b l : Lazy S} {g g' : Gen Map} (h : copyLaz
   exact clean_copyNeed _ _ _ _ _ _ h1 ha hb
 
 /-- **The cons of two call-free parts meets `LOKS`.** -/
-theorem lokS_consP (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {fh ft : Noun}
+theorem lokS_consP (lib : Lib) {N : Needs} (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {fh ft : Noun}
     (hfh : ∃ x y, fh = C x y) (hpp : p.pure = true) (hqp : q.pure = true)
     (Mp : MinkEq lib P fh p) (Mq : MinkEq lib P ft q)
-    (Sp : LOKS (S := S) (Map := Map) false lib env P fh p) (Sq : LOKS (S := S) (Map := Map) false lib env P ft q) :
-    LOKS (S := S) (Map := Map) false lib env P (C fh ft) (Nomm.cons p q) := by
+    (Sp : LOKS (S := S) (Map := Map) false lib N env P fh p) (Sq : LOKS (S := S) (Map := Map) false lib N env P ft q) :
+    LOKS (S := S) (Map := Map) false lib N env P (C fh ft) (Nomm.cons p q) := by
   refine ⟨fun {sup L th region g0 g1 nex} hc hr => ?_, fun hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl hlab hnd hed
     hfl hcs hce hr => lokS_consP_run lib env hfh hpp hqp Mp Mq Sp Sq hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl hlab
       hnd hed hfl hcs hce hr⟩
