@@ -4,6 +4,7 @@ import lemmas.Compiler.CompRunShapePast
 import lemmas.Ska.RunShapeAgree
 import lemmas.Compiler.CompRunShapeTen
 import lemmas.Compiler.CompRunShapeTwo
+import lemmas.Compiler.CompRunShapeTwoI
 import lemmas.Compiler.CompRunShapeSix
 
 /-! The axioms of the main theorems of track A's `+run-shape` link (2026-11-27). -/
@@ -71,3 +72,4 @@ import lemmas.Compiler.CompRunShapeSix
 #print axioms Formalization.Compiler.rs6_at
 #print axioms Formalization.Compiler.rs_n6DP
 #print axioms Formalization.Compiler.runShape_n6DP_nz
+#print axioms Formalization.Compiler.rs_n2iW
