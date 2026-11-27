@@ -477,5 +477,273 @@ theorem lp_run (q c c' : Noun)
 
 end Loop
 
+/-! ## `accLoop` against the model's loop `sccLoop` -/
+
+section Model
+
+variable {T nc T' : FinMap Bell (VarEntry FinMap)}
+
+theorem get_put' {ν : Type} (m : FinMap Bell ν) (k c : Bell) (v : ν) :
+    FinMap.get (m.put k v) c = if c = k then some v else FinMap.get m c := by
+  simp [FinMap.put, FinMap.get]
+
+/-- **The accumulator against the model**: the keys `K` hold their nomm in
+`T'` and the flags `ft`; the others are absent, with no flags. -/
+def AccInv (T' : FinMap Bell (VarEntry FinMap)) (K : Bell → Prop) (M : FinMap Bell Noun) (ft : FlagTab) : Prop :=
+  ∀ c, (K c → ∃ e p, FinMap.get T' c = some e ∧ ft c = some p ∧ FinMap.get M c = some (C e.nomm.toNoun (flagNoun p))) ∧
+    (¬ K c → FinMap.get M c = none ∧ ft c = none)
+
+theorem accInv_congr {K K' : Bell → Prop} {M : FinMap Bell Noun} {ft ft' : FlagTab} (hK : ∀ c, K c ↔ K' c)
+    (hf : ∀ c, ft c = ft' c) (h : AccInv T' K M ft) : AccInv T' K' M ft' := by
+  intro c
+  refine ⟨fun hk => ?_, fun hk => ?_⟩
+  · obtain ⟨e, p, h1, h2, h3⟩ := (h c).1 ((hK c).2 hk); exact ⟨e, p, h1, (hf c) ▸ h2, h3⟩
+  · obtain ⟨h1, h2⟩ := (h c).2 (fun h' => hk ((hK c).1 h')); exact ⟨h1, (hf c) ▸ h2⟩
+
+theorem decF_flag (n : Noun) (p : Bool × Bool) : decF (C n (flagNoun p)) = some p := by
+  obtain ⟨a, b⟩ := p; cases a <;> cases b <;> rfl
+
+theorem accFt_of {K : Bell → Prop} {M : FinMap Bell Noun} {ft : FlagTab} (h : AccInv T' K M ft) : accFt M = ft := by
+  funext c
+  unfold accFt
+  by_cases hk : K c
+  · obtain ⟨e, p, -, hp, hm⟩ := (h c).1 hk; rw [hm, hp]; simp [decF_flag]
+  · obtain ⟨hm, hf⟩ := (h c).2 hk; rw [hm, hf]; rfl
+
+open Classical in
+theorem st1_fold (hA : AddsTo T nc T') : ∀ (L : List Bell) (K : Bell → Prop) (M : FinMap Bell Noun) (ft : FlagTab),
+    L.Nodup → (∀ b ∈ L, ¬ K b ∧ ∃ e, FinMap.get nc b = some e) → AccInv T' K M ft →
+    ∃ M1, foldO (st1 nc) L M = some M1 ∧
+      AccInv T' (fun c => K c ∨ c ∈ L) M1 (fun c => if c ∈ L then some (false, false) else ft c)
+  | [], K, M, ft, _, _, h => ⟨M, rfl, accInv_congr (fun c => by simp) (fun c => by simp) h⟩
+  | x :: L, K, M, ft, hd, hL, h => by
+    obtain ⟨hxK, e, he⟩ := hL x List.mem_cons_self
+    have hT' := (hA.new x e he).2
+    have h1 : AccInv T' (fun c => K c ∨ c = x) (M.put x (C e.nomm.toNoun (C (A 1) (A 1))))
+        (fun c => if c = x then some (false, false) else ft c) := by
+      intro c
+      refine ⟨fun hk => ?_, fun hk => ?_⟩
+      · by_cases hc : c = x
+        · subst hc; exact ⟨e, (false, false), hT', by simp, by rw [get_put']; simp; rfl⟩
+        · obtain ⟨e', p, h1, h2, h3⟩ := (h c).1 (hk.resolve_right hc)
+          exact ⟨e', p, h1, by simp [hc, h2], by rw [get_put', if_neg hc]; exact h3⟩
+      · have hc : c ≠ x := fun e => hk (Or.inr e)
+        obtain ⟨h1, h2⟩ := (h c).2 (fun h' => hk (Or.inl h'))
+        exact ⟨by rw [get_put', if_neg hc]; exact h1, by simp [hc, h2]⟩
+    have hd' := List.nodup_cons.1 hd
+    obtain ⟨M1, hf, hinv⟩ := st1_fold hA L (fun c => K c ∨ c = x) _ _ hd'.2
+      (fun b hb => ⟨fun h' => h'.elim (hL b (List.mem_cons_of_mem _ hb)).1 (fun e => hd'.1 (e ▸ hb)),
+        (hL b (List.mem_cons_of_mem _ hb)).2⟩) h1
+    refine ⟨M1, ?_, accInv_congr (fun c => ?_) (fun c => ?_) hinv⟩
+    · simp only [foldO, st1, he, Option.map_some, Option.bind_some]; exact hf
+    · simp only [List.mem_cons, or_assoc]
+    · by_cases h1 : c ∈ L
+      · simp [h1]
+      · by_cases h2 : c = x
+        · subst h2; simp [h1]
+        · simp [h1, h2]
+
+theorem foldl_none {α β : Type} (f : β → α → Option β) (L : List α) :
+    L.foldl (fun acc b => acc.bind fun g => f g b) none = none := by
+  induction L with
+  | nil => rfl
+  | cons x L ih => exact ih
+
+theorem st2_fold (hA : AddsTo T nc T') : ∀ (L : List Bell) (K : Bell → Prop) (M : FinMap Bell Noun) (f G : FlagTab),
+    (∀ b ∈ L, K b ∧ ∃ e, FinMap.get nc b = some e) → AccInv T' K M f →
+    L.foldl (fun acc b => acc.bind fun f => (evalFin (nmOf T') f b).map fun pt =>
+      fun c => if c = b then some pt else f c) (some f) = some G →
+    ∃ M2, foldO (st2 nc) L M = some M2 ∧ AccInv T' K M2 G
+  | [], K, M, f, G, _, h, hG => by
+    simp only [List.foldl_nil, Option.some.injEq] at hG
+    subst hG; exact ⟨M, rfl, h⟩
+  | x :: L, K, M, f, G, hL, h, hG => by
+    obtain ⟨hxK, e, he⟩ := hL x List.mem_cons_self
+    have hT' := (hA.new x e he).2
+    obtain ⟨e', p, h1, h2, h3⟩ := (h x).1 hxK
+    rw [hT', Option.some.injEq] at h1
+    subst h1
+    simp only [List.foldl_cons, Option.bind_some] at hG
+    unfold evalFin at hG
+    simp only [nmOf, hT', Option.map_some, Option.bind_some] at hG
+    cases hr : efGo f x.less e.nomm with
+    | none => rw [hr] at hG; simp only [Option.map_none] at hG; rw [foldl_none] at hG; cases hG
+    | some rr =>
+      rw [hr] at hG
+      simp only [Option.map_some, Option.map_some] at hG
+      have h1 : AccInv T' K (M.put x (C e.nomm.toNoun (flagNoun rr.2)))
+          (fun c => if c = x then some rr.2 else f c) := by
+        intro c
+        refine ⟨fun hk => ?_, fun hk => ?_⟩
+        · by_cases hc : c = x
+          · subst hc; exact ⟨e, rr.2, hT', by simp, by rw [get_put']; simp⟩
+          · obtain ⟨e', p, h1, h2, h3⟩ := (h c).1 hk
+            exact ⟨e', p, h1, by simp [hc, h2], by rw [get_put', if_neg hc]; exact h3⟩
+        · have hc : c ≠ x := fun e => hk (e ▸ hxK)
+          obtain ⟨h1, h2⟩ := (h c).2 hk
+          exact ⟨by rw [get_put', if_neg hc]; exact h1, by simp [hc, h2]⟩
+      obtain ⟨M2, hf, hinv⟩ := st2_fold hA L K _ _ G (fun b hb => hL b (List.mem_cons_of_mem _ hb)) h1 hG
+      refine ⟨M2, ?_, hinv⟩
+      have hex : ∃ fb, FinMap.get M x = some (C e.nomm.toNoun fb) := ⟨_, h3⟩
+      simp only [foldO, st2, he, Option.bind_some, if_pos hex, accFt_of h, hr, Option.map_some]
+      exact hf
+
+open Classical in
+/-- **`accLoop` is the model's loop** on accumulators that agree with it. -/
+theorem acc_loop (hA : AddsTo T nc T') : ∀ (Ls : List (List Bell)) (K : Bell → Prop) (M : FinMap Bell Noun) (ft G : FlagTab),
+    Ls.flatten.Nodup → (∀ b ∈ Ls.flatten, ¬ K b ∧ ∃ e, FinMap.get nc b = some e) → AccInv T' K M ft →
+    sccLoop (nmOf T') ft Ls = some G →
+    ∃ M', accLoop nc M Ls = some M' ∧ AccInv T' (fun c => K c ∨ c ∈ Ls.flatten) M' G
+  | [], K, M, ft, G, _, _, h, hG => by
+    simp only [sccLoop, Option.some.injEq] at hG
+    subst hG
+    exact ⟨M, rfl, accInv_congr (fun c => by simp) (fun _ => rfl) h⟩
+  | L :: Ls, K, M, ft, G, hd, hL, h, hG => by
+    simp only [List.flatten_cons] at hd hL
+    have hd1 := (List.nodup_append.1 hd).1
+    have hd2 := (List.nodup_append.1 hd).2.1
+    have hdis := (List.nodup_append.1 hd).2.2
+    simp only [sccLoop] at hG
+    cases hs : sccStep (nmOf T') ft L with
+    | none => rw [hs] at hG; cases hG
+    | some ft' =>
+      rw [hs, Option.bind_some] at hG
+      obtain ⟨M1, hf1, hi1⟩ := st1_fold hA L K M ft hd1
+        (fun b hb => hL b (List.mem_append_left _ hb)) h
+      obtain ⟨M2, hf2, hi2⟩ := st2_fold hA L (fun c => K c ∨ c ∈ L) M1 _ ft'
+        (fun b hb => ⟨Or.inr hb, (hL b (List.mem_append_left _ hb)).2⟩) hi1 hs
+      obtain ⟨M', hf', hi'⟩ := acc_loop hA Ls (fun c => K c ∨ c ∈ L) M2 ft' G hd2
+        (fun b hb => ⟨fun h' => h'.elim (hL b (List.mem_append_right _ hb)).1
+          (fun h'' => hdis b h'' b hb rfl), (hL b (List.mem_append_right _ hb)).2⟩) hi2 hG
+      refine ⟨M', ?_, accInv_congr (fun c => ?_) (fun _ => rfl) hi'⟩
+      · simp only [accLoop, accStep, hf1, Option.bind_some, hf2]; exact hf'
+      · simp only [List.flatten_cons, List.mem_append, or_assoc]
+
+end Model
+
+/-- The accumulator of the old table: `code.lon` as a map of nouns. -/
+noncomputable def accOf (F : FlagTab) (T : FinMap Bell (VarEntry FinMap)) : FinMap Bell Noun :=
+  FinMap.mapK (fun b e => C e.nomm.toNoun (tabFlags F T b)) T
+
+/-- **The model's loop on the accumulators**: from the old table with total
+flags `F`, over a `TarjanSpec` list, where `sccLoop` returns `G`, `accLoop`
+returns the accumulator of the new table with `G`, and `G` is total on it. -/
+theorem acc_final {code nc : FinMap Bell (VarEntry FinMap)} (hA : AddsTo code nc (addCode code nc))
+    {L : List (List Bell)} (hL : TarjanSpec nc L) {F G : FlagTab}
+    (hF0 : ∀ c, FinMap.get code c = none → F c = none)
+    (hFt : ∀ c e, FinMap.get code c = some e → ∃ p, F c = some p)
+    (hG : sccLoop (nmOf (addCode code nc)) F L = some G) :
+    accLoop nc (accOf F code) L = some (accOf G (addCode code nc)) ∧
+      ∀ c e, FinMap.get (addCode code nc) c = some e → ∃ p, G c = some p := by
+  obtain ⟨-, hnd, hcov, -⟩ := hL
+  have h0 : AccInv (addCode code nc) (fun c => ∃ e, FinMap.get code c = some e) (accOf F code) F := by
+    intro c
+    refine ⟨fun ⟨e, he⟩ => ?_, fun hk => ?_⟩
+    · obtain ⟨p, hp⟩ := hFt c e he
+      refine ⟨e, p, hA.old c e he, hp, ?_⟩
+      show (FinMap.get code c).map _ = _
+      rw [he]; simp [tabFlags, hp]
+    · have hn : FinMap.get code c = none := by
+        cases h : FinMap.get code c with
+        | none => rfl
+        | some e => exact absurd ⟨e, h⟩ hk
+      refine ⟨?_, hF0 c hn⟩
+      show (FinMap.get code c).map _ = _
+      rw [hn]; rfl
+  obtain ⟨M', hM', hinv⟩ := acc_loop hA L _ (accOf F code) F G hnd
+    (fun b hb => by
+      obtain ⟨e, he⟩ := (hcov b).1 hb
+      exact ⟨fun ⟨e', he'⟩ => (by rw [(hA.new b e he).1] at he'; cases he'), e, he⟩) h0 hG
+  have hK : ∀ c, ((∃ e, FinMap.get code c = some e) ∨ c ∈ L.flatten) ↔ ∃ e, FinMap.get (addCode code nc) c = some e := by
+    intro c
+    constructor
+    · rintro (⟨e, he⟩ | hc)
+      · exact ⟨e, hA.old c e he⟩
+      · obtain ⟨e, he⟩ := (hcov c).1 hc; exact ⟨e, (hA.new c e he).2⟩
+    · rintro ⟨e, he⟩
+      rcases hA.cov c e he with h | h
+      · exact Or.inl ⟨e, h⟩
+      · exact Or.inr ((hcov c).2 ⟨e, h⟩)
+  refine ⟨?_, fun c e he => ?_⟩
+  · rw [hM']
+    congr 1
+    apply Subtype.ext
+    funext c
+    show FinMap.get M' c = (FinMap.get (addCode code nc) c).map _
+    by_cases hk : (∃ e, FinMap.get code c = some e) ∨ c ∈ L.flatten
+    · obtain ⟨e, p, h1, h2, h3⟩ := (hinv c).1 hk
+      rw [h3, h1]; simp [tabFlags, h2]
+    · have hn : FinMap.get (addCode code nc) c = none := by
+        cases h : FinMap.get (addCode code nc) c with
+        | none => rfl
+        | some e => exact absurd ((hK c).2 ⟨e, h⟩) hk
+      rw [(hinv c).2 hk |>.1, hn]; rfl
+  · obtain ⟨e', p, -, h2, -⟩ := (hinv c).1 ((hK c).2 ⟨e, he⟩)
+    exact ⟨p, h2⟩
+
+section Top
+
+variable (root : Ident) (r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN : Noun)
+  (gr : Callgraph FinMap × Noun)
+  (r : Callgraph FinMap × FinMap Bell (FDatum FinMap) × Memo FinMap × FDatum FinMap × Noun)
+
+/-- **`LoopRunAt` restated true** (`LoopRunAt` of `PokeLinkLoop.lean` is
+false whenever `nc` is not empty: at `Ls = []` the model returns `F` and the
+pill leaves `code.lon` unchanged, not the noun of `addCode code nc`): the
+list is `TarjanSpec`, `code.lon` is the old table with the flags `F`, `F`
+total on the old keys. -/
+def LoopRunAtT (code nc baked : FinMap Bell (VarEntry FinMap)) (vr : Noun) (F : FlagTab) : Prop :=
+  ∀ (Ls : List (FinMap Bell Unit)) (G : FlagTab),
+    TarjanSpec nc (Ls.map fun S => (FinMap.rap S).map Prod.fst) →
+    sccLoop (nmOf (addCode code nc)) F (Ls.map fun S => (FinMap.rap S).map Prod.fst) = some G →
+    nock (C (listNoun FinMap.setNoun Ls) (C (nc.toNoun varEntryNoun) (C (baked.toNoun varEntryNoun)
+        (srSp root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r (codeNoun (tabFlags F) code) vr)))) srLoop =
+      some (C (listNoun FinMap.setNoun Ls) (C (nc.toNoun varEntryNoun) (C (baked.toNoun varEntryNoun)
+        (srSp root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r
+          (codeNoun (tabFlags G) (addCode code nc)) vr))))
+
+/-- **`LoopRunAtT` from the leaf `EvalFinAt`**: the SCC loop of the pill is
+the model's, on every old table with flags total on its keys. -/
+theorem loopRunAtT (hE : EvalFinAt) {code nc : FinMap Bell (VarEntry FinMap)} (baked : FinMap Bell (VarEntry FinMap))
+    (vr : Noun) (hA : AddsTo code nc (addCode code nc)) {F : FlagTab}
+    (hF0 : ∀ c, FinMap.get code c = none → F c = none)
+    (hFt : ∀ c e, FinMap.get code c = some e → ∃ p, F c = some p) :
+    LoopRunAtT root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r code nc baked vr F := by
+  intro Ls G hL hG
+  have hacc := (acc_final hA hL hF0 hFt hG).1
+  have ht := lp_trap root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r (baked.toNoun varEntryNoun) vr hE nc
+    Ls _ _ hacc
+  exact lp_run root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r _ _ vr _ _ _ ht
+
+end Top
+
+/-- **`LoopLinkAt` at `flagsOf` from `+tarjan` and `+eval-finalized`**
+(`loopLinkAt_flagsOf` with `LoopRunAt` discharged): on a closed old table
+with `InfoCalls` and a solution `F` total on its keys, from the leaves
+`SccsLeafAt` (track Q), `EvalFinAt` and `LoopTotal`. -/
+theorem loopLinkAt_flagsOfT (hE : EvalFinAt) (root : Ident) (r1 r2 r3 r4 jRest callsN varsN seekN hotN : Noun)
+    (gr : Callgraph FinMap × Noun)
+    (r : Callgraph FinMap × FinMap Bell (FDatum FinMap) × Memo FinMap × FDatum FinMap × Noun)
+    {code : FinMap Bell (VarEntry FinMap)} {E : BEnv FinMap} {n : Nat}
+    {bg : FinMap Bell (VarEntry FinMap) × FinMap Bell (FinMap Bell Unit)} {F : FlagTab} (vr : Noun)
+    (hc : CodeClosed code) (hv : VarsKeys E.vars code) (hi : InfoCalls code) (hbg : bakeGraph E n = some bg)
+    (hF : FlagSol code F) (hFt : ∀ c e, FinMap.get code c = some e → ∃ p, F c = some p)
+    (hS : SccsLeafAt root r1 r2 r3 r4 jRest (codeNoun flagsOf code) callsN varsN seekN hotN gr r
+      (newCode code bg.1) bg.1 vr)
+    (hT : LoopTotal code (newCode code bg.1) F) :
+    LoopLinkAt root r1 r2 r3 r4 jRest (codeNoun flagsOf code) callsN varsN seekN hotN gr r
+      flagsOf code (newCode code bg.1) bg.1 vr := by
+  obtain ⟨q, hq, Ls, rfl, hspec⟩ := hS
+  obtain ⟨G, hG⟩ := hT _ hspec
+  refine ⟨_, hq, ?_⟩
+  have hfl := (flagsOf_poke hc hv hi hbg hspec hF hG).1
+  have e : codeNoun (tabFlags G) (addCode code (newCode code bg.1)) =
+      codeNoun flagsOf (addCode code (newCode code bg.1)) :=
+    codeNoun_congr fun b _ => (hfl b).symm
+  have hl := loopRunAtT root r1 r2 r3 r4 jRest (codeNoun flagsOf code) callsN varsN seekN hotN gr r hE bg.1 vr
+    (addsTo_addCode code bg.1) hF.1 hFt Ls G hspec hG
+  rw [e, ← codeNoun_flagsOf hc hi hF] at hl
+  exact hl
+
 end Compiler
 end Formalization
