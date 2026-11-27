@@ -494,17 +494,17 @@ theorem lokS_cons_run (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Pro
 
 
 /-- **The cons whose parts may call meets `LOKS`**: each part call-free with
-`MinkEq` or hinted, with `LOKS`, and `JNewL` of a hinted tail. -/
-theorem lokS_cons (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {fh ft : Noun}
+`MinkEq` or hinted, with `LOKS`, and `JNewLS` of a hinted tail. -/
+theorem lokS_consS (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {fh ft : Noun}
     (hfh : ∃ x y, fh = C x y)
     (Kp : (p.pure = true ∧ MinkEq lib P fh p) ∨ hinted env.cod p = some true)
     (Kq : (q.pure = true ∧ MinkEq lib P ft q) ∨ hinted env.cod q = some true)
-    (Jq : hinted env.cod q = some true → JNewL (S := S) (Map := Map) env q)
+    (Jq : hinted env.cod q = some true → JNewLS (S := S) (Map := Map) env q)
     (Sp : LOKS (S := S) (Map := Map) false lib env P fh p) (Sq : LOKS (S := S) (Map := Map) false lib env P ft q) :
     LOKS (S := S) (Map := Map) false lib env P (C fh ft) (Nomm.cons p q) := by
   refine ⟨fun {sup L th region g0 g1 nex} hc hr => ?_, fun hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl hlab hnd hed
     hfl hcs hce hr => (fun ⟨a, b, c, d, e⟩ => ⟨a, b, Or.inr c, d, e⟩)
-      (lokS_cons_run lib env hfh Kp Kq (fun hq => JNewL.toS (Jq hq)) Sp Sq hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl
+      (lokS_cons_run lib env hfh Kp Kq Jq Sp Sq hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl
         hlab hnd hed hfl hcs hce hr)⟩
   have e : (runLC env sup (Nomm.cons p q) (CGoalL.next L th) region : CM Map (NextL S)) = (do
         let (hed, tel, o) ← splitL ⟨L, th⟩
@@ -552,6 +552,30 @@ theorem lokS_cons (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {
   obtain ⟨rfl, rfl⟩ := hcp
   exact clean_copyLazyL h8 cp cq'
 
+
+/-- **The cons whose parts may call meets `LOKS`**, with `JNewL` of a hinted
+tail (`lokS_consS`). -/
+theorem lokS_cons (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {fh ft : Noun}
+    (hfh : ∃ x y, fh = C x y)
+    (Kp : (p.pure = true ∧ MinkEq lib P fh p) ∨ hinted env.cod p = some true)
+    (Kq : (q.pure = true ∧ MinkEq lib P ft q) ∨ hinted env.cod q = some true)
+    (Jq : hinted env.cod q = some true → JNewL (S := S) (Map := Map) env q)
+    (Sp : LOKS (S := S) (Map := Map) false lib env P fh p) (Sq : LOKS (S := S) (Map := Map) false lib env P ft q) :
+    LOKS (S := S) (Map := Map) false lib env P (C fh ft) (Nomm.cons p q) :=
+  lokS_consS lib env hfh Kp Kq (fun hq => JNewL.toS (Jq hq)) Sp Sq
+
+/-- **The jump of the cons is a block it made** (`lokS_cons_run`), under
+every flat lazy goal from a state as `LOKS.run` asks. -/
+theorem jNewLS_cons (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {fh ft : Noun}
+    (hfh : ∃ x y, fh = C x y)
+    (Kp : (p.pure = true ∧ MinkEq lib P fh p) ∨ hinted env.cod p = some true)
+    (Kq : (q.pure = true ∧ MinkEq lib P ft q) ∨ hinted env.cod q = some true)
+    (Jq : hinted env.cod q = some true → JNewLS (S := S) (Map := Map) env q)
+    (Sp : LOKS (S := S) (Map := Map) false lib env P fh p) (Sq : LOKS (S := S) (Map := Map) false lib env P ft q) :
+    JNewLS (S := S) (Map := Map) env (Nomm.cons p q) :=
+  fun hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs hce hr =>
+    (lokS_cons_run lib env hfh Kp Kq Jq Sp Sq hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs
+      hce hr).2.2.1
 
 /-! ## `[0 0]` -/
 

@@ -572,6 +572,95 @@ theorem lokS_indirect (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Pro
       hlab hnd hed hfl hcs hce hr
     exact ⟨A, B, Or.inr C', D, E⟩
 
+
+/-- **The jump of the indirect call is a block it made** (`lokS_indirect_run`). -/
+theorem jNewLS_indirect (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {f fb fc : Noun}
+    (M : MinkC2 lib P f fb fc) (hfb : ∃ a b, fb = C a b)
+    (Kp : (p.pure = true ∧ MinkEq lib P fb p) ∨ hinted env.cod p = some true)
+    (Sp : LOKS (S := S) (Map := Map) false lib env P fb p) (Sq : LOKS (S := S) (Map := Map) false lib env P fc q) :
+    JNewLS (S := S) (Map := Map) env (Nomm.n2 p q Option.none) :=
+  fun hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs hce hr =>
+    (lokS_indirect_run lib env M hfb Kp Sp Sq hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs
+      hce hr).2.2.1
+
+/-! ## The class: `[0 axe]`, the cons and the indirect call -/
+
+/-- **The nomms built from `[0 axe]` by the cons and the indirect call**,
+with their formulas (the cases `Annot.n0`, `Annot.cons`, `Annot.indirect`). -/
+inductive CallTree : Noun → Nomm → Prop
+  | n0 (axe : Nat) : CallTree (slot axe) (Nomm.n0 axe)
+  | cons {a1 a2 b : Noun} {p q : Nomm} : CallTree (C a1 a2) p → CallTree b q →
+      CallTree (C (C a1 a2) b) (Nomm.cons p q)
+  | ind {b c : Noun} {p q : Nomm} : CallTree b p → CallTree c q → CallTree (n3 (A 2) b c) (Nomm.n2 p q Option.none)
+
+theorem CallTree.annot {lib : Lib} {code : Bell → Option Nomm} {P : Noun → Prop} {f : Noun} {nm : Nomm}
+    (h : CallTree f nm) : Annot lib code P f nm := by
+  induction h with
+  | n0 axe => exact Annot.n0
+  | cons _ _ ihp ihq => exact Annot.cons ihp ihq
+  | ind _ _ ihp ihq => exact Annot.indirect ihp ihq
+
+theorem CallTree.cell {f : Noun} {nm : Nomm} (h : CallTree f nm) : ∃ a b, f = C a b := by
+  cases h with
+  | n0 axe => exact ⟨_, _, rfl⟩
+  | cons _ _ => exact ⟨_, _, rfl⟩
+  | ind _ _ => exact ⟨_, _, rfl⟩
+
+theorem CallTree.hinted_of {f : Noun} {nm : Nomm} (h : CallTree f nm) (cod : Bell → Option Bool) :
+    nm.pure = false → hinted cod nm = some true := by
+  induction h with
+  | n0 axe => intro e; cases e
+  | @cons a1 a2 b p q _ _ ihp ihq =>
+    intro e
+    simp only [hinted]
+    cases ep : p.pure
+    · rw [ihp ep]; rfl
+    · rw [hinted_pure cod p ep]
+      have eq : q.pure = false := by simpa only [Nomm.pure, ep, Bool.true_and] using e
+      exact ihq eq
+  | ind _ _ => intro _; rfl
+
+/-- **Each nomm of the class is call-free with `MinkEq`, or hinted.** -/
+theorem CallTree.kind (lib : Lib) (cod : Bell → Option Bool) (P : Noun → Prop) {f : Noun} {nm : Nomm}
+    (h : CallTree f nm) : (nm.pure = true ∧ MinkEq lib P f nm) ∨ hinted cod nm = some true := by
+  have hok : CodeOK lib (fun _ => Option.none) := fun _ _ h => by cases h
+  cases hp : nm.pure
+  · exact Or.inr (h.hinted_of cod hp)
+  · exact Or.inl ⟨rfl, fun s hs gul tm r => mink_pure hok hp (h.annot (P := P)) hs gul tm r⟩
+
+/-- **Every nomm built from `[0 axe]` by the cons and the indirect call meets
+`LOKS false`** for its formula on any subjects, and a hinted one `JNewLS`.
+What is left are the premises of `LOKS.run` on the starting goal and state. -/
+theorem lokS_callTree (lib : Lib) (env : CallEnv) (P : Noun → Prop) {f : Noun} {nm : Nomm} (h : CallTree f nm) :
+    LOKS (S := S) (Map := Map) false lib env P f nm ∧
+      (hinted env.cod nm = some true → JNewLS (S := S) (Map := Map) env nm) := by
+  induction h with
+  | n0 axe =>
+    have M := ((CallTree.n0 axe).kind lib env.cod P).elim (fun h => h.2) (fun h => by cases h)
+    refine ⟨?_, fun h => by cases h⟩
+    rcases Nat.eq_zero_or_pos axe with rfl | ha
+    · exact lokS_n00 lib env M
+    · exact lokS_n0 lib env ha M
+  | @cons a1 a2 b p q hp hq ihp ihq =>
+    have Kp := hp.kind lib env.cod P
+    have Kq := hq.kind lib env.cod P
+    exact ⟨lokS_consS lib env ⟨_, _, rfl⟩ Kp Kq ihq.2 ihp.1 ihq.1,
+      fun _ => jNewLS_cons lib env ⟨_, _, rfl⟩ Kp Kq ihq.2 ihp.1 ihq.1⟩
+  | @ind b c p q hp hq ihp ihq =>
+    have Kp := hp.kind lib env.cod P
+    exact ⟨lokS_indirect lib env (minkC2_indirect lib P b c) hp.cell Kp ihp.1 ihq.1,
+      fun _ => jNewLS_indirect lib env (minkC2_indirect lib P b c) hp.cell Kp ihp.1 ihq.1⟩
+
+
+/-- `%cc2` (`CompRunOKLC.lean`), calls in both halves of a cons:
+`[[2 [0 3] [0 2]] [2 [0 3] [0 2]]]` meets `LOKS false`. -/
+example (lib : Lib) (env : CallEnv) (P : Noun → Prop) :
+    LOKS (S := S) (Map := Map) false lib env P
+      (C (n3 (A 2) (slot 3) (slot 2)) (n3 (A 2) (slot 3) (slot 2)))
+      (Nomm.cons (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) :=
+  (lokS_callTree lib env P (CallTree.cons (CallTree.ind (CallTree.n0 3) (CallTree.n0 2))
+    (CallTree.ind (CallTree.n0 3) (CallTree.n0 2)))).1
+
 end Comp
 end SkaModel
 end Formalization
