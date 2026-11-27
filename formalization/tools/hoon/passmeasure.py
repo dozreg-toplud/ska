@@ -142,10 +142,117 @@ def summarize(path):
     for x in lexbad[:30]:
         print('  ', x[0], x[1][:300])
 
-if sys.argv[1] == '--sum':
+def pmlines(path):
+    raw = []
+    for l in open(path).read().split('\n'):
+        if l[:1] in (' ', '\t') and raw:
+            raw[-1] += ' ' + l.strip()
+        else:
+            raw.append(l)
+    raw = [re.sub(r'\s+', ' ', l).replace('[ %pm', '[%pm') for l in raw]
+    ls = [l.strip() for l in raw if l.startswith('[%pm') or l.startswith('%pm')]
+    h = len(ls) // 2
+    if h and ls[:h] == ls[h:]:
+        ls = ls[:h]
+    return ls
+
+def runclass(t):
+    # the first component of the entry's tuple (Ska/PassMeasureE.lean, entryM) that changed:
+    # 'lc' (kS bus - kS less-code), 'pr' (%void flag, kS of the product), 'map', 'in' (indiW),
+    # 'sk' (seek), 'none' (the five fields compared by `changed` the same), None (a rise)
+    lc, pr, meq, ind, sk = t[3:8]
+    if lc == '%more': return 'lc'
+    if lc not in ('%eq', '%eqv'): return None
+    if pr == '%less': return 'pr'
+    if pr not in ('%eq', '%eqv'): return None
+    if meq == '%.n': return 'map'
+    if ind == '%more': return 'in'
+    if ind not in ('%eq', '%eqv'): return None
+    if sk == '%more': return 'sk'
+    if sk not in ('%eq', '%eqv'): return None
+    return 'none'
+
+def passes(path, verbose=False):
+    # The measure of the pass loop (Ska/PassMeasureP.lean): (B - next, the members' entries), the
+    # second compared pointwise (every member stays or falls, one falls, a culled one drops out).
+    # Per pass of a component: the member count, the multiset of the members' runs by the first
+    # component of their tuple that fell ('none': the five fields the same), whether a new function
+    # was pushed (`next` grew) and `changed`.  A pass that goes on (changed, or next grew) must:
+    # push a function (then B - next falls), or have every run 'none' or a fall, one run a fall,
+    # and the next pass of the component no more members.
+    c = {}
+    def inc(k, n=1):
+        c[k] = c.get(k, 0) + n
+    bad = []
+    case = None
+    opn = []   # open passes: [mug, pass, members, runs, pushed]
+    last = {}  # mug -> members of its last pass that went on without a push
+    for l in pmlines(path):
+        t = l.strip('[]').split()
+        tag = t[0]
+        if tag == '%pm-case':
+            case = t[1]; opn = []; last = {}; continue
+        if tag == '%pm-new':
+            for p in opn: p[4] = True
+            continue
+        if tag == '%pm-run':
+            if t[2] == '%.y':
+                continue      # a first run: a new function, pushed inside the innermost pass
+            if opn:
+                opn[-1][3].append((runclass(t), t[8]))
+            continue
+        if tag == '%pm-pass':
+            mug, pas, mem = t[1], int(t[2]), int(t[3])
+            if mug in last and mem > last[mug]:
+                bad.append((case, 'members grew without a push', l)); inc('bad: members grew')
+            last.pop(mug, None)
+            opn.append([mug, pas, mem, [], False])
+            continue
+        if tag == '%pm-end':
+            mug, pas, ch, found = t[1], int(t[2]), t[3], t[4]
+            if mug not in [q[0] for q in opn]:
+                inc('unmatched %pm-end'); continue
+            while opn[-1][0] != mug:
+                # a pass with no %pm-end: its member loop returned a lowlink below the index,
+                # so +analyze returned (the component is a part of a larger one): it does not go on
+                q = opn.pop(); inc('passes that return (low < index)')
+                last.pop(q[0], None)
+            p = opn.pop()
+            inc('passes')
+            ms = {}
+            for k, _ in p[3]:
+                ms[str(k)] = ms.get(str(k), 0) + 1
+            if verbose:
+                print(case, mug, 'pass', pas, 'members', p[2], 'runs', dict(sorted(ms.items())),
+                      'pushed', p[4], 'changed', ch)
+            if (found == '%.y') != p[4]:
+                inc('found and pushed differ')
+            goes = ch == '%.y' or found == '%.y'
+            if not goes:
+                inc('passes that end'); continue
+            inc('passes that go on')
+            if found == '%.y':
+                inc('  go on: a push (B - next falls)'); continue
+            strict = [k for k, cc in p[3] if k not in (None, 'none')]
+            rise = [k for k, cc in p[3] if k is None]
+            if rise or not strict:
+                bad.append((case, 'no fall', l, p[3])); inc('bad: go on without a fall'); continue
+            inc('  go on: entries fall (' + ','.join(sorted(set(strict))) + ')')
+            last[mug] = p[2]
+            continue
+    for k in sorted(c):
+        print(k, c[k])
+    print('passes that go on and do not lower the measure:', len(bad))
+    for x in bad[:30]:
+        print('  ', x[0], x[1], x[2][:200], x[3] if len(x) > 3 else '')
+
+if sys.argv[1] in ('--sum', '--passes', '--passes-v'):
     for p in sys.argv[2:]:
         print('==', p)
-        summarize(p)
+        if sys.argv[1] == '--sum':
+            summarize(p)
+        else:
+            passes(p, sys.argv[1] == '--passes-v')
     sys.exit(0)
 
 out = sys.argv[1]
