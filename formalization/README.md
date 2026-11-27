@@ -848,6 +848,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/RawInvCQ.lean` | `QM m` (every run of `m` is `Quiet`: no label made, blocks keep parameters and ends), its combinators and tactic `qmb`, and the arms that emit nothing, from the text of `CompSimBody.lean` with `QM` for `SimM`: the needs (`qm_must` .. `qm_kernLoop`), `qm_splitLoop`, `qm_intoLoopL`, `qm_copyLazyL` (with `qm_mergeForks`, `qm_mergeBonds`), `qm_walkLazy`, `qm_collapseGate`, `qm_kern` (its proxies only touch `cond`, its ops go in through `+add-ops`), `qm_lazyShut`.  README Gaps 14 (b). |
 | `Ska/RawInvCAT.lean` | `RunAT` with indirect calls (README Gaps 14 (b)): the state invariant `ATS` (labels in `[1, bo)`, every block meets `BATC` in the map and jumps below its label), `KP`, `Stab`, the triple `HT P m Q` with `pure'`, `bind'`, `ite'`, `conseq`, `weak`, `frame`, `quiet` (a `QM` step), `emit'`; the arms that emit (`ht_simpleNextL`, `ht_bombL`, `ht_splitL`, `ht_intoL`, `ht_copyL`, `ht_pastL`, `ht_medeL`, `ht_collapse`, `ht_forl`, `ht_doneBlocks`, `ht_kerf`), **`ht_callL`** (the indirect call), **`ht_runLC`** (`runLC env sup` on `PlainN`, every goal, lazy goals with forks and bonds included: `Fresh` goal jumps give a `Fresh` result jump), **`runATC_plain`** (`Closed`, `ArityOK`, `TwoNA` of the raw blocks of the top run), **`runDownC_plain`** (`Down` of them). |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
+| `Glue/RawOptIn.lean` | Track G (glue, README Gaps 22): `CompPieces` of `Ska/CompHypOf.lean` restated with track D's `OptIn` (`RawOptIn`) and the pill's passes at fuels per reference form (`OptRef`) in place of `rawDInv`, `optEq`, `optAlias`, `optSSA` (`RefSide`, `CompRestO`, `CompPiecesO`); `keeps_of_optIn`, `contract_of_piecesO`, `compHyp_of_piecesO` (to `CompHyp`, the hypothesis of `gap_of_comp`); on `FragX`: `rawMono_fragX`, `rawNary_fragX`, `rawOptIn_fragX`, `compHyp_of_fragX` (from `CompRestO` alone), `optRef_fragX` (from `optimize_total_finishLUX` / `-LFX`, given `A.optimize` = the pill's and `Straight.toNoun` injective); `fullAnswers_of_cg` (`FullAnswers` of the model of `+poke` from `CgHalts`, `MemoNoCallees` under `InvB`, `BakeEnds`, `RootAnswers`). |
+| `Glue/AuditGlue.lean` | `#check` of every declaration `LEDGER.md` names, `#print axioms` of the theorems of `Glue/`. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
 Every main theorem depends on `propext`, `Classical.choice` and `Quot.sound`
@@ -4294,3 +4296,16 @@ import only its theorems.  So:
        into `this`.  The pill link of the loop is not started.  Its skeleton is `csiFix` (956
        cells): the DFS `order`, the `%may` `+roll`, `top` by `+run:by`, and the `|-` over a
        `+roll` of `order`, with `member` as a hypothesis in the shape of `mem_gate_six`.
+22. **The ledger** (track G, 2026-11-27, `LEDGER.md`, `lemmas/Glue/`).  `LEDGER.md` traces
+    every field of `Gap` (`Assembly.lean`) down to its open leaves, with the mismatches
+    between the shapes the fields need and the shapes the tracks prove, and the open leaves
+    in order of what they block; every name it cites is checked in `Glue/AuditGlue.lean`.
+    Proved here by composition (`Glue/RawOptIn.lean`): `CompHyp` from `CompPiecesO`
+    (`compHyp_of_piecesO`: `OptIn` in place of `DInvS`, the old route through
+    `DriverRestSSA` being closed by `not_aliasOnceB` / `w_opt`), and from `CompRestO` alone
+    on `FragX` (`compHyp_of_fragX`); `OptRef` on `FragX` from the optimizer's totality
+    (`optRef_fragX`, given `Straight.toNoun` injective); `FullAnswers` from `CgHalts`
+    (`fullAnswers_of_cg`).  Not done: `refMono` and `RawMono` restated with `finishLUCM`
+    and a class that sees `env` and `N` (mismatch M3 of the ledger), so that the
+    direct-call theorems of tracks J and K plug in; `MemoNoCallees` in the invariant (M8);
+    the choice of `lib` for `LibSlam`, `RendLeafIs`, `HandIs`.

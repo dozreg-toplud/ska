@@ -13,6 +13,12 @@ import lemmas.Ska.CompDirectMCloseEx
 import lemmas.Ska.CompDirectMTailP
 import lemmas.Ska.CompDirectMTree
 import lemmas.Ska.RawInvCAT
+import lemmas.Compiler.RegisterFastShape
+import lemmas.Compiler.SkaJointConv
+import lemmas.Compiler.FolLoopConv
+import lemmas.Compiler.RoadPure
+import lemmas.Ska.CompDirectMTop
+import lemmas.Ska.OptAliasWitness
 
 /-!
 # Audit of `formalization/LEDGER.md`
@@ -156,6 +162,24 @@ namespace Formalization
 #check @SkaModel.Ana.passLoop_returns_fin
 #check @SkaModel.Ana.FinPushes
 #check @SkaModel.Ana.passOn_old
+
+/-! ## Further names of the ledger -/
+#check @SkaModel.Comp.noDirect_of_fragX
+#check @SkaModel.Ana.skaPoke_fuel_le
+#check @SkaModel.Ana.memoNoCallees_empty
+#check @SkaModel.Bake.bakeLoop_mono
+#check @SkaModel.Bake.bakeLoop_grows
+#check @Compiler.ska_poke_iff
+#check @Compiler.ska_poke_ana_iff_pill
+#check @Compiler.analyze_iff
+#check @Compiler.fol_loop_iff
+#check @Compiler.resolve_iff
+#check @Compiler.opt_gate
+#check @Compiler.cu_gate_scc_one_six_fol_ts
+#check @SkaModel.Opt.not_aliasOnceB
+#check @SkaModel.Opt.w_opt
+#check @SkaModel.PokeM.finishLUC_this
+#check @SkaModel.Opt.EntryOK
 
 /-! ## The glue theorems -/
 #print axioms SkaModel.Glue.keeps_of_optIn
