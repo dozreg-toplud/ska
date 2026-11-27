@@ -103,6 +103,29 @@ theorem partLM_of_partR {E : GenRest → Prop} {env : CallEnv} {msup : Option No
     (P : PartR env msup ctx (XM E msup) n region) : PartLM env msup ctx E n region :=
   ⟨fun goal g hi => crx_iff_mm.1 (P.link goal g hi), P.res⟩
 
+/-- **The code entries of the callees of `n`**: every direct call `[2 p q
+[~ b k]]` in `n` has `CodePure` (the noun `cod` of `code.long-ska`) and
+`env.cod b` is `env.pure b` (what `+hinted` reads). -/
+def CallCode (cod : Noun) (env : CallEnv) : Nomm → Prop
+  | Nomm.cons p q => CallCode cod env p ∧ CallCode cod env q
+  | Nomm.n0 _ => True
+  | Nomm.n1 _ => True
+  | Nomm.n3 p => CallCode cod env p
+  | Nomm.n4 p => CallCode cod env p
+  | Nomm.n5 p q => CallCode cod env p ∧ CallCode cod env q
+  | Nomm.n6 p q r => CallCode cod env p ∧ CallCode cod env q ∧ CallCode cod env r
+  | Nomm.n7 p q => CallCode cod env p ∧ CallCode cod env q
+  | Nomm.n10 _ v q => CallCode cod env v ∧ CallCode cod env q
+  | Nomm.n2 p q info =>
+      (match info with
+        | Option.none => True
+        | some (b, _) => CodePure cod env b ∧ env.cod b = some (env.pure b)) ∧
+      CallCode cod env p ∧ CallCode cod env q
+  | Nomm.n11s _ q _ => CallCode cod env q
+  | Nomm.n11d _ h q _ => CallCode cod env h ∧ CallCode cod env q
+  | Nomm.n12 _ _ => True
+  | Nomm.mean _ _ _ _ _ => True
+
 section
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
 

@@ -178,3 +178,74 @@ gen('CompRunRTen.lean',
          '# `%10` of `+run` against `runLCM env true` (copies of `CompRunTenL.lean`)'),
     [('CompRunTenL.lean', ['cr10_tailL', 'runLC_n10', 'comp_run_n10L'], [])],
     {'app': 2, 'auto': 1, 'comppast': 2, 'hpn': 2, 'intro': 1, 'linkR': 3, 'ndpair': 2, 'partL': 2, 'pastL': 10, 'pastcod': 1, 'runenv': 10, 'runsimp': 1})
+
+# --- +hinted and +past with the code table ----------------------------------------
+def hd_case(c):
+    """The IH applications of one case of `hd_gate`, with `hcc : CallCode cod env n`."""
+    tag = c.split()[0]
+    proj = {'cons': {'ihp': '.1', 'ihq': '.2'}, 'n5': {'ihp': '.1', 'ihq': '.2'}, 'n7': {'ihp': '.1', 'ihq': '.2'},
+            'n10': {'ihp': '.1', 'ihq': '.2'}, 'n6': {'ihp': '.1', 'ihq': '.2.1', 'ihr': '.2.2'},
+            'n3': {'ihp': ''}, 'n4': {'ihp': ''}, 'n11s': {'ihq': ''}, 'n11d': {'ihh': '.1', 'ihq': '.2'}}.get(tag, {})
+    for ih, pr in proj.items():
+        c = re.sub(r'\b' + ih + r' _ (h\w*)', ih + ' _ hcc' + pr + r' \1', c)
+    return c
+
+N2SOME = """    · obtain ⟨⟨⟨V, hgot, hv⟩, hcb⟩, hcp, hcq⟩ := hcc
+      have hgt := got_gate (mug := mugF) layer2 ⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩ bl.toNoun cod V
+        hgot
+      have hL := compK_layer2
+      have hba := by.arm_at
+      have hbg := by.got.arm_at
+      simp only [hinted, hcb, Option.map_some] at h
+      nock_open hdBat
+      cases hpu : env.pure bl
+      · simp only [hpu, Bool.not_false, orB, Option.some.injEq] at h
+        subst h
+        clear ihp ihq
+        rw [hpu] at hv
+        hd_simp
+      · simp only [hpu, Bool.not_true, orB] at h
+        rw [hpu] at hv
+        rcases orB_some' h with ⟨hp, rfl⟩ | ⟨hp, hq⟩
+        · have e1 := ihp _ hcp hp
+          clear ihp ihq h
+          simp only [loob] at e1
+          hd_simp
+        · have e1 := ihp _ hcp hp
+          have e2 := ihq _ hcq hq
+          clear ihp ihq h
+          cases b <;> simp only [loob] at e1 e2 <;> hd_simp
+"""
+
+def gen_hd():
+    blk, = extract(D + 'CompPastLink.lean', ['hd_gate'])
+    blk = rep1(blk, 'theorem hd_gate (K cod : Noun) : ∀ (n : Nomm) (b : Bool), hinted noCode n = some b →\n'
+               '    nock (C hdBat (C (C n.toNoun cod) K)) hdBat = some (loob b) := by',
+               'theorem hd_gateR (cod : Noun) (env : CallEnv) : ∀ (n : Nomm) (b : Bool), CallCode cod env n →\n'
+               '    hinted env.cod n = some b → nock (C hdBat (C (C n.toNoun cod) compK)) hdBat = some (loob b) := by', 1)
+    blk = rep1(blk, '    · simp [hinted, noCode, orB] at h\n', N2SOME, 1)
+    blk = rep1(blk, '    intro b h\n', '    intro b hcc h\n    simp only [CallCode] at hcc\n', 14)
+    parts = blk.split('\n  | ')
+    blk = '\n  | '.join([parts[0]] + [hd_case(c) for c in parts[1:]])
+    blk = re.sub(r'\*\*`\+hinted` is `hinted noCode`\*\*', '**`+hinted` is `hinted env.cod`** (copy of `hd_gate`)', blk)
+    return blk
+
+def rep1(s, old, new, n):
+    c = s.count(old)
+    assert c == n, (old[:60], c, n)
+    return s.replace(old, new)
+
+def gen_past():
+    blk, = extract(D + 'CompPastLink.lean', ['comp_past'])
+    blk = rep1(blk, 'theorem comp_past ', 'theorem comp_pastR ', 1)
+    blk = rep1(blk, '(hnom : hinted noCode nom ≠ Option.none)', '(env : CallEnv) (hcc : CallCode cod env nom)\n'
+               '    (hnom : hinted env.cod nom ≠ Option.none)', 1)
+    blk = rep1(blk, 'pastL noCode', 'pastL env.cod', 2)
+    blk = rep1(blk, 'rcases e : hinted noCode nom with', 'rcases e : hinted env.cod nom with', 1)
+    blk = rep1(blk, 'have hh := hd_gate compK cod nom b e', 'have hh := hd_gateR cod env nom b hcc e', 1)
+    return blk
+
+txt = head(['lemmas.Compiler.CompRunRBase'],
+           '# `+hinted` and `+past` reading the code table (copies of `hd_gate`, `comp_past` of `CompPastLink.lean`)')
+txt += gen_hd() + '\n' + gen_past() + '\nend Compiler\nend Formalization\n'
+open(D + 'CompRunRPast.lean', 'w').write(txt)
