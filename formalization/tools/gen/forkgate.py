@@ -1,4 +1,4 @@
-"""Cut the gates `fkGF` and `fkGB` of the trap of `+fork` (as written in
+"""Cut the gates `fkGF`, `fkGB` and the trap `fkLoop` of `+fork` (as written in
 lemmas/Compiler/CompForkGen.lean) into the chains of their pushes.
 
     tools/capped.sh -m 3G python3 tools/gen/forkgate.py OUTFILE
@@ -56,7 +56,7 @@ def show(n, subs):
     return '(C %s %s)' % (show(n[1], subs), show(n[2], subs))
 
 out = []
-for gate in ['fkGF', 'fkGB']:
+for gate in ['fkGF', 'fkGB', 'fkLoop']:
     n = body(gate)
     parts = [n]
     kinds = []

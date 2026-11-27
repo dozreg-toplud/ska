@@ -141,6 +141,7 @@ import lemmas.Compiler.CompSect
 import lemmas.Compiler.CompRunSixNext
 import lemmas.Compiler.CompSixKerf
 import lemmas.Compiler.CompForkGen
+import lemmas.Compiler.CompForkLoop
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -1128,3 +1129,7 @@ open Formalization
 #print axioms Compiler.comp_run_n6_k
 #print axioms Compiler.res_n6_k
 #print axioms Compiler.comp_fork_head
+#print axioms Compiler.fk_fgate
+#print axioms Compiler.fk_bgate
+#print axioms Compiler.cfk_all
+#print axioms Compiler.comp_fork_all

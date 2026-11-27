@@ -393,5 +393,132 @@ theorem fk_bgate (hc : CompIn ctx) (FHT SHT L' G' : Noun) (o' o1' o0' : Nat) (e 
 
 end
 
+theorem forkForks_ssM' (rc : Nat) (fk : List (Lazy.ForkE CSet)) (g : Gen (TreapMap mugF)) :
+    forkForks rc fk g = (ssM (gFkF rc) fk g).map fun r => ((r.1, r.2.1), r.2.2) :=
+  forkForks_ssM rc fk g
+
+theorem forkBonds_ssM' (rc : Nat) (bd : List (Nat × Lazy CSet)) (g : Gen (TreapMap mugF)) :
+    forkBonds rc bd g = (ssM (gFkB rc) bd g).map fun r => ((r.1, r.2.1), r.2.2) :=
+  forkBonds_ssM rc bd g
+
+/-- The simp set of the trap. -/
+syntax "fkl_go" "[" Lean.Parser.Tactic.simpLemma,* "]" : tactic
+
+set_option hygiene false in
+macro_rules
+  | `(tactic| fkl_go [$ts,*]) => `(tactic| simp [nock_exec, hDfs, fks_arm, hfs, h7, compK_ss, ss_arm,
+      ss_gate_eq, hQ, ha, hM, hmm, hv, forkForks_ssM', forkBonds_ssM', lazy_toNoun_mk, pure_apply,
+      bind_apply, splitEnc, $ts,*])
+
+syntax "fkl_open" ident "[" Lean.Parser.Tactic.simpLemma,* "]" : tactic
+
+macro_rules
+  | `(tactic| fkl_open $p:ident [$ts,*]) => `(tactic| (conv => { lhs; arg 2; unfold $p:ident }); fkl_go [$ts,*])
+
+section
+variable (h7 : slot? 7 ctx = some compK) (x : GenRest) (N : Noun) (rc : Nat)
+include h7
+
+mutual
+/-- **The trap of `+fork` on every lazy need** (forks and bonds to any
+depth), for every block, kids and state, in the pill's context: `forkLoop`. -/
+theorem cfk_all : ∀ laz : Lazy CSet, FkIH (ctx := ctx) x N rc laz
+  | Lazy.mk s fk bd => by
+    intro o o0 o1 g
+    obtain ⟨hc, -, hm⟩ := comp_ctx_pill ctx h7
+    obtain ⟨⟨Q, a, M, m, v, hQ, ha, hM, hmm, hv⟩, -⟩ := hm
+    have hfs := comp_fork_sure hc x g s o o0 o1
+    have hDfs := fks_at
+    simp only [compCore] at hfs
+    simp only [fkTS, compCore, splitEnc]
+    rw [lazy_toNoun_mk]
+    simp only [forkLoop, bind_apply]
+    conv => { lhs; arg 2; rw [fkLoop_eq] }
+    cases e1 : forkSure s o o0 o1 g with
+    | none =>
+      generalize comp.door = Dr at hDfs hfs ⊢
+      fkl_open fkLoop0 [e1]
+      fkl_open fkLoop1 [e1]
+    | some r =>
+      obtain ⟨⟨s0, s1⟩, g1⟩ := r
+      have hF := spsp_gate forkE forkE (fun g => genNoun g x) fkGF (C (C (C (A 0) v) (C (A 0) v)) (genNoun g1 x))
+        (C (C s0.toNoun s1.toNoun) (fkTS o (Lazy.mk s fk bd).toNoun o1 o0 (C N (A rc))
+          (C comp.door (C (genNoun g1 x) ctx))))
+        (gFkF rc) fk g1 (fun e he g' => cfk_forks fk e he g' _ _ _ _ _ _)
+      simp only [fkTS, lazy_toNoun_mk] at hF
+      cases eF : ssM (gFkF rc) fk g1 with
+      | none =>
+        rw [eF] at hF
+        generalize comp.door = Dr at hDfs hfs hF ⊢
+        fkl_open fkLoop0 [e1, eF, hF]
+        fkl_open fkLoop1 [e1, eF, hF]
+        fkl_open fkLoop2 [e1, eF, hF]
+        fkl_open fkLoop3 [e1, eF, hF]
+      | some rF =>
+        obtain ⟨f0, f1, g2⟩ := rF
+        rw [eF] at hF
+        have hB := spsp_gate bondE bondE (fun g => genNoun g x) fkGB (C (C (A 0) v) (genNoun g2 x))
+          (C (C (listN (f0.map forkE)) (listN (f1.map forkE))) (C (C s0.toNoun s1.toNoun)
+            (fkTS o (Lazy.mk s fk bd).toNoun o1 o0 (C N (A rc)) (C comp.door (C (genNoun g2 x) ctx)))))
+          (gFkB rc) bd g2 (fun e he g' => cfk_bonds bd e he g' _ _ _ _ _ _ _)
+        simp only [fkTS, lazy_toNoun_mk] at hB
+        cases eB : ssM (gFkB rc) bd g2 with
+        | none =>
+          rw [eB] at hB
+          generalize comp.door = Dr at hDfs hfs hF hB ⊢
+          fkl_open fkLoop0 [e1, eF, eB, hF, hB]
+          fkl_open fkLoop1 [e1, eF, eB, hF, hB]
+          fkl_open fkLoop2 [e1, eF, eB, hF, hB]
+          fkl_open fkLoop3 [e1, eF, eB, hF, hB]
+          fkl_open fkLoop4 [e1, eF, eB, hF, hB]
+          fkl_open fkLoop5 [e1, eF, eB, hF, hB]
+        | some rB =>
+          obtain ⟨b0, b1, g3⟩ := rB
+          rw [eB] at hB
+          generalize comp.door = Dr at hDfs hfs hF hB ⊢
+          fkl_open fkLoop0 [e1, eF, eB, hF, hB]
+          fkl_open fkLoop1 [e1, eF, eB, hF, hB]
+          fkl_open fkLoop2 [e1, eF, eB, hF, hB]
+          fkl_open fkLoop3 [e1, eF, eB, hF, hB]
+          fkl_open fkLoop4 [e1, eF, eB, hF, hB]
+          fkl_open fkLoop5 [e1, eF, eB, hF, hB]
+          fkl_open fkLoop6 [e1, eF, eB, hF, hB]
+
+theorem cfk_forks : ∀ (fk : List (Lazy.ForkE CSet)), ∀ e ∈ fk,
+    ∀ (g : Gen (TreapMap mugF)) (SHT L' G' : Noun) (o' o1' o0' : Nat),
+    nock (C fkGF (C (C (forkE e) (genNoun g x))
+      (C SHT (fkTS o' L' o1' o0' (C N (A rc)) (C comp.door (C G' ctx)))))) fkGF
+      = (gFkF rc e g).map fun r => C (C (forkE r.1) (forkE r.2.1)) (genNoun r.2.2 x)
+  | [], e, he => absurd he List.not_mem_nil
+  | ((oy, y), (on, n)) :: rest, e, he => by
+    rcases List.mem_cons.1 he with rfl | he'
+    · intro g SHT L' G' o' o1' o0'
+      exact fk_fgate x N rc (comp_ctx_pill ctx h7).1 SHT L' G' o' o1' o0' _ g (cfk_all y) (cfk_all n)
+    · exact cfk_forks rest e he'
+
+theorem cfk_bonds : ∀ (bd : List (Nat × Lazy CSet)), ∀ e ∈ bd,
+    ∀ (g : Gen (TreapMap mugF)) (FHT SHT L' G' : Noun) (o' o1' o0' : Nat),
+    nock (C fkGB (C (C (bondE e) (genNoun g x))
+      (C FHT (C SHT (fkTS o' L' o1' o0' (C N (A rc)) (C comp.door (C G' ctx))))))) fkGB
+      = (gFkB rc e g).map fun r => C (C (bondE r.1) (bondE r.2.1)) (genNoun r.2.2 x)
+  | [], e, he => absurd he List.not_mem_nil
+  | (ob, l) :: rest, e, he => by
+    rcases List.mem_cons.1 he with rfl | he'
+    · intro g FHT SHT L' G' o' o1' o0'
+      exact fk_bgate x N rc (comp_ctx_pill ctx h7).1 FHT SHT L' G' o' o1' o0' _ g (cfk_all l)
+    · exact cfk_bonds rest e he'
+end
+
+end
+
+/-- **`+fork` on every `next`** (lazy needs with forks and bonds to any
+depth), in the pill's context: the model's `forkL`. -/
+theorem comp_fork_all (h7 : slot? 7 ctx = some compK) (x : GenRest) (g : Gen (TreapMap mugF))
+    (laz : Lazy CSet) (th : Jmp) (rc : Nat) :
+    nock (C fkBatS (C (C (CGoalL.next laz th).toNoun (A rc)) (compCore g x ctx))) fkBatS
+      = (forkL ⟨laz, th⟩ rc g).map fun p => C (C p.1.1.goal.toNoun p.1.2.goal.toNoun) (genNoun p.2 x) :=
+  comp_fork_head x g laz th rc
+    (cfk_all h7 x (CGoalL.next laz th).toNoun rc laz th.there g.bo (g.bo + 1) (ooG (ooG g)))
+
 end Compiler
 end Formalization
