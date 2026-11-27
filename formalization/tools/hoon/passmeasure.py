@@ -270,6 +270,50 @@ i = find('    =/  index=@uxsite  next.st', a0)
 src[i + 1:i + 1] = ['    ~&  [%pm-new (mug id) index (lent stk.st)]']
 i = find('    =/  members=(list identity)  (sweep id (silt (above id stk.st)) st)', a0)
 src[i + 1:i + 1] = ['    ~&  [%pm-pass (mug id) pass (lent members) next.st (lent stk.st) %st (mug (turn (above id stk.st) |=(i=identity [i (git-g g.st i)])))]']
+# %pm-ent (track F, step 1 and 3 of 2026-11-27): at the start of every pass, every member of the
+# component (above id) with its DFS number, how its entry changed since the start of the previous
+# pass of this loop (the classes of %pm-run, or %new if it was not a member then), and the mugs of
+# its callees; also whether it is +dirty then; pm-prev holds the entries of the previous start
+i = find('    =/  pass=@  1', a0)
+src[i + 1:i + 1] = ['    =/  pm-prev=(map identity datum)  ~']
+i = find('    =/  members=(list identity)  (sweep id (silt (above id stk.st)) st)', a0)
+src[i + 2:i + 2] = [
+    '    =/  pm-cur=(list [identity datum])',
+    '      (turn (above id stk.st) |=(i=identity [i (git-g g.st i)]))',
+    '    =/  pm-sk',
+    '      |=  [o=sock n=sock]',
+    '      ^-  @tas',
+    '      ?:  =(o n)  %eq',
+    '      =/  up=?  (huge:so o n)',
+    '      =/  dn=?  (huge:so n o)',
+    '      ?:  &(up dn)  %eqv',
+    '      ?:  up  %more',
+    '      ?:  dn  %less',
+    '      %x',
+    '    =/  pm-cp',
+    '      |=  [o=cape n=cape]',
+    '      ^-  @tas',
+    '      ?:  =(o n)  %eq',
+    '      =/  up=?  =(| (lack:ca o n))',
+    '      =/  dn=?  =(| (lack:ca n o))',
+    '      ?:  &(up dn)  %eqv',
+    '      ?:  up  %more',
+    '      ?:  dn  %less',
+    '      %x',
+    '    ~&  :*  %pm-ent  (mug id)  pass',
+    '            %+  turn  pm-cur',
+    '            |=  [i=identity d=datum]',
+    '            :*  (mug i)  (~(gut by order.st) i 0)  (dirty i st)',
+    '                =/  o=(unit datum)  (~(get by pm-prev) i)',
+    '                ?~  o  [%new %new %new %new %new]',
+    '                :*  (pm-sk less-code.u.o less-code.d)  (pm-sk prod.u.o prod.d)',
+    '                    =(map.u.o map.d)  (pm-cp indi.u.o indi.d)  (pm-cp seek.u.o seek.d)',
+    '                ==',
+    '                (turn ~(tap in callees.d) |=(c=callee-entry (mug id.c)))',
+    '            ==',
+    '        ==',
+    '    =.  pm-prev  (malt pm-cur)',
+]
 i = find('    ?:  &(!changed =(next.st next-before))', a0)
 src[i:i] = ['    ~&  [%pm-end (mug id) pass changed !=(next.st next-before)]']
 i = find('              %rec', a0)
