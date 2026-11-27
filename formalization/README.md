@@ -788,7 +788,10 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/RawInvOutN.lean` | **`optIn_renOutR`**, **`optIn_prepN`**: `optIn_toStraightR` and `optIn_toStraight_prep` for any output map whose every block is a block of the renaming path by an injective `ren` of the raw blocks with the start moved to `0` (generated from their text), which is what the map path of `+to-straight` gives through `renameBlocks_ren` of track C. |
 | `Ska/RawInvKernX.lean` | `+kern` over a lazy tree with forks: `wentries` (the order of `+walk-lazy`, forks before bonds) and `wentries_perm`; `walkList`, **`walkLazy_flat`**; `sip_of`; `KI` (what the walk keeps: `SIP`, the keys of `cond` are proxies for `sub` above it, no defined register is a key, `sub` undefined, the entries to do apart and undefined), `KStep`, **`kernStep`** (one gate: the ops define the entry's sure need and read first only `sub` or a proxy for it), `KMany`, **`kernList_prep`**. |
 | `Ska/RawInvWholeX.lean` | The whole-subject pass on `FragX`: `opsRF_ren_back` (reads first after a renaming that need not be injective), `blockDefs_renBlob`, `renBlob_pre`, `liveK_frame` (liveness through the hop block of `+kerf`); **`optIn_finishLUX`**, **`optimize_keeps_finishLUX`**: `OptIn` and `Opt.Keeps` of `finishLU` on every nomm of `FragX` with at most 255 `%6`, no hypothesis on the run, through the unproxied blocks `mapVals (renBlob u)`; the instances `optIn_finishLUX_consSix`, `optimize_keeps_consSixU`, `optIn_finishLUX_sixSix`, `optimize_keeps_sixSixU`. |
-| `Ska/RawInvStX.lean` | The input facts of the totality of `+optimize` (Gaps 13, `StInv`, `ReadsIn`) on `FragX`: `arityOK_prep`, `twoNA_prep` (prologues keep parameters and ends); `readsIn_of_live` (`ReadsIn n` when every undefined register live at `0` is below `n`); `chase_nil` (in branch mode a jump without arguments is chased to one without), `chaseFin_two`, `bypassable_true_of`; **`stOut_ren`**: after the renaming path, `Closed` and the block `0` from the success of the chase alone, `ArityOK` and `TwoNA` from the raw blocks, and every register live at `0` the image of one in the need; `stIn_toStraight_prep`, `stIn_prepN` (the two final passes' forms); `RunAT` (open: `ArityOK` and `TwoNA` of the top run's raw blocks); **`stIn_finishLFX_of`**, **`stIn_finishLUX`**, **`optInput_finishLFX_of`**, **`optInput_finishLUX_of`**: `StInv ρ (keys)`, `DInvR` and `ReadsIn nargs` of both final passes on every nomm of `FragX` with at most 255 `%6`, given `RunAT`; `GateTotalN` (open, track H's: the expected restated `opt_gate_total` with `AliasRetN`, `DInvR` and `ReadsIn nargs`) and the corollaries `opt_total_finishLFX`, `opt_total_finishLUX` (the pill's `+optimize` returns on the raw output, given `GateTotalN`, `AliasRetN` and `RunAT`). |
+| `Ska/RawInvStX.lean` | The input facts of the totality of `+optimize` (Gaps 13, `StInv`, `ReadsIn`) on `FragX`: `arityOK_prep`, `twoNA_prep` (prologues keep parameters and ends); `readsIn_of_live` (`ReadsIn n` when every undefined register live at `0` is below `n`); `chase_nil` (in branch mode a jump without arguments is chased to one without), `chaseFin_two`, `bypassable_true_of`; **`stOut_ren`**: after the renaming path, `Closed` and the block `0` from the success of the chase alone, `ArityOK` and `TwoNA` from the raw blocks, and every register live at `0` the image of one in the need; `stIn_toStraight_prep`, `stIn_prepN` (the two final passes' forms); `RunAT` (`ArityOK` and `TwoNA` of the top run's raw blocks; proved on `FragX` by `runAT_fragX` of `RawInvATX.lean`); **`stIn_finishLFX_of`**, **`stIn_finishLUX`**, **`optInput_finishLFX_of`**, **`optInput_finishLUX_of`**: `StInv ρ (keys)`, `DInvR` and `ReadsIn nargs` of both final passes on every nomm of `FragX` with at most 255 `%6`, given `RunAT`; `GateTotalN` (open, track H's: the expected restated `opt_gate_total` with `AliasRetN`, `DInvR` and `ReadsIn nargs`) and the corollaries `opt_total_finishLFX`, `opt_total_finishLUX` (the pill's `+optimize` returns on the raw output, given `GateTotalN`, `AliasRetN` and `RunAT`; the forms without `RunAT` are the `_at` theorems of `RawInvATX.lean`). |
+| `Ska/RawInvAT.lean` | `RunAT`, the first fragment (README Gaps 14): `BAT` (a block passes as many arguments as its targets have parameters, a two-way end none), **`GA`** (the relation of a run: blocks below the old `bo` keep parameters and ends both ways, the new blocks meet `BAT` in the final map and jump below its `bo`, no block above it that was not there), `GA.trans`, `ga_quiet` (a step that makes no label, `Quiet`), `ga_emit` / `ga_emitF` / `ga_emitN`, `at_of_ga` (`ArityOK` and `TwoNA` from the empty state), `fresh_ga`, `GFresh` (the goal's jumps `Fresh`), the helpers of `run` (`ga_bomb`, `ga_simpleNext`, `ga_copy`, `ga_split`, `ga_into`, `ga_mede`, `ga_collapse`, `ga_doneBlocks`, **`ga_forl`**: `if0`, `if1` pass `[r0]`, `[r1]` to `barg`, whose parameter is `[r]`), `ATIH`, `entry_fresh`, `sub_at` (a sub-run, its result `Fresh` by `run_down`), the cases and **`run_at`** (every run of `run` from a state whose goal jumps are `Fresh` is a `GA`). |
+| `Ska/RawInvATX.lean` | `RunAT` on `FragX` (README Gaps 14): `ATR` (a `GA` and a `Fresh` result in `[1, g1.bo)`), `ATX`, the cases in the shape of `runX_eap` (`atx_frag` by `run_at` and `run_down`, `atx_seven`, `atx_sevenFrom`, `atx_four`, `atx_three`, `atx_binary` with `copyL_apart_some`, `atx_cons`, `ga_n5Pre`, `atx_five`, `atx_ten`, `atx_sixP`, `atx_sixN`), `ga_sixGenL`, `ga_same` (`+sect` by `SameBlocks`), `forkSure_out`, **`ga_forkSure`** (the fork blocks pass as many registers as the join has parameters, `NCopy.length`; the join hops to the goal's `Fresh` block), **`runX_at`**, **`runAT_fragX`** (`RunAT` on every nomm of `FragX` with at most 255 `%6`), and the theorems of `RawInvStX.lean` without `RunAT`: **`stIn_finishLFX_at`**, **`stIn_finishLUX_at`**, **`optInput_finishLFX_at`**, **`optInput_finishLUX_at`**, **`opt_total_finishLFX_at`**, **`opt_total_finishLUX_at`** (given only `GateTotalN` and `AliasRetN`, track H's). |
+| `Ska/RawInvCheckC.lean` | Executable checks with indirect calls (README Gaps 14 (b)): on the 120 nomms of `enumC` run through `runLC envR` (`runC`), the raw blocks meet `Closed`, `ArityOK`, `TwoNA` (`stB`, the facts of `RunAT`), and both final passes (`finishLUC`, `finishLFC` as `naryC`) meet `okSt` (`Closed`, `ArityOK`, `TwoNA`, the block `0`) and `okReads` (`ReadsIn nargs` over the reachable blocks); 60 raw runs and 60 n-ary outputs have a jump with arguments (`argsB`). |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
@@ -2794,8 +2797,8 @@ import only its theorems.  So:
    them (`chase`); before it, `+coerce-lazy` (n-ary, `finishLF`) or `+kerf`
    (whole subject, `finishLU`) puts the prologue ops in front of the entry.
    A check of all eight fields by executable checkers (`RawInvCheck.lean`)
-   on 5,200 enumerated nomms of `FragX` (both versions) and 360 with
-   indirect calls (`finishLUC`): no field fails.
+   on 5,200 enumerated nomms of `FragX` (both versions) and 120 with
+   indirect calls (`finishLUC`; `enumC` has 120 nomms, not 360 as said here before): no field fails.
 
    * `parNodup`.  Parameters appear only on join blocks.  Even without `%6`
      there is one: `+forl` (cases `%3` and `%5` under a `%next` goal that is
@@ -3015,19 +3018,43 @@ import only its theorems.  So:
    `NoLti`) and `ReadsIn nargs` (the field of `AliasRetN`, since
    `not_aliasRet`) of both final passes on every nomm of `FragX` with at
    most 255 `%6`, given **`RunAT`**: the top run's raw blocks meet
-   `ArityOK` and `TwoNA` (open, checked by `stB` on `enumX` and, under `%next` and
-   `%pick` from states with continuation blocks, `atGoalB`).  `ReadsIn`
+   `ArityOK` and `TwoNA` (proved on `FragX` by `runAT_fragX`, see below;
+   checked by `stB` on `enumX` and, under `%next` and `%pick` from states
+   with continuation blocks, `atGoalB`).  `ReadsIn`
    comes from the liveness at the entry that `OptIn` already used
    (`readsIn_of_live`); it holds only of reachable blocks (`readsInB`: an
    unreachable fork block of `enumX[340]` passes a register nothing
    defines), as its statement asks.  The instantiation of track H's
    totality is the corollary `opt_total_finishLFX` (`opt_total_finishLUX`)
    from `GateTotalN`, the expected form of the restated `opt_gate_total`,
-   with `AliasRetN` and `RunAT` the other hypotheses.  Left on track D:
-   `RunAT`, a run-level induction over `FragX` of `ArityOK` and `TwoNA`
-   from a state whose goal targets are blocks with no parameter (the
-   first fragment included, whose `+forl` passes `[r0]`, `[r1]` to the
-   one-parameter `barg`), then indirect calls (b) below.
+   with `AliasRetN` and `RunAT` the other hypotheses.  The tenth session
+   (`RawInvAT.lean`, `RawInvATX.lean`) proved `RunAT` on `FragX`
+   (**`runAT_fragX`**), so the `_at` forms **`optInput_finishLFX_at`**,
+   **`optInput_finishLUX_at`** and **`opt_total_finishLFX_at`**,
+   **`opt_total_finishLUX_at`** have no hypothesis on the run (the last two
+   ask only `GateTotalN` and `AliasRetN` of track H).  The induction
+   carries one relation `GA` between the states before and after a run:
+   the blocks below the old `bo` keep their parameters and ends both ways,
+   a block at a new label meets the arity of its targets in the final map
+   (`BAT`) and jumps below its `bo`, and nothing lies above `bo` that was
+   not there.  It composes because a new block's targets lie below the end
+   of its part, so later parts keep their parameters; a step that makes no
+   label is one (`ga_quiet`), and so is an `+emit` of a block that meets
+   `BAT` where it is put (`ga_emit`).  Every emitted jump is `Fresh` (no
+   argument, a target with no parameter: a goal jump, a block just
+   emitted, a sub-run's result by `run_down` or by the induction) except
+   two kinds: `+forl`'s `if0`, `if1` pass `[r0]`, `[r1]` to `barg`, whose
+   parameter is `[r]` (`ga_forl`), and `+fork-need`'s fork blocks pass
+   `flattenNeed n0`, `flattenNeed n1` to the join, whose parameters are
+   `flattenNeed ned`, as many by `NCopy.length` (`ga_forkSure`); `+sect`
+   keeps the blocks of `sixGenL` (`SameBlocks`).  No statement turned out
+   false; the induction is proved, so `atGoalB` stays the check of its
+   statement.  Left on track D: indirect calls, (b) below.  With indirect calls the
+   facts of `RunAT`, of `StInv` and `ReadsIn` hold on all 120 nomms of
+   `enumC` on both final passes (`RawInvCheckC.lean`), so the statements
+   carry over; the proof needs the induction on `runLC` of (b), and for
+   `RunAT` the `GA` of the arm of `%2` (`+kerf`'s hop, `+kern`'s ops, the
+   `%nok` block).
 
    **Left, in this order.**  (a) `%6` (`FragX`; `Frag6` is done; see the
    paragraph above for what holds and what is proved).  Two obstacles, both met
