@@ -125,6 +125,7 @@ theorem lokc_indAU {lib : Lib} {code : Bell → Option Nomm} (env : CallEnv) {p 
   | n10 => intro e; cases e
   | n11s => intro e; cases e
   | n11d => intro e; cases e
+  | n11c => intro e; cases e
   | mean => intro e; cases e
   | n12 => intro e; cases e
   | crash => intro e; cases e

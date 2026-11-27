@@ -108,6 +108,7 @@ theorem uokc_consA {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib c
   | n10 => intro e; cases e
   | n11s => intro e; cases e
   | n11d => intro e; cases e
+  | n11c => intro e; cases e
   | mean => intro e; cases e
   | n12 => intro e; cases e
   | bare => intro e; cases e
@@ -153,6 +154,7 @@ theorem uokc_consTA {lib : Lib} {code : Bell → Option Nomm} (hok : CodeOK lib 
   | n10 => intro e; cases e
   | n11s => intro e; cases e
   | n11d => intro e; cases e
+  | n11c => intro e; cases e
   | mean => intro e; cases e
   | n12 => intro e; cases e
   | bare => intro e; cases e

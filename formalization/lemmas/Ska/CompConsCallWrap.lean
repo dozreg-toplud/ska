@@ -159,6 +159,7 @@ theorem consCH_contract_of_annot {lib : Lib} {code : Bell → Option Nomm} (hok 
   | n10 => intro _ _ _ e; cases e
   | n11s => intro _ _ _ e; cases e
   | n11d => intro _ _ _ e; cases e
+  | n11c => intro _ _ _ e; cases e
   | mean => intro _ _ _ e; cases e
   | n12 => intro _ _ _ e; cases e
   | bare => intro _ _ _ e; cases e
