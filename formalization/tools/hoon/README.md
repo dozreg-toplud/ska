@@ -73,6 +73,13 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     `collide-vars.hoon`: after each poke, `H`'s code bells, their variants' bakes and nomms
                     (two code bells list the one variant, whose nomm is `[7 [0 1] [1 7]]`).  Fixed by commit 8f2162e: on the
                     changed compiler `collide.hoon` prints `[%after-witness %same]` twice (2026-11-24)
+* `passmeasure.py OUTDIR [seed]` writes an instrumented copy of the library and drivers for the measure of the pass loop
+                    of `+analyze` (`lemmas/Ska/PassMeasure.lean`, README Gaps 16): per run, how `less-code`, the product, the
+                    map, `indi` and `seek` changed; per pass loop, its passes; the members `+cull` drops and whether one is
+                    analysed again.  `passmeasure-lib.hoon` is its driver over 21 library calls.  Over 2,269 calls (2026-11-27):
+                    no run against the lexicographic measure (with `less-code` in the order `CapeLe`), 151 runs that changed
+                    only the map (open point (a)), 21 culled members and none found again (open point (b)), no pass loop that
+                    did not end
 * `closed.hoon`     `GraphClosed` of `lemmas/Ska/AnaEnds.lean` on the graph `+ska-callgraph` returns, over the 26 pokes of
                     `sitesmeet4.hoon`, `he2.hoon`, `voidscc.hoon`, `prodsame.hoon` with the memo threaded: 1760 entries,
                     4052 callee edges, no callee missing, every root an entry (2026-11-24)

@@ -75,6 +75,9 @@ most the cape of `bus`), summed over the identities of the graph, which are
 finitely many by the argument of `AnaEnds.lean` (callable formulas and
 `+he-sock`).  The provenance `map` is the point this sketch leaves open: it
 is compared by `changed` and can change while the product sock does not.
+`PassMeasure.lean` (track F) measured both open points on the real compiler
+and corrects the first component: the mask rises in the order `CapeLe`, not
+in size.
 -/
 
 namespace Formalization
