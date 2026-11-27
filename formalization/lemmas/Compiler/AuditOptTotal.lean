@@ -1,4 +1,4 @@
-import lemmas.Compiler.OptLinkTotalPass
+import lemmas.Compiler.OptLinkTotalAlias
 import lemmas.Ska.OptAliasPlainDriver
 
 /-! `#print axioms` of the converse of `+optimize` (`OptLinkTotal*.lean`),
@@ -105,4 +105,84 @@ def lexLtB : Nat × Nat × Nat → Nat × Nat × Nat → Bool
   ⟨NeedOrd.none, 2, xbBlocks⟩).map fun s => (HoonMap.get s.blocks 0).map (·.fin)) ==
   some (some (Termin.brz 1 ⟨[], 1⟩ ⟨[], 2⟩))
 
+
+/-! ## The walk invariant of `+alias`, checked at every step on the examples
+
+`walkStates` lists the state before each block of `topo`; `walkInvB` checks,
+for registers below `R`: (W0) every `p ∈ g.rev o` of the next block `o` is
+walked; (W1) every walked `p ∈ g.rev o` of an unwalked `o` has `g.new p`, `g.info p`, `g.imms p` set and an end that jumps to
+`o`, and a one-predecessor `%brn` / `%clq` / `%brz` has a fact for its test
+register; (W2) the facts of a walked block refer only to registers with a
+fact; (W3) a walked block that was kept has a fact for `g.old r` for every
+`r` below `n` or defined on every path from `0` to it (`DefFirst`). -/
+
+def walkStates (pick : List Nat → Nat) (n : Nat) (bl : LM Blob) : List Nat → AGen LM → List (List Nat × AGen LM)
+  | [], g => [([], g)]
+  | o :: t, g => (o :: t, g) :: match aliasBlock pick n bl g o with
+    | some g' => walkStates pick n bl t g'
+    | none => []
+
+def refsB (f : InfoReg) : List Nat := f.hedOf ++ f.telOf ++ f.hasHed.toList ++ f.hasTel.toList ++ f.decOf.toList
+
+/-- The paths of blocks from `0` to `p` (the last block first), with fuel. -/
+def pathsTo (bl : LM Blob) : Nat → Nat → List (List Nat)
+  | 0, _ => []
+  | k + 1, p => if p = 0 then [[0]] else
+    (bl.l.map Prod.fst).flatMap fun q => match HoonMap.get bl q with
+      | some b => if (getJmps b.fin).any (·.there = p) then (pathsTo bl k q).map (p :: ·) else []
+      | none => []
+
+def defOnAll (bl : LM Blob) (p r : Nat) : Bool :=
+  (pathsTo bl 6 p).all fun path => path.any fun q => ((HoonMap.get bl q).map fun b => (blockDefs b).contains r).getD false
+
+def testReg : Termin → Option Nat
+  | Termin.clq s _ _ => some s
+  | Termin.brn s _ _ => some s
+  | Termin.brz s _ _ => some s
+  | _ => none
+
+def walkInvB (R n : Nat) (bl : LM Blob) (topo : List Nat) : List Nat × AGen LM → Bool
+  | (rest, g) =>
+    let walked := topo.filter (· ∉ rest)
+    (match rest with
+      | o :: _ => (g.rev o).all (· ∈ walked)
+      | [] => true) &&
+    (rest.all fun o => (g.rev o).all fun p => p ∉ walked ||
+      match HoonMap.get g.new p, g.info p, g.imms p with
+      | some pb, some ip, some _ => (getJmps pb.fin).any (·.there = o) &&
+          (g.rev o != [p] || (testReg pb.fin).all fun s => (ip s).isSome)
+      | _, _, _ => false) &&
+    (walked.all fun p => match g.info p with
+      | some ip => (List.range R).all fun k => match ip k with
+        | some f => (refsB f).all fun x => (ip x).isSome
+        | none => true
+      | none => true) &&
+    (walked.all fun p => match g.info p with
+      | some ip => (List.range R).all fun r => !(decide (r < n) || defOnAll bl p r) || (ip (g.old r)).isSome
+      | none => true)
+
+#guard (walkStates (fun l => l.headD 0) 1 xaBlocks [0, 2, 1] (aliasInit (revCfg xaBlocks [0, 2, 1]))).all
+  (walkInvB 8 1 xaBlocks [0, 2, 1])
+#guard (walkStates (fun l => l.headD 0) 2 xbBlocks [0, 2, 1] (aliasInit (revCfg xbBlocks [0, 2, 1]))).all
+  (walkInvB 8 2 xbBlocks [0, 2, 1])
+#guard (walkStates (fun l => l.headD 0) 1 xhBlocks [0, 1] (aliasInit (revCfg xhBlocks [0, 1]))).all
+  (walkInvB 8 1 xhBlocks [0, 1])
+-- the walks are complete (one state per block, and the last)
+#guard (walkStates (fun l => l.headD 0) 2 xbBlocks [0, 2, 1] (aliasInit (revCfg xbBlocks [0, 2, 1]))).length == 4
+-- the witness of `not_aliasRet`: `wBl` reads register `1`, which `n = 1` does not give
+#guard (aliasM (fun l => l.headD 0) 1 AliasWit.wBl (revCfg AliasWit.wBl [0]) [0]).isNone
+#guard (aliasM (fun l => l.headD 0) 2 AliasWit.wBl (revCfg AliasWit.wBl [0]) [0]).isSome
+-- a `pick` that does not pick a member makes the model crash
+def wPick : LM Blob := ⟨[(0, ⟨[], [Pole.imm (Nock.A 5) 1, Pole.imm (Nock.A 5) 2, Pole.inc 2 3], Termin.bom none⟩)]⟩
+#guard (aliasM (fun _ => 7) 0 wPick (revCfg wPick [0]) [0]).isNone
+#guard (aliasM (fun l => l.headD 0) 0 wPick (revCfg wPick [0]) [0]).isSome
+
 end AuditOptTotal
+#print axioms switchRet_of
+#print axioms switchChains_some
+#print axioms stree_some
+#print axioms chainOf_some
+#print axioms plainsOf_some
+#print axioms not_aliasRet
+#print axioms aliasOp_some
+#print axioms aliasFin_some
