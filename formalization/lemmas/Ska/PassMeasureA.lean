@@ -68,7 +68,7 @@ theorem GoOKQ.ch (hgo : GoOKQ QA P Inv n go) {fol : Noun} {sub : Anno} {seat mk 
   folR_reghost ((hgo _ _ _ _ _ _ _ _ _ hi hs h).2 γ) rfl
 
 /-- **One level of the state-passing `fol-loop` is in `FolR`.** -/
-theorem bridge_stepQ (env : Env R) (hAS : ∀ a, QA a → QS a.sock) (hQ : QPres QA P) (hL : LocalStable Inv)
+theorem bridge_stepQ (env : Env R) (hAS : ∀ a, QA a → a.sock ≠ Sock.void → QS a.sock) (hQ : QPres QA P) (hL : LocalStable Inv)
     (hres : ResOKQ QS P Inv res) (hgo : GoOKQ QA P Inv n go)
     {fol : Noun} {sub : Anno} {seat mk : Option Noun} {bc df : Bool} {gs gs' : GenS M R} {out : FolOut}
     (hi : Inv gs) (hsub : QA sub) (h : folStep env res go fol sub seat mk bc df gs = some (out, gs')) :
@@ -105,7 +105,7 @@ theorem bridge_stepQ (env : Env R) (hAS : ∀ a, QA a → QS a.sock) (hQ : QPres
     have i2 := (hgo _ _ _ _ _ _ _ _ _ i1 hsub h2).1
     have i2' : Inv ({ g2 with want := Ca.uni g2.want (distribute Cape.yes f1.prod.src) } : GenS M R) :=
       hL.app i2 rfl rfl rfl rfl rfl rfl rfl rfl rfl rfl
-    rcases callStep_cases h3 with ⟨el, eb, est, _, hc⟩ | ⟨fa, fb, i, g3, h4, rfl, hc⟩ | ⟨fa, fb, r, g3, h4, _, el, eb, est, _, hc⟩
+    rcases callStep_cases h3 with ⟨el, eb, est, _, hc⟩ | ⟨fa, fb, i, g3, h4, rfl, hc⟩ | ⟨fa, fb, r, g3, h4, hnv, el, eb, est, _, hc⟩
     · refine ⟨hL.app i2 el eb (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est])
         (by rw [est]) (by rw [est]) (by rw [est]), fun γ => ?_⟩
       refine folR_of_calls (calls := [((C a b, sub, mk, bc, df, gs.at γ), (s1, g1.at (γ + 1))),
@@ -131,7 +131,7 @@ theorem bridge_stepQ (env : Env R) (hAS : ∀ a, QA a → QS a.sock) (hQ : QPres
         rw [goL_tl (by simp [GenS.at]), goL_hd]; simp only [Option.bind_some]
         refine hc _ _ _ _ ?_
         rw [goL_tl (by simp [GenS.at]), goL_tl (by simp [GenS.at]), goL_hd]
-    · obtain ⟨hp, i3, hg3⟩ := hres _ _ _ _ i2 (hAS _ ws1) h4
+    · obtain ⟨hp, i3, hg3⟩ := hres _ _ _ _ i2 (hAS _ ws1 hnv) h4
       refine ⟨hL.app i3 el eb (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est]) (by rw [est])
         (by rw [est]) (by rw [est]) (by rw [est]), fun γ => ?_⟩
       refine folR_of_calls (calls := [((C a b, sub, mk, bc, df, gs.at γ), (s1, g1.at (γ + 1))),
@@ -339,7 +339,7 @@ variable {P : Sock → Noun → TabEntry → Prop} {QA : Anno → Prop} {QS : So
 /-- **The state-passing `fol-loop` is in `FolR P`**, for an invariant `Inv`
 that `resolve` keeps with answers in `P` at every fuel below `n`. -/
 theorem folLoop_goOKQ {Inv : GenS M R → Prop} (env : Env R) (memoF : Memo M)
-    (hAS : ∀ a, QA a → QS a.sock) (hQ : QPres QA P) (hL : LocalStable Inv) :
+    (hAS : ∀ a, QA a → a.sock ≠ Sock.void → QS a.sock) (hQ : QPres QA P) (hL : LocalStable Inv) :
     ∀ n, (∀ k, k < n → ResOKQ QS P Inv (resolveR env memoF k)) → GoOKQ QA P Inv n (folLoop env memoF n)
   | 0 => fun _ _ _ _ _ _ _ _ _ _ _ _ h => by rw [folLoop_zero] at h; cases h
   | n + 1 => fun hres _ _ _ _ _ _ _ _ _ hi hs h => by
@@ -349,7 +349,7 @@ theorem folLoop_goOKQ {Inv : GenS M R → Prop} (env : Env R) (memoF : Memo M)
 
 /-- **The run of `+run` on `id` is a run with answers in `P`.** -/
 theorem run_folTopRQ {Inv : GenS M R → Prop} (env : Env R) (memoF : Memo M)
-    (hAS : ∀ a, QA a → QS a.sock) (hQ : QPres QA P) (hL : LocalStable Inv) {n index : Nat}
+    (hAS : ∀ a, QA a → a.sock ≠ Sock.void → QS a.sock) (hQ : QPres QA P) (hL : LocalStable Inv) {n index : Nat}
     (hres : ∀ k, k < n → ResOKQ QS P Inv (resolveR env memoF k)) {id : Ident} {st : SkaState M R}
     {out : FolOut} {gs' : GenS M R} (hi : Inv (genInit index st)) (hw : QA ⟨id.1, A 1⟩)
     (h : folLoop env memoF n id.2 ⟨id.1, A 1⟩ none none false false (genInit index st) = some (out, gs')) :
@@ -553,7 +553,7 @@ def QAT : Anno → Prop := fun a => WellFormed a.sock ∧ AnnoTP a
 /-- The subject socks `resolve` is asked at. -/
 def QST : Sock → Prop := fun s => WellFormed s ∧ Tidy s
 
-theorem qAS : ∀ a, QAT a → QST a.sock := fun _ h => ⟨h.1, h.2.1⟩
+theorem qAS : ∀ a, QAT a → a.sock ≠ Sock.void → QST a.sock := fun _ h _ => ⟨h.1, h.2.1⟩
 
 theorem qpres : QPres QAT PWT := fun n _ _ _ _ _ _ _ _ hs h =>
   ⟨folR_wf pwt_wf n hs.1 h, folR_tp pwt_tp n hs.2 h⟩

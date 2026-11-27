@@ -307,9 +307,52 @@ def StkW (st : SkaState M R) : Prop := ∀ i ∈ st.stk, ∀ d, gCore st.g i = s
 theorem stkW_sub {st st' : SkaState M R} (h : StkW st) (hs : SubSt st' st) : StkW st' :=
   fun i hi d hd => h i (hs.1 i hi) d (hs.2 i hi d hd)
 
-/-- **The named hypothesis**: a `+run` of a stack member keeps the stack invariant. -/
+/-- Every entry of the graph has a normal `indi`. -/
+def GraphNI (g : Graph) : Prop := ∀ i d, g i = some d → NormCape d.indi
+
+/-- Every entry of a memo has a normal `indi`. -/
+def MemoNI (m : Memo M) : Prop :=
+  ∀ f ms s e, Treap.get m f = some ms → Treap.get ms s = some e → NormCape e.2.indi
+
+/-- **The stack invariant with what keeps it**: every entry of the graph and
+of the memo of the poke has a normal `indi`, and every stack member's entry is
+`RunW`. -/
+structure WInv (st : SkaState M R) : Prop where
+  g_ni : GraphNI (gCore st.g)
+  done_ni : MemoNI st.done
+  stk : StkW st
+
+theorem WInv.congr {st st' : SkaState M R} (h : WInv st) (h1 : st'.g = st.g) (h2 : st'.done = st.done)
+    (h3 : st'.stk = st.stk) : WInv st' :=
+  ⟨by rw [h1]; exact h.g_ni, by rw [h2]; exact h.done_ni,
+    fun i hi d hd => h.stk i (h3 ▸ hi) d (h1 ▸ hd)⟩
+
+theorem cullFold_winv (l : List (Ident × Unit)) (st : SkaState M R) (h : WInv st) :
+    WInv (l.foldl cullStep st) := by
+  obtain ⟨_, a2, _, a4, _⟩ := cullFold_ok l st
+  refine ⟨fun k d hk => ?_, by rw [a2]; exact h.done_ni, stkW_sub h.stk (cullFold_sub l st)⟩
+  simp only [gCore] at hk
+  rw [a4] at hk
+  split at hk
+  · simp at hk
+  · exact h.g_ni k d (by simp only [gCore]; exact hk)
+
+/-- **`+cull` keeps `WInv`.** -/
+theorem cull_winv {n : Nat} {id : Ident} {st st' : SkaState M R} (h : WInv st) (hc : cull n id st = some st') :
+    WInv st' := by
+  rw [cull_eq] at hc
+  simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at hc
+  obtain ⟨ab, _, live, _, hst⟩ := hc
+  split at hst
+  · subst hst; exact h
+  · subst hst
+    refine cullFold_winv _ _ ?_
+    exact ⟨h.g_ni, h.done_ni, fun i hi d hd => h.stk i (List.mem_filter.mp hi).1 d hd⟩
+
+/-- **A `+run` of a stack member keeps the stack invariant** (proved in
+`Ska/PassMeasureW.lean`, `run_winv`). -/
 def RunStkW (run : RunGo M R) : Prop :=
-  ∀ id index st r st', SInv st → TInv st → StkW st → id ∈ st.stk → run id index st = some (r, st') → StkW st'
+  ∀ id index st r st', SInv st → TInv st → WInv st → id ∈ st.stk → run id index st = some (r, st') → WInv st'
 
 /-- **`changed` of a run means its entry changed.** -/
 theorem run_changed (env : Env R) (memoF : Memo M) (n : Nat) {id : Ident} {index : Nat}
@@ -345,9 +388,9 @@ lowers it, and lowers one when it reports `changed`; it keeps the stack
 invariant. -/
 theorem memberLoop_le (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmT : MemoTP memoF)
     (hRW : ∀ k, RunStkW (run env memoF k)) :
-    ∀ n index pass ms (st : SkaState M R) r st', SInv st → TInv st → StkW st →
+    ∀ n index pass ms (st : SkaState M R) r st', SInv st → TInv st → WInv st →
       memberLoop env memoF n index pass ms st = some (r, st') →
-      StkW st' ∧ (st'.next = st.next → (∀ i, OLe (valE st' i) (valE st i)) ∧
+      WInv st' ∧ (st'.next = st.next → (∀ i, OLe (valE st' i) (valE st i)) ∧
         (r.2 = true → ∃ i, OLt (valE st' i) (valE st i)))
   | 0 => by
     intro index pass ms st r st' _ _ _ h
@@ -368,15 +411,14 @@ theorem memberLoop_le (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmT :
               ((min r.1.1 t.1.1, r.1.2.2 || t.1.2), t.2)) = some (r, st') →
           st1.g = st.g → st1.done = st.done → st1.order = st.order → st1.stk = st.stk →
           st1.next = st.next →
-          StkW st' ∧ (st'.next = st.next → (∀ i, OLe (valE st' i) (valE st i)) ∧
+          WInv st' ∧ (st'.next = st.next → (∀ i, OLe (valE st' i) (valE st i)) ∧
             (r.2 = true → ∃ i, OLt (valE st' i) (valE st i))) := by
         intro st1 e h1 h2 h3 h4 h5
         simp only [Option.bind_eq_some_iff] at e
         obtain ⟨o, ho, ⟨r1, st2⟩, hr, e⟩ := e
         have i1 : SInv st1 := hi.congr h1 h2 h3 h4
         have t1 : TInv st1 := ht.congr h1 h2
-        have w1 : StkW st1 := by
-          intro i hi' d hd; rw [h4] at hi'; rw [h1] at hd; exact hw i hi' d hd
+        have w1 : WInv st1 := hw.congr h1 h2 h4
         have hm1 : m ∈ st1.stk := (i1.ord_stk m).mp ⟨o, by rw [h3]; exact ho⟩
         obtain ⟨i2, _, k2⟩ := run_ok env memoF hmF n m o st1 r1 st2 i1 hm1 hr
         have t2 := (allPT env memoF hmF hmT n n (Nat.le_refl n)).2.2.1 m o st1 r1 st2 i1 t1 hm1 hr
@@ -386,7 +428,7 @@ theorem memberLoop_le (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmT :
         have runle : st2.next = st1.next → (∀ i, OLe (valE st2 i) (valE st1 i)) ∧
             (r1.2.2 = true → ∃ i, OLt (valE st2 i) (valE st1 i)) := by
           intro en
-          obtain ⟨old, new, ho', hn', hst⟩ := run_entry_step env memoF n i1 t1 hm1 hr (w1 m hm1)
+          obtain ⟨old, new, ho', hn', hst⟩ := run_entry_step env memoF n i1 t1 hm1 hr (w1.stk m hm1)
           have hs2 : st2.stk = st1.stk := n2.2 en
           obtain ⟨A, B⟩ := valE_run hs2 (fun j hj => k2.2.2 j hj) ho' hn' hst
           exact ⟨A, fun hc => ⟨m, B (run_changed env memoF n i1 hm1 hr ho' hn' hc) hm1⟩⟩
@@ -453,9 +495,9 @@ theorem passLoop_of_on {env : Env R} {memoF : Memo M} {n : Nat} {id : Ident} {in
 /-- The invariants along a sequence of passes. -/
 theorem passOn_inv (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmT : MemoTP memoF)
     (hRW : ∀ k, RunStkW (run env memoF k)) {n : Nat} {id : Ident} {index pass : Nat}
-    {st st' : SkaState M R} (hi : SInv st) (ht : TInv st) (hw : StkW st)
+    {st st' : SkaState M R} (hi : SInv st) (ht : TInv st) (hw : WInv st)
     (h : PassOn env memoF n id index pass st st') :
-    SInv st' ∧ TInv st' ∧ StkW st' ∧ st.next ≤ st'.next ∧
+    SInv st' ∧ TInv st' ∧ WInv st' ∧ st.next ≤ st'.next ∧
       (st'.next = st.next → (∀ i, OLe (valE st' i) (valE st i)) ∧ ∃ i, OLt (valE st' i) (valE st i)) := by
   obtain ⟨ab, members, r, st2, _, _, h3, _, h5, h6⟩ := h
   have i1 : SInv ({ st with stats := { st.stats with passes := st.stats.passes + 1 } } : SkaState M R) :=
@@ -465,14 +507,14 @@ theorem passOn_inv (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmT : Me
   obtain ⟨i2, _, _⟩ := (allP env memoF hmF n n (Nat.le_refl n)).2.2.2.2 index pass members _ r st2 []
     (fun _ => False) i1 ⟨st.stk, (List.append_nil _).symm⟩ (fun _ h => h.elim) (fun _ _ h => h) h3
   have t2 := (allPT env memoF hmF hmT n n (Nat.le_refl n)).2.2.2.2 index pass members _ r st2 i1 t1 h3
-  obtain ⟨w2, L2⟩ := memberLoop_le env memoF hmF hmT hRW n index pass members _ r st2 i1 t1 hw h3
+  obtain ⟨w2, L2⟩ := memberLoop_le env memoF hmF hmT hRW n index pass members _ r st2 i1 t1 (hw.congr rfl rfl rfl) h3
   have n2 := (allN env memoF n n (Nat.le_refl n)).2.2.2.2 index pass members _ r st2 h3
   have c5 := cull_next h5
   obtain ⟨ab', hab'⟩ := cull_above h5
   obtain ⟨ab0, rest, _, hs', _⟩ := above_eq hab'
   obtain ⟨i3, _, _⟩ := cull_ok i2 h5 hs'
   have S := cull_sub h5
-  refine ⟨i3, cull_tp t2 h5, stkW_sub w2 S, by rw [c5]; exact n2.1, fun en => ?_⟩
+  refine ⟨i3, cull_tp t2 h5, cull_winv w2 h5, by rw [c5]; exact n2.1, fun en => ?_⟩
   have en2 : st2.next = st.next := c5.symm.trans en
   obtain ⟨A, B⟩ := L2 en2
   have hr : r.2 = true := by
@@ -493,10 +535,10 @@ functions analysed: finitely many identities and no culled member pushed
 again). -/
 theorem passOn_wf (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmT : MemoTP memoF)
     (hRW : ∀ k, RunStkW (run env memoF k)) (n : Nat) (id : Ident) (index p B : Nat)
-    (f : Nat → SkaState M R) (h0i : SInv (f 0)) (h0t : TInv (f 0)) (h0w : StkW (f 0))
+    (f : Nat → SkaState M R) (h0i : SInv (f 0)) (h0t : TInv (f 0)) (h0w : WInv (f 0))
     (hon : ∀ k, PassOn env memoF n id index (p + k) (f k) (f (k + 1)))
     (hB : ∀ k, (f k).next ≤ B) : False := by
-  have inv : ∀ k, SInv (f k) ∧ TInv (f k) ∧ StkW (f k) := by
+  have inv : ∀ k, SInv (f k) ∧ TInv (f k) ∧ WInv (f k) := by
     intro k
     induction k with
     | zero => exact ⟨h0i, h0t, h0w⟩
