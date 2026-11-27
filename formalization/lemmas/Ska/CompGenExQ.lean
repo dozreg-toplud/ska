@@ -254,6 +254,26 @@ theorem seven_contractGD (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → P
   finishLUC_contractGD lib N (fun hr => seven_doneGD lib env Hp Hq Lq (by simp [gen0]) rfl upBelow_gen0 clear_gen0
     condBelow_gen0 hr) hc
 
+
+/-- **The example `[7 [[0 2] [0 3]] [6 [2 [0 3] [0 2]] [0 2] [0 2]]]`, from
+the cons**: its contract follows from `NextGG` of the cons of two leaves
+(`nextGG_cons0`, not proved yet: `CompGenConsE.lean` states the missing
+`runOKGen_cons00`), with `sixDG_callTest` and `shape_exQ` for `q`. -/
+theorem exCons_contract_of (lib : Lib) (env : CallEnv) (N : Needs)
+    (Hp : NextGG (S := S) (Map := Map) lib N env (fun _ => True) (C (slot 2) (slot 3))
+      (Nomm.cons (Nomm.n0 2) (Nomm.n0 3)))
+    {c : Straight Map}
+    (hc : finishLUC (S := S) (Map := Map) env (Nomm.n7 (Nomm.cons (Nomm.n0 2) (Nomm.n0 3))
+      (Nomm.n6 (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) (Nomm.n0 2) (Nomm.n0 2))) = some c) :
+    c.need = NeedOrd.this ∧ ∀ s,
+      ContractFwd lib N s (n3 (A 7) (C (slot 2) (slot 3)) (n4 (A 6) (n3 (A 2) (slot 3) (slot 2)) (slot 2) (slot 2)))
+        [s] c ∧
+      ContractBwd lib N s (n3 (A 7) (C (slot 2) (slot 3)) (n4 (A 6) (n3 (A 2) (slot 3) (slot 2)) (slot 2) (slot 2)))
+        [s] c :=
+  have H := seven_contractGD lib env Hp (sixDG_callTest lib N env _)
+    (fun b0 d0 hu hcl hcb h => shape_exQ lib N env b0 d0 hu hcl hcb h) hc
+  ⟨H.1, fun s => H.2 s trivial⟩
+
 end Comp
 end SkaModel
 end Formalization
