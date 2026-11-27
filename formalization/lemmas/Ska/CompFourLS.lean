@@ -333,6 +333,71 @@ theorem collLS {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp
       hned regs hh hn res hres
     exact ⟨rt, hm, conv cf hcf c ned σ Inv ν O gul st t tm s0 s regs ag hned htr rt G⟩
 
+/-! ## Goals where the flag does not matter -/
+
+/-- **A goal at which the flag `x` of `RunOKLS` does not matter**: its sure
+part asks nothing (the fronts read no goal register either way) or it has no
+entry (there is no front). -/
+def FlagFree (L : Lazy S) : Prop := L.sure.ned = Need.none ∨ entries L = []
+
+/-- **At a flag-free goal `RunOKLS` holds with `x = false`.** -/
+theorem RunOKLS.unflag {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp} {Q : Wit} {x : Bool}
+    {g0 g1 : Gen Map} {nex : NextL S} (hF : FlagFree L) (R : RunOKLS (Map := Map) lib P f L th Q x g0 g1 nex) :
+    RunOKLS (Map := Map) lib P f L th Q false g0 g1 nex := by
+  rcases hF with h | h
+  · have e : gsE x L = gsE false L := by cases x <;> simp [gsE, h]
+    have F1 := R.front
+    have F2 := R.fs
+    unfold FrontsS at F2
+    rw [e] at F1 F2
+    exact { toRunOKLB := { R.toRunOKLB with front := F1 }, fs := F2 }
+  · refine { toRunOKLB := { R.toRunOKLB with front := ?_ }, fs := ?_ }
+    all_goals (intro e he; rw [h] at he; cases he)
+
+/-- **`LOKS false` at flag-free goals only**: the hypothesis of a part that
+is run only at such goals (the operand of `[4 p]`, the parts of an indirect
+call, and the parts of a cons at a flag-free goal). -/
+structure LOKSF (lib : Lib) (env : CallEnv) (P : Noun → Prop) (f : Noun) (nm : Nomm) : Prop where
+  clean : ∀ {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
+    Clean L.sure.ned → runLC env sup nm (CGoalL.next L th) region g0 = some (nex, g1) → Clean nex.laz.sure.ned
+  run : ∀ {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
+    FlagFree L → sixCount nm ≤ 255 → 1 ≤ g0.bo → g0.drop = false → UpBelow g0 → Clear g0 → CondBelow g0 →
+    1 ≤ th.there → th.there < g0.bo → th.args = [] → th.there ∉ (entries L).map Prod.fst → Distinct L.sure.ned →
+    (∀ x, NMem L.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none) →
+    (∀ e ∈ entries L, e.1 < g0.bo ∧ ∃ B th', HoonMap.get g0.blocks e.1 = some ⟨[], B, Termin.hop th'⟩) →
+    ((entries L).map Prod.fst).Nodup →
+    (∀ e ∈ entries L, Distinct e.2.sure.ned ∧
+      ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none) →
+    Flat L → Clean L.sure.ned → (∀ e ∈ entries L, Clean e.2.sure.ned) →
+    runLC env sup nm (CGoalL.next L th) region g0 = some (nex, g1) →
+    (∃ Q, RunOKLS (Map := Map) lib P f L th Q false g0 g1 nex) ∧ nex.th.there ∉ (entries nex.laz).map Prod.fst ∧
+      (nex.th = th ∨ g0.bo ≤ nex.th.there) ∧ Flat nex.laz ∧ (∀ e ∈ entries nex.laz, Clean e.2.sure.ned)
+
+/-- **`LOKS` (any flag) gives `LOKSF`** (`RunOKLS.unflag`). -/
+theorem LOKS.toF {x : Bool} {lib : Lib} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm}
+    (H : LOKS (S := S) (Map := Map) x lib env P f nm) : LOKSF (S := S) (Map := Map) lib env P f nm :=
+  ⟨H.clean, fun hF hc b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs hce hr =>
+    (fun ⟨⟨Q, R⟩, a, b, c, d⟩ => ⟨⟨Q, R.unflag hF⟩, a, b, c, d⟩)
+      (H.run hc b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs hce hr)⟩
+
+/-- **`JNewLS` at flag-free goals only.** -/
+def JNewLSF (env : CallEnv) (nm : Nomm) : Prop :=
+  ∀ {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
+    FlagFree L → sixCount nm ≤ 255 → 1 ≤ g0.bo → g0.drop = false → UpBelow g0 → Clear g0 → CondBelow g0 →
+    1 ≤ th.there → th.there < g0.bo → th.args = [] → th.there ∉ (entries L).map Prod.fst → Distinct L.sure.ned →
+    (∀ x, NMem L.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none) →
+    (∀ e ∈ entries L, e.1 < g0.bo ∧ ∃ B th', HoonMap.get g0.blocks e.1 = some ⟨[], B, Termin.hop th'⟩) →
+    ((entries L).map Prod.fst).Nodup →
+    (∀ e ∈ entries L, Distinct e.2.sure.ned ∧
+      ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none) →
+    Flat L → Clean L.sure.ned → (∀ e ∈ entries L, Clean e.2.sure.ned) →
+    runLC (Map := Map) env sup nm (CGoalL.next L th) region g0 = some (nex, g1) → g0.bo ≤ nex.th.there
+
+theorem JNewLS.toF {env : CallEnv} {nm : Nomm} (h : JNewLS (S := S) (Map := Map) env nm) :
+    JNewLSF (S := S) (Map := Map) env nm :=
+  fun _ hc b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs hce hr =>
+    h hc b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs hce hr
+
 /-! ## `[4 p]` under a flat lazy goal -/
 
 /-- **The `%4` case of `run` under `%next L th`**, with `collPick`. -/
@@ -347,14 +412,13 @@ theorem runLC_n4_next (env : CallEnv) (sup : Option Nomm) (p : Nomm) (L : Lazy S
   conv => lhs; unfold runLC
   rfl
 
-/-- **`[4 p]` whose operand meets `LOKS` (any flag), under a flat lazy
-goal**, from a state as `LOKS.run` asks: `RunOKLS` with `x = true` and the
+/-- **`[4 p]` whose operand meets `LOKSF`, under a flat lazy goal**, from a state as `LOKS.run` asks: `RunOKLS` with `x = true` and the
 witness `fourWit L d`, the jump a new block at none of the result's
 entries, the result flat with clean entries.  `collapsePre_spec`, the block
 of the increment, the operand's `LOKS` under `%next (lazy-from-reg arg)
 (jmp0 o)` (a flat goal with no entry), `incLB`, `collLS`. -/
-theorem lokS_four_run (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f fb : Noun} {xp : Bool}
-    (M : MinkC4 lib P f fb) (Sp : LOKS (S := S) (Map := Map) xp lib env P fb p)
+theorem lokS_four_run (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f fb : Noun}
+    (M : MinkC4 lib P f fb) (Sp : LOKSF (S := S) (Map := Map) lib env P fb p)
     {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S}
     (hcount : sixCount (Nomm.n4 p) ≤ 255) (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0)
     (hcl0 : Clear g0) (hcb : CondBelow g0) (h1 : 1 ≤ th.there) (h2 : th.there < g0.bo) (hta : th.args = [])
@@ -407,7 +471,7 @@ theorem lokS_four_run (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop}
   have cbE : CondBelow gE := fun x hx => by rw [hcnE] at hx; have := cb2 x hx; omega
   have eR : entries (ofSure (lazyReg g2.re : Sure S)) = [] := entries_ofSure _
   obtain ⟨⟨Qp, Rp⟩, pne, pj, pfl, pec⟩ := Sp.run (sup := sup) (L := ofSure (lazyReg g2.re)) (th := jmp0 g2.bo)
-    (region := region) (by simpa only [sixCount] using hcount) (by omega) hdE (GU.up hu2)
+    (region := region) (Or.inr eR) (by simpa only [sixCount] using hcount) (by omega) hdE (GU.up hu2)
     ((hcl0.growU GU2).growU GU) cbE
     (by simp only [jmp0]; omega) (by simp only [jmp0]; omega) rfl (by rw [eR]; simp) trivial
     (fun x hx => by
@@ -429,10 +493,10 @@ theorem lokS_four_run (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop}
   · rw [e]; simp only [jmp0]; omega
   · omega
 
-/-- **`[4 p]` meets `LOKS true`** when its operand meets `LOKS` (any flag),
-for a formula `f` whose `+mink` is the increment of the operand's. -/
-theorem lokS_four (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f fb : Noun} {xp : Bool}
-    (M : MinkC4 lib P f fb) (Sp : LOKS (S := S) (Map := Map) xp lib env P fb p) :
+/-- **`[4 p]` meets `LOKS true`** when its operand meets `LOKSF`, for a
+formula `f` whose `+mink` is the increment of the operand's. -/
+theorem lokS_four (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f fb : Noun}
+    (M : MinkC4 lib P f fb) (Sp : LOKSF (S := S) (Map := Map) lib env P fb p) :
     LOKS (S := S) (Map := Map) true lib env P f (Nomm.n4 p) := by
   refine ⟨fun {sup L th region g0 g1 nex} hc hr => ?_, fun {sup L th region g0 g1 nex} hcount b0 d0 hu hcl hcb
     h1 h2 hta ht hsd hsl hlab hnd hed hfl hcl' hce hr => ?_⟩
@@ -443,8 +507,8 @@ theorem lokS_four (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f 
     exact ⟨H, ne, Or.inr j, fl, ec⟩
 
 /-- **The jump of `[4 p]` is always a block it made.** -/
-theorem jNewLS_four (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f fb : Noun} {xp : Bool}
-    (M : MinkC4 lib P f fb) (Sp : LOKS (S := S) (Map := Map) xp lib env P fb p) :
+theorem jNewLS_four (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f fb : Noun}
+    (M : MinkC4 lib P f fb) (Sp : LOKSF (S := S) (Map := Map) lib env P fb p) :
     JNewLS (S := S) (Map := Map) env (Nomm.n4 p) := by
   intro sup L th region g0 g1 nex hcount b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcl' hce hr
   exact (lokS_four_run lib env M Sp hcount b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hr).2.2.1
