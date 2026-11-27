@@ -284,3 +284,103 @@ open('lemmas/Ska/CompDirectMLS.lean', 'w').write(A)
 open('lemmas/Ska/CompDirectMLSCons.lean', 'w').write(B)
 print('wrote lemmas/Ska/CompDirectMLS.lean', len(A.splitlines()), 'lines,',
       'lemmas/Ska/CompDirectMLSCons.lean', len(B.splitlines()), 'lines,', len(copy), 'declarations')
+
+# ---------------------------------------------------------------------------
+# The n-ary class `CallTreeDN` (README Gaps 18.15 (d)): the text of
+# CompDirectMTree.lean's class and its induction with the ORIGINAL names
+# (every copy `XM` back to track C's `X`, `runLCM env true` back to `runLC
+# env`), the direct call by this track's n-ary lemmas (CompNaryTopCal.lean,
+# CompNaryTopDirect.lean) for a `p` that meets `LOKSF`.  Written to
+# lemmas/Ska/CompNaryTopDN.lean.
+NPATCHES = [  # n-ary lemmas for a `p` that meets `LOKSF` (so may itself hold a direct call)
+    ('callLBN_run', 'callLBN_runF', [
+        ('(Sp : LOKS (S := S) (Map := Map) false lib N env P fb p)', '(Sp : LOKSF (S := S) (Map := Map) lib N env P fb p)', 1),
+        ('(L := ofSure ⟨sub, HoonSet.empty⟩) (th := jmp0 g2.bo) hcount',
+         '(L := ofSure ⟨sub, HoonSet.empty⟩) (th := jmp0 g2.bo) (Or.inr e3) hcount', 1)]),
+    ('lokS_directN', 'lokS_directNF', [
+        ('(Sp : LOKS (S := S) (Map := Map) false lib N env P fb p)', '(Sp : LOKSF (S := S) (Map := Map) lib N env P fb p)', 1),
+        ('callLBN_run lib env', 'callLBN_runF lib env', 1)]),
+    ('tailN_done', 'tailN_doneF', [
+        ('(Sp : LOKS (S := S) (Map := Map) false lib N env P fb p)', '(Sp : LOKSF (S := S) (Map := Map) lib N env P fb p)', 1),
+        ('(L := ofSure ⟨sub, HoonSet.empty⟩) (th := jmp0 g0.bo) hcount',
+         '(L := ofSure ⟨sub, HoonSet.empty⟩) (th := jmp0 g0.bo) (Or.inr e3) hcount', 1)]),
+]
+DIRECT_OLD = ('env.ring bl = Option.none → env.need bl = some bNed → N bl false = some bNed → N bl true = some ndT →')
+DIRECT_NEW = ('env.ring bl = Option.none → env.need bl = some bNed → N bl false = some bNed →\n'
+              '      (SplitsLess bl bNed ∧ ∀ m, env.sof m p q bl bNed = false) →')
+TREE = ['CallTreeD', 'CallTreeD.toA', 'CallTreeD.sixCount', 'CallTreeD.cell', 'CallTreeD.hinted_of', 'CallTreeD.kind',
+        'jNewLSM_direct', 'lokSM_callTreeD', 'callTreeD_done']
+TPATCHES = {  # (old, new, count) on the source text, before the renames
+    'CallTreeD': [
+        ('{bl : Bell} {bNed ndT : NeedOrd}', '{bl : Bell} {bNed : NeedOrd}', 1), (DIRECT_OLD, DIRECT_NEW, 1),
+        ('(`env.ring b = none`, `env.need b = some bNed` with `N b false\n= some bNed`, some `N b true`), the callee not pure',
+         '(`env.ring b = none`, `env.need b = some bNed` with `N b false\n= some bNed`), every noun that fits the bell splitting by its need\n'
+         '(`SplitsLess`), no soft call, the callee not pure', 1),
+        ('for the run with `mono` `&`.', 'for the n-ary run (`runLC`, `mono` `|`).', 1),
+        ('(it runs under `%next (lazy-from-reg\nsub-pes)`, a flag-free goal)', '(it runs under `%next (ofSure\nsub)`, a flag-free goal)', 1)],
+    'jNewLSM_direct': [
+        ('{b : Bell} {bNed ndT : NeedOrd}', '{b : Bell} {bNed : NeedOrd}', 1),
+        ('(hNf : N b false = some bNed) (hNt : N b true = some ndT) (hpure : env.pure b = false)',
+         '(hsof : ∀ m, env.sof m p q b bNed = false) (hNf : N b false = some bNed) (hspl : SplitsLess b bNed)\n'
+         '    (hpure : env.pure b = false)', 1),
+        ('callLBM_runM lib env hring hned hNf hNt Sp', 'callLBN_runF lib env hring hned hsof hNf hspl Sp', 1)],
+    'lokSM_callTreeD': [
+        ('with the copies for `runLCM env true`,\nthe leaves by `LOKS.toM`, the direct call', "with track C's constructors (`runLC env`),\nthe leaves as they are, the direct call", 1),
+        ('@direct P b1 fb fq p q bl bNed ndT hp hring hned hNf hNt hpure', '@direct P b1 fb fq p q bl bNed hp hring hned hNf hsn hpure', 1),
+        ('lokSM_directF (S := S) (Map := Map) lib env hring hned\n      hNf hNt hpure',
+         'lokSM_directF (S := S) (Map := Map) lib env hring hned\n      hsn.2 hNf hsn.1 hpure', 1),
+        ('jNewLSM_direct (S := S) (Map := Map) lib env hring hned\n      hNf hNt hpure',
+         'jNewLSM_direct (S := S) (Map := Map) lib env hring hned\n      hsn.2 hNf hsn.1 hpure', 1)],
+    'callTreeD_done': [
+        ('of `callTreeA_done` with the copies for `runLCM env true`; the leaves by\n`runLCM_true`, ', "of `callTreeA_done` with track C's constructors (`runLC env`); the leaves\nas they are, ", 1),
+        ('@direct P b1 fb fq p q bl bNed ndT hp hring hned hNf hNt hpure', '@direct P b1 fb fq p q bl bNed hp hring hned hNf hsn hpure', 1),
+        ('    rw [runLCM_true env rfl] at hr\n', '', 2),
+        ('tailP_doneM lib hring hned hNf hNt (lokSM_callTreeD lib env hp).1.1',
+         'tailP_doneM lib hring hned hsn.2 hNf hsn.1 (lokSM_callTreeD lib env hp).1.1', 1)],
+}
+NRENAME = {'CallTreeD': 'CallTreeDN', 'lokSM_callTreeD': 'lokS_callTreeDN', 'callTreeD_done': 'callTreeDN_done',
+           'jNewLSM_direct': 'jNewLS_directN', 'lokSM_directF': 'lokS_directNF', 'callLBM_runM': 'callLBN_runF',
+           'tailP_doneM': 'tailN_doneF', 'LOKSM': 'LOKS'}
+for n in copy:
+    NRENAME[newname(n)] = n
+NSUBS = [  # (regex, replacement, count of the whole file)
+    (re.compile(r'\brunLCM((?:\s+\(Map := Map\))?)\s+env true\b'), r'runLC\1 env'),
+    (re.compile(r'\.toM rfl\b'), ''),
+]
+ntexts = []
+for src, dst, subs in NPATCHES:
+    text = decls[src][2]
+    assert text.count(f'theorem {src} ') == 1, src
+    text = text.replace(f'theorem {src} ', f'theorem {dst} ')
+    for o, nw, c in subs:
+        assert text.count(o) == c, (src, o, text.count(o), c)
+        text = text.replace(o, nw)
+    assert text.startswith('/--')
+    ntexts.append('/-- ' + f'(Generated by `tools/gen/loksm.py`: `{src}` for a `p` that meets `LOKSF`.)\n' + text[3:].lstrip(' '))
+tcount = {'subs': 0, 'names': 0}
+ttexts = []
+for n in TREE:
+    base, _, text = decls[n]
+    assert base == 'CompDirectMTree', (n, base)
+    for o, nw, c in TPATCHES.get(n, []):
+        assert text.count(o) == c, (n, o, text.count(o), c)
+        text = text.replace(o, nw)
+    for rx, rp in NSUBS:
+        text, c = rx.subn(rp, text)
+        tcount['subs'] += c
+    for r in sorted(NRENAME, key=len, reverse=True):
+        text, c = re.subn(r"(?<![A-Za-z0-9_.'])" + re.escape(r) + r"(?![A-Za-z0-9_'])", NRENAME[r], text)
+        tcount['names'] += c
+    assert not re.search(r'\brunLCM\b|\bLOKS[A-Z]*M\b|\bJNewLS[A-Z]*M\b|\bndT\b|\bhNt\b', text), (n, 'M left')
+    note = f'(Generated by `tools/gen/loksm.py`: `{n}` with the original names, for the n-ary run.)'
+    text = ('/-- ' + note + '\n' + text[3:].lstrip(' ')) if text.startswith('/--') else f'/-- {note} -/\n' + text
+    ttexts.append(text)
+assert tcount == {'subs': 3, 'names': 96}, tcount
+docN = ('The n-ary class `CallTreeDN` (README Gaps 18.15 (d)): `CallTreeD` (CompDirectMTree.lean) for '
+        '`runLC env`, with track C\'s own constructors, and the n-ary direct call (`lokS_directNF`, `tailN_doneF`).')
+NT = (head(['lemmas.Ska.CompNaryTopCal', 'lemmas.Ska.CompDirectMTree'], 'The n-ary class `CallTreeDN`', docN)
+      + '\n'.join(ntexts) + '\n' + ttexts[0] + '\nsection\nvariable {lib : Lib} {env : CallEnv} {N : Needs}\n\n'
+      + '\n'.join(ttexts[1:6]) + '\n' + '\n'.join(ttexts[6:]) + '\n' + tail)
+assert ttexts[5].rstrip().endswith('\nend'), 'the section of CallTreeD.* ends with CallTreeD.kind'
+open('lemmas/Ska/CompNaryTopDN.lean', 'w').write(NT)
+print('wrote lemmas/Ska/CompNaryTopDN.lean', len(NT.splitlines()), 'lines')
