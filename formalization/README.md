@@ -5367,7 +5367,11 @@ import only its theorems.  So:
     `HtRank` follows from `TarjanSpec nc L` (`Ska/PokeFlagsOf.lean`, no edge from `L[i]` to
     `L[j]` for `i < j`) with `ht` the index of a bell's SCC in `L`, once `sccs.cache` is the
     noun of the SCC sets of `nc` and `calls` that of the entries' `calls`.  Not yet: the soft
-    direct call at `mono |`.
+    direct call at `mono |`.  Finding for it: "only the final `Y` allows `soft ≠ ~`" does not
+    suffice even for a tail call, since the Hoon (lines 4005 to 4060) runs `+soft-new`, then
+    `+soft-bond` (when `~(has by soft.gen) call-block`), and only then the runs of `q` (unless
+    `safe-fol-fol`) and `p`, so those two sub-runs start with the new entry in `soft.gen` and `p`'s
+    goal holds the soft bond; their class must admit `x.soft = softMapNoun` of a non-empty map.
 20. **`+to-straight` with proxies: the map path** (track I, 2026-11-27,
     `Compiler/CompStraightMap*.lean`, nouns cut by `tools/gen/tsmap.py`).
     The map first.
