@@ -962,8 +962,9 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Glue/Entry.lean` | Track G (Gaps 22 (e)): `rawEntry` from static facts.  `NoPoison` (no reachable jump passes `~`), `splitReg`, `CelGuard` (every `%hed s` / `%tal s` of a reachable block comes after a `%cel s` of its body with no write of `s` between); `bpath_reach`, `taken_mem`, `Pure`, `Present`, `execPole_zero` (an op that steps changes only its destination), `execPole_cel`, `poleReads_sub`, `finReads_sub`, `jmpArgs_sub`, `evalPassLoop_ok`; the invariant of a path from the entry `EInv` (`Phase1`, `Phase2`), `einv_entry`, `reads_present`, `einv_step`, `einv_steps`; **`entryOK_of`**: `Opt.EntryOK` from `DefFirst`, `Compiler.ReadsIn nargs`, `NoPoison`, `CelGuard` and at least `nargs` values, for every oracle, scry gate, state and trace; for a run-level induction: `GuardedBody`, `BlocksOK` (every block passes no `~` and has a guarded body), `noPoison_of_blocksOK`, `celGuard_of_blocksOK`, `guardedBody_nil`, `guardedBody_append`. |
 | `Glue/EntryFragX.lean` | Track G (Gaps 22 (e)): `rawEntry` on `FragX`.  Leaves `GuardMonoX`, `GuardNaryX` (`NoPoison` and `CelGuard` of the raw output of `finishLU`, `finishLF`); `split_length`, `finishLF_nargs`, `finishLU_nargs1`; `entry_finishLUX`, `entry_finishLFX` (with track D's `optIn_finishLUX`/`-LFX` for `DefFirst`, `optInput_finishLUX_at`/`-LFX_at` for `ReadsIn`); `entryMono_fragX`, `entryNary_fragX` (the leaves `EntryMono`, `EntryNary`); `rawEntry_fragX`; `CompRestOE` (`CompRestO` without `rawEntry`), `compHyp_of_fragX'`. |
 | `Glue/EntryCheck.lean` | Track G: executable checks (`#guard`) of `EntryOK` along the interpreter's path (`stepF`, `okAt`, `walk`) on the raw output of both final passes, entered with the split of 45 subjects (crashing ones included): `enumX` (183,600 runs per pass, more input needs and capes), `enumCX` (178,200 runs per pass, four oracles); `noPoisonB`, `celGuardB` on all outputs and, over all blocks, on the raw runs under `%done`, `%next`, `%pick`. |
-| `Glue/AuditGlue.lean` | `#check` of every declaration `LEDGER.md` names, `#print axioms` of the theorems of `Glue/` (3500M cap). |
-| `Glue/AuditGlueP.lean` | The same for track P's route and the names that cannot be imported beside `AuditGlue.lean`'s (the two build clashes). |
+| `Glue/AuditGlue.lean` | `#check` of every declaration `LEDGER.md` names (track P's route and track I's `SccLoopMsg` included since M15 closed; the former `AuditGlueP.lean` is folded in), `#print axioms` of the theorems of `Glue/` (3500M cap). |
+| `Glue/GuardKern.lean` | Track G (Gaps 22 (e)): the `%cel` guard of `+kern-need`.  `GuardedPre` (a split guarded inside the list or on `d` with no write of `d` before), `guardedBody_cel`, `guardedBody_cons`, `guardedPre_split`, `guardedPre_append`, `guardedPre_part`; `kernBoth_guard` (the freshness fact: the head's ops between `%cel d` and `%tal d` write no `d`, from D's `KR.defs` and `Distinct`), `kr_guard`, `kernLoop_guard`, `kernLoop_guarded` (with D's `KR`), `kernNeed_guarded`. |
+| `Glue/GuardRun.lean` | Track G (Gaps 22 (e)): `BlocksOK` kept by the block steps of `+comp`.  `BlockOK`, `blocksOK_put`, `blocksOK_emitted`, `addOps_ok` (a guarded list in front), `blocksOK_insertHop`, `sureLoop_guard` (`+sure-loop`, under D's `raw_sureLoop` hypotheses). |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
 Every main theorem depends on `propext`, `Classical.choice` and `Quot.sound`
@@ -5207,9 +5208,9 @@ import only its theorems.  So:
 
 22. **The ledger** (track G, 2026-11-27, `LEDGER.md`, `lemmas/Glue/`).  `LEDGER.md` traces
     every field of `Gap` (`Assembly.lean`) down to its open leaves, with the mismatches
-    between the shapes the fields need and the shapes the tracks prove (M1 to M15), and the
+    between the shapes the fields need and the shapes the tracks prove (M1 to M16), and the
     open leaves in order of what they block; every name it cites is checked in
-    `Glue/AuditGlue.lean` or `Glue/AuditGlueP.lean`.  Proved here by composition:
+    `Glue/AuditGlue.lean`.  Proved here by composition:
     (a) `CompHyp` from `CompPiecesO` (`compHyp_of_piecesO`: `OptIn` in place of `DInvS`) and
     on `FragX` (`compHyp_of_fragX`).  (b) Mismatch M3 closed (`Glue/MonoCalls.lean`):
     `CompPiecesM` with `refMono` at `finishLUCM` and classes `MonoClass`, `NaryClass` that
@@ -5219,7 +5220,7 @@ import only its theorems.  So:
     `rawNaryD_calls`); `compHyp_of_calls` from `CompRestM` and the leaves `OptInMono`,
     `OptInNary` (track D); `OptRef` from the leaves `OptTotalMono`, `OptTotalNary` and
     `hpill` (`optRef_of_total`), `rawEntry` from `EntryMono`, `EntryNary` (`rawEntry_of`),
-    all proved on `FragX`; `straight_toNoun_inj` (`hinj`, also track P's), `optRef_fragX'`.
+    all proved on `FragX`; `hinj` by track P's `straight_toNoun_inj`, `optRef_fragX'`.
     (c) Mismatch M8 closed (`Glue/InvMemo.lean`, `Glue/InvMemoP.lean`): the invariant
     `InvSM` (`InvS` and `MemoNoCallees`), kept (`pokeS_memo`, `pokeS_memoP`), true at the
     start and at `cor` (`invSM_init`, `gap_of_armPM`), `FullAnswers` on it from `CgHalts`,
@@ -5233,10 +5234,15 @@ import only its theorems.  So:
     runs, `Glue/EntryCheck.lean`); `entryOK_of` proves it from `DefFirst`, `ReadsIn`,
     `NoPoison`, `CelGuard`; on `FragX` the first two are track D's, so `rawEntry` and
     `CompHyp` (`compHyp_of_fragX'`) rest on the two static leaves `GuardMonoX`,
-    `GuardNaryX` (checked on all of `enumX`, `enumCX`; a run-level induction is open).
-    Not done: every leaf of `LEDGER.md` section 10; two build clashes block composing files
-    (`Compiler.unitNoun_id_inj` in `PokeEnc` and `OptLinkAlJReg`, `Comp.isLeaf` in
-    `SccLoopMsg` and `CompNCJump`).
+    `GuardNaryX` (checked on all of `enumX`, `enumCX`).  Toward them (`Glue/GuardKern.lean`,
+    `Glue/GuardRun.lean`): the freshness fact of `+kern-need` (`kernBoth_guard`,
+    `kernLoop_guarded`: its ops are a guarded body) and `BlocksOK` kept by `+emit`,
+    `+add-ops` of a guarded list, `+insert-hop`, `+sure-loop` (`sureLoop_guard`); open: the
+    run-level induction over `FragX` (D's `runX_at` shape) and `+to-straight`.  (f) M15
+    closed: no build clash is left among the files `AuditGlue` imports.  (g) M16 (in the
+    making): track J's `runLCH` (hints) is a third model of `+run`; `refMono` and the
+    classes must eventually be stated at `finishLUCH`.  Not done: every leaf of `LEDGER.md`
+    section 10; the model half of `inlAnnot` is stated (LEDGER 2.e) but not proved.
 23. **The poke on states: `enc` and the `%full` branch** (track P, 2026-11-27,
     `Ska/PokeEnc.lean`, `Compiler/PokeLink.lean`, `Compiler/PokeLinkFull.lean`, `Compiler/PokeLinkOpt.lean`,
     `Compiler/PokeLinkScc.lean`, `Compiler/PokeLinkJet.lean`, `Compiler/PokeLinkReach.lean`,
