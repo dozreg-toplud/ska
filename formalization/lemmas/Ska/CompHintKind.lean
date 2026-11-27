@@ -52,6 +52,19 @@ theorem KindU.of_minkEq {lib : Lib} {cod : Bell → Option Bool} {P : Noun → P
     (hh : hinted cod nm = some false) (M : MinkEq lib P f e) : KindU lib cod P f nm :=
   Or.inl ⟨hh, totalC_of_minkEq M⟩
 
+/-! ## `+lazy-bound` -/
+
+/-- **`+lazy-bound` step by step**: a new block `[hop th]` tagged with the
+region, and the whole lazy need parked in one bond there.  With a need
+without forks and bonds, this is the second branch of `pastL_hinted` (a
+flat result); with a bond, a bond inside a bond (`CompHintNest.lean`). -/
+theorem lazyBound_apply {nex : NextL S} (ha : nex.th.args = []) (region : List Nat) (g : Gen Map) :
+    (lazyBound nex region : CM Map (NextL S)) g =
+      some (⟨mk Sure.bunt [] [(g.bo, nex.laz)], jmp0 g.bo⟩,
+        (g.emitted ⟨[], [], Termin.hop nex.th⟩).tagged g.bo region) := by
+  unfold lazyBound
+  simp only [ha, bind_apply, emit_apply, setTag_apply, if_true, pure_apply, Option.bind_some]
+
 /-! ## `TotalC` of the composites -/
 
 section
