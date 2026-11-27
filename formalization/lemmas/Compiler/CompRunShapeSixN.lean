@@ -383,5 +383,208 @@ theorem six_leap (p q r : Nomm) (sup : Option Nomm) (laz rest : Laze CSet) (bys 
 
 end
 
+/-- The dispatch with no leap and the kerf test passed (`rs6Tk` is `&`): the kerf. -/
+theorem six_kerf_disp (T : Noun) (kb : Bool) (htk : nock (C (A 0) T) rs6Tk = some (A 0))
+    (hkt : nock (C (A 0) T) rs6KTest = some (loob kb)) :
+    nock (C (A 0) T) sixDisp = if kb then nock (C (A 0) T) rs6KRec else nock (C (A 0) T) sixForkN := by
+  unfold sixDisp
+  rw [rs6Kerf_fork]
+  generalize rs6Tk = TK at htk
+  generalize rs6KTest = KT at hkt
+  generalize rs6KRec = KR
+  generalize sixForkN = FN
+  generalize rs6Gb = GB
+  generalize rs6Rest = RR
+  generalize rs6Leap = LP
+  cases kb <;> simp [nock_exec, htk, hkt, loob]
+
+section
+variable (hc : CompIn ctx) (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+include hc h7 hcode
+
+/-- **The case `%6` under `[%next laz]` at every fuel that covers it** (`SixDeep`). -/
+theorem six_fuel (env : ShapeEnv) (hcn : CodeNomms env.cod cod) (p q r : Nomm) (sup : Option Nomm)
+    (y : RsRest) (hy : E y) (hcp : CallCode cod (shapeCE env) p) (hq0 : Bake.NoAx0 q) (hr0 : Bake.NoAx0 r)
+    (hun : ∀ ned, unsS env q r ned ≠ Option.none)
+    (hr : ∀ g st1, GoalNZ g → RsAtE ctx env E r sup g st1)
+    (hq : ∀ g st1, GoalNZ g → RsAtE ctx env E q sup g st1)
+    (hp : ∀ g st1, GoalNZ g → RsAtE ctx env E p sup g st1) :
+    ∀ (f : Nat) (laz : Laze CSet) (st : RSt CSet), LzNZ laz → SixDeep q r f laz →
+      nock (rsCoreG (Nomm.n6 p q r).toNoun (GoalS.next laz).toNoun (supNoun sup) (rsDoor st y ctx)) rsGate
+        = (sixShape env (runShape env sup p) (runShape env sup q) (runShape env sup r) p q r f laz st).map
+            fun p => C p.1.toNoun (rsGenNoun p.2 y)
+  | 0, _, _, _, h => h.elim
+  | f + 1, laz, st, hl, ⟨hf1, hd⟩ => by
+    rw [six_entry, six_lep h7 p q r sup laz st y hl hq0 hr0]
+    cases e : lazeLeaps laz q r with
+    | none => simp [sixShape, shLiftS, e, bind, StateT.bind]
+    | some x =>
+      cases x with
+      | some rb =>
+        obtain ⟨rest, bys⟩ := rb
+        have hnz := (lazeLeaps_nz hl hq0 hr0 e).1
+        have hrec := six_fuel env hcn p q r sup y hy hcp hq0 hr0 hun hr hq hp f rest st hnz (hd rest bys e)
+        simp only [Option.map_some, Option.bind_some]
+        rw [six_leap hc h7 hcode p q r sup laz rest bys st y _ hrec]
+        congr 1
+        cases e2 : sixShape env (runShape env sup p) (runShape env sup q) (runShape env sup r) p q r f rest st with
+        | none => simp [sixShape, shLiftS, e, e2, bind, StateT.bind]
+        | some pr =>
+          obtain ⟨l0, st0⟩ := pr
+          cases e3 : bys.foldlM (fun acc b => lazeCopy acc b) l0 <;>
+            simp [sixShape, shLiftS, e, e2, e3, bind, StateT.bind]
+      | none =>
+        obtain ⟨sur, fk, bd⟩ := laz
+        have hl0 : LzNZ (Laze.mk sur [] [] : Laze CSet) := ⟨hl.1, trivial, trivial⟩
+        simp only [Option.map_some, Option.bind_some]
+        have hA : llsN Option.none = A 0 := rfl
+        rw [hA]
+        cases hne : noneEq (Laze.mk SureO.bunt fk bd : Laze CSet) with
+        | true =>
+          rw [six_br hc h7 hcode env p q r sup sur fk bd st y hy hcp hne (fun st1 => hr _ st1 hl0)
+            (fun st1 => hq _ st1 hl0) (fun st1 => hp _ st1 trivial)]
+          congr 1
+          simp [sixShape, shLiftS, e, hne, bind, StateT.bind, Laze.fork, Laze.bond, Laze.sure]
+        | false =>
+          obtain ⟨t, ht⟩ := sfk_some (sofsHas st.sofs) (unsS env q r)
+            (fun ned => Option.ne_none_iff_exists'.mp (hun ned)) (Laze.mk sur fk bd)
+          have htk := six_tk hc p q r sup sur fk bd st y
+          rw [hne] at htk
+          have hkt := six_ktest hc h7 hcode env hcn p q r sup (Laze.mk sur fk bd) st y t ht
+          have hm : sixShape env (runShape env sup p) (runShape env sup q) (runShape env sup r) p q r (f + 1)
+              (Laze.mk sur fk bd) st
+              = if ((whole q && whole r) || thisOnlyS (Laze.mk sur fk bd : Laze CSet)
+                  || lazeBig (sofsHas st.sofs) (Laze.mk sur fk bd) || t) = true
+                then sixShape env (runShape env sup p) (runShape env sup q) (runShape env sup r) p q r f thisL st
+                else sixFork env (runShape env sup p) (runShape env sup q) (runShape env sup r) p (Laze.mk sur fk bd) st := by
+            cases h1 : whole q <;> cases h2 : whole r <;> cases h3 : thisOnlyS (Laze.mk sur fk bd : Laze CSet) <;>
+              cases h4 : lazeBig (sofsHas st.sofs) (Laze.mk sur fk bd) <;>
+              simp [sixShape, shLiftS, e, hne, ht, h1, h2, h3, h4, bind, StateT.bind, get, getThe, MonadState.get,
+                StateT.get, rs6_get, pure, StateT.pure, Laze.fork, Laze.bond] <;> cases t <;> rfl
+          rw [hm, six_kerf_disp _ _ (by simpa [loob] using htk) hkt]
+          generalize ((whole q && whole r) || thisOnlyS (Laze.mk sur fk bd : Laze CSet)
+            || lazeBig (sofsHas st.sofs) (Laze.mk sur fk bd) || t) = kb
+          cases kb with
+          | true =>
+            simp only [if_true]
+            rw [six_rec]
+            obtain ⟨f', rfl⟩ : ∃ f', f = f' + 1 := ⟨f - 1, by omega⟩
+            exact six_this hc h7 hcode env p q r sup f' st y hy hcp hq0 hr0 (fun st1 => hr _ st1 lzNZ_thisL)
+              (fun st1 => hq _ st1 lzNZ_thisL) (fun st1 => hp _ st1 trivial)
+          | false =>
+            simp only [Bool.false_eq_true, if_false]
+            exact six_fork hc h7 hcode env p q r sup (Laze.mk sur fk bd) hl st y hy hcp hr hq hp
+
+/-- **The case `[6 p q r]` under `[%next laz]`** on `RsAtE`, at `sixFuel`, where the fuel covers the
+runs on the same nomm (`SixDeep`). -/
+theorem rs_n6NE (env : ShapeEnv) (hcn : CodeNomms env.cod cod) (p q r : Nomm) (sup : Option Nomm)
+    (laz : Laze CSet) (hl : LzNZ laz) (st : RSt CSet) (hcp : CallCode cod (shapeCE env) p)
+    (hq0 : Bake.NoAx0 q) (hr0 : Bake.NoAx0 r) (hun : ∀ ned, unsS env q r ned ≠ Option.none)
+    (hdeep : SixDeep q r sixFuel laz)
+    (hr : ∀ g st1, GoalNZ g → RsAtE ctx env E r sup g st1)
+    (hq : ∀ g st1, GoalNZ g → RsAtE ctx env E q sup g st1)
+    (hp : ∀ g st1, GoalNZ g → RsAtE ctx env E p sup g st1) :
+    RsAtE ctx env E (Nomm.n6 p q r) sup (GoalS.next laz) st := by
+  intro y hy
+  rw [six_fuel hc h7 hcode env hcn p q r sup y hy hcp hq0 hr0 hun hr hq hp sixFuel laz st hl hdeep]
+  rfl
+
+end
+
+/-! ## `LzNZ` is kept -/
+
+theorem sixTailM_nz (env : ShapeEnv) (rp rq rr : GoalS CSet → SM CSet (Laze CSet)) (p : Nomm) (gr gq gp : GoalS CSet)
+    (hrp : ∀ st l st1, rp gp st = some (l, st1) → LzNZ l)
+    (hrq : ∀ st l st1, rq gq st = some (l, st1) → LzNZ l)
+    (hrr : ∀ st l st1, rr gr st = some (l, st1) → LzNZ l)
+    (st : RSt CSet) (l : Laze CSet) (st1 : RSt CSet) (e : sixTailM env rp rq rr p gr gq gp st = some (l, st1)) :
+    LzNZ l := by
+  unfold sixTailM at e
+  obtain ⟨l1, s1, e1, k1⟩ := sm_bind_some e
+  obtain ⟨l0, s2, e2, k2⟩ := sm_bind_some k1
+  obtain ⟨lz, s3, e3, k3⟩ := sm_bind_some k2
+  obtain ⟨lz', s4, e4, k4⟩ := sm_bind_some k3
+  obtain ⟨st', s5, e5, k5⟩ := sm_bind_some k4
+  obtain ⟨lc, s6, e6, k6⟩ := sm_bind_some k5
+  have h3 := lazeSect_nz l0 l1 s2 lz s3 (hrq _ _ _ e2) (hrr _ _ _ e1) e3
+  obtain ⟨a, ea, ra⟩ := shLiftS_some e4
+  simp only [Prod.mk.injEq] at ra
+  have h4 : LzNZ lz' := by rw [ra.1]; exact lazePastFork_nz env lz p a h3 ea
+  have hbig : LzNZ (if lazeBig (sofsHas st'.sofs) lz' = true then thisL else lz') := by
+    split
+    · exact lzNZ_thisL
+    · exact h4
+  exact lazeCopyEnd_nz (hrp _ _ _ e6) hbig k6
+
+theorem foldCopy_nz : ∀ (bys : List (Laze CSet)) (l r : Laze CSet), LzNZ l → (∀ b ∈ bys, LzNZ b) →
+    bys.foldlM (fun acc b => lazeCopy acc b) l = some r → LzNZ r
+  | [], l, r, hl, _, e => by simp at e; subst e; exact hl
+  | b :: bs, l, r, hl, hb, e => by
+    simp only [List.foldlM_cons] at e
+    cases e1 : lazeCopy l b with
+    | none => rw [e1] at e; cases e
+    | some c =>
+      rw [e1] at e
+      exact foldCopy_nz bs c r (lazeCopy_nz l b c hl (hb b (by simp)) e1) (fun x hx => hb x (by simp [hx])) e
+
+/-- **`sixShape` keeps `LzNZ`**, given that the runs of `p`, `q`, `r` do on goals of `GoalNZ`. -/
+theorem sixShape_nz (env : ShapeEnv) (rp rq rr : GoalS CSet → SM CSet (Laze CSet)) (p q r : Nomm)
+    (hq0 : Bake.NoAx0 q) (hr0 : Bake.NoAx0 r)
+    (hrp : ∀ g st l st1, GoalNZ g → rp g st = some (l, st1) → LzNZ l)
+    (hrq : ∀ g st l st1, GoalNZ g → rq g st = some (l, st1) → LzNZ l)
+    (hrr : ∀ g st l st1, GoalNZ g → rr g st = some (l, st1) → LzNZ l) :
+    ∀ (f : Nat) (laz : Laze CSet) (st : RSt CSet) (l : Laze CSet) (st1 : RSt CSet), LzNZ laz →
+      sixShape env rp rq rr p q r f laz st = some (l, st1) → LzNZ l
+  | 0, _, _, _, _, _, e => by simp [sixShape] at e
+  | f + 1, laz, st, l, st1, hl, e => by
+    simp only [sixShape] at e
+    obtain ⟨lep, s1, e1, e⟩ := sm_bind_some e
+    obtain ⟨a, ea, ra⟩ := shLiftS_some e1
+    simp only [Prod.mk.injEq] at ra
+    obtain ⟨ra1, ra2⟩ := ra
+    simp only [ra1] at e
+    clear e1
+    cases a with
+    | some rb =>
+      obtain ⟨rest, bys⟩ := rb
+      obtain ⟨hrest, hbys⟩ := lazeLeaps_nz hl hq0 hr0 ea
+      obtain ⟨l0, s2, e2, e⟩ := sm_bind_some e
+      have h0 := sixShape_nz env rp rq rr p q r hq0 hr0 hrp hrq hrr f rest _ l0 s2 hrest e2
+      obtain ⟨c, ec, rc⟩ := shLiftS_some e
+      simp only [Prod.mk.injEq] at rc
+      have hlc : l = c := by first | exact rc.1.symm | exact rc.1
+      rw [hlc]
+      exact foldCopy_nz bys l0 c h0 hbys ec
+    | none =>
+      obtain ⟨sur, fk, bd⟩ := laz
+      simp only [Laze.fork, Laze.bond, Laze.sure] at e
+      cases hne : noneEq (Laze.mk SureO.bunt fk bd : Laze CSet) with
+      | false =>
+        simp only [hne, Bool.not_false, ↓reduceIte] at e
+        obtain ⟨st', s2, e2, e⟩ := sm_bind_some e
+        obtain ⟨kerf, s3, e3, e⟩ := sm_bind_some e
+        cases kerf with
+        | true =>
+          simp only [↓reduceIte] at e
+          exact sixShape_nz env rp rq rr p q r hq0 hr0 hrp hrq hrr f thisL _ l st1 lzNZ_thisL e
+        | false =>
+          simp only [Bool.false_eq_true, ↓reduceIte] at e
+          unfold sixFork at e
+          obtain ⟨gs, s4, e4, e⟩ := sm_bind_some e
+          have hnz := lazeBranch_nz (Laze.mk sur fk bd) s3 gs s4 hl e4
+          have e' : sixTailM env rp rq rr p (GoalS.next gs.2) (GoalS.next gs.1) (GoalS.next thisL) s4
+              = some (l, st1) := by
+            obtain ⟨g0, g1⟩ := gs
+            exact e
+          exact sixTailM_nz env rp rq rr p _ _ _ (fun st l st1 e => hrp (GoalS.next thisL) st l st1 lzNZ_thisL e)
+            (fun st l st1 e => hrq (GoalS.next gs.1) st l st1 hnz.1 e)
+            (fun st l st1 e => hrr (GoalS.next gs.2) st l st1 hnz.2 e) s4 l st1 e'
+      | true =>
+        simp only [hne, Bool.not_true, Bool.false_eq_true, ↓reduceIte] at e
+        have hl0 : LzNZ (Laze.mk sur [] [] : Laze CSet) := ⟨hl.1, trivial, trivial⟩
+        exact sixBranch_nz env rp rq rr p _ (fun st l st1 e => hrp GoalS.pick st l st1 trivial e)
+          (fun st l st1 e => hrq (GoalS.next (Laze.mk sur [] [])) st l st1 hl0 e)
+          (fun st l st1 e => hrr (GoalS.next (Laze.mk sur [] [])) st l st1 hl0 e) _ l st1 e
+
 end Compiler
 end Formalization
