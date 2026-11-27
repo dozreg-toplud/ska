@@ -291,6 +291,52 @@ def exEAp : List Nomm :=
 #guard exEAp.all fun nm => okOut (naryX nm) &&
   ((runX nm).map fun (nex, g) => disjB nex && lazyOKB g.blocks nex && !(entries nex.laz).isEmpty) == some true
 
+/- The instances of `optIn_finishLUX` (`RawInvWholeX.lean`): the whole-subject
+pass succeeds on both, `+kerf` makes a proxy (so `+to-straight` takes its map
+path), and the output passes `okOut`.  On all of `enumX` `+kerf` makes a
+proxy, and every key of `cond` is a proxy for the register of `+kern`. -/
+def kerfX (nm : Nomm) : Option (Nat × Comp.Gen FM) :=
+  (runX nm).bind fun (nex, g1) => (kerf (S := LS) (Map := FM) nex g1).map fun ((_, sub), g2) => (sub, g2)
+
+#guard exEAp.all fun nm => (mono nm).isSome && okOut (mono nm) &&
+  ((kerfX nm).map fun (_, g2) => hasProxies g2.cond) == some true
+#guard enumX.all fun nm => match kerfX nm with
+  | some (sub, g2) => hasProxies g2.cond && (HoonMapKeys.keys g2.cond).all fun k =>
+      match HoonMap.get g2.cond k with
+      | some e => e.1 == sub && sub < k
+      | none => false
+  | none => true
+
+/-! ## The facts of `StInv` (`Compiler/OptLinkTotalInv.lean`) that `OptIn` lacks
+
+Checked for the optimizer's totality (Gaps 13): `Closed` (every jump
+targets a block), `ArityOK` (a jump passes as many arguments as its target
+has parameters), a block `0`, and `TwoNA` (two-way ends pass no arguments),
+on the output of both final passes over all of `enumX`; the raw blocks of
+the run meet `Closed`, `ArityOK` and `TwoNA` too (their labels start at
+`1`).  Not vacuous: 3,360 n-ary outputs have a jump with arguments. -/
+
+def twoWayB : Termin → Bool
+  | Termin.clq .. | Termin.eqq .. | Termin.brn .. | Termin.brz .. | Termin.lti .. => true
+  | _ => false
+
+/-- `Closed`, `ArityOK`, `TwoNA` of a block map. -/
+def stB (m : FM Blob) : Bool :=
+  (blocksOf m).all fun (_, b) => (getJmps b.fin).all fun j =>
+    (match m.f j.there with
+      | some b2 => j.args.length == b2.par.length
+      | none => false) && (!twoWayB b.fin || j.args.isEmpty)
+
+def okSt (o : Option (Straight FM)) : Bool := match o with
+  | some c => stB c.blocks && (c.blocks.f 0).isSome
+  | none => true
+
+#guard enumX.all fun nm => okSt (naryX nm) && okSt (mono nm) &&
+  match runX nm with | some (_, g) => stB g.blocks | none => true
+#guard (enumX.filter fun nm => match naryX nm with
+  | some c => (blocksOf c.blocks).any fun (_, b) => (getJmps b.fin).any fun j => !j.args.isEmpty
+  | none => false).length == 3360
+
 end Raw
 end SkaModel
 end Formalization
