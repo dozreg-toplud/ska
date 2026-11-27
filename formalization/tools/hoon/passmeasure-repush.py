@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-# usage: passmeasure-repush.py OUT.hoon (w|m|s|r SEED N): drivers for point (b) of README Gaps 16 (re-pushes);
+# usage: passmeasure-repush.py OUT.hoon (w|m|s|c|r SEED N): drivers for point (b) of README Gaps 16 (re-pushes);
 #   run with RUNHOON_LIB=OUTDIR/lib.hoon of passmeasure.py, then passmeasure-repush.py --sum OUT.txt...
 #   w: one re-push (two sites), m: k sites push one identity k times, s: one site re-pushes,
+#   c: a chain of two restarting callees before the site (one identity pushed 4 times),
 #   r: random cores (registers, a shared f, its own product a restarting shift register)
 # witness generator for point (b): a re-push of a culled identity
 import sys
@@ -172,6 +173,27 @@ def rnd_case(rnd, idx):
     bus = '[[[& &] |] [[%R %F] 0]]'.replace('%R', n2h(R)).replace('%F', n2h(f))
     return ('r%d' % idx, bus, L(9, 4, A(1)))
 
+def gfun(selfax, m, b=9, x=L(0, 1)):
+    gbase = L(7, L(2, A(1), A(5)), K(tuple_val([b] + [x] * m)))
+    gs = slots(m + 1)
+    sh = tup([A(peg(6, gs[0]))] + [A(peg(6, s)) for s in gs[2:]] + [A(31)])
+    gstep = L(8, L(2, A(1), A(selfax)), L(7, L(L(9, 4, A(7)), A(1)), sh))
+    return L(6, L(3, A(7)), gbase, gstep)
+def chain2(n=14, m0=6, a=7, x=L(0, 1)):
+    f = L(L(2, A(1), A(22)), L(L(2, A(1), A(23)), L(9, 4, A(3))))
+    g0 = gfun(26, m0); g1 = gfun(54, 3)
+    rs = slots(n)
+    y0 = L(2, L(L(K(a), A(peg(2, rs[0]))), A(3)), K(g0))          # in [Pr K]
+    g0s = slots(m0 + 1)
+    y1 = L(2, L(L(K(a), A(peg(2, g0s[1]))), A(7)), K(g1))         # in [G0 [Pr K]]
+    g1s = slots(4)
+    z = L(2, L(tup([K(a)] + [A(peg(2, s)) for s in g1s[1:4]]), A(15)), K(f))  # in [G1 [G0 [Pr K]]]
+    shP = tup([A(peg(30, s)) for s in rs[1:]] + [A(63)])          # in [Zp [G1 [G0 [Pr K]]]]
+    body = L(8, y0, L(8, y1, L(8, z, shP)))
+    R = L(6, L(3, A(3)), K(tuple_val([x] * n)), L(8, L(9, 4, A(1)), body))
+    bat = L(R, L(g0, L(g1, f)))
+    return ('c%d' % n, '[[[& &] |] [%B 0]]'.replace('%B', n2h(bat)), L(9, 4, A(1)))
+
 def summary(paths):
     import importlib.util, os
     pm = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'passmeasure.py')
@@ -210,6 +232,8 @@ if __name__ == '__main__':
     elif mode == 'm':
         cs = [rcase(nm, multi(ns)[0]) for nm, ns in
               [('m2', [3, 6]), ('m3', [3, 6, 9]), ('m4', [3, 6, 9, 12]), ('m5', [3, 5, 7, 9, 11])]]
+    elif mode == 'c':
+        cs = [chain2(), chain2(20, 8)]
     elif mode == 's':
         cs = []
         for nm, n in [('s8', 8), ('s12', 12)]:

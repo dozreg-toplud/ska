@@ -3033,7 +3033,11 @@ import only its theorems.  So:
     (registers, 2 to 5 sites of a shared `f` that is itself a restarting
     shift register in 70 %, later sites built from earlier products): 13
     re-pushes, at most 2 pushes of one identity, at most 9 passes, every
-    pass loop returned.  No poke whose pass loop did not return.
+    pass loop returned.  A chain of two restarting callees before the one
+    site (mode `c`) pushes one identity 4 times (31 passes): the count can
+    double with each level of the chain, so it is not bounded by the
+    number of sites, but it stayed finite.  No poke whose pass loop did not
+    return.
     Restated (`Ska/PassMeasureB.lean`): what `passOn_wf_W` and
     `passLoop_returns` use is only that `next` is bounded along each chain
     of passes; `next` grows by one at every push, so this is `FinPushes`,
