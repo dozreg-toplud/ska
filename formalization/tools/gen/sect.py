@@ -133,7 +133,23 @@ scG0Y, scGS = gate_parts(scG0)
 scG1Y, gs1 = gate_parts(scG1)
 assert gs1 == scGS
 
-parts = [('scLB', scLB), ('scGS', scGS), ('scG0Y', scG0Y), ('scG1Y', scG1Y), ('scG0', scG0),
+# the gates that the three `+jab:by` take: `|=(blob +<(par tar.args))`
+# (`scParG`), and the gate `lens-hop` (`scLensB`) that builds `scInner`
+BOMB = C(A(1), C(A(0), A(0), A(0x6d6f62), A(0)))
+found = []
+def walk(n):
+    if n[0] != 'C':
+        return
+    if n[1] == A(8) and sl(6, n) == BOMB and sl(7, n)[0] == 'C' and sl(14, n)[0] == 'C' \
+            and sl(28, n) == A(1) and sl(15, n) == C(A(0), A(1)):
+        found.append((sl(29, n), n))
+    walk(n[1]); walk(n[2])
+walk(scJabs)
+assert len(found) == 2, len(found)
+(scParG, _), (scInner, scLensB) = found
+assert scParG == C(A(10), C(A(2), A(0), A(59)), A(0), A(6))
+
+parts = [('scParG', scParG), ('scInner', scInner), ('scLensB', scLensB), ('scLB', scLB), ('scGS', scGS), ('scG0Y', scG0Y), ('scG1Y', scG1Y), ('scG0', scG0),
          ('scG1', scG1), ('scRep0', scRep0), ('scRep1', scRep1), ('scJabs', scJabs),
          ('scArgs', scArgs), ('scOt', scOt), ('scND', scND), ('scThr', scThr), ('scTail', scTail),
          ('scB', scB), ('scBat', BAT), ('scBunt', BUNT)]

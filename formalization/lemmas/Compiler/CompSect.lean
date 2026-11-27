@@ -226,5 +226,150 @@ theorem sc_rep1 (hc : CompIn ctx) (rid : Nat) (IB IS IC Y1 Y3 Y4 Y5 Y6 Y7 : Noun
   unfold scRep1
   simp [nock_exec, hc, by_arm, by.arm_at, by.rep.arm_at, rep_arm, hlb, hrep]
 
+/-! ## `+jab:by` on the blocks -/
+
+/-- `+jab:by` with a gate that need only work on the value `v` at the key. -/
+theorem jab_gate_at {mug : Noun → Nat} (c : Noun) (hc : GorIn mug c) (B key fp fs fc : Noun)
+    (g : Noun → Noun) (v : Noun) (hg : nock (C fp (C v fc)) fp = some (g v)) :
+    ∀ (a out : Noun), getF mug key a = some (C (A 0) v) → jabF mug key g a = some out →
+      nock (C by.jab.battery (C (C key (C fp (C fs fc))) (C B (C a c)))) by.jab.battery = some out := by
+  intro a
+  have hgor := gor_gate (mug := mug) c hc.2
+  have hgo := hc.1
+  fun_induction jabF mug key g a
+  all_goals intro out hv h
+  all_goals first
+    | (simp at h; done)
+    | skip
+  all_goals simp [getF, *] at hv
+  all_goals first
+    | (cases h
+       subst hv
+       nock_open by.jab.battery
+       simp [nock_exec, *]
+       done)
+    | (nock_open by.jab.battery
+       simp_all [nock_exec])
+
+/-- **`+jab:by` on the blocks**: at a block `b` that the gate maps to `b'`,
+the noun of the blocks with `b'` put at the key. -/
+theorem jab_blocks (fp fs fc : Noun) (bs : TreapMap mugF Blob) (o : Nat) (b b' : Blob)
+    (hb : HoonMap.get bs o = some b) (hg : nock (C fp (C b.toNoun fc)) fp = some b'.toNoun) :
+    nock (C by.jab.battery (C (C (A o) (C fp (C fs fc))) (C by.battery (C (HoonMap.toNoun Blob.toNoun bs)
+      layer2)))) by.jab.battery = some (HoonMap.toNoun Blob.toNoun (HoonMap.put bs o b')) := by
+  have hm := isMap_hoonMap Blob.toNoun bs
+  have hv : Get (HoonMap.toNoun Blob.toNoun bs) (A o) b.toNoun := by
+    rw [hoonMap_toNoun] at hm ⊢
+    exact (Tr.Get_toNoun_iff Blob.toNoun _ hm _ _).2 ⟨o, b, rfl, hb, rfl⟩
+  obtain ⟨out, hj, hmo, hget⟩ := jabF_spec (A o) (fun _ => b'.toNoun) hm hv
+  obtain ⟨out', hp, hmp, hgp⟩ := putF_spec mugF (HoonMap.toNoun Blob.toNoun bs) (A o) b'.toNoun hm
+  rw [jab_gate_at layer2 gorIn_morIn_layer2.1 by.battery (A o) fp fs fc (fun _ => b'.toNoun) b.toNoun hg _ out
+    (getF_some hm hv) hj]
+  rw [putF_hoonMap] at hp
+  cases hp
+  congr 1
+  exact isMap_ext hmo hmp (fun k w => by rw [hget, hgp])
+
+/-- The block after `|=(blob +<(par tar.args))`. -/
+theorem sc_parg (b : Blob) (par : List Nat) (D : Noun) (yes nuh : Noun) (Z : Noun) :
+    nock (C scParG (C b.toNoun (C (C yes (C nuh (listNoun A par))) Z))) scParG
+      = some ({ b with par := par } : Blob).toNoun := by
+  unfold scParG; simp [nock_exec, Blob.toNoun]
+
+/-- The gate that `lens-hop` builds, on a block whose end is `%hop`. -/
+theorem sc_inner (b : Blob) (t : Jmp) (hb : b.fin = Termin.hop t) (args : List (Option Nat)) (D : Noun) :
+    nock (C scInner (C b.toNoun (C scLensB (C (listNoun (unitNoun A) args) D)))) scInner
+      = (lensHop args b).map Blob.toNoun := by
+  obtain ⟨par, body, fin⟩ := b
+  simp only at hb
+  subst hb
+  unfold scInner
+  simp [nock_exec, Blob.toNoun, Termin.toNoun, Tag.hop, lensHop, Jmp.toNoun]
+
+theorem sc_lensB (a D : Noun) : nock (C scLensB (C a D)) scLensB
+    = some (C scInner (C (C (A 0) (C (A 0) (C (A 0x6d6f62) (A 0)))) (C scLensB (C a D)))) := by
+  conv => lhs; arg 2; unfold scLensB
+  simp [nock_exec]
+
+theorem get_put_hop {bs : TreapMap mugF Blob} {o tgt : Nat} {b v : Blob} {t : Jmp}
+    (h : HoonMap.get bs o = some b) (hf : b.fin = Termin.hop t) (hv : o = tgt → ∃ t', v.fin = Termin.hop t') :
+    ∃ c t2, HoonMap.get (HoonMap.put bs tgt v) o = some c ∧ c.fin = Termin.hop t2 := by
+  rw [hoonMap_get] at h ⊢
+  show ∃ c t2, TreapMap.get (TreapMap.put bs tgt v) o = some c ∧ _
+  rw [TreapMap.get_put]
+  by_cases e : o = tgt
+  · obtain ⟨t', ht'⟩ := hv e
+    exact ⟨v, t', if_pos e, ht'⟩
+  · exact ⟨b, t, by rw [if_neg e]; exact h, hf⟩
+
+/-- The arm `jab` of the door on a map that holds a key: its gate, whose
+sample the call replaces. -/
+theorem jab_arm_map (B c : Noun) (bs : TreapMap mugF Blob) (o : Nat) (b : Blob)
+    (h : HoonMap.get bs o = some b) :
+    ∃ S, nock (C B (C (HoonMap.toNoun Blob.toNoun bs) c)) by.jab.arm
+      = some (C by.jab.battery (C S (C B (C (HoonMap.toNoun Blob.toNoun bs) c)))) := by
+  rw [hoonMap_get] at h
+  rw [hoonMap_toNoun]
+  obtain ⟨t, ht⟩ := bs
+  cases t with
+  | nil => simp [TreapMap.get, Tr.get] at h
+  | node k v l r =>
+    simp only [TreapMap.toNoun, Tr.toNoun]
+    exact ⟨C (A k) (C (C (A 0) (A 15)) (C (Blob.toNoun v) (C (Blob.toNoun v) (Blob.toNoun v)))), by
+      nock_open by.jab.arm; simp [nock_exec]⟩
+
+/-- **The three `+jab:by` of `+sect`**: the parameters of the join, then the
+arguments of the two ends, then `gen`. -/
+theorem sc_jabs (hc : CompIn ctx) (acc : SectAcc (TreapMap mugF)) (INS Y2 Y3 Y4 Y5 Y6 N0 N1 R : Noun) (tgt o0 o1 : Nat)
+    (g : Gen (TreapMap mugF)) (bt b0 b1 : Blob) (t0 t1 : Jmp)
+    (hbt : HoonMap.get g.blocks tgt = some bt) (h0 : HoonMap.get g.blocks o0 = some b0)
+    (hf0 : b0.fin = Termin.hop t0) (h1 : HoonMap.get g.blocks o1 = some b1) (hf1 : b1.fin = Termin.hop t1) :
+    nock (scDot x ctx acc INS (A tgt) Y2 Y3 Y4 Y5 Y6 (C N0 (C N1 (C (A o0) (C (A o1) R)))) g) scJabs
+      = ((do
+          jabBlock tgt (fun b => some { b with par := acc.2.2.2 })
+          jabBlock o0 (lensHop acc.2.1)
+          jabBlock o1 (lensHop acc.2.2.1) : CM (TreapMap mugF) Unit) g).map fun p => genNoun p.2 x := by
+  -- the first jab: the parameters of the join
+  have hv0 : o0 = tgt → ∃ t', ({ bt with par := acc.2.2.2 } : Blob).fin = Termin.hop t' := fun e => by
+    subst e; rw [hbt] at h0; cases h0; exact ⟨t0, hf0⟩
+  obtain ⟨c0, u0, hc0, hfc0⟩ := get_put_hop (tgt := tgt) (v := { bt with par := acc.2.2.2 }) h0 hf0 hv0
+  have hv1 : o1 = tgt → ∃ t', ({ bt with par := acc.2.2.2 } : Blob).fin = Termin.hop t' := fun e => by
+    subst e; rw [hbt] at h1; cases h1; exact ⟨t1, hf1⟩
+  obtain ⟨d1, w1, hd1, hfd1⟩ := get_put_hop (tgt := tgt) (v := { bt with par := acc.2.2.2 }) h1 hf1 hv1
+  -- the second: the arguments of the yes end
+  have hv2 : o1 = o0 → ∃ t', ({ c0 with fin := Termin.hop { u0 with args := acc.2.1 } } : Blob).fin
+      = Termin.hop t' := fun _ => ⟨_, rfl⟩
+  obtain ⟨c1, u1, hc1, hfc1⟩ := get_put_hop (tgt := o0) hd1 hfd1 hv2
+  have hl0 : lensHop acc.2.1 c0 = some { c0 with fin := Termin.hop { u0 with args := acc.2.1 } } := by
+    simp [lensHop, hfc0]
+  have hl1 : lensHop acc.2.2.1 c1 = some { c1 with fin := Termin.hop { u1 with args := acc.2.2.1 } } := by
+    simp [lensHop, hfc1]
+  have hm : ((do
+          jabBlock tgt (fun b => some { b with par := acc.2.2.2 })
+          jabBlock o0 (lensHop acc.2.1)
+          jabBlock o1 (lensHop acc.2.2.1) : CM (TreapMap mugF) Unit) g)
+      = some ((), { g with blocks := (HoonMap.put (HoonMap.put (HoonMap.put g.blocks tgt { bt with par := acc.2.2.2 })
+          o0 { c0 with fin := Termin.hop { u0 with args := acc.2.1 } })
+          o1 { c1 with fin := Termin.hop { u1 with args := acc.2.2.1 } }) }) := by
+    simp only [bind_apply, jabBlock, hbt, Option.bind_some, Option.map_some]
+    simp only [hc0, Option.bind_some, hl0, Option.map_some, hc1, hl1]
+  rw [hm, Option.map_some]
+  have hj0 := jab_blocks scParG (C (A 0) (C (A 0) (C (A 0x6d6f62) (A 0))))
+    (scDot x ctx acc INS (A tgt) Y2 Y3 Y4 Y5 Y6 (C N0 (C N1 (C (A o0) (C (A o1) R)))) g) g.blocks tgt bt
+    { bt with par := acc.2.2.2 } hbt (by simp only [scDot, scArgsN]; exact sc_parg _ _ (A 0) _ _ _)
+  have hj1 := fun D => jab_blocks scInner (C (A 0) (C (A 0) (C (A 0x6d6f62) (A 0))))
+    (C scLensB (C (listNoun (unitNoun A) acc.2.1) D)) _ o0 c0 _ hc0
+    (by rw [sc_inner c0 u0 hfc0, hl0]; rfl)
+  have hj2 := fun D => jab_blocks scInner (C (A 0) (C (A 0) (C (A 0x6d6f62) (A 0))))
+    (C scLensB (C (listNoun (unitNoun A) acc.2.2.1) D)) _ o1 c1 _ hc1
+    (by rw [sc_inner c1 u1 hfc1, hl1]; rfl)
+  obtain ⟨S0, hS0⟩ := jab_arm_map by.battery layer2 g.blocks tgt bt hbt
+  obtain ⟨S1, hS1⟩ := jab_arm_map by.battery layer2 _ o0 c0 hc0
+  obtain ⟨S2, hS2⟩ := jab_arm_map by.battery layer2 _ o1 c1 hc1
+  simp only [scDot, scArgsN, compCore, genNoun] at hj0 hj1 hj2 ⊢
+  generalize comp.door = Dr at hj0 hj1 hj2 ⊢
+  unfold scJabs
+  simp [nock_exec, hc, by_arm, by.arm_at, by.jab.arm_at, hS0, hS1, hS2, hj0, hj1, hj2, sc_lensB]
+
 end Compiler
 end Formalization
