@@ -19,6 +19,9 @@
 #   [%ds S b soft]               right after: ~(tap by soft.gen) after the run, each [o soft-call]
 #   [%dp S b prev np]            at the product: the previous entry's need (or ~) and
 #                                need-pessimized
+#   [%dc S b soft mug wyt]       in finish after +coerce-lazy: ~(tap by soft.gen), the mug and size of
+#                                blocks.gen; [%dd S b mug wyt] the same after +soft-done
+#   [%dz S b need n-args blocks] the straight of (finish ~), its blocks as ~(tap by blocks)
 #   [%fin S entries]             the needs of the entries the final pass returns (as mugs)
 #   [%rs tag]                    (with --tally) each case of +run-shape entered
 import os, re, sys
@@ -164,6 +167,16 @@ if sys.argv[1] in ('--lean', '--tally'):
         elif tag == 'ds':
             S, (b, sl) = e[1]
             pend[(S, b)]['soft'] = lst(sl)
+        elif tag == 'dc':
+            S, (b, (sl, _)) = e[1]
+            for r in reversed(recs):
+                if r['b'] == b and 'csoft' not in r:
+                    r['csoft'] = lst(sl); break
+        elif tag == 'dz':
+            S, (b, (zn, (za, zb))) = e[1]
+            for r in reversed(recs):
+                if r['b'] == b and 'zneed' not in r:
+                    r['zneed'] = zn; r['znargs'] = za; r['zblocks'] = lst(zb); break
         elif tag == 'dp':
             S, (b, (prev, np)) = e[1]
             r = pend.pop((S, b))
@@ -177,11 +190,14 @@ if sys.argv[1] in ('--lean', '--tally'):
     print('`+shape-collapse`, `ned-final`, `need-new`, the raw `sur`, `o`, no soft call, the members')
     print('`[bell need sure pure jet]` (the views), the callees outside `[bell need sure pure jet]`')
     print('(only those the nomm calls), the previous entry (`~` or `[~ need]`), `need-pessimized`,')
-    print('the soft map after the run (`~(tap by soft.gen)`, each `[o soft-call]`). -/')
+    print('the soft map after the run (`~(tap by soft.gen)`, each `[o soft-call]`), the soft map after')
+    print('`+coerce-lazy` in `finish` (`csoft`), the straight of `(finish ~)`: need, `n-args`, the blocks')
+    print('`~(tap by blocks)` (each `[o blob]`). -/')
     print('structure DoneRec where\n  cs : String\n  b : Nat\n  less : String\n  nomm : String\n  laz : String')
     print('  ord : String\n  nedf : String\n  nn : String\n  sur : String\n  o : Nat\n  nosoft : Bool')
     print('  mem : List String\n  out : List String\n  prev : String\n  np : String')
-    print('  soft : List String := []\n')
+    print('  soft : List String := []\n  csoft : List String := []\n  zneed : String := "0"')
+    print('  znargs : Nat := 0\n  zblocks : List String := []\n')
     names = []
     for i, r in enumerate(recs):
         cal = callees(r['nomm'], [])
@@ -195,7 +211,10 @@ if sys.argv[1] in ('--lean', '--tally'):
         print('  mem := [%s]' % ', '.join('"%s"' % ns(x) for x in r['mem']))
         print('  out := [%s]' % ', '.join('"%s"' % ns(x) for x in out))
         print('  prev := "%s"\n  np := "%s"' % (ns(r['prev']), ns(r['np'])))
-        print('  soft := [%s]\n' % ', '.join('"%s"' % ns(x) for x in r.get('soft', [])))
+        print('  soft := [%s]' % ', '.join('"%s"' % ns(x) for x in r.get('soft', [])))
+        print('  csoft := [%s]' % ', '.join('"%s"' % ns(x) for x in r.get('csoft', [])))
+        print('  zneed := "%s"\n  znargs := %d' % (ns(r['zneed']), r['znargs']))
+        print('  zblocks := [%s]\n' % ', '.join('"%s"' % ns(x) for x in r['zblocks']))
     print('def recs : List DoneRec := [%s]\n' % ', '.join(names))
     print('end Formalization.SkaModel.SccLoop.RealData')
     sys.exit(0)
@@ -254,6 +273,23 @@ ins('    ?~  s-previous=(~(get by map-local) b)', [
     '            ?~(sp need-new (msg-need-ord need-new need.u.sp cape.less.b))',
     '        ==',
 ], after=False)
+# inside finish: the soft map and the blocks after +coerce-lazy, the blocks after +soft-done,
+# and the straight of (finish ~)
+ins('      =.  gen  ~(soft-done comp gen)', [
+    '      ~&  ^-(* [%dc (mug scc) (mug b) ~(tap by soft.gen) (mug blocks.gen) ~(wyt by blocks.gen)])',
+], after=False)
+ins('      =.  gen  ~(soft-done comp gen)', [
+    '      ~&  ^-(* [%dd (mug scc) (mug b) (mug blocks.gen) ~(wyt by blocks.gen)])',
+])
+k = [i for i in range(a, src.index('++  bake-need'))
+     if src[i] == '      ?~  pessimized  (~(to-straight comp gen) res)']
+assert len(k) == 1
+src[k[0]:k[0] + 1] = [
+    '      ?~  pessimized',
+    '        =/  z  (~(to-straight comp gen) res)',
+    '        ~&  ^-(* [%dz (mug scc) (mug b) need.z n-args.z ~(tap by blocks.z)])',
+    '        z',
+]
 ins('      [m c(nary (~(uni by nary.c) m))]', [
     '      ~&  ^-  *',
     '          [%fin (mug scc) (turn ~(tap by m) |=([b=bell s=straight] [(mug b) need.s]))]',

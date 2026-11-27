@@ -11,6 +11,8 @@ import lemmas.Ska.SccLoopReal
 import lemmas.Compiler.CompSccLoopMemStep
 import lemmas.Compiler.CompSccLoopSoft
 import lemmas.Ska.SccLoopSoftCheck
+import lemmas.Ska.SccLoopSoftFinCheck
+import lemmas.Compiler.CompSccLoopSoftDone
 
 /-! The axioms of the theorems of `Ska/SccLoop.lean`, `Ska/SccLoopMsg.lean` and `Ska/SccLoopCycle.lean`
 (README Gaps 21): each must print
@@ -133,3 +135,6 @@ open Formalization.SkaModel.SccLoop
 #print axioms Formalization.SkaModel.SccLoop.cfgRealS_eq
 #print axioms Formalization.SkaModel.SccLoop.doneRetS_iff
 #print axioms Formalization.Compiler.crxts_of_xt
+#print axioms Formalization.Compiler.sdArm_eq
+#print axioms Formalization.Compiler.sd_trap
+#print axioms Formalization.Compiler.sd_tree
