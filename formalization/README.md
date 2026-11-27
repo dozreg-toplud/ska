@@ -377,6 +377,10 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/OptLinkTotalBlock.lean` | **`aliasBlock_some`**: one kept block of the walk returns, from what the walk invariant must give at it (the block, closed facts and immediates and the new block of every predecessor, its jumps to `o` with enough arguments that have facts, `TestFact`, the set `S`, `old` the identity on the parameters and the registers written), with closed facts, immediates with facts, and facts for `S` and the registers written in the new state. |
 | `Compiler/OptLinkTotalWalk.lean` | **The walk invariant of `+alias`**, `WInv n bl topo pre g` after the prefix `pre`: `ARev` (track E), no facts for an unwalked block, a walked block still listed by an unwalked one has facts, `old r ≠ r` only at a register a kept walked block writes, and for every block with facts `KeptOK` (reachable, closed facts and immediates with facts, its new block with a fact for the test register, jumps with at least the target's arity and facts for the arguments, a jump to every unwalked block that lists it, and a fact under the current `old` for every register of `SqR`, a parameter, an argument of the entry no block defines, or a register every path from `0` defines earlier, or written by its body); the input `WIn` (`TopoOK`, `RevSound`, `DefFirst`, `DefOnceR`, `NoLti`, `ArityOK`, `TwoNA`, `ReadsIn n`); **`readS`** (every read of a reachable block is in `SqR` or written before it), **`later_dst`** (a register a later block writes is not one an earlier kept block has in `SqR` or writes: `DefOnceR` and the order of `topo` on paths), **`afin_walk`** (the new end: a fact for its test register, arguments renamed from the old end's reads, a jump to every block that still lists it). |
 | `Compiler/OptLinkTotalWalkStep.lean` | The induction: **`winv_init`**, **`winv_drop`** (a dropped block keeps `WInv`), **`winv_kept`** (at a kept block `WInv` and `WIn` give the hypotheses of `aliasBlock_some`, and the state after has `WInv`), **`winv_walk`**, and **`aliasRetN_of`**: `AliasRetN pick ρ L` for every `pick` that picks a member. |
+| `Compiler/OptLinkTotalN.lean` | The converse of `+optimize` at one `N = nargs` (Gaps 13): **`ReadsKeep P N J`** (every pass of the driver keeps `ReadsIn N` on blocks with `J`, with `TopoInvR` where the driver has it), **`PassTotalN P ρ L N J`** (`PassTotal` with `+alias` asked to return at `N` only, on blocks with `ReadsIn N`, and `ReadsKeep` a field), `structLoop_reads`, **`optimizeOnce_totalN`**, **`optLoop_totalN`**, **`optimizeF_totalN`** (the old proofs carrying `ReadsIn N` and `s.nargs = N`), **`passTotalN_of`** (at `DInvR`, `+alias` by `aliasRetN_of`, given `SwitchRet` and `ReadsKeep`), **`opt_gate_totalN_of`** (the pill's `+optimize` returns, `sfuel` above `ρ` on `L`, given `ReadsKeep`). |
+| `Compiler/OptLinkTotalReads.lean` | The passes keep `ReadsIn N` (Gaps 13): `readsIn_of_lift` (a read after of a register not defined after is a read of a reachable block before, and a definition before of it is kept), `allDefs_iff`, `allDefs_mono`; **`rub_reads`**, **`mid_reads`** (a substituted argument is read at the end of the bypassed block), `filt_reads`, **`trim_reads`**; `mt_read` (a read of a merged block is a read of a reachable block of its chain), **`hops_reads`** (the definition before is in the merged block or a block of the path after: `ssk_mt_first` and the lift of `ssk_hops_first`); **`dead_reads`** (the definition before is live, so kept: the argument of `ssk_dead`). |
+| `Compiler/OptLinkTotalFinal.lean` | **`AliasReadsN`** (open: the model of `+alias` at `N` keeps `ReadsIn N` on blocks with `DInvR`, `TopoInvR`), **`readsKeep_of`** (`ReadsKeep` for the passes of the Hoon, given `AliasReadsN`), **`gateTotalN_of`** (track D's `GateTotalN`, given `AliasReadsN`), **`opt_total_finishLFX'`**, **`opt_total_finishLUX'`**: the pill's `+optimize` returns on the raw output of every nomm of `FragX` (`sixCount ≤ 255`), for both final passes, given `AliasReadsN` only (`AliasRetN` by `aliasRetN_of`, `RunAT` by track D's `opt_total_finishLFX_at` / `_LUX_at`). |
+| `Compiler/OptLinkTotalReadsCheck.lean` | Check (`#guard`): `readsB`, the decidable `ReadsIn`, after every pass of up to eight rounds of `+optimize-once` with the model passes, on `xaBlocks`, `xbBlocks`, `xhBlocks` and all 4,080 raw outputs of `enumX` (57,042 checks); the axioms of the three files above. |
 | `Compiler/OptLinkSwNouns.lean` | `+switch-chains` (arm `182` of `optC`, `sw_at_cut`, `swBody_eq`): its nouns cut by `tools/gen/optlink.py switch` (the gates `test-of` `swTOB`, `chain-of` `swCHB`, `plain-of` `swPOB`, `plains-of` `swPSB`, `cases` `swCSB`, `tree` `swTRB`, `uses`, `nex`, the walk `swWalk` and its two branches, each cut at the tests the proofs step through), the subjects `swS3` to `swS9` after `uses` and each gate, and the nouns `stestN`, `splainN`, `spN`, `scaseN` of the model's values. |
 | `Compiler/OptLinkSwUses.lean` | `uses` (`sw_uses`): a map related to `usesOf` (`UsesRel`: at each register with a positive count, that count), through the gate `put` (`uses_gut`, `uses_put`, `bump`), the gate of the `+roll` over the ops and the gate of the `+rep:by` (`sw_repg`, the pattern of `rd_step`). |
 | `Compiler/OptLinkSwTest.lean` | **The gate `test-of` is `testOf`**, crashes included (`sw_test`): the model restated by the steps (`testOf_eq`: `clqNA`, `eqqNA`, `toYb`, `toBod`, `toHM`, `toC`), each Nock step stated as the subject it starts from (`to_clq`, `to_y`, `to_yb`, `to_eqq`, `to_bod`, `to_hm`, `to_h`, `to_m`, `to_s`, `to_c`, `to_eq`). |
@@ -2809,6 +2813,41 @@ import only its theorems.  So:
    with the model passes, `ReadsIn nargs` (on the reachable blocks) holds
    on the input of `+alias` and on the output of every round of
    `optimizeOnce` (up to six rounds), so that `J` is the right one.
+
+   Fifth session (2026-11-27): `PassTotal` restated at one `N`
+   (`OptLinkTotalN.lean`): **`PassTotalN`** asks `+alias` at `N` only, on
+   blocks with `ReadsIn N`, and holds **`ReadsKeep`** (every pass keeps
+   `ReadsIn N`) as a field; `optimizeOnce_totalN`, `optLoop_totalN`,
+   `optimizeF_totalN` carry `ReadsIn N` and `s.nargs = N` (`withBlocks`
+   keeps `nargs`), and `passTotalN_of` takes `+alias` from `aliasRetN_of`.
+   Checked first (`OptLinkTotalReadsCheck.lean`, `#guard`): `ReadsIn nargs`
+   holds after EVERY pass (the structural passes at each turn of the
+   structural loop, `+alias`, `+trim-trace-hints`, `+remove-dead-code`, the
+   structural passes after it, `+switch-chains`), up to eight rounds, on the
+   three examples and on all 4,080 raw outputs of `enumX` (57,042 checks),
+   so the invariant to carry is `ReadsIn N` itself.  Proved
+   (`OptLinkTotalReads.lean`): `+remove-useless-branching`,
+   `+remove-empty-middle` and `+trim-trace-hints` keep the definitions of
+   every block and read only what a reachable block read before
+   (`rub_reads`, `mid_reads`, `trim_reads`); `+remove-hops` and
+   `+remove-dead-code` may drop definitions, and keep `ReadsIn N` with
+   `DefFirst`: a register the input defines and a reachable block after
+   reads is defined before the read on a path, and that definition is kept,
+   in the merged block or a block of the path (`hops_reads`) or because it
+   is live (`dead_reads`).  Open: **`AliasReadsN`**
+   (`OptLinkTotalFinal.lean`), that `+alias` keeps `ReadsIn N`.  A read of
+   its output is `old y` for a read `y` of a reachable input block, and the
+   proof of `alias_defFirst` (track E) shows that `old y` is defined before
+   on the path after, or is a parameter or an earlier op, or is not in
+   `allDefs bl`; in that last case `old y < N` is still to show: when
+   `old y = y`, `ReadsIn N` of the input gives it (`tav_undef`), and when
+   `old y ≠ y`, `old y` comes from an immediate or a fact name, so the
+   availability invariant `TAv` (`OptAliasAvail.lean`) must be had at
+   `A y := y ∈ allDefs bl ∨ y < N` (the entry facts name registers below
+   `nargs`), not at `AvP`.  With it, **`gateTotalN_of`** gives
+   `GateTotalN` and **`opt_total_finishLFX'`** / **`opt_total_finishLUX'`**
+   the totality of the pill's `+optimize` on raw `FragX` output with no
+   other hypothesis.
 
 14. **Raw `+comp` output meets the optimizer's invariant** (track D,
    2026-11-24, `Ska/RawInv*.lean`, `Ska/AuditRaw.lean`).  The driver theorem
