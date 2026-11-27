@@ -91,7 +91,13 @@ site was compiled against a jet's arguments. -/
 def Hot (ovo : Noun) : Prop :=
   ∃ head tail, ovo = C (A jets) (C head tail)
 
-/-- `Reach core₀ core`: `core₀` can become `core`. -/
+/-- `Reach core₀ core`: `core₀` can become `core`.
+For now we assume no %jets pokes, which should be OK if we assume that all jets
+are correct, and we already assume that in practice.
+
+XX Maybe admit %jets pokes under condition that the given subject needs are
+sound? But what would "sound" mean?..
+-/
 inductive Reach (core₀ : Noun) : Noun → Prop where
   | pill : Reach core₀ core₀
   | poke {core ovo prod core'} :
@@ -114,8 +120,9 @@ def Loads : Prop :=
   ∃ core, FromPill core
 
 /-- SKA interpreter computes a result without a crash iff Nock does the same.
-From the interpreter to Nock the scry gate is `~`: with a namespace, opcode
-12 computes nouns that Nock has no rule for. -/
+From Nock to SKA interpreter: any scry gate, as Nock didn't scry
+From SKA interpreter to Nock: only if scry gate is ~
+-/
 def NockEquivalence : Prop :=
   ∀ core₀ core s f p gul,
     FromPill core₀ → Reach core₀ core →
@@ -128,8 +135,7 @@ def MockEquivalence : Prop :=
     FromPill core₀ → Reach core₀ core →
     (Mock core₀ s f gul toon ↔ ∃ core', Run core s f gul toon core')
 
-/-- Analysis and compilation of the entry point halt: `[%full s f]` is
-answered for every subject and every formula that is a cell. -/
+/-- %full pokes halt for all subjects and cell formulas -/
 def Halts : Prop :=
   ∀ core₀ core s f₁ f₂,
     FromPill core₀ → Reach core₀ core →
