@@ -173,5 +173,119 @@ theorem crd_ctail (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52
         simp [nock_exec, crSubj, Nomm.toNoun, hnf, bind, StateT.bind, h7, hcode, hD1, cr_past_arm, hpa,
           cr_bat_dol, hp1, eq, e3, eq2, hD2, cr_cp_arm, hcpy, cr_next_nounL, Function.comp_def]
 
+/-! ## Step `7`: the call blocks, `mono` `|`, no key, no ring, `sof` `|` -/
+
+/-- The subject of step `7`: `sof` (`|`), `b-sur`, `sub-v`, `sub-ned`,
+`b-ned`, `rin` (`~`), `callee-pure` on the subject of `$`. -/
+abbrev crdS6 (V5 SV SN V2 PV S : Noun) : Noun :=
+  C (A 1) (C V5 (C SV (C SN (C V2 (C (A 0) (C PV S))))))
+
+/-- The noun of a direct call with no memo key. -/
+abbrev crdN (p q : Nomm) (b : Bell) : Noun := C (A 2) (C p.toNoun (C q.toNoun (C (A 0) (C b.toNoun (A 0)))))
+
+/-- The tail of the noun of a goal. -/
+noncomputable def crdGoalT : CGoalL CSet → Noun
+  | CGoalL.pick z o => C z.toNoun o.toNoun
+  | CGoalL.done => A 0
+  | CGoalL.next laz th => C laz.toNoun th.toNoun
+
+/-- The model of step `7` (`callL`): under `%done` one block `[~ ~ %jmp b
+sub-v]`; otherwise `+simple-next`, `+kerf` and `[~ [%cal b sub-v pro]~ %hop
+~ out]`. -/
+noncomputable def crdBlockM (b : Bell) (subV : List Nat) : CGoalL CSet → CM (TreapMap mugF) Nat
+  | CGoalL.done => emit ⟨[], [], Termin.jmp b subV⟩
+  | g => do
+      let nex ← simpleNextL g
+      let (out, pro) ← kerf nex
+      emit ⟨[], [Pole.cal b subV pro], Termin.hop (jmp0 out)⟩
+
+/-- **Step `7` under `%done`**: the test of `%done` with no key, `mono` `|`,
+one `+emit` of `[~ ~ (jump-op ~)]` (`[%jmp b sub-v]`, no ring), the `=?` of
+`sof` (`|`, the state kept). -/
+theorem crd_blk_done (hc : CompIn ctx) (x : GenRest) (V5 V2 PV : Noun) (subNed : Need) (p q : Nomm) (b : Bell)
+    (region : List Nat) (sup : Noun) (g : Gen (TreapMap mugF)) :
+    nock (crdS6 V5 (listNoun A (flattenNeed subNed)) subNed.toNoun V2 PV
+      (crSubj (A 1) (crdN p q b) (CGoalL.done : CGoalL CSet).toNoun (listNoun A region) sup (compCore g x ctx)))
+      crDKc7
+      = (crdBlockM b (flattenNeed subNed) CGoalL.done g).map fun p => C (A p.1) (genNoun p.2 x) := by
+  have he := cf_emit (x := x) hc g ⟨[], [], Termin.jmp b (flattenNeed subNed)⟩
+  simp only [Blob.toNoun, listNoun, Termin.toNoun, Tag.jmp] at he
+  have hD := comp_emit_at
+  simp only [crdBlockM, cf_emit_g, Option.map_some]
+  simp only [crSubj, compCore] at he ⊢
+  generalize comp.door = Dr at he hD ⊢
+  unfold crDKc7 crD7 crD7Op crD7Jop crD7T crD7D crD7Ur0 crD7Uc0 crD7Ur1
+  simp [nock_exec, CGoalL.toNoun, hD, comp_emit_arm, he]
+
+theorem crd_blob_cal (b : Bell) (v : List Nat) (d t : Nat) :
+    Blob.toNoun ⟨[], [Pole.cal b v d], Termin.hop (jmp0 t)⟩
+      = C (A 0) (C (C (C (A 0x6c6163) (C b.toNoun (C (listNoun A v) (A d)))) (A 0)) (C (A 0x706f68) (C (A 0) (A t)))) := by
+  simp [Blob.toNoun, listNoun, Termin.toNoun, Pole.toNoun, Tag.hop, Tag.cal, Jmp.toNoun, jmp0]
+
+/-- **Step `7` on a `%next` or `%pick` goal**: the test of `%done` fails,
+`+simple-next` (`comp_simple_next`), `+kerf` (`comp_kerf_all`), `mono` `|`,
+one `+emit` of `[~ [(call-op ~ pro)]~ %hop ~ out]` (`[%cal b sub-v pro]`, no
+ring), the `=?` of `sof` (`|`). -/
+theorem crd_blk_next (h7 : slot? 7 ctx = some compK) (x : GenRest) (hx : x.NoSoft) (V5 V2 PV : Noun)
+    (subNed : Need) (p q : Nomm) (b : Bell) (region : List Nat) (sup : Noun) (goal : CGoalL CSet)
+    (hgd : goal ≠ CGoalL.done) (g : Gen (TreapMap mugF)) (hinv : GInv g goal) :
+    nock (crdS6 V5 (listNoun A (flattenNeed subNed)) subNed.toNoun V2 PV
+      (crSubj (A 1) (crdN p q b) goal.toNoun (listNoun A region) sup (compCore g x ctx))) crDKc7
+      = (crdBlockM b (flattenNeed subNed) goal g).map fun p => C (A p.1) (genNoun p.2 x) := by
+  obtain ⟨hc, hl, hm⟩ := comp_ctx_pill ctx h7
+  have hmod : crdBlockM b (flattenNeed subNed) goal = (do
+      let nex ← simpleNextL goal
+      let (out, pro) ← kerf nex
+      emit ⟨[], [Pole.cal b (flattenNeed subNed) pro], Termin.hop (jmp0 out)⟩ : CM (TreapMap mugF) Nat) := by
+    cases goal with
+    | done => exact absurd rfl hgd
+    | _ => rfl
+  have htd : ∃ k, goal.toNoun = C (A k) (crdGoalT goal) ∧ k ≠ 0x656e6f64 := by
+    cases goal with
+    | done => exact absurd rfl hgd
+    | next laz th => exact ⟨_, rfl, by decide⟩
+    | pick z o => exact ⟨_, rfl, by decide⟩
+  obtain ⟨k, hk, hkd⟩ := htd
+  have hkd' : (0x656e6f64 : Nat) ≠ k := fun h => hkd h.symm
+  have hsn := comp_simple_next hc x g goal (A 1) (crdN p q b) (listNoun A region) sup
+  rw [hmod, bind_apply]
+  simp only [crSubj, compCore] at hsn ⊢
+  cases e : simpleNextL (S := CSet) (Map := TreapMap mugF) goal g with
+  | none =>
+    rw [e] at hsn
+    simp only [Option.map_none] at hsn
+    rw [hk] at hsn ⊢
+    generalize comp.door = Dr at hsn ⊢
+    unfold crDKc7 crD7 crD7Op crD7Jop crD7T crD7Nr0 crD7Nc0
+    simp [nock_exec, crdS6, hsn, cr_bat_sn, hkd, hkd']
+  | some r =>
+    obtain ⟨nex0, g1⟩ := r
+    rw [e] at hsn
+    simp only [Option.map_some] at hsn
+    obtain ⟨-, -, ⟨⟨lnb, -⟩, d1, -⟩, -⟩ := simpleNextL_res hinv e
+    have hkf := comp_kerf_all hc hl hm x g1 nex0 (walk_mdP hx g1.bo (lall_mono (fun _ hs => hs.1) lnb))
+    have hD1 := comp_kerf_at
+    have hD3 := comp_emit_at
+    rw [cr_next_nounL] at hsn
+    simp only [compCore] at hkf
+    cases ek : kerf nex0 g1 with
+    | none =>
+      rw [ek] at hkf
+      rw [hk] at hsn ⊢
+      generalize comp.door = Dr at hsn hkf hD1 hD3 ⊢
+      unfold crDKc7 crD7 crD7Op crD7Jop crD7T crD7Nr0 crD7Nc0 crD7Nr1 crD7Nc1
+      simp [nock_exec, crdS6, hsn, cr_bat_sn, hkd, hkd', hD1, comp_kerf_arm, hkf, bind, StateT.bind, ek]
+    | some r2 =>
+      obtain ⟨⟨out, pro⟩, g2⟩ := r2
+      rw [ek] at hkf
+      simp only [Option.map_some] at hkf
+      have he := cf_emit (x := x) hc g2 ⟨[], [Pole.cal b (flattenNeed subNed) pro], Termin.hop (jmp0 out)⟩
+      rw [crd_blob_cal] at he
+      rw [hk] at hsn ⊢
+      generalize comp.door = Dr at hsn hkf hD1 hD3 he ⊢
+      unfold crDKc7 crD7 crD7Op crD7Jop crD7T crD7Nr0 crD7Nc0 crD7Nr1 crD7Nc1 crD7Ne crD7Vr0 crD7Vc0 crD7Vr1
+      simp [nock_exec, crdS6, hsn, cr_bat_sn, hkd, hkd', hD1, comp_kerf_arm, hkf, bind, StateT.bind, ek, hD3, comp_emit_arm,
+        he, cf_emit_g]
+
 end Compiler
 end Formalization
