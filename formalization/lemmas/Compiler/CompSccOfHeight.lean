@@ -1,4 +1,4 @@
-import lemmas.Compiler.CompSccOfAnyK
+import lemmas.Compiler.CompSccOfOneAny
 
 /-!
 # Nested misses closed by induction on height (README Gaps 19 (g))
@@ -14,7 +14,8 @@ of `b'` inside the run, at the bells in progress `(PeS P S st, PfS Pf S)`.  Here
   of an SCC of height `h` keeps it for every callee of smaller height.
 * `CCBelow ... D h`: every callee in the domain `D` of height below `h` is `CalleeCompiledP` at
   every `(P, Pf)` above it, at every context with `CtxK` (the induction hypothesis).
-* `CalleeH`: the table's data of one callee: a one-bell callee (`OneCallee`) or an SCC with
+* `CalleeH`: the table's data of one callee: a one-bell callee (`OneCalleeA`, no `BakeRunO`:
+  `calleeCompiled_oneKA`) or an SCC with
   the data of `SccCalleeR` at every `(P, Pf)` above it, where each `%done` call's
   `MemDoneRest` may use `CCBelow` at the callee's height.
 * **`calleeCompiled_stepH`** (one step) and **`calleeCompiled_heights`**: every callee of `D`
@@ -115,14 +116,14 @@ SCC `S` (its `sccs` entry, `hnd`) with `SccLoopData` at every `(P, Pf)` above `b
 `%done` calls may use `CCBelow` at `b`'s height (the outside callees of the members, lower). -/
 def CalleeH (env : CallEnv) (SC0 CODE JETS CALLS JH : Noun) (inl : Noun → Option Nomm) (ht : Noun → Nat)
     (D : Bell → Prop) (b : Bell) : Prop :=
-  OneCallee env SC0 CODE CALLS inl b ∨
+  OneCalleeA env SC0 CODE CALLS inl b ∨
     ∃ S, getF mugF b.toNoun SC0 = some (C (A 0) S) ∧
       ((∀ n, S ≠ C n (C (A 0) (A 0))) ∨ ∃ n, S = C n (C (A 0) (A 0)) ∧ CalleeIn CALLS n n) ∧
       ∀ P Pf, Above ht (ht b.toNoun) P Pf →
         SccLoopData env SC0 CODE JETS CALLS JH inl P Pf S (CCBelow env SC0 CODE JETS CALLS JH inl ht D (ht b.toNoun))
 
 /-- **One step of the induction on height**: a callee with `CalleeH` whose lower callees are
-`CCBelow` is `CalleeCompiledP` at every `(P, Pf)` above it (`calleeCompiled_oneKP`, or
+`CCBelow` is `CalleeCompiledP` at every `(P, Pf)` above it (`calleeCompiled_oneKA`, or
 `calleeCompiled_sccA` with `sccLoopAtA_real`). -/
 theorem calleeCompiled_stepH {env : CallEnv} {SC0 CODE JETS CALLS JH : Noun} {inl : Noun → Option Nomm}
     {ht : Noun → Nat} {D : Bell → Prop} (hsg : SccsGood SC0)
@@ -135,11 +136,11 @@ theorem calleeCompiled_stepH {env : CallEnv} {SC0 CODE JETS CALLS JH : Noun} {in
   obtain ⟨h7, hl, hj, h107⟩ := hctx
   have hnPf : ∀ k, Pf k → ht k ≠ ht b.toNoun := fun k hk e => Nat.lt_irrefl _ (e ▸ hab.2 k hk)
   rcases hT with hone | ⟨S, hsc, hnd, hdat⟩
-  · obtain ⟨cape, DATA, FOL, nm, fuel, envb, p, st, rfl, hsc, hinl, hcalls, hcode, hn, hax, hfix, hbake, hone⟩ := hone
+  · obtain ⟨cape, DATA, FOL, nm, fuel, envb, p, st, rfl, hsc, hinl, hcalls, hcode, hn, hax, hfix, hone⟩ := hone
     have e : nb = st.need := Option.some.inj (hnb.symm.trans hone.2.2.1)
     subst e
-    exact calleeCompiled_oneKP h7 hl hj h107 env envb cape DATA FOL nm fuel p st inl hsc hinl hcalls hcode hn hax
-      hfix hbake hone P Pf (fun h => hnPf _ (hab.1 _ h) rfl) (fun h => hnPf _ h rfl)
+    exact calleeCompiled_oneKA h7 hl hj h107 env envb cape DATA FOL nm fuel p st inl hsc hinl hcalls hcode hn hax
+      hfix hone P Pf (fun h => hnPf _ (hab.1 _ h) rfl) (fun h => hnPf _ h rfl)
   · have hS : ∀ k ∈ tapList S, ht k = ht b.toNoun := hht _ _ hsc
     have hPfS : ∀ k ∈ tapList S, ¬ Pf k := fun k hk h => hnPf k h (hS k hk)
     have hPS : ∀ k ∈ tapList S, ¬ P k := fun k hk h => hPfS k hk (hab.1 k h)

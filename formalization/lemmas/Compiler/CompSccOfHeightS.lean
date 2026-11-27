@@ -251,7 +251,7 @@ theorem sccLoopData_of_S {env : CallEnv} {SC0 CODE JETS CALLS JH : Noun} {inl : 
 /-- **The table's data of one callee with static calls**: `CalleeH` with `SccLoopDataS`. -/
 def CalleeHS (env : CallEnv) (SC0 CODE JETS CALLS JH : Noun) (inl : Noun → Option Nomm) (ht : Noun → Nat)
     (D : Bell → Prop) (b : Bell) : Prop :=
-  OneCallee env SC0 CODE CALLS inl b ∨
+  OneCalleeA env SC0 CODE CALLS inl b ∨
     ∃ S, getF mugF b.toNoun SC0 = some (C (A 0) S) ∧
       ((∀ n, S ≠ C n (C (A 0) (A 0))) ∨ ∃ n, S = C n (C (A 0) (A 0)) ∧ CalleeIn CALLS n n) ∧
       ∀ P Pf, Above ht (ht b.toNoun) P Pf → SccLoopDataS env SC0 CODE JETS CALLS JH inl P Pf S ht D (ht b.toNoun)
