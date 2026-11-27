@@ -44,6 +44,11 @@ def CopyRunAt (g g' : Gen Map) (fs ss rs : List (Nat × Lazy S)) : Prop :=
       ∃ R', Runs lib O c gul st' t (P k) R R' ∧ (∀ F ∈ atL fs k ++ atL ss k, HoldsN F.ned R' z) ∧
         ∀ y, (∀ F ∈ atL fs k ++ atL ss k, ¬ NMem F.ned y) → SkaModel.read y R' = SkaModel.read y R
 
+/-- **What `CopyRunAt` asks at every label** of the two inputs' entry lists. -/
+def CopyPreAt (g : Gen Map) (fs ss : List (Nat × Lazy S)) : Prop :=
+  ∀ k, (∀ F ∈ atL fs k ++ atL ss k, Clean F.ned ∧ Distinct F.ned ∧ ∀ y, NMem F.ned y → y < g.re) ∧
+    (atL fs k ++ atL ss k).Pairwise (fun L L' => ∀ r, NMem L.ned r → ¬ NMem L'.ned r)
+
 /-- **The run of the cons of two leaves, every state named**: `gE` (the
 split's block emitted), `gS` (after the split), `gC` (the copy's block
 emitted), `g1`; the halves `hed`, `tel` and their moves `hed'`, `tel'`. -/
