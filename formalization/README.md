@@ -2397,8 +2397,7 @@ import only its theorems.  So:
    what is assumed: over a block invariant `J` that the structural passes and
    `+remove-dead-code` keep, `+alias` returns on blocks with `StInv`, `J` and
    `TopoInv`, keeps them (with the filtered `topo` and its `+rev-cfg`), does
-   not raise `mu` and lowers it when it reports a change (it folds a branch to
-   a hop or to `[%bom ~]`, or drops a block), `+trim-trace-hints` returns,
+   not raise `mu` and lowers it when it reports a change, `+trim-trace-hints` returns,
    keeps them and does not raise `mu`, and `+switch-chains` returns.  Then
    `optimizeF_total`, `optHalts_of` and **`opt_gate_total_of`** (the pill's
    `+optimize` returns the noun of the model's result, for some fuel).
@@ -2406,7 +2405,23 @@ import only its theorems.  So:
    the merge of `+remove-hops`, the fold of `+remove-useless-branching` and
    the fold and drops of `+alias` each lower `mu`.
 
-   Left, in the order to do it: (1) `PassTotal` for `P.alias = aliasM
+   **A finding**: the field `alias` of `PassTotal` is false as stated.
+   `+alias` reports a change not only when it folds a branch (to a hop or to
+   `[%bom ~]`) or drops a block, but also when it turns a `%brn` whose test
+   register is known to be a loob into a `%brz` (`aliasFin`, the case
+   `hasImm = none`, `isLoob`), which keeps the blocks, the kinds of ends and
+   the targets, so `mu` stays the same while the loop goes on: `xbBlocks` of
+   `AuditOptTotal.lean` (`[%lob 1]` then `[%brn 1 1 2]`, two arguments), on
+   which `aliasM` returns `folded` with `mu` unchanged (`#guard`).  The Hoon
+   does the same (`al_link`: the pill's `+alias` returns the model's result
+   where the model returns).  The loop still ends (the number of `%brn` ends
+   falls), so the fix is the measure: count a `%brn` end above the other
+   two-way ends in the second component of `mu` (weights `2` and `1`); the
+   structural passes keep the kind of every end they keep, so their proofs
+   carry over with `twoWay` replaced by the weight.
+
+   Left, in the order to do it: (0) the weighted second component, then
+   (1) `PassTotal` for `P.alias = aliasM
    (Ana.pickR FinMap)`, `P.trim = trimTraceHints`, `P.switch = switchChains
    sfuel`, with `J` = `DInvR` (= `OptIn`) or what of it is needed.  For
    `+alias`: that it returns needs every register it reads to have a fact

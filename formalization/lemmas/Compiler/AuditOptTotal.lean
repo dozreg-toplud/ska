@@ -49,4 +49,19 @@ def ρx (o : Nat) : Nat := 10 - o
 #guard (removeEmptyMiddle 10 xaBlocks).map (·.1) == some false
 #guard (bbTopo 10 xaBlocks) == some [0, 2, 1]
 
+/-- **A finding on the measure**: `+alias` reports a change (`folded`) when it
+turns a `%brn` whose test register is known to be a loob into a `%brz`, which
+keeps the blocks, the two-way ends and the targets, so `mu` stays the same
+while the loop of `+optimize` goes on (the field `alias` of `PassTotal`
+fails here).  The number of `%brn` ends falls, so a measure that counts a
+`%brn` above the other two-way ends would decrease. -/
+def xbBlocks : LM Blob :=
+  ⟨[(0, ⟨[], [Pole.lob 1], Termin.brn 1 ⟨[], 1⟩ ⟨[], 2⟩⟩), (1, ⟨[], [], Termin.don 1⟩),
+    (2, ⟨[], [], Termin.don 0⟩)]⟩
+
+#guard (mu ρx [0, 1, 2] xbBlocks) == (3, 1, 17)
+#guard ((aliasM (fun l => l.headD 0) 2 xbBlocks (revCfg xbBlocks [0, 1, 2]) [0, 1, 2]).map
+  fun r => (r.1, mu ρx [0, 1, 2] r.2, (HoonMap.get r.2 0).map (·.fin))) ==
+  some (true, (3, 1, 17), some (Termin.brz 1 ⟨[], 1⟩ ⟨[], 2⟩))
+
 end AuditOptTotal
