@@ -106,13 +106,13 @@ def SccN (c : Cfg Noun N) (SCC : Noun) : Prop :=
 /-- The print of `csfRec`, `(print-comp 0 |.(leaf+"[fixpoint-compilation {(scow %ud counter)}]"))`,
 returns a gate that gives back its sample.  `print-comp` (lines 107 to 110) is `!@  comp-verb
 same  %*($ slog pri pri, a ~[$:print])`, and line 100 (`=/  comp-verb  ~`) is commented out, so
-`comp-verb` is NOT defined and the pill's `print-comp` is the `+slog` branch.  What this then
-needs, in order: (1) `$:print` returns: the trap builds the tape `"[fixpoint-compilation "`, the
-`+scow %ud` of the atom `counter` (any tape: its value is not read) and `"]"`, so it is exactly
-"`+scow %ud` on an atom returns a tape"; (2) `+slog` on the one-tank list runs the dynamic hint
-`~>(%slog.[pri i.a] ..)`, a Nock 11 with a cell hint whose clue `[pri i.a]` returns, so the hint
-returns its body (`nock_op11_cell`), and on `~` it gives `same`; (3) `same` gives back its
-sample.  With line 100 uncommented `print-comp` is `same` and only (3) is left. -/
+`comp-verb` is NOT defined.  `!@  wing  a  b` is `a` when the wing is absent (`+mint` of
+`hoon.hoon`: `?.((feel p.gen) $(gen q.gen) $(gen r.gen))`), so the pill's `print-comp` is `same`:
+its battery `print_comp.battery` is `[9 97710 [0 511]]`, the pull of the arm `same` (README Gaps
+21.14; an earlier reading took the `+slog` branch).  What this needs: `same` gives back its
+sample.  (Were `comp-verb` defined, the `+slog` branch would also need `+scow %ud` on an atom to
+return a tape and the `%slog` hint, whose clue is a cell that returns, to return its body,
+`nock_op11_cell`.) -/
 def PrintId (p : LoopP) : Prop :=
   ∀ (k : Nat) (ST ML CA RES : Noun), ∃ BAT SAM CTX,
     nock (C RES (p.core (A k) ST ML CA)) csfRecPrint = some (C BAT (C SAM CTX)) ∧
