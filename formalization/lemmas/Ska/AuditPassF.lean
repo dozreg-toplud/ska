@@ -1,6 +1,7 @@
 import lemmas.Ska.PassMeasureK
 import lemmas.Ska.PassMeasureS
 import lemmas.Ska.PassMeasureE
+import lemmas.Ska.PassMeasureP
 
 /-! The axioms of the theorems of track F (`Ska/PassMeasure.lean`,
 `Ska/PassMeasureK.lean`, `Ska/PassMeasureT.lean`, `Ska/PassMeasureS.lean`, `Ska/PassMeasureA.lean`,
@@ -89,3 +90,13 @@ out. -/
 #guard
   let T := Sock.mk (Cape.cell Cape.yes (Cape.cell Cape.yes Cape.yes)) (C (A 5) (C (A 6) (A 7)))
   doubleInt ⟨T, C (A 2) (C (A 6) (A 7))⟩ ⟨T, A 1⟩ == ⟨T, C (A 2) (C (A 6) (A 7))⟩
+
+-- the pass loop (`Ska/PassMeasureN.lean`, `Ska/PassMeasureP.lean`)
+#print axioms Ana.allN
+#print axioms ev_const
+#print axioms fam_finite
+#print axioms runDatum_changed
+#print axioms Ana.memberLoop_le
+#print axioms Ana.passLoop_of_on
+#print axioms Ana.passOn_inv
+#print axioms Ana.passOn_wf

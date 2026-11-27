@@ -85,7 +85,10 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     13,297 runs no untidy subject sock, product, `less-code` or callee subject, and no map with `[~ ~]`
                     (2026-11-27).  And `RunW` (`lemmas/Ska/PassMeasureE.lean`) of the old entry at every run after
                     the first: `less-code` always a mask of `bus`, `indi` always fixed by `+lack:ca` of `dark` and the
-                    new `indi` normal; 680 runs with an old product `%void` (2026-11-27)
+                    new `indi` normal; 680 runs with an old product `%void` (2026-11-27).  `--passes OUT...` checks the
+                    measure of the whole component (`lemmas/Ska/PassMeasureP.lean`) per pass: of 5,058 passes that
+                    ended with `%pm-end`, 2,446 went on, 947 with a push and 1,499 with every run kept or lowered,
+                    one lowered and no more members next pass; none against it (`--passes-v` prints each pass)
 * `untidyin.hoon`   the pokes that could plant an untidy sock: `%fast` with data under a `|` and with a cape `[| |]`
                     returns and keeps both templates normalized (`[[& |] [bat 0]]`), `%fast` with a cell cape over an atom
                     and `%dire` with an untidy bell crash, and a `%full` poke then returns with tidy memo subjects (2026-11-27)
