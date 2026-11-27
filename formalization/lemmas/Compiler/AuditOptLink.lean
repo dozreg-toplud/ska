@@ -1,3 +1,4 @@
+import lemmas.Compiler.OptLinkAlJReg
 import lemmas.Compiler.OptLinkRub
 import lemmas.Compiler.OptLinkDead
 import lemmas.Compiler.OptLinkRev
@@ -173,3 +174,8 @@ open Formalization Compiler
 #print axioms sw_gate
 #print axioms switchLink
 #print axioms opt_gate_sw
+#print axioms al_at_cut
+#print axioms aliasBody_eq
+#print axioms al_rn
+#print axioms old_put
+#print axioms al_jreg

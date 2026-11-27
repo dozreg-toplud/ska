@@ -312,6 +312,9 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/OptLinkSwWalkTag.lean` | **A tagged chain in the walk** (`sw_wtag`): where `switchTag` returns `(out', done')`, the branch is the next turn of the walk on `out'` and a set related to `done'`; three steps, each stated as the subject it leaves (`wt_ids`, `wt_r`, `wt_fin`). |
 | `Compiler/OptLinkSwWalkPlain.lean` | **A plain chain in the walk** (`sw_wplain`): where `switchPlain` returns `(out', done', nex')`, the branch is the next turn of the walk; four steps (`wp_old`, `wp_r`, `wp_ids` with the trap of new labels against `freshIds`, `wp_idt`, and `wp_node` with the `+skip` test `immTo`, `wp_skg`). |
 | `Compiler/OptLinkSwGate.lean` | **The walk** (`sw_walk`, by induction on `topo`), **`+switch-chains` where `switchChains fuel` returns, on blocks with no `%lti`** (`sw_gate`), so `SwitchLink P` for every `P` whose `switch` is the model (`switchLink`), and **`+optimize` with `AliasLink` as the only hypothesis** (`opt_gate_sw`). |
+| `Compiler/OptLinkAlNouns.lean` | The nouns of `+alias` (arm `725` of `optC`, `al_at_cut`, `aliasBody_eq`), cut by `tools/gen/optlink.py alias` at each phase of the plan of Gaps 13: the five arms of its `\|^` core, the prelude, and the walk `alWalk` cut at each `=/` and `=^`, one noun per case of the `?-` over the op (`alOpImm` to `alOpLast`) and over the end (`alFinClq` to `alFinLast`). |
+| `Compiler/OptLinkAlRn.lean` | Phase 1 of `+alias` (Gaps 13): `OldRel N f`, the map `old.gen` as the renaming `f` of the model (`oldRel_nil`: the bunt is `id`; `old_put`: `+put:by` is `updA`); **`rn` is `f`** (`al_rn`). |
+| `Compiler/OptLinkAlJReg.lean` | Phase 2 of `+alias` (Gaps 13): `infoN` (the noun of an `info-reg`), `InfoRel N x` (the sets by `SawRel`, `is-loob` up to `loobImm`), `sawRel_int` (`+int:in` is the filter), `alCtx` (the core the arms of the `\|^` core run in); **`join-reg` of related nouns is related to `joinReg`** (`al_jreg`, each of the eight fields its own fact `f1` to `f8`, the loob tests `al_jr_la`, `al_jr_lb`). |
 | `Compiler/AuditOptLink.lean` | `#print axioms` of the main theorems of `Compiler/OptLink*.lean`; `OptLinkBase.lean` also has `+rep` forward (`rep_gate_fwd`) and against a relation (`rep_gate_rel`). |
 | `Ska/Types.lean` | Models of the IR types (`Bell`, `Sock`, `Cape`, `Pole`, `Termin`, `Blob`, `Straight`, `Tone`, ...), each with its Hoon noun layout. |
 | `Ska/Mink.lean`, `Ska/MinkTrace.lean` | Models of `+mink`, `+mook` and `+mock`; what Nock computes, `+mink` returns (`mink_of_evalH`, with `EvalH` the same as `Eval`: `EvalH.toEval`, `Eval.toEvalH`), also on a dynamic hint whose tag is a cell (`eval_cell_tag`); with no scry gate, what `+mink` returns as `[%0 p]` Nock computes (`evalH_of_minkF_nil`, `eval_of_minkF_nil`). |
@@ -2212,6 +2215,71 @@ import only its theorems.  So:
    all of `ooAfter` went past the 3 GB cap, while the same proof cut into
    eight steps (each `unfold`ing one or two pieces at the formula position,
    with `optC` and the block nouns generalized) checks in about a second.
+
+   **The plan of `+alias`** (2026-11-27, before its proof; nouns by
+   `tools/gen/optlink.py alias`, `Compiler/OptLinkAlNouns.lean`, every one
+   tied to the pill by `al_at_cut`).  The arm (6048 cells) is a gate whose
+   body (6029) pushes the bunt of `gen` (`alGenBunt`, 7 cells), sets `rev.gen`
+   (axis `382`) to `alRevInit` (90) and runs the arm `$` (axis `95`) of a
+   `\|^` core with battery `alBat` (5917).  The subject of the walk is
+   `[alBat [GEN [alBodyCut [[nargs blocks rev topo] optC]]]]` (`gen` at `6`,
+   `topo` at `247`, `blocks` at `122`); `GEN` is `[new old info imms
+   info-local imms-local rev folded]`.  The phases, each its own theorem, in
+   the order to link them (the helpers first, since the phases call them):
+
+   | # | Phase | Noun | Cells | Calls | Model |
+   | --- | --- | --- | --- | --- | --- |
+   | 1 | `rn` | `alRnB` | 23 | `+gut:by` | `g.old` (`OldRel`: `gut old r r` is `A (g.old r)`) |
+   | 2 | `join-reg` | `alJRegB` | 177 | `+int:in` (`int_in`) | `joinReg` |
+   | 3 | `param-info` | `alPInfoB` | 134 | `+murn`, `+same`, `+roll`, `+lent`, `join-reg` | `paramInfo` |
+   | 4 | `join-info` | `alJInfoB` | 300 | `+mor`, `+gor`, `+uni:by` (`UniByR`), `join-reg` | `joinInfoA` (a new loop relation in the style of `IntR`: keys the intersection, the value `join-reg` of the two or, under an equal subtree, the value itself) |
+   | 5 | `join-imms` | `alJImmsB` | 340 | `+int:in`, `+uni:by` | `joinImmsA` (an empty set dropped) |
+   | 6 | prelude | `alGenBunt`, `alRevInit` | 97 | `+run:by` (`run_by`), `+bake`, `+silt` (`silt_gate`) | the start state of `aliasM` (`rev` by `JugRel` to `dedupN` of the jar) |
+   | 7 | end of the walk, `pre` | in `alWalk`, `alPre` | 7 + 35 | `+get:ju`, `+tap:in` (`tap_in`) | `aliasWalk []`; `g.rev o` up to order |
+   | 8 | unreachable block | `alUnT`, `alUnB` (`alUnRoll`) | 136 | `+got:by`, `+get-jmps`, `+roll`, `+del:ju` | the first branch of `aliasBlock` |
+   | 9 | facts at the start | `alInfo` (`alEntry` 69, `alJoin` 608: `alJnRoll` 81, `alJnPreB`, `alJnRef` 512 with `alJnBrn` 207, `alJnBrz` 173, `alJnClq` 87) | 687 | `+put:by`, `+got:by`, `join-info`, `+jab:by` | `entryInfo`, `aliasStart` |
+   | 10 | `imms` and the two `=.` | `alImms` | 89 + 10 | `+got:by`, `join-imms` | `aliasStartImms` |
+   | 11 | `bob` | `alBob` | 21 | `+got:by` | `HoonMap.get bl o` |
+   | 12 | parameters | `alPars` (`alEdges` 112, trap `alParT` 203) | 329 | `+zing`, `+turn`, `+murn`, `+get-jmps`, `+got:by`, `+put:by`, `param-info`, `+flop` | `aliasEdges`, `aliasPars` |
+   | 13 | body | `alBody` (gate `alBodyG` 2336, one noun per op: `%imm` 154, `%mov` 46, `%inc` 181, `%con` 349, `%hed` 191, `%tal` 191, `%cel` 100, `%lob` 135, `%equ` 47, the hints 5 to 29, `%spy` 81, `%nok` 81, `%cal` 74, `%caf` 76, `%cam` 76, `%csl` 106, `%csf` 69, `%csm` = `alOpLast` 76) | 2409 | `+roll`, `+flop`, `rn`, `+get:ju`, `+put:ju`, `+put:by`, `+got:by`, `+jab:by`, `+int:in`, `+put:in`, `+turn` | `aliasOp`, `aliasBody` |
+   | 14 | end | `alFin` (`%clq` 226, `%eqq` 110, `%brn` 260, `%brz` 158, `%hop` 39, `%jmp`, `%jmf` 25, `%jsp`, `%jsf`, `%don` 18, `%bom` = `alFinLast` 10) | 980 | `rn`, `+got:by`, `+del:ju`, `+turn`, `+lift` | `aliasFin`, `aliasFold` |
+   | 15 | stores, next turn | `alTail` | 113 | `+put:by` | the record that `aliasBlock` returns |
+   | 16 | walk, gate | `alWalk`, `alBodyCut` | | | `aliasWalk` by induction on `topo`, `aliasM`, then `AliasLink` |
+
+   Linked so far: phase 1 (`al_rn`, `OptLinkAlRn.lean`) and phase 2
+   (`al_jreg`, `OptLinkAlJReg.lean`, with `InfoRel` and `infoN`); next is
+   phase 3, `param-info`, then the loop relation of `join-info`.  The
+   pattern that kept each step small: cut the body into named fields in
+   `optlink.py` (the field nouns of `join-reg` are `alJRegF1` to
+   `alJRegF8`), prove one fact per field with only that field unfolded
+   and the case split it needs, and assemble with `nock_cons_of`.
+
+   The relations (`OldRel` and `InfoRel` are defined, the rest to come):
+   `HoonMap.toNoun` exactly for `new.gen` and the result; `OldRel` for
+   `old.gen`; `InfoRel N x` for an `info-reg` noun `N` and an `InfoReg` `x`:
+   the units and `is-cell` equal, `hed-of` and `tel-of` sets with the members
+   of the lists (`SawRel`), and `is-loob` equal to `x.isLoob` up to
+   `x.loobImm` (`isLoob' || x.loobImm = x.isLoob || x.loobImm`), which is
+   what `join-info` leaves (header 2 of `Ska/OptAliasModel.lean`); a map of
+   them (`IsMap`, the same keys) for `info-local` and each entry of
+   `info.gen`; `imms` a `jug` with the members of `AImms` (an empty set
+   absent); `rev.gen` by `JugRel` to `g.rev`, whose lists have no duplicates
+   (`dedupN`, then `erase`).  What the comparison of the Hoon and the model
+   found (no difference beyond the header of `Ska/OptAliasModel.lean`): the
+   Hoon's `pre` is `+tap:in` of a set, the model's `g.rev o`, the same
+   members in another order, so the link of phases 9, 10, 12 needs on the
+   model side that `aliasStart`, `aliasStartImms`, `aliasEdges` with
+   `aliasPars` give related results on two orders of `pre` (`joinReg`
+   commutative and associative up to the members of the lists and
+   `isLoob` up to `loobImm`, `paramInfo` of a permutation); the refinement
+   after a `%brz` reads `is-loob`, where `InfoRel` alone does not fix it, so
+   the walk must carry the invariant that a `%brz` end of `new.gen` has a
+   test register with no `has-imm` in `info.gen` (true: `aliasFin` keeps or
+   makes a `%brz` only then); `pick` is chosen as the root of the canonical
+   set of the list (`isMap_ext`: the treap of a set depends only on its
+   members), which meets `hpick`, so `AliasLink` is discharged for `P.alias
+   = aliasM pick`; `NoLti` of the result is a model-side fact (an end is
+   kept or becomes `%hop`, `%brz`, `[%bom ~]`).
 
    Left, in the order to do it: (1) the converse for the structural loop of
    `+optimize-once` (`structLoop`); the converse of the three fuelled passes
