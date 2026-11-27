@@ -30,6 +30,13 @@ ARMS = [('need-from', 'door', 14, 'ndf'), ('need-cut', 'door', 16375, 'ndc'),
         ('pass-edit', 'K', 48046, 'ped'), ('pass-both', 'K', 94, 'pbt'),
         ('lazy-leap', 'door', 442366, 'lzl'), ('leap', 'door', 441179, 'lpx')]
 
+# Parts of a battery named by their axis in it, innermost first: in
+# `lzlBat` = [7 [0 1] 8 cut 8 Sur R2], `Sur` is the `?~ cut` (axis 126),
+# `R2` the turns and the prunes (127), `Pr` the two prunes (2047).
+EXTRA = {'lzl': [('Pr', 2047, 'The two `+lazy-prune` of `+lazy-leap`.'),
+                 ('R2', 127, 'The turns over the forks and the bonds of `+lazy-leap`, then the prunes.'),
+                 ('Sur', 126, 'The `?~ cut` of `+lazy-leap`: the sure needs of `by` and `rec`.')]}
+
 memo = {}
 def full(n):
     n = norm(n)
@@ -99,6 +106,8 @@ for hoon, where, ax, p in ARMS:
             cnt['L'] += 1
             emit('%sL%d' % (p, cnt['L']), t, 'A trap of `+%s`.' % hoon)
     walk(bat)
+    for nm, sax, doc in EXTRA.get(p, []):
+        emit(p + nm, full(slot(sax, bat)), doc)
     emit('%sBat' % p, bat, 'The battery of `+%s` (%s arm `%d`).' % (hoon, where, ax))
     out.append('def %sBunt : Noun :=\n  %s' % (p, show(bunt, True)))
     out.append('def %sArm : Noun := C (A 8) (C (C (A 1) %sBunt) (C (C (A 1) %sBat) (C (A 0) (A 1))))'
