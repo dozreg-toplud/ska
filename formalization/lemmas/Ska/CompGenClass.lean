@@ -90,6 +90,13 @@ structure HalvesApart (hed tel : Lazy S) (lo : Nat) : Prop where
   hlo : (∀ r, NMem hed.sure.ned r → r < lo) ∧ ∀ e ∈ entries hed, ∀ r, NMem e.2.sure.ned r → r < lo
   tlo : (∀ r, NMem tel.sure.ned r → r < lo) ∧ ∀ e ∈ entries tel, ∀ r, NMem e.2.sure.ned r → r < lo
 
+/-- **The witness relation of the cons** (`CompGenClassD.lean`,
+`CompGenClassE.lean`): both parts' at the same subject, the product the
+pair of theirs, `d = pair dp dq`, `w = C wp wq`. -/
+def consWit (Qp Qq : Wit) : Wit :=
+  fun s v d w => ∃ vp vq dp wp dq wq, Qp s vp dp wp ∧ Qq s vq dq wq ∧ v = C vp vq ∧ d = Need.pair dp dq ∧
+    w = C wp wq
+
 /-- **The fragment of the induction**, with the formulas: `[0 a]` (`a ≥ 2`),
 `[1 k]`, `[3 p]`, `[4 p]`, `[5 p q]`, the cons, `[7 p q]`. -/
 inductive GenFrag : Noun → Nomm → Prop
