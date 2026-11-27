@@ -849,25 +849,30 @@ theorem passStep_ok {n : Nat} {mem : MemGo M R} {pass : PassGo M R} (hmem : MemP
   obtain ⟨i2, s2, k2⟩ := hmem index p members _ r1 st2 (id :: rest) (· ∈ rest) i1 ⟨ab0, hs⟩
     (fun j hj => List.mem_cons_of_mem _ hj) hms hm
   have K2 : Keep (id :: rest) (· ∈ rest) st st2 := k2
+  obtain ⟨l2, el2⟩ := K2.1
   simp only at e
   split at e
   · simp only [Option.some.injEq, Prod.mk.injEq] at e
     obtain ⟨_, rfl⟩ := e
     exact ⟨i2, s2, K2.weaken ⟨[id], rfl⟩ (fun _ h => h)⟩
-  · simp only [Option.bind_eq_some_iff] at e
-    obtain ⟨st3, hc, e⟩ := e
-    obtain ⟨l2, el2⟩ := K2.1
-    obtain ⟨i3, s3, k3⟩ := cull_ok i2 hc el2
-    have K3 : Keep (id :: rest) (· ∈ rest) st st3 := K2.trans (k3.mono (fun j hj => List.mem_cons_of_mem _ hj))
-    obtain ⟨l3, el3⟩ := K3.1
-    split at e
-    · simp only [Option.map_eq_some_iff] at e
-      obtain ⟨st4, hp, e⟩ := e
-      cases e
-      obtain ⟨i4, s4, k4⟩ := pop_ok i3 hp el3
-      exact ⟨i4, gStepsR_trans s2 (gStepsR_trans s3 s4), (K3.weaken ⟨[id], rfl⟩ (fun _ h => h)).trans k4⟩
-    · obtain ⟨i4, s4, k4⟩ := hpass id index (p + 1) st3 low st' l3 rest i3 el3 e
-      exact ⟨i4, gStepsR_trans s2 (gStepsR_trans s3 s4), (K3.weaken ⟨[id], rfl⟩ (fun _ h => h)).trans k4⟩
+  · split at e
+    · -- no change: another pass if a reached member is dirty, else `+cull` and `+pop`
+      unfold passEnd at e
+      simp only [Option.bind_eq_some_iff] at e
+      obtain ⟨ab2, _, ms2, _, e⟩ := e
+      split at e
+      · obtain ⟨i4, s4, k4⟩ := hpass id index (p + 1) st2 low st' l2 rest i2 el2 e
+        exact ⟨i4, gStepsR_trans s2 s4, (K2.weaken ⟨[id], rfl⟩ (fun _ h => h)).trans k4⟩
+      · simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at e
+        obtain ⟨st3, hc, st4, hp, e⟩ := e
+        cases e
+        obtain ⟨i3, s3, k3⟩ := cull_ok i2 hc el2
+        have K3 : Keep (id :: rest) (· ∈ rest) st st3 := K2.trans (k3.mono (fun j hj => List.mem_cons_of_mem _ hj))
+        obtain ⟨l3, el3⟩ := K3.1
+        obtain ⟨i4, s4, k4⟩ := pop_ok i3 hp el3
+        exact ⟨i4, gStepsR_trans s2 (gStepsR_trans s3 s4), (K3.weaken ⟨[id], rfl⟩ (fun _ h => h)).trans k4⟩
+    · obtain ⟨i4, s4, k4⟩ := hpass id index (p + 1) st2 low st' l2 rest i2 el2 e
+      exact ⟨i4, gStepsR_trans s2 s4, (K2.weaken ⟨[id], rfl⟩ (fun _ h => h)).trans k4⟩
 
 /-- The cull before the first pass, then the pass loop, keep the invariant. -/
 theorem cullPass_ok {n : Nat} {pass : PassGo M R} (hpass : PassP pass) {id : Ident} {index : Nat}
