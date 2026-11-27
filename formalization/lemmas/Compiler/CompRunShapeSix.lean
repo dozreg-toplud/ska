@@ -1,4 +1,4 @@
-import lemmas.Compiler.CompRunShapeCons
+import lemmas.Compiler.CompRunShapeSeven
 import lemmas.Compiler.CompRunShapeSixSectCut
 import lemmas.Compiler.CompRunShapeSixFkCut
 import lemmas.Compiler.CompRunShapeSixBigCut
@@ -17,7 +17,11 @@ Under a goal that is not `%next`, `lep` is `~` and the kerf test is no, so the c
   trap `lbg_go`, `lbg_forks`, `lbg_bonds`; `cs_has_gate`: `+has:in` on `sofs`).
 * `rsK6_eq`: the case read from the pill is `rs6Arm`.
 * **`rs_n6DP`**: the case under `%done` and `%pick`.
-* `sixBranch_nz`: `sixBranch` keeps `LzNZ` (`lazeSect_nz`, `lazePastFork_nz`).
+* `sixBranch_nz`, `runShape_n6DP_nz`: the branch keeps `LzNZ` (`lazeSect_nz`,
+  `lazePastFork_nz`).
+
+Not here: `%6` under `[%next laz]` (`sixShape`: `+laze-leaps`, the kerf tests
+`+laze-this-only`, `+laze-soft-fork`, `+whole`, and `+laze-branch`).
 -/
 
 namespace Formalization
@@ -177,6 +181,184 @@ theorem lbg_gate (laz : Laze CSet) :
   simp [nock_exec, rsDoor, h, hl1, h7, gth.arm_at, gth_arm, hg, rs6_lmax_at, lazeBig, loob, Lazy.lazyMax]
 
 end
+
+/-! ## The case under `%done` and `%pick` -/
+
+theorem rsK6_eq : rsK6 = rs6Arm := by simp [rsK6, rs6_at]
+
+theorem rs_disp_n6 (t s goal sup D : Noun) :
+    nock (rsS s (C (A 6) t) goal sup D) rsDol = nock (rsS s (C (A 6) t) goal sup D) rsK6 := by
+  nock_open rsDol
+  simp [nock_exec, rsS, rsCoreG, rsTc, rsT]
+
+theorem rs6_goal (goal : GoalS CSet) (hnn : goal = GoalS.done ∨ goal = GoalS.pick) :
+    ∃ tag, goal.toNoun = C (A tag) (A 0) ∧ tag ≠ 0x7478656e := by
+  rcases hnn with rfl | rfl
+  · exact ⟨_, rfl, by decide⟩
+  · exact ⟨_, rfl, by decide⟩
+
+theorem rs6_model (env : ShapeEnv) (sup : Option Nomm) (p q r : Nomm) (goal : GoalS CSet)
+    (hnn : goal = GoalS.done ∨ goal = GoalS.pick) :
+    runShape env sup (Nomm.n6 p q r) goal
+      = sixBranch env (runShape env sup p) (runShape env sup q) (runShape env sup r) p goal := by
+  rcases hnn with rfl | rfl <;> rfl
+
+theorem rs6_get (st : RSt CSet) : (MonadStateOf.get : SM CSet (RSt CSet)) st = some (st, st) := rfl
+
+set_option hygiene false in
+/-- The simp set of the leaves of `rs_n6DP`. -/
+local macro "six_simp" " [" xs:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(tactic| simp [nock_exec, rsS,
+  rsCoreG, rsDoor, sixBranch, bind, StateT.bind, get, getThe, MonadState.get, StateT.get, liftS, pure,
+  StateT.pure, rs6_get, hne, hne', rs6Lep, rs6Tk, rs6Gb, rs6Rest, GoalS.toNoun, thisL_noun, eqCode_atom, $xs,*])
+
+section
+variable (hc : CompIn ctx) (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+include hc h7 hcode
+
+/-- **The case `[6 p q r]` under `%done` and `%pick`**: the runs of `r` and `q` on the goal,
+`+laze-sect`, `+laze-past-fork` over `p`, `this` if `+laze-big`, the run of `p` under `%pick`,
+`+laze-copy` (`sixBranch`). -/
+theorem rs_n6DP (env : ShapeEnv) (p q r : Nomm) (sup : Option Nomm) (goal : GoalS CSet)
+    (hnn : goal = GoalS.done ∨ goal = GoalS.pick) (st : RSt CSet) (hcp : CallCode cod (shapeCE env) p)
+    (hr : ∀ st1, RsAt ctx env r sup goal st1)
+    (hq : ∀ st1, RsAt ctx env q sup goal st1)
+    (hp : ∀ st1, RsAt ctx env p sup GoalS.pick st1) :
+    RsAt ctx env (Nomm.n6 p q r) sup goal st := by
+  intro y
+  obtain ⟨tag, htag, hne⟩ := rs6_goal goal hnn
+  have hne' : ¬ (0x7478656e = tag) := fun h => hne h.symm
+  rw [rs6_model env sup p q r goal hnn]
+  simp only [Nomm.toNoun]
+  rw [rs_push, rs_disp_n6, rsK6_eq, htag]
+  unfold rs6Arm
+  have hr' := hr st y
+  simp only [rsCoreG, rsDoor, htag] at hr'
+  cases e1 : runShape env sup r goal st with
+  | none => rw [e1] at hr'; six_simp [hr', e1]
+  | some r1 =>
+    obtain ⟨l1, st1⟩ := r1
+    rw [e1] at hr'
+    have hq' := hq st1 y
+    simp only [rsCoreG, rsDoor, htag] at hq'
+    cases e2 : runShape env sup q goal st1 with
+    | none => rw [e2] at hq'; six_simp [hr', e1, hq', e2]
+    | some r2 =>
+      obtain ⟨l0, st2⟩ := r2
+      rw [e2] at hq'
+      have hs := lzs_gate (ctx := ctx) st2 y l0 l1
+      simp only [rsDoor] at hs
+      cases e3 : lazeSect l0 l1 st2 with
+      | none => rw [e3] at hs; six_simp [hr', e1, hq', e2, lzs_at', lzs_arm, hs, e3]
+      | some r3 =>
+        obtain ⟨lz, st3⟩ := r3
+        rw [e3] at hs
+        have hpf := lpf_gate hc h7 hcode env p hcp (rsGenNoun st3 y) lz
+        cases e4 : lazePastFork env lz p with
+        | none =>
+          rw [e4] at hpf
+          six_simp [hr', e1, hq', e2, lzs_at', lzs_arm, hs, e3, lpf_at', lpf_arm, hpf, e4]
+        | some lz' =>
+          rw [e4] at hpf
+          have hbg := lbg_gate hc h7 st3 y lz'
+          simp only [rsDoor] at hbg
+          have hp' := hp st3 y
+          simp only [rsCoreG, rsDoor, GoalS.toNoun] at hp'
+          cases e5 : runShape env sup p GoalS.pick st3 with
+          | none =>
+            rw [e5] at hp'
+            by_cases hb : lazeBig (sofsHas st3.sofs) lz' = true <;>
+            · six_simp [hr', e1, hq', e2, lzs_at', lzs_arm, hs, e3, lpf_at', lpf_arm, hpf, e4,
+                lbg_at', lbg_arm, hbg, hb, loob, hp', e5]
+          | some r5 =>
+            obtain ⟨lc, st4⟩ := r5
+            rw [e5] at hp'
+            by_cases hb : lazeBig (sofsHas st3.sofs) lz' = true
+            · have hlc := lc_all hc h7 (rsGenNoun st4 y) lc thisL
+              rw [thisL_noun] at hlc
+              cases e6 : lazeCopy lc thisL with
+              | none =>
+                rw [e6] at hlc
+                six_simp [hr', e1, hq', e2, lzs_at', lzs_arm, hs, e3, lpf_at', lpf_arm, hpf, e4,
+                  lbg_at', lbg_arm, hbg, hb, loob, hp', e5, lc_at', lc_arm, hlc, e6]
+              | some l =>
+                rw [e6] at hlc
+                six_simp [hr', e1, hq', e2, lzs_at', lzs_arm, hs, e3, lpf_at', lpf_arm, hpf, e4,
+                  lbg_at', lbg_arm, hbg, hb, loob, hp', e5, lc_at', lc_arm, hlc, e6]
+            · simp only [Bool.not_eq_true] at hb
+              have hlc := lc_all hc h7 (rsGenNoun st4 y) lc lz'
+              cases e6 : lazeCopy lc lz' with
+              | none =>
+                rw [e6] at hlc
+                six_simp [hr', e1, hq', e2, lzs_at', lzs_arm, hs, e3, lpf_at', lpf_arm, hpf, e4,
+                  lbg_at', lbg_arm, hbg, hb, loob, hp', e5, lc_at', lc_arm, hlc, e6]
+              | some l =>
+                rw [e6] at hlc
+                six_simp [hr', e1, hq', e2, lzs_at', lzs_arm, hs, e3, lpf_at', lpf_arm, hpf, e4,
+                  lbg_at', lbg_arm, hbg, hb, loob, hp', e5, lc_at', lc_arm, hlc, e6]
+
+end
+
+/-! ## `LzNZ` is kept -/
+
+theorem lazeSect_nz (l0 l1 : Laze CSet) (st : RSt CSet) (r : Laze CSet) (st1 : RSt CSet) (h0 : LzNZ l0)
+    (h1 : LzNZ l1) (e : lazeSect l0 l1 st = some (r, st1)) : LzNZ r := by
+  simp [lazeSect, idS, bind, StateT.bind, pure, StateT.pure] at e
+  obtain ⟨h, -⟩ := e
+  subst h
+  exact ⟨fun y hy => absurd hy (HoonSet.mem_empty y), ⟨h0, h1, trivial⟩, trivial⟩
+
+theorem lpfF_nz : ∀ (f : List ((Nat × Laze CSet) × (Nat × Laze CSet))), LzNZF f → LzNZF (f.map lpfE)
+  | [], _ => trivial
+  | ((oy, y), (on, n)) :: rest, ⟨hy, hn, hr⟩ =>
+    ⟨⟨fun z hz => absurd hz (HoonSet.mem_empty z), trivial, ⟨hy, trivial⟩⟩,
+      ⟨fun z hz => absurd hz (HoonSet.mem_empty z), trivial, ⟨hn, trivial⟩⟩, lpfF_nz rest hr⟩
+
+theorem lazePastFork_nz (env : ShapeEnv) (laz : Laze CSet) (nom : Nomm) (r : Laze CSet) (hl : LzNZ laz)
+    (e : lazePastFork env laz nom = some r) : LzNZ r := by
+  unfold lazePastFork at e
+  obtain ⟨s, f, bd⟩ := laz
+  obtain ⟨hs, hf, hb⟩ := hl
+  cases eh : hinted env.pure nom with
+  | none => simp [eh] at e
+  | some b =>
+    cases b
+    · simp [eh] at e; subst e; exact ⟨hs, hf, hb⟩
+    · simp [eh, Laze.sure, Laze.fork, Laze.bond] at e; subst e; exact ⟨hs, lpfF_nz f hf, hb⟩
+
+/-- **`sixBranch` keeps `LzNZ`**, given that its three runs do. -/
+theorem sixBranch_nz (env : ShapeEnv) (rp rq rr : GoalS CSet → SM CSet (Laze CSet)) (p : Nomm) (gb : GoalS CSet)
+    (hrp : ∀ st l st1, rp GoalS.pick st = some (l, st1) → LzNZ l)
+    (hrq : ∀ st l st1, rq gb st = some (l, st1) → LzNZ l)
+    (hrr : ∀ st l st1, rr gb st = some (l, st1) → LzNZ l)
+    (st : RSt CSet) (l : Laze CSet) (st1 : RSt CSet) (e : sixBranch env rp rq rr p gb st = some (l, st1)) :
+    LzNZ l := by
+  unfold sixBranch at e
+  obtain ⟨l1, s1, e1, k1⟩ := sm_bind_some e
+  obtain ⟨l0, s2, e2, k2⟩ := sm_bind_some k1
+  obtain ⟨lz, s3, e3, k3⟩ := sm_bind_some k2
+  obtain ⟨lz', s4, e4, k4⟩ := sm_bind_some k3
+  obtain ⟨st', s5, e5, k5⟩ := sm_bind_some k4
+  obtain ⟨lc, s6, e6, k6⟩ := sm_bind_some k5
+  have h3 := lazeSect_nz l0 l1 s2 lz s3 (hrq _ _ _ e2) (hrr _ _ _ e1) e3
+  obtain ⟨a, ea, ra⟩ := liftS_some e4
+  simp only [Prod.mk.injEq] at ra
+  have h4 : LzNZ lz' := by rw [ra.1]; exact lazePastFork_nz env lz p a h3 ea
+  have hbig : LzNZ (if lazeBig (sofsHas st'.sofs) lz' = true then thisL else lz') := by
+    split
+    · exact lzNZ_thisL
+    · exact h4
+  exact lazeCopyEnd_nz (hrp _ _ _ e6) hbig k6
+
+/-- **The case `[6 p q r]` under `%done` and `%pick` keeps `LzNZ`**, given that its three runs do. -/
+theorem runShape_n6DP_nz (env : ShapeEnv) (sup : Option Nomm) (p q r : Nomm) (goal : GoalS CSet)
+    (hnn : goal = GoalS.done ∨ goal = GoalS.pick)
+    (hrp : ∀ st l st1, runShape env sup p GoalS.pick st = some (l, st1) → LzNZ l)
+    (hrq : ∀ st l st1, runShape env sup q goal st = some (l, st1) → LzNZ l)
+    (hrr : ∀ st l st1, runShape env sup r goal st = some (l, st1) → LzNZ l)
+    (st : RSt CSet) (l : Laze CSet) (st1 : RSt CSet)
+    (e : runShape env sup (Nomm.n6 p q r) goal st = some (l, st1)) : LzNZ l := by
+  rw [rs6_model env sup p q r goal hnn] at e
+  exact sixBranch_nz env _ _ _ p goal hrp hrq hrr st l st1 e
 
 end Compiler
 end Formalization
