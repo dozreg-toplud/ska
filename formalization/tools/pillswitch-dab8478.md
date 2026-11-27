@@ -24,6 +24,10 @@ Arms whose Nock changed:
    follows the order of the forks of the tag type, a set ordered by the mugs
    of type nouns, and these hold the type of the library core, whose arms
    (as Hoon) include `+analyze`.
+   The hand-written nouns that changed with them: `hdBat` of
+   `Compiler/CompPastLink.lean` and `cr11TD` of `Compiler/CompRunHintS.lean`
+   (the `?=(hint-dynamic ..)` of `comp-run`'s case `%11`, written by
+   `tools/gen/runhint.py`); both regenerated from the pill, proofs unchanged.
 
 Every other changed noun is a battery, a quoted core or a type noun that
 holds one of them: `ska_analyze.battery` and `.arm`, `ska_cg.k_bat`,
