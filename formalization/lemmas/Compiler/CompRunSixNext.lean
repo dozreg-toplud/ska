@@ -325,5 +325,80 @@ theorem cr6s_s01 (hc : CompIn ctx) (p q r : Nomm) (s : Sure CSet) (th : Jmp) (re
     generalize comp.door = Dr at hD1 hD2 hD3 hfs hk ho1 ho2 hi ⊢
     unfold cr6S0 cr6SA0 cr6S1 cr6SA1
     simp [nock_exec, hD1, ho1, ho2, hD2, fks_arm, hfs, hD3, hi, hk]
+
+/-! ## The case under a fork-free `%next` goal -/
+
+/-- A goal `[%next [sur ~ ~] ~ o]` meets `GInv` when the looks of `sur` are
+not at `0` and its need has no register twice, all below the counter. -/
+theorem ginv_ofSure {s : Sure CSet} {o : Nat} {g : Gen (TreapMap mugF)} (hl : CrLok s)
+    (hn : ∀ y, NMem s.ned y → y < g.re) (hd : Distinct s.ned) (hdr : g.drop = false) :
+    GInv g (CGoalL.next (Lazy.ofSure s) (jmp0 o)) :=
+  ⟨⟨⟨⟨hl, hn⟩, trivial, trivial⟩, by rw [lregs_ofSure]; exact (distinct_iff_nodup _).1 hd,
+    lkeys_ofSure _, by simp [llabs_ofSure]⟩, hdr, jmpIn_jmp0 _ _⟩
+
+/-- Phase S under `%next` after `+id`: the reads of `cond`, the two runs in
+the region `rid :: region`, `+sect` and the rest. -/
+noncomputable def sixNfK (env : CallEnv) (msup : Option Nomm) (p q r : Nomm) (region : List Nat)
+    (s0 s1 : Sure CSet) (o0 o1 rid : Nat) : CM (TreapMap mugF) (NextL CSet) := do
+  let cb ← getCond
+  let nex1 ← runLC env msup r (CGoalL.next (Lazy.ofSure s1) (jmp0 o1)) (rid :: region)
+  let cbw ← getCond
+  let nex0 ← runLC env msup q (CGoalL.next (Lazy.ofSure s0) (jmp0 o0)) (rid :: region)
+  sixLynN env msup p region (rid :: region) o0 o1 cb cbw nex0 nex1
+
+/-- **The model of `%6` under a fork-free `%next` goal** is phase S
+(`sixNextLC_fork_free`). -/
+theorem runLC_n6_nf (env : CallEnv) (msup : Option Nomm) (p q r : Nomm) (s : Sure CSet) (th : Jmp)
+    (region : List Nat) :
+    (runLC env msup (Nomm.n6 p q r) (CGoalL.next (Lazy.mk s [] []) th) region : CM (TreapMap mugF) (NextL CSet))
+      = (do
+          let o0 ← oo
+          let o1 ← oo
+          let (s0, s1) ← forkSure s th.there o0 o1
+          let rid ← idM
+          sixNfK env msup p q r region s0 s1 o0 o1 rid) := by
+  show sixNextLC env.cod _ _ _ p q r 3 (Lazy.mk s [] []) th region = _
+  rw [sixNextLC_fork_free]
+  rfl
+
+/-- **The case `%6` of `+run` under a fork-free `%next` goal** (no fork, no
+bond: phase S), on every state with the invariant, given the links and
+results of the parts (`SixParts`): the test `p` in the case's region, the
+branches `q` and `r` in every region `rid :: region` (they run in the
+region of the fork). -/
+theorem comp_run_n6_nf (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q r : Nomm) (region : List Nat)
+    (P : SixParts env msup ctx p region) (Q : ∀ rid, SixParts env msup ctx q (rid :: region))
+    (R : ∀ rid, SixParts env msup ctx r (rid :: region))
+    (s : Sure CSet) (th : Jmp) (g : Gen (TreapMap mugF)) (hinv : GInv g (CGoalL.next (Lazy.mk s [] []) th)) :
+    CompRunAtR (runLC env msup) ctx (Nomm.n6 p q r) (CGoalL.next (Lazy.mk s [] []) th) region g := by
+  intro x mono sup hx
+  obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
+  have hd : g.drop = false := ginv_drop hinv
+  have hl0 : CrLok s := hinv.1.1.1.1
+  rw [cr6s_head_nf h7, runLC_n6_nf]
+  refine cr6s_s01 hc p q r s th region x g mono sup (sixNfK env msup p q r region) (fun s0 s1 g3 ef => ?_)
+  obtain ⟨-, -, d3, lk0, lk1, D0, D1, -, fr⟩ := forkSure_inv ef
+  have dI : (idG g3).drop = false := d3.trans hd
+  have gi1 : GInv (idG g3) (CGoalL.next (Lazy.ofSure s1) (jmp0 (g.bo + 1))) :=
+    ginv_ofSure (fun y hy => hl0 y (lk1 ▸ hy)) (fun y hy => (fr y (Or.inr hy)).2) D1 dI
+  have gi0 : GInv (idG g3) (CGoalL.next (Lazy.ofSure s0) (jmp0 g.bo)) :=
+    ginv_ofSure (fun y hy => hl0 y (lk0 ▸ hy)) (fun y hy => (fr y (Or.inl hy)).2) D0 dI
+  exact cr6s_mid (ctx := ctx) env msup p q r (g3.id :: region) (CGoalL.next (Lazy.ofSure s0) (jmp0 g.bo))
+    (CGoalL.next (Lazy.ofSure s1) (jmp0 (g.bo + 1))) x hx (idG g3) mono
+    (CGoalL.next (Lazy.mk s [] []) th).toNoun (listNoun A region) sup (A 0)
+    (fun cb cbw nex0 nex1 => sixLynN env msup p region (g3.id :: region) g.bo (g.bo + 1) cb cbw nex0 nex1)
+    ((R g3.id).link _ _ gi1)
+    (fun nex1 g1 e1 => (Q g3.id).link _ g1 (by
+      obtain ⟨l1, b1, gi1', -⟩ := (R g3.id).res _ _ g1 nex1 gi1 e1
+      exact ginv_mono gi0 l1 b1 ((ginv_drop gi1').trans dI.symm)))
+    (fun nex1 g1 nex0 g2 e1 e2 => by
+      obtain ⟨l1, b1, gi1', -⟩ := (R g3.id).res _ _ g1 nex1 gi1 e1
+      have hi0 := ginv_mono gi0 l1 b1 ((ginv_drop gi1').trans dI.symm)
+      obtain ⟨l2, -, gi2, -⟩ := (Q g3.id).res _ g1 g2 nex0 hi0 e2
+      exact cr6s_lyn_n h7 hcode env msup p q r region (g3.id :: region) P.cod P.hin
+        (fun yes nuh g' hd' => P.link _ g' ⟨hd', jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩) P.res x hx g2 (ginv_drop gi2)
+        nex0 nex1 gi2.1.1 (lnb_mono l2 0 gi1'.1.1) (Lazy.ofSure s0) (Lazy.ofSure s1) g.bo (g.bo + 1)
+        (idG g3).cond g1.cond mono (C (Lazy.mk s [] []).toNoun th.toNoun) sup (A 0))
 end Compiler
 end Formalization
