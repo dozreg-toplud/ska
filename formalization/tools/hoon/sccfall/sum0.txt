@@ -1,0 +1,26 @@
+big    |scc| 1  sweeps 3  final yes
+         need-new [%both [%both this this] this] ; [%both [%both this this] this]
+         entry    [%both [%both this this] this] -> [%both [%both this this] this]
+         F: 2 outputs: [%both [%both this this] this] (23)  [%both [this this] this] (1)
+         orbit fixed: [%both [%both this this] this]
+         ranked, longest chain 2; over every output: yes, 2
+f1     |scc| 1  sweeps 3  final yes
+         need-new [%both [%both this none] this] ; [%both [%both this none] this]
+         entry    [%both [%both this none] this] -> [%both [%both this none] this]
+         F: 3 outputs: [%both [%both this none] this] (12)  [%both [this this] this] (3)  [%both [%both this this] this] (9)
+         orbit off-table: [%both [%both this none] this]
+         ranked, longest chain 2; over every output: yes, 2
+f2     |scc| 1  sweeps 3  final yes
+         need-new [%both [%both this none] this] ; [%both [%both this none] this]
+         entry    [%both [%both this none] this] -> [%both [%both this none] this]
+         F: 3 outputs: [%both [%both this none] this] (12)  [%both [this this] this] (3)  [%both [%both this this] this] (9)
+         orbit off-table: [%both [%both this none] this]
+         ranked, longest chain 2; over every output: yes, 2
+f3     |scc| 1  sweeps 3  final yes
+         need-new [%both [%both this this] this] ; [%both [%both this this] this]
+         entry    [%both [%both this this] this] -> [%both [%both this this] this]
+         F: 2 outputs: [%both [this this] this] (5)  [%both [%both this this] this] (19)
+         orbit fixed: [%both [%both this this] this]
+         ranked, longest chain 2; over every output: yes, 2
+falls 0, probe cycles 0, tables with a cycle or fall from some start 0
+tables 4, not ranked 0, longest chain 2, not ranked over every output 0

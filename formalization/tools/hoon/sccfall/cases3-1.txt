@@ -1,0 +1,98 @@
+r4-21
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(0 (p [[c.s a.s] [a.s c.s]])) [?:(.=(-.s +.s) b.s ?:(.=(a.s 0) (p [[b.s c.s] [a.s b.s]]) d.s)) ?:(.=(0 (p [[a.s b.s] [a.s b.s]])) ?:(.=(a.s 0) (p [[d.s a.s] +.s]) +.s) [(p [[d.s a.s] [b.s a.s]]) (p [[b.s c.s] [a.s d.s]])])] (p [[c.s b.s] [a.s b.s]])))
+
+r4-22
+++  p  |=(s=[[a=* b=*] [c=* d=*]] (p [[b.s d.s] [b.s c.s]]))
+
+r4-23
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(-.s +.s) ?:(.=(-.s +.s) ?:(.=(0 (p [[b.s a.s] [a.s b.s]])) (p [[d.s b.s] [c.s b.s]]) ?:(.=(a.s 0) [-.s +.s a.s b.s c.s d.s] (p [[d.s a.s] [d.s b.s]]))) ?:(.=(a.s c.s) ?:(.=(a.s c.s) -.a.s a.s) -.s)) (p [[c.s b.s] [a.s c.s]])))
+
+r4-24
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(s 0) ?:(.=(-.s +.s) (p [[c.s a.s] [c.s b.s]]) d.s) ?:(.=(0 (p [[c.s a.s] [b.s d.s]])) ?:(.=(a.s 0) ?:(.=(+.s 0) (p [[a.s d.s] +.s]) (p [[d.s b.s] [b.s c.s]])) (p [[b.s d.s] [d.s a.s]])) ?:(.=(0 (p [[d.s c.s] [a.s b.s]])) ?:(.=(-.s +.s) (p [[d.s a.s] +.s]) -.a.s) ?:(.=(a.s c.s) (p [[a.s c.s] [d.s c.s]]) a.s)))))
+
+r4-25
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(-.s +.s) (p [[a.s b.s] [c.s a.s]]) ?:(.=(-.s 0) ?:(.=(a.s c.s) d.s ?:(.=(0 (p [[d.s b.s] [a.s d.s]])) (p [[c.s d.s] [c.s a.s]]) d.s)) ?:(.=(0 (p [[c.s b.s] [b.s c.s]])) (p [+.s [b.s c.s]]) ?:(.=(-.s +.s) (p [[d.s a.s] [d.s a.s]]) (p [[a.s b.s] [d.s b.s]]))))))
+
+r4-26
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(0 (p [[a.s c.s] [d.s a.s]])) ?:(.=(+.s 0) -.s ?:(.=(-.s +.s) ?:(.=(-.s +.s) [s -.s] b.s) ?:(.=(a.s 0) (p [[d.s a.s] [b.s d.s]]) [-.s +.s a.s b.s c.s d.s]))) a.s))
+
+r4-27
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(-.s +.s) ?:(.=(0 (p [[a.s c.s] [c.s d.s]])) (p [[b.s d.s] [d.s a.s]]) ?:(.=(+.s 0) ?:(.=(0 (p [[d.s a.s] [c.s d.s]])) (p [[d.s a.s] [d.s c.s]]) (p [[a.s d.s] [d.s b.s]])) ?:(.=(-.s 0) (p [[b.s c.s] [d.s b.s]]) -.s))) ?:(.=(0 (p [[a.s b.s] [b.s d.s]])) ?:(.=(-.s 0) ?:(.=(a.s 0) 0 (p [[a.s d.s] [c.s b.s]])) [[s -.s] (p [[c.s d.s] [d.s a.s]])]) (p [[b.s c.s] [b.s c.s]]))))
+
+r4-28
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(s 0) (p [[c.s a.s] [b.s d.s]]) [?:(.=(-.s +.s) ?:(.=(-.s +.s) (p [[d.s c.s] [b.s a.s]]) -.s) (p [[d.s c.s] [a.s d.s]])) ?:(.=(0 (p [+.s [b.s d.s]])) [(p [[b.s c.s] [b.s c.s]]) (p [[c.s b.s] [a.s b.s]])] ?:(.=(-.s 0) s -.a.s))]))
+
+r4-29
+++  p  |=(s=[[a=* b=*] [c=* d=*]] (p [[a.s d.s] [c.s a.s]]))
+
+r4-30
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(+.s 0) ?:(.=(a.s c.s) ?:(.=(-.s 0) b.s [(p [[a.s d.s] [c.s d.s]]) +.c.s]) ?:(.=(+.s 0) ?:(.=(+.s 0) [s -.s] (p [+.s [a.s d.s]])) [-.s (p [[c.s b.s] [c.s a.s]])])) +.c.s))
+
+r4-31
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(0 (p [[c.s a.s] [b.s d.s]])) ?:(.=(-.s +.s) ?:(.=(0 (p [[b.s c.s] [d.s c.s]])) [(p [[b.s d.s] [c.s d.s]]) (p [[a.s b.s] [a.s c.s]])] ?:(.=(-.s 0) a.s (p [[c.s b.s] [d.s b.s]]))) ?:(.=(-.s 0) [(p [-.s [b.s a.s]]) [s -.s]] d.s)) ?:(.=(a.s c.s) ?:(.=(s 0) (p [[a.s b.s] [c.s b.s]]) (p [[c.s d.s] [d.s c.s]])) ?:(.=(a.s 0) ?:(.=(s 0) (p [[c.s d.s] [c.s d.s]]) (p [[c.s d.s] [a.s d.s]])) ?:(.=(+.s 0) 0 (p [[d.s b.s] [c.s d.s]]))))))
+
+r4-32
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(a.s 0) ?:(.=(a.s 0) ?:(.=(0 (p [[c.s d.s] [c.s d.s]])) ?:(.=(+.s 0) (p [[d.s a.s] -.s]) (p [[c.s a.s] [b.s c.s]])) [+.s +.c.s]) ?:(.=(0 (p [[c.s d.s] [d.s a.s]])) ?:(.=(-.s +.s) (p [[b.s c.s] [c.s b.s]]) (p [[d.s a.s] [d.s b.s]])) c.s)) ?:(.=(+.s 0) (p [[b.s c.s] [b.s c.s]]) [[(p [+.s [b.s c.s]]) (p [[d.s a.s] [a.s d.s]])] d.s])))
+
+r4-33
+++  p  |=(s=[[a=* b=*] [c=* d=*]] (p [[d.s c.s] [b.s d.s]]))
+
+r4-34
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(a.s 0) [s -.s] -.a.s))
+
+r4-35
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(a.s c.s) ?:(.=(a.s 0) ?:(.=(0 (p [[a.s c.s] [d.s b.s]])) ?:(.=(0 (p [[a.s c.s] [b.s c.s]])) (p [[b.s d.s] [d.s b.s]]) c.s) [+.c.s a.s]) ?:(.=(a.s 0) ?:(.=(-.s 0) (p [[a.s c.s] +.s]) +.c.s) +.c.s)) +.c.s))
+
+r4-36
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(a.s 0) ?:(.=(-.s 0) ?:(.=(-.s +.s) (p [[b.s a.s] +.s]) ?:(.=(-.s +.s) (p [[d.s b.s] [a.s b.s]]) (p [[b.s a.s] [d.s c.s]]))) (p [[a.s d.s] [b.s a.s]])) ?:(.=(-.s 0) ?:(.=(0 (p [[d.s c.s] [c.s a.s]])) c.s (p [[a.s b.s] +.s])) ?:(.=(0 (p [[c.s a.s] +.s])) [(p [[a.s c.s] [d.s c.s]]) c.s] ?:(.=(-.s +.s) (p [[c.s b.s] [b.s d.s]]) (p [[b.s d.s] [a.s b.s]]))))))
+
+r4-37
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(s 0) ?:(.=(+.s 0) (p [[c.s b.s] [a.s b.s]]) (p [[a.s c.s] [d.s b.s]])) ?:(.=(a.s c.s) (p [[b.s d.s] [b.s d.s]]) ?:(.=(a.s c.s) [s -.s] ?:(.=(a.s 0) b.s +.c.s)))))
+
+r4-38
+++  p  |=(s=[[a=* b=*] [c=* d=*]] [-.s ?:(.=(s 0) [s -.s] ?:(.=(a.s 0) (p [[d.s b.s] [d.s b.s]]) ?:(.=(0 (p [[d.s b.s] [c.s a.s]])) s (p [[c.s a.s] [b.s c.s]]))))])
+
+r4-39
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(a.s 0) ?:(.=(s 0) 0 [?:(.=(a.s c.s) +.c.s (p [[d.s b.s] [c.s d.s]])) ?:(.=(a.s 0) (p [[d.s c.s] [b.s c.s]]) b.s)]) ?:(.=(s 0) ?:(.=(a.s c.s) (p [[c.s a.s] [b.s d.s]]) [c.s (p [[a.s b.s] [b.s d.s]])]) ?:(.=(+.s 0) (p [[c.s d.s] [c.s b.s]]) [(p [[c.s a.s] -.s]) d.s]))))
+
+r4-40
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(+.s 0) -.s ?:(.=(a.s 0) [s ?:(.=(0 (p [[c.s a.s] [a.s b.s]])) 0 b.s)] (p [[d.s a.s] [b.s d.s]]))))
+
+r4-41
+++  p  |=(s=[[a=* b=*] [c=* d=*]] [?:(.=(a.s c.s) ?:(.=(a.s 0) (p [[d.s a.s] [c.s d.s]]) ?:(.=(+.s 0) (p [[c.s d.s] [a.s b.s]]) (p [[d.s c.s] +.s]))) ?:(.=(s 0) ?:(.=(-.s 0) 0 (p [[b.s a.s] [b.s c.s]])) (p [[b.s c.s] [b.s c.s]]))) ?:(.=(0 (p [[a.s c.s] [d.s b.s]])) (p [[b.s d.s] +.s]) ?:(.=(a.s 0) ?:(.=(0 (p [[a.s c.s] [a.s d.s]])) (p [[a.s b.s] [d.s b.s]]) (p [[b.s a.s] [d.s c.s]])) ?:(.=(a.s c.s) (p [[c.s d.s] [c.s d.s]]) 0)))])
+
+r4-42
+++  p  |=(s=[[a=* b=*] [c=* d=*]] (p [[c.s b.s] [a.s c.s]]))
+
+r4-43
+++  p  |=(s=[[a=* b=*] [c=* d=*]] (p [[c.s b.s] [a.s d.s]]))
+
+r4-44
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(0 (p [[a.s b.s] [c.s b.s]])) [[[(p [[d.s b.s] [d.s c.s]]) +.s] ?:(.=(a.s c.s) s +.c.s)] ?:(.=(a.s c.s) ?:(.=(-.s +.s) (p [[a.s d.s] [b.s c.s]]) 0) ?:(.=(a.s 0) 0 +.s))] ?:(.=(+.s 0) [(p [[b.s d.s] [a.s b.s]]) (p [[d.s c.s] [a.s b.s]])] ?:(.=(0 (p [[d.s b.s] [b.s d.s]])) ?:(.=(+.s 0) (p [[b.s d.s] [c.s a.s]]) -.s) ?:(.=(-.s +.s) (p [[c.s b.s] [c.s a.s]]) 0)))))
+
+r4-45
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(-.s +.s) [[?:(.=(a.s c.s) -.s (p [+.s [c.s a.s]])) +.c.s] [?:(.=(a.s 0) (p [[c.s a.s] [a.s b.s]]) (p [[d.s b.s] [a.s b.s]])) ?:(.=(0 (p [[c.s b.s] +.s])) (p [[a.s d.s] +.s]) (p [-.s [a.s c.s]]))]] ?:(.=(0 (p [[a.s b.s] [d.s c.s]])) [?:(.=(a.s c.s) (p [-.s [a.s b.s]]) (p [[d.s c.s] [d.s b.s]])) ?:(.=(+.s 0) (p [[c.s b.s] [a.s c.s]]) (p [-.s [a.s c.s]]))] (p [[c.s d.s] [b.s a.s]]))))
+
+r4-46
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(-.s 0) (p [[b.s c.s] [c.s d.s]]) ?:(.=(0 (p [[b.s d.s] [b.s d.s]])) [?:(.=(a.s c.s) (p [[c.s d.s] [a.s d.s]]) b.s) ?:(.=(0 (p [[a.s c.s] [d.s b.s]])) (p [[b.s d.s] [d.s a.s]]) (p [[d.s c.s] [d.s b.s]]))] ?:(.=(0 (p [[c.s d.s] [a.s d.s]])) (p [-.s [b.s a.s]]) ?:(.=(0 (p [[b.s c.s] [d.s c.s]])) (p [[a.s c.s] [d.s a.s]]) (p [[a.s d.s] [d.s b.s]]))))))
+
+r4-47
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(-.s 0) ?:(.=(+.s 0) ?:(.=(-.s 0) ?:(.=(+.s 0) (p [[d.s a.s] [b.s d.s]]) (p [+.s [c.s b.s]])) ?:(.=(-.s +.s) [s -.s] (p [[b.s d.s] [b.s c.s]]))) (p [[d.s a.s] [a.s c.s]])) ?:(.=(-.s +.s) (p [[d.s a.s] [c.s b.s]]) [?:(.=(s 0) (p [[a.s d.s] [b.s a.s]]) (p [[d.s c.s] [b.s a.s]])) (p [-.s [d.s a.s]])])))
+
+r4-48
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(a.s c.s) ?:(.=(s 0) (p [+.s [c.s d.s]]) (p [[d.s b.s] -.s])) ?:(.=(0 (p [[b.s a.s] -.s])) ?:(.=(0 (p [[d.s a.s] -.s])) ?:(.=(a.s c.s) (p [[c.s a.s] [b.s a.s]]) [s -.s]) ?:(.=(a.s c.s) a.s (p [[a.s c.s] [c.s d.s]]))) ?:(.=(-.s 0) [-.s (p [-.s [c.s b.s]])] (p [[a.s b.s] [c.s a.s]])))))
+
+r4-49
+++  p  |=(s=[[a=* b=*] [c=* d=*]] [?:(.=(-.s +.s) ?:(.=(+.s 0) ?:(.=(0 (p [[d.s a.s] [d.s b.s]])) (p [[b.s a.s] [d.s b.s]]) (p [[c.s d.s] [d.s a.s]])) (p [[d.s a.s] +.s])) +.s) ?:(.=(a.s 0) ?:(.=(0 (p [[b.s c.s] [c.s b.s]])) [(p [[b.s c.s] [c.s a.s]]) (p [[a.s b.s] [a.s b.s]])] a.s) s)])
+
+r4-50
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(-.s 0) +.s ?:(.=(-.s +.s) ?:(.=(s 0) 0 ?:(.=(a.s 0) (p [[d.s c.s] [b.s a.s]]) (p [[d.s b.s] [a.s d.s]]))) [s -.s])))
+
+r4-51
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(0 (p [[c.s d.s] [c.s d.s]])) (p [[c.s b.s] [b.s d.s]]) ?:(.=(+.s 0) ?:(.=(-.s 0) ?:(.=(0 (p [[b.s a.s] +.s])) (p [[c.s a.s] [c.s a.s]]) (p [[b.s a.s] -.s])) ?:(.=(0 (p [[d.s a.s] [a.s d.s]])) b.s (p [+.s [b.s d.s]]))) (p [+.s [a.s c.s]]))))
+
+r4-52
+++  p  |=(s=[[a=* b=*] [c=* d=*]] (p [[c.s d.s] [d.s c.s]]))
+
+r4-53
+++  p  |=(s=[[a=* b=*] [c=* d=*]] ?:(.=(0 (p [[a.s d.s] [b.s d.s]])) ?:(.=(0 (p [[d.s a.s] [c.s b.s]])) ?:(.=(a.s c.s) +.c.s ?:(.=(+.s 0) [-.s +.s a.s b.s c.s d.s] -.s)) (p [[a.s b.s] [c.s b.s]])) (p [[c.s b.s] [c.s b.s]])))

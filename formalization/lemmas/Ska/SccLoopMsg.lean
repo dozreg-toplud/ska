@@ -61,7 +61,7 @@ theorem msgCap_eq (r : NeedOrd) : msgCap r = if regsU r > splitMax then NeedOrd.
 
 /-! ## The cases of `msgOrd` -/
 
-def isLeaf : NeedOrd → Bool
+def ordIsLeaf : NeedOrd → Bool
   | NeedOrd.this => true
   | NeedOrd.none => true
   | _ => false
@@ -76,48 +76,48 @@ def mkB (b : Bool) (x y : NeedOrd) : NeedOrd := if b then NeedOrd.both x y else 
 theorem msgOrd_self (a : NeedOrd) (c : Cape) : msgOrd a a c = a := by
   unfold msgOrd; simp
 
-theorem msgOrd_leaf (a b : NeedOrd) (c : Cape) (ha : isLeaf a) (hb : isLeaf b) (h : a ≠ b) :
+theorem msgOrd_leaf (a b : NeedOrd) (c : Cape) (ha : ordIsLeaf a) (hb : ordIsLeaf b) (h : a ≠ b) :
     msgOrd a b c = NeedOrd.this := by
-  cases a <;> cases b <;> simp_all [isLeaf, msgOrd]
+  cases a <;> cases b <;> simp_all [ordIsLeaf, msgOrd]
 
-theorem msgOrd_left (s d : NeedOrd) (c : Cape) (hs : isLeaf s) (hd : isLeaf d = false) :
+theorem msgOrd_left (s d : NeedOrd) (c : Cape) (hs : ordIsLeaf s) (hd : ordIsLeaf d = false) :
     msgOrd s d c = msgOne s d c := by
-  cases s <;> cases d <;> simp_all [isLeaf, msgOrd]
+  cases s <;> cases d <;> simp_all [ordIsLeaf, msgOrd]
 
-theorem msgOrd_right (s d : NeedOrd) (c : Cape) (hs : isLeaf s) (hd : isLeaf d = false) :
+theorem msgOrd_right (s d : NeedOrd) (c : Cape) (hs : ordIsLeaf s) (hd : ordIsLeaf d = false) :
     msgOrd d s c = msgOne s d c := by
-  cases s <;> cases d <;> simp_all [isLeaf, msgOrd]
+  cases s <;> cases d <;> simp_all [ordIsLeaf, msgOrd]
 
-theorem msgOrd_inner (a b : NeedOrd) (c : Cape) (ha : isLeaf a = false) (hb : isLeaf b = false)
+theorem msgOrd_inner (a b : NeedOrd) (c : Cape) (ha : ordIsLeaf a = false) (hb : ordIsLeaf b = false)
     (h : a ≠ b) :
     msgOrd a b c = mkB (isB a || isB b) (msgOrd (ordHed a) (ordHed b) (capeHed c))
       (msgOrd (ordTel a) (ordTel b) (capeTel c)) := by
-  cases a <;> cases b <;> simp_all [isLeaf, isB, msgOrd, mkB, ordHed, ordTel]
+  cases a <;> cases b <;> simp_all [ordIsLeaf, isB, msgOrd, mkB, ordHed, ordTel]
 
-theorem msgOne_cell (s d : NeedOrd) (lh lt : Cape) (hd : isLeaf d = false) :
+theorem msgOne_cell (s d : NeedOrd) (lh lt : Cape) (hd : ordIsLeaf d = false) :
     msgOne s d (Cape.cell lh lt) =
       msgCap (mkB (s == NeedOrd.this || isB d) (msgNone (ordHed d) lh) (msgNone (ordTel d) lt)) := by
-  cases d <;> simp_all [isLeaf, isB, msgOne, mkB] <;> cases s <;> simp
+  cases d <;> simp_all [ordIsLeaf, isB, msgOne, mkB] <;> cases s <;> simp
 
 theorem msgOne_atom (s d : NeedOrd) (c : Cape) (hc : ∀ x y, c ≠ Cape.cell x y) :
     msgOne s d c = NeedOrd.this := by
   cases c <;> simp_all [msgOne]
 
-theorem msgNone_cell (d : NeedOrd) (lh lt : Cape) (hd : isLeaf d = false) :
+theorem msgNone_cell (d : NeedOrd) (lh lt : Cape) (hd : ordIsLeaf d = false) :
     msgNone d (Cape.cell lh lt) =
       msgCap (mkB (isB d) (msgNone (ordHed d) lh) (msgNone (ordTel d) lt)) := by
-  cases d <;> simp_all [isLeaf, isB, msgNone, mkB, ordHed, ordTel]
+  cases d <;> simp_all [ordIsLeaf, isB, msgNone, mkB, ordHed, ordTel]
 
 theorem msgOne_yes (s d : NeedOrd) : msgOne s d Cape.yes = NeedOrd.this := rfl
 theorem msgOne_no (s d : NeedOrd) : msgOne s d Cape.no = NeedOrd.this := rfl
-theorem msgNone_yes (d : NeedOrd) (hd : isLeaf d = false) : msgNone d Cape.yes = NeedOrd.this := by
-  cases d <;> simp_all [isLeaf, msgNone]
-theorem msgNone_no (d : NeedOrd) (hd : isLeaf d = false) : msgNone d Cape.no = NeedOrd.this := by
-  cases d <;> simp_all [isLeaf, msgNone]
+theorem msgNone_yes (d : NeedOrd) (hd : ordIsLeaf d = false) : msgNone d Cape.yes = NeedOrd.this := by
+  cases d <;> simp_all [ordIsLeaf, msgNone]
+theorem msgNone_no (d : NeedOrd) (hd : ordIsLeaf d = false) : msgNone d Cape.no = NeedOrd.this := by
+  cases d <;> simp_all [ordIsLeaf, msgNone]
 
-theorem msgNone_atom (d : NeedOrd) (c : Cape) (hd : isLeaf d = false)
+theorem msgNone_atom (d : NeedOrd) (c : Cape) (hd : ordIsLeaf d = false)
     (hc : ∀ x y, c ≠ Cape.cell x y) : msgNone d c = NeedOrd.this := by
-  cases d <;> cases c <;> simp_all [isLeaf, msgNone]
+  cases d <;> cases c <;> simp_all [ordIsLeaf, msgNone]
 
 /-! ## `msg none` -/
 
@@ -125,12 +125,12 @@ theorem regsU_mkB (b : Bool) (x y : NeedOrd) : regsU (mkB b x y) ≤ regsU (Need
   cases b <;> simp [mkB, consOrd, regsU] <;> split <;> simp [regsU] <;> omega
 
 theorem mkB_ne_none_of_ne (b : Bool) (x y : NeedOrd) (h : mkB b x y ≠ NeedOrd.none) :
-    isLeaf (mkB b x y) = false := by
+    ordIsLeaf (mkB b x y) = false := by
   cases b
   · simp only [mkB, consOrd] at h ⊢
     by_cases hx : x = NeedOrd.none ∧ y = NeedOrd.none
     · simp [hx] at h
-    · simp [hx, isLeaf]
+    · simp [hx, ordIsLeaf]
   · rfl
 
 theorem msgCap_this_or (r : NeedOrd) : msgCap r = NeedOrd.this ∨ (msgCap r = r ∧ regsU r ≤ splitMax) := by
@@ -179,8 +179,8 @@ theorem msgNone_idem (d : NeedOrd) (c : Cape) : msgNone (msgNone d c) c = msgNon
 
 /-! ## Helpers on shapes -/
 
-theorem ord_induct {Q : NeedOrd → Prop} (hl : ∀ a, isLeaf a = true → Q a)
-    (hi : ∀ a, isLeaf a = false → Q (ordHed a) → Q (ordTel a) → Q a) : ∀ a, Q a := by
+theorem ord_induct {Q : NeedOrd → Prop} (hl : ∀ a, ordIsLeaf a = true → Q a)
+    (hi : ∀ a, ordIsLeaf a = false → Q (ordHed a) → Q (ordTel a) → Q a) : ∀ a, Q a := by
   intro a
   induction a with
   | pair p q ih1 ih2 => exact hi _ rfl ih1 ih2
@@ -188,12 +188,12 @@ theorem ord_induct {Q : NeedOrd → Prop} (hl : ∀ a, isLeaf a = true → Q a)
   | this => exact hl _ rfl
   | none => exact hl _ rfl
 
-theorem leaf_cases {a : NeedOrd} (h : isLeaf a = true) : a = NeedOrd.this ∨ a = NeedOrd.none := by
-  cases a <;> simp_all [isLeaf]
+theorem ordLeaf_cases {a : NeedOrd} (h : ordIsLeaf a = true) : a = NeedOrd.this ∨ a = NeedOrd.none := by
+  cases a <;> simp_all [ordIsLeaf]
 
-theorem pair_of {a : NeedOrd} (h : isLeaf a = false) (hb : isB a = false) :
+theorem pair_of {a : NeedOrd} (h : ordIsLeaf a = false) (hb : isB a = false) :
     a = NeedOrd.pair (ordHed a) (ordTel a) := by
-  cases a <;> simp_all [isLeaf, isB, ordHed, ordTel]
+  cases a <;> simp_all [ordIsLeaf, isB, ordHed, ordTel]
 
 theorem mkB_none {b : Bool} {x y : NeedOrd} (h : mkB b x y = NeedOrd.none) :
     b = false ∧ x = NeedOrd.none ∧ y = NeedOrd.none := by
@@ -203,7 +203,7 @@ theorem mkB_none {b : Bool} {x y : NeedOrd} (h : mkB b x y = NeedOrd.none) :
     · rw [if_neg hx] at h; cases h
   · cases h
 
-theorem mkB_parts {b : Bool} {x y : NeedOrd} (h : isLeaf (mkB b x y) = false) :
+theorem mkB_parts {b : Bool} {x y : NeedOrd} (h : ordIsLeaf (mkB b x y) = false) :
     ordHed (mkB b x y) = x ∧ ordTel (mkB b x y) = y ∧ isB (mkB b x y) = b := by
   cases b <;> simp only [mkB, consOrd, Bool.false_eq_true, ↓reduceIte] at h ⊢
   · by_cases hx : x = NeedOrd.none ∧ y = NeedOrd.none
@@ -211,9 +211,9 @@ theorem mkB_parts {b : Bool} {x y : NeedOrd} (h : isLeaf (mkB b x y) = false) :
     · rw [if_neg hx]; simp [ordHed, ordTel, isB]
   · simp [ordHed, ordTel, isB]
 
-theorem mkB_leaf {b : Bool} {x y : NeedOrd} (h : isLeaf (mkB b x y) = true) :
+theorem mkB_leaf {b : Bool} {x y : NeedOrd} (h : ordIsLeaf (mkB b x y) = true) :
     mkB b x y = NeedOrd.none := by
-  rcases leaf_cases h with h' | h'
+  rcases ordLeaf_cases h with h' | h'
   · cases b <;> simp only [mkB, consOrd, Bool.false_eq_true, ↓reduceIte] at h'
     · by_cases hx : x = NeedOrd.none ∧ y = NeedOrd.none
       · rw [if_pos hx] at h'; cases h'
@@ -241,7 +241,7 @@ theorem msgCap_mkB_this {b : Bool} {x y : NeedOrd} (h : msgCap (mkB b x y) = Nee
       · rw [if_neg hx] at h; cases h
     · cases h
 
-theorem msgOne_none (d : NeedOrd) (c : Cape) (hd : isLeaf d = false) :
+theorem msgOne_none (d : NeedOrd) (c : Cape) (hd : ordIsLeaf d = false) :
     msgOne NeedOrd.none d c = msgNone d c := by
   cases c with
   | cell lh lt => rw [msgOne_cell _ _ _ _ hd, msgNone_cell _ _ _ hd]; rfl
@@ -260,13 +260,13 @@ theorem msgOrd_eq_none_atom (c : Cape) (hc : ∀ x y, c ≠ Cape.cell x y) :
   · intro a ha b h
     by_cases hab : a = b
     · subst hab; rw [msgOrd_self] at h; exact ⟨h, h⟩
-    cases hb : isLeaf b
+    cases hb : ordIsLeaf b
     · rw [msgOrd_left _ _ _ ha hb, msgOne_atom _ _ _ hc] at h; cases h
     · rw [msgOrd_leaf _ _ _ ha hb hab] at h; cases h
   · intro a ha ih1 ih2 b h
     by_cases hab : a = b
     · subst hab; rw [msgOrd_self] at h; exact ⟨h, h⟩
-    cases hb : isLeaf b
+    cases hb : ordIsLeaf b
     · rw [msgOrd_inner _ _ _ ha hb hab, hh, ht] at h
       obtain ⟨hf, hx, hy⟩ := mkB_none h
       obtain ⟨h1, h2⟩ := ih1 _ hx
@@ -276,7 +276,7 @@ theorem msgOrd_eq_none_atom (c : Cape) (hc : ∀ x y, c ≠ Cape.cell x y) :
     · rw [msgOrd_right _ _ _ hb ha, msgOne_atom _ _ _ hc] at h; cases h
 
 theorem atom_pair_eq {a b : NeedOrd} {c : Cape} (hc : ∀ x y, c ≠ Cape.cell x y)
-    (ha : isLeaf a = false) (hb : isLeaf b = false) (hf : isB a = false ∧ isB b = false)
+    (ha : ordIsLeaf a = false) (hb : ordIsLeaf b = false) (hf : isB a = false ∧ isB b = false)
     (hx : msgOrd (ordHed a) (ordHed b) (capeHed c) = NeedOrd.none)
     (hy : msgOrd (ordTel a) (ordTel b) (capeTel c) = NeedOrd.none) : a = b := by
   have hh : capeHed c = c := by cases c <;> simp_all [capeHed]
@@ -292,9 +292,9 @@ theorem msgOrd_eq_none : ∀ a b c, msgOrd a b c = NeedOrd.none → msgNone a c 
   · intro a ha b c h
     by_cases hab : a = b
     · subst hab; rw [msgOrd_self] at h; subst h; rfl
-    rcases leaf_cases ha with rfl | rfl
+    rcases ordLeaf_cases ha with rfl | rfl
     · exfalso
-      cases hb : isLeaf b
+      cases hb : ordIsLeaf b
       · rw [msgOrd_left _ _ _ rfl hb] at h
         cases c with
         | cell lh lt =>
@@ -306,7 +306,7 @@ theorem msgOrd_eq_none : ∀ a b c, msgOrd a b c = NeedOrd.none → msgNone a c 
   · intro a ha ih1 ih2 b c h
     by_cases hab : a = b
     · subst hab; rw [msgOrd_self] at h; subst h; rfl
-    cases hb : isLeaf b
+    cases hb : ordIsLeaf b
     · rw [msgOrd_inner _ _ _ ha hb hab] at h
       obtain ⟨hf, hx, hy⟩ := mkB_none h
       simp only [Bool.or_eq_false_iff] at hf
@@ -331,7 +331,7 @@ theorem msgOrd_eq_none : ∀ a b c, msgOrd a b c = NeedOrd.none → msgNone a c 
 theorem msgOrd_none_self : ∀ d c, msgOrd d (msgNone d c) c = msgNone d c := by
   refine ord_induct (Q := fun d => ∀ c, msgOrd d (msgNone d c) c = msgNone d c) ?_ ?_
   · intro d hd c
-    rcases leaf_cases hd with rfl | rfl <;> simp [msgNone, msgOrd_self]
+    rcases ordLeaf_cases hd with rfl | rfl <;> simp [msgNone, msgOrd_self]
   · intro d hd ih1 ih2 c
     cases c with
     | cell lh lt =>
@@ -341,7 +341,7 @@ theorem msgOrd_none_self : ∀ d c, msgOrd d (msgNone d c) c = msgNone d c := by
       · rw [h, msgOrd_right _ _ _ rfl hd, msgOne_cell _ _ _ _ hd]
         simpa [mkB] using msgCap_mkB_this h
       · rw [h]
-        cases hR : isLeaf (mkB (isB d) (msgNone (ordHed d) lh) (msgNone (ordTel d) lt))
+        cases hR : ordIsLeaf (mkB (isB d) (msgNone (ordHed d) lh) (msgNone (ordTel d) lt))
         · by_cases hdR : d = mkB (isB d) (msgNone (ordHed d) lh) (msgNone (ordTel d) lt)
           · rw [← hdR, msgOrd_self]
           rw [msgOrd_inner _ _ _ hd hR hdR]
@@ -356,9 +356,9 @@ theorem msgOrd_none_self : ∀ d c, msgOrd d (msgNone d c) c = msgNone d c := by
 
 /-! ## `msgAbs` and commutativity -/
 
-theorem msgOrd_this_of (a : NeedOrd) (c : Cape) (ha : isLeaf a = true) :
+theorem msgOrd_this_of (a : NeedOrd) (c : Cape) (ha : ordIsLeaf a = true) :
     msgOrd a NeedOrd.this c = NeedOrd.this := by
-  rcases leaf_cases ha with rfl | rfl
+  rcases ordLeaf_cases ha with rfl | rfl
   · exact msgOrd_self _ _
   · exact msgOrd_leaf _ _ _ rfl rfl (by simp)
 
@@ -368,7 +368,7 @@ theorem msgOrd_abs : ∀ a b c, msgOrd a (msgOrd a b c) c = msgOrd a b c := by
   · intro a ha b c
     by_cases hab : a = b
     · subst hab; rw [msgOrd_self, msgOrd_self]
-    cases hb : isLeaf b
+    cases hb : ordIsLeaf b
     · rw [msgOrd_left _ _ _ ha hb]
       cases c with
       | cell lh lt =>
@@ -377,7 +377,7 @@ theorem msgOrd_abs : ∀ a b c, msgOrd a (msgOrd a b c) c = msgOrd a b c := by
           (msgNone (ordTel b) lt)) with h | ⟨h, hr⟩
         · rw [h, msgOrd_this_of _ _ ha]
         · rw [h]
-          cases hR : isLeaf (mkB (a == NeedOrd.this || isB b) (msgNone (ordHed b) lh)
+          cases hR : ordIsLeaf (mkB (a == NeedOrd.this || isB b) (msgNone (ordHed b) lh)
               (msgNone (ordTel b) lt))
           · rw [msgOrd_left _ _ _ ha hR, msgOne_cell _ _ _ _ hR]
             obtain ⟨e1, e2, e3⟩ := mkB_parts hR
@@ -388,7 +388,7 @@ theorem msgOrd_abs : ∀ a b c, msgOrd a (msgOrd a b c) c = msgOrd a b c := by
           · have hn := mkB_leaf hR
             obtain ⟨hf, _, _⟩ := mkB_none hn
             rw [hn]
-            rcases leaf_cases ha with rfl | rfl
+            rcases ordLeaf_cases ha with rfl | rfl
             · simp at hf
             · exact msgOrd_self _ _
       | _ => simp only [msgOne_yes, msgOne_no]; rw [msgOrd_this_of _ _ ha]
@@ -396,9 +396,9 @@ theorem msgOrd_abs : ∀ a b c, msgOrd a (msgOrd a b c) c = msgOrd a b c := by
   · intro a ha ih1 ih2 b c
     by_cases hab : a = b
     · subst hab; rw [msgOrd_self, msgOrd_self]
-    cases hb : isLeaf b
+    cases hb : ordIsLeaf b
     · rw [msgOrd_inner _ _ _ ha hb hab]
-      cases hR : isLeaf (mkB (isB a || isB b) (msgOrd (ordHed a) (ordHed b) (capeHed c))
+      cases hR : ordIsLeaf (mkB (isB a || isB b) (msgOrd (ordHed a) (ordHed b) (capeHed c))
           (msgOrd (ordTel a) (ordTel b) (capeTel c)))
       · by_cases haR : a = mkB (isB a || isB b) (msgOrd (ordHed a) (ordHed b) (capeHed c))
             (msgOrd (ordTel a) (ordTel b) (capeTel c))
@@ -426,7 +426,7 @@ theorem msgOrd_abs : ∀ a b c, msgOrd a (msgOrd a b c) c = msgOrd a b c := by
         · rw [h, msgOrd_right _ _ _ rfl ha, msgOne_cell _ _ _ _ ha]
           simpa [mkB] using msgCap_mkB_this h
         · rw [h]
-          cases hR : isLeaf (mkB (b == NeedOrd.this || isB a) (msgNone (ordHed a) lh)
+          cases hR : ordIsLeaf (mkB (b == NeedOrd.this || isB a) (msgNone (ordHed a) lh)
               (msgNone (ordTel a) lt))
           · by_cases haR : a = mkB (b == NeedOrd.this || isB a) (msgNone (ordHed a) lh)
                 (msgNone (ordTel a) lt)
@@ -453,13 +453,13 @@ theorem msgOrd_comm : ∀ a b c, msgOrd a b c = msgOrd b a c := by
   · intro a ha b c
     by_cases hab : a = b
     · rw [hab]
-    cases hb : isLeaf b
+    cases hb : ordIsLeaf b
     · rw [msgOrd_left _ _ _ ha hb, msgOrd_right _ _ _ ha hb]
     · rw [msgOrd_leaf _ _ _ ha hb hab, msgOrd_leaf _ _ _ hb ha (Ne.symm hab)]
   · intro a ha ih1 ih2 b c
     by_cases hab : a = b
     · rw [hab]
-    cases hb : isLeaf b
+    cases hb : ordIsLeaf b
     · rw [msgOrd_inner _ _ _ ha hb hab, msgOrd_inner _ _ _ hb ha (Ne.symm hab), ih1, ih2,
         Bool.or_comm]
     · rw [msgOrd_right _ _ _ hb ha, msgOrd_left _ _ _ hb ha]
