@@ -11,7 +11,9 @@ dropped call `DROP` and the call `CALL`.  Writes `OUTDIR/kd.lean`: `PURE`,
 earlier ones, with `CALL` read from the pill as `(slot? k comp.door).getD
 (A 0)`, so that `cr2Dir = crDHead` is a `kernel_rfl` fact.  Prints the map
 of `CALL`: each push with its cell count and the arms it pulls (core axis,
-battery axis)."""
+battery axis).  Writes `OUTDIR/kc.lean`, the body of
+`lemmas/Compiler/CompRunDirectKN.lean`: `CALL` cut at its pushes (see the
+comment above `chain`), with `crdk_eq : crDCall = crDKr0`."""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.setrecursionlimit(100000)
@@ -132,3 +134,71 @@ defs = [
     '(C (A 6) (C crDTest (C crDDrop crDCall))))))))',
 ]
 open(os.path.join(OUT, 'kd.lean'), 'w').write('\n\n'.join(defs) + '\n')
+
+# The call `CALL`, cut at its pushes (`OUTDIR/kc.lean`).  `chain` walks the
+# `=*`, `=/` and `=^` of a noun: step `i` of prefix `P` is `Pc<i>` (what is
+# pushed) and `Pr<i>` (the noun from step `i` on, with `Pc<i>` and
+# `Pr<i+1>` named in it).  Part 7 (`call-blocks`) is cut further: the gates
+# `call-op` (`crD7Op`) and `jump-op` (`crD7Jop`), the test (`crD7T`), the
+# branch under `%done` (`crD7D`: `crD7Dm` under `mono` `&`, `crD7Du` under
+# `|`, cut as the chain `crD7U`), the other branch (`crD7N`, the chain of
+# `+simple-next` and `+kerf`, then `crD7Nm` under `&`, `crD7Nu` under `|`, cut
+# as the chain `crD7V`).
+def chain(n):
+    out = []
+    while True:
+        if is_push(n):
+            out.append(('push', sl(30, n), n, sl(511, n))); n = sl(511, n)
+        elif sl(2, n) == ('A', 8):
+            out.append(('let', sl(6, n), n, sl(7, n))); n = sl(7, n)
+        elif sl(2, n) == ('A', 7) and sl(6, n) == ('C', ('A', 0), ('A', 1)):
+            out.append(('alias', None, n, sl(7, n))); n = sl(7, n)
+        else:
+            out.append(('end', None, n, None)); return out
+
+kdefs = []
+names = {}
+
+def name(nm, n):
+    kdefs.append('def %s : Noun :=\n  %s' % (nm, show(n, dict(names))))
+    names[id(n)] = nm
+
+def cut_chain(P, n, sub=None):
+    ch = chain(n)
+    # the computations first (innermost names are defined before use)
+    for i, (k, A, whole, rest) in enumerate(ch):
+        if A is not None:
+            if sub and i in sub:
+                sub[i](A)
+            name('%sc%d' % (P, i), A)
+    for i in range(len(ch) - 1, -1, -1):
+        k, A, whole, rest = ch[i]
+        if k == 'end' and id(whole) in names:
+            continue
+        name('%sr%d' % (P, i), whole)
+    return ch
+
+def cut7(A0):
+    assert sl(2, A0) == ('A', 7) and sl(6, A0) == ('C', ('A', 0), ('A', 1))
+    A = sl(7, A0)
+    assert sl(2, A) == ('A', 8)
+    OP, R = sl(6, A), sl(7, A)
+    JOP, IF7 = sl(6, R), sl(7, R)
+    assert sl(2, R) == ('A', 8) and sl(2, IF7) == ('A', 6)
+    T7, DN, NX = sl(6, IF7), sl(14, IF7), sl(15, IF7)
+    name('crD7Op', OP); name('crD7Jop', JOP); name('crD7T', T7)
+    name('crD7Dm', sl(14, DN))
+    cut_chain('crD7U', sl(15, DN))
+    name('crD7D', DN)
+    ch = chain(NX)
+    assert [c[0] for c in ch] == ['push', 'push', 'end'], [c[0] for c in ch]
+    E = ch[-1][2]
+    name('crD7Nm', sl(14, E))
+    cut_chain('crD7V', sl(15, E))
+    name('crD7Ne', E)
+    cut_chain('crD7N', NX)
+    name('crD7', A)
+
+cut_chain('crDK', CALL, {7: cut7})
+kdefs.append('theorem crdk_eq : crDCall = crDKr0 := by kernel_rfl')
+open(os.path.join(OUT, 'kc.lean'), 'w').write('\n\n'.join(kdefs) + '\n')
