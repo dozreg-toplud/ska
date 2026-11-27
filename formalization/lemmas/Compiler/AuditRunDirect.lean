@@ -113,3 +113,7 @@ open Formalization.Compiler
 #print axioms res_n2_dropMono
 #print axioms comp_run_n2_directMM
 #print axioms res_n2_directMono
+#print axioms noDirect_of_nd
+#print axioms partLM_of_partL
+#print axioms comp_run_n2_directML
+#print axioms res_n2_directML

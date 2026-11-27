@@ -1,6 +1,6 @@
 import lemmas.Compiler.CompRunDirectMonoB
 import lemmas.Compiler.CompRunDirectP
-import lemmas.Ska.CompRunLCM
+import lemmas.Ska.CompDirectMEq
 
 /-!
 # The direct call of `%2` under `mono` `&`: the parts, the case, the result
@@ -576,6 +576,61 @@ theorem res_n2_directMono {env : CallEnv} {msup : Option Nomm} {p q : Nomm} {reg
     | next laz th =>
       simp only [crdDrop, Bool.and_eq_true] at hdr
       exact res_n2_dropMono ihp ihq hpc hdr.1 hdr.2 hi h
+
+/-! ## Parts with no direct call
+
+On a nomm with no direct call `runLCM env true` is `runLC` (`runLCM_true`),
+so `PartL` (track A's link against `runLC env msup` at every `mono`) gives
+`PartLM` for every `E`. -/
+
+/-- `NoDirect` (the class of `PartL`) has no direct call. -/
+theorem noDirect_of_nd : ∀ (n : Nomm), NoDirect n → n.noDirect = true
+  | Nomm.n0 _, _ => rfl
+  | Nomm.n1 _, _ => rfl
+  | Nomm.n3 p, h => by simp only [Nomm.noDirect]; exact noDirect_of_nd p h
+  | Nomm.n4 p, h => by simp only [Nomm.noDirect]; exact noDirect_of_nd p h
+  | Nomm.n5 p q, h => by simp only [Nomm.noDirect, noDirect_of_nd p h.1, noDirect_of_nd q h.2, Bool.and_self]
+  | Nomm.cons p q, h => by simp only [Nomm.noDirect, noDirect_of_nd p h.1, noDirect_of_nd q h.2, Bool.and_self]
+  | Nomm.n7 p q, h => by simp only [Nomm.noDirect, noDirect_of_nd p h.1, noDirect_of_nd q h.2, Bool.and_self]
+  | Nomm.n10 _ v q, h => by simp only [Nomm.noDirect, noDirect_of_nd v h.1, noDirect_of_nd q h.2, Bool.and_self]
+  | Nomm.n6 p q r, h => by
+    simp only [Nomm.noDirect, noDirect_of_nd p h.1, noDirect_of_nd q h.2.1, noDirect_of_nd r h.2.2, Bool.and_self]
+  | Nomm.n2 p q Option.none, h => by
+    simp only [Nomm.noDirect, Option.isNone_none, noDirect_of_nd p h.1, noDirect_of_nd q h.2, Bool.and_self]
+
+/-- **`PartL` gives `PartLM`** (for every `E`). -/
+theorem partLM_of_partL {E : GenRest → Prop} {env : CallEnv} {msup : Option Nomm} {n : Nomm} {region : List Nat}
+    (P : PartL env msup ctx n region) : PartLM env msup ctx E n region := by
+  have hm := runLCM_true (S := CSet) (Map := TreapMap mugF) env (noDirect_of_nd n P.nd) msup
+  refine ⟨fun goal g hi x hx _ => ?_, fun goal g g' nex hi h => ?_⟩
+  · unfold RunAtR
+    rw [hm]
+    exact P.link goal g hi x _ _ hx
+  · rw [hm] at h
+    exact P.res goal g g' nex hi h
+
+/-- **The case `%2` on a direct call with no memo key under `mono` `&`, its
+parts with no direct call** (`PartL`, as `comp_run_n2_callM`): on every goal
+with `GInv`, against `runLCM env true msup` at `mono` `A 0`, for every rest
+`x` with `NoSoft` and `CallNounM`. -/
+theorem comp_run_n2_directML (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q : Nomm) {region : List Nat} (P : PartL env msup ctx p region)
+    (Q : PartL env msup ctx q region) (b : Bell) (hcd : CodePure cod env b) (nb : NeedOrd)
+    (hri : env.ring b = Option.none) (hnb : env.need b = some nb) (goal : CGoalL CSet) (g : Gen (TreapMap mugF))
+    (hinv : GInv g goal) :
+    CompRunAtMM env msup ctx (fun x => ∃ sur SOF, CallNounM msup ctx p q b nb sur x (A 0) SOF)
+      (Nomm.n2 p q (some (b, Option.none))) goal region g := by
+  obtain ⟨hpc, hpn⟩ := hinted_nd env.cod P.nd
+  exact comp_run_n2_directMM h7 hcode env msup p q hpc hpn (partLM_of_partL P) (partLM_of_partL Q) b hcd nb
+    (fun _ h => h) hri hnb goal g hinv
+
+/-- **What that case returns** (`GRes`), its parts with no direct call. -/
+theorem res_n2_directML {env : CallEnv} {msup : Option Nomm} {p q : Nomm} {region : List Nat}
+    (P : PartL env msup ctx p region) (Q : PartL env msup ctx q region) {b : Bell} {nb : NeedOrd}
+    (hri : env.ring b = Option.none) (hnb : env.need b = some nb) :
+    ResForR (runLCM env true msup) (Nomm.n2 p q (some (b, Option.none))) region :=
+  res_n2_directMono (partLM_of_partL (E := fun _ => True) P).res (partLM_of_partL (E := fun _ => True) Q).res
+    (hinted_nd env.cod P.nd).1 hri hnb
 
 end Compiler
 end Formalization
