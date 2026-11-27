@@ -11,7 +11,8 @@ import lemmas.Compiler.CompSccOfHeight
   domain `D`, of smaller height.  **`callOkTN_memOk`**: `CallOkTN` at `EM` (by `callOkTN_member`,
   or `callOkTN_out` with `CalleeCompiledP` from `CCBelow` at `above_memS`).
 * `MemDoneRestS`: `MemDoneRest` with `DirCallsP MemCallOk` for the calls; `memDoneRest_of_S`.
-* `SccLoopDataS`, `CalleeHS`: the table's data with static calls and `r.env = env`;
+* `SccLoopDataS`, `CalleeHS`: the table's data with static calls and `r.env` agreeing with `env`
+  at the lower callees of `D` (`callOkTN_outW`);
   `sccLoopData_of_S`, `calleeH_of_S`.
 * **`cu_gate_dir_sccH`**: the gate of `+compile-unary` on `DirOk` with every outside callee in
   `D` and the nested misses closed by `calleeCompiled_heights0`.
@@ -79,13 +80,41 @@ def MemCallOk (r : RealCfg) (order : List Noun) (kids : Noun → List Noun) (st 
       ((hasInF mugF b.toNoun SCC = some true ∧ b.toNoun ∈ r.scc) ∨
         (hasInF mugF b.toNoun SCC = some false ∧ b.toNoun ∉ r.scc ∧ D b ∧ ht b.toNoun < h))
 
+/-- **`callOkTN_out` with the loop's `r.env` agreeing with `env` at `b` only** (the iterated
+`env`: `r.env` is the `env` of the lower heights). -/
+theorem callOkTN_outW {r : RealCfg} {order : List Noun} {kids : Noun → List Noun} {st : St Noun NeedOrd}
+    {env : CallEnv} {SC0 : Noun} {inl : Noun → Option Nomm} {P Pf : Noun → Prop} {S : Noun}
+    {xs : GenRest} (hrs : r.scc = tapList S) (hPf : ∀ k, P k → Pf k) (hPS : ∀ k ∈ tapList S, ¬ P k)
+    (hbell : ∀ k ∈ tapList S, ∃ b' : Bell, b'.toNoun = k)
+    {SCC LONG JH ML B cod : Noun} {msup : Option Nomm} {p q : Nomm} {b : Bell} {nb : NeedOrd}
+    (hre : r.env.need b = env.need b ∧ r.env.sure b = env.sure b)
+    (hcd : CodePure cod (envDone r order kids st) b)
+    (hc : (envDone r order kids st).cod b = some ((envDone r order kids st).pure b))
+    (hri : (envDone r order kids st).ring b = Option.none)
+    (hnb : (envDone r order kids st).need b = some nb)
+    (hsf : (envDone r order kids st).sof (made p msup) p q b nb = false)
+    (hcole : ∃ cole, slot? 6846 (memDCtx SCC LONG JH ML (A 0) B) = some cole ∧ getF mugF b.toNoun cole = some (A 0))
+    (hsof : ∀ x, SofRetN (envDone r order kids st) msup (memDCtx SCC LONG JH ML (A 0) B) p q b nb x)
+    (hin : hasInF mugF b.toNoun SCC = some false)
+    (hcc : CalleeCompiledP env (RKP SC0 inl (PfS Pf S)) (PeS P S st) (memDCtx SCC LONG JH ML (A 0) B) b nb) :
+    CallOkTN (envDone r order kids st) cod (memDCtx SCC LONG JH ML (A 0) B) (EM env SC0 inl P Pf S st xs)
+      (ExtE (EM env SC0 inl P Pf S st xs)) msup p q b := by
+  refine callOkTN_of_IP rfl hcd hc hri hnb hsf hcole ⟨JH, by simp [memDCtx, nock_exec]⟩ hsof
+    (by simp [memDCtx, nock_exec]) hin (envA := env) (Pf := PfS Pf S) (fun h => ?_) (fun x h => h.1) (fun x h => h.2.1)
+    (fun x h => h.2.1.2) ?_ (fun x x' h he hA hR => eM_step hPS hbell h he hA hR) hcc
+  · have hb : b.toNoun ∉ r.scc := fun hb => h (Or.inr (hrs ▸ hb))
+    rw [← hre.1, ← hre.2]; exact need_done_out hb
+  · rintro k (h | ⟨h, -⟩)
+    · exact Or.inl (hPf k h)
+    · exact Or.inr h
+
 /-- **`CallOkTN` at `EM` from the static facts** (a member by `callOkTN_member`; an outside
 callee by `callOkTN_out`, its nested compile `CalleeCompiledP` from the induction hypothesis
 `CCBelow` at the bells in progress of the member run, `above_memS`). -/
 theorem callOkTN_memOk {r : RealCfg} {order : List Noun} {kids : Noun → List Noun} {st : St Noun NeedOrd}
     {env : CallEnv} {SC0 : Noun} {inl : Noun → Option Nomm} {P Pf : Noun → Prop} {S : Noun} {xs : GenRest}
     {CODE JETS CALLS JH ML B SCC : Noun} {ht : Noun → Nat} {D : Bell → Prop} {h : Nat}
-    (hre : r.env = env) (hrs : r.scc = tapList S) (hPS : ∀ k ∈ tapList S, ¬ P k)
+    (hre : (∀ b : Bell, D b → ht b.toNoun < h → r.env.need b = env.need b ∧ r.env.sure b = env.sure b)) (hrs : r.scc = tapList S) (hPS : ∀ k ∈ tapList S, ¬ P k)
     (hbell : ∀ k ∈ tapList S, ∃ b' : Bell, b'.toNoun = k)
     (hab : Above ht h P Pf) (hS : ∀ k ∈ tapList S, ht k = h) (hml : MlExact st.ml ML)
     (hIH : CCBelow env SC0 CODE JETS CALLS JH inl ht D h) {ms : Option Nomm} {p q : Nomm} {b : Bell}
@@ -97,8 +126,8 @@ theorem callOkTN_memOk {r : RealCfg} {order : List Noun} {kids : Noun → List N
   · rw [need_done hb] at hnb
     obtain rfl := Option.some.inj hnb
     exact callOkTN_member hcd hc hri hsf hcole hsof hml hin hb fun x hx => by rw [hrs]; exact hx.2.2.2
-  · have hnb' : env.need b = some nb := by rw [← hre, ← (need_done_out hb).1]; exact hnb
-    exact callOkTN_out hre hrs hab.1 hPS hbell hcd hc hri hnb hsf hcole hsof hin
+  · have hnb' : env.need b = some nb := by rw [← (hre b hD hlt).1, ← (need_done_out hb).1]; exact hnb
+    exact callOkTN_outW hrs hab.1 hPS hbell (hre b hD hlt) hcd hc hri hnb hsf hcole hsof hin
       (hIH b _ _ _ nb hD hlt (above_memS hab hS hlt) (ctxK_memD _ _ _ _ _ _ _ _) hnb')
 
 /-- `envDone` changes only `need` and `sure`: the code table facts carry over. -/
@@ -135,6 +164,8 @@ theorem memCallOk_of {r : RealCfg} {order : List Noun} {kids : Noun → List Nou
   · have hnb' : (envDone r order kids st).need b = some nb := by rw [(need_done_out hb).1]; exact hnb
     exact ⟨hcd, hcod, he'.ring b hr, hcole, nb, hnb', (hs _ hnb').1, (hs _ hnb').2, Or.inr ⟨hin, hb, hD, hlt⟩⟩
 
+/-- **`MemDoneRest` with the calls by their static facts** (`DirCallsP MemCallOk` in place of
+`DirCallsTN`). -/
 def MemDoneRestS (r : RealCfg) (order : List Noun) (kids : Noun → List Noun) (env : CallEnv) (SC0 : Noun)
     (inl : Noun → Option Nomm) (P Pf : Noun → Prop) (S : Noun) (xs : GenRest) (st : St Noun NeedOrd) (keep : Bool)
     (DN KIDS ML0 CB SCC CODE LSR JH CACHE0 b ML CACHE : Noun) (ht : Noun → Nat) (D : Bell → Prop) (h : Nat) : Prop :=
@@ -167,7 +198,7 @@ def MemDoneRestS (r : RealCfg) (order : List Noun) (kids : Noun → List Noun) (
 theorem memDoneRest_of_S {r : RealCfg} {order : List Noun} {kids : Noun → List Noun} {env : CallEnv} {SC0 : Noun}
     {inl : Noun → Option Nomm} {P Pf : Noun → Prop} {S : Noun} {xs : GenRest} {st : St Noun NeedOrd} {keep : Bool}
     {DN KIDS ML0 CB SCC CODE JETS CALLS JH CACHE0 b ML CACHE : Noun} {ht : Noun → Nat} {D : Bell → Prop} {h : Nat}
-    (hre : r.env = env) (hrs : r.scc = tapList S) (hPS : ∀ k ∈ tapList S, ¬ P k)
+    (hre : (∀ b : Bell, D b → ht b.toNoun < h → r.env.need b = env.need b ∧ r.env.sure b = env.sure b)) (hrs : r.scc = tapList S) (hPS : ∀ k ∈ tapList S, ¬ P k)
     (hbell : ∀ k ∈ tapList S, ∃ b' : Bell, b'.toNoun = k)
     (hab : Above ht h P Pf) (hS : ∀ k ∈ tapList S, ht k = h) (hml : MlExact st.ml ML)
     (hIH : CCBelow env SC0 CODE JETS CALLS JH inl ht D h)
@@ -180,13 +211,13 @@ theorem memDoneRest_of_S {r : RealCfg} {order : List Noun} {kids : Noun → List
     dirCallsTN_of (fun ms p q b' hok => callOkTN_memOk hre hrs hPS hbell hab hS hml hIH hok) _ _ hd, rest⟩
 
 /-- **`SccLoopData` with static calls** (`MemDoneRestS`, no induction hypothesis) and the
-real configuration's `env` the table's (`r.env = env`). -/
+real configuration's `env` agreeing with the table's at the callees of `D` below `h`. -/
 def SccLoopDataS (env : CallEnv) (SC0 CODE JETS CALLS JH : Noun) (inl : Noun → Option Nomm)
     (P Pf : Noun → Prop) (S : Noun) (ht : Noun → Nat) (D : Bell → Prop) (h : Nat) : Prop :=
   ∀ x NR CR, LoopRest env (RKP SC0 inl Pf) P S x NR CR →
     ∃ (r : RealCfg) (order : List Noun) (kids : Noun → List Noun) (rk : Ranked (cfgReal r order kids))
       (nout : Noun → NeedOrd),
-      r.env = env ∧ CfgOf (cfgReal r order kids) S (kidsOf S (C CODE (C JETS CALLS)) JH (C NR CR)) ∧
+      (∀ b : Bell, D b → ht b.toNoun < h → r.env.need b = env.need b ∧ r.env.sure b = env.sure b) ∧ CfgOf (cfgReal r order kids) S (kidsOf S (C CODE (C JETS CALLS)) JH (C NR CR)) ∧
       MemGate (cfgReal r order kids)
         (LoopR (cfgReal r order kids).scc (fun _ => []) nout (QK env (RKP SC0 inl Pf) P S x))
         (csiCtx (A 1) (kidsOf S (C CODE (C JETS CALLS)) JH (C NR CR)) S (C CODE (C JETS CALLS)) JH (C NR CR))
