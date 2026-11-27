@@ -3,6 +3,7 @@ import lemmas.Compiler.CompRunDirectC
 import lemmas.Compiler.CompRunDirectP
 import lemmas.Compiler.CompRunDirectS
 import lemmas.Compiler.CompRunDirectMono
+import lemmas.Compiler.CompRunDirectMonoL
 
 /-! The axioms of the link of the direct call of `%2` (README Gaps 19). -/
 
@@ -45,3 +46,25 @@ open Formalization.Compiler
 #print axioms mtc_none
 #print axioms mtc_this
 #print axioms mtc_loop_eq
+#print axioms mtcPA_0
+#print axioms mtcPA_1
+#print axioms mtcPA_2
+#print axioms mtcPA_2n
+#print axioms mtcPA_3
+#print axioms mtcPA_3n
+#print axioms mtcPA_4
+#print axioms mtcPA_L
+#print axioms mtcBO_0
+#print axioms mtcBO_1
+#print axioms mtcBO_2
+#print axioms mtcBO_2n
+#print axioms mtcBO_3
+#print axioms mtcBO_3n
+#print axioms mtcBO_4
+#print axioms mtcBO_L
+#print axioms mtc_disp_pair
+#print axioms mtc_disp_both
+#print axioms mtc_pair
+#print axioms mtc_both
+#print axioms mtc_loop
+#print axioms mtc_gate
