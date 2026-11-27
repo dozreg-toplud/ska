@@ -50,7 +50,7 @@ theorem res_n2_direct_six (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (hp 
     (fun goal g g' nex hi h => by
       rw [runLCM_true env (noDirect_of_nd q (sixOk_noDirect _ hq))] at h
       exact res_all6 env q hq hqa msup region goal g g' nex hi h)
-    (hinted_nd env.cod (sixOk_noDirect _ hp)).1 hri hnb
+    hri hnb
 
 end Compiler
 end Formalization
