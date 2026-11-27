@@ -219,5 +219,169 @@ theorem six_this (env : ShapeEnv) (p q r : Nomm) (sup : Option Nomm) (f : Nat) (
 
 end
 
+/-! ## `+laze-soft-fork` returns when `!&((sound q ned) (sound r ned))` does -/
+
+theorem orB_isSome {a b : Option Bool} (ha : ∃ x, a = some x) (hb : ∃ y, b = some y) : ∃ z, orB a b = some z := by
+  obtain ⟨x, rfl⟩ := ha
+  obtain ⟨y, rfl⟩ := hb
+  cases x <;> simp [orB]
+
+section
+variable (soft : Nat → Bool) (uns : NeedOrd → Option Bool) (hu : ∀ ned, ∃ b, uns ned = some b)
+include hu
+
+mutual
+theorem sfk_some : ∀ laz : Laze CSet, ∃ t, softForkS soft uns laz = some t
+  | Laze.mk _ f b => by
+    simp only [softForkS]
+    exact orB_isSome (sfkB_some b) (sfkF_some f)
+theorem sfkB_some : ∀ bd : List (Nat × Laze CSet), ∃ t, softForkSB soft uns bd = some t
+  | [] => ⟨false, rfl⟩
+  | (o, l) :: rest => by
+    simp only [softForkSB]
+    refine orB_isSome (orB_isSome ?_ (sfk_some l)) (sfkB_some rest)
+    split
+    · exact hu _
+    · exact ⟨false, rfl⟩
+theorem sfkF_some : ∀ fk : List ((Nat × Laze CSet) × (Nat × Laze CSet)), ∃ t, softForkSF soft uns fk = some t
+  | [] => ⟨false, rfl⟩
+  | ((_, a), (_, b)) :: rest => by
+    simp only [softForkSF]
+    exact orB_isSome (orB_isSome (sfk_some a) (sfk_some b)) (sfkF_some rest)
+end
+
+end
+
+/-! ## The kerf, the fork, the leap -/
+
+/-- The fork of the kerf: `+laze-branch`, its `=^`, the tail on the halves. -/
+def sixForkN : Noun :=
+  C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C rs6KLbr
+    (C (A 7) (C (C (A 10) (C (C (A 1022) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3)))
+    (sixTailN (C (C (A 1) (A 0x7478656e)) (C (A 0) (A 5))) (C (C (A 1) (A 0x7478656e)) (C (A 0) (A 12)))
+      (C (C (A 1) (A 0x7478656e)) (C (A 0) (A 254)))))))))))
+
+theorem rs6Kerf_fork : rs6Kerf = C (A 6) (C rs6KTest (C rs6KRec sixForkN)) := rs6Kerf_eq
+
+/-- The body of the gate that `+roll` slams over the `bys`: `(laze-copy acc by)`. -/
+def sixRollB : Noun :=
+  C (A 8) (C (C (A 9) (C (A 43958) (C (A 0) (A 1023)))) (C (A 9) (C (A 2) (C (A 10)
+    (C (C (A 6) (C (C (A 0) (A 29)) (C (A 0) (A 28)))) (C (A 0) (A 2)))))))
+
+section
+variable (hc : CompIn ctx) (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+include hc h7 hcode
+
+/-- **The kerf test**, where `+laze-soft-fork` returns. -/
+theorem six_ktest (env : ShapeEnv) (hcn : CodeNomms env.cod cod) (p q r : Nomm) (sup : Option Nomm)
+    (laz : Laze CSet) (st : RSt CSet) (y : RsRest) (t : Bool)
+    (ht : softForkS (sofsHas st.sofs) (unsS env q r) laz = some t) :
+    nock (C (A 0) (sixS ctx p q r sup laz st y)) rs6KTest
+      = some (loob ((whole q && whole r) || thisOnlyS laz || lazeBig (sofsHas st.sofs) laz || t)) := by
+  have hana := whl_ana h7
+  have hw1 := wh_gate ana q
+  have hw2 := wh_gate ana r
+  have hlto := lto_all hc (rsGenNoun st y) laz
+  have hlbg := lbg_gate hc h7 st y laz
+  simp only [rsDoor] at hlbg
+  have hlsf := lsf_all hc h7 hcode env hcn q r st y laz t ht
+  simp only [rsDoor] at hlsf
+  unfold rs6KTest sixS
+  cases e1 : whole q <;> cases e2 : whole r <;> cases e3 : thisOnlyS laz <;>
+    cases e4 : lazeBig (sofsHas st.sofs) laz <;> cases t <;>
+    simp [nock_exec, rsS, rsCoreG, rsDoor, GoalS.toNoun, hana, wh_at, wh_arm, hw1, hw2, e1, e2, e3, e4,
+      lto_at', lto_arm, hlto, lbg_at', lbg_arm, hlbg, lsf_at', lsf_arm, hlsf, loob]
+
+/-- **The fork**: `+laze-branch`, then the tail on `[%next goal-1]`, `[%next goal-0]`, `[%next this]`. -/
+theorem six_fork (env : ShapeEnv) (p q r : Nomm) (sup : Option Nomm) (laz : Laze CSet) (hl : LzNZ laz)
+    (st : RSt CSet) (y : RsRest) (hy : E y) (hcp : CallCode cod (shapeCE env) p)
+    (hr : ∀ g st1, GoalNZ g → RsAtE ctx env E r sup g st1)
+    (hq : ∀ g st1, GoalNZ g → RsAtE ctx env E q sup g st1)
+    (hp : ∀ g st1, GoalNZ g → RsAtE ctx env E p sup g st1) :
+    nock (C (A 0) (sixS ctx p q r sup laz st y)) sixForkN
+      = (sixFork env (runShape env sup p) (runShape env sup q) (runShape env sup r) p laz st).map
+          fun p => C p.1.toNoun (rsGenNoun p.2 y) := by
+  rw [sixFork_tail]
+  have hlb := lbr_call hc h7 (C (A 0) (sixS ctx p q r sup laz st y)) laz st y
+    (by simp [sixS, rsS, rsCoreG, nock_exec]) (by simp [sixS, rsS, rsCoreG, GoalS.toNoun, nock_exec])
+  change nock _ rs6KLbr = _ at hlb
+  have hstep : nock (C (A 0) (sixS ctx p q r sup laz st y)) sixForkN
+      = (lazeBranch laz st).bind fun w => nock (C (C w.1.1.toNoun w.1.2.toNoun) (C (A 0) (sixS ctx p q r sup laz w.2 y)))
+          (sixTailN (C (C (A 1) (A 0x7478656e)) (C (A 0) (A 5))) (C (C (A 1) (A 0x7478656e)) (C (A 0) (A 12)))
+            (C (C (A 1) (A 0x7478656e)) (C (A 0) (A 254)))) := by
+    unfold sixForkN
+    generalize sixTailN _ _ _ = TL
+    simp only [sixS, rsS, rsCoreG, rsDoor] at hlb ⊢
+    generalize rs6KLbr = LB at hlb ⊢
+    cases e1 : lazeBranch laz st with
+    | none => rw [e1] at hlb; simp [nock_exec, hlb]
+    | some r1 =>
+      rw [e1] at hlb
+      simp [nock_exec, hlb]
+  rw [hstep]
+  cases e1 : lazeBranch laz st with
+  | none => rfl
+  | some r1 =>
+    obtain ⟨⟨g0, g1⟩, st1⟩ := r1
+    have hnz := lazeBranch_nz laz st (g0, g1) st1 hl e1
+    have ht := six_tail hc h7 hcode env p q r sup (GoalS.next g1) (GoalS.next g0) (GoalS.next thisL) st1 y hy hcp
+      (fun st2 => hr _ st2 hnz.2) (fun st2 => hq _ st2 hnz.1) (fun st2 => hp _ st2 lzNZ_thisL)
+      (C g0.toNoun g1.toNoun) (A 0) (GoalS.next laz).toNoun (GoalS.next laz).toNoun
+      (C (C (A 1) (A 0x7478656e)) (C (A 0) (A 5))) (C (C (A 1) (A 0x7478656e)) (C (A 0) (A 12)))
+      (C (C (A 1) (A 0x7478656e)) (C (A 0) (A 254)))
+      (fun Z => by simp [nock_exec, GoalS.toNoun]) (fun a Z => by simp [nock_exec, GoalS.toNoun])
+      (fun a b c Z => by simp [nock_exec, GoalS.toNoun, thisL_noun])
+    rw [n6_noun] at ht
+    simp only [Option.bind_some]
+    exact ht
+
+/-- **The leap**: the run on `[%next rest]`, then `+roll` of `+laze-copy` over the `bys`. -/
+theorem six_leap (p q r : Nomm) (sup : Option Nomm) (laz rest : Laze CSet) (bys : List (Laze CSet))
+    (st : RSt CSet) (y : RsRest) (R : Option (Laze CSet × RSt CSet))
+    (hrec : nock (rsCoreG (Nomm.n6 p q r).toNoun (GoalS.next rest).toNoun (supNoun sup) (rsDoor st y ctx)) rsGate
+      = R.map fun p => C p.1.toNoun (rsGenNoun p.2 y)) :
+    nock (C (llsN (some (rest, bys))) (sixS ctx p q r sup laz st y)) sixDisp
+      = (R.bind fun pr => (bys.foldlM (fun acc b => lazeCopy acc b) pr.1).map fun l => (l, pr.2)).map
+          fun p => C p.1.toNoun (rsGenNoun p.2 y) := by
+  have hrec' := hrec
+  simp only [rsCoreG, rsDoor, GoalS.toNoun, n6_noun] at hrec'
+  unfold sixDisp rs6Leap
+  cases R with
+  | none =>
+    rw [Option.map_none] at hrec'
+    generalize rs6Tk = TK
+    generalize rs6Kerf = KF
+    generalize rs6Gb = GB
+    generalize rs6Rest = RR
+    simp [nock_exec, llsN, unitNoun, sixS, rsS, rsCoreG, rsDoor, GoalS.toNoun, hrec']
+  | some pr =>
+    obtain ⟨l, st1⟩ := pr
+    simp only [Option.map_some] at hrec'
+    have hroll := roll_gateO Laze.toNoun Laze.toNoun layer2 sixRollB (noneL : Laze CSet).toNoun
+      (C l.toNoun (C (llsN (some (rest, bys))) (sixS ctx p q r sup laz st1 y)))
+      (fun acc b => lazeCopy acc b) bys l (by
+        intro x _ acc
+        have hlc := lc_all hc h7 (rsGenNoun st1 y) acc x
+        unfold sixRollB
+        simp [nock_exec, sixS, rsS, rsCoreG, rsDoor, lc_at', lc_arm, hlc])
+    rw [noneL_noun] at hroll
+    simp only [llsN, unitNoun, sixS, rsS, rsCoreG, rsDoor, sixRollB, GoalS.toNoun] at hroll
+    have hl2 : slot? 262143 ctx = some layer2 := hc
+    generalize rs6Tk = TK
+    generalize rs6Kerf = KF
+    generalize rs6Gb = GB
+    generalize rs6Rest = RR
+    cases e : bys.foldlM (fun acc b => lazeCopy acc b) l with
+    | none =>
+      rw [e] at hroll
+      simp [nock_exec, llsN, unitNoun, sixS, rsS, rsCoreG, rsDoor, GoalS.toNoun, hrec', hl2, roll.arm_at,
+        roll_arm, hroll, e]
+    | some l' =>
+      rw [e] at hroll
+      simp [nock_exec, llsN, unitNoun, sixS, rsS, rsCoreG, rsDoor, GoalS.toNoun, hrec', hl2, roll.arm_at,
+        roll_arm, hroll, e, sixRollB]
+
+end
+
 end Compiler
 end Formalization
