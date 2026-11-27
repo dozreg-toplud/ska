@@ -112,6 +112,12 @@ def defsB (goal : CGoalL LS) (g0 g1 : Comp.Gen FM) : Bool :=
   let G := goalRegs goal
   (allDefsL g1.blocks).all fun y => D0.contains y || g0.re ≤ y || G.contains y
 
+/-- **The result's goal registers**: a register of the result's lazy tree is
+one of the goal's or fresh (what composes `defsB` along `%7`). -/
+def gregB (goal : CGoalL LS) (g0 : Comp.Gen FM) (nex : NextL LS) : Bool :=
+  let G := goalRegs goal
+  (goalRegs nex.goal).all fun y => G.contains y || g0.re ≤ y
+
 /-- A sub-run with its checks: `none` when one fails. -/
 def wrapC (K : List (Nat × List Nat)) (X : Comp.Gen FM → Bool) (rp : CGoalL LS → List Nat → CM FM (NextL LS)) :
     CGoalL LS → List Nat → CM FM (NextL LS) := fun goal region g0 =>
@@ -119,7 +125,7 @@ def wrapC (K : List (Nat × List Nat)) (X : Comp.Gen FM → Bool) (rp : CGoalL L
   match rp goal region g0 with
   | some (nex, g1) =>
     if iB K nex.goal g1 && liveCB K goal g0 g1 nex && prepB goal g0 g1 && condGrowB g0 g1 && defsB goal g0 g1 &&
-      g0.re ≤ g1.re then some (nex, g1)
+      gregB goal g0 nex && g0.re ≤ g1.re then some (nex, g1)
     else Option.none
   | Option.none => Option.none
 
