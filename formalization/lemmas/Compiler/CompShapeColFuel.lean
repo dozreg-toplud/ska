@@ -180,5 +180,65 @@ example (DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE : Noun)
     INL' hinl env rfl (by simp [sixBare, Bake.NoAx0]) hnorm (noBakeOneO_no env _ _ DATA) FUNC V sixBare rfl
     (by simp [sixBare, Bake.NoAx0]) hgot hv
 
+/-- `cu_gate_scc_one_six_nf` on the nomms that `+fol-loop` makes (`FolMade`). -/
+theorem cu_gate_scc_one_six_fol_nf (cape : Cape) (DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE : Noun)
+    (hnary : getF mugF (C (C cape.toNoun DATA) FOL) NARY = some (A 0)) (hnmap : IsMap mugF NARY)
+    (hsmap : IsMap mugF SURE) (hcalls : NoSelfCall (C (C cape.toNoun DATA) FOL) CALLS)
+    (nm : Nomm) (INL' : Noun) (hinl : InlOK (C (C cape.toNoun DATA) FOL) CODE INL nm INL')
+    (env : CallEnv) (hn : SixOk nm = true) (hf : FolMade nm) (hnorm : NormRun env nm)
+    (hbake : NoBakeOneO env nm (fun nex => scOrdR nex cape) cape DATA)
+    (FUNC V : Noun) (n : Nomm) (hn' : SixOk n = true) (hf' : FolMade n)
+    (hgot : getF mugF FUNC CODE = some (C (A 0) V)) (hv : slot? 2 V = some n.toNoun) :
+    nock (C cuGB (C (cuSam FUNC (setOne (C (C cape.toNoun DATA) FOL)) CODE (C JETS CALLS) JH
+        (cacheN NARY MONO SCCS INL SURE)) compK)) cuGB
+      = (runLC env Option.none nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF))).bind fun p =>
+          (finishLFC (S := CSet) (Map := TreapMap mugF) env nm (scOrdR p.1 cape) cape (fun n => (n, []))).bind fun st =>
+            (putF mugF (C (C cape.toNoun DATA) FOL) st.toNoun NARY).bind fun NARYU =>
+              (putF mugF (C (C cape.toNoun DATA) FOL) (sccSur p.1 cape).toNoun SURE).bind fun SURE' =>
+                (finishLUC (S := CSet) (Map := TreapMap mugF) env n).map fun st' =>
+                  C (C st'.toNoun (C (C (C (C cape.toNoun DATA) FOL) st.toNoun) (C (A 0) (A 0))))
+                    (cacheN NARYU MONO SCCS INL' SURE') :=
+  cu_gate_scc_one_six_nf cape DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE hnary hnmap hsmap hcalls nm INL'
+    hinl env hn (folMade_noAx0 hf) hnorm hbake FUNC V n hn' (folMade_noAx0 hf') hgot hv
+
+/-- `cu_gate_scc_one_six_bake_nf` on the nomms that `+fol-loop` makes (`FolMade`). -/
+theorem cu_gate_scc_one_six_bake_fol_nf (cape : Cape) (DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE : Noun)
+    (hnary : getF mugF (C (C cape.toNoun DATA) FOL) NARY = some (A 0)) (hnmap : IsMap mugF NARY)
+    (hsmap : IsMap mugF SURE) (hcalls : NoSelfCall (C (C cape.toNoun DATA) FOL) CALLS)
+    (nm : Nomm) (INL' : Noun) (hinl : InlOK (C (C cape.toNoun DATA) FOL) CODE INL nm INL')
+    (env : CallEnv) (hn : SixOk nm = true) (hf : FolMade nm) (hnorm : NormRun env nm)
+    (hbake : BakeRunO env nm (fun nex => scOrdR nex cape) cape DATA)
+    (FUNC V : Noun) (n : Nomm) (hn' : SixOk n = true) (hf' : FolMade n)
+    (hgot : getF mugF FUNC CODE = some (C (A 0) V)) (hv : slot? 2 V = some n.toNoun) :
+    nock (C cuGB (C (cuSam FUNC (setOne (C (C cape.toNoun DATA) FOL)) CODE (C JETS CALLS) JH
+        (cacheN NARY MONO SCCS INL SURE)) compK)) cuGB
+      = (runLC env Option.none nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF))).bind fun p =>
+          (finishLFB (S := CSet) (Map := TreapMap mugF) env nm (scOrdR p.1 cape) (Sock.mk cape DATA)).bind fun st =>
+            (putF mugF (C (C cape.toNoun DATA) FOL) st.toNoun NARY).bind fun NARYU =>
+              (putF mugF (C (C cape.toNoun DATA) FOL) (sccSur p.1 cape).toNoun SURE).bind fun SURE' =>
+                (finishLUC (S := CSet) (Map := TreapMap mugF) env n).map fun st' =>
+                  C (C st'.toNoun (C (C (C (C cape.toNoun DATA) FOL) st.toNoun) (C (A 0) (A 0))))
+                    (cacheN NARYU MONO SCCS INL' SURE') :=
+  cu_gate_scc_one_six_bake_nf cape DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE hnary hnmap hsmap hcalls nm
+    INL' hinl env hn (folMade_noAx0 hf) hnorm hbake FUNC V n hn' (folMade_noAx0 hf') hgot hv
+
+/-- **The top with the real bake on a known head** (`sixHead`, `%s01` of the
+bake check, cape `[& |]`, `CompSccSixBake.lean`) with no fuel hypothesis:
+`NormRun` (checked on it in `Ska/ShapeColAlgCheck.lean`) and `hord` (the
+`ord` of the run is a cell with a `%this` head, computed by the `#guard`s of
+`CompSccSixBake.lean`), which gives `BakeRunO` by `bakeRunO_head`. -/
+example (dh dt FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE : Noun)
+    (hnary : getF mugF (C (C capeHead.toNoun (C dh dt)) FOL) NARY = some (A 0)) (hnmap : IsMap mugF NARY)
+    (hsmap : IsMap mugF SURE) (hcalls : NoSelfCall (C (C capeHead.toNoun (C dh dt)) FOL) CALLS) (INL' : Noun)
+    (hinl : InlOK (C (C capeHead.toNoun (C dh dt)) FOL) CODE INL sixHead INL') (env : CallEnv)
+    (hnorm : NormRun env sixHead)
+    (hord : ∀ nex g1, runLC env Option.none sixHead (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF))
+      = some (nex, g1) → ∃ q, scOrdR nex capeHead = NeedOrd.pair NeedOrd.this q)
+    (FUNC V : Noun) (hgot : getF mugF FUNC CODE = some (C (A 0) V))
+    (hv : slot? 2 V = some sixHead.toNoun) :=
+  cu_gate_scc_one_six_bake_nf capeHead (C dh dt) FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE hnary hnmap hsmap
+    hcalls _ INL' hinl env rfl (by simp [sixHead, Bake.NoAx0]) hnorm
+    (bakeRunO_head env _ _ Cape.yes dh dt rfl hord) FUNC V sixHead rfl (by simp [sixHead, Bake.NoAx0]) hgot hv
+
 end Compiler
 end Formalization
