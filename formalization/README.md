@@ -364,6 +364,11 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/Validate.lean` | `+validate-cape`, `+validate-bell` and `+validate-ovum` on a `%dire` against `Cape.ofNoun?` and `Bell.ofNoun?` (`vcape_run`, `vbell_run`, `vovum_dire`); the poke of a core with `CorIn` runs `+validate-ovum` first (`pokeN_validates`), so it crashes on a bad `%dire` bell (`pokeDireBad`, the former hypothesis `PokeDireBad`). |
 | `Compiler/PokeLink.lean` | `+poke` on `%full` up to its callees (track P, Gaps 23): `anaArmP` with `+ska-cole-update` (P2), `anaHyp_of_armP`, `gap_of_armP` (the shapes of `contract`, `invKept`, `invStart` for `enc fl`), `invStart_cor`; `pillFull`, `FullBranchIs` (the Nock of the branch, open), `SkaLink`, `JetRootLink`, `SccLink`, `MonoLink`, `OptLink`, and `pokeN_full_of`: `PokeModel` on `%full` from these. |
 | `Compiler/PokeLinkFull.lean` | `FullBranchIs` proved (track P, Gaps 23): `+validate-ovum` on a `%full` is the mold (`vovum_full`), which returns a cell formula (`mold_full_cell`) and crashes on an atom one (`mold_full_atom`); the dispatch (`ipokeR_eq`, kernel) and the validation push (`ipokeB_full`, `ipokeB_full_atom`); the seven call formulas of the `%full` branch (`tools/gen/pokefull.py`) and the callees as gate slams read from the core (`skaRaw` .. `monoRaw`; `skaP`, `jrP`, `sccP`, `monoP`, `optP`), with `ska_call` .. `opt_call`; the glue (`full_run`, `else_run`, `then_run`), so `fullBranchIs`; `pokeN_full_atom` (the pill crashes on an atom formula); `jetRootLink_false` and its restatement `JetRootLinkR`; `pokeN_full`, `pokeModel_full`, `pokeModel_full_corIn` (`pokeModel` on `%full` from the links). |
+| `Compiler/PokeLinkOpt.lean` | `OptLink` restated so that it is true (track P, Gaps 23): `OptLink` for every straight is false (`+optimize` crashes on a straight with no blocks, `tools/hoon/optempty.hoon`); `optimizeP` (the pill's `+optimize` read back), `OptTotal` (the class of `GateTotalN`), `OptLinkOn`, **`optLinkOn_optimizeP`** (the link on `OptTotal` for `A.optimize = optimizeP`), `optimizeP_ref` (`OptRef`'s form), `optP_hpill` (track G's `hpill`), `optTotal_of_inv`, `optTotal_finishLUX`/`-LFX`, `OptInAt`, `pokeN_fullO`, `pokeModel_fullO`, `pokeModel_fullP`. |
+| `Compiler/PokeLinkScc.lean` | `SccLink` up to the image of `+scc-of` (track P, Gaps 23): `sccG` (the gate on an encoded core is a constant, `sccs_raw_enc`), `enc_edit958`, `sccOfP` (the pill's `+scc-of` read back), **`sccLink_of`** (`SccLink` from `SccImage`, a statement on the pill alone). |
+| `Compiler/PokeLinkJet.lean` | The jetted-root test proved (track P, Gaps 23): `jetRootP` (the model: `getF` of `call.cole` and of `jets-hot`, the one-block `jsfStraight`), `JetsGood`, **`jrP_enc`** (`get_gate`, `has_gate`, `put_gate` on `layer2`), `JetRootLinkG`, `jetRootLinkG_of`, `jetRootLinkR_of_good`, `pokeN_fullAt`, `pokeModel_fullG` (everything per state). |
+| `Compiler/PokeLinkReach.lean` | P1 option (b) as one hypothesis (track P, Gaps 23): `enc_flags_congr`, `SkaLinkU` (`SkaLink` up to the flags), `SkaFlags`, `skaLink_of_flags`, **`full_step_enc`** (the `poke` case of `PokeReachEnc` on `%full`). |
+| `Compiler/PokeLinkSka.lean` | The analysis half of `+ska-poke` on encoded states (track P, Gaps 23): `skaRaw_eq`, **`skaRaw_iff`** (`ska_poke_iff` with `ska_poke_ana_iff_pill`), `SpRestAt` (the baking half, named), `SkaLinkAt`, `skaLinkAt_of`, `pokeN_fullAt2`. |
 | `Compiler/AuditPokeLink.lean` | `#check` and `#print axioms` of track P. |
 | `Compiler/Connect.lean` | `Top`, `Mook`, `Run` and `Mock` of `core/Statement.lean` hold exactly when the models do (`top_iff`, `mook_iff`, `run_iff`, `mock_iff`, through `pull_slam`: `Pull` and `Slam` are `Nock` runs, so `nock`, by `StatementEval.lean`), on every core of the pill's shape (`core_shape`, `core_layer4`); the axes of `Statement.lean` are the generated ones (`axes_agree`). |
 | `Assembly.lean` | The four statements of `core/Statement.lean` (`full_of`; `meek_of` for `NockEquivalence`, `mockEquivalence_of` from `weak_of` and `converse_of`) from the hypotheses listed in `Gap`, each a `def … : Prop` naming the track that owns it: `PokeModel`, `Contract`, `Halting`, `InvStart`, `InvKept`, `LibSlam`, `LibFormat`, `MookFormat`.  Proved here: the outer `+poke` (`poke_iff`), and every core that `Reach` allows is of the pill's shape with a compiler's core the model reaches (`reach_model`). |
@@ -4825,7 +4830,9 @@ import only its theorems.  So:
     (`Compiler.unitNoun_id_inj` in `PokeEnc` and `OptLinkAlJReg`, `Comp.isLeaf` in
     `SccLoopMsg` and `CompNCJump`).
 23. **The poke on states: `enc` and the `%full` branch** (track P, 2026-11-27,
-    `Ska/PokeEnc.lean`, `Compiler/PokeLink.lean`, `Compiler/PokeLinkFull.lean`, `Compiler/AuditPokeLink.lean`).
+    `Ska/PokeEnc.lean`, `Compiler/PokeLink.lean`, `Compiler/PokeLinkFull.lean`, `Compiler/PokeLinkOpt.lean`,
+    `Compiler/PokeLinkScc.lean`, `Compiler/PokeLinkJet.lean`, `Compiler/PokeLinkReach.lean`,
+    `Compiler/PokeLinkSka.lean`, `Compiler/AuditPokeLink.lean`).
     The fields of `pokeModel` that no track owned (LEDGER 1.1, 1.2, 1.6, 4.1, M9, M11).
     *The map of the state* (checked on the pill with `tools/gen/nouns.py`).  The compiler's
     core is `cr = [pokeBat [monoBat [state lib]]]`: axis `2` the battery of `+load`,
@@ -4974,3 +4981,55 @@ import only its theorems.  So:
     and `CR` nouns, both can be defined as the pill's branch read back through `enc`, so
     their links are the Nock of the branches and the image.  The jetted root of `%full` is
     in `JetRootLink`.  `Reach` never pokes a hot `%jets`, so `PokeModel` leaves those out.
+    *Second session (2026-11-27): the links stated so that they are true.*  Every link
+    stated for EVERY state is false or unprovable where the pill reads a noun the model
+    does not constrain, so the composition is now PER STATE (`pokeN_fullAt2`: the
+    equations of `+ska-poke` and of the jetted-root test and `OptInAt` at the state only;
+    `SccLink`, `MonoLink` still global).
+    - **Finding: `OptLink` (every straight) is false of `optP` for every `A`**: `+optimize-once`
+      starts with `(bb-topo blocks.s)`, which reads block `0` with `+got:by`, so a straight with
+      no blocks crashes (`tools/hoon/optempty.hoon`: `[[%this ~] 1 ~]` crashes, one `%don` block
+      returns); the model's `A.optimize` is total, so `pokeN_full`, `pokeModel_full` were
+      vacuous.  Restated (`PokeLinkOpt.lean`): `A.optimize := optimizeP` (the pill's read back),
+      the link on the class `OptTotal` of track H/D's totality (`GateTotalN`'s form: `StInv`,
+      `DInvR`, `ReadsIn`, `optTotal_of_inv`; raw output of `FragX`, `optTotal_finishLUX`/`-LFX`)
+      is PROVED (`optLinkOn_optimizeP`); `optimizeP` is `optimizeF` with the pill's passes on
+      that class (`optimizeP_ref`, `OptRef`'s form; `optP_hpill` is track G's `hpill`).  What is
+      left is a statement on the model at the state, `OptInAt OptTotal` (the straight the
+      model's `%full` hands `+optimize` is in the class: track D's `OptTotalMono` on the class
+      of the compile, with the mono cache holding only what the model compiled).
+    - `SccLink` (`PokeLinkScc.lean`): `A.sccOf` has no model, so it is the pill's read back
+      (`sccOfP`); `sccLink_of` proves `SccLink` from ONE hypothesis on the pill alone,
+      `SccImage` (the gate's product on the nouns of a bell, `calls`, `sccs` is the noun of a
+      pair of maps).  For it: the arm (409 cells) and `+tarjan` build sets and maps with
+      `+put:in`, `+put:by` from `~` or `sccs` (`putF_spec`, `isMap_ext`).  Not cut yet.
+    - Jetted root PROVED (`PokeLinkJet.lean`): `jetRootP` (`getF` of `call.cole` = axis `126`
+      of the jets noun, `getF` of `jets-hot`, the one-block `jsfStraight` with `ringDec`),
+      `jrP_enc` on every encoded state with `JetsGood` (`call.cole` an `IsMap mugF` noun whose
+      values are rings, `jets-hot` an `IsMap mugF` noun), so `JetRootLinkG` holds for
+      `A.jetRoot = jetRootP` (`jetRootLinkG_of`); `JetRootLinkR` itself needs `SkaJetsGood`
+      for every state, false where `hot` is not a map.  Left: `JetsGood` of the jets the
+      model's `+ska-poke` returns, at the state (from the invariant).
+    - P1, option (b) as ONE hypothesis (`PokeLinkReach.lean`): `SkaLink = SkaLinkU` (the link up
+      to the flags: the new core is `enc fl'` for SOME `fl'`) `+ SkaFlags` (in that product
+      `fl' newTable b = fl newTable b` for every key `b`), `skaLink_of_flags` (`enc` reads the
+      flags of the table's keys only, `enc_flags_congr`).  What the SCC loop with
+      `+eval-finalized` must give for `SkaFlags`: the flags it writes for each new bell are
+      `fl newTable b`, and `fl` is unchanged on old bells when the table grows (the loop writes
+      new bells only).  `full_step_enc`: the `poke` case of `PokeReachEnc` on `%full`: from
+      `enc fl st` the pill's core is `enc fl st'` for the model's `st'`, under the links and
+      `JetsGood`, `OptInAt` at the state.
+    - `SkaLink` (`PokeLinkSka.lean`): the analysis half on encoded states is PROVED
+      (`skaRaw_eq`, `skaRaw_iff` = `ska_poke_iff` + `ska_poke_ana_iff_pill`, on a state whose
+      jets noun is `[r1 r2 r3 r4 jRest]` and whose `~(key by jets-hot)` returns); the baking
+      half is the named `SpRestAt` (`skaLinkAt_of`: `SkaLinkAt` from it).  The fuel `∃ n` stays
+      inside `SpRestAt` (P3 for both `+ska-callgraph` and `Ana.skaPoke`).  *The map of
+      `spRest`* (1,120 cells, `nouns.py`), its pushes in order, each with the model function
+      of `skaPokeB`/`anaArmP` it corresponds to: `dat` (101 cells, `pokeDat`), `root-bell` (3,
+      `E.root`), `jetted` (86, `jet` of `pokeEnv`, with `+cole-match`), `+bake-graph` and the
+      write of `vars` (21 + 9, `bakeGraph E (bf E)`, `bg.2`), `new-code` (85, `newCode`), the
+      SCC order by `+tarjan` under `%poke-tarjan` (188, no model: it orders the flags only), the
+      SCC loop under `%poke-scc-loop` with `+eval-finalized` (243, `addCode` with the flags, P1),
+      `new-cores` (54) and the `jets.lon` edit with `+uni-ju` (45) and `+ska-cole-update` at the
+      end (45 with `[root-bell (flop new.regs)]`: `jetsOf`, `newOf`), the writes of `seek`
+      (106) and `calls` (106, `addCode`).  No part has a pill link yet.
