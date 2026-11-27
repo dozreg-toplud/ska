@@ -130,6 +130,7 @@ import lemmas.Ska.CompGenExQ
 import lemmas.Ska.CompGenSevenN
 import lemmas.Ska.CompGenConsD
 import lemmas.Ska.CompGenConsE
+import lemmas.Ska.CompGenConsK
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -1417,3 +1418,16 @@ open Formalization.SkaModel.Comp
 #print axioms SplitOKD.apartAt
 #print axioms consSt_of_run
 #print axioms exCons_contract_of
+#print axioms consAt_of_run
+#print axioms CopyOKL.runAt
+#print axioms labDisj_copyLazyL
+#print axioms frontLG_cons00
+#print axioms goalSemD_cons00
+#print axioms frontsG_cons00
+#print axioms SplitOKD.cleanAt
+#print axioms consCopyPre
+#print axioms frameG_cons00
+#print axioms semCore_cons00
+#print axioms runOKGen_cons00
+#print axioms nextGG_cons0
+#print axioms exCons_contract
