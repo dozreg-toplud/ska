@@ -1,4 +1,4 @@
-import lemmas.Compiler.CompRunHintCall
+import lemmas.Compiler.CompRunHintClass
 
 /-!
 # The case `%12` of `+run` (README Gaps 25)
@@ -177,6 +177,137 @@ theorem c12_tail (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 
         simp [nock_exec, crSubj, Nomm.toNoun, h15, ct_lfr_at, ct_lfr_arm, ct_lfr_gate, cr_bat_dol, hq1, bind,
           StateT.bind, h7, hcode, hD1, cr_past_arm, hpa, hp1, eq2, hD2, cr_cp_arm, hcpy, eq, e3, cr_next_nounL,
           Function.comp_def]
+
+/-! ## From `+kerf` on -/
+
+/-- **From `+kerf` on, on a lazy `next`**: `+kerf` (`comp_kerf_all`), the
+two registers, the `%spy` block and `c12_tail`. -/
+theorem c12_kf (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (P : PartH env snd msup ctx X p region)
+    (Q : PartH env snd msup ctx X q region)
+    (x : GenRest) (hx : x.NoSoft) (mono goalN sup : Noun) (nex0 : NextL CSet)
+    (g1 : Gen (TreapMap mugF)) (hd : g1.drop = false) (hlok : LAll CrLok nex0.laz) (hX : X x mono sup) :
+    nock (C nex0.goal.toNoun
+      (crSubj mono (Nomm.n12 p q).toNoun goalN (listNoun A region) sup (compCore g1 x ctx))) c12Kf
+      = (c12KfM env snd msup p q region nex0 g1).map fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  obtain ⟨hc, hl, hm⟩ := comp_ctx_pill ctx h7
+  have hpn := P.past
+  have hk := comp_kerf_all hc hl hm x g1 nex0 (walk_mdP hx g1.bo hlok)
+  have hD1 := comp_kerf_at
+  have hD2 := comp_re_at
+  have hD3 := comp_emit_at
+  rw [cr_next_nounL]
+  simp only [compCore] at hk ⊢
+  cases ek : kerf nex0 g1 with
+  | none =>
+    rw [ek] at hk
+    generalize comp.door = Dr at hk hD1 hD2 hD3 ⊢
+    nock_open c12Kf
+    simp [nock_exec, crSubj, hD1, comp_kerf_arm, hk, c12KfM, bind, StateT.bind, ek]
+  | some r =>
+    obtain ⟨⟨out, pro⟩, g2⟩ := r
+    rw [ek] at hk
+    simp only [Option.map_some] at hk
+    obtain ⟨-, -, d2⟩ := km_drop (km_kerf _) ek hd
+    have hre0 := comp_re' ctx x g2
+    have hre1 := comp_re' ctx x { g2 with re := g2.re + 1 }
+    have he := cf_emit (x := x) hc { { g2 with re := g2.re + 1 } with re := g2.re + 1 + 1 }
+      ⟨[], [Pole.spy (g2.re + 1) g2.re pro], Termin.hop (jmp0 out)⟩
+    rw [cr_blob_spy_hop] at he
+    generalize hg5 : cfEmitG ⟨[], [Pole.spy (g2.re + 1) g2.re pro], Termin.hop (jmp0 out)⟩
+      { { g2 with re := g2.re + 1 } with re := g2.re + 1 + 1 } = g5 at he
+    have r5 : g5.re = g2.re + 1 + 1 := by rw [← hg5, cf_emitG_re]
+    have d5 : g5.drop = false := by rw [← hg5, cf_emitG_drop]; exact d2
+    have iq : GInv g5 (CGoal.toL (CGoal.next (lazyReg (S := CSet) g2.re) (jmp0 g2.bo))) :=
+      ginv_reg g2.bo (by omega) d5
+    have lp : LInv g5.re g5.bo (Lazy.ofSure (lazyReg (S := CSet) (g2.re + 1))) := linv_reg (by omega)
+    have ap : (lregs (Lazy.ofSure (lazyReg (S := CSet) (g2.re + 1))) ++
+        lregs (Lazy.ofSure (lazyReg (S := CSet) g2.re))).Nodup := by simp [lregs_reg]
+    have ht := c12_tail h7 hcode env msup p q hpn region x hx mono goalN sup
+      (C (A 0x7478656e) (C nex0.laz.toNoun nex0.th.toNoun)) out pro g2.re (g2.re + 1) g2.bo g5 (Q.link _ _ iq)
+      (fun nexF g6 nexF' g7 e e3 => P.link _ _ (tail_pgoal iq lp (Q.res _ _ _ _ iq e) e3).1)
+      (fun nexF g6 nexF' g7 nexS g8 e e3 e4 => by
+        have R2 := Q.res _ _ _ _ iq e
+        exact (tail_copyH iq lp ap R2 e3 (P.res _ _ _ _ (tail_pgoal iq lp R2 e3).1 e4)).1) hX
+    simp only [crSubj, compCore] at ht hre0 hre1
+    generalize comp.door = Dr at hk hD1 hD2 hD3 hre0 hre1 he ht ⊢
+    nock_open c12Kf
+    simp [nock_exec, crSubj, hD1, comp_kerf_arm, hk, hD2, hre0, hre1, hD3, comp_emit_arm, he, ht, c12KfM, bind,
+      StateT.bind, ek, re, cf_emit_g, hg5]
+
+/-! ## The case -/
+
+/-- **The case `%12` of `+run` on every goal with `GInv`**, against `runLCH
+env snd true msup` at a rest predicate, `p` and `q` as `PartH`. -/
+theorem comp_run_n12H (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (P : PartH env snd msup ctx X p region)
+    (Q : PartH env snd msup ctx X q region)
+    (goal : CGoalL CSet) (g : Gen (TreapMap mugF)) (hinv : GInv g goal) :
+    CompRunAtX (runLCH env snd true msup) ctx X (Nomm.n12 p q) goal region g := by
+  obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
+  intro x mono sup hx hX
+  rw [runLCH_n12, c12_noun, cr_disp_n12, c12_head]
+  have hsn := comp_simple_next hc x g goal mono (C (A 12) (C p.toNoun q.toNoun)) (listNoun A region) sup
+  rw [bind_apply]
+  cases e : simpleNextL (S := CSet) (Map := TreapMap mugF) goal g with
+  | none =>
+    rw [e] at hsn
+    simp only [Option.map_none] at hsn
+    simp only [crSubj, compCore] at hsn ⊢
+    generalize comp.door = Dr at hsn ⊢
+    nock_open c12Ind
+    simp [nock_exec, crSubj, hsn, cr_bat_sn]
+  | some r =>
+    obtain ⟨nex0, g1⟩ := r
+    rw [e] at hsn
+    simp only [Option.map_some] at hsn
+    obtain ⟨-, -, ⟨⟨lnb, -⟩, d1, -⟩, -⟩ := simpleNextL_res hinv e
+    have hk := c12_kf h7 hcode env msup p q P Q x hx mono goal.toNoun sup nex0 g1 d1 (lall_mono (fun _ hs => hs.1) lnb) hX
+    rw [c12_noun] at hk
+    simp only [crSubj, compCore] at hsn hk ⊢
+    generalize comp.door = Dr at hsn hk ⊢
+    nock_open c12Ind
+    simp [nock_exec, crSubj, hsn, cr_bat_sn, hk]
+
+/-- What `%12` returns (`GRes`). -/
+theorem res_n12H {env : CallEnv} {msup : Option Nomm} {p q : Nomm}
+    (ihp : ResForR (runLCH env snd true msup) p region) (ihq : ResForR (runLCH env snd true msup) q region) :
+    ResForR (runLCH env snd true msup) (Nomm.n12 p q) region := by
+  intro goal g g' nex hi h
+  have hd := ginv_drop hi
+  rw [runLCH_n12] at h
+  obtain ⟨nex0, g1, h1, h⟩ := bind_some h
+  unfold c12KfM at h
+  obtain ⟨⟨out, pro⟩, g2, h2, h⟩ := bind_some h
+  obtain ⟨rPath, ga, ha, h⟩ := bind_some h
+  rw [re_apply] at ha
+  simp only [Option.some.injEq, Prod.mk.injEq] at ha
+  obtain ⟨rfl, rfl⟩ := ha
+  obtain ⟨rRef, gb, hb, h⟩ := bind_some h
+  rw [re_apply] at hb
+  simp only [Option.some.injEq, Prod.mk.injEq] at hb
+  obtain ⟨rfl, rfl⟩ := hb
+  obtain ⟨o, g3, h3, h⟩ := bind_some h
+  obtain ⟨nexF, g4, h4, h⟩ := bind_some h
+  obtain ⟨nexF', g5, h5, h⟩ := bind_some h
+  obtain ⟨nexS, g6, h6, h7⟩ := bind_some h
+  obtain ⟨l1, b1, d1⟩ := km_drop (km_simpleNextL _) h1 hd
+  obtain ⟨l2, b2, d2⟩ := km_drop (km_kerf _) h2 d1
+  obtain ⟨l3, b3, d3⟩ := km_drop (KM.emit' _) h3 d2
+  simp only at l3 b3
+  obtain ⟨l, b, i, s⟩ := tail_allRH ihq ihp (ginv_reg_j (by omega) d3 (jmpIn_jmp0 _ _))
+    (linv_reg (by omega)) (by simp [lregs_reg]) h4 h5 h6 h7
+  refine ⟨by omega, by omega, i, fun x hx => Or.inl ?_⟩
+  rcases s x hx with e | e
+  · simp [lregs_reg] at e; omega
+  · omega
+
+/-- **`%12` from the `PartH` of its parts.** -/
+theorem partH_n12 (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    {env : CallEnv} {msup : Option Nomm} {p q : Nomm} (P : PartH env snd msup ctx X p region)
+    (Q : PartH env snd msup ctx X q region) (hpa : PastAt ctx env.cod (Nomm.n12 p q)) :
+    PartH env snd msup ctx X (Nomm.n12 p q) region :=
+  ⟨fun goal g hi => comp_run_n12H h7 hcode env msup p q P Q goal g hi, res_n12H P.res Q.res, hpa⟩
 
 end Compiler
 end Formalization
