@@ -6,9 +6,9 @@ import lemmas.Compiler.CompRunRPast
 
 `DirOk`: the plain class (`%0`, `%1`, `%3`, `%4`, `%5`, `%7`, cons, `%10`
 with an axis not `0`, the indirect call), nested in any way, with the direct
-call `[2 p q [~ b ~]]` (no memo key) whose subject `p` has no direct call
-(`PlainOk p`; the case `%2` of `CompRunDirectMonoP.lean` takes `+hinted` of
-`p` without the code table).  `DirCalls env cod ctx E msup n`: per direct
+call `[2 p q [~ b ~]]` (no memo key), with direct calls anywhere (also in
+the subject `p` of a direct call: the case `%2` of `CompRunDirectMonoP.lean`
+takes `+past` over `p` as `PastAt ctx env.cod p`, which the induction gives).  `DirCalls env cod ctx E msup n`: per direct
 call in `n`, the callee's code entry (`CodePure`, `env.cod b = some (env.pure
 b)`), no ring, its need `nb`, and `CallNounM` at `mono` `A 0` for every rest
 with `E` (the `msup` of each call is the one the run gives it: `%7` hands
@@ -103,7 +103,7 @@ def DirOk : Nomm → Bool
   | Nomm.n0 _ => true
   | Nomm.n1 _ => true
   | Nomm.n2 p q Option.none => DirOk p && DirOk q
-  | Nomm.n2 p q (some (_, Option.none)) => PlainOk p && DirOk p && DirOk q
+  | Nomm.n2 p q (some (_, Option.none)) => DirOk p && DirOk q
   | Nomm.n3 p => DirOk p
   | Nomm.n4 p => DirOk p
   | Nomm.n5 p q => DirOk p && DirOk q
@@ -142,7 +142,7 @@ theorem callCode_of_dir {env : CallEnv} {cod : Noun} {E : GenRest → Prop} :
     exact ⟨trivial, callCode_of_dir p h.1 ms hd.1, callCode_of_dir q h.2 ms hd.2⟩
   | Nomm.n2 p q (some (b, Option.none)), h, ms, hd => by
     simp only [DirOk, Bool.and_eq_true] at h; simp only [DirCalls] at hd; simp only [CallCode]
-    exact ⟨⟨hd.1.1, hd.1.2.1⟩, callCode_of_dir p h.1.2 ms hd.2.1, callCode_of_dir q h.2 ms hd.2.2⟩
+    exact ⟨⟨hd.1.1, hd.1.2.1⟩, callCode_of_dir p h.1 ms hd.2.1, callCode_of_dir q h.2 ms hd.2.2⟩
   | Nomm.n2 _ _ (some (_, some _)), h, _, _ => by simp [DirOk] at h
   | Nomm.n3 p, h, ms, hd => by
     simp only [DirOk] at h; simp only [DirCalls] at hd; simp only [CallCode]; exact callCode_of_dir p h ms hd
@@ -200,12 +200,11 @@ theorem comp_run_dir (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot?
     have hc := callCode_of_dir (ctx := ctx) _ h msup hd
     simp only [DirOk, Bool.and_eq_true] at h; simp only [DirCalls] at hd
     obtain ⟨⟨hcd, -, hri, nb, hnb, hE⟩, hdp, hdq⟩ := hd
-    have P := comp_run_dir h7 hcode env E p h.1.2 msup region hdp
+    have P := comp_run_dir h7 hcode env E p h.1 msup region hdp
     have Q := comp_run_dir h7 hcode env E q h.2 msup region hdq
-    obtain ⟨hpc, hpn⟩ := hinted_plain env.cod h.1.1
-    exact ⟨fun goal g hi => crx_iff_mm.2 (comp_run_n2_directMM h7 hcode env msup p q hpc hpn (partLM_of_partR P)
+    exact ⟨fun goal g hi => crx_iff_mm.2 (comp_run_n2_directMM h7 hcode env msup p q P.past (partLM_of_partR P)
         (partLM_of_partR Q) b hcd nb hE hri hnb goal g hi),
-      res_n2_directMono P.res Q.res hpc hri hnb, pastAt_code h7 hcode env hc⟩
+      res_n2_directMono P.res Q.res hri hnb, pastAt_code h7 hcode env hc⟩
   | Nomm.n2 _ _ (some (_, some _)), h, _, _, _ => by simp [DirOk] at h
   | Nomm.n3 p, h, msup, region, hd => by
     have hc := callCode_of_dir (ctx := ctx) _ h msup hd
@@ -287,6 +286,20 @@ example (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = som
         (Nomm.n2 (Nomm.n0 1) (Nomm.n1 k') (some (b', Option.none)))) goal region g :=
   comp_run_dirMM h7 hcode env E _ rfl msup region
     (by simp only [DirCalls]; exact ⟨⟨hb, trivial, trivial⟩, ⟨hb', trivial, trivial⟩⟩) goal g hi
+
+/-- **An example**: a direct call whose subject is a direct call, `[2 [2 [0
+1] [1 k] [~ b ~]] [1 k'] [~ b' ~]]` (`+past` over the subject reads the code
+entry of `b`), on every goal with `GInv`, given the two calls' `CallOk`. -/
+example (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod) (env : CallEnv)
+    (E : GenRest → Prop) (msup : Option Nomm) (k k' : Noun) (b b' : Bell)
+    (hb : CallOk env cod ctx E msup (Nomm.n0 1) (Nomm.n1 k) b)
+    (hb' : CallOk env cod ctx E msup (Nomm.n2 (Nomm.n0 1) (Nomm.n1 k) (some (b, Option.none))) (Nomm.n1 k') b')
+    (goal : CGoalL CSet) (region : List Nat) (g : Gen (TreapMap mugF)) (hi : GInv g goal) :
+    CompRunAtMM env msup ctx E
+      (Nomm.n2 (Nomm.n2 (Nomm.n0 1) (Nomm.n1 k) (some (b, Option.none))) (Nomm.n1 k') (some (b', Option.none)))
+      goal region g :=
+  comp_run_dirMM h7 hcode env E _ rfl msup region
+    (by simp only [DirCalls]; exact ⟨hb', ⟨hb, trivial, trivial⟩, trivial⟩) goal g hi
 
 end Compiler
 end Formalization

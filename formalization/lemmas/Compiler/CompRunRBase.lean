@@ -15,9 +15,9 @@ hypothesis `X x mono sup` on the rest, `mono` and `sup`.
 
 * `CompRunAtX` and `XM E msup` (`E x`, `mono = A 0`, `sup` the noun of
   `msup`): `CompRunAtX … (XM E msup)` is `CompRunAtMM` (`crx_iff_mm`).
-* `PastAt ctx cod n`: the pill's `+past` over `n` is `pastL cod`
-  (`comp_past` is `PastAt ctx noCode`); `pastAt_nd`: with no direct call it
-  is `PastAt ctx cod` for every `cod`.
+* `PastAt ctx cod n` (`CompRunDirectMonoB.lean`): the pill's `+past` over
+  `n` is `pastL cod`; `pastAt_nd`: with no direct call it is `PastAt ctx cod`
+  for every `cod`.
 * `PartR`: what the copied cases take of a part (the link `CompRunAtX`, the
   result `ResForR`, and `PastAt ctx env.cod`).
 -/
@@ -66,19 +66,6 @@ theorem crx_of_runLC {env : CallEnv} {msup : Option Nomm} {X : GenRest → Noun 
   intro x mono sup hx _
   rw [runLCM_true env hn msup]
   exact h x mono sup hx
-
-/-- **`+past` over `n` is `pastL cod`.** -/
-def PastAt (ctx : Noun) (cod : Bell → Option Bool) (n : Nomm) : Prop :=
-  ∀ (x : GenRest) (g : Gen (TreapMap mugF)) (nex : NextL CSet) (region : List Nat),
-    nock (C paBat (C (C nex.goal.toNoun (C n.toNoun (listNoun A region))) (compCore g x ctx))) paBat
-      = (pastL cod nex n region g).map fun p => C p.1.goal.toNoun (genNoun p.2 x)
-
-/-- With no direct call, `+past` is `pastL cod` for every `cod`. -/
-theorem pastAt_nd (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
-    (cod' : Bell → Option Bool) {n : Nomm} (hn : NoDirect n) : PastAt ctx cod' n := by
-  intro x g nex region
-  rw [pastL_cod (hinted_nd cod' hn).1]
-  exact comp_past h7 hcode x g nex n region (hinted_nd cod' hn).2
 
 /-- What the copied cases take of a part. -/
 structure PartR (env : CallEnv) (msup : Option Nomm) (ctx : Noun) (X : GenRest → Noun → Noun → Prop) (n : Nomm)
