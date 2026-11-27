@@ -7,6 +7,8 @@ import lemmas.Ska.CompHintSpotEx
 * `d10` `[11 [%spot [1 0]] [11 [%spot [1 1]] [4 [0 3]]]]` (a spot over a
   spot): `contract_d10` (`regGBT_n11dKept` for the inner, `n11dKept_doneR`
   for the outer).
+* `d19` `[4 [11 [%spot [1 0]] [4 [0 3]]]]` (a spot under the `%next` goal of
+  a `%4`): `contract_d19` (`four_doneR`).
 -/
 
 set_option linter.unusedSectionVars false
@@ -46,6 +48,35 @@ theorem contract_d10 (lib : Lib) (env : CallEnv) (snd : Nomm → NeedOrd → Boo
     spot_dynamic spot_stop exD10QF
   have H := finishLUCH_contractN11dKeptR (S := S) (N := N) lib RI hsi (clueLOKS_n1 lib env _ (A 0)) (by decide)
     (noBondH_n1 (A 0)) spot_dynamic spot_stop exD10IF hc
+  exact ⟨H.1, fun s => H.2 s trivial⟩
+
+end
+
+def exD19K : Nomm := Nomm.n11d tagSpot (Nomm.n1 (A 0)) exD10Q exD10QF
+def exD19KF : Noun := n3 (A 11) (C (A tagSpot) (quote (A 0))) exD10QF
+def exD19 : Nomm := Nomm.n4 exD19K
+def exD19F : Noun := n2 (A 4) exD19KF
+
+#guard dumped "d19" == some (exD19.toNoun, exD19F)
+#guard (finishLUCH (S := LS) (Map := FM) envH sndH exD19).isSome
+
+section
+variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
+
+/-- **The contract at the top of the dumped `d19`**,
+`[4 [11 [%spot [1 0]] [4 [0 3]]]]`: a spot under the `%next` goal of a
+`%4` (`regGBT_n11dKept`, `four_doneR`). -/
+theorem contract_d19 (lib : Lib) (env : CallEnv) (snd : Nomm → NeedOrd → Bool) (N : Needs) {c : Straight Map}
+    (hsq : snd exD10Q NeedOrd.this = true) (hc : finishLUCH (S := S) env snd exD19 = some c) :
+    c.need = NeedOrd.this ∧ ∀ s, ContractFwd lib N s exD19F [s] c ∧ ContractBwd lib N s exD19F [s] c := by
+  have hq : CallTreeHU lib env N (fun _ => True) false exD10QF exD10Q :=
+    CallTreeHU.four (b1 := true) (CallTreeHU.base (CallTreeD.n0 3) rfl)
+  have RQ : RegGBT (S := S) (Map := Map) snd lib N env (fun _ => True) exD10QF exD10Q := RegGBT.of_loksf
+    (lokSHU_callTreeHU (S := S) (Map := Map) (snd := snd) lib env hq).1.1 (by decide)
+  have RK : RegGBT (S := S) (Map := Map) snd lib N env (fun _ => True) exD19KF exD19K := regGBT_n11dKept RQ hsq
+    (clueLOKS_n1 lib env _ (A 0)) (by decide) (noBondH_n1 (A 0)) spot_dynamic spot_stop exD10QF
+  have H := finishLUCH_contractGBT (S := S) (snd := snd) lib N (fun hr => four_doneR lib RK
+    (minkC4_four lib _ exD19KF) (by simp [gen0]) rfl upBelow_gen0 clear_gen0 condBelow_gen0 hr) hc
   exact ⟨H.1, fun s => H.2 s trivial⟩
 
 end
