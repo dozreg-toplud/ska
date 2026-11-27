@@ -38,11 +38,11 @@ the core at axis `31` of the gate's context, the fifth layer of `hoon.hoon`):
 So `road-pure` returns `y` exactly when `+mink` of the trap with `gul = ~`
 ends in `%0` and the direct run returns `y` (`rp_run_iff`), and the gate
 `+ska-poke` likewise (`ska_poke_gate_iff`).  `+mink` with `gul = ~` returns
-`[%0 p]` exactly when `EvalH` (Nock in which every dynamic hint that the run
-evaluates has an atom tag) gives `p` (`evalH_of_mink_nil`, with
+`[%0 p]` exactly when `EvalH` (Nock, with opcode 9 stated by its arm and the
+dynamic hint in two rules) gives `p` (`evalH_of_mink_nil`, with
 `mink_of_evalH`), so the gate returns `y` exactly when the trap's run is an
-`EvalH` run to `y` (`ska_poke_iff_evalH`).  `nock` is `EvalA`, Nock with atom
-hint tags, so every return of the trap is such a run (`sp_trap_evalH`), and
+`EvalH` run to `y` (`ska_poke_iff_evalH`).  `nock` is `Eval`, and `Eval` is
+`EvalH`, so every return of the trap is such a run (`sp_trap_evalH`), and
 the gate returns `y` exactly when the trap does, with no hypothesis
 (`ska_poke_iff`).
 -/
@@ -490,12 +490,16 @@ theorem rp_evalH_step (lib : Lib) (go : Trace → Noun → Noun → Option Tone)
     exact EvalH.op11_cell (ih _ _ _ _ h1) (ih _ _ _ _ h2)
   · obtain ⟨a, h1, h⟩ := rp_tz h
     obtain ⟨b, h2, h⟩ := rp_tz h
+    cases h
+    exact EvalH.op11_ctag (ih _ _ _ _ h1) (ih _ _ _ _ h2)
+  · obtain ⟨a, h1, h⟩ := rp_tz h
+    obtain ⟨b, h2, h⟩ := rp_tz h
     simp at h
   · cases h
 
 /-- **`+mink` with no scry gate** ends in `[%0 p]` only on an `EvalH` run
-to `p`: Nock in which every dynamic hint that the run evaluates has an atom
-tag.  With `mink_of_evalH`, the two are the same. -/
+to `p`, which is a Nock run (`EvalH.toEval`).  With `mink_of_evalH`, the two
+are the same. -/
 theorem evalH_of_minkF_nil (lib : Lib) :
     ∀ (n : Nat) (t : Trace) (s f p : Noun), minkF lib (A 0) n t s f = some (Tone.zero p) → EvalH s f p
   | 0, _, _, _, _, h => by simp [minkF] at h
@@ -509,8 +513,7 @@ theorem evalH_of_mink_nil {lib : Lib} {s f p : Noun} (h : Mink lib (A 0) [] s f 
   exact evalH_of_minkF_nil lib n [] s f p hn
 
 /-- **The gate `+ska-poke`** returns `y` exactly when the run of its trap is
-an `EvalH` run to `y`, that is, a Nock run in which every dynamic hint it
-evaluates has an atom tag.  No hypothesis. -/
+an `EvalH` run to `y`, that is, a Nock run.  No hypothesis. -/
 theorem ska_poke_iff_evalH (sam y : Noun) :
     nock (C spBat (C sam ana)) spBat = some y ↔ EvalH (spTrap sam) rpK y := by
   rw [ska_poke_gate_iff]
@@ -523,17 +526,17 @@ theorem ska_poke_iff_evalH (sam y : Noun) :
     obtain ⟨n, hn⟩ := mink_of_evalH rpLib (A 0) he
     refine ⟨⟨y, n, hn []⟩, ?_⟩
     rw [← sp_trap_kick]
-    exact nock_of_evalA he.toEvalA
+    exact nock_of_eval he.toEval
 
-/-- `nock` is `EvalA` (a dynamic hint with a cell tag crashes, as in
-`+mink`), so every return of the trap is an `EvalH` run. -/
+/-- `nock` is `Eval`, which is `EvalH`, so every return of the trap is an
+`EvalH` run. -/
 theorem sp_trap_evalH (sam y : Noun) (h : nock (spTrap sam) spX = some y) : EvalH (spTrap sam) rpK y := by
   rw [← sp_trap_kick] at h
-  exact SkaModel.EvalA.toEvalH (evalA_of_nock h)
+  exact SkaModel.Eval.toEvalH (eval_of_nock h)
 
 /-- **The gate `+ska-poke`** returns `y` exactly when its trap does.  No
-hypothesis: `nock` is Nock with atom hint tags, as `+mink` is, so the run
-under `+mink` that `road-pure` makes first returns whenever the trap does. -/
+hypothesis: `+mink` follows Nock, so the run under `+mink` that `road-pure`
+makes first returns whenever the trap does. -/
 theorem ska_poke_iff (sam y : Noun) :
     nock (C spBat (C sam ana)) spBat = some y ↔ nock (spTrap sam) spX = some y := by
   rw [ska_poke_gate_iff]

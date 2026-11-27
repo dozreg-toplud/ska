@@ -1,13 +1,14 @@
 import lemmas.Compiler.EvalRend
 import lemmas.KernelRfl
 import core.Statement
-import lemmas.Spec
+import lemmas.StatementEval
 
 /-!
 # The statements of `core/Statement.lean` against the models
 
 `Top`, `Mook`, `Run` and `Mock` of `core/Statement.lean` are relations on the
-pill's own Nock, through `Eval`.  Here each holds exactly when the model of
+pill's own Nock, through `Nock`, `Fas` and `Hax` (taken to `nock`, `Slot` and
+`Edit` by `lemmas/StatementEval.lean`).  Here each holds exactly when the model of
 `Ska/Interp.lean` or `Ska/Mink.lean` says so, on every core of the shape the
 pill's core has: an outer battery `ob` over the interpreter core
 `icore cr = [interp.battery cr]`, where the compiler's core `cr` keeps layers 2
@@ -75,15 +76,14 @@ theorem pull_slam {ctx battery bunt sam out : Noun} {axis : Nat}
     (∃ gate, Ska.Pull ctx axis gate ∧ Ska.Slam gate sam out) ↔
       nock (C battery (C sam ctx)) battery = some out := by
   constructor
-  · rintro ⟨gate, hp, b, u, c, rfl, hs⟩
-    rw [Ska.Pull, ← nock_eq_some_iff, hpull, Option.some.injEq] at hp
+  · rintro ⟨gate, hp, hs⟩
+    rw [Ska.pull_iff_nock, hpull, Option.some.injEq] at hp
+    obtain ⟨b, u, c, rfl, hs⟩ := Ska.slam_iff_nock.1 hs
     simp only [Noun.cell.injEq] at hp
     obtain ⟨rfl, -, rfl⟩ := hp
-    rw [← nock_eq_some_iff] at hs
     simpa [nock_exec] using hs
   · intro h
-    refine ⟨_, (nock_eq_some_iff).1 hpull, battery, bunt, ctx, rfl, ?_⟩
-    rw [← nock_eq_some_iff]
+    refine ⟨_, Ska.pull_iff_nock.2 hpull, Ska.slam_iff_nock.2 ⟨battery, bunt, ctx, rfl, ?_⟩⟩
     simpa [nock_exec] using h
 
 theorem slot_core (ob cr : Noun) {e : Noun} : Slot Ska.axEval (C ob (icore cr)) e ↔ e = icore cr := by
@@ -92,6 +92,14 @@ theorem slot_core (ob cr : Noun) {e : Noun} : Slot Ska.axEval (C ob (icore cr)) 
 theorem edit_core (ob cr inner core' : Noun) :
     Edit Ska.axInner inner (C ob (icore cr)) core' ↔ core' = C ob (icore inner) := by
   rw [← edit?_iff]; simp [Ska.axInner, nock_exec, eq_comm]
+
+theorem fas_core (ob cr : Noun) {e : Noun} :
+    Fas (A Ska.axEval) (C ob (icore cr)) e ↔ e = icore cr :=
+  fas_iff_slot.trans (slot_core ob cr)
+
+theorem hax_core (ob cr inner core' : Noun) :
+    Hax (A Ska.axInner) inner (C ob (icore cr)) core' ↔ core' = C ob (icore inner) :=
+  hax_iff_edit.trans (edit_core ob cr inner core')
 
 theorem mook_pull (cr : Noun) : nock (icore cr) (n3 (A 9) (A Ska.axMook) (slot 1)) =
     some (C eval_mook.battery (C (C (A 2) (A 0)) (icore cr))) := by
@@ -120,9 +128,9 @@ theorem top_iff (ob cr : Noun) (hc : CorIn cr) (s f gul ton core' : Noun) :
     simp [Ska.axTop, nock_exec, this, eval_top_arm]
   constructor
   · rintro ⟨e, gate, inner, he, hpg, hsl, hed⟩
-    rw [slot_core] at he
+    rw [fas_core] at he
     subst he
-    rw [edit_core] at hed
+    rw [hax_core] at hed
     have h := (pull_slam hpull).1 ⟨gate, hpg, hsl⟩
     obtain ⟨t, cr', e1, he, -⟩ := eval_top_to_model lib hslam pk hpk cr hc s f gul _ h
     simp only [Noun.cell.injEq] at e1
@@ -131,7 +139,7 @@ theorem top_iff (ob cr : Noun) (hc : CorIn cr) (s f gul ton core' : Noun) :
   · rintro ⟨t, cr', rfl, rfl, he⟩
     have h := (eval_top_of_model lib hslam pk hpk cr hc s f gul t cr' he).1
     obtain ⟨gate, hpg, hsl⟩ := (pull_slam hpull).2 h
-    exact ⟨icore cr, gate, cr', (slot_core ob cr).2 rfl, hpg, hsl, (edit_core ob cr cr' _).2 rfl⟩
+    exact ⟨icore cr, gate, cr', (fas_core ob cr).2 rfl, hpg, hsl, (hax_core ob cr cr' _).2 rfl⟩
 
 
 variable (hrb : RendBaseIs lib layer4) (hst : SoftTankIs lib layer4) (hm : SkipMsgIs lib layer4)
@@ -146,9 +154,9 @@ theorem mook_iff (ob cr : Noun) (hc : CorIn cr) (t : Tone) (toon core' : Noun) :
         evalMook lib (SkaModel.interp lib pk m) m cr t = some (tn, cr') := by
   constructor
   · rintro ⟨e, gate, inner, he, hpg, hsl, hed⟩
-    rw [slot_core] at he
+    rw [fas_core] at he
     subst he
-    rw [edit_core] at hed
+    rw [hax_core] at hed
     have h := (pull_slam (mook_pull cr)).1 ⟨gate, hpg, hsl⟩
     obtain ⟨tn, cr', m, e1, he⟩ :=
       (eval_mook_iff lib hslam pk hpk hrb hst hm hlist hmsg hbad cr hc t _).1 h
@@ -159,7 +167,7 @@ theorem mook_iff (ob cr : Noun) (hc : CorIn cr) (t : Tone) (toon core' : Noun) :
     have h := (eval_mook_iff lib hslam pk hpk hrb hst hm hlist hmsg hbad cr hc t _).2
       ⟨tn, cr', m, rfl, he⟩
     obtain ⟨gate, hpg, hsl⟩ := (pull_slam (mook_pull cr)).2 h
-    exact ⟨icore cr, gate, cr', (slot_core ob cr).2 rfl, hpg, hsl, (edit_core ob cr cr' _).2 rfl⟩
+    exact ⟨icore cr, gate, cr', (fas_core ob cr).2 rfl, hpg, hsl, (hax_core ob cr cr' _).2 rfl⟩
 
 /-- `Run` of `core/Statement.lean` (`+eval-top`, then `+eval-mook` of its
 tone) on a core of the pill's shape is the model's `RunI`. -/
@@ -220,13 +228,13 @@ theorem mock_iff (lib : Lib) (hslam : SlamIsNock lib) (hleaf : RendLeafIs lib)
   have hiff := mock_pill_iff lib hslam hleaf hhand hrest hst hm s f gul toon
   constructor
   · rintro ⟨hoon, gate, hh, hpg, hsl⟩
-    rw [← slot?_iff, h4, Option.some.injEq] at hh
+    rw [fas_iff_slot, ← slot?_iff, h4, Option.some.injEq] at hh
     subst hh
     obtain ⟨t, ht, rfl⟩ := hiff.1 ((pull_slam hpull).1 ⟨gate, hpg, hsl⟩)
     exact ⟨t, rfl, ht⟩
   · rintro ⟨t, rfl, ht⟩
     obtain ⟨gate, hpg, hsl⟩ := (pull_slam hpull).2 (hiff.2 ⟨t, ht, rfl⟩)
-    exact ⟨layer4, gate, slot?_iff.1 h4, hpg, hsl⟩
+    exact ⟨layer4, gate, fas_iff_slot.2 (slot?_iff.1 h4), hpg, hsl⟩
 
 end Compiler
 end Formalization
