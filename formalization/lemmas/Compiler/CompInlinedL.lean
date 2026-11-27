@@ -239,5 +239,171 @@ theorem ns_gate (nm : Nomm) :
   simp only [nock_exec]
   exact h
 
+/-! ## The trap on any nomm
+
+The statement of the trap on one nomm: on every cache `CA` with the
+invariant `I`, when the walk `walk` of the model returns `nm'`, the trap
+returns `nm'` and a cache with `I`.  `inl_trap` proves it on every nomm from
+the one case that is not a rebuild, the `%2` with an `info` (`h2`, which may
+use the statement on both children). -/
+
+/-- The trap of `+inlined` on the nomm `nm` returns the walk of it and a
+cache with `I`. -/
+def TrapP (I : Noun → Prop) (walk : Nomm → Option Nomm) (HOT N BAT B LONG JH KK : Noun) (nm : Nomm) : Prop :=
+  ∀ CA nm', I CA → walk nm = some nm' → ∃ CA', I CA' ∧
+    nock (C inlTrap (C nm.toNoun (inlR HOT N BAT B LONG JH CA KK))) inlTrap = some (C nm'.toNoun CA')
+
+/-- **The trap of `+inlined` on any nomm** is `inlWalk`, threading the
+cache, given the `%2` case with an `info`. -/
+theorem inl_trap (calls : Bell → Bell → Bool) (hot single : Bell → Bool) (go : Bell → Option Nomm)
+    (I : Noun → Prop) (HOT N BAT B LONG JH KK : Noun)
+    (h2 : ∀ p q c k, TrapP I (inlWalk calls hot single go) HOT N BAT B LONG JH KK p →
+      TrapP I (inlWalk calls hot single go) HOT N BAT B LONG JH KK q →
+      TrapP I (inlWalk calls hot single go) HOT N BAT B LONG JH KK (Nomm.n2 p q (some (c, k)))) :
+    ∀ nm, TrapP I (inlWalk calls hot single go) HOT N BAT B LONG JH KK nm := by
+  intro nm
+  induction nm with
+  | cons p q ihp ihq =>
+    intro CA nm' hI hw
+    simp only [inlWalk, Option.bind_eq_some_iff, Option.some.injEq] at hw
+    obtain ⟨r1, w1, r2, w2, rfl⟩ := hw
+    obtain ⟨CA1, hI1, e1⟩ := ihp CA r1 hI w1
+    obtain ⟨CA2, hI2, e2⟩ := ihq CA1 r2 hI1 w2
+    refine ⟨CA2, hI2, ?_⟩
+    obtain ⟨x, y, hxy⟩ := nomm_cell p
+    rw [hxy] at e1
+    conv => { lhs; arg 2; unfold inlTrap }
+    unfold inlR at e1 e2 ⊢
+    simp [nock_exec, Nomm.toNoun, Tag.mean, inlBCons, hxy, e1, e2]
+  | n0 a =>
+    intro CA nm' hI hw
+    simp only [inlWalk, Option.some.injEq] at hw
+    subst hw
+    refine ⟨CA, hI, ?_⟩
+    conv => { lhs; arg 2; unfold inlTrap }
+    unfold inlR
+    simp [nock_exec, Nomm.toNoun]
+  | n1 k =>
+    intro CA nm' hI hw
+    simp only [inlWalk, Option.some.injEq] at hw
+    subst hw
+    refine ⟨CA, hI, ?_⟩
+    conv => { lhs; arg 2; unfold inlTrap }
+    unfold inlR
+    simp [nock_exec, Nomm.toNoun]
+  | n2 p q info ihp ihq =>
+    cases info with
+    | none =>
+      intro CA nm' hI hw
+      simp only [inlWalk, Option.bind_eq_some_iff, Option.some.injEq] at hw
+      obtain ⟨r1, w1, r2, w2, rfl⟩ := hw
+      obtain ⟨CA1, hI1, e1⟩ := ihp CA r1 hI w1
+      obtain ⟨CA2, hI2, e2⟩ := ihq CA1 r2 hI1 w2
+      refine ⟨CA2, hI2, ?_⟩
+      conv => { lhs; arg 2; unfold inlTrap }
+      unfold inlR at e1 e2 ⊢
+      simp [nock_exec, Nomm.toNoun, Tag.mean, unitNoun, inlB2, e1, e2]
+    | some ck =>
+      obtain ⟨c, k⟩ := ck
+      exact h2 p q c k ihp ihq
+  | n3 p ihp =>
+    intro CA nm' hI hw
+    simp only [inlWalk, Option.bind_eq_some_iff, Option.some.injEq] at hw
+    obtain ⟨r1, w1, rfl⟩ := hw
+    obtain ⟨CA1, hI1, e1⟩ := ihp CA r1 hI w1
+    refine ⟨CA1, hI1, ?_⟩
+    conv => { lhs; arg 2; unfold inlTrap }
+    unfold inlR at e1 ⊢
+    simp [nock_exec, Nomm.toNoun, Tag.mean, inlB3, e1]
+  | n4 p ihp =>
+    intro CA nm' hI hw
+    simp only [inlWalk, Option.bind_eq_some_iff, Option.some.injEq] at hw
+    obtain ⟨r1, w1, rfl⟩ := hw
+    obtain ⟨CA1, hI1, e1⟩ := ihp CA r1 hI w1
+    refine ⟨CA1, hI1, ?_⟩
+    conv => { lhs; arg 2; unfold inlTrap }
+    unfold inlR at e1 ⊢
+    simp [nock_exec, Nomm.toNoun, Tag.mean, inlB4, e1]
+  | n5 p q ihp ihq =>
+    intro CA nm' hI hw
+    simp only [inlWalk, Option.bind_eq_some_iff, Option.some.injEq] at hw
+    obtain ⟨r1, w1, r2, w2, rfl⟩ := hw
+    obtain ⟨CA1, hI1, e1⟩ := ihp CA r1 hI w1
+    obtain ⟨CA2, hI2, e2⟩ := ihq CA1 r2 hI1 w2
+    refine ⟨CA2, hI2, ?_⟩
+    conv => { lhs; arg 2; unfold inlTrap }
+    unfold inlR at e1 e2 ⊢
+    simp [nock_exec, Nomm.toNoun, Tag.mean, inlB5, e1, e2]
+  | n6 p q r ihp ihq ihr =>
+    intro CA nm' hI hw
+    simp only [inlWalk, Option.bind_eq_some_iff, Option.some.injEq] at hw
+    obtain ⟨r1, w1, r2, w2, r3, w3, rfl⟩ := hw
+    obtain ⟨CA1, hI1, e1⟩ := ihp CA r1 hI w1
+    obtain ⟨CA2, hI2, e2⟩ := ihq CA1 r2 hI1 w2
+    obtain ⟨CA3, hI3, e3⟩ := ihr CA2 r3 hI2 w3
+    refine ⟨CA3, hI3, ?_⟩
+    conv => { lhs; arg 2; unfold inlTrap }
+    unfold inlR at e1 e2 e3 ⊢
+    simp [nock_exec, Nomm.toNoun, Tag.mean, inlB6, e1, e2, e3]
+  | n7 p q ihp ihq =>
+    intro CA nm' hI hw
+    simp only [inlWalk, Option.bind_eq_some_iff, Option.some.injEq] at hw
+    obtain ⟨r1, w1, r2, w2, rfl⟩ := hw
+    obtain ⟨CA1, hI1, e1⟩ := ihp CA r1 hI w1
+    obtain ⟨CA2, hI2, e2⟩ := ihq CA1 r2 hI1 w2
+    refine ⟨CA2, hI2, ?_⟩
+    conv => { lhs; arg 2; unfold inlTrap }
+    unfold inlR at e1 e2 ⊢
+    simp [nock_exec, Nomm.toNoun, Tag.mean, inlB7, e1, e2]
+  | n10 a v q ihv ihq =>
+    intro CA nm' hI hw
+    simp only [inlWalk, Option.bind_eq_some_iff, Option.some.injEq] at hw
+    obtain ⟨r1, w1, r2, w2, rfl⟩ := hw
+    obtain ⟨CA1, hI1, e1⟩ := ihv CA r1 hI w1
+    obtain ⟨CA2, hI2, e2⟩ := ihq CA1 r2 hI1 w2
+    refine ⟨CA2, hI2, ?_⟩
+    conv => { lhs; arg 2; unfold inlTrap }
+    unfold inlR at e1 e2 ⊢
+    simp [nock_exec, Nomm.toNoun, Tag.mean, inlB10, e1, e2]
+  | n11s t q body ihq =>
+    intro CA nm' hI hw
+    simp only [inlWalk, Option.bind_eq_some_iff, Option.some.injEq] at hw
+    obtain ⟨r1, w1, rfl⟩ := hw
+    obtain ⟨CA1, hI1, e1⟩ := ihq CA r1 hI w1
+    refine ⟨CA1, hI1, ?_⟩
+    conv => { lhs; arg 2; unfold inlTrap }
+    unfold inlR at e1 ⊢
+    simp [nock_exec, Nomm.toNoun, Tag.mean, inlB11, e1]
+  | n11d t h q body ihh ihq =>
+    intro CA nm' hI hw
+    simp only [inlWalk, Option.bind_eq_some_iff, Option.some.injEq] at hw
+    obtain ⟨r1, w1, r2, w2, rfl⟩ := hw
+    obtain ⟨CA1, hI1, e1⟩ := ihh CA r1 hI w1
+    obtain ⟨CA2, hI2, e2⟩ := ihq CA1 r2 hI1 w2
+    refine ⟨CA2, hI2, ?_⟩
+    conv => { lhs; arg 2; unfold inlTrap }
+    unfold inlR at e1 e2 ⊢
+    simp [nock_exec, Nomm.toNoun, Tag.mean, inlB11, e1, e2]
+  | n12 p q ihp ihq =>
+    intro CA nm' hI hw
+    simp only [inlWalk, Option.bind_eq_some_iff, Option.some.injEq] at hw
+    obtain ⟨r1, w1, r2, w2, rfl⟩ := hw
+    obtain ⟨CA1, hI1, e1⟩ := ihp CA r1 hI w1
+    obtain ⟨CA2, hI2, e2⟩ := ihq CA1 r2 hI1 w2
+    refine ⟨CA2, hI2, ?_⟩
+    conv => { lhs; arg 2; unfold inlTrap }
+    unfold inlR at e1 e2 ⊢
+    simp [nock_exec, Nomm.toNoun, Tag.mean, inlB12, e1, e2]
+  | mean p b q body k ihp ihq =>
+    intro CA nm' hI hw
+    simp only [inlWalk, Option.bind_eq_some_iff, Option.some.injEq] at hw
+    obtain ⟨r1, w1, r2, w2, rfl⟩ := hw
+    obtain ⟨CA1, hI1, e1⟩ := ihp CA r1 hI w1
+    obtain ⟨CA2, hI2, e2⟩ := ihq CA1 r2 hI1 w2
+    refine ⟨CA2, hI2, ?_⟩
+    conv => { lhs; arg 2; unfold inlTrap }
+    unfold inlR at e1 e2 ⊢
+    simp [nock_exec, Nomm.toNoun, Tag.mean, inlBMean, e1, e2]
+
 end Compiler
 end Formalization
