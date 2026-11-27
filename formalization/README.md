@@ -642,7 +642,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/RawInvCheck.lean` | Executable checkers of the eight fields of `OptIn` on the final pass's output and of the run-level invariant on raw blocks, `#guard`ed on `[10 [6 0 1] 5 [0 6] 0 1]`, `[4 [3 [0 1]]]`, `[[0 2] [0 3]]` and on enumerated nomms of the first fragment, of `FragX` and with indirect calls. |
 | `Ska/RawInvGen.lean` | `SI g`, the invariant of a state of `+comp` on the first fragment (labels below `bo`, blocks that jump down, registers below `re`, `BlkNodup`, `Cross`, `NoTr`, `Par1`, `ArgsAbove`), kept by `re` (`si_re`), `+emit` (`si_emit` under `EmitOK`) and `+add-ops` (`si_addOps` under `OpsOK`); `defd_of_wroteIn` (track C's footprint bounds the new definitions); `GArgs`, `GLive`. |
 | `Ska/RawInvArms.lean`, `Ska/RawInvSplit.lean`, `Ska/RawInvCollapse.lean`, `Ska/RawInvMede.lean` | The arms on raw blocks: `raw_bomb`, `raw_doneBlocks`, `raw_simpleNext`, `raw_forl`, `raw_splitNeed`, `raw_split`, `copyNeed_raw` (`CopyR`: the moves of `+copy-need-make-ops` define each register once and read only the merged need), `raw_copy`, `sureRequireLook_keeps`, `raw_crashNeed`, `raw_collapse`, `raw_medeLoop`, `raw_mede`: what each defines (once), reads first, and leaves live. |
-| `Ska/RawInvRun.lean`, `Ska/RawInvCons.lean`, `Ska/RawInvInto.lean` | **`run_raw`**: `RawIH nm` for every nomm, the run-level invariant of `run` (the first fragment): `SI` kept, and every register live at the run's entry is in its result's need or live at its goal's continuation and not named by the goal. `sub_facts` (track C's `run_keeps`, `run_foot`, `run_down`), `raw_tail`, `raw_binTail`, the cases `raw_n0`, `raw_n1`, `raw_n7`, `raw_n4`, `raw_n3`, `raw_cons`, `raw_n5`, `raw_n10` (`intoRec_raw`, `raw_into`). |
+| `Ska/RawInvRun.lean`, `Ska/RawInvCons.lean`, `Ska/RawInvInto.lean` | **`run_rawP`**: `RawIHP X ρ lo nm` for every nomm, the run-level invariant of `run` (the first fragment) from a state with `SIP X ρ lo` (`RawInvGenP.lean`; since 2026-11-27 the arm lemmas of `RawInvArms`, `RawInvSplit`, `RawInvCollapse`, `RawInvMede` and these files take `SIP` in place of `SI`, and the collapse's liveness at the goal's continuation goes by rank): `SIP` kept, and every register live at the run's entry is in its result's need or live at its goal's continuation and not named by the goal.  **`run_raw`**: `RawIH nm` (with `SI`, the statement as before), the instance `X := Xstd`, `ρ := 3 k`, `lo := 0`. `sub_facts` (track C's `run_keeps`, `run_foot`, `run_down`), `raw_tail`, `raw_binTail`, the cases `raw_n0`, `raw_n1`, `raw_n7`, `raw_n4`, `raw_n3`, `raw_cons`, `raw_n5`, `raw_n10` (`intoRec_raw`, `raw_into`). |
 | `Ska/RawInvOut.lean`, `Ska/RawInvOutMain.lean` | Through the renaming path of `+to-straight`: `mem_aliasReads` (`srcs`), `renReg_surj`, `chase_raw`, `chaseFin_raw`, and **`optIn_toStraight`**: blocks that jump down, define each register once, have no trace hint op, pass no argument into a reachable parameter and leave live at the entry only input registers give an output with `OptIn`. |
 | `Ska/RawInvKern.lean`, `Ska/RawInvTop.lean`, `Ska/AuditRaw.lean` | The prologue (`kernLoop_raw`, `raw_sureLoop`) and the main theorems of track D: **`optIn_finish`**, **`optIn_finishLF`**, **`optIn_finishLU`** (`OptIn` of the raw blocks of the n-ary and whole-subject final passes on `Frag nm CGoal.done`, nothing baked), `rawDInv_finishLF`, `rawDInv_finishLU` (the field `rawDInv` of `CompHypOf.lean`), `optimize_keeps_finishLF`, `optimize_keeps_finishLU`; their axioms. |
 | `Ska/RawInvClosed.lean`, `Ska/RawInvClosedRun.lean` | **`run_closed`**: a run of `run` from a state that does not drop and has `Clear` jumps from its own blocks (labels from `g0.bo` on) only to its own labels or to its goal's targets (`ClosedR g0.bo (GTgt goal)`), and its result's jump is at one of them; one lemma per arm (`cs_split`, `cs_into`, `cs_copy`, `cs_mede`, `cs_collapse`, ...) and per case. |
@@ -652,6 +652,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/RawInvLiveK.lean` | `LiveK bl K k r` (liveness where the block at each `x` first defines `K x`), `Prep P bl bl'` (ops `P k` in front of every block), **`live_prep`**, **`live_entry_of_prep`** (after prologues that define the kills, only what they read first is live at an entry where nothing is live with the kills), `prep_trans`, `prep_put`, `defd_prep`; the ranked fields `JDownR ρ`, `ArgsAboveR ρ` with `acyclic_of_jdownR`, `passOK_ofR`, `downPar_of_argsR`, and their keeping by prologues (`upRk_prep`, `jdownR_upRk_prep`, `argsAboveR_upRk_prep`, `parNodup_prep`). |
 | `Ska/RawInvOutR.lean` | Generated from `chase_raw`, `chaseFin_raw`, `optIn_toStraight` with `Down` replaced by `DownRk ρ`: `chase_rawR`, `chaseFin_rawR`, **`optIn_toStraightR`** (`OptIn` after `+to-straight` for blocks that go down in any rank, as the fork blocks of `%6` under `%next` need). |
 | `Ska/RawInvTopX.lean` | **`optIn_toStraight_prep`**: `OptIn` of `+to-straight` after prologues at the lazy entries, from `DownRk (upRk bl)`, `ArgsAboveR (upRk bl)` and `¬ LiveK` at the entry of the raw blocks and the prologue facts that `checkPrep` checks; **`liveK_prep`** (prologues that define the old kills and read first only the new ones turn `LiveK` with the new kills into `LiveK` with the old), `downRk_prep`, `jdownR_of_downRk`, `noTr_prep`; **`coerceLazyL_prep`** (`+coerce-lazy` over a lazy tree is a `Prep` with `CoerceMany`: the ops at each entry define its sure need, read first only the input need, no trace hint op, given `CoerceStep` of each one-entry step under an invariant `I` of the states; `coerceList_prep`, through `coerceLazyL_flat`). |
+| `Ska/RawInvGenP.lean` | Track D (Gaps 14, `FragX` step 1): `SIP X ρ lo g`, the state invariant without the jump and parameter fields of `SI`: jumps down in a rank `ρ` (`JDownR`), `ρ k = 3 k` from `lo` on and `ρ x < 3 lo` below, and a predicate `X` of the blocks kept by a new block and by ops in front (`XOK`; `Xstd` = `JDown`, `Par1`, `ArgsAbove`, so `si_sip`, `sip_si`: `SI g ↔ SIP Xstd (3 * ·) 0 g`); `sip_reg`, `sip_re`, `sip_emit`, `sip_addOps`, `SIP.below`; liveness by rank: `live_frameRk`, `live_unfoldRk`, `live_prependRk`, and the label forms `DownBelowP`, `live_unfoldP`, `live_frameP`. |
+| `Ska/RawInvFragX.lean` | **`run_rawU`**: a run of the first fragment from a state with `SIP X (upRk g0.blocks) g0.bo` (blocks that hop up as `%6` under `%next` makes them, joins with several parameters) keeps it in the rank of the end state and has the liveness spec of `run_raw` (`run_rawP` with `ρ := upRk g0.blocks`; `upRk_congr`: the ranks do not change, since the old terminators are kept, `run_down`, and no new block hops up). |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
@@ -2474,13 +2476,22 @@ import only its theorems.  So:
    `Par1`.  Proved: the final pass from these facts,
    **`optIn_toStraight_prep`** (through `optIn_toStraightR`, `live_prep`),
    and the composition step **`liveK_prep`** for a parent's ops in front of
-   a sub-run's lazy entries.  Left for `FragX`: (i) the run-level induction
-   of those facts (`RawIHX`): its first obstacle is that `run_raw` asks `SI`
-   of the start state, which a first-fragment sub-run that starts after a
-   `%6` (the head of `[[0 3] [6 ...]]`, the `p` of `[5 p q]` with `%6` in
-   `q`) does not have, so `SI` must be replaced by the ranked fields in the
-   arm lemmas or a frame lemma must show that a run's new blocks do not
-   depend on those fields of the old ones; (ii) the one-entry step of
+   a sub-run's lazy entries.  Step (i) of the run-level induction is done
+   (2026-11-27, second session, `RawInvGenP.lean`, `RawInvFragX.lean`): the
+   arm lemmas and `run_rawP` take `SIP X ρ lo` (jumps down in a rank, no
+   parameter field) in place of `SI`, `run_raw` is its instance, and
+   **`run_rawU`** runs the first fragment from a state whose blocks hop up
+   (`SIP X (upRk g0.blocks) g0.bo`).  Left for `FragX`: (i') the run-level
+   induction (`RawIHX`) itself.  Its first obstacle: `run_rawU` speaks of
+   `Live` (no kills), but a first-fragment run whose goal's continuation is
+   the code of a run with `%6` (the head `p` of a cons whose tail has the
+   `%6`: `p` runs for the goal `q`'s entry) must hand up liveness with the
+   kills of that code's lazy entries, `LiveK g1 K entry r → NMem need r ∨
+   (LiveK g0 K th.there r ∧ ...)` for kills `K` that vanish from `g0.bo` on;
+   with `Live` the kills are lost at the continuation.  So the liveness
+   half of `run_rawP` should be restated over `LiveK K` with such `K` (the
+   same proofs, with `LiveK` forms of `live_iff`, `live_unfoldRk`,
+   `live_frameRk`, `live_prependRk`, `not_live_bom`, ...); (ii) the one-entry step of
    `+coerce-lazy` (`CoerceStep`, under an invariant that also gives
    `BlkNodup` and `Cross` after it): `raw_coerce` has it but asks `SI`; the
    iteration over the lazy tree is proved (`coerceLazyL_prep`), and

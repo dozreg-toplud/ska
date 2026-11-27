@@ -20,21 +20,22 @@ namespace Raw
 open Nock Opt Comp
 
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
+variable {X : Map Blob → Prop} [XOK X] {ρ : Nat → Nat} {lo : Nat}
 
 theorem pre_pre (A B : List Pole) (b : Blob) : pre A (pre B b) = pre (A ++ B) b := by
   cases b; simp [pre]
 
 /-- What the loop of `+mede` leaves in front of block `o`. -/
-def MedeR (ned : Need) (g g' : Comp.Gen Map) (o : Nat) (b : Blob) : Prop :=
-  SI g' ∧ g'.bo = g.bo ∧ g.re ≤ g'.re ∧ ∃ A,
+def MedeR (X : Map Blob → Prop) (ρ : Nat → Nat) (lo : Nat) (ned : Need) (g g' : Comp.Gen Map) (o : Nat) (b : Blob) : Prop :=
+  SIP X ρ lo g' ∧ g'.bo = g.bo ∧ g.re ≤ g'.re ∧ ∃ A,
     (∀ k, HoonMap.get g'.blocks k = if k = o then some (pre A b) else HoonMap.get g.blocks k) ∧
     (∀ y, ¬ OpsRF A y) ∧ (∀ y ∈ defsOf A, NMem ned y ∨ (g.re ≤ y ∧ y < g'.re)) ∧
     (∀ y, NMem ned y → y ∈ defsOf A) ∧ (∀ y, Defd g'.blocks y ↔ Defd g.blocks y ∨ y ∈ defsOf A)
 
 theorem medeR_crash {o : Nat} {n : Nat} {ned : Need} {g g' : Comp.Gen Map} {b : Blob} {u : Unit}
-    (h : SI g) (hb : HoonMap.get g.blocks o = some b) (dn : Distinct ned) (hn : NB g.re ned)
+    (h : SIP X ρ lo g) (hb : HoonMap.get g.blocks o = some b) (dn : Distinct ned) (hn : NB g.re ned)
     (hf : ∀ y, NMem ned y → ¬ Defd g.blocks y) (hc : crashNeed o (Sum.inl n) ned g = some (u, g')) :
-    MedeR ned g g' o b := by
+    MedeR X ρ lo ned g g' o b := by
   obtain ⟨S', bo', l', A, hget, hrf, hdefs, hdd, hcov⟩ :=
     raw_crashNeed h hb dn hn (fun p e => by cases e) (fun y hy _ => hf y hy) hc
   refine ⟨S', bo', l', A, hget, fun y hy => (by have := hrf y hy; cases this), fun y hy => ?_,
@@ -45,8 +46,8 @@ theorem medeR_crash {o : Nat} {n : Nat} {ned : Need} {g g' : Comp.Gen Map} {b : 
 
 /-- **The loop of `+mede`.** -/
 theorem raw_medeLoop {o : Nat} : ∀ (ned : Need) (som : Noun) (g g' : Comp.Gen Map) (b : Blob) (u : Unit),
-    SI g → HoonMap.get g.blocks o = some b → Distinct ned → NB g.re ned →
-    (∀ y, NMem ned y → ¬ Defd g.blocks y) → medeLoop o som ned g = some (u, g') → MedeR ned g g' o b := by
+    SIP X ρ lo g → HoonMap.get g.blocks o = some b → Distinct ned → NB g.re ned →
+    (∀ y, NMem ned y → ¬ Defd g.blocks y) → medeLoop o som ned g = some (u, g') → MedeR X ρ lo ned g g' o b := by
   intro ned
   induction ned with
   | none =>
@@ -66,7 +67,7 @@ theorem raw_medeLoop {o : Nat} : ∀ (ned : Need) (som : Noun) (g g' : Comp.Gen 
       ⟨regsIn_one (fun y hy => by simp [Comp.poleRegs] at hy; omega), by simp [defsOf, aliasDst],
         fun y hy => by simp [defsOf, aliasDst] at hy; subst hy; exact hf _ rfl,
         fun op hop => by simp at hop; subst hop; rfl⟩
-    obtain ⟨S', b', hb', e', q', o'⟩ := si_addOps h P hm'
+    obtain ⟨S', b', hb', e', q', o'⟩ := sip_addOps h P hm'
     rw [hb] at hb'; cases hb'
     refine ⟨S', o', by omega, [Pole.imm som r], fun k => ?_, fun y hy => ?_, fun y hy => ?_, fun y hy => ?_,
       fun y => by rw [e', defd_prepend hb]⟩
@@ -139,7 +140,7 @@ theorem raw_medeLoop {o : Nat} : ∀ (ned : Need) (som : Noun) (g g' : Comp.Gen 
         ⟨regsIn_one (fun y hy => by simp [Comp.poleRegs] at hy; omega), by simp [defsOf, aliasDst],
           fun y hy => by simp [defsOf, aliasDst] at hy; subst hy; exact hf _ (Or.inl rfl),
           fun op hop => by simp at hop; subst hop; rfl⟩
-      obtain ⟨S0, b0, hb0, e0, q0, o0⟩ := si_addOps h P h0
+      obtain ⟨S0, b0, hb0, e0, q0, o0⟩ := sip_addOps h P h0
       rw [hb] at hb0; cases hb0
       have hb0' : HoonMap.get g0.blocks o = some (pre [Pole.imm (C a c) r] b) := by rw [e0]; exact get_put_self
       have dd0 : ∀ y, Defd g0.blocks y ↔ Defd g.blocks y ∨ y = r := fun y => by
@@ -204,16 +205,16 @@ theorem raw_medeLoop {o : Nat} : ∀ (ned : Need) (som : Noun) (g g' : Comp.Gen 
 /-- **`+mede`**: a new block hopping to the goal's continuation, with the
 constant put into every register of the goal's need. -/
 theorem raw_mede {th : Jmp} {som : Noun} {laz : Sure S} {g g' : Comp.Gen Map} {o : Nat}
-    (h : SI g) (dn : Distinct laz.ned) (hn : NB g.re laz.ned) (ha : th.args = []) (hj : th.there < g.bo)
+    (h : SIP X ρ lo g) (dn : Distinct laz.ned) (hn : NB g.re laz.ned) (ha : th.args = []) (hj : th.there < g.bo)
     (hf : ∀ y, NMem laz.ned y → ¬ Defd g.blocks y)
     (hm : mede th som laz g = some (o, g')) :
-    SI g' ∧ o = g.bo ∧ g'.bo = g.bo + 1 ∧ g.re ≤ g'.re ∧
+    SIP X ρ lo g' ∧ o = g.bo ∧ g'.bo = g.bo + 1 ∧ g.re ≤ g'.re ∧
       (∀ k, k < g.bo → HoonMap.get g'.blocks k = HoonMap.get g.blocks k) ∧
       (∀ y, Live g'.blocks o y → Live g.blocks th.there y ∧ ¬ NMem laz.ned y) ∧
       (∀ y, Defd g'.blocks y → Defd g.blocks y ∨ NMem laz.ned y ∨ (g.re ≤ y ∧ y < g'.re)) := by
   simp only [mede] at hm
   obtain ⟨o1, g1, h1, hm⟩ := bind_some hm
-  obtain ⟨S1, rfl, e1, q1, bo1⟩ := si_emit h (emitOK_hop ha hj) h1
+  obtain ⟨S1, rfl, e1, q1, bo1⟩ := sip_emit h (emitOK_hop ha hj) h1
   obtain ⟨g2, g2', h2, hm⟩ := bind_some hm
   rw [get_apply] at h2
   simp only [Option.some.injEq, Prod.mk.injEq] at h2
@@ -224,7 +225,7 @@ theorem raw_mede {th : Jmp} {som : Noun} {laz : Sure S} {g g' : Comp.Gen Map} {o
   have L3 := sureRequireLook_spec h3
   obtain ⟨k3, e3⟩ := L3.gen
   have l3 := L3.le
-  have S3 : SI g3 := by rw [e3]; exact si_reg S1 (by rw [e3] at l3; exact l3)
+  have S3 : SIP X ρ lo g3 := by rw [e3]; exact sip_reg S1 (by rw [e3] at l3; exact l3)
   have b3 : g3.blocks = g1.blocks := by rw [e3]
   have bo3 : g3.bo = g1.bo := by rw [e3]
   obtain ⟨u, g4, h4, hm⟩ := bind_some hm
@@ -248,7 +249,7 @@ theorem raw_mede {th : Jmp} {som : Noun} {laz : Sure S} {g g' : Comp.Gen Map} {o
     rw [get4, if_neg (by omega), b3, e1, get_put_ne (by omega)]
   refine ⟨S4, rfl, by omega, by omega, below, fun y hy => ?_, fun y hy => ?_⟩
   · have hk : HoonMap.get g4.blocks g.bo = some ⟨[], A ++ [], Termin.hop th⟩ := by rw [get4, if_pos rfl]
-    rcases live_unfold hk (h.below g.bo) below (fun j hj' => by simp [getJmps] at hj'; subst hj'; exact hj) hy with
+    rcases live_unfoldP hk (h.below g.bo) below (fun j hj' => by simp [getJmps] at hj'; subst hj'; exact hj) hy with
       ⟨-, hr⟩ | ⟨j, hj', hl, hn'⟩
     · simp only [List.append_nil] at hr
       rcases hr with hr | ⟨-, hr⟩

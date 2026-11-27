@@ -21,6 +21,7 @@ namespace Raw
 open Nock Opt Comp
 
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
+variable {X : Map Blob → Prop} [XOK X] {ρ : Nat → Nat} {lo : Nat}
 
 theorem not_live_don {bl : Map Blob} {k r x : Nat} (hk : HoonMap.get bl k = some ⟨[], [], Termin.don r⟩)
     (hx : Live bl k x) : x = r := by
@@ -30,16 +31,16 @@ theorem not_live_don {bl : Map Blob} {k r x : Nat} (hk : HoonMap.get bl k = some
   · rw [blockRF_fin] at hr; simpa [finRegs] using hr
   · simp [getJmps] at hj
 
-theorem raw_cons {p q : Nomm} (ihp : RawIH S Map p) (ihq : RawIH S Map q) : RawIH S Map (Nomm.cons p q) := by
+theorem raw_cons {p q : Nomm} (ihp : RawIHP S Map X ρ lo p) (ihq : RawIHP S Map X ρ lo q) : RawIHP S Map X ρ lo (Nomm.cons p q) := by
   intro goal g0 g1 nex h hg hD hj ha hf hr
   cases goal with
   | done =>
     simp only [run] at hr
     obtain ⟨gl, g2, h2, hr⟩ := bind_some hr
     obtain ⟨r, g3, h3, h2⟩ := bind_some h2
-    obtain ⟨S3, rfl, q3, b3, o3⟩ := si_re h h3
+    obtain ⟨S3, rfl, q3, b3, o3⟩ := sip_re h h3
     obtain ⟨o, g4, h4, h2⟩ := bind_some h2
-    obtain ⟨S4, rfl, e4, q4, bo4⟩ := si_emit S3 (emitOK_don (by omega)) h4
+    obtain ⟨S4, rfl, e4, q4, bo4⟩ := sip_emit S3 (emitOK_don (by omega)) h4
     simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
     obtain ⟨rfl, rfl⟩ := h2
     simp only at hr
@@ -62,7 +63,7 @@ theorem raw_cons {p q : Nomm} (ihp : RawIH S Map p) (ihq : RawIH S Map q) : RawI
   | pick z o =>
     simp only [run, bind_apply, pure_apply, Option.bind_some] at hr
     obtain ⟨⟨o', g2⟩, h2, hr⟩ := Option.bind_eq_some_iff.mp hr
-    obtain ⟨S2, rfl, e2, q2, bo2⟩ := si_emit h (emitOK_bom Option.none) h2
+    obtain ⟨S2, rfl, e2, q2, bo2⟩ := sip_emit h (emitOK_bom Option.none) h2
     obtain ⟨⟨nex2, g3⟩, h3, hr⟩ := Option.bind_eq_some_iff.mp hr
     obtain ⟨⟨nex2', g3'⟩, hp, hr⟩ := Option.bind_eq_some_iff.mp hr
     obtain ⟨rfl, rfl⟩ := past_some hp
@@ -88,29 +89,29 @@ theorem blockRF_eqq {a c y : Nat} {z o : Jmp} (hz : z.args = []) (ho : o.args = 
     (h : BlockRF ⟨[], [], Termin.eqq a c z o⟩ y) : y = a ∨ y = c := by
   rw [blockRF_fin] at h; simpa [finRegs, jmpRegs, hz, ho] using h
 
-theorem raw_n5 {p q : Nomm} (ihp : RawIH S Map p) (ihq : RawIH S Map q) : RawIH S Map (Nomm.n5 p q) := by
+theorem raw_n5 {p q : Nomm} (ihp : RawIHP S Map X ρ lo p) (ihq : RawIHP S Map X ρ lo q) : RawIHP S Map X ρ lo (Nomm.n5 p q) := by
   intro goal g0 g1 nex h hg hD hj ha hf hr
   simp only [run] at hr
   obtain ⟨rp, g2, h2, hr⟩ := bind_some hr
-  obtain ⟨S2, rfl, q2, b2, o2⟩ := si_re h h2
+  obtain ⟨S2, rfl, q2, b2, o2⟩ := sip_re h h2
   obtain ⟨rq, g3, h3, hr⟩ := bind_some hr
-  obtain ⟨S3, rfl, q3, b3, o3⟩ := si_re S2 h3
+  obtain ⟨S3, rfl, q3, b3, o3⟩ := sip_re S2 h3
   obtain ⟨o, g4, h4, hr⟩ := bind_some hr
   have b30 : g3.blocks = g0.blocks := by rw [b3, b2]
-  have H : SI g4 ∧ 1 ≤ o ∧ o < g4.bo ∧ g3.re ≤ g4.re ∧
+  have H : SIP X ρ lo g4 ∧ 1 ≤ o ∧ o < g4.bo ∧ g3.re ≤ g4.re ∧
       (∀ x, Defd g4.blocks x → Defd g0.blocks x ∨ g3.re ≤ x ∨ GMem goal x) ∧
       (∀ x, Live g4.blocks o x → x = g0.re ∨ x = g2.re ∨ GLive g0.blocks goal x) := by
     cases goal with
     | pick z o' =>
       simp only [GJ] at hj
       simp only at h4
-      obtain ⟨S4, rfl, e4, q4, bo4⟩ := si_emit S3 (emitOK_eqq (by omega) (by omega) ha.1 ha.2 (by omega) (by omega)) h4
+      obtain ⟨S4, rfl, e4, q4, bo4⟩ := sip_emit S3 (emitOK_eqq (by omega) (by omega) ha.1 ha.2 (by omega) (by omega)) h4
       refine ⟨S4, by have := h.bo1; omega, by omega, by omega, fun x d => ?_, fun x hl => ?_⟩
       · rw [e4, defd_put (S3.none (Nat.le_refl _)), b30] at d
         rcases d with d | d
         · exact Or.inl d
         · simp [blockDefs, defsOf] at d
-      · rcases live_unfold (by rw [e4]; exact get_put_self) (S3.below g3.bo)
+      · rcases live_unfoldP (by rw [e4]; exact get_put_self) (S3.below g3.bo)
           (fun k hk => by rw [e4, get_put_ne (by omega)])
           (fun j hj' => by simp [getJmps] at hj'; rcases hj' with rfl | rfl <;> omega) hl with
           e | ⟨j, hj', hl', -⟩
@@ -126,7 +127,7 @@ theorem raw_n5 {p q : Nomm} (ihp : RawIH S Map p) (ihq : RawIH S Map q) : RawIH 
       simp only at h4
       obtain ⟨⟨o0, o1⟩, g5, h5, h4⟩ := bind_some h4
       obtain ⟨S5, l5, rfl, rfl, bo5, fr5, n0, n1, dd5⟩ := raw_doneBlocks S3 h5
-      obtain ⟨S4, rfl, e4, q4, bo4⟩ := si_emit S5 (emitOK_eqq (by omega) (by omega) rfl rfl
+      obtain ⟨S4, rfl, e4, q4, bo4⟩ := sip_emit S5 (emitOK_eqq (by omega) (by omega) rfl rfl
         (by simp [jmp0]; omega) (by simp [jmp0]; omega)) h4
       refine ⟨S4, by have := h.bo1; omega, by omega, by omega, fun x d => ?_, fun x hl => ?_⟩
       · rw [e4, defd_put (S5.none (Nat.le_refl _))] at d
@@ -135,7 +136,7 @@ theorem raw_n5 {p q : Nomm} (ihp : RawIH S Map p) (ihq : RawIH S Map q) : RawIH 
           · rw [b30] at d; exact Or.inl d
           · exact Or.inr (Or.inl d.1)
         · simp [blockDefs, defsOf] at d
-      · rcases live_unfold (by rw [e4]; exact get_put_self) (S5.below g5.bo)
+      · rcases live_unfoldP (by rw [e4]; exact get_put_self) (S5.below g5.bo)
           (fun k hk => by rw [e4, get_put_ne (by omega)])
           (fun j hj' => by simp [getJmps] at hj'; rcases hj' with rfl | rfl <;> simp [jmp0] <;> omega) hl with
           e | ⟨j, hj', hl', -⟩
@@ -163,13 +164,13 @@ theorem raw_n5 {p q : Nomm} (ihp : RawIH S Map p) (ihq : RawIH S Map q) : RawIH 
             (regsIn_one (fun x hx => by simp [Comp.poleRegs] at hx; omega)) (by simp [FinIn, JmpIn, jmp0])
             (by simp [defsOf, aliasDst, List.filterMap_cons]) (fun y hy => by simp [defsOf, aliasDst] at hy)
             (fun op hop => by simp at hop; subst hop; rfl)
-        obtain ⟨S4, rfl, e4, q4, bo4⟩ := si_emit S3 E h4
+        obtain ⟨S4, rfl, e4, q4, bo4⟩ := sip_emit S3 E h4
         refine ⟨S4, by have := h.bo1; omega, by omega, by omega, fun x d => ?_, fun x hl => ?_⟩
         · rw [e4, defd_put (S3.none (Nat.le_refl _)), b30] at d
           rcases d with d | d
           · exact Or.inl d
           · simp [blockDefs, defsOf, aliasDst] at d
-        · rcases live_unfold (by rw [e4]; exact get_put_self) (S3.below g3.bo)
+        · rcases live_unfoldP (by rw [e4]; exact get_put_self) (S3.below g3.bo)
             (fun k hk => by rw [e4, get_put_ne (by omega)])
             (fun j hj' => by simp [getJmps] at hj'; rw [hj']; simp [jmp0]; omega) hl with
             ⟨-, e⟩ | ⟨j, hj', hl', -⟩
@@ -189,7 +190,7 @@ theorem raw_n5 {p q : Nomm} (ihp : RawIH S Map p) (ihq : RawIH S Map q) : RawIH 
         simp only at h4
         obtain ⟨⟨z, o''⟩, g6, h6, h4⟩ := bind_some h4
         obtain ⟨S6, q6, bo6, rfl, rfl, fr6, lz, lo', dd6⟩ := raw_forl S5 rl nd tl h6
-        obtain ⟨S4, rfl, e4, q4, bo4⟩ := si_emit S6 (emitOK_eqq (by omega) (by omega) rfl rfl
+        obtain ⟨S4, rfl, e4, q4, bo4⟩ := sip_emit S6 (emitOK_eqq (by omega) (by omega) rfl rfl
           (by simp [jmp0]; omega) (by simp [jmp0]; omega)) h4
         refine ⟨S4, by have := h.bo1; omega, by omega, by omega, fun x d => ?_, fun x hl => ?_⟩
         · rw [e4, defd_put (S6.none (Nat.le_refl _))] at d
@@ -203,7 +204,7 @@ theorem raw_n5 {p q : Nomm} (ihp : RawIH S Map p) (ihq : RawIH S Map q) : RawIH 
               · exact Or.inr (Or.inl e.1)
             · exact Or.inr (Or.inl (by omega))
           · simp [blockDefs, defsOf] at d
-        · rcases live_unfold (by rw [e4]; exact get_put_self) (S6.below g6.bo)
+        · rcases live_unfoldP (by rw [e4]; exact get_put_self) (S6.below g6.bo)
             (fun k hk => by rw [e4, get_put_ne (by omega)])
             (fun j hj' => by simp [getJmps] at hj'; rcases hj' with rfl | rfl <;> simp [jmp0] <;> omega) hl with
             e | ⟨j, hj', hl', -⟩

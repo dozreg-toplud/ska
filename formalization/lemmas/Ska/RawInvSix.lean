@@ -61,9 +61,9 @@ theorem optIn_finishLF6 [MapKeys Map] {c a b : Nomm} (hc : ∀ z o, Frag c (CGoa
   -- `a`
   have nf1 : ∀ r, Defd g1.blocks r → ¬ GMem (CGoal.done : CGoal S) r := fun r _ e => e
   obtain ⟨S2, L2⟩ := run_raw a CGoal.done g1 g2 n0 S1 trivial trivial trivial trivial nf1 hra
-  obtain ⟨l2, bo2, nb2, d2, s2, dd2, ab2, loa2, hia2⟩ := sub_facts (goal := (CGoal.done : CGoal S)) S1 trivial
+  obtain ⟨l2, bo2, nb2, d2, s2, dd2, ab2, loa2, hia2⟩ := sub_facts (goal := (CGoal.done : CGoal S)) (si_sip S1) trivial
     trivial trivial trivial hra
-  have nd2 := defd_next S1 nf1 s2 dd2
+  have nd2 := defd_next (si_sip S1) nf1 s2 dd2
   have G2 := (run_down a CGoal.done g1 g2 n0 trivial S1.bo1 S1.drop hra).grow
   have D2 : Down g2.blocks := G2.down D1 S1.bo1
   -- the branch blocks
@@ -114,7 +114,7 @@ theorem optIn_finishLF6 [MapKeys Map] {c a b : Nomm} (hc : ∀ z o, Frag c (CGoa
   have nfc : ∀ r, Defd gs.blocks r → ¬ GMem (CGoal.pick (jmp0 g2.bo) (jmp0 (g2.bo + 1)) : CGoal S) r :=
     fun r _ e => e
   obtain ⟨S3, L3⟩ := run_raw c _ gs g3 nc Sgs hgc trivial hjc ⟨rfl, rfl⟩ nfc hrc
-  obtain ⟨l3, bo3, nb3, d3, s3, dd3, ab3, loc3, hic3⟩ := sub_facts Sgs hgc trivial hjc ⟨rfl, rfl⟩ hrc
+  obtain ⟨l3, bo3, nb3, d3, s3, dd3, ab3, loc3, hic3⟩ := sub_facts (si_sip Sgs) hgc trivial hjc ⟨rfl, rfl⟩ hrc
   obtain ⟨CL3, ent3⟩ := run_closed c _ gs g3 nc gsd Sgs.bo1 hjc (fun k hk => Sgs.none hk) hrc
   have AB3 := run_above (P := (gs.re ≤ ·)) (goal := (CGoal.pick (jmp0 g2.bo) (jmp0 (g2.bo + 1)) : CGoal S)) gsd
     ⟨fun x hx => by simp [jmp0] at hx, fun x hx => by simp [jmp0] at hx⟩ (ple_le (Nat.le_refl _)) hrc
