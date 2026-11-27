@@ -101,6 +101,40 @@ theorem callOkTN_memOk {r : RealCfg} {order : List Noun} {kids : Noun → List N
     exact callOkTN_out hre hrs hab.1 hPS hbell hcd hc hri hnb hsf hcole hsof hin
       (hIH b _ _ _ nb hD hlt (above_memS hab hS hlt) (ctxK_memD _ _ _ _ _ _ _ _) hnb')
 
+/-- `envDone` changes only `need` and `sure`: the code table facts carry over. -/
+theorem envFrom_done {r : RealCfg} {order : List Noun} {kids : Noun → List Noun} {st : St Noun NeedOrd}
+    {CODE COLE : Noun} (he : EnvFrom r.env CODE COLE) : EnvFrom (envDone r order kids st) CODE COLE :=
+  ⟨he.cod, he.pure, he.ring⟩
+
+theorem slot6846_memD {CODE JETS CALLS JH SCC ML TOP B COLE : Noun} (hcl : slot? 190 (C JETS CALLS) = some COLE) :
+    slot? 6846 (memDCtx SCC (C CODE (C JETS CALLS)) JH ML TOP B) = some COLE := by
+  simp [memDCtx, nock_exec] at hcl ⊢; exact hcl
+
+/-- **`MemCallOk` from the table** (the per-call facts of `dirCallsT_of_E`: a code entry, no entry
+in `call.cole`, `sof` `|` with `SofRetN` at the need; `EnvFrom` of the loop's `r.env`), and member
+of the SCC, or outside in `D`, lower, with a need in `r.env`. -/
+theorem memCallOk_of {r : RealCfg} {order : List Noun} {kids : Noun → List Noun} {st : St Noun NeedOrd}
+    {CODE JETS CALLS JH SCC ML TOP B COLE : Noun} {ht : Noun → Nat} {D : Bell → Prop} {h : Nat}
+    {ms : Option Nomm} {p q : Nomm} {b : Bell}
+    (he : EnvFrom r.env CODE COLE) (hcl : slot? 190 (C JETS CALLS) = some COLE)
+    {c : Bool} (hc : codeOf CODE b = some c) (hr : getF mugF b.toNoun COLE = some (A 0))
+    (hs : ∀ nb, (envDone r order kids st).need b = some nb →
+      (envDone r order kids st).sof (made p ms) p q b nb = false ∧
+        ∀ x, SofRetN (envDone r order kids st) ms (memDCtx SCC (C CODE (C JETS CALLS)) JH ML TOP B) p q b nb x)
+    (hm : (hasInF mugF b.toNoun SCC = some true ∧ b.toNoun ∈ r.scc) ∨
+      (hasInF mugF b.toNoun SCC = some false ∧ b.toNoun ∉ r.scc ∧ D b ∧ ht b.toNoun < h ∧
+        ∃ nb, r.env.need b = some nb)) :
+    MemCallOk r order kids st CODE (memDCtx SCC (C CODE (C JETS CALLS)) JH ML TOP B) SCC ht D h ms p q b := by
+  have he' := envFrom_done (order := order) (kids := kids) (st := st) he
+  obtain ⟨hcd, hcod⟩ := codePure_of he' hc
+  have hcole : ∃ cole, slot? 6846 (memDCtx SCC (C CODE (C JETS CALLS)) JH ML TOP B) = some cole ∧
+      getF mugF b.toNoun cole = some (A 0) := ⟨COLE, slot6846_memD hcl, hr⟩
+  rcases hm with ⟨hin, hb⟩ | ⟨hin, hb, hD, hlt, nb, hnb⟩
+  · have hnb := need_done (order := order) (kids := kids) (st := st) hb
+    exact ⟨hcd, hcod, he'.ring b hr, hcole, _, hnb, (hs _ hnb).1, (hs _ hnb).2, Or.inl ⟨hin, hb⟩⟩
+  · have hnb' : (envDone r order kids st).need b = some nb := by rw [(need_done_out hb).1]; exact hnb
+    exact ⟨hcd, hcod, he'.ring b hr, hcole, nb, hnb', (hs _ hnb').1, (hs _ hnb').2, Or.inr ⟨hin, hb, hD, hlt⟩⟩
+
 def MemDoneRestS (r : RealCfg) (order : List Noun) (kids : Noun → List Noun) (env : CallEnv) (SC0 : Noun)
     (inl : Noun → Option Nomm) (P Pf : Noun → Prop) (S : Noun) (xs : GenRest) (st : St Noun NeedOrd) (keep : Bool)
     (DN KIDS ML0 CB SCC CODE LSR JH CACHE0 b ML CACHE : Noun) (ht : Noun → Nat) (D : Bell → Prop) (h : Nat) : Prop :=
