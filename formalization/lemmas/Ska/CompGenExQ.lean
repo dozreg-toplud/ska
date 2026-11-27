@@ -86,6 +86,89 @@ theorem labUniq_exQ (env : CallEnv) {sup : Option Nomm} {region : List Nat} {g0 
   labUniq_six_leaves env (PickTree.ind (CallTreeA.n0 3) (CallTreeA.n0 2)) (NoEntF.ind rfl rfl (NoEntF.pure rfl rfl))
     (NoEntF.pure rfl rfl) (NoEntF.pure rfl rfl) h
 
+/-! ## `Clean` needs of the example's `q` -/
+
+/-- **The needs of that result are `Clean`**: the sure need is the test's
+(`PickOK.clean`), the branches' needs are clean (`DoneOK.clean`), the
+wrappers' `bunt`. -/
+theorem clean_six_leaves (lib : Lib) (N : Needs) (env : CallEnv) {sup : Option Nomm} {fc : Noun} {c : Nomm}
+    {ba bb : Bool} {fa fb : Noun} {a b : Nomm} (hc : PickTree fc c) (hcn : NoEntF c)
+    (ta : CallTreeA ba fa a) (ha : NoEntF a) (tb : CallTreeA bb fb b) (hb : NoEntF b)
+    {region : List Nat} {g0 g4 : Gen Map} {nex : NextL S}
+    (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0) (hcl0 : Clear g0) (hcb0 : CondBelow g0)
+    (h : runLC env sup (Nomm.n6 c a b) (CGoalL.done : CGoalL S) region g0 = some (nex, g4)) :
+    Clean nex.laz.sure.ned ∧ ∀ e ∈ entries nex.laz, Clean e.2.sure.ned := by
+  obtain ⟨x1, x0, xc, g1, g2, g3, l0, l1, h1, h2, hx0a, hx1a, h3, hl01, hrest⟩ := runLC_six_done_apartW env sup h
+  have Db := callTreeA_done lib (N := N) env tb (fun _ => True) b0 d0 hu hcl0 hcb0 h1
+  have Rb := Db.run
+  have u1 : UpBelow g1 := Rb.grow.up hu
+  have d1 : g1.drop = false := Rb.ext.2.2.1.trans d0
+  have b1 : 1 ≤ g1.bo := Nat.le_trans b0 Rb.ext.2.1
+  have cl1 : Clear g1 := hcl0.growU Rb.grow
+  have cb1 : CondBelow g1 := Rb.cfr.below hcb0
+  have Da := callTreeA_done lib (N := N) env ta (fun _ => True) b1 d1 u1 cl1 cb1 h2
+  have Ra := Da.run
+  have lo0 : 1 ≤ x0.th.there := Ra.lo
+  have hi0 : x0.th.there < g2.bo := Ra.hi
+  have lo1 : 1 ≤ x1.th.there := Rb.lo
+  have hi1 : x1.th.there < g1.bo := Rb.hi
+  have cl2 : Clear g2 := cl1.growU Ra.grow
+  have cb2 : CondBelow g2 := Ra.cfr.below cb1
+  have u2 : UpBelow g2 := Ra.grow.up u1
+  have d2 : g2.drop = false := Ra.ext.2.2.1.trans d1
+  have b12 : g1.bo ≤ g2.bo := Ra.ext.2.1
+  have GU : GrowU g2 (sixGenL g2 x0.th x1.th region) := (grow_sixGenL region (jumpsBelow_hop lo0 hi0)
+    (jumpsBelow_hop lo1 (by omega))).toU u2
+  have uG : UpBelow (sixGenL g2 x0.th x1.th region) := GU.up u2
+  have dG : (sixGenL g2 x0.th x1.th region).drop = false := by simp [d2]
+  have Dc := pickTree_pick lib (N := N) env hc (fun _ => True) (z := jmp0 g2.bo) (o := jmp0 (g2.bo + 1))
+    ⟨⟨by simp only [jmp0]; omega, by simp only [jmp0, sixGenL_bo]; omega⟩,
+      by simp only [jmp0]; omega, by simp only [jmp0, sixGenL_bo]; omega⟩ ⟨rfl, rfl⟩
+    (by simp only [sixGenL_bo]; omega) dG uG (cl2.growU GU)
+    (fun k hk => by simp only [sixGenL_cond, sixGenL_re] at hk ⊢; exact cb2 k hk) h3
+  have e1 : entries x1.laz = [] := noEnt_of_noEntF (S := S) (Map := Map) env hb (goal := CGoal.done) trivial h1
+  have e0 : entries x0.laz = [] := noEnt_of_noEntF (S := S) (Map := Map) env ha (goal := CGoal.done) trivial h2
+  have ec : entries xc.laz = [] := pickTree_noEnt (S := S) (Map := Map) env hc hcn h3
+  obtain ⟨sc, hsc⟩ := exists_ofSure_of_entries ec
+  have hbig : lazyBig (mk (Sure.bunt : Sure S) [((g2.bo, l0), (g2.bo + 1, l1))] []) = false := by
+    apply lazyBig_entries
+    rw [entries_six]
+    rcases hl01 with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+    · simp only [e0, e1, List.length_append, List.length_cons, List.length_nil]; decide
+    · simp only [entries_wrap, e0, e1, List.length_append, List.length_cons, List.length_nil]; decide
+  have hcp := hrest hbig
+  rw [copyL_six_apart xc l0 l1 g2.bo (g2.bo + 1) g3 (by rw [hsc]; simp [ofSure])] at hcp
+  obtain ⟨⟨u, g4'⟩, hadd, e4⟩ := Option.map_eq_some_iff.mp hcp
+  simp only [Prod.mk.injEq] at e4
+  obtain ⟨rfl, rfl⟩ := e4
+  refine ⟨Dc.clean, fun e he => ?_⟩
+  rw [entries_copy_six, ec, List.nil_append] at he
+  have cbunt : Clean (Sure.bunt : Sure S).ned := by simp [Sure.bunt, Clean]
+  rcases hl01 with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+  · simp only [e0, e1, List.append_nil, List.cons_append, List.nil_append, List.mem_cons, List.not_mem_nil,
+      or_false] at he
+    rcases he with rfl | rfl
+    · exact Da.clean
+    · exact Db.clean
+  · simp only [entries_wrap, e0, e1, List.append_nil, List.cons_append, List.nil_append, List.mem_cons,
+      List.not_mem_nil, or_false] at he
+    rcases he with rfl | rfl | rfl | rfl
+    · exact cbunt
+    · exact Da.clean
+    · exact cbunt
+    · exact Db.clean
+
+/-- **What `[7 p q]` asks of the example's `q`**: `LabUniq` and `Clean`. -/
+theorem shape_exQ (lib : Lib) (N : Needs) (env : CallEnv) {sup : Option Nomm} {region : List Nat} {g0 g4 : Gen Map}
+    {nex : NextL S} (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0) (hcl : Clear g0) (hcb : CondBelow g0)
+    (h : runLC env sup (Nomm.n6 (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none) (Nomm.n0 2) (Nomm.n0 2))
+      (CGoalL.done : CGoalL S) region g0 = some (nex, g4)) :
+    Raw.LabUniq nex.laz ∧ Clean nex.laz.sure.ned ∧ ∀ e ∈ entries nex.laz, Clean e.2.sure.ned :=
+  ⟨labUniq_exQ env h, clean_six_leaves lib N env (PickTree.ind (CallTreeA.n0 3) (CallTreeA.n0 2))
+    (NoEntF.ind rfl rfl (NoEntF.pure rfl rfl)) (CallTreeA.n0 2) (NoEntF.pure rfl rfl) (CallTreeA.n0 2)
+    (NoEntF.pure rfl rfl) b0 d0 hu hcl hcb h⟩
+
+
 /-! ## `[7 p q]` under `%done` from a class of `p` -/
 
 /-- **A `p` that only fronts its goal's labels, at any lazy goal** (the
