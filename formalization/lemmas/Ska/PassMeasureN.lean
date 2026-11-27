@@ -135,7 +135,7 @@ theorem runStep_n (env : Env R) (memoF : Memo M) {n : Nat}
     intro gs gs' h _ _ _ _ _ e6 e7 _ _ _
     exact ⟨by rw [e7]; exact h.1, fun e => by rw [e6]; exact h.2 (by rw [← e7]; exact e)⟩
   obtain ⟨i1, _⟩ := run_folTopRQ (P := fun _ _ _ => True) (QA := fun _ => True) (QS := fun _ => True)
-    env memoF (fun _ _ => trivial) (fun _ _ _ _ _ _ _ _ _ _ _ => trivial) hL
+    env memoF (fun _ _ _ => trivial) (fun _ _ _ _ _ _ _ _ _ _ _ => trivial) hL
     (fun k hk idT gs r gs' hi _ e =>
       ⟨trivial, hi.trans (hres k hk idT gs r gs' e).1, (hres k hk idT gs r gs' e).2⟩)
     (NStep.refl' (st := st0) (st' := (genInit index st0).st) rfl rfl) trivial hf
