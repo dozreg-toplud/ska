@@ -3328,3 +3328,65 @@ import only its theorems.  So:
     agreement of `NeedRead`/`SureNoun` with `env` as invariants of the
     compile of an SCC; (5) the miss in `nary.cache` (the recursion
     above); (6) a class of nomms with direct calls for `comp_run_all_l`.
+20. **`+to-straight` with proxies: the map path** (track I, 2026-11-27,
+    `Compiler/CompStraightMap*.lean`, nouns cut by `tools/gen/tsmap.py`).
+    The map first.
+    (1) Linked before this item: `+to-straight` (door arm `6892`, gate
+    `tsBat`, 4716 cells) on its renaming branch only.  The pushes are
+    linked with `cond` empty (`ts_pre`, `tsn_pre`: the third push,
+    `proxies`, is `(A 1)` there), the arm `$` takes `&(run !proxies)`
+    (`ts_dol`, `tsn_dol`), and the fold is `renameBlocks` (`ts_core_at`,
+    `tsn_core`, `tsn_at`).  So the whole-subject final pass
+    (`cu_finish_all`, `CompUnaryTop.lean`) is linked only where `cond` is
+    empty after `+kerf` (`cu_cond_empty`: a pure nomm without `%6`).  On
+    the model `+kerf` makes a proxy on every enumerated nomm with a `%6`
+    (track D), so every whole-subject compile with a `%6` takes the map
+    path.
+    (2) What the branch with `proxies` `&` runs.  The `|^` core
+    (`tsCoreBat`, 4392 cells) has thirteen arms.  The renaming branch uses
+    `$` (battery axis `126`, 509 cells, of which its own branch is 163 and
+    the map branch `tsMapBr` 295), `rewrite-input` (`14`, 217), `rer`
+    (`12`, 135), `+bypassable` (`30`, 58), `+chase` (`13`, 78) and
+    `+chase-fin` (`254`, 582), all linked.  The map branch uses, for every
+    kept block, `rewrite-par` (battery `250`, core arm `378`, 58 cells:
+    `?:  =(~ par)`, else `+spin` of layer 2 with the gate `(rer(gen gen)
+    r)`), `rewrite-body` (`502`, core `758`, 65 cells: the same `+spin`
+    with `rewrite-op`), `rewrite-op` (`2`, core `4`, 1605 cells: the 25-way
+    `?-` on the op tags, one `=^` through `rer` per register field),
+    `rewrite-fin` (`1006`, core `1518`, 823 cells: the 11-way `?-`, the
+    branch jumps through `rewrite-jump` (`124`, core `188`, 38 cells:
+    `(rewrite-args (chase & j))`), the hop through `rewrite-hop` (`255`,
+    core `383`, 38 cells: `(chase | j)`), `%bom` through `+chase`) and
+    `rewrite-args` (`1007`, core `1519`, 174 cells: `?:  =(~ args.j)`,
+    else `+spin` over the units, `rer` on each `u.a`).  None of these
+    seven is linked.  The branch is `[input (count-args input) =<(new
+    (~(rep by blocks) gate))]`: the first accumulator is `[~ B]` with `B`
+    the bunt of `_gen` (`[7 [9 170 0 0xfffff] 9 2 0 1]`, arm `170` of the
+    types core), and the gate does `=.  gen  gen-acc`, the test `&(!=(0 k)
+    (bypassable & b))` (on yes `[new gen]`), else three `=^` (par, body,
+    fin) and `[(put:by new k [par1 body1 fin1]) gen1]`.  Every register
+    goes through `rer`, whose `=?  r  proxies  (unproxy r)` slams the gate
+    `unproxy` (`tsUnBat`: `+get:by` of `cond.gen` at `r`, `def.u.e` on a
+    hit) and which, with `run` `&`, returns `[(ren r) gen]` and leaves
+    `gen`.  The pushes differ from the linked ones only in `proxies`: `&`
+    (`A 0`) when the noun of `cond` is a cell.
+    (3) The model's map path is `toStraightF` with `hasProxies cond`
+    (`Ska/CompStraightMap.lean`): `rewriteInput`, then `mapBlocks` with
+    `rewriteBlob` (`rewritePar`, `rewriteBody` through `rewriteOp`,
+    `rewriteFin` through `rewriteJump`, `rewriteHop`, `rewriteArgs`), each
+    register by `rer cond proxies run ren` in the state monad `RM`.  On a
+    run of inputs `rer` reads and writes no state, and `toStraightF_run`
+    (through `mapBlocks_stateless`) makes the map path `renameBlocks bs
+    (proxRen cond true ren)`, whose `keepBlock` renames by `proxRen` and
+    chases with `chaseFin`.  The whole-subject compile has the one input
+    `sub`, so `run` is `&` there and only this stateless case occurs: the
+    state `[re-gen m]`, and so the bunt `B`, is never read.  The stateful
+    case (`run` `|`) occurs only in the n-ary final pass when a part of
+    the input was baked or coerced; it is not in this item.
+    (4) The plan: link each rewrite gate in any core whose `rer` returns
+    `[f r G]` with `G` the core's own `gen`, against `renPole f`,
+    `renJmp f` after `chase`, and `chaseFin bs f`; then the gate of the
+    fold against `renameStep bs f`, the branch by `rep_gate_list`, `$`
+    with `proxies` `&`, the pushes with any `cond`, and `+to-straight` on
+    `tsSample` for every `cond` (`TsAt` without its hypothesis), which
+    ends `+compile-unary` for code with proxies.
