@@ -22,7 +22,8 @@ induction on `runLC`.
 
 Proved here: `LiveC` composes along a goal chain (`LiveC.trans`, the shape
 of `%7`: `liveRun_seven` for any pre- and postcondition that chain), the
-pure arms (`liveC_refl`, `liveC_fromL`: `%0` under `%next`), the top
+pure arms (`liveC_refl`, `liveC_fromL`: `%0` under `%next`; `liveC_pick_z`,
+`liveC_pick_o`: `%1` under `%pick`), the top
 (`liveC_done`: nothing is live at the entry under `%done`), and the two
 facts every arm that walks the goal's lazy need uses: ops put in front of
 blocks (`liveK_prepK`: a register live after them is live before them with
@@ -127,6 +128,16 @@ theorem liveC_refl {K : Nat → Nat → Prop} {laz : Lazy S} {th : Jmp} {g : Com
 theorem liveC_fromL {K : Nat → Nat → Prop} {laz laz' : Lazy S} {th : Jmp} {axe : Nat} {g : Comp.Gen Map}
     (h : fromL axe laz = some laz') : LiveC K (CGoalL.next laz th) g g ⟨laz', th⟩ :=
   fun _ hl => hl.mono fun _ _ hk => hk.elim Or.inl fun h' => Or.inr (lazK_fromL h h')
+
+/-- **`%1` under `%pick`** (and every run that hands a target of `%pick` up
+with no block made): the result's kills are only more. -/
+theorem liveC_pick_z {K : Nat → Nat → Prop} {z o : Jmp} {laz : Lazy S} {g : Comp.Gen Map} :
+    LiveC K (CGoalL.pick z o) g g ⟨laz, z⟩ :=
+  fun _ hl => Or.inl (hl.mono fun _ _ hk => Or.inl hk)
+
+theorem liveC_pick_o {K : Nat → Nat → Prop} {z o : Jmp} {laz : Lazy S} {g : Comp.Gen Map} :
+    LiveC K (CGoalL.pick z o) g g ⟨laz, o⟩ :=
+  fun _ hl => Or.inr (hl.mono fun _ _ hk => Or.inl hk)
 
 /-! ## Ops in front of blocks -/
 
