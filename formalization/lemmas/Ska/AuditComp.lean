@@ -124,6 +124,12 @@ import lemmas.Ska.CompGen
 import lemmas.Ska.CompGenSeven
 import lemmas.Ska.CompGenTop
 import lemmas.Ska.CompGenLeaf
+import lemmas.Ska.CompGenSixD
+import lemmas.Ska.CompGenSevenD
+import lemmas.Ska.CompGenExQ
+import lemmas.Ska.CompGenSevenN
+import lemmas.Ska.CompGenConsD
+import lemmas.Ska.CompGenConsE
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -1382,3 +1388,32 @@ open Formalization.SkaModel.Comp
 #print axioms runOKGen_n0
 #print axioms RunOKGD.goalOut
 #print axioms runOKGen_n0_at
+#print axioms six_doneGD
+#print axioms sixDG_callTest
+#print axioms finishLUC_contractSixDG
+#print axioms sixCallTest22_contractG
+#print axioms runOKGD_sevenG
+#print axioms seven0_doneGD
+#print axioms seven0Six_contract
+#print axioms labUniq_six_leaves
+#print axioms clean_six_leaves
+#print axioms shape_exQ
+#print axioms nextGG_n0
+#print axioms nextGG_n1
+#print axioms seven_doneGD
+#print axioms seven_contractGD
+#print axioms runOKGen_sevenGF
+#print axioms runOKGen_sevenG
+#print axioms frontRG_sevenQ
+#print axioms frontLG_sevenG
+#print axioms GrowG.seven
+#print axioms runOKGen_n1
+#print axioms medeWalk_okL
+#print axioms splitL_okL
+#print axioms SplitOKL.runAt
+#print axioms copyLazyL_okL
+#print axioms copyPieces_run
+#print axioms splitL_okD
+#print axioms SplitOKD.apartAt
+#print axioms consSt_of_run
+#print axioms exCons_contract_of
