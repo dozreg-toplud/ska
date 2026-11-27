@@ -209,10 +209,13 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompUnaryTrap.lean` | The trap of `+compile-unary` (`cuTrap`, axis `1473626077` of `K`, `cu_trap_at`) and its gate (`cuGB`, axis `179885`, `cu_gb_at`): `+compile-scc-in` (`cuCsi`, a hypothesis), the edit of the gate's `cache`, `+comp` (arm `5590`, `cu_comp_at`, its battery `cgBat` builds `[comp.door [cuBunt ctx]]`), the entry (`cu_trap_entry`), `+got:by` of `code` and `+run` (`cu_trap_run`), `+kerf` (`cu_trap_kerf`), `+to-straight` and the product (`cu_trap_end`).  `cu_trap`: the trap returns `[[s NM] CA]` with `s` the noun of `finishLU n`; `cu_gate`: so does the gate through `road-pure`; `cu_ref_mono` and `cu_gate_some`: the same against `finishLUC env n` for every `env`, the form of `refMono`. |
 | `Compiler/CompSccIn.lean` | The structure of `+compile-scc-in` (its header: the passes, the state they thread, the final pass of `member` for one bell with line numbers, and every difference from `finishLF`), and the arms of the n-ary final pass linked so far: `+soft-done` is the identity on `soft` empty or `mode` `%drop` (`sd_empty`, `sd_drop`), the gate of `+need-to-ordered` is `needToOrd` (`nta_gate`), the gate of `+need-ord-alloc-regs` is `needOrdAllocRegs` (`noar_gate`), and the gate of `+collapse-shape` is the check of `args.then` then `needOrdAllocRegs` of the shape that the gate of `+shape-collapse` returns, a hypothesis (`cs_gate`). |
 | `Compiler/CompStraightMap.lean`, `Compiler/CompStraightMapNouns.lean` | The map path of `+to-straight` (README Gaps 20): the nouns of `rewrite-par`, `-body`, `-op`, `-fin`, `-jump`, `-hop`, `-args` and of the map branch with their kernel facts (`tsmPar_at` .. `tsm_br_eq`, written by `tools/gen/tsmap.py`); `RerS` (a `rer` that renames by `f` and keeps `gen`), `spinM_pure`, `tsm_argG`, `tsm_args`, `tsm_core_arms`, `tsm_jmp`, `tsm_hop`, `tsm_parG`, `tsm_par`. |
-| `Compiler/CompStraightMapOps.lean` | Written by `tools/gen/tsmops.py`: `MapCoreS`, `rewrite-op` on each of the 25 op tags (`tsm_op_<tag>`, `tsm_op`: `renPole f`, `gen` kept) and `rewrite-fin` on the ten terminators other than `%bom` and `%lti` (`tsm_fin_<tag>`: `chaseFin bs f`). |
+| `Compiler/CompStraightMapOps.lean` | Written by `tools/gen/tsmops.py`: `MapCoreS` (its `hU`, the bunt `[~ gen]` of the units of `rewrite-args`), `rewrite-op` on each of the 25 op tags (`tsm_op_<tag>`, `tsm_op`: `renPole f`, `gen` kept) and `rewrite-fin` on the ten terminators other than `%bom` and `%lti` (`tsm_fin_<tag>`: `chaseFin bs f`). |
 | `Compiler/CompStraightMapBlk.lean` | `tsm_core_l2`, `tsm_chase_cell`, `rewrite-fin` on `%bom` and `%lti` and on any terminator (`tsm_fin`), the bunt of `pole` (`tsm_pole_bunt`), `rewrite-body` (`tsm_bodG`, `tsm_bod`), the gate of the fold of the map branch (`tsm_gate`: `renameStep bs f`). |
 | `Compiler/CompStraightMapTop.lean` | The map branch (`tsm_branch`), the gate `unproxy` (`tsm_unproxy`), `rer` with `proxies` `&` (`tsm_rer_prox`), the arm `$` with `proxies` `&` (`tsm_dol`) and the core (`tsm_core`: the renaming path by `ren ∘ unproxy`, as `toStraightF_run`). |
 | `Compiler/AuditStraightMap.lean` | `#print axioms` of the main theorems of README Gaps 20. |
+| `Compiler/CompStraightMapPre.lean` | Written by `tools/gen/tsmpre.py`: the states of `+to-straight` with the noun `PX` of `proxies` (`tsS5P`, `tsS7P`, `tsCoreStP`, equal to the old ones at `(A 1)`: `tsS5N_eq_P`, `tsCoreStN_eq_P`), pushes 1 to 5 with `cond` a cell (`tsnp_pre1`: `proxies` is `&`), and `tsnp_r_layer1`, `tsnp_pre2`, `tsnp_ren`, `tsnp_pre3`, `tsnp_pre3_nil` copied from `CompStraightN.lean` with `PX`. |
+| `Compiler/CompStraightMapAt.lean` | The bunts of the map path by the kernel on a spine of free nouns (`tsm_rep_bunt_sp`, `tsm_arg_bunt_sp`, `tsm_blob_bunt_eq`), `ctx_of_slot7`, `proxies` from `cond` (`hasProxies_cell`, `hasProxies_none`), the pushes with proxies (`tsnp_pre`), the core (`tsmp_core`), the gate with proxies (`tsmp_at`) and on every `cond` (`ts_at_all`: the noun of `toStraightF` on a run of inputs), the whole-subject `TsAt` on every `cond` (`ts_at_this`, `ts_at_proved`). |
+| `Compiler/CompStraightMapSix.lean` | Written by `tools/gen/tsmsix.py`: track A's `TsMapAt` holds (`tsMapAt_holds`), and its tops without it (`cu_gate_scc_one_six_ts`, `cu_gate_scc_one_six_fol_ts`, `cu_gate_six_ts`). |
 | `Compiler/CompStraightN.lean` | `+to-straight` on an n-ary input need (the sample `[%next [[ned ~] ~ ~] ~ o]` of the final pass of `+compile-scc-in`, `tsSampleN`): the pushes with `ins` `flattenNeed ned`, `r0` its head, `n-in` its length and `run` `isRun ins r0 0` (`tsn_pre1`, the trap `run` `tsn_run`, `tsn_pre2`, `tsn_pre3`, `tsn_pre`), `ren` is `renReg r0 n-in` (`tsn_ren`), `rer` (`tsn_rer`), the trap of `+rewrite-input` on any need returns `needToOrd ned` and leaves `gen` (`tsn_ri_trap`, `tsn_ri`), the arm `$` takes the renaming branch (`tsn_dol`), `+count-args` is `countArgs` (`ca_gate`), the renaming branch (`tsn_rename`), the gate of the fold in any `CfCore` core (`tsn_step_gen`, `tsn_st_cf`, `tsn_step`), the core (`tsn_core`), and the gate: on a run of inputs with `cond` empty it returns the noun of `toStraightF` (`tsn_at`). |
 | `Compiler/CompCoerceLazy.lean` | `+coerce-lazy` (door battery axis `3580`, `comp_cz_at`, its gate body `czBody` cut into `czX`, `czSrl`, `czLok`, `czTail`) on a fork-free `[sure ~ ~]`: `+axe-in-less-cape` (arm `95` of `K`) is `axeInLessCape` (`aic_loop`, `aic_gate`), `+axe-in-need` (arm `0x5dd4`) is `axeInNeedL` (`ain_loop`, `ain_gate`), the gate of the `+rep:in` over `lok` is `czStep` (`cz_gate_step`) and the fold is `coerceLok` (`coerceLok_eq`, `cz_lok`, with no `0` in its product, `coerceLok_ne0`), `+sure-require-look` of the new sure (`cz_srl`), the trap `sure-loop` is `sureLoop` with `o` not in `soft` (`cz_loop_none`, `cz_loop_this`, `cz_loop_pair`, `cz_loop_both_this`, `cz_loop_both_pair`, `cz_loop_both_both`, `cz_loop`), and the gate is `coerceLazy` (`cz_gate`) or `coerceLazyL` on `ofSure` (`cz_gate_L`). |
 | `Compiler/CompBakeNeed.lean` | `+bake-need` (arm `384468` of `K`, `bn_at`, its gate body `bnBody` and trap `bnLoop` cut into `bnTest`, `bnYes` with the baking trap `bnAll`, and `bnRec`) when nothing is baked: on a need with no cell of two `%none` and no `%both` with two `%none` halves (`NeedNorm`, true of every need of `+need-ord-alloc-regs`, `needNorm_noar`) and a sock that is `%void` or not wholly known (`all:ca` false) at every node of the need, with `hed:so` and `tel:so` down the walk (`NoBake`), the test of each node is false before `+need-fits` (`bn_test`), `+cons-need` rebuilds each cell (`cn_gate`), and the gate returns `[ned ~]` (`bn_loop`, `bn_gate`). |
@@ -3749,20 +3752,43 @@ import only its theorems.  So:
     `&(!=(0 k) (bypassable & b))` as `keepBlock`, and the first
     accumulator `[~ gen]` as `mapBlocks` from the state that
     `rewriteInput` left.
-    Not linked yet, in order: (1) the pushes of `+to-straight` with `cond`
-    a nonempty treap (the third push is `&` there; `tsn_pre1` hard-codes
-    `(A 1)` in `tsS5N`, so the state of the core needs a `proxies`
-    parameter), and from them the hypotheses of `tsm_core` on the real
-    core: `hu` is `tsm_unproxy`, `hren` is `tsn_ren`, `hN`, `hL`, `hB`,
-    `hT`, `hK` are slots, `hU` (the bunt of `(unit @uvre)`) and `hRB` (the
-    bunt of the sample of `tsmGate`, `[[0 *blob] [~ gen]]`) are kernel
-    facts on a symbolic spine: `evalFuel` on a subject whose tail is
-    `spineN [r1 .. r16] compTypes` reduces in the kernel with the `r_i`
-    free (checked for the `(map @uwoo blob)` part of `tsmRepBuntF`, which
-    gives `~`), as long as no free variable is returned whole by a slot
-    (`slotAtPath x []` with `x` free does not reduce), so the `[0 14]`
-    part is split off with `nock_cell`; (2) `TsAt` without its hypothesis
-    on `cond` (the gate on `tsSample` for every `cond`: `tsn_at` when
-    `cond` is empty, `tsm_core` and `toStraightF_run` otherwise); (3) the
-    end of `+compile-unary` for code with a proxy: `comp_kerf_all` then
-    that `TsAt`, against `finishLU`/`finishLUC`.
+    Finding, 2026-11-27 (the next agent): the hypothesis `hU` of
+    `MapCoreS`, `tsm_args` and `tsm_core` (the bunt of the sample of the
+    `+spin` gate of `rewrite-args`) said `some (A 0)`, but the formula
+    `tsmArgBuntF1` is an autocons `[[7 .. 9 2 0 1] [0 30]]`, whose product
+    is the cell `[~ gen]`: no core met it, so every lemma on `MapCoreS`
+    held vacuously.  Restated as `some (C (A 0) G)` (`tsm_args` spins from
+    `[~ gen]`, as `tsm_par` does); every proof went through unchanged.
+    L, 2026-11-27 (track I, the pill link closed),
+    `Compiler/CompStraightMapPre.lean` (`tools/gen/tsmpre.py`),
+    `Compiler/CompStraightMapAt.lean`, `Compiler/CompStraightMapSix.lean`
+    (`tools/gen/tsmsix.py`).  The third push is `?:(=(~ cond.gen) | &)`,
+    so `proxies` is `&` exactly when the noun of `cond` is a cell, which
+    is `hasProxies cond` (`hasProxies_cell`; without proxies `cond` is
+    empty, `hasProxies_none`).  The states take the noun `PX` of
+    `proxies` (`tsS5P`, `tsS7P`, `tsCoreStP`, `tsStP`); the pushes that
+    do not read it are copied from `CompStraightN.lean` with `PX`
+    (`tsnp_r_layer1`, `tsnp_pre2`, `tsnp_ren`, `tsnp_pre3`,
+    `tsnp_pre3_nil`), pushes 1 to 5 with `cond` a cell (`tsnp_pre1`), and
+    `tsnp_pre` is the gate up to the call of `$` with `proxies` `&`.  The
+    two bunts are kernel facts on a core whose rest is fifteen free nouns
+    then `K` (`tsm_rep_bunt_sp`: `[[0 *blob] [~ [0 0]]]`, the blob bunt
+    being `[~ ~ %bom ~]`, `tsm_blob_bunt_eq`; `tsm_arg_bunt_sp`: `[~ [0
+    0]]`): no slot there returns a free noun whole, so `evalFuel` reduces
+    with them free, in under a second; the real core is that spine once
+    `ctx` is `[c2 c6 K]` (`ctx_of_slot7`).  With `tsm_unproxy`,
+    `tsnp_ren` and the slots, `tsm_core` gives the core (`tsmp_core`:
+    `renameBlocks bs (renReg r0 n-in ∘ unproxy cond)`), the gate with
+    proxies is `toStraightF` by `toStraightF_run` (`tsmp_at`), and on
+    every `cond` (`ts_at_all`: `tsn_at` when `hasProxies cond` is false).
+    So track A's `TsMapAt` holds (`tsMapAt_holds`), its tops hold with no
+    hypothesis on `+to-straight` (`cu_gate_scc_one_six_ts`,
+    `cu_gate_scc_one_six_fol_ts`: only `FinSure` and the state nouns
+    left), the gate of `+compile-unary` on `SixOk` code is `finishLUC`
+    whatever proxies `+kerf` leaves (`cu_gate_six_ts`, track A's
+    `cu_gate_six` with `Q` true), and the whole-subject `TsAt` of
+    `CompUnaryTop.lean` holds in every context of `+comp`
+    (`ts_at_this`, `ts_at_proved`).  `TsOn` asks a run of inputs (its
+    premise `isRun .. = true`), so the stateful case (`run` `|`, the
+    n-ary pass with a baked or coerced input) is not needed by
+    `TsMapAt`; it is still not linked.
