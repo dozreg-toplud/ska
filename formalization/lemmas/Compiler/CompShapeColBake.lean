@@ -348,5 +348,42 @@ theorem cu_gate_scc_one_six_bake_fol_all (cape : Cape)
   cu_gate_scc_one_six_bake_all cape DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE hnary hnmap hsmap hcalls nm
     INL' hinl env hn (folMade_noAx0 hf) FUNC V n hn' (folMade_noAx0 hf') hgot hv
 
+/-- `%m01` of `tools/hoon/bakedump.hoon`: `[[0 2] [0 6] [0 7]]` on the bell
+`[[| [& |]] [0 7 0]]` (the middle of the subject known, `7`). -/
+def m01Nomm : Nomm := Nomm.cons (Nomm.n0 2) (Nomm.cons (Nomm.n0 6) (Nomm.n0 7))
+
+/-- The cape `[| [& |]]`. -/
+def capeM01 : Cape := Cape.cell Cape.no (Cape.cell Cape.yes Cape.no)
+
+/- The model's final pass of `m01Nomm` (over `LS`, `FM`, in the environment
+of the dumps): the `ord` is `[%this [%this %this]]`, the registers `[5 6 7]`;
+`+bake-need` bakes the middle one and leaves `[5 7]`, not a run, so
+`+to-straight` takes the map path with `run` `|` (`tsr_at`). -/
+#guard ((runLC (S := LS) (Map := FM) envR Option.none m01Nomm (CGoalL.done : CGoalL LS) [] gen0).bind fun p =>
+    (shapeCol 64 p.1.laz capeM01).bind fun ord => (needOrdAllocRegs ord p.2).map fun q =>
+      let b := bakeNeed q.1 (Sock.mk capeM01 (C (A 0) (C (A 7) (A 0))))
+      (ord, b.2.length, flattenNeed q.1, flattenNeed b.1, isRun (flattenNeed b.1) ((flattenNeed b.1).headD 0) 0))
+  = some (NeedOrd.pair NeedOrd.this (NeedOrd.pair NeedOrd.this NeedOrd.this), 1, [5, 6, 7], [5, 7], false)
+
+/- The n-ary entry of the model with the bake succeeds there with two
+arguments. -/
+#guard ((runLC (S := LS) (Map := FM) envR Option.none m01Nomm (CGoalL.done : CGoalL LS) [] gen0).bind fun p =>
+    (finishLFB (S := LS) (Map := FM) envR m01Nomm ((shapeCol 64 p.1.laz capeM01).getD NeedOrd.none)
+      (Sock.mk capeM01 (C (A 0) (C (A 7) (A 0))))).map fun st => st.nargs) = some 2
+
+/-- **The top with the real bake on `%m01`** (a known middle, whose residual
+is not a run): `m01Nomm` as the SCC's nomm and as the code's nomm, with no
+hypothesis but the state nouns. -/
+example (FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE : Noun)
+    (hnary : getF mugF (C (C capeM01.toNoun (C (A 0) (C (A 7) (A 0)))) FOL) NARY = some (A 0))
+    (hnmap : IsMap mugF NARY) (hsmap : IsMap mugF SURE)
+    (hcalls : NoSelfCall (C (C capeM01.toNoun (C (A 0) (C (A 7) (A 0)))) FOL) CALLS) (INL' : Noun)
+    (hinl : InlOK (C (C capeM01.toNoun (C (A 0) (C (A 7) (A 0)))) FOL) CODE INL m01Nomm INL') (env : CallEnv)
+    (FUNC V : Noun) (hgot : getF mugF FUNC CODE = some (C (A 0) V))
+    (hv : slot? 2 V = some m01Nomm.toNoun) :=
+  cu_gate_scc_one_six_bake_all capeM01 (C (A 0) (C (A 7) (A 0))) FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE
+    hnary hnmap hsmap hcalls _ INL' hinl env rfl (by simp [m01Nomm, Bake.NoAx0]) FUNC V m01Nomm rfl
+    (by simp [m01Nomm, Bake.NoAx0]) hgot hv
+
 end Compiler
 end Formalization
