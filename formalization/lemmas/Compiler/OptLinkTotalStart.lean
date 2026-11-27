@@ -233,5 +233,133 @@ theorem aliasEdges_inv (g : Opt.AGen Map) (o : Nat) (pre : List Nat)
   obtain ⟨ls, e, h⟩ := M pre hn
   exact ⟨ls.flatten, by simp only [Opt.aliasEdges, e, Option.map_some], h⟩
 
+/-! ## The parameter loop (`I1` .. `I3`) -/
+
+theorem iref_foldJoin {x : Nat} : ∀ (t : List Opt.InfoReg) (h : Opt.InfoReg),
+    IRef (t.foldl (fun b a => Opt.joinReg a b) h) x → IRef h x ∧ ∀ a ∈ t, IRef a x
+  | [], h, hx => ⟨hx, fun _ h => by cases h⟩
+  | a :: t, h, hx => by
+    obtain ⟨h1, h2⟩ := iref_foldJoin t (Opt.joinReg a h) hx
+    obtain ⟨ha, hh⟩ := iref_joinReg h1
+    exact ⟨hh, fun a' ha' => by
+      rcases List.mem_cons.1 ha' with rfl | ha'
+      · exact ha
+      · exact h2 a' ha'⟩
+
+theorem filterMap_id_len : ∀ (l : List (Option Opt.InfoReg)), none ∈ l → (l.filterMap id).length < l.length
+  | [], h => by cases h
+  | a :: l, h => by
+    rcases List.mem_cons.1 h with rfl | h'
+    · simp only [List.filterMap_cons, id, List.length_cons]
+      exact Nat.lt_succ_of_le (List.length_filterMap_le _ _)
+    · have := filterMap_id_len l h'
+      cases a <;> simp only [List.filterMap_cons, id, List.length_cons] <;> omega
+
+/-- A register `param-info` refers to is referred to by the fact of every
+edge. -/
+theorem iref_paramInfo {ins : List (Option Opt.InfoReg)} {x : Nat} (h : IRef (Opt.paramInfo ins) x) :
+    ins ≠ [] ∧ ∀ a ∈ ins, ∃ v, a = some v ∧ IRef v x := by
+  unfold Opt.paramInfo at h
+  split at h
+  · exact absurd h (iref_empty x)
+  · rename_i hd tl e
+    split at h
+    · rename_i hlen
+      have hall : ∀ a ∈ ins, ∃ v, a = some v := fun a ha => by
+        cases a with
+        | some v => exact ⟨v, rfl⟩
+        | none => have := filterMap_id_len ins ha; omega
+      obtain ⟨h1, h2⟩ := iref_foldJoin tl hd h
+      refine ⟨fun hn => by subst hn; simp at e, fun a ha => ?_⟩
+      obtain ⟨v, rfl⟩ := hall a ha
+      have hv : v ∈ ins.filterMap id := List.mem_filterMap.2 ⟨some v, ha, rfl⟩
+      rw [e] at hv
+      rcases List.mem_cons.1 hv with rfl | hv
+      · exact ⟨_, rfl, h1⟩
+      · exact ⟨v, rfl, h2 v hv⟩
+    · simp [IRef] at h
+
+theorem mapM_aliasIn (g : Opt.AGen Map) : ∀ (es : List (Nat × List (Option Nat))),
+    (∀ e ∈ es, (Opt.aliasIn g e).isSome) →
+    ∃ ins, es.mapM (Opt.aliasIn g) = some ins ∧ (es ≠ [] → ins ≠ []) ∧ ∀ e ∈ es, ∃ a ∈ ins, Opt.aliasIn g e = some a
+  | [], _ => ⟨[], rfl, fun h => absurd rfl h, fun _ h => by cases h⟩
+  | e :: es, h => by
+    obtain ⟨a, ea⟩ := Option.isSome_iff_exists.1 (h e List.mem_cons_self)
+    obtain ⟨ins, ei, -, hi⟩ := mapM_aliasIn g es (fun e' he' => h e' (List.mem_cons_of_mem _ he'))
+    refine ⟨a :: ins, by simp only [List.mapM_cons, ea, Option.bind_some, ei]; rfl, (fun _ h => by cases h),
+      fun e' he' => ?_⟩
+    rcases List.mem_cons.1 he' with rfl | he'
+    · exact ⟨a, List.mem_cons_self, ea⟩
+    · obtain ⟨a', ha', h'⟩ := hi e' he'; exact ⟨a', List.mem_cons_of_mem _ ha', h'⟩
+
+theorem aliasIn_some {g : Opt.AGen Map} {e : Nat × List (Option Nat)} {v : Opt.InfoReg}
+    (h : Opt.aliasIn g e = some (some v)) : ∃ i u, g.info e.1 = some i ∧ i u = some v := by
+  obtain ⟨p, args⟩ := e
+  cases args with
+  | nil => cases h
+  | cons a args =>
+    cases a with
+    | none => cases h
+    | some u =>
+      simp only [Opt.aliasIn, Option.map_eq_some_iff, Option.some.injEq, exists_eq_right] at h
+      obtain ⟨i, hi, hu⟩ := Option.bind_eq_some_iff.1 h
+      exact ⟨i, u, hi, hu⟩
+
+/-- **`I1` .. `I3`**: the parameter loop returns once every edge passes at
+least as many arguments as there are parameters (`I1`) and every register an
+edge passes to a parameter has a fact in its predecessor (`I2`, `I3`).  With
+closed facts in the predecessors, and a fact in `loc` for every register with
+a fact in the predecessor of every edge, the facts after are closed, keep
+those of `loc`, and hold every parameter. -/
+theorem aliasPars_inv (g : Opt.AGen Map) : ∀ (ps : List Nat) (es : List (Nat × List (Option Nat))) (loc : Opt.AInfo),
+    AClo loc → (∀ e ∈ es, ∃ i, g.info e.1 = some i ∧ AClo i) →
+    (∀ x, es ≠ [] → (∀ e ∈ es, ∃ i, g.info e.1 = some i ∧ (i x).isSome) → (loc x).isSome) →
+    (∀ e ∈ es, ps.length ≤ e.2.length) →
+    (∀ e ∈ es, ∀ k u, k < ps.length → e.2[k]? = some (some u) → ((g.info e.1).bind fun i => i u).isSome) →
+    ∃ loc', Opt.aliasPars g ps es loc = some loc' ∧ AClo loc' ∧ KGrow loc loc' ∧ ∀ x ∈ ps, (loc' x).isSome
+  | [], es, loc, hc, _, _, _, _ => ⟨loc, rfl, hc, kgrow_refl _, fun _ h => by cases h⟩
+  | x :: ps, es, loc, hc, hci, hR, hl, hu => by
+    have hin : ∀ e ∈ es, (Opt.aliasIn g e).isSome := by
+      intro e he
+      obtain ⟨p, args⟩ := e
+      cases args with
+      | nil => have := hl _ he; simp at this
+      | cons a args =>
+        cases a with
+        | none => rfl
+        | some u =>
+          simp only [Opt.aliasIn, Option.isSome_map]
+          exact hu _ he 0 u (by simp) rfl
+    obtain ⟨ins, ei, hne, hins⟩ := mapM_aliasIn g es hin
+    have cw : AClo (Opt.updA loc x (some (Opt.paramInfo ins))) := aclo_upd hc fun y hy => by
+      obtain ⟨hne', hall⟩ := iref_paramInfo hy
+      refine kgrow_upd _ _ _ _ (hR y ?_ ?_)
+      · intro he; subst he; cases ei; exact hne' rfl
+      · intro e he
+        obtain ⟨a, ha, ea⟩ := hins e he
+        obtain ⟨v, rfl, hv⟩ := hall a ha
+        obtain ⟨i, u, hi, hiu⟩ := aliasIn_some ea
+        obtain ⟨i', hi', ci⟩ := hci e he
+        rw [hi] at hi'; cases hi'
+        exact ⟨i, hi, ci u v y hiu hv⟩
+    obtain ⟨loc', e2, c2, g2, p2⟩ := aliasPars_inv g ps (es.map fun e => (e.1, e.2.tail)) _ cw
+      (fun e he => by
+        obtain ⟨e0, he0, rfl⟩ := List.mem_map.1 he; exact hci e0 he0)
+      (fun y hne' hall => by
+        refine kgrow_upd _ _ _ _ (hR y (fun h => hne' (by simp [h])) fun e he => ?_)
+        exact hall (e.1, e.2.tail) (List.mem_map.2 ⟨e, he, rfl⟩))
+      (fun e he => by
+        obtain ⟨e0, he0, rfl⟩ := List.mem_map.1 he
+        have := hl e0 he0; simp only [List.length_cons] at this; simp only [List.length_tail]; omega)
+      (fun e he k u hk hku => by
+        obtain ⟨e0, he0, rfl⟩ := List.mem_map.1 he
+        refine hu e0 he0 (k + 1) u (by simp only [List.length_cons]; omega) ?_
+        simpa [List.getElem?_tail] using hku)
+    refine ⟨loc', ?_, c2, kgrow_trans (kgrow_upd _ _ _) g2, fun y hy => ?_⟩
+    · simp only [Opt.aliasPars, ei, Option.bind_some]; exact e2
+    · rcases List.mem_cons.1 hy with rfl | hy
+      · exact g2 _ (by simp [Opt.updA])
+      · exact p2 y hy
+
 end Compiler
 end Formalization
