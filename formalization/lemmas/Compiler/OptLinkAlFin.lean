@@ -241,6 +241,19 @@ theorem genRelL_fin {g : Opt.AGen (TreapMap mugF)} {loc : Opt.AInfo} {imml : Opt
       (genN (HoonMap.toNoun Blob.toNoun g.new) OLD INFO IMMS LOC IMML REV' (flag f')) :=
   ⟨OLD, INFO, IMMS, LOC, IMML, REV', rfl, hO, hI, hM, hR, hL, hIm⟩
 
+/-- `InfoRel` fixes `is-loob` up to `loobImm`, so up to `atomImm`. -/
+theorem lb_atomImm {lb : Bool} {ic : Opt.InfoReg} (h : (lb || ic.loobImm) = (ic.isLoob || ic.loobImm)) :
+    (lb || ic.atomImm) = (ic.isLoob || ic.atomImm) := by
+  unfold Opt.InfoReg.atomImm
+  unfold Opt.InfoReg.loobImm at h
+  rcases e : ic.hasImm with _ | ⟨n | _⟩ <;> simp [e] at h ⊢ <;> simp_all
+
+/-- With no immediate, `InfoRel` fixes `is-loob`. -/
+theorem lb_none {lb : Bool} {ic : Opt.InfoReg} (h : (lb || ic.loobImm) = (ic.isLoob || ic.loobImm))
+    (e : ic.hasImm = none) : lb = ic.isLoob := by
+  unfold Opt.InfoReg.loobImm at h
+  simpa [e] using h
+
 /-- **What the link of an end states**: where the model's `aliasFin` returns
 `res`, the case `FC` returns `[fin-new gen]` with `fin-new` the noun of the
 new end and `gen` related to the model's state with `rev` and `folded` of
