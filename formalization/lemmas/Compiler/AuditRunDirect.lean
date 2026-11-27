@@ -19,6 +19,7 @@ import lemmas.Compiler.CompSccOfOneGate
 import lemmas.Compiler.CompSccOfAny
 import lemmas.Compiler.CompRunSoftDefs
 import lemmas.Compiler.CompRunSoftCall
+import lemmas.Compiler.CompRunSoftChain
 
 /-! The axioms of the link of the direct call of `%2` (README Gaps 19). -/
 
@@ -319,3 +320,23 @@ open Formalization.Compiler
 #print axioms Formalization.Compiler.comp_run_n0_nextS
 #print axioms Formalization.Compiler.comp_run_n2_softTail
 #print axioms Formalization.Compiler.crd_ctailRTQ
+#print axioms Formalization.Compiler.sof_push_val
+#print axioms Formalization.Compiler.sofRetS_of
+#print axioms Formalization.Compiler.callNounS_of_read
+#print axioms Formalization.Compiler.softBond_spec
+#print axioms Formalization.Compiler.walkP_softBond
+#print axioms Formalization.Compiler.copyH_softTail
+#print axioms Formalization.Compiler.comp_run_n2_softTailR
+#print axioms Formalization.Compiler.md_loopF
+#print axioms Formalization.Compiler.md_gateF
+#print axioms Formalization.Compiler.comp_mede_allF
+#print axioms Formalization.Compiler.comp_run_n1_nextF
+#print axioms Formalization.Compiler.comp_run_consLRTQ
+#print axioms Formalization.Compiler.comp_run_n10LRTQ
+#print axioms Formalization.Compiler.runLCS_lift
+#print axioms Formalization.Compiler.crxts_of_q
+#print axioms Formalization.Compiler.comp_run_n7TQ
+#print axioms Formalization.Compiler.comp_run_softFreeQ
+#print axioms Formalization.Compiler.crxts_softFree
+#print axioms Formalization.Compiler.yOkQ_of_S
+#print axioms Formalization.Compiler.comp_run_softChain
