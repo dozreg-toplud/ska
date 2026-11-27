@@ -188,3 +188,6 @@ out. -/
 #print axioms Ana.resolveStep_new
 #print axioms Ana.push_guard
 #print axioms Ana.noStackSeq_of_kruskal
+#print axioms Ana.heSock_of_btEmb
+#print axioms Ana.btEmb_of_map
+#print axioms Ana.noStackSeq_heSock
