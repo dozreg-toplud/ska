@@ -56,10 +56,11 @@ to a hypothesis on the state of the walk at `o`:
   `aliasEdges_inv`; `I1` .. `I3`: `aliasPars_inv` (`OptLinkTotalStart.lean`);
 * `B1`, `B4` and all of them together: `aliasBlock_some`
   (`OptLinkTotalBlock.lean`), with the hypotheses listed in its header.
-Open: the walk invariant `W0` .. `W3` that gives the hypotheses of
-`aliasBlock_some` at every kept block, by induction on `aliasWalk` over
-`topo` (the dropped blocks, `pre = []` and `o ≠ 0`, return by `TopoOK`
-alone), and with it `AliasRetN` (see Gaps 13).
+The walk invariant that gives the hypotheses of `aliasBlock_some` at every
+kept block is `WInv` (`OptLinkTotalWalk.lean`), and the induction on
+`aliasWalk` over `topo` is `winv_walk` (`OptLinkTotalWalkStep.lean`; the
+dropped blocks, `pre = []` and `o ≠ 0`, return by `TopoOK` alone), so
+`AliasRetN` holds (`aliasRetN_of`, see Gaps 13).
 -/
 
 namespace Formalization
@@ -79,8 +80,8 @@ defined in the map or is an argument of the entry (below `n`). -/
 def ReadsIn (n : Nat) (bl : Map Blob) : Prop :=
   ∀ o b i r, Opt.Reach bl o → HoonMap.get bl o = some b → Opt.ReadAt b i r → r ∈ Opt.allDefs bl ∨ r < n
 
-/-- **`AliasRet`, corrected** (open): with `ReadsIn n`, for a `pick` that
-picks a member. -/
+/-- **`AliasRet`, corrected**: with `ReadsIn n`, for a `pick` that picks a
+member (proved: `aliasRetN_of`, `OptLinkTotalWalkStep.lean`). -/
 def AliasRetN (pick : List Nat → Nat) (ρ : Nat → Nat) (L : List Nat) : Prop :=
   ∀ n (bl : Map Blob) topo rev, StInv ρ L bl → Opt.DInvR bl → ReadsIn n bl → Opt.TopoInvR bl topo rev →
     (Opt.aliasM pick n bl rev topo).isSome
