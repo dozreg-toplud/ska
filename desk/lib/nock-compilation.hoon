@@ -2238,11 +2238,15 @@
     ::  callee has run) and the members of a component that was found stable
     ::  before its real root was known.
     ::
-    ::  Members that .id does not reach are dropped before the first pass
-    ::  too, as after every pass: a nested component that turned out not to
-    ::  be one leaves its members on the stack, and a member that the sweep
-    ::  does not list is never run again, while a run later in the pass can
-    ::  call it and read its entry from before its callees changed.
+    ::  Members that .id does not reach are dropped before the first pass,
+    ::  and again once the loop is stable: a nested component that turned out
+    ::  not to be one leaves its members on the stack, and a member that the
+    ::  sweep does not list is not run in that pass, while a run later in the
+    ::  pass can call it and read its entry from before its callees changed.
+    ::  A member that stops being reached between passes keeps its entry and
+    ::  its place on the stack, and continues from that entry if it is called
+    ::  again. Analyzing it afresh each time it comes back can make the loop
+    ::  go on forever.
     ::
     =.  st  (cull id st)
     =/  pass=@  1
@@ -2270,15 +2274,16 @@
       [[(min low-m low-t) |(changed-m changed-t)] st]
     ::
     ?.  =(low index)  [low st]
-    ::  members that .id does not reach anymore are dropped
-    ::
-    =.  st  (cull id st)
     ::  stable: no member was dirty, or no entry changed and no function was
-    ::  found (a new function was seen in progress, as an empty entry, by the
-    ::  members that called it, which are dirty now)
+    ::  found, and every member that .id reaches is clean: one that a pass
+    ::  start did not reach was not swept, and a run of the pass can reach
+    ::  it again. Only then are the members .id does not reach dropped
     ::
     ?:  &(!changed =(next.st next-before))
-      [next.st (pop id st)]
+      ?:  %+  lien  (sweep id (silt (above id stk.st)) st)
+          |=(m=identity (dirty m st))
+        pass-loop(pass +(pass))
+      [next.st (pop id (cull id st))]
     pass-loop(pass +(pass))
   ::  did the entry of a callee of .m change since .m last ran? A run reads
   ::  the entries of its callees as they are at the time, except its own: a
@@ -2324,13 +2329,14 @@
     ?:  =(id i.stk)  [id ~]
     [i.stk $(stk t.stk)]
   ::  Forget the members of the component of .id that are not reachable from
-  ::  .id anymore: a later pass can stop calling a function that an earlier
-  ::  one found, e.g. when a call becomes indirect or gets another subject.
-  ::  Such a function can still call members, so its entry is not final and
-  ::  must not be left in the graph, where it would pass for a finished one.
+  ::  .id anymore, before the first pass of +analyze's loop and once the loop
+  ::  is stable: a later pass can stop calling a function that an earlier one
+  ::  found, e.g. when a call becomes indirect or gets another subject. Such
+  ::  a function can still call members, so its entry is not final and must
+  ::  not be left in the graph, where it would pass for a finished one.
   ::  Nothing else refers to it: every function above .id on the stack was
-  ::  found after .id, by a member. If it is called again, it is analyzed
-  ::  afresh.
+  ::  found after .id, by a member. Between passes it is not dropped: it
+  ::  keeps its entry, and continues from it if it is called again.
   ::
   ++  cull
     |=  [id=identity st=ska-state]
