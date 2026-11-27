@@ -1,4 +1,4 @@
-# LEDGER: what `Full` rests on (track G, 2026-11-27, tenth pass)
+# LEDGER: what `Full` rests on (track G, 2026-11-28, eleventh pass)
 
 `Full` (`core/Statement.lean`) is proved by `Assembly.full_of` from one
 structure, `Assembly.Gap lib pk InvC`, with eight fields.  This file traces
@@ -25,6 +25,86 @@ checked here* (taken from the digest and the coordinator).
 The tenth pass is at base 34b83be (digest [299]); track G's new names are
 checked in `AuditGlue.lean` (section "tenth pass"); names of other tracks
 from digest [296] to [299] and the brief are *not checked here*.
+
+The eleventh pass is at base 812e4aa (digest [302]: every track merged
+through [302], the FIXED compiler, pill 03d6233e...), with integration
+6e1dff4 (track D's leaves) merged in; track G's new names are checked in
+`AuditGlue.lean` (section "eleventh pass"); the names of other tracks from
+digest [296] to [302] cited below were FOUND in the tree at 812e4aa (grep,
+file named), not `#check`ed, except track D's four leaves (checked).
+
+READ FIRST (eleventh pass, base 812e4aa, digest [296] to [302]):
+- `StraightA` IS A THEOREM from a sharper named hypothesis: `straightA_of`
+  (`Glue/StraightRen.lean`) from `ProxEnd`, the three PROXY FACTS of the
+  state the top `+kerf` leaves (`ProxOK`: `wr` no register a block writes
+  or takes is a key of `cond`; `cel` a split of a key comes after a `%cel`
+  of it in the body; `src` a block that splits or tests a key does not
+  write or take its source).  None names the annotation.  So
+  `guardMonoC_noSixP`: `GuardMonoC` on `NoSixM` from `KIMid` (D) and
+  `ProxEnd`; `entryMono_noSixP`: `EntryMono` on `NoSixM` from D's
+  `OptInMono`, `ReadsInMono`, `KIMid` and `ProxEnd`.  CHECKED
+  (`Glue/StraightRenCheck.lean`, `#guard`): `ProxOK` holds after the top
+  `+kerf` on 7 of 7 direct calls and on ALL 7,920 `enumDX` nomms (5,351
+  with proxies).  `wr` is track D's `IL.cond` (`¬ Defd`) at that state.
+- FINDING: the old route's fact (`RenOK`: no written register is merged
+  with another by `unproxy`) FAILS on 640 of the 7,920 states (an inner
+  `+kerf` reads its `%nok` / `%cal` result register through proxies).  The
+  general lemma is `celAnn_rename`: `BlocksOKA bs K` and `RenA bs K f`
+  (`f` sends no other written register or parameter onto a register whose
+  guard matters in the block: annotated, split or `%cel`-tested there)
+  give `NoPoison` and `CelAnn` of the renamed code with the renamed
+  annotation.  `+chase` carries the annotation back through empty hops
+  (`chase_back`, `ann_back`); a `%clq` whose two ends chase to one block
+  loses `ClqYes` and gets `CellOut` from its no-end's edge condition.
+- TRACK D's LEAVES ARE THEOREMS on the class with INDIRECT calls, no `%6`,
+  no direct call, no hint (integration 6e1dff4, `Ska/RawInvCLLeaves.lean`):
+  `optInMono_plain : OptInMono S Map PlainM`, `readsInMono_plain`,
+  `optInNary_plain : OptInNary S Map PlainNC` (nothing baked),
+  `readsInNary_plain`.  For `KIMid`: `kim_split`, `kim_into` PROVED with no
+  hypothesis; the run clause only for goals meeting `IL ∧ LG`
+  (`kim_run_plainIL`); the `GD`-only form is checked (0 failures on 2,856
+  nomms under 7 goals) and is D's next step, with `LzS Q l ↔ kimLz Q l`
+  and the DIRECT call in its inductions (to reach `NoSixM`).  So
+  `EntryMono` on `PlainM` rests on `KIMid`'s run clause (D) and `ProxEnd`
+  alone (`entryMono_plain` if built, see 2.c ELEVENTH PASS); `EntryNary`
+  on `PlainNC` still needs `GuardNaryC` (G, not started).  D also found
+  `IL` FALSE at `%6` as stated (`+fork-need`'s `o0` / `o1` hop up to the
+  join, `+fork`'s `insertHop` rewrites an old entry block; reached from the
+  top only with a call): a candidate `ATS6` holds on every family, an OPEN
+  leaf for `%6` with calls.
+- M17 is FIXED in the Hoon (dab8478 `ska: the pass loop of +analyze culls
+  only when it is stable`, merged 5bf349d at [300]; pill 03d6233e...,
+  793,550 bytes, `tools/pillswitch-dab8478.md`).  Track F re-cut and
+  re-proved the model (`Ana.passEnd`, `pass_stepW`), keeping the top
+  statements (`analyze_iff`, `ska_callgraph_iff`, `cg_run`,
+  `skaPoke_sound`); the R / `EvFrozen` route is deleted.  `CgHalts` is
+  still a HYPOTHESIS: left are the quiet-pass lemma, `FinPushes` from
+  `FinIdents`, `FinBranch` / `KruskalBT`, the fuel of `+run` (track F since
+  [302]).
+- NEW OPEN QUESTION: `split-max` in the sweep loop (track S since [301], no
+  Lean): `+msg-need-ord` is not monotone, because the cut is applied in one
+  branch only, so the sweep loop's need may shrink and a cycle is
+  conceivable (T, B, G under cape `[[| |] [| |]]` shown to the user; added
+  in 3bbfae4 by an earlier session).  Track S searches for a real cycle on
+  the real compiler and measures candidate changes on copies.
+- Other tracks ([296] to [302]): Q: `+tarjan` modelled and proved correct
+  (`tarjanM_spec`, `tjSpec_flop`, equal to the real arm on 222 graphs),
+  linked (`tarjanLinkAt_jug`), the miss of `+scc-of` (`sccG_miss_enc`),
+  `inlinedM_returns`; `+tarjan` crashes on the EMPTY graph (guarded in
+  `+ska-poke`, line 1884; `+scc-of` never passes it one); left: the bridge
+  to P's `TarjanSpecN` (`SccsLeafAt`, `TarjanExists`).  A: `+run-shape`,
+  all ten corpus cases (`rs_cls8`, `rs_done8`, `rs_n2dW`, `rs_n2iW`,
+  `rs_n6DP`).  I: the per-member `%done` step on soft members
+  (`mem_done_stepS`, `memGate_done_realS`): all 65 real compiles, soft ones
+  included, under `hreq` and the run.  K: `monoLinkGood3_of_gateStr`
+  (`UnaryGateAtStr`, no decoding fields), the corpus's soft tail call
+  (`callLS_soft_tail`, `comp_run_n2_softTail`).  P:
+  `pokeModel_fullReachP5` over `PGood5` (= `PGood4` + `InvB` + `SccsIs` +
+  `ColeCoh`), `loopTotal_of`, `htRank_of`, `good5_full_step`;
+  `loopLinkAt_flagsOfT` up to `SccsLeafAt`, `EvalFinAt`.  J: the direct
+  call in the hinted classes (`lokSH_directF`, `regFT_direct`), 18 of 39.
+  F: `InvBS` is FALSE as stated (`invBS_false`); its truthful form
+  `InvBSR` (reached states) is OPEN with NO OWNER (track F is on halting).
 
 READ FIRST (tenth pass, base 34b83be, digest [296] to [299]):
 - `GuardMonoC` IS A THEOREM on `NoSixM` (no `%6`; direct and indirect
@@ -424,7 +504,7 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
 | `rawMono`, `rawNary` | PROVED | `rawMonoD_calls`, `rawNaryD_calls` | done |
 | `rawOptIn` | LEAF | `OptInMono S Map FM`, `OptInNary S Map FN` (`rawOptIn_of`); PROVED on `FragX` (`optInMono_fragX`, `optInNary_fragX`) | D |
 | `optRef` | LEAF | `OptTotalMono S FM`, `OptTotalNary S FN` + `hpill` (`optRef_of_total`); PROVED on `FragX` (`optTotalMono_fragX`, `optTotalNary_fragX`); `hinj` PROVED (track P's `Compiler.straight_toNoun_inj`) | H (input side D), P (`hpill` = `OptLink`, restated `OptLinkOn`) |
-| `rawEntry` | LEAF | `EntryMono S Map lib FM`, `EntryNary S Map lib FN` (`rawEntry_of`); PROVED on `FragX` with NO leaf (`guardFinalU`, `guardFinalF`, hence `guardMonoX`, `guardNaryX`, `rawEntry_fragX`; `compHyp_of_fragX₃`; generic `entryOK_of`; 2.c); with calls: `entryMono_of` / `entryNary_of` from `OptInMono`/`-Nary` (D), `ReadsInMono`/`-Nary` (D), `GuardMonoC`/`-NaryC` (G; `mtl_kpa`, `kpa_monoBlocks`, `kpa_callDM` over `InvA` (`KPA`); TENTH PASS: `guardMonoC_noSix` on `NoSixM` from the named hypotheses `KIMid` (D) and `StraightA` (G), `entryMono_noSix`; `KerfA` false as stated, `kerfG` proved); general `entryOK_ofK` | G, D |
+| `rawEntry` | LEAF | `EntryMono S Map lib FM`, `EntryNary S Map lib FN` (`rawEntry_of`); PROVED on `FragX` with NO leaf (`guardFinalU`, `guardFinalF`, hence `guardMonoX`, `guardNaryX`, `rawEntry_fragX`; `compHyp_of_fragX₃`; generic `entryOK_of`; 2.c); with calls: `entryMono_of` / `entryNary_of` from `OptInMono`/`-Nary` (D), `ReadsInMono`/`-Nary` (D), `GuardMonoC`/`-NaryC` (G; `mtl_kpa`, `kpa_monoBlocks`, `kpa_callDM` over `InvA` (`KPA`); TENTH PASS: `guardMonoC_noSix` on `NoSixM` from the named hypotheses `KIMid` (D) and `StraightA` (G), `entryMono_noSix`; `KerfA` false as stated, `kerfG` proved; ELEVENTH PASS: `StraightA` PROVED from `ProxEnd` (`straightA_of`, `celAnn_rename`), so `guardMonoC_noSixP` from `KIMid` and `ProxEnd`, `entryMono_noSixP`; D's four leaves PROVED on `PlainM` / `PlainNC`, integration 6e1dff4); general `entryOK_ofK` | G, D |
 | `refMono`, `refNary` | OPEN | pill link at `finishLUCM` / `finishLFC` | A, I, K |
 | `inFragM`, `inFragN` | OPEN, FALSE today | every compiled nomm in `MonoCalls` / `NaryCalls` | C, J, K |
 | `inlAnnot` | model half PROVED (`inlAnnot_of`), from two LEAVES | `InlPill` (pill half: `D.inl` is `inlinedM`), `InvBS` (the analysis gives `CodeOKS`); 2.e | none, none |
@@ -729,6 +809,38 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
       edge condition); `KIMid` (D); `GuardNaryC` (its run is `runLCM env
       false`: the direct call is `callL`'s `%cal` branch, plus
       `+need-ord-alloc-regs` and `+coerce-lazy`).
+    ELEVENTH PASS (`Glue/StraightRen.lean`, `Glue/StraightRenCheck.lean`).
+    - The final pass on the run `[sub]` is `renameBlocks` by `f =
+      renReg sub 1 ∘ unproxy` (`toStraightF_run`).  PROVED:
+      **`celAnn_rename`** (`BlocksOKA bs K` and `RenA bs K f` give
+      `NoPoison` and `CelAnn new (fun l s => ∃ s0, K l s0 ∧ f s0 = s)`;
+      `RenA`: for every register `s` annotated at, split in or
+      `%cel`-tested in a block (`Want`), `f` sends no other register the
+      block writes or takes onto `f s`), `chase_back` / `ann_back` (the
+      annotation goes back through empty hops), `blocksOKA_start` (the
+      unannotated start block moved to `0`), `blocksOKA_np` (the annotation
+      restricted to registers that are no keys of `cond`, from `ProxOK`'s
+      `wr` and `cel`), `renA_prox` (`ProxOK` gives `RenA` for
+      `renReg ∘ unproxy`), **`straightA_of`** (`StraightA` from
+      `ProxEnd`), **`guardMonoC_noSixP`**, `entryMono_noSixP`.
+    - NAMED HYPOTHESIS `ProxEnd env` (open, track D or G): the state after
+      the top `+kerf` meets `ProxOK` (`wr`, `cel`, `src`; above).  `wr` is
+      D's `IL.cond` (`¬ Defd`) there; `cel` holds because a key is read
+      only by `+kern-need` / `+collapse-lazy-atom` ops at a lazy label,
+      which start with the `%cel`; `src` because a kerf's register is
+      written only by the `%nok` / `%cal` block emitted after the kerf,
+      never in one of its lazy blocks.  CHECKED: 7 of 7, 7,920 of 7,920
+      (`tallyP`), the old fact failing on 640.
+    - With track D's leaves (integration 6e1dff4): D's class `PlainM`
+      (indirect calls only) is inside `NoSixM`, so on it `EntryMono` rests
+      on `KIMid`'s run clause and `ProxEnd` alone.
+    - OPEN, in order: `ProxEnd` (a run invariant on `cond` beside `InvA`:
+      every arm, as `KPA` carries `InvA` only); `KIMid`'s run clause in the
+      `GD` form (D); `GuardNaryC` (its run is `runLCM env false`; the final
+      pass bakes and may take the MAP path, whose renaming is built while
+      it runs: `mapBlocks` must be shown to be `renameBlocks` by its final
+      map, injective, before `celAnn_rename` applies); `%6` with calls
+      (D's `ATS6`).
 2.d `optRef`: see the table; with calls the input side of track H's
     totality (`opt_total_*` need `FragX` because the alias pass reads only
     call-free blocks) is open.
@@ -854,7 +966,13 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
 
 ## 3. `halting : FullAnswers pk InvC`
 
-FALSE OF THE CURRENT COMPILER (digest [265], M17).  The pass loop of
+ELEVENTH PASS: M17 is FIXED (dab8478, merged at digest [300], pill
+03d6233e...; see M17).  The paragraph below describes the OLD compiler; on
+the fixed one `halting` rests on `CgHalts` (track F: the quiet-pass lemma,
+`FinPushes` from `FinIdents`, `FinBranch` / `KruskalBT`, the fuel of
+`+run`).
+
+FALSE OF THE OLD COMPILER (digest [265], M17).  The pass loop of
 `+analyze` does not end on `tools/hoon/takecycle.hoon`: one `%full` poke on
 the fresh core (subject 0, a hand-built formula: a root with a 3-slot shift
 register, two relay chains of lengths 2 and 4 feeding complement sites;
@@ -1067,6 +1185,16 @@ M17. `halting` is FALSE of the current compiler (digest [265], section 3):
     branch (new pill 793,550 bytes, sha256 03d6233e..., `pillswitch` note,
     model of the pass loop changed in place, then halting on the new loop).
     PENDING, not done: until it merges, M17 stands on integration.
+    ELEVENTH PASS: FIXED.  Hoon commit dab8478 (the `endcull` hunk and
+    three comments), merged 5bf349d at [300]; pill sha256 03d6233e...,
+    793,550 bytes, names switched by `tools/pillswitch-dab8478.md`; arms
+    whose Nock changed: the `$` of the pass loop, and five arms with
+    unchanged source whose `?=` over hint tags is reordered (`+know`, arm
+    14302 of `ana`, `+hinted`, `comp-run-shape`, `comp-run`).  Track F
+    re-cut `Ana.passEnd` and re-proved `pass_stepW`, keeping `analyze_iff`,
+    `ska_callgraph_iff`, `cg_run`, `skaPoke_sound`; the R / `EvFrozen` and
+    `passOn_moves` routes are deleted.  `CgHalts` stays a hypothesis
+    (section 3).
 M18. `PrintId` (track I's loop theorems) rested on a misreading: `!@` takes
     its FIRST branch when the wing is MISSING (`desk/sys/hoon.hoon` line
     10132), so with `comp-verb` not defined `print-comp` is `same`
@@ -1111,12 +1239,21 @@ M20 (eighth pass, track I [281]). `runLC` / `runLCM` do NOT cover SOFT
    `OptTotalMono` / `OptTotalNary` on the classes with calls (2.c, 2.d):
    track D in the `LRL` form (`ArmsL.cons` / `.n10` FALSE as stated, [293];
    `liveRun_plain_of_specs` from `SplitSpecL`, `IntoSpecL`), track H's
-   input side.  `GuardMonoC` (2.c): a theorem on `NoSixM` from `KIMid`
-   (track D, owed: `DN` kept by runs, `+split`, `+into`) and `StraightA`
-   (track G, open: the final pass) (`guardMonoC_noSix`, tenth pass).
-5. `CgHalts` (3.1): FALSE of the current compiler (M17); the Hoon change
-   is APPROVED and being applied on track F's branch (PENDING), then
-   `EvFrozen` for the new loop (track F).
+   input side.  ELEVENTH PASS: the four are THEOREMS on D's class `PlainM`
+   / `PlainNC` (indirect calls, no `%6`, no direct call, no hint;
+   integration 6e1dff4); with direct calls and `%6` they stay D's (`IL`
+   false at `%6`, candidate `ATS6`).  `GuardMonoC` (2.c): a theorem on
+   `NoSixM` from `KIMid` (track D: `kim_split`, `kim_into` proved; the run
+   clause in the `GD` form checked, D's next step) and `ProxEnd` (the proxy
+   facts after the top `+kerf`, open: track D or G; checked on 7 + 7,920)
+   (`guardMonoC_noSixP`; `StraightA` is `straightA_of`).  `GuardNaryC`:
+   not started (the map path of `+to-straight`).
+5. `CgHalts` (3.1): M17 FIXED (dab8478, merged at [300]); on the fixed
+   loop `CgHalts` is a hypothesis: the quiet-pass lemma, `FinPushes` from
+   `FinIdents`, `FinBranch` / `KruskalBT`, the fuel of `+run` (track F).
+   NEW OPEN QUESTION (track S, [301]): `split-max` in the sweep loop
+   (`+msg-need-ord` is not monotone: the cut is applied in one branch
+   only); a real cycle would make the sweep loop's totality false.
 6. `pokeModel` (1.2): `OptLinkOn`, `JetRootLinkR`, `SccImage`, `SpRestAt`
    (1,120 cells), `PokeReachEnc`, the image of `enc` with M12: track P.
 7. `GuardFinalU` / `GuardFinalF` (2.c): CLOSED in the sixth pass
@@ -1131,8 +1268,10 @@ M20 (eighth pass, track I [281]). `runLC` / `runLCM` do NOT cover SOFT
 10. `inlAnnot` (2.e): model half PROVED (`inlAnnot_of`), two leaves:
     - `InvBS M lib` (the analysis gives `CodeOKS`: at every direct call
       with no memo key and a `+safe-fol-fol` formula part, that part
-      returns; from the sock at the call knowing the formula, M19).  OWNER
-      track F since [282] (real-compiler check of every such call first).
+      returns; from the sock at the call knowing the formula, M19).  FALSE
+      as stated (`invBS_false`: it quantifies over every `InvB` state); the
+      truthful leaf `InvBSR` (reached states) is OPEN with NO OWNER since
+      [302] (track F is on halting).
     - `InlPill lib D` (the pill half: on every `InvB` state `D.inl … b =
       some nm` gives `inlinedM (realOf long.code) calls hot single fuel b
       = some nm`).  NO OWNER (a new track N, [282]).  MAP (seventh pass):
@@ -1164,8 +1303,9 @@ M20 (eighth pass, track I [281]). `runLC` / `runLCM` do NOT cover SOFT
     (`runLCS`, `finishLFCS`, [288], [294]); the pill step on soft members is
     left.
 
-Leaves with NO owner (ninth pass: `InlPill` is track Q's since [286];
-`InvBS` is track F's and FALSE as stated, `InvBSR` its true form): 2.h `answers` (totality beyond I's
+Leaves with NO owner (eleventh pass: `InvBSR`, the true form of the false
+`InvBS`, since track F moved to halting; ninth pass: `InlPill` is track
+Q's since [286]): 2.h `answers` (totality beyond I's
 loop), `stable`, `jetRoot`, `jets`, `fast`, 3.3 `BakeEnds`, 3.4
 `RootAnswers`, 7.2 and 8 (four format leaves).  Taken in the fourth pass:
 2.c `GuardMonoX`, `GuardNaryX` (track G).  M5 is track A's since
