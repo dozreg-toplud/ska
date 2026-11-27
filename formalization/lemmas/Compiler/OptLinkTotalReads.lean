@@ -2,6 +2,8 @@ import lemmas.Compiler.OptLinkTotalN
 import lemmas.Ska.OptAliasSSAMid
 import lemmas.Ska.OptAliasSSARub
 import lemmas.Ska.RawInvBase
+import lemmas.Ska.OptAliasSSAHops
+import lemmas.Ska.OptAliasInv
 
 /-!
 # The passes keep `ReadsIn N`: the passes that keep every definition
@@ -100,6 +102,74 @@ theorem trim_reads {N : Nat} {bl : Map Blob} {topo : List Nat} {rev : Map (List 
   have hd : trimDrop uns (trimOpened bl) op = true := by simpa [tkeep] using hop
   obtain ⟨_, _, hk, -⟩ := trimDrop_true hd
   cases op <;> first | rfl | simp [traceKey] at hk
+
+/-- A read of a merged block is a read of a reachable block of the chain. -/
+theorem mt_read {bl : Map Blob} {rev : Map (List Nat)} {o : Nat} {b : Blob} {T : List Pole} {F : Termin}
+    (hm : MTail bl rev o b T F) : HoonMap.get bl o = some b → Reach bl o → ∀ i r, ReadAt (merge b T F) i r →
+      ∃ x bx i', Reach bl x ∧ HoonMap.get bl x = some bx ∧ ReadAt bx i' r := by
+  induction hm with
+  | @stop o b _ =>
+    intro hb hr i r hrd
+    have e : merge b [] b.fin = b := by simp [merge]
+    rw [e] at hrd
+    exact ⟨o, b, i, hr, hb, hrd⟩
+  | @link o b t b1 ops T F hfin _ hb1 hseg _ ih =>
+    intro hb hr i r hrd
+    have hr1 : Reach bl t.there := Reach.jump (j := t) hr hb (by rw [hfin]; simp [getJmps])
+    rcases ssk_readAt_app (A := b.body) (B := ops ++ b1.body ++ T) hrd with ⟨hi, hrd⟩ | ⟨hi, hrd⟩
+    · exact ⟨o, b, i, hr, hb, Or.inl hrd⟩
+    · rw [List.append_assoc] at hrd
+      rcases ssk_readAt_app (A := ops) (B := b1.body ++ T) hrd with ⟨hi2, hrd2⟩ | ⟨hi2, hrd2⟩
+      · obtain ⟨op, hop, hrop⟩ := ssk_read_op hrd2
+        rcases ssk_seg_ops t.args b1.par [] ops hseg op hop with h | ⟨h, -⟩
+        · cases h
+        · exact ⟨o, b, b.body.length, hr, hb, Or.inr ⟨rfl, by rw [hfin]; exact mem_jmpRegs.mpr (h r hrop)⟩⟩
+      · exact ih hb1 hr1 _ r hrd2
+
+/-- **`+remove-hops` keeps `ReadsIn N`**: a read of a merged block is a read
+of a reachable block before, and a register `bl` defines is defined before the
+read on a path (`DefFirst`), so in the merged block or one of the path after
+(`ssk_mt_first`, the lift of `ssk_hops_first`). -/
+theorem hops_reads {N fuel : Nat} {bl bl' : Map Blob} {rev : Map (List Nat)} {topo : List Nat} {ch : Bool}
+    (hn : topo.Nodup) (h0 : topo.head? = some 0) (h2 : DefFirst bl)
+    (h : removeHops fuel bl rev topo = some (ch, bl')) (hR : ReadsIn N bl) : ReadsIn N bl' := by
+  have hB := hops_blocks hn h0 h
+  have lift : ∀ L, BPath bl' L → ∀ o p, L = o :: p → ∃ q, BPath bl (o :: q) ∧
+      ∀ x ∈ q, ∀ bx, HoonMap.get bl x = some bx → ∀ r ∈ blockDefs bx,
+        ∃ y ∈ p, ∃ m, HoonMap.get bl' y = some m ∧ r ∈ blockDefs m := by
+    intro L hL
+    induction hL with
+    | start => intro o p e; cases e; exact ⟨[], BPath.start, fun x hx => by cases hx⟩
+    | @step p0 o0 m j _ hm hj ih =>
+      intro o p e
+      cases e
+      obtain ⟨q0, hq0, hD0⟩ := ih o0 p0 rfl
+      obtain ⟨b, T, F, hb, hmt, rfl⟩ := hB.back o0 m hm
+      obtain ⟨e, be, l, hbe, hF, hP, hD⟩ := ssk_mt_path hmt hb
+      have hj' : j ∈ getJmps be.fin := by rw [← hF]; exact hj
+      refine ⟨e :: (l ++ q0), BPath.step (hP q0 hq0) hbe hj', fun x hx bx hbx r hr => ?_⟩
+      have hx' : x ∈ e :: l ∨ x ∈ q0 := by
+        simp only [List.mem_cons, List.mem_append] at hx ⊢
+        rcases hx with hx | hx | hx
+        · exact Or.inl (Or.inl hx)
+        · exact Or.inl (Or.inr hx)
+        · exact Or.inr hx
+      rcases hx' with hx | hx
+      · exact ⟨o0, List.mem_cons_self, _, hm, hD x hx bx hbx r hr⟩
+      · obtain ⟨y, hy, m', hm', hr'⟩ := hD0 x hx bx hbx r hr
+        exact ⟨y, List.mem_cons_of_mem _ hy, m', hm', hr'⟩
+  refine readsIn_of_lift hR fun o m i r hr hm hrd _ => ?_
+  obtain ⟨b, T, F, hb, hmt, rfl⟩ := hB.back o m hm
+  obtain ⟨p, hp⟩ := awi_reach_bpath hr
+  obtain ⟨q, hq, hD⟩ := lift _ hp o p rfl
+  refine ⟨mt_read hmt hb (ssk_bpath_reach hq o List.mem_cons_self) i r hrd, fun hr0 => ?_⟩
+  rcases ssk_mt_first h2 hmt hb i r q hrd hr0 hq with h | h | ⟨o', ho', b', hb', hm'⟩
+  · exact bdef_allDefs hm (List.mem_append_left _ h)
+  · refine bdef_allDefs hm (List.mem_append_right _ ?_)
+    obtain ⟨op, hop, hd⟩ := List.mem_filterMap.mp h
+    exact List.mem_filterMap.mpr ⟨op, List.mem_of_mem_take hop, hd⟩
+  · obtain ⟨y, -, m', hm'', hr'⟩ := hD o' ho' b' hb' r hm'
+    exact bdef_allDefs hm'' hr'
 
 end
 
