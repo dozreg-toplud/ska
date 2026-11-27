@@ -1,5 +1,6 @@
 import lemmas.Compiler.CompMonoLinkSccs
 import lemmas.Compiler.PokeLinkGlue
+import lemmas.Compiler.PokeLinkJetsCole
 
 /-!
 # The gate's record at `PGood6`, and track P's top over `PGood6` with it (README Gaps 19 (g))
@@ -93,8 +94,7 @@ structure GateRest6Sw (fl : Flags) (st : PSt) (b : Bell) (e : VarEntry FinMap) (
     st.hot (cacheNoun st.cache)
   /-- the class of `b`'s nomm (K) -/
   dir : DirOk e.nomm = true
-  /-- the code table (C/J/P) -/
-  envFrom : EnvFrom env (codeNoun fl st.long.code) COLE
+  /-- the code table (no ring: K's link covers callees without a `call.cole` entry; `ana`: P) -/
   noRing : CodeNoRing (codeNoun fl st.long.code) COLE e.nomm
   ana : CodeAna (codeNoun fl st.long.code)
   /-- the table of callees (A, I, K) -/
@@ -107,49 +107,34 @@ structure GateRest6Sw (fl : Flags) (st : PSt) (b : Bell) (e : VarEntry FinMap) (
       st.hot NM)
     (cuRest CA) b'
 
-/-- **`cole` is a state fact**: the jets noun of a `PGood` state has a `COLE` at axis `190` of
-`[jets calls]` (`JetsMaps`). -/
-theorem coleOf_good {Cls : Straight (TreapMap mugF) → Prop} {st : PSt} (hg : PGood6 Cls st) :
-    ∃ COLE, slot? 190 (C st.jets (callsNoun st.long)) = some COLE := by
-  obtain ⟨r1, r2, r3, r4, pd, ca, bk, hj, -⟩ := hg.good5.good4.good3.good2.good.maps
-  refine ⟨ca, ?_⟩
-  rw [hj]
-  simp [nock_exec]
-
-/-- **`got` and `nomm` are state facts** at a key of the table (`codeNoun_getF`). -/
-theorem got_of_get (fl : Flags) {code : FinMap Bell (VarEntry FinMap)} {b : Bell} {e : VarEntry FinMap}
-    (he : FinMap.get code b = some e) :
-    getF mugF b.toNoun (codeNoun fl code) = some (C (A 0) (C e.nomm.toNoun (fl code b))) ∧
-      slot? 2 (C e.nomm.toNoun (fl code b)) = some e.nomm.toNoun := by
-  refine ⟨?_, by simp [nock_exec]⟩
-  have h := codeNoun_getF fl code b
-  rw [show code.get b = some e from he] at h
-  exact h
-
 /-- **`GateRest5Sw` from `GateRest6Sw`** and the state facts. -/
 theorem gateRest5Sw_of_6 {fl : Flags} {st : PSt} {b : Bell} {e : VarEntry FinMap} {NM CA COLE : Noun}
-    {env : Comp.CallEnv} {inl : Noun → Option Nomm} {D : Bell → Prop} (he : FinMap.get st.long.code b = some e)
-    (hcole : slot? 190 (C st.jets (callsNoun st.long)) = some COLE) (H : GateRest6Sw fl st b e NM CA COLE env inl D) :
-    GateRest5Sw fl st b (sccSet st.long.code b) NM CA (C e.nomm.toNoun (fl st.long.code b)) COLE env inl e.nomm D :=
-  ⟨(got_of_get fl he).1, (got_of_get fl he).2, hcole, H.csi, H.agree, H.rest, H.dec, H.top, H.dir, H.envFrom,
-    H.noRing, H.ana, H.table, H.callees⟩
+    {need : Bell → Option SkaModel.NeedOrd} {sure : Bell → SkaModel.NeedOrd} {sof : Nomm → Nomm → Nomm → Bell → SkaModel.NeedOrd → Bool}
+    {inl : Noun → Option Nomm} {D : Bell → Prop} (he : FinMap.get st.long.code b = some e)
+    (hcole : slot? 190 (C st.jets (callsNoun st.long)) = some COLE)
+    (H : GateRest6Sw fl st b e NM CA COLE (envOf (codeNoun fl st.long.code) COLE need sure sof) inl D) :
+    GateRest5Sw fl st b (sccSet st.long.code b) NM CA (C e.nomm.toNoun (fl st.long.code b)) COLE
+      (envOf (codeNoun fl st.long.code) COLE need sure sof) inl e.nomm D :=
+  ⟨(gateGot_of_key fl st b e he).1, (gateGot_of_key fl st b e he).2, hcole, H.csi, H.agree, H.rest, H.dec, H.top,
+    H.dir, envOf_from _ _ need sure sof, H.noRing, H.ana, H.table, H.callees⟩
 
 /-- The record asked at every `PGood6` state, key, entry and `COLE`. -/
 def GateRest6All (fl : Flags) (Cls : Straight (TreapMap mugF) → Prop) : Prop :=
   ∀ st b e COLE, PGood6 Cls st → FinMap.get st.long.code b = some e →
     slot? 190 (C st.jets (callsNoun st.long)) = some COLE →
-    ∃ (NM CA : Noun) (envK : Comp.CallEnv) (inl : Noun → Option Nomm) (D : Bell → Prop),
-      GateRest6Sw fl st b e NM CA COLE envK inl D
+    ∃ (NM CA : Noun) (need : Bell → Option SkaModel.NeedOrd) (sure : Bell → SkaModel.NeedOrd)
+      (sof : Nomm → Nomm → Nomm → Bell → SkaModel.NeedOrd → Bool) (inl : Noun → Option Nomm) (D : Bell → Prop),
+      GateRest6Sw fl st b e NM CA COLE (envOf (codeNoun fl st.long.code) COLE need sure sof) inl D
 
 /-- **The gate `UnaryGateAtS` from the record** at a key of a `PGood6` state. -/
 theorem unaryGateAtS_of_6 {fl : Flags} {Cls : Straight (TreapMap mugF) → Prop} (hGR : GateRest6All fl Cls)
     {st : PSt} {b : Bell} {e : VarEntry FinMap} (hg : PGood6 Cls st) (he : FinMap.get st.long.code b = some e) :
     ∃ (NM CA V COLE : Noun) (envK : Comp.CallEnv) (inl : Noun → Option Nomm) (ht : Noun → Nat) (D : Bell → Prop),
       UnaryGateAtS fl st b (sccSet st.long.code b) NM CA V COLE (sccsNoun st.cache.sccs) envK inl e.nomm ht D := by
-  obtain ⟨COLE, hcole⟩ := coleOf_good hg
-  obtain ⟨NM, CA, envK, inl, D, H⟩ := hGR st b e COLE hg he hcole
+  obtain ⟨-, -, -, -, -, COLE, -, -, -, hcole⟩ := gateCole_of_good hg
+  obtain ⟨NM, CA, need, sure, sof, inl, D, H⟩ := hGR st b e COLE hg he hcole
   obtain ⟨ht, H'⟩ := unaryGateAtS_of_good5 hg.good5 (gateRest5_of_Sw hg.good5 (gateRest5Sw_of_6 he hcole H))
-  exact ⟨NM, CA, _, COLE, envK, inl, ht, D, H'⟩
+  exact ⟨NM, CA, _, COLE, _, inl, ht, D, H'⟩
 
 /-- **`MonoLinkGood6K` from the record.** -/
 theorem monoLinkGood6K_of_gate (fl : Flags) (Ar : Arms FinMap (TreapMap mugF) Noun Noun (Noun × Noun))
@@ -518,6 +503,25 @@ theorem pokeModel_fullReachP6U (Ar : Arms FinMap (TreapMap mugF) Noun Noun (Noun
   pokeModel_fullReachP6K flagsOf Ar env hhe hth hsoft hrf lib hA hJA hOA hSA
     (spRestGood6_of_leaves Ar OptTotal env hA hF hreg hL) (monoLinkGood6K_of_gate flagsOf Ar OptTotal hUA hGR)
     hJ hJC hU (unaryCacheKeeps6_of_gate hUA hGR hRK) (unarySccsIs6_of_gate hUA hGR) hX
+
+/-- **THE TOP at track P's concrete route: `pokeModel_fullReachP9` with track K's record**:
+`pokeModel_fullReachP6U` at `jetsOfP`, `newOfP`, `regOfP`, the fuel `anaFuel env regOfP`
+(P's `fuelOK_anaFuel`, `regOfP_shape`, `jetsOfGood_P`, `jetsOfCole6_P`). -/
+theorem pokeModel_fullReachP9U (Ar : Arms FinMap (TreapMap mugF) Noun Noun (Noun × Noun))
+    (env : Env Noun) (hhe : env.he = heSock) (hth : env.threshold = 32)
+    (hsoft : env.softSpot = softSpotF) (hrf : env.registerFast = registerFastP) (lib : Lib)
+    {jet : Noun → Noun → (Bell → Option Datum) → Noun → Bell → Bool} {fold frozen : Bool}
+    {bf : BEnv FinMap → Nat}
+    (hA : Ar.skaPoke = anaArmP env jet fold frozen (anaFuel env regOfP) bf regOfP jetsOfP newOfP)
+    (hJA : Ar.jetRoot = jetRootP) (hOA : Ar.optimize = optimizeP) (hSA : Ar.sccOf = sccOfP)
+    (hUA : Ar.compileUnary = compileUnaryP flagsOf)
+    (hL : SpLeavesGood OptTotal env jet fold frozen bf jetsOfP newOfP)
+    (hGR : GateRest6All flagsOf OptTotal) (hRK : UnaryRestKeys6 flagsOf OptTotal)
+    (hU : UnaryKeeps Ar OptTotal) (hX : OtherKeeps6 flagsOf OptTotal) :
+    ∀ cr, CorIn cr → ∀ s f, pokeN cr (Ovum.full s f).toNoun =
+      (liftPoke (enc flagsOf) (pokeS Ar) cr (Ovum.full s f)).map fun r => C r.1.toNoun r.2 :=
+  pokeModel_fullReachP6U Ar env hhe hth hsoft hrf lib hA hJA hOA hSA hUA (fuelOK_anaFuel env regOfP) regOfP_shape hL
+    hGR hRK jetsOfGood_P jetsOfCole6_P hU hX
 
 end Compiler
 end Formalization
