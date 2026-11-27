@@ -10,6 +10,8 @@ import lemmas.Compiler.CompMonoLinkTop5
 import lemmas.Compiler.CompMonoLinkSccs
 import lemmas.Compiler.CompSccOfSoftSim
 import lemmas.Compiler.CompRunSoftRes
+import lemmas.Compiler.CompMonoLinkTop6
+import lemmas.Compiler.CompSccOfSweepMiss
 
 /-! The axioms of the link of `+compiled-mono` and of the run at `mono` `|` (README Gaps 19 (g)).
 `CompSccOfAny`, `PokeLinkGood` and track I's `CompSccLoop*` import together since the renames of
@@ -127,3 +129,16 @@ that one's imports light. -/
 #print axioms Formalization.Compiler.memRunS_dir
 #print axioms Formalization.Compiler.res_softFree
 #print axioms Formalization.Compiler.softChainG_ginv
+#print axioms Formalization.Compiler.pokeModel_fullReachP9U
+#print axioms Formalization.Compiler.pokeModel_fullReachP6U
+#print axioms Formalization.Compiler.pokeModel_fullReachP6K
+#print axioms Formalization.Compiler.good6_full_stepK
+#print axioms Formalization.Compiler.pokeModel_fullGood6K
+#print axioms Formalization.Compiler.unarySccsIs6_of_gate
+#print axioms Formalization.Compiler.unaryCacheKeeps6_of_gate
+#print axioms Formalization.Compiler.cacheGood_of_gate
+#print axioms Formalization.Compiler.monoLinkGood6K_of_gate
+#print axioms Formalization.Compiler.gateRest5Sw_of_6
+#print axioms Formalization.Compiler.mid_key
+#print axioms Formalization.Compiler.sweepMiss_keeps
+#print axioms Formalization.Compiler.memSweepCall_of_KDM
