@@ -1108,6 +1108,19 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/RawInvCLTen.lean` | **Finding: `ArmsL.n10` and `ArmsL.cons` are false** (`IL` does not ask `LabUniq` of the goal; under `goalDup` 144 of the 2,856 top runs fail, among them `[10 [2 [0 1]] [0 1]]` while `[0 1]` meets `LR`) (README Gaps 14 (b)): **`LRL`** (`LR` with `LG` of the goal), `lrl_of_lr`, `IntoSpecL` (the spec of `+into`, checked at every into of `PlainN`: 0 failures, not proved), `il_addKillsOf`, `il_carry`, `il_glueL`, `gfl_of_il`, **`ten_tail`**, **`liveRun_n10L`**, `armsL_n10L` (from `IntoSpecL`). |
 | `Ska/RawInvCLConsArm.lean` | The cons arm (README Gaps 14 (b)): the same finding for the cons (`[[[2 [0 1] [0 1]] [0 1]] [0 1]]`), `LiveRunL`, `lrl_iff`, `LR.toL`, `SplitSpecL` (the spec of `+split`, checked at every split of `PlainN`: 0 failures, not proved), `lreg_mem`, `il_glueT`, `il_killsOf`, **`cons_tail`**, `liveRun_cons_pick`, `liveRun_cons_next`, **`liveRun_consL`** (from `SplitSpecL`). |
 | `Ska/RawInvCLRunL.lean` | **The induction restated** (README Gaps 14 (b)): `ArmsLL` (fields `cons`, `n10` in the `LRL` form), the `L` versions `liveRun_n3L`, `liveRun_n4L`, `five_tailL`, `liveRun_n5L`, `liveRun_n2L`, `liveRun_n7L` (`LG` of the middle goal by `labRun_plain`), **`liveRun_plainOfL`**, `liveRun_plain_topOfL`, `armsLL_of`, **`liveRun_plain_of_specs`** (`LRL` on all of `PlainN` from `SplitSpecL` and `IntoSpecL`). |
+| `Ska/RawInvCLSplitSpec.lean` | **`splitSpecL`** (README Gaps 14 (b)): `SpsI` (the walk invariant of a split: ops only in front, reading first what a half kills there, defining only input registers at their label, the count of the halves' registers), `spsLoop` mutual with `spsForks`, `spsBonds`, `sps_prune`, `sps_il`, `sps_apart`, `sps_live`. |
+| `Ska/RawInvCLIntoSpec.lean` | **`intoSpecL`** (README Gaps 14 (b)): `its_sure` (`ItsSure`, one entry of `+into-sure`), `ItsPre`, `ItsW` (the walk invariant), `its_app`, `its_weak`, the pruning facts `its_prune*`, `its_loop` mutual with `its_forks`, `its_bonds`, `its_liveK`. |
+| `Ska/RawInvCLTopU.lean` | The whole-subject pass on `PlainN` (README Gaps 14 (b)): `plainN_noDirect`, `SAB` (single assignment, no trace op, jump arguments defined in their own block), `TopSAU`, the renaming facts `tu_*`, **`optIn_finishLUC_of`**, **`readsIn_finishLUC_of`**, `optIn_finishLUCM_of`, `readsIn_finishLUCM_of` (from `SplitSpecL`, `IntoSpecL`, `TopSAU`). |
+| `Ska/RawInvCLTopN.lean` | The n-ary pass on `PlainN` (README Gaps 14 (b)): `TopSAR`, `tn_sip` (`IL` and `SAB` give `SIP`), `tn_step` (`+coerce-lazy` with `CoD`), **`optIn_finishLFC_of`**, **`readsIn_finishLFC_of`** (nothing baked). |
+| `Ska/RawInvCLCheckSA.lean` | `TopSAU`, `TopSAR` checked (`chkSA`): 2,856 of the `PlainN` nomms of `enumCX` hold, 0 fail. |
+| `Ska/RawInvCLSABase.lean` | **`liveRun_plain`** (`LRL` on all of `PlainN`, no hypothesis), the statement `KerfSAB`. |
+| `Ska/RawInvCLSAKerf.lean` | **`kerfSAB`** (`+kerf` keeps `SAB` under `IL`): `ksa_prepend`, `ksa_emit`, `ksa_gate`, `ksa_walk`. |
+| `Ska/RawInvCLSARunBase.lean`, `Ska/RawInvCLSARunSteps.lean` | The definition count (README Gaps 14 (b)): `sarR` (a tree's registers with multiplicity), `SCR` (definitions after plus copies in the result at most definitions before plus copies in the input plus one per fresh register), `sc_bind` and the combinators, `sc_walkLazy`, the emitting steps `sc_pastL`, `sc_forl`, `sc_doneBlocks`, `sc_simpleNextL`, `sc_bombL`, `sar_fromL`, `sar_mede`. |
+| `Ska/RawInvCLSARun.lean` | `HC`, **`sarRun_plainOf`** (the count on every run of `runLC` on `PlainN`), `sar_sab` (`SAB` from at most one definition per register), `SarSteps`, `SarStepsW` (the five walk counts), `topSAR_plain_of`, `topSAU_plain_of`, `topSAR_plainW`, `topSAU_plainW`. |
+| `Ska/RawInvCLSACountSplit.lean`, `Ska/RawInvCLSACountInto.lean`, `Ska/RawInvCLSACountK.lean`, `Ska/RawInvCLSACountCopy.lean` | The five counts of `SarStepsW`: **`scsp_split`** (`scspLoop`), **`scit_into`** (`scit_loop`, `scit_loopL`), **`sckf_kerf`** (`sckf_loop`, `sckf_gate`), **`sccl_collapse`** (`sccl_root`: the root gate defines nothing of `r`), **`sccp_copy`** (`sccpR`, `sccp_copyLazyL` with `LabUniq`). |
+| `Ska/RawInvCLLeaves.lean` | **Track G's four leaves on the class with indirect calls and no `%6`** (README Gaps 14 (b)): `sarStepsW`, **`topSAR_plain`**, **`topSAU_plain`**, `PlainM`, `PlainNC`, **`optInMono_plain`**, **`readsInMono_plain`**, **`optInNary_plain`**, **`readsInNary_plain`** (the exact forms `OptInMono`, `ReadsInMono`, `OptInNary`, `ReadsInNary` of `Glue/MonoCalls.lean`, `Glue/GuardCalls.lean`). |
+| `Ska/RawInvCLKIMid.lean` | Toward track G's `KIMid` (README Gaps 14 (b)): `kimLz` (the constructor of G's `LzS`), `kimDN`, **`kim_split`**, **`kim_into`** (no hypothesis), `kim_run_plainIL`, `kim_runM_plainIL` (the run clause on `PlainN` from `IL` and `LG` of the goal). |
+| `Ska/RawInvCLCheckSix.lean` | `LRL` at `%6` checked (README Gaps 14 (b)): `csxRun` (`runLC` with every sub-run checked, by `tools/gen/csxrun.py`); the down clause of `ATS` and `prepOld` fail at `+fork-need` and `insertHop` (witnesses `csxW1`, `csxW2`), the candidate `ATS6` (down or hop, `Acyclic`) with `PrepRedir` holds. |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `Glue/RawOptIn.lean` | Track G (glue, README Gaps 22): `CompPieces` of `Ska/CompHypOf.lean` restated with track D's `OptIn` (`RawOptIn`) and the pill's passes at fuels per reference form (`OptRef`) in place of `rawDInv`, `optEq`, `optAlias`, `optSSA` (`RefSide`, `CompRestO`, `CompPiecesO`); `keeps_of_optIn`, `contract_of_piecesO`, `compHyp_of_piecesO` (to `CompHyp`, the hypothesis of `gap_of_comp`); on `FragX`: `rawMono_fragX`, `rawNary_fragX`, `rawOptIn_fragX`, `compHyp_of_fragX` (from `CompRestO` alone), `optRef_fragX` (from `optimize_total_finishLUX` / `-LFX`, given `A.optimize` = the pill's and `Straight.toNoun` injective); `fullAnswers_of_cg` (`FullAnswers` of the model of `+poke` from `CgHalts`, `MemoNoCallees` under `InvB`, `BakeEnds`, `RootAnswers`); `RawMonoM` (`RawMono` against `finishLUCM`, the compile with direct calls), `rawMonoM_of` (from `RawMono` on `noDirect` classes), `rawMonoM_fragX`. |
 | `Glue/MonoCalls.lean` | Track G (Gaps 22 (b)): mismatch M3 closed.  `MonoClass`, `NaryClass` (classes that see `env`, `N`, the bell), `RawMonoD` (against `finishLUCM`), `RawNaryD`, `RefSideM`, `CompRestM`, `CompPiecesM`, `finishLUCM_this`, `contract_of_piecesM`, `compHyp_of_piecesM`, `compRestM_of_O`; `noDirect_NCG`, `noDirect_fragUFG`, `six0_noDirect`; `MonoCalls` (`NCG`, `CallTreeDB`, `CallTreeAB`, `TopTreeB`, `Six0B`), `NaryCalls` (`FragUN`, `CallTreeAN`, `CallTreeDNB`), `rawMonoD_calls`, `rawNaryD_calls`; leaves `OptInMono`, `OptInNary` (`rawOptIn_of`, proved on `FragX`), `EntryMono`, `EntryNary` (`rawEntry_of`), `OptTotalMono`, `OptTotalNary` (`optRef_of_total`, proved on `FragX`); `compHyp_of_calls`; `straight_toNoun_inj`, `optRef_fragX'`. |
@@ -3982,6 +3995,32 @@ import only its theorems.  So:
    `SplitSpecL` and `IntoSpecL`, the `IL`/`LiveC` specs of `+split` and
    `+into`, both checked at every split and into of `PlainN` (0 failures),
    not proved.  `ArmsL`, `LR` and `liveRun_plainOf` are unchanged.
+
+   **`OptIn` with indirect calls, 2026-11-27, nineteenth session
+   (`RawInvCLSplitSpec.lean` .. `RawInvCLLeaves.lean`).**  `SplitSpecL`
+   and `IntoSpecL` are proved (**`splitSpecL`**, **`intoSpecL`**), so
+   **`liveRun_plain`** gives `LRL` on all of `PlainN` with no hypothesis.
+   The final passes (`+kerf` and `+to-straight` for the whole subject,
+   `+need-ord-alloc-regs`, `+coerce-lazy`, `+to-straight` for the n-ary
+   entry) need one more run-level fact, single assignment of the raw blocks
+   (`SAB`: every register defined at most once in the map, no trace op,
+   jump arguments defined in their own block), checked first on all of
+   `PlainN` and proved by a definition count that needs no `IL`
+   (`SCR`, `sarRun_plainOf`, the five walk counts of `SarStepsW`; the
+   count fails under `goalDup` at `+copy`, so `+copy` asks `LabUniq`).
+   **Track G's four leaves are theorems on `PlainN`**:
+   `optInMono_plain`, `readsInMono_plain` (class `PlainM`),
+   `optInNary_plain`, `readsInNary_plain` (class `PlainNC`, nothing baked).
+   Not covered: the direct call (`+mono-try-call`, the `%clq` split),
+   hints, `%6`.  At `%6` (`RawInvCLCheckSix.lean`, checked on 183,638
+   runs) `IL` is false as stated: `+fork-need` emits blocks that hop UP to
+   the join, and `+fork`'s `insertHop` rewrites an old entry block (so
+   `prepOld`, `KP` and the label rank fail; reached from the top with a
+   call, `csxW2`); the candidate `ATS6` (down or a hop, `Acyclic`) with
+   `PrepRedir` holds everywhere.  For track G's `KIMid`, `kim_split` and
+   `kim_into` are its clauses `split`, `into`; its clause `run` is proved on
+   `PlainN` from `IL ∧ LG` of the goal (`kim_runM_plainIL`), and with `GD`
+   alone only checked.
 
    **Left, in this order.**  (a) `%6` (`FragX`; `Frag6` is done; see the
    paragraph above for what holds and what is proved).  Two obstacles, both met
