@@ -114,6 +114,9 @@ def QK (env : CallEnv) (R : GenRest → Prop) (P : Noun → Prop) (S : Noun) (x 
   AgreeIP env (fun k => P k ∨ k ∈ tapList S) ⟨CA, x.soft, x.sofs⟩ ∧ Ext x ⟨CA, x.soft, x.sofs⟩ ∧
     R ⟨CA, x.soft, x.sofs⟩ ∧ ∃ NR REST, CA = C NR REST ∧ ∀ k ∈ tapList S, getF mugF k NR = some (A 0)
 
+/-- The fuel at which `compileSccIn_total` makes the model return under `Ranked`. -/
+def fuelR (c : Cfg Noun NeedOrd) (r : Ranked c) : Nat := 4 * c.scc.length + c.order.length * (r.H + 1) + 2
+
 /-- **What track I's loop on the callee's SCC `S` takes**, at the miss rest `x` whose cache is
 `[NR CR]`: a configuration that is the pill's (`CfgOf`), `Ranked`, the member gates (`MemGate` on
 `%may`, `%done`, and `%must` for every `TOP` of the `%may` needs) for `LoopR` with `bs` the
@@ -121,7 +124,7 @@ members and `Q := QK env R P S x`, the print (`PrintId`), and the agreement of `
 model's final state at the members (true by definition of an `env` read from the model). -/
 def SccLoopAt (env : CallEnv) (R : GenRest → Prop) (P : Noun → Prop) (S CODE JETS CALLS JH : Noun)
     (x : GenRest) (NR CR : Noun) : Prop :=
-  ∃ (c : Cfg Noun NeedOrd) (_ : Ranked c) (outC : Noun → List Noun) (nout : Noun → NeedOrd),
+  ∃ (c : Cfg Noun NeedOrd) (r : Ranked c) (outC : Noun → List Noun) (nout : Noun → NeedOrd),
     CfgOf c S (kidsOf S (C CODE (C JETS CALLS)) JH (C NR CR)) ∧
     MemGate c (LoopR c.scc outC nout (QK env R P S x))
       (csiCtx (A 1) (kidsOf S (C CODE (C JETS CALLS)) JH (C NR CR)) S (C CODE (C JETS CALLS)) JH (C NR CR))
@@ -135,7 +138,7 @@ def SccLoopAt (env : CallEnv) (R : GenRest → Prop) (P : Noun → Prop) (S CODE
         (topOf c (maySweep c (St.empty : St Noun NeedOrd))) TOP Mode.must (A 0x7473756d)) ∧
     (∀ TOP MAY, PrintId ⟨A 1, kidsOf S (C CODE (C JETS CALLS)) JH (C NR CR), S, C CODE (C JETS CALLS), JH,
       C NR CR, TOP, MAY, listN c.order⟩) ∧
-    ∀ fuel (s : St Noun NeedOrd), compileSccIn c false fuel St.empty = some s → ∀ b' : Bell, b'.toNoun ∈ c.scc →
+    ∀ (s : St Noun NeedOrd), compileSccIn c false (fuelR c r) St.empty = some s → ∀ b' : Bell, b'.toNoun ∈ c.scc →
       env.need b' = s.ml b'.toNoun ∧ ∀ v, s.sure b'.toNoun = some v → env.sure b' = v
 
 /-- **`CalleeCompiled` for a callee of any SCC** (README Gaps 19 (g)): `b`'s `sccs` entry is
@@ -200,7 +203,7 @@ theorem calleeCompiled_scc {ctx CODE JETS CALLS JH SC0 : Noun} (h7 : slot? 7 ctx
   obtain ⟨hml, hsh, -, hAq, hEq, hRq, NRq, RESTq, eq, hmissq⟩ := hLR
   obtain ⟨eq1, eq2⟩ := Noun.cell.inj eq
   subst eq1 eq2
-  have henv' := henv _ s hs
+  have henv' := henv s hs
   have hssome := compileSccIn_sure_some c _ _ s hs
   -- facts of `M`
   have hmemM : ∀ k v, Get M k v → k ∈ tapList S := by
@@ -382,6 +385,49 @@ theorem calleeCompiledP_rank {env : CallEnv} {R : GenRest → Prop} (ht : Bell �
   | succ m ih =>
     intro b hb P ctx nb hg
     exact hstep b P ctx nb hg fun b' P' ctx' nb' hlt hg' => ih b' (by omega) P' ctx' nb' hg'
+
+/-! ## The poke's `env` from the model -/
+
+/-- The `sccs` entry of a bell noun. -/
+def sccOfN (SC0 k : Noun) : Option Noun :=
+  match getF mugF k SC0 with
+  | some (Noun.cell _ S) => some S
+  | _ => none
+
+/-- **The poke's `env` read from the model** (README Gaps 19 (g), step 3): for a bell whose `sccs`
+entry is `S`, the need and the sure need of the model's compile of `S` (`compileSccIn` on the
+configuration `cfg S`, at the fuel of its rank `rk S`, from no entry); for any other bell, `base`
+(the entries already in the cache: `enc` writes them from the model).  The configurations are a
+parameter: the member compiles of `cfg S` read the needs of the callees outside `S` through an
+`env` of the SCCs of smaller height, so the poke's `env` is this definition iterated over the
+heights (not done here). -/
+noncomputable def envP (base : CallEnv) (SC0 : Noun) (cfg : Noun → Cfg Noun NeedOrd) (rk : ∀ S, Ranked (cfg S)) :
+    CallEnv :=
+  { base with
+    need := fun b => match sccOfN SC0 b.toNoun with
+      | some S => match compileSccIn (cfg S) false (fuelR (cfg S) (rk S)) St.empty with
+        | some s => s.ml b.toNoun
+        | none => base.need b
+      | none => base.need b
+    sure := fun b => match sccOfN SC0 b.toNoun with
+      | some S => match compileSccIn (cfg S) false (fuelR (cfg S) (rk S)) St.empty with
+        | some s => (s.sure b.toNoun).getD (base.sure b)
+        | none => base.sure b
+      | none => base.sure b }
+
+/-- **The agreement clause of `SccLoopAt` holds for `envP` by definition**: at the configuration
+and rank `envP` uses for `S`, every member of `S` (whose `sccs` entry is `S`) reads the model's
+final need and sure need. -/
+theorem envP_agree (base : CallEnv) (SC0 S : Noun) (cfg : Noun → Cfg Noun NeedOrd) (rk : ∀ S, Ranked (cfg S))
+    (hmem : ∀ b' : Bell, b'.toNoun ∈ (cfg S).scc → getF mugF b'.toNoun SC0 = some (C (A 0) S))
+    (s : St Noun NeedOrd) (hs : compileSccIn (cfg S) false (fuelR (cfg S) (rk S)) St.empty = some s)
+    (b' : Bell) (hb : b'.toNoun ∈ (cfg S).scc) :
+    (envP base SC0 cfg rk).need b' = s.ml b'.toNoun ∧
+      ∀ v, s.sure b'.toNoun = some v → (envP base SC0 cfg rk).sure b' = v := by
+  have h1 : sccOfN SC0 b'.toNoun = some S := by simp [sccOfN, hmem b' hb]
+  refine ⟨?_, fun v hv => ?_⟩
+  · simp only [envP, h1, hs]
+  · simp only [envP, h1, hs, hv, Option.getD_some]
 
 /-! ## The gate -/
 
