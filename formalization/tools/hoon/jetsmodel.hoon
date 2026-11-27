@@ -37,6 +37,11 @@
 ::  regs' core and arms and the hot rings; %nnew: the poke's list is
 ::  (flop new.regs).
 ::
+::  %bset, %pset, %jpth, %rmap  (thirteenth session, track P): back.cole
+::  and pend are maps whose every value is a set (BackSets, PendSets of
+::  PGood7); every key of core.jets is a path; on a %f, the regs that
+::  +ska-callgraph returns have four maps and paths as the keys of core.
+::
 ::  %cdom  (eleventh session) ColeDom: every key of call.cole is a key of
 ::          code, and every member of a back.cole set is a key of code
 ::  and the sizes of code, inl, sure, nary, mono, sccs, call.cole, pend,
@@ -267,6 +272,23 @@
       |=  [r=ring bs=(set bell)]
       (levy ~(tap in bs) |=(c=bell =((~(get by call.cole.jets.lon) c) `r)))
   ==
+=/  is-path  |=(p=* ^-(? ?@(p =(0 p) &(?=(@ -.p) $(p +.p)))))
+=/  ok-bset=?
+  ?&  ~(apt by back.cole.jets.lon)
+      (levy ~(tap by back.cole.jets.lon) |=([r=ring bs=(set bell)] ~(apt in bs)))
+  ==
+=/  ok-pset=?
+  ?&  ~(apt by pend.jets.lon)
+      (levy ~(tap by pend.jets.lon) |=([p=path ss=(set sock)] ~(apt in ss)))
+  ==
+=/  ok-jpth=?  (levy ~(tap in ~(key by core.jets.lon)) |=(p=path (is-path p)))
+=/  ok-rmap=?
+  ?.  ?=(%f -.c)  &
+  =/  [g=callgraph =regs]
+    (ska-callgraph [[&+s.c ;;(^ f.c)] memo.lon0 [root core batt arms ~]:jets.lon0])
+  ?&  ~(apt by root.regs)  ~(apt by core.regs)  ~(apt by batt.regs)  ~(apt by arms.regs)
+      (levy ~(tap in ~(key by core.regs)) |=(p=path (is-path p)))
+  ==
 =/  jm=[ok-jmod=? ok-nnew=?]
   ?.  ?=(%f -.c)  [& &]
   =/  [g=callgraph =regs]
@@ -294,6 +316,7 @@
         %imap  ok-imap  %ikey  ok-ikey  %ival  ok-ival  %sccs  ok-sccs  %nary  ok-nary
         %vars  ok-vars  %ckey  ok-ckey  %mono  ok-mono  %flag  ok-flag  %scck  ok-scck  %gone  ok-gone
         %sset  ok-sset  %ccoh  ok-ccoh  %cdom  ok-cdom  %jmod  ok-jmod.jm  %nnew  ok-nnew.jm
+        %bset  ok-bset  %pset  ok-pset  %jpth  ok-jpth  %rmap  ok-rmap
         %before  sz0
         %sizes  ~(wyt by code.lon)  ~(wyt by inl.ca)  ~(wyt by sure.ca)  ~(wyt by nary.ca)
                 ~(wyt by mono.ca)  ~(wyt by sccs.ca)
