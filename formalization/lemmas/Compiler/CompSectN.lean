@@ -15,6 +15,9 @@ open Nock Pill Hoon
 
 -- BEGIN sect
 
+def scIns : Noun :=
+  (C (A 8) (C (C (A 9) (C (A 0x2fbde) (C (A 0) (A 0x1fffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 14)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (A 0)) (C (C (A 1) (C (A 5) (C (C (A 0) (A 6)) (C (A 0) (A 0x3ffbc))))) (C (A 0) (A 1))))))))) (C (A 0) (A 2))))))))
+
 def scParG : Noun :=
   (C (A 10) (C (C (A 2) (C (A 0) (A 59))) (C (A 0) (A 6))))
 
@@ -58,7 +61,7 @@ def scOt : Noun :=
   (C (A 8) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x3ffffff)))) (C (A 9) (C (A 701) (C (A 10) (C (C (A 6) (C (A 0) (A 0x7fde))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 2038))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x7ffffff)))) (C (A 9) (C (A 701) (C (A 10) (C (C (A 6) (C (A 0) (A 0xffde))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 8174))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x706f68)) (C (A 0) (A 54)))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x706f68)) (C (A 0) (A 22)))) (C (C (A 6) (C (C (A 5) (C (C (A 0) (A 111)) (C (A 0) (A 47)))) (C (C (A 0) (A 111)) (C (A 0) (A 0))))) (C (A 0) (A 0))))) (C (A 0) (A 0)))))))))
 
 def scND : Noun :=
-  (C (A 8) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0xffffff)))) (C (A 9) (C (A 687) (C (A 10) (C (C (A 6) (C (A 0) (A 0x7f7e))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 4031))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x1ffffff)))) (C (A 9) (C (A 687) (C (A 10) (C (C (A 6) (C (A 0) (A 8127))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 8126))) (C (A 0) (A 2)))))))) (C (A 8) (C scOt (C (A 8) (C (C (A 8) (C (C (A 1) (A 0)) (C (C (A 1) (C (A 8) (C (C (A 9) (C (A 0x2fbde) (C (A 0) (A 0x1fffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 14)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (A 0)) (C (C (A 1) (C (A 5) (C (C (A 0) (A 6)) (C (A 0) (A 0x3ffbc))))) (C (A 0) (A 1))))))))) (C (A 0) (A 2))))))))) (C (A 0) (A 1))))) (C (A 8) (C (C (A 1) (A 0)) (C (A 8) (C scArgs (C (A 7) (C scRep0 (C (A 7) (C scRep1 scJabs))))))))))))))))
+  (C (A 8) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0xffffff)))) (C (A 9) (C (A 687) (C (A 10) (C (C (A 6) (C (A 0) (A 0x7f7e))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 4031))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x1ffffff)))) (C (A 9) (C (A 687) (C (A 10) (C (C (A 6) (C (A 0) (A 8127))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 8126))) (C (A 0) (A 2)))))))) (C (A 8) (C scOt (C (A 8) (C (C (A 8) (C (C (A 1) (A 0)) (C (C (A 1) scIns) (C (A 0) (A 1))))) (C (A 8) (C (C (A 1) (A 0)) (C (A 8) (C scArgs (C (A 7) (C scRep0 (C (A 7) (C scRep1 scJabs))))))))))))))))
 
 def scThr : Noun :=
   (C (A 6) (C (C (A 9) (C (A 1398) (C (A 0) (A 31)))) (C (C (A 0) (A 126)) scND)))

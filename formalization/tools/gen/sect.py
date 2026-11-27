@@ -149,7 +149,11 @@ assert len(found) == 2, len(found)
 (scParG, _), (scInner, scLensB) = found
 assert scParG == C(A(10), C(A(2), A(0), A(59)), A(0), A(6))
 
-parts = [('scParG', scParG), ('scInner', scInner), ('scLensB', scLensB), ('scLB', scLB), ('scGS', scGS), ('scG0Y', scG0Y), ('scG1Y', scG1Y), ('scG0', scG0),
+# the battery of `inside-branch`
+assert sl(6, ins) == C(A(1), A(0)) and sl(28, ins) == A(1) and sl(15, ins) == C(A(0), A(1))
+scIns = sl(29, ins)
+
+parts = [('scIns', scIns), ('scParG', scParG), ('scInner', scInner), ('scLensB', scLensB), ('scLB', scLB), ('scGS', scGS), ('scG0Y', scG0Y), ('scG1Y', scG1Y), ('scG0', scG0),
          ('scG1', scG1), ('scRep0', scRep0), ('scRep1', scRep1), ('scJabs', scJabs),
          ('scArgs', scArgs), ('scOt', scOt), ('scND', scND), ('scThr', scThr), ('scTail', scTail),
          ('scB', scB), ('scBat', BAT), ('scBunt', BUNT)]

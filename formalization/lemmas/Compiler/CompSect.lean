@@ -371,5 +371,186 @@ theorem sc_jabs (hc : CompIn ctx) (acc : SectAcc (TreapMap mugF)) (INS Y2 Y3 Y4 
   unfold scJabs
   simp [nock_exec, hc, by_arm, by.arm_at, by.jab.arm_at, hS0, hS1, hS2, hj0, hj1, hj2, sc_lensB]
 
+/-! ## The pushes of the threading -/
+
+theorem dif_arm (B a c : Noun) :
+    nock (C B (C a c)) by.dif.arm = some (C by.dif.battery (C a (C B (C a c)))) := by
+  nock_open by.dif.arm; simp only [nock_exec]
+
+/-- The subject of the threading: the two block labels, the battery, the
+sample (with `region-branch` `rid :: rest`, `cond-before`, `cond-between`)
+and the door. -/
+def scT (o1b o0b : Nat) (Y6 N0 N1 : Noun) (o0 o1 rid : Nat) (rest : List Nat)
+    (cb cbw : TreapMap mugF (Nat × List Nat)) (g : Gen (TreapMap mugF)) : Noun :=
+  C (A o1b) (C (A o0b) (C Y6 (C (C N0 (C N1 (C (A o0) (C (A o1) (C (listNoun A (rid :: rest))
+    (C (HoonMap.toNoun condValNoun cb) (HoonMap.toNoun condValNoun cbw))))))) (compCore g x ctx))))
+
+/-- `inside-branch`: whether a tag holds the region's identifier. -/
+theorem sc_ins (hc : CompIn ctx) (o1b o0b : Nat) (Y6 N0 N1 : Noun) (o0 o1 rid : Nat) (rest : List Nat)
+    (cb cbw : TreapMap mugF (Nat × List Nat)) (g : Gen (TreapMap mugF)) (Z1 Z2 Z3 : Noun) (tag : List Nat) :
+    nock (C scIns (C (listNoun A tag) (C Z1 (C Z2 (C Z3 (scT (ctx := ctx) x o1b o0b Y6 N0 N1 o0 o1 rid rest cb cbw g))))))
+      scIns = some (loob (tag.any (· == rid))) := by
+  have hl := lien_gate layer2 (C (A 5) (C (C (A 0) (A 6)) (C (A 0) (A 0x3ffbc)))) (A 0)
+    (C scIns (C (listNoun A tag) (C Z1 (C Z2 (C Z3 (scT (ctx := ctx) x o1b o0b Y6 N0 N1 o0 o1 rid rest cb cbw g))))))
+    (fun n => decide (n = A rid)) (tag.map A) (fun y _ => by
+      simp only [scT, compCore]
+      generalize comp.door = Dr
+      simp [nock_exec, eqCode_atom, loob]
+      by_cases e : y = A rid <;> simp [e, eqCode, loob])
+  rw [← cd_listNoun_listN] at hl
+  have he : (tag.map A).any (fun n => decide (n = A rid)) = tag.any (· == rid) := by
+    simp only [List.any_map, Function.comp_def]
+    congr 1; funext y; by_cases e : y = rid <;> simp [e]
+  rw [he] at hl
+  simp only [scT, compCore] at hl ⊢
+  generalize comp.door = Dr at hl ⊢
+  conv => lhs; arg 2; unfold scIns
+  simp [nock_exec, hc, lien.arm_at, lien_arm, hl]
+
+theorem sectStep_blocks {rid : Nat} {yes : Bool} {made : TreapMap mugF (Nat × List Nat)}
+    {acc acc' : SectAcc (TreapMap mugF)} {k : Nat} {g g' : Gen (TreapMap mugF)}
+    (h : sectStep rid yes made acc k g = some (acc', g')) : g'.blocks = g.blocks := by
+  unfold sectStep at h
+  split at h
+  · cases h; rfl
+  · split at h
+    · cases h; rfl
+    · split at h
+      · cases h; rfl
+      · cases h; rfl
+
+theorem foldlM_sectStep_blocks {rid : Nat} {yes : Bool} {made : TreapMap mugF (Nat × List Nat)} :
+    ∀ (ks : List Nat) (acc acc' : SectAcc (TreapMap mugF)) (g g' : Gen (TreapMap mugF)),
+    (ks.foldlM (sectStep rid yes made) acc : CM (TreapMap mugF) _) g = some (acc', g') → g'.blocks = g.blocks
+  | [], acc, acc', g, g', h => by cases h; rfl
+  | k :: ks, acc, acc', g, g', h => by
+    rw [List.foldlM_cons, bind_apply] at h
+    cases e : sectStep rid yes made acc k g with
+    | none => rw [e] at h; cases h
+    | some r =>
+      rw [e, Option.bind_some] at h
+      rw [foldlM_sectStep_blocks ks r.1 acc' r.2 g' h, sectStep_blocks e]
+
+/-- **The threading of `+sect`** (`scND`, when not dropping) is `sectThread`. -/
+theorem sc_nd (hc : CompIn ctx) (o1b o0b : Nat) (Y6 N0 N1 : Noun) (o0 o1 rid : Nat) (rest : List Nat)
+    (cb cbw : TreapMap mugF (Nat × List Nat)) (g : Gen (TreapMap mugF)) :
+    nock (scT (ctx := ctx) x o1b o0b Y6 N0 N1 o0 o1 rid rest cb cbw g) scND
+      = (sectThread rid o0 o1 cb cbw g).map fun p => genNoun p.2 x := by
+  have hgc : NeedIn layer2 ∧ SomeIn layer2 ∧ GorIn mugF layer2 :=
+    ⟨need.arm_at, someIn_layer2, gorIn_morIn_layer2.1⟩
+  have hd0 := dif_by_hoonMap layer2 gorIn_morIn_layer2 condValNoun g.cond cbw
+  have hd1 := dif_by_hoonMap layer2 gorIn_morIn_layer2 condValNoun cbw cb
+  have gotN : ∀ o, HoonMap.get g.blocks o = Option.none →
+      nock (C by.got.battery (C (A o) (C by.battery (C (HoonMap.toNoun Blob.toNoun g.blocks) layer2))))
+        by.got.battery = Option.none := fun o e =>
+    got_gate_nil layer2 hgc _ _ (by rw [getF_hoonMap, e]; rfl)
+  have gotS : ∀ o b, HoonMap.get g.blocks o = some b →
+      nock (C by.got.battery (C (A o) (C by.battery (C (HoonMap.toNoun Blob.toNoun g.blocks) layer2))))
+        by.got.battery = some b.toNoun := fun o b e =>
+    got_gate layer2 hgc _ _ _ (by rw [getF_hoonMap, e]; rfl)
+  unfold sectThread
+  cases e0 : HoonMap.get g.blocks o0 with
+  | none =>
+    have h := gotN o0 e0
+    simp only [scT, compCore, genNoun] at h ⊢
+    generalize comp.door = Dr
+    unfold scND scOt
+    simp [nock_exec, hc, by_arm, by.arm_at, by.dif.arm_at, dif_arm, hd0, hd1, by.got.arm_at, got_arm, h]
+  | some b0 =>
+  have g0 := gotS o0 b0 e0
+  cases e1 : HoonMap.get g.blocks o1 with
+  | none =>
+    have h := gotN o1 e1
+    simp only [scT, compCore, genNoun] at h g0 ⊢
+    generalize comp.door = Dr
+    unfold scND scOt
+    simp [nock_exec, hc, by_arm, by.arm_at, by.dif.arm_at, dif_arm, hd0, hd1, by.got.arm_at, got_arm, h, g0]
+  | some b1 =>
+  have g1 := gotS o1 b1 e1
+  obtain ⟨p0, bd0, f0⟩ := b0
+  obtain ⟨p1, bd1, f1⟩ := b1
+  cases f0
+  case hop t0 =>
+    cases f1
+    case hop t1 =>
+      obtain ⟨a0, th0⟩ := t0
+      obtain ⟨a1, th1⟩ := t1
+      by_cases ht : th0 = th1
+      · subst ht
+        cases et : HoonMap.get g.blocks th0 with
+        | none =>
+          have h := gotN th0 et
+          simp only [scT, compCore, genNoun] at g0 g1 h ⊢
+          generalize comp.door = Dr
+          unfold scND scOt scArgs
+          simp [nock_exec, hc, by_arm, by.arm_at, by.dif.arm_at, dif_arm, hd0, hd1, by.got.arm_at, got_arm, g0, g1,
+            h, Blob.toNoun, Termin.toNoun, Jmp.toNoun, Tag.hop, et]
+        | some bt =>
+        have gt := gotS th0 bt et
+        have hins := fun tag => sc_ins x hc o1b o0b Y6 N0 N1 o0 o1 rid rest cb cbw g (A th0)
+          (HoonMap.toNoun condValNoun (difM cbw cb)) (HoonMap.toNoun condValNoun (difM g.cond cbw)) tag
+        have hemp : HoonMap.toNoun A (HoonMap.empty : TreapMap mugF Nat) = A 0 := rfl
+        have hrep0 := sc_rep0 x hc rid scIns (A 0) _ (A th0) (HoonMap.toNoun condValNoun (difM cbw cb)) (A o1b)
+          (A o0b) Y6 (C N0 (C N1 (C (A o0) (C (A o1) (C (listNoun A (rid :: rest)) (C (HoonMap.toNoun condValNoun cb) (HoonMap.toNoun condValNoun cbw))))))) hins (difM g.cond cbw) ((HoonMap.empty, a0, a1, bt.par) : SectAcc (TreapMap mugF)) g
+        cases e2 : ((HoonMapKeys.keys (difM g.cond cbw)).foldlM (sectStep rid true (difM g.cond cbw))
+            ((HoonMap.empty, a0, a1, bt.par) : SectAcc (TreapMap mugF)) : CM (TreapMap mugF) _) g with
+        | none =>
+          rw [e2] at hrep0
+          simp only [scDot, scArgsN, scT, compCore, genNoun, Option.map_none, hemp] at g0 g1 gt hrep0 ⊢
+          generalize comp.door = Dr at hrep0 ⊢
+          unfold scND scOt scArgs
+          simp [nock_exec, hc, by_arm, by.arm_at, by.dif.arm_at, dif_arm, hd0, hd1, by.got.arm_at, got_arm, g0, g1,
+            gt, Blob.toNoun, Termin.toNoun, Jmp.toNoun, Tag.hop, et, bind_apply, e2, hrep0]
+        | some r1 =>
+        obtain ⟨acc1, g1'⟩ := r1
+        have hb1 := foldlM_sectStep_blocks _ _ _ _ _ e2
+        rw [e2] at hrep0
+        have hrep1 := sc_rep1 x hc rid scIns (A 0) _ (A th0) (HoonMap.toNoun condValNoun (difM g.cond cbw)) (A o1b)
+          (A o0b) Y6 (C N0 (C N1 (C (A o0) (C (A o1) (C (listNoun A (rid :: rest)) (C (HoonMap.toNoun condValNoun cb) (HoonMap.toNoun condValNoun cbw))))))) hins (difM cbw cb) acc1 g1'
+        cases e3 : ((HoonMapKeys.keys (difM cbw cb)).foldlM (sectStep rid false (difM cbw cb)) acc1
+            : CM (TreapMap mugF) _) g1' with
+        | none =>
+          rw [e3] at hrep1
+          simp only [scDot, scArgsN, scT, compCore, genNoun, Option.map_none, Option.map_some, hemp] at g0 g1 gt hrep0 hrep1 ⊢
+          generalize comp.door = Dr at hrep0 hrep1 ⊢
+          unfold scND scOt scArgs
+          simp [nock_exec, hc, by_arm, by.arm_at, by.dif.arm_at, dif_arm, hd0, hd1, by.got.arm_at, got_arm, g0, g1,
+            gt, Blob.toNoun, Termin.toNoun, Jmp.toNoun, Tag.hop, et, bind_apply, e2, e3, hrep0, hrep1]
+        | some r2 =>
+        obtain ⟨acc2, g2⟩ := r2
+        have hb2 := foldlM_sectStep_blocks _ _ _ _ _ e3
+        rw [e3] at hrep1
+        have hbl : g2.blocks = g.blocks := hb2.trans hb1
+        have hj := sc_jabs x hc acc2 (C scIns (C (A 0) (C (A th0) (C (HoonMap.toNoun condValNoun (difM cbw cb))
+          (C (HoonMap.toNoun condValNoun (difM g.cond cbw))
+            (scT (ctx := ctx) x o1b o0b Y6 N0 N1 o0 o1 rid rest cb cbw g))))))
+          (HoonMap.toNoun condValNoun (difM cbw cb)) (HoonMap.toNoun condValNoun (difM g.cond cbw)) (A o1b) (A o0b) Y6
+          N0 N1 (C (listNoun A (rid :: rest)) (C (HoonMap.toNoun condValNoun cb) (HoonMap.toNoun condValNoun cbw)))
+          th0 o0 o1 g2 bt _ _ ⟨a0, th0⟩ ⟨a1, th0⟩ (by rw [hbl]; exact et) (by rw [hbl]; exact e0) rfl
+          (by rw [hbl]; exact e1) rfl
+        simp only [scDot, scArgsN, scT, compCore, genNoun, Option.map_some, hemp] at g0 g1 gt hrep0 hrep1 hj ⊢
+        generalize comp.door = Dr at hrep0 hrep1 hj ⊢
+        unfold scND scOt scArgs
+        simp [nock_exec, hc, by_arm, by.arm_at, by.dif.arm_at, dif_arm, hd0, hd1, by.got.arm_at, got_arm, g0, g1,
+          gt, Blob.toNoun, Termin.toNoun, Jmp.toNoun, Tag.hop, et, bind_apply, e2, e3, hrep0, hrep1, hj]
+      · have ht' : ¬ th1 = th0 := fun e => ht e.symm
+        simp only [scT, compCore, genNoun] at g0 g1 ⊢
+        generalize comp.door = Dr
+        unfold scND scOt
+        simp [nock_exec, hc, by_arm, by.arm_at, by.dif.arm_at, dif_arm, hd0, hd1, by.got.arm_at, got_arm, g0, g1,
+          Blob.toNoun, Termin.toNoun, Jmp.toNoun, Tag.hop, ht, ht']
+    all_goals
+      simp only [scT, compCore, genNoun] at g0 g1 ⊢
+      generalize comp.door = Dr
+      unfold scND scOt
+      simp [nock_exec, hc, by_arm, by.arm_at, by.dif.arm_at, dif_arm, hd0, hd1, by.got.arm_at, got_arm, g0, g1,
+        Blob.toNoun, Termin.toNoun, Jmp.toNoun, Tag.clq, Tag.eqq, Tag.brn, Tag.brz, Tag.hop, Tag.jmp, Tag.jmf, Tag.jsp, Tag.jsf, Tag.don, Tag.bom, Tag.lti]
+  all_goals
+    simp only [scT, compCore, genNoun] at g0 g1 ⊢
+    generalize comp.door = Dr
+    unfold scND scOt
+    simp [nock_exec, hc, by_arm, by.arm_at, by.dif.arm_at, dif_arm, hd0, hd1, by.got.arm_at, got_arm, g0, g1,
+      Blob.toNoun, Termin.toNoun, Jmp.toNoun, Tag.clq, Tag.eqq, Tag.brn, Tag.brz, Tag.hop, Tag.jmp, Tag.jmf, Tag.jsp, Tag.jsf, Tag.don, Tag.bom, Tag.lti]
+
 end Compiler
 end Formalization
