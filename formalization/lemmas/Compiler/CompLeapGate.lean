@@ -26,7 +26,8 @@ departure.
 `lpx_gate`: `+leap` is `leap` on every lazy need whose looks are not `0` and
 nomms with no `%10` at axis `0`, in every door core whose context has `K` at
 `7`.  `lp6_leap` states it on `lp6Bat` and `compCore`, the form of `hLp` in
-`comp_run_n6_k`; `lp6_leap_none` is that `hLp`, from `hlp`.
+`comp_run_n6_k`; `lp6_leap_none` is that `hLp`, from `hlp`.  `leap_lall`:
+`rest` and every `by` keep `LAll CrLok`.
 -/
 
 namespace Formalization
@@ -157,6 +158,53 @@ theorem lp6_leap_none (h7 : slot? 7 ctx = some compK) {laz : Lazy CSet} {q r : N
     nock (C lp6Bat (C (C laz.toNoun (C q.toNoun r.toNoun)) (compCore g x ctx))) lp6Bat = some (A 0) := by
   intro x _
   rw [lp6_leap h7 laz q r hl hq hr g x, hlp]; rfl
+
+/-! ## The looks of what `+leap` returns -/
+
+/-- The loop of `+leap` keeps `LAll CrLok`, of `rest` and of every `by`. -/
+theorem leapLoop_lall (sur : Sure CSet) (hsur : CrLok sur) :
+    ∀ (pas : List (Nat × Nat)) (lab : Lazy CSet) (bys : List (Lazy CSet)) (res : Lazy CSet × List (Lazy CSet)),
+    PosL pas → LAll CrLok lab → (∀ b ∈ bys, LAll CrLok b) → leapLoop sur pas lab bys = some (some res) →
+    LAll CrLok res.1 ∧ ∀ b ∈ res.2, LAll CrLok b
+  | [], lab, bys, res, _, hl, hb, h => by
+    obtain ⟨ls, lf, lb⟩ := lab
+    simp only [leapLoop] at h
+    split at h
+    · cases h
+    · simp only [Option.some.injEq] at h
+      subst h
+      exact ⟨⟨hsur, hl.2.1, hl.2.2⟩, hb⟩
+  | (p, s) :: rest, lab, bys, res, hpos, hl, hb, h => by
+    have hp : p ≠ 0 := (hpos (p, s) List.mem_cons_self).1
+    have hs : s ≠ 0 := (hpos (p, s) List.mem_cons_self).2
+    have hrest : PosL rest := fun x hx => hpos x (List.mem_cons_of_mem _ hx)
+    simp only [leapLoop] at h
+    cases e : lazyLeap p s lab with
+    | none => simp [e] at h
+    | some br =>
+      obtain ⟨b, r⟩ := br
+      obtain ⟨h1, h2⟩ := lzl_lall hp hs hl e
+      simp only [e, Option.bind_some] at h
+      split at h
+      · exact leapLoop_lall sur hsur rest lab bys res hrest hl hb h
+      · refine leapLoop_lall sur hsur rest r (b :: bys) res hrest h2 ?_ h
+        intro y hy
+        rcases List.mem_cons.1 hy with rfl | hy
+        · exact h1
+        · exact hb y hy
+
+/-- **What `+leap` returns** looks at no axis `0`: `rest` and every `by`. -/
+theorem leap_lall {laz : Lazy CSet} {q r : Nomm} {res : Lazy CSet × List (Lazy CSet)} (hl : LAll CrLok laz)
+    (hq : Bake.NoAx0 q) (hr : Bake.NoAx0 r) (h : leap laz q r = some (some res)) :
+    LAll CrLok res.1 ∧ ∀ b ∈ res.2, LAll CrLok b := by
+  obtain ⟨pas, hpb, hpos, -⟩ := pbt_gate passIn_compK q r hq hr
+  obtain ⟨sur, fk, bd⟩ := laz
+  simp only [leap] at h
+  split at h
+  · cases h
+  · rw [hpb, Option.bind_some] at h
+    exact leapLoop_lall sur hl.1 pas (Lazy.mk Sure.bunt fk bd) [] res hpos ⟨fun y hy => absurd hy (HoonSet.mem_empty y), hl.2.1, hl.2.2⟩
+      (fun _ hb => absurd hb List.not_mem_nil) h
 
 end Compiler
 end Formalization

@@ -24,3 +24,4 @@ open Formalization.Compiler
 #print axioms lpx_gate
 #print axioms lp6_leap
 #print axioms lp6_leap_none
+#print axioms leap_lall
