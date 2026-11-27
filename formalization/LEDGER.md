@@ -249,8 +249,11 @@ M3. `runLC` vs `runLCM env true`.  `refMono` says the whole-subject
     `FM : Nomm → Prop` cannot see.  TO RECONCILE: restate `refMono` with
     `finishLUCM` (the bridge to the present classes is `finishLUCM_eq` once
     each is shown `noDirect`), and give `RawMono` a class
-    `FM : CallEnv → Needs → Bell → Nomm → Prop`.  No owner (glue, next
-    step of this track).
+    `FM : CallEnv → Needs → Bell → Nomm → Prop`.  DONE of the first half:
+    `Glue.RawMonoM` (`RawMono` against `finishLUCM`), `Glue.rawMonoM_of`
+    (from `RawMono` on any class of `noDirect` nomms), `Glue.rawMonoM_fragX`.
+    Left: `refMono` with `finishLUCM` (a `CompRestO` variant) and the class
+    with `env`, `N`.  No owner (glue, next step of this track).
 M4. `sccSur` vs `shapeCol`.  The pill link (`cu_gate_scc_one_six_ts`) puts
     `ord = sccSur p.1 cape` under `FinSure env nm`; `FinSure` is FALSE when
     a `%6` result reaches the top, and `sccSur` differs from the Hoon's

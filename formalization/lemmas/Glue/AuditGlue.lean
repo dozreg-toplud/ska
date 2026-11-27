@@ -191,5 +191,7 @@ namespace Formalization
 #print axioms SkaModel.Glue.compHyp_of_fragX
 #print axioms SkaModel.Glue.optRef_fragX
 #print axioms SkaModel.Glue.fullAnswers_of_cg
+#print axioms SkaModel.Glue.rawMonoM_of
+#print axioms SkaModel.Glue.rawMonoM_fragX
 
 end Formalization

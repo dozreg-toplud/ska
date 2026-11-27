@@ -1,6 +1,7 @@
 import lemmas.Ska.CompHypOfNC
 import lemmas.Ska.RawInvWholeX
 import lemmas.Ska.AnaEnds
+import lemmas.Ska.CompDirectMTop
 import lemmas.Compiler.OptLinkTotalAvail
 
 /-!
@@ -228,6 +229,31 @@ theorem compHyp_of_fragX {M' : Type → Type → Type} [Treap M'] {lib : Lib} {r
   compHyp_of_piecesO A
     { toCompRestO := P, rawOptIn := rawOptIn_fragX P.toRefSide, rawMono := rawMono_fragX lib,
       rawNary := rawNary_fragX lib }
+
+/-! ## Mismatch M3 of `LEDGER.md`: the whole-subject code with direct calls
+
+The Hoon at `mono &` compiles a direct call by `runLCM env true`
+(`finishLUCM`), not `runLC` (`finishLUC`).  `RawMonoM` is `RawMono` against
+`finishLUCM`; on every class of `noDirect` nomms it follows from `RawMono`
+(`finishLUCM_eq`). -/
+
+/-- (b) against `finishLUCM`, the whole-subject compile with direct calls. -/
+def RawMonoM (S : Type) [Comp.HoonSet S] (Map : Type → Type) [HoonMap Map] [Comp.HoonMapKeys Map] (lib : Lib)
+    (FM : Nomm → Prop) : Prop :=
+  ∀ (code : Bell → Option Nomm) (bl : Bell) (nm : Nomm) (env : Comp.CallEnv) (s : Straight Map) (N : Needs),
+    CodeOK lib code → Annot lib code (SkaModel.Fits bl.less) bl.fol nm → FM nm → Comp.CalleeNeeds env N →
+    Comp.finishLUCM (S := S) env nm = some s → BellContract lib N bl true s
+
+/-- **`RawMonoM` from `RawMono` on a class without direct calls.** -/
+theorem rawMonoM_of {lib : Lib} {FM : Nomm → Prop} (h : RawMono S Map lib FM)
+    (hd : ∀ nm, FM nm → nm.noDirect = true) : RawMonoM S Map lib FM := by
+  intro code bl nm env s N hok hA hf hc hs
+  rw [Comp.finishLUCM_eq env (hd nm hf)] at hs
+  exact h code bl nm env s N hok hA hf hc hs
+
+/-- **`RawMonoM` on `FragXM`** (`noDirect_of_fragX`). -/
+theorem rawMonoM_fragX (lib : Lib) : RawMonoM S Map lib (FragXM S) :=
+  rawMonoM_of (rawMono_fragX lib) fun _ hf => Comp.noDirect_of_fragX hf.1
 
 /-! ## `OptRef` on `FragX` from the pill's totality -/
 
