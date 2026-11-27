@@ -7,6 +7,7 @@ import lemmas.Compiler.CompRunDirectMonoL
 import lemmas.Compiler.CompRunDirectMonoB
 import lemmas.Compiler.CompRunDirectMonoP
 import lemmas.Compiler.CompRunDirectMonoC
+import lemmas.Compiler.CompRunRClass
 
 /-! The axioms of the link of the direct call of `%2` (README Gaps 19). -/
 
@@ -121,3 +122,36 @@ open Formalization.Compiler
 #print axioms partL_six
 #print axioms comp_run_n2_direct_six
 #print axioms res_n2_direct_six
+
+/-! The run link at `mono` `&` with direct calls inside (`CompRunR*.lean`). -/
+
+#print axioms Formalization.Compiler.crx_iff_mm
+#print axioms Formalization.Compiler.crx_of_runLC
+#print axioms Formalization.Compiler.pastAt_nd
+#print axioms Formalization.Compiler.partR_of_partL
+#print axioms Formalization.Compiler.partLM_of_partR
+#print axioms Formalization.Compiler.runLCM_n2_none
+#print axioms Formalization.Compiler.runLCM_cons_done
+#print axioms Formalization.Compiler.res_consR
+#print axioms Formalization.Compiler.res_n2R
+#print axioms Formalization.Compiler.res_n3R
+#print axioms Formalization.Compiler.res_n4R
+#print axioms Formalization.Compiler.res_n5R
+#print axioms Formalization.Compiler.res_n7R
+#print axioms Formalization.Compiler.res_n10R
+#print axioms Formalization.Compiler.comp_run_n3LR
+#print axioms Formalization.Compiler.comp_run_n4LR
+#print axioms Formalization.Compiler.comp_run_n7CR
+#print axioms Formalization.Compiler.comp_run_consLR
+#print axioms Formalization.Compiler.comp_run_n5LR
+#print axioms Formalization.Compiler.comp_run_n2LR
+#print axioms Formalization.Compiler.comp_run_n10LR
+#print axioms Formalization.Compiler.hd_gateR
+#print axioms Formalization.Compiler.comp_pastR
+#print axioms Formalization.Compiler.hinted_code
+#print axioms Formalization.Compiler.pastAt_code
+#print axioms Formalization.Compiler.callCode_of_dir
+#print axioms Formalization.Compiler.resR_of_res
+#print axioms Formalization.Compiler.comp_run_dir
+#print axioms Formalization.Compiler.comp_run_dirMM
+#print axioms Formalization.Compiler.res_dir
