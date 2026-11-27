@@ -29,8 +29,8 @@ The way through:
    say that the pill
    does nothing there that the model cannot follow.
 4. On such cores the statements are the model's (`meek_reach` and
-   `meek_conv_reach` for the two directions of `NockEquivalence`, with the
-   scry gate `~`; `weak_reach` and `converse_reach` for those of
+   `meek_conv_reach` for the two directions of `NockEquivalence`, the second
+   with the scry gate `~`; `weak_reach` and `converse_reach` for those of
    `MockEquivalence`), through `top_iff`, `run_iff` and `mock_iff`.
 -/
 
@@ -350,19 +350,20 @@ theorem Gap.reach (g : Gap lib pk InvC) {core₀ c : Noun} (h0 : Ska.FromPill co
     g.libFormat g.mookFormat h0 h
   exact ⟨cr, rfl, hc, reach_inv lib g.contract.toPokeSteps g.invKept g.invStart hr⟩
 
-/-- `NockEquivalence`: forward, `meek` at the scry gate `~`; backward,
-`meek_conv`, from the invariant at the reached state. -/
+/-- `NockEquivalence`: from Nock to the interpreter, `meek` for every scry
+gate; back, `meek_conv` with the scry gate `~`, from the invariant at the
+reached state. -/
 theorem meek_of (g : Gap lib pk InvC) : Ska.NockEquivalence := by
   refine Ska.nockEquivalence_iff_eval.2 ?_
-  intro core₀ c s f p h0 hr
+  intro core₀ c s f p gul h0 hr
   have hpk := pokeIs_all g.pokeModel
   obtain ⟨cr, rfl, hc, hr'⟩ := reach_model cueRoot g.libSlam g.pokeModel ovumMold
     g.libFormat g.mookFormat h0 hr
   constructor
   · intro hA
     obtain ⟨st', he⟩ :=
-      meek_reach lib g.contract g.halting g.invKept (gul := A 0) g.invStart hr' hA
-    exact ⟨_, (top_iff lib g.libSlam pk hpk ob cr hc s f (A 0) _ _).2 ⟨_, st', rfl, rfl, he⟩⟩
+      meek_reach lib g.contract g.halting g.invKept (gul := gul) g.invStart hr' hA
+    exact ⟨_, (top_iff lib g.libSlam pk hpk ob cr hc s f gul _ _).2 ⟨_, st', rfl, rfl, he⟩⟩
   · rintro ⟨c', ht⟩
     obtain ⟨t, cr', ht0, -, he⟩ := (top_iff lib g.libSlam pk hpk ob cr hc s f (A 0) _ _).1 ht
     have e : t = Tone.zero p := tone_toNoun_inj (b := Tone.zero p) ht0.symm

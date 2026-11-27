@@ -61,7 +61,7 @@ for example `446 comp-need-ord-alloc-regs` and `1014 comp-collapse-shape`.
 | `Cue.lean` | `cue : Nat → Option Noun`, after `+cue` of hoon.hoon. Written to be read, not run. |
 | `Bytes.lean` | `bytes% { b₀, b₁, … }`, the number with these bytes, lowest first: the one piece of metaprogramming in `core/`. |
 | `Pill.lean` | Generated: the pill file as an atom, byte by byte. The lines between its braces are those of vere's `steel.c` (`xxd -i`). |
-| `Statement.lean` | `Loads`, `NockEquivalence` (Nock computes `p` exactly when `+eval-top` with the scry gate `~` returns `[%0 p]`), `MockEquivalence` (`+mock` returns a toon exactly when `+eval-top` then `+eval-mook` do, for any scry gate), `Halts`, `Full`, and the few definitions they need. Start here. |
+| `Statement.lean` | `Loads`, `NockEquivalence` (if Nock computes `p`, `+eval-top` returns `[%0 p]` with any scry gate; if `+eval-top` with the scry gate `~` returns `[%0 p]`, Nock computes `p`), `MockEquivalence` (`+mock` returns a toon exactly when `+eval-top` then `+eval-mook` do, for any scry gate), `Halts`, `Full`, and the few definitions they need. Start here. |
 
 The statements quantify over every core that the pill's core can become by
 pokes and by runs of the interpreter, except through a `%jets` poke that names
@@ -94,7 +94,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | File | Content |
 | --- | --- |
 | `Spec.lean`, `SpecEquiv.lean` | `Slot`, `Edit` and `Eval`, the form of the specification the proofs use, and their equality with `Fas`, `Hax` and `Nock` of `core/` (`fas_iff_slot`, `hax_iff_edit`, `nock_iff_eval`, `nock_eq_some_iff_spec`). |
-| `StatementEval.lean` | The definitions of `core/Statement.lean` with `Eval`, `Slot`, `Edit` or `nock` for `Nock`, `Fas`, `Hax` (`pull_iff_nock`, `slam_iff_nock`, `fromPill_iff_eval`, `top_iff_slot`, `mook_iff_slot`, `mock_iff_slot`, `nockEquivalence_iff_eval`, both directions of the iff). |
+| `StatementEval.lean` | The definitions of `core/Statement.lean` with `Eval`, `Slot`, `Edit` or `nock` for `Nock`, `Fas`, `Hax` (`pull_iff_nock`, `slam_iff_nock`, `fromPill_iff_eval`, `top_iff_slot`, `mook_iff_slot`, `mock_iff_slot`, `nockEquivalence_iff_eval`, both implications). |
 | `Fuel.lean` | `slot?`, `edit?` and the fuelled `evalFuel`. |
 | `Sound.lean` | `slot?_iff`, `edit?_iff`, and `evalFuel_sound`: a fuelled run is a derivation of `Eval`. |
 | `Run.lean` | `nock`, the evaluator as a partial function, with one rewrite rule per opcode, and `nock_eq_some_iff : nock s f = some p ↔ Eval s f p` (`eval_of_nock`, `nock_of_eval`); `Eval.deterministic`. |
