@@ -81,6 +81,30 @@ theorem contract_d19 (lib : Lib) (env : CallEnv) (snd : Nomm → NeedOrd → Boo
 
 end
 
+/-! ## The table of the 39 at the top -/
+
+/-- A kept dynamic `stopTag` hint in `RegGBT`: the clue as `keptIn`'s, the
+formula a member of the frame case or itself such a hint (`regGBT_n11dKept`,
+nested at any depth). -/
+def keptR : Nomm → Bool
+  | Nomm.n11d tag h q _ => hintDynamic tag && stopTag tag && clueIn h &&
+      ((frameFormInS q && (outReason q).isNone) || keptR q)
+  | _ => false
+
+/-- `outReasonSpot` with nested kept hints (`n11dKept_doneR`) and a kept
+hint under a `%4` (`four_doneR`). -/
+def outReasonReg (nm : Nomm) : Option String :=
+  match nm with
+  | Nomm.n11d _ _ _ _ => if keptR nm then Option.none else outReasonSpot nm
+  | Nomm.n4 p => if keptR p then Option.none else outReasonSpot nm
+  | _ => outReasonSpot nm
+
+def reasonsReg : List (String × Option String) :=
+  HintData.all.map fun (n, j) => (n, ((parts j).bind fun (nmN, _, _, _) => nommOf 300 nmN).bind outReasonReg)
+
+#guard (reasonsReg.filter fun r => r.2.isNone).map Prod.fst ==
+  ["s01", "s02", "s03", "s06", "d01", "d02", "d06", "d08", "d10", "d14", "d19", "d21", "d23", "m01"]
+
 end Comp
 end SkaModel
 end Formalization
