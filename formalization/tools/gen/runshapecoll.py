@@ -11,11 +11,19 @@ without `+need-to-ordered`: its body is `[7 [0 1] [6 TEST YES NO]]` with
 `TURN` the `+turn` over `fork.laz` (gate `TG`, sample bunt `TB`), `LZB` the
 bunt of `laze` (arm `0x575ee` of `K`, at axis `15`) and `BG` the gate of the
 `+roll` over `bond.laz`.  `+laze-collapse` is `+shape-collapse` with arm
-`5598` in place of `6006`.
+`5598` in place of `6006`.  `+laze-may` is
+
+    [8 INTR [8 [1 TRAP] [9 2 0 1]]]
+    TRAP = [8 ROLL [9 2 [10 [6 [0 29] [7 [0 3] [8 [[B B] [0 12]] [[1 GATE] [0 1]]]]]] [0 2]]]]
+
+`INTR` the push of `(inter1-to-inter2 (laze-to-inter1 laz) less)`, `B` the
+bunt of `need-inter2` (arm `0x575f` of `K`, at axis `31`), `GATE` the gate of
+the `+roll` over `fork.intr`, which runs `TRAP` again at axis `7` of its
+subject on both branches.
 
     tools/capped.sh -m 3G python3 tools/gen/runshapecoll.py OUTDIR
 
-writes `OUTDIR/runshapecoll.lean`."""
+writes `OUTDIR/runshapecoll.lean` and `OUTDIR/runshapemay.lean`."""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from nouns import *
@@ -102,3 +110,35 @@ with open(os.path.join(OUT, 'runshapecoll.lean'), 'w') as f:
     emit(f, defs)
 print(show(turn, names=False))
 print(show(tb, names=False)); print(show(tg, names=False)); print(show(lzb, names=False))
+
+# +laze-may
+mBunt, mBody, mHint = gate(0x2eeeb)
+_, mIntr, m1 = seq(mBody, 3)         # [8 INTR M1]
+_, mtq, m9 = seq(m1, 3)              # [8 [1 TRAP] [9 2 0 1]]
+assert show(m9, names=False) == '[9 2 0 1]', show(m9, names=False)
+mTrap = norm(norm(mtq)[2])
+_, mroll, mslam = seq(mTrap, 3)
+assert show(mroll, names=False) == '[9 0x2fbdfc 0 0xfffff]', show(mroll, names=False)
+_, _, m10 = seq(mslam, 3)
+_, m6, _ = seq(m10, 3)
+msam = norm(norm(m6)[2])             # [[0 29] [7 [0 3] [8 SMP [[1 GATE] [0 1]]]]]
+assert show(slot(2, msam), names=False) == '[0 29]'
+mmk = norm(slot(7, norm(slot(3, msam))))
+assert norm(slot(2, mmk)) == ('A', 8)
+msmp = norm(slot(6, mmk))
+mB = norm(slot(4, msmp))
+assert eqn(slot(5, msmp), mB)
+assert show(slot(3, msmp), names=False) == '[0 12]'
+assert show(slot(15, mmk), names=False) == '[0 1]'
+mGate = norm(slot(29, mmk))
+assert show(slot(28, mmk), names=False) == '1'
+mdefs = [
+    ('lmyB', mB, 'The bunt of `need-inter2` in the sample of the gate of the `+roll` (arm `0x575f` of `K`, at axis `31`).'),
+    ('lmyGate', mGate, 'The gate of the `+roll` over `fork.intr`: `(uni-need-ord (uni-need-ord acc ^$(intr y)) ^$(intr n))`.'),
+    ('lmyTrap', mTrap, 'The trap of `+laze-may`: the `+roll` over `fork.intr` from `sure.intr`.'),
+    ('lmyBody', mBody, 'The gate body of `+laze-may`.'),
+    ('lmyBunt', mBunt, 'Its sample bunt.'),
+    ('lmyHint', mHint, 'Its `%fast` hint.'),
+]
+with open(os.path.join(OUT, 'runshapemay.lean'), 'w') as f:
+    emit(f, mdefs)
