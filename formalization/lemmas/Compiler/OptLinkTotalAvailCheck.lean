@@ -1,4 +1,6 @@
 import lemmas.Compiler.OptLinkTotalReadsCheck
+import lemmas.Compiler.OptLinkTotalAvail
+import lemmas.Ska.RawInvEApart
 
 /-!
 # Check: the availability invariant of `+alias` at `UN N` (track H, Gaps 13)
@@ -17,6 +19,15 @@ none).  `roundsA` is `rounds` of `OptLinkTotalReadsCheck.lean` with the check
 (pass id `11`) run on the input of every `+alias`.  It holds on the three
 examples and on all 4,080 raw outputs of `enumX`: 4 + 4,474 walks of
 `+alias` checked.
+
+**The instance** `optimize_total_sixSix`: the final theorem
+`optimize_total_finishLUX` (`OptLinkTotalAvail.lean`) applied to
+`[6 [0 2] [6 [0 6] [0 3] [0 1]] [1 0]]` (track D's `fragX_sixSix`).  The
+kernel does not reduce `finishLU` (`decide +kernel` gets stuck even on
+`(finishLU [0 1]).isSome`), so the equation stays a hypothesis; the compiled
+`#guard`s show it is met: `finishLU` returns a map of 9 blocks with one
+argument, and the model of `+optimize` (with the head as `pick`, as in
+`OptLinkTotalReadsCheck.lean`) returns 5 blocks on it.
 -/
 
 namespace Formalization
@@ -120,6 +131,38 @@ def nA (s : Straight LM) : Nat := ((roundsA 8 s []).filter (·.1 == 11)).length
 #guard raws.all allOkA
 -- the number of walks of `+alias` checked
 #guard (exs.foldl (fun n s => n + nA s) 0, raws.foldl (fun n s => n + nA s) 0) == (4, 4474)
+
+/-! ## The instance -/
+
+section
+open Comp Raw Pill Hoon
+
+/-- `[6 [0 2] [6 [0 6] [0 3] [0 1]] [1 0]]`, a `%6` in a branch of a `%6`. -/
+def sixSixNomm : Nomm := Nomm.n6 (Nomm.n0 2) (Nomm.n6 (Nomm.n0 6) (Nomm.n0 3) (Nomm.n0 1)) (Nomm.n1 (A 0))
+
+#guard (Comp.finishLU (S := LS) (Map := TreapMap mugF) sixSixNomm).map
+  (fun c => (c.nargs, (MapKeys.keys c.blocks).length)) == some (1, 9)
+#guard ((Comp.finishLU (S := LS) (Map := TreapMap mugF) sixSixNomm).bind fun c => Opt.optimizeF 30
+  ⟨Opt.aliasM (fun l => l.headD 0), Opt.trimTraceHints, Opt.switchChains 30⟩ c).map
+  (fun s => (MapKeys.keys s.blocks).length) == some 5
+
+/-- **The final theorem on a `%6` in a branch of a `%6`.** -/
+theorem optimize_total_sixSix {c' : Straight (TreapMap mugF)}
+    (h : finishLU (S := LS) (Map := TreapMap mugF) sixSixNomm = some c') :
+    ∃ sfuel fuel s', Opt.optimizeF fuel ⟨Opt.aliasM (Ana.pickR FinMap), Opt.trimTraceHints,
+      Opt.switchChains sfuel⟩ c' = some s' ∧ nock (C optBody (C c'.toNoun optC)) optBody = some s'.toNoun :=
+  optimize_total_finishLUX fragX_sixSix (by decide) h
+
+end
+
+#print axioms tavU_pre
+#print axioms tavU_at
+#print axioms alias_readsIn
+#print axioms aliasReadsN
+#print axioms gateTotalN
+#print axioms optimize_total_finishLFX
+#print axioms optimize_total_finishLUX
+#print axioms optimize_total_sixSix
 
 end AvailCheck
 end Compiler
