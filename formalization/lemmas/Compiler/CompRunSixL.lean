@@ -364,7 +364,7 @@ theorem comp_run_n6_l_k (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : sl
   have hl : LAll CrLok rest := lall_mono (fun _ h => h.1) hi.1.1
   have h2 := htw rest bys hlp
   exact comp_run_n6_l h7 env msup p q r region hq hr laz th g hinv rest bys hlp htw
-    (comp_run_n6_k h7 hcode env msup p q r region P Q R rest th g hi h2 (lp6_leap_none h7 hl hq hr g h2) hne hkt)
+    (comp_run_n6_k h7 hcode env msup p q r region P Q R rest th g hi h2 hq hr hne hkt)
     (fun nex g' e => res_n6_k P.res (fun rid => (Q rid).res) (fun rid => (R rid).res) rest th g g' nex hi h2 hne
       hkt e)
 
