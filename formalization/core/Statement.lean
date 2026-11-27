@@ -119,17 +119,14 @@ From the interpreter to Nock the scry gate is `~`: with a namespace, opcode
 def NockEquivalence : Prop :=
   ∀ core₀ core s f p gul,
     FromPill core₀ → Reach core₀ core →
-    (Nock s f p →
-      ∃ core', Top core s f gul (C (A 0) p) core') ∧
-    ((∃ core', Top core s f (A 0) (C (A 0) p) core') →
-      Nock s f p)
+    (Nock s f p → ∃ core', Top core s f gul (C (A 0) p) core') ∧
+    ((∃ core', Top core s f (A 0) (C (A 0) p) core') → Nock s f p)
 
 /-- Interpreting with SKA is equivalent to interpreting with +mock -/
 def MockEquivalence : Prop :=
   ∀ core₀ core s f gul toon,
     FromPill core₀ → Reach core₀ core →
-    (Mock core₀ s f gul toon ↔
-     ∃ core', Run core s f gul toon core')
+    (Mock core₀ s f gul toon ↔ ∃ core', Run core s f gul toon core')
 
 /-- Analysis and compilation of the entry point halt: `[%full s f]` is
 answered for every subject and every formula that is a cell. -/
