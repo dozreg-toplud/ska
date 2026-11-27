@@ -903,6 +903,9 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Glue/InvMemo.lean` | Track G (Gaps 22 (c)): mismatch M8 for `anaArm`.  `InvSM`, `invSM_init`, `sound_and`, `compileStep_long`, `anaArm_memo`, `pokeS_memo`, `gap_of_compM`, `anaArm_someN`, `fullAnswers_of_cgM`. |
 | `Glue/InvMemoP.lean` | Track G: M8 on track P's route.  `anaArmP_memo`, `pokeS_memoP`, `anaArmP_someN`, `fullAnswers_of_cgMP`, `gap_of_armPM` (`invStart` at `cor`), `halting_of_cgMP`. |
 | `Glue/LibPill.lean` | Track G (Gaps 22 (d)): the `lib` of the pill `libP`; `libP_slam`, `libP_rendLeaf`, `libP_hand`; leaves `RendRestTonFree`, `SoftTankUnit`, `SkipMsgTonFree`, `EvalMookSame`; `libP_rendRest`, `libP_softTank`, `libP_skipMsg`, `libP_format`, `libP_evalMook`. |
+| `Glue/Entry.lean` | Track G (Gaps 22 (e)): `rawEntry` from static facts.  `NoPoison` (no reachable jump passes `~`), `splitReg`, `CelGuard` (every `%hed s` / `%tal s` of a reachable block comes after a `%cel s` of its body with no write of `s` between); `bpath_reach`, `taken_mem`, `Pure`, `Present`, `execPole_zero` (an op that steps changes only its destination), `execPole_cel`, `poleReads_sub`, `finReads_sub`, `jmpArgs_sub`, `evalPassLoop_ok`; the invariant of a path from the entry `EInv` (`Phase1`, `Phase2`), `einv_entry`, `reads_present`, `einv_step`, `einv_steps`; **`entryOK_of`**: `Opt.EntryOK` from `DefFirst`, `Compiler.ReadsIn nargs`, `NoPoison`, `CelGuard` and at least `nargs` values, for every oracle, scry gate, state and trace. |
+| `Glue/EntryFragX.lean` | Track G (Gaps 22 (e)): `rawEntry` on `FragX`.  Leaves `GuardMonoX`, `GuardNaryX` (`NoPoison` and `CelGuard` of the raw output of `finishLU`, `finishLF`); `split_length`, `finishLF_nargs`, `finishLU_nargs1`; `entry_finishLUX`, `entry_finishLFX` (with track D's `optIn_finishLUX`/`-LFX` for `DefFirst`, `optInput_finishLUX_at`/`-LFX_at` for `ReadsIn`); `entryMono_fragX`, `entryNary_fragX` (the leaves `EntryMono`, `EntryNary`); `rawEntry_fragX`; `CompRestOE` (`CompRestO` without `rawEntry`), `compHyp_of_fragX'`. |
+| `Glue/EntryCheck.lean` | Track G: executable checks (`#guard`) of `EntryOK` along the interpreter's path (`stepF`, `okAt`, `walk`) on the raw output of both final passes, entered with the split of 45 subjects (crashing ones included): `enumX` (183,600 runs per pass, more input needs and capes), `enumCX` (178,200 runs per pass, four oracles); `noPoisonB`, `celGuardB` on all outputs and, over all blocks, on the raw runs under `%done`, `%next`, `%pick`. |
 | `Glue/AuditGlue.lean` | `#check` of every declaration `LEDGER.md` names, `#print axioms` of the theorems of `Glue/` (3500M cap). |
 | `Glue/AuditGlueP.lean` | The same for track P's route and the names that cannot be imported beside `AuditGlue.lean`'s (the two build clashes). |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
@@ -4698,8 +4701,14 @@ import only its theorems.  So:
     `fullAnswers_of_cgMP`, `halting_of_cgMP`), for `anaArm` and track P's `anaArmP`.
     (d) The `lib` of the pill (`Glue/LibPill.lean`, `libP`): `LibSlam`, `RendLeafIs`,
     `HandIs` proved; `LibFormat`, `MookFormat` from four statements about the pill alone
-    (`RendRestTonFree`, `SoftTankUnit`, `SkipMsgTonFree`, `EvalMookSame`).  Not done:
-    every leaf of `LEDGER.md` section 10; two build clashes block composing files
+    (`RendRestTonFree`, `SoftTankUnit`, `SkipMsgTonFree`, `EvalMookSame`).
+    (e) `rawEntry` (`Glue/Entry.lean`, `Glue/EntryFragX.lean`): `EntryOK` holds of raw
+    output as stated, on every subject (checked along the interpreter's path, 723,600
+    runs, `Glue/EntryCheck.lean`); `entryOK_of` proves it from `DefFirst`, `ReadsIn`,
+    `NoPoison`, `CelGuard`; on `FragX` the first two are track D's, so `rawEntry` and
+    `CompHyp` (`compHyp_of_fragX'`) rest on the two static leaves `GuardMonoX`,
+    `GuardNaryX` (checked on all of `enumX`, `enumCX`; a run-level induction is open).
+    Not done: every leaf of `LEDGER.md` section 10; two build clashes block composing files
     (`Compiler.unitNoun_id_inj` in `PokeEnc` and `OptLinkAlJReg`, `Comp.isLeaf` in
     `SccLoopMsg` and `CompNCJump`).
 23. **The poke on states: `enc` and the `%full` branch** (track P, 2026-11-27,

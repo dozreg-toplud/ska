@@ -23,6 +23,7 @@ import lemmas.Glue.MonoCalls
 import lemmas.Glue.InvMemo
 import lemmas.Glue.LibPill
 import lemmas.Glue.EntryFragX
+import lemmas.Compiler.CompSofArms
 import lemmas.Compiler.CompSofPush
 import lemmas.Compiler.CompShapeColLoop
 import lemmas.Compiler.CompShapeColOrig
@@ -316,6 +317,11 @@ namespace Formalization
 #check @SkaModel.Glue.GuardMonoX
 #check @SkaModel.Glue.GuardNaryX
 #check @SkaModel.Glue.CompRestOE
+#check @SkaModel.Opt.EntryOK
+#check @SkaModel.Raw.optInput_finishLUX_at
+#check @SkaModel.Raw.optInput_finishLFX_at
+#check @SkaModel.Raw.optIn_finishLFX
+#check @Compiler.cu_gate_dir_code
 #print axioms SkaModel.Glue.entryOK_of
 #print axioms SkaModel.Glue.entry_finishLUX
 #print axioms SkaModel.Glue.entry_finishLFX
