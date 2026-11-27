@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # usage: sccofhit.py OUTDIR      then
 #   RUNHOON_LIB=OUTDIR/lib.hoon tools/hoon/runhoon.sh OUTDIR/ck.hoon 900 > out.txt
-#   tools/hoon/sccofhit.py --sum out.txt
+#   tools/hoon/sccofhit.py --sum out.txt   (raw nouns: %sco is 7.299.955, %top 7.368.564)
 # Which path of +scc-of a miss in nary.cache takes (README Gaps 19 (g), track K): the
 # instrumented library and the 37 %full pokes of calleecomp.py, plus, in the miss branch of
 # +callee-compiled, before its +scc-of, the print
-#   [%sco b in-sccs scc-size callees-outside-sccs mono-run-flag-unknown]
+#   [%sco b in-sccs scc-size callees-outside-sccs]
 # with in-sccs: sccs.cache holds b (the HIT path of +scc-of: [u.s sccs], no sub loop, no
 # +tarjan), scc-size: the size of the stored SCC (0 when absent), and the number of b's
 # callees (calls.long-ska) that sccs.cache lacks (what the sub loop would walk first).
@@ -14,19 +14,17 @@ import os, subprocess, sys
 D = os.path.dirname(os.path.abspath(__file__))
 if sys.argv[1] == '--sum':
     import re
-    txt = open(sys.argv[2]).read()
-    sco = re.findall(r'\[%sco ([0-9.]+) (\S+?) ([0-9.]+) ([0-9.]+)\]', txt.replace('\n', ' '))
-    top = re.findall(r'\[%top ([0-9.]+) (\S+?)\]', txt.replace('\n', ' '))
-    h = len(sco) // 2
-    if h and sco[:h] == sco[h:]: sco = sco[:h]
-    h = len(top) // 2
-    if h and top[:h] == top[h:]: top = top[:h]
-    hit = sum(1 for s in sco if s[1] in ('%.y', '0', '&'))
-    print('misses in nary.cache (+scc-of from +callee-compiled):', len(sco))
-    print('  of them, b in sccs.cache (HIT path):', hit)
-    print('  SCC sizes on the HIT path:', sorted(set(s[2] for s in sco if s[1] in ('%.y', '0', '&'))))
-    print('  callees outside sccs.cache:', sorted(set(s[3] for s in sco)))
-    print('top +scc-of of the poke:', len(top), 'in sccs before:', sorted(set(t[1] for t in top)))
+    from collections import Counter
+    ls = re.findall(r'\[([0-9. ]+)\]', open(sys.argv[2]).read())
+    ls = [[int(x.replace('.', '')) for x in l.split()] for l in ls]
+    h = len(ls) // 2
+    if h and ls[:h] == ls[h:]:
+        ls = ls[:h]                      # the harness evaluates twice
+    sco = [l for l in ls if l[0] == 7299955 and len(l) == 5]   # %sco
+    top = [l for l in ls if l[0] == 7368564 and len(l) == 3]   # %top
+    print('misses in nary.cache:', len(sco), ' in sccs.cache (0 = yes):', Counter(l[2] for l in sco))
+    print('  SCC sizes:', Counter(l[3] for l in sco), ' callees outside sccs.cache:', Counter(l[4] for l in sco))
+    print('poke +scc-of:', len(top), ' func in sccs.cache before (0 = yes):', Counter(l[2] for l in top))
     sys.exit(0)
 out = sys.argv[1]
 subprocess.check_call([sys.executable, os.path.join(D, 'calleecomp.py'), out])
