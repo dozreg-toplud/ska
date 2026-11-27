@@ -84,6 +84,7 @@ theorem rawX_binTail {p q : Nomm} (xp : FragX (S := S) p) (xq : FragX (S := S) q
     (h : SIP X (upRk g2.blocks) g2.bo g2) (nh : NB g2.re hs.ned) (nt : NB g2.re ts.ned) (dh : Distinct hs.ned)
     (dt : Distinct ts.ned) (ap : ∀ x, NMem hs.ned x → ¬ NMem ts.ned x) (ha : j.args = []) (hj1 : 1 ≤ j.there)
     (hj : j.there < g2.bo) (hf : ∀ x, Defd g2.blocks x → ¬ NMem hs.ned x ∧ ¬ NMem ts.ned x)
+    (ch : Clean hs.ned) (ct : Clean ts.ned)
     (h3 : runL q (CGoalL.next (ofSure ts) j) region g2 = some (nex2, g3))
     (h4 : runL p (CGoalL.next (ofSure hs) nex2.th) region g3 = some (nex1, g4))
     (h5 : copyL nex1 nex2.laz g4 = some (nex, g1)) :
@@ -95,7 +96,7 @@ theorem rawX_binTail {p q : Nomm} (xp : FragX (S := S) p) (xq : FragX (S := S) q
   -- the run of `q`
   have gq : GoalIn g2.re (CGoal.next ts j : CGoal S) := ⟨nt, fun x hx => by rw [ha] at hx; cases hx⟩
   obtain ⟨S3, a3, lo3, hi3, L3⟩ := ihq (CGoal.next ts j) region g2 g3 nex2 K hK h gq dt ⟨hj1, hj⟩ ha
-    (fun r d hm => (hf r d).2 hm) hcq h3
+    (fun r d hm => (hf r d).2 hm) hcq ct h3
   have Rq := runX_keeps xq (goal := CGoal.next ts j) h.drop gq hcq h3
   have Fq := runX_foot xq (goal := CGoal.next ts j) h.drop gq dt hcq h3
   have l3 := Rq.keeps.le
@@ -116,7 +117,7 @@ theorem rawX_binTail {p q : Nomm} (xp : FragX (S := S) p) (xq : FragX (S := S) q
   have hK3 : KVan (fun a c => a < g3.bo ∧ (K a c ∨ lazK nex2.th.there nex2.laz a c)) g3.bo :=
     ⟨fun k r hk e => by have := e.1; omega⟩
   obtain ⟨S4, a4, lo4, hi4, L4⟩ := ihp (CGoal.next hs nex2.th) region g3 g4 nex1 _ hK3 S3 gp dh ⟨lo3, hi3⟩ a3 fp
-    hcp h4
+    hcp ch h4
   have Rp := runX_keeps xp (goal := CGoal.next hs nex2.th) S3.drop gp hcp h4
   have Fp := runX_foot xp (goal := CGoal.next hs nex2.th) S3.drop gp dh hcp h4
   have l4 := Rp.keeps.le
@@ -207,7 +208,7 @@ theorem rawX_consBody {p q : Nomm} (xp : FragX (S := S) p) (xq : FragX (S := S) 
     {sur : Sure S} {th : Jmp} {region : List Nat} {g0 g1 : Comp.Gen Map} {nex : NextL S}
     {K : Nat → Nat → Prop} (hK : KVan K g0.bo) (h : SIP X (upRk g0.blocks) g0.bo g0) (hn : NB g0.re sur.ned)
     (dn : Distinct sur.ned) (ha : th.args = []) (hj1 : 1 ≤ th.there) (hj : th.there < g0.bo)
-    (hf : ∀ y, NMem sur.ned y → ¬ Defd g0.blocks y)
+    (hf : ∀ y, NMem sur.ned y → ¬ Defd g0.blocks y) (hcl : Clean sur.ned)
     (hr : (do
       let (hed, tel, o) ← splitL ⟨ofSure sur, th⟩
       let nexh ← pastL noCode ⟨hed, jmp0 o⟩ q region
@@ -223,6 +224,7 @@ theorem rawX_consBody {p q : Nomm} (xp : FragX (S := S) p) (xq : FragX (S := S) 
   obtain ⟨⟨⟨hed, tel, o'⟩, g2⟩, hs2, e2⟩ := Option.map_eq_some_iff.mp h2
   simp only [Prod.mk.injEq] at e2
   obtain ⟨⟨rfl, rfl, rfl⟩, rfl⟩ := e2
+  have CS := clean_split hs2 hcl
   obtain ⟨S2, eo, bo2, l2, fr2, Ls, Ds⟩ := raw_split (K := K) h dn hn ha hj hf hs2
   simp only at eo; subst eo
   obtain ⟨-, nh, nt⟩ := keeps_split h.drop hn (fun x hx => by rw [ha] at hx; cases hx) hs2
@@ -251,7 +253,7 @@ theorem rawX_consBody {p q : Nomm} (xp : FragX (S := S) p) (xq : FragX (S := S) 
         · rcases mt x e with e' | e'
           · exact hf x e' d
           · omega
-      · exact ⟨e1, e2⟩) h3 h4 hr
+      · exact ⟨e1, e2⟩) (ch := CS.1) (ct := CS.2) h3 h4 hr
   refine ⟨S1, a1, lo1, hi1, fun x hx => ?_⟩
   obtain ⟨hl, n1, n2⟩ := L1 x hx
   rcases Ls x hl with e | e | e
@@ -264,13 +266,13 @@ theorem rawX_consBody {p q : Nomm} (xp : FragX (S := S) p) (xq : FragX (S := S) 
 `raw_cons`. -/
 theorem rawX_cons {p q : Nomm} (xp : FragX (S := S) p) (xq : FragX (S := S) q) (ihp : RawIHX S Map X p)
     (ihq : RawIHX S Map X q) : RawIHX S Map X (Nomm.cons p q) := by
-  intro goal region g0 g1 nex K hK h hg hD hj ha hf hc hr
+  intro goal region g0 g1 nex K hK h hg hD hj ha hf hc hcl hr
   have hc' : sixCount p + sixCount q ≤ 255 := by simpa only [sixCount] using hc
   cases goal with
   | next sur th =>
     simp only [CGoal.toL] at hr
     rw [runL_cons_next] at hr
-    exact rawX_consBody xp xq ihp ihq hc' hK h hg.1 hD ha hj.1 hj.2 (fun y hy d => hf y d hy) hr
+    exact rawX_consBody xp xq ihp ihq hc' hK h hg.1 hD ha hj.1 hj.2 (fun y hy d => hf y d hy) hcl hr
   | done =>
     simp only [CGoal.toL] at hr
     rw [runL_cons_done] at hr
@@ -287,7 +289,7 @@ theorem rawX_cons {p q : Nomm} (xp : FragX (S := S) p) (xq : FragX (S := S) q) (
         rw [e4, defd_put (S3.none (Nat.le_refl _)), b3] at d
         rcases d with d | d
         · have := h.defd_lt d; omega
-        · simp [blockDefs, defsOf] at d) hr
+        · simp [blockDefs, defsOf] at d) trivial hr
     refine ⟨S1, a1, lo1, hi1, fun x hx => ?_⟩
     obtain ⟨hl, hn⟩ := L1 x hx
     exact hn (by simp only [lazyReg, NMem]; exact not_liveK_don (by rw [e4]; exact get_put_self) hl)
@@ -305,7 +307,7 @@ theorem rawX_cons {p q : Nomm} (xp : FragX (S := S) p) (xq : FragX (S := S) q) (
     obtain ⟨S1, a1, lo1, hi1, L1⟩ := rawX_binTail (hs := Sure.bunt) (ts := Sure.bunt) xp xq ihp ihq hc'
       (hK.mono (by omega)) (sip_reRank S2 (fun k hk => h.none hk) (finKeep_put e2)) (nb_none _) (nb_none _)
       trivial trivial (fun _ e => e.elim) rfl (by simp [jmp0]; have := h.bo1; omega) (by simp [jmp0]; omega)
-      (fun _ _ => ⟨fun e => e.elim, fun e => e.elim⟩) h3 h4 hr
+      (fun _ _ => ⟨fun e => e.elim, fun e => e.elim⟩) (ch := trivial) (ct := trivial) h3 h4 hr
     refine ⟨S1, a1, lo1, hi1, fun x hx => ?_⟩
     obtain ⟨hl, -⟩ := L1 x hx
     exact absurd hl (not_liveK_bom (by rw [e2]; exact get_put_self))
@@ -316,7 +318,7 @@ theorem rawX_cons {p q : Nomm} (xp : FragX (S := S) p) (xq : FragX (S := S) q) (
 registers, then the two runs and the copy, as `raw_n5`. -/
 theorem rawX_five {p q : Nomm} (xp : FragX (S := S) p) (xq : FragX (S := S) q) (ihp : RawIHX S Map X p)
     (ihq : RawIHX S Map X q) : RawIHX S Map X (Nomm.n5 p q) := by
-  intro goal region g0 g1 nex K hK h hg hD hj ha hf hc hr
+  intro goal region g0 g1 nex K hK h hg hD hj ha hf hc _ hr
   have hc' : sixCount p + sixCount q ≤ 255 := by simpa only [sixCount] using hc
   rw [runL_n5_toL] at hr
   obtain ⟨rp, g2, h2, hr⟩ := bind_some hr
@@ -474,7 +476,7 @@ theorem rawX_five {p q : Nomm} (xp : FragX (S := S) p) (xq : FragX (S := S) q) (
       rcases dd4 x d with d | d | d
       · have := h.defd_lt d; omega
       · omega
-      · have := hgm x d; omega) h5 h6 hr
+      · have := hgm x d; omega) (ch := trivial) (ct := trivial) h5 h6 hr
   refine ⟨S1, a1, lo1, hi1, fun x hx => ?_⟩
   obtain ⟨hl, n1, n2⟩ := L1 x hx
   simp only [lazyReg, NMem] at n1 n2
@@ -490,7 +492,7 @@ of the value `v` for the donor's need and of the target `q` for the
 recipient's, and the copy, as `raw_n10`. -/
 theorem rawX_ten (a : Nat) {v q : Nomm} (xv : FragX (S := S) v) (xq : FragX (S := S) q) (ihv : RawIHX S Map X v)
     (ihq : RawIHX S Map X q) : RawIHX S Map X (Nomm.n10 a v q) := by
-  intro goal region g0 g1 nex K hK h hg hD hj ha hf hc hr
+  intro goal region g0 g1 nex K hK h hg hD hj ha hf hc hcl hr
   have hc' : sixCount q + sixCount v ≤ 255 := by simp only [sixCount] at hc; omega
   rw [runL_n10_body] at hr
   obtain ⟨next, gs, hs, hr⟩ := bind_some hr
@@ -519,6 +521,7 @@ theorem rawX_ten (a : Nat) {v q : Nomm} (xv : FragX (S := S) v) (xq : FragX (S :
   obtain ⟨⟨⟨don, rec, o'⟩, g3⟩, hs3, e3⟩ := Option.map_eq_some_iff.mp h3
   simp only [Prod.mk.injEq] at e3
   obtain ⟨⟨rfl, rfl, rfl⟩, rfl⟩ := e3
+  have CI := clean_into hs3 (clean_simpleNext hs' hcl)
   obtain ⟨S3, eo, bo3, l3, fr3, L3, dd3, Dd, Dr, Ap, md, mr⟩ := raw_into (K := K) S2 D2 nb2 a2 t2 nf2 hs3
   subst eo
   obtain ⟨-, nd3, nr3⟩ := keeps_into S2.drop ⟨nb2, fun x hx => by rw [a2] at hx; cases hx⟩ hs3
@@ -547,7 +550,7 @@ theorem rawX_ten (a : Nat) {v q : Nomm} (xv : FragX (S := S) v) (xq : FragX (S :
         · rcases md x e with e' | e'
           · exact nf2 x e' d
           · omega
-      · exact ⟨n2, n1⟩) h4 h5 hr
+      · exact ⟨n2, n1⟩) (ch := CI.2) (ct := CI.1) h4 h5 hr
   refine ⟨S1, a1, lo1, hi1, fun x hx => ?_⟩
   obtain ⟨hl, n1, n2⟩ := L1 x hx
   rcases L3 x hl with e | e | ⟨hl', hn'⟩
