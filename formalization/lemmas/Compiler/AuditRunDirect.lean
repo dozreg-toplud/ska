@@ -1,5 +1,6 @@
 import lemmas.Compiler.CompRunDirect
 import lemmas.Compiler.CompRunDirectC
+import lemmas.Compiler.CompRunDirectP
 
 /-! The axioms of the link of the direct call of `%2` (README Gaps 19). -/
 
@@ -22,3 +23,9 @@ open Formalization.Compiler
 #print axioms crd_model_call
 #print axioms crd_call_body
 #print axioms comp_run_n2_call
+#print axioms km_crdBlockM
+#print axioms linv_need
+#print axioms crd_goals
+#print axioms crd_hpq
+#print axioms res_n2_call
+#print axioms comp_run_n2_callM
