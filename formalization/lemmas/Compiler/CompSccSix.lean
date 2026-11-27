@@ -635,5 +635,37 @@ theorem cu_gate_scc_one_six_fol (hT : TsMapAt) (cape : Cape) (DATA FOL CODE JETS
   cu_gate_scc_one_six hT cape DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE hnary hnmap hsmap hcalls nm INL'
     hinl env hn (folMade_noAx0 hf) hfs hbake FUNC V n hn' (folMade_noAx0 hf')  hgot hv
 
+/-! ## Examples with `%6` -/
+
+/-- `[6 [0 2] [4 0 3] [1 0]]`, the `%6` of `sixEx`. -/
+example : sixEx = Nomm.n6 (Nomm.n0 2) (Nomm.n4 (Nomm.n0 3)) (Nomm.n1 (A 0)) := rfl
+
+/-- **A `%6` in both passes**: the SCC's nomm `[7 [1 0] [6 [0 2] [4 0 3] [1 0]]]`
+(its final pass is fork-free, `finSure_n7_n1`) and the code's nomm the same;
+the hypotheses left are `TsMapAt` and those on the state nouns. -/
+example (hT : TsMapAt) (DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE : Noun)
+    (hnary : getF mugF (C (C Cape.no.toNoun DATA) FOL) NARY = some (A 0)) (hnmap : IsMap mugF NARY)
+    (hsmap : IsMap mugF SURE) (hcalls : NoSelfCall (C (C Cape.no.toNoun DATA) FOL) CALLS) (INL' : Noun)
+    (hinl : InlOK (C (C Cape.no.toNoun DATA) FOL) CODE INL (Nomm.n7 (Nomm.n1 (A 0)) sixEx) INL') (env : CallEnv)
+    (FUNC V : Noun) (hgot : getF mugF FUNC CODE = some (C (A 0) V))
+    (hv : slot? 2 V = some (Nomm.n7 (Nomm.n1 (A 0)) sixEx).toNoun) :=
+  cu_gate_scc_one_six hT Cape.no DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE hnary hnmap hsmap hcalls _ INL'
+    hinl env rfl (by simp [sixEx, Bake.NoAx0]) (finSure_n7_n1 env _ _) (noBakeOneC_no env _ DATA) FUNC V _ rfl
+    (by simp [sixEx, Bake.NoAx0]) hgot hv
+
+/-- **The bare `%6` as the code's nomm**: the unary pass asks no fork-free
+result, so `n` is `[6 [0 2] [4 0 3] [1 0]]` itself, compiled under
+`%done` (phase S, the fork of `[[yes ..] [nuh ..]]` in its result, then
+`+kerf` on it); the SCC's nomm is `[7 [1 0] [7 [0 1] [6 [0 2] [4 0 3] [1 0]]]]`. -/
+example (hT : TsMapAt) (DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE : Noun)
+    (hnary : getF mugF (C (C Cape.no.toNoun DATA) FOL) NARY = some (A 0)) (hnmap : IsMap mugF NARY)
+    (hsmap : IsMap mugF SURE) (hcalls : NoSelfCall (C (C Cape.no.toNoun DATA) FOL) CALLS) (INL' : Noun)
+    (hinl : InlOK (C (C Cape.no.toNoun DATA) FOL) CODE INL (Nomm.n7 (Nomm.n1 (A 0)) (Nomm.n7 (Nomm.n0 1) sixEx)) INL')
+    (env : CallEnv) (FUNC V : Noun) (hgot : getF mugF FUNC CODE = some (C (A 0) V))
+    (hv : slot? 2 V = some sixEx.toNoun) :=
+  cu_gate_scc_one_six hT Cape.no DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE hnary hnmap hsmap hcalls _ INL'
+    hinl env rfl (by simp [sixEx, Bake.NoAx0]) (finSure_n7_n1 env _ _) (noBakeOneC_no env _ DATA) FUNC V sixEx rfl
+    (by simp [sixEx, Bake.NoAx0]) hgot hv
+
 end Compiler
 end Formalization
