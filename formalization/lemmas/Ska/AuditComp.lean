@@ -101,6 +101,7 @@ import lemmas.Ska.CompConsLS
 import lemmas.Ska.CompConsLSRun
 import lemmas.Ska.CompPastLS
 import lemmas.Ska.CompConsLSCall
+import lemmas.Ska.CompIndirectLS
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -1087,3 +1088,13 @@ open Formalization.SkaModel.Comp
 #print axioms lokS_cons_run
 #print axioms lokS_cons
 #print axioms lokS_n00
+#print axioms JNewL.toS
+#print axioms lokS_consS
+#print axioms jNewLS_cons
+#print axioms nokLB
+#print axioms kerfLB
+#print axioms lokS_indirect_run
+#print axioms lokS_indirect
+#print axioms jNewLS_indirect
+#print axioms CallTree.kind
+#print axioms lokS_callTree
