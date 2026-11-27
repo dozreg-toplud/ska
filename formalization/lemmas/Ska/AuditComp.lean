@@ -1194,3 +1194,8 @@ open Formalization.SkaModel.Comp
 #print axioms oneCons_contract
 #print axioms finishLUC_contractCallTreeA
 #print axioms finishLUC_bellContractCallTreeA
+#print axioms lokS_cons_runH
+#print axioms lokS_consH
+#print axioms jNewLS_consH
+#print axioms lokS_callTreeA
+#print axioms fourConsSeven_contract

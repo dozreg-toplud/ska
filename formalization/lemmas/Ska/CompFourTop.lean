@@ -427,7 +427,7 @@ run under `q`'s result, must have index `true`. -/
 inductive CallTreeA : Bool → Noun → Nomm → Prop
   | n0 (axe : Nat) : CallTreeA true (slot axe) (Nomm.n0 axe)
   | cons {b1 b2 : Bool} {a1 a2 b : Noun} {p q : Nomm} : CallTreeA b1 (C a1 a2) p → CallTreeA b2 b q →
-      CallTreeA (b1 && b2) (C (C a1 a2) b) (Nomm.cons p q)
+      CallTreeA (b2 && (b1 || !q.pure)) (C (C a1 a2) b) (Nomm.cons p q)
   | ind {b1 b2 : Bool} {b c : Noun} {p q : Nomm} : CallTreeA b1 b p → CallTreeA b2 c q →
       CallTreeA true (n3 (A 2) b c) (Nomm.n2 p q Option.none)
   | seven {b2 : Bool} {b c : Noun} {p q : Nomm} : CallTreeA true b p → CallTreeA b2 c q →
@@ -539,10 +539,14 @@ theorem lokS_callTreeA (lib : Lib) {N : Needs} (env : CallEnv) {b : Bool} {f : N
     have Kq := hq.kind lib env.cod P
     refine ⟨⟨lokS_consF lib env ⟨_, _, rfl⟩ Kp Kq (ihq P).1.2 (ihp P).1.1 (ihq P).1.1,
       fun _ => jNewLSF_cons lib env ⟨_, _, rfl⟩ Kp Kq (ihq P).1.2 (ihp P).1.1 (ihq P).1.1⟩, fun hb => ?_⟩
-    simp only [Bool.and_eq_true] at hb
-    obtain ⟨Lp, -⟩ := (ihp P).2 hb.1
-    obtain ⟨Lq, Jq⟩ := (ihq P).2 hb.2
-    exact ⟨lokS_consS lib env ⟨_, _, rfl⟩ Kp Kq Jq Lp Lq, fun _ => jNewLS_cons lib env ⟨_, _, rfl⟩ Kp Kq Jq Lp Lq⟩
+    simp only [Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true'] at hb
+    obtain ⟨Lq, Jq⟩ := (ihq P).2 hb.1
+    rcases hb.2 with h1 | h1
+    · obtain ⟨Lp, -⟩ := (ihp P).2 h1
+      exact ⟨lokS_consS lib env ⟨_, _, rfl⟩ Kp Kq Jq Lp Lq, fun _ => jNewLS_cons lib env ⟨_, _, rfl⟩ Kp Kq Jq Lp Lq⟩
+    · have hqh := hq.hinted_of env.cod h1
+      exact ⟨lokS_consH lib env ⟨_, _, rfl⟩ Kp Kq Jq hqh (ihp P).1.1 Lq,
+        fun _ => jNewLS_consH lib env ⟨_, _, rfl⟩ Kp Kq Jq hqh (ihp P).1.1 Lq⟩
   | @ind b1 b2 b c p q hp hq ihp ihq =>
     intro P
     have Kp := hp.kind lib env.cod P
@@ -739,6 +743,24 @@ theorem oneCons_contract (lib : Lib) (env : CallEnv) {c : Straight Map}
       ContractBwd lib N s (C (quote (A 0)) (n2 (A 4) (slot 1))) [s] c :=
   have H := finishLUC_contractCallTreeA lib env (fun _ => True)
     (CallTreeA.cons (CallTreeA.n1 (A 0)) (CallTreeA.four (CallTreeA.n0 1))) hc N
+  ⟨H.1, fun s => H.2 s trivial⟩
+
+
+/-- `[7 [[4 [0 2]] [2 [0 3] [0 2]]] [2 [0 3] [0 2]]]`: a cons with an
+increment head and a calling tail (index `true`, README Gaps 12.31) as the
+`p` of `[7 p q]`. -/
+theorem fourConsSeven_contract (lib : Lib) (env : CallEnv) {c : Straight Map}
+    (hc : finishLUC (S := S) (Map := Map) env
+      (Nomm.n7 (Nomm.cons (Nomm.n4 (Nomm.n0 2)) (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none))
+        (Nomm.n2 (Nomm.n0 3) (Nomm.n0 2) Option.none)) = some c)
+    (N : Needs) : c.need = NeedOrd.this ∧ ∀ s,
+      ContractFwd lib N s (n3 (A 7) (C (n2 (A 4) (slot 2)) (n3 (A 2) (slot 3) (slot 2)))
+        (n3 (A 2) (slot 3) (slot 2))) [s] c ∧
+      ContractBwd lib N s (n3 (A 7) (C (n2 (A 4) (slot 2)) (n3 (A 2) (slot 3) (slot 2)))
+        (n3 (A 2) (slot 3) (slot 2))) [s] c :=
+  have H := finishLUC_contractCallTreeA lib env (fun _ => True)
+    (CallTreeA.seven (CallTreeA.cons (CallTreeA.four (CallTreeA.n0 2)) (CallTreeA.ind (CallTreeA.n0 3) (CallTreeA.n0 2)))
+      (CallTreeA.ind (CallTreeA.n0 3) (CallTreeA.n0 2))) hc N
   ⟨H.1, fun s => H.2 s trivial⟩
 
 end Comp
