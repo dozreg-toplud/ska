@@ -1,4 +1,5 @@
 import lemmas.Ska.PokeEnc
+import lemmas.Ska.AnaEnds
 
 /-!
 # The pill's `+poke` on `%full` as the model's poke, up to the callees
@@ -69,6 +70,29 @@ theorem anaHyp_of_armP (A : Arms M Map J H CR) {lib : Lib} {env : Env R}
     simp only [Prod.mk.injEq] at he
     obtain ⟨rfl, -, -⟩ := he
     exact ⟨rfl, Bake.skaPoke_root_fits env hpi (wf_root s) (normSock_yes s) hroot hsk s (fits_yes s)⟩
+
+/-- **The fuel of the analysis is a good one** (mismatch P3, the analysis
+side of M9): wherever the analysis answers at some fuel, it answers the same
+at `fuel`.  Then the `∃ n` of `ska_poke_ana_iff_pill` is the fuel `fuel` of
+`anaArmP`. -/
+def FuelOK (env : Env R) (regOf : J → R) (fuel : Noun → Noun → LongB M → J → Nat) : Prop :=
+  ∀ s f (L : LongB M) j n r, Ana.skaPoke env n (Sock.mk Cape.yes s, f) L.memo (regOf j) = some r →
+    Ana.skaPoke env (fuel s f L j) (Sock.mk Cape.yes s, f) L.memo (regOf j) = some r
+
+/-- **`anaFuel` is a good fuel**, with no hypothesis: the fuel `CgHalts`
+gives `fullAnswers_of_cg` (M9) is one at which the analysis answers as at
+every fuel that answers (`skaPoke_fuel_le`). -/
+theorem fuelOK_anaFuel (env : Env R) (regOf : J → R) : FuelOK (M := M) env regOf (anaFuel env regOf) := by
+  intro s f L j n r h
+  have hex : ∃ n r, Ana.skaPoke env n (Sock.mk Cape.yes s, f) L.memo (regOf j) = some r := ⟨n, r, h⟩
+  unfold anaFuel
+  rw [dif_pos hex]
+  obtain ⟨r0, h0⟩ := Classical.choose_spec hex
+  have a := Ana.skaPoke_fuel_le env (Nat.le_max_left n (Classical.choose hex)) _ _ _ r h
+  have b := Ana.skaPoke_fuel_le env (Nat.le_max_right n (Classical.choose hex)) _ _ _ r0 h0
+  rw [a] at b
+  cases b
+  exact h0
 
 end AnaP
 

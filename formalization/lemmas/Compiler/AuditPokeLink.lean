@@ -23,3 +23,4 @@ open Formalization Formalization.Compiler
 #print axioms gap_of_armP
 #print axioms invStart_cor
 #print axioms pokeN_full_of
+#print axioms fuelOK_anaFuel

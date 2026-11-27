@@ -4478,8 +4478,8 @@ import only its theorems.  So:
     - **P3, the fuel (M9).**  The analysis link (`ska_poke_ana_iff_pill`) is an iff with
       `∃ n`; `anaArm` takes the fuel `fuel s f L j`.  The link is stated with the fuel as
       a hypothesis-free choice (`FuelOK`: the model at the chosen fuel answers whenever
-      it answers at some fuel), which `anaFuel` of `CgHalts` meets where
-      `skaPoke_fuel_le` holds.
+      it answers at some fuel), and `anaFuel`, the fuel of `fullAnswers_of_cg`, is one
+      with no hypothesis (`fuelOK_anaFuel`, by `skaPoke_fuel_le`).
     *The branches of the inner `+poke`* (`ipokeBat`, 1,022 cells; after the validation
     push `ipokeB`, the dispatch `ipokeR`, 1,001 cells): `%jets` 298 cells, `%fast` 288,
     `%full` 272, `%dire` 122.  The `%full` branch calls, in order: `+ska-poke` (arm `20`
@@ -4509,8 +4509,9 @@ import only its theorems.  So:
     `~(put by)` need their pill links on `IsMap` nouns (`getF_toNoun` and `putF_toNoun`
     give the model side).  (2) `SkaLink` for `anaArmP`: `ska_poke_ana_iff_pill` composed
     with the link of `spRest` (not started: `+bake-graph`, `new-code`, the SCC loop with
-    `+eval-finalized`, the writes of `seek` and `calls`, `+ska-cole-update`), at a fuel
-    that `FuelOK` allows (P3; `anaFuel` of `CgHalts` with `skaPoke_fuel_le`).  (3) The
+    `+eval-finalized`, the writes of `seek` and `calls`, `+ska-cole-update`), at the fuel
+    `anaFuel` (P3: `fuelOK_anaFuel` turns the `∃ n` of the iff into it; the fuel `bf` of
+    `+bake-graph` needs the same, not done).  (3) The
     image (`PokeReachEnc`): the `poke` case follows from the links (each returns an
     encoded state) but for the flags (P1).  (4) P4, *not checked*: a `%full` whose formula
     is an atom crashes in the pill (the mold `fol=^`), so `PokeModel` needs `pokeS A` to
