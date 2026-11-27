@@ -41,12 +41,31 @@ namespace Comp
 
 open Nock Lazy
 
+/-- **The formula part of a direct call**: the nomm `q` is skipped by the
+compiler (`safeFolFol`) and has no `%6`; its formula `fq` returns the
+callee's formula, and nothing else, on the subjects.  `q` need not be `[1
+fq]`: the analysis puts the constant `[1 b.fol]` in the nomm where the
+formula fetches the callee from the subject (`[0 axe]`), which is the only
+way a bell can call itself (its formula cannot contain itself). -/
+structure QDirect (lib : Lib) (P : Noun → Prop) (q : Nomm) (fq : Noun) (bl : Bell) : Prop where
+  safe : safeFolFol q = true
+  six : sixCount q = 0
+  ret : ∀ {s gul : Noun} {n : Nat} {tm : Trace} {rc : Tone}, P s → minkF lib gul n tm s fq = some rc →
+    rc = Tone.zero bl.fol
+  mink : ∀ {s gul : Noun} {tm : Trace}, P s → Mink lib gul tm s fq (Tone.zero bl.fol)
+
+/-- **`[1 b.fol]` is the formula part of a direct call.** -/
+theorem QDirect.quote (lib : Lib) (P : Noun → Prop) (bl : Bell) :
+    QDirect lib P (Nomm.n1 bl.fol) (C (A 1) bl.fol) bl :=
+  ⟨rfl, rfl, fun _ h => quote_hq1 h, fun _ => quote_hq2⟩
+
 /-- **`CallTreeA` with the direct call**, for the run with `mono` `&`.  The
 index `P` is the set of subjects (the `q` of `[7 p q]` is in the class at the
 products of `p`, `Img lib P b`); the index `x` says, as in `CallTreeA`,
 whether the nomm meets `LOKSM false` at every goal.  A direct call
-`[2 p [1 k] b]` has `p` of any index (it runs under `%next (lazy-from-reg
-sub-pes)`, a flag-free goal), `k` the callee's formula, the callee's needs as
+`[2 p q b]` has `p` of any index (it runs under `%next (lazy-from-reg
+sub-pes)`, a flag-free goal), `q` skipped with a formula `fq` returning the
+callee's formula (`QDirect`), the callee's needs as
 in `tail_done` (`env.ring b = none`, `env.need b = some bNed` with `N b false
 = some bNed`, some `N b true`), the callee not pure, and the products of `p`
 on `P` fitting the callee's subject. -/
@@ -69,12 +88,12 @@ inductive CallTreeD (lib : Lib) (env : CallEnv) (N : Needs) : (Noun → Prop) �
       CallTreeD lib env N P b1 b p → CallTreeD lib env N P b2 c q →
       CallTreeD lib env N P false (n3 (A 5) b c) (Nomm.n5 p q)
   | n1 {P : Noun → Prop} (k : Noun) : CallTreeD lib env N P true (quote k) (Nomm.n1 k)
-  | direct {P : Noun → Prop} {b1 : Bool} {fb k : Noun} {p : Nomm} {bl : Bell} {bNed ndT : NeedOrd} :
+  | direct {P : Noun → Prop} {b1 : Bool} {fb fq : Noun} {p q : Nomm} {bl : Bell} {bNed ndT : NeedOrd} :
       CallTreeD lib env N P b1 fb p →
       env.ring bl = Option.none → env.need bl = some bNed → N bl false = some bNed → N bl true = some ndT →
-      env.pure bl = false → env.cod bl = some false → k = bl.fol →
+      env.pure bl = false → env.cod bl = some false → QDirect lib P q fq bl →
       (∀ x gul y, P x → Mink lib gul [] x fb (Tone.zero y) → SkaModel.Fits bl.less y) →
-      CallTreeD lib env N P true (n3 (A 2) fb (C (A 1) k)) (Nomm.n2 p (Nomm.n1 k) (some (bl, Option.none)))
+      CallTreeD lib env N P true (n3 (A 2) fb fq) (Nomm.n2 p q (some (bl, Option.none)))
 
 section
 variable {lib : Lib} {env : CallEnv} {N : Needs}
@@ -109,7 +128,7 @@ theorem CallTreeD.sixCount {P : Noun → Prop} {x : Bool} {f : Noun} {nm : Nomm}
   | three _ ihp => simp only [Comp.sixCount, ihp]
   | five _ _ ihp ihq => simp only [Comp.sixCount, ihp, ihq]
   | n1 k => rfl
-  | direct _ _ _ _ _ _ _ _ _ ihp => simp only [Comp.sixCount, ihp]
+  | direct _ _ _ _ _ _ _ hk _ ihp => simp only [Comp.sixCount, ihp, hk.six]
 
 theorem CallTreeD.cell {P : Noun → Prop} {x : Bool} {f : Noun} {nm : Nomm} (h : CallTreeD lib env N P x f nm) :
     ∃ a b, f = C a b := by
@@ -244,13 +263,12 @@ theorem lokSM_callTreeD (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Pr
     have M := ((CallTreeA.n1 k).kind lib env.cod P).elim (fun h => h.2) (fun h => by cases h)
     have HM := (lokS_n1 (S := S) (Map := Map) (N := N) lib env M).toM rfl
     exact ⟨⟨HM.toF, fun h => by cases h⟩, fun _ => ⟨HM, fun h => by cases h⟩⟩
-  | @direct P b1 fb k p bl bNed ndT hp hring hned hNf hNt hpure hcod hk hAp ihp =>
-    subst hk
-    have L := lokSM_directF (S := S) (Map := Map) lib env (q := Nomm.n1 bl.fol) (fq := C (A 1) bl.fol) hring hned
-      hNf hNt hpure ihp.1.1 rfl hAp (fun _ h => quote_hq1 h) (fun _ => quote_hq2)
-    have J : JNewLSM (S := S) (Map := Map) env (Nomm.n2 p (Nomm.n1 bl.fol) (some (bl, Option.none))) :=
-      jNewLSM_direct (S := S) (Map := Map) lib env (q := Nomm.n1 bl.fol) (fq := C (A 1) bl.fol) hring hned
-      hNf hNt hpure ihp.1.1 rfl hAp (fun _ h => quote_hq1 h) (fun _ => quote_hq2)
+  | @direct P b1 fb fq p q bl bNed ndT hp hring hned hNf hNt hpure hcod hk hAp ihp =>
+    have L := lokSM_directF (S := S) (Map := Map) lib env hring hned
+      hNf hNt hpure ihp.1.1 hk.safe hAp hk.ret hk.mink
+    have J : JNewLSM (S := S) (Map := Map) env (Nomm.n2 p q (some (bl, Option.none))) :=
+      jNewLSM_direct (S := S) (Map := Map) lib env hring hned
+      hNf hNt hpure ihp.1.1 hk.safe hAp hk.ret hk.mink
     exact ⟨⟨L.toF, fun _ => J.toF⟩, fun _ => ⟨L, fun _ => J⟩⟩
 
 /-- **Every member of `CallTreeD` under `%done` meets `DoneOK`**: the text
@@ -316,11 +334,10 @@ theorem callTreeD_done (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Pro
     rw [runLCM_true env rfl] at hr
     exact n1_doneB lib env (((CallTreeA.n1 k).kind lib env.cod P).elim (fun h => h.2) (fun h => by cases h))
       b0 d0 hu hcl hcb hr
-  | @direct P b1 fb k p bl bNed ndT hp hring hned hNf hNt hpure hcod hk hAp _ =>
+  | @direct P b1 fb fq p q bl bNed ndT hp hring hned hNf hNt hpure hcod hk hAp _ =>
     intro sup region g0 g1 nex b0 d0 hu hcl hcb hr
-    subst hk
-    exact tailP_doneM lib hring hned hNf hNt (lokSM_callTreeD lib env hp).1.1 (by rw [hp.sixCount]; omega) rfl hAp
-      (fun _ h => quote_hq1 h) (fun _ => quote_hq2) b0 d0 hu hcl hcb hr
+    exact tailP_doneM lib hring hned hNf hNt (lokSM_callTreeD lib env hp).1.1 (by rw [hp.sixCount]; omega) hk.safe
+      hAp hk.ret hk.mink b0 d0 hu hcl hcb hr
 
 /-- **The contract of `CallTreeD` at the top**: the whole-subject code
 (`finishLUCM`) of every member meets both halves of the contract for its
