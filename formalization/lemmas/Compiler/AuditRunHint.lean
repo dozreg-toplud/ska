@@ -1,4 +1,4 @@
-import lemmas.Compiler.CompRunHintClass
+import lemmas.Compiler.CompRunHintEx
 
 /-! The axioms of the link of the hint cases of `+run` (README Gaps 25). -/
 
@@ -34,3 +34,21 @@ open Formalization.Compiler
 #print axioms runLCH_n11d_nd
 #print axioms comp_run_n11d_nd
 #print axioms partH_n11d_nd
+#print axioms comp_past_if
+#print axioms soundAt_of
+#print axioms soundAt_sf
+#print axioms cr11_kept
+#print axioms ck_p3
+#print axioms ck_p1
+#print axioms comp_run_n11s_kept
+#print axioms cr11_dkept
+#print axioms cd_p7
+#print axioms cd_p4
+#print axioms cd_p1
+#print axioms comp_run_n11d_kept
+#print axioms pastIfL_inv
+#print axioms linv_bound
+#print axioms cd_steps
+#print axioms ck_steps
+#print axioms partH_n11d_kept
+#print axioms partH_n11s_kept

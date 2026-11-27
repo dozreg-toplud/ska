@@ -1,4 +1,4 @@
-import lemmas.Compiler.CompRunHintD
+import lemmas.Compiler.CompRunHintKP
 
 /-!
 # The run link with hints: the class `HintOk` (README Gaps 25)
@@ -8,7 +8,11 @@ not `hint-static` (`n11s`, every tag but `%bout` and `%xray`: `%spot`,
 `%fast`, `%memo`, an unknown one) and the dynamic hint whose tag is not
 `hint-dynamic` (`n11d`: `%memo` with an unsafe clue, `%fast`, an unknown
 tag; `partH_n11d_nd`, `CompRunHintD.lean`) nested in any way, and every direct call
-hint-free.  **`comp_run_hint`**: every member whose direct calls meet
+hint-free; since 2026-11-27 (second session) also the kept static tag
+(`%bout`, `%xray`: `partH_n11s_kept`) and the kept dynamic tag (`%spot` of
+`!:`, `%slog`, `%hunk`, ...: `partH_n11d_kept`), with `+sound` returning the
+model's `snd` on the formula under every kept hint (`HintSound`).
+**`comp_run_hint`**: every member whose direct calls meet
 `CallOk` is a `PartH` at `XM E msup` (the link against `runLCH env snd true
 msup` on every goal with `GInv`, its result, `+past`), by induction: the
 hint-free constructors by the copies of `CompRunHint*.lean`
@@ -40,8 +44,8 @@ def HintOk : Nomm → Bool
   | Nomm.n6 p q r => HintOk p && HintOk q && HintOk r
   | Nomm.n7 p q => HintOk p && HintOk q
   | Nomm.n10 a v q => (a != 0 && HintOk v) && HintOk q
-  | Nomm.n11s tag q _ => !hintStatic tag && HintOk q
-  | Nomm.n11d tag h q _ => (!hintDynamic tag && HintOk h) && HintOk q
+  | Nomm.n11s _ q _ => HintOk q
+  | Nomm.n11d _ h q _ => HintOk h && HintOk q
   | _ => false
 
 /-- **`CallOk` of every direct call** (`DirCalls` at a call), each at the
@@ -60,6 +64,21 @@ def HintCalls (env : CallEnv) (cod ctx : Noun) (E : GenRest → Prop) : Option N
   | ms, Nomm.n11s _ q _ => HintCalls env cod ctx E ms q
   | ms, Nomm.n11d _ h q _ => HintCalls env cod ctx E ms h ∧ HintCalls env cod ctx E ms q
   | _, _ => True
+
+/-- **`+sound` returns `snd` on the formula under every kept hint**
+(`SoundAt`, read by `+past-if`). -/
+def HintSound (ctx : Noun) (snd : Nomm → NeedOrd → Bool) : Nomm → Prop
+  | Nomm.cons p q => HintSound ctx snd p ∧ HintSound ctx snd q
+  | Nomm.n2 p q Option.none => HintSound ctx snd p ∧ HintSound ctx snd q
+  | Nomm.n3 p => HintSound ctx snd p
+  | Nomm.n4 p => HintSound ctx snd p
+  | Nomm.n5 p q => HintSound ctx snd p ∧ HintSound ctx snd q
+  | Nomm.n6 p q r => HintSound ctx snd p ∧ HintSound ctx snd q ∧ HintSound ctx snd r
+  | Nomm.n7 p q => HintSound ctx snd p ∧ HintSound ctx snd q
+  | Nomm.n10 _ v q => HintSound ctx snd v ∧ HintSound ctx snd q
+  | Nomm.n11s tag q _ => (hintStatic tag = true → SoundAt ctx snd q) ∧ HintSound ctx snd q
+  | Nomm.n11d tag h q _ => (hintDynamic tag = true → SoundAt ctx snd q) ∧ HintSound ctx snd h ∧ HintSound ctx snd q
+  | _ => True
 
 theorem callCode_of_hint {env : CallEnv} {cod : Noun} {E : GenRest → Prop} :
     ∀ (n : Nomm), HintOk n = true → ∀ (ms : Option Nomm), HintCalls env cod ctx E ms n → CallCode cod env n
@@ -92,11 +111,11 @@ theorem callCode_of_hint {env : CallEnv} {cod : Noun} {E : GenRest → Prop} :
     simp only [HintOk, Bool.and_eq_true] at h; simp only [HintCalls] at hd; simp only [CallCode]
     exact ⟨callCode_of_hint p h.1.1 ms hd.1, callCode_of_hint q h.1.2 ms hd.2.1, callCode_of_hint r h.2 ms hd.2.2⟩
   | Nomm.n11s _ q _, h, ms, hd => by
-    simp only [HintOk, Bool.and_eq_true] at h; simp only [HintCalls] at hd; simp only [CallCode]
-    exact callCode_of_hint q h.2 ms hd
+    simp only [HintOk] at h; simp only [HintCalls] at hd; simp only [CallCode]
+    exact callCode_of_hint q h ms hd
   | Nomm.n11d _ h q _, hn, ms, hd => by
     simp only [HintOk, Bool.and_eq_true] at hn; simp only [HintCalls] at hd; simp only [CallCode]
-    exact ⟨callCode_of_hint h hn.1.2 ms hd.1, callCode_of_hint q hn.2 ms hd.2⟩
+    exact ⟨callCode_of_hint h hn.1 ms hd.1, callCode_of_hint q hn.2 ms hd.2⟩
   | Nomm.n12 _ _, h, _, _ => by simp [HintOk] at h
   | Nomm.mean _ _ _ _ _, h, _, _ => by simp [HintOk] at h
 
@@ -123,9 +142,9 @@ theorem noAx0_of_hint : ∀ (n : Nomm), HintOk n = true → Bake.NoAx0 n
     simp only [HintOk, Bool.and_eq_true, bne_iff_ne, ne_eq] at h
     exact ⟨h.1.1, noAx0_of_hint v h.1.2, noAx0_of_hint q h.2⟩
   | Nomm.n11s _ q _, h => by
-    simp only [HintOk, Bool.and_eq_true] at h; exact noAx0_of_hint q h.2
+    simp only [HintOk] at h; exact noAx0_of_hint q h
   | Nomm.n11d _ h q _, hn => by
-    simp only [HintOk, Bool.and_eq_true] at hn; exact ⟨noAx0_of_hint h hn.1.2, noAx0_of_hint q hn.2⟩
+    simp only [HintOk, Bool.and_eq_true] at hn; exact ⟨noAx0_of_hint h hn.1, noAx0_of_hint q hn.2⟩
   | Nomm.n12 _ _, h => by simp [HintOk] at h
   | Nomm.mean _ _ _ _ _, h => by simp [HintOk] at h
 
@@ -143,73 +162,81 @@ direct calls meet `CallOk` is a `PartH` at `XM E msup` (link against
 theorem comp_run_hint (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
     (env : CallEnv) (snd : Nomm → NeedOrd → Bool) (E : GenRest → Prop) :
     ∀ (n : Nomm), HintOk n = true → ∀ (msup : Option Nomm) (region : List Nat),
-      HintCalls env cod ctx E msup n → PartH env snd msup ctx (XM E msup) n region
-  | Nomm.cons p q, h, msup, region, hd => by
+      HintCalls env cod ctx E msup n → HintSound ctx snd n → PartH env snd msup ctx (XM E msup) n region
+  | Nomm.cons p q, h, msup, region, hd, hs => by
     have hc := callCode_of_hint (ctx := ctx) _ h msup hd
     simp only [HintOk, Bool.and_eq_true] at h; simp only [HintCalls] at hd
-    have P := comp_run_hint h7 hcode env snd E p h.1 msup region hd.1
-    have Q := comp_run_hint h7 hcode env snd E q h.2 msup region hd.2
+    simp only [HintSound] at hs
+    have P := comp_run_hint h7 hcode env snd E p h.1 msup region hd.1 hs.1
+    have Q := comp_run_hint h7 hcode env snd E q h.2 msup region hd.2 hs.2
     exact ⟨fun goal g hi => comp_run_consLRH h7 hcode env msup p q P Q goal g hi, res_consRH P.res Q.res,
       pastAt_code h7 hcode env hc⟩
-  | Nomm.n0 ax, h, msup, region, hd =>
+  | Nomm.n0 ax, h, msup, region, hd, hs =>
     partH_of_partR rfl (comp_run_dir h7 hcode env E (Nomm.n0 ax) rfl msup region trivial)
-  | Nomm.n1 k, h, msup, region, hd =>
+  | Nomm.n1 k, h, msup, region, hd, hs =>
     partH_of_partR rfl (comp_run_dir h7 hcode env E (Nomm.n1 k) rfl msup region trivial)
-  | Nomm.n2 p q Option.none, h, msup, region, hd => by
+  | Nomm.n2 p q Option.none, h, msup, region, hd, hs => by
     have hc := callCode_of_hint (ctx := ctx) _ h msup hd
     simp only [HintOk, Bool.and_eq_true] at h; simp only [HintCalls] at hd
-    have P := comp_run_hint h7 hcode env snd E p h.1 msup region hd.1
-    have Q := comp_run_hint h7 hcode env snd E q h.2 msup region hd.2
+    simp only [HintSound] at hs
+    have P := comp_run_hint h7 hcode env snd E p h.1 msup region hd.1 hs.1
+    have Q := comp_run_hint h7 hcode env snd E q h.2 msup region hd.2 hs.2
     exact ⟨fun goal g hi => comp_run_n2LRH h7 hcode env msup p q P Q goal g hi, res_n2RH P.res Q.res,
       pastAt_code h7 hcode env hc⟩
-  | Nomm.n2 p q (some (b, Option.none)), h, msup, region, hd => by
+  | Nomm.n2 p q (some (b, Option.none)), h, msup, region, hd, hs => by
     simp only [HintOk, Bool.and_eq_true] at h; simp only [HintCalls] at hd
     exact partH_of_partR h.2 (comp_run_dir h7 hcode env E _ h.1 msup region hd)
-  | Nomm.n2 _ _ (some (_, some _)), h, _, _, _ => by simp [HintOk] at h
-  | Nomm.n3 p, h, msup, region, hd => by
+  | Nomm.n2 _ _ (some (_, some _)), h, _, _, _, hs => by simp [HintOk] at h
+  | Nomm.n3 p, h, msup, region, hd, hs => by
     have hc := callCode_of_hint (ctx := ctx) _ h msup hd
     simp only [HintOk] at h; simp only [HintCalls] at hd
-    have P := comp_run_hint h7 hcode env snd E p h msup region hd
+    simp only [HintSound] at hs
+    have P := comp_run_hint h7 hcode env snd E p h msup region hd hs
     exact ⟨fun goal g hi => comp_run_n3LRH h7 env msup p goal region g hi P.link, res_n3RH P.res,
       pastAt_code h7 hcode env hc⟩
-  | Nomm.n4 p, h, msup, region, hd => by
+  | Nomm.n4 p, h, msup, region, hd, hs => by
     have hc := callCode_of_hint (ctx := ctx) _ h msup hd
     simp only [HintOk] at h; simp only [HintCalls] at hd
-    have P := comp_run_hint h7 hcode env snd E p h msup region hd
+    simp only [HintSound] at hs
+    have P := comp_run_hint h7 hcode env snd E p h msup region hd hs
     exact ⟨fun goal g hi => comp_run_n4LRH h7 env msup p goal region g hi P.link, res_n4RH P.res,
       pastAt_code h7 hcode env hc⟩
-  | Nomm.n5 p q, h, msup, region, hd => by
+  | Nomm.n5 p q, h, msup, region, hd, hs => by
     have hc := callCode_of_hint (ctx := ctx) _ h msup hd
     simp only [HintOk, Bool.and_eq_true] at h; simp only [HintCalls] at hd
-    have P := comp_run_hint h7 hcode env snd E p h.1 msup region hd.1
-    have Q := comp_run_hint h7 hcode env snd E q h.2 msup region hd.2
+    simp only [HintSound] at hs
+    have P := comp_run_hint h7 hcode env snd E p h.1 msup region hd.1 hs.1
+    have Q := comp_run_hint h7 hcode env snd E q h.2 msup region hd.2 hs.2
     exact ⟨fun goal g hi => comp_run_n5LRH h7 hcode env msup p q P Q goal g hi, res_n5RH P.res Q.res,
       pastAt_code h7 hcode env hc⟩
-  | Nomm.n7 p q, h, msup, region, hd => by
+  | Nomm.n7 p q, h, msup, region, hd, hs => by
     have hc := callCode_of_hint (ctx := ctx) _ h msup hd
     simp only [HintOk, Bool.and_eq_true] at h; simp only [HintCalls] at hd
-    have P := comp_run_hint h7 hcode env snd E p h.1 msup region hd.1
-    have Q := comp_run_hint h7 hcode env snd E q h.2 (some p) region hd.2
+    simp only [HintSound] at hs
+    have P := comp_run_hint h7 hcode env snd E p h.1 msup region hd.1 hs.1
+    have Q := comp_run_hint h7 hcode env snd E q h.2 (some p) region hd.2 hs.2
     exact ⟨fun goal g hi => comp_run_n7CRH env msup p q goal region g (Q.link goal g hi)
         (fun x mono sup hX => ⟨hX.1, hX.2.1, rfl⟩)
         (fun nex g1 e => P.link nex.goal g1 (Q.res goal g g1 nex hi e).2.2.1),
       res_n7RH Q.res P.res, pastAt_code h7 hcode env hc⟩
-  | Nomm.n10 a v q, h, msup, region, hd => by
+  | Nomm.n10 a v q, h, msup, region, hd, hs => by
     have hc := callCode_of_hint (ctx := ctx) _ h msup hd
     simp only [HintOk, Bool.and_eq_true, bne_iff_ne, ne_eq] at h; simp only [HintCalls] at hd
-    have V := comp_run_hint h7 hcode env snd E v h.1.2 msup region hd.1
-    have Q := comp_run_hint h7 hcode env snd E q h.2 msup region hd.2
+    simp only [HintSound] at hs
+    have V := comp_run_hint h7 hcode env snd E v h.1.2 msup region hd.1 hs.1
+    have Q := comp_run_hint h7 hcode env snd E q h.2 msup region hd.2 hs.2
     exact ⟨fun goal g hi => comp_run_n10LRH h7 hcode env msup a h.1.1 v q V Q goal g hi,
       res_n10RH h.1.1 V.res Q.res, pastAt_code h7 hcode env hc⟩
-  | Nomm.n6 p q r, h, msup, region, hd => by
+  | Nomm.n6 p q r, h, msup, region, hd, hs => by
     have hc := callCode_of_hint (ctx := ctx) _ h msup hd
     have ha := noAx0_of_hint _ h
     simp only [HintOk, Bool.and_eq_true] at h; simp only [HintCalls] at hd; simp only [Bake.NoAx0] at ha
     have hc' := hc
     simp only [CallCode] at hc'
-    have P := comp_run_hint h7 hcode env snd E p h.1.1 msup region hd.1
-    have Q := fun rg => comp_run_hint h7 hcode env snd E q h.1.2 msup rg hd.2.1
-    have R := fun rg => comp_run_hint h7 hcode env snd E r h.2 msup rg hd.2.2
+    simp only [HintSound] at hs
+    have P := comp_run_hint h7 hcode env snd E p h.1.1 msup region hd.1 hs.1
+    have Q := fun rg => comp_run_hint h7 hcode env snd E q h.1.2 msup rg hd.2.1 hs.2.1
+    have R := fun rg => comp_run_hint h7 hcode env snd E r h.2 msup rg hd.2.2 hs.2.2
     exact ⟨fun goal g hi => comp_run_n6_allRH h7 hcode env msup p q r region (sixRH_of h7 hcode P hc'.1)
         (sixRH_of h7 hcode (Q region) hc'.2.1) (sixRH_of h7 hcode (R region) hc'.2.2)
         (fun rid => sixRH_of h7 hcode (Q (rid :: region)) hc'.2.1)
@@ -217,34 +244,38 @@ theorem comp_run_hint (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot
       res_n6_allRH P.res (Q region).res (R region).res (fun rid => (Q (rid :: region)).res)
         (fun rid => (R (rid :: region)).res) ha.2.1 ha.2.2,
       pastAt_code h7 hcode env hc⟩
-  | Nomm.n11s tag q body, h, msup, region, hd => by
+  | Nomm.n11s tag q body, h, msup, region, hd, hs => by
     have hc := callCode_of_hint (ctx := ctx) _ h msup hd
-    simp only [HintOk, Bool.and_eq_true, Bool.not_eq_true'] at h; simp only [HintCalls] at hd
-    have Q := comp_run_hint h7 hcode env snd E q h.2 msup region hd
-    exact partH_n11s h.1 body Q (pastAt_code h7 hcode env hc)
-  | Nomm.n11d tag h q body, hn, msup, region, hd => by
+    simp only [HintOk] at h; simp only [HintCalls] at hd; simp only [HintSound] at hs
+    have Q := comp_run_hint h7 hcode env snd E q h msup region hd hs.2
+    cases ht : hintStatic tag with
+    | false => exact partH_n11s ht body Q (pastAt_code h7 hcode env hc)
+    | true => exact partH_n11s_kept h7 ht body Q (hs.1 ht) (pastAt_code h7 hcode env hc)
+  | Nomm.n11d tag h q body, hn, msup, region, hd, hs => by
     have hc := callCode_of_hint (ctx := ctx) _ hn msup hd
-    simp only [HintOk, Bool.and_eq_true, Bool.not_eq_true'] at hn; simp only [HintCalls] at hd
-    have H := comp_run_hint h7 hcode env snd E h hn.1.2 msup region hd.1
-    have Q := comp_run_hint h7 hcode env snd E q hn.2 msup region hd.2
-    exact partH_n11d_nd h7 hn.1.1 body Q H (pastAt_code h7 hcode env hc)
-  | Nomm.n12 _ _, h, _, _, _ => by simp [HintOk] at h
-  | Nomm.mean _ _ _ _ _, h, _, _, _ => by simp [HintOk] at h
+    simp only [HintOk, Bool.and_eq_true] at hn; simp only [HintCalls] at hd; simp only [HintSound] at hs
+    have H := comp_run_hint h7 hcode env snd E h hn.1 msup region hd.1 hs.2.1
+    have Q := comp_run_hint h7 hcode env snd E q hn.2 msup region hd.2 hs.2.2
+    cases ht : hintDynamic tag with
+    | false => exact partH_n11d_nd h7 ht body Q H (pastAt_code h7 hcode env hc)
+    | true => exact partH_n11d_kept h7 ht body Q H (hs.1 ht) (pastAt_code h7 hcode env hc)
+  | Nomm.n12 _ _, h, _, _, _, hs => by simp [HintOk] at h
+  | Nomm.mean _ _ _ _ _, h, _, _, _, hs => by simp [HintOk] at h
 
 /-- **The run link with hints on every goal with `GInv`.** -/
 theorem comp_run_hintX (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
     (env : CallEnv) (snd : Nomm → NeedOrd → Bool) (E : GenRest → Prop) (n : Nomm) (hn : HintOk n = true)
-    (msup : Option Nomm) (region : List Nat) (hd : HintCalls env cod ctx E msup n) (goal : CGoalL CSet)
-    (g : Gen (TreapMap mugF)) (hi : GInv g goal) :
+    (msup : Option Nomm) (region : List Nat) (hd : HintCalls env cod ctx E msup n) (hs : HintSound ctx snd n)
+    (goal : CGoalL CSet) (g : Gen (TreapMap mugF)) (hi : GInv g goal) :
     CompRunAtX (runLCH env snd true msup) ctx (XM E msup) n goal region g :=
-  (comp_run_hint h7 hcode env snd E n hn msup region hd).link goal g hi
+  (comp_run_hint h7 hcode env snd E n hn msup region hd hs).link goal g hi
 
 /-- What a run of the class returns. -/
 theorem res_hint (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
     (env : CallEnv) (snd : Nomm → NeedOrd → Bool) (E : GenRest → Prop) (n : Nomm) (hn : HintOk n = true)
-    (msup : Option Nomm) (region : List Nat) (hd : HintCalls env cod ctx E msup n) :
+    (msup : Option Nomm) (region : List Nat) (hd : HintCalls env cod ctx E msup n) (hs : HintSound ctx snd n) :
     ResForR (runLCH env snd true msup) n region :=
-  (comp_run_hint h7 hcode env snd E n hn msup region hd).res
+  (comp_run_hint h7 hcode env snd E n hn msup region hd hs).res
 
 /-- **An example**: a static `%spot` around a cons, `[11 %spot [[0 2] [1 k]]]`,
 on every goal with `GInv`. -/
@@ -253,7 +284,9 @@ example (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = som
     (goal : CGoalL CSet) (region : List Nat) (g : Gen (TreapMap mugF)) (hi : GInv g goal) :
     CompRunAtX (runLCH env snd true msup) ctx (XM E msup)
       (Nomm.n11s 0x746f7073 (Nomm.cons (Nomm.n0 2) (Nomm.n1 k)) body) goal region g :=
-  comp_run_hintX h7 hcode env snd E _ rfl msup region (by simp [HintCalls]) goal g hi
+  comp_run_hintX h7 hcode env snd E _ rfl msup region (by simp [HintCalls])
+    (by simp [HintSound, hintStatic, hintDynamic, HintTag.bout, HintTag.xray, HintTag.spin, HintTag.jinx, HintTag.live,
+      HintTag.slog, Tag.hunk, Tag.hand, Tag.lose, Tag.mean, Tag.spot]) goal g hi
 
 /-- **An example**: a hint inside a branch of a `%6`, `[6 [0 2] [11 %spot [0
 3]] [1 k]]`, on every goal with `GInv`. -/
@@ -262,7 +295,9 @@ example (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = som
     (goal : CGoalL CSet) (region : List Nat) (g : Gen (TreapMap mugF)) (hi : GInv g goal) :
     CompRunAtX (runLCH env snd true msup) ctx (XM E msup)
       (Nomm.n6 (Nomm.n0 2) (Nomm.n11s 0x746f7073 (Nomm.n0 3) body) (Nomm.n1 k)) goal region g :=
-  comp_run_hintX h7 hcode env snd E _ rfl msup region (by simp [HintCalls]) goal g hi
+  comp_run_hintX h7 hcode env snd E _ rfl msup region (by simp [HintCalls])
+    (by simp [HintSound, hintStatic, hintDynamic, HintTag.bout, HintTag.xray, HintTag.spin, HintTag.jinx, HintTag.live,
+      HintTag.slog, Tag.hunk, Tag.hand, Tag.lose, Tag.mean, Tag.spot]) goal g hi
 
 /-- **An example**: a dropped dynamic hint (`%fast`, a clue that computes)
 around a cons, inside the subject of a `%7`: `[7 [11 [%fast [4 0 1]] [[0 2]
@@ -273,7 +308,9 @@ example (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = som
     CompRunAtX (runLCH env snd true msup) ctx (XM E msup)
       (Nomm.n7 (Nomm.n11d 0x74736166 (Nomm.n4 (Nomm.n0 1)) (Nomm.cons (Nomm.n0 2) (Nomm.n1 k)) body) (Nomm.n0 3))
       goal region g :=
-  comp_run_hintX h7 hcode env snd E _ rfl msup region (by simp [HintCalls]) goal g hi
+  comp_run_hintX h7 hcode env snd E _ rfl msup region (by simp [HintCalls])
+    (by simp [HintSound, hintStatic, hintDynamic, HintTag.bout, HintTag.xray, HintTag.spin, HintTag.jinx, HintTag.live,
+      HintTag.slog, Tag.hunk, Tag.hand, Tag.lose, Tag.mean, Tag.spot]) goal g hi
 
 end Compiler
 end Formalization
