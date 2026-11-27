@@ -85,6 +85,12 @@ import lemmas.Glue.StraightRen
 import lemmas.Glue.StraightRenCheck
 import lemmas.Glue.StraightPlain
 import lemmas.Ska.RawInvCLKIMid
+import lemmas.Glue.ProxPlain
+import lemmas.Glue.ProxPlainCheck
+import lemmas.Glue.SplitDefBase
+import lemmas.Glue.SplitDefRun
+import lemmas.Glue.GuardNaryPlain
+import lemmas.Glue.ProxCalls
 
 /-!
 # Audit of `formalization/LEDGER.md`
@@ -629,5 +635,30 @@ namespace Formalization
 #check @SkaModel.Raw.kim_run_plainIL
 #print axioms SkaModel.Glue.guardMonoC_plain
 #print axioms SkaModel.Glue.entryMono_plain
+
+
+-- twelfth pass, track G: `EntryMono` / `EntryNary` on `PlainM` / `PlainNC` from `KIMid` alone (2.c)
+#check @SkaModel.Glue.RenAN
+#check @SkaModel.Glue.ProxOKN
+#check @SkaModel.Glue.SplitDefEnd
+#check @SkaModel.Glue.KeyUndefC
+#check @SkaModel.Glue.NskEndC
+#print axioms SkaModel.Glue.celAnn_renameN
+#print axioms SkaModel.Glue.blocksOKA_npN
+#print axioms SkaModel.Glue.renA_proxN
+#print axioms SkaModel.Glue.proxEndN_of
+#print axioms SkaModel.Glue.guardMonoC_plainE
+#print axioms SkaModel.Glue.kernNeed_sd
+#print axioms SkaModel.Glue.ks_runLC
+#print axioms SkaModel.Glue.splitDefEnd_plain
+#print axioms SkaModel.Glue.entryMono_plainK
+#print axioms SkaModel.Glue.kpa_coerceLazyL
+#print axioms SkaModel.Glue.ks_coerceLazyL
+#print axioms SkaModel.Glue.nary_noKey
+#print axioms SkaModel.Glue.guardNaryC_plain
+#print axioms SkaModel.Glue.entryNary_plain
+#print axioms SkaModel.Glue.proxEndC_of
+#print axioms SkaModel.Glue.guardMonoC_noSixN
+#print axioms SkaModel.Glue.entryMono_noSixN
 
 end Formalization

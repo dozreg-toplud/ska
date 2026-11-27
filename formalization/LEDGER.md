@@ -1,4 +1,4 @@
-# LEDGER: what `Full` rests on (track G, 2026-11-28, eleventh pass)
+# LEDGER: what `Full` rests on (track G, 2026-11-28, twelfth pass)
 
 `Full` (`core/Statement.lean`) is proved by `Assembly.full_of` from one
 structure, `Assembly.Gap lib pk InvC`, with eight fields.  This file traces
@@ -32,6 +32,55 @@ through [302], the FIXED compiler, pill 03d6233e...), with integration
 `AuditGlue.lean` (section "eleventh pass"); the names of other tracks from
 digest [296] to [302] cited below were FOUND in the tree at 812e4aa (grep,
 file named), not `#check`ed, except track D's four leaves (checked).
+
+The twelfth pass is at base fbf606d (digest [305]); track G's new names are
+checked in `AuditGlue.lean` (section "twelfth pass"); names of other tracks
+from digest [303] to [305] are *not checked here* (taken from the digest).
+
+READ FIRST (twelfth pass, base fbf606d, digest [303] to [305]):
+- **`EntryMono` on `PlainM` and `EntryNary` on `PlainNC` rest on `KIMid`
+  ALONE**: `entryMono_plainK` (`Glue/SplitDefRun.lean`), `entryNary_plain`
+  (`Glue/GuardNaryPlain.lean`), with D's four `*_plain` leaves.  On
+  `NoSixM` (direct calls): `entryMono_noSixN` (`Glue/ProxCalls.lean`) from
+  D's `OptInMono`, `ReadsInMono`, `KIMid`, the end-state leaf `KeyUndefC`
+  (D: no key of `cond` is defined after the top `+kerf`, D's `IL.cond`
+  there) and `NskEndC` (G: no split op splits a key).  `EntryNary` on a
+  class with direct calls or baked immediates: not done.
+- The renaming needs LESS than `ProxEnd`: the `%cel` disjunct of `Want`
+  matters only for a register annotated somewhere, and the restricted
+  annotation has no key, so `celAnn_renameN` under `RenAN` needs only
+  `ProxOKN` (`wr`, and `nsk`: no key is split); the `src` clause (cross
+  block, no invariant behind it) is gone.  `ProxEnd` is superseded, not
+  proved.  CHECKED (`Glue/ProxPlainCheck.lean`): on all 2,856 `PlainN`
+  nomms of `enumCX`, 7 direct calls and 7,920 `enumDX` nomms no key is
+  split; 28 hand-made `PlainN` nomms DO test a key with `%cel`
+  (`+crash-need` of a bond's need through a proxy), none splits one.
+- On `PlainN`, `wr` and `nsk` are D's `IL.cond` (`topU_of`) plus `SDBody`
+  (every split register is defined by an earlier op of its body), carried
+  through `runLC` by a new frame `KS` (`ks_runLC`, `kernNeed_sd`: the only
+  splits are `+kern-need`'s, after its `%mov`).  With direct calls `SDBody`
+  FAILS (`+mono-try-call`'s split block) and 64 of the 7,920 `enumDX`
+  states split a register with no definition; the invariant for `NskEndC`
+  is: a split register is defined earlier in its body, or is no key and
+  lies below `re`.
+- On `PlainNC` nothing is baked, so the inputs are a run
+  (`isRun_needOrdAllocRegs`) and `+to-straight` takes the RENAMING path:
+  the map path is needed only with baked immediates.  `+coerce-lazy` is
+  carried over `KPA` (`kpa_coerceLazyL`) and `KS`; `nary_noKey` restates
+  the step `uD` inside D's `tn_all`.
+- Other tracks, digest [303] to [305] (not checked here): D (6e1dff4):
+  `splitSpecL`, `intoSpecL`, `liveRun_plain` unconditional, `topSAR_plain`,
+  `topSAU_plain`, the four `*_plain` leaves; `IL` FALSE at `%6` as stated
+  (183,638 runs), candidate `ATS6` + `PrepRedir`.  C (75dffca): `%6` under
+  `%done` on the real result (`six_doneGD`), `runOKGD_sevenG`,
+  `runOKGen_sevenGF`, `runOKGen_n1`; the first contracts only the general
+  relation gives (`sixCallTest22_contractG`, `seven0Six_contract`); the
+  example waits on `runOKGen_cons00`.  K (8cbe387): `comp_run_softChain`
+  (`SoftChainOk`: 5 of the 6 soft compiles; r31 `fld` is a `%6` reading
+  `+soft-less`), `comp_run_n2_softTailR`, `softBond_spec`,
+  `comp_run_n1_nextF`; MODEL QUESTION passed to track I (owner of
+  `runLCS`): `+mede` -> `+crash-need` asks `+soft-ask` at a soft block
+  while the model's `%1` never asks (not reproduced on the real compiler).
 
 READ FIRST (eleventh pass, base 812e4aa, digest [296] to [302]):
 - `StraightA` IS A THEOREM from a sharper named hypothesis: `straightA_of`
@@ -845,6 +894,22 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
       it runs: `mapBlocks` must be shown to be `renameBlocks` by its final
       map, injective, before `celAnn_rename` applies); `%6` with calls
       (D's `ATS6`).
+    - TWELFTH PASS: `ProxEnd` superseded by `ProxOKN` (`wr`, `nsk`) under
+      the narrower `RenAN` (`celAnn_renameN`, `renA_proxN`,
+      `blocksOKA_npN`, `Glue/ProxPlain.lean`).  On `PlainN`: `proxEndN_of`
+      (D's `IL.cond` and `SDBody`), `splitDefEnd_plain` (frame `KS`,
+      `Glue/SplitDefBase.lean`, `Glue/SplitDefRun.lean`), so
+      **`entryMono_plainK`**: `EntryMono` on `PlainM` from `KIMid` alone.
+      `GuardNaryC` on `PlainNC`: **`guardNaryC_plain`** (renaming path,
+      `kpa_coerceLazyL`, `ks_coerceLazyL`, `nary_noKey`), so
+      **`entryNary_plain`** from `KIMid` alone.  On `NoSixM`:
+      `guardMonoC_noSixN`, `entryMono_noSixN` from `KIMid`, `KeyUndefC` (D)
+      and `NskEndC` (G).  OPEN: `NskEndC` (the `KS` frame with the direct
+      call's arms and the invariant "defined earlier in the body, or no key
+      below `re`"), `KeyUndefC` (D's `IL` with the direct call), `KIMid`'s
+      run clause in the `GD` form (D), the n-ary pass with baked immediates
+      (the map path: `mapBlocks` = `renameBlocks` by its final map), `%6`
+      with calls (D's `ATS6`).
 2.d `optRef`: see the table; with calls the input side of track H's
     totality (`opt_total_*` need `FragX` because the alias pass reads only
     call-free blocks) is open.
@@ -1251,7 +1316,10 @@ M20 (eighth pass, track I [281]). `runLC` / `runLCM` do NOT cover SOFT
    clause in the `GD` form checked, D's next step) and `ProxEnd` (the proxy
    facts after the top `+kerf`, open: track D or G; checked on 7 + 7,920)
    (`guardMonoC_noSixP`; `StraightA` is `straightA_of`).  `GuardNaryC`:
-   not started (the map path of `+to-straight`).
+   not started (the map path of `+to-straight`).  TWELFTH PASS: on `PlainM` /
+   `PlainNC` both entry leaves rest on `KIMid` alone (`entryMono_plainK`,
+   `entryNary_plain`); on `NoSixM` `GuardMonoC` rests on `KIMid`,
+   `KeyUndefC` (D) and `NskEndC` (G) (`guardMonoC_noSixN`).
 5. `CgHalts` (3.1): M17 FIXED (dab8478, merged at [300]); on the fixed
    loop `CgHalts` is a hypothesis: the quiet-pass lemma, `FinPushes` from
    `FinIdents`, `FinBranch` / `KruskalBT`, the fuel of `+run` (track F).

@@ -1294,6 +1294,12 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Glue/StraightRen.lean` | Track G (Gaps 22 (m)): the final pass with calls.  `bypassable_body`, `chase_back`, `ann_back` (the annotation goes back through empty hops), `Want`, `RenA` (the renaming condition), `noWrite_ren`, `nwb_ren`, `cellOut_ren`, **`celAnn_rename`** (`BlocksOKA` and `RenA` give `NoPoison` and `CelAnn` of the renamed code), `get_start`, `blocksOKA_start`, `ProxOK` (the proxy facts `wr`, `cel`, `src`), `proxOK_start`, `blocksOKA_np`, `renA_prox`, the named hypothesis `ProxEnd`, **`straightA_of`** (`StraightA` from `ProxEnd`), **`guardMonoC_noSixP`**, `entryMono_noSixP`. |
 | `Glue/StraightRenCheck.lean` | Track G (Gaps 22 (m)): `wrB`, `celB`, `srcB` (Boolean `ProxOK`), `renOldB` (the old `RenOK` fact), `kerfState`, `tallyP`: `ProxOK` after the top `+kerf` on 7 of 7 direct calls and 7,920 of 7,920 `enumDX` nomms; the old fact fails on 640. |
 | `Glue/StraightPlain.lean` | Track G (Gaps 22 (m)): `noSix_of_plain`, `guardMonoC_plain`, **`entryMono_plain`** (`EntryMono` on track D's `PlainM` from `KIMid` and `ProxEnd`, with D's `optInMono_plain`, `readsInMono_plain`). |
+| `Glue/ProxPlain.lean` | Track G (Gaps 22 (n)): `WantN`, `RenAN` (the `%cel` test counted only for an annotated register), **`celAnn_renameN`**, `ProxOKN` (`wr`, `nsk`: no split op splits a key), `proxOKN_start`, `blocksOKA_npN`, `renA_proxN`, `SDBody`, the leaf `SplitDefEnd`, `ProxEndN`, **`proxEndN_of`** (from D's `IL.cond` via `topU_of`), **`guardMonoC_plainE`**, `entryMono_plainE`. |
+| `Glue/ProxPlainCheck.lean` | Track G (Gaps 22 (n)): after the top `+kerf`: no key split or `%cel`-tested and `SDBody` everywhere on the 2,856 `PlainN` nomms of `enumCX`; 28 hand-made nomms test a key with `%cel`, none splits one; with direct calls `SDBody` fails on every state, 64 of 7,920 `enumDX` states split a register defined nowhere, no state splits a key. |
+| `Glue/SplitDefBase.lean` | Track G (Gaps 22 (n)): `SDx`, `SDS`, the frame `KS` (as `KP`, over `SDBody`) and its combinators, `kernBoth_sdx`, `kernLoop_sdx`, **`kernNeed_sd`**, `ks_kernNeed`, the needs arms (`ks_must` .. `ks_doneBlocks`). |
+| `Glue/SplitDefRun.lean` | Track G (Gaps 22 (n)): the lazy arms in `KS` (ported from `Ska/CompSimBody.lean`), `ks_callL`, **`ks_runLC`** (`runLC` on `PlainN` keeps `SDS`), `ks_kerf`, `sds_gen0`, **`splitDefEnd_plain`**, **`entryMono_plainK`** (`EntryMono` on `PlainM` from `KIMid` alone). |
+| `Glue/GuardNaryPlain.lean` | Track G (Gaps 22 (n)): `kpa_sureLoop`, `kpa_coerceLazy`, `kpa_coerceLazyL` (`+coerce-lazy` keeps `InvA`), `ks_sureLoop`, `ks_coerceLazyL`, `nary_noKey` (D's in-proof `uD` of `tn_all` restated), **`guardNaryC_plain`** (`GuardNaryC` on `PlainNC` from `KIMid`), **`entryNary_plain`** (`EntryNary` on `PlainNC` from `KIMid` alone). |
+| `Glue/ProxCalls.lean` | Track G (Gaps 22 (n)): the two leaves with direct calls, `KeyUndefC` (track D: no key defined at the end) and `NskEndC` (track G: no key split), `proxEndC_of`, **`guardMonoC_noSixN`**, `entryMono_noSixN` (`EntryMono` on `NoSixM` from D's `OptInMono`, `ReadsInMono`, `KIMid`, `KeyUndefC` and `NskEndC`). |
 | `Glue/GuardFinalTop.lean` | Track G (Gaps 22 (e)): **`guardFinalU`**, **`guardFinalF`** (the two final-pass leaves are theorems), `guardMonoX`, `guardNaryX`, **`compHyp_of_fragX₃`** (`CompHyp` on `FragX` from `CompRestOE` alone, no guard leaf); two `example`s on `[6 [0 2] [6 [0 6] [0 3] [0 1]] [1 0]]`. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
@@ -6673,6 +6679,22 @@ import only its theorems.  So:
     on `PlainM` / `PlainNC`, `IL` false at `%6` (candidate `ATS6`), `InvBSR` with no owner.
     Not done: `ProxEnd` (a run invariant on `cond` beside `InvA`), `GuardNaryC` (the map
     path of `+to-straight`).
+    (n) Twelfth pass (`Glue/ProxPlain.lean`, `Glue/ProxPlainCheck.lean`,
+    `Glue/SplitDefBase.lean`, `Glue/SplitDefRun.lean`, `Glue/GuardNaryPlain.lean`,
+    `Glue/ProxCalls.lean`): **`EntryMono` on `PlainM` and `EntryNary` on `PlainNC` rest on
+    `KIMid` alone** (`entryMono_plainK`, `entryNary_plain`).  The renaming needs less than
+    `ProxEnd`: the `%cel` disjunct of `Want` matters only for an annotated register, so
+    `celAnn_renameN` under `RenAN` needs only `ProxOKN` (no written register or parameter is
+    a key, no split op splits a key; no `src`).  On `PlainN` both are D's `IL.cond` (a key
+    has no definition) once every split register is defined earlier in its body (`SDBody`,
+    carried through `runLC` by the frame `KS`: the only splits are `+kern-need`'s, after its
+    `%mov`).  On `PlainNC` nothing is baked, so the inputs are a run and `+to-straight`
+    takes the renaming path (no map path); `+coerce-lazy` is carried over `KPA` and `KS`.
+    With direct calls (`NoSixM`) `GuardMonoC` rests on `KIMid` and two end-state leaves,
+    `KeyUndefC` (D) and `NskEndC` (G); `SDBody` fails there (`+mono-try-call`'s split
+    block), and 64 of 7,920 `enumDX` states split a register with no definition.  Not done:
+    `NskEndC` (the invariant: every split register is defined earlier in its body, or is no
+    key and lies below `re`), the n-ary class with baked immediates (the map path), `%6`.
 23. **The poke on states: `enc` and the `%full` branch** (track P, 2026-11-27,
     `Ska/PokeEnc.lean`, `Compiler/PokeLink.lean`, `Compiler/PokeLinkFull.lean`, `Compiler/PokeLinkOpt.lean`,
     `Compiler/PokeLinkScc.lean`, `Compiler/PokeLinkJet.lean`, `Compiler/PokeLinkReach.lean`,
