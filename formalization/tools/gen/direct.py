@@ -6,7 +6,7 @@
 `cr2Dir` is `[7 [0 1] [7 [0 1] [8 PURE [6 TEST DROP CALL]]]]`: the two `=*`
 (`b-callee`, `key`), the push of `callee-pure`, the test of the drop, the
 dropped call `DROP` and the call `CALL`.  Writes `OUTDIR/kd.lean`: `PURE`,
-`TEST`, `DROP` cut at its `=^` pushes (the run of `q` under `+safe-fol-fol`,
+`TEST`, `DROP` cut at its `=^` pushes (`crDNf`, the run of `q` under `+safe-fol-fol`,
 `+past`, the run of `p`, then `+copy`), each later part named inside the
 earlier ones, with `CALL` read from the pill as `(slot? k comp.door).getD
 (A 0)`, so that `cr2Dir = crDHead` is a `kernel_rfl` fact.  Prints the map
@@ -123,7 +123,8 @@ defs = [
     'def crDD3 : Noun :=\n  ' + show(D3, {}),
     'def crDD2 : Noun :=\n  ' + show(D2, {id(D3): 'crDD3'}),
     'def crDD1 : Noun :=\n  ' + show(D1, {id(D2): 'crDD2'}),
-    'def crDDrop : Noun :=\n  ' + show(DROP, {id(D1): 'crDD1'}),
+    'def crDNf : Noun :=\n  ' + show(sl(30, DROP), {}),
+    'def crDDrop : Noun :=\n  ' + show(DROP, {id(D1): 'crDD1', id(sl(30, DROP)): 'crDNf'}),
     'def crDPure : Noun :=\n  ' + show(PURE, {}),
     'def crDTest : Noun :=\n  ' + show(TEST, {}),
     'def crDCall : Noun := (slot? %d comp.door).getD (A 0)' % ACALL,

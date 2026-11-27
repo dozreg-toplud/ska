@@ -86,5 +86,103 @@ theorem crd_model (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (b : Bell) (
       = crdDropM env msup p q th region := by
   simp only [runLC, callL, hpu, hne, Bool.and_self, if_true, crdDropM, pastL_cod hpc]
 
+/-- The first push of the dropped call: `+safe-fol-fol` of `q` (arm `767` of
+`ana`), else the run of `q` for `[%next *need-lazy then.goal]`. -/
+theorem crd_nf (h7 : slot? 7 ctx = some compK) (env : CallEnv) (msup : Option Nomm) (p q : Nomm)
+    (region : List Nat) (x : GenRest) (hx : x.NoSoft) (mono I sup : Noun) (laz : Lazy CSet) (th : Jmp)
+    (g : Gen (TreapMap mugF))
+    (hq : CompRunAtR (runLC env msup) ctx q (CGoalL.next (Lazy.ofSure Sure.bunt) th) region g) :
+    nock (C (A 0) (crSubj mono (C (A 2) (C p.toNoun (C q.toNoun I))) (CGoalL.next laz th).toNoun
+      (listNoun A region) sup (compCore g x ctx))) crDNf
+      = ((if safeFolFol q then pure ⟨Lazy.ofSure Sure.bunt, th⟩
+          else runLC env msup q (CGoalL.next (Lazy.ofSure Sure.bunt) th) region : CM (TreapMap mugF) (NextL CSet))
+          g).map fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  have h63 := crd_ctx63 h7
+  have hsa : slot? 767 ana = some safe_fol_fol.arm := safe_fol_fol.arm_at
+  have hsf := safe_fol_fol_pill q
+  have hq1 := hq x mono sup hx
+  rw [cgl_next_noun, cr_bunt_noun] at hq1
+  rw [cgl_next_noun]
+  unfold crDNf
+  simp only [crSubj, compCore] at hq1 ⊢
+  generalize comp.door = Dr at hq1 ⊢
+  cases hs : safeFolFol q with
+  | true =>
+    simp [nock_exec, h63, hsa, safe_fol_fol_arm, hsf, hs, loob, pure, StateT.pure, cr_next_nounL, cr_bunt_noun]
+  | false =>
+    simp [nock_exec, h63, hsa, safe_fol_fol_arm, hsf, hs, loob, cr_bat_dol, hq1]
+
+/-- **The dropped call** after the test: the first push (`crd_nf`), `+past`
+over `p` (`comp_past`), the run of `p` for `[%next *need-lazy then.nex-fol]`,
+`+copy` (`comp_copy_all`). -/
+theorem crd_drop (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (hpn : hinted noCode p ≠ Option.none)
+    (region : List Nat) (x : GenRest) (hx : x.NoSoft) (mono I sup : Noun) (laz : Lazy CSet) (th : Jmp)
+    (g : Gen (TreapMap mugF))
+    (hq : CompRunAtR (runLC env msup) ctx q (CGoalL.next (Lazy.ofSure Sure.bunt) th) region g)
+    (hp : ∀ nexF g2 nexF' g3, (if safeFolFol q then pure ⟨Lazy.ofSure Sure.bunt, th⟩
+          else runLC env msup q (CGoalL.next (Lazy.ofSure Sure.bunt) th) region : CM (TreapMap mugF) (NextL CSet))
+          g = some (nexF, g2) → pastL noCode nexF p region g2 = some (nexF', g3) →
+      CompRunAtR (runLC env msup) ctx p (CGoalL.next (Lazy.ofSure Sure.bunt) nexF'.th) region g3)
+    (hcp : ∀ nexF g2 nexF' g3 nexS g4, (if safeFolFol q then pure ⟨Lazy.ofSure Sure.bunt, th⟩
+          else runLC env msup q (CGoalL.next (Lazy.ofSure Sure.bunt) th) region : CM (TreapMap mugF) (NextL CSet))
+          g = some (nexF, g2) → pastL noCode nexF p region g2 = some (nexF', g3) →
+      runLC env msup p (CGoalL.next (Lazy.ofSure Sure.bunt) nexF'.th) region g3 = some (nexS, g4) →
+      CopyH g4.re nexS.laz nexF'.laz) :
+    nock (C (A 0) (crSubj mono (C (A 2) (C p.toNoun (C q.toNoun I))) (CGoalL.next laz th).toNoun
+      (listNoun A region) sup (compCore g x ctx))) crDDrop
+      = (crdDropM env msup p q th region g).map fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  have hnf := crd_nf h7 env msup p q region x hx mono I sup laz th g hq
+  have hD1 := cr_past_at
+  have hD2 := comp_cp_at
+  unfold crdDropM
+  generalize hF : (if safeFolFol q then pure ⟨Lazy.ofSure Sure.bunt, th⟩
+    else runLC env msup q (CGoalL.next (Lazy.ofSure Sure.bunt) th) region : CM (TreapMap mugF) (NextL CSet)) = F
+    at hnf hp hcp
+  simp only [crSubj, compCore] at hnf ⊢
+  cases eq : F g with
+  | none =>
+    rw [eq] at hnf
+    generalize comp.door = Dr at hnf hD1 hD2 ⊢
+    unfold crDDrop
+    simp [nock_exec, hnf, bind, StateT.bind, eq]
+  | some r =>
+    obtain ⟨nexF, g2⟩ := r
+    rw [eq] at hnf
+    simp only [Option.map_some, cr_next_nounL] at hnf
+    have hpa := comp_past h7 hcode x g2 nexF p region hpn
+    simp only [cr_next_nounL, compCore] at hpa
+    cases e3 : pastL (S := CSet) (Map := TreapMap mugF) noCode nexF p region g2 with
+    | none =>
+      rw [e3] at hpa
+      generalize comp.door = Dr at hnf hD1 hD2 hpa ⊢
+      unfold crDDrop crDD1 crDD2 crDD3
+      simp [nock_exec, crSubj, Nomm.toNoun, hnf, bind, StateT.bind, h7, hcode, hD1, cr_past_arm, hpa, eq, e3]
+    | some r3 =>
+      obtain ⟨nexF', g3⟩ := r3
+      rw [e3] at hpa
+      simp only [Option.map_some, cr_next_nounL] at hpa
+      have hp1 := hp nexF g2 nexF' g3 eq e3 x mono sup hx
+      rw [cgl_next_noun, cr_bunt_noun] at hp1
+      simp only [crSubj, compCore] at hp1
+      cases eq2 : runLC (S := CSet) (Map := TreapMap mugF) env msup p
+          (CGoalL.next (Lazy.ofSure Sure.bunt) nexF'.th) region g3 with
+      | none =>
+        rw [eq2] at hp1
+        generalize comp.door = Dr at hnf hD1 hD2 hpa hp1 ⊢
+        unfold crDDrop crDD1 crDD2 crDD3
+        simp [nock_exec, crSubj, Nomm.toNoun, hnf, bind, StateT.bind, h7, hcode, hD1, cr_past_arm, hpa,
+          cr_bat_dol, hp1, eq, e3, eq2]
+      | some r' =>
+        obtain ⟨nexS, g4⟩ := r'
+        rw [eq2] at hp1
+        simp only [Option.map_some, cr_next_nounL] at hp1
+        have hcpy := comp_copy_all h7 x g4 nexS nexF'.laz (hcp nexF g2 nexF' g3 nexS g4 eq e3 eq2)
+        simp only [compCore, cr_next_nounL] at hcpy
+        generalize comp.door = Dr at hnf hD1 hD2 hpa hp1 hcpy ⊢
+        unfold crDDrop crDD1 crDD2 crDD3
+        simp [nock_exec, crSubj, Nomm.toNoun, hnf, bind, StateT.bind, h7, hcode, hD1, cr_past_arm, hpa,
+          cr_bat_dol, hp1, eq, e3, eq2, hD2, cr_cp_arm, hcpy, cr_next_nounL, Function.comp_def]
+
 end Compiler
 end Formalization

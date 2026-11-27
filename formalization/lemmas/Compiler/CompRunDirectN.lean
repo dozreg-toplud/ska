@@ -8,7 +8,7 @@ import lemmas.Compiler.CompRunTwo
 `b-callee` and of `key` (no code but `[7 [0 1] _]`), the push of
 `callee-pure` (`pure:(~(got by code.long-ska) b-callee)`, `crDPure`), the
 test `&(callee-pure ?=(%next -.goal) (none-equivalent laz.goal))`
-(`crDTest`), the dropped call (`crDDrop`, cut at its pushes: the run of `q`
+(`crDTest`), the dropped call (`crDDrop`, cut at its pushes: `crDNf` the run of `q`
 under `+safe-fol-fol`, then `crDD1` from `+past`, `crDD2` from the run of
 `p`, `crDD3` the `+copy`), and the call (`crDCall`, read from the pill).
 `crd_eq` checks the cut against the pill.  README Gaps 19.
@@ -28,8 +28,11 @@ def crDD2 : Noun :=
 def crDD1 : Noun :=
   (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 9) (C (A 0x2bfe) (C (A 0) (A 63)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 6)) (C (C (A 0) (A 2026)) (C (A 0) (A 2030))))) (C (A 0) (A 2)))))))))) (C (A 7) (C (C (A 10) (C (C (A 510) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) crDD2))))))))
 
+def crDNf : Noun :=
+  (C (A 7) (C (C (A 0) (A 1)) (C (A 6) (C (C (A 8) (C (C (A 9) (C (A 767) (C (A 0) (A 4095)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 2006))) (C (A 0) (A 2)))))))) (C (C (C (C (A 1) (A 0x7478656e)) (C (C (A 1) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))) (C (A 0) (A 987)))) (C (A 0) (A 126))) (C (A 9) (C (A 5) (C (A 10) (C (C (A 118) (C (C (A 1) (A 0x7478656e)) (C (C (A 1) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))) (C (A 0) (A 987))))) (C (A 10) (C (C (A 58) (C (A 0) (A 982))) (C (A 0) (A 3)))))))))))))
+
 def crDDrop : Noun :=
-  (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C (C (A 7) (C (C (A 0) (A 1)) (C (A 6) (C (C (A 8) (C (C (A 9) (C (A 767) (C (A 0) (A 4095)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 2006))) (C (A 0) (A 2)))))))) (C (C (C (C (A 1) (A 0x7478656e)) (C (C (A 1) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))) (C (A 0) (A 987)))) (C (A 0) (A 126))) (C (A 9) (C (A 5) (C (A 10) (C (C (A 118) (C (C (A 1) (A 0x7478656e)) (C (C (A 1) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))) (C (A 0) (A 987))))) (C (A 10) (C (C (A 58) (C (A 0) (A 982))) (C (A 0) (A 3))))))))))))) (C (A 7) (C (C (A 10) (C (C (A 254) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) crDD1))))))))
+  (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C crDNf (C (A 7) (C (C (A 10) (C (C (A 254) (C (A 0) (A 5))) (C (A 0) (A 1)))) (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) crDD1))))))))
 
 def crDPure : Noun :=
   (C (A 7) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x7fffff)))) (C (A 9) (C (A 701) (C (A 10) (C (C (A 6) (C (A 0) (A 4084))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 3934))) (C (A 0) (A 2)))))))) (C (A 0) (A 6))))
