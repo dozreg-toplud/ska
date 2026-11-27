@@ -201,5 +201,96 @@ theorem mem_prod_oldM (MOVED SUR' WAS NN LZ NF NEDB IMM : Noun) (o : Nat) (SUR G
   · rw [if_pos hn]; exact key _ (Or.inl ⟨rfl, hn⟩)
   · rw [if_neg hn]; exact key _ (Or.inr ⟨rfl, hn⟩)
 
+/-- **The gate `member` on `%done` for a member of a real SCC** (`top` is `~`, as in the final
+pass, `map-local` any map): with the run of `+run` the hypothesis `hrunN` (leaving the rest
+`x1`, with no soft, whose cache is `cacheN C1 C2 C3 C4 SURE`) against the model's run `hrunL`,
+`+shape-collapse` (`hsc`), `+need-ord-alloc-regs` (`hnoar`), the residual of the bake a run
+(`hrun`, track A's `BakeRunO`), `+sure-of` (`hsur`) and the `sure.cache` steps (`hwas`, `hput`):
+* no entry of `b` (`getF` gives `~`): the gate puts at `b` the straight of `finishLFC env nm ord
+  cape (bakeNeed · [cape data])` and returns `chg` = `memChgN`;
+* an entry `[prev REST]`: `need-pessimized` is `msgOrd need-new prev cape`; when it is
+  `need-new` the straight is `finishLFC`'s, otherwise it is what `finish` gives on `[~ np]`
+  (`+coerce-soft`, not linked); `chg` is `memChgO`. -/
+theorem mem_gate_done_R (cape : Cape) (DATA FOL : Noun) (keep : Bool)
+    (ML CACHE DN KIDS ML0 CB SCC CODE LSR JH CACHE0 : Noun)
+    (nm : Nomm) (CA1 : Noun)
+    (hinl : nock (C inlBody (C (C (C (C cape.toNoun DATA) FOL) (C (C CODE LSR) (C JH CACHE))) compK)) inlBody
+      = some (C nm.toNoun CA1))
+    (env : CallEnv) (nex : NextL CSet) (g1 : Gen (TreapMap mugF))
+    (hrunL : runLC env Option.none nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF)) = some (nex, g1))
+    (x1 : GenRest)
+    (hrunN : nock (crSubj (A 1) nm.toNoun (C (A 0x656e6f64) (A 0)) (A 0) (A 0)
+        (compCore genEntry (cuRest CA1) (memDCtx SCC (C CODE LSR) JH ML (A 0) (C (C cape.toNoun DATA) FOL)))) crDol
+      = some (C nex.goal.toNoun (genNoun g1 x1)))
+    (C1 C2 C3 C4 SURE : Noun) (hx1 : x1.cache = cacheN C1 C2 C3 C4 SURE) (hs1 : x1.soft = A 0)
+    (ord : NeedOrd) (hsc : nock (C scBody (C (C nex.laz.toNoun cape.toNoun) compK)) scBody = some ord.toNoun)
+    (hargs : nex.th.args = []) (nedF : Need) (g2 : Gen (TreapMap mugF))
+    (hnoar : needOrdAllocRegs ord g1 = some (nedF, g2))
+    (hrun : isRun (flattenNeed (bakeNeed nedF (Sock.mk cape DATA)).1)
+      ((flattenNeed (bakeNeed nedF (Sock.mk cape DATA)).1).headD 0) 0 = true)
+    (sur : NeedOrd) (hsur : sureOf (needToOrd nex.laz.sure.ned) nex.laz.sure.lok cape = some sur)
+    (WAS SURE' : Noun) (hwas : getF mugF (C (C cape.toNoun DATA) FOL) SURE = some WAS)
+    (hw : WAS = A 0 ∨ ∃ u, WAS = C (A 0) u)
+    (hput : putF mugF (C (C cape.toNoun DATA) FOL) (memSurKN keep WAS sur.toNoun) SURE = some SURE')
+    (hml : IsMap mugF ML) :
+    (getF mugF (C (C cape.toNoun DATA) FOL) ML = some (A 0) →
+      nock (C memBody (C (memSam (C (C cape.toNoun DATA) FOL) (A 0x656e6f64) (loob keep) ML (A 0) CACHE)
+          (memCtx DN KIDS ML0 CB SCC (C CODE LSR) JH CACHE0))) memBody
+        = (finishLFC (S := CSet) (Map := TreapMap mugF) env nm ord cape
+            (fun n => bakeNeed n (Sock.mk cape DATA))).bind fun st =>
+            (putF mugF (C (C cape.toNoun DATA) FOL) st.toNoun ML).map fun ML' =>
+              C (memChgN (memMovedN keep WAS sur.toNoun) (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1).toNoun)
+                (C ML' (cacheN C1 C2 C3 C4 SURE'))) ∧
+    (∀ (prev : NeedOrd) (REST : Noun),
+      getF mugF (C (C cape.toNoun DATA) FOL) ML = some (C (A 0) (C prev.toNoun REST)) →
+      nock (C memBody (C (memSam (C (C cape.toNoun DATA) FOL) (A 0x656e6f64) (loob keep) ML (A 0) CACHE)
+          (memCtx DN KIDS ML0 CB SCC (C CODE LSR) JH CACHE0))) memBody
+        = (if (msgOrd (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1) prev cape).toNoun
+              = (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1).toNoun then
+            (finishLFC (S := CSet) (Map := TreapMap mugF) env nm ord cape
+              (fun n => bakeNeed n (Sock.mk cape DATA))).map Straight.toNoun
+          else nock (C finBody (C (C (A 0) (msgOrd (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1) prev cape).toNoun)
+            (memFCR keep WAS sur.toNoun
+              (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1).toNoun nex.laz.toNoun nedF.toNoun
+              (bakeNeed nedF (Sock.mk cape DATA)).1.toNoun (immNoun (bakeNeed nedF (Sock.mk cape DATA)).2)
+              nex.th.there (genNoun g2 x1) nm.toNoun
+              (memDCtx SCC (C CODE LSR) JH ML (A 0) (C (C cape.toNoun DATA) FOL)) (C (C cape.toNoun DATA) FOL) ML
+              (A 0) (cacheN C1 C2 C3 C4 SURE') (memCtx DN KIDS ML0 CB SCC (C CODE LSR) JH CACHE0)))) finBody).bind
+          fun ST => (putF mugF (C (C cape.toNoun DATA) FOL) ST ML).map fun ML' =>
+            C (memChgO (memMovedN keep WAS sur.toNoun)
+                (msgOrd (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1) prev cape).toNoun prev.toNoun)
+              (C ML' (cacheN C1 C2 C3 C4 SURE'))) := by
+  have hto := mem_to_finish_R cape DATA FOL keep ML (A 0) CACHE DN KIDS ML0 CB SCC CODE LSR JH CACHE0 nm CA1 hinl
+    nex g1 x1 hrunN C1 C2 C3 C4 SURE hx1 ord hsc hargs nedF g2 hnoar sur hsur WAS SURE' hwas hw hput
+  have hmv : memMovedN keep WAS sur.toNoun = A 0 ∨ memMovedN keep WAS sur.toNoun = A 1 := by
+    unfold memMovedN; split <;> simp
+  obtain ⟨hs6, hs14, hs496, hl2⟩ := mem_rest_slots nm.toNoun SCC (C CODE LSR) JH ML (A 0) cape.toNoun DATA FOL
+    (loob keep) (cacheN C1 C2 C3 C4 SURE') DN KIDS ML0 CB CACHE0
+  have hf := fin_gate_finishLF_six_B (fun _ => True) tsMapAt_holds env
+    (rfl : slot? 7 (memDCtx SCC (C CODE LSR) JH ML (A 0) (C (C cape.toNoun DATA) FOL)) = some compK)
+    (memMovedN keep WAS sur.toNoun) (memSurKN keep WAS sur.toNoun) WAS
+    (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1).toNoun
+    sur.toNoun _ cuBunt cape hs6 hs14 hs496 hl2 x1 hs1 nm ord nex g1 g2
+    nedF (Sock.mk cape DATA) hrunL hargs trivial hnoar hrun
+  refine ⟨fun hnone => ?_, fun prev REST hprev => ?_⟩
+  · have hnn : ∃ p q, (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1).toNoun = C p q := nord_cell _
+    rw [hto]
+    unfold memFCR memFCB
+    rw [mem_prod_newM (hmv := hmv) (hnn := hnn) (hml := hml) (hnone := hnone)]
+    try unfold memFCR memFCB at hf
+    rw [hf, Option.bind_map]
+    rfl
+  · have hmsg := msg_gate_K (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1) prev cape
+    unfold msgS at hmsg
+    rw [hto]
+    unfold memFCR memFCB
+    rw [mem_prod_oldM (hmv := hmv) (hml := hml) (hprev := hprev) (hmsg := hmsg)]
+    by_cases hnp : (msgOrd (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1) prev cape).toNoun
+        = (needToOrd (bakeNeed nedF (Sock.mk cape DATA)).1).toNoun
+    · rw [if_pos hnp, if_pos hnp]
+      try unfold memFCR memFCB at hf
+      rw [hf]
+    · rw [if_neg hnp, if_neg hnp]
+
 end Compiler
 end Formalization

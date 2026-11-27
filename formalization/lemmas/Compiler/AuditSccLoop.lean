@@ -98,3 +98,7 @@ open Formalization.SkaModel.SccLoop
 #print axioms Formalization.Compiler.mem_to_finish_R
 #print axioms Formalization.Compiler.mem_prod_newM
 #print axioms Formalization.Compiler.mem_prod_oldM
+#print axioms Formalization.Compiler.mem_gate_done_R
+#print axioms Formalization.SkaModel.SccLoop.compReal_done
+#print axioms Formalization.SkaModel.SccLoop.toStraightF_need
+#print axioms Formalization.SkaModel.SccLoop.finishLFC_need

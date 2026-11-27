@@ -91,3 +91,103 @@ theorem compReal_done (r : RealCfg) (b : Noun) (vn vs : Noun → NeedOrd) (o : O
   simp [compReal, h]
 
 end Formalization.SkaModel.SccLoop
+
+namespace Formalization.SkaModel.SccLoop
+
+open Nock Formalization.Hoon Formalization.SkaModel Formalization.SkaModel.Comp Formalization.Compiler
+
+/-- `+rewrite-input` gives the `+need-to-ordered` of the need it renumbers. -/
+theorem rewriteInputGo_need {Map : Type → Type} [HoonMap Map] (rr : Nat → RM Map Nat) :
+    ∀ (ned : Need) (st st' : Nat × Map Nat) (x : NeedOrd),
+      rewriteInputGo rr ned st = some (x, st') → x = needToOrd ned
+  | Need.none, st, st', x, h => by
+    simp only [rewriteInputGo, pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at h
+    rw [← h.1]; rfl
+  | Need.this r, st, st', x, h => by
+    simp only [rewriteInputGo, bind, StateT.bind, pure, StateT.pure] at h
+    cases e : rr r st with
+    | none => rw [e] at h; cases h
+    | some p => rw [e] at h; simp only [Option.bind_some, Option.some.injEq, Prod.mk.injEq] at h; rw [← h.1]; rfl
+  | Need.pair p q, st, st', x, h => by
+    simp only [rewriteInputGo, bind, StateT.bind, pure, StateT.pure] at h
+    cases e1 : rewriteInputGo rr p st with
+    | none => rw [e1] at h; cases h
+    | some a =>
+      rw [e1] at h
+      simp only [Option.bind_some] at h
+      cases e2 : rewriteInputGo rr q a.2 with
+      | none => rw [e2] at h; cases h
+      | some b =>
+        rw [e2] at h
+        simp only [Option.bind_some, Option.some.injEq, Prod.mk.injEq] at h
+        rw [← h.1, rewriteInputGo_need rr p st a.2 a.1 (by rw [e1]),
+          rewriteInputGo_need rr q a.2 b.2 b.1 (by rw [e2])]; rfl
+  | Need.both r p q, st, st', x, h => by
+    simp only [rewriteInputGo, bind, StateT.bind, pure, StateT.pure] at h
+    cases e0 : rr r st with
+    | none => rw [e0] at h; cases h
+    | some c =>
+      rw [e0] at h
+      simp only [Option.bind_some] at h
+      cases e1 : rewriteInputGo rr p c.2 with
+      | none => rw [e1] at h; cases h
+      | some a =>
+        rw [e1] at h
+        simp only [Option.bind_some] at h
+        cases e2 : rewriteInputGo rr q a.2 with
+        | none => rw [e2] at h; cases h
+        | some b =>
+          rw [e2] at h
+          simp only [Option.bind_some, Option.some.injEq, Prod.mk.injEq] at h
+          rw [← h.1, rewriteInputGo_need rr p c.2 a.2 a.1 (by rw [e1]),
+            rewriteInputGo_need rr q a.2 b.2 b.1 (by rw [e2])]; rfl
+
+/-- **The straight of `+to-straight` has the need it was given**, ordered. -/
+theorem toStraightF_need {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map] (cond : Map (Nat × List Nat))
+    (blocks : Map Blob) (ned : Need) (o : Nat) (s : Straight Map) (h : toStraightF cond blocks ned o = some s) :
+    s.need = needToOrd ned := by
+  unfold toStraightF at h
+  simp only at h
+  cases e0 : HoonMap.get blocks o with
+  | none => rw [e0] at h; cases h
+  | some start =>
+    rw [e0, Option.bind_some] at h
+    generalize rer cond (hasProxies cond) _ (renReg _ _) = rr at h
+    cases e1 : rewriteInput rr ned (0, HoonMap.empty) with
+    | none => rw [e1] at h; cases h
+    | some r =>
+      obtain ⟨input, st⟩ := r
+      rw [e1, Option.bind_some] at h
+      have hin : input = needToOrd ned := by
+        unfold rewriteInput at e1
+        simp only [if_true] at e1
+        exact rewriteInputGo_need rr ned _ st input e1
+      split at h <;>
+      · obtain ⟨new, -, rfl⟩ := Option.map_eq_some_iff.mp h
+        exact hin
+
+/-- **The straight of the final pass has the need `need-new`**: the `+need-to-ordered` of the
+residual of the bake. -/
+theorem finishLFC_need (env : CallEnv) (nm : Nomm) (ord : NeedOrd) (less : Cape)
+    (bake : Need → Need × List (Nat × Noun)) (nex : NextL CSet) (g1 : SkaModel.Comp.Gen (TreapMap mugF))
+    (hrunL : runLC env Option.none nm (CGoalL.done : CGoalL CSet) [] (gen0 : SkaModel.Comp.Gen (TreapMap mugF)) = some (nex, g1))
+    (nedF : Need) (g2 : SkaModel.Comp.Gen (TreapMap mugF)) (hnoar : needOrdAllocRegs ord g1 = some (nedF, g2))
+    (s : Straight (TreapMap mugF))
+    (h : finishLFC (S := CSet) (Map := TreapMap mugF) env nm ord less bake = some s) :
+    s.need = needToOrd (bake nedF).1 := by
+  unfold finishLFC at h
+  simp only [hrunL, Option.bind_some] at h
+  by_cases ha : nex.th.args ≠ []
+  · simp [ha] at h
+  · simp only [ha, if_false, hnoar, Option.bind_some] at h
+    cases e1 : coerceLazyL nedF less nex.th.there nex.laz g2 with
+    | none => rw [e1] at h; cases h
+    | some r1 =>
+      rw [e1, Option.bind_some] at h
+      cases e2 : addOps nex.th.there ((bake nedF).2.map fun (r, v) => Pole.imm v r) r1.2 with
+      | none => rw [e2] at h; cases h
+      | some r2 =>
+        rw [e2, Option.bind_some] at h
+        exact toStraightF_need _ _ _ _ s h
+
+end Formalization.SkaModel.SccLoop
