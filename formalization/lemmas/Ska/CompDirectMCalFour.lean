@@ -1,4 +1,4 @@
-import lemmas.Ska.CompDirectMCal
+import lemmas.Ska.CompDirectMLS
 import lemmas.Ska.CompDirectMTailEx
 
 /-!
@@ -7,8 +7,8 @@ import lemmas.Ska.CompDirectMTailEx
 README Gaps 18.13 (track J, 2026-11-27).  The first contract theorem with a
 direct call under `%next` (the `%cal` form of `callLBM`):
 
-* `four_doneBM`: `four_doneB` (`CompFourTop.lean`, unchanged) for the
-  whole-subject run (`runLCM env true`), the operand meeting `LOKSM false`.
+* `four_doneBM` (generated, `CompDirectMLS.lean`): `four_doneB` for the
+  whole-subject run (`runLCM env true`), the operand meeting `LOKSFM`.
 * `finishLUCM_contractFourDirect`: both halves of the contract of
   `[4 [2 p [1 k] b]]` on the real whole-subject code, `p` meeting `LOKS
   false` with no direct call (track C's class), hypotheses only on the needs
@@ -29,69 +29,8 @@ namespace Comp
 
 open Nock Lazy
 
-/-- `omega` after reducing the projections of the states (as in `CompFourTop.lean`). -/
-local macro "romega" : tactic =>
-  `(tactic| first | omega | (simp only [emitted_re, emitted_bo] at *; omega) | (dsimp only at *; omega))
-
 section
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
-
-/-- **`four_doneB` for the whole-subject run**: `[4 p]` under `%done` meets
-`DoneOK` when `p` meets `LOKSM false`.  The text of `four_doneB`. -/
-theorem four_doneBM (lib : Lib) {N : Needs} {p : Nomm} {env : CallEnv} {P : Noun → Prop} {f fb : Noun}
-    (Sp : LOKSM (S := S) (Map := Map) false lib N env P fb p) (M : MinkC4 lib P f fb) {sup : Option Nomm}
-    {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S} (hcount : sixCount p ≤ 255) (b0 : 1 ≤ g0.bo)
-    (d0 : g0.drop = false) (hu : UpBelow g0) (hcl0 : Clear g0) (hcb : CondBelow g0)
-    (h : runLCM env true sup (Nomm.n4 p) CGoalL.done region g0 = some (nex, g1)) :
-    DoneOK lib N P f g0 g1 nex := by
-  have e4 : (runLCM env true sup (Nomm.n4 p) (CGoalL.done : CGoalL S) region : CM Map (NextL S)) = (do
-      let pro ← re
-      let arg ← re
-      let o ← emit ⟨[], [Pole.inc arg pro], Termin.don pro⟩
-      runLCM env true sup p (CGoalL.next (ofSure (lazyReg arg)) (jmp0 o)) region) := by
-    conv => lhs; unfold runLCM
-  rw [e4] at h
-  simp only [bind_apply, re_apply, emit_apply, Option.bind_some] at h
-  have e0 : ∀ a : Nat, entries (ofSure (lazyReg a : Sure S)) = [] := fun a => entries_ofSure _
-  have GU := ((grow_reg g0 (g0.re + 1 + 1)).trans (grow_emit (g := { g0 with re := g0.re + 1 + 1 })
-    (b := ⟨[], [Pole.inc (g0.re + 1) g0.re], Termin.don g0.re⟩) (jumpsBelow_nil rfl _))).toU hu
-  obtain ⟨⟨Qp, Rp⟩, pne, -, pfl, pec⟩ := Sp.run (L := ofSure (lazyReg _)) (th := jmp0 _) hcount
-    (by simp only [emitted_bo]; omega) (by simpa [emitted_drop] using d0) (GU.up hu) (hcl0.growU GU)
-    (CondFresh.below (condFresh_of_eq (g0 := g0) (by romega) rfl) hcb)
-    (by simp only [jmp0]; omega) (by simp only [jmp0, emitted_bo]; omega) rfl (by rw [e0]; simp) trivial
-    (fun r hr => by
-      simp only [lazyReg, ofSure, NMem] at hr; subst hr
-      exact ⟨by simp [emitted_re], condBelow_none hcb (by romega)⟩)
-    (fun e he => by rw [e0] at he; cases he) (by rw [e0]; simp) (fun e he => by rw [e0] at he; cases he)
-    (flat_ofSure _) trivial (fun e he => by rw [e0] at he; cases he) h
-  have RG := Rp.toRunOKLB.toGB (fun r hr => by
-    simp only [lazyReg, NMem] at hr; subst hr; simp [emitted_re])
-  refine ⟨?_, pne, pfl, Sp.clean (L := ofSure (lazyReg _)) trivial h, pec⟩
-  refine unaryGB_ok M ((ext_re _).trans ((ext_re _).trans (ext_emit _ _)))
-    (((grow_reg g0 _).trans (grow_emit (jumpsBelow_nil rfl _))).toU hu) rfl
-    ⟨Nat.le_succ _, by simp [emitted_re]⟩ (by simp [emitted_bo]) (fresh_emitted (by simpa using d0) rfl rfl) RG
-    (fix_of_keeps (gs := g0) rfl ((keepsA_reg _ g0 _ (by romega)).trans (keepsA_emitted d0 (blobIn_one
-      (fun x hx => by
-        simp only [poleRegs, List.mem_cons, List.mem_nil_iff, or_false] at hx
-        rcases hx with rfl | rfl
-        <;> exact condBelow_none hcb (by romega)) (condBelow_none hcb (by romega)))))
-      ((keeps_reg g0 _ (by romega)).trans (keeps_emitted d0 (blobIn_one
-      (fun x hx => by
-        simp only [poleRegs, List.mem_cons, List.mem_nil_iff, or_false] at hx
-        rcases hx with rfl | rfl
-        <;> romega) (by simp only [FinIn]; romega)))))
-    ?_
-  intro c hc σ Inv ν O gul st regs t tm x hI htr hx
-  have hb := emitted_get' (by simpa using d0) (hc _ (by simp) (by simp [emitted_bo]))
-  have hj := goJ_jmp0 (lib := lib) (O := O) (gul := gul) (st := st) regs t _ _ hb
-  cases x with
-  | atom n =>
-    rw [show [Pole.inc _ _] = [Pole.inc _ _] ++ [] from rfl, runs_inc hx] at hj
-    refine ⟨Tone.zero (A (n + 1)), st, hI, Needs.le_refl _, ?_, ToneRel.zero _⟩
-    rw [hj]; simp [execBlob_don', read_store_eq]
-  | cell u v =>
-    rw [show [Pole.inc _ _] = [Pole.inc _ _] ++ [] from rfl, crashes_inc hx] at hj
-    exact ⟨Tone.two t, st, hI, Needs.le_refl _, hj, ToneRel.two htr⟩
 
 /-- **`[4 [2 p [1 k] b]]` at the top meets both halves of the contract** on
 the real whole-subject code (`finishLUCM`): the direct call under `%next`
@@ -110,7 +49,7 @@ theorem finishLUCM_contractFourDirect (lib : Lib) {env : CallEnv} {P : Noun → 
   subst hk
   have Sc := lokSM_direct (S := S) (Map := Map) lib env (q := Nomm.n1 b.fol) (fq := C (A 1) b.fol) hring hned hNf hNt
     hpure Sp hpd rfl hAp (fun _ h => quote_hq1 h) (fun _ => quote_hq2)
-  exact finishLUCM_contractGB lib N (fun hr => (four_doneBM lib Sc (minkC4_four lib P _)
+  exact finishLUCM_contractGB lib N (fun hr => (four_doneBM lib Sc.toF (minkC4_four lib P _)
     (by simp only [sixCount]; omega) (by simp [gen0]) rfl upBelow_gen0 clear_gen0 condBelow_gen0 hr).run) hc
 
 end
