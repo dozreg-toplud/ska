@@ -57,3 +57,4 @@ open Formalization SkaModel Raw
 #print axioms chaseFin_rawR
 #print axioms optIn_toStraightR
 #print axioms optIn_toStraight_prep
+#print axioms coerceLazyL_prep
