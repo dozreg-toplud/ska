@@ -106,6 +106,7 @@ import lemmas.Ska.CompCallTreeTop
 import lemmas.Ska.CompSevenLS
 import lemmas.Ska.CompFourLS
 import lemmas.Ska.CompConsLSF
+import lemmas.Ska.CompThreeLS
 import lemmas.Ska.CompFourTop
 
 /-!
@@ -1160,3 +1161,12 @@ open Formalization.SkaModel.Comp
 #print axioms CallTree7.toA
 #print axioms fourInd_contract
 #print axioms fourCons_contract
+#print axioms forl_fix
+#print axioms clqLB
+#print axioms RunOKLS.wutNone
+#print axioms lokS_three_run
+#print axioms lokS_three
+#print axioms jNewLS_three
+#print axioms unaryGTB_ok
+#print axioms three_doneB
+#print axioms threeInd_contract
