@@ -661,6 +661,19 @@ theorem rgood_op8 {m : Nat} (IH' : ∀ k, k < m → GoRGood lib code bus W (folL
     obtain ⟨y, m1, m2⟩ := mink_inv_n8 hm
     exact G2.prod X' (C y x) gul p (hsub X' x gul y hx m1) m2
 
+/-! ## A hint whose tag is a cell, analysed as under `%$` -/
+
+theorem rgood_op11c (IH : GoRGood lib code bus W go) {x y h1 h2 f : Noun}
+    (hs : shape fol = Shape.op11c x y h1 h2 f)
+    (h : folStep tab go fol sub mk bc df gen = some (out, gen')) (hW : WCov W gen') :
+    RGood lib code bus W fol sub out := by
+  have hf := shape_eq hs (by simp)
+  simp only [Shape.fol] at hf
+  subst hf
+  simp only [folStep, hs] at h
+  have G' := IH _ _ _ _ _ _ _ _ h hW
+  exact G'.transfer (fun _ _ _ => mink_ctag_iff) (annot_ctag G'.annot)
+
 end Cases
 
 /-! ## The main theorem -/
@@ -698,6 +711,7 @@ theorem folLoop_rgood {lib : Lib} {code : Bell → Option Nomm} {tab : Tab} {bus
     · exact rgood_bare IH hs hp h hW
     · exact rgood_op11s_plain IH hs hp h hW
   | op11d tag h1 h2 f => exact rgood_op11d IH hM hs h hW
+  | op11c x y h1 h2 f => exact rgood_op11c IH hs h hW
   | op12 a b q => exact rgood_op12 IH hM hs h hW
   | other => exact rgood_other hs h
 

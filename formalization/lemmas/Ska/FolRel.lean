@@ -276,6 +276,7 @@ theorem folR_rgood {lib : Lib} {code : Bell → Option Nomm} {bus : Sock} {W : C
       exact rgood_bareR (IH _ _ _ _ _ _ _ _ h hW') (hgo _ _ _ _ _ _ _ _ h)
     · exact rgood_op11s_plain IH hs hp h hW'
   | op11d tag h1 h2 f => exact rgood_op11d IH hM hs h hW'
+  | op11c x y h1 h2 f => exact rgood_op11c IH hs h hW'
   | op12 a b q => exact rgood_op12 IH hM hs h hW'
   | other => exact rgood_other hs h
 
@@ -421,6 +422,7 @@ theorem folR_rprod {lib : Lib} {bus : Sock} {W : Cape} {K : Nat}
       exact rprod_bareR (hgo _ _ _ _ _ _ _ _ h)
     · exact rprod_op11s_plain IH hs hp h hW'
   | op11d tag h1 h2 f => exact rprod_op11d IH hM hs h hW'
+  | op11c x y h1 h2 f => exact rprod_op11c IH hs h hW'
   | op12 a b q => exact rprod_op12 hs h
   | other => exact rprod_other hs h
 

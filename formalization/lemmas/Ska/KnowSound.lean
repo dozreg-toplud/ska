@@ -272,6 +272,12 @@ theorem annot_safe_total {lib : Lib} {code : Bell → Option Nomm} :
     obtain ⟨c, h1⟩ := ih1 hs.1.2 x gul hx
     obtain ⟨y, h2⟩ := ih2 hs.2 x gul hx
     exact ⟨y, mink_mk_n11d _ h1 h2⟩
+  | n11c _ _ ih1 ih2 =>
+    intro hs x gul hx
+    simp only [safeNomm, Bool.and_eq_true] at hs
+    obtain ⟨c, h1⟩ := ih1 hs.1.2 x gul hx
+    obtain ⟨y, h2⟩ := ih2 hs.2 x gul hx
+    exact ⟨y, mink_ctag_iff.mpr (mink_mk_n11d _ h1 h2)⟩
   | mean _ _ ih1 ih2 =>
     intro hs x gul hx
     simp only [safeNomm, Bool.and_eq_true] at hs
@@ -1057,6 +1063,44 @@ theorem knowGo_sound (hc : CodeOK lib code) (hdat : DatOK lib dat) (hres : ResOK
         exact fits_litAnno (lit_val hc hA2 hQP K21 hx hm')
     · cases h
       refine ⟨Annot.n11d K1.1 K2.1, ?_⟩
+      intro x hx gul t m y hm
+      obtain ⟨m', t', hm'⟩ := hsem x hx gul t m y hm
+      exact K2.2 x hx gul t' m' y hm'
+  | n11c hA1 hA2 ih1 ih2 =>
+    rename_i P x0 y0 h0 f0 p q
+    intro sub st r h hsuf Q hQ
+    simp only [knowGo, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨hh, hhh, qq, hq, h⟩ := h
+    have hq2 : qq.2 <:+ stF := by split at h <;> (cases h; exact hsuf)
+    have hh2 : hh.2 <:+ stF := (knowGo_suffix fold dat res q _ _ _ hq).trans hq2
+    have hQP : ∀ x, Q x → P x := fun x hx => (hQ x hx).1
+    have K1 := ih1 sub st hh hhh hh2 Q hQ
+    have K2 := ih2 sub hh.2 qq hq hq2 Q hQ
+    have hsem : ∀ x, Q x → ∀ gul t m y, nommF lib gul code m t x (Nomm.n11d 0 p q f0) = some (Tone.zero y) →
+        ∃ m' t', nommF lib gul code m' t' x q = some (Tone.zero y) := by
+      intro x hx gul t m y hm
+      obtain ⟨m', rfl, hm'⟩ := nommF_succ_inv hm
+      simp only [nommStep] at hm'
+      obtain ⟨c0, _, hm'⟩ := tbind_zero_inv hm'
+      obtain ⟨z, hz, hm'⟩ := tbind_zero_inv hm'
+      cases hm'
+      exact ⟨m', _, hz⟩
+    split at h
+    · rename_i v hfree hs hv
+      cases h
+      have K21 := K2.1
+      rw [lit_eq hv] at K21
+      refine ⟨?_, ?_⟩
+      · show Annot lib code' Q _ qq.1.1
+        rw [lit_eq hv]
+        refine Annot.fold fun x gul hx => ?_
+        obtain ⟨c0, hc0⟩ := annot_safe_total K1.1 hs x gul hx
+        exact mink_ctag_iff.mpr (mink_mk_n11d 0 hc0 (annot_lit K21 v rfl x gul hx))
+      · intro x hx gul t m y hm
+        obtain ⟨m', t', hm'⟩ := hsem x hx gul t m y hm
+        exact fits_litAnno (lit_val hc hA2 hQP K21 hx hm')
+    · cases h
+      refine ⟨Annot.n11c K1.1 K2.1, ?_⟩
       intro x hx gul t m y hm
       obtain ⟨m', t', hm'⟩ := hsem x hx gul t m y hm
       exact K2.2 x hx gul t' m' y hm'

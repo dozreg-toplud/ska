@@ -235,6 +235,9 @@ theorem folStep_noAx0 (env : Env R) (res : ResGo M R) {go : FolGoS M R} (hg : Go
       cases arm with
       | none => exact ⟨a1, a2⟩
       | some p => obtain ⟨bl, k⟩ := p; exact ⟨a1, a2⟩
+  | op11c x y h1 h2 f =>
+    simp only [folStep, hs] at h
+    exact hg _ _ _ _ _ _ _ _ _ h
   | op12 a b q =>
     simp only [folStep, hs, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨⟨p1, g1⟩, h1, ⟨q1, g2⟩, h2, rfl, rfl⟩ := h

@@ -119,6 +119,7 @@ theorem folStep_mono {tab : Tab} {go : FolGo} (IH : GoMono go) : GoMono (folStep
     · simp only [Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h
       obtain ⟨arm, harm, ⟨fr, g3⟩, h3, _, rfl⟩ := h
       exact (IH _ _ _ _ _ _ _ _ h1).trans ((meanArm_mono IH harm).trans (IH _ _ _ _ _ _ _ _ h3))
+  · exact IH _ _ _ _ _ _ _ _ h
   · simp only [Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨⟨p, g1⟩, h1, ⟨q, g2⟩, h2, _, rfl⟩ := h
     exact (IH _ _ _ _ _ _ _ _ h1).trans (IH _ _ _ _ _ _ _ _ h2)

@@ -482,6 +482,22 @@ theorem rprod_op8 {m : Nat} (IH' : ∀ k, k < m → GoRProd lib bus W K (folLoop
     · rw [slotO_some_cell_true]; exact provO_iff.mpr hx.prov
   exact G2.prod X' (C y x) gul p hsub (minkF_up m2)
 
+/-! ## A hint whose tag is a cell, analysed as under `%$` -/
+
+theorem rprod_op11c (IH : GoRProd lib bus W K go) {x y h1 h2 f : Noun}
+    (hs : shape fol = Shape.op11c x y h1 h2 f)
+    (h : folStep tab go fol sub mk bc df gen = some (out, gen')) (hW : WCov W gen') :
+    RProd lib bus W K fol sub out := by
+  have hf := shape_eq hs (by simp)
+  simp only [Shape.fol] at hf
+  subst hf
+  simp only [folStep, hs] at h
+  have G' := IH _ _ _ _ _ _ _ _ h hW
+  refine ⟨fun X' z gul p hz hm => G'.prod X' z gul p hz ?_, fun hs => ?_⟩
+  · rw [minkF_ctag] at hm; exact hm
+  · obtain ⟨d, hd, md⟩ := G'.saf hs
+    exact ⟨d, hd, fun x gul => mink_ctag_iff.mpr (md x gul)⟩
+
 end Cases
 
 /-! ## The main theorem -/
@@ -521,6 +537,7 @@ theorem folLoop_rprod {lib : Lib} {tab : Tab} {bus : Sock} {W : Cape} {K : Nat}
     · exact rprod_bare hs hp h
     · exact rprod_op11s_plain IH hs hp h hW
   | op11d tag h1 h2 f => exact rprod_op11d IH hM hs h hW
+  | op11c x y h1 h2 f => exact rprod_op11c IH hs h hW
   | op12 a b q => exact rprod_op12 hs h
   | other => exact rprod_other hs h
 

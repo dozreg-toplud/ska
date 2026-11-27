@@ -151,6 +151,9 @@ theorem folStep_norm {tab : Tab} {go : FolGo} (htab : TabNorm tab) (IH : GoNorm 
       obtain ⟨arm, harm, ⟨fr, g3⟩, h3, rfl, rfl⟩ := h
       have := IH _ _ _ _ _ _ _ _ hsub h3
       exact this
+  | op11c x y h1 h2 f =>
+    simp only [folStep, hs] at h
+    exact IH _ _ _ _ _ _ _ _ hsub h
   | op12 a b q =>
     simp only [folStep, hs, Option.bind_eq_some_iff, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨⟨p1, g1⟩, h1, ⟨q1, g2⟩, h2, rfl, rfl⟩ := h
