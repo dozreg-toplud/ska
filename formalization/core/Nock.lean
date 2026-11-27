@@ -171,9 +171,9 @@ inductive Nock : Noun -> Noun -> Noun -> Prop where
         Nock a d q ->
         Nock (C p q) (T2 0 (A 3)) r ->
         Nock a (T3 11 (C b c) d) r
-    | op11atom {a c p n} :
+    | op11atom {a b c p} :
         Nock a c p ->
-        Nock a (T3 11 (A n) c) p
+        Nock a (T3 11 (A b) c) p
 
 end Nock
 end Formalization
