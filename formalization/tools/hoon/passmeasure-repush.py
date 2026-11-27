@@ -194,6 +194,37 @@ def chain2(n=14, m0=6, a=7, x=L(0, 1)):
     bat = L(R, L(g0, L(g1, f)))
     return ('c%d' % n, '[[[& &] |] [%B 0]]'.replace('%B', n2h(bat)), L(9, 4, A(1)))
 
+def under(ax, d):
+    for _ in range(d): ax = peg(3, ax)
+    return ax
+def chain(d, n, ms, a=7, x=L(0, 1)):
+    """a chain of d restarting callees g_0 .. g_{d-1} before one site z of f, in R's step:
+    y_0 calls g_0 on [[a Pr.0] K] (Pr: R's product, an n-tuple shift register), y_i calls g_i on
+    [[a G_{i-1}.1] K], z calls f on [[a G_{d-1}.1 G_{d-1}.2 G_{d-1}.3] K]; g_i is a restarting
+    shift register of ms[i] + 1 slots (gfun), which reads its sample slot, so a change of G_{i-1}.1
+    pushes a fresh g_i whose register starts full again.  chain(2, 14, [6, 3]) is chain2()."""
+    assert len(ms) == d and ms[-1] >= 3
+    f = L(L(2, A(1), A(22)), L(L(2, A(1), A(23)), L(9, 4, A(3))))
+    bs = slots(d + 2)                                  # battery [R g_0 .. g_{d-1} f]
+    gs = [gfun(peg(6, bs[i + 1]), ms[i]) for i in range(d)]
+    rs = slots(n)
+    ys = [L(2, L(L(K(a), A(peg(2, rs[0]))), A(3)), K(gs[0]))]       # in [Pr K]
+    for i in range(1, d):                                           # in [G_{i-1} [.. [Pr K]]]
+        gp = slots(ms[i - 1] + 1)
+        ys.append(L(2, L(L(K(a), A(peg(2, gp[1]))), A(under(3, i))), K(gs[i])))
+    gl = slots(ms[-1] + 1)
+    z = L(2, L(tup([K(a)] + [A(peg(2, s)) for s in gl[1:4]]), A(under(3, d))), K(f))
+    shP = tup([A(peg(under(2, d + 1), s)) for s in rs[1:]] + [A(peg(under(3, d + 1), 3))])
+    body = shP
+    for y in reversed(ys + [z]):
+        body = L(8, y, body)
+    R = L(6, L(3, A(3)), K(tuple_val([x] * n)), L(8, L(9, 4, A(1)), body))
+    bat = tup([R] + gs + [f])
+    nm = 'c%d-%d-%s' % (d, n, '-'.join(map(str, ms)))
+    return (nm.replace('-', 'x'), '[[[& &] |] [%B 0]]'.replace('%B', n2h(bat)), L(9, 4, A(1)))
+def cells(x):
+    return 0 if isinstance(x, int) else 1 + cells(x[0]) + cells(x[1])
+
 def summary(paths):
     import importlib.util, os
     pm = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'passmeasure.py')
@@ -233,7 +264,11 @@ if __name__ == '__main__':
         cs = [rcase(nm, multi(ns)[0]) for nm, ns in
               [('m2', [3, 6]), ('m3', [3, 6, 9]), ('m4', [3, 6, 9, 12]), ('m5', [3, 5, 7, 9, 11])]]
     elif mode == 'c':
-        cs = [chain2(), chain2(20, 8)]
+        if len(sys.argv) > 3:   # c D N M_0,..,M_{D-1}: a chain of D restarting callees
+            d, n = int(sys.argv[3]), int(sys.argv[4])
+            cs = [chain(d, n, [int(m) for m in sys.argv[5].split(',')])]
+        else:
+            cs = [chain2(), chain2(20, 8)]
     elif mode == 's':
         cs = []
         for nm, n in [('s8', 8), ('s12', 12)]:

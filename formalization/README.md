@@ -3157,6 +3157,38 @@ import only its theorems.  So:
     double with each level of the chain, so it is not bounded by the
     number of sites, but it stayed finite.  No poke whose pass loop did not
     return.
+    Growth and non-termination on the real compiler (2026-11-27, step 1
+    and 2 of track F; `passmeasure-repush.py c D N M..`,
+    `passmeasure-tab.py`, `passmeasure-q.py`, `passmeasure-u.py`,
+    `passmeasure-cyc.py`).  A chain of `D` restarting callees, `D` = 1 to
+    8: the passes of the root's loop equal the slots of the registers
+    (`N` + the `M_i`) within 5 % (15 passes for 14 slots up to 134 for 140
+    at `D` = 8, 796 for 795 at `D` = 1), so the passes are linear in the
+    size of the formula (cells), not exponential in `D`.  The pushes of
+    the most pushed identity grow with `D` (2, 4, 8, 10, 12, 16, 18, 26
+    with lengths falling by 3; 4, 8, 14, 24, 40 with Fibonacci lengths,
+    which full doubling needs, `M_{k-1} > M_k + M_{k+1}`), always below a
+    third of the passes: each push of one identity needs a cull between,
+    and a cull ends a pass.  Wall time on the plain library is polynomial:
+    about 0.6, 3.3 and 22 s per `+ska-callgraph` call for one register of
+    195, 395 and 795 slots (a power 2.5 to 2.7 of the size: the passes
+    times the runs of a pass times the formula with its long axes).  Search for a loop that does not
+    return: 960 random cores with two shared formulas and feedback of
+    site products into the root's registers (50 re-pushes, at most 18
+    passes), 1280 random self-calls of one formula at many subjects (3690
+    `%rec` takeovers, 69 back to an earlier target, 4 re-pushes, at most
+    11 passes), 19 chains, and one period-3 takeover designed as a true
+    cycle (`passmeasure-cyc.py`): every loop returned.  The designed cycle
+    fails for two reasons that a proof can use: `fol-loop` analyses both
+    branches of a `%6` whatever its test (the product is their
+    `+double-int`), so a formula cannot dispatch on a known tag and every
+    identity of it runs every site; and for a kid that passes `+hit-test`
+    a `%rec` target's product, patched by `+patch-prod`, depends on the
+    target only through precision (the parts it computed by indirect
+    calls are unknown), so a value fed back must run to itself.  A point
+    any measure must handle: a member is rerun only when `+dirty`, and
+    its callee set is not among the five fields `changed` compares, so a
+    member can change callees (a takeover) with its entry constant.
     Restated (`Ska/PassMeasureB.lean`): what `passOn_wf_W` and
     `passLoop_returns` use is only that `next` is bounded along each chain
     of passes; `next` grows by one at every push, so this is `FinPushes`,
@@ -3184,7 +3216,7 @@ import only its theorems.  So:
     | the stack (finitely many identities) | argued (Kruskal over `+he-sock`), not proved | `AnaEnds.lean` header |
     | one entry | proved; `RunW` of every stack member proved | `entry_finite`, `Ana.run_entry_step`, `run_winv` |
     | the pass loop, passes | proved, with the bound `B` on `next` named, or finitely many pushes per chain | `passOn_wf_W`, `passOn_wf_fin` |
-| no culled identity pushed again (b) | false: `repush.hoon` (one site can push one identity twice); replaced by `FinPushes`, not proved | `PassMeasureB.lean` |
+    | no culled identity pushed again (b) | false: `repush.hoon` (one site can push one identity twice); replaced by `FinPushes`, not proved; no loop that does not return in 2,260 searched cores, passes linear in the register slots | `PassMeasureB.lean`, `passmeasure-tab.py` |
     | the pass loop, fuel | proved, given that each pass returns at some fuel and `B`, or `FinPushes` | `passLoop_returns`, `passLoop_returns_fin` |
     | `+sweep`, `+cull` | structural over the members and their callee sets; fuel not bounded in Lean | `Analysis.lean` |
     | the member loop | structural over its list, each step a `+run` (the whole recursion) | `Analysis.lean` |
