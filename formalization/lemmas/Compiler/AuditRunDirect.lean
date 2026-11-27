@@ -106,3 +106,10 @@ open Formalization.Compiler
 #print axioms crd_hpqM
 #print axioms res_n2_callMono
 #print axioms comp_run_n2_callMM
+#print axioms crd_nfR
+#print axioms crd_dropR
+#print axioms crd_model_dropM
+#print axioms comp_run_n2_dropMono
+#print axioms res_n2_dropMono
+#print axioms comp_run_n2_directMM
+#print axioms res_n2_directMono
