@@ -432,6 +432,256 @@ theorem atx_ten {a : Nat} {v q : Nomm} (ihv : ATX S Map v) (ihq : ATX S Map q) (
     (by simp only [jmp0]; omega) F3 hc' nd nr (jmpIn_jmp0 _ _) h3 h4 hcp
   exact ⟨A0.trans (A3.trans R.ga), R.lo, R.hi, R.fresh⟩
 
+
+/-! ## `%6` -/
+
+theorem ga_tagged (g : Comp.Gen Map) (o : Nat) (region : List Nat) : GA g (g.tagged o region) :=
+  ga_quiet ⟨grow_tagged g o region, by unfold Gen.tagged; split <;> rfl⟩
+
+theorem ga_id (g : Comp.Gen Map) (k : Nat) : GA g { g with id := k } where
+  bo := Nat.le_refl _
+  drop := rfl
+  keep := fun _ b _ hb => ⟨b, hb, rfl, rfl⟩
+  old := fun _ b _ hb => ⟨b, hb, rfl, rfl⟩
+  new := fun _ _ hl hu _ => absurd hu (Nat.not_lt.mpr hl)
+  out := fun _ b _ hb => ⟨b, hb⟩
+
+theorem ga_same {g g' : Comp.Gen Map} (h : SameBlocks g g') : GA g g' := by
+  obtain ⟨-, hbo, -, hdr, -, -, hk⟩ := h
+  exact ⟨by omega, hdr, fun k b _ hb => ⟨b, by rw [hk]; exact hb, rfl, rfl⟩,
+    fun k b _ hb => ⟨b, by rw [← hk]; exact hb, rfl, rfl⟩, fun k _ hl hu _ => by omega,
+    fun k b _ hb => ⟨b, by rw [← hk]; exact hb⟩⟩
+
+theorem gfresh_ga {goal : CGoal S} {g g' : Comp.Gen Map} (hf : GFresh g goal) (hj : GJ g.bo goal) (a : GA g g') :
+    GFresh g' goal := by
+  cases goal with
+  | next laz th => exact fresh_ga hf hj.2 a
+  | pick z o => exact ⟨fresh_ga hf.1 hj.1.2 a, fresh_ga hf.2 hj.2.2 a⟩
+  | done => trivial
+
+/-- **The two lazy blocks of a `%6`.** -/
+theorem ga_sixGenL {g2 : Comp.Gen Map} {t0 t1 : Jmp} (region : List Nat) (hd : g2.drop = false)
+    (f0 : Fresh g2 t0) (l0 : t0.there < g2.bo) (f1 : Fresh g2 t1) (l1 : t1.there < g2.bo) :
+    GA g2 (sixGenL g2 t0 t1 region) ∧ Fresh (sixGenL g2 t0 t1 region) (jmp0 g2.bo) ∧
+      Fresh (sixGenL g2 t0 t1 region) (jmp0 (g2.bo + 1)) := by
+  have A1 := ga_emitF (b := ⟨[], [], Termin.hop t0⟩) hd (fresh_one f0 l0)
+  have hd1 : (g2.emitted ⟨[], [], Termin.hop t0⟩).drop = false := hd
+  have A2 := ga_emitF (b := ⟨[], [], Termin.hop t1⟩) hd1 (fresh_one (fresh_ga f1 l1 A1) (Nat.lt_of_lt_of_le l1 A1.bo))
+  have T := (ga_tagged ((g2.emitted ⟨[], [], Termin.hop t0⟩).emitted ⟨[], [], Termin.hop t1⟩) g2.bo region).trans
+    (ga_tagged _ (g2.bo + 1) region)
+  refine ⟨A1.trans (A2.trans T), ?_, ?_⟩
+  · exact fresh_ga (fresh_emitted hd rfl rfl) (show g2.bo < g2.bo + 1 by omega) (A2.trans T)
+  · exact fresh_ga (fresh_emitted hd1 rfl rfl) (show g2.bo + 1 < g2.bo + 1 + 1 by omega) T
+
+theorem forkSure_out {sur : Sure S} {o : Nat} {g g' : Comp.Gen Map} {s0 s1 : Sure S}
+    (h : forkSure sur o g.bo (g.bo + 1) { g with bo := g.bo + 2 } = some ((s0, s1), g')) (hd : g.drop = false) :
+    ∀ k, g.bo + 3 ≤ k → HoonMap.get g'.blocks k = HoonMap.get g.blocks k := by
+  unfold forkSure at h
+  obtain ⟨⟨n0, n1⟩, gK, hK, h⟩ := bind_some h
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h
+  unfold forkNeed at hK
+  obtain ⟨⟨m0, m1⟩, gN, hN, h⟩ := bind_some hK
+  obtain ⟨⟨kk, eN⟩, -⟩ := forkNeedGo_spec _ _ _ _ _ hN
+  subst eN
+  simp only [bind_apply, emit_apply, Option.bind_some, pure_apply] at h
+  simp only [emir, Gen.emitted, hd, Bool.false_eq_true, if_false, Option.bind_some, pure_apply,
+    Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h
+  intro k hk
+  simp [HoonMap.get_put, show k ≠ g.bo by omega, show k ≠ g.bo + 1 by omega, show k ≠ g.bo + 2 by omega]
+
+/-- **`+fork-sure`**: the fork blocks pass the registers of `s0`, `s1` to
+the join, whose parameters are those of `sur` (as many, by `NCopy.length`),
+and the join hops to the goal's `Fresh` block. -/
+theorem ga_forkSure {sur : Sure S} {th : Jmp} {g gF : Comp.Gen Map} {s0 s1 : Sure S}
+    (h : forkSure sur th.there g.bo (g.bo + 1) { g with bo := g.bo + 2 } = some ((s0, s1), gF))
+    (hd : g.drop = false) (hf : Fresh g th) (hh : th.there < g.bo) :
+    GA g gF ∧ Fresh gF (jmp0 g.bo) ∧ Fresh gF (jmp0 (g.bo + 1)) := by
+  obtain ⟨_, _, c0, c1, _, _, _, _, _, hbo, hdrop, _, _, hb0, hb1, hb2, hold⟩ := forkSure_spec h hd
+  have hout := forkSure_out h hd
+  have batF : ∀ (s : Sure S), NCopy sur.ned s.ned →
+      BAT gF.blocks ⟨[], [], Termin.hop ⟨(flattenNeed s.ned).map some, g.bo + 2⟩⟩ := fun s c => by
+    refine ⟨fun j hj b2 hbx => ?_, fun ht => by simp [Compiler.twoWay] at ht⟩
+    simp only [finJumps, List.mem_cons, List.not_mem_nil, or_false] at hj
+    subst hj
+    have e : HoonMap.get gF.blocks (g.bo + 2) = some b2 := hbx
+    rw [hb2] at e; cases e
+    simp only [List.length_map]; exact c.length
+  have jl : ∀ (s : Sure S), ∀ j ∈ finJumps (Termin.hop ⟨(flattenNeed s.ned).map some, g.bo + 2⟩), j.there < gF.bo :=
+    fun s j hj => by
+      simp only [finJumps, List.mem_cons, List.not_mem_nil, or_false] at hj
+      subst hj; simp only; omega
+  refine ⟨⟨by omega, hdrop, fun k b hk hb => ⟨b, by rw [hold k hk]; exact hb, rfl, rfl⟩,
+    fun k b hk hb => ⟨b, by rw [← hold k hk]; exact hb, rfl, rfl⟩, fun k b hl hu hb => ?_,
+    fun k b hk hb => ⟨b, by rw [← hout k (by omega)]; exact hb⟩⟩, ⟨_, hb0, rfl, rfl⟩, ⟨_, hb1, rfl, rfl⟩⟩
+  by_cases e0 : k = g.bo
+  · subst e0; rw [hb0] at hb; cases hb
+    exact ⟨batF s0 c0, jl s0⟩
+  by_cases e1 : k = g.bo + 1
+  · subst e1; rw [hb1] at hb; cases hb
+    exact ⟨batF s1 c1, jl s1⟩
+  have e2 : k = g.bo + 2 := by omega
+  subst e2; rw [hb2] at hb; cases hb
+  refine ⟨⟨fun j hj b2 hb2' => ?_, fun ht => by simp [Compiler.twoWay] at ht⟩, fun j hj => ?_⟩
+  · simp only [finJumps, List.mem_cons, List.not_mem_nil, or_false] at hj
+    subst hj
+    obtain ⟨b3, h3, p3, a3⟩ := hf
+    have e : HoonMap.get gF.blocks th.there = some b2 := hb2'
+    rw [hold _ hh, h3] at e; cases e
+    simp [jmp0, p3]
+  · simp only [finJumps, List.mem_cons, List.not_mem_nil, or_false] at hj
+    subst hj; simp only [jmp0]; omega
+
+theorem atx_sixP {c a b : Nomm} (hcp : c.pure = true) (ihc : ATX S Map c) (iha : ATX S Map a)
+    (ihb : ATX S Map b) (kc : KeepX S Map c) (ka : KeepX S Map a) (kb : KeepX S Map b) {goal : CGoal S}
+    (hg' : NotNext goal) {region : List Nat} {g0 g4 : Comp.Gen Map} {nex : NextL S} (hd : g0.drop = false)
+    (h1 : 1 ≤ g0.bo) (hj : GJ g0.bo goal) (hF : GFresh g0 goal) (hg : GoalIn g0.re goal)
+    (hc : sixCount c + sixCount a + sixCount b + 1 ≤ 255)
+    (h : runL (Nomm.n6 c a b) (CGoal.toL goal) region g0 = some (nex, g4)) : ATR g0 g4 nex := by
+  rw [runL_n6_body _ _ _ hg'] at h
+  obtain ⟨x1, x0, xc, g1, g2, g3, hb1, hb2, _, _, h3, hrest⟩ := sixBody_apart hcp h
+  have B := ihb hd h1 hj hF hg (by omega) hb1
+  have Rb := kb hd hg (by omega) hb1
+  have d1 := B.ga.drop.trans hd
+  have A := iha d1 (Nat.le_trans h1 B.ga.bo) (hj.mono B.ga.bo) (gfresh_ga hF hj B.ga) (hg.mono Rb.keeps.le)
+    (by omega) hb2
+  have Ra := ka d1 (hg.mono Rb.keeps.le) (by omega) hb2
+  have d2 := A.ga.drop.trans d1
+  have G := ga_sixGenL (region := region) d2 A.fresh A.hi (fresh_ga B.fresh B.hi A.ga)
+    (Nat.lt_of_lt_of_le B.hi A.ga.bo)
+  have gc : GoalIn (sixGenL g2 x0.th x1.th region).re (CGoal.pick (jmp0 g2.bo) (jmp0 (g2.bo + 1)) : CGoal S) :=
+    ⟨jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩
+  have dG : (sixGenL g2 x0.th x1.th region).drop = false := G.1.drop.trans d2
+  have b2 : 1 ≤ g2.bo := Nat.le_trans h1 (Nat.le_trans B.ga.bo A.ga.bo)
+  have C := ihc (goal := CGoal.pick (jmp0 g2.bo) (jmp0 (g2.bo + 1))) dG (by simp only [sixGenL_bo]; omega)
+    ⟨⟨show 1 ≤ g2.bo by omega, by simp only [jmp0, sixGenL_bo]; omega⟩,
+      ⟨show 1 ≤ g2.bo + 1 by omega, by simp only [jmp0, sixGenL_bo]; omega⟩⟩ ⟨G.2.1, G.2.2⟩ gc (by omega) h3
+  have Rc := kc (goal := CGoal.pick (jmp0 g2.bo) (jmp0 (g2.bo + 1))) dG gc (by omega) h3
+  have hbig : lazyBig (mk (Sure.bunt : Sure S) [((g2.bo, x0.laz), (g2.bo + 1, x1.laz))] []) = false := by
+    apply lazyBig_entries
+    rw [entries_six]; simp only [List.length_append, List.length_cons]
+    have := Ra.size; have := Rb.size; simp only [lazyMax]; omega
+  have h4 := hrest hbig
+  obtain ⟨n, hcopy, rfl⟩ := copyL_apart_some
+    (fun e he e' he' => by
+      have := (Rc.labs _ (fork_in_entries he)).1
+      simp only [sixGenL_bo] at this
+      rw [fork_mk, List.mem_singleton] at he'
+      subst he'
+      simp only
+      omega)
+    (fun e he e' he' => by rw [bond_mk] at he'; cases he') h4
+  have d3 : g3.drop = false := C.ga.drop.trans dG
+  have Cp := ga_copy hcopy C.fresh C.hi d3
+  have D := copy_down (goal := (CGoal.done : CGoal S)) hcopy C.lo C.hi d3 (by have := C.lo; have := C.hi; omega)
+  exact ⟨B.ga.trans (A.ga.trans (G.1.trans (C.ga.trans Cp))), D.lo, D.hi, D.entry.elim id fun e => e.elim⟩
+
+theorem atx_sixN {c a b : Nomm} (hcp : c.pure = true) (ihc : ATX S Map c) (iha : ATX S Map a)
+    (ihb : ATX S Map b) (kc : KeepX S Map c) (ka : KeepX S Map a) (kb : KeepX S Map b) {sur : Sure S} {th : Jmp}
+    {region : List Nat} {g0 g9 : Comp.Gen Map} {nex : NextL S} (hd : g0.drop = false) (h1 : 1 ≤ g0.bo)
+    (hj : GJ g0.bo (CGoal.next sur th)) (hF : Fresh g0 th) (hg : GoalIn g0.re (CGoal.next sur th))
+    (hc : sixCount c + sixCount a + sixCount b + 1 ≤ 255)
+    (h : runL (Nomm.n6 c a b) (CGoal.toL (CGoal.next sur th)) region g0 = some (nex, g9)) : ATR g0 g9 nex := by
+  simp only [CGoal.toL] at h
+  rw [runL_n6_next, sixNextL_ofSure] at h
+  obtain ⟨s0, s1, x1, x0, xc, lz, yes, nuh, gF, gR, gQ, gS, gC, hFk, hR, hQ, hS, hC, hrest⟩ :=
+    sixNextSimple_apart hcp h
+  obtain ⟨_, _, _, _, d0, d1, j01, hreg, hle, hbo, hdrop, hcond, _, hb0, hb1, hb2, hold⟩ := forkSure_spec hFk hd
+  have AF := ga_forkSure (th := th) hFk hd hF hj.2
+  have dF : gF.drop = false := AF.1.drop.trans hd
+  have AI := ga_id gF (gF.id + 1)
+  have gb : GoalIn ({ gF with id := gF.id + 1 } : Comp.Gen Map).re (CGoal.next s1 (jmp0 (g0.bo + 1))) :=
+    ⟨fun x hx => (hreg x (Or.inr hx)).2, jmpIn_jmp0 _ _⟩
+  have B := ihb (goal := CGoal.next s1 (jmp0 (g0.bo + 1))) (g0 := { gF with id := gF.id + 1 }) dF
+    (show 1 ≤ gF.bo by omega) ⟨show 1 ≤ g0.bo + 1 by omega, show g0.bo + 1 < gF.bo by omega⟩ AF.2.2 gb (by omega) hR
+  have Rb := kb (goal := CGoal.next s1 (jmp0 (g0.bo + 1))) (g0 := { gF with id := gF.id + 1 }) dF gb
+    (by omega) hR
+  have d1' : gR.drop = false := B.ga.drop.trans dF
+  have lR : gF.re ≤ gR.re := Rb.keeps.le
+  have bR : gF.bo ≤ gR.bo := B.ga.bo
+  have ga' : GoalIn gR.re (CGoal.next s0 (jmp0 g0.bo)) :=
+    ⟨fun x hx => Nat.lt_of_lt_of_le (hreg x (Or.inl hx)).2 lR, jmpIn_jmp0 _ _⟩
+  have A := iha (goal := CGoal.next s0 (jmp0 g0.bo)) d1' (by omega) ⟨h1, show g0.bo < gR.bo by omega⟩
+    (fresh_ga AF.2.1 (show g0.bo < gF.bo by omega) (AI.trans B.ga)) ga' (by omega) hQ
+  have Ra := ka (goal := CGoal.next s0 (jmp0 g0.bo)) d1' ga' (by omega) hQ
+  have d2 : gQ.drop = false := A.ga.drop.trans d1'
+  have cR : gR.cond = gF.cond := Rb.cnd
+  rw [cR] at hS
+  obtain ⟨ey, en, _, _, el, hsb⟩ := sect_spec d2 (Ra.cnd.trans cR) hS
+  have G := ga_sixGenL (region := gF.id :: region) d2 A.fresh A.hi (fresh_ga B.fresh B.hi A.ga)
+    (Nat.lt_of_lt_of_le B.hi A.ga.bo)
+  have GS := G.1.trans (ga_same hsb)
+  have bS : gS.bo = gQ.bo + 2 := by rw [hsb.2.1]; simp
+  have reS : gS.re = gQ.re := by rw [hsb.1]; simp
+  subst ey en el
+  have dS : gS.drop = false := GS.drop.trans d2
+  have gc : GoalIn gS.re (CGoal.pick (jmp0 gQ.bo) (jmp0 (gQ.bo + 1)) : CGoal S) := ⟨jmpIn_jmp0 _ _, jmpIn_jmp0 _ _⟩
+  have bQ : gR.bo ≤ gQ.bo := A.ga.bo
+  have C := ihc (goal := CGoal.pick (jmp0 gQ.bo) (jmp0 (gQ.bo + 1))) dS (by omega)
+    ⟨⟨show 1 ≤ gQ.bo by omega, show gQ.bo < gS.bo by omega⟩, ⟨show 1 ≤ gQ.bo + 1 by omega,
+      show gQ.bo + 1 < gS.bo by omega⟩⟩
+    ⟨fresh_ga G.2.1 (show gQ.bo < (sixGenL gQ x0.th x1.th (gF.id :: region)).bo by simp) (ga_same hsb),
+      fresh_ga G.2.2 (show gQ.bo + 1 < (sixGenL gQ x0.th x1.th (gF.id :: region)).bo by simp) (ga_same hsb)⟩
+    gc (by omega) hC
+  have Rc := kc (goal := CGoal.pick (jmp0 gQ.bo) (jmp0 (gQ.bo + 1))) dS gc (by omega) hC
+  have hbig : lazyBig (mk (Sure.bunt : Sure S) [((gQ.bo, x0.laz), (gQ.bo + 1, x1.laz))] []) = false := by
+    apply lazyBig_entries
+    rw [entries_six]; simp only [List.length_append, List.length_cons]
+    have := Ra.size; have := Rb.size; simp only [lazyMax]; omega
+  have h4 := hrest hbig
+  have lC := Rc.keeps.le
+  obtain ⟨n, hcopy, rfl⟩ := copyL_apart_some
+    (fun e he e' he' => by
+      have := (Rc.labs _ (fork_in_entries he)).1
+      rw [fork_mk, List.mem_singleton] at he'
+      subst he'
+      simp only
+      omega)
+    (fun e he e' he' => by rw [bond_mk] at he'; cases he') h4
+  have dC : gC.drop = false := C.ga.drop.trans dS
+  have Cp := ga_copy hcopy C.fresh C.hi dC
+  have D := copy_down (goal := (CGoal.done : CGoal S)) hcopy C.lo C.hi dC (by have := C.lo; have := C.hi; omega)
+  exact ⟨AF.1.trans (AI.trans (B.ga.trans (A.ga.trans (GS.trans (C.ga.trans Cp))))), D.lo, D.hi,
+    D.entry.elim id fun e => e.elim⟩
+
+/-! ## The induction and `RunAT` -/
+
+/-- **`ArityOK` and `TwoNA`: every run on `FragX` from a state whose goal
+jumps are `Fresh` is a `GA` with a `Fresh` result.** -/
+theorem runX_at {nm : Nomm} (hf : FragX (S := S) nm) : ATX S Map nm := by
+  induction hf with
+  | frag hf => exact atx_frag hf
+  | @six c a b hc ha hb ihc iha ihb =>
+    intro goal region g0 g1 nex hd h1 hj hF hg hcount h
+    have hc'' : sixCount c + sixCount a + sixCount b + 1 ≤ 255 := by simpa only [sixCount] using hcount
+    cases goal with
+    | next sur th =>
+      exact atx_sixN (fragX_pure hc) ihc iha ihb (runX_keeps hc) (runX_keeps ha) (runX_keeps hb) hd h1 hj hF hg
+        hc'' h
+    | done =>
+      exact atx_sixP (goal := CGoal.done) (fragX_pure hc) ihc iha ihb (runX_keeps hc) (runX_keeps ha)
+        (runX_keeps hb) trivial hd h1 hj hF hg hc'' h
+    | pick z o =>
+      exact atx_sixP (goal := CGoal.pick z o) (fragX_pure hc) ihc iha ihb (runX_keeps hc) (runX_keeps ha)
+        (runX_keeps hb) trivial hd h1 hj hF hg hc'' h
+  | four hp ih => exact atx_four ih
+  | three hp ih => exact atx_three ih
+  | seven hq hp ih => exact atx_seven hq ih
+  | cons hp hq ihp ihq =>
+    exact atx_cons ihp ihq (runX_keeps hp) (runX_keeps hq) (fragX_pure hp) (fragX_pure hq)
+  | five hp hq ihp ihq => exact atx_five ihp ihq (runX_keeps hp) (runX_keeps hq) (fragX_pure hp)
+  | ten hv hq ihv ihq =>
+    exact atx_ten ihv ihq (runX_keeps hv) (runX_keeps hq) (fragX_pure hv) (fragX_pure hq)
+  | sevenFrom ha _ ihq => exact atx_sevenFrom ha ihq
+
+/-- **`RunAT` on `FragX`**: the raw blocks of the top run meet `ArityOK`
+and `TwoNA`. -/
+theorem runAT_fragX {nm : Nomm} (hf : FragX (S := S) nm) (hc : sixCount nm ≤ 255) : RunAT S Map nm := by
+  intro nex g1 h
+  have R := runX_at hf (goal := CGoal.done) (by simp [gen0]) (by simp [gen0]) trivial trivial trivial hc h
+  exact at_of_ga R.ga fun k => by simp [gen0, HoonMap.get_empty]
+
 end Raw
 end SkaModel
 end Formalization
