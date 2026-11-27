@@ -23,6 +23,11 @@
 ::  %gone   a bell of the %drop list has no entry in nary, mono, inl,
 ::          sure after the poke, and a %jets keeps every nary entry it
 ::          does not drop
+::  %sset  (ninth session) every sccs entry of k is the SCC of k: the keys
+::          k2 of code with k reaching k2 and k2 reaching k over calls
+::          (the height clause SccsIs of PGood5)
+::  %ccoh  (ninth session) ColeCoh: call.cole maps c to r iff c is in the
+::          back.cole set of r
 ::  and the sizes of code, inl, sure, nary, mono, sccs, call.cole, pend,
 ::  jets-hot, and for %jets the length of the %drop list.
 ::  The commands: [%f sub fol] a %full; [%a reset tems] a %fast;
@@ -220,9 +225,39 @@
 =/  ok-mono=?  (levy ~(tap in ~(key by mono.ca)) |=(b=bell (~(has by code.lon) b)))
 =/  ok-flag=?  =((replay lon) code.lon)
 =/  ok-scck=?  (levy ~(tap in ~(key by sccs.ca)) |=(b=bell (~(has by code.lon) b)))
+=/  reach
+  |=  k=bell
+  ^-  (set bell)
+  =|  seen=(set bell)
+  =/  todo=(list bell)  ~[k]
+  |-  ^-  (set bell)
+  ?~  todo  seen
+  ?:  (~(has in seen) i.todo)  $(todo t.todo)
+  =/  nx=(list bell)
+    (skim ~(tap in (~(gut by calls.lon) i.todo ~)) |=(c=bell (~(has by code.lon) c)))
+  $(seen (~(put in seen) i.todo), todo (weld nx t.todo))
+=/  ok-sset=?
+  %+  levy  ~(tap by sccs.ca)
+  |=  [k=bell s=(set bell)]
+  =/  rk=(set bell)  (reach k)
+  =/  want=(set bell)
+    %-  silt
+    %+  skim  ~(tap in ~(key by code.lon))
+    |=(k2=bell &((~(has in rk) k2) (~(has in (reach k2)) k)))
+  =(s want)
+=/  ok-ccoh=?
+  ?&  %+  levy  ~(tap by call.cole.jets.lon)
+      |=  [c=bell r=ring]
+      (~(has in (~(gut by back.cole.jets.lon) r ~)) c)
+    ::
+      %+  levy  ~(tap by back.cole.jets.lon)
+      |=  [r=ring bs=(set bell)]
+      (levy ~(tap in bs) |=(c=bell =((~(get by call.cole.jets.lon) c) `r)))
+  ==
 ~&  :*  %i  n  -.c  %ccall  ok-ccall  %cinfo  ok-cinfo  %smap  ok-smap  %skey  ok-skey
         %imap  ok-imap  %ikey  ok-ikey  %ival  ok-ival  %sccs  ok-sccs  %nary  ok-nary
         %vars  ok-vars  %ckey  ok-ckey  %mono  ok-mono  %flag  ok-flag  %scck  ok-scck  %gone  ok-gone
+        %sset  ok-sset  %ccoh  ok-ccoh
         %before  sz0
         %sizes  ~(wyt by code.lon)  ~(wyt by inl.ca)  ~(wyt by sure.ca)  ~(wyt by nary.ca)
                 ~(wyt by mono.ca)  ~(wyt by sccs.ca)
