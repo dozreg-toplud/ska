@@ -1,4 +1,5 @@
 import lemmas.Compiler.CompRunHintDir
+import lemmas.Compiler.CompRunHint12
 
 /-!
 # The run link with hints inside direct calls: the class `HintOkC` (README Gaps 25)
@@ -8,7 +9,8 @@ direct call `[2 p q [~ b ~]]` in the class themselves, so with hints, in
 place of hint-free `DirOk` parts.  `HintCallsC` asks `CallOk` of every direct
 call, also those under a hint (`HintCalls` stopped at a direct call with
 `DirCalls`, which does not look under a hint), and `HintSoundC` is
-`HintSound` with the parts of a direct call.
+`HintSound` with the parts of a direct call; since the same session all
+three also take `[12 p q]` (`partH_n12`, `CompRunHint12.lean`).
 
 * `crx_iff_mmH`, `partLMH_of_partH`: `PartH` at `XM E msup` is what the
   generated direct call (`CompRunHintDir.lean`, `tools/gen/runhintdir.py`)
@@ -59,6 +61,7 @@ def HintOkC : Nomm → Bool
   | Nomm.n10 a v q => (a != 0 && HintOkC v) && HintOkC q
   | Nomm.n11s _ q _ => HintOkC q
   | Nomm.n11d _ h q _ => HintOkC h && HintOkC q
+  | Nomm.n12 p q => HintOkC p && HintOkC q
   | _ => false
 
 /-- **`CallOk` of every direct call**, also under a hint, each at the
@@ -77,6 +80,7 @@ def HintCallsC (env : CallEnv) (cod ctx : Noun) (E : GenRest → Prop) : Option 
   | ms, Nomm.n10 _ v q => HintCallsC env cod ctx E ms v ∧ HintCallsC env cod ctx E ms q
   | ms, Nomm.n11s _ q _ => HintCallsC env cod ctx E ms q
   | ms, Nomm.n11d _ h q _ => HintCallsC env cod ctx E ms h ∧ HintCallsC env cod ctx E ms q
+  | ms, Nomm.n12 p q => HintCallsC env cod ctx E ms p ∧ HintCallsC env cod ctx E ms q
   | _, _ => True
 
 /-- **`+sound` returns `snd` on the formula under every kept hint**
@@ -92,6 +96,7 @@ def HintSoundC (ctx : Noun) (snd : Nomm → NeedOrd → Bool) : Nomm → Prop
   | Nomm.n10 _ v q => HintSoundC ctx snd v ∧ HintSoundC ctx snd q
   | Nomm.n11s tag q _ => (hintStatic tag = true → SoundAt ctx snd q) ∧ HintSoundC ctx snd q
   | Nomm.n11d tag h q _ => (hintDynamic tag = true → SoundAt ctx snd q) ∧ HintSoundC ctx snd h ∧ HintSoundC ctx snd q
+  | Nomm.n12 p q => HintSoundC ctx snd p ∧ HintSoundC ctx snd q
   | _ => True
 
 theorem callCode_of_hintC {env : CallEnv} {cod : Noun} {E : GenRest → Prop} :
@@ -130,7 +135,7 @@ theorem callCode_of_hintC {env : CallEnv} {cod : Noun} {E : GenRest → Prop} :
   | Nomm.n11d _ h q _, hn, ms, hd => by
     simp only [HintOkC, Bool.and_eq_true] at hn; simp only [HintCallsC] at hd; simp only [CallCode]
     exact ⟨callCode_of_hintC h hn.1 ms hd.1, callCode_of_hintC q hn.2 ms hd.2⟩
-  | Nomm.n12 _ _, h, _, _ => by simp [HintOkC] at h
+  | Nomm.n12 _ _, _, _, _ => trivial
   | Nomm.mean _ _ _ _ _, h, _, _ => by simp [HintOkC] at h
 
 theorem noAx0_of_hintC : ∀ (n : Nomm), HintOkC n = true → Bake.NoAx0 n
@@ -159,7 +164,8 @@ theorem noAx0_of_hintC : ∀ (n : Nomm), HintOkC n = true → Bake.NoAx0 n
     simp only [HintOkC] at h; exact noAx0_of_hintC q h
   | Nomm.n11d _ h q _, hn => by
     simp only [HintOkC, Bool.and_eq_true] at hn; exact ⟨noAx0_of_hintC h hn.1, noAx0_of_hintC q hn.2⟩
-  | Nomm.n12 _ _, h => by simp [HintOkC] at h
+  | Nomm.n12 p q, h => by
+    simp only [HintOkC, Bool.and_eq_true] at h; exact ⟨noAx0_of_hintC p h.1, noAx0_of_hintC q h.2⟩
   | Nomm.mean _ _ _ _ _, h => by simp [HintOkC] at h
 
 /-- **The run link with hints inside direct calls, at `mono` `&`**: every
@@ -274,7 +280,12 @@ theorem comp_run_hintC (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slo
     cases ht : hintDynamic tag with
     | false => exact partH_n11d_nd h7 ht body Q H (pastAt_code h7 hcode env hc)
     | true => exact partH_n11d_kept h7 ht body Q H (hs.1 ht) (pastAt_code h7 hcode env hc)
-  | Nomm.n12 _ _, h, _, _, _, hs => by simp [HintOkC] at h
+  | Nomm.n12 p q, h, msup, region, hd, hs => by
+    have hc := callCode_of_hintC (ctx := ctx) _ h msup hd
+    simp only [HintOkC, Bool.and_eq_true] at h; simp only [HintCallsC] at hd; simp only [HintSoundC] at hs
+    have P := comp_run_hintC h7 hcode env snd E p h.1 msup region hd.1 hs.1
+    have Q := comp_run_hintC h7 hcode env snd E q h.2 msup region hd.2 hs.2
+    exact partH_n12 h7 hcode P Q (pastAt_code h7 hcode env hc)
   | Nomm.mean _ _ _ _ _, h, _, _, _, hs => by simp [HintOkC] at h
 
 end Compiler

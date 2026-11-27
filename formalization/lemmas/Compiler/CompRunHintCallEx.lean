@@ -13,7 +13,8 @@ no `HintSound` hypothesis (`comp_run_hint_tab`, `comp_run_hint_ana`):
   analysis made it (`tools/hoon/hinttab.hoon`, poke 0, the entry of the
   callee; output `tools/hoon/hinttab.txt`): four kept dynamic spots, nested,
   a `%6`, a `%4`, a `%10` whose value is hinted, and the recursive direct
-  call under three of the spots.
+  call under three of the spots;
+* a scry `[12 p q]` whose path holds a kept spot.
 -/
 
 namespace Formalization
@@ -72,6 +73,17 @@ example (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = som
     CompRunAtX (runLCH env (sfSnd cod) true msup) ctx (XM E msup) (spotArm F b B0 B2 B3) goal region g :=
   comp_run_hint_anaX h7 hcode hana env E _ rfl msup region
     (by simp only [spotArm, HintCallsC, and_true, true_and]; exact hb) goal g hi
+
+/-- **A scry with a kept spot in its path**, `[12 [1 r] [11 [%spot [1 s]] [0 3]]]`
+(the dumped `c04` of `tools/hoon/hintdump.hoon` has this shape), on every
+goal with `GInv`, from `CodeAna`. -/
+example (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (hana : CodeAna cod) (env : CallEnv) (E : GenRest → Prop) (msup : Option Nomm) (r s body : Noun)
+    (goal : CGoalL CSet) (region : List Nat) (g : Gen (TreapMap mugF)) (hi : GInv g goal) :
+    CompRunAtX (runLCH env (sfSnd cod) true msup) ctx (XM E msup)
+      (Nomm.n12 (Nomm.n1 r) (Nomm.n11d 0x746f7073 (Nomm.n1 s) (Nomm.n0 3) body)) goal region g :=
+  comp_run_hint_anaX h7 hcode hana env E _ rfl msup region (by simp [HintCallsC]) goal g hi
+
 
 end Compiler
 end Formalization

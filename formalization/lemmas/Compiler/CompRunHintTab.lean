@@ -17,10 +17,9 @@ over `nommOf cod`), `SoundAt` holds as soon as `+sound-far` returns on `q`
   `Bake.NoAx0` whose `hintBells` have entries, in a table closed for
   `+sound-far` (`SfTable (nommOf cod)`: every nomm of the table has no `%10`
   at axis `0` on its product path and an entry for each callee there).
-* `entries_of_callCode`: with `CodeAna cod` (the facts of the analysis on
+* `entries_of_calls`: with `CodeAna cod` (the facts of the analysis on
   `code.long-ska`, `CompSofCode.lean`), every callee of a member of `HintOkC`
-  whose calls have code entries (`CallCode`, from `HintCallsC`) has a nomm
-  entry.
+  whose calls meet `CallOk` (`HintCallsC`) has a nomm entry.
 * **`comp_run_hint_tab`**: `comp_run_hintC` at `snd = sfSnd cod` with
   `SfTable` and the entries of the callees in place of `HintSoundC`;
   **`comp_run_hint_ana`**: with `CodeAna cod` alone.
@@ -148,67 +147,74 @@ theorem hintSound_of_tab (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : s
     exact ⟨fun _ => soundAt_tab h7 hcode ht ha.2 fun b m => hb b (Or.inr m),
       hintSound_of_tab h7 hcode ht h ha.1 fun b m => hb b (Or.inl m),
       hintSound_of_tab h7 hcode ht q ha.2 fun b m => hb b (Or.inr m)⟩
-  | Nomm.n12 _ _, _, _ => by simp only [HintSoundC]
+  | Nomm.n12 p q, ha, hb => by
+    simp only [Bake.NoAx0] at ha; simp only [hintBells, List.mem_append] at hb; simp only [HintSoundC]
+    exact ⟨hintSound_of_tab h7 hcode ht p ha.1 fun b m => hb b (Or.inl m),
+      hintSound_of_tab h7 hcode ht q ha.2 fun b m => hb b (Or.inr m)⟩
   | Nomm.mean _ _ _ _ _, _, _ => by simp only [HintSoundC]
 
 /-- **The callees of a member of the class have nomm entries**, from
-`CodeAna` and the code entries of its calls (`CallCode`). -/
-theorem entries_of_callCode {cod : Noun} {env : CallEnv} (hana : CodeAna cod) :
-    ∀ (n : Nomm), HintOkC n = true → CallCode cod env n → ∀ b ∈ hintBells n, ∃ m, nommOf cod b = some m
-  | Nomm.cons p q, h, hc, b, hb => by
-    simp only [HintOkC, Bool.and_eq_true] at h; simp only [CallCode] at hc
+`CodeAna` and the code entries of its calls (`CallOk` in `HintCallsC`). -/
+theorem entries_of_calls {cod : Noun} {env : CallEnv} {E : GenRest → Prop} (hana : CodeAna cod) :
+    ∀ (n : Nomm), HintOkC n = true → ∀ (ms : Option Nomm), HintCallsC env cod ctx E ms n →
+      ∀ b ∈ hintBells n, ∃ m, nommOf cod b = some m
+  | Nomm.cons p q, h, ms, hc, b, hb => by
+    simp only [HintOkC, Bool.and_eq_true] at h; simp only [HintCallsC] at hc
     simp only [hintBells, List.mem_append] at hb
-    exact hb.elim (entries_of_callCode hana p h.1 hc.1 b) (entries_of_callCode hana q h.2 hc.2 b)
-  | Nomm.n0 _, _, _, b, hb => by simp [hintBells] at hb
-  | Nomm.n1 _, _, _, b, hb => by simp [hintBells] at hb
-  | Nomm.n2 p q Option.none, h, hc, b, hb => by
-    simp only [HintOkC, Bool.and_eq_true] at h; simp only [CallCode] at hc
+    exact hb.elim (entries_of_calls hana p h.1 ms hc.1 b) (entries_of_calls hana q h.2 ms hc.2 b)
+  | Nomm.n0 _, _, _, _, b, hb => by simp [hintBells] at hb
+  | Nomm.n1 _, _, _, _, b, hb => by simp [hintBells] at hb
+  | Nomm.n2 p q Option.none, h, ms, hc, b, hb => by
+    simp only [HintOkC, Bool.and_eq_true] at h; simp only [HintCallsC] at hc
     simp only [hintBells, List.mem_append] at hb
-    exact hb.elim (entries_of_callCode hana p h.1 hc.2.1 b) (entries_of_callCode hana q h.2 hc.2.2 b)
-  | Nomm.n2 p q (some (b0, Option.none)), h, hc, b, hb => by
-    simp only [HintOkC, Bool.and_eq_true] at h; simp only [CallCode] at hc
+    exact hb.elim (entries_of_calls hana p h.1 ms hc.1 b) (entries_of_calls hana q h.2 ms hc.2 b)
+  | Nomm.n2 p q (some (b0, Option.none)), h, ms, hc, b, hb => by
+    simp only [HintOkC, Bool.and_eq_true] at h; simp only [HintCallsC] at hc
     simp only [hintBells, List.mem_cons, List.mem_append] at hb
     rcases hb with e | e | e
     · subst e
       obtain ⟨V, hg, -⟩ := hc.1.1
       exact (sofBell_code hana hg).1
-    · exact entries_of_callCode hana p h.1 hc.2.1 b e
-    · exact entries_of_callCode hana q h.2 hc.2.2 b e
-  | Nomm.n2 _ _ (some (_, some _)), h, _, _, _ => by simp [HintOkC] at h
-  | Nomm.n3 p, h, hc, b, hb => by
-    simp only [HintOkC] at h; simp only [CallCode] at hc; simp only [hintBells] at hb
-    exact entries_of_callCode hana p h hc b hb
-  | Nomm.n4 p, h, hc, b, hb => by
-    simp only [HintOkC] at h; simp only [CallCode] at hc; simp only [hintBells] at hb
-    exact entries_of_callCode hana p h hc b hb
-  | Nomm.n5 p q, h, hc, b, hb => by
-    simp only [HintOkC, Bool.and_eq_true] at h; simp only [CallCode] at hc
+    · exact entries_of_calls hana p h.1 ms hc.2.1 b e
+    · exact entries_of_calls hana q h.2 ms hc.2.2 b e
+  | Nomm.n2 _ _ (some (_, some _)), h, _, _, _, _ => by simp [HintOkC] at h
+  | Nomm.n3 p, h, ms, hc, b, hb => by
+    simp only [HintOkC] at h; simp only [HintCallsC] at hc; simp only [hintBells] at hb
+    exact entries_of_calls hana p h ms hc b hb
+  | Nomm.n4 p, h, ms, hc, b, hb => by
+    simp only [HintOkC] at h; simp only [HintCallsC] at hc; simp only [hintBells] at hb
+    exact entries_of_calls hana p h ms hc b hb
+  | Nomm.n5 p q, h, ms, hc, b, hb => by
+    simp only [HintOkC, Bool.and_eq_true] at h; simp only [HintCallsC] at hc
     simp only [hintBells, List.mem_append] at hb
-    exact hb.elim (entries_of_callCode hana p h.1 hc.1 b) (entries_of_callCode hana q h.2 hc.2 b)
-  | Nomm.n6 p q r, h, hc, b, hb => by
-    simp only [HintOkC, Bool.and_eq_true] at h; simp only [CallCode] at hc
+    exact hb.elim (entries_of_calls hana p h.1 ms hc.1 b) (entries_of_calls hana q h.2 ms hc.2 b)
+  | Nomm.n6 p q r, h, ms, hc, b, hb => by
+    simp only [HintOkC, Bool.and_eq_true] at h; simp only [HintCallsC] at hc
     simp only [hintBells, List.mem_append] at hb
     rcases hb with (e | e) | e
-    · exact entries_of_callCode hana p h.1.1 hc.1 b e
-    · exact entries_of_callCode hana q h.1.2 hc.2.1 b e
-    · exact entries_of_callCode hana r h.2 hc.2.2 b e
-  | Nomm.n7 p q, h, hc, b, hb => by
-    simp only [HintOkC, Bool.and_eq_true] at h; simp only [CallCode] at hc
+    · exact entries_of_calls hana p h.1.1 ms hc.1 b e
+    · exact entries_of_calls hana q h.1.2 ms hc.2.1 b e
+    · exact entries_of_calls hana r h.2 ms hc.2.2 b e
+  | Nomm.n7 p q, h, ms, hc, b, hb => by
+    simp only [HintOkC, Bool.and_eq_true] at h; simp only [HintCallsC] at hc
     simp only [hintBells, List.mem_append] at hb
-    exact hb.elim (entries_of_callCode hana p h.1 hc.1 b) (entries_of_callCode hana q h.2 hc.2 b)
-  | Nomm.n10 _ v q, h, hc, b, hb => by
-    simp only [HintOkC, Bool.and_eq_true] at h; simp only [CallCode] at hc
+    exact hb.elim (entries_of_calls hana p h.1 ms hc.1 b) (entries_of_calls hana q h.2 (some p) hc.2 b)
+  | Nomm.n10 _ v q, h, ms, hc, b, hb => by
+    simp only [HintOkC, Bool.and_eq_true] at h; simp only [HintCallsC] at hc
     simp only [hintBells, List.mem_append] at hb
-    exact hb.elim (entries_of_callCode hana v h.1.2 hc.1 b) (entries_of_callCode hana q h.2 hc.2 b)
-  | Nomm.n11s _ q _, h, hc, b, hb => by
-    simp only [HintOkC] at h; simp only [CallCode] at hc; simp only [hintBells] at hb
-    exact entries_of_callCode hana q h hc b hb
-  | Nomm.n11d _ hh q _, h, hc, b, hb => by
-    simp only [HintOkC, Bool.and_eq_true] at h; simp only [CallCode] at hc
+    exact hb.elim (entries_of_calls hana v h.1.2 ms hc.1 b) (entries_of_calls hana q h.2 ms hc.2 b)
+  | Nomm.n11s _ q _, h, ms, hc, b, hb => by
+    simp only [HintOkC] at h; simp only [HintCallsC] at hc; simp only [hintBells] at hb
+    exact entries_of_calls hana q h ms hc b hb
+  | Nomm.n11d _ hh q _, h, ms, hc, b, hb => by
+    simp only [HintOkC, Bool.and_eq_true] at h; simp only [HintCallsC] at hc
     simp only [hintBells, List.mem_append] at hb
-    exact hb.elim (entries_of_callCode hana hh h.1 hc.1 b) (entries_of_callCode hana q h.2 hc.2 b)
-  | Nomm.n12 _ _, h, _, _, _ => by simp [HintOkC] at h
-  | Nomm.mean _ _ _ _ _, h, _, _, _ => by simp [HintOkC] at h
+    exact hb.elim (entries_of_calls hana hh h.1 ms hc.1 b) (entries_of_calls hana q h.2 ms hc.2 b)
+  | Nomm.n12 p q, h, ms, hc, b, hb => by
+    simp only [HintOkC, Bool.and_eq_true] at h; simp only [HintCallsC] at hc
+    simp only [hintBells, List.mem_append] at hb
+    exact hb.elim (entries_of_calls hana p h.1 ms hc.1 b) (entries_of_calls hana q h.2 ms hc.2 b)
+  | Nomm.mean _ _ _ _ _, h, _, _, _, _ => by simp [HintOkC] at h
 
 /-- **The run link with hints, `+sound` from the table**: `comp_run_hintC` at
 `snd = sfSnd cod` (the model of `+sound` on the table of `ctx`), with a table
@@ -231,7 +237,7 @@ theorem comp_run_hint_ana (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : 
     (msup : Option Nomm) (region : List Nat) (hd : HintCallsC env cod ctx E msup n) :
     PartH env (sfSnd cod) msup ctx (XM E msup) n region :=
   comp_run_hint_tab h7 hcode (sfTable_code hana) env E n hn msup region hd
-    (entries_of_callCode hana n hn (callCode_of_hintC n hn msup hd))
+    (entries_of_calls hana n hn msup hd)
 
 /-- **`comp_run_hint_ana` on every goal with `GInv`.** -/
 theorem comp_run_hint_anaX (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
