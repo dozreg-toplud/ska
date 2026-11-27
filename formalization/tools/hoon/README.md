@@ -203,6 +203,15 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     pass that goes on (the clean test never fired), although 1,553 starts had an unreached dirty member
                     and 936 runs changed their callee set with no `changed`.  The control (the library before dab8478
                     on `repush.hoon`) fails A at 12 starts.  Largest pass number 62 (`ck-rnd1`, `%rnd1` case 49)
+* `passmeasure-branch.py --instrument LIB.hoon OUT.hoon`, `passmeasure-branch.py OUT.txt...` (track F, README Gaps 16)
+                    `FinBranch` on traces.  `--instrument` adds to a library of `passmeasure-quiet.py` a print at the
+                    start of every `+run`: `%pb-beg` (mug, the `%2` and `%9` nodes of the formula along the grammar, the
+                    formula's mug); the check pairs it with `%pm-run`, takes the innermost open run as the parent of
+                    each `%pm-new`, and counts per case and parent the distinct kids, their formulas and the re-pushes.
+                    2026-11-28 on the corpus of `passmeasure-quiet.py` (10,532 cases, 68,750 runs, 24,460 pushes): 0
+                    re-pushes, at most 64 distinct kids of one parent (514 sites), 572 parents with more kids than
+                    `%2`/`%9` nodes (at most twice as many); on the generated cores (no hints) the kid formulas never
+                    exceed the sites, so the extra kids are one formula reached with other subject socks.
 * `passfix-cores.py all|grid|grid2|ablate|ablate2|one OUT.hoon [..]`, `--tab OUT.txt..` one driver of the 88
                     cores of `passmeasure-take.py` (`all`), or of `core3` cases (two relay chains from `k`'s
                     target into `a`, `b`) for the smallest witness; `--tab` per case: root passes, capped, `%st`
