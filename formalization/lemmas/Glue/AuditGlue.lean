@@ -10,6 +10,7 @@ import lemmas.Ska.PassMeasureB
 import lemmas.Ska.OptAliasOnce
 import lemmas.Compiler.CompStraightMapSix
 import lemmas.Ska.CompDirectMCloseEx
+import lemmas.Glue.GuardCallsD
 import lemmas.Ska.CompDirectMTailP
 import lemmas.Ska.CompDirectMTree
 import lemmas.Ska.RawInvCAT
@@ -566,5 +567,28 @@ namespace Formalization
 #print axioms SkaModel.Glue.emitA
 #print axioms SkaModel.Glue.mtl_tail
 #print axioms SkaModel.Glue.mtl_kpa
+
+-- ninth pass, track G: `KPA` over `InvA` (2.c)
+#check @SkaModel.Glue.FL
+#check @SkaModel.Glue.XB
+#check @SkaModel.Glue.LzL
+#check @SkaModel.Glue.GFL
+#check @SkaModel.Glue.KPA
+#check @SkaModel.Glue.KerfA
+#check @SkaModel.Glue.RunA
+#check @SkaModel.Glue.RN
+#print axioms SkaModel.Glue.KPA.bind'
+#print axioms SkaModel.Glue.KPA.emit'
+#print axioms SkaModel.Glue.KPA.addOps'
+#print axioms SkaModel.Glue.KPA.mtc
+#print axioms SkaModel.Glue.kpa_simpleNextL
+#print axioms SkaModel.Glue.kpa_monoBlocks
+#print axioms SkaModel.Glue.kpa_copyNeed
+#print axioms SkaModel.Glue.kpa_copyLazyL
+#print axioms SkaModel.Glue.kpa_copyL
+#print axioms SkaModel.Glue.kpa_pastL
+#print axioms SkaModel.Glue.kpa_needOrd
+#print axioms SkaModel.Glue.kpa_callTail
+#print axioms SkaModel.Glue.kpa_callDM
 
 end Formalization
