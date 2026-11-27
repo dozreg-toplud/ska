@@ -1,6 +1,7 @@
 import lemmas.Compiler.CompRunTNCall
 import lemmas.Compiler.CompRunTClass
 import lemmas.Compiler.CompSccLoopMemDone
+import lemmas.Compiler.CompUnaryDirE
 
 /-!
 # The threaded run link at `mono` `|` on the class `DirOk` (README Gaps 19 (g))
@@ -259,6 +260,68 @@ theorem res_dirTN (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52
     (hd : DirCallsTN env cod ctx E Y msup n) : ResForR (runLCM env false msup) n region :=
   (comp_run_dirTN h7 hcode env E Y hY n hn msup region hd).res
 
+
+/-! ## The per-call facts at `mono` `|` -/
+
+/-- **The push of `sof` gives `|`** at the rest `x` (`mono` `|`): what `CallOkTN` asks of the
+pill's `sof` (line 3970: no key, and `sound` or no reason for a soft call). -/
+def SofRetN (env : CallEnv) (msup : Option Nomm) (ctx : Noun) (p q : Nomm) (b : Bell) (nb : NeedOrd)
+    (x : GenRest) : Prop :=
+  ∀ (g : Gen (TreapMap mugF)) (SV SN PV goalN regionN : Noun),
+    nock (C (env.sure b).toNoun (C SV (C SN (C nb.toNoun (C (A 0) (C PV (crSubj (A 1) (crdN p q b) goalN regionN
+      (unitNoun Nomm.toNoun msup) (compCore g x ctx)))))))) crDKc6 = some (A 1)
+
+theorem callNounN_of_read (h7 : slot? 7 ctx = some compK) {env : CallEnv} {msup : Option Nomm} {p q : Nomm}
+    {b : Bell} {nb : NeedOrd} {x : GenRest}
+    (hcole : ∃ cole, slot? 6846 ctx = some cole ∧ getF mugF b.toNoun cole = some (A 0))
+    (hhot : ∃ jh, slot? 54 ctx = some jh) (hr : NeedRead ctx x b nb) (hs : SureNoun env b x)
+    (hso : SofRetN env msup ctx p q b nb x) :
+    CallNounM msup ctx p q b nb (env.sure b).toNoun x (A 1) (A 1) :=
+  ⟨hcole, hhot, cne_read h7 b nb x hcole hhot hr, csu_gate (comp_ctx_pill ctx h7).1 env b x hs, hso⟩
+
+/-- **`CallOkTN` of a callee read at every rest** (a member of the SCC through `map-local` or
+`top`, `NeedRead`'s `scc` case, or a hit): no miss, `x' = x`. -/
+theorem callOkTN_of_read (h7 : slot? 7 ctx = some compK) {env : CallEnv} {cod : Noun} {E : GenRest → Prop}
+    {Y : GenRest → GenRest → Prop} (hY : ∀ x, Y x x) {msup : Option Nomm} {p q : Nomm} {b : Bell} {nb : NeedOrd}
+    (hcd : CodePure cod env b) (hc : env.cod b = some (env.pure b)) (hri : env.ring b = Option.none)
+    (hnb : env.need b = some nb) (hsof : env.sof (made p msup) p q b nb = false)
+    (hcole : ∃ cole, slot? 6846 ctx = some cole ∧ getF mugF b.toNoun cole = some (A 0))
+    (hhot : ∃ jh, slot? 54 ctx = some jh)
+    (hE : ∀ x, x.NoSoft → E x → NeedRead ctx x b nb ∧ SureNoun env b x ∧ SofRetN env msup ctx p q b nb x) :
+    CallOkTN env cod ctx E Y msup p q b :=
+  ⟨hcd, hc, hri, nb, hnb, hsof, fun x hx hEx => by
+    obtain ⟨hr, hs, hso⟩ := hE x hx hEx
+    have hm := callNounN_of_read h7 hcole hhot hr hs hso
+    exact ⟨x, _, hY x, callNounMT_of_m hm, hm⟩⟩
+
+/-- **`CallOkTN` of one call at `EnvE`** (`callOkT_of_E` at `mono` `|`): readable at the start,
+or outside the SCC with `CalleeCompiled` (a miss compiles the callee's SCC). -/
+theorem callOkTN_of_E (h7 : slot? 7 ctx = some compK) {env : CallEnv} {cod : Noun} {x0 : GenRest}
+    {R : GenRest → Prop} {msup : Option Nomm} {p q : Nomm} {b : Bell} {nb : NeedOrd}
+    (hcd : CodePure cod env b) (hc : env.cod b = some (env.pure b)) (hri : env.ring b = Option.none)
+    (hnb : env.need b = some nb) (hsf : env.sof (made p msup) p q b nb = false)
+    (hcole : ∃ cole, slot? 6846 ctx = some cole ∧ getF mugF b.toNoun cole = some (A 0))
+    (hhot : ∃ jh, slot? 54 ctx = some jh) (hsof : ∀ x, SofRetN env msup ctx p q b nb x)
+    (hca : CallAt env R ctx x0 b nb) :
+    CallOkTN env cod ctx (EnvE env R x0) (ExtE (EnvE env R x0)) msup p q b := by
+  refine ⟨hcd, hc, hri, nb, hnb, hsf, fun x _ hE => ?_⟩
+  have hit : NeedRead ctx x b nb → SureNoun env b x → ∃ x' sur, ExtE (EnvE env R x0) x x' ∧
+      CallNounMT msup ctx p q b nb sur x x' (A 1) (A 1) ∧ CallNounM msup ctx p q b nb sur x' (A 1) (A 1) := by
+    intro hr hs
+    have hm := callNounN_of_read h7 hcole hhot hr hs (hsof x)
+    exact ⟨x, _, ⟨ext_refl x, id⟩, callNounMT_of_m hm, hm⟩
+  rcases hca with ⟨hr, hs⟩ | ⟨S, hS, hin, hcc⟩
+  · exact hit (needRead_ext hr hE.2.1) (sureNoun_ext hs hE.2.1 hE.1)
+  · obtain ⟨_, NR, MO, SC, INL, SU, hcx, hnm, -⟩ := hE.1
+    have hNR : slot? 2 x.cache = some NR := by rw [hcx]; simp [cacheN, nock_exec]
+    rcases getF_cases (k := b.toNoun) hnm with h0 | ⟨u, hu⟩
+    · obtain ⟨CA', hmiss, hext, hA', hR', N', u', hN', hu'⟩ := hcc x NR MO SC (C INL SU) hE.1 hE.2.2 hcx h0
+      obtain ⟨hr', hs'⟩ := hit_of_agree hS hin hnb hA' hN' hu'
+      have hm := callNounN_of_read h7 hcole hhot hr' hs' (hsof ⟨CA', x.soft, x.sofs⟩)
+      exact ⟨_, _, agreeE_ext hext hA' hR',
+        callNounMT_of h7 hcole hhot (NeedStep.miss hS hin hcx h0 hmiss) hs' (hsof ⟨CA', x.soft, x.sofs⟩), hm⟩
+    · obtain ⟨hr, hs⟩ := hit_of_agree hS hin hnb hE.1 hNR hu
+      exact hit hr hs
 
 /-- **The run of a member of an SCC at `mono` `|`** (track I's `hrunN` of `mem_gate_done_R`):
 in the context `memDCtx` of `member`, from the rest `cuRest CA1` with `E`, the pill's `+run` on
