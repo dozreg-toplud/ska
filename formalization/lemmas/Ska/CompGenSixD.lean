@@ -11,7 +11,7 @@ since the wrapped fork of `+past-fork` repeats labels and `RunOKGB` asks
 `AgreeG` per label), so the relation is stated here on the result itself:
 
 * `SixDG`, `SixD.toG`: `SixDW` with `RunOKGD` of the real result.
-* `atL_apart`, `atL_cons_ne`, `atL_cons_eq`, `notMem_of_atL`, `FillSemL.mono`,
+* `atL_none`, `atL_cons_ne`, `atL_cons_eq`, `notMem_of_atL`, `FillSemL.mono`,
   `FillSemL.toOne` (a conjunction of one need and `bunt`s is that need),
   `AgreeG.part` (a part's `AgreeG` from the whole's, its labels apart from
   the other parts').
@@ -37,7 +37,7 @@ variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys
 
 /-! ## Needs at one label -/
 
-theorem atL_apart {es : List (Nat × Lazy S)} {o : Nat} (h : ∀ e ∈ es, e.1 ≠ o) : atL es o = [] := by
+theorem atL_none {es : List (Nat × Lazy S)} {o : Nat} (h : ∀ e ∈ es, e.1 ≠ o) : atL es o = [] := by
   unfold atL
   rw [List.filter_eq_nil_iff.mpr (fun e he hd => h e he (of_decide_eq_true hd))]
   rfl
@@ -146,9 +146,9 @@ theorem WrapL.atL_self {y : Nat} {x l : Lazy S} (h : WrapL y x l) (hx : ∀ e �
     atL ((y, l) :: entries l) y = [x.sure] ∨ atL ((y, l) :: entries l) y = [Sure.bunt, x.sure] := by
   rcases h with h | h <;> subst l
   · left
-    rw [atL_cons_eq (y, x) (entries x), atL_apart hx]
+    rw [atL_cons_eq (y, x) (entries x), atL_none hx]
   · right
-    rw [entries_wrap, atL_cons_eq (y, _) _, atL_cons_eq (y, x) (entries x), atL_apart hx]
+    rw [entries_wrap, atL_cons_eq (y, _) _, atL_cons_eq (y, x) (entries x), atL_none hx]
     rfl
 
 /-- The entries of a branch at the fork are apart within a label. -/
@@ -406,33 +406,33 @@ theorem six_doneGD (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Prop} {
       rw [en, atL_append, atL_append]
   have sC : ∀ o, g2.bo + 2 ≤ o → o < g3.bo → suresAt (mk (⟨xc.laz.sure.ned, HoonSet.uni xc.laz.sure.lok HoonSet.empty⟩ : Sure S)
       (xc.laz.fork ++ [((g2.bo, l0), (g2.bo + 1, l1))]) xc.laz.bond) o = suresAt xc.laz o := fun o h0 h1 => by
-    rw [hsW, atL_apart (es := (g2.bo, l0) :: entries l0) (fun e he => by rcases hd0 e he with h | h <;> omega),
-      atL_apart (es := (g2.bo + 1, l1) :: entries l1) (fun e he => by rcases hd1 e he with h | h <;> omega)]
+    rw [hsW, atL_none (es := (g2.bo, l0) :: entries l0) (fun e he => by rcases hd0 e he with h | h <;> omega),
+      atL_none (es := (g2.bo + 1, l1) :: entries l1) (fun e he => by rcases hd1 e he with h | h <;> omega)]
     simp only [List.append_nil]; rfl
   have sA : ∀ o, g1.bo ≤ o → o < g2.bo → suresAt (mk (⟨xc.laz.sure.ned, HoonSet.uni xc.laz.sure.lok HoonSet.empty⟩ : Sure S)
       (xc.laz.fork ++ [((g2.bo, l0), (g2.bo + 1, l1))]) xc.laz.bond) o = suresAt x0.laz o := fun o h0 h1 => by
-    rw [hsW, atL_apart (es := entries xc.laz) (fun e he => by have := lc e he; omega), w0.atL_ne (by omega),
-      atL_apart (es := (g2.bo + 1, l1) :: entries l1) (fun e he => by rcases hd1 e he with h | h <;> omega)]
+    rw [hsW, atL_none (es := entries xc.laz) (fun e he => by have := lc e he; omega), w0.atL_ne (by omega),
+      atL_none (es := (g2.bo + 1, l1) :: entries l1) (fun e he => by rcases hd1 e he with h | h <;> omega)]
     simp only [List.append_nil, List.nil_append]; rfl
   have sB : ∀ o, g0.bo ≤ o → o < g1.bo → suresAt (mk (⟨xc.laz.sure.ned, HoonSet.uni xc.laz.sure.lok HoonSet.empty⟩ : Sure S)
       (xc.laz.fork ++ [((g2.bo, l0), (g2.bo + 1, l1))]) xc.laz.bond) o = suresAt x1.laz o := fun o h0 h1 => by
-    rw [hsW, atL_apart (es := entries xc.laz) (fun e he => by have := lc e he; omega),
-      atL_apart (es := (g2.bo, l0) :: entries l0) (fun e he => by rcases hd0 e he with h | h <;> omega), w1.atL_ne (by omega)]
+    rw [hsW, atL_none (es := entries xc.laz) (fun e he => by have := lc e he; omega),
+      atL_none (es := (g2.bo, l0) :: entries l0) (fun e he => by rcases hd0 e he with h | h <;> omega), w1.atL_ne (by omega)]
     simp only [List.nil_append]; rfl
   have sY : suresAt (mk (⟨xc.laz.sure.ned, HoonSet.uni xc.laz.sure.lok HoonSet.empty⟩ : Sure S)
       (xc.laz.fork ++ [((g2.bo, l0), (g2.bo + 1, l1))]) xc.laz.bond) g2.bo = [x0.laz.sure] ∨
       suresAt (mk (⟨xc.laz.sure.ned, HoonSet.uni xc.laz.sure.lok HoonSet.empty⟩ : Sure S)
       (xc.laz.fork ++ [((g2.bo, l0), (g2.bo + 1, l1))]) xc.laz.bond) g2.bo = [Sure.bunt, x0.laz.sure] := by
-    rw [hsW, atL_apart (es := entries xc.laz) (fun e he => by have := lc e he; omega),
-      atL_apart (es := (g2.bo + 1, l1) :: entries l1) (fun e he => by rcases hd1 e he with h | h <;> omega)]
+    rw [hsW, atL_none (es := entries xc.laz) (fun e he => by have := lc e he; omega),
+      atL_none (es := (g2.bo + 1, l1) :: entries l1) (fun e he => by rcases hd1 e he with h | h <;> omega)]
     simp only [List.append_nil, List.nil_append]
     exact w0.atL_self (fun e he => by have := la e he; omega)
   have sN : suresAt (mk (⟨xc.laz.sure.ned, HoonSet.uni xc.laz.sure.lok HoonSet.empty⟩ : Sure S)
       (xc.laz.fork ++ [((g2.bo, l0), (g2.bo + 1, l1))]) xc.laz.bond) (g2.bo + 1) = [x1.laz.sure] ∨
       suresAt (mk (⟨xc.laz.sure.ned, HoonSet.uni xc.laz.sure.lok HoonSet.empty⟩ : Sure S)
       (xc.laz.fork ++ [((g2.bo, l0), (g2.bo + 1, l1))]) xc.laz.bond) (g2.bo + 1) = [Sure.bunt, x1.laz.sure] := by
-    rw [hsW, atL_apart (es := entries xc.laz) (fun e he => by have := lc e he; omega),
-      atL_apart (es := (g2.bo, l0) :: entries l0) (fun e he => by rcases hd0 e he with h | h <;> omega)]
+    rw [hsW, atL_none (es := entries xc.laz) (fun e he => by have := lc e he; omega),
+      atL_none (es := (g2.bo, l0) :: entries l0) (fun e he => by rcases hd0 e he with h | h <;> omega)]
     simp only [List.nil_append]
     exact w1.atL_self (fun e he => by have := lb e he; omega)
   have hc43 : g4'.cond = g3.cond := by rw [(KC.addOps' _ _).keep _ _ _ hadd, emitted_cond]

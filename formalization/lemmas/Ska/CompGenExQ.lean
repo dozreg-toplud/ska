@@ -1,5 +1,6 @@
 import lemmas.Ska.CompGenSevenD
 import lemmas.Ska.RawInvCLCopy
+import lemmas.Ska.CompGenOne
 
 /-!
 # The example's `q`: the shape of its result
@@ -174,14 +175,15 @@ theorem shape_exQ (lib : Lib) (N : Needs) (env : CallEnv) {sup : Option Nomm} {r
 /-- **A `p` that only fronts its goal's labels, at any lazy goal** (the
 shape `runOKGD_sevenG` takes): every run under `%next L th` from a goal of
 `GoalG` whose registers are no keys of `cond`, with `LabUniq` and `Clean`
-needs (the premises of the cons's `+copy`), from a state with the invariants of the
+needs (the premises of the cons's `+copy`) and a jump without arguments
+(`[1 k]` hops to it), from a state with the invariants of the
 runs under `%done`, meets `RunOKGen` with `x = false`, grows as `GrowU`
 and re-points none of the goal's entries. -/
 abbrev NextGG (lib : Lib) (N : Needs) (env : CallEnv) (P : Noun → Prop) (f : Noun) (nm : Nomm) : Prop :=
   ∀ {sup : Option Nomm} {region : List Nat} {g0 g1 : Gen Map} {L : Lazy S} {th : Jmp} {nex : NextL S},
     GoalG (Map := Map) L th g0 → (∀ r, NMem L.sure.ned r → HoonMap.get g0.cond r = Option.none) →
     (∀ e ∈ entries L, ∀ r, NMem e.2.sure.ned r → HoonMap.get g0.cond r = Option.none) → Raw.LabUniq L →
-    Clean L.sure.ned → (∀ e ∈ entries L, Clean e.2.sure.ned) →
+    Clean L.sure.ned → (∀ e ∈ entries L, Clean e.2.sure.ned) → th.args = [] →
     1 ≤ g0.bo → g0.drop = false → UpBelow g0 → Clear g0 → CondBelow g0 →
     runLC env sup nm (CGoalL.next L th) region g0 = some (nex, g1) →
     ∃ Q : Wit, RunOKGen lib N P f L th Q false g0 g1 nex ∧ GrowU g0 g1 ∧
@@ -190,7 +192,7 @@ abbrev NextGG (lib : Lib) (N : Needs) (env : CallEnv) (P : Noun → Prop) (f : N
 /-- **`[0 axe]` is in the class** (axis at least `2`). -/
 theorem nextGG_n0 (lib : Lib) (N : Needs) (env : CallEnv) (P : Noun → Prop) {axe : Nat} (ha : 2 ≤ axe) :
     NextGG (S := S) (Map := Map) lib N env P (slot axe) (Nomm.n0 axe) := by
-  intro sup region g0 g1 L th nex G hnc hec _ _ _ _ _ _ _ _ h
+  intro sup region g0 g1 L th nex G hnc hec _ _ _ _ _ _ _ _ _ h
   rw [runLC_n0_next_from env sup ha] at h
   obtain ⟨L', hf, e⟩ := Option.map_eq_some_iff.mp h
   simp only [Prod.mk.injEq] at e
@@ -198,6 +200,15 @@ theorem nextGG_n0 (lib : Lib) (N : Needs) (env : CallEnv) (P : Noun → Prop) {a
   have M0 : MinkEq lib P (slot axe) (Nomm.n0 axe) := fun s hs gul tm r =>
     mink_pure (codeOK_none lib) rfl ((CallTreeA.n0 axe).annot P) hs gul tm r
   exact ⟨_, runOKGen_n0 (N := N) lib M0 hf G hnc hec id, GrowU.refl _, fun _ _ => not_repointG_refl⟩
+
+/-- **`[1 k]` is in the class.** -/
+theorem nextGG_n1 (lib : Lib) (N : Needs) (env : CallEnv) (P : Noun → Prop) (k : Noun) :
+    NextGG (S := S) (Map := Map) lib N env P (quote k) (Nomm.n1 k) := by
+  intro sup region g0 g1 L th nex G hnc hec _ _ _ hta _ d0 hu _ hcb h
+  have M1 : MinkEq lib P (quote k) (Nomm.n1 k) := fun s hs gul tm r =>
+    mink_pure (codeOK_none lib) rfl ((CallTreeA.n1 k).annot P) hs gul tm r
+  obtain ⟨-, R, hgu, hnr⟩ := runOKGen_n1 (N := N) lib M1 G hnc hec d0 hu hcb hta h id
+  exact ⟨_, R, hgu, hnr⟩
 
 /-- **`[7 p q]` under `%done`**: `q` of `SixDG` (a `%6`, any test, labels of
 its result possibly repeated) whose results are `LabUniq` with `Clean`
@@ -220,7 +231,11 @@ theorem seven_doneGD (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Prop}
   simp only [NextL.goal] at h2
   have b1 : 1 ≤ g1.bo := Nat.le_trans b0 Rq.ext.2.1
   obtain ⟨lu, cl, ecl⟩ := Lq b0 d0 hu hcl hcb h1
-  obtain ⟨Q, Rp, hgu, hnr⟩ := Hp (Rq.goalOut b0 (fun r hr => hr.elim)) Rq.ncond Rq.econd lu cl ecl b1
+  have hta : nx.th.args = [] := by
+    rcases Rq.ent with ⟨_, _, _, ha⟩ | e
+    · exact ha
+    · exact e.elim
+  obtain ⟨Q, Rp, hgu, hnr⟩ := Hp (Rq.goalOut b0 (fun r hr => hr.elim)) Rq.ncond Rq.econd lu cl ecl hta b1
     (Rq.ext.2.2.1.trans d0) (Rq.grow.up hu) (hcl.growU Rq.grow) (Rq.cfr.below hcb) h2
   exact runOKGD_sevenG (minkC7_seven lib P fp fq) Rq Rp hgu hnr (fun r hr => hr.elim)
 
