@@ -646,6 +646,56 @@ theorem optimize_keeps_finishLFX (M : Type → Type → Type) [Ana.Treap M] {fue
     Opt.Keeps c' s' :=
   optimize_keeps_optIn M (optIn_finishLFX hf hc hbake h) ho
 
+/-! ## Two instances -/
+
+/-- `[[6 [0 2] [0 3] [0 1]] [0 1]]`, a `%6` under a cons, is in `FragX`. -/
+theorem fragX_consSix : FragX (S := S) (Nomm.cons (Nomm.n6 (Nomm.n0 2) (Nomm.n0 3) (Nomm.n0 1)) (Nomm.n0 1)) :=
+  FragX.cons (FragX.six (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial))
+    (FragX.frag fun _ => trivial)
+
+/-- `[6 [0 2] [6 [0 6] [0 3] [0 1]] [1 0]]`, a `%6` in a branch of a `%6`,
+is in `FragX`. -/
+theorem fragX_sixSix : FragX (S := S) (Nomm.n6 (Nomm.n0 2) (Nomm.n6 (Nomm.n0 6) (Nomm.n0 3) (Nomm.n0 1))
+    (Nomm.n1 (A 0))) :=
+  FragX.six (FragX.frag fun _ => trivial)
+    (FragX.six (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial) (FragX.frag fun _ => trivial))
+    (FragX.frag fun _ => trivial)
+
+/-- **A `%6` under a cons**: the raw n-ary code of
+`[[6 [0 2] [0 3] [0 1]] [0 1]]` meets `OptIn`, and `+optimize` keeps it. -/
+theorem optIn_finishLFX_consSix {ord : NeedOrd} {less : Cape} {bake : Need → Need × List (Nat × Noun)}
+    (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
+    (h : finishLF (S := S) (Map := Map) (Nomm.cons (Nomm.n6 (Nomm.n0 2) (Nomm.n0 3) (Nomm.n0 1)) (Nomm.n0 1))
+      ord less bake = some c') : OptIn c'.blocks :=
+  optIn_finishLFX fragX_consSix (by decide) hbake h
+
+theorem optimize_keeps_consSix (M : Type → Type → Type) [Ana.Treap M] {fuel sfuel : Nat} {ord : NeedOrd}
+    {less : Cape} {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, []))
+    {c' s' : Straight Map}
+    (h : finishLF (S := S) (Map := Map) (Nomm.cons (Nomm.n6 (Nomm.n0 2) (Nomm.n0 3) (Nomm.n0 1)) (Nomm.n0 1))
+      ord less bake = some c')
+    (ho : optimizeF fuel ⟨aliasM (Ana.pickR M), trimTraceHints, switchChains sfuel⟩ c' = some s') :
+    Opt.Keeps c' s' :=
+  optimize_keeps_finishLFX M fragX_consSix (by decide) hbake h ho
+
+/-- **Nested `%6`s**: the raw n-ary code of
+`[6 [0 2] [6 [0 6] [0 3] [0 1]] [1 0]]` meets `OptIn`, and `+optimize`
+keeps it. -/
+theorem optIn_finishLFX_sixSix {ord : NeedOrd} {less : Cape} {bake : Need → Need × List (Nat × Noun)}
+    (hbake : ∀ ned, bake ned = (ned, [])) {c' : Straight Map}
+    (h : finishLF (S := S) (Map := Map) (Nomm.n6 (Nomm.n0 2) (Nomm.n6 (Nomm.n0 6) (Nomm.n0 3) (Nomm.n0 1))
+      (Nomm.n1 (A 0))) ord less bake = some c') : OptIn c'.blocks :=
+  optIn_finishLFX fragX_sixSix (by decide) hbake h
+
+theorem optimize_keeps_sixSix (M : Type → Type → Type) [Ana.Treap M] {fuel sfuel : Nat} {ord : NeedOrd}
+    {less : Cape} {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, []))
+    {c' s' : Straight Map}
+    (h : finishLF (S := S) (Map := Map) (Nomm.n6 (Nomm.n0 2) (Nomm.n6 (Nomm.n0 6) (Nomm.n0 3) (Nomm.n0 1))
+      (Nomm.n1 (A 0))) ord less bake = some c')
+    (ho : optimizeF fuel ⟨aliasM (Ana.pickR M), trimTraceHints, switchChains sfuel⟩ c' = some s') :
+    Opt.Keeps c' s' :=
+  optimize_keeps_finishLFX M fragX_sixSix (by decide) hbake h ho
+
 end Raw
 end SkaModel
 end Formalization

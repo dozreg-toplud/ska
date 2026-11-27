@@ -280,6 +280,17 @@ def disjB (nex : NextL LS) : Bool := nodupB ((nodesOf nex).flatMap fun x => x.2.
 #guard (sixes ++ enumX).all fun nm =>
   ((runL nm (CGoal.toL (CGoal.pick (jmp0 1) (jmp0 2) : CGoal LS)) [] gP).map fun (_, g) => xupB g.blocks) == some true
 
+
+/-- The two instances of `RawInvEApart.lean` (a `%6` under a cons, nested
+`%6`s): the final pass succeeds, its output passes the checks, and the run
+meets `LazOK` with entries. -/
+def exEAp : List Nomm :=
+  [Nomm.cons (Nomm.n6 (Nomm.n0 2) (Nomm.n0 3) (Nomm.n0 1)) (Nomm.n0 1),
+    Nomm.n6 (Nomm.n0 2) (Nomm.n6 (Nomm.n0 6) (Nomm.n0 3) (Nomm.n0 1)) (Nomm.n1 (A 0))]
+
+#guard exEAp.all fun nm => okOut (naryX nm) &&
+  ((runX nm).map fun (nex, g) => disjB nex && lazyOKB g.blocks nex && !(entries nex.laz).isEmpty) == some true
+
 end Raw
 end SkaModel
 end Formalization

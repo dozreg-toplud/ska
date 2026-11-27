@@ -97,3 +97,7 @@ open Formalization SkaModel Raw
 #print axioms lazOK_run
 #print axioms optIn_finishLFX
 #print axioms optimize_keeps_finishLFX
+#print axioms optIn_finishLFX_consSix
+#print axioms optimize_keeps_consSix
+#print axioms optIn_finishLFX_sixSix
+#print axioms optimize_keeps_sixSix
