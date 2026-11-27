@@ -188,13 +188,166 @@ theorem mono_call (q rin func new v ib ovo : Noun) :
   unfold monoFP monoRaw gateAt slamG
   simp only [nock_exec, Option.bind_assoc]
 
-theorem opt_call (str q rin x v ib ovo : Noun) :
-    nock (C str (C q (C rin (C x (C v (C ib (C ovo (C b2 (C b6 (C (C z (C L (C ho (C na (C mo (C sc rest)))))) lib)))))))))) optFP =
-      (slot? 31 (C b2 (C b6 (C (C z (C L (C ho (C na (C mo (C sc rest)))))) lib)))).bind fun oc => slamAt oc 2941 str := by
+theorem opt_call (K str q rin x v ib ovo : Noun) :
+    nock (C str (C q (C rin (C x (C v (C ib (C ovo (C b2 (C b6 (C (C z (C L (C ho K))) lib)))))))))) optFP =
+      (slot? 3 lib).bind fun oc => slamAt oc 2941 str := by
   unfold optFP slamAt
   simp only [nock_exec, Option.bind_assoc]
 
 end Calls
+
+
+/-! ## The glue of the branch -/
+
+/-- The path of the branch past the jetted-root test: `+scc-of`,
+`+compiled-mono`, `+optimize`. -/
+def elseF : Noun :=
+  C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C sccFP (C (A 7) (C (C (A 10) (C (C (A 0xffbe) (C (A 0) (A 5))) (C (A 0) (A 1))))
+    (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3)))
+    (C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C monoFP (C (A 7) (C (C (A 10) (C (C (A 0x3ff7) (C (A 0) (A 5))) (C (A 0) (A 1))))
+    (C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3)))
+    (C (A 8) (C optFP (C (C (C (A 1) (A Tag.ir)) (C (C (A 0) (A 124)) (C (C (A 0) (A 2)) (C (A 0) (A 125))))) (C (A 0) (A 511))))))))))))))))))))
+
+/-- The jetted root: the `%jsf` straight-out. -/
+def thenF : Noun :=
+  C (A 8) (C (C (C (A 1) (C (A Tag.this) (A 0))) (C (C (A 1) (A 1)) putFP))
+    (C (C (C (A 1) (A Tag.ir)) (C (C (A 0) (A 28)) (C (C (A 0) (A 2)) (C (A 0) (A 29))))) (C (A 0) (A 127))))
+
+/-- The jetted-root test: `&(?=(^ rin) (~(has by jets-hot) u.rin))`. -/
+def testF : Noun :=
+  C (A 6) (C (C (A 3) (C (A 0) (A 2))) (C (C (A 6) (C hasFP (C (C (A 1) (A 0)) (C (A 1) (A 1))))) (C (A 1) (A 1))))
+
+/-- **The `%full` branch** (272 cells), cut at its calls. -/
+def fullF : Noun :=
+  let t := C (A 8) (C getFP (C (A 6) (C testF (C thenF elseF))))
+  let t := C (A 7) (C (C (C (A 0) (A 4)) (C (A 0) (A 3))) t)
+  let t := C (A 7) (C (C (A 10) (C (C (A 1018) (C (A 0) (A 5))) (C (A 0) (A 1)))) t)
+  C (A 7) (C (C (A 0) (A 1)) (C (A 8) (C skaFP t)))
+
+/-- The other branches of the dispatch, kept whole. -/
+noncomputable def bJets : Noun := (slot? 14 ipokeR).getD (A 0)
+noncomputable def bFast : Noun := (slot? 126 ipokeR).getD (A 0)
+noncomputable def bDire : Noun := (slot? 1023 ipokeR).getD (A 0)
+
+/-- **The dispatch of the inner `+poke`**: `%jets`, `%fast`, `%full`, and
+`%dire` last, with no test. -/
+theorem ipokeR_eq : ipokeR =
+    C (A 6) (C (C (A 5) (C (C (A 1) (A Tag.jets)) (C (A 0) (A 4)))) (C bJets
+    (C (A 6) (C (C (A 5) (C (C (A 1) (A Tag.fast)) (C (A 0) (A 4)))) (C bFast
+    (C (A 6) (C (C (A 5) (C (C (A 1) (A Tag.full)) (C (A 0) (A 4)))) (C fullF bDire)))))))) := by
+  kernel_rfl
+
+section Glue
+variable (b2 b6 z L ho na mo sc rest lib : Noun)
+
+/-- The path past the jetted-root test. -/
+theorem else_run (oc rin func new v ib ovo : Noun) (hoc : slot? 3 lib = some oc) :
+    nock (C rin (C (C func new) (C v (C ib (C ovo (C b2 (C b6 (C (C z (C L (C ho (C na (C mo (C sc rest)))))) lib)))))))) elseF =
+      (sccP (C b2 (C b6 (C (C z (C L (C ho (C na (C mo (C sc rest)))))) lib))) func).bind fun q => (monoP q.2 func q.1).bind fun p =>
+        (slamAt oc 2941 p.1).map fun out => C (C (A Tag.ir) (C func (C out new))) p.2 := by
+  unfold elseF sccP monoP
+  rcases e5 : sccRaw (C b2 (C b6 (C (C z (C L (C ho (C na (C mo (C sc rest)))))) lib))) func with _ | _ | ⟨q, sccs'⟩
+  · simp only [nock_exec, scc_call, e5, Option.bind_none, Option.bind_fun_none]
+  · simp only [nock_exec, scc_call, e5, Option.bind_none, Option.bind_some, Option.bind_fun_none]
+  · rcases e6 : monoRaw (C b2 (C b6 (C (C z (C L (C ho (C na (C mo (C sccs' rest)))))) lib))) func q with
+      _ | _ | ⟨str, K'⟩
+    · simp only [nock_exec, scc_call, e5, mono_call, e6, Option.bind_none, Option.bind_some, Option.bind_fun_none,
+        Option.map_some]
+    · simp only [nock_exec, scc_call, e5, mono_call, e6, Option.bind_none, Option.bind_some, Option.bind_fun_none,
+        Option.map_some]
+    · simp only [nock_exec, scc_call, e5, mono_call, e6, opt_call, hoc, Option.bind_none, Option.bind_some,
+        Option.bind_fun_none, Option.map_some]
+      cases slamAt oc 2941 str <;> simp only [nock_exec, Option.bind_none, Option.bind_some, Option.map_some,
+        Option.map_none]
+
+/-- The jetted root. -/
+theorem then_run (r u func new v ib ovo : Noun) :
+    nock (C (C r u) (C (C func new) (C v (C ib (C ovo (C b2 (C b6 (C (C z (C L (C ho (C na (C mo (C sc rest)))))) lib)))))))) thenF =
+      (putRaw (C b2 (C b6 (C (C z (C L (C ho (C na (C mo (C sc rest)))))) lib))) func u).map fun p =>
+        C (C (A Tag.ir) (C func (C (C (C (A Tag.this) (A 0)) (C (A 1) p)) new))) (C b2 (C b6 (C (C z (C L (C ho (C na (C mo (C sc rest)))))) lib))) := by
+  unfold thenF
+  cases e : putRaw (C b2 (C b6 (C (C z (C L (C ho (C na (C mo (C sc rest)))))) lib))) func u <;>
+    simp only [nock_exec, put_call, e, Option.bind_none, Option.bind_some, Option.map_some, Option.map_none]
+
+/-- **The `%full` branch is `pillFull` of the callees**, on a core with the
+pill's layout (the state's parts and the library are variables). -/
+theorem full_run (oc s f ib : Noun) (hoc : slot? 3 lib = some oc) :
+    nock (C (C (A Tag.full) (C s f)) (C ib (C (C (A Tag.full) (C s f)) (C b2 (C b6 (C (C z (C L (C ho (C na (C mo (C sc rest)))))) lib)))))) fullF =
+      pillFull skaP jrP sccP monoP (fun str => slamAt oc 2941 str) (C b2 (C b6 (C (C z (C L (C ho (C na (C mo (C sc rest)))))) lib))) s f := by
+  have hE := fun L rin func new v ib ovo => else_run b2 b6 z L ho na mo sc rest lib oc rin func new v ib ovo hoc
+  unfold fullF pillFull skaP
+  rcases e1 : skaRaw (C b2 (C b6 (C (C z (C L (C ho (C na (C mo (C sc rest)))))) lib))) s f with _ | _ | ⟨_ | ⟨func, new⟩, L'⟩
+  · simp only [nock_exec, ska_call, e1, Option.bind_none]
+  · simp only [nock_exec, ska_call, e1, Option.bind_none, Option.bind_some]
+  · simp only [nock_exec, ska_call, e1, Option.bind_none, Option.bind_some, getFP, Option.bind_fun_none]
+  · unfold jrP
+    rcases e2 : getRaw (C b2 (C b6 (C (C z (C L' (C ho (C na (C mo (C sc rest)))))) lib))) func with _ | _ | ⟨r, u⟩
+    · simp only [nock_exec, ska_call, e1, get_call, e2, Option.bind_none, Option.bind_some, Option.map_some]
+    · simp only [nock_exec, ska_call, e1, get_call, e2, Option.bind_none, Option.bind_some, Option.map_some,
+        testF, hE, wut_atom, pick_one]
+    · rcases e3 : hasRaw (C b2 (C b6 (C (C z (C L' (C ho (C na (C mo (C sc rest)))))) lib))) u with _ | ⟨_ | _ | n⟩ | ⟨h1, h2⟩
+      · simp only [nock_exec, ska_call, e1, get_call, e2, Option.bind_none, Option.bind_some, Option.map_some,
+          testF, has_call, e3]
+      · cases e4 : putRaw (C b2 (C b6 (C (C z (C L' (C ho (C na (C mo (C sc rest)))))) lib))) func u <;>
+          simp [nock_exec, ska_call, e1, get_call, e2, Option.map_some, testF, has_call, e3, then_run, e4]
+      · simp [nock_exec, ska_call, e1, get_call, e2, Option.map_some, testF, has_call, e3, hE]
+      · simp [nock_exec, ska_call, e1, get_call, e2, Option.map_some, testF, has_call, e3, Nock.pick]
+      · simp [nock_exec, ska_call, e1, get_call, e2, Option.map_some, testF, has_call, e3, Nock.pick]
+
+end Glue
+
+
+/-! ## Validation, dispatch, and the branch on encoded states -/
+
+/-- The dispatch sends a `%full` to the `%full` branch. -/
+theorem ipokeR_full (s f ib ovo cr : Noun) :
+    nock (C (C (A Tag.full) (C s f)) (C ib (C ovo cr))) ipokeR =
+      nock (C (C (A Tag.full) (C s f)) (C ib (C ovo cr))) fullF := by
+  rw [ipokeR_eq]
+  simp [nock_exec, pick_eqCode, Tag.jets, Tag.fast, Tag.full]
+
+/-- The validation push of the inner `+poke` on a `%full` with a cell formula
+returns the ovum. -/
+theorem ipokeB_full {cr : Noun} (h15 : slot? 15 cr = some vcore) (s f₁ f₂ : Noun) :
+    nock (C ipokeBat (C (C (A Tag.full) (C s (C f₁ f₂))) cr)) ipokeB = some (C (A Tag.full) (C s (C f₁ f₂))) := by
+  unfold ipokeB
+  simp only [nock_exec, h15, vcore_ovum, gateArm_run, vovum_full, mold_full_cell]
+
+/-- **The pill side of P4**: on a `%full` with an atom formula the validation
+push crashes. -/
+theorem ipokeB_full_atom {cr : Noun} (h15 : slot? 15 cr = some vcore) (s : Noun) (a : Nat) :
+    nock (C ipokeBat (C (C (A Tag.full) (C s (A a))) cr)) ipokeB = none := by
+  unfold ipokeB
+  simp only [nock_exec, h15, vcore_ovum, gateArm_run, vovum_full, mold_full_atom]
+
+theorem cor_slot2 : slot? 2 cor = some corB2 := by kernel_rfl
+theorem corLib_vcore : corLib = vcore := by kernel_rfl
+theorem corLib_opt : slot? 3 corLib = some optC := by kernel_rfl
+
+theorem enc_slot2 (fl : Flags) (st : PSt) : slot? 2 (enc fl st) = slot? 2 cor := by
+  rw [cor_slot2]; simp [enc, nock_exec]
+
+theorem enc_slot15 (fl : Flags) (st : PSt) : slot? 15 (enc fl st) = some vcore := by
+  rw [← corLib_vcore]; simp [enc, nock_exec]
+
+/-- **`FullBranchIs` holds** of the pill's callees: on every encoded state
+and every `%full` with a cell formula, the pill's inner `+poke` is
+`pillFull skaP jrP sccP monoP optP`. -/
+theorem fullBranchIs (fl : Flags) : FullBranchIs fl skaP jrP sccP monoP optP := by
+  intro st s f₁ f₂
+  have h := full_run corB2 corB6 (A 0) (longNoun fl st.jets st.long) st.hot (st.cache.nary.toNoun Straight.toNoun)
+    (st.cache.mono.toNoun Straight.toNoun) (st.cache.sccs.toNoun FinMap.setNoun) (C st.cache.rest.1 st.cache.rest.2)
+    corLib optC s (C f₁ f₂) ipokeBat corLib_opt
+  rw [pokeN_eq (enc_slot2 fl st), nock_eight ipokeBat_eq, Ovum.toNoun, ipokeB_full (enc_slot15 fl st),
+    Option.bind_some, ipokeR_full]
+  exact h
+
+/-- **The pill crashes on a `%full` with an atom formula** (mismatch P4, the
+pill side), on every encoded state. -/
+theorem pokeN_full_atom (fl : Flags) (st : PSt) (s : Noun) (a : Nat) :
+    pokeN (enc fl st) (Ovum.full s (A a)).toNoun = none := by
+  rw [pokeN_eq (enc_slot2 fl st), nock_eight ipokeBat_eq]
+  simp only [Ovum.toNoun, ipokeB_full_atom (enc_slot15 fl st), Option.bind_none]
 
 end Compiler
 end Formalization
