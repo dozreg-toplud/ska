@@ -750,6 +750,246 @@ theorem equLS {lib : Lib} {N : Needs} {P : Noun → Prop} {f fb fc : Noun} (M : 
     · exact ⟨_, ((M.bwd hs hu).2 u _ rfl hv).2 v rfl,
         conv cf hcf c ned σ Inv ν O gul st t tm s0 s regs ag hned u v G⟩
 
+/-! ## `[5 p q]` under a flat lazy goal -/
+
+/-- The collapse of a goal that asks nothing returns nothing. -/
+theorem collapseL_noneEq {L : Lazy S} {th : Jmp} (ea : th.args = []) (en : noneEquivalentL L = true) :
+    (collapseLazyAtomL ⟨L, th⟩ : CM Map (Option (Nat × Nat))) = pure Option.none := by
+  unfold collapseLazyAtomL
+  simp [ea, en]
+
+/-- The collapse of a goal that asks something returns a register. -/
+theorem collapseL_isSome {L : Lazy S} {th : Jmp} {g g' : Gen Map} {a : Option (Nat × Nat)}
+    (hc : collapseLazyAtomL ⟨L, th⟩ g = some (a, g')) (ne : noneEquivalentL L = false) : a.isSome = true := by
+  unfold collapseLazyAtomL at hc
+  dsimp only at hc
+  by_cases ea : th.args ≠ []
+  · rw [if_pos ea] at hc; cases hc
+  rw [if_neg ea, if_neg (by simp [ne])] at hc
+  obtain ⟨nedS, g1, h1, hc⟩ := bind_some hc
+  obtain ⟨⟨r, o⟩, g2, h2, hc⟩ := bind_some hc
+  simp only [bind_apply, get_apply, Option.bind_some] at hc
+  split at hc
+  · simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at hc
+    rw [← hc.1]; rfl
+  · obtain ⟨u, g3, h3, hc⟩ := bind_some hc
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at hc
+    rw [← hc.1]; rfl
+
+/-- **The `%5` case of `run` under `%next L th`.** -/
+theorem runLC_n5_next (env : CallEnv) (sup : Option Nomm) (p q : Nomm) (L : Lazy S) (th : Jmp)
+    (region : List Nat) :
+    (runLC env sup (Nomm.n5 p q) (CGoalL.next L th) region : CM Map (NextL S)) = (do
+      let rp ← re
+      let rq ← re
+      let o ← (do
+        let a ← collapseLazyAtomL ⟨L, th⟩
+        match a with
+        | Option.none =>
+            if th.args = [] then emit ⟨[], [Pole.equ rp rq], Termin.hop (jmp0 th.there)⟩
+            else fun _ => Option.none
+        | some (r, o) => do
+            let (z, o') ← forl r o
+            emit ⟨[], [], Termin.eqq rp rq (jmp0 z) (jmp0 o')⟩ : CM Map Nat)
+      let nexq ← runLC env sup q (CGoalL.next (ofSure (lazyReg rq)) (jmp0 o)) region
+      let nexq ← pastL env.cod nexq p region
+      let nexp ← runLC env sup p (CGoalL.next (ofSure (lazyReg rp)) nexq.th) region
+      copyL nexp nexq.laz) := by
+  conv => lhs; unfold runLC
+  rfl
+
+/-- **The pieces of a run of `[5 p q]` under `%next L th`**, after the two
+registers `r-p = g0.re` and `r-q = g0.re + 1`. -/
+theorem runLC_n5_split {env : CallEnv} {sup : Option Nomm} {p q : Nomm} {L : Lazy S} {th : Jmp}
+    {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S}
+    (hr : runLC env sup (Nomm.n5 p q) (CGoalL.next L th) region g0 = some (nex, g1)) :
+    ∃ (o : Nat) (gE : Gen Map) (nexF : NextL S) (g4 : Gen Map) (nexF' : NextL S) (g5 : Gen Map) (nexS : NextL S)
+      (g6 : Gen Map),
+      (do
+        let a ← collapseLazyAtomL ⟨L, th⟩
+        match a with
+        | Option.none =>
+            if th.args = [] then emit ⟨[], [Pole.equ g0.re (g0.re + 1)], Termin.hop (jmp0 th.there)⟩
+            else fun _ => Option.none
+        | some (r, o) => do
+            let (z, o') ← forl r o
+            emit ⟨[], [], Termin.eqq g0.re (g0.re + 1) (jmp0 z) (jmp0 o')⟩ : CM Map Nat)
+        { { g0 with re := g0.re + 1 } with re := g0.re + 1 + 1 } = some (o, gE) ∧
+      runLC env sup q (CGoalL.next (ofSure (lazyReg (g0.re + 1))) (jmp0 o)) region gE = some (nexF, g4) ∧
+      pastL env.cod nexF p region g4 = some (nexF', g5) ∧
+      runLC env sup p (CGoalL.next (ofSure (lazyReg g0.re)) nexF'.th) region g5 = some (nexS, g6) ∧
+      copyL nexS nexF'.laz g6 = some (nex, g1) := by
+  rw [runLC_n5_next] at hr
+  obtain ⟨rp, gr1, hr1, hr⟩ := bind_some hr
+  obtain ⟨rq, gr2, hr2, hr⟩ := bind_some hr
+  rw [re_apply] at hr1 hr2
+  simp only [Option.some.injEq, Prod.mk.injEq] at hr1 hr2
+  obtain ⟨rfl, rfl⟩ := hr1
+  obtain ⟨rfl, rfl⟩ := hr2
+  obtain ⟨o, gE, hE, h⟩ := bind_some hr
+  obtain ⟨nexF, g4, k4, h⟩ := bind_some h
+  obtain ⟨nexF', g5, k5, h⟩ := bind_some h
+  obtain ⟨nexS, g6, k6, k7⟩ := bind_some h
+  exact ⟨o, gE, nexF, g4, nexF', g5, nexS, g6, hE, k4, k5, k6, k7⟩
+
+/-- **`[5 p q]` whose parts meet `LOKSF`, under a flat lazy goal**, from a
+state as `LOKS.run` asks: `RunOKLS` with `x = true`, the jump a new block
+at none of the result's entries, the result flat with clean entries.  The
+registers `r-p`, `r-q`; under a goal that asks nothing the block `[equ r-p
+r-q] hop th` (`equLS`); else `collapsePre_spec` (after the registers,
+`CollPre.lower`), `+forl`, the block `[eqq r-p r-q z o']` (`eqqLB` from the
+state after the collapse with the registers of `g0`, so that the kept
+registers do not have `r-p`, `r-q`), `collLSk`; the pair `pairRun_ok`. -/
+theorem lokS_five_run (lib : Lib) {N : Needs} (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {f fb fc : Noun}
+    (M : MinkC5 lib P f fb fc) (hfb : ∃ a b, fb = C a b)
+    (Kp : (p.pure = true ∧ MinkEq lib P fb p) ∨ hinted env.cod p = some true)
+    (Sp : LOKSF (S := S) (Map := Map) lib N env P fb p) (Sq : LOKSF (S := S) (Map := Map) lib N env P fc q)
+    {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S}
+    (hcount : sixCount (Nomm.n5 p q) ≤ 255) (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0)
+    (hcl0 : Clear g0) (hcb : CondBelow g0) (h1 : 1 ≤ th.there) (h2 : th.there < g0.bo) (hta : th.args = [])
+    (ht : th.there ∉ (entries L).map Prod.fst) (hsd : Distinct L.sure.ned)
+    (hsl : ∀ x, NMem L.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none)
+    (hlab : ∀ e ∈ entries L, e.1 < g0.bo ∧ ∃ B th', HoonMap.get g0.blocks e.1 = some ⟨[], B, Termin.hop th'⟩)
+    (hnd : ((entries L).map Prod.fst).Nodup)
+    (hed : ∀ e ∈ entries L, Distinct e.2.sure.ned ∧
+      ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none)
+    (hr : runLC env sup (Nomm.n5 p q) (CGoalL.next L th) region g0 = some (nex, g1)) :
+    (∃ Q, RunOKLS (Map := Map) lib N P f L th Q true g0 g1 nex) ∧
+      nex.th.there ∉ (entries nex.laz).map Prod.fst ∧ g0.bo ≤ nex.th.there ∧ Flat nex.laz ∧
+      (∀ e ∈ entries nex.laz, Clean e.2.sure.ned) := by
+  have hc : sixCount p ≤ 255 ∧ sixCount q ≤ 255 := by simp only [sixCount] at hcount; omega
+  obtain ⟨o, gE, nexF, g4, nexF', g5, nexS, g6, hE, k4, k5, k6, k7⟩ := runLC_n5_split hr
+  obtain ⟨g0', hg0'⟩ : ∃ g : Gen Map, g = { { g0 with re := g0.re + 1 } with re := g0.re + 1 + 1 } := ⟨_, rfl⟩
+  rw [← hg0'] at hE
+  have r0' : g0'.re = g0.re + 2 := by rw [hg0']
+  have b0' : g0'.bo = g0.bo := by rw [hg0']
+  have c0' : g0'.cond = g0.cond := by rw [hg0']
+  have d0' : g0'.drop = false := by rw [hg0']; exact d0
+  have bl0' : g0'.blocks = g0.blocks := by rw [hg0']
+  have cb0' : CondBelow g0' := fun k hk => by rw [c0'] at hk; have := hcb k hk; omega
+  have nk0 : ∀ x, g0.re ≤ x → HoonMap.get g0.cond x = Option.none := fun x hx => condBelow_none hcb hx
+  obtain ⟨a, gA, hc2, hE⟩ := bind_some hE
+  by_cases en : noneEquivalentL L = true
+  · -- the goal asks nothing: the block `[equ r-p r-q] hop th`
+    rw [collapseL_noneEq hta en, pure_apply] at hc2
+    simp only [Option.some.injEq, Prod.mk.injEq] at hc2
+    obtain ⟨rfl, rfl⟩ := hc2
+    simp only [if_pos hta, emit_apply, Option.some.injEq, Prod.mk.injEq] at hE
+    obtain ⟨rfl, rfl⟩ := hE
+    obtain ⟨blk, hblk⟩ : ∃ blk : Blob, blk = ⟨[], [Pole.equ g0.re (g0.re + 1)], Termin.hop (jmp0 th.there)⟩ :=
+      ⟨_, rfl⟩
+    rw [← hblk, b0'] at k4
+    have reE : (g0'.emitted blk).re = g0.re + 2 := by rw [emitted_re, r0']
+    have boE : (g0'.emitted blk).bo = g0.bo + 1 := by rw [emitted_bo, b0']
+    have cnE : (g0'.emitted blk).cond = g0.cond := by rw [← c0']; rfl
+    have dE : (g0'.emitted blk).drop = false := by rw [emitted_drop]; exact d0'
+    have kE : HoonMap.get (g0'.emitted blk).blocks g0.bo = some blk := by rw [← b0']; exact emitted_get g0' blk d0'
+    have E0 : Ext g0 g0' := by rw [hg0']; exact (ext_re _).trans (ext_re _)
+    have EE : Ext g0 (g0'.emitted blk) := E0.trans (ext_emit _ _)
+    have G0 : Grow g0 (g0'.emitted blk) := by
+      have g00 : Grow g0 g0' := by rw [hg0']; exact (grow_re _).trans (grow_re _)
+      exact g00.trans (grow_emit (by rw [hblk, b0']; exact jumpsBelow_hop (j := jmp0 th.there) h1 h2))
+    have GU : GrowU g0 (g0'.emitted blk) := G0.toU hu
+    obtain ⟨⟨Qp, Rp⟩, pne, pj, pfl, pec⟩ := pairRun_ok (a := g0.re) (o := g0.bo) lib env hfb Kp Sp Sq hc b0
+      (by omega) dE (GU.up hu) (hcl0.growU GU) (fun k hk => by rw [cnE] at hk; have := hcb k hk; omega)
+      (by omega) (by rw [cnE]; exact nk0 _ (Nat.le_refl _)) (by rw [cnE]; exact nk0 _ (by omega)) k4 k5 k6 k7
+    have RS := equLS M hfb en hta (fun e he => (hlab e he).1) hcb reE boE cnE EE GU (by rw [kE, hblk])
+      Rp.toRunOKLB
+    exact ⟨⟨_, RS⟩, pne, by omega, pfl, pec⟩
+  · -- the collapse, `+forl`, the block `[eqq r-p r-q z o']`
+    have en' : noneEquivalentL L = false := by simpa using en
+    rcases a with _ | ⟨r, o0⟩
+    · exact absurd (collapseL_isSome hc2 en') (by simp)
+    have CP0 := collapsePre_spec (r := r) (there := o0) hc2 rfl d0' cb0' (fun x hx => by have := (hsl x hx).1; omega)
+      (fun x hx => by rw [c0']; exact (hsl x hx).2) (List.nodup_cons.mpr ⟨ht, hnd⟩)
+      (fun e he => ⟨by rw [b0']; exact (hlab e he).1, by
+        obtain ⟨B, th'', hb⟩ := (hlab e he).2; exact ⟨B, _, by rw [bl0']; exact hb⟩⟩)
+      (fun e he x hx => by have := ((hed e he).2 x hx).1; omega)
+    have CP : CollPre L th g0 gA r o0 := CollPre.lower (k := g0.re + 1 + 1) (by omega) (by subst hg0'; exact CP0)
+    have c1 := CP0.le
+    have c2 := CP.bo1
+    obtain ⟨⟨z, o'⟩, g3, h3, hE⟩ := bind_some hE
+    simp only [emit_apply, Option.some.injEq, Prod.mk.injEq] at hE
+    obtain ⟨rfl, rfl⟩ := hE
+    obtain ⟨blk, hblk⟩ : ∃ blk : Blob, blk = ⟨[], [], Termin.eqq g0.re (g0.re + 1) (jmp0 z) (jmp0 o')⟩ := ⟨_, rfl⟩
+    rw [← hblk] at k4
+    have hth' : 1 ≤ o0 ∧ o0 < gA.bo := by
+      rcases CP.shape with ⟨e, eb, -⟩ | ⟨e, eb, -⟩ <;> (rw [e]; omega)
+    obtain ⟨E23, r3, b3, -⟩ := forl_ok h3 CP.rlt
+    have Fd := forl_down h3 hth'.1 hth'.2 (by omega)
+    have c3 : g3.cond = gA.cond := (kc_forl r o0).keep gA _ g3 h3
+    have d2 : gA.drop = false := CP.drop.trans d0
+    have d3 : g3.drop = false := E23.2.2.1.trans d2
+    have reE : (g3.emitted blk).re = g3.re := by rw [emitted_re]
+    have boE : (g3.emitted blk).bo = g3.bo + 1 := by rw [emitted_bo]
+    have cnE : (g3.emitted blk).cond = g3.cond := rfl
+    have dE : (g3.emitted blk).drop = false := by rw [emitted_drop]; exact d3
+    have kE : HoonMap.get (g3.emitted blk).blocks g3.bo = some blk := emitted_get g3 blk d3
+    have G3E : Grow g3 (g3.emitted blk) := grow_emit (by rw [hblk]; exact jumpsBelow_two rfl Fd.2.1 Fd.2.2)
+    have GUA : GrowU g0 gA := CP.grow.toU hu
+    have huA : UpBelow gA := GUA.up hu
+    have GU : GrowU gA (g3.emitted blk) := (Fd.1.trans G3E).toU huA
+    have E3E : Ext g3 (g3.emitted blk) := ext_emit _ _
+    have cbA : CondBelow gA := CP.pfor.1.below hcb
+    have cbE : CondBelow (g3.emitted blk) := fun x hx => by rw [cnE, c3] at hx; have := cbA x hx; omega
+    have hak : ∀ k, k < g0.re + 2 → HoonMap.get gA.cond k = HoonMap.get g0.cond k := fun k hk => by
+      rw [CP0.pfor.1.get_lt (by omega), c0']
+    obtain ⟨⟨Qp, Rp⟩, pne, pj, pfl, pec⟩ := pairRun_ok (a := g0.re) (o := g3.bo) lib env hfb Kp Sp Sq hc
+      (by omega) (by omega) dE (GU.up huA) ((hcl0.growU GUA).growU GU) cbE (by omega)
+      (by rw [cnE, c3, hak _ (by omega)]; exact nk0 _ (Nat.le_refl _))
+      (by rw [cnE, c3, hak _ (by omega)]; exact nk0 _ (by omega)) k4 k5 k6 k7
+    obtain ⟨gL, hgL⟩ : ∃ g : Gen Map, g = { gA with re := g0.re } := ⟨_, rfl⟩
+    have RA := eqqLB (Map := Map) M hfb (g2 := gA) (g3 := g3) (gE := g3.emitted blk) (gL := gL) CP.rlt CP.rkey cbA d2
+      (by omega) (by rw [hak _ (by omega)]; exact nk0 _ (Nat.le_refl _))
+      (by rw [hak _ (by omega)]; exact nk0 _ (by omega))
+      (by rw [hgL]; exact Nat.le_refl _) (by rw [hgL]) (by rw [hgL]) (by rw [hgL]) (by rw [hgL]) h3 c3 reE boE cnE E3E GU hth'
+      (by rw [kE, hblk]) Rp.toRunOKLB
+    have hfr : ∀ e ∈ entries nex.laz, ∀ x, NMem e.2.sure.ned x → g0.re ≤ x := fun e he x hx => by
+      rcases (Rp.eregs e he).2 x hx with ⟨e0, h0, _⟩ | h | h
+      · rw [entries_ofSure] at h0; cases h0
+      · simp only [ofSure, sure_mk, pairReg, NMem] at h; omega
+      · omega
+    have RS := collLSk (Map := Map) CP hu (fun e he => (hlab e he).1) (fun x hx => (hsl x hx).1)
+      (fun e he x hx => (hed e he).2 x hx) hfr (by rw [hgL]) (by rw [hgL]) (by rw [hgL]) (by rw [hgL]; exact Nat.le_refl _)
+      (by have := Rp.re; omega)
+      ((condFresh_of_eq (by omega) (cnE.trans c3)).trans Rp.cfr) RA
+    exact ⟨⟨_, RS⟩, pne, by omega, pfl, pec⟩
+
+/-- **`[5 p q]` meets `LOKS true`** when its parts meet `LOKSF`, for a
+formula `f` whose `+mink` is the equality test of the parts' (`MinkC5`). -/
+theorem lokS_five (lib : Lib) {N : Needs} (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {f fb fc : Noun}
+    (M : MinkC5 lib P f fb fc) (hfb : ∃ a b, fb = C a b)
+    (Kp : (p.pure = true ∧ MinkEq lib P fb p) ∨ hinted env.cod p = some true)
+    (Sp : LOKSF (S := S) (Map := Map) lib N env P fb p) (Sq : LOKSF (S := S) (Map := Map) lib N env P fc q) :
+    LOKS (S := S) (Map := Map) true lib N env P f (Nomm.n5 p q) := by
+  refine ⟨fun {sup L th region g0 g1 nex} hcl hr => ?_, fun hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl hlab hnd hed
+    hfl hcs hce hr => ?_⟩
+  · obtain ⟨o, gE, nexF, g4, nexF', g5, nexS, g6, hE, k4, k5, k6, k7⟩ := runLC_n5_split hr
+    have cq := Sq.clean (L := ofSure (lazyReg _)) trivial k4
+    have cq' : Clean nexF'.laz.sure.ned := by
+      rcases Kp with ⟨pp, _⟩ | hh
+      · rw [pastL_pure _ _ pp, pure_apply] at k5
+        simp only [Option.some.injEq, Prod.mk.injEq] at k5
+        obtain ⟨rfl, rfl⟩ := k5
+        exact cq
+      · rcases pastL_hinted hh k5 with ⟨x1, x2, _⟩ | ⟨x1, x2⟩
+        · subst x1 x2; exact cq
+        · subst x1 x2; trivial
+    exact clean_copyL k7 (Sp.clean (L := ofSure (lazyReg _)) trivial k6) cq'
+  · obtain ⟨A, B, C', D, E⟩ := lokS_five_run lib env M hfb Kp Sp Sq hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl
+      hlab hnd hed hr
+    exact ⟨A, B, Or.inr C', D, E⟩
+
+/-- **The jump of `[5 p q]` is always a block it made.** -/
+theorem jNewLS_five (lib : Lib) {N : Needs} (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {f fb fc : Noun}
+    (M : MinkC5 lib P f fb fc) (hfb : ∃ a b, fb = C a b)
+    (Kp : (p.pure = true ∧ MinkEq lib P fb p) ∨ hinted env.cod p = some true)
+    (Sp : LOKSF (S := S) (Map := Map) lib N env P fb p) (Sq : LOKSF (S := S) (Map := Map) lib N env P fc q) :
+    JNewLS (S := S) (Map := Map) env (Nomm.n5 p q) :=
+  fun hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs hce hr =>
+    (lokS_five_run (N := N) lib env M hfb Kp Sp Sq hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl hlab hnd hed
+      hr).2.2.1
+
 end Comp
 end SkaModel
 end Formalization
