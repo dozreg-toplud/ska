@@ -320,7 +320,408 @@ theorem stOut_ren {blocks : Map Blob} {ned : Need} {o : Nat} {start : Blob}
     simp only [labOf, if_true] at hl0
     exact ⟨r, rfl, hl r hl0⟩
 
+/-! ## The two final passes -/
+
+theorem countArgs_flatten : ∀ ned : Need, countArgs (needToOrd ned) = (flattenNeed ned).length
+  | Need.none => rfl
+  | Need.this _ => rfl
+  | Need.pair p q => by
+    simp only [needToOrd, countArgs, flattenNeed, List.length_append, countArgs_flatten p, countArgs_flatten q]
+  | Need.both _ h t => by
+    simp only [needToOrd, countArgs, flattenNeed, List.length_cons, List.length_append, countArgs_flatten h,
+      countArgs_flatten t]
+
+/-- The renaming of a run of inputs takes each input below their number. -/
+theorem renReg_lt_of_run {ned : Need} (hrun : isRun (flattenNeed ned) ((flattenNeed ned).headD 0) 0 = true)
+    {r : Nat} (hr : NMem ned r) :
+    renReg ((flattenNeed ned).headD 0) (flattenNeed ned).length r < (flattenNeed ned).length := by
+  have hm := (mem_flatten ned r).mpr hr
+  rw [isRun_iff] at hrun
+  generalize (flattenNeed ned).headD 0 = r0 at hrun ⊢
+  generalize ens : flattenNeed ned = ins at hrun hm ⊢
+  rw [hrun] at hm
+  simp only [List.mem_range'_1] at hm
+  simp only [renReg]
+  split
+  · omega
+  · split
+    · omega
+    · omega
+
+/-- **The facts of `StInv` and the liveness at `0` after `+to-straight`
+on the renaming path**, for blocks that are raw blocks with ops in front
+(the n-ary final pass): the hypotheses of `optIn_toStraight_prep` that
+speak of liveness, plus `ArityOK` and `TwoNA` of the raw blocks. -/
+theorem stIn_toStraight_prep {bl bl' : Map Blob} {P : Nat → List Pole} {K : Nat → Nat → Prop}
+    {ned : Need} {o : Nat} {c' : Straight Map}
+    (hP : Prep P bl bl') (hrk : DownRk (upRk bl) bl) (har : Compiler.ArityOK bl) (htw : Compiler.TwoNA bl)
+    (hK : ∀ k r, K k r → r ∈ defsOf (P k)) (hl : ∀ r, ¬ LiveK bl K o r)
+    (hX : ∀ k r, OpsRF (P k) r → NMem ned r) (h : toStraight bl' ned o = some c') :
+    Compiler.Closed c'.blocks ∧ Compiler.ArityOK c'.blocks ∧ (HoonMap.get c'.blocks 0).isSome ∧
+      Compiler.TwoNA c'.blocks ∧ ∀ r', Live c'.blocks 0 r' → r' < c'.nargs := by
+  have e : upRk bl' = upRk bl := funext (upRk_prep hP)
+  have rk' : DownRk (upRk bl') bl' := by rw [e]; exact downRk_prep hP hrk
+  unfold toStraight at h
+  simp only at h
+  split at h
+  · cases h
+  rename_i hrun
+  have hrun' : isRun (flattenNeed ned) ((flattenNeed ned).headD 0) 0 = true := by simpa using hrun
+  cases hst : HoonMap.get bl' o with
+  | none => rw [hst] at h; cases h
+  | some start =>
+  rw [hst, Option.bind_some] at h
+  obtain ⟨new, hnew, rfl⟩ := Option.map_eq_some_iff.mp h
+  simp only
+  have hi : Inj (renReg ((flattenNeed ned).headD 0) (flattenNeed ned).length) := renReg_inj _ _
+  have hsurj := renReg_surj ((flattenNeed ned).headD 0) (flattenNeed ned).length
+  generalize hbs : HoonMap.put (HoonMap.del bl' o) 0 start = bs at hnew
+  have ho1 : 1 ≤ o := (rk' o start hst).1
+  have hbs0 : HoonMap.get bs 0 = some start := by simp [← hbs, HoonMap.get_put]
+  have hbso : HoonMap.get bs o = Option.none := by
+    simp [← hbs, HoonMap.get_put, HoonMap.get_del, show o ≠ 0 by omega]
+  have hbsk : ∀ k, k ≠ 0 → k ≠ o → HoonMap.get bs k = HoonMap.get bl' k := fun k h0 hk => by
+    simp [← hbs, HoonMap.get_put, HoonMap.get_del, h0, hk]
+  obtain ⟨c1, c2, c3, c4, c5⟩ := stOut_ren hst hbs0 hbso hbsk hi hsurj (fun k b' hk => renameBlocks_get hnew hk)
+    (renameBlocks_spec hnew) rk' (arityOK_prep hP har) (twoNA_prep hP htw)
+    (fun r hr => live_entry_of_prep hP hK hl hX hr)
+  refine ⟨c1, c2, c3, c4, fun r' hlv => ?_⟩
+  obtain ⟨r, rfl, hr⟩ := c5 r' hlv
+  rw [countArgs_flatten]
+  exact renReg_lt_of_run hrun' hr
+
+/-- **`stIn_toStraight_prep` for any output of the renaming path** (the
+whole-subject final pass, through the unproxied blocks): the hypotheses of
+`optIn_prepN` that speak of liveness, plus `ArityOK` and `TwoNA` of the raw
+blocks and the converse `hnew'` of `hnew`. -/
+theorem stIn_prepN {bl bl' : Map Blob} {P : Nat → List Pole} {K : Nat → Nat → Prop}
+    {ned : Need} {o : Nat}
+    (hP : Prep P bl bl') (hrk : DownRk (upRk bl) bl) (har : Compiler.ArityOK bl) (htw : Compiler.TwoNA bl)
+    (hK : ∀ k r, K k r → r ∈ defsOf (P k)) (hl : ∀ r, ¬ LiveK bl K o r)
+    (hX : ∀ k r, OpsRF (P k) r → NMem ned r)
+    {start : Blob} (hst : HoonMap.get bl' o = some start) {bs : Map Blob} (hbs0 : HoonMap.get bs 0 = some start)
+    (hbso : HoonMap.get bs o = Option.none) (hbsk : ∀ k, k ≠ 0 → k ≠ o → HoonMap.get bs k = HoonMap.get bl' k)
+    {ren : Nat → Nat} (hi : Inj ren) (hsurj : ∀ r', ∃ r, ren r = r') {new : Map Blob}
+    (hnew : ∀ k b', HoonMap.get new k = some b' → ∃ b, HoonMap.get bs k = some b ∧ keepBlock bs ren k b = some (some b'))
+    (hnew' : ∀ k b, HoonMap.get bs k = some b → ∃ kb, keepBlock bs ren k b = some kb ∧ HoonMap.get new k = kb) :
+    Compiler.Closed new ∧ Compiler.ArityOK new ∧ (HoonMap.get new 0).isSome ∧ Compiler.TwoNA new ∧
+      ∀ r', Live new 0 r' → ∃ r, ren r = r' ∧ NMem ned r := by
+  have e : upRk bl' = upRk bl := funext (upRk_prep hP)
+  have rk' : DownRk (upRk bl') bl' := by rw [e]; exact downRk_prep hP hrk
+  exact stOut_ren hst hbs0 hbso hbsk hi hsurj hnew hnew' rk' (arityOK_prep hP har) (twoNA_prep hP htw)
+    (fun r hr => live_entry_of_prep hP hK hl hX hr)
+
 end Out
+
+/-! ## The top theorems, given the run's raw facts -/
+
+section Top
+variable {S : Type} [HoonSet S] [HoonMapKeys Map]
+
+/-- **What the run-level induction owes** (open, checked by `stB` on all of
+`enumX`): the raw blocks of the top run of `nm` meet `ArityOK` and `TwoNA`. -/
+def RunAT (S : Type) [HoonSet S] (Map : Type → Type) [HoonMap Map] [HoonMapKeys Map] (nm : Nomm) : Prop :=
+  ∀ nex g1, runL nm (CGoalL.done : CGoalL S) [] (gen0 : Comp.Gen Map) = some (nex, g1) →
+    Compiler.ArityOK g1.blocks ∧ Compiler.TwoNA g1.blocks
+
+variable [MapKeys Map]
+
+/-- **The facts of `StInv` and the liveness at `0` of the n-ary code of
+`FragX`**, given `RunAT`.  Generated from the text of `optIn_finishLFX_of`
+with `lazOK_run` for its hypothesis and `stIn_toStraight_prep` for the
+final call. -/
+theorem stIn_finishLFX_of {nm : Nomm} (hf : FragX (S := S) nm) (hc : sixCount nm ≤ 255) (hat : RunAT S Map nm)
+    {ord : NeedOrd} {less : Cape} {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, []))
+    {c' : Straight Map} (h : finishLF (S := S) (Map := Map) nm ord less bake = some c') :
+    Compiler.Closed c'.blocks ∧ Compiler.ArityOK c'.blocks ∧ (HoonMap.get c'.blocks 0).isSome ∧
+      Compiler.TwoNA c'.blocks ∧ ∀ r', Live c'.blocks 0 r' → r' < c'.nargs := by
+  have O : ∀ {nex : NextL S} {g1 : Comp.Gen Map},
+      runL nm (CGoalL.done : CGoalL S) [] (gen0 : Comp.Gen Map) = some (nex, g1) →
+      RunOKP (Map := Map) lib0 nm (CGoal.done : CGoal S) gen0 g1 nex :=
+    fun h1 => (runX_ok lib0 hf).1 trivial trivial hc (by simp [gen0]) rfl upBelow_gen0 h1
+  rw [finishLF_eq hbake (fun _ _ h1 => (O h1).cnd)] at h
+  unfold finishL at h
+  obtain ⟨⟨nex, g1⟩, h1, hA⟩ := Option.bind_eq_some_iff.mp h
+  simp only at hA
+  split at hA
+  · cases hA
+  obtain ⟨⟨nedF, g2⟩, h2, hB⟩ := Option.bind_eq_some_iff.mp hA
+  rw [hbake] at hB
+  simp only [List.map_nil] at hB
+  obtain ⟨⟨u3, g3⟩, h3, hC⟩ := Option.bind_eq_some_iff.mp hB
+  obtain ⟨⟨u4, g4⟩, h4, hT⟩ := Option.bind_eq_some_iff.mp hC
+  have R := O h1
+  obtain ⟨LA, LD⟩ := lazOK_run hf hc h1
+  -- the run
+  obtain ⟨S1, -, -, -, L1⟩ := runX_rawIHX_up (S := S) (Map := Map) hf CGoal.done [] gen0 g1 nex (fun _ _ => False)
+    (KVan.none _) sip_gen0X trivial trivial trivial trivial (fun _ _ e => e) hc trivial h1
+  have hl : ∀ r, ¬ LiveK g1.blocks (lazK nex.th.there nex.laz) nex.th.there r := fun r hl' =>
+    L1 r (hl'.mono fun x y h => h.elim False.elim id)
+  have haa : ArgsAboveR (upRk g1.blocks) g1.blocks := argsAboveR_upRk_of_xup S1.x
+  have hrk : DownRk (upRk g1.blocks) g1.blocks :=
+    downRk_of_growU R.grow (fun k => by simp [gen0, HoonMap.get_empty]) (by simp [gen0])
+  -- the input need
+  obtain ⟨⟨k2, e2⟩, l2, -, mF⟩ := needOrdAllocRegs_spec ord g1 g2 nedF h2
+  subst e2
+  have l2' : g1.re ≤ k2 := l2
+  -- `+coerce-lazy`
+  have I0 : CoI (Xup (Map := Map)) (upRk g1.blocks) g1.bo nedF k2 ((nex.th.there, nex.laz) :: entries nex.laz)
+      { g1 with re := k2 } := by
+    refine ⟨sip_reg S1 l2, Nat.le_refl _, fun r hr => ⟨(mF r hr).2, fun d => ?_⟩, LA, fun e he => ?_⟩
+    · have := S1.defd_lt d; have := (mF r hr).1; omega
+    · have rg : ∀ r, NMem e.2.sure.ned r → r < g1.re := fun r hr => by
+        rcases List.mem_cons.mp he with rfl | he'
+        · exact (R.regs r hr).2
+        · exact ((R.eregs e he').2 r hr).2
+      refine ⟨?_, ?_, fun r hr => ⟨by have := rg r hr; omega, fun m => ?_, LD e he r hr⟩⟩
+      · rcases List.mem_cons.mp he with rfl | he'
+        · rcases R.ent with ⟨b, hb, -, -⟩ | hj
+          · exact ⟨b, hb⟩
+          · exact hj.elim
+        · obtain ⟨-, -, th, hb⟩ := R.labs e he'
+          exact ⟨_, hb⟩
+      · rcases List.mem_cons.mp he with rfl | he'
+        · exact R.dist
+        · exact (R.eregs e he').1
+      · have := rg r hr; have := (mF r m).1; omega
+  obtain ⟨I3, P, pP, kP, rP, -⟩ := coerceLazyL_prepI (S := S) (Map := Map)
+    (CoI (Xup (Map := Map)) (upRk g1.blocks) g1.bo nedF k2)
+    (fun _ _ _ _ _ _ hI hs => coI_step hI hs) I0 h3
+  -- the empty bake
+  obtain ⟨S4, b4, hb4, e4, -, -⟩ := sip_addOps I3.1 (opsOK_nil g3) h4
+  have get4 : ∀ k, HoonMap.get g4.blocks k = HoonMap.get g3.blocks k := fun k => by
+    rw [e4]
+    by_cases e : k = nex.th.there
+    · subst e; rw [get_put_self, hb4, pre_nil]
+    · rw [get_put_ne e]
+  have pP4 : Prep P g1.blocks g4.blocks := fun k => by rw [get4 k]; exact pP k
+  exact stIn_toStraight_prep (K := lazK nex.th.there nex.laz) pP4 hrk (hat nex g1 h1).1 (hat nex g1 h1).2
+    (fun k r hk => by obtain ⟨e, he, rfl, hr⟩ := hk; exact kP e he r hr) hl rP hT
+
+/-- **The same for the whole-subject code of `FragX`.**  Generated from the
+text of `optIn_finishLUX`: the hop block of `+kerf` goes to the entry, which
+has no parameter (`Entry`), and `stIn_prepN` replaces `optIn_prepN`, with
+the converse of the fold from `renameBlocks_ren`. -/
+theorem stIn_finishLUX {nm : Nomm} (hf : FragX (S := S) nm) (hc : sixCount nm ≤ 255) (hat : RunAT S Map nm)
+    {c' : Straight Map} (h : finishLU (S := S) (Map := Map) nm = some c') :
+    Compiler.Closed c'.blocks ∧ Compiler.ArityOK c'.blocks ∧ (HoonMap.get c'.blocks 0).isSome ∧
+      Compiler.TwoNA c'.blocks ∧ ∀ r', Live c'.blocks 0 r' → r' < c'.nargs := by
+  unfold finishLU at h
+  obtain ⟨⟨nex, g1⟩, h1, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨⟨⟨o, sub⟩, g7⟩, h2, h⟩ := Option.bind_eq_some_iff.mp h
+  simp only at h
+  have R : RunOKP (Map := Map) lib0 nm (CGoal.done : CGoal S) gen0 g1 nex :=
+    (runX_ok lib0 hf).1 trivial trivial hc (by simp [gen0]) rfl upBelow_gen0 h1
+  obtain ⟨LA, LD⟩ := lazOK_run hf hc h1
+  obtain ⟨S1, a1, lo1, hi1, L1⟩ := runX_rawIHX_up (S := S) (Map := Map) hf CGoal.done [] gen0 g1 nex
+    (fun _ _ => False) (KVan.none _) sip_gen0X trivial trivial trivial trivial (fun _ _ e => e) hc trivial h1
+  have hl1 : ∀ r, ¬ LiveK g1.blocks (lazK nex.th.there nex.laz) nex.th.there r := fun r hl' =>
+    L1 r (hl'.mono fun x y h => h.elim False.elim id)
+  have hcnd : ∀ k, HoonMap.get g1.cond k = Option.none := fun k => by
+    rw [R.cnd]; simp [gen0, HoonMap.get_empty]
+  -- `+kerf`: the hop block
+  simp only [kerf] at h2
+  obtain ⟨o', ge, he, h2⟩ := bind_some h2
+  have gee : ge = g1.emitted ⟨[], [], Termin.hop nex.th⟩ := by
+    have he' := he
+    rw [emit_apply] at he'
+    simp only [Option.some.injEq, Prod.mk.injEq] at he'
+    exact he'.2.symm
+  obtain ⟨Se, eo, ee, qe, boe⟩ := sip_emit S1 (emitOK_hop a1 hi1) he
+  obtain ⟨r, g3, h3, h2⟩ := bind_some h2
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+  obtain ⟨⟨e2o, e2s⟩, e2g⟩ := h2
+  subst e2o e2s e2g eo
+  rw [kern_eq] at h3
+  obtain ⟨r0, g5, h5, h3⟩ := bind_some h3
+  have c5 : g5.cond = g1.cond := by
+    rw [re_apply] at h5
+    simp only [Option.some.injEq, Prod.mk.injEq] at h5
+    rw [← h5.2, gee]; rfl
+  obtain ⟨S5, er0, q5, b5, o5⟩ := sip_re Se h5
+  subst er0
+  obtain ⟨g6, g6', h6, h3⟩ := bind_some h3
+  rw [get_apply] at h6
+  simp only [Option.some.injEq, Prod.mk.injEq] at h6
+  obtain ⟨rfl, rfl⟩ := h6
+  rw [S5.drop] at h3
+  simp only [Bool.false_eq_true, if_false] at h3
+  obtain ⟨⟨⟩, g7', h7, h3⟩ := bind_some h3
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h3
+  obtain ⟨e3r, e3g⟩ := h3
+  subst e3r
+  rw [walkLazy_flat, e3g] at h7
+  have h7' : walkList (kernGate ge.re g1.bo) ((g1.bo, nex.laz) :: wentries nex.laz) g5 = some ((), g3) := by
+    simp only [walkList]; exact h7
+  -- the state before the walk
+  have hbo5 : HoonMap.get g5.blocks g1.bo = some ⟨[], [], Termin.hop nex.th⟩ := by rw [b5, ee]; exact get_put_self
+  have below5 : ∀ k, k < g1.bo → HoonMap.get g5.blocks k = HoonMap.get g1.blocks k := fun k hk => by
+    rw [b5, ee, get_put_ne (by omega)]
+  have dd5 : ∀ y, Defd g5.blocks y ↔ Defd g1.blocks y := fun y => by
+    rw [b5, ee, defd_put (S1.none (Nat.le_refl _))]; simp [blockDefs, defsOf]
+  have I0 : KI (S := S) Xup (upRk g1.blocks) g1.bo ge.re ((g1.bo, nex.laz) :: wentries nex.laz) g5 := by
+    refine ⟨S5, by omega, fun k v hv => ?_, fun y _ => by rw [c5, hcnd], fun d => ?_, ?_, fun e he => ?_⟩
+    · rw [c5, hcnd] at hv; cases hv
+    · have := S1.defd_lt ((dd5 _).mp d); omega
+    · have LA' := List.pairwise_cons.mp LA
+      exact needsApart_perm ((wentries_perm nex.laz).symm.cons _) (List.pairwise_cons.mpr ⟨LA'.1, LA'.2⟩)
+    · rcases List.mem_cons.mp he with rfl | he'
+      · exact ⟨⟨_, hbo5⟩, R.dist, fun y hy => ⟨by have := (R.regs y hy).2; omega,
+          fun d => LD (nex.th.there, nex.laz) List.mem_cons_self y hy ((dd5 y).mp d)⟩⟩
+      · have hm : e ∈ entries nex.laz := (wentries_perm nex.laz).mem_iff.mp he'
+        obtain ⟨-, lt, th', hb⟩ := R.labs e hm
+        exact ⟨⟨_, by rw [below5 _ (by omega)]; exact hb⟩, (R.eregs e hm).1, fun y hy =>
+          ⟨by have := ((R.eregs e hm).2 y hy).2; omega,
+            fun d => LD e (List.mem_cons_of_mem _ hm) y hy ((dd5 y).mp d)⟩⟩
+  obtain ⟨I7, P, pP, kP, rP, -⟩ := kernList_prep ge.re g1.bo _ g5 g3 I0 h7'
+  obtain ⟨S7, -, ck7, dk7, ns7, -, -⟩ := I7
+  -- the final pass: the map path is the renaming path of the unproxied blocks
+  rw [toStraightF_run _ _ _ (by simp [isRun, flattenNeed])] at h
+  simp only [flattenNeed, List.headD, List.length] at h
+  obtain ⟨start, hst, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨new, hnew, rfl⟩ := Option.map_eq_some_iff.mp h
+  generalize hu : (fun r => if hasProxies g3.cond then unproxy g3.cond r else r) = u
+  have uN : ∀ x, HoonMap.get g3.cond x = Option.none → u x = x := fun x hx => by
+    rw [← hu]; simp only; split
+    · exact unproxy_none hx
+    · rfl
+  have uK : ∀ x v, HoonMap.get g3.cond x = some v → u x = v.1 := fun x v hx => by
+    have hp : hasProxies g3.cond = true := by
+      unfold hasProxies
+      cases e : HoonMapKeys.keys g3.cond with
+      | nil =>
+        have := (HoonMapKeys.mem_keys g3.cond x).mpr (by simp [hx])
+        rw [e] at this; cases this
+      | cons _ _ => rfl
+    rw [← hu]; simp only [hp, if_true, unproxy, hx]
+  have uLow : ∀ x, x ≤ ge.re → u x = x := fun x hx => uN x (by
+    cases e : HoonMap.get g3.cond x with
+    | none => rfl
+    | some v => have := (ck7 x v e).1; omega)
+  have uD : ∀ x, Defd g3.blocks x → u x = x := fun x d => uN x (dk7 x d)
+  have hpr : proxRen g3.cond (hasProxies g3.cond) (renReg ge.re 1) = renReg ge.re 1 ∘ u := by
+    rw [← hu]; rfl
+  rw [hpr] at hnew
+  -- ranks
+  have rk5 : DownRk (upRk g5.blocks) g5.blocks := by
+    have G : GrowU (gen0 : Comp.Gen Map) ge := by
+      rw [gee]
+      exact R.grow.trans (growU_emit (fun j hj => by
+        simp only [finJumps, List.mem_singleton] at hj; subst hj; exact ⟨lo1, hi1⟩) (R.grow.up upBelow_gen0))
+    rw [b5]; exact downRk_of_growU G (fun k => by simp [gen0, HoonMap.get_empty]) (by simp [gen0])
+  have RD := rankDown_start (downRk_prep pP rk5) hst
+  have gs8 := get_mapVals (renBlob u) (HoonMap.put (HoonMap.del g3.blocks g1.bo) 0 start)
+  have g8 := get_mapVals (renBlob u) g3.blocks
+  have hnew8 : ∀ k b', HoonMap.get new k = some b' →
+      ∃ b, HoonMap.get (mapVals (renBlob u) (HoonMap.put (HoonMap.del g3.blocks g1.bo) 0 start)) k = some b ∧
+        keepBlock (mapVals (renBlob u) (HoonMap.put (HoonMap.del g3.blocks g1.bo) 0 start)) (renReg ge.re 1) k b =
+          some (some b') := by
+    intro k b' hk
+    obtain ⟨b, hb, hkb⟩ := renameBlocks_get hnew hk
+    refine ⟨renBlob u b, by rw [gs8, hb]; rfl, ?_⟩
+    rw [keepBlock_ren RD gs8]; exact hkb
+  -- the unproxied blocks are the raw blocks with the unproxied ops in front
+  have P8 : Prep (fun k => (P k).map (renPole u)) g5.blocks (mapVals (renBlob u) g3.blocks) := by
+    intro k
+    rw [g8, pP k]
+    cases hb : HoonMap.get g5.blocks k with
+    | none => rfl
+    | some b =>
+      simp only [Option.map_some]
+      have fx : renBlob u b = b := by
+        rw [renBlob_congr (P := (· < g5.re)) (v := id) (fun x hx => by simp only [id]; exact uLow x (by omega))
+          (S5.regs k b hb), renBlob_id]
+      rw [renBlob_pre, fx]
+  have DB : ∀ k b8, HoonMap.get (mapVals (renBlob u) g3.blocks) k = some b8 →
+      ∃ b, HoonMap.get g3.blocks k = some b ∧ b8 = renBlob u b ∧ blockDefs b8 = blockDefs b := by
+    intro k b8 hk
+    rw [g8] at hk
+    obtain ⟨b, hb, rfl⟩ := Option.map_eq_some_iff.mp hk
+    refine ⟨b, hb, rfl, ?_⟩
+    rw [blockDefs_renBlob]; exact map_fix (fun x hx => uD x (defd_iff.mpr ⟨k, b, hb, hx⟩))
+  have dd8 : ∀ y, Defd (mapVals (renBlob u) g3.blocks) y → Defd g3.blocks y := fun y d => by
+    obtain ⟨k, b8, hk, hm⟩ := defd_iff.mp d
+    obtain ⟨b, hb, -, e⟩ := DB k b8 hk
+    rw [e] at hm; exact defd_iff.mpr ⟨k, b, hb, hm⟩
+  have bn8 : BlkNodup (mapVals (renBlob u) g3.blocks) := fun k b8 hk => by
+    obtain ⟨b, hb, -, e⟩ := DB k b8 hk; rw [e]; exact S7.nd k b hb
+  have bx8 : Cross (mapVals (renBlob u) g3.blocks) := fun k k' b8 b8' y hk hk' hne m m' => by
+    obtain ⟨b, hb, -, e⟩ := DB k b8 hk
+    obtain ⟨b', hb', -, e'⟩ := DB k' b8' hk'
+    rw [e] at m; rw [e'] at m'
+    exact S7.cr k k' b b' y hb hb' hne m m'
+  have nt8 : NoTr (mapVals (renBlob u) g3.blocks) := fun k b8 hk op hop => by
+    obtain ⟨b, hb, rfl, -⟩ := DB k b8 hk
+    simp only [renBlob, List.mem_map] at hop
+    obtain ⟨op0, h0, rfl⟩ := hop
+    rw [tr_ren]; exact S7.tr k b hb op0 h0
+  have g10 : g1.bo ≠ 0 := by have := S1.bo1; omega
+  -- the raw facts on the blocks before the walk: the hop block of `+kerf` goes to the entry
+  have ar1 := (hat nex g1 h1).1
+  have tw1 := (hat nex g1 h1).2
+  have get5 : ∀ k, HoonMap.get g5.blocks k = HoonMap.get (HoonMap.put g1.blocks g1.bo ⟨[], [], Termin.hop nex.th⟩) k :=
+    fun k => by rw [b5, ee]
+  have AR5 : Compiler.ArityOK g5.blocks := by
+    intro k b j b2 hk hj hb2
+    rw [get5] at hk hb2
+    rcases get_put_cases hk with ⟨rfl, rfl⟩ | ⟨ne, hk⟩
+    · simp only [getJmps, List.mem_singleton] at hj
+      subst hj
+      rw [get_put_ne (by omega)] at hb2
+      rcases R.ent with ⟨b0, hb0, hp, ha⟩ | hj
+      · rw [hb0] at hb2; cases hb2; simp [hp, ha]
+      · exact hj.elim
+    · have := S1.jlt hk hj
+      rw [get_put_ne (by omega)] at hb2
+      exact ar1 k b j b2 hk hj hb2
+  have TW5 : Compiler.TwoNA g5.blocks := by
+    intro k b j hk h2 hj
+    rw [get5] at hk
+    rcases get_put_cases hk with ⟨rfl, rfl⟩ | ⟨ne, hk⟩
+    · simp [Compiler.twoWay] at h2
+    · exact tw1 k b j hk h2 hj
+  have hK8 : ∀ k y, lazK g1.bo nex.laz k y → y ∈ defsOf ((P k).map (renPole u)) := by
+    intro k y hk
+    obtain ⟨e, he, rfl, hy⟩ := hk
+    have he' : e ∈ (g1.bo, nex.laz) :: wentries nex.laz := by
+      rcases List.mem_cons.mp he with rfl | he
+      · exact List.mem_cons_self
+      · exact List.mem_cons_of_mem _ ((wentries_perm _).mem_iff.mpr he)
+    have yl : y < g1.re := by
+      rcases List.mem_cons.mp he with rfl | he
+      · exact (R.regs y hy).2
+      · exact ((R.eregs e he).2 y hy).2
+    rw [defsOf_ren, ← uLow y (by omega)]
+    exact List.mem_map_of_mem (kP e he' y hy)
+  have hl8 : ∀ y, ¬ LiveK g5.blocks (lazK g1.bo nex.laz) g1.bo y := by
+    intro y hlv
+    rcases hlv with ⟨hb, hrf, -⟩ | ⟨hb, hj, hl', -, hk⟩
+    · rw [hbo5] at hb; cases hb
+      simp [BlockRF, OpsRF, finRegs, jmpRegs, a1] at hrf
+    · rw [hbo5] at hb; cases hb
+      simp only [getJmps, List.mem_singleton] at hj
+      subst hj
+      exact hl1 y (liveK_frame below5 (fun k b hb j hj => S1.jlt hb hj)
+        (fun hm => hk ⟨(g1.bo, nex.laz), List.mem_cons_self, rfl, hm⟩) hl' hi1)
+  have hX8 : ∀ k y, OpsRF ((P k).map (renPole u)) y → NMem (Need.this ge.re) y := by
+    intro k y hy
+    obtain ⟨x, rfl, hx⟩ := opsRF_ren_back _ hy
+    simp only [NMem]
+    rcases rP k x hx with rfl | ⟨t, ht⟩
+    · exact uLow _ (Nat.le_refl _)
+    · exact uK x _ ht
+  obtain ⟨c1, c2, c3, c4, c5⟩ := stIn_prepN (K := lazK g1.bo nex.laz) (ned := Need.this ge.re) P8 rk5 AR5 TW5
+    hK8 hl8 hX8 (by rw [g8, hst]; rfl) (by rw [gs8]; simp [HoonMap.get_put])
+    (by rw [gs8]; simp [HoonMap.get_put, HoonMap.get_del, g10])
+    (fun k k0 ko => by rw [gs8, g8]; simp [HoonMap.get_put, HoonMap.get_del, k0, ko])
+    (renReg_inj _ _) (renReg_surj _ _) hnew8 (renameBlocks_ren RD gs8 hnew)
+  refine ⟨c1, c2, c3, c4, fun r' hlv => ?_⟩
+  obtain ⟨r, rfl, hr⟩ := c5 r' hlv
+  simp only [NMem] at hr
+  subst hr
+  simp [renReg, needToOrd, countArgs]
+
+end Top
 
 end Raw
 end SkaModel
