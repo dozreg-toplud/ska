@@ -86,6 +86,176 @@ theorem JNewLSFH.n11s (hs : hintStatic tag = false) (body : Noun) (H : JNewLSFH 
 
 end N11s
 
+/-! ## A dynamic hint not kept, with a safe clue -/
+
+/-- **`+mink` runs `f'` as `f` on the subjects of `P`.** -/
+structure MinkAsP (lib : Lib) (P : Noun → Prop) (f' f : Noun) : Prop where
+  fwd : ∀ {gul : Noun} {n : Nat} {tm : Trace} {s : Noun} {r : Tone}, P s → minkF lib gul n tm s f' = some r →
+    ∃ n', n' ≤ n ∧ minkF lib gul n' tm s f = some r
+  bwd : ∀ {gul : Noun} {tm : Trace} {s : Noun} {r : Tone}, P s → Mink lib gul tm s f r → Mink lib gul tm s f' r
+
+/-- **A clue that never crashes** on the subjects of `P` and always
+returns (what `+safe-nomm` says of a clue's nomm, for its formula). -/
+structure ClueSafe (lib : Lib) (P : Noun → Prop) (fh : Noun) : Prop where
+  ret : ∀ {s gul : Noun} {n : Nat} {tm : Trace} {rc : Tone}, P s → minkF lib gul n tm s fh = some rc →
+    ∃ k, rc = Tone.zero k
+  mink : ∀ {s gul : Noun} {tm : Trace}, P s → ∃ k, Mink lib gul tm s fh (Tone.zero k)
+
+theorem stopTag_of_dyn {tag : Nat} (h : hintDynamic tag = false) : stopTag tag = false := by
+  unfold hintDynamic at h
+  unfold stopTag
+  simp only [Bool.or_eq_false_iff, decide_eq_false_iff_not] at h ⊢
+  omega
+
+theorem minkF_n11d (lib : Lib) (gul : Noun) (n : Nat) (tm : Trace) (s : Noun) {tag : Nat}
+    (hs : hintDynamic tag = false) (fh f : Noun) :
+    minkF lib gul (n + 1) tm s (n3 (A 11) (C (A tag) fh) f) =
+      tbind (minkF lib gul n tm s fh) fun _ => minkF lib gul n tm s f := by
+  show tbind (minkF lib gul n tm s fh) (fun c => tbind (minkF lib gul n
+    (if stopTag tag = true then (tag, c) :: tm else tm) s f) fun p => some (Tone.zero p)) = _
+  simp only [stopTag_of_dyn hs, Bool.false_eq_true, if_false, tbind_zero]
+
+/-- **A dynamic hint that is not `hint-dynamic`, with a safe clue, runs as
+its formula** on the subjects of `P`. -/
+theorem minkAsP_n11d (lib : Lib) {P : Noun → Prop} {tag : Nat} (hs : hintDynamic tag = false) {fh : Noun}
+    (hc : ClueSafe lib P fh) (f : Noun) : MinkAsP lib P (n3 (A 11) (C (A tag) fh) f) f where
+  fwd := fun {gul n tm s r} hP h => by
+    cases n with
+    | zero => simp [minkF] at h
+    | succ n =>
+      rw [minkF_n11d lib gul n tm s hs] at h
+      rcases e : minkF lib gul n tm s fh with _ | rc
+      · rw [e] at h; cases h
+      · obtain ⟨k, rfl⟩ := hc.ret hP e
+        rw [e] at h
+        exact ⟨n, Nat.le_succ n, h⟩
+  bwd := fun {gul tm s r} hP ⟨n, h⟩ => by
+    obtain ⟨k, m, hm⟩ := hc.mink (gul := gul) (tm := tm) hP
+    refine ⟨max n m + 1, ?_⟩
+    rw [minkF_n11d lib gul _ tm s hs, minkF_le lib gul (Nat.le_max_right n m) tm s fh _ hm]
+    exact minkF_le lib gul (Nat.le_max_left n m) tm s f r h
+
+theorem RunOKLB.minkAsP {lib : Lib} {N : Needs} {P : Noun → Prop} {f f' : Noun} {L : Lazy S} {th : Jmp} {Q : Wit}
+    {x : Bool} {g0 g1 : Gen Map} {nex : NextL S} (M : MinkAsP lib P f' f)
+    (R : RunOKLB (Map := Map) lib N P f L th Q x g0 g1 nex) : RunOKLB (Map := Map) lib N P f' L th Q x g0 g1 nex where
+  re := R.re
+  bo := R.bo
+  drop := R.drop
+  keep := R.keep
+  grow := R.grow
+  cfr := R.cfr
+  lo := R.lo
+  hi := R.hi
+  ent := R.ent
+  regs := R.regs
+  dist := R.dist
+  eregs := R.eregs
+  labs := R.labs
+  nodup := R.nodup
+  dreg := R.dreg
+  nec := fun s hs hfit => by
+    obtain ⟨h1, h2⟩ := R.nec s hs hfit
+    refine ⟨fun gul n tm r h => ?_, fun gul tm => ?_⟩
+    · obtain ⟨n', -, h'⟩ := M.fwd hs h
+      exact h1 gul n' tm r h'
+    · obtain ⟨r, hm, hb⟩ := h2 gul tm
+      exact ⟨r, M.bwd hs hm, hb⟩
+  ncond := R.ncond
+  econd := R.econd
+  front := R.front
+  sem := fun cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s0 s r hI ht hP hm => by
+    obtain ⟨n', hn, h'⟩ := M.fwd hP hm
+    exact R.sem cf hcf c ned σ Inv ν O n' gul hN hS (oracleFwd_le hF hn) st t tm s0 s r hI ht hP h'
+  semB := fun cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI ht hP hA hre regs hs hn res hg => by
+    obtain ⟨r, hm, hg'⟩ := R.semB cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI ht hP hA hre regs hs hn res hg
+    exact ⟨r, M.bwd hP hm, hg'⟩
+
+theorem RunOKLS.minkAsP {lib : Lib} {N : Needs} {P : Noun → Prop} {f f' : Noun} {L : Lazy S} {th : Jmp} {Q : Wit}
+    {x : Bool} {g0 g1 : Gen Map} {nex : NextL S} (M : MinkAsP lib P f' f)
+    (R : RunOKLS (Map := Map) lib N P f L th Q x g0 g1 nex) : RunOKLS (Map := Map) lib N P f' L th Q x g0 g1 nex :=
+  { R.toRunOKLB.minkAsP M with fs := R.fs }
+
+theorem RunOKGB.minkAsP {lib : Lib} {N : Needs} {P : Noun → Prop} {f f' : Noun} {goal : CGoal S}
+    {g0 g1 : Gen Map} {nex : NextL S} (M : MinkAsP lib P f' f) (R : RunOKGB lib N P f goal g0 g1 nex) :
+    RunOKGB lib N P f' goal g0 g1 nex where
+  ext := R.ext
+  grow := R.grow
+  cfr := R.cfr
+  lo := R.lo
+  hi := R.hi
+  ent := R.ent
+  regs := R.regs
+  dist := R.dist
+  eregs := R.eregs
+  labs := R.labs
+  nodup := R.nodup
+  nec := fun s hs hfit => by
+    obtain ⟨h1, h2⟩ := R.nec s hs hfit
+    refine ⟨fun gul n tm r h => ?_, fun gul tm => ?_⟩
+    · obtain ⟨n', -, h'⟩ := M.fwd hs h
+      exact h1 gul n' tm r h'
+    · obtain ⟨r, hm, hb⟩ := h2 gul tm
+      exact ⟨r, M.bwd hs hm, hb⟩
+  ncond := R.ncond
+  econd := R.econd
+  sem := fun cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s0 s r hI ht hP hm => by
+    obtain ⟨n', hn, h'⟩ := M.fwd hP hm
+    exact R.sem cf hcf c ned σ Inv ν O n' gul hN hS (oracleFwd_le hF hn) st t tm s0 s r hI ht hP h'
+  semB := fun cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI ht hP hA hre regs hs hn res hg => by
+    obtain ⟨r, hm, hg'⟩ := R.semB cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI ht hP hA hre regs hs hn res hg
+    exact ⟨r, M.bwd hP hm, hg'⟩
+
+theorem DoneOK.minkAsP {lib : Lib} {N : Needs} {P : Noun → Prop} {f f' : Noun} {g0 g1 : Gen Map} {nex : NextL S}
+    (M : MinkAsP lib P f' f) (D : DoneOK lib N P f g0 g1 nex) : DoneOK lib N P f' g0 g1 nex :=
+  ⟨D.run.minkAsP M, D.nent, D.flat, D.clean, D.eclean⟩
+
+/-- **A dynamic hint that is not `hint-dynamic`, with a safe clue,
+compiles as its formula** (line 4290: `+safe-nomm` of the clue). -/
+theorem runLCH_n11d_safe (env : CallEnv) (snd : Nomm → NeedOrd → Bool) (mono : Bool)
+    {tag : Nat} (hs : hintDynamic tag = false) {h : Nomm} (hh : safeNomm h = true) (sup : Option Nomm) (q : Nomm)
+    (body : Noun) (goal : CGoalL S) (region : List Nat) :
+    (runLCH env snd mono sup (Nomm.n11d tag h q body) goal region : CM Map (NextL S)) =
+      runLCH env snd mono sup q goal region := by
+  simp only [runLCH, hs, hh, Bool.not_false, if_true]
+  exact bind_pure _
+
+section N11d
+variable {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop} {f fh : Noun} {q h : Nomm} {tag : Nat}
+
+theorem LOKSH.n11d {x : Bool} (hs : hintDynamic tag = false) (hh : safeNomm h = true) (hc : ClueSafe lib P fh)
+    (body : Noun) (H : LOKSH (S := S) (Map := Map) snd x lib N env P f q) (h6 : sixCount h = 0) :
+    LOKSH (S := S) (Map := Map) snd x lib N env P (n3 (A 11) (C (A tag) fh) f) (Nomm.n11d tag h q body) :=
+  ⟨fun hc' hr => H.clean hc' (by rwa [runLCH_n11d_safe env snd true hs hh] at hr),
+   fun hcount b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs hce hr =>
+    (fun ⟨⟨Q, R⟩, a, b, c, d⟩ => ⟨⟨Q, R.minkAsP (minkAsP_n11d lib hs hc f)⟩, a, b, c, d⟩)
+      (H.run (by simp only [sixCount, h6] at hcount; omega) b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed
+        hfl hcs hce (by rwa [runLCH_n11d_safe env snd true hs hh] at hr))⟩
+
+theorem LOKSFH.n11d (hs : hintDynamic tag = false) (hh : safeNomm h = true) (hc : ClueSafe lib P fh)
+    (body : Noun) (H : LOKSFH (S := S) (Map := Map) snd lib N env P f q) (h6 : sixCount h = 0) :
+    LOKSFH (S := S) (Map := Map) snd lib N env P (n3 (A 11) (C (A tag) fh) f) (Nomm.n11d tag h q body) :=
+  ⟨fun hc' hr => H.clean hc' (by rwa [runLCH_n11d_safe env snd true hs hh] at hr),
+   fun hF hcount b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs hce hr =>
+    (fun ⟨⟨Q, R⟩, a, b, c, d⟩ => ⟨⟨Q, R.minkAsP (minkAsP_n11d lib hs hc f)⟩, a, b, c, d⟩)
+      (H.run hF (by simp only [sixCount, h6] at hcount; omega) b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed
+        hfl hcs hce (by rwa [runLCH_n11d_safe env snd true hs hh] at hr))⟩
+
+theorem JNewLSH.n11d (hs : hintDynamic tag = false) (hh : safeNomm h = true) (body : Noun)
+    (H : JNewLSH (S := S) (Map := Map) snd env q) (h6 : sixCount h = 0) :
+    JNewLSH (S := S) (Map := Map) snd env (Nomm.n11d tag h q body) :=
+  fun hcount b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs hce hr =>
+    H (by simp only [sixCount, h6] at hcount; omega) b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs hce
+      (by rwa [runLCH_n11d_safe env snd true hs hh] at hr)
+
+theorem JNewLSFH.n11d (hs : hintDynamic tag = false) (hh : safeNomm h = true) (body : Noun)
+    (H : JNewLSFH (S := S) (Map := Map) snd env q) (h6 : sixCount h = 0) :
+    JNewLSFH (S := S) (Map := Map) snd env (Nomm.n11d tag h q body) :=
+  fun hF hcount b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs hce hr =>
+    H hF (by simp only [sixCount, h6] at hcount; omega) b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs
+      hce (by rwa [runLCH_n11d_safe env snd true hs hh] at hr)
+
+end N11d
+
 /-! ## The class -/
 
 /-- **`CallTreeD` with hints**: a member of `CallTreeD` without hints, the
@@ -114,6 +284,10 @@ inductive CallTreeH (lib : Lib) (env : CallEnv) (N : Needs) : (Noun → Prop) �
   | n11s {P : Noun → Prop} {x : Bool} {f : Noun} {q : Nomm} {tag : Nat} (body : Noun) :
       CallTreeH lib env N P x f q → hintStatic tag = false → q.pure = false →
       CallTreeH lib env N P x (n3 (A 11) (A tag) f) (Nomm.n11s tag q body)
+  | n11d {P : Noun → Prop} {x : Bool} {f fh : Noun} {q h : Nomm} {tag : Nat} (body : Noun) :
+      CallTreeH lib env N P x f q → hintDynamic tag = false → safeNomm h = true → ClueSafe lib P fh →
+      hinted env.cod h = some false → sixCount h = 0 → q.pure = false →
+      CallTreeH lib env N P x (n3 (A 11) (C (A tag) fh) f) (Nomm.n11d tag h q body)
 
 section
 variable {lib : Lib} {env : CallEnv} {N : Needs}
@@ -129,6 +303,7 @@ theorem CallTreeH.sixCount {P : Noun → Prop} {x : Bool} {f : Noun} {nm : Nomm}
   | three _ ihp => simp only [Comp.sixCount, ihp]
   | five _ _ ihp ihq => simp only [Comp.sixCount, ihp, ihq]
   | n11s _ _ _ _ ih => simp only [Comp.sixCount, ih]
+  | n11d _ _ _ _ _ _ h6 _ ih => simp only [Comp.sixCount, ih, h6]
 
 theorem CallTreeH.cell {P : Noun → Prop} {x : Bool} {f : Noun} {nm : Nomm} (h : CallTreeH lib env N P x f nm) :
     ∃ a b, f = C a b := by
@@ -151,6 +326,7 @@ theorem CallTreeH.toD {P : Noun → Prop} {x : Bool} {f : Noun} {nm : Nomm} (h :
   | five _ _ ihp ihq =>
     intro e; simp only [Nomm.pure, Bool.and_eq_true] at e; exact CallTreeD.five (ihp e.1) (ihq e.2)
   | n11s _ _ _ _ _ => intro e; cases e
+  | n11d _ _ _ _ _ _ _ _ _ => intro e; cases e
 
 theorem CallTreeH.hinted_of {P : Noun → Prop} {x : Bool} {f : Noun} {nm : Nomm} (h : CallTreeH lib env N P x f nm) :
     nm.pure = false → hinted env.cod nm = some true := by
@@ -187,6 +363,7 @@ theorem CallTreeH.hinted_of {P : Noun → Prop} {x : Bool} {f : Noun} {nm : Nomm
     · rw [hinted_pure env.cod p ep]
       exact ihq (by simpa only [Nomm.pure, ep, Bool.true_and] using e)
   | n11s _ _ hs hq ih => intro _; simp only [hinted, hs, ih hq]; rfl
+  | n11d _ _ hs _ _ hh _ hq ih => intro _; simp only [hinted, hs, hh, ih hq]; rfl
 
 /-- **Each member is call-free with `MinkEq`, or hinted.** -/
 theorem CallTreeH.kind {P : Noun → Prop} {x : Bool} {f : Noun} {nm : Nomm} (h : CallTreeH lib env N P x f nm) :
@@ -266,6 +443,14 @@ theorem lokSH_callTreeH (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Pr
     refine ⟨⟨ih.1.1.n11s hs body, fun hc => JNewLSFH.n11s hs body (ih.1.2 hc)⟩, fun hx => ?_⟩
     obtain ⟨L, J⟩ := ih.2 hx
     exact ⟨L.n11s hs body, fun hc => JNewLSH.n11s hs body (J hc)⟩
+  | @n11d P x f fh q h tag body hq hs hsafe hc hh h6 hp ih =>
+    have e : hinted env.cod (Nomm.n11d tag h q body) = hinted env.cod q := by
+      show orB (some (hintDynamic tag)) (orB (hinted env.cod h) (hinted env.cod q)) = _
+      rw [hs, hh]; rfl
+    rw [e]
+    refine ⟨⟨ih.1.1.n11d hs hsafe hc body h6, fun hc' => JNewLSFH.n11d hs hsafe body (ih.1.2 hc') h6⟩, fun hx => ?_⟩
+    obtain ⟨L, J⟩ := ih.2 hx
+    exact ⟨L.n11d hs hsafe hc body h6, fun hc' => JNewLSH.n11d hs hsafe body (J hc') h6⟩
 
 /-- **Every member of `CallTreeH` under `%done` meets `DoneOK`**: the text
 of `callTreeD_done` with the copies for `runLCH env snd true`; the members
@@ -330,6 +515,10 @@ theorem callTreeH_done (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Pro
     intro sup region g0 g1 nex b0 d0 hu hcl hcb hr
     rw [runLCH_n11s env snd true hs] at hr
     exact (ih b0 d0 hu hcl hcb hr).minkAs (minkAs_n11s lib tag f)
+  | @n11d P x f fh q h tag body hq hs hsafe hc hh h6 hp ih =>
+    intro sup region g0 g1 nex b0 d0 hu hcl hcb hr
+    rw [runLCH_n11d_safe env snd true hs hsafe] at hr
+    exact (ih b0 d0 hu hcl hcb hr).minkAsP (minkAsP_n11d lib hs hc f)
 
 /-- **The contract of `CallTreeH` at the top**: the whole-subject code with
 hints (`finishLUCH`) of every member meets both halves of the contract for
