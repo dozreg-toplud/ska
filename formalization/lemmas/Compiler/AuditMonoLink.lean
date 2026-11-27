@@ -7,6 +7,7 @@ import lemmas.Compiler.CompMonoLinkDec
 import lemmas.Compiler.CompSccOfRank
 import lemmas.Compiler.CompMonoLinkStr
 import lemmas.Compiler.CompMonoLinkTop5
+import lemmas.Compiler.CompMonoLinkSccs
 
 /-! The axioms of the link of `+compiled-mono` and of the run at `mono` `|` (README Gaps 19 (g)).
 `CompSccOfAny`, `PokeLinkGood` and track I's `CompSccLoop*` import together since the renames of
@@ -102,3 +103,19 @@ that one's imports light. -/
 #print axioms Formalization.Compiler.monoLinkGood5_of_gateS
 #print axioms Formalization.Compiler.unaryGateAtS_of_good5
 #print axioms Formalization.Compiler.pokeModel_fullReachP5S
+#print axioms Formalization.Compiler.memSweepCall_of_KD
+#print axioms Formalization.Compiler.memSweepCall_of_KR
+#print axioms Formalization.Compiler.memGate_may_KD
+#print axioms Formalization.Compiler.memGate_must_KD
+#print axioms Formalization.Compiler.sccLoopDataSDStr_of_Sw
+#print axioms Formalization.Compiler.sccLoopDataDS_of_Sw
+#print axioms Formalization.Compiler.calleeHSDS_of_Sw
+#print axioms Formalization.Compiler.topLoopS_of_Sh
+#print axioms Formalization.Compiler.topDec_of_Sh
+#print axioms Formalization.Compiler.gateRest5_of_Sw
+#print axioms Formalization.Compiler.pokeModel_fullReachP5Sw
+#print axioms Formalization.Compiler.cu_sccs_of_gateS
+#print axioms Formalization.Compiler.unarySccsIs5_of_gate
+#print axioms Formalization.Compiler.good5_full_stepU
+#print axioms Formalization.Compiler.pokeReachGood5U
+#print axioms Formalization.Compiler.pokeModel_fullReachP5U
