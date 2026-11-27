@@ -8,6 +8,8 @@ import lemmas.Ska.PassMeasureB
 import lemmas.Ska.PassStab
 import lemmas.Ska.PassStabM
 import lemmas.Ska.PassFreeze
+import lemmas.Ska.PassMoves
+import lemmas.Ska.PassIdents
 
 /-! The axioms of the theorems of track F (`Ska/PassMeasure.lean`,
 `Ska/PassMeasureK.lean`, `Ska/PassMeasureT.lean`, `Ska/PassMeasureS.lean`, `Ska/PassMeasureA.lean`,
@@ -153,3 +155,17 @@ out. -/
 #print axioms Ana.freeze_abstract
 #print axioms Ana.freeze_no_chain
 #print axioms Ana.finPushes_of_freeze
+-- C on the model (`Ska/PassMoves.lean`)
+#print axioms Ana.sweep_nodup
+#print axioms Ana.resolve_new
+#print axioms Ana.run_new
+#print axioms Ana.memberLoop_new
+#print axioms Ana.passOn_moves
+#print axioms Ana.passHyp_step
+#print axioms Ana.passMoves_chain
+#print axioms Ana.finPushes_of_freezeC
+-- (i) from finite branching, Kruskal and König (`Ska/PassIdents.lean`)
+#print axioms Ana.konig
+#print axioms Ana.finIdents_of_tree
+#print axioms Ana.noPath_of_kruskal
+#print axioms Ana.finIdents_of_kruskal
