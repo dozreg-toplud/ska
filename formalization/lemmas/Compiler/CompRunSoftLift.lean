@@ -10,7 +10,7 @@ the model `runLCS` on them is `runLCM env |` lifted (`soft.gen` kept), and their
 `CompRunAtXQ` link at the rest predicate `x.soft = softMapNoun sm` (`CompRunSoftQ.lean`).
 
 * `liftS_bind`, `liftS_pure`: `liftS` is a monad map;
-* `SoftFree`: cons, `%0`, `%1`, `%7`, `%10` only;
+* `SoftFree`: cons, `%0`, `%1`, `%7`, `%10` (axis not `0`) only;
 * **`runLCS_lift`**: on a `SoftFree` nomm, `runLCS env snd sup` is `runLCM env false sup` with the
   soft map kept;
 * **`crxts_of_q`**: a `CompRunAtXQ` link at `x.soft = softMapNoun gs.soft` with a `Y` that keeps
@@ -43,7 +43,7 @@ def SoftFree : Nomm → Bool
   | Nomm.n0 _ => true
   | Nomm.n1 _ => true
   | Nomm.n7 p q => SoftFree p && SoftFree q
-  | Nomm.n10 _ v q => SoftFree v && SoftFree q
+  | Nomm.n10 a v q => (a != 0) && SoftFree v && SoftFree q
   | _ => false
 
 theorem runLC_n1 (env : CallEnv) (sup : Option Nomm) (k : Noun) (goal : CGoalL CSet) (region : List Nat) :
@@ -85,7 +85,7 @@ theorem runLCS_lift (env : CallEnv) (snd : Nomm → NeedOrd → Bool) : ∀ (n :
     simp only [runLCS, runLCM, ihp, ihq, liftS_bind]
   | Nomm.n10 a v q, h, sup => by
     simp only [SoftFree, Bool.and_eq_true] at h
-    have ihv := runLCS_lift env snd v h.1 sup
+    have ihv := runLCS_lift env snd v h.1.2 sup
     have ihq := runLCS_lift env snd q h.2 sup
     funext goal region
     simp only [runLCS, runLCM, ihv, ihq]
