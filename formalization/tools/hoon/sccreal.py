@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-# usage: sccreal.py OUTDIR      then
+# usage: sccreal.py OUTDIR [--extra]     then   (--extra: the 8 cases of EXTRA instead of sccloop.py's,
+#   and --lean out.txt --extra > lemmas/Ska/SccLoopMedeData.lean)
 #   RUNHOON_LIB=OUTDIR/lib.hoon tools/hoon/runhoon.sh OUTDIR/ck.hoon 900 > out.txt
 #   tools/hoon/sccreal.py --lean out.txt > lemmas/Ska/SccLoopRealData.lean
 #   sccreal.py OUTDIR --tally-lib, the same run, then
