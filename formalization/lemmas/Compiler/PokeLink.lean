@@ -39,14 +39,20 @@ variable {M : Type → Type → Type} [Treap M] {Map : Type → Type} [HoonMap M
 
 /-- **`+ska-poke` as `+poke` calls it**, as `anaArm`, but the new jets state
 is made from the hot jets, the old jets state, the registrations, and the old
-and new tables (`+ska-cole-update` reads the new bells and their `seek`). -/
+and new tables (`+ska-cole-update` reads the new bells and their `seek`), and a
+`%full` whose formula is an atom has no answer, as `+validate-ovum` crashes on
+it (the mold `fol=^`; mismatch P4: the analysis model answers an atom
+formula, `Shape.other`). -/
 def anaArmP (env : Env R) (jet : H → J → (Bell → Option Datum) → R → Bell → Bool) (fold frozen : Bool)
     (fuel : Noun → Noun → LongB M → J → Nat) (bf : BEnv M → Nat) (regOf : J → R)
     (jetsOf : H → J → R → LongB M → LongB M → J)
     (newOf : R → Noun) : Noun → Noun → LongB M → J → H → Option (Bell × LongB M × J × Noun) :=
   fun s f L j hot =>
-    (skaPokeB env (jet hot j) fold frozen (fuel s f L j) bf (Sock.mk Cape.yes s, f) L (regOf j)).map fun r =>
-      (r.1, r.2.1, jetsOf hot j r.2.2 L r.2.1, newOf r.2.2)
+    match f with
+    | Noun.atom _ => none
+    | Noun.cell _ _ =>
+      (skaPokeB env (jet hot j) fold frozen (fuel s f L j) bf (Sock.mk Cape.yes s, f) L (regOf j)).map fun r =>
+        (r.1, r.2.1, jetsOf hot j r.2.2 L r.2.1, newOf r.2.2)
 
 /-- **`AnaHyp` of `anaArmP`**, with no hypothesis (the proof of
 `anaHyp_of_bakes`: the jets state plays no part). -/
@@ -58,9 +64,12 @@ theorem anaHyp_of_armP (A : Arms M Map J H CR) {lib : Lib} {env : Env R}
   ana := by
     intro s f long jets hot r h hinv
     rw [hA] at h
+    cases f with
+    | atom _ => simp [anaArmP] at h
+    | cell f1 f2 =>
     simp only [anaArmP, Option.map_eq_some_iff] at h
     obtain ⟨⟨rb, L', reg'⟩, hk, rfl⟩ := h
-    have hroot : (Sock.mk Cape.yes s, f).1 ≠ Sock.void := Sock.noConfusion
+    have hroot : (Sock.mk Cape.yes s, C f1 f2).1 ≠ Sock.void := Sock.noConfusion
     have h1 := skaPokeB_sound env hinv (wf_root s) (normSock_yes s) hroot hk
     refine ⟨h1.1, ?_⟩
     obtain ⟨code, hpi⟩ := hinv.ghost

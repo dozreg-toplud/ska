@@ -4513,9 +4513,13 @@ import only its theorems.  So:
     `anaFuel` (P3: `fuelOK_anaFuel` turns the `∃ n` of the iff into it; the fuel `bf` of
     `+bake-graph` needs the same, not done).  (3) The
     image (`PokeReachEnc`): the `poke` case follows from the links (each returns an
-    encoded state) but for the flags (P1).  (4) P4, *not checked*: a `%full` whose formula
-    is an atom crashes in the pill (the mold `fol=^`), so `PokeModel` needs `pokeS A` to
-    be `none` there; `pokeN_full_of` is stated for cell formulas only.
+    encoded state) but for the flags (P1).  (4) P4: a `%full` whose formula is an atom
+    crashes in the pill (the mold `fol=^`), while the analysis model answers it
+    (`folStep` on `Shape.other` gives `[%0 0]`), so with `A.skaPoke = anaArm …`
+    `PokeModel` fails there as soon as the rest of the chain answers.  `anaArmP` has no
+    answer on an atom formula (the model side of the fix); the pill side, that
+    `+validate-ovum` crashes on it, is not proved (the mold, as `mold_full`), and
+    `pokeN_full_of` is stated for cell formulas.
     *The other branches*: `%dire` (122 cells) is the chain of `%full` without `+ska-poke`
     and the jetted-root test, with `+compiled-nary` (107 cells) when `mono` is `|`: the
     model is `compileStep`, and `SccLink`, `MonoLink`, `OptLink` and a `NaryLink` would
