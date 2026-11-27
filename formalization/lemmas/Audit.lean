@@ -158,6 +158,11 @@ import lemmas.Ska.ShapeColAlg
 import lemmas.Compiler.CompShapeColRet
 import lemmas.Compiler.CompBakeGate
 import lemmas.Ska.BakeNeedCheck
+import lemmas.Ska.BakeNeedRun
+import lemmas.Compiler.CompSccSixBake
+import lemmas.Ska.ShapeColAlgN
+import lemmas.Ska.ShapeColAlgFix
+import lemmas.Compiler.CompShapeColFuel
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -1225,3 +1230,33 @@ open Formalization
 #print axioms Compiler.bn_testG
 #print axioms Compiler.bn_loopB
 #print axioms Compiler.bn_gateB
+#print axioms Compiler.cu_gate_scc_one_six_q_B
+#print axioms Compiler.cu_gate_scc_one_six_bake
+#print axioms Compiler.fin_gate_ts_B
+#print axioms Compiler.mem_to_finish_six_B
+#print axioms Compiler.bakeRunO_head
+#print axioms Compiler.bakeRunO_no
+#print axioms SkaModel.Comp.bake_run_head
+#print axioms SkaModel.Comp.bake_run_tail_pair
+#print axioms SkaModel.Comp.bake_run_tail_both
+#print axioms SkaModel.Comp.bakeGo_sublist
+#print axioms SkaModel.Comp.uniOrd_comm
+#print axioms SkaModel.Comp.uniOrd_eq_uniN
+#print axioms SkaModel.Comp.uniOrd_assoc
+#print axioms SkaModel.Comp.ordNormal_uniOrd
+#print axioms SkaModel.Comp.msgOrd_normal_depth
+#print axioms SkaModel.Comp.ordNormal_msgFix
+#print axioms SkaModel.Comp.ordW_uniN
+#print axioms SkaModel.Comp.fixRound_ok
+#print axioms SkaModel.Comp.weight_le
+#print axioms SkaModel.Comp.weight_bound
+#print axioms SkaModel.Comp.fixRet_bound
+#print axioms SkaModel.Comp.sureLook_normal
+#print axioms SkaModel.Comp.i12_normal
+#print axioms Compiler.l2i_normal
+#print axioms Compiler.shapeCol_ret
+#print axioms Compiler.scAt_R
+#print axioms Compiler.cu_gate_scc_one_six_nf
+#print axioms Compiler.cu_gate_scc_one_six_bake_nf
+#print axioms Compiler.cu_gate_scc_one_six_fol_nf
+#print axioms Compiler.cu_gate_scc_one_six_bake_fol_nf
