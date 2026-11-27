@@ -37,8 +37,8 @@ trap = norm(trq[2])
 assert eqn(slot(0x5ddc, K), ('C', ('A', 1), ('A', 48)))
 subs = []
 with open(os.path.join(OUT, 'nsize.lean'), 'w') as f:
-    for name, n, doc in [('nsTrap', trap, 'The trap of `+nomm-size`.'),
-                         ('nsBody', body, 'The gate body of `+nomm-size`.')]:
+    for name, n, doc in [('nszTrap', trap, 'The trap of `+nomm-size`.'),
+                         ('nszBody', body, 'The gate body of `+nomm-size`.')]:
         f.write('/-- %s -/\ndef %s : Noun :=\n  %s\n\n' % (doc, name, lean(n, subs)))
         subs.insert(0, (name, n))
 print('ok')
