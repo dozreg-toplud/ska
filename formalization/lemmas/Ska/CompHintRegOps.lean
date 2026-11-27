@@ -266,6 +266,84 @@ theorem regGBT_three {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop}
 
 end Four
 
+/-! ## `[7 p q]`: `q` in `RegGBT` with the shape of its result, `p` without a kept hint -/
+
+/-- **A run under `%next (lazy-from-reg r) th` with the shape its parent's
+next part needs** (`DoneOKT`'s facts at this goal): `RunOKGBT`, the jump at
+no entry, the result flat with clean needs. -/
+structure RegOKT (lib : Lib) (N : Needs) (P : Noun → Prop) (f : Noun) (rg : Nat) (th : Jmp) (g0 g1 : Gen Map)
+    (nex : NextL S) : Prop where
+  run : RunOKGBT lib N P f (CGoal.next (lazyReg rg) th) g0 g1 nex
+  nent : nex.th.there ∉ (entries nex.laz).map Prod.fst
+  flat : Flat nex.laz
+  clean : Clean nex.laz.sure.ned
+  eclean : ∀ e ∈ entries nex.laz, Clean e.2.sure.ned
+
+/-- **`RegFT`: `RegGBT` with the shape of the result** (`RegOKT`). -/
+def RegFT (snd : Nomm → NeedOrd → Bool) (lib : Lib) (N : Needs) (env : CallEnv) (P : Noun → Prop) (f : Noun)
+    (nm : Nomm) : Prop :=
+  ∀ {sup : Option Nomm} {rg : Nat} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
+    1 ≤ g0.bo → g0.drop = false → UpBelow g0 → Clear g0 → CondBelow g0 →
+    1 ≤ th.there → th.there < g0.bo → th.args = [] → rg < g0.re → HoonMap.get g0.cond rg = Option.none →
+    runLCH (S := S) (Map := Map) env snd true sup nm (CGoalL.next (ofSure (lazyReg rg)) th) region g0 = some (nex, g1) →
+    RegOKT lib N P f rg th g0 g1 nex
+
+section Seven
+variable {snd : Nomm → NeedOrd → Bool}
+
+theorem RegFT.toReg {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm}
+    (H : RegFT (S := S) (Map := Map) snd lib N env P f nm) : RegGBT (S := S) (Map := Map) snd lib N env P f nm :=
+  fun b0 d0 hu hcl hcb th1 th2 hta hr0 hc0 hr => (H b0 d0 hu hcl hcb th1 th2 hta hr0 hc0 hr).run
+
+/-- **A member of `LOKSFH` is in `RegFT`** (`LOKSH.run`, `LOKSH.clean`). -/
+theorem RegFT.of_loksf {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm}
+    (H : LOKSFH (S := S) (Map := Map) (snd := snd) lib N env P f nm) (hc : sixCount nm ≤ 255) :
+    RegFT (S := S) (Map := Map) snd lib N env P f nm := by
+  intro sup rg th region g0 g1 nex b0 d0 hu hcl hcb th1 th2 hta hr0 hc0 hr
+  have e0 : entries (ofSure (lazyReg rg : Sure S)) = [] := entries_ofSure _
+  obtain ⟨⟨Q, RS⟩, ne, -, fl, ec⟩ := H.run (sup := sup) (L := ofSure (lazyReg rg)) (th := th) (region := region)
+    (Or.inr e0) hc b0 d0 hu hcl hcb th1 th2 hta (by rw [e0]; simp) trivial
+    (fun x hx => by
+      simp only [lazyReg, ofSure, NMem] at hx; subst hx
+      exact ⟨hr0, hc0⟩)
+    (fun e he => by rw [e0] at he; cases he) (by rw [e0]; simp) (fun e he => by rw [e0] at he; cases he)
+    (flat_ofSure _) trivial (fun e he => by rw [e0] at he; cases he) hr
+  exact ⟨(RS.toRunOKLB.toGB (fun x hx => by simp only [lazyReg, NMem] at hx; omega)).toT, ne, fl,
+    H.clean (L := ofSure (lazyReg rg)) trivial hr, ec⟩
+
+/-- **`[7 p q]` under `%next (lazy-from-reg r) th`**: `q` in `RegFT` (its
+result may have bonds, flat ones), `p` a member of `CallTreeHU` with `x =
+true` (no kept hint: `runOKGBT_sevenL` takes `p`'s run as `RunOKLB` under
+`q`'s result, the agreement at one trace, from `LOKSH.run` on that flat
+lazy goal).  The text of `doneAllT_seven` for this goal. -/
+theorem regFT_seven (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Prop} {b c : Noun} {p q : Nomm}
+    (hp : CallTreeHU lib env N P true b p) (Hq : RegFT (S := S) (Map := Map) snd lib N env (Img lib P b) c q) :
+    RegFT (S := S) (Map := Map) snd lib N env P (n3 (A 7) b c) (Nomm.n7 p q) := by
+  intro sup rg th region g0 g1 nex b0 d0 hu hcl hcb th1 th2 hta hr0 hc0 hr
+  rw [runLCH_n7] at hr
+  obtain ⟨nx, ga, h1, h2⟩ := bind_some hr
+  have D := Hq b0 d0 hu hcl hcb th1 th2 hta hr0 hc0 h1
+  have Rq := D.run
+  have Lp := ((lokSHU_callTreeHU (S := S) (Map := Map) (snd := snd) lib (N := N) env hp).2 rfl).1
+  have hj : nx.th.args = [] := by
+    rcases Rq.ent with ⟨_, _, _, ha⟩ | e
+    · exact ha
+    · simp only [GoalJ] at e; rw [e]; exact hta
+  obtain ⟨⟨Q, RS⟩, hne, -, hfl, hec⟩ := Lp.run (sup := sup) (L := nx.laz) (th := nx.th) (region := region)
+    (by rw [hp.sixCount]; omega) (by have := Rq.ext.2.1; omega) (Rq.ext.2.2.1.trans d0) (Rq.grow.up hu)
+    (Clear.growU hcl Rq.grow) (Rq.cfr.below hcb) Rq.lo Rq.hi hj D.nent Rq.dist
+    (fun x hx => ⟨by
+      rcases Rq.regs x hx with e | e
+      · have := Rq.ext.1; simp only [GMem, lazyReg, NMem] at e; omega
+      · exact e.2, Rq.ncond x hx⟩)
+    (fun e he => ⟨(Rq.labs e he).2.1, (Rq.labs e he).2.2⟩) Rq.nodup
+    (fun e he => ⟨(Rq.eregs e he).1, fun x hx => ⟨((Rq.eregs e he).2 x hx).2, Rq.econd e he x hx⟩⟩)
+    D.flat D.clean D.eclean h2
+  exact ⟨runOKGBT_sevenL (minkC7_seven lib P b c) Rq RS.toRunOKLB
+    (fun r hr => by simp only [GMem, lazyReg, NMem] at hr; omega), hne, hfl, Lp.clean (L := nx.laz) D.clean h2, hec⟩
+
+end Seven
+
 end Comp
 end SkaModel
 end Formalization
