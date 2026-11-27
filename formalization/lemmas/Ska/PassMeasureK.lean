@@ -32,9 +32,10 @@ the cape, no `[| |]`).  Without it the step is false: on
 `bus = [[& |] [1 7]]` the old `less-code` `+app:ca [& |]` is `bus` itself and
 the new one with a `want` of `[& &]` is `[[& |] [1 0]]`, with the same cape, and
 a later `want` of `|` gives `bus` again (`less_untidy_example`).  Every sock
-operation of the analysis keeps `Tidy` as far as seen (`+knit:so`, `+hed:so`,
-`+tel:so`, `+app:ca` here; `+pull:so`, `+darn:so`, `+purr:so`, `+msg-sock` by
-the same pattern, not proved), and the root `&+sub` is tidy.
+operation of the analysis keeps `Tidy` (`+knit:so`, `+hed:so`, `+tel:so`,
+`+app:ca` here; the others, every run of `fol-loop` and every write of the
+graph in `PassMeasureT.lean`, with the data and the pokes: no untidy sock
+occurs on the real compiler), and the root `&+sub` is tidy.
 
 ## 2. The map
 
