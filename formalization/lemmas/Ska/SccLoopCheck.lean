@@ -3,10 +3,11 @@ import lemmas.Ska.ShapeCol
 
 /-! # The model of the loop of `+compile-scc-in` against the real compiler
 
-The dumps of `SccLoopData.lean` (`tools/hoon/sccloop.py`: 15 formulas, 20 SCCs that go
+The dumps of `SccLoopData.lean` (`tools/hoon/sccloop.py`: 18 formulas, 23 SCCs that go
 through the loop: self-recursive bells (a decrement, a list walk, a tree walk, a loop that swaps
 fields, a loop that grows one field, Ackermann), SCCs of two and three bells (even/odd, a cycle
-of three, members that read different parts of a cell, a member that calls itself and another).
+of three, members that read different parts of a cell, a member that calls itself and another, four members reading shifted parts of a pair, a ring
+rotating a triple).
 The member compile is the dump itself (`look`: the record of the same bell, mode and views of
 the kids), `+msg-need-ord` is `msgOrd` of `ShapeCol.lean` with the member's cape.  Checked:
 * `traceOk`: the model's compiles are the compiler's, in the same order, with the same `keep`,
@@ -78,7 +79,7 @@ def detOk (d : Dump) : Bool :=
     !(decide (r.b = q.b) && decide (r.views = q.views) && r.mode != Mode.may && q.mode != Mode.may) ||
       (decide (r.nn = q.nn) && decide (r.surRaw = q.surRaw))
 
-#guard dumps.length = 20
+#guard dumps.length = 23
 #guard dumps.all traceOk
 #guard dumps.all bOk
 #guard dumps.all detOk
@@ -86,9 +87,9 @@ def detOk (d : Dump) : Bool :=
 #guard dumps.all (fun d => d.sweeps = [true, true, false])
 -- Compiles per SCC in the loop (`%must`): at most twice the members.
 #guard dumps.all (fun d => (d.comps.filter (fun r => decide (r.mode = Mode.must))).length ≤ 2 * d.mem.length)
--- A need changed in the second sweep in one SCC (`%deep`): `need-pessimized` there is not the
--- previous need.
+-- A need changed in the second sweep in three SCCs (`%deep`, `%deep4`, `%deep2` or `%rot3`):
+-- `need-pessimized` there is not the previous need.
 #guard (dumps.filter (fun d => d.comps.any (fun r => r.mode == Mode.must &&
-    match r.prev with | some p => decide (p ≠ r.np) | none => false))).length = 1
+    match r.prev with | some p => decide (p ≠ r.np) | none => false))).length = 3
 
 end Formalization.SkaModel.SccLoop
