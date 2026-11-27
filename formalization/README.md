@@ -2567,6 +2567,26 @@ import only its theorems.  So:
    arguments, the `?>` of `+remove-useless-branching` and of `aliasFin`) or
    the block `0` (the entry).
 
+   **The input list of the final `opt_gate_total`** (third session,
+   2026-11-27, for track D; the statement being proved on
+   `dozreg/formalization-ska-h`).  For `s : Straight (TreapMap mugF)`, with
+   `bl = s.blocks`, exactly: `Opt.Acyclic bl`, `Closed bl`, `ArityOK bl`,
+   `(HoonMap.get bl 0).isSome`, `TwoNA bl` (these five give
+   `StInv ρ (keys bl) bl` by `stInv_of`), `Opt.DInvR bl` (which holds
+   `NoLti`), and `ReadsIn s.nargs bl` (`OptLinkTotalAlias.lean`: every
+   register that a block reachable from `0` reads, by an op or by its end,
+   `Opt.ReadAt`, is in `Opt.allDefs bl` or below `s.nargs`).  Nothing else:
+   the fuel of `+switch-chains` is chosen above `ρ` on the keys
+   (`switchRet_of`), and `pick` is `Ana.pickR FinMap`, which picks a member.
+   The block `[%cel 1] [%bom ~]` with one argument (the witness of
+   `not_aliasRet`) crashes the real `+alias` and `+optimize` too
+   (`tools/hoon/undefread.hoon`: with `n-args = 2` `+alias` returns the
+   block unchanged, with `n-args = 1` `+mule` of `+alias` and of `+optimize`
+   gives `%.n`).  It is hand-built: it reads register `1`, which is neither
+   an argument nor defined, and raw `+comp` output is expected never to do
+   that, since `+comp` reads only registers it has written on the path or
+   the `n-args` registers of the subject; `ReadsIn s.nargs` is that fact.
+
 14. **Raw `+comp` output meets the optimizer's invariant** (track D,
    2026-11-24, `Ska/RawInv*.lean`, `Ska/AuditRaw.lean`).  The driver theorem
    `optimize_keeps_optIn` of 12.8 asks `OptIn` of the raw blocks (the field
