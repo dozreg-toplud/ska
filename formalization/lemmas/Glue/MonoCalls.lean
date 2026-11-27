@@ -2,6 +2,7 @@ import lemmas.Glue.RawOptIn
 import lemmas.Ska.CompDirectMTree
 import lemmas.Ska.CompNaryTop
 import lemmas.Ska.CompNaryTopRec
+import lemmas.Ska.CompSixLSClass
 
 /-!
 # Glue: the contract side with calls (mismatch M3 of `LEDGER.md`, finished)
@@ -23,7 +24,7 @@ call environment, the callees' needs and the bell.  Here:
 * the bridges: `rawMonoD_of` (a `RawMono` class of `noDirect` nomms),
   `noDirect_NCG`, `noDirect_fragUFG`, `compRestM_of_O`;
 * the classes with calls that the tracks reached: `MonoCalls` (`NCG`,
-  `CallTreeD`, `TopTree`, `CallTreeA`) and `NaryCalls` (`FragUN`, `CallTreeA`,
+  `CallTreeD`, `TopTree`, `CallTreeA`, `Six0`) and `NaryCalls` (`FragUN`, `CallTreeA`,
   `CallTreeDN`, nothing baked), with their raw contracts `rawMonoD_calls`,
   `rawNaryD_calls`;
 * the two optimizer leaves as statements about the MODEL, per class:
@@ -162,16 +163,48 @@ theorem rawMonoD_topTree (lib : Lib) : RawMonoD S Map lib TopTreeB := by
   intro code bl nm env s N _ _ hf _ h
   exact (Comp.finishLUCM_bellContractTopTree (S := S) (lib := lib) hf h N).2
 
+theorem pickTree_noDirect {f : Noun} {nm : Nomm} (h : Comp.PickTree f nm) : nm.noDirect = true := by
+  induction h with
+  | ind hp hq => simp [Nomm.noDirect, hp.noDirect, hq.noDirect]
+  | n0 _ => rfl
+  | seven hp _ ih => simp [Nomm.noDirect, hp.noDirect, ih]
+
+theorem sixTest_noDirect {f : Noun} {c : Nomm} (h : Comp.SixTest (S := S) f c) : c.noDirect = true := by
+  cases h with
+  | pure _ ht _ => exact ht.noDirect
+  | call hp _ => exact pickTree_noDirect hp
+  | three ht _ => simp [Nomm.noDirect, ht.noDirect]
+
+/-- **Track C's `Six0` has no direct call.** -/
+theorem six0_noDirect {f : Noun} {nm : Nomm} {k : Nat} (h : Comp.Six0 (S := S) f nm k) : nm.noDirect = true := by
+  induction h with
+  | leaf ht _ => exact ht.noDirect
+  | six hc _ _ _ iha ihb => simp [Nomm.noDirect, sixTest_noDirect hc, iha, ihb]
+
+/-- **Track C's class with `%6` and calls** (`Six0`: tests of `SixTest`,
+branches nested `%6` down to `CallTreeA` leaves), at the bell's formula. -/
+def Six0B (S : Type) [Comp.HoonSet S] : MonoClass := fun _ _ bl nm => ∃ k, Comp.Six0 (S := S) bl.fol nm k
+
+theorem rawMonoD_six0 (lib : Lib) : RawMonoD S Map lib (Six0B S) := by
+  intro code bl nm env s N _ _ hf _ h
+  obtain ⟨k, hk⟩ := hf
+  rw [Comp.finishLUCM_eq env (six0_noDirect hk)] at h
+  have H := Comp.finishLUC_contractSix0 (S := S) lib env (SkaModel.Fits bl.less) hk h N
+  intro x hx args hargs
+  simp only [if_true, Option.some.injEq] at hargs
+  subst hargs
+  exact H.2 x hx
+
 /-- **The whole-subject classes with a raw contract, with calls**: `NCG`
 (hence `FragUFG`, `FragU`), track J's `CallTreeD` (direct calls), track C's
-`CallTreeA` and `TopTree`. -/
+`CallTreeA`, `TopTree` and `Six0` (`%6` with calls). -/
 def MonoCalls (S : Type) [Comp.HoonSet S] (lib : Lib) : MonoClass :=
-  orM (liftMC (NCG S)) (orM (CallTreeDB lib) (orM CallTreeAB TopTreeB))
+  orM (liftMC (NCG S)) (orM (CallTreeDB lib) (orM CallTreeAB (orM TopTreeB (Six0B S))))
 
 /-- **The raw whole-subject contract on `MonoCalls`.** -/
 theorem rawMonoD_calls (lib : Lib) : RawMonoD S Map lib (MonoCalls S lib) :=
   rawMonoD_or (rawMonoD_NCG lib) (rawMonoD_or (rawMonoD_callTreeD lib)
-    (rawMonoD_or (rawMonoD_callTreeA lib) (rawMonoD_topTree lib)))
+    (rawMonoD_or (rawMonoD_callTreeA lib) (rawMonoD_or (rawMonoD_topTree lib) (rawMonoD_six0 lib))))
 
 /-- **Track J's n-ary class with calls**: `CallTreeA` at the bell's formula,
 nothing baked. -/
