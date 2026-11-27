@@ -1,4 +1,5 @@
 import lemmas.Compiler.CompInlinedL4
+import lemmas.Compiler.CompInlinedL5
 
 /-! `#print axioms` of the pill link of `+inlined` (track Q, Gaps 28). -/
 
@@ -16,3 +17,7 @@ open Formalization Formalization.Compiler
 #print axioms hotN_of
 #print axioms inlCoh_empty
 #print axioms inl_pill_gate
+#print axioms inlWalk_some
+#print axioms inlinedM_rank
+#print axioms inlRank_ok
+#print axioms inlinedM_returns
