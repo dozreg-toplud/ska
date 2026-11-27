@@ -210,6 +210,126 @@ theorem treeN_run (lib : Lib) {N : Needs} {P : Noun → Prop} {b : Bell} {bNed n
       exact ⟨r, mink_tail_bwd hmk, callOut_goal hI' hle (e2.trans E) hrel htr
         (hK ned hned regs regs' keep (g2.re + 3) (by omega) (by omega))⟩
 
+/-! ## The run -/
+
+/-- **The run of the direct call under `%next L th` with `mono` `&`, `q`
+skipped, not dropped**: the callee's registers, `+kerf`, the merge block and
+the two call blocks (`callBlocksGen`), the tree, `p` under `%next
+(lazy-from-reg sub-pes) (jmp0 tree)`, `+copy` into the need that asks
+nothing. -/
+theorem runLCM_cal {env : CallEnv} {sup : Option Nomm} {p q : Nomm} {b : Bell} {bNed : NeedOrd} {L : Lazy S}
+    {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S}
+    (hring : env.ring b = Option.none) (hned : env.need b = some bNed) (hq : safeFolFol q = true)
+    (hpure : (env.pure b && noneEquivalentL L) = false)
+    (h : runLCM env true sup (Nomm.n2 p q (some (b, Option.none))) (CGoalL.next L th) region g0 = some (nex, g1)) :
+    ∃ sub gA out pro g2 o' gT nexS g5, needOrdAllocRegs bNed g0 = some (sub, gA) ∧
+      kerf (⟨L, th⟩ : NextL S) gA = some ((out, pro), g2) ∧
+      monoTryLoop (g2.bo + 2) sub (g2.re + 1) (g2.bo + 1) (callBlocksGen g2 b sub pro out) = some (o', gT) ∧
+      runLCM env true sup p (CGoalL.next (ofSure (lazyReg (g2.re + 1))) (jmp0 o')) region gT = some (nexS, g5) ∧
+      copyL nexS (ofSure Sure.bunt) g5 = some (nex, g1) := by
+  simp only [runLCM, callLM, callDM, hring, hned, hq, hpure, if_true] at h
+  obtain ⟨sub, gA, ha, h⟩ := bind_some h
+  obtain ⟨⟨subPes, cb⟩, gB, hm, h⟩ := bind_some h
+  simp only [monoBlocks, monoTryCall, simpleNextL, bind_apply, re_apply, emit_apply, pure_apply, Option.bind_some] at hm
+  obtain ⟨⟨⟨out, pro⟩, g2⟩, hk, hm⟩ := Option.bind_eq_some_iff.mp hm
+  simp only [bind_apply, re_apply, emit_apply, pure_apply, Option.bind_some] at hm
+  obtain ⟨⟨o', gT⟩, ht, hm⟩ := Option.bind_eq_some_iff.mp hm
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at hm
+  obtain ⟨⟨rfl, rfl⟩, rfl⟩ := hm
+  simp only [pure_apply, bind_apply, Option.bind_some] at h
+  rw [pastL_bunt] at h
+  simp only [pure_apply, Option.bind_some] at h
+  obtain ⟨⟨nexS, g5⟩, hp, hc⟩ := Option.bind_eq_some_iff.mp h
+  exact ⟨sub, gA, out, pro, g2, o', gT, nexS, g5, ha, hk, ht, hp, hc⟩
+
+/-! ## `callLBM` -/
+
+/-- **The direct call `[2 p q b]` under a flat lazy goal with `mono` `&`**
+(the `%cal` form, `callLBM`), from a state as `LOKS.run` asks: `RunOKLS`
+with the witness `kernWit re` of `+kerf`, the jump a new block at none of the
+result's entries, the result flat with clean entries.  `p` meets `LOKS
+false` with no direct call, `q` is skipped and returns the callee's formula
+(and nothing else) on the subjects, the products of `p` fit the bell
+(`Annot.direct`), the needs as in `tail_done`, and the call is not dropped
+(the drop of a pure callee whose product is not needed is another case). -/
+theorem callLBM_run (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Prop} {p q : Nomm} {fb fq : Noun}
+    {b : Bell} {bNed ndT : NeedOrd} (hring : env.ring b = Option.none) (hned : env.need b = some bNed)
+    (hNf : N b false = some bNed) (hNt : N b true = some ndT)
+    (Sp : LOKS (S := S) (Map := Map) false lib N env P fb p) (hpd : p.noDirect = true) (hcount : sixCount p ≤ 255)
+    (hq : safeFolFol q = true)
+    (hAp : ∀ x gul y, P x → Mink lib gul [] x fb (Tone.zero y) → SkaModel.Fits b.less y)
+    (hq1 : ∀ {s gul : Noun} {n : Nat} {tm : Trace} {rc : Tone}, P s → minkF lib gul n tm s fq = some rc →
+      rc = Tone.zero b.fol)
+    (hq2 : ∀ {s gul : Noun} {tm : Trace}, P s → Mink lib gul tm s fq (Tone.zero b.fol))
+    {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S}
+    (hpure : (env.pure b && noneEquivalentL L) = false)
+    (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0)
+    (hcl0 : Clear g0) (hcb : CondBelow g0) (h1 : 1 ≤ th.there) (h2 : th.there < g0.bo) (hta : th.args = [])
+    (ht : th.there ∉ (entries L).map Prod.fst) (hsd : Distinct L.sure.ned)
+    (hsl : ∀ x, NMem L.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none)
+    (hlab : ∀ e ∈ entries L, e.1 < g0.bo ∧ ∃ B th', HoonMap.get g0.blocks e.1 = some ⟨[], B, Termin.hop th'⟩)
+    (hnd : ((entries L).map Prod.fst).Nodup)
+    (hed : ∀ e ∈ entries L, Distinct e.2.sure.ned ∧
+      ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none)
+    (hfl : Flat L) (hcs : Clean L.sure.ned) (hce : ∀ e ∈ entries L, Clean e.2.sure.ned)
+    (hr : runLCM env true sup (Nomm.n2 p q (some (b, Option.none))) (CGoalL.next L th) region g0 = some (nex, g1)) :
+    (∃ Q, RunOKLS (Map := Map) lib N P (n3 (A 2) fb fq) L th Q false g0 g1 nex) ∧
+      nex.th.there ∉ (entries nex.laz).map Prod.fst ∧ g0.bo ≤ nex.th.there ∧ Flat nex.laz ∧
+      (∀ e ∈ entries nex.laz, Clean e.2.sure.ned) := by
+  obtain ⟨sub, gA, out, pro, g2, o', gT, nexS, g5, ha, hk, htr, hp, hc⟩ := runLCM_cal hring hned hq hpure hr
+  rw [runLCM_true env hpd] at hp
+  obtain ⟨⟨kA, rfl⟩, la, dA, ma⟩ := needOrdAllocRegs_spec bNed _ _ _ ha
+  simp only at la ma
+  have hcbk : CondBelow ({ g0 with re := kA } : Gen Map) := fun x hx => by
+    have := hcb x hx; show x < kA; omega
+  have hlab' : ∀ e ∈ entries L, e.1 < g0.bo ∧ ∃ B fin, HoonMap.get g0.blocks e.1 = some ⟨[], B, fin⟩ :=
+    fun e he => ⟨(hlab e he).1, by obtain ⟨B, th', h⟩ := (hlab e he).2; exact ⟨B, _, h⟩⟩
+  obtain ⟨eo, ep, b2, dr2, l2, PF, G2, -, -, -, c0, -⟩ := kerf_specL hk d0 hcbk hu h1 h2 hlab' hnd
+  simp only at eo ep b2 dr2 l2 c0
+  subst out pro
+  have hfit : ∀ s, Img lib P fb s → SkaModel.Fits b.less s := fun s ⟨x, gul, hx, hm⟩ => hAp x gul s hx hm
+  have G2' : GrowU g0 g2 := ⟨G2.bo, G2.drop, G2.keep, G2.new⟩
+  have hu2 : UpBelow g2 := G2'.up hu
+  have hcb2 : CondBelow g2 := PF.1.below hcbk
+  have d2 : g2.drop = false := dr2.trans d0
+  have hcs2 : ∀ x, NMem sub x → HoonMap.get g2.cond x = Option.none := fun x hx => by
+    rw [PF.1.get_lt (show x < kA from (ma x hx).2)]; exact condBelow_none hcb (ma x hx).1
+  obtain ⟨Rq, l1, cT, bT⟩ := treeN_run (S := S) lib (P := Img lib P fb) hNf hNt hfit ha (by simp only; omega) la
+    (by omega) b0 (by omega) d2 hu2 hcb2 hcs2 c0 htr
+  have e3 : entries (ofSure (lazyReg (g2.re + 1) : Sure S)) = [] := entries_ofSure _
+  have dT : gT.drop = false := Rq.ext.2.2.1.trans d2
+  have GqU : GrowU g2 gT := ⟨Rq.grow.bo, Rq.grow.drop, Rq.grow.keep, Rq.grow.new⟩
+  have huT : UpBelow gT := GqU.up hu2
+  have hclT : Clear gT := Clear.growU (Clear.growU hcl0 G2') GqU
+  have hcbT : CondBelow gT := fun x hx => by rw [cT] at hx; have := hcb2 x hx; omega
+  obtain ⟨⟨Qh, Rp⟩, hne, -, hfl', hec⟩ := Sp.run (sup := sup) (region := region)
+    (L := ofSure (lazyReg (g2.re + 1))) (th := jmp0 o') hcount (by have := Rq.lo; omega) dT huT
+    hclT hcbT Rq.lo Rq.hi rfl (by rw [e3]; simp) trivial
+    (fun x hx => by
+      simp only [ofSure, sure_mk, lazyReg, NMem] at hx; subst hx
+      exact ⟨by omega, Rq.ncond _ (by simp [ofSure, lazyReg, NMem])⟩)
+    (fun e he => by rw [e3] at he; cases he) (by rw [e3]; simp) (fun e he => by rw [e3] at he; cases he)
+    (flat_ofSure _) trivial (fun e he => by rw [e3] at he; cases he) hp
+  have cS := Sp.clean (L := ofSure (lazyReg (g2.re + 1))) trivial hp
+  have d5 : g5.drop = false := Rp.drop.trans dT
+  have Rp' := Rp.toRunOKLB.copyBunt huT d5 rfl (fun e he => by rw [e3] at he; cases he) hc
+  have R7 := runOKGB_sevenLW (minkC7_direct lib P fb fq b.fol hq1 hq2) Rq Rp' (fun r hr => by
+    simp only [GMem, lazyReg, NMem] at hr; subst hr; omega)
+  have r1 := Rp'.re
+  have K := kerfLBM hk la d0 hcb hu hta h1 h2 hsd hsl hlab' hnd hed (by omega)
+    ((condFresh_of_eq (by omega) cT).trans Rp'.cfr) R7
+  have labS : ∀ e ∈ entries nexS.laz, e.1 < g5.bo := fun e he => by
+    rcases (Rp.labs e he).1 with h | h
+    · rw [e3] at h; cases h
+    · exact h.2
+  have b5 := Rp.bo
+  obtain ⟨rfl, -, -, -, -, -⟩ := copyL_bunt d5 hc
+  rcases nexS with ⟨⟨s1, f1, b1⟩, th1⟩
+  exact ⟨⟨_, K⟩, fun hm => by
+    obtain ⟨e, he, ee⟩ := List.mem_map.mp hm
+    have := labS e he; simp only [jmp0] at ee; omega, by simp only [jmp0]; have := Rq.ext.2.1; simp only at this; omega,
+    ⟨hfl'.1, hfl'.2⟩, hec⟩
+
 end Comp
 end SkaModel
 end Formalization
