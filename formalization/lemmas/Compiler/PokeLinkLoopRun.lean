@@ -303,6 +303,178 @@ theorem lp_g2 (hE : EvalFinAt) (b : Bell) (n : Nomm) (fb : Noun) (rr : Sock × B
   simp [lpC2, lpS, srSp, srS3x, srS0, spAfter, spT0, nock_exec, ana_l2, by.arm_at, by_arm, by.jab.arm_at,
     hja, hjab, flagNoun]
 
+/-- A step on bells run on the nouns of the set's pre-order. -/
+noncomputable def onKey (g : Bell → FinMap Bell Noun → Option (FinMap Bell Noun)) (x : Noun) (M : FinMap Bell Noun) :
+    Option (FinMap Bell Noun) :=
+  match FinMap.decode? (κ := Bell) x with
+  | some b => g b M
+  | none => none
+
+theorem foldO_onKey (g : Bell → FinMap Bell Noun → Option (FinMap Bell Noun)) (S : FinMap Bell Unit)
+    (M : FinMap Bell Noun) :
+    foldO (onKey g) (preorder S.setNoun) M = foldO g (S.rap.map Prod.fst) M := by
+  rw [FinMap.preorder_setNoun', foldO_map, foldO_map]
+  congr 1
+  funext x s
+  simp [onKey, FinMap.decode?_enc]
+
+theorem mem_onKey {g : Bell → FinMap Bell Noun → Option (FinMap Bell Noun)} {S : FinMap Bell Unit} {x : Noun}
+    (hx : x ∈ preorder S.setNoun) {s t : FinMap Bell Noun} (h : onKey g x s = some t) :
+    ∃ b, x = TKey.enc b ∧ g b s = some t := by
+  rw [FinMap.preorder_setNoun'] at hx
+  obtain ⟨⟨b, u⟩, _, rfl⟩ := List.mem_map.1 hx
+  exact ⟨b, rfl, by simpa [onKey, FinMap.decode?_enc] using h⟩
+
+set_option maxHeartbeats 2000000 in
+/-- **`loc1`**: `~(rep in scc)` from `code.lon` with the gate of `loc1`. -/
+theorem lp_loc1 (nc : FinMap Bell (VarEntry FinMap)) (S : FinMap Bell Unit) (M M1 : FinMap Bell Noun)
+    (h : foldO (st1 nc) (S.rap.map Prod.fst) M = some M1) (q : Noun) :
+    nock (C S.setNoun (lpC2 root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r (nc.toNoun varEntryNoun)
+        bakedN vr q (M.toNoun id))) lpLoc1 = some (M1.toNoun id) := by
+  have hf : ∀ x ∈ preorder S.setNoun, ∀ s t, onKey (st1 nc) x s = some t →
+      nock (C lpG1 (C (C x (s.toNoun id)) (C S.setNoun (lpC2 root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN
+        gr r (nc.toNoun varEntryNoun) bakedN vr q (M.toNoun id))))) lpG1 = some (t.toNoun id) := by
+    intro x hx s t ht
+    obtain ⟨b, rfl, hb⟩ := mem_onKey hx ht
+    simp only [st1] at hb
+    cases he : nc.get b with
+    | none => rw [he] at hb; cases hb
+    | some e =>
+      rw [he] at hb
+      cases hb
+      exact lp_g1 root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r bakedN vr nc b e he _ _ _ s
+  have hr := rep_gate_opt (fun M : FinMap Bell Noun => M.toNoun id) (onKey (st1 nc)) in.battery layer2 lpG1
+    lpBell _ S.setNoun (Tree.of_isSet (FinMap.isSet_setNoun S)) M M1 (by rw [foldO_onKey]; exact h) hf
+  have hb := lp_bell
+  unfold lpBellF at hb
+  simp [nock_exec] at hb
+  simp only [lpC2, lpS, srSp, srS3x, srS0, spAfter, spT0] at hr
+  unfold lpLoc1 lpDoor1 lpBunt1
+  simp [lpC2, lpS, srSp, srS3x, srS0, spAfter, spT0, nock_exec, ana_l2, in.arm_at, in_arm, in.rep.arm_at, rep_arm,
+    hb, hr]
+
+set_option maxHeartbeats 2000000 in
+/-- **`loc2`**: `~(rep in scc)` from `loc1` with the gate of `loc2`. -/
+theorem lp_loc2 (hE : EvalFinAt) (nc : FinMap Bell (VarEntry FinMap)) (S : FinMap Bell Unit) (M1 M2 : FinMap Bell Noun)
+    (h : foldO (st2 nc) (S.rap.map Prod.fst) M1 = some M2) (q c : Noun) :
+    nock (C (M1.toNoun id) (C S.setNoun (lpC2 root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN
+        bakedN vr q c))) lpLoc2 = some (M2.toNoun id) := by
+  have hf : ∀ x ∈ preorder S.setNoun, ∀ s t, onKey (st2 nc) x s = some t →
+      nock (C lpG2 (C (C x (s.toNoun id)) (C (M1.toNoun id) (C S.setNoun (lpC2 root r1 r2 r3 r4 jRest codeN callsN
+        varsN seekN hotN gr r ncN bakedN vr q c))))) lpG2 = some (t.toNoun id) := by
+    intro x hx s t ht
+    obtain ⟨b, rfl, hb⟩ := mem_onKey hx ht
+    simp only [st2] at hb
+    cases he : nc.get b with
+    | none => rw [he] at hb; cases hb
+    | some e =>
+      rw [he, Option.bind_some] at hb
+      by_cases hx : ∃ fb, s.get b = some (C e.nomm.toNoun fb)
+      · rw [if_pos hx] at hb
+        obtain ⟨fb, hfb⟩ := hx
+        cases hg : efGo (accFt s) b.less e.nomm with
+        | none => rw [hg] at hb; cases hb
+        | some rr =>
+          rw [hg] at hb
+          cases hb
+          exact lp_g2 root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN bakedN vr hE b e.nomm fb rr s
+            hfb hg _ _ _ _
+      · rw [if_neg hx] at hb; cases hb
+  have hr := rep_gate_opt (fun M : FinMap Bell Noun => M.toNoun id) (onKey (st2 nc)) in.battery layer2 lpG2
+    lpBell _ S.setNoun (Tree.of_isSet (FinMap.isSet_setNoun S)) M1 M2 (by rw [foldO_onKey]; exact h) hf
+  have hb := lp_bell
+  unfold lpBellF at hb
+  simp [nock_exec] at hb
+  simp only [lpC2, lpS, srSp, srS3x, srS0, spAfter, spT0] at hr
+  unfold lpLoc2 lpDoor2 lpBunt2
+  simp [lpC2, lpS, srSp, srS3x, srS0, spAfter, spT0, nock_exec, ana_l2, in.arm_at, in_arm, in.rep.arm_at, rep_arm,
+    hb, hr]
+
+set_option maxHeartbeats 2000000 in
+/-- **The branch of a nonempty `sccs`**: `scc` pushed, `loc1`, `loc2`, then
+`code.lon` written and the trap run on `t.sccs`. -/
+theorem lp_no (s q' c l1 l2 : Noun)
+    (h1 : nock (C s (lpC2 root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN bakedN vr (C s q') c))
+      lpLoc1 = some l1)
+    (h2 : nock (C l1 (C s (lpC2 root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN bakedN vr (C s q') c)))
+      lpLoc2 = some l2) :
+    nock (lpC2 root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN bakedN vr (C s q') c) lpNo =
+      nock (lpC2 root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN bakedN vr q' l2) lpBat2 := by
+  have hs : nock (lpC2 root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN bakedN vr (C s q') c)
+      (C (A 0) (A 28)) = some s := by
+    simp [lpC2, lpS, nock_exec]
+  nock_open lpNo
+  rw [nock_op8, hs, Option.bind_some, nock_op8, h1, Option.bind_some, nock_op8, h2, Option.bind_some]
+  unfold lpTail
+  simp [lpC2, lpS, srSp, srS3x, srS0, spAfter, spT0, nock_exec]
+
+set_option maxHeartbeats 1000000 in
+/-- The trap on a nonempty `sccs` takes the branch `lpNo`. -/
+theorem lp_cons (s q' c : Noun) :
+    nock (lpC2 root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN bakedN vr (C s q') c) lpBat2 =
+      nock (lpC2 root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN bakedN vr (C s q') c) lpNo := by
+  have e : lpBat2 = C (A 7) (C (C (A 0) (A 1)) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 14))))
+      (C (C (A 0) (A 0x7fffa)) lpNo)))) := rfl
+  conv => lhs; arg 2; rw [e]
+  simp [lpC2, lpS, nock_exec]
+
+set_option maxHeartbeats 1000000 in
+/-- The trap on an empty `sccs` returns `lon`. -/
+theorem lp_nil (c : Noun) :
+    nock (lpC2 root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN bakedN vr (A 0) c) lpBat2 =
+      some (lpLon r1 r2 r3 r4 jRest callsN seekN r vr c) := by
+  have e : lpBat2 = C (A 7) (C (C (A 0) (A 1)) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 14))))
+      (C (C (A 0) (A 0x7fffa)) lpNo)))) := rfl
+  conv => lhs; arg 2; rw [e]
+  simp [lpC2, lpS, srSp, srS3x, srS0, spAfter, spT0, lpLon, nock_exec]
+
+/-- **The trap `scc-loop`** against `accLoop`: on the noun of a list of SCC
+sets and the noun of an accumulator `M`, where the model's loop returns
+`M'`, the trap returns `lon` with `code.lon` the noun of `M'`. -/
+theorem lp_trap (hE : EvalFinAt) (nc : FinMap Bell (VarEntry FinMap)) :
+    ∀ (Ls : List (FinMap Bell Unit)) (M M' : FinMap Bell Noun),
+    accLoop nc M (Ls.map fun S => S.rap.map Prod.fst) = some M' →
+    nock (lpC2 root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r (nc.toNoun varEntryNoun) bakedN vr
+        (listNoun FinMap.setNoun Ls) (M.toNoun id)) lpBat2 =
+      some (lpLon r1 r2 r3 r4 jRest callsN seekN r vr (M'.toNoun id))
+  | [], M, M', h => by
+    simp only [List.map_nil, accLoop, Option.some.injEq] at h
+    subst h
+    exact lp_nil root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r _ bakedN vr _
+  | S :: Ls, M, M', h => by
+    simp only [List.map_cons, accLoop, accStep] at h
+    cases h1 : foldO (st1 nc) (S.rap.map Prod.fst) M with
+    | none => rw [h1] at h; cases h
+    | some M1 =>
+      rw [h1, Option.bind_some] at h
+      cases h2 : foldO (st2 nc) (S.rap.map Prod.fst) M1 with
+      | none => rw [h2] at h; cases h
+      | some M2 =>
+        rw [h2, Option.bind_some] at h
+        simp only [listNoun]
+        rw [lp_cons, lp_no root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r _ bakedN vr _ _ _ _ _
+          (lp_loc1 root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r bakedN vr nc S M M1 h1 _)
+          (lp_loc2 root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r _ bakedN vr hE nc S M1 M2 h2 _ _)]
+        exact lp_trap hE nc Ls M2 M' h
+
+set_option maxHeartbeats 2000000 in
+/-- **`srLoop`** on the loop's subject: where the trap returns `lon` with
+code `c'`, the loop writes it back. -/
+theorem lp_run (q c c' : Noun)
+    (h : nock (lpC2 root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN bakedN vr q c) lpBat2 =
+      some (lpLon r1 r2 r3 r4 jRest callsN seekN r vr c')) :
+    nock (lpS root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN bakedN vr q c) srLoop =
+      some (lpS root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN bakedN vr q c') := by
+  have hb : nock (C lpBat (lpS root r1 r2 r3 r4 jRest codeN callsN varsN seekN hotN gr r ncN bakedN vr q c)) lpBat =
+      some (lpLon r1 r2 r3 r4 jRest callsN seekN r vr c') := by
+    nock_open lpBat
+    simp only [nock_exec]
+    exact h
+  rw [srLoop_cut]
+  unfold lpTop lpF
+  simp only [lpS, srSp, srS3x, srS0, spAfter, spT0, lpLon] at hb ⊢
+  simp [nock_exec, hb]
+
 end Loop
 
 end Compiler
