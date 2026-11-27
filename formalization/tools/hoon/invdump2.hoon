@@ -28,6 +28,8 @@
 ::          (the height clause SccsIs of PGood5)
 ::  %ccoh  (ninth session) ColeCoh: call.cole maps c to r iff c is in the
 ::          back.cole set of r
+::  %cdom  (eleventh session) ColeDom: every key of call.cole is a key of
+::          code, and every member of a back.cole set is a key of code
 ::  and the sizes of code, inl, sure, nary, mono, sccs, call.cole, pend,
 ::  jets-hot, and for %jets the length of the %drop list.
 ::  The commands: [%f sub fol] a %full; [%a reset tems] a %fast;
@@ -254,10 +256,16 @@
       |=  [r=ring bs=(set bell)]
       (levy ~(tap in bs) |=(c=bell =((~(get by call.cole.jets.lon) c) `r)))
   ==
+=/  ok-cdom=?
+  ?&  (levy ~(tap in ~(key by call.cole.jets.lon)) |=(c=bell (~(has by code.lon) c)))
+      %+  levy  ~(tap by back.cole.jets.lon)
+      |=  [r=ring bs=(set bell)]
+      (levy ~(tap in bs) |=(c=bell (~(has by code.lon) c)))
+  ==
 ~&  :*  %i  n  -.c  %ccall  ok-ccall  %cinfo  ok-cinfo  %smap  ok-smap  %skey  ok-skey
         %imap  ok-imap  %ikey  ok-ikey  %ival  ok-ival  %sccs  ok-sccs  %nary  ok-nary
         %vars  ok-vars  %ckey  ok-ckey  %mono  ok-mono  %flag  ok-flag  %scck  ok-scck  %gone  ok-gone
-        %sset  ok-sset  %ccoh  ok-ccoh
+        %sset  ok-sset  %ccoh  ok-ccoh  %cdom  ok-cdom
         %before  sz0
         %sizes  ~(wyt by code.lon)  ~(wyt by inl.ca)  ~(wyt by sure.ca)  ~(wyt by nary.ca)
                 ~(wyt by mono.ca)  ~(wyt by sccs.ca)
