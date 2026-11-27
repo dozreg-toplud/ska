@@ -4,6 +4,10 @@ import lemmas.Ska.SccLoopTotal
 import lemmas.Compiler.CompSccLoopGate
 import lemmas.Compiler.CompSccLoopUse
 import lemmas.Compiler.CompSccLoopClose
+import lemmas.Compiler.CompSccLoopPrint
+import lemmas.Compiler.CompSccLoopMemDone
+import lemmas.Compiler.CompSccLoopMemShape
+import lemmas.Ska.SccLoopReal
 
 /-! The axioms of the theorems of `Ska/SccLoop.lean`, `Ska/SccLoopMsg.lean` and `Ska/SccLoopCycle.lean`
 (README Gaps 21): each must print
@@ -84,3 +88,13 @@ open Formalization.SkaModel.SccLoop
 #print axioms Formalization.Compiler.csiNeeds_of_loopR
 #print axioms Formalization.Compiler.ccc_csi_open
 #print axioms Formalization.Compiler.cccMiss_of_loop
+
+-- Gaps 21.14 (the print, the member gate on `%done` for a real SCC)
+#print axioms Formalization.Compiler.printId_pill
+#print axioms Formalization.Compiler.csi_gate_loop_np
+#print axioms Formalization.Compiler.csi_gate_loop_d_np
+#print axioms Formalization.Compiler.csi_gate_ranked_np
+#print axioms Formalization.Compiler.hcsi_of_loop_np
+#print axioms Formalization.Compiler.mem_to_finish_R
+#print axioms Formalization.Compiler.mem_prod_newM
+#print axioms Formalization.Compiler.mem_prod_oldM
