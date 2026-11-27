@@ -371,6 +371,207 @@ theorem kerfLB {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp
       hned regs hh hn res hres
     exact ⟨r, hm, conv cf hcf c ned σ Inv ν O gul st t tm s0 s regs ag hned htr r (goalSemCMD_toCM G)⟩
 
+
+/-! ## The indirect call -/
+
+/-- **The indirect call whose parts meet `LOKS`, under a flat lazy goal**,
+from a state as `LOKS.run` asks: `RunOKLS` with the witness `kernWit re`,
+the jump a new block at none of the result's entries, the result flat with
+clean entries.  The pair of `q` and `p` is `pairLS_ok` under `%next [this re
+this re+1] (jmp0 nok)` (`pairReg`), the `%nok` block `nokLB`, `+kerf`
+`kerfLB`. -/
+theorem lokS_indirect_run (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {f fb fc : Noun}
+    (M : MinkC2 lib P f fb fc) (hfb : ∃ a b, fb = C a b)
+    (Kp : (p.pure = true ∧ MinkEq lib P fb p) ∨ hinted env.cod p = some true)
+    (Sp : LOKS (S := S) (Map := Map) false lib env P fb p) (Sq : LOKS (S := S) (Map := Map) false lib env P fc q)
+    {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S}
+    (hcount : sixCount (Nomm.n2 p q Option.none) ≤ 255) (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0)
+    (hcl0 : Clear g0) (hcb : CondBelow g0) (h1 : 1 ≤ th.there) (h2 : th.there < g0.bo) (hta : th.args = [])
+    (ht : th.there ∉ (entries L).map Prod.fst) (hsd : Distinct L.sure.ned)
+    (hsl : ∀ x, NMem L.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none)
+    (hlab : ∀ e ∈ entries L, e.1 < g0.bo ∧ ∃ B th', HoonMap.get g0.blocks e.1 = some ⟨[], B, Termin.hop th'⟩)
+    (hnd : ((entries L).map Prod.fst).Nodup)
+    (hed : ∀ e ∈ entries L, Distinct e.2.sure.ned ∧
+      ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none)
+    (hfl : Flat L) (hcs : Clean L.sure.ned) (hce : ∀ e ∈ entries L, Clean e.2.sure.ned)
+    (hr : runLC env sup (Nomm.n2 p q Option.none) (CGoalL.next L th) region g0 = some (nex, g1)) :
+    (∃ Q, RunOKLS (Map := Map) lib P f L th Q false g0 g1 nex) ∧
+      nex.th.there ∉ (entries nex.laz).map Prod.fst ∧ g0.bo ≤ nex.th.there ∧ Flat nex.laz ∧
+      (∀ e ∈ entries nex.laz, Clean e.2.sure.ned) := by
+  obtain ⟨nex0, g1', out, pro, g2, o, g3, nexF, g4, nexF', g5, nexS, g6, k1, k2, k3, k4, k5, k6, k7⟩ :=
+    runLC_n2_none hr
+  simp only [simpleNextL, pure_apply, Option.some.injEq, Prod.mk.injEq] at k1
+  obtain ⟨rfl, rfl⟩ := k1
+  have hlab' : ∀ e ∈ entries L, e.1 < g0.bo ∧ ∃ B fin, HoonMap.get g0.blocks e.1 = some ⟨[], B, fin⟩ :=
+    fun e he => ⟨(hlab e he).1, by obtain ⟨_, B, th', hb⟩ := hlab e he; exact ⟨B, _, hb⟩⟩
+  have hk2 := k2
+  obtain ⟨rfl, rfl, b2, dr2, l2, PF, G2, -, -, -, c0, -⟩ := kerf_specL k2 d0 hcb hu h1 h2 hlab' hnd
+  have d2 : g2.drop = false := dr2.trans d0
+  have u2 : UpBelow g2 := G2.up hu
+  have cl2 : Clear g2 := hcl0.growU G2
+  have cb2 : CondBelow g2 := PF.1.below hcb
+  have hc : sixCount p ≤ 255 ∧ sixCount q ≤ 255 := by simp only [sixCount] at hcount; omega
+  -- the `%nok` block (as `indirectC_inner`)
+  rw [emit_apply] at k3
+  simp only [Option.some.injEq, Prod.mk.injEq] at k3
+  obtain ⟨rfl, rfl⟩ := k3
+  have nk : ∀ x, g2.re ≤ x → HoonMap.get g2.cond x = Option.none := fun x hx => condBelow_none cb2 hx
+  have eb3 : ∀ k, HoonMap.get ({ { g2 with re := g2.re + 1 } with re := g2.re + 1 + 1 }.emitted
+      ⟨[], [Pole.nok g2.re (g2.re + 1) g0.re], Termin.hop (jmp0 g0.bo)⟩).blocks k =
+      if k = g2.bo then some ⟨[], [Pole.nok g2.re (g2.re + 1) g0.re], Termin.hop (jmp0 g0.bo)⟩ else
+        HoonMap.get g2.blocks k := fun k => by
+    simp only [Gen.emitted, d2, Bool.false_eq_true, ↓reduceIte, HoonMap.get_put]
+  have G0 := growU_emit (g := { { g2 with re := g2.re + 1 } with re := g2.re + 1 + 1 })
+    (b := ⟨[], [Pole.nok g2.re (g2.re + 1) g0.re], Termin.hop (jmp0 g0.bo)⟩)
+    (fun j hj => by
+      simp only [finJumps, List.mem_singleton] at hj; subst hj; simp only [jmp0]; exact ⟨b0, (by omega)⟩) u2
+  have G3 : GrowU g2 ({ { g2 with re := g2.re + 1 } with re := g2.re + 1 + 1 }.emitted
+      ⟨[], [Pole.nok g2.re (g2.re + 1) g0.re], Termin.hop (jmp0 g0.bo)⟩) := ⟨G0.bo, G0.drop, G0.keep, G0.new⟩
+  generalize hg3 : ({ { g2 with re := g2.re + 1 } with re := g2.re + 1 + 1 }.emitted
+      ⟨[], [Pole.nok g2.re (g2.re + 1) g0.re], Termin.hop (jmp0 g0.bo)⟩ : Gen Map) = g3 at G3 eb3 k4
+  have r3 : g3.re = g2.re + 2 := by rw [← hg3]; simp [Gen.emitted]
+  have b3 : g3.bo = g2.bo + 1 := by rw [← hg3]; simp [Gen.emitted]
+  have d3 : g3.drop = false := by rw [← hg3]; simp [Gen.emitted, d2]
+  have cn3 : g3.cond = g2.cond := by rw [← hg3]; simp [Gen.emitted]
+  have k3o : HoonMap.get g3.blocks g2.bo = some ⟨[], [Pole.nok g2.re (g2.re + 1) g0.re], Termin.hop (jmp0 g0.bo)⟩ := by
+    rw [eb3, if_pos rfl]
+  have E3 : Ext g2 g3 := ⟨by omega, by omega, by rw [d3, d2], fun k hk => by rw [eb3, if_neg (by omega)]⟩
+  have u3 : UpBelow g3 := G3.up u2
+  have cl3 : Clear g3 := cl2.growU G3
+  have cb3 : CondBelow g3 := fun k hk => by rw [cn3] at hk; have := cb2 k hk; omega
+  have e3 : ∀ (r : Nat), entries (ofSure (lazyReg r : Sure S)) = [] := fun r => entries_ofSure _
+  -- the formula part `q`
+  obtain ⟨⟨Qt, Rq⟩, -, -, fq, cqE⟩ := Sq.run (sup := sup) (region := region)
+    (L := ofSure (lazyReg (g2.re + 1))) (th := jmp0 g2.bo) hc.2 (by omega) d3 u3 cl3 cb3
+    (by simp only [jmp0]; omega) (by simp only [jmp0]; omega) rfl (by rw [e3]; simp) trivial
+    (fun x hx => by
+      simp only [ofSure, sure_mk, lazyReg, NMem] at hx; subst hx
+      exact ⟨by omega, by rw [cn3]; exact nk _ (by omega)⟩)
+    (fun e he => by rw [e3] at he; cases he) (by rw [e3]; simp) (fun e he => by rw [e3] at he; cases he)
+    (flat_ofSure _) trivial (fun e he => by rw [e3] at he; cases he) k4
+  -- its `+past` behind `p`
+  have tcase : (nexF' = nexF ∧ g5 = g4 ∧ ((∀ s, FitsS nexF.laz.sure s) ∨ TotalC lib P fb)) ∨
+      (nexF' = ⟨Lazy.mk Sure.bunt [] ((g4.bo, Lazy.mk nexF.laz.sure nexF.laz.fork []) :: nexF.laz.bond),
+          jmp0 g4.bo⟩ ∧
+        g5 = (g4.emitted ⟨[], [], Termin.hop nexF.th⟩).tagged g4.bo region) := by
+    rcases Kp with ⟨pp, Mp⟩ | hp
+    · rw [pastL_pure _ _ pp, pure_apply] at k5
+      simp only [Option.some.injEq, Prod.mk.injEq] at k5
+      exact Or.inl ⟨k5.1.symm, k5.2.symm, Or.inr (totalC_of_minkEq Mp)⟩
+    · rcases pastL_hinted hp k5 with ⟨x1, x2, en, es, _⟩ | ⟨x1, x2⟩
+      · exact Or.inl ⟨x1, x2, Or.inl (fun x => fitsS_trivial en es x)⟩
+      · exact Or.inr ⟨x1, x2⟩
+  have Rq' : RunOKLS (Map := Map) lib P fc (ofSure (lazyReg (g2.re + 1))) (jmp0 g2.bo) Qt false g3 g5 nexF' := by
+    rcases tcase with ⟨rfl, rfl, -⟩ | ⟨rfl, rfl⟩
+    · exact Rq
+    · exact Rq.past (fun r hr => by simp only [ofSure, sure_mk, lazyReg, NMem] at hr; subst hr; omega)
+        (fun e he => by rw [e3] at he; cases he) rfl (Rq.drop.trans d3) (Rq.grow.up u3) region
+  have fq' : Flat nexF'.laz ∧ (∀ e ∈ entries nexF'.laz, Clean e.2.sure.ned) ∧ Clean nexF'.laz.sure.ned ∧
+      ((∀ s, FitsS nexF'.laz.sure s) ∨ TotalC lib P fb) := by
+    rcases tcase with ⟨rfl, rfl, hf⟩ | ⟨rfl, rfl⟩
+    · exact ⟨fq, cqE, Sq.clean (L := ofSure (lazyReg (g2.re + 1))) trivial k4, hf⟩
+    · have fl : Flat (Lazy.mk (Sure.bunt : Sure S) [] ((g4.bo, Lazy.mk nexF.laz.sure nexF.laz.fork []) ::
+          nexF.laz.bond)) := flat_mk (fun e he => by
+        rcases List.mem_cons.mp he with rfl | he
+        · show Lazy.mk nexF.laz.sure nexF.laz.fork [] = ofSure nexF.laz.sure
+          rw [fq.1]; rfl
+        · exact fq.2 e he)
+      refine ⟨fl, fun e he => ?_, trivial, Or.inl (fun s => fitsS_bunt s)⟩
+      rw [entries_flat fl] at he
+      rcases List.mem_cons.mp he with rfl | he
+      · exact Sq.clean (L := ofSure (lazyReg (g2.re + 1))) trivial k4
+      · exact cqE e (by rw [entries_flat fq]; exact he)
+  have d5 : g5.drop = false := Rq'.drop.trans d3
+  have u5 : UpBelow g5 := Rq'.grow.up u3
+  have cl5 : Clear g5 := cl3.growU Rq'.grow
+  have cb5 : CondBelow g5 := Rq'.cfr.below cb3
+  have r5 := Rq'.re
+  have bo5 := Rq'.bo
+  -- the subject part `p`
+  obtain ⟨⟨Qh, Rp⟩, -, -, fp, cpE⟩ := Sp.run (sup := sup) (region := region)
+    (L := ofSure (lazyReg g2.re)) (th := nexF'.th) hc.1 (by omega) d5 u5 cl5 cb5 Rq'.lo Rq'.hi
+    (nextArgs_nil Rq'.ent rfl) (by rw [e3]; simp) trivial
+    (fun x hx => by
+      simp only [ofSure, sure_mk, lazyReg, NMem] at hx; subst hx
+      exact ⟨by omega, by rw [Rq'.cfr.get_lt (by omega), cn3]; exact nk _ (Nat.le_refl _)⟩)
+    (fun e he => by rw [e3] at he; cases he) (by rw [e3]; simp) (fun e he => by rw [e3] at he; cases he)
+    (flat_ofSure _) trivial (fun e he => by rw [e3] at he; cases he) k6
+  -- the copy and the pair
+  obtain ⟨n, g3', r, hcp, hM, rfl⟩ := copyL_flat' fp fq'.1 k7
+  have nfit : ∀ (x y : Noun), ¬ (¬ FitsS (ofSure (lazyReg g2.re : Sure S)).sure x ∨
+      ¬ FitsS (ofSure (lazyReg (g2.re + 1) : Sure S)).sure y) :=
+    fun x y h => h.elim (fun h => h (fitsS_lazyReg _ x)) (fun h => h (fitsS_lazyReg _ y))
+  have hrg : ∀ x, NMem (ofSure (pairReg g2.re : Sure S)).sure.ned x → x = g2.re ∨ x = g2.re + 1 := fun x hx => by
+    simpa only [ofSure, sure_mk, pairReg, NMem] using hx
+  obtain ⟨R, hth, eth, fR, cR, lR⟩ := pairLS_ok (Fin := fun _ _ _ x y r => r = Tone.zero (C x y))
+    (FinB := fun _ _ x y r => r = Tone.zero (C x y)) (L := ofSure (pairReg g2.re)) (th := jmp0 g2.bo)
+    (hed := ofSure (lazyReg g2.re)) (tel := ofSure (lazyReg (g2.re + 1))) (o := g2.bo) (PB := fun _ => [])
+    (fun _ hm => minkF_consG hfb hm) (fun _ hh => mink_consG_bwd (ft := fc) hfb hh)
+    (fun _ _ _ _ _ _ h => h) (fun _ _ _ _ _ h => h)
+    (flat_ofSure _) (by simp [ofSure])
+    (fun x hx => by rcases hrg x hx with rfl | rfl <;> (rw [cn3]; exact nk _ (by omega)))
+    (fun e he => by simp [ofSure] at he)
+    ⟨⟨trivial, trivial, fun x a b => by simp only [NMem] at a b; omega⟩,
+      fun x hx => by rcases hrg x hx with rfl | rfl <;> omega⟩
+    (Ext.refl g3) (GrowU.refl g3) rfl cb3
+    (fun r hr => by simp only [ofSure, sure_mk, lazyReg, NMem] at hr; subst hr; exact Or.inl (Or.inl rfl))
+    (fun r hr => by simp only [ofSure, sure_mk, lazyReg, NMem] at hr; subst hr; exact Or.inl (Or.inr rfl))
+    (fun r a b => by simp only [ofSure, sure_mk, lazyReg, NMem] at a b; omega)
+    (Pref.refl g3) (fun _ _ => rfl) (flat_ofSure _) (flat_ofSure _) (fun e he => by simp [ofSure] at he)
+    (fun e he => by simp [ofSure] at he) (fun e he => by simp [ofSure] at he) (by simp [ofSure]) (by simp [ofSure])
+    (Ext.refl g3) (GrowU.refl g3) rfl rfl
+    (Or.inl ⟨rfl, rfl, Or.inl (fun x => fitsS_lazyReg _ x)⟩) fq'.2.2.2
+    Rq' Rp fq'.1 fp fq'.2.1 cpE fq'.2.2.1 (Sp.clean (L := ofSure (lazyReg g2.re)) trivial k6) hcp hM u3 d3
+    (fun cf _ k h0 h1' => absurd h1' (by omega))
+    (fun _ _ _ x y r hn hr => absurd hn (nfit x y)) (fun _ _ x y hn => absurd hn (nfit x y))
+    (fun c hc σ Inv ν O n gul hS hF st' regs t tm x y n' r _ hI htr fx fy hx hy hr => by
+      subst hr
+      exact ⟨fun _ => ⟨st', regs, hI, Needs.le_refl _, ⟨hx, hy⟩, fun _ _ => rfl, rfl⟩,
+        fun nf => absurd (fitsS_pairReg _ x y) nf⟩)
+    (fun c hc σ Inv ν O gul hS hB st' regs t tm x y hI htr fx fy hx hy res _ =>
+      ⟨_, rfl, ⟨fun _ => ⟨st', regs, hI, Needs.le_refl _, ⟨hx, hy⟩, fun _ _ => rfl, rfl⟩,
+        fun nf => absurd (fitsS_pairReg _ x y) nf⟩⟩)
+  -- the `%nok` block and `+kerf`
+  have KL := kerfLB hk2 d0 hcb hu hta h1 h2 hsd hsl hlab' hnd hed
+    (nokLB M hfb (by omega) c0 cb2 r3 b3 cn3 E3 G3 k3o R.toRunOKLB)
+  refine ⟨⟨_, KL⟩, fun hm => ?_, ?_, fR, cR⟩
+  · obtain ⟨e', he', ee⟩ := List.mem_map.mp hm
+    have := lR e' he'
+    have hthe : (pairRes n r nexF'.laz.bond nexS.laz.bond).th = n.th := rfl
+    rw [hthe, eth] at ee
+    simp only [jmp0] at ee
+    omega
+  · show g0.bo ≤ n.th.there
+    omega
+
+
+/-- **The indirect call whose parts meet `LOKS` meets `LOKS`** (`[2 p q]`,
+the subject part's formula `fb` a cell, the subject part call-free with
+`MinkEq` or hinted). -/
+theorem lokS_indirect (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {f fb fc : Noun}
+    (M : MinkC2 lib P f fb fc) (hfb : ∃ a b, fb = C a b)
+    (Kp : (p.pure = true ∧ MinkEq lib P fb p) ∨ hinted env.cod p = some true)
+    (Sp : LOKS (S := S) (Map := Map) false lib env P fb p) (Sq : LOKS (S := S) (Map := Map) false lib env P fc q) :
+    LOKS (S := S) (Map := Map) false lib env P f (Nomm.n2 p q Option.none) := by
+  refine ⟨fun {sup L th region g0 g1 nex} hc hr => ?_, fun hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl hlab hnd hed
+    hfl hcs hce hr => ?_⟩
+  · obtain ⟨nex0, g1', out, pro, g2, o, g3, nexF, g4, nexF', g5, nexS, g6, k1, k2, k3, k4, k5, k6, k7⟩ :=
+      runLC_n2_none hr
+    have cq := Sq.clean (L := ofSure (lazyReg (g2.re + 1))) trivial k4
+    have cq' : Clean nexF'.laz.sure.ned := by
+      rcases Kp with ⟨pp, _⟩ | hh
+      · rw [pastL_pure _ _ pp, pure_apply] at k5
+        simp only [Option.some.injEq, Prod.mk.injEq] at k5
+        obtain ⟨rfl, rfl⟩ := k5
+        exact cq
+      · rcases pastL_hinted hh k5 with ⟨x1, x2, _⟩ | ⟨x1, x2⟩
+        · subst x1 x2; exact cq
+        · subst x1 x2; trivial
+    exact clean_copyL k7 (Sp.clean (L := ofSure (lazyReg g2.re)) trivial k6) cq'
+  · obtain ⟨A, B, C', D, E⟩ := lokS_indirect_run lib env M hfb Kp Sp Sq hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl
+      hlab hnd hed hfl hcs hce hr
+    exact ⟨A, B, Or.inr C', D, E⟩
+
 end Comp
 end SkaModel
 end Formalization
