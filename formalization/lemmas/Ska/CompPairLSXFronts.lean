@@ -6,15 +6,15 @@ import lemmas.Ska.CompFrontSX
 
 README Gaps 12.32.  The first piece of `pairLS_ok` for parts of any flag:
 `pairLS_fronts` (`CompPairLSSem.lean`) with the parts' `RunOKLS` at any
-flags `xp`, `xq`, the parent's at any `x`, and the witness `pairWitX C H`
-(the halves `H` that `+split` allocated, held with the parts' products),
+flags `xp`, `xq`, the parent's at any `x`, and the witness `pairWitX C HW`
+(the halves `HW` that `+split` allocated, held with the parts' products),
 through `frontS_pairX` at each goal label.  The section is
-`CompPairLSSem.lean`'s with the flags, `H`, the keep of `H` by the block
-`o` in `hA`/`hAB` (`Keep … ∨ NMem H`), and the new hypotheses: `H` in the
+`CompPairLSSem.lean`'s with the flags, `HW`, the keep of `HW` by the block
+`o` in `hA`/`hAB` (`Keep … ∨ NMem HW`), and the new hypotheses: `HW` in the
 split's range (`hHr`), the halves hold it (`hHh`), the parts' goal
-registers held from the parent's and `H` (`hEH`), the goal's entries apart
+registers held from the parent's and `HW` (`hEH`), the goal's entries apart
 from its sure need (`hG`), and the parts' result entries at the goal's
-labels apart from `H` and the goals' registers (`hPH`, the fact the scratch
+labels apart from `HW` and the goals' registers (`hPH`, the fact the scratch
 test of `CompFrontSX.lean` found true at goal labels).
 -/
 
@@ -34,7 +34,7 @@ section
 
 variable {lib : Lib} {N : Needs} {P : Noun → Prop} {f fh ft : Noun} {L : Lazy S} {th : Jmp}
     {g0 g' g'' gb g1 g2 g3' g3 : Gen Map} {hed tel Lh : Lazy S} {o : Nat} {jt : Jmp} {Qh Qt : Wit}
-    {nexq nexp : NextL S} {n : Next S} {x xp xq : Bool} {H : Need} {r : List (Nat × Lazy S)} {PB : Nat → List Pole}
+    {nexq nexp : NextL S} {n : Next S} {x xp xq : Bool} {HW : Need} {r : List (Nat × Lazy S)} {PB : Nat → List Pole}
     {Fin : Noun → Nat → Trace → Noun → Noun → Tone → Prop} {FinB : Noun → Trace → Noun → Noun → Tone → Prop}
     (Mf : ∀ {s gul : Noun} {n : Nat} {tm : Trace} {r : Tone}, P s → minkF lib gul n tm s f = some r →
       ∃ n', n' < n ∧ ∃ rh, minkF lib gul n' tm s fh = some rh ∧
@@ -91,7 +91,7 @@ variable {lib : Lib} {N : Needs} {P : Noun → Prop} {f fh ft : Noun} {L : Lazy 
       ∀ (st : σ) (regs : Map (Option Noun)) (t tm : Trace) (x y : Noun) (n' : Nat) (r : Tone), n' < n → Inv st →
         Forall2 (FrameRel lib (ν st)) t tm → FitsS hed.sure x → FitsS tel.sure y → HoldsN hed.sure.ned regs x →
         HoldsN tel.sure.ned regs y → Fin gul n' tm x y r →
-        GoalSemCM lib O c gul Inv ν (fun z => Keep g0 g' (CGoal.next L.sure th) z ∨ NMem H z) st regs t tm (jmp0 o)
+        GoalSemCM lib O c gul Inv ν (fun z => Keep g0 g' (CGoal.next L.sure th) z ∨ NMem HW z) st regs t tm (jmp0 o)
           (CGoal.next L.sure th) r)
     (hAB : ∀ (c : Straight Map), Agree c g0 g' → ∀ (σ : Type) (Inv : σ → Prop) (ν : σ → Needs) (O : Oracle σ)
       (gul : Noun), OracleSteps Inv ν O → OracleBwd lib Inv ν O →
@@ -99,18 +99,18 @@ variable {lib : Lib} {N : Needs} {P : Noun → Prop} {f fh ft : Noun} {L : Lazy 
         Forall2 (FrameRel lib (ν st)) t tm → FitsS hed.sure x → FitsS tel.sure y → HoldsN hed.sure.ned regs x →
         HoldsN tel.sure.ned regs y → ∀ res, goJ lib O c gul st regs t (jmp0 o) = some res →
         ∃ r, FinB gul tm x y r ∧
-          GoalSemCM lib O c gul Inv ν (fun z => Keep g0 g' (CGoal.next L.sure th) z ∨ NMem H z) st regs t tm (jmp0 o)
+          GoalSemCM lib O c gul Inv ν (fun z => Keep g0 g' (CGoal.next L.sure th) z ∨ NMem HW z) st regs t tm (jmp0 o)
           (CGoal.next L.sure th) r)
 
     -- the halves in the witness and the parts' goal registers (README Gaps 12.32)
-    (hHr : ∀ z, NMem H z → g0.re ≤ z ∧ z < g'.re)
+    (hHr : ∀ z, NMem HW z → g0.re ≤ z ∧ z < g'.re)
     (hHh : ∀ (R : Map (Option Noun)) (a b : Noun), HoldsN hed.sure.ned R a → HoldsN tel.sure.ned R b →
-      HoldsN H R (C a b))
-    (hEH : ∀ (R : Map (Option Noun)) (a b : Noun), HoldsN (gsE x L) R (C a b) → HoldsN H R (C a b) →
+      HoldsN HW R (C a b))
+    (hEH : ∀ (R : Map (Option Noun)) (a b : Noun), HoldsN (gsE x L) R (C a b) → HoldsN HW R (C a b) →
       HoldsN (gsE xp Lh) R a ∧ HoldsN (gsE xq tel) R b)
     (hG : ∀ e ∈ L.bond, ∀ z, NMem L.sure.ned z → ¬ NMem e.2.sure.ned z)
     (hPH : ∀ e ∈ L.bond, ∀ e1 ∈ nexp.laz.bond ++ nexq.laz.bond, e1.1 = e.1 → ∀ z,
-      (NMem H z ∨ NMem (gsE xp Lh) z ∨ NMem (gsE xq tel) z ∨ NMem (gsE x L) z) → ¬ NMem e1.2.sure.ned z)
+      (NMem HW z ∨ NMem (gsE xp Lh) z ∨ NMem (gsE xq tel) z ∨ NMem (gsE x L) z) → ¬ NMem e1.2.sure.ned z)
 include Mf Mb hFin hFinB hLf hLn hLc hLb hg hpre hgr hcnd hcb hlp hlq hpq hB hBo hhf htf hsp hhl htl hhn htn hgb hgbU hgbc hgbre hjt hhd hq hp hqf hpf hqc hpc cq cp hc hM hu d0 hfix hnotF hnotB hA hAB hHr hHh hEH hG hPH
 
 /-- The fronts of `pairLS_ok` (`FrontsS`). -/
@@ -145,7 +145,7 @@ theorem pairLSX_fronts {idx : Map (Nat × Lazy S)}
           CopyPre s1.ned s2.ned ga.re ∧
           (∀ x, NMem s1.ned x → x < g2.re ∧ (x < g1.re → NMem sh.ned x)) ∧
           (∀ x, NMem s2.ned x → x < g1.re ∧ (x < gb.re → NMem st.ned x))) :
-    FrontsS (Map := Map) (pairWitX C H Qh Qt) x g0 g3 L (pairRes n r nexq.laz.bond nexp.laz.bond) := by
+    FrontsS (Map := Map) (pairWitX C HW Qh Qt) x g0 g3 L (pairRes n r nexq.laz.bond nexp.laz.bond) := by
   have b0' := hpre.2.1
   have bB : g''.bo = g'.bo := hB.bo
   have bgb := hgb.2.1
@@ -326,7 +326,7 @@ theorem pairLSX_fronts {idx : Map (Nat × Lazy S)}
       · exact ⟨by have := (hLe x a).1; omega, fun _ => a⟩
       · exact ⟨by omega, fun h => by omega⟩
     -- the parts' entries at the label are apart from the halves and the goals' registers
-    have nP : ∀ z, (NMem H z ∨ NMem (gsE xp Lh) z ∨ NMem (gsE xq tel) z ∨ NMem (gsE x L) z) →
+    have nP : ∀ z, (NMem HW z ∨ NMem (gsE xp Lh) z ∨ NMem (gsE xq tel) z ∨ NMem (gsE x L) z) →
         ¬ NMem Lp.ned z ∧ ¬ NMem Lq.ned z := fun z hz => by
       refine ⟨fun hm => ?_, fun hm => ?_⟩
       · rcases mp' with h1 | ⟨_, rfl⟩
@@ -337,7 +337,7 @@ theorem pairLSX_fronts {idx : Map (Nat × Lazy S)}
         · simp [Sure.bunt, NMem] at hm
     have gm' : ∀ z, NMem L.sure.ned z → z < g0.re := fun z hz => hg.2 z hz
     have F1 := frontS_pairX (comb := C) FPs FQs (lo0 := g0.re) (lo := g3.re) (Lb := e.2.sure) (Fs := PB e.1)
-      (H := H) (E := gsE x L)
+      (H := HW) (E := gsE x L)
       (by omega) (by omega) (by omega) (by omega) (by omega)
       (fun s v d w x hq' hx => hp.dreg s v d w x hq' hx) (fun s v d w x hq' hx => hq.dreg s v d w x hq' hx)
       hLh' hLt' SA.ht hM1 hM2 hM3 hM4 SA.fit SA.sem
