@@ -8,6 +8,8 @@ import lemmas.Compiler.CompRunDirectMonoB
 import lemmas.Compiler.CompRunDirectMonoP
 import lemmas.Compiler.CompRunDirectMonoC
 import lemmas.Compiler.CompRunRClass
+import lemmas.Compiler.CompUnaryDir
+import lemmas.Compiler.CompSofPush
 
 /-! The axioms of the link of the direct call of `%2` (README Gaps 19). -/
 
@@ -183,3 +185,21 @@ open Formalization.Compiler
 #print axioms Formalization.Compiler.noAx0_of_dir
 #print axioms Formalization.Compiler.callNounM_of_r
 #print axioms Formalization.Compiler.callOk_of_r
+#print axioms Formalization.Compiler.cu_trap_dir
+#print axioms Formalization.Compiler.cu_gate_dir
+#print axioms Formalization.Compiler.codePure_of
+#print axioms Formalization.Compiler.callOk_of_s
+#print axioms Formalization.Compiler.dirCalls_of_s
+#print axioms Formalization.Compiler.cu_gate_dir_s
+#print axioms Formalization.Compiler.dirCallsS_of
+#print axioms Formalization.Compiler.needRead_of_scc
+#print axioms Formalization.Compiler.cu_gate_dir_csi
+#print axioms Formalization.Compiler.snd_gate
+#print axioms Formalization.Compiler.sof_push
+#print axioms Formalization.Compiler.callCode_of_bells
+#print axioms Formalization.Compiler.sofAll_of_arms
+#print axioms Formalization.Compiler.cu_gate_dir_arms
+#print axioms Formalization.Compiler.soundFarRet_triv
+#print axioms Formalization.Compiler.needSoftRet_triv
+#print axioms Formalization.Compiler.sofArms_triv
+#print axioms Formalization.Compiler.cu_gate_dir_this
