@@ -6979,3 +6979,81 @@ import only its theorems.  So:
        whole-table list of Gaps 28.4.  (b) `scoMiss` returns (`scoSub` at its measure, then
        `tarjanM_total`, `scoRoll`, `scoGot` by the partition) and its stored set is `b`'s SCC in
        the graph of the callees without an SCC in `sccs`: `SccImageMiss`, `SccQ`, track K.
+30. **`+split-max` in the sweep loop of `+compile-scc-in`** (track S, 2026-11-28, `tools/hoon/splitmax*.py`,
+    copies and runs in `~/work/ska-scratch/splitmax/`).  Not a Lean item: the facts for a decision
+    about the cut of `+msg-need-ord` (line 7415, added by an AI session in 3bbfae4 and set to 6 in
+    a257bce for the forks of the parsers) where the loop joins a member's new need with its entry
+    (line 3601).  `desk/` unchanged.
+    1. *How often the cut acts on real code* (one traced first run of each benchmark: `splitmax.py
+       --trace --small`, `pill.sh`, `bench.sh KIND 1`, `splitmax-sum.py`).  `mint`: 615 SCCs through
+       the loop (two of 250 bells), 1,910 joins, 253 reach the cut line, the cut FIRES in 26 (19 to
+       26 over runs: the first run also compiles the compiler's own arms, which differ by copy), all in a
+       middle sweep (never the first or the last), all on an entry that was a split; 248 joins shrink
+       the entry (fewer registers), 18 of them where the cut fires (the others are the uncut join under
+       an atom cape, a climb); at most 6 sweeps (592 SCCs take 3).  `rdr`: 232 SCCs, 844 joins, 172
+       reach, 24 fire, 84 shrink (10 by the cut), at most 6 sweeps.  `nuck`: 66 SCCs, 84 joins, none
+       reaches.  `ream`: the traced copy runs out of loom after 224 SCCs (the untraced one runs): 590
+       joins, 82 reach, 11 fire.  The final pass never finds a need other than the entry.  No member's
+       entry ever returns to an earlier one.  The cut fires on the stale part of a need read through
+       `top` (the `%may` need of a callee not yet compiled): e.g. an entry with 18 registers whose new
+       need is `this` at a deep tail (`[this [this [%both none ...]]]`): the uncut join keeps both (21
+       registers), the cut gives 14.
+    2. *Half of the cycle on real code* (`mint`, full trace, `splitmax-order.py`).  `need-new` is not
+       monotone across sweeps (1,508 consecutive pairs of a member: by split axes 1,184 equal, 204
+       lose, 79 gain, 41 neither).  10 members fire twice at the same axis: at 270477651 (axis 63)
+       `need-new` goes big split, `this`, big split, the entry big, `this`, `this` (the second big
+       need meets `this` and is cut again); at 1202617745 (axis 15) the entry goes from a split over 6
+       registers to `this` (cut) and back to a split of 6 (`[%both this [this [this [this this]]]]`,
+       kept since 6 is not over `split-max`).  So the steps G -> T and T -> B of the cycle T, B, G, T
+       of `msgOrd_cycle` both happen on real code; the missing step is a both-both join over six
+       registers after the regrowth, and then a `this`.
+    3. *The search* (`splitmax-cores.py`): 1,350 generated SCCs of one to three gates whose samples
+       hold known gates at every other leaf (capes cells over 3 or 7 inner nodes), 4 random batches of
+       154 and 2 targeted batches of 204 (a callee whose fork cuts, read at `top` first).  None fires
+       the cut, no shrink, no return; at most 6 sweeps; every run returned.  The real fires need
+       deeper capes than the samples give (the tails of lists inside cores with known batteries).
+       There is no order that the compiler keeps on `need-new` (2.), so the reason the loop ends is
+       not a property of the member compile but of the views settling after 3 to 6 sweeps.
+    4. *Candidate changes* (`splitmax.py --fix`; output against the unpatched copy).  `loop`: the join
+       of line 3601 without the cut.  `sticky`: the join as now, but a member whose join cut keeps
+       that entry for the rest of the loop.  `late`: the uncut join until stable, then a sweep of every
+       member with the cut join, the members it changes kept, the loop goes on, and ends at a cut sweep
+       that changes nothing.  `nocut`: the cut line removed (forks too), the control.  Identical
+       output (mugs of product and state) on the 21 pokes and 21 library calls of `takesame.hoon`
+       for all four.  The code of the benchmark targets (the mug of each final pass's map of
+       straights, `%fz`, on the SCCs of hoon.hoon; the compiler's own SCCs, which are compiled in the
+       same first run, differ by copy and are left out): `loop` changes 3 of 1,072 SCCs of `mint`
+       (250, 250 and 7 bells), 2 of 800 of `rdr` (250, 191), 5 of the 1,881 of the partial `ream`, none
+       of `nuck`; `sticky` changes one SCC, the same of 250 bells in `mint`, `rdr` and `ream`; `late`
+       that one in `mint`, 2 in `rdr` and `ream`, but it adds a cut sweep to each of the 621 SCCs of
+       `mint` (4,062 joins for 1,499, up to 9 sweeps).  Benchmark (`ab.sh none X mint:6 ream:21 rdr:21 nuck:21`, four
+       rotations; warm, then first run, against `none` side by side): `loop` mint +0.3 % / +0.7 %,
+       ream +5.3 % / +0.5 %, rdr +1.1 % / -0.3 %, nuck +0.7 % / -0.7 %; `sticky` mint +0.3 % / +0.1 %,
+       ream +0.9 % / +0.3 %, rdr +1.0 % / 0.0 %, nuck 0.0 % / -0.1 %; `late` mint 0.0 % / +10.2 %, ream
+       -0.1 % / +4.7 %, rdr -5.2 % / +12.3 %, nuck 0.0 % / +1.6 %; `nocut` (the control: no cut at the forks either) mint
+       -5.4 % / -1.4 %, rdr -10.0 % / +20.0 %, nuck +114 % / +274 %, ream +170 % warm and its first run
+       runs out of loom.  So the cut at the forks is
+       what pays (3bbfae4, a257bce: the parsers), and the cut in the loop is worth 5 % of warm `ream`
+       (what `loop` loses), all of it kept by `sticky`.
+    5. *Termination arguments.*  The uncut join climbs: at a node where the cape is a cell the kind of
+       the entry (none, then this or split, then both) never goes down, and under an atom of the cape
+       the entry only loses splits, keeps `%both` and turns `none` into `this` (`splitmax-climb.py 3 3`:
+       2,359,296 triples, none fails; with the cut 15 fail).  So the measure (the kinds over the finitely
+       many cell nodes of the cape, then minus a weight of the parts under atoms) rises
+       lexicographically at every change of an entry, and a member's entries form a finite chain.
+       `loop` and `nocut` (the join is the uncut one): this discharges `Ranked` with a well-founded
+       rank in place of the bound `H`; the weight is bounded only by the first entries, so
+       `loop_total` must be restated with a lexicographic (or well-founded) rank, not `phi + H`.
+       `sticky`: before a member's first cut its joins are the uncut join, so they climb as above, and
+       the cut freezes it once: rank (frozen, measure).  `late`: the measure inside each run of uncut
+       sweeps, and each cut sweep that changes something freezes one more member, so at most
+       `|scc| + 1` cut sweeps.
+    6. *Recommendation*: `sticky`: on the real targets it changes the code of one SCC (250 bells, the
+       same in `mint`, `rdr`, `ream`), costs nothing measurable, keeps the 5 % of `ream` that the cut in
+       the loop gives, and makes each member's entries a climb of the uncut join followed by at most one
+       freeze.  The measured patch keeps the flag in `n-args` of the placeholder straight (read
+       nowhere off `%done`) and finds the cut by comparing with a copy `+msg-need-ord-uncut`; a set of
+       frozen bells threaded through the sweeps would say the same more plainly.  Unknown: whether
+       the unpatched loop can cycle on real code (the steps G -> T -> B of 2. occur, the closing step
+       was not found); the climb for shapes over three inner nodes (enumerated to three, not proved);
+       `Ranked` restated on a well-founded rank (the next Lean step).
