@@ -4420,3 +4420,70 @@ import only its theorems.  So:
     and a class that sees `env` and `N` (mismatch M3 of the ledger), so that the
     direct-call theorems of tracks J and K plug in; `MemoNoCallees` in the invariant (M8);
     the choice of `lib` for `LibSlam`, `RendLeafIs`, `HandIs`.
+23. **The poke on states: `enc` and the `%full` branch** (track P, 2026-11-27,
+    `Ska/PokeEnc.lean`, `Compiler/PokeLink.lean`, `Compiler/AuditPokeLink.lean`).
+    The fields of `pokeModel` that no track owned (LEDGER 1.1, 1.2, 1.6, 4.1, M9, M11).
+    *The map of the state* (checked on the pill with `tools/gen/nouns.py`).  The compiler's
+    core is `cr = [pokeBat [monoBat [state lib]]]`: axis `2` the battery of `+load`,
+    `+peek`, `+poke`, `+wish`, axis `6` the battery of `+version`, `+compiled-mono`,
+    `+compiled-nary`, axis `14` `state=state-0`, axis `15` the library (`vcore`).  On the
+    pill, axis `14` of `cor` is `[0 [[0 0 0 0 0 0 0] 0 0 0 0 0] 0 0 0 0 0 0]`.  The axes of
+    `cr`, next to the fields of `CSt` (`Ska/PokeModel.lean`) and the noun of each:
+
+    | axis of `cr` | Hoon | `CSt` field | noun of the model's value |
+    |---|---|---|---|
+    | `28` | `%0` | (constant) | `A 0` |
+    | `116` | `jets.long-ska` = `[root core batt arms pend [call back]]` (`232`, `466`, `934`, `1870`, `3742`, `7486`, `7487`) | `jets : J`, `J := Noun` | the noun itself |
+    | `234` | `memo` | `long.memo : Memo FinMap` | `memoNoun` (`Analysis.lean`) |
+    | `470` | `code=(map bell [nomm pure total])` | `long.code : FinMap Bell (VarEntry FinMap)`, `.nomm` | `[nomm.toNoun flags]`, flags NOT in the model |
+    | `942` | `calls=(map bell (set bell))` | `long.code`, `.calls` | `Treap.setNoun` |
+    | `1886` | `vars=(jug bell bell)` | `long.vars` | `Treap.toNoun Treap.setNoun` |
+    | `1887` | `seek=(map bell cape)` | `long.code`, `.seek` | `Cape.toNoun` |
+    | `118` | `jets-hot=(map ring [need=need-ordered])` | `hot : H`, `H := Noun` | the noun itself |
+    | `238` | `nary.cache` | `cache.nary : FinMap Bell (Straight (TreapMap mugF))` | `Straight.toNoun` |
+    | `478` | `mono.cache` | `cache.mono` | `Straight.toNoun` |
+    | `958` | `sccs.cache` | `cache.sccs` | `Treap.setNoun` |
+    | `1918`, `1919` | `inl.cache`, `sure.cache` | `cache.rest : CR`, `CR := Noun × Noun` | the nouns themselves |
+
+    The noun of every map is `FinMap.toNoun` (`Compiler/TreapKey.lean`): the treap of its
+    pairs, keys by `TKey.enc`.  A treap under `mugF` has no freedom: the order is `+gor`
+    and the priority `+mor` of the keys, both from their mugs, so two treaps with the same
+    pairs are one noun (`isMap_ext`, `Hoon/Canon.lean`).  So `enc` is a FUNCTION with no
+    choice in it, and it is injective as soon as the value nouns are (`toNoun_inj` of
+    `FinMap` from `get_toNoun`).  What `PokeReach` cores then need, to be in the image:
+    (i) every map is an `IsMap mugF` noun, which `+put:by`, `+del:by`, `+put:in` keep
+    (`putF_spec`, `delF_spec`), so it is the `FinMap.toNoun` of its pairs (`isMap_ext`);
+    (ii) every key and value decodes (a bell, a nomm, a datum, a straight); (iii) `code`,
+    `calls`, `seek` have the same keys, since `+ska-poke` writes the three from `new-code`
+    and nothing else writes them (`+ska-cole-settle` reads them only); (iv) the flags.
+    *Mismatches* found by the map:
+    - **P1, the flags.**  An entry of `code` is `[nomm pure total]`, the flags of
+      `+eval-finalized`, which the SCC loop of `+ska-poke` computes, callees' SCCs first,
+      the members of one SCC in the order of `~(rep in scc)`, each reading the flags
+      written so far.  `VarEntry` has no flags.  So `enc` takes them as a parameter
+      `fl : FinMap Bell (VarEntry FinMap) → Bell → Noun` (the flags noun of a bell of a
+      table), and the image needs the pill's flags to be `fl` of its table (open; true for
+      the function that replays the SCC loop on the table if old bells never call new
+      ones, *not checked*).  `compile-unary` and `compile-scc` get `code` with the flags,
+      so their links are on `encLong fl` nouns.
+    - **P2, `+ska-cole-update`.**  `+ska-poke` ends with `(ska-cole-update lon ~(key by
+      new-code) hot)`: the new `cole` reads the new bells, their `seek`, and the hot
+      rings.  `anaArm` makes the new jets state as `jetsOf j reg'` from the registrations
+      only, so it is not the pill.  Restated: `anaArmP` with `jetsOfP : H → J → R → LongB
+      → LongB → J` (old and new table), and `AnaHyp` for it (`anaHyp_of_armP`, same
+      proof); `gap_of` then applies with it, `gap_of_comp` does not.
+    - **P3, the fuel (M9).**  The analysis link (`ska_poke_ana_iff_pill`) is an iff with
+      `∃ n`; `anaArm` takes the fuel `fuel s f L j`.  The link is stated with the fuel as
+      a hypothesis-free choice (`FuelOK`: the model at the chosen fuel answers whenever
+      it answers at some fuel), which `anaFuel` of `CgHalts` meets where
+      `skaPoke_fuel_le` holds.
+    *The branches of the inner `+poke`* (`ipokeBat`, 1,022 cells; after the validation
+    push `ipokeB`, the dispatch `ipokeR`, 1,001 cells): `%jets` 298 cells, `%fast` 288,
+    `%full` 272, `%dire` 122.  The `%full` branch calls, in order: `+ska-poke` (arm `20`
+    of `cr` axis `511`, `ana`, under `~>  %ska`, 1,390 cells; analysis part linked,
+    `spRest` not), `~(key by jets-hot)` (hoon.hoon), `~(get by call.cole)`,
+    `~(has by jets-hot)` (the jetted-root test), `~(put by)` (the `%jsf` straight),
+    `+scc-of` (arm `96127` of `cr` axis `63`, 409 cells, not linked), `+compiled-mono`
+    (arm `10` of `cr` axis `3`, 115 cells, not linked; it calls `+compile-unary`),
+    `+optimize` (arm `2941`, linked on `FragX`, track H).  `+compiled-nary` (107 cells,
+    not linked) is on the `%dire` path only.
