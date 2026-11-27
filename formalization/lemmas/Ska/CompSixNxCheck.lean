@@ -24,6 +24,10 @@ In phases S and K every clause holds on every run.  In F (and L into F)
 `RunOKLS` as it stands (`grow`, `front`) is false there, a finding for F.
 The candidates with the real need in place of `nexU` fail (`tallyReal`).
 
+`tagTally`: the tag clause `TagLS` (`CompSixNxS.lean`) that phase S asks of
+its branches holds on the 7 branches and the 5,145 nomms of `all6` under
+the goals with no entry (123,648 runs, 27,168 of them make proxies).
+
 The semantic clause, through the interpreter: `semU all6`, the whole-subject
 code made when every parent reads the UNWRAPPED need of a `%6` under
 `%next` (`finishLUCU`, `CompSixNxRunU.lean`), agrees with `+mink` on all
@@ -153,6 +157,30 @@ def semU (nms : List Nomm) : Nat × Nat × Nat × Nat :=
     | Option.none => (a + 1, b, c, d)) (0, 0, 0, 0)
 
 #guard semU all6 == (5145, 5145, 123480, 123480)
+
+/-! ## The tag clause of the branches (`TagLS`, `CompSixNxS.lean`) -/
+
+/-- Under a goal with no entry, in region `[7]`: every key the run adds to
+`cond` has a tag with the region as a suffix (`CondTag`). -/
+def tagOne (nm : Nomm) (s : Sure LS) (th : Jmp) (g0 : Gen FM) : Option Bool :=
+  (runLC envR Option.none nm (CGoalL.next (ofSure s) th) [7] g0).map fun (_, g1) =>
+    (HoonMapKeys.keys g1.cond).all fun k => match HoonMap.get g1.cond k with
+      | some (_, t) => (match HoonMap.get g0.cond k with | some (_, t') => t' == t | _ => false) || [7].isSuffixOf t
+      | Option.none => true
+
+/-- `(runs, model fails, CondTag fails, runs whose cond grew)`. -/
+def tagTally (nms : List Nomm) : Nat × Nat × Nat × Nat :=
+  let rs := nms.flatMap fun nm => LSXCheck.sures.flatMap fun s => LSXCheck.jumps.flatMap fun th =>
+    statesH.map fun g => (tagOne nm s th g,
+      (runLC envR Option.none nm (CGoalL.next (ofSure s) th) [7] g).map fun (_, g1) =>
+        (HoonMapKeys.keys g1.cond).length)
+  (rs.length, (rs.filter (·.1.isNone)).length, (rs.filter (·.1 == some false)).length,
+    (rs.filter fun x => x.2.getD 0 != 0).length)
+
+-- The 7 branches and the 5,145 nomms of `all6` under the 6 goals with no
+-- entry, 2 jumps, 2 states: 123,648 runs, `cond` grows on 27,168 of them,
+-- and no key is outside the region.
+#guard tagTally (brs ++ all6) == (123648, 0, 0, 27168)
 
 end SixNxCheck
 end Comp
