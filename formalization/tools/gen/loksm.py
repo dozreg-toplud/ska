@@ -206,7 +206,8 @@ for n in copy:
 for n in COUNTS:
     assert n in observed, ('declaration left the closure', n)
 
-# Copies of this track's `callLBM_run` and `lokSM_direct` (CompDirectMCal.lean)
+# Copies of this track's `callLBM_run`, `lokSM_direct` (CompDirectMCal.lean) and
+# `tailP_done` (CompDirectMTailP.lean)
 # for a `p` that meets `LOKSFM` (so may itself hold a direct call): the run of
 # `p` is under `%next (lazy-from-reg sub-pes)`, a flag-free goal with no entry.
 PATCHES = [
@@ -221,6 +222,12 @@ PATCHES = [
          '(Sp : LOKSFM (S := S) (Map := Map) lib N env P fb p)', 1),
         ('    rw [runLCM_true env hpd] at hp\n', '', 1),
         ('callLBM_run lib env hring hned hNf hNt Sp hpd hc6', 'callLBM_runM lib env hring hned hNf hNt Sp hc6', 1)]),
+    ('tailP_done', 'tailP_doneM', [
+        ('(Sp : LOKS (S := S) (Map := Map) false lib N env P fb p) (hpd : p.noDirect = true)',
+         '(Sp : LOKSFM (S := S) (Map := Map) lib N env P fb p)', 1),
+        ('  rw [runLCM_true env hpd] at hp\n', '', 1),
+        ("(L := ofSure (lazyReg gA.re)) (th := jmp0 o') hcount",
+         "(L := ofSure (lazyReg gA.re)) (th := jmp0 o') (Or.inr e3) hcount", 1)]),
 ]
 for src, dst, subs in PATCHES:
     text = decls[src][2]
