@@ -7,7 +7,8 @@ import lemmas.Ska.RawInvATX
 `readsKeep_of`: `ReadsKeep` (`OptLinkTotalN.lean`) for the passes of the
 Hoon at `DInvR`, from the per-pass facts of `OptLinkTotalReads.lean`
 (`hops_reads`, `rub_reads`, `mid_reads`, `trim_reads`, `dead_reads`), given
-**`AliasReadsN`**: the model of `+alias` keeps `ReadsIn N` (open).
+**`AliasReadsN`**: the model of `+alias` keeps `ReadsIn N` (proved:
+`aliasReadsN`, `OptLinkTotalAvail.lean`).
 
 **`gateTotalN_of`**: track D's `GateTotalN` (`RawInvStX.lean`), given
 `AliasReadsN`.  **`opt_total_finishLFX'`**, **`opt_total_finishLUX'`**: the
@@ -28,7 +29,7 @@ set_option linter.unusedSectionVars false
 section
 variable {Map : Type → Type} [HoonMap Map] [MapKeys Map]
 
-/-- **`+alias` keeps `ReadsIn N`** (open): on blocks with `DInvR`, `TopoInvR`
+/-- **`+alias` keeps `ReadsIn N`** (proved: `aliasReadsN`, `OptLinkTotalAvail.lean`): on blocks with `DInvR`, `TopoInvR`
 and `ReadsIn N`, the output of the model at `N` has `ReadsIn N`. -/
 def AliasReadsN (Map : Type → Type) [HoonMap Map] [MapKeys Map] (pick : List Nat → Nat) : Prop :=
   ∀ N (bl : Map Blob) topo rev f bl', DInvR bl → TopoInvR bl topo rev → ReadsIn N bl →
