@@ -1,4 +1,4 @@
-# LEDGER: what `Full` rests on (track G, 2026-11-27, eighth pass)
+# LEDGER: what `Full` rests on (track G, 2026-11-27, ninth pass)
 
 `Full` (`core/Statement.lean`) is proved by `Assembly.full_of` from one
 structure, `Assembly.Gap lib pk InvC`, with eight fields.  This file traces
@@ -17,7 +17,58 @@ pass") unless marked *not checked*.  The seventh pass is at base c9f611e (digest
 are checked in `AuditGlue.lean` (section "seventh pass").  The eighth pass is at
 base eb51715 (digest [282]); track G's new names are checked in `AuditGlue.lean`
 (section "eighth pass"); names of other tracks from digest [273] to [282] are
-*not checked here* (taken from the digest).
+*not checked here* (taken from the digest).  The ninth pass is at base 776fe98
+(digest [292]); track G's new names are checked in `AuditGlue.lean` (section
+"ninth pass"); names of other tracks from digest [283] to [295] are *not
+checked here* (taken from the digest and the coordinator).
+
+READ FIRST (ninth pass, base 776fe98, digest [283] to [295]):
+- `rawEntry` WITH CALLS (2.c), `GuardMonoC`: the run-level induction is
+  redone over `InvA` as `KPA` (`Glue/GuardCallsA.lean`,
+  `Glue/GuardCallsD.lean`): stages `(K, bo, re)`, labels `FL` (below `bo`,
+  no annotation) kept along stages, lazy labels `LzL`, lifting lemmas
+  `KPA.emit'` / `KPA.addOps'` (the old side condition `BlockOK` plus `FL`
+  targets; `+add-ops` only at an `FL` label, so never at a split block).
+  PROVED: `kpa_monoBlocks` (from `KerfA`), **`kpa_callDM`** (the direct
+  call, from `RunA` of its two parts and `KerfA`), `+copy`, `+past`,
+  `runA_top`.  OPEN: `KerfA` (`+kern` in the middle of a run) and `RunA` of
+  `runLCM` on the class (the other arms), then the final passes.  CHECKED
+  (`Glue/GuardCallsCheck.lean`): `BlocksOKA` (all blocks, the greatest
+  annotation) holds at the end of the run, after `+kerf` and on the finished
+  code of the seven `CompDirectMCheck` calls (7 of 7) and of one nomm in 8 of
+  `enumDX` (990 of 990): 0 failures at every stage, so `CelAnn` survives
+  `+kerf` and `+to-straight` there; the whole `enumDX` does not finish within
+  the 900 s cap.
+- D's leaves (coordinator, [293]): `ArmsL.cons` and `ArmsL.n10` are FALSE
+  as stated (`LR` assumes only `IL`, which admits two bonds at one label),
+  so `liveRun_plainOf` was vacuous; true forms `LRL` (`LR` plus `LG`:
+  `LabUniq`, entries below `bo`), `ArmsLL`, `liveRun_plainOfL`,
+  `liveRun_plain_of_specs` (from `SplitSpecL`, `IntoSpecL`: checked, not
+  proved); `labRun_plain`, `liveRun_n5`, `liveRun_n2` proved.  `OptInMono`,
+  `ReadsInMono`, `OptInNary`, `ReadsInNary` are OWED BY TRACK D in the `LRL`
+  form, on code with calls and no `%6`, as `Glue/GuardCalls.lean` states
+  them (kept stable).  The `+copy` question (two bonds at one label) is
+  CLOSED by check: 0 failures at every copy of 309,850 runs with `%6` and
+  hints.
+- M17: the author APPROVED the no-cull fix of the pass loop of `+analyze`
+  ([286] to [289], no measurable benchmark effect); track F applies it on
+  its branch with a new pill (793,550 bytes, sha256 03d6233e...).  PENDING:
+  until it merges, `halting` stays false of the pill on integration.
+- `InvBS` as stated is FALSE (track F, `invBS_false`: it quantifies over
+  every `InvB` state); the truthful leaf is `InvBSR` (reached states).
+  `InlPill`: track Q since [286]; every branch of `+inlined` is linked
+  (`inl_pill_gate`), `InlPill` itself still needs (a) `D.inl` tied to the
+  pill (P), (b) a fuel bound for `inlinedM`, (c) `SccQ` beyond the hit path
+  of `+scc-of`, (d) P's `CacheGood.inlKeys` strengthened to `InlCoh`.
+- K: `cu_gate_dir_sccH` (nesting closed by height, new hypothesis `HtScc`
+  and lower callees); P: `PGood3` (= `PGood2` + `VarsKeys`), flags closed on
+  the model (`flagsOf_poke`, `loopLinkAt_flagsOf` from `SccsLeafAt`,
+  `LoopRunAt`, `LoopTotal`; needs `PGood4`); A: `+run-shape` modelled (683
+  `#guard`s), 5 of 10 cases linked; J: `RegGBT` (runs under `%next
+  (lazy-from-reg r)`), 17 of 39; C: `RunOKGen` complete as a definition, the
+  top proved in it (`finishLUC_contractGD`), famC failures a harness
+  artifact; I: soft calls MODELLED (`runLCS`, `finishLFCS`, 65 of 65), M20
+  reduced to the pill step on soft members; Q: `+tarjan` since [291].
 
 READ FIRST (eighth pass, base eb51715, digest [273] to [282]):
 - `rawEntry` WITH CALLS (2.c): the path guard is done.  `entryOK_ofK`
@@ -349,7 +400,7 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
 | `rawMono`, `rawNary` | PROVED | `rawMonoD_calls`, `rawNaryD_calls` | done |
 | `rawOptIn` | LEAF | `OptInMono S Map FM`, `OptInNary S Map FN` (`rawOptIn_of`); PROVED on `FragX` (`optInMono_fragX`, `optInNary_fragX`) | D |
 | `optRef` | LEAF | `OptTotalMono S FM`, `OptTotalNary S FN` + `hpill` (`optRef_of_total`); PROVED on `FragX` (`optTotalMono_fragX`, `optTotalNary_fragX`); `hinj` PROVED (track P's `Compiler.straight_toNoun_inj`) | H (input side D), P (`hpill` = `OptLink`, restated `OptLinkOn`) |
-| `rawEntry` | LEAF | `EntryMono S Map lib FM`, `EntryNary S Map lib FN` (`rawEntry_of`); PROVED on `FragX` with NO leaf (`guardFinalU`, `guardFinalF`, hence `guardMonoX`, `guardNaryX`, `rawEntry_fragX`; `compHyp_of_fragX₃`; generic `entryOK_of`; 2.c); with calls: `entryMono_of` / `entryNary_of` from `OptInMono`/`-Nary` (D), `ReadsInMono`/`-Nary` (D), `GuardMonoC`/`-NaryC` (G; `mtl_kpa` done, the other arms over `InvA` open); general `entryOK_ofK` | G, D |
+| `rawEntry` | LEAF | `EntryMono S Map lib FM`, `EntryNary S Map lib FN` (`rawEntry_of`); PROVED on `FragX` with NO leaf (`guardFinalU`, `guardFinalF`, hence `guardMonoX`, `guardNaryX`, `rawEntry_fragX`; `compHyp_of_fragX₃`; generic `entryOK_of`; 2.c); with calls: `entryMono_of` / `entryNary_of` from `OptInMono`/`-Nary` (D), `ReadsInMono`/`-Nary` (D), `GuardMonoC`/`-NaryC` (G; `mtl_kpa`, `kpa_monoBlocks`, `kpa_callDM` over `InvA` (`KPA`); `KerfA` and `RunA` of the other arms open); general `entryOK_ofK` | G, D |
 | `refMono`, `refNary` | OPEN | pill link at `finishLUCM` / `finishLFC` | A, I, K |
 | `inFragM`, `inFragN` | OPEN, FALSE today | every compiled nomm in `MonoCalls` / `NaryCalls` | C, J, K |
 | `inlAnnot` | model half PROVED (`inlAnnot_of`), from two LEAVES | `InlPill` (pill half: `D.inl` is `inlinedM`), `InvBS` (the analysis gives `CodeOKS`); 2.e | none, none |
@@ -593,6 +644,41 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
       Not done: `monoBlocks`, `callDM`, the other arms over `InvA`, the
       final passes (`+kerf`, `+to-straight` renaming keeps `CelAnn` along
       `RenOK`).
+    NINTH PASS (`Glue/GuardCallsA.lean`, `Glue/GuardCallsD.lean`,
+    `Glue/GuardCallsCheck.lean`).
+    - `KPA K0 b0 r0 P m`: from `InvA K g` at a stage extending the base
+      `(K0, b0, r0)`, every run of `m` ends in `InvA K' g'` at a stage
+      extending the start (`XB`: `bo`, `re` grow, `K'` agrees with `K`
+      below the old `bo`), with `P K' g'.bo g'.re` of the result.  Inputs
+      are stated at the base and stay true (`FL.up`, `LzL.up`, `GFL.up`);
+      `KPA.bind'` makes the end stage the base of what follows.
+    - The lifting lemmas: `KPA.emit'` (a block meeting the old `BlockOK`
+      whose jumps go to `FL` labels keeps `InvA`, `K` unchanged, the new
+      label `FL`), `KPA.addOps'` (a guarded list at an `FL` label: not a
+      split block, so its splits are `%cel`-guarded; a `CellOut` by `%cel`
+      survives the prefix), `KPA.same`, `KPA.re'`, `KPA.mtc` (from
+      `mtl_kpa`).  `kpa_copyNeed` is `kp_copyNeed` ported by script with
+      asserted replacements.  `+insert-hop` and `+fork` are not needed: on
+      code with no `%6` they are not reached (`Ska/CompSimBody.lean`).
+    - PROVED: `kpa_simpleNextL`, `kpa_monoBlocks` (from `KerfA`),
+      `kpa_copyLazyL` / `kpa_mergeForks` / `kpa_mergeBonds` / `kpa_copyL`,
+      `kpa_pastL`, `kpa_needOrd`, `kpa_callTail`, **`kpa_callDM`** (both the
+      drop and the `+mono-try-call` path, every goal with `GFL`, from `RunA`
+      of the two parts and `KerfA`), `invA_gen0`, `runA_top`.
+    - OPEN, in order: `KerfA` (`+kerf` in the middle of a run: `+kern`'s
+      `+add-ops` at the lazy's labels, `FL` by `LzL`, needs `kernNeed`'s
+      output guarded there, i.e. track D's `KI` mid-run); `RunA` of `runLCM
+      env true` on the class (cons, `%0`, `%1`, `%3`, `%4`, `%5`, `%7`,
+      `%10`, the indirect call `callL`: the old `GuardX` proofs over `KPA`);
+      then `+kerf` and `+to-straight` at the top.
+    - CHECKED: `blocksOKAB` (`BlocksOKA` on ALL blocks with the
+      greatest annotation, `GuardCallsCheck.lean`) at the three stages of
+      `finishLUCM envD` (end of the run, after `+kerf`, finished code):
+      0 failures on 7 of 7 `CompDirectMCheck` calls and 990 of 990
+      (`enumDX8`, one nomm in 8 of `enumDX`, `#guard`ed); the full 7,920
+      timed out at 900 s.  So the run-level target of `RunA` / `runA_top`
+      is true there, and the final passes keep the annotation (step 4:
+      the renaming of `+to-straight` maps it, no counterexample).
 2.d `optRef`: see the table; with calls the input side of track H's
     totality (`opt_total_*` need `FragX` because the alias pass reads only
     call-free blocks) is open.
@@ -638,8 +724,9 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
       `inlinedM_annot` (induction on the fuel = the callee chain; no
       measure, no use of `calls`, `hot`, `single` or the size test);
       `inlAnnot_of`: the field `inlAnnot` from two LEAVES:
-      - `InlPill lib D` (the pill half, NO OWNER; a new track N is to be
-        briefed from the map below, [282]): on every `InvB` state
+      - `InlPill lib D` (the pill half; OWNER track Q since [286]: every
+        branch of `+inlined` linked, `inl_pill_gate`, [291]; left: (a) to
+        (d) of READ FIRST, ninth pass; the map below, [282]): on every `InvB` state
         `D.inl … b = some nm` gives `inlinedM (realOf long.code) calls hot
         single fuel b = some nm` for some fuel, `calls`, `hot`, `single`;
       - `InvBS M lib` (the analysis half; OWNER track F since [282], with a
@@ -924,7 +1011,12 @@ M16 (in the making). Hints: track J's `runLCH env snd mono` is a THIRD model
 M17. `halting` is FALSE of the current compiler (digest [265], section 3):
     the pass loop of `+analyze` does not end on `tools/hoon/takecycle.hoon`.
     `CgHalts`, `EvFrozen`, `FinPushes`, `Halts` are false.  A Hoon change
-    (the user's decision) is needed before `Full` can be proved.
+    (the user's decision) is needed before `Full` can be proved.  NINTH
+    PASS: the author APPROVED the no-cull fix ([286] to [289]: cull only
+    when stable; no measurable benchmark effect); track F applies it on its
+    branch (new pill 793,550 bytes, sha256 03d6233e..., `pillswitch` note,
+    model of the pass loop changed in place, then halting on the new loop).
+    PENDING, not done: until it merges, M17 stands on integration.
 M18. `PrintId` (track I's loop theorems) rested on a misreading: `!@` takes
     its FIRST branch when the wing is MISSING (`desk/sys/hoon.hoon` line
     10132), so with `comp-verb` not defined `print-comp` is `same`
@@ -953,6 +1045,9 @@ M20 (eighth pass, track I [281]). `runLC` / `runLCM` do NOT cover SOFT
    (eighth pass): `+run-shape` (3,284 cells, the member compile of
    `+compile-scc-in` in the modes `%must` / `%may`; no model, no link):
    track A since [273]; and the soft calls the model lacks (M20, I).
+   NINTH PASS: `+tarjan` (`SccsLeafAt`, the miss path of `+scc-of`, the fuel
+   bound of `inlinedM`): track Q since [291]; the soft members in the pill
+   (`+soft-done`, `+soft-emit`, `mem_done_stepS`, `NM` decoding): track I.
 2. `answers` / `RootAnswers` (2.h, 3.4): TOTALITY of the compile.  The
    sweep loop ends under `Ranked c` (`loop_total`); `Ranked` of the real
    member compile is argued, not proved (I); then totality of `+scc-of`,
@@ -962,12 +1057,14 @@ M20 (eighth pass, track I [281]). `runLC` / `runLCM` do NOT cover SOFT
    `NaryCalls`; missing `%10`, `%11` (J, Q: M16), `%12`, `%mean`, memo
    keys, `%6` below the top (C: phase F needs a new relation), baking.
    Tracks C, J, K, Q.
-4. `OptInMono` / `OptInNary` and `OptTotalMono` / `OptTotalNary` on the
-   classes with calls (2.c, 2.d): track D (`ArmsL` = `n5`, `cons`, `n10`,
-   `n2` left), track H's input side.
-5. `CgHalts` (3.1): FALSE of the current compiler (M17); needs a Hoon
-   change first (the user's decision), then `EvFrozen` for the new loop
-   (track F).
+4. `OptInMono` / `OptInNary`, `ReadsInMono` / `ReadsInNary` and
+   `OptTotalMono` / `OptTotalNary` on the classes with calls (2.c, 2.d):
+   track D in the `LRL` form (`ArmsL.cons` / `.n10` FALSE as stated, [293];
+   `liveRun_plain_of_specs` from `SplitSpecL`, `IntoSpecL`), track H's
+   input side.  `GuardMonoC` (2.c): track G (`KerfA`, `RunA`).
+5. `CgHalts` (3.1): FALSE of the current compiler (M17); the Hoon change
+   is APPROVED and being applied on track F's branch (PENDING), then
+   `EvFrozen` for the new loop (track F).
 6. `pokeModel` (1.2): `OptLinkOn`, `JetRootLinkR`, `SccImage`, `SpRestAt`
    (1,120 cells), `PokeReachEnc`, the image of `enc` with M12: track P.
 7. `GuardFinalU` / `GuardFinalF` (2.c): CLOSED in the sixth pass
@@ -1011,9 +1108,12 @@ M20 (eighth pass, track I [281]). `runLC` / `runLCM` do NOT cover SOFT
 14. M16 (hints, `runLCH`): J, Q, G; Q's `HintSound` derived from the
     table (`hintSound_of_tab`, [275]).
 15. `PrintId` (1.4, M18): CLOSED (`printId_pill`, track I).
-16. M20 (soft calls not in `runLC`, [281]): track I.
+16. M20 (soft calls not in `runLC`, [281]): track I; the model now has them
+    (`runLCS`, `finishLFCS`, [288], [294]); the pill step on soft members is
+    left.
 
-Leaves with NO owner: 2.e `InlPill` (`InvBS` is track F's since [282]), 2.h `answers` (totality beyond I's
+Leaves with NO owner (ninth pass: `InlPill` is track Q's since [286];
+`InvBS` is track F's and FALSE as stated, `InvBSR` its true form): 2.h `answers` (totality beyond I's
 loop), `stable`, `jetRoot`, `jets`, `fast`, 3.3 `BakeEnds`, 3.4
 `RootAnswers`, 7.2 and 8 (four format leaves).  Taken in the fourth pass:
 2.c `GuardMonoX`, `GuardNaryX` (track G).  M5 is track A's since

@@ -1125,6 +1125,9 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Glue/EntryPathCheck.lean` | Track G (Gaps 22 (j)): executable checks of `CelGuardP` (`celGuardPB`) and `CelAnn` (`celAnnB`, the greatest annotation by a fixed point) on raw and optimized code (`optF`: `optimizeF 30` on `Opt.LM`): the seven calls of `CompDirectMCheck` (`dmCases`), `enumDX` (`toDirect`: `enumCX` with direct calls), `enumCX`; `EntryOK` along the path on `dmCases` raw and optimized. |
 | `Glue/GuardCalls.lean` | Track G (Gaps 22 (j)): leaves `GuardMonoC`, `GuardNaryC` (G), `ReadsInMono`, `ReadsInNary` (D); `finishLUCM_nargs1`, **`entryMono_of`**, **`entryNary_of`**; `BlocksOKA`, `noPoison_of_blocksOKA`, `celAnn_of_blocksOKA`, `blocksOKA_of_blocksOK`, `celAnn_of_celGuard`, `guardMonoC_fragX`. |
 | `Glue/GuardCallsMono.lean` | Track G (Gaps 22 (j)): `InvA` (the run invariant with calls), `cellOut_mono`, `emitA`, `MtlPost`, `mtl_tail`, `invA_re`, **`mtl_kpa`** (`+mono-try-call` keeps `InvA`). |
+| `Glue/GuardCallsA.lean` | Track G (Gaps 22 (k)): `FL`, `XB` (stages), `LzL` (lazy labels), `GFL`, `invA_congr`, `KPA` with `pure'`, `bind'`, `mono`, `fail`, `crash`, `ite'`, `same`, `re'`, the lifting lemmas `emit'`, `addOps'`, `mtc`; `kpa_simpleNextL`, `KerfA` (open), **`kpa_monoBlocks`**. |
+| `Glue/GuardCallsD.lean` | Track G (Gaps 22 (k)): `kpa_copyNeed` (ported by script), `FkL`, `BdL`, `kpa_copyLazyL`, `kpa_mergeForks`, `kpa_mergeBonds`, `RN`, `kpa_copyL`, `kpa_setTag`, `kpa_pastL`, `kpa_needOrd`, `RunA`, `kpa_callTail`, **`kpa_callDM`** (the direct call keeps `InvA`), `invA_gen0`, `runA_top`. |
+| `Glue/GuardCallsCheck.lean` | Track G (Gaps 22 (k)): `blocksOKAB` (`BlocksOKA` with the greatest annotation on all blocks), `stages`, `tallyS`: the end of the run, after `+kerf`, and the finished code of the seven `CompDirectMCheck` calls and of `enumDX`. |
 | `Glue/GuardFinalTop.lean` | Track G (Gaps 22 (e)): **`guardFinalU`**, **`guardFinalF`** (the two final-pass leaves are theorems), `guardMonoX`, `guardNaryX`, **`compHyp_of_fragX₃`** (`CompHyp` on `FragX` from `CompRestOE` alone, no guard leaf); two `example`s on `[6 [0 2] [6 [0 6] [0 3] [0 1]] [1 0]]`. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
@@ -6087,7 +6090,16 @@ import only its theorems.  So:
     `entryNary_of`, `Glue/GuardCalls.lean`); the run-level induction is started over the
     invariant `InvA` (labels and jumps below `bo`, `BlocksOKA`): `mtl_kpa`
     (`Glue/GuardCallsMono.lean`, `+mono-try-call`).  Not done: every leaf of `LEDGER.md`
-    section 10; the other arms over `InvA`.
+    section 10; the other arms over `InvA`.  (k) Ninth pass: the arms over `InvA` as
+    `KPA` (`Glue/GuardCallsA.lean`: stages `(K, bo, re)`, `FL` labels, lifting lemmas
+    `KPA.emit'`, `KPA.addOps'`, `KPA.mtc`; `Glue/GuardCallsD.lean`: `+copy`, `+past`,
+    `kpa_monoBlocks`, **`kpa_callDM`** from `RunA` of the two parts and `KerfA`,
+    `runA_top`).  Checked (`Glue/GuardCallsCheck.lean`): `BlocksOKA` with the greatest annotation at the end of the run, after `+kerf` and on the
+    finished code: 0 failures on the 7 `CompDirectMCheck` calls and on 990 `enumDX` nomms (one
+    in 8).  Not done: `KerfA`
+    (`+kern` mid-run, track D's `KI` there), `RunA` of the other arms of `runLCM`, the
+    final passes; LEDGER ninth pass (D's `LRL` forms, M17 pending, `InvBSR`, `InlPill`
+    to Q).
 23. **The poke on states: `enc` and the `%full` branch** (track P, 2026-11-27,
     `Ska/PokeEnc.lean`, `Compiler/PokeLink.lean`, `Compiler/PokeLinkFull.lean`, `Compiler/PokeLinkOpt.lean`,
     `Compiler/PokeLinkScc.lean`, `Compiler/PokeLinkJet.lean`, `Compiler/PokeLinkReach.lean`,
