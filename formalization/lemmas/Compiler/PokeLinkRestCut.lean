@@ -33,17 +33,33 @@ namespace Compiler
 open Nock Pill
 
 -- BEGIN sprestcut
-/-- Push 0 of `spRest` (`%8`): the gate `dat`, 101 cells. -/
+/-- The bunt of the sample of the gate of push 0. -/
+def srDatBunt : Noun :=
+  (C (C (A 1) (A 0)) (C (A 0) (A 0)))
+
+/-- The battery of the gate of push 0. -/
+def srDatBat : Noun :=
+  (C (A 8) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x7fffff)))) (C (A 9) (C (A 764) (C (A 10) (C (C (A 6) (C (A 0) (A 30))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 14))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 2))) (C (C (A 1) (A 1)) (C (A 1) (A 0))))) (C (C (A 8) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0xffffff)))) (C (A 9) (C (A 764) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 7) (C (C (A 9) (C (A 84) (C (A 0) (A 4095)))) (C (A 9) (C (A 10) (C (A 0) (A 1)))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 0x1ffea)) (C (A 0) (A 61)))) (C (A 0) (A 2))))))))))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 60))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 2))) (C (C (A 1) (A 1)) (C (A 1) (A 0))))) (C (C (A 1) (A 0)) (C (C (A 1) (A 0)) (C (A 0) (A 11)))))))) (C (A 0) (A 2)))))))
+
+/-- Push 0 of `spRest` (`%8`): the gate `dat`, 101 cells: a gate `[8 [1 bunt] [1 bat] [0 1]]`. -/
 def srDat : Noun :=
-  (C (A 8) (C (C (A 1) (C (C (A 1) (A 0)) (C (A 0) (A 0)))) (C (C (A 1) (C (A 8) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x7fffff)))) (C (A 9) (C (A 764) (C (A 10) (C (C (A 6) (C (A 0) (A 30))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 14))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 2))) (C (C (A 1) (A 1)) (C (A 1) (A 0))))) (C (C (A 8) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0xffffff)))) (C (A 9) (C (A 764) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 7) (C (C (A 9) (C (A 84) (C (A 0) (A 4095)))) (C (A 9) (C (A 10) (C (A 0) (A 1)))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 0x1ffea)) (C (A 0) (A 61)))) (C (A 0) (A 2))))))))))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 60))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 2))) (C (C (A 1) (A 1)) (C (A 1) (A 0))))) (C (C (A 1) (A 0)) (C (C (A 1) (A 0)) (C (A 0) (A 11)))))))) (C (A 0) (A 2)))))))) (C (A 0) (A 1)))))
+  C (A 8) (C (C (A 1) srDatBunt) (C (C (A 1) srDatBat) (C (A 0) (A 1))))
 
 /-- Push 1 of `spRest` (`%8`): `root-bell`, 3 cells. -/
 def srRoot : Noun :=
   (C (C (A 0) (A 118)) (C (A 0) (A 4089)))
 
-/-- Push 2 of `spRest` (`%8`): the gate `jetted`, 86 cells. -/
+/-- The bunt of the sample of the gate of push 2. -/
+def srJetBunt : Noun :=
+  (C (C (A 1) (A 0)) (C (A 0) (A 0)))
+
+/-- The battery of the gate of push 2. -/
+def srJetBat : Noun :=
+  (C (A 6) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x1ffffff)))) (C (A 9) (C (A 3061) (C (A 10) (C (C (A 6) (C (A 0) (A 0x7ffd3e))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 14))) (C (A 0) (A 2)))))))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 0x57dc) (C (A 0) (A 8191)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 14)) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 8) (C (C (A 0) (A 30)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 14))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 2)))) (C (C (A 1) (A 0)) (C (A 0) (A 190))))))))) (C (C (A 0) (A 8182)) (C (C (A 0) (A 0x7fde)) (C (A 0) (A 0xfffb))))))) (C (A 0) (A 2)))))))) (C (A 3) (C (A 0) (A 2))))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))))))
+
+/-- Push 2 of `spRest` (`%8`): the gate `jetted`, 86 cells: a gate `[8 [1 bunt] [1 bat] [0 1]]`. -/
 def srJet : Noun :=
-  (C (A 8) (C (C (A 1) (C (C (A 1) (A 0)) (C (A 0) (A 0)))) (C (C (A 1) (C (A 6) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x1ffffff)))) (C (A 9) (C (A 3061) (C (A 10) (C (C (A 6) (C (A 0) (A 0x7ffd3e))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 14))) (C (A 0) (A 2)))))))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 0x57dc) (C (A 0) (A 8191)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 14)) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 8) (C (C (A 0) (A 30)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 14))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 2)))) (C (C (A 1) (A 0)) (C (A 0) (A 190))))))))) (C (C (A 0) (A 8182)) (C (C (A 0) (A 0x7fde)) (C (A 0) (A 0xfffb))))))) (C (A 0) (A 2)))))))) (C (A 3) (C (A 0) (A 2))))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))))))) (C (A 0) (A 1)))))
+  C (A 8) (C (C (A 1) srJetBunt) (C (C (A 1) srJetBat) (C (A 0) (A 1))))
 
 /-- Push 3 of `spRest` (`%7`): the `[0 1]` of `=^  [baked vars.lon]`, 1 cells. -/
 def srBakeId : Noun :=

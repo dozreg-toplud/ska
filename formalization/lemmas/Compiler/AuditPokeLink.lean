@@ -4,6 +4,7 @@ import lemmas.Compiler.PokeLinkScc
 import lemmas.Compiler.PokeLinkSka
 import lemmas.Compiler.PokeLinkGood
 import lemmas.Compiler.PokeLinkSccHit
+import lemmas.Compiler.PokeLinkRest
 
 /-! # Audit of track P: `enc` and the `%full` branch of `+poke` -/
 
@@ -102,3 +103,16 @@ open Formalization Formalization.Compiler
 #print axioms sccBat_run
 #print axioms sccG_hit
 #print axioms sccImage_of_miss
+#print axioms spRest_cut
+#print axioms pokeDat_eq
+#print axioms spRest_three
+#print axioms srK3_run
+#print axioms srK7_run
+#print axioms srK8_run
+#print axioms spRest_of_parts
+#check @DatLinkAt
+#check @JetLinkAt
+#check @BakeLinkAt
+#check @NewCodeLinkAt
+#check @LoopLinkAt
+#check @TailLinkAt

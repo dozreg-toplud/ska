@@ -46,8 +46,23 @@ assert len(parts) == len(NAMES), len(parts)
 out = []
 for i, (op, p) in enumerate(parts):
     print(f'{i:2} op{op} {NAMES[i]:9} cells {cells(p)}')
-    out.append(f'/-- Push {i} of `spRest` (`%{op}`): {HOON[i]}, {cells(p)} cells. -/\n'
-               f'def {NAMES[i]} : Noun :=\n  {lean(p)}')
+    q = norm(p)
+    gate = None
+    if q[0] == 'C' and norm(q[1]) == ('A', 8):
+        r = norm(q[2]); bu = norm(r[1]); rr = norm(r[2])
+        if bu[0] == 'C' and norm(bu[1]) == ('A', 1) and rr[0] == 'C' and eqn(rr[2], ('C', ('A', 0), ('A', 1))):
+            ba = norm(rr[1])
+            if ba[0] == 'C' and norm(ba[1]) == ('A', 1):
+                gate = (bu[2], ba[2])
+    if gate:
+        nm = NAMES[i]
+        out.append(f'/-- The bunt of the sample of the gate of push {i}. -/\ndef {nm}Bunt : Noun :=\n  {lean(gate[0])}')
+        out.append(f'/-- The battery of the gate of push {i}. -/\ndef {nm}Bat : Noun :=\n  {lean(gate[1])}')
+        out.append(f'/-- Push {i} of `spRest` (`%{op}`): {HOON[i]}, {cells(p)} cells: a gate `[8 [1 bunt] [1 bat] [0 1]]`. -/\n'
+                   f'def {nm} : Noun :=\n  C (A 8) (C (C (A 1) {nm}Bunt) (C (C (A 1) {nm}Bat) (C (A 0) (A 1))))')
+    else:
+        out.append(f'/-- Push {i} of `spRest` (`%{op}`): {HOON[i]}, {cells(p)} cells. -/\n'
+                   f'def {NAMES[i]} : Noun :=\n  {lean(p)}')
 print(f'   end srEnd cells {cells(n)}')
 out.append(f'/-- The end of `spRest`: `+ska-cole-update` and the product, {cells(n)} cells. -/\n'
            f'def srEnd : Noun :=\n  {lean(n)}')
