@@ -25,7 +25,12 @@
 #       dirty member is charged to the newest callee it owes its dirt to), the first position that
 #       differs falls (E: by inclusion of the sets, Ec: by their size);
 #   P2A some member at p falls or is culled by the start of p+2;
-#   P2D lex by DFS number of (entry, +dirty) between p and p+2, the first difference a fall.
+#   P2D lex by DFS number of (entry, +dirty) between p and p+2, the first difference a fall;
+#   N   (C on the model, PassMoves.lean) at every pass that went on with no start member falling or
+#       culled, some start member has at p+1 a callee that was neither a member nor a callee of a
+#       member at p (so not in the graph at p, the graph being closed under callees); NP the same
+#       at every pass with a visible push (a member at p+1 with a DFS number not at p), unless a
+#       start member fell or was culled.
 import re, sys, os
 src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'passmeasure-stab.py')).read()
 g = {}; exec(src.split("\nv = '-v'")[0], g)
@@ -71,7 +76,7 @@ def fall(cls): return runclass(*cls) not in ('none', None)
 def analyse(paths, verbose):
     c = {}
     def inc(k, n=1): c[k] = c.get(k, 0) + n
-    fails = {k: [] for k in ('T0', 'T1', 'T1d', 'T2', 'T6', 'T3same', 'T5', 'E', 'Ec', 'P2A', 'P2D')}
+    fails = {k: [] for k in ('T0', 'T1', 'T1d', 'T2', 'T6', 'T3same', 'T5', 'E', 'Ec', 'P2A', 'P2D', 'N', 'NP')}
     runs_m = []; runs_l = []; switches = []; tmax = [(0,)]
     for path in paths:
         for case, root, starts in loops_of(path):
@@ -106,6 +111,19 @@ def analyse(paths, verbose):
                         if not ran: fails['T1d'].append((case, root, p, mug))
                     if not fall(n[2]) and n[3] != m[3]:
                         sw[(root, mug, m[1])] = sw.get((root, mug, m[1]), 0) + 1
+                # N, NP: a pass that goes on with nothing falling gave a start member a new callee
+                movedN = any(M1.get(mug) is None or M1[mug][1] != m[1] or fall(M1[mug][2]) for mug, m in M0.items())
+                oldN = set(M0).union(*[set(m[3]) for m in M0.values()])
+                newk = [mug for mug, m in M0.items() if mug in M1 and M1[mug][1] == m[1]
+                        and any(k not in oldN for k in M1[mug][3])]
+                if not movedN:
+                    inc('N checked (no start member fell or was culled)')
+                    if not newk: fails['N'].append((case, root, p))
+                idx0 = {m[1] for m in M0.values()}
+                if any(n[1] not in idx0 for n in M1.values()):
+                    inc('NP checked (a visible push)')
+                    if not movedN and not newk: fails['NP'].append((case, root, p))
+                    if newk: inc('NP with a start member given a new callee')
                 # T6: every member at p+1 is reached from the root over callees among members
                 seen = {root}; q = [root]
                 while q:
