@@ -371,5 +371,87 @@ theorem runLC_n6_k (env : CallEnv) (msup : Option Nomm) (p q r : Nomm) (laz : La
   rw [e]
   simp only [Lazy.ofSure, sixNextLC_fork_free]
 
+/-- The noun of the goal of phase K after `+kerf`. -/
+theorem goalK_noun (pro out : Nat) :
+    (CGoalL.next (Lazy.ofSure (⟨Need.this pro, HoonSet.empty⟩ : Sure CSet)) (jmp0 out) : CGoalL CSet).toNoun
+      = C (A 0x7478656e) (C (C (C (C (A 0x73696874) (A pro)) (A 0)) (C (A 0) (A 0))) (C (A 0) (A out))) := by
+  rw [next_jmp0_noun, Lazy.toNoun_ofSure]
+  simp [lazyNoun, Sure.toNoun, Need.toNoun, Tag.this, HoonSet.toNoun_empty]
+
+/-- **Phase K** (`cr6K0`, `cr6K1`): `+kerf` of the goal (`comp_kerf_all`),
+the state put back, then `$` again on the goal `[%next (lazy-from-need
+this+pro) ~ out]`, given the link of that run. -/
+theorem cr6k_eq (h7 : slot? 7 ctx = some compK) (env : CallEnv) (msup : Option Nomm) (p q r : Nomm)
+    (laz : Lazy CSet) (th : Jmp) (region : List Nat) (x : GenRest) (g : Gen (TreapMap mugF))
+    (mono sup LEP : Noun) (hP : WalkP (mdP x) g.bo laz)
+    (hK : ∀ out pro g', kerf ⟨laz, th⟩ g = some ((out, pro), g') →
+      nock (crSubj mono (Nomm.n6 p q r).toNoun
+        (CGoalL.next (Lazy.ofSure (⟨Need.this pro, HoonSet.empty⟩ : Sure CSet)) (jmp0 out)).toNoun
+          (listNoun A region) sup
+        (compCore g' x ctx)) crDol
+      = (runLC (S := CSet) env msup (Nomm.n6 p q r)
+          (CGoalL.next (Lazy.ofSure ⟨Need.this pro, HoonSet.empty⟩) (jmp0 out)) region g').map
+          fun p => C p.1.goal.toNoun (genNoun p.2 x)) :
+    nock (C LEP (crSubj mono (Nomm.n6 p q r).toNoun (CGoalL.next laz th).toNoun (listNoun A region) sup
+      (compCore g x ctx))) cr6K0
+      = ((do
+          let (out, pro) ← kerf ⟨laz, th⟩
+          runLC env msup (Nomm.n6 p q r)
+            (CGoalL.next (Lazy.ofSure ⟨Need.this pro, HoonSet.empty⟩) (jmp0 out)) region :
+            CM (TreapMap mugF) (NextL CSet)) g).map
+          fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  obtain ⟨hc, hl, hm⟩ := comp_ctx_pill ctx h7
+  have h15 := cr_ctx15 h7
+  have hkf := comp_kerf_all hc hl hm x g ⟨laz, th⟩ hP
+  have hD := comp_kerf_at
+  simp only [compCore] at hkf
+  rw [bind_apply]
+  cases ek : kerf ⟨laz, th⟩ g with
+  | none =>
+    rw [ek] at hkf
+    simp only [Option.bind_none, Option.map_none]
+    simp only [crSubj, compCore, CGoalL.toNoun] at hkf ⊢
+    generalize comp.door = Dr at hD hkf ⊢
+    unfold cr6K0
+    simp [nock_exec, hD, comp_kerf_arm, hkf]
+  | some v =>
+    obtain ⟨⟨out, pro⟩, g'⟩ := v
+    rw [ek] at hkf
+    have hr := hK out pro g' ek
+    rw [goalK_noun] at hr
+    simp only [Option.bind_some, Option.map_some] at hkf ⊢
+    simp only [crSubj, compCore, CGoalL.toNoun] at hkf hr ⊢
+    generalize comp.door = Dr at hD hkf hr ⊢
+    unfold cr6K0 cr6K1
+    simp [nock_exec, hD, comp_kerf_arm, hkf, h15, ct_lfn_at, ct_lfn_arm, ct_lfn_gate, cr_bat_dol, hr]
+
+/-- **The head of `%6` on the way to phase K**: `lep` is `~` (given the
+Nock of `+leap`), `?^  lep` fails, `+none-equivalent` of the need with the
+bunt sure is `|`, and the test of `+kerf` holds (`cr6tk_eq`): `cr6K0` runs
+with `lep` pushed. -/
+theorem cr6k_head (h7 : slot? 7 ctx = some compK) (p q r : Nomm) (laz : Lazy CSet) (th : Jmp)
+    (region : List Nat) (x : GenRest) (hx : x.NoSoft) (g : Gen (TreapMap mugF)) (mono sup : Noun)
+    (hLp : nock (C lp6Bat (C (C laz.toNoun (C q.toNoun r.toNoun)) (compCore g x ctx))) lp6Bat = some (A 0))
+    (hne : Lazy.noneEquivalentL (Lazy.mk Sure.bunt laz.fork laz.bond) = false) (hkt : kerfTest q r laz = true) :
+    nock (crSubj mono (Nomm.n6 p q r).toNoun (CGoalL.next laz th).toNoun (listNoun A region) sup
+      (compCore g x ctx)) crDol
+      = nock (C (A 0) (crSubj mono (Nomm.n6 p q r).toNoun (CGoalL.next laz th).toNoun (listNoun A region) sup
+          (compCore g x ctx))) cr6K0 := by
+  have hD := lp6_at
+  have htk := cr6tk_eq h7 p q r laz th region x hx g mono sup (A 0)
+  rw [hkt] at htk
+  obtain ⟨s, fk, bd⟩ := laz
+  have hn := ne_all (Lazy.mk Sure.bunt fk bd)
+  simp only [Lazy.fork, Lazy.bond] at hne
+  rw [hne] at hn
+  simp only [CGoalL.toNoun, lazy_toNoun_mk] at hn hLp htk ⊢
+  simp only [Sure.toNoun, Sure.bunt, Need.toNoun, Tag.none, HoonSet.toNoun_empty] at hn
+  rw [Nomm.toNoun, cr_disp_n6, cr6_eq]
+  simp only [crSubj, compCore, Nomm.toNoun] at hLp htk ⊢
+  generalize comp.door = Dr at hD hLp htk ⊢
+  generalize s.toNoun = SN at hLp htk ⊢
+  unfold cr6Head cr6NoLep cr6Lep cr6T2 cr6KF
+  simp [nock_exec, hD, lp6_arm, hLp, h7, compK_ne, ne_arm, hn, htk, loob]
+
 end Compiler
 end Formalization
