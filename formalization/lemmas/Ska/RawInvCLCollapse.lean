@@ -233,6 +233,31 @@ theorem collapseWalk_prep {r o : Nat} {l : Lazy S} {g0 g1 : Comp.Gen Map} (hd : 
   walkLazy_prepD (R := RCol r) (D := fun y => y = r ∨ g0.re ≤ y) CSt.refl (fun _ _ _ h1 h2 => h1.trans h2) (fun _ _ _ h hy => rCol_mono h hy)
     (fun x s g g' h0 h => collapseGate_step hd hc0 x s g g' h0 h) h
 
+/-! ## Liveness through such a walk -/
+
+/-- A register the gate may read first is `r` once unproxied. -/
+theorem rCol_unproxy {r : Nat} {g : Comp.Gen Map} (hr : HoonMap.get g.cond r = Option.none) {x : Nat}
+    (h : RCol r g x) : unproxy g.cond x = r := by
+  rcases h with rfl | ⟨t, ht⟩
+  · exact unproxy_none hr
+  · simp [unproxy, ht]
+
+/-- **A register other than the walk's source, live after a walk whose ops
+read first only what unproxies to `R0`**, is live before it with the kills
+the unproxied ops define (`unpM_prepG`, `liveK_prepK`, `opsRF_ren_back`):
+the step of every walking arm (`+collapse-lazy-atom`, `+kern`). -/
+theorem liveK_walkR {R0 : Nat} {P : Nat → List Pole} {g g' : Comp.Gen Map} (hP : Prep P g.blocks g'.blocks)
+    (hc : ∀ x, x < g.re → HoonMap.get g'.cond x = HoonMap.get g.cond x)
+    (hR : ∀ k b, HoonMap.get g.blocks k = some b → BlobIn (· < g.re) b)
+    (hread : ∀ k x, OpsRF (P k) x → unproxy g'.cond x = R0) {K : Nat → Nat → Prop} {k y : Nat} (hy : y ≠ R0)
+    (h : LiveK (unpM g') K k y) :
+    LiveK (unpM g) (fun x z => K x z ∨ z ∈ defsOf ((P x).map (renPole (unproxy g'.cond)))) k y := by
+  have pU := unpM_prepG hP hc hR
+  refine (liveK_prepK pU (K' := fun x z => z ∈ defsOf ((P x).map (renPole (unproxy g'.cond)))) (fun _ _ h => h)
+    h).resolve_right fun ⟨k', hk'⟩ => ?_
+  obtain ⟨x, ex, hx⟩ := opsRF_ren_back _ hk'
+  exact hy (ex.symm.trans (hread k' x hx))
+
 end Raw
 end SkaModel
 end Formalization
