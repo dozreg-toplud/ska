@@ -148,6 +148,15 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
 * `passmeasure-cyc.py OUT.hoon` a period-3 %rec takeover designed as a true cycle; it returns in 2 passes, because
                     `fol-loop` analyses both branches of a %6 whatever its test (no dispatch on a known tag) and a
                     `%rec` target's product, patched by `+patch-prod`, depends on the target only through its precision
+* `passmeasure-take.py OUT.hoon x|q|r|s ARGS`, `batch DIR`, `batch2 DIR`, `--sum[-v] OUT.txt...` cores
+                    designed to make a persistent member (the root, constant subject) take a fresh callee
+                    forever by the `%rec` takeover at a site of constant subject (README Gaps 16): family X
+                    (32 cores, `batch`: two ages feed incomparable partial patterns of a formula slot) and A (34
+                    cores, `batch2`: complementary patterns fed across two tags); `--sum` per case: root passes,
+                    `%st` recurrence, pushes, re-pushes, takeovers, changes of the root's callee set (`-v`: the
+                    set per pass).  2026-11-27: all 66 returned, at most 10 passes, no `%st` recurrence, no
+                    re-push (a cons `[v v]` has the cape `[& &]`, so its member covers every subject of its tag;
+                    every pattern appears at the first read, when the registers are fresh)
 * `untidyin.hoon`   the pokes that could plant an untidy sock: `%fast` with data under a `|` and with a cape `[| |]`
                     returns and keeps both templates normalized (`[[& |] [bat 0]]`), `%fast` with a cell cape over an atom
                     and `%dire` with an untidy bell crash, and a `%full` poke then returns with tidy memo subjects (2026-11-27)
