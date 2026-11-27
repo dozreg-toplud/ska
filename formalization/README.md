@@ -612,6 +612,10 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/OptAliasPlain.lean` | **Plain single assignment**, `DefOnceR` (every register has at most one definition, a parameter or an op, dead fills included, in the blocks reachable from `0`), and the block invariant of the driver **`DInvR`** (`DInvT`, `DefFirst`, `NoLti`, `DefOnceR`), which implies `DInvS` and `FillFresh` (`dInvR_dInvS`, `defOnceB_of_R`, `fillFresh_of_R`) and is implied by single assignment over all blocks (`defOnceR_of_defOnce`: `DefOnce`, the definitions of the whole map distinct).  Why it rather than `DInvS` with `FillFresh` (header): a pass keeps it through the map of the places of definitions after to places before that the proofs of `DefOnceB` already build (`onceR_of_map`, `onceR_of_sub`), with no clause on dead fills, and raw `+comp` output then owes no statement about dead fills.  Every pass of the loop keeps it: **`rub_onceR`**, **`mid_onceR`**, **`trim_onceR`** (`filt_onceR`), **`dead_onceR`** (on `TopoOK`), **`hops_onceR`** (`hk_onceR`, `hk_site`: the chains of `HkSites`, disjoint by `hk_disj`), **`alias_onceR`** (`alias_site_op`).  The header gives the two ways a pass makes a dead fill of an ordinary `%imm` (a merge with a `[%bom ~]` block, a `%brn` on a known immediate that is no loobean turned into `%bom`), under which the invariant survives. |
 | `Ska/OptAliasPlainDriver.lean` | **`optimize_keeps_plain`**: `optimizeF` with the model of `+alias`, the real `+trim-trace-hints` and the model of `+switch-chains` keeps the code (`Keeps`) on blocks with `DInvR`, given `hpick` alone (`driverHypR_of`: every field of `DriverHyp` at `DInvR` and `TopoInvR`; `alias_fieldR`: `alias_onceB` with `FillFresh` from `DefOnceR`); **`optimize_keeps_plain_pickR`**: the passes of the Hoon (`pickR`), with no hypothesis but `DInvR` of the input blocks.  **`OptIn`**: the invariant raw `+comp` output owes, field by field with a one-line meaning each (`optIn_iff`: it is `DInvR`; `optimize_keeps_optIn`).  The witnesses of `OptAliasWitness.lean` violate it (`not_defOnceR_v`, `not_defOnceR_w`, `not_fillFresh_v`, `not_fillFresh_w`, `not_dInvR_v`, `not_dInvR_w`: register `2` is written by the `%inc` of block `0` and by the fill).  `ex_hops`, `ex_alias`: the two examples of the header of `OptAliasPlain.lean`, evaluated on `LM`. |
 | `Ska/OptAliasFresh.lean` | The driver under the weaker invariant **`DInvF`** = `DInvS` and `FillFresh` (`dInvF_of_R`: `DInvR` implies it; it allows several dead fills of one register).  **`fillFresh_of_map`**: a map of the places of definitions after to places before, reachable, injective for a fixed register, and taking a definition that counts to one that counts, carries `FillFresh` over under `DefOnceB`.  Every pass keeps it: **`rub_fresh`**, **`mid_fresh`** (the identity map), **`trim_fresh`**, **`dead_fresh`** (`SubPass`: labels, parameters and ends kept, a monotone part of each body, `filt_sub`, `dead_sub`; `sub_live`: a dead fill before stays one after), **`hops_fresh`** (`hk_fresh`, through `hk_site`, `hk_live`, `hk_disj`), and `alias_fillFresh`.  **`optimize_keeps_fresh`** (given `hpick`) and **`optimize_keeps_fresh_pickR`** (no hypothesis but `DInvF`), through `driverHypF_of` and `alias_fieldF`; `not_dInvF_v`, `not_dInvF_w`. |
+| `Ska/OptAliasPerm.lean` | The order of `pre` in `+alias` (track E, Gaps 15).  **`InfoEq`** (the units and `isCell` equal, `hedOf` and `telOf` with the same members, `isLoob ∨ loobImm` equal: what `InfoRel` fixes) and, up to it, **`loobC_joinReg`** (the class of `isLoob` of a join is the meet of the classes), `joinReg_congr`, `joinReg_comm`, `joinReg_assoc`, `joinReg_idem`, `joinRegE_eq`; the same for `joinInfoA` (`AInfoEq`) and `joinImmsA` (`ImmsEq`); `fold1_perm` (a fold over two permutations); **`aliasStart_perm`**, **`aliasStartImms_perm`**, **`aliasEdges_perm`**, **`paramInfo_perm`**, **`aliasPars_perm`**, `aliasPars_edges_perm` (related by `OptR`: both `none`, or both `some` and related); `perm_of_nodup`; `aliasStart_order` (a witness that equality fails). |
+| `Ska/OptAliasBrz.lean` | Invariants of the walk of `+alias` on any input: **`BrzInv`** (a `%brz` end of `new` has a test register whose facts in `info` exist and have no `hasImm`: `afin_brz`, `brzInv_block`, `brzInv_walk`, **`brzInv_loob`**), **`RevNodup`** of `rev` (`revNodup_walk`), both at every state (`aliasM_inv`); **`aliasM_noLti`** (no `%lti` in the result when the input has none, with no other hypothesis); `aliasBlock_walked`, `aliasBlock_dropped`. |
+| `Ska/OptAliasPickRoot.lean` | **`sawRel_root`**: a set noun related to a non-empty list by `SawRel` is `[pickR FinMap l L R]`, so the Hoon's `n.res` and `n.intersect` are `pickR FinMap` of the model's list; **`pickR_ext`** (the choice depends only on the members); **`infoRel_of_infoEq`** (`InfoRel N x` and `InfoEq x y` give `InfoRel N y`); `tapList_set_nodup` (the list of `~(tap in ...)` of a set has no duplicates). |
+| `Ska/AuditAliasE.lean` | `#print axioms` of the main theorems of track E. |
 | `Ska/OptBranch.lean` | `+remove-useless-branching` (`rubFin`, `removeUselessBranching`) and `rub_keepsR`: it keeps the code (`KeepsR`; `rub_keeps` of `OptArgs.lean` gives `Keeps`), with no hypothesis on the CFG.  A simulation on paths (`RubRel`, `rub_fwd`, `rub_bwd`, `rub_bwd_end`, `rub_reads`); `ReadsOK` is used where a `%clq` or `%brz` became a hop and so no longer reads its register. |
 | `Ska/OptHops.lean`, `Ska/OptMiddle.lean`, `Ska/OptDead.lean` | Models of `+remove-hops` (`hopSeg`, `hopChain`, `hopsStep`, `removeHops`), `+remove-empty-middle` (`rewriteJump`, `rewriteHop`, `mkSub`, `passArg`, `readersOf`, `removeEmptyMiddle`) and `+remove-dead-code` (`safeAssign`, `deadBody`, `removeDeadCode`), with their preservation statements as definitions (`HopsKeeps`, with `ParNodup` and `PassOK`, proved in `OptArgs.lean` from `OptHopsSim.lean`; `MiddleKeeps`, with `PassOK` of the input and of the result and `ArgsOK` on the entry, proved in `OptMiddleSim.lean`; `DeadKeeps`, `Keeps` on a `topo` with `TopoOK`, proved in `OptDeadSim.lean`). |
 | `Ska/OptRegLe.lean` | `RegLe R R'`: at every register the same unit, or poison in `R` and a value in `R'`.  An op, a pass, a branch and an end whose real reads read values in `R` do the same on `R'` (`execPole_le`, `evalPass_le`, `taken_le`, `endOf_le`), and a step of the code before that does not crash read values (`execPole_reads`, `taken_reads`, `endOf_reads`). |
@@ -2503,3 +2507,34 @@ import only its theorems.  So:
    runner as a parameter with its unfolding equations.  Estimate: `Frag6`
    took about 1300 lines (closure, cut, the top case); `FragX`, as much
    again as what is done here (about 5000 lines), most of it the lazy arms.
+15. **The model-side lemmas of the link of `+alias`** (track E, 2026-11-27,
+   `Ska/OptAliasPerm.lean`, `Ska/OptAliasBrz.lean`, `Ska/OptAliasPickRoot.lean`,
+   `Ska/AuditAliasE.lean`).  The four facts that Gaps 13 asks of the model
+   are proved, each on any input (`AliasLink` assumes only `NoLti` of the
+   blocks).  (1) The order of `pre`.  Under a permutation of `pre` the
+   results are not equal (`aliasStart_order`: `joinReg` keeps the order of
+   its first `hedOf`), but they are related by `InfoEq` at each register
+   (`aliasStart_perm`), by `ImmsEq` (`aliasStartImms_perm`) and, for the
+   edges, by `List.Perm` (`aliasEdges_perm`), and the parameter loop maps
+   permuted edges and related facts to related facts (`aliasPars_perm`,
+   `aliasPars_edges_perm`, from `paramInfo_perm`).  `InfoEq` is exactly
+   what `InfoRel` reads (`infoRel_of_infoEq`).  So the link of phases 9, 10
+   and 12 proves the Hoon's nouns related to the model run on `preH`, the
+   atoms of `~(tap in ...)`, and moves the relation to the model's
+   `g.rev o`: `preH` is a permutation of it by `perm_of_nodup`, with
+   `RevNodup` of the model (`aliasM_inv`) and the nodup of the tap list on
+   the noun side (`tapList_set_nodup`).  The phases after read
+   the facts only through `InfoRel` and the members of the sets, so the
+   model's own order is never compared with the Hoon's.  (2) `%brz`.
+   `BrzInv` holds at every state of the walk (`aliasM_inv`), and
+   `brzInv_loob` gives `loobImm = false` for the facts the refinement after a
+   single predecessor's `%brz` reads, where `InfoRel` (its last clause, or
+   `InfoEq.isLoob`) fixes `isLoob` exactly.  (3) `pick`.  The choice is
+   `Ana.pickR FinMap` (with the local instance `Ana.tkeyNat`): a set noun
+   related to a non-empty list by `SawRel` is the noun of the `+silt` of the
+   list (`isSet_ext`), whose root is that key (`sawRel_root`); it meets
+   `hpick` (`pickR_mem`) and depends only on the members (`pickR_ext`).  So
+   `AliasLink` is to be discharged for `P.alias = aliasM (Ana.pickR FinMap)`.
+   (4) `NoLti`: `aliasM_noLti`, the first conjunct of `AliasLink`, with no
+   hypothesis beyond `NoLti` of the input (`alias_nolti` of
+   `OptAliasResult.lean` needed `TopoInvR`).

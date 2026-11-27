@@ -110,5 +110,12 @@ theorem infoRel_of_infoEq {N : Noun} {x y : InfoReg} (h : InfoRel N x) (e : Info
     unfold InfoReg.loobC at hl
     rw [← hl, ← e.loobImm]; exact h3
 
+/-- **The list of `~(tap in ...)` of a set has no duplicates**, so the Hoon's
+`pre` and the model's `g.rev o` (`RevNodup`) with the same members are
+permutations (`perm_of_nodup`). -/
+theorem tapList_set_nodup {mug : Noun → Nat} {a : Noun} (h : IsSet mug a) : (tapList a).Nodup := by
+  have hp := List.pairwise_map.mp (tapList_set_pairwise h)
+  exact hp.imp fun {x y} hxy e => by subst e; exact TapBefore.asymm hxy hxy
+
 end Compiler
 end Formalization

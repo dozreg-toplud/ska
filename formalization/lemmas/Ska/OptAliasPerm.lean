@@ -548,6 +548,24 @@ theorem aliasPars_edges_perm (g : AGen Map) (o : Nat) (ps : List Nat) {pre pre' 
 theorem perm_of_nodup {l l' : List Nat} (h : l.Nodup) (h' : l'.Nodup) (hm : ∀ x, x ∈ l ↔ x ∈ l') :
     l.Perm l' := (List.perm_ext_iff_of_nodup h h').mpr hm
 
+/-! ## Equality fails: a witness -/
+
+/-- The facts of the witness: two predecessors whose `hedOf` of register `0`
+hold the same members in two orders. -/
+def wInfo : Nat → Option AInfo
+  | 1 => some fun r => if r = 0 then some { hedOf := [1, 2] } else none
+  | 2 => some fun r => if r = 0 then some { hedOf := [2, 1] } else none
+  | _ => none
+
+/-- **`aliasStart` is not a function of the members of `pre`**: the two orders
+of `[1, 2]` give `hedOf` of register `0` in two orders (`InfoEq`, not equal). -/
+theorem aliasStart_order (new : Map Blob) :
+    let g : AGen Map := { new := new, old := id, info := wInfo, imms := fun _ => none, rev := fun _ => [],
+                          folded := false }
+    (aliasStart g 5 [1, 2]).map (· 0) = some (some { hedOf := [1, 2] }) ∧
+    (aliasStart g 5 [2, 1]).map (· 0) = some (some { hedOf := [2, 1] }) := by
+  simp [aliasStart, wInfo, joinInfoA, joinRegE, joinReg, InfoReg.loobImm]
+
 end Opt
 end SkaModel
 end Formalization
