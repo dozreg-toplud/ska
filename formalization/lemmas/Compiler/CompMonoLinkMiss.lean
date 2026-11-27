@@ -10,7 +10,11 @@ one lemma each:
 * `mono_tail`: the edit of `cache` at `1015` with the product's cache, and `monoPutF`
   (`+put:by` of `mono`, `put_gate`): `[straight cache']` with `mono` of the new cache put;
 * `monoRaw_miss`: the arm on a miss (`getF` of `mono` gives `~`) is the slam, then the tail;
-* **`monoMissAt_of`**: `MonoMissAt` at every state (`putF_toNoun`).
+* **`monoMissAt_of`**: `MonoMissAt` at every state (`putF_toNoun`);
+* `unaryImageAt_of_gate`: `UnaryImageAt` from the gate's product in the form of
+  `cu_gate_dir_scc` (`[[st NM] CA']`), when `NM` decodes as a map of straights and `CA'` as a cache;
+* **`monoLinkGood_of_image`**: track P's `MonoLinkGood` from `Ar.compileUnary = compileUnaryP fl` and
+  `UnaryImageAt` at every `PGood` state.
 -/
 
 namespace Formalization
@@ -112,6 +116,38 @@ theorem monoMissAt_of (fl : Flags) (st : PSt) (b : Bell) (sc : FinMap Bell Unit)
   exact mono_tail fl st b.toNoun (FinMap.setNoun sc) (A 0) r.1.1.toNoun (r.1.2.toNoun Straight.toNoun)
     (r.2.nary.toNoun Straight.toNoun) (r.2.mono.toNoun Straight.toNoun)
     (C (r.2.sccs.toNoun FinMap.setNoun) (C r.2.rest.1 r.2.rest.2)) _ hp
+
+/-- **`UnaryImageAt` from the gate** (the conclusion of `cu_gate_dir_scc` on the encoded sample,
+`cuG` being its `nock (C cuGB (C SAM compK)) cuGB`): the product `[[st NM] CA']` is the noun of a
+model result when `NM` is the noun of a map of straights (track I's `M`) and every `CA'` the gate
+may return (`P`) is the noun of a cache. -/
+theorem unaryImageAt_of_gate (fl : Flags) (st : PSt) (b : Bell) (sc : FinMap Bell Unit) (env : CallEnv) (n : Nomm)
+    (NM : Noun) (P : Noun → Prop)
+    (hg : ∃ CA', P CA' ∧ cuG (monoSam fl st b.toNoun (FinMap.setNoun sc))
+      = (finishLUCM (S := CSet) (Map := TreapMap mugF) env n).map fun s => C (C s.toNoun NM) CA')
+    (hNM : ∃ m : FinMap Bell (Straight (TreapMap mugF)), NM = m.toNoun Straight.toNoun)
+    (hCA : ∀ CA', P CA' → ∃ c : Cache FinMap (TreapMap mugF) (Noun × Noun), CA' = cacheNoun c) :
+    UnaryImageAt fl st b sc := by
+  intro out ho
+  obtain ⟨CA', hP, hg⟩ := hg
+  rw [hg] at ho
+  obtain ⟨m, rfl⟩ := hNM
+  obtain ⟨c, rfl⟩ := hCA CA' hP
+  cases e : finishLUCM (S := CSet) (Map := TreapMap mugF) env n with
+  | none => rw [e] at ho; cases ho
+  | some s =>
+    rw [e] at ho
+    simp only [Option.map_some, Option.some.injEq] at ho
+    exact ⟨((s, m), c), ho.symm⟩
+
+/-- **`MonoLinkGood` (track P's hypothesis) from the image of `+compile-unary`**: the 125 cells of
+`+compiled-mono` are linked (`monoLinkAt_of`, `monoMissAt_of`), so what is left is that `Ar` reads
+`+compile-unary` back (`hA`, by the choice of `Ar`) and that the gate's product decodes at every
+`PGood` state (`UnaryImageAt`, from `unaryImageAt_of_gate` and `cu_gate_dir_scc`). -/
+theorem monoLinkGood_of_image (fl : Flags) (Ar : Arms FinMap (TreapMap mugF) Noun Noun (Noun × Noun))
+    (Cls : Straight (TreapMap mugF) → Prop) (hA : Ar.compileUnary = compileUnaryP fl)
+    (hU : ∀ st b sc, PGood Cls st → UnaryImageAt fl st b sc) : MonoLinkGood fl Ar Cls :=
+  fun st b sc hg => monoLinkAt_of fl Ar hA st b sc (hU st b sc hg) (monoMissAt_of fl st b sc)
 
 end Compiler
 end Formalization
