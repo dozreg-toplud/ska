@@ -22,6 +22,7 @@ import lemmas.Ska.OptAliasWitness
 import lemmas.Glue.MonoCalls
 import lemmas.Glue.InvMemo
 import lemmas.Glue.LibPill
+import lemmas.Glue.EntryFragX
 import lemmas.Compiler.CompSofPush
 import lemmas.Compiler.CompShapeColLoop
 import lemmas.Compiler.CompShapeColOrig
@@ -306,5 +307,21 @@ namespace Formalization
 #print axioms SkaModel.Glue.libP_format
 #print axioms SkaModel.Glue.libP_evalMook
 #print axioms SkaModel.Glue.straight_toNoun_inj
+
+-- rawEntry (LEDGER 2.c): the generic lemma and FragX
+#check @SkaModel.Glue.NoPoison
+#check @SkaModel.Glue.CelGuard
+#check @SkaModel.Glue.EInv
+#check @SkaModel.Glue.einv_step
+#check @SkaModel.Glue.GuardMonoX
+#check @SkaModel.Glue.GuardNaryX
+#check @SkaModel.Glue.CompRestOE
+#print axioms SkaModel.Glue.entryOK_of
+#print axioms SkaModel.Glue.entry_finishLUX
+#print axioms SkaModel.Glue.entry_finishLFX
+#print axioms SkaModel.Glue.entryMono_fragX
+#print axioms SkaModel.Glue.entryNary_fragX
+#print axioms SkaModel.Glue.rawEntry_fragX
+#print axioms SkaModel.Glue.compHyp_of_fragX'
 
 end Formalization
