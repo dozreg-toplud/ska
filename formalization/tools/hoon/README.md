@@ -89,6 +89,20 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     measure of the whole component (`lemmas/Ska/PassMeasureP.lean`) per pass: of 5,058 passes that
                     ended with `%pm-end`, 2,446 went on, 947 with a push and 1,499 with every run kept or lowered,
                     one lowered and no more members next pass; none against it (`--passes-v` prints each pass)
+* `repush.hoon`     point (b) of README Gaps 16 is false: three `%full` pokes on which an identity that `+cull`
+                    dropped is pushed again in a later pass of the same component (with the library of
+                    `passmeasure.py`: a `%pm-new` for a mug an earlier `%pm-cull` printed).  Poke 1: two sites of one
+                    formula `f` whose subjects (built from two shift registers in the product of a recursive `R`)
+                    pass through `[[a x x |] K]` at passes 2 and 5; poke 2: four sites, one identity pushed four times;
+                    poke 3: one site pushes two identities twice each, its subject going back up when a callee
+                    upstream is replaced by a fresh entry.  8, 14, 12 passes; all three return on the plain library
+                    (2026-11-27)
+* `passmeasure-repush.py OUT.hoon w|m|s|c|r SEED N` the drivers of the search for `repush.hoon` (`w` one re-push, `m` 2 to
+                    5 sites, `s` one site, `c` a chain of two restarting callees before one site: one identity pushed 4
+                    times, 31 passes, `r` random cores whose shared `f` is a restarting shift register), run with
+                    the library of `passmeasure.py`; `--sum OUT.txt...` counts pushes per identity, re-pushes after a
+                    cull, passes, and cases that did not finish.  Over 363 random cores (seeds 1, 11 to 16): 13
+                    re-pushes, at most 2 pushes of one identity, at most 9 passes, all returned (2026-11-27)
 * `untidyin.hoon`   the pokes that could plant an untidy sock: `%fast` with data under a `|` and with a cape `[| |]`
                     returns and keeps both templates normalized (`[[& |] [bat 0]]`), `%fast` with a cell cape over an atom
                     and `%dire` with an untidy bell crash, and a `%full` poke then returns with tidy memo subjects (2026-11-27)
