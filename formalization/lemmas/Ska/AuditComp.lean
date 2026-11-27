@@ -111,6 +111,8 @@ import lemmas.Ska.CompFourTop
 import lemmas.Ska.CompFiveLS
 import lemmas.Ska.CompOneLS
 import lemmas.Ska.CompPairLSX
+import lemmas.Ska.CompLOKSXUnary
+import lemmas.Ska.CompPairLSXCheck
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -1207,3 +1209,19 @@ open Formalization.SkaModel.Comp
 #print axioms pairLSX_sem
 #print axioms pairLSX_semB
 #print axioms pairLSX_ok
+#print axioms AtGoalRegs.p2
+#print axioms LOKS.toX
+#print axioms apartS_n0
+#print axioms apartS_n1
+#print axioms lokSX_n0
+#print axioms lokSX_n1
+#print axioms apartS_seven
+#print axioms lokSX_seven
+#print axioms apartS_four
+#print axioms lokSX_four
+#print axioms apartS_three
+#print axioms lokSX_three
+#print axioms apartS_indirect
+#print axioms lokSX_indirectF
+#print axioms apartS_five
+#print axioms lokSX_five
