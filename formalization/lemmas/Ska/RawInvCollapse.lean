@@ -29,6 +29,7 @@ namespace Raw
 open Nock Opt Comp
 
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
+variable {X : Map Blob → Prop} [XOK X] {ρ : Nat → Nat} {lo : Nat}
 
 /-! ## `+sure-require-look` keeps registers -/
 
@@ -129,11 +130,11 @@ theorem regs_fill {P : Nat → Prop} (l : List Nat) (h : ∀ x ∈ l, P x) : Reg
 
 /-- **`+crash-need`.** -/
 theorem raw_crashNeed {o : Nat} {atom : Sum Nat Nat} {ned : Need} {g g' : Comp.Gen Map} {b : Blob} {u : Unit}
-    (h : SI g) (hb : HoonMap.get g.blocks o = some b) (dn : Distinct ned) (hn : NB g.re ned)
+    (h : SIP X ρ lo g) (hb : HoonMap.get g.blocks o = some b) (dn : Distinct ned) (hn : NB g.re ned)
     (hp : ∀ p, atom = Sum.inr p → p < g.re)
     (hf : ∀ y, NMem ned y → (∀ p, atom = Sum.inr p → y ≠ p) → ¬ Defd g.blocks y)
     (hc : crashNeed o atom ned g = some (u, g')) :
-    SI g' ∧ g'.bo = g.bo ∧ g.re ≤ g'.re ∧ ∃ A,
+    SIP X ρ lo g' ∧ g'.bo = g.bo ∧ g.re ≤ g'.re ∧ ∃ A,
       (∀ k, HoonMap.get g'.blocks k = if k = o then some (pre A b) else HoonMap.get g.blocks k) ∧
       (∀ y, OpsRF A y → atom = Sum.inr y) ∧
       (∀ y ∈ defsOf A, (NMem ned y ∧ ∀ p, atom = Sum.inr p → y ≠ p) ∨ (g.re ≤ y ∧ y < g'.re)) ∧
@@ -156,7 +157,7 @@ theorem raw_crashNeed {o : Nat} {atom : Sum Nat Nat} {ned : Need} {g g' : Comp.G
           rcases List.mem_cons.mp hop with rfl | hop
           · rfl
           · exact tr_fill _ op hop⟩
-    obtain ⟨S', b', hb', e', q', o'⟩ := si_addOps h P hc
+    obtain ⟨S', b', hb', e', q', o'⟩ := sip_addOps h P hc
     rw [hb] at hb'; cases hb'
     refine ⟨S', o', by omega, Pole.cel p :: ((flattenNeed ned).filter (· != p)).map fun x => Pole.imm (A 0) x,
       fun k => ?_, fun y hy => ?_, fun y hy => ?_, fun y => ?_, ?_⟩
@@ -176,7 +177,7 @@ theorem raw_crashNeed {o : Nat} {atom : Sum Nat Nat} {ned : Need} {g g' : Comp.G
   | inl n =>
     simp only [crashNeed] at hc
     obtain ⟨r, g1, h1, hc⟩ := bind_some hc
-    obtain ⟨S1, rfl, q1, b1, o1⟩ := si_re h h1
+    obtain ⟨S1, rfl, q1, b1, o1⟩ := sip_re h h1
     have nd : ¬ Defd g1.blocks g.re := fun d => by rw [b1] at d; have := h.defd_lt d; omega
     have P : OpsOK g1 (Pole.imm (A n) g.re :: Pole.cel g.re :: (flattenNeed ned).map fun x => Pole.imm (A 0) x) :=
       ⟨RegsIn.cons (fun y hy => by simp [Comp.poleRegs] at hy; omega) (RegsIn.cons
@@ -198,7 +199,7 @@ theorem raw_crashNeed {o : Nat} {atom : Sum Nat Nat} {ned : Need} {g g' : Comp.G
           · rcases List.mem_cons.mp hop with rfl | hop
             · rfl
             · exact tr_fill _ op hop⟩
-    obtain ⟨S', b', hb', e', q', o'⟩ := si_addOps S1 P hc
+    obtain ⟨S', b', hb', e', q', o'⟩ := sip_addOps S1 P hc
     rw [b1, hb] at hb'; cases hb'
     refine ⟨S', by omega, by omega, Pole.imm (A n) g.re :: Pole.cel g.re :: (flattenNeed ned).map fun x => Pole.imm (A 0) x,
       fun k => ?_, fun y hy => ?_, fun y hy => ?_, fun y => ?_, ?_⟩
@@ -232,10 +233,10 @@ theorem lt_or_eq_of_mem_this {r y : Nat} {lo hi : Nat} {ned' : Need}
 
 /-- **`+collapse-lazy-atom`** on a fork-free goal. -/
 theorem raw_collapse [HoonMapKeys Map] {laz : Sure S} {th : Jmp} {g g' : Comp.Gen Map} {a : Option (Nat × Nat)}
-    (h : SI g) (hn : NB g.re laz.ned) (hj : th.there < g.bo)
+    (h : SIP X ρ lo g) (hn : NB g.re laz.ned) (hj : th.there < g.bo)
     (hf : ∀ y, NMem laz.ned y → ¬ Defd g.blocks y)
     (hc : collapseLazyAtom ⟨laz, th⟩ g = some (a, g')) :
-    SI g' ∧ g.re ≤ g'.re ∧ g.bo ≤ g'.bo ∧ th.args = [] ∧
+    SIP X ρ lo g' ∧ g.re ≤ g'.re ∧ g.bo ≤ g'.bo ∧ th.args = [] ∧
       (∀ k, k < g.bo → k ≠ th.there → HoonMap.get g'.blocks k = HoonMap.get g.blocks k) ∧
       (a = Option.none → laz.ned = Need.none ∧ g' = g) ∧
       (∀ r there, a = some (r, there) →
@@ -258,13 +259,13 @@ theorem raw_collapse [HoonMapKeys Map] {laz : Sure S} {th : Jmp} {g g' : Comp.Ge
   obtain ⟨ns, g1, h1, hc⟩ := bind_some hc
   have L1 := sureRequireLook_spec h1
   obtain ⟨k1, e1⟩ := L1.gen
-  have S1 : SI g1 := by rw [e1]; exact si_reg h (by have := L1.le; rw [e1] at this; exact this)
+  have S1 : SIP X ρ lo g1 := by rw [e1]; exact sip_reg h (by have := L1.le; rw [e1] at this; exact this)
   have b1 : g1.blocks = g.blocks := by rw [e1]
   have bo1 : g1.bo = g.bo := by rw [e1]
   have keep1 : ∀ y, NMem laz.ned y → NMem ns y := fun y hy => sureRequireLook_keeps h1 hy
   have l1 := L1.le
   obtain ⟨⟨r, there⟩, g2, h2, hc⟩ := bind_some hc
-  have hr : SI g2 ∧ g1.re ≤ g2.re ∧ (∀ k, k < g1.bo → HoonMap.get g2.blocks k = HoonMap.get g1.blocks k) ∧
+  have hr : SIP X ρ lo g2 ∧ g1.re ≤ g2.re ∧ (∀ k, k < g1.bo → HoonMap.get g2.blocks k = HoonMap.get g1.blocks k) ∧
       r < g2.re ∧ (NMem laz.ned r ∨ (g.re ≤ r ∧ r < g2.re)) ∧ ¬ Defd g2.blocks r ∧
       (∀ y, Defd g2.blocks y ↔ Defd g.blocks y) ∧
       ((there = th.there ∧ g2.blocks = g.blocks ∧ g2.bo = g.bo ∧ ∀ y, NMem laz.ned y → y = r) ∨
@@ -284,7 +285,7 @@ theorem raw_collapse [HoonMapKeys Map] {laz : Sure S} {th : Jmp} {g g' : Comp.Ge
         · exact fun d => by have := h.defd_lt d; omega
     | none =>
       obtain ⟨r0, g3, h3, h2⟩ := bind_some h2
-      obtain ⟨S3, rfl, q3, b3, o3⟩ := si_re S1 h3
+      obtain ⟨S3, rfl, q3, b3, o3⟩ := sip_re S1 h3
       simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
       obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h2
       refine ⟨S3, by omega, fun k _ => by rw [b3], by omega, Or.inr ⟨by omega, by omega⟩, ?_,
@@ -292,9 +293,9 @@ theorem raw_collapse [HoonMapKeys Map] {laz : Sure S} {th : Jmp} {g g' : Comp.Ge
       exact fun d => by rw [b3, b1] at d; have := h.defd_lt d; omega
     | pair p q =>
       obtain ⟨r0, g3, h3, h2⟩ := bind_some h2
-      obtain ⟨S3, rfl, q3, b3, o3⟩ := si_re S1 h3
+      obtain ⟨S3, rfl, q3, b3, o3⟩ := sip_re S1 h3
       obtain ⟨o, g4, h4, h2⟩ := bind_some h2
-      obtain ⟨S4, rfl, e4, q4, bo4⟩ := si_emit S3 (emitOK_bom Option.none) h4
+      obtain ⟨S4, rfl, e4, q4, bo4⟩ := sip_emit S3 (emitOK_bom Option.none) h4
       simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
       obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h2
       have dd : ∀ y, Defd g4.blocks y ↔ Defd g.blocks y := fun y => by
@@ -304,7 +305,7 @@ theorem raw_collapse [HoonMapKeys Map] {laz : Sure S} {th : Jmp} {g g' : Comp.Ge
         Or.inr ⟨by omega, by omega, by rw [e4]; exact get_put_self⟩⟩
     | both r0 p q =>
       obtain ⟨o, g4, h4, h2⟩ := bind_some h2
-      obtain ⟨S4, rfl, e4, q4, bo4⟩ := si_emit S1 (emitOK_bom Option.none) h4
+      obtain ⟨S4, rfl, e4, q4, bo4⟩ := sip_emit S1 (emitOK_bom Option.none) h4
       simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
       obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h2
       have dd : ∀ y, Defd g4.blocks y ↔ Defd g.blocks y := fun y => by
@@ -332,7 +333,7 @@ theorem raw_collapse [HoonMapKeys Map] {laz : Sure S} {th : Jmp} {g g' : Comp.Ge
   have L4 := sureRequireLook_spec h4
   obtain ⟨k4, e4⟩ := L4.gen
   have l4 := L4.le
-  have S4 : SI g4 := by rw [e4]; exact si_reg S2 (by rw [e4] at l4; exact l4)
+  have S4 : SIP X ρ lo g4 := by rw [e4]; exact sip_reg S2 (by rw [e4] at l4; exact l4)
   have b4 : g4.blocks = g2.blocks := by rw [e4]
   have bo4 : g4.bo = g2.bo := by rw [e4]
   have m4 : ∀ y, NMem ned' y → y = r ∨ (g2.re ≤ y ∧ y < g4.re) := fun y hy => lt_or_eq_of_mem_this L4.mem hy
@@ -342,14 +343,14 @@ theorem raw_collapse [HoonMapKeys Map] {laz : Sure S} {th : Jmp} {g g' : Comp.Ge
     · omega
     · omega
   have dd4 : ∀ y, Defd g4.blocks y ↔ Defd g.blocks y := fun y => by rw [b4, dd2]
-  have close : ∀ (g5 : Comp.Gen Map) (A : List Pole), SI g5 → g4.re ≤ g5.re → g5.bo = g4.bo →
+  have close : ∀ (g5 : Comp.Gen Map) (A : List Pole), SIP X ρ lo g5 → g4.re ≤ g5.re → g5.bo = g4.bo →
       (∀ k, k ≠ there → HoonMap.get g5.blocks k = HoonMap.get g4.blocks k) →
       (∀ y, Live g5.blocks there y → OpsRF A y ∨ (y ∉ defsOf A ∧ Live g4.blocks there y)) →
       (∀ y, OpsRF A y → y = r) →
       (∀ y, Defd g5.blocks y ↔ Defd g4.blocks y ∨ y ∈ defsOf A) →
       (∀ y ∈ defsOf A, g2.re ≤ y ∧ y < g5.re ∧ y ≠ r) →
       (pure (some (r, there)) : CM Map (Option (Nat × Nat))) g5 = some (a, g') →
-      SI g' ∧ g.re ≤ g'.re ∧ g.bo ≤ g'.bo ∧ th.args = [] ∧
+      SIP X ρ lo g' ∧ g.re ≤ g'.re ∧ g.bo ≤ g'.bo ∧ th.args = [] ∧
       (∀ k, k < g.bo → k ≠ th.there → HoonMap.get g'.blocks k = HoonMap.get g.blocks k) ∧
       (a = Option.none → laz.ned = Need.none ∧ g' = g) ∧
       (∀ r there', a = some (r, there') →
@@ -406,13 +407,13 @@ theorem raw_collapse [HoonMapKeys Map] {laz : Sure S} {th : Jmp} {g g' : Comp.Ge
             simp [defsOf_mov] at hy; subst hy
             have := h.defd_lt ((dd4 _).mp d); omega,
           fun op hop => by simp at hop; subst hop; rfl⟩
-      obtain ⟨S5, b5, hb5, e5, q5, o5⟩ := si_addOps S4 P h5
+      obtain ⟨S5, b5, hb5, e5, q5, o5⟩ := sip_addOps S4 P h5
       have below : ∀ k, k ≠ there → HoonMap.get g5.blocks k = HoonMap.get g4.blocks k := fun k hk => by
         rw [e5, get_put_ne hk]
       refine close g5 [Pole.mov r r'] S5 (by omega) o5 below (fun y hl => ?_) (fun y hy => ?_) (fun y => ?_)
         (fun y hy => ?_) hc
       · rw [e5] at hl
-        rcases live_prepend hb5 (S4.below there) (fun j hj => S4.jd there b5 hb5 j hj) hl with ⟨-, h'⟩ | h'
+        rcases live_prependRk hb5 S4.jr hl with ⟨-, h'⟩ | h'
         · exact Or.inl h'
         · exact Or.inr h'
       · simp only [OpsRF, reads_mov] at hy
@@ -438,8 +439,8 @@ theorem raw_collapse [HoonMapKeys Map] {laz : Sure S} {th : Jmp} {g g' : Comp.Ge
     refine close g5 A S5 l5 bo5 (fun k hk => by rw [hget, if_neg hk]) (fun y hl => ?_) (fun y hy => ?_) hdd
       (fun y hy => ?_) hc
     · have hk : HoonMap.get g5.blocks there = some (pre A b5) := by rw [hget, if_pos rfl]
-      have he : ∀ x, x < there → HoonMap.get g5.blocks x = HoonMap.get g4.blocks x := fun x hx => by
-        rw [hget, if_neg (by omega)]
+      have he : ∀ x, ρ x < ρ there → HoonMap.get g5.blocks x = HoonMap.get g4.blocks x := fun x hx => by
+        rw [hget, if_neg (fun e => by subst e; omega)]
       have hl' : Live (HoonMap.put g4.blocks there (pre A b5)) there y := by
         rcases live_iff.mp hl with ⟨b', hb', hr'⟩
         rw [hk] at hb'; cases hb'
@@ -447,10 +448,10 @@ theorem raw_collapse [HoonMapKeys Map] {laz : Sure S} {th : Jmp} {g g' : Comp.Ge
         rcases hr' with hr' | ⟨j, hj, hlj, hn⟩
         · exact Or.inl hr'
         · refine Or.inr ⟨j, hj, ?_, hn⟩
-          have hjt : j.there < there := S4.jd there b5 hb5 j hj
-          exact (live_frame (S4.below there) (fun x hx => get_put_ne (Nat.ne_of_lt hx)) hjt).mpr
-            ((live_frame (S4.below there) he hjt).mp hlj)
-      rcases live_prepend hb5 (S4.below there) (fun j hj => S4.jd there b5 hb5 j hj) hl' with ⟨-, h'⟩ | h'
+          have hjt : ρ j.there < ρ there := S4.jr there b5 hb5 j hj
+          exact (live_frameRk S4.jr (fun x hx => get_put_ne (fun e => by subst e; omega)) hjt).mpr
+            ((live_frameRk S4.jr he hjt).mp hlj)
+      rcases live_prependRk hb5 S4.jr hl' with ⟨-, h'⟩ | h'
       · exact Or.inl h'
       · exact Or.inr h'
     · have := hrf y hy; cases this; rfl
@@ -476,8 +477,8 @@ theorem raw_collapse [HoonMapKeys Map] {laz : Sure S} {th : Jmp} {g g' : Comp.Ge
     refine close g5 A S5 l5 bo5 (fun k hk => by rw [hget, if_neg hk]) (fun y hl => ?_) (fun y hy => ?_) hdd
       (fun y hy => ?_) hc
     · have hk : HoonMap.get g5.blocks there = some (pre A b5) := by rw [hget, if_pos rfl]
-      have he : ∀ x, x < there → HoonMap.get g5.blocks x = HoonMap.get g4.blocks x := fun x hx => by
-        rw [hget, if_neg (by omega)]
+      have he : ∀ x, ρ x < ρ there → HoonMap.get g5.blocks x = HoonMap.get g4.blocks x := fun x hx => by
+        rw [hget, if_neg (fun e => by subst e; omega)]
       have hl' : Live (HoonMap.put g4.blocks there (pre A b5)) there y := by
         rcases live_iff.mp hl with ⟨b', hb', hr'⟩
         rw [hk] at hb'; cases hb'
@@ -485,10 +486,10 @@ theorem raw_collapse [HoonMapKeys Map] {laz : Sure S} {th : Jmp} {g g' : Comp.Ge
         rcases hr' with hr' | ⟨j, hj, hlj, hn⟩
         · exact Or.inl hr'
         · refine Or.inr ⟨j, hj, ?_, hn⟩
-          have hjt : j.there < there := S4.jd there b5 hb5 j hj
-          exact (live_frame (S4.below there) (fun x hx => get_put_ne (Nat.ne_of_lt hx)) hjt).mpr
-            ((live_frame (S4.below there) he hjt).mp hlj)
-      rcases live_prepend hb5 (S4.below there) (fun j hj => S4.jd there b5 hb5 j hj) hl' with ⟨-, h'⟩ | h'
+          have hjt : ρ j.there < ρ there := S4.jr there b5 hb5 j hj
+          exact (live_frameRk S4.jr (fun x hx => get_put_ne (fun e => by subst e; omega)) hjt).mpr
+            ((live_frameRk S4.jr he hjt).mp hlj)
+      rcases live_prependRk hb5 S4.jr hl' with ⟨-, h'⟩ | h'
       · exact Or.inl h'
       · exact Or.inr h'
     · have := hrf y hy; cases this; rfl

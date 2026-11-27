@@ -53,10 +53,10 @@ theorem top_run {nm : Nomm} {nex : Next S} {g1 : Comp.Gen Map}
   have S0 : SI (gen0 : Comp.Gen Map) := si_gen0
   have nd0 : ∀ r, Defd (gen0 : Comp.Gen Map).blocks r → ¬ GMem (CGoal.done : CGoal S) r := fun r _ e => e
   obtain ⟨S1, L1⟩ := run_raw nm CGoal.done gen0 g1 nex S0 trivial trivial trivial trivial nd0 h1
-  obtain ⟨-, -, nb1, d1, s1, dd1, a1, lo1, hi1⟩ := sub_facts (goal := (CGoal.done : CGoal S)) S0 trivial trivial
+  obtain ⟨-, -, nb1, d1, s1, dd1, a1, lo1, hi1⟩ := sub_facts (goal := (CGoal.done : CGoal S)) (si_sip S0) trivial trivial
     trivial trivial h1
   obtain ⟨D1, B, fin, hB⟩ := runDown (S := S) (Map := Map) nm nex g1 h1
-  refine ⟨S1, fun r hl => (L1 r hl).elim id (fun e => e.elim), nb1, d1, defd_next S0 nd0 s1 dd1, a1, lo1, hi1, D1,
+  refine ⟨S1, fun r hl => (L1 r hl).elim id (fun e => e.elim), nb1, d1, defd_next (si_sip S0) nd0 s1 dd1, a1, lo1, hi1, D1,
     B, fin, hB⟩
 
 /-- **The final pass of `member`, with nothing baked, meets `OptIn`.** -/
