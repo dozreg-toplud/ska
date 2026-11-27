@@ -3905,3 +3905,49 @@ import only its theorems.  So:
     premise `isRun .. = true`), so the stateful case (`run` `|`, the
     n-ary pass with a baked or coerced input) is not needed by
     `TsMapAt`; it is still not linked.
+21. **`+compile-scc-in` as a loop** (track I, 2026-11-27, `Ska/SccLoop.lean`,
+    `Ska/SccLoopCheck.lean`, `tools/hoon/sccloop.py`).
+    1. *The map* (lines 3441 to 3717 of `desk/lib/nock-compilation.hoon`, arm `2732` of `K`, body
+       2488 cells: `csiLevy` 42, `csiHit` 90, `csiKids` 107, the gate `member` 1051, `final`
+       119, `csiDoneCall` 17, `csiFix` 956).  After the cache hit, the arm builds `kids` (each
+       member's callees inside the SCC) and `done`, which is `&` only for one bell that does not
+       call itself.  Then `(final | ~ cache)` runs at once.  Otherwise `csiFix` runs, in four
+       parts.  First, `order` is the DFS postorder of the members over `kids`, from the roots
+       `~(tap in scc)`.  Second, the `%may` sweep is a `+roll` over `order` of `member b %may | m
+       ~ c` from an empty `m`, and `top` is the need of each entry it makes.  Third, the sweep
+       loop threads `st=[any tick ran chg]` (from `[| 0 ~ ~]`), `map-local` (from `~`) and
+       `cache`.  A sweep is a `+roll` over `order`.  A member `b` is dirty when it has never run
+       or when a kid `k` has `(gut chg k 0) >= (got ran b)`, so a self call made at the tick of
+       the last compile counts.  A dirty member runs `member b %must keep m top c` at the tick
+       `t = tick + 1` with `keep = (t > 4 * |scc|)`, sets `ran b = t`, sets `chg b = t` when
+       the member says that it changed, and sets `any`.  The loop stops after a sweep with
+       `any` false, so after a sweep that compiles nothing.  Fourth, `(final & map-local cache)`
+       is a `+roll` over `~(tap in scc)` (not `order`) of `member b %done & m ~ c`, then
+       `nary.cache` is united with its map.
+    2. *`member`* (lines 3473 to 3609).  Before the fixed point it runs `+run-shape`, then
+       `+laze-collapse` (`%must`) or `+laze-may` (`%may`), then `+bake-need-ord`.  That shape is
+       `need-new`, and `sur` is `+sure-of` of the laze's sure part.  On `%done` it runs `+run`,
+       `+collapse-shape` (which calls `+shape-collapse`, track A), `+bake-need` and `+sure-of`,
+       and `need-new` is `(need-to-ordered ned.bak)`.  Then `sur` is the old entry of
+       `sure.cache` when `keep` holds and there is one, it is put back at `b`, and `moved` is
+       `sur` against `(fall was none)`.  With no entry of `b` in `map-local` the member puts
+       `(finish ~)` and changes when `moved`, or `need-new` asks something, or `top` asks
+       something at `b`.  With an entry `prev` it computes `need-pessimized = (msg-need-ord
+       need-new prev cape)`, changes when `moved` or `need-pessimized` differs from `prev`, and
+       puts `(finish ~)` when `need-pessimized = need-new`, else `(finish `need-pessimized)`.
+       Off `%done`, `finish` is the placeholder `[need 0 ~]` (the `?.  done` branch).  On
+       `%done` it is `+coerce-lazy`, `+soft-done`, the baked `%imm` ops, then `+to-straight`,
+       after `+coerce-soft` when pessimized.  `+callee-need` reads, for a callee in the SCC,
+       the need of its `map-local` entry, else `top`, else `[%none ~]`, and `+callee-sure`
+       reads `sure.cache`.
+    3. *Linked today, and what a real SCC breaks.*  Linked: the cache hit (`csi_hit`), and the
+       arm on one bell with `NoSelfCall` (`csi_gate_scc_one*`, `cu_gate_scc_one*`, for
+       `finishLF` and `finishLFC env` on `indOk` nomms).  On those, `member` is linked on
+       `%done` with `map-local` and `top` empty (`mem_gate`), and on an entry equal to
+       `need-new` (`mem_gate_old`, `msg_eq`).  A real SCC breaks four of those assumptions.
+       `done` is `|`, so `csiFix` runs, and none of its 956 cells is linked.  `member` then runs
+       its `?.  done` branch (`+run-shape`, `+laze-collapse`, `+laze-may`, `+bake-need-ord`, no
+       model).  The final pass reads a nonempty `map-local`, so `+msg-need-ord` sees two
+       different shapes and `+coerce-soft` may run (no model).  The final `+roll` is over more
+       than one bell with `keep` set.  The one-bell top also never reads `top` and never
+       compiles a bell twice.
