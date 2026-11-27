@@ -439,5 +439,32 @@ theorem memDoneMS_eq (env : CallEnv) (snd : Nomm → NeedOrd → Bool)
   | none => rfl
   | some p => rfl
 
+/-- `envView` keeps `sof`. -/
+theorem envView_sof (e : CallEnv) (scc : List Noun) (vn vs : Noun → NeedOrd) :
+    (envView e scc vn vs).sof = e.sof := rfl
+
+/-- **Without soft calls outside, `compRealS` is `compReal`.** -/
+theorem compRealS_eq (r : RealCfg) (snd : Nomm → NeedOrd → Bool)
+    (hsof : ∀ m p q b n, r.env.sof m p q b n = false) : compRealS r snd = compReal r := by
+  have key : ∀ vn vs (m : MemInfo), memDoneMS (envView r.env r.scc vn vs) snd m =
+      memDoneM (envView r.env r.scc vn vs) m :=
+    fun vn vs m => memDoneMS_eq (envView r.env r.scc vn vs) snd (fun m p q b n => hsof m p q b n) m
+  funext b mode vn vs
+  cases mode <;> simp only [compRealS, compReal, key]
+
+/-- **Without soft calls, `cfgRealS` is `cfgReal`**, so every theorem on `cfgReal`
+(`memGate_done_real`, `memGate_done_K`) holds for `cfgRealS`. -/
+theorem cfgRealS_eq (r : RealCfg) (snd : Nomm → NeedOrd → Bool) (order : List Noun) (kids : Noun → List Noun)
+    (hsof : ∀ m p q b n, r.env.sof m p q b n = false) : cfgRealS r snd order kids = cfgReal r order kids := by
+  simp only [cfgRealS, cfgReal, compRealS_eq r snd hsof]
+
+/-- Without soft calls `DoneRetS` is `DoneRet`. -/
+theorem doneRetS_iff (r : RealCfg) (snd : Nomm → NeedOrd → Bool)
+    (hsof : ∀ m p q b n, r.env.sof m p q b n = false) : DoneRetS r snd ↔ DoneRet r := by
+  have key : ∀ vn vs (m : MemInfo), memDoneMS (envView r.env r.scc vn vs) snd m =
+      memDoneM (envView r.env r.scc vn vs) m :=
+    fun vn vs m => memDoneMS_eq (envView r.env r.scc vn vs) snd (fun m p q b n => hsof m p q b n) m
+  simp only [DoneRetS, DoneRet, key]
+
 end SkaModel.SccLoop
 end Formalization

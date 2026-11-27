@@ -398,5 +398,29 @@ noncomputable def memDoneMS (env : CallEnv) (snd : Nomm → NeedOrd → Bool) (m
           (sureOf (needToOrd nex.laz.sure.ned) nex.laz.sure.lok m.cape).map fun sur =>
             ⟨needToOrd (bakeNeed nedF (Sock.mk m.cape m.data)).1, sur⟩
 
+/-- **The member compile of a real SCC with soft calls**: `compReal` with `memDoneMS` on `%done`;
+`snd` is `+sound` on `code.long-ska`. -/
+noncomputable def compRealS (r : RealCfg) (snd : Nomm → NeedOrd → Bool) (b : Noun) (mode : Mode)
+    (vn vs : Noun → NeedOrd) : Out NeedOrd :=
+  let env := envView r.env r.scc vn vs
+  let o := match mode with
+    | Mode.done => memDoneMS env snd (r.info b)
+    | _ => sweepM r mode env (r.info b)
+  o.getD ⟨NeedOrd.none, NeedOrd.none⟩
+
+/-- `cfgReal` with `compRealS`. -/
+noncomputable def cfgRealS (r : RealCfg) (snd : Nomm → NeedOrd → Bool) (order : List Noun)
+    (kids : Noun → List Noun) : Cfg Noun NeedOrd :=
+  ⟨r.scc, order, kids, NeedOrd.none, fun b a p => msgOrd a p (r.info b).cape, compRealS r snd⟩
+
+/-- **`DoneRet` with soft calls**: the `%done` compile returns on every view. -/
+def DoneRetS (r : RealCfg) (snd : Nomm → NeedOrd → Bool) : Prop :=
+  ∀ b ∈ r.scc, ∀ vn vs, (memDoneMS (envView r.env r.scc vn vs) snd (r.info b)).isSome
+
+theorem compRealS_done (r : RealCfg) (snd : Nomm → NeedOrd → Bool) (b : Noun) (vn vs : Noun → NeedOrd)
+    (o : Out NeedOrd) (h : memDoneMS (envView r.env r.scc vn vs) snd (r.info b) = some o) :
+    compRealS r snd b Mode.done vn vs = o := by
+  simp [compRealS, h]
+
 end SkaModel.SccLoop
 end Formalization
