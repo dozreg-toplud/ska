@@ -1026,6 +1026,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Glue/GuardArmsL.lean` | Track G (Gaps 22 (e)): `KP.map'`; `kp_copyLazyL` (with `kp_mergeForks`, `kp_mergeBonds`: `+copy` of lazy needs with forks), `kp_copyL`, `kp_forkNeedGo`, `kp_forkSure`. |
 | `Glue/GuardX.lean` | Track G (Gaps 22 (e)): **`runX_kp`**: on `FragX` every run of `runL` for a fork-free goal with `GJX` jumps keeps `Inv` and returns a jump with no `~` (`RKX`); the cases outside `%6` through `splitL_mk` .. `pastL_pure`, `%6` by `rkx_sixP`, `rkx_sixN` (C's `sixBody_apart`, `sixNextSimple_apart`, `sect_spec` with `KeepR.cnd`, the fork not big by `KeepR.size`); **`runX_blocksOK`** for the top run. |
 | `Glue/GuardTop.lean` | Track G (Gaps 22 (e)): the leaves `GuardFinalU`, `GuardFinalF` (the final passes from the end state of the top run) and `guardMonoX_of`, `guardNaryX_of`, `compHyp_of_fragX''`. |
+| `Glue/GuardFinal.lean` | Track G (Gaps 22 (e)): `BlocksOK` through the final passes: `kernStepG`, `kernListG` (one gate of `+kern` and the walk, under track D's `KI`), `coerceStepG`, `coerceListG`, `coerceLazyLG` (`+coerce-lazy` under D's `CoI`, by `sureLoop_guard`), `chase_keeps` (what holds of a jump and of every block's hop holds of its `+chase`; fixpoint induction, no rank), `chaseFin_jmps`, `guardedBody_ren`, `RenOK`, **`blocksOK_rename`** (the renaming path keeps `BlocksOK` when the renaming sends no written register onto another), `blocksOK_start`. |
+| `Glue/GuardFinalTop.lean` | Track G (Gaps 22 (e)): **`guardFinalU`**, **`guardFinalF`** (the two final-pass leaves are theorems), `guardMonoX`, `guardNaryX`, **`compHyp_of_fragX₃`** (`CompHyp` on `FragX` from `CompRestOE` alone, no guard leaf); two `example`s on `[6 [0 2] [6 [0 6] [0 3] [0 1]] [1 0]]`. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
 Every main theorem depends on `propext`, `Classical.choice` and `Quot.sound`
@@ -5689,7 +5691,7 @@ import only its theorems.  So:
 
 22. **The ledger** (track G, 2026-11-27, `LEDGER.md`, `lemmas/Glue/`).  `LEDGER.md` traces
     every field of `Gap` (`Assembly.lean`) down to its open leaves, with the mismatches
-    between the shapes the fields need and the shapes the tracks prove (M1 to M16), and the
+    between the shapes the fields need and the shapes the tracks prove (M1 to M18), and the
     open leaves in order of what they block; every name it cites is checked in
     `Glue/AuditGlue.lean`.  Proved here by composition:
     (a) `CompHyp` from `CompPiecesO` (`compHyp_of_piecesO`: `OptIn` in place of `DInvS`) and
@@ -5722,12 +5724,22 @@ import only its theorems.  So:
     run-level induction is proved (`Glue/GuardStep.lean` .. `Glue/GuardX.lean`, fifth pass):
     `runX_kp`, `runX_blocksOK` (the raw blocks of the top run of `FragX` meet `BlocksOK`, the
     result jump passes no `~`), so the two leaves are now `GuardFinalU`, `GuardFinalF`, the
-    final passes alone (`guardMonoX_of`, `guardNaryX_of`, `compHyp_of_fragX''`); open:
-    `+kerf` / `+coerce-lazy` over the result's lazy tree (`Distinct` of each entry's need)
-    and `+to-straight` (map path: unproxying, renaming, `+chase`).  (f) M15
+    final passes alone (`guardMonoX_of`, `guardNaryX_of`, `compHyp_of_fragX''`).  SIXTH
+    PASS (`Glue/GuardFinal.lean`, `Glue/GuardFinalTop.lean`): both are theorems
+    (`guardFinalU`, `guardFinalF`), so `GuardMonoX`, `GuardNaryX` are (`guardMonoX`,
+    `guardNaryX`) and `CompHyp` on `FragX` needs `CompRestOE` alone (`compHyp_of_fragX₃`):
+    `+kern` and `+coerce-lazy` keep `BlocksOK` under track D's `KI` and `CoI`
+    (`kernListG`, `coerceLazyLG`), `+to-straight` by `blocksOK_rename` (the map path is the
+    renaming path by `renReg ∘ unproxy`; `unproxy` fixes every defined register and sends
+    the others to themselves or to `sub`, which is not defined).  With calls (`MonoCalls`)
+    `EntryMono` is still a leaf.  (f) M15
     closed: no build clash is left among the files `AuditGlue` imports.  (g) M16 (in the
     making): track J's `runLCH` (hints) is a third model of `+run`; `refMono` and the
-    classes must eventually be stated at `finishLUCH`.  Not done: every leaf of `LEDGER.md`
+    classes must eventually be stated at `finishLUCH`.  (h) LEDGER sixth pass (digest [256]
+    to [269]): `halting` is FALSE of the current compiler (M17: the pass loop of
+    `+analyze` does not end on `tools/hoon/takecycle.hoon`), so `Full` needs a Hoon change
+    first; `PrintId` of track I is true of the pill (M18); M15 reopened (two
+    `Compiler.sw_gate`).  Not done: every leaf of `LEDGER.md`
     section 10; the model half of `inlAnnot` is stated (LEDGER 2.e) but not proved.
 23. **The poke on states: `enc` and the `%full` branch** (track P, 2026-11-27,
     `Ska/PokeEnc.lean`, `Compiler/PokeLink.lean`, `Compiler/PokeLinkFull.lean`, `Compiler/PokeLinkOpt.lean`,
