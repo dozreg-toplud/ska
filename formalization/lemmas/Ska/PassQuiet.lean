@@ -592,6 +592,82 @@ theorem passLoop_returns_runs (env : Env R) {memoF : Memo M} (hmF : MemoWF memoF
   passLoop_returns_q env hmF hmT hmN hmI id index rest x hc hB fun y hy =>
     passStep_parts env hmF hmN hrun (passReachQ_inv env hmF hmT hmN hmI hy hc).2.2.2
 
+/-! ## 7. `FinPushesQ` from the growth of the graph -/
+
+/-- A pass that goes on does not lower `next`. -/
+theorem passGoOn_next {env : Env R} {memoF : Memo M} {n : Nat} {id : Ident} {index pass : Nat}
+    {st st' : SkaState M R} (h : PassGoOn env memoF n id index pass st st') : st.next ≤ st'.next := by
+  rcases h with ⟨ab, members, r, _, _, h3, _⟩ | ⟨ab, members, r, _, _, h3, _⟩ <;>
+  exact ((allN env memoF n n (Nat.le_refl n)).2.2.2.2 index pass members _ r st' h3).1
+
+/-- **What a pass does to the graph** (not proved here): no identity leaves
+`g`, and a pass that pushes leaves in `g` an identity that was not there
+(the outermost push of the pass: a nested `+analyze` culls only what it
+pushed itself, and its root is popped into `g` or stays on the stack). -/
+def PassGrowG (st st' : SkaState M R) : Prop :=
+  (∀ i, Treap.get st.g i ≠ none → Treap.get st'.g i ≠ none) ∧
+    (st.next < st'.next → ∃ i, Treap.get st.g i = none ∧ Treap.get st'.g i ≠ none)
+
+/-- **(i) for the graph along a chain**: the identities in `g` at the passes
+of the chain lie in one finite list. -/
+def FinIdentsG (f : Nat → Nat × SkaState M R) : Prop :=
+  ∃ I : List Ident, ∀ k i, Treap.get (f k).2.g i ≠ none → i ∈ I
+
+/-- **`FinPushesQ` from the growth of the graph and finitely many
+identities**: along a chain whose passes keep every identity of `g` and add
+one at every push, with the identities of `g` in a finite list, `next` is
+eventually constant, so bounded. -/
+theorem finPushesQ_of_grow {env : Env R} {memoF : Memo M} {id : Ident} {index : Nat} {x : Nat × SkaState M R}
+    (hG : ∀ a b, PassNextQ env memoF id index x a b → PassGrowG b.2 a.2)
+    (hI : ∀ f : Nat → Nat × SkaState M R, (∀ k, PassNextQ env memoF id index x (f (k + 1)) (f k)) →
+      FinIdentsG f) :
+    FinPushesQ env memoF id index x := by
+  intro f hf
+  obtain ⟨I, hI⟩ := hI f hf
+  have hnx : ∀ k, (f k).2.next ≤ (f (k + 1)).2.next := fun k => by
+    obtain ⟨_, m, _, hp⟩ := hf k; exact passGoOn_next hp
+  let c : Nat → Nat := fun k => (I.filter (fun i => (Treap.get (f k).2.g i).isSome)).length
+  have hcI : ∀ k, c k ≤ I.length := fun k => List.length_filter_le _ _
+  have hc : ∀ k, c k ≤ c (k + 1) ∧ ((f k).2.next < (f (k + 1)).2.next → c k < c (k + 1)) := by
+    intro k
+    obtain ⟨g1, g2⟩ := hG _ _ (hf k)
+    have imp : ∀ j ∈ I, (Treap.get (f k).2.g j).isSome = true → (Treap.get (f (k + 1)).2.g j).isSome = true :=
+      fun j _ hj => Option.isSome_iff_ne_none.mpr (g1 j (Option.isSome_iff_ne_none.mp hj))
+    refine ⟨filter_length_le I imp, fun hlt => ?_⟩
+    obtain ⟨i, hi0, hi1⟩ := g2 hlt
+    refine filter_length_lt I imp ⟨i, hI (k + 1) i hi1, Option.isSome_iff_ne_none.mpr hi1, ?_⟩
+    rw [hi0]; rfl
+  obtain ⟨K, hK⟩ := ev_const (r := fun a b : Nat => a < b) Nat.lt_wfRel.wf (fun _ _ _ => Nat.lt_trans)
+    (fun k => I.length - c k) (fun k => by
+      have h1 := (hc k).1
+      have h2 := hcI (k + 1)
+      show I.length - c (k + 1) = I.length - c k ∨ I.length - c (k + 1) < I.length - c k
+      omega)
+  have hsame : ∀ k, K ≤ k → (f (k + 1)).2.next = (f k).2.next := by
+    intro k hk
+    have h1 : I.length - c (k + 1) = I.length - c k := hK k hk
+    have h2 := hcI (k + 1)
+    have h3 := (hc k).1
+    have hceq : c (k + 1) = c k := by omega
+    rcases Nat.lt_or_ge (f k).2.next (f (k + 1)).2.next with hlt | hge
+    · have := (hc k).2 hlt; omega
+    · exact Nat.le_antisymm hge (hnx k)
+  have hmono : ∀ i j, i ≤ j → (f i).2.next ≤ (f j).2.next := by
+    intro i j hij
+    induction hij with
+    | refl => exact Nat.le_refl _
+    | step _ ih => exact Nat.le_trans ih (hnx _)
+  have hafter : ∀ d, (f (K + d)).2.next = (f K).2.next := by
+    intro d
+    induction d with
+    | zero => rfl
+    | succ d ih => rw [← ih]; exact hsame (K + d) (Nat.le_add_right _ _)
+  refine ⟨(f K).2.next, fun k => ?_⟩
+  rcases Nat.lt_or_ge k K with hk | hk
+  · exact hmono k K (Nat.le_of_lt hk)
+  · obtain ⟨d, rfl⟩ := Nat.exists_eq_add_of_le hk
+    exact Nat.le_of_eq (hafter d)
+
 end Ana
 end SkaModel
 end Formalization

@@ -171,3 +171,5 @@ out. -/
 #print axioms Ana.memberLoop_returns
 #print axioms Ana.passStep_parts
 #print axioms Ana.passLoop_returns_runs
+#print axioms Ana.passGoOn_next
+#print axioms Ana.finPushesQ_of_grow
