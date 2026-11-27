@@ -189,13 +189,77 @@ end Blocks
 /-! ## No bond out of a goal with none (Step 1) -/
 
 /-- **`NoBondH`: the run of `nm` under a `%next` goal with no fork and no
-bond has no bond.**  The clause a kept hint needs of its formula: under
-`+lazy-bound` the formula's need is one bond, so a bond of the formula's
-result would be a bond inside a bond (`CompHintNest.lean`). -/
+bond has no fork and no bond.**  The clause a kept hint needs of its
+formula: under `+lazy-bound` the formula's need is one bond, so a bond of
+the formula's result would be a bond inside a bond (`CompHintNest.lean`). -/
 def NoBondH (snd : Nomm → NeedOrd → Bool) (env : CallEnv) (nm : Nomm) : Prop :=
   ∀ {sup : Option Nomm} {sur : Sure S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
     runLCH (S := S) (Map := Map) env snd true sup nm (CGoalL.next (ofSure sur) th) region g0 = some (nex, g1) →
-      nex.laz.bond = []
+      nex.laz.fork = [] ∧ nex.laz.bond = []
+
+section NoBond
+variable {snd : Nomm → NeedOrd → Bool} {env : CallEnv}
+
+theorem noBondH_n0 (ax : Nat) : NoBondH (S := S) (Map := Map) snd env (Nomm.n0 ax) := by
+  intro sup sur th region g0 g1 nex hr
+  by_cases h0 : ax = 0
+  · subst h0
+    simp only [runLCH, if_true, bombL, bind_apply, emit_apply, Option.bind_some, pure_apply, Option.some.injEq,
+      Prod.mk.injEq] at hr
+    obtain ⟨rfl, rfl⟩ := hr
+    exact ⟨rfl, rfl⟩
+  · simp only [runLCH, h0, if_false, simpleNextL, bind_apply, pure_apply, Option.bind_some] at hr
+    by_cases h1 : ax = 1
+    · simp only [h1, if_true, pure_apply, Option.some.injEq, Prod.mk.injEq] at hr
+      obtain ⟨rfl, rfl⟩ := hr
+      exact ⟨rfl, rfl⟩
+    · have e : fromL ax (ofSure sur) = (fromSure ax sur).map ofSure := by simp [fromL, ofSure]
+      simp only [h1, if_false, e] at hr
+      cases hf : fromSure ax sur with
+      | none => simp [hf] at hr
+      | some s' =>
+        simp only [hf, Option.map_some, pure_apply, Option.some.injEq, Prod.mk.injEq] at hr
+        obtain ⟨rfl, rfl⟩ := hr
+        exact ⟨rfl, rfl⟩
+
+theorem noBondH_n1 (k : Noun) : NoBondH (S := S) (Map := Map) snd env (Nomm.n1 k) := by
+  intro sup sur th region g0 g1 nex hr
+  simp only [runLCH] at hr
+  obtain ⟨o, g', -, h2⟩ := bind_some hr
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h2
+  obtain ⟨rfl, rfl⟩ := h2
+  exact ⟨rfl, rfl⟩
+
+theorem noBondH_n4 {p : Nomm} (hp : NoBondH (S := S) (Map := Map) snd env p) :
+    NoBondH (S := S) (Map := Map) snd env (Nomm.n4 p) := by
+  intro sup sur th region g0 g1 nex hr
+  obtain ⟨arg, o, gX, h⟩ := runLCH_n4_last (fun z o => by simp) hr
+  exact hp h
+
+theorem noBondH_n7 {p q : Nomm} (hp : NoBondH (S := S) (Map := Map) snd env p)
+    (hq : NoBondH (S := S) (Map := Map) snd env q) : NoBondH (S := S) (Map := Map) snd env (Nomm.n7 p q) := by
+  intro sup sur th region g0 g1 nex hr
+  rw [runLCH_n7] at hr
+  obtain ⟨nx, ga, h1, h2⟩ := bind_some hr
+  obtain ⟨f1, b1⟩ := hq h1
+  have e : nx.goal = CGoalL.next (ofSure nx.laz.sure) nx.th := by
+    simp only [NextL.goal]; rw [← Lazy.eta nx.laz, f1, b1]; rfl
+  rw [e] at h2
+  exact hp h2
+
+theorem noBondH_n11s {tag : Nat} (hs : hintStatic tag = false) {q : Nomm} (body : Noun)
+    (hq : NoBondH (S := S) (Map := Map) snd env q) : NoBondH (S := S) (Map := Map) snd env (Nomm.n11s tag q body) := by
+  intro sup sur th region g0 g1 nex hr
+  rw [runLCH_n11s env snd true hs] at hr
+  exact hq hr
+
+theorem noBondH_n11d {tag : Nat} (hs : hintDynamic tag = false) {h q : Nomm} (hh : safeNomm h = true) (body : Noun)
+    (hq : NoBondH (S := S) (Map := Map) snd env q) : NoBondH (S := S) (Map := Map) snd env (Nomm.n11d tag h q body) := by
+  intro sup sur th region g0 g1 nex hr
+  rw [runLCH_n11d_safe env snd true hs hh] at hr
+  exact hq hr
+
+end NoBond
 
 /-! ## The kept static hint under `%done` -/
 
@@ -295,7 +359,7 @@ theorem n11sKept_done {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop
       exact ⟨by simp only [Gen.emitted]; omega, condBelow_none hcb (Nat.le_refl _)⟩)
     (fun e he => by rw [e0] at he; cases he) (by rw [e0]; simp) (fun e he => by rw [e0] at he; cases he)
     (flat_ofSure _) trivial (fun e he => by rw [e0] at he; cases he) h3
-  have hb0 := hnb h3
+  have hb0 := (hnb h3).2
   have hq : nq.laz = ofSure nq.laz.sure := lazy_eq_ofSure hfl.1 hb0
   have dc : gc.drop = false := RS.drop.trans d0
   have uc : UpBelow gc := RS.grow.up (G12.up hu)
