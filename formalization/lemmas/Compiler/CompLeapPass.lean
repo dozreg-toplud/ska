@@ -348,5 +348,185 @@ theorem pth_gate {K : Noun} (hK : PassIn K) (a b : List (Nat × Nat)) (ha : PosL
     nock_open pthBat
     simp [nock_exec, hK.1, turn.arm_at, turn_arm, zing.arm_at, lq_zing_arm, ht, hz, e, hn0]
 
+/-! ## `+pass-edit` -/
+
+/-- The gate of `+pass-edit` on a part `x` of the edited noun, on positive
+axes: nothing when `x` is under the axis `axe`, `x` when it is beside it, the
+parts beside the path when it is above it. -/
+def peOne (axe : Nat) (x : Nat × Nat) : List (Nat × Nat) :=
+  match (gep axe x.1).join with
+  | some _ => []
+  | Option.none => match (gep x.1 axe).join with
+    | Option.none => [x]
+    | some d => editLoop x.1 x.2 d
+
+theorem passEdit_pos {axe : Nat} {don rec : List (Nat × Nat)} (hax : axe ≠ 0) (hr : PosL rec) :
+    passEdit axe don rec
+      = some (don.map (fun x => (pegF axe x.1, x.2)) ++ (rec.map (peOne axe)).flatten) := by
+  unfold passEdit
+  rw [turnO_some _ (peOne axe) rec (fun x hx => by
+    obtain ⟨hx1, hx2⟩ := hr x hx
+    rw [gep_pos hax hx1]
+    unfold peOne
+    cases (gep axe x.1).join with
+    | some d => rfl
+    | none =>
+      simp only [Option.bind_some]
+      rw [gep_pos hx1 hax]
+      cases (gep x.1 axe).join <;> rfl)]
+  rfl
+
+theorem editLoop_pos : ∀ (d p s : Nat), p ≠ 0 → s ≠ 0 → PosL (editLoop p s d) := by
+  intro d
+  induction d using Nat.strongRecOn with
+  | ind d ih =>
+    intro p s hp hs
+    rw [editLoop.eq_def]
+    split
+    · intro e he; simp at he
+    · rename_i h
+      intro e he
+      simp only [List.mem_cons] at he
+      have h3 : ∀ o, o = 2 ∨ o = 3 → pegF p o ≠ 0 ∧ pegF s o ≠ 0 := fun o ho =>
+        ⟨pegF_ne hp (by omega), pegF_ne hs (by omega)⟩
+      have hk : cap d = 2 ∨ cap d = 3 := by rw [← capF_eq_cap]; exact capF_cases d (by omega)
+      rcases he with rfl | he
+      · exact h3 _ (by split <;> omega)
+      · exact ih (mas d) (mas_lt d (by omega)) _ _ (h3 _ hk).1 (h3 _ hk).2 e he
+
+theorem peOne_pos {axe : Nat} {x : Nat × Nat} (hx : x.1 ≠ 0 ∧ x.2 ≠ 0) : PosL (peOne axe x) := by
+  unfold peOne
+  split
+  · intro e he; simp at he
+  · split
+    · intro e he; simp at he; subst he; exact hx
+    · exact editLoop_pos _ _ _ hx.1 hx.2
+
+theorem passEdit_posL {axe : Nat} {don rec r : List (Nat × Nat)} (hax : axe ≠ 0) (hd : PosL don)
+    (hr : PosL rec) (h : passEdit axe don rec = some r) : PosL r := by
+  rw [passEdit_pos hax hr] at h
+  simp only [Option.some.injEq] at h
+  subst h
+  intro e he
+  simp only [List.mem_append, List.mem_map, List.mem_flatten] at he
+  rcases he with ⟨x, hx, rfl⟩ | ⟨_, ⟨x, hx, rfl⟩, he⟩
+  · exact ⟨pegF_ne hax (hd x hx).1, (hd x hx).2⟩
+  · exact peOne_pos (hr x hx) e he
+
+/-- The trap of `+pass-edit`: the parts beside the path `d` from `[p s]`. -/
+theorem ped_loop {K : Noun} (hK : PassIn K) (U X : Noun) :
+    ∀ d, 1 ≤ d → ∀ p s, p ≠ 0 → s ≠ 0 →
+    nock (C pedL1 (C (A d) (C U (C pedG2 (C (pN (p, s)) (C pedBat (C X K))))))) pedL1
+      = some (lN (editLoop p s d)) := by
+  have hl1 := pi_layer1 hK
+  have har := cf_arith
+  intro d
+  induction d using Nat.strongRecOn with
+  | ind d ih =>
+    intro hd p s hp hs
+    by_cases d1 : d = 1
+    · subst d1
+      nock_open pedL1
+      rw [editLoop.eq_def]
+      simp [nock_exec, lN]
+    have h2 : 2 ≤ d := by omega
+    have hcap := cap_gate layer1 har.2.2.2 d h2
+    have hmas := mas_gate layer1 har d h2
+    have hm1 : 1 ≤ masF d := masF_pos d h2
+    have hne : ¬ (1 = d) := by omega
+    rcases capF_cases d h2 with hc2 | hc3
+    · have ihm := ih (masF d) (by rw [masF_eq_mas]; exact mas_lt d h2) hm1 (pegF p 2) (pegF s 2)
+        (pegF_ne hp (by omega)) (pegF_ne hs (by omega))
+      have hp3 := pi_peg hp (b := 3) (by omega)
+      have hs3 := pi_peg hs (b := 3) (by omega)
+      have hp2 := pi_peg hp (b := 2) (by omega)
+      have hs2 := pi_peg hs (b := 2) (by omega)
+      simp only [pN] at ihm ⊢
+      nock_open pedL1
+      rw [editLoop.eq_def]
+      simp [nock_exec, hl1, hne, cap_arm, cap.arm_at, hcap, hc2, mas_arm, mas.arm_at, hmas, ihm,
+        show ¬ d ≤ 1 by omega, ← capF_eq_cap, ← masF_eq_mas, peg_arm, peg.arm_at, hp3, hs3,
+        hp2, hs2, lN, pN]
+    · have ihm := ih (masF d) (by rw [masF_eq_mas]; exact mas_lt d h2) hm1 (pegF p 3) (pegF s 3)
+        (pegF_ne hp (by omega)) (pegF_ne hs (by omega))
+      have hp3 := pi_peg hp (b := 3) (by omega)
+      have hs3 := pi_peg hs (b := 3) (by omega)
+      have hp2 := pi_peg hp (b := 2) (by omega)
+      have hs2 := pi_peg hs (b := 2) (by omega)
+      simp only [pN] at ihm ⊢
+      nock_open pedL1
+      rw [editLoop.eq_def]
+      simp [nock_exec, hl1, hne, cap_arm, cap.arm_at, hcap, hc3, mas_arm, mas.arm_at, hmas, ihm,
+        show ¬ d ≤ 1 by omega, ← capF_eq_cap, ← masF_eq_mas, peg_arm, peg.arm_at, hp3, hs3,
+        hp2, hs2, lN, pN]
+
+/-- The gate of `+pass-edit` over the parts of the edited noun. -/
+theorem ped_g2 {K : Noun} (hK : PassIn K) (axe : Nat) (hax : axe ≠ 0) (Y : Noun) (x : Nat × Nat)
+    (hx : x.1 ≠ 0 ∧ x.2 ≠ 0) :
+    nock (C pedG2 (C (pN x) (C pedBat (C (C (A axe) Y) K)))) pedG2
+      = some (lN (peOne axe x)) := by
+  obtain ⟨p, s⟩ := x
+  obtain ⟨hp, hs⟩ := hx
+  simp only at hp hs
+  have hg1 := pi_gep hK hax hp
+  have hg2 := pi_gep hK hp hax
+  unfold peOne
+  nock_open pedG2
+  cases e1 : (gep axe p).join with
+  | some d =>
+    rw [e1] at hg1
+    simp [nock_exec, pN, hK.2.1, gepArm, hg1, unitNoun, lN]
+  | none =>
+    rw [e1] at hg1
+    cases e2 : (gep p axe).join with
+    | some d =>
+      rw [e2] at hg2
+      have hl := ped_loop hK (C (A 0) (A d)) (C (A axe) Y) d (by have := gep_join_pos e2; omega)
+        p s hp hs
+      simp only [pN] at hl
+      simp [nock_exec, pN, hK.2.1, gepArm, hg1, hg2, unitNoun, hl]
+    | none =>
+      rw [e2] at hg2
+      simp [nock_exec, pN, hK.2.1, gepArm, hg1, hg2, unitNoun, lN]
+
+/-- The gate of `+pass-edit` over the parts of the new part. -/
+theorem ped_g1 {K : Noun} (hK : PassIn K) (axe : Nat) (hax : axe ≠ 0) (Y : Noun) (x : Nat × Nat)
+    (hx : x.1 ≠ 0 ∧ x.2 ≠ 0) :
+    nock (C pedG1 (C (pN x) (C pedBat (C (C (A axe) Y) K)))) pedG1
+      = some (pN (pegF axe x.1, x.2)) := by
+  have hl1 := pi_layer1 hK
+  have hp := pi_peg hax hx.1
+  nock_open pedG1
+  simp [nock_exec, pN, hl1, peg_arm, peg.arm_at, hp]
+
+/-- **`+pass-edit`** is `passEdit` on a positive axis and lists of parts with
+no axis `0`. -/
+theorem ped_gate {K : Noun} (hK : PassIn K) (axe : Nat) (don rec : List (Nat × Nat)) (hax : axe ≠ 0)
+    (hd : PosL don) (hr : PosL rec) :
+    nock (C pedBat (C (C (A axe) (C (lN don) (lN rec))) K)) pedBat
+      = (passEdit axe don rec).map lN := by
+  rw [passEdit_pos hax hr]
+  have ht1 := lq_turn_gate pN pN layer2 homoIn_layer2 pedG1 (C (A 0) (A 0))
+    (C pedBat (C (C (A axe) (C (lN don) (lN rec))) K)) (fun x => (pegF axe x.1, x.2)) don
+    (fun x hx => ped_g1 hK axe hax _ x (hd x hx))
+  have ht2 := lq_turn_gate pN listN layer2 homoIn_layer2 pedG2 (C (A 0) (A 0))
+    (C pedBat (C (C (A axe) (C (lN don) (lN rec))) K)) (fun x => (peOne axe x).map pN) rec
+    (fun x hx => ped_g2 hK axe hax _ x (hr x hx))
+  have hz : nock (C zing.battery (C (listN (rec.map fun x => listN ((peOne axe x).map pN))) layer2))
+      zing.battery = some (lN (rec.map (peOne axe)).flatten) := by
+    have := lq_zing (rec.map (peOne axe))
+    simpa [List.map_map, Function.comp_def] using this
+  have hw := weld_gate_list layer2 ((don.map fun x => (pegF axe x.1, x.2)).map pN)
+    (((rec.map (peOne axe)).flatten).map pN)
+  simp only [List.map_map, Function.comp_def] at ht1 ht2 hw
+  have hld : lN don = listN (don.map pN) := rfl
+  have hlr : lN rec = listN (rec.map pN) := rfl
+  rw [hld, hlr] at ht1 ht2 ⊢
+  unfold lN at hz
+  simp only [List.map_flatten, List.map_map, Function.comp_def] at hz hw
+  nock_open pedBat
+  simp [nock_exec, hK.1, turn.arm_at, turn_arm, zing.arm_at, lq_zing_arm, weld.arm_at, weld_arm,
+    ht1, ht2, hz, hw, lN, List.map_append, Function.comp_def]
+
 end Compiler
 end Formalization
