@@ -55,13 +55,15 @@ theorem upRk_congr {bl bl' : Map Blob} {k : Nat}
       subst h
       cases f <;> rfl
 
-/-- **A run of the first fragment from a state whose blocks may hop up.** -/
-theorem run_rawU {nm : Nomm} {goal : CGoal S} {g0 g1 : Comp.Gen Map} {nex : Next S}
+/-- **A run of the first fragment from a state whose blocks may hop up**,
+with liveness over kills `K` at the old labels (below `g0.bo`). -/
+theorem run_rawUK {K : Nat → Nat → Prop} {nm : Nomm} {goal : CGoal S} {g0 g1 : Comp.Gen Map} {nex : Next S}
+    [KVan K g0.bo]
     (h : SIP X (upRk g0.blocks) g0.bo g0) (hg : GoalIn g0.re goal) (hD : GDist goal) (hj : GJ g0.bo goal)
     (ha : GArgs goal) (hf : ∀ r, Defd g0.blocks r → ¬ GMem goal r) (hr : run nm goal g0 = some (nex, g1)) :
     SIP X (upRk g1.blocks) g1.bo g1 ∧
-      ∀ r, Live g1.blocks nex.th.there r → NMem nex.laz.ned r ∨ GLive g0.blocks goal r := by
-  obtain ⟨S1, L1⟩ := run_rawP nm goal g0 g1 nex h hg hD hj ha hf hr
+      ∀ r, LiveK g1.blocks K nex.th.there r → NMem nex.laz.ned r ∨ GLiveK g0.blocks K goal r := by
+  obtain ⟨S1, L1⟩ := run_rawPK (K := K) nm goal g0 g1 nex h hg hD hj ha hf hr
   have G := (run_down nm goal g0 g1 nex hj h.bo1 h.drop hr).grow
   have hbo := G.bo
   have E : ∀ k, upRk g1.blocks k = upRk g0.blocks k := by
@@ -102,6 +104,15 @@ theorem run_rawU {nm : Nomm} {goal : CGoal S} {g0 g1 : Comp.Gen Map} {nex : Next
     by_cases e : x < g0.bo
     · have := h.rlo x e; omega
     · rw [h.rk x (by omega)]; omega
+
+/-- **A run of the first fragment from a state whose blocks may hop up.** -/
+theorem run_rawU {nm : Nomm} {goal : CGoal S} {g0 g1 : Comp.Gen Map} {nex : Next S}
+    (h : SIP X (upRk g0.blocks) g0.bo g0) (hg : GoalIn g0.re goal) (hD : GDist goal) (hj : GJ g0.bo goal)
+    (ha : GArgs goal) (hf : ∀ r, Defd g0.blocks r → ¬ GMem goal r) (hr : run nm goal g0 = some (nex, g1)) :
+    SIP X (upRk g1.blocks) g1.bo g1 ∧
+      ∀ r, Live g1.blocks nex.th.there r → NMem nex.laz.ned r ∨ GLive g0.blocks goal r := by
+  obtain ⟨S1, L1⟩ := run_rawUK (K := fun _ _ => False) h hg hD hj ha hf hr
+  exact ⟨S1, fun r hl => (L1 r (liveK_of_live hl)).imp id gLiveK_none.mp⟩
 
 end Raw
 end SkaModel

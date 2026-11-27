@@ -259,6 +259,126 @@ theorem sip_addOps {g g' : Comp.Gen Map} {o : Nat} {A : List Pole} {u : Unit} (h
     · exact h.jr k b hb j hj
     · exact h.jr k b' hk j hj
 
+/-! ## Liveness with kills that vanish from `lo` on
+
+The liveness half of `run_rawP` over `LiveK K` (`run_rawPK`), for kills `K`
+at labels below `lo` only: a run's new blocks are at `lo` and above, where
+`LiveK K` is `Live`, so its proofs go through with the forms below. -/
+
+/-- **The kills `K` vanish from the label `lo` on.** -/
+class KVan (K : Nat → Nat → Prop) (lo : Nat) : Prop where
+  van : ∀ k r, lo ≤ k → ¬ K k r
+
+instance KVan.none (lo : Nat) : KVan (fun _ _ => False) lo := ⟨fun _ _ _ h => h⟩
+
+/-- What a run for `goal` may leave live at its entry beyond its result's
+need, with the kills `K`. -/
+def GLiveK {S : Type} [HoonSet S] (bl : Map Blob) (K : Nat → Nat → Prop) : CGoal S → Nat → Prop
+  | CGoal.next laz th, r => LiveK bl K th.there r ∧ ¬ NMem laz.ned r
+  | CGoal.pick z o, r => LiveK bl K z.there r ∨ LiveK bl K o.there r
+  | CGoal.done, _ => False
+
+theorem gLiveK_none {S : Type} [HoonSet S] {bl : Map Blob} {goal : CGoal S} {r : Nat} :
+    GLiveK bl (fun _ _ => False) goal r ↔ GLive bl goal r := by
+  cases goal with
+  | next laz th => exact and_congr_left fun _ => ⟨LiveK.live, liveK_of_live⟩
+  | pick z o => exact or_congr ⟨LiveK.live, liveK_of_live⟩ ⟨LiveK.live, liveK_of_live⟩
+  | done => exact Iff.rfl
+
+theorem LiveK.nk {bl : Map Blob} {K : Nat → Nat → Prop} {k r : Nat} (h : LiveK bl K k r) : ¬ K k r := by
+  cases h with
+  | here _ _ hk => exact hk
+  | next _ _ _ _ hk => exact hk
+
+theorem liveK_cases {bl : Map Blob} {K : Nat → Nat → Prop} {k r : Nat} (h : LiveK bl K k r) :
+    ∃ b, HoonMap.get bl k = some b ∧
+      (BlockRF b r ∨ ∃ j ∈ getJmps b.fin, LiveK bl K j.there r ∧ r ∉ blockDefs b) := by
+  cases h with
+  | here hb hr _ => exact ⟨_, hb, Or.inl hr⟩
+  | next hb hj hl hd _ => exact ⟨_, hb, Or.inr ⟨_, hj, hl, hd⟩⟩
+
+theorem liveK_iff {bl : Map Blob} {K : Nat → Nat → Prop} {k r : Nat} (hk : ¬ K k r) :
+    LiveK bl K k r ↔ ∃ b, HoonMap.get bl k = some b ∧
+      (BlockRF b r ∨ ∃ j ∈ getJmps b.fin, LiveK bl K j.there r ∧ r ∉ blockDefs b) := by
+  refine ⟨liveK_cases, ?_⟩
+  rintro ⟨b, hb, hr | ⟨j, hj, hl, hd⟩⟩
+  · exact LiveK.here hb hr hk
+  · exact LiveK.next hb hj hl hd hk
+
+theorem KVan.no {K : Nat → Nat → Prop} [KVan K lo] {k r : Nat} (hk : lo ≤ k) : ¬ K k r := KVan.van k r hk
+
+theorem liveK_frameRk_to {K : Nat → Nat → Prop} {ρ : Nat → Nat} {bl bl' : Map Blob} {M : Nat} (hd : JDownR ρ bl)
+    (he : ∀ x, ρ x < M → HoonMap.get bl' x = HoonMap.get bl x) {k r : Nat} (h : LiveK bl' K k r) (hk : ρ k < M) :
+    LiveK bl K k r := by
+  induction h with
+  | @here k b r hb hr hn => rw [he k hk] at hb; exact LiveK.here hb hr hn
+  | @next k b j r hb hj _ hd' hn ih =>
+    rw [he k hk] at hb
+    exact LiveK.next hb hj (ih (Nat.lt_trans (hd k b hb j hj) hk)) hd' hn
+
+theorem liveK_frameRk_of {K : Nat → Nat → Prop} {ρ : Nat → Nat} {bl bl' : Map Blob} {M : Nat} (hd : JDownR ρ bl)
+    (he : ∀ x, ρ x < M → HoonMap.get bl' x = HoonMap.get bl x) {k r : Nat} (h : LiveK bl K k r) (hk : ρ k < M) :
+    LiveK bl' K k r := by
+  induction h with
+  | @here k b r hb hr hn => rw [← he k hk] at hb; exact LiveK.here hb hr hn
+  | @next k b j r hb hj _ hd' hn ih =>
+    have hlt := hd k b hb j hj
+    rw [← he k hk] at hb
+    exact LiveK.next hb hj (ih (Nat.lt_trans hlt hk)) hd' hn
+
+/-- **Liveness with kills below the rank `M` sees only the blocks below `M`.** -/
+theorem liveK_frameRk {K : Nat → Nat → Prop} {ρ : Nat → Nat} {bl bl' : Map Blob} {M : Nat} (hd : JDownR ρ bl)
+    (he : ∀ x, ρ x < M → HoonMap.get bl' x = HoonMap.get bl x) {k r : Nat} (hk : ρ k < M) :
+    LiveK bl' K k r ↔ LiveK bl K k r :=
+  ⟨fun h => liveK_frameRk_to hd he h hk, fun h => liveK_frameRk_of hd he h hk⟩
+
+theorem liveK_unfoldRk {K : Nat → Nat → Prop} {ρ : Nat → Nat} {bl bl' : Map Blob} {k M : Nat} {b : Blob}
+    (hk : HoonMap.get bl' k = some b)
+    (hd : JDownR ρ bl) (he : ∀ x, ρ x < M → HoonMap.get bl' x = HoonMap.get bl x)
+    (hj : ∀ j ∈ getJmps b.fin, ρ j.there < M) {r : Nat} (h : LiveK bl' K k r) :
+    BlockRF b r ∨ ∃ j ∈ getJmps b.fin, LiveK bl K j.there r ∧ r ∉ blockDefs b := by
+  obtain ⟨b', hb', hr⟩ := liveK_cases h
+  rw [hk] at hb'; cases hb'
+  rcases hr with hr | ⟨j, hjm, hl, hn⟩
+  · exact Or.inl hr
+  · exact Or.inr ⟨j, hjm, (liveK_frameRk hd he (hj j hjm)).mp hl, hn⟩
+
+/-- **Liveness with kills at a block with ops in front**, when the blocks
+go down in a rank. -/
+theorem liveK_prependRk {K : Nat → Nat → Prop} {ρ : Nat → Nat} {bl : Map Blob} {o : Nat} {b : Blob} {A : List Pole}
+    (hb : HoonMap.get bl o = some b) (hd : JDownR ρ bl) {r : Nat}
+    (h : LiveK (HoonMap.put bl o (pre A b)) K o r) :
+    (r ∉ b.par ∧ OpsRF A r) ∨ (r ∉ defsOf A ∧ LiveK bl K o r) := by
+  have hnk := h.nk
+  have he : ∀ x, ρ x < ρ o → HoonMap.get (HoonMap.put bl o (pre A b)) x = HoonMap.get bl x :=
+    fun x hx => get_put_ne (fun e => by subst e; omega)
+  rcases liveK_unfoldRk (b := pre A b) get_put_self hd he (fun j hj => hd o b hb j hj) h with
+    ⟨hp, hr⟩ | ⟨j, hj, hl, hn⟩
+  · simp only [pre] at hp hr
+    rcases hr with hr | ⟨hn, hf⟩
+    · rcases opsRF_append.mp hr with hr | ⟨hnA, hr⟩
+      · exact Or.inl ⟨hp, hr⟩
+      · exact Or.inr ⟨hnA, LiveK.here hb ⟨hp, Or.inl hr⟩ hnk⟩
+    · rw [defsOf_append, List.mem_append, not_or] at hn
+      exact Or.inr ⟨hn.1, LiveK.here hb ⟨hp, Or.inr ⟨hn.2, hf⟩⟩ hnk⟩
+  · have hn' : r ∉ blockDefs b ∧ r ∉ defsOf A := ⟨fun e => hn (mem_blockDefs_pre.mpr (Or.inl e)),
+      fun e => hn (mem_blockDefs_pre.mpr (Or.inr e))⟩
+    exact Or.inr ⟨hn'.2, LiveK.next hb hj hl hn'.1 hnk⟩
+
+theorem liveK_unfoldP {K : Nat → Nat → Prop} {bl bl' : Map Blob} {k L : Nat} {b : Blob}
+    (hk : HoonMap.get bl' k = some b)
+    (hd : DownBelowP bl L) (he : ∀ x, x < L → HoonMap.get bl' x = HoonMap.get bl x)
+    (hj : ∀ j ∈ getJmps b.fin, j.there < L) {r : Nat} (h : LiveK bl' K k r) :
+    BlockRF b r ∨ ∃ j ∈ getJmps b.fin, LiveK bl K j.there r ∧ r ∉ blockDefs b :=
+  let ⟨_, hd, h1, h2⟩ := hd
+  liveK_unfoldRk hk hd (fun x hx => he x (h1 x hx)) (fun j hj' => h2 _ (hj j hj')) h
+
+theorem liveK_frameP {K : Nat → Nat → Prop} {bl bl' : Map Blob} {L : Nat} (hd : DownBelowP bl L)
+    (he : ∀ x, x < L → HoonMap.get bl' x = HoonMap.get bl x) {k r : Nat} (hk : k < L) :
+    LiveK bl' K k r ↔ LiveK bl K k r :=
+  let ⟨_, hd, h1, h2⟩ := hd
+  liveK_frameRk hd (fun x hx => he x (h1 x hx)) (h2 k hk)
+
 end Raw
 end SkaModel
 end Formalization

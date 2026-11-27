@@ -21,6 +21,7 @@ open Nock Opt Comp
 
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
 variable {X : Map Blob → Prop} [XOK X] {ρ : Nat → Nat} {lo : Nat}
+variable {K : Nat → Nat → Prop} [KVan K lo]
 
 theorem pre_pre (A B : List Pole) (b : Blob) : pre A (pre B b) = pre (A ++ B) b := by
   cases b; simp [pre]
@@ -210,7 +211,7 @@ theorem raw_mede {th : Jmp} {som : Noun} {laz : Sure S} {g g' : Comp.Gen Map} {o
     (hm : mede th som laz g = some (o, g')) :
     SIP X ρ lo g' ∧ o = g.bo ∧ g'.bo = g.bo + 1 ∧ g.re ≤ g'.re ∧
       (∀ k, k < g.bo → HoonMap.get g'.blocks k = HoonMap.get g.blocks k) ∧
-      (∀ y, Live g'.blocks o y → Live g.blocks th.there y ∧ ¬ NMem laz.ned y) ∧
+      (∀ y, LiveK g'.blocks K o y → LiveK g.blocks K th.there y ∧ ¬ NMem laz.ned y) ∧
       (∀ y, Defd g'.blocks y → Defd g.blocks y ∨ NMem laz.ned y ∨ (g.re ≤ y ∧ y < g'.re)) := by
   simp only [mede] at hm
   obtain ⟨o1, g1, h1, hm⟩ := bind_some hm
@@ -249,7 +250,7 @@ theorem raw_mede {th : Jmp} {som : Noun} {laz : Sure S} {g g' : Comp.Gen Map} {o
     rw [get4, if_neg (by omega), b3, e1, get_put_ne (by omega)]
   refine ⟨S4, rfl, by omega, by omega, below, fun y hy => ?_, fun y hy => ?_⟩
   · have hk : HoonMap.get g4.blocks g.bo = some ⟨[], A ++ [], Termin.hop th⟩ := by rw [get4, if_pos rfl]
-    rcases live_unfoldP hk (h.below g.bo) below (fun j hj' => by simp [getJmps] at hj'; subst hj'; exact hj) hy with
+    rcases liveK_unfoldP hk (h.below g.bo) below (fun j hj' => by simp [getJmps] at hj'; subst hj'; exact hj) hy with
       ⟨-, hr⟩ | ⟨j, hj', hl, hn'⟩
     · simp only [List.append_nil] at hr
       rcases hr with hr | ⟨-, hr⟩

@@ -25,6 +25,7 @@ open Nock Opt Comp
 
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
 variable {X : Map Blob → Prop} [XOK X] {ρ : Nat → Nat} {lo : Nat}
+variable {K : Nat → Nat → Prop} [KVan K lo]
 
 theorem tr_con {a c d : Nat} : trOp (Pole.con a c d) = false := rfl
 
@@ -234,8 +235,8 @@ theorem raw_into {laz : Sure S} {th : Jmp} {axe : Nat} {g g' : Comp.Gen Map} {do
     (hs : into ⟨laz, th⟩ axe g = some ((don, rec, o), g')) :
     SIP X ρ lo g' ∧ o = g.bo ∧ g'.bo = g.bo + 1 ∧ g.re ≤ g'.re ∧
       (∀ k, k < g.bo → HoonMap.get g'.blocks k = HoonMap.get g.blocks k) ∧
-      (∀ y, Live g'.blocks g.bo y → NMem don.ned y ∨ NMem rec.ned y ∨
-        (Live g.blocks th.there y ∧ ¬ NMem laz.ned y)) ∧
+      (∀ y, LiveK g'.blocks K g.bo y → NMem don.ned y ∨ NMem rec.ned y ∨
+        (LiveK g.blocks K th.there y ∧ ¬ NMem laz.ned y)) ∧
       (∀ y, Defd g'.blocks y → Defd g.blocks y ∨ ((NMem laz.ned y ∨ g.re ≤ y) ∧ ¬ NMem don.ned y ∧ ¬ NMem rec.ned y)) ∧
       Distinct don.ned ∧ Distinct rec.ned ∧ (∀ y, NMem don.ned y → ¬ NMem rec.ned y) ∧
       (∀ y, NMem don.ned y → NMem laz.ned y ∨ g.re ≤ y) ∧ (∀ y, NMem rec.ned y → NMem laz.ned y ∨ g.re ≤ y) := by
@@ -266,7 +267,7 @@ theorem raw_into {laz : Sure S} {th : Jmp} {axe : Nat} {g g' : Comp.Gen Map} {do
     obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h3
     refine ⟨S1, trivial, bo1, by omega, below1, fun y hy => ?_, fun y d => Or.inl ((dd1 y).mp d), dn, trivial,
       fun _ _ e => e.elim, fun y hy => Or.inl hy, fun y hy => hy.elim⟩
-    rcases live_unfoldP hb1 (h.below g.bo) below1 (fun j hj' => by simp [getJmps] at hj'; subst hj'; exact hj) hy with
+    rcases liveK_unfoldP hb1 (h.below g.bo) below1 (fun j hj' => by simp [getJmps] at hj'; subst hj'; exact hj) hy with
       hr | ⟨j, hj', hl', -⟩
     · rw [blockRF_fin] at hr; simp [finRegs, jmpRegs_nil ha] at hr
     · simp [getJmps] at hj'; subst hj'
@@ -301,7 +302,7 @@ theorem raw_into {laz : Sure S} {th : Jmp} {axe : Nat} {g g' : Comp.Gen Map} {do
     fun y hy => (I.md y hy).imp id fun e => by omega, fun y hy => (I.mr y hy).imp id fun e => by omega⟩
   · have hk : HoonMap.get g3.blocks g.bo = some ⟨[], ops' ++ [], Termin.hop th⟩ := by
       rw [e3]; exact get_put_self
-    rcases live_unfoldP hk (h.below g.bo) below (fun j hj' => by simp [getJmps] at hj'; subst hj'; exact hj) hy with
+    rcases liveK_unfoldP hk (h.below g.bo) below (fun j hj' => by simp [getJmps] at hj'; subst hj'; exact hj) hy with
       ⟨-, hr⟩ | ⟨j, hj', hl', hn'⟩
     · simp only [List.append_nil] at hr
       rcases hr with hr | ⟨-, hr⟩
@@ -344,12 +345,12 @@ theorem simpleNext_dist {goal : CGoal S} {g g' : Comp.Gen Map} {nex : Next S} (h
 
 /-! ## `[10 [a v] q]` -/
 
-theorem raw_n10 (a : Nat) {v q : Nomm} (ihv : RawIHP S Map X ρ lo v) (ihq : RawIHP S Map X ρ lo q) :
-    RawIHP S Map X ρ lo (Nomm.n10 a v q) := by
+theorem raw_n10 (a : Nat) {v q : Nomm} (ihv : RawIHPK S Map X ρ lo K v) (ihq : RawIHPK S Map X ρ lo K q) :
+    RawIHPK S Map X ρ lo K (Nomm.n10 a v q) := by
   intro goal g0 g1 nex h hg hD hj ha hf hr
   simp only [run] at hr
   obtain ⟨nx, g2, h2, hr⟩ := bind_some hr
-  obtain ⟨S2, l2, bo2, a2, t2, fr2, dd2, L2, m2, -⟩ := raw_simpleNext h hj ha hg h2
+  obtain ⟨S2, l2, bo2, a2, t2, fr2, dd2, L2, m2, -⟩ := raw_simpleNext (K := K) h hj ha hg h2
   have D2 := simpleNext_dist hD h2
   have hgm : ∀ x, GMem goal x → x < g0.re := fun x hx => by
     cases goal with
@@ -365,7 +366,7 @@ theorem raw_n10 (a : Nat) {v q : Nomm} (ihv : RawIHP S Map X ρ lo v) (ihq : Raw
     · exact hf y d e
     · have := h.defd_lt d; omega
   obtain ⟨⟨don, rec, o⟩, g3, h3, hr⟩ := bind_some hr
-  obtain ⟨S3, rfl, bo3, l3, fr3, L3, dd3, Dd, Dr, Ap, md, mr⟩ := raw_into S2 D2 nb2 a2 t2 nf2 h3
+  obtain ⟨S3, rfl, bo3, l3, fr3, L3, dd3, Dd, Dr, Ap, md, mr⟩ := raw_into (K := K) S2 D2 nb2 a2 t2 nf2 h3
   obtain ⟨-, nd3, nr3⟩ := keeps_into S2.drop ⟨nb2, fun x hx => by rw [a2] at hx; cases hx⟩ h3
   simp only at nd3 nr3
   obtain ⟨nexR, g3', hpr, hr⟩ := bind_some hr
@@ -399,14 +400,16 @@ theorem raw_n10 (a : Nat) {v q : Nomm} (ihv : RawIHP S Map X ρ lo v) (ihq : Raw
 
 /-! ## The induction -/
 
-/-- **`RawIHP` holds of every nomm**: on the nomms where `run` returns (the
+/-- **`RawIHPK` holds of every nomm**: on the nomms where `run` returns (the
 first fragment), every run from a state with `SIP` (jumps down in a rank
 `ρ`, labels from `lo` on ranked `3 k`, a carried predicate `X` that the two
-steps keep) keeps it and leaves live at its entry only its result's need
-and what its goal's continuation needs beyond the goal.  So a run of the
+steps keep) keeps it and leaves live at its entry, with kills `K` that
+vanish from `lo` on, only its result's need and what its goal's
+continuation needs beyond the goal with the same kills.  So a run of the
 first fragment after a `%6` under `%next` (fork blocks that hop up, a join
-with several parameters) is covered, with `X := fun _ => True`. -/
-theorem run_rawP : ∀ nm : Nomm, RawIHP S Map X ρ lo nm := by
+with several parameters) is covered, with `X := fun _ => True`, and so is a
+run whose goal's continuation is code with lazy entries that kill. -/
+theorem run_rawPK : ∀ nm : Nomm, RawIHPK S Map X ρ lo K nm := by
   intro nm
   induction nm with
   | n0 ax => exact raw_n0 ax
@@ -423,6 +426,12 @@ theorem run_rawP : ∀ nm : Nomm, RawIHP S Map X ρ lo nm := by
   | n11d => intro goal g0 g1 nex _ _ _ _ _ _ h; simp only [run] at h; cases h
   | n12 => intro goal g0 g1 nex _ _ _ _ _ _ h; simp only [run] at h; cases h
   | mean => intro goal g0 g1 nex _ _ _ _ _ _ h; simp only [run] at h; cases h
+
+/-- **`RawIHP` holds of every nomm**: `run_rawPK` with no kills. -/
+theorem run_rawP : ∀ nm : Nomm, RawIHP S Map X ρ lo nm := by
+  intro nm goal g0 g1 nex h hg hD hj ha hf hr
+  obtain ⟨S1, L1⟩ := run_rawPK (K := fun _ _ => False) nm goal g0 g1 nex h hg hD hj ha hf hr
+  exact ⟨S1, fun r hl => (L1 r (liveK_of_live hl)).imp id gLiveK_none.mp⟩
 
 /-- **`RawIH` holds of every nomm**: on the nomms where `run` returns (the
 first fragment), every run keeps the invariant and leaves live at its entry

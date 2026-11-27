@@ -30,6 +30,7 @@ open Nock Opt Comp
 
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
 variable {X : Map Blob → Prop} [XOK X] {ρ : Nat → Nat} {lo : Nat}
+variable {K : Nat → Nat → Prop} [KVan K lo]
 
 /-! ## `+sure-require-look` keeps registers -/
 
@@ -242,7 +243,7 @@ theorem raw_collapse [HoonMapKeys Map] {laz : Sure S} {th : Jmp} {g g' : Comp.Ge
       (∀ r there, a = some (r, there) →
         (NMem laz.ned r ∨ (g.re ≤ r ∧ r < g'.re)) ∧ r < g'.re ∧ ¬ Defd g'.blocks r ∧ there < g'.bo ∧
         (∀ y, Defd g'.blocks y → Defd g.blocks y ∨ (g.re ≤ y ∧ y < g'.re ∧ y ≠ r)) ∧
-        (∀ y, Live g'.blocks there y → y = r ∨ (Live g.blocks th.there y ∧ ¬ NMem laz.ned y))) := by
+        (∀ y, LiveK g'.blocks K there y → y = r ∨ (LiveK g.blocks K th.there y ∧ ¬ NMem laz.ned y))) := by
   unfold collapseLazyAtom at hc
   by_cases ha : th.args ≠ []
   · rw [if_pos ha] at hc; cases hc
@@ -345,7 +346,7 @@ theorem raw_collapse [HoonMapKeys Map] {laz : Sure S} {th : Jmp} {g g' : Comp.Ge
   have dd4 : ∀ y, Defd g4.blocks y ↔ Defd g.blocks y := fun y => by rw [b4, dd2]
   have close : ∀ (g5 : Comp.Gen Map) (A : List Pole), SIP X ρ lo g5 → g4.re ≤ g5.re → g5.bo = g4.bo →
       (∀ k, k ≠ there → HoonMap.get g5.blocks k = HoonMap.get g4.blocks k) →
-      (∀ y, Live g5.blocks there y → OpsRF A y ∨ (y ∉ defsOf A ∧ Live g4.blocks there y)) →
+      (∀ y, LiveK g5.blocks K there y → OpsRF A y ∨ (y ∉ defsOf A ∧ LiveK g4.blocks K there y)) →
       (∀ y, OpsRF A y → y = r) →
       (∀ y, Defd g5.blocks y ↔ Defd g4.blocks y ∨ y ∈ defsOf A) →
       (∀ y ∈ defsOf A, g2.re ≤ y ∧ y < g5.re ∧ y ≠ r) →
@@ -356,7 +357,7 @@ theorem raw_collapse [HoonMapKeys Map] {laz : Sure S} {th : Jmp} {g g' : Comp.Ge
       (∀ r there', a = some (r, there') →
         (NMem laz.ned r ∨ (g.re ≤ r ∧ r < g'.re)) ∧ r < g'.re ∧ ¬ Defd g'.blocks r ∧ there' < g'.bo ∧
         (∀ y, Defd g'.blocks y → Defd g.blocks y ∨ (g.re ≤ y ∧ y < g'.re ∧ y ≠ r)) ∧
-        (∀ y, Live g'.blocks there' y → y = r ∨ (Live g.blocks th.there y ∧ ¬ NMem laz.ned y))) := by
+        (∀ y, LiveK g'.blocks K there' y → y = r ∨ (LiveK g.blocks K th.there y ∧ ¬ NMem laz.ned y))) := by
     intro g5 A S5 l5 bo5 fr5 lv5 rf5 dd5 df5 e5
     simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at e5
     obtain ⟨rfl, rfl⟩ := e5
@@ -384,7 +385,7 @@ theorem raw_collapse [HoonMapKeys Map] {laz : Sure S} {th : Jmp} {g g' : Comp.Ge
             by_cases e : NMem laz.ned y
             · exact Or.inl (hr' y e)
             · exact Or.inr ⟨hl, e⟩
-          · exact absurd hl (not_live_bom eb)
+          · exact absurd hl (not_liveK_bom eb)
   cases ned' with
   | none =>
     exact close g4 [] S4 (Nat.le_refl _) rfl (fun _ _ => rfl) (fun y hl => Or.inr ⟨by simp [defsOf], hl⟩)
@@ -413,7 +414,7 @@ theorem raw_collapse [HoonMapKeys Map] {laz : Sure S} {th : Jmp} {g g' : Comp.Ge
       refine close g5 [Pole.mov r r'] S5 (by omega) o5 below (fun y hl => ?_) (fun y hy => ?_) (fun y => ?_)
         (fun y hy => ?_) hc
       · rw [e5] at hl
-        rcases live_prependRk hb5 S4.jr hl with ⟨-, h'⟩ | h'
+        rcases liveK_prependRk hb5 S4.jr hl with ⟨-, h'⟩ | h'
         · exact Or.inl h'
         · exact Or.inr h'
       · simp only [OpsRF, reads_mov] at hy
@@ -441,17 +442,17 @@ theorem raw_collapse [HoonMapKeys Map] {laz : Sure S} {th : Jmp} {g g' : Comp.Ge
     · have hk : HoonMap.get g5.blocks there = some (pre A b5) := by rw [hget, if_pos rfl]
       have he : ∀ x, ρ x < ρ there → HoonMap.get g5.blocks x = HoonMap.get g4.blocks x := fun x hx => by
         rw [hget, if_neg (fun e => by subst e; omega)]
-      have hl' : Live (HoonMap.put g4.blocks there (pre A b5)) there y := by
-        rcases live_iff.mp hl with ⟨b', hb', hr'⟩
+      have hl' : LiveK (HoonMap.put g4.blocks there (pre A b5)) K there y := by
+        rcases liveK_cases hl with ⟨b', hb', hr'⟩
         rw [hk] at hb'; cases hb'
-        refine live_iff.mpr ⟨_, get_put_self, ?_⟩
+        refine (liveK_iff hl.nk).mpr ⟨_, get_put_self, ?_⟩
         rcases hr' with hr' | ⟨j, hj, hlj, hn⟩
         · exact Or.inl hr'
         · refine Or.inr ⟨j, hj, ?_, hn⟩
           have hjt : ρ j.there < ρ there := S4.jr there b5 hb5 j hj
-          exact (live_frameRk S4.jr (fun x hx => get_put_ne (fun e => by subst e; omega)) hjt).mpr
-            ((live_frameRk S4.jr he hjt).mp hlj)
-      rcases live_prependRk hb5 S4.jr hl' with ⟨-, h'⟩ | h'
+          exact (liveK_frameRk S4.jr (fun x hx => get_put_ne (fun e => by subst e; omega)) hjt).mpr
+            ((liveK_frameRk S4.jr he hjt).mp hlj)
+      rcases liveK_prependRk hb5 S4.jr hl' with ⟨-, h'⟩ | h'
       · exact Or.inl h'
       · exact Or.inr h'
     · have := hrf y hy; cases this; rfl
@@ -479,17 +480,17 @@ theorem raw_collapse [HoonMapKeys Map] {laz : Sure S} {th : Jmp} {g g' : Comp.Ge
     · have hk : HoonMap.get g5.blocks there = some (pre A b5) := by rw [hget, if_pos rfl]
       have he : ∀ x, ρ x < ρ there → HoonMap.get g5.blocks x = HoonMap.get g4.blocks x := fun x hx => by
         rw [hget, if_neg (fun e => by subst e; omega)]
-      have hl' : Live (HoonMap.put g4.blocks there (pre A b5)) there y := by
-        rcases live_iff.mp hl with ⟨b', hb', hr'⟩
+      have hl' : LiveK (HoonMap.put g4.blocks there (pre A b5)) K there y := by
+        rcases liveK_cases hl with ⟨b', hb', hr'⟩
         rw [hk] at hb'; cases hb'
-        refine live_iff.mpr ⟨_, get_put_self, ?_⟩
+        refine (liveK_iff hl.nk).mpr ⟨_, get_put_self, ?_⟩
         rcases hr' with hr' | ⟨j, hj, hlj, hn⟩
         · exact Or.inl hr'
         · refine Or.inr ⟨j, hj, ?_, hn⟩
           have hjt : ρ j.there < ρ there := S4.jr there b5 hb5 j hj
-          exact (live_frameRk S4.jr (fun x hx => get_put_ne (fun e => by subst e; omega)) hjt).mpr
-            ((live_frameRk S4.jr he hjt).mp hlj)
-      rcases live_prependRk hb5 S4.jr hl' with ⟨-, h'⟩ | h'
+          exact (liveK_frameRk S4.jr (fun x hx => get_put_ne (fun e => by subst e; omega)) hjt).mpr
+            ((liveK_frameRk S4.jr he hjt).mp hlj)
+      rcases liveK_prependRk hb5 S4.jr hl' with ⟨-, h'⟩ | h'
       · exact Or.inl h'
       · exact Or.inr h'
     · have := hrf y hy; cases this; rfl
