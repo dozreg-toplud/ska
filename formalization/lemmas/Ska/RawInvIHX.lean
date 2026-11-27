@@ -2,6 +2,7 @@ import lemmas.Ska.RawInvFragX
 import lemmas.Ska.RawInvTopX
 import lemmas.Ska.CompFragX
 import lemmas.Ska.CompSevenN
+import lemmas.Ska.CompSevenSame
 
 /-!
 # Raw `+comp` output on `FragX`: the run-level invariant
@@ -239,6 +240,104 @@ theorem rawX_tail {p : Nomm} (ihp : RawIHX S Map X p) {g0 g g1 g2 : Comp.Gen Map
     rw [e1, get_put_ne (by omega)]
   exact ⟨liveK_unfoldP (by rw [e1]; exact get_put_self) (h.below g.bo) he' E.jd hl',
     fun e => hn' (by simp [lazyReg, NMem, e])⟩
+
+/-! ## `%4` -/
+
+/-- **The case `four`**: the block of `%4` (after the collapse of the goal's
+need under `%next`), then the run of the operand, as `raw_n4`. -/
+theorem rawX_four {p : Nomm} (ihp : RawIHX S Map X p) : RawIHX S Map X (Nomm.n4 p) := by
+  intro goal region g0 g1 nex K hK h hg hD hj ha hf hr
+  have hn : ∀ k, g0.bo ≤ k → HoonMap.get g0.blocks k = Option.none := fun k hk => h.none hk
+  cases goal with
+  | done =>
+    simp only [CGoal.toL] at hr
+    unfold runL at hr
+    obtain ⟨pro, g2, h2, hr⟩ := bind_some hr
+    obtain ⟨S2, rfl, q2, b2, o2⟩ := sip_re h h2
+    obtain ⟨arg, g3, h3, hr⟩ := bind_some hr
+    obtain ⟨S3, rfl, q3, b3, o3⟩ := sip_re S2 h3
+    obtain ⟨o, g4, h4, hr⟩ := bind_some hr
+    have nd : ∀ x, g0.re ≤ x → ¬ Defd g3.blocks x := fun x hx d => by
+      rw [b3, b2] at d; have := h.defd_lt d; omega
+    obtain ⟨S1, L1⟩ := rawX_tail ihp hK S3 hn (finKeep_blocks (by rw [b3, b2]))
+      (emitOK_one S3 rfl (fun x hx => by simp [Comp.poleRegs] at hx; omega)
+      (nd _ (Nat.le_refl _)) rfl (fun j hj => by simp [getJmps] at hj) (fun j hj => by simp [getJmps] at hj)
+      (by simp [FinIn]; omega)) (by omega) (nd _ (by omega)) (by rw [blockDefs_inc]; omega) h4 hr
+    refine ⟨S1, fun y hy => ?_⟩
+    rcases L1 y hy with ⟨e | ⟨j, hj', -⟩, hne⟩
+    · exact absurd (blockRF_inc (fun x hx => by simpa [finRegs] using hx) e) hne
+    · simp [getJmps] at hj'
+  | pick z o =>
+    simp only [GJ] at hj
+    simp only [CGoal.toL] at hr
+    unfold runL at hr
+    obtain ⟨pro, g2, h2, hr⟩ := bind_some hr
+    obtain ⟨S2, rfl, q2, b2, o2⟩ := sip_re h h2
+    obtain ⟨arg, g3, h3, hr⟩ := bind_some hr
+    obtain ⟨S3, rfl, q3, b3, o3⟩ := sip_re S2 h3
+    obtain ⟨o', g4, h4, hr⟩ := bind_some hr
+    have nd : ∀ x, g0.re ≤ x → ¬ Defd g3.blocks x := fun x hx d => by
+      rw [b3, b2] at d; have := h.defd_lt d; omega
+    obtain ⟨S1, L1⟩ := rawX_tail ihp hK S3 hn (finKeep_blocks (by rw [b3, b2]))
+      (emitOK_one S3 rfl (fun x hx => by simp [Comp.poleRegs] at hx; omega)
+      (nd _ (Nat.le_refl _)) rfl
+      (fun j hj' => by simp [getJmps] at hj'; rcases hj' with rfl | rfl; exact ha.1; exact ha.2)
+      (fun j hj' => by simp [getJmps] at hj'; rcases hj' with rfl | rfl <;> omega)
+      (by simp [FinIn, JmpIn, ha.1, ha.2]; omega)) (by omega) (nd _ (by omega)) (by rw [blockDefs_inc]; omega) h4 hr
+    refine ⟨S1, fun y hy => ?_⟩
+    rcases L1 y hy with ⟨e | ⟨j, hj', hl, -⟩, hne⟩
+    · exact absurd (blockRF_inc (fun x hx => by simpa [finRegs, jmpRegs, ha.1, ha.2] using hx) e) hne
+    · rw [b3, b2] at hl
+      simp [getJmps] at hj'
+      rcases hj' with rfl | rfl
+      · exact Or.inl hl
+      · exact Or.inr hl
+  | next laz th =>
+    have hjt : th.there < g0.bo := hj.2
+    simp only [CGoal.toL] at hr
+    rw [runL_n4_next] at hr
+    obtain ⟨a, g2, h2, hr⟩ := bind_some hr
+    have h2' : collapseLazyAtom ⟨laz, th⟩ g0 = some (a, g2) := by
+      rw [← collapseLazyAtomL_toL]; exact h2
+    obtain ⟨S2, l2, bo2, ha2, fr2, cn, cs⟩ := raw_collapse (K := K) h hg.1 hj.2 (fun y hy d => hf y d hy) h2'
+    have F2 : FinKeep g0 g2 := finKeep_of_grow (collapse_down h2' hj.1 hj.2 h.bo1).1
+    obtain ⟨⟨pro, th'⟩, g3, h3, hr⟩ := bind_some hr
+    have P : SIP X (upRk g0.blocks) g0.bo g3 ∧ g2.re ≤ g3.re ∧ pro < g3.re ∧ ¬ Defd g3.blocks pro ∧ th' < g3.bo ∧
+        g3.blocks = g2.blocks ∧ g3.bo = g2.bo ∧
+        ∀ y, LiveK g3.blocks K th' y → y = pro ∨ (LiveK g0.blocks K th.there y ∧ ¬ NMem laz.ned y) := by
+      cases a with
+      | some x =>
+        simp only [collPick, pure_apply, Option.some.injEq, Prod.mk.injEq] at h3
+        obtain ⟨rfl, rfl⟩ := h3
+        obtain ⟨-, rl, nd, tl, -, lv⟩ := cs pro th' rfl
+        exact ⟨S2, Nat.le_refl _, rl, nd, tl, rfl, rfl, lv⟩
+      | none =>
+        obtain ⟨hn0, rfl⟩ := cn rfl
+        simp only [collPick] at h3
+        obtain ⟨r, g4, h4, h3⟩ := bind_some h3
+        obtain ⟨S4, rfl, q4, b4, o4⟩ := sip_re S2 h4
+        rw [if_pos ha2] at h3
+        simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h3
+        obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h3
+        refine ⟨S4, by omega, by omega, fun d => by rw [b4] at d; have := h.defd_lt d; omega, by omega, b4, o4,
+          fun y hl => Or.inr ⟨by rw [b4] at hl; exact hl, by rw [hn0]; exact id⟩⟩
+    obtain ⟨S3, l3, prl, pnd, tl, b3, o3', lv3⟩ := P
+    obtain ⟨arg, g4, h4, hr⟩ := bind_some hr
+    obtain ⟨S4, rfl, q4, b4, o4⟩ := sip_re S3 h4
+    obtain ⟨o, g5, h5, hr⟩ := bind_some hr
+    have F4 : FinKeep g0 g4 := F2.trans (finKeep_blocks (by rw [b4, b3])) bo2
+    obtain ⟨S1, L1⟩ := rawX_tail ihp hK S4 hn F4 (emitOK_one S4 rfl (fun x hx => by simp [Comp.poleRegs] at hx; omega)
+      (by rw [b4]; exact pnd) rfl (fun j hj' => by simp [getJmps] at hj'; rw [hj']; rfl)
+      (fun j hj' => by simp [getJmps] at hj'; rw [hj']; simp [jmp0]; omega) (by simp [FinIn, JmpIn, jmp0]))
+      (by omega) (fun d => by rw [b4] at d; have := S3.defd_lt d; omega) (by rw [blockDefs_inc]; omega) h5 hr
+    refine ⟨S1, fun y hy => ?_⟩
+    rcases L1 y hy with ⟨e | ⟨j, hj', hl, hn'⟩, hne⟩
+    · exact absurd (blockRF_inc (fun x hx => by simp [finRegs, jmpRegs, jmp0] at hx) e) hne
+    · simp [getJmps] at hj'; subst hj'
+      rw [b4] at hl
+      rcases lv3 y hl with e | e
+      · exact absurd e (fun e' => hn' (by rw [blockDefs_inc]; exact e'))
+      · exact e
 
 end Raw
 end SkaModel
