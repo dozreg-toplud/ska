@@ -99,5 +99,78 @@ theorem tj_kids_loop {CTX : Noun} {Gm : Gr Noun} (hL : slot? 32767 CTX = some la
         rw [hstep]
         exact h2
 
+/-- The `+rep:in` of `connect` over the kids. -/
+theorem tj_kidsrep_run {CTX K0 : Noun} (hL : slot? 32767 CTX = some layer2) (h24 : slot? 24 CTX = some K0)
+    (IX V KS ACC : Noun) (ht : Tree KS) :
+    nock (C IX (tjConnCore V KS ACC CTX)) tjKidsRep
+      = (preorder KS).foldlM (fun N x => nock (C tjKBat (C (C x N) (C IX (tjConnCore V KS ACC CTX)))) tjKBat)
+          (C IX ACC) := by
+  have hk := tj_ksam h24 IX V KS ACC
+  have hr := tj_rep_gate in.battery layer2 tjKBat K0 (C IX ACC) (C IX (tjConnCore V KS ACC CTX)) KS ht
+  have hk' := hk
+  simp only [tjConnCore] at hk' hr
+  rw [tjKidsRep_eq, tjKGate_eq]
+  simp [tjConnCore, nock_exec, hL, in.arm_at, in_arm, in.rep.arm_at, rep_arm, hk', hr]
+
+/-- The empty set. -/
+theorem tjSet_nil : TjSet (A 0) fun k => k ∈ ([] : List Noun) :=
+  ⟨by simpa [IsSet] using (IsMap.nil : IsMap mugF (A 0)), fun k => ⟨fun h => absurd h Get_atom, fun h => by simp at h⟩⟩
+
+/-- **`connect` is the model's `connect`**: at every fuel, on a kid set
+noun whose pre-order is the model's kids, whenever the model returns, the
+trap returns the noun of the same `lowest` and state. -/
+theorem tj_connect {CTX : Noun} {Gm : Gr Noun} (hL : slot? 32767 CTX = some layer2) (hg : TjGraphAt CTX Gm) :
+    ∀ n v KS, Tree KS → ∀ s r, connect Gm n v (preorder KS) s = some r →
+      ∀ ACC, TjStIs ACC s → ∃ ACC', TjStIs ACC' r.2 ∧ nock (tjConnCore v KS ACC CTX) tjConn = some (C (A r.1) ACC')
+  | 0, v, KS, ht, s, r, h, ACC, hs => by simp [connect] at h
+  | n + 1, v, KS, ht, s, r, h, ACC, hs => by
+    obtain ⟨G, K0, hG, h24, hju⟩ := hg
+    obtain ⟨VIS, CUR, FIN, rfl, hv, hc, hf⟩ := hs
+    have ih : ∀ v KS, Tree KS → preorder KS = kidsOf Gm v → ∀ s r, connect Gm n v (kidsOf Gm v) s = some r →
+        ∀ ACC, TjStIs ACC s → ∃ ACC', TjStIs ACC' r.2 ∧
+          nock (tjConnCore v KS ACC CTX) tjConn = some (C (A r.1) ACC') := by
+      intro v KS ht hpre s r h ACC hs
+      rw [← hpre] at h
+      exact tj_connect hL ⟨G, K0, hG, h24, hju⟩ n v KS ht s r h ACC hs
+    obtain ⟨VIS1, CUR1, hv1, hc1, hen⟩ := tj_enter hL v KS FIN s hv hc
+    simp only [connect] at h
+    cases hk : kidsLoop Gm (connect Gm n) (preorder KS) s.idx (enter v s) with
+    | none => rw [hk] at h; cases h
+    | some p =>
+      rw [hk] at h
+      obtain ⟨lo, s2⟩ := p
+      have hs1 : TjStIs (tjAccN (A (s.idx + 1)) VIS1 (listNoun id (v :: s.stk)) CUR1 FIN) (enter v s) :=
+        ⟨VIS1, CUR1, FIN, rfl, hv1, hc1, hf⟩
+      obtain ⟨ACC2, hs2, hkl⟩ := tj_kids_loop hL ⟨G, K0, hG, h24, hju⟩ n (A s.idx) v KS
+        (tjAccN (A (s.idx + 1)) VIS1 (listNoun id (v :: s.stk)) CUR1 FIN) ih (preorder KS) s.idx (enter v s)
+        (lo, s2) hk _ hs1
+      have hkr := tj_kidsrep_run hL h24 (A s.idx) v KS (tjAccN (A (s.idx + 1)) VIS1 (listNoun id (v :: s.stk)) CUR1 FIN) ht
+      rw [hkl] at hkr
+      obtain ⟨VIS2, CUR2, FIN2, rfl, hv2, hc2, hf2⟩ := hs2
+      simp only [tjConnCore, tjAccN] at hen hkr
+      by_cases e : s.idx = lo
+      · subst e
+        simp only [if_true] at h
+        have hp := tj_pop hL (A s.idx) (A s.idx) v KS (A s2.idx) VIS2 FIN2 s2.stk [] s2.cur (A 0) CUR2 tjSet_nil hc2
+        revert hp
+        cases hpl : popLoop v s2.stk [] s2.cur with
+        | none => rw [hpl] at h; cases h
+        | some q =>
+          rw [hpl] at h
+          obtain ⟨out, stk, cur⟩ := q
+          simp only [Option.some.injEq] at h
+          subst h
+          rintro ⟨OUT', CUR', ho', hc', hpop⟩
+          simp only [tjPopCore, tjConnCore, tjAccN] at hpop
+          refine ⟨tjAccN (A s2.idx) VIS2 (listNoun id stk) CUR' (C OUT' FIN2),
+            ⟨VIS2, CUR', C OUT' FIN2, rfl, hv2, hc', ⟨OUT', FIN2, rfl, ho', hf2⟩⟩, ?_⟩
+          conv => lhs; rw [tjConn_eq]
+          simp [tjConnCore, tjAccN, nock_exec, hen, hkr, tjAfter_eq, tjPopBr_eq, hpop]
+      · simp only [e, if_false, Option.some.injEq] at h
+        subst h
+        refine ⟨tjAccN (A s2.idx) VIS2 (listNoun id s2.stk) CUR2 FIN2, ⟨VIS2, CUR2, FIN2, rfl, hv2, hc2, hf2⟩, ?_⟩
+        conv => lhs; rw [tjConn_eq]
+        simp [tjConnCore, tjAccN, nock_exec, hen, hkr, tjAfter_eq, e]
+
 end Compiler
 end Formalization
