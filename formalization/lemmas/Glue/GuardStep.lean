@@ -94,10 +94,14 @@ theorem blockOK_of {b : Blob} (hj : ∀ j ∈ getJmps b.fin, JOK j) (hb : NoSpli
 
 /-! ## `KP` -/
 
-/-- **Every run of `m` keeps `BlocksOK` and returns a result in `P`.**  A
+/-- The state invariant: `BlocksOK`, and the run is not dropping (no step
+of `+comp` sets `drop`). -/
+def Inv (g : Comp.Gen Map) : Prop := BlocksOK g.blocks ∧ g.drop = false
+
+/-- **Every run of `m` keeps `Inv` and returns a result in `P`.**  A
 structure, so that `intro` does not open it. -/
 structure KP {α : Type} (P : α → Prop) (m : CM Map α) : Prop where
-  k : ∀ g x g', BlocksOK g.blocks → m g = some (x, g') → BlocksOK g'.blocks ∧ P x
+  k : ∀ g x g', Inv g → m g = some (x, g') → Inv g' ∧ P x
 
 /-- A step that keeps `BlocksOK`, whatever it returns. -/
 abbrev KB {α : Type} (m : CM Map α) : Prop := KP (fun _ : α => True) m
@@ -132,61 +136,68 @@ theorem ite' {α : Type} {P : α → Prop} (c : Prop) [Decidable c] {a b : CM Ma
   · exact ha
   · exact hb
 
-/-- A step that leaves the blocks alone. -/
-theorem same {α : Type} {m : CM Map α} (h : ∀ g x g', m g = some (x, g') → g'.blocks = g.blocks) : KB m := by
+/-- A step that leaves the blocks and `drop` alone. -/
+theorem same {α : Type} {m : CM Map α}
+    (h : ∀ g x g', m g = some (x, g') → g'.blocks = g.blocks ∧ g'.drop = g.drop) : KB m := by
   constructor
   intro g x g' hb e
-  rw [h g x g' e]; exact ⟨hb, trivial⟩
+  obtain ⟨e1, e2⟩ := h g x g' e
+  exact ⟨⟨by rw [e1]; exact hb.1, by rw [e2]; exact hb.2⟩, trivial⟩
 
-theorem re' : KB (re : CM Map Nat) := same fun g x g' h => by rw [re_apply] at h; cases h; rfl
+theorem re' : KB (re : CM Map Nat) := same fun g x g' h => by rw [re_apply] at h; cases h; exact ⟨rfl, rfl⟩
 
-theorem oo' : KB (oo : CM Map Nat) := same fun g x g' h => by cases h; rfl
+theorem oo' : KB (oo : CM Map Nat) := same fun g x g' h => by cases h; exact ⟨rfl, rfl⟩
 
-theorem freshId' : KB (freshId : CM Map Nat) := same fun g x g' h => by cases h; rfl
+theorem freshId' : KB (freshId : CM Map Nat) := same fun g x g' h => by cases h; exact ⟨rfl, rfl⟩
 
-theorem idM' : KB (idM : CM Map Nat) := same fun g x g' h => by cases h; rfl
+theorem idM' : KB (idM : CM Map Nat) := same fun g x g' h => by cases h; exact ⟨rfl, rfl⟩
 
-theorem get' : KB (get : CM Map (Comp.Gen Map)) := same fun g x g' h => by rw [get_apply] at h; cases h; rfl
+theorem get' : KB (get : CM Map (Comp.Gen Map)) := same fun g x g' h => by rw [get_apply] at h; cases h; exact ⟨rfl, rfl⟩
 
-theorem getCond' : KB (getCond : CM Map (Map (Nat × List Nat))) := same fun g x g' h => by cases h; rfl
+theorem getCond' : KB (getCond : CM Map (Map (Nat × List Nat))) := same fun g x g' h => by cases h; exact ⟨rfl, rfl⟩
 
 theorem setTag' (o : Nat) (region : List Nat) : KB (setTag o region : CM Map Unit) :=
   same fun g x g' h => by
     cases h
-    split <;> rfl
+    split <;> exact ⟨rfl, rfl⟩
 
 theorem copyTag' (frm : Nat) (tos : List Nat) : KB (copyTag frm tos : CM Map Unit) :=
   same fun g x g' h => by
     unfold copyTag at h
     split at h
-    · cases h; rfl
+    · cases h; exact ⟨rfl, rfl⟩
     · obtain ⟨rg, _, e⟩ := Option.map_eq_some_iff.mp h
-      cases e; rfl
+      cases e; exact ⟨rfl, rfl⟩
 
 theorem proxy' (r o : Nat) : KB (proxy r o : CM Map Nat) :=
   same fun g x g' h => by
     unfold proxy at h
     simp only at h
     split at h
-    · cases h; rfl
+    · cases h; exact ⟨rfl, rfl⟩
     · obtain ⟨tag, _, e⟩ := Option.map_eq_some_iff.mp h
-      cases e; rfl
+      cases e; exact ⟨rfl, rfl⟩
 
 theorem liftO' {α : Type} (x : Option α) : KB (liftO x : CM Map α) :=
   same fun g a g' h => by
     obtain ⟨b, _, e⟩ := Option.map_eq_some_iff.mp h
-    cases e; rfl
+    cases e; exact ⟨rfl, rfl⟩
 
 theorem lift' {α : Type} (x : Option α) : KB ((fun g => x.map fun a => (a, g)) : CM Map α) :=
   same fun g a g' h => by
     obtain ⟨b, _, e⟩ := Option.map_eq_some_iff.mp h
-    cases e; rfl
+    cases e; exact ⟨rfl, rfl⟩
 
 /-- **`+add-ops` of a guarded list.** -/
 theorem addOpsG (o : Nat) {ops : List Pole} (h : GuardedBody ops) : KB (addOps o ops : CM Map Unit) := by
   constructor
   intro g x g' hb e
-  exact ⟨(addOps_ok hb h e).1, trivial⟩
+  refine ⟨⟨(addOps_ok hb.1 h e).1, ?_⟩, trivial⟩
+  unfold addOps at e
+  split at e
+  · cases e; exact hb.2
+  · obtain ⟨b, _, e⟩ := Option.map_eq_some_iff.mp e
+    cases e; exact hb.2
 
 /-- **`+add-ops` of a list with no split.** -/
 theorem addOps' (o : Nat) {ops : List Pole} (h : NoSplit ops) : KB (addOps o ops : CM Map Unit) :=
@@ -200,7 +211,7 @@ theorem emir' (o : Nat) {b : Blob} (h : BlockOK b) : KB (emir o b : CM Map Unit)
   refine ⟨?_, trivial⟩
   split
   · exact hb
-  · exact blocksOK_put hb h
+  · exact ⟨blocksOK_put hb.1 h, hb.2⟩
 
 /-- **`+emit` of a block that meets `BlockOK`.** -/
 theorem emit' {b : Blob} (h : BlockOK b) : KB (emit b : CM Map Nat) := by
@@ -208,7 +219,7 @@ theorem emit' {b : Blob} (h : BlockOK b) : KB (emit b : CM Map Nat) := by
   intro g x g' hb e
   rw [emit_apply] at e
   cases e
-  exact ⟨blocksOK_emitted hb h, trivial⟩
+  exact ⟨⟨blocksOK_emitted hb.1 h, hb.2⟩, trivial⟩
 
 /-- `+emit`, with the label it returns. -/
 theorem emitL {b : Blob} (h : BlockOK b) : KB (emit b : CM Map Nat) := emit' h
@@ -216,7 +227,20 @@ theorem emitL {b : Blob} (h : BlockOK b) : KB (emit b : CM Map Nat) := emit' h
 theorem insertHop' (a o1 o2 : Nat) : KB (insertHop a o1 o2 : CM Map Unit) := by
   constructor
   intro g x g' hb e
-  exact ⟨blocksOK_insertHop hb e, trivial⟩
+  refine ⟨⟨blocksOK_insertHop hb.1 e, ?_⟩, trivial⟩
+  unfold insertHop at e
+  split at e
+  · cases e; exact hb.2
+  · cases hb' : HoonMap.get g.blocks a with
+    | none => rw [hb'] at e; cases e
+    | some b =>
+      rw [hb'] at e
+      simp only [Option.bind_some] at e
+      split at e
+      · split at e
+        · cases e
+        · cases e; exact hb.2
+      · cases e
 
 theorem foldl' {α β : Type} (f : CM Map α → β → CM Map α) (hf : ∀ acc b, KB acc → KB (f acc b)) :
     ∀ (l : List β) (acc : CM Map α), KB acc → KB (l.foldl f acc)
