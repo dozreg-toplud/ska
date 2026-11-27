@@ -2,7 +2,7 @@ import lemmas.Compiler.CompRunShapeCut
 import lemmas.Ska.RunShape
 
 /-!
-# The link of `+run-shape`: the frame, `[1 k]`, `[0 a]`, `[7 p q]` (track A, 2026-11-27)
+# The link of `+run-shape`: the frame, `[1 k]`, `[0 a]`, `[4 p]`, `[7 p q]` (track A, 2026-11-27)
 
 The gate of `+run-shape` (`rsGate`, `CompRunShapeCut.lean`) runs on its core
 
@@ -19,9 +19,9 @@ changes only `id-gen` and `sofs` of `gen` (`RSt`); the other eight fields are th
 * **`rs_n1`**: the case `[1 k]` on every goal and state.
 * **`rs_n0`**: the case `[0 a]`, given `LazeFromAt` (the link of `+laze-from`, door arm
   `0x1576a`, not linked yet) at the door.
-* **`rs_n7`**: the case `[7 p q]` from `RsAt` of its two recursive calls.
+* **`rs_n7`**: the case `[7 p q]` from `RsAt` of its two recursive calls; **`rs_n4`**: `[4 p]`.
 * **`rs_cls`**: by induction, `RsAt` on every nomm of `RsCls` (built of `[0 a]`, `[1 k]`,
-  `[7 p q]`), every `sup`, goal and state, given `LazeFromAt` at the door.
+  `[4 p]`, `[7 p q]`), every `sup`, goal and state, given `LazeFromAt` at the door.
 -/
 
 namespace Formalization
@@ -179,10 +179,29 @@ theorem rs_n0 (env : ShapeEnv) (a : Nat) (sup : Option Nomm) (goal : GoalS CSet)
         rw [e] at hg'
         simp [nock_exec, rsS, rsCoreG, rsDoor, h0, h1, h0', h1', h9, hg', runShape, liftS, e, rsSimpleN, GoalS.toNoun]
 
-/-- The nomms built of the cases linked so far: `[0 a]`, `[1 k]`, `[7 p q]`. -/
+theorem rs_disp_n4 (t s goal sup D : Noun) :
+    nock (rsS s (C (A 4) t) goal sup D) rsDol = nock (rsS s (C (A 4) t) goal sup D) rsK4 := by
+  nock_open rsDol
+  simp [nock_exec, rsS, rsCoreG, rsTc, rsT]
+
+/-- **The case `[4 p]`**: `p` under `[%next this]`. -/
+theorem rs_n4 (env : ShapeEnv) (p : Nomm) (sup : Option Nomm) (goal : GoalS CSet) (st : RSt CSet)
+    (hp : RsAt ctx env p sup (GoalS.next thisL) st) :
+    RsAt ctx env (Nomm.n4 p) sup goal st := by
+  intro y
+  simp only [Nomm.toNoun]
+  rw [rs_push, rs_disp_n4]
+  have hp' := hp y
+  simp only [rsCoreG, rsDoor, GoalS.toNoun, thisL_noun] at hp'
+  nock_open rsK4
+  simp [nock_exec, rsS, rsCoreG, rsDoor, runShape]
+  exact hp'
+
+/-- The nomms built of the cases linked so far: `[0 a]`, `[1 k]`, `[4 p]`, `[7 p q]`. -/
 def RsCls : Nomm → Prop
   | Nomm.n0 _ => True
   | Nomm.n1 _ => True
+  | Nomm.n4 p => RsCls p
   | Nomm.n7 p q => RsCls p ∧ RsCls q
   | _ => False
 
@@ -193,6 +212,7 @@ theorem rs_cls (env : ShapeEnv) (hf : ∀ st y, LazeFromAt (rsDoor st y ctx)) :
     ∀ (n : Nomm), RsCls n → ∀ sup goal st, RsAt ctx env n sup goal st
   | Nomm.n0 a, _, sup, goal, st => rs_n0 env a sup goal st (hf st)
   | Nomm.n1 k, _, sup, goal, st => rs_n1 env k sup goal st
+  | Nomm.n4 p, hp, sup, goal, st => rs_n4 env p sup goal st (rs_cls env hf p hp sup (GoalS.next thisL) st)
   | Nomm.n7 p q, ⟨hp, hq⟩, sup, goal, st =>
     rs_n7 env p q sup goal st (rs_cls env hf q hq (some p) goal st)
       (fun l st1 => rs_cls env hf p hp sup (GoalS.next l) st1)

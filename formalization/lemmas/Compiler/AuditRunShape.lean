@@ -8,4 +8,5 @@ import lemmas.Ska.RunShapeAgree
 #print axioms Formalization.Compiler.rs_n1
 #print axioms Formalization.Compiler.rs_n0
 #print axioms Formalization.Compiler.rs_n7
+#print axioms Formalization.Compiler.rs_n4
 #print axioms Formalization.Compiler.rs_cls
