@@ -65,6 +65,8 @@ open Formalization.SkaModel
 #print axioms converse
 #print axioms meek_cell_tag
 #print axioms meek_reach
+#print axioms meek_conv
+#print axioms meek_conv_reach
 #print axioms weak_reach
 #print axioms converse_reach
 #print axioms knit_fits

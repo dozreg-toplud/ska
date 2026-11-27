@@ -418,6 +418,7 @@ open Formalization
 #print axioms Assembly.meek_of
 #print axioms Assembly.weak_of
 #print axioms Assembly.converse_of
+#print axioms Assembly.mockEquivalence_of
 #print axioms Assembly.halts_of
 #print axioms Assembly.full_of
 #print axioms Frame.absNock_sound
@@ -612,7 +613,8 @@ open Formalization
 #print axioms Compiler.ska_poke_gate_iff
 #print axioms Compiler.sp_trap_evalH
 #print axioms Compiler.ska_poke_iff
-#print axioms Compiler.evalH_of_minkF_nil
+#print axioms SkaModel.evalH_of_minkF_nil
+#print axioms SkaModel.eval_of_minkF_nil
 #print axioms Compiler.ska_poke_iff_evalH
 #print axioms FrameCall.absNockS_sound
 #print axioms Compiler.rf_summ_ok

@@ -3,13 +3,15 @@ import lemmas.Ska.Theorems
 /-!
 # The statements, for the models
 
-The model-level versions of `NockEquivalence`, `MockEquivalence` and
-`MockEquivalenceInverse` of `core/Statement.lean`, for any compiler that
-satisfies the contract (`Sound`), and the same over every state the compiler
-reaches (`ReachI`).
+The model-level versions of the two directions of `NockEquivalence` and of
+`MockEquivalence` of `core/Statement.lean`, for any compiler that satisfies
+the contract (`Sound`), and the same over every state the compiler reaches
+(`ReachI`).
 
 * `meek`: if Nock computes `p` (`Eval`), `+eval-top` returns `[%0 p]`.
   Needs `FullAnswers`, the model's `Halts`.
+* `meek_conv`: if `+eval-top` with no scry gate returns `[%0 p]`, Nock
+  computes `p`: `+mink` with no scry gate is sound (`eval_of_minkF_nil`).
 * `weak`: what `+mock` returns, `+eval-top` then `+eval-mook` return.  Needs
   `FullAnswers`.
 * `converse`: what `+eval-top` then `+eval-mook` return, `+mock` returns.
@@ -223,6 +225,19 @@ theorem meek (lib : Lib) {poke : σ → Ovum → Option (Prod Map × σ)} {InvC 
   rw [hrel.zero_right] at hrun
   exact ⟨st', n + 1, hrun⟩
 
+/-- **The converse of `meek`, with no scry gate.**  If the interpreter returns
+`[%0 p]` on `s` and `f` with the scry gate `~`, from a state where the
+compiler's invariant holds, Nock computes `p`: the run of `+mink` that the
+interpreter stands for returns `[%0 p]` too (`interp_bwd`), and `+mink` with
+no scry gate is sound (`eval_of_minkF_nil`). -/
+theorem meek_conv (lib : Lib) {poke : σ → Ovum → Option (Prod Map × σ)} {InvC : σ → Prop}
+    (hS : Sound lib poke InvC) {st st' : σ} {s f p : Noun}
+    (hI : InvC st) (h : EvalTop lib poke st s f (A 0) (Tone.zero p) st') : Eval s f p := by
+  obtain ⟨k, hk⟩ := h
+  obtain ⟨tm, ⟨n, hn⟩, hrel⟩ := (interp_bwd lib hS k).nok st s f (A 0) _ st' hI hk
+  cases hrel
+  exact eval_of_minkF_nil lib n [] s f p hn
+
 /-- **`MockEquivalence`, for the models.**  What `+mock` returns, the interpreter returns,
 rendered by `+eval-mook`. -/
 theorem weak (lib : Lib) {poke : σ → Ovum → Option (Prod Map × σ)} {InvC : σ → Prop}
@@ -238,7 +253,7 @@ theorem weak (lib : Lib) {poke : σ → Ovum → Option (Prod Map × σ)} {InvC 
   obtain ⟨st'', hm⟩ := evalMook_fwd lib hS hF hI' hrel hmook
   exact ⟨st'', k₁ + 1, ti, st', hrun, hm⟩
 
-/-- **`MockEquivalenceInverse`, for the models.**  What the interpreter returns, rendered,
+/-- **The other direction of `MockEquivalence`, for the models.**  What the interpreter returns, rendered,
 `+mock` returns. -/
 theorem converse (lib : Lib) {poke : σ → Ovum → Option (Prod Map × σ)} {InvC : σ → Prop}
     (hS : Sound lib poke InvC) {st st'' : σ} {s f gul : Noun} {toon : Toon}
@@ -338,6 +353,14 @@ theorem meek_reach (lib : Lib) {poke : σ → Ovum → Option (Prod Map × σ)} 
     {st₀ st : σ} {s f p gul : Noun} (h₀ : InvC st₀) (hr : ReachI lib poke st₀ st)
     (h : Eval s f p) : ∃ st', EvalTop lib poke st s f gul (Tone.zero p) st' :=
   meek lib hS hF (reach_inv lib hS.toPokeSteps hother h₀ hr) h
+
+/-- `meek_conv` over every state the compiler reaches from `st₀`. -/
+theorem meek_conv_reach (lib : Lib) {poke : σ → Ovum → Option (Prod Map × σ)} {InvC : σ → Prop}
+    (hS : Sound lib poke InvC)
+    (hother : ∀ st ov p st', InvC st → ¬ HotOvum ov → poke st ov = some (p, st') → InvC st')
+    {st₀ st st' : σ} {s f p : Noun} (h₀ : InvC st₀) (hr : ReachI lib poke st₀ st)
+    (h : EvalTop lib poke st s f (A 0) (Tone.zero p) st') : Eval s f p :=
+  meek_conv lib hS (reach_inv lib hS.toPokeSteps hother h₀ hr) h
 
 /-- `weak` over every state the compiler reaches from `st₀`. -/
 theorem weak_reach (lib : Lib) {poke : σ → Ovum → Option (Prod Map × σ)} {InvC : σ → Prop}

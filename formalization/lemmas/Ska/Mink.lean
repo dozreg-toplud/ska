@@ -433,6 +433,112 @@ theorem eval_cell_tag (lib : Lib) (gul : Noun) (s : Noun) (t : Trace) (n : Nat) 
         some (Tone.zero (A 42)) :=
   ⟨Eval.op11_cell Eval.op1 Eval.op1 (Eval.op0 (Slot.right Slot.one)), rfl⟩
 
+/-! ## `+mink` with no scry gate is `EvalH` -/
+
+theorem tbind_zero_split {x : Option Tone} {k : Noun → Option Tone} {p : Noun}
+    (h : tbind x k = some (Tone.zero p)) : ∃ y, x = some (Tone.zero y) ∧ k y = some (Tone.zero p) := by
+  rcases tbind_eq_some h with h | ⟨_, hnz⟩
+  · exact h
+  · exact absurd rfl (hnz p)
+
+/-- One level of `+mink` with no scry gate that ends in `[%0 p]` is an
+`EvalH` step, given the same of its calls. -/
+theorem evalH_step_nil (lib : Lib) (go : Trace → Noun → Noun → Option Tone)
+    (ih : ∀ t s f p, go t s f = some (Tone.zero p) → EvalH s f p) (t : Trace) (s f p : Noun)
+    (h : minkStep lib (A 0) go t s f = some (Tone.zero p)) : EvalH s f p := by
+  unfold minkStep at h
+  split at h
+  · obtain ⟨a, h1, h⟩ := tbind_zero_split h
+    obtain ⟨b, h2, h⟩ := tbind_zero_split h
+    cases h
+    exact EvalH.cell (ih _ _ _ _ h1) (ih _ _ _ _ h2)
+  · split at h
+    · cases h
+    · rename_i hs
+      cases h
+      exact EvalH.op0 (slot?_sound _ hs)
+  · cases h
+    exact EvalH.op1
+  · obtain ⟨a, h1, h⟩ := tbind_zero_split h
+    obtain ⟨b, h2, h⟩ := tbind_zero_split h
+    exact EvalH.op2 (ih _ _ _ _ h1) (ih _ _ _ _ h2) (ih _ _ _ _ h)
+  · obtain ⟨a, h1, h⟩ := tbind_zero_split h
+    cases h
+    exact EvalH.op3 (ih _ _ _ _ h1)
+  · obtain ⟨a, h1, h⟩ := tbind_zero_split h
+    split at h
+    · cases h
+    · cases h
+      exact EvalH.op4 (ih _ _ _ _ h1)
+  · obtain ⟨a, h1, h⟩ := tbind_zero_split h
+    obtain ⟨b, h2, h⟩ := tbind_zero_split h
+    cases h
+    exact EvalH.op5 (ih _ _ _ _ h1) (ih _ _ _ _ h2)
+  · obtain ⟨a, h1, h⟩ := tbind_zero_split h
+    split at h
+    · exact EvalH.op6_zero (ih _ _ _ _ h1) (ih _ _ _ _ h)
+    · exact EvalH.op6_one (ih _ _ _ _ h1) (ih _ _ _ _ h)
+    · cases h
+  · obtain ⟨a, h1, h⟩ := tbind_zero_split h
+    exact EvalH.op7 (ih _ _ _ _ h1) (ih _ _ _ _ h)
+  · obtain ⟨a, h1, h⟩ := tbind_zero_split h
+    exact EvalH.op8 (ih _ _ _ _ h1) (ih _ _ _ _ h)
+  · obtain ⟨a, h1, h⟩ := tbind_zero_split h
+    split at h
+    · cases h
+    · rename_i hs
+      exact EvalH.op9 (ih _ _ _ _ h1) (slot?_sound _ hs) (ih _ _ _ _ h)
+  · split at h
+    · cases h
+    · obtain ⟨a, h1, h⟩ := tbind_zero_split h
+      obtain ⟨b, h2, h⟩ := tbind_zero_split h
+      split at h
+      · cases h
+      · rename_i he
+        cases h
+        exact EvalH.op10 (ih _ _ _ _ h2) (ih _ _ _ _ h1) (edit?_sound _ he)
+  · obtain ⟨a, h1, h⟩ := tbind_zero_split h
+    cases h
+    exact EvalH.op11_atom (ih _ _ _ _ h1)
+  · obtain ⟨a, h1, h⟩ := tbind_zero_split h
+    obtain ⟨b, h2, h⟩ := tbind_zero_split h
+    cases h
+    exact EvalH.op11_cell (ih _ _ _ _ h1) (ih _ _ _ _ h2)
+  · obtain ⟨a, h1, h⟩ := tbind_zero_split h
+    obtain ⟨b, h2, h⟩ := tbind_zero_split h
+    cases h
+    exact EvalH.op11_ctag (ih _ _ _ _ h1) (ih _ _ _ _ h2)
+  · obtain ⟨a, h1, h⟩ := tbind_zero_split h
+    obtain ⟨b, h2, h⟩ := tbind_zero_split h
+    simp at h
+  · cases h
+
+/-- **`+mink` with no scry gate is sound for Nock**: it ends in `[%0 p]`
+only on an `EvalH` run to `p`, which is a Nock run (`EvalH.toEval`).  With
+`mink_of_evalH`, the two are the same.  (With a scry gate, opcode 12 returns
+nouns that Nock has no rule for.) -/
+theorem evalH_of_minkF_nil (lib : Lib) :
+    ∀ (n : Nat) (t : Trace) (s f p : Noun), minkF lib (A 0) n t s f = some (Tone.zero p) → EvalH s f p
+  | 0, _, _, _, _, h => by simp [minkF] at h
+  | n + 1, t, s, f, p, h => by
+    rw [minkF_succ_eq] at h
+    exact evalH_step_nil lib (minkF lib (A 0) n) (evalH_of_minkF_nil lib n) t s f p h
+
+theorem evalH_of_mink_nil {lib : Lib} {s f p : Noun} (h : Mink lib (A 0) [] s f (Tone.zero p)) :
+    EvalH s f p := by
+  obtain ⟨n, hn⟩ := h
+  exact evalH_of_minkF_nil lib n [] s f p hn
+
+/-- `evalH_of_minkF_nil` with `Eval`: what `+mink` with no scry gate returns
+as `[%0 p]`, Nock computes. -/
+theorem eval_of_minkF_nil (lib : Lib) (n : Nat) (t : Trace) (s f p : Noun)
+    (h : minkF lib (A 0) n t s f = some (Tone.zero p)) : Eval s f p :=
+  (evalH_of_minkF_nil lib n t s f p h).toEval
+
+theorem eval_of_mink_nil {lib : Lib} {s f p : Noun} (h : Mink lib (A 0) [] s f (Tone.zero p)) :
+    Eval s f p :=
+  (evalH_of_mink_nil h).toEval
+
 /-! ## `+mook` and `+mock`
 
     ++  mook

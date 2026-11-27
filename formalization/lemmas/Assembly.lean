@@ -10,8 +10,8 @@ import lemmas.Compiler.MookOther
 /-!
 # The assembly
 
-`Loads`, `NockEquivalence`, `MockEquivalence`, `MockEquivalenceInverse` and
-`Halts` of `core/Statement.lean`, so
+`Loads`, `NockEquivalence`, `MockEquivalence` and `Halts` of
+`core/Statement.lean`, so
 `Full`, from the hypotheses below and nothing else (`full_of`).  Each
 hypothesis is a `def … : Prop` that names its owner; `Gap` lists them all.
 This file is the remaining gap of the whole project.
@@ -28,8 +28,10 @@ The way through:
    `+eval-mook` on any noun: `pokeValid` (from `OvumMold`) and `MookOther`
    say that the pill
    does nothing there that the model cannot follow.
-4. On such cores the statements are the model's (`meek_reach`, `weak_reach`,
-   `converse_reach`), through `top_iff`, `run_iff` and `mock_iff`.
+4. On such cores the statements are the model's (`meek_reach` and
+   `meek_conv_reach` for the two directions of `NockEquivalence`, with the
+   scry gate `~`; `weak_reach` and `converse_reach` for those of
+   `MockEquivalence`), through `top_iff`, `run_iff` and `mock_iff`.
 -/
 
 namespace Formalization
@@ -348,17 +350,29 @@ theorem Gap.reach (g : Gap lib pk InvC) {core₀ c : Noun} (h0 : Ska.FromPill co
     g.libFormat g.mookFormat h0 h
   exact ⟨cr, rfl, hc, reach_inv lib g.contract.toPokeSteps g.invKept g.invStart hr⟩
 
+/-- `NockEquivalence`: forward, `meek` at the scry gate `~`; backward,
+`meek_conv`, from the invariant at the reached state. -/
 theorem meek_of (g : Gap lib pk InvC) : Ska.NockEquivalence := by
   refine Ska.nockEquivalence_iff_eval.2 ?_
-  intro core₀ c s f p gul h0 hr hA
+  intro core₀ c s f p h0 hr
   have hpk := pokeIs_all g.pokeModel
   obtain ⟨cr, rfl, hc, hr'⟩ := reach_model cueRoot g.libSlam g.pokeModel ovumMold
     g.libFormat g.mookFormat h0 hr
-  obtain ⟨st', he⟩ := meek_reach lib g.contract g.halting g.invKept (gul := gul) g.invStart hr' hA
-  exact ⟨_, (top_iff lib g.libSlam pk hpk ob cr hc s f gul _ _).2 ⟨_, st', rfl, rfl, he⟩⟩
+  constructor
+  · intro hA
+    obtain ⟨st', he⟩ :=
+      meek_reach lib g.contract g.halting g.invKept (gul := A 0) g.invStart hr' hA
+    exact ⟨_, (top_iff lib g.libSlam pk hpk ob cr hc s f (A 0) _ _).2 ⟨_, st', rfl, rfl, he⟩⟩
+  · rintro ⟨c', ht⟩
+    obtain ⟨t, cr', ht0, -, he⟩ := (top_iff lib g.libSlam pk hpk ob cr hc s f (A 0) _ _).1 ht
+    have e : t = Tone.zero p := tone_toNoun_inj (b := Tone.zero p) ht0.symm
+    subst e
+    exact meek_conv_reach lib g.contract g.invKept g.invStart hr' he
 
-theorem weak_of (g : Gap lib pk InvC) : Ska.MockEquivalence := by
-  intro core₀ c s f gul toon h0 hr hm
+/-- `MockEquivalence` from `+mock` to the interpreter. -/
+theorem weak_of (g : Gap lib pk InvC) {core₀ c s f gul toon : Noun} (h0 : Ska.FromPill core₀)
+    (hr : Ska.Reach core₀ c) (hm : Ska.Mock core₀ s f gul toon) :
+    ∃ c', Ska.Run c s f gul toon c' := by
   have hpk := pokeIs_all g.pokeModel
   obtain ⟨hleaf, hhand, hrest, hst, hmsg⟩ := g.libFormat
   have hlist := listMoldIs
@@ -374,8 +388,10 @@ theorem weak_of (g : Gap lib pk InvC) : Ska.MockEquivalence := by
   exact ⟨_, (run_iff lib g.libSlam pk hpk hrb hst hmsg hlist hmm (fun _ hc => pokeDireBad hc) ob cr hc s f gul _ _).2
     ⟨t, st'', rfl, rfl, hrun⟩⟩
 
-theorem converse_of (g : Gap lib pk InvC) : Ska.MockEquivalenceInverse := by
-  intro core₀ c s f gul toon c' h0 hr hrun
+/-- `MockEquivalence` from the interpreter to `+mock`. -/
+theorem converse_of (g : Gap lib pk InvC) {core₀ c s f gul toon c' : Noun} (h0 : Ska.FromPill core₀)
+    (hr : Ska.Reach core₀ c) (hrun : Ska.Run c s f gul toon c') :
+    Ska.Mock core₀ s f gul toon := by
   have hpk := pokeIs_all g.pokeModel
   obtain ⟨hleaf, hhand, hrest, hst, hmsg⟩ := g.libFormat
   have hlist := listMoldIs
@@ -390,6 +406,9 @@ theorem converse_of (g : Gap lib pk InvC) : Ska.MockEquivalenceInverse := by
   have hM := converse_reach lib g.contract g.invKept g.invStart hr' hR
   exact (mock_iff lib g.libSlam hleaf hhand hrest hst hmsg core core_layer4 s f gul _).2 ⟨tn, rfl, hM⟩
 
+theorem mockEquivalence_of (g : Gap lib pk InvC) : Ska.MockEquivalence :=
+  fun _ _ _ _ _ _ h0 hr => ⟨weak_of g h0 hr, fun ⟨_, h⟩ => converse_of g h0 hr h⟩
+
 theorem halts_of (g : Gap lib pk InvC) : Ska.Halts := by
   intro core₀ c s f₁ f₂ h0 hr
   obtain ⟨cr, rfl, hc, hI⟩ := g.reach h0 hr
@@ -398,10 +417,10 @@ theorem halts_of (g : Gap lib pk InvC) : Ska.Halts := by
   rw [hr1, Option.map_some] at e
   exact ⟨r.1.toNoun, C ob (icore r.2), (poke_iff cr _ _ _).2 ⟨r.2, e, rfl⟩⟩
 
-/-- **The assembly.**  The five statements of `core/Statement.lean`, from the
+/-- **The assembly.**  The four statements of `core/Statement.lean`, from the
 hypotheses of `Gap`. -/
 theorem full_of (g : Gap lib pk InvC) : Ska.Full :=
-  ⟨loads cueRoot, meek_of g, weak_of g, converse_of g, halts_of g⟩
+  ⟨loads cueRoot, meek_of g, mockEquivalence_of g, halts_of g⟩
 
 end
 

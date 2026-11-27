@@ -61,8 +61,8 @@ theorem mock_iff_slot {core s f gul toon : Noun} :
 /-- `NockEquivalence`, with `Eval` for `Nock`. -/
 theorem nockEquivalence_iff_eval :
     NockEquivalence ↔
-      ∀ core₀ core s f p gul, FromPill core₀ → Reach core₀ core →
-        Eval s f p → ∃ core', Top core s f gul (C (A 0) p) core' := by
+      ∀ core₀ core s f p, FromPill core₀ → Reach core₀ core →
+        (Eval s f p ↔ ∃ core', Top core s f (A 0) (C (A 0) p) core') := by
   simp only [NockEquivalence, nock_iff_eval]
 
 end Ska

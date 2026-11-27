@@ -39,7 +39,7 @@ So `road-pure` returns `y` exactly when `+mink` of the trap with `gul = ~`
 ends in `%0` and the direct run returns `y` (`rp_run_iff`), and the gate
 `+ska-poke` likewise (`ska_poke_gate_iff`).  `+mink` with `gul = ~` returns
 `[%0 p]` exactly when `EvalH` (Nock, with opcode 9 stated by its arm and the
-dynamic hint in two rules) gives `p` (`evalH_of_mink_nil`, with
+dynamic hint in two rules) gives `p` (`evalH_of_mink_nil` of `Ska/Mink.lean`, with
 `mink_of_evalH`), so the gate returns `y` exactly when the trap's run is an
 `EvalH` run to `y` (`ska_poke_iff_evalH`).  `nock` is `Eval`, and `Eval` is
 `EvalH`, so every return of the trap is such a run (`sp_trap_evalH`), and
@@ -416,101 +416,6 @@ theorem ska_poke_gate_iff (sam y : Noun) :
       = some (C rpBat (C (spTrap sam) rpCtx)) from rfl, Option.bind_some,
     show slot? 2 (C rpBat (C (spTrap sam) rpCtx)) = some rpBat from rfl, Option.bind_some,
     rp_run_iff (spTrap sam) rpCtx rpL5 y rp_l4 rp_l5 rp_mean_at, sp_trap_kick]
-
-/-! ## `+mink` with no scry gate is `EvalH` -/
-
-theorem rp_tz {x : Option Tone} {k : Noun → Option Tone} {p : Noun}
-    (h : tbind x k = some (Tone.zero p)) : ∃ y, x = some (Tone.zero y) ∧ k y = some (Tone.zero p) := by
-  rcases tbind_eq_some h with h | ⟨_, hnz⟩
-  · exact h
-  · exact absurd rfl (hnz p)
-
-/-- One level of `+mink` with no scry gate that ends in `[%0 p]` is an
-`EvalH` step, given the same of its calls. -/
-theorem rp_evalH_step (lib : Lib) (go : Trace → Noun → Noun → Option Tone)
-    (ih : ∀ t s f p, go t s f = some (Tone.zero p) → EvalH s f p) (t : Trace) (s f p : Noun)
-    (h : minkStep lib (A 0) go t s f = some (Tone.zero p)) : EvalH s f p := by
-  unfold minkStep at h
-  split at h
-  · obtain ⟨a, h1, h⟩ := rp_tz h
-    obtain ⟨b, h2, h⟩ := rp_tz h
-    cases h
-    exact EvalH.cell (ih _ _ _ _ h1) (ih _ _ _ _ h2)
-  · split at h
-    · cases h
-    · rename_i hs
-      cases h
-      exact EvalH.op0 (slot?_sound _ hs)
-  · cases h
-    exact EvalH.op1
-  · obtain ⟨a, h1, h⟩ := rp_tz h
-    obtain ⟨b, h2, h⟩ := rp_tz h
-    exact EvalH.op2 (ih _ _ _ _ h1) (ih _ _ _ _ h2) (ih _ _ _ _ h)
-  · obtain ⟨a, h1, h⟩ := rp_tz h
-    cases h
-    exact EvalH.op3 (ih _ _ _ _ h1)
-  · obtain ⟨a, h1, h⟩ := rp_tz h
-    split at h
-    · cases h
-    · cases h
-      exact EvalH.op4 (ih _ _ _ _ h1)
-  · obtain ⟨a, h1, h⟩ := rp_tz h
-    obtain ⟨b, h2, h⟩ := rp_tz h
-    cases h
-    exact EvalH.op5 (ih _ _ _ _ h1) (ih _ _ _ _ h2)
-  · obtain ⟨a, h1, h⟩ := rp_tz h
-    split at h
-    · exact EvalH.op6_zero (ih _ _ _ _ h1) (ih _ _ _ _ h)
-    · exact EvalH.op6_one (ih _ _ _ _ h1) (ih _ _ _ _ h)
-    · cases h
-  · obtain ⟨a, h1, h⟩ := rp_tz h
-    exact EvalH.op7 (ih _ _ _ _ h1) (ih _ _ _ _ h)
-  · obtain ⟨a, h1, h⟩ := rp_tz h
-    exact EvalH.op8 (ih _ _ _ _ h1) (ih _ _ _ _ h)
-  · obtain ⟨a, h1, h⟩ := rp_tz h
-    split at h
-    · cases h
-    · rename_i hs
-      exact EvalH.op9 (ih _ _ _ _ h1) (slot?_sound _ hs) (ih _ _ _ _ h)
-  · split at h
-    · cases h
-    · obtain ⟨a, h1, h⟩ := rp_tz h
-      obtain ⟨b, h2, h⟩ := rp_tz h
-      split at h
-      · cases h
-      · rename_i he
-        cases h
-        exact EvalH.op10 (ih _ _ _ _ h2) (ih _ _ _ _ h1) (edit?_sound _ he)
-  · obtain ⟨a, h1, h⟩ := rp_tz h
-    cases h
-    exact EvalH.op11_atom (ih _ _ _ _ h1)
-  · obtain ⟨a, h1, h⟩ := rp_tz h
-    obtain ⟨b, h2, h⟩ := rp_tz h
-    cases h
-    exact EvalH.op11_cell (ih _ _ _ _ h1) (ih _ _ _ _ h2)
-  · obtain ⟨a, h1, h⟩ := rp_tz h
-    obtain ⟨b, h2, h⟩ := rp_tz h
-    cases h
-    exact EvalH.op11_ctag (ih _ _ _ _ h1) (ih _ _ _ _ h2)
-  · obtain ⟨a, h1, h⟩ := rp_tz h
-    obtain ⟨b, h2, h⟩ := rp_tz h
-    simp at h
-  · cases h
-
-/-- **`+mink` with no scry gate** ends in `[%0 p]` only on an `EvalH` run
-to `p`, which is a Nock run (`EvalH.toEval`).  With `mink_of_evalH`, the two
-are the same. -/
-theorem evalH_of_minkF_nil (lib : Lib) :
-    ∀ (n : Nat) (t : Trace) (s f p : Noun), minkF lib (A 0) n t s f = some (Tone.zero p) → EvalH s f p
-  | 0, _, _, _, _, h => by simp [minkF] at h
-  | n + 1, t, s, f, p, h => by
-    rw [minkF_succ_eq] at h
-    exact rp_evalH_step lib (minkF lib (A 0) n) (evalH_of_minkF_nil lib n) t s f p h
-
-theorem evalH_of_mink_nil {lib : Lib} {s f p : Noun} (h : Mink lib (A 0) [] s f (Tone.zero p)) :
-    EvalH s f p := by
-  obtain ⟨n, hn⟩ := h
-  exact evalH_of_minkF_nil lib n [] s f p hn
 
 /-- **The gate `+ska-poke`** returns `y` exactly when the run of its trap is
 an `EvalH` run to `y`, that is, a Nock run.  No hypothesis. -/
