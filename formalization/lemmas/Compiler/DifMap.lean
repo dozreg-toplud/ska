@@ -20,19 +20,19 @@ open Nock Pill Hoon SkaModel SkaModel.Comp
 
 variable {ν : Type}
 
-theorem get_foldl_del (a : TreapMap mugF ν) : ∀ (ks : List Nat) (k : Nat),
+theorem get_foldl_delM (a : TreapMap mugF ν) : ∀ (ks : List Nat) (k : Nat),
     HoonMap.get (ks.foldl HoonMap.del a) k = if k ∈ ks then none else HoonMap.get a k
   | [], k => by simp
   | x :: xs, k => by
     simp only [List.foldl_cons]
-    rw [get_foldl_del (HoonMap.del a x) xs k, HoonMap.get_del]
+    rw [get_foldl_delM (HoonMap.del a x) xs k, HoonMap.get_del]
     by_cases h1 : k ∈ xs <;> by_cases h2 : k = x <;> simp [h1, h2]
 
 /-- The lookups of `difM`: those of `a` off the keys of `b`. -/
 theorem get_difM (a b : TreapMap mugF ν) (k : Nat) :
     HoonMap.get (difM a b) k = if (HoonMap.get b k).isSome then none else HoonMap.get a k := by
   unfold difM
-  rw [get_foldl_del]
+  rw [get_foldl_delM]
   simp only [HoonMapKeys.mem_keys]
 
 /-- `+dif:by`'s model on the nouns of two treaps is the noun of `difM`. -/
