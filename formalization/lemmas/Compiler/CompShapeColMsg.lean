@@ -134,6 +134,14 @@ def msgRestN : Noun :=
 def fxMsg : Noun :=
   (C (A 8) (C (C (A 9) (C (A 20) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 28)) (C (C (A 0) (A 58)) (C (A 0) (A 119))))) (C (A 0) (A 2))))))))
 
+/-- `&(?=(%none -.a) =(b fix))`. -/
+def fxT2 : Noun :=
+  (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x656e6f6e)) (C (A 0) (A 24)))) (C (C (A 6) (C (C (A 5) (C (C (A 0) (A 26)) (C (A 0) (A 54)))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))) (C (A 1) (A 1)))))
+
+/-- `&(?=(%none -.b) =(a fix))`. -/
+def fxT3 : Noun :=
+  (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x656e6f6e)) (C (A 0) (A 52)))) (C (C (A 6) (C (C (A 5) (C (C (A 0) (A 12)) (C (A 0) (A 54)))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))) (C (A 1) (A 1)))))
+
 /-- `need-here`. -/
 def fxHere : Noun :=
   (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x73696874)) (C (A 0) (A 24)))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x73696874)) (C (A 0) (A 52)))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x68746f62)) (C (A 0) (A 24)))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x68746f62)) (C (A 0) (A 52)))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))))))))))))
@@ -148,7 +156,7 @@ def fxEnd : Noun :=
 
 /-- After the test on `fix`. -/
 def fxRest : Noun :=
-  (C (A 6) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x656e6f6e)) (C (A 0) (A 24)))) (C (C (A 6) (C (C (A 5) (C (C (A 0) (A 26)) (C (A 0) (A 54)))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (C (A 0) (A 26)) (C (A 6) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x656e6f6e)) (C (A 0) (A 52)))) (C (C (A 6) (C (C (A 5) (C (C (A 0) (A 12)) (C (A 0) (A 54)))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (C (A 0) (A 12)) (C (A 8) (C fxHere (C (A 8) (C fxCons fxEnd))))))))))
+  (C (A 6) (C fxT2 (C (C (A 0) (A 26)) (C (A 6) (C fxT3 (C (C (A 0) (A 12)) (C (A 8) (C fxHere (C (A 8) (C fxCons fxEnd))))))))))
 
 /-- The gate body of `+msg-need-ord-fix-aware`. -/
 def fxBody : Noun :=
@@ -667,6 +675,186 @@ theorem msg_gate (KC : Noun) (MK : MsgK KC) :
 /-- `+msg-need-ord` of `K` itself. -/
 theorem msg_gate_K (a b : NeedOrd) (less : Cape) :
     nock (msgS a b less compK) msgBody = some (msgOrd a b less).toNoun := msg_gate compK msgK_compK a b less
+
+/-! ## `+msg-need-ord-fix-aware` -/
+
+/-- What `+msg-need-ord-fix-aware` reads in its context `K`. -/
+structure FixK (KC : Noun) : Prop extends MsgK KC where
+  msg : slot? 20 KC = some msgArm
+  hon : slot? 374 KC = some honArm
+  ton : slot? 92 KC = some tonArm
+
+theorem fixK_compK : FixK compK := { msgK_compK with msg := msg_at, hon := hon_at, ton := ton_at }
+
+/-- The subject of the gate body of `+msg-need-ord-fix-aware`. -/
+def fxS (a b fix : NeedOrd) (less : Cape) (KC : Noun) : Noun :=
+  C fxBody (C (C a.toNoun (C b.toNoun (C fix.toNoun less.toNoun))) KC)
+
+/-- The top of the gate: `=(a b)`, then `fix` `%this` or `%none`. -/
+theorem fx_top (KC : Noun) (FK : FixK KC) (a b fix : NeedOrd) (less : Cape) :
+    nock (fxS a b fix less KC) fxBody =
+      if a = b then some a.toNoun
+      else if ordAtm fix then some (msgOrd a b less).toNoun
+      else nock (fxS a b fix less KC) fxRest := by
+  have hm := msg_gate KC FK.toMsgK a b less
+  have hma := FK.msg
+  unfold msgS at hm
+  unfold fxS
+  conv => { lhs; arg 2; unfold fxBody }
+  generalize fxBody = FB
+  generalize fxRest = R
+  by_cases e : a = b
+  · subst e; simp [nock_exec, eqCode_self]
+  · have hab : ¬ a.toNoun = b.toNoun := fun h => e (nord_inj a b h)
+    cases fix <;> simp [nock_exec, eqCode, hab, e, fxMsg, hma, msg_arm, hm, ordAtm, NeedOrd.toNoun, Tag.none,
+      Tag.this, Tag.both, ord_eqCode, atom_eq_nord, nord_eq_atom]
+
+theorem fx_t2 (MB KC : Noun) (a b fix : NeedOrd) (less : Cape) :
+    nock (C MB (C (C a.toNoun (C b.toNoun (C fix.toNoun less.toNoun))) KC)) fxT2
+      = some (loob (decide (a = NeedOrd.none ∧ b = fix))) := by
+  unfold fxT2
+  by_cases h : b = fix <;>
+  cases a <;> simp [nock_exec, eqCode, NeedOrd.toNoun, Tag.none, Tag.this, Tag.both, ord_eqCode, atom_eq_nord,
+    nord_eq_atom, nord_toNoun_eq, h, loob]
+
+theorem fx_t3 (MB KC : Noun) (a b fix : NeedOrd) (less : Cape) :
+    nock (C MB (C (C a.toNoun (C b.toNoun (C fix.toNoun less.toNoun))) KC)) fxT3
+      = some (loob (decide (b = NeedOrd.none ∧ a = fix))) := by
+  unfold fxT3
+  by_cases h : a = fix <;>
+  cases b <;> simp [nock_exec, eqCode, NeedOrd.toNoun, Tag.none, Tag.this, Tag.both, ord_eqCode, atom_eq_nord,
+    nord_eq_atom, nord_toNoun_eq, h, loob]
+
+/-- The tests of `+msg-need-ord-fix-aware` on `a` or `b` `%none`. -/
+theorem fx_rest (MB KC : Noun) (a b fix : NeedOrd) (less : Cape) :
+    nock (C MB (C (C a.toNoun (C b.toNoun (C fix.toNoun less.toNoun))) KC)) fxRest =
+      if a = NeedOrd.none ∧ b = fix then some b.toNoun
+      else if b = NeedOrd.none ∧ a = fix then some a.toNoun
+      else nock (C MB (C (C a.toNoun (C b.toNoun (C fix.toNoun less.toNoun))) KC))
+        (C (A 8) (C fxHere (C (A 8) (C fxCons fxEnd)))) := by
+  have h2 := fx_t2 MB KC a b fix less
+  have h3 := fx_t3 MB KC a b fix less
+  unfold fxRest
+  generalize C (A 8) (C fxHere (C (A 8) (C fxCons fxEnd))) = Q
+  generalize fxT2 = T2 at h2 ⊢
+  generalize fxT3 = T3 at h3 ⊢
+  simp only [nock_exec, h2, h3]
+  by_cases d2 : a = NeedOrd.none ∧ b = fix
+  · rw [if_pos d2, decide_eq_true d2]; simp [nock_exec, loob]
+  · rw [if_neg d2, decide_eq_false d2]
+    by_cases d3 : b = NeedOrd.none ∧ a = fix
+    · rw [if_pos d3]; simp [nock_exec, loob, h3, decide_eq_true d3]
+    · rw [if_neg d3]; simp [nock_exec, loob, h3, decide_eq_false d3]
+
+/-- `need-here`. -/
+theorem fx_here (MB KC : Noun) (a b fix : NeedOrd) (less : Cape) :
+    nock (C MB (C (C a.toNoun (C b.toNoun (C fix.toNoun less.toNoun))) KC)) fxHere
+      = some (loob (ordWhole a || ordWhole b)) := by
+  unfold fxHere
+  cases a <;> cases b <;> simp [nock_exec, eqCode, NeedOrd.toNoun, Tag.none, Tag.this, Tag.both, ord_eqCode,
+    atom_eq_nord, nord_eq_atom, ordWhole, loob]
+
+/-- The `+cons-need` of the two recursive calls. -/
+theorem fx_cons (MB KC H : Noun) (FK : FixK KC) (a b fix : NeedOrd) (less : Cape) (r1 r2 : NeedOrd)
+    (h1 : nock (C MB (C (C (ordHed a).toNoun (C (ordHed b).toNoun (C (ordHed fix).toNoun (Ca.hed less).toNoun)))
+      KC)) MB = some r1.toNoun)
+    (h2 : nock (C MB (C (C (ordTel a).toNoun (C (ordTel b).toNoun (C (ordTel fix).toNoun (Ca.tel less).toNoun)))
+      KC)) MB = some r2.toNoun) :
+    nock (C H (C MB (C (C a.toNoun (C b.toNoun (C fix.toNoun less.toNoun))) KC))) fxCons
+      = some (consOrd r1 r2).toNoun := by
+  have hc := cn_gate_ord KC r1 r2
+  have hlib := FK.lib
+  have hcn := FK.cn
+  have hh := FK.hon
+  have ht := FK.ton
+  unfold fxCons
+  simp [nock_exec, hlib, ca.lib.arm_at, ca_lib_arm, ca.hed.arm_at, ca_hed_arm, ca_hed_gate, ca.tel.arm_at,
+    ca_tel_arm, ca_tel_gate, hh, ht, hon_arm, ton_arm, hon_gate, ton_gate, h1, h2, hcn, cnArm, hc]
+
+/-- The end, on a `+cons-need`. -/
+theorem fx_end (L : Noun) (w : Bool) (l r : NeedOrd) :
+    nock (C (consOrd l r).toNoun (C (loob w) L)) fxEnd = some (fixEnd w (consOrd l r)).toNoun := by
+  unfold fxEnd
+  obtain ⟨u, v, e'⟩ := nord_cell l
+  rcases consOrd_cases l r with ⟨e, -, -⟩ | e <;> rw [e] <;> cases w <;>
+    simp [nock_exec, eqCode, NeedOrd.toNoun, Tag.none, Tag.this, Tag.both, fixEnd, loob, e']
+
+/-- The case of `fix` a cell or a `%both`, past the tests on `%none`. -/
+theorem fx_cell (KC : Noun) (FK : FixK KC) (a b fix : NeedOrd) (less : Cape) (r1 r2 : NeedOrd)
+    (h1 : nock (fxS (ordHed a) (ordHed b) (ordHed fix) (Ca.hed less) KC) fxBody = some r1.toNoun)
+    (h2 : nock (fxS (ordTel a) (ordTel b) (ordTel fix) (Ca.tel less) KC) fxBody = some r2.toNoun) :
+    nock (fxS a b fix less KC) (C (A 8) (C fxHere (C (A 8) (C fxCons fxEnd))))
+      = some (fixEnd (ordWhole a || ordWhole b) (consOrd r1 r2)).toNoun := by
+  unfold fxS at h1 h2 ⊢
+  have hh := fx_here fxBody KC a b fix less
+  have hc := fx_cons fxBody KC (loob (ordWhole a || ordWhole b)) FK a b fix less r1 r2 h1 h2
+  have he := fx_end (C fxBody (C (C a.toNoun (C b.toNoun (C fix.toNoun less.toNoun))) KC))
+    (ordWhole a || ordWhole b) r1 r2
+  generalize fxHere = H at hh ⊢
+  generalize fxCons = Q at hc ⊢
+  generalize fxEnd = E at he ⊢
+  simp [nock_exec, hh, hc, he]
+
+/-- **`+msg-need-ord-fix-aware`** is `msgFix`: the gate body on
+`[[a b fix less] K]` is `msgFix a b fix less` for every `a`, `b`, `fix`,
+`less`, given the arms it reads in `K`.  By induction on `fix`: on a
+`%this` or `%none` it is `+msg-need-ord` (`msg_gate`), on a cell or a
+`%both` the two recursive calls on the halves are the induction
+hypothesis. -/
+theorem fx_gate (KC : Noun) (FK : FixK KC) :
+    ∀ (fix a b : NeedOrd) (less : Cape), nock (fxS a b fix less KC) fxBody = some (msgFix a b fix less).toNoun := by
+  intro fix
+  induction fix with
+  | this =>
+    intro a b less
+    rw [fx_top KC FK, msgFix.eq_def]
+    by_cases e : a = b <;> simp [e, ordAtm]
+  | none =>
+    intro a b less
+    rw [fx_top KC FK, msgFix.eq_def]
+    by_cases e : a = b <;> simp [e, ordAtm]
+  | pair fh ft ihh iht =>
+    intro a b less
+    rw [fx_top KC FK, msgFix.eq_def a b (NeedOrd.pair fh ft) less]
+    by_cases e : a = b
+    · rw [if_pos e, if_pos e]
+    rw [if_neg e, if_neg e]
+    simp only [ordAtm, Bool.false_eq_true, if_false]
+    have hr := fx_rest fxBody KC a b (NeedOrd.pair fh ft) less
+    unfold fxS at hr ⊢
+    rw [hr]
+    by_cases c2 : a = NeedOrd.none ∧ b = NeedOrd.pair fh ft
+    · rw [if_pos c2, if_pos c2]
+    rw [if_neg c2, if_neg c2]
+    by_cases c3 : b = NeedOrd.none ∧ a = NeedOrd.pair fh ft
+    · rw [if_pos c3, if_pos c3]
+    rw [if_neg c3, if_neg c3]
+    have h := fx_cell KC FK a b (NeedOrd.pair fh ft) less _ _ (ihh _ _ _) (iht _ _ _)
+    unfold fxS at h
+    rw [h, capeHed_eq, capeTel_eq]
+  | both fh ft ihh iht =>
+    intro a b less
+    rw [fx_top KC FK, msgFix.eq_def a b (NeedOrd.both fh ft) less]
+    by_cases e : a = b
+    · rw [if_pos e, if_pos e]
+    rw [if_neg e, if_neg e]
+    simp only [ordAtm, Bool.false_eq_true, if_false]
+    have hr := fx_rest fxBody KC a b (NeedOrd.both fh ft) less
+    unfold fxS at hr ⊢
+    rw [hr]
+    by_cases c2 : a = NeedOrd.none ∧ b = NeedOrd.both fh ft
+    · rw [if_pos c2, if_pos c2]
+    rw [if_neg c2, if_neg c2]
+    by_cases c3 : b = NeedOrd.none ∧ a = NeedOrd.both fh ft
+    · rw [if_pos c3, if_pos c3]
+    rw [if_neg c3, if_neg c3]
+    have h := fx_cell KC FK a b (NeedOrd.both fh ft) less _ _ (ihh _ _ _) (iht _ _ _)
+    unfold fxS at h
+    rw [h, capeHed_eq, capeTel_eq]
+
+/-- `+msg-need-ord-fix-aware` of `K` itself. -/
+theorem fx_gate_K (fix a b : NeedOrd) (less : Cape) :
+    nock (fxS a b fix less compK) fxBody = some (msgFix a b fix less).toNoun := fx_gate compK fixK_compK fix a b less
 
 end Compiler
 end Formalization

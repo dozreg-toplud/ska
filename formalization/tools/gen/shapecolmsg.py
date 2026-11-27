@@ -130,6 +130,8 @@ _, fHere, f7 = seq(f6, 3)            # [8 HERE F7]
 _, fCons, fEnd = seq(f7, 3)          # [8 CONS END]
 defs += [
     ('fxMsg', fy1, '`(msg-need-ord a b less)`.'),
+    ('fxT2', ft2, '`&(?=(%none -.a) =(b fix))`.'),
+    ('fxT3', ft3, '`&(?=(%none -.b) =(a fix))`.'),
     ('fxHere', fHere, '`need-here`.'),
     ('fxCons', fCons, 'The `+cons-need` of the two recursive calls.'),
     ('fxEnd', fEnd, 'The end: `%both`, `%this`, `%none` or the cell.'),
