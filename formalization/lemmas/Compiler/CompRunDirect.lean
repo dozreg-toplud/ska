@@ -265,5 +265,33 @@ theorem res_n2_drop {env : CallEnv} {msup : Option Nomm} {p q : Nomm} {region : 
   · simp [lregs_bunt] at e
   · exact Or.inl e
 
+/-! ## `+made` (door arm `13814`) -/
+
+/-- The battery of the gate `+made`. -/
+def madBat : Noun :=
+  C (A 6) (C (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 12))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0))
+    (C (A 0) (A 24)))) (C (C (A 5) (C (C (A 1) (A 1)) (C (A 0) (A 25)))) (C (A 1) (A 1))))) (C (A 1) (A 1)))))
+    (C (C (A 6) (C (C (A 3) (C (A 0) (A 13))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))) (C (A 1) (A 1)))))
+    (C (C (A 0) (A 27)) (C (A 0) (A 12))))
+
+/-- The arm `+made`: the gate with the bunt `[[0 0] 0]`. -/
+def madArm : Noun := C (A 8) (C (C (A 1) (C (C (A 0) (A 0)) (A 0))) (C (C (A 1) madBat) (C (A 0) (A 1))))
+
+theorem comp_made_at : slot? 13814 comp.door = some madArm := by kernel_rfl
+
+/-- **`+made` is `made`** on every nomm and every `sup`, in any context. -/
+theorem made_gate (D : Noun) (nom : Nomm) (sup : Option Nomm) :
+    nock (C madBat (C (C nom.toNoun (unitNoun Nomm.toNoun sup)) D)) madBat = some (made nom sup).toNoun := by
+  unfold madBat
+  cases nom with
+  | n0 ax =>
+    by_cases h : ax = 1
+    · subst h
+      cases sup <;> simp [nock_exec, Nomm.toNoun, unitNoun, made]
+    · have h' : (1 : Nat) ≠ ax := Ne.symm h
+      cases sup <;> simp [nock_exec, Nomm.toNoun, unitNoun, made, h, h']
+  | cons p q => cases p <;> cases sup <;> simp [nock_exec, Nomm.toNoun, unitNoun, made, Tag.mean]
+  | _ => cases sup <;> simp [nock_exec, Nomm.toNoun, unitNoun, made, Tag.mean]
+
 end Compiler
 end Formalization

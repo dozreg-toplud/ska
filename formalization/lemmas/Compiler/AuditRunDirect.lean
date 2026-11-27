@@ -10,3 +10,4 @@ open Formalization.Compiler
 #print axioms crd_drop
 #print axioms comp_run_n2_drop
 #print axioms res_n2_drop
+#print axioms made_gate
