@@ -33,7 +33,7 @@ theorem csfSwDirty_eq : csfSwDirty =
 
 /-- The subject of the gate body of one sweep step: the gate, the sample `[b st m c]`, the trap
 core. -/
-def swG (p : LoopP) (CNT ST0 ML0 CA0 b ST ML CA : Noun) : Noun :=
+def csSwG (p : LoopP) (CNT ST0 ML0 CA0 b ST ML CA : Noun) : Noun :=
   C csfSwGate (C (C b (C ST (C ML CA))) (p.core CNT ST0 ML0 CA0))
 
 theorem tickOpt_cases (o : Option Nat) : tickOpt o = A 0 ∨ ∃ v, tickOpt o = C (A 0) v := by
@@ -43,7 +43,7 @@ theorem tickOpt_cases (o : Option Nat) : tickOpt o = A 0 ∨ ∃ v, tickOpt o = 
 theorem sw_any_body (p : LoopP) (CNT ST0 ML0 CA0 b ML CA ANY TK RAN CHG : Noun) (r : Nat)
     (f : Noun → Option Nat) (hchg : TickMap f CHG) (k : Noun) :
     nock (C swAnyBody (C k (C (C (A 0) (A r))
-        (swG p CNT ST0 ML0 CA0 b (C ANY (C TK (C RAN CHG))) ML CA)))) swAnyBody
+        (csSwG p CNT ST0 ML0 CA0 b (C ANY (C TK (C RAN CHG))) ML CA)))) swAnyBody
       = some (loob (decide (r ≤ (f k).getD 0))) := by
   have hL := compK_layer2
   have hL1 := compK_layer1
@@ -56,7 +56,7 @@ theorem sw_any_body (p : LoopP) (CNT ST0 ML0 CA0 b ML CA ANY TK RAN CHG : Noun) 
     rcases e : f k with _ | t <;> rw [e] at hg <;> simp only [tickOpt] at hg
     · simpa using gut_gate layer2 hc k (A 0) CHG (A 0) hg (Or.inl rfl)
     · simpa using gut_gate layer2 hc k (A 0) CHG _ hg (Or.inr ⟨_, rfl⟩)
-  unfold swG LoopP.core csfCore LoopP.subj
+  unfold csSwG LoopP.core csfCore LoopP.subj
   generalize compK = KC at hL hL1 ⊢
   simp [nock_exec, swAnyBody, hL, hL1, gte.arm_at, gte_arm, hgte, by.arm_at, by_arm,
     by.gut.arm_at, gut_arm, hv]
@@ -71,7 +71,7 @@ theorem any_congr_mem {l l' : List Noun} (g : Noun → Bool) (h : ∀ k, k ∈ l
 theorem sw_dirty (c : Cfg Noun N) (p : LoopP) (hkids : KidsN c p.KIDS)
     (CNT ST0 ML0 CA0 : Noun) (st : St Noun N) (b ST ML CA : Noun) (hb : b ∈ c.scc)
     (hst : StN st ST) :
-    nock (swG p CNT ST0 ML0 CA0 b ST ML CA) csfSwDirty = some (loob (dirty c st b)) := by
+    nock (csSwG p CNT ST0 ML0 CA0 b ST ML CA) csfSwDirty = some (loob (dirty c st b)) := by
   obtain ⟨RAN, CHG, rfl, hran, hchg⟩ := hst
   obtain ⟨out, hout, htree, hmem⟩ := hkids b hb
   have hL := compK_layer2
@@ -83,18 +83,18 @@ theorem sw_dirty (c : Cfg Noun N) (p : LoopP) (hkids : KidsN c p.KIDS)
   · rw [e] at hget
     have hd : dirty c st b = true := by simp [dirty, e]
     rw [hd]
-    unfold swG LoopP.core csfCore LoopP.subj at *
+    unfold csSwG LoopP.core csfCore LoopP.subj at *
     generalize compK = KC at hL ⊢
     simp [nock_exec, hL, by.arm_at, by_arm, by.get.arm_at, get_arm, hget, tickOpt, loob]
   · rw [e] at hget
     have hany := any_in_gate_on in.battery layer2 swAnyBody (C (C (A 1) (A 0)) (C (A 0) (A 0)))
-      (C (C (A 0) (A r)) (swG p CNT ST0 ML0 CA0 b (C (loob st.any) (C (A st.tick) (C RAN CHG))) ML CA))
+      (C (C (A 0) (A r)) (csSwG p CNT ST0 ML0 CA0 b (C (loob st.any) (C (A st.tick) (C RAN CHG))) ML CA))
       (fun k => decide (r ≤ (st.chg k).getD 0)) (unUnit out) htree
       (fun x _ => sw_any_body p CNT ST0 ML0 CA0 b ML CA _ _ RAN CHG r st.chg hchg x)
     have hd : dirty c st b = (preorder (unUnit out)).any (fun k => decide (r ≤ (st.chg k).getD 0)) := by
       simp only [dirty, e]; exact (any_congr_mem _ hmem).symm
     rw [hd]
-    unfold swG LoopP.core csfCore LoopP.subj at *
+    unfold csSwG LoopP.core csfCore LoopP.subj at *
     generalize compK = KC at hL hany ⊢
     simp [nock_exec, hL, by.arm_at, by_arm, by.get.arm_at, get_arm, hget, tickOpt,
       in.arm_at, in_arm, in.any.arm_at, any_in_arm, ju.arm_at, ju_arm, ju.get.arm_at, ju_get_arm,
@@ -103,7 +103,7 @@ theorem sw_dirty (c : Cfg Noun N) (p : LoopP) (hkids : KidsN c p.KIDS)
 /-- **`keep`**: `(gth t (mul 4 ~(wyt in scc)))`, on the subject `[t dirty gate]`. -/
 theorem sw_keep (c : Cfg Noun N) (p : LoopP) (hscc : SccN c p.SCC)
     (CNT ST0 ML0 CA0 b ST ML CA D : Noun) (t : Nat) :
-    nock (C (A t) (C D (swG p CNT ST0 ML0 CA0 b ST ML CA))) csfSwKeep
+    nock (C (A t) (C D (csSwG p CNT ST0 ML0 CA0 b ST ML CA))) csfSwKeep
       = some (loob (decide (4 * c.scc.length < t))) := by
   have hL := compK_layer2
   have hL1 := compK_layer1
@@ -111,7 +111,7 @@ theorem sw_keep (c : Cfg Noun N) (p : LoopP) (hscc : SccN c p.SCC)
   rw [hscc.2.2] at hw
   have hmul := mul_gate layer1 arith_layer1.1 4 c.scc.length
   have hgth := gth_gate layer1 arith_layer1.2.2.2.2.1 t (4 * c.scc.length)
-  unfold swG LoopP.core csfCore LoopP.subj
+  unfold csSwG LoopP.core csfCore LoopP.subj
   generalize compK = KC at hL hL1 ⊢
   simp [nock_exec, csfSwKeep, hL, hL1, gth.arm_at, gth_arm, hgth, mul.arm_at, mul_arm, hmul,
     in.arm_at, in_arm, in.wyt.arm_at, wyt_arm, hw]
@@ -122,7 +122,7 @@ theorem sw_mem (c : Cfg Noun N) (R : (Noun → Option N) → (Noun → Option N)
     (hm : MemGate c R p.ctx top p.TOP Mode.must (A 0x7473756d)) (hscc : SccN c p.SCC)
     (CNT ST0 ML0 CA0 : Noun) (st : St Noun N) (b ST ML CA D : Noun) (t : Nat) (hb : b ∈ c.scc)
     (hR : R st.ml st.sure ML CA) :
-    ∃ ML' CA', nock (C (A t) (C D (swG p CNT ST0 ML0 CA0 b ST ML CA))) csfSwMem
+    ∃ ML' CA', nock (C (A t) (C D (csSwG p CNT ST0 ML0 CA0 b ST ML CA))) csfSwMem
         = some (C (loob (member c top b Mode.must (decide (4 * c.scc.length < t)) st).1)
             (C ML' CA')) ∧
       R (member c top b Mode.must (decide (4 * c.scc.length < t)) st).2.ml
@@ -131,7 +131,7 @@ theorem sw_mem (c : Cfg Noun N) (R : (Noun → Option N) → (Noun → Option N)
   refine ⟨ML', CA', ?_, hR'⟩
   have hk := sw_keep c p hscc CNT ST0 ML0 CA0 b ST ML CA D t
   unfold memSam at hcall
-  unfold swG LoopP.core csfCore LoopP.subj LoopP.mg at *
+  unfold csSwG LoopP.core csfCore LoopP.subj LoopP.mg at *
   simp [nock_exec, csfSwMem, hk, hcall]
 
 /-- **The new `st`**: `[& t (~(put by ran.st) b t) ?:(chg.r (~(put by chg.st) b t) chg.st)]`,
@@ -140,7 +140,7 @@ theorem sw_st (p : LoopP) (CNT ST0 ML0 CA0 b ML CA D ML' CA' ANY TK RAN CHG : No
     (ran chg : Noun → Option Nat) (hran : TickMap ran RAN) (hchg : TickMap chg CHG) (t : Nat)
     (ch : Bool) :
     ∃ RAN' CHG', nock (C (C (loob ch) (C ML' CA')) (C (A t) (C D
-        (swG p CNT ST0 ML0 CA0 b (C ANY (C TK (C RAN CHG))) ML CA)))) csfSwSt
+        (csSwG p CNT ST0 ML0 CA0 b (C ANY (C TK (C RAN CHG))) ML CA)))) csfSwSt
         = some (C (A 0) (C (A t) (C RAN' CHG'))) ∧
       TickMap (upd ran b (some t)) RAN' ∧ TickMap (if ch then upd chg b (some t) else chg) CHG' := by
   obtain ⟨RAN', hp1, hran'⟩ := tickMap_put hran b t
@@ -148,7 +148,7 @@ theorem sw_st (p : LoopP) (CNT ST0 ML0 CA0 b ML CA D ML' CA' ANY TK RAN CHG : No
   have hg1 := put_gate layer2 gorIn_morIn_layer2 b (A t) RAN RAN' hp1
   have hg2 := put_gate layer2 gorIn_morIn_layer2 b (A t) CHG CHG1 hp2
   have hL := compK_layer2
-  unfold swG LoopP.core csfCore LoopP.subj
+  unfold csSwG LoopP.core csfCore LoopP.subj
   generalize compK = KC at hL ⊢
   cases ch
   · refine ⟨RAN', CHG, ?_, hran', by simpa using hchg⟩
@@ -174,7 +174,7 @@ theorem sw_gate (c : Cfg Noun N) (R : (Noun → Option N) → (Noun → Option N
         = some (C ST' (C ML' CA')) ∧ StN (sweepStep c top st b) ST' ∧
       R (sweepStep c top st b).ml (sweepStep c top st b).sure ML' CA' := by
   have hd := sw_dirty c p hkids CNT ST0 ML0 CA0 st b ST ML CA hb hst
-  unfold swG at hd
+  unfold csSwG at hd
   have hgate : ∀ X, nock X csfSwGate =
       nock X (C (A 8) (C csfSwDirty (C (A 6) (C (C (A 0) (A 2)) (C csfSwYes csfSwNo))))) :=
     fun X => by rw [csfSwGate_eq]
@@ -204,7 +204,7 @@ theorem sw_gate (c : Cfg Noun N) (R : (Noun → Option N) → (Noun → Option N
       unfold sweepStep; rw [if_pos hdy]
     refine ⟨C (A 0) (C (A (st.tick + 1)) (C RAN' CHG')), ML', CA', ?_, ?_, ?_⟩
     · rw [hgate]
-      unfold swG at hmem hst'
+      unfold csSwG at hmem hst'
       obtain ⟨x, y, hxy⟩ : ∃ x y, csfSwSt = C x y := ⟨_, _, rfl⟩
       rw [hxy] at hst'
       simp [nock_exec, csfSwYes, csfSwOut, lt, hd, hmem, hxy, hst']
