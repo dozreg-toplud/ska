@@ -1,4 +1,4 @@
-import lemmas.Compiler.CompRunHintClass
+import lemmas.Compiler.CompRunHintD
 import lemmas.Compiler.CompSofArms
 import lemmas.Compiler.CompSccIn
 
