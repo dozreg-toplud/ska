@@ -10,12 +10,14 @@ twice (`runLC` passes the fuel `3`) and crashes when the fuel is out.
 
 `LeapTwice laz q r`: `+leap` of the rest that `+leap` returned is `~`.  Under
 it the fuel `3` is as good as any larger fuel (`sixNextLC_fuel`), so the
-model is the Hoon's unbounded recursion.  `LeapTwice` is not proved here: it
-held on the real compiler over 726 formulas (`tools/hoon/leaptwice.py`,
-2026-11-27: 708 leaps, 174 of them with a rest that still forks or bonds, so
-that the second `+leap` ran its loop, never a second leap).  On paper: a
-second round finds in every block the part at each pass already `%none` (or
-still behind a register, as in the first round), and no look under it.
+model is the Hoon's unbounded recursion.  `LeapTwice` is proved, not here
+(this file is imported by the proof): `leap_twice` of `Ska/CompLeapTwice.lean`
+for passes with nonzero product axes, and `leapTwice_noAx0` of
+`Ska/CompLeapTwiceRun.lean` for every lazy need on branches with
+`Bake.NoAx0` (with `sixNextLC_fuel_tw`, the fuel `3` without the
+hypothesis).  It had held on the real compiler over 726 formulas
+(`tools/hoon/leaptwice.py`, 2026-11-27: 708 leaps, 174 of them with a rest
+that still forks or bonds, never a second leap).
 
 `sixNextLC_fork_free`: on a goal with no fork and no bond (as after `+kerf`)
 any fuel from `1` on gives phase S (`sixNextSimpleC`).
@@ -31,7 +33,8 @@ open Nock Lazy
 
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
 
-/-- `+leap` of the rest that `+leap` returned is `~`. -/
+/-- `+leap` of the rest that `+leap` returned is `~` (proved on branches with
+`Bake.NoAx0`: `leapTwice_noAx0`). -/
 def LeapTwice (laz : Lazy S) (q r : Nomm) : Prop :=
   ∀ rest bys, leap laz q r = some (some (rest, bys)) → leap rest q r = some Option.none
 
