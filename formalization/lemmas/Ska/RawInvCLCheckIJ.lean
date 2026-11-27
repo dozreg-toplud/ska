@@ -32,7 +32,8 @@ front at the goal's lazy entries (`prepOld`), `cond` only grows, by
 keys from the old `re` on, `re` only grows, and every register defined
 after the run was defined before it, is fresh, or is a goal register
 (`defsB`: the frame that `%5`, cons, `%10` and `%2` need for their second
-run's goal).
+run's goal), and a result's lazy tree has bonds and forks at distinct labels
+at every node when the goal's has (`labB`: the `LabUniq` that `+copy` needs).
 -/
 
 namespace Formalization
@@ -112,6 +113,29 @@ def defsB (goal : CGoalL LS) (g0 g1 : Comp.Gen FM) : Bool :=
   let G := goalRegs goal
   (allDefsL g1.blocks).all fun y => D0.contains y || g0.re ≤ y || G.contains y
 
+/-- **The result's goal registers**: a register of the result's lazy tree is
+one of the goal's or fresh (what composes `defsB` along `%7`). -/
+def gregB (goal : CGoalL LS) (g0 : Comp.Gen FM) (nex : NextL LS) : Bool :=
+  let G := goalRegs goal
+  (goalRegs nex.goal).all fun y => G.contains y || g0.re ≤ y
+
+/-- At every node of the tree the bonds lie at distinct labels and the forks
+at distinct `yes` labels (`LabUniq` of `RawInvCLCopy.lean`, which `+copy`
+needs of both its trees). -/
+def labUniqB : Nat → Lazy LS → Bool
+  | 0, _ => true
+  | f + 1, mk _ fk bd => nodupB (bd.map (·.1)) && nodupB (fk.map (·.1.1)) &&
+      bd.all (fun e => labUniqB f e.2) && fk.all (fun e => labUniqB f e.1.2 && labUniqB f e.2.2)
+
+def goalLabB : CGoalL LS → Bool
+  | CGoalL.next laz _ => labUniqB 30 laz
+  | _ => true
+
+/-- **`LabUniq` carries**: when the goal's lazy tree has it, the result's has
+it.  (Its entry labels lie below `bo` already by `iB`: every entry has a
+block, every block lies below `bo`.) -/
+def labB (goal : CGoalL LS) (nex : NextL LS) : Bool := !goalLabB goal || labUniqB 30 nex.laz
+
 /-- A sub-run with its checks: `none` when one fails. -/
 def wrapC (K : List (Nat × List Nat)) (X : Comp.Gen FM → Bool) (rp : CGoalL LS → List Nat → CM FM (NextL LS)) :
     CGoalL LS → List Nat → CM FM (NextL LS) := fun goal region g0 =>
@@ -119,7 +143,7 @@ def wrapC (K : List (Nat × List Nat)) (X : Comp.Gen FM → Bool) (rp : CGoalL L
   match rp goal region g0 with
   | some (nex, g1) =>
     if iB K nex.goal g1 && liveCB K goal g0 g1 nex && prepB goal g0 g1 && condGrowB g0 g1 && defsB goal g0 g1 &&
-      g0.re ≤ g1.re then some (nex, g1)
+      gregB goal g0 nex && labB goal nex && g0.re ≤ g1.re then some (nex, g1)
     else Option.none
   | Option.none => Option.none
 
@@ -281,6 +305,32 @@ block, and on 290 under `%done` (a sub-run after the `+kern` of a call). -/
 
 #guard ((plainCX.filter fun nm => !checkIJX (fun g => (condKeys g).isEmpty) goalB gB nm).length,
   (plainCX.filter fun nm => !checkIJX (fun g => (condKeys g).isEmpty) CGoalL.done gen0 nm).length) == (2832, 290)
+
+/-! ## `labB` is not vacuous and needs its hypothesis: under the four goals
+496, 496, 344 and 1,056 top results have a node with two bonds or two forks;
+from a goal with two bonds at one label (`goalDup`, which meets `iB`), 832 of
+the 2,856 top results have two bonds at one label (the goal's, passed on).
+The stronger "all entry labels of the tree distinct" holds on every top
+result under `%done`, `%next` and the bond goal. -/
+
+def multiB : Nat → Lazy LS → Bool
+  | 0, _ => false
+  | f + 1, mk _ fk bd => 2 ≤ bd.length || 2 ≤ fk.length ||
+      bd.any (fun e => multiB f e.2) || fk.any (fun e => multiB f e.1.2 || multiB f e.2.2)
+
+def goalDup : CGoalL LS := CGoalL.next (mk (lazyReg 1) [] [(1, ofSure (lazyReg 0)), (1, ofSure (lazyReg 3))]) (jmp0 2)
+def gDup : Comp.Gen FM := { gB with re := 4 }
+
+def cntTopL (goal : CGoalL LS) (g0 : Comp.Gen FM) (P : NextL LS → Bool) : Nat :=
+  (plainCX.filter fun nm => match runCG goal g0 nm with | some (nex, _) => P nex | none => false).length
+
+#guard iB [] goalDup gDup && !goalLabB goalDup
+#guard (cntTopL CGoalL.done gen0 (fun n => multiB 30 n.laz), cntTopL goalY gY (fun n => multiB 30 n.laz),
+  cntTopL goalP gP (fun n => multiB 30 n.laz), cntTopL goalB gB (fun n => multiB 30 n.laz)) == (496, 496, 344, 1056)
+#guard cntTopL goalDup gDup (fun n => !labUniqB 30 n.laz) == 832
+#guard (cntTopL goalB gB (fun n => !nodupB (((nodesF 30 [] (0, n.laz)).map (·.1)).drop 1)),
+  cntTopL goalY gY (fun n => !nodupB (((nodesF 30 [] (0, n.laz)).map (·.1)).drop 1)),
+  cntTopL CGoalL.done gen0 (fun n => !nodupB (((nodesF 30 [] (0, n.laz)).map (·.1)).drop 1))) == (0, 0, 0)
 
 end Raw
 end SkaModel
