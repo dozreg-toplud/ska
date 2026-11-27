@@ -78,5 +78,10 @@ defs = [
     'def cr11Dy : Noun := C (A 6) (C cr11TD (C cr11DKept cr11NDyn))',
     'def cr11Head : Noun := C (A 6) (C cr11T (C cr11St cr11Dy))',
 ]
+ND = sl(15, DY)
+# NDYN: the push of `$(nomm q.nomm)`, then `?:  (safe-nomm q.p.nomm)`
+assert sl(2, ND) == A(7) and sl(6, ND) == C(A(0), A(1)) and sl(14, ND) == A(8)
+assert sl(30, ND) == C(A(7), C(C(A(0), A(1)), C(A(9), C(A(5), C(A(10), C(C(A(58), C(A(0), A(470))), C(A(0), A(1)))))))), sl(30, ND)
+defs.append('/-- The dropped dynamic tag, written out. -/\ndef cr11Nd : Noun :=\n  ' + show(ND))
 open(os.path.join(OUT, 'k11.lean'), 'w').write('\n\n'.join(defs) + '\n')
 print('kept', AKEPT, 'dkept', ADKEPT, 'ndyn', ANDYN)

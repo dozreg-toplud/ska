@@ -29,3 +29,8 @@ open Formalization.Compiler
 #print axioms comp_run_hint
 #print axioms comp_run_hintX
 #print axioms res_hint
+#print axioms cr11nd_eq
+#print axioms cr11_nd
+#print axioms runLCH_n11d_nd
+#print axioms comp_run_n11d_nd
+#print axioms partH_n11d_nd
