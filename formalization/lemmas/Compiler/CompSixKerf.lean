@@ -453,5 +453,55 @@ theorem cr6k_head (h7 : slot? 7 ctx = some compK) (p q r : Nomm) (laz : Lazy CSe
   unfold cr6Head cr6NoLep cr6Lep cr6T2 cr6KF
   simp [nock_exec, hD, lp6_arm, hLp, h7, compK_ne, ne_arm, hn, htk, loob]
 
+/-- **The case `%6` of `+run` in phase K**: under a `%next` goal with
+`GInv` whose `+leap` is `~` (in the model, `hlp`, and in the Nock, `hLp`),
+whose need with the bunt sure is not `+none-equivalent` and whose `+kerf`
+test holds, given the parts (`SixParts`, the branches in the regions
+`rid :: region`): `+kerf`, then phase S on the fork-free goal
+(`comp_run_n6_nf`). -/
+theorem comp_run_n6_k (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q r : Nomm) (region : List Nat)
+    (P : SixParts env msup ctx p region) (Q : ∀ rid, SixParts env msup ctx q (rid :: region))
+    (R : ∀ rid, SixParts env msup ctx r (rid :: region))
+    (laz : Lazy CSet) (th : Jmp) (g : Gen (TreapMap mugF)) (hinv : GInv g (CGoalL.next laz th))
+    (hlp : leap laz q r = some Option.none)
+    (hLp : ∀ x : GenRest, x.NoSoft →
+      nock (C lp6Bat (C (C laz.toNoun (C q.toNoun r.toNoun)) (compCore g x ctx))) lp6Bat = some (A 0))
+    (hne : Lazy.noneEquivalentL (Lazy.mk Sure.bunt laz.fork laz.bond) = false)
+    (hkt : kerfTest q r laz = true) :
+    CompRunAtR (runLC env msup) ctx (Nomm.n6 p q r) (CGoalL.next laz th) region g := by
+  intro x mono sup hx
+  have hd := ginv_drop hinv
+  have hl : LAll CrLok laz := lall_mono (fun _ h => h.1) hinv.1.1
+  rw [cr6k_head h7 p q r laz th region x hx g mono sup (hLp x hx) hne hkt,
+    runLC_n6_k env msup p q r laz th region hlp hne hkt]
+  exact cr6k_eq h7 env msup p q r laz th region x g mono sup (A 0) (walk_mdP hx _ hl)
+    (fun out pro g' ek => comp_run_n6_nf h7 hcode env msup p q r region P Q R ⟨Need.this pro, HoonSet.empty⟩
+      (jmp0 out) g' (ginv_kerf ek hd) x mono sup hx)
+
+/-- **What `%6` returns in phase K**: `GRes`, given what the runs of the
+parts return (`res_n6_nf` after `+kerf`; the register of `+kerf` is fresh). -/
+theorem res_n6_k {env : CallEnv} {msup : Option Nomm} {p q r : Nomm} {region : List Nat}
+    (ihp : ResFor env msup p region) (ihq : ∀ rid, ResFor env msup q (rid :: region))
+    (ihr : ∀ rid, ResFor env msup r (rid :: region))
+    (laz : Lazy CSet) (th : Jmp) (g g' : Gen (TreapMap mugF)) (nex : NextL CSet)
+    (hi : GInv g (CGoalL.next laz th)) (hlp : leap laz q r = some Option.none)
+    (hne : Lazy.noneEquivalentL (Lazy.mk Sure.bunt laz.fork laz.bond) = false)
+    (hkt : kerfTest q r laz = true)
+    (h : runLC env msup (Nomm.n6 p q r) (CGoalL.next laz th) region g = some (nex, g')) :
+    GRes g (CGoalL.next laz th) g' nex := by
+  rw [runLC_n6_k env msup p q r laz th region hlp hne hkt] at h
+  obtain ⟨⟨out, pro⟩, g1, ek, h⟩ := bind_some h
+  obtain ⟨-, hrp, hp, hb, -⟩ := kerf_inv ek
+  obtain ⟨r1, b1, gi, fr⟩ := res_n6_nf ihp ihq ihr ⟨Need.this pro, HoonSet.empty⟩ (jmp0 out) g1 g' nex
+    (ginv_kerf ek (ginv_drop hi)) h
+  refine ⟨by omega, by omega, gi, fun y hy => Or.inl ?_⟩
+  rcases fr y hy with e | e
+  · omega
+  · change y ∈ lregs (Lazy.ofSure (⟨Need.this pro, HoonSet.empty⟩ : Sure CSet)) at e
+    rw [show (⟨Need.this pro, HoonSet.empty⟩ : Sure CSet) = lazyReg pro from rfl, lregs_reg pro] at e
+    have ey : y = pro := by simpa using e
+    omega
+
 end Compiler
 end Formalization
