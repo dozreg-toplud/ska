@@ -4,7 +4,7 @@ import lemmas.Compiler.OptLinkAlWalkHyp
 /-!
 # `+alias`: one turn of the walk (README Gaps 13, phases 9 to 15 composed)
 
-The phases still open elsewhere are named hypotheses (`OptLinkAlWalkHyp.lean`),
+The phases proved in other files enter as named hypotheses (`OptLinkAlWalkHyp.lean`),
 in the form the link needs (each on the model's `g.rev o`, the Hoon's `pre`
 any list with no duplicates and the members of `g.rev o`):
 
@@ -14,12 +14,10 @@ any list with no duplicates and the members of `g.rev o`):
 * `AlParsLink`: phase 12, `=^  par-new  gen` (`alPars`) returns
   `[par.bob gen]` with `info-local` `InfoMapRel` to `aliasPars g b.par
   edges info`, `edges` of `aliasEdges g o (g.rev o)`.
-* `AlBodyLink`: the statement of `al_body_gen` (phase 13, proved in
-  `OptLinkAlBodyGate.lean`) for `pick = Ana.pickR FinMap`.  It is a
-  hypothesis here only because `OptLinkAlBody.lean` and `OptLinkAlFin.lean`
-  both declare `alRnArm` and `alBat_rn`, so no file can import both
-  `al_body_gen` and `al_fin`; `al_body_link` (`OptLinkAlWalkBody.lean`)
-  proves it.
+* `AlBodyLink`: the statement of `al_body_gen` (phase 13) for `pick =
+  Ana.pickR FinMap`.
+
+All three are proved in `OptLinkAlWalkBody.lean`.
 
 * `alW1_start`: the branch of a reached block is `alStartW [8 alBob alW4]`;
   `al_reach_comp`: the Nock from `bob` to `alTail`, from the product of

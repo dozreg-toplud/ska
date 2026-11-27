@@ -1,4 +1,4 @@
-import lemmas.Compiler.OptLinkAlFinAll
+import lemmas.Compiler.OptLinkAlWFinAll
 import lemmas.Compiler.OptLinkAlStartImms
 
 /-!

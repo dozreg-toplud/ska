@@ -3,11 +3,10 @@ import lemmas.Compiler.OptLinkAlStartImms
 /-!
 # `+alias`: the phases the walk takes as hypotheses (README Gaps 13)
 
-This file imports neither `OptLinkAlFin.lean` nor `OptLinkAlBody.lean`
-(both declare `alRnArm` and `alBat_rn`, so no file can import both, and
-`OptLinkAlStartAll.lean`, `OptLinkAlParsTrap.lean` import the second), so
-each hypothesis is stated here and proved where its phase is
-(`OptLinkAlWalkBody.lean`: `al_start_link`, `al_pars_link`, `al_body_link`).
+The turn and the walk are proved from these (`al_link_of`), and each is
+proved from its phase in `OptLinkAlWalkBody.lean` (`al_start_link`,
+`al_pars_link`, `al_body_link`), so that the composition does not depend on
+the files of the phases.
 
 * `alStartW`: the noun `alStartF` of `OptLinkAlStartAll.lean`, copied
   (`al_start_link` checks the copy by `rfl`).

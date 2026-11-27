@@ -11,10 +11,8 @@ import lemmas.Compiler.OptLinkAlParsTrap
 * `al_pars_link`: `AlParsLink` is `al_pars` (phase 12, track G).
 * `al_body_link`: `AlBodyLink` is `al_body_gen` (phase 13).
 
-These cannot be imported beside `OptLinkAlWalkGate.lean` while
-`OptLinkAlBody.lean` and `OptLinkAlFin.lean` both declare `alRnArm` and
-`alBat_rn`; with that fixed, `al_link P hP al_start_link al_pars_link
-al_body_link : AliasLink P`.
+`OptLinkAlWalkGate.lean` imports this file: `al_link` is `al_link_of`
+with these three.
 -/
 
 namespace Formalization
