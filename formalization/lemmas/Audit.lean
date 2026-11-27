@@ -165,6 +165,8 @@ import lemmas.Ska.ShapeColAlgFix
 import lemmas.Compiler.CompShapeColFuel
 import lemmas.Compiler.CompShapeColNorm
 import lemmas.Compiler.CompStraightRun
+import lemmas.Compiler.CompStraightRunIn
+import lemmas.Compiler.CompShapeColBake
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -1271,3 +1273,18 @@ open Formalization
 #print axioms Compiler.tsr_rer
 #print axioms Compiler.tsr_par
 #print axioms Compiler.tsr_args
+#print axioms Compiler.tsr_jmp
+#print axioms Compiler.tsr_hop
+#print axioms Compiler.tsr_op
+#print axioms Compiler.tsr_fin
+#print axioms Compiler.tsr_bod
+#print axioms Compiler.mapBlocks_rap
+#print axioms Compiler.tsr_gate
+#print axioms Compiler.tsr_branch
+#print axioms Compiler.tsr_ri
+#print axioms Compiler.tsr_core
+#print axioms Compiler.tsr_at
+#print axioms Compiler.ts_at_any
+#print axioms Compiler.tsAny_holds
+#print axioms Compiler.cu_gate_scc_one_six_bake_all
+#print axioms Compiler.cu_gate_scc_one_six_bake_fol_all
