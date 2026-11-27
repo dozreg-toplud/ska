@@ -2,7 +2,10 @@
 # usage: sccreal.py OUTDIR      then
 #   RUNHOON_LIB=OUTDIR/lib.hoon tools/hoon/runhoon.sh OUTDIR/ck.hoon 900 > out.txt
 #   tools/hoon/sccreal.py --lean out.txt > lemmas/Ska/SccLoopRealData.lean
-#   tools/hoon/sccreal.py --tally out.txt        (the cases of +run-shape the %must compiles take)
+#   sccreal.py OUTDIR --tally-lib, the same run, then
+#   tools/hoon/sccreal.py --tally out.txt        (the entries of +run-shape per case of the nomm
+#                                                 and goal, in %must and %may compiles: each
+#                                                 counted under the mode of the last member begun)
 # The %done compiles of the members of real SCCs (README Gaps 21.14, the model memDoneM of
 # lemmas/Ska/SccLoopReal.lean), on the 18 formulas of sccloop.py.  The instrumented copy of the
 # library prints, as raw nouns:
@@ -131,13 +134,17 @@ def callees(nm, acc):
 if sys.argv[1] in ('--lean', '--tally'):
     evs = records(sys.argv[2])
     if sys.argv[1] == '--tally':
-        case = None; tal = {}; tot = {}
+        case = None; tal = {}; tot = {}; mode = None
+        want = sys.argv[3] if len(sys.argv) > 3 else 'must'
         for e in evs:
             tag = cord(e[0])
             if tag == 'case':
                 case = cord(e[1])
-            elif tag == 'rs':
-                k = cord(e[1]) if e[1] < 2 ** 64 else str(e[1])
+            elif tag == 'rm':
+                mode = cord(e[1])
+            elif tag == 'rs' and mode == want:
+                c0, g = e[1]
+                k = '%s/%s' % (cord(c0) if c0 > 20 else 'n%d' % c0, cord(g))
                 tot[k] = tot.get(k, 0) + 1
                 tal.setdefault(k, set()).add(case)
         for k in sorted(tot, key=lambda k: -tot[k]):
@@ -242,14 +249,19 @@ ins('      [m c(nary (~(uni by nary.c) m))]', [
     '          [%fin (mug scc) (turn ~(tap by m) |=([b=bell s=straight] [(mug b) need.s]))]',
 ], after=False)
 if tally:
-    # each case of +run-shape: a print at the head of each ?- branch of its dispatch
+    # each entry of +run-shape: the case of the nomm (%2 split into direct and indirect, the
+    # autocons %cons, a hint by its kind) and the kind of the goal, printed before its ?-
     r0 = src.index('  ++  run-shape')
-    r1 = next(i for i in range(r0 + 1, len(src)) if src[i].startswith('  ++  '))
-    for i in range(r1 - 1, r0, -1):
-        m = re.match(r'^(      )(\[%[0-9a-z]+ \*\]|\[\^ \*\])\s*$', src[i])
-        if m:
-            tag = m.group(2)[2:-3] if m.group(2) != '[^ *]' else 'cons'
-            src[i + 1:i + 1] = ['      ~&  ^-(* [%rs %%%s])' % ('cons' if tag == 'cons' else 'n' + tag if tag.isdigit() else tag)]
+    k = next(i for i in range(r0, len(src)) if src[i] == '    ?-    nomm')
+    src[k:k] = ['    ~&  ^-  *',
+                '        :+  %rs',
+                '          ?+  nomm  ?@(-.nomm -.nomm %cons)',
+                '            [%2 *]   ?~(info.nomm %ind %dir)',
+                '            [%11 *]  ?@(p.nomm %hs %hd)',
+                '          ==',
+                '        -.goal']
+    ins('    =/  comp  (comp scc long-ska jets-hot map-local top b)',
+        ['    ~&  ^-(* [%rm mode])'], after=False)
 open(os.path.join(out, 'lib.hoon'), 'w').write('\n'.join(src))
 
 cs = open(os.path.join(D, 'sccloop.py')).read()
