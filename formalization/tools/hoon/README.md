@@ -173,6 +173,24 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     `[V |]`, `[| V]` of one formula in turn).  With the library of
                     `passmeasure.py` the `%st` hash is periodic (33,135 passes in 300 s, 24 values); on the plain
                     library no answer in 600 s (2026-11-27)
+* `passfix.py OUT.hoon --fix none|keep|endcull|late [--n N] [--cap N] [--in LIB]` (track F, README Gaps 16)
+                    writes a PATCHED COPY of the library with a candidate fix of the pass loop (each textual
+                    patch asserts its text occurs once): `keep` (a) `+cull` keeps the dropped datum and a re-push
+                    starts from it, `endcull` (b) no `+cull` inside the loop, only when stable, which also needs
+                    every reached member clean (`+dirty`), `late` (c) the original for N passes (64), then (b);
+                    `--cap N` (measurement only) stops a loop at pass N+1 with `[%pm-capped ..]`.
+                    `PASSMEASURE_IN=OUT.hoon passmeasure.py DIR` instruments such a copy
+* `passfix-cores.py all|grid|grid2|ablate|ablate2|one OUT.hoon [..]`, `--tab OUT.txt..` one driver of the 88
+                    cores of `passmeasure-take.py` (`all`), or of `core3` cases (two relay chains from `k`'s
+                    target into `a`, `b`) for the smallest witness; `--tab` per case: root passes, capped, `%st`
+                    period, pushes, re-pushes, takeovers.  2026-11-27, unpatched with `--cap 400`: 88 return but
+                    2 capped; grids (348 cases) 22 capped, the smallest `e2-12-44-020` (`takemin.hoon`)
+* `takemin.hoon`    the smallest witness found (R's register 2, 6 sites, relay chains of 1 and 2, registers 4):
+                    plain library no answer in 240 s; period 9 from pass 6 with `--cap`; returns with each fix
+* `takesame.hoon`, `takesame-thread.hoon` identical output of a fix: the 21 pokes of `sprestdump.hoon` and the
+                    21 library calls of `passmeasure-lib.hoon` (on the core of hoon.hoon), and the 324 calls of
+                    thread-a/b/c; mugs of product, state, graph.  2026-11-27: `keep`, `endcull`, `late` equal to
+                    the unpatched library on these, on the 1,921 cores of passmeasure.py and on `repush.hoon`
 * `untidyin.hoon`   the pokes that could plant an untidy sock: `%fast` with data under a `|` and with a cape `[| |]`
                     returns and keeps both templates normalized (`[[& |] [bat 0]]`), `%fast` with a cell cape over an atom
                     and `%dire` with an untidy bell crash, and a `%full` poke then returns with tidy memo subjects (2026-11-27)

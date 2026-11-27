@@ -4326,6 +4326,37 @@ import only its theorems.  So:
     distrusted (`indi`) by another.  The 21 other cores of family D returned
     (at most 17 root passes, 43 re-pushes, at most 4 pushes of one identity).
 
+    **The cause and three candidate fixes** (track F, 2026-11-27, not applied;
+    `tools/hoon/passfix.py`, `passfix-cores.py`).  The site `k` resolves by
+    `%rec` to the NEWEST member of formula 5 on the stack that covers its
+    constant kid, and both `[V |]` and `[| V]` cover it; `+cull` drops the one
+    nothing reaches, and when `a` (or `b`) sees its slot known again it pushes
+    that identity afresh from the bunt entry; it is then the newest, takes over
+    `k`, and `k`'s product register restarts, which restarts the relay chains
+    that feed `a` and `b` one pass per relay later.  What fails is the
+    monotone accumulation of `+run` (`less-code` united with the old entry,
+    the product generalized with it): it holds within a member's life, and
+    `+cull` ends that life, so "a culled member is never needed again" (the
+    comment of `+cull`) is the assumption that breaks.  Smallest witness found
+    (`tools/hoon/takemin.hoon`, 348 generated cases): R's register 2, six sites
+    (`k`, relays of chains 1 and 2, `a`, `b`), registers of 4, period 9 from
+    pass 6; shortening a chain, a register of 3 or another slot makes it end
+    in 7 to 20 passes (and on the witness with chains 2, 2: removing `a` or
+    `b`, 8).  Fixes on copies, against the unpatched library:
+    (a) `keep` (re-push from the culled datum), (b) `endcull` (cull only when
+    stable, with every reached member clean), (c) `late` (the original for 64
+    passes, then (b)).  All three: `takecycle.hoon` and `takemin.hoon` return;
+    the 88 cores of `passmeasure-take.py` all return (root passes 1,430 with
+    two capped at 400, after: 590, 625, 771; re-pushes 2,423, after: 49, 0,
+    422); the same product and state on the 21 pokes of `sprestdump.hoon`, the
+    21 library calls of `passmeasure-lib.hoon`, the 324 calls of
+    `thread-a/b/c`, the 1,921 cores of `passmeasure.py` and `repush.hoon`.  On
+    `takecycle.hoon` the three give one product and (b) another state.  The
+    clean test of (b) never fired (2,703 stable ends).  With (b) no identity is
+    pushed twice inside a loop, so `FinPushes` follows from (i) and R is not
+    needed; (a) still re-pushes and needs a new argument for pushes with all
+    entries frozen.
+
     Still open, for a compiler that ends: R (`EvFrozen`), (i)'s
     `FinBranch`, and the fuel of `+run` inside the member loop, which is the
     whole recursion; so `CgHalts` is still a hypothesis, and false of this
