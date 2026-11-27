@@ -20,6 +20,9 @@ import lemmas.Ska.RawInvCLPast
 import lemmas.Ska.RawInvCLFrameRun
 import lemmas.Ska.RawInvCLCopyIL
 import lemmas.Ska.RawInvCLRunL
+import lemmas.Ska.RawInvCLLeaves
+import lemmas.Ska.RawInvCLSAKerf
+import lemmas.Ska.RawInvCLKIMid
 
 /-!
 # Axioms of the main theorems of track D (README Gaps 14)
@@ -240,3 +243,32 @@ open Formalization SkaModel Raw
 #print axioms liveRun_plain_topOfL
 #print axioms armsLL_of
 #print axioms liveRun_plain_of_specs
+#print axioms splitSpecL
+#print axioms intoSpecL
+#print axioms liveRun_plain
+#print axioms kerfSAB
+#print axioms sarRun_plainOf
+#print axioms sar_sab
+#print axioms scsp_split
+#print axioms scit_into
+#print axioms sccp_copy
+#print axioms sccl_collapse
+#print axioms sckf_kerf
+#print axioms sarStepsW
+#print axioms topSAR_plain
+#print axioms topSAU_plain
+#print axioms plainN_noDirect
+#print axioms optIn_finishLUC_of
+#print axioms readsIn_finishLUC_of
+#print axioms optIn_finishLUCM_of
+#print axioms readsIn_finishLUCM_of
+#print axioms optIn_finishLFC_of
+#print axioms readsIn_finishLFC_of
+#print axioms kim_split
+#print axioms kim_into
+#print axioms kim_run_plainIL
+#print axioms kim_runM_plainIL
+#print axioms Glue.optInMono_plain
+#print axioms Glue.readsInMono_plain
+#print axioms Glue.optInNary_plain
+#print axioms Glue.readsInNary_plain
