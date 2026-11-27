@@ -10,6 +10,9 @@ import lemmas.Ska.CompHintRegKeepEx
   (`finishLUCH_contractSurSeven`, `surGBT_n11dKept` over the cons).
 * `runLCH_n4n0_done`: the result of `[4 [0 a]]` under `%done` is the flat
   `+from` of `a` over a register.
+* `regGBT_sevenS`: `[7 p q]` under `%next (lazy-from-reg r)` with `p` in
+  `SurGBT`, `q` in `RegFT`, so `[spot [7 [spot k] q]]` nests.
+* `outReasonSur`, the table of the 39 at the top (`#guard`: 18 in).
 -/
 
 set_option linter.unusedSectionVars false
@@ -101,6 +104,54 @@ theorem contract_d13 (lib : Lib) (env : CallEnv) (snd : Nomm → NeedOrd → Boo
     · simp only [ofSure, fromPath_two]; exact hsnd
     · simp only [ofSure, fromPath_two, Fits]; exact ⟨trivial, trivial⟩) hc
   exact ⟨H.1, fun s => H.2 s trivial⟩
+
+/-- **`[7 p q]` under `%next (lazy-from-reg r) th` with `p` in `SurGBT Ap`**
+(a kept hint, nested in any way `surGBT_n11dKept` allows): `q` in `RegFT`,
+its result without entries and with `Ap` of its sure need (`hq`).  So a
+kept spot whose formula is such a `%7` is in `RegGBT` (`regGBT_n11dKept`):
+the shape `[spot [7 [spot k] q]]` of a `!:` arm's step. -/
+theorem regGBT_sevenS (lib : Lib) {snd : Nomm → NeedOrd → Bool} {N : Needs} {env : CallEnv} {P : Noun → Prop}
+    {b c : Noun} {p q : Nomm} {Ap : Sure S → Prop} (Hp : SurGBT (S := S) (Map := Map) snd lib N env P Ap b p)
+    (Hq : RegFT (S := S) (Map := Map) snd lib N env (Img lib P b) c q)
+    (hq : ∀ {sup : Option Nomm} {rg : Nat} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nx : NextL S},
+      runLCH (S := S) (Map := Map) env snd true sup q (CGoalL.next (ofSure (lazyReg rg)) th) region g0 =
+        some (nx, g1) → entries nx.laz = [] ∧ Ap nx.laz.sure) :
+    RegGBT (S := S) (Map := Map) snd lib N env P (n3 (A 7) b c) (Nomm.n7 p q) := by
+  intro sup rg th region g0 g1 nex b0 d0 hu hcl hcb th1 th2 hta hr0 hc0 hr
+  rw [runLCH_n7] at hr
+  obtain ⟨nx, ga, h1, h2⟩ := bind_some hr
+  have D := Hq b0 d0 hu hcl hcb th1 th2 hta hr0 hc0 h1
+  have Rq := D.run
+  obtain ⟨hne, hA⟩ := hq h1
+  have hj : nx.th.args = [] := by
+    rcases Rq.ent with ⟨_, _, _, ha⟩ | e
+    · exact ha
+    · simp only [GoalJ] at e; rw [e]; exact hta
+  have h2' : runLCH (S := S) (Map := Map) env snd true sup p (CGoalL.next (ofSure nx.laz.sure) nx.th) region ga =
+      some (nex, g1) := by
+    rw [← eq_ofSure_of_entries hne]; exact h2
+  have Rp := Hp hA (by have := Rq.ext.2.1; omega) (Rq.ext.2.2.1.trans d0) (Rq.grow.up hu) (Clear.growU hcl Rq.grow)
+    (Rq.cfr.below hcb) Rq.lo Rq.hi hj Rq.dist D.clean
+    (fun x hx => ⟨by
+      rcases Rq.regs x hx with e | e
+      · have := Rq.ext.1; simp only [GMem, lazyReg, NMem] at e; omega
+      · exact e.2, Rq.ncond x hx⟩) h2'
+  exact runOKGBT_sevenG (minkC7_seven lib P b c) Rq hne Rp
+    (fun r hr => by simp only [GMem, lazyReg, NMem] at hr; omega)
+
+/-! ## The table of the 39 at the top -/
+
+/-- `outReasonOps` with `d13` in (`contract_d13`; the only dumped `%7`
+whose `p` is kept and whose `+sound` holds, `d12`'s fails). -/
+def outReasonSur (nm : Nomm) : Option String :=
+  if nm.toNoun == exD13.toNoun then Option.none else outReasonOps nm
+
+def reasonsSur : List (String × Option String) :=
+  HintData.all.map fun (n, j) => (n, ((parts j).bind fun (nmN, _, _, _) => nommOf 300 nmN).bind outReasonSur)
+
+#guard (reasonsSur.filter fun r => r.2.isNone).map Prod.fst ==
+  ["s01", "s02", "s03", "s05", "s06", "d01", "d02", "d03", "d06", "d08", "d09", "d10", "d13", "d14", "d19", "d21",
+    "d23", "m01"]
 
 end
 
