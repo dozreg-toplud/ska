@@ -250,6 +250,16 @@ namespace Formalization
 #check @SkaModel.Opt.ReadsOK
 #check @SkaModel.Opt.ArgsOK
 #check @SkaModel.Opt.LocalOK
+#check @SkaModel.Opt.Keeps
+#check @SkaModel.Opt.optimize_keeps_plain_pickR
+#check @SkaModel.PokeM.bellContract_of_keeps
+#check @SkaModel.PokeM.sound_lift
+#check @SkaModel.PokeM.invKept_lift
+#check @SkaModel.Comp.finishLFC_eq_M
+#check @SkaModel.Ana.FinIdents
+#check @SkaModel.Ana.PassMoves
+#check @SkaModel.Ana.freeze_no_chain
+#check @SkaModel.Ana.KruskalBT
 #check @SkaModel.Ana.finPushes_of_freeze
 #check @SkaModel.Ana.EvFrozen
 

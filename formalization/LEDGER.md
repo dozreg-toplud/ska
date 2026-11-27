@@ -3,7 +3,8 @@
 `Full` (`core/Statement.lean`) is proved by `Assembly.full_of` from one
 structure, `Assembly.Gap lib pk InvC`, with eight fields.  This file traces
 each field down to its OPEN LEAVES.  Every declaration named here is checked
-to exist in `lemmas/Glue/AuditGlue.lean` (`#check`), and the theorems of
+to exist in `lemmas/Glue/AuditGlue.lean` or, for track P's route,
+`lemmas/Glue/AuditGlueP.lean` (`#check`), and the theorems of
 `lemmas/Glue/` have their axioms printed there (all within `propext`,
 `Classical.choice`, `Quot.sound`).  A line that could not be verified is
 marked *not checked*; names on a track branch that is not merged are marked
@@ -35,14 +36,27 @@ shapes:
 - NEW `Glue.gap_of_compM` (`Glue/InvMemo.lean`): the same on the invariant
   `InvSM` (section 4, M8), so that `halting` and the other three use ONE
   invariant;
-- track P's `gap_of_armP` with `anaArmP` (`+ska-cole-update`, mismatch P2)
-  *(branch -p, not merged)*.
+- track P's `Compiler.gap_of_armP` (`Compiler/PokeLink.lean`) with
+  `anaArmP` (`+ska-cole-update`, mismatch P2; no answer on an atom formula,
+  P4) for `enc fl`, `invStart` at the pill's `cor`: THE ROUTE NOW
+  (`gap_of_comp` does not apply to `anaArmP`);
+- NEW `Glue.gap_of_armPM` (`Glue/InvMemoP.lean`): `gap_of_armP` on `InvSM`,
+  with `Glue.halting_of_cgMP` for `halting` on the same invariant.
 
 They fix `pk := liftPoke enc (pokeS A)`, `InvC := liftInv enc (InvS lib ref)`
 (or `InvSM`), `A.skaPoke` the analysis arm, and `ref : Ref M Map J H` (the
-reference compiler, free, tied to `A` by `CompHyp`).  Track P defines `enc`
-(`Ska/PokeEnc.lean`: the state as the compiler's core, the flags of `code` a
-parameter `fl`, mismatch P1) and `enc_inj` *(branch -p, not merged)*.
+reference compiler, free, tied to `A` by `CompHyp`).  Track P defines `enc
+fl` (`Ska/PokeEnc.lean`: the state as the compiler's core, the flags of
+`code` a parameter `fl`, mismatch P1), `enc_inj`, `cor_enc fl : cor = enc fl
+emptySt`, `cor_enc_gap`.
+
+BUILD CLASHES (found while auditing; no file can import both of a pair):
+`Ska/PokeEnc.lean` and `Compiler/OptLinkAlJReg.lean` both declare
+`Compiler.unitNoun_id_inj`; `Ska/SccLoopMsg.lean` and `Ska/CompNCJump.lean`
+both declare `Comp.isLeaf`.  So the names of P's route are checked in
+`Glue/AuditGlueP.lean`, and `Glue/MonoCalls.lean` (which needs
+`OptLinkTotalAvail`) keeps its own `straight_toNoun_inj`.  Fix: rename one
+of each pair (owners P, H; I, C).
 
 ## 1. `pokeModel : PokeModel pk`
 
@@ -56,18 +70,19 @@ PROVED around it: the frame of `+poke` on every `CorIn` core
 `%dire` on a bad bell (`pokeDireBad`).
 
 Leaves (all track P now):
-1.1 `enc` and its image: track P, `Ska/PokeEnc.lean` (`enc`, `enc_inj`,
-    `straight_toNoun_inj`, the map of `cr`'s axes against `CSt`, README
-    Gaps 23) *(branch -p, not merged)*.  Left: every `PokeReach` core is in
-    the image (maps are `IsMap mugF`, keys and values decode, `code`/`calls`/
-    `seek` share keys, the flags are `fl` of the table: P1).
-1.2 `+ska-poke` is the analysis arm: P2 found that the pill's `+ska-poke`
-    ends with `+ska-cole-update`, which `anaArm` does not model; restated
-    `anaArmP` (`jetsOfP` reads the old and new table), `anaHyp_of_armP`;
-    `pokeN_full_of` (`Compiler/PokeLink.lean`): `pokeModel` on `%full` from
-    five named links `SkaLink`, `JetRootLink`, `SccLink`, `MonoLink`,
-    `OptLink` *(branch -p, not merged)*.  PROVED pieces: `ska_poke_iff`,
-    `ska_poke_ana_iff_pill`, `analyze_iff`, `fol_loop_iff`, `resolve_iff`.
+1.1 `enc`: PROVED (`enc`, `enc_inj`, `Compiler.straight_toNoun_inj`; the map
+    of `cr`'s axes against `CSt`, README Gaps 23).  Left: every `PokeReach`
+    core is in the image (maps are `IsMap mugF`, keys and values decode,
+    `code`/`calls`/`seek` share keys, the flags are `fl` of the table: P1).
+1.2 `+ska-poke` is `anaArmP` (P2): `pokeN_full_of` (`Compiler/PokeLink.lean`)
+    gives `pokeModel` on `%full` with a cell formula from `FullBranchIs`
+    (OPEN: `+validate-ovum` on `%full`, the dispatch, the 272-cell branch)
+    and five named links `SkaLink`, `JetRootLink`, `SccLink`, `MonoLink`,
+    `OptLink` (OPEN).  In `SkaLink`: the analysis part is linked
+    (`ska_poke_iff`, `ska_poke_ana_iff_pill`, `analyze_iff`, `fol_loop_iff`,
+    `resolve_iff`); `spRest`, the baking half (`+bake-graph`, `new-code`,
+    the SCC loop with `+eval-finalized`, the writes of `seek` and `calls`,
+    `+ska-cole-update`), has NO link.
 1.3 `A.compileUnary` is the pill's `+compile-unary` (299 cells): tracks A,
     I, K.  PROVED: `cu_gate_scc_one_six_ts`, `cu_gate_scc_one_six_fol_ts`
     (one bell, `NoSelfCall`, `SixOk`, `FinSure`, `NoBakeOneC`); with direct
@@ -83,10 +98,10 @@ Leaves (all track P now):
     modelled (`SccLoop.lean`); the pill link (`csiFix`) not started.
 1.5 `A.optimize` is the pill's `+optimize`: PROVED on `FragX` (track H,
     `optimize_total_finishLUX`, `-LFX`, `opt_gate`).  Track P's `OptLink`.
-1.6 `+scc-of` (430 cells), the jetted root, `%jets` (298 cells of the
-    branch), `%fast` (288), `+compiled-mono` (115), `+compiled-nary` (107),
-    the `%dire` branch (122): track P (cell counts from README Gaps 23,
-    *branch -p*), not linked.
+1.6 `+scc-of` (409 cells by P's count, 430 tree cells by
+    `tools/gen/nouns.py`), the jetted root (`JetRootLink`), `%jets` (298
+    cells of the branch), `%fast` (288), `+compiled-mono` (115),
+    `+compiled-nary` (107), `%dire` (122): track P, not linked.
 
 ## 2. `contract : Sound lib pk InvC`
 
@@ -171,7 +186,7 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
     cons into it) → `EntryOK`; (ii) the four static properties of the raw
     code of each class (D has `OptIn` on `FragX`, `Closed`, `ArityOK` on
     `PlainN`; the guard is new).  No pill link: a model fact.  Size: (i)
-    is of the size of `optimize_keeps_plain` (the `Opt*Sim` files), (ii)
+    is of the size of `optimize_keeps_plain_pickR` (the `Opt*Sim` files), (ii)
     the size of D's `RawInvC*` per class.
 2.d `optRef`: see the table; with calls the input side of track H's
     totality (`opt_total_*` need `FragX` because the alias pass reads only
@@ -235,9 +250,11 @@ Chain: `fullAnswers_lift henc` of `FullAnswers (pokeS A) InvC'`:
     -e, not merged: `finPushes_of_freezeC` (`FinPushes` from (i) and R
     alone given `MemoNoCallees` and `PassHyp`), `passMoves_chain`.
 3.2 `MemoNoCallees`: in the invariant `InvSM` (PROVED kept:
-    `Glue.pokeS_memo`, `anaArm_memo`; start: `invSM_init`).  For P's
-    `anaArmP` the same proof applies (its long is `skaPokeB`'s): *composition
-    only* until P is merged.
+    `Glue.pokeS_memo`, `anaArm_memo`; on P's route `pokeS_memoP`,
+    `anaArmP_memo`; start: `invSM_init`).  On P's route the halting field is
+    `Glue.halting_of_cgMP` (`FullAnswers (liftPoke (enc fl) (pokeS A))
+    (liftInv (enc fl) (InvSM lib ref))` from `CgHalts`, `BakeEnds`,
+    `RootAnswers`, `hA : A.skaPoke = anaArmP … (anaFuel env regOf) …`).
 3.3 `BakeEnds` (the worklist of `+bake-graph` ends within `bf`): OPEN, no
     owner; `bakeLoop_mono`, `bakeLoop_grows`; no measure.
 3.4 `RootAnswers` (no owner).  WHAT IT STATES: after the analysis of a
@@ -253,19 +270,18 @@ Chain: `fullAnswers_lift henc` of `FullAnswers (pokeS A) InvC'`:
     totality theorem of `runLCM` on the nomms of `+fol-loop` (the model is
     fuelled; the tracks prove contracts GIVEN a result).
 3.5 `hC : CompHyp`: section 2.
-M9/P3 (fuel): P's `FuelOK`, `fuelOK_anaFuel` *(branch -p, not merged)*.
+M9/P3 (fuel): P's `FuelOK`, `fuelOK_anaFuel` (the analysis side).
 
 ## 4. `invStart : InvC cor`
 
-`invSM_init` / `invS_init`: the invariant of the bunt state.  Leaf 4.1
-(`cor` = `enc` of the bunt state): track P's `cor_enc`, `invStart_cor`
-(axis 14 of `cor` is `[0 [[0 0 0 0 0 0 0] 0 0 0 0 0] 0 0 0 0 0 0]`, by
-kernel) *(branch -p, not merged)*.
+CLOSED for `enc fl`: track P's `invStart_cor` (`cor_enc`: axis 14 of `cor`
+is `[0 [[0 0 0 0 0 0 0] 0 0 0 0 0] 0 0 0 0 0 0]`, by kernel) on `InvS`, and
+the third component of `Glue.gap_of_armPM` on `InvSM` (`invSM_init`).
 
 ## 5. `invKept : InvKept pk InvC`
 
-`(gap_of_compM …).2.1` on `InvSM` (`pokeS_invKept` and `pokeS_memo`), the
-same hypotheses as section 2.
+`(gap_of_armPM …).2.1` on `InvSM` (`pokeS_invKept` and `pokeS_memoP`), the
+same hypotheses as section 2 (or `gap_of_compM` for `anaArm`).
 
 ## 6. `libSlam : SlamIsNock lib`
 
@@ -324,21 +340,31 @@ M7. `callee` and `shape`: `shape` is the disabled `shape-check` assert;
     `msgAbs` PROVED (`msgOrd_abs`); the sweep loop does not end in general
     on the model (`cyc_never`), so a property of the member compile is
     needed (track I).
-M8. `MemoNoCallees` not in the invariant: RECONCILED (`InvSM`,
-    `gap_of_compM`, `fullAnswers_of_cgM`) for `anaArm`; for P's `anaArmP`
-    the same proof, *composition only*.
-M9. Fuel: P3 (`FuelOK`) *(branch -p)*.
+M8. `MemoNoCallees` not in the invariant: RECONCILED (`InvSM`;
+    `gap_of_compM`, `fullAnswers_of_cgM` for `anaArm`; `gap_of_armPM`,
+    `fullAnswers_of_cgMP`, `halting_of_cgMP` for `anaArmP`).
+M9. Fuel: P3 (`FuelOK`, `fuelOK_anaFuel`).
 M10. `FinPushes`: track F reduces it to `EvFrozen` (and (i)).
 M11. `pokeModel` over `liftPoke`: track P (`enc`, `cor_enc`).
-P1. (track P) The flags `[nomm pure total]` of `code` are not in `VarEntry`:
-    `enc` takes them as a parameter; the image needs the pill's flags to be
-    `fl` of its table (open).
-P2. (track P) `+ska-cole-update`: `anaArm` is not the pill; `anaArmP`.
-    Consequence here: `gap_of_comp`, `gap_of_compM`, `fullAnswers_of_loops`,
-    `fullAnswers_of_cgM`, `AnaEnds`, `BakeEnds` are stated for `anaArm`;
-    each needs its `anaArmP` twin (same proofs: the long and the analysis
-    are the same, only the jets state differs).
-P3. (track P) Fuel, as M9.
+M12 (P1). The flags `[nomm pure total]` of each `code` entry are not in
+    `VarEntry`; `enc` takes them as a parameter; `+compile-unary` reads them;
+    the image of `PokeReach` cores needs a model of the flags (open; read
+    from the Hoon, not tested on the compiler).
+M13 (P2). `+ska-cole-update` reads the new bells, their `seek`, the hot
+    rings; `anaArm`'s `jetsOf j reg'` cannot see them, so `anaArm` is not
+    the pill; `anaArmP` replaces it.  Consequence: `gap_of_comp`,
+    `gap_of_compM`, `fullAnswers_of_loops`, `fullAnswers_of_cgM` are for
+    `anaArm`; their `anaArmP` twins: `gap_of_armP`, `gap_of_armPM`,
+    `fullAnswers_of_cgMP` (DONE).  `AnaEnds`, `BakeEnds`, `CgHalts` do not
+    mention the arm and are unchanged.
+M14 (P4). A `%full` with an ATOM formula: the pill crashes in the mold
+    `fol=^`, the analysis model answers (`Shape.other` gives `[%0 0]`), so
+    `PokeModel` with `anaArm` is false there; `anaArmP` answers nothing on
+    an atom.  The pill side (`+validate-ovum` crashes) is not proved.
+    `FullAnswers` asks only cell formulas, so halting is unaffected.
+M15. Build clashes (section 0): `Compiler.unitNoun_id_inj` (PokeEnc vs
+    OptLinkAlJReg), `Comp.isLeaf` (SccLoopMsg vs CompNCJump).  Not a
+    statement mismatch, but no file can compose the two sides of a pair.
 
 ## 10. OPEN LEAVES, in order of what blocks the most
 
@@ -359,7 +385,8 @@ P3. (track P) Fuel, as M9.
 5. `CgHalts` (3.1): `EvFrozen` (track F).
 6. `EntryMono` / `EntryNary` (2.c, `rawEntry`): a generic `EntryOK` lemma
    from `OptIn`, `Closed`, `ArityOK`, a `%cel` guard.  NO OWNER.
-7. `pokeModel` (1.1, 1.2, 1.6, 4.1, P1, P2): track P.
+7. `pokeModel` (1.2 `FullBranchIs` and the five links, `spRest`, 1.6, the
+   image of `enc` with M12): track P.
 8. `BakeEnds` (3.3): no measure.  NO OWNER.
 9. `callee` (2.g): tracks I, J.
 10. `inlAnnot` (2.e): `+inlined` (1,345 cells) not modelled.  NO OWNER.
@@ -371,5 +398,7 @@ P3. (track P) Fuel, as M9.
 Leaves with NO owner: 2.c `rawEntry` (`EntryMono`, `EntryNary`), 2.e
 `inlAnnot`, 2.h `answers` (totality beyond I's loop), `stable`, `jetRoot`,
 `jets`, `fast`, 3.3 `BakeEnds`, 3.4 `RootAnswers`, 7.2 and 8 (four format
-leaves), M5.  Owned since the first pass: 1.1, 1.2, 1.6, 4.1, M11 (track P).
-Closed since the first pass: M3, M8 (for `anaArm`), `hinj`, 6, 7.1.
+leaves), M5, M15 (the renames).  Owned since the first pass: 1.2, 1.6, M11,
+M12 to M14 (track P).  Closed since the first pass: M3, M8 (both arms),
+`hinj`, 1.1 (`enc`), 4.1 / `invStart` (`invStart_cor`, `gap_of_armPM`), 6,
+7.1.

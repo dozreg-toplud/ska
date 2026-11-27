@@ -23,6 +23,8 @@ namespace Formalization
 #check @Compiler.enc_inj
 #check @Compiler.cor_enc
 #check @Compiler.cor_enc_gap
+#check @Compiler.emptySt
+#check @Compiler.Flags
 #check @Compiler.anaArmP
 #check @Compiler.anaHyp_of_armP
 #check @Compiler.gap_of_armP
