@@ -1,6 +1,7 @@
 import lemmas.Compiler.CompMonoLinkMiss
 import lemmas.Compiler.CompRunTNClass
 import lemmas.Compiler.CompSccOfAny
+import lemmas.Compiler.CompSccOfAnyK
 
 /-! The axioms of the link of `+compiled-mono` and of the run at `mono` `|` (README Gaps 19 (g)).
 `CompSccOfAny`, `PokeLinkGood` and track I's `CompSccLoop*` import together since the renames of
@@ -27,3 +28,18 @@ that one's imports light. -/
 #print axioms Formalization.Compiler.callOkTN_of_read
 #print axioms Formalization.Compiler.callOkTN_of_E
 #print axioms Formalization.Compiler.mem_runN
+#print axioms Formalization.Compiler.calleeCompiled_sccA
+#print axioms Formalization.Compiler.eM_step
+#print axioms Formalization.Compiler.eM_start
+#print axioms Formalization.Compiler.callOkTN_of_IP
+#print axioms Formalization.Compiler.needRead_member
+#print axioms Formalization.Compiler.sureNoun_done
+#print axioms Formalization.Compiler.callOkTN_member
+#print axioms Formalization.Compiler.callOkTN_out
+#print axioms Formalization.Compiler.memDoneCall_of
+#print axioms Formalization.Compiler.memDoneCall_of_rest
+#print axioms Formalization.Compiler.sccLoopAtA_real
+#print axioms Formalization.Compiler.callAt_anyA
+#print axioms Formalization.Compiler.cu_gate_dir_sccA
+#print axioms Formalization.Compiler.calleeCompiled_oneKP
+#print axioms Formalization.Compiler.sccCalleeA_of_real
