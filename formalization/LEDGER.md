@@ -32,7 +32,7 @@ READ FIRST (tenth pass, base 34b83be, digest [296] to [299]):
   (`Glue/GuardCallsTop.lean`) from `KIMid` (owed by track D) and
   `StraightA` (track G); `entryMono_noSix`: `EntryMono` on `NoSixM` from
   D's `OptInMono`, `ReadsInMono` and these two.  See 2.c, TENTH PASS.
-- FINDING: the ninth pass's `KerfA` is FALSE as stated (any `nex` with
+- FINDING (argued, no witness run): the ninth pass's `KerfA` is FALSE as stated (any `nex` with
   `FL` labels): `+kern-need` of a need with a register twice puts a split
   after a write of its register.  True form: `KerfG` (every sure need of
   the lazy `DN`: distinct registers below `re`), PROVED (`kerfG`).

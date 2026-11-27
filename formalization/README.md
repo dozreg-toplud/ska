@@ -6281,7 +6281,7 @@ import only its theorems.  So:
     `+into` keep "every sure need of the lazy has distinct registers below `re`"; checked
     at the top run on 7 + 198 nomms, `Glue/GuardCallsCheckD.lean`) and `StraightA` (the
     final pass keeps the annotation; checked by the third stage of `GuardCallsCheck`).  The
-    ninth pass's `KerfA` is false as stated (a need with a register twice); its true form
+    ninth pass's `KerfA` is false as stated by the argument (a need with a register twice; no witness run); its true form
     `KerfG` (`DN` entries) is proved (`kerfG`), and so are all the arms (`runG_lcm`).
     `entryMono_noSix`: `EntryMono` on `NoSixM` from D's `OptInMono`, `ReadsInMono` and
     the two hypotheses.  Not done: `StraightA` (`RenOK` fails as such with calls: an inner
