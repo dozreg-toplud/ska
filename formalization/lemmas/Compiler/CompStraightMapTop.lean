@@ -116,5 +116,42 @@ theorem tsm_dol (SB REN N R0 INS REST : Noun) (f : Nat → Nat) (ned : Need)
   generalize ned.toNoun = NED at hri hN ⊢
   simp [nock_exec, hdol, hria, hri, hN]
 
+/-! ## The core with proxies -/
+
+/-- **The `|^` core of `+to-straight` with `proxies` `&` and `run` `&`**: the
+arm `$` returns the noun of the straight whose blocks are the renaming path
+of `bs` by `ren ∘ u` (`u` the `unproxy` gate, `ren` the `ren` gate), the
+form of the model's map path on a run of inputs (`toStraightF_run`:
+`renameBlocks bs (proxRen cond true ren)`).  The hypotheses on the core are
+those of `MapCoreS` but `rer` (given by `tsm_rer_prox`), the types core and
+`K` in the rest, and the bunt of the sample of the fold's gate. -/
+theorem tsm_core {bs : TreapMap mugF Blob} (UB US UC RB RS RC SB N R0 INS REST : Noun) (u ren : Nat → Nat)
+    (ned : Need)
+    (hu : ∀ r, nock (C UB (C (A r) UC)) UB = some (A (u r)))
+    (hren : ∀ r, nock (C RB (C (A r) RC)) RB = some (A (ren r)))
+    (hN : slot? 488 (C (C UB (C US UC)) REST) = some ned.toNoun)
+    (hL : slot? 0x7fffffff (C SB (C (C RB (C RS RC)) (C (A 0) (C N (C R0 (C INS (C (A 0)
+      (C (C UB (C US UC)) REST)))))))) = some layer2)
+    (hU : ∀ J, nock (C tsmArgBody (C J (C tsCoreBat (C (C (A 0) (A 0)) (C SB (C (C RB (C RS RC)) (C (A 0)
+      (C N (C R0 (C INS (C (A 0) (C (C UB (C US UC)) REST)))))))))))) tsmArgBuntF1 = some (A 0))
+    (hB : slot? 4094 (C tsCoreBat (C (C (A 0) (A 0)) (C SB (C (C RB (C RS RC)) (C (A 0) (C N (C R0 (C INS
+      (C (A 0) (C (C UB (C US UC)) REST)))))))))) = some (HoonMap.toNoun Blob.toNoun bs))
+    (hT : slot? 0x1ffff (C SB (C (C RB (C RS RC)) (C (A 0) (C N (C R0 (C INS (C (A 0)
+      (C (C UB (C US UC)) REST)))))))) = some compTypes)
+    (hK : slot? 0xffff (C SB (C (C RB (C RS RC)) (C (A 0) (C N (C R0 (C INS (C (A 0)
+      (C (C UB (C US UC)) REST)))))))) = some compK)
+    (hRB : nock (C (needToOrd ned).toNoun (C tsCoreBat (C (C (A 0) (A 0)) (C SB (C (C RB (C RS RC)) (C (A 0)
+      (C N (C R0 (C INS (C (A 0) (C (C UB (C US UC)) REST))))))))))) tsmRepBuntF
+      = some (C (C (A 0) tsmBlobBunt) (C (A 0) (C (A 0) (A 0))))) :
+    nock (C tsCoreBat (C (C (A 0) (A 0)) (C SB (C (C RB (C RS RC)) (C (A 0) (C N (C R0 (C INS
+        (C (A 0) (C (C UB (C US UC)) REST)))))))))) (C (A 9) (C (A 190) (C (A 0) (A 1))))
+      = (renameBlocks bs (fun r => ren (u r))).map fun new =>
+          Straight.toNoun (⟨needToOrd ned, countArgs (needToOrd ned), new⟩ : Straight (TreapMap mugF)) := by
+  have hrer := tsm_rer_prox UB US UC RB RS RC (C (A 0) (A 0)) SB N R0 INS REST u ren hu hren
+  have hc : MapCoreS bs (fun r => ren (u r)) (C (A 0) (A 0)) _ := ⟨hrer, hL, hU, hB⟩
+  rw [tsm_dol SB (C RB (C RS RC)) N R0 INS (C (C UB (C US UC)) REST) _ ned hrer hN,
+    tsm_branch hc hT hK (needToOrd ned) hRB]
+  rfl
+
 end Compiler
 end Formalization
