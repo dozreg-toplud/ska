@@ -143,6 +143,8 @@ import lemmas.Compiler.CompSixKerf
 import lemmas.Compiler.CompForkGen
 import lemmas.Compiler.CompForkLoop
 import lemmas.Compiler.CompRunSixF
+import lemmas.Compiler.CompRunSixAll
+import lemmas.Compiler.CompRunAllSix
 
 /-! The axioms behind the main statements.  Run with `lake env lean lemmas/Audit.lean`. -/
 
@@ -1145,3 +1147,18 @@ open Formalization
 #print axioms Compiler.cr6f_head
 #print axioms Compiler.comp_run_n6_f
 #print axioms Compiler.res_n6_f
+#print axioms Compiler.cr6s_head_ne
+#print axioms Compiler.cr6_head_crash
+#print axioms Compiler.cr6s_s01_g
+#print axioms Compiler.comp_run_n6_ne
+#print axioms Compiler.res_n6_ne
+#print axioms Compiler.comp_run_n6_nl
+#print axioms Compiler.res_n6_nl
+#print axioms Compiler.comp_run_n6_l_f
+#print axioms Compiler.comp_run_n6_l_ne
+#print axioms Compiler.comp_run_n6_next
+#print axioms Compiler.res_n6_next
+#print axioms Compiler.comp_run_n6_all
+#print axioms Compiler.res_n6_all
+#print axioms Compiler.res_all6
+#print axioms Compiler.comp_run_all_l6

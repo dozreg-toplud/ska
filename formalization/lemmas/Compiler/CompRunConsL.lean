@@ -65,6 +65,13 @@ theorem hinted_plain (cod : Bell → Option Bool) {n : Nomm} (h : PlainOk n = tr
   rw [hinted_noDirect cod n hn, hinted_noDirect noCode n hn]
   exact ⟨rfl, by simp⟩
 
+/-- **`+hinted` of a nomm with no direct call** reads no code table and does
+not crash. -/
+theorem hinted_nd (cod : Bell → Option Bool) {n : Nomm} (hn : NoDirect n) :
+    hinted cod n = hinted noCode n ∧ hinted noCode n ≠ Option.none := by
+  rw [hinted_noDirect cod n hn, hinted_noDirect noCode n hn]
+  exact ⟨rfl, by simp⟩
+
 theorem pastL_plain {cod : Bell → Option Bool} {n : Nomm} (h : PlainOk n = true) (nex : NextL CSet)
     (region : List Nat) : (pastL cod nex n region : CM (TreapMap mugF) (NextL CSet)) = pastL noCode nex n region :=
   pastL_cod (hinted_plain cod h).1 nex region
@@ -192,7 +199,7 @@ with the invariant. -/
 structure PartL (env : CallEnv) (msup : Option Nomm) (ctx : Noun) (n : Nomm) (region : List Nat) : Prop where
   link : ∀ (goal : CGoalL CSet) (g : Gen (TreapMap mugF)), GInv g goal → CompRunAtR (runLC env msup) ctx n goal region g
   res : ResFor env msup n region
-  plain : PlainOk n = true
+  nd : NoDirect n
 
 /-- **The `%next` branch of the cons case on a lazy goal**: `+split`
 (`comp_split_all`), then `crc_ntailL`. -/
@@ -204,8 +211,8 @@ theorem crc_nextL (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52
       (compCore g x ctx)) crKc
       = (runLC env msup (Nomm.cons p q) (CGoalL.next laz th) region g).map
           fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
-  obtain ⟨hpc, hpn⟩ := hinted_plain env.cod P.plain
-  obtain ⟨hqc, hqn⟩ := hinted_plain env.cod Q.plain
+  obtain ⟨hpc, hpn⟩ := hinted_nd env.cod P.nd
+  obtain ⟨hqc, hqn⟩ := hinted_nd env.cod Q.nd
   have hsp := comp_split_all h7 x g ⟨laz, th⟩ (crInvL_lok (crInvL_of_gInv hinv) 0)
   simp only [cr_next_nounL, compCore] at hsp
   have hDs := cr_split_at
@@ -257,7 +264,7 @@ theorem crc_pickL (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52
           copyL nex1 nex2.laz : CM (TreapMap mugF) (NextL CSet)) (cfEmitG ⟨[], [], Termin.bom Option.none⟩ g)).map
           fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
   obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
-  obtain ⟨hpc, hpn⟩ := hinted_plain env.cod P.plain
+  obtain ⟨hpc, hpn⟩ := hinted_nd env.cod P.nd
   have he := cf_emit (x := x) hc g ⟨[], [], Termin.bom Option.none⟩
   rw [crc_blob_bom] at he
   have hq0 : GInv (cfEmitG ⟨[], [], Termin.bom Option.none⟩ g) (CGoalL.next (Lazy.ofSure Sure.bunt) (jmp0 g.bo)) :=
@@ -340,7 +347,7 @@ theorem comp_run_consL (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slo
     exact crc_nextL h7 hcode env msup p q P Q x hx mono sup _ _ _
       (ginv_reg _ (by rw [cf_emitG_re]; simp) (by rw [cf_emitG_drop]; exact hinv))
   | pick z o =>
-    obtain ⟨hpc, -⟩ := hinted_plain env.cod P.plain
+    obtain ⟨hpc, -⟩ := hinted_nd env.cod P.nd
     have hpk := crc_pickL h7 hcode env msup p q P Q x hx mono (CGoalL.pick (S := CSet) z o).toNoun sup g hinv.1
     rw [runLC_cons_pick, crc_eq]
     simp only [pastL_cod hpc]

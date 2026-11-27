@@ -225,7 +225,7 @@ theorem comp_run_n5L (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot?
     (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (P : PartL env msup ctx p region) (Q : PartL env msup ctx q region)
     (goal : CGoalL CSet) (g : Gen (TreapMap mugF)) (hinv : GInv g goal) :
     CompRunAtR (runLC env msup) ctx (Nomm.n5 p q) goal region g := by
-  obtain ⟨hpc, hpn⟩ := hinted_plain env.cod P.plain
+  obtain ⟨hpc, hpn⟩ := hinted_nd env.cod P.nd
   have hd := ginv_drop hinv
   intro x mono sup hx
   have hre0 := comp_re' ctx x g
@@ -371,7 +371,7 @@ theorem cr2_kfL (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 c
       (crSubj mono (Nomm.n2 p q Option.none).toNoun goalN (listNoun A region) sup (compCore g1 x ctx))) cr2Kf
       = (cr2KfML env msup p q region nex0 g1).map fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
   obtain ⟨hc, hl, hm⟩ := comp_ctx_pill ctx h7
-  obtain ⟨-, hpn⟩ := hinted_plain env.cod P.plain
+  obtain ⟨-, hpn⟩ := hinted_nd env.cod P.nd
   have hk := comp_kerf_all hc hl hm x g1 nex0 (walk_mdP hx g1.bo hlok)
   have hD1 := comp_kerf_at
   have hD2 := comp_re_at
@@ -424,7 +424,7 @@ theorem comp_run_n2L (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot?
     (goal : CGoalL CSet) (g : Gen (TreapMap mugF)) (hinv : GInv g goal) :
     CompRunAtR (runLC env msup) ctx (Nomm.n2 p q Option.none) goal region g := by
   obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
-  obtain ⟨hpc, -⟩ := hinted_plain env.cod P.plain
+  obtain ⟨hpc, -⟩ := hinted_nd env.cod P.nd
   intro x mono sup hx
   have hmod : (runLC env msup (Nomm.n2 p q Option.none) goal region : CM (TreapMap mugF) (NextL CSet)) =
       simpleNextL goal >>= cr2KfML env msup p q region := by

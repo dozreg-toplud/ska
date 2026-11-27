@@ -217,7 +217,7 @@ theorem comp_run_n2_drop (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : s
     (hne : Lazy.noneEquivalentL laz = true) :
     CompRunAtR (runLC env msup) ctx (Nomm.n2 p q (some (b, key))) (CGoalL.next laz th) region g := by
   obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
-  obtain ⟨hpc, hpn⟩ := hinted_plain env.cod P.plain
+  obtain ⟨hpc, hpn⟩ := hinted_nd env.cod P.nd
   obtain ⟨V, hgot, hv⟩ := hcd
   have hd : g.drop = false := hinv.2.1
   have hj : JmpIn (· < g.re) th := hinv.2.2
