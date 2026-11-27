@@ -1173,3 +1173,14 @@ open Formalization.SkaModel.Comp
 #print axioms threeInd_contract
 #print axioms Needs.none_le
 #print axioms minkC5_five
+#print axioms eqqLB
+#print axioms collLSk
+#print axioms CollPre.lower
+#print axioms pairRun_ok
+#print axioms equLS
+#print axioms lokS_five_run
+#print axioms lokS_five
+#print axioms jNewLS_five
+#print axioms pairGTB_ok
+#print axioms five_doneB
+#print axioms fiveInd_contract
