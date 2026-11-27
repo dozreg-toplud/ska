@@ -1241,6 +1241,9 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Glue/GuardCallsR.lean` | Track G (Gaps 22 (l)): `rs_run`, `rs_split`, `rs_into` (`KIMid` as `RS`), the arms `runG_n0`, `runG_n1`, `runG_n3`, `runG_n4`, `runG_n5`, `runG_n7`, `runG_cons`, `runG_n10`, `runG_n2`, and **`runG_lcm`**: `RunG (runLCM env true sup nm)` on `NoSixC` under `KIMid`. |
 | `Glue/GuardCallsTop.lean` | Track G (Gaps 22 (l)): the named hypothesis `StraightA` (the final pass keeps the annotation), `top_kerfA`, **`guardMonoC_noSix`** (`GuardMonoC` on `NoSixM` from `KIMid` and `StraightA`), `guardMonoC_sub`, `entryMono_noSix`. |
 | `Glue/GuardCallsCheckD.lean` | Track G (Gaps 22 (l)): `lzsB` (Boolean `LzS (DN re)`), `endDN`: `KIMid`'s run clause at the end of the top run: 7 of 7 direct calls, 198 of 198 `enumDX` nomms (one in 40). |
+| `Glue/StraightRen.lean` | Track G (Gaps 22 (m)): the final pass with calls.  `bypassable_body`, `chase_back`, `ann_back` (the annotation goes back through empty hops), `Want`, `RenA` (the renaming condition), `noWrite_ren`, `nwb_ren`, `cellOut_ren`, **`celAnn_rename`** (`BlocksOKA` and `RenA` give `NoPoison` and `CelAnn` of the renamed code), `get_start`, `blocksOKA_start`, `ProxOK` (the proxy facts `wr`, `cel`, `src`), `proxOK_start`, `blocksOKA_np`, `renA_prox`, the named hypothesis `ProxEnd`, **`straightA_of`** (`StraightA` from `ProxEnd`), **`guardMonoC_noSixP`**, `entryMono_noSixP`. |
+| `Glue/StraightRenCheck.lean` | Track G (Gaps 22 (m)): `wrB`, `celB`, `srcB` (Boolean `ProxOK`), `renOldB` (the old `RenOK` fact), `kerfState`, `tallyP`: `ProxOK` after the top `+kerf` on 7 of 7 direct calls and 7,920 of 7,920 `enumDX` nomms; the old fact fails on 640. |
+| `Glue/StraightPlain.lean` | Track G (Gaps 22 (m)): `noSix_of_plain`, `guardMonoC_plain`, **`entryMono_plain`** (`EntryMono` on track D's `PlainM` from `KIMid` and `ProxEnd`, with D's `optInMono_plain`, `readsInMono_plain`). |
 | `Glue/GuardFinalTop.lean` | Track G (Gaps 22 (e)): **`guardFinalU`**, **`guardFinalF`** (the two final-pass leaves are theorems), `guardMonoX`, `guardNaryX`, **`compHyp_of_fragX₃`** (`CompHyp` on `FragX` from `CompRestOE` alone, no guard leaf); two `example`s on `[6 [0 2] [6 [0 6] [0 3] [0 1]] [1 0]]`. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
@@ -6476,6 +6479,20 @@ import only its theorems.  So:
     `+kerf`'s proxies merge with the register its `%nok` / `%cal` writes; the annotation
     must be renamed with the registers), `KIMid` (track D), `GuardNaryC` (its run is
     `runLCM env false`, whose direct call is `callL`'s `%cal` branch, not covered).
+    (m) Eleventh pass (`Glue/StraightRen.lean`, `Glue/StraightRenCheck.lean`,
+    `Glue/StraightPlain.lean`): **`StraightA` is a theorem** (`straightA_of`) from the named
+    hypothesis `ProxEnd`: the state the top `+kerf` leaves meets `ProxOK` (no written
+    register or parameter is a key of `cond`; a split of a key follows a `%cel` of it; a
+    block that splits or tests a key does not write or take its source), which names no
+    annotation and is checked on 7 of 7 direct calls and on all 7,920 `enumDX` nomms.  The
+    general lemma `celAnn_rename` renames the annotation with the registers under `RenA`;
+    the old `RenOK` fact fails on 640 of those states.  So `GuardMonoC` on `NoSixM` rests on
+    `KIMid` and `ProxEnd` (`guardMonoC_noSixP`), and with track D's leaves (integration
+    6e1dff4, merged here) `EntryMono` on `PlainM` rests on them alone (`entryMono_plain`).
+    LEDGER eleventh pass: M17 fixed (dab8478), the `split-max` question (track S), D's leaves
+    on `PlainM` / `PlainNC`, `IL` false at `%6` (candidate `ATS6`), `InvBSR` with no owner.
+    Not done: `ProxEnd` (a run invariant on `cond` beside `InvA`), `GuardNaryC` (the map
+    path of `+to-straight`).
 23. **The poke on states: `enc` and the `%full` branch** (track P, 2026-11-27,
     `Ska/PokeEnc.lean`, `Compiler/PokeLink.lean`, `Compiler/PokeLinkFull.lean`, `Compiler/PokeLinkOpt.lean`,
     `Compiler/PokeLinkScc.lean`, `Compiler/PokeLinkJet.lean`, `Compiler/PokeLinkReach.lean`,

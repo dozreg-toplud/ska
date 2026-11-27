@@ -81,6 +81,10 @@ import lemmas.Glue.InlineAnnot
 import lemmas.Glue.InlineCheck
 import lemmas.Glue.GuardCallsMono
 import lemmas.Glue.GuardCallsTop
+import lemmas.Glue.StraightRen
+import lemmas.Glue.StraightRenCheck
+import lemmas.Glue.StraightPlain
+import lemmas.Ska.RawInvCLKIMid
 
 /-!
 # Audit of `formalization/LEDGER.md`
@@ -600,5 +604,30 @@ namespace Formalization
 #print axioms SkaModel.Glue.runG_lcm
 #print axioms SkaModel.Glue.guardMonoC_noSix
 #print axioms SkaModel.Glue.entryMono_noSix
+
+-- eleventh pass, track G: `StraightA` from the proxy facts `ProxEnd` (2.c)
+#check @SkaModel.Glue.RenA
+#check @SkaModel.Glue.ProxOK
+#check @SkaModel.Glue.ProxEnd
+#print axioms SkaModel.Glue.chase_back
+#print axioms SkaModel.Glue.celAnn_rename
+#print axioms SkaModel.Glue.blocksOKA_start
+#print axioms SkaModel.Glue.blocksOKA_np
+#print axioms SkaModel.Glue.renA_prox
+#print axioms SkaModel.Glue.straightA_of
+#print axioms SkaModel.Glue.guardMonoC_noSixP
+#print axioms SkaModel.Glue.entryMono_noSixP
+-- track D's leaves (integration 6e1dff4) and the class `PlainM`
+#check @SkaModel.Glue.PlainM
+#check @SkaModel.Glue.PlainNC
+#print axioms SkaModel.Glue.optInMono_plain
+#print axioms SkaModel.Glue.readsInMono_plain
+#print axioms SkaModel.Glue.optInNary_plain
+#print axioms SkaModel.Glue.readsInNary_plain
+#check @SkaModel.Raw.kim_split
+#check @SkaModel.Raw.kim_into
+#check @SkaModel.Raw.kim_run_plainIL
+#print axioms SkaModel.Glue.guardMonoC_plain
+#print axioms SkaModel.Glue.entryMono_plain
 
 end Formalization
