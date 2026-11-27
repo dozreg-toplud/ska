@@ -270,9 +270,29 @@ def alJImmsB : Noun :=
 def alJImmsBunt : Noun :=
   alJInfoBunt
 
+/-- `have`: `(murn ins same)` in `param-info`. -/
+def alPIMurn : Noun :=
+  (C (A 8) (C (C (A 9) (C (A 0x17defea) (C (A 0) (A 0x7fffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 14)) (C (A 7) (C (C (A 0) (A 3)) (C (A 9) (C (A 0x17dae) (C (A 0) (A 0x7fffff)))))))) (C (A 0) (A 2))))))))
+
+/-- The gate of the `+roll` in `param-info`: `(join-reg a b)`. -/
+def alPIGate : Noun :=
+  (C (A 8) (C (C (A 9) (C (A 4) (C (A 0) (A 63)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 28)) (C (A 0) (A 29)))) (C (A 0) (A 2))))))))
+
+/-- `joined`: the `+roll` of `join-reg` over `t.have`. -/
+def alPIRoll : Noun :=
+  (C (A 8) (C (C (A 9) (C (A 0x2fbdfc) (C (A 0) (A 0xffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 13)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (C (A 1) (C (A 1) (C (A 1) (C (A 0) (C (A 0) (C (A 0) (C (A 0) alJImmsBunt))))))) (C (A 0) (A 4))) (C (C (A 1) alPIGate) (C (A 0) (A 1))))))))) (C (A 0) (A 2))))))))
+
+/-- `=((lent have) (lent ins))`. -/
+def alPILen : Noun :=
+  (C (A 5) (C (C (A 8) (C (C (A 9) (C (A 0x2fbd5) (C (A 0) (A 0x1ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 14))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 9) (C (A 0x2fbd5) (C (A 0) (A 0x1ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 62))) (C (A 0) (A 2))))))))))
+
+/-- `joined(hed-of ~, tel-of ~, has-hed ~, has-tel ~, dec-of ~)`. -/
+def alPIEdit : Noun :=
+  (C (A 10) (C (C (A 254) (C (A 1) (A 0))) (C (A 10) (C (C (A 126) (C (A 1) (A 0))) (C (A 10) (C (C (A 62) (C (A 1) (A 0))) (C (A 10) (C (C (A 30) (C (A 1) (A 0))) (C (A 10) (C (C (A 14) (C (A 1) (A 0))) (C (A 0) (A 2))))))))))))
+
 /-- The body of `param-info`. -/
 def alPInfoB : Noun :=
-  (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 0x17defea) (C (A 0) (A 0x7fffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 14)) (C (A 7) (C (C (A 0) (A 3)) (C (A 9) (C (A 0x17dae) (C (A 0) (A 0x7fffff)))))))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 2)))) (C (C (A 1) (C (A 1) (C (A 1) (C (A 0) (C (A 0) (C (A 0) (C (A 0) alJImmsBunt))))))) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 0x2fbdfc) (C (A 0) (A 0xffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 13)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (C (A 1) (C (A 1) (C (A 1) (C (A 0) (C (A 0) (C (A 0) (C (A 0) alJImmsBunt))))))) (C (A 0) (A 4))) (C (C (A 1) (C (A 8) (C (C (A 9) (C (A 4) (C (A 0) (A 63)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 28)) (C (A 0) (A 29)))) (C (A 0) (A 2))))))))) (C (A 0) (A 1))))))))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 5) (C (C (A 8) (C (C (A 9) (C (A 0x2fbd5) (C (A 0) (A 0x1ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 14))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 9) (C (A 0x2fbd5) (C (A 0) (A 0x1ffffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 62))) (C (A 0) (A 2)))))))))) (C (C (A 0) (A 2)) (C (A 10) (C (C (A 254) (C (A 1) (A 0))) (C (A 10) (C (C (A 126) (C (A 1) (A 0))) (C (A 10) (C (C (A 62) (C (A 1) (A 0))) (C (A 10) (C (C (A 30) (C (A 1) (A 0))) (C (A 10) (C (C (A 14) (C (A 1) (A 0))) (C (A 0) (A 2))))))))))))))))))))))
+  (C (A 8) (C alPIMurn (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 2)))) (C (C (A 1) (C (A 1) (C (A 1) (C (A 0) (C (A 0) (C (A 0) (C (A 0) alJImmsBunt))))))) (C (A 8) (C alPIRoll (C (A 6) (C alPILen (C (C (A 0) (A 2)) alPIEdit))))))))))
 
 /-- Its sample bunt. -/
 def alPInfoBunt : Noun :=

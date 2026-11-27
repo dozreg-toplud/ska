@@ -797,6 +797,16 @@ elif WHICH == 'alias':
     jimms_bunt, jimms = gate_of(dig(bat, [30]))
     pinfo_bunt, pinfo = gate_of(dig(bat, [62]))
     walk = dig(bat, [63])
+    # PINFO = [8 MURN [6 [5 [1 0] [0 2]] [1 BUNT] [8 ROLL [6 LEN [0 2] EDIT]]]]
+    e8, pimurn, pirest = seq(pinfo, 3)
+    assert e8 == ('A', 8)
+    e6, pit0, pibunt, pir2 = seq(pirest, 4)
+    assert e6 == ('A', 6) and eqn(pit0, ('C', ('A', 5), ('C', ('C', ('A', 1), ('A', 0)), ('C', ('A', 0), ('A', 2)))))
+    e8, piroll, pir3 = seq(pir2, 3)
+    assert e8 == ('A', 8)
+    e6, pilen, pij, piedit = seq(pir3, 4)
+    assert e6 == ('A', 6) and eqn(pij, ('C', ('A', 0), ('A', 2)))
+    pigate = dig(piroll, [7, 7, 6, 3, 3, 7, 7, 2, 3])
     # WALK = [6 END [[0 895] [0 12]] [7 [0 1] [8 PRE [6 UNT UNB [7 [0 1] [8 INFO R3]]]]]]
     pre = dig(walk, [15, 7, 6])
     r1 = dig(walk, [15, 7, 7])
@@ -854,6 +864,11 @@ elif WHICH == 'alias':
         ('alJInfoBunt', jinfo_bunt, 'Its sample bunt.'),
         ('alJImmsB', jimms, 'The body of `join-imms`.'),
         ('alJImmsBunt', jimms_bunt, 'Its sample bunt.'),
+        ('alPIMurn', pimurn, '`have`: `(murn ins same)` in `param-info`.'),
+        ('alPIGate', pigate, 'The gate of the `+roll` in `param-info`: `(join-reg a b)`.'),
+        ('alPIRoll', piroll, '`joined`: the `+roll` of `join-reg` over `t.have`.'),
+        ('alPILen', pilen, '`=((lent have) (lent ins))`.'),
+        ('alPIEdit', piedit, '`joined(hed-of ~, tel-of ~, has-hed ~, has-tel ~, dec-of ~)`.'),
         ('alPInfoB', pinfo, 'The body of `param-info`.'),
         ('alPInfoBunt', pinfo_bunt, 'Its sample bunt.'),
         ('alPre', pre, '`pre`: `~(tap in (~(get ju rev.gen) o))`.'),
