@@ -7,50 +7,37 @@
   ~>  %memo./ska
   (g v)
 ::
-++  build-sys
-  |=  [sub=(trap vase) nam=term sys=path]
-  ^-  (trap vase)
-  ~>  %slog.[0 leaf+"steel: building /sys/{(trip nam)}"]
-  =/  src  .^(@t cx+(welp sys /[nam]/hoon))
-  (memo-call swat sub (rain /sys/[nam]/hoon src))
+::  +make: the source of the gate that makes the pill from the two texts.
+::  It is compiled against the hoon.hoon that the pill holds and run in it
 ::
-++  build-lib
-  |=  [sub=(trap vase) imp=? bug=? nam=term lib=path]
-  ^-  (trap vase)
-  ~>  %slog.[0 leaf+"ivory: building /lib/{(trip nam)}"]
-  =/  hun=hoon
-    %^  mist  bug  /lib/[nam]/hoon
-    .^(@t cx+(welp lib /[nam]/hoon))
-  ?.  imp  (swat sub hun)
-  (swel sub [%ktts nam hun])
-::
-++  mist
-  |=  [bug=? bon=path txt=@]
-  ^-  hoon
-  =+  vas=vast
-  ~|  bon
-  %+  scan  (trip txt)
-  %-  full
-  =/  skip-ford
-    %-  star
-    ;~  pose  vul
-      %+  ifix  [fas (just `@`10)]
-      (star ;~(less (just `@`10) next))
-    ==
-  ::
-  %+  ifix  [;~(plug gay skip-ford) gay]
-  (stag %tssg (most gap tall:vas(wer bon, bug bug)))
-  ::
-::  +swel: +swat but with +slop
-::
-++  swel
-  |=  [tap=(trap vase) gen=hoon]
-  ^-  (trap vase)
-  =/  gun  (~(mint ut p:$:tap) %noun gen)
-  =>  [tap=tap gun=gun]
-  |.  ~+
-  =/  pro  q:$:tap
-  [[%cell p.gun p:$:tap] [.*(pro q.gun) pro]]
+++  make
+  ^-  @t
+  %-  of-wain:format
+  :~  '|=  [sys=@t lib=@t bug=?]'
+      '=/  mist'
+      '  |=  [bon=path txt=@]'
+      '  ^-  hoon'
+      '  =+  vas=vast'
+      '  ~|  bon'
+      '  %+  scan  (trip txt)'
+      '  %-  full'
+      '  =/  skip-ford'
+      '    %-  star'
+      '    ;~  pose  vul'
+      '      %+  ifix  [fas (just `@`10)]'
+      '      (star ;~(less (just `@`10) next))'
+      '    =='
+      '  %+  ifix  [;~(plug gay skip-ford) gay]'
+      '  (stag %tssg (most gap tall:vas(wer bon, bug bug)))'
+      '=/  trap'
+      '  =/  sub  *(trap vase)'
+      '  =.  sub  (swat sub (rain /sys/hoon/hoon sys))'
+      '  (swat sub (mist /lib/nock-compilation/hoon lib))'
+      '=/  nok  !.'
+      '  =>  [=_trap ~]  !='
+      '  q:$:trap'
+      '[%steel nok trap ~]'
+  ==
 --
 ::
 :-  %say
@@ -67,15 +54,17 @@
 ::  core that carries them compiles three times slower
 ::
 =/  bug=?  ?~(arg | bug.arg)
-=/  sys=path  /(scot %p p.bec)/ska/(scot %da now)/sys
-=/  lib=path  /(scot %p p.bec)/ska/(scot %da now)/lib
-=/  trap
-  =/  sub  *(trap vase)
-  =.  sub  (build-sys sub %hoon sys)
-  (build-lib sub | bug %nock-compilation lib)
+=/  sys=@t  .^(@t cx+/(scot %p p.bec)/ska/(scot %da now)/sys/hoon/hoon)
+=/  lib=@t
+  .^(@t cx+/(scot %p p.bec)/ska/(scot %da now)/lib/nock-compilation/hoon)
+::  the pill is made by the hoon.hoon it holds, not by the kernel's: the
+::  kernel builds /sys/hoon, and +make is compiled against that core and
+::  run in it.  The trap keeps the core that ran +swat, so with the
+::  kernel's own the pill would hold two hoon.hoons, and an edit of
+::  /sys/hoon would be paid in every type that the two no longer share
 ::
-=/  nok  !.
-  =>  [=_trap ~]  !=
-  q:$:trap
-::
-[%steel nok trap ~]
+~>  %slog.[0 leaf+"steel: building /sys/hoon"]
+=/  hon=vase  $:(memo-call swat *(trap vase) (rain /sys/hoon/hoon sys))
+~>  %slog.[0 leaf+"steel: building the pill in it"]
+;;  [%steel p=(list)]
+(slum q:(slap hon (ream make)) [sys lib bug])
