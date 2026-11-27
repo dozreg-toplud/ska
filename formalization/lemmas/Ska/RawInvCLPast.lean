@@ -9,7 +9,12 @@ README Gaps 14 (b), track D.  The shared step of `%5`, cons and the call
 * **`pastL_spec`**: `+past` keeps `IL` of the result's goal, and its result
   meets `LiveC` against the goal of its input (the kills of the parked
   root move from the continuation to the hop block, those of the other
-  entries stay).
+  entries stay); `pastL_frame`: it keeps the frame.
+* `FrL goal g0 g1`: the frame of a run (`re` and `cond` grow, a register
+  defined after the run was defined before it, is fresh, or is a goal
+  register: checked by `defsB` of `RawInvCLCheckIJ.lean`);
+  **`il_lazyReg_after`**: with it, a register allocated before a run can be
+  asked after it (the goal of the second run of `%5`, cons, `%10`, `%2`).
 -/
 
 set_option linter.unusedSectionVars false
@@ -127,6 +132,83 @@ theorem pastL_spec {K : Nat → Nat → Prop} {cod : Bell → Option Bool} {nex 
     · rcases List.mem_cons.mp he with rfl | he
       · exact (hys hm).elim
       · exact Or.inr ⟨e, List.mem_cons_of_mem _ (hP.mem_iff.mpr (List.mem_cons_of_mem _ he)), ex, hm⟩
+
+/-! ## The frame of a run -/
+
+/-- **The frame of a run** (checked at every sub-run by `defsB` and
+`condGrowB` of `RawInvCLCheckIJ.lean`): `re` grows, `cond` grows by keys
+from the old `re` on, and a register defined after the run was defined
+before it, is fresh, or is a register of the goal's lazy tree. -/
+def FrL (goal : CGoalL S) (g0 g1 : Comp.Gen Map) : Prop :=
+  g0.re ≤ g1.re ∧ (∀ k v, HoonMap.get g1.cond k = some v → HoonMap.get g0.cond k = some v ∨ g0.re ≤ k) ∧
+    ∀ y, Defd g1.blocks y → Defd g0.blocks y ∨ g0.re ≤ y ∨ GRegL goal y
+
+/-- `+past` keeps the frame. -/
+theorem pastL_frame {cod : Bell → Option Bool} {nex nex' : NextL S} {nom : Nomm} {region : List Nat}
+    {g g' : Comp.Gen Map} (hd : g.drop = false) (hfree : HoonMap.get g.blocks g.bo = Option.none)
+    (h : pastL cod nex nom region g = some (nex', g')) : FrL nex.goal g g' := by
+  have hrefl : FrL (S := S) nex.goal g g := ⟨Nat.le_refl _, fun k v hk => Or.inl hk, fun y hy => Or.inl hy⟩
+  unfold pastL at h
+  split at h
+  · simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    rw [← h.2]; exact hrefl
+  rcases hh : hinted cod nom with _ | ⟨_ | _⟩
+  · rw [hh] at h; cases h
+  · rw [hh] at h
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    rw [← h.2]; exact hrefl
+  rw [hh] at h
+  dsimp only at h
+  obtain ⟨o, ga, ha, h⟩ := bind_some h
+  rw [emit_apply] at ha
+  simp only [Option.some.injEq, Prod.mk.injEq] at ha
+  obtain ⟨rfl, rfl⟩ := ha
+  obtain ⟨u, gb, hb, h⟩ := bind_some h
+  simp only [setTag, Option.some.injEq, Prod.mk.injEq] at hb
+  obtain ⟨-, rfl⟩ := hb
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨-, rfl⟩ := h
+  have hd1 : (g.emitted ⟨[], [], Termin.hop nex.th⟩).drop = false := hd
+  rw [if_neg (by rw [hd1]; exact Bool.false_ne_true)]
+  refine ⟨Nat.le_refl _, fun k v hk => Or.inl hk, fun y hy => Or.inl ?_⟩
+  have e := (defd_put (b := (⟨[], [], Termin.hop nex.th⟩ : Blob)) hfree (r := y)).mp
+    (by simpa [Gen.emitted, hd] using hy)
+  rcases e with e | e
+  · exact e
+  · simp [blockDefs] at e
+
+/-- **The goal "`r` at `j`" after a run with the frame**: a register below
+the run's start, defined by no block, no key and no register of the run's
+goal, can be asked at a fresh jump after it. -/
+theorem il_lazyReg_after {K : Nat → Nat → Prop} {goal goal' : CGoalL S} {g0 g1 : Comp.Gen Map} {r : Nat} {j : Jmp}
+    (hI : IL K goal' g1) (hF : FrL goal g0 g1) (hr : r < g0.re) (hdr : ¬ Defd g0.blocks r)
+    (hkr : HoonMap.get g0.cond r = Option.none) (hgr : ¬ GRegL goal r) (hj : Fresh g1 j) :
+    IL K (CGoalL.next (ofSure (lazyReg (S := S) r)) j) g1 := by
+  obtain ⟨hre, hc, hD⟩ := hF
+  have hk1 : HoonMap.get g1.cond r = Option.none := by
+    cases e : HoonMap.get g1.cond r with
+    | none => rfl
+    | some v =>
+      rcases hc r v e with h | h
+      · rw [hkr] at h; cases h
+      · omega
+  refine ⟨hI.ats, hI.regs, fun k v hk => ?_, hI.kvan, hj, ?_, fun e he => ?_⟩
+  · obtain ⟨k1, k2, -, k4, k5⟩ := hI.cond k v hk
+    refine ⟨k1, k2, fun hg => ?_, k4, k5⟩
+    have e : k = r := gregL_ofSure.mp hg
+    subst e; rw [hk1] at hk; cases hk
+  · rw [entries_ofSure]; exact List.pairwise_singleton _ _
+  · rw [entries_ofSure, List.mem_singleton] at he
+    subst he
+    obtain ⟨b, hb, hp, -⟩ := hj
+    refine ⟨⟨b, hb, hp⟩, trivial, fun y hy => ?_⟩
+    have e : y = r := hy
+    subst e
+    refine ⟨Nat.lt_of_lt_of_le hr hre, fun hdy => ?_⟩
+    rcases hD y hdy with h | h | h
+    · exact hdr h
+    · omega
+    · exact hgr h
 
 end Raw
 end SkaModel
