@@ -615,6 +615,17 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/OptMiddleSim.lean` | **`middle_keeps_of`**, **`middleKeeps`**: `+remove-empty-middle` keeps `execEntry`, `ReadsOK` and `ArgsOK` on every entry with `ArgsOK`, given `PassOK` of the input and of the result.  A simulation on paths with one relation (`MidI`: the same position, pending arguments passing the same units, registers agreeing off `Byp` and on what the block mentions once its pass is done), matched step for step in both directions after the walks (`mid_fwd_step`, `mid_bwd_step`), the same ends (`mid_endOf`) and reads (`mid_reads`).  `ReadsOK` is not needed; `ArgsOK` is, with the witness in the header (a hop `[0v5]` into an empty block whose parameter nothing mentions, `0v5` not in the file: the code before crashes at the pass, the code after goes on). |
 | `Ska/OptArgs.lean` | `ArgsOK` through the other proved passes, given `ReadsOK`: `rub_argsOK` (`+remove-useless-branching`, same arguments and registers), `hops_argsOK_of` (`+remove-hops`, through `RegLe.get_none`); `LocalOK` through them: `rub_localOK` (an op after is the op before at the same place or an epilogue `%equ`/`%lob`), `hops_localOK_of` (the same op on registers above, or a merged `%mov` on the way to a pass that succeeds before: `ArgsOK`, the check and the counts, which `HopII` now records), `middle_localOK` (the same op on registers that agree on what it mentions); with them **`Keeps`** of the three proved passes: `rub_keeps` (no hypothesis), `hops_keeps_of`, `hops_keeps`, `hopsKeeps` (the hypotheses of `hops_keepsR_of`), `middle_keeps` (`PassOK` of the input and of the result). |
 | `Ska/PokeModel.lean` | A model of `+poke` (`+compiled-mono`, `+compiled-nary`, the `%full` and `%dire` branches; the compile arms, `%jets` and `%fast` are parameters). `pokeS_sound`, `pokeS_invKept`, `invS_init` from two named hypotheses: `CompHyp` (what `+comp`, `+optimize` and the cache must supply) and `AnaHyp`. `gap_of` gives the shapes of `Gap.contract`, `Gap.invKept` and `Gap.invStart` of `lemmas/Assembly.lean`. |
+| `Ska/RawInvBase.lean` | Track D (Gaps 14): `Defd`, `DefUniq` (one definition per register over all blocks, `defOnceR_of_defUniq`), `mem_allDefs`; liveness `Live bl k r` (a path from `k` reads `r` before any definition) and **`defFirst_of_live`**: `DefFirst` when no register with a definition is live at `0`; `NoTr` (no trace hint op) and `trimBr_of_noTr` (the empty stack); `OpsRF`, `BlockRF`, `live_frame` (liveness below `L` sees only blocks below `L`). |
+| `Ska/RawInvStep.lean` | The invariants of raw blocks (`BlkNodup`, `Cross`, `Par1`, `ArgsAbove`, `JDown`) and their two steps, a new block (`*_put`) and ops in front of a block (`*_prepend`, `live_prepend`); `defUniq_of`, `parNodup_of_par1`, `passOK_of`, `downPar_of_args`, `acyclic_of_jdown`. |
+| `Ska/RawInvCheck.lean` | Executable checkers of the eight fields of `OptIn` on the final pass's output and of the run-level invariant on raw blocks, `#guard`ed on `[10 [6 0 1] 5 [0 6] 0 1]`, `[4 [3 [0 1]]]`, `[[0 2] [0 3]]` and on enumerated nomms of the first fragment, of `FragX` and with indirect calls. |
+| `Ska/RawInvGen.lean` | `SI g`, the invariant of a state of `+comp` on the first fragment (labels below `bo`, blocks that jump down, registers below `re`, `BlkNodup`, `Cross`, `NoTr`, `Par1`, `ArgsAbove`), kept by `re` (`si_re`), `+emit` (`si_emit` under `EmitOK`) and `+add-ops` (`si_addOps` under `OpsOK`); `defd_of_wroteIn` (track C's footprint bounds the new definitions); `GArgs`, `GLive`. |
+| `Ska/RawInvArms.lean`, `Ska/RawInvSplit.lean`, `Ska/RawInvCollapse.lean`, `Ska/RawInvMede.lean` | The arms on raw blocks: `raw_bomb`, `raw_doneBlocks`, `raw_simpleNext`, `raw_forl`, `raw_splitNeed`, `raw_split`, `copyNeed_raw` (`CopyR`: the moves of `+copy-need-make-ops` define each register once and read only the merged need), `raw_copy`, `sureRequireLook_keeps`, `raw_crashNeed`, `raw_collapse`, `raw_medeLoop`, `raw_mede`: what each defines (once), reads first, and leaves live. |
+| `Ska/RawInvRun.lean`, `Ska/RawInvCons.lean`, `Ska/RawInvInto.lean` | **`run_raw`**: `RawIH nm` for every nomm, the run-level invariant of `run` (the first fragment): `SI` kept, and every register live at the run's entry is in its result's need or live at its goal's continuation and not named by the goal. `sub_facts` (track C's `run_keeps`, `run_foot`, `run_down`), `raw_tail`, `raw_binTail`, the cases `raw_n0`, `raw_n1`, `raw_n7`, `raw_n4`, `raw_n3`, `raw_cons`, `raw_n5`, `raw_n10` (`intoRec_raw`, `raw_into`). |
+| `Ska/RawInvOut.lean`, `Ska/RawInvOutMain.lean` | Through the renaming path of `+to-straight`: `mem_aliasReads` (`srcs`), `renReg_surj`, `chase_raw`, `chaseFin_raw`, and **`optIn_toStraight`**: blocks that jump down, define each register once, have no trace hint op, pass no argument into a reachable parameter and leave live at the entry only input registers give an output with `OptIn`. |
+| `Ska/RawInvKern.lean`, `Ska/RawInvTop.lean`, `Ska/AuditRaw.lean` | The prologue (`kernLoop_raw`, `raw_sureLoop`) and the main theorems of track D: **`optIn_finish`**, **`optIn_finishLF`**, **`optIn_finishLU`** (`OptIn` of the raw blocks of the n-ary and whole-subject final passes on `Frag nm CGoal.done`, nothing baked), `rawDInv_finishLF`, `rawDInv_finishLU` (the field `rawDInv` of `CompHypOf.lean`), `optimize_keeps_finishLF`, `optimize_keeps_finishLU`; their axioms. |
+| `Ska/RawInvClosed.lean`, `Ska/RawInvClosedRun.lean` | **`run_closed`**: a run of `run` from a state that does not drop and has `Clear` jumps from its own blocks (labels from `g0.bo` on) only to its own labels or to its goal's targets (`ClosedR g0.bo (GTgt goal)`), and its result's jump is at one of them; one lemma per arm (`cs_split`, `cs_into`, `cs_copy`, `cs_mede`, `cs_collapse`, ...) and per case. |
+| `Ska/RawInvCut.lean` | The liveness cut for code changed after a run (Gaps 14): `LiveAv bl Z k r` (a path from `k` that never enters `Z` reads `r`), **`live_cut`** (a live register is live along such a path or live at a block of `Z`), `liveAv_frame`, **`liveAv_region`** (a path that avoids `Z` inside a region closed up to `Z` reads only registers the region's blocks mention), `blockRF_in`; `raw_coerce` (`+coerce-lazy` at one block on a fork-free need, from `raw_sureLoop`). |
+| `Ska/RawInvSix.lean` | **`optIn_finishLF6`**: the n-ary raw blocks of `[6 c a b]` under `%done` with `c`, `a`, `b` in the first fragment meet `OptIn` (`runL_six_done` of track C; the liveness at the entry is cut at the branch blocks, a path that avoids them stays in the test's code by `run_closed` and `RunOK.ext`, which mentions only registers allocated in it by `run_above`); `optIn_finishLF_frag6`, `rawDInv_finishLF_frag6`, `optimize_keeps_finishLF_frag6` on track C's class `Frag6`. |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
@@ -2218,3 +2229,165 @@ import only its theorems.  So:
    library arm) took about four hours; the cost grows with the number of loops
    whose accumulator holds a set or a map that the model keeps in another
    form.
+14. **Raw `+comp` output meets the optimizer's invariant** (track D,
+   2026-11-24, `Ska/RawInv*.lean`, `Ska/AuditRaw.lean`).  The driver theorem
+   `optimize_keeps_optIn` of 12.8 asks `OptIn` of the raw blocks (the field
+   `rawDInv` of `CompHypOf.lean`, stated there with the weaker `DInvS`, which
+   `dInvR_dInvS` gives).  The inventory, field by field, before any proof.
+   "The first fragment" is the call-free, `%6`-free fragment, the nomms on
+   which `run` of `CompModel.lean` returns (`Frag` of `CompFrag.lean`: `%0`,
+   `%1`, `%3`, `%4`, `%5`, cons, `%7`, `%10`); `FragX` of `CompFragX.lean`
+   adds `%6`.  The final pass is `toStraightF`: on the fragments it takes its
+   renaming path (`kc_run`, `toStraightF_eq`), which renames registers by the
+   bijection `renReg r0 n`, moves the entry block to `0`, drops the
+   bypassable blocks (no parameter, no body, a hop) and chases the jumps past
+   them (`chase`); before it, `+coerce-lazy` (n-ary, `finishLF`) or `+kerf`
+   (whole subject, `finishLU`) puts the prologue ops in front of the entry.
+   A check of all eight fields by executable checkers (`RawInvCheck.lean`)
+   on 5,200 enumerated nomms of `FragX` (both versions) and 360 with
+   indirect calls (`finishLUC`): no field fails.
+
+   * `parNodup`.  Parameters appear only on join blocks.  Even without `%6`
+     there is one: `+forl` (cases `%3` and `%5` under a `%next` goal that is
+     not none-equivalent, after `+collapse-lazy-atom`) emits `barg` with the
+     one parameter `[r]`, and `if0`, `if1` hop to it with `[r0]`, `[r1]`
+     (`[4 [3 [0 1]]]`: `0w2 [v2] hop 1`).  So "no `%6`, no parameters" is
+     not so, but on the first fragment every block has at most one
+     parameter and the field is trivial.  With `%6`: `+fork-need`'s join has
+     the registers of the goal's sure need (`flattenNeed`, distinct by
+     `Foot.dist`/`FootR.dist` of track C), `+sect` prepends fresh registers
+     `tn`.  The final pass renames injectively (`renReg_inj`).
+   * `passOK`.  The jumps with arguments: `if0`, `if1` pass `r0`, `r1`,
+     allocated after the collapse register `r`, the parameter of `barg`;
+     the fork blocks of `+fork-need` pass the fresh registers of
+     `forkNeedGo` to the goal's registers; `+sect` (`lensHop`) passes the
+     proxies' definitions `df` to fresh `tn`.  Mechanism: arguments are
+     allocated after the target's parameters.  The final pass: `chase`
+     returns a jump with arguments unchanged (one to a bypassable block
+     fails the pass), renaming is injective.
+   * `acyclic`.  Code is built backwards from the continuation: a block is
+     emitted after the blocks it jumps to, so on the first fragment every
+     jump goes to a lower label (`run_down`, `Down`, `CompDown.lean`).  With
+     `%6` under `%next` the fork blocks `o0`, `o1` hop up to the join, which
+     is allocated after them (`GrowU`, `upRk`, `downRk_of_growU`,
+     `CompGrowU.lean`).  The final pass: `chase` follows hops downwards in
+     the rank, the entry moves to `0` with the rank of its old label, and no
+     kept jump can go to the old entry label (`chase` fails on it).
+   * `downPar`.  No argument of a jump is a parameter of a block reachable
+     from its target: `r0`, `r1` are allocated after every block reachable
+     from `barg` exists, and those blocks' parameters were allocated before
+     (`BelowIn`, `run_keeps`, `CompBelowRun.lean`); no block's parameters or
+     end change after it is emitted on the first fragment (`Grow.keep`).  The
+     final pass: a path of the output is a path of the raw blocks through
+     the bypassed hops.  With `%6`, `+sect` changes the join's parameters
+     after the fact (`jabBlock`), the place to look.
+   * `trimBr`.  No trace hint op (`%hdp`/`%hde` of `%spot` or `%mean`,
+     `%hmp`, `%hme`, `%hcp`, `%hce`) is emitted without `%11`, which `runL`
+     and `runLC` do not compile, so `K` is empty everywhere and the field is
+     trivial for every nomm the models compile (`brOp` keeps the empty
+     stack on every other op).  Renaming keeps the op kinds.
+   * `defFirst`.  The run for a goal `%next laz th` makes code whose paths
+     from its entry to `th` define every register of `laz` that it does not
+     hand up in its result's need, and which reads only registers it defined
+     before or registers of its result's need; the prologue of the final
+     pass defines the result's need at the entry from the input registers,
+     which nothing defines.  Stated through liveness: `Live bl k r`, a path
+     from `k` that reads `r` before any definition of it; `DefFirst` holds
+     when no register with a definition is live at `0`.  Track C has the
+     footprint of the writes (`Foot.wr`, `FootR.wr`) but no fact on paths.
+   * `noLti`.  Syntactic: `+comp` never emits `%lti`, and `chaseFin` is
+     `none` on it, so the output of the renaming path never has one,
+     whatever the raw blocks.
+   * `defOnce`.  Registers come from the counter `re`: each one is written
+     by the arm that allocated it, or by the run whose goal names it, and a
+     run writes no register of its result's need (`Foot.wr`), which the code
+     before it writes (`+copy`'s moves, `+split`'s `con`, the prologue).
+     The fills of `+crash-need` write fresh registers or the goal's, never
+     the register they test since af5cc39 (the model has the `+murn`).
+     Track C gives the set of written registers (`WroteIn`), not that each
+     is written once.  The final pass: `+kern-need` and `+sure-loop` write
+     the need's registers once each and fresh ones; bypassed blocks define
+     nothing; renaming is injective.  `DefOnceR` follows from `DefOnce` over
+     all blocks (`defOnceR_of_defOnce`), and the proof aims at that.
+
+   What the final pass can break: nothing of the eight, given what the
+   raw blocks of the run have; the facts to carry through it are the
+   injectivity of `renReg`, that `chase` only skips empty hops, and that the
+   prologue writes only the result need's registers and fresh ones.
+
+   **Done (2026-11-24, track D, `Ska/RawInv*.lean`).**  On the first
+   fragment (`Frag nm CGoal.done`: `%0`, `%1`, `%3`, `%4`, `%5`, cons, `%7`,
+   `%10`; no call, no `%6`, no hint), with nothing baked, the raw blocks
+   meet all eight fields: **`optIn_finishLF`** (n-ary, any input shape `ord`
+   and cape), **`optIn_finishLU`** (whole subject), so `rawDInv_finishLF`,
+   `rawDInv_finishLU` (`DInvS`, the form of `rawDInv` in `CompHypOf.lean`)
+   and `optimize_keeps_finishLF`, `optimize_keeps_finishLU` (`+optimize`
+   with the passes of the Hoon keeps that code).  No field is false; the
+   checkers of `RawInvCheck.lean` agree on enumerated nomms of `FragX` and
+   with indirect calls.  The proof in three layers:
+   (1) the run-level invariant **`run_raw`** (`RawIH`): from a state with
+   `SI` (labels below `bo`, blocks that jump down, registers below `re`, one
+   definition per register over all blocks, no trace hint op, at most one
+   parameter, jump arguments above the parameters at or below their
+   target) whose definitions avoid the goal's registers, a run keeps `SI`
+   and leaves live at its entry only registers of its result's need or
+   registers live at the goal's continuation that the goal does not name;
+   the arms each say what they define once, read first and leave live
+   (`raw_split`, `copyNeed_raw`, `raw_copy`, `raw_collapse`, `raw_forl`,
+   `raw_mede`, `raw_into`, ...), the facts of track C about the sub-runs
+   (`run_keeps`, `run_foot`, `run_down`) are used as they are;
+   (2) the prologue (`raw_sureLoop`, `kernLoop_raw`): it defines the run's
+   need from the input registers and reads first only those;
+   (3) `+to-straight` (**`optIn_toStraight`**): liveness, definitions,
+   reachability and ranks pass through the bijective renaming and the
+   chase of the bypassed hops.  `DefFirst` is stated through liveness
+   (`defFirst_of_live`: no register with a definition live at `0`).
+   A `%6` at the top (track C's class `Frag6`, the n-ary version):
+   **`optIn_finishLF6`**, `optIn_finishLF_frag6`, `rawDInv_finishLF_frag6`,
+   `optimize_keeps_finishLF_frag6` (`RawInvClosed*.lean`, `RawInvCut.lean`,
+   `RawInvSix.lean`).  The robust liveness asked below was not needed in
+   its general form: `run_closed` (the test's code jumps only into itself or
+   to the two branch blocks), `run_above` of track C (that code mentions
+   only registers from `gs.re` on), `RunOK.ext` of track C (a fork-free run
+   leaves the blocks below its start as they were, so the branch blocks and
+   the code of `a` and `b` are untouched by the run of `c`), `live_cut` and
+   `liveAv_region` give it for this case: a register live at the entry is
+   read on a path that avoids the branch blocks, so it is the test's own
+   (then in the test's need, which the entry's `+sure-loop` defines), or it
+   is live at a branch block, whose `+sure-loop` reads only inputs.
+
+   **Left, in this order.**  (a) `%6` (`FragX`; `Frag6` is done).  Two obstacles, both met
+   on the way here.  First, the liveness spec of a run is about the state
+   at its end; with `%6` the final pass (and `+split`, `+copy` of the
+   parents) put ops in front of lazy blocks inside a run's code after the
+   run (the `yes`/`nuh` blocks of `%6`, every fork entry), so the spec must
+   be robust: for every map that agrees with the run's blocks on its labels
+   `[g0.bo, g1.bo)`, a register live at the entry is in the result's need
+   or live at a goal target (or at a lazy entry).  It follows from the
+   present spec with two facts more: the run's blocks jump only to its own
+   labels or to its goal's targets (an induction like `run_down`), and they
+   mention only fresh registers and the goal's (`run_keepsA` of track C);
+   then a cut lemma (a path either stays in the run's labels or reaches a
+   target) gives the robust form.  With it, `Frag6` (a `%6` at the top,
+   under `%done`) is near: `runL_six_done` of track C splits the run, and
+   the final pass's `+coerce-lazy` puts one `+sure-loop` at the entry and
+   one at each branch block.  Second, under `%next` a `%6` returns a lazy
+   need with forks, so every arm above it runs on `Lazy` (`splitLoop`,
+   `copyLazyL`, `fromL`, `walkLazy` in `+mede`, `+collapse-lazy-atom` and
+   `+kern` with proxies, `+fork`/`+sect` with `insertHop` and the threaded
+   parameters, `lazyShut`), each needing its own `raw_` lemma over the lazy
+   entries, and `toStraightF` takes the map path when proxies exist (the
+   renaming `ren ∘ unproxy` is not injective, but proxies are never
+   defined, only read, so `DefUniq` should still pass).  `+fork-need`'s join
+   is where `ParNodup`, `PassOK`, `DownPar` and `Acyclic` (with `upRk`) get
+   content: its parameters are the goal's need (distinct), the fork blocks
+   pass fresh registers and hop up.  `Par1` and `ArgsAbove` must be replaced
+   there (several parameters; arguments allocated after the join's
+   parameters, ranked by `upRk`).  (b) Indirect calls: the arm of `%2`
+   (`runLC_n2_none`: `+simple-next`, `+kerf` with `+kern` into the goal's
+   need from a fresh `pro`, the `%nok` block, then the two runs and the copy
+   as in `raw_binTail`) fits the present spec; nested calls need the
+   induction on `runLC`, most simply by making the case lemmas take the
+   runner as a parameter with its unfolding equations.  Estimate: `Frag6`
+   took about 1300 lines (closure, cut, the top case); `FragX`, as much
+   again as what is done here (about 5000 lines), most of it the lazy arms.
