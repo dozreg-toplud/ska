@@ -54,6 +54,10 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
 * `splitmax-order.py OUT.txt` (full trace) the order of `need-new` across a member's sweeps (axes split, axes in
                     a register: equal, loses, gains, neither) and the entry steps that climb in the order of
                     the uncut join
+* `splitmax-climb.py K KC [--cut]` the measure of the uncut join by enumeration: for all entries and new needs
+                    with at most K inner nodes and capes with at most KC, the join climbs node by node (cell
+                    cape: kind none < this, split < both, never this <-> split; atom cape: the split only
+                    shrinks, both stays).  2026-11-28, `3 3`: 2,359,296 triples, 0 fail; with `--cut` 15 fail
 * `splitmax-cores.py OUT.hoon SEED N [DEEP] [--targeted]` a driver of generated SCCs for the search (the form of
                     `sccstress.py`'s driver): one to three gates on a sample of four or eight leaves where every
                     other leaf is the same known gate, called by the members, so that the capes are cells;
