@@ -141,5 +141,102 @@ theorem trap_loop (c : Cfg Noun N) (R : (Noun → Option N) → (Noun → Option
         rw [e3, csf_fin]
         exact hfin NARY REST NARYU hc hu
 
+/-! ## `csiFix` against `compileSccIn c false` -/
+
+/-- **`csiFix` against the model**: the DFS gives `order` (`hdfs`, a hypothesis on its product),
+the `%may` `+roll` gives `[MAY CA1]` (`may_roll`), the `=^` puts `CA1` at `cache`, `top` gives
+`TOP` and the member gate on `%must` with that `TOP` meets `MemGate` for `topOf` of the `%may`
+state (`hmust`, one hypothesis for both), then the trap runs (`trap_loop`).  Wherever
+`compileSccIn c false fuel st0` returns `s`, `csiFix` returns `[ML' [NARYU REST]]` with `R s`
+of `ML'` and the last member run's cache `[NARY REST]`, `NARYU = (~(uni by NARY) ML')`. -/
+theorem csf_fix_loop (c : Cfg Noun N) (R : (Noun → Option N) → (Noun → Option N) → Noun → Noun → Prop)
+    (p : LoopP) (hR0 : ∀ ml sure ML CA, R ml sure ML CA → R (fun _ => none) sure (A 0) CA)
+    (hmay : MemGate c R p.ctx (fun _ => c.none) (A 0) Mode.may (A 0x79616d))
+    (hdone : MemGate c R p.ctx (fun _ => c.none) (A 0) Mode.done (A 0x656e6f64))
+    (st0 : St Noun N)
+    (hmust : ∀ MAY CA1, R (maySweep c st0).ml (maySweep c st0).sure MAY CA1 →
+      ∃ TOP, nock (C MAY (C p.ORD (p.subj (A 0) CA1))) csfTop = some TOP ∧
+        MemGate c R p.ctx (topOf c (maySweep c st0)) TOP Mode.must (A 0x7473756d))
+    (hkids : KidsN c p.KIDS) (hscc : SccN c p.SCC)
+    (hord : p.ORD = listN c.order) (hsub : ∀ b ∈ c.order, b ∈ c.scc)
+    (hdfs : nock (p.subj (A 0) p.CA0) csfOrder = some p.ORD)
+    (hpr : ∀ TOP MAY, PrintId { p with TOP := TOP, MAY := MAY })
+    (hR : R st0.ml st0.sure (A 0) p.CA0) (fuel : Nat) (s : St Noun N)
+    (hs : compileSccIn c false fuel st0 = some s) :
+    ∃ ML' CA', R s.ml s.sure ML' CA' ∧ ∀ NARY REST NARYU, CA' = C NARY REST →
+      nock (C by.uni.battery (C ML' (C by.battery (C NARY layer2)))) by.uni.battery = some NARYU →
+      nock (p.subj (A 0) p.CA0) csiFix = some (C ML' (C NARYU REST)) := by
+  obtain ⟨MAY, CA1, hm1, hR1⟩ := may_roll c R p hmay hord hsub st0 p.CA0 hR
+  obtain ⟨TOP, htop, hmust'⟩ := hmust MAY CA1 hR1
+  have hput : nock (C (C MAY CA1) (C p.ORD (p.subj (A 0) p.CA0))) csfPut
+      = some (C (C MAY CA1) (C p.ORD (p.subj (A 0) CA1))) := by
+    unfold csfPut LoopP.subj csiSam; simp [nock_exec]
+  have hcons : nock (C (C MAY CA1) (C p.ORD (p.subj (A 0) CA1))) csfCons
+      = some (C MAY (C p.ORD (p.subj (A 0) CA1))) := by
+    unfold csfCons; simp [nock_exec]
+  have hfix := csf_fix _ _ _ _ _ _ hdfs hm1 hput hcons htop
+  unfold compileSccIn at hs
+  simp only [Bool.false_eq_true, if_false, Option.map_eq_some_iff] at hs
+  obtain ⟨s', hl, rfl⟩ := hs
+  obtain ⟨ML', CA', hR', hgo⟩ := trap_loop c R { p with TOP := TOP, MAY := MAY }
+    (topOf c (maySweep c st0)) hmust' hdone hkids hscc hord hsub (hpr TOP MAY) fuel _ s' 0 csfSt0
+    (A 0) CA1 rfl hl (stN_st0 _ rfl rfl rfl rfl) (hR0 _ _ _ _ hR1)
+  exact ⟨ML', CA', hR', fun NARY REST NARYU hc hu => by rw [hfix]; exact hgo NARY REST NARYU hc hu⟩
+
+/-! ## The gate `+compile-scc-in` -/
+
+/-- **The gate on a cache miss with `done` false** is `csiFix` on its subject: the cache test
+gives `|` (`hlevy`), `kids` is `KIDS` (`hkids`), `done` is `|` (`hdn`); then `member` and `final`
+are pushed. -/
+theorem csi_to_fix (SCC LONG JH CA0 KIDS : Noun) (TOP MAY ORD : Noun)
+    (hlevy : nock (C csiBody (C (csiSam SCC LONG JH CA0) compK)) csiLevy = some (A 1))
+    (hkids : nock (C (A 0) (C csiBody (C (csiSam SCC LONG JH CA0) compK))) csiKids = some KIDS)
+    (hdn : nock (C KIDS (C (A 0) (C csiBody (C (csiSam SCC LONG JH CA0) compK)))) csiDone
+      = some (A 1)) :
+    nock (C csiBody (C (csiSam SCC LONG JH CA0) compK)) csiBody
+      = nock ((⟨A 1, KIDS, SCC, LONG, JH, CA0, TOP, MAY, ORD⟩ : LoopP).subj (A 0) CA0) csiFix := by
+  have hma : ∀ d, nock d memArm = some (C memBody (C memBunt d)) := by
+    intro d; unfold memArm memHint; generalize memBody = B; generalize memBunt = U; simp [nock_exec]
+  conv => { lhs; arg 2; unfold csiBody }
+  unfold LoopP.subj LoopP.fg LoopP.sm LoopP.mg LoopP.ctx csiSM csiCtx memCtx
+  simp [nock_exec, hlevy, hkids, hdn, hma, csiFinalA]
+  rfl
+
+/-- **`csi_gate_loop`: the gate `+compile-scc-in` on `[scc long-ska jets-hot cache]` as a loop.**
+On a cache miss (`hlevy`) with `done` false (`hdn`), wherever the model `compileSccIn c false
+fuel st0` returns `s`, the gate returns `[M [NARYU REST]]`: `R` relates `s` (the state after
+`final c true`) to `M` and the cache `[NARY REST]` of the last member run, and `NARYU` is
+`(~(uni by NARY) M)`.  The hypotheses about `+run` are the member gate on `%may`, `%must` and
+`%done` (`MemGate`); the others are on products of pushes not linked here (the cache test,
+`kids`, `done`, the DFS `hdfs`, `top` inside `hmust`) and the print (`PrintId`). -/
+theorem csi_gate_loop (c : Cfg Noun N) (R : (Noun → Option N) → (Noun → Option N) → Noun → Noun → Prop)
+    (SCC LONG JH CA0 KIDS ORD : Noun)
+    (hlevy : nock (C csiBody (C (csiSam SCC LONG JH CA0) compK)) csiLevy = some (A 1))
+    (hkidsP : nock (C (A 0) (C csiBody (C (csiSam SCC LONG JH CA0) compK))) csiKids = some KIDS)
+    (hdn : nock (C KIDS (C (A 0) (C csiBody (C (csiSam SCC LONG JH CA0) compK)))) csiDone
+      = some (A 1))
+    (p : LoopP) (hp : p = ⟨A 1, KIDS, SCC, LONG, JH, CA0, A 0, A 0, ORD⟩)
+    (hR0 : ∀ ml sure ML CA, R ml sure ML CA → R (fun _ => none) sure (A 0) CA)
+    (hmay : MemGate c R p.ctx (fun _ => c.none) (A 0) Mode.may (A 0x79616d))
+    (hdone : MemGate c R p.ctx (fun _ => c.none) (A 0) Mode.done (A 0x656e6f64))
+    (st0 : St Noun N)
+    (hmust : ∀ MAY CA1, R (maySweep c st0).ml (maySweep c st0).sure MAY CA1 →
+      ∃ TOP, nock (C MAY (C ORD (p.subj (A 0) CA1))) csfTop = some TOP ∧
+        MemGate c R p.ctx (topOf c (maySweep c st0)) TOP Mode.must (A 0x7473756d))
+    (hkids : KidsN c KIDS) (hscc : SccN c SCC)
+    (hord : ORD = listN c.order) (hsub : ∀ b ∈ c.order, b ∈ c.scc)
+    (hdfs : nock (p.subj (A 0) CA0) csfOrder = some ORD)
+    (hpr : ∀ TOP MAY, PrintId { p with TOP := TOP, MAY := MAY })
+    (hR : R st0.ml st0.sure (A 0) CA0) (fuel : Nat) (s : St Noun N)
+    (hs : compileSccIn c false fuel st0 = some s) :
+    ∃ M CA', R s.ml s.sure M CA' ∧ ∀ NARY REST NARYU, CA' = C NARY REST →
+      nock (C by.uni.battery (C M (C by.battery (C NARY layer2)))) by.uni.battery = some NARYU →
+      nock (C csiBody (C (csiSam SCC LONG JH CA0) compK)) csiBody = some (C M (C NARYU REST)) := by
+  subst hp
+  obtain ⟨M, CA', hR', hgo⟩ := csf_fix_loop c R _ hR0 hmay hdone st0 hmust hkids hscc hord hsub hdfs
+    hpr hR fuel s hs
+  exact ⟨M, CA', hR', fun NARY REST NARYU hc hu => by
+    rw [csi_to_fix SCC LONG JH CA0 KIDS (A 0) (A 0) ORD hlevy hkidsP hdn]; exact hgo NARY REST NARYU hc hu⟩
+
 end Compiler
 end Formalization
