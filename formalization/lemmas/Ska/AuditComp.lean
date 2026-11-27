@@ -102,6 +102,7 @@ import lemmas.Ska.CompConsLSRun
 import lemmas.Ska.CompPastLS
 import lemmas.Ska.CompConsLSCall
 import lemmas.Ska.CompIndirectLS
+import lemmas.Ska.CompCallTreeTop
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -1098,3 +1099,16 @@ open Formalization.SkaModel.Comp
 #print axioms jNewLS_indirect
 #print axioms CallTree.kind
 #print axioms lokS_callTree
+#print axioms RunOKLB.toGB
+#print axioms runOKGB_of_next
+#print axioms runOKGB_done
+#print axioms runLC_done_next
+#print axioms lokS_done
+#print axioms CallTree.sixCount
+#print axioms callTree_done
+#print axioms topTree_done
+#print axioms finishLUC_contractTopTree
+#print axioms finishLUC_bellContractTopTree
+#print axioms cc2_contract
+#print axioms consInd_contract
+#print axioms bc1_contract
