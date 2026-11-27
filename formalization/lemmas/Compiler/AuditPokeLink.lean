@@ -1,3 +1,4 @@
+import lemmas.Compiler.PokeLinkJetsP
 import lemmas.Compiler.PokeLink
 import lemmas.Compiler.PokeLinkFull
 import lemmas.Compiler.PokeLinkScc
@@ -213,3 +214,8 @@ open Formalization Formalization.Compiler
 #print axioms spRestAt_of_leaves
 #print axioms spRestGood6_of_leaves
 #print axioms pokeModel_fullReachP6L
+#print axioms pokeModel_fullReachP7
+#print axioms gateGot_of_key
+#print axioms gateCole_of_good
+#print axioms jetsOfGood_P
+#print axioms pokeModel_fullReachP8
