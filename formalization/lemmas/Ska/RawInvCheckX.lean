@@ -337,6 +337,49 @@ def okSt (o : Option (Straight FM)) : Bool := match o with
   | some c => (blocksOf c.blocks).any fun (_, b) => (getJmps b.fin).any fun j => !j.args.isEmpty
   | none => false).length == 3360
 
+/-! ## `RunAT` (`RawInvStX.lean`) under `%next` and `%pick`
+
+The statement for the run-level induction of `ArityOK` and `TwoNA`: from a
+state whose goal targets are blocks with no parameter, a run's blocks meet
+`Closed`, `ArityOK` and `TwoNA` (`stB`), and the result's jump has no
+arguments and targets a block with no parameter (`Entry`, track C). -/
+
+def atGoalB (goal : CGoal LS) (g0 : Comp.Gen FM) (nm : Nomm) : Option Bool :=
+  (runL nm (CGoal.toL goal) [] g0).map fun (nex, g) =>
+    stB g.blocks && nex.th.args.isEmpty && match g.blocks.f nex.th.there with
+      | some b => b.par.isEmpty
+      | none => false
+
+#guard (sixes ++ enumX).all fun nm =>
+  atGoalB (CGoal.next (lazyReg 0) (jmp0 1)) gY nm == some true &&
+  atGoalB (CGoal.pick (jmp0 1) (jmp0 2)) gP nm == some true
+
+/-! ## `ReadsIn` (`Compiler/OptLinkTotalAlias.lean`), the field `AliasRetN` adds
+
+Every register a reachable block reads (an op or the end) has a definition
+in the map or is one of the `nargs` arguments.  On the output of both final
+passes over all of `enumX`.  Over all blocks it fails (560 n-ary outputs):
+an unreachable fork block passes a register nothing defines, as in the
+output of `enumX[340]`, whose block `2` hops to the join `4` with `[2]` and
+no block jumps to `2`.  Not vacuous: 3,396 n-ary outputs have a reachable
+block that reads an argument with no definition. -/
+
+def readsInB (c : Straight FM) : Bool :=
+  let R := reachF c.blocks ((blocksOf c.blocks).length + 1) 0
+  (blocksOf c.blocks).all fun (k, b) => !R.contains k ||
+    ((b.body.flatMap aliasReads) ++ finRegs b.fin).all fun r => (allDefsL c.blocks).contains r || r < c.nargs
+
+def okReads (o : Option (Straight FM)) : Bool := match o with
+  | some c => readsInB c
+  | none => true
+
+#guard enumX.all fun nm => okReads (naryX nm) && okReads (mono nm)
+#guard (enumX.filter fun nm => match naryX nm with
+  | some c => let R := reachF c.blocks ((blocksOf c.blocks).length + 1) 0
+      (blocksOf c.blocks).any fun (k, b) => R.contains k &&
+        ((b.body.flatMap aliasReads) ++ finRegs b.fin).any fun r => r < c.nargs && !(allDefsL c.blocks).contains r
+  | none => false).length == 3396
+
 end Raw
 end SkaModel
 end Formalization
