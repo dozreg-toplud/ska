@@ -5,7 +5,8 @@ import lemmas.Compiler.CompPastLink
 
 Written by `tools/gen/sofpush.py` from the pill: `+sound` (door arm
 `13654`, `(sound-far nom ned code.long-ska 3)`), `+sound-far` (arm `5467` of
-`K`, behind its `%fast` hint), `+need-soft` (arm `5466` of `K`), each with
+`K`, behind its `%fast` hint), `+need-soft` (arm `5466` of `K`), `+need-ord-edit`
+(arm `5596` of `K`), `+cell-sure` (arm `48047` of `K`), each with
 its gate battery and the kernel fact of where it sits.
 -/
 
@@ -43,6 +44,26 @@ def nsArm : Noun :=
   (C (A 8) (C (C (A 1) (C (C (A 0x656e6f6e) (A 0)) (C (C (A 0x656e6f6e) (A 0)) (C (A 1) (A 0))))) (C (C (A 1) nsBat) (C (A 0) (A 1)))))
 
 theorem compK_ns : slot? 5466 compK = some nsArm := by kernel_rfl
+
+/-- The gate battery of `+need-ord-edit` (arm `5596` of `K`) (155 cells). -/
+def noeBat : Noun :=
+  (C (A 6) (C (C (A 5) (C (C (A 1) (A 1)) (C (A 0) (A 12)))) (C (C (C (A 0) (A 13)) (C (A 1) (C (A 0x656e6f6e) (A 0)))) (C (A 6) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x656e6f6e)) (C (A 0) (A 26)))) (C (C (A 1) (A 0)) (C (A 5) (C (C (A 1) (A 0x73696874)) (C (A 0) (A 26))))))) (C (C (A 1) (C (C (A 0x656e6f6e) (A 0)) (C (A 0x656e6f6e) (A 0)))) (C (A 8) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x68746f62)) (C (A 0) (A 26)))) (C (C (C (A 0) (A 54)) (C (A 0) (A 55))) (C (C (A 0) (A 26)) (C (A 0) (A 27)))))) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 22) (C (A 0) (A 0xfffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 60))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 2)) (C (A 0) (A 2)))) (C (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 8) (C (C (A 9) (C (A 47) (C (A 0) (A 0xfffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 60))) (C (A 0) (A 2)))))))) (C (A 0) (A 4)))) (C (A 0) (A 3)))))) (C (C (A 0) (A 4)) (C (A 8) (C (C (A 9) (C (A 350) (C (A 0) (A 31)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 13)) (C (A 0) (A 29)))) (C (A 0) (A 2))))))))))))) (C (A 11) (C (C (A 0x73736f74) (C (A 5) (C (C (A 1) (A 3)) (C (A 0) (A 2))))) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 8) (C (C (A 9) (C (A 47) (C (A 0) (A 0xfffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 60))) (C (A 0) (A 2)))))))) (C (A 0) (A 5)))) (C (A 0) (A 3)))))) (C (C (A 0) (A 4)) (C (A 8) (C (C (A 9) (C (A 350) (C (A 0) (A 31)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 28)) (C (A 0) (A 13)))) (C (A 0) (A 2))))))))))))))))))))))))))))
+
+/-- The arm `+need-ord-edit` (arm `5596` of `K`). -/
+def noeArm : Noun :=
+  (C (A 8) (C (C (A 1) (C (A 0) (C (A 0x656e6f6e) (A 0)))) (C (C (A 1) noeBat) (C (A 0) (A 1)))))
+
+theorem compK_noe : slot? 5596 compK = some noeArm := by kernel_rfl
+
+/-- The gate battery of `+cell-sure` (arm `48047` of `K`) (40 cells). -/
+def csBat : Noun :=
+  (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x68746f62)) (C (A 0) (A 24)))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 3) (C (A 0) (A 24))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 3) (C (A 0) (A 26))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 26)))) (C (C (A 6) (C (C (A 3) (C (A 0) (A 27))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))))))))))))
+
+/-- The arm `+cell-sure` (arm `48047` of `K`). -/
+def csArm : Noun :=
+  (C (A 8) (C (C (A 1) (C (C (A 0x656e6f6e) (A 0)) (C (A 1) (A 0)))) (C (C (A 1) csBat) (C (A 0) (A 1)))))
+
+theorem compK_cs : slot? 48047 compK = some csArm := by kernel_rfl
 
 end Compiler
 end Formalization
