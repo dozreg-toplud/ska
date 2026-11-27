@@ -208,6 +208,11 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompLift.lean` | `+bind` (arm `5983` of `layer2`, `lf_bind_at`) and `+lift` (arm `372`, `lf_lift_at`, its sample bunt `lfLiftBunt` read from the pill): `(turn v (lift ren))` renames the units of a list of registers (`lf_turn`), so the gate `rj` of `+chase-fin` is `renJmp ren` (`lf_rj`), `TsRjAt` holds (`lf_ts_rj`) and `cu_finish_all` is the end of `+compile-unary` with no hypothesis on `+to-straight`.  The gate `ren-jmp` of `+map-regs` is `renJmp` too (`lf_mr_rj`), so `(map-regs ren)` is linked on every block (`mr_inner`, the terminator by `mrFin`: `renFin` except `%lti`, which the Nock keeps) and is `renBlob` on every block without `%lti` (`mr_inner_ren`). |
 | `Compiler/CompUnaryTrap.lean` | The trap of `+compile-unary` (`cuTrap`, axis `1473626077` of `K`, `cu_trap_at`) and its gate (`cuGB`, axis `179885`, `cu_gb_at`): `+compile-scc-in` (`cuCsi`, a hypothesis), the edit of the gate's `cache`, `+comp` (arm `5590`, `cu_comp_at`, its battery `cgBat` builds `[comp.door [cuBunt ctx]]`), the entry (`cu_trap_entry`), `+got:by` of `code` and `+run` (`cu_trap_run`), `+kerf` (`cu_trap_kerf`), `+to-straight` and the product (`cu_trap_end`).  `cu_trap`: the trap returns `[[s NM] CA]` with `s` the noun of `finishLU n`; `cu_gate`: so does the gate through `road-pure`; `cu_ref_mono` and `cu_gate_some`: the same against `finishLUC env n` for every `env`, the form of `refMono`. |
 | `Compiler/CompSccIn.lean` | The structure of `+compile-scc-in` (its header: the passes, the state they thread, the final pass of `member` for one bell with line numbers, and every difference from `finishLF`), and the arms of the n-ary final pass linked so far: `+soft-done` is the identity on `soft` empty or `mode` `%drop` (`sd_empty`, `sd_drop`), the gate of `+need-to-ordered` is `needToOrd` (`nta_gate`), the gate of `+need-ord-alloc-regs` is `needOrdAllocRegs` (`noar_gate`), and the gate of `+collapse-shape` is the check of `args.then` then `needOrdAllocRegs` of the shape that the gate of `+shape-collapse` returns, a hypothesis (`cs_gate`). |
+| `Compiler/CompStraightMap.lean`, `Compiler/CompStraightMapNouns.lean` | The map path of `+to-straight` (README Gaps 20): the nouns of `rewrite-par`, `-body`, `-op`, `-fin`, `-jump`, `-hop`, `-args` and of the map branch with their kernel facts (`tsmPar_at` .. `tsm_br_eq`, written by `tools/gen/tsmap.py`); `RerS` (a `rer` that renames by `f` and keeps `gen`), `spinM_pure`, `tsm_argG`, `tsm_args`, `tsm_core_arms`, `tsm_jmp`, `tsm_hop`, `tsm_parG`, `tsm_par`. |
+| `Compiler/CompStraightMapOps.lean` | Written by `tools/gen/tsmops.py`: `MapCoreS`, `rewrite-op` on each of the 25 op tags (`tsm_op_<tag>`, `tsm_op`: `renPole f`, `gen` kept) and `rewrite-fin` on the ten terminators other than `%bom` and `%lti` (`tsm_fin_<tag>`: `chaseFin bs f`). |
+| `Compiler/CompStraightMapBlk.lean` | `tsm_core_l2`, `tsm_chase_cell`, `rewrite-fin` on `%bom` and `%lti` and on any terminator (`tsm_fin`), the bunt of `pole` (`tsm_pole_bunt`), `rewrite-body` (`tsm_bodG`, `tsm_bod`), the gate of the fold of the map branch (`tsm_gate`: `renameStep bs f`). |
+| `Compiler/CompStraightMapTop.lean` | The map branch (`tsm_branch`), the gate `unproxy` (`tsm_unproxy`), `rer` with `proxies` `&` (`tsm_rer_prox`), the arm `$` with `proxies` `&` (`tsm_dol`) and the core (`tsm_core`: the renaming path by `ren ∘ unproxy`, as `toStraightF_run`). |
+| `Compiler/AuditStraightMap.lean` | `#print axioms` of the main theorems of README Gaps 20. |
 | `Compiler/CompStraightN.lean` | `+to-straight` on an n-ary input need (the sample `[%next [[ned ~] ~ ~] ~ o]` of the final pass of `+compile-scc-in`, `tsSampleN`): the pushes with `ins` `flattenNeed ned`, `r0` its head, `n-in` its length and `run` `isRun ins r0 0` (`tsn_pre1`, the trap `run` `tsn_run`, `tsn_pre2`, `tsn_pre3`, `tsn_pre`), `ren` is `renReg r0 n-in` (`tsn_ren`), `rer` (`tsn_rer`), the trap of `+rewrite-input` on any need returns `needToOrd ned` and leaves `gen` (`tsn_ri_trap`, `tsn_ri`), the arm `$` takes the renaming branch (`tsn_dol`), `+count-args` is `countArgs` (`ca_gate`), the renaming branch (`tsn_rename`), the gate of the fold in any `CfCore` core (`tsn_step_gen`, `tsn_st_cf`, `tsn_step`), the core (`tsn_core`), and the gate: on a run of inputs with `cond` empty it returns the noun of `toStraightF` (`tsn_at`). |
 | `Compiler/CompCoerceLazy.lean` | `+coerce-lazy` (door battery axis `3580`, `comp_cz_at`, its gate body `czBody` cut into `czX`, `czSrl`, `czLok`, `czTail`) on a fork-free `[sure ~ ~]`: `+axe-in-less-cape` (arm `95` of `K`) is `axeInLessCape` (`aic_loop`, `aic_gate`), `+axe-in-need` (arm `0x5dd4`) is `axeInNeedL` (`ain_loop`, `ain_gate`), the gate of the `+rep:in` over `lok` is `czStep` (`cz_gate_step`) and the fold is `coerceLok` (`coerceLok_eq`, `cz_lok`, with no `0` in its product, `coerceLok_ne0`), `+sure-require-look` of the new sure (`cz_srl`), the trap `sure-loop` is `sureLoop` with `o` not in `soft` (`cz_loop_none`, `cz_loop_this`, `cz_loop_pair`, `cz_loop_both_this`, `cz_loop_both_pair`, `cz_loop_both_both`, `cz_loop`), and the gate is `coerceLazy` (`cz_gate`) or `coerceLazyL` on `ofSure` (`cz_gate_L`). |
 | `Compiler/CompBakeNeed.lean` | `+bake-need` (arm `384468` of `K`, `bn_at`, its gate body `bnBody` and trap `bnLoop` cut into `bnTest`, `bnYes` with the baking trap `bnAll`, and `bnRec`) when nothing is baked: on a need with no cell of two `%none` and no `%both` with two `%none` halves (`NeedNorm`, true of every need of `+need-ord-alloc-regs`, `needNorm_noar`) and a sock that is `%void` or not wholly known (`all:ca` false) at every node of the need, with `hed:so` and `tel:so` down the walk (`NoBake`), the test of each node is false before `+need-fits` (`bn_test`), `+cons-need` rebuilds each cell (`cn_gate`), and the gate returns `[ned ~]` (`bn_loop`, `bn_gate`). |
@@ -3585,3 +3590,115 @@ import only its theorems.  So:
     `hot`, `sof` and the agreement of `NeedRead`/`SureNoun` with `env` as
     invariants of the compile of an SCC; (5) the miss in `nary.cache` (the
     recursion above).
+20. **`+to-straight` with proxies: the map path** (track I, 2026-11-27,
+    `Compiler/CompStraightMap*.lean`, nouns cut by `tools/gen/tsmap.py`).
+    The map first.
+    (1) Linked before this item: `+to-straight` (door arm `6892`, gate
+    `tsBat`, 4716 cells) on its renaming branch only.  The pushes are
+    linked with `cond` empty (`ts_pre`, `tsn_pre`: the third push,
+    `proxies`, is `(A 1)` there), the arm `$` takes `&(run !proxies)`
+    (`ts_dol`, `tsn_dol`), and the fold is `renameBlocks` (`ts_core_at`,
+    `tsn_core`, `tsn_at`).  So the whole-subject final pass
+    (`cu_finish_all`, `CompUnaryTop.lean`) is linked only where `cond` is
+    empty after `+kerf` (`cu_cond_empty`: a pure nomm without `%6`).  On
+    the model `+kerf` makes a proxy on every enumerated nomm with a `%6`
+    (track D), so every whole-subject compile with a `%6` takes the map
+    path.
+    (2) What the branch with `proxies` `&` runs.  The `|^` core
+    (`tsCoreBat`, 4392 cells) has thirteen arms.  The renaming branch uses
+    `$` (battery axis `126`, 509 cells, of which its own branch is 163 and
+    the map branch `tsMapBr` 295), `rewrite-input` (`14`, 217), `rer`
+    (`12`, 135), `+bypassable` (`30`, 58), `+chase` (`13`, 78) and
+    `+chase-fin` (`254`, 582), all linked.  The map branch uses, for every
+    kept block, `rewrite-par` (battery `250`, core arm `378`, 58 cells:
+    `?:  =(~ par)`, else `+spin` of layer 2 with the gate `(rer(gen gen)
+    r)`), `rewrite-body` (`502`, core `758`, 65 cells: the same `+spin`
+    with `rewrite-op`), `rewrite-op` (`2`, core `4`, 1605 cells: the 25-way
+    `?-` on the op tags, one `=^` through `rer` per register field),
+    `rewrite-fin` (`1006`, core `1518`, 823 cells: the 11-way `?-`, the
+    branch jumps through `rewrite-jump` (`255`, core `383`, 38 cells:
+    `(rewrite-args (chase & j))`), the hop through `rewrite-hop` (`124`,
+    core `188`, 38 cells: `(chase | j)`), `%bom` through `+chase`) and
+    `rewrite-args` (`1007`, core `1519`, 174 cells: `?:  =(~ args.j)`,
+    else `+spin` over the units, `rer` on each `u.a`).  None of these
+    seven is linked.  The branch is `[input (count-args input) =<(new
+    (~(rep by blocks) gate))]`: the first accumulator is `[~ B]` with `B`
+    the current `gen` (the example of `_gen` is `[0 14]`; the formula
+    `[7 [9 170 0 0xfffff] 9 2 0 1]` next to it is the bunt of `blob`, arm
+    `170` of the types core, for the pair `[k b]`), and the gate does `=.  gen  gen-acc`, the test `&(!=(0 k)
+    (bypassable & b))` (on yes `[new gen]`), else three `=^` (par, body,
+    fin) and `[(put:by new k [par1 body1 fin1]) gen1]`.  Every register
+    goes through `rer`, whose `=?  r  proxies  (unproxy r)` slams the gate
+    `unproxy` (`tsUnBat`: `+get:by` of `cond.gen` at `r`, `def.u.e` on a
+    hit) and which, with `run` `&`, returns `[(ren r) gen]` and leaves
+    `gen`.  The pushes differ from the linked ones only in `proxies`: `&`
+    (`A 0`) when the noun of `cond` is a cell.
+    (3) The model's map path is `toStraightF` with `hasProxies cond`
+    (`Ska/CompStraightMap.lean`): `rewriteInput`, then `mapBlocks` with
+    `rewriteBlob` (`rewritePar`, `rewriteBody` through `rewriteOp`,
+    `rewriteFin` through `rewriteJump`, `rewriteHop`, `rewriteArgs`), each
+    register by `rer cond proxies run ren` in the state monad `RM`.  On a
+    run of inputs `rer` reads and writes no state, and `toStraightF_run`
+    (through `mapBlocks_stateless`) makes the map path `renameBlocks bs
+    (proxRen cond true ren)`, whose `keepBlock` renames by `proxRen` and
+    chases with `chaseFin`.  The whole-subject compile has the one input
+    `sub`, so `run` is `&` there and only this stateless case occurs: the
+    state `[re-gen m]`, and so the bunt `B`, is never read.  The stateful
+    case (`run` `|`) occurs only in the n-ary final pass when a part of
+    the input was baked or coerced; it is not in this item.
+    (4) The plan: link each rewrite gate in any core whose `rer` returns
+    `[f r G]` with `G` the core's own `gen`, against `renPole f`,
+    `renJmp f` after `chase`, and `chaseFin bs f`; then the gate of the
+    fold against `renameStep bs f`, the branch by `rep_gate_list`, `$`
+    with `proxies` `&`, the pushes with any `cond`, and `+to-straight` on
+    `tsSample` for every `cond` (`TsAt` without its hypothesis), which
+    ends `+compile-unary` for code with proxies.
+    L, 2026-11-27 (track I, the map path), `Compiler/CompStraightMap.lean`,
+    `Compiler/CompStraightMapNouns.lean` (`tools/gen/tsmap.py`),
+    `Compiler/CompStraightMapOps.lean` (`tools/gen/tsmops.py`),
+    `Compiler/CompStraightMapBlk.lean`, `Compiler/CompStraightMapTop.lean`,
+    `Compiler/AuditStraightMap.lean`.  Linked, in any core `[tsCoreBat [G
+    R]]` whose `rer` renames by `f` and returns `G` (`RerS`, with the
+    hypotheses `MapCoreS`: `layer2`, the blocks `bs` and the bunt of the
+    units of `rewrite-args` in the core): `rewrite-args` (`tsm_args`:
+    `renJmp f`), `rewrite-jump` and `rewrite-hop` (`tsm_jmp`, `tsm_hop`:
+    `+chase` with `&` or `|`, then `renJmp f`), `rewrite-par` (`tsm_par`),
+    `rewrite-op` on each of the 25 tags (`tsm_op_<tag>`, `tsm_op`:
+    `renPole f`), `rewrite-body` (`tsm_bod`, with the bunt of `pole`
+    computed by the kernel, `tsm_pole_bunt`), `rewrite-fin` on every
+    terminator (`tsm_fin`: `chaseFin bs f`), the gate of the fold
+    (`tsm_gate`: `renameStep bs f`), and the branch (`tsm_branch`: `[ord
+    (countArgs ord) new]` with `new` the renaming path `renameBlocks bs
+    f`, through `rep_gate_list`).  The gate `unproxy` is the model's
+    `unproxy` (`tsm_unproxy`), `rer` with `proxies` `&` and `run` `&` is
+    `RerS (ren ∘ u)` (`tsm_rer_prox`), the arm `$` takes the map branch
+    when `proxies` is `&` (`tsm_dol`), and the three give the core
+    (`tsm_core`): the arm `$` returns the noun of `[needToOrd ned
+    (countArgs ..) (renameBlocks bs (ren ∘ u))]`, the form of the model's
+    map path on a run of inputs (`toStraightF_run`, whose renaming is
+    `proxRen cond true ren = ren ∘ unproxy cond`).  Compared part by part
+    with no departure: the order of the `=^` in each op and terminator
+    (no effect with a stateless `rer`), the `?:  =(~ par)` and `?:  =(~
+    args.j)` shortcuts (the model's `mapM` on `[]`), `%bom` through
+    `+chase` with `&`, `%lti` falling into the `%bom` case and crashing
+    (`+got:by` of a cell, `tsm_fin_lti`) as the model's `none`, the test
+    `&(!=(0 k) (bypassable & b))` as `keepBlock`, and the first
+    accumulator `[~ gen]` as `mapBlocks` from the state that
+    `rewriteInput` left.
+    Not linked yet, in order: (1) the pushes of `+to-straight` with `cond`
+    a nonempty treap (the third push is `&` there; `tsn_pre1` hard-codes
+    `(A 1)` in `tsS5N`, so the state of the core needs a `proxies`
+    parameter), and from them the hypotheses of `tsm_core` on the real
+    core: `hu` is `tsm_unproxy`, `hren` is `tsn_ren`, `hN`, `hL`, `hB`,
+    `hT`, `hK` are slots, `hU` (the bunt of `(unit @uvre)`) and `hRB` (the
+    bunt of the sample of `tsmGate`, `[[0 *blob] [~ gen]]`) are kernel
+    facts on a symbolic spine: `evalFuel` on a subject whose tail is
+    `spineN [r1 .. r16] compTypes` reduces in the kernel with the `r_i`
+    free (checked for the `(map @uwoo blob)` part of `tsmRepBuntF`, which
+    gives `~`), as long as no free variable is returned whole by a slot
+    (`slotAtPath x []` with `x` free does not reduce), so the `[0 14]`
+    part is split off with `nock_cell`; (2) `TsAt` without its hypothesis
+    on `cond` (the gate on `tsSample` for every `cond`: `tsn_at` when
+    `cond` is empty, `tsm_core` and `toStraightF_run` otherwise); (3) the
+    end of `+compile-unary` for code with a proxy: `comp_kerf_all` then
+    that `TsAt`, against `finishLU`/`finishLUC`.
