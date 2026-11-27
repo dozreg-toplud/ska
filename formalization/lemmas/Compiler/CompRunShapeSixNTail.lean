@@ -11,7 +11,8 @@ gives, of `q` on `F2`, `+laze-sect`, `+laze-past-fork` over `p`, `this` if `+laz
 (`sixBranch_tail`), `sixFork` is `+laze-branch` then it on `[%next g1]`, `[%next g0]`,
 `[%next this]` (`sixFork_tail`).
 
-* **`six_tail`**: on every subject `[X [LEP rsS]]` whose `F1`, `F2`, `F3` give the goals' nouns,
+* **`six_tail`**: on every subject `[X [LEP rsS]]` whose `F1`, `F2`, `F3` give the goals' nouns
+  (`F3` reads at most `this` of the subject),
   from the runs of `r`, `q`, `p` on `RsAtE` at the rest `y`.
 -/
 
@@ -67,7 +68,8 @@ theorem six_tail (env : ShapeEnv) (p q r : Nomm) (sup : Option Nomm) (gr gq gp :
     (X LEP s goalN F1 F2 F3 : Noun)
     (hF1 : ∀ Z, nock (C X Z) F1 = some gr.toNoun)
     (hF2 : ∀ a Z, nock (C a (C X Z)) F2 = some gq.toNoun)
-    (hF3 : ∀ a b c Z, nock (C a (C b (C c (C X Z)))) F3 = some gp.toNoun) :
+    (hF3 : ∀ a b c Z, nock (C a (C b (C c (C X (C LEP (C s (C (C (C (C (A 0x73696874) (A 0)) (A 0)) (C (A 0) (A 0)))
+      Z))))))) F3 = some gp.toNoun) :
     nock (C X (C LEP (rsS s (Nomm.n6 p q r).toNoun goalN (supNoun sup) (rsDoor st y ctx)))) (sixTailN F1 F2 F3)
       = (sixTailM env (runShape env sup p) (runShape env sup q) (runShape env sup r) p gr gq gp st).map
           fun p => C p.1.toNoun (rsGenNoun p.2 y) := by
