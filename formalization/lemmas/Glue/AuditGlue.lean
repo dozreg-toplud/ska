@@ -78,6 +78,7 @@ import lemmas.Compiler.CompSccLoopMemDone
 import lemmas.Ska.CompGen
 import lemmas.Glue.InlineAnnot
 import lemmas.Glue.InlineCheck
+import lemmas.Glue.GuardCallsMono
 
 /-!
 # Audit of `formalization/LEDGER.md`
@@ -539,5 +540,31 @@ namespace Formalization
 #print axioms SkaModel.Glue.inlWalk_annot
 #print axioms SkaModel.Glue.inlinedM_annot
 #print axioms SkaModel.Glue.inlAnnot_of
+
+-- eighth pass, track G: `rawEntry` with calls (2.c)
+#check @SkaModel.Glue.ClqYes
+#check @SkaModel.Glue.EntryCell
+#check @SkaModel.Glue.CelGuardP
+#check @SkaModel.Glue.CellOut
+#check @SkaModel.Glue.CelAnn
+#check @SkaModel.Glue.GuardMonoC
+#check @SkaModel.Glue.GuardNaryC
+#check @SkaModel.Glue.ReadsInMono
+#check @SkaModel.Glue.ReadsInNary
+#check @SkaModel.Glue.BlocksOKA
+#check @SkaModel.Glue.InvA
+#print axioms SkaModel.Glue.einvP_step
+#print axioms SkaModel.Glue.entryOK_ofP
+#print axioms SkaModel.Glue.entryOK_of'
+#print axioms SkaModel.Glue.einvK_step
+#print axioms SkaModel.Glue.entryOK_ofK
+#print axioms SkaModel.Glue.celAnn_of_P
+#print axioms SkaModel.Glue.entryMono_of
+#print axioms SkaModel.Glue.entryNary_of
+#print axioms SkaModel.Glue.celAnn_of_blocksOKA
+#print axioms SkaModel.Glue.guardMonoC_fragX
+#print axioms SkaModel.Glue.emitA
+#print axioms SkaModel.Glue.mtl_tail
+#print axioms SkaModel.Glue.mtl_kpa
 
 end Formalization
