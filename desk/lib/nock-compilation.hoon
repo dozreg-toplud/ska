@@ -2733,6 +2733,12 @@
       ?^  arm  [%mean nomm.h b.u.arm nomm.f f.fol k.u.arm]
       [%11 [a.fol nomm.h] nomm.f f.fol]
     ::
+        [%11 [a=^ h=^] f=*]
+      ::  a tag that is a cell names no hint: the clue is computed and
+      ::  dropped, as under the tag %$
+      ::
+      fol-loop(fol [%11 [%$ h.fol] f.fol])
+    ::
         [%12 p=^ q=*]
       =^  p  gen  fol-loop(fol p.fol)
       =^  q  gen  fol-loop(fol q.fol)
