@@ -15,6 +15,9 @@ import lemmas.Ska.SccLoopSoftFinCheck
 import lemmas.Compiler.CompSccLoopSoftDone
 import lemmas.Compiler.CompSccLoopStrDec
 import lemmas.Compiler.CompSccLoopSoftEmit
+import lemmas.Compiler.CompSccLoopSoftEmitAll
+import lemmas.Compiler.CompSccLoopSoftMemDone
+import lemmas.Ska.SccLoopSoftReqCheck
 
 /-! The axioms of the theorems of `Ska/SccLoop.lean`, `Ska/SccLoopMsg.lean` and `Ska/SccLoopCycle.lean`
 (README Gaps 21): each must print
@@ -156,3 +159,36 @@ open Formalization.SkaModel.SccLoop
 #print axioms Formalization.Compiler.se_nil
 #print axioms Formalization.Compiler.se_end
 #print axioms Formalization.Compiler.csiDec_of_loop
+#print axioms Formalization.Compiler.axsRel_put
+#print axioms Formalization.Compiler.sa_trap
+#print axioms Formalization.Compiler.se_axs
+#print axioms Formalization.Compiler.sx_this
+#print axioms Formalization.Compiler.sk_gate
+#print axioms Formalization.Compiler.sk_trap
+#print axioms Formalization.Compiler.se_cut
+#print axioms Formalization.Compiler.se_ops
+#print axioms Formalization.Compiler.se_tries
+#print axioms Formalization.Compiler.se_hed
+#print axioms Formalization.Compiler.se_bad
+#print axioms Formalization.Compiler.softCuts_tops
+#print axioms Formalization.Compiler.se_pre
+#print axioms Formalization.Compiler.se_emit
+#print axioms Formalization.Compiler.se_emit_hE
+#print axioms Formalization.Compiler.sask_gate
+#print axioms Formalization.Compiler.czS_loop
+#print axioms Formalization.Compiler.czS_all
+#print axioms Formalization.Compiler.comp_coerce_lazy_allS
+#print axioms Formalization.Compiler.sd_trapP
+#print axioms Formalization.Compiler.sd_treeS
+#print axioms Formalization.Compiler.finishLFCS_tail
+#print axioms Formalization.Compiler.fin_gate_ts_BS
+#print axioms Formalization.Compiler.fin_gate_finishLFCS_B
+#print axioms Formalization.Compiler.fin_gate_ts_BSC
+#print axioms Formalization.Compiler.fin_gate_finishLFCS_BC
+#print axioms Formalization.SkaModel.SccLoop.SoftReqCheck.reqTNB_spec
+#print axioms Formalization.Compiler.memDoneMS_eqP
+#print axioms Formalization.Compiler.finishLFCS_need
+#print axioms Formalization.Compiler.mem_gate_done_RS
+#print axioms Formalization.Compiler.mem_done_stepS
+#print axioms Formalization.Compiler.memGate_done_realS
+#print axioms Formalization.Compiler.memGate_done_KS
