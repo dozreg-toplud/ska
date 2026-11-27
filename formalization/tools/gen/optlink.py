@@ -797,6 +797,53 @@ elif WHICH == 'alias':
     jimms_bunt, jimms = gate_of(dig(bat, [30]))
     pinfo_bunt, pinfo = gate_of(dig(bat, [62]))
     walk = dig(bat, [63])
+    # PINFO = [8 MURN [6 [5 [1 0] [0 2]] [1 BUNT] [8 ROLL [6 LEN [0 2] EDIT]]]]
+    e8, pimurn, pirest = seq(pinfo, 3)
+    assert e8 == ('A', 8)
+    e6, pit0, pibunt, pir2 = seq(pirest, 4)
+    assert e6 == ('A', 6) and eqn(pit0, ('C', ('A', 5), ('C', ('C', ('A', 1), ('A', 0)), ('C', ('A', 0), ('A', 2)))))
+    e8, piroll, pir3 = seq(pir2, 3)
+    assert e8 == ('A', 8)
+    e6, pilen, pij, piedit = seq(pir3, 4)
+    assert e6 == ('A', 6) and eqn(pij, ('C', ('A', 0), ('A', 2)))
+    pigate = dig(piroll, [7, 7, 6, 3, 3, 7, 7, 2, 3])
+    # JINFO, JIMMS = [8 [1 TRAP] [9 2 [0 1]]]
+    def trap_of(g):
+        e8, t1, call = seq(g, 3)
+        assert e8 == ('A', 8) and norm(t1)[0] == 'C' and norm(norm(t1)[1]) == ('A', 1)
+        assert eqn(call, ('C', ('A', 9), ('C', ('A', 2), ('C', ('A', 0), ('A', 1)))))
+        return norm(norm(t1)[2])
+    jitrap = trap_of(jinfo)
+    # the prelude: (~(run by rev) (bake silt (list @uwoo)))
+    l2n = slot(0x1ffff, optc)
+    l1n = slot(0x3ffff, optc)
+    bakearm = norm(slot(0xbef7f7, l2n))
+    bake_bunt, bake_body = ct_arm_of(bakearm)
+    # BAKE BODY = [8 [7 [0 13] [9 2 [0 1]]] [[1 INNER] [0 1]]]
+    bake_inner = dig(bake_body, [7, 2, 3])
+    assert eqn(dig(bake_body, [6]), ('C', ('A', 7), ('C', ('C', ('A', 0), ('A', 13)), ('C', ('A', 9), ('C', ('A', 2), ('C', ('A', 0), ('A', 1)))))))
+    listarm = norm(slot(1407, l1n))
+    # LIST = [8 [8 [1 0] [[1 X] [0 1]]] [[1 LISTB] [0 1]]], LISTB = [8 [1 0] [[1 MB] [0 1]]]
+    list_b = dig(listarm, [7, 2, 3])
+    list_mb = dig(list_b, [7, 2, 3])
+    # the @uwoo mold in alRevInit: [8 [1 0] [[1 UWOO] [0 1]]]
+    def find_path(n, pred, ax=1):
+        n = norm(n)
+        if pred(n):
+            return ax
+        if n[0] != 'C':
+            return None
+        return find_path(n[1], pred, 2 * ax) or find_path(n[2], pred, 2 * ax + 1)
+    def is_uwoo(n):
+        if n[0] != 'C' or norm(n[1]) != ('A', 8):
+            return False
+        t = norm(n[2])
+        return (t[0] == 'C' and eqn(t[1], ('C', ('A', 1), ('A', 0))) and norm(t[2])[0] == 'C'
+                and contains_atom(norm(t[2])[1], 0x6f6f7775))
+    uax = find_path(revinit, is_uwoo)
+    assert uax is not None
+    uwoo = dig(revinit, [uax, 7, 2, 3])
+    jmtrap = trap_of(jimms)
     # WALK = [6 END [[0 895] [0 12]] [7 [0 1] [8 PRE [6 UNT UNB [7 [0 1] [8 INFO R3]]]]]]
     pre = dig(walk, [15, 7, 6])
     r1 = dig(walk, [15, 7, 7])
@@ -844,16 +891,31 @@ elif WHICH == 'alias':
     for i, fi in enumerate(jrf):
         D.append(('alJRegF%d' % (i + 1), fi, 'Field %d of the `info-reg` that `join-reg` makes.' % (i + 1)))
     defs += D + [
+        ('alBakeBunt', bake_bunt, 'The sample bunt of `+bake` (arm `0xbef7f7` of `layer2`).'),
+        ('alBakeInner', bake_inner, 'The gate `+bake` makes: `(f arg)`.'),
+        ('alBakeB', bake_body, 'The body of `+bake`: the bunt `*a`, then the gate.'),
+        ('alBakeArm', bakearm, 'The arm `+bake` of `layer2`.'),
+        ('alListMB', list_mb, 'The body of the mold `(list item)`.'),
+        ('alListB', list_b, 'The body of `+list`: the mold.'),
+        ('alListArm', listarm, 'The arm `+list` (`1407` of `layer1`).'),
+        ('alUwooB', uwoo, 'The body of the mold `@uwoo` in `alRevInit`.'),
         ('alGenBunt', genbunt, 'The bunt of `gen`.'),
         ('alRevInit', revinit, '`(~(run by rev) (bake silt (list @uwoo)))`.'),
         ('alRnB', rn, 'The body of `rn`: `(~(gut by old.gen) r r)`.'),
         ('alRnBunt', rn_bunt, 'Its sample bunt.'),
         ('alJRegB', jreg, 'The body of `join-reg`.'),
         ('alJRegBunt', jreg_bunt, 'Its sample bunt.'),
+        ('alJITrap', jitrap, 'The trap of `join-info`.'),
         ('alJInfoB', jinfo, 'The body of `join-info`.'),
         ('alJInfoBunt', jinfo_bunt, 'Its sample bunt.'),
+        ('alJMTrap', jmtrap, 'The trap of `join-imms`.'),
         ('alJImmsB', jimms, 'The body of `join-imms`.'),
         ('alJImmsBunt', jimms_bunt, 'Its sample bunt.'),
+        ('alPIMurn', pimurn, '`have`: `(murn ins same)` in `param-info`.'),
+        ('alPIGate', pigate, 'The gate of the `+roll` in `param-info`: `(join-reg a b)`.'),
+        ('alPIRoll', piroll, '`joined`: the `+roll` of `join-reg` over `t.have`.'),
+        ('alPILen', pilen, '`=((lent have) (lent ins))`.'),
+        ('alPIEdit', piedit, '`joined(hed-of ~, tel-of ~, has-hed ~, has-tel ~, dec-of ~)`.'),
         ('alPInfoB', pinfo, 'The body of `param-info`.'),
         ('alPInfoBunt', pinfo_bunt, 'Its sample bunt.'),
         ('alPre', pre, '`pre`: `~(tap in (~(get ju rev.gen) o))`.'),

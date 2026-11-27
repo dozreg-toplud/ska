@@ -319,6 +319,10 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/OptLinkAlNouns.lean` | The nouns of `+alias` (arm `725` of `optC`, `al_at_cut`, `aliasBody_eq`), cut by `tools/gen/optlink.py alias` at each phase of the plan of Gaps 13: the five arms of its `\|^` core, the prelude, and the walk `alWalk` cut at each `=/` and `=^`, one noun per case of the `?-` over the op (`alOpImm` to `alOpLast`) and over the end (`alFinClq` to `alFinLast`). |
 | `Compiler/OptLinkAlRn.lean` | Phase 1 of `+alias` (Gaps 13): `OldRel N f`, the map `old.gen` as the renaming `f` of the model (`oldRel_nil`: the bunt is `id`; `old_put`: `+put:by` is `updA`); **`rn` is `f`** (`al_rn`). |
 | `Compiler/OptLinkAlJReg.lean` | Phase 2 of `+alias` (Gaps 13): `infoN` (the noun of an `info-reg`), `InfoRel N x` (the sets by `SawRel`, `is-loob` up to `loobImm`), `sawRel_int` (`+int:in` is the filter), `alCtx` (the core the arms of the `\|^` core run in); **`join-reg` of related nouns is related to `joinReg`** (`al_jreg`, each of the eight fields its own fact `f1` to `f8`, the loob tests `al_jr_la`, `al_jr_lb`). |
+| `Compiler/OptLinkAlPInfo.lean` | Phase 3 of `+alias` (Gaps 13): `UInfoRel` (a `(unit info-reg)` noun holds an optional fact), the body of `param-info` cut into `alPIMurn`, `alPIRoll` (gate `alPIGate`), `alPILen`, `alPIEdit`, one fact each (`pi_have`, `pi_murn`, `pi_gate`, `pi_roll`, `pi_len`, `pi_edit`); **`param-info` of related units is related to `paramInfo`** (`al_pinfo`). |
+| `Compiler/OptLinkAlJInfo.lean` | Phase 4 of `+alias` (Gaps 13): `JIR`, the loop of `join-info` (the trap `alJITrap`), one constructor per branch with `=(a b)` (`eq`) and the four `+uni:by` branches (`mg`, `mn`, `ng`, `nn`, `UniByR`), run by `ji_loop`; `jiP_of_maps` (on two maps whose values `join-reg` takes: keys of both, the value `join-reg` of the two or, from an equal subtree, the value itself, `JV`); `InfoMapRel` (a map of atoms to related `info-reg` nouns, the same keys), `infoRel_joinReg_both`, `infoRel_joinRegE_of`; **`join-info` of related maps is related to `joinInfoA`** (`al_jinfo`). |
+| `Compiler/OptLinkAlJImms.lean` | Phase 5 of `+alias` (Gaps 13): `JMR`, the loop of `join-imms` (the trap `alJMTrap`), as `JIR` with the equal root split into `same` (the `+int:in`, `IntR`, not empty) and `same0` (empty: `+uni:by` of the halves), run by `jm_loop`; `jmP_of_maps` (on maps of sets that are not empty, `SetVals`: a key kept exactly where the two sets meet, `Kp`, its value their intersection, `VSpec`); `ImmsRel` (each value a set with the members of the list at its key, an empty list absent); **`join-imms` of related jugs is related to `joinImmsA`** (`al_jimms`). |
+| `Compiler/OptLinkAlPrelude.lean` | Phase 6 of `+alias` (Gaps 13): the prelude `(~(run by rev) (bake silt (list @uwoo)))`: `+bake` (`bake_at`, arm `0xbef7f7` of `layer2`, nouns `alBakeArm`, `alBakeB`, `alBakeInner`) runs the mold `(list @uwoo)` (`+list`, `list_at`, arm `1407` of `layer1`, `alListArm`, `alListB`, `alListMB`) on its default `~` for its bunt (`list_mb`), and its gate slams `+silt` (`bake_inner`, `siltF_saw`); **`rev.gen` is `JugRel` to `dedupN` of the jar** (`al_revinit`, by `run_by_P`); **the gate body is the walk `alWalk` on `gen` = `alGen0 R0`** (`al_prelude`). |
 | `Compiler/AuditOptLink.lean` | `#print axioms` of the main theorems of `Compiler/OptLink*.lean`; `OptLinkBase.lean` also has `+rep` forward (`rep_gate_fwd`) and against a relation (`rep_gate_rel`). |
 | `Ska/Types.lean` | Models of the IR types (`Bell`, `Sock`, `Cape`, `Pole`, `Termin`, `Blob`, `Straight`, `Tone`, ...), each with its Hoon noun layout. |
 | `Ska/Mink.lean`, `Ska/MinkTrace.lean` | Models of `+mink`, `+mook` and `+mock`; what Nock computes, `+mink` returns (`mink_of_evalH`, with `EvalH` the same as `Eval`: `EvalH.toEval`, `Eval.toEvalH`), also on a dynamic hint whose tag is a cell (`eval_cell_tag`); with no scry gate, what `+mink` returns as `[%0 p]` Nock computes (`evalH_of_minkF_nil`, `eval_of_minkF_nil`). |
@@ -2257,10 +2261,10 @@ import only its theorems.  So:
    | --- | --- | --- | --- | --- | --- |
    | 1 | `rn` | `alRnB` | 23 | `+gut:by` | `g.old` (`OldRel`: `gut old r r` is `A (g.old r)`) |
    | 2 | `join-reg` | `alJRegB` | 177 | `+int:in` (`int_in`) | `joinReg` |
-   | 3 | `param-info` | `alPInfoB` | 134 | `+murn`, `+same`, `+roll`, `+lent`, `join-reg` | `paramInfo` |
-   | 4 | `join-info` | `alJInfoB` | 300 | `+mor`, `+gor`, `+uni:by` (`UniByR`), `join-reg` | `joinInfoA` (a new loop relation in the style of `IntR`: keys the intersection, the value `join-reg` of the two or, under an equal subtree, the value itself) |
-   | 5 | `join-imms` | `alJImmsB` | 340 | `+int:in`, `+uni:by` | `joinImmsA` (an empty set dropped) |
-   | 6 | prelude | `alGenBunt`, `alRevInit` | 97 | `+run:by` (`run_by`), `+bake`, `+silt` (`silt_gate`) | the start state of `aliasM` (`rev` by `JugRel` to `dedupN` of the jar) |
+   | 3 | `param-info` | `alPInfoB` | 134 | `+murn`, `+same`, `+roll`, `+lent`, `join-reg` | `paramInfo`: done, `al_pinfo` (`UInfoRel` on the units) |
+   | 4 | `join-info` | `alJInfoB` | 300 | `+mor`, `+gor`, `+uni:by` (`UniByR`), `join-reg` | `joinInfoA`: done, `al_jinfo` (loop relation `JIR`, `ji_loop`, `jiP_of_maps`; maps by `InfoMapRel`) |
+   | 5 | `join-imms` | `alJImmsB` | 340 | `+int:in`, `+uni:by` | `joinImmsA`: done, `al_jimms` (loop relation `JMR`, `jm_loop`, `jmP_of_maps`; jugs by `ImmsRel`, an empty set dropped) |
+   | 6 | prelude | `alGenBunt`, `alRevInit` | 97 | `+run:by` (`run_by_P`), `+bake`, `+list`, `+silt` (`silt_gate`) | the start state of `aliasM` (`rev` by `JugRel` to `dedupN` of the jar): done, `al_revinit`, `al_prelude` (the body is `alWalk` on `alGen0 R0`) |
    | 7 | end of the walk, `pre` | in `alWalk`, `alPre` | 7 + 35 | `+get:ju`, `+tap:in` (`tap_in`) | `aliasWalk []`; `g.rev o` up to order |
    | 8 | unreachable block | `alUnT`, `alUnB` (`alUnRoll`) | 136 | `+got:by`, `+get-jmps`, `+roll`, `+del:ju` | the first branch of `aliasBlock` |
    | 9 | facts at the start | `alInfo` (`alEntry` 69, `alJoin` 608: `alJnRoll` 81, `alJnPreB`, `alJnRef` 512 with `alJnBrn` 207, `alJnBrz` 173, `alJnClq` 87) | 687 | `+put:by`, `+got:by`, `join-info`, `+jab:by` | `entryInfo`, `aliasStart` |
@@ -2272,9 +2276,21 @@ import only its theorems.  So:
    | 15 | stores, next turn | `alTail` | 113 | `+put:by` | the record that `aliasBlock` returns |
    | 16 | walk, gate | `alWalk`, `alBodyCut` | | | `aliasWalk` by induction on `topo`, `aliasM`, then `AliasLink` |
 
-   Linked so far: phase 1 (`al_rn`, `OptLinkAlRn.lean`) and phase 2
-   (`al_jreg`, `OptLinkAlJReg.lean`, with `InfoRel` and `infoN`); next is
-   phase 3, `param-info`, then the loop relation of `join-info`.  The
+   Linked so far: phase 1 (`al_rn`, `OptLinkAlRn.lean`), phase 2
+   (`al_jreg`, `OptLinkAlJReg.lean`, with `InfoRel` and `infoN`), phase 3
+   (`al_pinfo`, `OptLinkAlPInfo.lean`), phase 4 (`al_jinfo`,
+   `OptLinkAlJInfo.lean`), phase 5 (`al_jimms`, `OptLinkAlJImms.lean`) and
+   phase 6 (`al_revinit`, `al_prelude`, `OptLinkAlPrelude.lean`: the gate
+   of `(bake silt (list @uwoo))` is built by running the mold `(list @uwoo)`
+   on its default `~`, which returns `~` without calling `@uwoo`); next is
+   phase 7, the end of the walk and `pre`, then the walk phases in the order
+   of the table, with the model-side lemmas of Gaps 15 (merge
+   `dozreg/formalization-ska` first).  The
+   loops of `join-info` and `join-imms` went through as `int_loop` did: one
+   `nock_open` of the trap and one `simp` per constructor; the builders
+   follow `intP_of_sets` (induction on `uniSz a + uniSz b`), the order
+   facts of the four `+uni:by` branches closed by `grind` after
+   `kin_cutR`/`kin_cutL`/`kin_node`.  The
    pattern that kept each step small: cut the body into named fields in
    `optlink.py` (the field nouns of `join-reg` are `alJRegF1` to
    `alJRegF8`), prove one fact per field with only that field unfolded
