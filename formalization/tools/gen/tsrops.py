@@ -106,8 +106,69 @@ units of `rewrite-args`, the blocks `bs`. -/
 structure MapCoreM (bs : TreapMap mugF Blob) (rr : Nat → RM (TreapMap mugF) Nat) (R : Noun) : Prop where
   hrer : RerM rr R
   hL : slot? 0x7fffffff R = some layer2
-  hU : ∀ J G, nock (C tsmArgBody (C J (C tsCoreBat (C G R)))) tsmArgBuntF1 = some (C (A 0) G)
+  hU : ∀ J (st : Nat × TreapMap mugF Nat), nock (C tsmArgBody (C J (C tsCoreBat (C (rmN st) R)))) tsmArgBuntF1
+    = some (C (A 0) (rmN st))
   hB : ∀ G, slot? 4094 (C tsCoreBat (C G R)) = some (HoonMap.toNoun Blob.toNoun bs)
+
+/-- **`rewrite-args` with the state**, `tsr_args` with the bunt of the units
+asked only at the states `rmN st` (a cell, which the kernel can reduce). -/
+theorem tsr_argsM {rr : Nat → RM (TreapMap mugF) Nat} {R : Noun} (hrer : RerM rr R)
+    (hL : slot? 0x7fffffff R = some layer2)
+    (hU : ∀ J (st : Nat × TreapMap mugF Nat), nock (C tsmArgBody (C J (C tsCoreBat (C (rmN st) R)))) tsmArgBuntF1
+      = some (C (A 0) (rmN st))) (j : Jmp)
+    (st : Nat × TreapMap mugF Nat) :
+    nock (C tsmArgBody (C (Jmp.toNoun j) (C tsCoreBat (C (rmN st) R)))) tsmArgBody
+      = (rewriteArgs rr j st).map fun p => C (Jmp.toNoun p.1) (rmN p.2) := by
+  obtain ⟨args, there⟩ := j
+  cases args with
+  | nil =>
+    conv => { lhs; arg 2; unfold tsmArgBody }
+    simp [nock_exec, Jmp.toNoun, listNoun, rewriteArgs, pure, StateT.pure]
+  | cons a0 as =>
+    have hsp := spin_arm_l2
+    rw [spin_gate_eq] at hsp
+    have hs1 := spin.arm_at
+    have hSpin := spin_gate_T (unitNoun A) (unitNoun A) rmN layer2 spinIn_layer2 tsmArgG1 (C (A 0) (rmN st))
+      (C tsmArgBody (C (Jmp.toNoun ⟨a0 :: as, there⟩) (C tsCoreBat (C (rmN st) R))))
+      (fun a s => argStep rr a s) (a0 :: as) st
+      (fun a _ s => tsr_argG hrer _ _ _ a s)
+    rw [spinM_mapM] at hSpin
+    have hm : (fun a => match a with
+        | Option.none => (pure Option.none : RM (TreapMap mugF) (Option Nat))
+        | some r => do let r1 ← rr r; pure (some r1)) = argStep rr := by
+      funext a; cases a <;> rfl
+    have hu := hU (Jmp.toNoun ⟨a0 :: as, there⟩) st
+    have hR : rewriteArgs rr ⟨a0 :: as, there⟩ st
+        = (List.mapM (argStep rr) (a0 :: as) st).bind (fun p => some ((⟨p.1, there⟩ : Jmp), p.2)) := by
+      unfold rewriteArgs
+      rw [if_neg (List.cons_ne_nil _ _), ← hm]
+      rfl
+    rw [hR]
+    cases em : List.mapM (argStep rr) (a0 :: as) st with
+    | none =>
+      rw [em] at hSpin
+      simp only [Option.map_none] at hSpin
+      rw [← listNoun_map_listN] at hSpin
+      simp only [Jmp.toNoun, listNoun, List.map_cons] at hSpin hu
+      conv => { lhs; arg 2; unfold tsmArgBody }
+      generalize tsmArgBuntF1 = UB at hu ⊢
+      generalize tsCoreBat = K at hSpin hu ⊢
+      generalize tsmArgG1 = AG at hSpin ⊢
+      generalize tsmArgBody = AB at hSpin hu ⊢
+      generalize rmN st = GS at hSpin hu ⊢
+      simp [nock_exec, Jmp.toNoun, listNoun, hL, hs1, spin.axis, hsp, hSpin, hu]
+    | some q =>
+      rw [em] at hSpin
+      simp only [Option.map_some] at hSpin
+      rw [← listNoun_map_listN, ← listNoun_map_listN] at hSpin
+      simp only [Jmp.toNoun, listNoun, List.map_cons] at hSpin hu
+      conv => { lhs; arg 2; unfold tsmArgBody }
+      generalize tsmArgBuntF1 = UB at hu ⊢
+      generalize tsCoreBat = K at hSpin hu ⊢
+      generalize tsmArgG1 = AG at hSpin ⊢
+      generalize tsmArgBody = AB at hSpin hu ⊢
+      generalize rmN st = GS at hSpin hu ⊢
+      simp [nock_exec, Jmp.toNoun, listNoun, hL, hs1, spin.axis, hsp, hSpin, hu]
 
 theorem rewriteJump_eq (rr : Nat → RM (TreapMap mugF) Nat) (bs : TreapMap mugF Blob) (j : Jmp)
     (st : Nat × TreapMap mugF Nat) :
@@ -128,7 +189,8 @@ theorem rewriteHop_eq (rr : Nat → RM (TreapMap mugF) Nat) (bs : TreapMap mugF 
 JMP = '''/-- **`rewrite-{name}` with the state**: `(rewrite-args (chase {flag} j))`. -/
 theorem tsr_{short} {{rr : Nat → RM (TreapMap mugF) Nat}} {{R : Noun}} (bs : TreapMap mugF Blob) (hrer : RerM rr R)
     (hL : slot? 0x7fffffff R = some layer2)
-    (hU : ∀ J G, nock (C tsmArgBody (C J (C tsCoreBat (C G R)))) tsmArgBuntF1 = some (C (A 0) G))
+    (hU : ∀ J (st : Nat × TreapMap mugF Nat), nock (C tsmArgBody (C J (C tsCoreBat (C (rmN st) R)))) tsmArgBuntF1
+      = some (C (A 0) (rmN st)))
     (hB : ∀ G, slot? 4094 (C tsCoreBat (C G R)) = some (HoonMap.toNoun Blob.toNoun bs)) (j : Jmp)
     (st : Nat × TreapMap mugF Nat) :
     nock (C {body} (C (Jmp.toNoun j) (C tsCoreBat (C (rmN st) R)))) {body}
@@ -147,7 +209,7 @@ theorem tsr_{short} {{rr : Nat → RM (TreapMap mugF) Nat}} {{R : Noun}} (bs : T
     simp [nock_exec, h1519, h21, tsChaseArm, hch, loob]
   | some j' =>
     rw [e] at hch
-    have ha := tsr_args hrer hL hU j' st
+    have ha := tsr_argsM hrer hL hU j' st
     generalize tsCoreBat = K at hch h1519 h21 ha ⊢
     conv => {{ lhs; arg 2; unfold {body} }}
     simp [nock_exec, h1519, h21, tsChaseArm, hch, ha, loob]
