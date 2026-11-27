@@ -28,7 +28,8 @@ writes `CompSevenV.lean`, `fivev.py` writes `CompFiveV.lean`, `fourv.py`
 writes `CompFourV.lean`, `tenv.py` writes `CompTenV.lean`, `runlc.py` writes
 `CompRunLC.lean`, `runlcm.py` writes `CompRunLCM.lean` (from `CompRunLC.lean`), `kernlt.py` prints `kernBoth_lt` and `kernLoop_lt` of
 `CompWholeKern.lean` (from `CompUnproxyRegs.lean`), `walkdi.py` prints
-`walkLazy_okDI` of `CompWholeKern.lean` (from `CompCollapseGate.lean`); run each from
+`walkLazy_okDI` of `CompWholeKern.lean` (from `CompCollapseGate.lean`), `monotry.py` cuts the trap of
+`+mono-try-call` for `CompRunDirectMono.lean`, `monoblk.py` cuts `crD7Nm` for `CompRunDirectMonoB.lean`; run each from
 `formalization/`, every extraction and replacement asserts its match count).
 `mrops.py` writes the 25 lemmas `mr_op_<tag>` and `mr_op` of
 `CompMapRegs.lean` between the lines `-- BEGIN mrops` and `-- END mrops`.
@@ -258,7 +259,9 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompRunDirectC.lean` | The direct call that emits a block (README Gaps 19): `RunAt` (one instance of the run link), `CompRunAtM` (the link at `mono` `|` with `sup` the noun of `msup`, for every `x` with `NoSoft` and `E x`; `cram_of_r`), `CallNoun` (what the call reads of the rest of the compiler as nouns: `call-cole`, `jets-hot`, `+callee-need`, `+callee-sure`, the push of `sof`), the tail (`crd_cnf`, `crd_ctail`), step 7 under `mono` `|` (`crd_blk_done`, `crd_blk_next`, model `crdBlockM`), steps 7 to 14 (`crd_from7`), steps 0 to 6 (`crd_head6`), the drop test on every goal (`crd_test_all`, `crdDrop`), the model (`crd_model_call`), **`comp_run_n2_call`** (the case `%2` on a call that is not dropped, every goal with `GInv`, one `RunAt` instance at `mono` `|`). |
 | `Compiler/CompRunDirectP.lean` | The direct call under `mono` `|` from `PartL` (README Gaps 19): `km_crdBlockM` (the blocks of step 7 keep counters, `drop`, tags), `linv_need` (`LInv` of `[[ned ~] ~ ~]` with fresh distinct registers), `crd_goals` (the goals of `q` and `p` after the blocks), `crd_hpq` (the runs of `p`, `q` and `CopyH` of `comp_run_n2_call` from `PartL`), `res_n2_call` (`GRes` of the call), **`comp_run_n2_callM`** (the call as `CompRunAtM` with `E x := ∃ sur, CallNoun … x`). |
 | `Compiler/CompRunDirectS.lean` | `+callee-sure` and `+callee-need` (README Gaps 19): `csu_gate` (`+callee-sure`, door arm `4060`, is `env.sure b` under `SureNoun`: `sure.cache`, axis `31` of `cache`, holds `env.sure b` or nothing with `env.sure b = none`; `sureNoun_of_map` on a map noun), `ccc_nary` (`+callee-compiled`, door arm `13791`, on a hit in `nary.cache`), `cne_read` (`+callee-need`, door arm `221180`, with no ring in its read-only cases `NeedRead`: `scc` member with `map-local` or `top`, non-member in `nary.cache`; the state unchanged), `CallNounR`, `callNoun_of_r`, **`comp_run_n2_callR`** (the call as `CompRunAtM` with `CallNounR`). |
-| `Compiler/CompRunDirectMono.lean` | `+mono-try-call` (door arm `437183`) against `monoTryLoop` (README Gaps 19): the nouns (`mtcLoop` the trap, `mtcGB` the gate, `mtc_gb`, `mtc_at`), the trap's subject `mtcT`, the statement `MtcAt`, the trap on `%none` and `%this` (`mtc_none`, `mtc_this`), and the cut of the cell and `%both` branches into five pushes and a last `+emit` (`mtcPAr<i>`, `mtcBOr<i>`, `mtc_loop_eq`); the cell and `%both` cases not linked. |
+| `Compiler/CompRunDirectMono.lean` | `+mono-try-call` (door arm `437183`) against `monoTryLoop` (README Gaps 19): the nouns (`mtcLoop` the trap, `mtcGB` the gate, `mtc_gb`, `mtc_at`), the trap's subject `mtcT`, the statement `MtcAt`, the trap on `%none` and `%this` (`mtc_none`, `mtc_this`), and the cut of the cell and `%both` branches into five pushes and a last `+emit` (`mtcPAr<i>`, `mtcBOr<i>`, `mtc_loop_eq`, by `tools/gen/monotry.py`). |
+| `Compiler/CompRunDirectMonoL.lean` | `+mono-try-call` on a cell and on `%both`, one push per lemma (README Gaps 19): the subject after the pushes `mtcS`, `mtcPA_0` .. `mtcPA_4`, `mtcPA_L` and `mtcBO_0` .. `mtcBO_4`, `mtcBO_L` (`+re`, `+re`, the run on the tail, the run on the head, with `_2n`/`_3n` for a failing run, the split `+emit`, the `%clq` `+emit`), the dispatch `mtc_disp_pair`, `mtc_disp_both`, **`mtc_pair`**, **`mtc_both`**, **`mtc_loop`** (the trap on every need is `monoTryLoop`), **`mtc_gate`** (the gate on `[ned opt [sub pes]]` is `monoTryCall`). |
+| `Compiler/CompRunDirectMonoB.lean` | The direct call under `mono` `&` (README Gaps 19): step 7 (`crdBlockMM`, `monoBlocks_eq`, `crd_blkM_done` on `crD7Dm`, the cut `crNMr<i>` of `crD7Nm` by `tools/gen/monoblk.py` with one lemma per push `crNM_0` .. `crNM_6`, `crNM_L`, `crd7_nm`, `crd_blkM_next`), steps 8 and 9 (`mtc_arm`, `crd_7to9M`: `+mono-try-call` by `mtc_gate`, `sub-ned` `[%this sub-pes]`), the tail against any run model (`RunAtR`, `crdFqR`, `crdTailMR`, `crd_cnfR`, `crd_ctailR`), `crd_from7M` (steps 7 to 14, model `crdCallMM`), `CallNounM` and `crd_head6M` (steps 0 to 6 at any `mono` and `sof`), `crd_model_callM` (`callDM` is `needOrdAllocRegs nb >>= crdCallMM`), **`crd_callM`** (the call `crDCall` at `mono` `A 0`), `callLM_true_direct`. |
 | `Compiler/AuditRunDirect.lean` | `#print axioms` of the theorems of `CompRunDirect*.lean`. |
 | `Compiler/CompRunTenL.lean` | `%10` on every goal with `GInv`, with lazy results (`comp_run_n10L`): `+into` of a lazy need (`comp_into_all`) and the tail (`cr10_tailL`). |
 | `Compiler/CompRunAllL.lean` | **`comp_run_all_l`, `runLinkL`: the run link on every goal with `GInv` for every nomm of the plain class**, every region, `env` and `msup`, given only `slot? 7 ctx = some compK` and `slot? 52 ctx = some cod`; `comp_run_entry_l`; `plainOk_of_indOk` (the fragment `indOk` is in the class); `example`s: `[8 [9 2 [0 1]] c]` for every `c` of the class on every goal with `GInv`, and with `c` a cons whose head calls. |
@@ -3214,17 +3217,41 @@ import only its theorems.  So:
     the model on the cases read: the order `r-t` then `r-h`, the tail's
     run first into `o`, the head's into `o-t`, the `?<` of `%both` after
     both runs, as in `monoTryLoop`.
-    Next, in order: (1) the cell and `%both` cases of the trap, one push
-    at a time on `mtcPAr<i>`/`mtcBOr<i>` (state each step as `nock S_i
-    mtcPAr<i> = nock S_(i+1) mtcPAr<i+1>` with `comp.door` generalized and
-    `genNoun` folded, the runs by `MtcAt` of the parts), then `mtc_loop`
-    by induction and `mtc_gate` (`monoTryCall`); (2) `crD7Dm` (`%done`:
-    `+re`, two `+emit`) and `crD7Nm` (`merge`, `opt`, `pes`) against
-    `monoBlocks`, the step 8 cell branch with `mtc_gate`, step 9 with the
-    need `[%this sub-pes]` (`lazyReg`); (3) the case as a `RunAt` at `mono`
-    `A 0` against `runLCM env true` (`callDM`), with `crd_head6` at any
-    `mono` (its steps do not read it) and `sof` any value (under `mono` `&`
-    it is pushed and never read); (4) `cole`, `hot`, `sof` and the
-    agreement of `NeedRead`/`SureNoun` with `env` as invariants of the
-    compile of an SCC; (5) the miss in `nary.cache` (the recursion
-    above); (6) a class of nomms with direct calls for `comp_run_all_l`.
+    Linked (`Compiler/CompRunDirectMonoL.lean`, 2026-11-27, fourth
+    session): the cell and `%both` cases of the trap, one push per lemma
+    (`mtcPA_<i>`, `mtcBO_<i>`: `nock S_i mtcPAr<i> = nock S_(i+1)
+    mtcPAr<i+1>` with `comp.door` generalized and `genNoun` folded, the two
+    `+re` by `comp_re'`, the two runs by a hypothesis on the run of
+    `mtcLoop` or its failure, the two `+emit` by `cf_emit`; each about a
+    second), `mtc_pair`, `mtc_both` (from `MtcAt` of the parts),
+    **`mtc_loop`** (every need, by induction) and **`mtc_gate`** (the gate
+    is `monoTryCall`).  Linked (`Compiler/CompRunDirectMonoB.lean`): step 7
+    under `mono` `&` against `crdBlockMM` (`monoBlocks` is `crdBlockMM`
+    then `monoTryCall`, `monoBlocks_eq`): `crD7Dm` in one `simp`
+    (`crd_blkM_done`), `crD7Nm` cut into its seven pushes (one `simp` over
+    it was OOM-killed at 3G) with `crd7_nm` up to it (`+simple-next`,
+    `+kerf`, the test of `mono`, the gates `call-op` and `jump-op` kept as
+    `crOG`, `crJG`) and `crd_blkM_next`; steps 8 and 9 (`crd_7to9M`); the
+    tail against any run model `R` (`crd_ctailR`, the same proof as
+    `crd_ctail`); steps 0 to 6 at any `mono` and with the push of `sof`
+    returning any `SOF` (`CallNounM`, `crd_head6M`); the call
+    **`crd_callM`**: `crDCall` at `mono` `A 0` is `needOrdAllocRegs nb >>=
+    crdCallMM R …`, which is `callDM env (R p) (R q)` (`crd_model_callM`,
+    under not dropped, `env.ring b = none`, `env.need b = some nb`), and
+    `callLM env true` on a direct call is `callDM` (`callLM_true_direct`).
+    No departure from the model: the blocks, registers and order of
+    `+mono-try-call` and of `opt`, `pes`, `merge` are those of
+    `monoBlocks`/`monoTryLoop`; `nex-arg` is `[%next (lazy-from-need
+    [%this sub-pes]) ~ call-block]`, `lazyReg` (`crdArg_this`).
+    Next, in order: (1) the case `%2` under `mono` `&` as one theorem from
+    `cr2Dir` (the drop test `crd_test_all` holds at any `mono`), with the
+    runs of `p` and `q` as `RunAtR (runLCM env true)` from `PartL`-like
+    hypotheses at `mono` `A 0` (`crd_goals`, `crd_hpq` read `crdBlockM`:
+    redo them for `monoBlocks`, whose goals `GInv`/`LInv` need
+    `km` of `monoTryLoop`), and `GRes` (as `res_n2_call`); (2) the run
+    link `RunAt` itself at `mono` `A 0` against `runLCM env true` for the
+    other cases (`runLCM_eq` gives it on nomms without a direct call); (3)
+    `cole`, `hot`, `sof` and the agreement of `NeedRead`/`SureNoun` with
+    `env` as invariants of the compile of an SCC; (4) the miss in
+    `nary.cache` (the recursion above); (5) a class of nomms with direct
+    calls for `comp_run_all_l`.
