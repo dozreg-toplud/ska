@@ -248,6 +248,269 @@ theorem rawX_sixP {c a b : Nomm} (xc' : FragX (S := S) c) (xa : FragX (S := S) a
   · exact gLiveK_frame (h.below g0.bo) F1 hj (L2 r e)
   · exact L1 r ((liveK_frameP (S1.below g1.bo) F2 hi1).mp e)
 
+/-! ## A fork-free `%next`: `+fork-sure`, the branches, `+sect`, the tail -/
+
+/-- **What the case `%6` under `%next` asks of the predicate `X`** beyond
+`XOK`: it depends on the blocks only (`+sect` leaves the same blocks, not
+the same map), and it holds after the three blocks of `+fork-sure` (two
+fork blocks at `l`, `l + 1` that hop up with fresh registers to the join at
+`l + 2`, whose parameters are the goal's need and which hops down to `t`). -/
+class XSix (X : Map Blob → Prop) extends XOK X : Prop where
+  ext : ∀ {bl bl' : Map Blob}, X bl → (∀ k, HoonMap.get bl' k = HoonMap.get bl k) → X bl'
+  fork : ∀ {bl bl' : Map Blob} {l t R : Nat} {ned : Need} {a0 a1 : List Nat}, X bl →
+    (∀ k b, HoonMap.get bl k = some b → k < l) → (∀ k b, HoonMap.get bl k = some b → BlobIn (· < R) b) →
+    1 ≤ t → t < l → (∀ x ∈ flattenNeed ned, x < R) → (∀ x ∈ a0, R ≤ x) → (∀ x ∈ a1, R ≤ x) →
+    (flattenNeed ned).Nodup → (∀ k, k < l → HoonMap.get bl' k = HoonMap.get bl k) →
+    HoonMap.get bl' l = some ⟨[], [], Termin.hop ⟨a0.map some, l + 2⟩⟩ →
+    HoonMap.get bl' (l + 1) = some ⟨[], [], Termin.hop ⟨a1.map some, l + 2⟩⟩ →
+    HoonMap.get bl' (l + 2) = some ⟨flattenNeed ned, [], Termin.hop (jmp0 t)⟩ →
+    (∀ k, l + 3 ≤ k → HoonMap.get bl' k = Option.none) → X bl'
+
+instance : XSix (fun _ : Map Blob => True) where
+  ext := fun _ _ => trivial
+  fork := fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ => trivial
+
+theorem sip_sameBlocks {X : Map Blob → Prop} [XSix X] {g g' : Comp.Gen Map} (h : SIP X (upRk g.blocks) g.bo g)
+    (hs : SameBlocks g g') : SIP X (upRk g'.blocks) g'.bo g' := by
+  have E : ∀ k, HoonMap.get g'.blocks k = HoonMap.get g.blocks k := hs.2.2.2.2.2.2
+  have R : upRk g'.blocks = upRk g.blocks := funext fun k => by unfold upRk; rw [E]
+  have B : g'.bo = g.bo := hs.2.1
+  rw [R, B]
+  exact ⟨by rw [hs.2.2.2.1]; exact h.drop, by rw [B]; exact h.bo1,
+    fun k b hb => by rw [B]; rw [E] at hb; exact h.lab k b hb,
+    fun k b hb => by rw [hs.1]; rw [E] at hb; exact h.regs k b hb,
+    fun o b hb => by rw [E] at hb; exact h.nd o b hb,
+    fun o o' b b' r h1 h2 => by rw [E] at h1 h2; exact h.cr o o' b b' r h1 h2,
+    fun k b hb => by rw [E] at hb; exact h.tr k b hb,
+    fun k b hb => by rw [E] at hb; exact h.jr k b hb, by omega, h.rk, h.rlo, XSix.ext h.x E⟩
+
+/-- At a fork block, then the join: a register live there and not in the
+branch's copy of the need is live at the goal's continuation and not in
+its need. -/
+theorem liveK_fork {bl bl0 : Map Blob} {K : Nat → Nat → Prop} {o j t L : Nat} {sur s : Need} {r : Nat}
+    (h0 : HoonMap.get bl o = some ⟨[], [], Termin.hop ⟨(flattenNeed s).map some, j⟩⟩)
+    (hj : HoonMap.get bl j = some ⟨flattenNeed sur, [], Termin.hop (jmp0 t)⟩)
+    (hd : DownBelowP bl0 L) (he : ∀ k, k < L → HoonMap.get bl k = HoonMap.get bl0 k) (ht : t < L)
+    (h : LiveK bl K o r) (hn : ¬ NMem s r) : LiveK bl0 K t r ∧ ¬ NMem sur r := by
+  obtain ⟨b, hb, hr⟩ := liveK_cases h
+  rw [h0] at hb; cases hb
+  rcases hr with ⟨-, hr⟩ | ⟨j', hj', hl, -⟩
+  · simp only [OpsRF, defsOf, finRegs, jmpRegs] at hr
+    rcases hr with hr | ⟨-, hr⟩
+    · exact hr.elim
+    · simp only [List.filterMap_map] at hr
+      exact absurd ((mem_flatten s r).mp (by simpa using hr)) hn
+  simp [getJmps] at hj'; subst hj'
+  obtain ⟨b, hb, hr⟩ := liveK_cases hl
+  rw [hj] at hb; cases hb
+  rcases hr with ⟨-, hr⟩ | ⟨j'', hj'', hl', hnd⟩
+  · simp [OpsRF, defsOf, finRegs, jmpRegs, jmp0] at hr
+  simp [getJmps] at hj''; subst hj''
+  refine ⟨(liveK_frameP hd he ht).mp hl', fun m => hnd ?_⟩
+  exact mem_blockDefs.mpr (Or.inl ((mem_flatten sur r).mpr m))
+
+/-- **`+fork-sure` keeps the invariant**, in the rank of the state after it
+(the fork blocks hop up to the join), and defines only registers below the
+old `re`. -/
+theorem sip_forkSure {X : Map Blob → Prop} [XSix X] {sur : Sure S} {th : Jmp} {g0 gF : Comp.Gen Map}
+    {s0 s1 : Sure S} (h : SIP X (upRk g0.blocks) g0.bo g0) (hn : NB g0.re sur.ned) (hd : Distinct sur.ned)
+    (hf : ∀ y, Defd g0.blocks y → ¬ NMem sur.ned y) (h1 : 1 ≤ th.there) (h2 : th.there < g0.bo)
+    (hF : forkSure sur th.there g0.bo (g0.bo + 1) { g0 with bo := g0.bo + 2 } = some ((s0, s1), gF)) :
+    SIP X (upRk gF.blocks) gF.bo gF ∧ ∀ r, Defd gF.blocks r → r < g0.re := by
+  obtain ⟨-, -, -, -, -, -, -, hreg, hle, hbo, hdrop, -, -, hb0, hb1, hb2, hold⟩ := forkSure_spec hF h.drop
+  have oth := forkSure_other hF h.drop
+  have hnone : ∀ k, g0.bo + 3 ≤ k → HoonMap.get gF.blocks k = Option.none := fun k hk => by
+    rw [oth k hk]; exact h.none (by omega)
+  have cs : ∀ k b, HoonMap.get gF.blocks k = some b → (k < g0.bo ∧ HoonMap.get g0.blocks k = some b) ∨
+      (k = g0.bo ∧ b = ⟨[], [], Termin.hop ⟨(flattenNeed s0.ned).map some, g0.bo + 2⟩⟩) ∨
+      (k = g0.bo + 1 ∧ b = ⟨[], [], Termin.hop ⟨(flattenNeed s1.ned).map some, g0.bo + 2⟩⟩) ∨
+      (k = g0.bo + 2 ∧ b = ⟨flattenNeed sur.ned, [], Termin.hop (jmp0 th.there)⟩) := by
+    intro k b hb
+    by_cases k0 : k < g0.bo
+    · exact Or.inl ⟨k0, by rw [← hold k k0]; exact hb⟩
+    by_cases e0 : k = g0.bo
+    · subst e0; rw [hb0] at hb; exact Or.inr (Or.inl ⟨rfl, (Option.some.inj hb).symm⟩)
+    by_cases e1 : k = g0.bo + 1
+    · subst e1; rw [hb1] at hb; exact Or.inr (Or.inr (Or.inl ⟨rfl, (Option.some.inj hb).symm⟩))
+    by_cases e2 : k = g0.bo + 2
+    · subst e2; rw [hb2] at hb; exact Or.inr (Or.inr (Or.inr ⟨rfl, (Option.some.inj hb).symm⟩))
+    rw [hnone k (by omega)] at hb; cases hb
+  have hlo := h.lob
+  have bF : gF.bo = g0.bo + 3 := hbo
+  have rOld : ∀ k, k < g0.bo → upRk gF.blocks k = upRk g0.blocks k := fun k hk =>
+    upRk_congr (by rw [hold k hk])
+  have r0 : upRk gF.blocks g0.bo = 3 * (g0.bo + 2) + 1 := by
+    unfold upRk; rw [hb0]; simp [show g0.bo < g0.bo + 2 by omega]
+  have r1 : upRk gF.blocks (g0.bo + 1) = 3 * (g0.bo + 2) + 1 := by
+    unfold upRk; rw [hb1]; simp [show g0.bo + 1 < g0.bo + 2 by omega]
+  have r2 : upRk gF.blocks (g0.bo + 2) = 3 * (g0.bo + 2) := by
+    unfold upRk; rw [hb2]; simp [jmp0, show ¬ (g0.bo + 2 < th.there) by omega]
+  have rHi : ∀ k, g0.bo + 3 ≤ k → upRk gF.blocks k = 3 * k := fun k hk => by unfold upRk; rw [hnone k hk]
+  have D : ∀ r, Defd gF.blocks r → r < g0.re := fun r d => by
+    obtain ⟨k, bb, hb, m⟩ := defd_iff.mp d
+    rcases cs k bb hb with ⟨-, hb'⟩ | ⟨-, rfl⟩ | ⟨-, rfl⟩ | ⟨-, rfl⟩
+    · exact h.defd_lt (defd_iff.mpr ⟨k, bb, hb', m⟩)
+    · simp [blockDefs] at m
+    · simp [blockDefs] at m
+    · simp only [blockDefs, List.filterMap_nil, List.append_nil] at m
+      exact hn r ((mem_flatten _ r).mp m)
+  refine ⟨⟨by rw [hdrop]; exact h.drop, by omega, fun k b hb => ?_, fun k b hb => ?_, fun o b hb => ?_,
+    fun o o' b b' r e1 e2 ne m1 => ?_, fun k b hb => ?_, fun k b hb j hj => ?_, Nat.le_refl _,
+    fun k hk => rHi k (by omega), fun x hx => ?_, ?_⟩, D⟩
+  · rcases cs k b hb with ⟨k0, -⟩ | ⟨rfl, -⟩ | ⟨rfl, -⟩ | ⟨rfl, -⟩ <;> omega
+  · rcases cs k b hb with ⟨-, hb'⟩ | ⟨-, rfl⟩ | ⟨-, rfl⟩ | ⟨-, rfl⟩
+    · exact (h.regs k b hb').mono fun x hx => Nat.lt_of_lt_of_le hx hle
+    · exact blobIn_fin (f := Termin.hop _) (jmpIn_flatten fun x hx => (hreg x (Or.inl hx)).2)
+    · exact blobIn_fin (f := Termin.hop _) (jmpIn_flatten fun x hx => (hreg x (Or.inr hx)).2)
+    · exact ⟨fun x hx => Nat.lt_of_lt_of_le (hn x ((mem_flatten _ x).mp hx)) hle, RegsIn.nil _, jmpIn_jmp0 _ _⟩
+  · rcases cs o b hb with ⟨-, hb'⟩ | ⟨-, rfl⟩ | ⟨-, rfl⟩ | ⟨-, rfl⟩
+    · exact h.nd o b hb'
+    · simp [blockDefs]
+    · simp [blockDefs]
+    · simpa [blockDefs] using flatten_nodup hd
+  · intro m2
+    rcases cs o b e1 with ⟨k0, hb'⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;>
+      rcases cs o' b' e2 with ⟨k0', hb''⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;>
+      (try simp only [blockDefs, List.filterMap_nil, List.append_nil, List.not_mem_nil] at m1 m2) <;>
+      first
+      | exact h.cr o o' b b' r hb' hb'' ne m1 m2
+      | exact hf r (defd_iff.mpr ⟨o, b, hb', m1⟩) ((mem_flatten _ r).mp m2)
+      | exact hf r (defd_iff.mpr ⟨o', b', hb'', m2⟩) ((mem_flatten _ r).mp m1)
+      | exact ne rfl
+      | omega
+  · rcases cs k b hb with ⟨-, hb'⟩ | ⟨-, rfl⟩ | ⟨-, rfl⟩ | ⟨-, rfl⟩
+    · exact h.tr k b hb'
+    all_goals intro op hop; simp at hop
+  · rcases cs k b hb with ⟨k0, hb'⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+    · have a := h.jr k b hb' j hj
+      have b0 := h.rlo k k0
+      have jt : j.there < g0.bo := by
+        rcases Nat.lt_or_ge j.there g0.bo with e | e
+        · exact e
+        · have := h.rk j.there e
+          omega
+      rw [rOld k k0, rOld _ jt]; exact a
+    · simp [getJmps] at hj; subst hj; dsimp only; rw [r0, r2]; omega
+    · simp [getJmps] at hj; subst hj; dsimp only; rw [r1, r2]; omega
+    · simp [getJmps] at hj; subst hj; simp only [jmp0]; rw [r2, rOld _ h2]; have := h.rlo _ h2; omega
+  · by_cases k0 : x < g0.bo
+    · rw [rOld x k0]; have := h.rlo x k0; omega
+    · have : x = g0.bo ∨ x = g0.bo + 1 ∨ x = g0.bo + 2 := by omega
+      rcases this with rfl | rfl | rfl
+      · rw [r0]; omega
+      · rw [r1]; omega
+      · rw [r2]; omega
+  · exact XSix.fork (l := g0.bo) (t := th.there) (R := g0.re) (ned := sur.ned) h.x h.lab h.regs h1 h2
+      (fun x hx => hn x ((mem_flatten _ x).mp hx)) (fun x hx => (hreg x (Or.inl ((mem_flatten _ x).mp hx))).1)
+      (fun x hx => (hreg x (Or.inr ((mem_flatten _ x).mp hx))).1) (flatten_nodup hd) hold hb0 hb1 hb2 hnone
+
+/-- **`%6` for a fork-free `%next`**: `+fork-sure`, `b` for the copy `s1`
+into the fork block `o1`, `a` for `s0` into `o0`, `+sect` (the same blocks
+as `sixGenL`, `sect_spec`), the tail.  A register live at a fork block and
+not in its copy is live past the join at the goal's continuation and not in
+the goal's need (`liveK_fork`). -/
+theorem rawX_sixN {X : Map Blob → Prop} [XSix X] {c a b : Nomm} (xc' : FragX (S := S) c)
+    (xa : FragX (S := S) a) (xb : FragX (S := S) b)
+    (ihc : RawIHX S Map X c) (iha : RawIHX S Map X a) (ihb : RawIHX S Map X b)
+    {sur : Sure S} {th : Jmp} {region : List Nat} {g0 g9 : Comp.Gen Map} {nex : NextL S}
+    {K : Nat → Nat → Prop} (hK : KVan K g0.bo) (h : SIP X (upRk g0.blocks) g0.bo g0)
+    (hg : GoalIn g0.re (CGoal.next sur th : CGoal S)) (hD : Distinct sur.ned)
+    (hj : GJ g0.bo (CGoal.next sur th : CGoal S)) (hf : ∀ r, Defd g0.blocks r → ¬ NMem sur.ned r)
+    (hcl : Clean sur.ned) (hc : sixCount c + sixCount a + sixCount b + 1 ≤ 255)
+    (hr : runL (Nomm.n6 c a b) (CGoal.toL (CGoal.next sur th)) region g0 = some (nex, g9)) :
+    SIP X (upRk g9.blocks) g9.bo g9 ∧ nex.th.args = [] ∧ 1 ≤ nex.th.there ∧ nex.th.there < g9.bo ∧
+      ∀ r, LiveK g9.blocks (fun x y => K x y ∨ lazK nex.th.there nex.laz x y) nex.th.there r →
+        LiveK g0.blocks K th.there r ∧ ¬ NMem sur.ned r := by
+  have hcp := fragX_pure xc'
+  simp only [CGoal.toL] at hr
+  rw [runL_n6_next, sixNextL_ofSure] at hr
+  obtain ⟨s0, s1, x1, x0, xc, lz, yes, nuh, gF, gR, gQ, gS, gC, hF, hR, hQ, hS, hC, hrest⟩ :=
+    sixNextSimple_apart hcp hr
+  obtain ⟨-, -, c0, c1, d0, d1, j01, hreg, -, hbo, -, -, -, hb0, hb1, hb2, hold⟩ :=
+    forkSure_spec (sur := sur) hF h.drop
+  obtain ⟨SF, dF⟩ := sip_forkSure h hg.1 hD hf hj.1 hj.2 hF
+  have SF' : SIP X (upRk ({ gF with id := gF.id + 1 } : Comp.Gen Map).blocks)
+      ({ gF with id := gF.id + 1 } : Comp.Gen Map).bo { gF with id := gF.id + 1 } :=
+    ⟨SF.drop, SF.bo1, SF.lab, SF.regs, SF.nd, SF.cr, SF.tr, SF.jr, SF.lob, SF.rk, SF.rlo, SF.x⟩
+  have b0 := h.bo1
+  have bF : gF.bo = g0.bo + 3 := hbo
+  have cl1 : Clean s1.ned := c1.clean hcl
+  have cl0 : Clean s0.ned := c0.clean hcl
+  -- the branch `b`
+  have gb : GoalIn gF.re (CGoal.next s1 (jmp0 (g0.bo + 1)) : CGoal S) :=
+    ⟨fun x hx => (hreg x (Or.inr hx)).2, jmpIn_jmp0 _ _⟩
+  have jb : GJ gF.bo (CGoal.next s1 (jmp0 (g0.bo + 1)) : CGoal S) := ⟨by simp [jmp0], by simp [jmp0]; omega⟩
+  obtain ⟨SR, -, -, hiR, LR⟩ := ihb (CGoal.next s1 (jmp0 (g0.bo + 1))) (gF.id :: region) ({ gF with id := gF.id + 1 } : Comp.Gen Map) gR x1 K
+    (hK.mono (show g0.bo ≤ gF.bo by omega)) SF' gb d1 jb rfl
+    (fun r d m => by have := dF r d; have := (hreg r (Or.inr m)).1; omega) (by omega) cl1 hR
+  have Rb := runX_keeps xb (goal := CGoal.next s1 (jmp0 (g0.bo + 1))) SF'.drop gb (by omega) hR
+  have Fb := runX_frameN xb SF' jb rfl d1 gb.1 cl1 (by omega) hR
+  have Ftb := runX_foot xb (goal := CGoal.next s1 (jmp0 (g0.bo + 1))) SF'.drop gb d1 (by omega) hR
+  have lR : gF.re ≤ gR.re := Rb.keeps.le
+  have bR : gF.bo ≤ gR.bo := Rb.keeps.bo
+  -- the branch `a`
+  have ga : GoalIn gR.re (CGoal.next s0 (jmp0 g0.bo) : CGoal S) :=
+    ⟨fun x hx => Nat.lt_of_lt_of_le (hreg x (Or.inl hx)).2 lR, jmpIn_jmp0 _ _⟩
+  have ja : GJ gR.bo (CGoal.next s0 (jmp0 g0.bo) : CGoal S) := ⟨by simp [jmp0]; omega, by simp [jmp0]; omega⟩
+  obtain ⟨SQ, -, -, hiQ, LQ⟩ := iha (CGoal.next s0 (jmp0 g0.bo)) (gF.id :: region) gR gQ x0 K
+    (hK.mono (by omega)) SR ga d0 ja rfl (fun r d m => by
+      rcases defd_of_wroteIn Ftb.wr d with d | ⟨-, e, -⟩
+      · have := dF r d; have := (hreg r (Or.inl m)).1; omega
+      · rcases e with e | e
+        · have := (hreg r (Or.inl m)).2; simp only at e; omega
+        · exact j01 r m e) (by omega) cl0 hQ
+  have Ra := runX_keeps xa (goal := CGoal.next s0 (jmp0 g0.bo)) SR.drop ga (by omega) hQ
+  have Fa := runX_frameN xa SR ja rfl d0 ga.1 cl0 (by omega) hQ
+  -- `+sect`
+  have cR : gR.cond = gF.cond := Rb.cnd
+  rw [cR] at hS
+  obtain ⟨ey, en, a0, a1, el, hsb⟩ := sect_spec SQ.drop (Ra.cnd.trans cR) hS
+  subst ey en el
+  have bQ : gR.bo ≤ gQ.bo := Ra.keeps.bo
+  have hbig : lazyBig (mk (Sure.bunt : Sure S) [((gQ.bo, x0.laz), (gQ.bo + 1, x1.laz))] []) = false := by
+    apply lazyBig_entries
+    rw [entries_six]; simp only [List.length_append, List.length_cons]
+    have := Ra.size; have := Rb.size; simp only [lazyMax]; omega
+  obtain ⟨S9, e9, l9, h9, L9⟩ := rawX_sixTail (K := K) xc' ihc (by omega) SQ hiQ (by omega) a0 a1 hsb
+    (sip_sameBlocks (sip_sixGenL SQ a0 a1 hiQ (by omega)) hsb) hC (hrest hbig)
+  refine ⟨S9, e9, l9, h9, fun r hl => ?_⟩
+  rcases L9 r hl with e | e
+  · obtain ⟨e1, n0⟩ := LQ r e
+    have e2 := (liveK_frameP (SF'.below _) Fb (show g0.bo < gF.bo by omega)).mp e1
+    exact liveK_fork hb0 hb2 (h.below g0.bo) hold hj.2 e2 n0
+  · have e1 := (liveK_frameP (SR.below gR.bo) Fa hiR).mp e
+    obtain ⟨e2, n1⟩ := LR r e1
+    exact liveK_fork hb1 hb2 (h.below g0.bo) hold hj.2 e2 n1
+
+/-- **The case `six` of `RawIHX`.** -/
+theorem rawX_six {X : Map Blob → Prop} [XSix X] {c a b : Nomm} (xc' : FragX (S := S) c)
+    (xa : FragX (S := S) a) (xb : FragX (S := S) b)
+    (ihc : RawIHX S Map X c) (iha : RawIHX S Map X a) (ihb : RawIHX S Map X b) :
+    RawIHX S Map X (Nomm.n6 c a b) := by
+  intro goal region g0 g1 nex K hK h hg hD hj ha hf hc hcl hr
+  have hc' : sixCount c + sixCount a + sixCount b + 1 ≤ 255 := by simpa only [sixCount] using hc
+  cases goal with
+  | next sur th => exact rawX_sixN xc' xa xb ihc iha ihb hK h hg hD hj (fun r d m => hf r d m) hcl hc' hr
+  | done => exact rawX_sixP xc' xa xb ihc iha ihb (goal := CGoal.done) trivial hK h hg hj ha hc' hr
+  | pick z o => exact rawX_sixP xc' xa xb ihc iha ihb (goal := CGoal.pick z o) trivial hK h hg hj ha hc' hr
+
+/-! ## The induction -/
+
+/-- **`RawIHX` on `FragX`**, for every predicate `X` of the blocks that the
+steps keep (`XSix`). -/
+theorem runX_rawIHX {X : Map Blob → Prop} [XSix X] {nm : Nomm} (hf : FragX (S := S) nm) :
+    RawIHX S Map X nm := by
+  induction hf with
+  | frag hf => exact rawX_frag hf
+  | six xc xa xb ihc iha ihb => exact rawX_six xc xa xb ihc iha ihb
+  | four _ ih => exact rawX_four ih
+  | three _ ih => exact rawX_three ih
+  | seven hq _ ih => exact rawX_seven hq ih
+  | cons xp xq ihp ihq => exact rawX_cons xp xq ihp ihq
+  | five xp xq ihp ihq => exact rawX_five xp xq ihp ihq
+  | ten xv xq ihv ihq => exact rawX_ten _ xv xq ihv ihq
+  | sevenFrom ha _ ihq => exact rawX_sevenFrom ha ihq
+
 end Raw
 end SkaModel
 end Formalization
