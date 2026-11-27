@@ -77,6 +77,19 @@ abbrev NextGC (lib : Lib) (N : Needs) (env : CallEnv) (P : Noun → Prop) (f : N
     ∃ Q : Wit, RunOKGen lib N P f L th Q false g0 g1 nex ∧ GrowU g0 g1 ∧
       (∀ a ∈ (entries L).map Prod.fst, ¬ RepointG g0 g1 a) ∧ ResG (Map := Map) L g0 g1 nex.laz
 
+/-- **The halves of `+split` apart, as the copy reads them** (the cons, the
+interface between `CompGenClassB.lean`, which proves it of the split, and
+`CompGenClassC.lean`, which reads it): the sure halves apart, the entries'
+halves apart at each label, each sure half apart from the other half's
+entries, and every register of both below `lo` (the split's end). -/
+structure HalvesApart (hed tel : Lazy S) (lo : Nat) : Prop where
+  ss : ∀ r, NMem hed.sure.ned r → ¬ NMem tel.sure.ned r
+  ee : ∀ e ∈ entries hed, ∀ e' ∈ entries tel, e.1 = e'.1 → ∀ r, NMem e.2.sure.ned r → ¬ NMem e'.2.sure.ned r
+  se : ∀ e ∈ entries tel, ∀ r, NMem hed.sure.ned r → ¬ NMem e.2.sure.ned r
+  es : ∀ e ∈ entries hed, ∀ r, NMem tel.sure.ned r → ¬ NMem e.2.sure.ned r
+  hlo : (∀ r, NMem hed.sure.ned r → r < lo) ∧ ∀ e ∈ entries hed, ∀ r, NMem e.2.sure.ned r → r < lo
+  tlo : (∀ r, NMem tel.sure.ned r → r < lo) ∧ ∀ e ∈ entries tel, ∀ r, NMem e.2.sure.ned r → r < lo
+
 /-- **The fragment of the induction**, with the formulas: `[0 a]` (`a ≥ 2`),
 `[1 k]`, `[3 p]`, `[4 p]`, `[5 p q]`, the cons, `[7 p q]`. -/
 inductive GenFrag : Noun → Nomm → Prop
