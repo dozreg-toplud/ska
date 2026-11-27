@@ -622,8 +622,20 @@ def memberStep (run : RunGo M R) (memberLoop : MemGo M R) (index pass : Nat) :
     if r.1.1 < index then some ((r.1.1, r.1.2.2), r.2) else
     (memberLoop index pass ms r.2).map fun t => ((min r.1.1 t.1.1, r.1.2.2 || t.1.2), t.2)
 
+/-- The end of a pass that changed no entry and found no function: another
+pass if a member that `id` reaches is dirty, else `+cull` and `+pop`, with
+the fuel `n` of `+sweep` and `+cull`. -/
+def passEnd (n : Nat) (passLoop : PassGo M R) (id : Ident) (index pass : Nat) (st : SkaState M R) :
+    Option (Nat × SkaState M R) :=
+  (above id st.stk).bind fun ab =>
+  (sweep n id (Treap.silt ab) st).bind fun ms =>
+  if ms.any (fun m => dirty m st) = true then passLoop id index (pass + 1) st else
+  (cull n id st).bind fun st' => (pop id st').map fun st'' => (st.next, st'')
+
 /-- One pass over the component of `id` (`index` its DFS number, `pass` the
-number of the pass), with the fuel `n` of `+sweep` and `+cull`. -/
+number of the pass), with the fuel `n` of `+sweep` and `+cull`.  No member
+is dropped between passes: `+cull` runs only once the component is stable
+(`passEnd`). -/
 def passStep (n : Nat) (memberLoop : MemGo M R) (passLoop : PassGo M R) (id : Ident)
     (index pass : Nat) (st : SkaState M R) : Option (Nat × SkaState M R) :=
   (above id st.stk).bind fun ab =>
@@ -633,8 +645,7 @@ def passStep (n : Nat) (memberLoop : MemGo M R) (passLoop : PassGo M R) (id : Id
   (memberLoop index pass members st).bind fun r =>
   let st := r.2
   if r.1.1 ≠ index then some (r.1.1, st) else
-  (cull n id st).bind fun st =>
-  if r.1.2 = false ∧ st.next = nextBefore then (pop id st).map fun st' => (st.next, st')
+  if r.1.2 = false ∧ st.next = nextBefore then passEnd n passLoop id index pass st
   else passLoop id index (pass + 1) st
 
 /-- The `=.  st  (cull id st)` before the first pass, then the pass loop. -/
