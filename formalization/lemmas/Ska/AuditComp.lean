@@ -114,6 +114,7 @@ import lemmas.Ska.CompPairLSX
 import lemmas.Ska.CompLOKSXUnary
 import lemmas.Ska.CompPairLSXCheck
 import lemmas.Ska.CompSixLSPick
+import lemmas.Ska.CompSixLSClass
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -1232,3 +1233,32 @@ open Formalization.SkaModel.Comp
 #print axioms callTreeA_pickInd
 #print axioms callTreeA_pickN0
 #print axioms pickTree_pick
+#print axioms minkF_sixC
+#print axioms mink_sixC_bwd
+#print axioms pickD_of_uok
+#print axioms sixD_of_callTreeA
+#print axioms runLC_six_done_apart
+#print axioms sixBlk_fwd
+#print axioms sixBlk_bwd
+#print axioms six_doneGB
+#print axioms finishLUC_contractSixD
+#print axioms six3_contract
+#print axioms walkLazy_wrap
+#print axioms walkEq_six
+#print axioms kern_walkEq
+#print axioms kerf_walkEq
+#print axioms finishLUC_contractGBW
+#print axioms finishLUC_contractSixDW
+#print axioms runLC_six_done_apartW
+#print axioms six_doneGBW
+#print axioms pickTree_noEnt
+#print axioms pickD_of_pickTree
+#print axioms sixTest_pickD
+#print axioms six0_done
+#print axioms finishLUC_contractSix0
+#print axioms three_pickB
+#print axioms pickD_three
+#print axioms sixCallTest_contract
+#print axioms sixCallBoth_contract
+#print axioms sixNested_contract
+#print axioms sixThreeCall_contract

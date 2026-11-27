@@ -7,6 +7,7 @@ import lemmas.Ska.PassMeasureF
 import lemmas.Ska.PassMeasureB
 import lemmas.Ska.PassStab
 import lemmas.Ska.PassStabM
+import lemmas.Ska.PassFreeze
 
 /-! The axioms of the theorems of track F (`Ska/PassMeasure.lean`,
 `Ska/PassMeasureK.lean`, `Ska/PassMeasureT.lean`, `Ska/PassMeasureS.lean`, `Ska/PassMeasureA.lean`,
@@ -142,3 +143,13 @@ out. -/
 -- the candidates (`Ska/PassStabM.lean`)
 #print axioms Ana.svLt_of_olt
 #print axioms Ana.stabLt_of_A
+-- the freezing argument (`Ska/PassFreeze.lean`)
+#print axioms Ana.memberLoop_clean
+#print axioms Ana.passOn_dirty
+#print axioms Ana.cull_keeps_kid
+#print axioms Ana.cull_reach
+#print axioms Ana.passOn_cull
+#print axioms Ana.passOn_shape
+#print axioms Ana.freeze_abstract
+#print axioms Ana.freeze_no_chain
+#print axioms Ana.finPushes_of_freeze

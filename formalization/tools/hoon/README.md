@@ -19,6 +19,7 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
 * `directdump.hoon` the raw blocks of the whole-subject version of three direct calls of the recursive `R` (`lemmas/Ska/CompDirect.lean`, README Gaps 18): a tail call, a call under `%4`, a call in the head of a cons; `+mono-try-call` (`%clq`, `%hed`, `%tal`, the optimistic `%jmp`/`%cal`, the pessimistic `%jsp`/`%csl`), which the model does not have
 * `directdump2.hoon` the cases of `directdump.hoon` and four more (a call in the tail of a cons, the test of a `%6`, and a callee `R2` whose need `[~ [this this]]` splits two levels deep, as a tail call and under `%4`), with the top's need and argument count and each callee's bell and need: the seven `#guard`s of `lemmas/Ska/CompDirectMCheck.lean` (`finishLUCM`) are equal to its blocks (2026-11-27)
 * `sccloop.py OUTDIR` writes an instrumented copy of the library (prints in `+compile-scc-in` and `member`: the SCC, `order`, `top`, each compile's views of the kids, `need-new`, `sur`, `was`, `moved`, cape, previous entry and `need-pessimized`, each sweep's `any`, the final entries) and a driver of 18 recursive formulas.  Run `RUNHOON_LIB=OUTDIR/lib.hoon runhoon.sh OUTDIR/ck.hoon 900 > out.txt`, then `sccloop.py --lean out.txt > lemmas/Ska/SccLoopData.lean`.  On 2026-11-27: 23 SCCs went through the loop, each in three sweeps, at most two `%must` compiles per member, `need-new` of every `%done` compile equal to that member's last sweep and `need-pessimized` equal to the entry (`lemmas/Ska/SccLoopCheck.lean`)
+* `sccstress.py OUTDIR [SEED] [N]` the instrumented library of `sccloop.py` and a driver of 9 fixed and N generated SCCs (one to three gates on the sample `[[a b] [c d]]`, capes cells at the sample); run `RUNHOON_LIB=OUTDIR/lib.hoon runhoon.sh OUTDIR/ck.hoon 1700 > out.txt`, then `sccstress.py --sum out.txt` (per SCC: size, sweeps, most `%must` compiles of a member, `keep`, each member's entries; the cases are in `OUTDIR/cases.txt`; parser in `sccloop_parse.py`).  2026-11-27, seeds 1 (56, with the first 4 fixed cases) and 2 (70): 145 SCCs, at most 5 sweeps, `keep` never set; the summaries and cases are in `sccstress/` (README Gaps 21.8)
 * `shapecoldump.hoon` the input (`laz.nex`, the cape) and the product of `+shape-collapse` in the one-bell final pass of 34 formulas whose final pass forks (a `%6` under `%done`, known parts of the subject, nested `%6`, `%6` in a cons, `+sect` under `%next`, a split over `split-max`, a bond), the sets as lists in the order of `+rep:in`; its output is `shapecoldump.txt`, the `#guard`s of `lemmas/Ska/ShapeColCheck.lean` (`tools/gen/shapecolcheck.py`), all equal (2026-11-27).  The test's own `?=`, `;;` and `+turn` on the library's types fail with `fuse-loop`: the driver walks the lazy need as a raw noun
 * `leaptwice.py OUTDIR` writes an instrumented copy of the library and a driver for the fuel `3` of `sixNextLC` (`lemmas/Ska/CompRunLC.lean`): in the case `%6` of `+run`, whenever `+leap` returns a rest, it runs `+leap` on that rest and prints `[%lp2-bad ..]` if it is not `~`.  Run `RUNHOON_LIB=OUTDIR/lib.hoon runhoon.sh OUTDIR/ck.hoon 1700 > out.txt`, then `leaptwice.py --sum out.txt`.  Over 726 formulas (the 162 of `thread-a/b/c`, 364 with a `%6` in the first part of a `%7` whose second part forks, in the head of a cons, nested, two in a row, and 200 random ones): `+leap` returned a rest 708 times (174 of them a rest that still forks or bonds, so the second `+leap` ran its loop), never a second time; `+kerf` ran 242 times, phase F 1208 (2026-11-27)
 * `wholedump.hoon` the raw blocks of the whole-subject version (`+compiled-mono`, what `%full` and `%dire` with `mono` `&` run) and of the n-ary version of `[4 [0 3]]`, `[6 [3 0 1] [0 2] [1 0]]`, `[[0 2] [0 3]]`, `[7 [0 2] [4 [0 3]]]` and the indirect call `[2 [0 3] [0 2]]`, with each version's need and argument count (`lemmas/Ska/CompWhole.lean`, 2026-11-24)
@@ -83,7 +84,8 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     analysed again (also `%pm-rec caller kid target`, `%pm-ex caller kid` at every %rec and exact
                     resolution, and `%st`, a mug of the members with their entries, at every pass; and `%pm-ent`, at
                     every pass start each member with its DFS number, how its entry changed since the previous start, its
-                    callees and whether it is `+dirty`, read by `passmeasure-stab.py`).  `passmeasure-lib.hoon` is its driver over 21 library calls.  Over 2,269 calls (2026-11-27):
+                    callees and whether it is `+dirty`, read by `passmeasure-stab.py`; and `%pm-tik`, at the same start
+                    the run counter and `[ran chg]` of every function in progress, read by `passmeasure-freeze.py`).  `passmeasure-lib.hoon` is its driver over 21 library calls.  Over 2,269 calls (2026-11-27):
                     no run against the lexicographic measure (with `less-code` in the order `CapeLe`), 151 runs that changed
                     only the map (open point (a)), 21 culled members and none found again (open point (b)), no pass loop that
                     did not end.  It also checks `Tidy` and `PiNorm` (`lemmas/Ska/PassMeasureT.lean`) at every run: over
@@ -125,6 +127,21 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     DB of `lemmas/Ska/PassStabM.lean`.  Over the 2,632 cores of q, u, the chains, the re-push drivers and
                     cyc (2026-11-27): 18,682 passes, 50,915 pairs, no rise; A fails at 407, B at 415, C never, D at 43
                     (all in u, an older member goes dirty through a back edge), DB at 49 (README Gaps 16)
+* `passmeasure-freeze.py [-v] OUT.txt...` the tests of the freezing argument (`lemmas/Ska/PassFreeze.lean`, README
+                    Gaps 16) on `%pm-ent` and `%pm-tik`: T0 `+dirty` is "a callee's chg >= the member's ran"; T1 a member
+                    that does not run keeps callees and entry, and one clean at the start runs only if a callee changed in
+                    the pass (`+dirty` is tested at the member's turn); T2 a callee of a member kept by `+cull` that was a
+                    member is kept; T3 what each dirty member owes its dirt to; T4 runs of starts at which a member is
+                    dirty with entry and callees the same, and whether it owes that only to transient callees; T5 a
+                    dirty member at every start of a pass that goes on; T6 every member reached from the root; T7
+                    callee changes at a constant entry; candidates E (dirt charged to the newest callee owed), P2A, P2D
+                    (passes p and p+2).  Over the 2,632 cores of passmeasure-stab.py with `%pm-tik` (2026-11-27):
+                    T0 to T6 never fail (69,069 starts, 118,678 kept callees, 18,682 passes), 12,462 stuck starts, none
+                    owed only to transient callees, at most 49 callee changes of one member at a constant entry
+                    (`fib6`); E 0 fails, P2A 97, P2D 5
+* `passmeasure-run.sh LIB OUTDIR DRIVER...` runs drivers with the library of `passmeasure.py`, six at a time, 900 s
+                    each; `passmeasure-show.py OUT.txt CASETAG ROOTMUG` prints one pass loop pass by pass;
+                    `passmeasure-inter.py OUTDIR` matches the D failures of the u cores with their `%rec` takeovers
 * `passmeasure-cyc.py OUT.hoon` a period-3 %rec takeover designed as a true cycle; it returns in 2 passes, because
                     `fol-loop` analyses both branches of a %6 whatever its test (no dispatch on a known tag) and a
                     `%rec` target's product, patched by `+patch-prod`, depends on the target only through its precision

@@ -248,7 +248,7 @@ theorem callTreeD_slotCall (lib : Lib) {env : CallEnv} {bZ : Bell} {cN cW : Stra
     (hcod : env.cod bZ = some false) :
     CallTreeD lib env (Table.needs (table2 bZ cN cW)) (SkaModel.Fits bZ.less) true (slotCallFol bZ)
       (slotCall bZ) :=
-  CallTreeD.direct (CallTreeD.n0 1) hring hneed (table2_needs bZ cN cW).1 (table2_needs bZ cN cW).2 hpure hcod rfl
+  CallTreeD.direct (CallTreeD.n0 1) hring hneed (table2_needs bZ cN cW).1 (table2_needs bZ cN cW).2 hpure hcod (QDirect.quote _ _ _)
     (fun x gul y hx hm => by rw [mink_slot1 hm]; exact hx)
 
 /-- **The first closed theorem with a direct call**: the whole-subject code
