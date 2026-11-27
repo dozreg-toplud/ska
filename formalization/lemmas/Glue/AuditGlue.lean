@@ -39,6 +39,7 @@ import lemmas.Ska.CompTenLS
 import lemmas.Ska.CompSixLSRCall
 import lemmas.Compiler.CompShapeColRet
 import lemmas.Glue.InvMemoP
+import lemmas.Glue.GuardRun
 import lemmas.Compiler.PokeLink
 import lemmas.Ska.PokeEnc
 import lemmas.Ska.SccLoopMsg
@@ -341,6 +342,26 @@ namespace Formalization
 #print axioms SkaModel.Glue.entryNary_fragX
 #print axioms SkaModel.Glue.rawEntry_fragX
 #print axioms SkaModel.Glue.compHyp_of_fragX'
+
+-- GuardMonoX / GuardNaryX (LEDGER 2.c, fourth pass): the +kern-need guard, the block steps
+#check @SkaModel.Glue.GuardedPre
+#check @SkaModel.Glue.BlockOK
+#check @SkaModel.Raw.KR
+#check @SkaModel.Raw.kernLoop_raw
+#check @SkaModel.Raw.raw_sureLoop
+#check @SkaModel.Raw.stOut_ren
+#check @SkaModel.Raw.runX_at
+#check @SkaModel.Comp.sect_spec
+#check @SkaModel.Annot.mono
+#print axioms SkaModel.Glue.guardedBody_cel
+#print axioms SkaModel.Glue.guardedPre_append
+#print axioms SkaModel.Glue.kernBoth_guard
+#print axioms SkaModel.Glue.kernLoop_guarded
+#print axioms SkaModel.Glue.kernNeed_guarded
+#print axioms SkaModel.Glue.blocksOK_emitted
+#print axioms SkaModel.Glue.addOps_ok
+#print axioms SkaModel.Glue.blocksOK_insertHop
+#print axioms SkaModel.Glue.sureLoop_guard
 
 -- track P's route and track I's SccLoopMsg (was AuditGlueP.lean; M15)
 #check @Compiler.straight_toNoun_inj
