@@ -208,7 +208,7 @@ theorem rs6_get (st : RSt CSet) : (MonadStateOf.get : SM CSet (RSt CSet)) st = s
 set_option hygiene false in
 /-- The simp set of the leaves of `rs_n6DP`. -/
 local macro "six_simp" " [" xs:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(tactic| simp [nock_exec, rsS,
-  rsCoreG, rsDoor, sixBranch, bind, StateT.bind, get, getThe, MonadState.get, StateT.get, liftS, pure,
+  rsCoreG, rsDoor, sixBranch, bind, StateT.bind, get, getThe, MonadState.get, StateT.get, shLiftS, pure,
   StateT.pure, rs6_get, hne, hne', rs6Lep, rs6Tk, rs6Gb, rs6Rest, GoalS.toNoun, thisL_noun, eqCode_atom, $xs,*])
 
 section
@@ -340,7 +340,7 @@ theorem sixBranch_nz (env : ShapeEnv) (rp rq rr : GoalS CSet → SM CSet (Laze C
   obtain ⟨st', s5, e5, k5⟩ := sm_bind_some k4
   obtain ⟨lc, s6, e6, k6⟩ := sm_bind_some k5
   have h3 := lazeSect_nz l0 l1 s2 lz s3 (hrq _ _ _ e2) (hrr _ _ _ e1) e3
-  obtain ⟨a, ea, ra⟩ := liftS_some e4
+  obtain ⟨a, ea, ra⟩ := shLiftS_some e4
   simp only [Prod.mk.injEq] at ra
   have h4 : LzNZ lz' := by rw [ra.1]; exact lazePastFork_nz env lz p a h3 ea
   have hbig : LzNZ (if lazeBig (sofsHas st'.sofs) lz' = true then thisL else lz') := by

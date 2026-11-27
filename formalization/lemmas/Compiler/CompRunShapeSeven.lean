@@ -32,17 +32,17 @@ theorem sm_bind_some {α β : Type} {x : SM CSet α} {f : α → SM CSet β} {st
   | none => rw [e] at h; cases h
   | some p => obtain ⟨a, st'⟩ := p; rw [e] at h; exact ⟨a, st', rfl, h⟩
 
-theorem liftS_some {α : Type} {o : Option α} {st : RSt CSet} {r : α × RSt CSet}
-    (h : (liftS o : SM CSet α) st = some r) : ∃ a, o = some a ∧ r = (a, st) := by
-  simp only [liftS] at h
+theorem shLiftS_some {α : Type} {o : Option α} {st : RSt CSet} {r : α × RSt CSet}
+    (h : (shLiftS o : SM CSet α) st = some r) : ∃ a, o = some a ∧ r = (a, st) := by
+  simp only [shLiftS] at h
   cases e : o with
   | none => rw [e] at h; cases h
   | some a => rw [e] at h; simp only [Option.map_some, Option.some.injEq] at h; exact ⟨a, rfl, h.symm⟩
 
 /-- The end of the cases: `+laze-copy` of two `laze`s of `LzNZ`. -/
 theorem lazeCopyEnd_nz {a b l : Laze CSet} {st st1 : RSt CSet} (ha : LzNZ a) (hb : LzNZ b)
-    (h : (liftS (lazeCopy a b) : SM CSet (Laze CSet)) st = some (l, st1)) : LzNZ l := by
-  obtain ⟨c, e, r⟩ := liftS_some h
+    (h : (shLiftS (lazeCopy a b) : SM CSet (Laze CSet)) st = some (l, st1)) : LzNZ l := by
+  obtain ⟨c, e, r⟩ := shLiftS_some h
   simp only [Prod.mk.injEq] at r
   rw [r.1]; exact lazeCopy_nz a b c ha hb e
 
@@ -54,34 +54,34 @@ theorem consNext_nz (env : ShapeEnv) (rp rq : GoalS CSet → SM CSet (Laze CSet)
     (e : consNext env rp rq p q laz st = some (l, st1)) : LzNZ l := by
   unfold consNext at e
   cases e1 : lazeSplit laz with
-  | none => simp [e1, liftS, bind, StateT.bind] at e
+  | none => simp [e1, shLiftS, bind, StateT.bind] at e
   | some ht =>
     obtain ⟨hed, tel⟩ := ht
     obtain ⟨hnz, tnz⟩ := lazeSplit_nz laz hl hed tel e1
     cases e2 : lazePast env hed q st with
-    | none => simp [e1, e2, liftS, bind, StateT.bind] at e
+    | none => simp [e1, e2, shLiftS, bind, StateT.bind] at e
     | some r2 =>
       obtain ⟨hed', s2⟩ := r2
       have h1 := lazePast_nz env hed q st hed' s2 hnz e2
       cases e3 : rq (GoalS.next tel) s2 with
-      | none => simp [e1, e2, e3, liftS, bind, StateT.bind] at e
+      | none => simp [e1, e2, e3, shLiftS, bind, StateT.bind] at e
       | some r3 =>
         obtain ⟨l2, s3⟩ := r3
         have h2 := hrq (GoalS.next tel) s2 l2 s3 tnz e3
         cases e4 : lazePast env l2 p s3 with
-        | none => simp [e1, e2, e3, e4, liftS, bind, StateT.bind] at e
+        | none => simp [e1, e2, e3, e4, shLiftS, bind, StateT.bind] at e
         | some r4 =>
           obtain ⟨l2', s4⟩ := r4
           have h3 := lazePast_nz env l2 p s3 l2' s4 h2 e4
           cases e5 : rp (GoalS.next hed') s4 with
-          | none => simp [e1, e2, e3, e4, e5, liftS, bind, StateT.bind] at e
+          | none => simp [e1, e2, e3, e4, e5, shLiftS, bind, StateT.bind] at e
           | some r5 =>
             obtain ⟨l1, s5⟩ := r5
             have h4 := hrp (GoalS.next hed') s4 l1 s5 h1 e5
             cases e6 : lazeCopy l1 l2' with
-            | none => simp [e1, e2, e3, e4, e5, e6, liftS, bind, StateT.bind] at e
+            | none => simp [e1, e2, e3, e4, e5, e6, shLiftS, bind, StateT.bind] at e
             | some c =>
-              simp [e1, e2, e3, e4, e5, e6, liftS, bind, StateT.bind] at e
+              simp [e1, e2, e3, e4, e5, e6, shLiftS, bind, StateT.bind] at e
               rw [← e.1]; exact lazeCopy_nz l1 l2' c h4 h3 e6
 
 /-- The nomms built of the cases linked so far: `[0 a]`, `[1 k]`, `[3 p]`, `[4 p]`,

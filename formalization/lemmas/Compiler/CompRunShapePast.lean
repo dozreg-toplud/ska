@@ -162,9 +162,9 @@ theorem lzp_gate (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 
     have hp' : ¬ ((s.ned = NeedOrd.none ∧ HoonSet.small s.lok = true) ∧ f = []) := by
       intro ⟨⟨h1, h2⟩, h3⟩; subst h3; simp [h1, h2] at hp
     cases b
-    · simp [hb, loob, nock_exec, lazePast, hp, hp', e, liftS, pure, StateT.pure, rsDoor, lzpHi, h7, hcode,
+    · simp [hb, loob, nock_exec, lazePast, hp, hp', e, shLiftS, pure, StateT.pure, rsDoor, lzpHi, h7, hcode,
         compK_hd, hd_arm, hh, bind, StateT.bind, Laze.sure, Laze.fork, Laze.bond]
-    · simp [hb, loob, nock_exec, lazePast, hp, hp', e, liftS, pure, StateT.pure, rsDoor, lzpHi, lzpId, h7, hcode,
+    · simp [hb, loob, nock_exec, lazePast, hp, hp', e, shLiftS, pure, StateT.pure, rsDoor, lzpHi, lzpId, h7, hcode,
         compK_hd, hd_arm, hh, bind, StateT.bind, lzp_id_at', comp_id_at, idS, rs_id, Laze.toNoun,
         Laze.forksNoun, Laze.bondsNoun, SureO.toNoun, SureO.bunt, NeedOrd.toNoun, Tag.none,
         HoonSet.toNoun_empty, Laze.sure, Laze.fork, Laze.bond]
