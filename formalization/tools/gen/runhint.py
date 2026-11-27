@@ -1,7 +1,10 @@
 """Cut the case `%11` of `+run` (door axis 18011890248581118) into named
 parts (README Gaps 25).
 
-    tools/capped.sh -m 3G python3 tools/gen/runhint.py OUTDIR
+    tools/capped.sh -m 3G python3 tools/gen/runhint.py [OUTDIR]
+
+OUTDIR defaults to the scratch directory of track Q (run from
+`formalization/` with `.` it would write a stray `k11.lean` into the tree).
 
 The body is `[6 T ST DY]`: `T` the test `?@  p.nomm`, `ST` the atom tag
 `[6 TS KEPT REC]` (`TS` the test `?=(hint-static p.nomm)`, `KEPT` the kept
@@ -13,7 +16,8 @@ asserted."""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from nouns import slot, norm
-OUT = sys.argv[1] if len(sys.argv) > 1 else '.'
+SCRATCH = '/tmp/claude-1000/-home-kirill-work-ska-scratch-wt-ska-formalization/f82d372f-f0b4-4933-9658-7b962d5dfef8/scratchpad/track-q'
+OUT = sys.argv[1] if len(sys.argv) > 1 else SCRATCH
 
 def comp(a, b):
     k = b.bit_length() - 1
