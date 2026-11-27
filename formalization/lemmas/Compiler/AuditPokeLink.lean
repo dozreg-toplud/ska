@@ -13,6 +13,7 @@ import lemmas.Compiler.PokeLinkLoop
 import lemmas.Compiler.PokeLinkLoopRun
 import lemmas.Compiler.PokeLinkGood4
 import lemmas.Compiler.PokeLinkTop5
+import lemmas.Compiler.PokeLinkEvalFin
 
 /-! # Audit of track P: `enc` and the `%full` branch of `+poke` -/
 
@@ -194,3 +195,7 @@ open Formalization Formalization.Compiler
 #print axioms pokeModel_fullGood5
 #print axioms pokeReachGood5
 #print axioms pokeModel_fullReachP5
+#print axioms ef_htrap
+#print axioms ef_loop_all
+#print axioms evalFinAt
+#print axioms loopLinkAt_good5E
