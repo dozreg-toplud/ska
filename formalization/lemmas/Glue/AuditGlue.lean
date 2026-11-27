@@ -41,6 +41,7 @@ import lemmas.Compiler.CompShapeColRet
 import lemmas.Glue.InvMemoP
 import lemmas.Glue.GuardRun
 import lemmas.Glue.GuardTop
+import lemmas.Glue.GuardFinalTop
 import lemmas.Compiler.PokeLink
 import lemmas.Ska.PokeEnc
 import lemmas.Ska.SccLoopMsg
@@ -411,5 +412,14 @@ namespace Formalization
 #print axioms SkaModel.Glue.fullAnswers_of_cgMP
 #print axioms SkaModel.Glue.gap_of_armPM
 #print axioms SkaModel.Glue.halting_of_cgMP
+
+#print axioms SkaModel.Glue.blocksOK_rename
+#print axioms SkaModel.Glue.kernListG
+#print axioms SkaModel.Glue.coerceLazyLG
+#print axioms SkaModel.Glue.guardFinalU
+#print axioms SkaModel.Glue.guardFinalF
+#print axioms SkaModel.Glue.guardMonoX
+#print axioms SkaModel.Glue.guardNaryX
+#print axioms SkaModel.Glue.compHyp_of_fragX₃
 
 end Formalization
