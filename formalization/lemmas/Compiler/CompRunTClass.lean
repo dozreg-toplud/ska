@@ -1,5 +1,6 @@
 import lemmas.Compiler.CompRunTSixAll
 import lemmas.Compiler.CompRunRClass
+import lemmas.Compiler.CompRunTCall
 
 /-!
 # The threaded run link on the class `DirOk` (README Gaps 19 (g))
@@ -10,8 +11,10 @@ import lemmas.Compiler.CompRunRClass
   callee) where the call reads as a hit (`CallNounM`).
 * `comp_run_n2_directXT`: the direct call, dropped or not, its parts linked at
   one rest each (`PartLM`).
-* `DirCallsT`, `callCode_of_dirT`, `dirCallsT_of` (the old `DirCalls` is the
-  case `Y = (· = ·)`), `sixRT_of`.
+* `DirCallsT` (`CallOkT` at every direct call, inside the subject and formula
+  of another one too), `callCode_of_dirT`, `dirCallsT_of` (the old `DirCalls`
+  is the case with no miss), `sixRT_of`, `dirCallsT_nested` (the shape of a
+  miss in the subject of a direct call).
 * **`comp_run_dirT`**: every nomm of `DirOk` whose direct calls meet `CallOkT`
   is a `PartRT` at `XM E msup`, for every `Y` with `YOk (XM E msup) Y`;
   **`comp_run_dirXT`**, `res_dirT`.
@@ -124,15 +127,15 @@ theorem comp_run_n2_directXT {E : GenRest → Prop} {Y : GenRest → GenRest →
           exact (tail_copyH (ginv_bunt_j hd hj) (linv_bunt _ _) (by simp [lregs_bunt]) R2 e3
             (P.res _ _ _ _ (tail_pgoal (ginv_bunt_j hd hj) (linv_bunt _ _) R2 e3).1 e4)).1)
 
-/-- **`CallOkT` of every direct call**, each at the `msup` its run gets; the
-subject and formula of a direct call with `DirCalls` (their own calls read
-as hits at every rest with `E`). -/
+/-- **`CallOkT` of every direct call**, each at the `msup` its run gets,
+the subject and formula of a direct call included (a call there may miss
+too: the tail of the call is threaded, `comp_run_n2_directXTT`). -/
 def DirCallsT (env : CallEnv) (cod ctx : Noun) (E : GenRest → Prop) (Y : GenRest → GenRest → Prop) :
     Option Nomm → Nomm → Prop
   | ms, Nomm.cons p q => DirCallsT env cod ctx E Y ms p ∧ DirCallsT env cod ctx E Y ms q
   | ms, Nomm.n2 p q Option.none => DirCallsT env cod ctx E Y ms p ∧ DirCallsT env cod ctx E Y ms q
   | ms, Nomm.n2 p q (some (b, _)) =>
-      CallOkT env cod ctx E Y ms p q b ∧ DirCalls env cod ctx E ms p ∧ DirCalls env cod ctx E ms q
+      CallOkT env cod ctx E Y ms p q b ∧ DirCallsT env cod ctx E Y ms p ∧ DirCallsT env cod ctx E Y ms q
   | ms, Nomm.n3 p => DirCallsT env cod ctx E Y ms p
   | ms, Nomm.n4 p => DirCallsT env cod ctx E Y ms p
   | ms, Nomm.n5 p q => DirCallsT env cod ctx E Y ms p ∧ DirCallsT env cod ctx E Y ms q
@@ -149,7 +152,7 @@ theorem dirCallsT_of {env : CallEnv} {cod : Noun} {E : GenRest → Prop} {Y : Ge
   | _, Nomm.n0 _, _ => trivial
   | _, Nomm.n1 _, _ => trivial
   | ms, Nomm.n2 p q Option.none, h => ⟨dirCallsT_of hY ms p h.1, dirCallsT_of hY ms q h.2⟩
-  | _, Nomm.n2 _ _ (some (_, _)), h => ⟨callOkT_of hY h.1, h.2.1, h.2.2⟩
+  | ms, Nomm.n2 p q (some (_, _)), h => ⟨callOkT_of hY h.1, dirCallsT_of hY ms p h.2.1, dirCallsT_of hY ms q h.2.2⟩
   | ms, Nomm.n3 p, h => dirCallsT_of hY ms p h
   | ms, Nomm.n4 p, h => dirCallsT_of hY ms p h
   | ms, Nomm.n5 p q, h => ⟨dirCallsT_of hY ms p h.1, dirCallsT_of hY ms q h.2⟩
@@ -173,7 +176,7 @@ theorem callCode_of_dirT {env : CallEnv} {cod : Noun} {E : GenRest → Prop} {Y 
     exact ⟨trivial, callCode_of_dirT p h.1 ms hd.1, callCode_of_dirT q h.2 ms hd.2⟩
   | Nomm.n2 p q (some (b, Option.none)), h, ms, hd => by
     simp only [DirOk, Bool.and_eq_true] at h; simp only [DirCallsT] at hd; simp only [CallCode]
-    exact ⟨⟨hd.1.1, hd.1.2.1⟩, callCode_of_dir p h.1 ms hd.2.1, callCode_of_dir q h.2 ms hd.2.2⟩
+    exact ⟨⟨hd.1.1, hd.1.2.1⟩, callCode_of_dirT p h.1 ms hd.2.1, callCode_of_dirT q h.2 ms hd.2.2⟩
   | Nomm.n2 _ _ (some (_, some _)), h, _, _ => by simp [DirOk] at h
   | Nomm.n3 p, h, ms, hd => by
     simp only [DirOk] at h; simp only [DirCallsT] at hd; simp only [CallCode]; exact callCode_of_dirT p h ms hd
@@ -236,10 +239,9 @@ theorem comp_run_dirT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot
     have hc := callCode_of_dirT (ctx := ctx) _ h msup hd
     simp only [DirOk, Bool.and_eq_true] at h; simp only [DirCallsT] at hd
     obtain ⟨⟨hcd, -, hri, nb, hnb, hE⟩, hdp, hdq⟩ := hd
-    have P := comp_run_dir h7 hcode env E p h.1 msup region hdp
-    have Q := comp_run_dir h7 hcode env E q h.2 msup region hdq
-    exact ⟨fun goal g hi => comp_run_n2_directXT (hY msup) h7 hcode env p q P.past (partLM_of_partR P)
-        (partLM_of_partR Q) b hcd nb hE hri hnb goal g hi,
+    have P := comp_run_dirT h7 hcode env E Y hY p h.1 msup region hdp
+    have Q := comp_run_dirT h7 hcode env E Y hY q h.2 msup region hdq
+    exact ⟨fun goal g hi => comp_run_n2_directXTT (hY msup) h7 hcode env p q P Q b hcd nb hE hri hnb goal g hi,
       res_n2_directMono P.res Q.res hri hnb, pastAt_code h7 hcode env hc⟩
   | Nomm.n2 _ _ (some (_, some _)), h, _, _, _ => by simp [DirOk] at h
   | Nomm.n3 p, h, msup, region, hd => by
@@ -316,6 +318,19 @@ theorem res_dirT (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 
 /-- **Equality is a `YOk`**: the case with no miss. -/
 theorem yOk_eq (X : GenRest → Noun → Noun → Prop) : YOk X (· = ·) :=
   ⟨fun _ => rfl, fun h1 h2 => h1.trans h2, fun hx h => h ▸ hx, fun hX h => h ▸ hX⟩
+
+/-- **A miss in the subject of a direct call is covered** (the shape): for
+`[2 [2 p0 q0 b1] q b]`, `DirCallsT` asks `CallOkT` of the inner call `b1`,
+whose need step may miss and compile `b1`'s SCC (`CallNounMT` from `x` to
+some `x'`), and `comp_run_dirT` links the outer call with that miss inside
+the run of its subject. -/
+theorem dirCallsT_nested {env : CallEnv} {cod : Noun} {E : GenRest → Prop} {Y : GenRest → GenRest → Prop}
+    {ms : Option Nomm} {p0 q0 q : Nomm} {b b1 : Bell} {k k1 : Option Noun}
+    (h : CallOkT env cod ctx E Y ms (Nomm.n2 p0 q0 (some (b1, k1))) q b) (h1 : CallOkT env cod ctx E Y ms p0 q0 b1)
+    (hp0 : DirCallsT env cod ctx E Y ms p0) (hq0 : DirCallsT env cod ctx E Y ms q0)
+    (hq : DirCallsT env cod ctx E Y ms q) :
+    DirCallsT env cod ctx E Y ms (Nomm.n2 (Nomm.n2 p0 q0 (some (b1, k1))) q (some (b, k))) :=
+  ⟨h, ⟨h1, hp0, hq0⟩, hq⟩
 
 end Compiler
 end Formalization
