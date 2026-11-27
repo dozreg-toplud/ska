@@ -92,7 +92,7 @@ theorem infoMapRel_of_aInfoEq {N : Noun} {a b : Opt.AInfo} (h : InfoMapRel N a) 
 /-! ## The entry block -/
 
 /-- The noun of `*info-reg`. -/
-theorem infoRel_bunt : InfoRel (C (A 1) (C (A 1) (C (A 0) (C (A 0) (C (A 0) (C (A 0) (C (A 0) (A 0))))))))
+theorem infoRel_buntN : InfoRel (C (A 1) (C (A 1) (C (A 0) (C (A 0) (C (A 0) (C (A 0) (C (A 0) (A 0))))))))
     ({} : Opt.InfoReg) :=
   ⟨false, A 0, A 0, rfl, sawRel_nil, sawRel_nil, rfl⟩
 
@@ -114,7 +114,7 @@ theorem al_ent (PRE GEN BL REV TOPO : Noun) (nargs : Nat) :
     simp [nock_exec]
   | succ n ih =>
     intro r hr I hI
-    obtain ⟨I1, hp, hI1⟩ := infoMapRel_put hI infoRel_bunt r
+    obtain ⟨I1, hp, hI1⟩ := infoMapRel_put hI infoRel_buntN r
     have hI1' : InfoMapRel I1 (fun k => if k < r + 1 then some {} else none) := by
       refine ⟨hI1.1, fun k v hg => ?_, fun q y hy => hI1.2.2 q y ?_⟩
       · obtain ⟨q, x, e, hx, hq⟩ := hI1.2.1 k v hg
