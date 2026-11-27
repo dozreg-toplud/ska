@@ -5,6 +5,7 @@ import lemmas.Compiler.CompRunDirectS
 import lemmas.Compiler.CompRunDirectMono
 import lemmas.Compiler.CompRunDirectMonoL
 import lemmas.Compiler.CompRunDirectMonoB
+import lemmas.Compiler.CompRunDirectMonoP
 
 /-! The axioms of the link of the direct call of `%2` (README Gaps 19). -/
 
@@ -91,3 +92,17 @@ open Formalization.Compiler
 #print axioms crd_model_callM
 #print axioms crd_callM
 #print axioms callLM_true_direct
+#print axioms km_monoTryLoop
+#print axioms km_crdBlockMM
+#print axioms km_monoBlocks
+#print axioms crdBlockMM_sub
+#print axioms monoBlocks_sub
+#print axioms ginv_noar
+#print axioms crd_goalsM
+#print axioms runLCM_n2_direct
+#print axioms crd_model_n2M
+#print axioms comp_run_n2_callMono
+#print axioms crd_fq_resR
+#print axioms crd_hpqM
+#print axioms res_n2_callMono
+#print axioms comp_run_n2_callMM
