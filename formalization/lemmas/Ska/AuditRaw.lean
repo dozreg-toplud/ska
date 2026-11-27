@@ -15,6 +15,7 @@ import lemmas.Ska.RawInvCAT
 import lemmas.Ska.RawInvCLSpec
 import lemmas.Ska.RawInvCLIJ
 import lemmas.Ska.RawInvCLCollapse
+import lemmas.Ska.RawInvCLRun
 
 /-!
 # Axioms of the main theorems of track D (README Gaps 14)
@@ -175,3 +176,13 @@ open Formalization SkaModel Raw
 #print axioms collapseGate_step
 #print axioms collapseWalk_prep
 #print axioms liveK_walkR
+#print axioms liveC_emitG
+#print axioms liveRun_n4_done
+#print axioms liveRun_n4_pick
+#print axioms liveRun_n4
+#print axioms liveRun_clq
+#print axioms doneBlocks_spec
+#print axioms liveRun_n3
+#print axioms liveRun_plainOf
+#print axioms il_gen0
+#print axioms liveRun_plain_topOf
