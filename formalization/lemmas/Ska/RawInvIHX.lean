@@ -59,21 +59,22 @@ def RawIHX (S : Type) [HoonSet S] (Map : Type → Type) [HoonMap Map] [HoonMapKe
     (nm : Nomm) : Prop :=
   ∀ (goal : CGoal S) (region : List Nat) (g0 g1 : Comp.Gen Map) (nex : NextL S) (K : Nat → Nat → Prop),
     KVan K g0.bo → SIP X (upRk g0.blocks) g0.bo g0 → GoalIn g0.re goal → GDist goal → GJ g0.bo goal →
-    GArgs goal → (∀ r, Defd g0.blocks r → ¬ GMem goal r) →
+    GArgs goal → (∀ r, Defd g0.blocks r → ¬ GMem goal r) → sixCount nm ≤ 255 →
     runL nm (CGoal.toL goal) region g0 = some (nex, g1) →
-    SIP X (upRk g1.blocks) g1.bo g1 ∧
+    SIP X (upRk g1.blocks) g1.bo g1 ∧ nex.th.args = [] ∧ 1 ≤ nex.th.there ∧ nex.th.there < g1.bo ∧
       ∀ r, LiveK g1.blocks (fun x y => K x y ∨ lazK nex.th.there nex.laz x y) nex.th.there r →
         GLiveK g0.blocks K goal r
 
 /-- **The case `frag`**: a nomm of the first fragment, by `run_rawUK`. -/
 theorem rawX_frag {nm : Nomm} (hf : ∀ goal : CGoal S, Frag nm goal) : RawIHX S Map X nm := by
-  intro goal region g0 g1 nex K hK h hg hD hj ha hfd hr
+  intro goal region g0 g1 nex K hK h hg hD hj ha hfd _ hr
   rw [runL_frag (hf goal) region g0] at hr
   obtain ⟨⟨nex', g1'⟩, hr', e⟩ := Option.map_eq_some_iff.mp hr
   simp only [Prod.mk.injEq] at e
   obtain ⟨rfl, rfl⟩ := e
   obtain ⟨S1, L1⟩ := run_rawUK (K := K) h hg hD hj ha hfd hr'
-  refine ⟨S1, fun r hl => ?_⟩
+  obtain ⟨-, -, -, -, -, -, a1, lo1, hi1⟩ := sub_facts h hg hD hj ha hr'
+  refine ⟨S1, a1, lo1, hi1, fun r hl => ?_⟩
   have hnk := hl.nk
   simp only [Next.toL] at hl hnk
   rcases L1 r (hl.mono fun x y h => Or.inl h) with e | e
@@ -110,10 +111,11 @@ theorem lazK_fromL {axe : Nat} {l l' : Lazy S} (h : fromL axe l = some l') {o x 
 emits nothing and keeps the kills. -/
 theorem rawX_sevenFrom {axe : Nat} {q : Nomm} (ha : 2 ≤ axe) (ihq : RawIHX S Map X q) :
     RawIHX S Map X (Nomm.n7 (Nomm.n0 axe) q) := by
-  intro goal region g0 g1 nex K hK h hg hD hj hA hfd hr
+  intro goal region g0 g1 nex K hK h hg hD hj hA hfd hc hr
   obtain ⟨nx, laz', h1, hl, rfl⟩ := runL_seven_from ha hr
-  obtain ⟨S1, L1⟩ := ihq goal region g0 g1 nx K hK h hg hD hj hA hfd h1
-  exact ⟨S1, fun r hlv => L1 r (hlv.mono fun x y e => e.imp id (lazK_fromL hl))⟩
+  obtain ⟨S1, a1, lo1, hi1, L1⟩ := ihq goal region g0 g1 nx K hK h hg hD hj hA hfd
+    (by simpa only [sixCount, Nat.zero_add] using hc) h1
+  exact ⟨S1, a1, lo1, hi1, fun r hlv => L1 r (hlv.mono fun x y e => e.imp id (lazK_fromL hl))⟩
 
 /-! ## `[7 p q]` with `q` in the first fragment -/
 
@@ -124,7 +126,7 @@ theorem KVan.mono {K : Nat → Nat → Prop} {lo lo' : Nat} (h : KVan K lo) (hl 
 for its fork-free result. -/
 theorem rawX_seven {p q : Nomm} (hq : ∀ goal : CGoal S, Frag q goal) (ihp : RawIHX S Map X p) :
     RawIHX S Map X (Nomm.n7 p q) := by
-  intro goal region g0 g1 nex K hK h hg hD hj hA hfd hr
+  intro goal region g0 g1 nex K hK h hg hD hj hA hfd hc hr
   rw [runL_n7] at hr
   obtain ⟨nq', g2, h2, hr⟩ := bind_some hr
   rw [runL_frag (hq goal) region g0] at h2
@@ -134,9 +136,10 @@ theorem rawX_seven {p q : Nomm} (hq : ∀ goal : CGoal S, Frag q goal) (ihp : Ra
   obtain ⟨S2, L2⟩ := run_rawUK (K := K) h hg hD hj hA hfd hq2
   obtain ⟨-, b2, nb2, d2, s2, dd2, a2, lo2, hi2⟩ := sub_facts h hg hD hj hA hq2
   rw [Next.goal_toL] at hr
-  obtain ⟨S1, L1⟩ := ihp nq.goal region _ g1 nex K (hK.mono b2) S2
-    ⟨nb2, fun x hx => by rw [a2] at hx; cases hx⟩ d2 ⟨lo2, hi2⟩ a2 (defd_next h hfd s2 dd2) hr
-  refine ⟨S1, fun r hl => ?_⟩
+  obtain ⟨S1, a1, lo1, hi1, L1⟩ := ihp nq.goal region _ g1 nex K (hK.mono b2) S2
+    ⟨nb2, fun x hx => by rw [a2] at hx; cases hx⟩ d2 ⟨lo2, hi2⟩ a2 (defd_next h hfd s2 dd2)
+    (by simp only [sixCount] at hc; omega) hr
+  refine ⟨S1, a1, lo1, hi1, fun r hl => ?_⟩
   obtain ⟨hl', hn⟩ := L1 r hl
   rcases L2 r hl' with e | e
   · exact absurd e hn
@@ -216,16 +219,16 @@ theorem rawX_tail {p : Nomm} (ihp : RawIHX S Map X p) {g0 g g1 g2 : Comp.Gen Map
     {nex : NextL S} {region : List Nat} {K : Nat → Nat → Prop} (hK : KVan K g0.bo)
     (h : SIP X (upRk g0.blocks) g0.bo g) (hn : ∀ k, g0.bo ≤ k → HoonMap.get g0.blocks k = Option.none)
     (F : FinKeep g0 g) (E : EmitOK g b) (hx : x < g.re) (hnx : ¬ Defd g.blocks x) (hxb : x ∉ blockDefs b)
-    (he : (emit b : CM Map Nat) g = some (o, g1))
+    (hc : sixCount p ≤ 255) (he : (emit b : CM Map Nat) g = some (o, g1))
     (hr : runL p (CGoalL.next (ofSure (lazyReg x)) (jmp0 o)) region g1 = some (nex, g2)) :
-    SIP X (upRk g2.blocks) g2.bo g2 ∧
+    SIP X (upRk g2.blocks) g2.bo g2 ∧ nex.th.args = [] ∧ 1 ≤ nex.th.there ∧ nex.th.there < g2.bo ∧
       ∀ y, LiveK g2.blocks (fun a c => K a c ∨ lazK nex.th.there nex.laz a c) nex.th.there y →
         (BlockRF b y ∨ ∃ j ∈ getJmps b.fin, LiveK g.blocks K j.there y ∧ y ∉ blockDefs b) ∧ y ≠ x := by
   obtain ⟨S1, rfl, e1, q1, bo1⟩ := sip_emit h E he
   have hl := h.none (Nat.le_refl g.bo)
   have hlo := h.lob
   have S1' := sip_reRank S1 hn (F.trans (finKeep_put e1) hlo)
-  obtain ⟨S2, L2⟩ := ihp (CGoal.next (lazyReg x) (jmp0 g.bo)) region g1 g2 nex K (hK.mono (by omega)) S1'
+  obtain ⟨S2, a2, lo2, hi2, L2⟩ := ihp (CGoal.next (lazyReg x) (jmp0 g.bo)) region g1 g2 nex K (hK.mono (by omega)) S1'
     ⟨nb_this (by omega), jmpIn_jmp0 _ _⟩ trivial
     ⟨by simp [jmp0]; have := h.bo1; omega, by simp [jmp0]; omega⟩ rfl
     (fun r d hm => by
@@ -233,8 +236,8 @@ theorem rawX_tail {p : Nomm} (ihp : RawIHX S Map X p) {g0 g g1 g2 : Comp.Gen Map
       rw [e1, defd_put hl] at d
       rcases d with d | d
       · exact hnx d
-      · exact hxb d) hr
-  refine ⟨S2, fun y hy => ?_⟩
+      · exact hxb d) hc hr
+  refine ⟨S2, a2, lo2, hi2, fun y hy => ?_⟩
   obtain ⟨hl', hn'⟩ := L2 y hy
   have he' : ∀ k, k < g.bo → HoonMap.get g1.blocks k = HoonMap.get g.blocks k := fun k hk => by
     rw [e1, get_put_ne (by omega)]
@@ -246,7 +249,8 @@ theorem rawX_tail {p : Nomm} (ihp : RawIHX S Map X p) {g0 g g1 g2 : Comp.Gen Map
 /-- **The case `four`**: the block of `%4` (after the collapse of the goal's
 need under `%next`), then the run of the operand, as `raw_n4`. -/
 theorem rawX_four {p : Nomm} (ihp : RawIHX S Map X p) : RawIHX S Map X (Nomm.n4 p) := by
-  intro goal region g0 g1 nex K hK h hg hD hj ha hf hr
+  intro goal region g0 g1 nex K hK h hg hD hj ha hf hc hr
+  simp only [sixCount] at hc
   have hn : ∀ k, g0.bo ≤ k → HoonMap.get g0.blocks k = Option.none := fun k hk => h.none hk
   cases goal with
   | done =>
@@ -259,11 +263,11 @@ theorem rawX_four {p : Nomm} (ihp : RawIHX S Map X p) : RawIHX S Map X (Nomm.n4 
     obtain ⟨o, g4, h4, hr⟩ := bind_some hr
     have nd : ∀ x, g0.re ≤ x → ¬ Defd g3.blocks x := fun x hx d => by
       rw [b3, b2] at d; have := h.defd_lt d; omega
-    obtain ⟨S1, L1⟩ := rawX_tail ihp hK S3 hn (finKeep_blocks (by rw [b3, b2]))
+    obtain ⟨S1, a1, lo1, hi1, L1⟩ := rawX_tail ihp hK S3 hn (finKeep_blocks (by rw [b3, b2]))
       (emitOK_one S3 rfl (fun x hx => by simp [Comp.poleRegs] at hx; omega)
       (nd _ (Nat.le_refl _)) rfl (fun j hj => by simp [getJmps] at hj) (fun j hj => by simp [getJmps] at hj)
-      (by simp [FinIn]; omega)) (by omega) (nd _ (by omega)) (by rw [blockDefs_inc]; omega) h4 hr
-    refine ⟨S1, fun y hy => ?_⟩
+      (by simp [FinIn]; omega)) (by omega) (nd _ (by omega)) (by rw [blockDefs_inc]; omega) hc h4 hr
+    refine ⟨S1, a1, lo1, hi1, fun y hy => ?_⟩
     rcases L1 y hy with ⟨e | ⟨j, hj', -⟩, hne⟩
     · exact absurd (blockRF_inc (fun x hx => by simpa [finRegs] using hx) e) hne
     · simp [getJmps] at hj'
@@ -278,13 +282,13 @@ theorem rawX_four {p : Nomm} (ihp : RawIHX S Map X p) : RawIHX S Map X (Nomm.n4 
     obtain ⟨o', g4, h4, hr⟩ := bind_some hr
     have nd : ∀ x, g0.re ≤ x → ¬ Defd g3.blocks x := fun x hx d => by
       rw [b3, b2] at d; have := h.defd_lt d; omega
-    obtain ⟨S1, L1⟩ := rawX_tail ihp hK S3 hn (finKeep_blocks (by rw [b3, b2]))
+    obtain ⟨S1, a1, lo1, hi1, L1⟩ := rawX_tail ihp hK S3 hn (finKeep_blocks (by rw [b3, b2]))
       (emitOK_one S3 rfl (fun x hx => by simp [Comp.poleRegs] at hx; omega)
       (nd _ (Nat.le_refl _)) rfl
       (fun j hj' => by simp [getJmps] at hj'; rcases hj' with rfl | rfl; exact ha.1; exact ha.2)
       (fun j hj' => by simp [getJmps] at hj'; rcases hj' with rfl | rfl <;> omega)
-      (by simp [FinIn, JmpIn, ha.1, ha.2]; omega)) (by omega) (nd _ (by omega)) (by rw [blockDefs_inc]; omega) h4 hr
-    refine ⟨S1, fun y hy => ?_⟩
+      (by simp [FinIn, JmpIn, ha.1, ha.2]; omega)) (by omega) (nd _ (by omega)) (by rw [blockDefs_inc]; omega) hc h4 hr
+    refine ⟨S1, a1, lo1, hi1, fun y hy => ?_⟩
     rcases L1 y hy with ⟨e | ⟨j, hj', hl, -⟩, hne⟩
     · exact absurd (blockRF_inc (fun x hx => by simpa [finRegs, jmpRegs, ha.1, ha.2] using hx) e) hne
     · rw [b3, b2] at hl
@@ -326,11 +330,11 @@ theorem rawX_four {p : Nomm} (ihp : RawIHX S Map X p) : RawIHX S Map X (Nomm.n4 
     obtain ⟨S4, rfl, q4, b4, o4⟩ := sip_re S3 h4
     obtain ⟨o, g5, h5, hr⟩ := bind_some hr
     have F4 : FinKeep g0 g4 := F2.trans (finKeep_blocks (by rw [b4, b3])) bo2
-    obtain ⟨S1, L1⟩ := rawX_tail ihp hK S4 hn F4 (emitOK_one S4 rfl (fun x hx => by simp [Comp.poleRegs] at hx; omega)
+    obtain ⟨S1, a1, lo1, hi1, L1⟩ := rawX_tail ihp hK S4 hn F4 (emitOK_one S4 rfl (fun x hx => by simp [Comp.poleRegs] at hx; omega)
       (by rw [b4]; exact pnd) rfl (fun j hj' => by simp [getJmps] at hj'; rw [hj']; rfl)
       (fun j hj' => by simp [getJmps] at hj'; rw [hj']; simp [jmp0]; omega) (by simp [FinIn, JmpIn, jmp0]))
-      (by omega) (fun d => by rw [b4] at d; have := S3.defd_lt d; omega) (by rw [blockDefs_inc]; omega) h5 hr
-    refine ⟨S1, fun y hy => ?_⟩
+      (by omega) (fun d => by rw [b4] at d; have := S3.defd_lt d; omega) (by rw [blockDefs_inc]; omega) hc h5 hr
+    refine ⟨S1, a1, lo1, hi1, fun y hy => ?_⟩
     rcases L1 y hy with ⟨e | ⟨j, hj', hl, hn'⟩, hne⟩
     · exact absurd (blockRF_inc (fun x hx => by simp [finRegs, jmpRegs, jmp0] at hx) e) hne
     · simp [getJmps] at hj'; subst hj'
@@ -347,7 +351,8 @@ theorem finKeep_of_eq {g g' : Comp.Gen Map} (fr : ∀ x, x < g.bo → HoonMap.ge
 /-- **The case `three`**: the test block of `%3` (after `+forl` under
 `%next`), then the run of the operand, as `raw_n3`. -/
 theorem rawX_three {p : Nomm} (ihp : RawIHX S Map X p) : RawIHX S Map X (Nomm.n3 p) := by
-  intro goal region g0 g1 nex K hK h hg hD hj ha hf hr
+  intro goal region g0 g1 nex K hK h hg hD hj ha hf hc hr
+  simp only [sixCount] at hc
   have hn : ∀ k, g0.bo ≤ k → HoonMap.get g0.blocks k = Option.none := fun k hk => h.none hk
   cases goal with
   | done =>
@@ -358,12 +363,12 @@ theorem rawX_three {p : Nomm} (ihp : RawIHX S Map X p) : RawIHX S Map X (Nomm.n3
     obtain ⟨r, g3, h3, hr⟩ := bind_some hr
     obtain ⟨S3, rfl, q3, b3, o3⟩ := sip_re S2 h3
     obtain ⟨oc, g4, h4, hr⟩ := bind_some hr
-    obtain ⟨S1, L1⟩ := rawX_tail ihp hK S3 hn ((finKeep_of_eq fr2).trans (finKeep_blocks b3) (by omega))
+    obtain ⟨S1, a1, lo1, hi1, L1⟩ := rawX_tail ihp hK S3 hn ((finKeep_of_eq fr2).trans (finKeep_blocks b3) (by omega))
       (emitOK_clq (show g2.re < g3.re by omega) rfl rfl
       (show (jmp0 g0.bo).there < g3.bo by simp [jmp0]; omega) (show (jmp0 (g0.bo + 1)).there < g3.bo by simp [jmp0]; omega))
       (show g2.re < g3.re by omega) (fun d => by rw [b3] at d; have := S2.defd_lt d; omega)
-      (by simp [blockDefs, defsOf]) h4 hr
-    refine ⟨S1, fun y hy => ?_⟩
+      (by simp [blockDefs, defsOf]) hc h4 hr
+    refine ⟨S1, a1, lo1, hi1, fun y hy => ?_⟩
     rcases L1 y hy with ⟨e | ⟨j, hj', hl, -⟩, hne⟩
     · exact absurd (blockRF_clq rfl rfl e) hne
     · rw [b3] at hl
@@ -378,9 +383,9 @@ theorem rawX_three {p : Nomm} (ihp : RawIHX S Map X p) : RawIHX S Map X (Nomm.n3
     obtain ⟨r, g3, h3, hr⟩ := bind_some hr
     obtain ⟨S3, rfl, q3, b3, o3⟩ := sip_re h h3
     obtain ⟨oc, g4, h4, hr⟩ := bind_some hr
-    obtain ⟨S1, L1⟩ := rawX_tail ihp hK S3 hn (finKeep_blocks b3) (emitOK_clq (by omega) ha.1 ha.2 (by omega) (by omega))
-      (by omega) (fun d => by rw [b3] at d; have := h.defd_lt d; omega) (by simp [blockDefs, defsOf]) h4 hr
-    refine ⟨S1, fun y hy => ?_⟩
+    obtain ⟨S1, a1, lo1, hi1, L1⟩ := rawX_tail ihp hK S3 hn (finKeep_blocks b3) (emitOK_clq (by omega) ha.1 ha.2 (by omega) (by omega))
+      (by omega) (fun d => by rw [b3] at d; have := h.defd_lt d; omega) (by simp [blockDefs, defsOf]) hc h4 hr
+    refine ⟨S1, a1, lo1, hi1, fun y hy => ?_⟩
     rcases L1 y hy with ⟨e | ⟨j, hj', hl, -⟩, hne⟩
     · exact absurd (blockRF_clq ha.1 ha.2 e) hne
     · rw [b3] at hl
@@ -393,7 +398,7 @@ theorem rawX_three {p : Nomm} (ihp : RawIHX S Map X p) : RawIHX S Map X (Nomm.n3
     rw [runL_n3_next, noneEquivalentL_ofSure] at hr
     by_cases hne : noneEquivalent laz = true
     · rw [if_pos hne] at hr
-      exact ihp (CGoal.next laz th) region g0 g1 nex K hK h hg hD hj ha hf hr
+      exact ihp (CGoal.next laz th) region g0 g1 nex K hK h hg hD hj ha hf hc hr
     rw [if_neg hne] at hr
     obtain ⟨a, g2, h2, hr⟩ := bind_some hr
     have h2' : collapseLazyAtom ⟨laz, th⟩ g0 = some (a, g2) := by
@@ -412,10 +417,10 @@ theorem rawX_three {p : Nomm} (ihp : RawIHX S Map X p) : RawIHX S Map X (Nomm.n3
       obtain ⟨S4, rfl, q4, b4, o4⟩ := sip_re S3 h4
       obtain ⟨oc, g5, h5, hr⟩ := bind_some hr
       have F4 : FinKeep g0 g4 := (F2.trans (finKeep_of_eq fr3) bo2).trans (finKeep_blocks b4) (by omega)
-      obtain ⟨S1, L1⟩ := rawX_tail ihp hK S4 hn F4 (emitOK_clq (by omega) rfl rfl (by simp [jmp0]; omega)
+      obtain ⟨S1, a1, lo1, hi1, L1⟩ := rawX_tail ihp hK S4 hn F4 (emitOK_clq (by omega) rfl rfl (by simp [jmp0]; omega)
         (by simp [jmp0]; omega)) (by omega) (fun d => by rw [b4] at d; have := S3.defd_lt d; omega)
-        (by simp [blockDefs, defsOf]) h5 hr
-      refine ⟨S1, fun y hy => ?_⟩
+        (by simp [blockDefs, defsOf]) hc h5 hr
+      refine ⟨S1, a1, lo1, hi1, fun y hy => ?_⟩
       rcases L1 y hy with ⟨e | ⟨j, hj', hl, -⟩, hne'⟩
       · exact absurd (blockRF_clq rfl rfl e) hne'
       · rw [b4] at hl
