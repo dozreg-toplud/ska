@@ -354,6 +354,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/ListMold.lean` | The list mold of layer 1, `;;((list) n)`, returns `n` on a list and crashes otherwise (`listMoldIs`, the former hypothesis `ListMoldIs`). |
 | `Compiler/Validate.lean` | `+validate-cape`, `+validate-bell` and `+validate-ovum` on a `%dire` against `Cape.ofNoun?` and `Bell.ofNoun?` (`vcape_run`, `vbell_run`, `vovum_dire`); the poke of a core with `CorIn` runs `+validate-ovum` first (`pokeN_validates`), so it crashes on a bad `%dire` bell (`pokeDireBad`, the former hypothesis `PokeDireBad`). |
 | `Compiler/PokeLink.lean` | `+poke` on `%full` up to its callees (track P, Gaps 23): `anaArmP` with `+ska-cole-update` (P2), `anaHyp_of_armP`, `gap_of_armP` (the shapes of `contract`, `invKept`, `invStart` for `enc fl`), `invStart_cor`; `pillFull`, `FullBranchIs` (the Nock of the branch, open), `SkaLink`, `JetRootLink`, `SccLink`, `MonoLink`, `OptLink`, and `pokeN_full_of`: `PokeModel` on `%full` from these. |
+| `Compiler/PokeLinkFull.lean` | `FullBranchIs` proved (track P, Gaps 23): `+validate-ovum` on a `%full` is the mold (`vovum_full`), which returns a cell formula (`mold_full_cell`) and crashes on an atom one (`mold_full_atom`); the dispatch (`ipokeR_eq`, kernel) and the validation push (`ipokeB_full`, `ipokeB_full_atom`); the seven call formulas of the `%full` branch (`tools/gen/pokefull.py`) and the callees as gate slams read from the core (`skaRaw` .. `monoRaw`; `skaP`, `jrP`, `sccP`, `monoP`, `optP`), with `ska_call` .. `opt_call`; the glue (`full_run`, `else_run`, `then_run`), so `fullBranchIs`; `pokeN_full_atom` (the pill crashes on an atom formula); `jetRootLink_false` and its restatement `JetRootLinkR`; `pokeN_full`, `pokeModel_full`, `pokeModel_full_corIn` (`pokeModel` on `%full` from the links). |
 | `Compiler/AuditPokeLink.lean` | `#check` and `#print axioms` of track P. |
 | `Compiler/Connect.lean` | `Top`, `Mook`, `Run` and `Mock` of `core/Statement.lean` hold exactly when the models do (`top_iff`, `mook_iff`, `run_iff`, `mock_iff`, through `pull_slam`: `Pull` and `Slam` are `Nock` runs, so `nock`, by `StatementEval.lean`), on every core of the pill's shape (`core_shape`, `core_layer4`); the axes of `Statement.lean` are the generated ones (`axes_agree`). |
 | `Assembly.lean` | The four statements of `core/Statement.lean` (`full_of`; `meek_of` for `NockEquivalence`, `mockEquivalence_of` from `weak_of` and `converse_of`) from the hypotheses listed in `Gap`, each a `def … : Prop` naming the track that owns it: `PokeModel`, `Contract`, `Halting`, `InvStart`, `InvKept`, `LibSlam`, `LibFormat`, `MookFormat`.  Proved here: the outer `+poke` (`poke_iff`), and every core that `Reach` allows is of the pill's shape with a compiler's core the model reaches (`reach_model`). |
@@ -4568,7 +4569,7 @@ import only its theorems.  So:
     direct-call theorems of tracks J and K plug in; `MemoNoCallees` in the invariant (M8);
     the choice of `lib` for `LibSlam`, `RendLeafIs`, `HandIs`.
 23. **The poke on states: `enc` and the `%full` branch** (track P, 2026-11-27,
-    `Ska/PokeEnc.lean`, `Compiler/PokeLink.lean`, `Compiler/AuditPokeLink.lean`).
+    `Ska/PokeEnc.lean`, `Compiler/PokeLink.lean`, `Compiler/PokeLinkFull.lean`, `Compiler/AuditPokeLink.lean`).
     The fields of `pokeModel` that no track owned (LEDGER 1.1, 1.2, 1.6, 4.1, M9, M11).
     *The map of the state* (checked on the pill with `tools/gen/nouns.py`).  The compiler's
     core is `cr = [pokeBat [monoBat [state lib]]]`: axis `2` the battery of `+load`,
@@ -4646,24 +4647,65 @@ import only its theorems.  So:
     `FullBranchIs` (the Nock of the branch) and five links on encoded states, `SkaLink`
     (leaf 1.2), `JetRootLink`, `SccLink`, `MonoLink` (`+compiled-mono`, with
     `+compile-unary` inside: tracks A, I, K), `OptLink` (track H).
-    *Open, in order*: (1) `FullBranchIs`: `+validate-ovum` returns a `%full` unchanged (the
-    mold `ovum`, arm `685` of `vcore`; only the converse is proved, `mold_full`), the
-    dispatch, and the 272 cells of the branch, with the callees named by their axes in
-    `pillFull`'s docstring; the library calls `~(key by)`, `~(get by)`, `~(has by)`,
-    `~(put by)` need their pill links on `IsMap` nouns (`getF_toNoun` and `putF_toNoun`
-    give the model side).  (2) `SkaLink` for `anaArmP`: `ska_poke_ana_iff_pill` composed
-    with the link of `spRest` (not started: `+bake-graph`, `new-code`, the SCC loop with
+    *Proved since* (`Compiler/PokeLinkFull.lean`, same axioms): **`FullBranchIs` is a
+    theorem** (`fullBranchIs fl : FullBranchIs fl skaP jrP sccP monoP optP`).  The callees
+    are the slams of the gates the branch builds, read from the core `cr` by axis
+    (`hoon.hoon` `2097151`, `ana` `511`, the `+scc-of` core `63`, the `+compiled-mono`
+    core `3`, `long-ska` `58`, `jets-hot` `118`, `cache` `119`, `call.cole` `7486`, `calls`
+    `942`, `sccs` `958`): `skaRaw` (arm `20` of `ana` on `[[& s] f]`, `long-ska` and
+    `~(key by jets-hot)`, arm `188` of the door `by`), `getRaw` / `hasRaw` / `putRaw` (arms
+    `764`, `3061`, `340` of `by`), `sccRaw` (arm `96127`), `monoRaw` (arm `10`), `optP`
+    (`slamAt optC 2941`); `skaP`, `sccP`, `monoP` take the product apart and write it into
+    the core as the branch does (`edit? 58`, `958`, `119`), `jrP` is the test with the `%jsf`
+    straight-out.  The kernel checks that the pill's dispatch is `%jets`, `%fast`, `%full`
+    (then `%dire` untested) with the `%full` branch equal to `fullF`, the glue over the seven
+    call formulas (`ipokeR_eq`).  `+validate-ovum` on a `%full` is the mold (`vovum_full`),
+    which returns `[%full s [f1 f2]]` unchanged (`mold_full_cell`) and crashes on `[%full s
+    @]` (`mold_full_atom`): P4's pill side, so `pokeN_full_atom` (the pill crashes on a
+    `%full` with an atom formula, every encoded state).  Then `pokeN_full` (`pokeN_full_of`
+    without `FullBranchIs`), `pokeModel_full` (every `%full`, the atom case from `hAt`: the
+    model's `+ska-poke` answers no atom formula, true of `anaArmP`, `anaArmP_atom`), and
+    `pokeModel_full_corIn` (the form of `PokeModel` on `%full`, with `PokeReachEnc` added).
+    *Finding*: **`JetRootLink` is false of the pill's test** (`jetRootLink_false`): its right
+    side always returns, but on a state whose `jets` noun is an atom (`J := Noun` admits it)
+    the test reads `call.cole` from it and crashes (`jrP_jets_atom`).  Restated as
+    `JetRootLinkR`: the same equation only on the states the model's `+ska-poke` returns,
+    at its root bell (implied by `JetRootLink`, `jetRootLinkR_of`), which is all
+    `pokeN_full_of` uses.  The same caution holds for `MonoLink` (`+compile-unary` reads
+    `jets` and `jets-hot`, raw nouns) and `SkaLink` (it reads the registrations from `jets`):
+    a link stated for every `st` must let the model crash where the pill does.
+    *Open, in order*: (1) the five links on the pill's callees: `SkaLink fl A skaP`,
+    `JetRootLinkR fl A jrP`, `SccLink fl A sccP`, `MonoLink fl A monoP`, `OptLink A optP`
+    (`opt_gate` of track H gives the last on `FragX`).  (2) `SkaLink` for `anaArmP`:
+    `ska_poke_ana_iff_pill` composed with the link of `spRest` (not started: `+bake-graph`,
+    `new-code`, the SCC loop with
     `+eval-finalized`, the writes of `seek` and `calls`, `+ska-cole-update`), at the fuel
     `anaFuel` (P3: `fuelOK_anaFuel` turns the `∃ n` of the iff into it; the fuel `bf` of
-    `+bake-graph` needs the same, not done).  (3) The
-    image (`PokeReachEnc`): the `poke` case follows from the links (each returns an
-    encoded state) but for the flags (P1).  (4) P4: a `%full` whose formula is an atom
-    crashes in the pill (the mold `fol=^`), while the analysis model answers it
-    (`folStep` on `Shape.other` gives `[%0 0]`), so with `A.skaPoke = anaArm …`
-    `PokeModel` fails there as soon as the rest of the chain answers.  `anaArmP` has no
-    answer on an atom formula (the model side of the fix); the pill side, that
-    `+validate-ovum` crashes on it, is not proved (the mold, as `mold_full`), and
-    `pokeN_full_of` is stated for cell formulas.
+    `+bake-graph` needs the same, not done); `skaRaw` is `nock (C spBat (C sam ana))
+    spBat` after `sp_at`.  (3) The image (`PokeReachEnc`): the `poke` case follows from the
+    links (each returns an encoded state) but for the flags (P1).
+    *P1, a decision proposal.*  (a) A model of the flags: `flagsOf : FinMap Bell (VarEntry
+    FinMap) → Bell → Noun` replaying the SCC loop of `+ska-poke`: the SCCs of the new bells
+    in reverse topological order (`+scc-of` over `calls`), the members of each in the order of
+    `~(rep in scc)` (the treap order of the set, a function of the mugs), each member's flags
+    by `+eval-finalized` (a walk of its nomm: `%0` by `+have` on the sock, `%2` pure only with
+    `info` and the callee pure, hints by `hint-safe`, `%memo`, `%fast`) over the table with
+    the flags written so far; it reads `nomm`, `calls` and `less` of the bell and the callees'
+    flags.  Its size: `+eval-finalized` is about 60 lines of Hoon, the loop 15, plus the SCC
+    order.  Then `enc (flagsOf)` and the image condition is a theorem about the loop.  (b)
+    Keep `fl` a parameter and prove the image condition for SOME `fl`: since the pill never
+    rewrites an old entry's flags (the loop runs over the new bells only) and the new
+    bells' flags are written once, `fl` can be defined after the fact as the flags the pill
+    wrote, read back from the `code` noun (`getF` on `codeNoun`), which makes `PokeReachEnc`
+    a statement on the pill's writes alone (all of `code`, `calls`, `seek` from `new-code`)
+    and costs no model of `+eval-finalized`; its price is that nothing in the model then
+    says what the flags are, which is harmless because no model function reads them
+    (`+compile-unary`'s link reads `code` with the flags as a noun).  Recommended: (b).
+    *Dump* (`tools/hoon/flagsdump.hoon`, 10 `%full` pokes in a row: `[4 0 1]`, a mutual
+    recursion of `stale.hoon`, `[0 1]`, a decrement loop, crashes and hints): 1 to 11 entries,
+    the flags `[| |]`, `[| &]` and `[& &]` all occur (`[& |]` never), an old entry's flags
+    never change across pokes, and no SCC of more than one bell occurred, so the order of
+    `~(rep in scc)` played no part in these runs.
     *The other branches*: `%dire` (122 cells) is the chain of `%full` without `+ska-poke`
     and the jetted-root test, with `+compiled-nary` (107 cells) when `mono` is `|`: the
     model is `compileStep`, and `SccLink`, `MonoLink`, `OptLink` and a `NaryLink` would
