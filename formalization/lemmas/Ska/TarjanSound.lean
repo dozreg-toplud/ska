@@ -53,6 +53,7 @@ structure TjInv2 (G : Gr V) (s : St V) : Prop where
   lt : ∀ u i, s.vis u = some i → i < s.idx
   sc : ∀ S ∈ s.fin, ∀ a ∈ S, ∀ b ∈ S, TjReach G a b
   clo : FinClosed G s.fin
+  ne : ∀ S ∈ s.fin, S ≠ []
 
 /-- `lowest` against the state `s0` before `enter v`. -/
 def TjBR (G : Gr V) (s0 : St V) (v : V) (lo : Nat) : Prop :=
@@ -102,7 +103,7 @@ theorem tjKR_mono {G : Gr V} {s0 : St V} {v : V} {lo lo' : Nat} {acc : St V} (h 
   · exact Or.inr ⟨w, hw, j, hj, Nat.le_trans h hl, hr⟩
 
 theorem tjInv2_enter {G : Gr V} {s : St V} (h : TjInv2 G s) (v : V) : TjInv2 G (enter v s) := by
-  refine ⟨fun u i hu => ?_, h.sc, h.clo⟩
+  refine ⟨fun u i hu => ?_, h.sc, h.clo, h.ne⟩
   simp only [enter] at hu ⊢
   by_cases e : u = v
   · simp [e] at hu; omega
@@ -305,7 +306,7 @@ theorem connect_ok2 {G : Gr V} {U : List V} (hU : ∀ u w, w ∈ kidsOf G u → 
         · exact ⟨TjReach.refl _, TjReach.refl _, hn, hva⟩
         · have hs := vis_of_stk h3 (hXa x hx)
           exact ⟨hXv x hx, hF x (hXs x hx).1 hs, (hXs x hx).1, hs⟩
-      refine ⟨hF, k2, fun x hx hx0 => ?_, hLE, ⟨k7.lt, ?_, ?_⟩⟩
+      refine ⟨hF, k2, fun x hx hx0 => ?_, hLE, ⟨k7.lt, ?_, ?_, ?_⟩⟩
       · have := vis_of_stk hI hx; rw [hx0] at this; cases this
       · intro S hS a1 ha1 b1 hb1
         rcases List.mem_cons.1 hS with rfl | hS
@@ -342,6 +343,10 @@ theorem connect_ok2 {G : Gr V} {U : List V} (hU : ∀ u w, w ∈ kidsOf G u → 
           simp only [List.length_cons] at hi
           obtain ⟨j, hj, hij, hw'⟩ := k7.clo i (by omega) x hx w hw
           exact ⟨j + 1, by simp; omega, by omega, by simpa using hw'⟩
+      · intro S hS
+        rcases List.mem_cons.1 hS with rfl | hS
+        · simp
+        · exact k7.ne S hS
     · rw [if_neg hl] at h
       simp only [Option.some.injEq, Prod.mk.injEq] at h
       obtain ⟨rfl, rfl⟩ := h
@@ -378,6 +383,102 @@ theorem outer_ok2 {G : Gr V} {U : List V} (hU : ∀ u w, w ∈ kidsOf G u → w 
       have c5 := (connect_ok2 hU n v acc lo a (hR _ List.mem_cons_self) e hm hI hIU hI2 r1).2.2.2.2
       simp only [outer, e, hk, r1] at h
       exact outer_ok2 hU hK rest a s' hG' hR' (Nat.lt_of_le_of_lt (tjMeas_le r2.vis_ext) hm) r3 r4 hsa c5 h
+
+/-! ## The components are the SCCs -/
+
+theorem reach_closed {G : Gr V} {L : List (List V)} (hC : FinClosed G L) {a b : V} (h : TjReach G a b) :
+    ∀ i (hi : i < L.length), a ∈ L[i] → ∃ j, ∃ hj : j < L.length, i ≤ j ∧ b ∈ L[j] := by
+  induction h with
+  | refl a => exact fun i hi ha => ⟨i, hi, Nat.le_refl _, ha⟩
+  | step e _ ih =>
+    intro i hi ha
+    obtain ⟨j, hj, hij, hb⟩ := hC i hi _ ha _ e
+    obtain ⟨k, hk, hjk, hc⟩ := ih j hj hb
+    exact ⟨k, hk, Nat.le_trans hij hjk, hc⟩
+
+theorem idx_unique {L : List (List V)} {a : V} (hc : L.flatten.count a ≤ 1) :
+    ∀ i k (hi : i < L.length) (hk : k < L.length), a ∈ L[i] → a ∈ L[k] → i = k := by
+  induction L with
+  | nil => intro i k hi; simp at hi
+  | cons S L ih =>
+    intro i k hi hk h1 h2
+    rw [List.flatten_cons, List.count_append] at hc
+    cases i with
+    | zero =>
+      cases k with
+      | zero => rfl
+      | succ k =>
+        simp only [List.getElem_cons_zero, List.getElem_cons_succ] at h1 h2
+        have := List.count_pos_iff.2 h1
+        have := List.count_pos_iff.2 (List.mem_flatten.2 ⟨_, List.getElem_mem (by simp at hk; omega), h2⟩)
+        omega
+    | succ i =>
+      cases k with
+      | zero =>
+        simp only [List.getElem_cons_zero, List.getElem_cons_succ] at h1 h2
+        have := List.count_pos_iff.2 h2
+        have := List.count_pos_iff.2 (List.mem_flatten.2 ⟨_, List.getElem_mem (by simp at hi; omega), h1⟩)
+        omega
+      | succ k =>
+        simp only [List.getElem_cons_succ] at h1 h2
+        simp only [List.length_cons] at hi hk
+        have := ih (by omega) i k (by omega) (by omega) h1 h2
+        omega
+
+/-- **The spec of the model's result on its own graph** (`L` callers first,
+as the arm returns it): each component is nonempty and is the SCC of each of
+its members; each vertex of the graph occurs once, nothing else; no member
+of a later component (emitted earlier) calls a member of an earlier one. -/
+def TjSpec (G : Gr V) (L : List (List V)) : Prop :=
+  (∀ S ∈ L, S ≠ [] ∧ ∀ a ∈ S, ∀ b, b ∈ S ↔ TjReach G a b ∧ TjReach G b a) ∧
+    (∀ u, L.flatten.count u = if u ∈ tjVerts G then 1 else 0) ∧
+    ∀ i j, i < j → ∀ (hi : i < L.length) (hj : j < L.length), ∀ b ∈ L[j], ∀ c ∈ L[i], c ∉ kidsOf G b
+
+/-- **`tarjanM` is correct**: on every nonempty graph with distinct keys it
+returns, and its list meets `TjSpec`. -/
+theorem tarjanM_spec (G : Gr V) (hne : G ≠ []) (hk : (G.map Prod.fst).Nodup) :
+    ∃ L, tarjanM G = some L ∧ TjSpec G L := by
+  have hU : ∀ u w, w ∈ kidsOf G u → w ∈ tjVerts G := kidsOf_sub G
+  have hm : tjMeas (tjVerts G) (St.init : St V) < fuelOf G := by
+    rw [fuelOf_eq]; exact Nat.lt_succ_of_le (List.countP_le_length)
+  obtain ⟨s, h1, -, h3, h4, h5, h6, h7⟩ := outer_ok hU (kidsOf_key hk) G St.init (fun p h => h)
+    (fun p hp => mem_tjVerts.2 ⟨p, hp, Or.inl rfl⟩) hm tjInv_init (fun u h => by simp [St.init] at h) rfl
+  have hI2 := outer_ok2 hU (kidsOf_key hk) G St.init s (fun p h => h)
+    (fun p hp => mem_tjVerts.2 ⟨p, hp, Or.inl rfl⟩) hm tjInv_init (fun u h => by simp [St.init] at h) rfl
+    ⟨fun u i h => by simp [St.init] at h, by simp [St.init], fun i hi => by simp [St.init] at hi,
+      by simp [St.init]⟩ h1
+  obtain ⟨L, hL, hcount⟩ := tarjanM_count G hne hk
+  have hLs : L = s.fin := by
+    cases G with
+    | nil => exact absurd rfl hne
+    | cons q G' =>
+      simp only [tarjanM] at hL
+      rw [h1] at hL
+      exact (Option.some.inj hL).symm
+  subst hLs
+  have hc1 : ∀ u, s.fin.flatten.count u ≤ 1 := fun u => by rw [hcount u]; split <;> omega
+  refine ⟨s.fin, hL, ⟨fun S hS => ⟨hI2.ne S hS, fun a ha b => ⟨fun hb => ⟨hI2.sc S hS a ha b hb,
+    hI2.sc S hS b hb a ha⟩, fun ⟨hab, hba⟩ => ?_⟩⟩, hcount, ?_⟩⟩
+  · obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.1 hS
+    obtain ⟨j, hj, hij, hbj⟩ := reach_closed hI2.clo hab i hi ha
+    obtain ⟨k, hk', hjk, hak⟩ := reach_closed hI2.clo hba j hj hbj
+    have := idx_unique (hc1 a) i k hi hk' ha hak
+    have hji : j = i := by omega
+    subst hji; exact hbj
+  · intro i j hij hi hj b hb c hc he
+    obtain ⟨k, hk', hjk, hck⟩ := hI2.clo j hj b hb c he
+    have := idx_unique (hc1 c) i k hi hk' hc hck
+    omega
+
+/-- **Flopped (the order of `+ska-poke`), callees first**: no member of an
+earlier component calls a member of a later one. -/
+theorem tjSpec_flop {G : Gr V} {L : List (List V)} (h : TjSpec G L) :
+    ∀ i j, i < j → ∀ (hi : i < L.reverse.length) (hj : j < L.reverse.length),
+      ∀ b ∈ L.reverse[i], ∀ c ∈ L.reverse[j], c ∉ kidsOf G b := by
+  intro i j hij hi hj b hb c hc
+  rw [List.getElem_reverse] at hb hc
+  simp only [List.length_reverse] at hi hj
+  exact h.2.2 (L.length - 1 - j) (L.length - 1 - i) (by omega) (by omega) (by omega) b hb c hc
 
 end Tarjan
 end Formalization
