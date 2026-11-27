@@ -1,6 +1,7 @@
 import lemmas.Ska.RawInvWholeX
 import lemmas.Ska.RawInvEApart
 import lemmas.Compiler.OptLinkTotalAlias
+import lemmas.Compiler.TreapList
 
 /-!
 # Raw `+comp` output on `FragX`: the facts of `StInv` and `ReadsIn` through the final pass
@@ -721,8 +722,89 @@ theorem stIn_finishLUX {nm : Nomm} (hf : FragX (S := S) nm) (hc : sixCount nm �
   subst hr
   simp [renReg, needToOrd, countArgs]
 
+/-! ## The input facts of the totality of `+optimize`, per pass -/
+
+/-- **What `+optimize`'s totality asks of the n-ary code of `FragX`**
+(`StInv` with some rank, over the keys; `DInvR`, which holds `NoLti`;
+`ReadsIn nargs`), given `RunAT`. -/
+theorem optInput_finishLFX_of {nm : Nomm} (hf : FragX (S := S) nm) (hc : sixCount nm ≤ 255) (hat : RunAT S Map nm)
+    {ord : NeedOrd} {less : Cape} {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, []))
+    {c' : Straight Map} (h : finishLF (S := S) (Map := Map) nm ord less bake = some c') :
+    ∃ ρ, Compiler.StInv ρ (MapKeys.keys c'.blocks) c'.blocks ∧ DInvR c'.blocks ∧
+      Compiler.ReadsIn c'.nargs c'.blocks := by
+  obtain ⟨c1, c2, c3, c4, c5⟩ := stIn_finishLFX_of hf hc hat hbake h
+  have hO := optIn_finishLFX hf hc hbake h
+  obtain ⟨ρ, hI⟩ := Compiler.stInv_of hO.acyclic c1 c2 c3 c4
+  exact ⟨ρ, hI, optIn_iff.mp hO, readsIn_of_live fun r hl _ => c5 r hl⟩
+
+/-- **What `+optimize`'s totality asks of the whole-subject code of
+`FragX`**, given `RunAT`. -/
+theorem optInput_finishLUX_of {nm : Nomm} (hf : FragX (S := S) nm) (hc : sixCount nm ≤ 255) (hat : RunAT S Map nm)
+    {c' : Straight Map} (h : finishLU (S := S) (Map := Map) nm = some c') :
+    ∃ ρ, Compiler.StInv ρ (MapKeys.keys c'.blocks) c'.blocks ∧ DInvR c'.blocks ∧
+      Compiler.ReadsIn c'.nargs c'.blocks := by
+  obtain ⟨c1, c2, c3, c4, c5⟩ := stIn_finishLUX hf hc hat h
+  have hO := optIn_finishLUX hf hc h
+  obtain ⟨ρ, hI⟩ := Compiler.stInv_of hO.acyclic c1 c2 c3 c4
+  exact ⟨ρ, hI, optIn_iff.mp hO, readsIn_of_live fun r hl _ => c5 r hl⟩
+
 end Top
 
 end Raw
 end SkaModel
+
+namespace Compiler
+
+open Nock SkaModel Comp Raw
+
+/-! ## The totality of `+optimize` on raw output: the named corollary
+
+Track H restates `opt_gate_total` with `AliasRetN` (`AliasRet` is false,
+`not_aliasRet`) and `J = DInvR ∧ ReadsIn N` at `N = s.nargs`.  Until that
+statement exists, `GateTotalN` names its expected form (open, track H's),
+and the corollaries below are that one application on the raw output of
+`FragX`, with `RunAT` (open, track D's) the other hypothesis left. -/
+
+open Pill Hoon in
+/-- **The expected form of track H's restated `opt_gate_total`** (open):
+on blocks with `StInv ρ L`, `DInvR` and `ReadsIn nargs`, given `AliasRetN`,
+some fuels make the model of `+optimize` return `s'`, and the pill's
+`+optimize` returns its noun. -/
+def GateTotalN : Prop :=
+  ∀ (ρ : Nat → Nat) (L : List Nat), AliasRetN (Map := TreapMap mugF) (Ana.pickR FinMap) ρ L →
+    ∀ s : Straight (TreapMap mugF), StInv ρ L s.blocks → Opt.DInvR s.blocks → ReadsIn s.nargs s.blocks →
+      ∃ sfuel fuel s', Opt.optimizeF fuel ⟨Opt.aliasM (Ana.pickR FinMap), Opt.trimTraceHints,
+        Opt.switchChains sfuel⟩ s = some s' ∧ nock (C optBody (C s.toNoun optC)) optBody = some s'.toNoun
+
+section
+variable {S : Type} [HoonSet S]
+
+open Pill Hoon in
+/-- **The pill's `+optimize` returns on the raw n-ary code of every nomm of
+`FragX`**, given `GateTotalN` and `AliasRetN` (track H's) and `RunAT`
+(track D's). -/
+theorem opt_total_finishLFX (hG : GateTotalN)
+    (hA : ∀ ρ L, AliasRetN (Map := TreapMap mugF) (Ana.pickR FinMap) ρ L)
+    {nm : Nomm} (hf : FragX (S := S) nm) (hc : sixCount nm ≤ 255) (hat : RunAT S (TreapMap mugF) nm)
+    {ord : NeedOrd} {less : Cape} {bake : Need → Need × List (Nat × Noun)} (hbake : ∀ ned, bake ned = (ned, []))
+    {c' : Straight (TreapMap mugF)} (h : finishLF (S := S) (Map := TreapMap mugF) nm ord less bake = some c') :
+    ∃ sfuel fuel s', Opt.optimizeF fuel ⟨Opt.aliasM (Ana.pickR FinMap), Opt.trimTraceHints,
+      Opt.switchChains sfuel⟩ c' = some s' ∧ nock (C optBody (C c'.toNoun optC)) optBody = some s'.toNoun := by
+  obtain ⟨ρ, hI, hJ, hR⟩ := optInput_finishLFX_of hf hc hat hbake h
+  exact hG ρ _ (hA ρ _) c' hI hJ hR
+
+open Pill Hoon in
+/-- **The same for the raw whole-subject code.** -/
+theorem opt_total_finishLUX (hG : GateTotalN)
+    (hA : ∀ ρ L, AliasRetN (Map := TreapMap mugF) (Ana.pickR FinMap) ρ L)
+    {nm : Nomm} (hf : FragX (S := S) nm) (hc : sixCount nm ≤ 255) (hat : RunAT S (TreapMap mugF) nm)
+    {c' : Straight (TreapMap mugF)} (h : finishLU (S := S) (Map := TreapMap mugF) nm = some c') :
+    ∃ sfuel fuel s', Opt.optimizeF fuel ⟨Opt.aliasM (Ana.pickR FinMap), Opt.trimTraceHints,
+      Opt.switchChains sfuel⟩ c' = some s' ∧ nock (C optBody (C c'.toNoun optC)) optBody = some s'.toNoun := by
+  obtain ⟨ρ, hI, hJ, hR⟩ := optInput_finishLUX_of hf hc hat h
+  exact hG ρ _ (hA ρ _) c' hI hJ hR
+
+end
+
+end Compiler
 end Formalization
