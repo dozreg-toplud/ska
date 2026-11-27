@@ -164,14 +164,14 @@ theorem frontsS_seven {Qp Qq : Wit} {x : Bool} {L : Lazy S} {g0 g1 g2 : Gen Map}
         · have := hlab e he; omega
 
 /-- **`RunOKLS` of `[7 p q]`** (`runOKLB_seven` with `frontsS_seven`). -/
-theorem runOKLS_seven {lib : Lib} {P : Noun → Prop} {fb fc : Noun} {L : Lazy S} {th : Jmp} {Qp Qq : Wit}
+theorem runOKLS_seven {lib : Lib} {N : Needs} {P : Noun → Prop} {fb fc : Noun} {L : Lazy S} {th : Jmp} {Qp Qq : Wit}
     {x : Bool} {g0 g1 g2 : Gen Map} {nx nex : NextL S}
-    (Rq : RunOKLS (Map := Map) lib (Img lib P fb) fc L th Qq x g0 g1 nx)
-    (Rp : RunOKLS (Map := Map) lib P fb nx.laz nx.th Qp false g1 g2 nex)
+    (Rq : RunOKLS (Map := Map) lib N (Img lib P fb) fc L th Qq x g0 g1 nx)
+    (Rp : RunOKLS (Map := Map) lib N P fb nx.laz nx.th Qp false g1 g2 nex)
     (hL : ∀ r, NMem L.sure.ned r → r < g0.re)
     (hlab : ∀ e ∈ entries L, e.1 < g0.bo)
     (hE : ∀ e ∈ entries nx.laz, ∀ r, NMem (gsE x L) r → r < g1.re ∧ ¬ NMem e.2.sure.ned r) :
-    RunOKLS lib P (n3 (A 7) fb fc) L th (sevenWit Qp Qq) x g0 g2 nex :=
+    RunOKLS lib N P (n3 (A 7) fb fc) L th (sevenWit Qp Qq) x g0 g2 nex :=
   { toRunOKLB := runOKLB_seven Rq.toRunOKLB Rp.toRunOKLB hL hlab
     fs := frontsS_seven Rq.fs Rp.fs Rp.dreg Rq.dreg Rq.re Rp.re (fun k hk => Rp.cfr.get_lt hk) hE Rq.nodup
       (fun e he => by have := hlab e he; have := Rq.bo; omega) Rp.keep
@@ -188,10 +188,10 @@ products of `p` and of `p` give `LOKS false` of `[7 p q]`.  `q`'s result
 is flat with clean entries and its jump at no entry (`LOKS` of `q`), so it
 meets the premises of `LOKS.run` for `p`; the jump of the whole is `p`'s,
 the goal's or new. -/
-theorem lokS_seven {lib : Lib} {env : CallEnv} {P : Noun → Prop} {fb fc : Noun} {p q : Nomm}
-    (Lq : LOKS (S := S) (Map := Map) false lib env (Img lib P fb) fc q)
-    (Lp : LOKS (S := S) (Map := Map) false lib env P fb p) :
-    LOKS (S := S) (Map := Map) false lib env P (n3 (A 7) fb fc) (Nomm.n7 p q) := by
+theorem lokS_seven {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop} {fb fc : Noun} {p q : Nomm}
+    (Lq : LOKS (S := S) (Map := Map) false lib N env (Img lib P fb) fc q)
+    (Lp : LOKS (S := S) (Map := Map) false lib N env P fb p) :
+    LOKS (S := S) (Map := Map) false lib N env P (n3 (A 7) fb fc) (Nomm.n7 p q) := by
   refine ⟨fun {sup L th region g0 g1 nex} hc hr => ?_, fun {sup L th region g0 g2 nex} hcount b0 d0 hu hcl hcb
     h1 h2 hta ht hsd hsl hlab hnd hed hfl hcl' hce hr => ?_⟩
   · rw [runLC_n7] at hr
@@ -235,9 +235,9 @@ theorem lokS_seven {lib : Lib} {env : CallEnv} {P : Noun → Prop} {fb fc : Noun
 
 /-- **The jump of a hinted `[7 p q]` is a block it made**: `p`'s jump is
 new, or it is `q`'s, new when `q` is hinted; when `q` is not, `p` is. -/
-theorem jNewLS_seven {lib : Lib} {env : CallEnv} {P : Noun → Prop} {fb fc : Noun} {p q : Nomm}
-    (Lq : LOKS (S := S) (Map := Map) false lib env (Img lib P fb) fc q)
-    (Lp : LOKS (S := S) (Map := Map) false lib env P fb p)
+theorem jNewLS_seven {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop} {fb fc : Noun} {p q : Nomm}
+    (Lq : LOKS (S := S) (Map := Map) false lib N env (Img lib P fb) fc q)
+    (Lp : LOKS (S := S) (Map := Map) false lib N env P fb p)
     (Jq : hinted env.cod q = some true → JNewLS (S := S) (Map := Map) env q)
     (Jp : hinted env.cod p = some true → JNewLS (S := S) (Map := Map) env p)
     (hh : hinted env.cod (Nomm.n7 p q) = some true) : JNewLS (S := S) (Map := Map) env (Nomm.n7 p q) := by
@@ -356,8 +356,8 @@ theorem CallTree7.kind (lib : Lib) (cod : Bell → Option Bool) (P : Noun → Pr
 /-- **Every nomm of `CallTree7` meets `LOKS false`** on any subjects, and a
 hinted one `JNewLS`, with only the premises of `LOKS.run` on the starting
 goal and state. -/
-theorem lokS_callTree7 (lib : Lib) (env : CallEnv) {f : Noun} {nm : Nomm} (h : CallTree7 f nm) :
-    ∀ P, LOKS (S := S) (Map := Map) false lib env P f nm ∧
+theorem lokS_callTree7 (lib : Lib) {N : Needs} (env : CallEnv) {f : Noun} {nm : Nomm} (h : CallTree7 f nm) :
+    ∀ P, LOKS (S := S) (Map := Map) false lib N env P f nm ∧
       (hinted env.cod nm = some true → JNewLS (S := S) (Map := Map) env nm) := by
   induction h with
   | n0 axe =>
@@ -387,12 +387,12 @@ theorem lokS_callTree7 (lib : Lib) (env : CallEnv) {f : Noun} {nm : Nomm} (h : C
 
 /-- **A nomm with `LOKS` that begins under `%done` with the block `[don
 re]`** meets `DoneOK` (`runLC_done_next`, `lokS_done`). -/
-theorem done_of_lokS {x : Bool} {lib : Lib} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm}
-    (H : LOKS (S := S) (Map := Map) x lib env P f nm) (hcount : sixCount nm ≤ 255)
+theorem done_of_lokS {x : Bool} {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm}
+    (H : LOKS (S := S) (Map := Map) x lib N env P f nm) (hcount : sixCount nm ≤ 255)
     (hs : (∃ p q, nm = Nomm.cons p q) ∨ (∃ p q, nm = Nomm.n2 p q Option.none) ∨ (∃ ax, 1 ≤ ax ∧ nm = Nomm.n0 ax))
     {sup : Option Nomm} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S}
     (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0) (hcl : Clear g0) (hcb : CondBelow g0)
-    (hr : runLC env sup nm CGoalL.done region g0 = some (nex, g1)) : DoneOK lib P f g0 g1 nex := by
+    (hr : runLC env sup nm CGoalL.done region g0 = some (nex, g1)) : DoneOK lib N P f g0 g1 nex := by
   rw [runLC_done_next env sup hs region g0] at hr
   exact lokS_done H hcount b0 d0 hu hcl hcb hr
 
@@ -400,10 +400,10 @@ theorem done_of_lokS {x : Bool} {lib : Lib} {env : CallEnv} {P : Noun → Prop} 
 by `callTree_done`, the cons and the indirect call by `done_of_lokS`,
 `[7 p q]` with `q`'s `DoneOK` and `p`'s `LOKS` at `q`'s result through
 `runOKGB_sevenL` (`topTree_done`'s step). -/
-theorem callTree7_done (lib : Lib) (env : CallEnv) {f : Noun} {nm : Nomm} (h : CallTree7 f nm) :
+theorem callTree7_done (lib : Lib) {N : Needs} (env : CallEnv) {f : Noun} {nm : Nomm} (h : CallTree7 f nm) :
     ∀ (P : Noun → Prop) {sup : Option Nomm} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
     1 ≤ g0.bo → g0.drop = false → UpBelow g0 → Clear g0 → CondBelow g0 →
-    runLC env sup nm CGoalL.done region g0 = some (nex, g1) → DoneOK (S := S) (Map := Map) lib P f g0 g1 nex := by
+    runLC env sup nm CGoalL.done region g0 = some (nex, g1) → DoneOK (S := S) (Map := Map) lib N P f g0 g1 nex := by
   induction h with
   | n0 axe =>
     intro P sup region g0 g1 nex b0 d0 hu hcl hcb hr
@@ -424,7 +424,7 @@ theorem callTree7_done (lib : Lib) (env : CallEnv) {f : Noun} {nm : Nomm} (h : C
     obtain ⟨nx, ga, h1, h2⟩ := bind_some hr
     have D := ihq (Img lib P b) b0 d0 hu hcl hcb h1
     have Rq := D.run
-    have Lp := (lokS_callTree7 (S := S) (Map := Map) lib env hp P).1
+    have Lp := (lokS_callTree7 (S := S) (Map := Map) lib (N := N) env hp P).1
     have hj : nx.th.args = [] := by
       rcases Rq.ent with ⟨_, _, _, ha⟩ | e
       · exact ha
@@ -448,8 +448,8 @@ on every subject, with no hypothesis about the run. -/
 theorem finishLUC_contractCallTree7 (lib : Lib) (env : CallEnv) (P : Noun → Prop) {f : Noun} {nm : Nomm}
     (h : CallTree7 f nm) {c : Straight Map} (hc : finishLUC (S := S) env nm = some c) (N : Needs) :
     c.need = NeedOrd.this ∧ ∀ s, P s → ContractFwd lib N s f [s] c ∧ ContractBwd lib N s f [s] c :=
-  finishLUC_contractGB lib (fun hr => (callTree7_done (S := S) (Map := Map) lib env h P (by simp [gen0]) rfl
-    upBelow_gen0 clear_gen0 condBelow_gen0 hr).run) hc N
+  finishLUC_contractGB lib N (fun hr => (callTree7_done (S := S) (Map := Map) lib env h P (by simp [gen0]) rfl
+    upBelow_gen0 clear_gen0 condBelow_gen0 hr).run) hc
 
 /-- **The bell contract of `CallTree7`** (`finishLUC_contractNC`'s form). -/
 theorem finishLUC_bellContractCallTree7 {lib : Lib} {bl : Bell} {nm : Nomm} (h : CallTree7 bl.fol nm)

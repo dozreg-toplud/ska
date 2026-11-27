@@ -28,11 +28,11 @@ open Nock Lazy
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
 
 /-- **A run under a lazy goal, with its block of `+past`** (see the header). -/
-theorem RunOKLS.past {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp} {Q : Wit} {x : Bool}
-    {g0 g1 : Gen Map} {nex : NextL S} (R : RunOKLS (Map := Map) lib P f L th Q x g0 g1 nex)
+theorem RunOKLS.past {lib : Lib} {N : Needs} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp} {Q : Wit} {x : Bool}
+    {g0 g1 : Gen Map} {nex : NextL S} (R : RunOKLS (Map := Map) lib N P f L th Q x g0 g1 nex)
     (hsur : ∀ r, NMem L.sure.ned r → r < g0.re) (hLb : ∀ e ∈ entries L, e.1 < g0.bo)
     (hta : th.args = []) (d1 : g1.drop = false) (u1 : UpBelow g1) (region : List Nat) :
-    RunOKLS (Map := Map) lib P f L th Q x g0 ((g1.emitted ⟨[], [], Termin.hop nex.th⟩).tagged g1.bo region)
+    RunOKLS (Map := Map) lib N P f L th Q x g0 ((g1.emitted ⟨[], [], Termin.hop nex.th⟩).tagged g1.bo region)
       ⟨Lazy.mk Sure.bunt [] ((g1.bo, Lazy.mk nex.laz.sure nex.laz.fork []) :: nex.laz.bond), jmp0 g1.bo⟩ := by
   have hb : ∀ k, HoonMap.get ((g1.emitted ⟨[], [], Termin.hop nex.th⟩).tagged g1.bo region).blocks k =
       if k = g1.bo then some ⟨[], [], Termin.hop nex.th⟩ else HoonMap.get g1.blocks k := fun k => by
@@ -167,22 +167,22 @@ theorem RunOKLS.past {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th
     · exact Or.inl ⟨L', (mem _).mpr (Or.inr h1), by rw [re1]; exact h2⟩
     · exact Or.inr ⟨NE e he h1, by rw [re1]; exact h2⟩
   · -- forward
-    intro cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm ag hned regs _ hn
+    intro cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s0 s r hI htr hs hm ag hned regs _ hn
     obtain ⟨ag1, hned1, F1, F2⟩ := core cf hcf c ned σ O gul t s0 s ag hned st regs hn
     by_cases fs : FitsS nex.laz.sure s
     · obtain ⟨R', hh, hn', hk, e1⟩ := F1 fs
       exact goalSemCMD_step (Needs.le_refl _) hk e1
-        (R.sem cf (hcfE cf hcf) c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm ag1 hned1 R' hh hn')
+        (R.sem cf (hcfE cf hcf) c ned σ Inv ν O n gul hN hS hF st t tm s0 s r hI htr hs hm ag1 hned1 R' hh hn')
     · have ec := F2 fs
       rcases (R.nec s hs fs).1 gul n tm r hm with e | ⟨v, rfl, hv⟩
       · subst e; exact ⟨Tone.two t, st, hI, Needs.le_refl _, ec, ToneRel.two htr⟩
       · exact ⟨fun f => absurd f hv, fun _ => ⟨Tone.two t, st, hI, Needs.le_refl _, ec, ToneRel.two htr⟩⟩
   · -- backward
-    intro cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs _ hn res hres
+    intro cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag hned regs _ hn res hres
     obtain ⟨ag1, hned1, F1, F2⟩ := core cf hcf c ned σ O gul t s0 s ag hned st regs hn
     by_cases fs : FitsS nex.laz.sure s
     · obtain ⟨R', hh, hn', hk, e1⟩ := F1 fs
-      obtain ⟨r, hm, G⟩ := R.semB cf (hcfE cf hcf) c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag1 hned1 R'
+      obtain ⟨r, hm, G⟩ := R.semB cf (hcfE cf hcf) c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag1 hned1 R'
         hh hn' res (by rw [← e1]; exact hres)
       exact ⟨r, hm, goalSemCMD_step (Needs.le_refl _) hk e1 G⟩
     · have ec := F2 fs

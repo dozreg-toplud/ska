@@ -57,12 +57,12 @@ theorem JNewL.toS {env : CallEnv} {nm : Nomm} (h : JNewL (S := S) (Map := Map) e
     JNewLS (S := S) (Map := Map) env nm :=
   fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ hr => h hr
 
-theorem lokS_cons_run (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {fh ft : Noun}
+theorem lokS_cons_run (lib : Lib) {N : Needs} (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {fh ft : Noun}
     (hfh : ∃ x y, fh = C x y)
     (Kp : (p.pure = true ∧ MinkEq lib P fh p) ∨ hinted env.cod p = some true)
     (Kq : (q.pure = true ∧ MinkEq lib P ft q) ∨ hinted env.cod q = some true)
     (Jq : hinted env.cod q = some true → JNewLS (S := S) (Map := Map) env q)
-    (Sp : LOKS (S := S) (Map := Map) false lib env P fh p) (Sq : LOKS (S := S) (Map := Map) false lib env P ft q)
+    (Sp : LOKS (S := S) (Map := Map) false lib N env P fh p) (Sq : LOKS (S := S) (Map := Map) false lib N env P ft q)
     {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S}
     (hcount : sixCount (Nomm.cons p q) ≤ 255) (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0)
     (hcl0 : Clear g0) (hcb : CondBelow g0) (h1 : 1 ≤ th.there) (h2 : th.there < g0.bo) (hta : th.args = [])
@@ -74,7 +74,7 @@ theorem lokS_cons_run (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Pro
       ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none)
     (hfl : Flat L) (hcs : Clean L.sure.ned) (hce : ∀ e ∈ entries L, Clean e.2.sure.ned)
     (hr : runLC env sup (Nomm.cons p q) (CGoalL.next L th) region g0 = some (nex, g1)) :
-    (∃ Q, RunOKLS (Map := Map) lib P (C fh ft) L th Q false g0 g1 nex) ∧
+    (∃ Q, RunOKLS (Map := Map) lib N P (C fh ft) L th Q false g0 g1 nex) ∧
       nex.th.there ∉ (entries nex.laz).map Prod.fst ∧ g0.bo ≤ nex.th.there ∧ Flat nex.laz ∧
       (∀ e ∈ entries nex.laz, Clean e.2.sure.ned) := by
   have e : (runLC env sup (Nomm.cons p q) (CGoalL.next L th) region : CM Map (NextL S)) = (do
@@ -322,7 +322,7 @@ theorem lokS_cons_run (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Pro
       exact SA.ct) h3
   have bq0 := Rq.bo
   -- the tail with its `+past`
-  have Rq' : RunOKLS (Map := Map) lib P ft (mk sT [] (bt.filter fun e => !(lazyEmpty e.2))) nexh.th Qt false gb g1'' nexq' := by
+  have Rq' : RunOKLS (Map := Map) lib N P ft (mk sT [] (bt.filter fun e => !(lazyEmpty e.2))) nexh.th Qt false gb g1'' nexq' := by
     rcases tcase with ⟨rfl, rfl, -⟩ | ⟨rfl, rfl⟩
     · exact Rq
     · exact Rq.past (fun r hr => by have := lt2' _ Mt r hr; omega) (fun e he => by
@@ -495,13 +495,13 @@ theorem lokS_cons_run (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Pro
 
 /-- **The cons whose parts may call meets `LOKS`**: each part call-free with
 `MinkEq` or hinted, with `LOKS`, and `JNewLS` of a hinted tail. -/
-theorem lokS_consS (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {fh ft : Noun}
+theorem lokS_consS (lib : Lib) {N : Needs} (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {fh ft : Noun}
     (hfh : ∃ x y, fh = C x y)
     (Kp : (p.pure = true ∧ MinkEq lib P fh p) ∨ hinted env.cod p = some true)
     (Kq : (q.pure = true ∧ MinkEq lib P ft q) ∨ hinted env.cod q = some true)
     (Jq : hinted env.cod q = some true → JNewLS (S := S) (Map := Map) env q)
-    (Sp : LOKS (S := S) (Map := Map) false lib env P fh p) (Sq : LOKS (S := S) (Map := Map) false lib env P ft q) :
-    LOKS (S := S) (Map := Map) false lib env P (C fh ft) (Nomm.cons p q) := by
+    (Sp : LOKS (S := S) (Map := Map) false lib N env P fh p) (Sq : LOKS (S := S) (Map := Map) false lib N env P ft q) :
+    LOKS (S := S) (Map := Map) false lib N env P (C fh ft) (Nomm.cons p q) := by
   refine ⟨fun {sup L th region g0 g1 nex} hc hr => ?_, fun hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl hlab hnd hed
     hfl hcs hce hr => (fun ⟨a, b, c, d, e⟩ => ⟨a, b, Or.inr c, d, e⟩)
       (lokS_cons_run lib env hfh Kp Kq Jq Sp Sq hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl
@@ -555,23 +555,23 @@ theorem lokS_consS (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Prop} 
 
 /-- **The cons whose parts may call meets `LOKS`**, with `JNewL` of a hinted
 tail (`lokS_consS`). -/
-theorem lokS_cons (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {fh ft : Noun}
+theorem lokS_cons (lib : Lib) {N : Needs} (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {fh ft : Noun}
     (hfh : ∃ x y, fh = C x y)
     (Kp : (p.pure = true ∧ MinkEq lib P fh p) ∨ hinted env.cod p = some true)
     (Kq : (q.pure = true ∧ MinkEq lib P ft q) ∨ hinted env.cod q = some true)
     (Jq : hinted env.cod q = some true → JNewL (S := S) (Map := Map) env q)
-    (Sp : LOKS (S := S) (Map := Map) false lib env P fh p) (Sq : LOKS (S := S) (Map := Map) false lib env P ft q) :
-    LOKS (S := S) (Map := Map) false lib env P (C fh ft) (Nomm.cons p q) :=
+    (Sp : LOKS (S := S) (Map := Map) false lib N env P fh p) (Sq : LOKS (S := S) (Map := Map) false lib N env P ft q) :
+    LOKS (S := S) (Map := Map) false lib N env P (C fh ft) (Nomm.cons p q) :=
   lokS_consS lib env hfh Kp Kq (fun hq => JNewL.toS (Jq hq)) Sp Sq
 
 /-- **The jump of the cons is a block it made** (`lokS_cons_run`), under
 every flat lazy goal from a state as `LOKS.run` asks. -/
-theorem jNewLS_cons (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {fh ft : Noun}
+theorem jNewLS_cons (lib : Lib) {N : Needs} (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {fh ft : Noun}
     (hfh : ∃ x y, fh = C x y)
     (Kp : (p.pure = true ∧ MinkEq lib P fh p) ∨ hinted env.cod p = some true)
     (Kq : (q.pure = true ∧ MinkEq lib P ft q) ∨ hinted env.cod q = some true)
     (Jq : hinted env.cod q = some true → JNewLS (S := S) (Map := Map) env q)
-    (Sp : LOKS (S := S) (Map := Map) false lib env P fh p) (Sq : LOKS (S := S) (Map := Map) false lib env P ft q) :
+    (Sp : LOKS (S := S) (Map := Map) false lib N env P fh p) (Sq : LOKS (S := S) (Map := Map) false lib N env P ft q) :
     JNewLS (S := S) (Map := Map) env (Nomm.cons p q) :=
   fun hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs hce hr =>
     (lokS_cons_run lib env hfh Kp Kq Jq Sp Sq hcount b0 d0 hu hcl0 hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs
@@ -581,8 +581,8 @@ theorem jNewLS_cons (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Prop}
 
 /-- **`[0 0]` meets `LOKS`**: the block of `+bomb` crashes, no op at any
 goal entry, no product (`frontS_false`). -/
-theorem lokS_n00 (lib : Lib) (env : CallEnv) {P : Noun → Prop} {f : Noun}
-    (M : MinkEq lib P f (Nomm.n0 0)) : LOKS (S := S) (Map := Map) false lib env P f (Nomm.n0 0) := by
+theorem lokS_n00 (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Prop} {f : Noun}
+    (M : MinkEq lib P f (Nomm.n0 0)) : LOKS (S := S) (Map := Map) false lib N env P f (Nomm.n0 0) := by
   refine ⟨(lokc_n00 (S := S) (Map := Map) lib env M).clean, fun {sup L th region g0 g1 nex} _ b0 d0 hu hcl hcb
     h1 h2 hta ht hsd hsl hlab hnd hed hfl _ hce hr => ?_⟩
   rw [runLC_eq env _ rfl, runL_n00_next] at hr
@@ -590,7 +590,7 @@ theorem lokS_n00 (lib : Lib) (env : CallEnv) {P : Noun → Prop} {f : Noun}
   obtain ⟨rfl, rfl⟩ := hr
   have e0 : entries (ofSure (Sure.bunt : Sure S)) = [] := entries_ofSure _
   have RB := ((runOKL_n00 (Map := Map) lib (L := L) (th := th) b0 d0 hu (fun e he => (hlab e he).1)
-    (fun _ => A 0)).toLC M).toB (P := P)
+    (fun _ => A 0)).toLC M).toB (P := P) (N := N)
   have FS : FrontsS (Map := Map) (pureWit (Nomm.n0 0) (fun _ => Need.none) (fun _ => A 0)) false g0
       (g0.emitted ⟨[], [], Termin.bom (some th.there)⟩) L ⟨ofSure Sure.bunt, jmp0 g0.bo⟩ := by
     intro e he

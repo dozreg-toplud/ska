@@ -61,7 +61,7 @@ theorem eq_of_label {l : List (Nat × Lazy S)} (h : (l.map Prod.fst).Nodup) {a b
     · exact ih h'.2 h1 h2
 
 section
-variable {lib : Lib} {σ : Type} {Inv : σ → Prop} {ν : σ → Needs} {O : Oracle σ} {c : Straight Map} {gul : Noun}
+variable {lib : Lib} {N : Needs} {σ : Type} {Inv : σ → Prop} {ν : σ → Needs} {O : Oracle σ} {c : Straight Map} {gul : Noun}
 
 /-- **`GoalSemCM` with a witness kept by the code**: `GoalSemCMD`. -/
 theorem goalSemCMD_of_CM {K : Nat → Prop} {st : σ} {regs : Map (Option Noun)} {t tm : Trace} {je : Jmp}
@@ -115,7 +115,7 @@ theorem mem_pairRes_bond {n : Next S} {r bq bp : List (Nat × Lazy S)} {e : Nat 
 
 section
 
-variable {lib : Lib} {P : Noun → Prop} {f fh ft : Noun} {L : Lazy S} {th : Jmp}
+variable {lib : Lib} {N : Needs} {P : Noun → Prop} {f fh ft : Noun} {L : Lazy S} {th : Jmp}
     {g0 g' g'' gb g1 g2 g3' g3 : Gen Map} {hed tel Lh : Lazy S} {o : Nat} {jt : Jmp} {Qh Qt : Wit}
     {nexq nexp : NextL S} {n : Next S} {r : List (Nat × Lazy S)} {PB : Nat → List Pole}
     {Fin : Noun → Nat → Trace → Noun → Noun → Tone → Prop} {FinB : Noun → Trace → Noun → Noun → Tone → Prop}
@@ -154,8 +154,8 @@ variable {lib : Lib} {P : Noun → Prop} {f fh ft : Noun} {L : Lazy S} {th : Jmp
         HoonMap.get gb.blocks g''.bo = some ⟨[], [], Termin.hop (jmp0 o)⟩))
     (hhd : (∀ s, FitsS nexq.laz.sure s) ∨ TotalC lib P fh)
     -- the parts
-    (hq : RunOKLS (Map := Map) lib P ft tel jt Qt false gb g1 nexq)
-    (hp : RunOKLS (Map := Map) lib P fh Lh nexq.th Qh false g1 g2 nexp)
+    (hq : RunOKLS (Map := Map) lib N P ft tel jt Qt false gb g1 nexq)
+    (hp : RunOKLS (Map := Map) lib N P fh Lh nexq.th Qh false g1 g2 nexp)
     (hqf : Flat nexq.laz) (hpf : Flat nexp.laz)
     (hqc : ∀ e ∈ entries nexq.laz, Clean e.2.sure.ned) (hpc : ∀ e ∈ entries nexp.laz, Clean e.2.sure.ned)
     (cq : Clean nexq.laz.sure.ned) (cp : Clean nexp.laz.sure.ned)

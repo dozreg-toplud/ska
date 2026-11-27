@@ -57,11 +57,11 @@ theorem AgreeUB.toU {lib : Lib} {σ : Type} {O : Oracle σ} {c : Straight Map} {
   exact ⟨A, th', h1', by simpa using h2, h3⟩
 
 /-- **The forward `sem` of `RunOKGB`** (`SemGC` with `AgreeUB`). -/
-def SemGB (lib : Lib) (P : Noun → Prop) (f : Noun) (goal : CGoal S) (g0 g1 : Gen Map) (nex : NextL S) :
+def SemGB (lib : Lib) (N : Needs) (P : Noun → Prop) (f : Noun) (goal : CGoal S) (g0 g1 : Gen Map) (nex : NextL S) :
     Prop :=
   ∀ (cf : Map (Nat × List Nat)), (∀ k, k < g1.re → HoonMap.get cf k = HoonMap.get g1.cond k) →
     ∀ (c : Straight Map) (ned : Need) (σ : Type) (Inv : σ → Prop) (ν : σ → Needs) (O : Oracle σ) (n : Nat)
-      (gul : Noun), OracleSteps Inv ν O → OracleFwd lib Inv ν O n →
+      (gul : Noun), (∀ st, Inv st → N ≤ ν st) → OracleSteps Inv ν O → OracleFwd lib Inv ν O n →
     ∀ (st : σ) (t tm : Trace) (s0 s : Noun) (r : Tone), Inv st → Forall2 (FrameRel lib (ν st)) t tm → P s →
     minkF lib gul n tm s f = some r →
     (∀ st' : σ, AgreeUB lib O c gul st' t cf ned g0 g1 nex.laz s0 s) → (∀ x, NMem ned x → g1.re ≤ x) →
@@ -69,11 +69,11 @@ def SemGB (lib : Lib) (P : Noun → Prop) (f : Noun) (goal : CGoal S) (g0 g1 : G
     GoalSemCM lib O c gul Inv ν (fun x => (x < g0.re ∨ NMem ned x) ∧ ¬ GMem goal x) st regs t tm nex.th goal r
 
 /-- **The backward `sem` of `RunOKGB`** (`SemGCB` with `AgreeUB`). -/
-def SemGBB (lib : Lib) (P : Noun → Prop) (f : Noun) (goal : CGoal S) (g0 g1 : Gen Map) (nex : NextL S) :
+def SemGBB (lib : Lib) (N : Needs) (P : Noun → Prop) (f : Noun) (goal : CGoal S) (g0 g1 : Gen Map) (nex : NextL S) :
     Prop :=
   ∀ (cf : Map (Nat × List Nat)), (∀ k, k < g1.re → HoonMap.get cf k = HoonMap.get g1.cond k) →
     ∀ (c : Straight Map) (ned : Need) (σ : Type) (Inv : σ → Prop) (ν : σ → Needs) (O : Oracle σ)
-      (gul : Noun), OracleSteps Inv ν O → OracleBwd lib Inv ν O →
+      (gul : Noun), (∀ st, Inv st → N ≤ ν st) → OracleSteps Inv ν O → OracleBwd lib Inv ν O →
     ∀ (st : σ) (t tm : Trace) (s0 s : Noun), Inv st → Forall2 (FrameRel lib (ν st)) t tm → P s →
     (∀ st' : σ, AgreeUB lib O c gul st' t cf ned g0 g1 nex.laz s0 s) → (∀ x, NMem ned x → g1.re ≤ x) →
     ∀ regs, HoldsS nex.laz.sure regs s → HoldsN ned regs s0 →
@@ -82,7 +82,7 @@ def SemGBB (lib : Lib) (P : Noun → Prop) (f : Noun) (goal : CGoal S) (g0 g1 : 
       GoalSemCM lib O c gul Inv ν (fun x => (x < g0.re ∨ NMem ned x) ∧ ¬ GMem goal x) st regs t tm nex.th goal r
 
 /-- **`RunOKGC` with bodies at the result entries.** -/
-structure RunOKGB (lib : Lib) (P : Noun → Prop) (f : Noun) (goal : CGoal S) (g0 g1 : Gen Map) (nex : NextL S) :
+structure RunOKGB (lib : Lib) (N : Needs) (P : Noun → Prop) (f : Noun) (goal : CGoal S) (g0 g1 : Gen Map) (nex : NextL S) :
     Prop where
   ext : Ext g0 g1
   grow : GrowU g0 g1
@@ -100,22 +100,22 @@ structure RunOKGB (lib : Lib) (P : Noun → Prop) (f : Noun) (goal : CGoal S) (g
   nec : ∀ s, P s → ¬ FitsS nex.laz.sure s → NecC lib f goal s
   ncond : ∀ r, NMem nex.laz.sure.ned r → HoonMap.get g1.cond r = Option.none
   econd : ∀ e ∈ entries nex.laz, ∀ r, NMem e.2.sure.ned r → HoonMap.get g1.cond r = Option.none
-  sem : SemGB lib P f goal g0 g1 nex
-  semB : SemGBB lib P f goal g0 g1 nex
+  sem : SemGB lib N P f goal g0 g1 nex
+  semB : SemGBB lib N P f goal g0 g1 nex
 
 /-- **`RunOKGC` is `RunOKGB` with empty bodies.** -/
-theorem RunOKGC.toB {lib : Lib} {P : Noun → Prop} {f : Noun} {goal : CGoal S} {g0 g1 : Gen Map} {nex : NextL S}
-    (R : RunOKGC (Map := Map) lib P f goal g0 g1 nex) : RunOKGB lib P f goal g0 g1 nex := by
+theorem RunOKGC.toB {lib : Lib} {N : Needs} {P : Noun → Prop} {f : Noun} {goal : CGoal S} {g0 g1 : Gen Map} {nex : NextL S}
+    (R : RunOKGC (Map := Map) lib P f goal g0 g1 nex) : RunOKGB lib N P f goal g0 g1 nex := by
   have hl : ∀ e ∈ entries nex.laz, ∃ th, HoonMap.get g1.blocks e.1 = some ⟨[], [], Termin.hop th⟩ :=
     fun e he => (R.labs e he).2.2
   refine ⟨R.ext, R.grow, R.cfr, R.lo, R.hi, R.ent, R.regs, R.dist, R.eregs,
     fun e he => ⟨(R.labs e he).1, by have := (R.labs e he).2.1; have := R.hi; omega, [], (R.labs e he).2.2⟩,
     R.nodup, R.nec, R.ncond, R.econd,
     ?_, ?_⟩
-  · intro cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
+  · intro cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
     exact R.sem cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm (fun st' => (ag st').toU hl) hned
       regs hh hn
-  · intro cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
+  · intro cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
     exact R.semB cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs (fun st' => (ag st').toU hl) hned regs
       hh hn res hres
 
@@ -123,12 +123,12 @@ theorem RunOKGC.toB {lib : Lib} {P : Noun → Prop} {f : Noun} {goal : CGoal S} 
 
 /-- **`[7 p q]` for any goal with bodies** (`runOKGC_sevenL` for `RunOKGB`
 and `RunOKLB`): `p` reads no goal register (`x = false`). -/
-theorem runOKGB_sevenL {lib : Lib} {P : Noun → Prop} {f fb fc : Noun} (M : MinkC7 lib P f fb fc)
+theorem runOKGB_sevenL {lib : Lib} {N : Needs} {P : Noun → Prop} {f fb fc : Noun} (M : MinkC7 lib P f fb fc)
     {goal : CGoal S} {Qp : Wit} {g0 g1 g2 : Gen Map} {nx nex : NextL S}
-    (Rq : RunOKGB (Map := Map) lib (Img lib P fb) fc goal g0 g1 nx)
-    (Rp : RunOKLB (Map := Map) lib P fb nx.laz nx.th Qp false g1 g2 nex)
+    (Rq : RunOKGB (Map := Map) lib N (Img lib P fb) fc goal g0 g1 nx)
+    (Rp : RunOKLB (Map := Map) lib N P fb nx.laz nx.th Qp false g1 g2 nex)
     (hg : ∀ r, GMem goal r → r < g0.re) :
-    RunOKGB lib P f goal g0 g2 nex := by
+    RunOKGB lib N P f goal g0 g2 nex := by
   have q1 := Rq.ext.1
   have q2 := Rq.ext.2.1
   have p1 := Rp.re
@@ -264,12 +264,12 @@ theorem runOKGB_sevenL {lib : Lib} {P : Noun → Prop} {f fb fc : Noun} (M : Min
       · obtain ⟨r, hr, hbr⟩ := (Rq.nec u ⟨s, gul, hs, mink_nil_of_mink_zero hb⟩ hq).2 gul tm
         exact ⟨r, (M.bwd hs hb).2 u r rfl hr, hbr⟩
   · -- forward
-    intro cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
+    intro cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
     have hcf1 : ∀ k, k < g1.re → HoonMap.get cf k = HoonMap.get g1.cond k := fun k hk' =>
       (hcf k (by omega)).trans (Rp.cfr.get_lt hk')
     obtain ⟨agP, K⟩ := core cf hcf c ned σ Inv ν O gul st t tm s0 s ag hned regs hn
     obtain ⟨n1, h1n, rb, hb, hr⟩ := M.fwd hs hm
-    have Gp := Rp.sem cf hcf c ned σ Inv ν O n1 gul hS (oracleFwd_le hF h1n) st t tm s0 s rb hI htr hs hb agP
+    have Gp := Rp.sem cf hcf c ned σ Inv ν O n1 gul hN hS (oracleFwd_le hF h1n) st t tm s0 s rb hI htr hs hb agP
       hned regs hh hn
     rcases hr with ⟨hnz, hr⟩ | ⟨u, rfl, n2, h2n, hc⟩
     · rw [hr]
@@ -277,15 +277,15 @@ theorem runOKGB_sevenL {lib : Lib} {P : Noun → Prop} {f fb fc : Noun} (M : Min
     by_cases fit : FitsS nx.laz.sure u
     · obtain ⟨st', R1, dp, wp, hI', hν, hqp, h1, hD1, k1, e1⟩ := Gp.1 fit
       obtain ⟨agQ, hnQ, hsQ, hnQ', fin⟩ := K u st' R1 dp wp hqp hI' hν fit h1 hD1 k1
-      exact fin r (Rq.sem cf hcf1 c (Need.pair ned dp) σ Inv ν O n2 gul hS (oracleFwd_le hF h2n)
+      exact fin r (Rq.sem cf hcf1 c (Need.pair ned dp) σ Inv ν O n2 gul hN hS (oracleFwd_le hF h2n)
         st' t tm (C s0 wp) u r hI' (frames_mono hν htr) (img_of hs hb) hc agQ hnQ R1 hsQ hnQ') e1
     · exact goalSemCM_of_badC ((Rq.nec u (img_of hs hb) fit).1 gul n2 tm r hc) (Gp.2 fit)
   · -- backward
-    intro cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
+    intro cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
     have hcf1 : ∀ k, k < g1.re → HoonMap.get cf k = HoonMap.get g1.cond k := fun k hk' =>
       (hcf k (by omega)).trans (Rp.cfr.get_lt hk')
     obtain ⟨agP, K⟩ := core cf hcf c ned σ Inv ν O gul st t tm s0 s ag hned regs hn
-    obtain ⟨rb, hb, Gp⟩ := Rp.semB cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs agP hned regs hh hn
+    obtain ⟨rb, hb, Gp⟩ := Rp.semB cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs agP hned regs hh hn
       res hres
     cases rb with
     | one q =>
@@ -299,7 +299,7 @@ theorem runOKGB_sevenL {lib : Lib} {P : Noun → Prop} {f fb fc : Noun} (M : Min
       by_cases fit : FitsS nx.laz.sure u
       · obtain ⟨st', R1, dp, wp, hI', hν, hqp, h1, hD1, k1, e1⟩ := Gp.1 fit
         obtain ⟨agQ, hnQ, hsQ, hnQ', fin⟩ := K u st' R1 dp wp hqp hI' hν fit h1 hD1 k1
-        obtain ⟨r, hr, Gq⟩ := Rq.semB cf hcf1 c (Need.pair ned dp) σ Inv ν O gul hS hB st' t tm (C s0 wp) u hI'
+        obtain ⟨r, hr, Gq⟩ := Rq.semB cf hcf1 c (Need.pair ned dp) σ Inv ν O gul hN hS hB st' t tm (C s0 wp) u hI'
           (frames_mono hν htr) hu agQ hnQ R1 hsQ hnQ' res (by rw [← e1]; exact hres)
         exact ⟨r, (M.bwd hs hb).2 u r rfl hr, fin r Gq e1⟩
       · obtain ⟨r, hr, hbad⟩ := (Rq.nec u hu fit).2 gul tm
@@ -465,18 +465,18 @@ theorem finishTop_genB (lib : Lib) {g1 : Gen Map} {nex : NextL S} (R : TopSB g1 
 
 /-- **The contract from `RunOKGB` under `%done`** (`finishLUC_contractG`
 with bodies): the whole-subject code of a nomm whose run for `%done` from
-`gen0` meets `RunOKGB` has the need `this` and meets both halves of the
-contract on the subjects of `P`. -/
-theorem finishLUC_contractGB (lib : Lib) {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm}
+`gen0` meets `RunOKGB` at the needs `N` has the need `this` and meets both
+halves of the contract for `N` on the subjects of `P`. -/
+theorem finishLUC_contractGB (lib : Lib) {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm} (N : Needs)
     (hR : ∀ {nex : NextL S} {gE : Gen Map}, runLC env Option.none nm (CGoalL.done : CGoalL S) [] (gen0 : Gen Map) =
-      some (nex, gE) → RunOKGB lib P f (CGoal.done : CGoal S) gen0 gE nex)
-    {c : Straight Map} (h : finishLUC (S := S) env nm = some c) (N : Needs) :
+      some (nex, gE) → RunOKGB lib N P f (CGoal.done : CGoal S) gen0 gE nex)
+    {c : Straight Map} (h : finishLUC (S := S) env nm = some c) :
     c.need = NeedOrd.this ∧ ∀ s, P s → ContractFwd lib N s f [s] c ∧ ContractBwd lib N s f [s] c := by
   unfold finishLUC at h
   obtain ⟨⟨nex, gE⟩, hr, h⟩ := Option.bind_eq_some_iff.mp h
   obtain ⟨⟨⟨o', sub⟩, g8⟩, hk, hts⟩ := Option.bind_eq_some_iff.mp h
   simp only at hts
-  have R : RunOKGB lib P f (CGoal.done : CGoal S) gen0 gE nex := hR hr
+  have R : RunOKGB lib N P f (CGoal.done : CGoal S) gen0 gE nex := hR hr
   have T : TopSB gE nex :=
     { ext := R.ext
       grow := R.grow
@@ -505,15 +505,15 @@ theorem finishLUC_contractGB (lib : Lib) {env : CallEnv} {P : Noun → Prop} {f 
     · exact e
     · exact hp.elim
   have F := finishTop_genB lib T (fwdPhi lib N P f)
-    (fun cf hcf c ned σ O st t gul s ag hned regs hh hn Inv ν n tm r hs _ hS hF hm hI htr => by
+    (fun cf hcf c ned σ O st t gul s ag hned regs hh hn Inv ν n tm r hs hN hS hF hm hI htr => by
       obtain ⟨ton, st', -, -, he, hrel⟩ :=
-        R.sem cf hcf c ned σ Inv ν O n gul hS hF st t tm s s r hI htr hs hm ag hned regs hh hn
+        R.sem cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s s r hI htr hs hm ag hned regs hh hn
       exact ⟨ton, st', he, hrel⟩)
     (fun σ O st t gul s hfs Inv ν n tm r hs _ _ _ hm _ htr =>
       ⟨Tone.two t, st, rfl, by rw [bad ((R.nec s hs hfs).1 gul n tm r hm)]; exact ToneRel.two htr⟩) hk hts
   have B := finishTop_genB lib T (bwdPhi lib N P f)
-    (fun cf hcf c ned σ O st t gul s ag hned regs hh hn Inv ν tm hs _ hS hB hI htr ton st'' hx => by
-      obtain ⟨r, hm, G⟩ := R.semB cf hcf c ned σ Inv ν O gul hS hB st t tm s s hI htr hs ag hned regs hh hn _ hx
+    (fun cf hcf c ned σ O st t gul s ag hned regs hh hn Inv ν tm hs hN hS hB hI htr ton st'' hx => by
+      obtain ⟨r, hm, G⟩ := R.semB cf hcf c ned σ Inv ν O gul hN hS hB st t tm s s hI htr hs ag hned regs hh hn _ hx
       obtain ⟨ton', st', -, -, he, hrel⟩ := G
       rw [he] at hx
       cases hx

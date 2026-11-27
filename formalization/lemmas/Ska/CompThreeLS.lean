@@ -55,15 +55,15 @@ theorem forl_fix {r o : Nat} {g g' : Gen Map} {z o' : Nat}
 (jmp0 oc)`, from the state with the blocks of `+forl r there` and `[clq arg
 z o']` made, is `RunOKLB` of `[3 fb]` under `%next (lazy-from-reg r) (jmp0
 there)` from the state before, with products atoms (`atomWit`). -/
-theorem clqLB {lib : Lib} {P : Noun → Prop} {f fb : Noun} (M : MinkC3 lib P f fb)
+theorem clqLB {lib : Lib} {N : Needs} {P : Noun → Prop} {f fb : Noun} (M : MinkC3 lib P f fb)
     {g2 g3 gE g' : Gen Map} {nex : NextL S} {r there z o' : Nat} {Q : Wit} {x : Bool}
     (hr : r < g2.re) (hrk : HoonMap.get g2.cond r = Option.none) (cb2 : CondBelow g2) (d2 : g2.drop = false)
     (hF : (forl r there : CM Map (Nat × Nat)) g2 = some ((z, o'), g3)) (c3 : g3.cond = g2.cond)
     (rE : gE.re = g3.re + 1) (bE : gE.bo = g3.bo + 1) (cE : gE.cond = g3.cond) (E3 : Ext g3 gE)
     (G : GrowU g2 gE) (hth : 1 ≤ there ∧ there < g2.bo)
     (kc : HoonMap.get gE.blocks g3.bo = some ⟨[], [], Termin.clq g3.re (jmp0 z) (jmp0 o')⟩)
-    (R : RunOKLB (Map := Map) lib P fb (ofSure (lazyReg g3.re)) (jmp0 g3.bo) Q x gE g' nex) :
-    RunOKLB (Map := Map) lib P f (ofSure (lazyReg r)) (jmp0 there) atomWit false g2 g' nex := by
+    (R : RunOKLB (Map := Map) lib N P fb (ofSure (lazyReg g3.re)) (jmp0 g3.bo) Q x gE g' nex) :
+    RunOKLB (Map := Map) lib N P f (ofSure (lazyReg r)) (jmp0 there) atomWit false g2 g' nex := by
   obtain ⟨E23, r3, b3, FS⟩ := forl_ok hF hr
   have E2E := E23.trans E3
   have e0 : entries (ofSure (lazyReg g3.re : Sure S)) = [] := entries_ofSure _
@@ -189,17 +189,17 @@ theorem clqLB {lib : Lib} {P : Noun → Prop} {f fb : Noun} (M : MinkC3 lib P f 
       refine ⟨_, M.bwd hs hmb, ?_⟩
       rw [bad hbad]
       exact Or.inl rfl
-  · intro cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
+  · intro cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
     have ag3 : ∀ st' : σ, AgreeLB lib O c gul st' t cf ned gE g' nex.laz s0 s :=
       fun st' => agreeLB_mono (ag st') (by omega)
     obtain ⟨n', hn', rb, hb, rfl⟩ := M.fwd hs hm
     exact conv cf hcf c ned σ Inv ν O gul st t tm s0 s regs ag hned htr rb
-      (R.sem cf hcf c ned σ Inv ν O n' gul hS (oracleFwd_le hF hn') st t tm s0 s rb hI htr hs hb ag3 hned
+      (R.sem cf hcf c ned σ Inv ν O n' gul hN hS (oracleFwd_le hF hn') st t tm s0 s rb hI htr hs hb ag3 hned
         regs hh hn)
-  · intro cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
+  · intro cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
     have ag3 : ∀ st' : σ, AgreeLB lib O c gul st' t cf ned gE g' nex.laz s0 s :=
       fun st' => agreeLB_mono (ag st') (by omega)
-    obtain ⟨rb, hmb, G⟩ := R.semB cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag3 hned regs hh hn
+    obtain ⟨rb, hmb, G⟩ := R.semB cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag3 hned regs hh hn
       res hres
     exact ⟨_, M.bwd hs hmb, conv cf hcf c ned σ Inv ν O gul st t tm s0 s regs ag hned htr rb G⟩
 
@@ -212,10 +212,10 @@ def wutWit (Q : Wit) : Wit := fun s v' d w => ∃ v, Q s v d w ∧ v' = wut v
 /-- **`[3 p]` under a goal that asks nothing** (`three_of_none` for
 `RunOKLS`): `p` runs under the goal itself and every product fits it and its
 entries, so `p`'s `RunOKLS` for `fb` is one for `[3 fb]` with `wutWit`. -/
-theorem RunOKLS.wutNone {lib : Lib} {P : Noun → Prop} {f fb : Noun} {L : Lazy S} {th : Jmp} {Q : Wit} {x : Bool}
+theorem RunOKLS.wutNone {lib : Lib} {N : Needs} {P : Noun → Prop} {f fb : Noun} {L : Lazy S} {th : Jmp} {Q : Wit} {x : Bool}
     {g0 g1 : Gen Map} {nex : NextL S} (M : MinkC3 lib P f fb) (hn : noneEquivalentL L = true)
-    (R : RunOKLS (Map := Map) lib P fb L th Q x g0 g1 nex) :
-    RunOKLS (Map := Map) lib P f L th (wutWit Q) x g0 g1 nex := by
+    (R : RunOKLS (Map := Map) lib N P fb L th Q x g0 g1 nex) :
+    RunOKLS (Map := Map) lib N P f L th (wutWit Q) x g0 g1 nex := by
   obtain ⟨hsn, hsl⟩ := noneEq_sure hn
   have hE : gsE x L = Need.none := by cases x <;> simp [gsE, hsn]
   have hfitL : ∀ v, FitsS L.sure v := fun v => ⟨by rw [hsn]; trivial, looks_one hsl v⟩
@@ -276,12 +276,12 @@ theorem RunOKLS.wutNone {lib : Lib} {P : Noun → Prop} {f fb : Noun} {L : Lazy 
     obtain ⟨f1, h1⟩ := hent e he
     exact ⟨F, hb, fun cf hcf => (hF cf hcf).imp (fun ⟨L', hm, fs⟩ => ⟨L', hm, FL hE f1 h1 fs⟩)
       (fun ⟨hn', fs⟩ => ⟨hn', FL hE f1 h1 fs⟩)⟩
-  · intro cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn'
+  · intro cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn'
     obtain ⟨n', hn'', rb, hb, rfl⟩ := M.fwd hs hm
-    exact conv rb (R.sem cf hcf c ned σ Inv ν O n' gul hS (oracleFwd_le hF hn'') st t tm s0 s rb hI htr hs hb ag
+    exact conv rb (R.sem cf hcf c ned σ Inv ν O n' gul hN hS (oracleFwd_le hF hn'') st t tm s0 s rb hI htr hs hb ag
       hned regs hh hn')
-  · intro cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs hh hn' res hres
-    obtain ⟨rb, hmb, G⟩ := R.semB cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs hh hn' res hres
+  · intro cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag hned regs hh hn' res hres
+    obtain ⟨rb, hmb, G⟩ := R.semB cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag hned regs hh hn' res hres
     exact ⟨_, M.bwd hs hmb, conv rb G⟩
   · intro e he
     obtain ⟨F, hb, hF⟩ := R.fs e he
@@ -313,8 +313,8 @@ result's entries and the goal's or new, the result flat with clean entries.
 Under a goal that asks nothing the operand runs there (`RunOKLS.wutNone`);
 else `collapsePre_spec`, `+forl`, the `clq` block, the operand under `%next
 (lazy-from-reg arg)`, `clqLB`, `collLS`. -/
-theorem lokS_three_run (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f fb : Noun}
-    (M : MinkC3 lib P f fb) (Sp : LOKSF (S := S) (Map := Map) lib env P fb p)
+theorem lokS_three_run (lib : Lib) {N : Needs} (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f fb : Noun}
+    (M : MinkC3 lib P f fb) (Sp : LOKSF (S := S) (Map := Map) lib N env P fb p)
     {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S}
     (hcount : sixCount (Nomm.n3 p) ≤ 255) (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0)
     (hcl0 : Clear g0) (hcb : CondBelow g0) (h1 : 1 ≤ th.there) (h2 : th.there < g0.bo) (hta : th.args = [])
@@ -326,7 +326,7 @@ theorem lokS_three_run (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop
       ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none)
     (hfl : Flat L) (hcs : Clean L.sure.ned) (hce : ∀ e ∈ entries L, Clean e.2.sure.ned)
     (hr : runLC env sup (Nomm.n3 p) (CGoalL.next L th) region g0 = some (nex, g1)) :
-    (∃ Q, RunOKLS (Map := Map) lib P f L th Q true g0 g1 nex) ∧
+    (∃ Q, RunOKLS (Map := Map) lib N P f L th Q true g0 g1 nex) ∧
       nex.th.there ∉ (entries nex.laz).map Prod.fst ∧
       ((nex.th = th ∨ g0.bo ≤ nex.th.there) ∧ (noneEquivalentL L = false → g0.bo ≤ nex.th.there)) ∧
       Flat nex.laz ∧ (∀ e ∈ entries nex.laz, Clean e.2.sure.ned) := by
@@ -415,9 +415,9 @@ theorem lokS_three_run (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop
 
 /-- **`[3 p]` meets `LOKS true`** when its operand meets `LOKSF`, for a
 formula `f` whose `+mink` is the cell test of the operand's. -/
-theorem lokS_three (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f fb : Noun}
-    (M : MinkC3 lib P f fb) (Sp : LOKSF (S := S) (Map := Map) lib env P fb p) :
-    LOKS (S := S) (Map := Map) true lib env P f (Nomm.n3 p) := by
+theorem lokS_three (lib : Lib) {N : Needs} (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f fb : Noun}
+    (M : MinkC3 lib P f fb) (Sp : LOKSF (S := S) (Map := Map) lib N env P fb p) :
+    LOKS (S := S) (Map := Map) true lib N env P f (Nomm.n3 p) := by
   refine ⟨fun {sup L th region g0 g1 nex} hc hr => ?_, fun {sup L th region g0 g1 nex} hcount b0 d0 hu hcl hcb
     h1 h2 hta ht hsd hsl hlab hnd hed hfl hcl' hce hr => ?_⟩
   · rw [runLC_n3_next] at hr
@@ -437,8 +437,8 @@ theorem lokS_three (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f
 /-- **The jump of a hinted `[3 p]` is a block it made**: under a goal that
 asks nothing it is the operand's (`JNewLSF`, the goal flag-free), else it is
 always new. -/
-theorem jNewLS_three (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f fb : Noun}
-    (M : MinkC3 lib P f fb) (Sp : LOKSF (S := S) (Map := Map) lib env P fb p)
+theorem jNewLS_three (lib : Lib) {N : Needs} (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f fb : Noun}
+    (M : MinkC3 lib P f fb) (Sp : LOKSF (S := S) (Map := Map) lib N env P fb p)
     (Jp : hinted env.cod p = some true → JNewLSF (S := S) (Map := Map) env p)
     (hh : hinted env.cod (Nomm.n3 p) = some true) : JNewLS (S := S) (Map := Map) env (Nomm.n3 p) := by
   intro sup L th region g0 g1 nex hcount b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcl' hce hr

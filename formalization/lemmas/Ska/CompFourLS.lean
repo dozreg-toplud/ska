@@ -43,14 +43,14 @@ def atomWit : Wit := fun _ v d _ => (∃ m, v = A m) ∧ d = Need.none
 (jmp0 o)`, from the state with the block `[inc arg pro] hop there` made at
 `o`, is `RunOKLB` of `[4 fb]` under `%next (lazy-from-reg pro) (jmp0
 there)` from the state before, with products atoms (`atomWit`). -/
-theorem incLB {lib : Lib} {P : Noun → Prop} {f fb : Noun} (M : MinkC4 lib P f fb)
+theorem incLB {lib : Lib} {N : Needs} {P : Noun → Prop} {f fb : Noun} (M : MinkC4 lib P f fb)
     {g2 g3 g' : Gen Map} {nex : NextL S} {th' pro : Nat} {Q : Wit} {x : Bool}
     (hpro : pro < g2.re) (hpk : HoonMap.get g2.cond pro = Option.none) (cb2 : CondBelow g2)
     (r3 : g3.re = g2.re + 1) (b3 : g3.bo = g2.bo + 1) (cn3 : g3.cond = g2.cond) (E3 : Ext g2 g3)
     (G3 : GrowU g2 g3)
     (k3o : HoonMap.get g3.blocks g2.bo = some ⟨[], [Pole.inc g2.re pro], Termin.hop (jmp0 th')⟩)
-    (R : RunOKLB (Map := Map) lib P fb (ofSure (lazyReg g2.re)) (jmp0 g2.bo) Q x g3 g' nex) :
-    RunOKLB (Map := Map) lib P f (ofSure (lazyReg pro)) (jmp0 th') atomWit false g2 g' nex := by
+    (R : RunOKLB (Map := Map) lib N P fb (ofSure (lazyReg g2.re)) (jmp0 g2.bo) Q x g3 g' nex) :
+    RunOKLB (Map := Map) lib N P f (ofSure (lazyReg pro)) (jmp0 th') atomWit false g2 g' nex := by
   have e0 : entries (ofSure (lazyReg g2.re : Sure S)) = [] := entries_ofSure _
   have e1 : entries (ofSure (lazyReg pro : Sure S)) = [] := entries_ofSure _
   have rl := R.re
@@ -154,17 +154,17 @@ theorem incLB {lib : Lib} {P : Noun → Prop} {f fb : Noun} (M : MinkC4 lib P f 
       refine ⟨_, M.bwd hs hmb, ?_⟩
       rw [bad hbad]
       exact Or.inl rfl
-  · intro cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
+  · intro cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
     have ag3 : ∀ st' : σ, AgreeLB lib O c gul st' t cf ned g3 g' nex.laz s0 s :=
       fun st' => agreeLB_mono (ag st') (by omega)
     obtain ⟨n', hn', rb, hb, rfl⟩ := M.fwd hs hm
     exact conv cf hcf c ned σ Inv ν O gul st t tm s0 s regs ag hned htr rb
-      (R.sem cf hcf c ned σ Inv ν O n' gul hS (oracleFwd_le hF hn') st t tm s0 s rb hI htr hs hb ag3 hned
+      (R.sem cf hcf c ned σ Inv ν O n' gul hN hS (oracleFwd_le hF hn') st t tm s0 s rb hI htr hs hb ag3 hned
         regs hh hn)
-  · intro cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
+  · intro cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
     have ag3 : ∀ st' : σ, AgreeLB lib O c gul st' t cf ned g3 g' nex.laz s0 s :=
       fun st' => agreeLB_mono (ag st') (by omega)
-    obtain ⟨rb, hmb, G⟩ := R.semB cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag3 hned regs hh hn
+    obtain ⟨rb, hmb, G⟩ := R.semB cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag3 hned regs hh hn
       res hres
     exact ⟨_, M.bwd hs hmb, conv cf hcf c ned σ Inv ν O gul st t tm s0 s regs ag hned htr rb G⟩
 
@@ -183,14 +183,14 @@ from `g0` to `g2` with the register `r` and the label `there`, and
 `RunOKLB` of the rest under `%next (lazy-from-reg r) (jmp0 there)` whose
 result entries are fresh, give `RunOKLS` under `%next L th` with `x = true`
 and the witness `fourWit L r`; no result entry is at a goal label. -/
-theorem collLS {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp} {g0 g2 g1 : Gen Map}
+theorem collLS {lib : Lib} {N : Needs} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp} {g0 g2 g1 : Gen Map}
     {r there : Nat} {nex : NextL S} (CP : CollPre L th g0 g2 r there)
     (hu : UpBelow g0) (hlab : ∀ e ∈ entries L, e.1 < g0.bo)
     (hsl : ∀ x, NMem L.sure.ned x → x < g0.re)
     (hec : ∀ e ∈ entries L, ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none)
     (hfr : ∀ e ∈ entries nex.laz, ∀ x, NMem e.2.sure.ned x → g2.re ≤ x)
-    (R : RunOKLB (Map := Map) lib P f (ofSure (lazyReg r)) (jmp0 there) atomWit false g2 g1 nex) :
-    RunOKLS (Map := Map) lib P f L th (fourWit L r) true g0 g1 nex := by
+    (R : RunOKLB (Map := Map) lib N P f (ofSure (lazyReg r)) (jmp0 there) atomWit false g2 g1 nex) :
+    RunOKLS (Map := Map) lib N P f L th (fourWit L r) true g0 g1 nex := by
   have e2 : entries (ofSure (lazyReg r : Sure S)) = [] := entries_ofSure _
   have Re : Ext g2 g1 := ⟨R.re, R.bo, R.drop, fun o ho => R.keep o ho (by rw [e2]; simp)⟩
   have rl := R.re
@@ -324,12 +324,12 @@ theorem collLS {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp
       · exact absurd (fitsS_lazyReg _ q) nq
     exact ⟨fun gul n tm rt hm => bad (N1 gul n tm rt hm), fun gul tm => by
       obtain ⟨rt, hm, hb⟩ := N2 gul tm; exact ⟨rt, hm, bad hb⟩⟩
-  · intro cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s rt hI htr hs hm ag hned regs hh hn
+  · intro cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s0 s rt hI htr hs hm ag hned regs hh hn
     exact conv cf hcf c ned σ Inv ν O gul st t tm s0 s regs ag hned htr rt
-      (R.sem cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s rt hI htr hs hm (agR cf c ned σ O gul t s0 s ag) hned
+      (R.sem cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s0 s rt hI htr hs hm (agR cf c ned σ O gul t s0 s ag) hned
         regs hh hn)
-  · intro cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
-    obtain ⟨rt, hm, G⟩ := R.semB cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs (agR cf c ned σ O gul t s0 s ag)
+  · intro cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
+    obtain ⟨rt, hm, G⟩ := R.semB cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs (agR cf c ned σ O gul t s0 s ag)
       hned regs hh hn res hres
     exact ⟨rt, hm, conv cf hcf c ned σ Inv ν O gul st t tm s0 s regs ag hned htr rt G⟩
 
@@ -341,9 +341,9 @@ entry (there is no front). -/
 def FlagFree (L : Lazy S) : Prop := L.sure.ned = Need.none ∨ entries L = []
 
 /-- **At a flag-free goal `RunOKLS` holds with `x = false`.** -/
-theorem RunOKLS.unflag {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp} {Q : Wit} {x : Bool}
-    {g0 g1 : Gen Map} {nex : NextL S} (hF : FlagFree L) (R : RunOKLS (Map := Map) lib P f L th Q x g0 g1 nex) :
-    RunOKLS (Map := Map) lib P f L th Q false g0 g1 nex := by
+theorem RunOKLS.unflag {lib : Lib} {N : Needs} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp} {Q : Wit} {x : Bool}
+    {g0 g1 : Gen Map} {nex : NextL S} (hF : FlagFree L) (R : RunOKLS (Map := Map) lib N P f L th Q x g0 g1 nex) :
+    RunOKLS (Map := Map) lib N P f L th Q false g0 g1 nex := by
   rcases hF with h | h
   · have e : gsE x L = gsE false L := by cases x <;> simp [gsE, h]
     have F1 := R.front
@@ -357,7 +357,7 @@ theorem RunOKLS.unflag {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {
 /-- **`LOKS false` at flag-free goals only**: the hypothesis of a part that
 is run only at such goals (the operand of `[4 p]`, the parts of an indirect
 call, and the parts of a cons at a flag-free goal). -/
-structure LOKSF (lib : Lib) (env : CallEnv) (P : Noun → Prop) (f : Noun) (nm : Nomm) : Prop where
+structure LOKSF (lib : Lib) (N : Needs) (env : CallEnv) (P : Noun → Prop) (f : Noun) (nm : Nomm) : Prop where
   clean : ∀ {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
     Clean L.sure.ned → runLC env sup nm (CGoalL.next L th) region g0 = some (nex, g1) → Clean nex.laz.sure.ned
   run : ∀ {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
@@ -370,12 +370,12 @@ structure LOKSF (lib : Lib) (env : CallEnv) (P : Noun → Prop) (f : Noun) (nm :
       ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none) →
     Flat L → Clean L.sure.ned → (∀ e ∈ entries L, Clean e.2.sure.ned) →
     runLC env sup nm (CGoalL.next L th) region g0 = some (nex, g1) →
-    (∃ Q, RunOKLS (Map := Map) lib P f L th Q false g0 g1 nex) ∧ nex.th.there ∉ (entries nex.laz).map Prod.fst ∧
+    (∃ Q, RunOKLS (Map := Map) lib N P f L th Q false g0 g1 nex) ∧ nex.th.there ∉ (entries nex.laz).map Prod.fst ∧
       (nex.th = th ∨ g0.bo ≤ nex.th.there) ∧ Flat nex.laz ∧ (∀ e ∈ entries nex.laz, Clean e.2.sure.ned)
 
 /-- **`LOKS` (any flag) gives `LOKSF`** (`RunOKLS.unflag`). -/
-theorem LOKS.toF {x : Bool} {lib : Lib} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm}
-    (H : LOKS (S := S) (Map := Map) x lib env P f nm) : LOKSF (S := S) (Map := Map) lib env P f nm :=
+theorem LOKS.toF {x : Bool} {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm}
+    (H : LOKS (S := S) (Map := Map) x lib N env P f nm) : LOKSF (S := S) (Map := Map) lib N env P f nm :=
   ⟨H.clean, fun hF hc b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs hce hr =>
     (fun ⟨⟨Q, R⟩, a, b, c, d⟩ => ⟨⟨Q, R.unflag hF⟩, a, b, c, d⟩)
       (H.run hc b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcs hce hr)⟩
@@ -417,8 +417,8 @@ witness `fourWit L d`, the jump a new block at none of the result's
 entries, the result flat with clean entries.  `collapsePre_spec`, the block
 of the increment, the operand's `LOKS` under `%next (lazy-from-reg arg)
 (jmp0 o)` (a flat goal with no entry), `incLB`, `collLS`. -/
-theorem lokS_four_run (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f fb : Noun}
-    (M : MinkC4 lib P f fb) (Sp : LOKSF (S := S) (Map := Map) lib env P fb p)
+theorem lokS_four_run (lib : Lib) {N : Needs} (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f fb : Noun}
+    (M : MinkC4 lib P f fb) (Sp : LOKSF (S := S) (Map := Map) lib N env P fb p)
     {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S}
     (hcount : sixCount (Nomm.n4 p) ≤ 255) (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0)
     (hcl0 : Clear g0) (hcb : CondBelow g0) (h1 : 1 ≤ th.there) (h2 : th.there < g0.bo) (hta : th.args = [])
@@ -429,7 +429,7 @@ theorem lokS_four_run (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop}
     (hed : ∀ e ∈ entries L, Distinct e.2.sure.ned ∧
       ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none)
     (hr : runLC env sup (Nomm.n4 p) (CGoalL.next L th) region g0 = some (nex, g1)) :
-    (∃ Q, RunOKLS (Map := Map) lib P f L th Q true g0 g1 nex) ∧
+    (∃ Q, RunOKLS (Map := Map) lib N P f L th Q true g0 g1 nex) ∧
       nex.th.there ∉ (entries nex.laz).map Prod.fst ∧ g0.bo ≤ nex.th.there ∧ Flat nex.laz ∧
       (∀ e ∈ entries nex.laz, Clean e.2.sure.ned) := by
   rw [runLC_n4_next] at hr
@@ -495,9 +495,9 @@ theorem lokS_four_run (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop}
 
 /-- **`[4 p]` meets `LOKS true`** when its operand meets `LOKSF`, for a
 formula `f` whose `+mink` is the increment of the operand's. -/
-theorem lokS_four (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f fb : Noun}
-    (M : MinkC4 lib P f fb) (Sp : LOKSF (S := S) (Map := Map) lib env P fb p) :
-    LOKS (S := S) (Map := Map) true lib env P f (Nomm.n4 p) := by
+theorem lokS_four (lib : Lib) {N : Needs} (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f fb : Noun}
+    (M : MinkC4 lib P f fb) (Sp : LOKSF (S := S) (Map := Map) lib N env P fb p) :
+    LOKS (S := S) (Map := Map) true lib N env P f (Nomm.n4 p) := by
   refine ⟨fun {sup L th region g0 g1 nex} hc hr => ?_, fun {sup L th region g0 g1 nex} hcount b0 d0 hu hcl hcb
     h1 h2 hta ht hsd hsl hlab hnd hed hfl hcl' hce hr => ?_⟩
   · obtain ⟨arg, o, gX, h⟩ := runLC_n4_last (fun z o h => by cases h) hr
@@ -507,8 +507,8 @@ theorem lokS_four (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f 
     exact ⟨H, ne, Or.inr j, fl, ec⟩
 
 /-- **The jump of `[4 p]` is always a block it made.** -/
-theorem jNewLS_four (lib : Lib) (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f fb : Noun}
-    (M : MinkC4 lib P f fb) (Sp : LOKSF (S := S) (Map := Map) lib env P fb p) :
+theorem jNewLS_four (lib : Lib) {N : Needs} (env : CallEnv) {p : Nomm} {P : Noun → Prop} {f fb : Noun}
+    (M : MinkC4 lib P f fb) (Sp : LOKSF (S := S) (Map := Map) lib N env P fb p) :
     JNewLS (S := S) (Map := Map) env (Nomm.n4 p) := by
   intro sup L th region g0 g1 nex hcount b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hfl hcl' hce hr
   exact (lokS_four_run lib env M Sp hcount b0 d0 hu hcl hcb h1 h2 hta ht hsd hsl hlab hnd hed hr).2.2.1
