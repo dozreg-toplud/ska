@@ -318,5 +318,160 @@ theorem rsd_nd (hc : CompIn ctx) (h7 : slot? 7 ctx = some compK) {cod : Noun} (h
       simp [nock_exec, rsS, rsCoreG, rsDoor, rsGenNoun, hned, hsur, hst, bind, StateT.bind, e1, es, hj, liftS, rsdSy,
         hp', nedL, idS, putSofs, lzp_id_at', comp_id_at, hid, SureO.bunt, hc', in.arm_at, in_arm, in.put.arm_at, put_in_arm, hpu]
 
+
+/-- **`l-fol`**: `[none gen]` when `+safe-fol-fol` holds of `q`, else the run of `q` on
+`[%next none]`. -/
+theorem rsd_fol (h7 : slot? 7 ctx = some compK) (env : ShapeEnv) (sup : Option Nomm) (p q : Nomm) (b : Bell)
+    (k : Option Noun) (DR PU SIM GN : Noun) (st : RSt CSet) (y : RsRest)
+    (hq : nock (rsCoreG q.toNoun (GoalS.next (noneL : Laze CSet)).toNoun (supNoun sup) (rsDoor st y ctx)) rsGate
+      = (runShape env sup q (GoalS.next noneL) st).map fun r => C r.1.toNoun (rsGenNoun r.2 y)) :
+    nock (C DR (C PU (rsS SIM (C (A 2) (C p.toNoun (C q.toNoun (C (A 0) (C b.toNoun (unitNoun id k))))))
+      GN (supNoun sup) (rsDoor st y ctx)))) rsdFol
+      = (rsdFolM env sup q st).map fun r => C r.1.toNoun (rsGenNoun r.2 y) := by
+  have h63 := crd_ctx63 h7
+  have hsa : slot? 767 ana = some safe_fol_fol.arm := safe_fol_fol.arm_at
+  have hsf := safe_fol_fol_pill q
+  simp only [rsCoreG, rsDoor, GoalS.toNoun, noneL_noun] at hq
+  unfold rsdFol rsdFolM
+  cases hs : safeFolFol q with
+  | true =>
+    simp [nock_exec, rsS, rsCoreG, rsDoor, h63, hsa, safe_fol_fol_arm, hsf, hs, loob, pure, StateT.pure, noneL_noun]
+  | false =>
+    simp [nock_exec, rsS, rsCoreG, rsDoor, h63, hsa, safe_fol_fol_arm, hsf, hs, loob, hq]
+
+/-- **`l-sub`**: under `drop` the run of `p` on `[%next none]`, else `rsd_nd`. -/
+theorem rsd_sub (hc : CompIn ctx) (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : ShapeEnv) (hcn : CodeNomms env.cod cod) (p q : Nomm) (hcp : CallCode cod (shapeCE env) p)
+    (hcq : CallCode cod (shapeCE env) q) (b : Bell) (k : Option Noun) (sup : Option Nomm) (st : RSt CSet)
+    (y : RsRest) (hsc : ShapeCall ctx env p q b k sup y) (dr : Bool) (L1 L0 PU SIM GN : Noun)
+    (hp : ∀ l st1, LzNZ l → nock (rsCoreG p.toNoun (GoalS.next l).toNoun (supNoun sup) (rsDoor st1 y ctx)) rsGate
+      = (runShape env sup p (GoalS.next l) st1).map fun r => C r.1.toNoun (rsGenNoun r.2 y)) :
+    nock (rsdS4 L1 L0 (loob dr) PU SIM p.toNoun q.toNoun b k GN (supNoun sup) (rsDoor st y ctx)) rsdSub
+      = (rsdSubM env sup p q b k dr st).map fun r => C r.1.toNoun (rsGenNoun r.2 y) := by
+  cases dr with
+  | false =>
+    have hnd := rsd_nd hc h7 hcode env hcn p q hcp hcq b k sup st y hsc L1 L0 (loob false) PU SIM GN hp
+    unfold rsdSubM
+    unfold rsdSub
+    simp only [rsdS4, loob] at hnd ⊢
+    simp [nock_exec]
+    exact hnd
+  | true =>
+    have hp' := hp noneL st lzNZ_noneL
+    simp only [rsCoreG, rsDoor, GoalS.toNoun, noneL_noun] at hp'
+    unfold rsdSubM rsdSub rsdS4
+    simp [nock_exec, rsS, rsCoreG, rsDoor, loob, hp']
+
+
+/-- **The direct case `[2 p q [~ b k]]`**, on every goal, from the runs of `p` and `q` on goals of
+`LzNZ`, on the rests of `gen` of `E`, where `ShapeCall` holds at each. -/
+theorem rs_n2dW (hc : CompIn ctx) (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : ShapeEnv) (hcn : CodeNomms env.cod cod) (p q : Nomm) (b : Bell) (k : Option Noun)
+    (sup : Option Nomm) (goal : GoalS CSet) (st : RSt CSet) (E : RsRest → Prop)
+    (hcc : CallCode cod (shapeCE env) (Nomm.n2 p q (some (b, k))))
+    (hsc : ∀ y, E y → ShapeCall ctx env p q b k sup y)
+    (hq : ∀ l st1, LzNZ l → RsAtE ctx env E q sup (GoalS.next l) st1)
+    (hp : ∀ l st1, LzNZ l → RsAtE ctx env E p sup (GoalS.next l) st1) :
+    RsAtE ctx env E (Nomm.n2 p q (some (b, k))) sup goal st := by
+  intro y hy
+  obtain ⟨⟨hpure, hpe⟩, hcp, hcq⟩ := hcc
+  obtain ⟨V, hgot, hv⟩ := hpure
+  have hpb : env.pure b = some ((env.pure b).getD false) := hpe
+  have hv' : slot? 6 V = some (loob ((env.pure b).getD false)) := hv
+  clear hv hpe
+  generalize (env.pure b).getD false = pu at hv' hpb
+  rw [runShape_n2d, rsd_nomm, rs_push, rs_disp_n2, rsK2_eq]
+  have hpu := rsd_pu hc hcode p.toNoun q.toNoun b.toNoun (unitNoun id k) V (loob pu) (rsSimpleN goal) goal.toNoun
+    (supNoun sup) st y hgot hv'
+  have hdr := rsd_dr hc pu (C (A 2) (C p.toNoun (C q.toNoun (C (A 0) (C b.toNoun (unitNoun id k))))))
+    (supNoun sup) goal st y
+  have hfo := rsd_fol h7 env sup p q b k (loob (rsdDrop pu goal)) (loob pu) (rsSimpleN goal) goal.toNoun st y
+    (hq noneL st lzNZ_noneL y hy)
+  simp only [rsS, rsCoreG, rsDoor] at hpu hdr hfo
+  unfold rsdArm rsdD
+  cases e1 : rsdFolM env sup q st with
+  | none =>
+    rw [e1] at hfo
+    simp [nock_exec, rsS, rsCoreG, rsDoor, hpu, hdr, hfo, hpb, liftS, bind, StateT.bind, e1]
+  | some r1 =>
+    obtain ⟨lf, st1⟩ := r1
+    rw [e1] at hfo
+    have hpa := lzp_gate h7 hcode env p hcp st1 y lf
+    simp only [rsDoor] at hpa
+    cases e2 : lazePast env lf p st1 with
+    | none =>
+      rw [e2] at hpa
+      simp [nock_exec, rsS, rsCoreG, rsDoor, hpu, hdr, hfo, hpb, liftS, bind, StateT.bind, e1, rsdPa, lzp_at', lzpArm,
+        hpa, e2]
+    | some r2 =>
+      obtain ⟨lf', st2⟩ := r2
+      rw [e2] at hpa
+      have hsb := rsd_sub hc h7 hcode env hcn p q hcp hcq b k sup st2 y (hsc y hy) (rsdDrop pu goal) lf'.toNoun
+        lf.toNoun (loob pu) (rsSimpleN goal) goal.toNoun (fun l st3 hl => hp l st3 hl y hy)
+      simp only [rsdS4, rsS, rsCoreG, rsDoor] at hsb
+      cases e3 : rsdSubM env sup p q b k (rsdDrop pu goal) st2 with
+      | none =>
+        rw [e3] at hsb
+        simp [nock_exec, rsS, rsCoreG, rsDoor, hpu, hdr, hfo, hpb, liftS, bind, StateT.bind, e1, rsdPa, lzp_at', lzpArm,
+          hpa, e2, hsb, e3]
+      | some r3 =>
+        obtain ⟨ls, st3⟩ := r3
+        rw [e3] at hsb
+        have hlc := lc_all hc h7 (rsGenNoun st3 y) ls lf'
+        cases e4 : lazeCopy ls lf' with
+        | none =>
+          rw [e4] at hlc
+          simp [nock_exec, rsS, rsCoreG, rsDoor, hpu, hdr, hfo, hpb, liftS, bind, StateT.bind, e1, rsdPa, lzp_at', lzpArm,
+            hpa, e2, hsb, e3, rsdEnd, lc_at', lc_arm, hlc, e4]
+        | some l =>
+          rw [e4] at hlc
+          simp [nock_exec, rsS, rsCoreG, rsDoor, hpu, hdr, hfo, hpb, liftS, bind, StateT.bind, e1, rsdPa, lzp_at', lzpArm,
+            hpa, e2, hsb, e3, rsdEnd, lc_at', lc_arm, hlc, e4]
+
+
+/-- `l-sub` keeps `LzNZ`, given that the runs of `p` do. -/
+theorem rsdSubM_nz (env : ShapeEnv) (sup : Option Nomm) (p q : Nomm) (b : Bell) (k : Option Noun) (dr : Bool)
+    (hrp : ∀ g st l st1, GoalNZ g → runShape env sup p g st = some (l, st1) → LzNZ l)
+    (st : RSt CSet) (l : Laze CSet) (st1 : RSt CSet) (e : rsdSubM env sup p q b k dr st = some (l, st1)) :
+    LzNZ l := by
+  unfold rsdSubM at e
+  cases dr with
+  | true => exact hrp (GoalS.next noneL) st l st1 lzNZ_noneL e
+  | false =>
+    simp only [Bool.false_eq_true, if_false, rsdNdM] at e
+    obtain ⟨ned, s1, e1, e⟩ := sm_bind_some e
+    obtain ⟨soft, s2, e2, e⟩ := sm_bind_some e
+    cases soft with
+    | false => exact hrp (GoalS.next (nedL ned)) s2 l st1 (lzNZ_nedL ned) e
+    | true =>
+      simp only [Bool.not_true, Bool.false_eq_true, if_false] at e
+      obtain ⟨i, s3, e3, e⟩ := sm_bind_some e
+      obtain ⟨u, s4, e4, e⟩ := sm_bind_some e
+      exact hrp (GoalS.next (Laze.mk SureO.bunt [] [(i, nedL ned)])) s4 l st1 (lzNZ_softL i ned) e
+
+/-- **The direct case keeps `LzNZ`**, given that the runs of `p` and `q` do. -/
+theorem twoNz (env : ShapeEnv) (p q : Nomm) (b : Bell) (k : Option Noun) (sup : Option Nomm) (goal : GoalS CSet)
+    (hrp : ∀ g st l st1, GoalNZ g → runShape env sup p g st = some (l, st1) → LzNZ l)
+    (hrq : ∀ g st l st1, GoalNZ g → runShape env sup q g st = some (l, st1) → LzNZ l)
+    (st : RSt CSet) (l : Laze CSet) (st1 : RSt CSet)
+    (e : runShape env sup (Nomm.n2 p q (some (b, k))) goal st = some (l, st1)) : LzNZ l := by
+  rw [runShape_n2d] at e
+  obtain ⟨pu, s1, e1, e⟩ := sm_bind_some e
+  obtain ⟨lf, s2, e2, e⟩ := sm_bind_some e
+  obtain ⟨lf', s3, e3, e⟩ := sm_bind_some e
+  obtain ⟨ls, s4, e4, e⟩ := sm_bind_some e
+  have h2 : LzNZ lf := by
+    unfold rsdFolM at e2
+    cases hs : safeFolFol q with
+    | true =>
+      simp only [hs, if_true, pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at e2
+      rw [← e2.1]; exact lzNZ_noneL
+    | false =>
+      simp only [hs, Bool.false_eq_true, if_false] at e2
+      exact hrq (GoalS.next noneL) s1 lf s2 lzNZ_noneL e2
+  have h3 := lazePast_nz env lf p s2 lf' s3 h2 e3
+  have h4 := rsdSubM_nz env sup p q b k _ hrp s3 ls s4 e4
+  exact lazeCopyEnd_nz h4 h3 e
+
 end Compiler
 end Formalization
