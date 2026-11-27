@@ -1,6 +1,7 @@
 import lemmas.Ska.RawInvCLKUSplit
 import lemmas.Ska.RawInvCLKUCopy
 import lemmas.Ska.RawInvCLKURun
+import lemmas.Ska.RawInvCLKURunM
 import lemmas.Ska.RawInvCLKIMid
 import lemmas.Glue.GuardCallsB
 
@@ -24,7 +25,9 @@ latter as `LabUniq` beside its `GFL`) in place of `GD`.
   `lzS_dn_of_gxl` (`GX` gives G's `LzS (DN r)`).
 * **`KIMidX C env`**: the clauses `run` (on the class `C`, `GX ∧ LG` in and
   out), `split`, `into`, `past` (`GX` and `LL` of the parts), `dn`.
-* **`kimidX_plain env : KIMidX PlainN env`**, with no hypothesis.
+* **`kimidX_plain env : KIMidX PlainN env`**, with no hypothesis, and
+  **`kimidX_noSix env : KIMidX Glue.NoSixC env`**: track G's whole class
+  (direct and indirect calls; `kuRunM_noSix`, `RawInvCLKURunM.lean`).
 -/
 
 set_option linter.unusedSectionVars false
@@ -186,6 +189,18 @@ theorem kimidX_plain (env : CallEnv) : KIMidX S Map PlainN env where
     obtain ⟨le, -, c⟩ := kuc_past cod nex nom region g x g' h
     exact ⟨gx_of_count hg.1 hg.2 le c, lab_pastL h hl.1 hl.2⟩
   dn := fun r l h => lzS_dn_of_gxl h
+
+/-- **Track G's mid-run fact, corrected, on track G's whole class
+`NoSixC`** (no `%6`; direct and indirect calls), with no hypothesis. -/
+theorem kimidX_noSix (env : CallEnv) : KIMidX S Map Glue.NoSixC env where
+  run := fun nm sup hp goal region g g' x hx hl h => by
+    obtain ⟨lg, le, -, c⟩ := kuRunM_noSix env kuSteps nm hp sup goal region g g' x hl h
+    have G := gx_sarG hx
+    exact ⟨gx_of_count G.1 G.2 le c, lg⟩
+  split := (kimidX_plain (S := S) (Map := Map) env).split
+  into := (kimidX_plain (S := S) (Map := Map) env).into
+  past := (kimidX_plain (S := S) (Map := Map) env).past
+  dn := (kimidX_plain (S := S) (Map := Map) env).dn
 
 end Raw
 end SkaModel
