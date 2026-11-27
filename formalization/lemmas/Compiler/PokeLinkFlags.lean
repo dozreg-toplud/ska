@@ -1,5 +1,6 @@
 import lemmas.Ska.PokeFlagsOf
 import lemmas.Compiler.PokeLinkGood2
+import lemmas.Compiler.PokeLinkKeep
 
 /-!
 # The flags of a closed table are unique (track P, README Gaps 23, P1)
@@ -616,6 +617,116 @@ theorem flagsOf_loop (hA : AddsTo T nc T') (hC : CodeClosed T) (hI : InfoCalls T
   rw [flagsOf_sol hC' hI' hsol b, flagsOf_sol hC hI hF b, hold b hb]
 
 end Loop
+
+/-! ## The tables of `+ska-poke`: `AddsTo` and `InfoCalls` -/
+
+theorem newCode_getF (code baked : FinMap Bell (VarEntry FinMap)) (b : Bell) :
+    FinMap.get (newCode code baked) b = if Treap.has code b = true then none else FinMap.get baked b := by
+  rw [← tget_fin, ← tget_fin]
+  have e2 := foldl_putIf baked (Treap.has code) (Treap.rap baked) Treap.empty (rap_ok baked) b
+  unfold newCode
+  rw [e2, any_rap]
+  cases Treap.has code b <;> cases hg : Treap.get baked b <;> simp [Treap.get_empty]
+
+/-- **`addCode code (newCode code baked)` adds `newCode code baked` to `code`.** -/
+theorem addsTo_addCode (code baked : FinMap Bell (VarEntry FinMap)) :
+    AddsTo code (newCode code baked) (addCode code (newCode code baked)) := by
+  refine ⟨fun b e hb => ?_, fun b e hb => ?_, fun b e hb => ?_⟩
+  · rw [← tget_fin, addCode_get, tget_fin, hb]
+  · rw [newCode_getF] at hb
+    split at hb
+    · cases hb
+    · rename_i hn
+      have hcn : FinMap.get code b = none := by
+        cases h0 : FinMap.get code b with
+        | none => rfl
+        | some _ => exact absurd ((has_iff code b).2 ⟨_, h0⟩) hn
+      refine ⟨hcn, ?_⟩
+      rw [← tget_fin, addCode_get, tget_fin, hcn]; exact hb
+  · rw [← tget_fin, addCode_get, tget_fin] at hb
+    cases h0 : FinMap.get code b with
+    | some e0 => rw [h0] at hb; exact Or.inl hb
+    | none =>
+      rw [h0] at hb
+      refine Or.inr ?_
+      rw [newCode_getF]
+      have : Treap.has code b = false := by
+        cases hh : Treap.has code b with
+        | false => rfl
+        | true => obtain ⟨_, hv⟩ := (has_iff code b).1 hh; rw [tget_fin, h0] at hv; cases hv
+      rw [this]; exact hb
+
+theorem mapM_mem_of {α β : Type} (f : α → Option β) :
+    ∀ (l : List α) (ys : List β), l.mapM f = some ys → ∀ x ∈ l, ∀ y, f x = some y → y ∈ ys
+  | [], _, _, _, hx, _, _ => absurd hx List.not_mem_nil
+  | x :: l, ys, h, x', hx, y, hy => by
+    cases ha : f x with
+    | none => simp [List.mapM_cons, ha] at h
+    | some a =>
+      cases has : l.mapM f with
+      | none => simp [List.mapM_cons, ha, has] at h
+      | some as =>
+        simp [List.mapM_cons, ha, has] at h
+        subst h
+        rcases List.mem_cons.1 hx with rfl | hx
+        · rw [ha] at hy; cases hy; exact List.mem_cons_self
+        · exact List.mem_cons_of_mem _ (mapM_mem_of f l as has x' hx y hy)
+
+/-- **The info bells of a baked variant are among its callees.** -/
+theorem bakeGraph_infoCalls {E : BEnv FinMap} {n : Nat}
+    {bg : FinMap Bell (VarEntry FinMap) × FinMap Bell (FinMap Bell Unit)} (h : bakeGraph E n = some bg) :
+    InfoCalls bg.1 := by
+  unfold bakeGraph at h
+  obtain ⟨st, _, hf⟩ := Option.bind_eq_some_iff.1 h
+  obtain ⟨out, vars⟩ := bg
+  intro v ve hv c hc
+  rcases finalFold_calls E st _ Treap.empty out E.vars vars hf v ve hv with h0 | ⟨e, _, d, sites, vs, _, hk, hvs, hcalls⟩
+  · rw [Treap.get_empty] at h0; cases h0
+  · obtain ⟨s, hs, hr⟩ := know_infos hk c hc
+    have hm := mapM_mem_of _ sites vs hvs s hs c hr
+    have hh : Treap.has ve.calls c = true := by rw [hcalls, Treap.has_silt]; exact hm
+    obtain ⟨u, hu⟩ := (has_iff _ c).1 hh
+    rw [tget_fin] at hu
+    cases u; exact hu
+
+/-- **`InfoCalls` is kept by the bake's new code.** -/
+theorem infoCalls_addCode {code : FinMap Bell (VarEntry FinMap)} {E : BEnv FinMap} {n : Nat}
+    {bg : FinMap Bell (VarEntry FinMap) × FinMap Bell (FinMap Bell Unit)}
+    (hi : InfoCalls code) (h : bakeGraph E n = some bg) : InfoCalls (addCode code (newCode code bg.1)) := by
+  intro b e hb
+  rw [← tget_fin, addCode_get, tget_fin] at hb
+  cases h0 : FinMap.get code b with
+  | some e0 => rw [h0] at hb; exact hi b e (h0.trans hb)
+  | none => rw [h0] at hb; exact bakeGraph_infoCalls h b e hb
+
+/-- The empty table's solution: no flags. -/
+theorem flagSol_none (T : FinMap Bell (VarEntry FinMap)) (hT : ∀ b, FinMap.get T b = none) :
+    FlagSol T (fun _ => none) :=
+  ⟨fun _ _ => rfl, fun b e hb => by rw [hT b] at hb; cases hb⟩
+
+/-- **The flags after `+ska-poke`'s SCC loop** (what `LoopLinkAt` needs at
+`fl = flagsOf`, on the model side): on a closed old table with `vars` on
+keys, info bells among callees and a solution `F`, if `+tarjan` lists the
+SCCs of the new code (`TarjanSpec`) and the model's loop from `F` returns
+`G`, then `flagsOf` of the new table is `G`'s flags, the old bells keep
+`flagsOf` of the old table, and the new table again has all four
+properties. -/
+theorem flagsOf_poke {code : FinMap Bell (VarEntry FinMap)} {E : BEnv FinMap} {n : Nat}
+    {bg : FinMap Bell (VarEntry FinMap) × FinMap Bell (FinMap Bell Unit)}
+    (hc : CodeClosed code) (hv : VarsKeys E.vars code) (hi : InfoCalls code) (hbg : bakeGraph E n = some bg)
+    {L : List (List Bell)} (hL : TarjanSpec (newCode code bg.1) L) {F G : FlagTab} (hF : FlagSol code F)
+    (hr : sccLoop (nmOf (addCode code (newCode code bg.1))) F L = some G) :
+    (∀ b, flagsOf (addCode code (newCode code bg.1)) b = (match G b with
+      | some p => flagNoun p
+      | none => A 0)) ∧
+    (∀ b, FinMap.get code b ≠ none → flagsOf (addCode code (newCode code bg.1)) b = flagsOf code b) ∧
+    CodeClosed (addCode code (newCode code bg.1)) ∧ InfoCalls (addCode code (newCode code bg.1)) ∧
+    FlagSol (addCode code (newCode code bg.1)) G := by
+  have hA := addsTo_addCode code bg.1
+  have hC' := (addCode_closed hc hv hbg).1
+  have hI' := infoCalls_addCode hi hbg
+  refine ⟨fun b => (flagsOf_loop hA hc hi hC' hI' hL hF hr b).1,
+    fun b hb => (flagsOf_loop hA hc hi hC' hI' hL hF hr b).2 hb, hC', hI', (sccLoop_sol hA hc hC' hI' hL hF hr).2⟩
 
 end Compiler
 end Formalization
