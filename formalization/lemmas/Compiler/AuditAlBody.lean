@@ -39,3 +39,4 @@ open Formalization Compiler
 #print axioms al_bodyG
 #print axioms body_fold
 #print axioms al_body
+#print axioms al_body_gen

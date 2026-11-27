@@ -1,6 +1,7 @@
 import lemmas.Compiler.OptLinkAlBodyImm
 import lemmas.Compiler.OptLinkAlPrelude
 import lemmas.Compiler.OptLinkMiddle
+import lemmas.Compiler.OptLinkAlState
 
 /-!
 # `+alias`: the gate of the body and its `+roll` (phase 13, README Gaps 13)
@@ -18,6 +19,10 @@ import lemmas.Compiler.OptLinkMiddle
   ops and a related state; `gen` keeps every field but `old`, `info-local`,
   `imms-local`.  The roll starts from the bunt of its gate's sample, `[*pole
   ~ gen]` (`poleBunt`, `list_mb`).
+* `al_body_gen`: `al_body` stated with `GenRelL` (`OptLinkAlState.lean`) on
+  the walk's subject `alWS`: the body of the block `b` runs on the model's
+  state `{ old := g.old, loc, imml }` and leaves `gen` related to
+  `{ g with old := st'.old }` with `st'.loc`, `st'.imml`.
 -/
 
 namespace Formalization
@@ -189,6 +194,19 @@ theorem al_body (P1 PAR FIN P3 P4 P5 NEW INFO IMMS REST Y Z OLD LOC IML : Noun) 
   generalize alBodyG = G at hN' ⊢
   simp [nock_exec, alBodyGBunt, hL, hL1, hT, hpm, hpg, hps, hpb, hl1, hla, list_arm, list_b, list_mb, roll.arm_at, roll_arm,
     flop.arm_at, flop_arm, hN', hfl]
+
+/-- **The body of a block, on the state of the walk** (phase 13 with `GenRelL`). -/
+theorem al_body_gen {g : Opt.AGen (TreapMap mugF)} {loc : Opt.AInfo} {imml : Opt.AImms} {GEN : Noun}
+    (hg : GenRelL g loc imml GEN) (PN IM IN PRE NA BL REV TOPO : Noun) (b : Blob) (ops : List Pole)
+    (st' : Opt.ABody) (hb : Opt.aliasBody (Ana.pickR FinMap) b.body { old := g.old, loc := loc, imml := imml }
+      = some (ops, st')) :
+    ∃ GEN', nock (C PN (C b.toNoun (C IM (C IN (C PRE (alWS GEN NA BL REV TOPO)))))) alBody
+      = some (C (listNoun Pole.toNoun ops) GEN') ∧ GenRelL { g with old := st'.old } st'.loc st'.imml GEN' := by
+  obtain ⟨OLD, INFO, IMMS, LOC, IMML, REV', rfl, h1, h2, h3, h4, h5, h6⟩ := hg
+  obtain ⟨OLD', LOC', IML', e, hR'⟩ := al_body PN (listNoun A b.par) b.fin.toNoun IM IN PRE
+    (HoonMap.toNoun Blob.toNoun g.new) INFO IMMS (C REV' (flag g.folded)) alBodyCut (C NA (C BL (C REV TOPO)))
+    OLD LOC IMML b.body _ ⟨h1, h5, h6⟩ ops st' hb
+  exact ⟨_, e, OLD', INFO, IMMS, LOC', IML', REV', rfl, hR'.1, h2, h3, h4, hR'.2.1, hR'.2.2⟩
 
 end Compiler
 end Formalization
