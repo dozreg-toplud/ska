@@ -186,6 +186,23 @@ def argsB' (c : Straight FM) : Bool :=
 #guard countB gapB (enumX.map mono ++ enumX.map naryX) == 1824
 #guard countB argsB' (enumX.map naryX) == 3360
 
+/-- No block at all passes `~`, and every block meets the guard: the form a
+run-level induction would carry (the raw blocks of `runL` under `%done`,
+`%next` and `%pick`). -/
+def allNoneFreeB (m : FM Blob) : Bool :=
+  (blocksOf m).all fun (_, b) => (getJmps b.fin).all fun j => j.args.all Option.isSome
+
+def runBlocksB (r : Option (NextL LS × Comp.Gen FM)) : Bool := match r with
+  | some (_, g) => allNoneFreeB g.blocks && celGuardB ⟨NeedOrd.this, 0, g.blocks⟩
+  | Option.none => true
+
+#guard enumX.all fun nm => runBlocksB (runX nm)
+#guard (sixes ++ enumX).all fun nm =>
+  runBlocksB (runL nm (CGoal.toL (CGoal.next (lazyReg 0) (jmp0 1) : CGoal LS)) [] gY) &&
+  runBlocksB (runL nm (CGoal.toL (CGoal.pick (jmp0 1) (jmp0 2) : CGoal LS)) [] gP)
+#guard countB (fun c => !allNoneFreeB c.blocks) (enumX.map mono ++ enumX.map naryX) == 0
+#guard enumCX.all fun nm => runBlocksB (runC nm)
+
 end EntryCheck
 end Glue
 end SkaModel
