@@ -298,6 +298,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompRunSixLInv.lean` | **`leapInv`**: on a lazy need with `LInv kr kb` and branches with `Bake.NoAx0`, the rest and every `by` that `+leap` returns meet `LInv kr kb`, no register is in two of them, and every register is the goal's (`LeapInv`).  By counts of registers (`RC`): `needCut_regs`, `flatten_fromPath`, `needFrom_regs`, `lzSur_regs`, `lzl_inv` (mutual with `lzl_inv_forks`, `lzl_inv_bonds`: `+lazy-leap` keeps the counts, the keys of each level and the labels), `leapLoop_inv`, `leap_keeps`; `walkP_and`, `lnb_of`. |
 | `Compiler/CompRunSixAll.lean` | **The case `%6` on every goal with `GInv`** (README Gaps 9): phase S on a `%next` goal whose forks and bonds ask nothing (`+leap` gives `~`, the need with the bunt sure `+none-equivalent`: `+fork-sure` of `sure.laz.goal` drops them, as `sixNextSimpleC`): `cr6s_head_ne` (the head with `+leap` in full), `cr6_head_crash` (`+leap` crashes, so does the case), `cr6s_s01_g` (`cr6s_s01` on any lazy need), `runLC_n6_ne`, `runLC_n6_ne_eq` (the model is the one of `[%next [sure ~ ~] then]`), `ginv_sureOnly`, **`comp_run_n6_ne`**, `res_n6_ne`; **`comp_run_n6_nl`**, `res_n6_nl` (`+leap` gives `~`: the split on `noneEquivalentL` and `kerfTest` to phases S, K, F); `comp_run_n6_l_f`, `comp_run_n6_l_ne` (phase L re-entering F and S, without `LeapTwice`); **`comp_run_n6_next`**, `res_n6_next` (every `%next` goal: `+leap` crashes, gives `~`, or a rest, then phase L and `comp_run_n6_nl` on the rest by `leapTwice_noAx0`); **`comp_run_n6_all`**, **`res_n6_all`** (every goal; `%done` and `%pick` by `comp_run_n6_dp`). Hypotheses: `SixParts` of the operands (branches in `region` and every `rid :: region`), `Bake.NoAx0` of the branches. |
 | `Compiler/CompRunAllSix.lean` | **The plain class with `%6`** (README Gaps 9): `SixOk` (`PlainOk` with `%6`, nested in any way; `sixOk_of_plainOk`, `sixOk_noDirect`), **`res_all6`** (every run of a nomm of the class with `Bake.NoAx0` from a goal with `GInv` returns `GRes`) and **`comp_run_all_l6`** (the run link on every goal with `GInv`, every region, `env`, `msup`, given only `slot? 7 ctx = some compK` and `slot? 52 ctx = some cod`), by induction on the nomm, `%6` by `comp_run_n6_all` with `SixParts` from the induction (`sixParts_of`, `hinted_nd`); examples: `[[6 [0 2] [4 0 3] [1 0]] [0 1]]`, `[7 [0 1] [6 [0 2] [4 0 3] [1 0]]]` on every goal with `GInv`, and the `%6` at the entry of `+comp`. |
+| `Compiler/CompRunTagsSix.lean` | `km_runLC6`: every run of `SixOk` keeps the counters growing, the mode and the tags (`KM`), as `km_runLC`; the phases of `%6` (`km_sixNextLC` at every fuel, `km_sixNextForkC`, `km_sixNextSimpleC`), `km_copyAll`, `km_lazyShut`, `km_getCond`. |
+| `Compiler/CompSccSix.lean` | **The top on `SixOk`** (README Gaps 9): the chain of `CompSccCallGate.lean` restated for `SixOk` with `Bake.NoAx0` (copied by script: `fin_gate_ts`, `fin_gate_finishLF_six`, `mem_to_finish_six`, `mem_gate_six`, `csi_gate_scc_one_m_six`, `mem_gate_none_six`, `csi_gate_scc_one_f_six`, `cu_trap_six`, `cu_gate_six`), with `comp_run_entry_six`, `indPure_of_sixOk`, `entry_lok`, `scc_sur_six`, and `comp_kerf_all` for the unary pass; the named hypotheses `TsOn Q` / `TsMapAt` (`+to-straight` on every `cond`; `tsOn_empty` on an empty one) and `FinSure` (a fork-free final pass; `finSure_n7_n1`); **`cu_gate_scc_one_six`**, `cu_gate_scc_one_six_q`, **`cu_gate_scc_one_six_fol`** (`NoAx0` from `+fol-loop`, `FolMade`, `folMade_noAx0`); two examples with `%6`. |
 | `Compiler/CompCoerceLazyGen.lean` | **`+coerce-lazy` on every lazy need** (forks and bonds to any depth): `czTail` with its roll gates named (`czBG`, `czFG`, `cz_tail_eq`); the root part on any lazy need (`cz_lokG`, `cz_srlG`, `cz_x`); the gates (`cz_bgate`, `cz_fgate`: the gate slammed again on the entry's label and need, the same `ned` and `less`); one step (`cz_step`, cut into `cz_step_none`, `cz_step_ee`, `cz_step_eb`, `cz_step_fe`, `cz_step_fb` to keep each kernel check small); **`cz_all`**, **`comp_coerce_lazy_all`**: the gate is `coerceLazyL ned less o laz` (the bonds before the forks, no departure), with an empty `soft`. |
 | `Compiler/SoftSpot.lean` | `+soft-spot` against `softSpotF` (the noun itself when it is `[path pint]`, with `atomList` and `pintShape`), on every noun and context (`soft_spot_loop`, `soft_spot_gate`); `softSpotIs_of`: `SoftSpotIs` for every `Env` whose `softSpot` is `softSpotF`. |
 | `Compiler/TreapMap.lean` | The instance of `HoonMap` that the interpreter's maps are: `TreapMap mugF ν`, the treaps `Tr ν` with atom keys that satisfy `IsMap mugF` under every layout of their values.  `Tr.get`, `Tr.put`, `Tr.del` follow `getF`, `putF`, `delF`, and on `Tr.toNoun f` of a treap the noun models give `Tr.toNoun f` of their results (`getF_hoonMap`, `putF_hoonMap`, `delF_hoonMap`); the laws of the class come from `putF_spec`, `delF_spec`, `getF_some`, `getF_none`. |
@@ -2084,6 +2086,68 @@ import only its theorems.  So:
     Next: the facts of the class that the top reads, now with `%6`:
     `km_runLC` and `tag_all` (`CompRunTags.lean`, still `PlainOk`), then
     the top (`cu_gate_scc_one_f_c`) on `SixOk`.
+    L, 2026-11-27 (track A, the top on `SixOk`: what the chain reads).  The
+    chain from `+run` to `cu_gate_scc_one_f_c` (`CompSccCallGate.lean`,
+    `CompSccCall.lean`, `CompFinish.lean`, `CompUnaryTrap.lean`) is stated on
+    `indOk`, not on `PlainOk`; `km_runLC` and `tag_all` are read by none of
+    it.  Every place that reads the class or a fact of it:
+    (1) `comp_run_entry_c` (the run at the entry; in `mem_to_finish_c`,
+    `mem_gate_none_c`, `cu_trap_c`): lifted by `comp_run_all_l6` at
+    `genEntry` with `[%done ~]`, whose `GInv` is `rfl`.
+    (2) `inl_gate_ind` with `indPure_of_indOk` (`+inlined` is the identity;
+    in `csi_gate_scc_one_m_c`, `csi_gate_scc_one_f_c`): `indPure` already
+    has `%6`, so `indPure_of_sixOk`.
+    (3) `args_frag_c` (`args.then` empty; in `csi_gate_scc_one_m_c`): not
+    needed, `csi_gate_scc_one_f_c` splits on it and both sides crash.
+    (4) `scc_sur_frag_c` (the result's `laz` fork-free, and `+sure-of`
+    succeeds; in `csi_gate_scc_one_m_c`, `mem_gate_none_c`) and with it
+    `hsc_of_sure` (`+shape-collapse`) and `cz_gate_L` in `fin_gate`
+    (`+coerce-lazy` on `[s ~ ~]`): false on `SixOk`.  A `%6` under `%done`
+    leaves the fork `[[yes laz.nex-0] [nuh laz.nex-1]]` in the result, and
+    so does `+sect` under `%next`; on a lazy need with forks `+shape-collapse`
+    runs `+lazy-to-inter1` and the `+inter2-*` arms, which have no model, and
+    the model's `sccSur` (`+sure-of` of the sure part alone) is not what they
+    compute.  So the top keeps a fork-free result as a named hypothesis
+    (`FinSure`), and `+sure-of` succeeds by `GRes` (no look at `0`).
+    (5) `mem_cond_frag_c` (in `mem_gate_c`) and `hcond` of `fin_gate` for
+    `tsn_at`, and `kerf_ofSure` with `crx_run` for `TsAt` in `cu_trap_c`:
+    `cond` empty at `+to-straight`.  False on `SixOk` (`+kern` of `%2`,
+    `+collapse-lazy-atom`, `+lazy-shut`, `+kerf` of phase K, `+sect` write
+    it): the named hypothesis `TsMapAt` (`+to-straight` on every `cond`,
+    track I).
+    (6) `comp_kerf` on `Next.toL` (in `cu_trap_c`, the `+kerf` of the
+    unary pass on a fork-free result): `comp_kerf_all` on every lazy need.
+    **The top on `SixOk` is proved** (2026-11-27, track A,
+    `Compiler/CompSccSix.lean`): `cu_gate_scc_one_six` is
+    `cu_gate_scc_one_f_c` for nomms `nm` (the SCC's) and `n` (the code's) of
+    `SixOk` with `Bake.NoAx0`, under two named hypotheses: `TsMapAt`
+    (`+to-straight` on the final-pass sample on every `cond`, i.e. `tsn_at`
+    without `hcond`: the map branch, which track I is proving; one
+    application of that theorem closes it) and `FinSure env nm` (the final
+    pass of `nm` returns a fork-free `laz`; see (4)).  `n` needs no
+    `FinSure`: the unary pass runs `+kerf` on any lazy need.
+    `cu_gate_scc_one_six_q` is the same with `TsOn Q` for any `Q` on the
+    `cond` the passes reach (`tsOn_empty`: `Q` = empty is proved by
+    `tsn_at`), and `cu_gate_scc_one_six_fol` takes `FolMade` (made by
+    `+fol-loop`) of both nomms in place of `Bake.NoAx0`
+    (`folMade_noAx0`, from `folLoop_noAx0`).  What it covers today:
+    every nomm of `SixOk` as the code's `n`; as the SCC's `nm`, those with a
+    fork-free final pass, e.g. `[7 [1 k] c]` for every `c`
+    (`finSure_n7_n1`), but no nomm whose `%6` result reaches the top,
+    since a `%6` under `%done` (and `+sect` under `%next`) leaves a fork in
+    it.  Two `example`s (only `TsMapAt` and the state nouns left, cape `|`):
+    `nm` = `n` = `[7 [1 0] [6 [0 2] [4 0 3] [1 0]]]`, and `nm` =
+    `[7 [1 0] [7 [0 1] [6 ..]]]` with `n` the bare `[6 [0 2] [4 0 3] [1 0]]`.
+    None needs no hypothesis: closing `TsOn` by `tsOn_empty` asks `cond`
+    empty after the run, and `+mede` of `[1 k]` on a need with forks has no
+    `KC` lemma yet.  `km_runLC6` (`Compiler/CompRunTagsSix.lean`): `KM` of
+    every run of `SixOk`, the four phases of `%6` included.  Not done:
+    `tag_all` on `SixOk` (the labels of `+fork` by `+copy-tag`, of `+sect`
+    and of the `%done` / `%pick` case by `+set-tag`, of `+past-fork`, and
+    phase L's `copyAll`); only the model's `+proxy` reads it, so the top
+    does not.  Next: `+shape-collapse` on a lazy need with forks (a model
+    of `+lazy-to-inter1` and the `+inter2-*` arms, and `ord` in place of
+    `sccSur`), which removes `FinSure`.
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
