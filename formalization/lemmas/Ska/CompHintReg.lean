@@ -366,6 +366,280 @@ theorem runLCH_n11d_done_next {env : CallEnv} {tag : Nat} (hs : hintDynamic tag 
 
 end Reg
 
+section Kept
+variable {snd : Nomm → NeedOrd → Bool}
+
+/-- **A kept dynamic `stopTag` hint over a member of `RegGBT` is in
+`RegGBT`** (the clue with `LOKSFH` and `NoBondH`, `+sound` of `%this` for
+the formula).  The text of `n11dKept_done` for the goal `%next
+(lazy-from-reg rg) th`: no block `[don re]`, the epilogue hops to `th`; the
+formula's `RunOKGBT` (any result, bonds inside included) behind the block of
+`+lazy-bound` (`RunOKGBT.bound`); the entries of the result are
+`(o, nq.laz) :: entries nq.laz`; the end is `frameOK_goes` at the goal's
+need, which every product fits, then `goalSemCM_step` over the clue. -/
+theorem regGBT_n11dKept {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop} {fh fq : Noun} {h q : Nomm}
+    (Hq : RegGBT (S := S) (Map := Map) snd lib N env P fq q) (hsnd : snd q NeedOrd.this = true)
+    (Hh : LOKSFH (S := S) (Map := Map) (snd := snd) lib N env P fh h) (hch : sixCount h ≤ 255)
+    (hnh : NoBondH (S := S) (Map := Map) snd env h)
+    {tag : Nat} (hs : hintDynamic tag = true) (hst : stopTag tag = true) (body : Noun) :
+    RegGBT (S := S) (Map := Map) snd lib N env P (n3 (A 11) (C (A tag) fh) fq) (Nomm.n11d tag h q body) := by
+  intro sup rg th region g0 g1 nex b0 d0 hu hcl hcb th1 th2 hta hr0 hc0 hr
+  obtain ⟨nq, gc, nh, gh, h3, hqa, h6, h7⟩ := runLCH_n11d_kept_next hs hsnd hr
+  have e0 : ∀ r, entries (ofSure (lazyReg r : Sure S)) = [] := fun r => entries_ofSure _
+  -- the state after `toke` and the epilogue
+  have dA : (genN g0 tag body th).drop = false := d0
+  have reA : (genN g0 tag body th).re = g0.re + 1 := rfl
+  have boA : (genN g0 tag body th).bo = g0.bo + 1 := rfl
+  have bA : ∀ k, HoonMap.get (genN g0 tag body th).blocks k =
+      if k = g0.bo then some ⟨[], [Pole.hde tag g0.re body], Termin.hop th⟩ else HoonMap.get g0.blocks k := by
+    intro k; simp only [genN, Gen.emitted, d0, Bool.false_eq_true, ↓reduceIte, HoonMap.get_put]
+  have GA : GrowU g0 (genN g0 tag body th) := (growU_re g0 _).trans
+    (growU_emit (g := { g0 with re := g0.re + 1 }) (b := ⟨[], [Pole.hde tag g0.re body], Termin.hop th⟩)
+      (fun j hj => by simp only [finJumps, List.mem_singleton] at hj; subst hj; exact ⟨th1, th2⟩) hu)
+  have uA : UpBelow (genN g0 tag body th) := GA.up hu
+  have clA : Clear (genN g0 tag body th) := hcl.growU GA
+  have cbA : CondBelow (genN g0 tag body th) := fun k hk => by
+    have := hcb k hk; simp only [genN, Gen.emitted] at this ⊢; omega
+  have extA : Ext g0 (genN g0 tag body th) := ⟨by rw [reA]; omega, by rw [boA]; omega, dA.trans d0.symm,
+    fun o ho => by rw [bA, if_neg (by omega)]⟩
+  have ctoke : HoonMap.get g0.cond g0.re = Option.none := condBelow_none hcb (Nat.le_refl _)
+  -- the formula, its bond
+  have RQ := Hq (by rw [boA]; omega) dA uA clA cbA (by simp only [jmp0]; omega) (by simp only [jmp0]; rw [boA]; omega)
+    rfl (by rw [reA]; omega) (by simp only [genN, Gen.emitted]; exact hc0) h3
+  have dc : gc.drop = false := RQ.ext.2.2.1.trans dA
+  have uc : UpBelow gc := RQ.grow.up uA
+  have RG := RQ.bound (fun x hx => by simp only [lazyReg, NMem] at hx; rw [reA]; omega) hqa dc uc region
+  have nql : ∀ e ∈ entries nq.laz, g0.bo + 1 ≤ e.1 ∧ e.1 < gc.bo := fun e he =>
+    ⟨by have := (RQ.labs e he).1; rw [boA] at this; exact this, (RQ.labs e he).2.1⟩
+  have boD : ((gc.emitted ⟨[], [], Termin.hop nq.th⟩).tagged gc.bo region).bo = gc.bo + 1 := by
+    simp only [tagged_bo, Gen.emitted]
+  have dD : ((gc.emitted ⟨[], [], Termin.hop nq.th⟩).tagged gc.bo region).drop = false := by
+    simp only [tagged_drop, Gen.emitted]; exact dc
+  have rcA : g0.re + 1 ≤ gc.re := by have := RG.ext.1; simp only [reA, tagged_re, Gen.emitted] at this; exact this
+  have bcA : g0.bo + 1 ≤ gc.bo := by have := RQ.ext.2.1; rw [boA] at this; exact this
+  -- the prologue
+  have GE : GrowU ((gc.emitted ⟨[], [], Termin.hop nq.th⟩).tagged gc.bo region)
+      (((gc.emitted ⟨[], [], Termin.hop nq.th⟩).tagged gc.bo region).emitted
+        ⟨[], [Pole.hdp tag g0.re body], Termin.hop (jmp0 gc.bo)⟩) :=
+    growU_emit (fun j hj => by
+      simp only [finJumps, List.mem_singleton] at hj; subst hj; simp only [jmp0, boD]; omega) (RG.grow.up uA)
+  have uE := GE.up (RG.grow.up uA)
+  have clE := (clA.growU RG.grow).growU GE
+  have cbE : CondBelow (((gc.emitted ⟨[], [], Termin.hop nq.th⟩).tagged gc.bo region).emitted
+        ⟨[], [Pole.hdp tag g0.re body], Termin.hop (jmp0 gc.bo)⟩) := RG.cfr.below cbA
+  have ctD : HoonMap.get ((gc.emitted ⟨[], [], Termin.hop nq.th⟩).tagged gc.bo region).cond g0.re = Option.none := by
+    rw [RG.cfr.get_lt (by rw [reA]; omega)]; exact ctoke
+  -- the clue
+  obtain ⟨⟨Qh, RSh⟩, -, -, hflh, -⟩ := Hh.run (sup := sup) (L := ofSure (lazyReg g0.re)) (th := jmp0 (gc.bo + 1))
+    (region := region) (Or.inr (e0 _)) hch (by simp only [Gen.emitted, boD]; omega) (by simp only [emitted_drop]; exact dD)
+    uE clE cbE (by simp only [jmp0]; omega) (by simp only [jmp0, Gen.emitted, tagged_bo]; omega) rfl
+    (by rw [e0]; simp) trivial
+    (fun x hx => by
+      simp only [lazyReg, ofSure, NMem] at hx; subst hx
+      exact ⟨by simp only [Gen.emitted, tagged_re]; omega, ctD⟩)
+    (fun e he => by rw [e0] at he; cases he) (by rw [e0]; simp) (fun e he => by rw [e0] at he; cases he)
+    (flat_ofSure _) trivial (fun e he => by rw [e0] at he; cases he) h6
+  have RGh := RSh.toRunOKLB.toGB (fun r hr => by
+    simp only [lazyReg, NMem] at hr; subst hr; simp only [Gen.emitted, tagged_re]; omega)
+  obtain ⟨hfh, hbh⟩ := hnh h6
+  have dh : gh.drop = false := RSh.drop.trans (by simp only [emitted_drop]; exact dD)
+  obtain ⟨rfl, r1, b1, d1, c1, k1⟩ := copyL_bond1 dh hfh hbh h7
+  -- the copy block, the facts of the states
+  have hb1 : ∀ k, HoonMap.get g1.blocks k =
+      if k = gh.bo then some ⟨[], [], Termin.hop nh.th⟩ else HoonMap.get gh.blocks k := by
+    intro k; rw [k1 k]; simp [Gen.emitted, dh, HoonMap.get_put]
+  have hargs : nh.th.args = [] := nextArgs_nil RGh.ent rfl
+  have boh : gc.bo + 2 ≤ gh.bo := by have := RGh.ext.2.1; simp only [Gen.emitted, tagged_bo] at this; omega
+  have reh : gc.re ≤ gh.re := by have := RGh.ext.1; simp only [Gen.emitted, tagged_re] at this; omega
+  have E1 : Ext gh g1 := ⟨by omega, by omega, by rw [d1, dh], fun o ho => by rw [hb1, if_neg (by omega)]⟩
+  have EE1 : Ext (((gc.emitted ⟨[], [], Termin.hop nq.th⟩).tagged gc.bo region).emitted
+      ⟨[], [Pole.hdp tag g0.re body], Termin.hop (jmp0 gc.bo)⟩) g1 := RGh.ext.trans E1
+  have ED1 : Ext ((gc.emitted ⟨[], [], Termin.hop nq.th⟩).tagged gc.bo region) g1 := (ext_emit _ _).trans EE1
+  have EA1 : Ext (genN g0 tag body th) g1 := RG.ext.trans ED1
+  have CF1 : CondFresh ((gc.emitted ⟨[], [], Termin.hop nq.th⟩).tagged gc.bo region) g1 :=
+    (condFresh_of_eq (Nat.le_refl _) rfl).trans (RGh.cfr.trans (condFresh_of_eq (by omega) c1))
+  have CFA1 : CondFresh (genN g0 tag body th) g1 := RG.cfr.trans CF1
+  have GG : Grow gh g1 := Grow.congr_right (grow_emit (g := gh) (b := ⟨[], [], Termin.hop nh.th⟩) (fun j hj => by
+    simp [finJumps] at hj; subst hj; exact ⟨RGh.lo, RGh.hi⟩)) b1 (by rw [d1, emitted_drop, dh]) k1
+  have hent : entries (mk Sure.bunt [] [(gc.bo, nq.laz)] : Lazy S) = (gc.bo, nq.laz) :: entries nq.laz :=
+    entries_bound1 _ _ _
+  have hent' : entries (mk ⟨nh.laz.sure.ned, HoonSet.uni nh.laz.sure.lok HoonSet.empty⟩ [] [(gc.bo, nq.laz)] :
+      Lazy S) = (gc.bo, nq.laz) :: entries nq.laz := entries_bound1 _ _ _
+  have hentN : entries nh.laz = [] := by rw [entries_flat hflh, hbh]
+  have hmem : ∀ e, e ∈ entries (mk ⟨nh.laz.sure.ned, HoonSet.uni nh.laz.sure.lok HoonSet.empty⟩ [] [(gc.bo, nq.laz)] :
+      Lazy S) → e ∈ entries (mk Sure.bunt [] [(gc.bo, nq.laz)] : Lazy S) := fun e he => by
+    rw [hent]; rw [hent'] at he; exact he
+  have hnot : ∀ o, o ≠ gc.bo → (o < g0.bo + 1 ∨ gc.bo ≤ o) →
+      o ∉ (entries (mk ⟨nh.laz.sure.ned, HoonSet.uni nh.laz.sure.lok HoonSet.empty⟩ []
+        [(gc.bo, nq.laz)] : Lazy S)).map Prod.fst := fun o ho hlt hm => by
+    rw [hent', List.map_cons, List.mem_cons] at hm
+    rcases hm with hm | hm
+    · exact ho hm
+    · obtain ⟨e, he, ee⟩ := List.mem_map.mp hm
+      have := nql e he; omega
+  -- the blocks in the program
+  have blocks : ∀ (cf : Map (Nat × List Nat)), (∀ k, k < g1.re → HoonMap.get cf k = HoonMap.get g1.cond k) →
+      ∀ (c : Straight Map) (ned : Need) {σ : Type} (O : Oracle σ) (gul : Noun) (st : σ) (t : Trace) (s0 s : Noun),
+      AgreeUB lib O c gul st t cf ned g0 g1
+        (mk ⟨nh.laz.sure.ned, HoonSet.uni nh.laz.sure.lok HoonSet.empty⟩ [] [(gc.bo, nq.laz)]) s0 s →
+      HoonMap.get c.blocks gh.bo = some ⟨[], [], Termin.hop nh.th⟩ ∧
+      FrameOK c tag g0.re body (gc.bo + 1) gc.bo g0.bo th := by
+    intro cf hcf c ned σ O gul st t s0 s ag
+    have ct : HoonMap.get cf g0.re = Option.none := by
+      rw [hcf _ (by omega), CFA1.get_lt (by rw [reA]; omega)]; exact ctoke
+    have bE : HoonMap.get g1.blocks (gc.bo + 1) =
+        some ⟨[], [Pole.hdp tag g0.re body], Termin.hop (jmp0 gc.bo)⟩ := by
+      rw [EE1.2.2.2 _ (by simp only [Gen.emitted, tagged_bo]; omega), ← boD]; exact hk_emitted_self dD _
+    refine ⟨?_, ⟨hst, ?_, ?_⟩⟩
+    · rw [ag.1 gh.bo (by omega) (by omega) (hnot _ (by omega) (Or.inr (by omega))), hb1, if_pos rfl]
+      simp [unproxyBlob, renBlob, renFin, renJmp_nil _ hargs]
+    · rw [ag.1 _ (by omega) (by omega) (hnot _ (by omega) (Or.inr (by omega))), bE]
+      simp [unproxyBlob, renBlob, renFin, renPole, renJmp, jmp0, unproxy_none ct]
+    · rw [ag.1 _ (Nat.le_refl _) (by omega) (hnot _ (by omega) (Or.inl (by omega))),
+        EA1.2.2.2 _ (by rw [boA]; omega), bA, if_pos rfl]
+      simp [unproxyBlob, renBlob, renFin, renPole, renJmp_nil _ hta, unproxy_none ct]
+  have agh : ∀ {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ} {t : Trace}
+      {cf : Map (Nat × List Nat)} {ned : Need} {s0 s : Noun},
+      AgreeUB lib O c gul st t cf ned g0 g1
+        (mk ⟨nh.laz.sure.ned, HoonSet.uni nh.laz.sure.lok HoonSet.empty⟩ [] [(gc.bo, nq.laz)]) s0 s →
+      AgreeUB lib O c gul st t cf ned (((gc.emitted ⟨[], [], Termin.hop nq.th⟩).tagged gc.bo region).emitted
+        ⟨[], [Pole.hdp tag g0.re body], Termin.hop (jmp0 gc.bo)⟩) gh nh.laz s0 s := fun ag =>
+    ⟨fun o h0 h1 hn => by
+      simp only [Gen.emitted, tagged_bo] at h0
+      rw [ag.1 o (by omega) (by omega) (hnot o (by omega) (Or.inr (by omega))), hb1, if_neg (by omega)],
+     fun e he => by rw [hentN] at he; cases he⟩
+  have agq : ∀ {σ : Type} {O : Oracle σ} {c : Straight Map} {gul : Noun} {st : σ} {t : Trace}
+      {cf : Map (Nat × List Nat)} {ned : Need} {s0 s : Noun},
+      AgreeUB lib O c gul st t cf ned g0 g1
+        (mk ⟨nh.laz.sure.ned, HoonSet.uni nh.laz.sure.lok HoonSet.empty⟩ [] [(gc.bo, nq.laz)]) s0 s →
+      AgreeUB lib O c gul st t cf ned (genN g0 tag body th) ((gc.emitted ⟨[], [], Termin.hop nq.th⟩).tagged gc.bo region)
+        (mk Sure.bunt [] [(gc.bo, nq.laz)]) s0 s := fun ag =>
+    ⟨fun o h0 h1 hn => by
+      rw [ag.1 o (by rw [boA] at h0; omega) (by have := ED1.2.1; omega) (by rw [hent']; rw [hent] at hn; exact hn),
+        ED1.2.2.2 o h1],
+     fun e he => by
+      obtain ⟨A, B, th', a1, a2, a3⟩ := ag.2 e (by rw [hent']; rw [hent] at he; exact he)
+      have l2 := (RG.labs e he).2.1
+      exact ⟨A, B, th', by rw [← ED1.2.2.2 e.1 l2]; exact a1, a2, a3.mono (by have := ED1.1; omega)⟩⟩
+  -- the kept registers across the clue
+  have hkc : ∀ (ned : Need) (regs regs1 : Map (Option Noun)), (∀ x, NMem ned x → g1.re ≤ x) →
+      (∀ x, ((x < (((gc.emitted ⟨[], [], Termin.hop nq.th⟩).tagged gc.bo region).emitted
+        ⟨[], [Pole.hdp tag g0.re body], Termin.hop (jmp0 gc.bo)⟩).re ∨ NMem ned x) ∧
+        ¬ GMem (CGoal.next (lazyReg g0.re : Sure S) (jmp0 (gc.bo + 1))) x) →
+        SkaModel.read x regs1 = SkaModel.read x regs) →
+      ∀ x, ((x < g0.re ∨ NMem ned x) ∧ ¬ GMem (CGoal.next (lazyReg rg : Sure S) th) x) →
+        SkaModel.read x regs1 = SkaModel.read x regs := fun ned regs regs1 hned hk1 x ⟨a, b⟩ =>
+    hk1 x ⟨a.imp (fun h => by simp only [Gen.emitted, tagged_re]; omega) id, fun hg => by
+      simp only [GMem, lazyReg, NMem] at hg
+      rcases a with a | a
+      · omega
+      · have := hned x a; omega⟩
+  have hKm : ∀ (ned : Need) x, ((x < g0.re ∨ NMem ned x) ∧ ¬ GMem (CGoal.next (lazyReg rg : Sure S) th) x) →
+      ((x < (genN g0 tag body th).re ∨ NMem ned x) ∧ ¬ GMem (CGoal.next (lazyReg rg : Sure S) (jmp0 g0.bo)) x) :=
+    fun ned x ⟨a, b⟩ => ⟨a.imp (fun h => by rw [reA]; omega) id, fun hg => b (by simpa [GMem] using hg)⟩
+  refine ⟨extA.trans EA1, GA.trans (RG.grow.trans (GE.trans (RGh.grow.trans (GG.toU (RGh.grow.up uE))))),
+    (condFresh_of_eq (g0 := g0) (g1 := genN g0 tag body th) (by rw [reA]; omega) rfl).trans CFA1,
+    by simp only [jmp0]; omega, by simp only [jmp0]; omega,
+    Or.inl ⟨_, by simp only [jmp0]; rw [hb1, if_pos rfl], rfl, rfl⟩,
+    fun r hr => Or.inr ?_, RGh.dist, fun e he => ?_, fun e he => ?_, ?_, fun s hs hf => ?_,
+    fun r hr => by rw [c1]; exact RGh.ncond r hr, fun e he r hr => ?_, ?_, ?_⟩
+  · rcases RGh.regs r hr with h | h
+    · simp only [GMem, lazyReg, NMem] at h; subst h; constructor <;> omega
+    · simp only [Gen.emitted, tagged_re] at h; constructor <;> omega
+  · have he' := hmem e he
+    refine ⟨(RG.eregs e he').1, fun r hr => ?_⟩
+    have := (RG.eregs e he').2 r hr
+    refine ⟨this.1.imp (fun h => by simpa [GMem] using h) (fun h => by rw [reA] at h; omega), ?_⟩
+    have := this.2; simp only [tagged_re, Gen.emitted] at this; omega
+  · have he' := hmem e he
+    obtain ⟨l1, l2, B, th', hB⟩ := RG.labs e he'
+    exact ⟨by rw [boA] at l1; omega, by have := ED1.2.1; omega, B, th', by rw [ED1.2.2.2 e.1 l2]; exact hB⟩
+  · rw [hent', List.map_cons, List.nodup_cons]
+    exact ⟨fun hm => by obtain ⟨e, he, ee⟩ := List.mem_map.mp hm; have := nql e he; simp at ee; omega, RQ.nodup⟩
+  · have hf' : ¬ FitsS nh.laz.sure s := fun hf2 => hf ⟨hf2.1, (looks_uni _ _ _).mpr ⟨hf2.2, looks_empty _⟩⟩
+    have NC := RGh.nec s hs hf'
+    refine ⟨fun gul n tm r hm => ?_, fun gul tm => ?_⟩
+    · cases n with
+      | zero => rw [minkF_zero_fuel] at hm; cases hm
+      | succ m =>
+        rw [minkF_n11d_stop lib gul m tm s hst] at hm
+        cases hmh : minkF lib gul m tm s fh with
+        | none => rw [hmh] at hm; cases hm
+        | some rh =>
+          have := badC_lazyReg (NC.1 gul m tm rh hmh); subst this
+          rw [hmh] at hm; simp only [tbind] at hm; cases hm
+          exact Or.inl rfl
+    · obtain ⟨rh, hm, hb⟩ := NC.2 gul tm
+      have := badC_lazyReg hb; subst this
+      exact ⟨_, mink_n11d_clue hst hm (fun q => by simp), Or.inl rfl⟩
+  · have he' := hmem e he
+    rw [CF1.get_lt ((RG.eregs e he').2 r hr).2]; exact RG.econd e he' r hr
+  · intro cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
+    obtain ⟨hcp, F⟩ := blocks cf hcf c ned O gul st t s0 s (ag st t)
+    have ecopy : ∀ st regs, goJ lib O c gul st regs t (jmp0 gh.bo) = goJ lib O c gul st regs t nh.th := fun st regs => by
+      rw [goJ_jmp0 _ _ _ _ hcp, execBlob_hop]
+    cases n with
+    | zero => rw [minkF_zero_fuel] at hm; cases hm
+    | succ m =>
+      rw [minkF_n11d_stop lib gul m tm s hst] at hm
+      cases hmh : minkF lib gul m tm s fh with
+      | none => rw [hmh] at hm; cases hm
+      | some rh =>
+        rw [hmh] at hm
+        have Gh := RGh.sem cf (fun k hk => by rw [hcf k (by omega), c1]) c ned σ Inv ν O m gul hN hS
+          (oracleFwd_le hF (Nat.le_succ m)) st t tm s0 s rh
+          hI htr hs hmh (fun st' => agh (ag st' t)) (fun x hx => by have := hned x hx; omega) regs
+          ⟨hh.1, ((looks_uni _ _ _).mp hh.2).1⟩ hn
+        cases rh with
+        | zero v =>
+          simp only [tbind] at hm
+          obtain ⟨st1, regs1, hI1, hle1, hh1, hk1, e1⟩ := Gh.1 (fitsS_lazyReg _ v)
+          have hn1 : HoldsN ned regs1 s0 := holdsN_frame ned hn (fun x hx => hk1 x ⟨Or.inr hx, fun hg => by
+            simp only [GMem, lazyReg, NMem] at hg; have := hned x hx; omega⟩)
+          have Gq := RG.sem cf (fun k hk => by rw [hcf k (by have := CF1.1; omega), CF1.get_lt hk]) c ned σ Inv ν O m gul
+            hN hS (oracleFwd_le hF (Nat.le_succ m)) st1 ((tag, v) :: t) ((tag, v) :: tm) s0 s r hI1
+            (Forall2.cons (FrameRel.same hst) (frames_mono hle1 htr)) hs hm (fun st' t' => agq (ag st' t'))
+            (fun x hx => by have := hned x hx; simp only [tagged_re, Gen.emitted]; omega) regs1 (holdsS_bunt _ _) hn1
+          exact goalSemCM_step hle1 (hkc ned regs regs1 hned hk1) (by rw [ecopy, e1]) _ _
+            (goalSemCM_monoK (hKm ned) _ _ (frameOK_goes F (fitsS_lazyReg rg) hh1 Gq))
+        | one b =>
+          simp only [tbind] at hm; cases hm
+          obtain ⟨ton, st2, hI2, hle2, e2, hrel⟩ := Gh
+          exact ⟨ton, st2, hI2, hle2, by rw [ecopy]; exact e2, hrel⟩
+        | two tr =>
+          simp only [tbind] at hm; cases hm
+          obtain ⟨ton, st2, hI2, hle2, e2, hrel⟩ := Gh
+          exact ⟨ton, st2, hI2, hle2, by rw [ecopy]; exact e2, hrel⟩
+  · intro cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
+    obtain ⟨hcp, F⟩ := blocks cf hcf c ned O gul st t s0 s (ag st t)
+    have ecopy : ∀ st regs, goJ lib O c gul st regs t (jmp0 gh.bo) = goJ lib O c gul st regs t nh.th := fun st regs => by
+      rw [goJ_jmp0 _ _ _ _ hcp, execBlob_hop]
+    rw [ecopy] at hres
+    obtain ⟨rh, hmh, Gh⟩ := RGh.semB cf (fun k hk => by rw [hcf k (by omega), c1]) c ned σ Inv ν O gul hN hS hB
+      st t tm s0 s hI htr hs (fun st' => agh (ag st' t)) (fun x hx => by have := hned x hx; omega) regs
+      ⟨hh.1, ((looks_uni _ _ _).mp hh.2).1⟩ hn res hres
+    cases rh with
+    | zero v =>
+      obtain ⟨st1, regs1, hI1, hle1, hh1, hk1, e1⟩ := Gh.1 (fitsS_lazyReg _ v)
+      have hn1 : HoldsN ned regs1 s0 := holdsN_frame ned hn (fun x hx => hk1 x ⟨Or.inr hx, fun hg => by
+        simp only [GMem, lazyReg, NMem] at hg; have := hned x hx; omega⟩)
+      rw [e1, goJ_push hst F.2.1 st1 regs1 hh1 t] at hres
+      obtain ⟨r, hmq, Gq⟩ := RG.semB cf (fun k hk => by rw [hcf k (by have := CF1.1; omega), CF1.get_lt hk]) c ned σ Inv ν
+        O gul hN hS hB st1 ((tag, v) :: t) ((tag, v) :: tm) s0 s hI1
+        (Forall2.cons (FrameRel.same hst) (frames_mono hle1 htr)) hs (fun st' t' => agq (ag st' t'))
+        (fun x hx => by have := hned x hx; simp only [tagged_re, Gen.emitted]; omega) regs1 (holdsS_bunt _ _) hn1
+        res hres
+      exact ⟨r, mink_n11d_stop hst hmh hmq, goalSemCM_step hle1 (hkc ned regs regs1 hned hk1) (by rw [ecopy, e1]) _ _
+        (goalSemCM_monoK (hKm ned) _ _ (frameOK_goes F (fitsS_lazyReg rg) hh1 Gq))⟩
+    | one b =>
+      obtain ⟨ton, st2, hI2, hle2, e2, hrel⟩ := Gh
+      exact ⟨_, mink_n11d_clue hst hmh (fun q => by simp), ton, st2, hI2, hle2, by rw [ecopy]; exact e2, hrel⟩
+    | two tr =>
+      obtain ⟨ton, st2, hI2, hle2, e2, hrel⟩ := Gh
+      exact ⟨_, mink_n11d_clue hst hmh (fun q => by simp), ton, st2, hI2, hle2, by rw [ecopy]; exact e2, hrel⟩
+
+end Kept
+
 end Comp
 end SkaModel
 end Formalization
