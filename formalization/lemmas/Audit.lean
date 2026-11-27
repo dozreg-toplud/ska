@@ -1135,3 +1135,13 @@ open Formalization
 #print axioms Compiler.cfk_all
 #print axioms Compiler.comp_fork_all
 #print axioms Compiler.cr6f_s03
+#print axioms Compiler.km_forkL
+#print axioms Compiler.fkl_spec
+#print axioms Compiler.forkL_spec
+#print axioms Compiler.ginv_forkL
+#print axioms Compiler.cr6f_p
+#print axioms Compiler.cr6f_lyn
+#print axioms Compiler.cr6f_mid
+#print axioms Compiler.cr6f_head
+#print axioms Compiler.comp_run_n6_f
+#print axioms Compiler.res_n6_f
