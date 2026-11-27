@@ -1301,6 +1301,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Glue/GuardNaryPlain.lean` | Track G (Gaps 22 (n)): `kpa_sureLoop`, `kpa_coerceLazy`, `kpa_coerceLazyL` (`+coerce-lazy` keeps `InvA`), `ks_sureLoop`, `ks_coerceLazyL`, `nary_noKey` (D's in-proof `uD` of `tn_all` restated), **`guardNaryC_plain`** (`GuardNaryC` on `PlainNC` from `KIMid`), **`entryNary_plain`** (`EntryNary` on `PlainNC` from `KIMid` alone). |
 | `Glue/ProxCalls.lean` | Track G (Gaps 22 (n)): the two leaves with direct calls, `KeyUndefC` (track D: no key defined at the end) and `NskEndC` (track G: no key split), `proxEndC_of`, **`guardMonoC_noSixN`**, `entryMono_noSixN` (`EntryMono` on `NoSixM` from D's `OptInMono`, `ReadsInMono`, `KIMid`, `KeyUndefC` and `NskEndC`). |
 | `Glue/Assemble13.lean` | Track G (Gaps 22 (o)): THE ASSEMBLY.  `Route13` (the choices of P's route), the leaf records `PokeLeaves13`, `CompLeaves13`, `ClassLeaves13`, `HaltLeaves13`, `FormatLeaves13`; `PokeOther13`, `pokeModel_of_fullOther`, `monoLinkGood6_of_rest5`, `pokeModel_fullReachP6K` (P's top with K's `GateRest5`), `unaryFinish_of_rest5`; `compHyp13`; **`gap13`**, **`full13`**; `andM`, `andN`, `classLeaves_or`, `classLeaves_fragX`, `PlainCallsM`, `PlainCallsN`, `classLeaves_plain`, `gap13_fragX`, `gap13_fragXPlain`. |
+| `Glue/NskProxy.lean` | Track G (Gaps 22 (o)): toward `NskEndC`.  `SDW` (a split register is defined earlier in its body, or is no key below `re`), `sdw_of_sds`, `nsk_of_sdw`, the leaf `SDWEndC`, `nskEndC_of`, `entryMono_noSixW`, `proxy_fresh` (`+proxy` allocates its key at `re`), `sdw_proxy`. |
 | `Glue/AuditGlue13.lean` | Track G: `#check` / `#print axioms` of the thirteenth pass and of the other tracks' names it cites from digest [306] to [314] (3500M cap). |
 | `Glue/GuardFinalTop.lean` | Track G (Gaps 22 (e)): **`guardFinalU`**, **`guardFinalF`** (the two final-pass leaves are theorems), `guardMonoX`, `guardNaryX`, **`compHyp_of_fragX₃`** (`CompHyp` on `FragX` from `CompRestOE` alone, no guard leaf); two `example`s on `[6 [0 2] [6 [0 6] [0 3] [0 1]] [1 0]]`. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
@@ -6712,7 +6713,8 @@ import only its theorems.  So:
     (`fuelOK_anaFuel`).  Not bridged: `CompHyp` asks `unary`, `refMono`, `inlAnnot` on
     every `InvB` state, while K's record (`unaryFinish_of_rest5`: the pill's
     `+compile-unary` is `finishLUCM (S := CSet)` on `DirOk`) and Q's `inlAnnot_of_inv` hold
-    on reached states only.  `LEDGER.md` section 10 lists every field.
+    on reached states only.  `LEDGER.md` section 10 lists every field.  `NskEndC` reduced to the
+    frame target `SDWEndC` (`Glue/NskProxy.lean`: `nskEndC_of`, `sdw_proxy`).
 23. **The poke on states: `enc` and the `%full` branch** (track P, 2026-11-27,
     `Ska/PokeEnc.lean`, `Compiler/PokeLink.lean`, `Compiler/PokeLinkFull.lean`, `Compiler/PokeLinkOpt.lean`,
     `Compiler/PokeLinkScc.lean`, `Compiler/PokeLinkJet.lean`, `Compiler/PokeLinkReach.lean`,

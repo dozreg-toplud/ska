@@ -1517,10 +1517,15 @@ checked:
 
 To widen the class (each step adds a union by `classLeaves_or`):
 - `MonoCalls ∩ NoSixM` (direct calls): `OptInMono` on `NoSixM` (D),
-  `ReadsInMono` (D), `KeyUndefC` (D), `NskEndC` (G: the `KS` frame with the
-  direct call's arms and the invariant "a split register is defined earlier
-  in its body, or it is no key and lies below `re`"; CHECKED: no key is
-  split on 2,856 + 7 + 7,920 states), `OptTotalMono` (no owner);
+  `ReadsInMono` (D), `KeyUndefC` (D), `NskEndC` (G; CHECKED: no key is
+  split on 2,856 + 7 + 7,920 states).  THIRTEENTH PASS
+  (`Glue/NskProxy.lean`): `NskEndC` is a theorem from `KeyUndefC` and the
+  frame target `SDWEndC` (`nskEndC_of`, `entryMono_noSixW`), where `SDW`
+  says that every split register is defined earlier in its body, or is no
+  key and lies below `re`; `+proxy` keeps `SDW` (`proxy_fresh`: its key is
+  the old `re`; `sdw_proxy`); the old frame's `SDS` is the first disjunct
+  (`sdw_of_sds`).  Left: the `KS` frame re-run with `SDW`, then the
+  direct-call arms.  `OptTotalMono` (no owner);
 - the n-ary side with direct calls or baked immediates: `GuardNaryC` there
   (G: the map path of `+to-straight`), `OptInNary` (D);
 - `%6` with calls: D's `ATS6`;

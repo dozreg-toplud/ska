@@ -1,4 +1,5 @@
 import lemmas.Glue.Assemble13
+import lemmas.Glue.NskProxy
 import lemmas.Compiler.CompSccLoopSoftLoop
 import lemmas.Compiler.CompRunShapeTen
 import lemmas.Ska.TarjanSound
@@ -45,6 +46,16 @@ namespace Formalization
 #print axioms Compiler.monoLinkGood6_of_rest5
 #print axioms Compiler.pokeModel_fullReachP6K
 #print axioms Compiler.unaryFinish_of_rest5
+
+-- thirteenth pass, track G: toward `NskEndC`
+#check @SkaModel.Glue.SDW
+#check @SkaModel.Glue.SDWEndC
+#print axioms SkaModel.Glue.sdw_of_sds
+#print axioms SkaModel.Glue.nsk_of_sdw
+#print axioms SkaModel.Glue.nskEndC_of
+#print axioms SkaModel.Glue.entryMono_noSixW
+#print axioms SkaModel.Glue.proxy_fresh
+#print axioms SkaModel.Glue.sdw_proxy
 
 -- other tracks, digest [306] to [315], in the tree at e4345c23
 #check @Compiler.pokeModel_fullReachP6L
