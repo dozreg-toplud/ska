@@ -231,6 +231,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Compiler/CompStraightN.lean` | `+to-straight` on an n-ary input need (the sample `[%next [[ned ~] ~ ~] ~ o]` of the final pass of `+compile-scc-in`, `tsSampleN`): the pushes with `ins` `flattenNeed ned`, `r0` its head, `n-in` its length and `run` `isRun ins r0 0` (`tsn_pre1`, the trap `run` `tsn_run`, `tsn_pre2`, `tsn_pre3`, `tsn_pre`), `ren` is `renReg r0 n-in` (`tsn_ren`), `rer` (`tsn_rer`), the trap of `+rewrite-input` on any need returns `needToOrd ned` and leaves `gen` (`tsn_ri_trap`, `tsn_ri`), the arm `$` takes the renaming branch (`tsn_dol`), `+count-args` is `countArgs` (`ca_gate`), the renaming branch (`tsn_rename`), the gate of the fold in any `CfCore` core (`tsn_step_gen`, `tsn_st_cf`, `tsn_step`), the core (`tsn_core`), and the gate: on a run of inputs with `cond` empty it returns the noun of `toStraightF` (`tsn_at`). |
 | `Compiler/CompCoerceLazy.lean` | `+coerce-lazy` (door battery axis `3580`, `comp_cz_at`, its gate body `czBody` cut into `czX`, `czSrl`, `czLok`, `czTail`) on a fork-free `[sure ~ ~]`: `+axe-in-less-cape` (arm `95` of `K`) is `axeInLessCape` (`aic_loop`, `aic_gate`), `+axe-in-need` (arm `0x5dd4`) is `axeInNeedL` (`ain_loop`, `ain_gate`), the gate of the `+rep:in` over `lok` is `czStep` (`cz_gate_step`) and the fold is `coerceLok` (`coerceLok_eq`, `cz_lok`, with no `0` in its product, `coerceLok_ne0`), `+sure-require-look` of the new sure (`cz_srl`), the trap `sure-loop` is `sureLoop` with `o` not in `soft` (`cz_loop_none`, `cz_loop_this`, `cz_loop_pair`, `cz_loop_both_this`, `cz_loop_both_pair`, `cz_loop_both_both`, `cz_loop`), and the gate is `coerceLazy` (`cz_gate`) or `coerceLazyL` on `ofSure` (`cz_gate_L`). |
 | `Compiler/CompBakeNeed.lean` | `+bake-need` (arm `384468` of `K`, `bn_at`, its gate body `bnBody` and trap `bnLoop` cut into `bnTest`, `bnYes` with the baking trap `bnAll`, and `bnRec`) when nothing is baked: on a need with no cell of two `%none` and no `%both` with two `%none` halves (`NeedNorm`, true of every need of `+need-ord-alloc-regs`, `needNorm_noar`) and a sock that is `%void` or not wholly known (`all:ca` false) at every node of the need, with `hed:so` and `tel:so` down the walk (`NoBake`), the test of each node is false before `+need-fits` (`bn_test`), `+cons-need` rebuilds each cell (`cn_gate`), and the gate returns `[ned ~]` (`bn_loop`, `bn_gate`). |
+| `Compiler/CompBakeFits.lean`, `Compiler/CompBakeAll.lean`, `Compiler/CompBakeGate.lean` | **`+bake-need` against the model on every need and sock** (README Gaps 9, MAP of 2026-11-27): `+need-fits` (arm `4` of `K`, `nf_at`, `nfBody`; **`nf_gate`**: the loobean of `needFits`), the baking trap (`bnAll` with `+known-sock`, arm `1500`, `ks_at`; **`bn_all`**: `bakeAll` on a cell sock), the test of a node in full (`bn_testG`), the branch that bakes (`bn_yes`), the loop (**`bn_loopB`**: `bakeGo`, cells rebuilt by `+cons-need` on any halves, a `%both` with both halves baked made `[%this r]`) and the gate (**`bn_gateB`**: `bakedNoun (bakeNeed ned know)`, no side condition). `+bake-need-ord` (arm `1398`) is modelled and checked, not linked. |
 | `Compiler/CompFinish.lean` | The gate `finish` of `+compile-scc-in` (`%compile-scc-finish`, axis `0x2ab2dffd6fbffffffffe` of `K`, `fin_at`, its body `finBody`) on `~` in the subject of `member` (`finCtx`: `gen` at `62`, the tuple `[need-new laz ned-final bak o sur]` at `30`, the door `comp`, `done`, `cape.less.b` and `layer2` in the rest at `6`, `14`, `496`, `0x3ffffff`): `+coerce-lazy`, `+soft-done`, `+add-ops` of the `%imm` ops of `imm.bak = ~` (`fin_turn_nil`) and `+to-straight` of `[%next [[ned.bak ~] ~ ~] ~ o]` give the noun of `finTail`, the tail of `finishLF` (`finishLF_tail`, `fin_gate`); against `finishLF nm ord less (fun n => (n, []))` given the run and `+need-ord-alloc-regs` of `ord` (`fin_gate_finishLF`), from the product of `+collapse-shape` under the hypothesis `hsc` on `+shape-collapse` (`fin_after_cs`), with `bak = [ned-final ~]` from `+bake-need` under `NoBake` (`fin_bak`). |
 | `Compiler/CompSureOf.lean` | `+sure-of` (arm `0x2bae` of `K`, `so_at`, its body `soBody`) and `+inter1-to-inter2` (arm `0xbbbb`, `i2_at`, its body `i2Body` cut into the `+rep:in` `i2Rep` with its gate `i2Gate` and trap `i2Trap`, and the `+turn` `i2Turn`) on a fork-free input, against a model written here, since `lemmas/Ska` had none: `sureLook` (the trap: the walk down to an axis, `%this` where the shape has `%none`, the cells rebuilt with `+cons-need`, a former `%this` or `%both` as a `%both`), `sureOfStep` (the gate: `new` at axis `1` and inside the known part of `less`, a crash at `0`), `sureOf` (the fold over `lok` in the order of `+rep:in`).  `cn_gate_ord` (`+cons-need` on shapes, `consOrd`), `i2_trap`, `i2_gate_step`, `i2_rep`, `i2_gate` (`[sure ~]` on `[[[ned lok] ~] less]`, the `+turn` over `~` giving `~`), `so_gate` (`+sure-of` of `[[ned lok] less]` is `sureOf ned lok less`).  The nouns come from `tools/gen/member.py`. |
 | `Compiler/CompMember.lean` | The gate `member` of `+compile-scc-in` (`%compile-scc-fn`, axis `358182910` of `K`, `mem_at`), its body `memBody` cut by `tools/gen/member.py` into `memComp`, `memInl`, `memR2`, `memRes` (with `memFinal`: `memRun`, `memCs`, `memBak`, `memSur`, `memTuple`), `memAfter` (`memWas`, `memSurK`, `memPut`, `memMoved`, the push of `finArm`) and `memProd` (`memSprev`, `memNew`, `memOld`); `+inlined` (arm `0x5dde`, `inl_at`, its body `inlBody` a slot of the pill, not linked).  The subjects `memSam`, `memCtx` (`done`, `kids`, `map-local` on the core of `+compile-scc-in`), `memDCtx`, `memS0`, `memS3`.  Plumbing with the calls' products as nouns: `mem_entry` (to the final pass, `+inlined` as `hinl`), `mem_r3`, `mem_res`, the calls (`mem_run_call`, `mem_cs_call`, `mem_bak_call`, `mem_sur_call`, `mem_tuple_call`), `mem_final` (the pass returns `[[need-new laz ned-final bak o sur] gen]`), `mem_after` (`=.  cache  cache.gen`, `was` by `getF`, `sur` (`memSurKN`), the put by `putF`, `moved` (`memMovedN`), the push of `finish` on `finCtx`), `mem_prod_new` (with `map-local` and `top` empty: `[chg (put:by ~ b (finish ~)) cache]`, `chg` as `memChgN`). |
@@ -503,6 +504,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/SccLoopCycle.lean` | A member compile that meets `Hyp` (`cyc_hyp`) under which the loop of `+compile-scc-in` never returns, whatever the fuel (`cyc_never`), Gaps 21.8. |
 | `Ska/SccLoopCheck.lean` | The loop model against the real compiler (`#guard`): `traceOk` (every compile in order with `keep`, `need-new`, `sur`, the previous entry and `need-pessimized`, the `any` of every sweep, the final entries' needs; `msg` is `msgOrd` of `ShapeCol.lean`), `bOk` (property (b) on the compiler), `detOk` (the hypotheses `kidsOnly` and `shape` on the dumps), three sweeps on every SCC. |
 | `Ska/CompStraight.lean`, `Ska/CompEntry.lean` | The renaming and chasing of `+to-straight` keep what the code does (`sim_block`), and entering the result does what the entry block did (`toStraight_entry`), for blocks whose jumps go down in some rank of the labels (`DownRk`, `toStraight_entryR`); `Down` is the identity rank. |
+| `Ska/BakeNeed.lean`, `Ska/BakeNeedCheck.lean` | A model of `+bake-need` (`needFits`, `bakeAll`, `bakeGo`, `bakeNeed`, `sockData`, `bakeTest`), `+bake-need-ord` (`ordFits`, `bakeNeedOrd`) and the n-ary final pass with the real bake (`finishLFB env nm ord less`: `finishLFC` with `fun n => bakeNeed n less`); `bakedNoun`. The check (generated by `tools/gen/bakecheck.py` from `tools/hoon/bakedump.txt`, the output of `tools/hoon/bakedump.hoon`): 34 `#guard`s, one per bell `[[cape data] formula]` of call-free code (32 of them bake: known heads, tails, middles, whole subjects, `%both`, a known atom where the need asks a cell, reads through `%6`, `%7`, `%8`, `%10`, `%3`, `%5`), each checking `bakeNeed` against the real `bak`, `bakeNeedOrd` against the real `+bake-need-ord` and `need-to-ordered ned.bak`, the model's whole final pass against the real straight (need, argument count, every block; on the map path of `+to-straight`, 4 cases, the need, the argument count and block `0` only, since the numbering of the other registers follows the fold order of the map instance), and the model's code run by `execEntry` against `minkF` on three subjects that fit the sock. All equal (2026-11-27). |
 | `Ska/CompTopOK.lean` | `finish_bellContract`: on the fragment `Frag`, the final pass meets `BellContract` for every shape on which it does not crash, when nothing is baked and the bell's cape has no `[| |]`. Its hypotheses `RunDown` and `CoerceSpec` are discharged in `CompFinal.lean`. |
 | `Ska/AnaInv.lean` | The construction invariant of the state-passing analysis (`SInv`, `Keep`). Every arm writes the graph by `GStepR` only and leaves the stack below it alone (`allP`, by induction on the fuel).  `ResPL orig`: what the `resolve` loop begun with `orig` keeps on every current identity (the memo lookup is at the current sock, so a hit is well formed by `gitMi_wf`). `skaCallgraph_steps`: the graph of `+ska-callgraph` is made by `GStepsR` from the empty graph. |
 | `Ska/StaleWitness.lean` | A scheduling bug that this work found in `+analyze` and reproduced on the real compiler: the first pass at a root did not run a member left on the stack by a nested pass loop that exited early, and `+pop` could finalize it stale. Fixed in the Hoon by the cull before the first pass (fefb95d); the formulas are kept as a regression test. |
@@ -2422,6 +2424,107 @@ import only its theorems.  So:
     termination: it needs a non-normal shape.  Next: the algebra on
     normal shapes, then the bound (which closes `FixRet`); the converse of
     `ic_loop` needs an induction on `Eval`.
+    MAP (2026-11-27, track A, baking in the final pass, LEDGER M5).
+    (1) `+bake-need [ned know]` (`K` arm `384468`, 557 cells) walks
+    `ned` with the sock `k` (first `know` = `less.b`, then `hed:so` and
+    `tel:so` down the walk).  At a node where `k` is a cell sock, its
+    cape is wholly known (`all:ca`) and `+need-fits` holds of the need
+    and the data, the node becomes `[%none ~]` and the trap `all` puts
+    `[r v]` on the front of `imm` for every register of the part: a
+    `%this r` with its data, a `%both r` with its whole data before its
+    halves, the head before the tail.  So `imm` is the baked registers in
+    reverse preorder.  Elsewhere `%none` and `%this` stay, a cell is
+    rebuilt by `+cons-need` (two `%none` give `%none`), and `[%both r h
+    t]` becomes `[%both r x]` when `x` is a cell, `[%this r]` when both
+    halves were baked away.  (2) `+need-fits [ned som]` (`K` arm `4`, 169
+    cells): `%none` and `%this` fit anything; a cell need, and a `%both`
+    (its register skipped on a need, absent on a shape), ask for a cell
+    and fit by halves.  (3) `+bake-need-ord [ned know]` (`K` arm `1398`,
+    268 cells) is the same walk on a `need-ordered` with no `imm`
+    (`[%both x]` or `[%this ~]`); it runs in the `%must` and `%may`
+    sweeps (the shapes of `+laze-collapse` and `+laze-may`) and in the
+    `shape-check` assert (switched off), NOT in the final pass of a bell
+    alone in its SCC (`done` is `&` there).  (4) `$baked` is `[ned=need
+    imm=(list [r=@uvre v=*])]`.  The final pass (lines 3514, 3535) uses
+    it so: `need-new` is `(need-to-ordered ned.bak)` (into `map-local`,
+    the change test, and the callers' view of the callee's need); `finish`
+    runs `+coerce-lazy` on the whole `ned-final` (the body's registers),
+    then `+add-ops o` of `[%imm v r]` for each pair of `imm` (put in
+    front of the deconsing code of block `o`, line 3570), then
+    `+to-straight` of `[%next [[ned.bak ~] ~ ~] ~ o]`: only the registers
+    of the residual need are arguments.  `sure.cache` gets `+sure-of` of
+    the sure part of `laz`, which does not see the bake.  (5) The model's
+    parameter `bake` of `finishLF` / `finishLFC` must be `fun n =>
+    bakeNeed n less.b` with `less.b = Sock.mk cape DATA` and the pairs in
+    the Hoon's order.  (6) `+to-straight` on the residual: the registers
+    of `ned-final` are a run in preorder (`isRun_needOrdAllocRegs`), so the
+    residual is a run when the baked registers are a prefix or a suffix of
+    that order (a known head or a known tail of the subject); a known part
+    in the middle (`[a [K b]]` with `K` known) leaves `[r0, r0+2]`, the map
+    path with `run` false, whose `+rewrite-input` numbers the inputs
+    afresh: `TsOn` and `ts_at_all` assume `isRun`, so that path is not
+    linked (track I's Gaps 20 has proxies with `run` true only).
+    (7) Linked before this MAP: `bn_gate` (`Compiler/CompBakeNeed.lean`)
+    only when `NoBake` (the sock at every node is `%void` or not wholly
+    known), so the test never reaches `+need-fits`.  Not linked: the
+    branch that bakes (`bnYes`, 12 cells, the trap `bnAll`, 188, with
+    `+known-sock`), `+need-fits` (169), `+bake-need-ord` (268), and
+    `+to-straight` with `run` false.  (8) What bakes in a real poke: a
+    read of a wholly known part folds to a constant before the final pass
+    (in the 11 `%full` pokes of `tools/hoon/bakedump.hoon`, part B, the
+    variants of a recursive gate whose bake knows the sample's tail have no
+    register there, and `imm` is `~` in every n-ary entry), so `+bake-need`
+    bakes a leaf only when the need reaches a known part through a part
+    that is not wholly known (a partly known cell passed whole to a callee
+    that splits it, a `%both`); part A of the driver makes such bells
+    directly (the nomm of a poke that knows nothing, compiled on a bell
+    whose sock knows parts of the subject).
+    DONE (2026-11-27, track A): the model (`Ska/BakeNeed.lean`), checked
+    on 34 bells against the real final pass with all its arms, blocks and
+    semantics (`Ska/BakeNeedCheck.lean`; no disagreement), and the pill
+    link of `+bake-need` on every need and sock (`bn_gateB`, with
+    `nf_gate`, `bn_all`, `bn_testG`, `bn_loopB`).  NOT DONE: the top
+    without `NoBakeOneO`.  What it needs, in order: (a) `fin_bak` with
+    `bn_gateB` (the tuple of `member` then holds `ned.bak` and `imm.bak`
+    in place of `ned-final` and `~` at the `NEDB`, `IMM` of `finCtx`, and
+    `need-new` is `needToOrd` of the residual); (b) `fin_gate_ts_L` with
+    the `+turn` of the `%imm` gate over a nonempty `imm` (`turn_gate` on
+    the gate `[[1 %imm] [0 13] [0 12]]`) and `comp_add_ops` on those ops,
+    so the tail is `finTail nedF less o laz (fun n => bakeNeed n know)`;
+    (c) `+to-straight` of the residual: `TsOn` and `ts_at_all` assume
+    `isRun`, which holds when the baked registers are a prefix or a suffix
+    in preorder (prove: `bakeGo` removes whole subtrees and keeps `%both`
+    registers, so a known head or tail leaves a run) and fails for a known
+    middle (`%m01`, `%m02`, `%m03`, `%b05` of the check), where the map
+    path with `run` false is not linked; so the new top takes `isRun` of
+    `(bakeNeed nedF less).1` as a named hypothesis; (d) the chain
+    `mem_to_finish_six_L` .. `cu_gate_scc_one_six_fix` copied with these
+    (`tools/gen/tsmsix.py` shows how), the n-ary entry `finishLFB env nm
+    (scOrd fuel p.1 cape) (Sock.mk cape DATA)`.
+    The model-side contract for a real bake (tracks C, J; not proved):
+    `RawNary` and `FragUN` assume `∀ ned, bake ned = (ned, [])`.  The
+    statement wanted: for `bake = fun n => bakeNeed n bl.less`, if
+    `finishLFC env nm ord cape bake = some s` then `BellContract lib N bl
+    false s`, where the caller passes the arguments of the residual need
+    `s.need` and the contract quantifies over subjects that fit `bl.less`
+    (`Fits bl.less sub`), on which every baked pair `(r, v)` has `v` equal
+    to the part of the subject at the register's axis (`bakeAll` takes `v`
+    from the sock's data, and `Fits` makes the subject agree with the data
+    on the known cape).  So the prologue's `%imm` ops put into each baked
+    register what the unbaked code would have read from the arguments, and
+    the body runs on the same register file.  Closest lemmas:
+    `finishTopF_genB` (`Ska/CompNaryTop.lean`: the code entered with the
+    split of a subject; it needs a variant whose split fills the baked
+    registers by `%imm` instead of arguments), `coerceLazyL_spec`
+    (`Ska/CompNestCoerce.lean`, unchanged: `+coerce-lazy` runs on the
+    whole `ned-final`), and the fit facts of `Ska/Bake.lean`
+    (`bakeOf_fits`).  The new pieces: the residual split (`argsOf
+    (needToOrd (bakeNeed n less).1) sub` is the split of `n` with the
+    baked leaves dropped), `imm` agrees with the subject under `Fits`
+    (induction on `bakeGo`, with `needFits` for the cells), and the `%imm`
+    ops in front of block `o` (`execBlob_body` over `Pole.imm`).  Size:
+    about 400 lines on the model side, most of it the `finishTopF_genB`
+    variant.
      M: `+run` (s), and in the lazy files `+kern`
      (s), `+lazy-shut`, `+kerf`, `+insert-hop`, `+fork-sure`, `+fork-need`,
      `+fork`, `+sect`, `+need-cut`, `+need-from`, `+lazy-leap`, `+leap`,
