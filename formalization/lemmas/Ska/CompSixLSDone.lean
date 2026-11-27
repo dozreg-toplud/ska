@@ -1,5 +1,6 @@
 import lemmas.Ska.CompSixLSPick
 import lemmas.Ska.CompSevenA
+import lemmas.Ska.CompSixLSCheck
 
 /-!
 # `[6 c a b]` under `%done` with calling branches: `six_doneGB`
@@ -632,6 +633,45 @@ theorem six_doneGB (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Prop} {
   · -- the bound
     rw [en]; simp only [List.length_append, List.length_cons]
     omega
+
+/-! ## The top -/
+
+/-- **The contract from `SixD`**: the whole-subject code of a nomm whose runs
+under `%done` meet `SixD` meets both halves of the contract
+(`finishLUC_contractGB`, the bound unused). -/
+theorem finishLUC_contractSixD (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Prop} {f : Noun} {nm : Nomm}
+    {k : Nat} (H : SixD (S := S) (Map := Map) lib N env P f nm k) {c : Straight Map}
+    (hc : finishLUC (S := S) env nm = some c) :
+    c.need = NeedOrd.this ∧ ∀ s, P s → ContractFwd lib N s f [s] c ∧ ContractBwd lib N s f [s] c :=
+  finishLUC_contractGB lib N (fun hr => (H (by simp [gen0]) rfl upBelow_gen0 clear_gen0 condBelow_gen0 hr).1) hc
+
+/-- `[3 [0 2]]`, the cell test of the head, as a test: `PickD` with the bound `0`. -/
+theorem pickD_three2 (lib : Lib) {N : Needs} (env : CallEnv) (P : Noun → Prop) :
+    PickD (S := S) (Map := Map) lib N env P (n2 (A 3) (slot 2)) (Nomm.n3 (Nomm.n0 2)) 0 :=
+  pickD_of_uok lib env (uok_x lib (FragX.three (FragX.frag (nm := Nomm.n0 2) fun _ => trivial)))
+    (fun s hs gul tm r => mink_pure (codeOK_none lib) rfl ((CallTreeA.three (CallTreeA.n0 2)).annot P) hs gul tm r)
+    (by decide)
+
+/-- **`[6 [3 [0 2]] [2 [0 6] [0 7]] [0 3]]` meets both halves of the
+contract**: if the head of the subject is a cell, the indirect call of the
+head's tail on the head's head, else the tail. -/
+theorem six3_contract (lib : Lib) (env : CallEnv) {c : Straight Map}
+    (hc : finishLUC (S := S) (Map := Map) env
+      (Nomm.n6 (Nomm.n3 (Nomm.n0 2)) (Nomm.n2 (Nomm.n0 6) (Nomm.n0 7) Option.none) (Nomm.n0 3)) = some c)
+    (N : Needs) : c.need = NeedOrd.this ∧ ∀ s,
+      ContractFwd lib N s (n4 (A 6) (n2 (A 3) (slot 2)) (n3 (A 2) (slot 6) (slot 7)) (slot 3)) [s] c ∧
+      ContractBwd lib N s (n4 (A 6) (n2 (A 3) (slot 2)) (n3 (A 2) (slot 6) (slot 7)) (slot 3)) [s] c :=
+  have H := finishLUC_contractSixD (S := S) (Map := Map) lib (N := N) env (P := fun _ => True)
+    (six_doneGB lib env rfl (pickD_three2 lib env _)
+      (sixD_of_callTreeA lib env (CallTreeA.ind (CallTreeA.n0 6) (CallTreeA.n0 7))
+        (NoEntF.ind rfl rfl (NoEntF.pure rfl rfl)) _)
+      (sixD_of_callTreeA lib env (CallTreeA.n0 3) (NoEntF.pure rfl rfl) _) (by decide)) hc
+  ⟨H.1, fun s => H.2 s trivial⟩
+
+-- The whole-subject code of that nomm exists and agrees with `+mink` on
+-- the 24 subjects of `CompSixLSCheck.lean`.
+#guard SixCheck.sem [Nomm.n6 (Nomm.n3 (Nomm.n0 2)) (Nomm.n2 (Nomm.n0 6) (Nomm.n0 7) Option.none) (Nomm.n0 3)] ==
+  (1, 1, 24, 24)
 
 end Comp
 end SkaModel
