@@ -86,6 +86,51 @@ theorem goalSemCM_next_hop {je : Jmp} {sur : Sure S} {e : Nat} {th : Jmp} {r : T
   | one b => exact H
   | two tr => exact H
 
+/-! ### The blocks of a kept dynamic hint (`%hdp`, `%hde`) -/
+
+/-- **The prologue of a kept dynamic `stopTag` hint pushes the frame**
+`(tag, v)`, `v` the clue's product in `toke`. -/
+theorem goJ_push {o tag toke : Nat} {body : Noun} {th : Jmp} (hs : stopTag tag = true)
+    (hb : HoonMap.get c.blocks o = some ⟨[], [Pole.hdp tag toke body], Termin.hop th⟩) {v : Noun}
+    (st : σ) (regs : Map (Option Noun)) (hv : SkaModel.read toke regs = some v) (t : Trace) :
+    goJ lib O c gul st regs t (jmp0 o) = goJ lib O c gul st regs ((tag, v) :: t) th := by
+  rw [goJ_jmp0 _ _ _ _ hb, execBlob_cons]
+  simp [execPole, localPole, hs, hv, execBlob_hop]
+
+/-- **The epilogue of a kept dynamic `stopTag` hint pops the frame.** -/
+theorem goJ_pop {o tag toke : Nat} {body : Noun} {th : Jmp} (hs : stopTag tag = true)
+    (hb : HoonMap.get c.blocks o = some ⟨[], [Pole.hde tag toke body], Termin.hop th⟩)
+    (st : σ) (regs : Map (Option Noun)) (fr : Nat × Noun) (t : Trace) :
+    goJ lib O c gul st regs (fr :: t) (jmp0 o) = goJ lib O c gul st regs t th := by
+  rw [goJ_jmp0 _ _ _ _ hb, execBlob_cons]
+  simp [execPole, localPole, hs, popTrace, execBlob_hop]
+
+/-- A kept dynamic tag that is not `stopTag` (`%slog`, `%xray`): the
+prologue pushes nothing. -/
+theorem goJ_hdp_quiet {o tag toke : Nat} {body : Noun} {th : Jmp} (hs : stopTag tag = false)
+    (hb : HoonMap.get c.blocks o = some ⟨[], [Pole.hdp tag toke body], Termin.hop th⟩)
+    (st : σ) (regs : Map (Option Noun)) (t : Trace) :
+    goJ lib O c gul st regs t (jmp0 o) = goJ lib O c gul st regs t th := by
+  rw [goJ_jmp0 _ _ _ _ hb, execBlob_cons]
+  simp [execPole, localPole, hs, execBlob_hop]
+
+/-- A kept dynamic tag that is not `stopTag`: the epilogue pops nothing. -/
+theorem goJ_hde_quiet {o tag toke : Nat} {body : Noun} {th : Jmp} (hs : stopTag tag = false)
+    (hb : HoonMap.get c.blocks o = some ⟨[], [Pole.hde tag toke body], Termin.hop th⟩)
+    (st : σ) (regs : Map (Option Noun)) (t : Trace) :
+    goJ lib O c gul st regs t (jmp0 o) = goJ lib O c gul st regs t th := by
+  rw [goJ_jmp0 _ _ _ _ hb, execBlob_cons]
+  simp [execPole, localPole, hs, execBlob_hop]
+
+/-- **`+mink` on a dynamic hint**: the clue, then the formula with the
+frame `(tag, c)` pushed when `stopTag`; a crash inside the formula carries
+the frame (the trace it is given is the pushed one). -/
+theorem minkF_n11d_any (lib : Lib) (gul : Noun) (n : Nat) (tm : Trace) (s : Noun) (tag : Nat) (fh f : Noun) :
+    minkF lib gul (n + 1) tm s (n3 (A 11) (C (A tag) fh) f) =
+      tbind (minkF lib gul n tm s fh) fun c =>
+        tbind (minkF lib gul n (if stopTag tag = true then (tag, c) :: tm else tm) s f) fun p => some (Tone.zero p) :=
+  rfl
+
 end Exec
 
 section Blocks

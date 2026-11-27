@@ -1,5 +1,6 @@
 import lemmas.Ska.CompHintKeep
 import lemmas.Ska.CompHintNest
+import lemmas.Ska.CompHintTreeUEx
 
 /-!
 # `NoBondH` on the model; the dumped kept static hints at the top (README Gaps 24.14)
@@ -103,6 +104,31 @@ def exS06F : Noun := n3 (A 11) (A tagBout) exS06QF
 #guard (finishLUCH (S := LS) (Map := FM) envH sndH exS01).isSome
 #guard (finishLUCH (S := LS) (Map := FM) envH sndH exS06).isSome
 #guard sndH (Nomm.n0 3) NeedOrd.this && sndH exS06Q NeedOrd.this
+
+/-! ## The table of the 39 at the top -/
+
+/-- The first part with no contract at the top: `outReason`, with a kept
+static hint at the top around a member with `noBondN` covered
+(`finishLUCH_contractN11sKeptHU`, for an `snd` whose `+sound` of `%this`
+holds). -/
+def outReasonTop (nm : Nomm) : Option String :=
+  match nm with
+  | Nomm.n11s tag q _ =>
+      if hintStatic tag then
+        (if (outReason q).isNone && HintKeep.noBondN envH.cod q then Option.none
+         else some "kept static tag, formula out or with a bond")
+      else outReason q
+  | _ => (outReason nm).map fun r => if r == "kept static tag" then "kept static tag, not at the top" else r
+
+def reasonsTop : List (String × Option String) :=
+  HintData.all.map fun (n, j) => (n, ((parts j).bind fun (nmN, _, _, _) => nommOf 300 nmN).bind outReasonTop)
+
+#guard (reasonsTop.filter fun r => r.2.isNone).map Prod.fst == ["s01", "s02", "s03", "s06", "d06"]
+-- The reasons that changed from `reasons` (CompHintTreeUEx): the kept
+-- static hints not at the top.
+#guard (reasonsTop.filter fun r => r.2.isSome && (reasons.lookup r.1) != some r.2) ==
+  [("s04", some "kept static tag, not at the top"), ("s05", some "kept static tag, not at the top"),
+   ("s07", some "kept static tag, not at the top")]
 
 section
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys Map]
