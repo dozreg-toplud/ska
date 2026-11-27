@@ -204,5 +204,20 @@ theorem cu_gate_scc_one_six_fix (fuel : Nat) (cape : Cape) (DATA FOL CODE JETS C
   cu_gate_scc_one_six_sc fuel cape DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE hnary hnmap hsmap hcalls nm INL'
     hinl env hn hax (scRet_of_fixRet env hn hax cape fuel hfix) hbake FUNC V n hn' hax' hgot hv
 
+/-- **The top on the bare `%6`** (`sixBare`) with `FixRet` the one
+hypothesis on `+shape-collapse` (the model's loop stops within `fuel`
+rounds; on this nomm three rounds, by the `#guard`s of
+`CompSccSixSc.lean`). -/
+example (fuel : Nat) (DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE : Noun)
+    (hnary : getF mugF (C (C Cape.no.toNoun DATA) FOL) NARY = some (A 0)) (hnmap : IsMap mugF NARY)
+    (hsmap : IsMap mugF SURE) (hcalls : NoSelfCall (C (C Cape.no.toNoun DATA) FOL) CALLS) (INL' : Noun)
+    (hinl : InlOK (C (C Cape.no.toNoun DATA) FOL) CODE INL sixBare INL') (env : CallEnv)
+    (hfix : FixRet env sixBare Cape.no fuel)
+    (FUNC V : Noun) (hgot : getF mugF FUNC CODE = some (C (A 0) V))
+    (hv : slot? 2 V = some sixBare.toNoun) :=
+  cu_gate_scc_one_six_fix fuel Cape.no DATA FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE hnary hnmap hsmap hcalls _
+    INL' hinl env rfl (by simp [sixBare, Bake.NoAx0]) hfix (noBakeOneO_no env _ _ DATA) FUNC V sixBare rfl
+    (by simp [sixBare, Bake.NoAx0]) hgot hv
+
 end Compiler
 end Formalization
