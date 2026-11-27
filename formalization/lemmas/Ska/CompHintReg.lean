@@ -640,6 +640,51 @@ theorem regGBT_n11dKept {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Pr
 
 end Kept
 
+section Top
+variable {snd : Nomm → NeedOrd → Bool}
+
+/-- **A kept dynamic `stopTag` hint over a member of `RegGBT`, under
+`%done`**: the block `[don re]`, then the run under `%next (lazy-from-reg
+re)` into it (`runLCH_n11d_done_next`, `regGBT_n11dKept`,
+`runOKGBT_done`).  The formula may itself be a kept hint (nested spots). -/
+theorem n11dKept_doneR {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop} {fh fq : Noun} {h q : Nomm}
+    (Hq : RegGBT (S := S) (Map := Map) snd lib N env P fq q) (hsnd : snd q NeedOrd.this = true)
+    (Hh : LOKSFH (S := S) (Map := Map) (snd := snd) lib N env P fh h) (hch : sixCount h ≤ 255)
+    (hnh : NoBondH (S := S) (Map := Map) snd env h)
+    {tag : Nat} (hs : hintDynamic tag = true) (hst : stopTag tag = true) (body : Noun)
+    {sup : Option Nomm} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S}
+    (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0) (hcl : Clear g0) (hcb : CondBelow g0)
+    (hr : runLCH env snd true sup (Nomm.n11d tag h q body) CGoalL.done region g0 = some (nex, g1)) :
+    RunOKGBT lib N P (n3 (A 11) (C (A tag) fh) fq) (CGoal.done : CGoal S) g0 g1 nex := by
+  rw [runLCH_n11d_done_next hs] at hr
+  have G1 : GrowU ({ g0 with re := g0.re + 1 } : Gen Map)
+      ({ g0 with re := g0.re + 1 }.emitted ⟨[], [], Termin.don g0.re⟩) :=
+    growU_emit (g := { g0 with re := g0.re + 1 }) (b := ⟨[], [], Termin.don g0.re⟩)
+      (fun j hj => by simp [finJumps] at hj) hu
+  have GA := (growU_re g0 _).trans G1
+  have R := regGBT_n11dKept (S := S) (Map := Map) Hq hsnd Hh hch hnh hs hst body (by simp [Gen.emitted])
+    (by simpa [Gen.emitted] using d0) (GA.up hu) (hcl.growU GA)
+    (fun k hk => by have := hcb k hk; simp only [Gen.emitted] at this ⊢; omega)
+    (by simp only [jmp0]; omega) (by simp only [jmp0, Gen.emitted]; omega) rfl (by simp [Gen.emitted])
+    (by simp only [Gen.emitted]; exact condBelow_none hcb (Nat.le_refl _)) hr
+  exact runOKGBT_done hu hcb (by rw [R.ext.2.2.2 _ (by simp [Gen.emitted])]; exact hk_emitted_self d0 _) R
+
+/-- **The contract of a kept dynamic `stopTag` hint over a member of
+`RegGBT` at the top**: both halves, traces included. -/
+theorem finishLUCH_contractN11dKeptR (lib : Lib) {env : CallEnv} {N : Needs} {P : Noun → Prop} {fh fq : Noun}
+    {h q : Nomm} (Hq : RegGBT (S := S) (Map := Map) snd lib N env P fq q) (hsnd : snd q NeedOrd.this = true)
+    (Hh : LOKSFH (S := S) (Map := Map) (snd := snd) lib N env P fh h) (hch : sixCount h ≤ 255)
+    (hnh : NoBondH (S := S) (Map := Map) snd env h)
+    {tag : Nat} (hs : hintDynamic tag = true) (hst : stopTag tag = true) (body : Noun) {c : Straight Map}
+    (hc : finishLUCH (S := S) env snd (Nomm.n11d tag h q body) = some c) :
+    c.need = NeedOrd.this ∧ ∀ s, P s →
+      ContractFwd lib N s (n3 (A 11) (C (A tag) fh) fq) [s] c ∧
+        ContractBwd lib N s (n3 (A 11) (C (A tag) fh) fq) [s] c :=
+  finishLUCH_contractGBT lib N (fun hr => n11dKept_doneR Hq hsnd Hh hch hnh hs hst body (by simp [gen0]) rfl
+    upBelow_gen0 clear_gen0 condBelow_gen0 hr) hc
+
+end Top
+
 end Comp
 end SkaModel
 end Formalization
