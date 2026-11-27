@@ -9,6 +9,7 @@ import lemmas.Compiler.CompRunDirectMonoP
 import lemmas.Compiler.CompRunDirectMonoC
 import lemmas.Compiler.CompRunRClass
 import lemmas.Compiler.CompUnaryDir
+import lemmas.Compiler.CompSofPush
 
 /-! The axioms of the link of the direct call of `%2` (README Gaps 19). -/
 
@@ -193,3 +194,8 @@ open Formalization.Compiler
 #print axioms Formalization.Compiler.dirCallsS_of
 #print axioms Formalization.Compiler.needRead_of_scc
 #print axioms Formalization.Compiler.cu_gate_dir_csi
+#print axioms Formalization.Compiler.snd_gate
+#print axioms Formalization.Compiler.sof_push
+#print axioms Formalization.Compiler.callCode_of_bells
+#print axioms Formalization.Compiler.sofAll_of_arms
+#print axioms Formalization.Compiler.cu_gate_dir_arms
