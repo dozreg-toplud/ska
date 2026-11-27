@@ -31,7 +31,12 @@ the `%imm` ops of `imm.bak` and `+to-straight` of the residual `ned.bak`
 `BakeRunO` holds when the baked registers are a prefix or a suffix of the
 registers of `ned-final` in preorder (`Ska/BakeNeedRun.lean`:
 `bake_run_of_infix`, `bake_run_head`, `bake_run_tail_pair`,
-`bake_run_tail_both`); under cape `|` nothing is baked (`bakeRunO_no`).
+`bake_run_tail_both`); under cape `|` nothing is baked (`bakeRunO_no`);
+on a wholly known head whenever the `ord` is a cell with a `%this` head
+(`bakeRunO_head`, by `noar_pair_this`).  The example at the end is `%s01`
+of the bake check, `[6 [0 2] [0 6] [0 7]]` on the bell `[[& |] [dh dt]]`:
+its `#guard`s run the model's final pass, which bakes the head's register
+and leaves a run of two arguments.
 -/
 
 namespace Formalization
@@ -514,6 +519,78 @@ theorem cu_gate_scc_one_six_bake (fuel : Nat) (cape : Cape) (DATA FOL CODE JETS 
     hnary hnmap hsmap hcalls nm INL' hinl env hn hax (fun nex => scOrd fuel nex cape)
     (scAt_of_scRet env nm cape fuel (scRet_of_fixRet env hn hax cape fuel hfix)) (fun _ _ _ => trivial) hbake
     FUNC V n hn' hax' (fun _ _ _ _ _ _ => trivial) hgot hv
+
+/-! ## A known head -/
+
+/-- `+need-ord-alloc-regs` of a cell shape whose head is `%this`. -/
+theorem noar_pair_this (q : NeedOrd) (g g' : Gen (TreapMap mugF)) (nedF : Need)
+    (h : needOrdAllocRegs (NeedOrd.pair NeedOrd.this q) g = some (nedF, g')) :
+    ∃ r t, nedF = Need.pair (Need.this r) t := by
+  simp only [needOrdAllocRegs, cra_bind] at h
+  obtain ⟨hh, g1, e1, tt, g2, -, e3⟩ := h
+  obtain ⟨r, g0, -, e1'⟩ := e1
+  simp only [pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at e1'
+  obtain ⟨rfl, -⟩ := e1'
+  simp only [reduceCtorEq, false_and, if_false, pure, StateT.pure, Option.some.injEq, Prod.mk.injEq] at e3
+  exact ⟨r, tt, e3.1.symm⟩
+
+/-- **`BakeRunO` for a wholly known head** (cape `[c |]` with `c` wholly
+known, data a cell) whenever the `ord` of every final pass is a cell with a
+`%this` head: the head's register is baked away and the rest is a suffix
+(`bake_run_head`). -/
+theorem bakeRunO_head (env : CallEnv) (nm : Nomm) (ordOf : NextL CSet → NeedOrd) (ch : Cape) (dh dt : Noun)
+    (hc : Ca.all ch = true)
+    (h : ∀ nex g1, runLC env Option.none nm (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF))
+      = some (nex, g1) → ∃ q, ordOf nex = NeedOrd.pair NeedOrd.this q) :
+    BakeRunO env nm ordOf (Cape.cell ch Cape.no) (C dh dt) := by
+  intro nex g1 nedF g2 hr hno
+  have hrun := isRun_needOrdAllocRegs hno
+  obtain ⟨q, hq⟩ := h nex g1 hr
+  rw [hq] at hno
+  obtain ⟨r, t, rfl⟩ := noar_pair_this q g1 g2 _ hno
+  exact (bake_run_head (Need.this r) t dh dt hc rfl hrun).2
+
+/-- `%s01` of `tools/hoon/bakedump.hoon`: `[6 [0 2] [0 6] [0 7]]` on the
+bell `[[& |] [0 0]]` (the head of the subject known, `0`). -/
+def sixHead : Nomm := Nomm.n6 (Nomm.n0 2) (Nomm.n0 6) (Nomm.n0 7)
+
+/-- The cape `[& |]`. -/
+def capeHead : Cape := Cape.cell Cape.yes Cape.no
+
+/- The model's final pass of `sixHead` (over `LS`, `FM`, in the
+environment of the dumps): the `ord` of `+shape-collapse` is `[%this
+[%this %this]]` (the real compiler's, `%s01` of `Ska/BakeNeedCheck.lean`),
+`+bake-need` under `[[& |] [0 0]]` bakes one register (the head's) and
+leaves a run of two. -/
+#guard ((runLC (S := LS) (Map := FM) envR Option.none sixHead (CGoalL.done : CGoalL LS) [] gen0).bind fun p =>
+    (shapeCol 64 p.1.laz capeHead).bind fun ord => (needOrdAllocRegs ord p.2).map fun q =>
+      let b := bakeNeed q.1 (Sock.mk capeHead (C (A 0) (A 0)))
+      (ord, b.2.length, (flattenNeed b.1).length, isRun (flattenNeed b.1) ((flattenNeed b.1).headD 0) 0))
+  = some (NeedOrd.pair NeedOrd.this (NeedOrd.pair NeedOrd.this NeedOrd.this), 1, 2, true)
+
+/- The n-ary entry of the model with the bake (`finishLFB`) succeeds there
+with two arguments, the head being an `%imm` in the prologue. -/
+#guard ((runLC (S := LS) (Map := FM) envR Option.none sixHead (CGoalL.done : CGoalL LS) [] gen0).bind fun p =>
+    (finishLFB (S := LS) (Map := FM) envR sixHead ((shapeCol 64 p.1.laz capeHead).getD NeedOrd.none)
+      (Sock.mk capeHead (C (A 0) (A 0)))).map fun st => st.nargs) = some 2
+
+/-- **The top with the real bake on a known head** (`sixHead` as the SCC's
+nomm and as the code's nomm, the bell `[[& |] DATA]` with the head of `DATA`
+known): `BakeRunO` from `bakeRunO_head` once the `ord` is a cell with a
+`%this` head (`hord`, what the `#guard`s compute: `[%this [%this %this]]`);
+`FixRet` stays. -/
+example (fuel : Nat) (dh dt FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE : Noun)
+    (hnary : getF mugF (C (C capeHead.toNoun (C dh dt)) FOL) NARY = some (A 0)) (hnmap : IsMap mugF NARY)
+    (hsmap : IsMap mugF SURE) (hcalls : NoSelfCall (C (C capeHead.toNoun (C dh dt)) FOL) CALLS) (INL' : Noun)
+    (hinl : InlOK (C (C capeHead.toNoun (C dh dt)) FOL) CODE INL sixHead INL') (env : CallEnv)
+    (hfix : FixRet env sixHead capeHead fuel)
+    (hord : ∀ nex g1, runLC env Option.none sixHead (CGoalL.done : CGoalL CSet) [] (gen0 : Gen (TreapMap mugF))
+      = some (nex, g1) → ∃ q, scOrd fuel nex capeHead = NeedOrd.pair NeedOrd.this q)
+    (FUNC V : Noun) (hgot : getF mugF FUNC CODE = some (C (A 0) V))
+    (hv : slot? 2 V = some sixHead.toNoun) :=
+  cu_gate_scc_one_six_bake fuel capeHead (C dh dt) FOL CODE JETS CALLS JH NARY MONO SCCS INL SURE hnary hnmap hsmap
+    hcalls _ INL' hinl env rfl (by simp [sixHead, Bake.NoAx0]) hfix
+    (bakeRunO_head env _ _ Cape.yes dh dt rfl hord) FUNC V sixHead rfl (by simp [sixHead, Bake.NoAx0]) hgot hv
 
 end Compiler
 end Formalization
