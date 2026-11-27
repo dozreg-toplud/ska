@@ -114,5 +114,120 @@ theorem opOK_imm (n : Noun) (d : Nat) : OpOK (Ana.pickR FinMap) alOpImm (Pole.im
     simp [nock_exec, alOpImm, Pole.toNoun, hL, by.arm_at, by_arm, by.put.arm_at, put_arm, ju.arm_at, ju_arm,
       ju.get.arm_at, ju_get_arm, ju.put.arm_at, ju_put_arm, hget, hp, hq, optCons, Tag.imm]
 
+/-! ## `%con` -/
+
+/-- The lens `|=(info-reg +<(hed-of (~(put in hed-of) new)))` of `%con`. -/
+def alLensHed : Noun := C (A 10) (C (C (A 14) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6102) (C (A 0) (A 0x1fffffffff)))) (C (A 9) (C (A 84) (C (A 10) (C (C (A 6) (C (A 0) (A 118))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 62))) (C (A 0) (A 2))))))))) (C (A 0) (A 6)))
+
+/-- The lens `|=(info-reg +<(tel-of (~(put in tel-of) new)))` of `%con`. -/
+def alLensTel : Noun := C (A 10) (C (C (A 30) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6102) (C (A 0) (A 0x1fffffffff)))) (C (A 9) (C (A 84) (C (A 10) (C (C (A 6) (C (A 0) (A 238))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 62))) (C (A 0) (A 2))))))))) (C (A 0) (A 6)))
+
+theorem al_lens_hed (x : Opt.InfoReg) (lb : Bool) (hs ts hs' : Noun) (d : Nat)
+    (hp : putInF mugF (A d) hs = some hs') (fc : Noun) (hc : slot? 0x7ffffffff fc = some layer2)
+    (hd : slot? 6 fc = some (A d)) :
+    nock (C alLensHed (C (infoN x lb hs ts) fc)) alLensHed
+      = some (infoN { x with hedOf := Opt.insN x.hedOf d } lb hs' ts) := by
+  have hpi := put_in_gate layer2 gorIn_morIn_layer2 (A d) hs hs' hp
+  unfold alLensHed
+  simp [nock_exec, infoN, hc, hd, in.arm_at, in_arm, in.put.arm_at, put_in_arm, hpi]
+
+theorem al_lens_tel (x : Opt.InfoReg) (lb : Bool) (hs ts ts' : Noun) (d : Nat)
+    (hp : putInF mugF (A d) ts = some ts') (fc : Noun) (hc : slot? 0x7ffffffff fc = some layer2)
+    (hd : slot? 6 fc = some (A d)) :
+    nock (C alLensTel (C (infoN x lb hs ts) fc)) alLensTel
+      = some (infoN { x with telOf := Opt.insN x.telOf d } lb hs ts') := by
+  have hpi := put_in_gate layer2 gorIn_morIn_layer2 (A d) ts ts' hp
+  unfold alLensTel
+  simp [nock_exec, infoN, hc, hd, in.arm_at, in_arm, in.put.arm_at, put_in_arm, hpi]
+
+/-- `+put:in` of `d` on a set related to `l`: related to `insN l d`. -/
+theorem saw_insN {S : Noun} {l : List Nat} (h : SawRel S l) (d : Nat) :
+    ∃ S', putInF mugF (A d) S = some S' ∧ SawRel S' (Opt.insN l d) := by
+  obtain ⟨out, hp, hs, hh⟩ := putInF_spec mugF S (A d) h.1
+  refine ⟨out, hp, hs, fun k => ?_⟩
+  rw [hh, h.2 k]
+  constructor
+  · rintro (rfl | ⟨n, hn, rfl⟩)
+    · exact ⟨d, mem_insN.2 (Or.inl rfl), rfl⟩
+    · exact ⟨n, mem_insN.2 (Or.inr hn), rfl⟩
+  · rintro ⟨n, hn, rfl⟩
+    rcases mem_insN.1 hn with rfl | hn
+    · exact Or.inl rfl
+    · exact Or.inr ⟨n, hn, rfl⟩
+
+/-- **`%con`**. -/
+theorem opOK_con (h t d : Nat) : OpOK (Ana.pickR FinMap) alOpCon (Pole.con h t d) := by
+  intro K BN GI P1 P2 P3 P4 P5 NEW INFO IMMS REST Y Z OLD LOC IML st hR res st' hm
+  simp only [Opt.aliasOp] at hm
+  obtain ⟨hi, hhi, hm⟩ := Option.bind_eq_some_iff.1 hm
+  obtain ⟨ti, hti, hm⟩ := Option.bind_eq_some_iff.1 hm
+  obtain ⟨Nh, hNh, hrh, hgh⟩ := loc_got hR.2.1 hhi
+  obtain ⟨Nt, hNt, hrt, hgt⟩ := loc_got hR.2.1 hti
+  obtain ⟨lbh, hsh, tsh, rfl, hhsh, htsh, hlbh⟩ := hrh
+  obtain ⟨lbt, hst, tst, rfl, hhst, htst, hlbt⟩ := hrt
+  obtain ⟨H, hH, hHs, hHk⟩ := int_in (mug := mugF) layer2 gorIn_morIn_layer2 hsh tst hhsh.1 htst.1
+  have hHr := sawRel_int hhsh htst hHs hHk
+  obtain ⟨X, R, hX⟩ := alBat_rn
+  have hrn := al_rn' X R NEW OLD (C INFO (C IMMS (C LOC (C IML REST)))) Y Z st.old hR.1
+  have hL := optC_layer2
+  by_cases hne : hi.hedOf.filter (· ∈ ti.telOf) ≠ []
+  · rw [if_pos hne] at hm
+    simp only [Option.some.injEq, Prod.mk.injEq] at hm
+    obtain ⟨rfl, rfl⟩ := hm
+    obtain ⟨Lr, Rr, rfl⟩ := sawRel_root hHr hne
+    obtain ⟨OLD', hp, hr⟩ := old_put hR.1 d (Ana.pickR FinMap (hi.hedOf.filter (· ∈ ti.telOf)))
+    refine ⟨OLD', LOC, IML, ?_, hr, hR.2.1, hR.2.2⟩
+    unfold alOS alGenB
+    rw [hX]
+    generalize optC = OC at hL hrn
+    unfold alRnArm at hrn
+    simp [nock_exec, alOpCon, alRnArm, Pole.toNoun, hL, by.arm_at, by_arm, by.got.arm_at, got_arm,
+      by.put.arm_at, put_arm, in.arm_at, in_arm, in.int.arm_at, int_in_arm, hrn, hgh, hgt, hH, hp, optCons,
+      infoN]
+  · rw [if_neg hne] at hm
+    have hH0 : H = A 0 := hHr.eq_nil.2 (by simpa using hne)
+    subst hH0
+    have hx0 : InfoRel (C (A 0) (C (A 1) (C (A 0) (C (A 0) (C (C (A 0) (A (st.old h)))
+        (C (C (A 0) (A (st.old t))) (C (A 0) (A 0))))))))
+        { hasHed := some (st.old h), hasTel := some (st.old t), isCell := true } :=
+      ⟨false, A 0, A 0, rfl, sawRel_nil, sawRel_nil, rfl⟩
+    obtain ⟨LOC1, hp1, hr1⟩ := loc_put hR.2.1 d hx0
+    obtain ⟨l1, hl1, hm⟩ := Option.bind_eq_some_iff.1 hm
+    obtain ⟨x1, hx1, rfl⟩ := Option.map_eq_some_iff.1 hl1
+    obtain ⟨N1, hN1, hrel1, hg1⟩ := loc_got hr1 hx1
+    obtain ⟨p1, q1, a1, b1, hLOC1⟩ := loc_node hN1
+    have hja1 := jab_arm_node by.battery layer2 p1 q1 a1 b1
+    rw [← hLOC1] at hja1
+    obtain ⟨lb1, hs1, ts1, rfl, hhs1, hts1, hlb1⟩ := hrel1
+    obtain ⟨hs1', hq1, hS1'⟩ := saw_insN hhs1 d
+    obtain ⟨LOC2, hj1, hr2⟩ := loc_jab hr1 hN1 (infoN { x1 with hedOf := Opt.insN x1.hedOf d } lb1 hs1' ts1)
+      (y := { x1 with hedOf := Opt.insN x1.hedOf d }) ⟨lb1, hs1', ts1, rfl, hS1', hts1, hlb1⟩
+    obtain ⟨l2, hl2, hm⟩ := Option.map_eq_some_iff.1 hm
+    simp only [Option.some.injEq, Prod.mk.injEq] at hm
+    obtain ⟨rfl, rfl⟩ := hm
+    obtain ⟨x2, hx2, rfl⟩ := Option.map_eq_some_iff.1 hl2
+    obtain ⟨N2, hN2, hrel2, hg2⟩ := loc_got hr2 hx2
+    obtain ⟨p2, q2, a2, b2, hLOC2⟩ := loc_node hN2
+    have hja2 := jab_arm_node by.battery layer2 p2 q2 a2 b2
+    rw [← hLOC2] at hja2
+    obtain ⟨lb2, hs2, ts2, rfl, hhs2, hts2, hlb2⟩ := hrel2
+    obtain ⟨ts2', hq2, hT2'⟩ := saw_insN hts2 d
+    obtain ⟨LOC3, hj2, hr3⟩ := loc_jab hr2 hN2 (infoN { x2 with telOf := Opt.insN x2.telOf d } lb2 hs2 ts2')
+      (y := { x2 with telOf := Opt.insN x2.telOf d }) ⟨lb2, hs2, ts2', rfl, hhs2, hT2', hlb2⟩
+    refine ⟨OLD, LOC3, IML, ?_, hR.1, hr3, hR.2.2⟩
+    have hj1' := fun fs fc (hc : slot? 0x7ffffffff fc = some layer2) (hd : slot? 6 fc = some (A d)) =>
+      hj1 alLensHed fs fc (al_lens_hed x1 lb1 hs1 ts1 hs1' d hq1 fc hc hd)
+    have hj2' := fun fs fc (hc : slot? 0x7ffffffff fc = some layer2) (hd : slot? 6 fc = some (A d)) =>
+      hj2 alLensTel fs fc (al_lens_tel x2 lb2 hs2 ts2 ts2' d hq2 fc hc hd)
+    unfold alLensHed at hj1'
+    unfold alLensTel at hj2'
+    unfold alOS alGenB
+    rw [hX]
+    generalize optC = OC at hL hrn
+    unfold alRnArm at hrn
+    simp [nock_exec, alOpCon, alRnArm, Pole.toNoun, hL, by.arm_at, by_arm, by.got.arm_at, got_arm,
+      by.put.arm_at, put_arm, by.jab.arm_at, in.arm_at, in_arm, in.int.arm_at, int_in_arm, hrn, hgh, hgt, hH,
+      hp1, hg1, hg2, hja1, hja2, hj1', hj2', optCons, Tag.con, infoN]
+
 end Compiler
 end Formalization
