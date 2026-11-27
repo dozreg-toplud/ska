@@ -51,7 +51,7 @@ blocks `bs`. -/
 structure MapCoreS (bs : TreapMap mugF Blob) (f : Nat → Nat) (G R : Noun) : Prop where
   hrer : RerS f G R
   hL : slot? 0x7fffffff R = some layer2
-  hU : ∀ J, nock (C tsmArgBody (C J (C tsCoreBat (C G R)))) tsmArgBuntF1 = some (A 0)
+  hU : ∀ J, nock (C tsmArgBody (C J (C tsCoreBat (C G R)))) tsmArgBuntF1 = some (C (A 0) G)
   hB : slot? 4094 (C tsCoreBat (C G R)) = some (HoonMap.toNoun Blob.toNoun bs)
 
 ''']
