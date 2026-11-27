@@ -33,7 +33,7 @@ variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys
 /-- **The hypothesis under a flat lazy goal**: `LOKB` with `RunOKLS`, flat
 goals and results with clean entries, and the run's jump the goal's or a
 block it made. -/
-structure LOKS (x : Bool) (lib : Lib) (env : CallEnv) (P : Noun → Prop) (f : Noun) (nm : Nomm) : Prop where
+structure LOKS (x : Bool) (lib : Lib) (N : Needs) (env : CallEnv) (P : Noun → Prop) (f : Noun) (nm : Nomm) : Prop where
   clean : ∀ {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
     Clean L.sure.ned → runLC env sup nm (CGoalL.next L th) region g0 = some (nex, g1) → Clean nex.laz.sure.ned
   run : ∀ {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
@@ -46,7 +46,7 @@ structure LOKS (x : Bool) (lib : Lib) (env : CallEnv) (P : Noun → Prop) (f : N
       ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none) →
     Flat L → Clean L.sure.ned → (∀ e ∈ entries L, Clean e.2.sure.ned) →
     runLC env sup nm (CGoalL.next L th) region g0 = some (nex, g1) →
-    (∃ Q, RunOKLS (Map := Map) lib P f L th Q x g0 g1 nex) ∧ nex.th.there ∉ (entries nex.laz).map Prod.fst ∧
+    (∃ Q, RunOKLS (Map := Map) lib N P f L th Q x g0 g1 nex) ∧ nex.th.there ∉ (entries nex.laz).map Prod.fst ∧
       (nex.th = th ∨ g0.bo ≤ nex.th.there) ∧ Flat nex.laz ∧ (∀ e ∈ entries nex.laz, Clean e.2.sure.ned)
 
 /-! ## `+from` of a flat need -/
@@ -105,8 +105,8 @@ theorem fromL_flat {axe : Nat} {L L' : Lazy S} (hL : Flat L) (h : fromL axe L = 
 
 /-- **`[0 axe]` under a flat lazy goal, `axe ≥ 1`**: `RunOKLS` with the
 witness relation of the call-free run, no op at any goal entry. -/
-theorem lokS_n0 (lib : Lib) (env : CallEnv) {P : Noun → Prop} {f : Noun} {axe : Nat} (ha : 1 ≤ axe)
-    (M : MinkEq lib P f (Nomm.n0 axe)) : LOKS (S := S) (Map := Map) false lib env P f (Nomm.n0 axe) := by
+theorem lokS_n0 (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Prop} {f : Noun} {axe : Nat} (ha : 1 ≤ axe)
+    (M : MinkEq lib P f (Nomm.n0 axe)) : LOKS (S := S) (Map := Map) false lib N env P f (Nomm.n0 axe) := by
   refine ⟨(lokc_n0 (S := S) (Map := Map) lib env ha M).clean, fun {sup L th region g0 g1 nex} _ b0 d0 hu hcl hcb
     h1 h2 hta ht hsd hsl hlab hnd hed hfl _ hce hr => ?_⟩
   rw [runLC_eq env _ rfl] at hr
@@ -155,7 +155,7 @@ theorem lokS_n0 (lib : Lib) (env : CallEnv) {P : Noun → Prop} {f : Noun} {axe 
         (fun e he r hr => ((hed e he).2 r hr).2) _
     · exact runOKL_n0 (g := stripG X g0) lib hf h1 h2 hsd (fun e he => (hed e he).1) hnd hemp (fun r hr => (hsl r hr).2)
         (fun e he r hr => ((hed e he).2 r hr).2) _
-  have RB := RunOKLB.ofSim s0 s0 (fun o ho => stripBd_out ho) (RL.toLC M).toB
+  have RB := RunOKLB.ofSim (N := N) s0 s0 (fun o ho => stripBd_out ho) (RL.toLC M).toB
   -- the fronts: no op, the result's entry seen at `axe`
   have FS : FrontsS (Map := Map) (pureWit (Nomm.n0 axe) (fun _ => Need.none) (fun _ => A 0)) false g0 g0 L ⟨L', th⟩ := by
     intro e he

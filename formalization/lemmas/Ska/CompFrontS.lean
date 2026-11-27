@@ -323,8 +323,8 @@ def FrontsS (Q : Wit) (x : Bool) (g0 g1 : Gen Map) (L : Lazy S) (nex : NextL S) 
         FrontS (Map := Map) Q (gsE x L) g0.re g1.re Sure.bunt (F.map (renPole (unproxy cf))) e.2.sure))
 
 /-- **`RunOKLB` with every front at the state level.** -/
-structure RunOKLS (lib : Lib) (P : Noun → Prop) (f : Noun) (L : Lazy S) (th : Jmp) (Q : Wit) (x : Bool)
-    (g0 g1 : Gen Map) (nex : NextL S) : Prop extends RunOKLB (Map := Map) lib P f L th Q x g0 g1 nex where
+structure RunOKLS (lib : Lib) (N : Needs) (P : Noun → Prop) (f : Noun) (L : Lazy S) (th : Jmp) (Q : Wit) (x : Bool)
+    (g0 g1 : Gen Map) (nex : NextL S) : Prop extends RunOKLB (Map := Map) lib N P f L th Q x g0 g1 nex where
   fs : FrontsS (Map := Map) Q x g0 g1 L nex
 
 /-- **The fronts of `FrontsS` give the field `front` of `RunOKLB`.** -/

@@ -44,7 +44,7 @@ variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] [HoonMapKeys
 
 /-- **A pair of runs under a flat lazy goal with entries** (see the header):
 `RunOKLS` of the whole, its result flat with clean entries. -/
-theorem pairLS_ok {lib : Lib} {P : Noun → Prop} {f fh ft : Noun} {L : Lazy S} {th : Jmp}
+theorem pairLS_ok {lib : Lib} {N : Needs} {P : Noun → Prop} {f fh ft : Noun} {L : Lazy S} {th : Jmp}
     {g0 g' g'' gb g1 g2 g3' g3 : Gen Map} {hed tel Lh : Lazy S} {o : Nat} {jt : Jmp} {Qh Qt : Wit}
     {nexq nexp : NextL S} {n : Next S} {r : List (Nat × Lazy S)} {PB : Nat → List Pole}
     {Fin : Noun → Nat → Trace → Noun → Noun → Tone → Prop} {FinB : Noun → Trace → Noun → Noun → Tone → Prop}
@@ -83,8 +83,8 @@ theorem pairLS_ok {lib : Lib} {P : Noun → Prop} {f fh ft : Noun} {L : Lazy S} 
         HoonMap.get gb.blocks g''.bo = some ⟨[], [], Termin.hop (jmp0 o)⟩))
     (hhd : (∀ s, FitsS nexq.laz.sure s) ∨ TotalC lib P fh)
     -- the parts
-    (hq : RunOKLS (Map := Map) lib P ft tel jt Qt false gb g1 nexq)
-    (hp : RunOKLS (Map := Map) lib P fh Lh nexq.th Qh false g1 g2 nexp)
+    (hq : RunOKLS (Map := Map) lib N P ft tel jt Qt false gb g1 nexq)
+    (hp : RunOKLS (Map := Map) lib N P fh Lh nexq.th Qh false g1 g2 nexp)
     (hqf : Flat nexq.laz) (hpf : Flat nexp.laz)
     (hqc : ∀ e ∈ entries nexq.laz, Clean e.2.sure.ned) (hpc : ∀ e ∈ entries nexp.laz, Clean e.2.sure.ned)
     (cq : Clean nexq.laz.sure.ned) (cp : Clean nexp.laz.sure.ned)
@@ -111,7 +111,7 @@ theorem pairLS_ok {lib : Lib} {P : Noun → Prop} {f fh ft : Noun} {L : Lazy S} 
         HoldsN tel.sure.ned regs y → ∀ res, goJ lib O c gul st regs t (jmp0 o) = some res →
         ∃ r, FinB gul tm x y r ∧
           GoalSemCM lib O c gul Inv ν (Keep g0 g' (CGoal.next L.sure th)) st regs t tm (jmp0 o) (CGoal.next L.sure th) r) :
-    RunOKLS (Map := Map) lib P f L th (pairWit C Qh Qt) false g0 g3 (pairRes n r nexq.laz.bond nexp.laz.bond) ∧
+    RunOKLS (Map := Map) lib N P f L th (pairWit C Qh Qt) false g0 g3 (pairRes n r nexq.laz.bond nexp.laz.bond) ∧
       g0.bo ≤ n.th.there ∧ n.th = jmp0 g2.bo ∧ Flat (pairRes n r nexq.laz.bond nexp.laz.bond).laz ∧
       (∀ e ∈ entries (pairRes n r nexq.laz.bond nexp.laz.bond).laz, Clean e.2.sure.ned) ∧
       (∀ e ∈ entries (pairRes n r nexq.laz.bond nexp.laz.bond).laz, e.1 < g2.bo) := by

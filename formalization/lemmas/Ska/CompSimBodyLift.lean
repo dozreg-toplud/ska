@@ -115,10 +115,10 @@ theorem map_addBody_nil (x : Option Blob) : x.map (addBody []) = x := by cases x
 
 /-- **`RunOKLB` of the stripped run is `RunOKLB` of the real run**, when
 the extra bodies sit at the goal's entries. -/
-theorem RunOKLB.ofSim {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp} {Q : Wit} {x : Bool}
+theorem RunOKLB.ofSim {lib : Lib} {N : Needs} {P : Noun → Prop} {f : Noun} {L : Lazy S} {th : Jmp} {Q : Wit} {x : Bool}
     {bd : Nat → List Pole} {g0 g0' g1 g1' : Gen Map} {nex : NextL S} (s0 : SimB bd g0 g0') (s1 : SimB bd g1 g1')
     (hX : ∀ o, o ∉ (entries L).map Prod.fst → bd o = [])
-    (R : RunOKLB (Map := Map) lib P f L th Q x g0' g1' nex) : RunOKLB (Map := Map) lib P f L th Q x g0 g1 nex := by
+    (R : RunOKLB (Map := Map) lib N P f L th Q x g0' g1' nex) : RunOKLB (Map := Map) lib N P f L th Q x g0 g1 nex := by
   have e0r := s0.re
   have e0b := s0.bo
   have e1r := s1.re
@@ -159,13 +159,13 @@ theorem RunOKLB.ofSim {lib : Lib} {P : Noun → Prop} {f : Noun} {L : Lazy S} {t
       rw [s1.blocks, this]
       simp [addBody]
     · rw [e0r, e1r]; exact hf cf (hcf cf h)
-  · intro cf h c ned σ Inv ν O n gul hS hF st t tm s0' s r hI htr hs hm ag hned regs hh hn
+  · intro cf h c ned σ Inv ν O n gul hN hS hF st t tm s0' s r hI htr hs hm ag hned regs hh hn
     rw [e0r]
-    exact R.sem cf (hcf cf h) c ned σ Inv ν O n gul hS hF st t tm s0' s r hI htr hs hm (fun st' => agB (ag st'))
+    exact R.sem cf (hcf cf h) c ned σ Inv ν O n gul hN hS hF st t tm s0' s r hI htr hs hm (fun st' => agB (ag st'))
       (fun z hz => by rw [← e1r]; exact hned z hz) regs hh hn
-  · intro cf h c ned σ Inv ν O gul hS hB st t tm s0' s hI htr hs ag hned regs hh hn res hres
+  · intro cf h c ned σ Inv ν O gul hN hS hB st t tm s0' s hI htr hs ag hned regs hh hn res hres
     rw [e0r]
-    exact R.semB cf (hcf cf h) c ned σ Inv ν O gul hS hB st t tm s0' s hI htr hs (fun st' => agB (ag st'))
+    exact R.semB cf (hcf cf h) c ned σ Inv ν O gul hN hS hB st t tm s0' s hI htr hs (fun st' => agB (ag st'))
       (fun z hz => by rw [← e1r]; exact hned z hz) regs hh hn res hres
 
 /-! ## The stripped state -/
@@ -247,7 +247,7 @@ theorem stripBd_out {X : List Nat} {g : Gen Map} {k : Nat} (hk : k ∉ X) : stri
 /-- **`LOKC` with bodies at the goal entries and `RunOKLB x`**, from a state
 where the goal's jump is at none of its entries, and the result's jump at
 none of the result's entries. -/
-structure LOKB (x : Bool) (lib : Lib) (env : CallEnv) (P : Noun → Prop) (f : Noun) (nm : Nomm) : Prop where
+structure LOKB (x : Bool) (lib : Lib) (N : Needs) (env : CallEnv) (P : Noun → Prop) (f : Noun) (nm : Nomm) : Prop where
   clean : ∀ {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
     Clean L.sure.ned → runLC env sup nm (CGoalL.next L th) region g0 = some (nex, g1) → Clean nex.laz.sure.ned
   run : ∀ {sup : Option Nomm} {L : Lazy S} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
@@ -259,14 +259,14 @@ structure LOKB (x : Bool) (lib : Lib) (env : CallEnv) (P : Noun → Prop) (f : N
     (∀ e ∈ entries L, Distinct e.2.sure.ned ∧
       ∀ x, NMem e.2.sure.ned x → x < g0.re ∧ HoonMap.get g0.cond x = Option.none) →
     runLC env sup nm (CGoalL.next L th) region g0 = some (nex, g1) →
-    (∃ Q, RunOKLB (Map := Map) lib P f L th Q x g0 g1 nex) ∧ nex.th.there ∉ (entries nex.laz).map Prod.fst
+    (∃ Q, RunOKLB (Map := Map) lib N P f L th Q x g0 g1 nex) ∧ nex.th.there ∉ (entries nex.laz).map Prod.fst
 
 /-- **`LOKC` of a nomm of `PlainN` gives `LOKB false`**: strip the goal
 entries' bodies (`simB_strip`), run from the stripped state
 (`simM_runLC`), take `LOKC` there, lift (`RunOKLC.toB`) and move the
 relation back (`RunOKLB.ofSim`). -/
-theorem LOKC.toB {lib : Lib} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm} (hp : PlainN nm)
-    (h : LOKC (S := S) (Map := Map) lib env P f nm) : LOKB (S := S) (Map := Map) false lib env P f nm := by
+theorem LOKC.toB {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm} (hp : PlainN nm)
+    (h : LOKC (S := S) (Map := Map) lib env P f nm) : LOKB (S := S) (Map := Map) false lib N env P f nm := by
   refine ⟨h.clean, fun {sup L th region g0 g1 nex} hc b0 d0 hu hcl hcb h1 h2 ha ht hsd hsl hlab hnd hed hr => ?_⟩
   let X := (entries L).map Prod.fst
   have hX : ∀ o ∈ X, o < g0.bo := fun o ho => by
@@ -279,7 +279,7 @@ theorem LOKC.toB {lib : Lib} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm 
       obtain ⟨hlt, B, th', hb⟩ := hlab e he
       exact ⟨hlt, th', stripG_get_mem (List.mem_map_of_mem he) hb⟩) hnd hed hr'
   obtain ⟨⟨Q, R⟩, j⟩ := L0
-  have RB := RunOKLB.ofSim s0 s1 (fun o ho => stripBd_out ho) R.toB
+  have RB := RunOKLB.ofSim (N := N) s0 s1 (fun o ho => stripBd_out ho) R.toB
   refine ⟨⟨Q, RB⟩, fun hm => ?_⟩
   obtain ⟨e, he, e1⟩ := List.mem_map.mp hm
   rcases (R.labs e he).1 with h | h
@@ -292,15 +292,15 @@ theorem LOKC.toB {lib : Lib} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm 
   · omega
 
 /-- **The weakening of `x`.** -/
-theorem LOKB.up {lib : Lib} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm}
-    (h : LOKB (S := S) (Map := Map) false lib env P f nm) (x : Bool) : LOKB (S := S) (Map := Map) x lib env P f nm :=
+theorem LOKB.up {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm}
+    (h : LOKB (S := S) (Map := Map) false lib N env P f nm) (x : Bool) : LOKB (S := S) (Map := Map) x lib N env P f nm :=
   ⟨h.clean, fun hc b0 d0 hu hcl hcb h1 h2 ha ht hsd hsl hlab hnd hed hr => by
     obtain ⟨⟨Q, R⟩, j⟩ := h.run hc b0 d0 hu hcl hcb h1 h2 ha ht hsd hsl hlab hnd hed hr
     exact ⟨⟨Q, R.up (fun r hr => (hsl r hr).1) x⟩, j⟩⟩
 
-theorem LOKB.wrap {x : Bool} {lib : Lib} {env : CallEnv} {P : Noun → Prop} {f f' : Noun} {nm : Nomm}
-    (W : WrapRel lib P f f') (B : LOKB (S := S) (Map := Map) x lib env P f nm) :
-    LOKB (S := S) (Map := Map) x lib env P f' nm :=
+theorem LOKB.wrap {x : Bool} {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop} {f f' : Noun} {nm : Nomm}
+    (W : WrapRel lib P f f') (B : LOKB (S := S) (Map := Map) x lib N env P f nm) :
+    LOKB (S := S) (Map := Map) x lib N env P f' nm :=
   ⟨B.clean, fun hc b0 d0 hu hcl hcb h1 h2 ha ht hsd hsl hlab hnd hed h => by
     obtain ⟨⟨Q, R⟩, j⟩ := B.run hc b0 d0 hu hcl hcb h1 h2 ha ht hsd hsl hlab hnd hed h
     exact ⟨⟨Q, R.wrap W⟩, j⟩⟩

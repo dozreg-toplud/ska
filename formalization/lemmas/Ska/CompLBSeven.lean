@@ -87,13 +87,13 @@ theorem frontLB_seven_bunt {Qp Qq : Wit} {E : Need} {lo0 lo1 lo2 : Nat} {M : Sur
 /-- **`[7 p q]` under `%next L th` with bodies** (`runOKLC_seven` for
 `RunOKLB`): `q` with any flag, `p` with `x = false`; the whole has `q`'s
 flag and the witness relation `sevenWit`. -/
-theorem runOKLB_seven {lib : Lib} {P : Noun → Prop} {fb fc : Noun} {L : Lazy S} {th : Jmp} {Qp Qq : Wit} {x : Bool}
+theorem runOKLB_seven {lib : Lib} {N : Needs} {P : Noun → Prop} {fb fc : Noun} {L : Lazy S} {th : Jmp} {Qp Qq : Wit} {x : Bool}
     {g0 g1 g2 : Gen Map} {nx nex : NextL S}
-    (Rq : RunOKLB (Map := Map) lib (Img lib P fb) fc L th Qq x g0 g1 nx)
-    (Rp : RunOKLB (Map := Map) lib P fb nx.laz nx.th Qp false g1 g2 nex)
+    (Rq : RunOKLB (Map := Map) lib N (Img lib P fb) fc L th Qq x g0 g1 nx)
+    (Rp : RunOKLB (Map := Map) lib N P fb nx.laz nx.th Qp false g1 g2 nex)
     (hL : ∀ r, NMem L.sure.ned r → r < g0.re)
     (hlab : ∀ e ∈ entries L, e.1 < g0.bo) :
-    RunOKLB lib P (n3 (A 7) fb fc) L th (sevenWit Qp Qq) x g0 g2 nex := by
+    RunOKLB lib N P (n3 (A 7) fb fc) L th (sevenWit Qp Qq) x g0 g2 nex := by
   have q1 := Rq.re
   have q2 := Rq.bo
   have p1 := Rp.re
@@ -274,31 +274,31 @@ theorem runOKLB_seven {lib : Lib} {P : Noun → Prop} {fb fc : Noun} {L : Lazy S
           rcases plab e.1 hm with h | h
           · exact hk h
           · have := hlab e he; omega
-  · intro cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
+  · intro cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
     have hcf1 : ∀ k, k < g1.re → HoonMap.get cf k = HoonMap.get g1.cond k := fun k hk' =>
       (hcf k (by omega)).trans (Rp.cfr.get_lt hk')
     obtain ⟨agP, K⟩ := core cf hcf c ned σ Inv ν O gul st t tm s0 s htr ag hned regs hn
     obtain ⟨n', hn', rb, hb, h | ⟨u, rfl, hc⟩⟩ := minkF_sevenC hm
-    · have Gp := Rp.sem cf hcf c ned σ Inv ν O n' gul hS (oracleFwd_le hF (Nat.le_of_lt hn')) st t tm s0 s rb hI
+    · have Gp := Rp.sem cf hcf c ned σ Inv ν O n' gul hN hS (oracleFwd_le hF (Nat.le_of_lt hn')) st t tm s0 s rb hI
         htr hs hb agP hned regs hh hn
       obtain ⟨hnz, rfl⟩ := h
       exact goalSemCMD_ret hnz (returnsC_of_goalSemCMD hnz Gp)
-    have Gp := Rp.sem cf hcf c ned σ Inv ν O n' gul hS (oracleFwd_le hF (Nat.le_of_lt hn')) st t tm s0 s _ hI
+    have Gp := Rp.sem cf hcf c ned σ Inv ν O n' gul hN hS (oracleFwd_le hF (Nat.le_of_lt hn')) st t tm s0 s _ hI
       htr hs hb agP hned regs hh hn
     by_cases fit : FitsS nx.laz.sure u
     · obtain ⟨st', R1, dp, wp, hI', hν, hqp, h1, hD1, k1, e1⟩ := Gp.1 fit
       obtain ⟨agQ, hnQ, hsQ, hnQ', fin⟩ := K u st' R1 dp wp hqp hI' hν fit h1 hD1 k1
-      exact fin r (Rq.sem cf hcf1 c (Need.pair ned dp) σ Inv ν O n' gul hS (oracleFwd_le hF (Nat.le_of_lt hn'))
+      exact fin r (Rq.sem cf hcf1 c (Need.pair ned dp) σ Inv ν O n' gul hN hS (oracleFwd_le hF (Nat.le_of_lt hn'))
         st' t tm (C s0 wp) u r hI' (frames_mono hν htr) (img_of hs hb) hc agQ hnQ R1 hsQ hnQ') e1
     · have R2 := Gp.2 fit
       rcases (Rq.nec u (img_of hs hb) fit).1 gul n' tm r hc with e | ⟨v, rfl, nf⟩
       · subst e; exact R2
       · exact ⟨fun f => absurd f nf, fun _ => R2⟩
-  · intro cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
+  · intro cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
     have hcf1 : ∀ k, k < g1.re → HoonMap.get cf k = HoonMap.get g1.cond k := fun k hk' =>
       (hcf k (by omega)).trans (Rp.cfr.get_lt hk')
     obtain ⟨agP, K⟩ := core cf hcf c ned σ Inv ν O gul st t tm s0 s htr ag hned regs hn
-    obtain ⟨rb, hb, Gp⟩ := Rp.semB cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs agP hned regs hh hn
+    obtain ⟨rb, hb, Gp⟩ := Rp.semB cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs agP hned regs hh hn
       res hres
     cases rb with
     | one q =>
@@ -310,7 +310,7 @@ theorem runOKLB_seven {lib : Lib} {P : Noun → Prop} {fb fc : Noun} {L : Lazy S
       by_cases fit : FitsS nx.laz.sure u
       · obtain ⟨st', R1, dp, wp, hI', hν, hqp, h1, hD1, k1, e1⟩ := Gp.1 fit
         obtain ⟨agQ, hnQ, hsQ, hnQ', fin⟩ := K u st' R1 dp wp hqp hI' hν fit h1 hD1 k1
-        obtain ⟨r, hr, Gq⟩ := Rq.semB cf hcf1 c (Need.pair ned dp) σ Inv ν O gul hS hB st' t tm (C s0 wp) u hI'
+        obtain ⟨r, hr, Gq⟩ := Rq.semB cf hcf1 c (Need.pair ned dp) σ Inv ν O gul hN hS hB st' t tm (C s0 wp) u hI'
           (frames_mono hν htr) hu agQ hnQ R1 hsQ hnQ' res (by rw [← e1]; exact hres)
         exact ⟨r, (mink_sevenC_bwd hb).2 u r rfl hr, fin r Gq e1⟩
       · have R2 := Gp.2 fit

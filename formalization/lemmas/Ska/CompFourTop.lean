@@ -42,18 +42,18 @@ local macro "romega" : tactic =>
 of the whole for the goal, the formula's `+mink` the increment of the
 operand's (`MinkC4`), the block at `o` turning the operand's product `x`
 held at `a` into `GoalSemCM` of `incTone tm (zero x)` (`hblk`). -/
-theorem unaryGB_ok {lib : Lib} {P : Noun → Prop} {f fb : Noun} (M : MinkC4 lib P f fb) {goal : CGoal S}
+theorem unaryGB_ok {lib : Lib} {N : Needs} {P : Noun → Prop} {f fb : Noun} (M : MinkC4 lib P f fb) {goal : CGoal S}
     {g0 g' g1 : Gen Map} {a o : Nat} {nexp : NextL S}
     (hpre : Ext g0 g') (hgr : GrowU g0 g') (hcnd : g'.cond = g0.cond) (ha : g0.re ≤ a ∧ a < g'.re)
     (ho : o < g'.bo) (hfr : Fresh g' (jmp0 o))
-    (hp : RunOKGB (Map := Map) lib P fb (CGoal.next (lazyReg a) (jmp0 o)) g' g1 nexp)
+    (hp : RunOKGB (Map := Map) lib N P fb (CGoal.next (lazyReg a) (jmp0 o)) g' g1 nexp)
     (hfix : ∀ (cf : Map (Nat × List Nat)), (∀ k, k < g'.re → HoonMap.get cf k = HoonMap.get g0.cond k) →
       ∀ k, g0.bo ≤ k → k < g'.bo → (HoonMap.get g'.blocks k).map (unproxyBlob cf) = HoonMap.get g'.blocks k)
     (hblk : ∀ (c : Straight Map), Agree c g0 g' → ∀ (σ : Type) (Inv : σ → Prop) (ν : σ → Needs) (O : Oracle σ)
       (gul : Noun) (st : σ) (regs : Map (Option Noun)) (t tm : Trace) (x : Noun), Inv st →
       Forall2 (FrameRel lib (ν st)) t tm → SkaModel.read a regs = some x →
       GoalSemCM lib O c gul Inv ν (Keep g0 g' goal) st regs t tm (jmp0 o) goal (incTone tm (Tone.zero x))) :
-    RunOKGB lib P f goal g0 g1 nexp := by
+    RunOKGB lib N P f goal g0 g1 nexp := by
   have l1 := hp.ext.1
   have b1 := hp.ext.2.1
   have bad : ∀ {tm : Trace} {r : Tone}, BadC (CGoal.next (lazyReg a : Sure S) (jmp0 o)) tm r → r = Tone.two tm :=
@@ -132,13 +132,13 @@ theorem unaryGB_ok {lib : Lib} {P : Noun → Prop} {f fb : Noun} (M : MinkC4 lib
     refine ⟨_, M.bwd hs hmb, ?_⟩
     rw [bad hbad]
     exact Or.inl rfl
-  · intro cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
+  · intro cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
     obtain ⟨n', hn', rb, hb, rfl⟩ := M.fwd hs hm
     exact conv cf hcf c ned σ Inv ν O gul st t tm s0 s hI htr ag hned regs rb
-      (hp.sem cf hcf c ned σ Inv ν O n' gul hS (oracleFwd_le hF hn') st t tm s0 s rb hI htr hs hb
+      (hp.sem cf hcf c ned σ Inv ν O n' gul hN hS (oracleFwd_le hF hn') st t tm s0 s rb hI htr hs hb
         (fun st' => agP cf c ned σ O gul st' t s0 s (ag st')) hned regs hh hn)
-  · intro cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
-    obtain ⟨rb, hmb, G⟩ := hp.semB cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs
+  · intro cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
+    obtain ⟨rb, hmb, G⟩ := hp.semB cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs
       (fun st' => agP cf c ned σ O gul st' t s0 s (ag st')) hned regs hh hn res hres
     exact ⟨_, M.bwd hs hmb, conv cf hcf c ned σ Inv ν O gul st t tm s0 s hI htr ag hned regs rb G⟩
 
@@ -146,12 +146,12 @@ theorem unaryGB_ok {lib : Lib} {P : Noun → Prop} {f fb : Noun} (M : MinkC4 lib
 block `[inc arg pro] don pro`, the operand's `LOKSF` under `%next
 (lazy-from-reg arg)` (a goal with no entry), `RunOKLB.toGB`, `unaryGB_ok`
 (the blocks as in `four_runD`). -/
-theorem four_doneB (lib : Lib) {p : Nomm} {env : CallEnv} {P : Noun → Prop} {f fb : Noun}
-    (Sp : LOKSF (S := S) (Map := Map) lib env P fb p) (M : MinkC4 lib P f fb) {sup : Option Nomm}
+theorem four_doneB (lib : Lib) {N : Needs} {p : Nomm} {env : CallEnv} {P : Noun → Prop} {f fb : Noun}
+    (Sp : LOKSF (S := S) (Map := Map) lib N env P fb p) (M : MinkC4 lib P f fb) {sup : Option Nomm}
     {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S} (hcount : sixCount p ≤ 255) (b0 : 1 ≤ g0.bo)
     (d0 : g0.drop = false) (hu : UpBelow g0) (hcl0 : Clear g0) (hcb : CondBelow g0)
     (h : runLC env sup (Nomm.n4 p) CGoalL.done region g0 = some (nex, g1)) :
-    DoneOK lib P f g0 g1 nex := by
+    DoneOK lib N P f g0 g1 nex := by
   have e4 : (runLC env sup (Nomm.n4 p) (CGoalL.done : CGoalL S) region : CM Map (NextL S)) = (do
       let pro ← re
       let arg ← re
@@ -204,7 +204,7 @@ theorem four_doneB (lib : Lib) {p : Nomm} {env : CallEnv} {P : Noun → Prop} {f
 /-- **`unaryGT_ok` for `RunOKGB`** (its text with `AgreeUB`): `unaryGC_ok` for a tone transform `T` that keeps the tones that are
 no product (`hT`), with `+mink` on `f` the transform of `+mink` on `fb`
 (`fw`, `bw`). -/
-theorem unaryGTB_ok {lib : Lib} {P : Noun → Prop} {f fb : Noun} {T : Trace → Tone → Tone}
+theorem unaryGTB_ok {lib : Lib} {N : Needs} {P : Noun → Prop} {f fb : Noun} {T : Trace → Tone → Tone}
     (hT : ∀ tm r, (∀ p, r ≠ Tone.zero p) → T tm r = r)
     (fw : ∀ {s gul : Noun} {n : Nat} {tm : Trace} {r : Tone}, P s → minkF lib gul n tm s f = some r →
       ∃ n', n' ≤ n ∧ ∃ rb, minkF lib gul n' tm s fb = some rb ∧ r = T tm rb)
@@ -212,14 +212,14 @@ theorem unaryGTB_ok {lib : Lib} {P : Noun → Prop} {f fb : Noun} {T : Trace →
     {goal : CGoal S} {g0 g' g1 : Gen Map} {a o : Nat} {nexp : NextL S}
     (hpre : Ext g0 g') (hgr : GrowU g0 g') (hcnd : g'.cond = g0.cond) (ha : g0.re ≤ a ∧ a < g'.re)
     (ho : o < g'.bo) (hfr : Fresh g' (jmp0 o))
-    (hp : RunOKGB (Map := Map) lib P fb (CGoal.next (lazyReg a) (jmp0 o)) g' g1 nexp)
+    (hp : RunOKGB (Map := Map) lib N P fb (CGoal.next (lazyReg a) (jmp0 o)) g' g1 nexp)
     (hfix : ∀ (cf : Map (Nat × List Nat)), (∀ k, k < g'.re → HoonMap.get cf k = HoonMap.get g0.cond k) →
       ∀ k, g0.bo ≤ k → k < g'.bo → (HoonMap.get g'.blocks k).map (unproxyBlob cf) = HoonMap.get g'.blocks k)
     (hblk : ∀ (c : Straight Map), Agree c g0 g' → ∀ (σ : Type) (Inv : σ → Prop) (ν : σ → Needs) (O : Oracle σ)
       (gul : Noun) (st : σ) (regs : Map (Option Noun)) (t tm : Trace) (x : Noun), Inv st →
       Forall2 (FrameRel lib (ν st)) t tm → SkaModel.read a regs = some x →
       GoalSemCM lib O c gul Inv ν (Keep g0 g' goal) st regs t tm (jmp0 o) goal (T tm (Tone.zero x))) :
-    RunOKGB lib P f goal g0 g1 nexp := by
+    RunOKGB lib N P f goal g0 g1 nexp := by
   have l1 := hp.ext.1
   have b1 := hp.ext.2.1
   have bad : ∀ {tm : Trace} {r : Tone}, BadC (CGoal.next (lazyReg a : Sure S) (jmp0 o)) tm r → r = Tone.two tm :=
@@ -299,13 +299,13 @@ theorem unaryGTB_ok {lib : Lib} {P : Noun → Prop} {f fb : Noun} {T : Trace →
     refine ⟨_, bw hs hmb, ?_⟩
     rw [bad hbad, hT tm _ (fun _ e => by cases e)]
     exact Or.inl rfl
-  · intro cf hcf c ned σ Inv ν O n gul hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
+  · intro cf hcf c ned σ Inv ν O n gul hN hS hF st t tm s0 s r hI htr hs hm ag hned regs hh hn
     obtain ⟨n', hn', rb, hb, rfl⟩ := fw hs hm
     exact conv cf hcf c ned σ Inv ν O gul st t tm s0 s hI htr ag hned regs rb
-      (hp.sem cf hcf c ned σ Inv ν O n' gul hS (oracleFwd_le hF hn') st t tm s0 s rb hI htr hs hb
+      (hp.sem cf hcf c ned σ Inv ν O n' gul hN hS (oracleFwd_le hF hn') st t tm s0 s rb hI htr hs hb
         (fun st' => agP cf c ned σ O gul st' t s0 s (ag st')) hned regs hh hn)
-  · intro cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
-    obtain ⟨rb, hmb, G⟩ := hp.semB cf hcf c ned σ Inv ν O gul hS hB st t tm s0 s hI htr hs
+  · intro cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs ag hned regs hh hn res hres
+    obtain ⟨rb, hmb, G⟩ := hp.semB cf hcf c ned σ Inv ν O gul hN hS hB st t tm s0 s hI htr hs
       (fun st' => agP cf c ned σ O gul st' t s0 s (ag st')) hned regs hh hn res hres
     exact ⟨_, bw hs hmb, conv cf hcf c ned σ Inv ν O gul st t tm s0 s hI htr ag hned regs rb G⟩
 
@@ -315,12 +315,12 @@ theorem unaryGTB_ok {lib : Lib} {P : Noun → Prop} {f fb : Noun} {T : Trace →
 with `RunOKLB.toGB`, `unaryGTB_ok`): `doneBlocks`,
 the `clq` block, then the operand (`unaryGT_ok`, the blocks as in
 `runOKV_n3D`). -/
-theorem three_doneB (lib : Lib) {p : Nomm} {env : CallEnv} {P : Noun → Prop} {f fb : Noun}
-    (Sp : LOKSF (S := S) (Map := Map) lib env P fb p) (M : MinkC3 lib P f fb) {sup : Option Nomm}
+theorem three_doneB (lib : Lib) {N : Needs} {p : Nomm} {env : CallEnv} {P : Noun → Prop} {f fb : Noun}
+    (Sp : LOKSF (S := S) (Map := Map) lib N env P fb p) (M : MinkC3 lib P f fb) {sup : Option Nomm}
     {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S} (hcount : sixCount p ≤ 255) (b0 : 1 ≤ g0.bo)
     (d0 : g0.drop = false) (hu : UpBelow g0) (hcl0 : Clear g0) (hcb : CondBelow g0)
     (h : runLC env sup (Nomm.n3 p) CGoalL.done region g0 = some (nex, g1)) :
-    DoneOK lib P f g0 g1 nex := by
+    DoneOK lib N P f g0 g1 nex := by
   have e3 : (runLC env sup (Nomm.n3 p) (CGoalL.done : CGoalL S) region : CM Map (NextL S)) = (do
       let (o0, o1) ← doneBlocks
       let r ← re
@@ -375,13 +375,13 @@ has no entry).: the run under `%next
 (lazy-from-reg re)` into the block `[don re]` meets every premise of
 `LOKS.run` (a flat goal with no entry), so the run under `%done` that
 begins with that block meets `DoneOK`. -/
-theorem lokS_doneF {lib : Lib} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm}
-    (H : LOKSF (S := S) (Map := Map) lib env P f nm) (hcount : sixCount nm ≤ 255)
+theorem lokS_doneF {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm}
+    (H : LOKSF (S := S) (Map := Map) lib N env P f nm) (hcount : sixCount nm ≤ 255)
     {sup : Option Nomm} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S}
     (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0) (hcl : Clear g0) (hcb : CondBelow g0)
     (hr : runLC env sup nm (CGoalL.next (ofSure (lazyReg g0.re)) (jmp0 g0.bo)) region
         ({ g0 with re := g0.re + 1 }.emitted ⟨[], [], Termin.don g0.re⟩) = some (nex, g1)) :
-    DoneOK lib P f g0 g1 nex := by
+    DoneOK lib N P f g0 g1 nex := by
   have e0 : entries (ofSure (lazyReg g0.re : Sure S)) = [] := entries_ofSure _
   have G1 : GrowU ({ g0 with re := g0.re + 1 } : Gen Map) ({ g0 with re := g0.re + 1 }.emitted ⟨[], [], Termin.don g0.re⟩) :=
     growU_emit (g := { g0 with re := g0.re + 1 }) (b := ⟨[], [], Termin.don g0.re⟩)
@@ -406,12 +406,12 @@ theorem lokS_doneF {lib : Lib} {env : CallEnv} {P : Noun → Prop} {f : Noun} {n
 
 /-- **A nomm with `LOKSF` that begins under `%done` with the block `[don
 re]`** meets `DoneOK` (`runLC_done_next`, `lokS_done`). -/
-theorem done_of_lokSF {lib : Lib} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm}
-    (H : LOKSF (S := S) (Map := Map) lib env P f nm) (hcount : sixCount nm ≤ 255)
+theorem done_of_lokSF {lib : Lib} {N : Needs} {env : CallEnv} {P : Noun → Prop} {f : Noun} {nm : Nomm}
+    (H : LOKSF (S := S) (Map := Map) lib N env P f nm) (hcount : sixCount nm ≤ 255)
     (hs : (∃ p q, nm = Nomm.cons p q) ∨ (∃ p q, nm = Nomm.n2 p q Option.none) ∨ (∃ ax, 1 ≤ ax ∧ nm = Nomm.n0 ax))
     {sup : Option Nomm} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S}
     (b0 : 1 ≤ g0.bo) (d0 : g0.drop = false) (hu : UpBelow g0) (hcl : Clear g0) (hcb : CondBelow g0)
-    (hr : runLC env sup nm CGoalL.done region g0 = some (nex, g1)) : DoneOK lib P f g0 g1 nex := by
+    (hr : runLC env sup nm CGoalL.done region g0 = some (nex, g1)) : DoneOK lib N P f g0 g1 nex := by
   rw [runLC_done_next env sup hs region g0] at hr
   exact lokS_doneF H hcount b0 d0 hu hcl hcb hr
 
@@ -502,16 +502,16 @@ theorem CallTreeA.kind (lib : Lib) (cod : Bell → Option Bool) (P : Noun → Pr
 /-- **Every nomm of `CallTreeA` meets `LOKSF`** on any subjects (a hinted one
 `JNewLSF`), and one of index `true` `LOKS false` (a hinted one `JNewLS`),
 with only the premises of `LOKS.run` on the starting goal and state. -/
-theorem lokS_callTreeA (lib : Lib) (env : CallEnv) {b : Bool} {f : Noun} {nm : Nomm} (h : CallTreeA b f nm) :
-    ∀ P, (LOKSF (S := S) (Map := Map) lib env P f nm ∧
+theorem lokS_callTreeA (lib : Lib) {N : Needs} (env : CallEnv) {b : Bool} {f : Noun} {nm : Nomm} (h : CallTreeA b f nm) :
+    ∀ P, (LOKSF (S := S) (Map := Map) lib N env P f nm ∧
         (hinted env.cod nm = some true → JNewLSF (S := S) (Map := Map) env nm)) ∧
-      (b = true → LOKS (S := S) (Map := Map) false lib env P f nm ∧
+      (b = true → LOKS (S := S) (Map := Map) false lib N env P f nm ∧
         (hinted env.cod nm = some true → JNewLS (S := S) (Map := Map) env nm)) := by
   induction h with
   | n0 axe =>
     intro P
     have M := ((CallTreeA.n0 axe).kind lib env.cod P).elim (fun h => h.2) (fun h => by cases h)
-    have H : LOKS (S := S) (Map := Map) false lib env P (slot axe) (Nomm.n0 axe) := by
+    have H : LOKS (S := S) (Map := Map) false lib N env P (slot axe) (Nomm.n0 axe) := by
       rcases Nat.eq_zero_or_pos axe with rfl | ha
       · exact lokS_n00 lib env M
       · exact lokS_n0 lib env ha M
@@ -554,10 +554,10 @@ theorem lokS_callTreeA (lib : Lib) (env : CallEnv) {b : Bool} {f : Noun} {nm : N
 /-- **Every nomm of `CallTreeA` under `%done` meets `DoneOK`**: `[0 axe]`
 by `callTree_done`, the cons and the indirect call by `done_of_lokSF`,
 `[7 p q]` as in `callTree7_done`, `[4 p]` by `four_doneB`. -/
-theorem callTreeA_done (lib : Lib) (env : CallEnv) {b : Bool} {f : Noun} {nm : Nomm} (h : CallTreeA b f nm) :
+theorem callTreeA_done (lib : Lib) {N : Needs} (env : CallEnv) {b : Bool} {f : Noun} {nm : Nomm} (h : CallTreeA b f nm) :
     ∀ (P : Noun → Prop) {sup : Option Nomm} {region : List Nat} {g0 g1 : Gen Map} {nex : NextL S},
     1 ≤ g0.bo → g0.drop = false → UpBelow g0 → Clear g0 → CondBelow g0 →
-    runLC env sup nm CGoalL.done region g0 = some (nex, g1) → DoneOK (S := S) (Map := Map) lib P f g0 g1 nex := by
+    runLC env sup nm CGoalL.done region g0 = some (nex, g1) → DoneOK (S := S) (Map := Map) lib N P f g0 g1 nex := by
   induction h with
   | n0 axe =>
     intro P sup region g0 g1 nex b0 d0 hu hcl hcb hr
@@ -578,7 +578,7 @@ theorem callTreeA_done (lib : Lib) (env : CallEnv) {b : Bool} {f : Noun} {nm : N
     obtain ⟨nx, ga, h1, h2⟩ := bind_some hr
     have D := ihq (Img lib P b) b0 d0 hu hcl hcb h1
     have Rq := D.run
-    have Lp := ((lokS_callTreeA (S := S) (Map := Map) lib env hp P).2 rfl).1
+    have Lp := ((lokS_callTreeA (S := S) (Map := Map) lib (N := N) env hp P).2 rfl).1
     have hj : nx.th.args = [] := by
       rcases Rq.ent with ⟨_, _, _, ha⟩ | e
       · exact ha
@@ -610,8 +610,8 @@ on every subject, with no hypothesis about the run. -/
 theorem finishLUC_contractCallTreeA (lib : Lib) (env : CallEnv) (P : Noun → Prop) {b : Bool} {f : Noun} {nm : Nomm}
     (h : CallTreeA b f nm) {c : Straight Map} (hc : finishLUC (S := S) env nm = some c) (N : Needs) :
     c.need = NeedOrd.this ∧ ∀ s, P s → ContractFwd lib N s f [s] c ∧ ContractBwd lib N s f [s] c :=
-  finishLUC_contractGB lib (fun hr => (callTreeA_done (S := S) (Map := Map) lib env h P (by simp [gen0]) rfl
-    upBelow_gen0 clear_gen0 condBelow_gen0 hr).run) hc N
+  finishLUC_contractGB lib N (fun hr => (callTreeA_done (S := S) (Map := Map) lib env h P (by simp [gen0]) rfl
+    upBelow_gen0 clear_gen0 condBelow_gen0 hr).run) hc
 
 /-- **The bell contract of `CallTreeA`** (`finishLUC_contractNC`'s form). -/
 theorem finishLUC_bellContractCallTreeA {lib : Lib} {bl : Bell} {b : Bool} {nm : Nomm} (h : CallTreeA b bl.fol nm)

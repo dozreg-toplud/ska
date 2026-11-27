@@ -108,6 +108,7 @@ import lemmas.Ska.CompFourLS
 import lemmas.Ska.CompConsLSF
 import lemmas.Ska.CompThreeLS
 import lemmas.Ska.CompFourTop
+import lemmas.Ska.CompFiveLS
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -1170,3 +1171,5 @@ open Formalization.SkaModel.Comp
 #print axioms unaryGTB_ok
 #print axioms three_doneB
 #print axioms threeInd_contract
+#print axioms Needs.none_le
+#print axioms minkC5_five
