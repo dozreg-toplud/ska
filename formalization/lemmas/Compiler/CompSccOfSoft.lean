@@ -20,7 +20,9 @@ loop runs at track I's `cfgRealS r snd` and its `%done` gate is `memGate_done_re
 * `MemDoneRestDS`, `memDoneCall_of_restDS`, **`sccLoopAtD_realS`** (`memGate_done_realS`);
 * `SccLoopDataDS` (the loop data at `cfgRealS`), `CalleeHDS` (an SCC has the loop data of
   `CompSccOfStr.lean` or of this file), `calleeCompiled_stepHDS`, `calleeCompiled_heightsDS`,
-  `calleeCompiled_heights0DS`, `CalleeHSDS`, `calleeH_of_SDS`.
+  `calleeCompiled_heights0DS`, `CalleeHSDS`, `calleeH_of_SDS`, `calleeHSDS_of_Str`;
+* `member_cfgRealS_sweep`, `maySweep_cfgRealS`, **`memGate_cfgRealS_of`**: a `%may` / `%must`
+  gate at `cfgReal` is one at `cfgRealS` (`compRealS` differs only on `%done`).
 -/
 
 namespace Formalization
@@ -389,6 +391,35 @@ theorem calleeH_of_SDS {env : CallEnv} {SC0 MO0 CODE JETS CALLS JH : Noun} {inl 
     rcases hdat P Pf hab with hd | hd
     · exact Or.inl (sccLoopData_of_SDStr hPS (fun k hk => ((hsg _ _ hsc).2.2 k hk).2) hab hS hd)
     · exact Or.inr hd
+
+/-! ## The sweeps' gates carry over to `cfgRealS` -/
+
+/-- **`member` of the sweeps is the same at `cfgRealS` and `cfgReal`** (`compRealS` differs from
+`compReal` only on `%done`). -/
+theorem member_cfgRealS_sweep (r : RealCfg) (snd : Nomm → NeedOrd → Bool) (order : List Noun)
+    (kids : Noun → List Noun) (top : Noun → NeedOrd) (b : Noun) (mode : Mode) (hm : mode ≠ Mode.done) (keep : Bool)
+    (st : St Noun NeedOrd) :
+    member (cfgRealS r snd order kids) top b mode keep st = member (cfgReal r order kids) top b mode keep st := by
+  cases mode with
+  | done => exact absurd rfl hm
+  | may => rfl
+  | must => rfl
+
+/-- The `%may` sweep is the same at `cfgRealS` and `cfgReal`. -/
+theorem maySweep_cfgRealS (r : RealCfg) (snd : Nomm → NeedOrd → Bool) (order : List Noun)
+    (kids : Noun → List Noun) (st : St Noun NeedOrd) :
+    maySweep (cfgRealS r snd order kids) st = maySweep (cfgReal r order kids) st := rfl
+
+/-- **A `%may` / `%must` gate at `cfgReal` is one at `cfgRealS`** (so track I's sweep gates for
+`cfgRealShape r xs` give those of `cfgRealS { r with laze := lazeReal xs } snd`). -/
+theorem memGate_cfgRealS_of (r : RealCfg) (snd : Nomm → NeedOrd → Bool) (order : List Noun)
+    (kids : Noun → List Noun) {R : (Noun → Option NeedOrd) → (Noun → Option NeedOrd) → Noun → Noun → Prop}
+    {ctx : Noun} {top : Noun → NeedOrd} {TOP : Noun} {mode : Mode} {MODE : Noun} (hm : mode ≠ Mode.done)
+    (h : MemGate (cfgReal r order kids) R ctx top TOP mode MODE) :
+    MemGate (cfgRealS r snd order kids) R ctx top TOP mode MODE := by
+  intro st keep b ML CA hb hR
+  rw [member_cfgRealS_sweep r snd order kids top b mode hm keep st]
+  exact h st keep b ML CA hb hR
 
 /-- A table without soft members is one with them admitted. -/
 theorem calleeHSDS_of_Str {env : CallEnv} {SC0 MO0 CODE JETS CALLS JH : Noun} {inl : Noun → Option Nomm}
