@@ -566,7 +566,8 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
       `%cel` is in the predecessor.  Not needed by the chain: `EntryOK` is
       a hypothesis on RAW code and `Opt.Keeps` carries the run through
       `+optimize`.  77 of the 7,920 mono codes: `optimizeF 30` returns
-      `none` (see the check file for the cause).
+      `none`; it is FUEL (the first, 48 blocks, is optimized at fuel 100
+      and meets `NoPoison` and `CelAnn`).
     - THE LEAVES with calls (`Glue/GuardCalls.lean`): `entryMono_of`
       (`EntryMono` from `OptInMono`, the new `ReadsInMono`, `GuardMonoC`),
       `entryNary_of` (from `OptInNary`, `ReadsInNary`, `GuardNaryC`);
