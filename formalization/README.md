@@ -59,8 +59,7 @@ for example `446 comp-need-ord-alloc-regs` and `1014 comp-collapse-shape`.
 | --- | --- |
 | `Nock.lean` | Nock 4K, rule for rule: nouns, `Wut`, `Lus`, `Tis`, `Fas`, `Hax` and the relation `Nock`. |
 | `Cue.lean` | `cue : Nat → Option Noun`, after `+cue` of hoon.hoon. Written to be read, not run. |
-| `Bytes.lean` | `bytes% { b₀, b₁, … }`, the number with these bytes, lowest first: the one piece of metaprogramming in `core/`. |
-| `Pill.lean` | Generated: the pill file as an atom, byte by byte. The lines between its braces are those of vere's `steel.c` (`xxd -i`). |
+| `Pill.lean` | Generated: the pill file as an atom, in 1024-byte chunks. The same bytes as vere's `steel.c`, which `tools/pill2core.py --check pill/steel.pill steel.c` confirms. |
 | `Statement.lean` | `Loads`, `NockEquivalence` (if Nock computes `p`, `+eval-top` returns `[%0 p]` with any scry gate; if `+eval-top` with the scry gate `~` returns `[%0 p]`, Nock computes `p`), `MockEquivalence` (`+mock` returns a toon exactly when `+eval-top` then `+eval-mook` do, for any scry gate), `Halts`, `Full`, and the few definitions they need. Start here. |
 
 The statements quantify over every core that the pill's core can become by
@@ -82,10 +81,7 @@ two rules).  `lemmas/SpecEquiv.lean` proves them the same relations
 What a reader of `core/` has to take on trust beyond the Lean kernel:
 
 1. `Nock` is Nock, and `cue` is `+cue`.
-2. `Pill.lean` is the pill file (`tools/pill2core.py --check`, which also
-   checks a `steel.c`), and `bytes%` of `Bytes.lean` computes the number it
-   says.  `lemmas/CuePill.lean` has the same number as a plain list of
-   literals (`pill_eq`, by `rfl`).
+2. `Pill.lean` is the pill file (`tools/pill2core.py --check`).
 3. The axes in `Statement.lean` are those of the arms they are named after.
    Each is the formula Hoon compiles the arm's name to against the library.
 
