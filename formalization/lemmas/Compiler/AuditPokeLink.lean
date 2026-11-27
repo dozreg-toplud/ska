@@ -7,6 +7,8 @@ import lemmas.Compiler.PokeLinkSccHit
 import lemmas.Compiler.PokeLinkRest
 import lemmas.Compiler.PokeLinkRestTail
 import lemmas.Compiler.PokeLinkGood2
+import lemmas.Compiler.PokeLinkGoodK
+import lemmas.Ska.PokeFlagsOf
 
 /-! # Audit of track P: `enc` and the `%full` branch of `+poke` -/
 
@@ -128,3 +130,17 @@ open Formalization Formalization.Compiler
 #print axioms good2_empty
 #check @TailEndAt
 #check @PGood2
+#print axioms knowGo_infos
+#print axioms bakeGraph_closed
+#print axioms bakeGraph_vars
+#print axioms addCode_closed
+#print axioms skaCodeKeeps_of_armP
+#print axioms good3_empty
+#print axioms good3_full_step
+#print axioms pokeN_fullAt4
+#print axioms pokeModel_fullReachP3
+#print axioms pgoodK_state_of
+#print axioms flagsOf_eq
+#check @pokeModel_fullReachP3
+#check @FlagSol
+#check @TarjanSpecN
