@@ -123,5 +123,35 @@ theorem comp_run_n7TS {X : GenRest → Noun → Noun → Prop} {Y : GenRest → 
     nock_open crK7
     simp [nock_exec, crSubj, cr_bat_dol, h1, h2, runLCS, e, bind, StateT.bind]
 
+/-- **The model on a soft tail call** (`callLS` at `%done`, no key, no ring, `sof` true): the
+entry of `+soft-new` at the call's block makes `~(has by soft.gen) call-block` true, so
+`+soft-bond` runs before the runs of `q` and `p` (lines 4005 to 4055). -/
+theorem callLS_soft_tail {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map] (env : CallEnv)
+    (rp rq : CGoalL S → List Nat → CMS Map (NextL S)) (p q : Nomm) (b : Bell) (sup : Option Nomm)
+    (region : List Nat) (bNed : NeedOrd) (hri : env.ring b = Option.none) (hnb : env.need b = some bNed)
+    (hsof : env.sof (made p sup) p q b bNed = true) (s : GenSf Map) :
+    callLS env rp rq p q (some (b, Option.none)) sup CGoalL.done region s =
+      (do
+        let subNed ← liftS (needOrdAllocRegs bNed)
+        let o ← liftS (emit ⟨[], [], Termin.jmp b (flattenNeed subNed)⟩)
+        softNew o 1 b Option.none subNed (env.sure b) 0 0
+        let nexArg ← softBond (⟨Lazy.ofSure ⟨subNed, HoonSet.empty⟩, jmp0 o⟩ : NextL S) region
+        let nexFol ← (if safeFolFol q then pure ⟨Lazy.ofSure Sure.bunt, nexArg.th⟩
+          else rq (CGoalL.next (Lazy.ofSure Sure.bunt) nexArg.th) region : CMS Map (NextL S))
+        let nexFol ← liftS (pastL env.cod nexFol p region)
+        let nexSub ← rp (CGoalL.next nexArg.laz nexFol.th) region
+        liftS (copyL nexSub nexFol.laz) : CMS Map (NextL S)) s := by
+  simp only [callLS, hri, hnb, hsof, if_true]
+  simp only [bind, StateT.bind, liftS, softNew, withSoft, GenSf.isSoft, pure, StateT.pure]
+  cases h1 : needOrdAllocRegs bNed s.g with
+  | none => simp [h1]
+  | some r =>
+    obtain ⟨subNed, g1⟩ := r
+    cases h2 : emit (Map := Map) ⟨[], [], Termin.jmp b (flattenNeed subNed)⟩ g1 with
+    | none => simp [h1, h2]
+    | some r2 =>
+      obtain ⟨o, g2⟩ := r2
+      simp [h1, h2, HoonMap.get_put]
+
 end Compiler
 end Formalization
