@@ -1,4 +1,7 @@
 import lemmas.Compiler.PokeLinkGood6
+import lemmas.Compiler.PokeLinkEvalFin
+import lemmas.Compiler.CompSccOfMissImg
+import lemmas.Compiler.CompTarjanLeaf
 
 /-!
 # The top of the `%full` branch on `PGood6` (track P, README Gaps 23)
@@ -9,14 +12,33 @@ the `ColeCoh` step `JetsOfCole6` (true of `+ska-cole-update`: it asks
 `hJC` (false of it, `coleCohM_put_bad`).  The links are asked on `PGood6`
 states only, so every hypothesis is at most as strong as before.
 
+* **`loopLinkAt_good6`**: the SCC loop's link `LoopLinkAt` at `flagsOf` on a
+  `PGood6` state with no leaf left (`evalFinAt`, track Q's
+  `sccsLeafAt_of_tarjan`);
 * `SpRestGood6`, `MonoLinkGood6`, `monoLinkGood6_of_gate`, `OtherKeeps6`;
-* `pokeModel_fullGood6`, `pokeReachGood6`, **`pokeModel_fullReachP6`**.
+* `pokeModel_fullGood6`, `pokeReachGood6` (with track Q's `SccOfIsK`);
+* **`pokeModel_fullReachP6`**: `SccImage`, `SccOfKeeps`, `SccOfIs`,
+  `TarjanExists` and `SccsLeafAt` are no longer assumed (track Q's
+  `sccImage`, `sccOfKeeps_of`, `sccOfIsK_of`, `tarjanExists`).
 -/
 
 namespace Formalization
 namespace Compiler
 
 open Nock Pill Hoon SkaModel SkaModel.Ana SkaModel.Bake SkaModel.PokeF SkaModel.PokeM FinMap
+
+/-- **The SCC loop's link on a `PGood6` state, no leaf left.** -/
+theorem loopLinkAt_good6 (root : Ident) (r1 r2 r3 r4 jRest callsN varsN seekN hotN : Noun)
+    (gr : Callgraph FinMap × Noun)
+    (r : Callgraph FinMap × FinMap Bell (FDatum FinMap) × Memo FinMap × FDatum FinMap × Noun)
+    {Cls : Straight (TreapMap mugF) → Prop} {st : PSt} (hg : PGood6 Cls st) {E : BEnv FinMap} {n : Nat}
+    {bg : FinMap Bell (VarEntry FinMap) × FinMap Bell (FinMap Bell Unit)} (vr : Noun)
+    (hbg : bakeGraph E n = some bg) (hEv : E.vars = st.long.vars)
+    (hN : ∀ b e, FinMap.get (addCode st.long.code (newCode st.long.code bg.1)) b = some e → NoAx0 e.nomm) :
+    LoopLinkAt root r1 r2 r3 r4 jRest (codeNoun flagsOf st.long.code) callsN varsN seekN hotN gr r
+      flagsOf st.long.code (newCode st.long.code bg.1) bg.1 vr :=
+  loopLinkAt_good5E root r1 r2 r3 r4 jRest callsN varsN seekN hotN gr r hg.good5 vr hbg hEv hN
+    (sccsLeafAt_of_tarjan _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _)
 
 section Links
 
@@ -57,7 +79,7 @@ theorem pokeModel_fullGood6 (env : Env Noun) (hhe : env.he = heSock) (hth : env.
     (hA : Ar.skaPoke = anaArmP envR jet fold frozen fuel bf regOf jetsOf newOf)
     (hJA : Ar.jetRoot = jetRootP) (hR : SpRestGood6 fl Ar Cls env) (hC : SccLink fl Ar sccP)
     (hM : MonoLinkGood6 fl Ar Cls) (hO : OptLinkOn Cls Ar optP) (hK : SkaKeeps Ar) (hU : UnaryKeeps Ar Cls)
-    (hSc : SccOfKeeps Ar) (hSI : SccOfIs Ar) (hTE : TarjanExists) (hJC : JetsOfCole6 jetsOf)
+    (hSc : SccOfKeeps Ar) (hSI : SccOfIsK Ar) (hTE : TarjanExists) (hJC : JetsOfCole6 jetsOf)
     (hAt : ∀ s a L j h, Ar.skaPoke s (A a) L j h = none) (st : PSt) (hg : PGood6 Cls st) (s f : Noun) :
     pokeN (enc fl st) (Ovum.full s f).toNoun =
       (liftPoke (enc fl) (pokeS Ar) (enc fl st) (Ovum.full s f)).map fun r => C r.1.toNoun r.2 := by
@@ -81,7 +103,7 @@ theorem pokeReachGood6 (env : Env Noun) (hhe : env.he = heSock) (hth : env.thres
     (hA : Ar.skaPoke = anaArmP envR jet fold frozen fuel bf regOf jetsOf newOf)
     (hJA : Ar.jetRoot = jetRootP) (hR : SpRestGood6 fl Ar Cls env) (hC : SccLink fl Ar sccP)
     (hM : MonoLinkGood6 fl Ar Cls) (hO : OptLinkOn Cls Ar optP) (hK : SkaKeeps Ar) (hU : UnaryKeeps Ar Cls)
-    (hSc : SccOfKeeps Ar) (hCK : UnaryCacheKeeps Ar Cls) (hSI : SccOfIs Ar) (hUS : UnarySccsIs Ar)
+    (hSc : SccOfKeeps Ar) (hCK : UnaryCacheKeeps Ar Cls) (hSI : SccOfIsK Ar) (hUS : UnarySccsIs Ar)
     (hTE : TarjanExists) (hJC : JetsOfCole6 jetsOf)
     (hAt : ∀ s a L j h, Ar.skaPoke s (A a) L j h = none) (hX : OtherKeeps6 fl Cls) :
     ∀ cr, PokeReach cr → ∃ st, PGood6 Cls st ∧ enc fl st = cr := by
@@ -108,8 +130,7 @@ end Links
 track P's route (`anaArmP`, `optimizeP`, `sccOfP`, `jetRootP`, `OptTotal`,
 `compileUnaryP`).  Left, with owners: `SpRestGood6` (P: the glue of
 `spRest_of_parts`, `BakeLinkAt`, `TailEndAt`; the loop is
-`loopLinkAt_good5E` from `SccsLeafAt` (Q)), `SccImage`, `SccOfKeeps`,
-`SccOfIs`, `TarjanExists` (Q), `JetsOfGood jetsOf` and `JetsOfCole6 jetsOf`
+`loopLinkAt_good6`, no leaf), `JetsOfGood jetsOf` and `JetsOfCole6 jetsOf`
 (P: `+ska-cole-update`), the gate `UnaryGateAt` at `PGood6` states (K, its
 fields `got`, `nomm`, `cole`, `envFrom`, `noRing`, `ana` owed by P),
 `UnaryKeeps OptTotal` (D), `UnaryCacheKeeps`, `UnarySccsIs` (K / Q),
@@ -123,8 +144,7 @@ theorem pokeModel_fullReachP6 (fl : Flags) (Ar : Arms FinMap (TreapMap mugF) Nou
     (hA : Ar.skaPoke = anaArmP env jet fold frozen fuel bf regOf jetsOf newOf)
     (hJA : Ar.jetRoot = jetRootP) (hOA : Ar.optimize = optimizeP) (hSA : Ar.sccOf = sccOfP)
     (hUA : Ar.compileUnary = compileUnaryP fl)
-    (hR : SpRestGood6 fl Ar OptTotal env) (hI : SccImage) (hSc : SccOfKeeps Ar) (hSI : SccOfIs Ar)
-    (hTE : TarjanExists)
+    (hR : SpRestGood6 fl Ar OptTotal env)
     (hG : ∀ st b sc, PGood6 OptTotal st → ∃ (NM CA V COLE SC0 : Noun) (env : Comp.CallEnv) (inl : Noun → Option Nomm)
       (n : Nomm) (ht : Noun → Nat) (D : Bell → Prop), UnaryGateAt fl st b sc NM CA V COLE SC0 env inl n ht D)
     (hJ : JetsOfGood jetsOf) (hJC : JetsOfCole6 jetsOf)
@@ -133,6 +153,10 @@ theorem pokeModel_fullReachP6 (fl : Flags) (Ar : Arms FinMap (TreapMap mugF) Nou
     ∀ cr, CorIn cr → ∀ s f, pokeN cr (Ovum.full s f).toNoun =
       (liftPoke (enc fl) (pokeS Ar) cr (Ovum.full s f)).map fun r => C r.1.toNoun r.2 := by
   have hM := monoLinkGood6_of_gate fl Ar OptTotal hUA hG
+  have hI : SccImage := sccImage
+  have hSc : SccOfKeeps Ar := sccOfKeeps_of hSA
+  have hSI : SccOfIsK Ar := sccOfIsK_of hSA
+  have hTE : TarjanExists := tarjanExists
   have hK := skaKeeps_of_armP Ar hA hJ
   have hAt : ∀ s a L j h, Ar.skaPoke s (A a) L j h = none := fun s a L j h => by
     rw [hA]; exact anaArmP_atom env jet fold frozen fuel bf regOf jetsOf newOf s a L j h

@@ -1,5 +1,6 @@
 import lemmas.Compiler.PokeLinkTop5
 import lemmas.Compiler.PokeLinkCole
+import lemmas.Compiler.CompSccOfMissSem
 
 /-!
 # `PGood6`: `PGood5` with `ColeDom` (track P, README Gaps 23)
@@ -16,7 +17,12 @@ ring's `back` set (`coleCohM_put_bad`).  The pill never puts such a bell:
 * `JetsOfCole6`: the step restated, with `ColeDom` and a table `L'` that
   keeps the keys of `L` (the bells `+ska-cole-update` matches are those of
   `L'` not in `L`), and `ColeDom` kept;
+* `bakeGraph_root`, **`anaArmP_root`**: the root bell of a poke is a key of
+  the new table (the worklist keeps the root's bake, the final pass gives it
+  its variant), so `+scc-of` is called on a key;
 * **`good6_full_step`**: the model's `%full` keeps `PGood6`; `good6_mid`;
+  both with track Q's `SccOfIsK` (`SccOfIs` is false off a key or without
+  `SccsGoodM`, `CompSccOfMissIs.lean`), its side conditions discharged;
 * the noun form of `ColeCohM` and of the domain: `getF_toNoun_iff`,
   **`coleCoh_toNoun`**, `coleDom_toNoun` (the maps `call` and `back` laid
   out by `FinMap.toNoun`, a ring a noun).
@@ -58,6 +64,39 @@ theorem addCode_keys (code baked : FinMap Bell (VarEntry FinMap)) (b : Bell) (h 
   obtain ⟨e, he⟩ := Option.ne_none_iff_exists'.1 h
   rw [(addsTo_addCode code baked).1 b e he]; simp
 
+/-- **The root's variant is baked**: the worklist keeps the root's bake
+(`LoopInv.root`) and the final pass gives every bake its variant. -/
+theorem bakeGraph_root {E : BEnv FinMap} {n : Nat} {bg : FinMap Bell (VarEntry FinMap) × FinMap Bell (FinMap Bell Unit)}
+    (h : bakeGraph E n = some bg) : (Treap.get bg.1 E.root).isSome := by
+  unfold bakeGraph at h
+  obtain ⟨st, hl, hf⟩ := Option.bind_eq_some_iff.1 h
+  obtain ⟨qs', hI⟩ := bakeLoop_inv E n _ _ _ _ (loopInv_init E) hl
+  obtain ⟨out, vars⟩ := bg
+  exact (finalFold_spec E st _ Treap.empty out E.vars vars hf).2.2.1 (E.root, E.root.less)
+    ((Treap.mem_rap _ _ _).2 hI.root)
+
+/-- **The root bell of a poke is a key of the new table.** -/
+theorem anaArmP_root {R : Type} {env : Env R}
+    {jet : Noun → Noun → (Bell → Option Datum) → R → Bell → Bool} {fold frozen : Bool}
+    {fuel : Noun → Noun → LongB FinMap → Noun → Nat} {bf : BEnv FinMap → Nat} {regOf : Noun → R}
+    {jetsOf : Noun → Noun → R → LongB FinMap → LongB FinMap → Noun} {newOf : R → Noun}
+    {s f j hot : Noun} {L : LongB FinMap} {r : Bell × LongB FinMap × Noun × Noun}
+    (h : anaArmP env jet fold frozen fuel bf regOf jetsOf newOf s f L j hot = some r) :
+    ∃ e, FinMap.get r.2.1.code r.1 = some e := by
+  unfold anaArmP at h
+  split at h
+  · cases h
+  · obtain ⟨r', hr', rfl⟩ := Option.map_eq_some_iff.1 h
+    unfold skaPokeB at hr'
+    obtain ⟨a, _, hr'⟩ := Option.bind_eq_some_iff.1 hr'
+    obtain ⟨bg, hbg, rfl⟩ := Option.map_eq_some_iff.1 hr'
+    have hroot := bakeGraph_root hbg
+    dsimp only
+    rw [← tget_fin, addCode_get]
+    split
+    · exact ⟨_, rfl⟩
+    · exact Option.isSome_iff_exists.1 hroot
+
 section Keep
 
 variable {Ar : Arms FinMap (TreapMap mugF) Noun Noun (Noun × Noun)} {Cls : Straight (TreapMap mugF) → Prop}
@@ -85,7 +124,7 @@ theorem good6_full_step {R : Type} {env : Env R}
     {jetsOf : Noun → Noun → R → LongB FinMap → LongB FinMap → Noun} {newOf : R → Noun}
     (hA : Ar.skaPoke = anaArmP env jet fold frozen fuel bf regOf jetsOf newOf)
     (hK : SkaKeeps Ar) (hU : UnaryKeeps Ar Cls) (hO : SccOfKeeps Ar) (hC : UnaryCacheKeeps Ar Cls)
-    (hSI : SccOfIs Ar) (hUS : UnarySccsIs Ar) (hTE : TarjanExists) (hJC : JetsOfCole6 jetsOf)
+    (hSI : SccOfIsK Ar) (hUS : UnarySccsIs Ar) (hTE : TarjanExists) (hJC : JetsOfCole6 jetsOf)
     (st : PSt) (s f : Noun) (pr : SkaModel.Prod (TreapMap mugF)) (st' : PSt)
     (hg : PGood6 Cls st) (h : pokeS Ar st (Ovum.full s f) = some (pr, st')) : PGood6 Cls st' := by
   have hg3 := good3_full_step hK hU (skaCodeKeeps_of_armP Ar hA) hO hC st s f pr st' hg.good5.good4.good3 h
@@ -121,7 +160,8 @@ theorem good6_full_step {R : Type} {env : Env R}
     obtain ⟨p', hp', e⟩ := Option.map_eq_some_iff.1 hp
     cases e
     simp only [if_true] at hp'
-    have hsq : SccsIs r.2.1.code q.2 := hSI _ _ _ q hc' hsc e3
+    have hsq : SccsIs r.2.1.code q.2 :=
+      hSI _ _ _ q hc' hsc hg.good5.good4.good3.good2.cache.sccs (anaArmP_root e1') e3
     refine key _ rfl rfl ?_ hg3
     unfold compiledMono at hp'
     split at hp'
@@ -137,7 +177,7 @@ theorem good6_mid {R : Type} {env : Env R}
     {fuel : Noun → Noun → LongB FinMap → Noun → Nat} {bf : BEnv FinMap → Nat} {regOf : Noun → R}
     {jetsOf : Noun → Noun → R → LongB FinMap → LongB FinMap → Noun} {newOf : R → Noun}
     (hA : Ar.skaPoke = anaArmP env jet fold frozen fuel bf regOf jetsOf newOf)
-    (hK : SkaKeeps Ar) (hO : SccOfKeeps Ar) (hSI : SccOfIs Ar) (hTE : TarjanExists) (hJC : JetsOfCole6 jetsOf)
+    (hK : SkaKeeps Ar) (hO : SccOfKeeps Ar) (hSI : SccOfIsK Ar) (hTE : TarjanExists) (hJC : JetsOfCole6 jetsOf)
     (st : PSt) (s f : Noun) (hg : PGood6 Cls st) (r : Bell × LongB FinMap × Noun × Noun)
     (e1 : Ar.skaPoke s f st.long st.jets st.hot = some r)
     (q : FinMap Bell Unit × FinMap Bell (FinMap Bell Unit)) (e3 : Ar.sccOf r.1 r.2.1 st.cache.sccs = some q) :
@@ -160,7 +200,8 @@ theorem good6_mid {R : Type} {env : Env R}
   have hsc := sccsIs_addCode (addsTo_addCode st.long.code bg.1) hc hg.good5.sccsIs
     hg.good5.good4.good3.good2.cache.sccs
   rw [← hcode] at hi' hG1 hG2 hc' hsc
-  exact ⟨⟨⟨hg3, hi', ⟨G, hG1, hG2⟩⟩, ⟨lib, hInv'⟩, hSI _ _ _ q hc' hsc e3, hcole⟩, hdom⟩
+  exact ⟨⟨⟨hg3, hi', ⟨G, hG1, hG2⟩⟩, ⟨lib, hInv'⟩,
+    hSI _ _ _ q hc' hsc hg.good5.good4.good3.good2.cache.sccs (anaArmP_root e1') e3, hcole⟩, hdom⟩
 
 end Keep
 
