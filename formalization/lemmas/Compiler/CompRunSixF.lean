@@ -511,5 +511,104 @@ theorem comp_run_n6_f (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot
         (fun h => by have := fr _ (List.mem_append_right _ h); omega)
         l0 l1 _ _ g3.id (idG g3).cond g1.cond mono _ sup)
 
+/-! ## What the case returns in phase F -/
+
+/-- **What `%6` returns in phase F**: `GRes`, given what the runs of the
+parts return.  Every register of the result is fresh: `r-cond` and the
+registers of the goals of `+fork` are taken after the call, the branch
+needs are made of those or fresh ones, the register of `+lazy-shut` is
+fresh, and the run of `p` reads only `r-cond`. -/
+theorem res_n6_f {env : CallEnv} {msup : Option Nomm} {p q r : Nomm} {region : List Nat}
+    (ihp : ResFor env msup p region) (ihq : ∀ rid, ResFor env msup q (rid :: region))
+    (ihr : ∀ rid, ResFor env msup r (rid :: region))
+    (laz : Lazy CSet) (th : Jmp) (g g' : Gen (TreapMap mugF)) (nex : NextL CSet)
+    (hi : GInv g (CGoalL.next laz th)) (hlp : leap laz q r = some Option.none)
+    (hne : Lazy.noneEquivalentL (Lazy.mk Sure.bunt laz.fork laz.bond) = false)
+    (hkt : kerfTest q r laz = false)
+    (h : runLC env msup (Nomm.n6 p q r) (CGoalL.next laz th) region g = some (nex, g')) :
+    GRes g (CGoalL.next laz th) g' nex := by
+  rw [runLC_n6_f env msup p q r laz th region hlp hne hkt, sixNextForkC_eq] at h
+  obtain ⟨rc, gR, eR, h⟩ := bind_some h
+  rw [re_ap] at eR
+  simp only [Option.some.injEq, Prod.mk.injEq] at eR
+  obtain ⟨rfl, rfl⟩ := eR
+  obtain ⟨⟨n0, n1⟩, g3, ef, h⟩ := bind_some h
+  obtain ⟨rid, gI, eI, h⟩ := bind_some h
+  rw [idM_ap] at eI
+  simp only [Option.some.injEq, Prod.mk.injEq] at eI
+  obtain ⟨rfl, rfl⟩ := eI
+  unfold sixFK at h
+  obtain ⟨c0, g0, e0, h⟩ := bind_some h
+  simp only [getCond, Option.some.injEq, Prod.mk.injEq] at e0
+  obtain ⟨-, rfl⟩ := e0
+  obtain ⟨nex1, g1, e1, h⟩ := bind_some h
+  obtain ⟨c1, g1', e1', h⟩ := bind_some h
+  simp only [getCond, Option.some.injEq, Prod.mk.injEq] at e1'
+  obtain ⟨-, rfl⟩ := e1'
+  obtain ⟨nex0, g2, e2, h⟩ := bind_some h
+  obtain ⟨lt2, bt2, d2, h0, h1, ap01, fr⟩ := six_f_runs (ihq g3.id) (ihr g3.id) hi ef e1 e2
+  unfold sixLynF at h
+  obtain ⟨⟨lz, yes, nuh⟩, g4, e3, h⟩ := bind_some h
+  have hlz := sect_lazy e3
+  obtain ⟨k4r, k4b, k4d⟩ := (km_sect nex0 nex1 _ _ _ _ _).keep _ _ _ e3
+  obtain ⟨hy, hn⟩ := sect_labels e3
+  subst hlz
+  have d4 : g4.drop = false := k4d.trans d2
+  have lvF := lyn_linv (linv_mono h0 k4r k4b) (linv_mono h1 k4r k4b) ap01 hy hn
+  unfold sixPF at h
+  obtain ⟨lazy, g5, e5, h⟩ := bind_some h
+  simp only [liftO] at e5
+  cases epf : Lazy.pastFork env.cod (Lazy.mk Sure.bunt [((yes, nex0.laz), (nuh, nex1.laz))] []) p with
+  | none => rw [epf] at e5; cases e5
+  | some lz' =>
+  rw [epf] at e5
+  simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at e5
+  obtain ⟨rfl, rfl⟩ := e5
+  have lvP : LInv g4.re g4.bo lz' := linv_pastFork epf lvF
+  have rP : ∀ y ∈ lregs lz', g.re < y := fun y hy => by
+    rw [lregs_pastFork epf] at hy
+    simp only [lregs, fregs, bregs, flattenNeed, Sure.bunt, List.nil_append, List.append_nil] at hy
+    exact fr y hy
+  obtain ⟨o, g6, e6, h⟩ := bind_some h
+  rw [emit_apply] at e6
+  simp only [Option.some.injEq, Prod.mk.injEq] at e6
+  obtain ⟨rfl, rfl⟩ := e6
+  obtain ⟨lz'', g7, e7, h⟩ := bind_some h
+  obtain ⟨k7r, k7b, k7d, lv7, f7⟩ := lazyShut_inv
+    (linv_mono lvP (Nat.le_of_eq (emitted_re _ _).symm) (by rw [emitted_bo]; omega)) e7
+  simp only [emitted_re, emitted_bo, emitted_drop] at k7r k7b k7d f7
+  have d7 : g7.drop = false := k7d.trans d4
+  obtain ⟨nexC, g8, e8, h⟩ := bind_some h
+  obtain ⟨l8, b8, gi8, s8⟩ := ihp _ g7 g8 nexC (ginv_rc (by omega) d7) e8
+  have hC : LInv g8.re g8.bo nexC.laz := gi8.1
+  have hP8 : LInv g8.re g8.bo lz'' := linv_mono lv7 l8 b8
+  have sC : ∀ y ∈ lregs nexC.laz, g7.re ≤ y ∨ y = g.re := fun y hy => by
+    rcases s8 y hy with e | e
+    · exact Or.inl e
+    · change y ∈ lregs (Lazy.ofSure (lazyReg g.re : Sure CSet)) at e
+      rw [lregs_reg, List.mem_singleton] at e
+      exact Or.inr e
+  have sL : ∀ y ∈ lregs lz'', g.re < y := fun y hy => by
+    rcases f7 y hy with e | e
+    · exact rP y e
+    · omega
+  have ap8 : (lregs nexC.laz ++ lregs lz'').Nodup := by
+    refine List.nodup_append.2 ⟨gi8.1.2.1, lv7.2.1, fun a ha b hb e => ?_⟩
+    subst e
+    have := lnb_regs lv7.1 a hb
+    have := sL a hb
+    rcases sC a ha with e | e
+    · omega
+    · omega
+  obtain ⟨l9, b9, gi9, s9⟩ := copyL_inv hC hP8 ap8 (ginv_drop gi8) h
+  refine ⟨by omega, by omega, gi9, fun y hy => Or.inl ?_⟩
+  rcases s9 y hy with e | e
+  · rcases List.mem_append.1 e with e | e
+    · rcases sC y e with e' | e'
+      · omega
+      · omega
+    · have := sL y e; omega
+  · omega
+
 end Compiler
 end Formalization
