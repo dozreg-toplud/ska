@@ -95,6 +95,11 @@ def ct_arm_of(a):
     return bunt, body
 
 
+def cells(n):
+    n = norm(n)
+    return 0 if n[0] == 'A' else 1 + cells(n[1]) + cells(n[2])
+
+
 defs = []
 if WHICH == 'helpers':
     for nm, ax, doc in [('gj', 1502, '`+get-jmps`'), ('jr', 175, '`+jmp-regs`'),
@@ -752,6 +757,126 @@ elif WHICH == 'switch':
              ('swWPlain', wplain, 'The plain branch of the walk: `ps` and its tests.'),
              ('swWalk', walk, 'The walk of `+switch-chains` over `topo`.'),
              ('swBodyCut', body, 'The gate body of `+switch-chains`.')]
+elif WHICH == 'alias':
+    bunt, body, hint = opt_arm(725)
+    def dig(n, axes):
+        for ax in axes:
+            n = norm(slot(ax, n))
+            assert n is not None
+        return n
+    def gate_of(g):
+        e, bq, mk = seq(g, 3)
+        assert e == ('A', 8)
+        b1, ctx = seq(mk, 2)
+        assert ctx == ('C', ('A', 0), ('A', 1)), ctx
+        return norm(bq)[2], norm(b1)[2]
+    def tagname(v):
+        return v.to_bytes((v.bit_length() + 7) // 8, 'little').decode()
+    def wut(n):
+        """the cases of a `?-` on a tag: [6 [5 [1 TAG] [0 AX]] CASE REST]..."""
+        out = []
+        while True:
+            n = norm(n)
+            if n[0] != 'C' or norm(n[1]) != ('A', 6):
+                return out, n
+            t = norm(slot(6, n))
+            if norm(slot(2, t)) != ('A', 5) or norm(slot(12, t)) != ('A', 1):
+                return out, n
+            out.append((tagname(norm(slot(13, t))[1]), norm(slot(14, n))))
+            n = norm(slot(15, n))
+    # BODY = [8 [1 GENBUNT] [7 [10 [382 REVINIT] [0 1]] [8 [1 BAT] [9 95 [0 1]]]]]
+    assert norm(slot(2, body)) == ('A', 8)
+    genbunt = dig(body, [6, 3])
+    revinit = dig(body, [7, 6, 13])
+    assert dig(body, [7, 6, 12]) == ('A', 382)
+    bat = dig(body, [7, 7, 6, 3])
+    assert eqn(dig(body, [7, 7, 7]), ('C', ('A', 9), ('C', ('A', 95), ('C', ('A', 0), ('A', 1)))))
+    jreg_bunt, jreg = gate_of(dig(bat, [2]))
+    rn_bunt, rn = gate_of(dig(bat, [6]))
+    jinfo_bunt, jinfo = gate_of(dig(bat, [14]))
+    jimms_bunt, jimms = gate_of(dig(bat, [30]))
+    pinfo_bunt, pinfo = gate_of(dig(bat, [62]))
+    walk = dig(bat, [63])
+    # WALK = [6 END [[0 895] [0 12]] [7 [0 1] [8 PRE [6 UNT UNB [7 [0 1] [8 INFO R3]]]]]]
+    pre = dig(walk, [15, 7, 6])
+    r1 = dig(walk, [15, 7, 7])
+    unt, unb = dig(r1, [6]), dig(r1, [14])
+    unroll = dig(unb, [7, 6, 13])
+    assert dig(unb, [7, 6, 12]) == ('A', 1918)
+    r2 = dig(r1, [15])
+    info = dig(r2, [7, 6])
+    entry = dig(info, [7, 14])
+    join = dig(info, [7, 15])
+    jnroll = dig(join, [2, 6])
+    jnref = dig(join, [2, 7, 14])
+    jnpre = dig(jnref, [6])
+    jncases, jnelse = wut(dig(jnref, [7]))
+    assert [t for t, _ in jncases] == ['brn', 'brz', 'clq'], jncases
+    r3 = dig(r2, [7, 7])
+    imms = dig(r3, [7, 7, 6])
+    r4 = dig(r3, [7, 7, 7])
+    bob = dig(r4, [7, 7, 6])
+    r5 = dig(r4, [7, 7, 7])
+    pars = dig(r5, [7, 6])
+    edges = dig(pars, [7, 6])
+    partrap = dig(pars, [7, 7, 7, 6, 3])
+    r6 = dig(r5, [7, 7])
+    bodyp = dig(r6, [7, 7, 7, 6])
+    bodyg = dig(bodyp, [7, 6, 7, 7, 13, 3, 7, 7, 2, 3])
+    bodygb = dig(bodyp, [7, 6, 7, 7, 13, 3, 7, 6])
+    opcases, opelse = wut(dig(bodyg, [7]))
+    r7 = dig(r6, [7, 7, 7, 7])
+    fin = dig(r7, [7, 7, 7, 6])
+    fincases, finelse = wut(dig(fin, [7]))
+    tail = dig(r7, [7, 7, 7, 7])
+    D = []
+    for t, c in opcases:
+        D.append(('alOp' + t.capitalize(), c, 'The case `%%%s` of the body.' % t))
+    D.append(('alOpLast', opelse, 'The last case of the body (no test).'))
+    for t, c in fincases:
+        D.append(('alFin' + t.capitalize(), c, 'The case `%%%s` of the end.' % t))
+    D.append(('alFinLast', finelse, 'The last case of the end (no test).'))
+    for t, c in jncases:
+        D.append(('alJn' + t.capitalize(), c, 'The refinement after a `%%%s`.' % t))
+    defs += D + [
+        ('alGenBunt', genbunt, 'The bunt of `gen`.'),
+        ('alRevInit', revinit, '`(~(run by rev) (bake silt (list @uwoo)))`.'),
+        ('alRnB', rn, 'The body of `rn`: `(~(gut by old.gen) r r)`.'),
+        ('alRnBunt', rn_bunt, 'Its sample bunt.'),
+        ('alJRegB', jreg, 'The body of `join-reg`.'),
+        ('alJRegBunt', jreg_bunt, 'Its sample bunt.'),
+        ('alJInfoB', jinfo, 'The body of `join-info`.'),
+        ('alJInfoBunt', jinfo_bunt, 'Its sample bunt.'),
+        ('alJImmsB', jimms, 'The body of `join-imms`.'),
+        ('alJImmsBunt', jimms_bunt, 'Its sample bunt.'),
+        ('alPInfoB', pinfo, 'The body of `param-info`.'),
+        ('alPInfoBunt', pinfo_bunt, 'Its sample bunt.'),
+        ('alPre', pre, '`pre`: `~(tap in (~(get ju rev.gen) o))`.'),
+        ('alUnT', unt, 'The test `&(=(~ pre) !=(0w0 o))`.'),
+        ('alUnRoll', unroll, 'The `+roll` that deletes the edges of an unreachable block from `rev.gen`.'),
+        ('alUnB', unb, 'The branch of an unreachable block.'),
+        ('alEntry', entry, 'The facts of the entry block: `*info-reg` for `0 .. n-args - 1`.'),
+        ('alJnRoll', jnroll, 'The `+roll` of `join-info` over `t.pre`.'),
+        ('alJnPreB', jnpre, '`pre-b`: `(~(got by new.gen) i.pre)`.'),
+        ('alJnRef', jnref, 'The refinement after a one-predecessor `%brn`, `%brz`, `%clq`.'),
+        ('alJoin', join, 'The facts of a block with predecessors: `[info gen]`.'),
+        ('alInfo', info, 'The `=^  info  gen` of the facts at the start.'),
+        ('alImms', imms, '`imms`: `join-imms` over `pre`.'),
+        ('alBob', bob, '`bob`: `(~(got by blocks) o)`.'),
+        ('alEdges', edges, '`edges`: the predecessors with the arguments of their jumps to `o`.'),
+        ('alParT', partrap, 'The trap of the parameters.'),
+        ('alPars', pars, 'The `=^  par-new  gen` of the parameters.'),
+        ('alBodyG', bodyg, 'The gate of the `+roll` over `body.bob`.'),
+        ('alBodyGBunt', bodygb, 'Its sample bunt.'),
+        ('alBody', bodyp, 'The `=^  body-new  gen` of the body.'),
+        ('alFin', fin, 'The `=^  fin-new  gen` of the end.'),
+        ('alTail', tail, 'The stores into `new.gen`, `info.gen`, `imms.gen` and the next turn.'),
+        ('alWalk', walk, 'The arm `$` of the `|^` core: the walk over `topo`.'),
+        ('alBat', bat, 'The battery of the `|^` core.'),
+        ('alBodyCut', body, 'The gate body of `+alias`.'),
+    ]
+    for nm, n, _ in defs:
+        print(nm, cells(n) if 'cells' in globals() else '')
 else:
     raise SystemExit('unknown ' + WHICH)
 with open(os.path.join(OUT, WHICH + '.lean'), 'w') as f:
