@@ -33,6 +33,13 @@ writes `CompFourV.lean`, `tenv.py` writes `CompTenV.lean`, `runlc.py` writes
 `formalization/`, every extraction and replacement asserts its match count).
 `mrops.py` writes the 25 lemmas `mr_op_<tag>` and `mr_op` of
 `CompMapRegs.lean` between the lines `-- BEGIN mrops` and `-- END mrops`.
+`pairlsx_fsx.py STMT HEAD` writes `CompFrontSX.lean` from `frontS_pair` of
+`CompFrontS.lean` (`STMT` the new statement, `pairlsx_fsx_stmt.lean`, `HEAD` the
+file's header, `pairlsx_fsx_head.lean`), `pairlsx_fronts.py` writes
+`CompPairLSXFronts.lean` (from `CompPairLSSem.lean`), `pairlsx_x.py` writes
+`CompPairLSXCore.lean` and `CompPairLSXSem.lean` (from `CompPairLSCore.lean`,
+`CompPairLSSem.lean`), `pairlsx_ok.py` writes `CompPairLSX.lean` (from
+`pairLS_ok` of `CompPairLS.lean`).
 
 `tools/capped.sh` runs a command under a memory cap (8 GB unless `-m SIZE`).
 Use it for anything that makes the kernel evaluate: an uncapped check of `cue`
@@ -579,6 +586,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/CompPairLSXCore.lean` | `pairLSX_core` (`pairLS_core` in that section; the head's front at the park block reads `gsE xp Lh`, which asks nothing there). |
 | `Ska/CompPairLSXSem.lean` | `pairLSX_sem`, `pairLSX_semB` (`pairLS_sem`, `pairLS_semB` in that section, the witness `pairWitX C HW`: the halves hold the parts' products at the jump to `o`, and `o` keeps them). |
 | `Ska/CompPairLSX.lean` | `pairLSX_ok`: `pairLS_ok` for parts of any flag, into `RunOKLS` at any `x` with the witness `pairWitX C HW`; the front field from `FrontsS.toFrontG` (the result's entries at the goal's labels are a part's entry there or the copy of two, apart from the goal's registers by `hPH`). |
+| `Ska/CompPairLSXCheck.lean` | The checks of `LOKSX` on the executable model (README Gaps 12.32, 12.33), as `#guard`s: (G) the goal's entries apart from its sure registers gives the same of the result, (P2) under it a result entry at a goal label is apart from the goal's sure registers, (P3) such an entry reads only the goal entry at its label and registers the run allocated; 6,448 runs (the 75 nomms of the old scratch checker and 49 shapes of `[5 p q]` and `[7 p q]`, alone and under a cons, under 30 flat lazy goals, 2 jumps, 2 states), all three hold, and (P2) at every label fails on 108 runs of each list (the park entries). |
 | `Ska/CompConsLS.lean` | The hypothesis under a flat lazy goal (README Gaps 12.24): `LOKS` (`RunOKLS`, the jump the goal's or made and at no entry, flat results with clean entries), `fromBonds_flat`, `fromL_flat`, `lokS_n0` (`[0 axe]`, `axe ≥ 1`). |
 | `Ska/CompConsLSRun.lean` | The cons under a flat lazy goal (README Gaps 12.24): `splitL_flat`, `copyL_flat'`, `splitAt_of_splitBs`, `lokS_consP_run`, `clean_splitLoop`, `clean_copyLazyL`, `lokS_consP` (the cons of two call-free parts with `LOKS` meets `LOKS`). |
 | `Ska/CompPastLS.lean` | `+past` behind a run under a lazy goal (README Gaps 12.25): `RunOKLS.past` (`tailGC_past` for `RunOKLS`: the run's result parked in a bond at a new block `hop nex.th`, goal blocks, fronts and witness unchanged). |
