@@ -423,6 +423,184 @@ theorem liveC_medeL {K : Nat → Nat → Prop} {laz : Lazy S} {th : Jmp} {som : 
   rw [get_mapVals, get_mapVals, hgeb, get_put_ne (Nat.ne_of_lt hx)]
   rfl
 
+/-! ## `%0` and `%1` under every goal -/
+
+/-- **`+from` on the result keeps the spec**: its kills are only more. -/
+theorem LiveC.fromL {K : Nat → Nat → Prop} {goal : CGoalL S} {g0 g1 : Comp.Gen Map} {nex : NextL S}
+    (h : LiveC K goal g0 g1 nex) {axe : Nat} {laz' : Lazy S} (hf : fromL axe nex.laz = some laz') :
+    LiveC K goal g0 g1 ⟨laz', nex.th⟩ :=
+  fun r hl => h r (hl.mono fun _ _ hk => hk.imp id (lazK_fromL hf))
+
+/-- The block of a fresh emit, read through `unproxy`. -/
+theorem unpM_emitted_self {g : Comp.Gen Map} (hd : g.drop = false) (b : Blob) :
+    HoonMap.get (unpM (g.emitted b)) g.bo = some (renBlob (unproxy g.cond) b) := by
+  unfold unpM
+  rw [get_mapVals]
+  simp only [Gen.emitted, hd, Bool.false_eq_true, if_false]
+  rw [get_put_self]
+  rfl
+
+theorem unpM_emitted_ne {g : Comp.Gen Map} (hd : g.drop = false) (b : Blob) {x : Nat} (hx : x ≠ g.bo) :
+    HoonMap.get (unpM (g.emitted b)) x = HoonMap.get (unpM g) x := by
+  unfold unpM
+  rw [get_mapVals, get_mapVals]
+  simp only [Gen.emitted, hd, Bool.false_eq_true, if_false]
+  rw [get_put_ne hx]
+
+/-- A run that ends at a fresh block with no reads and no jumps: nothing is
+live at its entry. -/
+theorem liveC_dead {K : Nat → Nat → Prop} {goal : CGoalL S} {g0 g1 : Comp.Gen Map} {nex : NextL S}
+    (hb : ∃ b, HoonMap.get (unpM g1) nex.th.there = some b ∧ (∀ r, ¬ BlockRF b r) ∧ getJmps b.fin = []) :
+    LiveC K goal g0 g1 nex := by
+  obtain ⟨b, hb, hr, hj⟩ := hb
+  intro r hl
+  cases hl with
+  | here hb' hr' _ => rw [hb] at hb'; cases hb'; exact (hr r hr').elim
+  | next hb' hj' _ _ _ => rw [hb] at hb'; cases hb'; rw [hj] at hj'; exact absurd hj' List.not_mem_nil
+
+/-- **`+bomb` under every goal**: nothing is live at the `%bom` block. -/
+theorem liveC_bombL {K : Nat → Nat → Prop} {goal : CGoalL S} {g0 g1 : Comp.Gen Map} {nex : NextL S}
+    {miss : Option Nat} (hd : g0.drop = false) (h : (bombL miss : CM Map (NextL S)) g0 = some (nex, g1)) :
+    LiveC K goal g0 g1 nex := by
+  simp only [bombL] at h
+  obtain ⟨o, ga, ha, h⟩ := bind_some h
+  rw [emit_apply] at ha
+  simp only [Option.some.injEq, Prod.mk.injEq] at ha
+  obtain ⟨rfl, rfl⟩ := ha
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨rfl, rfl⟩ := h
+  refine liveC_dead ⟨_, unpM_emitted_self hd _, fun r hr => ?_, rfl⟩
+  obtain ⟨-, hr | ⟨-, hr⟩⟩ := hr
+  · exact hr
+  · simp [renBlob, renFin, finRegs] at hr
+
+/-- A register that `IL` makes no proxy: every key of `cond` is below `re`. -/
+theorem IL.cond_re {K : Nat → Nat → Prop} {goal : CGoalL S} {g : Comp.Gen Map} (h : IL K goal g) :
+    HoonMap.get g.cond g.re = Option.none := by
+  cases e : HoonMap.get g.cond g.re with
+  | none => rfl
+  | some v => exact absurd (h.cond _ v e).1 (Nat.lt_irrefl _)
+
+/-- **`+simple-next` under `%pick`**: the `%brn` block reads only the fresh
+register of its result's need; past it, the targets' liveness, framed. -/
+theorem liveC_simpleNextL_pick {K : Nat → Nat → Prop} {z o : Jmp} {g0 g1 : Comp.Gen Map} {nex : NextL S}
+    (hI : IL K (CGoalL.pick z o : CGoalL S) g0)
+    (h : (simpleNextL (CGoalL.pick z o : CGoalL S) : CM Map (NextL S)) g0 = some (nex, g1)) :
+    LiveC K (CGoalL.pick z o) g0 g1 nex := by
+  have hd : g0.drop = false := hI.ats.1
+  obtain ⟨⟨bz, hbz, -, az⟩, ⟨bo', hbo, -, ao⟩⟩ := (hI.goal : GoalL g0 (CGoalL.pick z o))
+  simp only [simpleNextL] at h
+  obtain ⟨r, ga, ha, h⟩ := bind_some h
+  rw [re_apply] at ha
+  simp only [Option.some.injEq, Prod.mk.injEq] at ha
+  obtain ⟨rfl, rfl⟩ := ha
+  obtain ⟨o', gb, hb, h⟩ := bind_some h
+  rw [emit_apply] at hb
+  simp only [Option.some.injEq, Prod.mk.injEq] at hb
+  obtain ⟨rfl, rfl⟩ := hb
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨rfl, rfl⟩ := h
+  have hu : unproxy g0.cond g0.re = g0.re := unproxy_none hI.cond_re
+  have hget : HoonMap.get (unpM (({ g0 with re := g0.re + 1 } : Comp.Gen Map).emitted
+      ⟨[], [], Termin.brn g0.re z o⟩)) g0.bo = some ⟨[], [], Termin.brn g0.re z o⟩ := by
+    rw [unpM_emitted_self (g := { g0 with re := g0.re + 1 }) hd]
+    simp [renBlob, renFin, renJmp_nil _ az, renJmp_nil _ ao, hu]
+  have hzl : z.there < g0.bo := hI.lab hbz
+  have hol : o.there < g0.bo := hI.lab hbo
+  have hfr : ∀ j : Jmp, j.there < g0.bo → ∀ y, LiveK (unpM (({ g0 with re := g0.re + 1 } : Comp.Gen Map).emitted
+      ⟨[], [], Termin.brn g0.re z o⟩)) (fun x y => K x y ∨ lazK g0.bo (ofSure (⟨Need.this g0.re, HoonSet.empty⟩ : Sure S)) x y)
+      j.there y → LiveK (unpM g0) K j.there y := fun j hj y hl =>
+    (liveK_frameP hI.downU (fun x hx => (unpM_emitted_ne (g := { g0 with re := g0.re + 1 }) hd _
+      (Nat.ne_of_lt hx)).trans rfl) hj).mp (hl.mono fun _ _ hk => Or.inl hk)
+  intro y hl
+  cases hl with
+  | here hb' hr hk =>
+    have hb2 := hget.symm.trans hb'
+    cases hb2
+    obtain ⟨-, hr⟩ := hr
+    rcases hr with hr | ⟨-, hr⟩
+    · exact hr.elim
+    · simp only [finRegs, jmpRegs, az, ao, List.filterMap_nil, List.append_nil, List.mem_singleton] at hr
+      subst hr
+      exact (hk (Or.inr (lazK_ofSure.mpr ⟨rfl, rfl⟩))).elim
+  | next hb' hj hl _ _ =>
+    have hb2 := hget.symm.trans hb'
+    cases hb2
+    simp only [getJmps, List.mem_cons, List.not_mem_nil, or_false] at hj
+    rcases hj with rfl | rfl
+    · exact Or.inl (hfr _ hzl y hl)
+    · exact Or.inr (hfr _ hol y hl)
+
+/-- **`%0` under every goal.** -/
+theorem liveC_n0 (env : CallEnv) (sup : Option Nomm) {ax : Nat} {K : Nat → Nat → Prop} {goal : CGoalL S}
+    {region : List Nat} {g0 g1 : Comp.Gen Map} {nex : NextL S} (hI : IL K goal g0)
+    (h : runLC env sup (Nomm.n0 ax) goal region g0 = some (nex, g1)) : LiveC K goal g0 g1 nex := by
+  have hd : g0.drop = false := hI.ats.1
+  simp only [runLC] at h
+  split at h
+  · exact liveC_bombL hd h
+  obtain ⟨nx, ga, ha, h⟩ := bind_some h
+  have L : LiveC K goal g0 ga nx := by
+    cases goal with
+    | next laz th =>
+      simp only [simpleNextL, pure_apply, Option.some.injEq, Prod.mk.injEq] at ha
+      obtain ⟨rfl, rfl⟩ := ha
+      exact liveC_refl
+    | pick z o => exact liveC_simpleNextL_pick hI ha
+    | done => exact liveC_simpleNextL_done hd hI.cond_re ha
+  split at h
+  · simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact L
+  · cases hf : fromL ax nx.laz with
+    | none => simp only [hf] at h; cases h
+    | some laz' =>
+      simp only [hf, pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact L.fromL hf
+
+/-- **`%1` under every goal.** -/
+theorem liveC_n1 (env : CallEnv) (sup : Option Nomm) {k : Noun} {K : Nat → Nat → Prop} {goal : CGoalL S}
+    {region : List Nat} {g0 g1 : Comp.Gen Map} {nex : NextL S} (hI : IL K goal g0)
+    (h : runLC env sup (Nomm.n1 k) goal region g0 = some (nex, g1)) : LiveC K goal g0 g1 nex := by
+  have hd : g0.drop = false := hI.ats.1
+  cases goal with
+  | done =>
+    simp only [runLC] at h
+    obtain ⟨r, ga, ha, h⟩ := bind_some h
+    rw [re_apply] at ha
+    simp only [Option.some.injEq, Prod.mk.injEq] at ha
+    obtain ⟨rfl, rfl⟩ := ha
+    obtain ⟨o, gb, hb, h⟩ := bind_some h
+    rw [emit_apply] at hb
+    simp only [Option.some.injEq, Prod.mk.injEq] at hb
+    obtain ⟨rfl, rfl⟩ := hb
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    have hu : unproxy g0.cond g0.re = g0.re := unproxy_none hI.cond_re
+    refine liveC_dead ⟨_, unpM_emitted_self (g := { g0 with re := g0.re + 1 }) hd _, fun r hr => ?_, rfl⟩
+    obtain ⟨-, hr | ⟨hnd, hr⟩⟩ := hr
+    · rcases hr with hr | ⟨-, hr⟩ <;> simp [renPole, aliasReads, aliasDst, Opt.poleRegs, OpsRF] at hr
+    · have e1 : r = g0.re := by simpa [renBlob, renFin, finRegs, hu] using hr
+      exact hnd (by simp [renBlob, renPole, defsOf, aliasDst, hu, e1])
+  | pick z o =>
+    simp only [runLC] at h
+    split at h
+    · simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact liveC_pick_z
+    · split at h
+      · simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+        obtain ⟨rfl, rfl⟩ := h
+        exact liveC_pick_o
+      · exact liveC_bombL hd h
+  | next laz th =>
+    simp only [runLC] at h
+    obtain ⟨o, ga, ha, h⟩ := bind_some h
+    simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact liveC_medeL hI ha
+
 end Raw
 end SkaModel
 end Formalization
