@@ -115,6 +115,26 @@ theorem pokeModel_fullReachP6K (Ar : Arms FinMap (TreapMap mugF) Noun Noun (Noun
   exact pokeModel_fullGood6 flagsOf Ar OptTotal env hhe hth hsoft hrf hA hJA hR (sccLink_of flagsOf hSA hI) hM
     (optLinkOn_optimizeP hOA) hK hU hSc hSI hTE hJC hAt st hg s f
 
+/-- **What K's record gives that the assembly does not use** (the misfit of
+`CompHyp.unary` / `refMono`): at a `PGood5` state, the pill's
+`+compile-unary` IS the model's `finishLUCM` (at `S := CSet`) on the code
+table's nomm `n` of `b` (`DirOk n`), under the record's `env`.  P's
+`MonoLinkAt` reads only that the product decodes (`UnaryImageAt`);
+`CompHyp.unary` and `RefSideM.refMono` ask this equality on EVERY `InvB`
+table and cache, not on reachable states, so it cannot be plugged in. -/
+theorem unaryFinish_of_rest5 {Cls : Straight (TreapMap mugF) → Prop} {fl : Flags} {st : PSt} {b : Bell}
+    {sc : FinMap Bell Unit} {NM CA V COLE : Noun} {env : Comp.CallEnv} {inl : Noun → Option Nomm} {n : Nomm}
+    {D : Bell → Prop} (hg : PGood5 Cls st) (H : GateRest5 fl st b sc NM CA V COLE env inl n D) :
+    DirOk n = true ∧ ∃ CA', nock (C cuGB (C (cuSam b.toNoun (FinMap.setNoun sc) (codeNoun fl st.long.code)
+        (C st.jets (callsNoun st.long)) st.hot (cacheNoun st.cache)) compK)) cuGB
+      = (Comp.finishLUCM (S := CSet) (Map := TreapMap mugF) env n).map fun s => C (C s.toNoun NM) CA' := by
+  obtain ⟨ht, H'⟩ := unaryGateAtS_of_good5 hg H
+  obtain ⟨CA', -, -, -, -, e⟩ := cu_gate_dir_sccDS b.toNoun (FinMap.setNoun sc) (codeNoun fl st.long.code)
+    st.jets (callsNoun st.long) st.hot (cacheNoun st.cache) NM CA V COLE _ (st.cache.mono.toNoun Straight.toNoun)
+    env inl n ht D H'.got H'.nomm H'.cole H'.csi H'.agree H'.rest H'.dec H'.dir H'.envFrom H'.noRing H'.ana
+    H'.sccsGood H'.jug H'.heights H'.table H'.callees
+  exact ⟨H'.dir, CA', e⟩
+
 end Compiler
 
 namespace SkaModel
