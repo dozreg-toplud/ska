@@ -1,5 +1,7 @@
 import lemmas.Compiler.PokeLink
 import lemmas.Compiler.PokeLinkFull
+import lemmas.Compiler.PokeLinkScc
+import lemmas.Compiler.PokeLinkSka
 
 /-! # Audit of track P: `enc` and the `%full` branch of `+poke` -/
 
@@ -41,3 +43,43 @@ open Formalization Formalization.Compiler
 #print axioms pokeN_full
 #print axioms pokeModel_full
 #print axioms pokeModel_full_corIn
+
+-- 2026-11-27, second session: the links restated so that they are true
+#check @OptLinkOn
+#check @OptTotal
+#check @optimizeP
+#check @OptInAt
+#check @SccImage
+#check @sccOfP
+#check @JetsGood
+#check @jetRootP
+#check @JetRootLinkG
+#check @SkaLinkU
+#check @SkaFlags
+#check @SpRestAt
+#check @SkaLinkAt
+#print axioms optP_eq
+#print axioms optLinkOn_optimizeP
+#print axioms optimizeP_ref
+#print axioms optP_hpill
+#print axioms optTotal_of_inv
+#print axioms optTotal_finishLUX
+#print axioms pokeN_fullO
+#print axioms pokeModel_fullO
+#print axioms pokeModel_fullP
+#print axioms sccs_raw_enc
+#print axioms enc_edit958
+#print axioms sccLink_of
+#print axioms jrP_enc
+#print axioms jetRootLinkG_of
+#print axioms jetRootLinkR_of_good
+#print axioms pokeN_fullAt
+#print axioms pokeModel_fullG
+#print axioms enc_flags_congr
+#print axioms skaLink_of_flags
+#print axioms full_step_enc
+#print axioms full_step_enc_flags
+#print axioms skaRaw_eq
+#print axioms skaRaw_iff
+#print axioms skaLinkAt_of
+#print axioms pokeN_fullAt2
