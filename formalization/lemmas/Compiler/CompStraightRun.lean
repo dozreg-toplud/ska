@@ -81,5 +81,64 @@ theorem tsr_rer (cond : TreapMap mugF (Nat × List Nat)) (proxies : Bool) (ren :
       simp [nock_exec, rmN, loob, h14, h254, h510, hL, by_arm, by.arm_at, by.get.arm_at, by.put.arm_at, get_arm,
         put_arm, hg, hp, hu', e, unitNoun, rer]
 
+/-! ## `rewrite-par` and `rewrite-args` with the state -/
+
+/-- `spinM` of a gate of `RM` is its `mapM`. -/
+theorem spinM_mapM {α β σ : Type} (f : α → StateT σ Option β) : ∀ (l : List α) (s : σ),
+    spinM (fun a s => f a s) l s = (l.mapM f) s
+  | [], s => rfl
+  | a :: l, s => by
+    have ih := spinM_mapM f l
+    simp only [spinM, List.mapM_cons, bind, StateT.bind, pure, StateT.pure]
+    cases h : f a s with
+    | none => rfl
+    | some p =>
+      simp only [Option.bind_some, ih]
+      cases (List.mapM f l) p.2 <;> rfl
+
+/-- **The gate of the `+spin` of `rewrite-par`** with the state: `=.  gen  g`,
+then `rer` in the core with that `gen`. -/
+theorem tsr_parG {rr : Nat → RM (TreapMap mugF) Nat} {R : Noun} (hrer : RerM rr R) (B J G0 : Noun) (r : Nat)
+    (st : Nat × TreapMap mugF Nat) :
+    nock (C tsmParG (C (C (A r) (rmN st)) (C B (C J (C tsCoreBat (C G0 R)))))) tsmParG
+      = (rr r st).map fun p => C (A p.1) (rmN p.2) := by
+  have hra := ts_rer_at
+  have h := hrer r st
+  generalize tsCoreBat = K at hra h ⊢
+  generalize tsRerBody = RB at hra h ⊢
+  generalize rmN st = GS at h ⊢
+  simp [nock_exec, tsmParG, hra, h]
+
+/-- **`rewrite-par` with the state**: the model's `rewritePar rr`. -/
+theorem tsr_par {rr : Nat → RM (TreapMap mugF) Nat} {R : Noun} (hrer : RerM rr R)
+    (hL : slot? 0x7fffffff R = some layer2) (v : List Nat) (st : Nat × TreapMap mugF Nat) :
+    nock (C tsmParBody (C (listNoun A v) (C tsCoreBat (C (rmN st) R)))) tsmParBody
+      = (rewritePar rr v st).map fun p => C (listNoun A p.1) (rmN p.2) := by
+  cases v with
+  | nil =>
+    conv => { lhs; arg 2; unfold tsmParBody }
+    simp [nock_exec, listNoun, rewritePar, List.mapM_nil, pure, StateT.pure]
+  | cons a0 as =>
+    have hsp := spin_arm_l2
+    rw [spin_gate_eq] at hsp
+    have hs1 := spin.arm_at
+    have hSpin := spin_gate_T A A rmN layer2 spinIn_layer2 tsmParG (C (A 0) (rmN st))
+      (C tsmParBody (C (listNoun A (a0 :: as)) (C tsCoreBat (C (rmN st) R))))
+      (fun a s => rr a s) (a0 :: as) st
+      (fun a _ s => tsr_parG hrer _ _ _ a s)
+    rw [spinM_mapM] at hSpin
+    have e : ∀ x : Option (List Nat × (Nat × TreapMap mugF Nat)),
+        x.map (fun r => C (listN (r.1.map A)) (rmN r.2)) = x.map (fun r => C (listNoun A r.1) (rmN r.2)) := by
+      intro x; cases x <;> simp [listNoun_map_listN]
+    rw [e, ← listNoun_map_listN] at hSpin
+    simp only [listNoun, List.map_cons] at hSpin
+    unfold rewritePar
+    conv => { lhs; arg 2; unfold tsmParBody }
+    generalize tsCoreBat = K at hSpin ⊢
+    generalize tsmParG = PG at hSpin ⊢
+    generalize tsmParBody = PB at hSpin ⊢
+    generalize rmN st = GS at hSpin ⊢
+    simp [nock_exec, listNoun, hL, hs1, spin.axis, hsp, hSpin]
+
 end Compiler
 end Formalization
