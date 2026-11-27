@@ -1086,3 +1086,4 @@ open Formalization.SkaModel.Comp
 #print axioms RunOKLS.past
 #print axioms lokS_cons_run
 #print axioms lokS_cons
+#print axioms lokS_n00

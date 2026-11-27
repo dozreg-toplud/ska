@@ -1,4 +1,5 @@
 import lemmas.Ska.CompPastLS
+import lemmas.Ska.CompNCLeaf
 
 /-!
 # The cons whose parts may call, under a flat lazy goal: `lokS_cons`
@@ -501,6 +502,34 @@ theorem lokS_cons (lib : Lib) (env : CallEnv) {p q : Nomm} {P : Noun → Prop} {
   simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at hcp
   obtain ⟨rfl, rfl⟩ := hcp
   exact clean_copyLazyL h8 cp cq'
+
+
+/-! ## `[0 0]` -/
+
+/-- **`[0 0]` meets `LOKS`**: the block of `+bomb` crashes, no op at any
+goal entry, no product (`frontS_false`). -/
+theorem lokS_n00 (lib : Lib) (env : CallEnv) {P : Noun → Prop} {f : Noun}
+    (M : MinkEq lib P f (Nomm.n0 0)) : LOKS (S := S) (Map := Map) false lib env P f (Nomm.n0 0) := by
+  refine ⟨(lokc_n00 (S := S) (Map := Map) lib env M).clean, fun {sup L th region g0 g1 nex} _ b0 d0 hu hcl hcb
+    h1 h2 hta ht hsd hsl hlab hnd hed hfl _ hce hr => ?_⟩
+  rw [runLC_eq env _ rfl, runL_n00_next] at hr
+  simp only [Option.some.injEq, Prod.mk.injEq] at hr
+  obtain ⟨rfl, rfl⟩ := hr
+  have e0 : entries (ofSure (Sure.bunt : Sure S)) = [] := entries_ofSure _
+  have RB := ((runOKL_n00 (Map := Map) lib (L := L) (th := th) b0 d0 hu (fun e he => (hlab e he).1)
+    (fun _ => A 0)).toLC M).toB (P := P)
+  have FS : FrontsS (Map := Map) (pureWit (Nomm.n0 0) (fun _ => Need.none) (fun _ => A 0)) false g0
+      (g0.emitted ⟨[], [], Termin.bom (some th.there)⟩) L ⟨ofSure Sure.bunt, jmp0 g0.bo⟩ := by
+    intro e he
+    have hlt := (hlab e he).1
+    refine ⟨[], fun B fin hb => ?_, fun cf hcf => Or.inr ⟨(by rw [e0]; exact fun h => (by cases h)), ?_⟩⟩
+    · simp only [Gen.emitted, d0, Bool.false_eq_true, ↓reduceIte, HoonMap.get_put, List.nil_append]
+      rw [if_neg (by omega)]; exact hb
+    · exact frontS_false (fun s v d w hq => by
+        obtain ⟨hv, _, _⟩ := hq
+        rw [pureEval_n00] at hv; cases hv)
+  refine ⟨⟨_, { toRunOKLB := RB, fs := FS }⟩, (by rw [e0]; exact fun h => (by cases h)), Or.inr (Nat.le_refl _),
+    ⟨rfl, fun e he => (by cases he)⟩, fun e he => (by rw [e0] at he; cases he)⟩
 
 end Comp
 end SkaModel
