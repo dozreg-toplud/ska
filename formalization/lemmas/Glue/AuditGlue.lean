@@ -317,6 +317,10 @@ namespace Formalization
 #check @SkaModel.Glue.GuardMonoX
 #check @SkaModel.Glue.GuardNaryX
 #check @SkaModel.Glue.CompRestOE
+#check @SkaModel.Glue.BlocksOK
+#check @SkaModel.Glue.guardedBody_append
+#check @SkaModel.Glue.noPoison_of_blocksOK
+#check @SkaModel.Glue.celGuard_of_blocksOK
 #check @SkaModel.Opt.EntryOK
 #check @SkaModel.Raw.optInput_finishLUX_at
 #check @SkaModel.Raw.optInput_finishLFX_at

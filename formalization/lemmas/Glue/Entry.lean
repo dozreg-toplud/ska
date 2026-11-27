@@ -581,6 +581,51 @@ theorem entryOK_of {c : Straight Map} (hD : DefFirst c.blocks) (hR : Compiler.Re
       simp [execPole, localPole, hxz]
     | _ => simp [safeAssign] at hsa
 
+
+/-! ## The all-blocks form, for a run-level induction
+
+What a run-level induction on the compiler model would carry: EVERY block
+passes no `~` and has a guarded body (`BlocksOK`).  It gives the two facts
+(`noPoison_of_blocksOK`, `celGuard_of_blocksOK`), and a body with guarded
+ops put in front stays guarded (`guardedBody_append`: `addOps` does not
+separate a `%cel` from its `%hed`). -/
+
+/-- Every `%hed s` / `%tal s` of the body comes after a `%cel s` of it with no
+write of `s` between. -/
+def GuardedBody (body : List Pole) : Prop :=
+  ∀ i p s, body[i]? = some p → splitReg p = some s →
+    ∃ j : Nat, j < i ∧ body[j]? = some (Pole.cel s) ∧
+      ∀ l, j < l → l < i → ∀ q, body[l]? = some q → aliasDst q ≠ some s
+
+/-- **The all-blocks form**: no block passes `~`, every body is guarded. -/
+def BlocksOK (bl : Map Blob) : Prop :=
+  ∀ o b, HoonMap.get bl o = some b → (∀ j ∈ getJmps b.fin, Option.none ∉ j.args) ∧ GuardedBody b.body
+
+theorem noPoison_of_blocksOK {bl : Map Blob} (h : BlocksOK bl) : NoPoison bl :=
+  fun o b j _ hb hj => (h o b hb).1 j hj
+
+theorem celGuard_of_blocksOK {bl : Map Blob} (h : BlocksOK bl) : CelGuard bl :=
+  fun o b i p s _ hb hp hs => (h o b hb).2 i p s hp hs
+
+theorem guardedBody_nil : GuardedBody [] := fun i p s h => by simp at h
+
+/-- **Guarded ops in front of a guarded body give a guarded body.** -/
+theorem guardedBody_append {A B : List Pole} (hA : GuardedBody A) (hB : GuardedBody B) :
+    GuardedBody (A ++ B) := by
+  intro i p s hp hs
+  rcases Nat.lt_or_ge i A.length with hi | hi
+  · rw [List.getElem?_append_left hi] at hp
+    obtain ⟨j, hj, hjc, hw⟩ := hA i p s hp hs
+    refine ⟨j, hj, by rw [List.getElem?_append_left (by omega)]; exact hjc, fun l h1 h2 q hq => ?_⟩
+    rw [List.getElem?_append_left (by omega)] at hq
+    exact hw l h1 h2 q hq
+  · rw [List.getElem?_append_right hi] at hp
+    obtain ⟨j, hj, hjc, hw⟩ := hB (i - A.length) p s hp hs
+    refine ⟨j + A.length, by omega, by rw [List.getElem?_append_right (by omega)]; simpa using hjc,
+      fun l h1 h2 q hq => ?_⟩
+    rw [List.getElem?_append_right (by omega)] at hq
+    exact hw (l - A.length) (by omega) (by omega) q hq
+
 end
 
 end Glue

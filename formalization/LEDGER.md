@@ -207,8 +207,9 @@ WHICH FIELDS OF `CompPiecesM` ARE DISCHARGED on `MonoCalls` / `NaryCalls`:
     `finishLF` output).  `EntryNary` needs no relation of the cape to the
     bell: the cape only removes look checks, never a `%cel`.
     OPEN: the two leaves, a run-level induction in the style of D's
-    `runX_at`: the all-blocks form (no block passes `~`, every block's body
-    guarded) holds of the raw runs under `%done`, `%next`, `%pick` (`sixes`,
+    `runX_at`: the all-blocks form (`BlocksOK`: no block passes `~`, every
+    block's body guarded; `noPoison_of_blocksOK`, `celGuard_of_blocksOK`,
+    `guardedBody_append`) holds of the raw runs under `%done`, `%next`, `%pick` (`sixes`,
     `enumX`, `enumCX`), and is kept by `emit` of such a block, `addOps` of a
     guarded list (a prefix does not separate a `%cel` from its `%hed`) and
     `+insert-hop`; then `+to-straight` (renaming, unproxying, `chase`) must
