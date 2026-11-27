@@ -54,6 +54,20 @@ theorem analyzeStepH_le (memoF : Memo FinMap) {cu cu' : Ident → SkaState FinMa
         · exact OLe.bind (hcu _ _) fun _ => hpl _ _ _ _
         · exact OLe.refl _
 
+theorem passEndH_le {sw sw' : Ident → FinMap Ident Unit → SkaState FinMap R → Option (List Ident)}
+    {cu cu' : Ident → SkaState FinMap R → Option (SkaState FinMap R)}
+    {pl pl' : PassGo FinMap R}
+    (hsw : ∀ i was st, OLe (sw i was st) (sw' i was st))
+    (hcu : ∀ i st, OLe (cu i st) (cu' i st))
+    (hpl : ∀ id index pass st, OLe (pl id index pass st) (pl' id index pass st))
+    (id : Ident) (index pass : Nat) (st : SkaState FinMap R) :
+    OLe (passEndH sw cu pl id index pass st) (passEndH sw' cu' pl' id index pass st) := by
+  unfold passEndH
+  refine OLe.bind (OLe.refl _) fun ab => OLe.bind (hsw _ _ _) fun ms => ?_
+  split
+  · exact hpl _ _ _ _
+  · exact OLe.bind (hcu _ _) fun _ => OLe.refl _
+
 theorem passStepH_le {sw sw' : Ident → FinMap Ident Unit → SkaState FinMap R → Option (List Ident)}
     {cu cu' : Ident → SkaState FinMap R → Option (SkaState FinMap R)}
     {ml ml' : MemGo FinMap R} {pl pl' : PassGo FinMap R}
@@ -68,10 +82,9 @@ theorem passStepH_le {sw sw' : Ident → FinMap Ident Unit → SkaState FinMap R
   refine OLe.bind (hml _ _ _ _) fun r => ?_
   split
   · exact OLe.refl _
-  · refine OLe.bind (hcu _ _) fun st' => ?_
-    split
-    · exact OLe.refl _
-    · exact hpl _ _ _ _
+  · by_cases hc : r.1.2 = false ∧ r.2.next = st.next
+    · rw [if_pos hc, if_pos hc]; exact passEndH_le hsw hcu hpl _ _ _ _
+    · rw [if_neg hc, if_neg hc]; exact hpl _ _ _ _
 
 /-! ## `+sweep` and `+cull` at a level against the model's fuel -/
 
