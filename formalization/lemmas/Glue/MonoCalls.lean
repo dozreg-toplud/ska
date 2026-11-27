@@ -1,6 +1,7 @@
 import lemmas.Glue.RawOptIn
 import lemmas.Ska.CompDirectMTree
 import lemmas.Ska.CompNaryTop
+import lemmas.Ska.CompNaryTopRec
 
 /-!
 # Glue: the contract side with calls (mismatch M3 of `LEDGER.md`, finished)
@@ -22,8 +23,8 @@ call environment, the callees' needs and the bell.  Here:
 * the bridges: `rawMonoD_of` (a `RawMono` class of `noDirect` nomms),
   `noDirect_NCG`, `noDirect_fragUFG`, `compRestM_of_O`;
 * the classes with calls that the tracks reached: `MonoCalls` (`NCG`,
-  `CallTreeD`, `TopTree`, `CallTreeA`) and `NaryCalls` (`FragUN`, `CallTreeA`
-  with nothing baked), with their raw contracts `rawMonoD_calls`,
+  `CallTreeD`, `TopTree`, `CallTreeA`) and `NaryCalls` (`FragUN`, `CallTreeA`,
+  `CallTreeDN`, nothing baked), with their raw contracts `rawMonoD_calls`,
   `rawNaryD_calls`;
 * the two optimizer leaves as statements about the MODEL, per class:
   `OptInMono`, `OptInNary` (track D's `OptIn` of the raw blocks) and
@@ -181,12 +182,23 @@ theorem rawNaryD_callTreeA (lib : Lib) : RawNaryD S Map lib CallTreeAN := by
   obtain ⟨⟨x, hx⟩, hb⟩ := hf
   exact Comp.finishLFC_bellContractCallTreeA (S := S) hx hbl hn hb h N
 
-/-- **The n-ary classes with a raw contract**: `FragUN` (call-free, nothing
-baked) and `CallTreeAN`. -/
-def NaryCalls (S : Type) [Comp.HoonSet S] : NaryClass := orN (liftNC (FragUN S)) CallTreeAN
+/-- **Track J's n-ary class with direct calls** (`CallTreeDN`, the `%cal`
+and `%jmp` forms), at the subjects of the bell, nothing baked. -/
+def CallTreeDNB (lib : Lib) : NaryClass := fun env N bl _ bake nm =>
+  (∃ x, Comp.CallTreeDN lib env N (SkaModel.Fits bl.less) x bl.fol nm) ∧ ∀ ned, bake ned = (ned, [])
 
-theorem rawNaryD_calls (lib : Lib) : RawNaryD S Map lib (NaryCalls S) :=
-  rawNaryD_or (rawNaryD_of (rawNary_fragU lib)) (rawNaryD_callTreeA lib)
+theorem rawNaryD_callTreeDN (lib : Lib) : RawNaryD S Map lib (CallTreeDNB lib) := by
+  intro code bl nm env ord cape data bake s N _ _ hbl hn hf _ h
+  obtain ⟨⟨x, hx⟩, hb⟩ := hf
+  exact Comp.finishLFC_bellContractCallTreeDN (S := S) hx hbl hn hb h
+
+/-- **The n-ary classes with a raw contract**: `FragUN` (call-free, nothing
+baked), `CallTreeAN` and `CallTreeDNB` (nothing baked). -/
+def NaryCalls (S : Type) [Comp.HoonSet S] (lib : Lib) : NaryClass :=
+  orN (liftNC (FragUN S)) (orN CallTreeAN (CallTreeDNB lib))
+
+theorem rawNaryD_calls (lib : Lib) : RawNaryD S Map lib (NaryCalls S lib) :=
+  rawNaryD_or (rawNaryD_of (rawNary_fragU lib)) (rawNaryD_or (rawNaryD_callTreeA lib) (rawNaryD_callTreeDN lib))
 
 /-! ## The restated pieces -/
 
@@ -371,8 +383,8 @@ theorem optInNary_fragX : OptInNary S Map (liftNC (FragXN S)) := by
 `OptIn` leaves of track D; the raw contracts are `rawMonoD_calls`,
 `rawNaryD_calls`. -/
 theorem compHyp_of_calls {M' : Type → Type → Type} [Treap M'] {lib : Lib} {ref : Ref M Map J H}
-    {D : CompData M Map J H} (P : CompRestM S M' A lib ref D (MonoCalls S lib) (NaryCalls S))
-    (hm : OptInMono S Map (MonoCalls S lib)) (hn : OptInNary S Map (NaryCalls S)) : CompHyp A lib ref :=
+    {D : CompData M Map J H} (P : CompRestM S M' A lib ref D (MonoCalls S lib) (NaryCalls S lib))
+    (hm : OptInMono S Map (MonoCalls S lib)) (hn : OptInNary S Map (NaryCalls S lib)) : CompHyp A lib ref :=
   compHyp_of_piecesM A
     { toCompRestM := P, rawOptIn := rawOptIn_of A P.toRefSideM hm hn, rawMono := rawMonoD_calls lib,
       rawNary := rawNaryD_calls lib }
