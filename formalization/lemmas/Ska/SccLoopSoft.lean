@@ -28,7 +28,7 @@ import lemmas.Ska.CompRunLC
    and a noun that is not a cell sends the call to the callee's subject version, whole, and
    `+soft-emit` itself crashes only when `+soft-free` fails (line 5458).
 
-**The model.**  `GenS` is `Gen` with `soft.gen`, `CMS` its state monad, `liftS` a step of `CM`
+**The model.**  `GenSf` is `Gen` with `soft.gen`, `CMS` its state monad, `liftS` a step of `CM`
 on the `Gen` part.  `runLCS env snd` is `runLC env` (`Ska/CompRunLC.lean`, not changed) with the
 direct call of `callL` taken when `env.sof` holds (`callLS`: `softNew`, `softBond`), `+kern` with
 `softAsk` (`kernS`), and `+soft-less`, `+soft-fork` reading the state (`withSoft`); `snd` is
@@ -48,19 +48,19 @@ open Nock Lazy
 variable {S : Type} [HoonSet S] {Map : Type → Type} [HoonMap Map]
 
 /-- **The state of `+run` with `soft.gen`.** -/
-structure GenS (Map : Type → Type) where
+structure GenSf (Map : Type → Type) where
   g : Gen Map
   soft : Map SoftCall
 
-/-- The arms of `+comp` that read or write `soft.gen` thread `GenS`. -/
-abbrev CMS (Map : Type → Type) := StateT (GenS Map) Option
+/-- The arms of `+comp` that read or write `soft.gen` thread `GenSf`. -/
+abbrev CMS (Map : Type → Type) := StateT (GenSf Map) Option
 
 /-- A step of `CM` on the `Gen` part, `soft.gen` kept. -/
 def liftS {α : Type} (m : CM Map α) : CMS Map α := fun s =>
   (m s.g).map fun p => (p.1, ⟨p.2, s.soft⟩)
 
 /-- `(~(has by soft.gen) o)`. -/
-def GenS.isSoft (s : GenS Map) (o : Nat) : Bool := (HoonMap.get s.soft o).isSome
+def GenSf.isSoft (s : GenSf Map) (o : Nat) : Bool := (HoonMap.get s.soft o).isSome
 
 /-- A step that reads the test `~(has by soft.gen)` of the current state. -/
 def withSoft {α : Type} (k : (Nat → Bool) → CMS Map α) : CMS Map α := fun s => k s.isSoft s
@@ -377,7 +377,7 @@ def runLCS [HoonMapKeys Map] (env : CallEnv) (snd : Nomm → NeedOrd → Bool) :
   | _, _, _, _ => fun _ => Option.none
 
 /-- An empty `soft.gen` on a state. -/
-def GenS.ofGen (g : Gen Map) : GenS Map := ⟨g, HoonMap.empty⟩
+def GenSf.ofGen (g : Gen Map) : GenSf Map := ⟨g, HoonMap.empty⟩
 
 end Comp
 end SkaModel
@@ -390,7 +390,7 @@ open Nock Formalization.Hoon Formalization.SkaModel Formalization.SkaModel.Comp 
 from an empty `soft.gen`; the chain after the run does not read `soft.gen` (sentence 4). -/
 noncomputable def memDoneMS (env : CallEnv) (snd : Nomm → NeedOrd → Bool) (m : MemInfo) :
     Option (Out NeedOrd) :=
-  (runLCS (S := CSet) (Map := TreapMap mugF) env snd Option.none m.nm CGoalL.done [] (GenS.ofGen gen0)).bind
+  (runLCS (S := CSet) (Map := TreapMap mugF) env snd Option.none m.nm CGoalL.done [] (GenSf.ofGen gen0)).bind
     fun (nex, g1) =>
       if nex.th.args ≠ [] then Option.none else
       (shapeCol m.fuel nex.laz m.cape).bind fun ord =>

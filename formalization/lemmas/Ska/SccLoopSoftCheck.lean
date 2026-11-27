@@ -51,7 +51,7 @@ def sofOf (r : DoneRec) (e : CallEnv) : CallEnv :=
 /-- `memDoneMS` over `LS`, `FM`, with `sureOfS`, returning the run, `ned-final` and the soft map. -/
 def memDoneLSS (env : CallEnv) (snd : Nomm → NeedOrd → Bool) (nm : Nomm) (cape : Cape) (data : Noun)
     (fuel : Nat) : Option (NextL LS × NeedOrd × Need × Out NeedOrd × FM SoftCall) :=
-  (runLCS (S := LS) (Map := FM) env snd Option.none nm CGoalL.done [] (GenS.ofGen gen0)).bind
+  (runLCS (S := LS) (Map := FM) env snd Option.none nm CGoalL.done [] (GenSf.ofGen gen0)).bind
     fun (nex, g1) =>
     if nex.th.args ≠ [] then Option.none else
     (shapeCol fuel nex.laz cape).bind fun ord =>
