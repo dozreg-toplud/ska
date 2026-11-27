@@ -176,6 +176,253 @@ theorem walkLazy_prepG {f : Nat → Sure S → CM Map Unit} {St : Comp.Gen Map �
   obtain ⟨e, he, ee⟩ := eP k hk
   exact ⟨e, (hm e).mpr he, ee⟩
 
+/-! ## The unproxied blocks after a walk -/
+
+/-- **The unproxied blocks after ops in front, `cond` grown above the old
+`re`**: the old unproxied blocks with the ops, unproxied by the new `cond`,
+in front. -/
+theorem unpM_prepG {P : Nat → List Pole} {g g' : Comp.Gen Map} (hP : Prep P g.blocks g'.blocks)
+    (hc : ∀ x, x < g.re → HoonMap.get g'.cond x = HoonMap.get g.cond x)
+    (hR : ∀ k b, HoonMap.get g.blocks k = some b → BlobIn (· < g.re) b) :
+    Prep (fun k => (P k).map (renPole (unproxy g'.cond))) (unpM g) (unpM g') := by
+  intro k
+  unfold unpM
+  rw [get_mapVals, get_mapVals, hP k]
+  cases hb : HoonMap.get g.blocks k with
+  | none => rfl
+  | some b =>
+    show some (renBlob (unproxy g'.cond) (pre (P k) b)) = some (pre _ (renBlob (unproxy g.cond) b))
+    rw [renBlob_pre, renBlob_unproxy_grow hc (hR k b hb)]
+
+/-- The jumps of a renamed end. -/
+theorem getJmps_renFin (u : Nat → Nat) (t : Termin) : getJmps (renFin u t) = (getJmps t).map (renJmp u) := by
+  cases t <;> rfl
+
+/-- **Renaming keeps jumping down.** -/
+theorem jdown_mapVals {bl : Map Blob} (h : JDown bl) (u : Nat → Nat) : JDown (mapVals (renBlob u) bl) := by
+  intro k b hb j hj
+  rw [get_mapVals] at hb
+  obtain ⟨b0, h0, rfl⟩ := Option.map_eq_some_iff.mp hb
+  simp only [renBlob, getJmps_renFin, List.mem_map] at hj
+  obtain ⟨j0, hj0, rfl⟩ := hj
+  exact h k b0 h0 j0 hj0
+
+/-- `ATS` gives that the blocks jump down. -/
+theorem ATS.jdown {g : Comp.Gen Map} (h : ATS g) : JDown g.blocks := fun k b hb j hj =>
+  (h.2.2 k b hb).2.2.2 j (by rw [← getJmps_eq]; exact hj)
+
+/-- The unproxied blocks of an `IL` state jump down below `bo`. -/
+theorem IL.downU {K : Nat → Nat → Prop} {goal : CGoalL S} {g : Comp.Gen Map} (h : IL K goal g) :
+    DownBelowP (unpM g) g.bo :=
+  (jdown_mapVals h.ats.jdown _).belowP _
+
+/-- A label with a block in an `IL` state is below `bo`. -/
+theorem IL.lab {K : Nat → Nat → Prop} {goal : CGoalL S} {g : Comp.Gen Map} (h : IL K goal g) {k : Nat} {b : Blob}
+    (hb : HoonMap.get g.blocks k = some b) : k < g.bo :=
+  (h.ats.2.2 k b hb).1
+
+/-- A goal register is no proxy. -/
+theorem IL.unproxy_greg {K : Nat → Nat → Prop} {goal : CGoalL S} {g : Comp.Gen Map} (h : IL K goal g) {r : Nat}
+    (hr : GRegL goal r) : unproxy g.cond r = r := by
+  unfold unproxy
+  cases e : HoonMap.get g.cond r with
+  | none => rfl
+  | some v => exact absurd hr (h.cond r v e).2.2.1
+
+/-! ## `+add-ops` and the loop of `+mede` -/
+
+theorem addOps_step {o : Nat} {A : List Pole} {g g' : Comp.Gen Map} (hd : g.drop = false)
+    (h : addOps o A g = some ((), g')) :
+    AddSt g g' ∧ g'.cond = g.cond ∧ Prep (fun k => if k = o then A else []) g.blocks g'.blocks := by
+  simp only [addOps, hd, Bool.false_eq_true, if_false] at h
+  obtain ⟨b, hb, e⟩ := Option.map_eq_some_iff.mp h
+  simp only [Prod.mk.injEq] at e
+  obtain ⟨-, rfl⟩ := e
+  exact ⟨⟨rfl, hd.symm, rfl, Nat.le_refl _, fun _ _ h => h, fun _ _ h => Or.inl h⟩, rfl, prep_put hb⟩
+
+/-- What the loop of `+mede` does at `o`: ops in front that define the need
+and read nothing first. -/
+def MedeS (o : Nat) (ned : Need) (g g' : Comp.Gen Map) : Prop :=
+  AddSt g g' ∧ g'.cond = g.cond ∧ ∃ A, Prep (fun k => if k = o then A else []) g.blocks g'.blocks ∧
+    (∀ r, NMem ned r → r ∈ defsOf A) ∧ ∀ y, ¬ OpsRF A y
+
+theorem medeS_trans {o : Nat} {n1 n2 n : Need} {a b c : Comp.Gen Map} (h1 : MedeS o n1 a b) (h2 : MedeS o n2 b c)
+    (hn : ∀ r, NMem n r → NMem n1 r ∨ NMem n2 r) : MedeS o n a c := by
+  obtain ⟨s1, c1, A, pA, kA, rA⟩ := h1
+  obtain ⟨s2, c2, B, pB, kB, rB⟩ := h2
+  refine ⟨s1.trans s2, c2.trans c1, B ++ A, fun k => ?_, fun r hr => ?_, fun y hy => ?_⟩
+  · rw [pB k, pA k]
+    by_cases e : k = o
+    · subst e; cases HoonMap.get a.blocks k <;> simp [pre, List.append_assoc]
+    · cases HoonMap.get a.blocks k <;> simp [pre, e]
+  · rw [defsOf_append, List.mem_append]
+    rcases hn r hr with h | h
+    · exact Or.inr (kA r h)
+    · exact Or.inl (kB r h)
+  · rcases opsRF_append.mp hy with h | ⟨-, h⟩
+    · exact rB y h
+    · exact rA y h
+
+theorem medeS_imm {o : Nat} {som : Noun} {r : Nat} {ned : Need} {g g' : Comp.Gen Map} (hd : g.drop = false)
+    (hn : ∀ y, NMem ned y → y = r) (h : addOps o [Pole.imm som r] g = some ((), g')) : MedeS o ned g g' := by
+  obtain ⟨s, c, p⟩ := addOps_step hd h
+  refine ⟨s, c, _, p, fun y hy => ?_, fun y hy => ?_⟩
+  · rw [hn y hy]; simp [defsOf, aliasDst]
+  · rcases hy with hy | ⟨-, hy⟩
+    · simp [aliasReads, aliasDst, Opt.poleRegs] at hy
+    · exact hy
+
+theorem medeS_crash {o n : Nat} {ned : Need} {g g' : Comp.Gen Map} (hd : g.drop = false)
+    (h : crashNeed o (Sum.inl n) ned g = some ((), g')) : MedeS o ned g g' := by
+  simp only [crashNeed] at h
+  obtain ⟨r, g1, h1, h2⟩ := bind_some h
+  rw [re_apply] at h1
+  simp only [Option.some.injEq, Prod.mk.injEq] at h1
+  obtain ⟨rfl, rfl⟩ := h1
+  obtain ⟨⟨b1, d1, t1, r1, c1, n1⟩, c, p⟩ := addOps_step (by simpa using hd) h2
+  refine ⟨⟨b1, d1, t1, Nat.le_trans (Nat.le_succ _) r1, c1, fun k v hv => (n1 k v hv).imp id
+      fun h => Nat.le_trans (Nat.le_succ _) h⟩, c, _, p, fun y hy => ?_, fun y hy => ?_⟩
+  · simp only [defsOf_cons, aliasDst, Option.toList_some, Option.toList_none, List.nil_append, defsOf_fill]
+    exact List.mem_cons_of_mem _ ((mem_flatten ned y).mpr hy)
+  · rcases hy with hy | ⟨hne, hy⟩
+    · simp [aliasReads, aliasDst, Opt.poleRegs] at hy
+    · rcases hy with hy | ⟨-, hy⟩
+      · rw [reads_cel] at hy; subst hy; exact hne rfl
+      · exact opsRF_fill _ hy
+
+/-- **The loop of `+mede`.** -/
+theorem medeLoop_step {o : Nat} : ∀ (ned : Need) (som : Noun) (g g' : Comp.Gen Map),
+    g.drop = false → medeLoop o som ned g = some ((), g') → MedeS o ned g g'
+  | Need.none, som, g, g', _, h => by
+    have e : g' = g := by cases som <;> simp_all [medeLoop, pure_apply]
+    subst e
+    exact ⟨AddSt.refl _, rfl, [], prep_same, fun r hr => hr.elim, fun y hy => hy⟩
+  | Need.this r, som, g, g', hd, h => by
+    unfold medeLoop at h; exact medeS_imm hd (fun y hy => hy) h
+  | Need.pair p q, Noun.atom n, g, g', hd, h => by unfold medeLoop at h; exact medeS_crash hd h
+  | Need.both r p q, Noun.atom n, g, g', hd, h => by unfold medeLoop at h; exact medeS_crash hd h
+  | Need.pair p q, Noun.cell a b, g, g', hd, h => by
+    simp only [medeLoop] at h
+    obtain ⟨u, g1, h1, h2⟩ := bind_some h
+    have s1 := medeLoop_step p a g g1 hd h1
+    have s2 := medeLoop_step q b g1 g' (s1.1.2.1.trans hd) h2
+    exact medeS_trans s1 s2 fun r hr => hr
+  | Need.both r p q, Noun.cell a b, g, g', hd, h => by
+    simp only [medeLoop] at h
+    obtain ⟨u, g1, h1, h2⟩ := bind_some h
+    obtain ⟨u', g2, h2, h3⟩ := bind_some h2
+    have s1 : MedeS o (Need.this r) g g1 := medeS_imm hd (fun y hy => hy) h1
+    have s2 := medeLoop_step p a g1 g2 (s1.1.2.1.trans hd) h2
+    have s3 := medeLoop_step q b g2 g' (s2.1.2.1.trans (s1.1.2.1.trans hd)) h3
+    exact medeS_trans (medeS_trans s1 s2 (n := Need.pair (Need.this r) p) fun y hy => hy) s3
+      fun y hy => by
+        rcases hy with hy | hy | hy
+        · exact Or.inl (Or.inl hy)
+        · exact Or.inl (Or.inr hy)
+        · exact Or.inr hy
+
+/-- The step of the walk of `+mede`: same `cond`. -/
+def MSt (a b : Comp.Gen Map) : Prop := AddSt a b ∧ b.cond = a.cond
+
+/-- **The gate of `+mede` only puts ops in front**, reading nothing first. -/
+theorem medeGate_step {som : Noun} {g0 : Comp.Gen Map} (hd : g0.drop = false) (x : Nat) (s : Sure S)
+    (g g' : Comp.Gen Map) (h0 : MSt g0 g)
+    (h : (do let ned ← sureRequireLook s; medeLoop x som ned : CM Map Unit) g = some ((), g')) :
+    MSt g g' ∧ GStep (fun _ _ => False) x s g g' := by
+  obtain ⟨ned, g1, h1, h2⟩ := bind_some h
+  have L := sureRequireLook_spec h1
+  obtain ⟨k, rfl⟩ := L.gen
+  have hd1 : ({ g with re := k } : Comp.Gen Map).drop = false := h0.1.2.1.trans hd
+  obtain ⟨⟨b2, d2, t2, r2, c2, n2⟩, c, A, pA, kA, rA⟩ := medeLoop_step ned som _ g' hd1 h2
+  refine ⟨⟨⟨b2, d2, t2, Nat.le_trans L.le r2, c2, fun k v hv => (n2 k v hv).imp id
+      fun h => Nat.le_trans L.le h⟩, c⟩, A, pA, fun r hr => kA r (sureRequireLook_keeps h1 hr), fun y hy => rA y hy⟩
+
+/-- **`+mede` is a hop block and a walk that only puts ops in front.** -/
+theorem medeL_walk {th : Jmp} {som : Noun} {laz : Lazy S} {g0 g1 : Comp.Gen Map} {o : Nat}
+    (hd : g0.drop = false) (h : medeL th som laz g0 = some (o, g1)) :
+    o = g0.bo ∧ MSt (g0.emitted ⟨[], [], Termin.hop th⟩) g1 ∧
+      WalkP (fun _ _ => False) ((o, laz) :: entries laz) (g0.emitted ⟨[], [], Termin.hop th⟩) g1 := by
+  simp only [medeL] at h
+  obtain ⟨o', ge, he, h⟩ := bind_some h
+  rw [emit_apply] at he
+  simp only [Option.some.injEq, Prod.mk.injEq] at he
+  obtain ⟨rfl, rfl⟩ := he
+  obtain ⟨g', gg, hg, h⟩ := bind_some h
+  rw [get_apply] at hg
+  simp only [Option.some.injEq, Prod.mk.injEq] at hg
+  obtain ⟨rfl, rfl⟩ := hg
+  have hde : (g0.emitted ⟨[], [], Termin.hop th⟩).drop = false := hd
+  simp only [hde, Bool.false_eq_true, if_false] at h
+  obtain ⟨u, g2, h2, h3⟩ := bind_some h
+  simp only [pure_apply, Option.some.injEq, Prod.mk.injEq] at h3
+  obtain ⟨rfl, rfl⟩ := h3
+  have hrf : ∀ a : Comp.Gen Map, MSt a a := fun a => ⟨AddSt.refl a, rfl⟩
+  have htr : ∀ a b c : Comp.Gen Map, MSt a b → MSt b c → MSt a c := fun a b c h1 h2 =>
+    ⟨h1.1.trans h2.1, h2.2.trans h1.2⟩
+  obtain ⟨s, w⟩ := walkLazy_prepG hrf htr (R := fun _ _ => False) (fun _ _ _ _ h => h)
+    (fun x sur g g' h0 h => medeGate_step hde x sur g g' h0 h) h2
+  exact ⟨rfl, s, w⟩
+
+/-! ## The case `%1` under `%next` -/
+
+/-- **`%1` under `%next`**: `+mede`'s hop block to the goal, with ops in
+front of the goal's lazy blocks that define their needs and read nothing:
+a register live at the hop block is live at the goal's continuation once
+the goal's lazy tree defines its needs. -/
+theorem liveC_medeL {K : Nat → Nat → Prop} {laz : Lazy S} {th : Jmp} {som : Noun} {g0 g1 : Comp.Gen Map}
+    {o : Nat} (hI : IL K (CGoalL.next laz th) g0) (h : medeL th som laz g0 = some (o, g1)) :
+    LiveC K (CGoalL.next laz th) g0 g1 ⟨ofSure Sure.bunt, jmp0 o⟩ := by
+  have hd : g0.drop = false := hI.ats.1
+  obtain ⟨rfl, ⟨hst, hcond⟩, P, pP, kP, rP, -⟩ := medeL_walk hd h
+  obtain ⟨⟨tb, htb, -, targs⟩, -, hent⟩ := (hI.goal : GoalL g0 (CGoalL.next laz th))
+  have hgeb : (g0.emitted ⟨[], [], Termin.hop th⟩).blocks = HoonMap.put g0.blocks g0.bo ⟨[], [], Termin.hop th⟩ := by
+    simp [Gen.emitted, hd]
+  have hR : ∀ k b, HoonMap.get (g0.emitted ⟨[], [], Termin.hop th⟩).blocks k = some b →
+      BlobIn (· < (g0.emitted ⟨[], [], Termin.hop th⟩).re) b := by
+    intro k b hb
+    rw [hgeb] at hb
+    by_cases e : k = g0.bo
+    · subst e; rw [get_put_self] at hb; cases hb
+      refine ⟨fun x hx => absurd hx List.not_mem_nil, RegsIn.nil _, ?_⟩
+      show JmpIn _ th
+      intro x hx; rw [targs] at hx; exact absurd hx List.not_mem_nil
+    · rw [get_put_ne e] at hb; exact hI.regs k b hb
+  have pU := unpM_prepG pP (fun x _ => by rw [hcond]) hR
+  intro r hl
+  have hl0 := hl.mono (K' := K) fun x y h => Or.inl h
+  have hl1 := (liveK_prepK pU (K' := fun x y => y ∈ defsOf ((P x).map (renPole (unproxy g1.cond))))
+    (fun _ _ h => h) hl0).resolve_right fun ⟨k', hk'⟩ => by
+      obtain ⟨x, -, hx⟩ := opsRF_ren_back _ hk'
+      exact rP k' x hx
+  -- the goal's kills are among the ops' definitions
+  have hgreg : ∀ e ∈ (g0.bo, laz) :: entries laz, ∀ y, NMem e.2.sure.ned y → GRegL (CGoalL.next laz th) y := by
+    intro e he y hy
+    rcases List.mem_cons.mp he with rfl | he
+    · exact ⟨(th.there, laz), List.mem_cons_self, hy⟩
+    · exact ⟨e, List.mem_cons_of_mem _ he, hy⟩
+  have hl2 : LiveK (unpM (g0.emitted ⟨[], [], Termin.hop th⟩)) (fun x y => K x y ∨ lazK g0.bo laz x y) g0.bo r := by
+    refine hl1.mono fun x y hk => hk.imp id fun ⟨e, he, ex, hy⟩ => ?_
+    subst ex
+    rw [defsOf_ren, List.mem_map]
+    refine ⟨y, kP e he y hy, ?_⟩
+    rw [hcond]
+    exact hI.unproxy_greg (hgreg e he y hy)
+  have hlab : ∀ e ∈ (th.there, laz) :: entries laz, e.1 < g0.bo := fun e he => by
+    obtain ⟨⟨b, hb, -⟩, -⟩ := hent e he
+    exact hI.lab hb
+  have hbo : HoonMap.get (unpM (g0.emitted ⟨[], [], Termin.hop th⟩)) g0.bo = some ⟨[], [], Termin.hop th⟩ := by
+    unfold unpM
+    rw [get_mapVals, hgeb, get_put_self]
+    simp [renBlob, renFin, renJmp_nil _ targs]
+  have hl3 := liveK_hop_root hbo targs (fun y hk => hI.kvan.van _ _ (Nat.le_refl _) hk)
+    (fun e he ee => by have := hlab e (List.mem_cons_of_mem _ he); omega)
+    (by have := hlab _ List.mem_cons_self; simp only at this; omega) hl2
+  have hthere : th.there < g0.bo := hlab _ List.mem_cons_self
+  refine (liveK_frameP hI.downU (fun x hx => ?_) hthere).mp hl3
+  unfold unpM
+  rw [get_mapVals, get_mapVals, hgeb, get_put_ne (Nat.ne_of_lt hx)]
+  rfl
+
 end Raw
 end SkaModel
 end Formalization
