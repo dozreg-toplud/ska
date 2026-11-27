@@ -9,7 +9,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from nouns import *
 
-K = ('C', ('R', 'nhe0b859c3d8aa'), ('C', ('R', 'nh15c74912d225'), ('C', ('A', 0), ('R', 'ana'))))
+K = ('C', ('R', 'nh5592f9d7750f'), ('C', ('R', 'nh15c74912d225'), ('C', ('A', 0), ('R', 'ana'))))
 memo = {}
 def cells(n):
     n = norm(n)

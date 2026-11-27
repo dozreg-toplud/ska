@@ -8,14 +8,15 @@ the members' entries, each as `valE st i` (the tuple `entryM` of the entry of
 `i` if `i` is on the stack, else `none`, below every tuple), compared
 pointwise: every identity stays or falls (`OLe`), one falls (`OLt`).
 
-A pass that goes on (`PassOn`: the member loop came back with the lowlink
-`index`, `+cull` ran, and `changed` or `next` grew; then the pass loop calls
-itself, `passLoop_of_on`) raises `next`, or leaves it and lowers the entries:
+A pass that goes on with a change (`PassOn`: the member loop came back with
+the lowlink `index`, and `changed` or `next` grew; then the pass loop calls
+itself on the member loop's state, `passLoop_of_on`; since dab8478 no
+`+cull` runs between passes) raises `next`, or leaves it and lowers the entries:
 with `next` the same the member loop runs on the same stack (`allN`), each
 `+run` keeps its entry or lowers its tuple (`Ana.run_entry_step`), one run
 reported `changed` (so lowered it, `runDatum_changed`), the other members'
-entries are left alone (`Keep` of `RunP`), and `+cull` drops members, which
-lowers their value to `none` (`valE_sub`).  `passOn_wf`: there is no infinite
+entries are left alone (`Keep` of `RunP`).  (`+cull`, which drops members and
+lowers their value to `none`, `valE_sub`, now runs only at the end.)  `passOn_wf`: there is no infinite
 sequence of such passes, by `ev_const` (`next` is bounded, so it stops
 growing) and `fam_finite` (finitely many identities, each non-increasing in a
 well-founded order, one falling at every step).
@@ -467,30 +468,32 @@ theorem memberLoop_le (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmT :
 
 /-! ## 6. The pass loop -/
 
-/-- **One pass of the component of `id` that goes on**: the member loop came
-back with the lowlink `index`, `+cull` ran, and `changed` was reported or
-`next` grew. -/
+/-- **One pass of the component of `id` that goes on with a change**: the
+member loop came back with the lowlink `index`, and `changed` was reported or
+`next` grew.  Since dab8478 no member is dropped between passes, so the next
+pass starts from the member loop's state.  (A pass that goes on with no
+change, because a member that `id` reaches is dirty at the end of the pass,
+is not a `PassOn`: that the quiet passes are finitely many is not proved.) -/
 def PassOn (env : Env R) (memoF : Memo M) (n : Nat) (id : Ident) (index pass : Nat)
     (st st' : SkaState M R) : Prop :=
-  ∃ ab members r st2, above id st.stk = some ab ∧ sweep n id (Treap.silt ab) st = some members ∧
+  ∃ ab members r, above id st.stk = some ab ∧ sweep n id (Treap.silt ab) st = some members ∧
     memberLoop env memoF n index pass members
-      { st with stats := { st.stats with passes := st.stats.passes + 1 } } = some (r, st2) ∧
-    r.1 = index ∧ cull n id st2 = some st' ∧ ¬ (r.2 = false ∧ st'.next = st.next)
+      { st with stats := { st.stats with passes := st.stats.passes + 1 } } = some (r, st') ∧
+    r.1 = index ∧ ¬ (r.2 = false ∧ st'.next = st.next)
 
 /-- **A pass that goes on is the pass loop calling itself.** -/
 theorem passLoop_of_on {env : Env R} {memoF : Memo M} {n : Nat} {id : Ident} {index pass : Nat}
     {st st' : SkaState M R} (h : PassOn env memoF n id index pass st st') :
     passLoop env memoF (n + 1) id index pass st = passLoop env memoF n id index (pass + 1) st' := by
-  obtain ⟨ab, members, r, st2, h1, h2, h3, h4, h5, h6⟩ := h
+  obtain ⟨ab, members, r, h1, h2, h3, h4, h6⟩ := h
   rw [passLoop_succ]
   unfold passStep
   simp only [h1, h2, Option.bind_some, h3]
   split
   · rename_i hc; exact absurd h4 hc
-  · simp only [h5, Option.bind_some]
-    split
-    · rename_i hc; exact absurd hc h6
-    · rfl
+  · first
+    | rfl
+    | exact if_neg h6
 
 /-- The invariants along a sequence of passes. -/
 theorem passOn_inv (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmT : MemoTP memoF)
@@ -499,24 +502,18 @@ theorem passOn_inv (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmT : Me
     (h : PassOn env memoF n id index pass st st') :
     SInv st' ∧ TInv st' ∧ WInv st' ∧ st.next ≤ st'.next ∧
       (st'.next = st.next → (∀ i, OLe (valE st' i) (valE st i)) ∧ ∃ i, OLt (valE st' i) (valE st i)) := by
-  obtain ⟨ab, members, r, st2, _, _, h3, _, h5, h6⟩ := h
+  obtain ⟨ab, members, r, _, _, h3, _, h6⟩ := h
   have i1 : SInv ({ st with stats := { st.stats with passes := st.stats.passes + 1 } } : SkaState M R) :=
     hi.congr rfl rfl rfl rfl
   have t1 : TInv ({ st with stats := { st.stats with passes := st.stats.passes + 1 } } : SkaState M R) :=
     ht.congr rfl rfl
-  obtain ⟨i2, _, _⟩ := (allP env memoF hmF n n (Nat.le_refl n)).2.2.2.2 index pass members _ r st2 []
+  obtain ⟨i2, _, _⟩ := (allP env memoF hmF n n (Nat.le_refl n)).2.2.2.2 index pass members _ r st' []
     (fun _ => False) i1 ⟨st.stk, (List.append_nil _).symm⟩ (fun _ h => h.elim) (fun _ _ h => h) h3
-  have t2 := (allPT env memoF hmF hmT n n (Nat.le_refl n)).2.2.2.2 index pass members _ r st2 i1 t1 h3
-  obtain ⟨w2, L2⟩ := memberLoop_le env memoF hmF hmT hRW n index pass members _ r st2 i1 t1 (hw.congr rfl rfl rfl) h3
-  have n2 := (allN env memoF n n (Nat.le_refl n)).2.2.2.2 index pass members _ r st2 h3
-  have c5 := cull_next h5
-  obtain ⟨ab', hab'⟩ := cull_above h5
-  obtain ⟨ab0, rest, _, hs', _⟩ := above_eq hab'
-  obtain ⟨i3, _, _⟩ := cull_ok i2 h5 hs'
-  have S := cull_sub h5
-  refine ⟨i3, cull_tp t2 h5, cull_winv w2 h5, by rw [c5]; exact n2.1, fun en => ?_⟩
-  have en2 : st2.next = st.next := c5.symm.trans en
-  obtain ⟨A, B⟩ := L2 en2
+  have t2 := (allPT env memoF hmF hmT n n (Nat.le_refl n)).2.2.2.2 index pass members _ r st' i1 t1 h3
+  obtain ⟨w2, L2⟩ := memberLoop_le env memoF hmF hmT hRW n index pass members _ r st' i1 t1 (hw.congr rfl rfl rfl) h3
+  have n2 := (allN env memoF n n (Nat.le_refl n)).2.2.2.2 index pass members _ r st' h3
+  refine ⟨i2, t2, w2, n2.1, fun en => ?_⟩
+  obtain ⟨A, B⟩ := L2 en
   have hr : r.2 = true := by
     cases e : r.2 with
     | true => rfl
@@ -525,7 +522,7 @@ theorem passOn_inv (env : Env R) (memoF : Memo M) (hmF : MemoWF memoF) (hmT : Me
   have v1 : valE ({ st with stats := { st.stats with passes := st.stats.passes + 1 } } : SkaState M R) =
       valE st := valE_congr rfl rfl
   rw [v1] at A hlt
-  exact ⟨fun j => ole_trans (valE_sub S j) (A j), i, ole_lt_trans (valE_sub S i) hlt⟩
+  exact ⟨A, i, hlt⟩
 
 /-- **The pass loop of `+analyze` ends**: there is no infinite sequence of
 passes of a component that go on (each at some fuel), from a state with the construction, tidy

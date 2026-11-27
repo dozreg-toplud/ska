@@ -16,22 +16,22 @@ namespace Cue
 
 open Nock CueRel
 
-theorem d2145917 : Dec pill KV 2145917 s2145917 2165544 10468 10508 := by cue_dec
-theorem d2166796 : Dec pill KV 2166796 s2166796 2174509 10513 10533 := by cue_dec
-theorem d2184632 : Dec pill KV 2184632 s2184632 2201899 10586 10680 := by cue_dec
-theorem d2205935 : Dec pill KV 2205935 s2205935 2221013 10702 10776 := by cue_dec
-theorem d2235919 : Dec pill KV 2235919 s2235919 2249329 10851 10920 := by cue_dec
-theorem d2201980 : Dec pill KV 2201980 s2201980 2249329 10681 10920 := by cue_dec
-theorem d2254319 : Dec pill KV 2254319 s2254319 2270199 10947 11027 := by cue_dec
-theorem d2282167 : Dec pill KV 2282167 s2282167 2295388 11085 11152 := by cue_dec
-theorem d2252248 : Dec pill KV 2252248 s2252248 2295388 10937 11152 := by cue_dec
-theorem d2300254 : Dec pill KV 2300254 s2300254 2314389 11179 11246 := by cue_dec
-theorem d2318691 : Dec pill KV 2318691 s2318691 2335751 11270 11353 := by cue_dec
-theorem d2335812 : Dec pill KV 2335812 s2335812 2354728 11353 11442 := by cue_dec
-theorem d2249344 : Dec pill KV 2249344 s2249344 2354743 10920 11442 := by cue_dec
-theorem d2357024 : Dec pill KV 2357024 s2357024 2372055 11447 11482 := by cue_dec
-theorem d2174866 : Dec pill KV 2174866 s2174866 2372829 10534 11484 := by cue_dec
-theorem d2136172 : Dec pill KV 2136172 s2136172 2375621 10445 11489 := by cue_dec
+theorem d2145917 : Dec pill KV 2145917 s2145917 2165544 10469 10509 := by cue_dec
+theorem d2166796 : Dec pill KV 2166796 s2166796 2174509 10514 10534 := by cue_dec
+theorem d2184632 : Dec pill KV 2184632 s2184632 2201899 10587 10681 := by cue_dec
+theorem d2205935 : Dec pill KV 2205935 s2205935 2221013 10703 10777 := by cue_dec
+theorem d2235919 : Dec pill KV 2235919 s2235919 2249329 10852 10921 := by cue_dec
+theorem d2201980 : Dec pill KV 2201980 s2201980 2249329 10682 10921 := by cue_dec
+theorem d2254319 : Dec pill KV 2254319 s2254319 2270199 10948 11028 := by cue_dec
+theorem d2282167 : Dec pill KV 2282167 s2282167 2295388 11086 11153 := by cue_dec
+theorem d2252248 : Dec pill KV 2252248 s2252248 2295388 10938 11153 := by cue_dec
+theorem d2300254 : Dec pill KV 2300254 s2300254 2314389 11180 11247 := by cue_dec
+theorem d2318691 : Dec pill KV 2318691 s2318691 2335751 11271 11354 := by cue_dec
+theorem d2335812 : Dec pill KV 2335812 s2335812 2354728 11354 11443 := by cue_dec
+theorem d2249344 : Dec pill KV 2249344 s2249344 2354743 10921 11443 := by cue_dec
+theorem d2357024 : Dec pill KV 2357024 s2357024 2372055 11448 11483 := by cue_dec
+theorem d2174866 : Dec pill KV 2174866 s2174866 2372829 10535 11485 := by cue_dec
+theorem d2136172 : Dec pill KV 2136172 s2136172 2375621 10446 11490 := by cue_dec
 
 end Cue
 end Pill

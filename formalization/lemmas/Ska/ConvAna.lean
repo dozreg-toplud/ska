@@ -147,7 +147,7 @@ theorem cullPass_ok2 {memoF : Memo M} {n : Nat} {pass : PassGo M R} (hpass : Pas
   unfold cullPass at h
   simp only [Option.bind_eq_some_iff] at h
   obtain ⟨st3, hcu, e⟩ := h
-  obtain ⟨c3, s3, k3, fr3, hsurv3, hreach3⟩ := cull_ok2 hc hs hidx hrest hrb hcu
+  obtain ⟨c3, s3, k3, fr3, hsurv3, -⟩ := cull_ok2 hc hs hidx hrest hrb hcu
   have hrest3 : ∀ m ∈ rest, MemOK st3 F m index := fun m hm =>
     memOK_keepRest hc.ord hc.s hs hidx k3 fr3.ticks (fun _ h => h) hm (hrest m hm)
   obtain ⟨l3, el3⟩ := k3.1
@@ -163,7 +163,7 @@ theorem cullPass_ok2 {memoF : Memo M} {n : Nat} {pass : PassGo M R} (hpass : Pas
   obtain ⟨⟨F4, hF4, c4⟩, s4, k4, fr4, hcl4, hid4, hlo4, hlt4⟩ := hpass id index 1 st3 low st' F l3 rest c3 el3 hidx3
     hrest3 (fun hm => restBelow_keep hc.s (hc.clo hm).1 (hrb hm) (fun m hm' => by rw [hs]; simp [hm'])
       (fun m hm' => k3.2.2 m (List.mem_cons_of_mem _ hm')) (fun c hc' => k3.2.1 c (List.mem_cons_of_mem _ hc'))
-      fr3 (up_of_split hc.ord hs hidx)) hcl3 hreach3 e
+      fr3 (up_of_split hc.ord hs hidx)) hcl3 e
   exact ⟨⟨F4, hF4, c4⟩, gStepsR_trans s3 s4, (k3.weaken ⟨[id], rfl⟩ (fun j hj => List.mem_cons_of_mem _ hj)).trans k4,
     (fr3.weaken (fun j hj => List.mem_cons_of_mem _ hj)).trans2 fr4 (fun j hj => hj), hcl4, hid4, hlo4, hlt4⟩
 
@@ -396,7 +396,7 @@ def AllP2 (env : Env R) (memoF : Memo M) (n : Nat) : Prop :=
 
 theorem allP2_zero (env : Env R) (memoF : Memo M) : AllP2 env memoF 0 := by
   refine ⟨fun _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ h => ?_,
-    fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_⟩
+    fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_, fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ h => ?_⟩
   · rw [resolve_zero] at h; cases h
   · rw [analyze_zero] at h; cases h
   · rw [run_zero] at h; cases h

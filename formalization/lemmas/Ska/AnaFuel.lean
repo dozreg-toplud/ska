@@ -187,6 +187,16 @@ theorem memberStep_le {run run' : RunGo M R} {ml ml' : MemGo M R}
       · exact OLe.refl _
       · exact OLe.map _ (hml _ _ _ _)
 
+theorem passEnd_le (n : Nat) {pl pl' : PassGo M R}
+    (hpl : ∀ id index pass st, OLe (pl id index pass st) (pl' id index pass st))
+    (id : Ident) (index pass : Nat) (st : SkaState M R) :
+    OLe (passEnd n pl id index pass st) (passEnd (n + 1) pl' id index pass st) := by
+  unfold passEnd
+  refine OLe.bind (OLe.refl _) fun ab => OLe.bind (sweep_fuel _ _ _ _) fun ms => ?_
+  split
+  · exact hpl _ _ _ _
+  · exact OLe.bind (cull_fuel _ _ _) fun _ => OLe.refl _
+
 theorem passStep_le (n : Nat) {ml ml' : MemGo M R} {pl pl' : PassGo M R}
     (hml : ∀ index pass ms st, OLe (ml index pass ms st) (ml' index pass ms st))
     (hpl : ∀ id index pass st, OLe (pl id index pass st) (pl' id index pass st))
@@ -197,10 +207,9 @@ theorem passStep_le (n : Nat) {ml ml' : MemGo M R} {pl pl' : PassGo M R}
   refine OLe.bind (hml _ _ _ _) fun r => ?_
   split
   · exact OLe.refl _
-  · refine OLe.bind (cull_fuel _ _ _) fun st' => ?_
-    split
-    · exact OLe.refl _
-    · exact hpl _ _ _ _
+  · by_cases hc : r.1.2 = false ∧ r.2.next = st.next
+    · rw [if_pos hc, if_pos hc]; exact passEnd_le n hpl _ _ _ _
+    · rw [if_neg hc, if_neg hc]; exact hpl _ _ _ _
 
 theorem cullPass_le (n : Nat) {pl pl' : PassGo M R}
     (hpl : ∀ id index pass st, OLe (pl id index pass st) (pl' id index pass st))

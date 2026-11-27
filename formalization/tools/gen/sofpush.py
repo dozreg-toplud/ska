@@ -9,7 +9,7 @@ from nouns import *
 def core2bat(ax):
     b = bin(ax)[2:]; assert b[:2] == '10', ax
     return int('1' + b[2:], 2)
-Kbat = ('R', 'nhe0b859c3d8aa'); door = ('R', 'comp.door')
+Kbat = ('R', 'nh5592f9d7750f'); door = ('R', 'comp.door')
 def cells(n):
     n = norm(n)
     return 0 if n[0] == 'A' else 1 + cells(n[1]) + cells(n[2])
