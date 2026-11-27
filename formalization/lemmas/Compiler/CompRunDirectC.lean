@@ -435,5 +435,137 @@ theorem crd_head6 (h7 : slot? 7 ctx = some compK) (msup : Option Nomm) (p q : No
     simp [nock_exec, crdN, hc, hcole, by_arm, by.arm_at, by.get.arm_at, get_arm, hgt, hD1, hne, hD2, noarHint, h7, hnoar, hD3,
       comp_fn_arm, hfn, hjh, biff_arm, biff.arm_at, biff_gate_nil, hD4, hsu, hsof]
 
+/-! ## The drop test where it fails, the model, the call -/
+
+/-- Whether the call is dropped (`callL`): a pure callee on a `%next` goal
+whose need asks nothing. -/
+noncomputable def crdDrop (pu : Bool) : CGoalL CSet → Bool
+  | CGoalL.next laz _ => pu && Lazy.noneEquivalentL laz
+  | _ => false
+
+/-- **The test of the drop on every goal**: `&(callee-pure ?=(%next -.goal)
+(none-equivalent laz.goal))` is `crdDrop`; on `%done` and `%pick` it fails at
+`?=(%next -.goal)`, on an impure callee at `callee-pure`. -/
+theorem crd_test_all (h7 : slot? 7 ctx = some compK) (N mono region sup : Noun) (pu : Bool) (goal : CGoalL CSet)
+    (g : Gen (TreapMap mugF)) (x : GenRest) :
+    nock (C (loob pu) (crSubj mono N goal.toNoun region sup (compCore g x ctx))) crDTest
+      = some (loob (crdDrop pu goal)) := by
+  cases pu with
+  | true =>
+    cases goal with
+    | next laz th => exact crd_test h7 N mono region sup laz th g x
+    | done => unfold crDTest; simp [nock_exec, crSubj, CGoalL.toNoun, crdDrop, loob]
+    | pick z o => unfold crDTest; simp [nock_exec, crSubj, CGoalL.toNoun, crdDrop, loob]
+  | false =>
+    unfold crDTest
+    cases goal <;> simp [nock_exec, crSubj, CGoalL.toNoun, crdDrop, loob]
+
+/-- **The model of the call** (`callL` with a known callee, no key, no ring,
+`sof` false, not dropped): `+need-ord-alloc-regs`, then `crdCallM`. -/
+theorem crd_model_call (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (b : Bell) (nb : NeedOrd)
+    (goal : CGoalL CSet) (region : List Nat) (hdr : crdDrop (env.pure b) goal = false)
+    (hri : env.ring b = Option.none) (hnb : env.need b = some nb) (hsof : env.sof (made p msup) p q b nb = false)
+    (hpc : hinted env.cod p = hinted noCode p) :
+    (runLC env msup (Nomm.n2 p q (some (b, Option.none))) goal region : CM (TreapMap mugF) (NextL CSet))
+      = needOrdAllocRegs nb >>= fun subNed => crdCallM env msup p q b subNed goal region := by
+  cases goal with
+  | next laz th =>
+    simp only [crdDrop] at hdr
+    simp only [runLC, callL, hdr, hri, hnb, hsof, Bool.false_eq_true, if_false, pastL_cod hpc]
+    unfold crdCallM crdTailM crdFq crdArg crdBlockM
+    rfl
+  | done =>
+    simp only [runLC, callL, hri, hnb, hsof, Bool.false_eq_true, if_false, pastL_cod hpc]
+    unfold crdCallM crdTailM crdFq crdArg crdBlockM
+    rfl
+  | pick z o =>
+    simp only [runLC, callL, hri, hnb, hsof, Bool.false_eq_true, if_false, pastL_cod hpc]
+    unfold crdCallM crdTailM crdFq crdArg crdBlockM
+    rfl
+
+/-- **The call after the drop test** (steps `0` to `14`): `crd_head6`, then
+step `7` by the goal (`crd_blk_done`, `crd_blk_next`) and `crd_from7`. -/
+theorem crd_call_body (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (hpn : hinted noCode p ≠ Option.none) (b : Bell)
+    (nb : NeedOrd) (sur : Noun) (x : GenRest) (hx : x.NoSoft) (hn : CallNoun msup ctx p q b nb sur x) (PV : Noun)
+    (goal : CGoalL CSet) (region : List Nat) (g : Gen (TreapMap mugF)) (hinv : GInv g goal)
+    (hpq : ∀ subNed g1, needOrdAllocRegs nb g = some (subNed, g1) →
+      (∀ cb g2, crdBlockM b (flattenNeed subNed) goal g1 = some (cb, g2) →
+        RunAt env msup ctx x (A 1) (unitNoun Nomm.toNoun msup) q (CGoalL.next (Lazy.ofSure Sure.bunt) (jmp0 cb))
+          region g2) ∧
+      (∀ cb g2 nexF g3 nexF' g4, crdBlockM b (flattenNeed subNed) goal g1 = some (cb, g2) →
+        crdFq env msup q (jmp0 cb) region g2 = some (nexF, g3) → pastL noCode nexF p region g3 = some (nexF', g4) →
+        RunAt env msup ctx x (A 1) (unitNoun Nomm.toNoun msup) p
+          (CGoalL.next (Lazy.ofSure ⟨subNed, HoonSet.empty⟩) nexF'.th) region g4) ∧
+      (∀ cb g2 nexF g3 nexF' g4 nexS g5, crdBlockM b (flattenNeed subNed) goal g1 = some (cb, g2) →
+        crdFq env msup q (jmp0 cb) region g2 = some (nexF, g3) → pastL noCode nexF p region g3 = some (nexF', g4) →
+        runLC env msup p (CGoalL.next (Lazy.ofSure ⟨subNed, HoonSet.empty⟩) nexF'.th) region g4 = some (nexS, g5) →
+        CopyH g5.re nexS.laz nexF'.laz)) :
+    nock (C PV (crSubj (A 1) (crdN p q b) goal.toNoun (listNoun A region) (unitNoun Nomm.toNoun msup)
+      (compCore g x ctx))) crDCall
+      = ((needOrdAllocRegs nb >>= fun subNed => crdCallM env msup p q b subNed goal region :
+          CM (TreapMap mugF) (NextL CSet)) g).map fun p => C p.1.goal.toNoun (genNoun p.2 x) := by
+  obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
+  rw [crd_head6 h7 msup p q b nb sur x hn PV goal.toNoun region g, bind_apply]
+  cases e : needOrdAllocRegs nb g with
+  | none => rfl
+  | some r =>
+    obtain ⟨subNed, g1⟩ := r
+    obtain ⟨⟨k, hk⟩, hre, -, -⟩ := needOrdAllocRegs_spec nb g g1 subNed e
+    have hinv1 : GInv g1 goal := ginv_mono hinv hre (by rw [hk]; exact Nat.le_refl _) (by rw [hk])
+    obtain ⟨hq, hp, hcp⟩ := hpq subNed g1 e
+    have hblk : nock (crdS6 sur (listNoun A (flattenNeed subNed)) subNed.toNoun nb.toNoun PV
+        (crSubj (A 1) (crdN p q b) goal.toNoun (listNoun A region) (unitNoun Nomm.toNoun msup) (compCore g1 x ctx)))
+        crDKc7 = (crdBlockM b (flattenNeed subNed) goal g1).map fun p => C (A p.1) (genNoun p.2 x) := by
+      by_cases hgd : goal = CGoalL.done
+      · subst hgd; exact crd_blk_done hc x sur nb.toNoun PV subNed p q b region _ g1
+      · exact crd_blk_next h7 x hx sur nb.toNoun PV subNed p q b region _ goal hgd g1 hinv1
+    simp only [Option.bind_some]
+    exact crd_from7 h7 hcode env msup p q hpn region x hx sur nb.toNoun PV _ subNed b goal g1 hblk hq hp hcp
+
+/-- **The case `%2` on a direct call that emits a block** (README Gaps 19),
+one instance (`RunAt`) at `mono` `|` and `sup` the noun of `msup`: a callee
+`b` with no memo key whose code entry has `pure` `env.pure b` (`CodePure`),
+the call not dropped (`crdDrop`), no ring, `env.need b = some nb`, `sof`
+false, the rest `x` of the state with `NoSoft` and `CallNoun`, every goal with
+`GInv`; the runs of `q` and `p` for the goals of the call (`hpq`). -/
+theorem comp_run_n2_call (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+    (env : CallEnv) (msup : Option Nomm) (p q : Nomm) (hpl : PlainOk p = true) (b : Bell) (hcd : CodePure cod env b)
+    (nb : NeedOrd) (sur : Noun) (goal : CGoalL CSet) (region : List Nat) (g : Gen (TreapMap mugF))
+    (hinv : GInv g goal) (hdr : crdDrop (env.pure b) goal = false) (hri : env.ring b = Option.none)
+    (hnb : env.need b = some nb) (hsof : env.sof (made p msup) p q b nb = false)
+    (x : GenRest) (hx : x.NoSoft) (hn : CallNoun msup ctx p q b nb sur x)
+    (hpq : ∀ subNed g1, needOrdAllocRegs nb g = some (subNed, g1) →
+      (∀ cb g2, crdBlockM b (flattenNeed subNed) goal g1 = some (cb, g2) →
+        RunAt env msup ctx x (A 1) (unitNoun Nomm.toNoun msup) q (CGoalL.next (Lazy.ofSure Sure.bunt) (jmp0 cb))
+          region g2) ∧
+      (∀ cb g2 nexF g3 nexF' g4, crdBlockM b (flattenNeed subNed) goal g1 = some (cb, g2) →
+        crdFq env msup q (jmp0 cb) region g2 = some (nexF, g3) → pastL noCode nexF p region g3 = some (nexF', g4) →
+        RunAt env msup ctx x (A 1) (unitNoun Nomm.toNoun msup) p
+          (CGoalL.next (Lazy.ofSure ⟨subNed, HoonSet.empty⟩) nexF'.th) region g4) ∧
+      (∀ cb g2 nexF g3 nexF' g4 nexS g5, crdBlockM b (flattenNeed subNed) goal g1 = some (cb, g2) →
+        crdFq env msup q (jmp0 cb) region g2 = some (nexF, g3) → pastL noCode nexF p region g3 = some (nexF', g4) →
+        runLC env msup p (CGoalL.next (Lazy.ofSure ⟨subNed, HoonSet.empty⟩) nexF'.th) region g4 = some (nexS, g5) →
+        CopyH g5.re nexS.laz nexF'.laz)) :
+    RunAt env msup ctx x (A 1) (unitNoun Nomm.toNoun msup) (Nomm.n2 p q (some (b, Option.none))) goal region g := by
+  obtain ⟨hc, -, -⟩ := comp_ctx_pill ctx h7
+  obtain ⟨hpc, hpn⟩ := hinted_plain env.cod hpl
+  obtain ⟨V, hgot, hv⟩ := hcd
+  unfold RunAt
+  rw [crd_model_call env msup p q b nb goal region hdr hri hnb hsof hpc, crd_noun, cr_disp_n2, cr2_dir, crd_eq]
+  have hpure := crd_pure hc hcode p.toNoun q.toNoun b.toNoun (unitNoun id Option.none) V _ (A 1)
+    goal.toNoun (listNoun A region) (unitNoun Nomm.toNoun msup) g x hgot hv
+  have ht := crd_test_all h7 (C (A 2) (C p.toNoun (C q.toNoun (C (A 0) (C b.toNoun (unitNoun id Option.none))))))
+    (A 1) (listNoun A region) (unitNoun Nomm.toNoun msup) (env.pure b) goal g x
+  rw [hdr] at ht
+  have hcall := crd_call_body h7 hcode env msup p q hpn b nb sur x hx hn (loob (env.pure b)) goal region g hinv hpq
+  simp only [crdN] at hcall
+  have hu : unitNoun (id : Noun → Noun) Option.none = A 0 := rfl
+  rw [hu] at hpure ht ⊢
+  have hl : loob false = A 1 := rfl
+  rw [hl] at ht
+  unfold crDHead
+  simp [nock_exec, hpure, ht, hcall]
+
 end Compiler
 end Formalization
