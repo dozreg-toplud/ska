@@ -11,7 +11,8 @@ slots.  Then the pushes with `cond` a nonempty treap (`tsnp_pre`: `proxies`
 is `&`), the core (`tsmp_core`: the renaming path by `renReg r0 n-in ∘
 unproxy cond`), the gate with proxies against `toStraightF_run`
 (`tsmp_at`), and the gate on every `cond` (`ts_at_all`: `tsn_at` when
-`hasProxies cond` is false).
+`hasProxies cond` is false), and the whole-subject `TsAt` without its
+hypothesis on `cond` (`ts_at_this`, `ts_at_proved`).
 -/
 
 namespace Formalization
@@ -182,6 +183,20 @@ theorem ts_at_all {ctx : Noun} (h7 : slot? 7 ctx = some compK) (g : Gen (TreapMa
   cases hp : hasProxies g.cond with
   | false => exact tsn_at h7 g x o ned (hasProxies_none hp) hrun
   | true => exact tsmp_at h7 g x o ned hp hrun
+
+/-- **The whole-subject `TsAt` on every `cond`**: `+to-straight` on the
+sample `[%next [[this+sub ~] ~ ~] ~ o]` of `+compile-unary` returns the noun
+of `toStraightF`, with or without proxies. -/
+theorem ts_at_this {ctx : Noun} (h7 : slot? 7 ctx = some compK) (g : Gen (TreapMap mugF)) (x : GenRest)
+    (sub o : Nat) :
+    nock (C tsBat (C (tsSample (A o) (A sub)) (compCore g x ctx))) tsBat
+      = (toStraightF g.cond g.blocks (Need.this sub) o).map Straight.toNoun := by
+  rw [tsSample_eq]
+  exact ts_at_all h7 g x o (Need.this sub) (by simp [flattenNeed, isRun])
+
+/-- So `TsAt` (`CompUnaryTop.lean`) holds in every context of `+comp`. -/
+theorem ts_at_proved {ctx : Noun} (h7 : slot? 7 ctx = some compK) : TsAt ctx :=
+  fun g x sub o _ => ts_at_this h7 g x sub o
 
 end Compiler
 end Formalization

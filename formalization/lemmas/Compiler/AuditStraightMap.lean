@@ -1,4 +1,4 @@
-import lemmas.Compiler.CompStraightMapTop
+import lemmas.Compiler.CompStraightMapSix
 
 /-! The axioms of the main theorems of the map path of `+to-straight`
 (README Gaps 20). -/
@@ -18,3 +18,15 @@ open Formalization.Compiler
 #print axioms tsm_rer_prox
 #print axioms tsm_dol
 #print axioms tsm_core
+#print axioms tsm_rep_bunt_sp
+#print axioms tsm_arg_bunt_sp
+#print axioms tsnp_pre
+#print axioms tsmp_core
+#print axioms tsmp_at
+#print axioms ts_at_all
+#print axioms ts_at_this
+#print axioms ts_at_proved
+#print axioms tsMapAt_holds
+#print axioms cu_gate_scc_one_six_ts
+#print axioms cu_gate_scc_one_six_fol_ts
+#print axioms cu_gate_six_ts
