@@ -97,3 +97,4 @@ open Formalization.SkaModel.Comp
 #print axioms tableOK_slot
 #print axioms closed_slotCall
 #print axioms closed_slotCallFour
+#print axioms dt_closed_of_table
