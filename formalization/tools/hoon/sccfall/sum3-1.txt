@@ -1,0 +1,194 @@
+r4-21  |scc| 1  sweeps 3  final yes
+         need-new [[%both this this] [%both this this]] ; [[%both this this] [%both this this]]
+         entry    [[%both this this] [%both this this]] -> [[%both this this] [%both this this]]
+         F: 1 outputs: [[%both this this] [%both this this]] (129)
+         orbit fixed: [[%both this this] [%both this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-22  |scc| 1  sweeps 3  final yes
+         need-new [[none this] [this this]] ; [[none this] [this this]]
+         entry    [[none this] [this this]] -> [[none this] [this this]]
+         F: 1 outputs: [[none this] [this this]] (129)
+         orbit fixed: [[none this] [this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-23  |scc| 1  sweeps 3  final yes
+         need-new [[%both this this] [%both this this]] ; [[%both this this] [%both this this]]
+         entry    [[%both this this] [%both this this]] -> [[%both this this] [%both this this]]
+         F: 1 outputs: [[%both this this] [%both this this]] (129)
+         orbit fixed: [[%both this this] [%both this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-24  |scc| 1  sweeps 3  final yes
+         need-new [%both this [%both this this]] ; [%both this [%both this this]]
+         entry    [%both this [%both this this]] -> [%both this [%both this this]]
+         F: 1 outputs: [%both this [%both this this]] (129)
+         orbit fixed: [%both this [%both this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-25  |scc| 1  sweeps 3  final yes
+         need-new [[%both this this] [%both this this]] ; [[%both this this] [%both this this]]
+         entry    [[%both this this] [%both this this]] -> [[%both this this] [%both this this]]
+         F: 1 outputs: [[%both this this] [%both this this]] (129)
+         orbit fixed: [[%both this this] [%both this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-26  |scc| 1  sweeps 3  final yes
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+         F: 1 outputs: [%both [%both this this] [%both this this]] (129)
+         orbit fixed: [%both [%both this this] [%both this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-27  |scc| 1  sweeps 3  final yes
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+         F: 1 outputs: [%both [%both this this] [%both this this]] (129)
+         orbit fixed: [%both [%both this this] [%both this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-28  |scc| 1  sweeps 4  final yes
+         need-new [%both [%both this this] [%both [%both this none] this]] ; [%both [%both this [%both this none]] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both [%both this none] this]] -> [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+         F: 1 outputs: [%both [%both this this] [%both this this]] (129)
+         orbit off-table: [%both [%both this this] [%both [%both this none] this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-29  |scc| 1  sweeps 3  final yes
+         need-new [[this none] [this this]] ; [[this none] [this this]]
+         entry    [[this none] [this this]] -> [[this none] [this this]]
+         F: 1 outputs: [[this none] [this this]] (129)
+         orbit fixed: [[this none] [this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-30  |scc| 1  sweeps 3  final yes
+         need-new [%both this [%both this this]] ; [%both this [%both this this]]
+         entry    [%both this [%both this this]] -> [%both this [%both this this]]
+         F: 1 outputs: [%both this [%both this this]] (129)
+         orbit fixed: [%both this [%both this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-31  |scc| 1  sweeps 3  final yes
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+         F: 1 outputs: [%both [%both this this] [%both this this]] (129)
+         orbit fixed: [%both [%both this this] [%both this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-32  |scc| 1  sweeps 3  final yes
+         need-new [[%both this this] [%both this this]] ; [[%both this this] [%both this this]]
+         entry    [[%both this this] [%both this this]] -> [[%both this this] [%both this this]]
+         F: 1 outputs: [[%both this this] [%both this this]] (129)
+         orbit fixed: [[%both this this] [%both this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-33  |scc| 1  sweeps 3  final yes
+         need-new [[none this] [this this]] ; [[none this] [this this]]
+         entry    [[none this] [this this]] -> [[none this] [this this]]
+         F: 1 outputs: [[none this] [this this]] (129)
+         orbit fixed: [[none this] [this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-35  |scc| 1  sweeps 3  final yes
+         need-new [[%both this this] [%both this this]] ; [[%both this this] [%both this this]]
+         entry    [[%both this this] [%both this this]] -> [[%both this this] [%both this this]]
+         F: 2 outputs: [[%both this this] [%both this this]] (99)  [[%both this this] [this this]] (30)
+         orbit fixed: [[%both this this] [%both this this]]
+         ranked, longest chain 1; over every output: yes, 2
+r4-36  |scc| 1  sweeps 3  final yes
+         need-new [[%both this this] [%both this this]] ; [[%both this this] [%both this this]]
+         entry    [[%both this this] [%both this this]] -> [[%both this this] [%both this this]]
+         F: 2 outputs: [[%both this this] this] (33)  [[%both this this] [%both this this]] (96)
+         orbit fixed: [[%both this this] [%both this this]]
+         ranked, longest chain 1; over every output: yes, 2
+r4-37  |scc| 1  sweeps 3  final yes
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+         F: 1 outputs: [%both [%both this this] [%both this this]] (129)
+         orbit fixed: [%both [%both this this] [%both this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-38  |scc| 1  sweeps 3  final yes
+         need-new [%both this this] ; [%both this this]
+         entry    [%both this this] -> [%both this this]
+         F: 1 outputs: [%both this this] (129)
+         orbit fixed: [%both this this]
+         ranked, longest chain 1; over every output: yes, 1
+r4-39  |scc| 1  sweeps 3  final yes
+         need-new [%both [%both this this] this] ; [%both [%both this this] this]
+         entry    [%both [%both this this] this] -> [%both [%both this this] this]
+         F: 2 outputs: [%both [%both this this] this] (99)  [%both [this this] this] (30)
+         orbit fixed: [%both [%both this this] this]
+         ranked, longest chain 2; over every output: yes, 2
+r4-40  |scc| 1  sweeps 3  final yes
+         need-new [%both this this] ; [%both this this]
+         entry    [%both this this] -> [%both this this]
+         F: 1 outputs: [%both this this] (129)
+         orbit fixed: [%both this this]
+         ranked, longest chain 1; over every output: yes, 1
+r4-41  |scc| 1  sweeps 3  final yes
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+         F: 1 outputs: [%both [%both this this] [%both this this]] (129)
+         orbit fixed: [%both [%both this this] [%both this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-42  |scc| 1  sweeps 3  final yes
+         need-new [[this this] [this none]] ; [[this this] [this none]]
+         entry    [[this this] [this none]] -> [[this this] [this none]]
+         F: 1 outputs: [[this this] [this none]] (129)
+         orbit fixed: [[this this] [this none]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-43  |scc| 1  sweeps 3  final yes
+         need-new [[this this] [this this]] ; [[this this] [this this]]
+         entry    [[this this] [this this]] -> [[this this] [this this]]
+         F: 1 outputs: [[this this] [this this]] (129)
+         orbit fixed: [[this this] [this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-44  |scc| 1  sweeps 3  final yes
+         need-new [%both [%both this this] [%both [%both none this] this]] ; [%both [%both this this] [%both [%both none this] this]]
+         entry    [%both [%both this this] [%both [%both none this] this]] -> [%both [%both this this] [%both [%both none this] this]]
+         F: 1 outputs: [%both [%both this this] [%both this this]] (129)
+         orbit off-table: [%both [%both this this] [%both [%both none this] this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-45  |scc| 1  sweeps 3  final yes
+         need-new [[%both this this] [%both this this]] ; [[%both this this] [%both this this]]
+         entry    [[%both this this] [%both this this]] -> [[%both this this] [%both this this]]
+         F: 1 outputs: [[%both this this] [%both this this]] (129)
+         orbit fixed: [[%both this this] [%both this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-46  |scc| 1  sweeps 3  final yes
+         need-new [[%both this this] [this this]] ; [[%both this this] [this this]]
+         entry    [[%both this this] [this this]] -> [[%both this this] [this this]]
+         F: 1 outputs: [[%both this this] [this this]] (129)
+         orbit fixed: [[%both this this] [this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-47  |scc| 1  sweeps 3  final yes
+         need-new [%both this this] ; [%both this this]
+         entry    [%both this this] -> [%both this this]
+         F: 1 outputs: [%both this this] (129)
+         orbit fixed: [%both this this]
+         ranked, longest chain 1; over every output: yes, 1
+r4-48  |scc| 1  sweeps 3  final yes
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+         F: 2 outputs: [%both [%both this this] [%both this this]] (98)  [%both [%both this this] [this this]] (31)
+         orbit fixed: [%both [%both this this] [%both this this]]
+         ranked, longest chain 2; over every output: yes, 3
+r4-49  |scc| 1  sweeps 3  final yes
+         need-new [%both [%both this this] this] ; [%both [%both this this] this]
+         entry    [%both [%both this this] this] -> [%both [%both this this] this]
+         F: 1 outputs: [%both [%both this this] this] (129)
+         orbit fixed: [%both [%both this this] this]
+         ranked, longest chain 1; over every output: yes, 1
+r4-50  |scc| 1  sweeps 3  final yes
+         need-new [%both this this] ; [%both this this]
+         entry    [%both this this] -> [%both this this]
+         F: 1 outputs: [%both this this] (129)
+         orbit fixed: [%both this this]
+         ranked, longest chain 1; over every output: yes, 1
+r4-51  |scc| 1  sweeps 3  final yes
+         need-new [[%both this this] [%both this this]] ; [[%both this this] [%both this this]]
+         entry    [[%both this this] [%both this this]] -> [[%both this this] [%both this this]]
+         F: 1 outputs: [[%both this this] [%both this this]] (129)
+         orbit fixed: [[%both this this] [%both this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-52  |scc| 1  sweeps 3  final yes
+         need-new [none [this this]] ; [none [this this]]
+         entry    [none [this this]] -> [none [this this]]
+         F: 1 outputs: [none [this this]] (129)
+         orbit fixed: [none [this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r4-53  |scc| 1  sweeps 3  final yes
+         need-new [[%both this [%both none this]] [%both [%both none this] this]] ; [[%both this [%both none this]] [%both [%both none this] [%both none this]]]
+         entry    [[%both this [%both none this]] [%both [%both none this] this]] -> [[%both this [%both none this]] [%both [%both none this] this]]
+         F: 1 outputs: [[%both this this] [%both this this]] (129)
+         orbit off-table: [[%both this [%both none this]] [%both [%both none this] this]]
+         ranked, longest chain 1; over every output: yes, 1
+falls 0, probe cycles 0, tables with a cycle or fall from some start 0
+tables 32, not ranked 0, longest chain 2, not ranked over every output 0

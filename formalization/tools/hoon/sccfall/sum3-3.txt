@@ -1,0 +1,192 @@
+r5-27  |scc| 2  sweeps 3  final yes
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+         need-new [[this this] [%both this this]] ; [[this this] [%both this this]]
+         entry    [[this this] [%both this this]] -> [[this this] [%both this this]]
+r5-28  |scc| 2  sweeps 3  final yes
+         need-new [[%both this this] [%both this this]] ; [[%both this this] [%both this this]]
+         entry    [[%both this this] [%both this this]] -> [[%both this this] [%both this this]]
+         need-new [[this this] [%both this this]] ; [[this this] [%both this this]]
+         entry    [[this this] [%both this this]] -> [[this this] [%both this this]]
+r5-29  |scc| 1  sweeps 3  final yes
+         need-new [[this none] [%both this none]] ; [[this none] [%both this none]]
+         entry    [[this none] [%both this none]] -> [[this none] [%both this none]]
+         F: 4 outputs: [[this none] [%both this none]] (51)  [[this none] [this this]] (16)  [[this none] [%both this this]] (48)  [[this none] [this none]] (14)
+         orbit fixed: [[this none] [%both this none]]
+         ranked, longest chain 1; over every output: yes, 3
+r5-30  |scc| 2  sweeps 3  final yes
+         need-new [[%both this this] [%both this this]] ; [[%both this this] [%both this this]]
+         entry    [[%both this this] [%both this this]] -> [[%both this this] [%both this this]]
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+r5-31  |scc| 2  sweeps 3  final yes
+         need-new [[this this] [this none]] ; [[this this] [this none]]
+         entry    [[this this] [this none]] -> [[this this] [this none]]
+         need-new [[%both this this] [%both this this]] ; [[%both this this] [%both this this]]
+         entry    [[%both this this] [%both this this]] -> [[%both this this] [%both this this]]
+r5-32  |scc| 2  sweeps 3  final yes
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+         need-new [%both [%both this this] this] ; [%both [%both this this] this]
+         entry    [%both [%both this this] this] -> [%both [%both this this] this]
+r5-33  |scc| 2  sweeps 3  final yes
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+r5-34  |scc| 1  sweeps 3  final yes
+         need-new [[this this] this] ; [[this this] this]
+         entry    [[this this] this] -> [[this this] this]
+         F: 1 outputs: [[this this] this] (129)
+         orbit fixed: [[this this] this]
+         ranked, longest chain 1; over every output: yes, 1
+r5-35  |scc| 1  sweeps 3  final yes
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+         F: 1 outputs: [%both [%both this this] [%both this this]] (129)
+         orbit fixed: [%both [%both this this] [%both this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r5-36  |scc| 2  sweeps 4  final yes
+         need-new [[%both [%both none this] this] [%both this [%both none this]]] ; [[%both this this] [%both [%both none this] [%both none this]]] ; [[%both this this] [%both this [%both none this]]]
+         entry    [[%both [%both none this] this] [%both this [%both none this]]] -> [[%both this this] [%both this [%both none this]]] -> [[%both this this] [%both this [%both none this]]]
+         need-new [%both [%both this [%both none this]] [%both this [%both none this]]] ; [%both [%both [%both none this] [%both none this]] [%both this this]] ; [%both [%both this [%both none this]] [%both this this]]
+         entry    [%both [%both this [%both none this]] [%both this [%both none this]]] -> [%both [%both this [%both none this]] [%both this this]] -> [%both [%both this [%both none this]] [%both this this]]
+r5-37  |scc| 2  sweeps 4  final yes
+         need-new [%both [%both [%both none this] this] [%both this this]] ; [%both [%both this this] [%both this [%both none this]]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both [%both none this] this] [%both this this]] -> [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+r5-38  |scc| 2  sweeps 3  final yes
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+r5-39  |scc| 2  sweeps 3  final yes
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+r5-40  |scc| 2  sweeps 3  final yes
+         need-new [[none [%both this none]] [none this]] ; [[none this] [none this]]
+         entry    [[none [%both this none]] [none this]] -> [[none this] [none this]]
+         need-new [%both this this] ; [%both this this]
+         entry    [%both this this] -> [%both this this]
+r5-41  |scc| 2  sweeps 4  final yes
+         need-new [%both [%both [%both this this] [%both this this]] [%both this [%both none this]]] ; [%both [%both this [%both this this]] [%both [%both this this] [%both this this]]] ; [%both [%both this [%both this this]] [%both [%both this this] [%both this this]]]
+         entry    [%both [%both [%both this this] [%both this this]] [%both this [%both none this]]] -> [%both [%both this [%both this this]] [%both this [%both this this]]] -> [%both [%both this [%both this this]] [%both this [%both this this]]]
+         need-new [[[%both this this] [%both none this]] [[%both this this] none]] ; [[this [%both this this]] [[%both this this] none]]
+         entry    [[[%both this this] [%both none this]] [[%both this this] none]] -> [[this [%both this this]] [[%both this this] none]]
+r5-42  |scc| 2  sweeps 3  final yes
+         need-new [[%both this this] [%both this this]] ; [[%both this this] [%both this this]]
+         entry    [[%both this this] [%both this this]] -> [[%both this this] [%both this this]]
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+r5-43  |scc| 2  sweeps 3  final yes
+         need-new [[%both this this] [this this]] ; [[%both this this] [this this]]
+         entry    [[%both this this] [this this]] -> [[%both this this] [this this]]
+         need-new [this this] ; [this this]
+         entry    [this this] -> [this this]
+r5-44  |scc| 2  sweeps 3  final yes
+         need-new [[%both this this] [%both [%both none this] this]] ; [[%both this this] [%both [%both none this] this]]
+         entry    [[%both this this] [%both [%both none this] this]] -> [[%both this this] [%both [%both none this] this]]
+         need-new [%both [%both [%both none this] [%both none this]] [%both this this]] ; [%both [%both [%both none this] [%both none this]] [%both this this]]
+         entry    [%both [%both [%both none this] [%both none this]] [%both this this]] -> [%both [%both [%both none this] [%both none this]] [%both this this]]
+r5-45  |scc| 1  sweeps 3  final yes
+         need-new [this [%both this this]] ; [this [%both this this]]
+         entry    [this [%both this this]] -> [this [%both this this]]
+         F: 1 outputs: [this [%both this this]] (129)
+         orbit fixed: [this [%both this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r5-45  |scc| 1  sweeps 3  final yes
+         need-new [this [this this]] ; [this [this this]]
+         entry    [this [this this]] -> [this [this this]]
+         F: 1 outputs: [this [this this]] (129)
+         orbit fixed: [this [this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r5-46  |scc| 2  sweeps 3  final yes
+         need-new [%both [%both this this] [this this]] ; [%both [%both this this] [this this]]
+         entry    [%both [%both this this] [this this]] -> [%both [%both this this] [this this]]
+         need-new [%both [%both this this] [this this]] ; [%both [%both this this] [this this]]
+         entry    [%both [%both this this] [this this]] -> [%both [%both this this] [this this]]
+r5-47  |scc| 2  sweeps 3  final yes
+         need-new [%both [%both this this] this] ; [%both [%both this this] this]
+         entry    [%both [%both this this] this] -> [%both [%both this this] this]
+         need-new [%both [%both this this] [%both this none]]
+         entry    [%both [%both this this] [%both this none]]
+r5-48  |scc| 1  sweeps 3  final yes
+         need-new [[%both this this] [this this]] ; [[%both this this] [this this]]
+         entry    [[%both this this] [this this]] -> [[%both this this] [this this]]
+         F: 1 outputs: [[%both this this] [this this]] (129)
+         orbit fixed: [[%both this this] [this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r5-48  |scc| 1  sweeps 3  final yes
+         need-new [[this this] [this this]] ; [[this this] [this this]]
+         entry    [[this this] [this this]] -> [[this this] [this this]]
+         F: 1 outputs: [[this this] [this this]] (129)
+         orbit fixed: [[this this] [this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r5-49  |scc| 2  sweeps 3  final yes
+         need-new [[none this] [%both [%both none this] this]] ; [[none this] [%both this this]]
+         entry    [[none this] [%both [%both none this] this]] -> [[none this] [%both this this]]
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+r5-50  |scc| 2  sweeps 3  final yes
+         need-new [[%both this this] [%both this this]] ; [[%both this this] [%both this this]]
+         entry    [[%both this this] [%both this this]] -> [[%both this this] [%both this this]]
+         need-new [[%both this this] [%both this this]] ; [[%both this this] [%both this this]]
+         entry    [[%both this this] [%both this this]] -> [[%both this this] [%both this this]]
+r5-51  |scc| 1  sweeps 3  final yes
+         need-new [[this none] [none this]] ; [[this none] [none this]]
+         entry    [[this none] [none this]] -> [[this none] [none this]]
+         F: 1 outputs: [[this none] [none this]] (129)
+         orbit fixed: [[this none] [none this]]
+         ranked, longest chain 1; over every output: yes, 1
+r5-52  |scc| 2  sweeps 6  final yes
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+         need-new [[%both [%both this this] [%both this this]] [this [%both this this]]] ; [[%both [%both this this] this] [[%both this this] [%both this this]]] ; [[%both [%both this this] this] [[%both this this] this]] ; [[%both this this] [[%both this this] this]] ; [[%both this this] [this this]]
+         entry    [[%both [%both this this] [%both this this]] [this [%both this this]]] -> [[%both [%both this this] this] [this [%both this this]]] -> [[%both [%both this this] this] [this this]] -> [[%both this this] [this this]] -> [[%both this this] [this this]]
+r5-53  |scc| 2  sweeps 3  final yes
+         need-new [%both [%both this this] this] ; [%both [%both this this] this]
+         entry    [%both [%both this this] this] -> [%both [%both this this] this]
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+r5-54  |scc| 1  sweeps 3  final yes
+         need-new [[%both this this] [%both this this]] ; [[%both this this] [%both this this]]
+         entry    [[%both this this] [%both this this]] -> [[%both this this] [%both this this]]
+         F: 1 outputs: [[%both this this] [%both this this]] (129)
+         orbit fixed: [[%both this this] [%both this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r5-54  |scc| 1  sweeps 3  final yes
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+         F: 1 outputs: [%both [%both this this] [%both this this]] (129)
+         orbit fixed: [%both [%both this this] [%both this this]]
+         ranked, longest chain 1; over every output: yes, 1
+r5-55  |scc| 2  sweeps 4  final yes
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+         need-new [%both [%both [%both this this] this] this] ; [%both [%both this this] this] ; [%both [%both this this] this]
+         entry    [%both [%both [%both this this] this] this] -> [%both [%both this this] this] -> [%both [%both this this] this]
+r5-56  |scc| 2  sweeps 3  final yes
+         need-new [this this] ; [this this]
+         entry    [this this] -> [this this]
+         need-new [%both [%both this this] [%both this this]] ; [%both [%both this this] [%both this this]]
+         entry    [%both [%both this this] [%both this this]] -> [%both [%both this this] [%both this this]]
+r5-57  |scc| 2  sweeps 3  final yes
+         need-new [%both [[%both this none] this] [this this]] ; [%both [[%both this none] [%both this none]] [this this]]
+         entry    [%both [[%both this none] this] [this this]] -> [%both [[%both this none] this] [this this]]
+         need-new [[[%both this none] [%both this none]] [[%both this none] this]] ; [[[%both this none] [%both this none]] [[%both this none] this]]
+         entry    [[[%both this none] [%both this none]] [[%both this none] this]] -> [[[%both this none] [%both this none]] [[%both this none] this]]
+r5-58  |scc| 2  sweeps 4  final yes
+         need-new [%both this [%both this this]] ; [%both this [%both this this]] ; [%both this [%both this this]]
+         entry    [%both this [%both this this]] -> [%both this [%both this this]] -> [%both this [%both this this]]
+         need-new [[%both this [%both this none]] [%both this this]] ; [[%both this this] [%both [%both this none] this]] ; [[%both this this] [%both this this]]
+         entry    [[%both this [%both this none]] [%both this this]] -> [[%both this this] [%both this this]] -> [[%both this this] [%both this this]]
+r5-59  |scc| 2  sweeps 3  final yes
+         need-new [[%both this this] [%both this this]] ; [[%both this this] [%both this this]]
+         entry    [[%both this this] [%both this this]] -> [[%both this this] [%both this this]]
+         need-new [[none this] [%both this this]]
+         entry    [[none this] [%both this this]]
+falls 0, probe cycles 0, tables with a cycle or fall from some start 0
+tables 10, not ranked 0, longest chain 1, not ranked over every output 0
