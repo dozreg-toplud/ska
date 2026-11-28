@@ -1,4 +1,5 @@
 import lemmas.Compiler.OptLinkAlState
+import lemmas.Compiler.OptLinkAlBody
 import lemmas.Compiler.CompLift
 import lemmas.Ska.OptAliasBrz
 
@@ -61,10 +62,7 @@ set_option linter.unusedVariables false
 def alFS (X1 X2 BOB X4 X5 X6 WALK : Noun) : Noun :=
   C X1 (C X2 (C BOB (C X4 (C X5 (C X6 WALK)))))
 
-/-- The arm `rn` of the battery. -/
-def alRnArm : Noun := C (A 8) (C (C (A 1) (A 0)) (C (C (A 1) alRnB) (C (A 0) (A 1))))
-
-theorem alBat_rn : ∃ R1 R2, alBat = C R1 (C alRnArm R2) := ⟨_, _, rfl⟩
+/-! The arm `rn` of the battery: `alRnArm` and `alBat_rn` of `OptLinkAlBody.lean`. -/
 
 theorem al_rn_arm (d : Noun) : nock d alRnArm = some (C alRnB (C (A 0) d)) := by
   simp [alRnArm, nock_exec]
