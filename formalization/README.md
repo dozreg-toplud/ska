@@ -1098,6 +1098,8 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/PokeFlagsOf.lean` | `flagsOf` (track P, Gaps 23, P1): `nmOf`, `Edge`, `Reach`, `InScc`, `sccSet`, `sccOrd`, `ftAt`, `FlagSol` (a solution of the loop, order-free), `flagsOf` (`Classical.epsilon`), `flagsOf_eq`, `TarjanSpec`, `TarjanSpecN` (the leaf on `+tarjan`). |
 | `Ska/PokeHalt.lean` | `FullAnswers` from `CompHyp` and one hypothesis per loop (`AnaEnds`, `BakeEnds`, `RootAnswers`; `fullAnswers_of_loops`; `PokeSites` is no longer needed since the guard of commit 8f2162e). The final pass never crashes (`finalEnds_always`). The worklist does not depend on extra fuel (`bakeLoop_mono`), and bakes only lose knowledge (`bakeLoop_grows`). Not proved: that the worklist and the analysis end. |
 | `Ska/BakeMeasure.lean` | The normal form of `+norm-sock` (`CanonCD`, `normCD_canon`, `normCD_of_canon`) and a measure `kap` on it: on normal socks, a strict loss of nouns lowers it (`kap_sub`, `kapS_lt`), and the same nouns give the same sock (`canon_ext`).  Every bake at the end of the worklist is `less.c` or normal (`bakes_canon`), and a change of a bake that keeps its nouns goes to or from `less.c` (`noLoss_lessc`).  `less.c` is often not normal on the real compiler (2,045 of 3,033 pairs checked), so `BakeEnds` still needs a bound on the changes back to `less.c`. |
+| `Ska/BakeHalt.lean` | Track Q (Gaps 31): the leaf `BakeEnds`.  `bakeFuel` (a fuel at which the worklist returns, as `anaFuel`), `BakeHalts` (returns at some fuel), `bakeEnds_of_halts`, `bakeHalts_of_ends`, `bakeEnds_mono`.  The measure `kapX` that depends only on the nouns of a sock (`&` on a noun of size `n` counts `2n+1`, a cell cape that knows something its halves plus 1): a strict loss of nouns lowers it with no normal form (`kapX_sub`, `kapXS_lt`), so a change of a bake lowers it unless it is a tie (`rebakeG_kapX`).  The lexicographic `bakeMeasure` (bells of `U` with no bake, sum of `kapXS`, queue length) and `bakeLoop_halts_of_drop`, `put_drop`, `touchFold_drop`, `bakeStep_drop`; **`bakeEnds_of_drops`**: `BakeEnds` at `bakeFuel` from `BakeDrops` (per poke: a finite `U`, no crash, no tie). |
+| `Ska/AuditBakeHalt.lean` | `#print axioms` of `Ska/BakeHalt.lean`. |
 | `Ska/SitesMeet.lean` | Obsolete for good: since the guard of commit 8f2162e `bakes_ok` needs no `SitesMeet`.  A dead route (true theorems, kept as a record; `SitesMeet` is false, see `SitesMeetFalse.lean`).  `SitesMeet` from three smaller invariants (`sitesMeet_of_parts`): `LessProvides` (under the code requirement itself, every site provides its callee's code requirement), `KnowMono` (`+know` is monotone in the subject sock: under a bake below `less.cur` each site has a site of the same callee under `less.cur` that knows no more; false for the model in general, see `KnowMonoFalse.lean`) and `SitesInhab` (no site's sock is `%void`).  `pokeSites_of_parts`: `PokeSites` from the three for every poke.  None of the three is proved; all three held on the real compiler on the 11,370 sites of `sitesmeet2.hoon` (3,033 pairs of a code bell and a bake, 1,555 of them strict) with no failure (`tools/hoon/sitesmeet3.hoon`).  `LessProvides` reduces (an argument in the header) to the coherence of the products of the identities of one code bell. |
 | `Ska/KnowMonoFalse.lean` | Obsolete for good since the guard of commit 8f2162e (a part of the `SitesMeet` route).  `knowMono_false`: `KnowMono` fails for every folding environment whose `dat` has two given datums, so it cannot come from the sock operations of `+know` alone.  Under the bake a read folds and loses its provenance, a call on the other branch of a `%6` keeps provenance `2`, and `+double-int` forgets the part (`|`), while under `less.cur` neither folds and the join keeps `[& |]` `[7 0]`.  `SitesMeet` is not refuted by it (the site knows `|`).  Not checked on the real compiler. |
 | `Ska/SitesMeetNF.lean` | Obsolete for good: since the guard of commit 8f2162e `bakes_ok` needs no `SitesMeet`.  A dead route (true theorems, kept as a record; `SitesMeet` is false, see `SitesMeetFalse.lean`).  `sitesMeet_of_nf`: `SitesMeet` from `LessProvidesNF` (under `less.cur`, `+know` without folding lists sites that provide their callees' code requirements) and `KnowMeetsNF` (each site under a bake shares a noun with a site of the same callee of that run without folding), with no `SitesInhab`.  `+knit:so`, `+double-int` and `+pull:so` keep `Meets` (`meets_knit`, `meets_doubleInt`, `meets_doubleInt_left`, `meets_pull`).  Both invariants held on the real compiler (`tools/hoon/sitesmeet4.hoon`: 11,370 sites under 3,033 bakes, 11,661 sites without folding, no failure). |
@@ -7787,3 +7789,51 @@ import only its theorems.  So:
        the unpatched loop can cycle on real code (the steps G -> T -> B of 2. occur, the closing step
        was not found); the climb for shapes over three inner nodes (enumerated to three, not proved);
        `Ranked` restated on a well-founded rank (the next Lean step).
+
+31. **`BakeEnds`: the worklist of `+bake-graph` ends** (track Q, 2026-11-28, `Ska/BakeHalt.lean`,
+    `tools/gen/bakehalt_lib.py`, `tools/hoon/bakehalt-lib.hoon`, `tools/hoon/bakehalt-adv.hoon`).
+    1. *The loop.*  The queue holds code bells whose bake changed (once each, `qs`), the root first
+       with its code requirement, fixed.  A step evaluates the popped bell under its bake with `+know`
+       (`res` the identity), keeps its sites that `+pick` sends to no variant of an earlier poke
+       (`new`), and recomputes the bake of every callee it informs now or informed before (`touched`):
+       `less.c` when fixed (jetted), frozen or uninformed, else `+norm-sock` of `+uni-sock` of `less.c`
+       and the `+purr:so` meet of what the callers last told it (`less.c` when that contradicts
+       `less.c`), intersected with the old bake when it would grow (`grew`).  A callee is queued again
+       exactly when its bake changes.  There is ONE bake per code bell per poke, so one new variant per
+       code bell per poke (`vars` grows by at most the number of code bells a poke bakes).
+    2. *Measured* (an instrumented copy, `bakehalt_lib.py OUT --cap 20000`; counts per run of
+       `+bake-graph`: evaluations, bells, changes of a bell's bake with its first, changes that keep
+       the nouns (old and new mutually `+huge:so`, a tie), changes back to `less.c`, `grew`, the
+       longest queue).  85 `%full` pokes: the 16 of `hinttab.hoon` (at most 3 evaluations), the 48 of
+       `annots3.hoon` (at most 3), and 21 library calls on the library as a known subject
+       (`bakehalt-lib.hoon`, the formulas of `passmeasure-lib.hoon`): 2,238 evaluations for 1,585
+       bells, the largest `(ream '(add 1 2)')` with 1,464 evaluations over 986 bells (1.5 per bell),
+       queue at most 102, at most 7 changes of one bell's bake, 3 changes back to `less.c` in all (each
+       a loss), `grew` 0, NO tie, every worklist ended (the cap never hit).  Variants per code bell
+       across the 21 pokes: at most 5.  The search (`bakehalt-adv.hoon`, 14 pokes in one state: lists
+       of formulas known to depth 10 and 40 walked by one gate and by two arms in turn, list spines
+       known to depth 40 with unknown heads, a gate that swaps its samples, a `%6` on a part the meet
+       loses, a chain of three gates, repeats): at most 43 evaluations, every bell baked once, no
+       tie.  Knowledge that descends does not make re-bakes: the analysis gives each level its own
+       code bell (a code requirement that differs), and knowledge that is not code is cut at the root
+       (the root's bake is its code requirement).
+    3. *Proved* (`Ska/BakeHalt.lean`): `bakeEnds_of_drops`, `BakeEnds` at `bakeFuel` from `BakeDrops`
+       through the lexicographic measure (bells of `U` without a bake, sum of `kapXS` of the bakes,
+       queue length).  `kapX` follows the nouns, so the non-normal `less.c` of the real compiler
+       (`BakeMeasure.lean`: 2,045 of 3,033) is no obstacle to the measure itself: a change lowers it
+       unless it is a tie.
+    4. *Open* (the hypotheses of `BakeDrops`, first blocker first).  (a) NO TIE: a tie is a change
+       between a `less.c` that is not normal and the normal sock with its nouns (`noLoss_lessc`); it
+       needs a callee to lose all its informers (or the guard to fail) and be informed again with no
+       loss.  Not seen on the corpus.  The step of `+know` found to read the form of a sock rather
+       than its nouns is `+double-int` (`+patch-prod`, `+knit:so`, `+uni-sock` checked by reading) (it descends into a cell cape, so it knows more under `[& &]`
+       than under `&`), so a caller's site can be picked by an earlier variant under `less.c` and not
+       under its normal form: callers in their raw form inform less, which pushes callees to their
+       raw form too (a positive feedback, which does not oscillate in the cases tried); no bound on
+       ties is proved.  (b) NO CRASH: every queued bell has a datum (`pokeDat`) and `+know`, `+pick`,
+       `+huge:so`, `+norm-sock` return on the reached states.  (c) A finite `U` holding the callees of
+       the sites of the datums' nomms, and no bake without a noun.
+    5. *For the glue* (`HaltLeaves13.bake`, `Glue/Assemble13.lean`): take `bf := PokeM.bakeFuel`
+       (Route13 and `pokeModel_fullReachP9` take `bf` as a parameter, as `anaFuel` for the analysis);
+       then `bake := bakeEnds_of_drops h` or `bakeEnds_of_halts h`, and a `BakeLinkAt E n` proved at
+       every `n ≥` some bound gives it at `bakeFuel E` once `BakeHalts` holds (`bakeLoop_mono`).
