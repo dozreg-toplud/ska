@@ -1,3 +1,5 @@
+import lemmas.Compiler.PokeLinkColeUpd
+import lemmas.Compiler.PokeLinkGood8
 import lemmas.Compiler.PokeLinkTailEnd
 import lemmas.Compiler.PokeLinkTailJets
 import lemmas.Compiler.PokeLinkTailCores
@@ -244,3 +246,24 @@ open Formalization Formalization.Compiler
 #print axioms spLeavesGood7_of_8
 #print axioms spRestGood7_of_leaves8
 #print axioms pokeModel_fullReachP11
+#print axioms invK_empty
+#print axioms good8_empty
+#print axioms pokeS_full_long
+#print axioms invK_armP
+#print axioms good8_full_step
+#print axioms otherKeeps7_of_8
+#print axioms otherGood8
+#print axioms pokeReachGood8
+#print axioms pokeModel_fullReachP12
+#print axioms reach_invK
+#print axioms juPutF_sets_some
+#print axioms cputBat_run
+#print axioms coleStepO_pair
+#print axioms couCm_run
+#print axioms couStep_run
+#print axioms couBunt_run
+#print axioms couSam_run
+#print axioms couBat_run
+#print axioms srEnd_run
+#print axioms srEnd_ts
+#print axioms srEndAt_of
