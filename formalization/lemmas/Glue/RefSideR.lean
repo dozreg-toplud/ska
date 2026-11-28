@@ -51,7 +51,7 @@ noncomputable def refDHR (S : Type) [Comp.HoonSet S] (D : CompData FinMap (Treap
 /-- **The ring leaves (owner K)**: the ring compiles erase to the no-ring ones, at the
 reached tables' nomms. -/
 structure RingLeaves (S : Type) [Comp.HoonSet S] (lib : Lib) (D : CompData FinMap (TreapMap mugF) Noun Noun)
-    (Tr : LongB FinMap → Noun → Noun → Prop) : Prop where
+    (sn : LongB FinMap → SndT) (Tr : LongB FinMap → Noun → Noun → Prop) : Prop where
   /-- K: `RingEraseU` at the table's hint-free nomms. -/
   eraseU : ∀ long jets hot b nm, InvB lib long → Tr long jets hot → realOf long.code b = some nm →
     nm.noHint = true → Comp.RingEraseU (S := S) (Map := TreapMap mugF) (D.env long jets hot b true) nm
@@ -60,12 +60,18 @@ structure RingLeaves (S : Type) [Comp.HoonSet S] (lib : Lib) (D : CompData FinMa
     D.inl long jets hot b = some nm → b.less = Sock.mk cape data →
     Comp.RingEraseF (S := S) (Map := TreapMap mugF) (D.env long jets hot b false) nm (D.ord long jets hot b) cape
       (D.bake long jets hot b)
+  /-- K: the ring model's code has uniform rings (`callOpR b (env.ring b)`). -/
+  uniR : ∀ long jets hot b m s, InvB lib long → Tr long jets hot → refDHR S D sn long jets hot b m = some s →
+    RingUniform s
+  /-- K: the no-ring model's code has uniform rings (none at all). -/
+  uni0 : ∀ long jets hot b m s, InvB lib long → Tr long jets hot → refDH S (noRingD D) sn long jets hot b m = some s →
+    RingUniform s
 
 variable {lib : Lib} {D : CompData FinMap (TreapMap mugF) Noun Noun} {sn : LongB FinMap → SndT}
   {Tr : LongB FinMap → Noun → Noun → Prop}
 
 /-- **`refDHR` and the no-ring reference are related by `RingRel`** at the reached tables. -/
-theorem refDHR_rel (hL : RingLeaves S lib D Tr) {long : LongB FinMap} {jets hot : Noun} (hI : InvB lib long)
+theorem refDHR_rel (hL : RingLeaves S lib D sn Tr) {long : LongB FinMap} {jets hot : Noun} (hI : InvB lib long)
     (hT : Tr long jets hot) (b : Bell) (m : Bool) :
     Comp.RingRel (refDHR S D sn long jets hot b m) (refDH S (noRingD D) sn long jets hot b m) := by
   cases m with
@@ -113,7 +119,7 @@ theorem ringRel_none {a b : Option (Straight (TreapMap mugF))} (h : Comp.RingRel
 
 /-- **The needs of `refDHR` are those of the no-ring reference** (the optimizer keeps the need
 up to rings). -/
-theorem refN_refDHR {Ar : ArmsP} (hO : OptRing Ar) (hL : RingLeaves S lib D Tr) {long : LongB FinMap} {jets hot : Noun}
+theorem refN_refDHR {Ar : ArmsP} (hO : OptRing Ar) (hL : RingLeaves S lib D sn Tr) {long : LongB FinMap} {jets hot : Noun}
     (hI : InvB lib long) (hT : Tr long jets hot) :
     refN Ar (refDHR S D sn) long jets hot = refN Ar (refDH S (noRingD D) sn) long jets hot := by
   funext b m
@@ -125,11 +131,11 @@ theorem refN_refDHR {Ar : ArmsP} (hO : OptRing Ar) (hL : RingLeaves S lib D Tr) 
     obtain ⟨s0, e0, hs⟩ := ringRel_some h e
     rw [e0]
     simp only [Option.map_some, Option.some.injEq]
-    exact (hO s s0 hs).2.1
+    exact (hO s s0 (hL.uniR long jets hot b m s hI hT e) (hL.uni0 long jets hot b m s0 hI hT e0) hs).2.1
 
 /-- **The contract of `refDHR`'s code from that of the no-ring reference's** (K's
 `execEntry_ringEq`). -/
-theorem contractR_of {Ar : ArmsP} (hO : OptRing Ar) (hL : RingLeaves S lib D Tr)
+theorem contractR_of {Ar : ArmsP} (hO : OptRing Ar) (hL : RingLeaves S lib D sn Tr)
     (h0 : ∀ long jets hot b m s, InvB lib long → Tr long jets hot → refDH S (noRingD D) sn long jets hot b m = some s →
       BellContract lib (refN Ar (refDH S (noRingD D) sn) long jets hot) b m (Ar.optimize s) ∧
         (m = true → (Ar.optimize s).nargs = 1 ∧ (Ar.optimize s).need = NeedOrd.this)) :
@@ -138,7 +144,7 @@ theorem contractR_of {Ar : ArmsP} (hO : OptRing Ar) (hL : RingLeaves S lib D Tr)
         (m = true → (Ar.optimize s).nargs = 1 ∧ (Ar.optimize s).need = NeedOrd.this) := by
   intro long jets hot b m s hI hT hr
   obtain ⟨s0, e0, hs⟩ := ringRel_some (refDHR_rel (sn := sn) hL hI hT b m) hr
-  have ho := hO s s0 hs
+  have ho := hO s s0 (hL.uniR long jets hot b m s hI hT hr) (hL.uni0 long jets hot b m s0 hI hT e0) hs
   obtain ⟨hc, hn⟩ := h0 long jets hot b m s0 hI hT e0
   rw [refN_refDHR hO hL hI hT]
   refine ⟨bellContract_ringSameN ho hc, fun hm => ?_⟩
@@ -151,7 +157,7 @@ optimizer leaf. -/
 theorem compHypOnR_of {Ar : ArmsP} {FM : MonoClassH} {FN : NaryClass} {I : PSt → Prop} {Rd : PSt → Bell → Prop}
     (U : CompStateOnR Ar lib (refDHR S D sn) I Rd)
     (P : ContractLeavesOnH S Ar lib (refDH S (noRingD D) sn) (noRingD D) sn FM FN Tr) (K : ClassLeavesH S lib FM FN)
-    (hO : OptRing Ar) (hL : RingLeaves S lib D Tr) (hRT : ∀ st b, Rd st b → Tr st.long st.jets st.hot) :
+    (hO : OptRing Ar) (hL : RingLeaves S lib D sn Tr) (hRT : ∀ st b, Rd st b → Tr st.long st.jets st.hot) :
     CompHypOnR Ar lib (refDHR S D sn) I Rd :=
   { toCompStateOnR := U
     contract := fun st b m s hrd hI hr =>

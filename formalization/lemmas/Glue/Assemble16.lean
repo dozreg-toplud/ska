@@ -117,7 +117,7 @@ def UnaryOutR (Ar : ArmsP) : Prop :=
       slot? 190 (C st.jets (callsNoun st.long)) = some COLE ∧
       (e.nomm.noHint = true →
         Comp.finishLUCMR (S := CSet) (envOf (codeNoun flagsOf st.long.code) COLE need sure sof) e.nomm = some r.1.1) ∧
-      (e.nomm.noHint = false → ∃ s', RingSameN r.1.1 s' ∧
+      (e.nomm.noHint = false → ∃ s', RingSameN r.1.1 s' ∧ RingUniform r.1.1 ∧ RingUniform s' ∧
         Comp.finishLUCH (S := CSet) (envOf (codeNoun flagsOf st.long.code) COLE need sure sof).noRing (snP st.long)
           e.nomm = some s')
 
@@ -150,7 +150,7 @@ theorem unaryAtR_of {Ar : ArmsP} {D : CompData FinMap (TreapMap mugF) Noun Noun}
   intro st b e r hg he hu
   refine ⟨?_, hC st b e r hg he hu⟩
   obtain ⟨COLE, need, sure, sof, hcole, h1, h2⟩ := hK st b e r hg he hu
-  obtain ⟨hE1, hE2⟩ := hE st b e COLE need sure sof r.1.1 hg he hcole
+  obtain ⟨hE1, -⟩ := hE st b e COLE need sure sof r.1.1 hg he hcole
   have he' : Treap.get st.long.code b = some e := he
   simp only [refDHR, if_true, realOf, he', Option.map_some, Option.bind_some]
   by_cases hh : e.nomm.noHint = true
@@ -158,9 +158,9 @@ theorem unaryAtR_of {Ar : ArmsP} {D : CompData FinMap (TreapMap mugF) Noun Noun}
     exact ⟨r.1.1, hE1 hh (h1 hh), sameO_refl Ar _⟩
   · rw [if_neg hh]
     have hf : e.nomm.noHint = false := by simpa using hh
-    obtain ⟨s', hs, hl⟩ := h2 hf
-    obtain ⟨hE1', hE2'⟩ := hE st b e COLE need sure sof s' hg he hcole
-    exact ⟨s', hE2' hf hl, hO _ _ hs⟩
+    obtain ⟨s', hs, hu1, hu2, hl⟩ := h2 hf
+    obtain ⟨-, hE2'⟩ := hE st b e COLE need sure sof s' hg he hcole
+    exact ⟨s', hE2' hf hl, hO _ _ hu1 hu2 hs⟩
 
 /-! ## The leaves of `CompHypOnR` at `refDHR` -/
 
@@ -216,8 +216,8 @@ structure CompLeaves16 (Ar : ArmsP) (D : CompData FinMap (TreapMap mugF) Noun No
   callee : ∀ long jets hot b m, InvB libP long → Tr14 long jets hot →
     Comp.CalleeNeeds (D.env long jets hot b m) (refN Ar (ref0 D) long jets hot)
   /-- K: `RingEraseU` / `RingEraseF` at the reached tables' nomms. -/
-  ring : RingLeaves CSet libP D Tr14
-  /-- H: `+optimize` keeps `RingSameN`. -/
+  ring : RingLeaves CSet libP D snP Tr14
+  /-- H: `+optimize` keeps `RingSameN` on straights with uniform rings. -/
   optRing : OptRing Ar
 
 /-- **The state half of `CompHypOnR` at `refDHR`.** -/

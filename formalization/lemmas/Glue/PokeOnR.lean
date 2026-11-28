@@ -66,8 +66,33 @@ theorem sameO_trans {s1 s2 s3 : Straight Map} (h1 : SameO A s1 s2) (h2 : SameO A
 
 variable (A)
 
-/-- **Leaf (H): `+optimize` keeps `RingSameN`** (the passes treat the ring ops as the plain ones). -/
-def OptRing : Prop := ∀ s s' : Straight Map, RingSameN s s' → RingSameN (A.optimize s) (A.optimize s')
+/-- An op's ring is the one `rg` gives its callee (a plain call: none). -/
+def OpRing (rg : Bell → Option Ring) : Pole → Prop
+  | Pole.cal a _ _ => rg a = none
+  | Pole.caf a _ _ n => rg a = some n
+  | Pole.csl a _ _ => rg a = none
+  | Pole.csf a _ _ n => rg a = some n
+  | _ => True
+
+/-- An end's ring is the one `rg` gives its callee. -/
+def FinRing (rg : Bell → Option Ring) : Termin → Prop
+  | Termin.jmp a _ => rg a = none
+  | Termin.jmf a _ n => rg a = some n
+  | Termin.jsp a _ => rg a = none
+  | Termin.jsf a _ n => rg a = some n
+  | _ => True
+
+/-- **The rings of a straight are uniform per callee**: one ring function `rg` gives the ring
+of every call op and end (what one compile at one `call.cole` emits: `callOpR b (env.ring b)`). -/
+def RingUniform (s : Straight Map) : Prop :=
+  ∃ rg : Bell → Option Ring, ∀ k blk, HoonMap.get s.blocks k = some blk →
+    (∀ p ∈ blk.body, OpRing rg p) ∧ FinRing rg blk.fin
+
+/-- **Leaf (H): `+optimize` keeps `RingSameN` on straights with uniform rings** (the passes
+treat the ring ops as the plain ones, Hoon lines 7160 to 7234 and 8619 to 8742; uniformity
+keeps `+alias` from merging blocks that are equal only after erasure). -/
+def OptRing : Prop := ∀ s s' : Straight Map, RingUniform s → RingUniform s' → RingSameN s s' →
+  RingSameN (A.optimize s) (A.optimize s')
 
 /-- **Every cached form is the reference compiler's, up to rings** (of the optimized forms). -/
 def CacheOKR (ref : Ref M Map J H) (long : LongB M) (jets : J) (hot : H) (c : Cache M Map CR) : Prop :=
@@ -86,9 +111,11 @@ theorem cacheOKR_of_ok {ref : Ref M Map J H} {long : LongB M} {jets : J} {hot : 
   ⟨fun b s hs => ⟨s, h.1 b s hs, sameO_refl A s⟩, fun b s hs => ⟨s, h.2 b s hs, sameO_refl A s⟩⟩
 
 theorem cacheOKR_of_raw (hO : OptRing A) {ref : Ref M Map J H} {long : LongB M} {jets : J} {hot : H}
-    {c : Cache M Map CR} (h : CacheOKRaw ref long jets hot c) : CacheOKR A ref long jets hot c :=
-  ⟨fun b s hs => (h.1 b s hs).imp fun _ ⟨e, r⟩ => ⟨e, hO _ _ r⟩,
-   fun b s hs => (h.2 b s hs).imp fun _ ⟨e, r⟩ => ⟨e, hO _ _ r⟩⟩
+    {c : Cache M Map CR} (hu : ∀ b m s, ref long jets hot b m = some s → RingUniform s)
+    (hc : (∀ b s, Treap.get c.mono b = some s → RingUniform s) ∧ ∀ b s, Treap.get c.nary b = some s → RingUniform s)
+    (h : CacheOKRaw ref long jets hot c) : CacheOKR A ref long jets hot c :=
+  ⟨fun b s hs => (h.1 b s hs).imp fun _ ⟨e, r⟩ => ⟨e, hO _ _ (hc.1 b s hs) (hu _ _ _ e) r⟩,
+   fun b s hs => (h.2 b s hs).imp fun _ ⟨e, r⟩ => ⟨e, hO _ _ (hc.2 b s hs) (hu _ _ _ e) r⟩⟩
 
 variable (A)
 

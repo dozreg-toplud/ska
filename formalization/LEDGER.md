@@ -1463,9 +1463,11 @@ unchanged).  Reached states `I14`, `Rd14`, `Tr14` as `gap14`.  Base fdb08081.
   `bakeEnds_of_dropsT` (BakeHaltTie, not in this base) gives it the same way.
 
 KNOWN FALSE OF THE REAL COMPILER: none known.  (Truth risks: `stable` if a new bell changes an
-old callee's need; `OptRing` if a pass merges blocks that are equal only after erasure: the
-Hoon's passes treat `%caf`/`%csf`/`%jmf`/`%jsf` as `%cal`/`%csl`/`%jmp`/`%jsp`, lines 7160 to
-7234, 8619 to 8742, so a straight whose ring ops are uniform per callee is safe.)
+old callee's need.  `OptRing` is asked only of straights with UNIFORM rings (`RingUniform`: one
+ring function gives the ring of every call op and end, as one compile at one `call.cole`
+emits); on a straight that mixes `%jmp b` and `%jmf b`, `+alias` could merge blocks equal only
+after erasure, so the universal form would be suspect.  The Hoon's passes treat
+`%caf`/`%csf`/`%jmf`/`%jsf` as `%cal`/`%csl`/`%jmp`/`%jsp`, lines 7160 to 7234, 8619 to 8742.)
 
 NO OWNER (size S < M < L):
 - `CompLeaves16.stable` (M): `refR` after `+ska-poke` agrees UP TO RINGS on old bells (the
@@ -1498,10 +1500,12 @@ The hypotheses with owners (record, field, owner, one line each):
   `env.noRing`, needs of `ref0`).
 - `optPill` (P): the pill's `+optimize` on `ref0`'s forms.
 - `inlPill` (no owner), `callee` (I, J: `CalleeNeeds (D.env ..) (refN Ar (ref0 D) ..)`).
-- `ring` (K): `RingLeaves CSet libP D Tr14`: `eraseU` (`RingEraseU (D.env ..) nm` at hint-free
-  table nomms), `eraseF` (`RingEraseF` at `D.inl`).  K's simulation of `runLCMR env` against
-  `runLCMR env.noRing`.
-- `optRing` (H): `OptRing Ar`: `+optimize` keeps `RingSameN`.
+- `ring` (K): `RingLeaves CSet libP D snP Tr14`: `eraseU` (`RingEraseU (D.env ..) nm` at
+  hint-free table nomms), `eraseF` (`RingEraseF` at `D.inl`): K's simulation of `runLCMR env`
+  against `runLCMR env.noRing`; `uniR`, `uni0` (`RingUniform` of `refDHR`'s and `ref0`'s code:
+  `callOpR b (env.ring b)`, and no ring at `env.noRing`).
+- `optRing` (H): `OptRing Ar`: `+optimize` keeps `RingSameN` on straights with uniform rings.
+  `UnaryOutR`'s hinted half also gives `RingUniform` of both sides.
 
 `ClassLeavesH CSet libP FM FN` (unchanged; `gap16_plainH`: `ClassLeaves15`, as section 10a).
 
