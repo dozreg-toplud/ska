@@ -1430,6 +1430,13 @@ M20 (eighth pass, track I [281]). `runLC` / `runLCM` do NOT cover SOFT
 
 ## 10. THE HYPOTHESES OF `gap16`, one open leaf each (sixteenth pass)
 
+STATUS 2026-11-28 (seventeenth pass, cut short): `gap16` is still the LATEST PROVED assembly and its
+list below stands.  `gap17` was not finished; its wiring lemmas are in `Glue/Wire17.lean` (`I17` / `Rd17` on
+P's `PGood9`, `PokeLeaves17`, `reachOn17`, `UnaryAtR9` and its parts where `jets-hot = ~`, `bake17_of_dropsT`
+from Q's `BakeDropsT`, `HintLeavesW` / `classLeavesH_hintW` on J's `HintClsBW`, `consFragB_fragX`).  P's
+`pokeModel_fullReachP14` is NOT usable as stated: its `hG` is the old `UnaryGateAt` (`noRing : CodeNoRing`,
+`dir : DirOk`: false at ring code and hinted keys), so `PokeLeaves17.good9` stays K's leaf.
+
 `gap16 Ar D hR hP hC hK hH hF : Assembly.Gap libP (liftPoke (enc flagsOf) (pokeS Ar))
 (liftInv (enc flagsOf) (InvSMIR Ar libP (refR D) I14))` (`Glue/Assemble16.lean`),
 `full16 : Ska.Full`, the instance `gap16_plainH` (`gap15`'s classes, `ClassLeaves15`
