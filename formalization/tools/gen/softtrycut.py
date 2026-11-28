@@ -70,6 +70,13 @@ shapes = []
 def head(nm, v):
     if cells(v) <= 3:
         return show(v)
+    # a gate literal [8 [1 bunt] [1 battery] [0 1]]: its battery named `<nm>Bat`
+    if (v[0] == 'c' and v[1] == ('a', 8) and v[2][0] == 'c' and v[2][1][0] == 'c' and v[2][1][1] == ('a', 1)
+            and v[2][2][0] == 'c' and v[2][2][1][0] == 'c' and v[2][2][1][1] == ('a', 1)
+            and v[2][2][2] == ('c', ('a', 0), ('a', 1))):
+        out.append((nm + 'Bat', show(v[2][2][1][2])))
+        out.append((nm, '(C (A 8) (C (C (A 1) %s) (C (C (A 1) %sBat) (C (A 0) (A 1)))))' % (show(v[2][1][2]), nm)))
+        return nm
     out.append((nm, show(v)))
     return nm
 
