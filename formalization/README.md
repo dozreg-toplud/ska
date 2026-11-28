@@ -5098,7 +5098,14 @@ import only its theorems.  So:
     `depthFin_of_width`); an answer that changes adds an identity only if a
     call on it has a subject not seen before, and each identity finishes at
     most once (a finished one stays in `g`, which `+cull` never clears of it).
-    `passLoop_returns_wd` takes `DepthFin`.  Not proved: `DepthFin` itself
+    `passLoop_returns_wd` takes `DepthFin`.  The depth measured (the cape
+    tree of each pushed subject, `passmeasure-git.py --depth`): 12,440 of the
+    12,574 loops never push deeper after pass 1 than before, 132 do once;
+    the 62-pass loop (`tools/hoon/width-he.hoon`) pushes one level deeper
+    every two passes (3 to 33), but each push stays on the stack as a new
+    member, and the count follows `he-threshold` (8, 16, 32, 48 give 14, 30,
+    62, 94 passes, in copies of the library): the stack part, which
+    `noGoodChain` bounds, not the width.  Not proved: `DepthFin` itself
     (what crosses passes, the cycle entries and `done`, does not grow by
     reading the code, but the products of `done` entries patched at a sock
     are not shown to be bounded by that sock and the code).

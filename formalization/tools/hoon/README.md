@@ -269,6 +269,12 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     atom where a formula is expected, `indi` empty: answer unknown); 12 values of `c`; with the
                     library of `passmeasure-git.py` 38 hits with two passing entries, for `c = 101, 102` the answer
                     changes from `c` to unknown once the dark entry is in `done`; every loop ends in 2 passes
+                    `--depth OUT.txt...` (the instrumented library also prints `%pw-dep`, the depth of the cape tree
+                    of each pushed subject): per loop the deepest push of the first run against each pass; 2026-11-28:
+                    12,440 of 12,574 loops never deeper after pass 1, 132 once, one case 30 times (`width-he.hoon`)
+* `width-he.hoon`   (track F, README Gaps 16) case 49 of `ck-rnd1` alone: 62 passes, the stack grows by one member
+                    every two passes at a subject one level deeper; with `he-threshold` 8, 16, 48 in a copy of the
+                    library 14, 30, 94 passes
 * `passfix-cores.py all|grid|grid2|ablate|ablate2|one OUT.hoon [..]`, `--tab OUT.txt..` one driver of the 88
                     cores of `passmeasure-take.py` (`all`), or of `core3` cases (two relay chains from `k`'s
                     target into `a`, `b`) for the smallest witness; `--tab` per case: root passes, capped, `%st`

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # usage: passmeasure-git.py --instrument LIB.hoon OUT.hoon        (track F, README Gaps 16)
 #        passmeasure-git.py [-v] OUT.txt...
+#        passmeasure-git.py --depth OUT.txt...   (on a library that also prints [%pw-dep mug depth]
+#            after %pm-new: the depth of the cape tree of the pushed subject sock, +pw-depth)
 # The `done` answers of +git:mi across the passes of a pass loop (point (c) of Gaps 16).
 # --instrument adds to a library of passmeasure.py (any of its descendants) an arm +pw-all and,
 # at the `done` hit of the resolution of a %2 in +fol-loop, a print
@@ -49,7 +51,24 @@ def instrument(lib, out):
               ==
           [u.m gen]
 '''
-    open(out, 'w').write(s.replace(old, new))
+    s = s.replace(old, new)
+    dep = '''++  pw-depth
+  |=  s=sock
+  ^-  @ud
+  ?@  s  0
+  =/  c=cape  cape.s
+  =/  d=*  data.s
+  |-  ^-  @ud
+  ?@  c  0
+  ?@  d  0
+  +((max $(c -.c, d -.d) $(c +.c, d +.d)))
+::
+'''
+    s = s.replace('++  pw-all\n', dep + '++  pw-all\n', 1)
+    o2 = '    ~&  [%pm-new (mug id) index (lent stk.st)]\n'
+    assert s.count(o2) == 1
+    s = s.replace(o2, o2 + '    ~&  [%pw-dep (mug id) (pw-depth more.id)]\n')
+    open(out, 'w').write(s)
 
 def num(x):
     x = x.strip('[]').replace('.', '')
@@ -77,6 +96,7 @@ def cases(path):
         if tag == '%pm-new': ev.append(('new', t[1], num(t[3])))
         elif tag == '%pm-pass': ev.append(('pass', t[1], num(t[2]), num(t[5])))
         elif tag == '%pm-end': ev.append(('end', t[1], num(t[2])))
+        elif tag == '%pw-dep': ev.append(('dep', t[1], num(t[2])))
         elif tag == '%pw-hit':
             ev.append(('hit', (t[1], t[2]), t[3], t[4], t[5], num(t[6]), num(t[7]), num(t[8])))
     if ev: yield ev
@@ -150,7 +170,38 @@ def main(paths, verbose):
             same = sum(1 for b in per.values() if p in b and p - 1 in b and b[p] == b[p - 1])
             print(f'    pass {p}: pushes {pushes.get(p, 0)} hits {hits.get(p, 0)} calls also in pass {p-1}: same answer {same}, other answer {ch}')
 
+def depth(paths):
+    # per loop: the deepest push of the first run (from the root's push to pass 1) against the
+    # deepest push of each pass; a loop whose passes push deeper than its first run
+    tot = collections.Counter(); worst = []; deepest = (0, None)
+    for path in paths:
+        fam = os.path.basename(path)
+        for ci, ev in enumerate(cases(path)):
+            for (r, k0, k1, kend, np) in loops(ev):
+                tot['loops'] += 1
+                k = k0
+                while k > 0 and not (ev[k][0] == 'new' and ev[k][1] == r): k -= 1
+                d0 = max([e[2] for e in ev[k:k0] if e[0] == 'dep'] or [0])
+                cur = 0; byp = collections.Counter()
+                for j in range(k0, kend + 1):
+                    e = ev[j]
+                    if e[0] == 'pass' and e[1] == r: cur = e[2]
+                    elif e[0] == 'dep': byp[cur] = max(byp[cur], e[2])
+                dl = max(byp.values() or [0])
+                if dl > deepest[0]: deepest = (dl, (fam, ci, r, np))
+                if byp: tot['loops with a push in a pass'] += 1
+                if dl > d0:
+                    tot['loops whose passes push deeper than the first run'] += 1
+                    worst.append((dl - d0, d0, dl, fam, ci, r, np, sorted(byp.items())))
+                rise = [p for p in sorted(byp) if p > 1 and byp[p] > max([byp[q] for q in byp if q < p] + [d0])]
+                if rise: tot['loops with a pass >= 2 deeper than all before'] += 1
+    for k, v in tot.items(): print(f'{k}: {v}')
+    print('deepest push in a pass:', deepest)
+    for w in sorted(worst, reverse=True)[:6]: print('  ', w[:7], w[7][:8])
+
 if __name__ == '__main__':
+    if sys.argv[1] == '--depth':
+        depth(sys.argv[2:]); sys.exit(0)
     if sys.argv[1] == '--instrument':
         instrument(sys.argv[2], sys.argv[3])
     else:
