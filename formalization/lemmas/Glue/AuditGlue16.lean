@@ -30,3 +30,4 @@ open Formalization SkaModel Glue
 #print axioms Glue.full16
 #print axioms Glue.gap16_plainH
 #print axioms Glue.bake16_of_drops
+#print axioms Glue.unaryAtR_of

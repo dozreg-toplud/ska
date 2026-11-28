@@ -102,6 +102,66 @@ theorem unaryDireR_of {Ar : ArmsP} {ref : Ref FinMap (TreapMap mugF) Noun Noun} 
       some ((s, n), c') := by rw [← hq1]; exact hu
   exact hU _ b eb _ hm heb hu'
 
+/-! ## `UnaryAtR` from what K's `GateRest8` must give -/
+
+/-- **What K's record `GateRest8` must give at a key** (K; the replacement of
+`unaryOut_of_gate`, with NO `ringFree` field): `+compile-unary` at a hint-free key IS
+`finishLUCMR` of the key's nomm under `envOf CODE COLE ..` (whose `ring` is `ringOf COLE`); at
+a hinted key its code is the same up to rings as `finishLUCH` with the rings dropped (misfit
+10's twin). -/
+def UnaryOutR (Ar : ArmsP) : Prop :=
+  ∀ (st : PSt) b (e : VarEntry FinMap) r, PGood6 OptTotal st → FinMap.get st.long.code b = some e →
+    Ar.compileUnary b (sccSet st.long.code b) st.long st.jets st.hot st.cache = some r →
+    ∃ (COLE : Noun) (need : Bell → Option NeedOrd) (sure : Bell → NeedOrd)
+      (sof : Nomm → Nomm → Nomm → Bell → NeedOrd → Bool),
+      slot? 190 (C st.jets (callsNoun st.long)) = some COLE ∧
+      (e.nomm.noHint = true →
+        Comp.finishLUCMR (S := CSet) (envOf (codeNoun flagsOf st.long.code) COLE need sure sof) e.nomm = some r.1.1) ∧
+      (e.nomm.noHint = false → ∃ s', RingSameN r.1.1 s' ∧
+        Comp.finishLUCH (S := CSet) (envOf (codeNoun flagsOf st.long.code) COLE need sure sof).noRing (snP st.long)
+          e.nomm = some s')
+
+/-- **Leaf (K, I): the `env` of K's record gives what `D.env` gives** (`UnaryEnvIs14` on the
+ring model). -/
+def UnaryEnvIsR (D : CompData FinMap (TreapMap mugF) Noun Noun) : Prop :=
+  ∀ (st : PSt) b (e : VarEntry FinMap) COLE (need : Bell → Option NeedOrd) (sure : Bell → NeedOrd)
+    (sof : Nomm → Nomm → Nomm → Bell → NeedOrd → Bool) (s : Straight (TreapMap mugF)),
+    PGood6 OptTotal st → FinMap.get st.long.code b = some e → slot? 190 (C st.jets (callsNoun st.long)) = some COLE →
+    (e.nomm.noHint = true →
+      Comp.finishLUCMR (S := CSet) (envOf (codeNoun flagsOf st.long.code) COLE need sure sof) e.nomm = some s →
+      Comp.finishLUCMR (S := CSet) (D.env st.long st.jets st.hot b true) e.nomm = some s) ∧
+    (e.nomm.noHint = false →
+      Comp.finishLUCH (S := CSet) (envOf (codeNoun flagsOf st.long.code) COLE need sure sof).noRing (snP st.long)
+        e.nomm = some s →
+      Comp.finishLUCH (S := CSet) (D.env st.long st.jets st.hot b true).noRing (snP st.long) e.nomm = some s)
+
+/-- **Leaf (I, K): the cache `+compile-unary` returns keeps `CacheOKR`** (`UnaryCacheOK14` up to
+rings). -/
+def UnaryCacheOKR (Ar : ArmsP) (ref : Ref FinMap (TreapMap mugF) Noun Noun) : Prop :=
+  ∀ (st : PSt) b (e : VarEntry FinMap) r, PGood6 OptTotal st → FinMap.get st.long.code b = some e →
+    Ar.compileUnary b (sccSet st.long.code b) st.long st.jets st.hot st.cache = some r →
+    CacheOKR Ar ref st.long st.jets st.hot st.cache → CacheOKR Ar ref st.long st.jets st.hot r.2
+
+/-- **`UnaryAtR` from K's `UnaryOutR`, `UnaryEnvIsR` and `UnaryCacheOKR`** (with the optimizer
+leaf for the hinted keys). -/
+theorem unaryAtR_of {Ar : ArmsP} {D : CompData FinMap (TreapMap mugF) Noun Noun} (hO : OptRing Ar)
+    (hK : UnaryOutR Ar) (hE : UnaryEnvIsR D) (hC : UnaryCacheOKR Ar (refDHR CSet D snP)) :
+    UnaryAtR Ar (refDHR CSet D snP) := by
+  intro st b e r hg he hu
+  refine ⟨?_, hC st b e r hg he hu⟩
+  obtain ⟨COLE, need, sure, sof, hcole, h1, h2⟩ := hK st b e r hg he hu
+  obtain ⟨hE1, hE2⟩ := hE st b e COLE need sure sof r.1.1 hg he hcole
+  have he' : Treap.get st.long.code b = some e := he
+  simp only [refDHR, if_true, realOf, he', Option.map_some, Option.bind_some]
+  by_cases hh : e.nomm.noHint = true
+  · rw [if_pos hh]
+    exact ⟨r.1.1, hE1 hh (h1 hh), sameO_refl Ar _⟩
+  · rw [if_neg hh]
+    have hf : e.nomm.noHint = false := by simpa using hh
+    obtain ⟨s', hs, hl⟩ := h2 hf
+    obtain ⟨hE1', hE2'⟩ := hE st b e COLE need sure sof s' hg he hcole
+    exact ⟨s', hE2' hf hl, hO _ _ hs⟩
+
 /-! ## The leaves of `CompHypOnR` at `refDHR` -/
 
 /-- The reference compiler of `gap16`. -/
