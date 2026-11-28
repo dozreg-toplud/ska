@@ -315,6 +315,139 @@ theorem folLoop_saf (env : Env R) (memoF : Memo M) : ∀ n fol sub seat mk bc df
     rw [folLoop_succ] at h
     exact folStep_saf env (folLoop_saf env memoF n) h hs
 
+/-! ## 4. The `&` regions of the sock operations of `fol-loop` -/
+
+/-- `G` holds of the halves of every cell it holds of (`NGood` is). -/
+def SubC (G : Noun → Prop) : Prop := ∀ x y, G (Noun.cell x y) → G x ∧ G y
+
+theorem subC_nGood (As : List Nat) (B : Nat) : SubC (NGood As B) := fun x y h => by
+  have hs := h.1; simp only [nsize] at hs
+  exact ⟨⟨by omega, h.2.1⟩, ⟨by omega, h.2.2⟩⟩
+
+section Regions
+
+variable {G : Noun → Prop}
+
+theorem sockG_dunno : SockG G Sock.dunno := trivial
+theorem sockG_void : SockG G Sock.void := trivial
+
+theorem sockG_knit {a b : Sock} (ha : SockG G a) (hb : SockG G b) : SockG G (So.knit a b) := by
+  cases a with
+  | void => trivial
+  | mk l d1 =>
+    cases b with
+    | void => trivial
+    | mk r d2 =>
+      unfold So.knit
+      simp only
+      split
+      · trivial
+      · unfold Ca.con at *
+        split
+        · trivial
+        · exact ⟨ha, hb⟩
+
+theorem sockG_hed (hG : SubC G) {s : Sock} (h : SockG G s) : SockG G (So.hed s) := by
+  rcases s with _ | ⟨c, d⟩
+  · trivial
+  · cases c <;> cases d <;> simp only [So.hed, SockG, RegG, Sock.dunno] at h ⊢
+    all_goals first | trivial | exact (hG _ _ h).1 | exact h.1
+
+theorem sockG_tel (hG : SubC G) {s : Sock} (h : SockG G s) : SockG G (So.tel s) := by
+  rcases s with _ | ⟨c, d⟩
+  · trivial
+  · cases c <;> cases d <;> simp only [So.tel, SockG, RegG, Sock.dunno] at h ⊢
+    all_goals first | trivial | exact (hG _ _ h).2 | exact h.2
+
+theorem sockG_pullLoop (hG : SubC G) : ∀ (axe : Nat) (c : Cape) (d : Noun), RegG G c d →
+    SockG G (So.pullLoop c d axe) := by
+  intro axe
+  induction axe using Nat.strongRecOn with
+  | _ axe ih =>
+  intro c d hc
+  rw [So.pullLoop.eq_def]
+  split
+  · exact hc
+  · split
+    · trivial
+    · split
+      · trivial
+      · rename_i dh dt _
+        split
+        · split
+          · exact ih _ (mas_lt axe (by omega)) _ _ hc.1
+          · exact ih _ (mas_lt axe (by omega)) _ _ hc.2
+        · have hcy : c = Cape.yes := by
+            cases c with
+            | yes => rfl
+            | no => contradiction
+            | cell a b => exact ((by assumption : ∀ x y, Cape.cell a b = Cape.cell x y → False) a b rfl).elim
+          subst hcy
+          have h2 := hG _ _ hc
+          split
+          · exact ih _ (mas_lt axe (by omega)) _ _ h2.1
+          · exact ih _ (mas_lt axe (by omega)) _ _ h2.2
+
+theorem sockG_pull (hG : SubC G) {S s : Sock} {a : Nat} (h : SockG G S) (hp : So.pull S a = some s) :
+    SockG G s := by
+  unfold So.pull at hp
+  split at hp
+  · cases hp
+  · split at hp
+    · cases hp; trivial
+    · cases hp; exact sockG_pullLoop hG a _ _ h
+
+theorem sockG_darnUp : ∀ (acc : List (Nat × Sock)) (two : Sock), SockG G two →
+    (∀ p ∈ acc, SockG G p.2) → SockG G (So.darnUp two acc)
+  | [], two, h, _ => h
+  | (n, s) :: acc, two, h, ha => by
+    have hs : SockG G s := ha (n, s) (by simp)
+    have ht : ∀ p ∈ acc, SockG G p.2 := fun p hp => ha p (by simp [hp])
+    rw [darnUp_eq]
+    split
+    · exact sockG_darnUp _ _ (sockG_knit h hs) ht
+    · exact sockG_darnUp _ _ (sockG_knit hs h) ht
+
+theorem sockG_darnDown (hG : SubC G) : ∀ (ax : Nat) (one two : Sock) (acc : List (Nat × Sock)) (s : Sock),
+    SockG G one → SockG G two → (∀ p ∈ acc, SockG G p.2) →
+    So.darnDown one ax two acc = some s → SockG G s := by
+  intro ax
+  induction ax using Nat.strongRecOn with
+  | _ ax ih =>
+  intro one two acc s h1 h2 ha hd
+  rw [So.darnDown] at hd
+  split at hd
+  · cases hd; exact sockG_darnUp acc two h2 ha
+  · split at hd
+    · cases hd
+    · split at hd
+      · exact ih (mas ax) (mas_lt ax (by omega)) _ _ _ _ (sockG_hed hG h1) h2
+          (fun p hp => by
+            simp only [List.mem_cons] at hp
+            rcases hp with rfl | hp
+            · exact sockG_tel hG h1
+            · exact ha p hp) hd
+      · exact ih (mas ax) (mas_lt ax (by omega)) _ _ _ _ (sockG_tel hG h1) h2
+          (fun p hp => by
+            simp only [List.mem_cons] at hp
+            rcases hp with rfl | hp
+            · exact sockG_hed hG h1
+            · exact ha p hp) hd
+
+/-- **`+darn:so` keeps good regions.** -/
+theorem sockG_darn (hG : SubC G) {one two s : Sock} {ax : Nat} (h1 : SockG G one) (h2 : SockG G two)
+    (hd : So.darn one ax two = some s) : SockG G s := by
+  unfold So.darn at hd
+  split at hd
+  · cases hd; exact h2
+  · split at hd
+    · cases hd; trivial
+    · split at hd
+      · cases hd; trivial
+      · exact sockG_darnDown hG ax one two [] s h1 h2 (by simp) hd
+
+end Regions
+
 end Ana
 end SkaModel
 end Formalization
