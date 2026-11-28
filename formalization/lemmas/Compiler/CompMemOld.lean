@@ -8,7 +8,8 @@ On the final pass, when `map-local` already has a straight `u` of `b`
 3603 of `nock-compilation.hoon`):
 
 ```hoon
-=/  need-pessimized  (msg-need-ord need-new need.u.s-previous cape.less.b)
+=/  need-pessimized
+  (msg-need-ord-kept need-new need.u.s-previous cape.less.b)
 :+  |(moved !=(need-pessimized need.u.s-previous))
   %+  ~(put by map-local)  b
   ?:  =(need-pessimized need-new)  (finish ~)
@@ -17,9 +18,10 @@ cache
 ```
 
 Linked here for the case of a fixed point reached, where the shape of `u`
-is `need-new`: `+msg-need-ord` (arm `20` of `K`, its nouns cut by
-`tools/gen/msgneed.py`) of two equal shapes is that shape by its first
-branch (`msg_eq`), so `need-pessimized` is `need-new`, `chg` is `moved`, and
+is `need-new`: `+msg-need-ord-kept` (arm `178934` of `K` since 2a5b618, its
+nouns cut by `tools/gen/keptarm.py`; `+msg-need-ord`, arm `20`, cut by
+`tools/gen/msgneed.py`, is kept below for its other users) of two equal
+shapes is that shape by its first branch (`kept_eq`), so `need-pessimized` is `need-new`, `chg` is `moved`, and
 `finish ~` is called, whose straight `finishLF` gives (`mem_prod_old`,
 `mem_gate_old`).  The other case (`finish` of a pessimized shape, through
 `+coerce-soft`, which has no model) is not linked.
@@ -66,6 +68,37 @@ theorem msg_eq (X LESS K : Noun) : nock (C msgBody (C (C X (C X LESS)) K)) msgBo
   generalize msgRest = R
   simp [nock_exec, eqCode_self]
 
+/-! ## `+msg-need-ord-kept` (2a5b618: the join of `member`)
+
+Cut by `tools/gen/keptarm.py` as `+msg-need-ord` is above: the gate has no hint. -/
+
+/-- The branches of `+msg-need-ord-kept` after `?:  =(new old)  new`. -/
+def keptRest : Noun :=
+  (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x73696874)) (C (A 0) (A 52)))) (C (C (A 0) (A 26)) (C (A 6) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x656e6f6e)) (C (A 0) (A 52)))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x656e6f6e)) (C (A 0) (A 24)))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x73696874)) (C (A 0) (A 24)))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))))))))) (C (C (A 8) (C (C (A 9) (C (A 20) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 28)) (C (C (A 0) (A 58)) (C (A 0) (A 59))))) (C (A 0) (A 2)))))))) (C (A 11) (C (C (A 0x6f6d656d) (C (A 1) (A 0))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x68746f62)) (C (A 0) (A 24)))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x68746f62)) (C (A 0) (A 52)))) (C (C (C (A 1) (A 0x68746f62)) (C (C (A 8) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 114)) (C (C (A 0) (A 234)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 7) (C (C (A 9) (C (A 20) (C (A 0) (A 255)))) (C (A 9) (C (A 20) (C (A 0) (A 1)))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 59))) (C (A 0) (A 2))))))))))))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 115)) (C (C (A 0) (A 235)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 7) (C (C (A 9) (C (A 20) (C (A 0) (A 255)))) (C (A 9) (C (A 94) (C (A 0) (A 1)))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 59))) (C (A 0) (A 2))))))))))))) (C (A 0) (A 2)))))))))) (C (C (A 1) (A 0x68746f62)) (C (C (A 8) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 114)) (C (C (A 0) (A 116)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 7) (C (C (A 9) (C (A 20) (C (A 0) (A 255)))) (C (A 9) (C (A 20) (C (A 0) (A 1)))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 59))) (C (A 0) (A 2))))))))))))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 115)) (C (C (A 0) (A 117)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 7) (C (C (A 9) (C (A 20) (C (A 0) (A 255)))) (C (A 9) (C (A 94) (C (A 0) (A 1)))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 59))) (C (A 0) (A 2))))))))))))) (C (A 0) (A 2))))))))))))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x68746f62)) (C (A 0) (A 52)))) (C (C (C (A 1) (A 0x68746f62)) (C (C (A 8) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 56)) (C (C (A 0) (A 234)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 7) (C (C (A 9) (C (A 20) (C (A 0) (A 255)))) (C (A 9) (C (A 20) (C (A 0) (A 1)))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 59))) (C (A 0) (A 2))))))))))))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 57)) (C (C (A 0) (A 235)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 7) (C (C (A 9) (C (A 20) (C (A 0) (A 255)))) (C (A 9) (C (A 94) (C (A 0) (A 1)))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 59))) (C (A 0) (A 2))))))))))))) (C (A 0) (A 2)))))))))) (C (A 8) (C (C (A 9) (C (A 350) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (C (A 8) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 56)) (C (C (A 0) (A 116)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 7) (C (C (A 9) (C (A 20) (C (A 0) (A 255)))) (C (A 9) (C (A 20) (C (A 0) (A 1)))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 59))) (C (A 0) (A 2))))))))))))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 0) (A 1)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 57)) (C (C (A 0) (A 117)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 7) (C (C (A 9) (C (A 20) (C (A 0) (A 255)))) (C (A 9) (C (A 94) (C (A 0) (A 1)))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 59))) (C (A 0) (A 2))))))))))))) (C (A 0) (A 2)))))))))))) (C (A 0) (A 2))))))))))))))))))))))
+
+/-- The gate body of `+msg-need-ord-kept`. -/
+def keptBody : Noun :=
+  (C (A 7) (C (C (A 0) (A 1)) (C (A 6) (C (C (A 5) (C (C (A 0) (A 12)) (C (A 0) (A 26)))) (C (C (A 0) (A 12)) keptRest)))))
+
+/-- Its sample bunt. -/
+def keptBunt : Noun :=
+  (C (C (A 0x656e6f6e) (A 0)) (C (C (A 0x656e6f6e) (A 0)) (A 1)))
+
+/-- The arm `+msg-need-ord-kept`. -/
+def keptArm : Noun := C (A 8) (C (C (A 1) keptBunt) (C (C (A 1) keptBody) (C (A 0) (A 1))))
+
+/-- `+msg-need-ord-kept` is arm `178934` of `K`. -/
+theorem kept_at : slot? 178934 compK = some keptArm := by kernel_rfl
+
+theorem kept_arm (d : Noun) : nock d keptArm = some (C keptBody (C keptBunt d)) := by
+  unfold keptArm; generalize keptBody = B; generalize keptBunt = U; simp [nock_exec]
+
+/-- **`+msg-need-ord-kept` of two equal shapes** is that shape. -/
+theorem kept_eq (X LESS K : Noun) : nock (C keptBody (C (C X (C X LESS)) K)) keptBody = some X := by
+  conv => { lhs; arg 2; unfold keptBody }
+  generalize keptRest = R
+  simp [nock_exec, eqCode_self]
+
 /-! ## The product -/
 
 /-- **The product of `member` when `map-local` holds a straight of `b`
@@ -84,8 +117,8 @@ theorem mem_prod_old (MOVED SUR' WAS NN LZ NF NEDB IMM : Noun) (o : Nat) (SUR G2
           (memS3 NM DCTX (memS0 (C (C CAPE DATA) FOL) KEEP ML TOP CA (memCtx DN KIDS ML0 CB SCC LONG JH CACHE0))))))
           finBody).bind fun ST => (putF mugF (C (C CAPE DATA) FOL) ST ML).map fun ML' => C MOVED (C ML' CA) := by
   have hL := compK_layer2
-  have hma := msg_at
-  have hmsg := msg_eq NN CAPE compK
+  have hma := kept_at
+  have hmsg := kept_eq NN CAPE compK
   have hg := get_gate (mug := mugF) layer2 ⟨someIn_layer2, gorIn_morIn_layer2.1⟩ (C (C CAPE DATA) FOL) ML _ hprev
   generalize hF : finCtx MOVED SUR' WAS NN LZ NF NEDB IMM o SUR G2
     (memS3 NM DCTX (memS0 (C (C CAPE DATA) FOL) KEEP ML TOP CA (memCtx DN KIDS ML0 CB SCC LONG JH CACHE0))) = FC
@@ -98,7 +131,7 @@ theorem mem_prod_old (MOVED SUR' WAS NN LZ NF NEDB IMM : Noun) (o : Nat) (SUR G2
     generalize compK = KC at hL hma hmsg e ⊢
     generalize finBody = FB at e ⊢
     rcases hmv with rfl | rfl <;>
-    simp [nock_exec, hL, by.arm_at, by_arm, by.get.arm_at, get_arm, hg, hma, msg_arm, hmsg, e, eqCode_self]
+    simp [nock_exec, hL, by.arm_at, by_arm, by.get.arm_at, get_arm, hg, hma, kept_arm, hmsg, e, eqCode_self]
   | some ST =>
     obtain ⟨ML', hp, -, -⟩ := putF_spec mugF ML (C (C CAPE DATA) FOL) ST hml
     have hpg := put_gate (mug := mugF) layer2 gorIn_morIn_layer2 (C (C CAPE DATA) FOL) ST ML ML' hp
@@ -107,7 +140,7 @@ theorem mem_prod_old (MOVED SUR' WAS NN LZ NF NEDB IMM : Noun) (o : Nat) (SUR G2
     generalize compK = KC at hL hma hmsg e ⊢
     generalize finBody = FB at e ⊢
     rcases hmv with rfl | rfl <;>
-    simp [nock_exec, hL, by.arm_at, by_arm, by.get.arm_at, get_arm, hg, hma, msg_arm, hmsg, e, eqCode_self,
+    simp [nock_exec, hL, by.arm_at, by_arm, by.get.arm_at, get_arm, hg, hma, kept_arm, hmsg, e, eqCode_self,
       by.put.arm_at, put_arm, hpg, hp]
 
 /-- **The gate `member` on its final pass when `map-local` holds a straight
