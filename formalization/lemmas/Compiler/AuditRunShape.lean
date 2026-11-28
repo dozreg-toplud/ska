@@ -23,6 +23,8 @@ import lemmas.Compiler.CompRunShapeTwelve
 import lemmas.Compiler.CompRunShapePastIf
 import lemmas.Compiler.CompRunShapeEleven
 import lemmas.Compiler.CompRunShapeMean
+import lemmas.Compiler.CompRunShapeTMiss
+import lemmas.Compiler.CompRunShapeClassF
 
 /-! The axioms of the main theorems of track A's `+run-shape` link (2026-11-27). -/
 
@@ -148,3 +150,41 @@ import lemmas.Compiler.CompRunShapeMean
 #print axioms Formalization.Compiler.elevenDNz
 #print axioms Formalization.Compiler.rmk_gate
 #print axioms Formalization.Compiler.meanNz
+
+/-! Threading the rest of `gen` (a callee compiled inside `+run-shape`), `%mean`, the class as facts (2026-11-28). -/
+
+#print axioms Formalization.Compiler.rsAtT_of_E
+#print axioms Formalization.Compiler.shapeCallT_of
+#print axioms Formalization.Compiler.rs_n2dT
+#print axioms Formalization.Compiler.rsd_ndT
+#print axioms Formalization.Compiler.rs_n3T
+#print axioms Formalization.Compiler.rs_n5T
+#print axioms Formalization.Compiler.rs_consT
+#print axioms Formalization.Compiler.rs_n10T
+#print axioms Formalization.Compiler.rs_n2iT
+#print axioms Formalization.Compiler.rs_n6DPT
+#print axioms Formalization.Compiler.six_tailT
+#print axioms Formalization.Compiler.six_fuelT
+#print axioms Formalization.Compiler.rs_n6NT
+#print axioms Formalization.Compiler.rs_n12T
+#print axioms Formalization.Compiler.rs_n11sT
+#print axioms Formalization.Compiler.rs_n11dT
+#print axioms Formalization.Compiler.rs_nmeanT
+#print axioms Formalization.Compiler.rsm_pre
+#print axioms Formalization.Compiler.rsm_ned
+#print axioms Formalization.Compiler.rsm_end
+#print axioms Formalization.Compiler.rs_clsT6
+#print axioms Formalization.Compiler.rs_doneT6
+#print axioms Formalization.Compiler.memShape_branchT6
+#print axioms Formalization.Compiler.rs_clsTM
+#print axioms Formalization.Compiler.rs_doneTM
+#print axioms Formalization.Compiler.memShape_branchTM
+#print axioms Formalization.Compiler.rsNeed_of_step
+#print axioms Formalization.Compiler.shapeCallT_of_step
+#print axioms Formalization.Compiler.sixDeep_noAx0
+#print axioms Formalization.Compiler.rsClsM_of_F
+#print axioms Formalization.Compiler.memShape_branchTF
+#print axioms Formalization.SkaModel.Comp.lazeLeaps_idem'
+#print axioms Formalization.SkaModel.Comp.soundS_total
+#print axioms Formalization.SkaModel.Comp.unsS_total
+#print axioms Formalization.SkaModel.Comp.softTest_total
