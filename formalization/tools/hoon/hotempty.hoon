@@ -146,6 +146,59 @@
       rs
     [%jets (turn rs2 |=(r=ring [r nd]))]
   ==
+::  the models' predictions, from the state before the poke
+::
+=/  jh0  jets-hot.state
+::  %jsmod: settleO, a roll over the code table (not +ska-cole-settle)
+::
+=/  jpred=_cole.jets.lon0
+  ?.  &(?=(%j -.c) !=(~ pend.jets.lon0))  cole.jets.lon0
+  %+  roll  ~(tap by code.lon0)
+  |=  [[b=bell *] c=_cole.jets.lon0]
+  ?:  (~(has by call.c) b)  c
+  =/  sek=cape  (~(gut by seek.lon0) b &)
+  ?~  r=(cole-match b sek pend.jets.lon0 arms.jets.lon0 ~)  c
+  (cole-put b u.r c)
+::  %dmod: compileStep: +scc-of, then compiled-mono / compiled-nary on the
+::  state with the new sccs, then +optimize
+::
+=/  dsel=(unit [b=bell m=?])
+  ?.  ?=(%d -.c)  ~
+  =/  ks=(list bell)  ~(tap in ~(key by code.long-ska.state))
+  `[(snag (mod k.c (lent ks)) ks) m.c]
+=/  dpred=(unit [out=straight-out ca=_cache.state st=straight])
+  ?~  dsel  ~
+  =/  sc  (scc-of b.u.dsel calls.long-ska.state sccs.cache.state)
+  =.  sccs.cache.state  sccs.sc
+  =/  r=[straight _cache.state]
+    ?:  m.u.dsel  (compiled-mono b.u.dsel -.sc)
+    (compiled-nary b.u.dsel -.sc)
+  `[(optimize -.r) +.r -.r]
+::  %fmod: the regs rerun, pend by uni-ju / dif-ju (or ~ and the cole
+::  rebuilt over all of code on reset), the cache cleared iff call changed
+::
+=/  fpred=(unit [j=_jets.lon0 ca=_cache.state])
+  ?.  ?=(%a -.c)  ~
+  =/  j0  jets.lon0
+  =/  reg=regs  ?:(r.c *regs [root core batt arms ~]:j0)
+  =.  reg
+    %+  roll  p.c
+    |=  [[pax=path tem=sock] =_reg]
+    (register-template pax tem ~ reg)
+  =/  pc=[pend=_pend.j0 cole=_cole.j0]
+    ?.  r.c  [((uni-ju pend.j0) ((dif-ju core.reg) core.j0)) cole.j0]
+    =/  l  ~(tap by code.lon0)
+    =/  co=_cole.j0  [~ ~]
+    |-  ^-  [_pend.j0 _cole.j0]
+    ?~  l  [~ co]
+    =/  sek=cape  (~(got by seek.lon0) p.i.l)
+    =/  r  (cole-match p.i.l sek core.reg arms.reg hot0)
+    $(l t.l, co ?~(r co (cole-put p.i.l u.r co)))
+  =/  j1  j0(root root.reg, core core.reg, batt batt.reg, arms arms.reg, pend pend.pc, cole cole.pc)
+  =/  cf
+    ?:  =(call.cole.j0 call.cole.pc)  cache.state
+    cache.state(nary ~, mono ~, inl ~, sure ~)
+  `[j1 cf]
 =^  p  ..poke  (poke ovo)
 =/  ndrop=@ud  ?:(?=([%drop *] p) (lent p.p) 0)
 =/  dl=(list bell)  ?:(?=([%drop *] p) p.p ~)
@@ -284,6 +337,49 @@
   ?:  ?=(%f -.c)  &
   =(`*`[memo code calls vars seek]:lon0 `*`[memo code calls vars seek]:long-ska.state)
 =/  ok-jatm=?  &
+=/  lon1=long-ska  long-ska.state
+=/  cz  cache.state
+=/  jsm=[ok=? cole=? pend=? rest=? cache=? hot=? prod=?]
+  ?.  ?=(%j -.c)  [& & & & & & &]
+  =/  f1=?  =(`*`jpred `*`cole.jets.lon1)
+  =/  f2=?  =(~ pend.jets.lon1)
+  =/  f3=?  =(`*`lon0(cole.jets jpred, pend.jets ~) `*`lon1)
+  =/  f4=?  =(`*`ca0 `*`cz)
+  =/  f5=?  =(~ jets-hot.state)
+  =/  f6=?  =(`*`p `*`[%drop ~])
+  [&(f1 f2 f3 f4 f5 f6) f1 f2 f3 f4 f5 f6]
+=/  dm=[ok=? long=? hot=? cache=? prod=? put=? nput=?]
+  ?~  dsel  [& & & & & & &]
+  ?~  dpred  [| | | | | | |]
+  =/  f1=?  =(`*`lon0 `*`lon1)
+  =/  f2=?  =(`*`jh0 `*`jets-hot.state)
+  =/  f3=?  =(`*`ca.u.dpred `*`cz)
+  =/  f4=?  =(`*`p `*`[%ir b.u.dsel out.u.dpred ~])
+  =/  f5=?  ?.(m.u.dsel & =(`*`(~(get by mono.cz) b.u.dsel) `*`[~ st.u.dpred]))
+  =/  f6=?  ?:(m.u.dsel & =(`*`(~(get by nary.cz) b.u.dsel) `*`[~ st.u.dpred]))
+  [&(f1 f2 f3 f4 f5) f1 f2 f3 f4 f5 f6]
+=/  fm=[ok=? jets=? rest=? cache=? sccs=? hot=? prod=?]
+  ?~  fpred  [& & & & & & &]
+  =/  f1=?  =(`*`j.u.fpred `*`jets.lon1)
+  =/  f2=?  =(`*`[memo code calls vars seek]:lon0 `*`[memo code calls vars seek]:lon1)
+  =/  f3=?  =(`*`ca.u.fpred `*`cz)
+  =/  f4=?  =(`*`sccs.ca0 `*`sccs.cz)
+  =/  f5=?  =(`*`jh0 `*`jets-hot.state)
+  =/  f6=?  =(`*`p `*`~)
+  [&(f1 f2 f3 f4 f5 f6) f1 f2 f3 f4 f5 f6]
+~&  :*  %m  n  -.c  %jsmod  ok.jsm  %dmod  ok.dm  %fmod  ok.fm
+        %clr  !=(`*`ca0 `*`cz)  %nput  nput.dm
+    ==
+~?  !ok.jsm  [%jsmod-bad n +.jsm ~(wyt by call.jpred) ~(wyt by call.cole.jets.lon1)]
+~?  !ok.dm  [%dmod-bad n +.dm]
+~?  !ok.fm
+  :*  %fmod-bad  n  +.fm
+      ?~  fpred  ~
+      :*  (mug root.j.u.fpred)  (mug root.jets.lon1)  (mug core.j.u.fpred)  (mug core.jets.lon1)
+          (mug batt.j.u.fpred)  (mug batt.jets.lon1)  (mug arms.j.u.fpred)  (mug arms.jets.lon1)
+          (mug pend.j.u.fpred)  (mug pend.jets.lon1)  (mug cole.j.u.fpred)  (mug cole.jets.lon1)
+      ==
+  ==
 ~&  :*  %i  n  -.c  %ccall  ok-ccall  %cinfo  ok-cinfo  %smap  ok-smap  %skey  ok-skey
         %imap  ok-imap  %ikey  ok-ikey  %ival  ok-ival  %sccs  ok-sccs  %nary  ok-nary
         %vars  ok-vars  %ckey  ok-ckey  %mono  ok-mono  %flag  ok-flag  %scck  ok-scck  %gone  ok-gone
