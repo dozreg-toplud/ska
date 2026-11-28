@@ -275,7 +275,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Hoon/RunByP.lean` | `+run:by` with a gate known only on the values of the map (`run_by_P`, `run_loop_P`, the arm `by_run_arm`). |
 | `Hoon/SwArms.lean` | The arms `+sort`, `+rear`, `+snip` build their gates (`sort_arm`, `rear_arm`, `snip_arm`), for the link of `+switch-chains`. |
 | `Compiler/CompSccOne.lean` | `cu_gate_scc_one` with the calls linked: `csi_gate_scc_one_m` (`+compile-scc-in` on `[b ~ ~]`) and `cu_gate_scc_one_m` (`+compile-unary`) state the product as a `bind` over `finishLF nm (sccSur nex cape) cape`, crashing when it is `none` (`csi_final_one_none`, `cu_gate_none`), with `+inlined` (`inl_gate`, under `InlOK`), `+shape-collapse` (`hsc_of_sure`), `kids` for a bell that does not call itself (`NoSelfCall`, `csi_kids_noself` with `int_in`; `NoCalls`, `csi_kids_nocalls`; `ju_has_kids`), `+uni:by` (`uni_by_one`, `IsMap` of `nary`), `+sure-of` succeeding on the fragment (`scc_sur_frag`, by `cra_run_lok` and `sureOf_some`) `args.then` empty on the fragment (`crx_run_args`, `args_frag`) and `was` from the put (`getF_of_putF`).  Left: `hrunL`, `hnoar`, `hb` (the model), `hnary`, `hnmap`, `hcalls` (`NoSelfCall`), `InlOK`, `hput` (the state nouns).  `csi_gate_scc_one_f`, `cu_gate_scc_one_f` fold the run in: a `bind` over `runL` and `finishLF` with `ord := sccSur` of that run, crashing when it is `none` (`mem_gate_none`: the run or `+collapse-shape` crash), under `NoBakeOne` (nothing baked whenever the pass gets to `+bake-need`) and on the state nouns `hnary`, `IsMap` of `nary` and `sure.cache`, `NoSelfCall`, `InlOK`.  The cache hit: when every member of a tree `scc` is in `nary.cache`, `+compile-scc-in` returns the `+gas:by` of the cached straights in the order of `+tap:in` and the cache unchanged (`csi_hit`, `csi_hit_one`, with `+levy`, `+has:by`, `+turn` of `csiHitGate` and `+got:by`), and `+compile-unary` returns `finishLU` with it (`cu_gate_hit`). |
-| `Compiler/CompMemOld.lean` | The branch `memOld` of `member` (`map-local` holds a straight of `b`) on a fixed point reached: `+msg-need-ord` (arm `20` of `K`, nouns by `tools/gen/msgneed.py`, `msg_at`) of two equal shapes is that shape (`msg_eq`), so with the previous shape equal to `need-new` the gate returns `[moved (~(put by map-local) b (finish ~)) cache]` (`mem_prod_old`, `mem_gate_old`: a `bind` over `finishLF`, `map-local` a map).  The pessimized case (`+coerce-soft`) is not linked. |
+| `Compiler/CompMemOld.lean` | The branch `memOld` of `member` (`map-local` holds a straight of `b`) on a fixed point reached: `+msg-need-ord-kept` (arm `178934` of `K` since 2a5b618, nouns by `tools/gen/keptarm.py`, `kept_at`, `kept_arm`) of two equal shapes is that shape (`kept_eq`; the same for `+msg-need-ord`, arm `20`, `msg_eq`, kept for `CompShapeColMsg.lean`), so with the previous shape equal to `need-new` the gate returns `[moved (~(put by map-local) b (finish ~)) cache]` (`mem_prod_old`, `mem_gate_old`: a `bind` over `finishLF`, `map-local` a map).  The pessimized case (`+coerce-soft`) is not linked. |
 | `Compiler/CompNoNN.lean` | `+need-ord-alloc-regs` of `sccSur` succeeds on the fragment (`noar_frag`): the invariant `NN` (no cell and no `%both` of a need with two `%none` halves) holds of the sure need of every run (`nn_run`, through `+simple-next`, `+bomb`, `+from` (`nn_fromPath`), `+split` (`nn_splitNeed`, `nn_must`), `+into` (`nn_intoLoop`, `nn_rollTack`), `+copy` (`nn_copyNeed`)), goes to the shape (`nno_needToOrd`) and through `+sure-of` (`nno_sureLook`, `nno_sureOf`), and `+need-ord-alloc-regs` succeeds on it (`noar_nno`).  A bell whose cape is `|` bakes nothing (`noBake_no`), so for it `cu_gate_scc_one_f` holds with no hypothesis on the model but the fragment (`cu_gate_scc_one_no`). |
 | `Compiler/CompRunTwo.lean` | The case `%2` of `+run` for an indirect call (`info` `~`), against the model with calls `runLC env msup` (`callL` with `info = none`): `CompRunAtR R` (`CompRunAt` against any model `R`, `CompRunAt` is `CompRunAtR runL`), `CompRunAtC env` (against `runLC env msup` for every `msup`; from `CompRunAt` on a pure nomm, `crc_of_pure`, by `runLC_eq`); `CrOut`, `CrRes` (what a run returns: fork-free, below the counter, made of fresh registers and the goal's need, distinct, no look at `0`) and the facts of the `+copy` of two runs (`crf_copy_ok`, `crf_copy_out`); the Nock of the case cut by `tools/gen/runtwo.py` (`cr2_eq`: `[6 [5 [1 0] [0 471]] cr2Ind cr2Dir]`, the direct call `cr2Dir` read from the pill); `cr2_tail` (the run of `q` into the `%nok` block, `+past` over a pure `p`, the run of `p`, `+copy`), `cr2_kf` (`+kerf`, two `+re`, the call block), `comp_run_n2` (the case on every fork-free goal with `CrInv`, `p` pure with no `%6`, given the parts, `Cr2Parts`); `cr5_tailC` (the tail of `%5` with a `q` that may call).  The header lists the helper calls in order and what the branch reads of the state. |
 | `Compiler/CompRunCall.lean` | `+run` on the fragment with indirect calls (`indOk`: pure with no `%6` and `tenOk`, closed under `[2 p q ~]` and `[5 p q]` with `p` pure and `q` in it, under `%3`, `%4`, and `%7` of two of it), against `runLC`: `comp_run_n4C`, `comp_run_n3C` (the proofs of `comp_run_n4`, `comp_run_n3` with `runLC`), `comp_run_n7C` (`q` with `sup` set to `p`), `comp_run_n5C`; the invariant `crf_run` (every run of the fragment from a goal with `CrInv` meets `CrRes`); `comp_run_all_c` (**`CompRunAtC` on every nomm of `indOk`**, every goal and state with `CrInv`, every region and `env`, given only `slot? 7 ctx = some compK` and `slot? 52 ctx = some cod`), `comp_run_entry_c`, and an `example` on `[7 [2 [0 1] [2 [0 3] [0 2] ~] ~] [0 2]]`. |
@@ -695,6 +695,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/SccLoop.lean` | `+compile-scc-in` as a loop (Gaps 21), executable, with the member compile (`Cfg.comp`) and `+msg-need-ord` (`Cfg.msg`) as parameters: `member` (`keep`, `was`, `moved`, the two branches on `map-local`, `need-pessimized`, `chg`), `dirty`, `sweepStep`, `sweep`, `loop` (fuel), `maySweep`, `final`, `compileSccIn`, with ghost state (`rd`, `tr`, `sw`).  Proved: `loop_end` (property (a)), `loop_inv` and `loop_reads` (each member's last compile read the final views of its kids), `final_member` and `final_keeps` (properties (b) and (c), under `Hyp`: `kidsOnly`, `shape`, `msgSelf`, `msgAbs`).  Also the records `Rec`, `Dump` of the dumps. |
 | `Ska/SccLoopData.lean` | Generated by `tools/hoon/sccloop.py --lean`: the dumps of the instrumented `+compile-scc-in` on 23 SCCs (18 formulas), bells as mugs. |
 | `Ska/SccLoopMsg.lean` | The algebra of `msgOrd` (Gaps 21.8): `msgOrd_self`, `msgOrd_comm`, `msgOrd_abs` (`msgAbs` of `Hyp`), `msgOrd_abs'`, `msgNone_idem`, `msgOrd_none_self`, `msgOrd_eq_none`, `regsU`/`ordRegs_min`; witnesses `msgOrd_not_assoc`, `msgOrd_cycle` (`this ↦ bTT ↦ bBig ↦ this` under `[[| |] [| |]]`), `msgOrd_deep`. |
+| `Ska/ShapeColKept.lean` | `msgOrdKept` (`+msg-need-ord-kept`, 2a5b618, the join of the sweep loop), the climb order `OrdLe`, `Canon`, the potential `pot`; `kept_climbs`, `kept_eq_or_lt`, `kept_canon`, `kept_pot`, `kept_cycle_stops`, `kept_noncanon`, `msgOrd_falls` (README Gaps 30). |
 | `Ska/SccLoopCycle.lean` | A member compile that meets `Hyp` (`cyc_hyp`) under which the loop of `+compile-scc-in` never returns, whatever the fuel (`cyc_never`), Gaps 21.8. |
 | `Ska/SccLoopTotal.lean` | The loop of `+compile-scc-in` ends under the hypothesis `Ranked` on the member compile (Gaps 21.8.5): `loop_total` (fuel `phi st + 2` from an `Ok` state), `compileSccIn_total` (fuel `4 * \|scc\| + \|order\| * (H + 1) + 2` from any state), the measure `phi`, `sweepStep_psi`, `quiet_clean` (a sweep without a change is followed by one that compiles nothing), `cyc_not_ranked` (the configuration of `cyc_never` is not `Ranked`). |
 | `Compiler/CompSccLoopNouns.lean` | Generated by `tools/gen/csifix.py`: `csiFix` of `+compile-scc-in` cut into its pushes (`csfOrder`, `csfMay`, `csfPut`, `csfCons`, `csfTop`, `csfSt0`, `csfTrap`, `csfSwRoll`, `csfRec`, `csfFin`), `csiFix_cut` (Gaps 21.11). |
@@ -7841,84 +7842,68 @@ import only its theorems.  So:
        `sccSet` is empty); `SccOfIsK` adds both and holds.  *Left*: track K's `UnarySccsIs` (each
        `+scc-of` call of `+compile-unary` is on a key with `SccsGoodM`: then `sccOfIsK_of`).
 
-30. **`+split-max` in the sweep loop of `+compile-scc-in`** (track S, 2026-11-28, `tools/hoon/splitmax*.py`,
-    copies and runs in `~/work/ska-scratch/splitmax/`).  Not a Lean item: the facts for a decision
-    about the cut of `+msg-need-ord` (line 7415, added by an AI session in 3bbfae4 and set to 6 in
-    a257bce for the forks of the parsers) where the loop joins a member's new need with its entry
-    (line 3601).  `desk/` unchanged.
-    1. *How often the cut acts on real code* (one traced first run of each benchmark: `splitmax.py
-       --trace --small`, `pill.sh`, `bench.sh KIND 1`, `splitmax-sum.py`).  `mint`: 615 SCCs through
-       the loop (two of 250 bells), 1,910 joins, 253 reach the cut line, the cut FIRES in 26 (19 to
-       26 over runs: the first run also compiles the compiler's own arms, which differ by copy), all in a
-       middle sweep (never the first or the last), all on an entry that was a split; 248 joins shrink
-       the entry (fewer registers), 18 of them where the cut fires (the others are the uncut join under
-       an atom cape, a climb); at most 6 sweeps (592 SCCs take 3).  `rdr`: 232 SCCs, 844 joins, 172
-       reach, 24 fire, 84 shrink (10 by the cut), at most 6 sweeps.  `nuck`: 66 SCCs, 84 joins, none
-       reaches.  `ream`: the traced copy runs out of loom after 224 SCCs (the untraced one runs): 590
-       joins, 82 reach, 11 fire.  The final pass never finds a need other than the entry.  No member's
-       entry ever returns to an earlier one.  The cut fires on the stale part of a need read through
-       `top` (the `%may` need of a callee not yet compiled): e.g. an entry with 18 registers whose new
-       need is `this` at a deep tail (`[this [this [%both none ...]]]`): the uncut join keeps both (21
-       registers), the cut gives 14.
-    2. *Half of the cycle on real code* (`mint`, full trace, `splitmax-order.py`).  `need-new` is not
-       monotone across sweeps (1,508 consecutive pairs of a member: by split axes 1,184 equal, 204
-       lose, 79 gain, 41 neither).  10 members fire twice at the same axis: at 270477651 (axis 63)
-       `need-new` goes big split, `this`, big split, the entry big, `this`, `this` (the second big
-       need meets `this` and is cut again); at 1202617745 (axis 15) the entry goes from a split over 6
-       registers to `this` (cut) and back to a split of 6 (`[%both this [this [this [this this]]]]`,
-       kept since 6 is not over `split-max`).  So the steps G -> T and T -> B of the cycle T, B, G, T
-       of `msgOrd_cycle` both happen on real code; the missing step is a both-both join over six
-       registers after the regrowth, and then a `this`.
-    3. *The search* (`splitmax-cores.py`): 1,350 generated SCCs of one to three gates whose samples
-       hold known gates at every other leaf (capes cells over 3 or 7 inner nodes), 4 random batches of
-       154 and 2 targeted batches of 204 (a callee whose fork cuts, read at `top` first).  None fires
-       the cut, no shrink, no return; at most 6 sweeps; every run returned.  The real fires need
-       deeper capes than the samples give (the tails of lists inside cores with known batteries).
-       There is no order that the compiler keeps on `need-new` (2.), so the reason the loop ends is
-       not a property of the member compile but of the views settling after 3 to 6 sweeps.
-    4. *Candidate changes* (`splitmax.py --fix`; output against the unpatched copy).  `loop`: the join
-       of line 3601 without the cut.  `sticky`: the join as now, but a member whose join cut keeps
-       that entry for the rest of the loop.  `late`: the uncut join until stable, then a sweep of every
-       member with the cut join, the members it changes kept, the loop goes on, and ends at a cut sweep
-       that changes nothing.  `nocut`: the cut line removed (forks too), the control.  Identical
-       output (mugs of product and state) on the 21 pokes and 21 library calls of `takesame.hoon`
-       for all four.  The code of the benchmark targets (the mug of each final pass's map of
-       straights, `%fz`, on the SCCs of hoon.hoon; the compiler's own SCCs, which are compiled in the
-       same first run, differ by copy and are left out): `loop` changes 3 of 1,072 SCCs of `mint`
-       (250, 250 and 7 bells), 2 of 800 of `rdr` (250, 191), 5 of the 1,881 of the partial `ream`, none
-       of `nuck`; `sticky` changes one SCC, the same of 250 bells in `mint`, `rdr` and `ream`; `late`
-       that one in `mint`, 2 in `rdr` and `ream`, but it adds a cut sweep to each of the 621 SCCs of
-       `mint` (4,062 joins for 1,499, up to 9 sweeps).  Benchmark (`ab.sh none X mint:6 ream:21 rdr:21 nuck:21`, four
-       rotations; warm, then first run, against `none` side by side): `loop` mint +0.3 % / +0.7 %,
-       ream +5.3 % / +0.5 %, rdr +1.1 % / -0.3 %, nuck +0.7 % / -0.7 %; `sticky` mint +0.3 % / +0.1 %,
-       ream +0.9 % / +0.3 %, rdr +1.0 % / 0.0 %, nuck 0.0 % / -0.1 %; `late` mint 0.0 % / +10.2 %, ream
-       -0.1 % / +4.7 %, rdr -5.2 % / +12.3 %, nuck 0.0 % / +1.6 %; `nocut` (the control: no cut at the forks either) mint
-       -5.4 % / -1.4 %, rdr -10.0 % / +20.0 %, nuck +114 % / +274 %, ream +170 % warm and its first run
-       runs out of loom.  So the cut at the forks is
-       what pays (3bbfae4, a257bce: the parsers), and the cut in the loop is worth 5 % of warm `ream`
-       (what `loop` loses), all of it kept by `sticky`.
-    5. *Termination arguments.*  The uncut join climbs: at a node where the cape is a cell the kind of
-       the entry (none, then this or split, then both) never goes down, and under an atom of the cape
-       the entry only loses splits, keeps `%both` and turns `none` into `this` (`splitmax-climb.py 3 3`:
-       2,359,296 triples, none fails; with the cut 15 fail).  So the measure (the kinds over the finitely
-       many cell nodes of the cape, then minus a weight of the parts under atoms) rises
-       lexicographically at every change of an entry, and a member's entries form a finite chain.
-       `loop` and `nocut` (the join is the uncut one): this discharges `Ranked` with a well-founded
-       rank in place of the bound `H`; the weight is bounded only by the first entries, so
-       `loop_total` must be restated with a lexicographic (or well-founded) rank, not `phi + H`.
-       `sticky`: before a member's first cut its joins are the uncut join, so they climb as above, and
-       the cut freezes it once: rank (frozen, measure).  `late`: the measure inside each run of uncut
-       sweeps, and each cut sweep that changes something freezes one more member, so at most
-       `|scc| + 1` cut sweeps.
-    6. *Recommendation*: `sticky`: on the real targets it changes the code of one SCC (250 bells, the
-       same in `mint`, `rdr`, `ream`), costs nothing measurable, keeps the 5 % of `ream` that the cut in
-       the loop gives, and makes each member's entries a climb of the uncut join followed by at most one
-       freeze.  The measured patch keeps the flag in `n-args` of the placeholder straight (read
-       nowhere off `%done`) and finds the cut by comparing with a copy `+msg-need-ord-uncut`; a set of
-       frozen bells threaded through the sweeps would say the same more plainly.  Unknown: whether
-       the unpatched loop can cycle on real code (the steps G -> T -> B of 2. occur, the closing step
-       was not found); the climb for shapes over three inner nodes (enumerated to three, not proved);
-       `Ranked` restated on a well-founded rank (the next Lean step).
+30. **`+split-max` in the sweep loop of `+compile-scc-in`: DECIDED, the kept join** (track S,
+    2026-11-28, `Ska/ShapeColKept.lean`, `tools/msgord/enumkept.py`, `tools/msgord/msgkept.hoon`,
+    `tools/gen/keptarm.py`, `tools/pillswitch-2a5b618.md`; the facts for the decision:
+    `tools/hoon/splitmax*.py`, copies and runs in `~/work/ska-scratch/splitmax/`).
+    1. *The decision.*  The cut of `+msg-need-ord` (line 7415, `split-max` 6, 3bbfae4 and a257bce)
+       made a big split whole, and the plain join of that with a smaller split brought the split
+       back, so a member's entry could come round (`msgOrd_cycle`, `cyc_never` of Gaps 21.8; two of
+       the three steps seen on `mint`, below).  The author's commit 2a5b618 joins a member's new
+       shape with its entry (line 3601) by a new arm `+msg-need-ord-kept`: equal shapes give the new
+       one, an entry `this` stays, an entry `none` or a new `none` / `this` go to `+msg-need-ord`,
+       and two cells or `%both` recurse on the halves with the kept join.  The fork joins keep
+       `+msg-need-ord` and its cut.  The earlier `sticky` draft (freeze a member's entry after a cut)
+       was not taken: a frozen shape can be one that the member's code does not fit in
+       `+coerce-soft`.  Benchmark within noise, `takesame.hoon` identical (the coordinator).
+    2. *The pill* (`tools/pillswitch-2a5b618.md`): sha256 `8bc108f4...`, 794,095 bytes.  The new arm
+       is arm `178934` of `K` and pushes `+this-only`, `+laze`, `+pass-bomb` and `+inter2-fix-round`
+       one level down in the battery; `+compile-scc-in` and seven callers of the moved arms change
+       by call atoms only.  `CompMemOld.lean` links the kept arm's first branch (`kept_at`,
+       `kept_arm`, `kept_eq`) for `mem_prod_old`.  The build is NOT green on this pill:
+       `mem_prod_oldM` (`CompSccLoopMemDone.lean`) and `mem_prod_oldX` (`CompSccLoopMemSweep.lean`)
+       still read the join at arm `20`; moving their hypotheses `hmsg` to `keptBody` (a patch in
+       the track's scratch, `memdone-memsweep-kept.patch`) leaves `mem_gate_done_R` (line 287) and
+       `CompSccLoopSweepStep.lean` (line 153), which discharge `hmsg` by `msg_gate_K`: they need the
+       link of the kept arm (4.).
+    3. *The model, proved* (`Ska/ShapeColKept.lean`).  `msgOrdKept` is the arm line for line.  The
+       order `OrdLe`: `none` below everything, everything below `this`, and through cells pointwise
+       with a `pair` below a `both` of halves above its halves (nothing < parts < the noun and its
+       parts < the noun).  `msgOrd` does not climb in it (`msgOrd_falls`: the entry `this` regrows
+       to `[%both this this]`).  **`kept_climbs`**: for every new shape and cape, a canonical entry
+       (`Canon`: no `[[%none ~] [%none ~]]` inside, which `+cons-need` never builds) is `OrdLe`
+       the kept join; `kept_eq_or_lt`: the join is the entry or strictly above it; `kept_canon`: it
+       stays canonical.  It is false on a non-canonical entry in any order with `none` at the
+       bottom (`kept_noncanon`: `[[%none ~] [%none ~]]` falls to `[%none ~]`, on the real arm too).
+       **`kept_pot`**: with `pot less` (`0` for `this`, `topC less` for `none`, which bounds every
+       shape the cape bounds, `2` for a split and `1` for a `%both` plus the halves) the join is the
+       entry or has a strictly smaller potential, so a member's entries, from its first one on, form
+       a finite chain.  The old cycle climbs (`kept_cycle_stops`: `kept(B, T) = T`,
+       `kept(G, B) = B`, `kept(T, G) = T`).  `OrdLe` is not well-founded on all shapes in either
+       direction (`[this [this ...]]` climbs for ever, `[%both [%both .. this] this]` falls for
+       ever): what bounds a chain is the entry it starts from (`kept_pot`), not the order.
+       `enumkept.py 3 3` (3,359,889 triples of canonical shapes): no failure of the three facts,
+       plain `msg` falls on 426,010; `msgkept.hoon` (with `RUNHOON_LIB`) gives the outputs of the
+       four `decide`s on the real arm.
+    4. *`Ranked` is not provable for the kept join as stated*: `Ranked` asks for one bound `H` on
+       the ranks of every entry, but a canonical entry whose split has `k` cells under an atom of the
+       cape climbs `k` times (one leaf `none` to `this` at a time), so no `H` serves all member
+       compiles.  What holds is the potential of 3., relative to each member's first entry.  Next
+       step (not done): a `loop_total` for a configuration whose join is `msgOrdKept` and whose
+       `need-new` is canonical, by restricting the join to the entries of potential at most that of
+       the state after the first sweep (a configuration that is `Ranked` with `H` the sum of those
+       potentials and agrees with the real one on the states the loop reaches), so that the loop
+       ends with no `Ranked` hypothesis; then track I links the kept arm against `msgOrdKept` (the
+       pattern of `msg_gate_K` of `CompShapeColMsg.lean`: the same `MsgK` pieces, plus the arm `20`
+       itself) and moves the configurations of `SccLoopReal*.lean`, `SccLoopSoft2*.lean` to the
+       kept join.
+    5. *The facts for the decision* (before 2a5b618, `splitmax.py`, `splitmax-sum.py`,
+       `splitmax-order.py`, `splitmax-cores.py`, `splitmax-climb.py`): the cut fires on real code
+       in a middle sweep (`mint` 26 of 1,910 joins, `rdr` 24 of 844, `nuck` none), on the stale part
+       of a need read through `top`; on `mint` an entry went from a split over 6 registers to `this`
+       and back to a split of 6 (the steps G -> T and T -> B of `msgOrd_cycle`), the closing step was
+       not found; 1,350 generated SCCs never fired the cut; the candidates `loop`, `sticky`, `late`,
+       `nocut` and their benchmarks are in the report of 2026-11-28 (track S) and in `splitmax.py`.
 
 31. **`BakeEnds`: the worklist of `+bake-graph` ends** (track Q, 2026-11-28, `Ska/BakeHalt.lean`,
     `Ska/BakeHaltTie.lean`, `tools/gen/bakehalt_lib.py`, `tools/hoon/bakehalt-lib.hoon`,

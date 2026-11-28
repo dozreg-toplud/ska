@@ -1466,7 +1466,9 @@ NO OWNER (for the coordinator; size = my estimate of the work, S < M < L):
 - `ClassLeaves15.totalPlainM`, `.totalPlainN` (L), `.totalPlainDM` (L), `HintLeaves.total`
   (L): the pill's `+optimize` returns on the raw code of `PlainCalls`, `PlainCallsDM` and J's
   hinted class (H's `optimize_total_finishLUX` extended to calls and hints).
-- `CompLeaves15.answers`, the part outside I (M): `split-max` (S's question).
+- `CompLeaves15.answers`, the part outside I (M): `split-max` DECIDED (2a5b618, the sweep loop's
+  join is `+msg-need-ord-kept`; it climbs, `kept_climbs`, `kept_pot` of `Ska/ShapeColKept.lean`,
+  README Gaps 30); left: the loop's totality on the kept join (S) and its pill link (I).
 
 The hypotheses with owners (record, field, owner, one line each):
 
@@ -1567,7 +1569,7 @@ moving there needs K's record at `PGood7`/`PGood8`.
 
 Toward `SDWEndC` (the `guard` leaf's body-local route): as in 10a.
 
-QUESTIONS TO THE AUTHOR (open): (a) `WidthFin` (F); (b) `split-max` (S).
+QUESTIONS TO THE AUTHOR (open): (a) `WidthFin` (F); (b) `split-max` (S): answered by 2a5b618.
 
 ## 10a. THE HYPOTHESES OF `gap14`, one open leaf each (fourteenth pass, superseded by 10)
 
