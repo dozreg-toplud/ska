@@ -112,7 +112,7 @@ partial def hcWhyK (snd : Nomm → NeedOrd → Bool) (k : HKind) (f : Noun) (nm 
   | Option.none =>
   match nm with
   | Nomm.n0 _ => fMis f nm
-  | Nomm.n1 _ => fMis f nm
+  | Nomm.n1 k' => if hcDropK f k' then "dropped hint over a constant: no " ++ kName k ++ " rule" else fMis f nm
   | Nomm.cons p q => "cons: " ++ leafWhy f (Nomm.cons p q)
   | Nomm.n5 p q => "%5: " ++ leafWhy f (Nomm.n5 p q)
   | Nomm.n4 p =>
@@ -143,12 +143,28 @@ partial def hcWhyK (snd : Nomm → NeedOrd → Bool) (k : HKind) (f : Noun) (nm 
             else if !(safeFolFol q && decide (sixCount (Nomm.n2 p q info) ≤ 255) &&
                 (match fq, q with
                   | Noun.cell (Noun.atom 1) F, Nomm.n1 F' => F = F' && F = b.fol
-                  | _, _ => false)) then "direct call: formula not [1 b.fol]"
+                  | Noun.cell (Noun.atom 0) (Noun.atom _), Nomm.n1 F' => F' = b.fol
+                  | _, _ => false)) then "direct call: formula not [1 b.fol] or [0 a]"
             else "zc: direct call with a subject not [0 1]"
       | _, some (_, some _) => "direct call with a constant"
       | _, Option.none => "indirect call: " ++ leafWhy f nm
       | _, _ => fMis f nm
   | Nomm.n7 p q =>
+      let gen := fun (b c : Noun) =>
+        let pl := hcLeaf b p == some true
+        match k with
+        | HKind.ft => if pl then (hcWhyK snd HKind.ft c q).getD "?" else "%7: p not a leaf of index &"
+        | HKind.reg =>
+            if pl then (hcWhyK snd HKind.ft c q).getD "?"
+            else if !(hcV snd b p).sur then (hcWhyK snd HKind.sur b p).getD "?"
+            else (hcWhyK snd HKind.zc c q).getD "?"
+        | HKind.dall => if pl then (hcWhyK snd HKind.dall c q).getD "?" else "%7: p not a leaf of index &"
+        | HKind.top =>
+            if pl then (hcWhyK snd HKind.dall c q).getD "?"
+            else "%7 at the top: p not a leaf (nor the [7 kept [4 [0 a]]] form)"
+        | HKind.sh => if isS3Body nm then "+sound fails" else "ShapeH: a %7 other than S3"
+        | HKind.sur => "%7 under a sure need"
+        | HKind.zc => "zc: a %7"
       match f with
       | Noun.cell (Noun.atom 7) (Noun.cell b c) =>
           match p, b with
@@ -159,21 +175,11 @@ partial def hcWhyK (snd : Nomm → NeedOrd → Bool) (k : HKind) (f : Noun) (nm 
               | HKind.ft => (hcWhyK snd HKind.ft c q).getD "?"
               | HKind.top => (hcWhyK snd HKind.top c q).getD "?"
               | _ => "[7 [0 1] q]: no " ++ kName k ++ " rule"
-          | _, _ =>
-              let pl := hcLeaf b p == some true
-              match k with
-              | HKind.ft => if pl then (hcWhyK snd HKind.ft c q).getD "?" else "%7: p not a leaf of index &"
-              | HKind.reg =>
-                  if pl then (hcWhyK snd HKind.ft c q).getD "?"
-                  else if !(hcV snd b p).sur then (hcWhyK snd HKind.sur b p).getD "?"
-                  else (hcWhyK snd HKind.zc c q).getD "?"
-              | HKind.dall => if pl then (hcWhyK snd HKind.dall c q).getD "?" else "%7: p not a leaf of index &"
-              | HKind.top =>
-                  if pl then (hcWhyK snd HKind.dall c q).getD "?"
-                  else "%7 at the top: p not a leaf (nor the [7 kept [4 [0 a]]] form)"
-              | HKind.sh => if isS3Body nm then "+sound fails" else "ShapeH: a %7 other than S3"
-              | HKind.sur => "%7 under a sure need"
-              | HKind.zc => "zc: a %7"
+          | _, _ => gen b c
+      | Noun.cell (Noun.atom 9) (Noun.cell (Noun.atom a) c) =>
+          gen c (Noun.cell (Noun.atom 2) (Noun.cell (Noun.cell (Noun.atom 0) (Noun.atom 1)) (Noun.cell (Noun.atom 0) (Noun.atom a))))
+      | Noun.cell (Noun.atom 8) (Noun.cell (Noun.cell a1 a2) c) =>
+          gen (Noun.cell (Noun.cell a1 a2) (Noun.cell (Noun.atom 0) (Noun.atom 1))) c
       | _ => fMis f nm
   | Nomm.n10 a v q =>
       match f with
@@ -308,47 +314,47 @@ def realReasons : List (String × Nat) := tallyOf (real.filterMap entWhy)
 
 /-! ## The tally on the 57 real entries -/
 
-#guard inReal == ["t01", "t03", "t06", "t07", "t15", "t19", "m02", "m03", "m04", "m06", "m07", "m08", "m09", "m10",
-  "m11", "m13", "m19", "m23"]
-#guard (inReal.length, (tEnts.filter entIn).length, (mEnts.filter entIn).length) == (18, 6, 12)
--- none of the six code-table entries with a kept hint is in
-#guard HintClsData.kept.filter inReal.contains == []
+#guard inReal == ["t01", "t03", "t06", "t07", "t15", "t19", "t21", "m02", "m03", "m04", "m06", "m07", "m08", "m09",
+  "m10", "m11", "m13", "m17", "m19", "m23"]
+#guard (inReal.length, (tEnts.filter entIn).length, (mEnts.filter entIn).length) == (20, 7, 13)
+-- of the six code-table entries with a kept hint, `t21` (`spotArm`'s shape, the real `!:` gate) is in
+#guard HintClsData.kept.filter inReal.contains == ["t21"]
 -- the five arms of real `~_` gates: none is in
 #guard ["g01", "g02", "g03", "g04", "g05"].filter inReal.contains == []
 
--- **The reasons, most first** (39 out of 57).
-#guard realReasons == [("%mean: constant (pure trap)", 17), ("formula %9 for nomm %7", 7), ("%6 at the top", 3),
-  ("formula %8 for nomm %7", 3), ("%6 branch: formula %11 for nomm %1", 2), ("%6 branch: formula %9 for nomm %7", 2),
-  ("%6 branch: cons: kept dynamic hint", 1), ("%7 at the top: p not a leaf (nor the [7 kept [4 [0 a]]] form)", 1),
-  ("cons: %6", 1), ("cons: %mean", 1), ("direct call at the top", 1)]
+-- **The reasons, most first** (37 out of 57).  "direct call: no dall rule" is a
+-- `[9 2 [0 1]]` (`[7 [0 1] call]`) at the top: a direct call at the top;
+-- "formula %2 for nomm %7" an inlined call (`[2 [0 1] [0 2]]` whose nomm is the arm).
+#guard realReasons == [("%mean: constant (pure trap)", 17), ("direct call: no dall rule", 5), ("%6 at the top", 3),
+  ("formula %2 for nomm %7", 3), ("%6 branch: cons: kept dynamic hint", 2),
+  ("%7 at the top: p not a leaf (nor the [7 kept [4 [0 a]]] form)", 2), ("%6 branch: ShapeH: %mean", 1),
+  ("%6 branch: ShapeH: a %7 other than S3", 1), ("cons: %6", 1), ("cons: %mean", 1), ("direct call at the top", 1)]
 
 /-- The reason of each real entry out. -/
 def realWhy : List (String × String) := real.filterMap fun e => (entWhy e).map fun r => (e.name, r)
 
-#guard realWhy == [("t02", "formula %9 for nomm %7"), ("t04", "formula %9 for nomm %7"),
-  ("t05", "%6 branch: formula %9 for nomm %7"), ("t08", "formula %9 for nomm %7"),
-  ("t09", "%6 branch: formula %9 for nomm %7"), ("t10", "%6 at the top"), ("t11", "direct call at the top"),
-  ("t12", "formula %9 for nomm %7"), ("t13", "%6 at the top"), ("t14", "%6 branch: cons: kept dynamic hint"),
-  ("t16", "formula %9 for nomm %7"), ("t17", "formula %9 for nomm %7"), ("t18", "formula %8 for nomm %7"),
-  ("t20", "formula %8 for nomm %7"), ("t21", "%6 branch: formula %11 for nomm %1"),
-  ("m01", "%mean: constant (pure trap)"), ("m05", "%mean: constant (pure trap)"),
-  ("m12", "%mean: constant (pure trap)"), ("m14", "%mean: constant (pure trap)"), ("m15", "cons: %6"),
-  ("m16", "%mean: constant (pure trap)"), ("m17", "formula %8 for nomm %7"),
+#guard realWhy == [("t02", "formula %2 for nomm %7"), ("t04", "direct call: no dall rule"),
+  ("t05", "%6 branch: ShapeH: a %7 other than S3"), ("t08", "direct call: no dall rule"),
+  ("t09", "%6 branch: cons: kept dynamic hint"), ("t10", "%6 at the top"), ("t11", "direct call at the top"),
+  ("t12", "formula %2 for nomm %7"), ("t13", "%6 at the top"), ("t14", "%6 branch: cons: kept dynamic hint"),
+  ("t16", "direct call: no dall rule"), ("t17", "direct call: no dall rule"), ("t18", "direct call: no dall rule"),
+  ("t20", "%7 at the top: p not a leaf (nor the [7 kept [4 [0 a]]] form)"), ("m01", "%mean: constant (pure trap)"),
+  ("m05", "%mean: constant (pure trap)"), ("m12", "%mean: constant (pure trap)"),
+  ("m14", "%mean: constant (pure trap)"), ("m15", "cons: %6"), ("m16", "%mean: constant (pure trap)"),
   ("m18", "%mean: constant (pure trap)"), ("m20", "%mean: constant (pure trap)"), ("m21", "%6 at the top"),
   ("m22", "%mean: constant (pure trap)"), ("m24", "%mean: constant (pure trap)"), ("m25", "cons: %mean"),
   ("m26", "%mean: constant (pure trap)"), ("m27", "%7 at the top: p not a leaf (nor the [7 kept [4 [0 a]]] form)"),
   ("m28", "%mean: constant (pure trap)"), ("m29", "%mean: constant (pure trap)"),
   ("m30", "%mean: constant (pure trap)"), ("m31", "%mean: constant (pure trap)"),
-  ("g01", "%mean: constant (pure trap)"), ("g02", "formula %9 for nomm %7"),
-  ("g03", "%mean: constant (pure trap)"), ("g04", "%mean: constant (pure trap)"),
-  ("g05", "%6 branch: formula %11 for nomm %1")]
+  ("g01", "%mean: constant (pure trap)"), ("g02", "formula %2 for nomm %7"), ("g03", "%mean: constant (pure trap)"),
+  ("g04", "%mean: constant (pure trap)"), ("g05", "%6 branch: ShapeH: %mean")]
 
 /-- The entries out only by the table (a constant `%mean`): the class
 itself holds of their nomm. -/
 def structOnly : List String :=
   (real.filter fun e => (hcV (sndM e.tab) e.fol e.nomm).top && (tabWhy e.tab e.nomm).isSome).map (·.name)
 
-#guard structOnly == ["m01", "m05", "m12", "m18", "m22", "m28", "m29"]
+#guard structOnly == ["m01", "m05", "m12", "m16", "m18", "m22", "m28", "m29"]
 
 /-- In-class real entries with a direct callee whose `less` cape is not `|`
 (their `FitH` is a premise about the subject). -/
@@ -357,9 +363,12 @@ def fitList : List String :=
     | Sock.mk Cape.no _ => false
     | _ => true).map (·.name)
 
--- no in-class real entry has a direct call, so `FitH` is `True` on all of them
-#guard fitList == []
-#guard (real.filter fun e => entIn e && !(callBells e.nomm).isEmpty).isEmpty
+-- `t21` and `m17` call a callee whose `less` knows the battery: their `FitH`
+-- (the products of the call's subject formula fit it, and hold the arm at the
+-- `%9`'s axis) is a fact about the subject, false at `P = fun _ => True`, the
+-- glue's `P = Fits bl.less` is where it can hold
+#guard fitList == ["t21", "m17"]
+#guard (real.filter fun e => entIn e && !(callBells e.nomm).isEmpty).map (·.name) == ["t21", "m17"]
 
 /-! ## The 39 hand formulas -/
 
@@ -379,27 +388,27 @@ def hWhy (e : String × Nomm × Noun) : Option String := hcWhyK sndH HKind.top e
 
 #guard hEnts.all fun e => (hWhy e).isNone == hIn e
 
--- The class on the 39 (`sndH`): 22, the 20 of `outReasonTen` and `m02`, `m03`.
+-- The class on the 39 (`sndH`): 23, the 20 of `outReasonTen` and `d22` (the `%8`), `m02`, `m03`.
 #guard (hEnts.filter hIn).map (·.1) == ["s01", "s02", "s03", "s05", "s06", "d01", "d02", "d03", "d06", "d08", "d09",
-  "d10", "d13", "d14", "d18", "d19", "d20", "d21", "d23", "m01", "m02", "m03"]
--- With `HintTab` at `envH` (every trap of `envH` pure): 21, `m02`'s `%mean` has a constant there.
+  "d10", "d13", "d14", "d18", "d19", "d20", "d21", "d22", "d23", "m01", "m02", "m03"]
+-- With `HintTab` at `envH` (every trap of `envH` pure): 22, `m02`'s `%mean` has a constant there.
 #guard (hEnts.filter fun e => hIn e && (hTabWhy e.2.1).isNone).map (·.1) == ["s01", "s02", "s03", "s05", "s06",
-  "d01", "d02", "d03", "d06", "d08", "d09", "d10", "d13", "d14", "d18", "d19", "d20", "d21", "d23", "m01", "m03"]
+  "d01", "d02", "d03", "d06", "d08", "d09", "d10", "d13", "d14", "d18", "d19", "d20", "d21", "d22", "d23", "m01",
+  "m03"]
 #guard (hEnts.filter fun e => hIn e && (hTabWhy e.2.1).isSome).map (fun e => (e.1, hTabWhy e.2.1)) ==
   [("m02", some "%mean: constant (pure trap)")]
 
--- **The reasons on the 39, most first** (17 out of the class).
+-- **The reasons on the 39, most first** (16 out of the class).
 #guard tallyOf (hEnts.filterMap hWhy) == [("%12", 4),
   ("%7 at the top: p not a leaf (nor the [7 kept [4 [0 a]]] form)", 3), ("%6 at the top", 2),
   ("unkept dynamic hint with a clue not [1 k]", 2), ("%5: kept dynamic hint", 1), ("cons: %12", 1),
-  ("cons: kept dynamic hint", 1), ("cons: kept static hint", 1), ("formula %11 for nomm %11d", 1),
-  ("formula %8 for nomm %7", 1)]
+  ("cons: kept dynamic hint", 1), ("cons: kept static hint", 1), ("formula %11 for nomm %11d", 1)]
 #guard (hEnts.filter fun e => !hIn e).map (fun e => (e.1, (hWhy e).getD "")) ==
   [("s04", "cons: kept static hint"), ("s07", "%7 at the top: p not a leaf (nor the [7 kept [4 [0 a]]] form)"),
   ("d04", "unkept dynamic hint with a clue not [1 k]"), ("d05", "unkept dynamic hint with a clue not [1 k]"),
   ("d07", "formula %11 for nomm %11d"), ("d11", "cons: kept dynamic hint"),
   ("d12", "%7 at the top: p not a leaf (nor the [7 kept [4 [0 a]]] form)"), ("d15", "%5: kept dynamic hint"),
-  ("d16", "%6 at the top"), ("d17", "%6 at the top"), ("d22", "formula %8 for nomm %7"),
+  ("d16", "%6 at the top"), ("d17", "%6 at the top"),
   ("m04", "%7 at the top: p not a leaf (nor the [7 kept [4 [0 a]]] form)"), ("c01", "%12"), ("c02", "%12"),
   ("c03", "cons: %12"), ("c04", "%12"), ("c05", "%12")]
 

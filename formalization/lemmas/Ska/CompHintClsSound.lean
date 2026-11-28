@@ -2,6 +2,7 @@ import lemmas.Ska.CompHintCls
 import lemmas.Ska.CompHintTreeEx
 import lemmas.Ska.CompHintSpotEx
 import lemmas.Ska.CompHintRegEx
+import lemmas.Ska.CompSevenMink
 
 /-!
 # The class of hinted nomms: the theorem (README Gaps 24.22)
@@ -335,6 +336,104 @@ theorem hvSur3_ok {f : Noun} {nm : Nomm} {o : Bool}
 
 end
 
+/-! ## Formula transfers: `%9`, `%8` (`MinkC7`), a dropped hint over a constant (`MinkAs`) -/
+
+section Transfer
+variable {lib : Lib} {env : CallEnv} {snd : Nomm → NeedOrd → Bool} {N : Needs} {P : Noun → Prop}
+
+/-- **A hint dropped over a constant is the constant** to `+mink`, at every
+trace (the clue `[1 c]` cannot crash, the trace pushed is popped). -/
+theorem minkAs_dropK {f k : Noun} (h : hcDropK f k = true) : MinkAs lib f (quote k) := by
+  unfold hcDropK at h
+  split at h
+  · rename_i tag k'
+    simp only [decide_eq_true_eq] at h; subst h
+    refine ⟨fun {gul n tm s r} hm => ?_, fun {gul tm s r} hm => ?_⟩
+    · cases n with
+      | zero => simp [minkF] at hm
+      | succ m => exact ⟨m, Nat.le_succ m, (minkF_n11s lib gul m tm s tag (quote k)).symm.trans hm⟩
+    · obtain ⟨n, hn⟩ := hm
+      exact ⟨n + 1, (minkF_n11s lib gul n tm s tag (quote k)).trans hn⟩
+  · rename_i tag c k'
+    simp only [decide_eq_true_eq] at h; subst h
+    refine ⟨fun {gul n tm s r} hm => ?_, fun {gul tm s r} hm => ?_⟩
+    · cases n with
+      | zero => simp [minkF] at hm
+      | succ m =>
+        rw [minkF_n11d_any] at hm
+        cases m with
+        | zero => simp [minkF, tbind] at hm
+        | succ j =>
+          simp only [minkF_quote, tbind] at hm
+          exact ⟨j + 1, by omega, by rw [minkF_quote]; exact hm⟩
+    · obtain ⟨n, hn⟩ := hm
+      cases n with
+      | zero => simp [minkF] at hn
+      | succ m =>
+        rw [minkF_quote] at hn
+        cases hn
+        exact ⟨2, by rw [minkF_n11d_any]; rfl⟩
+  · cases h
+
+theorem SurGBT.minkAs' {Ap : Sure S → Prop} {f f' : Noun} {nm : Nomm} (M : MinkAs lib f' f)
+    (H : SurGBT (S := S) (Map := Map) snd lib N env P Ap f nm) :
+    SurGBT (S := S) (Map := Map) snd lib N env P Ap f' nm := by
+  intro sup sur th region g0 g1 nex a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 hr
+  exact (H a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 hr).minkAs M
+
+theorem RegGBT.minkAs' {f f' : Noun} {nm : Nomm} (M : MinkAs lib f' f)
+    (H : RegGBT (S := S) (Map := Map) snd lib N env P f nm) : RegGBT (S := S) (Map := Map) snd lib N env P f' nm := by
+  intro sup rg th region g0 g1 nex a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 hr
+  exact (H a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 hr).minkAs M
+
+theorem RegFT.minkAs' {f f' : Noun} {nm : Nomm} (M : MinkAs lib f' f)
+    (H : RegFT (S := S) (Map := Map) snd lib N env P f nm) : RegFT (S := S) (Map := Map) snd lib N env P f' nm := by
+  intro sup rg th region g0 g1 nex a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 hr
+  have R := H a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 hr
+  exact ⟨R.run.minkAs M, R.nent, R.flat, R.clean, R.eclean⟩
+
+theorem DoneAllT.minkAs' {f f' : Noun} {nm : Nomm} (M : MinkAs lib f' f)
+    (H : DoneAllT (S := S) (Map := Map) lib N env snd P f nm) : DoneAllT (S := S) (Map := Map) lib N env snd P f' nm := by
+  intro sup region g0 g1 nex a1 a2 a3 a4 a5 hr
+  have D := H a1 a2 a3 a4 a5 hr
+  exact ⟨D.run.minkAs M, D.nent, D.flat, D.clean, D.eclean⟩
+
+theorem DoneG.minkAs' {f f' : Noun} {nm : Nomm} (M : MinkAs lib f' f)
+    (H : DoneG (S := S) (Map := Map) lib N env snd P f nm) : DoneG (S := S) (Map := Map) lib N env snd P f' nm := by
+  intro sup region g0 g1 nex a1 a2 a3 a4 a5 hr
+  exact (H a1 a2 a3 a4 a5 hr).minkAs M
+
+theorem SixNH.minkAs' {Ap : Sure S → Prop} {f f' : Noun} {nm : Nomm} {k : Nat} (M : MinkAs lib f' f)
+    (H : SixNH (S := S) (Map := Map) snd lib N env P Ap f nm k) : SixNH (S := S) (Map := Map) snd lib N env P Ap f' nm k := by
+  intro sup sur th region g0 g1 nex a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 hr
+  have R := H a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 hr
+  exact ⟨R.1.minkAs M, R.2⟩
+
+/-- **A dropped hint over a constant**: every kind of `[1 k]`. -/
+theorem hvDrop_ok {f k : Noun} (hd : hcDropK f k = true) :
+    HVOK (S := S) (Map := Map) lib env snd N P f (Nomm.n1 k) hvDrop := by
+  have V := hvLeaf_ok (S := S) (Map := Map) (lib := lib) (env := env) (snd := snd) (N := N) (P := P)
+    (f := quote k) (nm := Nomm.n1 k) (x := true) (by simp [hcLeaf])
+  have M := minkAs_dropK (lib := lib) hd
+  exact ⟨fun _ h => (by cases h), fun _ => SurGBT.minkAs' M (V.sur rfl), fun _ => RegGBT.minkAs' M (V.reg rfl),
+    fun _ => RegFT.minkAs' M (V.ft rfl), fun h => (by cases h), fun _ => DoneAllT.minkAs' M (V.dall rfl),
+    fun _ => DoneG.minkAs' M (V.top rfl), fun _ h => (by cases h)⟩
+
+/-- The direct call's formula part `[0 a]` returns `F` on subjects holding it. -/
+theorem slot_hq1 {a : Nat} {F s gul : Noun} {n : Nat} {tm : Trace} {rc : Tone} (hs : slot? a s = some F)
+    (h : minkF lib gul n tm s (slot a) = some rc) : rc = Tone.zero F := by
+  cases n with
+  | zero => simp [minkF] at h
+  | succ m =>
+    simp only [minkF, minkStep, hs] at h
+    cases h; rfl
+
+theorem slot_hq2 {a : Nat} {F s gul : Noun} {tm : Trace} (hs : slot? a s = some F) :
+    Mink lib gul tm s (slot a) (Tone.zero F) :=
+  ⟨1, by simp only [minkF, minkStep, hs]⟩
+
+end Transfer
+
 /-! ## The `%6`, the `S3` body, `[7 [0 1] q]`, the `d13` rule -/
 
 theorem hintTab_mono {env : CallEnv} {N : Needs} {nm m : Nomm} (h : HintTab env N nm)
@@ -396,6 +495,10 @@ theorem hcBranch_ok {fa : Noun} {a : Nomm} {va : HV} {ka : Nat}
   · split at h
     · rename_i he
       cases h; subst he; exact sixNH_n1 _
+    · cases h
+  · split at h
+    · rename_i hd
+      cases h; exact SixNH.minkAs' (minkAs_dropK hd) (sixNH_n1 _)
     · cases h
   · split at h
     · rename_i hr
@@ -486,6 +589,137 @@ end
 
 /-! ## The theorem -/
 
+
+/-! ## The `%7` texts with any `MinkC7` (`[7 b c]`, `[9 a c]`, `[8 b c]`) -/
+
+section Seven
+variable {snd : Nomm → NeedOrd → Bool}
+
+/-- (The text of `regGBT_sevenS` with any `MinkC7`.) -/
+theorem regGBT_sevenSM (lib : Lib) {N : Needs} {env : CallEnv} {P : Noun → Prop}
+    {f b c : Noun} {p q : Nomm} {Ap : Sure S → Prop} (M : MinkC7 lib P f b c)
+    (Hp : SurGBT (S := S) (Map := Map) snd lib N env P Ap b p)
+    (Hq : RegFT (S := S) (Map := Map) snd lib N env (Img lib P b) c q)
+    (hq : ∀ {sup : Option Nomm} {rg : Nat} {th : Jmp} {region : List Nat} {g0 g1 : Gen Map} {nx : NextL S},
+      runLCH (S := S) (Map := Map) env snd true sup q (CGoalL.next (ofSure (lazyReg rg)) th) region g0 =
+        some (nx, g1) → entries nx.laz = [] ∧ Ap nx.laz.sure) :
+    RegGBT (S := S) (Map := Map) snd lib N env P f (Nomm.n7 p q) := by
+  intro sup rg th region g0 g1 nex b0 d0 hu hcl hcb th1 th2 hta hr0 hc0 hr
+  rw [runLCH_n7] at hr
+  obtain ⟨nx, ga, h1, h2⟩ := bind_some hr
+  have D := Hq b0 d0 hu hcl hcb th1 th2 hta hr0 hc0 h1
+  have Rq := D.run
+  obtain ⟨hne, hA⟩ := hq h1
+  have hj : nx.th.args = [] := by
+    rcases Rq.ent with ⟨_, _, _, ha⟩ | e
+    · exact ha
+    · simp only [GoalJ] at e; rw [e]; exact hta
+  have h2' : runLCH (S := S) (Map := Map) env snd true sup p (CGoalL.next (ofSure nx.laz.sure) nx.th) region ga =
+      some (nex, g1) := by
+    rw [← eq_ofSure_of_entries hne]; exact h2
+  have Rp := Hp hA (by have := Rq.ext.2.1; omega) (Rq.ext.2.2.1.trans d0) (Rq.grow.up hu) (Clear.growU hcl Rq.grow)
+    (Rq.cfr.below hcb) Rq.lo Rq.hi hj Rq.dist D.clean
+    (fun x hx => ⟨by
+      rcases Rq.regs x hx with e | e
+      · have := Rq.ext.1; simp only [GMem, lazyReg, NMem] at e; omega
+      · exact e.2, Rq.ncond x hx⟩) h2'
+  exact runOKGBT_sevenG M Rq hne Rp (fun r hr => by simp only [GMem, lazyReg, NMem] at hr; omega)
+
+/-- (The text of `regFT_seven` with any `MinkC7`.) -/
+theorem regFT_sevenM (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Prop} {f b c : Noun} {p q : Nomm}
+    (M : MinkC7 lib P f b c)
+    (hp : CallTreeHU lib env N P true b p) (Hq : RegFT (S := S) (Map := Map) snd lib N env (Img lib P b) c q) :
+    RegFT (S := S) (Map := Map) snd lib N env P f (Nomm.n7 p q) := by
+  intro sup rg th region g0 g1 nex b0 d0 hu hcl hcb th1 th2 hta hr0 hc0 hr
+  rw [runLCH_n7] at hr
+  obtain ⟨nx, ga, h1, h2⟩ := bind_some hr
+  have D := Hq b0 d0 hu hcl hcb th1 th2 hta hr0 hc0 h1
+  have Rq := D.run
+  have Lp := ((lokSHU_callTreeHU (S := S) (Map := Map) (snd := snd) lib (N := N) env hp).2 rfl).1
+  have hj : nx.th.args = [] := by
+    rcases Rq.ent with ⟨_, _, _, ha⟩ | e
+    · exact ha
+    · simp only [GoalJ] at e; rw [e]; exact hta
+  obtain ⟨⟨Q, RS⟩, hne, -, hfl, hec⟩ := Lp.run (sup := sup) (L := nx.laz) (th := nx.th) (region := region)
+    (by rw [hp.sixCount]; omega) (by have := Rq.ext.2.1; omega) (Rq.ext.2.2.1.trans d0) (Rq.grow.up hu)
+    (Clear.growU hcl Rq.grow) (Rq.cfr.below hcb) Rq.lo Rq.hi hj D.nent Rq.dist
+    (fun x hx => ⟨by
+      rcases Rq.regs x hx with e | e
+      · have := Rq.ext.1; simp only [GMem, lazyReg, NMem] at e; omega
+      · exact e.2, Rq.ncond x hx⟩)
+    (fun e he => ⟨(Rq.labs e he).2.1, (Rq.labs e he).2.2⟩) Rq.nodup
+    (fun e he => ⟨(Rq.eregs e he).1, fun x hx => ⟨((Rq.eregs e he).2 x hx).2, Rq.econd e he x hx⟩⟩)
+    D.flat D.clean D.eclean h2
+  exact ⟨runOKGBT_sevenL M Rq RS.toRunOKLB
+    (fun r hr => by simp only [GMem, lazyReg, NMem] at hr; omega), hne, hfl, Lp.clean (L := nx.laz) D.clean h2, hec⟩
+
+/-- (The text of `doneAllT_seven` with any `MinkC7`.) -/
+theorem doneAllT_sevenM (lib : Lib) {N : Needs} (env : CallEnv) {P : Noun → Prop} {f b c : Noun} {p q : Nomm}
+    (M : MinkC7 lib P f b c)
+    (hp : CallTreeHU lib env N P true b p) (Hq : DoneAllT (S := S) (Map := Map) lib N env snd (Img lib P b) c q) :
+    DoneAllT (S := S) (Map := Map) lib N env snd P f (Nomm.n7 p q) := by
+  intro sup region g0 g1 nex b0 d0 hu hcl hcb hr
+  rw [runLCH_n7] at hr
+  obtain ⟨nx, ga, h1, h2⟩ := bind_some hr
+  have D := Hq b0 d0 hu hcl hcb h1
+  have Rq := D.run
+  have Lp := ((lokSHU_callTreeHU (S := S) (Map := Map) (snd := snd) lib (N := N) env hp).2 rfl).1
+  have hj : nx.th.args = [] := by
+    rcases Rq.ent with ⟨_, _, _, ha⟩ | e
+    · exact ha
+    · exact e.elim
+  obtain ⟨⟨Q, RS⟩, hne, -, hfl, hec⟩ := Lp.run (sup := sup) (L := nx.laz) (th := nx.th) (region := region)
+    (by rw [hp.sixCount]; omega) (by have := Rq.ext.2.1; omega) (Rq.ext.2.2.1.trans d0) (Rq.grow.up hu)
+    (Clear.growU hcl Rq.grow) (Rq.cfr.below hcb) Rq.lo Rq.hi hj D.nent Rq.dist
+    (fun x hx => ⟨by
+      rcases Rq.regs x hx with e | e
+      · exact e.elim
+      · exact e.2, Rq.ncond x hx⟩)
+    (fun e he => ⟨(Rq.labs e he).2.1, (Rq.labs e he).2.2⟩) Rq.nodup
+    (fun e he => ⟨(Rq.eregs e he).1, fun x hx => ⟨((Rq.eregs e he).2 x hx).2, Rq.econd e he x hx⟩⟩)
+    D.flat D.clean D.eclean h2
+  exact ⟨runOKGBT_sevenL M Rq RS.toRunOKLB (fun r hr => hr.elim), hne, hfl,
+    Lp.clean (L := nx.laz) D.clean h2, hec⟩
+
+end Seven
+
+section
+variable {lib : Lib} {env : CallEnv} {snd : Nomm → NeedOrd → Bool} {N : Needs} {P : Noun → Prop}
+
+/-- **A `%7` by `MinkC7`** (`hv7G`): the fields from the parts'. -/
+theorem hv7G_ok {f b c : Noun} {p q : Nomm} {vp vq : HV} (M : MinkC7 lib P f b c)
+    (Vp : HVOK (S := S) (Map := Map) lib env snd N P b p vp)
+    (Vq : HVOK (S := S) (Map := Map) lib env snd N (Img lib P b) c q vq) (ht : HintTab env N (Nomm.n7 p q)) :
+    HVOK (S := S) (Map := Map) lib env snd N P f (Nomm.n7 p q) (hv7G snd f (Nomm.n7 p q) b p vp vq) := by
+  refine ⟨fun _ h => (by cases h), fun h => (by cases h), fun h => ?_, fun h => ?_, fun h => (by cases h),
+    fun h => ?_, fun h => ?_, fun k h => ?_⟩
+  · simp only [hv7G, Bool.or_eq_true, Bool.and_eq_true, beq_iff_eq] at h
+    rcases h with ⟨h1, h2⟩ | ⟨h1, h2⟩
+    · exact RegFT.toReg (regFT_sevenM lib env M ((hcLeaf_sound lib env N p b true h1).2 P) (Vq.ft h2))
+    · obtain ⟨hf, hz⟩ := Vq.zc h2
+      exact regGBT_sevenSM lib M (Vp.sur h1) (Vq.ft hf) hz
+  · simp only [hv7G, Bool.and_eq_true, beq_iff_eq] at h
+    exact regFT_sevenM lib env M ((hcLeaf_sound lib env N p b true h.1).2 P) (Vq.ft h.2)
+  · simp only [hv7G, Bool.and_eq_true, beq_iff_eq] at h
+    exact doneAllT_sevenM lib env M ((hcLeaf_sound lib env N p b true h.1).2 P) (Vq.dall h.2)
+  · simp only [hv7G, Bool.or_eq_true, Bool.and_eq_true, beq_iff_eq] at h
+    rcases h with ⟨h1, h2⟩ | h
+    · exact DoneAllT.toG (doneAllT_sevenM lib env M ((hcLeaf_sound lib env N p b true h1).2 P) (Vq.dall h2))
+    · exact topKF_ok h
+  · simp only [hv7G] at h
+    split at h
+    · rename_i hc
+      simp only [Bool.and_eq_true] at hc
+      cases h
+      obtain ⟨k4, F, b', he⟩ := isS3Body_eq hc.1
+      obtain ⟨hring, ⟨bNed, hned, hNf⟩, ⟨ndT, hNt⟩, hpure⟩ :=
+        ht.1 b' (by rw [he]; simp [callBells, spotS3Call, spotS3Ten, spotS4])
+      rw [he]
+      exact shapeH_s3body k4 F hring hned hpure hc.2
+    · cases h
+
+end
+
 /-- **Every field of `hcV snd f nm` holds**, under `HintTab` and `FitH`. -/
 theorem hcV_sound (lib : Lib) (env : CallEnv) (snd : Nomm → NeedOrd → Bool) (N : Needs) :
     ∀ (nm : Nomm) (f : Noun) (P : Noun → Prop), HintTab env N nm → FitH lib P f nm →
@@ -497,7 +731,9 @@ theorem hcV_sound (lib : Lib) (env : CallEnv) (snd : Nomm → NeedOrd → Bool) 
   | Nomm.n1 k, f, P, ht, hfit => by
     rw [hcV.eq_def]; dsimp only; split
     · rename_i x hx; exact hvLeaf_ok hx
-    · exact hvNone_ok
+    · split
+      · rename_i hd; exact hvDrop_ok hd
+      · exact hvNone_ok
   | Nomm.cons p q, f, P, ht, hfit => by
     rw [hcV.eq_def]; dsimp only; split
     · rename_i x hx; exact hvLeafC_ok hx _
@@ -565,6 +801,13 @@ theorem hcV_sound (lib : Lib) (env : CallEnv) (snd : Nomm → NeedOrd → Bool) 
           exact regFT_direct lib env hring hned hNf hNt hpure
             (lokSHU_callTreeHU (S := S) (Map := Map) (snd := snd) lib env T).1.1 hsf hfit.1
             (fun _ h => by rw [← hF]; exact quote_hq1 h) (fun _ => by rw [← hF]; exact quote_hq2) h6
+        · simp only [decide_eq_true_eq] at hm
+          have T := (hcLeaf_sound lib env N p fb x hx).2 P
+          have hsl := hfit.2.2 _ rfl
+          intro sup rg th region g0 g1 nex
+          exact regFT_direct lib env hring hned hNf hNt hpure
+            (lokSHU_callTreeHU (S := S) (Map := Map) (snd := snd) lib env T).1.1 hsf hfit.1
+            (fun hs h => slot_hq1 (hsl _ hs) h) (fun hs => slot_hq2 (hsl _ hs)) h6
         · cases hm
       · simp only [Bool.and_eq_true] at hh
         obtain ⟨hok, hp⟩ := hh
@@ -601,33 +844,13 @@ theorem hcV_sound (lib : Lib) (env : CallEnv) (snd : Nomm → NeedOrd → Bool) 
           rcases h with h | h
           · exact regGBT_seven01P (V.reg h)
           · exact RegFT.toReg (regFT_seven lib env T1 (V'.ft h))
-        · have Vp := IHp b P htp hfit.1
-          have Vq := IHq c _ htq hfit.2
-          refine ⟨fun _ h => (by cases h), fun h => (by cases h), fun h => ?_, fun h => ?_, fun h => (by cases h),
-            fun h => ?_, fun h => ?_, fun k h => ?_⟩
-          · simp only [Bool.or_eq_true, Bool.and_eq_true, beq_iff_eq] at h
-            rcases h with ⟨h1, h2⟩ | ⟨h1, h2⟩
-            · exact RegFT.toReg (regFT_seven lib env ((hcLeaf_sound lib env N p b true h1).2 P) (Vq.ft h2))
-            · obtain ⟨hf, hz⟩ := Vq.zc h2
-              exact regGBT_sevenS lib (Vp.sur h1) (Vq.ft hf) hz
-          · simp only [Bool.and_eq_true, beq_iff_eq] at h
-            exact regFT_seven lib env ((hcLeaf_sound lib env N p b true h.1).2 P) (Vq.ft h.2)
-          · simp only [Bool.and_eq_true, beq_iff_eq] at h
-            exact doneAllT_seven lib env ((hcLeaf_sound lib env N p b true h.1).2 P) (Vq.dall h.2)
-          · simp only [Bool.or_eq_true, Bool.and_eq_true, beq_iff_eq] at h
-            rcases h with ⟨h1, h2⟩ | h
-            · exact DoneAllT.toG (doneAllT_seven lib env ((hcLeaf_sound lib env N p b true h1).2 P) (Vq.dall h2))
-            · exact topKF_ok h
-          · split at h
-            · rename_i hc
-              simp only [Bool.and_eq_true] at hc
-              cases h
-              obtain ⟨k4, F, b', he⟩ := isS3Body_eq hc.1
-              obtain ⟨hring, ⟨bNed, hned, hNf⟩, ⟨ndT, hNt⟩, hpure⟩ :=
-                ht.1 b' (by rw [he]; simp [callBells, spotS3Call, spotS3Ten, spotS4])
-              rw [he]
-              exact shapeH_s3body k4 F hring hned hpure hc.2
-            · cases h
+        · exact hv7G_ok (minkC7_seven lib P b c) (IHp b P htp hfit.1) (IHq c _ htq hfit.2) ht
+    · rename_i a c
+      simp only [FitH] at hfit
+      exact hv7G_ok (minkC7_nine lib P a c) (IHp c P htp hfit.1) (IHq _ _ htq hfit.2) ht
+    · rename_i a1 a2 c
+      simp only [FitH] at hfit
+      exact hv7G_ok (minkC7_eight lib P a1 a2 c) (IHp _ P htp (by simp only [FitH])) (IHq c _ htq hfit.2) ht
     · exact hvNone_ok
   | Nomm.n10 a v q, f, P, ht, hfit => by
     have IH := fun fv P' ht' fh' => hcV_sound lib env snd N v fv P' ht' fh'
@@ -767,7 +990,7 @@ theorem contract_d13C (lib : Lib) (env : CallEnv) (snd : Nomm → NeedOrd → Bo
     c.need = NeedOrd.this ∧ ∀ s, ContractFwd lib N s exD13F [s] c ∧ ContractBwd lib N s exD13F [s] c := by
   have H := hintCls_contract lib env snd N (fun _ => True) (f := exD13F) ?_ ?_ ?_ hc
   · exact ⟨H.1, fun s => H.2 s trivial⟩
-  · simp [hcV, hcLeaf, hvLeaf, hvKeptD, hcNB, hinted0, hinted, orB, hcTopKF, tagSpot, spot_dynamic', spot_stop',
+  · simp [hcV, hcLeaf, hvLeaf, hvKeptD, hv7G, hcNB, hinted0, hinted, orB, hcTopKF, tagSpot, spot_dynamic', spot_stop',
       exD13, exD13F, exD13K, exD13KF, hsnd]
   · exact ⟨fun b hb => by simp [callBells, exD13, exD13K] at hb, fun b hb => by simp [meanBells, exD13, exD13K] at hb⟩
   · simp [FitH, exD13, exD13F, exD13K, exD13KF]
@@ -821,7 +1044,7 @@ theorem contract_spotArmC (lib : Lib) (env : CallEnv) (snd : Nomm → NeedOrd �
     (f := n3 (A 11) (C (A tagSpot) (quote k1)) (spotSixF (spotS2F k2 k3 k4 b.fol))) ?_ ?_ ?_ hc
   · exact ⟨H.1, fun s => H.2 s trivial⟩
   · simp only [spotSix, spotS2, spotS3, spotS3Ten, spotS3Call, spotS4, spotTest, tagSpot] at hsnd7 h4 hsnd
-    simp [hcV, hcLeaf, hvLeaf, hvKeptD, hcNB, hinted0, hinted, orB, hcTest, hcBranch, isS3Body, tagSpot,
+    simp [hcV, hcLeaf, hvLeaf, hvKeptD, hv7G, hcNB, hinted0, hinted, orB, hcTest, hcBranch, isS3Body, tagSpot,
       spot_dynamic', spot_stop', sixCount, safeFolFol, lazyMax, spotSix, spotSixF, spotS2, spotS2F, spotS3, spotS3F,
       spotS3Ten, spotS3TenF, spotS3Call, spotS3CallF, spotS4, spotS4F, spotTest, spotTestF, hsnd7, h4, h13, hsnd]
   · refine ⟨fun b' hb' => ?_, fun b' hb' => ?_⟩
@@ -831,7 +1054,7 @@ theorem contract_spotArmC (lib : Lib) (env : CallEnv) (snd : Nomm → NeedOrd �
     · simp [meanBells, spotSix, spotS2, spotS3, spotS3Ten, spotS3Call, spotS4, spotTest] at hb'
   · simp only [FitH, spotSix, spotSixF, spotS2, spotS2F, spotS3, spotS3F, spotS3Ten, spotS3TenF, spotS3Call,
       spotS3CallF, spotS4, spotS4F, spotTest, spotTestF, true_and, and_true]
-    exact hAp
+    exact ⟨hAp, fun a ha => by cases ha⟩
 
 end
 

@@ -19,6 +19,13 @@ field per goal kind (each field is what one family of constructors needs):
 * `top`: `DoneG` (runs under `%done`: the contract at the top);
 * `sh`: `ShapeH IsReg` with its count of entries (a branch of a `%6`).
 
+The formula is matched against the nomm with three transfers the analysis
+makes (`+fol-loop`): a `%7` nomm for the formulas `[7 b c]`, `[9 a c]`, `[8 b
+c]` (`MinkC7`: `minkC7_seven`, `minkC7_nine`, `minkC7_eight`), a constant
+`[1 k]` for a hint dropped over it (`hcDropK`, `MinkAs`), and a direct call
+`[1 F]` for its formula part `[0 a]` (the battery read at `a`, a premise in
+`FitH`).
+
 The side conditions are decidable checks inside `hcV` (`+sound` through
 `snd`, the hint-free test of a `%6`, `sixCount`, `+hinted` with no table).
 What is not decidable from the nomm is in two named hypotheses: `HintTab`
@@ -112,10 +119,22 @@ def hcTest : Noun → Nomm → Bool
     Nomm.n6 (Nomm.n3 (Nomm.n0 a')) (Nomm.n1 (Noun.atom 1)) (Nomm.n1 (Noun.atom 0)) => a = a' && 2 ≤ a
   | _, _ => false
 
-/-- A branch of a `%6`: a constant (count `0`) or a `reg` member with `sh`. -/
+/-- **A hint the analysis dropped over a constant**: the formula `[11 tag [1 k]]`
+or `[11 [tag [1 c]] [1 k]]` whose nomm is `[1 k]` (`+mink` of it is `[0 k]`
+at every trace: `minkAs_dropK`). -/
+def hcDropK (f : Noun) (k : Noun) : Bool :=
+  match f with
+  | Noun.cell (Noun.atom 11) (Noun.cell (Noun.atom _) (Noun.cell (Noun.atom 1) k')) => k = k'
+  | Noun.cell (Noun.atom 11) (Noun.cell (Noun.cell (Noun.atom _) (Noun.cell (Noun.atom 1) _))
+      (Noun.cell (Noun.atom 1) k')) => k = k'
+  | _ => false
+
+/-- A branch of a `%6`: a constant (count `0`), also under a dropped hint,
+or a `reg` member with `sh`. -/
 def hcBranch (fa : Noun) (a : Nomm) (va : HV) : Option Nat :=
   match fa, a with
   | Noun.cell (Noun.atom 1) k, Nomm.n1 k' => if k = k' then some 0 else Option.none
+  | _, Nomm.n1 k' => if hcDropK fa k' then some 0 else Option.none
   | _, _ => if va.reg then va.sh else Option.none
 
 /-- `spotArm`'s `S3` body, `[7 [10 6 [spot [1 k] [0 13]] [0 1]] [2 [0 1] [1 F] b]]`
@@ -138,10 +157,26 @@ def hcTopKF (snd : Nomm → NeedOrd → Bool) : Noun → Nomm → Bool
         snd p' (if a = 2 then NeedOrd.pair NeedOrd.this NeedOrd.none else NeedOrd.pair NeedOrd.none NeedOrd.this)
   | _, _ => false
 
+/-- **A `%7` nomm `[7 p q]` whose formula composes `b` then `c`** (`MinkC7`:
+`[7 b c]`, `[9 a c]` with `b := c`, `c := [2 [0 1] [0 a]]`, `[8 b c]` with
+`b := [b [0 1]]`): `ft`, `dall` with `p` a leaf of index `true`; `reg` also
+with `p` in `sur` and `q` a `zc` call; `top` from `dall` or the `d13` rule;
+`sh` of the `S3` body. -/
+def hv7G (snd : Nomm → NeedOrd → Bool) (f : Noun) (nm : Nomm) (b : Noun) (p : Nomm) (vp vq : HV) : HV :=
+  let ft := hcLeaf b p == some true && vq.ft
+  let da := hcLeaf b p == some true && vq.dall
+  { ft := ft, reg := ft || (vp.sur && vq.zc), dall := da, top := da || hcTopKF snd f nm,
+    sh := if isS3Body nm && snd (Nomm.n0 13) NeedOrd.this then some 2 else Option.none }
+
+/-- The value of a dropped hint over a constant: every kind but `leaf`. -/
+def hvDrop : HV := { sur := true, reg := true, ft := true, dall := true, top := true }
+
 /-- **The class**: the fields of `(f, nm)`, by recursion on `nm`. -/
 def hcV (snd : Nomm → NeedOrd → Bool) : Noun → Nomm → HV
   | f, nm@(Nomm.n0 _) => match hcLeaf f nm with | some x => hvLeaf x nm | Option.none => {}
-  | f, nm@(Nomm.n1 _) => match hcLeaf f nm with | some x => hvLeaf x nm | Option.none => {}
+  | f, nm@(Nomm.n1 k) => match hcLeaf f nm with
+      | some x => hvLeaf x nm
+      | Option.none => if hcDropK f k then hvDrop else {}
   | f, nm@(Nomm.cons p q) =>
       match hcLeaf f nm with
       | some x => { hvLeaf x nm with clue := hcNB nm }
@@ -174,6 +209,7 @@ def hcV (snd : Nomm → NeedOrd → Bool) : Noun → Nomm → HV
               let ok := (hcLeaf fb p).isSome && safeFolFol q && decide (sixCount nm ≤ 255) &&
                 (match fq, q with
                   | Noun.cell (Noun.atom 1) F, Nomm.n1 F' => F = F' && F = b.fol
+                  | Noun.cell (Noun.atom 0) (Noun.atom _), Nomm.n1 F' => F' = b.fol
                   | _, _ => false)
               { ft := ok, reg := ok, zc := ok && (match p with | Nomm.n0 1 => true | _ => false) }
           | some (_, some _) => {}
@@ -189,11 +225,14 @@ def hcV (snd : Nomm → NeedOrd → Bool) : Noun → Nomm → HV
               match p, b with
               | Nomm.n0 1, Noun.cell (Noun.atom 0) (Noun.atom 1) =>
                   { sur := vq.sur, reg := vq.reg || vq.ft, ft := vq.ft, top := vq.top }
-              | _, _ =>
-                  let ft := hcLeaf b p == some true && vq.ft
-                  let da := hcLeaf b p == some true && vq.dall
-                  { ft := ft, reg := ft || (vp.sur && vq.zc), dall := da, top := da || hcTopKF snd f nm,
-                    sh := if isS3Body nm && snd (Nomm.n0 13) NeedOrd.this then some 2 else Option.none }
+              | _, _ => hv7G snd f nm b p vp vq
+      | Noun.cell (Noun.atom 9) (Noun.cell (Noun.atom a) c) =>
+          hv7G snd f nm c p (hcV snd c p)
+            (hcV snd (Noun.cell (Noun.atom 2) (Noun.cell (Noun.cell (Noun.atom 0) (Noun.atom 1))
+              (Noun.cell (Noun.atom 0) (Noun.atom a)))) q)
+      | Noun.cell (Noun.atom 8) (Noun.cell (Noun.cell a1 a2) c) =>
+          let b := Noun.cell (Noun.cell a1 a2) (Noun.cell (Noun.atom 0) (Noun.atom 1))
+          hv7G snd f nm b p (hcV snd b p) (hcV snd c q)
       | _ => {}
   | f, nm@(Nomm.n10 a v q) =>
       match f with
@@ -287,11 +326,21 @@ def HintTab (env : CallEnv) (N : Needs) (nm : Nomm) : Prop :=
 
 /-- **The fit of the callees' `less`**: at every direct call, the products
 of its subject formula on the subjects the path gives it fit the callee's
-`less` (the premise `hAp` of `regFT_direct`); `q` of a `%7` at `Img lib P b`. -/
+`less` (the premise `hAp` of `regFT_direct`), and when the call's formula
+part is `[0 a]` (a `%9`: the analysis read the arm at `a` as the constant
+`[1 F]`) the subjects hold `F` at `a`; `q` of a `%7` at `Img lib P b`.  These
+are facts about the subject: at `P = fun _ => True` they fail for a callee
+whose `less` knows the battery (the real gates), at `P = Fits bl.less` (the
+glue's form, `CompHintClsGlue.lean`) they can hold. -/
 def FitH (lib : Lib) : (Noun → Prop) → Noun → Nomm → Prop
   | P, Noun.cell (Noun.atom 7) (Noun.cell b c), Nomm.n7 p q => FitH lib P b p ∧ FitH lib (Img lib P b) c q
-  | P, Noun.cell (Noun.atom 2) (Noun.cell fb _), Nomm.n2 p _ (some (bl, _)) =>
-      (∀ x gul y, P x → Mink lib gul [] x fb (Tone.zero y) → SkaModel.Fits bl.less y) ∧ FitH lib P fb p
+  | P, Noun.cell (Noun.atom 9) (Noun.cell (Noun.atom a) c), Nomm.n7 p q =>
+      FitH lib P c p ∧ FitH lib (Img lib P c) (n3 (A 2) (slot 1) (slot a)) q
+  | P, Noun.cell (Noun.atom 8) (Noun.cell (Noun.cell a1 a2) c), Nomm.n7 p q =>
+      FitH lib P (C (C a1 a2) (slot 1)) p ∧ FitH lib (Img lib P (C (C a1 a2) (slot 1))) c q
+  | P, Noun.cell (Noun.atom 2) (Noun.cell fb fq), Nomm.n2 p _ (some (bl, _)) =>
+      (∀ x gul y, P x → Mink lib gul [] x fb (Tone.zero y) → SkaModel.Fits bl.less y) ∧ FitH lib P fb p ∧
+        (∀ a, fq = slot a → ∀ s, P s → slot? a s = some bl.fol)
   | P, Noun.cell (Noun.atom 10) (Noun.cell (Noun.cell _ fv) _), Nomm.n10 _ v _ => FitH lib P fv v
   | P, Noun.cell (Noun.atom 11) (Noun.cell _ fq), Nomm.n11s _ q _ => FitH lib P fq q
   | P, Noun.cell (Noun.atom 11) (Noun.cell _ fq), Nomm.n11d _ _ q _ => FitH lib P fq q
