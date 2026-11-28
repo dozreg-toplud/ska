@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Instrumented COPY of nock-compilation.hoon for the halting of +bake-graph
-(track Q, README Gaps 31).  usage: bakehalt_lib.py OUT.hoon [--cap N]
+(track Q, README Gaps 31).  usage: bakehalt_lib.py OUT.hoon [--cap N] [--ties]
 
 Each textual patch asserts its text occurs once.  The copy counts, per run of
 +bake-graph: the evaluations (worklist steps), the bells with a bake, the
@@ -10,7 +10,9 @@ largest queue, and prints at the end
   [%bh-end evals bells maxchg nol tolc grew maxq]
 and, with --cap N, stops the worklist after N evaluations with
   [%bh-cap ...] (the bakes left as they are), so a non-ending worklist shows
-as a cap.  Every 10.000 evaluations it prints [%bh-evals n].
+as a cap.  Every 10.000 evaluations it prints [%bh-evals n].  With --ties it
+prints every tie [%bh-tie evals fol less old new] (fol as its +mug) and every
+loss back to less.c [%bh-loss-lc evals fol less old].
 """
 import sys
 
@@ -19,6 +21,7 @@ out = sys.argv[1]
 cap = None
 if '--cap' in sys.argv:
     cap = int(sys.argv[sys.argv.index('--cap') + 1])
+ties = '--ties' in sys.argv
 t = open(src).read()
 
 
@@ -60,10 +63,16 @@ rep("""  =*  work  $
         ==
 """)
 
+tieline = ''
+if ties:
+    tieline = """    ~?  ?&(?=(^ old) (huge:so bake u.old) (huge:so u.old bake))  [%bh-tie evals+evals.st fol+(mug fol.c) less+less.c old+old new+bake]
+    ~?  &(?=(^ old) =(bake less.c) !(huge:so u.old bake))  [%bh-loss-lc evals+evals.st fol+(mug fol.c) less+less.c old+old]
+"""
+
 rep("""    ?:  =(`bake old)  [changed st]
     [[c changed] st(bak (~(put by bak.st) c bake))]
 """, """    ?:  =(`bake old)  [changed st]
-    =?  nol.st  ?&(?=(^ old) (huge:so bake u.old) (huge:so u.old bake))  +(nol.st)
+""" + tieline + """    =?  nol.st  ?&(?=(^ old) (huge:so bake u.old) (huge:so u.old bake))  +(nol.st)
     =?  tolc.st  &(?=(^ old) =(bake less.c))  +(tolc.st)
     =.  chg.st  (~(put by chg.st) c +((~(gut by chg.st) c 0)))
     [[c changed] st(bak (~(put by bak.st) c bake))]
