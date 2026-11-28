@@ -16,6 +16,7 @@ import lemmas.Ska.PassStack
 import lemmas.Ska.PassDepth
 import lemmas.Ska.PassClosure
 import lemmas.Ska.PassClosureA
+import lemmas.Ska.PassWidth
 
 /-! The axioms of the theorems of track F (`Ska/PassMeasure.lean`,
 `Ska/PassMeasureK.lean`, `Ska/PassMeasureT.lean`, `Ska/PassMeasureS.lean`, `Ska/PassMeasureA.lean`,
@@ -237,3 +238,8 @@ out. -/
 #print axioms Ana.hok_of_clInv
 #print axioms Ana.gIn_okId
 #print axioms Ana.passLoop_returns_wc
+#print axioms Ana.mem_okIdsUpTo
+#print axioms Ana.gIn_okId_reach
+#print axioms Ana.widthFin_of_depth
+#print axioms Ana.depthFin_of_width
+#print axioms Ana.passLoop_returns_wd
