@@ -44,7 +44,7 @@ namespace Formalization
 #print axioms SkaModel.Glue.classLeaves_plain
 #print axioms Compiler.pokeModel_of_fullOther
 #print axioms Compiler.monoLinkGood6_of_rest5
-#print axioms Compiler.pokeModel_fullReachP6K
+#print axioms Compiler.pokeModel_fullReachP6G
 #print axioms Compiler.unaryFinish_of_rest5
 
 -- thirteenth pass, track G: toward `NskEndC`

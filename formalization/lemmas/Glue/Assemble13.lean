@@ -37,7 +37,7 @@ MISFITS bridged here:
   `PokeOther13` (P), and `pokeModel_of_fullOther` puts the two together;
 * track P's top takes the gate in the OLD record `UnaryGateAt`; track K's record is
   `GateRest5` / `UnaryGateAtS` (soft members), with no map to the old one:
-  `monoLinkGood6_of_rest5` and `pokeModel_fullReachP6K` (P's proof with K's record,
+  `monoLinkGood6_of_rest5` and `pokeModel_fullReachP6G` (P's proof with K's record,
   asked at `PGood6` states and read at `.good5`);
 * track P's top takes any fuel with `FuelOK`, `halting_of_cgMP` the fuel `anaFuel`:
   `Route13` fixes `anaFuel`, `fuelOK_anaFuel` bridges.
@@ -81,7 +81,7 @@ theorem monoLinkGood6_of_rest5 (fl : Flags) (Ar : Arms FinMap (TreapMap mugF) No
 /-- **`pokeModel_fullReachP6L` with track K's gate record**: P's proof of
 `pokeModel_fullReachP6` with `MonoLinkGood6` from `GateRest5` at `PGood6`
 states, `SpRestGood6` from P's two leaves. -/
-theorem pokeModel_fullReachP6K (Ar : Arms FinMap (TreapMap mugF) Noun Noun (Noun × Noun))
+theorem pokeModel_fullReachP6G (Ar : Arms FinMap (TreapMap mugF) Noun Noun (Noun × Noun))
     (env : Env Noun) (hhe : env.he = heSock) (hth : env.threshold = 32)
     (hsoft : env.softSpot = softSpotF) (hrf : env.registerFast = registerFastP) (lib : Lib)
     {jet : Noun → Noun → (Bell → Option Datum) → Noun → Bell → Bool} {fold frozen : Bool}
@@ -302,7 +302,7 @@ theorem gap13 (Ar : ArmsP) (ref : Ref FinMap (TreapMap mugF) Noun Noun) (D : Com
   have hG := gap_of_armPM Ar hCH hR.skaPoke flagsOf
   exact
     { pokeModel := pokeModel_of_fullOther
-        (pokeModel_fullReachP6K Ar env hR.he hR.threshold hR.softSpot hR.registerFast libP hR.skaPoke hR.jetRoot
+        (pokeModel_fullReachP6G Ar env hR.he hR.threshold hR.softSpot hR.registerFast libP hR.skaPoke hR.jetRoot
           hR.optimize hR.sccOf hR.compileUnary (fuelOK_anaFuel env regOf) hR.regs hP.spLeaves hP.gate
           hP.jetsOfGood hP.jetsOfCole hP.unaryKeeps hP.cacheKeeps hP.sccsIs hP.otherKeeps) hP.other
       contract := hG.1

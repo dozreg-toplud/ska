@@ -1,4 +1,4 @@
-# LEDGER: what `Full` rests on (track G, 2026-11-28, thirteenth pass)
+# LEDGER: what `Full` rests on (track G, 2026-11-28, fourteenth pass)
 
 `Full` (`core/Statement.lean`) is proved by `Assembly.full_of` from one
 structure, `Assembly.Gap lib pk InvC`, with eight fields.  This file traces
@@ -42,6 +42,13 @@ The thirteenth pass is at base e4345c23 (digest [314]; K's [315] merge
 from digest [306] to [314] that it cites, are checked in
 `lemmas/Glue/AuditGlue13.lean` (a second audit file, so that neither audit
 exceeds the 3500M cap); names from [315] are *not checked here*.
+
+The fourteenth pass is at base b413dd78 with the integration branch 9000589d
+merged in (3db60b97).  Its names are checked in `lemmas/Glue/AuditGlue14.lean`
+(axioms of `gap14` and its parts); the names of other tracks it cites
+(`InvK`, `inlAnnot_of_invK`, `pokeModel_fullReachP9U`, `GateRest6All`,
+`kimid_false`, `pokeModel_fullReachP11`) were FOUND in this tree.  The
+assembly is now `gap14` (section 10); section 10a keeps the list of `gap13`.
 
 ## THE ASSEMBLY (thirteenth pass): where `Full` stands, in ONE theorem
 
@@ -106,7 +113,7 @@ MISFITS (pieces that do not fit as stated), in the order found:
    record is `GateRest5` (built into `UnaryGateAtS`, soft members admitted),
    and K's file says that no map leads from the new record to the old one.
    BRIDGED: `monoLinkGood6_of_rest5` (K's record asked at `PGood6` states
-   and read at `.good5`) and `pokeModel_fullReachP6K` (P's proof of
+   and read at `.good5`) and `pokeModel_fullReachP6G` (P's proof of
    `pokeModel_fullReachP6` with it).  K's own top `pokeModel_fullReachP5S` is
    over `PGood5` and takes `SccOfIs`, which track Q found FALSE as stated.
 3. Track P's top takes any fuel with `FuelOK`, `halting_of_cgMP` takes the
@@ -1416,8 +1423,117 @@ M20 (eighth pass, track I [281]). `runLC` / `runLCM` do NOT cover SOFT
     `refNary` at `finishLUCM` / `finishLFC` are false on them until the
     model has soft calls (track I's running session), and the classes
     (`inFragM`, `inFragN`) must exclude or model them.  Owner I.
+    FOURTEENTH PASS: track I's FIXED soft model `runLCS2` / `finishLFCS2`
+    agrees with the Hoon (the old `runLCS` missed two callers of
+    `+crash-need`, the `+mede` difference); classes with soft calls can now
+    be stated on `runLCS2`.  Not yet a class of `ClassLeaves13`.
 
-## 10. THE HYPOTHESES OF `gap13`, one open leaf each (thirteenth pass)
+## 10. THE HYPOTHESES OF `gap14`, one open leaf each (fourteenth pass)
+
+`gap14 Ar D hR hP hC hK hH hF : Assembly.Gap libP (liftPoke (enc flagsOf) (pokeS Ar))
+(liftInv (enc flagsOf) (InvSMI libP (refD CSet D) I14))` (`Glue/Assemble14.lean`), and
+`full14 : Ska.Full`.  MISFIT 4 IS BRIDGED: the pill facts of `CompHyp` are asked only where
+the compiler runs.
+- `Glue/PokeOn.lean`: `CompHypOn A lib ref I Rd` (`unary`, `answers`, `contract` at `Rd`
+  states; `scc`, `stable`, `jetRoot`, `jets`, `fast` at `I` states), `ReachOn` (`I` kept by
+  every poke that names no jet; `Rd` at every `I` state and at the state of `%full` after
+  `+ska-poke`, at the root), `pokeS_soundOn`, `pokeS_invKeptOn`, `gap_of_armPMOn`,
+  `halting_of_cgMPOn`.  The one change of proof: `%full` compares the needs of the first and
+  the last state directly (the state in the middle need not satisfy `I`).
+- `Glue/PiecesOn.lean`: the contract from pieces asked at the tables of `Tr` only
+  (`contractOn_of`, by `refOn Tr ref`, the reference cut down to the `Tr` tables, which lets
+  `rawEntry_of`, `optRef_of_total`, `rawOptIn_of`, `keeps_of_optIn` be used unchanged);
+  `refD S D`, the reference compiler that IS the model, so that `refMono`, `refNary` are
+  theorems (`refMono_refD`, `refNary_refD`).
+- The reached states: `I14 st := PokeReach (enc flagsOf st) ∧ InvK libP st.long` (the pill's
+  own reachability, and track Q's `InvK`, a theorem: `invK_ana14` from `skaPokeB_soundK` at
+  P's root sock); `Rd14 Ar st b := InvK ∧ (PGood6 st ∨ st is the state of `%full` after
+  `+ska-poke` from a `PGood6` state and b its root)`; `Tr14 long := InvK libP long`.
+  `reachOn14` proves `ReachOn` (`PGood6` from `PokeReach` by K's `pokeReachGood6K`:
+  `good6_of_reach14`; `kept` because the pill's poke is the model's, `pokeModel14`);
+  `invStart14`.
+
+The hypotheses (record, field, owner, one line each):
+
+`Route14` (CHOICES): `env.he`, `env.threshold`, `env.softSpot`, `env.registerFast`;
+`Ar.skaPoke = anaArmP … (anaFuel env regOfP) bf regOfP jetsOfP newOfP` (P's concrete
+`regOfP`, `jetsOfP`, `newOfP`: the old leaves `jetsOfGood`, `jetsOfCole` and the shape of
+`regOf` are theorems now), `jetRoot`, `optimize`, `sccOf`, `compileUnary = compileUnaryP flagsOf`.
+
+`PokeLeaves14` (`pokeModel`; K's top `pokeModel_fullReachP9U` over `PGood6`):
+- `spLeaves` (P): `SpLeavesGood` (`BakeLinkAt`, `TailEndAt`) at `PGood6` states.
+- `gate` (K; fields owed by P, I, A): `GateRest6All flagsOf OptTotal`, the record of
+  `+compile-unary` at every key of a `PGood6` state.  Its field `noRing : CodeNoRing` is NOT
+  an invariant of the real compiler (K: a callee of a compiled bell can have a ring); the true
+  restriction is "no callee's ring has a hot driver": owner K for the field, plus a clause on
+  `hot` in P's state invariant.
+- `restKeys` (K): `UnaryRestKeys6`, the keys of `sure` and `inl` in the returned cache.
+- `unaryKeeps` (D): `UnaryKeeps`.
+- `otherKeeps` (P): `OtherKeeps6`.
+- `other` (P): `PokeOther13`, `%dire`, `%jets ~`, `%fast` are the model's.
+Gone since `gap13`: `jetsOfGood`, `jetsOfCole` (P's theorems at `jetsOfP`), `cacheKeeps`,
+`sccsIs` (K: from the gate, `unaryCacheKeeps6_of_gate`, `unarySccsIs6_of_gate`).  Track P's
+newer top `pokeModel_fullReachP11` (over `PGood7`; leaves `SpLeavesGood8`, `AnaRegsGood`,
+`OtherKeeps7`, K's gate) is NOT used: K's `P9U` composes with K's record directly; moving to
+`P11` needs `I14 → PGood7` and K's record at `PGood7`.
+
+`CompLeaves14` (`contract`, `invKept`, `halting`, through `CompHypOn`):
+- `unaryEnv` (K, I): `UnaryEnvIs14 D`: at a key of a `PGood6` state the `env` of K's record
+  gives `finishLUCM` the result `D.env` gives (the compile does not depend on the cache's
+  `need` / `sure` beyond `D.env`).  With it and `gate`, `unary` on the `%full` path is proved
+  (`unaryOut_of_gate`, `unaryMid14`: the pill's `+compile-unary` IS `finishLUCM` of the key's
+  nomm, on `DirOk`).
+- `unaryCache` (I, K): `UnaryCacheOK14`, the cache `+compile-unary` returns holds reference
+  forms (its `nary` entries from `+compile-scc-in` are `refD`'s).
+- `unaryDire` (K, P): `+compile-unary` on the `%dire` path (a `PGood6` state, any bell; K's
+  record covers the keys of the state after `+scc-of` in `%full` only, `good6_mid`).
+- `scc` (I): `+compile-scc` on the `%dire` path, at `I14` states.
+- `answers` (I, rest no owner; `split-max`, S): at `Rd14` states.
+- `stable`, `jetRoot`, `jets`, `fast` (NO OWNER): at `I14` states.
+- `inFrag` (C, J, K, A): `InFragOn`, every compiled nomm of an `InvK` table is in the class.
+- `optPill` (P): the pill's `+optimize` on `refD`'s forms of `InvK` tables.
+- `inlPill` (Q, the pill half, no owner): `InlPill libP D`.  `inlAnnot` is PROVED from it
+  (`inlAnnot_of_invK`, in `contractLeaves14`).
+- `callee` (I, J): `CalleeNeeds` at `InvK` tables.
+Gone since `gap13`: `refMono`, `refNary` (theorems at `refD`), `inlAnnot` (Q), `unary` on the
+`%full` path (K's record with `unaryEnv`, `unaryCache`).
+
+`ClassLeaves13` (unchanged; `S := CSet` fixed): on `FragX` none (`gap14_fragX`).  On
+`PlainCalls`, `classLeaves_plain` asks `KIMid`, which is FALSE (track D, `kimid_false`):
+`gap13_fragXPlain` rests on a false leaf.  The corrected `kimidX_noSix : KIMidX S Map NoSixC
+env` is proved on all of `NoSixC`; the switch (`RunGX`, `classLeaves_plainX`) is the next step
+on this track.
+
+`HaltLeaves14`: `cg` (F: `CgHalts`; F's `passLoop_returns_ws` rests on `KruskalBT`,
+`RunHalts`, the closure invariant and the width hypothesis `WidthFin`, a question to the
+author), `bake` (Q, H2: `BakeEnds`), `root` (NO OWNER: `RootAnswersOn`, at `I14` states).
+
+`FormatLeaves13` (NO OWNER): `RendRestTonFree`, `SoftTankUnit`, `SkipMsgTonFree`,
+`EvalMookSame`.
+
+MISFITS still open (numbers of the thirteenth pass):
+1. `PokeOther13` (P): a leaf, the `%dire`, `%jets ~`, `%fast` links.
+2. GONE (K's top reads K's record).  3. GONE (`Route14` is P's concrete route).
+4. BRIDGED.  Left of it: `unaryEnv` (the cache independence of K's `env`), `unaryCache`,
+   `unaryDire` (the `%dire` path has no `PGood6` lemma after `+scc-of`).
+5. GONE (`gap14` is at `S := CSet`).
+6. M16 (hints) and M20 (soft calls) keep their classes out of `ClassLeaves13`.
+7. C's contracts are per example.
+8. NEW: `KIMid` is false (D): the `PlainCalls` class must move to `KIMidX`.
+9. NEW: `CodeNoRing` in K's record is false of the real compiler (above).
+
+Toward `NskEndC` (the direct-call guard, `MonoCalls ∩ NoSixM`): the frame of `SDW` is
+`KSW` / `GrowSD` (`Glue/SplitDefW.lean`: a step relates its states by `GrowSD`, blocks old or
+`SDBody`, new `cond` keys at least the old `re`, `re` grows; `sdw_grow`; the combinators of
+`KS`).  Left: the primitive steps of `SplitDefBase.lean` (`putBlock`, the allocations,
+`+proxy` by `proxy_fresh`) in `KSW`, then `SplitDefRun.lean`'s text with `KSW`, then the arms
+of `+mono-try-call` and `callDM`.
+
+QUESTIONS TO THE AUTHOR (open): (a) the WIDTH of the analysis (track F's `WidthFin`: is the
+number of branches of the pass loop bounded?); (b) `split-max` in the sweep loop (track S: the
+cut fires on real code; S recommends a `sticky` variant; no decision yet).
+
+## 10a. THE HYPOTHESES OF `gap13`, one open leaf each (thirteenth pass, superseded by 10)
 
 This section is the list of the fields of the five records of `gap13`
 (`Glue/Assemble13.lean`), on the class `FragX ∪ PlainCalls`
