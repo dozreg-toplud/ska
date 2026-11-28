@@ -48,7 +48,7 @@ merged in (3db60b97).  Its names are checked in `lemmas/Glue/AuditGlue14.lean`
 (axioms of `gap14` and its parts); the names of other tracks it cites
 (`InvK`, `inlAnnot_of_invK`, `pokeModel_fullReachP9U`, `GateRest6All`,
 `kimid_false`, `pokeModel_fullReachP11`) were FOUND in this tree.  The
-assembly is now `gap15` (section 10); sections 10a and 10b keep the lists of `gap14` and `gap13`.
+assembly is now `gap16` (section 10); sections 10a, 10b and 10c keep the lists of `gap15`, `gap14` and `gap13`.
 
 ## THE ASSEMBLY (thirteenth pass): where `Full` stands, in ONE theorem
 
@@ -1428,7 +1428,118 @@ M20 (eighth pass, track I [281]). `runLC` / `runLCM` do NOT cover SOFT
     `+crash-need`, the `+mede` difference); classes with soft calls can now
     be stated on `runLCS2`.  Not yet a class of `ClassLeaves13`.
 
-## 10. THE HYPOTHESES OF `gap15`, one open leaf each (fifteenth pass)
+## 10. THE HYPOTHESES OF `gap16`, one open leaf each (sixteenth pass)
+
+`gap16 Ar D hR hP hC hK hH hF : Assembly.Gap libP (liftPoke (enc flagsOf) (pokeS Ar))
+(liftInv (enc flagsOf) (InvSMIR Ar libP (refR D) I14))` (`Glue/Assemble16.lean`),
+`full16 : Ska.Full`, the instance `gap16_plainH` (`gap15`'s classes, `ClassLeaves15`
+unchanged).  Reached states `I14`, `Rd14`, `Tr14` as `gap14`.  Base fdb08081.
+- THE CACHE IS COMPARED UP TO RINGS (misfit 11 gone; `Glue/PokeOnR.lean`): `CacheOKR Ar ref
+  long jets hot c` = every cached `s` has some `s'` with `ref .. = some s'` and `SameO Ar s s'`
+  (`RingSameN` of `Ar.optimize s` and `Ar.optimize s'`: K's `RingSame` of the blocks, same need,
+  same `nargs`; the OPTIMIZED forms, because the poke returns `Ar.optimize` of the cached
+  form).  The LEDGER's raw form is `CacheOKRaw` (`RingSameN s s'`); `cacheOKR_of_raw` turns it
+  into `CacheOKR` under the optimizer leaf `OptRing`.  `InvSR := InvB ∧ CacheOKR`,
+  `InvSMIR := (InvSR ∧ MemoNoCallees) ∧ I`.  `CompHypOnR`: `unary`, `scc`, `stable` give the
+  reference forms UP TO `SameO` (so a reference that differs from the real compile only in
+  rings is allowed: the hinted arms below), `CacheOKR` in `unary`, `scc`, `jets`, `fast`.
+  `pokeS_soundOnR`: a cached straight's contract from its reference form's by K's
+  `execEntry_ringEq` (`bellContract_sameO`); the needs are equal (`needOf_eqOnR`).
+- THE REFERENCE IS K's RING MODEL (`Glue/RefSideR.lean`): `refR D := refDHR CSet D snP`:
+  `finishLUCMR (D.env ..)` of a hint-free nomm, `finishLUCH (D.env ..).noRing (snP long)` of a
+  hinted one (NO hinted ring model exists; the real hinted compile is then the reference's up
+  to rings, which `CompHypOnR.unary` allows), `finishLFCR` of `D.inl`.  Its contract comes
+  from the NO-RING reference `ref0 D := refDH CSet (noRingD D) snP` (`gap15`'s, at `env.noRing`):
+  `refDHR_rel` (K's `RingRel` between the two at `Tr14` tables, from `RingLeaves`),
+  `refN_refDHR` (same needs, with `OptRing`), `contractR_of`, `compHypOnR_of`.  So EVERY class
+  leaf of `gap15` carries over unchanged (`ClassLeavesH`, `ClassLeaves15`), now at
+  `noRingD D`: a class of ring-free code is a class of `ref0`, and code WITH ring callees needs
+  no new class lemma (its contract is `ref0`'s through K's transfer).
+- `ringFree` / `CodeNoRing` / `GateRest6All` DO NOT APPEAR (misfit 9 gone): the poke side is
+  the record `PokeLeaves16` (`model`, `good`) and `unary` is `UnaryAtR` (`unaryAtR_of` splits
+  it into `UnaryOutR` (K), `UnaryEnvIsR` (K, I), `UnaryCacheOKR` (I, K)).
+- `bf := bakeFuel` in the route (`Route14 Ar env jet fold frozen bakeFuel`); `bake16_of_drops`
+  gives the bake leaf from Q's `BakeDrops` (`bakeEnds_of_drops`); Q's tie-tolerant
+  `bakeEnds_of_dropsT` (BakeHaltTie, not in this base) gives it the same way.
+
+KNOWN FALSE OF THE REAL COMPILER: none known.  (Truth risks: `stable` if a new bell changes an
+old callee's need; `OptRing` if a pass merges blocks that are equal only after erasure: the
+Hoon's passes treat `%caf`/`%csf`/`%jmf`/`%jsf` as `%cal`/`%csl`/`%jmp`/`%jsp`, lines 7160 to
+7234, 8619 to 8742, so a straight whose ring ops are uniform per callee is safe.)
+
+NO OWNER (size S < M < L):
+- `CompLeaves16.stable` (M): `refR` after `+ska-poke` agrees UP TO RINGS on old bells (the
+  ring of an old callee may change in `+ska-cole-update`; `SameO` absorbs it).
+- `CompLeaves16.jets` (M): `%jets ~` keeps `CacheOKR (refR ..)`: K's finding is exactly the
+  case `CacheOK` missed; needs `OptRing` and "the new ring changes only ring ops".
+- `CompLeaves16.fast` (S-M): `%fast` keeps `CacheOKR`.
+- `CompLeaves16.jetRoot` (M), `HaltLeaves16.root` (M: `RootAnswersOnR`).
+- `FormatLeaves13` (4 x S-M, pill only).
+- `CompLeaves16.inlPill` (L), `ClassLeaves15.totalPlainM/N/DM`, `HintLeaves.total` (L each).
+- `CompLeaves16.answers`, the part outside I (M; `split-max`).
+
+The hypotheses with owners (record, field, owner, one line each):
+
+`Route14 Ar env jet fold frozen bakeFuel` (CHOICES; `bf` fixed to Q's `bakeFuel`).
+
+`PokeLeaves16` (K; replaces `PokeLeaves14`, whose `gate` field is the false record):
+- `model` (K): `Assembly.PokeModel (liftPoke (enc flagsOf) (pokeS Ar))`: K's
+  `pokeModel_fullReachP9W` from `spLeaves` (P), `GateRest8All` (K), `restKeys` (K),
+  `unaryKeeps` (D), `otherKeeps` (P), `PokeOther13` (P).
+- `good` (K): every `PokeReach` state is `PGood6` (`pokeReachGood6K` at `GateRest8`).
+
+`CompLeaves16` (at `refR D`, the contract side at `ref0 D`):
+- `unaryAt` (K, I): `UnaryAtR Ar (refR D)`; from `unaryAtR_of`: `UnaryOutR` (K: WHAT K's RECORD
+  MUST GIVE, below), `UnaryEnvIsR D` (K, I), `UnaryCacheOKR` (I, K), `OptRing` (H).
+- `direGood` (P): `DireGood6 Ar` (as `gap15`).
+- `scc` (I): `+compile-scc` gives `refR`'s n-ary forms up to rings, keeps `CacheOKR`.
+- `answers` (I + no owner), `stable`, `jetRoot`, `jets`, `fast` (no owner).
+- `inFrag` (C, J, K, A): `InFragOnH CSet Ar libP (noRingD D) snP FM FN Tr14` (`gap15`'s, at
+  `env.noRing`, needs of `ref0`).
+- `optPill` (P): the pill's `+optimize` on `ref0`'s forms.
+- `inlPill` (no owner), `callee` (I, J: `CalleeNeeds (D.env ..) (refN Ar (ref0 D) ..)`).
+- `ring` (K): `RingLeaves CSet libP D Tr14`: `eraseU` (`RingEraseU (D.env ..) nm` at hint-free
+  table nomms), `eraseF` (`RingEraseF` at `D.inl`).  K's simulation of `runLCMR env` against
+  `runLCMR env.noRing`.
+- `optRing` (H): `OptRing Ar`: `+optimize` keeps `RingSameN`.
+
+`ClassLeavesH CSet libP FM FN` (unchanged; `gap16_plainH`: `ClassLeaves15`, as section 10a).
+
+`HaltLeaves16`: `cg` (F: `passLoop_returns_wc`, the width open), `bake` (Q:
+`bakeEnds_of_dropsT` at `bakeFuel`), `root` (no owner, `RootAnswersOnR`).  `FormatLeaves13` (no
+owner).
+
+WHAT K's RECORD MUST LOOK LIKE (`GateRest8`, K's running step): `GateRest6All` with
+- no `noRing` / `ringFree` / `CodeNoRing` field;
+- `env := envOf CODE COLE need sure sof` with `env.ring b = ringOf COLE b` (`CallOk` restated
+  as K's step 1 says, `ColeAt` in place of `CallNounMR.cole`, `RingNoun` of the `call.cole`
+  values from P's `PGood9`, `jets-hot = ~` from P's `reach_hotEmpty`);
+- the link `unaryOut_of_gate8` to `finishLUCMR env e.nomm` (in place of `finishLUCM`): this is
+  `UnaryOutR`'s hint-free half;
+- for hinted keys, `dir : HintOkM` and the code up to `RingSameN` of `finishLUCH env.noRing
+  (sfSnd cod) e.nomm` (`UnaryOutR`'s hinted half; misfit 10).
+
+MISFITS (renumbered; unowned leaves first, above):
+1. (was 10) HINTED ARMS END TO END: `UnaryOutR`'s hinted half needs K's hinted twin of the
+   record (`dir : HintOkM`, Q's `comp_run_hint_anaM`), K/I's `UnaryEnvIsR` hinted half, J's
+   `HintClsB` membership, D/G/H's `HintLeaves`.  The contract side is done (`HintClsB` in
+   `FM15`), now through `ref0` too.
+2. (was 4) left: `UnaryEnvIsR` (was `UnaryEnvIs14`, not attempted), `UnaryCacheOKR`.
+3. (was 1) `PokeOther13` (P): a leaf.
+4. (was 6) M20 (soft calls) keeps its class out.
+5. (was 7) C's contracts are per example.
+6. NEW, mild: the hinted reference with ring callees is `finishLUCH` with the rings dropped,
+   so `UnaryOutR` compares it up to rings; a hinted ring model (`finishLUCHR`, K/J) would make
+   it exact.  Not needed for truth.
+GONE: 9 (`CodeNoRing`; no record field in `gap16`), 11 (`CacheOK` by equality), 8 (`KIMid`).
+Not used yet: P's `pokeModel_fullReachP12`, P's `PGood9` exports (they feed K's `GateRest8`,
+not `gap16` directly).
+
+Toward `SDWEndC`: as in 10b.
+
+QUESTIONS TO THE AUTHOR (open): (a) `WidthFin` (F); (b) `split-max` (S).
+
+## 10a. THE HYPOTHESES OF `gap15`, one open leaf each (fifteenth pass, superseded by 10)
 
 `gap15 Ar D hR hP hC hK hH hF : Assembly.Gap libP (liftPoke (enc flagsOf) (pokeS Ar))
 (liftInv (enc flagsOf) (InvSMI libP (refDH CSet D snP) I14))` (`Glue/Assemble15.lean`),
@@ -1565,11 +1676,11 @@ MISFITS still open (11 first: it is the coordinator's priority):
 Not used yet: P's `pokeModel_fullReachP12` (`PGood8 := PGood7 ∧ InvK` at reached states):
 moving there needs K's record at `PGood7`/`PGood8`.
 
-Toward `SDWEndC` (the `guard` leaf's body-local route): as in 10a.
+Toward `SDWEndC` (the `guard` leaf's body-local route): as in 10b.
 
 QUESTIONS TO THE AUTHOR (open): (a) `WidthFin` (F); (b) `split-max` (S).
 
-## 10a. THE HYPOTHESES OF `gap14`, one open leaf each (fourteenth pass, superseded by 10)
+## 10b. THE HYPOTHESES OF `gap14`, one open leaf each (fourteenth pass, superseded by 10)
 
 `gap14 Ar D hR hP hC hK hH hF : Assembly.Gap libP (liftPoke (enc flagsOf) (pokeS Ar))
 (liftInv (enc flagsOf) (InvSMI libP (refD CSet D) I14))` (`Glue/Assemble14.lean`), and
@@ -1674,7 +1785,7 @@ QUESTIONS TO THE AUTHOR (open): (a) the WIDTH of the analysis (track F's `WidthF
 number of branches of the pass loop bounded?); (b) `split-max` in the sweep loop (track S: the
 cut fires on real code; S recommends a `sticky` variant; no decision yet).
 
-## 10b. THE HYPOTHESES OF `gap13`, one open leaf each (thirteenth pass, superseded by 10)
+## 10c. THE HYPOTHESES OF `gap13`, one open leaf each (thirteenth pass, superseded by 10)
 
 This section is the list of the fields of the five records of `gap13`
 (`Glue/Assemble13.lean`), on the class `FragX ∪ PlainCalls`

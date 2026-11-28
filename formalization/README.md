@@ -1413,6 +1413,10 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Glue/RefSideH.lean` | Track G (Gaps 22 (q)): M16, the contract side at `finishLUCH`.  `SndT`, `MonoClassH`, `OptInMonoH`, `EntryMonoH`, `OptTotalMonoH`, `ClassLeavesH`, `classLeavesH_of13`, `classLeavesH_or`, `NoNary`, `HintLeaves`, **`classLeavesH_hint`** (J's `HintClsB`, raw contract by `hintContract_holds`); `RefSideMOnH`, `ContractLeavesOnH`, `finishLUCH_this`, `optRefH_on`, `rawOptInH_on`, `rawEntryH_on`, **`contractOnH_of`**, `compHypOnH_of`; **`refDH`** (the model with hints as the reference), `refMonoH_refDH`, `refDH_false`, `InFragOnH`, `refSideMOnH_refDH`. |
 | `Glue/Assemble15.lean` | Track G (Gaps 22 (q)): THE ASSEMBLY at the model with hints.  `snP` (the table's `+sound`, Q's `sfSnd`), `dirOk_noHint`, `unaryMid15`, `DireGood6` (P's `%dire` leaf), **`unaryDire_of`**, `CompLeaves15`, `compState15`, `contractLeaves15`, `compHyp15`, `HaltLeaves15`, **`gap15`**, **`full15`**; `classLeaves_plainX` (no `KIMid`), `PlainCallsDM`, `classLeaves_plainDM` (D's `KdmMonoSpec`), `FM15`, `FN15`, `ClassLeaves15`, `classLeaves15_of`, **`gap15_plainH`**, `gap15_fragX`.  `LEDGER.md` section 10 lists every hypothesis. |
 | `Glue/AuditGlue15.lean` | Track G: `#print axioms` of `gap15`, `full15`, `gap15_plainH` and their parts (3500M as a single target). |
+| `Glue/PokeOnR.lean` | Track G (Gaps 22 (r)): the `PokeOn` chain with the cache UP TO RINGS (misfit 11).  `RingSameN`, `SameO` (of the optimized forms), `OptRing` (leaf H), `CacheOKR`, `CacheOKRaw`, `cacheOKR_of_ok`, `cacheOKR_of_raw`, `InvSR`, `bellContract_sameO` (K's `execEntry_ringEq`), `CompStateOnR`, `CompHypOnR`, `compStateOnR_of`, `compileStep_specOnR`, `needOf_eqOnR`, `pokeS_soundOnR`, `pokeS_invKeptOnR`, `InvSMIR`, `RootAnswersOnR`, `gap_of_armPMOnR`, `halting_of_cgMPOnR`. |
+| `Glue/RefSideR.lean` | Track G (Gaps 22 (r)): the reference on K's ring model.  `noRingD`, `refDHR` (`finishLUCMR` / `finishLFCR`; hinted nomms by `finishLUCH` at `env.noRing`), `RingLeaves` (K: `RingEraseU` / `RingEraseF`), `refDHR_rel`, `refN_refDHR`, `contractR_of` (the contract from the no-ring reference's), `compHypOnR_of`. |
+| `Glue/Assemble16.lean` | Track G (Gaps 22 (r)): THE ASSEMBLY on the ring model, the cache up to rings, no `ringFree`.  `PokeLeaves16` (K), `reachOn16`, `UnaryAtR`, `UnaryOutR` (what K's `GateRest8` must give), `UnaryEnvIsR`, `UnaryCacheOKR`, `unaryAtR_of`, `unaryMid16`, `unaryDireR_of`, `CompLeaves16`, `compState16`, `contractLeaves16`, `compHyp16`, `HaltLeaves16` (`bf := bakeFuel`), **`gap16`**, **`full16`**, `gap16_plainH`, `bake16_of_drops`. |
+| `Glue/AuditGlue16.lean` | Track G: `#print axioms` of `gap16`, `full16`, `gap16_plainH` and their parts (3500M as a single target). |
 | `Glue/GuardFinalTop.lean` | Track G (Gaps 22 (e)): **`guardFinalU`**, **`guardFinalF`** (the two final-pass leaves are theorems), `guardMonoX`, `guardNaryX`, **`compHyp_of_fragX₃`** (`CompHyp` on `FragX` from `CompRestOE` alone, no guard leaf); two `example`s on `[6 [0 2] [6 [0 6] [0 3] [0 1]] [1 0]]`. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
@@ -7137,6 +7141,17 @@ import only its theorems.  So:
     `DireGood6` (`unaryDire_of`).  Track K's ring finding (cached callers keep `%jmp` after a
     later `%jets ~`) makes `CacheOK` by equality false: misfit 11, the restatement up to
     `RingSame` is in `LEDGER.md` section 10, not done.
+    (r) Sixteenth pass (`Glue/PokeOnR.lean`, `Glue/RefSideR.lean`, `Glue/Assemble16.lean`,
+    `Glue/AuditGlue16.lean`): **THE REAL COMPILER WITH RINGS**.  `gap16` / `full16` compare the
+    cache UP TO RINGS (`CacheOKR`: `RingSameN` of the optimized forms; misfit 11 gone) and take
+    K's ring model as the reference (`refDHR`: `finishLUCMR` / `finishLFCR`); its contract comes
+    from the no-ring reference `refDH CSet (noRingD D) snP` through K's `RingEraseU` /
+    `RingEraseF` (leaves, owner K) and the optimizer leaf `OptRing` (H), so every class leaf of
+    `gap15` carries over unchanged.  No `ringFree` / `CodeNoRing` / `GateRest6All` in the
+    hypotheses (misfit 9 gone): the poke side is `PokeLeaves16` (K's `pokeModel_fullReachP9W`
+    and reached `PGood6`), `unary` is `UnaryAtR`, split by `unaryAtR_of` into `UnaryOutR` (what
+    K's `GateRest8` must give), `UnaryEnvIsR`, `UnaryCacheOKR`.  `bf := bakeFuel`.  No
+    hypothesis known false; list in `LEDGER.md` section 10.
 23. **The poke on states: `enc` and the `%full` branch** (track P, 2026-11-27,
     `Ska/PokeEnc.lean`, `Compiler/PokeLink.lean`, `Compiler/PokeLinkFull.lean`, `Compiler/PokeLinkOpt.lean`,
     `Compiler/PokeLinkScc.lean`, `Compiler/PokeLinkJet.lean`, `Compiler/PokeLinkReach.lean`,
