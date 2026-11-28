@@ -1,0 +1,198 @@
+exit 0
+ska: 1657 jetted arms
+[ %a-fail
+  [ [   less
+      [ cape=[[%.y [%.y %.y]] %.n]
+          data
+        [ [[6 [3 0 3] [9 4 10 [3 0 7] 0 1] 0 3] [4 9 4 0 1] [9 4 0 1] 9 10 0 1]
+          0
+        ]
+      ]
+      fol=[7 [[0 1] 9 11 0 1]]
+    ]
+    %.y
+  ]
+  %.n
+]
+[ %a-fail
+  [ [   less
+      [ cape=[[%.y [%.y %.y]] %.n]
+          data
+        [ [[6 [3 0 3] [9 4 10 [3 0 7] 0 1] 0 3] [4 9 4 0 1] [9 4 0 1] 9 10 0 1]
+          0
+        ]
+      ]
+      fol=[7 [[0 1] 9 11 0 1]]
+    ]
+    %.n
+  ]
+  %.n
+]
+[ %a-fail
+  [ [   less
+      [ cape=[[%.y [%.y %.n]] %.n]
+        data=[[[6 [3 0 3] [9 4 10 [3 0 7] 0 1] 0 3] [4 9 4 0 1] 0] 0]
+      ]
+      fol=[7 [[0 1] 9 10 0 1]]
+    ]
+    %.y
+  ]
+  %.n
+]
+[ %a-fail
+  [ [   less
+      [ cape=[[%.y [%.y %.n]] %.n]
+        data=[[[6 [3 0 3] [9 4 10 [3 0 7] 0 1] 0 3] [4 9 4 0 1] 0] 0]
+      ]
+      fol=[7 [[0 1] 9 10 0 1]]
+    ]
+    %.n
+  ]
+  %.n
+]
+[%part-a n=24 rings=24 uni=24 raw=20 opt=20 miss=2]
+[ %part-b
+  %cached-rings
+  %.n
+  %fresh-rings
+  %.y
+  %raw-eq
+  %.n
+  %raw-ring-eq
+  %.y
+  %opt-ring-eq
+  %.y
+  %uni
+  %.y
+  %.y
+]
+[%part-d %mixed-uni %.n %plain-uni %.y %raw-ring-eq %.y]
+[%part-d %opt-ring-eq %.n]
+[ %part-d
+  %omix
+  ~[
+    [ p=0w0
+        q
+      [par=~ body=~ fin=[%clq s=0v0 z=[args=~ there=0w1] o=[args=~ there=0w2]]]
+    ]
+    [ p=0w2
+        q
+      [ par=~
+        body=~
+          fin
+        [%jmf a=[less=[cape=%.n data=0] fol=[0 1]] v=~[0v0] n=[path=/x axe=2]]
+      ]
+    ]
+    [ p=0w1
+      q=[par=~ body=~ fin=[%jmp a=[less=[cape=%.n data=0] fol=[0 1]] v=~[0v0]]]
+    ]
+  ]
+]
+[ %part-d
+  %opla
+  ~[
+    [ p=0w0
+      q=[par=~ body=~ fin=[%jmp a=[less=[cape=%.n data=0] fol=[0 1]] v=~[0v0]]]
+    ]
+  ]
+]
+[%part-c %bells 63]
+[%part-c n=126 calls=70 nok=2 rings=0 uni=70 a=70 b=70 c=70 d1=70 d2=70]
+[ %a-fail
+  [ [   less
+      [ cape=[[%.y [%.y %.y]] %.n]
+          data
+        [ [[6 [3 0 3] [9 4 10 [3 0 7] 0 1] 0 3] [4 9 4 0 1] [9 4 0 1] 9 10 0 1]
+          0
+        ]
+      ]
+      fol=[7 [[0 1] 9 11 0 1]]
+    ]
+    %.y
+  ]
+  %.n
+]
+[ %a-fail
+  [ [   less
+      [ cape=[[%.y [%.y %.y]] %.n]
+          data
+        [ [[6 [3 0 3] [9 4 10 [3 0 7] 0 1] 0 3] [4 9 4 0 1] [9 4 0 1] 9 10 0 1]
+          0
+        ]
+      ]
+      fol=[7 [[0 1] 9 11 0 1]]
+    ]
+    %.n
+  ]
+  %.n
+]
+[ %a-fail
+  [ [   less
+      [ cape=[[%.y [%.y %.n]] %.n]
+        data=[[[6 [3 0 3] [9 4 10 [3 0 7] 0 1] 0 3] [4 9 4 0 1] 0] 0]
+      ]
+      fol=[7 [[0 1] 9 10 0 1]]
+    ]
+    %.y
+  ]
+  %.n
+]
+[ %a-fail
+  [ [   less
+      [ cape=[[%.y [%.y %.n]] %.n]
+        data=[[[6 [3 0 3] [9 4 10 [3 0 7] 0 1] 0 3] [4 9 4 0 1] 0] 0]
+      ]
+      fol=[7 [[0 1] 9 10 0 1]]
+    ]
+    %.n
+  ]
+  %.n
+]
+[%part-a n=24 rings=24 uni=24 raw=20 opt=20 miss=2]
+[ %part-b
+  %cached-rings
+  %.n
+  %fresh-rings
+  %.y
+  %raw-eq
+  %.n
+  %raw-ring-eq
+  %.y
+  %opt-ring-eq
+  %.y
+  %uni
+  %.y
+  %.y
+]
+[%part-d %mixed-uni %.n %plain-uni %.y %raw-ring-eq %.y]
+[%part-d %opt-ring-eq %.n]
+[ %part-d
+  %omix
+  ~[
+    [ p=0w0
+        q
+      [par=~ body=~ fin=[%clq s=0v0 z=[args=~ there=0w1] o=[args=~ there=0w2]]]
+    ]
+    [ p=0w2
+        q
+      [ par=~
+        body=~
+          fin
+        [%jmf a=[less=[cape=%.n data=0] fol=[0 1]] v=~[0v0] n=[path=/x axe=2]]
+      ]
+    ]
+    [ p=0w1
+      q=[par=~ body=~ fin=[%jmp a=[less=[cape=%.n data=0] fol=[0 1]] v=~[0v0]]]
+    ]
+  ]
+]
+[ %part-d
+  %opla
+  ~[
+    [ p=0w0
+      q=[par=~ body=~ fin=[%jmp a=[less=[cape=%.n data=0] fol=[0 1]] v=~[0v0]]]
+    ]
+  ]
+]
+[%part-c %bells 63]
+[%part-c n=126 calls=70 nok=2 rings=0 uni=70 a=70 b=70 c=70 d1=70 d2=70]
