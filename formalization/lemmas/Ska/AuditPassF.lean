@@ -13,6 +13,7 @@ import lemmas.Ska.PassIdents
 import lemmas.Ska.PassQuiet
 import lemmas.Ska.PassGrow
 import lemmas.Ska.PassStack
+import lemmas.Ska.PassDepth
 
 /-! The axioms of the theorems of track F (`Ska/PassMeasure.lean`,
 `Ska/PassMeasureK.lean`, `Ska/PassMeasureT.lean`, `Ska/PassMeasureS.lean`, `Ska/PassMeasureA.lean`,
@@ -191,3 +192,14 @@ out. -/
 #print axioms Ana.heSock_of_btEmb
 #print axioms Ana.btEmb_of_map
 #print axioms Ana.noStackSeq_heSock
+#print axioms Ana.stkGood_sub
+#print axioms Ana.stkGood_push
+#print axioms Ana.noGoodChain
+#print axioms Ana.goodUp_acc
+#print axioms Ana.stack_fin
+#print axioms Ana.passChain_stack_fin
+#print axioms Ana.finIdentsG_of_width
+#print axioms Ana.passLoop_returns_w
+#print axioms Ana.allS
+#print axioms Ana.chainStk_of
+#print axioms Ana.passLoop_returns_ws

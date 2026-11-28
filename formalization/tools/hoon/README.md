@@ -251,6 +251,10 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     bottom of the stack, the subject sock and the formula when small); the check counts the distinct pushed
                     formulas per case and lists the pushes outside.  2026-11-28, 10,532 cases, 24,460 pushes: 4 outside
                     (2 cases of `ck-rnd2`, the value of a safe cons of constants), at most 1,009 formulas in one case.
+* `passmeasure-width.py OUT.txt...` (track F, README Gaps 16) the width of each pass loop on the traces of `passmeasure.py`:
+                    pushes between its first and last pass start, minus the growth of the stack (new members), an
+                    upper bound on what `WidthFin` bounds.  2026-11-28, 12,592 loops: 1,950 with such a push, at most 127
+                    (library), 33 on the generated cores.
 * `passfix-cores.py all|grid|grid2|ablate|ablate2|one OUT.hoon [..]`, `--tab OUT.txt..` one driver of the 88
                     cores of `passmeasure-take.py` (`all`), or of `core3` cases (two relay chains from `k`'s
                     target into `a`, `b`) for the smallest witness; `--tab` per case: root passes, capped, `%st`
