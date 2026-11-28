@@ -33,10 +33,10 @@ section FolG
 variable {G : Noun → Prop} {Inv : GenS M R → Prop}
 
 /-- What `resolve` must give at a call whose formula is in `G` and whose
-subject sock has good regions: it keeps `Inv`, and its product has good
-regions. -/
+subject sock (not `%void`) has good regions: it keeps `Inv`, and its product
+has good regions. -/
 def ResGG (G : Noun → Prop) (Inv : GenS M R → Prop) (res : ResGo M R) : Prop :=
-  ∀ idT gs r gs', Inv gs → G idT.2 → SockG G idT.1 → res idT gs = some (r, gs') →
+  ∀ idT gs r gs', Inv gs → G idT.2 → SockG G idT.1 → idT.1 ≠ Sock.void → res idT gs = some (r, gs') →
     Inv gs' ∧ SockG G r.2.prod
 
 /-- What the recursion of `fol-loop` gives on a `FormG` formula and a good
@@ -70,7 +70,7 @@ theorem callStep_G (hG : SubC G) (hS : SafC G) (hL : LocalStable Inv) {res : Res
         exact ⟨i3, p3⟩
       · simp only [Option.bind_eq_some_iff] at h
         obtain ⟨⟨r1, g3⟩, h4, h⟩ := h
-        obtain ⟨i3, p3⟩ := hres (s.prod.sock, C fa fb) _ _ _ hi hfab hs h4
+        obtain ⟨i3, p3⟩ := hres (s.prod.sock, C fa fb) _ _ _ hi hfab hs (fun e => hnv (Or.inl e)) h4
         split at h
         · cases h
         · simp only [Option.some.injEq, Prod.mk.injEq] at h
