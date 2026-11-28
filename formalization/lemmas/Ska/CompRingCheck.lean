@@ -1,4 +1,5 @@
 import lemmas.Ska.CompRingRunEq
+import lemmas.Ska.CompRingSem
 import lemmas.Ska.CompCall
 
 /-!
@@ -70,6 +71,25 @@ def ringNary (env : CallEnv) (nm : Nomm) (ord : Noun) (less : Noun) (n : Nat) : 
   (finishLFCR (S := LS) (Map := FM) env nm (needOrdN ord) (capeN (match less with | Noun.cell c _ => c | _ => A 0))
     (fun ned => (ned, []))).map fun c => strOut c n
 
+/-- The need, the argument count and the erased blocks below `n`. -/
+def strErase (c : Straight FM) (n : Nat) : NeedOrd × Nat × List (Option Blob) :=
+  (c.need, c.nargs, (List.range n).map fun k => (c.blocks.f k).map eraseB)
+
+/-- **The ring compile erases to the compile with no ring** (`RingEraseU` of
+`CompRingContract.lean`, on this case): `finishLUCMR env` against `finishLUCM env.noRing`. -/
+def ringEraseMono (env : CallEnv) (nm : Nomm) (n : Nat) : Bool :=
+  match finishLUCMR (S := LS) (Map := FM) env nm, finishLUCM (S := LS) (Map := FM) env.noRing nm with
+  | some cR, some c0 => strErase cR n == strErase c0 n
+  | _, _ => false
+
+/-- The same for the n-ary final pass: `finishLFCR env` against `finishLFC env.noRing`. -/
+def ringEraseNary (env : CallEnv) (nm : Nomm) (ord : Noun) (less : Noun) (n : Nat) : Bool :=
+  let cp := capeN (match less with | Noun.cell c _ => c | _ => A 0)
+  match finishLFCR (S := LS) (Map := FM) env nm (needOrdN ord) cp (fun ned => (ned, [])),
+    finishLFC (S := LS) (Map := FM) env.noRing nm (needOrdN ord) cp (fun ned => (ned, [])) with
+  | some cR, some c0 => strErase cR n == strErase c0 n
+  | _, _ => false
+
 /-- The environment of `rt`. -/
 def env_rt : CallEnv := envRing [((C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))), (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))), (C (C (A 28013) (A 0)) (A 4)))]
 
@@ -89,11 +109,15 @@ def inl_rt : Nomm := (Nomm.n7 (Nomm.n0 1) (Nomm.n7 (Nomm.n0 1) (Nomm.n2 (Nomm.n0
     (C (A 4) (C (A 0) (C (C (C (A 6579560) (C (A 2) (A 4))) (C (C (A 7102836) (C (A 2) (A 3))) (A 0))) (C (A 7368552) (C (A 0) (A 3)))))),
     (C (A 5) (C (A 0) (C (A 0) (C (A 7433315) (C (A 2) (C (C (A 0) (A 4)) (C (A 0) (A 2))))))))])
 
+#guard ringEraseMono env_rt nomm_rt 6
+
 /- `rt`, the n-ary code (`+compiled-nary`). -/
 #guard ringNary env_rt inl_rt (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))) (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) 2 ==
   some ((C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))), 1,
     [(C (A 0) (C (A 0) (C (C (C (A 7761773) (C (A 0) (A 1))) (A 0)) (C (A 7368552) (C (A 0) (A 1)))))),
     (C (A 1) (C (A 0) (C (A 0) (C (A 6712682) (C (C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))) (C (C (A 1) (A 0)) (C (C (A 28013) (A 0)) (A 4))))))))])
+
+#guard ringEraseNary env_rt inl_rt (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))) (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) 2
 
 /- `rt`, the n-ary code of its callee 0 (`nary.cache`, from its `inl.cache` nomm). -/
 #guard ringNary env_rt (Nomm.n6 (Nomm.n3 (Nomm.n0 3)) (Nomm.n7 (Nomm.n10 3 (Nomm.n0 7) (Nomm.n0 1)) (Nomm.n2 (Nomm.n0 1) (Nomm.n1 (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))) (some (bellN (C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))), Option.none)))) (Nomm.n0 3)) (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))) (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) 9 ==
@@ -104,6 +128,8 @@ def inl_rt : Nomm := (Nomm.n7 (Nomm.n0 1) (Nomm.n7 (Nomm.n0 1) (Nomm.n2 (Nomm.n0
     (C (A 6) (C (A 0) (C (C (C (A 7761773) (C (A 0) (A 4))) (C (C (A 7103843) (A 4)) (C (C (A 7102836) (C (A 4) (A 5))) (C (C (A 7761773) (C (A 5) (A 2))) (A 0))))) (C (A 7368552) (C (A 0) (A 2)))))),
     (C (A 7) (C (A 0) (C (C (C (A 7761773) (C (A 0) (A 1))) (A 0)) (C (A 7368552) (C (A 0) (A 1)))))),
     (C (A 8) (C (A 0) (C (A 0) (C (A 7433315) (C (A 3) (C (C (A 0) (A 6)) (C (A 0) (A 7))))))))])
+
+#guard ringEraseNary env_rt (Nomm.n6 (Nomm.n3 (Nomm.n0 3)) (Nomm.n7 (Nomm.n10 3 (Nomm.n0 7) (Nomm.n0 1)) (Nomm.n2 (Nomm.n0 1) (Nomm.n1 (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))) (some (bellN (C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))), Option.none)))) (Nomm.n0 3)) (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))) (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) 9
 
 /-- The environment of `rn`. -/
 def env_rn : CallEnv := envRing [((C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))), (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))), (C (C (A 28013) (A 0)) (A 4)))]
@@ -127,6 +153,8 @@ def inl_rn : Nomm := (Nomm.n7 (Nomm.n0 1) (Nomm.n4 (Nomm.n7 (Nomm.n0 1) (Nomm.n2
     (C (A 7) (C (A 0) (C (C (C (A 6579560) (C (A 6) (A 10))) (C (C (A 7102836) (C (A 6) (A 9))) (A 0))) (C (A 7368552) (C (A 0) (A 6)))))),
     (C (A 8) (C (A 0) (C (A 0) (C (A 7433315) (C (A 6) (C (C (A 0) (A 7)) (C (A 0) (A 5))))))))])
 
+#guard ringEraseMono env_rn nomm_rn 9
+
 /- `rn`, the n-ary code (`+compiled-nary`). -/
 #guard ringNary env_rn inl_rn (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))) (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) 4 ==
   some ((C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))), 1,
@@ -134,6 +162,8 @@ def inl_rn : Nomm := (Nomm.n7 (Nomm.n0 1) (Nomm.n4 (Nomm.n7 (Nomm.n0 1) (Nomm.n2
     (C (A 1) (C (A 0) (C (C (C (A 6516329) (C (A 2) (A 1))) (A 0)) (C (A 7237476) (A 1))))),
     (C (A 2) (C (A 0) (C (C (C (A 7761773) (C (A 4) (A 2))) (A 0)) (C (A 7368552) (C (A 0) (A 1)))))),
     (C (A 3) (C (A 0) (C (C (C (A 6709603) (C (C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))) (C (C (A 3) (A 0)) (C (A 4) (C (C (A 28013) (A 0)) (A 4)))))) (A 0)) (C (A 7368552) (C (A 0) (A 2))))))])
+
+#guard ringEraseNary env_rn inl_rn (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))) (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) 4
 
 /-- The environment of `rc`. -/
 def env_rc : CallEnv := envRing [((C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))), (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))), (C (C (A 28013) (A 0)) (A 4)))]
@@ -159,6 +189,8 @@ def inl_rc : Nomm := (Nomm.n7 (Nomm.n0 1) (Nomm.cons (Nomm.n7 (Nomm.n0 1) (Nomm.
     (C (A 9) (C (A 0) (C (C (C (A 6579560) (C (A 7) (A 11))) (C (C (A 7102836) (C (A 7) (A 10))) (A 0))) (C (A 7368552) (C (A 0) (A 8)))))),
     (C (A 10) (C (A 0) (C (A 0) (C (A 7433315) (C (A 7) (C (C (A 0) (A 9)) (C (A 0) (A 7))))))))])
 
+#guard ringEraseMono env_rc nomm_rc 11
+
 /- `rc`, the n-ary code (`+compiled-nary`). -/
 #guard ringNary env_rc inl_rc (C (A 1752461154) (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0)))) (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) 6 ==
   some ((C (A 1752461154) (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0)))), 2,
@@ -168,6 +200,8 @@ def inl_rc : Nomm := (Nomm.n7 (Nomm.n0 1) (Nomm.cons (Nomm.n7 (Nomm.n0 1) (Nomm.
     (C (A 3) (C (A 0) (C (C (C (A 7761773) (C (A 0) (A 4))) (A 0)) (C (A 7368552) (C (A 0) (A 2)))))),
     (C (A 4) (C (A 0) (C (C (C (A 7761773) (C (A 6) (A 3))) (A 0)) (C (A 7368552) (C (A 0) (A 3)))))),
     (C (A 5) (C (A 0) (C (C (C (A 6709603) (C (C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))) (C (C (A 5) (A 0)) (C (A 6) (C (C (A 28013) (A 0)) (A 4)))))) (A 0)) (C (A 7368552) (C (A 0) (A 4))))))])
+
+#guard ringEraseNary env_rc inl_rc (C (A 1752461154) (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0)))) (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) 6
 
 /-- The environment of `rk`. -/
 def env_rk : CallEnv := envRing [((C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))), (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))), (C (C (A 28013) (A 0)) (A 4)))]
@@ -193,6 +227,8 @@ def inl_rk : Nomm := (Nomm.n7 (Nomm.n0 1) (Nomm.cons (Nomm.n0 1) (Nomm.n7 (Nomm.
     (C (A 9) (C (A 0) (C (C (C (A 6579560) (C (A 7) (A 11))) (C (C (A 7102836) (C (A 7) (A 10))) (A 0))) (C (A 7368552) (C (A 0) (A 8)))))),
     (C (A 10) (C (A 0) (C (A 0) (C (A 7433315) (C (A 7) (C (C (A 0) (A 9)) (C (A 0) (A 7))))))))])
 
+#guard ringEraseMono env_rk nomm_rk 11
+
 /- `rk`, the n-ary code (`+compiled-nary`). -/
 #guard ringNary env_rk inl_rk (C (A 1752461154) (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0)))) (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) 6 ==
   some ((C (A 1752461154) (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0)))), 2,
@@ -202,6 +238,8 @@ def inl_rk : Nomm := (Nomm.n7 (Nomm.n0 1) (Nomm.cons (Nomm.n0 1) (Nomm.n7 (Nomm.
     (C (A 3) (C (A 0) (C (C (C (A 7761773) (C (A 0) (A 3))) (A 0)) (C (A 7368552) (C (A 0) (A 2)))))),
     (C (A 4) (C (A 0) (C (C (C (A 7761773) (C (A 6) (A 4))) (A 0)) (C (A 7368552) (C (A 0) (A 3)))))),
     (C (A 5) (C (A 0) (C (C (C (A 6709603) (C (C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))) (C (C (A 5) (A 0)) (C (A 6) (C (C (A 28013) (A 0)) (A 4)))))) (A 0)) (C (A 7368552) (C (A 0) (A 4))))))])
+
+#guard ringEraseNary env_rk inl_rk (C (A 1752461154) (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0)))) (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) 6
 
 /-- The environment of `rp`. -/
 def env_rp : CallEnv := envRing [((C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))), (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))), (C (C (A 28013) (A 0)) (A 4)))]
@@ -227,6 +265,8 @@ def inl_rp : Nomm := (Nomm.n7 (Nomm.n0 1) (Nomm.n6 (Nomm.n7 (Nomm.n0 1) (Nomm.n2
     (C (A 11) (C (A 0) (C (C (C (A 6579560) (C (A 7) (A 11))) (C (C (A 7102836) (C (A 7) (A 10))) (A 0))) (C (A 7368552) (C (A 0) (A 10)))))),
     (C (A 12) (C (A 0) (C (A 0) (C (A 7433315) (C (A 7) (C (C (A 0) (A 11)) (C (A 0) (A 9))))))))])
 
+#guard ringEraseMono env_rp nomm_rp 13
+
 /- `rp`, the n-ary code (`+compiled-nary`). -/
 #guard ringNary env_rp inl_rp (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))) (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) 8 ==
   some ((C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))), 1,
@@ -236,6 +276,8 @@ def inl_rp : Nomm := (Nomm.n7 (Nomm.n0 1) (Nomm.n6 (Nomm.n7 (Nomm.n0 1) (Nomm.n2
     (C (A 5) (C (A 0) (C (A 0) (C (A 7238242) (C (A 4) (C (C (A 0) (A 2)) (C (A 0) (A 1)))))))),
     (C (A 6) (C (A 0) (C (C (C (A 7761773) (C (A 5) (A 4))) (A 0)) (C (A 7368552) (C (A 0) (A 5)))))),
     (C (A 7) (C (A 0) (C (C (C (A 6709603) (C (C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))) (C (C (A 3) (A 0)) (C (A 5) (C (C (A 28013) (A 0)) (A 4)))))) (A 0)) (C (A 7368552) (C (A 0) (A 6))))))])
+
+#guard ringEraseNary env_rp inl_rp (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))) (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) 8
 
 /-- The environment of `rb`. -/
 def env_rb : CallEnv := envRing [((C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))), (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))), (C (C (A 28013) (A 0)) (A 4)))]
@@ -259,6 +301,8 @@ def inl_rb : Nomm := (Nomm.n7 (Nomm.n0 1) (Nomm.n6 (Nomm.n3 (Nomm.n0 3)) (Nomm.n
     (C (A 8) (C (A 0) (C (C (C (A 7761773) (C (A 0) (A 3))) (A 0)) (C (A 7368552) (C (A 0) (A 6)))))),
     (C (A 10) (C (A 0) (C (A 0) (C (A 7433315) (C (A 6) (C (C (A 0) (A 8)) (C (A 0) (A 1))))))))])
 
+#guard ringEraseMono env_rb nomm_rb 11
+
 /- `rb`, the n-ary code (`+compiled-nary`). -/
 #guard ringNary env_rb inl_rb (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))) (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) 7 ==
   some ((C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))), 1,
@@ -267,6 +311,8 @@ def inl_rb : Nomm := (Nomm.n7 (Nomm.n0 1) (Nomm.n6 (Nomm.n3 (Nomm.n0 3)) (Nomm.n
     (C (A 2) (C (A 0) (C (A 0) (C (A 6712682) (C (C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))) (C (C (A 2) (A 0)) (C (C (A 28013) (A 0)) (A 4)))))))),
     (C (A 4) (C (A 0) (C (C (C (A 7761773) (C (A 0) (A 2))) (A 0)) (C (A 7368552) (C (A 0) (A 2)))))),
     (C (A 6) (C (A 0) (C (A 0) (C (A 7433315) (C (A 3) (C (C (A 0) (A 4)) (C (A 0) (A 1))))))))])
+
+#guard ringEraseNary env_rb inl_rb (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))) (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) 7
 
 /-- The environment of `rm`. -/
 def env_rm : CallEnv := envRing [((C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 4) (C (A 9) (C (A 4) (C (A 0) (A 1)))))), (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))), (C (C (A 28013) (A 0)) (A 10))),
@@ -288,6 +334,8 @@ def inl_rm : Nomm := (Nomm.n7 (Nomm.n0 1) (Nomm.n7 (Nomm.n0 1) (Nomm.n7 (Nomm.n0
     (C (A 4) (C (A 0) (C (C (C (A 6579560) (C (A 2) (A 4))) (C (C (A 7102836) (C (A 2) (A 3))) (A 0))) (C (A 7368552) (C (A 0) (A 3)))))),
     (C (A 5) (C (A 0) (C (A 0) (C (A 7433315) (C (A 2) (C (C (A 0) (A 4)) (C (A 0) (A 2))))))))])
 
+#guard ringEraseMono env_rm nomm_rm 6
+
 /- `rm`, the n-ary code (`+compiled-nary`). -/
 #guard ringNary env_rm inl_rm (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))) (C (C (C (A 0) (C (A 0) (A 1))) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (C (C (A 4) (C (A 9) (C (A 4) (C (A 0) (A 1))))) (A 0))) (A 0))) 4 ==
   some ((C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))), 1,
@@ -296,6 +344,8 @@ def inl_rm : Nomm := (Nomm.n7 (Nomm.n0 1) (Nomm.n7 (Nomm.n0 1) (Nomm.n7 (Nomm.n0
     (C (A 2) (C (A 0) (C (C (C (A 7761773) (C (A 4) (A 2))) (A 0)) (C (A 7368552) (C (A 0) (A 1)))))),
     (C (A 3) (C (A 0) (C (C (C (A 6709603) (C (C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))) (C (C (A 3) (A 0)) (C (A 4) (C (C (A 28013) (A 0)) (A 4)))))) (A 0)) (C (A 7368552) (C (A 0) (A 2))))))])
 
+#guard ringEraseNary env_rm inl_rm (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))) (C (C (C (A 0) (C (A 0) (A 1))) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (C (C (A 4) (C (A 9) (C (A 4) (C (A 0) (A 1))))) (A 0))) (A 0))) 4
+
 /- `rm`, the n-ary code of its callee 0 (`nary.cache`, from its `inl.cache` nomm). -/
 #guard ringNary env_rm (Nomm.n4 (Nomm.n7 (Nomm.n0 1) (Nomm.n2 (Nomm.n0 1) (Nomm.n1 (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))) (some (bellN (C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))), Option.none))))) (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))) (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) 4 ==
   some ((C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))), 1,
@@ -303,6 +353,8 @@ def inl_rm : Nomm := (Nomm.n7 (Nomm.n0 1) (Nomm.n7 (Nomm.n0 1) (Nomm.n7 (Nomm.n0
     (C (A 1) (C (A 0) (C (C (C (A 6516329) (C (A 2) (A 1))) (A 0)) (C (A 7237476) (A 1))))),
     (C (A 2) (C (A 0) (C (C (C (A 7761773) (C (A 4) (A 2))) (A 0)) (C (A 7368552) (C (A 0) (A 1)))))),
     (C (A 3) (C (A 0) (C (C (C (A 6709603) (C (C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))) (C (C (A 3) (A 0)) (C (A 4) (C (C (A 28013) (A 0)) (A 4)))))) (A 0)) (C (A 7368552) (C (A 0) (A 2))))))])
+
+#guard ringEraseNary env_rm (Nomm.n4 (Nomm.n7 (Nomm.n0 1) (Nomm.n2 (Nomm.n0 1) (Nomm.n1 (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))) (some (bellN (C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))), Option.none))))) (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))) (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) 4
 
 /-- The environment of `rx`. -/
 def env_rx : CallEnv := envRing [((C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))), (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))), (C (C (A 28013) (A 0)) (A 4))),
@@ -324,6 +376,8 @@ def inl_rx : Nomm := (Nomm.n7 (Nomm.n0 1) (Nomm.n7 (Nomm.n0 1) (Nomm.n7 (Nomm.n0
     (C (A 4) (C (A 0) (C (C (C (A 6579560) (C (A 2) (A 4))) (C (C (A 7102836) (C (A 2) (A 3))) (A 0))) (C (A 7368552) (C (A 0) (A 3)))))),
     (C (A 5) (C (A 0) (C (A 0) (C (A 7433315) (C (A 2) (C (C (A 0) (A 4)) (C (A 0) (A 2))))))))])
 
+#guard ringEraseMono env_rx nomm_rx 6
+
 /- `rx`, the n-ary code (`+compiled-nary`). -/
 #guard ringNary env_rx inl_rx (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))) (C (C (C (A 0) (C (A 0) (A 0))) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (C (C (A 4) (C (A 9) (C (A 4) (C (A 0) (A 1))))) (C (C (A 9) (C (A 4) (C (A 0) (A 1)))) (C (A 9) (C (A 10) (C (A 0) (A 1))))))) (A 0))) 11 ==
   some ((C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))), 1,
@@ -337,6 +391,8 @@ def inl_rx : Nomm := (Nomm.n7 (Nomm.n0 1) (Nomm.n7 (Nomm.n0 1) (Nomm.n7 (Nomm.n0
     (C (A 8) (C (A 0) (C (C (C (A 7761773) (C (A 0) (A 5))) (A 0)) (C (A 7368552) (C (A 0) (A 6)))))),
     (C (A 10) (C (A 0) (C (C (C (A 6709603) (C (C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))) (C (C (A 7) (A 0)) (C (A 8) (C (C (A 28013) (A 0)) (A 4)))))) (A 0)) (C (A 7368552) (C (A 0) (A 8))))))])
 
+#guard ringEraseNary env_rx inl_rx (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))) (C (C (C (A 0) (C (A 0) (A 0))) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (C (C (A 4) (C (A 9) (C (A 4) (C (A 0) (A 1))))) (C (C (A 9) (C (A 4) (C (A 0) (A 1)))) (C (A 9) (C (A 10) (C (A 0) (A 1))))))) (A 0))) 11
+
 /- `rx`, the n-ary code of its callee 1 (`nary.cache`, from its `inl.cache` nomm). -/
 #guard ringNary env_rx (Nomm.cons (Nomm.n7 (Nomm.n0 1) (Nomm.n2 (Nomm.n0 1) (Nomm.n1 (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))) (some (bellN (C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))), Option.none)))) (Nomm.n7 (Nomm.n0 1) (Nomm.n7 (Nomm.n0 1) (Nomm.n4 (Nomm.n7 (Nomm.n0 1) (Nomm.n2 (Nomm.n0 1) (Nomm.n1 (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))) (some (bellN (C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))), Option.none)))))))) (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))) (C (C (C (A 0) (C (A 0) (A 1))) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (C (C (A 4) (C (A 9) (C (A 4) (C (A 0) (A 1))))) (A 0))) (A 0))) 11 ==
   some ((C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))), 1,
@@ -349,6 +405,8 @@ def inl_rx : Nomm := (Nomm.n7 (Nomm.n0 1) (Nomm.n7 (Nomm.n0 1) (Nomm.n7 (Nomm.n0
     (C (A 6) (C (A 0) (C (C (C (A 6709603) (C (C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))) (C (C (A 5) (A 0)) (C (A 6) (C (C (A 28013) (A 0)) (A 4)))))) (A 0)) (C (A 7368552) (C (A 0) (A 5)))))),
     (C (A 8) (C (A 0) (C (C (C (A 7761773) (C (A 0) (A 5))) (A 0)) (C (A 7368552) (C (A 0) (A 6)))))),
     (C (A 10) (C (A 0) (C (C (C (A 6709603) (C (C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))) (C (C (A 7) (A 0)) (C (A 8) (C (C (A 28013) (A 0)) (A 4)))))) (A 0)) (C (A 7368552) (C (A 0) (A 8))))))])
+
+#guard ringEraseNary env_rx (Nomm.cons (Nomm.n7 (Nomm.n0 1) (Nomm.n2 (Nomm.n0 1) (Nomm.n1 (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))) (some (bellN (C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))), Option.none)))) (Nomm.n7 (Nomm.n0 1) (Nomm.n7 (Nomm.n0 1) (Nomm.n4 (Nomm.n7 (Nomm.n0 1) (Nomm.n2 (Nomm.n0 1) (Nomm.n1 (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))) (some (bellN (C (C (C (C (A 0) (A 1)) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (A 0)) (A 0))) (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3)))))), Option.none)))))))) (C (C (A 1701736302) (A 0)) (C (A 1936287860) (A 0))) (C (C (C (A 0) (C (A 0) (A 1))) (A 1)) (C (C (C (A 6) (C (C (A 3) (C (A 0) (A 3))) (C (C (A 9) (C (A 4) (C (A 10) (C (C (A 3) (C (A 0) (A 7))) (C (A 0) (A 1)))))) (C (A 0) (A 3))))) (C (C (A 4) (C (A 9) (C (A 4) (C (A 0) (A 1))))) (A 0))) (A 0))) 11
 
 end Comp
 end SkaModel

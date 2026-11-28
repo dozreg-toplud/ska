@@ -148,6 +148,7 @@ def ringOf(bell):
 out = []
 w = out.append
 w('''import lemmas.Ska.CompRingRunEq
+import lemmas.Ska.CompRingSem
 import lemmas.Ska.CompCall
 
 /-!
@@ -218,6 +219,25 @@ def ringMono (env : CallEnv) (nm : Nomm) (n : Nat) : Option (Noun × Nat × List
 def ringNary (env : CallEnv) (nm : Nomm) (ord : Noun) (less : Noun) (n : Nat) : Option (Noun × Nat × List Noun) :=
   (finishLFCR (S := LS) (Map := FM) env nm (needOrdN ord) (capeN (match less with | Noun.cell c _ => c | _ => A 0))
     (fun ned => (ned, []))).map fun c => strOut c n
+
+/-- The need, the argument count and the erased blocks below `n`. -/
+def strErase (c : Straight FM) (n : Nat) : NeedOrd × Nat × List (Option Blob) :=
+  (c.need, c.nargs, (List.range n).map fun k => (c.blocks.f k).map eraseB)
+
+/-- **The ring compile erases to the compile with no ring** (`RingEraseU` of
+`CompRingContract.lean`, on this case): `finishLUCMR env` against `finishLUCM env.noRing`. -/
+def ringEraseMono (env : CallEnv) (nm : Nomm) (n : Nat) : Bool :=
+  match finishLUCMR (S := LS) (Map := FM) env nm, finishLUCM (S := LS) (Map := FM) env.noRing nm with
+  | some cR, some c0 => strErase cR n == strErase c0 n
+  | _, _ => false
+
+/-- The same for the n-ary final pass: `finishLFCR env` against `finishLFC env.noRing`. -/
+def ringEraseNary (env : CallEnv) (nm : Nomm) (ord : Noun) (less : Noun) (n : Nat) : Bool :=
+  let cp := capeN (match less with | Noun.cell c _ => c | _ => A 0)
+  match finishLFCR (S := LS) (Map := FM) env nm (needOrdN ord) cp (fun ned => (ned, [])),
+    finishLFC (S := LS) (Map := FM) env.noRing nm (needOrdN ord) cp (fun ned => (ned, [])) with
+  | some cR, some c0 => strErase cR n == strErase c0 n
+  | _, _ => false
 ''')
 
 def blocks_out(bl):
@@ -243,10 +263,12 @@ for nam in order:
     md = c['monod']; n, bl = blocks_out(md['blocks'])
     w(f'/- `{nam}`, the whole-subject code (`+compiled-mono`). -/')
     w(f'#guard ringMono env_{nam} nomm_{nam} {n} ==\n  some ({lean(md["need"])}, {md["nargs"]},\n    {bl})\n')
+    w(f'#guard ringEraseMono env_{nam} nomm_{nam} {n}\n')
     nd = c['naryd']; n, bl = blocks_out(nd['blocks'])
     w(f'/- `{nam}`, the n-ary code (`+compiled-nary`). -/')
     w(f'#guard ringNary env_{nam} inl_{nam} {lean(nd["need"])} {lean(c["less"])} {n} ==\n'
       f'  some ({lean(nd["need"])}, {nd["nargs"]},\n    {bl})\n')
+    w(f'#guard ringEraseNary env_{nam} inl_{nam} {lean(nd["need"])} {lean(c["less"])} {n}\n')
     for k, d in enumerate(c['callees']):
         key = repr(d['bell'])
         if key in seen_callees:
@@ -258,6 +280,7 @@ for nam in order:
         w(f'/- `{nam}`, the n-ary code of its callee {k} (`nary.cache`, from its `inl.cache` nomm). -/')
         w(f'#guard ringNary env_{nam} {nomm(cn)} {lean(d["need"])} {lean(d["bell"][0])} {n} ==\n'
           f'  some ({lean(d["need"])}, {d["nargs"]},\n    {bl})\n')
+        w(f'#guard ringEraseNary env_{nam} {nomm(cn)} {lean(d["need"])} {lean(d["bell"][0])} {n}\n')
 
 w('''end Comp
 end SkaModel
