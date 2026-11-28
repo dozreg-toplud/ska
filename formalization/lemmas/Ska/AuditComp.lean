@@ -1474,3 +1474,4 @@ open Formalization.SkaModel.Comp
 #print axioms Formalization.SkaModel.Glue.rawMonoD_consFragB
 #print axioms Formalization.SkaModel.Glue.rawMonoD_consFragM
 #print axioms Formalization.SkaModel.Glue.consFrag_fragX
+#print axioms Formalization.SkaModel.Glue.rawMonoD_consFragB_new

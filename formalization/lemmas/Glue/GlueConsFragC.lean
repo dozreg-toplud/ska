@@ -1,5 +1,5 @@
 import lemmas.Glue.MonoCalls
-import lemmas.Ska.CompGenClassL
+import lemmas.Ska.CompGenClassM
 
 /-!
 # Glue: the unary contract of track C's one induction, in the glue's form
@@ -98,6 +98,15 @@ premise**: `ConsFrag ⊆ FragX` and `rawMonoM_fragX`. -/
 theorem rawMonoD_consFragM [Opt.MapKeys Map] (lib : Lib) : RawMonoD S Map lib (liftMC (ConsFragM S)) :=
   rawMonoD_of_M fun code bl nm env s N hok hA hf hc hs =>
     rawMonoM_fragX lib code bl nm env s N hok hA (consFragM_fragXM hf) hc hs
+
+/-- **`ContractConsFrag` holds**: track C's `contract_consFrag`
+(`CompGenClassM.lean`). -/
+theorem contractConsFrag_holds (lib : Lib) : ContractConsFrag S Map lib :=
+  fun env N _ _ hf _ h => Comp.contract_consFrag lib env N hf h
+
+/-- **`RawMonoD` of `ConsFragB` through the new relation**, no premise. -/
+theorem rawMonoD_consFragB_new (lib : Lib) : RawMonoD S Map lib ConsFragB :=
+  rawMonoD_consFragB lib (contractConsFrag_holds lib)
 
 end Glue
 end SkaModel
