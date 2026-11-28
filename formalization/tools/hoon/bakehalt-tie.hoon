@@ -45,4 +45,9 @@
 ~&  [%bh-case nam.i.pokes]
 =^  [func=bell new=(list [pax=path tem=sock clue=*])]  long-ska.state
   (ska-poke [;;(sock sut.i.pokes) ?>(?=(^ fol.i.pokes) fol.i.pokes)] long-ska.state ~(key by jets-hot.state))
+::  the variants of c (code bell -> the less of each variant)
+::
+~&  :-  %bh-vars-c
+    %+  turn  (skim ~(tap by vars.long-ska.state) |=([b=bell *] =(fol.b fc)))
+    |=([b=bell s=(set bell)] [code=less.b vars=(turn ~(tap in s) |=(v=bell less.v))])
 $(pokes t.pokes)
