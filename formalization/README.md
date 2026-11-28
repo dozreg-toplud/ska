@@ -1198,6 +1198,19 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/RawInvCLLeaves.lean` | **Track G's four leaves on the class with indirect calls and no `%6`** (README Gaps 14 (b)): `sarStepsW`, **`topSAR_plain`**, **`topSAU_plain`**, `PlainM`, `PlainNC`, **`optInMono_plain`**, **`readsInMono_plain`**, **`optInNary_plain`**, **`readsInNary_plain`** (the exact forms `OptInMono`, `ReadsInMono`, `OptInNary`, `ReadsInNary` of `Glue/MonoCalls.lean`, `Glue/GuardCalls.lean`). |
 | `Ska/RawInvCLKIMid.lean` | Toward track G's `KIMid` (README Gaps 14 (b)): `kimLz` (the constructor of G's `LzS`), `kimDN`, **`kim_split`**, **`kim_into`** (no hypothesis), `kim_run_plainIL`, `kim_runM_plainIL` (the run clause on `PlainN` from `IL` and `LG` of the goal). |
 | `Ska/RawInvCLCheckSix.lean` | `LRL` at `%6` checked (README Gaps 14 (b)): `csxRun` (`runLC` with every sub-run checked, by `tools/gen/csxrun.py`); the down clause of `ATS` and `prepOld` fail at `+fork-need` and `insertHop` (witnesses `csxW1`, `csxW2`), the candidate `ATS6` (down or hop, `Acyclic`) with `PrepRedir` holds. |
+| `Ska/RawInvCLKUBase.lean` | The state-free count of a tree's registers (README Gaps 14 (b), twentieth session): `KUC ri m ro` (`re`, `bo` grow; every register occurs in `ro x` at most as often as in `ri`, plus once if fresh), `RB m` (`re`, `bo` grow), the primitives (`ku_bind`, `ku_re`, `ku_emit`, `rb_*`, ...), **`KURun`** (an `LG` goal gives an `LG` result, and the count from `sarG goal` to `sarR x.laz`), `KUSteps` (the local steps). No `ATS`, `SarSt` or `Fresh`. |
+| `Ska/RawInvCLKUSplit.lean` | State-free counts of `+split` and `+into` (`kus_split`, `kus_into`, mutual walks `kusLoop`, `kus_loopL`), `RB` of `+forl`, `+done-blocks`, `+mede` and of `walkLazy` with `RB` gates (`kus_walkLazy`). |
+| `Ska/RawInvCLKUCopy.lean` | State-free counts of `+copy` (**`kuc_copy`**, `LabUniq` of both trees; `kuc_copyLazyL` mutual with `kuc_mergeForks`, `kuc_mergeBonds`) and `+past` (`kuc_past`), `RB` of `+collapse-lazy-atom` and `+kerf` (`kuc_collapse`, `kuc_kerf`). |
+| `Ska/RawInvCLKURun.lean` | The run induction of the count: `kurT` (a triple with the count), `kur_bin` (run q, `+past`, run p, `+copy`), `kur_callL`, `kur_run`, **`kuRun_plainOf`** (`KURun` of every `runLC` run on `PlainN` from `KUSteps`). |
+| `Ska/RawInvCLKURunM.lean` | The count with DIRECT calls: `kum_monoTryLoop`, `kum_needOrdAllocRegs`, `kum_monoBlocks`, **`kum_callDM`** (the drop path and the `+mono-try-call` path), `kum_run`, **`kuRunM_noSix`** (`KURun` of every `runLCM env true` run on track G's class `NoSixC`, from `KUSteps`). |
+| `Ska/RawInvCLKIMidW.lean` | **Track G's `KIMid` is false** (README Gaps 14 (b)): `kwGoal` (two bonds at label `1` with the needs `[0 1]`, `[2 0]`) meets `GD 3` (`kw_gd`), and `[[0 2] [0 3]]` returns a bond needing `[0 0]` (`kw_bonds`, by `decide +kernel`); **`kimid_false : ¬ Glue.KIMid LS FM envR`**. |
+| `Ska/RawInvCLKIMidU.lean` | **Track G's mid-run fact, corrected and proved** (README Gaps 14 (b)): `kuSteps`, **`kuRun_plain`**, `GXL`/`GX` (the registers of the WHOLE tree distinct and below `re`), `gx_of_count`, **`lzS_iff_kimLz`**, `lzS_dn_of_gxl` (`GX` gives G's `LzS (DN r)`), **`KIMidX C env`** (G's `KIMid` with `GX ∧ LG` in place of `GD`, clauses `run`, `split`, `into`, `past`, `dn`), **`kimidX_plain`**, **`kimidX_noSix`** (on all of `NoSixC`, direct calls included, no hypothesis). |
+| `Ska/RawInvCLPlainD.lean` | The class `PlainD` (`PlainN` with direct calls), `plainN_plainD`. |
+| `Ska/RawInvCLCheckDM.lean` | The run-level specs with DIRECT calls checked at every sub-run (`kdcRunk`: `runLCk` for `runLCM env true`, `callDM`'s sub-runs wrapped): `iB`, `jB`, `liveCB`, `prepB`, `condGrowB`, `defsB`, `gregB`, `labB`, `re` growth and `SCR` on the 5,742 `NoSixC` nomms of `enumDX` under four goals, with `envD` (the `+mono-try-call` path) and `envDP` (pure callees, the drop path), and `SAB` of the top blocks: 0 failures; two mutations at `callDM`'s blocks bite on all 1,278 bare calls. |
+| `Ska/RawInvCLSARunD.lean` | Single assignment with direct calls: `ksd_needOrd`, `ksd_loop` (the `+mono-try-call` loop as an `HC`), `ksd_monoBlocks`, `ksd_callDM`, `ksd_run`, **`sarRunM_plainD`** (`HRS` of every `runLCM env true` run on `PlainD`, no hypothesis), `TopSARM`, `TopSAUM`, **`topSAR_plainD`**, **`topSAU_plainD`**. |
+| `Ska/RawInvCLRunLD.lean` | Frames, labels and liveness with direct calls on `runLCM env true`: **`frameRunM_plainD`**, **`labRunM_plainD`** (`HRL`), `kdl_frame_callDM`, `kdl_htl_callDM`, `kdlLRLM`, **`liveRunM_plainD_of`** (`LRL` on `PlainD` from the liveness arm of `callDM`, `hDM`). |
+| `Ska/RawInvCLCallDM.lean` | The liveness arm of the direct call: the drop path proved; **`kdm_liveRun_callDM_of`**, **`liveRunM_plainD_ofM`**, `optIn_finishLUCM_ofD`, `readsIn_finishLUCM_ofD`, `PlainDM`, **`optInMono_plainD_of`**, **`readsInMono_plainD_of`**, all from ONE named block fact `KdmMonoSpec` (`IL` and liveness across `+need-ord-alloc-regs` and the call blocks of `+mono-try-call`). |
+| `Ska/RawInvCLCheckSixR.lean` | `%6`, checked (README Gaps 14 (b)): rank candidates at every sub-run of the families of `RawInvCLCheckSix.lean`; label ranks with hops exempt fail at `insertHop`, the height holds, i.e. `ATS6` with "no dangling jump" (clause `76`) holds before and after every sub-run (0 failures; the relations `80`, `81`, `82` on old and new blocks); the specs `ksrForkSureSpec`, `ksrForkSpec` (with the liveness exception: the other half's tree or the test register), `ksrSectSpec` stated and checked alone, 0 failures. |
 | `Ska/BugWitness.lean` | The three places where the Hoon broke the contract when this was written (an inlined call dropping its formula's formula, malformed operands, `%bare`). Fixed in the Hoon since; the models still describe the old code. |
 | `Glue/RawOptIn.lean` | Track G (glue, README Gaps 22): `CompPieces` of `Ska/CompHypOf.lean` restated with track D's `OptIn` (`RawOptIn`) and the pill's passes at fuels per reference form (`OptRef`) in place of `rawDInv`, `optEq`, `optAlias`, `optSSA` (`RefSide`, `CompRestO`, `CompPiecesO`); `keeps_of_optIn`, `contract_of_piecesO`, `compHyp_of_piecesO` (to `CompHyp`, the hypothesis of `gap_of_comp`); on `FragX`: `rawMono_fragX`, `rawNary_fragX`, `rawOptIn_fragX`, `compHyp_of_fragX` (from `CompRestO` alone), `optRef_fragX` (from `optimize_total_finishLUX` / `-LFX`, given `A.optimize` = the pill's and `Straight.toNoun` injective); `fullAnswers_of_cg` (`FullAnswers` of the model of `+poke` from `CgHalts`, `MemoNoCallees` under `InvB`, `BakeEnds`, `RootAnswers`); `RawMonoM` (`RawMono` against `finishLUCM`, the compile with direct calls), `rawMonoM_of` (from `RawMono` on `noDirect` classes), `rawMonoM_fragX`. |
 | `Glue/MonoCalls.lean` | Track G (Gaps 22 (b)): mismatch M3 closed.  `MonoClass`, `NaryClass` (classes that see `env`, `N`, the bell), `RawMonoD` (against `finishLUCM`), `RawNaryD`, `RefSideM`, `CompRestM`, `CompPiecesM`, `finishLUCM_this`, `contract_of_piecesM`, `compHyp_of_piecesM`, `compRestM_of_O`; `noDirect_NCG`, `noDirect_fragUFG`, `six0_noDirect`; `MonoCalls` (`NCG`, `CallTreeDB`, `CallTreeAB`, `TopTreeB`, `Six0B`), `NaryCalls` (`FragUN`, `CallTreeAN`, `CallTreeDNB`), `rawMonoD_calls`, `rawNaryD_calls`; leaves `OptInMono`, `OptInNary` (`rawOptIn_of`, proved on `FragX`), `EntryMono`, `EntryNary` (`rawEntry_of`), `OptTotalMono`, `OptTotalNary` (`optRef_of_total`, proved on `FragX`); `compHyp_of_calls`; `straight_toNoun_inj`, `optRef_fragX'`. |
@@ -4109,6 +4122,31 @@ import only its theorems.  So:
    `kim_into` are its clauses `split`, `into`; its clause `run` is proved on
    `PlainN` from `IL ∧ LG` of the goal (`kim_runM_plainIL`), and with `GD`
    alone only checked.
+
+   **Track G's mid-run fact and the direct call, 2026-11-28, twentieth
+   session (`RawInvCLKUBase.lean` .. `RawInvCLCheckSixR.lean`).**  Track
+   G's `KIMid` is FALSE in its clause `run` (`kimid_false`): a goal with
+   two bonds at one label sharing a register meets `GD`, and `+copy` merges
+   both of `first`'s bonds at that label with `second`'s last one, so a
+   sure need of the result holds the register twice.  The true form
+   `KIMidX` asks `GX` (the registers of the whole tree distinct and below
+   `re`) and `LG` (`LabUniq`, entries below `bo`) in place of `GD`, and
+   gives `GD` (`KIMidX.dn`); it is proved on all of `NoSixC`, direct calls
+   included, with no hypothesis (**`kimidX_noSix`**), from a state-free
+   count (`KURun`: every register occurs in the result's tree at most as
+   often as in the goal's, plus once if fresh; `kuRunM_noSix`).  The
+   direct call: the run-level specs hold at every sub-run on `enumDX`
+   (`RawInvCLCheckDM.lean`, 0 failures); single assignment on `PlainD`
+   is proved (`sarRunM_plainD`, `topSAR_plainD`, `topSAU_plainD`), the
+   frame and the labels too (`frameRunM_plainD`, `labRunM_plainD`); the
+   liveness and the two whole-subject leaves on `PlainDM` are proved from
+   one named block fact of the call blocks, `KdmMonoSpec`
+   (`optInMono_plainD_of`, `readsInMono_plainD_of`).  The n-ary leaves
+   with direct calls (`runLCM env false`, `callL`'s `%cal` branch) are not
+   started.  `%6`: the label ranks fail at `insertHop`; the height holds,
+   so the invariant is `ATS6` with no dangling jump (no rank is carried);
+   `+fork`, `+fork-sure` and `+sect` have specs that hold alone
+   (`RawInvCLCheckSixR.lean`), none proved yet.
 
    **Left, in this order.**  (a) `%6` (`FragX`; `Frag6` is done; see the
    paragraph above for what holds and what is proved).  Two obstacles, both met
