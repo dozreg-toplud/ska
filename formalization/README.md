@@ -7667,8 +7667,8 @@ import only its theorems.  So:
     4. *Open* (the hypotheses of `BakeDrops`, first blocker first).  (a) NO TIE: a tie is a change
        between a `less.c` that is not normal and the normal sock with its nouns (`noLoss_lessc`); it
        needs a callee to lose all its informers (or the guard to fail) and be informed again with no
-       loss.  Not seen on the corpus.  The only step of `+know` that reads the form of a sock rather
-       than its nouns is `+double-int` (it descends into a cell cape, so it knows more under `[& &]`
+       loss.  Not seen on the corpus.  The step of `+know` found to read the form of a sock rather
+       than its nouns is `+double-int` (`+patch-prod`, `+knit:so`, `+uni-sock` checked by reading) (it descends into a cell cape, so it knows more under `[& &]`
        than under `&`), so a caller's site can be picked by an earlier variant under `less.c` and not
        under its normal form: callers in their raw form inform less, which pushes callees to their
        raw form too (a positive feedback, which does not oscillate in the cases tried); no bound on
