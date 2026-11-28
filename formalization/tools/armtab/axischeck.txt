@@ -1,0 +1,386 @@
+Part A (lemmas/Pill/Facts.lean): 190 ok, 0 mismatched, 8 unmapped
+Part B (texts): 185 distinct (name, axis) mentions: 141 ok, 33 mismatched, 11 with no arm of that name
+
+A  ok    dec                                2398  s16/dec
+A  ok    add                                  36  s16/add
+A  ok    sub                                  79  s16/sub
+A  ok    mul                                   8  s16/mul
+A  ok    lth                                2399  s16/lth
+A  ok    lte                                 148  s16/lte
+A  ok    gth                                  75  s16/gth
+A  ok    gte                                  38  s16/gte
+A  ok    max                                 598  s16/max
+A  ok    min                                 156  s16/min
+A  ok    dvr                                 298  s16/dvr
+A  ok    div                                1198  s16/div
+A  ok    mod                                 157  s16/mod
+A  ok    cap                                  22  s16/cap
+A  ok    mas                                  47  s16/mas
+A  ok    peg                                  46  s16/peg
+A  ok    dor                                 183  s15/dor
+A  ok    gor                                 182  s15/gor
+A  ok    mor                                  90  s15/mor
+A  ok    mug                               12217  s15/mug
+A  ok    lent                             195541  s15/lent
+A  ok    weld                           12515316  s15/weld
+A  ok    snag                              48884  s15/snag
+A  ok    scag                           50061270  s15/scag
+A  ok    slag                             782174  s15/slag
+A  ok    turn                             782206  s15/turn
+A  ok    roll                            3128828  s15/roll
+A  ok    levy                              12220  s15/levy
+A  ok    lien                             195550  s15/lien
+A  ok    flop                            3128703  s15/flop
+A  ok    skip                          200245087  s15/skip
+A  ok    murn                           25030634  s15/murn
+A  ok    zing                            1564410  s15/zing
+A  ok    spin                          100122619  s15/spin
+A  ok    skim                             391099  s15/skim
+A  ok    rear                             782204  s15/rear
+A  ok    snip                           25030655  s15/snip
+A  ok    sort                            6257662  s15/sort
+A  ok    welp                             195540  s15/welp
+A  ok    skid                           12515326  s15/skid
+A  ok    homo                            1564411  s15/homo
+A  ok    need                               1502  s15/need
+A  ok    bex                                2676  s15/bex
+A  ok    rsh                               21438  s15/rsh
+A  ok    lsh                                 663  s15/lsh
+A  ok    end                               10711  s15/end
+A  ok    cut                                 668  s15/cut
+A  ok    cat                                 166  s15/cat
+A  ok    can                               42879  s15/can
+A  ok    rip                                 330  s15/rip
+A  ok    met                               10710  s15/met
+A  ok    mix                                 188  s15/mix
+A  ok    dis                                1518  s15/dis
+A  ok    con                                 756  s15/con
+A  ok    muk                               12216  s15/muk
+A  ok    fe                                  670  s15/fe
+A  ok    fe.sit                               44  s15/fe/sit
+A  ok    fe.sum                                4  s15/fe/sum
+A  ok    fe.rol                              188  s15/fe/rol
+A  ok    by                                 6103  s15/by
+A  ok    by.put                              340  s15/by/put
+A  ok    by.get                              764  s15/by/get
+A  ok    some                               5982  s15/some
+A  ok    by.has                             3061  s15/by/has
+A  ok    by.del                              190  s15/by/del
+A  ok    by.rep                              767  s15/by/rep
+A  ok    by.jab                              379  s15/by/jab
+A  ok    by.uni                              686  s15/by/uni
+A  ok    by.run                              766  s15/by/run
+A  ok    by.dif                              687  s15/by/dif
+A  ok    by.any                               20  s15/by/any
+A  ok    by.int                              341  s15/by/int
+A  ok    by.gas                              378  s15/by/gas
+A  ok    by.apt                             3060  s15/by/apt
+A  ok    by.tap                              174  s15/by/tap
+A  ok    by.key                              188  s15/by/key
+A  ok    by.got                              701  s15/by/got
+A  ok    fall                               3007  s15/fall
+A  ok    by.gut                             1531  s15/by/gut
+A  ok    in                                 6102  s15/in
+A  ok    in.put                               84  s15/in/put
+A  ok    in.gas                              187  s15/in/gas
+A  ok    in.del                               94  s15/in/del
+A  UNMAPPED  in.rep = 383: by.rep.arm in in.battery
+A  ok    in.run                              382  s15/in/run
+A  ok    in.uni                              174  s15/in/uni
+A  ok    in.int                               85  s15/in/int
+A  ok    in.dif                              175  s15/in/dif
+A  ok    in.any                                4  s15/in/any
+A  ok    in.has                              381  s15/in/has
+A  UNMAPPED  in.tap = 186: by.tap.arm in in.battery
+A  ok    ju                                  760  s15/ju
+A  ok    ja                                  761  s15/ja
+A  ok    ju.get                               46  s15/ju/get
+A  ok    ju.has                               47  s15/ju/has
+A  ok    ju.put                                4  s15/ju/put
+A  ok    ju.del                               10  s15/ju/del
+A  ok    ju.gas                               22  s15/ju/gas
+A  UNMAPPED  ja.get = 10: ju.get.arm in ja.battery
+A  ok    ja.add                                4  s15/ja/add
+A  ok    by.wyt                               86  s15/by/wyt
+A  UNMAPPED  in.wyt = 92: by.wyt.arm in in.battery
+A  ok    snoc                            1564350  s15/snoc
+A  ok    biff                                 92  s15/biff
+A  ok    mink                              22524  s13/mink
+A  ok    mink.layer1                          15  s16 in s13
+A  ok    monk                              22527  s13/monk
+A  ok    mock                               1406  s13/mock
+A  ok    mack                              22525  s13/mack
+A  ok    mook                               2810  s13/mook
+A  ok    soft                                350  s13/soft
+A  ok    tank                              48894  s15/tank
+A  ok    scow                               1498  s13/scow
+A  ok    mook.layer2                           7  s15 in s13
+A  ok    ca.con                                4  s10/ca/con
+A  ok    ca.hed                               20  s10/ca/hed
+A  ok    ca.uni                               84  s10/ca/uni
+A  ok    ca.int                              340  s10/ca/int
+A  ok    ca.app                              341  s10/ca/app
+A  ok    ca.lack                             171  s10/ca/lack
+A  ok    ca.yea                               86  s10/ca/yea
+A  ok    ca.dif                               87  s10/ca/dif
+A  ok    ca.all                               22  s10/ca/all
+A  ok    ca.pat                               46  s10/ca/pat
+A  ok    ca.tel                               94  s10/ca/tel
+A  ok    ca.lot                               95  s10/ca/lot
+A  ok    so.jibe                               4  s10/so/jibe
+A  ok    so.huge                              20  s10/so/huge
+A  ok    so.purr                              42  s10/so/purr
+A  ok    so.knit                              86  s10/so/knit
+A  ok    so.pull                             174  s10/so/pull
+A  ok    so.hed                              175  s10/so/hed
+A  ok    so.darn                              22  s10/so/darn
+A  ok    so.tel                               23  s10/so/tel
+A  ok    pi.edit                               4  s10/pi/edit
+A  ok    pi.hed                               20  s10/pi/hed
+A  ok    pi.prune                             42  s10/pi/prune
+A  ok    pi.cons                              86  s10/pi/cons
+A  ok    pi.slot                              87  s10/pi/slot
+A  ok    pi.tel                               22  s10/pi/tel
+A  ok    pi.compose                           23  s10/pi/compose
+A  UNMAPPED  ca.lib = 20  in lib = s10: no arm lib
+A  UNMAPPED  so.lib = 11  in lib = s10: no arm lib
+A  UNMAPPED  pi.lib = 42  in lib = s10: no arm lib
+A  ok    ca.lib.layer2                      2047  s15 in s10
+A  ok    ca.lib.layer1                      4095  s16 in s10
+A  ok    distribute                           43  s10/distribute
+A  ok    double_int                            4  s10/double-int
+A  ok    patch_prod                           22  s8/patch-prod
+A  ok    msg_anno                           5495  s8/msg-anno
+A  ok    knit_anno                            92  s8/knit-anno
+A  ok    knit_anno.lib                         7  s10 in s8
+A  ok    msg_sock                           5502  s8/msg-sock
+A  ok    safe_nomm                          5494  s8/safe-nomm
+A  ok    safe_fol_fol                        767  s8/safe-fol-fol
+A  ok    he_sock                            1374  s8/he-sock
+A  ok    cape_size                         22495  s8/cape-size
+A  ok    recursive_call                      342  s8/recursive-call
+A  ok    git_g                                 4  s8/git-g
+A  UNMAPPED  fol_loop.register_fast = 94: register_fast.arm in ana
+A  ok    mi                                   84  s8/mi
+A  ok    mi.git                               11  s8/mi/git
+A  ok    mi.put                                4  s8/mi/put
+A  ok    mi.gut                               10  s8/mi/gut
+A  ok    soft_spot                            86  s8/soft-spot
+A  ok    ska_cg                              341  s8/ska-callgraph
+A  ok    ident_mold                          186  s9/identity
+A  ok    msg_ca                              187  s8/msg-ca
+A  ok    silt                                767  s15/silt
+A  ok    in.bif                               86  s15/in/bif
+A  ok    prune_cg                          22007  s8/prune-callgraph
+A  ok    mfe                                 340  s8/memo-final-entry
+A  ok    ska_poke                             20  s8/ska-poke
+A  ok    comp.emit                         43690  s6/comp/$/emit
+A  ok    comp.emir                           350  s6/comp/$/emir
+A  ok    comp.add_ops                      10990  s6/comp/$/add-ops
+A  ok    comp.bomb                          1364  s6/comp/$/bomb
+A  ok    comp.from                          5630  s6/comp/$/from
+A  ok    comp.from_sure                    11259  s6/comp/$/from-sure
+A  ok    comp.split                      2797306  s6/comp/$/split
+A  ok    comp.split_sure                   10927  s6/comp/$/split-sure
+A  ok    comp.split_need                   88062  s6/comp/$/split-need
+A  ok    comp.must                         87390  s6/comp/$/must
+A  ok    comp.re                         5636095  s6/comp/$/re
+A  ok    comp.oo                            5460  s6/comp/$/oo
+A  ok    comp.id                           44015  s6/comp/$/id
+A  ok    comp.set_tag                     349662  s6/comp/$/set-tag
+A  ok    comp.copy_tag                   2818044  s6/comp/$/copy-tag
+A  ok    read.layer2                     4194303  s15 in s1
+A  ok    read                                186  s1/read
+A  ok    store                                94  s1/store
+A  ok    move                                 92  s1/move
+A  ok    eval_pass                           190  s1/eval-pass
+A  ok    eval_pole                             4  s1/eval-pole
+A  ok    eval_blob                           187  s1/eval-blob
+A  ok    eval_top                             22  s1/eval-top
+A  ok    eval_rend                            10  s1/eval-rend
+A  ok    eval_mook                           191  s1/eval-mook
+B  ok    +patch-prod                       22  s8/patch-prod cax  (axis: README.md:163)
+B  ok    +inlineable                      763  s8/inlineable cax  (axis: README.md:167)
+B  ok    +silt                            767  s15/silt cax  (arm: README.md:175)
+B  MISS  +run                              95  table: s15/by/run bax 510 cax 766, s15/in/run bax 254 cax 382, s15/run bax 830 cax 1342, s15/to/run bax 255 cax 383  (arm: README.md:177)
+B  none  +dirty                            94  no arm of that name  (arm: README.md:178)
+B  none  +above                            22  no arm of that name  (arm: README.md:179)
+B  none  +sweep                            93  no arm of that name  (arm: README.md:179)
+B  none  +cull                             10  no arm of that name  (arm: README.md:179)
+B  none  +pop                               4  no arm of that name  (arm: README.md:179)
+B  MISS  +analyze                          92  table: s12/ax/analyze bax 442 cax 698  (arm: README.md:180)
+B  ok    +ska-callgraph                   341  s8/ska-callgraph cax  (arm: README.md:183)
+B  ok    +prune-callgraph               22007  s8/prune-callgraph cax  (arm: README.md:184)
+B  ok    +memo-final-entry                340  s8/memo-final-entry cax  (arm: README.md:185)
+B  ok    +ska-poke                         20  s8/ska-poke cax  (arm: README.md:185)
+B  ok    +vi                            22526  s13/vi cax  (arm: README.md:186)
+B  ok    +mean                           2558  s12/mean cax  (arm: README.md:186)
+B  MISS  +mas                          524287  table: s16/mas bax 31 cax 47  (axis: README.md:193)
+B  ok    +forl                         442362  s6/comp/$/forl bax  (door axis: README.md:196)
+B  ok    +flatten-need                    220  s6/comp/$/flatten-need bax  (door axis: README.md:197)
+B  ok    +crash-need                    27310  s6/comp/$/crash-need bax  (door axis: README.md:198)
+B  ok    +collapse-lazy-atom            13822  s6/comp/$/collapse-lazy-atom bax  (door axis: README.md:200)
+B  ok    +none-equivalent                2811  s6/none-equivalent cax  (arm: README.md:200)
+B  ok    +run                            2047  s6/comp/$/run bax  (door axis: README.md:201)
+B  ok    +hinted                        96116  s6/hinted cax  (arm: README.md:202)
+B  ok    +past                           7166  s6/comp/$/past bax  (door axis: README.md:202)
+B  ok    +split                       1748730  s6/comp/$/split bax  (door axis: README.md:204)
+B  ok    +compile-unary                  2810  s6/compile-unary cax  (arm: README.md:207)
+B  ok    +kern-need                   3497462  s6/comp/$/kern-need bax  (door arm: README.md:208)
+B  ok    +kern                           7167  s6/comp/$/kern bax  (door arm: README.md:210)
+B  ok    +kerf                          27572  s6/comp/$/kerf bax  (door arm: README.md:210)
+B  MISS  +compile-unary                   254  table: s6/compile-unary bax 1786 cax 2810  (axis: README.md:211)
+B  none  +chase                            21  no arm of that name  (core arm: README.md:216)
+B  none  +chase-fin                       382  no arm of that name  (core arm: README.md:217)
+B  ok    +bind                           5983  s15/bind cax  (arm: README.md:219)
+B  ok    +lift                            372  s15/lift cax  (arm: README.md:219)
+B  ok    +comp                           5590  s6/comp cax  (arm: README.md:220)
+B  ok    +coerce-lazy                    3580  s6/comp/$/coerce-lazy bax  (door battery axis: README.md:236)
+B  ok    +axe-in-less-cape                 95  s6/axe-in-less-cape cax  (arm: README.md:236)
+B  ok    +bake-need                    384468  s6/bake-need cax  (arm: README.md:237)
+B  ok    +need-fits                         4  s6/need-fits cax  (arm: README.md:238)
+B  ok    +known-sock                     1500  s6/known-sock cax  (arm: README.md:238)
+B  ok    +bake-need-ord                  1398  s6/bake-need-ord cax  (arm: README.md:238)
+B  ok    +compile-scc-in                 2732  s6/compile-scc-in cax  (arm: README.md:243)
+B  ok    +tarjan                         2815  s8/tarjan cax  (arm: README.md:251)
+B  ok    +shape-collapse                  682  s6/shape-collapse cax  (arm: README.md:263)
+B  ok    +need-ord-regs                  1396  s6/need-ord-regs cax  (arm: README.md:266)
+B  ok    +msg-need-ord                     20  s6/msg-need-ord cax  (arm: README.md:266)
+B  ok    +msg-need-ord-fix-aware         1502  s6/msg-need-ord-fix-aware cax  (arm: README.md:266)
+B  ok    +lazy-empty                       54  s6/comp/$/lazy-empty bax  (door arm: README.md:285)
+B  ok    +lazy-prune                   874364  s6/comp/$/lazy-prune bax  (door arm: README.md:285)
+B  ok    +spin-split                      372  s6/spin-split cax  (arm: README.md:290)
+B  MISS  +run                      68709908471  table: s15/by/run bax 510 cax 766, s15/in/run bax 254 cax 382, s15/run bax 830 cax 1342, s15/to/run bax 255 cax 383  (door axis: README.md:307)
+B  ok    +made                          13814  s6/comp/$/made bax  (door arm: README.md:308)
+B  ok    +callee-sure                    4060  s6/comp/$/callee-sure bax  (door arm: README.md:312)
+B  ok    +callee-compiled               13791  s6/comp/$/callee-compiled bax  (door arm: README.md:312)
+B  ok    +callee-need                  221180  s6/comp/$/callee-need bax  (door arm: README.md:312)
+B  ok    +mono-try-call                437183  s6/comp/$/mono-try-call bax  (door arm: README.md:313)
+B  ok    +sound                         13654  s6/comp/$/sound bax  (door arm: README.md:327)
+B  ok    +sound-far                      5467  s6/sound-far cax  (arm: README.md:327)
+B  ok    +need-soft                      5466  s6/need-soft cax  (arm: README.md:327)
+B  ok    +need-ord-edit                  5596  s6/need-ord-edit cax  (arm: README.md:327)
+B  ok    +cell-sure                     48047  s6/cell-sure cax  (arm: README.md:327)
+B  ok    +sect                           6906  s6/comp/$/sect bax  (door arm: README.md:427)
+B  ok    +whole                          1372  s8/whole cax  (arm: README.md:429)
+B  ok    +soft-fork                    221182  s6/comp/$/soft-fork bax  (door arm: README.md:430)
+B  ok    +fork                            862  s6/comp/$/fork bax  (door arm: README.md:431)
+B  ok    +run-shape                     27630  s6/comp/$/run-shape bax  (arm: README.md:456)
+B  ok    +laze-to-inter1                 5598  s6/laze-to-inter1 cax  (arm: README.md:479)
+B  ok    +uni-ju                         1404  s8/uni-ju cax  (arm: README.md:551)
+B  ok    +remove-useless-branching        363  s5/remove-useless-branching cax  (arm: README.md:564)
+B  ok    +remove-dead-code                724  s5/remove-dead-code cax  (arm: README.md:565)
+B  ok    +rev-cfg                         732  s5/rev-cfg cax  (arm: README.md:566)
+B  ok    +bb-topo                        2942  s5/bb-topo cax  (arm: README.md:567)
+B  ok    +remove-hops                       4  s5/remove-hops cax  (arm: README.md:568)
+B  ok    +remove-empty-middle            2940  s5/remove-empty-middle cax  (arm: README.md:569)
+B  ok    +sy                               42  s15/sy cax  (arm: README.md:571)
+B  ok    +optimize-once                   180  s5/optimize-once cax  (arm: README.md:572)
+B  ok    +optimize                       2941  s5/optimize cax  (arm: README.md:575)
+B  ok    +switch-chains                   182  s5/switch-chains cax  (arm: README.md:575)
+B  ok    +trim-trace-hints                 23  s5/trim-trace-hints cax  (arm: README.md:576)
+B  ok    +alias                           725  s5/alias cax  (arm: README.md:614)
+B  MISS  +split-sure                        0  table: s6/comp/$/split-sure bax 6831 cax 10927  (axis: README.md:818)
+B  MISS  +comp                              7  table: s13/comp bax 28 cax 44, s6/comp bax 3542 cax 5590  (axis: README.md:1740)
+B  MISS  +hinted                           52  table: s6/hinted bax 63348 cax 96116  (axis: README.md:1854)
+B  ok    +to-straight                    6892  s6/comp/$/to-straight bax  (door arm: README.md:1965)
+B  ok    +lth                            2399  s16/lth cax  (arm: README.md:1976)
+B  none  +bypassable                       46  no arm of that name  (arm: README.md:2004)
+B  ok    +run                            3071  s6/comp/$/run cax  (door arm: README.md:2211)
+B  ok    +lazy-to-inter1                 6006  s6/lazy-to-inter1 cax  (arm: README.md:2866)
+B  ok    +safe-fol-fol                    767  s8/safe-fol-fol cax  (arm: README.md:5207)
+B  none  +simple-next                       4  no arm of that name  (arm: README.md:5233)
+B  ok    +soft-new                        382  s6/comp/$/soft-new cax  (door axis: README.md:5327)
+B  ok    +scc-of                        96127  s6/scc-of cax  (K arm: README.md:5492)
+B  ok    +compiled-mono                    10  s3/compiled-mono cax  (arm: README.md:5821)
+B  ok    +coerce-soft                     510  s6/comp/$/coerce-soft bax  (arm: README.md:6722)
+B  ok    +wish                              6  s0/wish bax  (axis: README.md:7130)
+B  MISS  +compiled-nary                    14  table: s3/compiled-nary bax 7 cax 11  (axis: README.md:7131)
+B  ok    +ska-cole-update                2746  s8/ska-cole-update cax  (arm: README.md:7587)
+B  ok    +cole-match                    22492  s8/cole-match cax  (arm: README.md:7601)
+B  ok    +lazy-from-reg                    92  s7/lazy-from-reg cax  (K arm: README.md:7721)
+B  ok    +mean-konst                      252  s6/comp/$/mean-konst bax  (door axis: README.md:7723)
+B  ok    +mean-konst                      380  s6/comp/$/mean-konst cax  (arm: README.md:7723)
+B  none  +chase-fin                       254  no arm of that name  (battery axis: lemmas/Compiler/CompChaseFin.lean:34)
+B  ok    +copy-lazy                      1022  s6/comp/$/copy-lazy bax  (door axis: lemmas/Compiler/CompCopyGen.lean:6)
+B  ok    +malt                            382  s15/malt cax  (arm: lemmas/Compiler/CompCopyLib.lean:9)
+B  ok    +molt                            766  s15/molt cax  (arm: lemmas/Compiler/CompCopyLib.lean:10)
+B  ok    +copy-need-make-ops             3452  s6/comp/$/copy-need-make-ops bax  (door axis: lemmas/Compiler/CompCopyLink.lean:85)
+B  ok    +copy                         220590  s6/comp/$/copy bax  (door axis: lemmas/Compiler/CompCopyLink.lean:500)
+B  ok    +sure-require-look               887  s6/comp/$/sure-require-look bax  (door axis: lemmas/Compiler/CompCopyLink.lean:558)
+B  ok    +insert-hop                        2  s6/comp/$/insert-hop bax  (door axis: lemmas/Compiler/CompCopyLink.lean:972)
+B  MISS  +comp                             63  table: s13/comp bax 28 cax 44, s6/comp bax 3542 cax 5590  (axis: lemmas/Compiler/CompCtx.lean:8)
+B  MISS  +weld                         262143  table: s15/nl/weld bax 14 cax 22, s15/weld bax 8321012 cax 12515316  (axis: lemmas/Compiler/CompDoor.lean:24)
+B  ok    +dropping                       1398  s6/comp/$/dropping cax  (arm: lemmas/Compiler/CompDoor.lean:44)
+B  ok    +soft-done                     54644  s6/comp/$/soft-done bax  (door battery axis: lemmas/Compiler/CompFinish.lean:14)
+B  ok    +from                           3582  s6/comp/$/from bax  (door arm: lemmas/Compiler/CompFromGen.lean:7)
+B  MISS  +oo                                6  table: s6/comp/$/oo bax 3412 cax 5460  (axis: lemmas/Compiler/CompGen.lean:94)
+B  MISS  +id                               14  table: s6/comp/$/id bax 27631 cax 44015  (axis: lemmas/Compiler/CompGen.lean:100)
+B  ok    +gep                            5597  s6/gep cax  (arm: lemmas/Compiler/CompInto.lean:32)
+B  ok    +cons-need                       350  s6/cons-need cax  (arm: lemmas/Compiler/CompInto.lean:35)
+B  ok    +leap                         441179  s6/comp/$/leap bax  (door arm: lemmas/Compiler/CompLeapGate.lean:7)
+B  ok    +pass-both                        94  s6/pass-both cax  (K arm: lemmas/Compiler/CompLeapGate.lean:19)
+B  ok    +lazy-leap                    442366  s6/comp/$/lazy-leap bax  (door arm: lemmas/Compiler/CompLeapGate.lean:20)
+B  MISS  +leap                              0  table: s6/comp/$/leap bax 441179 cax 703323  (axis: lemmas/Compiler/CompLeapGate.lean:196)
+B  MISS  +lazy-leap                         0  table: s6/comp/$/lazy-leap bax 442366 cax 704510  (axis: lemmas/Compiler/CompLeapLazyGate.lean:479)
+B  ok    +need-from                        14  s6/comp/$/need-from bax  (door arm: lemmas/Compiler/CompLeapN.lean:29)
+B  ok    +need-cut                      16375  s6/comp/$/need-cut bax  (door arm: lemmas/Compiler/CompLeapN.lean:43)
+B  ok    +pass-bomb                    715742  s6/pass-bomb cax  (K arm: lemmas/Compiler/CompLeapN.lean:57)
+B  ok    +pass                            340  s6/pass cax  (K arm: lemmas/Compiler/CompLeapN.lean:79)
+B  ok    +pass-then                        86  s6/pass-then cax  (K arm: lemmas/Compiler/CompLeapN.lean:101)
+B  ok    +pass-edit                     48046  s6/pass-edit cax  (K arm: lemmas/Compiler/CompLeapN.lean:127)
+B  ok    +mede                          27307  s6/comp/$/mede bax  (door arm: lemmas/Compiler/CompMedeGen.lean:6)
+B  ok    +walk-lazy                        30  s6/comp/$/walk-lazy bax  (door axis: lemmas/Compiler/CompMedeLink.lean:145)
+B  ok    +proxy                        441178  s6/comp/$/proxy bax  (door axis: lemmas/Compiler/CompMedeLink.lean:427)
+B  ok    +lazy-bound                   884726  s6/comp/$/lazy-bound bax  (door axis: lemmas/Compiler/CompMedeLink.lean:430)
+B  ok    +past-if                      882366  s6/comp/$/past-if bax  (door arm: lemmas/Compiler/CompRunHintPI.lean:8)
+B  ok    +need-to-ordered               44732  s6/need-to-ordered cax  (arm: lemmas/Compiler/CompRunHintPI.lean:13)
+B  MISS  +run-shape                       127  table: s6/comp/$/run-shape bax 27630 cax 44014  (axis: lemmas/Compiler/CompRunShapeBranch.lean:466)
+B  MISS  +laze-into                         0  table: s6/comp/$/laze-into bax 1769469 cax 2818045  (axis: lemmas/Compiler/CompRunShapeInto.lean:543)
+B  MISS  +laze-leap                         0  table: s6/comp/$/laze-leap bax 427 cax 683  (axis: lemmas/Compiler/CompRunShapeLeaps.lean:574)
+B  MISS  +laze-leaps                        0  table: s6/comp/$/laze-leaps bax 3414 cax 5462  (axis: lemmas/Compiler/CompRunShapeLeaps.lean:785)
+B  ok    +laze-sect                       762  s6/comp/$/laze-sect cax  (door arm: lemmas/Compiler/CompRunShapeSix.lean:14)
+B  MISS  +laze-split                        0  table: s6/comp/$/laze-split bax 27646 cax 44030  (axis: lemmas/Compiler/CompRunShapeSplit.lean:515)
+B  MISS  +run-shape                463566536702  table: s6/comp/$/run-shape bax 27630 cax 44014  (battery axis: lemmas/Compiler/CompRunShapeTwoCut.lean:6)
+B  MISS  +run-shape                      1372  table: s6/comp/$/run-shape bax 27630 cax 44014  (arm: lemmas/Compiler/CompRunShapeWhole.lean:48)
+B  ok    +soft-new                        254  s6/comp/$/soft-new bax  (door axis: lemmas/Compiler/CompRunSoftArms.lean:9)
+B  ok    +soft-bond                       442  s6/comp/$/soft-bond bax  (door axis: lemmas/Compiler/CompRunSoftArms.lean:11)
+B  ok    +need-ord-alloc-regs             446  s6/comp/$/need-ord-alloc-regs bax  (battery axis: lemmas/Compiler/CompSccIn.lean:96)
+B  ok    +collapse-shape                 1014  s6/comp/$/collapse-shape bax  (battery axis: lemmas/Compiler/CompSccIn.lean:300)
+B  MISS  +tarjan                           15  table: s8/tarjan bax 1791 cax 2815  (axis: lemmas/Compiler/CompSccOfMiss2.lean:203)
+B  MISS  +sure-of                           0  table: s6/sure-of bax 7086 cax 11182  (axis: lemmas/Compiler/CompSccOne.lean:206)
+B  ok    +inter2-collapse                1406  s6/inter2-collapse cax  (arm: lemmas/Compiler/CompShapeCol.lean:24)
+B  ok    +uni-need-ord                   2794  s6/uni-need-ord cax  (arm: lemmas/Compiler/CompShapeCol.lean:27)
+B  ok    +inter2-orig                    1367  s6/inter2-orig cax  (arm: lemmas/Compiler/CompShapeCol.lean:29)
+B  ok    +fork-need                        62  s6/comp/$/fork-need bax  (door arm: lemmas/Compiler/CompSixFork.lean:9)
+B  ok    +fork-sure                    884727  s6/comp/$/fork-sure bax  (door arm: lemmas/Compiler/CompSixFork.lean:16)
+B  ok    +past-fork                      4061  s6/comp/$/past-fork bax  (door arm: lemmas/Compiler/CompSixHelp.lean:14)
+B  ok    +soft-less                        52  s6/comp/$/soft-less bax  (door arm: lemmas/Compiler/CompSixHelp.lean:18)
+B  ok    +lazy-shut                    218495  s6/comp/$/lazy-shut bax  (door arm: lemmas/Compiler/CompSixHelp.lean:22)
+B  ok    +hed-need-ord                    374  s6/hed-need-ord cax  (K arm: lemmas/Compiler/CompSofSoft.lean:13)
+B  ok    +tel-need-ord                     92  s6/tel-need-ord cax  (K arm: lemmas/Compiler/CompSofSoft.lean:13)
+B  ok    +split-need                    88062  s6/comp/$/split-need cax  (arm: lemmas/Compiler/CompSplit.lean:7)
+B  ok    +split-sure                     6831  s6/comp/$/split-sure bax  (door arm: lemmas/Compiler/CompSplitGen.lean:163)
+B  MISS  +compile-unary            1508993103871  table: s6/compile-unary bax 1786 cax 2810  (axis: lemmas/Compiler/CompUnary.lean:45)
+B  MISS  +compile-unary                  4094  table: s6/compile-unary bax 1786 cax 2810  (axis: lemmas/Compiler/CompUnaryEnd.lean:31)
+B  MISS  +mi                                7  table: s8/mi bax 52 cax 84  (axis: lemmas/Compiler/GitMi.lean:27)
+B  ok    +cape-size                     22495  s8/cape-size cax  (axis: lemmas/Compiler/HeSock.lean:35)
+B  ok    +list                           1407  s16/list cax  (axis: lemmas/Compiler/ListMold.lean:6)
+B  ok    +get-jmps                       1502  s7/get-jmps cax  (arm: lemmas/Compiler/OptLinkHelpers.lean:37)
+B  ok    +jmp-regs                        175  s7/jmp-regs cax  (arm: lemmas/Compiler/OptLinkHelpers.lean:45)
+B  ok    +get-regs                         84  s7/get-regs cax  (arm: lemmas/Compiler/OptLinkHelpers.lean:53)
+B  ok    +get-reg-safe-assignment         750  s7/get-reg-safe-assignment cax  (arm: lemmas/Compiler/OptLinkHelpers.lean:61)
+B  MISS  +cole-match                       30  table: s8/cole-match bax 14300 cax 22492  (axis: lemmas/Compiler/PokeLinkColeUpd.lean:30)
+B  MISS  +cole-put                         31  table: s8/cole-put bax 1790 cax 2814  (axis: lemmas/Compiler/PokeLinkColeUpd.lean:32)
+B  ok    +cole-put                       2814  s8/cole-put cax  (axis: lemmas/Compiler/PokeLinkColeUpd.lean:34)
+B  MISS  +cole-put                         29  table: s8/cole-put bax 1790 cax 2814  (axis: lemmas/Compiler/PokeLinkColeUpd.lean:36)
+B  none  +have                            125  no arm of that name  (axis: lemmas/Compiler/PokeLinkEvalCut.lean:40)
+B  ok    +bake-graph                     5622  s8/bake-graph cax  (arm: lemmas/Compiler/PokeLinkRest.lean:27)
+B  ok    +git-g                             4  s8/git-g cax  (axis: lemmas/Compiler/RecCall.lean:36)
+B  ok    +bif                             342  s15/by/bif cax  (axis: lemmas/Hoon/DifBy.lean:70)
+B  ok    +bif                              86  s15/in/bif cax  (axis: lemmas/Hoon/DifIn.lean:77)
+B  MISS  +from-sure                         0  table: s6/comp/$/from-sure bax 7163 cax 11259  (axis: lemmas/Ska/CompCollapseThree.lean:70)
+B  MISS  +from                              1  table: s6/comp/$/from bax 3582 cax 5630  (axis: lemmas/Ska/CompLazyGoal.lean:26)
+B  MISS  +need-ord-edit                     0  table: s6/need-ord-edit bax 3548 cax 5596  (axis: lemmas/Ska/SofModel.lean:157)
+B  ok    +know                          13814  s8/know bax  (arm: tools/pillswitch-dab8478.md:19)
+B  ok    +hinted                        63348  s6/hinted bax  (battery axis: tools/pillswitch-dab8478.md:21)

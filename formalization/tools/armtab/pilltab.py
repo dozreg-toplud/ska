@@ -293,10 +293,13 @@ HASHNAME = re.compile(r'\b(?:nh[0-9a-f]{12}|[a-z_]+\.h[0-9a-f]{12})\b')
 
 
 def hand_names(root=FORM):
-    """hash names that files outside lemmas/Pill mention: name -> files"""
+    """hash names that files outside lemmas/Pill mention (the Lean files and
+    the generators tools/**/*.py, but not tools/armtab): name -> files"""
     out = {}
-    for f in glob.glob(root + '/lemmas/**/*.lean', recursive=True):
-        if '/lemmas/Pill/' in f:
+    fs = glob.glob(root + '/lemmas/**/*.lean', recursive=True) + \
+        glob.glob(root + '/tools/**/*.py', recursive=True)
+    for f in fs:
+        if '/lemmas/Pill/' in f or '/tools/armtab/' in f:
             continue
         for m in HASHNAME.finditer(open(f).read()):
             out.setdefault(m.group(0), set()).add(os.path.relpath(f, root))
