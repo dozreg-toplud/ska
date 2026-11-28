@@ -369,9 +369,240 @@ theorem put_drop {U : List Bell} {st st' : BSt M} {c : Bell} {s : Sock} (hc : c 
     · simp only [hget, if_true, ho]
       exact kapXS_lt hne hs hl
 
+/-! ### One step -/
+
+/-- What one touched callee must satisfy when its bake changes: it is a bell
+of `U`, and it had no bake, or a bake with a noun that the new one does not
+keep all of (not a tie). -/
+def TouchOK (E : BEnv M) (U : List Bell) (cur : Bell) (new : M Bell (List Sock)) (st : BSt M) (c : Bell) : Prop :=
+  ∀ ch ch' st', touchStep E cur new (some (ch, st)) c = some (ch', st') → ch' ≠ ch →
+    c ∈ U ∧ (Treap.get st.bak c = none ∨
+      ∃ o, Treap.get st.bak c = some o ∧ (∃ x, Fits o x) ∧ ∀ s, Treap.get st'.bak c = some s → ¬ Sub s o)
+
+/-- `TouchOK` at every callee of a fold of `touchStep`, on the state it is
+touched in. -/
+def FoldOK (E : BEnv M) (U : List Bell) (cur : Bell) (new : M Bell (List Sock)) :
+    List Bell → List Bell × BSt M → Prop
+  | [], _ => True
+  | c :: l, (ch, st) => TouchOK E U cur new st c ∧
+      ∀ r, touchStep E cur new (some (ch, st)) c = some r → FoldOK E U cur new l r
+
+/-- The first two parts of the measure, lexicographic, or equal. -/
+def LexLe2 (a b : Nat × Nat) : Prop := Prod.Lex (· < ·) (· < ·) a b ∨ a = b
+
+theorem lexLe2_trans {a b c : Nat × Nat} (h1 : LexLe2 a b) (h2 : LexLe2 b c) : LexLe2 a c := by
+  rcases h1 with h1 | rfl
+  · rcases h2 with h2 | rfl
+    · left
+      obtain ⟨a1, a2⟩ := a; obtain ⟨b1, b2⟩ := b; obtain ⟨c1, c2⟩ := c
+      rw [Prod.lex_def] at h1 h2 ⊢
+      simp only at h1 h2 ⊢
+      omega
+    · exact Or.inl h1
+  · exact h2
+
+theorem lexLt2_of_le_lt {a b c : Nat × Nat} (h1 : LexLe2 a b) (h2 : Prod.Lex (· < ·) (· < ·) b c) :
+    Prod.Lex (· < ·) (· < ·) a c := by
+  rcases h1 with h1 | rfl
+  · obtain ⟨a1, a2⟩ := a; obtain ⟨b1, b2⟩ := b; obtain ⟨c1, c2⟩ := c
+    rw [Prod.lex_def] at h1 h2 ⊢
+    simp only at h1 h2 ⊢
+    omega
+  · exact h2
+
+theorem lexLt2_of_lt_le {a b c : Nat × Nat} (h1 : Prod.Lex (· < ·) (· < ·) a b) (h2 : LexLe2 b c) :
+    Prod.Lex (· < ·) (· < ·) a c := by
+  rcases h2 with h2 | rfl
+  · obtain ⟨a1, a2⟩ := a; obtain ⟨b1, b2⟩ := b; obtain ⟨c1, c2⟩ := c
+    rw [Prod.lex_def] at h1 h2 ⊢
+    simp only at h1 h2 ⊢
+    omega
+  · exact h1
+
+/-- The pair of the first two parts of the measure. -/
+def meas2 (U : List Bell) (st : BSt M) : Nat × Nat := (unbaked U st, kapSum U st)
+
+/-- **One touched callee**: the measure does not grow, and drops when the
+callee is queued (its bake changed). -/
+theorem touchStep_drop {E : BEnv M} {U : List Bell} {cur : Bell} {new : M Bell (List Sock)} {c : Bell}
+    {ch ch' : List Bell} {st st' : BSt M} (h : touchStep E cur new (some (ch, st)) c = some (ch', st'))
+    (hok : TouchOK E U cur new st c) :
+    (ch' = ch ∧ meas2 U st' = meas2 U st) ∨ Prod.Lex (· < ·) (· < ·) (meas2 U st') (meas2 U st) := by
+  obtain ⟨_, hcase⟩ := touchStep_cases h
+  rcases hcase with ⟨_, hbak, hch⟩ | ⟨_, fixed, bake, bake', g, g', _, hre, hcase⟩
+  · left; exact ⟨hch, by unfold meas2 unbaked kapSum; rw [hbak]⟩
+  · rcases hcase with ⟨_, hbak, hch⟩ | ⟨hbak, hch⟩
+    · left; exact ⟨hch, by unfold meas2 unbaked kapSum; rw [hbak]⟩
+    · right
+      have hne : ch' ≠ ch := by rw [hch]; exact fun e => by simpa using congrArg List.length e
+      obtain ⟨hU, hold⟩ := hok ch ch' st' h hne
+      refine put_drop hU hbak ?_
+      rcases hold with hn | ⟨o, ho, hx, hl⟩
+      · exact Or.inl hn
+      · refine Or.inr ⟨o, ho, hx, ?_, hl bake' (by rw [hbak, Treap.get_put, if_pos rfl])⟩
+        rw [ho] at hre
+        exact rebakeG_grows hre
+
+/-- **A fold of touched callees**: the measure does not grow, and drops
+when a callee was queued. -/
+theorem touchFold_drop (E : BEnv M) (U : List Bell) (cur : Bell) (new : M Bell (List Sock)) :
+    ∀ (l : List Bell) (ch0 ch1 : List Bell) (st0 st1 : BSt M),
+      l.foldl (touchStep E cur new) (some (ch0, st0)) = some (ch1, st1) → FoldOK E U cur new l (ch0, st0) →
+      (ch1 = ch0 ∧ meas2 U st1 = meas2 U st0) ∨ Prod.Lex (· < ·) (· < ·) (meas2 U st1) (meas2 U st0)
+  | [], _, _, _, _, h, _ => by
+    simp only [List.foldl_nil, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact Or.inl ⟨rfl, rfl⟩
+  | c :: l, ch0, ch1, st0, st1, h, hok => by
+    simp only [List.foldl_cons] at h
+    cases h1 : touchStep E cur new (some (ch0, st0)) c with
+    | none => rw [h1, touchFold_none] at h; cases h
+    | some p =>
+      obtain ⟨chm, stm⟩ := p
+      rw [h1] at h
+      have a := touchStep_drop h1 hok.1
+      have b := touchFold_drop E U cur new l chm ch1 stm st1 h (hok.2 _ h1)
+      rcases a with ⟨e1, e2⟩ | a
+      · subst e1
+        rcases b with ⟨e3, e4⟩ | b
+        · exact Or.inl ⟨e3, e4.trans e2⟩
+        · exact Or.inr (by rw [← e2]; exact b)
+      · right
+        rcases b with ⟨_, e4⟩ | b
+        · rw [e4]; exact a
+        · exact lexLt2_of_lt_le b (Or.inl a)
+
+/-- **One step of the worklist lowers the measure**, when its fold of
+touched callees is `FoldOK`. -/
+theorem bakeStep_drop {E : BEnv M} {U : List Bell} {cur : Bell} {rest q' : List Bell} {qs qs' : M Bell Unit}
+    {st st' : BSt M} (h : bakeStep E cur rest qs st = some (q', qs', st'))
+    (hok : ∀ sites new, sitesOf E st cur = some sites →
+      sites.foldl (newStep E.vars) (some Treap.empty) = some new →
+      FoldOK E U cur new ((Treap.tap (uniIn (Treap.gut st.out cur Treap.empty) (keySet new))).map Prod.fst)
+        ([], { st with evals := st.evals + 1, out := Treap.put st.out cur (keySet new) })) :
+    LexLt (bakeMeasure U q' st') (bakeMeasure U (cur :: rest) st) := by
+  simp only [bakeStep, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  obtain ⟨sites, hs, new, hn, ⟨changed, st3⟩, hfold, he⟩ := h
+  simp only [Prod.mk.injEq] at he
+  obtain ⟨rfl, -, rfl⟩ := he
+  have hd := touchFold_drop E U cur new _ [] changed _ st3 hfold (hok sites new hs hn)
+  have hm : meas2 U ({ st with evals := st.evals + 1, out := Treap.put st.out cur (keySet new) } : BSt M) =
+      meas2 U st := rfl
+  rw [hm] at hd
+  unfold LexLt bakeMeasure
+  rcases hd with ⟨rfl, e⟩ | hd
+  · have e1 : unbaked U st3 = unbaked U st := congrArg Prod.fst e
+    have e2 : kapSum U st3 = kapSum U st := congrArg Prod.snd e
+    rw [e1, e2]
+    refine Prod.Lex.right _ (Prod.Lex.right _ ?_)
+    simp
+  · have : ∀ a b : Nat × Nat, ∀ x y : Nat, Prod.Lex (· < ·) (· < ·) a b →
+        Prod.Lex (· < ·) (Prod.Lex (· < ·) (· < ·)) (a.1, a.2, x) (b.1, b.2, y) := by
+      intro a b x y hab
+      obtain ⟨a1, a2⟩ := a; obtain ⟨b1, b2⟩ := b
+      rw [Prod.lex_def] at hab
+      rcases hab with h1 | ⟨rfl, h2⟩
+      · exact Prod.Lex.left _ _ h1
+      · exact Prod.Lex.right _ (Prod.Lex.left _ _ h2)
+    exact this (meas2 U st3) (meas2 U st) _ _ hd
+
 end Loop
 
 end Bake
+
+namespace PokeM
+
+variable {M : Type → Type → Type} [Treap M] {J H R : Type}
+
+/-- **The worklist of `+bake-graph` returns at SOME fuel**, on every poke
+from a state that satisfies `InvB` (`BakeEnds` without its fuel). -/
+def BakeHalts (lib : Lib) (env : Env R) (jet : H → J → (Bell → Option Datum) → R → Bell → Bool)
+    (fold frozen : Bool) (fuel : Noun → Noun → LongB M → J → Nat) (regOf : J → R) : Prop :=
+  ∀ s f (L : LongB M) j hot pr dats memo' rd reg', InvB lib L →
+    skaPoke env (fuel s f L j) (Sock.mk Cape.yes s, f) L.memo (regOf j) = some (pr, dats, memo', rd, reg') →
+    ∃ n st, bakeLoop (anaEnv jet fold frozen s f L j hot dats memo' rd reg') n
+      [(anaEnv jet fold frozen s f L j hot dats memo' rd reg').root]
+      (Treap.put Treap.empty (anaEnv jet fold frozen s f L j hot dats memo' rd reg').root ())
+      (bakeInit (anaEnv jet fold frozen s f L j hot dats memo' rd reg')) = some st
+
+/-- **The fuel of the worklist**: a fuel at which it returns, when there is
+one (as `anaFuel` for the analysis). -/
+noncomputable def bakeFuel (E : BEnv M) : Nat := by
+  classical
+  exact if h : ∃ n st, bakeLoop E n [E.root] (Treap.put Treap.empty E.root ()) (bakeInit E) = some st then
+    Classical.choose h else 0
+
+theorem bakeFuel_spec {E : BEnv M}
+    (h : ∃ n st, bakeLoop E n [E.root] (Treap.put Treap.empty E.root ()) (bakeInit E) = some st) :
+    ∃ st, bakeLoop E (bakeFuel E) [E.root] (Treap.put Treap.empty E.root ()) (bakeInit E) = some st := by
+  unfold bakeFuel
+  rw [dif_pos h]
+  exact Classical.choose_spec h
+
+/-- **`BakeEnds` at `bakeFuel` from `BakeHalts`.** -/
+theorem bakeEnds_of_halts {lib : Lib} {env : Env R} {jet : H → J → (Bell → Option Datum) → R → Bell → Bool}
+    {fold frozen : Bool} {fuel : Noun → Noun → LongB M → J → Nat} {regOf : J → R}
+    (h : BakeHalts lib env jet fold frozen fuel regOf) : BakeEnds lib env jet fold frozen fuel bakeFuel regOf :=
+  fun s f L j hot pr dats memo' rd reg' hI hp => bakeFuel_spec (h s f L j hot pr dats memo' rd reg' hI hp)
+
+/-- `BakeEnds` at any fuel gives `BakeHalts`: so `BakeEnds` at `bakeFuel`
+is exactly `BakeHalts`. -/
+theorem bakeHalts_of_ends {lib : Lib} {env : Env R} {jet : H → J → (Bell → Option Datum) → R → Bell → Bool}
+    {fold frozen : Bool} {fuel : Noun → Noun → LongB M → J → Nat} {bf : BEnv M → Nat} {regOf : J → R}
+    (h : BakeEnds lib env jet fold frozen fuel bf regOf) : BakeHalts lib env jet fold frozen fuel regOf :=
+  fun s f L j hot pr dats memo' rd reg' hI hp =>
+    let ⟨st, hst⟩ := h s f L j hot pr dats memo' rd reg' hI hp
+    ⟨_, st, hst⟩
+
+/-- **More fuel keeps `BakeEnds`.** -/
+theorem bakeEnds_mono {lib : Lib} {env : Env R} {jet : H → J → (Bell → Option Datum) → R → Bell → Bool}
+    {fold frozen : Bool} {fuel : Noun → Noun → LongB M → J → Nat} {bf bf' : BEnv M → Nat} {regOf : J → R}
+    (h : BakeEnds lib env jet fold frozen fuel bf regOf) (hle : ∀ E, bf E ≤ bf' E) :
+    BakeEnds lib env jet fold frozen fuel bf' regOf := by
+  intro s f L j hot pr dats memo' rd reg' hI hp
+  obtain ⟨st, hst⟩ := h s f L j hot pr dats memo' rd reg' hI hp
+  refine ⟨st, ?_⟩
+  generalize anaEnv jet fold frozen s f L j hot dats memo' rd reg' = E at hst ⊢
+  have := bakeLoop_mono E (bf E) (bf' E - bf E) _ _ _ _ hst
+  rwa [Nat.add_sub_cancel' (hle E)] at this
+
+/-- **What is left of `BakeEnds`, as a measure**: for every environment of
+a poke from an `InvB` state there are a finite list `U` of bells and a set
+`Rs` of states that holds of the first one, such that every step from a state
+of `Rs` with a queued bell returns (no crash) into `Rs`, and its fold of
+touched callees is `FoldOK` (every bell that gets a bake is in `U`; a
+changed bake had a noun and the new one is not a tie). -/
+def BakeDrops (lib : Lib) (env : Env R) (jet : H → J → (Bell → Option Datum) → R → Bell → Bool)
+    (fold frozen : Bool) (fuel : Noun → Noun → LongB M → J → Nat) (regOf : J → R) : Prop :=
+  ∀ s f (L : LongB M) j hot pr dats memo' rd reg', InvB lib L →
+    skaPoke env (fuel s f L j) (Sock.mk Cape.yes s, f) L.memo (regOf j) = some (pr, dats, memo', rd, reg') →
+    let E := anaEnv jet fold frozen s f L j hot dats memo' rd reg'
+    ∃ (U : List Bell) (Rs : List Bell → M Bell Unit → BSt M → Prop),
+      Rs [E.root] (Treap.put Treap.empty E.root ()) (bakeInit E) ∧
+      ∀ cur rest qs st, Rs (cur :: rest) qs st → ∃ q' qs' st',
+        bakeStep E cur rest qs st = some (q', qs', st') ∧ Rs q' qs' st' ∧
+        ∀ sites new, sitesOf E st cur = some sites →
+          sites.foldl (newStep E.vars) (some Treap.empty) = some new →
+          FoldOK E U cur new ((Treap.tap (uniIn (Treap.gut st.out cur Treap.empty) (keySet new))).map Prod.fst)
+            ([], { st with evals := st.evals + 1, out := Treap.put st.out cur (keySet new) })
+
+/-- **`BakeHalts` from the measure.** -/
+theorem bakeHalts_of_drops {lib : Lib} {env : Env R} {jet : H → J → (Bell → Option Datum) → R → Bell → Bool}
+    {fold frozen : Bool} {fuel : Noun → Noun → LongB M → J → Nat} {regOf : J → R}
+    (h : BakeDrops lib env jet fold frozen fuel regOf) : BakeHalts lib env jet fold frozen fuel regOf := by
+  intro s f L j hot pr dats memo' rd reg' hI hp
+  obtain ⟨U, Rs, h0, hs⟩ := h s f L j hot pr dats memo' rd reg' hI hp
+  refine bakeLoop_halts _ U Rs h0 fun cur rest qs st hR => ?_
+  obtain ⟨q', qs', st', h1, hR', hok⟩ := hs cur rest qs st hR
+  exact ⟨q', qs', st', h1, hR', bakeStep_drop h1 hok⟩
+
+/-- **The leaf H2 of `HaltLeaves13`** at the fuel `bakeFuel`, from the measure. -/
+theorem bakeEnds_of_drops {lib : Lib} {env : Env R} {jet : H → J → (Bell → Option Datum) → R → Bell → Bool}
+    {fold frozen : Bool} {fuel : Noun → Noun → LongB M → J → Nat} {regOf : J → R}
+    (h : BakeDrops lib env jet fold frozen fuel regOf) : BakeEnds lib env jet fold frozen fuel bakeFuel regOf :=
+  bakeEnds_of_halts (bakeHalts_of_drops h)
+
+end PokeM
 
 end SkaModel
 end Formalization
