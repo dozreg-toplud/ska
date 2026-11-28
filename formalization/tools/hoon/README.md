@@ -257,6 +257,18 @@ needs the harness `~/work/ska-scratch/nocw/nct` and `samx5.hoon` beside it.
                     pushes between its first and last pass start, minus the growth of the stack (new members), an
                     upper bound on what `WidthFin` bounds.  2026-11-28, 12,592 loops: 1,950 with such a push, at most 127
                     (library), 33 on the generated cores.
+* `passmeasure-git.py --instrument LIB.hoon OUT.hoon`, `passmeasure-git.py OUT.txt...` (track F, README Gaps 16)
+                    the `done` answers of `+git:mi` per pass.  `--instrument` adds to a library of `passmeasure-forms.py`
+                    an arm `+pw-all` and at the `done` hit of `resolve` a print `%pw-hit` (formula, caller sock, the
+                    entry, the patched `[prod map]`, its `less-code`, and: entries stored, entries that pass, distinct
+                    patched products).  2026-11-28, the corpus of `passmeasure-width.py` (12,574 loops, 21,088 hits):
+                    one passing entry at every hit, 2,524 calls repeated across passes of a loop, none answered
+                    otherwise; per pass of the 127 loop and of the 62-pass loop (`ck-rnd1`) its pushes and hits
+* `width-dark.hoon` (track F, README Gaps 16 (c)) two `done` entries of `F = [2 [0 3] [0 2]]` pass the hit test
+                    at `[[1 c] 6]`: the direct one (from `[[1 c] 5]`, answer `c`) and the dark one (from `[7 5]`, an
+                    atom where a formula is expected, `indi` empty: answer unknown); 12 values of `c`; with the
+                    library of `passmeasure-git.py` 38 hits with two passing entries, for `c = 101, 102` the answer
+                    changes from `c` to unknown once the dark entry is in `done`; every loop ends in 2 passes
 * `passfix-cores.py all|grid|grid2|ablate|ablate2|one OUT.hoon [..]`, `--tab OUT.txt..` one driver of the 88
                     cores of `passmeasure-take.py` (`all`), or of `core3` cases (two relay chains from `k`'s
                     target into `a`, `b`) for the smallest witness; `--tab` per case: root passes, capped, `%st`

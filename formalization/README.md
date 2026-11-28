@@ -1162,6 +1162,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Ska/PassClosureR.lean` | The closure invariant, the region lemmas left (track F, Gaps 16): `AnnoG`; `sockG_doubleInt`, `sockG_msgAnno`, `sockG_mergeProd`, `sockG_patchProd`, `sockG_msgSock`, `sockG_app`, `sockG_runDatum`: `+double-int`, `+msg-anno`, the merge of `+run`, `+patch-prod`, `+msg-sock`, `+app:ca` and the datum `+run` writes keep good `&` regions, each proof the mirror of its tidy proof. |
 | `Ska/PassClosureF.lean` | `fol-loop` keeps good regions (track F, Gaps 16): `ResGG` (what `resolve` must answer at a call with a good formula and a good non-void subject), `GoGG`, `callStep_G`, `folStep_G` (the case split of `folStep_saf`, `Inv` carried as in `bridge_stepQ`), **`folLoop_G`**: a `FormG` formula on a subject with good regions gives a product with good regions at every fuel; `run_folG`. |
 | `Ska/PassClosureA.lean` | The arm invariant and `hok` (track F, Gaps 16): `MemoG`, `gitMi_G`, `KeyG`, **`ClInv`** (products of `g` and `done` good; keys of `order`, the stack and `g` good and not `%void`), kept by every arm at every fuel from a memo of good products (**`allCl`**, the `allS` skeleton: `resolveStep_C`, `runStep_C` through `run_folG`, `memberStep_C`, `passStep_C`, `cull_C`, `pop_C`, `analyzeStep_C`), `passGoOn_C`; **`hok_of_clInv`**: every stack member along the chains is `OkId`; **`gIn_okId`**: so is every identity in `g`; **`passLoop_returns_wc`**: `passLoop_returns_ws` with `hok` discharged. |
+| `Ska/PassWidth.lean` | The width is a depth bound (track F, Gaps 16): `BT.depthW`, `btsUpTo`, `mem_btsUpTo` (the trees of bounded depth over a finite list of leaves are a finite list), `btSock`, `btSock_capeBT` (a shaped sock is its tree), `sockDepth`, `okIdsUpTo`, **`mem_okIdsUpTo`** (the `OkId` identities of bounded depth are a finite list), `gIn_okId_reach` (along the passes from a loop's entry every identity in `g` is `OkId`), `DepthFin` (along every chain of passes the subject socks of the functions the loop finished have bounded depth), **`widthFin_of_depth`**, `depthFin_of_width` (the two hypotheses say the same), **`passLoop_returns_wd`** (`passLoop_returns_wc` with `DepthFin` for `WidthFin`).  Tools: `tools/hoon/passmeasure-git.py` (the `done` answers of `+git:mi` per pass) and `tools/hoon/width-dark.hoon` (two `done` entries pass at one sock). |
 | `Ska/HeTurn.lean` | The `%he` lemma: `msgSock_he_lt` (if `heSock a b` and `a ≠ b`, then `msgSock a b` has a smaller `heMeasure`, the size of the cape plus its number of leaves `&`, than `a`) and so `msgSock_ne_of_he` (`msgSock a b ≠ some a`), from `knit_eq_cell`, `heSock_size` (`+he-sock` never grows the cape), `msgSock_cases` (the result is `|+~` or the knit of the results on the halves of two cells over cells), `msgSock_le` (the result's cape is no larger than either sock's, with no more leaves `&` than the first's) and `msgSock_left_size` (if the result is `a`, the cape of `b` is no smaller).  For example `a = [[& |] [5 ~]]` and `b = &+[5 6]` give `|+~`, measure `4` to `1`. |
 | `Ska/HeBound.lean` | The `resolve` loop makes boundedly many `%he` turns: `recLoop_he` (a `%he` answer of `+recursive-call` comes from a frame of the same formula whose subject sock `+he-sock` embeds), `recursiveCall_he_lt` (for an identity off the stack the new subject sock has a smaller `heMeasure`), `HeTurn` (a `%he` turn of the loop begun with `orig`: the memo lookup at `orig.2` and the current sock missed), `resolve_heTurn` (a turn is one unit of fuel in the same state), `heTurn_lt` (with `env.he = heSock` and `SInv`, a turn cuts `heMeasure`), and `resolve_he_bound`, `resolve_he_bound'`: from `i` the loop reaches, after `k ≤ heMeasure i.1 ≤ 2 * sockSize i.1` turns `%he`, an identity whose turn is not `%he`, and the loop at `i` with fuel `n + k` is the loop there with fuel `n`. |
 | `Ska/FolWeight.lean` | `fol-loop` within one run, with the direct calls fixed (`folLoopR env res`).  `folW`: a weight that counts `%8`, `%9`, `%11` above the `%7` and `%2` forms they become.  `NoInl`: the calls that never inline (an inlineable formula, or `[2 [0 1] x]` with `x` inlineable and `bare-call`, `memo-key` or `defer` set); `callStep_noInl` (with a flag set the inline branch is not taken), `folStep_congr` (on such a call, one level depends only on calls of smaller weight that never inline: an inlineable formula has no `%2`, no `%9`, and its `%11` forms set a flag), `folLoopR_stable`, `folLoopR_at_weight`: on such a formula the result is the same at every fuel from `folW fol` on, crashes included, whatever `res` is.  An inlined formula is inlineable, so inlining goes one level deep.  The fuel of a formula that inlines is not bounded by its weight: `[9 2 [0 1]]` (weight `8`) against `&+[g 0]` analyses the battery `g` inline. |
@@ -5071,6 +5072,36 @@ import only its theorems.  So:
     `less-code` in `callStep`, `+mean`'s `%2` without a bell (`bare-call`
     set: the bare rewrite analyses only `[0 1]` and `[1 x]` under it), and
     `env.registerFast` (a parameter: a hypothesis of the top theorem).
+    **The `done` order, measured, and the width as a depth bound** (track F,
+    2026-11-28, `Ska/PassWidth.lean`, `tools/hoon/passmeasure-git.py`,
+    `tools/hoon/width-dark.hoon`).  On the corpus above (12,574 loops,
+    21,088 `done` hits of `+git:mi`): every hit had exactly one entry that
+    passes the hit test (up to 34 entries stored for the formula), and none
+    of the 2,524 calls made at the same (formula, sock) in two passes of one
+    loop was answered by another entry or with another patched product.  The
+    127 loop (`passmeasure-lib` case 20): pushes 197, 23, 42, 9, 0, 0 and hits
+    346, 246, 242, 197, 51, 0 per pass, every repeated call answered the
+    same.  The most passes, 62 (`ck-rnd1` case 49): one push every other
+    pass, no `done` hit (the shift register of the chain drivers).  Point (c)
+    is real all the same: `width-dark.hoon` (`F = [2 [0 3] [0 2]]` at
+    `[[1 c] 5]`, a direct call, and at `[7 5]`, an atom where a formula is
+    expected: an indirect call that `+lack:ca` of `dark` takes out of
+    `indi`, so its `less-code` knows nothing and its hit test passes at any
+    sock) makes two entries pass at `[[1 c] 6]`, one giving `c`, one
+    unknown; which answers is the order of their keys in `tap`: for
+    `c = 101, 102` the call is answered by the precise entry before the
+    dark one exists and by the dark one after (38 hits with two passing
+    entries and two patched products); every loop still ends in 2 passes.
+    Why (c) cannot widen a loop by itself: every identity in `g` is `OkId`
+    (`gIn_okId_reach`), so `WidthFin` is the same as `DepthFin`, a bound on
+    the depth of the subject socks (`widthFin_of_depth`,
+    `depthFin_of_width`); an answer that changes adds an identity only if a
+    call on it has a subject not seen before, and each identity finishes at
+    most once (a finished one stays in `g`, which `+cull` never clears of it).
+    `passLoop_returns_wd` takes `DepthFin`.  Not proved: `DepthFin` itself
+    (what crosses passes, the cycle entries and `done`, does not grow by
+    reading the code, but the products of `done` entries patched at a sock
+    are not shown to be bounded by that sock and the code).
 17. **The pill link of the `+leap` family** (track I, 2026-11-27,
     `Compiler/CompLeap*.lean`, cut by `tools/gen/leap.py`).  Linked, each on
     every input or on a stated invariant, compared with the Hoon part by part
