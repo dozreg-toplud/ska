@@ -448,6 +448,122 @@ theorem sockG_darn (hG : SubC G) {one two s : Sock} {ax : Nat} (h1 : SockG G one
 
 end Regions
 
+/-! ## 5. The formulas `fol-loop` analyses -/
+
+/-- What one formula part must give: its saf value is in `G`, and so is the
+constant `fol-loop` makes of it: the part itself when it is a bare `%11`
+(`[2 [0 1] [1 fol]]`), the body when it is a `%memo` hint
+(`[2 [0 1] [1 f]]`). -/
+def LocG (G : Noun → Prop) (fol : Noun) : Prop :=
+  (∀ v, safV fol = some v → G v) ∧ (∀ p a b, shape fol = Shape.op11s p a b → p = Tag.bare → G fol) ∧
+    (∀ tag h1 h2 f, shape fol = Shape.op11d tag h1 h2 f → tag = Tag.memo → G f)
+
+/-- **The formula invariant**: every part of the formula (itself included) is `LocG`. -/
+def FormG (G : Noun → Prop) : Noun → Prop
+  | Noun.atom k => LocG G (Noun.atom k)
+  | Noun.cell x y => LocG G (Noun.cell x y) ∧ FormG G x ∧ FormG G y
+
+theorem formG_loc {G : Noun → Prop} {f : Noun} (h : FormG G f) : LocG G f := by
+  cases f with
+  | atom _ => exact h
+  | cell _ _ => exact h.1
+
+/-- `G` holds of the saf values of the nouns it holds of (`NGood` does:
+`safV_size`, `safV_atoms`). -/
+def SafC (G : Noun → Prop) : Prop := ∀ f v, safV f = some v → G f → G v
+
+theorem safC_nGood (As : List Nat) (B : Nat) : SafC (NGood As B) := fun _ _ h hf =>
+  ⟨Nat.le_trans (safV_size h) hf.1, safV_atoms h hf.2⟩
+
+/-- **A good noun is a good formula**: the formulas a sock knows as `&`
+(inlined, or called) satisfy the formula invariant. -/
+theorem formG_of {G : Noun → Prop} (hG : SubC G) (hS : SafC G) : ∀ f, G f → FormG G f := by
+  have loc : ∀ f, G f → LocG G f := by
+    intro f hf
+    refine ⟨fun v hv => hS f v hv hf, fun p a b e _ => hf, fun tag h1 h2 g e _ => ?_⟩
+    rw [shape_op11d e] at hf
+    exact (hG _ _ (hG _ _ hf).2).2
+  intro f
+  induction f with
+  | atom k => exact loc _
+  | cell x y ihx ihy => exact fun hf => ⟨loc _ hf, ihx (hG _ _ hf).1, ihy (hG _ _ hf).2⟩
+
+theorem formG_hed {G : Noun → Prop} {x y : Noun} (h : FormG G (Noun.cell x y)) : FormG G x := h.2.1
+theorem formG_tel {G : Noun → Prop} {x y : Noun} (h : FormG G (Noun.cell x y)) : FormG G y := h.2.2
+
+/-- A part that is none of the three: nothing to check. -/
+theorem locG_none {G : Noun → Prop} {fol : Noun} (h1 : safV fol = none)
+    (h2 : ∀ p a b, shape fol ≠ Shape.op11s p a b) (h3 : ∀ tag h1 h2 f, shape fol ≠ Shape.op11d tag h1 h2 f) :
+    LocG G fol :=
+  ⟨fun v hv => (by rw [h1] at hv; cases hv), fun p a b e => absurd e (h2 p a b),
+    fun tag x y f e => absurd e (h3 tag x y f)⟩
+
+theorem formG_atom {G : Noun → Prop} (k : Nat) : FormG G (Noun.atom k) :=
+  locG_none (by simp [safV]) (fun _ _ _ => by simp [shape]) (fun _ _ _ _ => by simp [shape])
+
+/-- The formula `%8` is rewritten into. -/
+theorem formG_op8 {G : Noun → Prop} {a b q : Noun} (h : FormG G (C (A 8) (C (C a b) q))) :
+    FormG G (n3 (A 7) (C (C a b) (slot 1)) q) := by
+  have hab := h.2.2.2.1
+  have hq := h.2.2.2.2
+  refine ⟨locG_none (by simp [safV]) (fun _ _ _ => by simp [shape]) (fun _ _ _ _ => by simp [shape]),
+    formG_atom 7, locG_none (by simp [safV]) (fun _ _ _ => by simp [shape]) (fun _ _ _ _ => by simp [shape]),
+    ⟨locG_none (by simp [safV]) (fun _ _ _ => by simp [shape]) (fun _ _ _ _ => by simp [shape]), hab,
+      locG_none (by simp [safV]) (fun _ _ _ => by simp [shape]) (fun _ _ _ _ => by simp [shape]),
+      formG_atom 0, formG_atom 1⟩, hq⟩
+
+/-- The formula `[2 [0 1] [0 p]]` of `%9` and of `+meanArm`. -/
+theorem formG_two_slot {G : Noun → Prop} (p : Nat) : FormG G (n3 (A 2) (slot 1) (slot p)) := by
+  refine ⟨locG_none (by simp [safV]) (fun _ _ _ => by simp [shape]) (fun _ _ _ _ => by simp [shape]),
+    formG_atom 2, locG_none (by simp [safV]) (fun _ _ _ => by simp [shape]) (fun _ _ _ _ => by simp [shape]),
+    ⟨locG_none (by simp [safV]) (fun _ _ _ => by simp [shape]) (fun _ _ _ _ => by simp [shape]),
+      formG_atom 0, formG_atom 1⟩,
+    ⟨locG_none (by simp [safV]) (fun _ _ _ => by simp [shape]) (fun _ _ _ _ => by simp [shape]),
+      formG_atom 0, formG_atom p⟩⟩
+
+/-- The formula `%9` is rewritten into. -/
+theorem formG_op9 {G : Noun → Prop} {p : Nat} {a b : Noun} (h : FormG G (C (A 9) (C (A p) (C a b)))) :
+    FormG G (n3 (A 7) (C a b) (n3 (A 2) (slot 1) (slot p))) := by
+  have hab := h.2.2.2.2
+  exact ⟨locG_none (by simp [safV]) (fun _ _ _ => by simp [shape]) (fun _ _ _ _ => by simp [shape]),
+    formG_atom 7, locG_none (by simp [safV]) (fun _ _ _ => by simp [shape]) (fun _ _ _ _ => by simp [shape]),
+    hab, formG_two_slot p⟩
+
+/-- `[2 [0 1] [1 x]]` with `x` good: the bare `%11` and the `%memo` hint. -/
+theorem formG_two_quote {G : Noun → Prop} {x : Noun} (hx : G x) (hfx : FormG G x) :
+    FormG G (n3 (A 2) (slot 1) (quote x)) := by
+  refine ⟨locG_none (by simp [safV]) (fun _ _ _ => by simp [shape]) (fun _ _ _ _ => by simp [shape]),
+    formG_atom 2, locG_none (by simp [safV]) (fun _ _ _ => by simp [shape]) (fun _ _ _ _ => by simp [shape]),
+    ⟨locG_none (by simp [safV]) (fun _ _ _ => by simp [shape]) (fun _ _ _ _ => by simp [shape]),
+      formG_atom 0, formG_atom 1⟩,
+    ⟨⟨fun v hv => (by simp [safV] at hv; rw [← hv]; exact hx), fun _ _ _ e => (by simp [shape] at e),
+      fun _ _ _ _ e => (by simp [shape] at e)⟩, formG_atom 1, hfx⟩⟩
+
+/-- The bare `%11` rewrite. -/
+theorem formG_bare {G : Noun → Prop} {p : Nat} {a b : Noun} (h : FormG G (C (A 11) (C (A p) (C a b))))
+    (hp : p = Tag.bare) : FormG G (n3 (A 2) (slot 1) (quote (C (A 11) (C (A p) (C a b))))) :=
+  formG_two_quote ((formG_loc h).2.1 p a b (by simp [shape]) hp) h
+
+/-- The `%memo` rewrite. -/
+theorem formG_memo {G : Noun → Prop} {tag : Nat} {h1 h2 f : Noun}
+    (h : FormG G (C (A 11) (C (C (A tag) (C h1 h2)) f))) (ht : tag = Tag.memo) :
+    FormG G (n3 (A 2) (slot 1) (quote f)) :=
+  formG_two_quote ((formG_loc h).2.2 tag h1 h2 f (by simp [shape]) ht) h.2.2.2.2
+
+/-- The `%11` with a cell tag, rerun with the tag `0`. -/
+theorem formG_op11c {G : Noun → Prop} {x y h1 h2 f : Noun}
+    (h : FormG G (C (A 11) (C (C (C x y) (C h1 h2)) f))) :
+    FormG G (C (A 11) (C (C (A 0) (C h1 h2)) f)) := by
+  have hh := h.2.2.2.1.2.2
+  have hf := h.2.2.2.2
+  have hsp : ¬ (0 = Tag.spot ∨ 0 = Tag.mean) := by simp [Tag.spot, Tag.mean]
+  have hme : (0 : Nat) ≠ Tag.memo := by simp [Tag.memo]
+  refine ⟨⟨fun v hv => by simp [safV, hsp] at hv, fun _ _ _ e => by simp [shape] at e,
+      fun tag _ _ _ e et => by simp [shape] at e; exact absurd (e.1 ▸ et) hme⟩, formG_atom 11, ?_, ?_, hf⟩
+  · exact locG_none (by simp [safV]) (fun _ _ _ => by simp [shape]) (fun _ _ _ _ => by simp [shape])
+  · exact ⟨locG_none (by simp [safV]) (fun _ _ _ => by simp [shape]) (fun _ _ _ _ => by simp [shape]),
+      formG_atom 0, hh⟩
+
 end Ana
 end SkaModel
 end Formalization
