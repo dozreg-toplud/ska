@@ -235,5 +235,22 @@ theorem srEnd_run (U rootN : Noun) (l : List Noun) (j1 co j3 ar pd cole mN cN ca
     simp [nock_exec, hA, hL2, hR, hN, hlon, hH, hK, ana_couArm, couArm_eq, flop.arm_at, flop_arm, hfl,
       by.arm_at, by_arm, by.key.arm_at, hkey, hgate]
 
+set_option maxHeartbeats 4000000 in
+/-- **`srEnd` on the tail's subject** (`srTS`, the regs `[ro co ba ar new]`
+with `new` a list, the edited jets `[ro co ba ar pd cole]`). -/
+theorem srEnd_ts (nco q ncN bkN g0 rN a b c g1 ro co ba ar e e0 pd cole mN cN caN vN sN hN : Noun)
+    (l : List Noun) (hnc : IsMap mugF ncN) (hs : IsMap mugF sN)
+    (hRg : ∀ x, (∃ v, Get ncN x v) → ∀ sek, CmRing (coleMatchP x sek co ar hN)) (hc : CoPair cole) :
+    ∃ nb, IsSet mugF nb ∧ (∀ k, Has nb k ↔ ∃ v, Get ncN k v) ∧
+      nock (srTS nco q ncN bkN g0 rN a b c (C g1 (C ro (C co (C ba (C ar (listN l)))))) e e0
+        (C ro (C co (C ba (C ar (C pd cole))))) mN cN caN vN sN hN) srEnd =
+      (repO (coleStepO sN co ar hN) nb cole).map fun cole' =>
+        C (C rN (listN l.reverse)) (C (C ro (C co (C ba (C ar (C pd cole'))))) (C mN (C cN (C caN (C vN sN))))) :=
+  srEnd_run _ rN l ro co ba ar pd cole mN cN caN vN sN hN ncN
+    (by simp [srTS, srS3x, srSk, srSam, nock_exec, ana_l2]) (by simp [srTS, srS3x, srSk, srSam, nock_exec, ana_l2])
+    (by simp [srTS, srS3x, srSk, srSam, nock_exec]) (by simp [srTS, srS3x, srSk, srSam, nock_exec])
+    (by simp [srTS, srS3x, srSk, srSam, nock_exec]) (by simp [srTS, srS3x, srSk, srSam, nock_exec])
+    (by simp [srTS, srS3x, srSk, srSam, nock_exec]) hnc hs hRg hc
+
 end Compiler
 end Formalization
