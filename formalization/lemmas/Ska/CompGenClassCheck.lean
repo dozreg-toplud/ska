@@ -140,7 +140,7 @@ def famD : List Nomm :=
 #guard (sixesP.length, famD.length, (goalsP.filter fun (L, th, g) => premB L th g).length,
   ((flatGoals LSXCheck.jumps statesH).filter fun (L, th, g) => premB L th g).length) == (32, 240, 300, 90)
 
-/-- famD under `goalsP` and the flat goals, famA: no clause fails at any
+/- famD under `goalsP` and the flat goals, famA: no clause fails at any
 sub-run. -/
 #guard tallyC famD goalsP == (72000, [], [])
 #guard tallyC famD (flatGoals LSXCheck.jumps statesH) == (21600, [], [])
