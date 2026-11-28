@@ -1,3 +1,4 @@
+import lemmas.Compiler.PokeLinkColeUpd
 import lemmas.Compiler.PokeLinkGood8
 import lemmas.Compiler.PokeLinkTailEnd
 import lemmas.Compiler.PokeLinkTailJets
@@ -255,3 +256,14 @@ open Formalization Formalization.Compiler
 #print axioms pokeReachGood8
 #print axioms pokeModel_fullReachP12
 #print axioms reach_invK
+#print axioms juPutF_sets_some
+#print axioms cputBat_run
+#print axioms coleStepO_pair
+#print axioms couCm_run
+#print axioms couStep_run
+#print axioms couBunt_run
+#print axioms couSam_run
+#print axioms couBat_run
+#print axioms srEnd_run
+#print axioms srEnd_ts
+#print axioms srEndAt_of
