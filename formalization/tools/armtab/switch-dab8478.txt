@@ -1,0 +1,58 @@
+old pill 75012450794f765e (793354 bytes), new pill 03d6233e67ae5f70 (793550 bytes)
+
+1. Paths: 2207 arms and 814 batteries in both pills; 2993 unchanged, 28 changed
+   OWN (the arm's formula changed, no changed path inside): 6
+     s6/comp/$/run-shape/$                                 3260 ->    3260 cells (or distinct cells past 10^7)
+     s6/comp/$/run/$                                       8148 ->    8148 cells (or distinct cells past 10^7)
+     s6/hinted/$                                            623 ->     623 cells (or distinct cells past 10^7)
+     s8/eval-finalized/$                                   1043 ->    1043 cells (or distinct cells past 10^7)
+     s8/know/$                                             2089 ->    2089 cells (or distinct cells past 10^7)
+     s8/ska-callgraph/$                                  194845 ->  194913 cells (or distinct cells past 10^7)
+   HELD (a changed arm or battery inside): 10 arms
+     s5/get-idom
+     s5/get-idom/$
+     s6/comp
+     s6/comp/$
+     s6/comp/$/run
+     s6/comp/$/run-shape
+     s6/hinted
+     s8/eval-finalized
+     s8/know
+     s8/ska-callgraph
+   batteries changed: 12
+     s5
+     s5/get-idom
+     s6
+     s6/comp
+     s6/comp/$
+     s6/comp/$/run
+     s6/comp/$/run-shape
+     s6/hinted
+     s8
+     s8/eval-finalized
+     s8/know
+     s8/ska-callgraph
+
+2. Hash names of lemmas/Pill used outside it: 4
+   comp.h50f637450e98 comp.h50f637450e98 =    [lemmas/Compiler/CompDoor.lean]
+   nh15c74912d225 nh15c74912d225 =    [lemmas/Compiler/CompCtx.lean, tools/gen/arms.py, tools/gen/csifix.py, tools/gen/inlined.py, tools/gen/leap.py, tools/gen/member.py, tools/gen/memshape.py, tools/gen/msgneed.py, tools/gen/optlink.py, tools/gen/shapecol.py, tools/gen/shapecolcells.py, tools/gen/shapecoll2i.py, tools/gen/shapecolmsg.py, tools/gen/sixhelp.py]
+   nhd6b9320ed1b6 nh0494996e5568   battery of s5 at 1  [lemmas/Compiler/OptLinkBase.lean, tools/gen/optlink.py]
+   nhe0b859c3d8aa nh5592f9d7750f   battery of s6 at 1  [lemmas/Compiler/CompCtx.lean, tools/gen/arms.py, tools/gen/cells.py, tools/gen/csifix.py, tools/gen/inlined.py, tools/gen/leap.py, tools/gen/member.py, tools/gen/memshape.py, tools/gen/msgneed.py, tools/gen/shapecol.py, tools/gen/shapecolcells.py, tools/gen/shapecoll2i.py, tools/gen/shapecolmsg.py, tools/gen/sixhelp.py, tools/gen/sofpush.py]
+   pairs to rename (old new):
+   nhd6b9320ed1b6 nh0494996e5568
+   nhe0b859c3d8aa nh5592f9d7750f
+
+3. Noun literals outside lemmas/Pill: 1373 parsed; 8 in the old pill and not in the new one, in 5 files
+   lemmas/Compiler/CompCtx.lean  (generator: none named: by hand)
+     compK                     229182 cells, in core s6 at 1
+     compTypes                 204518 cells, in core s7 at 1
+   lemmas/Compiler/CompPastLink.lean  (generator: none named: by hand)
+     hdArm                        641 cells, in arm s6/hinted at 1
+     hdBat                        623 cells, in arm s6/hinted/$ at 1
+   lemmas/Compiler/CompRunHintS.lean  (generator: runhint.py)
+     cr11TD                        84 cells, in arm s6/comp/$/run/$ at 7696581394398
+   lemmas/Compiler/SkaAnalyze.lean  (generator: none named: by hand)
+     aCullP                       397 cells, in arm s8/ska-callgraph/$ at 4361924902902
+     aYes                         457 cells, in arm s8/ska-callgraph/$ at 545240612862
+   lemmas/Compiler/SkaPassLoop.lean  (generator: none named: by hand)
+     pYes                          66 cells, in arm s8/ska-callgraph/$ at 292723825087129583614

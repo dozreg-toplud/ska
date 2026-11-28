@@ -1,0 +1,41 @@
+old pill 03d6233e67ae5f70 (793550 bytes), new pill fc7a2f4ec6449868 (793636 bytes)
+
+1. Paths: 2207 arms and 814 batteries in both pills; 2986 unchanged, 35 changed
+   OWN (the arm's formula changed, no changed path inside): 8
+     s6/comp/$/run-shape/$                                 3260 ->    3260 cells (or distinct cells past 10^7)
+     s6/comp/$/run/$                                       8148 ->    8148 cells (or distinct cells past 10^7)
+     s6/hinted/$                                            623 ->     623 cells (or distinct cells past 10^7)
+     s7/hint-dynamic/$                                      104 ->     178 cells (or distinct cells past 10^7)
+     s8/eval-finalized/$                                   1043 ->    1043 cells (or distinct cells past 10^7)
+     s8/know/$                                             2089 ->    2089 cells (or distinct cells past 10^7)
+     s8/safe-fol-fol/$                                      345 ->     345 cells (or distinct cells past 10^7)
+     s8/safe-nomm/$                                         316 ->     316 cells (or distinct cells past 10^7)
+   HELD (a changed arm or battery inside): 12 arms
+     s5/get-idom
+     s5/get-idom/$
+     s6/comp
+     s6/comp/$
+     s6/comp/$/run
+     s6/comp/$/run-shape
+     s6/hinted
+     s7/hint-dynamic
+     s8/eval-finalized
+     s8/know
+     s8/safe-fol-fol
+     s8/safe-nomm
+   batteries changed: 15
+     s5
+     s5/get-idom
+     s6
+     s6/comp
+     s6/comp/$
+     s6/comp/$/run
+     s6/comp/$/run-shape
+     s6/hinted
+     s7
+     s7/hint-dynamic
+     s8
+     s8/eval-finalized
+     s8/know
+     s8/safe-fol-fol
+     s8/safe-nomm
