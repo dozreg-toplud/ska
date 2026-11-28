@@ -6,11 +6,11 @@ import lemmas.Compiler.CompCalleeComp
 
 The sweeps run `+run-shape` on the bunt `gen` with a cache `CA` (the rest `memY CA`).  Its noun is
 track K's `genNoun` of `memG st` (the bunt with `id-gen` from `st`) at the rest `memX CA st`
-(`memY_genNoun`), so K's `cne_step` (`+callee-need` on a read, or on a miss whose compile `CccMiss`
+(`memY_genNounK`), so K's `cne_step` (`+callee-need` on a read, or on a miss whose compile `CccMiss`
 returns the cache `x'.cache`) is the need push of `ShapeCallT` with `y' = memY x'.cache`, and K's
 `SureNoun` at `x'` is `+callee-sure` there.
 
-* `memG`, `memX`, `memY_genNoun`, `needStep_rest` (a `NeedStep` keeps `soft` and `sofs`).
+* `memG`, `memX`, `memY_genNounK`, `needStep_rest` (a `NeedStep` keeps `soft` and `sofs`).
 * **`rsNeed_of_step`**: the need push from `NeedStep`.
 * `rsSure_of`: `+callee-sure` on `memY CA` from `SureNoun`.
 * **`shapeCallT_of_step`**: `ShapeCallT` at `memY CA` from `NeedStep` at every state, with the rest
@@ -34,11 +34,11 @@ def memG (st : RSt CSet) : Gen (TreapMap mugF) := { genEntry with id := st.idg }
 /-- The rest of track K of the bunt with the cache `CA` and `sofs` from `st`. -/
 noncomputable def memX (CA : Noun) (st : RSt CSet) : GenRest := ⟨CA, A 0, HoonSet.toNoun st.sofs⟩
 
-theorem memY_genNoun (CA : Noun) (st : RSt CSet) : rsGenNoun st (memY CA) = genNoun (memG st) (memX CA st) := by
+theorem memY_genNounK (CA : Noun) (st : RSt CSet) : rsGenNoun st (memY CA) = genNoun (memG st) (memX CA st) := by
   simp [rsGenNoun, genNoun, memY, memG, memX, genEntry]
 
 theorem memY_door (CA : Noun) (st : RSt CSet) : rsDoor st (memY CA) ctx = compCore (memG st) (memX CA st) ctx := by
-  simp only [rsDoor, compCore, memY_genNoun]
+  simp only [rsDoor, compCore, memY_genNounK]
 
 theorem needStep_rest {x x' : GenRest} {b : Bell} {nb : NeedOrd} (h : NeedStep ctx x b nb x') :
     x'.soft = x.soft ∧ x'.sofs = x.sofs := by
@@ -59,7 +59,7 @@ theorem rsNeed_of_step (h7 : slot? 7 ctx = some compK) (b : Bell) (nb : NeedOrd)
     nock (C cneBat (C b.toNoun (rsDoor st (memY CA) ctx))) cneBat
       = some (C nb.toNoun (rsGenNoun st (memY x'.cache))) := by
   have h := cne_step h7 b nb (memX CA st) x' hcole hhot hs (memG st)
-  rw [memY_door, h, memY_genNoun, ← memX_of_step hs]
+  rw [memY_door, h, memY_genNounK, ← memX_of_step hs]
 
 /-- `+callee-sure` on the bunt `gen` with the cache `CA` from track K's `SureNoun` (it reads
 `sure.cache` only). -/
