@@ -14,6 +14,8 @@ import lemmas.Compiler.CompMonoLinkTop6
 import lemmas.Compiler.CompSccOfSweepMiss
 import lemmas.Compiler.CompMonoLinkRing
 import lemmas.Compiler.CompRunSoftChain2
+import lemmas.Compiler.CompRingNeed
+import lemmas.Ska.CompRingCheck
 
 /-! The axioms of the link of `+compiled-mono` and of the run at `mono` `|` (README Gaps 19 (g)).
 `CompSccOfAny`, `PokeLinkGood` and track I's `CompSccLoop*` import together since the renames of
@@ -155,3 +157,26 @@ that one's imports light. -/
 #print axioms Formalization.Compiler.comp_run_n7TS2
 #print axioms Formalization.Compiler.comp_run_softChain2
 #print axioms Formalization.Compiler.medeAllAt_empty
+#print axioms Formalization.SkaModel.Comp.callLR_eq
+#print axioms Formalization.SkaModel.Comp.callDMR_eq
+#print axioms Formalization.SkaModel.Comp.callLMR_eq
+#print axioms Formalization.SkaModel.Comp.runLCMR_eq
+#print axioms Formalization.SkaModel.Comp.runLCR_eq
+#print axioms Formalization.SkaModel.Comp.finishLUCMR_eq
+#print axioms Formalization.SkaModel.Comp.finishLFCR_eq
+#print axioms Formalization.SkaModel.Comp.ringNoun_toNoun
+#print axioms Formalization.SkaModel.Comp.execPole_eraseP
+#print axioms Formalization.SkaModel.Comp.execBlob_eraseB
+#print axioms Formalization.SkaModel.Comp.execBlob_ringSim
+#print axioms Formalization.SkaModel.Comp.execBlob_ringEq
+#print axioms Formalization.SkaModel.Comp.execEntry_ringEq
+#print axioms Formalization.SkaModel.Comp.goJ_caf_j
+#print axioms Formalization.SkaModel.Comp.goJ_csf_j
+#print axioms Formalization.SkaModel.Comp.goJ_jmf
+#print axioms Formalization.SkaModel.Comp.goJ_jsf
+#print axioms Formalization.SkaModel.Comp.finishLUCMR_entry
+#print axioms Formalization.SkaModel.Comp.finishLFCR_entry
+#print axioms Formalization.SkaModel.Comp.finishLUCMR_none
+#print axioms Formalization.Compiler.cne_readR
+#print axioms Formalization.Compiler.coleAt_of_empty
+#print axioms Formalization.Compiler.ringOf_cole
