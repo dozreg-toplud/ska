@@ -106,7 +106,7 @@ MISFITS (pieces that do not fit as stated), in the order found:
    record is `GateRest5` (built into `UnaryGateAtS`, soft members admitted),
    and K's file says that no map leads from the new record to the old one.
    BRIDGED: `monoLinkGood6_of_rest5` (K's record asked at `PGood6` states
-   and read at `.good5`) and `pokeModel_fullReachP6K` (P's proof of
+   and read at `.good5`) and `pokeModel_fullReachP6G` (P's proof of
    `pokeModel_fullReachP6` with it).  K's own top `pokeModel_fullReachP5S` is
    over `PGood5` and takes `SccOfIs`, which track Q found FALSE as stated.
 3. Track P's top takes any fuel with `FuelOK`, `halting_of_cgMP` takes the
