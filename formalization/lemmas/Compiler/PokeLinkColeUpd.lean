@@ -199,5 +199,41 @@ theorem couBat_run (j1 co j3 ar pd cole mN cN caN vN sN nb hot : Noun) (hs : IsM
     rw [h] at hrep
     simp [nock_exec, couRep_eq, couSam_run, ana_l2, in.arm_at, in_arm, in.rep.arm_at, rep_arm, hrep]
 
+/-! ## The end of `spRest`: `+flop` and `+ska-cole-update` -/
+
+set_option maxHeartbeats 4000000 in
+/-- **`srEnd` on a subject with its slot facts**: `[root-bell (flop new)]`
+and `+ska-cole-update` of `lon` on `~(key by new-code)` (a set `nb` of the
+keys of `ncN`), where `seek` and `new-code` are maps, `+cole-match` answers
+a crash, `~` or `[~ ring]` at the keys of `new-code`, and `cole` is a cole
+pair. -/
+theorem srEnd_run (U rootN : Noun) (l : List Noun) (j1 co j3 ar pd cole mN cN caN vN sN hot ncN : Noun)
+    (hA : slot? 0xffff U = some ana) (hL2 : slot? 0xfffffff U = some layer2)
+    (hR : slot? 126 U = some rootN) (hN : slot? 0x1ffdf U = some (listN l))
+    (hlon : slot? 0x3fffa U = some (C (C j1 (C co (C j3 (C ar (C pd cole))))) (C mN (C cN (C caN (C vN sN))))))
+    (hH : slot? 0x3fffb U = some hot) (hK : slot? 14 U = some ncN)
+    (hnc : IsMap mugF ncN) (hs : IsMap mugF sN)
+    (hRg : ∀ x, (∃ v, Get ncN x v) → ∀ sek, CmRing (coleMatchP x sek co ar hot)) (hc : CoPair cole) :
+    ∃ nb, IsSet mugF nb ∧ (∀ k, Has nb k ↔ ∃ v, Get ncN k v) ∧
+      nock U srEnd = (repO (coleStepO sN co ar hot) nb cole).map fun cole' =>
+        C (C rootN (listN l.reverse)) (C (C j1 (C co (C j3 (C ar (C pd cole'))))) (C mN (C cN (C caN (C vN sN))))) := by
+  obtain ⟨nb, hev, hset, hhas⟩ := key_by (mug := mugF) layer2 ⟨in.arm_at, gorIn_morIn_layer2⟩ ncN hnc
+  have hkey := nock_eq_some_iff.2 hev
+  have hgate := couBat_run j1 co j3 ar pd cole mN cN caN vN sN nb hot hs hset
+    (fun x hx => hRg x ((hhas x).1 (((mem_preorder_tapList nb x).trans (mem_tapList_set hset x)).1 hx))) hc
+  unfold couG at hgate
+  have hfl := flop_gate layer2 homoIn_layer2 l
+  refine ⟨nb, hset, hhas, ?_⟩
+  unfold srEnd
+  cases h : repO (coleStepO sN co ar hot) nb cole with
+  | none =>
+    rw [h] at hgate
+    simp [nock_exec, hA, hL2, hR, hN, hlon, hH, hK, ana_couArm, couArm_eq, flop.arm_at, flop_arm, hfl,
+      by.arm_at, by_arm, by.key.arm_at, hkey, hgate]
+  | some c' =>
+    rw [h] at hgate
+    simp [nock_exec, hA, hL2, hR, hN, hlon, hH, hK, ana_couArm, couArm_eq, flop.arm_at, flop_arm, hfl,
+      by.arm_at, by_arm, by.key.arm_at, hkey, hgate]
+
 end Compiler
 end Formalization
