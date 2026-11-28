@@ -1,4 +1,5 @@
 import lemmas.Glue.Assemble14
+import lemmas.Glue.SplitDefW
 
 /-! Axioms of the fourteenth assembly (track G): only `propext`, `Classical.choice`, `Quot.sound`. -/
 
@@ -19,3 +20,6 @@ open Formalization
 #print axioms SkaModel.Glue.good6_of_reach14
 #print axioms SkaModel.Glue.invK_ana14
 #print axioms SkaModel.Glue.pokeModel14
+#print axioms SkaModel.Glue.sdw_grow
+#print axioms SkaModel.Glue.KSW.bind'
+#print axioms SkaModel.Glue.KSW.sdw

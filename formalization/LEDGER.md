@@ -1522,6 +1522,13 @@ MISFITS still open (numbers of the thirteenth pass):
 8. NEW: `KIMid` is false (D): the `PlainCalls` class must move to `KIMidX`.
 9. NEW: `CodeNoRing` in K's record is false of the real compiler (above).
 
+Toward `NskEndC` (the direct-call guard, `MonoCalls ∩ NoSixM`): the frame of `SDW` is
+`KSW` / `GrowSD` (`Glue/SplitDefW.lean`: a step relates its states by `GrowSD`, blocks old or
+`SDBody`, new `cond` keys at least the old `re`, `re` grows; `sdw_grow`; the combinators of
+`KS`).  Left: the primitive steps of `SplitDefBase.lean` (`putBlock`, the allocations,
+`+proxy` by `proxy_fresh`) in `KSW`, then `SplitDefRun.lean`'s text with `KSW`, then the arms
+of `+mono-try-call` and `callDM`.
+
 QUESTIONS TO THE AUTHOR (open): (a) the WIDTH of the analysis (track F's `WidthFin`: is the
 number of branches of the pass loop bounded?); (b) `split-max` in the sweep loop (track S: the
 cut fires on real code; S recommends a `sticky` variant; no decision yet).

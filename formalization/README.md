@@ -1373,6 +1373,7 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Glue/PokeOn.lean` | Track G (Gaps 22 (p)): the `PokeM` chain over REACHED states.  `midSt`, `ReachOn` (`now`, `ana`, `kept`), `CompStateOn`, `CompHypOn` (the pill facts at `Rd` / `I` states), `compileStep_specOn`, `needOf_eqOn`, **`pokeS_soundOn`**, **`pokeS_invKeptOn`**, `InvSMI`, `RootAnswersOn`, `rootAnswersOn_of`, `fullAnswers_of_cgMPOn`, **`gap_of_armPMOn`**, `halting_of_cgMPOn`. |
 | `Glue/PiecesOn.lean` | Track G (Gaps 22 (p)): the contract at reached tables.  `refOn` (the reference cut down to the `Tr` tables), `refOn_of`, `refOn_some`, `refN_on`, `RefSideMOn`, `refSideM_on`, `ContractLeavesOn`, **`contractOn_of`**, `compHypOn_of`; `refD` (the model as the reference), `refMono_refD`, `refNary_refD`, `InFragOn`, `refSideMOn_refD`. |
 | `Glue/Assemble14.lean` | Track G (Gaps 22 (p)): THE ASSEMBLY over reached states.  `Route14`, `PokeLeaves14`, `pokeModel14` (K's `pokeModel_fullReachP9U`), `good6_of_reach14`, `I14`, `Rd14`, `Tr14`, `invK_ana14`, `pokeS_invK`, `not_hot_noun`, `reachOn14`, `invStart14`, **`unaryOut_of_gate`** (the pill's `+compile-unary` is `finishLUCM` under K's record), `UnaryEnvIs14`, `UnaryCacheOK14`, `unaryMid14`, `CompLeaves14`, `compState14`, `contractLeaves14` (`inlAnnot` from Q's `inlAnnot_of_invK`), `compHyp14`, `HaltLeaves14`, **`gap14`**, **`full14`**, `gap14_fragX`. |
+| `Glue/SplitDefW.lean` | Track G (Gaps 22 (p)): the frame of `SDW` toward `SDWEndC`.  `GrowSD` (blocks old or `SDBody`, new `cond` keys at least the old `re`, `re` grows), `GrowSD.refl`, `GrowSD.trans`, **`sdw_grow`**, `growSD_of_sds`, `KSW` with `pure'`, `bind'`, `mono`, `fail`, `crash`, `ite'`, `KSW.sdw`. |
 | `Glue/AuditGlue14.lean` | Track G: `#print axioms` of `gap14`, `full14` and their parts (3500M as a single target). |
 | `Glue/GuardFinalTop.lean` | Track G (Gaps 22 (e)): **`guardFinalU`**, **`guardFinalF`** (the two final-pass leaves are theorems), `guardMonoX`, `guardNaryX`, **`compHyp_of_fragX₃`** (`CompHyp` on `FragX` from `CompRestOE` alone, no guard leaf); two `example`s on `[6 [0 2] [6 [0 6] [0 3] [0 1]] [1 0]]`. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
@@ -6961,7 +6962,8 @@ import only its theorems.  So:
     (`unaryOut_of_gate`) with the leaves `UnaryEnvIs14`, `UnaryCacheOK14`, `inlAnnot` is Q's
     `inlAnnot_of_invK`.  `LEDGER.md` section 10 lists every field of `gap14`; `KIMid` (in
     `classLeaves_plain`) is false (track D), so `gap13_fragXPlain` is vacuous until the switch
-    to `KIMidX`.
+    to `KIMidX`.  Toward `SDWEndC`: the frame `KSW` / `GrowSD` (`Glue/SplitDefW.lean`,
+    `sdw_grow`); the port of `SplitDefRun.lean`'s primitive steps to it is left.
 23. **The poke on states: `enc` and the `%full` branch** (track P, 2026-11-27,
     `Ska/PokeEnc.lean`, `Compiler/PokeLink.lean`, `Compiler/PokeLinkFull.lean`, `Compiler/PokeLinkOpt.lean`,
     `Compiler/PokeLinkScc.lean`, `Compiler/PokeLinkJet.lean`, `Compiler/PokeLinkReach.lean`,
