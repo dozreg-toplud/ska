@@ -9,8 +9,10 @@ tools/armtab/armtab.json (written by armtab.py from tools/hoon/armtab.hoon).
 its formula, as noun ids of tools/nouns.py (hash-consed: two pills cued in one
 process share their equal subtrees, so equality is `==` of ids).
 `lean_names(dir)`: the nouns of a generated lemmas/Pill directory, noun id
--> names.  Run under tools/capped.sh (a pill and its Lean nouns take about
-1.5 GB).
+-> names.  Heavy by the rule of the brief: run under
+formalization-keep/tools/heavy.sh 4G (peak 0.17 GB for one pill and its
+lemmas/Pill, 0.21 GB for switch.py's two: tools/nouns.py hash-conses, so each
+distinct noun exists once).
 """
 import glob
 import hashlib

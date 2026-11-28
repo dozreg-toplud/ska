@@ -1,0 +1,86 @@
+old pill 03d6233e67ae5f70 (793550 bytes), new pill d544731ae24f7de7 (793565 bytes)
+
+1. Paths: 2207 arms and 814 batteries in both pills; 2942 unchanged, 79 changed
+   OWN (the arm's formula changed, no changed path inside): 16
+     s11/cape/$                                              62 ->      62 cells (or distinct cells past 10^7)
+     s11/sock/$                                              40 ->      40 cells (or distinct cells past 10^7)
+     s2/poke/$                                             1022 ->    1022 cells (or distinct cells past 10^7)
+     s4/ovum/$                                              250 ->     250 cells (or distinct cells past 10^7)
+     s4/prod/$                                              188 ->     188 cells (or distinct cells past 10^7)
+     s6/comp/$/run-shape/$                                 3260 ->    3260 cells (or distinct cells past 10^7)
+     s6/comp/$/run/$                                       8148 ->    8148 cells (or distinct cells past 10^7)
+     s6/hinted/$                                            623 ->     623 cells (or distinct cells past 10^7)
+     s8/ska-poke/$                                         1390 ->    1390 cells (or distinct cells past 10^7)
+     s9/bell/$                                               28 ->      28 cells (or distinct cells past 10^7)
+     s9/datum/$                                             164 ->     164 cells (or distinct cells past 10^7)
+     s9/identity/$                                           28 ->      28 cells (or distinct cells past 10^7)
+     s9/long-ska/$                                          490 ->     490 cells (or distinct cells past 10^7)
+     s9/memo/$                                              138 ->     138 cells (or distinct cells past 10^7)
+     s9/regs/$                                              279 ->     279 cells (or distinct cells past 10^7)
+     s9/sock-anno/$                                          40 ->      40 cells (or distinct cells past 10^7)
+   HELD (a changed arm or battery inside): 30 arms
+     s10/ca
+     s10/ca/dif
+     s10/ca/dif/$
+     s10/so
+     s10/so/huge
+     s10/so/huge/$
+     s11/cape
+     s11/sock
+     s2/poke
+     s4/ovum
+     s4/prod
+     s5/get-idom
+     s5/get-idom/$
+     s6/comp
+     s6/comp/$
+     s6/comp/$/run
+     s6/comp/$/run-shape
+     s6/hinted
+     s8/bake-graph
+     s8/bake-graph/$
+     s8/ska-callgraph
+     s8/ska-callgraph/$
+     s8/ska-poke
+     s9/bell
+     s9/datum
+     s9/identity
+     s9/long-ska
+     s9/memo
+     s9/regs
+     s9/sock-anno
+   batteries changed: 33
+     s10
+     s10/ca
+     s10/ca/dif
+     s10/so
+     s10/so/huge
+     s11
+     s11/cape
+     s11/sock
+     s2
+     s2/poke
+     s4
+     s4/ovum
+     s4/prod
+     s5
+     s5/get-idom
+     s6
+     s6/comp
+     s6/comp/$
+     s6/comp/$/run
+     s6/comp/$/run-shape
+     s6/hinted
+     s8
+     s8/bake-graph
+     s8/ska-callgraph
+     s8/ska-poke
+     s9
+     s9/bell
+     s9/datum
+     s9/identity
+     s9/long-ska
+     s9/memo
+     s9/regs
+     s9/sock-anno
+   only in the new pill: arm s11/track-t-noop

@@ -48,11 +48,11 @@ old pill 75012450794f765e (793354 bytes), new pill 03d6233e67ae5f70 (793550 byte
      compTypes                 204518 cells, in core s7 at 1
    lemmas/Compiler/CompPastLink.lean  (generator: none named: by hand)
      hdArm                        641 cells, in arm s6/hinted at 1
-     hdBat                        623 cells, in bat s6/hinted at 1
+     hdBat                        623 cells, in arm s6/hinted/$ at 1
    lemmas/Compiler/CompRunHintS.lean  (generator: runhint.py)
      cr11TD                        84 cells, in arm s6/comp/$/run/$ at 7696581394398
    lemmas/Compiler/SkaAnalyze.lean  (generator: none named: by hand)
-     aCullP                       397 cells, in bat s8/ska-callgraph at 4361924902902
-     aYes                         457 cells, in bat s8/ska-callgraph at 545240612862
+     aCullP                       397 cells, in arm s8/ska-callgraph/$ at 4361924902902
+     aYes                         457 cells, in arm s8/ska-callgraph/$ at 545240612862
    lemmas/Compiler/SkaPassLoop.lean  (generator: none named: by hand)
-     pYes                          66 cells, in bat s8/ska-callgraph at 292723825087129583614
+     pYes                          66 cells, in arm s8/ska-callgraph/$ at 292723825087129583614

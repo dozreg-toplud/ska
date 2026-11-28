@@ -2,7 +2,7 @@
 """The report of a pill switch, by Hoon path (track T, README Gaps 32).
 
     switch.py OLD.pill NEW.pill [--old-table T] [--new-table T]
-              [--old-lean DIR] [--new-lean DIR] [--old-hand ROOT]
+              [--old-lean DIR] [--new-lean DIR] [--old-hand ROOT] [--paths-only]
 
 OLD.pill, NEW.pill: the two steel pills.  Tables: tools/armtab/armtab.json
 for both unless given (arm axes follow arm names: one table serves both
@@ -207,6 +207,8 @@ def main():
     for k in sorted(set(nnoun) - set(onoun)):
         print('   only in the new pill: %s %s' % k)
 
+    if '--paths-only' in a:
+        return
     # ---- 2. hash names of hand-written files
     oldlean = opt('--old-lean')
     newlean = opt('--new-lean', os.path.join(T.FORM, 'lemmas', 'Pill'))
@@ -218,9 +220,9 @@ def main():
         orev, oids = nrev, nids
     hand = T.hand_names(hroot)
     targets = {}
-    for k in both:
+    for k in sorted(both):          # arms before batteries, by path: deterministic
         targets.setdefault(onoun[k], k)
-    for p in set(ocor) & set(ncor):
+    for p in sorted(set(ocor) & set(ncor)):
         onoun[('core', p)] = ocor[p]
         nnoun[('core', p)] = ncor[p]
         targets.setdefault(ocor[p], ('core', p))

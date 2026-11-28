@@ -2,7 +2,9 @@
 """Check the axes that the proofs use against the arm table (track T, README
 Gaps 32).
 
-    axischeck.py [--table armtab.json] [--names names.json] > axischeck.txt
+    axischeck.py [--table armtab.json] [--names names.json] [--cited cited.json] > axischeck.txt
+
+(`--cited`: the paths of part B that matched, for armlean.py)
 
 Part A: every fact `X.arm_at : slot? X.axis Y = some X.arm` (or `∀ x, slot?
 X.axis (C Y x) = some ..`, or a core `slot? X.axis Y = some Z`) of
@@ -96,6 +98,7 @@ def main():
     men = re.compile(r'`\+([a-z][a-z0-9-]*)`[^.`;]{0,30}?\(?((?:door |core |K )?(?:battery )?'
                      r'(?:arm|axis))\s+`([0-9]+)`')
     seen = set()
+    cited = set()
     bok = bmiss = bunk = 0
     lines = []
     for f in sorted(files):
@@ -110,6 +113,7 @@ def main():
                 cs = by_name.get(nm, [])
                 hit = [(p, w) for p, e in cs for w in ('bax', 'cax') if e[w] == n]
                 if hit:
+                    cited.add(hit[0][0])
                     bok += 1
                     lines.append('B  ok    +%-24s %10d  %s %s  (%s: %s)' % (
                         nm, n, hit[0][0], hit[0][1], how, src))
@@ -127,6 +131,8 @@ def main():
     print()
     for ln in out + lines:
         print(ln)
+    if '--cited' in a:
+        json.dump(sorted(cited), open(a[a.index('--cited') + 1], 'w'), indent=0)
 
 
 if __name__ == '__main__':
