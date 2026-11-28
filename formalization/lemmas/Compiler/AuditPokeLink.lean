@@ -1,5 +1,6 @@
 import lemmas.Compiler.PokeLinkColeUpd
 import lemmas.Compiler.PokeLinkGood8
+import lemmas.Compiler.PokeLinkHotTop
 import lemmas.Compiler.PokeLinkTailEnd
 import lemmas.Compiler.PokeLinkTailJets
 import lemmas.Compiler.PokeLinkTailCores
@@ -267,3 +268,17 @@ open Formalization Formalization.Compiler
 #print axioms srEnd_run
 #print axioms srEnd_ts
 #print axioms srEndAt_of
+#print axioms good9_full_step
+#print axioms pokeReachGood9
+#print axioms pokeModel_fullReachP13
+#print axioms reach_hotEmpty
+#print axioms reach_ringVals
+#print axioms mold_jets_nil
+#print axioms pokeN_jets_idle
+#print axioms jetsIdle_keeps
+#print axioms otherKeeps9_of
+#print axioms spRestGood9_of_leaves9
+#print axioms pokeModel_fullGood9
+#print axioms pokeReachGood9R
+#print axioms pokeModel_fullReachP14
+#print axioms keyRaw_hot0

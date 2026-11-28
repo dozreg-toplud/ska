@@ -191,5 +191,27 @@ theorem pokeModel_fullReachP14 (Ar : Arms FinMap (TreapMap mugF) Noun Noun (Noun
     rw [enc_inj flagsOf _ _ he] at hg
     exact hg
 
+/-! ## The key set where `jets-hot = ~` -/
+
+/-- A set with no member is `~`. -/
+theorem set_noMem {key : Noun} (hs : IsSet mugF key) (hn : ∀ k, ¬ Has key k) : key = A 0 := by
+  unfold IsSet at hs
+  cases key with
+  | atom a => cases hs; rfl
+  | cell n rest =>
+    cases rest with
+    | atom b => simp only [toMap_cell_atom] at hs; cases hs
+    | cell l r => exact absurd (by unfold Has; rw [toMap_node]; exact Get.here) (hn n)
+
+/-- **Where `jets-hot = ~`, the pill's `~(key by jets-hot)` is `~`**: the
+key the leaves get is the noun `jetsOfP` is given, so the map-against-key-set
+finding of the fourteenth session does not arise. -/
+theorem keyRaw_hot0 (fl : Flags) (st : PSt) (hh : st.hot = A 0) : keyRaw (enc fl st) = some (A 0) := by
+  obtain ⟨key, hk, hs, hm⟩ := keyRaw_enc fl st (by rw [hh]; exact IsMap.nil)
+  rw [hk, set_noMem hs fun k hk' => by
+    obtain ⟨v, hv⟩ := (hm k).1 hk'
+    rw [hh] at hv
+    exact Get_atom hv]
+
 end Compiler
 end Formalization
