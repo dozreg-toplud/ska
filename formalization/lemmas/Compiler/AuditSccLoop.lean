@@ -25,6 +25,9 @@ import lemmas.Ska.SccLoopSoftShapeCheck
 import lemmas.Ska.SccLoopSoft2Eq
 import lemmas.Ska.SccLoopSoft2Shape
 import lemmas.Ska.SccLoopSoftTry
+import lemmas.Compiler.CompSccLoopSweepA
+import lemmas.Compiler.CompSccLoopSoftMemDone2
+import lemmas.Compiler.CompSccLoopSoft2Loop
 
 /-! The axioms of the theorems of `Ska/SccLoop.lean`, `Ska/SccLoopMsg.lean` and `Ska/SccLoopCycle.lean`
 (README Gaps 21): each must print
@@ -232,3 +235,16 @@ open Formalization.SkaModel.SccLoop
 #print axioms Formalization.SkaModel.Comp.medeLS_lifts
 #print axioms Formalization.SkaModel.Comp.collapseLazyAtomLS_lifts
 #print axioms Formalization.SkaModel.SccLoop.cfgRealSS2_eq
+#print axioms Formalization.Compiler.memShapeBranch_iffA
+#print axioms Formalization.Compiler.needRead_memberT
+#print axioms Formalization.Compiler.shapeOK_of_Q
+#print axioms Formalization.Compiler.shapeCall_of_left
+#print axioms Formalization.Compiler.memSweepCall_of_A
+#print axioms Formalization.Compiler.csi_gate_ranked_soft2
+#print axioms Formalization.Compiler.cfgRealSS2_member_sweep
+#print axioms Formalization.Compiler.compRealS2_done
+#print axioms Formalization.Compiler.finishLFCS2_need
+#print axioms Formalization.Compiler.mem_done_stepS2
+#print axioms Formalization.Compiler.memGate_done_realS2
+#print axioms Formalization.Compiler.memGate_done_KS2
+#print axioms Formalization.Compiler.csi_gate_ranked_soft2F
