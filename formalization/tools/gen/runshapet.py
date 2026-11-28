@@ -155,5 +155,182 @@ set_option linter.unusedVariables false
     print('wrote CompRunShapeMemberT.lean', len(body.split('\n')))
 
 
+
+CLS = """/-- **The nomms linked on every goal of `GoalNZ`, every constructor**: `RsClsE6` with `%11`, `%12`
+and `%mean`, whose conditions are facts of the nomm: `SfClosed` of the hinted nomm (`+laze-past-if`),
+the code entries of the subterms of `%12` and `%mean` (`CallCode`, which is `True` there), and of
+`%mean` `MeanPure` (`+mean-konst`) and the totality of `+sound` on `p`. -/
+def RsClsM (env : ShapeEnv) (cod : Noun) : Nomm → Prop
+  | Nomm.n0 _ => True
+  | Nomm.n1 _ => True
+  | Nomm.n3 p => RsClsM env cod p
+  | Nomm.n4 p => RsClsM env cod p
+  | Nomm.n7 p q => RsClsM env cod p ∧ RsClsM env cod q
+  | Nomm.cons p q => RsClsM env cod p ∧ RsClsM env cod q
+  | Nomm.n5 p q => RsClsM env cod p ∧ RsClsM env cod q
+  | Nomm.n10 _ v q => RsClsM env cod v ∧ RsClsM env cod q
+  | Nomm.n2 p q _ => RsClsM env cod p ∧ RsClsM env cod q
+  | Nomm.n6 p q r => RsClsM env cod p ∧ RsClsM env cod q ∧ RsClsM env cod r ∧ Bake.NoAx0 q ∧ Bake.NoAx0 r ∧
+      (∀ ned, unsS env q r ned ≠ Option.none) ∧ (∀ laz, LzNZ laz → SixDeep q r sixFuel laz)
+  | Nomm.n11s _ q _ => RsClsM env cod q ∧ SfClosed env.cod 3 q
+  | Nomm.n11d _ h q _ => RsClsM env cod h ∧ RsClsM env cod q ∧ SfClosed env.cod 3 q
+  | Nomm.n12 p q => RsClsM env cod p ∧ RsClsM env cod q ∧ CallCode cod (shapeCE env) p ∧
+      CallCode cod (shapeCE env) q
+  | Nomm.mean p b q _ k => RsClsM env cod p ∧ RsClsM env cod q ∧ SfClosed env.cod 3 q ∧
+      CallCode cod (shapeCE env) p ∧ CallCode cod (shapeCE env) q ∧ MeanPure cod env b k ∧
+      (∀ ned, soundS env p ned ≠ Option.none)
+
+/-- **`ShapeOKT` on every constructor**: `ShapeCallT` at every direct call and `MeanNeedT` at every
+`%mean`, at every rest of `E`, with the `sup` each runs under. -/
+def ShapeOKM (ctx : Noun) (env : ShapeEnv) (E : RsRest → Prop) (Rl : RsRest → RsRest → Prop) :
+    Option Nomm → Nomm → Prop
+  | sup, Nomm.n2 p q (some (b, k)) =>
+    (∀ y, E y → ShapeCallT ctx env E Rl p q b k sup y) ∧ ShapeOKM ctx env E Rl sup p ∧ ShapeOKM ctx env E Rl sup q
+  | sup, Nomm.n2 p q Option.none => ShapeOKM ctx env E Rl sup p ∧ ShapeOKM ctx env E Rl sup q
+  | sup, Nomm.n7 p q => ShapeOKM ctx env E Rl sup p ∧ ShapeOKM ctx env E Rl (some p) q
+  | sup, Nomm.n6 p q r => ShapeOKM ctx env E Rl sup p ∧ ShapeOKM ctx env E Rl sup q ∧ ShapeOKM ctx env E Rl sup r
+  | sup, Nomm.n3 p => ShapeOKM ctx env E Rl sup p
+  | sup, Nomm.n4 p => ShapeOKM ctx env E Rl sup p
+  | sup, Nomm.cons p q => ShapeOKM ctx env E Rl sup p ∧ ShapeOKM ctx env E Rl sup q
+  | sup, Nomm.n5 p q => ShapeOKM ctx env E Rl sup p ∧ ShapeOKM ctx env E Rl sup q
+  | sup, Nomm.n10 _ v q => ShapeOKM ctx env E Rl sup v ∧ ShapeOKM ctx env E Rl sup q
+  | sup, Nomm.n11s _ q _ => ShapeOKM ctx env E Rl sup q
+  | sup, Nomm.n11d _ h q _ => ShapeOKM ctx env E Rl sup h ∧ ShapeOKM ctx env E Rl sup q
+  | sup, Nomm.n12 p q => ShapeOKM ctx env E Rl sup p ∧ ShapeOKM ctx env E Rl sup q
+  | sup, Nomm.mean p b q _ k =>
+    (∀ y, E y → MeanNeedT ctx env E Rl b k y) ∧ ShapeOKM ctx env E Rl sup p ∧ ShapeOKM ctx env E Rl sup q
+  | _, _ => True
+"""
+
+NZ_NEW = """  | Nomm.n11s tag q body, ⟨hq, _⟩, sup, goal, st, l, st1, hg, e =>
+    elevenSNz env tag q body sup goal hg (fun g st l st1 hg e => runShape_nzM env cod q hq sup g st l st1 hg e)
+      st l st1 e
+  | Nomm.n11d tag h q body, ⟨hh, hq, _⟩, sup, goal, st, l, st1, hg, e =>
+    elevenDNz env tag h q body sup goal hg (fun g st l st1 hg e => runShape_nzM env cod q hq sup g st l st1 hg e)
+      (fun g st l st1 hg e => runShape_nzM env cod h hh sup g st l st1 hg e) st l st1 e
+  | Nomm.n12 p q, ⟨hp, hq, _⟩, sup, goal, st, l, st1, hg, e =>
+    twelveNz env p q sup goal (fun st l st1 e => runShape_nzM env cod p hp sup (GoalS.next thisL) st l st1 (lzNZ_thisL : GoalNZ (GoalS.next (thisL : Laze CSet))) e)
+      (fun st l st1 e => runShape_nzM env cod q hq sup (GoalS.next thisL) st l st1 (lzNZ_thisL : GoalNZ (GoalS.next (thisL : Laze CSet))) e) st l st1 e
+  | Nomm.mean p b q body k, ⟨hp, hq, _⟩, sup, goal, st, l, st1, hg, e =>
+    meanNz env p b q body k sup goal hg (fun g st l st1 hg e => runShape_nzM env cod p hp sup g st l st1 hg e)
+      (fun g st l st1 hg e => runShape_nzM env cod q hq sup g st l st1 hg e) st l st1 e"""
+
+IND_NEW = """  | Nomm.n11s tag q body, ⟨hq, hsf⟩, hcq, sup, hsq, goal, st, hg =>
+    rs_n11sT hc h7 hcode env hR hcn tag q body sup goal hg st hsf
+      (fun st1 => rs_clsTM q hq hcq sup hsq goal st1 hg)
+      (fun l st1 hl => rs_clsTM q hq hcq sup hsq (GoalS.next l) st1 hl)
+  | Nomm.n11d tag h q body, ⟨hh, hq, hsf⟩, ⟨hch, hcq⟩, sup, ⟨hsh, hsq⟩, goal, st, hg =>
+    rs_n11dT hc h7 hcode env hR hcn tag h q body sup goal hg st hsf hch
+      (fun st1 => rs_clsTM q hq hcq sup hsq goal st1 hg)
+      (fun l st1 hl => rs_clsTM q hq hcq sup hsq (GoalS.next l) st1 hl)
+      (fun st1 => rs_clsTM h hh hch sup hsh (GoalS.next noneL) st1 lzNZ_noneL)
+      (fun st1 => rs_clsTM h hh hch sup hsh (GoalS.next thisL) st1 lzNZ_thisL)
+  | Nomm.n12 p q, ⟨hp, hq, hcp, hcq⟩, _, sup, ⟨hsp, hsq⟩, goal, st, _ =>
+    rs_n12T hc h7 hcode env hR p q sup goal st hcp
+      (fun st1 => rs_clsTM q hq hcq sup hsq (GoalS.next thisL) st1 lzNZ_thisL)
+      (fun st1 => rs_clsTM p hp hcp sup hsp (GoalS.next thisL) st1 lzNZ_thisL)
+  | Nomm.mean p b q body k, ⟨hp, hq, hsf, hcp, hcq, hmp, hsnd⟩, _, sup, ⟨hmn, hsp, hsq⟩, goal, st, hg =>
+    rs_nmeanT hc h7 hcode env hR hcn p b q body k sup goal hg st hsf hcp hmp hmn hsnd
+      (fun l st1 hl => rs_clsTM q hq hcq sup hsq (GoalS.next l) st1 hl)
+      (fun l st1 hl => rs_clsTM p hp hcp sup hsp (GoalS.next l) st1 hl)"""
+
+
+def all_m():
+    nz = grab('CompRunShapeAll6.lean', 'runShape_nzE6')
+    nz = rep(nz, 'runShape_nzE6 env ', 'runShape_nzM env cod ')
+    nz = rep(nz, 'theorem runShape_nzE6 (env : ShapeEnv) : ∀ (n : Nomm), RsClsE6 env n',
+             'theorem runShape_nzM (env : ShapeEnv) (cod : Noun) : ∀ (n : Nomm), RsClsM env cod n', 1)
+    assert 'E6' not in nz.replace('RsClsE6', 'X'), nz
+    nz = '/-- **What a run of `RsClsM` returns looks at no axis `0`** when its goal does not. -/\n' + nz + '\n' + NZ_NEW
+    ind = open(BASE + 'CompRunShapeAllT.lean').read()
+    i = ind.index('/-- **The induction threading the rest**')
+    j = ind.index('/-- **For track I, threading the rest**')
+    ind_t, done_t = ind[i:j].rstrip(), ind[j:ind.index('\n\nend\n')]
+    ind_t = rep(ind_t, 'rs_clsT6', 'rs_clsTM')
+    ind_t = rep(ind_t, 'RsClsE6 env n', 'RsClsM env cod n', 1)
+    ind_t = rep(ind_t, 'ShapeOKT ctx env E Rl', 'ShapeOKM ctx env E Rl', 1)
+    ind_t = rep(ind_t, 'runShape_nzE6 env ', 'runShape_nzM env cod ', 1)
+    ind_t = rep(ind_t, '**The induction threading the rest**: `rs_clsE6` on `RsAtT`',
+                '**The induction threading the rest, every constructor**: `rs_clsT6` with `%11`, `%12` and `%mean`', 1)
+    ind_t = ind_t + '\n' + IND_NEW
+    done_t = rep(done_t, 'rs_doneT6', 'rs_doneTM')
+    done_t = rep(done_t, 'rs_clsT6', 'rs_clsTM', 1)
+    done_t = rep(done_t, 'RsClsE6 env n', 'RsClsM env cod n', 1)
+    done_t = rep(done_t, 'RsClsE6 env', 'RsClsM env cod', 1)
+    done_t = rep(done_t, 'ShapeOKT ctx env E Rl', 'ShapeOKM ctx env E Rl', 1)
+    done_t = rep(done_t, '`ShapeCallT` says', '`ShapeCallT` and `MeanNeedT` say', 1)
+    hdr = """import lemmas.Compiler.CompRunShapeAllT
+import lemmas.Compiler.CompRunShapeTHint
+import lemmas.Compiler.CompRunShapeTMean
+
+/-!
+# `+run-shape`: the induction on every constructor, threading the rest (track A, 2026-11-28)
+
+Generated by `tools/gen/runshapet.py`: `RsClsM` is `RsClsE6` with `%11` (`rs_n11sT`, `rs_n11dT`),
+`%12` (`rs_n12T`) and `%mean` (`rs_nmeanT`), each under conditions that are facts of the nomm;
+`ShapeOKM` adds `MeanNeedT` (the `+callee-need` of a `%mean`, which may compile the callee) to
+`ShapeOKT`.  The induction and the sweeps' call are copied from `rs_clsT6` / `rs_doneT6`.
+
+* `runShape_nzM`, **`rs_clsTM`**, **`rs_doneTM`**.
+-/
+
+namespace Formalization
+namespace Compiler
+
+open Nock Pill Hoon SkaModel SkaModel.Comp
+
+set_option linter.unusedSimpArgs false
+set_option linter.unusedSectionVars false
+set_option linter.unusedVariables false
+
+variable {ctx : Noun}
+
+"""
+    sec = """section
+variable (hc : CompIn ctx) (h7 : slot? 7 ctx = some compK) {cod : Noun} (hcode : slot? 52 ctx = some cod)
+  (env : ShapeEnv) (hcn : CodeNomms env.cod cod) (E : RsRest → Prop) (Rl : RsRest → RsRest → Prop)
+  (hR : RlPre Rl)
+include hc h7 hcode hcn hR
+
+"""
+    body = hdr + CLS + '\n' + nz + '\n\n' + sec + ind_t + '\n\n' + done_t.rstrip() + '\n\nend\n\nend Compiler\nend Formalization\n'
+    open(BASE + 'CompRunShapeAllM.lean', 'w').write(body)
+    print('wrote CompRunShapeAllM.lean', len(body.split('\n')))
+    m = open(BASE + 'CompRunShapeMemberT.lean').read()
+    i = m.index('/-- **The branch of the sweeps is the model, threading the rest**')
+    mt = m[i:m.index('\n\nend Compiler')]
+    mt = rep(mt, 'memShape_branchT6', 'memShape_branchTM', 1)
+    mt = rep(mt, '(hn : RsClsE6 (shapeEnvOfA jet xcod env) nm)', '(hn : RsClsM (shapeEnvOfA jet xcod env) cod nm)', 1)
+    mt = rep(mt, 'ShapeOKT (memDCtx', 'ShapeOKM (memDCtx', 1)
+    mt = rep(mt, 'rs_doneT6 hci', 'rs_doneTM hci', 1)
+    mt = rep(mt, '`memShape_branchA6` where the run', '`memShape_branchA6` on every constructor (`RsClsM`, `ShapeOKM`), where the run', 1)
+    mt = rep(mt, '(`rs_doneT6`)', '(`rs_doneTM`)', 1)
+    hdr = """import lemmas.Compiler.CompRunShapeMemberT
+import lemmas.Compiler.CompRunShapeAllM
+
+/-!
+# The branch of the sweeps of `member` on every constructor, threading the rest (track A, 2026-11-28)
+
+Generated by `tools/gen/runshapet.py` from `memShape_branchT6`: the run is `rs_doneTM`.
+
+* **`memShape_branchTM`**.
+-/
+
+namespace Formalization
+namespace Compiler
+
+open Nock Pill Hoon SkaModel SkaModel.Comp SkaModel.SccLoop
+
+set_option linter.unusedSimpArgs false
+set_option linter.unusedSectionVars false
+set_option linter.unusedVariables false
+
+"""
+    body = hdr + mt + '\n\nend Compiler\nend Formalization\n'
+    open(BASE + 'CompRunShapeMemberM.lean', 'w').write(body)
+    print('wrote CompRunShapeMemberM.lean', len(body.split('\n')))
+
+
 all_t()
 member_t()
+all_m()
