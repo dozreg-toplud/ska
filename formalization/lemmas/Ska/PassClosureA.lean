@@ -85,11 +85,12 @@ structure ClInv (G : Noun → Prop) (st : SkaState M R) : Prop where
   done_g : MemoG G st.done
   ord_key : ∀ i o, Treap.get st.order i = some o → KeyG G i
   stk_key : ∀ i ∈ st.stk, KeyG G i
+  g_key : ∀ i d, Treap.get st.g i = some d → KeyG G i
 
 theorem ClInv.congr {st st' : SkaState M R} (h : ClInv G st) (h1 : st'.g = st.g) (h2 : st'.done = st.done)
     (h3 : st'.order = st.order) (h4 : st'.stk = st.stk) : ClInv G st' :=
   ⟨by rw [h1]; exact h.g_prod, by rw [h2]; exact h.done_g, by rw [h3]; exact h.ord_key,
-    by rw [h4]; exact h.stk_key⟩
+    by rw [h4]; exact h.stk_key, by rw [h1]; exact h.g_key⟩
 
 theorem ClInv.gitG {st : SkaState M R} (h : ClInv G st) (i : Ident) : SockG G (gitG st.g i).prod := by
   unfold Ana.gitG Treap.gut
@@ -114,7 +115,8 @@ theorem clInv_stable : LocalStable (fun gs : GenS M R => ClInv G gs.st) := by
 theorem cullFold_C (l : List (Ident × Unit)) (st : SkaState M R) (hc : ClInv G st) :
     ClInv G (l.foldl cullStep st) := by
   obtain ⟨a1, a2, a3, a4, _⟩ := cullFold_ok l st
-  refine ⟨fun i d hi => ?_, by rw [a2]; exact hc.done_g, fun i o hi => ?_, by rw [a1]; exact hc.stk_key⟩
+  refine ⟨fun i d hi => ?_, by rw [a2]; exact hc.done_g, fun i o hi => ?_, by rw [a1]; exact hc.stk_key,
+    fun i d hi => ?_⟩
   · simp only [gCore] at hi
     rw [a4] at hi
     split at hi
@@ -124,6 +126,10 @@ theorem cullFold_C (l : List (Ident × Unit)) (st : SkaState M R) (hc : ClInv G 
     split at hi
     · cases hi
     · exact hc.ord_key i o hi
+  · rw [a4] at hi
+    split at hi
+    · cases hi
+    · exact hc.g_key i d hi
 
 theorem cull_C {n : Nat} {id : Ident} {st st' : SkaState M R} (hc : ClInv G st) (h : cull n id st = some st') :
     ClInv G st' := by
@@ -133,7 +139,7 @@ theorem cull_C {n : Nat} {id : Ident} {st st' : SkaState M R} (hc : ClInv G st) 
   split at hst
   · subst hst; exact hc
   · subst hst
-    exact cullFold_C _ _ ⟨hc.g_prod, hc.done_g, hc.ord_key, fun i hi => hc.stk_key i (List.mem_filter.mp hi).1⟩
+    exact cullFold_C _ _ ⟨hc.g_prod, hc.done_g, hc.ord_key, fun i hi => hc.stk_key i (List.mem_filter.mp hi).1, hc.g_key⟩
 
 theorem popGo_C {id : Ident} : ∀ (l : List Ident) (st st' : SkaState M R),
     st.stk = l → ClInv G st → popGo id l st = some st' → ClInv G st'
@@ -154,7 +160,8 @@ theorem popGo_C {id : Ident} : ∀ (l : List Ident) (st st' : SkaState M R),
       { st with stk := rest, order := Treap.del st.order top, ticks := Treap.del st.ticks top,
                 g := Treap.put st.g top d', done := putMi st.done top d' }
     have c2 : ClInv G st2 := by
-      refine ⟨?_, hc.done_g.putMi hd', fun i o hi => ?_, fun i hi => hc.stk_key i (by rw [hl]; exact List.mem_cons_of_mem _ hi)⟩
+      refine ⟨?_, hc.done_g.putMi hd', fun i o hi => ?_, fun i hi => hc.stk_key i (by rw [hl]; exact List.mem_cons_of_mem _ hi),
+        fun i d hi => ?_⟩
       · show ∀ i d, gCore (Treap.put st.g top d') i = some d → SockG G d.prod
         rw [gCore_put]
         exact gprod_put hc.g_prod hd'
@@ -163,6 +170,11 @@ theorem popGo_C {id : Ident} : ∀ (l : List Ident) (st st' : SkaState M R),
         split at hi'
         · cases hi'
         · exact hc.ord_key i o hi'
+      · have hi' : Treap.get (Treap.put st.g top d') i = some d := hi
+        rw [Treap.get_put] at hi'
+        split at hi'
+        · rename_i h; rw [h]; exact hc.stk_key top (by rw [hl]; exact List.mem_cons_self)
+        · exact hc.g_key i d hi'
     by_cases e : top = id
     · rw [if_pos e] at h
       cases h
@@ -250,15 +262,19 @@ theorem runStep_C (env : Env R) (memoF : Memo M) (hG : SubC G) (hS : SafC G) {n 
   have hRG : ∀ k, k < n → ResGG G (fun gs : GenS M R => ClInv G gs.st) (resolveR env memoF k) :=
     fun k hk idT gs r gs' hi hf' hs' hv e => hres k hk idT idT gs r gs' hs' hi ⟨hf', hs', hv⟩ e
   obtain ⟨c1, p1⟩ := run_folG env memoF hG hS clInv_stable hRG c0 hk.1 hk.2.1 hf
-  obtain ⟨e1, e2, e3, _⟩ := runEnd_fields id (gitG st0.g id) out gs
+  obtain ⟨e1, e2, e3, dn, e4⟩ := runEnd_fields id (gitG st0.g id) out gs
   have hold : SockG G (gitG st0.g id).core.prod := hc.gitG id
   show ClInv G (runEnd id (gitG st0.g id) out gs).2
-  refine ⟨?_, ?_, ?_, ?_⟩
+  refine ⟨?_, ?_, ?_, ?_, fun i d hi => ?_⟩
   · rw [runEnd_core]
     exact gprod_put c1.g_prod (sockG_runDatum hG p1 hold)
   · rw [e3]; exact c1.done_g
   · rw [e1]; exact c1.ord_key
   · rw [e2]; exact c1.stk_key
+  · rw [e4, Treap.get_put] at hi
+    split at hi
+    · rename_i h; rw [h]; exact hk
+    · exact c1.g_key i d hi
 
 theorem memberStep_C {run : RunGo M R} {mem : MemGo M R} (hrun : RunC G run) (hmem : MemC G mem) :
     MemC G (memberStep run mem) := by
@@ -338,16 +354,21 @@ theorem analyzeStep_C (hG : SubC G) {n : Nat} {memoF : Memo M} (hmG : MemoG G me
     simp only [Option.some.injEq, Prod.mk.injEq] at e
     obtain ⟨_, rfl⟩ := e
     have hp := gitMi_G hG hmG hk.2.1 hm
-    refine ⟨?_, hc.done_g.putMi hp, hc.ord_key, hc.stk_key⟩
-    show ∀ i d, gCore (Treap.put st.g id hit.2) i = some d → SockG G d.prod
-    rw [gCore_put]
-    exact gprod_put hc.g_prod hp
+    refine ⟨?_, hc.done_g.putMi hp, hc.ord_key, hc.stk_key, fun i d hi => ?_⟩
+    · show ∀ i d, gCore (Treap.put st.g id hit.2) i = some d → SockG G d.prod
+      rw [gCore_put]
+      exact gprod_put hc.g_prod hp
+    · have hi' : Treap.get (Treap.put st.g id hit.2) i = some d := hi
+      rw [Treap.get_put] at hi'
+      split at hi'
+      · rename_i h; rw [h]; exact hk
+      · exact hc.g_key i d hi'
   · simp only [Option.bind_eq_some_iff] at e
     obtain ⟨⟨r1, st2⟩, hr, e⟩ := e
     let stp : SkaState M R := { st with next := st.next + 1, order := Treap.put st.order id st.next,
                                          stk := id :: st.stk, g := Treap.put st.g id FDatum.bunt }
     have cp : ClInv G stp := by
-      refine ⟨?_, hc.done_g, fun i o hi => ?_, fun i hi => ?_⟩
+      refine ⟨?_, hc.done_g, fun i o hi => ?_, fun i hi => ?_, fun i d hi => ?_⟩
       · show ∀ i d, gCore (Treap.put st.g id FDatum.bunt) i = some d → SockG G d.prod
         rw [gCore_put]
         exact gprod_put hc.g_prod (d := FDatum.bunt.core) trivial
@@ -359,6 +380,11 @@ theorem analyzeStep_C (hG : SubC G) {n : Nat} {memoF : Memo M} (hmG : MemoG G me
       · rcases List.mem_cons.mp hi with rfl | hi
         · exact hk
         · exact hc.stk_key i hi
+      · have hi' : Treap.get (Treap.put st.g id FDatum.bunt) i = some d := hi
+        rw [Treap.get_put] at hi'
+        split at hi'
+        · rename_i h; rw [h]; exact hk
+        · exact hc.g_key i d hi'
     have c2 : ClInv G st2 := hrun _ _ _ _ _ cp hk hr
     simp only at e
     split at e
@@ -441,6 +467,16 @@ theorem hok_of_clInv (env : Env R) {memoF : Memo M} (hmF : MemoWF memoF) (hmT : 
   intro i hi
   obtain ⟨k1, k2, k3⟩ := hcy.stk_key i hi
   exact okId_of_good k1 k3 (TInv.stk hiy.1 hiy.2.1 hi) k2
+
+/-- **Every identity that enters the graph** at a state with the arm
+invariant (`G = NGood As B`) and the tidy invariant is `OkId (nounsUpTo As B)
+(leafList As B)`: its formula is among a finite list and its subject sock is
+shaped with leaves among a finite list.  What is not bounded is the shape of
+the subject sock (the width question, README Gaps 16). -/
+theorem gIn_okId {As : List Nat} {B : Nat} {st : SkaState M R} (hx : ClInv (NGood As B) st) (ht : TInv st)
+    {i : Ident} {d : FDatum M} (hi : Treap.get st.g i = some d) : OkId (nounsUpTo As B) (leafList As B) i := by
+  obtain ⟨k1, k2, k3⟩ := hx.g_key i d hi
+  exact okId_of_good k1 k3 (ht.mem hi).1 k2
 
 /-- **The pass loop of one component returns** from `KruskalBT`, `RunHalts`,
 the width `WidthFin`, a good stack at its entry, and the arm invariant
