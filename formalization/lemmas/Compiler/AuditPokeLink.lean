@@ -1,3 +1,4 @@
+import lemmas.Compiler.PokeLinkTailCores
 import lemmas.Compiler.PokeLinkGood7
 import lemmas.Compiler.PokeLinkJetsCole
 import lemmas.Compiler.PokeLinkJetsP
@@ -231,3 +232,4 @@ open Formalization Formalization.Compiler
 #print axioms pokeModel_fullReachG7
 #print axioms spRestGood7_of_leaves
 #print axioms pokeModel_fullReachP10
+#print axioms srCores_run
