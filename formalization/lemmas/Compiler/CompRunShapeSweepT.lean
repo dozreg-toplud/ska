@@ -413,5 +413,50 @@ theorem sweepMissStep_of_P {ctx : Noun} {env : CallEnv} {RR : GenRest → Prop} 
   obtain ⟨hk1, hk2⟩ := hkeys CA2 st NR MO SC RS CA' hM hc hmiss
   exact ⟨CA', hmiss, ⟨⟨rfl, rfl, hE.2.2.1, hE.2.2.2⟩, agreeIP_rest hA.1 hA', hRR _ _ _ _ _ hR', hk1, hk2⟩, hit⟩
 
+
+/-! ## The class `RsClsF` without its `NoAx0` clauses -/
+
+/-- **`RsClsF` less `Bake.NoAx0`**: what is left once the nomm has no `%10` at axis `0` (a theorem
+of the poke's datums, `skaPoke_dat` / `skaCallgraph_dat`): `SfClosed` at `%6` branches, `%11`
+and `%mean`, `CallCode` under `%12` / `%mean`, `MeanPure`. -/
+def RsClsS (env : ShapeEnv) (cod : Noun) : Nomm → Prop
+  | Nomm.n0 _ => True
+  | Nomm.n1 _ => True
+  | Nomm.n3 p => RsClsS env cod p
+  | Nomm.n4 p => RsClsS env cod p
+  | Nomm.n7 p q => RsClsS env cod p ∧ RsClsS env cod q
+  | Nomm.cons p q => RsClsS env cod p ∧ RsClsS env cod q
+  | Nomm.n5 p q => RsClsS env cod p ∧ RsClsS env cod q
+  | Nomm.n10 _ v q => RsClsS env cod v ∧ RsClsS env cod q
+  | Nomm.n2 p q _ => RsClsS env cod p ∧ RsClsS env cod q
+  | Nomm.n6 p q r => RsClsS env cod p ∧ RsClsS env cod q ∧ RsClsS env cod r ∧
+      SfClosed env.cod 3 q ∧ SfClosed env.cod 3 r
+  | Nomm.n11s _ q _ => RsClsS env cod q ∧ SfClosed env.cod 3 q
+  | Nomm.n11d _ h q _ => RsClsS env cod h ∧ RsClsS env cod q ∧ SfClosed env.cod 3 q
+  | Nomm.n12 p q => RsClsS env cod p ∧ RsClsS env cod q ∧ CallCode cod (shapeCE env) p ∧
+      CallCode cod (shapeCE env) q
+  | Nomm.mean p b q _ k => RsClsS env cod p ∧ RsClsS env cod q ∧ SfClosed env.cod 3 q ∧
+      CallCode cod (shapeCE env) p ∧ CallCode cod (shapeCE env) q ∧ MeanPure cod env b k ∧
+      SfClosed env.cod 3 p
+
+/-- **`RsClsF` from `Bake.NoAx0` and `RsClsS`.** -/
+theorem rsClsF_of_S (env : ShapeEnv) (cod : Noun) : ∀ n, Bake.NoAx0 n → RsClsS env cod n → RsClsF env cod n
+  | Nomm.n0 _, _, _ => trivial
+  | Nomm.n1 _, _, _ => trivial
+  | Nomm.n3 p, a, h => rsClsF_of_S env cod p a h
+  | Nomm.n4 p, a, h => rsClsF_of_S env cod p a h
+  | Nomm.n7 p q, ⟨ap, aq⟩, ⟨hp, hq⟩ => ⟨rsClsF_of_S env cod p ap hp, rsClsF_of_S env cod q aq hq⟩
+  | Nomm.cons p q, ⟨ap, aq⟩, ⟨hp, hq⟩ => ⟨rsClsF_of_S env cod p ap hp, rsClsF_of_S env cod q aq hq⟩
+  | Nomm.n5 p q, ⟨ap, aq⟩, ⟨hp, hq⟩ => ⟨rsClsF_of_S env cod p ap hp, rsClsF_of_S env cod q aq hq⟩
+  | Nomm.n10 _ v q, ⟨_, av, aq⟩, ⟨hv, hq⟩ => ⟨rsClsF_of_S env cod v av hv, rsClsF_of_S env cod q aq hq⟩
+  | Nomm.n2 p q _, ⟨ap, aq⟩, ⟨hp, hq⟩ => ⟨rsClsF_of_S env cod p ap hp, rsClsF_of_S env cod q aq hq⟩
+  | Nomm.n6 p q r, ⟨ap, aq, ar⟩, ⟨hp, hq, hr, sq, sr⟩ =>
+    ⟨rsClsF_of_S env cod p ap hp, rsClsF_of_S env cod q aq hq, rsClsF_of_S env cod r ar hr, aq, ar, sq, sr⟩
+  | Nomm.n11s _ q _, aq, ⟨hq, sq⟩ => ⟨rsClsF_of_S env cod q aq hq, sq⟩
+  | Nomm.n11d _ h q _, ⟨ah, aq⟩, ⟨hh, hq, sq⟩ => ⟨rsClsF_of_S env cod h ah hh, rsClsF_of_S env cod q aq hq, sq⟩
+  | Nomm.n12 p q, ⟨ap, aq⟩, ⟨hp, hq, cp, cq⟩ => ⟨rsClsF_of_S env cod p ap hp, rsClsF_of_S env cod q aq hq, cp, cq⟩
+  | Nomm.mean p b q _ k, ⟨ap, aq⟩, ⟨hp, hq, sq, cp, cq, mp, sp⟩ =>
+    ⟨rsClsF_of_S env cod p ap hp, rsClsF_of_S env cod q aq hq, sq, cp, cq, mp, sp⟩
+
 end Compiler
 end Formalization

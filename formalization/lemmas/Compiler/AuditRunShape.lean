@@ -25,6 +25,8 @@ import lemmas.Compiler.CompRunShapeEleven
 import lemmas.Compiler.CompRunShapeMean
 import lemmas.Compiler.CompRunShapeTMiss
 import lemmas.Compiler.CompRunShapeClassF
+import lemmas.Compiler.CompRunShapeSweepT
+import lemmas.Compiler.CompSccLoopSoft2T
 
 /-! The axioms of the main theorems of track A's `+run-shape` link (2026-11-27). -/
 
@@ -188,3 +190,15 @@ import lemmas.Compiler.CompRunShapeClassF
 #print axioms Formalization.SkaModel.Comp.soundS_total
 #print axioms Formalization.SkaModel.Comp.unsS_total
 #print axioms Formalization.SkaModel.Comp.softTest_total
+#print axioms Formalization.Compiler.sweepMiss_refl
+#print axioms Formalization.Compiler.sweepMiss_trans
+#print axioms Formalization.Compiler.pureKnown_of_callCode
+#print axioms Formalization.Compiler.shapeOKM_of_QT
+#print axioms Formalization.Compiler.needStep_sweep
+#print axioms Formalization.Compiler.sureK_sweep
+#print axioms Formalization.Compiler.shapeCallT_sweep
+#print axioms Formalization.Compiler.meanNeedT_sweep
+#print axioms Formalization.Compiler.memSweepCall_of_AT
+#print axioms Formalization.Compiler.sweepMissStep_of_P
+#print axioms Formalization.Compiler.rsClsF_of_S
+#print axioms Formalization.Compiler.csi_gate_ranked_soft2T
