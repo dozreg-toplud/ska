@@ -110,10 +110,7 @@ inductive Reach (core₀ : Noun) : Noun → Prop where
       Reach core₀ core → Mook core ton toon core' →
       Reach core₀ core'
 
-/-! ## The statements
-
-In all of them `gul`, the scry gate, is any noun; `~` is no namespace.
--/
+/-! ## The statements -/
 
 /-- The pill holds a core. -/
 def Loads : Prop :=
