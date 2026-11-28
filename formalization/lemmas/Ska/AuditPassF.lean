@@ -200,3 +200,6 @@ out. -/
 #print axioms Ana.passChain_stack_fin
 #print axioms Ana.finIdentsG_of_width
 #print axioms Ana.passLoop_returns_w
+#print axioms Ana.allS
+#print axioms Ana.chainStk_of
+#print axioms Ana.passLoop_returns_ws
