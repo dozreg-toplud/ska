@@ -1391,6 +1391,11 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Glue/Assemble14.lean` | Track G (Gaps 22 (p)): THE ASSEMBLY over reached states.  `Route14`, `PokeLeaves14`, `pokeModel14` (K's `pokeModel_fullReachP9U`), `good6_of_reach14`, `I14`, `Rd14`, `Tr14`, `invK_ana14`, `pokeS_invK`, `not_hot_noun`, `reachOn14`, `invStart14`, **`unaryOut_of_gate`** (the pill's `+compile-unary` is `finishLUCM` under K's record), `UnaryEnvIs14`, `UnaryCacheOK14`, `unaryMid14`, `CompLeaves14`, `compState14`, `contractLeaves14` (`inlAnnot` from Q's `inlAnnot_of_invK`), `compHyp14`, `HaltLeaves14`, **`gap14`**, **`full14`**, `gap14_fragX`. |
 | `Glue/SplitDefW.lean` | Track G (Gaps 22 (p)): the frame of `SDW` toward `SDWEndC`.  `GrowSD` (blocks old or `SDBody`, new `cond` keys at least the old `re`, `re` grows), `GrowSD.refl`, `GrowSD.trans`, **`sdw_grow`**, `growSD_of_sds`, `KSW` with `pure'`, `bind'`, `mono`, `fail`, `crash`, `ite'`, `KSW.sdw`. |
 | `Glue/AuditGlue14.lean` | Track G: `#print axioms` of `gap14`, `full14` and their parts (3500M as a single target). |
+| `Glue/GuardCallsX.lean` | Track G (Gaps 22 (q)): the run-level guard over track D's `KIMidX` (misfit 8 gone).  `LU`, `GU` (`GX ∧ LU` in place of `GD`; `GU.up`, `GU.gd`), `gxl_bunt`, `gxl_reg`, `gxl_this`, `gu_bunt`, `gu_reg`, `lg_of`, `ll_of`; `RSB`, `KPA.andRB`; `RunGX`, `RunRX`; `rs_runX`, `rs_splitX`, `rs_intoX`, `rs_pastX` (`kimidX_noSix`); `kpa_simpleNextLGX`, `kpa_callTailGX`, `kpa_callDMGX`, `kpa_callLIX`; the arms `runGX_*`, `kpa_twoRegsX`; **`runGX_lcm env`** (no hypothesis); **`top_kerfAX`**; `guardMonoC_noSixX` (from `StraightA` alone), `entryMono_noSixX`. |
+| `Glue/PlainX.lean` | Track G (Gaps 22 (q)): the entry leaves of the plain classes with no `KIMid`.  `guardMonoC_plainEX`, **`entryMono_plainKX`** (no hypothesis), `guardNaryC_plainX`, **`entryNary_plainX`** (no hypothesis), `guardMonoC_noSixNX`, `guardMonoC_noSixWX` (from `KeyUndefC` and `SDWEndC`), `noSix_of_plainD`. |
+| `Glue/RefSideH.lean` | Track G (Gaps 22 (q)): M16, the contract side at `finishLUCH`.  `SndT`, `MonoClassH`, `OptInMonoH`, `EntryMonoH`, `OptTotalMonoH`, `ClassLeavesH`, `classLeavesH_of13`, `classLeavesH_or`, `NoNary`, `HintLeaves`, **`classLeavesH_hint`** (J's `HintClsB`, raw contract by `hintContract_holds`); `RefSideMOnH`, `ContractLeavesOnH`, `finishLUCH_this`, `optRefH_on`, `rawOptInH_on`, `rawEntryH_on`, **`contractOnH_of`**, `compHypOnH_of`; **`refDH`** (the model with hints as the reference), `refMonoH_refDH`, `refDH_false`, `InFragOnH`, `refSideMOnH_refDH`. |
+| `Glue/Assemble15.lean` | Track G (Gaps 22 (q)): THE ASSEMBLY at the model with hints.  `snP` (the table's `+sound`, Q's `sfSnd`), `dirOk_noHint`, `unaryMid15`, `DireGood6` (P's `%dire` leaf), **`unaryDire_of`**, `CompLeaves15`, `compState15`, `contractLeaves15`, `compHyp15`, `HaltLeaves15`, **`gap15`**, **`full15`**; `classLeaves_plainX` (no `KIMid`), `PlainCallsDM`, `classLeaves_plainDM` (D's `KdmMonoSpec`), `FM15`, `FN15`, `ClassLeaves15`, `classLeaves15_of`, **`gap15_plainH`**, `gap15_fragX`.  `LEDGER.md` section 10 lists every hypothesis. |
+| `Glue/AuditGlue15.lean` | Track G: `#print axioms` of `gap15`, `full15`, `gap15_plainH` and their parts (3500M as a single target). |
 | `Glue/GuardFinalTop.lean` | Track G (Gaps 22 (e)): **`guardFinalU`**, **`guardFinalF`** (the two final-pass leaves are theorems), `guardMonoX`, `guardNaryX`, **`compHyp_of_fragX₃`** (`CompHyp` on `FragX` from `CompRestOE` alone, no guard leaf); two `example`s on `[6 [0 2] [6 [0 6] [0 3] [0 1]] [1 0]]`. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
@@ -7056,6 +7061,18 @@ import only its theorems.  So:
     `classLeaves_plain`) is false (track D), so `gap13_fragXPlain` is vacuous until the switch
     to `KIMidX`.  Toward `SDWEndC`: the frame `KSW` / `GrowSD` (`Glue/SplitDefW.lean`,
     `sdw_grow`); the port of `SplitDefRun.lean`'s primitive steps to it is left.
+    (q) Fifteenth pass (`Glue/GuardCallsX.lean`, `Glue/PlainX.lean`, `Glue/RefSideH.lean`,
+    `Glue/Assemble15.lean`, `Glue/AuditGlue15.lean`): **NO FALSE CLASS LEAF, HINTS IN THE
+    CLASS**.  `runGX_lcm` (D's `kimidX_noSix`, `GU` in place of `GD`) has no hypothesis, so
+    `entryMono_plainKX`, `entryNary_plainX` have none and `KIMid` is gone (misfit 8).  `gap15`
+    / `full15` take the model WITH HINTS as the reference (`refDH`: `finishLUCH` under the
+    table's `+sound` `snP`) and the class facts at `finishLUCH` (`ClassLeavesH`);
+    `gap15_plainH` covers hint-free `FragX` ∪ `PlainCalls` ∪ `PlainCallsDM` (direct calls, D's
+    `KdmMonoSpec`) and J's hinted class `HintClsB` (raw contract: J's theorem).  The poke side
+    still excludes hints (misfit 10: K's record asks `DirOk`); `unaryDire` reduced to P's
+    `DireGood6` (`unaryDire_of`).  Track K's ring finding (cached callers keep `%jmp` after a
+    later `%jets ~`) makes `CacheOK` by equality false: misfit 11, the restatement up to
+    `RingSame` is in `LEDGER.md` section 10, not done.
 23. **The poke on states: `enc` and the `%full` branch** (track P, 2026-11-27,
     `Ska/PokeEnc.lean`, `Compiler/PokeLink.lean`, `Compiler/PokeLinkFull.lean`, `Compiler/PokeLinkOpt.lean`,
     `Compiler/PokeLinkScc.lean`, `Compiler/PokeLinkJet.lean`, `Compiler/PokeLinkReach.lean`,
