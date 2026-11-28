@@ -133,6 +133,9 @@ import lemmas.Ska.CompGenConsE
 import lemmas.Ska.CompGenConsK
 import lemmas.Ska.CompGenClassF
 import lemmas.Ska.CompGenClassG
+import lemmas.Ska.CompGenClassM
+import lemmas.Ska.CompGenClassP
+import lemmas.Glue.GlueConsFragC
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -1455,3 +1458,19 @@ open Formalization.SkaModel.Comp
 #print axioms semGW_consG
 #print axioms nec_consG
 #print axioms semCoreG_consG
+#print axioms closedS_cons_of
+#print axioms nextGCS_all_of
+#print axioms consSemPre_of
+#print axioms frontsSG_consG
+#print axioms genFrag_minkEq
+#print axioms closedS_cons_gen
+#print axioms closedS_cons
+#print axioms nextGCS_consFrag
+#print axioms nextGCS_all
+#print axioms runOKGD_done_of_gen
+#print axioms doneGS_consFrag
+#print axioms contract_consFrag
+#print axioms NextGCS.toGX
+#print axioms Formalization.SkaModel.Glue.rawMonoD_consFragB
+#print axioms Formalization.SkaModel.Glue.rawMonoD_consFragM
+#print axioms Formalization.SkaModel.Glue.consFrag_fragX
