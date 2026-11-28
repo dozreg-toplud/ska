@@ -3598,7 +3598,8 @@
           ==
         (~(put by map-local) b (finish ~))
       cache
-    =/  need-pessimized  (msg-need-ord need-new need.u.s-previous cape.less.b)
+    =/  need-pessimized
+      (msg-need-ord-kept need-new need.u.s-previous cape.less.b)
     ::  Debug assert: the final pass finds the shape of the sweeps
     ::
     =>  =*  dot  .
@@ -7423,6 +7424,34 @@
     [%both (msg p.a h.b (hed:ca less)) (msg q.a t.b (tel:ca less))]
   %-  cons-need  ::  XX
   [(msg p.a p.b (hed:ca less)) (msg q.a q.b (tel:ca less))]
+::  The MSG of a member's new shape with its previous one, for the sweep
+::  loop of +compile-scc-in.  What the previous shape takes whole stays
+::  whole: the cut of +msg-need-ord (.split-max) makes a big split whole,
+::  and the plain MSG of that with a smaller split brings the split back, so
+::  a shape could come round and the loop not end.  With this a part of a
+::  member's shape only climbs: nothing, parts, the noun and its parts, the
+::  noun.
+::
+++  msg-need-ord-kept
+  |=  [new=need-ordered old=need-ordered less=cape]
+  ^-  need-ordered
+  =*  kept  .
+  ?:  =(new old)  new
+  ?:  ?=(%this -.old)  old
+  ?:  ?|  ?=(%none -.old)
+          ?=(%none -.new)
+          ?=(%this -.new)
+      ==
+    (msg-need-ord new old less)
+  ~+
+  ?:  ?=(%both -.new)
+    ?:  ?=(%both -.old)
+      [%both (kept h.new h.old (hed:ca less)) (kept t.new t.old (tel:ca less))]
+    [%both (kept h.new p.old (hed:ca less)) (kept t.new q.old (tel:ca less))]
+  ?:  ?=(%both -.old)
+    [%both (kept p.new h.old (hed:ca less)) (kept q.new t.old (tel:ca less))]
+  %-  cons-need
+  [(kept p.new p.old (hed:ca less)) (kept q.new q.old (tel:ca less))]
 ::
 ::  Registers of a shape, counted until there are more than .max
 ::
