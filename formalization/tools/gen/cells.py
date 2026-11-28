@@ -34,7 +34,7 @@ def core2bat(ax):
 def bat2core(ax):
     b=bin(ax)[2:]
     return int('10'+b[1:],2)
-Kbat=('R','nh5592f9d7750f'); door=('R','comp.door')
+Kbat=('R','nh290d8f32435a'); door=('R','comp.door')
 def armK(cax): return slot(core2bat(cax), Kbat)
 def armD(bax): return slot(bax, door)
 items = [('K', 'compile-scc-in', 2732), ('K', 'member (%compile-scc-fn)', 358182910), ('K','comp', 5590),

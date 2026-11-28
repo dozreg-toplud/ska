@@ -3,7 +3,7 @@ import lemmas.Compiler.CompShapeColI12
 /-!
 # `+inter2-fix-round` with forks
 
-`fr_trap`: the trap `round` of `+inter2-fix-round` (arm `0xaebdf` of `K`,
+`fr_trap`: the trap `round` of `+inter2-fix-round` (arm `0x15d7bf` of `K`,
 `frTrap` of `CompShapeCol.lean`) on `prev` with the parent's shape `parent`
 in its subject is `fixRound less prev parent` (`Ska/ShapeCol.lean`), forks
 to any depth; `fr_gate`: the gate body is `fixRound less prev [%none ~]`.

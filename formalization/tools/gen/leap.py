@@ -4,7 +4,7 @@ Lean definitions.
     tools/capped.sh -m 3G python3 tools/gen/leap.py OUTFILE
 
 The arms: `+need-from` (door `14`, prefix `ndf`), `+need-cut` (door
-`16375`, `ndc`), `+pass-bomb` (K `715742`, `pbo`), `+pass` (K `340`,
+`16375`, `ndc`), `+pass-bomb` (K `1431486`, `pbo`), `+pass` (K `340`,
 `pas`), `+pass-then` (K `86`, `pth`), `+pass-edit` (K `48046`, `ped`),
 `+pass-both` (K `94`, `pbt`), `+lazy-leap` (door `442366`, `lzl`), `+leap`
 (door `441179`, `lpx`; the same nouns as `lp6Arm`, cut further).  A door
@@ -23,10 +23,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from nouns import slot, norm
 OUT = sys.argv[1]
 
-K = ('C', ('R', 'nh5592f9d7750f'), ('C', ('R', 'nh15c74912d225'), ('C', ('A', 0), ('R', 'ana'))))
+K = ('C', ('R', 'nh290d8f32435a'), ('C', ('R', 'nh15c74912d225'), ('C', ('A', 0), ('R', 'ana'))))
 DOOR = ('R', 'comp.door')
 ARMS = [('need-from', 'door', 14, 'ndf'), ('need-cut', 'door', 16375, 'ndc'),
-        ('pass-bomb', 'K', 715742, 'pbo'), ('pass', 'K', 340, 'pas'), ('pass-then', 'K', 86, 'pth'),
+        ('pass-bomb', 'K', 1431486, 'pbo'), ('pass', 'K', 340, 'pas'), ('pass-then', 'K', 86, 'pth'),
         ('pass-edit', 'K', 48046, 'ped'), ('pass-both', 'K', 94, 'pbt'),
         ('lazy-leap', 'door', 442366, 'lzl'), ('leap', 'door', 441179, 'lpx')]
 

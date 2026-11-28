@@ -6,17 +6,17 @@ the pill (`slot? <axis> comp.door` or `slot? <axis> compK`).
     tools/capped.sh -m 3G python3 tools/gen/sixhelp.py NAME...
 
 Names: pastFork (door 4061), softLess (door 52), lazyShut (door 218495),
-lazyBig (K 11199), lazySize (K 348), thisOnly (K 178934), softFork (door
+lazyBig (K 11199), lazySize (K 348), thisOnly (K 357870), softFork (door
 221182), leap (door 441179), forkSure (door 884727), forkNeed (door 62),
 fork (door 862), sect (door 6906), whole (ana 1372)."""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from nouns import slot, norm, lean
 
-K = ('C', ('R', 'nh5592f9d7750f'), ('C', ('R', 'nh15c74912d225'), ('C', ('A', 0), ('R', 'ana'))))
+K = ('C', ('R', 'nh290d8f32435a'), ('C', ('R', 'nh15c74912d225'), ('C', ('A', 0), ('R', 'ana'))))
 ARMS = {
     'pastFork': ('door', 4061, 'pf'), 'softLess': ('door', 52, 'sl'), 'lazyShut': ('door', 218495, 'lsh'),
-    'lazyBig': ('K', 11199, 'lb'), 'lazySize': ('K', 348, 'lsz'), 'thisOnly': ('K', 178934, 'tho'),
+    'lazyBig': ('K', 11199, 'lb'), 'lazySize': ('K', 348, 'lsz'), 'thisOnly': ('K', 357870, 'tho'),
     'softFork': ('door', 221182, 'sfk'), 'leap': ('door', 441179, 'lp6'), 'forkSure': ('door', 884727, 'fks'),
     'forkNeed': ('door', 62, 'fkn'), 'fork': ('door', 862, 'fk'), 'sect': ('door', 6906, 'sc'),
     'whole': ('ana', 1372, 'wh'),

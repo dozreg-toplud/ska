@@ -9,7 +9,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from nouns import *
 
-K = ('C', ('R', 'nh5592f9d7750f'), ('C', ('R', 'nh15c74912d225'), ('C', ('A', 0), ('R', 'ana'))))
+K = ('C', ('R', 'nh290d8f32435a'), ('C', ('R', 'nh15c74912d225'), ('C', ('A', 0), ('R', 'ana'))))
 memo = {}
 def cells(n):
     n = norm(n)
@@ -23,7 +23,7 @@ def cells(n):
     return r
 
 ARMS = [(682, 'shape-collapse'), (6006, 'lazy-to-inter1'), (0xbbbb, 'inter1-to-inter2'),
-        (1406, 'inter2-collapse'), (0xaebdf, 'inter2-fix-round'), (1367, 'inter2-orig'),
+        (1406, 'inter2-collapse'), (0x15d7bf, 'inter2-fix-round'), (1367, 'inter2-orig'),
         (2794, 'uni-need-ord'), (20, 'msg-need-ord'), (350, 'cons-need')]
 for ax, nm in ARMS:
     a = slot(ax, K)

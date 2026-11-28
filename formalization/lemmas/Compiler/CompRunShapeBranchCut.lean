@@ -7,7 +7,7 @@ import lemmas.Compiler.CompRunLink
 `[7 [8 [1 lbrBunt] [1 lbrGate] 0 1] 11 [%fast ..] 0 1]`.  The gate: `lbrS1`, the `+spin` of
 `lbrG1` (bunt `lbrBF1`) over the forks; `lbrR1`, the edit of `gen` and `lbrS2`, the `+spin` of
 `lbrG2` (bunt `lbrBF2`) over the bonds; `lbrR2`, the edit of `gen` and `lbrFin`, the two halves
-by `+turn` of `+head` and `+tail`.  `lbrLb1`, `lbrLb2`: the bunt of `laze` (arm `0x575ee` of `K`).
+by `+turn` of `+head` and `+tail`.  `lbrLb1`, `lbrLb2`: the bunt of `laze` (arm `0xaebde` of `K`).
 `lbrG1` is cut at its pushes: `lbrF5` (after `=.  gen  gen-acc` and the four `+id`s: the call
 on `laz.y`), `lbrF6` (the call on `laz.n`), `lbrF7` (the product).
 
@@ -25,10 +25,10 @@ def lbrBunt : Noun :=
   (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))
 
 def lbrLb1 : Noun :=
-  (C (A 7) (C (C (A 9) (C (A 0x575ee) (C (A 0) (A 127)))) (C (A 9) (C (A 2) (C (A 0) (A 1))))))
+  (C (A 7) (C (C (A 9) (C (A 0xaebde) (C (A 0) (A 127)))) (C (A 9) (C (A 2) (C (A 0) (A 1))))))
 
 def lbrLb2 : Noun :=
-  (C (A 7) (C (C (A 9) (C (A 0x575ee) (C (A 0) (A 255)))) (C (A 9) (C (A 2) (C (A 0) (A 1))))))
+  (C (A 7) (C (C (A 9) (C (A 0xaebde) (C (A 0) (A 255)))) (C (A 9) (C (A 2) (C (A 0) (A 1))))))
 
 def lbrBF2 : Noun :=
   (C (C (C (A 1) (A 0)) lbrLb2) (C (A 0) (A 62)))

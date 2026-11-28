@@ -130,8 +130,8 @@ namespace Cue
 
 open Nock CueRel
 
-theorem last_bit : bits pill 6348398 1 = 1 := by
-  rw [win774 6348398 1 (by decide) (by decide)]; kernel_rfl
+theorem last_bit : bits pill 6352759 1 = 1 := by
+  rw [win775 6352759 1 (by decide) (by decide)]; kernel_rfl
 
 /-- The noun of the derivation is the noun of `lemmas/Pill`. -/
 theorem s0_eq : s0 = root := by kernel_rfl

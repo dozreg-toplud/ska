@@ -16,7 +16,7 @@ rather than to `+fork` (phase F) is
 
 (`cr6TK` of `CompRunSixN.lean`).  Here:
 
-* `+this-only` (`compK` arm `178934`, `thoBat`) on every lazy need is the
+* `+this-only` (`compK` arm `357870`, `thoBat`) on every lazy need is the
   model's `thisOnly` (`tho_all`).  Its battery is that of
   `+none-equivalent` (`neBat`) but for the first test,
   `?=(?(%this %none) -.ned.sure.laz)`, which reads only the head of the need;
@@ -42,7 +42,7 @@ variable {ctx : Noun}
 
 /-! ## `+this-only` -/
 
-/-- The battery of `+this-only` (`compK` arm `178934`): the battery of
+/-- The battery of `+this-only` (`compK` arm `357870`): the battery of
 `+none-equivalent` with the first test `?=(?(%this %none) -.ned.sure.laz)`. -/
 def thoBat : Noun :=
   (C (A 7) (C (C (A 0) (A 1)) (C (A 6) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0x656e6f6e)) (C (A 0) (A 48)))) (C (C (A 1) (A 0)) (C (A 5) (C (C (A 1) (A 0x73696874)) (C (A 0) (A 48))))))) (C (C (A 6) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 25)))) (C (C (A 1) (A 0)) (C (A 6) (C (C (A 3) (C (A 0) (A 25))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 1)) (C (A 0) (A 50)))) (C (C (A 6) (C (C (A 3) (C (A 0) (A 51))) (C (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 102)))) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 103)))) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (A 1) (A 1)))))))) (C (C (A 6) (C (C (A 8) (C (C (A 9) (C (A 0x2fbc) (C (A 0) (A 0x3ffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 58)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))) (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0)))))) (C (C (A 1) neGF) (C (A 0) (A 1))))))))) (C (A 0) (A 2)))))))) (C (C (A 6) (C (C (A 8) (C (C (A 9) (C (A 0x2fbc) (C (A 0) (A 0x3ffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 59)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C (A 0) (C (C (C (A 0x656e6f6e) (A 0)) (A 0)) (C (A 0) (A 0))))) (C (C (A 1) neGB) (C (A 0) (A 1))))))))) (C (A 0) (A 2)))))))) (C (C (A 1) (A 0)) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (A 1) (A 1))))) (C (A 1) (A 1)))))))
@@ -52,7 +52,7 @@ def thoBunt : Noun :=
 
 def thoArm : Noun := C (A 8) (C (C (A 1) thoBunt) (C (C (A 1) thoBat) (C (A 0) (A 1))))
 
-theorem tho_at : slot? 178934 compK = some thoArm := by kernel_rfl
+theorem tho_at : slot? 357870 compK = some thoArm := by kernel_rfl
 
 theorem tho_arm (d : Noun) : nock d thoArm = some (C thoBat (C thoBunt d)) := by
   unfold thoArm; simp only [nock_exec]

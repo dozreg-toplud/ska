@@ -9,7 +9,7 @@ without `+need-to-ordered`: its body is `[7 [0 1] [6 TEST YES NO]]` with
            [8 [[[1 0] LZB] [0 28] [0 2]] [[1 BG] [0 1]]]]]] [0 2]]]]
 
 `TURN` the `+turn` over `fork.laz` (gate `TG`, sample bunt `TB`), `LZB` the
-bunt of `laze` (arm `0x575ee` of `K`, at axis `15`) and `BG` the gate of the
+bunt of `laze` (arm `0xaebde` of `K`, at axis `15`) and `BG` the gate of the
 `+roll` over `bond.laz`.  `+laze-collapse` is `+shape-collapse` with arm
 `5598` in place of `6006`.  `+laze-may` is
 
@@ -29,7 +29,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from nouns import *
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else '.'
-K = ('C', ('R', 'nh5592f9d7750f'), ('C', ('R', 'nh15c74912d225'), ('C', ('A', 0), ('R', 'ana'))))
+K = ('C', ('R', 'nh290d8f32435a'), ('C', ('R', 'nh15c74912d225'), ('C', ('A', 0), ('R', 'ana'))))
 
 
 def seq(n, k):

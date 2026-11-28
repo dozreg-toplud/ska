@@ -27,7 +27,7 @@ def lztTurn : Noun :=
 
 /-- The bunt of `laze` in the sample of the gate of the `+roll`. -/
 def lztLzb : Noun :=
-  (C (A 7) (C (C (A 9) (C (A 0x575ee) (C (A 0) (A 15)))) (C (A 9) (C (A 2) (C (A 0) (A 1))))))
+  (C (A 7) (C (C (A 9) (C (A 0xaebde) (C (A 0) (A 15)))) (C (A 9) (C (A 2) (C (A 0) (A 1))))))
 
 /-- The gate of the `+roll` over `bond.laz`. -/
 def lztBG : Noun :=

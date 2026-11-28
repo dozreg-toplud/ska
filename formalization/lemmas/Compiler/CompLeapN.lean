@@ -6,7 +6,7 @@ import lemmas.Compiler.CompCtx
 Written by `tools/gen/leap.py` between the markers; do not edit by hand.
 Each arm is a gate `[8 [1 <p>Bunt] [1 <p>Bat] 0 1]` (`<p>Arm`), tied to the
 pill by the kernel fact `<p>_at`: `+need-from` (door `14`, `ndf`),
-`+need-cut` (door `16375`, `ndc`), `+pass-bomb` (K `715742`, `pbo`), `+pass`
+`+need-cut` (door `16375`, `ndc`), `+pass-bomb` (K `1431486`, `pbo`), `+pass`
 (K `340`, `pas`), `+pass-then` (K `86`, `pth`), `+pass-edit` (K `48046`,
 `ped`), `+pass-both` (K `94`, `pbt`), `+lazy-leap` (door `442366`, `lzl`),
 `+leap` (door `441179`, `lpx`, the nouns of `lp6Arm` cut further).
@@ -54,7 +54,7 @@ theorem ndc_at : slot? 16375 comp.door = some ndcArm := by kernel_rfl
 theorem ndc_arm (d : Noun) : nock d ndcArm = some (C ndcBat (C ndcBunt d)) := by
   unfold ndcArm; simp only [nock_exec]
 
-/-- The battery of `+pass-bomb` (K arm `715742`). -/
+/-- The battery of `+pass-bomb` (K arm `1431486`). -/
 def pboBat : Noun :=
   (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 6))) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 12)))) (C (A 1) (A 1))))) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 13)))) (C (A 6) (C (C (A 6) (C (C (A 3) (C (A 0) (A 6))) (C (C (A 5) (C (C (A 1) (A 11)) (C (A 0) (A 12)))) (C (A 1) (A 1))))) (C (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 54))) (C (A 0) (A 1)))))) (C (A 11) (C (C (A 0x73736f74) (C (A 1) (A 0))) (C (A 1) (A 1))))))))))
 
@@ -63,7 +63,7 @@ def pboBunt : Noun :=
 
 def pboArm : Noun := C (A 8) (C (C (A 1) pboBunt) (C (C (A 1) pboBat) (C (A 0) (A 1))))
 
-theorem pbo_at : slot? 715742 compK = some pboArm := by kernel_rfl
+theorem pbo_at : slot? 1431486 compK = some pboArm := by kernel_rfl
 
 theorem pbo_arm (d : Noun) : nock d pboArm = some (C pboBat (C pboBunt d)) := by
   unfold pboArm; simp only [nock_exec]
@@ -148,7 +148,7 @@ def pbtG2 : Noun :=
 
 /-- The battery of `+pass-both` (K arm `94`). -/
 def pbtBat : Noun :=
-  (C (A 6) (C (C (A 8) (C (C (A 9) (C (A 0xaebde) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 28))) (C (A 0) (A 2)))))))) (C (C (A 8) (C (C (A 9) (C (A 340) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 29))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 8) (C (C (A 9) (C (A 0xaebde) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 29))) (C (A 0) (A 2)))))))) (C (C (A 8) (C (C (A 9) (C (A 340) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 28))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 340) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 28))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 2)))) (C (C (A 1) (A 0)) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 340) (C (A 0) (A 15)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 61))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 2)))) (C (C (A 1) (A 0)) (C (A 8) (C (C (A 9) (C (A 0x17defa) (C (A 0) (A 0xfffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 0xbef7e) (C (A 0) (A 0xfffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 14)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C (A 0) (A 0))) (C (C (A 1) pbtG2) (C (A 0) (A 1))))))))) (C (A 0) (A 2))))))))))) (C (A 0) (A 2))))))))))))))))))))))))
+  (C (A 6) (C (C (A 8) (C (C (A 9) (C (A 0x15d7be) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 28))) (C (A 0) (A 2)))))))) (C (C (A 8) (C (C (A 9) (C (A 340) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 29))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 8) (C (C (A 9) (C (A 0x15d7be) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 29))) (C (A 0) (A 2)))))))) (C (C (A 8) (C (C (A 9) (C (A 340) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 28))) (C (A 0) (A 2)))))))) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 340) (C (A 0) (A 7)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 28))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 2)))) (C (C (A 1) (A 0)) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 340) (C (A 0) (A 15)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 61))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 5) (C (C (A 1) (A 0)) (C (A 0) (A 2)))) (C (C (A 1) (A 0)) (C (A 8) (C (C (A 9) (C (A 0x17defa) (C (A 0) (A 0xfffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 9) (C (A 0xbef7e) (C (A 0) (A 0xfffff)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 14)) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C (C (A 1) (C (A 0) (A 0))) (C (C (A 1) pbtG2) (C (A 0) (A 1))))))))) (C (A 0) (A 2))))))))))) (C (A 0) (A 2))))))))))))))))))))))))
 
 def pbtBunt : Noun :=
   (C (C (A 0) (A 0)) (C (A 0) (A 0)))

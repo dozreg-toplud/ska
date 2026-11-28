@@ -5,7 +5,7 @@ import lemmas.Ska.DatFacts
 /-!
 # `+pass` and its helpers, arms of the core `K` of `+comp`
 
-`+pass-bomb` (K `715742`), `+pass-then` (K `86`), `+pass-edit` (K `48046`),
+`+pass-bomb` (K `1431486`), `+pass-then` (K `86`), `+pass-edit` (K `48046`),
 and the mutual pair `+pass` (K `340`) and `+pass-both` (K `94`), all arms of
 the core `K` in which `+comp` is defined (`compK`).  They read of `K` each
 other, `+gep` (K `5597`) and layer 2 at `65535` (`+turn`, `+murn`, `+zing`,
@@ -44,7 +44,7 @@ def PosL (l : List (Nat × Nat)) : Prop := ∀ e ∈ l, e.1 ≠ 0 ∧ e.2 ≠ 0
 
 /-- What the arms of `+pass` read of the core `K`. -/
 def PassIn (K : Noun) : Prop :=
-  slot? 65535 K = some layer2 ∧ slot? 5597 K = some gepArm ∧ slot? 715742 K = some pboArm ∧
+  slot? 65535 K = some layer2 ∧ slot? 5597 K = some gepArm ∧ slot? 1431486 K = some pboArm ∧
   slot? 340 K = some pasArm ∧ slot? 86 K = some pthArm ∧ slot? 48046 K = some pedArm ∧
   slot? 94 K = some pbtArm
 

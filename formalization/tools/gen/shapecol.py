@@ -4,7 +4,7 @@ on a fork-free lazy need, cut into named parts, as Lean definitions.
     tools/capped.sh -m 3G python3 tools/gen/shapecol.py OUTDIR
 
 writes `OUTDIR/shapecol.lean`: for each of `+uni-need-ord` (`2794`, `uno`),
-`+lazy-to-inter1` (`6006`, `l2i`), `+inter2-fix-round` (`0xaebdf`, `fr`),
+`+lazy-to-inter1` (`6006`, `l2i`), `+inter2-fix-round` (`0x15d7bf`, `fr`),
 `+inter2-orig` (`1367`, `oi`), `+inter2-collapse` (`1406`, `ic`) and
 `+shape-collapse` (`682`, `sc`), the sample bunt, the gate body and the
 `%fast` hint of its arm `[7 [8 [1 BUNT] [1 BODY] 0 1] HINT]`, and the parts
@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from nouns import *
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else '.'
-K = ('C', ('R', 'nh5592f9d7750f'), ('C', ('R', 'nh15c74912d225'), ('C', ('A', 0), ('R', 'ana'))))
+K = ('C', ('R', 'nh290d8f32435a'), ('C', ('R', 'nh15c74912d225'), ('C', ('A', 0), ('R', 'ana'))))
 
 
 def seq(n, k):
@@ -73,7 +73,7 @@ defs += [
     ('l2iHint', lHint, 'Its `%fast` hint.'),
 ]
 # +inter2-fix-round
-fBunt, fBody, fHint = gate(0xaebdf)
+fBunt, fBody, fHint = gate(0x15d7bf)
 _, _, f1 = seq(fBody, 3)             # [8 [1 none] F1]
 _, trapq, _ = seq(f1, 3)             # [8 [1 TRAP] [9 2 0 1]]
 frTrap = norm(norm(trapq)[2])

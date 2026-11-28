@@ -22,7 +22,7 @@ has no function for it, but on a fork-free lazy need `[[ned lok] ~ ~]` it is
 2. `+inter1-to-inter2` (`i2_gate` of `CompSureOf.lean`) gives `[X ~]` with
    `X` the noun of `sureOf (needToOrd ned) lok less`;
 3. `+inter2-collapse` (arm `1406`) runs its fixed point: one round of
-   `+inter2-fix-round` (arm `0xaebdf`) on `[X ~]` is `[(uni-need-ord [%none ~]
+   `+inter2-fix-round` (arm `0x15d7bf`) on `[X ~]` is `[(uni-need-ord [%none ~]
    X) ~]`, which is `[X ~]` (`uno_none`, the first two branches of
    `+uni-need-ord`, arm `2794`), the `+turn` and the `+roll` over no fork
    doing nothing (`fr_gate_nofork`), so the loop stops at once; then
@@ -145,7 +145,7 @@ def oiHint : Noun :=
 
 /-- The fixed point loop of `+inter2-collapse`. -/
 def icTrap : Noun :=
-  (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 0xaebdf) (C (A 0) (A 31)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 14)) (C (A 0) (A 125)))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 5) (C (C (A 0) (A 2)) (C (A 0) (A 14)))) (C (C (A 0) (A 2)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 2))) (C (A 0) (A 3)))))))))))
+  (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 0x15d7bf) (C (A 0) (A 31)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 14)) (C (A 0) (A 125)))) (C (A 0) (A 2)))))))) (C (A 6) (C (C (A 5) (C (C (A 0) (A 2)) (C (A 0) (A 14)))) (C (C (A 0) (A 2)) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 2))) (C (A 0) (A 3)))))))))))
 
 /-- The gate body of `+inter2-collapse`. -/
 def icBody : Noun :=
@@ -175,8 +175,8 @@ def icArm : Noun := C (A 7) (C (C (A 8) (C (C (A 1) icBunt) (C (C (A 1) icBody) 
 theorem uno_at : slot? 2794 compK = some unoArm := by kernel_rfl
 /-- `+lazy-to-inter1` is arm `6006` of `K`. -/
 theorem l2i_at : slot? 6006 compK = some l2iArm := by kernel_rfl
-/-- `+inter2-fix-round` is arm `0xaebdf` of `K`. -/
-theorem fr_at : slot? 0xaebdf compK = some frArm := by kernel_rfl
+/-- `+inter2-fix-round` is arm `0x15d7bf` of `K`. -/
+theorem fr_at : slot? 0x15d7bf compK = some frArm := by kernel_rfl
 /-- `+inter2-orig` is arm `1367` of `K`. -/
 theorem oi_at : slot? 1367 compK = some oiArm := by kernel_rfl
 /-- `+inter2-collapse` is arm `1406` of `K`. -/

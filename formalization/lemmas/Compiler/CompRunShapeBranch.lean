@@ -49,15 +49,15 @@ theorem lbr_door (y : Noun) : nock (C comp.door y) (C (A 9) (C (A 0x15576) (C (A
 
 /-! ## The bunt of `laze` -/
 
-/-- The bunt of `laze` from `K`: the mold at arm `0x575ee` of `K`, slammed on its own sample. -/
-def lbrLzbF : Noun := C (A 7) (C (C (A 9) (C (A 0x575ee) (C (A 0) (A 1)))) (C (A 9) (C (A 2) (C (A 0) (A 1)))))
+/-- The bunt of `laze` from `K`: the mold at arm `0xaebde` of `K`, slammed on its own sample. -/
+def lbrLzbF : Noun := C (A 7) (C (C (A 9) (C (A 0xaebde) (C (A 0) (A 1)))) (C (A 9) (C (A 2) (C (A 0) (A 1)))))
 
 noncomputable def lbrLzbV : Noun := (evalFuel 2000 compK lbrLzbF).getD (A 0)
 
 theorem lbr_lzb : nock compK lbrLzbF = some lbrLzbV := nock_of_evalFuel (fuel := 2000) (by kernel_rfl)
 
 theorem lbr_lb_at (T : Noun) (ax : Nat) (h : slot? ax T = some compK) :
-    nock T (C (A 7) (C (C (A 9) (C (A 0x575ee) (C (A 0) (A ax)))) (C (A 9) (C (A 2) (C (A 0) (A 1))))))
+    nock T (C (A 7) (C (C (A 9) (C (A 0xaebde) (C (A 0) (A ax)))) (C (A 9) (C (A 2) (C (A 0) (A 1))))))
       = some lbrLzbV := by
   have hb := lbr_lzb
   unfold lbrLzbF at hb
