@@ -384,5 +384,34 @@ theorem memSweepCall_of_AT {r : RealCfg} {xs : ShapeX} {order : List Noun} {kids
     (memShapeBranch_iffA _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _).2 hbr, C1, C2, C3, C4, SU, memY_cache st1 _, hQ2,
     by rw [hrs]; exact hS2, fun b' _ k hk => by simp at hk⟩
 
+
+/-! ## K's leaf from `CalleeCompiledP` and the keys of the SCC -/
+
+theorem agreeIP_rest {env : CallEnv} {Pe : Noun → Prop} {c s f s' f' : Noun}
+    (hn : (⟨c, s', f'⟩ : GenRest).NoSoft) (h : AgreeIP env Pe ⟨c, s, f⟩) : AgreeIP env Pe ⟨c, s', f'⟩ := ⟨hn, h.2⟩
+
+/-- **`SweepMissStep` from track K's `CalleeCompiledP`** (at the bells in progress `P` and `S`, a
+rest predicate blind to `soft` / `sofs`) **and the keys of `S`**: the compile of the miss leaves
+the `nary` and `sure` entries of the members as they were (`hkeys`: the one fact that is not a
+`CalleeCompiledP` fact; true because the callee's SCC is disjoint from `S`). -/
+theorem sweepMissStep_of_P {ctx : Noun} {env : CallEnv} {RR : GenRest → Prop} {P : Noun → Prop} {S : Noun}
+    {x : GenRest} {CA1 : Noun} {b : Bell} {nb : NeedOrd}
+    (hRR : ∀ c s f s' f', RR ⟨c, s, f⟩ → RR ⟨c, s', f'⟩)
+    (hcc : CalleeCompiledP env RR (fun k => P k ∨ k ∈ tapList S) ctx b nb)
+    (hkeys : ∀ (CA2 : Noun) (st : RSt CSet) (NR MO SC RS CA' : Noun), SweepMissK env RR P S x CA1 CA2 →
+      CA2 = C NR (C MO (C SC RS)) → CccMiss ctx b nb NR MO SC RS (A 0) (HoonSet.toNoun st.sofs) CA' →
+      (∀ NR1 REST1, CA2 = C NR1 REST1 → ∃ NR2 REST2, CA' = C NR2 REST2 ∧
+        ∀ k ∈ tapList S, getF mugF k NR2 = getF mugF k NR1) ∧
+      (∀ SU1, slot? 31 CA2 = some SU1 → ∃ SU2, slot? 31 CA' = some SU2 ∧
+        ∀ k ∈ tapList S, getF mugF k SU2 = getF mugF k SU1)) :
+    SweepMissStep ctx env RR P S x CA1 b nb := by
+  intro CA2 st NR MO SC RS hM hc h0
+  obtain ⟨-, hA, hR, -, -⟩ := id hM
+  have hns : (⟨CA2, A 0, HoonSet.toNoun st.sofs⟩ : GenRest).NoSoft := fun o => rfl
+  obtain ⟨CA', hmiss, hE, hA', hR', hit⟩ := hcc ⟨CA2, A 0, HoonSet.toNoun st.sofs⟩ NR MO SC RS
+    (agreeIP_rest hns hA) (hRR _ _ _ _ _ hR) hc h0
+  obtain ⟨hk1, hk2⟩ := hkeys CA2 st NR MO SC RS CA' hM hc hmiss
+  exact ⟨CA', hmiss, ⟨⟨rfl, rfl, hE.2.2.1, hE.2.2.2⟩, agreeIP_rest hA.1 hA', hRR _ _ _ _ _ hR', hk1, hk2⟩, hit⟩
+
 end Compiler
 end Formalization
