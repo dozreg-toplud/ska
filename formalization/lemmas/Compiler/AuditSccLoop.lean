@@ -28,6 +28,9 @@ import lemmas.Ska.SccLoopSoftTry
 import lemmas.Compiler.CompSccLoopSweepA
 import lemmas.Compiler.CompSccLoopSoftMemDone2
 import lemmas.Compiler.CompSccLoopSoft2Loop
+import lemmas.Compiler.CompSccLoopSoftTryAnd
+import lemmas.Compiler.CompSccLoopSoftTryFlag
+import lemmas.Compiler.CompSccLoopSoftCutAll
 
 /-! The axioms of the theorems of `Ska/SccLoop.lean`, `Ska/SccLoopMsg.lean` and `Ska/SccLoopCycle.lean`
 (README Gaps 21): each must print
@@ -248,3 +251,21 @@ open Formalization.SkaModel.SccLoop
 #print axioms Formalization.Compiler.memGate_done_realS2
 #print axioms Formalization.Compiler.memGate_done_KS2
 #print axioms Formalization.Compiler.csi_gate_ranked_soft2F
+#print axioms Formalization.Compiler.tl_lat
+#print axioms Formalization.Compiler.tl_tom
+#print axioms Formalization.Compiler.tc_gate
+#print axioms Formalization.Compiler.tc_push
+#print axioms Formalization.Compiler.tz_ec_gate
+#print axioms Formalization.Compiler.tz_pes
+#print axioms Formalization.Compiler.tz_fail
+#print axioms Formalization.Compiler.tf_def
+#print axioms Formalization.Compiler.tf_trap
+#print axioms Formalization.Compiler.tf_test
+#print axioms Formalization.Compiler.tw_loop
+#print axioms Formalization.Compiler.tw_last
+#print axioms Formalization.Compiler.ta_and
+#print axioms Formalization.Compiler.ta_tail_eq
+#print axioms Formalization.Compiler.ty_try
+#print axioms Formalization.Compiler.sq_sa_gate
+#print axioms Formalization.Compiler.sq_sp_gate
+#print axioms Formalization.Compiler.sq_sx
