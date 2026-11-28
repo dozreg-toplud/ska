@@ -37,6 +37,9 @@ abbrev Bat := Nat → Option Noun
 /-- Nothing known. -/
 def noBat : Bat := fun _ => Option.none
 
+/-- `bat` for the subject made by the formula `b`: `bat` itself when `b` is `[0 1]`. -/
+def batAt (bat : Bat) (b : Noun) : Bat := if b = Noun.cell (Noun.atom 0) (Noun.atom 1) then bat else noBat
+
 /-- **What `bat` says holds of every subject of `P`.** -/
 def BatOK (bat : Bat) (P : Noun → Prop) : Prop := ∀ a F, bat a = some F → ∀ s, P s → slot? a s = some F
 
@@ -106,7 +109,7 @@ def hcX (snd : Nomm → NeedOrd → Bool) (bat : Bat) : Noun → Nomm → HW
           | Option.none =>
               match p, b with
               | Nomm.n0 1, Noun.cell (Noun.atom 0) (Noun.atom 1) => hw01 (hcX snd bat c q)
-              | _, _ => hw7G snd f nm b p (hcX snd bat b p) (hcX snd noBat c q)
+              | _, _ => hw7G snd f nm b p (hcX snd bat b p) (hcX snd (batAt bat b) c q)
       | Noun.cell (Noun.atom 9) (Noun.cell (Noun.atom a) c) =>
           match p, c with
           | Nomm.n0 1, Noun.cell (Noun.atom 0) (Noun.atom 1) =>
@@ -116,7 +119,7 @@ def hcX (snd : Nomm → NeedOrd → Bool) (bat : Bat) : Noun → Nomm → HW
                   (Noun.cell (Noun.atom 0) (Noun.atom a)))) q))
           | _, _ =>
               hw7G snd f nm c p (hcX snd bat c p)
-                (hcX snd noBat (Noun.cell (Noun.atom 2) (Noun.cell (Noun.cell (Noun.atom 0) (Noun.atom 1))
+                (hcX snd (batAt bat c) (Noun.cell (Noun.atom 2) (Noun.cell (Noun.cell (Noun.atom 0) (Noun.atom 1))
                   (Noun.cell (Noun.atom 0) (Noun.atom a)))) q)
       | Noun.cell (Noun.atom 8) (Noun.cell (Noun.cell a1 a2) c) =>
           let b := Noun.cell (Noun.cell a1 a2) (Noun.cell (Noun.atom 0) (Noun.atom 1))
@@ -183,10 +186,10 @@ and at an inlined call the facts of `X` against `F`. -/
 def FitHX (lib : Lib) (env : CallEnv) : Bat → (Noun → Prop) → Noun → Nomm → Prop
   | bat, P, Noun.cell (Noun.atom 7) (Noun.cell b c), Nomm.n7 p q =>
       FitHX lib env bat P b p ∧
-        FitHX lib env (if b = Noun.cell (Noun.atom 0) (Noun.atom 1) then bat else noBat) (Img lib P b) c q
+        FitHX lib env (batAt bat b) (Img lib P b) c q
   | bat, P, Noun.cell (Noun.atom 9) (Noun.cell (Noun.atom a) c), Nomm.n7 p q =>
       FitHX lib env bat P c p ∧
-        FitHX lib env (if c = Noun.cell (Noun.atom 0) (Noun.atom 1) then bat else noBat) (Img lib P c)
+        FitHX lib env (batAt bat c) (Img lib P c)
           (n3 (A 2) (slot 1) (slot a)) q
   | bat, P, Noun.cell (Noun.atom 8) (Noun.cell (Noun.cell a1 a2) c), Nomm.n7 p q =>
       FitHX lib env bat P (C (C a1 a2) (slot 1)) p ∧ FitHX lib env noBat (Img lib P (C (C a1 a2) (slot 1))) c q
