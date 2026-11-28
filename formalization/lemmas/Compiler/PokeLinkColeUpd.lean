@@ -252,5 +252,40 @@ theorem srEnd_ts (nco q ncN bkN g0 rN a b c g1 ro co ba ar e e0 pd cole mN cN ca
     (by simp [srTS, srS3x, srSk, srSam, nock_exec]) (by simp [srTS, srS3x, srSk, srSam, nock_exec])
     (by simp [srTS, srS3x, srSk, srSam, nock_exec]) hnc hs hRg hc
 
+/-! ## `SrEndAt` from the gate fact and a model fact -/
+
+/-- **`SrEndAt` from the run of `srEnd`**: where the regs' `new` is a list
+`l` and the product's list is its reverse, `+cole-match` answers a crash,
+`~` or `[~ ring]` at the keys of `new-code` (the gate fact), `cole` is a
+cole pair, and the `+rep:in` of `coleStepO` over the set of the keys of
+`new-code` gives the edited jets `j'` (a fact of the model alone). -/
+theorem srEndAt_of (root : Ident) (r1 r2 r3 r4 jRest codeN varsN hotN : Noun) (gr : Callgraph FinMap × Noun)
+    (r : Callgraph FinMap × FinMap Bell (FDatum FinMap) × Memo FinMap × FDatum FinMap × Noun)
+    (fl : Flags) (code nc : FinMap Bell (VarEntry FinMap)) (bkN vr j' newN nco : Noun)
+    (ro co ba ar pd cole : Noun) (l : List Noun)
+    (hreg : gr.2 = C ro (C co (C ba (C ar (listN l))))) (hnew : newN = listN l.reverse)
+    (hRg : ∀ x, (∃ v, Get (nc.toNoun varEntryNoun) x v) → ∀ sek, CmRing (coleMatchP x sek co ar hotN))
+    (hc : CoPair cole)
+    (hj : ∀ nb, IsSet mugF nb → (∀ k, Has nb k ↔ ∃ v, Get (nc.toNoun varEntryNoun) k v) →
+      (repO (coleStepO ((addCode code nc).toNoun fun e => e.seek.toNoun) co ar hotN) nb cole).map
+        (fun cole' => C ro (C co (C ba (C ar (C pd cole'))))) = some j') :
+    SrEndAt root r1 r2 r3 r4 jRest codeN varsN hotN gr r fl code nc bkN vr j' newN nco
+      (C ro (C co (C ba (C ar (C pd cole))))) := by
+  intro q
+  have hd : C (Treap.toNoun FDatum.toNoun gr.1) gr.2 =
+      C (Treap.toNoun FDatum.toNoun gr.1) (C ro (C co (C ba (C ar (listN l))))) := by rw [hreg]
+  rw [hd]
+  obtain ⟨nb, hset, hhas, h⟩ := srEnd_ts nco q (nc.toNoun varEntryNoun) bkN _ (srRootN root r) _ _ _
+    (Treap.toNoun FDatum.toNoun gr.1) ro co ba ar _ _ pd cole _ _ _ vr _ hotN l
+    (FinMap.isMap_toNoun _ nc) (FinMap.isMap_toNoun _ (addCode code nc)) hRg hc
+  rw [h, hnew]
+  have hj' := hj nb hset hhas
+  cases e : repO (coleStepO ((addCode code nc).toNoun fun e => e.seek.toNoun) co ar hotN) nb cole with
+  | none => rw [e] at hj'; cases hj'
+  | some c' =>
+    rw [e] at hj'
+    simp only [Option.map_some, Option.some.injEq] at hj' ⊢
+    rw [← hj']
+
 end Compiler
 end Formalization
