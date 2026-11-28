@@ -21,6 +21,8 @@ def couBat : Noun := (slot? 109 couArm).getD (A 0)
 def couRep : Noun := (slot? 245 couBat).getD (A 0)
 /-- the bunt of the sample of the step gate, 10 cells: axis `4062` of `couRep`. -/
 def couSam : Noun := (slot? 4062 couRep).getD (A 0)
+/-- the bunt of `bell`, 8 cells: axis `2` of `couSam`. -/
+def couBunt : Noun := (slot? 2 couSam).getD (A 0)
 /-- the battery of the step gate, 73 cells: axis `16253` of `couRep`. -/
 def couStep : Noun := (slot? 16253 couRep).getD (A 0)
 /-- the push of `sek`: `got:by` of `seek.lon` under `%mean`, 25 cells: axis `6` of `couStep`. -/
@@ -37,7 +39,8 @@ def cputBat : Noun := (slot? 29 cputArm).getD (A 0)
 theorem couArm_eq : couArm = (C (A 7) (C (C (A 8) (C (C (A 1) (C (C (C (A 0) (C (A 0) (C (A 0) (C (A 0) (C (A 0) (C (A 0) (A 0))))))) (C (A 0) (C (A 0) (C (A 0) (C (A 0) (A 0)))))) (C (A 0) (A 0)))) (C (C (A 1) couBat) (C (A 0) (A 1))))) (C (A 11) (C (C (A 0x74736166) (C (A 1) (C (A 0x6574616470752d656c6f632d616b73) (C (C (A 0) (A 4095)) (A 0))))) (C (A 0) (A 1)))))) := by kernel_rfl
 theorem couBat_eq : couBat = (C (A 7) (C (C (A 0) (A 1)) (C (A 7) (C (C (A 10) (C (C (A 799) couRep) (C (A 0) (A 1)))) (C (A 0) (A 12)))))) := by kernel_rfl
 theorem couRep_eq : couRep = (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6102) (C (A 0) (A 0x7fff)))) (C (A 9) (C (A 383) (C (A 10) (C (C (A 6) (C (A 0) (A 58))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 7) (C (C (A 0) (A 3)) (C (A 8) (C couSam (C (C (A 1) couStep) (C (A 0) (A 1)))))))) (C (A 0) (A 2)))))))) := by kernel_rfl
-theorem couSam_eq : couSam = (C (C (A 7) (C (C (A 9) (C (A 382) (C (A 0) (A 15)))) (C (A 9) (C (A 2) (C (A 0) (A 1)))))) (C (A 0) (A 799))) := by kernel_rfl
+theorem couSam_eq : couSam = (C couBunt (C (A 0) (A 799))) := by kernel_rfl
+theorem couBunt_eq : couBunt = (C (A 7) (C (C (A 9) (C (A 382) (C (A 0) (A 15)))) (C (A 9) (C (A 2) (C (A 0) (A 1)))))) := by kernel_rfl
 theorem couStep_eq : couStep = (C (A 8) (C couGot (C (A 8) (C couCm couTl)))) := by kernel_rfl
 theorem couGot_eq : couGot = (C (A 11) (C (C (A 0x6e61656d) (C (A 1) (A 0x6b6565732d616b73))) (C (A 8) (C (C (A 8) (C (C (A 9) (C (A 6103) (C (A 0) (A 0x1ffff)))) (C (A 9) (C (A 701) (C (A 10) (C (C (A 6) (C (A 0) (A 3999))) (C (A 0) (A 2)))))))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (A 0) (A 28))) (C (A 0) (A 2)))))))))) := by kernel_rfl
 theorem couCm_eq : couCm = (C (A 8) (C (C (A 9) (C (A 0x57dc) (C (A 0) (A 63)))) (C (A 9) (C (A 2) (C (A 10) (C (C (A 6) (C (C (A 0) (A 60)) (C (C (A 0) (A 6)) (C (C (A 0) (A 2018)) (C (C (A 0) (A 8078)) (C (A 0) (A 507))))))) (C (A 0) (A 2)))))))) := by kernel_rfl
@@ -155,6 +158,46 @@ theorem couStep_run (x acc j1 co j3 ar j5 mN cN caN vN sN nb hot : Noun) (hs : I
     unfold couG
     conv => lhs; arg 2; rw [couStep_eq]
     simp [nock_exec, couGot_eq, ana_l2, by.arm_at, by_arm, by.got.arm_at, got_arm, hgot, coleStepO, hg]
+
+/-! ## The gate -/
+
+/-- The bunt of `bell` in the sample of the step gate. -/
+noncomputable def couBuntV : Noun := (evalFuel 3000 (C (A 0) (C (A 0) ana)) couBunt).getD (A 0)
+
+theorem couBunt_run (x y : Noun) : nock (C x (C y ana)) couBunt = some couBuntV :=
+  nock_of_evalFuel (fuel := 3000) (by kernel_rfl)
+
+theorem couSam_run (x y : Noun) :
+    nock (C x (C y ana)) couSam = (slot? 799 (C x (C y ana))).map fun z => C couBuntV z := by
+  have h := couBunt_run x y
+  rw [couBunt_eq] at h
+  rw [couSam_eq, couBunt_eq, nock_cell, h, nock_op0]
+  cases slot? 799 (C x (C y ana)) <;> rfl
+
+set_option maxHeartbeats 4000000 in
+/-- **The gate of `+ska-cole-update`** on `[lon new-bells hot]`, `seek.lon`
+a map, `new-bells` a set at whose elements `+cole-match` answers a crash,
+`~` or `[~ ring]`, and a cole pair: `+rep:in` of `coleStepO`, written back
+into `cole.jets.lon`. -/
+theorem couBat_run (j1 co j3 ar pd cole mN cN caN vN sN nb hot : Noun) (hs : IsMap mugF sN)
+    (hnb : IsSet mugF nb) (hR : ∀ x ∈ preorder nb, ∀ sek, CmRing (coleMatchP x sek co ar hot))
+    (hc : CoPair cole) :
+    nock (couG j1 co j3 ar (C pd cole) mN cN caN vN sN nb hot) couBat =
+      (repO (coleStepO sN co ar hot) nb cole).map fun cole' =>
+        C (C j1 (C co (C j3 (C ar (C pd cole'))))) (C mN (C cN (C caN (C vN sN)))) := by
+  have hrep := rep_gateP in.battery layer2 couStep couBuntV cole (couG j1 co j3 ar (C pd cole) mN cN caN vN sN nb hot)
+    (coleStepO sN co ar hot) CoPair (fun x => ∀ sek, CmRing (coleMatchP x sek co ar hot))
+    (fun x acc hx hacc => couStep_run x acc j1 co j3 ar (C pd cole) mN cN caN vN sN nb hot hs hx hacc)
+    (fun _ _ _ _ h e => coleStepO_pair h e) nb (Tree.of_isSet hnb) hR hc
+  unfold couG at hrep ⊢
+  conv => lhs; arg 2; rw [couBat_eq]
+  cases h : repO (coleStepO sN co ar hot) nb cole with
+  | none =>
+    rw [h] at hrep
+    simp [nock_exec, couRep_eq, couSam_run, ana_l2, in.arm_at, in_arm, in.rep.arm_at, rep_arm, hrep]
+  | some c' =>
+    rw [h] at hrep
+    simp [nock_exec, couRep_eq, couSam_run, ana_l2, in.arm_at, in_arm, in.rep.arm_at, rep_arm, hrep]
 
 end Compiler
 end Formalization

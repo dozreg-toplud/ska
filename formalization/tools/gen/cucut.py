@@ -51,6 +51,7 @@ PARTS = [
     ('couBat', 'couArm', 'thttht', 'the battery of the gate'),
     ('couRep', 'couBat', 'ttththt', 'the `+rep:in` of `new-bells` with its step gate'),
     ('couSam', 'couRep', 'tttttht' + 'ttth', 'the bunt of the sample of the step gate'),
+    ('couBunt', 'couSam', 'h', 'the bunt of `bell`'),
     ('couStep', 'couRep', 'tttttht' + 'ttttht', 'the battery of the step gate'),
     ('couGot', 'couStep', 'th', 'the push of `sek`: `got:by` of `seek.lon` under `%mean`'),
     ('couCm', 'couStep', 'ttth', 'the push of the call of `+cole-match`'),
