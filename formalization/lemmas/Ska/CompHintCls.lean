@@ -99,7 +99,7 @@ def hvLeaf (x : Bool) (nm : Nomm) : HV :=
 clue `h`: `sur`, `reg`, `top` from `q`'s `sur`, `reg`; `sh` with a `[1 k]` clue. -/
 def hvKeptD (snd : Nomm → NeedOrd → Bool) (fh : Noun) (h q : Nomm) (vq : HV) (clue1 stop : Bool) : HV :=
   let ok := (hcLeaf fh h).isSome && hcNB h && snd q NeedOrd.this
-  { sur := ok && vq.sur, reg := ok && vq.reg, top := ok && (vq.reg || (stop && vq.dall)),
+  { sur := ok && vq.sur, reg := ok && vq.reg, top := ok && vq.reg,
     dall := ok && stop && vq.leaf.isSome && hcNB q,
     sh := if clue1 && snd q NeedOrd.this then vq.sh.map (· + 1) else Option.none }
 
