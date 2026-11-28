@@ -6,6 +6,23 @@ import lemmas.Compiler.CompRunShapeTen
 import lemmas.Compiler.CompRunShapeTwo
 import lemmas.Compiler.CompRunShapeTwoI
 import lemmas.Compiler.CompRunShapeSix
+import lemmas.Compiler.CompRunShapeECases
+import lemmas.Compiler.CompRunShapeAll
+import lemmas.Compiler.CompRunShapeAll6
+import lemmas.Compiler.CompRunShapeMember
+import lemmas.Compiler.CompRunShapeColl
+import lemmas.Compiler.CompRunShapeMay
+import lemmas.Compiler.CompRunShapeBno
+import lemmas.Compiler.CompRunShapeLeaps
+import lemmas.Compiler.CompRunShapeThisOnly
+import lemmas.Compiler.CompRunShapeWhole
+import lemmas.Compiler.CompRunShapeSoftFork
+import lemmas.Compiler.CompRunShapeBranch
+import lemmas.Compiler.CompRunShapeSixN
+import lemmas.Compiler.CompRunShapeTwelve
+import lemmas.Compiler.CompRunShapePastIf
+import lemmas.Compiler.CompRunShapeEleven
+import lemmas.Compiler.CompRunShapeMean
 
 /-! The axioms of the main theorems of track A's `+run-shape` link (2026-11-27). -/
 
@@ -73,3 +90,61 @@ import lemmas.Compiler.CompRunShapeSix
 #print axioms Formalization.Compiler.rs_n6DP
 #print axioms Formalization.Compiler.runShape_n6DP_nz
 #print axioms Formalization.Compiler.rs_n2iW
+
+/-! 2026-11-28: the induction on `RsAtE`, `%6` under `%next`, `%12`, `%11`, the helper arms, the sweeps' branch. -/
+
+#print axioms Formalization.Compiler.rs_n3E
+#print axioms Formalization.Compiler.rs_n7E
+#print axioms Formalization.Compiler.rs_consE
+#print axioms Formalization.Compiler.rs_n10E
+#print axioms Formalization.Compiler.rs_n5E
+#print axioms Formalization.Compiler.rs_n2iE
+#print axioms Formalization.Compiler.rs_n6DPE
+#print axioms Formalization.Compiler.runShape_nzE
+#print axioms Formalization.Compiler.runShape_nzT
+#print axioms Formalization.Compiler.rs_clsE
+#print axioms Formalization.Compiler.rs_tailE
+#print axioms Formalization.Compiler.rs_doneE
+#print axioms Formalization.Compiler.memY_gen
+#print axioms Formalization.Compiler.ms_run
+#print axioms Formalization.Compiler.memShape_branchA
+#print axioms Formalization.Compiler.memShape_branchA6
+#print axioms Formalization.Compiler.lzt_gate
+#print axioms Formalization.Compiler.lco_gate
+#print axioms Formalization.Compiler.lco_call
+#print axioms Formalization.Compiler.lmy_gate
+#print axioms Formalization.Compiler.lmy_call
+#print axioms Formalization.Compiler.bno_gate
+#print axioms Formalization.Compiler.bno_loop
+#print axioms Formalization.Compiler.bno_call
+#print axioms Formalization.Compiler.nf_gate_ord
+#print axioms Formalization.Compiler.llp_all
+#print axioms Formalization.Compiler.lls_all
+#print axioms Formalization.Compiler.lazeLeaps_nz
+#print axioms Formalization.Compiler.noc_gate
+#print axioms Formalization.Compiler.nof_gate
+#print axioms Formalization.Compiler.lto_all
+#print axioms Formalization.Compiler.whl_gate
+#print axioms Formalization.Compiler.whl_both
+#print axioms Formalization.Compiler.lsf_all
+#print axioms Formalization.Compiler.lienO_gate
+#print axioms Formalization.Compiler.lbr_all
+#print axioms Formalization.Compiler.lbr_call
+#print axioms Formalization.Compiler.lazeBranch_nz
+#print axioms Formalization.Compiler.six_fuel
+#print axioms Formalization.Compiler.rs_n6NE
+#print axioms Formalization.Compiler.sixShape_nz
+#print axioms Formalization.Compiler.sixDeep_of_idem
+#print axioms Formalization.Compiler.runShape_nzE6
+#print axioms Formalization.Compiler.rs_clsE6
+#print axioms Formalization.Compiler.rs_doneE6
+#print axioms Formalization.Compiler.rs_n12E
+#print axioms Formalization.Compiler.twelveNz
+#print axioms Formalization.Compiler.lpi_gate
+#print axioms Formalization.Compiler.lazePastIf_nz
+#print axioms Formalization.Compiler.rs_n11sE
+#print axioms Formalization.Compiler.rs_n11dE
+#print axioms Formalization.Compiler.elevenSNz
+#print axioms Formalization.Compiler.elevenDNz
+#print axioms Formalization.Compiler.rmk_gate
+#print axioms Formalization.Compiler.meanNz
