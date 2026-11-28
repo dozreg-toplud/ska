@@ -48,7 +48,7 @@ merged in (3db60b97).  Its names are checked in `lemmas/Glue/AuditGlue14.lean`
 (axioms of `gap14` and its parts); the names of other tracks it cites
 (`InvK`, `inlAnnot_of_invK`, `pokeModel_fullReachP9U`, `GateRest6All`,
 `kimid_false`, `pokeModel_fullReachP11`) were FOUND in this tree.  The
-assembly is now `gap14` (section 10); section 10a keeps the list of `gap13`.
+assembly is now `gap15` (section 10); sections 10a and 10b keep the lists of `gap14` and `gap13`.
 
 ## THE ASSEMBLY (thirteenth pass): where `Full` stands, in ONE theorem
 
@@ -1428,7 +1428,148 @@ M20 (eighth pass, track I [281]). `runLC` / `runLCM` do NOT cover SOFT
     `+crash-need`, the `+mede` difference); classes with soft calls can now
     be stated on `runLCS2`.  Not yet a class of `ClassLeaves13`.
 
-## 10. THE HYPOTHESES OF `gap14`, one open leaf each (fourteenth pass)
+## 10. THE HYPOTHESES OF `gap15`, one open leaf each (fifteenth pass)
+
+`gap15 Ar D hR hP hC hK hH hF : Assembly.Gap libP (liftPoke (enc flagsOf) (pokeS Ar))
+(liftInv (enc flagsOf) (InvSMI libP (refDH CSet D snP) I14))` (`Glue/Assemble15.lean`),
+`full15 : Ska.Full`; the instance **`gap15_plainH`** (`hK := classLeaves15_of hL`) and
+`gap15_fragX` (no class leaf).  The reached states (`I14`, `Rd14`, `Tr14`) are `gap14`'s.
+- THE REFERENCE IS THE MODEL WITH HINTS: `refDH CSet D snP` is `finishLUCH (D.env ..)
+  (snP long)` of the table's nomm (`snP long := sfSnd (codeNoun flagsOf long.code)`, Q's model
+  of `+sound` on the table), `refD`'s n-ary half (`Glue/RefSideH.lean`: `RefSideMOnH`,
+  `ContractLeavesOnH`, `contractOnH_of`, `compHypOnH_of`, `refSideMOnH_refDH`).
+- THE CLASS FACTS ARE AT `finishLUCH`: `ClassLeavesH S lib FM FN` (`FM : SndT → MonoClass`,
+  each mono field for every `snd`); every `ClassLeaves13` class on hint-free nomms is one
+  (`classLeavesH_of13`, `finishLUCH_eq`); `classLeavesH_or`; J's hinted class `HintClsB` is one
+  (`classLeavesH_hint`, its raw contract J's `rawMonoH_hintCls` + `hintContract_holds`, no
+  hypothesis) given `HintLeaves`.  M16 IS PLUGGED on the contract side.
+- `KIMid` IS GONE (misfit 8): `runGX_lcm env` (`Glue/GuardCallsX.lean`) proves `InvA` of every
+  run on `NoSixC` from D's `kimidX_noSix` with NO hypothesis (`RunGX`: `GU r goal := GX r goal ∧
+  LU goal` in place of `GD`; `GU.gd` gives `GD`, so `kerfG`, `kpa_simpleNextLG`,
+  `kpa_monoBlocksG` are reused); `top_kerfAX`; `entryMono_plainKX`, `entryNary_plainX`
+  (`Glue/PlainX.lean`) have NO hypothesis; `classLeaves_plainX` needs only H's totality.
+- `unary` on `%full`: K's record (at `finishLUCM`) and `UnaryEnvIs14`, moved to `finishLUCH` by
+  `dirOk_noHint` (K's record asks `DirOk`, which has no hint) and `finishLUCH_eq` (`unaryMid15`).
+
+NO OWNER (for the coordinator; size = my estimate of the work, S < M < L):
+- `CompLeaves15.stable` (M): `refDH` at the table after `+ska-poke` agrees with the old one on
+  old bells, at `I14` states (needs: `+ska-poke` only adds code entries, `D.env` and `snP` of
+  an old bell unchanged; truth risk if a new bell changes an old callee's need).
+- `CompLeaves15.jetRoot` (M): the contract of the jetted root, at `I14` states.
+- `CompLeaves15.jets` (S-M): `%jets ~` keeps `CacheOK (refDH ..)` (the cache's forms do not
+  depend on `jets` / `hot`).
+- `CompLeaves15.fast` (S-M): `%fast` keeps `CacheOK (refDH ..)`.
+- `HaltLeaves15.root` (M): `RootAnswersOn` at `refDH`, `I14` states (the root's nomm compiles).
+- `FormatLeaves13` (4 x S-M, pill only): `RendRestTonFree`, `SoftTankUnit`, `SkipMsgTonFree`,
+  `EvalMookSame`.
+- `CompLeaves15.inlPill` (L): `InlPill libP D`, the pill half of Q's `+inlined` = `inlinedM`.
+- `ClassLeaves15.totalPlainM`, `.totalPlainN` (L), `.totalPlainDM` (L), `HintLeaves.total`
+  (L): the pill's `+optimize` returns on the raw code of `PlainCalls`, `PlainCallsDM` and J's
+  hinted class (H's `optimize_total_finishLUX` extended to calls and hints).
+- `CompLeaves15.answers`, the part outside I (M): `split-max` (S's question).
+
+The hypotheses with owners (record, field, owner, one line each):
+
+`Route14` (CHOICES, as `gap14`): `env.he`, `env.threshold`, `env.softSpot`,
+`env.registerFast`, `skaPoke` (P's concrete route), `jetRoot`, `optimize`, `sccOf`,
+`compileUnary`.  (`bf` is free: Q's `bakeEnds_of_drops` asks `bf := bakeFuel`.)
+
+`PokeLeaves14` (as `gap14`): `spLeaves` (P), `gate` (K; P, I, A: `GateRest6All`, see misfits
+9 and 10), `restKeys` (K), `unaryKeeps` (D), `otherKeeps` (P), `other` (P: `PokeOther13`).
+
+`CompLeaves15` (`CompLeaves14` at `refDH`):
+- `unaryEnv` (K, I): `UnaryEnvIs14 D` (at `finishLUCM`; carried to `finishLUCH` on `DirOk`).
+- `unaryCache` (I, K): `UnaryCacheOK14 Ar (refDH ..)`.
+- `unaryDire` (P, then proved): `unaryDire_of` proves it from P's ONE lemma `DireGood6 Ar`
+  (at a `PGood6` state, when `+scc-of` returns `q` and `+compile-unary` returns on it: the
+  bell is a code key, `q.1 = sccSet code b`, and `{st with cache.sccs := q.2}` is `PGood6`:
+  the `%dire` twin of `mid_key` and `good6_mid`) and `unaryEnv`, `unaryCache`.
+- `scc` (I), `answers` (I + no owner), `stable`, `jetRoot`, `jets`, `fast` (no owner).
+- `inFrag` (C, J, K, A): `InFragOnH`, every compiled nomm of an `InvK` table is in
+  `FM (snP long)`; for `gap15_plainH`, `FM15`: hint-free `FragX` ∪ `PlainCalls` ∪
+  `PlainCallsDM`, or J's `HintClsB` (`hcV`, `HintTab`, `FitH`).  J's wider class (`hcW`,
+  `InFragHW`) drops in by replacing `HintClsB` in `FM15` and `classLeavesH_hint`'s raw contract
+  by J's `RawMonoH` of it (any `RawMonoH` class works: `ClassLeavesH.rawMono`).
+- `optPill` (P): the pill's `+optimize` on `refDH`'s forms (hinted forms now included).
+- `inlPill` (no owner), `callee` (I, J).
+
+`ClassLeaves15` (the class leaves of `gap15_plainH`; NO `KIMid`):
+- `totalPlainM`, `totalPlainN`, `totalPlainDM` (no owner, H's form): `OptTotal`.
+- `kdm` (D, in progress): `KdmMonoSpec` (D's `optInMono_plainD_of`, `readsInMono_plainD_of`).
+- `guard` (G): `GuardMonoC` on `NoSixM`: from `StraightA` (`guardMonoC_noSixX`, checked on 7/7
+  direct calls and 990/990 samples) or from D's `KeyUndefC` and G's `SDWEndC`
+  (`guardMonoC_noSixWX`).
+- `hint` (`HintLeaves`): `optIn` (D: `OptIn` of `finishLUCH` on `HintClsB`), `entry` (G, D: the
+  guard of `runLCH`: `RunGX` arms for `%11`/`%mean` are not written, `runLCM` fails there),
+  `total` (no owner, H's form).
+
+`HaltLeaves15`: `cg` (F; `WidthFin`, a question), `bake` (Q, H2; `bakeEnds_of_drops` with
+`bf := bakeFuel`), `root` (no owner).  `FormatLeaves13` (no owner).
+
+WHAT COVERS HINTED ARMS, AND WHAT DOES NOT YET (M16): the contract side (`refDH`,
+`ClassLeavesH`, `HintClsB` in `FM15`) speaks of `finishLUCH`.  The leaves that must ALSO speak
+of `finishLUCH` before a reached hinted arm is covered end to end:
+- K: `GateRest6All` (`dir : DirOk` excludes every hint, misfit 10) needs a hinted twin with
+  `dir : HintOkM e.nomm = true` and the link "+compile-unary IS `finishLUCH (envOf ..)
+  (sfSnd cod) e.nomm`" (a hinted `unaryFinish_of_rest5` / `unaryOut_of_gate`).  What it needs of
+  Q: `comp_run_hint_anaM` (`PartH env (sfSnd cod) msup ctx (XM E msup) n region` against
+  `runLCH env (sfSnd cod) true msup`, from `slot? 7 ctx = some compK`, `slot? 52 ctx = some
+  cod`, `CodeAna cod`, `HintOkM n`, `HintCallsM env cod ctx E msup n`), used where K's link now
+  uses the `DirOk` run link, at `cod := codeNoun flagsOf code` (so `sfSnd cod = snP long`).
+- K, I: `UnaryEnvIs14` at `finishLUCH` (the record's `env` and `D.env` give `runLCH` the same
+  result: `runLCH` also reads `env.pure`, `env.need` of `%mean` traps, J's `HintTab`).
+- J: membership `HintClsB` on real arms (`HintTab`, `FitH` at `Fits bl.less`); 20 of 57 real
+  arms today.
+- D, G, H: `HintLeaves` (above).
+With these, `unaryMid15` uses the hinted twin instead of `dirOk_noHint`; nothing else in
+`gap15` changes.  TRACK K's RING CASE (`callLR`, `runLCR`, `runLCMR`; a callee of `%fast`
+called through `%jsf` / `%jmf`): `finishLUCM` gets a ring variant; `refDH` must then be built
+on it (one more compile function in `RefSideMOnH` and `ClassLeavesH`, the same pattern).
+
+MISFITS still open (11 first: it is the coordinator's priority):
+11. NEW (track K's ring finding, integration 887d54eb; `tools/hoon/ringdump.hoon` part B):
+    a callee registered AFTER its caller was compiled gets its ring at a `%jets ~` poke
+    (not `Hot`), and with no driver `hot-stale` drops nothing, so the cached caller keeps
+    `%jmp` / `%jsp` while a fresh compile emits `%jmf` / `%jsf`.  So every leaf that says "a
+    cache entry IS the reference compile at the current state" is FALSE after such a poke:
+    `CacheOK` (`Ska/PokeModel.lean`, by equality) inside `InvS` / `InvSMI`, hence
+    `UnaryCacheOK14`, the `CacheOK` halves of `unaryDire` / `unaryMid15` / `scc`, `jets`,
+    `fast`, and the old `cacheKeeps`.  NOT DONE THIS PASS (the ring model is not in this base;
+    `CacheOK` is a shared file and the whole poke chain of `Glue/PokeOn.lean` reads it).  The
+    exact restatement, under new names:
+    - `CacheOKR ref long jets hot c := (∀ b s, Treap.get c.mono b = some s → ∃ s', ref long
+      jets hot b true = some s' ∧ RingSame s s') ∧ (the same for `c.nary` at `false`)`, with
+      `RingSame s s'` = the blocks have the same erasures (K's `RingSame`) and `s.need =
+      s'.need`, `s.nargs = s'.nargs` (the `%full` need comparison and the `nargs` of
+      `contract` read them);
+    - `InvSR := InvB ∧ CacheOKR`; `CompHypOnR` = `CompHypOn` with `CacheOKR` in `unary`, `scc`,
+      `jets`, `fast`; `pokeS_soundOnR`: a cached straight's `BellContract` from its reference
+      form's by K's `execEntry_ringEq` (the contract speaks only of how a straight RUNS);
+    - `UnaryCacheOKR` (I, K), and `jets` (no owner) now TRUE in the ring case: `%jets ~` keeps
+      `CacheOKR` because the new ring changes only erasure-equal ops.
+    This replaces the hypothesis `ringFree` / `CodeNoRing` (misfit 9): K's record no longer
+    needs the callees ring-free once the cache is compared up to `RingSame` and the reference
+    is built on `finishLUCMR` (K's `finishLUCMR_eq` under `RingFreeN` keeps the old case).
+    `jets-hot` is empty at every reached state (P, `PGood9`, `reach_hotEmpty`), so no `hot`
+    clause is needed.
+1. `PokeOther13` (P): a leaf.
+4. Left of it: `unaryEnv`, `unaryCache` (K, I); `unaryDire` is now P's `DireGood6`.
+6. M16 PLUGGED on the contract side (above); its poke side is misfit 10.  M20 (soft calls)
+   keeps its class out.
+7. C's contracts are per example.
+8. GONE: no `KIMid` in `gap15` (`gap13_fragXPlain`, `classLeaves_plain` keep it: superseded).
+9. `CodeNoRing` in K's record is false of the real compiler.
+10. NEW: K's `GateRest6All` asks `DirOk` of every key of every `PGood6` state; `DirOk` has no
+    hint (`dirOk_noHint`) and real tables have hinted arms, so the record is false of the real
+    compiler once a hinted arm is reached.  Owner K (the hinted twin above).
+Not used yet: P's `pokeModel_fullReachP12` (`PGood8 := PGood7 ∧ InvK` at reached states):
+moving there needs K's record at `PGood7`/`PGood8`.
+
+Toward `SDWEndC` (the `guard` leaf's body-local route): as in 10a.
+
+QUESTIONS TO THE AUTHOR (open): (a) `WidthFin` (F); (b) `split-max` (S).
+
+## 10a. THE HYPOTHESES OF `gap14`, one open leaf each (fourteenth pass, superseded by 10)
 
 `gap14 Ar D hR hP hC hK hH hF : Assembly.Gap libP (liftPoke (enc flagsOf) (pokeS Ar))
 (liftInv (enc flagsOf) (InvSMI libP (refD CSet D) I14))` (`Glue/Assemble14.lean`), and
@@ -1533,7 +1674,7 @@ QUESTIONS TO THE AUTHOR (open): (a) the WIDTH of the analysis (track F's `WidthF
 number of branches of the pass loop bounded?); (b) `split-max` in the sweep loop (track S: the
 cut fires on real code; S recommends a `sticky` variant; no decision yet).
 
-## 10a. THE HYPOTHESES OF `gap13`, one open leaf each (thirteenth pass, superseded by 10)
+## 10b. THE HYPOTHESES OF `gap13`, one open leaf each (thirteenth pass, superseded by 10)
 
 This section is the list of the fields of the five records of `gap13`
 (`Glue/Assemble13.lean`), on the class `FragX ∪ PlainCalls`
