@@ -1370,6 +1370,10 @@ What a reader of `core/` has to take on trust beyond the Lean kernel:
 | `Glue/Assemble13.lean` | Track G (Gaps 22 (o)): THE ASSEMBLY.  `Route13` (the choices of P's route), the leaf records `PokeLeaves13`, `CompLeaves13`, `ClassLeaves13`, `HaltLeaves13`, `FormatLeaves13`; `PokeOther13`, `pokeModel_of_fullOther`, `monoLinkGood6_of_rest5`, `pokeModel_fullReachP6G` (P's top with K's `GateRest5`), `unaryFinish_of_rest5`; `compHyp13`; **`gap13`**, **`full13`**; `andM`, `andN`, `classLeaves_or`, `classLeaves_fragX`, `PlainCallsM`, `PlainCallsN`, `classLeaves_plain`, `gap13_fragX`, `gap13_fragXPlain`. |
 | `Glue/NskProxy.lean` | Track G (Gaps 22 (o)): toward `NskEndC`.  `SDW` (a split register is defined earlier in its body, or is no key below `re`), `sdw_of_sds`, `nsk_of_sdw`, the leaf `SDWEndC`, `nskEndC_of`, `entryMono_noSixW`, `proxy_fresh` (`+proxy` allocates its key at `re`), `sdw_proxy`. |
 | `Glue/AuditGlue13.lean` | Track G: `#check` / `#print axioms` of the thirteenth pass and of the other tracks' names it cites from digest [306] to [314] (3500M cap). |
+| `Glue/PokeOn.lean` | Track G (Gaps 22 (p)): the `PokeM` chain over REACHED states.  `midSt`, `ReachOn` (`now`, `ana`, `kept`), `CompStateOn`, `CompHypOn` (the pill facts at `Rd` / `I` states), `compileStep_specOn`, `needOf_eqOn`, **`pokeS_soundOn`**, **`pokeS_invKeptOn`**, `InvSMI`, `RootAnswersOn`, `rootAnswersOn_of`, `fullAnswers_of_cgMPOn`, **`gap_of_armPMOn`**, `halting_of_cgMPOn`. |
+| `Glue/PiecesOn.lean` | Track G (Gaps 22 (p)): the contract at reached tables.  `refOn` (the reference cut down to the `Tr` tables), `refOn_of`, `refOn_some`, `refN_on`, `RefSideMOn`, `refSideM_on`, `ContractLeavesOn`, **`contractOn_of`**, `compHypOn_of`; `refD` (the model as the reference), `refMono_refD`, `refNary_refD`, `InFragOn`, `refSideMOn_refD`. |
+| `Glue/Assemble14.lean` | Track G (Gaps 22 (p)): THE ASSEMBLY over reached states.  `Route14`, `PokeLeaves14`, `pokeModel14` (K's `pokeModel_fullReachP9U`), `good6_of_reach14`, `I14`, `Rd14`, `Tr14`, `invK_ana14`, `pokeS_invK`, `not_hot_noun`, `reachOn14`, `invStart14`, **`unaryOut_of_gate`** (the pill's `+compile-unary` is `finishLUCM` under K's record), `UnaryEnvIs14`, `UnaryCacheOK14`, `unaryMid14`, `CompLeaves14`, `compState14`, `contractLeaves14` (`inlAnnot` from Q's `inlAnnot_of_invK`), `compHyp14`, `HaltLeaves14`, **`gap14`**, **`full14`**, `gap14_fragX`. |
+| `Glue/AuditGlue14.lean` | Track G: `#print axioms` of `gap14`, `full14` and their parts (3500M as a single target). |
 | `Glue/GuardFinalTop.lean` | Track G (Gaps 22 (e)): **`guardFinalU`**, **`guardFinalF`** (the two final-pass leaves are theorems), `guardMonoX`, `guardNaryX`, **`compHyp_of_fragX₃`** (`CompHyp` on `FragX` from `CompRestOE` alone, no guard leaf); two `example`s on `[6 [0 2] [6 [0 6] [0 3] [0 1]] [1 0]]`. |
 | `NockSmallStep.lean`, `Nomm.lean`, `DecExample.lean`, `NOMM_PROOF.md` | The earlier work: small-step semantics, a model of `nomm-1`, a toy decrement. |
 
@@ -6945,6 +6949,19 @@ import only its theorems.  So:
     `+compile-unary` is `finishLUCM (S := CSet)` on `DirOk`) and Q's `inlAnnot_of_inv` hold
     on reached states only.  `LEDGER.md` section 10 lists every field.  `NskEndC` reduced to the
     frame target `SDWEndC` (`Glue/NskProxy.lean`: `nskEndC_of`, `sdw_proxy`).
+    (p) Fourteenth pass (`Glue/PokeOn.lean`, `Glue/PiecesOn.lean`, `Glue/Assemble14.lean`,
+    `Glue/AuditGlue14.lean`): **MISFIT 4 BRIDGED**.  `CompHypOn` asks the pill facts only
+    where the compiler runs (`ReachOn`: an invariant `I` kept by the pokes, and `Rd`, the
+    states the compile step runs on); `pokeS_soundOn`, `pokeS_invKeptOn`, `gap_of_armPMOn`,
+    `halting_of_cgMPOn` re-prove the chain; `contractOn_of` the contract from pieces at the
+    reached tables (`refOn`); `refD`, the model as the reference (`refMono`, `refNary` are
+    theorems).  `gap14` / `full14` at `I14 = PokeReach ∘ enc ∧ InvK` (Q's `InvK` a theorem,
+    kept by P's arm: `invK_ana14`): the poke side is K's `pokeModel_fullReachP9U` (the old
+    gate misfit and the fuel misfit are gone), `unary` on the `%full` path is K's record
+    (`unaryOut_of_gate`) with the leaves `UnaryEnvIs14`, `UnaryCacheOK14`, `inlAnnot` is Q's
+    `inlAnnot_of_invK`.  `LEDGER.md` section 10 lists every field of `gap14`; `KIMid` (in
+    `classLeaves_plain`) is false (track D), so `gap13_fragXPlain` is vacuous until the switch
+    to `KIMidX`.
 23. **The poke on states: `enc` and the `%full` branch** (track P, 2026-11-27,
     `Ska/PokeEnc.lean`, `Compiler/PokeLink.lean`, `Compiler/PokeLinkFull.lean`, `Compiler/PokeLinkOpt.lean`,
     `Compiler/PokeLinkScc.lean`, `Compiler/PokeLinkJet.lean`, `Compiler/PokeLinkReach.lean`,
