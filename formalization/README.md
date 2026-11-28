@@ -8078,6 +8078,7 @@ import only its theorems.  So:
        it needs, per ring bell, an earlier variant that knows exactly the code plus the part the raw join
        keeps (an earlier poke that evaluates the ring makes floor variants, which pick every site), and a
        caller whose loss comes between the first evaluations of `c1` and `c2`.
+
 32. **Arms by Hoon path: the arm table and the pill switch** (track T, 2026-11-28, `tools/armtab/`,
     `tools/hoon/armtab.hoon`, `lemmas/Pill/Arms.lean`).
     1. *The table.*  `tools/hoon/armtab.hoon` walks the type of the library's core (`-:!>(.)` in a
