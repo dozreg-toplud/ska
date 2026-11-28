@@ -82,6 +82,40 @@ theorem unaryMid15 {Ar : ArmsP} {env : Env Noun} {jet : Noun → Noun → (Bell 
   rw [Comp.finishLUCH_eq _ _ (dirOk_noHint _ H.dir)]
   exact h1
 
+/-! ## `+compile-unary` on the `%dire` path (misfit 4) -/
+
+/-- **Leaf (P): `%dire` at a `PGood6` state.**  When `+scc-of` returns `q` and
+`+compile-unary` returns on it, the bell is a key of the code table, `q.1` is its SCC, and the
+state with the new `sccs` is `PGood6` (the `%dire` analogue of `mid_key` and `good6_mid`). -/
+def DireGood6 (Ar : ArmsP) : Prop :=
+  ∀ (st : PSt) b q r, PGood6 OptTotal st → InvK libP st.long → Ar.sccOf b st.long st.cache.sccs = some q →
+    Ar.compileUnary b q.1 st.long st.jets st.hot { st.cache with sccs := q.2 } = some r →
+    (∃ e, FinMap.get st.long.code b = some e) ∧ q.1 = sccSet st.long.code b ∧
+      PGood6 OptTotal { st with cache := { st.cache with sccs := q.2 } }
+
+/-- **The field `unaryDire` from P's `DireGood6`** and the two leaves of the `%full` path
+(`UnaryEnvIs14`, `UnaryCacheOK14`): the proof of `unaryMid15`. -/
+theorem unaryDire_of {Ar : ArmsP} {D : CompData FinMap (TreapMap mugF) Noun Noun}
+    (hUA : Ar.compileUnary = compileUnaryP flagsOf) (hGR : GateRest6All flagsOf OptTotal) (hDG : DireGood6 Ar)
+    (hE : UnaryEnvIs14 D) (hCa : UnaryCacheOK14 Ar (refDH CSet D snP)) :
+    ∀ (st : PSt) b q s n c', PGood6 OptTotal st → InvK libP st.long →
+      Ar.sccOf b st.long st.cache.sccs = some q →
+      Ar.compileUnary b q.1 st.long st.jets st.hot { st.cache with sccs := q.2 } = some ((s, n), c') →
+      refDH CSet D snP st.long st.jets st.hot b true = some s ∧
+        (CacheOK (refDH CSet D snP) st.long st.jets st.hot st.cache →
+          CacheOK (refDH CSet D snP) st.long st.jets st.hot c') := by
+  intro st b q s n c' hg hk hq hu
+  obtain ⟨⟨eb, heb⟩, hq1, hm⟩ := hDG st b q _ hg hk hq hu
+  have hu' : Ar.compileUnary b (sccSet st.long.code b) st.long st.jets st.hot { st.cache with sccs := q.2 } =
+      some ((s, n), c') := by rw [← hq1]; exact hu
+  obtain ⟨COLE, NM, CA, need, sure, sof, inl, D', hcole, H, hs⟩ := unaryOut_of_gate hUA hGR hm heb hu'
+  have h1 := hE _ _ _ _ _ _ _ _ _ _ _ _ hm heb hcole H hs
+  refine ⟨?_, hCa _ b eb _ hm heb hu'⟩
+  have heb' : Treap.get st.long.code b = some eb := heb
+  simp only [refDH, if_true, realOf, heb', Option.map_some, Option.bind_some]
+  rw [Comp.finishLUCH_eq _ _ (dirOk_noHint _ H.dir)]
+  exact h1
+
 /-! ## The leaves of `CompHypOn` at `refDH` -/
 
 /-- **`CompLeaves14` at the model with hints** (`refDH CSet D snP` in place of `refD CSet D`;

@@ -29,3 +29,4 @@ open Formalization SkaModel Glue
 #print axioms Glue.full15
 #print axioms Glue.gap15_plainH
 #print axioms Glue.gap15_fragX
+#print axioms Glue.unaryDire_of
