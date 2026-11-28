@@ -13,6 +13,7 @@ import lemmas.Compiler.CompRunSoftRes
 import lemmas.Compiler.CompMonoLinkTop6
 import lemmas.Compiler.CompSccOfSweepMiss
 import lemmas.Compiler.CompMonoLinkRing
+import lemmas.Compiler.CompRunSoftChain2
 
 /-! The axioms of the link of `+compiled-mono` and of the run at `mono` `|` (README Gaps 19 (g)).
 `CompSccOfAny`, `PokeLinkGood` and track I's `CompSccLoop*` import together since the renames of
@@ -148,3 +149,9 @@ that one's imports light. -/
 #print axioms Formalization.Compiler.codeKeys_of_closed
 #print axioms Formalization.Compiler.flagsLoob_flagsOf
 #print axioms Formalization.Compiler.codeNoHot_of_noRing
+#print axioms Formalization.Compiler.runLCS2_lift
+#print axioms Formalization.Compiler.crxts_softFree2
+#print axioms Formalization.Compiler.runLCS2_softTail_eq
+#print axioms Formalization.Compiler.comp_run_n7TS2
+#print axioms Formalization.Compiler.comp_run_softChain2
+#print axioms Formalization.Compiler.medeAllAt_empty
