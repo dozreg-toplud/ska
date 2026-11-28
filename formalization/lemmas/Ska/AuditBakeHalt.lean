@@ -1,6 +1,7 @@
 import lemmas.Ska.BakeHalt
+import lemmas.Ska.BakeHaltTie
 
-/-! Axioms of the track Q `BakeEnds` file (`Ska/BakeHalt.lean`, README Gaps 31). -/
+/-! Axioms of the track Q `BakeEnds` file (`Ska/BakeHalt.lean`, `Ska/BakeHaltTie.lean`, README Gaps 31). -/
 
 open Formalization.SkaModel
 
@@ -17,3 +18,12 @@ open Formalization.SkaModel
 #print axioms PokeM.bakeEnds_mono
 #print axioms PokeM.bakeHalts_of_drops
 #print axioms PokeM.bakeEnds_of_drops
+#print axioms Bake.bakeLoop_halts_of_wf
+#print axioms Bake.put_le
+#print axioms Bake.touchFold_le
+#print axioms Bake.bakeStep_le
+#print axioms Bake.bakeStep_drop4
+#print axioms Bake.bakeLoop_halts4
+#print axioms PokeM.bakeDropsT_of_drops
+#print axioms PokeM.bakeHalts_of_dropsT
+#print axioms PokeM.bakeEnds_of_dropsT
