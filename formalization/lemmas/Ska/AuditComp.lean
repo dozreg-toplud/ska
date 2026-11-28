@@ -131,6 +131,8 @@ import lemmas.Ska.CompGenSevenN
 import lemmas.Ska.CompGenConsD
 import lemmas.Ska.CompGenConsE
 import lemmas.Ska.CompGenConsK
+import lemmas.Ska.CompGenClassF
+import lemmas.Ska.CompGenClassG
 
 /-!
 # Axioms of the theorems about the model of `+comp`
@@ -1431,3 +1433,25 @@ open Formalization.SkaModel.Comp
 #print axioms runOKGen_cons00
 #print axioms nextGG_cons0
 #print axioms exCons_contract
+#print axioms nextGC_all_of
+#print axioms closedN0
+#print axioms closedN1
+#print axioms closedN7
+#print axioms nextGC_all
+#print axioms consGAt_of_run
+#print axioms premG_tel
+#print axioms premG_hed
+#print axioms halvesApart_split
+#print axioms copyPreG
+#print axioms resG_copy
+#print axioms frameG_consG
+#print axioms frontSG_consG
+#print axioms FrontSG.toLG
+#print axioms closedS_n0
+#print axioms closedS_n1
+#print axioms closedS_n7
+#print axioms frontSG_seven
+#print axioms semG_consG
+#print axioms semGW_consG
+#print axioms nec_consG
+#print axioms semCoreG_consG

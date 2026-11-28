@@ -1,3 +1,7 @@
+import lemmas.Compiler.PokeLinkTailEnd
+import lemmas.Compiler.PokeLinkTailJets
+import lemmas.Compiler.PokeLinkTailCores
+import lemmas.Compiler.PokeLinkGood7
 import lemmas.Compiler.PokeLinkJetsCole
 import lemmas.Compiler.PokeLinkJetsP
 import lemmas.Compiler.PokeLink
@@ -222,3 +226,21 @@ open Formalization Formalization.Compiler
 #print axioms pokeModel_fullReachP8
 #print axioms jetsOfCole6_P
 #print axioms pokeModel_fullReachP9
+#print axioms uniR_det
+#print axioms jetsOfSets_P
+#print axioms good7_full_step
+#print axioms good7_mid
+#print axioms pokeReachGood7
+#print axioms pokeModel_fullReachG7
+#print axioms spRestGood7_of_leaves
+#print axioms pokeModel_fullReachP10
+#print axioms srCores_run
+#print axioms rep_gateP
+#print axioms ujStep_run
+#print axioms uniJu_run
+#print axioms srJetsF_run
+#print axioms uniJuO_some
+#print axioms tailEndAt_of_end
+#print axioms spLeavesGood7_of_8
+#print axioms spRestGood7_of_leaves8
+#print axioms pokeModel_fullReachP11
