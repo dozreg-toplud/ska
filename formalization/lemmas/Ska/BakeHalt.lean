@@ -10,7 +10,7 @@ poke from an `InvB` state.  This file does three things.
 
 * **The fuel.**  `bakeFuel E` is a fuel at which the worklist returns, when
   there is one (as `anaFuel` of `AnaEnds.lean` for the analysis), so
-  `BakeEnds` at `bakeFuel` is exactly `BakeHalts`: the worklist returns at
+  `BakeEnds` at `bakeFuel` is exactly `BakeHalts`, the worklist returns at
   SOME fuel (`bakeEnds_of_halts`, `bakeHalts_of_ends`).  `bakeEnds_mono`:
   `BakeEnds` at a fuel gives it at every larger fuel (from `bakeLoop_mono`).
 * **The measure.**  `kapX` is a measure of what a sock knows that depends
@@ -18,16 +18,31 @@ poke from an `InvB` state.  This file does three things.
   normal form of `+norm-sock`): `&` on a noun of size `n` counts `2 n + 1`, a
   cape that knows nothing `0`, a cell cape that knows something the sum of
   its halves plus `1` (the cell).  So `[& &]` and `&` on one cell count the
-  same, and data under `|` does not count.  `kapXS_lt`: of two socks with a
-  noun, if the nouns of the first are nouns of the second and not the other
-  way, the second counts less.  So every change of a bake LOWERS `kapXS`
-  unless the old and the new bake have the same nouns (a TIE: `bakeChange_kapX`).
-* **The loop.**  `bakeLoop_halts`: the worklist returns at some fuel when
-  (1) the bells that ever get a bake are in a finite list `U`, (2) no step
-  crashes, (3) no change of a bake is a tie and no bake is empty.  The
-  measure is lexicographic: the bells of `U` with no bake, then the sum of
-  `kapXS` over the bakes, then the length of the queue.  On the real
-  compiler (85 pokes, `tools/hoon/bakehalt-*.hoon`) there was no tie.
+  same, and data under `|` does not count.  `kapX_sub`, `kapXS_lt`: of two
+  socks with a noun, if the nouns of the first are nouns of the second and
+  not the other way, the second counts less.  So every change of a bake
+  lowers `kapXS`, unless the old and the new bake have the same nouns (a
+  TIE, `rebakeG_kapX`), and ties are what `noLoss_lessc` describes: changes
+  between a `less.c` that is not normal and the normal sock with its nouns.
+* **The loop.**  The measure of the worklist is lexicographic
+  (`bakeMeasure`): the bells of a list `U` with no bake, the sum of `kapXS`
+  over their bakes, the length of the queue.  A touched callee that gets a
+  bake lowers the first two parts (`put_drop`: it is in `U` and had no bake,
+  or its bake had a noun and the new one is not a tie), so a step whose
+  touched callees all do (`FoldOK`) lowers the measure (`bakeStep_drop`:
+  if no bake changed, nothing is queued and the queue is shorter), and a
+  worklist whose every step returns and lowers it ends
+  (`bakeLoop_halts_of_drop`).  `BakeDrops` states this for every poke
+  from an `InvB` state, and `bakeEnds_of_drops` gives `BakeEnds` at
+  `bakeFuel` from it.
+
+What `BakeDrops` still asks, per poke: a finite `U` that holds every bell
+that gets a bake (the callees of sites of the datums' nomms), that no step
+crashes (`sitesOf` returns: the bell has a datum and `+know` returns, and
+`+pick`, `+huge:so`, `+norm-sock` return), and that no change of a bake is
+a tie or starts from a bake with no noun.  On the real compiler (85
+`%full` pokes, `tools/hoon/bakehalt-*.hoon`, README Gaps 31) every
+worklist ended, and no change was a tie.
 -/
 
 namespace Formalization
