@@ -1801,13 +1801,13 @@
     =/  bake=sock
       ?:  |(frozen (~(has in fix.st) c))  less.c
       =/  ks=(list sock)  (zing ~(val by m))
-      ?~  ks  less.c
+      ?~  ks  (norm-sock less.c)
       =/  meet=sock  (roll t.ks |=([k=sock acc=_i.ks] (purr:so k acc)))
       =/  both=sock  (norm-sock (uni-sock less.c meet))
       ::  what the sites know may contradict the code requirement, at a
       ::  site that is never reached: then the code requirement alone
       ::
-      ?.  (huge:so less.c both)  less.c
+      ?.  (huge:so less.c both)  (norm-sock less.c)
       both
     ::
     =/  old=(unit sock)  (~(get by bak.st) c)
